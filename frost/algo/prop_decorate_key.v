@@ -2134,23 +2134,34 @@ Proof.
   intros P ψ Ψ H; induction H; eauto with frost.
 Qed.
 
-(** A solve_eq output against a GUARDED target has a guarded head (no rule
-    with a guarded target emits a ∀-, ∀◇- or ◇-headed output). *)
-Lemma solve_eq_guarded_r_head : forall Θ P P0 P',
-  Θ ⊢ₑ P ∼ P0 ⤳ P' -> guarded_pskl P0 -> pskl_guarded_head P'.
-Proof.
-  intros Θ P P0 P' H; induction H; intros Hg; simpl;
-    try exact I; try (inversion Hg; fail).
-  - (* hole_l : P'=P0 *) inversion Hg; subst; simpl; auto.
-  - (* tophole_l_guarded *) apply IHa_solve_eq; assumption.
-Qed.
+(** ⚠️⚠️ THE GUARDED-**TARGET** VERSION IS NOW FALSE (2026-08-04, the
+    SolE-FlexR repair).  It used to read
 
-(** Symmetrically for a GUARDED subject. *)
-Lemma solve_eq_guarded_l_head : forall Θ P P0 P',
-  Θ ⊢ₑ P ∼ P0 ⤳ P' -> guarded_pskl P -> pskl_guarded_head P'.
+      [Θ ⊢ₑ P ∼ P0 ⤳ P' -> guarded_pskl P0 -> pskl_guarded_head P']
+
+    and its whole content was SE-FlexR: a guarded target could only be a
+    (flexible) VARIABLE, and the old row returned that variable, whose head
+    is guarded whatever the subject was.  The repaired row returns the
+    ACCUMULATED PATTERN instead, so at [∀γ.γ→γ ∼ β̂] — target guarded, since
+    [β̂] is a variable — the output is [∀γ.γ→γ] and its head is NOT guarded.
+
+    ⭐ The GUARDED-SUBJECT version survives, and it is the one the
+    consumers should have used: [a_guess_mono_guarded] (prop_solve_sub.v)
+    says guess^TY is structural on the three guarded shapes, so a guarded
+    subject still guesses to a guarded result.  The one call site that
+    wanted the target version (SEq-UnivGhostR's twin, the SE-GhostGuarded
+    row of [dec_ext_solve_eq_step_size]) is re-routed through the SUBJECT,
+    where the needed head-guardedness is exactly what
+    [pskl_top_guarded (∀◇P)] supplies — i.e. the paper's own implicit
+    source-skeleton discipline ([a_wf_pskl_top_guarded]: a ∀◇ is well-formed
+    only over a guarded body).  docs/PAPER-GAPS.md. *)
+Lemma solve_eq_guarded_l_head : forall Θ P P0 Ξ P',
+  Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' -> guarded_pskl P -> pskl_guarded_head P'.
 Proof.
-  intros Θ P P0 P' H; induction H; intros Hg; simpl;
+  intros Θ P P0 Ξ P' H; induction H; intros Hg; simpl;
     try exact I; try (inversion Hg; fail).
+  - (* flex_r : guess^TY is structural on the guarded shapes *)
+    apply guarded_pskl_head. eapply a_guess_mono_guarded; eassumption.
   - (* hole_r : P'=P *) inversion Hg; subst; simpl; auto.
   - (* tophole_r_guarded *) apply IHa_solve_eq; assumption.
 Qed.
@@ -2275,29 +2286,29 @@ Qed.
    to move the SOLVE derivation instead: rename its binder to a genuinely
    fresh α0 ([a_solve_eq_rename_var]) and read the families there.  A
    renamed premise is no sub-derivation, whence the measure. *)
-Lemma dec_ext_solve_eq_step_size : forall n Θ P P3 P' ψ Ψ' Ψtot,
+Lemma dec_ext_solve_eq_step_size : forall n Θ P P3 Ξ P' ψ Ψ' Ψtot,
   2 * (size_pskl P + size_pskl P3) <= n ->
-  Θ ⊢ₑ P ∼ P3 ⤳ P' ->
+  Θ ⊢ₑ P ∼ P3 ⤳ Ξ ⨾ P' ->
   dec_ext P' ψ Ψ' -> d_tags_skl Ψtot ψ ->
   exists Ψi Ψp, ψ ∼ᵗ P3 ⤳ Ψi /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
 Proof.
   induction n as [| n IHn];
-    [ intros Θ P P3 P' ψ Ψ' Ψtot Hsz Hs;
+    [ intros Θ P P3 Ξ P' ψ Ψ' Ψtot Hsz Hs;
       pose proof (size_pskl_min P); pose proof (size_pskl_min P3); lia | ].
-  intros Θ P P3 P' ψ Ψ' Ψtot Hsz Hs; revert ψ Ψ' Ψtot.
+  intros Θ P P3 Ξ P' ψ Ψ' Ψtot Hsz Hs; revert ψ Ψ' Ψtot.
   destruct Hs as
     [ Θ                                         (* SE-Unit *)
     | Θ α Q                                     (* SE-Var *)
-    | Θ α P Hflex Hnf                           (* SE-FlexR *)
+    | Θ α P Ξ A Hflex Hnf Hgu                   (* SE-FlexR *)
     | Θ Q                                       (* SE-GhostL *)
     | Θ P                                       (* SE-VacuousR *)
-    | Θ P1 P2 Q1 Q2 P1' P2' Hp1 Hp2             (* SE-Arrow *)
-    | Θ P Q P' b Hfr Hp                         (* SE-Forall *)
-    | Θ P Q P' Hp                               (* SE-UnivGhost *)
-    | Θ P Q P' b Hfr Hp                         (* SE-GhostForall *)
-    | Θ P Q P' Hg Hp                            (* SE-GhostGuarded *)
-    | Θ P Q P' b Hfr Hp                         (* SE-ForallGhost *)
-    | Θ P Q P' Hg Hp ];                         (* SE-GuardedGhost *)
+    | Θ P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2' Hp1 Hp2       (* SE-Arrow *)
+    | Θ P Q Ξ P' b Hfr Hp                       (* SE-Forall *)
+    | Θ P Q Ξ P' Hp                             (* SE-UnivGhost *)
+    | Θ P Q Ξ P' b Hfr Hp                       (* SE-GhostForall *)
+    | Θ P Q Ξ P' Hg Hp                          (* SE-GhostGuarded *)
+    | Θ P Q Ξ P' b Hfr Hp                       (* SE-ForallGhost *)
+    | Θ P Q Ξ P' Hg Hp ];                       (* SE-GuardedGhost *)
     intros ψ Ψ' Ψtot Hdec Hdt; cbn in Hsz.
   - (* unit *) inversion Hdec; subst.
     + exists empty, empty; split;
@@ -2606,8 +2617,8 @@ Proof.
       | split; [ exact Hdp | exact Hsub ] ].
 Qed.
 
-Lemma dec_ext_solve_eq_step : forall Θ P P3 P' ψ Ψ' Ψtot,
-  Θ ⊢ₑ P ∼ P3 ⤳ P' ->
+Lemma dec_ext_solve_eq_step : forall Θ P P3 Ξ P' ψ Ψ' Ψtot,
+  Θ ⊢ₑ P ∼ P3 ⤳ Ξ ⨾ P' ->
   dec_ext P' ψ Ψ' -> d_tags_skl Ψtot ψ ->
   exists Ψi Ψp, ψ ∼ᵗ P3 ⤳ Ψi /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
 Proof.
@@ -2641,7 +2652,7 @@ Qed.
     SIZE induction, for the same reason as the eq step (DESIGN.md §4.3). *)
 Lemma dec_ext_solve_sub_step_size : forall n Θ m P P3 P' ψ Ψ' Ψtot,
   2 * (size_pskl P + size_pskl P3) <= n ->
-  Θ ⊢ₛ P ≼[ m ] P3 ⤳ P' ->
+  Θ ⊢ₛ P ≼[ m ] P3 ⤳ Ξ ⨾ P' ->
   dec_ext P' ψ Ψ' -> d_tags_skl Ψtot ψ ->
   exists Ψi Ψp, ψ ≼ᵗ[ m ] P3 ⤳ Ψi /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
 Proof.
@@ -3007,7 +3018,7 @@ Proof.
 Qed.
 
 Lemma dec_ext_solve_sub_step : forall Θ m P P3 P' ψ Ψ' Ψtot,
-  Θ ⊢ₛ P ≼[ m ] P3 ⤳ P' ->
+  Θ ⊢ₛ P ≼[ m ] P3 ⤳ Ξ ⨾ P' ->
   dec_ext P' ψ Ψ' -> d_tags_skl Ψtot ψ ->
   exists Ψi Ψp, ψ ≼ᵗ[ m ] P3 ⤳ Ψi /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
 Proof.
@@ -3068,8 +3079,8 @@ Lemma pskl_no_top_top_guarded : forall P, pskl_no_top P -> pskl_top_guarded P.
 Proof. induction P; simpl; intuition. Qed.
 
 (** No ∀◇ is created solving (eq) against a ∀◇-free target. *)
-Lemma solve_eq_no_top : forall Θ P P0 P',
-  Θ ⊢ₑ P ∼ P0 ⤳ P' -> pskl_no_top P -> pskl_no_top P0 -> pskl_no_top P'.
+Lemma solve_eq_no_top : forall Θ P P0 Ξ P',
+  Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' -> pskl_no_top P -> pskl_no_top P0 -> pskl_no_top P'.
 Proof.
   intros Θ P P0 P' H; induction H; intros Hnt Hgf; simpl in Hnt, Hgf; simpl.
   - (* unit *) exact I.
@@ -3094,7 +3105,7 @@ Qed.
 (** Every ∀◇ a sub-solve creates over a ∀◇-free skeleton/target heads a
     GUARDED body (SS-GhostL: guarded premise; SS-GhostLF: an arrow). *)
 Lemma solve_sub_top_guarded : forall Θ m P P0 P',
-  Θ ⊢ₛ P ≼[ m ] P0 ⤳ P' -> pskl_no_top P -> pskl_no_top P0 ->
+  Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' -> pskl_no_top P -> pskl_no_top P0 ->
   pskl_top_guarded P'.
 Proof.
   intros Θ m P P0 P' Hs; induction Hs; intros Hnt Hgf; simpl in Hnt, Hgf; simpl.
@@ -3160,7 +3171,7 @@ Qed.
 
 (** The TY solve output is top-guarded (walk the constraint list). *)
 Lemma solve_cstr_top_guarded : forall Θ 𝒞 P P',
-  Θ ⊩ 𝒞 ⨾ P ⤳ P' -> pskl_no_top P -> List.Forall a_cstr_no_top 𝒞 ->
+  Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' -> pskl_no_top P -> List.Forall a_cstr_no_top 𝒞 ->
   pskl_top_guarded P'.
 Proof.
   intros Θ 𝒞 P P' Hs; induction Hs; intros Hnt Hntc.
@@ -3180,8 +3191,8 @@ Qed.
 (* ===================================================================== *)
 
 (** A guarded-headed subject stays guarded-headed through eq-solving. *)
-Lemma solve_eq_guarded_head_l : forall Θ P P0 P',
-  Θ ⊢ₑ P ∼ P0 ⤳ P' -> pskl_guarded_head P -> pskl_guarded_head P'.
+Lemma solve_eq_guarded_head_l : forall Θ P P0 Ξ P',
+  Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' -> pskl_guarded_head P -> pskl_guarded_head P'.
 Proof.
   intros Θ P P0 P' H; induction H; intros Hg; simpl in Hg;
     try contradiction; simpl; try exact I.
@@ -3190,8 +3201,8 @@ Proof.
 Qed.
 
 (** A guarded-headed subject stays guarded-headed through sub-solving. *)
-Lemma solve_sub_guarded_head_l : forall Θ m P P0 P',
-  Θ ⊢ₛ P ≼[ m ] P0 ⤳ P' -> pskl_guarded_head P -> pskl_guarded_head P'.
+Lemma solve_sub_guarded_head_l : forall Θ m P P0 Ξ P',
+  Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' -> pskl_guarded_head P -> pskl_guarded_head P'.
 Proof.
   intros Θ m P P0 P' Hs; induction Hs; intros Hg; simpl in Hg;
     try contradiction; simpl; try exact I.
@@ -3202,8 +3213,8 @@ Proof.
 Qed.
 
 (** [top_guarded] is preserved by eq-solving (∀◇ over guarded stays so). *)
-Lemma solve_eq_top_guarded : forall Θ P P0 P',
-  Θ ⊢ₑ P ∼ P0 ⤳ P' ->
+Lemma solve_eq_top_guarded : forall Θ P P0 Ξ P',
+  Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' ->
   pskl_top_guarded P -> pskl_top_guarded P0 -> pskl_top_guarded P'.
 Proof.
   intros Θ P P0 P' H; induction H; intros Hnt Hgf; simpl in Hnt, Hgf; simpl.
@@ -3242,8 +3253,8 @@ Proof.
 Qed.
 
 (** [top_guarded] is preserved by sub-solving. *)
-Lemma solve_sub_top_guarded_tg : forall Θ m P P0 P',
-  Θ ⊢ₛ P ≼[ m ] P0 ⤳ P' ->
+Lemma solve_sub_top_guarded_tg : forall Θ m P P0 Ξ P',
+  Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' ->
   pskl_top_guarded P -> pskl_top_guarded P0 -> pskl_top_guarded P'.
 Proof.
   intros Θ m P P0 P' Hs; induction Hs; intros Hnt Hgf; simpl in Hnt, Hgf; simpl.
@@ -3311,7 +3322,7 @@ Qed.
 
 (** The TY solve output is top-guarded (walk the constraints; ∀◇ targets OK). *)
 Lemma solve_cstr_top_guarded_tg : forall Θ 𝒞 P P',
-  Θ ⊩ 𝒞 ⨾ P ⤳ P' -> pskl_top_guarded P -> List.Forall a_cstr_tg 𝒞 ->
+  Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' -> pskl_top_guarded P -> List.Forall a_cstr_tg 𝒞 ->
   pskl_top_guarded P'.
 Proof.
   intros Θ 𝒞 P P' Hs; induction Hs; intros Hnt Hntc.
@@ -3325,8 +3336,8 @@ Qed.
 
 (** ASSEMBLY: walk the constraint list — UNCONDITIONAL; [dec_ext] re-grows
     toward P with COVERAGE Ψp ⊆ Ψpost ∪ Ψc. *)
-Lemma solve_cstr_decorate : forall Θ 𝒞 P P' ψ Ψpost Ψtot,
-  Θ ⊩ 𝒞 ⨾ P ⤳ P' ->
+Lemma solve_cstr_decorate : forall Θ 𝒞 P Ξ P' ψ Ψpost Ψtot,
+  Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' ->
   dec_ext P' ψ Ψpost -> d_tags_skl Ψtot ψ ->
   exists Ψc Ψp, 𝒞 ⊩ᵗ ψ ⤳ Ψc /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψpost `union` Ψc.
 Proof.
