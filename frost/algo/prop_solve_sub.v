@@ -696,6 +696,25 @@ Proof.
   apply swap_aenv_fresh_id; [ clear - Hα Hf | clear - Hβ Hf ]; fsetdec.
 Qed.
 
+(** [guess^TY] consults its context ONLY through the avoid-conditions
+    [∉ ftvar_in_aenv Θ], so it transports to any context that MENTIONS LESS.
+    Needed by the solve's context-change lemma now that SE-FlexR calls it. *)
+Lemma a_guess_mono_ctx_shrink : forall Θ P Ξ A Θ',
+  a_guess_mono Θ P Ξ A ->
+  ftvar_in_aenv Θ' [<=] ftvar_in_aenv Θ ->
+  a_guess_mono Θ' P Ξ A.
+Proof.
+  intros Θ P Ξ A Θ' H; revert Θ'; induction H; intros Θ' Hsub.
+  - apply a_guess_mono__hole. clear - H Hsub; fsetdec.
+  - apply a_guess_mono__tophole; auto.
+  - apply a_guess_mono__var.
+  - apply a_guess_mono__unit.
+  - apply a_guess_mono__arrow; auto.
+  - apply a_guess_mono__forall with (β := β);
+      [ clear - H Hsub; fsetdec
+      | apply IHa_guess_mono; simpl; clear - Hsub; fsetdec ].
+Qed.
+
 (** ⭐ THE WITNESS-MOVE, PACKAGED.  A solve premise recorded at the rule's
     OWN binder [b] is transported to any [α0] fresh for the two input
     skeletons and the output.

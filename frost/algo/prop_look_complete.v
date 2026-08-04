@@ -444,80 +444,223 @@ Qed.
    change is FALSE (a new entry can capture a recorded witness).  A context
    whose domain SHRINKS keeps every side condition; growth is the separate
    [a_solve_eq_weaken_tvar], which re-freshens witnesses via the rename. *)
+(* ⚠️ ONE MORE CONDITION SINCE 2026-08-04: [ftvar_in_aenv] must shrink too,
+   not only [dom].  SE-FlexR now calls [guess^TY], whose freshness is
+   against [ftvar_in_aenv Θ] (a flexible's PAYLOAD may mention a name), so a
+   context change that shrinks the domain while adding payload variables
+   would break the generated block's freshness.  Every consumer supplies it
+   for free — they all drop or add whole entries. *)
+(* ⚠️ ONE MORE CONDITION SINCE 2026-08-04: [ftvar_in_aenv] must shrink too,
+   not only [dom].  SE-FlexR now calls [guess^TY], whose freshness is
+   against [ftvar_in_aenv Θ] (a flexible's PAYLOAD may mention a name), so a
+   context change that shrinks the domain while adding payload variables
+   would break the generated block's freshness.  Every consumer supplies it
+   for free — they all drop or add whole entries. *)
+
+(** Pushing / stripping a RIGID entry: it is never a flexible, so neither
+    [a_flex] nor [a_flex_tvar] can see it.  These four are what the solve's
+    ∀ rows need now that their premise runs at [(b ~ tvar) ++ Θ]. *)
+Lemma a_flex_cons : forall b bd Θ P, a_flex Θ P -> a_flex ((b ~ bd) ++ Θ) P.
+Proof.
+  intros b bd Θ P H; inversion H; subst;
+    [ apply a_flex__var with (α := α)
+    | apply a_flex__var_def with (α := α) (τ := τ) ];
+    unfold binds; simpl; right; assumption.
+Qed.
+
+Lemma a_flex_strip_tvar : forall b Θ P,
+  a_flex ((b ~ abind_tvar) ++ Θ) P -> a_flex Θ P.
+Proof.
+  intros b Θ P H; inversion H; subst;
+    match goal with Hb : binds _ _ _ |- _ =>
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq Habs] | Hb'];
+        [ discriminate Habs | ] end;
+    [ apply a_flex__var with (α := α)
+    | apply a_flex__var_def with (α := α) (τ := τ) ]; assumption.
+Qed.
+
+Lemma a_flex_tvar_cons : forall b bd Θ α,
+  a_flex_tvar Θ α -> a_flex_tvar ((b ~ bd) ++ Θ) α.
+Proof.
+  intros b bd Θ α [Hb | [τ Hb]];
+    [ left | right; exists τ ]; unfold binds; simpl; right; assumption.
+Qed.
+
+Lemma a_flex_tvar_strip_tvar : forall b Θ α,
+  a_flex_tvar ((b ~ abind_tvar) ++ Θ) α -> a_flex_tvar Θ α.
+Proof.
+  intros b Θ α [Hb | [τ Hb]];
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq Habs] | Hb'];
+    solve [ discriminate Habs | left; exact Hb' | right; exists τ; exact Hb' ].
+Qed.
+
+(** The same, over an arbitrary PREFIX — what the threading rows need, their
+    second premise running at [Ξ1 ++ Θ]. *)
+Lemma a_flex_tvar_app_mono : forall Ξ Θ Θ' α,
+  (forall a, a_flex_tvar Θ a -> a_flex_tvar Θ' a) ->
+  a_flex_tvar (Ξ ++ Θ) α -> a_flex_tvar (Ξ ++ Θ') α.
+Proof.
+  intros Ξ Θ Θ' α Hm [Hb | [τ Hb]];
+    destruct (binds_app_1 _ _ _ _ _ Hb) as [HbΞ | HbΘ].
+  - left; apply binds_app_2; exact HbΞ.
+  - destruct (Hm α (or_introl HbΘ)) as [Hb' | [τ Hb']];
+      [ left | right; exists τ ]; apply binds_app_3; exact Hb'.
+  - right; exists τ; apply binds_app_2; exact HbΞ.
+  - destruct (Hm α (or_intror (ex_intro _ τ HbΘ))) as [Hb' | [τ0 Hb']];
+      [ left | right; exists τ0 ]; apply binds_app_3; exact Hb'.
+Qed.
+
+Lemma a_flex_app_weaken : forall Ξ Θ P, a_flex Θ P -> a_flex (Ξ ++ Θ) P.
+Proof.
+  intros Ξ Θ P H; inversion H; subst;
+    [ apply a_flex__var with (α := α)
+    | apply a_flex__var_def with (α := α) (τ := τ) ];
+    apply binds_app_3; assumption.
+Qed.
+
+Lemma a_flex_app_anti : forall Ξ Θ Θ' P,
+  (forall p, a_flex Θ' p -> a_flex Θ p) ->
+  a_flex (Ξ ++ Θ') P -> a_flex (Ξ ++ Θ) P.
+Proof.
+  intros Ξ Θ Θ' P Hl H; inversion H; subst;
+    match goal with Hb : binds ?a ?bd (Ξ ++ Θ') |- _ =>
+      destruct (binds_app_1 _ _ _ _ _ Hb) as [HbΞ | HbΘ] end.
+  - apply a_flex__var with (α := α); apply binds_app_2; exact HbΞ.
+  - apply a_flex_app_weaken. apply Hl.
+    apply a_flex__var with (α := α); exact HbΘ.
+  - apply a_flex__var_def with (α := α) (τ := τ); apply binds_app_2; exact HbΞ.
+  - apply a_flex_app_weaken. apply Hl.
+    apply a_flex__var_def with (α := α) (τ := τ); exact HbΘ.
+Qed.
+
+(* the shared script for the five binder rows: re-apply the rule (its
+   freshness rides the domain SHRINK) and hand the IH the SAME entry
+   pushed on both sides *)
+(* hand the IH the SAME rigid entry pushed on both sides *)
+Ltac solve_ctx_change_ih :=
+  match goal with
+  | IH : forall Th2, dom Th2 [<=] _ -> _ |- _ =>
+      apply IH;
+        [ match goal with Hd : dom _ [<=] dom _ |- _ =>
+            simpl; clear - Hd; fsetdec end
+        | match goal with Hf : ftvar_in_aenv _ [<=] _ |- _ =>
+            simpl; clear - Hf; fsetdec end
+        | intros α0 Hft; apply a_flex_tvar_cons;
+          match goal with Hm : forall a, a_flex_tvar _ a -> _ |- _ =>
+            apply Hm; eapply a_flex_tvar_strip_tvar; exact Hft end
+        | intros P0 Hf0; apply a_flex_cons;
+          match goal with Hl : forall p, a_flex _ p -> _ |- _ =>
+            apply Hl; eapply a_flex_strip_tvar; exact Hf0 end ]
+  end.
+
+(* the IH at the UNCHANGED context (first premise of a threading row) *)
+Ltac solve_ctx_change_ih_here :=
+  match goal with
+  | IH : forall Th2, dom Th2 [<=] _ -> _ |- _ =>
+      apply IH; assumption
+  end.
+
+(* the IH at [Ξ1 ++ Θ] (second premise of a threading row) *)
+Ltac solve_ctx_change_ih_app :=
+  match goal with
+  | IH : forall Th2, dom Th2 [<=] dom (?X ++ _) -> _ |- _ =>
+      apply IH;
+        [ match goal with Hd : dom _ [<=] dom _ |- _ =>
+            rewrite ! dom_app; clear - Hd; fsetdec end
+        | match goal with Hf : ftvar_in_aenv _ [<=] _ |- _ =>
+            rewrite ! ftvar_in_aenv_app; clear - Hf; fsetdec end
+        | intros α0 Hft;
+          match goal with Hm : forall a, a_flex_tvar _ a -> _ |- _ =>
+            eapply a_flex_tvar_app_mono; [ exact Hm | exact Hft ] end
+        | intros P0 Hf0;
+          match goal with Hl : forall p, a_flex _ p -> _ |- _ =>
+            eapply a_flex_app_anti; [ exact Hl | exact Hf0 ] end ]
+  end.
+
+Ltac solve_ctx_change_binder :=
+  econstructor;
+  [ match goal with
+    | Hfr : _ `notin` _ , Hd : dom _ [<=] dom _ |- _ =>
+        clear - Hfr Hd; fsetdec
+    end
+  | solve_ctx_change_ih ].
+
 Lemma a_solve_sub_eq_ctx_change :
-  (forall Θ m P P3 P', Θ ⊢ₛ P ≼[ m ] P3 ⤳ P' ->
+  (forall Θ m P P3 Ξ P', Θ ⊢ₛ P ≼[ m ] P3 ⤳ Ξ ⨾ P' ->
      forall Θ',
      dom Θ' [<=] dom Θ ->
+     ftvar_in_aenv Θ' [<=] ftvar_in_aenv Θ ->
      (forall α, a_flex_tvar Θ α -> a_flex_tvar Θ' α) ->
      (forall P0, a_flex Θ' P0 -> a_flex Θ P0) ->
-     Θ' ⊢ₛ P ≼[ m ] P3 ⤳ P') /\
-  (forall Θ P P3 P', Θ ⊢ₑ P ∼ P3 ⤳ P' ->
+     Θ' ⊢ₛ P ≼[ m ] P3 ⤳ Ξ ⨾ P') /\
+  (forall Θ P P3 Ξ P', Θ ⊢ₑ P ∼ P3 ⤳ Ξ ⨾ P' ->
      forall Θ',
      dom Θ' [<=] dom Θ ->
+     ftvar_in_aenv Θ' [<=] ftvar_in_aenv Θ ->
      (forall α, a_flex_tvar Θ α -> a_flex_tvar Θ' α) ->
      (forall P0, a_flex Θ' P0 -> a_flex Θ P0) ->
-     Θ' ⊢ₑ P ∼ P3 ⤳ P').
+     Θ' ⊢ₑ P ∼ P3 ⤳ Ξ ⨾ P').
 Proof.
   apply a_solve_sub_eq_mutind; intros;
-    try solve [ econstructor; eauto ];
-    (* binder rules: the freshness side condition transports along the
-       domain SHRINK; everything else is the IH *)
+    (* binder rows FIRST — [econstructor; eauto] would mis-pick for them *)
+    try solve [ solve_ctx_change_binder ];
+    (* SS-ForallR: the output passes THROUGH, so [econstructor] leaves the
+       witness an evar — name it *)
     try solve
       [ match goal with
-        | Hfr : ?b `notin` _ , Hsub : dom _ [<=] dom _ |- _ =>
-            econstructor;
-            [ clear - Hfr Hsub; fsetdec
-            | eauto ]
-        end ].
-  - (* SE-FlexR *)
-    match goal with
-      Hb : a_flex_tvar _ _,
-      Hnf : a_non_flex _ _,
-      Hmono : forall _ : atom, a_flex_tvar _ _ -> a_flex_tvar _ _,
-      Hfl : forall _ : pskl, a_flex _ _ -> a_flex _ _ |- _ =>
-        destruct Hnf as [Hlc Hnf'];
-        apply a_solve_eq__flex_r; [ apply Hmono; exact Hb | ];
-        split; [ exact Hlc | intro Hf; exact (Hnf' (Hfl _ Hf)) ]
-    end.
+        | Hfr : ?b `notin` _ |- _ ⊢ₛ _ ≼[ _ ] pskl_all_syn _ ⤳ _ ⨾ _ =>
+            apply a_solve_sub__forall_r with (β := b); [ | ];
+            [ match goal with Hd : dom _ [<=] dom _ |- _ =>
+                clear - Hfr Hd; fsetdec end
+            | solve_ctx_change_ih ]
+        end ];
+    (* the THREADING rows: the second premise runs at [Ξ1 ++ Θ] *)
+    try solve
+      [ econstructor;
+        [ solve_ctx_change_ih_here
+        | solve_ctx_change_ih_app ] ];
+    (* SE-FlexR: the flex tests transport by the two flex conditions, and
+       [guess^TY] by the [ftvar_in_aenv] shrink *)
+    try solve
+      [ match goal with
+        | Hb : a_flex_tvar _ _, Hnf : a_non_flex _ _,
+          Hgu : a_guess_mono _ _ _ _,
+          Hf : ftvar_in_aenv _ [<=] _,
+          Hmono : forall a, a_flex_tvar _ a -> _,
+          Hfl : forall p, a_flex _ p -> _ |- _ =>
+            destruct Hnf as [Hlc Hnf'];
+            apply a_solve_eq__flex_r;
+              [ apply Hmono; exact Hb
+              | split; [ exact Hlc | intro Hf0; exact (Hnf' (Hfl _ Hf0)) ]
+              | eapply a_guess_mono_ctx_shrink; [ exact Hgu | exact Hf ] ]
+        end ];
+    (* the structural rows *)
+    try solve [ econstructor; eauto ].
 Qed.
 
 (** Strengthening: drop a rigid tvar cons. *)
-Lemma a_solve_eq_strengthen_tvar : forall β Θ0 P P3 P',
-  ((β ~ abind_tvar) ++ Θ0) ⊢ₑ P ∼ P3 ⤳ P' ->
-  Θ0 ⊢ₑ P ∼ P3 ⤳ P'.
+Lemma a_solve_eq_strengthen_tvar : forall β Θ0 P P3 Ξ P',
+  ((β ~ abind_tvar) ++ Θ0) ⊢ₑ P ∼ P3 ⤳ Ξ ⨾ P' ->
+  Θ0 ⊢ₑ P ∼ P3 ⤳ Ξ ⨾ P'.
 Proof.
-  intros β Θ0 P P3 P' H.
-  eapply (proj2 a_solve_sub_eq_ctx_change); [ exact H | | | ].
+  intros β Θ0 P P3 Ξ P' H.
+  eapply (proj2 a_solve_sub_eq_ctx_change); [ exact H | | | | ].
   - simpl. fsetdec.
-  - intros α Hft.
-    destruct Hft as [Hb | [τ Hb]];
-      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq Habs] | Hb'];
-      solve [ discriminate Habs
-            | left; exact Hb'
-            | right; exists τ; exact Hb' ].
-  - intros P0 Hf; inversion Hf; subst.
-    + apply a_flex__var with (α := α); unfold binds; simpl; right; auto.
-    + apply a_flex__var_def with (α := α) (τ := τ);
-        unfold binds; simpl; right; auto.
+  - simpl. fsetdec.
+  - intros α Hft. eapply a_flex_tvar_strip_tvar; exact Hft.
+  - intros P0 Hf. apply (a_flex_cons β abind_tvar); exact Hf.
 Qed.
 
-Lemma a_solve_sub_strengthen_tvar : forall β Θ0 m P P3 P',
-  ((β ~ abind_tvar) ++ Θ0) ⊢ₛ P ≼[ m ] P3 ⤳ P' ->
-  Θ0 ⊢ₛ P ≼[ m ] P3 ⤳ P'.
+Lemma a_solve_sub_strengthen_tvar : forall β Θ0 m P P3 Ξ P',
+  ((β ~ abind_tvar) ++ Θ0) ⊢ₛ P ≼[ m ] P3 ⤳ Ξ ⨾ P' ->
+  Θ0 ⊢ₛ P ≼[ m ] P3 ⤳ Ξ ⨾ P'.
 Proof.
-  intros β Θ0 m P P3 P' H.
-  eapply (proj1 a_solve_sub_eq_ctx_change); [ exact H | | | ].
+  intros β Θ0 m P P3 Ξ P' H.
+  eapply (proj1 a_solve_sub_eq_ctx_change); [ exact H | | | | ].
   - simpl. fsetdec.
-  - intros α Hft.
-    destruct Hft as [Hb | [τ Hb]];
-      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq Habs] | Hb'];
-      solve [ discriminate Habs
-            | left; exact Hb'
-            | right; exists τ; exact Hb' ].
-  - intros P0 Hf; inversion Hf; subst.
-    + apply a_flex__var with (α := α); unfold binds; simpl; right; auto.
-    + apply a_flex__var_def with (α := α) (τ := τ);
-        unfold binds; simpl; right; auto.
+  - simpl. fsetdec.
+  - intros α Hft. eapply a_flex_tvar_strip_tvar; exact Hft.
+  - intros P0 Hf. apply (a_flex_cons β abind_tvar); exact Hf.
 Qed.
 
 (** Weakening: add a rigid tvar cons.  The EQ half only — every eq-∀ rule
@@ -526,6 +669,35 @@ Qed.
     ([close_pskl_subst_var]); the sub half's ForallR pins its leaked
     witness, so hypothesis-free sub-weakening is FALSE.  Size induction —
     the refreshed premise is no sub-derivation. *)
+
+(* ⚠️⚠️ FINDING (2026-08-04, NOT YET RE-PROVED — this is where the repair
+   campaign stands).  WEAKENING NOW NEEDS [β ∉ dom Ξ], and the statement
+   below is FALSE without it.
+
+   SE-FlexR calls [guess^TY], whose invented names avoid [ftvar_in_aenv Θ0].
+   Pushing a NEW entry β onto Θ0 enlarges that set, so a derivation whose run
+   happened to generate the atom β cannot be replayed at [(β ~ tvar) ++ Θ0]:
+   the hole row's side condition [α ∉ ftvar_in_aenv Θ] fails at exactly that
+   α.  This is not an artefact — it says you may not retroactively add a
+   context entry that COLLIDES with a name the algorithm invented, which is
+   the same discipline the reference implementation's global counter enforces.
+
+   The repaired statement is
+
+     Θ0 ⊢ₑ P ∼ P3 ⤳ Ξ ⨾ P'  ->  β ∉ dom Ξ  ->
+     ((β ~ tvar) ++ Θ0) ⊢ₑ P ∼ P3 ⤳ Ξ ⨾ P'
+
+   and consumers get the side condition FREE from [β ∉ ftvar_in_pskl P']
+   via [a_solve_eq_generated_occurs] (prop_solve_sub.v).
+
+   The PROOF also has to change: its ∀ rows refresh a colliding witness by a
+   double rename, and the witness now sits IN the premise's context — the
+   same casualty as [a_solve_sub_eq_rename_size], repaired there by
+   [a_solve_eq_move_binder] (equivariance).  Two extra pieces are needed
+   here: an EXCHANGE of two adjacent rigid entries (immediate from
+   [a_solve_sub_eq_ctx_change], both directions), and care that the swap's
+   [swap_aenv b δ Θ0] collapses to [Θ0] — which needs [b ∉ ftvar_in_aenv Θ0],
+   stronger than the rule's [b ∉ dom Θ0]. *)
 Lemma a_solve_eq_weaken_tvar_size : forall n β Θ0 P P3 P',
   2 * (size_pskl P + size_pskl P3) <= n ->
   Θ0 ⊢ₑ P ∼ P3 ⤳ P' ->
