@@ -93,12 +93,25 @@ Lemma a_lookeq_generated_ftvar : forall Θ α P P' Ξ 𝒞,
   Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 -> ftvar_in_aenv Ξ [<=] dom Ξ.
 Proof. intros; eapply (proj2 a_looksub_lookeq_generated_ftvar); eauto. Qed.
 
+(** The constraint-LIST solve's block, assembled from the per-constraint
+    ones ([a_solve_sub_decls] / [a_solve_eq_decls], prop_solve_sub.v). *)
+Lemma a_solve_cstr_decls : forall Θ 𝒞 P Ξ P',
+  Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' -> a_decls Ξ.
+Proof.
+  intros Θ 𝒞 P Ξ P' H; induction H.
+  - apply a_decls__nil.
+  - eapply a_solve_sub_decls; eauto.
+  - apply a_decls_app; [ assumption | eapply a_solve_eq_decls; eauto ].
+Qed.
+
+(** ⭐ THREE blocks now (2026-08-04): collection, SOLVING, final guess. *)
 Lemma a_extract_decls : forall Θ0 NM α m P P' Ξ P0,
   Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ P0 -> a_decls Ξ.
 Proof.
   intros Θ0 NM α m P P' Ξ P0 H; destruct H.
+  apply a_decls_app; [ eapply a_looksub_decls; eauto | ].
   apply a_decls_app;
-    [ eapply a_looksub_decls; eauto | eapply a_guess_decls; eauto ].
+    [ eapply a_solve_cstr_decls; eauto | eapply a_guess_decls; eauto ].
 Qed.
 
 (* ===================================================================== *)
@@ -307,34 +320,40 @@ Qed.
    The EXACT bound survives for eq-only constraint lists
    ([a_solve_cstr_ftv_eq]) — consistency's collections are all-eq, so the
    P6-Cs paths keep the strong form. *)
-Lemma a_solve_cstr_ftv : forall Θ 𝒞 P P',
-  Θ ⊩ 𝒞 ⨾ P ⤳ P' ->
+Lemma a_solve_cstr_ftv : forall Θ 𝒞 P Ξ P',
+  Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' ->
   forall α, α `in` ftvar_in_pskl P' ->
     α `in` (ftvar_in_pskl P `union` ftvar_in_cstrs 𝒞) \/ α `notin` dom Θ.
 Proof.
-  intros Θ 𝒞 P P' H; induction H; simpl; intros α0 Hα0.
+  intros Θ 𝒞 P Ξ P' H; induction H; simpl; intros α0 Hα0.
   - left; fsetdec.
   - destruct (a_solve_sub_ftv H Hα0) as [Hl | Hr];
       [ left; clear - Hl; fsetdec | right; exact Hr ].
-  - pose proof ((proj2 a_solve_sub_eq_ftv) _ _ _ _ H) as He.
+  - (* ⭐ two new ways out (2026-08-04): the eq-row's yield may now carry a
+       name SE-FlexR generated, and the tail runs at the THREADED context *)
+    pose proof (a_solve_eq_ftv H) as He.
     destruct (IHa_solve_cstr α0 Hα0) as [Hl | Hr];
-      [ left; clear - Hl He; fsetdec | right; exact Hr ].
+      [ | right; rewrite dom_app in Hr; clear - Hr; fsetdec ].
+    destruct (AtomSetProperties.In_dec α0 (dom Ξ1)) as [Hd | Hd];
+      [ right; eapply a_solve_eq_generated_notin_dom; eassumption
+      | left; clear - Hl He Hd; fsetdec ].
 Qed.
 
-Lemma a_solve_cstr_ftv_eq : forall Θ 𝒞 P P',
-  Θ ⊩ 𝒞 ⨾ P ⤳ P' ->
+Lemma a_solve_cstr_ftv_eq : forall Θ 𝒞 P Ξ P',
+  Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' ->
   Forall (fun c => exists Q, c = a_cstr_eq Q) 𝒞 ->
-  ftvar_in_pskl P' [<=] ftvar_in_pskl P `union` ftvar_in_cstrs 𝒞.
+  ftvar_in_pskl P' [<=]
+    ftvar_in_pskl P `union` ftvar_in_cstrs 𝒞 `union` dom Ξ.
 Proof.
-  intros Θ 𝒞 P P' H; induction H; simpl; intros Hall.
-  - fsetdec.
+  intros Θ 𝒞 P Ξ P' H; induction H; simpl; intros Hall.
+  - clear; fsetdec.
   - (* a sub constraint contradicts the all-eq hypothesis *)
     exfalso. inversion Hall as [ | c cs Hc _ ]; subst.
     destruct Hc as [Q0 Hc]. discriminate Hc.
   - inversion Hall as [ | c cs Hc Htl ]; subst.
-    pose proof ((proj2 a_solve_sub_eq_ftv) _ _ _ _ H) as He.
+    pose proof (a_solve_eq_ftv H) as He.
     specialize (IHa_solve_cstr Htl).
-    clear - He IHa_solve_cstr. fsetdec.
+    rewrite dom_app. clear - He IHa_solve_cstr. fsetdec.
 Qed.
 
 Lemma ptyp_to_pskl_ftv : forall A,
@@ -360,16 +379,16 @@ Proof.
   intros * Hex Hdom Hγ0 Hα1Ξ. inversion Hex; subst.
   simpl_env in Hα1Ξ.
   match goal with
-  | Hlk : _ ⊢ _ ≼[ _ , _ ] _ ⤳ _ ⨾ _ , Hsc : _ ⊩ _ ⨾ _ ⤳ _ |- _ =>
+  | Hlk : _ ⊢ _ ≼[ _ , _ ] _ ⤳ _ ⨾ _ , Hsc : _ ⊩ _ ⨾ _ ⤳ _ ⨾ _ |- _ =>
       pose proof (a_looksub_ftv Hlk) as Hb1;
       pose proof (a_solve_cstr_ftv Hsc) as Hb2
   end.
   pose proof (dom_subset_ftvar_in_aenv Θ0) as Hdf.
   (* the shared refutation: a variable of the SOLVE's output is either an
      input variable (⇒ in 𝒞, and then the LOOK's bound applies) or a name
-     one of the two runs invented (⇒ outside the ambient context) *)
+     one of the three runs invented (⇒ outside the ambient context) *)
   match goal with
-  | Hsc : _ ⊩ ?Cx ⨾ _ ⤳ ?Qx |- _ =>
+  | Hsc : _ ⊩ ?Cx ⨾ _ ⤳ _ ⨾ ?Qx |- _ =>
       assert (Hcore : α1 `notin` ftvar_in_pskl Qx);
       [ intro Hin; destruct (Hb2 α1 Hin) as [Hl | Hr];
         [ | apply Hr; rewrite dom_app; clear - Hdom; fsetdec ];
@@ -2420,7 +2439,11 @@ Lemma a_extract_family_of_instance : forall Θ0 NM M α P P0 Ξ P1,
     Θ0 ⊢ (open_pskl_wrt_pskl P (pskl_var_f α')) ⊳[ NM , α' , M ] P0 ⤳ Ξ ↪ P1.
 Proof.
   intros Θ0 NM M α P P0 Ξ P1 Hex Hfr.
-  inversion Hex as [ Θ0' NM' α'' m' Ps Ps' Ξl Ξg 𝒞l Q Q' Hlk Hsol Hgu
+  (* ⭐ THREE blocks since 2026-08-04: collection [Ξl], SOLVING [Ξs],
+     final guess [Ξg].  The renaming only touches the FIRST — the solve and
+     the guess never see the looked-for variable — so the family is still
+     the renamed look over the SAME solve and guess. *)
+  inversion Hex as [ Θ0' NM' α'' m' Ps Ps' Ξl Ξs Ξg 𝒞l Q Q' Hlk Hsol Hgu
                      HeqΘ HeqNM Heqα Heqm HeqP HeqP0 ]; subst.
   exists (dom Ξl `union` ftvar_in_cstrs 𝒞l).
   intros α' Hα'.

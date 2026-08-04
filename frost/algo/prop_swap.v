@@ -586,6 +586,25 @@ Proof.
     end; [exfalso; apply n0; exact (swap_atom_inj a b _ _ e1) | reflexivity].
 Qed.
 
+(** A swap IS the rename, when the TARGET is fresh for the subject: the
+    transposition's other half acts as the identity there.  This is the
+    bridge that lets a rename lemma be DERIVED from equivariance instead of
+    re-proved by a size induction — which matters now that the solve's
+    binder rows push their witness into the context, so a rename whose
+    SOURCE is that witness can no longer satisfy "source dodges Θ". *)
+Lemma swap_pskl_as_subst : forall a b P,
+  b `notin` ftvar_in_pskl P ->
+  swap_pskl a b P = subst_pskl_in_pskl (pskl_var_f b) a P.
+Proof.
+  induction P; simpl; intros Hb; f_equal;
+    try solve [ reflexivity | apply IHP; fsetdec
+              | apply IHP1; fsetdec | apply IHP2; fsetdec ].
+  destruct (α == a) as [-> | Hne].
+  - rewrite swap_atom_l. reflexivity.
+  - rewrite swap_atom_other; [ reflexivity | assumption | ].
+    intros ->. clear - Hb; fsetdec.
+Qed.
+
 Lemma swap_pskl_subst : forall a b P x Q,
   swap_pskl a b (subst_pskl_in_pskl P x Q)
   = subst_pskl_in_pskl (swap_pskl a b P) (swap_atom a b x) (swap_pskl a b Q).
@@ -846,25 +865,34 @@ Scheme a_solve_sub_sind := Induction for a_solve_sub Sort Prop
   with a_solve_eq_sind := Induction for a_solve_eq Sort Prop.
 Combined Scheme a_solve_sub_eq_sind from a_solve_sub_sind, a_solve_eq_sind.
 
+(** ⭐ [Ξ] is swapped too (2026-08-04).  Equivariance is what the solve's
+    binder rows now need in place of the double-rename witness-move: with
+    the witness IN the premise's context ([(β ~ tvar) ++ Θ]) a rename whose
+    SOURCE is that witness violates the "source dodges the context" side
+    condition, whereas a swap has no such condition — it renames the
+    context along with everything else.  (USER DIRECTIVE, swap kit:
+    equivariance is THE ONE renaming primitive.) *)
 Lemma a_solve_sub_eq_swap : forall a b,
-  (forall Θ m P Q P',
-     a_solve_sub Θ m P Q P' ->
+  (forall Θ m P Q Ξ P',
+     a_solve_sub Θ m P Q Ξ P' ->
      a_solve_sub (swap_aenv a b Θ) m (swap_pskl a b P) (swap_pskl a b Q)
-       (swap_pskl a b P')) /\
-  (forall Θ P Q P',
-     a_solve_eq Θ P Q P' ->
+       (swap_aenv a b Ξ) (swap_pskl a b P')) /\
+  (forall Θ P Q Ξ P',
+     a_solve_eq Θ P Q Ξ P' ->
      a_solve_eq (swap_aenv a b Θ) (swap_pskl a b P) (swap_pskl a b Q)
-       (swap_pskl a b P')).
+       (swap_aenv a b Ξ) (swap_pskl a b P')).
 Proof.
   intros a b.
   apply (a_solve_sub_eq_sind
-           (fun Θ m P Q P' _ =>
+           (fun Θ m P Q Ξ P' _ =>
               a_solve_sub (swap_aenv a b Θ) m (swap_pskl a b P)
-                (swap_pskl a b Q) (swap_pskl a b P'))
-           (fun Θ P Q P' _ =>
+                (swap_pskl a b Q) (swap_aenv a b Ξ) (swap_pskl a b P'))
+           (fun Θ P Q Ξ P' _ =>
               a_solve_eq (swap_aenv a b Θ) (swap_pskl a b P)
-                (swap_pskl a b Q) (swap_pskl a b P')));
-    intros; simpl.
+                (swap_pskl a b Q) (swap_aenv a b Ξ) (swap_pskl a b P')));
+    intros; simpl;
+    (* the THREADING rows split the block; the BINDER rows push a witness *)
+    rewrite ? swap_aenv_app in *; rewrite ? swap_aenv_cons in *; simpl in *.
   (* -------- a_solve_sub -------- *)
   - (* var *) apply a_solve_sub__var.
   - (* forall_l: close in the output *)
@@ -884,9 +912,10 @@ Proof.
   (* -------- a_solve_eq -------- *)
   - (* unit *) apply a_solve_eq__unit.
   - (* var *) apply a_solve_eq__var.
-  - (* flex_r *)
+  - (* flex_r : the output is guess^TY's, read back through the coercion *)
+    rewrite swap_pskl_ptyp_to_pskl.
     apply a_solve_eq__flex_r;
-      auto using a_flex_tvar_swap, a_non_flex_swap.
+      auto using a_flex_tvar_swap, a_non_flex_swap, a_guess_mono_swap.
   - (* hole_l *) apply a_solve_eq__hole_l.
   - (* hole_r *) apply a_solve_eq__hole_r.
   - (* arrow *) apply a_solve_eq__arrow; auto.
@@ -909,16 +938,18 @@ Proof.
     apply a_solve_eq__tophole_r_guarded; auto using guarded_pskl_swap.
 Qed.
 
-Lemma a_solve_cstr_swap : forall a b Θ C P Q,
-  a_solve_cstr Θ C P Q ->
+Lemma a_solve_cstr_swap : forall a b Θ C P Ξ Q,
+  a_solve_cstr Θ C P Ξ Q ->
   a_solve_cstr (swap_aenv a b Θ) (swap_cstrs a b C)
-    (swap_pskl a b P) (swap_pskl a b Q).
+    (swap_pskl a b P) (swap_aenv a b Ξ) (swap_pskl a b Q).
 Proof.
   intros * H; induction H; simpl.
   - apply a_solve_cstr__empty.
   - apply a_solve_cstr__sub. apply (proj1 (a_solve_sub_eq_swap a b)); auto.
-  - apply a_solve_cstr__eq with (P'' := swap_pskl a b P'');
-      [ apply (proj2 (a_solve_sub_eq_swap a b)); auto | exact IHa_solve_cstr ].
+  - rewrite swap_aenv_app.
+    apply a_solve_cstr__eq with (P'' := swap_pskl a b P'');
+      [ apply (proj2 (a_solve_sub_eq_swap a b)); auto
+      | rewrite <- swap_aenv_app; exact IHa_solve_cstr ].
 Qed.
 
 Lemma a_extract_swap : forall a b Θ NM α m P P' Ξ Q,
@@ -928,12 +959,12 @@ Lemma a_extract_swap : forall a b Θ NM α m P P' Ξ Q,
     (swap_aenv a b Ξ) (swap_pskl a b Q).
 Proof.
   intros * H; destruct H.
-  rewrite swap_aenv_app.
+  rewrite ! swap_aenv_app.
   apply a_extract__solve with (C := swap_cstrs a b C) (Q := swap_pskl a b Q).
   - apply (proj1 (a_looksub_lookeq_swap a b)); auto.
-  - rewrite <- swap_aenv_app. 
-    pose proof (a_solve_cstr_swap a b _ _ _ _ H0) as h. exact h.
-  - rewrite <- swap_aenv_app. apply a_guess_swap; auto.
+  - rewrite <- swap_aenv_app.
+    pose proof (a_solve_cstr_swap a b _ _ _ _ _ H0) as h. exact h.
+  - rewrite <- ! swap_aenv_app. apply a_guess_swap; auto.
 Qed.
 
 (* ===================================================================== *)

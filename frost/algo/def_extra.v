@@ -490,38 +490,66 @@ where "Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C" := (a_looksub Θ α m P P' Ξ C) 
 (*  [Θ] threads only what the flex rules need ([binds α̂] checks); the      *)
 (*  paper's judgments are context-free because [α̂] is syntactically        *)
 (*  distinct there.                                                       *)
+(*                                                                        *)
+(*  ⭐ THE SOLVE NOW EMITS A FRESH FLEXIBLE BLOCK [Ξ] (2026-08-04).        *)
+(*  SE-FlexR used to DISCARD the accumulated pattern ([P ∼ α̂ ⤳ α̂]), which *)
+(*  is the whole defect behind the two machine-checked refutations         *)
+(*  (docs/refutations.tex: Lemma E.17 look-completeness and Theorem 4.6).  *)
+(*  The repair the authors adopted keeps the pattern, NORMALIZED by        *)
+(*  [guess^TY]: a flexible position can only ever receive a ghost-free     *)
+(*  skeleton, so each ghost of the pattern becomes a FRESH flexible —      *)
+(*  exactly what the collection's own LE-FlexR already does.  Those fresh  *)
+(*  names have to reach the caller, so [Ξ] is threaded through ALL THREE   *)
+(*  solve judgments and lands in [a_extract]'s output suffix.              *)
+(*                                                                        *)
+(*  ⚠️ CONSEQUENCE FOR THE ∀-OPENING ROWS.  The solve used to generate no  *)
+(*  names at all, so its five binder rules could run their premise at [Θ]  *)
+(*  with the witness merely avoided.  Now a guess can fire BELOW such a    *)
+(*  binder, and (four of the five rows CLOSE over the witness) a generated *)
+(*  name equal to the witness would be captured.  The witness therefore    *)
+(*  ENTERS THE PREMISE'S CONTEXT — the same avoid-input discipline         *)
+(*  [a_guess_mono] and the look judgments already use (DESIGN.md §4.3):    *)
+(*  [ftvar_in_aenv ((β ~ tvar) ++ Θ)] contains β, so `generated names      *)
+(*  avoid enclosing witnesses' stays DERIVABLE rather than assumed.        *)
 (* ===================================================================== *)
 
-Reserved Notation "Θ ⊢ₛ P ≼[ m ] Q ⤳ P'"
-  (at level 75, P at level 74, m at level 0, Q at level 74, P' at level 74,
+Reserved Notation "Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P'"
+  (at level 75, P at level 74, m at level 0, Q at level 74, Ξ at level 0,
+   P' at level 74, no associativity).
+Reserved Notation "Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P'"
+  (at level 75, P at level 74, Q at level 74, Ξ at level 0, P' at level 74,
    no associativity).
-Reserved Notation "Θ ⊢ₑ P ∼ Q ⤳ P'"
-  (at level 75, P at level 74, Q at level 74, P' at level 74, no associativity).
 
-Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> pskl -> Prop :=
+Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
 | a_solve_sub__var : forall Θ m α Q,             (* SS-Var + SS-Flex *)
-    Θ ⊢ₛ (pskl_var_f α) ≼[ m ] Q ⤳ (pskl_var_f α)
-| a_solve_sub__forall_l : forall Θ m P Q P' β,   (* SS-ForallL *)
+    Θ ⊢ₛ (pskl_var_f α) ≼[ m ] Q ⤳ nil ⨾ (pskl_var_f α)
+| a_solve_sub__forall_l : forall Θ m P Q Ξ P' β,   (* SS-ForallL *)
     (* exists-fresh, INPUT-only freshness + explicit CLOSE (DESIGN.md §4.3):
        the side condition names only the inputs; the result is re-bound by
        [close_pskl_wrt_pskl], mirroring the implementation's [bind_var]
        after the recursive call (type.ml:499-505).  The [pskl_all_syn]
-       wrapper keeps the closed body's index 0 bound, so the output is lc. *)
+       wrapper keeps the closed body's index 0 bound, so the output is lc.
+       ⭐ THE WITNESS ENTERS THE CONTEXT (2026-08-04): the premise may now
+       GENERATE names (SE-FlexR's guess), and this row CLOSES over β, so a
+       generated β would be captured.  [ftvar_in_aenv] of the extended
+       context contains β, which is precisely what [a_guess_mono]'s hole
+       row avoids — so "the block is apart from β" is DERIVABLE. *)
     β `notin` dom Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
-    Θ ⊢ₛ (open_pskl_wrt_pskl P (pskl_var_f β)) ≼[ m ] Q ⤳ P' ->
+    ((β ~ abind_tvar) ++ Θ) ⊢ₛ (open_pskl_wrt_pskl P (pskl_var_f β))
+      ≼[ m ] Q ⤳ Ξ ⨾ P' ->
     Θ ⊢ₛ (pskl_all_syn P) ≼[ m ] Q
-         ⤳ (pskl_all_syn (close_pskl_wrt_pskl β P'))
-| a_solve_sub__univ_ghost_l : forall Θ m P Q P', (* SS-UnivGhostL *)
-    Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
-    Θ ⊢ₛ (pskl_tophole P) ≼[ m ] Q ⤳ (pskl_tophole P')
+         ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P'))
+| a_solve_sub__univ_ghost_l : forall Θ m P Q Ξ P', (* SS-UnivGhostL *)
+    Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' ->
+    Θ ⊢ₛ (pskl_tophole P) ≼[ m ] Q ⤳ Ξ ⨾ (pskl_tophole P')
 | a_solve_sub__vacuous : forall Θ m P,           (* SS-Vacuous: RHS is □ *)
-    Θ ⊢ₛ P ≼[ m ] pskl_hole ⤳ P
-| a_solve_sub__check : forall Θ P Q P',          (* SS-Check *)
+    Θ ⊢ₛ P ≼[ m ] pskl_hole ⤳ nil ⨾ P
+| a_solve_sub__check : forall Θ P Q Ξ P',        (* SS-Check *)
     guarded_pskl P ->
     guarded_pskl Q ->
-    Θ ⊢ₑ P ∼ Q ⤳ P' ->
-    Θ ⊢ₛ P ≼[ mode_tc ] Q ⤳ P'
-| a_solve_sub__forall_r : forall Θ A B P' β,     (* SS-ForallR *)
+    Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' ->
+    Θ ⊢ₛ P ≼[ mode_tc ] Q ⤳ Ξ ⨾ P'
+| a_solve_sub__forall_r : forall Θ A B Ξ P' β,   (* SS-ForallR *)
     (* exists-fresh, INPUT-only freshness, NO close: the result passes
        through unchanged, so β may legitimately ESCAPE into [P'] — the
        implementation opens the RHS and DISCARDS the binder name
@@ -535,28 +563,38 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> pskl -> Prop :=
        binder is vacuous".  Consequence: [a_solve_sub_ftv] is DISJUNCTIVE
        (an output variable is an input variable or avoids [dom Θ]). *)
     β `notin` dom Θ `union` ftvar_in_pskl A `union` ftvar_in_pskl B ->
-    Θ ⊢ₛ A ≼[ mode_tc ] (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ P' ->
-    Θ ⊢ₛ A ≼[ mode_tc ] (pskl_all_syn B) ⤳ P'
-| a_solve_sub__arrow : forall Θ m P1 P2 Q1 Q2 P1' P2',       (* SS-Arrow *)
-    Θ ⊢ₑ P1 ∼ Q1 ⤳ P1' ->
-    Θ ⊢ₛ P2 ≼[ m ] Q2 ⤳ P2' ->
+    ((β ~ abind_tvar) ++ Θ) ⊢ₛ A ≼[ mode_tc ]
+      (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ P' ->
+    Θ ⊢ₛ A ≼[ mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ P'
+(* ⚠️ THE SIBLING PREMISE THREADS, [Ξ2 ++ Ξ1].  Both halves may now GENERATE
+   names, and a guess avoids only what its own context mentions — run both at
+   [Θ] and the two blocks can pick THE SAME atom, making [Ξ1 ++ Ξ2] non-[uniq]
+   and silently conflating two independently-invented flexibles in
+   [P1' → P2'].  Running the second half at [Ξ1 ++ Θ] makes disjointness
+   DERIVABLE from [a_guess_mono]'s avoid-input instead of an obligation the
+   caller must re-arrange, and it is what the reference implementation does
+   anyway (one global counter, never reused).  Same shape as
+   [a_solve_cstr__eq], where the threading is forced by the pattern fold. *)
+| a_solve_sub__arrow : forall Θ m P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2',  (* SS-Arrow *)
+    Θ ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' ->
+    (Ξ1 ++ Θ) ⊢ₛ P2 ≼[ m ] Q2 ⤳ Ξ2 ⨾ P2' ->
     Θ ⊢ₛ (pskl_arrow P1 P2) ≼[ (mode_fn m) ] (pskl_arrow Q1 Q2)
-         ⤳ (pskl_arrow P1' P2')
-| a_solve_sub__ghost_l_fn : forall Θ m Q1 Q2 P1' P2',        (* SS-GhostLF *)
-    Θ ⊢ₑ pskl_hole ∼ Q1 ⤳ P1' ->
-    Θ ⊢ₛ pskl_hole ≼[ m ] Q2 ⤳ P2' ->
+         ⤳ (Ξ2 ++ Ξ1) ⨾ (pskl_arrow P1' P2')
+| a_solve_sub__ghost_l_fn : forall Θ m Q1 Q2 Ξ1 Ξ2 P1' P2',   (* SS-GhostLF *)
+    Θ ⊢ₑ pskl_hole ∼ Q1 ⤳ Ξ1 ⨾ P1' ->
+    (Ξ1 ++ Θ) ⊢ₛ pskl_hole ≼[ m ] Q2 ⤳ Ξ2 ⨾ P2' ->
     Θ ⊢ₛ pskl_hole ≼[ (mode_fn m) ] (pskl_arrow Q1 Q2)
-         ⤳ (pskl_tophole (pskl_arrow P1' P2'))
+         ⤳ (Ξ2 ++ Ξ1) ⨾ (pskl_tophole (pskl_arrow P1' P2'))
 | a_solve_sub__ghost_l : forall Θ B,             (* SS-GhostL *)
     guarded_pskl B ->
-    Θ ⊢ₛ pskl_hole ≼[ mode_tc ] B ⤳ (pskl_tophole B)
+    Θ ⊢ₛ pskl_hole ≼[ mode_tc ] B ⤳ nil ⨾ (pskl_tophole B)
 
-with a_solve_eq : aenv -> pskl -> pskl -> pskl -> Prop :=
+with a_solve_eq : aenv -> pskl -> pskl -> aenv -> pskl -> Prop :=
 | a_solve_eq__unit : forall Θ,                   (* SE-Unit *)
-    Θ ⊢ₑ pskl_unit ∼ pskl_unit ⤳ pskl_unit
+    Θ ⊢ₑ pskl_unit ∼ pskl_unit ⤳ nil ⨾ pskl_unit
 | a_solve_eq__var : forall Θ α Q,                (* SE-Var + SE-FlexL *)
-    Θ ⊢ₑ (pskl_var_f α) ∼ Q ⤳ (pskl_var_f α)
-| a_solve_eq__flex_r : forall Θ α P,             (* SE-FlexR *)
+    Θ ⊢ₑ (pskl_var_f α) ∼ Q ⤳ nil ⨾ (pskl_var_f α)
+| a_solve_eq__flex_r : forall Θ α P Ξ A,         (* SE-FlexR *)
     (* the paper's FlexR (full-algo-spec.tex:1374) is context-free and fires
        on ANY hatted variable — defined or not; [α̂ ∈ Θ] here is only the
        mech's rendering of hattedness.  The earlier [binds α abind_flex_mono]
@@ -564,62 +602,95 @@ with a_solve_eq : aenv -> pskl -> pskl -> pskl -> Prop :=
        nested in a structural counterpart makes the solve stuck here but not
        on paper, falsifying the completeness statements independently of the
        flexible-counterpart cex (cex_p6_flex_counterpart.v).  Widened
-       2026-07-24. *)
+       2026-07-24.
+
+       ⭐ THE OUTPUT IS THE ACCUMULATED PATTERN, NOT THE FLEXIBLE
+       (2026-08-04 — the authors' repair of the row this mechanization
+       refuted; docs/refutations.tex §"Suggested repair").  The old reading
+       [P ∼ α̂ ⤳ α̂] DISCARDS everything the collection has already computed
+       about this position: at the double-occurrence configuration it
+       overwrites the eq-constraint's yield [∀γ.γ→γ] with the flexible, the
+       enclosing SS-ForallL then re-binds a VACUOUS binder [∀_.β̂], and the
+       continuation is scope-stuck — which is exactly why NO [a_sub] run
+       existed there (cex/probe_double_occ_run.v) even though the run with
+       the right instantiation does (cex/probe_solve_flexr.v).  A raw
+       flexible and a ghost are the SAME epistemic situation, and the ghost
+       twins SE-VacuousR / SS-Vacuous both KEEP the pattern.
+
+       The pattern is handed through [guess^TY] rather than verbatim: what
+       lands here will be ASSIGNED to [α̂], and a flexible can only receive a
+       ghost-free skeleton, so each ghost becomes a FRESH flexible — the same
+       move the collection's own LE-FlexR makes.  [Ξ] is that fresh block,
+       and it is why all three solve judgments now carry an output suffix.
+       (The [P = ◇] case — where returning [α̂] let the guess SHARE the
+       flexible — is already covered by SE-GhostL, [◇ ∼ Q ⤳ Q].) *)
     a_flex_tvar Θ α ->
     a_non_flex Θ P ->
-    Θ ⊢ₑ P ∼ (pskl_var_f α) ⤳ (pskl_var_f α)
+    a_guess_mono Θ P Ξ A ->
+    Θ ⊢ₑ P ∼ (pskl_var_f α) ⤳ Ξ ⨾ (ptyp_to_pskl A)
 | a_solve_eq__hole_l : forall Θ Q,               (* SE-GhostL *)
-    Θ ⊢ₑ pskl_hole ∼ Q ⤳ Q
+    Θ ⊢ₑ pskl_hole ∼ Q ⤳ nil ⨾ Q
 | a_solve_eq__hole_r : forall Θ P,               (* SE-VacuousR *)
-    Θ ⊢ₑ P ∼ pskl_hole ⤳ P
-| a_solve_eq__arrow : forall Θ P1 P2 Q1 Q2 P1' P2',          (* SE-Arrow *)
-    Θ ⊢ₑ P1 ∼ Q1 ⤳ P1' ->
-    Θ ⊢ₑ P2 ∼ Q2 ⤳ P2' ->
-    Θ ⊢ₑ (pskl_arrow P1 P2) ∼ (pskl_arrow Q1 Q2) ⤳ (pskl_arrow P1' P2')
-| a_solve_eq__forall : forall Θ P Q P' β,        (* SE-Forall *)
+    Θ ⊢ₑ P ∼ pskl_hole ⤳ nil ⨾ P
+| a_solve_eq__arrow : forall Θ P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2',    (* SE-Arrow *)
+    (* threads — see [a_solve_sub__arrow] *)
+    Θ ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' ->
+    (Ξ1 ++ Θ) ⊢ₑ P2 ∼ Q2 ⤳ Ξ2 ⨾ P2' ->
+    Θ ⊢ₑ (pskl_arrow P1 P2) ∼ (pskl_arrow Q1 Q2)
+         ⤳ (Ξ2 ++ Ξ1) ⨾ (pskl_arrow P1' P2')
+| a_solve_eq__forall : forall Θ P Q Ξ P' β,      (* SE-Forall *)
     β `notin` dom Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
-    Θ ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f β))
-         ∼ (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ P' ->
+    ((β ~ abind_tvar) ++ Θ) ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f β))
+         ∼ (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ Ξ ⨾ P' ->
     Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_all_syn Q)
-         ⤳ (pskl_all_syn (close_pskl_wrt_pskl β P'))
-| a_solve_eq__tophole_both : forall Θ P Q P',    (* SE-UnivGhost *)
-    Θ ⊢ₑ P ∼ Q ⤳ P' ->
-    Θ ⊢ₑ (pskl_tophole P) ∼ (pskl_tophole Q) ⤳ (pskl_tophole P')
-| a_solve_eq__tophole_l_all : forall Θ P Q P' β, (* SE-GhostForall *)
+         ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P'))
+| a_solve_eq__tophole_both : forall Θ P Q Ξ P',  (* SE-UnivGhost *)
+    Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' ->
+    Θ ⊢ₑ (pskl_tophole P) ∼ (pskl_tophole Q) ⤳ Ξ ⨾ (pskl_tophole P')
+| a_solve_eq__tophole_l_all : forall Θ P Q Ξ P' β, (* SE-GhostForall *)
     β `notin` dom Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
-    Θ ⊢ₑ (pskl_tophole P) ∼ (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ P' ->
+    ((β ~ abind_tvar) ++ Θ) ⊢ₑ (pskl_tophole P)
+      ∼ (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ Ξ ⨾ P' ->
     Θ ⊢ₑ (pskl_tophole P) ∼ (pskl_all_syn Q)
-         ⤳ (pskl_all_syn (close_pskl_wrt_pskl β P'))
-| a_solve_eq__tophole_l_guarded : forall Θ P Q P',           (* SE-GhostGuarded *)
+         ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P'))
+| a_solve_eq__tophole_l_guarded : forall Θ P Q Ξ P',         (* SE-GhostGuarded *)
     guarded_pskl Q ->
-    Θ ⊢ₑ P ∼ Q ⤳ P' ->
-    Θ ⊢ₑ (pskl_tophole P) ∼ Q ⤳ P'
-| a_solve_eq__all_l_tophole : forall Θ P Q P' β, (* SE-ForallGhost *)
+    Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' ->
+    Θ ⊢ₑ (pskl_tophole P) ∼ Q ⤳ Ξ ⨾ P'
+| a_solve_eq__all_l_tophole : forall Θ P Q Ξ P' β, (* SE-ForallGhost *)
     β `notin` dom Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
-    Θ ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼ (pskl_tophole Q) ⤳ P' ->
+    ((β ~ abind_tvar) ++ Θ) ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f β))
+      ∼ (pskl_tophole Q) ⤳ Ξ ⨾ P' ->
     Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_tophole Q)
-         ⤳ (pskl_all_syn (close_pskl_wrt_pskl β P'))
-| a_solve_eq__tophole_r_guarded : forall Θ P Q P',           (* SE-GuardedGhost *)
+         ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P'))
+| a_solve_eq__tophole_r_guarded : forall Θ P Q Ξ P',         (* SE-GuardedGhost *)
     guarded_pskl P ->
-    Θ ⊢ₑ P ∼ Q ⤳ P' ->
-    Θ ⊢ₑ P ∼ (pskl_tophole Q) ⤳ P'
-where "Θ ⊢ₛ P ≼[ m ] Q ⤳ P'" := (a_solve_sub Θ m P Q P') : type_scope
-  and "Θ ⊢ₑ P ∼ Q ⤳ P'" := (a_solve_eq Θ P Q P') : type_scope.
+    Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' ->
+    Θ ⊢ₑ P ∼ (pskl_tophole Q) ⤳ Ξ ⨾ P'
+where "Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P'" := (a_solve_sub Θ m P Q Ξ P') : type_scope
+  and "Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P'" := (a_solve_eq Θ P Q Ξ P') : type_scope.
 
-Reserved Notation "Θ ⊩ C ⨾ P ⤳ Q"
-  (at level 75, C at level 74, P at level 74, Q at level 74, no associativity).
+Reserved Notation "Θ ⊩ C ⨾ P ⤳ Ξ ⨾ Q"
+  (at level 75, C at level 74, P at level 74, Ξ at level 0, Q at level 74,
+   no associativity).
 (* Constraint-list solving  [solve C P Q] (fig:constraint-solving, top box). *)
-Inductive a_solve_cstr : aenv -> a_cstrs -> pskl -> pskl -> Prop :=
+(* ⚠️ THE TAIL RUNS AT [Ξ1 ++ Θ].  The eq-row's fresh block is in scope for
+   every later constraint — its yield [P''] is THE PATTERN the tail solves
+   on, and that pattern now mentions the flexibles SE-FlexR invented.  A
+   later row asking "is this variable hatted?" ([a_solve_eq__flex_r]'s
+   [a_flex_tvar]) must be able to see them, which is the same fidelity
+   argument [a_extract] already makes for running the solve at [Ξ ++ Θ0]. *)
+Inductive a_solve_cstr : aenv -> a_cstrs -> pskl -> aenv -> pskl -> Prop :=
 | a_solve_cstr__empty : forall Θ P,
-    Θ ⊩ nil ⨾ P ⤳ P
-| a_solve_cstr__sub : forall Θ m Q P P',
-    Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
-    Θ ⊩ (a_cstr_sub m Q :: nil) ⨾ P ⤳ P'
-| a_solve_cstr__eq : forall Θ Q C P P' P'',
-    Θ ⊢ₑ P ∼ Q ⤳ P'' ->
-    Θ ⊩ C ⨾ P'' ⤳ P' ->
-    Θ ⊩ (a_cstr_eq Q :: C) ⨾ P ⤳ P'
-where "Θ ⊩ C ⨾ P ⤳ Q" := (a_solve_cstr Θ C P Q) : type_scope.
+    Θ ⊩ nil ⨾ P ⤳ nil ⨾ P
+| a_solve_cstr__sub : forall Θ m Q P Ξ P',
+    Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' ->
+    Θ ⊩ (a_cstr_sub m Q :: nil) ⨾ P ⤳ Ξ ⨾ P'
+| a_solve_cstr__eq : forall Θ Q C P Ξ1 Ξ2 P' P'',
+    Θ ⊢ₑ P ∼ Q ⤳ Ξ1 ⨾ P'' ->
+    (Ξ1 ++ Θ) ⊩ C ⨾ P'' ⤳ Ξ2 ⨾ P' ->
+    Θ ⊩ (a_cstr_eq Q :: C) ⨾ P ⤳ (Ξ2 ++ Ξ1) ⨾ P'
+where "Θ ⊩ C ⨾ P ⤳ Ξ ⨾ Q" := (a_solve_cstr Θ C P Ξ Q) : type_scope.
 
 Reserved Notation "Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q"
   (at level 75, P at level 74, NM at level 0, α at level 0, m at level 0,
@@ -646,15 +717,23 @@ Reserved Notation "Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q"
    reads Ξ, not the solve) and [a_extract_decorate], whose solve lemmas
    [solve_cstr_top_guarded_tg] / [solve_cstr_decorate] quantify Θ universally
    and never mention it in their conclusions. *)
+(* ⭐ THE OUTPUT SUFFIX HAS THREE BLOCKS (2026-08-04).  The solve now emits
+   its own fresh flexibles [Ξs] (SE-FlexR's [guess^TY] of the accumulated
+   pattern), so the look's suffix is [Ξ ++ Ξs ++ Ξ'] — collection, solving,
+   final guess — and each stage's avoid-input is everything generated before
+   it.  All three are blocks of UNDEFINED flexibles, so their relative order
+   is semantically immaterial (the homogeneous-flex reorder kit of
+   prop_look_complete_cstr.v moves between them); it is fixed here only
+   because [app] is not commutative on the nose. *)
 Inductive a_extract : aenv -> a_sub_mode -> atom -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
-| a_extract__solve : forall Θ0 NM α m P P' Ξ Ξ' C Q Q',
+| a_extract__solve : forall Θ0 NM α m P P' Ξ Ξs Ξ' C Q Q',
     Θ0 ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
-    (Ξ ++ Θ0) ⊩ C ⨾ pskl_hole ⤳ Q ->
-    (* the guess runs AFTER the collection, so its avoid-input is the whole
-       [Ξ ++ Θ0] the solve already runs at — this is what makes the two
-       halves of the output block [Ξ ++ Ξ'] disjoint *)
-    a_guess (Ξ ++ Θ0) NM Q Ξ' Q' ->
-    Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ (Ξ ++ Ξ') ↪ Q'
+    (Ξ ++ Θ0) ⊩ C ⨾ pskl_hole ⤳ Ξs ⨾ Q ->
+    (* the guess runs AFTER the collection AND the solving, so its
+       avoid-input is the whole [Ξs ++ Ξ ++ Θ0] — this is what makes the
+       three halves of the output block [Ξ ++ Ξs ++ Ξ'] disjoint *)
+    a_guess (Ξs ++ Ξ ++ Θ0) NM Q Ξ' Q' ->
+    Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ (Ξ ++ Ξs ++ Ξ') ↪ Q'
 where "Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q" := (a_extract Θ0 NM α m P P' Ξ Q) : type_scope.
 
 (* ===================================================================== *)
