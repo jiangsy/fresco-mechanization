@@ -1640,14 +1640,14 @@ Qed.
        [ad_ppre_def_chain_fold] (new, just above this comment) the other.
 
    ── rows left, hardest first ─────────────────────────────────────────────
-   (a) ⛔ THE ARROW ROW (≈ 2537, where [coqc] now stops): the two IHn calls
-       hand back two blocks that must MERGE.  [a_solve_cstr_app] threads (the
-       right branch runs at the left's block), the right branch's [L] must be
-       widened by the left's [dom Ξs1], and [a_solve_cstr_weaken_mid_flex]
-       carries the new [dom Ξm ∩ dom Ξ = ∅].  Prefer WEAKENING the right
-       branch's solve over re-parameterising its IH — the cheaper of P6-Cv's
-       two arrow idioms, since this statement carries many context-indexed
-       premises.
+   (a) ⛔ THE ARROW ROW.  Its LEFT IH is converted; [coqc] stops on the RIGHT
+       one, and there is a ⛔ RESUME block at that exact line with the six
+       steps worked out — read it, not this summary.  The headline: the right
+       IH runs at [Ξs1 ++ Ξc1 ++ Θ0] under [κs1 ++ κc1 ++ κ], NOT at
+       [Ξc1 ++ Θ0], because [Pa1] mentions the flexibles the LEFT SOLVE
+       invented; everything it returns is then permuted into the conclusion's
+       [Ξs2 ++ Ξs1] / [Ξc1 ++ Ξc2] order, which is cheap because [binds] over
+       an append is plain membership.
    (b) THE FIVE ∀ / ∀◇ ROWS: pass [Θw] and [Hψaw] down unchanged, run the IH
        at [add β L], and strip β from the [a_inc] with [a_inc_strip_tvar_mid]
        — whose [Forall (β ∉ ftv)] premise on the [κs] prefix now comes from
@@ -1764,6 +1764,11 @@ Theorem a_lookeq_solve_complete_gen :
        [Ξs ++ Ξc ++ Θ0] is the one [a_extract__solve] (def_extra.v:764) runs
        the final guess at, so P6-L consumes this verbatim. *)
     (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa /\            (* solve 𝒞 Pi Ξs Pa *)
+    (* [all_flex_mono] is re-derivable ([a_solve_cstr_decls]) but [uniq Ξs] is
+       NOT (hand-off §4c), and the ARROW row needs both to rebuild
+       [a_wf_aenv (Ξs ++ Ξc ++ Θ0)] for its right branch. *)
+    all_flex_mono Ξs /\
+    uniq Ξs /\
     keys κs = keys Ξs /\
     (forall α0, α0 `in` dom Ξs -> α0 `notin` L) /\
     Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs /\
@@ -1853,6 +1858,8 @@ Proof.
     repeat split.
     - apply a_lookeq__vacuous.
     - simpl. apply a_solve_cstr__empty.
+    - apply Forall_nil.
+    - apply uniq_nil.
     - intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec.
     - apply Forall_nil.
     - simpl. exact HwfPi.
@@ -1922,6 +1929,8 @@ Proof.
     - simpl. apply a_solve_cstr__eq
         with (Ξ1 := Ξs) (Ξ2 := (@nil (atom * abind))) (P'' := Pa);
         [ exact Hsolve | apply a_solve_cstr__empty ].
+    - exact Hfms.
+    - exact Hus.
     - exact Hks.
     - exact Hfrs.
     - exact HFs.
@@ -1976,6 +1985,8 @@ Proof.
     repeat split.
     - apply a_lookeq__absent; exact Hnin.
     - simpl. apply a_solve_cstr__empty.
+    - apply Forall_nil.
+    - apply uniq_nil.
     - intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec.
     - apply Forall_nil.
     - simpl. exact HwfPi.
@@ -2147,6 +2158,8 @@ Proof.
                with (Ξ1 := (@nil (atom * abind))) (Ξ2 := (@nil (atom * abind)))
                     (P'' := (pskl_var_f α0));
                [ exact Hsv | apply a_solve_cstr__empty ].
+          -- apply Forall_nil.
+          -- apply uniq_nil.
           -- intros α2 Hα2; simpl in Hα2; exfalso; clear - Hα2; fsetdec.
           -- apply Forall_nil.
           -- cbn [app]. rewrite HPieq in HwfPi.
@@ -2454,6 +2467,8 @@ Proof.
            apply a_solve_cstr__eq with (Ξ1 := Ξs)
                 (Ξ2 := (@nil (atom * abind))) (P'' := Pa);
              [ exact Hsolve_eq | apply a_solve_cstr__empty ].
+        -- (* all_flex_mono Ξs *) exact Hfms.
+        -- (* uniq Ξs *) exact Hus.
         -- (* keys κs = keys Ξs *) exact Hks.
         -- (* dom Ξs ∩ L = ∅ *) exact Hfrs.
         -- (* the SOLVE block's payloads *) exact HFs.
@@ -2533,14 +2548,17 @@ Proof.
           by (clear - HΨ1sub; fsetdec).
         assert (HΨs2L : Ψ1 ∩ Ψ' [<=] Ψ1) by (clear; fsetdec).
         (* --- LEFT IH on Ra / P01 --- *)
-        edestruct (IHn NM Θ0 Θ κ Δ Ψ' Ψi (Ψ1 ∩ Ψ') Ψ1 ψa Q1
+        edestruct (IHn NM Θ0 Θ Θw κ Δ Ψ' Ψi (Ψ1 ∩ Ψ') Ψ1 ψa Q1
                      (uskl_to_pskl Ra) P01 Pi Ra α Θs Δρ Ψρ1 Ra'
-                     Hml HwfΘ HwfΘ0 HwfP01 HwfPi Hκ HαΘ HαΘ0 eq_refl
+                     Hml HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP01 HwfPi Hκ Hκw Hψaw
+                     HαΘ HαΘ0 eq_refl
                      HscopeSa HlcSa Htags HdisjSa HsubL Hdfresh Hpre HΨs1L HΨs2L H1 HwfSubA Href1
                      Hrhoa HΘs HΨρ1e Hrfr HΔρΔ ltac:(eapply rho_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; fsetdec
-                          | cbn; clear; fsetdec ]) HΔρPi Hfawa Hψaap)
-          as (C1 & Ξc1 & Pa1 & κc1 & HLK1 & HSolve1 & HwfPa1 & HwfΞ1 & HαΞ1
+                          | cbn; clear; fsetdec ]) HΔρPi Hfawa Hψaap L HL)
+          as (C1 & Ξc1 & Ξs1 & Pa1 & κc1 & κs1
+                & HLK1 & HSolve1 & Hfms1 & Hus1 & Hks1 & Hfrs1 & HFs1
+                & HwfPa1 & HwfΞ1 & HαΞ1
                 & Hmap1 & Himg1 & HimgΔ1 & HftvC1 & Hinc1 & Hinceq1 & Hκf1 & Hpre1).
         (* --- transports for the RIGHT IH (κ → ρc1 ++ κ) --- *)
         assert (Htr_c : msubst_uskl_syn (κc1 ++ κ) Rb = msubst_uskl_syn κ Rb).
@@ -2596,7 +2614,15 @@ Proof.
           { eapply a_lookeq_ftv_ctx;
               [ exact HLK1 | clear - HΔρΘ0 Hα0; fsetdec
               | clear - Hd0; fsetdec | exact HΞ ]. }
-          clear - Hs1 Hc1 Hd0 HΞ; fsetdec. }
+          (* ⭐ the bound now has a [dom Ξs1] term — the SOLVE generates names
+             too.  A ρ-replaced variable is a RIGID of Θ0, and the block dodges
+             [L ⊇ ftvar_in_aenv Θ0], so it is not one of them. *)
+          assert (HΞs : α0 `notin` dom Ξs1).
+          { intro Hc. pose proof (Hfrs1 α0 Hc) as Hf.
+            pose proof (HΔρΘ0 α0 Hα0) as Hd00.
+            pose proof (dom_subset_ftvar_in_aenv Θ0) as Hdf.
+            clear - Hf Hd00 Hdf HL; fsetdec. }
+          clear - Hs1 Hc1 Hd0 HΞ HΞs; fsetdec. }
         assert (HΔρftvR : forall α0, α0 `in` Δρ ->
                   α0 `notin` ftvar_in_pskl P02 `union` ftvar_in_pskl Pa1).
         { intros α0 Hα0. pose proof (HΔρftv α0 Hα0) as Hd0.
@@ -2636,7 +2662,54 @@ Proof.
         assert (HfawbR : flex_apart_p0 (Ξc1 ++ Θ0) Δρ P02 ψa)
           by (eapply flex_apart_p0_weaken_flex_prefix;
                 [ exact Hfawb | exact HfrP02Ξ ]).
-        (* --- RIGHT IH on Rb / P02, at [Ξc1 ++ Θ0] with [ρc1 ++ κ] --- *)
+        (* ⛔ RESUME HERE (2026-08-04) — THE ARROW MERGE, the last hard row of
+           P6-Cs.  Everything above it in this file compiles.
+
+           ⚠️ THE RIGHT IH NO LONGER RUNS AT [Ξc1 ++ Θ0].  [Pa1] is the LEFT
+           SOLVE's output and mentions the flexibles [Ξs1] that solve invented,
+           so the precision the right branch needs ([Hpre1]) is stated under
+           [κs1 ++ κc1 ++ κ] — and the only context at which that is an [a_inc]
+           is [Ξs1 ++ Ξc1 ++ Θ0] ([Hinc1] verbatim).  So the right IH runs at
+
+               Θ0 := Ξs1 ++ Ξc1 ++ Θ0        κ := κs1 ++ κc1 ++ κ
+
+           and everything it hands back has to be PERMUTED into the conclusion's
+           [Ξs2 ++ Ξs1] / [Ξc1 ++ Ξc2] order.  That is the whole cost of the row.
+
+           WHAT TO BUILD, in order:
+           1. Pass [add α L] (not [L]) to BOTH IHs — the row needs
+              [α ∉ dom Ξs1] for [Hαr], and [α ∈ L] is not given.  The
+              conclusion's [∉ L] follows a fortiori.  Pass
+              [L ∪ dom Ξs1] on top for the RIGHT IH, which is what makes
+              [uniq (Ξs2 ++ Ξs1)] provable.
+           2. [a_wf_aenv (Ξs1 ++ Ξc1 ++ Θ0)] from [a_wf_aenv_flex_prefix]:
+              [Hfms1], [Hus1] and disjointness from
+              [a_solve_cstr_generated_fresh HSolve1] (prop_solve_sub.v, new).
+           3. The right IH's [Hκw]: a flexible of [Ξs1 ++ Ξc1 ++ Θ0] looks up
+              in [κs1] (bounded by [HFs1] : wf at [Θw]), in [κc1] (bounded by
+              [Himg1] : [⊆ ftv ψa], then [Hψaw]) or, being outside both
+              domains, in [κ] ([Hκw]).  ⚙️ Worth ONE helper —
+              [msubst_lookup_ftv_app : (∀ p ∈ κa, ftv (snd p) ⊆ S) →
+               (α ∉ dom κa → ftv (msubst_lookup κb α) ⊆ S) →
+               ftv (msubst_lookup (κa ++ κb) α) ⊆ S] — applied twice.
+           4. THE PERMUTATION.  [binds] over an append is plain membership, so
+              ANY reordering of the blocks preserves it — no disjointness
+              needed, [binds_swap_app] twice (or [analyze_binds]) does it.  The
+              transports are then [a_solve_cstr_ctx_change] (the ftvar side is
+              [ftvar_in_aenv_app] + [fsetdec]), [a_wf_pskl_weaken] and
+              [a_wf_aenv_flex_prefix].
+           5. The [a_inc]: do NOT permute [Hinc2].  REBUILD from [Hκ] with four
+              [a_inc_flex_prefix_build] steps — [Ξc2], [Ξc1], [Ξs1], [Ξs2] —
+              since the lemma does not care where a block was generated, only
+              that its payloads are wf-mono.  The four [Forall]s are [Hwm2],
+              [Hwm1] (from [a_inc_flex_prefix_split]) and [HFs1]/[HFs2] via
+              [HFw].
+           6. The precision: [Hpre2] is under
+              [κs2 ++ κc2 ++ κs1 ++ κc1 ++ κ] and the goal wants
+              [(κs2 ++ κs1) ++ (κc1 ++ κc2) ++ κ] — same bindings, pairwise
+              disjoint domains, so a chain of [msubst_pskl_app_swap]s. *)
+        (* --- RIGHT IH on Rb / P02, at [Ξs1 ++ Ξc1 ++ Θ0] with
+               [κs1 ++ κc1 ++ κ] --- *)
         edestruct (IHn NM (Ξc1 ++ Θ0) Θ (κc1 ++ κ) Δ Ψ'
                      (union Ψi (Ψ1 ∩ Ψ')) (Ψ2 ∩ Ψ')
                      Ψ2 ψa Q2 (uskl_to_pskl Rb) P02 Pa1 Rb α Θs Δρ Ψρ2 Rb'
