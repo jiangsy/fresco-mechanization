@@ -585,8 +585,8 @@ Theorem a_solve_eq_complete_var_gen :
      rigid binders (identical at the top-level call) *)
   a_wf_aenv Θw ->
   (forall x b, binds x b Θw -> binds x b Θ) ->
-  (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
-     binds α (abind_flex_mono_def τ0) Θw) ->
+  (* the converse for NON-rigid entries: [Θ] adds only rigid binders *)
+  (forall x b, binds x b Θ -> binds x b Θw \/ b = abind_tvar) ->
   Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   κ ∷ Θ0 ⊑ Θ ->
@@ -608,23 +608,28 @@ Theorem a_solve_eq_complete_var_gen :
   p6cv_concl Θ0 Θ Θw Θr κ Δ Ψi Ψa ψa Pi P0 L.
 Proof.
   intros NM Θ Θ0 Θw Θtv Θr Θ0r κ Δ Δρ Δr Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0.
-  intros HspΘ HspΘ0 HwfΘr Htvs HΔrd HΔρtv HwfΘ HwfΘ0 HwfΘw Hmon Hdefs
+  intros HspΘ HspΘ0 HwfΘr Htvs HΔrd HΔρtv HwfΘ HwfΘ0 HwfΘw Hmon Hnr
          HwfPi HwfP0 Hκ Hrho Htags
          Hsub Hinter Hfresh Hdelta Hshield Hdfresh Hapart Hpre
          Hsubeq1 Hsubeq2 Hconsis Hrefine.
   revert NM Θ0 Θtv Θr Θ0r κ Δ Δρ Δr Ψρ Ψ' Ψi Ψa ψa Pi P0
-         HspΘ HspΘ0 HwfΘr Htvs HΔrd HΔρtv HwfΘ HwfΘ0 Hmon Hdefs
+         HspΘ HspΘ0 HwfΘr Htvs HΔrd HΔρtv HwfΘ HwfΘ0 Hmon Hnr
          HwfPi HwfP0 Hκ Hrho Htags
          Hsub Hinter Hfresh Hdelta Hshield Hdfresh Hapart Hpre
          Hsubeq1 Hsubeq2 Hrefine.
   induction Hconsis; intros
     NM Θ0 Θtv Θr Θ0r κ Δ Δρ Δr Ψρ Ψ' Ψi Ψa ψa Pi P0
-    HspΘ HspΘ0 HwfΘr Htvs HΔrd HΔρtv HwfΘ HwfΘ0 Hmon Hdefs
+    HspΘ HspΘ0 HwfΘr Htvs HΔrd HΔρtv HwfΘ HwfΘ0 Hmon Hnr
     HwfPi HwfP0 Hκ Hrho Htags
     Hsub Hinter Hfresh Hdelta Hshield Hdfresh Hapart Hpre
     (* ⚙️ [Lav], not [L]: the consistency rules' own cofinite binder is [L] in
        several rows, and [intros] runs in all of them. *)
-    Hsubeq1 Hsubeq2 Hrefine Lav HLav.
+    Hsubeq1 Hsubeq2 Hrefine Lav HLav;
+  (* the definition-only form the solve kit asks for, in EVERY row *)
+  assert (Hdefs : forall α0 τ0, binds α0 (abind_flex_mono_def τ0) Θ ->
+                    binds α0 (abind_flex_mono_def τ0) Θw)
+    by (intros α0 τ0 Hb; destruct (Hnr _ _ Hb) as [Hb' | Hc];
+        [ exact Hb' | discriminate Hc ]).
   - (* unit *)
     assert (Hrefine' : Θ ⨟ empty ⊢ᵣᵃ
               (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ bskl_unit)
@@ -655,10 +660,20 @@ Proof.
     assert (Hrefine' : Θ ⨟ empty ⊢ᵣᵃ
               (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (bskl_var_f α))
       by (eapply refine_primary_to_plain_split; eassumption).
-    (* ⭐ [a_binds_tvar α Θ] is [ad_pat_consis__var]'s OWN premise, and it is
-       exactly the new wf side condition [a_solve_eq_cv_var] asks for. *)
-    assert (Hbα : a_binds_tvar α Θ)
-      by (match goal with Hb : a_binds_tvar α Θ |- _ => exact Hb end).
+    (* ⭐ [a_binds_tvar α Θ] is [ad_pat_consis__var]'s OWN premise.  It gives
+       the RIGHT disjunct of the wf side condition when α is a rigid of [Θ]
+       — which is the case a ∀ row produces, where α is the bound variable
+       and is not in [Θw] at all — and the left one otherwise, by
+       strengthening.  Either way nothing new is assumed. *)
+    assert (Hbα : a_binds_tvar α Θw \/ binds α abind_tvar Θ).
+    { match goal with Hb : a_binds_tvar α Θ |- _ =>
+        destruct Hb as [Hrig | [Hfm | (τx & Hfd)]];
+          [ right; exact Hrig
+          | destruct (Hnr _ _ Hfm) as [Hb' | Hc];
+              [ left; right; left; exact Hb' | discriminate Hc ]
+          | destruct (Hnr _ _ Hfd) as [Hb' | Hc];
+              [ left; right; right; exists τx; exact Hb' | discriminate Hc ] ]
+      end. }
     destruct (uskl_rho_var_l_inv Hrho) as [[-> HΨρ] | Hleaf].
     + assert (HΨ'e : Ψ' [=] empty)
         by (exact (d_tags_skl_var_inv (a_tags_sort_d_tags Htags))).
@@ -668,9 +683,9 @@ Proof.
       eapply solve_ext_post_solve;
         (* ⚙️ [L] is IMPLICIT ([Set Implicit Arguments] — it is inferable from
            the avoid-set premise's type), so only [HLav] is passed. *)
-        [ | exact (a_solve_eq_cv_var (Θ := Θ) (Δ := Δ)
-                     Hsz HwfΘ HwfΘ0 HwfPi HwfP0 Hκ Hbα Hdfresh Hpre Hrefine'
-                     HLav) ].
+        [ | exact (a_solve_eq_cv_var (Θ := Θ) (Θw := Θw) (Δ := Δ)
+                     Hsz HwfΘ HwfΘ0 HwfΘw Hmon Hdefs
+                     HwfPi HwfP0 Hκ Hbα Hdfresh Hpre Hrefine' HLav) ].
       intros Ξ0 κ' Pa Hsolve Hprec Δ' HS1 HS2 HS3.
       destruct (AtomSetProperties.In_dec α (dom Θr)) as [HinR | HninR].
       * (* Θr-side: Δ' avoids the target variable *)
@@ -941,10 +956,30 @@ Proof.
                   with (uskl_arrow (ptyp_to_uskl_syn τa1)
                                    (ptyp_to_uskl_syn τa2)).
                 rewrite <- Heq1, <- Heq2. exact Hpre1. }
+              (* ⛔ RESUME HERE (2026-08-04).  The witness now reports the
+                 extension's payloads well-formed in [Θw], the context that
+                 stays FIXED under binders, so it needs
+                 [a_wf_ptyp Θw (τa1 → τa2)] — and [FLEX] currently produces
+                 it at [Θ], which under a ∀ row is [Θ] EXTENDED by the bound
+                 rigid.  The fact is true and the argument is known (see the
+                 hand-off, §6 Step 1, "the one open obligation"):
+
+                   ftv (ψa1 → ψa2) ⊆ ftv (bskl_arrow Q1 Q2) ∪ dom Θr
+                                   ⊆ ftv (msubst_lookup κ β) ∪ dom Θr,
+
+                 by [consis_subject_ftv_bag_bound] then
+                 [ad_refine_syn_ftv_rhs_bound] on [Hrefβ'] — and a ∀ row's
+                 binder joins [Θtv], never [Θr], while [κ ∷ Θ0 ⊑ Θw] keeps
+                 every κ-image inside [dom Θw].  So the counterpart monotype
+                 is apart from every bound rigid, and [mono_ptyp_wf] lifts
+                 that to [a_wf_ptyp Θw].  What is missing is exactly that
+                 derivation, inside [FLEX], plus the premise [κ ∷ Θ0 ⊑ Θw]
+                 on the theorem (identical to [Hκ] at the top-level call). *)
               destruct (@a_guess_ty_witness_mono
-                          (size_pskl (pskl_arrow Pi1 Pi2)) Θ0 Θ κ Δ Ψi0
+                          (size_pskl (pskl_arrow Pi1 Pi2)) Θ0 Θ Θw κ Δ Ψi0
                           (ptyp_arrow τa1 τa2) (pskl_arrow Pi1 Pi2)
-                          ltac:(reflexivity) HwfΘ HwfPi0 Hmar Hwfar Hpre1' Lav)
+                          ltac:(reflexivity) HwfΘ HwfΘw Hmon Hdefs
+                          HwfPi0 Hmar Hwfar Hpre1' Lav)
                 as (Ξg & Ag & κg & Hgu & Hfmg & Hug & Hkg & Hfrg & HFg & Hqg).
               exists Ξg, (ptyp_to_pskl Ag), κg.
               split; [ apply a_solve_eq__flex_r;
