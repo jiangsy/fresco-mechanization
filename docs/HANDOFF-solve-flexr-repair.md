@@ -11,7 +11,12 @@ fast-forwarded to `d5f9169`). Nothing pushed.
 | `af89c1b` | ⭐ **subtyping soundness Qed + axiom-free under the repair** |
 | `d0a3432` | completeness cluster started; the weakening finding |
 | `0618301` | this hand-off |
-| *(latest)* | ⭐ **`probe_flexr_repair.v`**; the two rule strengthenings; retractions; docs |
+| `20ada0f` | ⭐ **`probe_flexr_repair.v`**; the two rule strengthenings; retractions; docs |
+| `b2a528c` | the wf layer of the completeness cluster |
+| `ae3ae0b`/`9322ea5`/`a5fb27a` | ⭐ `a_guess_ty_witness_mono` and its first sites |
+| `f50154a` | ⭐⭐ **`prop_look_complete.v` IS GREEN** — the arrow-case κ-merge |
+| `3faccba` | ⭐⭐ `a_guess_mono_ctx_change` + the flex-block WEAKENING, both moved up |
+| *(latest)* | WIP P6-Cv: SE-FlexR and the arrow merge through; ∀ rows remain |
 
 **Read `docs/refutations.tex` first** if you have not — it is the
 author-facing note, and it now ends with a §"Status" recording what the
@@ -253,7 +258,104 @@ target case has never been shown reachable.  Nothing goes to
 and indexing the three solve judgements by `N` is the ready fallback.  Until
 then, no action.
 
-### Step 1 — the P6 cluster (THE work; ~32k lines, NOT started)
+### Step 1 — the P6 cluster — ⭐ `prop_look_complete.v` IS GREEN; P6-Cv half done
+
+**RESUME AT `frost/algo/prop_look_complete_var.v`, the `forall_inh_tagged`
+row's `IHX` block (≈ line 1467) — the first of the THREE ∀ blocks.**
+Everything before it in that file is converted; `coqc` stops at the `IHX`
+statement, whose conclusion still has the old `exists Pa, … ⤳ Pa /\ …` shape.
+
+#### What is green and committed
+
+`prop_look_complete.v` compiles, `Qed`, `Closed under the global context` —
+including `a_solve_eq_cv_mono`'s arrow-case κ-merge, which was the resume
+point of the previous hand-off. Everything upstream of it is unchanged and
+still green.
+
+#### ⭐ The five reusable pieces that now live in `prop_look_complete.v`
+
+Read these before touching any downstream file; four of the five did not
+exist when the campaign started, and they are what makes the remaining work
+mechanical.
+
+| name | what it buys |
+|---|---|
+| `solve_ext` + `solve_ext_nil` / `_step` / `_post` / `_post_solve` | the κ-extension package as ONE definition parameterised by a post-condition. Every P6 statement is `solve_ext … Post`; the glue lemmas cover every row that is not the arrow merge or SE-FlexR itself. `_post_solve` keeps the SOLVE derivation in hand (P6-Cv's var row reads hole-freedom off it). |
+| ⭐ `a_guess_mono_ctx_change` | `guess^TY` reads its context ONLY as an avoid-set, so it transports to a **growing** context too, provided the block it generated dodges what the new context mentions. `a_guess_mono_ctx_shrink` had only the shrinking half. The ∀ case re-picks by SWAP. |
+| ⭐ `a_solve_sub_eq_weaken_mid_flex_size` (+ `a_solve_eq_weaken_flex_block`) | moved up from `prop_look_complete_cstr.v` and repaired: the block threads, there is a NEW premise `dom Ξm ∩ dom Ξ = ∅`, and the six ∀ rows re-freshen by `a_solve_*_move_binder*` instead of the double rename. |
+| `a_inc_flex_prefix_split` / `_build`, `all_flex_mono_decls`, `all_flex_mono_ftvar_in_aenv`, `a_wf_aenv_prepend_flex_block` | prepend an aligned wf-mono block to an `a_inc` and to its source context. |
+| ⭐ `ad_pat_consis_mono_subject_wf` | where the κ-extension's wf obligation comes from: a mono-paint consistency SUBJECT is wf in the context, because consistency's `var` row carries `a_binds_tvar` and its `flex_l` row carries the definition. **No new external side condition.** |
+
+#### ⭐ TWO IDIOMS THE ARROW CASE CAN USE — pick the cheaper one
+
+The two branches of an arrow must end up at DIFFERENT contexts, because
+`SE-Arrow` threads (`Θ` and `Ξ1 ++ Θ`).
+
+1. **Re-parameterise** the second IH over `Θ0` — what `a_solve_eq_cv_mono`
+   does. Costs `a_inc_flex_prefix_build`, `a_wf_aenv_prepend_flex_block`,
+   `a_wf_pskl_app_weaken` and a `ftvar_in_aenv` bound. Use it when the IH
+   already quantifies the context and carries few context-indexed premises.
+2. ⭐ **Weaken the second branch's SOLVE** with
+   `a_solve_eq_weaken_flex_block` — what P6-Cv's CORE does. Much cheaper
+   when the statement carries many context-indexed premises
+   (`aenv_split`, `flex_apart`, `rho_fresh`, …), because NONE of them move.
+   **Prefer this in the four remaining files.**
+
+Either way the avoid-sets are the same: the first IH runs at
+`L ∪ ftv Pi1 ∪ ftv Pi2 ∪ ftv P01 ∪ ftv P02`, the second at that `∪ dom Ξ1`;
+the merged block is `Ξ2 ++ Ξ1`, the merged extension `κb ++ κa`, and the two
+`msubst_pskl_mid_skip` equations are read off `a_solve_eq_ftv`.
+
+#### ⭐ TWO FACTS ABOUT THE REPAIR THAT KEEP RECURRING
+
+- **`guess^TY`'s output is a PAINT, hence hole-free.** So its precision is
+  Δ-MONOTONE (`ad_ppre_no_hole_subject_delta_mono`) and no Δ-freshness side
+  condition is needed at an SE-FlexR node. It is also why
+  `a_solve_eq_no_hole_p0` is still true — for a better reason than before.
+- **A ghost subject pins the block to `nil`** (`a_solve_eq_hole_subject_inv`,
+  true only because of finding 2's `nonghost_pskl`). Every `Pi = □` row is
+  therefore a `solve_ext_nil` row, and its extension is `nil` too — get that
+  from `keys κ' = keys nil` by `destruct κ'; [ | discriminate ]`.
+
+#### ⭕ THE ONE OPEN OBLIGATION — the ∀ rows' payload scope
+
+This is what the resume point runs into, and it is worth thinking about
+BEFORE writing the block.
+
+A P6 ∀ row runs its body IH at `(α ~ tvar) ++ Θ0` against the target
+`(α ~ tvar) ++ Θ`. So the body's package delivers
+`Forall (fun p => a_wf_ptyp ((α ~ tvar) ++ Θ) (snd p) ∧ …) κ'`, while the
+enclosing conclusion needs `a_wf_ptyp Θ`. The solve's ∀ rows pass `Ξ`
+through UNCHANGED, so the generated flexibles are declared OUTSIDE the
+binder — a payload mentioning `α` would be a scope violation.
+
+**It is dischargeable, and here is the argument.** A payload is only ever
+invented at an SE-FlexR node, where the COUNTERPART is a raw flexible `β̂` of
+`Θ0`; the monotype the extension reads off that position is (up to the
+refinement/consistency bridge that `FLEX` already builds) `msubst_lookup κ β̂`
+— and `κ ∷ Θ0 ⊑ Θ` makes every image **wf at `Θ`**, hence `α`-free. So the
+fix is to derive the wf from the κ-IMAGE rather than from the consistency at
+the extended context: i.e. inside each file's `FLEX` block, replace the
+`ad_pat_consis_mono_subject_wf` call by one going through `Hml`/`Hrefβ'`
+(`mono_ptyp (msubst_lookup κ β)` plus `a_inc`'s own wf component).
+
+⚠️ Do NOT weaken the package's wf component to dodge this — it is exactly
+what `a_inc_flex_prefix_build` needs downstream, and without it P6-L cannot
+rebuild `(κ' ++ κ) ∷ (Ξ ++ Θ0) ⊑ Θ`.
+
+#### The rest of the cluster
+
+`prop_look_complete_cstr.v` (P6-Cs) → `prop_look_complete_sub_var.v` (P6-Sv)
+→ `prop_look_complete_sub_cstr.v` (P6-Ss) → `prop_look_complete_extract.v`
+(P6-L). ⚙️ `prop_look_complete_cstr.v` must DELETE its copies of
+`binds_weaken_mid`, `binds_strengthen_mid`, `a_flex_tvar_weaken_mid`,
+`a_non_flex_weaken_mid`, `a_solve_sub_eq_weaken_mid_flex_size`,
+`a_solve_sub_weaken_mid_flex`, `a_solve_eq_weaken_mid_flex`,
+`a_inc_flex_prefix_split` and `a_inc_flex_prefix_build` — they moved up and
+will collide. `a_solve_cstr_weaken_mid_flex` stays there and needs the `Ξ`
+thread plus the new `dom Ξm ∩ dom Ξ = ∅` premise.
+
+### Step 1 (original notes; the plan above supersedes the status lines)
 
 `prop_look_complete.v` (4.8k) → `prop_look_complete_var.v` (P6-Cv) →
 `prop_look_complete_cstr.v` (P6-Cs) → `prop_look_complete_sub_var.v` (P6-Sv)
