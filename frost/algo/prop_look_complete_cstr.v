@@ -216,30 +216,12 @@ Qed.
 (*  natural orders (Ξc1++Θ0 for the left, Ξc2++Ξc1++Θ0 for the right).     *)
 (* ===================================================================== *)
 
-Definition keys {A : Type} (l : list (atom * A)) : list atom := List.map fst l.
-
-Lemma keys_app : forall (A : Type) (l1 l2 : list (atom * A)),
-  keys (l1 ++ l2) = keys l1 ++ keys l2.
-Proof.
-  intros A l1 l2; induction l1 as [ | p l1' IH ]; unfold keys in *; simpl;
-    [ reflexivity | rewrite IH; reflexivity ].
-Qed.
-
-Lemma keys_eq_dom : forall (A B : Type) (l1 : list (atom * A)) (l2 : list (atom * B)),
-  keys l1 = keys l2 -> dom l1 [=] dom l2.
-Proof.
-  induction l1 as [ | [x a] l1' IH ]; intros [ | [y b] l2' ] Hk;
-    unfold keys in *; simpl in *; try discriminate; try reflexivity.
-  injection Hk as Hxy Hk'; subst y.
-  pose proof (IH l2' Hk') as Hd. simpl_env in *. fsetdec.
-Qed.
-
-Definition all_flex_mono (Ξ : aenv) : Prop :=
-  Forall (fun p => snd p = abind_flex_mono) Ξ.
-
-Lemma all_flex_mono_app : forall A B,
-  all_flex_mono A -> all_flex_mono B -> all_flex_mono (A ++ B).
-Proof. intros A B HA HB. apply Forall_app; split; assumption. Qed.
+(* ⭐ MOVED UPSTREAM (2026-08-04) to frost/algo/prop_metasubst.v:
+   [keys], [keys_app], [keys_eq_dom], [all_flex_mono], [all_flex_mono_app].
+   The SolE-FlexR repair made the solve emit its own flexible block, so the
+   κ-EXTENSION package these describe is now needed from prop_look_complete.v
+   onwards — i.e. ABOVE this file.  Nothing about them was specific to the
+   collection layer: they are list/metasubst algebra. *)
 
 Lemma a_lookeq_all_flex_mono : forall Θ α P P0 Ξ 𝒞,
   Θ ⊢ P ∼[ α ] P0 ⤳ Ξ ⨾ 𝒞 -> all_flex_mono Ξ.

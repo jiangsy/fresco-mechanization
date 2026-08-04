@@ -520,48 +520,10 @@ Qed.
 (*  §7  FOUR SMALL TOOLS THE WITNESS INDUCTION ASSEMBLES WITH             *)
 (* ===================================================================== *)
 
-(** [msubst_pskl] only reads its argument's FREE variables, so entries keyed
-    outside them are invisible.  The arrow case needs exactly this: the two
-    branches' extensions are appended in one order but each branch's IH was
-    proved against its own extension alone. *)
-Lemma msubst_pskl_lookup_congr_ftv : forall κ σ P,
-  (forall α, α `in` ftvar_in_pskl P ->
-     msubst_lookup κ α = msubst_lookup σ α) ->
-  msubst_pskl κ P = msubst_pskl σ P.
-Proof.
-  intros κ σ P; revert κ σ;
-    induction P as [ | n | α | P1 IHP1 P2 IHP2 | P0 IHP0 | | P0 IHP0 ];
-    intros κ σ Heq; cbn in *; try reflexivity.
-  - rewrite Heq by (clear; fsetdec); reflexivity.
-  - rewrite (IHP1 κ σ), (IHP2 κ σ);
-      [ reflexivity | intros α Hα; apply Heq; clear - Hα; fsetdec
-      | intros α Hα; apply Heq; clear - Hα; fsetdec ].
-  - rewrite (IHP0 κ σ); [ reflexivity | exact Heq ].
-  - rewrite (IHP0 κ σ); [ reflexivity | exact Heq ].
-Qed.
-
-Lemma msubst_lookup_mid_skip : forall κa κm κb α,
-  α `notin` dom κm ->
-  msubst_lookup (κa ++ κm ++ κb) α = msubst_lookup (κa ++ κb) α.
-Proof.
-  intros κa κm κb α Hα.
-  destruct (AtomSetProperties.In_dec α (dom κa)) as [Hin | Hnin].
-  - rewrite (@msubst_lookup_app_in κa (κm ++ κb) α Hin).
-    rewrite (@msubst_lookup_app_in κa κb α Hin). reflexivity.
-  - rewrite (@msubst_lookup_app_notin κa (κm ++ κb) α Hnin).
-    rewrite (@msubst_lookup_app_notin κa κb α Hnin).
-    rewrite (@msubst_lookup_app_notin κm κb α Hα). reflexivity.
-Qed.
-
-Lemma msubst_pskl_mid_skip : forall κa κm κb P,
-  (forall α, α `in` dom κm -> α `notin` ftvar_in_pskl P) ->
-  msubst_pskl (κa ++ κm ++ κb) P = msubst_pskl (κa ++ κb) P.
-Proof.
-  intros κa κm κb P Hdisj.
-  apply msubst_pskl_lookup_congr_ftv; intros α Hα.
-  apply msubst_lookup_mid_skip.
-  intro Hc. apply (Hdisj α Hc). exact Hα.
-Qed.
+(* ⭐ MOVED UPSTREAM (2026-08-04) to frost/algo/prop_metasubst.v:
+   [msubst_pskl_lookup_congr_ftv], [msubst_lookup_mid_skip],
+   [msubst_pskl_mid_skip].  Same reason as the [keys] kit — the κ-extension
+   is now built from prop_look_complete.v onwards, above this file. *)
 
 (** Precision is monotone in Δ (the [_f]-kit transport, at [F = ∅]). *)
 Lemma ad_precise_delta_mono : forall Θ Δ0 Δ P X,

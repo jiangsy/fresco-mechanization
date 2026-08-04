@@ -1796,3 +1796,85 @@ Proof.
     + clear - Hdκ Harκ HaΞ. simpl_env in *. fsetdec.
     + clear - Hdσ Hasσ HaΞ. simpl_env in *. fsetdec.
 Qed.
+
+
+(* ===================================================================== *)
+(*  ⭐ THE κ-EXTENSION PACKAGE (moved here 2026-08-04).                     *)
+(*                                                                        *)
+(*  These lived in prop_look_complete_cstr.v and prop_look_complete_       *)
+(*  extract.v, where the ONLY consumer used to be the final guess's block. *)
+(*  The SolE-FlexR repair makes the SOLVE emit a flexible block too, so    *)
+(*  every P6 statement from prop_look_complete.v onwards has to extend its *)
+(*  metasubstitution over one — and that file sits ABOVE both of the old   *)
+(*  homes.  Nothing here is specific to the collection or extract layer:   *)
+(*  it is list algebra plus "msubst only reads free variables".           *)
+(* ===================================================================== *)
+
+Definition keys {A : Type} (l : list (atom * A)) : list atom := List.map fst l.
+
+Lemma keys_app : forall (A : Type) (l1 l2 : list (atom * A)),
+  keys (l1 ++ l2) = keys l1 ++ keys l2.
+Proof.
+  intros A l1 l2; induction l1 as [ | p l1' IH ]; unfold keys in *; simpl;
+    [ reflexivity | rewrite IH; reflexivity ].
+Qed.
+
+Lemma keys_eq_dom : forall (A B : Type) (l1 : list (atom * A)) (l2 : list (atom * B)),
+  keys l1 = keys l2 -> dom l1 [=] dom l2.
+Proof.
+  induction l1 as [ | [x a] l1' IH ]; intros [ | [y b] l2' ] Hk;
+    unfold keys in *; simpl in *; try discriminate; try reflexivity.
+  injection Hk as Hxy Hk'; subst y.
+  pose proof (IH l2' Hk') as Hd. simpl_env in *. fsetdec.
+Qed.
+
+Definition all_flex_mono (Ξ : aenv) : Prop :=
+  Forall (fun p => snd p = abind_flex_mono) Ξ.
+
+Lemma all_flex_mono_app : forall A B,
+  all_flex_mono A -> all_flex_mono B -> all_flex_mono (A ++ B).
+Proof. intros A B HA HB. apply Forall_app; split; assumption. Qed.
+
+(** [msubst_pskl] only reads its argument's FREE variables, so entries keyed
+    outside them are invisible.  The arrow case needs exactly this: the two
+    branches' extensions are appended in one order but each branch's IH was
+    proved against its own extension alone. *)
+Lemma msubst_pskl_lookup_congr_ftv : forall κ σ P,
+  (forall α, α `in` ftvar_in_pskl P ->
+     msubst_lookup κ α = msubst_lookup σ α) ->
+  msubst_pskl κ P = msubst_pskl σ P.
+Proof.
+  intros κ σ P; revert κ σ;
+    induction P as [ | n | α | P1 IHP1 P2 IHP2 | P0 IHP0 | | P0 IHP0 ];
+    intros κ σ Heq; cbn in *; try reflexivity.
+  - rewrite Heq by (clear; fsetdec); reflexivity.
+  - rewrite (IHP1 κ σ), (IHP2 κ σ);
+      [ reflexivity | intros α Hα; apply Heq; clear - Hα; fsetdec
+      | intros α Hα; apply Heq; clear - Hα; fsetdec ].
+  - rewrite (IHP0 κ σ); [ reflexivity | exact Heq ].
+  - rewrite (IHP0 κ σ); [ reflexivity | exact Heq ].
+Qed.
+
+Lemma msubst_lookup_mid_skip : forall κa κm κb α,
+  α `notin` dom κm ->
+  msubst_lookup (κa ++ κm ++ κb) α = msubst_lookup (κa ++ κb) α.
+Proof.
+  intros κa κm κb α Hα.
+  destruct (AtomSetProperties.In_dec α (dom κa)) as [Hin | Hnin].
+  - rewrite (@msubst_lookup_app_in κa (κm ++ κb) α Hin).
+    rewrite (@msubst_lookup_app_in κa κb α Hin). reflexivity.
+  - rewrite (@msubst_lookup_app_notin κa (κm ++ κb) α Hnin).
+    rewrite (@msubst_lookup_app_notin κa κb α Hnin).
+    rewrite (@msubst_lookup_app_notin κm κb α Hα). reflexivity.
+Qed.
+
+Lemma msubst_pskl_mid_skip : forall κa κm κb P,
+  (forall α, α `in` dom κm -> α `notin` ftvar_in_pskl P) ->
+  msubst_pskl (κa ++ κm ++ κb) P = msubst_pskl (κa ++ κb) P.
+Proof.
+  intros κa κm κb P Hdisj.
+  apply msubst_pskl_lookup_congr_ftv; intros α Hα.
+  apply msubst_lookup_mid_skip.
+  intro Hc. apply (Hdisj α Hc). exact Hα.
+Qed.
+
