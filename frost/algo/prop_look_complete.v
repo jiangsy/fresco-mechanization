@@ -1777,7 +1777,7 @@ Lemma p6cv_close_leaf :
   (forall α, α `in` Δρ -> α `notin` pskl_shielded_ftv (msubst_pskl κ Pi)) ->
   Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
   rho_leaf NM Θ Δρ Ψρ ψsub ψa ->
-  exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ Pa /\
+  exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ nil ⨾ Pa /\
              Θ ⨟ Δ ⊢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
 Proof.
   intros NM Θ0 Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa ψsub ψa Pi P0
@@ -1958,7 +1958,7 @@ Lemma a_solve_eq_cv_unit : forall n Θ0 Θ κ Δ Ψi Pi P0,
   κ ∷ Θ0 ⊑ Θ ->
   Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] uskl_unit ->
   Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ bskl_unit ->
-  exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ Pa /\
+  exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ nil ⨾ Pa /\
              Θ ⨟ Δ ⊢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi ] uskl_unit.
 Proof.
   induction n; intros Θ0 Θ κ Δ Ψi Pi P0 Hn
@@ -1984,23 +1984,29 @@ Proof.
         rewrite Hmid in Hrefine; simpl in Hrefine.
         eapply ad_refine_syn_rigid_var_unit_absurd;
           [ exact HwfΘ | eapply a_inc_binds_tvar; eauto | exact Hrefine ].
+      (* ⭐ BOTH FLEXIBLE CASES CHANGED (2026-08-04).  The repaired SE-FlexR
+         returns [guess^TY(P_i)], not the flexible — and here the subject is
+         [unit], whose guess is [(·; unit)].  So the witness is [unit], the
+         block is empty, and the precision obligation collapses from "the
+         flexible is precise into unit" to [ad_ppre__unit].  This is the
+         repair paying for itself: the old witness needed the whole
+         [ad_refine_inh_unit_ppre] detour through the refinement. *)
       * (* undefined flex : SE-FlexR *)
-        exists (pskl_var_f α); split.
-        -- apply a_solve_eq__flex_r;
-             [ left; exact Hfm | split; [ constructor | intros Hf; inversion Hf ] ].
-        -- eapply ad_partial_precise_psi_cong;
-             [ eapply ad_refine_inh_unit_ppre;
-                 [ exact HwfΘ | exact Hrefine | reflexivity | reflexivity ]
-             | clear - HΨi; fsetdec ].
+        exists pskl_unit; split.
+        -- apply a_solve_eq__flex_r with (A := ptyp_unit);
+             [ left; exact Hfm
+             | split; [ constructor | intros Hf; inversion Hf ]
+             | apply nonghost_pskl__unit
+             | apply a_guess_mono__unit ].
+        -- simpl. apply ad_ppre__unit. exact HΨi.
       * (* defined flex : SE-FlexR *)
-        exists (pskl_var_f α); split.
-        -- apply a_solve_eq__flex_r;
+        exists pskl_unit; split.
+        -- apply a_solve_eq__flex_r with (A := ptyp_unit);
              [ right; exists τ; exact Hfd
-             | split; [ constructor | intros Hf; inversion Hf ] ].
-        -- eapply ad_partial_precise_psi_cong;
-             [ eapply ad_refine_inh_unit_ppre;
-                 [ exact HwfΘ | exact Hrefine | reflexivity | reflexivity ]
-             | clear - HΨi; fsetdec ].
+             | split; [ constructor | intros Hf; inversion Hf ]
+             | apply nonghost_pskl__unit
+             | apply a_guess_mono__unit ].
+        -- simpl. apply ad_ppre__unit. exact HΨi.
     + (* P0 = arrow : refinement absurd *)
       simpl in Hrefine; inversion Hrefine.
     + (* P0 = all_syn : refinement absurd *)

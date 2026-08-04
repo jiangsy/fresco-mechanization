@@ -289,6 +289,54 @@ Copy its shape for the solve's block; the homogeneous-flex REORDER KIT in
 undefined flexibles, so order is semantically immaterial but not
 syntactically so).
 
+#### ⭐ THE ONE LEMMA THAT UNBLOCKS THE REST — `a_guess_ty_witness_mono`
+
+Established by working the first three sites (2026-08-04).  The κ-extension
+is **not** needed uniformly; it is needed exactly where `SE-FlexR` fires with
+a subject that can carry a ghost.  Concretely:
+
+* `p6cv_close_leaf` — closes by SE-Var. `Ξ := nil`. ✅ **DONE**
+* `a_solve_eq_cv_unit` — target `1`, so the subject is `1`/var/◇/∀◇.
+  `guess^TY(1) = (·; 1)`. `Ξ := nil`. ✅ **DONE**, and the repair made it
+  *simpler*: the old proof's witness was the flexible `α̂` and needed the
+  whole `ad_refine_inh_unit_ppre` detour through the refinement; the new
+  witness is `1` and the obligation collapses to `ad_ppre__unit`.
+* `a_solve_eq_cv_mono` — ⛔ **HERE IT BITES.**  In the `Pi = Pi1 → Pi2`,
+  `P0 = β̂` branch, `SE-FlexR` is the *only* applicable rule (SE-Var needs a
+  variable subject, SE-Arrow needs an arrow target), and `guess^TY` of an
+  arrow subject genuinely invents flexibles for its holes.
+
+So write this first — everything downstream is a consumer of it:
+
+```coq
+Lemma a_guess_ty_witness_mono : forall n Θ0 Θ κ Δ Ψi τ Pi,
+  size_pskl Pi <= n ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ Pi -> κ ∷ Θ0 ⊑ Θ -> mono_ptyp τ ->
+  Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ) ->
+  forall L, exists Ξ A κ',
+    (forall Θg, ftvar_in_aenv Θg [<=] L -> a_guess_mono Θg Pi Ξ A) /    all_flex_mono Ξ /\ uniq Ξ /\ keys κ' = keys Ξ /    (forall α, α `in` dom Ξ -> α `notin` L) /    Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κ' /    Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) (ptyp_to_pskl A))
+            ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ).
+```
+
+It is `a_guess_ty_witness` (`prop_look_complete_extract.v` §9) with the
+precision judgment `⊑ᵖ` in place of `⊳`/`⊑`, and it should be *easier*: the
+target is a MONOTYPE, so at a `◇` the extension reads the monotype off that
+position and the obligation becomes reflexivity-at-mono
+(`ptyp_to_pskl τ0 ⊑ᵖ[∅] ptyp_to_uskl_syn τ0`) rather than a refinement
+step.  `ad_ppre__hole` (a ghost is precise into ANYTHING, at `Ψ = ∅`) is what
+licenses the descent.  Copy §9's shape — the `L`-bounded context
+quantification is what makes the ∀ case provable, and the freshness output is
+what lets the arrow case merge two extensions without them colliding.
+
+Then the statements become
+
+```coq
+exists Ξ Pa κ', Θ0 ⊢ₑ Pi ∼ P0 ⤳ Ξ ⨾ Pa /\ <the Ξ/κ' package above> /  Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) Pa) ⊑ᵖ[ Ψi ] …
+```
+
+and the arrow case of `a_solve_eq_cv_mono` merges the two IHs' extensions,
+which is exactly where the freshness component earns its keep.
+
 **Known repair sites in `prop_look_complete.v`** (the IDE lists them as
 `Syntax error: '⨾' expected`, which is a reliable way to enumerate them):
 
