@@ -237,27 +237,21 @@ delete them when P6-L goes through without them.
 
 ## 6. NEXT STEPS, in order
 
-### Step 0 — ⭕ DECIDE FIRST: `guess^TY` or `guess^N`?
+### Step 0 — SETTLED: the guess stays `guess^TY`
 
-**Cheapest moment is now, before the P6 cluster is re-proved.**  The
-authors' row fixes the sort — `guess^TY(P) = (Ξ; P')` — and that is the
-first place a sort enters constraint solving: the paper's three solving
-judgements are sort-FREE, and `N` enters only at `Look`'s final
-`guess^N(Q)`.  At `N = SK` that final guess is the IDENTITY, so the solve's
-output IS the instantiation; if `SolE-FlexR` has already run `guess^TY` on a
-sub-pattern, the `SK` extract returns a partly-monomorphised skeleton (ghosts
-filled with fresh flexibles, `∀◇` dropped) — which is precisely what `SK` is
-supposed not to do.
+Follow the authors' row literally.  A sort-parametric `guess^N` (degenerating
+at `SK` to the pattern verbatim) was considered and **rejected**: there is no
+evidence of a problem, only the observation that `guess^SK` is the identity
+while `SolE-FlexR` names `TY` unconditionally, and the `SK` + bare-flexible-
+target case has never been shown reachable.  Nothing goes to
+`docs/PAPER-GAPS.md` for this — speculation is not a finding.
 
-The sort-uniform reading is `guess^N`, degenerating at `SK` to the pattern
-verbatim (= the repair `refutations.tex` originally proposed), at the cost of
-an `N` index on `a_solve_sub` / `a_solve_eq` / `a_solve_cstr`.  What is not
-known is whether the `SK` + flexible-target case is REACHABLE; if it is not,
-the two readings agree on every derivable judgement.  Full analysis in
-`docs/PAPER-GAPS.md` §"OPEN DESIGN QUESTION".  **Nothing downstream depends
-on the choice yet** — soundness consumes the solve rather than constructing
-it — but the P6 cluster CONSTRUCTS these derivations, so deciding after that
-work would mean redoing it.
+⚙️ Keep it in the back of your mind while doing Step 1 only in this sense:
+**if** the P6 construction actually gets stuck because a solve output at
+`N = SK` has been partly monomorphised (ghosts filled with fresh flexibles,
+`∀◇` dropped) where the ideal keeps them, that is the concrete obstruction,
+and indexing the three solve judgements by `N` is the ready fallback.  Until
+then, no action.
 
 ### Step 1 — the P6 cluster (THE work; ~32k lines, NOT started)
 
