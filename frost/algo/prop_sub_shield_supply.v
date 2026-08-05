@@ -175,57 +175,6 @@ Print Assumptions ad_pat_sub_g_monoish_tag_free.
 (*  and every walked guess is Δρ-clean, which is [fa_clean].               *)
 (* ===================================================================== *)
 
-Lemma fa_walk_tag_free : forall A Δρ P0 ψa Δρ' P0' ψa',
-  fa_walk A Δρ P0 ψa Δρ' P0' ψa' ->
-  ftag_in_uskl ψa [=] empty ->
-  (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
-  Δρ' [=] Δρ /\ ftag_in_uskl ψa' [=] empty /\
-  (ftvar_in_uskl ψa') ∩ Δρ' [=] empty.
-Proof.
-  intros A Δρ P0 ψa Δρ' P0' ψa' H; induction H; intros Htf Hcl.
-  - (* fw_refl *)
-    split; [ reflexivity | split; [ exact Htf | exact Hcl ] ].
-  - (* fw_step : one step preserves the invariant, then the IH *)
-    assert (Hstep : Δρ1 [=] Δρ /\ ftag_in_uskl ψ1 [=] empty /\
-                    (ftvar_in_uskl ψ1) ∩ Δρ1 [=] empty).
-    { destruct H; cbn in Htf, Hcl.
-      - (* arrow_l *)
-        split; [ reflexivity
-               | split; [ clear - Htf; fsetdec | clear - Hcl; fsetdec ] ].
-      - (* arrow_r *)
-        split; [ reflexivity
-               | split; [ clear - Htf; fsetdec | clear - Hcl; fsetdec ] ].
-      - (* all_l : Sub-ForallR descends P0 only *)
-        split; [ reflexivity | split; [ exact Htf | exact Hcl ] ].
-      - (* all_r : IMPOSSIBLE — a tagged ∀ inside a tag-free guess *)
-        exfalso.
-        assert (Hin : ε `in` add ε (ftag_in_uskl ψ)) by (clear; fsetdec).
-        rewrite Htf in Hin. clear - Hin; fsetdec.
-      - (* tophole_l : the guess is untouched *)
-        split; [ reflexivity | split; [ exact Htf | exact Hcl ] ].
-      - (* topholeg_r *)
-        split; [ reflexivity
-               | split; [ clear - Htf; fsetdec | clear - Hcl; fsetdec ] ].
-      - (* flexdef_r : a painting has no tags, and the step's OWN premise is
-           exactly its Δρ-cleanliness *)
-        split; [ reflexivity | split ];
-          [ rewrite ftag_in_uskl_ptyp_to_uskl_syn; clear; fsetdec
-          | assumption ]. }
-    destruct Hstep as (HΔ1 & Htf1 & Hcl1).
-    destruct (IHfa_walk Htf1 Hcl1) as (HΔ2 & Htf2 & Hcl2).
-    split; [ clear - HΔ1 HΔ2; fsetdec | split; [ exact Htf2 | exact Hcl2 ] ].
-Qed.
-
-Lemma flex_apart_walk_tag_free : forall Θ0 Δρ P0 ψa,
-  ftag_in_uskl ψa [=] empty ->
-  (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
-  flex_apart_walk Θ0 Δρ P0 ψa.
-Proof.
-  intros Θ0 Δρ P0 ψa Htf Hcl Δρ' P0' ψa' Hw.
-  destruct (fa_walk_tag_free Hw Htf Hcl) as (_ & _ & Hcl').
-  apply fa_clean; exact Hcl'.
-Qed.
-
 (** The shield, from tag-freeness alone. *)
 Lemma sub_shield_tag_free : forall Θ0 Ψa α P0 R ψa,
   Ψa [=] empty ->
@@ -332,14 +281,6 @@ Proof.
   exfalso. destruct H; inversion Hat.
 Qed.
 
-Lemma fa_walk_atomic_p0 : forall A Δρ P0 ψa Δρ' P0' ψa',
-  fa_walk A Δρ P0 ψa Δρ' P0' ψa' -> pskl_atomic P0 -> P0' = P0.
-Proof.
-  intros A Δρ P0 ψa Δρ' P0' ψa' H; induction H; intros Hat; [ reflexivity | ].
-  (* only the three ψ-side steps survive, and each keeps P0 *)
-  destruct H; try solve [ exfalso; inversion Hat ]; auto.
-Qed.
-
 (** [flex_apart] at an atomic P0 is one constructor, whatever the guess. *)
 Lemma flex_apart_atomic : forall Θ0 Δρ P0 ψa,
   P0 = pskl_unit \/ P0 = pskl_hole \/
@@ -423,34 +364,6 @@ Proof.
     destruct (pskl_flex_free_arrow_inv Hff) as [_ Hf]; exact Hf.
   - (* sss_all : the binder misses [dom Θ0] *)
     apply pskl_flex_free_open_fresh; assumption.
-Qed.
-
-Lemma fa_walk_flex_free : forall Θ0 Δρ P0 ψa Δρ' P0' ψa',
-  fa_walk (dom Θ0) Δρ P0 ψa Δρ' P0' ψa' ->
-  pskl_flex_free Θ0 P0 ->
-  pskl_flex_free Θ0 P0'.
-Proof.
-  intros Θ0 Δρ P0 ψa Δρ' P0' ψa' H; induction H; intros Hff; [ exact Hff | ].
-  apply IHfa_walk. destruct H.
-  - (* fastep_arrow_l *)
-    destruct (pskl_flex_free_arrow_inv Hff) as [Hf _]; exact Hf.
-  - (* fastep_arrow_r *)
-    destruct (pskl_flex_free_arrow_inv Hff) as [_ Hf]; exact Hf.
-  - (* fastep_all_l : the binder misses [dom Θ0] *)
-    apply pskl_flex_free_open_fresh; assumption.
-  - (* fastep_all_r : the ψ-side moves, P0 does not *) exact Hff.
-  - (* fastep_tophole_l *)
-    apply pskl_flex_free_tophole_inv; exact Hff.
-  - (* fastep_topholeg_r *) exact Hff.
-  - (* fastep_flexdef_r *) exact Hff.
-Qed.
-
-Lemma flex_apart_walk_flex_free : forall Θ0 Δρ P0 ψa,
-  pskl_flex_free Θ0 P0 ->
-  flex_apart_walk Θ0 Δρ P0 ψa.
-Proof.
-  intros Θ0 Δρ P0 ψa Hff Δρ' P0' ψa' Hw.
-  apply fa_flexfree; eapply fa_walk_flex_free; eassumption.
 Qed.
 
 (** …and the same for the Δρ-CONSTANT P0-only closure, which [sub_shield] now

@@ -345,25 +345,16 @@ Proof.
       apply (H f ltac:(simpl; clear; fsetdec)); exact Hfl end.
 Qed.
 
-(** …and the [flex_apart_walk] half, at the same leaf: one [fastep_all_r]
-    opens the guess into [β→β] at [β ∈ Δρ], where nothing applies. *)
-Lemma apart_w_codomain_fails : forall Δρ,
-  ~ flex_apart_walk Θ0w Δρ (pskl_var_f f) ψw.
-Proof.
-  intros Δρ Hfa.
-  pick fresh β for (empty : atoms).
-  assert (Hw : fa_walk (dom Θ0w) Δρ (pskl_var_f f) ψw
-                 (add β Δρ) (pskl_var_f f)
-                 (uskl_arrow (uskl_var_f β) (uskl_var_f β))).
-  { unfold ψw, cexψ.
-    eapply fw_step; [ apply fastep_all_r | ].
-    unfold open_uskl_wrt_uskl; simpl. apply fw_refl. }
-  pose proof (Hfa _ _ _ Hw) as Hleaf.
-  (* ⚙ evar-free on purpose: [eapply] here would leave [Δρ] and [β] open and
-     the [β ∈ Δρ] side goal would go to [fsetdec] WITH EVARS, which diverges *)
-  assert (Hβin : β `in` add β Δρ) by (clear; fsetdec).
-  exact (flex_apart_raw_flex_open_arrow_stuck Hβin Hleaf).
-Qed.
+(* ⭕ [apart_w_codomain_fails] DELETED (2026-08-05).  It was the
+   [flex_apart_walk] half of the over-strength claim: one [fastep_all_r] opens
+   the guess into [β→β] at [β ∈ Δρ], where nothing applies.  That closure no
+   longer exists — P6-Sv does not take it and [sub_shield] no longer carries
+   it — so the claim is now carried by the [flex_shield] half alone
+   ([shield_w_codomain_fails], above), which is still true and still makes the
+   point.  ⭐ The absence of a guess-fixed arrow descent in the deleted
+   [fa_step] is exactly why the guarded conjunct had to be ASSUMED and could
+   never be derived; see the retraction banner in prop_look_complete.v.
+   Coq text at commit `dbb4b2c`. *)
 
 (* --------------------------------------------------------------------- *)
 (*  (5) …AND THE DISPATCHER HAS NO OTHER RULE TO TAKE THERE                *)
@@ -443,11 +434,11 @@ Theorem p7_sub_shield_is_over_strong :
   (* … the FILL … *)
   ad_refine_syn_f empty Θ0w empty
     (pskl_to_bskl_inh (msubst_pskl κw P0w)) Qw /\
-  (* … and BOTH guess-descending closures fail at the CODOMAIN, which is
-     one [ss_walk] step from the root and which the OLD indexing paired
-     with this whole guess. *)
-  (forall Δρ, ~ flex_shield Θ0w (singleton e) Δρ (pskl_var_f f) ψw) /\
-  (forall Δρ, ~ flex_apart_walk Θ0w Δρ (pskl_var_f f) ψw).
+  (* … and the guess-descending closure fails at the CODOMAIN, which is one
+     [ss_walk] step from the root and which the OLD indexing paired with this
+     whole guess.  (The [flex_apart_walk] conjunct that also failed here is
+     gone from the tree — see the banner above.) *)
+  (forall Δρ, ~ flex_shield Θ0w (singleton e) Δρ (pskl_var_f f) ψw).
 Proof.
   repeat split;
     first [ apply Θ0w_wf | apply P0w_wf | apply Pw_wf | apply P0w_mode
@@ -455,7 +446,6 @@ Proof.
           | apply slack_w | apply Qw_wf | apply join_w | apply ψw_tags
           | apply ψw_erase_wf | apply join_premise_w | apply fill_w
           | apply shield_w_codomain_fails
-          | apply apart_w_codomain_fails
           | unfold Rw, Rjw; simpl; clear - Het; fsetdec
           | clear; fsetdec ].
 Qed.
@@ -516,65 +506,16 @@ Proof.
   induction Hrs; [ apply fa_rho_var; assumption | apply fa_arrow; assumption ].
 Qed.
 
-Lemma INVw_step : forall A Δρ P0 ψa Δρ1 P1 ψ1,
-  INVw Δρ P0 ψa -> fa_step A Δρ P0 ψa Δρ1 P1 ψ1 -> INVw Δρ1 P1 ψ1.
-Proof.
-  intros A Δρ P0 ψa Δρ1 P1 ψ1 [Hef Hd] Hs.
-  destruct Hs.
-  - (* arrow_l *)
-    simpl in Hef. split; [ tauto | ]. destruct Hd as [Hcl | Hrs].
-    + left. simpl in Hcl. clear - Hcl; fsetdec.
-    + right. inversion Hrs; subst; assumption.
-  - (* arrow_r *)
-    simpl in Hef. split; [ tauto | ]. destruct Hd as [Hcl | Hrs].
-    + left. simpl in Hcl. clear - Hcl; fsetdec.
-    + right. inversion Hrs; subst; assumption.
-  - (* all_l : the guess does not move *)
-    split; [ exact Hef | ]. destruct Hd as [Hcl | Hrs].
-    + left; exact Hcl.
-    + right. inversion Hrs; subst. apply rsw_var; assumption.
-  - (* all_r : VACUOUS — an ε-tagged ∀ is not [etag_free_w] *)
-    simpl in Hef; contradiction.
-  - (* tophole_l : the guess does not move *)
-    split; [ exact Hef | ]. destruct Hd as [Hcl | Hrs].
-    + left; exact Hcl.
-    + right. inversion Hrs; subst. apply rsw_var; assumption.
-  - (* topholeg_r *)
-    simpl in Hef. split; [ exact Hef | ]. destruct Hd as [Hcl | Hrs].
-    + left. simpl in Hcl. exact Hcl.
-    + inversion Hrs.
-  - (* flexdef_r : the new guess is a Δρ-clean PAINTING *)
-    split; [ apply etag_free_w_painting | left; assumption ].
-Qed.
-
-Lemma INVw_walk : forall A Δρ P0 ψa Δρ' P0' ψa',
-  fa_walk A Δρ P0 ψa Δρ' P0' ψa' -> INVw Δρ P0 ψa -> INVw Δρ' P0' ψa'.
-Proof.
-  intros A Δρ P0 ψa Δρ' P0' ψa' Hw; induction Hw; intros Hinv;
-    [ exact Hinv | ].
-  apply IHHw. eapply INVw_step; [ exact Hinv | exact H ].
-Qed.
-
-(** ⭐ PART B, machine-checked: the closure P6-Sv descends is SATISFIABLE at
-    the root — at an ARBITRARY Δρ, which is what [sub_shield]'s own Δρ'
-    quantifier hands it.  (With the guess-fixed P0 arrow descents this was
-    FALSE: [fastep_p0_arrow_r] then [fastep_all_r] reach [(α̂, β→β)].) *)
-Theorem apart_w_root_holds : forall Δρ, flex_apart_walk Θ0w Δρ P0w ψw.
-Proof.
-  intros Δρ Δρ' P0' ψa' Hw.
-  inversion Hw as [ | Δρa P0a ψaa Δρ1 P1 ψ1 Δρ2 P2 ψ2 Hstep Hrest ]; subst.
-  - (* the ROOT itself : the guess is CLOSED, so [fa_clean] at any Δρ *)
-    apply fa_clean. unfold ψw, cexψ; simpl. clear; fsetdec.
-  - (* the ONLY step from the root is [fastep_all_r] : [P0w] is an arrow and
-       [ψw] an ε-tagged ∀, so no other constructor matches *)
-    unfold P0w, ψw, cexψ in Hstep.
-    inversion Hstep; subst.
-    unfold open_uskl_wrt_uskl in Hrest; simpl in Hrest.
-    eapply INVw_flex_apart.
-    eapply INVw_walk; [ exact Hrest | ].
-    split; [ simpl; tauto | ].
-    right. apply rsw_arrow; apply rsw_var; clear; fsetdec.
-Qed.
+(* ⭕ [INVw_step] / [INVw_walk] / [apart_w_root_holds] DELETED (2026-08-05).
+   They carried the [INVw] invariant along an [fa_walk] to show P6-Sv's
+   [flex_apart_walk] SATISFIABLE at the root — the positive half of this
+   file's argument that the OLD non-positional indexing was over-strong
+   rather than simply unusable.  [fa_walk] and [flex_apart_walk] are gone
+   from the tree (P6-Sv does not take the closure under the repaired
+   [SolE-FlexR]), so the satisfiability question is moot.  [INVw] and
+   [INVw_flex_apart] are kept: they say what shapes [flex_apart] admits at
+   this configuration, which is still the content.
+   Coq text at commit `dbb4b2c`. *)
 
 Theorem apart_p0_w_root_holds : forall Δρ, flex_apart_p0 Θ0w Δρ P0w ψw.
 Proof.

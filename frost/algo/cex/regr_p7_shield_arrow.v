@@ -60,18 +60,14 @@ Proof.
   apply is_tskl__var.
 Qed.
 
-(** Sub-ForallL's walk step: the guess is instantiated at the fresh β, Δρ gains
-    β — and P0 is UNTOUCHED.  This is the state that used to be unreachable by
-    any [flex_apart] rule. *)
-Lemma the_step : forall A β ε P0,
-  fa_walk A empty P0 (ψid ε) (add β empty) P0 (uskl_var_f β).
-Proof.
-  intros A β ε P0. unfold ψid.
-  eapply fw_step; [ | apply fw_refl ].
-  replace (uskl_var_f β)
-    with (open_uskl_wrt_uskl (uskl_var_b 0) (uskl_var_f β)) by reflexivity.
-  apply fastep_all_r.
-Qed.
+(* ⭕ [the_step] DELETED (2026-08-05).  It exhibited Sub-ForallL's walk step
+   ([fa_walk]) reaching the state that used to be unreachable by any
+   [flex_apart] rule.  [fa_walk] itself is gone — P6-Sv no longer takes
+   [flex_apart_walk] under the repaired [SolE-FlexR] — so the step has nothing
+   to step in.  The two regression THEOREMS below are unaffected: they are
+   about [flex_apart]'s base rows [fa_flexfree] / [fa_rho_var] at the state
+   itself, which is what this file exists to check, and [flex_apart] is
+   untouched.  Coq text at commit `dbb4b2c`. *)
 
 (* ===================================================================== *)
 (*  §1  THE FLEX-FREE ARROW — covered by [fa_flexfree]                    *)

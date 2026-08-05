@@ -78,7 +78,61 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-05 (latest) — ⭐⭐ **P6-Cv NO LONGER CONSUMES `flex_apart`**: the position-wise payload-scope route
+## 2026-08-05 (latest) — ⭐⭐⭐ **`flex_apart` RETIRED FROM P6-Cv AND P6-Sv; `sub_shield` COLLAPSES TO A DERIVABLE PREMISE**
+
+`make coq` clean, every `.v` fresh, P6-Cv / P6-Sv / P6-Ss / P6-L /
+`a_sub_sound_thm` / the new `flex_apart_p0_sub_shield` all
+`Closed under the global context`.
+
+| lemma | premise before | after |
+|---|---|---|
+| P6-Cv | `flex_apart` | **gone** |
+| P6-Sv | `flex_apart_walk` (closure over `fa_walk`) | **gone** |
+| P6-Cs | `flex_apart_p0` | unchanged — one genuine consumer |
+| P6-Ss / P6-L | `sub_shield` = `flex_apart_p0` ∧ guarded `flex_apart_walk` | `flex_apart_p0` alone, and **derivable** |
+
+`fa_step` / `fa_walk` / `flex_apart_walk` and their kit are DELETED
+(retraction banner in `prop_look_complete.v`), as are the five walk lemmas in
+`prop_sub_shield_supply.v`, `the_step` in `regr_p7_shield_arrow.v` and the
+`INVw` walk block in `cex_p7_shield_realizable.v`.
+
+**What did it, in two steps.**  (1) P6-Cv stopped consuming `flex_apart`: the
+SE-FlexR row goes through `FLEXMONO` (`uskl_rho_mono_target` +
+`a_guess_ty_witness_mono_gen`, whose payloads are Θw-scoped POSITION-WISE via
+`ppre_hole_payload_wf`), and SE-GhostL gets its cleanliness from
+`ad_ppre__hole`'s own side condition.  (2) Everything above was a relay into
+that premise.
+
+⭐⭐ **THE ASYMMETRY THAT DECIDED IT.**  An earlier note said the move "cannot
+come out" because P6-Ss's Sub-Arrow row has nothing to descend on.  True — but
+only of the GUARDED conjunct: `fa_step` has no guess-fixed arrow descent (two
+such rows existed and made the walk UNSATISFIABLE composed with `fastep_all_r`,
+`cex/cex_p7_shield_realizable.v`).  `flex_apart_p0` closes over `p0_step`,
+which DOES have `p0step_arrow_l/_r`.  So the surviving half descends freely and
+`flex_apart_p0_sub_shield` derives the whole closure from the root, via
+`ss_walk_p0_walk` and `flex_apart_delta_grow`.  **Lesson: when a premise is a
+closure, ask which walk it closes over before concluding it cannot be
+derived — two conjuncts of one definition had opposite answers.**
+
+⭐⭐⭐ **TWO OF OUR OWN COUNTEREXAMPLES DIED WITH THE CONJUNCT**:
+`sub_shield_forall_flex_p0_fails` RETRACTED (its two stuck-shape lemmas
+stand), and `p7_sub_shield_double_fails` RETRACTED **AND REVERSED** —
+`p7_sub_shield_double_occ_holds` proves the shield HOLDS at the
+double-occurrence configuration (Δρ = ∅ there), and the headline is now
+`p7_double_occ_row_premises_all_hold`.  **The double-occurrence obstacle to
+`main_forall`'s supply is retired.**
+
+⛔ **WHAT SURVIVES.**  P6-Cs keeps `flex_apart_p0` for ONE site — the
+COLLECTION-side `LE-FlexR` row (`prop_look_complete_cstr.v` ≈ 2185).  Not for
+the mono-ness (that transfers), but for the κ-IMAGE Δρ-CLEANLINESS: LE-FlexR
+invents a fresh flexible whose image is the whole guess, and P6-Cs's
+conclusion carries `Forall (ftv (snd p) ∩ Δρ = ∅) κc`, which a partly-dirty
+guess violates; that conjunct is load-bearing for the arrow row's shielded-ftv
+premise.  The authors' repair touched `SolE-FlexR`, not `LE-FlexR` — and
+nothing indicates `LE-FlexR` is wrong, only that this obligation is open.
+
+
+## 2026-08-05 — ⭐⭐ **P6-Cv NO LONGER CONSUMES `flex_apart`**: the position-wise payload-scope route
 
 Step 3 of `docs/HANDOFF-solve-flexr-repair.md`, and the prescribed move in it
 was **wrong**.  Replacing P6-Ss's `sub_shield` by `flex_apart_walk` +

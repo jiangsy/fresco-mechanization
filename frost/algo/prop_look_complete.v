@@ -6104,175 +6104,28 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  [flex_apart] ALONG THE WALK                                           *)
 (* ===================================================================== *)
-
-(** P6-Cv's premise [flex_apart] is the Δρ-half of the invariant, and this
-    lemma only THREADS it — but it cannot descend it: [flex_apart] has
-    TWO-SIDED ∀ rows, and a two-sided family ties both binders to one
-    variable, so a one-sided descent (Sub-ForallR opens the payload;
-    Sub-ForallL instantiates the guess) cannot be recovered from it.  That
-    is a structure mismatch, not a naming one — renaming aligns a pair, it
-    does not manufacture a family — so no rename kit repairs it, and adding
-    one-sided rows to [flex_apart] would break the two-sided descent P6-Cv
-    itself performs.
-
-    The fix costs nothing and touches no closed file: index the premise by
-    the WALK.  [fa_step] has one constructor per descent THIS induction
-    performs; [flex_apart_walk] demands [flex_apart] at every state
-    reachable by them.  Closure under a descent is then a one-step prepend
-    ([flex_apart_walk_step]) and the delegation to P6-Cv reads the current
-    state off at reflexivity ([flex_apart_walk_here]).  [flex_apart] itself
-    is untouched, so P6-Cv and P6-Cs stay exactly as they are — and unlike
-    strengthening P6-Cv to [flex_shield], this keeps P6-Cs's call site
-    (Δρ = ∅, a TAGGED guess, [fa_clean]) satisfiable. *)
-(** ⚠️ Like [p0_step] and [ss_step], the walk carries an AVOID SET [A] that the
-    ∀-descent's binder must miss — [fastep_all_l] is the only step that moves
-    the PAYLOAD by opening a binder, and without the condition the walk reaches
-    payloads mentioning an arbitrary γ, which blocks the FLEXIBLE-prefix
-    transport ([fa_flexfree] is anti-monotone in the context, so it needs
-    [ftv P0' ∩ dom Ξ = ∅]).  [flex_apart_walk] instantiates [A := dom Θ0]. *)
-Inductive fa_step (A : atoms) :
-  atoms -> pskl -> uskl -> atoms -> pskl -> uskl -> Prop :=
-| fastep_arrow_l : forall Δρ P1 P2 ψ1 ψ2,
-    fa_step A Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) Δρ P1 ψ1
-| fastep_arrow_r : forall Δρ P1 P2 ψ1 ψ2,
-    fa_step A Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) Δρ P2 ψ2
-(* ⚠️ NO GUESS-FIXED P0 ARROW DESCENT (DESIGN §14.3, settled 2026-08-03).
-   Two rows [fastep_p0_arrow_l] / [fastep_p0_arrow_r] used to live here —
-   [fa_step A Δρ (P1 → P2) ψa Δρ Pi ψa], descending P0 while the guess stood
-   still — so that [flex_apart_walk_p0] could hand P6-Cs its own P0-only
-   closure out of P6-Ss's walk.  They made this walk UNSATISFIABLE: composed
-   with [fastep_all_r] (Sub-ForallL, which OPENS the guess and grows Δρ) they
-   reach a raw Θ0-flexible facing the OPENED body, e.g. [(α̂, β→β)] at
-   [β ∈ Δρ], where [fa_clean] is blocked by β, [fa_flexfree] / [fa_var_rigid]
-   by the flexible and every congruence by shape.  Machine-checked at a
-   REACHABLE P7b node in cex/cex_p7_shield_realizable.v.
-   The two closures are now kept apart: this one is POSITIONAL (P0 moves only
-   in lockstep with the guess, or under a row where the guess cannot move at
-   all), and P6-Cs's Δρ-CONSTANT [flex_apart_p0] below is carried as its own
-   [sub_shield] conjunct instead of being derived from this one. *)
-| fastep_all_l : forall Δρ P0 ψa γ,            (* Sub-ForallR *)
-    γ `notin` A ->
-    fa_step A Δρ (pskl_all_syn P0) ψa
-            Δρ (open_pskl_wrt_pskl P0 (pskl_var_f γ)) ψa
-| fastep_all_r : forall Δρ ε P0 ψ β,           (* Sub-ForallL *)
-    fa_step A Δρ P0 (uskl_all_etag ε ψ)
-            (add β Δρ) P0 (open_uskl_wrt_uskl ψ (uskl_var_f β))
-| fastep_tophole_l : forall Δρ P0 ψa,
-    fa_step A Δρ (pskl_tophole P0) ψa Δρ P0 ψa
-| fastep_topholeg_r : forall Δρ P0 ψ,          (* Sub-UnivGhostLG *)
-    fa_step A Δρ P0 (uskl_topholeg ψ) Δρ P0 ψ
-| fastep_flexdef_r : forall Δρ P0 α τ,         (* FlexMono *)
-    (* the definition that justifies this step lives in the TARGET context Θ,
-       not in Θ0, and Θ grows across ForallR — so the step stays CONTEXT-FREE
-       and carries the one consequence of Θ that matters instead: the
-       unfolded painting is Δρ-clean.  [delta_def_fresh] is what supplies it,
-       and P6-Sv's FlexMono row (the ONLY builder of this step) already has it
-       on hand as [Hclean] for its own [fsh_clean].
-       ⚠️ WITHOUT this premise the walk admits an ARBITRARY τ, and then
-       [flex_apart_walk] is not derivable from cleanliness of ψa at all —
-       which is exactly what blocks P7's [sub_shield] supply
-       (docs/DESIGN-completeness-subtyping.md §9.0). *)
-    (ftvar_in_uskl (ptyp_to_uskl_syn τ)) ∩ Δρ [=] empty ->
-    fa_step A Δρ P0 (uskl_var_f α) Δρ P0 (ptyp_to_uskl_syn τ).
-
-Inductive fa_walk (A : atoms) :
-  atoms -> pskl -> uskl -> atoms -> pskl -> uskl -> Prop :=
-| fw_refl : forall Δρ P0 ψa, fa_walk A Δρ P0 ψa Δρ P0 ψa
-| fw_step : forall Δρ P0 ψa Δρ1 P1 ψ1 Δρ2 P2 ψ2,
-    fa_step A Δρ P0 ψa Δρ1 P1 ψ1 ->
-    fa_walk A Δρ1 P1 ψ1 Δρ2 P2 ψ2 ->
-    fa_walk A Δρ P0 ψa Δρ2 P2 ψ2.
-
-Lemma fa_walk_mono : forall A A' Δρ P0 ψa Δρ' P0' ψa',
-  fa_walk A Δρ P0 ψa Δρ' P0' ψa' -> A' [<=] A ->
-  fa_walk A' Δρ P0 ψa Δρ' P0' ψa'.
-Proof.
-  intros A A' Δρ P0 ψa Δρ' P0' ψa' H; induction H; intros Hsub;
-    [ apply fw_refl | ].
-  eapply fw_step; [ | apply IHfa_walk; exact Hsub ].
-  destruct H;
-    solve [ constructor
-          | apply fastep_all_l; clear - H Hsub; fsetdec
-          | constructor; assumption ].
-Qed.
-
-(** The PAYLOAD's free variables still miss [A]: the ψ-side steps leave it
-    alone and the P0-side ones take subterms or open at a binder outside [A]. *)
-Lemma fa_walk_ftv : forall A Δρ P0 ψa Δρ' P0' ψa',
-  fa_walk A Δρ P0 ψa Δρ' P0' ψa' ->
-  (ftvar_in_pskl P0) ∩ A [=] empty ->
-  (ftvar_in_pskl P0') ∩ A [=] empty.
-Proof.
-  intros A Δρ P0 ψa Δρ' P0' ψa' H; induction H; intros Hfr; [ exact Hfr | ].
-  apply IHfa_walk. destruct H; simpl in Hfr;
-    try solve [ clear - Hfr; fsetdec ].
-  pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f γ)) as Hup.
-  simpl in Hup. clear - Hup Hfr H; fsetdec.
-Qed.
-
-Definition flex_apart_walk (Θ0 : aenv) (Δρ : atoms) (P0 : pskl) (ψa : uskl)
-  : Prop :=
-  forall Δρ' P0' ψa', fa_walk (dom Θ0) Δρ P0 ψa Δρ' P0' ψa' ->
-    flex_apart Θ0 Δρ' P0' ψa'.
-
-(** What the delegation to P6-Cv reads off. *)
-Lemma flex_apart_walk_here : forall Θ0 Δρ P0 ψa,
-  flex_apart_walk Θ0 Δρ P0 ψa -> flex_apart Θ0 Δρ P0 ψa.
-Proof. intros Θ0 Δρ P0 ψa H; apply H; apply fw_refl. Qed.
-
-(** …and what every descent needs: closure, by prepending the step. *)
-Lemma flex_apart_walk_step : forall Θ0 Δρ P0 ψa Δρ1 P1 ψ1,
-  flex_apart_walk Θ0 Δρ P0 ψa ->
-  fa_step (dom Θ0) Δρ P0 ψa Δρ1 P1 ψ1 ->
-  flex_apart_walk Θ0 Δρ1 P1 ψ1.
-Proof.
-  intros Θ0 Δρ P0 ψa Δρ1 P1 ψ1 H Hstep Δρ' P0' ψa' Hw.
-  apply H. eapply fw_step; [ exact Hstep | exact Hw ].
-Qed.
-
-(** …and the context weakening the ∀ cases need, which is just
-    [flex_apart_weaken] pointwise (the walk itself is context-free). *)
-Lemma flex_apart_walk_weaken : forall Θ0 Δρ P0 ψa,
-  flex_apart_walk Θ0 Δρ P0 ψa ->
-  forall Θ0', (forall x b, binds x b Θ0 -> binds x b Θ0') ->
-  (forall α, a_flex_tvar Θ0' α -> a_flex_tvar Θ0 α) ->
-  (dom Θ0) [<=] (dom Θ0') ->
-  flex_apart_walk Θ0' Δρ P0 ψa.
-Proof.
-  intros Θ0 Δρ P0 ψa H Θ0' Hmon Hfx Hdom Δρ' P0' ψa' Hw.
-  eapply flex_apart_weaken;
-    [ apply H; eapply fa_walk_mono; [ exact Hw | exact Hdom ]
-    | exact Hmon | exact Hfx ].
-Qed.
-
-(** The FLEXIBLE-prefix transport — the [flex_apart_p0] / [sub_shield] mirror,
-    and what the avoid set on [fastep_all_l] was added for. *)
-Lemma flex_apart_walk_weaken_flex_prefix : forall Θ0 Δρ P0 ψa Ξ,
-  flex_apart_walk Θ0 Δρ P0 ψa ->
-  (ftvar_in_pskl P0) ∩ (dom Ξ) [=] empty ->
-  flex_apart_walk (Ξ ++ Θ0) Δρ P0 ψa.
-Proof.
-  intros Θ0 Δρ P0 ψa Ξ H Hfr Δρ' P0' ψa' Hw.
-  assert (HwΞ : fa_walk (dom Ξ) Δρ P0 ψa Δρ' P0' ψa')
-    by (eapply fa_walk_mono; [ exact Hw | rewrite dom_app; clear; fsetdec ]).
-  assert (Hw0 : fa_walk (dom Θ0) Δρ P0 ψa Δρ' P0' ψa')
-    by (eapply fa_walk_mono; [ exact Hw | rewrite dom_app; clear; fsetdec ]).
-  eapply flex_apart_weaken_flex_prefix;
-    [ apply H; exact Hw0 | eapply fa_walk_ftv; [ exact HwΞ | exact Hfr ] ].
-Qed.
-
-(** Adding a RIGID creates no flexible, so this one stays free. *)
-Lemma flex_apart_walk_weaken_tvar : forall Θ0 Δρ P0 ψa β,
-  flex_apart_walk Θ0 Δρ P0 ψa ->
-  flex_apart_walk ((β ~ abind_tvar) ++ Θ0) Δρ P0 ψa.
-Proof.
-  intros Θ0 Δρ P0 ψa β H.
-  eapply flex_apart_walk_weaken;
-    [ exact H | intros x b Hb; apply binds_app_3; exact Hb
-    | apply a_flex_tvar_strip_tvar | simpl; clear; fsetdec ].
-Qed.
+(*  ⭕⭕ [fa_step] / [fa_walk] / [flex_apart_walk] DELETED (2026-08-05)      *)
+(*                                                                        *)
+(*  They indexed P6-Cv's [flex_apart] premise ALONG THE SUBTYPING DESCENT  *)
+(*  so P6-Sv could hand it over at every reachable state, and P6-Ss        *)
+(*  carried the closure as [sub_shield]'s guarded conjunct.  Under the     *)
+(*  authors' repaired [SolE-FlexR], P6-Cv does not consume [flex_apart] at *)
+(*  all, so P6-Sv's every use was a relay into a premise that no longer    *)
+(*  exists, and the guarded conjunct went with it.                         *)
+(*                                                                        *)
+(*  The design fact this block recorded is worth keeping: [fa_step] had    *)
+(*  NO guess-fixed arrow descent.  Two such rows once existed and made the *)
+(*  walk UNSATISFIABLE when composed with [fastep_all_r] (a raw            *)
+(*  Θ0-flexible facing the opened body at [β ∈ Δρ]) — machine-checked at a *)
+(*  reachable P7b node in cex/cex_p7_shield_realizable.v.  That absence is *)
+(*  precisely why the guarded conjunct had to be ASSUMED rather than       *)
+(*  derived, and why the surviving [flex_apart_p0] — whose [p0_step] DOES  *)
+(*  have the arrow rows — is derivable instead                             *)
+(*  ([flex_apart_p0_sub_shield], prop_look_complete_sub_cstr.v).           *)
+(*                                                                        *)
+(*  Coq text at commit `dbb4b2c`.                                          *)
+(* ===================================================================== *)
 
 (* ===================================================================== *)
 (*  The P0-ONLY walk (P6-Cs).                                             *)
