@@ -814,12 +814,31 @@ converted **rename-lemma-first** — the rename must be Qed before the
 rule changes, and the tree stays green at every step.  The four assets
 that make the campaign executable already exist:
 
-| cluster | rename lemma |
+| cluster | binder-move lemma |
 |---|---|
-| guess | `a_guess_mono_rename_tvar` (prop_look_complete_extract.v) |
+| guess | ~~`a_guess_mono_rename_tvar`~~ → `a_guess_mono_swap` (prop_swap.v) |
 | look | `a_looksub_lookeq_rename_tvar` (prop_looksub.v) — needs `β ∉ ftv 𝒞` |
-| solve | `a_solve_sub_eq_rename` (prop_look_complete.v) — fully general, renames the escaping output too |
-| consis mutual | `a_assign_unify_consis_rename_tvar` (prop_consis_rename.v) |
+| solve | ~~`a_solve_sub_eq_rename`~~ → `a_solve_sub_eq_swap` (prop_swap.v) |
+| consis mutual | `a_assign_unify_consis_rename_tvar` (prop_consis_rename.v §8) |
+
+⚙ **The substitution-shaped renames are being retired in favour of the
+equivariance kit** (§4.3 ⚙, prop_swap.v): a transposition is a bijection, so
+it carries no target-freshness side condition and no existential avoid-set,
+and both halves collapse to the identity exactly where a consumer needs them
+(`swap_*_fresh_id`).  Retired so far: the *solve* cluster's rename (its two
+wrappers `a_solve_{sub,eq}_rename_var` were deleted 2026-08-06, unused since
+`dec_ext_solve_eq_step_size` moved to `a_solve_eq_move_binder`), and the
+*guess* cluster's (`a_guess_mono_open_at` now goes through
+`a_guess_mono_swap` + `swap_ptyp_as_subst`; the 150-line size induction is
+gone).  ⛔ Still standing, and NOT a drop-in: `a_assign_unify_consis_rename_tvar`
+(§8, ~590 lines).  Its three consumers in §10 need the output context's
+suffix `Θt` to come back UNCHANGED under the move; the swap instead returns
+`swap_aenv α β Θt`, so equating the two needs `α ∉ ftvar_in_aenv Θt` — a
+scope fact §8 currently sidesteps with its `tvar_prefix` / F-protection
+argument and which no existing lemma supplies.  Retiring it is a proof
+redesign of §10's three ∀ rows, not a cleanup.  The DECLARATIVE and DECORATED
+layers keep their renames outright: there is no swap kit over `d_*` / `ad_*`,
+and their targets are cofinite relations with no outputs to leak.
 
 The standing recipe for a consumer that pushes a substitution through a
 derivation (it needs every binder ≠ the substituted variable, which

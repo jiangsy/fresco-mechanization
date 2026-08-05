@@ -9,7 +9,7 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
-Require Import src.frost.predicates.
+Require Import src.frost.def_extra.
 Require Import src.frost.prop_ln.
 Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
@@ -17,9 +17,9 @@ Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo.decorated_algo.def_decl_algo.
-Require Import src.frost.algo.decorated_algo.def_decorated.
-Require Import src.frost.algo.decorated_algo.def_decl_algo_sub.
+Require Import src.frost.decorated_algo.def_decl_algo.
+Require Import src.frost.decorated_algo.def_decorated.
+Require Import src.frost.decorated_algo.def_decl_algo_sub.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_precise.
@@ -28,13 +28,13 @@ Require Import src.frost.algo.prop_soundness_consis.
 Require Import src.frost.algo.prop_consis_rename.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_stability.
-Require Import src.frost.algo.decorated_algo.prop_decorate.
+Require Import src.frost.decorated_algo.prop_decorate.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_solve_sub.
 Require Import src.frost.algo.prop_looksub.
 Require Import src.frost.algo.prop_soundness_sub.
-Require Import src.frost.algo.decorated_algo.prop_decorate_sub.
+Require Import src.frost.decorated_algo.prop_decorate_sub.
 
 Set Implicit Arguments.
 
@@ -2445,9 +2445,10 @@ Proof. intros; eapply dec_ext_guess_source_size; eauto. Qed.
    ψ is an input and may mention that binder (a ◇ under the ∀ decorates to
    an arbitrary tagged skeleton), so the cofinite [dec_ext] / [d_tags_skl] /
    [a_solvetag] families cannot be re-built by renaming from it.  The fix is
-   to move the SOLVE derivation instead: rename its binder to a genuinely
-   fresh α0 ([a_solve_eq_rename_var]) and read the families there.  A
-   renamed premise is no sub-derivation, whence the measure. *)
+   to move the SOLVE derivation instead: SWAP its binder to a genuinely
+   fresh α0 ([a_solve_eq_move_binder], over the equivariance kit) and read
+   the families there.  A moved premise is no sub-derivation, whence the
+   measure. *)
 Lemma dec_ext_solve_eq_step_size : forall n Θ P P3 Ξ P' ψ Ψ' Ψtot,
   2 * (size_pskl P + size_pskl P3) <= n ->
   Θ ⊢ₑ P ∼ P3 ⤳ Ξ ⨾ P' ->

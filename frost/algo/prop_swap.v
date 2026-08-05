@@ -36,7 +36,6 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.def_extra.
-Require Import src.frost.predicates.
 Require Import src.frost.coercions.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
@@ -611,6 +610,47 @@ Proof.
   - rewrite swap_atom_l. reflexivity.
   - rewrite swap_atom_other; [ reflexivity | assumption | ].
     intros ->. clear - Hb; fsetdec.
+Qed.
+
+(** Same bridge at the TYPE sort — [a_guess_mono]'s output lives there. *)
+Lemma swap_ptyp_as_subst : forall a b A,
+  b `notin` ftvar_in_ptyp A ->
+  swap_ptyp a b A = subst_ptyp_in_ptyp (ptyp_var_f b) a A.
+Proof.
+  induction A; simpl; intros Hb; f_equal;
+    try solve [ reflexivity | apply IHA; fsetdec
+              | apply IHA1; fsetdec | apply IHA2; fsetdec ].
+  destruct (α == a) as [-> | Hne].
+  - rewrite swap_atom_l. reflexivity.
+  - rewrite swap_atom_other; [ reflexivity | assumption | ].
+    intros ->. clear - Hb; fsetdec.
+Qed.
+
+(** The CONTEXT bridge: [swap_aenv] IS [rename_aenv] (algo/def_extra.v) when
+    the TARGET is fresh for the context — the KEY and the PAYLOAD alike, since
+    [ftvar_in_aenv] counts both.  With it a substitution-shaped CONTEXT rename
+    is a corollary of equivariance with its statement UNCHANGED, so consumers
+    keep their [rename_aenv_*] rewriting ritual and the size inductions that
+    used to prove those renames go away. *)
+Lemma swap_aenv_as_rename : forall β γ (Θ : aenv),
+  γ `notin` ftvar_in_aenv Θ ->
+  swap_aenv β γ Θ = rename_aenv γ β Θ.
+Proof.
+  induction Θ as [| [x bd] Θ' IH]; intros Hγ; [reflexivity |].
+  simpl in Hγ. rewrite swap_aenv_cons. cbn [rename_aenv].
+  f_equal; [ f_equal | apply IH; clear - Hγ; fsetdec ].
+  - (* the key *)
+    unfold swap_atom. destruct (x == β) as [-> | Hne].
+    + destruct (β == β) as [_ | Hc]; [ reflexivity | contradiction ].
+    + destruct (x == γ) as [-> | _]; [ exfalso; clear - Hγ; fsetdec | ].
+      destruct (x == β) as [Hc | _]; [ contradiction | reflexivity ].
+  - (* the payload *)
+    destruct bd; simpl in Hγ |- *.
+    + reflexivity.
+    + f_equal. apply swap_ptyp_as_subst. fsetdec.
+    + f_equal. apply swap_pskl_as_subst. fsetdec.
+    + reflexivity.
+    + f_equal. apply swap_ptyp_as_subst. fsetdec.
 Qed.
 
 Lemma swap_pskl_subst : forall a b P x Q,

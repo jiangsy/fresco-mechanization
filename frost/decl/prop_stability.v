@@ -10,7 +10,7 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
 Require Import src.frost.prop_basic.
-Require Import src.frost.predicates.
+Require Import src.frost.def_extra.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_basic.
@@ -88,7 +88,7 @@ Proof.
     edestruct (@d_consis_sub_trans (mode_fn m) empty Γ (ptyp_to_utyp_syn A0) B
                  H (ptyp_to_btyp_syn A0) (ptyp_to_utyp_syn A) Δt) as [Δ [_ Hgoal]].
     + rewrite <- ptyp_to_utyp_syn_btyp_to_ptyp, btyp_to_ptyp_ptyp_to_btyp_syn; reflexivity.
-    + apply is_styp_is_syn; exact Hstyp1.
+    + exact Hstyp1.
     + exact Hcons1.
     + exists Δ. exact Hgoal.
 Qed.

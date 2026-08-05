@@ -7,7 +7,7 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
-Require Import src.frost.predicates.
+Require Import src.frost.def_extra.
 Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
 
@@ -68,18 +68,6 @@ Qed.
 Lemma is_ttyp_lc : forall C, is_ttyp C -> lc_utyp C.
 Proof.
   intros C H. induction H; eauto.
-Qed.
-
-
-(** * Inclusion facts. *)
-
-Lemma is_styp_is_syn : forall B, is_styp B -> is_syn B.
-Proof.
-  intros B H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; auto.
-  - apply is_syn__all with (L := L); auto.
 Qed.
 
 

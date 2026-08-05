@@ -1,8 +1,9 @@
 (** Frost — skeleton/wf lemmas needed by the syntax-directed equivalence.
     RESTART NOTE: this file is the dependency closure of the lemmas that
     prop_syntax_directed.v uses, extracted from the pre-restart development
-    (kept in full as prop_skeleton.v.pre-restart-legacy); the skeleton-safety
-    machinery is redone later following the paper.  *)
+    (kept in full as prop_skeleton.v.legacy until 2026-08-06, now in git
+    history at `a81ef2d`); the skeleton-safety machinery is redone later
+    following the paper.  *)
 
 (** Frost — declarative skeleton metatheory for the split syntax. *)
 
@@ -14,7 +15,7 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
-Require Import src.frost.predicates.
+Require Import src.frost.def_extra.
 Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.

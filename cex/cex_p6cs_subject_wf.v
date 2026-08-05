@@ -25,14 +25,13 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
-Require Import src.frost.predicates.
+Require Import src.frost.def_extra.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo.decorated_algo.def_decl_algo.
-Require Import src.frost.algo.decorated_algo.def_decorated.
-Require Import src.frost.algo.decorated_algo.def_decl_algo_sub.
-Require Import src.frost.def_tags.
+Require Import src.frost.decorated_algo.def_decl_algo.
+Require Import src.frost.decorated_algo.def_decorated.
+Require Import src.frost.decorated_algo.def_decl_algo_sub.
 Require Import src.frost.algo.completeness_look.prop_kit.  (* [delta_def_fresh] *)
 Require Import src.frost.algo.completeness_look.prop_eq_cstr.  (* P6-Cs + [msubst_uskl_syn] *)
 

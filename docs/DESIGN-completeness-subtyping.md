@@ -330,7 +330,8 @@ Painting facts: `pskl_to_bskl_inh (pskl_all_syn P) = bskl_all_inh (inh P)`;
   `d_tags_skl ∅ ψ` ⇒ ψ has NO `all_etag` (any `all_etag` forces a tag) ⇒
   `⌊ψ⌋` is ∀-free ⇒ **`inh ⌊ψ⌋ = syn ⌊ψ⌋`** (NEEDS helper
   `pskl_no_forall → pskl_to_bskl_inh = pskl_to_bskl_syn`; cf.
-  `no_forall_bskl` predicates.v:97, `ptyp_to_bskl_inh_syn_eq`
+  `no_forall_bskl` (was predicates.v:97; DELETED 2026-08-06 as an unused
+  duplicate — re-add if this route is taken), `ptyp_to_bskl_inh_syn_eq`
   prop_mono_bridge.v:78 — build the pskl analog).  Then `__hole` needs
   `Θ ⨟ ∅ ⊢ₚₛᵃ ⌊ψ⌋`: strip Δ from the wf premise via `Δ ∩ ftv ⌊ψ⌋ = ∅`
   (the ppre__hole side condition) + a wf Δ-strip lemma.
@@ -538,9 +539,9 @@ in the subject/derivation.  Consequences:
 - The consistency level is safe with a SYNTACTIC premise
   `inter Ψ' (ftag_in_uskl S) = ∅` — consistency has no ForallL, so no new
   tags appear inside a derivation.  (`ftag_in_uskl` = hand-written
-  syntactic tag collector, `frost/def_tags.v` — a LEAF module, imports
-  only `def_ott`, so it can be used by def-files without a rebuild
-  cascade.)  This is how step (2) is stated and proved.
+  syntactic tag collector, `frost/def_extra.v` — a LEAF module over the
+  generated syntax, so it can be used by def-files without a rebuild
+  cascade.  It lived in its own `frost/def_tags.v` until 2026-08-06.)  This is how step (2) is stated and proved.
 - The subtyping level ALSO introduces tags inside the derivation
   (ForallL's `ψ''`), whose freshness from `Ψ'` no premise about `S`/`ψa`
   can supply ⇒ step (3) must run over a **TAG-HYGIENIC fuel mirror**
@@ -1985,7 +1986,7 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   `ad_pat_consis_precise_var_case` (the packaged crux)); moved there
   from `prop_sub_complete.v`, which now holds only P5a + P5b-i (+ P5b-ii
   step (3) to come).  New leaf module `frost/def_tags.v`
-  (`ftag_in_uskl`).  `make coq` green; `Print Assumptions` on
+  (`ftag_in_uskl`; folded into `frost/def_extra.v` 2026-08-06).  `make coq` green; `Print Assumptions` on
   `ad_pat_consis_precise_subst` / `ad_partial_precise_complete` /
   `ad_pat_sub_to_n` = Closed under the global context.  §5.4 written:
   step (3) needs the tag-HYGIENIC mirror `ad_pat_sub_g` (paper's

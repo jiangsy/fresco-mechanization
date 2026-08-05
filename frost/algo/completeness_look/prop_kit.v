@@ -51,18 +51,17 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
-Require Import src.frost.predicates.
+Require Import src.frost.def_extra.
 Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo.decorated_algo.def_decl_algo.
-Require Import src.frost.algo.decorated_algo.def_decorated.
-Require Import src.frost.algo.decorated_algo.def_decl_algo_sub.
-Require Import src.frost.algo.decorated_algo.def_decl_algo_sub_hyg.
-Require Import src.frost.def_tags.
+Require Import src.frost.decorated_algo.def_decl_algo.
+Require Import src.frost.decorated_algo.def_decorated.
+Require Import src.frost.decorated_algo.def_decl_algo_sub.
+Require Import src.frost.decorated_algo.def_decl_algo_sub_hyg.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_normal.
@@ -72,7 +71,7 @@ Require Import src.frost.algo.prop_soundness_consis.
 Require Import src.frost.algo.prop_completeness_consis.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
-Require Import src.frost.algo.decorated_algo.prop_decorate.
+Require Import src.frost.decorated_algo.prop_decorate.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_consis_precise.
 Require Import src.frost.algo.prop_swap.
@@ -711,24 +710,10 @@ Proof.
     + apply Hnf; exact Hf.
 Qed.
 
-(** Rename preserves guardedness ([var β] is guarded). *)
-Lemma guarded_pskl_rename : forall P α β,
-  guarded_pskl P ->
-  guarded_pskl (subst_pskl_in_pskl (pskl_var_f β) α P).
-Proof.
-  intros P α β Hg; inversion Hg; subst; simpl.
-  - constructor.
-  - destruct_if;
-      constructor.
-  - constructor;
-      (apply subst_pskl_in_pskl_lc_pskl;
-        [ assumption | apply lc_pskl_var_f ]).
-Qed.
-
-(* [a_solve_sub_eq_rename] REPLACED by [a_solve_sub_rename_var] /
-   [a_solve_eq_rename_var] (prop_solve_sub.v, freshness campaign): the
-   asymmetric statement — target-fresh incl. the OUTPUT (SS-ForallR's leak
-   pins its witness), source only dodging [dom Θ]. *)
+(* [a_solve_sub_eq_rename] REPLACED by the equivariance kit's
+   [a_solve_sub_eq_swap] (prop_swap.v): a transposition needs no
+   target-freshness side condition at all, which is what the freshness
+   campaign's asymmetric rename shape was working around. *)
 
 (* ===================================================================== *)
 (*  Shape/tags helpers for the special cases (P0 = □; synthesized Q).      *)

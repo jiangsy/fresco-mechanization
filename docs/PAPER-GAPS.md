@@ -82,7 +82,7 @@ rule written with `P` / `Q` admits a full skeleton.  `\silab{Check}`
 
 Nothing in the *rule* forces `A`, `B` to be ghost-free; the sort is carried
 entirely by the choice of letter, and a Coq `Inductive` has no such notion.
-The mechanization therefore states it: `pskl_ghost_free` (frost/predicates.v)
+The mechanization therefore states it: `pskl_ghost_free` (frost/def_extra.v)
 holds exactly of the ghost-free skeletons, i.e. of the painted `ptyp`s
 (`pskl_ghost_free_to_ptyp`).
 

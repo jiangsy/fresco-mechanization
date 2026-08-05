@@ -9,13 +9,13 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
-Require Import src.frost.predicates.
+Require Import src.frost.def_extra.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
-Require Import src.frost.algo.decorated_algo.def_decorated.
-Require Import src.frost.algo.decorated_algo.def_decl_algo.
+Require Import src.frost.decorated_algo.def_decorated.
+Require Import src.frost.decorated_algo.def_decl_algo.
 Require Import src.frost.algo.prop_flex.
 
 Set Implicit Arguments.

@@ -31,14 +31,14 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
-Require Import src.frost.predicates.
+Require Import src.frost.def_extra.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo.decorated_algo.def_decl_algo.
-Require Import src.frost.algo.decorated_algo.def_decorated.
+Require Import src.frost.decorated_algo.def_decl_algo.
+Require Import src.frost.decorated_algo.def_decorated.
 Require Import src.frost.algo.prop_flex.
-Require Import src.frost.algo.decorated_algo.prop_decorate.
+Require Import src.frost.decorated_algo.prop_decorate.
 
 Set Implicit Arguments.
 
@@ -249,8 +249,6 @@ Qed.
 (*  §3  Compatibility: F-change + Δ-transport along [=]                   *)
 (* ===================================================================== *)
 
-Definition auc_dom_mono_assign := proj1 a_assign_unify_consis_dom_mono.
-Definition auc_dom_mono_unify  := proj1 (proj2 a_assign_unify_consis_dom_mono).
 Definition auc_dom_mono_consis := proj2 (proj2 a_assign_unify_consis_dom_mono).
 
 (** [Δ1]/[Δ2] are read only through set predicates, so they transport along
@@ -774,9 +772,6 @@ Ltac rn_vacuous :=
       end
   end.
 
-Definition auc_uniq_assign := proj1 a_assign_unify_consis_uniq.
-Definition auc_uniq_unify  :=
-  proj1 (proj2 a_assign_unify_consis_uniq).
 Definition auc_uniq_consis :=
   proj2 (proj2 a_assign_unify_consis_uniq).
 Definition auc_delta_consis :=

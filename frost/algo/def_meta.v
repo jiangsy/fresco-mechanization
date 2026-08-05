@@ -9,11 +9,11 @@ Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.coercions.
-Require Import src.frost.predicates.
+Require Import src.frost.def_extra.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.
-Require Import src.frost.algo.decorated_algo.def_decl_algo.   (* [ptyp_to_uskl_syn] *)
+Require Import src.frost.decorated_algo.def_decl_algo.   (* [ptyp_to_uskl_syn] *)
 
 Set Implicit Arguments.
 

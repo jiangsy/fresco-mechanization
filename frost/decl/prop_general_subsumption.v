@@ -19,7 +19,7 @@ Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.prop_basic.
-Require Import src.frost.predicates.
+Require Import src.frost.def_extra.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_basic.
@@ -34,9 +34,6 @@ Set Implicit Arguments.
 (*  witness + consistency composition (paper B.2), coercion / opening /      *)
 (*  free-variable lemmas, and consistency basics.                            *)
 (* ======================================================================== *)
-
-Ltac nbauto := try sauto limit:30.
-
 
 (** [compose_tags C B] is the tag context produced by composing the two
     consistency derivations through a synthesised middle type.  Making it an
@@ -98,8 +95,8 @@ Qed.
 (** A synthesised target carries no inh quantifier, so composing against it
     introduces no tag: [compose_tags C B = nil].  This is what lets the
     [mode_ti] infer base keeps its empty-tag output. *)
-Lemma compose_tags_is_syn_nil : forall B C,
-    is_syn B -> compose_tags C B [=] empty.
+Lemma compose_tags_is_styp_nil : forall B C,
+    is_styp B -> compose_tags C B [=] empty.
 Proof.
   intros B C Hsyn. generalize dependent C.
   induction Hsyn; intros C0.
@@ -213,7 +210,7 @@ Proof. induction B; simpl; fsetdec. Qed.
 
 (** A synthesised [btyp] is the syn-painting of its own forgetful image, so
     [d_consis_compose]'s [ptyp_to_btyp_syn A] middle can be fed an arbitrary
-    [is_syn] btyp via [A := btyp_to_ptyp B]. *)
+    [is_styp] btyp via [A := btyp_to_ptyp B]. *)
 Lemma btyp_to_ptyp_open_rec : forall B1 B2 k,
     btyp_to_ptyp (open_btyp_wrt_btyp_rec k B2 B1) =
     open_ptyp_wrt_ptyp_rec k (btyp_to_ptyp B2) (btyp_to_ptyp B1).
@@ -249,7 +246,7 @@ Proof.
 Qed.
 
 Lemma ptyp_to_btyp_syn_btyp_to_ptyp : forall B,
-    is_syn B ->
+    is_styp B ->
     ptyp_to_btyp_syn (btyp_to_ptyp B) = B.
 Proof.
   intros B Hsyn. induction Hsyn; simpl; try reflexivity.
@@ -289,21 +286,21 @@ Proof.
   apply utyp_to_btyp_open_rec.
 Qed.
 
-(** A [utyp]'s [btyp] erasure has only synthesised foralls, so it is [is_syn]
+(** A [utyp]'s [btyp] erasure has only synthesised foralls, so it is [is_styp]
     once locally closed (lc rules out a dangling [var_b]). *)
-Lemma is_syn_utyp_to_btyp : forall C,
-    lc_utyp C -> is_syn (utyp_to_btyp C).
+Lemma is_styp_utyp_to_btyp : forall C,
+    lc_utyp C -> is_styp (utyp_to_btyp C).
 Proof.
   intros C Hlc. induction Hlc; simpl.
-  - apply is_syn__unit.
-  - apply is_syn__var.
-  - apply is_syn__arrow; assumption.
-  - apply is_syn__all with (L := empty). intros α Hα.
+  - apply is_styp__unit.
+  - apply is_styp__var.
+  - apply is_styp__arrow; assumption.
+  - apply is_styp__all with (L := empty). intros α Hα.
     replace (open_btyp_wrt_btyp (utyp_to_btyp C) (btyp_var_f α))
       with (utyp_to_btyp (open_utyp_wrt_utyp C (utyp_var_f α)))
       by (rewrite utyp_to_btyp_open; reflexivity).
     apply H0.
-  - apply is_syn__all with (L := empty). intros α Hα.
+  - apply is_styp__all with (L := empty). intros α Hα.
     replace (open_btyp_wrt_btyp (utyp_to_btyp C) (btyp_var_f α))
       with (utyp_to_btyp (open_utyp_wrt_utyp C (utyp_var_f α)))
       by (rewrite utyp_to_btyp_open; reflexivity).
@@ -314,7 +311,7 @@ Qed.
 (** Empty-context composition: arbitrary input tag contexts, syn middle and
     target ⟹ empty output (the [mode_ti] infer base demands the empty set). *)
 Lemma d_consis_compose_syn_nil_l : forall Δa Δb Γ C B2 B,
-    is_syn B2 -> is_syn B ->
+    is_styp B2 -> is_styp B ->
     Δa ⨟ Γ ⊢ C ∼ B2 ->
     Δb ⨟ Γ ⊢ (btyp_to_utyp_syn B2) ∼ B ->
     empty ⨟ Γ ⊢ C ∼ B.
@@ -324,7 +321,7 @@ Proof.
   rewrite <- (ptyp_to_utyp_syn_btyp_to_ptyp B2) in Hd.
   pose proof (@d_consis_compose_strong (S (size_ptyp (btyp_to_ptyp B2)))
                 (btyp_to_ptyp B2) ltac:(lia) Δa Δb Γ C B Hc Hd) as [_ Hcons].
-  exact (d_consis_equiv (@compose_tags_is_syn_nil B C HsynB) Hcons).
+  exact (d_consis_equiv (@compose_tags_is_styp_nil B C HsynB) Hcons).
 Qed.
 
 (** A consistency derivation's [utyp] side is locally closed. *)
@@ -519,7 +516,7 @@ Lemma utyp_to_btyp_ptyp_to_utyp_syn : forall A,
 Proof. induction A; simpl; congruence. Qed.
 
 Lemma utyp_to_btyp_btyp_to_utyp_syn : forall B,
-    is_syn B -> utyp_to_btyp (btyp_to_utyp_syn B) = B.
+    is_styp B -> utyp_to_btyp (btyp_to_utyp_syn B) = B.
 Proof.
   intros B Hsyn.
   rewrite <- (ptyp_to_utyp_syn_btyp_to_ptyp B).
@@ -680,7 +677,7 @@ Qed.
     (via [d_consis_compose_syn_nil_l]), which is what [d_sub__infer] demands. *)
 Lemma d_consis_trans_mid_nil : forall Ψ1 Ψ2 Γ C Cmid B,
     lc_utyp Cmid ->
-    is_syn B ->
+    is_styp B ->
     Ψ1 ⨟ Γ ⊢ C ∼ (utyp_to_btyp Cmid) ->
     Ψ2 ⨟ Γ ⊢ Cmid ∼ B ->
     empty ⨟ Γ ⊢ C ∼ B.
@@ -688,7 +685,7 @@ Proof.
   intros Ψ1 Ψ2 Γ C Cmid B Hlc Hsyn HT HCmid.
   destruct (d_consis_erase_tags HCmid) as [Ψ2' Herase].
   eapply (d_consis_compose_syn_nil_l (B2 := utyp_to_btyp Cmid)).
-  - apply is_syn_utyp_to_btyp; exact Hlc.
+  - apply is_styp_utyp_to_btyp; exact Hlc.
   - exact Hsyn.
   - exact HT.
   - exact Herase.
@@ -1032,7 +1029,7 @@ Proof.
     apply d_sub__infer.
     + apply (d_consis_trans_mid_nil (Cmid := C) (Ψ1 := Ψ0) (Ψ2 := empty)).
       * exact (d_consis_lc_utyp H).
-      * apply is_styp_is_syn; exact H0.
+      * exact H0.
       * exact Hcons.
       * exact H.
     + exact H0.
@@ -1155,10 +1152,9 @@ Qed.
 
 (** Consistency-Subtyping Transitivity (paper, syntax-directed.tex:152):
     a consistency into a synthesised type composes with a subtyping out of
-    it.  The synthesised middle is carried as a [btyp] [B_A] with [is_syn],
+    it.  The synthesised middle is carried as a [btyp] [B_A] with [is_styp],
     bridged to the subtyping LHS via [btyp_to_utyp_syn] (the same convention
-    as [d_consis_compose_syn_nil]).  [is_syn] = [is_styp] up to
-    [is_styp_is_syn]. *)
+    as [d_consis_compose_syn_nil]). *)
 (** Paper CST (syntax-directed.tex:152), with the load-bearing [Ψ ⊆ Ψ']
     invariant the paper's "straightforward induction" silently needs: the
     subtyping context [Δb] is GENERAL (not [·]) — that is the inductive
@@ -1169,14 +1165,14 @@ Lemma d_consis_sub_trans : forall M Δb Γ C B,
     Δb ⨟ Γ ⊢[ M ] C ⩽ B ->
     forall B_A C' Δt,
       C = btyp_to_utyp_syn B_A ->
-      is_syn B_A ->
+      is_styp B_A ->
       Δt ⨟ Γ ⊢ C' ∼ B_A ->
       exists Δ, Δb [<=] Δ /\ Δ ⨟ Γ ⊢[ M ] C' ⩽ B.
 Proof.
   (* The [forall_l] case is the tag-encoding wall; it is dissolved by the
      erase-form generalisation [d_consis_sub_trans_mid], which threads tagged
      witnesses via [utyp_tag_refines].  Set [Cmid := btyp_to_utyp_syn B_A]:
-     its erasure is [B_A] ([utyp_to_btyp_btyp_to_utyp_syn], [is_syn]) and the
+     its erasure is [B_A] ([utyp_to_btyp_btyp_to_utyp_syn], [is_styp]) and the
      source [C'] refines it ([consis_refines_paint]). *)
   intros M Δb Γ C B Hsub B_A C' Δt Heq Hsyn Hcons. subst C.
   eapply d_consis_sub_trans_mid; [ exact Hsub | | ].
@@ -1236,12 +1232,12 @@ Proof.
   induction Hsub; intros n A0 M0 B0 Bres Hfn Hspine Htail.
   - (* d_sub__infer (ti): n = 0 forces the tail; compose by CST — now the
        fully-closed erase-form [d_consis_sub_trans_mid].  Middle is
-       [btyp_to_utyp_syn A0]; its erasure is [A0] (is_syn), matching the infer
+       [btyp_to_utyp_syn A0]; its erasure is [A0] (is_styp), matching the infer
        consistency, and [C] refines it by [consis_refines_paint]. *)
     inversion Hfn; subst.
     dependent destruction Hspine.
     edestruct (d_consis_sub_trans_mid Htail) as [Ψ' [_ HΨ']].
-    + rewrite utyp_to_btyp_btyp_to_utyp_syn by (apply is_styp_is_syn; eassumption).
+    + rewrite utyp_to_btyp_btyp_to_utyp_syn by eassumption.
       eassumption.
     + eapply consis_refines_paint; eassumption.
     + exists Ψ'. split; [ fsetdec | simpl; exact HΨ' ].
@@ -1489,7 +1485,7 @@ Proof.
     subst. dependent destruction H. rename B1 into Bn1. rename B2 into Bn2.
     assert (Herase : btyp_to_ptyp Bn1 = btyp_to_ptyp Barg).
     { pose proof (d_consis_btyp_erase H) as He.
-      rewrite (utyp_to_btyp_btyp_to_utyp_syn (is_styp_is_syn HsBarg)) in He.
+      rewrite (utyp_to_btyp_btyp_to_utyp_syn HsBarg) in He.
       symmetry. exact He. }
     apply d_sd_typing__abs_anno with (L := L0 `union` dom Γ) (B1 := Bn1).
     + discriminate.
@@ -1507,7 +1503,7 @@ Proof.
     assert (Herase : btyp_to_ptyp Bn1 = btyp_to_ptyp Barg).
     { match goal with Harg : _ ⨟ _ ⊢ btyp_to_utyp_syn Barg ∼ Bn1 |- _ =>
         pose proof (d_consis_btyp_erase Harg) as He end.
-      rewrite (utyp_to_btyp_btyp_to_utyp_syn (is_styp_is_syn HsBarg)) in He.
+      rewrite (utyp_to_btyp_btyp_to_utyp_syn HsBarg) in He.
       symmetry. exact He. }
     match goal with Hit : is_ityp (btyp_arrow _ Bn2) |- _ => inversion Hit; subst end.
     assert (HBn1 : Bn1 = ptyp_to_btyp_inh (btyp_to_ptyp Barg)).
@@ -1538,7 +1534,7 @@ Proof.
     subst. injection HC; intros; subst.
     assert (Herase : btyp_to_ptyp B1 = btyp_to_ptyp Barg).
     { pose proof (d_consis_btyp_erase H) as He.
-      rewrite (utyp_to_btyp_btyp_to_utyp_syn (is_styp_is_syn HsBarg)) in He.
+      rewrite (utyp_to_btyp_btyp_to_utyp_syn HsBarg) in He.
       symmetry. exact He. }
     apply d_sd_typing__abs_anno with (L := L0 `union` dom Γ) (B1 := B1).
     + discriminate.

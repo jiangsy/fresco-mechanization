@@ -24,21 +24,6 @@ Ltac inst_cofinites_with x :=
 Tactic Notation "inst_cofinites_with" ident(x) :=
   inst_cofinites_with x.
 
-Ltac inst_cofinites :=
-  match goal with
-  | x : atom |- _ => inst_cofinites_with x
-  end.
-
-(* Discharge absurd category mismatches for the current split syntax. *)
-Ltac discharge_category :=
-  match goal with
-  | H : is_styp (btyp_all_inh _) |- _ => inversion H
-  | H : is_ityp (btyp_all_syn _) |- _ => inversion H
-  | H : is_ttyp (utyp_all_syn _) |- _ => inversion H
-  | H : is_sskl (bskl_all_inh _) |- _ => inversion H
-  | H : is_iskl (bskl_all_syn _) |- _ => inversion H
-  end.
-
 (** Override Metalib's [gather_atoms] to include every atom-bearing
     source in our context: name-sets [atoms], single atoms, term
     contexts ([list (atom * dbind)]), tag / Ψ-scope contexts

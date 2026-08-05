@@ -13,7 +13,7 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
-Require Import src.frost.predicates.
+Require Import src.frost.def_extra.
 Require Import src.frost.prop_ln.
 Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
@@ -841,52 +841,6 @@ Proof.
   rewrite (swap_pskl_as_subst b α0 P') in Hr
     by (clear - Hα0; fsetdec).
   exact Hr.
-Qed.
-
-Lemma a_solve_sub_rename_var : forall Θ m P Q Ξ P' α0 β0,
-  Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' ->
-  α0 `notin` ftvar_in_aenv Θ `union` dom Ξ ->
-  β0 `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q
-      `union` ftvar_in_pskl P' ->
-  Θ ⊢ₛ (subst_pskl_in_pskl (pskl_var_f β0) α0 P) ≼[ m ]
-       (subst_pskl_in_pskl (pskl_var_f β0) α0 Q)
-       ⤳ Ξ ⨾ (subst_pskl_in_pskl (pskl_var_f β0) α0 P').
-Proof.
-  intros Θ m P Q Ξ P' α0 β0 H Hα Hβ.
-  assert (Hocc : dom Ξ [<=] ftvar_in_pskl P')
-    by (eapply a_solve_sub_generated_occurs; exact H).
-  assert (HβΞ : β0 `notin` dom Ξ) by (clear - Hβ Hocc; fsetdec).
-  assert (HαΞ : α0 `notin` dom Ξ) by (clear - Hα; fsetdec).
-  pose proof ((proj1 (a_solve_sub_eq_swap α0 β0)) _ _ _ _ _ _ H) as Hsw.
-  rewrite (swap_aenv_fresh_id α0 β0 Θ) in Hsw
-    by (clear - Hα Hβ; fsetdec).
-  rewrite (@a_solve_block_swap_id _ _ _ _ _ _ α0 β0 H HαΞ HβΞ) in Hsw.
-  rewrite ! (swap_pskl_as_subst α0 β0) in Hsw
-    by (clear - Hβ; fsetdec).
-  exact Hsw.
-Qed.
-
-Lemma a_solve_eq_rename_var : forall Θ P Q Ξ P' α0 β0,
-  Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' ->
-  α0 `notin` ftvar_in_aenv Θ `union` dom Ξ ->
-  β0 `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q
-      `union` ftvar_in_pskl P' ->
-  Θ ⊢ₑ (subst_pskl_in_pskl (pskl_var_f β0) α0 P)
-     ∼ (subst_pskl_in_pskl (pskl_var_f β0) α0 Q)
-     ⤳ Ξ ⨾ (subst_pskl_in_pskl (pskl_var_f β0) α0 P').
-Proof.
-  intros Θ P Q Ξ P' α0 β0 H Hα Hβ.
-  assert (Hocc : dom Ξ [<=] ftvar_in_pskl P')
-    by (eapply a_solve_eq_generated_occurs; exact H).
-  assert (HβΞ : β0 `notin` dom Ξ) by (clear - Hβ Hocc; fsetdec).
-  assert (HαΞ : α0 `notin` dom Ξ) by (clear - Hα; fsetdec).
-  pose proof ((proj2 (a_solve_sub_eq_swap α0 β0)) _ _ _ _ _ H) as Hsw.
-  rewrite (swap_aenv_fresh_id α0 β0 Θ) in Hsw
-    by (clear - Hα Hβ; fsetdec).
-  rewrite (@a_solve_eq_block_swap_id _ _ _ _ _ α0 β0 H HαΞ HβΞ) in Hsw.
-  rewrite ! (swap_pskl_as_subst α0 β0) in Hsw
-    by (clear - Hβ; fsetdec).
-  exact Hsw.
 Qed.
 
 (* ===================================================================== *)

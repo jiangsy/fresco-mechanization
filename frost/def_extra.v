@@ -1,4 +1,10 @@
-(** Frost — cross-system meta-functions and predicates. *)
+(** Frost — cross-system meta-functions and shape predicates.
+
+    One leaf module over the generated syntax: the tag collector, the
+    monotype / tagged / colour-discipline / guardedness / ghost-freeness
+    shape predicates, and the mode-compatibility relations.  (Formerly split
+    across [def_tags.v] and [predicates.v]; the split bought nothing — every
+    consumer imported all three.) *)
 
 Require Import Metalib.Metatheory.
 
@@ -22,7 +28,45 @@ Definition decr_mode (m : mode) : mode :=
   end.
 
 (* ===================================================================== *)
-(*  Six category predicates                                               *)
+(*  Syntactic quantifier tags                                            *)
+(* ===================================================================== *)
+
+(** The ε tags occurring in a [uskl] (its [∀^ε α.ψ] binders).  Tags are plain
+    atoms (not a locally-nameless sort), so lngen generates no collector; this
+    is the hand-written one.
+
+    Used by the completeness track: the paper's ForallL side condition
+    [fresh Ψ'] means the instantiation's tags are GLOBALLY fresh — in
+    particular fresh from the tags already in the subject — and mechanizing
+    that prose-freshness requires a subject's tags syntactically
+    (precision-substitution, docs/DESIGN-completeness-subtyping.md §5.2). *)
+
+Fixpoint ftag_in_uskl (R : uskl) : atoms :=
+  match R with
+  | uskl_unit => {}
+  | uskl_var_b _ => {}
+  | uskl_var_f _ => {}
+  | uskl_arrow R1 R2 => ftag_in_uskl R1 `union` ftag_in_uskl R2
+  | uskl_all_syn R0 => ftag_in_uskl R0
+  | uskl_all_etag ε R0 => add ε (ftag_in_uskl R0)
+  | uskl_hole => {}
+  | uskl_tophole R0 => ftag_in_uskl R0
+  | uskl_holeg => {}
+  | uskl_topholeg R0 => ftag_in_uskl R0
+  end.
+
+(* ===================================================================== *)
+(*  Monotypes                                                             *)
+(* ===================================================================== *)
+
+Inductive mono_ptyp : ptyp -> Prop :=
+| mono_ptyp__unit  : mono_ptyp ptyp_unit
+| mono_ptyp__var   : forall α, mono_ptyp (ptyp_var_f α)
+| mono_ptyp__arrow : forall A1 A2,
+    mono_ptyp A1 -> mono_ptyp A2 -> mono_ptyp (ptyp_arrow A1 A2).
+
+(* ===================================================================== *)
+(*  Tagged-category predicates                                            *)
 (* ===================================================================== *)
 
 (** Tagged types: only forall@ε; no other quantifiers, no holes. *)
@@ -124,6 +168,30 @@ Inductive guarded_pskl : pskl -> Prop :=
 | guarded_pskl__var   : forall α, guarded_pskl (pskl_var_f α)
 | guarded_pskl__arrow : forall P1 P2, lc_pskl P1 -> lc_pskl P2 -> guarded_pskl (pskl_arrow P1 P2).
 
+Inductive guarded_btyp : btyp -> Prop :=
+| guarded_btyp__unit  : guarded_btyp btyp_unit
+| guarded_btyp__var   : forall α, guarded_btyp (btyp_var_f α)
+| guarded_btyp__arrow : forall B1 B2,
+    lc_btyp B1 -> lc_btyp B2 -> guarded_btyp (btyp_arrow B1 B2).
+
+Inductive guarded_utyp : utyp -> Prop :=
+| guarded_utyp__unit  : guarded_utyp utyp_unit
+| guarded_utyp__var   : forall α, guarded_utyp (utyp_var_f α)
+| guarded_utyp__arrow : forall C1 C2,
+    lc_utyp C1 -> lc_utyp C2 -> guarded_utyp (utyp_arrow C1 C2).
+
+Inductive guarded_bskl : bskl -> Prop :=
+| guarded_bskl__unit  : guarded_bskl bskl_unit
+| guarded_bskl__var   : forall α, guarded_bskl (bskl_var_f α)
+| guarded_bskl__arrow : forall Q1 Q2,
+    lc_bskl Q1 -> lc_bskl Q2 -> guarded_bskl (bskl_arrow Q1 Q2).
+
+Inductive guarded_uskl : uskl -> Prop :=
+| guarded_uskl__unit  : guarded_uskl uskl_unit
+| guarded_uskl__var   : forall α, guarded_uskl (uskl_var_f α)
+| guarded_uskl__arrow : forall R1 R2,
+    lc_uskl R1 -> lc_uskl R2 -> guarded_uskl (uskl_arrow R1 R2).
+
 (** [nonghost_pskl P]: P's HEAD is not a ghost — it is neither [◇] nor
     [∀◇P0].  Weaker than [guarded_pskl], which also rules out a top-level ∀.
 
@@ -179,11 +247,53 @@ Inductive mod_comp_sk : bskl -> mode -> Prop :=
     mod_comp_sk Q2 m ->
     mod_comp_sk (bskl_arrow Q1 Q2) (mode_fn m).
 
+(* ===================================================================== *)
+(*  The TYPE sub-universe of the skeleton sorts                           *)
+(* ===================================================================== *)
+
+(** The paper's algorithmic judgments range over ONE syntactic category of
+    skeletons, but their metavariables are sorted: a rule that writes [A] / [B]
+    is restricted to the positions where the paper's grammar only ever produces
+    a TYPE, while a rule that writes [P] / [Q] admits a full skeleton.  The
+    mechanization keeps the single [pskl] carrier (splitting the sort would
+    duplicate every judgment) and recovers the distinction with this predicate:
+    a [pskl] is a type exactly when it mentions no ghost — no [◇] and no [∀◇].
+
+    Equivalently [pskl_ghost_free P ↔ exists A, P = ⌈A⌉] for locally-closed [P]
+    ([ptyp_to_pskl_ghost_free] / [pskl_ghost_free_to_ptyp], prop_basic.v).
+    Kept as a [Fixpoint] rather than an [Inductive] so that [simpl] discharges
+    it on concrete skeletons and so that it is trivially decidable; note it
+    holds of [pskl_var_b], i.e. it says nothing about local closure. *)
+
+Fixpoint pskl_ghost_free (P : pskl) : Prop :=
+  match P with
+  | pskl_unit => True
+  | pskl_var_b _ => True
+  | pskl_var_f _ => True
+  | pskl_arrow P1 P2 => pskl_ghost_free P1 /\ pskl_ghost_free P2
+  | pskl_all_syn P0 => pskl_ghost_free P0
+  | pskl_hole => False
+  | pskl_tophole _ => False
+  end.
+
+Fixpoint bskl_ghost_free (Q : bskl) : Prop :=
+  match Q with
+  | bskl_unit => True
+  | bskl_var_b _ => True
+  | bskl_var_f _ => True
+  | bskl_arrow Q1 Q2 => bskl_ghost_free Q1 /\ bskl_ghost_free Q2
+  | bskl_all_syn Q0 => bskl_ghost_free Q0
+  | bskl_all_inh Q0 => bskl_ghost_free Q0
+  | bskl_hole => False
+  | bskl_tophole _ => False
+  end.
+
 (* Constructor hints for the small structural shape / guardedness / mode
    predicates: they are dispatched trivially in metatheory proofs, so
    [eauto with frost] can discharge those cases directly.  A DEDICATED [frost]
    hint database (not [core]) keeps existing [auto] proofs unperturbed; the
    large relational judgments are deliberately NOT hinted (they would make
    [eauto] explode). *)
-#[export] Hint Constructors is_ttyp is_tskl is_styp is_ityp is_sskl is_iskl
-  guarded_ptyp guarded_pskl mod_comp_ty mod_comp_sk : frost.
+#[export] Hint Constructors mono_ptyp is_ttyp is_tskl is_styp is_ityp is_sskl
+  is_iskl guarded_ptyp guarded_pskl guarded_btyp guarded_utyp guarded_bskl
+  guarded_uskl mod_comp_ty mod_comp_sk : frost.

@@ -6,8 +6,17 @@ changed; the mechanization follows the paper's proof appendices bottom-up.
 Pre-restart history: [`docs/PROGRESS-legacy-2026-07.md`](docs/PROGRESS-legacy-2026-07.md).
 Decl↔paper sync findings: [`docs/REPORT-remech-decl-sync.md`](docs/REPORT-remech-decl-sync.md).
 
-Legacy proof files live beside their originals as `*.v.legacy` (git-tracked,
-excluded from the build); mine them when re-proving.
+Pre-restart proof files used to sit beside their originals as `*.v.legacy`
+(git-tracked, excluded from the build).  They were **deleted 2026-08-06**:
+each was pinned to the pre-restart declarative definitions and no longer
+type-checks (they reference constructors that no longer exist —
+`is_base_term__*`, `d_tags_skl__hole`, `is_tskl__all_syn`, …).  Mine them from
+git history when re-proving; they are last present at `a81ef2d`.  The two
+that carried real unported content are `frost/decl/prop_safety.v.legacy`
+(177 Qed / 14 Admitted — `d_pat_total_gen`, `d_pat_safety`, the
+`hole_safe`/`skel_safe` engine) and `frost/decl/prop_skeleton.v.legacy`
+(139 Qed — the pre-restart skeleton machinery); the nine `frost/algo/*.legacy`
+files were `Admitted` scaffolding subsumed by the current algo development.
 
 # Part 1: Paper → mechanization map
 
@@ -16,7 +25,7 @@ excluded from the build); mine them when re-proving.
 | Paper | Mechanization | Status |
 |---|---|---|
 | Syntax (types/terms/skeletons, decl §3) | `frost/language.ott` → `def_ott.v` (`ptyp/btyp/utyp/pskl/bskl/uskl`, `exp`) | 🟢 synced |
-| Colour/shape predicates (syn/inh/decorated/guarded/values) | `frost/def_extra.v`, `frost/predicates.v` | 🟢 synced (`is_tskl` fixed) |
+| Colour/shape predicates (syn/inh/decorated/guarded/values) | `frost/def_extra.v` | 🟢 synced (`is_tskl` fixed) |
 | `tags{Ψ}{φ}` / `tags{Ψ}{ψ}` | `decl/def_extra.v` `d_tags` / `d_tags_skl` | 🟢 synced (ψ-grammar exact) |
 | Typing (fig:decl-typing) | `d_typing` | 🟢 |
 | Syntax-directed typing (§3.3) | `d_sd_typing` | 🟢 |
@@ -78,7 +87,102 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-06 (latest) — ⭐⭐ **THE ALGORITHMIC RULES NOW CARRY THEIR SORT DISCIPLINE** (typ vs skl), and the tree builds 37% faster
+## 2026-08-06 (latest) — ⚙⚙ **HOUSEKEEPING: the pre-restart `.legacy` corpus deleted, `def_tags`+`predicates` folded into `def_extra`, `decorated_algo/` promoted, and two more renames retired into the SWAP kit**
+
+`make coq` clean; README.v still audits **28 × Closed under the global
+context**.  No statement of any paper-facing theorem changed — this is a
+deletion/refactor pass only.  Net: **−12 164 / +597 lines** across 93 files
+(of which ≈10 600 deleted lines are the `.legacy` corpus and ≈1 000 are Coq
+proof text that the equivariance kit made redundant).
+
+### 1. The `*.v.legacy` corpus is gone (11 files, ≈10 600 lines)
+
+They were pinned to the PRE-RESTART declarative definitions and no longer
+type-check against the current ones — they reference constructors that do not
+exist any more (`is_base_term__*`, `d_tags_skl__hole`, `d_tags_skl__tophole`,
+`is_tskl__all_syn`, `pskl_subsumes__*`).  Nine `frost/algo/*.legacy` files
+were `Admitted` scaffolding (`def_question`, `prop_lemmas`,
+`prop_soundness`, `prop_completeness`, `prop_decorated`, …) fully subsumed by
+the current algo development.  The two that carry real unported content are
+`decl/prop_safety.v.legacy` (177 Qed / 14 Admitted — `d_pat_total_gen`,
+`d_pat_safety`, the `hole_safe` / `skel_safe` engine) and
+`decl/prop_skeleton.v.legacy` (139 Qed).  ⚙ **Both are recoverable from git at
+`a81ef2d`** — mine them there when the paper-faithful skeleton-safety redo
+starts.  Deleting `d_sub_rename_var` (below) also retired
+`prop_renaming.v`'s "NON-tvar binder relabel" section, whose stated purpose
+was to discharge the `sub` case of `d_typing_rename_var` — a lemma that only
+ever existed in `prop_safety.v.legacy`.
+
+### 2. `def_tags.v` + `predicates.v` folded into `frost/def_extra.v`
+
+The three-way split bought nothing: every consumer imported all three, and the
+two smaller files held 6 predicates that were **exact duplicates** of ones
+already in `def_extra.v`.  Dropped as dead duplicates: `mono_btyp`,
+`mono_utyp`, `is_inh` (= `is_ityp`), `is_ttyp_utyp` (= `is_ttyp`),
+`is_syn_bskl` (= `is_sskl`), `no_forall_bskl`.  ⭐ `is_syn` was the SAME
+inductive as `is_styp` under a different constructor prefix and was the only
+duplicate with live uses — unified onto `is_styp` at 22 sites, and the
+identity-in-disguise `is_styp_is_syn` deleted with its 6 call sites.
+`ftag_in_uskl` moved over verbatim.  `frost/README.v` (a 0-byte file) deleted.
+
+### 3. `decorated_algo/` promoted out of `algo/` to `frost/decorated_algo/`
+
+It is not part of the algorithm: it is the ε-tagged BRIDGE that soundness and
+completeness both route through.  Module path `src.frost.algo.decorated_algo.*`
+→ `src.frost.decorated_algo.*`, 44 files touched.  The CLAUDE.md directory map
+was rewritten to match reality (it still listed the pre-2026-08-06 file names).
+
+### 4. ⭐ Two more substitution-shaped renames retired into the equivariance kit
+
+DESIGN.md §4.3's campaign converted the ∀ rows to exists-fresh
+**rename-lemma-first**; the swap kit (`algo/prop_swap.v`) later showed those
+renames are corollaries of equivariance.  Two of the four clusters are now
+actually converted, with **every consumer untouched** — the rename lemmas keep
+their statements verbatim and only their proofs change:
+
+| cluster | was | is |
+|---|---|---|
+| guess | `a_guess_mono_rename_tvar{,_size}`, 150 lines of size induction | `a_guess_mono_swap` + `swap_ptyp_as_subst`, 12 lines inside `a_guess_mono_open_at` |
+| look | `a_looksub_lookeq_rename_tvar_size`, **528 lines** | `a_looksub_lookeq_swap` + the three bridges, 2 × 12 lines |
+
+The enabling additions are three "a swap IS the rename when the TARGET is
+fresh" bridges: `swap_ptyp_as_subst` and `swap_aenv_as_rename` (prop_swap.v —
+the context one covers the KEY and the PAYLOAD, since `ftvar_in_aenv` counts
+both) and `swap_cstrs_as_subst` (prop_looksub.v, where `subst_cstrs` lives).
+⭐ **Why the size induction disappears entirely**: a substitution can COLLAPSE
+two names, so every binder row had to split three ways (source = binder /
+target = binder / neither) and the "target = binder" branch re-freshened,
+producing a non-subderivation — hence the measure.  A transposition is a
+BIJECTION, so there is no collapse, no split, and no measure.
+
+Deleted as dead in the same pass: `a_looksub_rename_tvar_keep`,
+`a_lookeq_rename_tvar_keep`, `a_lookeq_rename_var`, `a_solve_sub_rename_var`,
+`a_solve_eq_rename_var` (already swap-derived wrappers nobody called),
+`guarded_pskl_rename`, `d_sub_rename_var` + `d_consis_rename_var` +
+`d_wf_utyp_rename_var`, and the helpers that only the deleted size induction
+used (`ftv_subst_var_keep`, `subst_var_pskl_neq_var`, `rename_aenv_same`,
+`subst_cstrs_app`).  Also `frost/ltac_utils.v`'s unused `inst_cofinites` /
+`discharge_category`, `prop_general_subsumption.v`'s `nbauto`, and four unused
+`auc_*` projections in `prop_consis_rename.v`.
+
+### 5. ⛔ What was NOT retired, and why
+
+`a_assign_unify_consis_rename_tvar` (prop_consis_rename.v §8, **591 lines**)
+stays.  Its three consumers are `a_consis_decorate_size`'s ∀ rows (§10), which
+rebuild a cofinite `a_consistag` family from the run's one binder and need the
+output context's suffix `Θt` back **UNCHANGED**.  The swap instead returns
+`swap_aenv α β Θt`, so equating the two needs `α ∉ ftvar_in_aenv Θt` — a scope
+fact §8 currently sidesteps with its `tvar_prefix` / F-protection argument
+(§5) and which no existing lemma supplies (`a_wf_aenv` would give it, but §8
+runs on `uniq` alone).  Retiring it is a redesign of §10's three rows, not a
+cleanup.  `a_looksub_rename_var` (the LOOKED-FOR variable, §6) also stays and
+is NOT swap-derivable: its statement keeps `Θ` fixed while `α` is a flexible
+IN `Θ`, so the transposition is not the identity there.  The DECLARATIVE and
+DECORATED layers keep their renames outright — there is no swap kit over
+`d_*` / `ad_*`, and their targets are cofinite relations with no outputs to
+leak into.
+
+## 2026-08-06 — ⭐⭐ **THE ALGORITHMIC RULES NOW CARRY THEIR SORT DISCIPLINE** (typ vs skl), and the tree builds 37% faster
 
 `make coq` clean; README.v still audits **28 × Closed under the global
 context**, so both directions of subtyping stay closed and unconditional.
@@ -95,7 +199,7 @@ notion, so the mech was silently more liberal than the paper everywhere.
 ### 2. What landed
 
 `pskl_ghost_free` (the "is a type" predicate) moved from
-`algo/prop_pat_sub.v` up to [`frost/predicates.v`](frost/predicates.v) so the
+`algo/prop_pat_sub.v` up to [`frost/def_extra.v`](frost/def_extra.v) so the
 RULES can use it, with the syntactic closure kit (open / close / subst / swap
 / `ptyp_to_pskl` round-trip, `ghost_free_auto`) in
 [`frost/prop_basic.v`](frost/prop_basic.v).  Premises added:
