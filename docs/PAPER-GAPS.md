@@ -46,8 +46,23 @@ answer IS the pattern:
 | `∀β.β→β ≼[TC] f̂` | `∀_.f̂` (vacuous binder) | `∀β.β→β` | `f̂` cannot mention the bound β | the shape the lemma asks for |
 
 Machine-checked, Qed and axiom-free, in
-`cex/probe_flexr_neutralises_p6.v`.  Both cex files now carry retraction
-headers; their proof text is at the pre-repair commit `d5f9169`.
+`cex/probe_flexr_neutralises_p6.v`.
+
+### ⚙ WHERE THE RETRACTED FILES WENT (2026-08-06)
+
+Three files under `cex/` had been reduced to a retraction header with no Coq
+content — the tree's standing rule is that a KNOWN-FALSE proof is not
+committed, so each had lost its body while keeping its narrative.  They were
+DELETED on 2026-08-06; **this section is now their home**, and every
+`cex/…` citation of them elsewhere in the docs resolves here.  All three
+proof texts are preserved in git at commit **`d5f9169`** — the last commit
+under the published `SolE-FlexR` — and their headers, at `18cc7e4^`.
+
+| deleted file | what it claimed | why it is retracted |
+|---|---|---|
+| `cex/cex_p6_flex_counterpart.v` | the `-var` completeness lemmas are false at a flexible solve counterpart (`cex_solve_forces_flex`: "the only solve derivation forces `P_a = β̂`") | that central lemma is now FALSE — the repaired row returns `guess^TY(P_i) = c → ⟨⟩`, and the obligation becomes reflexivity (row 1 of the table above).  Its OTHER half — that the configuration is unreachable because `LE-FlexR` freshens a flexible target facing a compound subject — survives untouched in `cex/cex_p6_flex_freshened.v` (still green), and the `a_flex_tvar` WIDENING it motivated (`algo/def_extra.v`, `SolE-FlexR`'s comment) still stands: that is about which counterparts the rule ACCEPTS, not what it RETURNS |
+| `cex/cex_thm_complete_subtyping.v` | `thm_complete_subtyping_false` — Theorem 4.6 is false, by the double-occurrence instance `Θ0 = f̂`, `P0 = (∀γ.γ→γ) → f̂`, `P = ∀β.β→β` at `NM = TY`, `M = FN(TC)` | the authors accepted the refutation and replaced the row.  `guess^TY(β→β) = (·; β→β)`, so nothing is invented and nothing lost, the close re-binds a REAL occurrence, and A FULL RUN EXISTS.  Its direct negation is `cex/probe_flexr_repair.v` (`new_extract`, `new_run_exists`; Qed, axiom-free).  ⭐ Soundness of subtyping survived the repair unchanged (`a_sub_sound_thm`) |
+| `cex/probe_solve_flexr.v` | `run_exists_at_correct_instantiation` — localizing the failure to that one row by showing the continuation succeeds if handed the right instantiation | SUPERSEDED, not false: under the repair the algorithm *chooses* that instantiation itself, so the hypothetical is the TAIL of `new_run_exists` in `cex/probe_flexr_repair.v`, which additionally rests on nothing but `algo/def_extra.v` |
 
 ⛔ **What this does NOT settle.**  The mech's `sub_shield` premise was
 invented as the repair of the second of these, and P6-Sv / P6-Ss / P6-L
@@ -970,9 +985,13 @@ ghost-introduction cases.
 (consistency-proofs.tex:1181) and its subtyping twin
 `lemma:complete-constraint-collection-solving-var`
 (subtyping-proofs.tex:1696) are FALSE as stated.  Machine-checked
-counterexample: `algo/cex/cex_p6_flex_counterpart.v` (Qed, axiom-free,
+counterexample: `cex/cex_p6_flex_counterpart.v` (Qed, axiom-free,
 refuting the conclusion for EVERY `P_a`, EVERY `θ_a` with
 `inc[θ≡θ_a]{Θ0}{Θ}`, and every Δ/tag-set in the conclusion's precision).
+⚠️⚠️ **RETRACTED 2026-08-05 and the file DELETED 2026-08-06** — the authors'
+repaired `SolE-FlexR` neutralises it; see "WHERE THE RETRACTED FILES WENT" at
+the top of this file, and `cex/probe_flexr_neutralises_p6.v` for the machine
+check.  The text below describes the PRE-repair state.
 
 The configuration: `Θ0 = X, α̂`; `Θ = X`; `θ = [α̂ ↦ unit→unit]`;
 `ψ_a = X → unit`; `ρ = [X ↦ unit]` (so `ρ(ψ_a) = unit → unit`);
@@ -2268,7 +2287,9 @@ to a variable (`ad_refine_syn__flex_r`) demands a DEFINED flexible, while
 ### ⭐⭐⭐ THE CAUSE, LOCALIZED TO ONE SOLVE ROW (2026-08-04)
 
 `cex/probe_solve_flexr.v`, `run_exists_at_correct_instantiation`, Qed +
-axiom-free.  **The algorithm is not missing machinery — it discards an answer
+axiom-free.  (⚙ That file was SUPERSEDED by `cex/probe_flexr_repair.v` and
+DELETED 2026-08-06 — see "WHERE THE RETRACTED FILES WENT" at the top; the
+statement below is now the tail of `new_run_exists` there.)  **The algorithm is not missing machinery — it discards an answer
 it has already computed.**  Hand ForallL the instantiation `∀β.β→β` (the
 declarative guess `ψa` with its tag erased) and the run goes through, at the
 very configuration where `probe_no_run` says none exists:

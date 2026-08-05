@@ -141,7 +141,12 @@ but `algo/def_extra.v`, so it stays checkable while the cluster is broken):
 The decisive step: `guess^TY(β→β) = (·; β→β)` — no ghosts, so nothing is
 invented and nothing is lost, and the close re-binds a REAL occurrence.
 
-### Retracted (headers rewritten; Coq text at `d5f9169`)
+### Retracted (Coq text at `d5f9169`)
+
+⚙ These files' bodies were replaced by retraction HEADERS at the time; the
+headers themselves were removed 2026-08-06 (`18cc7e4`) once they were the
+whole file.  Their narrative now lives in **`docs/PAPER-GAPS.md`, "WHERE THE
+RETRACTED FILES WENT"**; the proof text is still at `d5f9169`.
 
 - `cex/probe_double_occ_run.v` — everything in it, including
   `p6l_look_completeness_fails`, `probe_no_run`,
