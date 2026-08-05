@@ -2919,6 +2919,47 @@ Qed.
     OUTSIDE the binder, because the solve's ∀ rows pass the generated block
     through unchanged (the flexibles are declared outside).  A rigid entry
     carries no definition, so [Hdefs] is immediate at every such row. *)
+(** A tvar-ish binding survives into a SUBCONTEXT that still has the
+    variable: the two contexts agree on the binding by uniqueness. *)
+Lemma a_binds_tvar_strengthen : forall Θ Θw α,
+  uniq Θ ->
+  (forall x b, binds x b Θw -> binds x b Θ) ->
+  a_binds_tvar α Θ ->
+  α `in` dom Θw ->
+  a_binds_tvar α Θw.
+Proof.
+  intros Θ Θw α Hu Hmon Hbt Hin.
+  apply binds_In_inv in Hin. destruct Hin as [b Hb].
+  assert (Hb' : binds α b Θ) by (apply Hmon; exact Hb).
+  destruct Hbt as [Hr | [Hf | (τ & Hd)]].
+  - pose proof (binds_unique _ _ _ _ _ Hb' Hr Hu) as ->.
+    left; exact Hb.
+  - pose proof (binds_unique _ _ _ _ _ Hb' Hf Hu) as ->.
+    right; left; exact Hb.
+  - pose proof (binds_unique _ _ _ _ _ Hb' Hd Hu) as ->.
+    right; right; exists τ; exact Hb.
+Qed.
+
+(** …hence a MONOTYPE well-formed in [Θ] and scoped inside [dom Θw] is
+    well-formed in [Θw]. *)
+Lemma a_wf_ptyp_mono_strengthen_dom : forall Θ Θw τ,
+  a_wf_aenv Θ ->
+  (forall x b, binds x b Θw -> binds x b Θ) ->
+  mono_ptyp τ ->
+  a_wf_ptyp Θ τ ->
+  ftvar_in_ptyp τ [<=] dom Θw ->
+  a_wf_ptyp Θw τ.
+Proof.
+  intros Θ Θw τ HwfΘ Hmon Hm Hwf Hsub.
+  apply mono_ptyp_wf; [ exact Hm | ].
+  intros α Hα.
+  eapply a_binds_tvar_strengthen;
+    [ apply a_wf_aenv_uniq; exact HwfΘ
+    | exact Hmon
+    | eapply a_wf_ptyp_ftv_binds; [ exact Hwf | exact Hα ]
+    | clear - Hsub Hα; fsetdec ].
+Qed.
+
 Lemma a_def_chain_wf_at : forall Θ Θw τ τe,
   a_def_chain Θ τ τe ->
   a_wf_aenv Θw ->
@@ -2930,6 +2971,78 @@ Proof.
   intros Θ Θw τ τe Hc; induction Hc; intros Hwf Hdefs Hp; auto.
   apply IHHc; [ exact Hwf | exact Hdefs | ].
   eapply a_wf_aenv_binds_def_wf; [ exact Hwf | apply Hdefs; eassumption ].
+Qed.
+
+(** …the same chain at [Θw := Θ]: [a_wf_ptyp Θ] is preserved outright. *)
+Lemma a_def_chain_wf_self : forall Θ τ τe,
+  a_def_chain Θ τ τe ->
+  a_wf_aenv Θ ->
+  a_wf_ptyp Θ τ ->
+  a_wf_ptyp Θ τe.
+Proof.
+  intros Θ τ τe Hc HwfΘ Hp.
+  eapply a_def_chain_wf_at;
+    [ exact Hc | exact HwfΘ | intros α0 τ0 Hb; exact Hb | exact Hp ].
+Qed.
+
+(** ⭐ …and the SCOPE bound the position-wise payload route threads
+    (2026-08-05).  A chain STEP lands on a DEFINITION of [Θ], which [Hdefs]
+    places in [Θw] and [Θw]'s own well-formedness scopes — so the bound is
+    restored outright after one step and merely carried by reflexivity. *)
+Lemma a_def_chain_ftv_at : forall Θ Θw Δ τ τe,
+  a_def_chain Θ τ τe ->
+  a_wf_aenv Θw ->
+  (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
+     binds α (abind_flex_mono_def τ0) Θw) ->
+  ftvar_in_ptyp τ [<=] dom Θw `union` Δ ->
+  ftvar_in_ptyp τe [<=] dom Θw `union` Δ.
+Proof.
+  intros Θ Θw Δ τ τe Hc; induction Hc; intros HwfΘw Hdefs Hft; [ exact Hft | ].
+  apply IHHc; [ exact HwfΘw | exact Hdefs | ].
+  assert (Hb : binds α (abind_flex_mono_def τd) Θw)
+    by (apply Hdefs; assumption).
+  assert (Hd : ftvar_in_ptyp τd [<=] dom Θw)
+    by (eapply a_wf_aenv_def_ftv_dom; [ exact HwfΘw | exact Hb ]).
+  clear - Hd; fsetdec.
+Qed.
+
+(** ⭐⭐ THE POSITION-WISE PAYLOAD SCOPE (2026-08-05).  A HOLE subject reaches
+    its target either directly ([ad_ppre__hole], whose OWN side condition is
+    the Δ-apartness) or across a flexible DEFINITION lookup
+    ([ad_ppre__flex_r], whose target variable is a defined flexible and so
+    already lives in [Θw]).  Either way the monotype standing at the hole is
+    [Θw]-scoped — with no cleanliness premise anywhere.
+
+    This is what lets [a_guess_ty_witness_mono_gen] below take the counterpart
+    well-formed only in [Θ]: the flexibles [guess^TY] invents sit exactly at
+    the holes, and nowhere else does the construction read a payload. *)
+Lemma ppre_hole_payload_wf : forall Θ Θw Δ Ψ τ,
+  a_wf_aenv Θ -> a_wf_aenv Θw ->
+  (forall x b, binds x b Θw -> binds x b Θ) ->
+  (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
+     binds α (abind_flex_mono_def τ0) Θw) ->
+  mono_ptyp τ -> a_wf_ptyp Θ τ ->
+  ftvar_in_ptyp τ [<=] dom Θw `union` Δ ->
+  Θ ⨟ Δ ⊢ pskl_hole ⊑ᵖ[ Ψ ] (ptyp_to_uskl_syn τ) ->
+  a_wf_ptyp Θw τ.
+Proof.
+  intros Θ Θw Δ Ψ τ HwfΘ HwfΘw Hmon Hdefs Hm Hwf Hft Hpre.
+  inversion Hpre; subst.
+  - (* ad_ppre__hole : the rule's OWN side condition is the Δ-apartness *)
+    assert (Hap : ftvar_in_ptyp τ ∩ Δ [=] empty).
+    { match goal with Hd : Δ ∩ ftvar_in_uskl _ [=] empty |- _ =>
+        rewrite ftvar_in_uskl_ptyp_to_uskl_syn in Hd; clear - Hd; fsetdec
+      end. }
+    eapply a_wf_ptyp_mono_strengthen_dom;
+      [ exact HwfΘ | exact Hmon | exact Hm | exact Hwf
+      | clear - Hft Hap; fsetdec ].
+  - (* ad_ppre__flex_r : the target is a DEFINED FLEXIBLE, hence in [Θw] *)
+    destruct τ; simpl in *; try discriminate.
+    match goal with Heq : uskl_var_f _ = ptyp_to_uskl_syn _ |- _ =>
+      cbn [ptyp_to_uskl_syn] in Heq; inversion Heq; subst end.
+    apply a_wf_ptyp__var. right; right.
+    match goal with Hb : binds _ (abind_flex_mono_def ?τ0) Θ |- _ =>
+      exists τ0; apply Hdefs; exact Hb end.
 Qed.
 
 (* ⭐ [Θw] IS THE WELL-FORMEDNESS CONTEXT OF THE EXTENSION, AND IT IS NOT
@@ -2960,7 +3073,7 @@ Proof.
     right. exists α0. split; [ reflexivity | exact Hrig ].
 Qed.
 
-Lemma a_guess_ty_witness_mono : forall n Θ0 Θ Θw κ Δ Ψi τ Pi,
+Lemma a_guess_ty_witness_mono_gen : forall n Θ0 Θ Θw κ Δ Ψi τ Pi,
   size_pskl Pi <= n ->
   a_wf_aenv Θ ->
   a_wf_aenv Θw ->
@@ -2971,7 +3084,13 @@ Lemma a_guess_ty_witness_mono : forall n Θ0 Θ Θw κ Δ Ψi τ Pi,
      binds α (abind_flex_mono_def τ0) Θw) ->
   Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
   mono_ptyp τ ->
-  a_wf_ptyp Θw τ ->
+  (* ⭐ THE GENERALIZATION: the counterpart need only be well-formed in [Θ],
+     with every variable of it that [Θw] does NOT have accounted for as a
+     [Δ]-variable.  [ad_ppre__hole] forces the target facing a hole to avoid
+     [Δ], so at the ONLY positions that invent a payload the two premises
+     collapse back to [a_wf_ptyp Θw]. *)
+  a_wf_ptyp Θ τ ->
+  ftvar_in_ptyp τ [<=] dom Θw `union` Δ ->
   Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ) ->
   forall L, exists (Ξ : aenv) (A : ptyp) (κ' : metasubst),
     (forall Θg, ftvar_in_aenv Θg [<=] L -> a_guess_mono Θg Pi Ξ A) /\
@@ -2984,7 +3103,7 @@ Lemma a_guess_ty_witness_mono : forall n Θ0 Θ Θw κ Δ Ψi τ Pi,
             ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ).
 Proof.
   induction n as [ | n IH ];
-    intros Θ0 Θ Θw κ Δ Ψi τ Pi Hsz HwfΘ HwfΘw Hmon Hdefs HwfPi Hmτ Hwfτ Hpre L.
+    intros Θ0 Θ Θw κ Δ Ψi τ Pi Hsz HwfΘ HwfΘw Hmon Hdefs HwfPi Hmτ Hwfτ Hftτ Hpre L.
   { exfalso. pose proof (size_pskl_min Pi) as Hm. clear - Hsz Hm. lia. }
   destruct Pi as [ | nb | α | Pi1 Pi2 | Pib | | Pi' ].
   - (* unit : the guess is the identity *)
@@ -3013,20 +3132,28 @@ Proof.
     cbn [msubst_pskl] in Hpre.
     destruct (ad_ppre_arrow_subject_chain_inv HwfΘ Hpre eq_refl eq_refl Hmτ)
       as (τ1 & τ2 & Ψ1 & Ψ2 & Hc & Hm1 & Hm2 & Hp1 & Hp2 & HΨ).
-    assert (Hwfar : a_wf_ptyp Θw (ptyp_arrow τ1 τ2))
-      by (eapply a_def_chain_wf_at;
-            [ exact Hc | exact HwfΘw | exact Hdefs | exact Hwfτ ]).
-    assert (Hwf1 : a_wf_ptyp Θw τ1) by (inversion Hwfar; assumption).
-    assert (Hwf2 : a_wf_ptyp Θw τ2) by (inversion Hwfar; assumption).
+    assert (Hwfar : a_wf_ptyp Θ (ptyp_arrow τ1 τ2))
+      by (eapply a_def_chain_wf_self;
+            [ exact Hc | exact HwfΘ | exact Hwfτ ]).
+    assert (Hftar : ftvar_in_ptyp (ptyp_arrow τ1 τ2) [<=] dom Θw `union` Δ)
+      by (eapply a_def_chain_ftv_at;
+            [ exact Hc | exact HwfΘw | exact Hdefs | exact Hftτ ]).
+    cbn [ftvar_in_ptyp] in Hftar.
+    assert (Hwf1 : a_wf_ptyp Θ τ1) by (inversion Hwfar; assumption).
+    assert (Hwf2 : a_wf_ptyp Θ τ2) by (inversion Hwfar; assumption).
+    assert (Hft1 : ftvar_in_ptyp τ1 [<=] dom Θw `union` Δ)
+      by (clear - Hftar; fsetdec).
+    assert (Hft2 : ftvar_in_ptyp τ2 [<=] dom Θw `union` Δ)
+      by (clear - Hftar; fsetdec).
     (* ⚠️ BOTH IHs run at an avoid-set containing BOTH sources, and the
        second additionally avoids the first block.  That is what makes each
        branch's extension invisible to the other's result below. *)
     destruct (IH Θ0 Θ Θw κ Δ Ψ1 τ1 Pi1 ltac:(lia) HwfΘ HwfΘw Hmon Hdefs
-                HwfPi1 Hm1 Hwf1 Hp1
+                HwfPi1 Hm1 Hwf1 Hft1 Hp1
                 (L `union` ftvar_in_pskl Pi1 `union` ftvar_in_pskl Pi2))
       as (Ξ1 & A1 & κa & Hgu1 & Hfm1 & Hu1 & Hk1 & Hfr1 & HF1 & Hpr1).
     destruct (IH Θ0 Θ Θw κ Δ Ψ2 τ2 Pi2 ltac:(lia) HwfΘ HwfΘw Hmon Hdefs
-                HwfPi2 Hm2 Hwf2 Hp2
+                HwfPi2 Hm2 Hwf2 Hft2 Hp2
                 (L `union` ftvar_in_pskl Pi1 `union` ftvar_in_pskl Pi2
                    `union` dom Ξ1))
       as (Ξ2 & A2 & κb & Hgu2 & Hfm2 & Hu2 & Hk2 & Hfr2 & HF2 & Hpr2).
@@ -3091,6 +3218,14 @@ Proof.
   - (* ---------------------------- ◇ -------------------------------- *)
     (* the guess invents [α̂1]; [κ'] sends it to the monotype standing here *)
     destruct (atom_fresh L) as [α1 Hα1].
+    (* ⭐ the payload's [Θw]-scope, position-wise: this is a HOLE, and
+       [ad_ppre__hole]'s own Δ-disjointness closes the gap the statement's
+       weakened premise left open. *)
+    cbn [msubst_pskl] in Hpre.
+    assert (Hwfw : a_wf_ptyp Θw τ)
+      by (eapply ppre_hole_payload_wf;
+            [ exact HwfΘ | exact HwfΘw | exact Hmon | exact Hdefs
+            | exact Hmτ | exact Hwfτ | exact Hftτ | exact Hpre ]).
     assert (HΨi : Ψi [=] empty)
       by (eapply ad_ppre_mono_tags_empty;
             [ exact HwfΘ | exact Hpre | reflexivity | exact Hmτ ]).
@@ -3104,12 +3239,12 @@ Proof.
     split; [ intros α0 Hα0; simpl in Hα0;
              assert (Heq : α0 = α1) by (clear - Hα0; fsetdec);
              subst α0; exact Hα1 | ].
-    split; [ apply Forall_cons; [ split; assumption | apply Forall_nil ] | ].
+    split; [ apply Forall_cons;
+             [ split; [ exact Hwfw | exact Hmτ ] | apply Forall_nil ] | ].
     cbn [app ptyp_to_pskl msubst_pskl msubst_lookup].
     destruct (α1 == α1) as [_ | Hne]; [ | contradiction ].
     eapply ad_partial_precise_psi_cong;
-      [ apply ad_ppre_mono_refl;
-          [ exact Hmτ | eapply a_wf_ptyp_weaken; [ exact Hmon | exact Hwfτ ] ]
+      [ apply ad_ppre_mono_refl; [ exact Hmτ | exact Hwfτ ]
       | clear - HΨi; fsetdec ].
   - (* ---------------------------- ∀◇ ------------------------------- *)
     (* [guess^TY] DROPS the universal ghost; the precision premise peels
@@ -3119,11 +3254,14 @@ Proof.
     cbn [msubst_pskl] in Hpre.
     destruct (ad_ppre_tophole_subject_chain_inv HwfΘ Hpre eq_refl eq_refl Hmτ)
       as (τe & Hc & Hme & Hp').
-    assert (Hwfe : a_wf_ptyp Θw τe)
-      by (eapply a_def_chain_wf_at;
-            [ exact Hc | exact HwfΘw | exact Hdefs | exact Hwfτ ]).
+    assert (Hwfe : a_wf_ptyp Θ τe)
+      by (eapply a_def_chain_wf_self;
+            [ exact Hc | exact HwfΘ | exact Hwfτ ]).
+    assert (Hfte : ftvar_in_ptyp τe [<=] dom Θw `union` Δ)
+      by (eapply a_def_chain_ftv_at;
+            [ exact Hc | exact HwfΘw | exact Hdefs | exact Hftτ ]).
     destruct (IH Θ0 Θ Θw κ Δ Ψi τe Pi' ltac:(lia) HwfΘ HwfΘw Hmon Hdefs
-                HwfPi' Hme Hwfe Hp' L)
+                HwfPi' Hme Hwfe Hfte Hp' L)
       as (Ξ0 & A0 & κ0 & Hgu & Hfm & Hu & Hk & Hfr & HF & Hpr).
     exists Ξ0, A0, κ0.
     split; [ intros Θg Hsub; apply a_guess_mono__tophole;
@@ -3134,6 +3272,41 @@ Proof.
     split; [ exact Hfr | ].
     split; [ exact HF | ].
     eapply ad_ppre_chain_fold; [ exact Hc | exact Hpr ].
+Qed.
+
+(** The ORIGINAL interface, as the [ftv τ ⊆ dom Θw] instance: a counterpart
+    already scoped inside [Θw] needs no Δ-slack.  Every pre-existing caller
+    uses this one; only P6-Cv's SE-FlexR row needs the general form, because
+    a ρ-DIRTY guess is [Θw]-scoped only up to [Δρ ⊆ Δ]. *)
+Lemma a_guess_ty_witness_mono : forall n Θ0 Θ Θw κ Δ Ψi τ Pi,
+  size_pskl Pi <= n ->
+  a_wf_aenv Θ ->
+  a_wf_aenv Θw ->
+  (forall x b, binds x b Θw -> binds x b Θ) ->
+  (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
+     binds α (abind_flex_mono_def τ0) Θw) ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
+  mono_ptyp τ ->
+  a_wf_ptyp Θw τ ->
+  Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ) ->
+  forall L, exists (Ξ : aenv) (A : ptyp) (κ' : metasubst),
+    (forall Θg, ftvar_in_aenv Θg [<=] L -> a_guess_mono Θg Pi Ξ A) /\
+    all_flex_mono Ξ /\
+    uniq Ξ /\
+    keys κ' = keys Ξ /\
+    (forall α, α `in` dom Ξ -> α `notin` L) /\
+    Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κ' /\
+    Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) (ptyp_to_pskl A))
+            ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ).
+Proof.
+  intros n Θ0 Θ Θw κ Δ Ψi τ Pi Hsz HwfΘ HwfΘw Hmon Hdefs HwfPi Hmτ Hwfτ Hpre L.
+  eapply a_guess_ty_witness_mono_gen;
+    [ exact Hsz | exact HwfΘ | exact HwfΘw | exact Hmon | exact Hdefs
+    | exact HwfPi | exact Hmτ
+    | eapply a_wf_ptyp_weaken; [ exact Hmon | exact Hwfτ ]
+    | (* the scope slack is unused: [τ] already sits inside [dom Θw] *)
+      pose proof (a_wf_ptyp_ftv_dom Hwfτ) as Hd; clear - Hd; fsetdec
+    | exact Hpre ].
 Qed.
 
 (* ⭐ THE CONCLUSION CARRIES THE κ-EXTENSION (2026-08-04).  The repaired
@@ -5768,6 +5941,37 @@ Proof.
         clear - Hin Hp; fsetdec ].
 Qed.
 
+(** ⭐ ρ IS CONGRUENT AT EVERY CONSTRUCTOR and non-trivial only at a bare
+    VARIABLE of the guess ([urho__leaf]) — and a bare variable is itself a
+    MONOTYPE.  So a mono-paint ρ-IMAGE forces a mono-paint GUESS, with no
+    cleanliness premise: this is what replaces the [flex_apart]-supplied
+    "ρ acts as the identity on the guess" step at P6-Cv's SE-FlexR row
+    (2026-08-05). *)
+Lemma uskl_rho_mono_target : forall NM Θ Δρ Ψρ ψsub ψa τ,
+  uskl_rho NM Θ Δρ Ψρ ψsub ψa ->
+  ψsub = ptyp_to_uskl_syn τ -> mono_ptyp τ ->
+  exists τa, ψa = ptyp_to_uskl_syn τa /\ mono_ptyp τa.
+Proof.
+  intros NM Θ Δρ Ψρ ψsub ψa τ H. revert τ.
+  induction H; intros τ Heq Hm.
+  - (* refl *) exists τ; split; [ exact Heq | exact Hm ].
+  - (* leaf: the guess IS a bare variable, hence a monotype *)
+    exists (ptyp_var_f α); split; [ reflexivity | apply mono_ptyp__var ].
+  - (* arrow *)
+    destruct τ; simpl in Heq; try discriminate Heq.
+    inversion Heq; subst.
+    inversion Hm; subst.
+    destruct (IHuskl_rho1 _ eq_refl ltac:(assumption)) as (τa1 & -> & Hm1).
+    destruct (IHuskl_rho2 _ eq_refl ltac:(assumption)) as (τa2 & -> & Hm2).
+    exists (ptyp_arrow τa1 τa2); split;
+      [ reflexivity | apply mono_ptyp__arrow; assumption ].
+  - (* all_syn : a mono paint is never a ∀ *)
+    exfalso. destruct τ; simpl in Heq; try discriminate Heq. inversion Hm.
+  - (* all_etag *) exfalso. destruct τ; simpl in Heq; discriminate Heq.
+  - (* tophole *)  exfalso. destruct τ; simpl in Heq; discriminate Heq.
+  - (* topholeg *) exfalso. destruct τ; simpl in Heq; discriminate Heq.
+Qed.
+
 (** ρ's target free variables are subject variables or replaced ones. *)
 Lemma uskl_rho_ftv_target_bound : forall NM Θ Δρ Ψρ R' R,
   uskl_rho NM Θ Δρ Ψρ R' R ->
@@ -6816,47 +7020,6 @@ Qed.
 (*  route through [dom Θr] fails — the [forall_syn_tagged] row puts its    *)
 (*  binder on the Θr side.                                                 *)
 (* ===================================================================== *)
-
-(** A tvar-ish binding survives into a SUBCONTEXT that still has the
-    variable: the two contexts agree on the binding by uniqueness. *)
-Lemma a_binds_tvar_strengthen : forall Θ Θw α,
-  uniq Θ ->
-  (forall x b, binds x b Θw -> binds x b Θ) ->
-  a_binds_tvar α Θ ->
-  α `in` dom Θw ->
-  a_binds_tvar α Θw.
-Proof.
-  intros Θ Θw α Hu Hmon Hbt Hin.
-  apply binds_In_inv in Hin. destruct Hin as [b Hb].
-  assert (Hb' : binds α b Θ) by (apply Hmon; exact Hb).
-  destruct Hbt as [Hr | [Hf | (τ & Hd)]].
-  - pose proof (binds_unique _ _ _ _ _ Hb' Hr Hu) as ->.
-    left; exact Hb.
-  - pose proof (binds_unique _ _ _ _ _ Hb' Hf Hu) as ->.
-    right; left; exact Hb.
-  - pose proof (binds_unique _ _ _ _ _ Hb' Hd Hu) as ->.
-    right; right; exists τ; exact Hb.
-Qed.
-
-(** …hence a MONOTYPE well-formed in [Θ] and scoped inside [dom Θw] is
-    well-formed in [Θw]. *)
-Lemma a_wf_ptyp_mono_strengthen_dom : forall Θ Θw τ,
-  a_wf_aenv Θ ->
-  (forall x b, binds x b Θw -> binds x b Θ) ->
-  mono_ptyp τ ->
-  a_wf_ptyp Θ τ ->
-  ftvar_in_ptyp τ [<=] dom Θw ->
-  a_wf_ptyp Θw τ.
-Proof.
-  intros Θ Θw τ HwfΘ Hmon Hm Hwf Hsub.
-  apply mono_ptyp_wf; [ exact Hm | ].
-  intros α Hα.
-  eapply a_binds_tvar_strengthen;
-    [ apply a_wf_aenv_uniq; exact HwfΘ
-    | exact Hmon
-    | eapply a_wf_ptyp_ftv_binds; [ exact Hwf | exact Hα ]
-    | clear - Hsub Hα; fsetdec ].
-Qed.
 
 (** ⭐ Refining a MONO PAINT introduces no variable the source and the
     context's DEFINITIONS do not already have.  The [dom Θ] of
