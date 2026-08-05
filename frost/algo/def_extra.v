@@ -592,7 +592,7 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
     guarded_pskl Q ->
     Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' ->
     Θ ⊢ₛ P ≼[ mode_tc ] Q ⤳ Ξ ⨾ P'
-| a_solve_sub__forall_r : forall Θ A B Ξ P' β,   (* SS-ForallR *)
+| a_solve_sub__forall_r : forall Θ P B Ξ P' β,   (* SS-ForallR *)
     (* SORT — TARGET ONLY.  The paper writes [solvesub{A}{TC}{\forall\beta.B}]
        (full-algo-spec.tex:1269-1273), i.e. it sorts BOTH sides as types; the
        LHS reading is a metavariable slip and is NOT mechanized, because this
@@ -600,9 +600,8 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
        [◇] (:1283-1294).  Sorting the LHS would leave [◇ ≼TC ∀β.B] with no
        rule at all, and that configuration is reachable (subject [∀α.α]
        against a ∀-target: LS-Var emits [sub_TC(∀β.B)] and the pattern is
-       still [◇]).  docs/PAPER-GAPS.md.  ⚠️ The binder [A] is therefore a
-       misnomer for a SKELETON position — kept only because renaming a rule
-       binder silently breaks [inversion]-generated names downstream. *)
+       still [◇]).  docs/PAPER-GAPS.md.  The binder is therefore named [P],
+       not [A], per the mech's own convention (renamed 2026-08-06). *)
     pskl_ghost_free (pskl_all_syn B) ->
     (* exists-fresh, INPUT-only freshness, NO close: the result passes
        through unchanged, so β may legitimately ESCAPE into [P'] — the
@@ -616,10 +615,10 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
        the whole family, degenerating the rule to "fires only when the
        binder is vacuous".  Consequence: [a_solve_sub_ftv] is DISJUNCTIVE
        (an output variable is an input variable or avoids [dom Θ]). *)
-    β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl A `union` ftvar_in_pskl B ->
-    ((β ~ abind_tvar) ++ Θ) ⊢ₛ A ≼[ mode_tc ]
+    β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl B ->
+    ((β ~ abind_tvar) ++ Θ) ⊢ₛ P ≼[ mode_tc ]
       (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ P' ->
-    Θ ⊢ₛ A ≼[ mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ P'
+    Θ ⊢ₛ P ≼[ mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ P'
 (* ⚠️ THE SIBLING PREMISE THREADS, [Ξ2 ++ Ξ1].  Both halves may now GENERATE
    names, and a guess avoids only what its own context mentions — run both at
    [Θ] and the two blocks can pick THE SAME atom, making [Ξ1 ++ Ξ2] non-[uniq]
@@ -946,11 +945,13 @@ Inductive a_assign : aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
     β `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
     Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
     ((β ~ abind_tvar) ++ Θ0) ⊲[ Ξ ] α ≔ P ⊣ ((β ~ abind_tvar) ++ Θ1)
-| a_assign__skip_tm_var : forall Θ0 Θ1 Ξ α x Q P,       (* Assign-SkipTmVar *)
+| a_assign__skip_tm_var : forall Θ0 Θ1 Ξ α x A P,       (* Assign-SkipTmVar *)
+    (* NAMING: the entry's payload is a [ptyp], so [A] — it was [Q]
+       (renamed 2026-08-06). *)
     x `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
     Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
-    ((x ~ abind_var_typ Q) ++ Θ0) ⊲[ Ξ ] α ≔ P
-      ⊣ ((x ~ abind_var_typ Q) ++ Θ1)
+    ((x ~ abind_var_typ A) ++ Θ0) ⊲[ Ξ ] α ≔ P
+      ⊣ ((x ~ abind_var_typ A) ++ Θ1)
 | a_assign__skip_tm_skl : forall Θ0 Θ1 Ξ α x Q P,       (* Assign-SkipTmVar (skl) *)
     x `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
     Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
@@ -1024,7 +1025,7 @@ with a_unify : aenv -> atom -> atom -> aenv -> Prop :=
     ((α1 ~ abind_flex_mono) ++ Θ0) ⊲ α ≈ᵘ β ⊣ ((α1 ~ abind_flex_mono) ++ Θ1)
 | a_unify__skip_other : forall Θ0 Θ1 c b α β,            (* Flex-Flex-Skip' *)
     (b = abind_tvar \/
-     (exists Q, b = abind_var_typ Q) \/
+     (exists A, b = abind_var_typ A) \/
      (exists Q, b = abind_var_skl Q)) ->
     c `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
     Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
@@ -1210,9 +1211,13 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
 | a_sub__univ_ghost_r : forall Θ0 P,                          (* UnivGhostR *)
     guarded_pskl P ->
     a_sub a_sub_mode_sk mode_tc pskl_hole Θ0 P (pskl_tophole P) Θ0
-| a_sub__flex_mono : forall NM M P0 Θ0 Θ1 α A,                (* FlexMono *)
-    a_sub_flex NM M P0 Θ0 nil α A Θ1 ->
-    a_sub NM (mode_fn M) P0 Θ0 (pskl_var_f α) A Θ1
+| a_sub__flex_mono : forall NM M P0 Θ0 Θ1 α Q,                (* FlexMono *)
+    (* NAMING: the OUTPUT is the paper's [Q] — a skeleton, not a type
+       (full-algo-spec.tex:820-824).  The whole [a_sub_flex] family below
+       carried [A] here; renamed 2026-08-06 to the mech's own convention
+       (A/B/C = ptyp/btyp/utyp, P/Q/R = pskl/bskl/uskl). *)
+    a_sub_flex NM M P0 Θ0 nil α Q Θ1 ->
+    a_sub NM (mode_fn M) P0 Θ0 (pskl_var_f α) Q Θ1
 | a_sub__arrow : forall NM M Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2,    (* Arrow *)
     Θ0 ⊢ₐ[ P0a ] P1 ∼ Q1 ⊣ Θ1 ->
     a_sub NM M P0b Θ1 P2 Q2 Θ2 ->
@@ -1259,7 +1264,7 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
    re-fires [FlexMono] over the merged context, which terminates because
    the consumed definition is gone. *)
 with a_sub_flex : a_sub_mode -> mode -> pskl -> aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
-| a_sub_flex__solve : forall NM M P0 Θ0 Θ1 Ξ α0 α β A,        (* Flex-Solve *)
+| a_sub_flex__solve : forall NM M P0 Θ0 Θ1 Ξ α0 α β Q,        (* Flex-Solve *)
     (* prose-completion: the deposited α̂,β̂ are fresh (Barendregt) *)
     α <> β ->
     α `notin` add α0 (dom (Ξ ++ Θ0)) ->
@@ -1267,9 +1272,9 @@ with a_sub_flex : a_sub_mode -> mode -> pskl -> aenv -> aenv -> atom -> pskl -> 
     a_sub NM (mode_fn M) P0
       (Ξ ++ (α0 ~ abind_flex_mono_def (ptyp_arrow (ptyp_var_f α) (ptyp_var_f β)))
           ++ (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono) ++ Θ0)
-      (pskl_arrow (pskl_var_f α) (pskl_var_f β)) A Θ1 ->
-    a_sub_flex NM M P0 ((α0 ~ abind_flex_mono) ++ Θ0) Ξ α0 A Θ1
-| a_sub_flex__assign : forall NM M P0 Θ0 Θ1 Ξ α β τ A,        (* Flex-Assign *)
+      (pskl_arrow (pskl_var_f α) (pskl_var_f β)) Q Θ1 ->
+    a_sub_flex NM M P0 ((α0 ~ abind_flex_mono) ++ Θ0) Ξ α0 Q Θ1
+| a_sub_flex__assign : forall NM M P0 Θ0 Θ1 Ξ α β τ Q,        (* Flex-Assign *)
     (* Paper (full-algo-spec.tex:888-894): MERGE [Θ0,Ξ] and re-enter the
        MAIN judgment with the substituted subject [α̂[τ/β̂]] — for β̂ = α̂ the
        subject becomes the monotype τ (the audit's F1: the subject may BE
@@ -1279,29 +1284,29 @@ with a_sub_flex : a_sub_mode -> mode -> pskl -> aenv -> aenv -> atom -> pskl -> 
     β `notin` dom Θ1 ->
     a_sub NM (mode_fn M) (subst_pskl_in_pskl (ptyp_to_pskl τ) β P0)
       (Ξ ++ Θ0)
-      (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)) A Θ1 ->
-    a_sub_flex NM M P0 ((β ~ abind_flex_mono_def τ) ++ Θ0) Ξ α A
+      (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)) Q Θ1 ->
+    a_sub_flex NM M P0 ((β ~ abind_flex_mono_def τ) ++ Θ0) Ξ α Q
       ((β ~ abind_flex_mono_def τ) ++ Θ1)
-| a_sub_flex__depend : forall NM M P0 Θ0 Θ1 Ξ α β A,          (* Flex-Depend *)
+| a_sub_flex__depend : forall NM M P0 Θ0 Θ1 Ξ α β Q,          (* Flex-Depend *)
     α <> β ->
     β `in` ftvar_in_pskl P0 ->
     (* β̂ joins the suffix at the Θ0-adjacent END (paper [β̂,Ξ],
        full-algo-spec.tex:896-902; audit F4 — mirror a_assign__depend). *)
-    a_sub_flex NM M P0 Θ0 (Ξ ++ (β ~ abind_flex_mono)) α A Θ1 ->
-    a_sub_flex NM M P0 ((β ~ abind_flex_mono) ++ Θ0) Ξ α A Θ1
-| a_sub_flex__skip : forall NM M P0 Θ0 Θ1 Ξ α β A,            (* Flex-Skip *)
+    a_sub_flex NM M P0 Θ0 (Ξ ++ (β ~ abind_flex_mono)) α Q Θ1 ->
+    a_sub_flex NM M P0 ((β ~ abind_flex_mono) ++ Θ0) Ξ α Q Θ1
+| a_sub_flex__skip : forall NM M P0 Θ0 Θ1 Ξ α β Q,            (* Flex-Skip *)
     α <> β ->
     β `notin` ftvar_in_pskl P0 ->
     β `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
-    a_sub_flex NM M P0 Θ0 Ξ α A Θ1 ->
-    a_sub_flex NM M P0 ((β ~ abind_flex_mono) ++ Θ0) Ξ α A
+    a_sub_flex NM M P0 Θ0 Ξ α Q Θ1 ->
+    a_sub_flex NM M P0 ((β ~ abind_flex_mono) ++ Θ0) Ξ α Q
       ((β ~ abind_flex_mono) ++ Θ1)
-| a_sub_flex__skip_rigid : forall NM M P0 Θ0 Θ1 Ξ α β A,      (* Flex-SkipRigid *)
+| a_sub_flex__skip_rigid : forall NM M P0 Θ0 Θ1 Ξ α β Q,      (* Flex-SkipRigid *)
     α <> β ->                               (* prose-completion (Barendregt) *)
     β `notin` ftvar_in_pskl P0 ->
     β `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
-    a_sub_flex NM M P0 Θ0 Ξ α A Θ1 ->
-    a_sub_flex NM M P0 ((β ~ abind_tvar) ++ Θ0) Ξ α A ((β ~ abind_tvar) ++ Θ1)
+    a_sub_flex NM M P0 Θ0 Ξ α Q Θ1 ->
+    a_sub_flex NM M P0 ((β ~ abind_tvar) ++ Θ0) Ξ α Q ((β ~ abind_tvar) ++ Θ1)
 (* ⛔ [paper-gap] Flex-SkipTmVar — MISSING from fig:alg-subtyping's second box
    (full-algo-spec.tex:883-912), which has only the five rules above, ALL of
    them matching a TYPE-variable entry.  The paper's TWIN walk has the rule
@@ -1316,16 +1321,16 @@ with a_sub_flex : a_sub_mode -> mode -> pskl -> aenv -> aenv -> atom -> pskl -> 
    are added in the paper's own idiom, verbatim mirrors of the twin walk's.
    The mech splits the paper's single [x : P] entry into a type binding and a
    skeleton binding, hence two rules for the paper's one.  docs/PAPER-GAPS.md *)
-| a_sub_flex__skip_tm_var : forall NM M P0 Θ0 Θ1 Ξ α x Q A,   (* Flex-SkipTmVar *)
+| a_sub_flex__skip_tm_var : forall NM M P0 Θ0 Θ1 Ξ α x Apay Q, (* Flex-SkipTmVar *)
     x `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
-    a_sub_flex NM M P0 Θ0 Ξ α A Θ1 ->
-    a_sub_flex NM M P0 ((x ~ abind_var_typ Q) ++ Θ0) Ξ α A
-      ((x ~ abind_var_typ Q) ++ Θ1)
-| a_sub_flex__skip_tm_skl : forall NM M P0 Θ0 Θ1 Ξ α x Q A,   (* Flex-SkipTmVar (skl) *)
+    a_sub_flex NM M P0 Θ0 Ξ α Q Θ1 ->
+    a_sub_flex NM M P0 ((x ~ abind_var_typ Apay) ++ Θ0) Ξ α Q
+      ((x ~ abind_var_typ Apay) ++ Θ1)
+| a_sub_flex__skip_tm_skl : forall NM M P0 Θ0 Θ1 Ξ α x Qpay Q, (* Flex-SkipTmVar (skl) *)
     x `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
-    a_sub_flex NM M P0 Θ0 Ξ α A Θ1 ->
-    a_sub_flex NM M P0 ((x ~ abind_var_skl Q) ++ Θ0) Ξ α A
-      ((x ~ abind_var_skl Q) ++ Θ1).
+    a_sub_flex NM M P0 Θ0 Ξ α Q Θ1 ->
+    a_sub_flex NM M P0 ((x ~ abind_var_skl Qpay) ++ Θ0) Ξ α Q
+      ((x ~ abind_var_skl Qpay) ++ Θ1).
 
 (* Skeleton splitting  [Θ0 ⊲ split P0 = P→Q ⊣ Θ1] (fig:alg-type-inference). *)
 Inductive a_split : aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
