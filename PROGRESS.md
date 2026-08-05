@@ -78,7 +78,44 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-05 (latest) — ⭐⭐⭐ **SUBTYPING COMPLETENESS IS UNCONDITIONAL.  `a_sub_complete_thm` GOES INTO README.v**
+## 2026-08-05 (latest) — ⭕⭕ **THE SHIELD LAYER IS FULLY DEPRECATED**
+
+`make coq` clean.  With subtyping completeness unconditional, the entire
+mech-invented shield apparatus and the counterexample record built around it
+are deleted.  **Nothing outside `cex/` ever depended on any of it**, and the
+cluster was self-contained (`def_flex_shield` ← its five users).
+
+DELETED (Coq text at `11349c5`):
+
+| file | lines | what it was |
+|---|---|---|
+| `cex/def_flex_shield.v` | 526 | `flex_shield`, its transport kit, `flex_shield_excludes_cex` |
+| `cex/cex_p7_shield_realizable.v` | 560 | the over-strength argument for the non-positional `sub_shield` |
+| `cex/cex_p7_shield_double_occ.v` | 449 | the double-occurrence configuration; its refutation was already retracted **and reversed** |
+| `cex/cex_p7_shield_forall_flex.v` | 170 | the ∀-over-flexible stuck shape; its `sub_shield` conclusion already retracted |
+| `cex/regr_p7_shield_arrow.v` | 113 | regression that `flex_apart`'s two base rows cover the arrow shapes |
+| `cex/probe_double_occ_run.v` | 97 | the `main_forall` refutation — retracted 2026-08-05 |
+| `cex/cex_p6sv_forall_flex.v` | 45 | the P6-Sv counterexample that started the saga — retracted by the repair |
+
+≈ 1960 lines.  Every one of these was either RETRACTED by the authors'
+repaired `SolE-FlexR` or a statement about a premise that no longer exists.
+
+⭐ KEPT, and de-shielded: `cex/cex_p7_sub_monoish.v`.  Its headline
+`p7_sub_monoish_counterpart_is_false` is a general fact about the SUBTYPING
+JOIN, not about the shield — the subtyping-side analogue of
+`ad_pat_consis_monoish_counterpart` is FALSE, because consistency's ∀ rules
+require the counterpart to be a quantifier too while subtyping's ForallL
+INSTANTIATES, so a tagged-∀ subject can face a mono-ish counterpart directly.
+That asymmetry outlived the layer it was written for; the header now states it
+on its own terms.
+
+⚠️ Docs (`DESIGN-completeness-subtyping.md`, the hand-offs) still narrate the
+shield saga and cite the deleted files.  That is deliberate — they are the
+history, and the commit is named in each deletion.  This log entry is the
+index into it.
+
+
+## 2026-08-05 — ⭐⭐⭐ **SUBTYPING COMPLETENESS IS UNCONDITIONAL.  `a_sub_complete_thm` GOES INTO README.v**
 
 `make coq` clean, every `.v` fresh, README's audit is 28 ×
 `Closed under the global context` with no axioms.

@@ -1,52 +1,32 @@
 (** ⚠️ THE SUBTYPING-SIDE ANALOGUE OF [ad_pat_consis_monoish_counterpart] IS
-    FALSE — SO P7's PLANNED ROUTE FOR SUPPLYING [sub_shield] DOES NOT WORK AS
-    SKETCHED.  [ad_pat_sub_g__forall_l_tagged] is the culprit again.
+    FALSE.
 
-    docs/DESIGN-completeness-subtyping.md §9.0 registered P7's TASK 0: P7b's
-    Sub-ForallL case is the sole consumer of P6-L, and P6-L carries the
-    P6-Sv/P6-Ss repair premise [sub_shield Θ0 Ψa empty P0 ψa], which P7 must
-    SUPPLY (the paper's P6-Sv WITHOUT it is false — cex_p6sv_forall_flex.v).
-    The route recorded there (and in §6 (z) item 3) was: at a flexible position
-    of P0 the metasubstitution's image is a MONOTYPE, so the refinement premise
-    makes the facing part of Q MONO-ISH ([ad_refine_mono_paint_rhs_monoish],
-    Qed), and then the consistency-side
+    On the CONSISTENCY side,
 
         Ψs ⨟ Θ ⊢ₛᵃ ψ ∼ Q  →  is_tskl ψ  →  bskl_monoish Q
-          →  Ψs = ∅  ∧  ψ is a mono PAINT               ([ad_pat_consis_monoish_counterpart])
+          →  Ψs = ∅  ∧  ψ is a mono PAINT      ([ad_pat_consis_monoish_counterpart])
 
-    would give tag-freeness of the facing ψa-region, i.e. [fsh_clean].  The plan
-    said the missing piece was "one [ad_pat_sub_g] analogue" of that lemma.
+    holds, and it is load-bearing — it is how P6-Cv reads the counterpart
+    monotype off a mono-ish [Q].  The SUBTYPING join has no such lemma, and
+    [ad_pat_sub_g__forall_l_tagged] is why.
 
-    THERE IS NO SUCH ANALOGUE.  Consistency's ∀ rules all require the
-    COUNTERPART to be a quantifier too, which is why a mono-ish counterpart
-    forces the subject mono there.  Subtyping's ForallL does not: it
-    INSTANTIATES, so a tagged-∀ subject can face a mono-ish counterpart
-    directly.  Below, [∀^ε α. α] — which IS [is_tskl], and ghost-free, so
+    ⭐ THE ASYMMETRY, worth remembering on its own terms.  Consistency's ∀
+    rules all require the COUNTERPART to be a quantifier too, so a mono-ish
+    counterpart forces the subject mono there.  Subtyping's ForallL does not —
+    it INSTANTIATES, so a tagged-∀ subject can face a mono-ish counterpart
+    directly.  Below, [∀^ε α. α] — which IS [is_tskl] and ghost-free, hence
     legal at [a_sub_mode_ty] — is instantiated with the context's rigid [β]
     and lands on the target [β], which is [bskl_monoish] by [bmi_var].  The
-    subject is not a mono paint (a mono paint is unit / var / arrow; it is
-    never a [uskl_all_etag]), so the conclusion fails outright.
+    subject is not a mono paint (a mono paint is unit / var / arrow, never a
+    [uskl_all_etag]), so the conclusion fails outright.
 
-    WHAT THIS DOES AND DOES NOT SETTLE.  It does NOT refute the shield supply
-    itself — only the monoish route to it.  Unfolding [sub_shield] at Δρ = ∅,
-    the hard leaf is a RAW Θ0-FLEXIBLE position of P0, where the only
-    applicable [flex_shield] rule is [fsh_clean], whose
-    [ftag ψa ∩ Ψa = ∅] plus [d_tags_skl]'s [Ψa ⊆ ftag ψa] forces **Ψa = ∅**:
-    the ForallL guess must be TAG-FREE, i.e. (with [a_tags_sort]'s
-    ghost-freeness at TY) a MONOTYPE.  So the real obligation is the
-    flex-mono WALL stated directly —
-
-        a raw-Θ0-flexible position of P0 forces the ForallL guess facing it
-        to be a monotype
-
-    — and NOT a "monoish counterpart" argument about the subject.  ⚠️ That wall
-    currently rests on an AUTHOR DECISION recorded against an IMPLEMENTATION
-    CRASH (docs/PAPER-GAPS.md, "broom_flex_poly: should not happen"), not
-    against a proof.  See DESIGN §9.0.
-
-    This is the same shape of finding as cex_p6ss_sub_target_ftv.v — indeed the
-    very same witness derivation — and for the same reason: [is_tskl] excludes
-    every ghost row of [ad_pat_sub_g] but NOT [__forall_l_tagged]. *)
+    ⚙ HISTORY (2026-08-05).  This file was written to record that P7's planned
+    route for SUPPLYING the mech-invented [sub_shield] premise does not work as
+    sketched.  That whole layer is now gone — the authors' repaired
+    [SolE-FlexR] retired [sub_shield], [flex_apart_walk] and [flex_shield]
+    together, and subtyping completeness is unconditional.  The finding above
+    outlived the layer it was written for, so the file is kept and its
+    motivation rewritten; the shield artefacts are at commit `11349c5`. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -64,7 +44,6 @@ Require Import src.frost.algo.def_decorated.
 Require Import src.frost.algo.def_decl_algo_sub.
 Require Import src.frost.algo.def_decl_algo_sub_hyg.
 Require Import src.frost.algo.prop_look_complete.   (* bskl_monoish *)
-Require Import src.frost.algo.cex.def_flex_shield.  (* [flex_shield], retired *)
 
 Set Implicit Arguments.
 
@@ -170,8 +149,9 @@ Print Assumptions p7_sub_monoish_counterpart_is_false.
 (** ⚠️ READ THIS BEFORE CONCLUDING ANYTHING FROM THE ABOVE.  Only the
     MONO-PAINT half of the statement is false.  The OTHER conjunct — [Ψ = ∅],
     i.e. "against a mono-ish counterpart NO TAG IS SOLVED" — is TRUE, and it
-    is proved: [ad_pat_sub_g_monoish_tag_free], prop_sub_shield_supply.v.
-    That is also the half the shield actually needs, because [fsh_clean]'s
+    was proved as [ad_pat_sub_g_monoish_tag_free] (in the deleted
+    prop_sub_shield_supply.v).  That was also the half the retired shield
+    needed, because its clean rule's
     [ftag ψa ∩ Ψa = ∅] plus [d_tags_skl]'s [Ψa ⊆ ftag ψa] is exactly
     "Ψa = ∅".
 
