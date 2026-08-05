@@ -153,7 +153,10 @@ mechanization/
 │   │   │                  soundness and completeness proofs both go through)
 │   │   ├── def_decorated.v      (the ε-tagged system)
 │   │   ├── def_decl_algo*.v     (declarative judgments over algo contexts:
-│   │   │                         consistency, refinement, subtyping, precision)
+│   │   │                         consistency, refinement, subtyping, precision,
+│   │   │                         and — def_decl_algo_typing.v — skeleton
+│   │   │                         inference `ad_pat` + syntax-directed typing
+│   │   │                         `ad_sd_typing`, which section D is stated over)
 │   │   └── prop_decorate*.v     (decoration of consistency/subtyping;
 │   │                             prop_decorate_key.v holds a_sub_sound_thm)
 │   └── algo/             (algorithmic system — all admit-free)

@@ -60,6 +60,21 @@ Inductive abind : Set :=
 
 Definition aenv : Set := list (atom * abind).
 
+(** The skeleton a TERM-variable entry carries, if it is one — the [abind]
+    mirror of [dbind_to_pskl] (coercions.v).  Skeleton inference reads a
+    variable's skeleton through this, so both binding forms of the paper's
+    single [x : P] entry are accepted: a stored skeleton verbatim, a stored
+    type via its painting.  Type-level entries ([abind_tvar] and the two
+    flexible forms) are not term variables and yield [None]. *)
+Definition abind_to_pskl (b : abind) : option pskl :=
+  match b with
+  | abind_var_skl P => Some P
+  | abind_var_typ A => Some (ptyp_to_pskl A)
+  | abind_tvar => None
+  | abind_flex_mono => None
+  | abind_flex_mono_def _ => None
+  end.
+
 (* ===================================================================== *)
 (*  Free variables of, and RENAMING through, an algorithmic context.      *)
 (*                                                                        *)
