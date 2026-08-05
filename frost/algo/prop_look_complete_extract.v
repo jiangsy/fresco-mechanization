@@ -1033,7 +1033,6 @@ Theorem a_extract_complete_gen :
   ftvar_in_uskl ψa [<=] dom Θ ->
   Θ ⨟ Δ ⊢ₚₛᵃ ⌊ ψa ⌋ˢ ->                     (* the paper's wf premise for ψa *)
   delta_def_fresh Δ Θ ->
-  sub_shield Θ0 Ψa empty α P0 R' ψa ->
   (* the join's AMBIENT tag context: the paper's [Ψ,Ψa] — P6-Ss's range
      parameter, surfaced (2026-07-31) for P7b's Sub-ForallL, whose row
      premise runs at [Ψ ∪ Ψa] with the ambient [Ψ ⊆ ftag R'] *)
@@ -1057,8 +1056,14 @@ Theorem a_extract_complete_gen :
 Proof.
   intros n NM M Θ0 Θ κ Δ Ψa Ψsub ψa Q P P0 R' α.
   intros HwfΘ HwfΘ0 HwfP0 HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR
-         Htags Hdisj HΔψ Hψaw Hwfψ Hdfresh Hshield HΨsubU HΨsubL Hsubty
+         Htags Hdisj HΔψ Hψaw Hwfψ Hdfresh HΨsubU HΨsubL Hsubty
          HwfSubj Hrefine.
+  (* ⭐⭐⭐ (2026-08-05) TASK 0's shield supply is DISCHARGED, not assumed:
+     [sub_shield] is instantiated at Δρ = ∅ here, where its growth condition
+     IS cleanliness and every reachable state is [fa_clean].  The premise is
+     gone from the statement. *)
+  assert (Hshield : sub_shield Θ0 Ψa empty α P0 R' ψa)
+    by apply sub_shield_empty.
   (* ---- (a)-(f) : P6-Ss at [Pi := □], [Ψi := ∅] ---- *)
   (* ⭐ THE SOLVE'S OWN BLOCK [Ξs] (2026-08-05, the SolE-FlexR repair).  The
      look's suffix is now three blocks, [Ξc ++ Ξs ++ Ξ'] — collection,
@@ -1283,7 +1288,6 @@ Corollary a_extract_complete :
      [paper-external wf side condition — docs/WF-SIDE-CONDITIONS.md] *)
   ftvar_in_uskl ψa [<=] dom Θ ->
   Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψa ⌋ˢ ->
-  sub_shield Θ0 Ψa empty α P0 R' ψa ->
   ad_pat_sub_g n NM M Ψa Θ
     (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')) Q ->
   Θ ⨟ empty ⊢ₚₛᵃ
@@ -1301,7 +1305,7 @@ Corollary a_extract_complete :
 Proof.
   intros n NM M Θ0 Θ κ Ψa ψa Q P P0 R' α.
   intros HwfΘ HwfΘ0 HwfP0 HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR
-         Htags Hdisj Hψaw Hwfψ Hshield Hsubty HwfSubj Hrefine.
+         Htags Hdisj Hψaw Hwfψ Hsubty HwfSubj Hrefine.
   eapply a_extract_complete_gen with (Ψsub := Ψa);
     [ exact HwfΘ | exact HwfΘ0 | exact HwfP0 | exact HmodSK | exact HmodTY
     | exact Hκ | exact HαΘ | exact HαΘ0 | exact HeraseR | exact HscopeR
@@ -1310,7 +1314,6 @@ Proof.
     | exact Hψaw
     | exact Hwfψ
     | intros β α0 τ Hβ; exfalso; clear - Hβ; fsetdec (* delta_def_fresh ∅ Θ *)
-    | exact Hshield
     | clear; fsetdec | clear; fsetdec                (* Ψsub := Ψa *)
     | exact Hsubty | exact HwfSubj | exact Hrefine ].
 Qed.

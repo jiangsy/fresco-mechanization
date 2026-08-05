@@ -27,6 +27,7 @@ Require Import src.frost.algo.prop_look_complete_cstr.
 Require Import src.frost.algo.prop_look_complete_sub_var.
 Require Import src.frost.algo.prop_look_complete_sub_cstr.
 Require Import src.frost.algo.prop_look_complete_extract.
+Require Import src.frost.algo.prop_sub_complete_dispatch.
 
 (* ===================================================================== *)
 (*  full-decl-proofs.tex / app:syntax-directed                            *)
@@ -141,6 +142,19 @@ Check a_solve_sub_complete_var.
 Check a_extract_complete_gen.
 Check a_extract_complete.
 
+(* ⭐⭐⭐ Theorem [Completeness of subtyping] (thm:complete-subtyping,
+   algorithmic.tex:1446) — P7, and UNCONDITIONAL since 2026-08-05.  It used to
+   take [forall n, main_forall n] as a hypothesis, whose one unsupplied
+   premise was the mech-invented [sub_shield]; under the authors' repaired
+   [SolE-FlexR] that gate is discharged outright ([sub_shield_empty]).
+   [a_sub_complete_bundle_holds] is the mutual main ⇄ flex bundle;
+   [a_sub_complete_thm] is its [Ψ := ∅], [R := ⌈P⌉ᵘ] instance.
+   Premises beyond the paper's are the EXTERNAL wf side conditions of
+   docs/WF-SIDE-CONDITIONS.md (well-formedness of the counterpart, and the
+   subject's ghost-freeness at the TY sort). *)
+Check a_sub_complete_bundle_holds.
+Check a_sub_complete_thm.
+
 (* ===================================================================== *)
 (*  Assumption audit — all must be "Closed under the global context"      *)
 (* ===================================================================== *)
@@ -168,5 +182,8 @@ Print Assumptions a_solve_eq_complete_var.
 Print Assumptions a_lookeq_solve_complete.
 Print Assumptions a_solve_sub_complete_var.
 Print Assumptions a_looksub_solve_complete.
+Print Assumptions a_extract_complete.
+Print Assumptions a_sub_complete_bundle_holds.
+Print Assumptions a_sub_complete_thm.
 Print Assumptions a_extract_complete_gen.
 Print Assumptions a_extract_complete.

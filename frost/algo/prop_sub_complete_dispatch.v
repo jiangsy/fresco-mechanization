@@ -993,6 +993,10 @@ Definition uskl_forall_headed (R : uskl) : Prop :=
     ghost-freeness of the join's subject that P5's precision-substitution
     transport demands ([ad_pat_sub_precise_upre_gv]'s last premise, threaded
     as a side condition throughout prop_sub_complete.v).  See §10. *)
+(* ⭕⭕ RETIRED (2026-08-05) — kept as documentation, with NO consumers.
+   This was the assembly's one hypothesis; §10 records why it is gone.  It is
+   not deleted because [uskl_forall_headed] and the shape of the residual are
+   what the campaign's counterexamples are stated against. *)
 Definition main_forall (n : nat) : Prop :=
   forall NM M Θ0 P0 P R R' Ψ Θ κ Q,
     uskl_forall_headed R ->
@@ -1002,7 +1006,6 @@ Definition main_forall (n : nat) : Prop :=
 Lemma main_join : forall n NM M Ψ Θ R' Q,
   ad_pat_sub_gv n NM M Ψ Θ R' Q ->
   (forall n', n' < n -> main_all n') ->
-  main_forall n ->
   forall Θ0 (ESC : uskl -> Prop),
     (forall R0, ESC (uskl_tophole R0) -> ESC R0) ->
     (forall R0, ESC (uskl_topholeg R0) -> ESC R0) ->
@@ -1024,7 +1027,7 @@ Proof.
     | n0 Ψ0 Θa Ma Rg Qg HM Hsub IHsub
     | n0 Ψ0 Θa Ma Rg Qg HM Hsub IHsub
     | n0 NM0 Ψ0 Θa Ma αd τd Qa Hbd Hsub IHsub ];
-    intros Hfuel Hforall Θ0 ESC He1 He2 He3 P0 P R κ HESC.
+    intros Hfuel Θ0 ESC He1 He2 He3 P0 P R κ HESC.
   - (* __infer : the row lemma takes any [R] *)
     apply a_sub_complete_infer.
   - (* __check : the row lemma owes [guarded_pskl P0] and the wf of [B] *)
@@ -1089,17 +1092,26 @@ Proof.
        after §8b has taken the WLOG's escaping shape off its hands *)
     intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
            Hgf.
-    assert (Hhd : uskl_forall_headed R).
+    (* ⭐⭐⭐ (2026-08-05) THE ROW LEMMA APPLIES DIRECTLY.  It used to owe
+       TASK 0's [sub_shield] on top of the join's own premises, which is why
+       this branch had to defer to the [main_forall] hypothesis.  That gate is
+       gone ([sub_shield_empty]), so the row's premises are EXACTLY the join
+       rule's — [HM], [HΨ1], [HΨ2], [Htg], [Hwfψ], [Hsub] — plus the fuel IH
+       and the WLOG the trichotomy supplies. *)
+    assert (Hhd : exists R0, R = uskl_all_etag εa R0).
     { destruct (@a_uskl_tyequiv_all_etag_l_inv Θa εa Rj _ Hslack) as [X0 HX].
       destruct (@msubst_uskl_syn_all_etag_inv κ R εa X0 HX) as [R0 [HR _]].
-      right; exists εa, R0; exact HR. }
+      exists R0; exact HR. }
+    destruct Hhd as [R0 HR0]. subst R.
     destruct (p0_wlog_trichotomy Hmodsk Hmodty (a_wf_pskl_lc HwfP0))
       as [Hwlog | [Hwlog | [HeqNM [HeqM [Pb HeqP0]]]]].
-    + exact (Hforall NM0 Ma Θ0 P0 P R (uskl_all_etag εa Rj) Ψ0 Θa κ Qa Hhd
+    + exact (@a_sub_complete_forall_l_tagged n0 NM0 Ma Θ0 P0 P R0 Rj Ψ0 Θa κ
+               Qa εa Ψ' ψj (Hfuel n0 ltac:(lia)) HM HΨ1 HΨ2 Htg Hwfψ Hsub
                (or_introl Hwlog)
                Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
                HwfQ Hgf).
-    + exact (Hforall NM0 Ma Θ0 P0 P R (uskl_all_etag εa Rj) Ψ0 Θa κ Qa Hhd
+    + exact (@a_sub_complete_forall_l_tagged n0 NM0 Ma Θ0 P0 P R0 Rj Ψ0 Θa κ
+               Qa εa Ψ' ψj (Hfuel n0 ltac:(lia)) HM HΨ1 HΨ2 Htg Hwfψ Hsub
                (or_intror Hwlog)
                Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
                HwfQ Hgf).
@@ -1108,32 +1120,39 @@ Proof.
       subst NM0 Ma P0.
       cbn in Hrs.
       destruct (ad_refine_syn_f_all_inh_l_shape Hrs) as [B HB]. subst Qa.
-      exact (@main_all_inh_counterpart n0 Θ0 (pskl_all_syn Pb) P R
+      exact (@main_all_inh_counterpart n0 Θ0 (pskl_all_syn Pb) P
+               (uskl_all_etag εa R0)
                (uskl_all_etag εa Rj) Ψ0 Θa κ B (Hfuel n0 ltac:(lia))
                Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
                HwfQ Hgf).
   - (* __forall_l_untagged : as above *)
     intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
            Hgf.
-    assert (Hhd : uskl_forall_headed R).
+    (* ⭐⭐⭐ as the tagged row above: TASK 0's gate is gone, so the row lemma
+       takes exactly the join rule's own premises. *)
+    assert (Hhd : exists R0, R = uskl_all_syn R0).
     { destruct (@a_uskl_tyequiv_all_syn_l_inv Θa Rj _ Hslack) as [X0 HX].
       destruct (@msubst_uskl_syn_all_syn_inv_mono Θ0 κ Θa R X0 Hinc HX)
         as [R0 [HR _]].
-      left; exists R0; exact HR. }
+      exists R0; exact HR. }
+    destruct Hhd as [R0 HR0]. subst R.
     destruct (p0_wlog_trichotomy Hmodsk Hmodty (a_wf_pskl_lc HwfP0))
       as [Hwlog | [Hwlog | [HeqNM [HeqM [Pb HeqP0]]]]].
-    + exact (Hforall NM0 Ma Θ0 P0 P R (uskl_all_syn Rj) Ψ0 Θa κ Qa Hhd
+    + exact (@a_sub_complete_forall_l_untagged n0 NM0 Ma Θ0 P0 P R0 Rj Ψ0 Θa κ
+               Qa Ψ' ψj (Hfuel n0 ltac:(lia)) HM HΨ1 HΨ2 Htg Hwfψ Hsub
                (or_introl Hwlog)
                Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
                HwfQ Hgf).
-    + exact (Hforall NM0 Ma Θ0 P0 P R (uskl_all_syn Rj) Ψ0 Θa κ Qa Hhd
+    + exact (@a_sub_complete_forall_l_untagged n0 NM0 Ma Θ0 P0 P R0 Rj Ψ0 Θa κ
+               Qa Ψ' ψj (Hfuel n0 ltac:(lia)) HM HΨ1 HΨ2 Htg Hwfψ Hsub
                (or_intror Hwlog)
                Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
                HwfQ Hgf).
     + subst NM0 Ma P0.
       cbn in Hrs.
       destruct (ad_refine_syn_f_all_inh_l_shape Hrs) as [B HB]. subst Qa.
-      exact (@main_all_inh_counterpart n0 Θ0 (pskl_all_syn Pb) P R
+      exact (@main_all_inh_counterpart n0 Θ0 (pskl_all_syn Pb) P
+               (uskl_all_syn R0)
                (uskl_all_syn Rj) Ψ0 Θa κ B (Hfuel n0 ltac:(lia))
                Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
                HwfQ Hgf).
@@ -1156,7 +1175,7 @@ Proof.
     (* the row is SK-only, so the motive's TY ghost-freeness is VACUOUS *)
     assert (Hgf0 : a_sub_mode_sk = a_sub_mode_ty -> uskl_ghost_free Rg)
       by (intro Habs; discriminate Habs).
-    destruct (IHsub Hfuel Hforall Θ0 ESC He1 He2 He3 P0 (⌊ R00 ⌋ˢ) R00 κ
+    destruct (IHsub Hfuel Θ0 ESC He1 He2 He3 P0 (⌊ R00 ⌋ˢ) R00 κ
                 (He1 R00 HESC)
                 Hwf0 Hwfth HwfP0 HwfP' Hmodsk Hmodty eq_refl Hinc Hslack0
                 Hsub Hrs HwfQ Hgf0)
@@ -1176,7 +1195,7 @@ Proof.
     (* SK-only, as above *)
     assert (Hgf0 : a_sub_mode_sk = a_sub_mode_ty -> uskl_ghost_free Rg)
       by (intro Habs; discriminate Habs).
-    destruct (IHsub Hfuel Hforall Θ0 ESC He1 He2 He3 P0 (⌊ R00 ⌋ˢ) R00 κ
+    destruct (IHsub Hfuel Θ0 ESC He1 He2 He3 P0 (⌊ R00 ⌋ˢ) R00 κ
                 (He2 R00 HESC)
                 Hwf0 Hwfth HwfP0 HwfP' Hmodsk Hmodty eq_refl Hinc Hslack0
                 Hsub Hrs HwfQ Hgf0)
@@ -1196,7 +1215,7 @@ Proof.
               uskl_ghost_free (ptyp_to_uskl_syn τd))
       by (intros _; apply mono_ptyp_to_uskl_syn_ghost_free;
           eapply a_wf_aenv_binds_def_mono; [ exact Hwfth | exact Hbd ]).
-    exact (IHsub Hfuel Hforall Θ0 ESC He1 He2 He3 P0 P R κ HESC
+    exact (IHsub Hfuel Θ0 ESC He1 He2 He3 P0 P R κ HESC
              Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack'
              Hsub Hrs HwfQ Hgfd).
 Qed.
@@ -1210,13 +1229,12 @@ Qed.
     is what breaks §12's non-decreasing main ⇄ flex cycle. *)
 Lemma main_arrow_holds : forall n,
   (forall n', n' < n -> main_all n') ->
-  main_forall n ->
   main_arrow n.
 Proof.
-  intros n Hfuel Hforall NM M Θ0 P0 P Ra Rb R' Ψ Θ κ Q.
+  intros n Hfuel NM M Θ0 P0 P Ra Rb R' Ψ Θ κ Q.
   intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
          Hgf.
-  exact (@main_join n NM M Ψ Θ R' Q HDj Hfuel Hforall Θ0
+  exact (@main_join n NM M Ψ Θ R' Q HDj Hfuel Θ0
            (fun R0 => exists Rx Ry, R0 = uskl_arrow Rx Ry)
            ltac:(intros R0 [Rx [Ry HH]]; discriminate HH)
            ltac:(intros R0 [Rx [Ry HH]]; discriminate HH)
@@ -1228,123 +1246,59 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §10  WHAT THE ASSEMBLY STILL OWES — measured, not guessed              *)
+(* ===================================================================== *)
+(*  §10  WHAT THE ASSEMBLY OWES — ⭐⭐⭐ NOTHING (2026-08-05)                *)
 (*                                                                        *)
-(*  The three layers of DESIGN §12.1 are now in the tree and all [Qed]:    *)
+(*  The three layers of DESIGN §12.1 are in the tree and all [Qed]:        *)
 (*                                                                        *)
 (*    (a) [main_arrow_holds] — the main half at an ARROW subject, from the *)
-(*        FUEL IH alone.  This is what breaks §12's non-decreasing cycle,  *)
-(*        and it is exactly what [a_sub_flex_complete_solve] now takes.    *)
+(*        FUEL IH alone.  This is what breaks §12's non-decreasing cycle.  *)
 (*    (b) [flex_step]        — the flex half, structural on [Θ0] with [Ξ]  *)
 (*        generalized and the total context length bounded.                *)
 (*    (c) [main_join]        — the main half's twelve-row join dispatch.   *)
 (*                                                                        *)
-(*  ONE obligation remains, and it is outside the mechanical assembly.    *)
+(*  ⭐⭐⭐ AND THE RESIDUAL IS DISCHARGED.  [main_forall] — the two ForallL   *)
+(*  rows — was the assembly's ONE hypothesis for a year of this campaign.  *)
+(*  Its single unsupplied premise was TASK 0's [sub_shield]                *)
+(*  (RESIDUAL A1), for which no general supply route existed once [P0]     *)
+(*  carried a ∀ below its head.  Under the authors' repaired [SolE-FlexR]  *)
+(*  that gate is GONE, for a reason that has nothing to do with supplying  *)
+(*  it: P6-Cv stopped consuming [flex_apart], so P6-Sv stopped needing     *)
+(*  [flex_apart_walk], so [sub_shield] lost its guess-descending conjunct  *)
+(*  — and what remains is Δρ-CONSTANT, hence at the Δρ = ∅ these rows      *)
+(*  instantiate it at, unconditionally TRUE ([sub_shield_empty],           *)
+(*  prop_look_complete_sub_cstr.v).  P6-L discharges it internally and no  *)
+(*  longer takes it; §9's two ForallL branches now apply their row lemmas  *)
+(*  DIRECTLY, on exactly the join rule's own premises.                     *)
 (*                                                                        *)
-(*  ⭕ RESIDUAL A — [main_forall n], the two ForallL rows.  It used to      *)
-(*     carry the WLOG premise too; that is now DISCHARGED INSIDE the       *)
-(*     dispatch (§8b + [p0_wlog_trichotomy]), so [main_forall] TAKES the   *)
-(*     WLOG as a hypothesis and the residual is narrower than it was.      *)
+(*  ⭕ The other former components, for the record:                         *)
+(*    · RESIDUAL A2 (the WLOG [guarded P0 ∨ P0 = □]) — CLOSED 2026-08-03,  *)
+(*      §8b: [p0_wlog_trichotomy] leaves exactly one escaping shape (a     *)
+(*      ∀-headed [P0] at NM = TY, M = TC) and [main_all_inh_counterpart]   *)
+(*      sends it through ForallR.  That is the mechanical content of the   *)
+(*      paper's one-sentence WLOG, subtyping-proofs.tex:3385.              *)
+(*    · The TY-only ghost-freeness of the join's subject — CLOSED, it sits *)
+(*      ON THE MOTIVE ([sub_complete_concl]'s last premise) and            *)
+(*      [a_sub_complete_thm] carries it as a paper-facing EXTERNAL side    *)
+(*      condition (docs/WF-SIDE-CONDITIONS.md).                            *)
+(*    · RESIDUAL B (the TERM-VARIABLE gap of §6) — CLOSED 2026-08-03:      *)
+(*      both the rules and P7a's two completeness rows are in the tree.    *)
 (*                                                                        *)
-(*     ⚙ WHAT IS LEFT, exactly — ONE premise of                            *)
-(*     [a_sub_complete_forall_l_tagged] / [_untagged] that the join does   *)
-(*     not supply: TASK 0's [sub_shield] (A1 below).                       *)
-(*                                                                        *)
-(*     ⭐ The OTHER former component — [NM = TY -> uskl_ghost_free …] — is  *)
-(*     CLOSED (2026-08-03): it sits ON THE MOTIVE as                       *)
-(*     [sub_complete_concl]'s last premise, on the JOIN-side subject, and  *)
-(*     [a_sub_complete_thm] carries it as the paper-facing EXTERNAL side   *)
-(*     condition (docs/WF-SIDE-CONDITIONS.md).  Every supplier was cheap   *)
-(*     because the four ghost-heading join rules are SK-only: Sub-Arrow    *)
-(*     inverts, Sub-ForallR passes through, the ForallL rows' own          *)
-(*     hypothesis is DELETED (the motive supplies it; the construction is  *)
-(*     their shared [Hgfswap] assert), the flex half derives it from its   *)
-(*     ≡ᵘ-to-a-painting slack ([tyequiv_mono_paint_ghost_free]), and this  *)
-(*     file's [__univ_ghost_l/lg] / [__flex_mono] cases discharge it by    *)
-(*     [discriminate] / [mono_ptyp_to_uskl_syn_ghost_free].               *)
-(*                                                                        *)
-(*     A1.  ⭕⚠️⚠️ TASK 0's [sub_shield] — and it is NOT SUPPLIABLE, because  *)
-(*          [main_forall] ITSELF IS FALSE (machine-checked 2026-08-03,     *)
-(*          cex/probe_double_occ_run.v).  Both row lemmas demand           *)
-(*          [forall α, sub_shield Θ0 Ψa ∅ α P0 (open Rb α) ψa] and the     *)
-(*          join does not supply it.  prop_sub_shield_supply.v discharges  *)
-(*          it for a flex-free / atomic / mono-counterpart /               *)
-(*          inh-free-counterpart / ∀-free [P0].  ⚠️⚠️ For a [P0] carrying a  *)
-(*          ∀ below its head the failure is REAL, not an indexing artifact: *)
-(*          at the DOUBLE-OCCURRENCE configuration                         *)
-(*          (cex/cex_p7_shield_double_occ.v — join + fill Qed-inhabited)   *)
-(*          NO [a_sub] run exists ([probe_no_run]): the extract is         *)
-(*          DETERMINISTIC there, the solve THREADS the accumulated pattern *)
-(*          so SE-FlexR overwrites the eq-constraint's yield with the      *)
-(*          flexible, the guess collapses to the vacuous-binder [∀_.f̂],   *)
-(*          and the continuation's domain consistency is scope-stuck.      *)
-(*          Hence the motive instance is FALSE                             *)
-(*          ([probe_motive_instance_false]) and [main_forall 3] with it    *)
-(*          ([probe_main_forall_false]).  ⭕ Whether that payload class is  *)
-(*          TYPING-REACHABLE is OPEN: a same-day "incomplete on programs"  *)
-(*          claim is RETRACTED (the declarative system rejects that        *)
-(*          program too — a polytype instantiation must be PAID FOR by an  *)
-(*          inherited ∀ in the counterpart, the paper's §2.9 limitations   *)
-(*          2 and 3; PAPER-GAPS 2026-08-03).  The cex needs a raw          *)
-(*          flexible at the payload's codomain AND a concrete counterpart  *)
-(*          there — opposite directions — so if that is unreachable the    *)
-(*          theorem is merely OVER-QUANTIFIED and the payload side         *)
-(*          condition is the repair (HANDOFF TASKS 2–3, back ON).          *)
-(*                                                                        *)
-(*     ⭐ A2 — CLOSED (2026-08-03), §8b, and DISCHARGED INSIDE §9's ForallL *)
-(*          rows, so it is no longer part of the residual at all.  The two  *)
-(*          ForallL row lemmas also demand                                  *)
-(*          [guarded_pskl P0 \/ P0 = pskl_hole], and at [NM = TY] with     *)
-(*          [M = TC] that is NOT derivable: [a_ty_mode_compat mode_tc P0]  *)
-(*          allows a ∀-headed [P0], and §8's refutation does not transfer  *)
-(*          (it consumes the Check row's [guarded_pskl B]; ForallL's       *)
-(*          counterpart is arbitrary).  The configuration is REAL — with a *)
-(*          ∀-headed [P0] the ALGORITHM fires ForallR ([a_sub__forall_r]   *)
-(*          is the rule whose INPUT is the ∀) while the JOIN's last rule   *)
-(*          is ForallL.  ⭐ THE PAPER HANDLES THIS, subtyping-proofs.tex:   *)
-(*          3385 — *Since declarative subtyping is congruent, we assume    *)
-(*          WLOG that guarded(P0) ∨ P0 = □; otherwise we apply ForallR     *)
-(*          first.*  It is a compressed proof step, NOT a defect.  Its     *)
-(*          mechanical content is the JOIN PERMUTATION of §8b:             *)
-(*          [p0_wlog_trichotomy] shows the ONLY escaping shape is a        *)
-(*          ∀-headed [P0] at [NM = TY], [M = TC]; there the FILL forces a  *)
-(*          ∀-inh counterpart and [main_all_inh_counterpart] sends the row *)
-(*          through ForallR.  §9's two ForallL cases now do exactly that.  *)
-(*                                                                        *)
-(*  ⭐ FORMER RESIDUAL B — the TERM-VARIABLE gap of §6 — is CLOSED           *)
-(*     (2026-08-03).  Both the rules and P7a's two completeness rows are   *)
-(*     in the tree, so [flex_step] carries no side condition on [Θ0] and   *)
-(*     its two term-variable branches are ordinary delegations.  The       *)
-(*     rejected alternative is worth recording: carrying the old           *)
-(*     [a_sub_flex_walkable Θ0] premise to the final bundle instead does   *)
-(*     NOT work — the row lemmas' fuel IH is the UNRESTRICTED              *)
-(*     [sub_complete_concl], so the restriction would have to move INTO    *)
-(*     the motive and every row would then owe walkability of the          *)
-(*     contexts it recurses at.                                           *)
-(*                                                                        *)
-(*  The assembly itself is §12, and it is done: [main_forall] is its ONE   *)
-(*  hypothesis.  ⚠️⚠️ That hypothesis is REFUTED (2026-08-03,                *)
-(*  cex/probe_double_occ_run.v, [probe_main_forall_false]): [main_forall]  *)
-(*  quantifies over payloads the TYPING never produces, and at the         *)
-(*  double-occ payload the algorithm has no run while the declarative      *)
-(*  solution is Qed-inhabited.  So [a_sub_complete_bundle_holds] and       *)
-(*  [a_sub_complete_thm] below are VACUOUS as stated.  (The earlier "the   *)
-(*  hypothesis is an instance of the very theorem being proved, hence      *)
-(*  known-true" reasoning was CIRCULAR precisely at the paper theorem's    *)
-(*  over-quantification of [P0]; stating the residual as [main_forall]     *)
-(*  rather than a guessed shield supply is what made the falsity           *)
-(*  DETECTABLE instead of silently assumed.)  The two theorems stay out    *)
-(*  of README.v.  The planned repair — a payload side condition on the     *)
-(*  MOTIVE, read off the typing's a_sub call sites — is still the route    *)
-(*  (HANDOFF TASKS 2–3); a same-day claim that it was INVALID because the  *)
-(*  failing class is typing-reachable has been RETRACTED (DESIGN §14.9,    *)
-(*  PAPER-GAPS 2026-08-03: the declarative system rejects that program     *)
-(*  too, so reachability is simply OPEN).                                  *)
+(*  ⚠️ HISTORY, so the retraction is not lost.  This block used to record   *)
+(*  that [main_forall] is FALSE (cex/probe_double_occ_run.v,               *)
+(*  [probe_main_forall_false]) and that the two flagships were therefore   *)
+(*  VACUOUS.  That refutation is RETRACTED: it ran through the double-     *)
+(*  occurrence configuration, where the OLD [SolE-FlexR] discarded the     *)
+(*  accumulated pattern so no [a_sub] run existed.  The repaired row       *)
+(*  returns [guess^TY(P)], the run exists (cex/probe_flexr_repair.v), and  *)
+(*  the shield at that very configuration now HOLDS                        *)
+(*  ([p7_sub_shield_double_occ_holds]).  Both flagships are UNCONDITIONAL  *)
+(*  and are indexed in README.v.                                           *)
 (* ===================================================================== *)
 
 
 (* ===================================================================== *)
-(*  §12  THE ASSEMBLY — [a_sub_complete_bundle], modulo [main_forall]      *)
+(*  §12  THE ASSEMBLY — [a_sub_complete_bundle], UNCONDITIONAL            *)
 (*                                                                        *)
 (*  DESIGN §12.1's three layers, glued: strong induction on the FUEL, and  *)
 (*  inside it strong induction on the CONTEXT LENGTH.                      *)
@@ -1360,22 +1314,28 @@ Qed.
 (*  [flex_here n Θ0], which is [flex_step] at [Ξ = nil].                   *)
 (* ===================================================================== *)
 
-Theorem a_sub_complete_bundle_holds :
-  (forall n, main_forall n) -> a_sub_complete_bundle.
+(** ⭐⭐⭐ UNCONDITIONAL (2026-08-05).  This used to take
+    [forall n, main_forall n] — the two ForallL rows, whose one unsupplied
+    premise was TASK 0's [sub_shield].  That gate is gone: under the authors'
+    repaired [SolE-FlexR] the shield lost its guess-descending conjunct and,
+    at the Δρ = ∅ these rows instantiate it at, is unconditionally true
+    ([sub_shield_empty]).  So §9's two ForallL branches apply their row
+    lemmas DIRECTLY and the hypothesis has no consumer left. *)
+Theorem a_sub_complete_bundle_holds : a_sub_complete_bundle.
 Proof.
-  intros Hforall n.
+  intros n.
   induction n as [n IHfuel] using lt_wf_ind.
   assert (Hfuel : forall n', n' < n -> main_all n')
     by (intros n' Hn'; exact (proj1 (IHfuel n' Hn'))).
   assert (Harrow : main_arrow n)
-    by (apply main_arrow_holds; [ exact Hfuel | exact (Hforall n) ]).
+    by (apply main_arrow_holds; exact Hfuel).
   (* the main half at every context, by strong induction on the LENGTH *)
   assert (Hbelow : forall k, main_below n k).
   { intro k. induction k as [k IHk] using lt_wf_ind.
     intros NM M Θ0 P0 P R R' Ψ Θ κ Q Hlen.
     intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
            Hgf.
-    refine (@main_join n NM M Ψ Θ R' Q HDj Hfuel (Hforall n) Θ0
+    refine (@main_join n NM M Ψ Θ R' Q HDj Hfuel Θ0
               (fun _ => True) _ _ _ P0 P R κ I
               Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
               HwfQ Hgf);
@@ -1399,16 +1359,12 @@ Qed.
     subject the motive carries; the paper's own form is the REFLEXIVE
     instance [R' := κ⌈P⌉ᵘ], so this statement is the weaker-premise one.
 
-    ⚠️⚠️ It inherits [main_forall], which is REFUTED
-    (cex/probe_double_occ_run.v, [probe_main_forall_false]) — so as stated
-    this theorem is VACUOUS, and it stays OUT of README.v (which indexes
-    unconditional paper claims).  ⭕ Whether the refuting configuration is
-    typing-reachable is OPEN (a same-day "reachable" claim is retracted —
-    DESIGN §14.9); if it is not, the paper statement is merely
-    OVER-QUANTIFIED and a payload side condition on the motive is the
-    repair (docs/HANDOFF-completeness-repair.md TASKS 2–3). *)
+    ⭐⭐⭐ UNCONDITIONAL (2026-08-05).  It used to inherit
+    [forall n, main_forall n], whose one unsupplied premise was TASK 0's
+    [sub_shield]; the authors' repaired [SolE-FlexR] retired that gate
+    ([sub_shield_empty]).  The premises below are the paper's own plus the
+    EXTERNAL wf side conditions registered in docs/WF-SIDE-CONDITIONS.md. *)
 Theorem a_sub_complete_thm :
-  (forall n, main_forall n) ->
   forall n NM M Θ0 P0 P R' Θ κ Q,
     a_wf_aenv Θ0 -> a_wf_aenv Θ ->
     Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
@@ -1433,9 +1389,9 @@ Theorem a_sub_complete_thm :
            Θ ⨟ empty ⊢ₚᵣᵃ
              (msubst_bskl ζ (pskl_to_bskl_syn P1)) ⊑ (bskl_to_pskl Q)).
 Proof.
-  intros Hforall n NM M Θ0 P0 P R' Θ κ Q
+  intros n NM M Θ0 P0 P R' Θ κ Q
     Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty Hinc Hslack HDj Hrs HwfQ Hgf.
-  exact (proj1 (a_sub_complete_bundle_holds Hforall n)
+  exact (proj1 (a_sub_complete_bundle_holds n)
            NM M Θ0 P0 P (pskl_to_uskl P) R' empty Θ κ Q
            Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty
            (uskl_to_pskl_pskl_to_uskl P) Hinc Hslack HDj Hrs HwfQ Hgf).

@@ -78,7 +78,55 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-05 (latest) — ⭐⭐⭐ **`flex_apart` RETIRED FROM P6-Cv AND P6-Sv; `sub_shield` COLLAPSES TO A DERIVABLE PREMISE**
+## 2026-08-05 (latest) — ⭐⭐⭐ **SUBTYPING COMPLETENESS IS UNCONDITIONAL.  `a_sub_complete_thm` GOES INTO README.v**
+
+`make coq` clean, every `.v` fresh, README's audit is 28 ×
+`Closed under the global context` with no axioms.
+
+**`a_sub_complete_bundle_holds` and `a_sub_complete_thm` no longer take
+`forall n, main_forall n`.**  That hypothesis was the assembly's last one
+(§10 RESIDUAL A), and its single unsupplied premise was the mech-invented
+`sub_shield` for a `P0` carrying a ∀ below its head — the residual that
+survived the whole `prop_sub_shield_supply.v` campaign.
+
+**Why it fell, and it is not because a supply route was found.**  The chain is
+entirely a consequence of the authors' repaired `SolE-FlexR`:
+
+1. P6-Cv stopped consuming `flex_apart` (`FLEXMONO` + the position-wise
+   payload scope).
+2. So P6-Sv stopped needing `flex_apart_walk` — every use was a relay.
+3. So `sub_shield` lost its guess-descending conjunct, leaving the
+   Δρ-CONSTANT half.
+4. And that half, at the **Δρ = ∅** which P6-L and P7b's two ForallL rows
+   instantiate it at, is **unconditionally true** (`sub_shield_empty`): the
+   walk's growth condition `Δρ' ∩ ftv ψa ⊆ Δρ` reads as cleanliness, so every
+   reachable state is `fa_clean`.
+
+⚠️ Step 4 was FALSE before step 3: `fa_walk`'s `fastep_all_r` GROWS Δρ, so
+from Δρ = ∅ the guess-descending half reached a state where the opened binder
+sits in Δρ and `fa_clean` is blocked.  That is exactly the double-occurrence
+refutation — now reversed (`p7_sub_shield_double_occ_holds`).
+
+Consequently: P6-L drops the premise and discharges it internally; P7b's
+`a_sub_complete_forall_l_tagged` / `_untagged` drop TASK 0's gate; §9's two
+ForallL branches of `main_join` apply those row lemmas DIRECTLY, on exactly
+the join rule's own premises; `main_join`, `main_arrow_holds` and the bundle
+drop the hypothesis.  `main_forall` is retired (kept as documentation, no
+consumers).
+
+⚠️ **The earlier refutation of `main_forall` is RETRACTED**, not worked
+around: `probe_main_forall_false` ran through the double-occurrence
+configuration, where the OLD `SolE-FlexR` discarded the accumulated pattern so
+no `a_sub` run existed.  The repaired row returns `guess^TY(P)` and the run
+exists (`cex/probe_flexr_repair.v`).
+
+**What the flagship still carries beyond the paper**: the EXTERNAL wf side
+conditions of `docs/WF-SIDE-CONDITIONS.md` — well-formedness of the
+counterpart, and the subject's ghost-freeness at the TY sort.  §10 is
+rewritten to record all of this, including the retraction.
+
+
+## 2026-08-05 — ⭐⭐⭐ **`flex_apart` RETIRED FROM P6-Cv AND P6-Sv; `sub_shield` COLLAPSES TO A DERIVABLE PREMISE**
 
 `make coq` clean, every `.v` fresh, P6-Cv / P6-Sv / P6-Ss / P6-L /
 `a_sub_sound_thm` / the new `flex_apart_p0_sub_shield` all

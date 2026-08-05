@@ -372,6 +372,25 @@ Proof.
   - apply fa_rho_var. clear - H Hle; fsetdec.
 Qed.
 
+(** ⭐⭐⭐ …and at Δρ = ∅ it is FREE OUTRIGHT (2026-08-05).  The walk's growth
+    condition [Δρ' ∩ ftv ψa ⊆ Δρ] reads, at Δρ = ∅, as "the guess is
+    Δρ'-clean" — which is [fa_clean] at every reachable state.  Δρ = ∅ is
+    exactly how P6-L and P7b's two ForallL rows instantiate it, so TASK 0's
+    shield supply — the residual that survived the whole `prop_sub_shield_supply`
+    campaign — is discharged.
+
+    ⚠️ This was NOT true before the guarded conjunct was retired: [fa_walk]'s
+    [fastep_all_r] GROWS Δρ, so from Δρ' = ∅ the guess-descending half reached
+    a state where the opened binder sits in Δρ and [fa_clean] is blocked.
+    That is precisely the double-occurrence refutation
+    (cex/cex_p7_shield_double_occ.v, now reversed). *)
+Lemma sub_shield_empty : forall Θ0 Ψ' α P0 R ψa,
+  sub_shield Θ0 Ψ' empty α P0 R ψa.
+Proof.
+  intros Θ0 Ψ' α P0 R ψa P0' R' Δρ' Hw Hle Hcl P0'' Hw0.
+  apply fa_clean. clear - Hcl; fsetdec.
+Qed.
+
 (** ⭐⭐ …so the CLOSURE is free: [sub_shield] follows from [flex_apart_p0] at
     the root.  This is what the guarded conjunct never allowed — [fa_step] has
     no guess-fixed arrow descent, so [flex_apart_walk] at [P1 → P2] does not

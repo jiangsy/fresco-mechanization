@@ -2497,20 +2497,19 @@ Lemma a_sub_complete_forall_l_tagged :
   a_tags_sort NM Ψa ψa ->
   Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψa ⌋ˢ ->
   ad_pat_sub_gv n NM M (Ψ `union` Ψa) Θ (open_uskl_wrt_uskl Rj ψa) Q ->
-  (* ⭐ TASK 0's gate, POSITIONALLY indexed (DESIGN §14.3, 2026-08-03):
-     the marker [α] is picked inside the proof, and the shield is
-     demanded at the SUBJECT the row hands P6-L, [open Rb α].  ⚠️ The
-     [forall R] form is NOT available — it is over-strong at
-     cex/cex_p7_shield_realizable.v's witness (take [R = unit → α],
-     which walks the guess onto a raw flexible it never meets). *)
-  (forall α, sub_shield Θ0 Ψa empty α P0
-               (open_uskl_wrt_uskl Rb (uskl_var_f α)) ψa) ->
+  (* ⭕⭕ TASK 0's GATE IS GONE (2026-08-05).  It used to demand
+     [sub_shield Θ0 Ψa ∅ α P0 (open Rb α) ψa] at every marker, and no general
+     supply route existed for a [P0] carrying a ∀ below its head — that
+     residual is what kept [main_forall] a hypothesis.  Under the authors'
+     repaired [SolE-FlexR], [sub_shield] lost its guess-descending conjunct
+     and, at Δρ = ∅, is unconditionally TRUE ([sub_shield_empty]).  P6-L
+     discharges it internally and no longer takes it. *)
   (guarded_pskl P0 \/ P0 = pskl_hole) ->
   sub_complete_concl (S n) NM M Θ0 P0 P (uskl_all_etag ε Rb)
     (uskl_all_etag ε Rj) Ψ Θ κ Q.
 Proof.
   intros n NM M Θ0 P0 P Rb Rj Ψ Θ κ Q ε Ψa ψa
-    IH HMti HΨaΨ HΨaftag Htags Hwfψa HD Hshield HP0wlog.
+    IH HMti HΨaΨ HΨaftag Htags Hwfψa HD HP0wlog.
   unfold sub_complete_concl.
   intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ Hgf.
   cbn in HeqP. subst P.
@@ -2607,7 +2606,6 @@ Proof.
                     clear - Hdψ; fsetdec)
               Hwfψa
               ltac:(intros β α0 τ Hβ; exfalso; clear - Hβ; fsetdec)
-              (Hshield α)
               ltac:(pose proof (ad_pat_sub_g_ftag_sub
                                   (ad_pat_sub_gv_forget HD)) as Hfs;
                     pose proof (ftag_in_uskl_open_upper Rj ψa) as Hou;
@@ -2810,20 +2808,19 @@ Lemma a_sub_complete_forall_l_untagged :
   a_tags_sort NM Ψa ψa ->
   Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψa ⌋ˢ ->
   ad_pat_sub_gv n NM M (Ψ `union` Ψa) Θ (open_uskl_wrt_uskl Rj ψa) Q ->
-  (* ⭐ TASK 0's gate, POSITIONALLY indexed (DESIGN §14.3, 2026-08-03):
-     the marker [α] is picked inside the proof, and the shield is
-     demanded at the SUBJECT the row hands P6-L, [open Rb α].  ⚠️ The
-     [forall R] form is NOT available — it is over-strong at
-     cex/cex_p7_shield_realizable.v's witness (take [R = unit → α],
-     which walks the guess onto a raw flexible it never meets). *)
-  (forall α, sub_shield Θ0 Ψa empty α P0
-               (open_uskl_wrt_uskl Rb (uskl_var_f α)) ψa) ->
+  (* ⭕⭕ TASK 0's GATE IS GONE (2026-08-05).  It used to demand
+     [sub_shield Θ0 Ψa ∅ α P0 (open Rb α) ψa] at every marker, and no general
+     supply route existed for a [P0] carrying a ∀ below its head — that
+     residual is what kept [main_forall] a hypothesis.  Under the authors'
+     repaired [SolE-FlexR], [sub_shield] lost its guess-descending conjunct
+     and, at Δρ = ∅, is unconditionally TRUE ([sub_shield_empty]).  P6-L
+     discharges it internally and no longer takes it. *)
   (guarded_pskl P0 \/ P0 = pskl_hole) ->
   sub_complete_concl (S n) NM M Θ0 P0 P (uskl_all_syn Rb)
     (uskl_all_syn Rj) Ψ Θ κ Q.
 Proof.
   intros n NM M Θ0 P0 P Rb Rj Ψ Θ κ Q Ψa ψa
-    IH HMti HΨaΨ HΨaftag Htags Hwfψa HD Hshield HP0wlog.
+    IH HMti HΨaΨ HΨaftag Htags Hwfψa HD HP0wlog.
   unfold sub_complete_concl.
   intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ Hgf.
   cbn in HeqP. subst P.
@@ -2920,7 +2917,6 @@ Proof.
                     clear - Hdψ; fsetdec)
               Hwfψa
               ltac:(intros β α0 τ Hβ; exfalso; clear - Hβ; fsetdec)
-              (Hshield α)
               ltac:(pose proof (ad_pat_sub_g_ftag_sub
                                   (ad_pat_sub_gv_forget HD)) as Hfs;
                     pose proof (ftag_in_uskl_open_upper Rj ψa) as Hou;
