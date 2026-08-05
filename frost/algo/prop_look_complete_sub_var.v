@@ -633,11 +633,11 @@ Qed.
 (** A □ input skeleton solves to □ or to a universal ghost — the only rules
     with a [□] left-hand side are SolS-Vacuous, SolS-GhostL and
     SolS-GhostLF (SolS-ForallR just threads the output through). *)
-Lemma a_solve_sub_hole_output : forall Θ0 m P0 Pa,
-  Θ0 ⊢ₛ pskl_hole ≼[ m ] P0 ⤳ Pa ->
+Lemma a_solve_sub_hole_output : forall Θ0 m P0 Ξ Pa,
+  Θ0 ⊢ₛ pskl_hole ≼[ m ] P0 ⤳ Ξ ⨾ Pa ->
   Pa = pskl_hole \/ exists B, Pa = pskl_tophole B.
 Proof.
-  intros Θ0 m P0 Pa H.
+  intros Θ0 m P0 Ξ Pa H.
   remember pskl_hole as Ph eqn:HeqP.
   (* surviving rows: SolS-Vacuous (output = the □ input), SolS-Check (□ is
      not guarded), SolS-ForallR (output = the body's), SolS-GhostLF and
@@ -1235,7 +1235,7 @@ Qed.
     It serves BOTH leaf sources: the [rho_leaf] disjunct of the [uskl_rho]
     inversions, and the [fsh_rho_var] branch of [flex_shield_flex_leaf]. *)
 Lemma a_solve_sub_complete_rho_var :
-  forall NM m Θ0 Θ κ Δ Δρ Ψ' Ψi Ψa α Pi P0,
+  forall NM m Θ0 Θ Θw κ Δ Δρ Ψ' Ψi Ψa α Pi P0,
   a_wf_aenv Θ ->
   a_tags_sort NM Ψ' (uskl_var_f α) ->
   Ψi `union` Ψa [<=] Ψ' ->
@@ -1246,12 +1246,16 @@ Lemma a_solve_sub_complete_rho_var :
      α0 `notin` pskl_shielded_ftv (msubst_pskl κ Pi)) ->
   Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
   Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_var_f α) ->
-  exists Pa, Θ0 ⊢ₛ Pi ≼[ m ] P0 ⤳ Pa /\
-             Θ0 ⨟ empty ⊢ₚₛᵃ Pa /\
-             Θ ⨟ Δ ⊢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi `union` Ψa ] (uskl_var_f α).
+  (* SolS-Var GENERATES NOTHING, so the package is the trivial one: this is
+     [solve_sub_ext_nil] with [Ξ := ·] and [κ' := ·], and [Θw] and [L] are
+     therefore unconstrained. *)
+  forall L,
+  solve_sub_ext Θ0 Θw m Pi P0 L
+    (fun κ' Pa =>
+       Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] (uskl_var_f α)).
 Proof.
-  intros NM m Θ0 Θ κ Δ Δρ Ψ' Ψi Ψa α Pi P0
-    HwfΘ Htags Hsub Hfresh Hdelta HαΔρ Hshield HwfPi Hpre.
+  intros NM m Θ0 Θ Θw κ Δ Δρ Ψ' Ψi Ψa α Pi P0
+    HwfΘ Htags Hsub Hfresh Hdelta HαΔρ Hshield HwfPi Hpre L.
   pose proof (Hfresh α HαΔρ) as (HXb & Hκav & Hdef).
   assert (HαΔ : α `in` Δ) by (clear - Hdelta HαΔρ; fsetdec).
   pose proof (Hshield α HαΔρ) as Hsh.
@@ -1262,11 +1266,11 @@ Proof.
   assert (HΨ'e : Ψ' [=] empty)
     by (exact (d_tags_skl_var_inv (a_tags_sort_d_tags Htags))).
   assert (HΨae : Ψa [=] empty) by (clear - Hsub HΨ'e; fsetdec).
-  exists Pi; split; [ | split ].
-  - rewrite HeqPi. apply a_solve_sub__var.
-  - exact HwfPi.
-  - rewrite Heqm.
-    apply ad_ppre__var; [ clear - HΨie HΨae; fsetdec | left; exact HαΔ ].
+  eapply solve_sub_ext_nil with (Pa := Pi);
+    [ rewrite HeqPi; apply a_solve_sub__var
+    | exact HwfPi
+    | cbn [app]; rewrite Heqm;
+      apply ad_ppre__var; [ clear - HΨie HΨae; fsetdec | left; exact HαΔ ] ].
 Qed.
 
 (* ===================================================================== *)
@@ -1432,7 +1436,13 @@ Qed.
     the precision against an arrow guess.  The ∀◇ row recurses STRUCTURALLY
     on Pi — no measure needed, since well-formedness makes the ghost's body
     guarded. *)
-Lemma arrow_grid : forall NM M Θ0 Θ κ Δ Δρ Ψt Ψi Ψa ψ1 ψ2 Pi P01 P02,
+(** ⭐ THE KEY hypothesis now hands back the ARROW ROW's whole merged package
+    (2026-08-04, the SolE-FlexR repair): the two halves THREAD — SS-Arrow and
+    SS-GhostLF run their second premise at [Ξ1 ++ Θ0] — so the caller cannot
+    give the two solves independently, and the block/extension it returns is
+    already the merged [Ξ2 ++ Ξ1] / [κ2 ++ κ1].  Both outputs are well-formed
+    at the MERGED block, which is what [a_wf_pskl__arrow] then lifts. *)
+Lemma arrow_grid : forall NM M Θ0 Θ Θw κ Δ Δρ Ψt Ψi Ψa ψ1 ψ2 Pi P01 P02,
   a_wf_aenv Θ ->
   κ ∷ Θ0 ⊑ Θ ->
   a_tags_sort NM Ψt (uskl_arrow ψ1 ψ2) ->
@@ -1440,7 +1450,7 @@ Lemma arrow_grid : forall NM M Θ0 Θ κ Δ Δρ Ψt Ψi Ψa ψ1 ψ2 Pi P01 P02,
   (* the two target components are well-formed — needed only to know the
      target is locally closed, which the guardedness of a ∀◇ output rests on *)
   Θ0 ⨟ empty ⊢ₚₛᵃ P01 -> Θ0 ⨟ empty ⊢ₚₛᵃ P02 ->
-  (forall Pi1 Pi2 Ψi1 Ψi2,
+  (forall Pi1 Pi2 Ψi1 Ψi2 L,
      Θ0 ⨟ empty ⊢ₚₛᵃ Pi1 -> Θ0 ⨟ empty ⊢ₚₛᵃ Pi2 ->
      (forall α, α `in` Δρ ->
         α `notin` pskl_shielded_ftv (msubst_pskl κ Pi1)) ->
@@ -1449,48 +1459,58 @@ Lemma arrow_grid : forall NM M Θ0 Θ κ Δ Δρ Ψt Ψi Ψa ψ1 ψ2 Pi P01 P02,
      Ψi [=] Ψi1 `union` Ψi2 ->
      Θ ⨟ Δ ⊢ (msubst_pskl κ Pi1) ⊑ᵖ[ Ψi1 ] ψ1 ->
      Θ ⨟ Δ ⊢ (msubst_pskl κ Pi2) ⊑ᵖ[ Ψi2 ] ψ2 ->
-     exists Pa1 Pa2,
-       Θ0 ⊢ₑ Pi1 ∼ P01 ⤳ Pa1 /\
-       Θ0 ⊢ₛ Pi2 ≼[ M ] P02 ⤳ Pa2 /\
-       Θ0 ⨟ empty ⊢ₚₛᵃ Pa1 /\ Θ0 ⨟ empty ⊢ₚₛᵃ Pa2 /\
-       Θ ⨟ Δ ⊢ (msubst_pskl κ (pskl_arrow Pa1 Pa2))
+     exists Ξ1 Ξ2 Pa1 Pa2 κ1 κ2,
+       Θ0 ⊢ₑ Pi1 ∼ P01 ⤳ Ξ1 ⨾ Pa1 /\
+       (Ξ1 ++ Θ0) ⊢ₛ Pi2 ≼[ M ] P02 ⤳ Ξ2 ⨾ Pa2 /\
+       all_flex_mono (Ξ2 ++ Ξ1) /\
+       uniq (Ξ2 ++ Ξ1) /\
+       keys (κ2 ++ κ1) = keys (Ξ2 ++ Ξ1) /\
+       (forall α, α `in` dom (Ξ2 ++ Ξ1) -> α `notin` L) /\
+       Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) (κ2 ++ κ1) /\
+       ((Ξ2 ++ Ξ1) ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa1 /\
+       ((Ξ2 ++ Ξ1) ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa2 /\
+       Θ ⨟ Δ ⊢ (msubst_pskl ((κ2 ++ κ1) ++ κ) (pskl_arrow Pa1 Pa2))
          ⊑ᵖ[ Ψi `union` Ψa ] (uskl_arrow ψ1 ψ2)) ->
   Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
   (forall α, α `in` Δρ -> α `notin` pskl_shielded_ftv (msubst_pskl κ Pi)) ->
   Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_arrow ψ1 ψ2) ->
-  exists Pa, Θ0 ⊢ₛ Pi ≼[ mode_fn M ] (pskl_arrow P01 P02) ⤳ Pa /\
-    Θ0 ⨟ empty ⊢ₚₛᵃ Pa /\
-    Θ ⨟ Δ ⊢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi `union` Ψa ] (uskl_arrow ψ1 ψ2).
+  forall L,
+  solve_sub_ext Θ0 Θw (mode_fn M) Pi (pskl_arrow P01 P02) L
+    (fun κ' Pa =>
+       Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) Pa)
+         ⊑ᵖ[ Ψi `union` Ψa ] (uskl_arrow ψ1 ψ2)).
 Proof.
-  intros NM M Θ0 Θ κ Δ Δρ Ψt Ψi Ψa ψ1 ψ2 Pi P01 P02
+  intros NM M Θ0 Θ Θw κ Δ Δρ Ψt Ψi Ψa ψ1 ψ2 Pi P01 P02
          HwfΘ Hκ Htags Htageq HwfP01 HwfP02 KEY.
   revert Ψi Ψa Htageq KEY.
   induction Pi as [ | nPi | β | Pi1 IH1 Pi2 IH2 | Pi0 IH0 | | Pi0 IH0 ];
-    intros Ψi Ψa Htageq KEY HwfPi Hshield Hpre;
+    intros Ψi Ψa Htageq KEY HwfPi Hshield Hpre L;
     cbn [msubst_pskl] in Hpre.
   - (* ⟨⟩ : no rule targets an arrow from unit *) inversion Hpre.
   - (* a bound variable is not well-formed *) inversion HwfPi.
   - (* a variable : SolS-Var keeps it, and a MONOTYPE κ-image forces the
-       guess to be tag-free, so there is nothing left to solve *)
+       guess to be tag-free, so there is nothing left to solve — and nothing
+       generated, so the package is [solve_sub_ext_nil]'s *)
     assert (Hml : mono_ptyp (msubst_lookup κ β))
       by (eapply a_inc_lookup_mono; exact Hκ).
     assert (HΨte : Ψt [=] empty)
       by (eapply ad_ppre_mono_subject_target_tags_empty;
             [ exact HwfΘ | exact Hpre | reflexivity | exact Hml
             | exact (a_tags_sort_d_tags Htags) ]).
-    exists (pskl_var_f β); split;
+    eapply solve_sub_ext_nil with (Pa := pskl_var_f β);
       [ apply a_solve_sub__var
-      | split; [ exact HwfPi | ];
-        cbn [msubst_pskl];
+      | exact HwfPi
+      | cbn [app msubst_pskl];
         eapply ad_partial_precise_psi_cong;
           [ exact Hpre | clear - Htageq HΨte; fsetdec ] ].
-  - (* an arrow : both components recurse through KEY *)
+  - (* an arrow : both components recurse through KEY, which already merged
+       the two blocks (SS-Arrow threads) *)
     inversion Hpre; subst.
     match goal with
       Hp1 : _ ⨟ _ ⊢ msubst_pskl κ Pi1 ⊑ᵖ[ ?Ψa1 ] ψ1,
       Hp2 : _ ⨟ _ ⊢ msubst_pskl κ Pi2 ⊑ᵖ[ ?Ψa2 ] ψ2,
       Hun : Ψi [=] _ |- _ =>
-      destruct (KEY Pi1 Pi2 Ψa1 Ψa2
+      destruct (KEY Pi1 Pi2 Ψa1 Ψa2 L
                   ltac:(inversion HwfPi; assumption)
                   ltac:(inversion HwfPi; assumption)
                   ltac:(intros α0 Hα0; pose proof (Hshield α0 Hα0) as Hs;
@@ -1500,18 +1520,22 @@ Proof.
                         cbn [msubst_pskl pskl_shielded_ftv] in Hs;
                         clear - Hs; fsetdec)
                   Hun Hp1 Hp2)
-        as (Pa1 & Pa2 & Hs1 & Hs2 & Hw1 & Hw2 & Hp)
+        as (Ξ1 & Ξ2 & Pa1 & Pa2 & κ1 & κ2
+            & Hs1 & Hs2 & Hfm & Hu & Hk & Hfr & HF & Hw1 & Hw2 & Hp)
     end.
-    exists (pskl_arrow Pa1 Pa2); split;
-      [ apply a_solve_sub__arrow; [ exact Hs1 | exact Hs2 ]
-      | split;
-        [ apply a_wf_pskl__arrow; [ exact Hw1 | exact Hw2 ] | exact Hp ] ].
+    exists (Ξ2 ++ Ξ1), (pskl_arrow Pa1 Pa2), (κ2 ++ κ1).
+    repeat (split; [ solve [ apply a_solve_sub__arrow; [ exact Hs1 | exact Hs2 ]
+                           | exact Hfm | exact Hu | exact Hk | exact Hfr
+                           | exact HF
+                           | apply a_wf_pskl__arrow; [ exact Hw1 | exact Hw2 ] ]
+                   | ]).
+    exact Hp.
   - (* ∀ : no rule targets an arrow from a quantifier *) inversion Hpre.
   - (* □ : SolS-GhostLF, with both branches run at input □ *)
     inversion Hpre; subst.
     match goal with Hd : Δ ∩ ftvar_in_uskl (uskl_arrow ψ1 ψ2) [=] empty,
                     He : Ψi [=] empty |- _ =>
-      destruct (KEY pskl_hole pskl_hole empty empty
+      destruct (KEY pskl_hole pskl_hole empty empty L
                   (a_wf_pskl__hole Θ0 empty) (a_wf_pskl__hole Θ0 empty)
                   ltac:(intros α0 Hα0; cbn; clear; fsetdec)
                   ltac:(intros α0 Hα0; cbn; clear; fsetdec)
@@ -1522,20 +1546,24 @@ Proof.
                   ltac:(cbn [msubst_pskl]; apply ad_ppre__hole;
                         [ clear; fsetdec
                         | cbn [ftvar_in_uskl] in Hd; clear - Hd; fsetdec ]))
-        as (Pa1 & Pa2 & Hs1 & Hs2 & Hw1 & Hw2 & Hp)
+        as (Ξ1 & Ξ2 & Pa1 & Pa2 & κ1 & κ2
+            & Hs1 & Hs2 & Hfm & Hu & Hk & Hfr & HF & Hw1 & Hw2 & Hp)
     end.
-    exists (pskl_tophole (pskl_arrow Pa1 Pa2)); split;
-      [ apply a_solve_sub__ghost_l_fn; [ exact Hs1 | exact Hs2 ]
-      | split;
-        [ apply a_wf_pskl__tophole;
-            [ apply guarded_pskl__arrow;
-                [ eapply a_wf_pskl_lc; exact Hw1
-                | eapply a_wf_pskl_lc; exact Hw2 ]
-            | apply a_wf_pskl__arrow; [ exact Hw1 | exact Hw2 ] ]
-        | cbn [msubst_pskl] in Hp |- *;
-          apply ad_ppre__tophole_remove; exact Hp ] ].
+    exists (Ξ2 ++ Ξ1), (pskl_tophole (pskl_arrow Pa1 Pa2)), (κ2 ++ κ1).
+    repeat (split;
+      [ solve [ apply a_solve_sub__ghost_l_fn; [ exact Hs1 | exact Hs2 ]
+              | exact Hfm | exact Hu | exact Hk | exact Hfr | exact HF
+              | apply a_wf_pskl__tophole;
+                  [ apply guarded_pskl__arrow;
+                      [ eapply a_wf_pskl_lc; exact Hw1
+                      | eapply a_wf_pskl_lc; exact Hw2 ]
+                  | apply a_wf_pskl__arrow; [ exact Hw1 | exact Hw2 ] ] ]
+      | ]).
+    cbn [msubst_pskl] in Hp |- *.
+    apply ad_ppre__tophole_remove; exact Hp.
   - (* ∀◇Pi0 : strip the ghost (the FILL and KEEP rows need a ∀^ε / ∀◈
-       guess), recurse, and wrap the output *)
+       guess), recurse, and wrap the output — a PASS-THROUGH row, so the
+       block and the extension come back unchanged *)
     inversion Hpre; subst.
     match goal with Hbody : _ ⨟ _ ⊢ msubst_pskl κ Pi0 ⊑ᵖ[ Ψi ] _ |- _ =>
       destruct (IH0 Ψi Ψa Htageq KEY
@@ -1545,22 +1573,25 @@ Proof.
                         pose proof (pskl_shielded_ftv_sub_ftv
                                       (msubst_pskl κ Pi0)) as Hle;
                         clear - Hs Hle; fsetdec)
-                  Hbody)
-        as (Pa & Hs & Hw & Hp)
+                  Hbody L)
+        as (Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hw & Hp)
     end.
-    exists (pskl_tophole Pa); split;
-      [ apply a_solve_sub__univ_ghost_l; exact Hs
-      | split;
-        [ apply a_wf_pskl__tophole;
-            [ eapply (proj1 a_solve_sub_eq_guarded);
-                [ exact Hs
-                | eapply a_wf_pskl_lc; eapply a_wf_pskl_tophole_inv; exact HwfPi
-                | apply lc_pskl_arrow;
-                    [ eapply a_wf_pskl_lc; exact HwfP01
-                    | eapply a_wf_pskl_lc; exact HwfP02 ]
-                | inversion HwfPi; assumption ]
-            | exact Hw ]
-        | cbn [msubst_pskl]; apply ad_ppre__tophole_remove; exact Hp ] ].
+    exists Ξ, (pskl_tophole Pa), κ'.
+    repeat (split;
+      [ solve [ apply a_solve_sub__univ_ghost_l; exact Hs
+              | exact Hfm | exact Hu | exact Hk | exact Hfr | exact HF
+              | apply a_wf_pskl__tophole;
+                  [ eapply (proj1 a_solve_sub_eq_guarded);
+                      [ exact Hs
+                      | eapply a_wf_pskl_lc;
+                        eapply a_wf_pskl_tophole_inv; exact HwfPi
+                      | apply lc_pskl_arrow;
+                          [ eapply a_wf_pskl_lc; exact HwfP01
+                          | eapply a_wf_pskl_lc; exact HwfP02 ]
+                      | inversion HwfPi; assumption ]
+                  | exact Hw ] ]
+      | ]).
+    cbn [msubst_pskl]. apply ad_ppre__tophole_remove; exact Hp.
 Qed.
 
 (* ===================================================================== *)
@@ -1642,12 +1673,67 @@ Qed.
     the context and into Δ ([a_wf_pskl_tvar_to_delta] below): the mech types
     a ∀◇ body at the EMPTY Δ, so only an UNSHIELDED variable may make that
     move — an asymmetry the paper's single-context [Θ ⊢ P] does not have. *)
+(* ⭐ The five binder rows now avoid [ftvar_in_aenv Θ], not [dom Θ] (the
+   SolE-FlexR repair, hand-off §2(3): a flexible's PAYLOAD may mention the
+   witness).  So "a variable of the context is not this row's binder" needs
+   one extra step, [dom_subset_ftvar_in_aenv]; it is the only thing the five
+   binder cases of [a_solve_sub_eq_unshielded] had to change. *)
+(** ⭐ [guess^TY]'s output is a PAINT, and a paint has no ghost — so it
+    SHIELDS NOTHING.  This is the whole content of the new SE-FlexR case of
+    [a_solve_sub_eq_unshielded] below: the repaired row returns the guessed
+    pattern instead of the flexible, and that pattern can never put a context
+    variable under a [∀◇]. *)
+(** ⚙️ The binder rows and the THREADED rows now run their premise at a GROWN
+    context ([(β ~ tvar) ++ Θ], [Ξ1 ++ Θ]), so "β0 is a variable of the
+    context" has to be WEAKENED rather than passed through.  A one-step lemma,
+    not [simpl; fsetdec]: the latter was tried at eleven sites and turned this
+    file into a multi-minute build. *)
+(** ⭐ A CONTEXT VARIABLE IS NEVER A GENERATED NAME.  [a_solve_*_ftv]'s bounds
+    all grew a [dom Ξ] term under the repair — the solve invents flexibles now
+    — and at every consumer below that term is ELIMINATED rather than absorbed:
+    the block dodges everything the context MENTIONS
+    ([a_solve_*_generated_fresh]), and [dom Θ ⊆ ftvar_in_aenv Θ]. *)
+Lemma solve_eq_generated_not_dom : forall Θ P Q Ξ P' (β0 : atom),
+  Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' -> β0 `in` dom Θ -> β0 `notin` dom Ξ.
+Proof.
+  intros Θ P Q Ξ P' β0 H Hdom Hc.
+  assert (Hgf : β0 `notin` ftvar_in_aenv Θ)
+    by (eapply a_solve_eq_generated_fresh; [ exact H | exact Hc ]).
+  pose proof (dom_subset_ftvar_in_aenv Θ) as Hds.
+  clear - Hgf Hds Hdom; fsetdec.
+Qed.
+
+Lemma in_dom_app_r : forall (x : atom) (E F : aenv),
+  x `in` dom F -> x `in` dom (E ++ F).
+Proof. intros x E F H; rewrite dom_app; clear - H; fsetdec. Qed.
+
+Lemma pskl_shielded_ftv_ptyp_to_pskl : forall A,
+  pskl_shielded_ftv (ptyp_to_pskl A) [=] empty.
+Proof.
+  induction A as [ | nA | αA | A1 IH1 A2 IH2 | A0 IH0 ];
+    cbn [ptyp_to_pskl pskl_shielded_ftv];
+    solve [ clear; fsetdec
+          | rewrite IH1; rewrite IH2; clear; fsetdec
+          | exact IH0 ].
+Qed.
+
+Lemma solve_binder_apart_dom : forall (b β0 : atom) (Θ : aenv) S,
+  b `notin` S ->
+  ftvar_in_aenv Θ [<=] S ->
+  β0 `in` dom Θ ->
+  β0 `notin` singleton b.
+Proof.
+  intros b β0 Θ S Hfr Hsub Hdom.
+  pose proof (dom_subset_ftvar_in_aenv Θ) as Hds.
+  clear - Hfr Hsub Hdom Hds; fsetdec.
+Qed.
+
 Lemma a_solve_sub_eq_unshielded :
-  (forall Θ m P Q P', Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
+  (forall Θ m P Q Ξ P', Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' ->
      forall β0, β0 `in` dom Θ ->
      β0 `notin` pskl_shielded_ftv P -> β0 `notin` ftvar_in_pskl Q ->
      β0 `notin` pskl_shielded_ftv P') /\
-  (forall Θ P Q P', Θ ⊢ₑ P ∼ Q ⤳ P' ->
+  (forall Θ P Q Ξ P', Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' ->
      forall β0, β0 `in` dom Θ ->
      β0 `notin` pskl_shielded_ftv P -> β0 `notin` ftvar_in_pskl Q ->
      β0 `notin` pskl_shielded_ftv P').
@@ -1655,6 +1741,10 @@ Proof.
   (* the three hypotheses about β0 are renamed BY SHAPE before any [cbn]:
      a [cbn] would turn [shielded (∀◇P)] into [ftv P] and make the two
      indistinguishable *)
+  (* ⚙️ the THREADED rows (SS-Arrow, SS-GhostLF, SE-Arrow) run their second
+     premise at [Ξ1 ++ Θ], so that IH's [β0 ∈ dom …] premise is about the
+     GROWN context; [dom_app] discharges it from the incoming one, and the
+     first [match] below must therefore accept either shape. *)
   apply a_solve_sub_eq_mutind; intros;
     match goal with Hd : _ `in` dom _ |- _ => rename Hd into Hdom end;
     match goal with Hs : _ `notin` pskl_shielded_ftv _ |- _ =>
@@ -1667,66 +1757,82 @@ Proof.
   - (* SS-ForallL : the closed output shields no more than its body, and the
        rule's binder is fresh for Θ, hence ≠ β0 *)
     match goal with
-    | Hfr : ?b `notin` (dom _ `union` _),
+    | Hfr : ?b `notin` ?S,
       IH : forall b0, b0 `in` dom _ -> _ |- _ =>
+      (* pick the FRESHNESS hypothesis, not one of the two [β0 ∉ …] ones *)
+      match S with context [ftvar_in_aenv _] => idtac end;
       pose proof (pskl_shielded_ftv_close_upper P' b) as Hcl;
       pose proof (pskl_shielded_ftv_open_upper P (pskl_var_f b)) as Hop;
       cbn [ftvar_in_pskl] in Hop;
       assert (Hne : β0 `notin` singleton b)
-        by (clear - Hfr Hdom; intro Hc;
-            assert (Hbe : β0 = b) by (clear - Hc; fsetdec); subst;
-            clear - Hfr Hdom; fsetdec);
+        by (match goal with Hd : _ `in` dom ?T |- _ =>
+              eapply (@solve_binder_apart_dom b β0 T S);
+                [ exact Hfr | clear; fsetdec | exact Hd ] end);
       enough (Hbody : β0 `notin` pskl_shielded_ftv P')
         by (clear - Hbody Hcl; fsetdec);
-      apply IH; [ exact Hdom | clear - Hsh Hop Hne; fsetdec | exact Hft ]
+      apply IH; [ solve [ exact Hdom | apply in_dom_app_r; exact Hdom ] | clear - Hsh Hop Hne; fsetdec | exact Hft ]
     end.
   - (* SS-UnivGhostL : the new ∀◇ body IS the premise's output, so its whole
        ftv is bounded by the inputs; [a_solve_sub_ftv]'s escape disjunct is
        closed off by [β0 ∈ dom Θ] *)
-    match goal with Hp : _ ⊢ₛ _ ≼[ _ ] _ ⤳ _ |- _ =>
+    match goal with Hp : _ ⊢ₛ _ ≼[ _ ] _ ⤳ _ ⨾ _ |- _ =>
       intro Hin; destruct (a_solve_sub_ftv Hp Hin) as [Hl | Hr];
         [ clear - Hl Hsh Hft; fsetdec | clear - Hr Hdom; fsetdec ]
     end.
   - (* SS-Check *)
     match goal with IH : forall b0, b0 `in` dom _ -> _ |- _ =>
-      apply IH; [ exact Hdom | exact Hsh | exact Hft ] end.
+      apply IH; [ solve [ exact Hdom | apply in_dom_app_r; exact Hdom ] | exact Hsh | exact Hft ] end.
   - (* SS-ForallR : the target opens at the rule's binder, again ≠ β0 *)
     match goal with
-    | Hfr : ?b `notin` (dom _ `union` _),
+    | Hfr : ?b `notin` ?S,
       IH : forall b0, b0 `in` dom _ -> _ |- _ =>
+      (* pick the FRESHNESS hypothesis, not one of the two [β0 ∉ …] ones *)
+      match S with context [ftvar_in_aenv _] => idtac end;
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f b))
         as Hop;
       cbn [ftvar_in_pskl] in Hop;
       assert (Hne : β0 `notin` singleton b)
-        by (clear - Hfr Hdom; intro Hc;
-            assert (Hbe : β0 = b) by (clear - Hc; fsetdec); subst;
-            clear - Hfr Hdom; fsetdec);
-      apply IH; [ exact Hdom | exact Hsh | clear - Hft Hop Hne; fsetdec ]
+        by (match goal with Hd : _ `in` dom ?T |- _ =>
+              eapply (@solve_binder_apart_dom b β0 T S);
+                [ exact Hfr | clear; fsetdec | exact Hd ] end);
+      apply IH; [ solve [ exact Hdom | apply in_dom_app_r; exact Hdom ] | exact Hsh | clear - Hft Hop Hne; fsetdec ]
     end.
   - (* SS-Arrow *)
     apply notin_union_3;
       [ match goal with
         | IH : forall b0, _ -> _ -> _ -> _ `notin` pskl_shielded_ftv ?X
           |- _ `notin` pskl_shielded_ftv ?X =>
-          apply IH; [ exact Hdom | clear - Hsh; fsetdec | clear - Hft; fsetdec ]
+          apply IH; [ solve [ exact Hdom | apply in_dom_app_r; exact Hdom ] | clear - Hsh; fsetdec | clear - Hft; fsetdec ]
         end
       | match goal with
         | IH : forall b0, _ -> _ -> _ -> _ `notin` pskl_shielded_ftv ?X
           |- _ `notin` pskl_shielded_ftv ?X =>
-          apply IH; [ exact Hdom | clear - Hsh; fsetdec | clear - Hft; fsetdec ]
+          apply IH; [ solve [ exact Hdom | apply in_dom_app_r; exact Hdom ] | clear - Hsh; fsetdec | clear - Hft; fsetdec ]
         end ].
   - (* SS-GhostLF : the new ∀◇ body is an arrow of two OUTPUTS, both bounded
        by β0-free inputs (a ◇ subject, and the target's two components) *)
+    (* ⭐ TWO REPAIR EFFECTS HERE (2026-08-04).  [a_solve_eq_ftv]'s bound now
+       carries a [dom Ξ1] term — the eq half GENERATES names — and it is
+       eliminated, not absorbed: a generated name dodges everything the
+       context MENTIONS ([a_solve_eq_generated_fresh]), and β0 is a variable
+       of that context.  And the sub half runs THREADED, at [Ξ1 ++ Θ], so its
+       escape disjunct is about the GROWN domain. *)
     match goal with
-    | He : _ ⊢ₑ _ ∼ _ ⤳ _, Hs : _ ⊢ₛ _ ≼[ _ ] _ ⤳ _ |- _ =>
+    | He : _ ⊢ₑ _ ∼ _ ⤳ ?X1 ⨾ _, Hs : _ ⊢ₛ _ ≼[ _ ] _ ⤳ _ ⨾ _ |- _ =>
       pose proof (a_solve_eq_ftv He) as Hfe;
       cbn [ftvar_in_pskl] in Hfe;
+      assert (HβΞ1 : β0 `notin` dom X1)
+        by (eapply solve_eq_generated_not_dom; [ exact He | exact Hdom ]);
       apply notin_union_3;
-        [ clear - Hfe Hft; fsetdec
+        [ clear - Hfe Hft HβΞ1; fsetdec
         | intro Hin; destruct (a_solve_sub_ftv Hs Hin) as [Hl | Hr];
             [ cbn [ftvar_in_pskl] in Hl; clear - Hl Hft; fsetdec
-            | clear - Hr Hdom; fsetdec ] ]
+            | rewrite dom_app in Hr; clear - Hr Hdom; fsetdec ] ]
     end.
+  - (* ⭐ SE-FlexR (2026-08-04, the repaired row): the output is [guess^TY]'s
+       PAINT, which has no ghost at all, so it shields nothing. *)
+    pose proof (pskl_shielded_ftv_ptyp_to_pskl A) as He.
+    clear - He; fsetdec.
   - (* SE-GhostL : the output IS the target *)
     pose proof (pskl_shielded_ftv_sub_ftv Q) as Hle.
     clear - Hle Hft; fsetdec.
@@ -1735,52 +1841,59 @@ Proof.
       [ match goal with
         | IH : forall b0, _ -> _ -> _ -> _ `notin` pskl_shielded_ftv ?X
           |- _ `notin` pskl_shielded_ftv ?X =>
-          apply IH; [ exact Hdom | clear - Hsh; fsetdec | clear - Hft; fsetdec ]
+          apply IH; [ solve [ exact Hdom | apply in_dom_app_r; exact Hdom ] | clear - Hsh; fsetdec | clear - Hft; fsetdec ]
         end
       | match goal with
         | IH : forall b0, _ -> _ -> _ -> _ `notin` pskl_shielded_ftv ?X
           |- _ `notin` pskl_shielded_ftv ?X =>
-          apply IH; [ exact Hdom | clear - Hsh; fsetdec | clear - Hft; fsetdec ]
+          apply IH; [ solve [ exact Hdom | apply in_dom_app_r; exact Hdom ] | clear - Hsh; fsetdec | clear - Hft; fsetdec ]
         end ].
   - (* SE-Forall *)
     match goal with
-    | Hfr : ?b `notin` (dom _ `union` _),
+    | Hfr : ?b `notin` ?S,
       IH : forall b0, b0 `in` dom _ -> _ |- _ =>
+      (* pick the FRESHNESS hypothesis, not one of the two [β0 ∉ …] ones *)
+      match S with context [ftvar_in_aenv _] => idtac end;
       pose proof (pskl_shielded_ftv_close_upper P' b) as Hcl;
       pose proof (pskl_shielded_ftv_open_upper P (pskl_var_f b)) as HopP;
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q (pskl_var_f b))
         as HopQ;
       cbn [ftvar_in_pskl] in HopP, HopQ;
       assert (Hne : β0 `notin` singleton b)
-        by (clear - Hfr Hdom; intro Hc;
-            assert (Hbe : β0 = b) by (clear - Hc; fsetdec); subst;
-            clear - Hfr Hdom; fsetdec);
+        by (match goal with Hd : _ `in` dom ?T |- _ =>
+              eapply (@solve_binder_apart_dom b β0 T S);
+                [ exact Hfr | clear; fsetdec | exact Hd ] end);
       enough (Hbody : β0 `notin` pskl_shielded_ftv P')
         by (clear - Hbody Hcl; fsetdec);
       apply IH;
-        [ exact Hdom | clear - Hsh HopP Hne; fsetdec
+        [ solve [ exact Hdom | apply in_dom_app_r; exact Hdom ] | clear - Hsh HopP Hne; fsetdec
         | clear - Hft HopQ Hne; fsetdec ]
     end.
   - (* SE-UnivGhost : as SS-UnivGhostL, but the eq half's bound is EXACT *)
-    match goal with Hp : _ ⊢ₑ _ ∼ _ ⤳ _ |- _ =>
-      pose proof (a_solve_eq_ftv Hp) as Hfe; clear - Hfe Hsh Hft; fsetdec
+    match goal with Hp : _ ⊢ₑ _ ∼ _ ⤳ ?X ⨾ _ |- _ =>
+      pose proof (a_solve_eq_ftv Hp) as Hfe;
+      assert (HβΞ : β0 `notin` dom X)
+        by (eapply solve_eq_generated_not_dom; [ exact Hp | exact Hdom ]);
+      clear - Hfe Hsh Hft HβΞ; fsetdec
     end.
   - (* SE-GhostForall : only the target opens *)
     match goal with
-    | Hfr : ?b `notin` (dom _ `union` _),
+    | Hfr : ?b `notin` ?S,
       IH : forall b0, b0 `in` dom _ -> _ |- _ =>
+      (* pick the FRESHNESS hypothesis, not one of the two [β0 ∉ …] ones *)
+      match S with context [ftvar_in_aenv _] => idtac end;
       pose proof (pskl_shielded_ftv_close_upper P' b) as Hcl;
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q (pskl_var_f b))
         as HopQ;
       cbn [ftvar_in_pskl] in HopQ;
       assert (Hne : β0 `notin` singleton b)
-        by (clear - Hfr Hdom; intro Hc;
-            assert (Hbe : β0 = b) by (clear - Hc; fsetdec); subst;
-            clear - Hfr Hdom; fsetdec);
+        by (match goal with Hd : _ `in` dom ?T |- _ =>
+              eapply (@solve_binder_apart_dom b β0 T S);
+                [ exact Hfr | clear; fsetdec | exact Hd ] end);
       enough (Hbody : β0 `notin` pskl_shielded_ftv P')
         by (clear - Hbody Hcl; fsetdec);
       apply IH;
-        [ exact Hdom | cbn [pskl_shielded_ftv]; exact Hsh
+        [ solve [ exact Hdom | apply in_dom_app_r; exact Hdom ] | cbn [pskl_shielded_ftv]; exact Hsh
         | clear - Hft HopQ Hne; fsetdec ]
     end.
   - (* SE-GhostGuarded : the ∀◇ subject is dropped; its body is β0-free, so a
@@ -1795,24 +1908,26 @@ Proof.
     end.
   - (* SE-ForallGhost : only the subject opens *)
     match goal with
-    | Hfr : ?b `notin` (dom _ `union` _),
+    | Hfr : ?b `notin` ?S,
       IH : forall b0, b0 `in` dom _ -> _ |- _ =>
+      (* pick the FRESHNESS hypothesis, not one of the two [β0 ∉ …] ones *)
+      match S with context [ftvar_in_aenv _] => idtac end;
       pose proof (pskl_shielded_ftv_close_upper P' b) as Hcl;
       pose proof (pskl_shielded_ftv_open_upper P (pskl_var_f b)) as HopP;
       cbn [ftvar_in_pskl] in HopP;
       assert (Hne : β0 `notin` singleton b)
-        by (clear - Hfr Hdom; intro Hc;
-            assert (Hbe : β0 = b) by (clear - Hc; fsetdec); subst;
-            clear - Hfr Hdom; fsetdec);
+        by (match goal with Hd : _ `in` dom ?T |- _ =>
+              eapply (@solve_binder_apart_dom b β0 T S);
+                [ exact Hfr | clear; fsetdec | exact Hd ] end);
       enough (Hbody : β0 `notin` pskl_shielded_ftv P')
         by (clear - Hbody Hcl; fsetdec);
       apply IH;
-        [ exact Hdom | clear - Hsh HopP Hne; fsetdec
+        [ solve [ exact Hdom | apply in_dom_app_r; exact Hdom ] | clear - Hsh HopP Hne; fsetdec
         | cbn [ftvar_in_pskl]; exact Hft ]
     end.
   - (* SE-GuardedGhost *)
     match goal with IH : forall b0, b0 `in` dom _ -> _ |- _ =>
-      apply IH; [ exact Hdom | exact Hsh | cbn [ftvar_in_pskl]; exact Hft ]
+      apply IH; [ solve [ exact Hdom | apply in_dom_app_r; exact Hdom ] | exact Hsh | cbn [ftvar_in_pskl]; exact Hft ]
     end.
 Qed.
 
@@ -1863,9 +1978,73 @@ Proof.
     [ right; left; exact Hb | right; right; exists τ; exact Hb ].
 Qed.
 
+(* ⛔⛔ RESUME HERE (2026-08-05) — P6-Sv UNDER THE SolE-FlexR REPAIR.
+
+   The STATEMENT below is CONVERTED AND FINAL, and everything above it in this
+   file compiles.  What is left is the PROOF BODY: [coqc] stops in the CHECK
+   row (the [a_solve_eq_complete_var] call, ≈ 40 lines down), which is the
+   first row that consumes a package.
+
+   ── what is already done ─────────────────────────────────────────────────
+   · [a_solve_sub_hole_output], [a_solve_sub_complete_rho_var] (now
+     [solve_sub_ext_nil]-shaped), ⭐ [arrow_grid] (its KEY hypothesis hands
+     back the whole MERGED package, because SS-Arrow and SS-GhostLF THREAD),
+     and ⭐ [a_solve_sub_eq_unshielded].
+   · the Infer row.
+   · new upstream kit in prop_look_complete.v: [solve_sub_ext] and its glue
+     ([_nil], [_step], [_post], [_post_solve], [_of_eq]) — the SUBTYPING twin
+     of [solve_ext], carrying the OUTPUT-WF conjunct at [Ξ ++ Θ0] (on the sub
+     side wf is a CONCLUSION, not a derivable property).
+   · new local kit here: [pskl_shielded_ftv_ptyp_to_pskl] (a PAINT shields
+     nothing — the whole content of the new SE-FlexR row of
+     [a_solve_sub_eq_unshielded]), [solve_eq_generated_not_dom] (a CONTEXT
+     variable is never a GENERATED name — this eliminates the [dom Ξ] term the
+     repair added to every [a_solve_*_ftv] bound), [in_dom_app_r] and
+     [solve_binder_apart_dom].
+
+   ── the four things every remaining row needs ────────────────────────────
+   1. ⭐ THE CHECK ROW MUST CALL [a_solve_eq_complete_var_at], NOT
+      [a_solve_eq_complete_var]: the paper-facing one pins [Θw := Θ] and is
+      unusable under Sub-ForallL/ForallR, which grow Θ.  Its argument order is
+      [HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfPi HwfP0 Hκ Hκw Hrho Htags … Lav HLav] and
+      it returns [(Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hp)].
+      [a_solve_eq_wf] then gives the output-wf AT [Ξ ++ Θ0] (its statement
+      moved), and [solve_sub_ext_of_eq] lifts the whole package through
+      SolS-Check in one step.
+   2. The ∀ rows: pass [Θw] and [Hψaw]/[HΔρw] down UNCHANGED (Θw is FIXED —
+      that is what lets β be stripped from the increase), re-establish only
+      [Hmon]/[Hnr]/[Hκw] at [(β ~ tvar) ++ Θ], run the IH at [add β Lav], and
+      strip β with [a_inc_strip_tvar_mid] — copy the five ∀ rows of P6-Cs
+      (prop_look_complete_cstr.v), which are line-for-line the same shape.
+   3. The ARROW row supplies [arrow_grid]'s KEY: its two IHs THREAD, the
+      second running at [Ξ1 ++ Θ0] under [κ1 ++ κ] — exactly P6-Cs's arrow
+      merge, and the same [binds_rot_app] / [a_inc_flex_prefix_build] /
+      [msubst_lookup_app_congr] toolkit applies.
+   4. ⚠️ [L] is a BINDER NAME of the cofinite [ad_pat_sub_g] rules, so the
+      avoid-set is introduced as [Lav] after [induction].
+
+   ⚙️ NEVER use [simpl; clear - H; fsetdec] as a [solve] alternative here: at
+   eleven sites it turned this file into a multi-minute build.  [in_dom_app_r]
+   is the one-step replacement. *)
 Theorem a_solve_sub_complete_var :
-  forall n NM M Θ0 Θs Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0,
+  forall n NM M Θ0 Θs Θ Θw κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0,
   a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  (* ⭐ THE Θw PACK (2026-08-04, the SolE-FlexR repair) — identical to P6-Cv's
+     and P6-Cs's, and needed for the same reason: the SOLVE now emits a block,
+     the ∀ rows run the IH at [Θ,β] and then STRIP β from the increase, and
+     the block's payloads can only dodge β by being well-formed in a context
+     that PREDATES the binder.  [Θw] is FIXED as the construction goes under
+     binders; only the two [binds] conditions and the κ-image bound move.
+     Vacuous at the top-level call ([Θw := Θ]). *)
+  a_wf_aenv Θw ->
+  (forall x b, binds x b Θw -> binds x b Θ) ->
+  (forall x b, binds x b Θ -> binds x b Θw \/ b = abind_tvar) ->
+  (forall α, a_flex_tvar Θ0 α ->
+     ftvar_in_ptyp (msubst_lookup κ α) [<=] dom Θw) ->
+  ftvar_in_uskl ψa [<=] dom Θw ->
+  (* the ρ-replaced variables miss [Θw] — see P6-Cs's own [HΔρw]: it is the
+     only handle on the SOLVE block's payloads being Δρ-clean *)
+  Δρ ∩ dom Θw [=] empty ->
   Θ0 ⨟ empty ⊢ₚₛᵃ Pi -> Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->   (* skmod[SK]{P0}{M} *)
   (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->   (* skmod[TY]{P0}{M} *)
@@ -1892,36 +2071,48 @@ Theorem a_solve_sub_complete_var :
   (forall x b, binds x b Θs -> binds x b Θ) ->
   ad_pat_sub_g n NM M Ψsub Θs ψsub Q ->
   Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
-  exists Pa, Θ0 ⊢ₛ Pi ≼[ M ] P0 ⤳ Pa /\
-             (* the paper's [Θ0 ⊢ P_a] (subtyping-proofs.tex:1737).  It is a
-                CONCLUSION of this lemma, not a consequence of a general
-                "solving preserves well-formedness" — there is no such
-                property once SS-ForallR is faithful, since its binder
-                escapes into the output (cex/cex_solve_sub_wf_leak.v).  The
-                paper's SolS-ForallR row (:1880-1900) carries it at
-                [Θ0,β] and removes β exactly where the mech does: from
-                [β ∉ ftv ψa] and the PRECISION conclusion. *)
-             Θ0 ⨟ empty ⊢ₚₛᵃ Pa /\
-             Θ ⨟ Δ ⊢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
+  (* ⭐ THE AVOID-SET PARAMETER: the SOLVE generates its own block now, and at
+     a binder row the witness has to be fixed BEFORE the block is picked. *)
+  forall L, ftvar_in_aenv Θ0 [<=] L ->
+  (* [solve_sub_ext] (prop_look_complete.v) packages the block [Ξ], its
+     aligned extension [κ'], the freshness, the payloads' well-formedness at
+     the FIXED [Θw], and the paper's [Θ0 ⊢ P_a] — which is a CONCLUSION of
+     this lemma, not a consequence of a general "solving preserves
+     well-formedness" (there is no such property once SS-ForallR is faithful,
+     since its binder escapes into the output: cex/cex_solve_sub_wf_leak.v),
+     and which is now stated at [Ξ ++ Θ0] because the repaired SolE-FlexR
+     lets the output mention the generated block. *)
+  solve_sub_ext Θ0 Θw M Pi P0 L
+    (fun κ' Pa =>
+       Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
 Proof.
-  intros n NM M Θ0 Θs Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0.
-  intros HwfΘ HwfΘ0 HwfPi HwfP0 HmodSK HmodTY Hκ Hrho Htags HwfSub
+  intros n NM M Θ0 Θs Θ Θw κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0.
+  intros HwfΘ HwfΘ0 HwfΘw Hmon Hnr Hκw Hψaw HΔρw
+         HwfPi HwfP0 HmodSK HmodTY Hκ Hrho Htags HwfSub
          Htageq Hinter Hrhof Hdelta Hshield Hdfresh Hapart Hpre
          HΨs1 HΨs2 Hext Hsub Hrefine.
   (* everything except the derivation is generalized: ForallR/ForallL both
      extend Θ0 and Θ, ForallL grows Δρ/Δ and rewrites the tag split, and
      Arrow splits P0/Pi/ψa — so no premise may stay fixed *)
+  (* ⚠️ [Θw] is NOT reverted — it is the FIXED well-formedness context, and
+     keeping it fixed under the ∀ rows is exactly what lets β be stripped out
+     of the increase.  Its five companion premises DO move, since each of them
+     also mentions a reverted variable. *)
   revert Θ Θ0 κ Δ Δρ Ψρ Ψ' Ψi Ψa ψa Pi P0
-         HwfΘ HwfΘ0 HwfPi HwfP0 HmodSK HmodTY Hκ Hrho Htags HwfSub
+         HwfΘ HwfΘ0 Hmon Hnr Hκw Hψaw HΔρw
+         HwfPi HwfP0 HmodSK HmodTY Hκ Hrho Htags HwfSub
          Htageq Hinter Hrhof Hdelta Hshield Hdfresh Hapart Hpre
          HΨs1 HΨs2 Hext Hrefine.
   (* the lemma's [Ψ'] is re-introduced as [Ψt]: [Ψ'] is a BINDER NAME of
      the ForallL rules, so [induction] has already claimed it *)
   induction Hsub; intros
     Θe Θ0 κ Δ Δρ Ψρ Ψt Ψi Ψa ψa Pi P0
-    HwfΘ HwfΘ0 HwfPi HwfP0 HmodSK HmodTY Hκ Hrho Htags HwfSub
+    HwfΘ HwfΘ0 Hmon Hnr Hκw Hψaw HΔρw
+    HwfPi HwfP0 HmodSK HmodTY Hκ Hrho Htags HwfSub
     Htageq Hinter Hrhof Hdelta Hshield Hdfresh Hapart Hpre
-    HΨs1 HΨs2 Hext Hrefine;
+    (* ⚠️ [L] is a BINDER NAME of the cofinite [ad_pat_sub_g] rules, which
+       [induction] has already claimed — the avoid-set comes in as [Lav]. *)
+    HΨs1 HΨs2 Hext Hrefine Lav HLav;
     (* the derivation's own context is the rule binder [Θ]; the generalized
        one comes back in as [Θe].  Renaming it back keeps every closed case
        textually unchanged: each rule premise that mentions the SMALL
@@ -1950,10 +2141,12 @@ Proof.
         [ pose proof (HmodTY eq_refl) as Hm | pose proof (HmodSK eq_refl) as Hm ];
         inversion Hm; reflexivity. }
     subst P0.
-    exists Pi; split; [ apply a_solve_sub__vacuous | split; [ exact HwfPi | ] ].
+    (* SolS-Vacuous generates nothing *)
+    eapply solve_sub_ext_nil with (Pa := Pi);
+      [ apply a_solve_sub__vacuous | exact HwfPi | cbn [app] ].
     eapply ad_partial_precise_psi_cong; [ exact Hpre | ].
-    assert (HΨae : Ψa [=] empty) by (clear - HΨs2 H; fsetdec).
-    clear - HΨae; fsetdec.
+    assert (HPsiae : Ψa [=] empty) by (clear - HΨs2 H; fsetdec).
+    clear - HPsiae; fsetdec.
   - (* Check (TY/TC).  The premise IS a consistency judgment, so P6-Cv
        ([a_solve_eq_complete_var]) applies verbatim — every premise of this
        lemma is one of its premises, with [flex_apart] read off the walk.

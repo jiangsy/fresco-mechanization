@@ -4021,6 +4021,108 @@ Proof.
   eapply Hpost; [ exact Hs | exact Hq ].
 Qed.
 
+(* ===================================================================== *)
+(*  The SUBTYPING twin of [solve_ext] (2026-08-04).  P6-Sv and P6-Ss     *)
+(*  state their conclusions with it.  Two differences from the eq one:   *)
+(*  the judgment is [≼[m]] and carries a MODE, and the package includes  *)
+(*  the output's WELL-FORMEDNESS — which on the sub side is a genuine    *)
+(*  conclusion of the completeness lemma rather than a derivable fact    *)
+(*  (there is no "solving preserves wf" once SS-ForallR is faithful:     *)
+(*  cex/cex_solve_sub_wf_leak.v).  It is stated at [Ξ ++ Θ0], since the  *)
+(*  repaired SolE-FlexR lets the output mention the generated block.     *)
+(* ===================================================================== *)
+Definition solve_sub_ext (Θ0 Θ : aenv) (m : mode) (Pi P0 : pskl) (L : atoms)
+    (Post : metasubst -> pskl -> Prop) : Prop :=
+  exists (Ξ : aenv) (Pa : pskl) (κ' : metasubst),
+    Θ0 ⊢ₛ Pi ≼[ m ] P0 ⤳ Ξ ⨾ Pa /\
+    all_flex_mono Ξ /\
+    uniq Ξ /\
+    keys κ' = keys Ξ /\
+    (forall α, α `in` dom Ξ -> α `notin` L) /\
+    Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κ' /\
+    (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa /\
+    Post κ' Pa.
+
+Lemma solve_sub_ext_nil : forall Θ0 Θ m Pi P0 L Post Pa,
+  Θ0 ⊢ₛ Pi ≼[ m ] P0 ⤳ nil ⨾ Pa ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ Pa ->
+  Post nil Pa ->
+  solve_sub_ext Θ0 Θ m Pi P0 L Post.
+Proof.
+  intros Θ0 Θ m Pi P0 L Post Pa Hs Hwf Hq.
+  exists nil, Pa, nil.
+  split; [ exact Hs | ].
+  split; [ apply Forall_nil | ].
+  split; [ apply uniq_nil | ].
+  split; [ reflexivity | ].
+  split; [ intros α0 Hα0; cbn in Hα0; exfalso; clear - Hα0; fsetdec | ].
+  split; [ apply Forall_nil | ].
+  split; [ cbn [app]; exact Hwf | ].
+  exact Hq.
+Qed.
+
+(** A row that PASSES ITS PREMISE THROUGH: block, extension, freshness and
+    output-wf are the premise's; only the solve step and the post-condition
+    move.  (The wf component rides along because a pass-through row does not
+    change the context.) *)
+Lemma solve_sub_ext_step : forall Θ0 Θ m m' Pi P0 Pi' P0' L Post Post',
+  (forall Ξ Pa, Θ0 ⊢ₛ Pi' ≼[ m' ] P0' ⤳ Ξ ⨾ Pa ->
+                Θ0 ⊢ₛ Pi ≼[ m ] P0 ⤳ Ξ ⨾ Pa) ->
+  (forall κ' Pa, Post' κ' Pa -> Post κ' Pa) ->
+  solve_sub_ext Θ0 Θ m' Pi' P0' L Post' ->
+  solve_sub_ext Θ0 Θ m Pi P0 L Post.
+Proof.
+  intros Θ0 Θ m m' Pi P0 Pi' P0' L Post Post' Hstep Hpost
+         (Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hwf & Hq).
+  exists Ξ, Pa, κ'.
+  repeat (split; [ solve [ apply Hstep; exact Hs | exact Hfm | exact Hu
+                         | exact Hk | exact Hfr | exact HF | exact Hwf ] | ]).
+  apply Hpost; exact Hq.
+Qed.
+
+Lemma solve_sub_ext_post : forall Θ0 Θ m Pi P0 L Post Post',
+  (forall κ' Pa, Post' κ' Pa -> Post κ' Pa) ->
+  solve_sub_ext Θ0 Θ m Pi P0 L Post' ->
+  solve_sub_ext Θ0 Θ m Pi P0 L Post.
+Proof.
+  intros Θ0 Θ m Pi P0 L Post Post' Hpost H.
+  eapply solve_sub_ext_step; [ intros Ξ Pa Hs; exact Hs | exact Hpost | exact H ].
+Qed.
+
+(** The same with the SOLVE DERIVATION and the OUTPUT-WF still in hand. *)
+Lemma solve_sub_ext_post_solve : forall Θ0 Θ m Pi P0 L Post Post',
+  (forall Ξ κ' Pa, Θ0 ⊢ₛ Pi ≼[ m ] P0 ⤳ Ξ ⨾ Pa ->
+     (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa -> Post' κ' Pa -> Post κ' Pa) ->
+  solve_sub_ext Θ0 Θ m Pi P0 L Post' ->
+  solve_sub_ext Θ0 Θ m Pi P0 L Post.
+Proof.
+  intros Θ0 Θ m Pi P0 L Post Post'  Hpost
+         (Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hwf & Hq).
+  exists Ξ, Pa, κ'.
+  repeat (split; [ solve [ exact Hs | exact Hfm | exact Hu
+                         | exact Hk | exact Hfr | exact HF | exact Hwf ] | ]).
+  eapply Hpost; [ exact Hs | exact Hwf | exact Hq ].
+Qed.
+
+(** An EQ package becomes a SUB one through SolS-Check, which is how P6-Sv's
+    Check row consumes P6-Cv.  The output-wf conjunct is supplied by the
+    caller ([a_solve_eq_wf] at the site). *)
+Lemma solve_sub_ext_of_eq : forall Θ0 Θ Pi P0 L Post,
+  (forall Ξ Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ Ξ ⨾ Pa ->
+     (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa) ->
+  guarded_pskl Pi -> guarded_pskl P0 ->
+  solve_ext Θ0 Θ Pi P0 L Post ->
+  solve_sub_ext Θ0 Θ mode_tc Pi P0 L Post.
+Proof.
+  intros Θ0 Θ Pi P0 L Post Hwf Hgi Hg
+         (Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hq).
+  exists Ξ, Pa, κ'.
+  repeat (split; [ solve [ apply a_solve_sub__check; assumption
+                         | exact Hfm | exact Hu | exact Hk | exact Hfr
+                         | exact HF | apply Hwf; exact Hs ] | ]).
+  exact Hq.
+Qed.
+
 (** The conclusion, named — it recurs at every site below. *)
 Definition cv_mono_concl (Θ0 Θ Θw : aenv) (κ : metasubst) (Δ Ψi : atoms)
     (τ : ptyp) (Pi P0 : pskl) (L : atoms) : Prop :=

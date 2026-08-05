@@ -343,6 +343,26 @@ side still derives it locally, via
 guarded-but-holey ForallSyn body satisfies every other premise; only the
 split rework, not a derivation, could remove it.
 
+## P6-Cs (`a_lookeq_solve_complete`) — the IDEAL GUESS is Θ-scoped
+
+⭐ **NEW 2026-08-05, with the authors' `SolE-FlexR` repair.**  The repaired row
+hands the accumulated pattern through `guess^TY` and ASSIGNS the result, so the
+solve now emits a block of fresh flexibles whose payloads are read off the
+IDEAL GUESS `ψa`.  Those payloads have to be well-formed in the ideal context,
+which forces
+
+**`ftvar_in_uskl ψa [<=] dom Θ`**
+
+on `a_lookeq_solve_complete` (and `[<=] dom Θw` on the generalized form).  It
+is the paper's prose "all inputs are well-formed" once more — `ψa` is an INPUT
+— and it is **not derivable** from the other premises: when α does not occur in
+`κR` the subject `(κR)[ψa/α]` does not mention `ψa` at all, so the subject-wf
+premise above says nothing about it.
+
+Its generalized companion `Δρ ∩ dom Θw [=] empty` is NOT a wf side condition
+but a proof-construction fact about the mech's own ρ-generalization; it is
+vacuous at ρ = identity.  See `docs/HANDOFF-solve-flexr-repair.md` §6 Step 1.
+
 ## P6-Cs (`a_lookeq_solve_complete`) — the subject-wf premise
 
 Consistency constraint collection and solving

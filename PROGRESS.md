@@ -78,7 +78,86 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-04 (latest) — ⭐⭐ **P6-Cv IS GREEN UNDER THE `SolE-FlexR` REPAIR**: the ∀-row payload-scope obligation is CLOSED, and the hand-off's prescribed derivation was wrong twice
+## 2026-08-05 (latest) — ⭐⭐ **P6-Cs IS GREEN UNDER THE `SolE-FlexR` REPAIR**; P6-Sv started, its statement FINAL
+
+`frost/algo/prop_look_complete_cstr.v` compiles: `a_lookeq_solve_complete_gen`
+and the paper-facing corollary `a_lookeq_solve_complete` are both `Qed` and
+`Closed under the global context`.  Every row now threads the SOLVE's own
+block `Ξs` and its aligned extension `κs`, at `Ξs ++ Ξc ++ Θ0` — the order
+`a_extract__solve` runs the final guess at, so P6-L consumes it verbatim.
+
+**The arrow row** (the one the previous hand-off flagged as the last hard
+one).  Its right IH runs at `Ξs1 ++ Ξc1 ++ Θ0` under `κs1 ++ κc1 ++ κ`, not at
+`Ξc1 ++ Θ0`: `Pa1` is the LEFT SOLVE's output and mentions the flexibles solve
+invented, so the precision the right branch consumes is stated under all three
+blocks, and the only context at which that is an `a_inc` is `Hinc1` verbatim.
+Everything it returns is permuted into the conclusion's `Ξs2 ++ Ξs1` /
+`Ξc1 ++ Ξc2` order, and the permutation is FREE — `binds` over an append is
+plain membership, so `analyze_binds` alone proves every reordering
+(`binds_rot_app`, `binds_rot_app_rev`, `binds_app_perm5`).  The `a_inc` is
+REBUILT from `Hκ` by four `a_inc_flex_prefix_build` steps rather than
+permuted; the precision's κ-reordering is a lookup-level identity on
+pairwise-disjoint blocks (new `msubst_lookup_app_congr`,
+`msubst_lookup_ftv_app`).
+
+⭐ **One new premise, forced by that row and by nothing else:**
+`Δρ ∩ dom Θw [=] empty`.  The right IH has to re-establish the shielded-ftv
+premise under the bigger metasubstitution, i.e. that a ρ-replaced variable
+misses every image.  For `κc1` that is the `Forall … ∩ Δρ = ∅` conclusion; the
+SOLVE block has no such conjunct **and cannot get one** (the LE-Var row reads
+`κs` off P6-Cv, whose package carries no ftv bound at all), so the only handle
+is its payloads' well-formedness at the FIXED `Θw`.  Δρ and Θw are both
+constant inside P6-Cs, so it threads unchanged; vacuous at the ρ = identity
+corollary, and P6-Ss's Sub-ForallL maintains it because the fresh rigid it
+adds to Δρ is picked fresh for Θ ⊇ Θw.  A proof-construction fact about the
+mech's own ρ-generalization — nothing for `docs/PAPER-GAPS.md`.
+
+**The five ∀ rows** (including the two ε-tagged mirrors).  `Θw` does NOT move;
+keeping it fixed is exactly what lets β be stripped out of the `a_inc`, since
+the SOLVE payloads' only β-freeness argument is `a_wf_ptyp Θw` together with
+`β ∉ dom Θw`.  Their IH runs at `add β L`, which is what makes `β ∉ dom Ξs`
+available — needed both by `HβPa` (the solve's ftv bound now carries a
+`dom Ξs` term) and by the strip.  `a_inc_strip_tvar_mid` peels BOTH blocks at
+once.
+
+**The corollary** gained the avoid-set parameter `L` and one further
+paper-external wf side condition, `ftvar_in_uskl ψa [<=] dom Θ`: the repaired
+`SolE-FlexR` reads the solve block's payloads off the ideal guess, and when α
+does not occur in `κR` the subject does not mention ψa at all, so the
+subject-wf premise says nothing about it.
+
+### P6-Sv started — `prop_look_complete_sub_var.v`
+
+New upstream kit in `prop_look_complete.v`: ⭐ **`solve_sub_ext`** and its glue
+(`_nil`, `_step`, `_post`, `_post_solve`, `_of_eq`) — the SUBTYPING twin of
+`solve_ext`.  Two differences: the judgment carries a MODE, and the package
+includes the OUTPUT's well-formedness at `Ξ ++ Θ0`, because on the sub side
+that is a genuine CONCLUSION of the completeness lemma rather than a derivable
+fact (`cex/cex_solve_sub_wf_leak.v`).
+
+Converted in P6-Sv: `a_solve_sub_hole_output`, `a_solve_sub_complete_rho_var`,
+⭐ `arrow_grid` (its `KEY` hypothesis now hands back the whole MERGED package,
+since SS-Arrow and SS-GhostLF THREAD), ⭐ `a_solve_sub_eq_unshielded`, the
+Infer row, and **the main theorem's STATEMENT, which is FINAL** (the Θw pack,
+`Δρ ∩ dom Θw = ∅`, the avoid-set `L`, and a `solve_sub_ext` conclusion).  A
+`⛔⛔ RESUME HERE` block above `a_solve_sub_complete_var` carries the plan;
+`coqc` stops in the CHECK row.
+
+⚠️ **Four traps, all of which will recur in P6-Ss.**  (1) The five binder rows
+avoid `ftvar_in_aenv Θ`, not `dom Θ`, so every ltac pattern
+``?b `notin` (dom _ `union` _)`` stops matching — match ``?b `notin` ?S`` with
+a `match S with context [ftvar_in_aenv _] => idtac end` guard.  (2) The binder
+rows AND the threading rows run their premise at a GROWN context, so a
+``β0 ∈ dom Θ`` premise must be weakened: use the one-step `in_dom_app_r` —
+`solve [ … | simpl; clear - H; fsetdec | … ]` at eleven sites turned the file
+into a **multi-minute** build.  (3) `a_solve_{eq,sub}_ftv`'s bounds grew a
+`dom Ξ` term, and at every consumer it must be ELIMINATED, not absorbed
+(`solve_eq_generated_not_dom`: a context variable is never a generated name).
+(4) A new SE-FlexR case appears in every induction over the solve — its output
+is `guess^TY`'s PAINT, which shields nothing
+(`pskl_shielded_ftv_ptyp_to_pskl`).
+
+## 2026-08-04 — ⭐⭐ **P6-Cv IS GREEN UNDER THE `SolE-FlexR` REPAIR**: the ∀-row payload-scope obligation is CLOSED, and the hand-off's prescribed derivation was wrong twice
 
 Branch `solve-flexr-repair-wip`, commits `3e44c4d` + follow-up.
 `frost/algo/prop_look_complete_var.v` compiles, `Qed`,
