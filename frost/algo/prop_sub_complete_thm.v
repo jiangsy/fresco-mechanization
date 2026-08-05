@@ -89,7 +89,7 @@ Require Import src.frost.algo.prop_sub_sound.      (* a_wf_pskl_subst_tvar *)
 Require Import src.frost.algo.prop_consis_precise.   (* uskl_precise kit *)
 Require Import src.frost.algo.prop_sub_complete.     (* P5 + the _gv transports *)
 Require Import src.frost.algo.prop_look_complete_cstr. (* ftag/msubst kit *)
-Require Import src.frost.algo.prop_look_complete_sub_cstr. (* sub_shield *)
+Require Import src.frost.algo.prop_look_complete_sub_cstr. (* P6-Ss *)
 Require Import src.frost.algo.prop_look_complete_extract. (* P6-L + the extract family *)
 Require Import src.frost.algo.prop_swap.                  (* THE SWAP KIT — P7a's renaming primitive *)
 

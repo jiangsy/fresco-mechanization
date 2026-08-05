@@ -536,50 +536,24 @@ Proof.
 Qed.
 
 (* --------------------------------------------------------------------- *)
-(*  …and PART A: the guard leaves EXACTLY the root.                        *)
+(*  …and PART A: the repair premise P6-Ss actually takes.                  *)
 (* --------------------------------------------------------------------- *)
 
-Lemma ss_walk_w_stuck : forall α P0' R',
-  ss_walk (dom Θ0w) α (pskl_var_f f) uskl_unit P0' R' ->
-  P0' = pskl_var_f f /\ R' = uskl_unit.
-Proof.
-  intros α P0' R' Hw. inversion Hw; subst; [ auto | ].
-  match goal with H : ss_step _ _ _ _ _ _ |- _ => inversion H end.
-Qed.
+(** ⭐⭐ THE DECISIVE CHECK, in the surviving vocabulary (2026-08-05).  The
+    premise P7b's ForallL rows and P6-L now carry is [flex_apart_p0] at
+    Δρ = ∅, and it HOLDS at the configuration that refutes the old
+    non-positional [sub_shield].
 
-Lemma ss_walk_w_inv : forall α P0' R',
-  ss_walk (dom Θ0w) α P0w (open_uskl_wrt_uskl Rjw (uskl_var_f α)) P0' R' ->
-  (P0' = P0w /\ R' = open_uskl_wrt_uskl Rjw (uskl_var_f α))
-  \/ (P0' = pskl_var_f f /\ R' = uskl_unit).
-Proof.
-  intros α P0' R' Hw. unfold Rjw, open_uskl_wrt_uskl in Hw; simpl in Hw.
-  inversion Hw as [ | Pa Ra P1 R1 P2 R2 Hstep Hrest ]; subst;
-    [ left; unfold Rjw, open_uskl_wrt_uskl; simpl; auto | ].
-  unfold P0w in Hstep. inversion Hstep; subst.
-  right. eapply ss_walk_w_stuck; exact Hrest.
-Qed.
-
-(** ⭐⭐ THE DECISIVE CHECK.  With the positional index AND the split walk, the
-    WHOLE repaired premise — in exactly the form P7b's ForallL rows now take
-    ([a_sub_complete_forall_l_tagged]) — HOLDS at the configuration that
-    refutes the old one. *)
-Theorem p7_sub_shield_repaired_holds : forall α,
-  sub_shield Θ0w (singleton e) empty α P0w
-    (open_uskl_wrt_uskl Rjw (uskl_var_f α)) ψw.
-Proof.
-  intros α P0' R' Δρ' Hw Hle Hcl.
-  (* ⭕ (2026-08-05) the guarded [flex_apart_walk] conjunct is GONE from
-     [sub_shield], so both branches now discharge the P0-only closure alone —
-     which is the half that never descends the guess. *)
-  destruct (ss_walk_w_inv Hw) as [[-> ->] | [-> ->]].
-  - apply apart_p0_w_root_holds.
-  - (* the CODOMAIN, where the OLD premise was false *)
-    intros P0'' _. apply fa_clean.
-    unfold ψw, cexψ; simpl. clear; fsetdec.
-Qed.
+    ⚙ The [ss_walk] inversion this proof used to need — the guard leaves
+    exactly the root, the codomain is one [sss_arrow_r] step away — is gone
+    with [ss_walk] itself: [sub_shield] had become a synonym for
+    [flex_apart_p0], so P6-Ss takes the latter directly and there is no walk
+    index left to invert. *)
+Theorem p7_shield_repaired_holds : flex_apart_p0 Θ0w empty P0w ψw.
+Proof. apply apart_p0_w_root_holds. Qed.
 
 End Realizable.
 
 Print Assumptions p7_sub_shield_is_over_strong.
 Print Assumptions join_at_Rw_is_forall_l.
-Print Assumptions p7_sub_shield_repaired_holds.
+Print Assumptions p7_shield_repaired_holds.

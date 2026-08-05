@@ -385,17 +385,19 @@ Proof. clear; fsetdec. Qed.
    walk reaches is [fa_clean].  The double-occurrence obstacle to
    [main_forall]'s supply is therefore retired.
 
+   ⚙ (2026-08-05, later) [sub_shield] itself is now DELETED — it had become a
+   synonym for [flex_apart_p0], which is what P6-Ss and P6-L take.  The
+   positive statement below is therefore phrased in that vocabulary.
+
    Coq text at commit `165746a`. *)
 
-(** ⭐⭐ The positive statement, replacing the retraction above. *)
-Theorem p7_sub_shield_double_occ_holds : forall α,
-  sub_shield Θ0d (singleton e) empty α P0d
-    (open_uskl_wrt_uskl Rjd (uskl_var_f α)) ψd.
-Proof.
-  intros α P0' R' Δρ' Hw Hle Hcl P0'' Hw0.
-  (* Δρ = ∅, so the growth condition makes the guess Δρ'-clean outright *)
-  apply fa_clean. clear - Hcl; fsetdec.
-Qed.
+(** ⭐⭐ The positive statement, replacing the retraction above: the repair
+    premise P6-Ss actually takes HOLDS at the double-occurrence
+    configuration.  Δρ = ∅ here, so every state the P0-walk reaches is
+    [fa_clean]. *)
+Theorem p7_shield_double_occ_holds :
+  flex_apart_p0 Θ0d empty P0d ψd.
+Proof. apply flex_apart_p0_clean. clear; fsetdec. Qed.
 
 (* ===================================================================== *)
 (*  THE HEADLINE — every OTHER hypothesis of the ForallL row holds        *)
@@ -424,24 +426,23 @@ Theorem p7_double_occ_row_premises_all_hold :
   (* … the FILL … *)
   ad_refine_syn_f empty Θ0d empty
     (pskl_to_bskl_inh (msubst_pskl κd P0d)) Qd /\
-  (* … and the shield — the row's ONE remaining premise — HOLDS at every
-     marker (2026-08-05; it was FALSE before the guarded conjunct was
-     retired, which is what this file used to record). *)
-  (forall α, sub_shield Θ0d (singleton e) empty α P0d
-       (open_uskl_wrt_uskl Rjd (uskl_var_f α)) ψd).
+  (* … and the shield — the row's ONE remaining premise — HOLDS here
+     (2026-08-05; it was FALSE before the guarded conjunct was retired, which
+     is what this file used to record). *)
+  flex_apart_p0 Θ0d empty P0d ψd.
 Proof.
   repeat split;
     first [ apply Θ0d_wf | apply P0d_wf | apply Pd_wf | apply P0d_mode
           | left; apply P0d_guarded | apply Rd_ghost_free | apply inc_d
           | apply slack_d | apply Qd_wf | apply join_d | apply ψd_tags
           | apply ψd_erase_wf | apply join_premise_d | apply fill_d
-          | exact p7_sub_shield_double_occ_holds
+          | exact p7_shield_double_occ_holds
           | unfold Rd, Rjd; simpl; clear - Het; fsetdec
           | clear; fsetdec ].
 Qed.
 
 End DoubleOccurrence.
 
-Print Assumptions p7_sub_shield_double_occ_holds.
+Print Assumptions p7_shield_double_occ_holds.
 Print Assumptions p7_double_occ_row_premises_all_hold.
 Print Assumptions join_at_Rd_is_forall_l.

@@ -977,31 +977,18 @@ Definition flex_here (n : nat) (Θ0 : aenv) : Prop :=
   forall NM M α P0 R' Ψ Θ κ Q,
     sub_flex_complete_concl n NM M Θ0 nil α P0 R' Ψ Θ κ Q.
 
-Definition uskl_forall_headed (R : uskl) : Prop :=
-  (exists R0, R = uskl_all_syn R0) \/ (exists ε R0, R = uskl_all_etag ε R0).
+(* ⭕⭕ [uskl_forall_headed] and [main_forall] DELETED (2026-08-05).
 
-(** ⭕ THE RESIDUAL, isolated — and NARROWED by §8b.  The two ForallL rows are
-    the ONLY ones the dispatch below does not discharge.  ⭐ The WLOG premise
-    they carry ([guarded_pskl P0 \/ P0 = pskl_hole]) is now a HYPOTHESIS here,
-    not an obligation: [p0_wlog_trichotomy] leaves exactly one escaping shape
-    (a ∀-headed [P0], possible only at [NM = TY] with [M = TC]) and
-    [main_all_inh_counterpart] closes it outright, so the dispatch below hands
-    this residual only the configurations the row lemmas actually accept.
+   [main_forall] was the assembly's ONE hypothesis for most of this campaign:
+   the two ForallL rows, isolated because they demanded TASK 0's [sub_shield]
+   on top of the join's own premises.  §10 records why that gate is gone.
+   With it gone the row lemmas take exactly the join rule's premises, §9's two
+   ForallL branches apply them directly, and nothing referred to either
+   definition any more.
 
-    What is LEFT is TASK 0's [sub_shield] — no general supply route exists for
-    a [P0] carrying a ∀ below its head — together with the TY-only
-    ghost-freeness of the join's subject that P5's precision-substitution
-    transport demands ([ad_pat_sub_precise_upre_gv]'s last premise, threaded
-    as a side condition throughout prop_sub_complete.v).  See §10. *)
-(* ⭕⭕ RETIRED (2026-08-05) — kept as documentation, with NO consumers.
-   This was the assembly's one hypothesis; §10 records why it is gone.  It is
-   not deleted because [uskl_forall_headed] and the shape of the residual are
-   what the campaign's counterexamples are stated against. *)
-Definition main_forall (n : nat) : Prop :=
-  forall NM M Θ0 P0 P R R' Ψ Θ κ Q,
-    uskl_forall_headed R ->
-    (guarded_pskl P0 \/ P0 = pskl_hole) ->
-    sub_complete_concl n NM M Θ0 P0 P R R' Ψ Θ κ Q.
+   ⚠️ The retracted counterexamples state their conclusions against
+   [main_forall]'s shape; their headers carry the statement inline.  Coq text
+   at commit `4351531`. *)
 
 Lemma main_join : forall n NM M Ψ Θ R' Q,
   ad_pat_sub_gv n NM M Ψ Θ R' Q ->

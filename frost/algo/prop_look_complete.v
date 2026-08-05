@@ -6247,6 +6247,51 @@ Qed.
 
 (** A Δρ-CLEAN guess shields every P0-subterm at once — in particular at
     Δρ = ∅, which is what the ρ = identity corollary of P6-Cs uses. *)
+(** …and [flex_apart] tolerates a Δρ that grows by variables the guess does
+    not mention.  Only two rows read Δρ: [fa_clean], whose disjointness the
+    growth condition preserves, and [fa_rho_var], which is monotone. *)
+Lemma flex_apart_delta_grow : forall Θ0 Δρ Δρ' P0 ψa,
+  flex_apart Θ0 Δρ P0 ψa ->
+  Δρ [<=] Δρ' -> Δρ' ∩ ftvar_in_uskl ψa [<=] Δρ ->
+  flex_apart Θ0 Δρ' P0 ψa.
+Proof.
+  intros Θ0 Δρ Δρ' P0 ψa H; induction H; intros Hle Hcl.
+  - apply fa_clean. clear - H Hcl; fsetdec.
+  - apply fa_unit.
+  - apply fa_var_rigid; assumption.
+  - apply fa_hole.
+  - apply fa_tophole; auto.
+  - apply fa_arrow;
+      [ apply IHflex_apart1 | apply IHflex_apart2 ];
+      solve [ exact Hle | cbn [ftvar_in_uskl] in Hcl; clear - Hcl; fsetdec ].
+  - (* ⚠️ the binder must dodge [Δρ'] too: the growth condition only bounds
+       [Δρ' ∩ ftv ψa], and opening puts the binder INTO the payload's ftv. *)
+    eapply fa_all_etag with (L := L `union` Δρ'); intros α0 Hα0.
+    apply H0; [ clear - Hα0; fsetdec | exact Hle | ].
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ (uskl_var_f α0)) as Hup.
+    cbn [ftvar_in_uskl] in Hcl, Hup. clear - Hcl Hup Hα0; fsetdec.
+  - (* ⚠️ the binder must dodge [Δρ'] too: the growth condition only bounds
+       [Δρ' ∩ ftv ψa], and opening puts the binder INTO the payload's ftv. *)
+    eapply fa_all_syn with (L := L `union` Δρ'); intros α0 Hα0.
+    apply H0; [ clear - Hα0; fsetdec | exact Hle | ].
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ (uskl_var_f α0)) as Hup.
+    cbn [ftvar_in_uskl] in Hcl, Hup. clear - Hcl Hup Hα0; fsetdec.
+  - apply fa_flexfree; assumption.
+  - apply fa_rho_var. clear - H Hle; fsetdec.
+Qed.
+
+(** …and the same for the P0-only closure, which is Δρ-CONSTANT: the growth is
+    pointwise.  This is what Sub-ForallL needs, where the row's fresh rigid β
+    joins Δρ and is fresh for the guess. *)
+Lemma flex_apart_p0_delta_grow : forall Θ0 Δρ Δρ' P0 ψa,
+  flex_apart_p0 Θ0 Δρ P0 ψa ->
+  Δρ [<=] Δρ' -> Δρ' ∩ ftvar_in_uskl ψa [<=] Δρ ->
+  flex_apart_p0 Θ0 Δρ' P0 ψa.
+Proof.
+  intros Θ0 Δρ Δρ' P0 ψa H Hle Hcl P0' Hw.
+  eapply flex_apart_delta_grow; [ apply H; exact Hw | exact Hle | exact Hcl ].
+Qed.
+
 Lemma flex_apart_p0_clean : forall Θ0 Δρ P0 ψa,
   (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
   flex_apart_p0 Θ0 Δρ P0 ψa.

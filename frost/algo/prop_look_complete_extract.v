@@ -1058,12 +1058,10 @@ Proof.
   intros HwfΘ HwfΘ0 HwfP0 HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR
          Htags Hdisj HΔψ Hψaw Hwfψ Hdfresh HΨsubU HΨsubL Hsubty
          HwfSubj Hrefine.
-  (* ⭐⭐⭐ (2026-08-05) TASK 0's shield supply is DISCHARGED, not assumed:
-     [sub_shield] is instantiated at Δρ = ∅ here, where its growth condition
-     IS cleanliness and every reachable state is [fa_clean].  The premise is
-     gone from the statement. *)
-  assert (Hshield : sub_shield Θ0 Ψa empty α P0 R' ψa)
-    by apply sub_shield_empty.
+  (* ⭐⭐⭐ (2026-08-05) TASK 0's shield supply is GONE from both statements:
+     P6-Ss's repair premise is [flex_apart_p0 Θ0 Δρ P0 ψa], and at the Δρ = ∅
+     this row uses it is [fa_clean] at every reachable state, so P6-Ss's own
+     corollary discharges it and P6-L never sees it. *)
   (* ---- (a)-(f) : P6-Ss at [Pi := □], [Ψi := ∅] ---- *)
   (* ⭐ THE SOLVE'S OWN BLOCK [Ξs] (2026-08-05, the SolE-FlexR repair).  The
      look's suffix is now three blocks, [Ξc ++ Ξs ++ Ξ'] — collection,
@@ -1076,7 +1074,7 @@ Proof.
               P P0 pskl_hole R' α
               HwfΘ HwfΘ0 HwfP0 ltac:(apply a_wf_pskl__hole)
               HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR Htags Hdisj
-              ltac:(clear; fsetdec) Hψaw Hdfresh Hshield
+              ltac:(clear; fsetdec) Hψaw Hdfresh
               ltac:(cbn [msubst_pskl];
                     apply ad_ppre__hole; [ clear; fsetdec | exact HΔψ ])
               HΨsubU HΨsubL
