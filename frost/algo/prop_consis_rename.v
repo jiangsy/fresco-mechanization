@@ -35,10 +35,10 @@ Require Import src.frost.predicates.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo.def_decl_algo.
-Require Import src.frost.algo.def_decorated.
+Require Import src.frost.algo.decorated_algo.def_decl_algo.
+Require Import src.frost.algo.decorated_algo.def_decorated.
 Require Import src.frost.algo.prop_flex.
-Require Import src.frost.algo.prop_decorate.
+Require Import src.frost.algo.decorated_algo.prop_decorate.
 
 Set Implicit Arguments.
 

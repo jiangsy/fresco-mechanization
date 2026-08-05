@@ -11,23 +11,23 @@ Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_syntax_directed.
 Require Import src.frost.decl.prop_general_subsumption.
-Require Import src.frost.algo.prop_decorate.
+Require Import src.frost.algo.decorated_algo.prop_decorate.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
-Require Import src.frost.algo.prop_consis_sound.
+Require Import src.frost.algo.prop_soundness_consis.
 Require Import src.frost.algo.prop_consis_rename.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.test_unify_regression.
 Require Import src.frost.algo.prop_precise.
-Require Import src.frost.algo.prop_consis_complete.
-Require Import src.frost.algo.prop_decorate_key.
-Require Import src.frost.algo.prop_sub_complete.
-Require Import src.frost.algo.prop_look_complete_var.
-Require Import src.frost.algo.prop_look_complete_cstr.
-Require Import src.frost.algo.prop_look_complete_sub_var.
-Require Import src.frost.algo.prop_look_complete_sub_cstr.
-Require Import src.frost.algo.prop_look_complete_extract.
-Require Import src.frost.algo.prop_sub_complete_dispatch.
+Require Import src.frost.algo.prop_completeness_consis.
+Require Import src.frost.algo.decorated_algo.prop_decorate_key.
+Require Import src.frost.algo.prop_completeness_sub_precise.
+Require Import src.frost.algo.completeness_look.prop_eq_var.
+Require Import src.frost.algo.completeness_look.prop_eq_cstr.
+Require Import src.frost.algo.completeness_look.prop_sub_var.
+Require Import src.frost.algo.completeness_look.prop_sub_cstr.
+Require Import src.frost.algo.completeness_look.prop_extract.
+Require Import src.frost.algo.prop_completeness_sub.
 
 (* ===================================================================== *)
 (*  full-decl-proofs.tex / app:syntax-directed                            *)

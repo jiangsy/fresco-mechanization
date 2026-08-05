@@ -23,7 +23,7 @@ Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_solve_sub.
-Require Import src.frost.algo.prop_consis_sound.
+Require Import src.frost.algo.prop_soundness_consis.
 
 Set Implicit Arguments.
 

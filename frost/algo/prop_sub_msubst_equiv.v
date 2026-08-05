@@ -35,19 +35,19 @@ Require Import src.frost.predicates.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo.def_decl_algo.
-Require Import src.frost.algo.def_decorated.
+Require Import src.frost.algo.decorated_algo.def_decl_algo.
+Require Import src.frost.algo.decorated_algo.def_decorated.
 Require Import src.frost.algo.prop_inc.            (* a_tyequiv_pskl *)
 Require Import src.frost.algo.prop_flex.           (* a_tyequiv_weaken_cons *)
 Require Import src.frost.algo.prop_compose.        (* a_inc_lookup_{wf,mono}, msubst_lookup_notin *)
 Require Import src.frost.algo.prop_normal.         (* a_inc_equiv_lookup *)
 Require Import src.frost.algo.prop_pat_sub.        (* uskl_to_pskl_ptyp_to_uskl_syn *)
-Require Import src.frost.algo.prop_consis_sound.   (* uskl_to_pskl_open *)
-Require Import src.frost.algo.prop_look_complete_cstr. (* msubst_uskl_syn_open *)
+Require Import src.frost.algo.prop_soundness_consis.   (* uskl_to_pskl_open *)
+Require Import src.frost.algo.completeness_look.prop_eq_cstr. (* msubst_uskl_syn_open *)
 Require Import src.frost.algo.prop_consis_precise.  (* ftag_in_uskl_{open_var,ptyp_syn} *)
-Require Import src.frost.algo.prop_consis_complete. (* skl_tyequiv_consis_transport *)
-Require Import src.frost.algo.def_decl_algo_sub_hyg. (* ad_pat_sub_g / _gv *)
-Require Import src.frost.algo.prop_sub_complete.     (* fold_flex, mono_paint_guarded *)
+Require Import src.frost.algo.prop_completeness_consis. (* skl_tyequiv_consis_transport *)
+Require Import src.frost.algo.decorated_algo.def_decl_algo_sub_hyg. (* ad_pat_sub_g / _gv *)
+Require Import src.frost.algo.prop_completeness_sub_precise.     (* fold_flex, mono_paint_guarded *)
 
 Set Implicit Arguments.
 

@@ -50,10 +50,10 @@ Require Import src.frost.predicates.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.
-Require Import src.frost.algo.def_decl_algo.
-Require Import src.frost.algo.def_decorated.
+Require Import src.frost.algo.decorated_algo.def_decl_algo.
+Require Import src.frost.algo.decorated_algo.def_decorated.
 Require Import src.frost.algo.prop_precise.        (* ad_precise *)
-Require Import src.frost.algo.prop_consis_sound.   (* ad_refine_pskl_f *)
+Require Import src.frost.algo.prop_soundness_consis.   (* ad_refine_pskl_f *)
 
 Set Implicit Arguments.
 

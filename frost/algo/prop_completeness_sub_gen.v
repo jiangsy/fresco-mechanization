@@ -61,20 +61,20 @@ Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.prop_basic.              (* bskl_to_pskl_pskl_to_bskl_{syn,inh} *)
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo.def_decl_algo.
-Require Import src.frost.algo.def_decorated.
-Require Import src.frost.algo.def_decl_algo_sub.
-Require Import src.frost.algo.def_decl_algo_sub_hyg.
+Require Import src.frost.algo.decorated_algo.def_decl_algo.
+Require Import src.frost.algo.decorated_algo.def_decorated.
+Require Import src.frost.algo.decorated_algo.def_decl_algo_sub.
+Require Import src.frost.algo.decorated_algo.def_decl_algo_sub_hyg.
 Require Import src.frost.algo.prop_inc.           (* a_binds_tvar_weaken_mid *)
 Require Import src.frost.algo.prop_refine.        (* lc_pskl_to_bskl_inh, a_wf_pskl_delta_mono *)
-Require Import src.frost.algo.prop_consis_complete. (* ad_precise_f *)
+Require Import src.frost.algo.prop_completeness_consis. (* ad_precise_f *)
 Require Import src.frost.algo.prop_consis_precise. (* pskl_no_forall *)
 Require Import src.frost.algo.prop_metasubst.     (* opt_axiom_factor *)
 Require Import src.frost.algo.prop_precise.       (* ad_precise, ⊢ₚᵣᵃ *)
 Require Import src.frost.algo.prop_flex.          (* a_decls *)
-Require Import src.frost.algo.prop_consis_sound.  (* ad_refine_{syn,pskl}_f *)
+Require Import src.frost.algo.prop_soundness_consis.  (* ad_refine_{syn,pskl}_f *)
 Require Import src.frost.algo.prop_compose.       (* a_inc_{dom_flex,lookup_wf,lookup_mono}, msubst_pskl_open *)
-Require Import src.frost.algo.prop_decorate_sub.  (* lc_uskl_of_pskl *)
+Require Import src.frost.algo.decorated_algo.prop_decorate_sub.  (* lc_uskl_of_pskl *)
 Require Import src.frost.algo.prop_normal.        (* a_inc_equiv_lookup (the a_binds_tvar form) *)
 Require Import src.frost.algo.prop_mono_bridge.   (* ptyp_to_bskl_inh_syn_eq *)
 Require Import src.frost.algo.prop_precise_recover. (* tyequiv_mono_refine_syn *)
@@ -82,15 +82,15 @@ Require Import src.frost.algo.prop_pat_sub.       (* uskl_to_pskl_ptyp_to_uskl_s
 Require Import src.frost.algo.prop_sub_msubst_equiv. (* ≡ᵘ + erasure + generation *)
 Require Import src.frost.algo.prop_stability.     (* a_wf_pskl_isub *)
 Require Import src.frost.algo.prop_inc_strengthen. (* a_assign_unify_consis_flex_preserve *)
-Require Import src.frost.algo.prop_decorate_key.  (* a_sub_sound_thm *)
+Require Import src.frost.algo.decorated_algo.prop_decorate_key.  (* a_sub_sound_thm *)
 Require Import src.frost.def_tags.                 (* ftag_in_uskl *)
-Require Import src.frost.algo.prop_decorate.       (* pskl_to_uskl kit *)
-Require Import src.frost.algo.prop_sub_sound.      (* a_wf_pskl_subst_tvar *)
+Require Import src.frost.algo.decorated_algo.prop_decorate.       (* pskl_to_uskl kit *)
+Require Import src.frost.algo.prop_soundness_sub.      (* a_wf_pskl_subst_tvar *)
 Require Import src.frost.algo.prop_consis_precise.   (* uskl_precise kit *)
-Require Import src.frost.algo.prop_sub_complete.     (* P5 + the _gv transports *)
-Require Import src.frost.algo.prop_look_complete_cstr. (* ftag/msubst kit *)
-Require Import src.frost.algo.prop_look_complete_sub_cstr. (* P6-Ss *)
-Require Import src.frost.algo.prop_look_complete_extract. (* P6-L + the extract family *)
+Require Import src.frost.algo.prop_completeness_sub_precise.     (* P5 + the _gv transports *)
+Require Import src.frost.algo.completeness_look.prop_eq_cstr.
+Require Import src.frost.algo.completeness_look.prop_sub_cstr.
+Require Import src.frost.algo.completeness_look.prop_extract.
 Require Import src.frost.algo.prop_swap.                  (* THE SWAP KIT — P7a's renaming primitive *)
 
 Set Implicit Arguments.

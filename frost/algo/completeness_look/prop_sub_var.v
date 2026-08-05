@@ -66,10 +66,10 @@ Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo.def_decl_algo.
-Require Import src.frost.algo.def_decorated.
-Require Import src.frost.algo.def_decl_algo_sub.
-Require Import src.frost.algo.def_decl_algo_sub_hyg.
+Require Import src.frost.algo.decorated_algo.def_decl_algo.
+Require Import src.frost.algo.decorated_algo.def_decorated.
+Require Import src.frost.algo.decorated_algo.def_decl_algo_sub.
+Require Import src.frost.algo.decorated_algo.def_decl_algo_sub_hyg.
 Require Import src.frost.def_tags.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
@@ -78,18 +78,18 @@ Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.prop_consis_precise.  (* d_tags_skl_var_inv *)
-Require Import src.frost.algo.prop_consis_sound.    (* a_wf_pskl_lc *)
-Require Import src.frost.algo.prop_decorate_sub.    (* lc_uskl_to_pskl_local *)
+Require Import src.frost.algo.prop_soundness_consis.    (* a_wf_pskl_lc *)
+Require Import src.frost.algo.decorated_algo.prop_decorate_sub.    (* lc_uskl_to_pskl_local *)
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_refine.       (* ad_refine_syn_weaken *)
 Require Import src.frost.algo.prop_looksub.
-Require Import src.frost.algo.prop_sub_sound.    (* a_wf_pskl_open *)
+Require Import src.frost.algo.prop_soundness_sub.    (* a_wf_pskl_open *)
 Require Import src.frost.algo.prop_solve_sub.
-Require Import src.frost.algo.prop_consis_complete.  (* a_wf_pskl_ftv_dom *)
-Require Import src.frost.algo.prop_sub_complete.
-Require Import src.frost.algo.prop_look_complete.
-Require Import src.frost.algo.prop_look_complete_var.
-Require Import src.frost.algo.prop_look_complete_cstr.  (* the ∀-binder kit,
+Require Import src.frost.algo.prop_completeness_consis.  (* a_wf_pskl_ftv_dom *)
+Require Import src.frost.algo.prop_completeness_sub_precise.
+Require Import src.frost.algo.completeness_look.prop_kit.
+Require Import src.frost.algo.completeness_look.prop_eq_var.
+Require Import src.frost.algo.completeness_look.prop_eq_cstr.  (* the ∀-binder kit,
     [mono_ptyp_to_uskl_syn_tskl], [ftag_in_uskl_ptyp_to_uskl_syn], … *)
 
 Set Implicit Arguments.

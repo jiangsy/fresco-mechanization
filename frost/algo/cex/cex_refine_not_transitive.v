@@ -51,7 +51,7 @@ Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo.def_decl_algo.
+Require Import src.frost.algo.decorated_algo.def_decl_algo.
 
 (* The fill: ∀◇(□ → □).  Well-formed at the empty Δ: the tophole's body
    is an arrow (hence guarded), and the arrow's components are holes. *)

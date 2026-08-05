@@ -66,12 +66,12 @@ Require Import src.frost.predicates.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo.def_decl_algo.
-Require Import src.frost.algo.def_decorated.
-Require Import src.frost.algo.def_decl_algo_sub.
-Require Import src.frost.algo.def_decl_algo_sub_hyg.
-Require Import src.frost.algo.prop_consis_sound.
-Require Import src.frost.algo.prop_sub_complete_thm.
+Require Import src.frost.algo.decorated_algo.def_decl_algo.
+Require Import src.frost.algo.decorated_algo.def_decorated.
+Require Import src.frost.algo.decorated_algo.def_decl_algo_sub.
+Require Import src.frost.algo.decorated_algo.def_decl_algo_sub_hyg.
+Require Import src.frost.algo.prop_soundness_consis.
+Require Import src.frost.algo.prop_completeness_sub_gen.
 
 Set Implicit Arguments.
 

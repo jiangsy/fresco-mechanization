@@ -44,11 +44,11 @@ Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.     (* ≡ˢ *)
-Require Import src.frost.algo.def_decl_algo.
+Require Import src.frost.algo.decorated_algo.def_decl_algo.
 Require Import src.frost.algo.prop_precise.   (* bskl_to_pskl_open *)
 Require Import src.frost.algo.prop_pat_sub.   (* {pskl,bskl}_ghost_free *)
-Require Import src.frost.algo.prop_consis_sound.  (* a_consis_sound, ad_refine_syn_f_forget *)
-Require Import src.frost.algo.prop_decorate_key.   (* a_sub_sound_thm *)
+Require Import src.frost.algo.prop_soundness_consis.  (* a_consis_sound, ad_refine_syn_f_forget *)
+Require Import src.frost.algo.decorated_algo.prop_decorate_key.   (* a_sub_sound_thm *)
 
 Set Implicit Arguments.
 

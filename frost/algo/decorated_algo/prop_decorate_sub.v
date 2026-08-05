@@ -22,17 +22,17 @@ Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo.def_decl_algo.
-Require Import src.frost.algo.def_decorated.
-Require Import src.frost.algo.def_decl_algo_sub.
-Require Import src.frost.algo.prop_consis_sound.
+Require Import src.frost.algo.decorated_algo.def_decl_algo.
+Require Import src.frost.algo.decorated_algo.def_decorated.
+Require Import src.frost.algo.decorated_algo.def_decl_algo_sub.
+Require Import src.frost.algo.prop_soundness_consis.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_stability.
-Require Import src.frost.algo.prop_decorate.
+Require Import src.frost.algo.decorated_algo.prop_decorate.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_looksub.
-Require Import src.frost.algo.prop_sub_sound.
+Require Import src.frost.algo.prop_soundness_sub.
 
 Set Implicit Arguments.
 

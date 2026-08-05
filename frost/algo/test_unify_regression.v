@@ -25,13 +25,13 @@ Require Import src.frost.predicates.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo.def_decl_algo.
+Require Import src.frost.algo.decorated_algo.def_decl_algo.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_stability.
-Require Import src.frost.algo.prop_decorate.
+Require Import src.frost.algo.decorated_algo.prop_decorate.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_refine.
-Require Import src.frost.algo.prop_consis_sound.
+Require Import src.frost.algo.prop_soundness_consis.
 
 (** A flexible variable defined to an ARROW — a perfectly ordinary state: it is
     exactly what [Assign-SolveM] produces via [guess^TY]. *)
