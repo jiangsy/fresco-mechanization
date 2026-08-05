@@ -794,8 +794,15 @@ Proof.
                 [ exact Hconsis2 | exact HwfΘ | exact HskQ2 ]).
         clear - Hsubeq2 H HΨ1e HΨ2e; fsetdec. }
       (* the repaired flexible-P0 discharge chain, Δ-universal via B2 *)
+      (* ⚙️ (2026-08-05) the first premise WAS
+         [flex_apart Θ0 Δρ β̂ (ψa1 → ψa2)].  At a FLEXIBLE P0 against an ARROW
+         guess that predicate has exactly one satisfiable row — [fa_clean] —
+         so its whole content is "the guess is Δρ-clean", and taking THAT
+         directly is what frees the block.  The one row that still calls
+         [FLEX] is SE-GhostL, where [Pi = ◇] and [ad_ppre__hole]'s own side
+         condition supplies the cleanliness for nothing. *)
       assert (FLEX : forall β,
-        flex_apart Θ0 Δρ (pskl_var_f β) (uskl_arrow ψa1 ψa2) ->
+        (ftvar_in_uskl (uskl_arrow ψa1 ψa2)) ∩ Δρ [=] empty ->
         a_flex_tvar Θ0 β ->
         Θr ⨟ Δr ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f β)))
              ⊳ (bskl_arrow Q1 Q2) ->
@@ -815,23 +822,7 @@ Proof.
         forall Δx,
           Θ ⨟ Δx ⊢ (msubst_pskl κ (pskl_var_f β)) ⊑ᵖ[ empty ]
             (uskl_arrow ψa1 ψa2)).
-      { intros β Hapβ Hflxβ Hrefβ.
-        assert (Hclean : (ftvar_in_uskl (uskl_arrow ψa1 ψa2)) ∩ Δρ [=] empty).
-        { inversion Hapβ; subst.
-          - assumption.
-          - (* fa_var_rigid clashes with flexibility via wf-uniq *)
-            exfalso.
-            match goal with Hb : binds β abind_tvar _ |- _ =>
-              destruct Hflxβ as [Hb' | [τx Hb']];
-              pose proof (binds_unique _ _ _ _ _ Hb Hb'
-                            (a_wf_aenv_uniq HwfΘ0)) as Hcc;
-              discriminate Hcc
-            end.
-          - (* fa_flexfree clashes with flexibility directly.  NB [fa_rho_var]
-               is discriminated: this target is an ARROW, not a variable. *)
-            exfalso.
-            match goal with Hff : pskl_flex_free _ _ |- _ =>
-              apply (Hff β); [ simpl; clear; fsetdec | exact Hflxβ ] end. }
+      { intros β Hclean Hflxβ Hrefβ.
         simpl in Hclean.
         destruct (uskl_rho_clean_eq Hrho1 ltac:(clear - Hclean; fsetdec))
           as [HeqR1 HΨρ1e].
@@ -902,6 +893,120 @@ Proof.
           [ exact Hcons' | exact HwfΘ | rewrite Heqψ1, Heqψ2; reflexivity
           | apply mono_ptyp__arrow; assumption
           | clear; fsetdec | exact Hml | exact Hrefβ' ]. }
+      (* ⭐⭐ THE ρ-DIRTY COMPANION OF [FLEX] (2026-08-05, the SolE-FlexR
+         repair).  Everything the SE-FlexR row below actually needs — the
+         counterpart monotype, its well-formedness and its scope — is
+         available WITHOUT [FLEX]'s cleanliness step, hence without reading
+         the [flex_apart] premise at all.
+
+         [FLEX] argues "the guess is Δρ-CLEAN, so ρ is the identity on it, so
+         the consistency SUBJECT *is* the guess".  That detour existed because
+         the OLD row answered a flexible counterpart with the FLEXIBLE, and
+         the obligation then compared the whole guess against a κ-image — a
+         whole-object comparison with no position-wise escape.  The repaired
+         row answers [guess^TY(Pi)], so we may instead read the monotype off
+         the SUBJECT and lift it to the GUESS: ρ is CONGRUENT at every
+         constructor and non-trivial only at a bare VARIABLE ([urho__leaf]),
+         and a bare variable is itself a monotype ([uskl_rho_mono_target]).
+
+         The one thing that does NOT survive is [Θw]-scope of the whole guess:
+         a ρ-replaced variable is a rigid the fixed [Θw] need not have.  It
+         survives up to [Δρ ⊆ Δ], which is exactly the slack
+         [a_guess_ty_witness_mono_gen] takes — and at the only positions that
+         invent a payload, [Pi]'s HOLES, [ad_ppre__hole] closes the gap
+         ([ppre_hole_payload_wf]). *)
+      assert (FLEXMONO : forall β,
+        a_flex_tvar Θ0 β ->
+        Θr ⨟ Δr ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f β)))
+             ⊳ (bskl_arrow Q1 Q2) ->
+        Ψa [=] empty /\
+        (exists τa1 τa2, mono_ptyp τa1 /\ mono_ptyp τa2 /\
+           ψa1 = ptyp_to_uskl_syn τa1 /\ ψa2 = ptyp_to_uskl_syn τa2 /\
+           a_wf_ptyp Θ (ptyp_arrow τa1 τa2) /\
+           ftvar_in_ptyp (ptyp_arrow τa1 τa2) [<=] dom Θw `union` Δ)).
+      { intros β Hflxβ Hrefβ.
+        assert (Hml : mono_ptyp (msubst_lookup κ β))
+          by (eapply a_inc_lookup_mono; eauto).
+        simpl in Hrefβ.
+        rewrite (ptyp_to_bskl_inh_syn_eq Hml) in Hrefβ.
+        assert (Hmi : bskl_monoish (bskl_arrow Q1 Q2))
+          by (eapply ad_refine_mono_paint_rhs_monoish;
+                [ exact HwfΘr | exact Hrefβ | reflexivity | exact Hml ]).
+        assert (Hmi1 : bskl_monoish Q1) by (inversion Hmi; assumption).
+        assert (Hmi2 : bskl_monoish Q2) by (inversion Hmi; assumption).
+        (* the SUBJECT is decorated because the GUESS is *)
+        assert (Htsk1 : is_tskl R1)
+          by (eapply uskl_rho_is_tskl;
+                [ exact Hrho1 | inversion Htags1; assumption ]).
+        assert (Htsk2 : is_tskl R2)
+          by (eapply uskl_rho_is_tskl;
+                [ exact Hrho2 | inversion Htags2; assumption ]).
+        destruct (ad_pat_consis_monoish_counterpart Hconsis1 HwfΘ Htsk1 Hmi1)
+          as (HΨ1e & τ1' & Hm1' & HeqR1).
+        destruct (ad_pat_consis_monoish_counterpart Hconsis2 HwfΘ Htsk2 Hmi2)
+          as (HΨ2e & τ2' & Hm2' & HeqR2).
+        (* …and the GUESS is a mono paint because its ρ-IMAGE is *)
+        destruct (uskl_rho_mono_target Hrho1 HeqR1 Hm1')
+          as (τa1 & Heq1 & Hma1).
+        destruct (uskl_rho_mono_target Hrho2 HeqR2 Hm2')
+          as (τa2 & Heq2 & Hma2).
+        assert (Hcons' : Ψ ⨟ Θ ⊢ₛᵃ (uskl_arrow R1 R2) ∼ (bskl_arrow Q1 Q2))
+          by (eapply ad_pat_consis__arrow; eassumption).
+        assert (Hrefβ' : Θ ⨟ empty ⊢ᵣᵃ
+                  (ptyp_to_bskl_syn (msubst_lookup κ β)) ⊳ (bskl_arrow Q1 Q2))
+          by (eapply refine_primary_to_plain_split; eassumption).
+        (* the SUBJECT's monotype is well-formed where the consistency lives *)
+        assert (Hwfsub : a_wf_ptyp Θ (ptyp_arrow τ1' τ2')).
+        { eapply ad_pat_consis_mono_subject_wf;
+            [ exact Hcons' | rewrite HeqR1, HeqR2; reflexivity
+            | apply mono_ptyp__arrow; assumption ]. }
+        (* both bounds below are over the context's DEFINITIONS, never over a
+           domain — a rigid binder carries no definition (see [FLEX]) *)
+        assert (Hdefw : forall α0 τ0, binds α0 (abind_flex_mono_def τ0) Θ ->
+                  α0 `in` dom Θw /\ ftvar_in_ptyp τ0 [<=] dom Θw).
+        { intros α0 τ0 Hb.
+          pose proof (Hdefs _ _ Hb) as Hbw.
+          split; [ eapply binds_In; exact Hbw
+                 | eapply a_wf_aenv_def_ftv_dom;
+                     [ exact HwfΘw | exact Hbw ] ]. }
+        assert (HftQ : ftvar_in_bskl (bskl_arrow Q1 Q2) [<=] dom Θw).
+        { eapply ad_refine_mono_paint_ftv_bound;
+            [ exact HwfΘ | exact Hrefβ' | reflexivity | exact Hml
+            | exact (Hκw β Hflxβ) | exact Hdefw ]. }
+        assert (HftR : (ftvar_in_uskl R1) `union` (ftvar_in_uskl R2)
+                       [<=] dom Θw).
+        { pose proof (consis_subject_ftv_defs_bound Hcons' Hdefw) as Ht.
+          cbn [ftvar_in_uskl ftvar_in_bskl] in Ht, HftQ.
+          clear - Ht HftQ; fsetdec. }
+        (* …and the GUESS adds only ρ-REPLACED variables on top of it *)
+        assert (Hftar : (ftvar_in_ptyp τa1) `union` (ftvar_in_ptyp τa2)
+                        [<=] (ftvar_in_uskl R1) `union` (ftvar_in_uskl R2)
+                             `union` Δρ).
+        { pose proof (uskl_rho_ftv_target_bound
+                        (urho__arrow Hrho1 Hrho2 HΨρs)) as Hb.
+          rewrite Heq1, Heq2 in Hb.
+          cbn [ftvar_in_uskl] in Hb.
+          rewrite !ftvar_in_uskl_ptyp_to_uskl_syn in Hb.
+          clear - Hb; fsetdec. }
+        assert (Hwfar : a_wf_ptyp Θ (ptyp_arrow τa1 τa2)).
+        { apply mono_ptyp_wf; [ apply mono_ptyp__arrow; assumption | ].
+          intros α0 Hα0. cbn [ftvar_in_ptyp] in Hα0.
+          destruct (mem α0 Δρ) eqn:Em;
+            [ apply mem_iff in Em; rename Em into Hin
+            | apply not_mem_iff in Em; rename Em into Hnin ].
+          - (* a ρ-replaced variable is a RIGID of Θ *)
+            destruct (Hfresh α0 Hin) as (Hb & _ & _). left; exact Hb.
+          - (* otherwise it is one of the SUBJECT's, which is wf in Θ *)
+            eapply a_wf_ptyp_ftv_tvarish; [ exact Hwfsub | ].
+            assert (Hin' : α0 `in` (ftvar_in_uskl R1) `union`
+                                   (ftvar_in_uskl R2))
+              by (clear - Hftar Hα0 Hnin; fsetdec).
+            rewrite HeqR1, HeqR2 in Hin'.
+            rewrite !ftvar_in_uskl_ptyp_to_uskl_syn in Hin'.
+            cbn [ftvar_in_ptyp]. clear - Hin'; fsetdec. }
+        split; [ clear - Hsubeq2 H HΨ1e HΨ2e; fsetdec | ].
+        exists τa1, τa2. repeat split; try assumption.
+        cbn [ftvar_in_ptyp]. clear - Hftar HftR Hdelta; fsetdec. }
       (* CORE: the grid, by strong induction on the sizes *)
       assert (CORE : forall n Pi P0 Ψi,
         size_pskl Pi + size_pskl P0 <= n ->
@@ -967,10 +1072,13 @@ Proof.
                 | eapply a_inc_binds_tvar; eauto
                 | intros β0 Hcc; discriminate Hcc ].
             * (* flexible: SE-FlexR + the discharge chain *)
-              destruct (FLEX β Hap1 Hflx Hrefine1)
+              (* ⭐⭐ [FLEXMONO], not [FLEX] (2026-08-05): this row needs the
+                 counterpart monotype and its SCOPE, and neither needs the
+                 [flex_apart] cleanliness step.  See the block's header. *)
+              destruct (FLEXMONO β Hflx Hrefine1)
                 as (HΨae
-                    & (τa1 & τa2 & Hma1 & Hma2 & Heq1 & Heq2 & Hwfar)
-                    & Hqf).
+                    & (τa1 & τa2 & Hma1 & Hma2 & Heq1 & Heq2 & Hwfar
+                       & Hftar)).
               assert (HΨie : Ψi0 [=] empty).
               { rewrite Heq1, Heq2 in Hpre1.
                 eapply ad_ppre_mono_tags_empty
@@ -994,30 +1102,20 @@ Proof.
                   with (uskl_arrow (ptyp_to_uskl_syn τa1)
                                    (ptyp_to_uskl_syn τa2)).
                 rewrite <- Heq1, <- Heq2. exact Hpre1. }
-              (* ⛔ RESUME HERE (2026-08-04).  The witness now reports the
-                 extension's payloads well-formed in [Θw], the context that
-                 stays FIXED under binders, so it needs
-                 [a_wf_ptyp Θw (τa1 → τa2)] — and [FLEX] currently produces
-                 it at [Θ], which under a ∀ row is [Θ] EXTENDED by the bound
-                 rigid.  The fact is true and the argument is known (see the
-                 hand-off, §6 Step 1, "the one open obligation"):
-
-                   ftv (ψa1 → ψa2) ⊆ ftv (bskl_arrow Q1 Q2) ∪ dom Θr
-                                   ⊆ ftv (msubst_lookup κ β) ∪ dom Θr,
-
-                 by [consis_subject_ftv_bag_bound] then
-                 [ad_refine_syn_ftv_rhs_bound] on [Hrefβ'] — and a ∀ row's
-                 binder joins [Θtv], never [Θr], while [κ ∷ Θ0 ⊑ Θw] keeps
-                 every κ-image inside [dom Θw].  So the counterpart monotype
-                 is apart from every bound rigid, and [mono_ptyp_wf] lifts
-                 that to [a_wf_ptyp Θw].  What is missing is exactly that
-                 derivation, inside [FLEX], plus the premise [κ ∷ Θ0 ⊑ Θw]
-                 on the theorem (identical to [Hκ] at the top-level call). *)
-              destruct (@a_guess_ty_witness_mono
+              (* ⭐⭐ THE PAYLOAD SCOPE IS POSITION-WISE (2026-08-05).  The
+                 witness reports its payloads well-formed in [Θw], the context
+                 that stays FIXED under binders — and a ρ-DIRTY guess is not
+                 [Θw]-scoped: a ρ-replaced variable is a rigid [Θw] need not
+                 have.  It IS scoped up to [Δρ ⊆ Δ], and that is all the
+                 general witness asks, because the flexibles [guess^TY]
+                 invents sit exactly at [Pi]'s HOLES and [ad_ppre__hole]'s own
+                 side condition keeps the target facing a hole apart from Δ
+                 ([ppre_hole_payload_wf]). *)
+              destruct (@a_guess_ty_witness_mono_gen
                           (size_pskl (pskl_arrow Pi1 Pi2)) Θ0 Θ Θw κ Δ Ψi0
                           (ptyp_arrow τa1 τa2) (pskl_arrow Pi1 Pi2)
                           ltac:(reflexivity) HwfΘ HwfΘw Hmon Hdefs
-                          HwfPi0 Hmar Hwfar Hpre1' Lav)
+                          HwfPi0 Hmar Hwfar Hftar Hpre1' Lav)
                 as (Ξg & Ag & κg & Hgu & Hfmg & Hug & Hkg & Hfrg & HFg & Hqg).
               exists Ξg, (ptyp_to_pskl Ag), κg.
               split; [ apply a_solve_eq__flex_r;
@@ -1235,7 +1333,15 @@ Proof.
                 | apply a_wf_aenv_uniq; exact HwfΘ
                 | eapply a_inc_binds_tvar; eauto
                 | intros β0 Hcc; discriminate Hcc ].
-            * destruct (FLEX β Hap1 Hflx Hrefine1) as (HΨae & _ & Hqf).
+            * (* ⭐ the cleanliness [FLEX] wants is FREE here: the subject is
+                 [◇], so [Hpre1] IS [ad_ppre__hole] and [Hhd] is its own side
+                 condition — with [Δρ ⊆ Δ] that is exactly the premise.
+                 ⚠️ NAMED, not [ltac:(… fsetdec)]: a premise slot runs its
+                 tactic against a goal whose set arguments are still evars. *)
+              assert (Hclean0 : (ftvar_in_uskl (uskl_arrow ψa1 ψa2))
+                                ∩ Δρ [=] empty)
+                by (cbn [ftvar_in_uskl]; clear - Hhd Hdelta; fsetdec).
+              destruct (FLEX β Hclean0 Hflx Hrefine1) as (HΨae & _ & Hqf).
               eapply solve_ext_nil with (Pa := (pskl_var_f β)); [ apply a_solve_eq__hole_l | ].
               intros Δ' HS1 HS2 HS3.
               eapply ad_partial_precise_psi_cong;
@@ -3425,6 +3531,10 @@ Qed.
 (*   3. flex_apart Θ0 Δρ P0 ψa — the LE-FlexR freshening invariant (a     *)
 (*      raw Θ0-flex of P0 never faces a ρ-replaced part of ψa); NOT       *)
 (*      derivable from the other premises (cex_p6_flex_freshened.v);      *)
+(*      ⭕ and, since 2026-08-05, NOT CONSUMED BY THIS PROOF EITHER —     *)
+(*      see the annotation on the premise itself.  The witness that       *)
+(*      motivated it (cex_p6_flex_counterpart.v) is RETRACTED, killed by  *)
+(*      the repaired SolE-FlexR (cex/probe_flexr_neutralises_p6.v).       *)
 (*      vacuous (fa_clean) at every ρ = id call site, e.g. P6-Cs's,       *)
 (*      since Δρ = ∅ — only the P6-Rv ForallL descent maintains it.       *)
 (*   4. the rho_fresh / Δρ ⊆ Δ / shielded pack — replaces the paper's     *)
@@ -3469,7 +3579,37 @@ Theorem a_solve_eq_complete_var :
   rho_fresh Δρ Θ κ -> Δρ [<=] Δ ->    (* MECH-ONLY (4): the ρ-freshness *)
   (forall α, α `in` Δρ -> α `notin` pskl_shielded_ftv (msubst_pskl κ Pi)) ->
   delta_def_fresh Δ Θ ->              (* MECH-ONLY (2) *)
-  flex_apart Θ0 Δρ P0 ψa ->           (* MECH-ONLY (3) *)
+  (* ⭕⭕ MECH-ONLY (3), AND NOW UNCONSUMED (2026-08-05).  Under the authors'
+     repaired [SolE-FlexR] this proof no longer READS [flex_apart] for
+     content anywhere.  Its two consumers are gone:
+
+       · the SE-FlexR row went through [FLEX]'s cleanliness step only to get
+         "ρ is the identity on the guess", and so the guess's monotype and
+         its Θw-scope.  Both now come from [FLEXMONO]: ρ is CONGRUENT except
+         at a bare VARIABLE, so a mono-paint ρ-IMAGE forces a mono-paint
+         GUESS ([uskl_rho_mono_target]), and the scope is carried up to
+         [Δρ ⊆ Δ] into [a_guess_ty_witness_mono_gen], whose payloads are
+         [Θw]-scoped POSITION-WISE ([ppre_hole_payload_wf]).
+       · the SE-GhostL row has [Pi = ◇], so [ad_ppre__hole]'s own side
+         condition IS the cleanliness — free.
+
+     WHY THE REPAIR IS WHAT DID IT: the OLD row answered a flexible
+     counterpart with the FLEXIBLE, so the obligation compared the WHOLE
+     guess against a κ-image, with no position-wise escape.  The repaired row
+     answers [guess^TY(Pi)] and the obligation is position-wise against [Pi],
+     whose holes the precision premise already keeps Δ-apart.
+
+     ⛔ THE PREMISE IS STILL THREADED (KEY / CORE / the three ∀ blocks /
+     [IHX]) and still on the statement, because DELETING it is a cascade:
+     P6-Cs's [flex_apart_p0], P6-Sv's [flex_apart_walk], P6-Ss's
+     [sub_shield] and P6-L all exist to SUPPLY it.  A strip of this file
+     alone was machine-checked to go through; what stops the cascade one
+     level up is that P6-Cs has a GENUINE consumer of its own at the
+     COLLECTION-side LE-FlexR row ([flex_apart_flex_var_clean],
+     prop_look_complete_cstr.v ≈ 2185) — and the authors' repair touched
+     [SolE-FlexR], not [LE-FlexR].  See docs/HANDOFF-solve-flexr-repair.md
+     §6 Step 3. *)
+  flex_apart Θ0 Δρ P0 ψa ->
   Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->   (* Δ|Θ ⊢ κPi ⊑ᵖ[Ψi] ψa *)
   Ψsub [<=] Ψρ `union` Ψa ->          (* the consistency index is the *)
   Ψa [<=] Ψsub ->                     (*   paper's "Ψ,Ψa", as bounds *)

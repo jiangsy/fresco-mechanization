@@ -743,7 +743,108 @@ well-formedness, re-read as an ftv bound).  `prop_sub_complete_dispatch.v`
 and `cex/probe_payload_reachability.v` needed nothing — the whole tree
 builds (`make coq` clean).
 
-### Step 3 — ⭐⭐ THE PAY-OFF, AND NOW THE FRONT: `sub_shield` and `main_forall`
+### Step 3 — ⭐⭐ THE PAY-OFF.  ⚠️ THE PRESCRIBED MOVE IS WRONG; THE REAL
+###            TARGET IS THE ROOT, AND HALF OF IT IS DONE (2026-08-05)
+
+**⛔ Do NOT run the experiment the rest of this section prescribes** (replace
+P6-Ss's `sub_shield` premise by `flex_apart_walk` + `flex_apart_p0` and lean
+on `flex_apart_walk_step` / `flex_apart_p0_step`).  It cannot come out, for a
+reason that has nothing to do with the repair:
+
+- **P6-Ss's Sub-Arrow row has no step to descend on.**  `sub_shield`'s
+  `ss_step` moves `P0` and the SUBJECT together (`sss_arrow_r`) with the guess
+  FIXED, and the matching `fa_step` row — `fastep_p0_arrow_r` — was
+  DELIBERATELY DELETED (prop_look_complete.v ≈ 5937): composed with
+  `fastep_all_r` it made `flex_apart_walk` UNSATISFIABLE at a reachable P7b
+  node (`cex/cex_p7_shield_realizable.v`).  So `flex_apart_walk` at
+  `P1 → P2` does not give it at `P2`, and nothing can re-establish the
+  premise at the right branch.
+- **Sub-ForallL's Δρ growth** is a second, softer blocker: `flex_apart` is
+  ANTI-monotone in Δρ at `fa_clean`, so `add β Δρ` needs a freshness argument
+  against the walk's own binders.  `sub_shield` gets both for free ONLY
+  because it is a closure — that is the work the closure is doing.
+
+**THE ROOT IS `flex_apart`, P6-Cv's premise.**  The whole tower —
+`flex_apart_p0` (P6-Cs), `flex_apart_walk` (P6-Sv), `sub_shield` (P6-Ss,
+P6-L) — exists for one purpose: to SUPPLY `flex_apart` to P6-Cv at every
+position the recursion reaches.  Kill it at P6-Cv and every closure above it
+has nothing left to close over.  And its stated justification,
+`cex_p6_flex_counterpart.v`, is exactly one of the two witnesses the repair
+retired.
+
+#### ⭐⭐ WHAT LANDED (2026-08-05) — P6-Cv NO LONGER CONSUMES IT
+
+`a_solve_eq_complete_var` does not READ `flex_apart` for content anywhere.
+Both consumers are gone, `make coq` clean:
+
+| consumer | was | now |
+|---|---|---|
+| SE-FlexR (`FLEX`, arrow guess, flexible `P0`) | `fa_clean` ⟹ ρ = id on the guess ⟹ its monotype + Θw-scope | `FLEXMONO`: `uskl_rho_mono_target` + `a_guess_ty_witness_mono_gen` |
+| SE-GhostL (`Pi = ◇`) | the same `FLEX` call | `ad_ppre__hole`'s OWN side condition, free |
+
+The three enablers (commit `718eb86`, all Qed):
+
+- `uskl_rho_mono_target` — ρ is CONGRUENT at every constructor and
+  non-trivial only at a bare VARIABLE (`urho__leaf`), and a bare variable is
+  itself a monotype.  So a mono-paint ρ-IMAGE forces a mono-paint GUESS.
+  This is the entire content of the cleanliness step.
+- `ppre_hole_payload_wf` — the payload scope, POSITION-WISE.  `guess^TY`
+  invents a flexible exactly at `Pi`'s HOLES, and `ad_ppre__hole` already
+  keeps the target facing a hole apart from Δ; the only other way a hole
+  subject reaches its target is `ad_ppre__flex_r`, whose target variable is a
+  defined flexible and so already lives in Θw.
+- `a_guess_ty_witness_mono_gen` — `a_wf_ptyp Θw τ` weakened to
+  `a_wf_ptyp Θ τ` + `ftv τ ⊆ dom Θw ∪ Δ`, which is what a ρ-DIRTY guess can
+  supply (`Δρ ⊆ Δ`).  The old statement is the `ftv τ ⊆ dom Θw` instance, so
+  every other caller is untouched.
+
+⭐ **WHY THE REPAIR IS WHAT DID IT.**  The OLD `SolE-FlexR` answered a
+flexible counterpart with the FLEXIBLE, so the obligation compared the WHOLE
+guess against a κ-image — a whole-object comparison with no position-wise
+escape, which is why `flex_apart` had to be ASSUMED.  The repaired row answers
+`guess^TY(Pi)`, whose obligation is position-wise against `Pi`, and `Pi`'s
+holes are already Δ-apart by the precision premise itself.
+
+#### ⛔ WHERE IT STOPS, AND THE NEXT CONCRETE MOVE
+
+The premise is still ON P6-Cv's statement (annotated `⭕ RETAINED BUT
+UNUSED`) and still threaded through KEY / CORE / the three ∀ blocks / `IHX`.
+Stripping this file alone WAS machine-checked to go through — the strip is
+purely mechanical (delete the premise line from the 8 statements; delete the
+`Hapart` / `Hap0` / `Hap1` / `Hap01` / `Hap02` tokens; delete the
+`flex_apart_arrow_inv` / `_tophole_p0_inv` / `_weaken` / `_all_etag_forall_inv`
+/ `_topholeg_target_inv` / `fa_clean` call sites and the `HapF` / `HapX`
+families, then drop `La` from the two `pick fresh` unions).  It was reverted
+only because it breaks every downstream file at once and the session could not
+finish the cascade.
+
+⚠️ **AND THE CASCADE IS NOT PURE THREADING.**  P6-Cs has a GENUINE consumer
+of its own at `prop_look_complete_cstr.v` ≈ 2185:
+
+```coq
+  destruct (flex_apart_flex_var_clean (flex_apart_p0_here Hfaw) Hnrig Hflx)
+    as [Hclean | (α0 & Hψeq & Hα0)].
+```
+
+That is the **COLLECTION-side `LE-FlexR`** row — and the authors' repair
+touched `SolE-FlexR`, the SOLVING side, not this one.  So the tower does not
+simply collapse; deciding it needs the same analysis done here for P6-Cv:
+whether the two-way read-off can be replaced by reading the monotype off the
+SUBJECT (the substitution instance `(κR')[ψa/α]` makes it harder than P6-Cv's
+plain `ρ(ψa)`), or whether `flex_apart_p0` genuinely survives.
+
+**ORDER FOR THE NEXT SESSION.**  (1) Settle `prop_look_complete_cstr.v` ≈ 2185
+— that single site decides whether the cascade runs.  (2) If it falls, strip
+P6-Cv (recipe above), then P6-Cs, P6-Sv, P6-Ss, P6-L in that order, deleting
+`ss_walk` / `sub_shield` / `prop_sub_shield_supply.v` only once the files go
+through without them.  (3) If it stands, `flex_apart_p0` survives and the
+right question becomes whether `sub_shield` can be weakened to its UNGUARDED
+conjunct alone — the guarded `flex_apart_walk` half feeds P6-Sv, whose own
+motivating witness (`cex_p6sv_forall_flex.v`) IS dead.
+
+---
+
+### Step 3 (ORIGINAL, superseded above — kept for the `sub_shield` map)
 
 P6-L itself is **re-proved and green** (`a_extract_complete_gen` /
 `a_extract_complete`, the paper's `lemma:complete-look`,

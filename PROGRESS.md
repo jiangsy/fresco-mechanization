@@ -78,7 +78,56 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-05 (latest) — ⭐⭐⭐ **THE WHOLE P6 CLUSTER IS GREEN UNDER THE `SolE-FlexR` REPAIR**, the tree builds, and the repair RETIRES two of our own counterexamples
+## 2026-08-05 (latest) — ⭐⭐ **P6-Cv NO LONGER CONSUMES `flex_apart`**: the position-wise payload-scope route
+
+Step 3 of `docs/HANDOFF-solve-flexr-repair.md`, and the prescribed move in it
+was **wrong**.  Replacing P6-Ss's `sub_shield` by `flex_apart_walk` +
+`flex_apart_p0` cannot come out: `sub_shield`'s `sss_arrow_r` moves `P0` and
+the subject with the GUESS FIXED, and the matching `fastep_p0_arrow_r` was
+deliberately deleted (it made the walk unsatisfiable at a reachable P7b node,
+`cex/cex_p7_shield_realizable.v`).  Carrying both facts across an arrow is
+exactly the work the closure does.
+
+The real target is the ROOT — `flex_apart`, P6-Cv's premise — and it is now
+**unconsumed**.  `make coq` clean.
+
+- `uskl_rho_mono_target` (new): ρ is CONGRUENT at every constructor and
+  non-trivial only at a bare VARIABLE (`urho__leaf`), and a bare variable is
+  itself a monotype.  A mono-paint ρ-IMAGE therefore forces a mono-paint
+  GUESS — the whole content of `FLEX`'s cleanliness step, at no premise cost.
+- `ppre_hole_payload_wf` (new): the payload scope, POSITION-WISE.  `guess^TY`
+  invents a flexible exactly at `Pi`'s HOLES, and `ad_ppre__hole`'s own side
+  condition keeps the target facing a hole apart from Δ; the only other route
+  to a hole subject's target is `ad_ppre__flex_r`, whose target variable is a
+  defined flexible already living in Θw.
+- `a_guess_ty_witness_mono_gen` (new): the witness with `a_wf_ptyp Θw τ`
+  weakened to `a_wf_ptyp Θ τ` + `ftv τ ⊆ dom Θw ∪ Δ` — what a ρ-DIRTY guess
+  can supply, since `Δρ ⊆ Δ`.  The old statement is the `ftv τ ⊆ dom Θw`
+  instance, so `a_guess_ty_witness_mono` is unchanged for every other caller.
+- P6-Cv's `FLEXMONO` (new block) serves SE-FlexR; `FLEX` now takes the
+  cleanliness DIRECTLY and its one remaining caller, SE-GhostL, has `Pi = ◇`
+  and gets it from `ad_ppre__hole` for free.
+
+⭐ WHY THE REPAIR IS WHAT DID IT.  The old `SolE-FlexR` answered a flexible
+counterpart with the FLEXIBLE, so the obligation compared the WHOLE guess
+against a κ-image — no position-wise escape, hence `flex_apart` had to be
+assumed.  The repaired row answers `guess^TY(Pi)`, whose obligation is
+position-wise against `Pi`, whose holes the precision premise already keeps
+Δ-apart.  Consistently, the witness that motivated `flex_apart`
+(`cex_p6_flex_counterpart.v`) is one of the two the repair retired.
+
+⛔ NOT YET DELETED.  The premise stays on P6-Cv's statement (annotated
+`⭕ RETAINED BUT UNUSED`) and threaded internally, because removing it breaks
+the whole downstream cluster at once — `flex_apart_p0` (P6-Cs),
+`flex_apart_walk` (P6-Sv), `sub_shield` (P6-Ss, P6-L) all exist to supply it.
+The strip of P6-Cv alone was machine-checked to go through; the recipe is in
+the hand-off.  ⚠️ And the cascade is NOT pure threading: P6-Cs has a genuine
+consumer at the COLLECTION-side `LE-FlexR` row (`prop_look_complete_cstr.v`
+≈ 2185, `flex_apart_flex_var_clean`) — a rule the authors' repair did not
+touch.  That one site decides whether the tower falls.
+
+
+## 2026-08-05 — ⭐⭐⭐ **THE WHOLE P6 CLUSTER IS GREEN UNDER THE `SolE-FlexR` REPAIR**, the tree builds, and the repair RETIRES two of our own counterexamples
 
 `make coq` is clean.  All five P6 lemmas are `Qed` and `Closed under the
 global context` under the authors' repaired rule — P6-Cv, P6-Cs, P6-Sv,
