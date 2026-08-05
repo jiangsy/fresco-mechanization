@@ -256,7 +256,7 @@ Proof.
     as (_ & _ & Qt & HeQt & _ & Hrs).
   subst P'.
   pose proof (ad_refine_syn_ghost_free_equiv
-                (ad_refine_syn_f_forget Hrs)
+                Hrs
                 (pskl_to_bskl_inh_ghost_free P0 Hgf)) as Heq.
   rewrite bskl_to_pskl_pskl_to_bskl_inh in Heq. exact Heq.
 Qed.

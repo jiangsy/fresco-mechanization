@@ -165,6 +165,39 @@ used (`ftv_subst_var_keep`, `subst_var_pskl_neq_var`, `rename_aenv_same`,
 `discharge_category`, `prop_general_subsumption.v`'s `nbauto`, and four unused
 `auc_*` projections in `prop_consis_rename.v`.
 
+### 4b. ⚙ Both flagship STATEMENTS lose `ad_refine_syn_f`
+
+`a_sub_sound_thm` and `a_sub_complete_thm` both mentioned `ad_refine_syn_f`
+at `F = ∅`.  `F` is consistency soundness' ghost-fill hygiene set
+(prop_soundness_consis.v §"Fill-hygienic refinement"), a proof device: the ∀
+cases must move an opened binder from Θ into the refinement's Δ, and a naive
+strip is unsound because a ghost FILL could mention it, so the variant forbids
+`F` in ghost fills.  At `F = ∅` the `__hole` side condition is vacuous and the
+two judgments are **inter-derivable** — `ad_refine_syn_f_forget` and
+`ad_refine_syn_f_of_plain` were both already Qed — so this was scaffolding
+leaking into two paper-facing statements.  Both now read the plain
+`Θ ⨟ ∅ ⊢ᵣᵃ … ⊳ …`.  ⭐ For COMPLETENESS this is not cosmetic: `_f` sat in a
+HYPOTHESIS, and being the stronger of the two it was gratuitously weakening
+the theorem.  The internal machinery still runs on `_f`; only the statements
+changed.  The one non-README consumer, `a_sub_concrete_output_equiv`, drops
+its `ad_refine_syn_f_forget` wrapper.
+
+⛔ **What this does NOT touch — `ad_pat_sub_gv`.**  That one is an argued
+repair, not scaffolding.  `_gv → _g` (`ad_pat_sub_gv_forget`) exists; the
+CONVERSE is the paper gap itself — the leaves' subject refinement is the third
+solution condition of the AUGMENTED thm:complete-consistency, not derivable
+from the paper's two (the capture configuration `(P0 = ◇, P = ∀X.◇, Q = ∀X.X)`
+passes both) and not statable at the root (refinement is lockstep;
+`cex_p7_univ_ghost_r_vacuous.v` + `cex_p7_third_premise_forall.v`).  Below it
+sit `_g → _n → ad_pat_sub`: `ad_pat_sub_g_of`, `ad_pat_sub_of_n` and
+`ad_pat_sub_to_n` are Qed, and the missing `_n → _g` TAG-FRESHENING bridge is
+DEFERRED by DESIGN §5.4 (≈300 lines; only the paper-facing corollary consumes
+it), after which DESIGN:166 requires transporting it to `_gv`.
+
+⚠️ **The two flagships therefore still do not COMPOSE**: soundness *concludes*
+plain `ad_pat_sub`, completeness *assumes* `ad_pat_sub_gv`.  Soundness produces
+strictly less than completeness consumes.
+
 ### 5. ⛔ What was NOT retired, and why
 
 `a_assign_unify_consis_rename_tvar` (prop_consis_rename.v §8, **591 lines**)

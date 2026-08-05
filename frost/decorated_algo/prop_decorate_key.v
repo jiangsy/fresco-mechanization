@@ -4140,15 +4140,28 @@ Theorem a_sub_sound_thm : forall NM M P0 Θ0 P P' Θ1,
   exists Qt,
     bskl_to_pskl Qt = P' /\
     (empty ⨟ Θ1 ⊢ₛᵃ[ NM | M ] (pskl_to_uskl P) ⩽ Qt) /\
-    ad_refine_syn_f empty Θ1 empty (pskl_to_bskl_inh P0) Qt.
+    (* ⚙ the PLAIN refinement, not the internal [ad_refine_syn_f] variant.
+       [F] is consistency soundness' ghost-fill hygiene set (prop_soundness_
+       consis.v §"Fill-hygienic refinement"); at [F = ∅] — the only value a
+       paper-facing statement ever uses — the [__hole] side condition is
+       vacuous and the two judgments are INTER-DERIVABLE
+       ([ad_refine_syn_f_forget] / [ad_refine_syn_f_of_plain]).  So [_f] in
+       the conclusion was scaffolding leaking into the statement, nothing
+       more.  Dropped 2026-08-06. *)
+    Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ Qt.
 Proof.
   intros NM M P0 Θ0 P P' Θ1 Hrun Hwf HwfP0 HwfP Hmod Hgf.
   pose proof (a_sub_decorate Hrun Hwf HwfP0 HwfP Hmod) as Htag.
-  exact ((proj1 a_subtag_sound_bundle) _ _ _ _ _ _ _ _ Htag
-           Hwf
-           ltac:(apply pskl_to_uskl_lc; eapply a_wf_pskl_lc; eauto)
-           HwfP0
-           ltac:(rewrite uskl_to_pskl_pskl_to_uskl; exact HwfP)
-           ltac:(intros HSK; apply a_sk_mode_compat_mod_comp_sk; apply Hmod; exact HSK)
-           Hgf).
+  destruct ((proj1 a_subtag_sound_bundle) _ _ _ _ _ _ _ _ Htag
+              Hwf
+              ltac:(apply pskl_to_uskl_lc; eapply a_wf_pskl_lc; eauto)
+              HwfP0
+              ltac:(rewrite uskl_to_pskl_pskl_to_uskl; exact HwfP)
+              ltac:(intros HSK; apply a_sk_mode_compat_mod_comp_sk;
+                    apply Hmod; exact HSK)
+              Hgf)
+    as (Hisub & Hwf1 & Qt & HeQt & Hjoin & Hrs).
+  exact (conj Hisub (conj Hwf1
+           (ex_intro _ Qt (conj HeQt (conj Hjoin
+              (ad_refine_syn_f_forget Hrs)))))).
 Qed.

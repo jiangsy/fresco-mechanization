@@ -1389,7 +1389,15 @@ Theorem a_sub_complete_thm :
     κ ∷ Θ0 ⊑ Θ ->
     Θ ⊢ R' ≡ᵘ (msubst_uskl_syn κ (pskl_to_uskl P)) ->
     ad_pat_sub_gv n NM M empty Θ R' Q ->
-    ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh (msubst_pskl κ P0)) Q ->
+    (* ⚙ the PLAIN refinement, not the internal [ad_refine_syn_f] variant.
+       [F] is consistency soundness' ghost-fill hygiene set (prop_soundness_
+       consis.v §"Fill-hygienic refinement"); at the [F = ∅] this theorem
+       instantiates it at, the [__hole] side condition is vacuous and the two
+       judgments are INTER-DERIVABLE ([ad_refine_syn_f_of_plain] /
+       [ad_refine_syn_f_forget]).  So [_f] in a HYPOTHESIS was scaffolding
+       leaking into the statement — and, being the stronger of the two, it
+       was also gratuitously weakening the theorem.  Dropped 2026-08-06. *)
+    Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
     Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
     (* the subject's TY ghost-freeness — the motive's EXTERNAL side
        condition (WF-SIDE-CONDITIONS.md); at the paper's own reflexive
@@ -1409,7 +1417,8 @@ Proof.
   exact (proj1 (a_sub_complete_bundle_holds n)
            NM M Θ0 P0 P (pskl_to_uskl P) R' empty Θ κ Q
            Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty
-           (uskl_to_pskl_pskl_to_uskl P) Hinc Hslack HDj Hrs HwfQ Hgf).
+           (uskl_to_pskl_pskl_to_uskl P) Hinc Hslack HDj
+           (ad_refine_syn_f_of_plain Hrs) HwfQ Hgf).
 Qed.
 
 Print Assumptions sub_complete_assemble.
