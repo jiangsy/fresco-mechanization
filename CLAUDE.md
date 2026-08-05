@@ -11,143 +11,44 @@ point to the same content.
   `paper/frost.pdf`).
 - Coq namespace: `src` (`-R . src` in `_CoqProject`).
 - Build: `make coq` (full kernel check) — the bar for committing.
-- **Status** (audited 2026-07-30): Phases 1–2 done; Phase 3 (the
-  algorithmic system) is well past scaffolding — **the whole
-  mechanization is admit-free and axiom-free**.  Consistency is closed
-  in both directions (soundness `a_consis_sound` + `a_unify_sound` /
-  `a_assign_sound`; completeness/optimality `a_consis_complete_thm` /
-  `complete_mu`), subtyping SOUNDNESS is closed (`a_sub_sound_thm`),
-  and subtyping COMPLETENESS has P5 done and **ALL FIVE of P6's lemmas**
-  closed — P6-Cv, P6-Cs, P6-Sv, P6-Ss (`a_looksub_solve_complete`) and
-  **P6-L (`a_extract_complete_gen`, subtyping-proofs.tex:2730, closed
-  2026-07-30)**.  P6-Sv and P6-Ss are REPAIRED statements: the paper's
-  P6-Sv is FALSE (`cex/cex_p6sv_forall_flex.v`), and P6-Ss's
-  Sub-ForallR needed a mode-guarded ftv-𝒞 disjunction because the
-  sub-side analogue of `ad_pat_consis_target_ftv` is FALSE
-  (`cex/cex_p6ss_sub_target_ftv.v`) — see docs/PAPER-GAPS.md and
-  docs/DESIGN-completeness-subtyping.md §8 (h).  P6-L needed one
-  ENCODING FIX: `a_extract` now carries a context and solves at
-  `Ξ ++ Θ0`, matching the paper's context-FREE solve/guess judgments
-  (DESIGN-completeness-subtyping.md §7.4 / §7.5).  **P7 is the current
-  front.**  Its TASK 0 (supplying P6-L's `sub_shield` premise) is
-  closed for a flex-free `P0`, for a `P0` with no ∀, and for an
-  inh-free counterpart (`prop_sub_shield_supply.v`), leaving only a
-  `P0` carrying a ∀ below its head.  P7b's motive is locked (and
-  REPAIRED — see below) and SIX of its seven rows are closed
-  (`prop_sub_complete_thm.v`): Sub-Ghost, Sub-GhostG, Sub-Infer,
-  Sub-Check, Sub-UnivGhostR and **Sub-Arrow** (`a_sub_complete_arrow`,
-  2026-07-31; only Sub-ForallR / Sub-ForallL remain, then P7a and the
-  bundle).  The enabler is `a_inc_equiv_precise_msubst` (precision
-  is stable under equivalent metasubstitutions).  ⚠️ Two things the
-  authors must see: the property `subtyping-proofs.tex:3243` marks
-  with its own TODO ("concrete `P_0` ⟹ RHS is `P_0`") is FALSE
-  (`cex/cex_p7_concrete_rhs.v`) though the paper's own cases are
-  unaffected (they argue via the equivalence); and the first-cut
-  ROOT-level third solution premise was REFUTED — it was a lockstep
-  condition that made `Sub-UnivGhostR` vacuous AND excluded the
-  head-disagreeing solutions of `Sub-ForallL` / `Sub-ForallR`
-  (`∀a.a ⩽ unit`, `unit ⩽ ∀a.unit`; machine-checked in
-  `cex/cex_p7_univ_ghost_r_vacuous.v` +
-  `cex/cex_p7_third_premise_forall.v`).  **REPAIRED same day**: the
-  motive's join is now the LEAF-VALID mirror `ad_pat_sub_gv`
-  (def_decl_algo_sub_hyg.v) carrying the subject refinement exactly
-  at the consistency leaves; the root premise is gone, all five rows
-  re-closed, and `Sub-UnivGhostR` is a REAL proof.  Remaining
-  obligation: transport the P5 precision-substitution + freshening
-  kits to `_gv` when ForallL/ForallR are written.  The paper's own
-  top-level 2-condition `thm:complete-consistency` is FALSE as
-  literally stated (only the augmented 3-condition form of
-  consistency-proofs.tex:2230 is true), so `thm:complete-subtyping`'s
-  Infer/Check invocations of it are a paper gap (PAPER-GAPS.md).
-  **TASK 0 SETTLED + REPAIRED (2026-08-03).**  The residual is
-  REALIZABLE (`cex/cex_p7_shield_realizable.v`), which showed the
-  mech-invented `sub_shield` premise was indexed NON-POSITIONALLY and
-  therefore over-strong.  It has been re-indexed: `ss_walk` now steps
-  `P0` and the SUBJECT in lockstep and carries the looked-for `α`, and
-  the two GUESS-DESCENDING closures (`flex_apart_walk`, `flex_shield`)
-  are demanded only where `α ∈ ftv R'`; the guess-FIXED
-  `flex_apart_deep` is an independent, UNGUARDED conjunct.  `fa_step`
-  lost its two guess-fixed P0 arrow descents (and with them
-  `flex_apart_walk_p0`), which is what made the walk satisfiable at
-  all.  `p7_sub_shield_repaired_holds` machine-checks the repaired
-  premise at the very witness that refutes the old one.  Nothing goes
-  to PAPER-GAPS.md — `sub_shield` is not a paper statement.
-  **P7c: THE BUNDLE IS ASSEMBLED (2026-08-03).**
-  `frost/algo/prop_sub_complete_dispatch.v` (§1–§12, all `Qed` +
-  axiom-free) holds the stuck-check
-  (`sub_flex_rigid_head_absurd`), the flex half (`flex_step`), the
-  main half's TWELVE-ROW join dispatch (`main_dispatch`), the
-  arrow-subject layer (`main_arrow_holds`), the ForallL/ForallR JOIN
-  PERMUTATION (`sub_gv_all_inh_forall_r_family` +
-  `ad_pat_sub_gv_fuel_weaken` + `main_all_inh_counterpart`, §11) and
-  the assembly itself, `a_sub_complete_bundle_holds` (§12), with
-  `a_sub_complete_thm` as the `Ψ := ∅`, `R := ⌈P⌉ᵘ` corollary.  Two
-  obstacles that stood in the way are now CLOSED: (i) the flexible
-  SUBTYPING walk had **no rule for a term-variable head** while the
-  twin assignment walk has `Assign-SkipTmVar` — MACHINE-CHECKED
-  (`cex/cex_p7_flex_walk_tm_var.v`) and the reference implementation
-  **crashes** on `fun x -> x 1`; ⭐ the rules AND P7a's two
-  completeness rows (`a_sub_flex_complete_skip_tm_var` /
-  `_skip_tm_skl`) are now in the tree, so `flex_step`'s stop-gap
-  `a_sub_flex_walkable` premise is gone.  And (ii) at ForallL the
-  join's last rule does not determine the algorithm's rule
-  (ForallL/ForallR commute) — ⚠️ **not a defect**: the paper covers it
-  with a one-sentence WLOG (subtyping-proofs.tex:3385), §8b is that
-  sentence's mechanical content, and it is DISCHARGED INSIDE the
-  dispatch (`p0_wlog_trichotomy` + `main_all_inh_counterpart`), so
-  `main_forall` now TAKES the WLOG as a hypothesis instead of owing
-  it.  ⭕ **ONE residual: the bundle takes `forall n, main_forall n`
-  as a hypothesis**, and (2026-08-03, later) it is down to ONE
-  component.  ⭐ The former second component — the ForallL rows'
-  `NM = TY -> uskl_ghost_free …` — is CLOSED: it sits ON THE MOTIVE
-  (`sub_complete_concl`'s last premise, on the JOIN-side subject),
-  `a_sub_complete_thm` carries it as the paper-facing EXTERNAL side
-  condition (docs/WF-SIDE-CONDITIONS.md), and every supplier was cheap
-  because the four ghost-heading join rules are SK-only.  What remained
-  was TASK 0's `sub_shield` for a `P0` carrying a ∀ below its head —
-  and ⚠️⚠️ the residual hypothesis `main_forall` is now REFUTED,
-  machine-checked (2026-08-03, `cex/probe_double_occ_run.v`): at the
-  DOUBLE-OCCURRENCE configuration (`cex/cex_p7_shield_double_occ.v`,
-  join + fill Qed-inhabited) NO `a_sub` run exists (`probe_no_run`) —
-  the extract is deterministic there, the solve THREADS its accumulated
-  pattern so SE-FlexR overwrites the eq-constraint's yield with the
-  flexible, the guess collapses to the vacuous-binder `∀_.f̂`, and the
-  continuation's domain consistency is scope-stuck — so the motive
-  instance is false (`probe_motive_instance_false`) and `main_forall`
-  with it (`probe_main_forall_false`).  The bundle and
-  `a_sub_complete_thm` are therefore VACUOUS as stated, and the two
-  flagships stay OUT of README.v (which indexes unconditional paper
-  claims).  ⭐ The failing payload shape is exactly the shield saga's
-  residual (a ∀ below `P0`'s head at a consis-feeding position), and
-  `prop_sub_shield_supply.v`'s covered shapes delimit the COMPLETABLE
-  class.  ⚠️⚠️ A same-day claim that this payload class is
-  TYPING-REACHABLE (a `pipe (fun g -> g arg)` program allegedly accepted
-  declaratively and rejected by met.exe) is **RETRACTED** — the
-  declarative system rejects that program TOO.  A polytype instantiation
-  must be PAID FOR by an inherited ∀ in the counterpart (the tag
-  discipline: `d_sub__forall_l_untagged` runs at `Ψ ∪ Ψ'`, only
-  `d_consis__forall_inh_tagged` puts a tag in, and `d_sub__infer` demands
-  `Ψ = ∅`), and there the skeleton `⫯(◇ → ◇)` supplies no ∀ — the paper's
-  §2.9 limitations 2 and 3 ("ghosts are nameless", "only flowing back and
-  forth once") document exactly that program.  ⭕ So whether the cex
-  configuration is reachable is OPEN, the theorem may be merely
-  OVER-QUANTIFIED, and the payload-side-condition repair
-  (`docs/HANDOFF-completeness-repair.md` TASKS 2–3) is back ON.
-  ⭕⭐⭐ **REACHABILITY, POSITIVE HALF MACHINE-CHECKED (2026-08-04)**:
-  `cex/probe_payload_reachability.v` (Qed, axiom-free) proves that at the
-  SK sort an `a_sub` output's MODE-SPINE never ends in a bare ∀
-  (`a_sub_sk_no_spine_all`), hence a payload's bare-∀ DOMAIN — the only
-  position that can pay a guess's tag — forces a FREEZE in the argument
-  (`app_payload_domain_all_needs_freeze`), and that a monotype guess exists
-  only for a ∀-free skeleton (`a_guess_mono_all_free`), so a flexible can
-  never absorb a ∀.  What is left open is the other conjunct — a raw
-  flexible at the payload's CODOMAIN — which the same run's collection
-  co-determines; closing it needs one EXTRACT-level fact (DESIGN §14.10 and
-  the TASK A box of the active hand-off state it).  ⚠️ LESSON:
-  before any "decl accepts" claim, enumerate ALL the declarative side
-  conditions (the TAG obligation, not just the monotype one) and check
-  §2.9 — the same species of error as the earlier MODE confusion.
-  See [`PROGRESS.md`](PROGRESS.md) Part 1 for the per-lemma map.
+- **Status** (audited 2026-08-05): Phases 1–2 done; **Phase 3 is
+  admit-free and axiom-free, and both directions of subtyping are
+  CLOSED AND UNCONDITIONAL.**
+  - Consistency: both directions (`a_consis_sound` / `a_unify_sound` /
+    `a_assign_sound`; `a_consis_complete_thm` / `complete_mu`).
+  - Subtyping SOUNDNESS: `a_sub_sound_thm`.
+  - ⭐⭐⭐ Subtyping COMPLETENESS: `a_sub_complete_bundle_holds` and
+    `a_sub_complete_thm` (thm:complete-subtyping), with **no residual
+    hypothesis** — both are `Check`ed and audited in `README.v`.  P5, all
+    five P6 lemmas (Cv/Cs/Sv/Ss/L) and P7a/b/c are green.
+  - What the completeness statement carries BEYOND the paper's own
+    premises is only the EXTERNAL wf side conditions registered in
+    [`docs/WF-SIDE-CONDITIONS.md`](docs/WF-SIDE-CONDITIONS.md):
+    well-formedness of the counterpart, and the subject's ghost-freeness
+    at the TY sort.  ⚠️ The latter is genuinely external — it is not
+    derivable from the join (`__arrow`'s domain and `__infer` take
+    arbitrary subjects) and not forced by `a_sub` either (`a_sub__check`
+    demands only `guarded_pskl`), though it is automatic whenever the
+    subject is a painting of a TYPE.
+  - ⚠️ **For the authors**, the live findings are in
+    [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md) and, in the paper's own
+    notation, [`docs/refutations.tex`](docs/refutations.tex).  The
+    headline one: `SolE-FlexR` DISCARDED the accumulated pattern, which
+    broke look-completeness; the authors' repair (thread the fresh
+    suffix `Ξ`, return `guess^TY(P)`) is what the tree now mechanizes,
+    and it is what retired the mech's own `sub_shield` / `flex_apart`
+    repair tower along with four of our counterexamples.  Also still
+    live: the paper's `:3243` TODO property is FALSE
+    (`cex/cex_p7_concrete_rhs.v`); the paper's 2-condition
+    `thm:complete-consistency` is FALSE as literally stated; refinement
+    is NOT transitive (`cex/cex_refine_not_transitive.v`).
+  - ⛔ **NOT yet done**: the paper itself.  `paper/` has not been touched
+    — see [`docs/HANDOFF-solve-flexr-repair.md`](docs/HANDOFF-solve-flexr-repair.md)
+    §0 (standing user directive) and §6 Step 4 for what the repair owes
+    `full-algo-spec.tex`.
+  - The per-lemma map and the dated history — including every retraction —
+    are in [`PROGRESS.md`](PROGRESS.md); this bullet is deliberately short.
+
 - **Read these three docs before touching code**: `AGENTS.md` (this
   file, ground rules), `DESIGN.md` (calculus + encoding design),
   `PROGRESS.md` (per-lemma status + daily progress log).
@@ -176,7 +77,7 @@ point to the same content.
 |---|---|---|
 | 1 | Syntactic / judgment **definitions** for the declarative system; algorithmic placeholder. | 🟢 **done** |
 | 2 | Declarative metatheory (subsumption, subtyping soundness, refinement preserves wf, skeleton validity/safety, stability lemmas). | 🟢 **admit-free** — D1 / D12 and the restored chain are all Qed; `frost/decl/` has no `admit`/`Admitted` left. See [PROGRESS.md Part 1](PROGRESS.md#part-1-paper--mechanization-mapping). |
-| 3 | Algorithmic system definitions and soundness/completeness vs. declarative. | 🟡 in progress, **admit-free** — consistency soundness AND completeness/optimality closed; subtyping soundness (`a_sub_sound_thm`) closed; subtyping completeness has P5 done and **P6 COMPLETE** — all five lemmas closed (P6-Cv, P6-Cs, P6-Sv, P6-Ss, P6-L), P6-Sv/P6-Ss as REPAIRED statements (`cex/cex_p6sv_forall_flex.v`, `cex/cex_p6ss_sub_target_ftv.v`).  **P7 is the current front** — TASK 0's shield supply closed for a flex-free `P0`, a ∀-free `P0`, and an inh-free counterpart; P7b's motive locked and FIVE rows closed (`prop_sub_complete_thm.v`), enabled by `a_inc_equiv_precise_msubst`.  ⚠️ For the authors: the paper's `:3243` TODO property is FALSE (`cex/cex_p7_concrete_rhs.v`); the first-cut ROOT-level third solution premise was REFUTED (lockstep — `cex/cex_p7_univ_ghost_r_vacuous.v` + `cex/cex_p7_third_premise_forall.v`) and REPAIRED via the leaf-valid join `ad_pat_sub_gv`; the paper's own 2-condition `thm:complete-consistency` is FALSE as literally stated (PAPER-GAPS.md). |
+| 3 | Algorithmic system definitions and soundness/completeness vs. declarative. | 🟢 **admit-free and axiom-free; both directions of subtyping CLOSED**.  Consistency soundness AND completeness/optimality closed; subtyping soundness (`a_sub_sound_thm`) closed; ⭐⭐⭐ subtyping COMPLETENESS closed and UNCONDITIONAL (`a_sub_complete_bundle_holds`, `a_sub_complete_thm`, both in `README.v`) — P5, all five P6 lemmas and P7a/b/c green.  The remaining work is the PAPER, not the mechanization (hand-off §6 Step 4). |
 
 ## Directory map
 
