@@ -236,6 +236,19 @@ Inductive a_subtag :
     Ψ [=] empty ->
     Θ0 ⊢ᵗ[ NM | mode_ti | pskl_hole | Ψ ] R ⩽˙ ⌊ R ⌋ˢ ⊣ Θ0
 | a_subtag__check : forall Ψ Θ0 Θ1 T B Q,                     (* Check *)
+    (* SORT, mirroring [a_sub__check]: the paper's [guarded{T,B}]
+       (decorated-algosub.tex:57) names an unresolved TYPE [T] and a type [B].
+       ⚠️ Only the TARGET is mechanized here, unlike in the plain
+       [a_sub__check].  The decorated system is a PROOF DEVICE consumed in
+       one direction only (decoration [a_sub → a_subtag], then soundness
+       [a_subtag → declarative]), so narrowing it buys no theorem and costs
+       one: [a_subtag_decoration_var] rebuilds this row at a ρ-image of a
+       STRIPPED subject, which would need a ghost-freeness analogue of
+       [guarded_msubst_decorate] (a full structural induction through
+       [msubst_uskl], where guardedness needs only a [destruct]).  The
+       subject's sort is stated where it is load-bearing — on the plain
+       rule. *)
+    pskl_ghost_free B ->
     guarded_uskl T ->
     guarded_pskl B ->
     Θ0 ⊢ᵗ[ empty | empty | B | Ψ ] T ∼˙ Q ⊣ Θ1 ->
@@ -246,6 +259,8 @@ Inductive a_subtag :
        [FlexL]:1655, [a_consis__flex_l], impl [U-FlexL]:182 — output [α̂]). *)
     Θ0 ⊢ᵗ[ a_sub_mode_ty | mode_tc | B | Ψ ] T ⩽˙ B ⊣ Θ1
 | a_subtag__forall_r : forall α Ψ Θ0 Θ1 Ξ R B,                (* ForallR *)
+    (* SORT, mirroring [a_sub__forall_r]: the target [∀α.B] is a TYPE. *)
+    pskl_ghost_free (pskl_all_syn B) ->
     a_suffix Ξ ->
     uniq (Ξ ++ Θ0) ->                                          (* Barendregt (prose-completion) *)
     (* EXISTS-FRESH, mirroring [a_sub__forall_r]'s 2026-07-31 encoding fix:
@@ -415,11 +430,15 @@ Inductive a_solvetag_sub : uskl -> mode -> pskl -> atoms -> Prop :=
     Ψ [=] empty ->
     ψ ≼ᵗ[ M ] pskl_hole ⤳ Ψ
 | a_solvetag_sub__check : forall ψ B Ψ,                       (* SSub-Check *)
+    (* SORT, mirroring [a_solve_sub__check]: target is a TYPE. *)
+    pskl_ghost_free B ->
     guarded_uskl ψ ->
     guarded_pskl B ->
     ψ ∼ᵗ B ⤳ Ψ ->
     ψ ≼ᵗ[ mode_tc ] B ⤳ Ψ
 | a_solvetag_sub__forall_r : forall L ψ B Ψ,                  (* SSub-ForallR *)
+    (* SORT, mirroring [a_solve_sub__forall_r]: TARGET only. *)
+    pskl_ghost_free (pskl_all_syn B) ->
     (forall β, β `notin` L ->
        ψ ≼ᵗ[ mode_tc ] (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ψ) ->
     ψ ≼ᵗ[ mode_tc ] (pskl_all_syn B) ⤳ Ψ

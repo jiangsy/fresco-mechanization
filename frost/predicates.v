@@ -94,6 +94,45 @@ Inductive is_syn_bskl : bskl -> Prop :=
 | is_syn_bskl__tophole : forall Q,
     is_syn_bskl Q -> is_syn_bskl (bskl_tophole Q).
 
+(** * The TYPE sub-universe of the skeleton sorts.
+
+    The paper's algorithmic judgments range over ONE syntactic category of
+    skeletons, but their metavariables are sorted: a rule that writes [A] / [B]
+    is restricted to the positions where the paper's grammar only ever produces
+    a TYPE, while a rule that writes [P] / [Q] admits a full skeleton.  The
+    mechanization keeps the single [pskl] carrier (splitting the sort would
+    duplicate every judgment) and recovers the distinction with this predicate:
+    a [pskl] is a type exactly when it mentions no ghost — no [◇] and no [∀◇].
+
+    Equivalently [pskl_ghost_free P ↔ exists A, P = ⌈A⌉] for locally-closed [P]
+    ([ptyp_to_pskl_ghost_free] / [pskl_ghost_free_to_ptyp], prop_basic.v).
+    Kept as a [Fixpoint] rather than an [Inductive] so that [simpl] discharges
+    it on concrete skeletons and so that it is trivially decidable; note it
+    holds of [pskl_var_b], i.e. it says nothing about local closure. *)
+
+Fixpoint pskl_ghost_free (P : pskl) : Prop :=
+  match P with
+  | pskl_unit => True
+  | pskl_var_b _ => True
+  | pskl_var_f _ => True
+  | pskl_arrow P1 P2 => pskl_ghost_free P1 /\ pskl_ghost_free P2
+  | pskl_all_syn P0 => pskl_ghost_free P0
+  | pskl_hole => False
+  | pskl_tophole _ => False
+  end.
+
+Fixpoint bskl_ghost_free (Q : bskl) : Prop :=
+  match Q with
+  | bskl_unit => True
+  | bskl_var_b _ => True
+  | bskl_var_f _ => True
+  | bskl_arrow Q1 Q2 => bskl_ghost_free Q1 /\ bskl_ghost_free Q2
+  | bskl_all_syn Q0 => bskl_ghost_free Q0
+  | bskl_all_inh Q0 => bskl_ghost_free Q0
+  | bskl_hole => False
+  | bskl_tophole _ => False
+  end.
+
 Inductive no_forall_bskl : bskl -> Prop :=
 | no_forall_bskl__unit    : no_forall_bskl bskl_unit
 | no_forall_bskl__var     : forall α, no_forall_bskl (bskl_var_f α)

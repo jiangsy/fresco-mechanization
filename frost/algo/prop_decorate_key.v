@@ -172,6 +172,7 @@ Proof.
       inv_guarded_hole.
     + (* LS-Check : decorate the consistency premise *)
       eapply a_subtag__check.
+      * assumption.
       * apply guarded_subst_decorate; assumption.
       * assumption.
       * eapply a_consistag_decoration;
@@ -363,7 +364,7 @@ Proof.
     rewrite Hcollapse in Htrans.
     (* assemble the exists-fresh node at the same binder *)
     eapply a_subtag__forall_r with (α := α) (Ξ := Ξ);
-      [ exact Hsuf | exact Huq | | exact Htrans ].
+      [ assumption | exact Hsuf | exact Huq | | exact Htrans ].
     rewrite dom_app.
     assert (Hfteq : ftvar_in_uskl (subst_bskl_in_uskl ψa αv R0)
                     [=] ftvar_in_uskl R).
@@ -1474,10 +1475,12 @@ Proof.
     apply a_solvetag_sub__vacuous; assumption.
   - (* SSub-Check *)
     apply a_solvetag_sub__check;
-      [ apply guarded_uskl_subst_var; assumption
+      [ apply pskl_ghost_free_subst_var; assumption
+      | apply guarded_uskl_subst_var; assumption
       | apply guarded_pskl_subst_var; assumption | auto ].
   - (* SSub-ForallR *)
-    apply a_solvetag_sub__forall_r with (L := L `union` singleton α); intros β Hβ.
+    apply a_solvetag_sub__forall_r with (L := L `union` singleton α);
+      [ apply pskl_ghost_free_subst_var; assumption | ]; intros β Hβ.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
       [ | clear - Hβ; fsetdec | apply lc_pskl_var_f ].
     match goal with IH : forall b, _ |- _ => apply IH; clear - Hβ; fsetdec end.
@@ -1551,9 +1554,11 @@ Proof.
   - (* SSub-Vacuous *) apply a_solvetag_sub__vacuous; assumption.
   - (* SSub-Check *)
     apply a_solvetag_sub__check;
-      [ assumption | apply guarded_pskl_subst_var; assumption | auto ].
+      [ apply pskl_ghost_free_subst_var; assumption
+      | assumption | apply guarded_pskl_subst_var; assumption | auto ].
   - (* SSub-ForallR *)
-    apply a_solvetag_sub__forall_r with (L := L `union` singleton α); intros β Hβ.
+    apply a_solvetag_sub__forall_r with (L := L `union` singleton α);
+      [ apply pskl_ghost_free_subst_var; assumption | ]; intros β Hβ.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
       [ | clear - Hβ; fsetdec | apply lc_pskl_var_f ].
     match goal with IH : forall b, _ |- _ => apply IH; clear - Hβ; fsetdec end.
@@ -1610,8 +1615,8 @@ Proof.
     intros ψ M P Ψ Hprem IH Ψtot Hdt; inversion Hdt; subst.
     match goal with Hd : d_tags_skl ?T ψ |- _ => exact (IH T Hd) end.
   - (* SSub-Vacuous *) intros ψ M Ψ He Ψtot Hdt; clear - He; fsetdec.
-  - (* SSub-Check *) intros ψ B Ψ Hgψ HgB Hprem IH Ψtot Hdt; exact (IH Ψtot Hdt).
-  - (* SSub-ForallR *) intros L ψ B Ψ Hprem IH Ψtot Hdt;
+  - (* SSub-Check *) intros ψ B Ψ Hgf Hgψ HgB Hprem IH Ψtot Hdt; exact (IH Ψtot Hdt).
+  - (* SSub-ForallR *) intros L ψ B Ψ Hgf Hprem IH Ψtot Hdt;
       destruct (atom_fresh L) as [β Hβ]; exact (IH β ltac:(clear - Hβ; fsetdec) Ψtot Hdt).
   - (* SSub-Arrow : subject arrow ψ1 ψ2 *)
     intros ψ1 ψ2 M Q1 Q2 Ψ Ψ1 Ψ2 Hp1 IH1 Hp2 IH2 He Ψtot Hdt; inversion Hdt; subst.
@@ -2844,11 +2849,11 @@ Proof.
     | Θ m P Q Ξ P' b Hfr Hp                     (* SS-ForallL *)
     | Θ m P Q Ξ P' Hp                           (* SS-UnivGhostL *)
     | Θ m P                                     (* SS-Vacuous *)
-    | Θ P Q Ξ P' H H0 H1                        (* SS-Check *)
-    | Θ A B Ξ P' b Hfr Hp                       (* SS-ForallR *)
+    | Θ P Q Ξ P' Hgf0 H H0 H1                   (* SS-Check *)
+    | Θ A B Ξ P' b Hgf0 Hfr Hp                  (* SS-ForallR *)
     | Θ m P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2' H H0        (* SS-Arrow *)
     | Θ m Q1 Q2 Ξ1 Ξ2 P1' P2' H H0              (* SS-GhostLF *)
-    | Θ B H ];                                  (* SS-GhostL *)
+    | Θ B Hgf0 H ];                             (* SS-GhostL *)
     intros ψ Ψ' Ψtot Hdec Hdt; cbn in Hsz; cbn in Htg.
   - (* var : P=P'=var α *)
     inversion Hdec; subst;
@@ -2979,7 +2984,8 @@ Proof.
       [ exact H1 | exact Htg | exact Hdec | exact Hdt | ].
     exists Ψi, Ψp; split;
       [ apply a_solvetag_sub__check;
-          [ eapply dec_ext_guarded_uskl;
+          [ assumption
+          | eapply dec_ext_guarded_uskl;
               [ exact Hdp | assumption | eapply d_tags_skl_is_tskl; exact Hdt ]
           | assumption
           | exact Hste ]
@@ -2996,7 +3002,8 @@ Proof.
               as [Ψi0 [Ψp0 [Hst0 [Hd0 Hu0]]]].
     exists Ψi0, Ψp0; split.
     + apply a_solvetag_sub__forall_r with
-        (L := ftvar_in_pskl B `union` singleton b).
+        (L := ftvar_in_pskl B `union` singleton b);
+        [ assumption | ].
       intros β Hβ.
       rewrite (subst_pskl_in_pskl_intro b B (pskl_var_f β)
                  ltac:(clear - Hfr; fsetdec)).
@@ -3138,7 +3145,8 @@ Proof.
         destruct (dec_ext_cover_eq Hde Hdt) as [Ψi [Hsi Hsub]];
         exists Ψi, Ψtot; split;
           [ apply a_solvetag_sub__check;
-              [ eapply dec_ext_guarded_uskl;
+              [ exact Hgf0
+              | eapply dec_ext_guarded_uskl;
                   [ exact Hde | exact H | eapply d_tags_skl_is_tskl; exact Hdt ]
               | exact H | exact Hsi ]
           | split; [ apply dec_ext__hole;
@@ -3152,7 +3160,8 @@ Proof.
         destruct (dec_ext_cover_eq Hde Hd0) as [Ψi [Hsi Hsub]];
         exists Ψi, Ψtot; split;
           [ apply a_solvetag_sub__univ_ghost_lg; apply a_solvetag_sub__check;
-              [ eapply dec_ext_guarded_uskl;
+              [ exact Hgf0
+              | eapply dec_ext_guarded_uskl;
                   [ exact Hde | exact H | eapply d_tags_skl_is_tskl; exact Hd0 ]
               | exact H | exact Hsi ]
           | split; [ apply dec_ext__hole;
@@ -3668,17 +3677,18 @@ Proof.
        pins the consistency output to [B] (it existentialises it, matching the
        plain [a_consis_chk] and the paper's "output not used / ≡ B"
        convention), so we simply decorate the plain consistency premise. *)
-    intros Θ0 Θ1 A B HgA HgB Hchk Hwf HwfP0 HwfP Hmod Hgf0.
+    intros Θ0 Θ1 A B Hgfa Hgfb HgA HgB Hchk Hwf HwfP0 HwfP Hmod Hgf0.
     destruct Hchk as [P' Hcns].
     eapply a_subtag__check;
-      [ apply pskl_to_uskl_guarded; exact HgA
+      [ exact Hgfb
+      | apply pskl_to_uskl_guarded; exact HgA
       | exact HgB
       | exact (a_consis_decorate Hcns (a_wf_aenv_uniq Hwf)) ].
   - (* ForallR (exists-fresh 2026-07-31: the rule's own binder serves) *)
-    intros α Θ0 Θ1 Ξ A B Hsuf Huq Hfr Hprem IHprem Hwf HwfP0 HwfP Hmod Hgf0.
+    intros α Θ0 Θ1 Ξ A B Hgfb Hsuf Huq Hfr Hprem IHprem Hwf HwfP0 HwfP Hmod Hgf0.
     rewrite dom_app in Hfr.
     eapply a_subtag__forall_r with (α := α) (Ξ := Ξ);
-      [ exact Hsuf | exact Huq
+      [ exact Hgfb | exact Hsuf | exact Huq
       | rewrite dom_app;
         pose proof (ftvar_in_uskl_pskl A) as Hfa;
         clear - Hfr Hfa; fsetdec

@@ -111,7 +111,7 @@ Lemma p6sv_body_returns_the_pattern : forall (f b : atom) (Θ0 : aenv),
 Proof.
   intros f b Θ0 Hb.
   apply a_solve_sub__check;
-    [ apply guarded_pskl__arrow; auto | apply guarded_pskl__var | ].
+    [ exact I | apply guarded_pskl__arrow; auto | apply guarded_pskl__var | ].
   replace (pskl_arrow (pskl_var_f b) (pskl_var_f b))
     with (ptyp_to_pskl (ptyp_arrow (ptyp_var_f b) (ptyp_var_f b)))
     at 2 by reflexivity.

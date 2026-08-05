@@ -261,6 +261,7 @@ Proof.
   destruct (atom_fresh (dom Θ)) as [α Hα].
   apply a_sub__forall_r with (α := α) (Ξ := nil)
     (B := pskl_arrow (pskl_var_b 0) (pskl_var_b 0)).
+  { simpl; intuition. }
   { constructor. }
   { crush_uniq. }
   { simpl. simpl in Hα. clear - Hα. fsetdec. }
@@ -275,7 +276,7 @@ Proof.
       (Q := pskl_var_f α).
     + simpl_open.
       apply a_looksub__check;
-        [ discriminate | crush_lc | crush_lc | ].
+        [ simpl; intuition | discriminate | crush_lc | crush_lc | ].
       apply a_lookeq__arrow with (Ξ1 := nil) (Ξ2 := nil)
         (C1 := a_cstr_eq (pskl_var_f α) :: nil)
         (C2 := a_cstr_eq (pskl_var_f α) :: nil);
@@ -290,7 +291,7 @@ Proof.
   - crush_uniq.
   - crush_wf.
   - simpl_open.
-    apply a_sub__check; [ crush_lc | crush_lc | ].
+    apply a_sub__check; [ simpl; intuition | simpl; intuition | crush_lc | crush_lc | ].
     eexists. eapply a_consis__arrow; apply a_consis__rigid; crush_binds.
 Qed.
 
@@ -389,6 +390,8 @@ Proof.
   - (* auto ⦂[TC; skel σ_auto]  σ_auto *)
     eapply a_typing__var with (B := σ_auto); [ crush_binds | ].
     apply a_sub__check.
+    + unfold σ_auto, σ_id; simpl; intuition.
+    + unfold σ_auto, σ_id; simpl; intuition.
     + unfold σ_auto, σ_id; simpl; crush_lc.
     + unfold σ_auto, σ_id; simpl; crush_lc.
     + eexists. apply consis_sigauto_refl.
@@ -431,6 +434,8 @@ Proof.
       * intros x Hx. simpl_open.
         eapply a_typing__var; [ crush_binds | ].
         apply a_sub__check.
+        { simpl; intuition. }
+        { simpl; intuition. }
         { crush_lc. }
         { crush_lc. }
         { eexists. apply a_consis__rigid. crush_binds. }
@@ -508,6 +513,7 @@ Proof.
         (Q := pskl_var_f fa).
       * simpl_open.
         apply a_looksub__check.
+        { simpl; intuition. }
         { discriminate. }
         { crush_lc. }
         { crush_lc. }
@@ -525,7 +531,7 @@ Proof.
     + crush_uniq.
     + crush_wf.
     + simpl_open.
-      apply a_sub__check; [ crush_lc | crush_lc | ].
+      apply a_sub__check; [ simpl; intuition | simpl; intuition | crush_lc | crush_lc | ].
       eexists.
       eapply a_consis__arrow
         with (Θ1 := (fa ~ abind_flex_mono) ++ (fb ~ abind_flex_mono) ++ Θlib).
@@ -617,6 +623,7 @@ Proof.
           (Q := pskl_var_f fa).
         { simpl_open.
           apply a_looksub__check.
+          - simpl; intuition.
           - discriminate.
           - crush_lc.
           - crush_lc.
@@ -634,7 +641,7 @@ Proof.
       * crush_uniq.
       * crush_wf.
       * simpl_open.
-        apply a_sub__check; [ crush_lc | crush_lc | ].
+        apply a_sub__check; [ simpl; intuition | simpl; intuition | crush_lc | crush_lc | ].
         eexists.
         eapply a_consis__arrow
           with (Θ1 := (fa ~ abind_flex_mono) ++ (fb ~ abind_flex_mono)
@@ -739,7 +746,7 @@ Proof.
           - constructor.
           - intros y _. simpl_open.
             eapply a_typing__var; [ crush_binds | ].
-            apply a_sub__check; [ crush_lc | crush_lc | ].
+            apply a_sub__check; [ simpl; intuition | simpl; intuition | crush_lc | crush_lc | ].
             eexists. apply a_consis__rigid. crush_binds. }
 Qed.
 
@@ -780,6 +787,7 @@ Proof.
         apply a_sub__forall_r with (α := α) (Ξ := nil)
           (B := ptyp_to_pskl
                   (ptyp_arrow (ptyp_arrow tInt (ptyp_arrow tBool b0)) b0)).
+        { simpl; intuition. }
         { constructor. }
         { crush_uniq. }
         { simpl. simpl in Hα. clear - Hα. fsetdec. }
@@ -795,7 +803,7 @@ Proof.
             (Q := pskl_var_f α).
           - simpl_open.
             apply a_looksub__check;
-              [ discriminate | crush_lc | crush_lc | ].
+              [ simpl; intuition | discriminate | crush_lc | crush_lc | ].
             apply a_lookeq__arrow with (Ξ1 := nil) (Ξ2 := nil)
               (C1 := a_cstr_eq (pskl_var_f α) :: nil)
               (C2 := a_cstr_eq (pskl_var_f α) :: nil).
@@ -818,7 +826,7 @@ Proof.
         { clear Hβ; crush_wf. }   (* ⚙ the ForallL opener's 3-way
                                      union makes [fsetdec] crawl *)
         { simpl_open.
-          apply a_sub__check; [ crush_lc | crush_lc | ].
+          apply a_sub__check; [ simpl; intuition | simpl; intuition | crush_lc | crush_lc | ].
           eexists.
           eapply a_consis__arrow.
           - eapply a_consis__arrow.
@@ -834,6 +842,7 @@ Proof.
                     `union` singleton fb `union` singleton x)) as [α Hα].
         apply a_sub__forall_r with (α := α) (Ξ := nil)
           (B := pskl_arrow (pskl_var_b 0) (pskl_var_b 0)).
+        { simpl; intuition. }
         { constructor. }
         { crush_uniq. }
         { simpl. simpl in Hα. clear - Hα. fsetdec. }
@@ -849,7 +858,7 @@ Proof.
             (Q := pskl_var_f α).
           - simpl_open.
             apply a_looksub__check;
-              [ discriminate | crush_lc | crush_lc | ].
+              [ simpl; intuition | discriminate | crush_lc | crush_lc | ].
             apply a_lookeq__arrow with (Ξ1 := nil) (Ξ2 := nil)
               (C1 := a_cstr_eq (pskl_var_f α) :: nil)
               (C2 := a_cstr_eq (pskl_var_f α) :: nil);
@@ -865,7 +874,7 @@ Proof.
         { clear Hβ; crush_wf. }   (* ⚙ the ForallL opener's 3-way
                                      union makes [fsetdec] crawl *)
         { simpl_open.
-          apply a_sub__check; [ crush_lc | crush_lc | ].
+          apply a_sub__check; [ simpl; intuition | simpl; intuition | crush_lc | crush_lc | ].
           eexists.
           eapply a_consis__arrow; apply a_consis__rigid; crush_binds. }
   - (* outer TI subtyping: Infer *)

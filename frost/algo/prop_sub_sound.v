@@ -505,7 +505,7 @@ Proof.
        [ad_refine_syn_f _ (inh B) Qt] forces the declarative consistency to
        transport from output [Qt] to [inh B] ([ad_pat_consis_refine_inh_target]),
        recovering the paper's "output ≡ B" reading. *)
-    intros Ψ Θ0 Θ1 T B P' HgT HgB Hc Hwf HlcT HwfB HwfT Hmod Hgf.
+    intros Ψ Θ0 Θ1 T B P' Hgfb HgT HgB Hc Hwf HlcT HwfB HwfT Hmod Hgf.
     specialize (Hgf eq_refl).
     destruct (a_consistag_sound_aux Hc Hwf HlcT HwfB HwfT
                 ltac:(intros α0 Hα0; clear - Hα0; fsetdec)
@@ -532,7 +532,7 @@ Proof.
   - (* ForallR (TY) : open the binder, run the body, strip the trailing
        suffix, and re-attach the rigid head (crib: a_consistag_sound_aux's
        ForallInh; the fill re-attaches via the ghost-free strip+rename). *)
-    intros α Ψ Θ0 Θ1 Ξ R B Hsuf Huq Hfr Hprem IH Hwf HlcS HwfP0 HwfS Hmod Hgf.
+    intros α Ψ Θ0 Θ1 Ξ R B Hgfb Hsuf Huq Hfr Hprem IH Hwf HlcS HwfP0 HwfS Hmod Hgf.
     assert (HgfB : pskl_ghost_free B)
       by (specialize (Hgf eq_refl);
           apply a_ty_mode_compat_tc_ghost_free in Hgf; simpl in Hgf; exact Hgf).

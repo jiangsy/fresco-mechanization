@@ -603,8 +603,9 @@ Proof.
     try solve
       [ match goal with
         | Hfr : ?b `notin` _ |- _ ⊢ₛ _ ≼[ _ ] pskl_all_syn _ ⤳ _ ⨾ _ =>
-            apply a_solve_sub__forall_r with (β := b); [ | ];
-            [ match goal with Hf : ftvar_in_aenv _ [<=] _ |- _ =>
+            apply a_solve_sub__forall_r with (β := b); [ | | ];
+            [ assumption
+            | match goal with Hf : ftvar_in_aenv _ [<=] _ |- _ =>
                 clear - Hfr Hf; fsetdec end
             | solve_ctx_change_ih ]
         end ];
@@ -3668,11 +3669,11 @@ Proof.
       | Θ m P Q Ξ P' b Hfr Hp                       (* SS-ForallL *)
       | Θ m P Q Ξ P' Hp                             (* SS-UnivGhostL *)
       | Θ m P                                       (* SS-Vacuous *)
-      | Θ P Q Ξ P' Hg1 Hg2 Hp                       (* SS-Check *)
-      | Θ A B Ξ P' b Hfr Hp                         (* SS-ForallR *)
+      | Θ P Q Ξ P' Hgf0 Hg1 Hg2 Hp                  (* SS-Check *)
+      | Θ A B Ξ P' b Hgf0 Hfr Hp                    (* SS-ForallR *)
       | Θ m P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2' Hp1 Hp2       (* SS-Arrow *)
       | Θ m Q1 Q2 Ξ1 Ξ2 P1' P2' Hp1 Hp2             (* SS-GhostLF *)
-      | Θ B Hg ];                                   (* SS-GhostL *)
+      | Θ B Hgf0 Hg ];                              (* SS-GhostL *)
       intros Ξl Ξm Θ0 Heq Hfm Hdisj Hftv Hout Hblk; subst; cbn in Hsz.
     - (* SS-Var *) apply a_solve_sub__var.
     - (* SS-ForallL — CLOSE: move the witness to a δ outside Ξm, which
@@ -3725,7 +3726,7 @@ Proof.
         | exact Hblk ].
     - (* SS-Vacuous *) apply a_solve_sub__vacuous.
     - (* SS-Check *)
-      apply a_solve_sub__check; [ exact Hg1 | exact Hg2 | ].
+      apply a_solve_sub__check; [ exact Hgf0 | exact Hg1 | exact Hg2 | ].
       eapply IHe with (Ξl := Ξl) (Ξm := Ξm) (Θ0 := Θ0);
         [ cbn; lia | exact Hp | reflexivity | exact Hfm | exact Hdisj
         | exact Hftv | exact Hout | exact Hblk ].
@@ -3751,7 +3752,8 @@ Proof.
         rewrite (subst_pskl_in_pskl_fresh_eq P') in Hr
           by (clear - HbP'; fsetdec).
         apply a_solve_sub__forall_r with (β := δ);
-          [ rewrite ftvar_in_aenv_weaken_mid by exact Hfm;
+          [ exact Hgf0
+          | rewrite ftvar_in_aenv_weaken_mid by exact Hfm;
             clear - Fr; fsetdec | ].
         eapply IHs with (Ξl := ((δ ~ abind_tvar) ++ Ξl)) (Ξm := Ξm) (Θ0 := Θ0);
           [ rewrite size_pskl_open_pskl_wrt_pskl_var; cbn; lia
@@ -3763,7 +3765,8 @@ Proof.
           | intros x Hx; specialize (Hftv x Hx); cbn in Hftv; exact Hftv
           | exact Hout | exact Hblk ].
       + apply a_solve_sub__forall_r with (β := b);
-          [ rewrite ftvar_in_aenv_weaken_mid by exact Hfm;
+          [ exact Hgf0
+          | rewrite ftvar_in_aenv_weaken_mid by exact Hfm;
             clear - Hfr Hnin; fsetdec | ].
         eapply IHs with (Ξl := ((b ~ abind_tvar) ++ Ξl)) (Ξm := Ξm) (Θ0 := Θ0);
           [ rewrite size_pskl_open_pskl_wrt_pskl_var; cbn; lia
@@ -3818,7 +3821,7 @@ Proof.
             clear - Hout; fsetdec
           | intros x Hx; specialize (Hblk x Hx); rewrite dom_app in Hblk;
             clear - Hblk; fsetdec ].
-    - (* SS-GhostL *) apply a_solve_sub__ghost_l; exact Hg. }
+    - (* SS-GhostL *) apply a_solve_sub__ghost_l; [ exact Hgf0 | exact Hg ]. }
   (* ================= the [a_solve_eq] half ================= *)
   { intros Θ P P0 Ξ P' Hsz Hd.
     destruct Hd as
@@ -4283,11 +4286,14 @@ Qed.
 Lemma solve_sub_ext_of_eq : forall Θ0 Θ Pi P0 L Post,
   (forall Ξ Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ Ξ ⨾ Pa ->
      (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa) ->
+  (* SORT: SolS-Check's target is a TYPE (see [a_solve_sub__check]).  At the
+     TY sort the caller reads it off [skmod{TY}]; at SK the row is vacuous. *)
+  pskl_ghost_free P0 ->
   guarded_pskl Pi -> guarded_pskl P0 ->
   solve_ext Θ0 Θ Pi P0 L Post ->
   solve_sub_ext Θ0 Θ mode_tc Pi P0 L Post.
 Proof.
-  intros Θ0 Θ Pi P0 L Post Hwf Hgi Hg
+  intros Θ0 Θ Pi P0 L Post Hwf Hgf Hgi Hg
          (Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hq).
   exists Ξ, Pa, κ'.
   repeat (split; [ solve [ apply a_solve_sub__check; assumption

@@ -910,6 +910,9 @@ Proof.
   - (* Check : delegates WHOLE to P6-Cs ([a_lookeq_solve_complete]) on the
        consistency premise, then re-wraps with LS-Check.  LS-Check's side
        conditions: P ≠ α (HPnα) and P, P0 guarded. *)
+    (* …and a TYPE, which is LS-Check's SORT premise *)
+    assert (HgfP0 : pskl_ghost_free P0)
+      by (apply a_ty_mode_compat_tc_ghost_free; exact (HmodTY eq_refl)).
     assert (HgP0 : guarded_pskl P0).
     { pose proof (HmodTY eq_refl) as Hmod.
       inversion Hmod as [ | A HeqA | ]; subst.
@@ -985,7 +988,8 @@ Proof.
     exists 𝒞, Ξc, Ξs, Pa, κc, κs.
     split;
       [ apply a_looksub__check;
-          [ exact HPnα | exact HgP | exact HgP0 | exact Hlook ] | ].
+          [ exact HgfP0 | exact HPnα | exact HgP | exact HgP0
+          | exact Hlook ] | ].
     repeat split; try assumption.
     (* ftv 𝒞 : P6-Cs's own ψa-relative output — the LEFT disjunct, and this is
        why the Check row needed P6-Cs's bound to name no context *)
@@ -1262,7 +1266,8 @@ Proof.
               cofinite family *)
            (* EXISTS-FRESH (cluster 3): fire at the β this row already picked *)
            apply a_looksub__forall_r with (β := β);
-             [ clear - Fr; solve_notin | exact HLK ].
+             [ exact (ptyp_to_pskl_ghost_free (ptyp_all A0))
+             | clear - Fr; solve_notin | exact HLK ].
         -- (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
         -- (* all_flex_mono Ξs *) exact Hfms.
         -- (* uniq Ξs *) exact Hus.
@@ -1374,7 +1379,8 @@ Proof.
               at β IS the premise, no family to build *)
            cbn. apply a_solve_cstr__sub.
            apply a_solve_sub__forall_r with (β := β);
-             [ clear - Fr; solve_notin | exact Hss ].
+             [ exact (ptyp_to_pskl_ghost_free (ptyp_all A0))
+             | clear - Fr; solve_notin | exact Hss ].
         -- (* all_flex_mono Ξs *) exact Hfms.
         -- (* uniq Ξs *) exact Hus.
         -- (* keys κs = keys Ξs *) exact Hks.

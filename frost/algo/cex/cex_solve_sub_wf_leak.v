@@ -82,10 +82,10 @@ Lemma cex_leak_run : forall Θ b,
 Proof.
   intros Θ b Hb.
   apply a_solve_sub__forall_r with (β := b);
-    [ cbn; clear - Hb; fsetdec | ].
+    [ exact I | cbn; clear - Hb; fsetdec | ].
   (* [open (var_b 0) (var_f b) = var_f b] *)
   unfold open_pskl_wrt_pskl; cbn.
-  apply a_solve_sub__ghost_l. apply guarded_pskl__var.
+  apply a_solve_sub__ghost_l; [ exact I | apply guarded_pskl__var ].
 Qed.
 
 (* ===================================================================== *)

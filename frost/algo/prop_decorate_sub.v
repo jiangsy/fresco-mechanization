@@ -1109,7 +1109,8 @@ Proof.
                 end ];
     (* Check: guardedness of the target survives a variable rename *)
     try solve [ apply a_solvetag_sub__check;
-                [ assumption | apply guarded_pskl_subst_var; assumption
+                [ apply pskl_ghost_free_subst_var; assumption
+                | assumption | apply guarded_pskl_subst_var; assumption
                 | auto ] ];
     (* arrows *)
     try solve [ eapply a_solvetag_sub__arrow; eauto ];
@@ -1120,6 +1121,7 @@ Proof.
     (* ∀-targets: push the rename under the target binder *)
     try solve [ apply a_solvetag_sub__forall_r
                   with (L := L `union` singleton α);
+                [ apply pskl_ghost_free_subst_var; assumption | ];
                 intros β Hβ;
                 rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
                   [ | clear - Hβ; fsetdec | constructor ];
@@ -1185,7 +1187,8 @@ Proof.
     inversion HQ; subst.
     destruct (atom_fresh (L `union` ftvar_in_pskl B0 `union` singleton β0))
       as [β' Hβ'].
-    pose proof (H β' ltac:(clear - Hβ'; fsetdec)) as Hinst.
+    (* [H] is now the row's SORT premise; the cofinite one is [H0] *)
+    pose proof (H0 β' ltac:(clear - Hβ'; fsetdec)) as Hinst.
     pose proof (proj1 a_solvetag_sub_eq_target_rename _ _ _ _ Hinst β' β0)
       as Hren.
     rewrite <- subst_pskl_in_pskl_intro in Hren;
@@ -1330,6 +1333,7 @@ Proof.
       inv_guarded_hole.
     + (* solvetag Check : decorate the consistency premise *)
       eapply a_subtag__check.
+      * assumption.
       * apply guarded_msubst_decorate;
           [ exact Hlcρ | exact Hlcψ | assumption ].
       * assumption.
@@ -1347,7 +1351,7 @@ Proof.
         rewrite dom_app in Hfr
     end.
     eapply a_subtag__forall_r with (α := α) (Ξ := Ξ);
-      [ assumption | assumption | | ].
+      [ assumption | assumption | assumption | | ].
     { (* freshness at the ρ-decorated subject: its erasure is R's *)
       assert (Heqf : ⌊ msubst_uskl ρ ψf ⌋ˢ = ⌊ R ⌋ˢ)
         by (apply erase_swap; rewrite HeqT; reflexivity).
@@ -2755,8 +2759,8 @@ Proof.
     [ Θ α m Q                                   (* LS-Var *)
     | Θ α m Q Q' Hnf                            (* LS-Absent *)
     | Θ α m Q                                   (* LS-Vacuous *)
-    | Θ α A B Ξ0 C0 Hne Hg Hg0 Hp               (* LS-Check *)
-    | Θ α A B Ξ0 C0 b Hfr0 Hp                   (* LS-ForallR *)
+    | Θ α A B Ξ0 C0 Hgf0 Hne Hg Hg0 Hp          (* LS-Check *)
+    | Θ α A B Ξ0 C0 b Hgf0 Hfr0 Hp              (* LS-ForallR *)
     | Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 Hp2   (* LS-Arrow *)
     | Θ α m Q Q' Ξ0 C0 b Hfr0 Hp                (* LS-ForallL *)
     | Θ α m Q Q' Ξ0 C0 Hp ];                    (* LS-UnivGhostL *)
@@ -3084,8 +3088,8 @@ Proof.
       [ Θ α m Q                                   (* LS-Var *)
       | Θ α m Q Q' Hnf                            (* LS-Absent *)
       | Θ α m Q                                   (* LS-Vacuous *)
-      | Θ α A B Ξ0 C0 Hne Hg Hg0 Hp               (* LS-Check *)
-      | Θ α A B Ξ0 C0 b Hfr0 Hp                   (* LS-ForallR *)
+      | Θ α A B Ξ0 C0 Hgf0 Hne Hg Hg0 Hp          (* LS-Check *)
+      | Θ α A B Ξ0 C0 b Hgf0 Hfr0 Hp              (* LS-ForallR *)
       | Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 Hp2   (* LS-Arrow *)
       | Θ α m Q Q' Ξ0 C0 b Hfr0 Hp                (* LS-ForallL *)
       | Θ α m Q Q' Ξ0 C0 Hp ];                    (* LS-UnivGhostL *)
@@ -3109,7 +3113,8 @@ Proof.
       + (* unit *)
         exists Ξ0, C0. split; [ | exact Hst ].
         apply a_looksub__check;
-          [ intro Hc; discriminate Hc | constructor | exact Hg0 | exact Hp ].
+          [ exact Hgf0 | intro Hc; discriminate Hc | constructor | exact Hg0
+          | exact Hp ].
       + (* var *)
         destruct_if as [-> | Hne0].
         * destruct ((proj2 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ Hp)
@@ -3118,13 +3123,14 @@ Proof.
           apply a_looksub__absent; exact HαP0.
         * exists Ξ0, C0. split; [ | exact Hst ].
           apply a_looksub__check;
-            [ exact Hne | constructor | exact Hg0 | exact Hp ].
+            [ exact Hgf0 | exact Hne | constructor | exact Hg0 | exact Hp ].
       + (* arrow *)
         destruct (IHe _ _ _ _ _ _ Hsz Hp β P0 ψa Ψa Hβα HαP0 HlcP0 Hst)
           as (Ξ' & C' & Hlk' & Hst').
         exists Ξ', C'. split; [ | exact Hst' ].
         apply a_looksub__check;
-          [ intro Hc; discriminate Hc
+          [ exact Hgf0
+          | intro Hc; discriminate Hc
           | constructor; apply subst_pskl_in_pskl_lc_pskl; assumption
           | exact Hg0
           | cbn [subst_pskl_in_pskl] in Hlk'; exact Hlk' ].
@@ -3173,7 +3179,7 @@ Proof.
         clear - Hup HδP0 HδA; fsetdec. }
       cbn [subst_pskl_in_pskl].
       apply a_looksub__forall_r with (β := δ);
-        [ clear - Hδα HδΘ Hδsub HδB; solve_notin | exact Hlk' ].
+        [ exact Hgf0 | clear - Hδα HδΘ Hδsub HδB; solve_notin | exact Hlk' ].
     - (* LS-Arrow *)
       assert (Hall1 : Forall (fun c => exists Q, c = a_cstr_eq Q) C1)
         by (eapply a_lookeq_cstr_eq; exact Hp1).

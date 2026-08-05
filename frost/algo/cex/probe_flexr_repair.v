@@ -156,6 +156,7 @@ Proof.
   - simpl. clear - Hβ. fsetdec.
   - unfold open_pskl_wrt_pskl; simpl.
     apply a_solve_sub__check.
+    + exact I.
     + apply guarded_pskl__arrow; apply lc_pskl_var_f.
     + apply guarded_pskl__var.
     + (* ⭐ SE-FlexR, repaired: the pattern SURVIVES *)
@@ -265,6 +266,7 @@ Proof.
               ++ (@nil (atom * abind))).
     eapply a_extract__solve.
     { eapply a_looksub__check.
+      { exact I. }
       { discriminate. }
       { apply guarded_pskl__arrow; apply lc_pskl_var_f. }
       { apply guarded_pskl__var. }
@@ -283,6 +285,8 @@ Proof.
   (* CONTINUATION: [α̂1 → α̂1 ⩽[TC] f̂] — Check, FlexR, Depend, SolveM *)
   unfold open_pskl_wrt_pskl; simpl.
   eapply a_sub__check.
+  { split; exact I. }
+  { exact I. }
   { apply guarded_pskl__arrow; apply lc_pskl_var_f. }
   { apply guarded_pskl__var. }
   unfold a_consis_chk. eexists.

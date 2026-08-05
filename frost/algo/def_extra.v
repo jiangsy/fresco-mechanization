@@ -405,12 +405,33 @@ Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs ->
 | a_looksub__vacuous : forall Θ α m P,           (* LS-Vacuous: RHS is □ *)
     Θ ⊢ P ≼[ α , m ] pskl_hole ⤳ nil ⨾ nil
 | a_looksub__check : forall Θ α A B Ξ C,         (* LS-Check *)
+    (* SORT: [A] and [B] are TYPES in the paper (full-algo-spec.tex:1042-1049),
+       matching the [a_sub__check] row this collection rule covers.  ⚠️ Only
+       the TARGET is mechanized — see the SORT note on [a_looksub__forall_r]
+       for why the subject is not. *)
+    pskl_ghost_free B ->
     A <> pskl_var_f α ->
     guarded_pskl A ->
     guarded_pskl B ->
     Θ ⊢ A ∼[ α ] B ⤳ Ξ ⨾ C ->
     Θ ⊢ A ≼[ α , mode_tc ] B ⤳ Ξ ⨾ C
 | a_looksub__forall_r : forall Θ α A B Ξ C β,    (* LS-ForallR — LEAKS *)
+    (* SORT — TARGET ONLY, here and at [a_looksub__check].  The paper sorts
+       the collection's SUBJECT as a type too ([A], full-algo-spec.tex:1042-1056),
+       and it is TRUE — but only because these two rows are reachable at the TY
+       sort ALONE: they need a guarded target, and [skmod{SK}] pins the
+       collection's target to [◇] at every mode.  Mechanizing it would
+       therefore mean threading [skmod] through the collection's STRUCTURAL
+       lemmas, which are mode-agnostic by design.  Two of them show why the
+       premise is not free: [a_looksub_lookeq_subst_stable] and
+       [a_looksub_lookeq_subst_gen_size] (prop_looksub.v §4, prop_decorate_sub.v
+       §8) substitute an ARBITRARY skeleton into the subject, and the latter's
+       consumer — [a_subtag_decoration]'s ForallL row — feeds it the node's
+       guess [P1], which at the SK sort IS the raw solve output and carries
+       ghosts.  The TARGET premise below has no such cost: it is read straight
+       off [skmod{TY}], which every consumer already carries.
+       docs/PAPER-GAPS.md. *)
+    pskl_ghost_free (pskl_all_syn B) ->
     β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl A
                        `union` ftvar_in_pskl B) ->
     ((β ~ abind_tvar) ++ Θ) ⊢ A ≼[ α , mode_tc ]
@@ -561,11 +582,28 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
 | a_solve_sub__vacuous : forall Θ m P,           (* SS-Vacuous: RHS is □ *)
     Θ ⊢ₛ P ≼[ m ] pskl_hole ⤳ nil ⨾ P
 | a_solve_sub__check : forall Θ P Q Ξ P',        (* SS-Check *)
+    (* SORT: the paper writes [solvesub{P}{TC}{B}{P'}] — the LHS is the
+       accumulated PATTERN (a skeleton) but the RHS is a TYPE
+       (full-algo-spec.tex:1262-1267).  The asymmetry is real: the pattern
+       starts at [◇] and is a skeleton throughout, while the target is a
+       mode-spine position of [P0], hence [⌈A⌉] at the TY sort. *)
+    pskl_ghost_free Q ->
     guarded_pskl P ->
     guarded_pskl Q ->
     Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' ->
     Θ ⊢ₛ P ≼[ mode_tc ] Q ⤳ Ξ ⨾ P'
 | a_solve_sub__forall_r : forall Θ A B Ξ P' β,   (* SS-ForallR *)
+    (* SORT — TARGET ONLY.  The paper writes [solvesub{A}{TC}{\forall\beta.B}]
+       (full-algo-spec.tex:1269-1273), i.e. it sorts BOTH sides as types; the
+       LHS reading is a metavariable slip and is NOT mechanized, because this
+       rule's own premise is discharged by SolS-GhostL, whose LHS is the ghost
+       [◇] (:1283-1294).  Sorting the LHS would leave [◇ ≼TC ∀β.B] with no
+       rule at all, and that configuration is reachable (subject [∀α.α]
+       against a ∀-target: LS-Var emits [sub_TC(∀β.B)] and the pattern is
+       still [◇]).  docs/PAPER-GAPS.md.  ⚠️ The binder [A] is therefore a
+       misnomer for a SKELETON position — kept only because renaming a rule
+       binder silently breaks [inversion]-generated names downstream. *)
+    pskl_ghost_free (pskl_all_syn B) ->
     (* exists-fresh, INPUT-only freshness, NO close: the result passes
        through unchanged, so β may legitimately ESCAPE into [P'] — the
        implementation opens the RHS and DISCARDS the binder name
@@ -602,6 +640,8 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
     Θ ⊢ₛ pskl_hole ≼[ (mode_fn m) ] (pskl_arrow Q1 Q2)
          ⤳ (Ξ2 ++ Ξ1) ⨾ (pskl_tophole (pskl_arrow P1' P2'))
 | a_solve_sub__ghost_l : forall Θ B,             (* SS-GhostL *)
+    (* SORT: [guarded{B}] with [B] a TYPE (full-algo-spec.tex:1283-1288). *)
+    pskl_ghost_free B ->
     guarded_pskl B ->
     Θ ⊢ₛ pskl_hole ≼[ mode_tc ] B ⤳ nil ⨾ (pskl_tophole B)
 
@@ -1121,10 +1161,33 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
 | a_sub__infer : forall NM P Θ0,                              (* Infer *)
     a_sub NM mode_ti pskl_hole Θ0 P P Θ0
 | a_sub__check : forall Θ0 Θ1 A B,                            (* Check *)
+    (* SORT (2026-08-06).  The paper writes this rule with the metavariables
+       [A] and [B] — TYPES, not skeletons (full-algo-spec.tex:799-804, and
+       [guarded{T,B}] in the decorated mirror, decorated-algosub.tex:57).  The
+       mech keeps ONE [pskl] carrier for both sorts, so the restriction is a
+       premise: ghost-freeness IS "being a painted [ptyp]"
+       ([pskl_ghost_free_to_ptyp]).  On the target it is not even new
+       information — [skmod{TY}{B}{TC}] already forces [B = ⌈A0⌉]
+       ([a_ty_mode_compat_tc_ghost_free]) — but [skmod] is the paper's
+       IMPLICIT side condition on the judgment, which a Coq [Inductive] has
+       no way to carry, so the rules that need it state it.
+
+       The SUBJECT's sort is stated too: both figures agree on it here (plain
+       [A], decorated [T]), unlike at ForallR.  It is not free — nothing in
+       [a_sub] forces it — but it IS invariant: at the TY sort the subject
+       comes from typing, which only ever hands [a_sub] a [ptyp] painting. *)
+    pskl_ghost_free A -> pskl_ghost_free B ->
     guarded_pskl A -> guarded_pskl B ->
     a_consis_chk Θ0 A B Θ1 ->
     a_sub a_sub_mode_ty mode_tc B Θ0 A B Θ1
 | a_sub__forall_r : forall α Θ0 Θ1 Ξ A B,                     (* ForallR *)
+    (* SORT: the paper's target here is [∀α.B] with [B] a TYPE
+       (full-algo-spec.tex:806-811) — see [a_sub__check].  Only the TARGET is
+       constrained: the paper's two figures DISAGREE on the subject (the plain
+       rule writes [A], the decorated one writes the skeleton [S],
+       decorated-algosub.tex:64), and the subject's sort is pinned by the
+       Check leaf this rule eventually reaches anyway. *)
+    pskl_ghost_free (pskl_all_syn B) ->
     a_suffix Ξ ->
     uniq (Ξ ++ Θ0) ->                                          (* Barendregt: the run's new names avoid the input (prose-completion) *)
     (* ⚠️ EXISTS-FRESH, deliberately (encoding fix 2026-07-31).  The paper's

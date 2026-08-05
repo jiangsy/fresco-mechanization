@@ -114,6 +114,55 @@ Proof.
     eauto using a_uskl_tyequiv, a_tyequiv__sym.
 Qed.
 
+(** ≡ᵘ is congruential on every ghost shape — a ghost is related only to the
+    SAME ghost — and its one non-structural row relates two MONOTYPE
+    paintings, which are ghost-free.  So the TYPE sort transports across it,
+    which is how P7's Check row turns the motive's [uskl_ghost_free R'] into
+    [a_sub__check]'s subject premise. *)
+(** A metasubstitution's images are MONOTYPE paintings, so it can neither
+    create nor destroy a ghost: the TYPE sort reflects back across it.  Stated
+    at the [pskl] carrier because [pskl_ghost_free] is the [Fixpoint] that
+    tolerates dangling indices — the [uskl] version would need local closure
+    for no gain. *)
+Lemma msubst_pskl_ghost_free_inv : forall κ P,
+  pskl_ghost_free (msubst_pskl κ P) -> pskl_ghost_free P.
+Proof.
+  induction P; cbn; intros Hg; try exact I; try contradiction.
+  - destruct Hg as [Hg1 Hg2]; split; auto.
+  - auto.
+Qed.
+
+Lemma a_uskl_tyequiv_ghost_free : forall Θ R R',
+  Θ ⊢ R ≡ᵘ R' ->
+  uskl_ghost_free R -> uskl_ghost_free R'.
+Proof.
+  intros Θ R R' H; induction H; intros Hg.
+  - (* mono paintings: both sides are ghost-free outright *)
+    apply mono_ptyp_to_uskl_syn_ghost_free; assumption.
+  - exact Hg.
+  - exact Hg.
+  - (* arrow *)
+    inversion Hg; subst; apply uskl_ghost_free__arrow; auto.
+  - (* ∀^syn *)
+    inversion Hg; subst.
+    match goal with
+    | Hb : forall a : atom, a `notin` ?L0 -> uskl_ghost_free _ |- _ =>
+        apply uskl_ghost_free__all_syn with (L := L `union` L0); intros α Hα;
+        apply H0; [ clear - Hα; fsetdec | apply Hb; clear - Hα; fsetdec ]
+    end.
+  - (* ∀^ε *)
+    inversion Hg; subst.
+    match goal with
+    | Hb : forall a : atom, a `notin` ?L0 -> uskl_ghost_free _ |- _ =>
+        apply uskl_ghost_free__all_etag with (L := L `union` L0); intros α Hα;
+        apply H0; [ clear - Hα; fsetdec | apply Hb; clear - Hα; fsetdec ]
+    end.
+  - inversion Hg.
+  - inversion Hg.
+  - inversion Hg.
+  - inversion Hg.
+Qed.
+
 (* ===================================================================== *)
 (*  Erasure: ≡ᵘ projects onto ≡ˢ                                          *)
 (* ===================================================================== *)

@@ -1442,6 +1442,17 @@ Proof.
   { rewrite <- HeqP. eapply guarded_uskl_msubst_erase;
       [ eapply a_uskl_tyequiv_guarded; [ exact Hrel | exact HgT ]
       | rewrite HeqP; eapply a_wf_pskl_lc; exact HwfP ]. }
+  (* …and it is a TYPE: the motive's TY-sort ghost-freeness of the unresolved
+     subject transports across [≡ᵘ] (which relates a ghost only to the SAME
+     ghost, and its one non-structural row to a monotype painting), then
+     reflects back through the metasubstitution (whose images are monotypes)
+     and through the erasure.  This is [a_sub__check]'s SUBJECT premise. *)
+  assert (HgfP : pskl_ghost_free P).
+  { rewrite <- HeqP.
+    eapply msubst_pskl_ghost_free_inv with (κ := κ).
+    rewrite <- uskl_to_pskl_msubst_uskl_syn.
+    apply uskl_ghost_free_to_pskl.
+    eapply a_uskl_tyequiv_ghost_free; [ exact Hrel | exact (Hgf eq_refl) ]. }
   (* the DECORATED premise undecorates, then the slack moves it to κP *)
   assert (Hc : empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κ P))
                             ∼ (pskl_to_bskl_inh B)).
@@ -1461,7 +1472,10 @@ Proof.
     as [_ [Hwf1 _]].
   (* the run: algorithmic [Check], whose output IS [P0] *)
   exists P0, Θ1. split;
-    [ apply a_sub__check; [ exact HgP | exact HgP0 | exists P1; exact Hrun ] | ].
+    [ apply a_sub__check;
+        [ exact HgfP
+        | apply a_ty_mode_compat_tc_ghost_free; exact (HmodTY eq_refl)
+        | exact HgP | exact HgP0 | exists P1; exact Hrun ] | ].
   intros κ1 Hid Hinc1.
   destruct (Hopt κ1 Hid Hinc1) as [ζ [Hζ [Hie Hprec]]].
   exists ζ. split; [ exact Hζ | split; [ exact Hie | ] ].
@@ -2248,7 +2262,8 @@ Proof.
   exists (pskl_all_syn (ptyp_to_pskl A0)), Θ1.
   split.
   { eapply a_sub__forall_r with (α := α) (Ξ := Ξj);
-      [ exact Hsufj | exact HuqJ | | exact Hrun ].
+      [ exact (ptyp_to_pskl_ghost_free (ptyp_all A0))
+      | exact Hsufj | exact HuqJ | | exact Hrun ].
     rewrite dom_app.
     clear - Fr HαΞj HαΘ1. simpl in Fr. fsetdec. }
   (* ---- 7. optimality ---- *)

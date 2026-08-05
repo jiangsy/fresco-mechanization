@@ -78,7 +78,94 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-05 (latest) — ⭕⭕ **THE SHIELD LAYER IS FULLY DEPRECATED**
+## 2026-08-06 (latest) — ⭐⭐ **THE ALGORITHMIC RULES NOW CARRY THEIR SORT DISCIPLINE** (typ vs skl), and the tree builds 37% faster
+
+`make coq` clean; README.v still audits **28 × Closed under the global
+context**, so both directions of subtyping stay closed and unconditional.
+
+### 1. The problem
+
+The algorithmic judgements all range over ONE category (`pskl`), but the
+paper's rules are sorted *by metavariable*: `A`/`B` mark positions the
+grammar only ever fills with a TYPE, `P`/`Q` admit a full skeleton.
+`SI-Check` is the clearest case — `\guarded{A,B}` — and nothing in the rule
+forces ghost-freeness; the letter carries it.  A Coq `Inductive` has no such
+notion, so the mech was silently more liberal than the paper everywhere.
+
+### 2. What landed
+
+`pskl_ghost_free` (the "is a type" predicate) moved from
+`algo/prop_pat_sub.v` up to [`frost/predicates.v`](frost/predicates.v) so the
+RULES can use it, with the syntactic closure kit (open / close / subst / swap
+/ `ptyp_to_pskl` round-trip, `ghost_free_auto`) in
+[`frost/prop_basic.v`](frost/prop_basic.v).  Premises added:
+
+| rule | premise |
+|---|---|
+| `a_sub__check` | subject **and** target |
+| `a_sub__forall_r` | target `∀α.B` |
+| `a_looksub__check`, `a_looksub__forall_r` | target |
+| `a_solve_sub__check`, `a_solve_sub__forall_r`, `a_solve_sub__ghost_l` | target |
+| `a_subtag__check`, `a_subtag__forall_r`, `a_solvetag_sub__check`, `a_solvetag_sub__forall_r` | target |
+
+Consistency, `assignvar`, `unifyvar`, `a_typing` and `a_pat` needed nothing —
+the paper writes `P`/`Q`/`τ` throughout, and `a_typing` already outputs a
+`ptyp`.
+
+The TARGET premises cost nothing: they are read off `skmod{TY}`
+(`a_ty_mode_compat_tc_ghost_free`), which every completeness lemma already
+carries.  `SI-Check`'s SUBJECT premise needed a new transport chain in P7 —
+the motive's TY-sort `uskl_ghost_free R'` moves across `≡ᵘ`
+(`a_uskl_tyequiv_ghost_free`), reflects back through the metasubstitution
+(`msubst_pskl_ghost_free_inv`) and then through the erasure
+(`uskl_ghost_free_to_pskl`).
+
+### 3. Three findings, all in [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md)
+
+- **The two figures disagree on `SI-ForallR`'s subject** — plain rule `A`,
+  decorated mirror the skeleton `S`.  Only the target is mechanized.
+- **`SolS-ForallR`'s LHS `A` is a slip**: its own premise is dischargeable by
+  `SolS-GhostL`, whose LHS is `◇`.  Sorting it would leave `◇ ≼TC ∀β.B` with
+  no rule, and that is reachable (`∀α.α` against a ∀-target).
+- **`LS-Check`/`LS-ForallR`'s subject is TRUE but not free.**  Those rows are
+  TY-reachable only, so the subject IS a type — but the collection's
+  structural lemmas are mode-agnostic and two of them substitute an ARBITRARY
+  skeleton into the subject (`a_looksub_lookeq_subst_stable`,
+  `a_looksub_lookeq_subst_gen_size`); the latter's consumer feeds it the
+  node's guess, which at the SK sort carries ghosts.  ⛔ Not mechanized;
+  it would mean threading `skmod` through the whole structural kit.
+
+### 4. ⚙ Build time: 970 s → 608 s serial, and one file 20×
+
+Profiled with `Set Ltac Profiling` against the `.aux` per-proof timings
+(which already record every proof's cost — no rebuild needed to find hot
+spots).  Two `fsetdec` misuses, both the hazard CLAUDE.md already names:
+
+| site | cost | fix |
+|---|---|---|
+| `prop_flex.v`, 3× `assert (ftvar_in_aenv ((x~tvar) ++ Θ) [=] add x …) by (simpl; fsetdec)` | 160 s | hoisted `ftvar_in_aenv_cons_tvar` up from `prop_looksub.v` and applied it |
+| `prop_flex.v`, `clear - Hfr Hb0Ξ Hup Fr Hc2. fsetdec` (5 hyps, one a 7-way `pick fresh` union) | 46 s | derive the three ATOMIC facts from one small hypothesis each first |
+
+`prop_flex.v` 133 s → 4.4 s.  **It is an EARLY dependency, so this is on the
+critical path of every rebuild.**  ⭐ And the sort premises paid for
+themselves: `prop_decorate_key.v` fell 96 s → 14.2 s, its
+`dec_ext_solve_eq_step_size` (76 s) dropping below 3 s — the premises PRUNE
+impossible rows out of that induction.
+
+⚙ **Lesson for the next perf pass**: the `.aux` files hold `proof_build_time`
+per proof.  Aggregate them BEFORE rebuilding anything; then label individual
+`fsetdec` calls with `time "F1" fsetdec` to find the single call that
+dominates.  Guessing from `grep` for unscoped `fsetdec` would have missed
+both of these — one was already `clear -`-scoped, just not narrowly enough.
+
+### 5. Also fixed (pre-existing)
+
+`cex/probe_payload_reachability.v` had a dangling `Require` on
+`algo/prop_sub_shield_supply.v`, deleted by the shield deprecation
+(`2a1c380`); its stale `.vo` had been masking the break.  The one-line
+`pskl_all_free` it needed is now inlined there.
+
+## 2026-08-05 — ⭕⭕ **THE SHIELD LAYER IS FULLY DEPRECATED**
 
 `make coq` clean.  With subtyping completeness unconditional, the entire
 mech-invented shield apparatus and the counterexample record built around it

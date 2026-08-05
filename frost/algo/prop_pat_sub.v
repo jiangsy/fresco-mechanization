@@ -1393,51 +1393,11 @@ Qed.
 (*  visibility and definition lookups — so it can be strengthened (the   *)
 (*  trailing Ξ dropped) and its opened binder renamed into a Δ-slot,     *)
 (*  with no F-hygiene at all: what ForallR's fill re-attachment needs.   *)
+(*                                                                        *)
+(*  [pskl_ghost_free] / [bskl_ghost_free] themselves now live in          *)
+(*  frost/predicates.v — the algorithmic RULES constrain their type       *)
+(*  positions with them, so the definition has to precede algo/def_extra. *)
 (* ===================================================================== *)
-
-Fixpoint pskl_ghost_free (P : pskl) : Prop :=
-  match P with
-  | pskl_unit => True
-  | pskl_var_b _ => True
-  | pskl_var_f _ => True
-  | pskl_arrow P1 P2 => pskl_ghost_free P1 /\ pskl_ghost_free P2
-  | pskl_all_syn P0 => pskl_ghost_free P0
-  | pskl_hole => False
-  | pskl_tophole _ => False
-  end.
-
-Fixpoint bskl_ghost_free (Q : bskl) : Prop :=
-  match Q with
-  | bskl_unit => True
-  | bskl_var_b _ => True
-  | bskl_var_f _ => True
-  | bskl_arrow Q1 Q2 => bskl_ghost_free Q1 /\ bskl_ghost_free Q2
-  | bskl_all_syn Q0 => bskl_ghost_free Q0
-  | bskl_all_inh Q0 => bskl_ghost_free Q0
-  | bskl_hole => False
-  | bskl_tophole _ => False
-  end.
-
-Lemma pskl_to_bskl_inh_ghost_free : forall P,
-  pskl_ghost_free P ->
-  bskl_ghost_free (pskl_to_bskl_inh P).
-Proof. induction P; simpl; intuition. Qed.
-
-Lemma pskl_ghost_free_open_rec : forall P α' k,
-  pskl_ghost_free P ->
-  pskl_ghost_free (open_pskl_wrt_pskl_rec k (pskl_var_f α') P).
-Proof.
-  induction P; intros α' k Hg; simpl in *; intuition.
-  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; auto.
-Qed.
-
-Lemma bskl_ghost_free_open_rec : forall Q α' k,
-  bskl_ghost_free Q ->
-  bskl_ghost_free (open_bskl_wrt_bskl_rec k (bskl_var_f α') Q).
-Proof.
-  induction Q; intros α' k Hg; simpl in *; intuition.
-  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; auto.
-Qed.
 
 Lemma mono_ptyp_to_bskl_syn_ghost_free : forall τ,
   mono_ptyp τ -> bskl_ghost_free (ptyp_to_bskl_syn τ).
@@ -1689,17 +1649,6 @@ Proof.
   - inversion HeqP; subst; reflexivity.
 Qed.
 
-(** Ghost-freeness survives substitution by a monotype painting. *)
-Lemma pskl_ghost_free_subst_mono : forall P τ β,
-  pskl_ghost_free P -> mono_ptyp τ ->
-  pskl_ghost_free (subst_pskl_in_pskl (ptyp_to_pskl τ) β P).
-Proof.
-  induction P; intros τ β Hg Hm; simpl in *; intuition.
-  destruct_if;
-    [ | simpl; auto ].
-  clear - Hm. induction Hm; simpl; intuition.
-Qed.
-
 (** FOLD a definition back into a fill's source: if the τ-image of Q0
     fills to Qt, then Q0 itself does — every β̂-node of Q0 caps its
     τ-subtree with [flex_l], rebuilt from the case's own premises.
@@ -1936,9 +1885,43 @@ Proof.
     + intros Hg. simpl in Hg. contradiction.
 Qed.
 
-(** [ptyp]s have no ghosts, so [guess^TY] outputs are ghost-free. *)
-Lemma ptyp_to_pskl_ghost_free : forall A, pskl_ghost_free (ptyp_to_pskl A).
-Proof. induction A; simpl; auto. Qed.
+(* ---- moving the TYPE sort between the [pskl] and [uskl] carriers ---- *)
+
+(** Erasure keeps the sort: an unresolved TYPE erases to a type.  This is
+    what feeds [a_sub__check]'s SUBJECT premise in P7, where ghost-freeness
+    is known of the unresolved subject.  The binder rows read the body's
+    sort off ONE instance — legitimate because [pskl_ghost_free] does not
+    look at variables ([pskl_ghost_free_open_rec_inv]). *)
+Lemma uskl_ghost_free_to_pskl : forall R,
+  uskl_ghost_free R -> pskl_ghost_free ⌊ R ⌋ˢ.
+Proof.
+  intros R H; induction H; cbn.
+  - exact I.
+  - exact I.
+  - split; assumption.
+  - destruct (atom_fresh L) as [α Hα]; specialize (H0 α Hα).
+    rewrite uskl_to_pskl_open in H0; unfold open_pskl_wrt_pskl in H0.
+    eapply pskl_ghost_free_open_rec_inv; exact H0.
+  - destruct (atom_fresh L) as [α Hα]; specialize (H0 α Hα).
+    rewrite uskl_to_pskl_open in H0; unfold open_pskl_wrt_pskl in H0.
+    eapply pskl_ghost_free_open_rec_inv; exact H0.
+Qed.
+
+(** …and the (untagged) painting keeps it in the other direction — what the
+    decoration lemmas need for [a_subtag__check]'s subject.  Local closure is
+    genuinely required: [pskl_ghost_free] ignores dangling indices, while
+    [uskl_ghost_free] has no [var_b] row. *)
+Lemma pskl_ghost_free_to_uskl : forall P,
+  lc_pskl P -> pskl_ghost_free P -> uskl_ghost_free (pskl_to_uskl P).
+Proof.
+  intros P Hlc; induction Hlc; cbn; intros Hg; try contradiction.
+  - apply uskl_ghost_free__unit.
+  - apply uskl_ghost_free__var.
+  - destruct Hg as [Hg1 Hg2]; apply uskl_ghost_free__arrow; auto.
+  - apply uskl_ghost_free__all_syn with (L := empty); intros α _.
+    rewrite <- pskl_to_uskl_open_var.
+    apply H0; apply pskl_ghost_free_open; exact Hg.
+Qed.
 
 Lemma a_extract_ty_ghost_free : forall Θ0 α M P P0 Ξ P1,
   a_extract Θ0 a_sub_mode_ty α M P P0 Ξ P1 ->

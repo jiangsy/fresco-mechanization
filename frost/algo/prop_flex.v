@@ -511,6 +511,15 @@ Proof.
     clear - IHa_guess_mono Hcl Hup. fsetdec.
 Qed.
 
+(** One-step domain arithmetic for a rigid cons.  ⚙ PERF: stated as a lemma
+    rather than re-derived by [simpl; fsetdec] at each use site.  The three
+    uses below sit under a context full of large set hypotheses, and
+    [fsetdec] preprocesses ALL of them — the three [assert]s alone cost 160 s
+    of build time before this (Ltac-profiled, 2026-08-06). *)
+Lemma ftvar_in_aenv_cons_tvar : forall β Θ,
+  ftvar_in_aenv ((β ~ abind_tvar) ++ Θ) [=] add β (ftvar_in_aenv Θ).
+Proof. intros; simpl; fsetdec. Qed.
+
 (* ===================================================================== *)
 (*  RENAMING THE GUESS — the asymmetric statement.                         *)
 (*                                                                        *)
@@ -616,7 +625,7 @@ Proof.
         pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Pb (pskl_var_f b0))
           as Hup. cbn in Hup.
         assert (Hc : ftvar_in_aenv ((b0 ~ abind_tvar) ++ Θ')
-                       [=] add b0 (ftvar_in_aenv Θ')) by (simpl; fsetdec).
+                       [=] add b0 (ftvar_in_aenv Θ')) by (apply ftvar_in_aenv_cons_tvar).
         clear - Fr Hup Hc. fsetdec. }
       (* rename #2: the requested β ⤳ b0, applied to the RESULT of #1 *)
       assert (Hsz2 : size_pskl (open_pskl_wrt_pskl Pb (pskl_var_f δ)) <= n)
@@ -628,9 +637,16 @@ Proof.
       apply Hr2.
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Pb (pskl_var_f δ))
         as Hup. cbn in Hup.
-      assert (Hc2 : ftvar_in_aenv ((δ ~ abind_tvar) ++ Θ')
-                      [=] add δ (ftvar_in_aenv Θ')) by (simpl; fsetdec).
-      clear - Hfr Hb0Ξ Hup Fr Hc2. fsetdec.
+      (* ⚙ PERF: handing [fsetdec] all five hypotheses at once cost 46 s —
+         [Fr] alone is a seven-way union, and the tauto stage is combinatorial
+         in the number of union conjuncts.  Deriving the three ATOMIC facts
+         first (each from ONE small hypothesis) leaves a goal [fsetdec]
+         dispatches in milliseconds.  Profiled 2026-08-06. *)
+      rewrite ftvar_in_aenv_cons_tvar.
+      assert (Hb0δ : b0 <> δ) by (clear - Fr; fsetdec).
+      assert (Hb0Θ : b0 `notin` ftvar_in_aenv Θ') by (clear - Hfr; fsetdec).
+      assert (Hb0Pb : b0 `notin` ftvar_in_pskl Pb) by (clear - Hfr; fsetdec).
+      clear - Hb0δ Hb0Θ Hb0Pb Hb0Ξ Hup. fsetdec.
     + destruct (β == b0) as [-> | Hβb0].
       * (* renaming the WITNESS away: b0 occurs in neither the subject
            (rule condition), the payload (closed at b0), the context (rule
@@ -665,7 +681,7 @@ Proof.
         pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Pb (pskl_var_f b0))
           as Hup. cbn in Hup.
         assert (Hc3 : ftvar_in_aenv ((b0 ~ abind_tvar) ++ Θ')
-                        [=] add b0 (ftvar_in_aenv Θ')) by (simpl; fsetdec).
+                        [=] add b0 (ftvar_in_aenv Θ')) by (apply ftvar_in_aenv_cons_tvar).
         clear - Hγ Hγb0 Hup HclAb Hc3. fsetdec.
 Qed.
 

@@ -121,7 +121,7 @@ Lemma cex_codomain :
   a_sub a_sub_mode_ty mode_tc pskl_unit Θw' pskl_unit pskl_unit Θw'.
 Proof.
   apply a_sub__check;
-    [ apply guarded_pskl__unit | apply guarded_pskl__unit | ].
+    [ exact I | exact I | apply guarded_pskl__unit | apply guarded_pskl__unit | ].
   exists pskl_unit. apply a_consis__unit.
 Qed.
 

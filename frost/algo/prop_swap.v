@@ -669,6 +669,16 @@ Lemma nonghost_pskl_swap : forall a b P,
   nonghost_pskl P -> nonghost_pskl (swap_pskl a b P).
 Proof. intros * H; destruct H; simpl; constructor. Qed.
 
+(** A swap only renames free variables, so it cannot create or destroy a
+    ghost — the TYPE sort of the [Check] / [ForallR] / [GhostL] rows is
+    swap-stable, which is what those rows' side conditions need here. *)
+Lemma pskl_ghost_free_swap : forall a b P,
+  pskl_ghost_free P -> pskl_ghost_free (swap_pskl a b P).
+Proof.
+  induction P; intros H; simpl in *; try contradiction; auto.
+  destruct H; split; auto.
+Qed.
+
 Lemma a_binds_tvar_swap : forall a b α (Θ : aenv),
   a_binds_tvar α Θ -> a_binds_tvar (swap_atom a b α) (swap_aenv a b Θ).
 Proof.
@@ -828,10 +838,10 @@ Proof.
   - (* vacuous *) apply a_looksub__vacuous.
   - (* check *)
     apply a_looksub__check;
-      auto using swap_pskl_neq_var, guarded_pskl_swap.
+      auto using swap_pskl_neq_var, guarded_pskl_swap, pskl_ghost_free_swap.
   - (* forall_r *)
     apply a_looksub__forall_r with (β := swap_atom a b β);
-      [ swap_freshness |].
+      [ apply pskl_ghost_free_swap; assumption | swap_freshness |].
     rewrite swap_pskl_open_var in H. exact H.
   - (* arrow *)
     rewrite swap_aenv_app, swap_cstrs_app.
@@ -913,14 +923,16 @@ Proof.
     rewrite swap_pskl_open_var in H. exact H.
   - (* univ_ghost_l *) apply a_solve_sub__univ_ghost_l; auto.
   - (* vacuous *) apply a_solve_sub__vacuous.
-  - (* check *) apply a_solve_sub__check; auto using guarded_pskl_swap.
+  - (* check *) apply a_solve_sub__check;
+      auto using guarded_pskl_swap, pskl_ghost_free_swap.
   - (* forall_r: the binder LEAKS into the output — no close, no re-bind *)
     apply a_solve_sub__forall_r with (β := swap_atom a b β);
-      [ swap_freshness |].
+      [ apply pskl_ghost_free_swap; assumption | swap_freshness |].
     rewrite swap_pskl_open_var in H. exact H.
   - (* arrow *) apply a_solve_sub__arrow; auto.
   - (* ghost_l_fn *) apply a_solve_sub__ghost_l_fn; auto.
-  - (* ghost_l *) apply a_solve_sub__ghost_l; auto using guarded_pskl_swap.
+  - (* ghost_l *) apply a_solve_sub__ghost_l;
+      auto using guarded_pskl_swap, pskl_ghost_free_swap.
   (* -------- a_solve_eq -------- *)
   - (* unit *) apply a_solve_eq__unit.
   - (* var *) apply a_solve_eq__var.
@@ -1272,12 +1284,13 @@ Proof.
   - (* infer *)
     intros NM P Θ0. simpl. apply a_sub__infer.
   - (* check *)
-    intros Θ0 Θ1 A B Hga Hgb Hchk. simpl.
+    intros Θ0 Θ1 A B Hgfa Hgfb Hga Hgb Hchk. simpl.
     apply a_sub__check;
-      auto using guarded_pskl_swap, a_consis_chk_swap.
+      auto using guarded_pskl_swap, pskl_ghost_free_swap, a_consis_chk_swap.
   - (* forall_r *)
-    intros α Θ0 Θ1 Ξ A B Hsuf Huniq Hfr Hd IH. simpl.
+    intros α Θ0 Θ1 Ξ A B Hgf Hsuf Huniq Hfr Hd IH. simpl.
     apply a_sub__forall_r with (α := swap_atom a b α) (Ξ := swap_aenv a b Ξ).
+    + apply pskl_ghost_free_swap; exact Hgf.
     + auto using a_suffix_swap.
     + rewrite <- swap_aenv_app. auto using swap_aenv_uniq.
     + swap_freshness.

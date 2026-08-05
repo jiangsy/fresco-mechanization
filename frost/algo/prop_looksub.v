@@ -524,7 +524,8 @@ Proof.
       simpl.
     + (* unit *)
       apply a_looksub__check;
-        [ intro Hc; discriminate Hc | constructor | assumption | auto ].
+        [ assumption | intro Hc; discriminate Hc | constructor | assumption
+        | auto ].
     + (* var α *)
       destruct_if as [-> | HneX].
       * (* α = β : the source became α-free — switch to Absent *)
@@ -535,10 +536,11 @@ Proof.
         end.
         apply a_looksub__absent. assumption.
       * apply a_looksub__check;
-          [ assumption | constructor | assumption | auto ].
+          [ assumption | assumption | constructor | assumption | auto ].
     + (* arrow *)
       apply a_looksub__check;
-        [ intro Hc; discriminate Hc
+        [ assumption
+        | intro Hc; discriminate Hc
         | constructor; apply subst_pskl_in_pskl_lc_pskl; auto
         | assumption
         | match goal with
@@ -552,7 +554,8 @@ Proof.
        [P0] inside what the binder already avoids — so the SAME binder
        serves, no re-freshening (and hence no output renaming). *)
     apply a_looksub__forall_r with (β := β);
-      [ pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper A P0 β0) as Hup;
+      [ assumption
+      | pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper A P0 β0) as Hup;
         match goal with Hsc : ftvar_in_pskl P0 [<=] _ |- _ =>
           clear - Hup Hsc n; fsetdec end | ].
     apply H; auto. match goal with Hsc : ftvar_in_pskl P0 [<=] _ |- _ =>
@@ -759,7 +762,7 @@ Proof.
   - (* LS-Vacuous *)
     intros; apply a_looksub__vacuous.
   - (* LS-Check *)
-    intros Θ α A B Ξ C Hne Hg Hg0 Hlk IH Pu βg Pg Heq Hβ Hβin Hα HlcPg HlcPu.
+    intros Θ α A B Ξ C Hgf Hne Hg Hg0 Hlk IH Pu βg Pg Heq Hβ Hβin Hα HlcPg HlcPu.
     destruct Pu as [ | n | β' | Pa Pb | Pb | | Pb ]; cbn in Heq; subst A.
     + apply a_looksub__check; assumption.
     + inversion Hg.
@@ -769,7 +772,8 @@ Proof.
       * apply a_looksub__check; assumption.
     + inversion HlcPu as [ | | ? ? HlcPa HlcPb | | | ]; subst.
       apply a_looksub__check;
-        [ discriminate
+        [ assumption
+        | discriminate
         | apply guarded_pskl__arrow; assumption
         | assumption
         | apply (IH (pskl_arrow Pa Pb) βg Pg);
@@ -779,13 +783,14 @@ Proof.
     + inversion Hg.
     + inversion Hg.
   - (* LS-ForallR *)
-    intros Θ α A B Ξ C β Hsc Hpre IH Pu βg Pg Heq Hβ Hβin Hα HlcPg HlcPu.
+    intros Θ α A B Ξ C β Hgf Hsc Hpre IH Pu βg Pg Heq Hβ Hβin Hα HlcPg HlcPu.
     (* target-opening: the source is only UN-substituted, and the binder
        still avoids it because [βg] itself is a context name *)
     subst A.
     assert (Hne1 : βg <> β) by (clear - Hsc Hβin; fsetdec).
     apply a_looksub__forall_r with (β := β);
-      [ pose proof (ftvar_in_pskl_subst_pskl_in_pskl_lower Pu Pg βg) as Hlow;
+      [ assumption
+      | pose proof (ftvar_in_pskl_subst_pskl_in_pskl_lower Pu Pg βg) as Hlow;
         clear - Hsc Hlow Hne1; fsetdec | ].
     apply (IH Pu βg Pg);
       solve [ assumption | reflexivity | clear - Hβin; cbn; fsetdec ].
@@ -1053,9 +1058,10 @@ Qed.
 (** One-step context facts the binder rows need in the shape [fsetdec] can
     use (reducing [ftvar_in_aenv] under a [cons] with [cbn] would unfold the
     atom-set operations themselves). *)
-Lemma ftvar_in_aenv_cons_tvar : forall β Θ,
-  ftvar_in_aenv ((β ~ abind_tvar) ++ Θ) [=] add β (ftvar_in_aenv Θ).
-Proof. intros; simpl; fsetdec. Qed.
+(* [ftvar_in_aenv_cons_tvar] moved UP to prop_flex.v (2026-08-06): it is the
+   one-step domain fact the [a_guess_mono] renaming needs, and re-deriving it
+   there by [simpl; fsetdec] IN THE AMBIENT CONTEXT cost 160 s of the tree's
+   build (profiled).  Still re-exported through this file's import chain. *)
 
 (** ⚙ The freshness kit the binder rows run on.  Their side conditions are
     five-way unions over a context, two skeletons, a generated block and a
@@ -1175,11 +1181,11 @@ Proof.
   - (* LS-Absent *) intros Θ α m P P' Hnf Θ' Hm.
     apply a_looksub__absent; exact Hnf.
   - (* LS-Vacuous *) intros. apply a_looksub__vacuous.
-  - (* LS-Check *) intros Θ α A B Ξ C Hne Hg Hg0 Hp IH Θ' Hm.
+  - (* LS-Check *) intros Θ α A B Ξ C Hgf Hne Hg Hg0 Hp IH Θ' Hm.
     apply a_looksub__check; solve [ assumption | apply IH; exact Hm ].
-  - (* LS-ForallR *) intros Θ α A B Ξ C β Hfr Hp IH Θ' Hm.
+  - (* LS-ForallR *) intros Θ α A B Ξ C β Hgf Hfr Hp IH Θ' Hm.
     apply a_looksub__forall_r with (β := β);
-      [ clear - Hfr Hm; fsetdec | apply IH; apply Hcons; exact Hm ].
+      [ exact Hgf | clear - Hfr Hm; fsetdec | apply IH; apply Hcons; exact Hm ].
   - (* LS-Arrow *) intros Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 IH1 Hp2 IH2 Θ' Hm.
     apply a_looksub__arrow; [ apply IH1 | apply IH2 ]; exact Hm.
   - (* LS-ForallL *) intros Θ α m P P' Ξ C β Hfr Hp IH Θ' Hm.
@@ -1265,8 +1271,8 @@ Proof.
   - (* LS-Var *) intros; simpl; fsetdec.
   - (* LS-Absent *) intros; simpl; fsetdec.
   - (* LS-Vacuous *) intros; simpl; fsetdec.
-  - (* LS-Check *) intros Θ α A B Ξ C Hne Hg Hg0 Hp IH γ Hγ. exact (IH γ Hγ).
-  - (* LS-ForallR *) intros Θ α A B Ξ C β Hfr Hp IH γ Hγ.
+  - (* LS-Check *) intros Θ α A B Ξ C Hgf Hne Hg Hg0 Hp IH γ Hγ. exact (IH γ Hγ).
+  - (* LS-ForallR *) intros Θ α A B Ξ C β Hgf Hfr Hp IH γ Hγ.
     apply IH; apply Hgrow; exact Hγ.
   - (* LS-Arrow *) intros Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 IH1 Hp2 IH2 γ Hγ.
     rewrite dom_app.
@@ -1379,8 +1385,8 @@ Proof.
       [ Θ α m Q                                   (* LS-Var *)
       | Θ α m Q Q' Hnf                            (* LS-Absent *)
       | Θ α m Q                                   (* LS-Vacuous *)
-      | Θ α A B Ξ0 C0 Hne Hg Hg0 Hp               (* LS-Check *)
-      | Θ α A B Ξ0 C0 b Hfr0 Hp                   (* LS-ForallR *)
+      | Θ α A B Ξ0 C0 Hgf0 Hne Hg Hg0 Hp          (* LS-Check *)
+      | Θ α A B Ξ0 C0 b Hgf0 Hfr0 Hp              (* LS-ForallR *)
       | Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 Hp2   (* LS-Arrow *)
       | Θ α m Q Q' Ξ0 C0 b Hfr0 Hp                (* LS-ForallL *)
       | Θ α m Q Q' Ξ0 C0 Hp ];                    (* LS-UnivGhostL *)
@@ -1394,7 +1400,8 @@ Proof.
     - (* LS-Vacuous *) apply a_looksub__vacuous.
     - (* LS-Check *)
       apply a_looksub__check;
-        [ apply subst_var_pskl_neq_var; auto
+        [ apply pskl_ghost_free_subst_var; assumption
+        | apply subst_var_pskl_neq_var; auto
         | apply guarded_pskl_subst_var; assumption
         | apply guarded_pskl_subst_var; assumption
         | apply IHe with (Θ := Θ); solve [ lia | assumption ] ].
@@ -1426,7 +1433,8 @@ Proof.
         rewrite (subst_pskl_in_pskl_fresh_eq A) in H1 by exact HbA.
         rewrite <- (subst_pskl_in_pskl_intro b B (pskl_var_f α1)) in H1
           by exact HbB.
-        apply a_looksub__forall_r with (β := α1); [ look_fresh | exact H1 ].
+        apply a_looksub__forall_r with (β := α1);
+          [ ghost_free_auto | look_fresh | exact H1 ].
       + destruct (α1 == b) as [-> | Hα1b].
         * (* (ii) TARGET = the rule's own binder.  [b ∉ dom Ξ0 ∪ ftv C0] — the
              lemma's OUTPUT-freshness premise — says the binder did NOT leak,
@@ -1471,9 +1479,11 @@ Proof.
           rewrite rename_aenv_cons_tvar_neq in H2 by congruence.
           rewrite <- (subst_pskl_in_pskl_open_pskl_wrt_pskl_var B (pskl_var_f b))
             in H2 by (solve [ congruence | constructor ]).
-          apply a_looksub__forall_r with (β := δ); [ look_fresh | exact H2 ].
+          apply a_looksub__forall_r with (β := δ);
+            [ ghost_free_auto | look_fresh | exact H2 ].
         * (* (iii) the binder stays put *)
-          apply a_looksub__forall_r with (β := b); [ look_fresh | ].
+          apply a_looksub__forall_r with (β := b);
+            [ ghost_free_auto | look_fresh | ].
           rewrite (subst_pskl_in_pskl_open_pskl_wrt_pskl_var B (pskl_var_f α1))
             by (solve [ congruence | constructor ]).
           rewrite <- rename_aenv_cons_tvar_neq by congruence.
@@ -2113,8 +2123,8 @@ Proof.
       [ Θ α m Q                                   (* LS-Var *)
       | Θ α m Q Q' Hnf                            (* LS-Absent *)
       | Θ α m Q                                   (* LS-Vacuous *)
-      | Θ α A B Ξ0 C0 Hne Hg Hg0 Hp               (* LS-Check *)
-      | Θ α A B Ξ0 C0 b Hfr0 Hp                   (* LS-ForallR *)
+      | Θ α A B Ξ0 C0 Hgf0 Hne Hg Hg0 Hp          (* LS-Check *)
+      | Θ α A B Ξ0 C0 b Hgf0 Hfr0 Hp              (* LS-ForallR *)
       | Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 Hp2   (* LS-Arrow *)
       | Θ α m Q Q' Ξ0 C0 b Hfr0 Hp                (* LS-ForallL *)
       | Θ α m Q Q' Ξ0 C0 Hp ];                    (* LS-UnivGhostL *)
@@ -2128,7 +2138,8 @@ Proof.
     - (* LS-Vacuous *) apply a_looksub__vacuous.
     - (* LS-Check *)
       apply a_looksub__check;
-        [ apply subst_var_neq_new; assumption
+        [ assumption
+        | apply subst_var_neq_new; assumption
         | apply guarded_pskl_subst_var; assumption
         | assumption
         | apply IHe; solve [ lia | assumption ] ].
@@ -2163,12 +2174,14 @@ Proof.
         rewrite (subst_pskl_in_pskl_fresh_eq A) in H1 by exact HbA.
         rewrite <- (subst_pskl_in_pskl_intro b B (pskl_var_f δ)) in H1
           by exact HbB.
-        apply a_looksub__forall_r with (β := δ); [ look_fresh | ].
+        apply a_looksub__forall_r with (β := δ);
+          [ ghost_free_auto | look_fresh | ].
         apply IHs;
           [ rewrite size_pskl_open_pskl_wrt_pskl_var; lia
           | exact H1 | exact HbA | exact Hα'Ξ | exact Hα'C ].
       + (* the binder stays put *)
-        apply a_looksub__forall_r with (β := b); [ look_fresh | ].
+        apply a_looksub__forall_r with (β := b);
+          [ ghost_free_auto | look_fresh | ].
         apply IHs;
           [ rewrite size_pskl_open_pskl_wrt_pskl_var; lia
           | exact Hp | exact Hα'P | exact Hα'Ξ | exact Hα'C ].

@@ -27,9 +27,11 @@ point to the same content.
     well-formedness of the counterpart, and the subject's ghost-freeness
     at the TY sort.  ⚠️ The latter is genuinely external — it is not
     derivable from the join (`__arrow`'s domain and `__infer` take
-    arbitrary subjects) and not forced by `a_sub` either (`a_sub__check`
-    demands only `guarded_pskl`), though it is automatic whenever the
-    subject is a painting of a TYPE.
+    arbitrary subjects), though it is automatic whenever the subject is a
+    painting of a TYPE.  (Since 2026-08-06 `a_sub__check` DOES demand it of
+    its own subject — see the sort-discipline bullet below — but that is a
+    premise the algorithm must SATISFY, not one a caller may assume, so the
+    motive still carries the condition.)
   - ⚠️ **For the authors**, the live findings are in
     [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md) and, in the paper's own
     notation, [`docs/refutations.tex`](docs/refutations.tex).  The
@@ -48,6 +50,23 @@ point to the same content.
     `full-algo-spec.tex`.
   - The per-lemma map and the dated history — including every retraction —
     are in [`PROGRESS.md`](PROGRESS.md); this bullet is deliberately short.
+
+- **Sort discipline (2026-08-06)**: the algorithmic judgements range over one
+  category (`pskl`), but the paper's rules are sorted BY METAVARIABLE — `A`/`B`
+  mark TYPE positions, `P`/`Q` skeleton ones.  The rules now carry that as a
+  `pskl_ghost_free` premise (frost/predicates.v; kit in `frost/prop_basic.v`).
+  ⚠️ Three positions where the paper sorts a slot but the mech deliberately
+  does NOT — each argued in [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md): the two
+  figures disagree on `SI-ForallR`'s subject, `SolS-ForallR`'s LHS `A` is a
+  slip (sorting it strands `◇ ≼TC ∀β.B`), and `LS-Check`/`LS-ForallR`'s subject
+  is true-but-not-free (the collection's structural lemmas are mode-agnostic).
+
+- ⚙ **Before any performance work, read the `.aux` files** — they record
+  `proof_build_time` per proof, so the hot spots are known WITHOUT rebuilding.
+  Then narrow a single call with `time "F1" fsetdec`.  The 2026-08-06 pass cut
+  the tree 970 s → 608 s serial; `prop_flex.v` alone went 133 s → 4.4 s, and
+  BOTH culprits were `fsetdec` calls that `grep` would have called innocent
+  (one already had a `clear -`, just too wide).
 
 - **Read these three docs before touching code**: `AGENTS.md` (this
   file, ground rules), `DESIGN.md` (calculus + encoding design),

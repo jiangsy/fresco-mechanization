@@ -1670,6 +1670,9 @@ Proof.
        case analysis on Pi.  P0 is GUARDED here: [skmod{TY}] makes it a
        type, and a ∀ is excluded because a [bskl_all_inh] target cannot be
        the inherited painting of a GUARDED B. *)
+    (* …and it is a TYPE, which is what SolS-Check's SORT premise wants *)
+    assert (HgfP0 : pskl_ghost_free P0)
+      by (apply a_ty_mode_compat_tc_ghost_free; exact (HmodTY eq_refl)).
     assert (HgP0 : guarded_pskl P0).
     { pose proof (HmodTY eq_refl) as Hmod.
       inversion Hmod as [ | A HeqA | ]; subst.
@@ -1719,7 +1722,8 @@ Proof.
       exists Ξ, Pa, κ'.
       repeat (split;
         [ solve [ apply a_solve_sub__check;
-                    [ apply guarded_pskl__unit | exact HgP0 | exact Hs ]
+                    [ exact HgfP0 | apply guarded_pskl__unit | exact HgP0
+                    | exact Hs ]
                 | exact Hfm | exact Hu | exact Hk | exact Hfr | exact HF
                 | exact HwfPa ] | ]).
       exact Hp.
@@ -1728,7 +1732,8 @@ Proof.
       exists Ξ, Pa, κ'.
       repeat (split;
         [ solve [ apply a_solve_sub__check;
-                    [ apply guarded_pskl__var | exact HgP0 | exact Hs ]
+                    [ exact HgfP0 | apply guarded_pskl__var | exact HgP0
+                    | exact Hs ]
                 | exact Hfm | exact Hu | exact Hk | exact Hfr | exact HF
                 | exact HwfPa ] | ]).
       exact Hp.
@@ -1738,7 +1743,8 @@ Proof.
         apply guarded_pskl__arrow; assumption. }
       exists Ξ, Pa, κ'.
       repeat (split;
-        [ solve [ apply a_solve_sub__check; [ exact Hg | exact HgP0 | exact Hs ]
+        [ solve [ apply a_solve_sub__check;
+                    [ exact HgfP0 | exact Hg | exact HgP0 | exact Hs ]
                 | exact Hfm | exact Hu | exact Hk | exact Hfr | exact HF
                 | exact HwfPa ] | ]).
       exact Hp.
@@ -1765,7 +1771,7 @@ Proof.
         by (destruct κ' as [ | p κ0 ]; [ reflexivity | discriminate Hk ]).
       subst κ'. cbn [app] in Hp.
       eapply solve_sub_ext_nil with (Pa := pskl_tophole P0);
-        [ apply a_solve_sub__ghost_l; exact HgP0
+        [ apply a_solve_sub__ghost_l; [ exact HgfP0 | exact HgP0 ]
         | apply a_wf_pskl__tophole; [ exact HgP0 | exact HwfP0 ]
         | cbn [app msubst_pskl]; apply ad_ppre__tophole_remove; exact Hp ].
     + (* ∀◇Pi' : strip the ghost, solve the body, wrap the output.
@@ -1795,7 +1801,7 @@ Proof.
         repeat (split;
           [ solve [ apply a_solve_sub__univ_ghost_l;
                       apply a_solve_sub__check;
-                        [ exact HgPi' | exact HgP0 | exact Hbody ]
+                        [ exact HgfP0 | exact HgPi' | exact HgP0 | exact Hbody ]
                   | exact Hfm | exact Hu | exact Hk | exact Hfr | exact HF
                   | apply a_wf_pskl__tophole;
                       [ eapply (proj2 a_solve_sub_eq_guarded);
@@ -1997,7 +2003,8 @@ Proof.
                      at [(β ~ tvar) ++ Θ0], so the IH's output IS the premise:
                      no strengthening, no family to manufacture. *)
                   apply a_solve_sub__forall_r with (β := β);
-                    [ clear - Fr; solve_notin | exact Hs ]
+                    [ exact (ptyp_to_pskl_ghost_free (ptyp_all A0))
+                    | clear - Fr; solve_notin | exact Hs ]
                 | exact Hfm | exact Hu | exact Hk
                 | intros α0 Hα0; pose proof (Hfr α0 Hα0) as Hf;
                   clear - Hf; fsetdec

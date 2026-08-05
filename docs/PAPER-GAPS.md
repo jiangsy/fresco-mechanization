@@ -65,6 +65,75 @@ NOT derivable (when α does not occur in `κR` the subject never mentions ψa).
 
 ---
 
+## SORT DISCIPLINE (2026-08-06) — the algorithmic rules distinguish TYPE positions from SKELETON positions by METAVARIABLE, and the mechanization now enforces it
+
+**Status: PROSE-COMPLETION, with one metavariable SLIP and one position left
+unmechanized (both argued below).**
+
+The algorithmic judgements all range over ONE syntactic category — skeletons
+— but their rules are *sorted by metavariable*: a rule written with `A` / `B`
+is restricted to positions the grammar only ever fills with a TYPE, while a
+rule written with `P` / `Q` admits a full skeleton.  `\silab{Check}`
+(`full-algo-spec.tex:799-804`) is the clearest case:
+
+    guarded{A,B}    aconsis[B]{Θ0}{A}{B}{Θ1}
+    ------------------------------------------
+        atypsub[TY][TC][B]{Θ0}{A}{B}{Θ1}
+
+Nothing in the *rule* forces `A`, `B` to be ghost-free; the sort is carried
+entirely by the choice of letter, and a Coq `Inductive` has no such notion.
+The mechanization therefore states it: `pskl_ghost_free` (frost/predicates.v)
+holds exactly of the ghost-free skeletons, i.e. of the painted `ptyp`s
+(`pskl_ghost_free_to_ptyp`).
+
+**Where the paper sorts a position, and what is mechanized:**
+
+| rule | paper | mechanized |
+|---|---|---|
+| `SI-Check` | `guarded{A,B}` | subject **and** target |
+| `SI-ForallR` | `A ⩽ ∀α.B` | target only — see (1) |
+| `SolS-Check` | `guarded{P,B}` | target only (LHS is the accumulated pattern, a skeleton — the paper agrees) |
+| `SolS-ForallR` | `solvesub{A}{TC}{∀β.B}` | target only — see (2) |
+| `SolS-GhostL` | `guarded{B}` | yes |
+| `LS-Check`, `LS-ForallR` | `A`, `B` | target only — see (3) |
+| `U-*` (consistency), `assignvar`, `unifyvar` | `P`/`Q`/`τ` throughout | nothing to add |
+
+**(1) The two figures DISAGREE on `SI-ForallR`'s subject.**  The plain rule
+writes `A` (`full-algo-spec.tex:806-811`); the decorated mirror writes the
+unresolved SKELETON `S` (`decorated-algosub.tex:64`) while still writing `T`
+— an unresolved TYPE — at `SI-Check`.  Only the target is common to both, so
+only the target is mechanized.  The subject's sort is pinned anyway by the
+`SI-Check` leaf the row eventually reaches.  **Authors: please reconcile.**
+
+**(2) `SolS-ForallR`'s LHS `A` is a SLIP.**  Its own premise is dischargeable
+by `SolS-GhostL`, whose LHS is the ghost `◇` (`:1283-1288`).  Sorting the LHS
+would leave `◇ ≼TC ∀β.B` with NO rule, and that configuration is reachable:
+subject `∀α.α` against a ∀-target makes `LS-Var` emit `sub_TC(∀β.B)` while
+the accumulated pattern is still `◇`.  Read `P`, not `A`.
+
+**(3) `LS-Check` / `LS-ForallR`'s subject `A` is TRUE but not free.**  These
+rows are reachable at the TY sort ALONE — they need a guarded target, and
+`skmod{SK}` pins the collection's target to `◇` at every mode — so the
+subject IS a type whenever they fire.  But the collection's STRUCTURAL
+lemmas are mode-agnostic by design, and two of them substitute an arbitrary
+skeleton into the subject: `a_looksub_lookeq_subst_stable` and
+`a_looksub_lookeq_subst_gen_size`.  The latter's consumer,
+`a_subtag_decoration`'s ForallL row, feeds it the node's guess `P₁`, and at
+the SK sort `P₁` is the raw solve output — ghosts and all.  Mechanizing the
+subject sort here would mean threading `skmod` through the whole structural
+kit; the payoff is nil, since the target premise already makes the rows
+non-overlapping.  Recorded rather than done.
+
+**Cost to the metatheory: none.**  The TARGET premises are read straight off
+`skmod{TY}` (`a_ty_mode_compat_tc_ghost_free`), which every completeness
+lemma already carries; `SI-Check`'s SUBJECT premise is derived in P7 from the
+motive's TY-sort ghost-freeness of the unresolved subject, transported across
+`≡ᵘ` (`a_uskl_tyequiv_ghost_free` — the relation maps a ghost only to the SAME
+ghost, and its one non-structural row to a monotype painting), reflected
+through the metasubstitution (`msubst_pskl_ghost_free_inv` — images are
+monotypes) and then through the erasure (`uskl_ghost_free_to_pskl`).  Both
+directions of subtyping stay closed and unconditional.
+
 ## PROSE-COMPLETION — `⊑`'s flex-def rule lacks the θ-image side-condition
 - Where: fig:information-increase (full-algo-spec.tex:30-35); mech
   `a_inc__flex_def` (algo/def_meta.v).

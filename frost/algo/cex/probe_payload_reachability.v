@@ -66,7 +66,6 @@ Require Import src.frost.predicates.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.
-Require Import src.frost.algo.prop_sub_shield_supply.   (* pskl_all_free *)
 
 Set Implicit Arguments.
 
@@ -249,6 +248,21 @@ Qed.
 (* ===================================================================== *)
 (*  §2  A MONOTYPE GUESS EXISTS ONLY FOR A ∀-FREE SKELETON                *)
 (* ===================================================================== *)
+
+(** ∀-freeness of a skeleton.  Inlined here (2026-08-06) — it used to come
+    from [prop_sub_shield_supply.v], which the shield-layer deprecation
+    deleted (`2a1c380`), leaving this probe's [Require] dangling.  This file
+    is its only remaining consumer, and the notion is one line. *)
+Fixpoint pskl_all_free (P : pskl) : Prop :=
+  match P with
+  | pskl_unit => True
+  | pskl_var_b _ => True
+  | pskl_var_f _ => True
+  | pskl_arrow P1 P2 => pskl_all_free P1 /\ pskl_all_free P2
+  | pskl_all_syn _ => False
+  | pskl_hole => True
+  | pskl_tophole P0 => pskl_all_free P0
+  end.
 
 (** [a_assign__solve_m] is the only rule that SOLVES a flexible against an
     inherited skeleton, and it demands [mono_ptyp τ] of [guess^TY]'s result.
