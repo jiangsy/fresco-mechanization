@@ -633,11 +633,41 @@ follow is $\uniq{\Xi}$, and that obstruction is inherited rather than new
 $\Theta$, exactly as \lslab{Arrow} does, and colliding blocks are filtered
 downstream by \silab{ForallL}'s $\uniq{\Xi,\Theta_0}$.
 
+\paragraph{5.\ It also retires two \emph{other} refutations of ours ---
+and the whole collection/solving cluster now goes through.}  All five
+completeness lemmas the subtyping proof rests on are \Qed{} and axiom-free
+under the repaired rule (\coq{prop\_look\_complete\_var}, \coq{\_cstr},
+\coq{\_sub\_var}, \coq{\_sub\_cstr}, \coq{\_extract} --- the last being
+\Cref{cl:look} itself).  Each produces a metasubstitution, and it is now
+\emph{extended} over the solve's new block; the one genuinely new premise
+the extension needed is well-formedness of the ideal guess in the ambient
+context, $\ftv{\psi_a}\subseteq\dom{\Theta}$, which is the paper's own
+prose ``all inputs are well-formed'' once more.
+
+More interestingly, two counterexamples \emph{we} had raised at the level
+of the \texttt{-var} lemmas are neutralised by the same repair, for the
+same reason --- both of them turned on the discarded pattern:
+\begin{itemize}\itemsep2pt
+\item a \emph{flexible counterpart} whose $\kappa$-image disagrees with the
+  guess at a $\rho$-substituted position.  The old row forced
+  $P_a = \hat\beta$ and hence the underivable
+  $(\Unit\to\Unit)\sqsubseteq^p(c\to\Unit)$; the repaired row returns the
+  pattern $c\to\Unit$ and the obligation is reflexivity.
+\item a $\forall$ over a flexible, $\forall\beta.\beta\to\beta
+  \preccurlyeq_{\TC} \hat f$.  The old row forced the body answer $\hat f$
+  and the close re-bound a vacuous binder; the repaired row returns
+  $\beta\to\beta$ and the close re-binds a \emph{real} occurrence.
+\end{itemize}
+Machine-checked in \coq{cex/probe\_flexr\_neutralises\_p6.v}; both files
+now carry retraction headers.  We flag this because one of them was our
+stated reason for a side condition we had added to the \texttt{-var}
+lemmas; whether that side condition can now be \emph{dropped} is a separate
+question, which we have not yet settled --- a dead witness is not a proof.
+
 \medskip\noindent
-\textbf{Still outstanding}: the collection / solving completeness lemmas
-that the subtyping completeness proof rests on.  Each produces a
-metasubstitution, and it must now be \emph{extended} over the solve's new
-block; that work is in progress.
+\textbf{Still outstanding}: whether the side condition just mentioned is
+still needed at all, and the top-level completeness theorem that sits above
+these lemmas.
 
 % =====================================================================
 \section*{A note on encoding fidelity}

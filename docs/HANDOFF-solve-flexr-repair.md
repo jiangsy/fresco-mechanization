@@ -20,7 +20,11 @@ fast-forwarded to `d5f9169`). Nothing pushed.
 | `3e44c4d` | ⭐⭐ **P6-Cv IS GREEN** — the ∀-row payload-scope obligation CLOSED |
 | `1eb82c2`…`19f0a57` | P6-Cs: the statement FINAL, five rows through, the arrow row analysed |
 | `f6b5cc1` | ⭐⭐ **P6-Cs IS GREEN** — the arrow merge, the five ∀ rows and the corollary |
-| *(latest)* | P6-Sv started: `solve_sub_ext` kit + every pre-theorem lemma + the FINAL statement |
+| `a73af9b` | P6-Sv started: `solve_sub_ext` kit + the FINAL statement |
+| `ece5b52` | ⭐⭐ **P6-Sv IS GREEN** |
+| `6b67d7b` | ⭐⭐ **P6-Ss IS GREEN** |
+| `e1ab396` | ⭐⭐⭐ **P6-L IS GREEN — the whole cluster closed** |
+| *(latest)* | Step 2 done (`prop_sub_complete_thm`); ⭐⭐ the repair RETIRES two of our own cex |
 
 **Read `docs/refutations.tex` first** if you have not — it is the
 author-facing note, and it now ends with a §"Status" recording what the
@@ -262,14 +266,57 @@ target case has never been shown reachable.  Nothing goes to
 and indexing the three solve judgements by `N` is the ready fallback.  Until
 then, no action.
 
-### Step 1 — the P6 cluster — ⭐⭐ P6-Cv AND P6-Cs ARE GREEN; P6-Sv is the front
+### Step 1 — the P6 cluster — ✅ **DONE.  ALL FIVE LEMMAS GREEN.**
 
-**RESUME AT `frost/algo/prop_look_complete_sub_var.v`, the `⛔⛔ RESUME HERE`
-block immediately above `a_solve_sub_complete_var` (≈ line 2130).** Everything
-before it in that file compiles; `coqc` stops ≈ 50 lines later, in the CHECK
-row's `a_solve_eq_complete_var` call. That block lists what is already
-converted, the four things every remaining row needs, and the one performance
-trap. Read it, not this summary.
+`make coq` is clean.  P6-Cv, P6-Cs, P6-Sv, P6-Ss and P6-L are all `Qed` and
+`Closed under the global context` under the authors' repaired rule, and so is
+Step 2 (`prop_sub_complete_thm.v`).  **The front is now Step 3.**
+
+#### ⭐ What the cluster cost, in one place
+
+ONE new premise everywhere: `ftvar_in_uskl ψa [<=] dom Θ` (at the fixed `Θw`
+in the generalized statements).  The repaired `SolE-FlexR` reads the SOLVE
+block's payloads off the ideal guess, so they are well-formed only if it is,
+and it is NOT derivable — when α does not occur in `κR` the subject never
+mentions ψa.  Registered in `docs/WF-SIDE-CONDITIONS.md`.
+⚠️ It is **not invariant in P6-Sv** (whose ForallL row moves the guess to
+`open ψsrc β`, β a fresh rigid absent from `Θw`) and P6-Sv does not need it.
+Its ρ-side companion `Δρ ∩ dom Θw = ∅` IS invariant everywhere, and is the
+only handle making the SOLVE block's payloads Δρ-clean.
+
+#### ⚠️⚠️ THE ONE TRAP THAT COST THE MOST TIME — read before writing a call
+
+`L` is the LAST ∀-bound variable of every repaired statement.  A premise slot
+filled by `ltac:(… fsetdec)`, or reached through a `solve [… fsetdec …]` list,
+therefore runs against a goal whose `?L` is still an EVAR — and **fsetdec on a
+goal with a set metavariable does not terminate in any useful time**.
+Measured: one such call took `prop_look_complete_sub_cstr.v` from 5 s to
+>200 s; a second pair took it to >900 s; the same shape with `eapply
+ad_ppre__arrow`'s tag evars hung a three-lemma probe outright.  Fixes:
+(i) NAME the avoid-set in an `assert` before the call, so `exact` instantiates
+`?L` structurally; (ii) put `exact HLav` FIRST in every `solve` list;
+(iii) PIN evar-valued tag sets — `apply ad_ppre__arrow with (Ψ1 := …)`.
+Related: never use `simpl; clear - H; fsetdec` as a `solve` alternative —
+a one-step lemma (`in_dom_app_r`) replaced eleven of them and took another
+file from minutes back to 20 s.
+
+#### ⭐⭐ THE REPAIR RETIRES TWO OF OUR OWN COUNTEREXAMPLES
+
+`cex_p6_flex_counterpart.v` and `cex_p6sv_forall_flex.v` both refuted a
+`-var` lemma by the SAME step — the old row discarded the accumulated
+pattern, forcing the answer to be the flexible.  The repaired row returns
+`guess^TY(P)`, and at both configurations `P` is ghost-free, so the answer IS
+the pattern: `c → ⟨⟩` instead of `β̂` (the obligation becomes reflexivity),
+and `∀β.β→β` instead of the vacuous `∀_.f̂`.  Machine-checked in
+⭐ `cex/probe_flexr_neutralises_p6.v` (Qed, axiom-free, self-contained); both
+files now carry retraction headers, their proof text at `d5f9169`.
+Recorded in `docs/PAPER-GAPS.md` and `docs/refutations.tex` §Status ¶5.
+
+⛔ **This does NOT license dropping `sub_shield`** — it was invented as the
+repair of the second of these, and P6-Sv/P6-Ss/P6-L still carry it.  A dead
+witness is not a proof.  It does make Step 3 much more likely to succeed, and
+it tells you WHERE to start: re-prove P6-Sv without the premise and see what
+the ∀-over-flexible row actually needs now.
 
 ⭐⭐ **P6-Cs (`prop_look_complete_cstr.v`) IS GREEN** — `Qed`, `Closed under
 the global context`, both the generalized theorem and the paper-facing
@@ -688,26 +735,41 @@ swap (`swap_aenv b δ Ξ = Ξ` by (K3) + `_generated_fresh_binder`;
 target is arbitrary, so `swap_aenv b δ Θ` never has to collapse — this one
 does **not** need §2(3).
 
-### Step 2 — `prop_sub_complete_thm.v` / `prop_sub_complete_dispatch.v`
+### Step 2 — ✅ **DONE** (`prop_sub_complete_thm.v`)
 
-Mostly consumers; expect `a_extract`'s three-block suffix and the P6
-statements' new `κ` extension to ripple. Also re-check
-`cex/probe_payload_reachability.v` (TASK A's positive half) — it reasons
-about `a_sub` outputs' mode-spine and `a_guess_mono`, both of which the
-repair touches.
+It was a two-line ripple in the end: P6-L's new guess-scope premise at the
+two call sites, supplied by the new local `uskl_wf_ftv_dom` (the guess's own
+well-formedness, re-read as an ftv bound).  `prop_sub_complete_dispatch.v`
+and `cex/probe_payload_reachability.v` needed nothing — the whole tree
+builds (`make coq` clean).
 
-### Step 3 — ⭐ THE PAY-OFF: P6-L, `sub_shield`, and `main_forall`
+### Step 3 — ⭐⭐ THE PAY-OFF, AND NOW THE FRONT: `sub_shield` and `main_forall`
 
-`a_extract_complete_gen` (`prop_look_complete_extract.v`) — the paper's
-`lemma:complete-look` (`subtyping-proofs.tex:2730`). **With the repair the
-counterexample to it is gone.** Re-prove it and check whether the
-`sub_shield` premise can be **weakened or dropped**, since `sub_shield` was
-invented as the mech's repair *of this very lemma*. Then see whether
-`main_forall` — now OPEN rather than refuted — becomes discharge-able, which
-would make `a_sub_complete_bundle_holds` and `a_sub_complete_thm`
-unconditional and put them in `README.v`.
+P6-L itself is **re-proved and green** (`a_extract_complete_gen` /
+`a_extract_complete`, the paper's `lemma:complete-look`,
+`subtyping-proofs.tex:2730`).  What is left is the premise it still carries.
 
-This is where the cleanup listed at the end of §5 gets decided.
+**START HERE.**  ⭐ The repair has already killed the witness that
+`sub_shield` was invented for — `cex_p6sv_forall_flex.v`'s ∀-over-flexible
+configuration now solves to `∀β.β→β`
+(`cex/probe_flexr_neutralises_p6.v`).  So the concrete first move is:
+DELETE `sub_shield` from `a_solve_sub_complete_var`'s premise list and
+re-run the file.  Every row either never used it, or used it through
+`sub_shield_here` / `sub_shield_here_p0` / `sub_shield_step` — grep those
+three names to see exactly which rows owe something, and what they owe is
+`flex_apart` / `flex_apart_p0`, which the ρ pack may now supply directly.
+If it comes out, propagate the deletion up through P6-Ss and P6-L (both take
+it verbatim) and then delete `ss_walk`, `sub_shield` and their kit
+(`prop_look_complete_sub_cstr.v` §§ near the top, `prop_sub_shield_supply.v`
+whole).  ⚠️ Do NOT delete speculatively — delete when the files go through
+without them, which is the rule §5's cleanup list already states.
+
+Then `main_forall` — now OPEN rather than refuted (§3) — and whether it
+becomes discharge-able, which would make `a_sub_complete_bundle_holds` and
+`a_sub_complete_thm` unconditional and put them in `README.v`.
+
+⚙️ Before touching anything, re-read `cex/probe_flexr_neutralises_p6.v`'s
+header: it says precisely what the two dead witnesses do and do not settle.
 
 ### Step 4 — the paper (⛔ GATED, see §0)
 

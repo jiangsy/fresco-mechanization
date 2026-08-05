@@ -93,20 +93,23 @@ Proof.
 Qed.
 
 (* solving [α ≐ ⟨⟩] against [Pi = ∀◇⟨⟩] can only produce [⟨⟩] (SE-GhostGuarded) *)
-Lemma cex_solve_forced : forall Θ Pa,
-  Θ ⊩ (a_cstr_eq pskl_unit :: nil) ⨾ cex_P0 ⤳ Pa ->
+(* ⚙️ The SOLVE now emits a block too, but not on this run: the eq row's
+   subject here is a GHOST, and [nonghost_pskl] bars SolE-FlexR from a ghost
+   subject, so SolE-GhostGuarded is the only rule and it generates nothing. *)
+Lemma cex_solve_forced : forall Θ Ξ Pa,
+  Θ ⊩ (a_cstr_eq pskl_unit :: nil) ⨾ cex_P0 ⤳ Ξ ⨾ Pa ->
   Pa = pskl_unit.
 Proof.
-  intros Θ Pa H.
+  intros Θ Ξ Pa H.
   inversion H; subst.
-  match goal with Heq : _ ⊢ₑ _ ∼ _ ⤳ ?Pmid |- _ =>
+  match goal with Heq : _ ⊢ₑ _ ∼ _ ⤳ _ ⨾ ?Pmid |- _ =>
     inversion Heq; subst;
       try solve [ match goal with Hg : guarded_pskl _ |- _ => inversion Hg end ]
   end.
   - (* SE-GhostGuarded : the body solve is [⟨⟩ ∼ ⟨⟩ ⤳ ⟨⟩] *)
-    match goal with Heq2 : _ ⊢ₑ pskl_unit ∼ pskl_unit ⤳ _ |- _ =>
+    match goal with Heq2 : _ ⊢ₑ pskl_unit ∼ pskl_unit ⤳ _ ⨾ _ |- _ =>
       inversion Heq2; subst end;
-      match goal with Hc : _ ⊩ nil ⨾ _ ⤳ _ |- _ => inversion Hc; subst end;
+      match goal with Hc : _ ⊩ nil ⨾ _ ⤳ _ ⨾ _ |- _ => inversion Hc; subst end;
       reflexivity.
 Qed.
 
@@ -144,9 +147,9 @@ Theorem p6cs_without_subject_wf_is_false :
           is exactly what is MISSING here *)
        Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
        (* conclusion, weakened to its three essential conjuncts *)
-       exists 𝒞 Ξc Pa (ρc : list (atom * ptyp)),
+       exists 𝒞 Ξc Ξs Pa (ρc : list (atom * ptyp)),
          (Θ0 ⊢ P ∼[ α ] P0 ⤳ Ξc ⨾ 𝒞) /\
-         (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Pa /\
+         (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa /\
          Θ ⨟ Δ ⊢ (msubst_pskl (ρc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
 Proof.
   intros Hthm.
@@ -154,7 +157,7 @@ Proof.
   (* every premise of P6-Cs except the subject wf, at the witness *)
   destruct (Hthm 10 a_sub_mode_sk nil nil nil empty empty empty empty empty
               cex_ψa cex_Q (cex_P α) cex_P0 cex_P0 (cex_S α) α)
-    as (𝒞 & Ξc & Pa & ρc & HLK & HSolve & Hprec).
+    as (𝒞 & Ξc & Ξs & Pa & ρc & HLK & HSolve & Hprec).
   - (* measure *) cbn; lia.
   - (* a_wf_aenv Θ *) apply a_wf_aenv__nil.
   - (* a_wf_aenv Θ0 *) apply a_wf_aenv__nil.
@@ -194,7 +197,7 @@ Proof.
   - (* … and now the conclusion is refuted *)
     destruct (@cex_lookeq_forced α Ξc 𝒞 HLK) as [-> ->].
     simpl in HSolve.
-    apply (@cex_solve_forced nil Pa) in HSolve; subst Pa.
+    apply (@cex_solve_forced nil Ξs Pa) in HSolve; subst Pa.
     cbn [msubst_pskl] in Hprec.
     exact (@cex_precision_fails nil empty (union empty empty) Hprec).
 Qed.
@@ -211,10 +214,10 @@ Check cex_subject_not_wf.
 (* ===================================================================== *)
 
 Theorem p6cs_fires_when_the_subject_is_wf : forall α,
-  exists 𝒞 Ξc Pa (ρc : list (atom * ptyp)),
+  exists 𝒞 Ξc Ξs Pa (ρc : list (atom * ptyp)),
     (nil ⊢ cex_P α ∼[ α ] cex_P0 ⤳ Ξc ⨾ 𝒞) /\
-    (Ξc ++ nil) ⊩ 𝒞 ⨾ cex_P0 ⤳ Pa /\
-    nil ⨟ empty ⊢ (msubst_pskl (ρc ++ nil) Pa)
+    (Ξc ++ nil) ⊩ 𝒞 ⨾ cex_P0 ⤳ Ξs ⨾ Pa /\
+    nil ⨟ empty ⊢ (msubst_pskl ρc Pa)
       ⊑ᵖ[ union empty empty ] uskl_unit.
 Proof.
   intros α.
@@ -243,6 +246,8 @@ Proof.
                      apply ad_ppre__unit; clear; fsetdec)
                ltac:(clear; fsetdec)
                ltac:(clear; fsetdec)
+               (* ⭐ the repaired statement's guess-scope premise: [ψa = ⟨⟩] *)
+               ltac:(cbn; clear; fsetdec)
                ltac:(cbn [cex_S msubst_uskl_syn msubst_lookup subst_bskl_in_uskl];
                      unfold ptyp_to_uskl_syn; cbn;
                      match goal with |- context [if ?c then _ else _] =>
@@ -258,10 +263,17 @@ Proof.
                        [ apply guarded_pskl__unit | apply a_wf_pskl__unit ])
                ltac:(cbn [msubst_pskl pskl_to_bskl_inh cex_P0];
                      apply ad_refine_syn__tophole_keep;
-                       [ apply guarded_bskl__unit | apply ad_refine_syn__unit ]))
-    as (𝒞 & Ξc & Pa & ρc & HLK & HSolve & _ & _ & _ & _ & _ & _ & _ & _ & _
-          & Hprec).
-  exists 𝒞, Ξc, Pa, ρc. repeat split; assumption.
+                       [ apply guarded_bskl__unit | apply ad_refine_syn__unit ])
+               (* the avoid-set parameter of the repaired statement *)
+               empty ltac:(cbn; clear; fsetdec))
+    as (𝒞 & Ξc & Ξs & Pa & ρc & κs & HLK & HSolve & Hrest).
+  exists 𝒞, Ξc, Ξs, Pa, (κs ++ ρc ++ nil).
+  split; [ exact HLK | split; [ exact HSolve | ] ].
+  (* the last conjunct of the package is the precision *)
+  repeat match goal with
+         | H : _ /\ _ |- _ => destruct H as [_ H]
+         end.
+  exact Hrest.
 Qed.
 
 Print Assumptions p6cs_without_subject_wf_is_false.

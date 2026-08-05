@@ -78,7 +78,62 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-05 (latest) — ⭐⭐ **P6-Cs IS GREEN UNDER THE `SolE-FlexR` REPAIR**; P6-Sv started, its statement FINAL
+## 2026-08-05 (latest) — ⭐⭐⭐ **THE WHOLE P6 CLUSTER IS GREEN UNDER THE `SolE-FlexR` REPAIR**, the tree builds, and the repair RETIRES two of our own counterexamples
+
+`make coq` is clean.  All five P6 lemmas are `Qed` and `Closed under the
+global context` under the authors' repaired rule — P6-Cv, P6-Cs, P6-Sv,
+P6-Ss and P6-L (`a_extract_complete`, the paper's `lemma:complete-look`) —
+and so is P7b (`prop_sub_complete_thm.v`) and the whole soundness chain
+including `a_sub_sound_thm`, whose statement never moved.
+
+### What the repair cost the cluster
+
+ONE new premise, everywhere: **`ftvar_in_uskl ψa [<=] dom Θ`** (at the
+fixed `Θw` in the generalized statements) — the ideal guess's own
+well-formedness in the ambient context.  The repaired `SolE-FlexR` reads
+the SOLVE block's payloads off that guess, so they are well-formed only if
+it is, and it is NOT derivable: when α does not occur in `κR` the subject
+`(κR)[ψa/α]` does not mention ψa at all.  Registered in
+`docs/WF-SIDE-CONDITIONS.md`.
+
+⚠️ It is NOT invariant in P6-Sv (whose ForallL row moves the guess to
+`open ψsrc β` with β a fresh rigid absent from `Θw`) — and P6-Sv does not
+need it, since the only lemma it feeds a guess to is P6-Cv's `_at`, which
+carries no guess-scope premise.  Its ρ-side companion `Δρ ∩ dom Θw = ∅` IS
+invariant everywhere and is what makes the SOLVE block's payloads Δρ-clean.
+
+### ⭐⭐ The repair retires TWO of our own counterexamples
+
+`cex_p6_flex_counterpart.v` and `cex_p6sv_forall_flex.v` both refuted a
+`-var` lemma by the SAME step — the old row discarded the accumulated
+pattern, forcing the answer to be the flexible.  The repaired row returns
+`guess^TY(P)`, and at both configurations `P` is ghost-free, so the answer
+IS the pattern: `c → ⟨⟩` instead of `β̂` (obligation becomes reflexivity),
+and `∀β.β→β` instead of the vacuous `∀_.f̂`.  Machine-checked in
+`cex/probe_flexr_neutralises_p6.v` (Qed, axiom-free, self-contained); both
+files now carry retraction headers, their proof text at `d5f9169`.
+
+⛔ This does NOT license dropping `sub_shield` — it was invented as the
+repair of the second of these, and P6-Sv/P6-Ss/P6-L still carry it.  A dead
+witness is not a proof; that is Step 3.
+
+### ⚠️⚠️ THE PERFORMANCE TRAP OF THE CAMPAIGN — three occurrences
+
+`L` is the LAST ∀-bound variable of every repaired statement, so a premise
+slot filled by `ltac:(… fsetdec)`, or reached through a `solve [… fsetdec …]`
+list, runs against a goal whose `?L` is still an EVAR — and **fsetdec on a
+goal with a set metavariable does not terminate in any useful time**.
+Measured: one such call took `prop_look_complete_sub_cstr.v` from 5 s to
+>200 s; a second pair took it to >900 s; the same shape with `eapply
+ad_ppre__arrow`'s tag evars hung a three-lemma probe file outright.  The
+fixes are (i) name the avoid-set in an `assert` before the call so `exact`
+instantiates `?L` structurally, (ii) put `exact HLav` FIRST in every
+`solve` list, and (iii) PIN evar-valued tag sets with `apply … with (Ψ1 :=
+…)`.  A related one: never use `simpl; clear - H; fsetdec` as a `solve`
+alternative — a one-step lemma (`in_dom_app_r`) replaced eleven of those and
+took another file from minutes back to 20 s.
+
+## 2026-08-05 — ⭐⭐ **P6-Cs IS GREEN UNDER THE `SolE-FlexR` REPAIR**; P6-Sv started, its statement FINAL
 
 `frost/algo/prop_look_complete_cstr.v` compiles: `a_lookeq_solve_complete_gen`
 and the paper-facing corollary `a_lookeq_solve_complete` are both `Qed` and

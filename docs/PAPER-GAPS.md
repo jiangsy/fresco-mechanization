@@ -28,6 +28,43 @@ recently P6-Sv at the end of this file)}.
 > Several judgments looked broken until that condition was restored.  **Check
 > that file before concluding a lemma is unprovable.**
 
+## ⭐⭐ RETRACTION (2026-08-05) — the `SolE-FlexR` repair NEUTRALISES two of OUR OWN counterexamples, and the whole P6 cluster now goes through
+
+**Not a paper gap — a correction to two findings we raised.**  Both
+`cex/cex_p6_flex_counterpart.v` and `cex/cex_p6sv_forall_flex.v` refuted
+`-var` completeness lemmas by the SAME step: the published `SolE-FlexR`
+read `P ∼ α̂ ⤳ α̂`, DISCARDING the accumulated pattern, so the solve's answer
+at a flexible counterpart was forced to be the flexible, and the enclosing
+precision obligation then compared that flexible's κ-image with the ideal
+guess.  The authors' repaired row returns `guess^TY(P)`; at both
+configurations `P` is ghost-free, so `guess^TY` invents nothing and the
+answer IS the pattern:
+
+| configuration | old answer | repaired answer | old obligation | now |
+|---|---|---|---|---|
+| `P_i = c → ⟨⟩` vs `P_0 = β̂`, `κ β̂ = ⟨⟩→⟨⟩` | `β̂` | `c → ⟨⟩` | `(⟨⟩→⟨⟩) ⊑ᵖ (c→⟨⟩)` — no rule at the rigid `c` | reflexivity |
+| `∀β.β→β ≼[TC] f̂` | `∀_.f̂` (vacuous binder) | `∀β.β→β` | `f̂` cannot mention the bound β | the shape the lemma asks for |
+
+Machine-checked, Qed and axiom-free, in
+`cex/probe_flexr_neutralises_p6.v`.  Both cex files now carry retraction
+headers; their proof text is at the pre-repair commit `d5f9169`.
+
+⛔ **What this does NOT settle.**  The mech's `sub_shield` premise was
+invented as the repair of the second of these, and P6-Sv / P6-Ss / P6-L
+still carry it.  One dead witness does not license dropping it — that has
+to be decided by re-proving without the premise.
+
+✅ **What did land**: all five P6 lemmas are Qed and axiom-free under the
+repaired rule (P6-Cv, P6-Cs, P6-Sv, P6-Ss, P6-L), and the whole tree
+builds.  One genuinely new premise was needed across the cluster —
+`ftvar_in_uskl ψa [<=] dom Θ`, the ideal guess's own well-formedness in the
+ambient context — because the repaired `SolE-FlexR` reads the solve block's
+payloads off that guess.  It is the paper's prose "all inputs are
+well-formed" again and is registered in `docs/WF-SIDE-CONDITIONS.md`; it is
+NOT derivable (when α does not occur in `κR` the subject never mentions ψa).
+
+---
+
 ## PROSE-COMPLETION — `⊑`'s flex-def rule lacks the θ-image side-condition
 - Where: fig:information-increase (full-algo-spec.tex:30-35); mech
   `a_inc__flex_def` (algo/def_meta.v).

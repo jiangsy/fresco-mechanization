@@ -95,6 +95,19 @@ Require Import src.frost.algo.prop_swap.                  (* THE SWAP KIT — P7
 
 Set Implicit Arguments.
 
+(** ⚙️ P6-L's guess-scope premise, read off the guess's own
+    well-formedness.  A named lemma rather than an inline [rewrite … in …]:
+    at one of the two call sites the [⌊·⌋ˢ] is already reduced and the
+    rewrite has nothing to fire on. *)
+Lemma uskl_wf_ftv_dom : forall Θ Δ ψ,
+  Θ ⨟ Δ ⊢ₚₛᵃ ⌊ ψ ⌋ˢ -> ftvar_in_uskl ψ [<=] Δ `union` dom Θ.
+Proof.
+  intros Θ Δ ψ H.
+  pose proof (a_wf_pskl_ftv_dom H) as Hd.
+  rewrite ftvar_in_pskl_uskl_to_pskl in Hd. exact Hd.
+Qed.
+
+
 (* ===================================================================== *)
 (*  P7b — the generalised thm:complete-subtyping (subtyping-proofs:3054)   *)
 (* ===================================================================== *)
@@ -2587,6 +2600,11 @@ Proof.
               ltac:(rewrite (ftag_in_uskl_open_var Rb α);
                     cbn in HΨaftag; clear - HΨaftag Hftjb; fsetdec)
               ltac:(clear; fsetdec)
+              (* ⭐ P6-L's new guess-scope premise (the SolE-FlexR repair):
+                 read straight off the guess's own well-formedness *)
+              ltac:(assert (Hdψ : ftvar_in_uskl ψa [<=] empty `union` dom Θ)
+                      by (apply uskl_wf_ftv_dom; exact Hwfψa);
+                    clear - Hdψ; fsetdec)
               Hwfψa
               ltac:(intros β α0 τ Hβ; exfalso; clear - Hβ; fsetdec)
               (Hshield α)
@@ -2895,6 +2913,11 @@ Proof.
               ltac:(rewrite (ftag_in_uskl_open_var Rb α);
                     cbn in HΨaftag; clear - HΨaftag Hftjb; fsetdec)
               ltac:(clear; fsetdec)
+              (* ⭐ P6-L's new guess-scope premise (the SolE-FlexR repair):
+                 read straight off the guess's own well-formedness *)
+              ltac:(assert (Hdψ : ftvar_in_uskl ψa [<=] empty `union` dom Θ)
+                      by (apply uskl_wf_ftv_dom; exact Hwfψa);
+                    clear - Hdψ; fsetdec)
               Hwfψa
               ltac:(intros β α0 τ Hβ; exfalso; clear - Hβ; fsetdec)
               (Hshield α)
