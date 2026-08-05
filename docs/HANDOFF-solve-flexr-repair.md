@@ -749,20 +749,42 @@ P6-L itself is **re-proved and green** (`a_extract_complete_gen` /
 `a_extract_complete`, the paper's `lemma:complete-look`,
 `subtyping-proofs.tex:2730`).  What is left is the premise it still carries.
 
-**START HERE.**  ⭐ The repair has already killed the witness that
-`sub_shield` was invented for — `cex_p6sv_forall_flex.v`'s ∀-over-flexible
-configuration now solves to `∀β.β→β`
-(`cex/probe_flexr_neutralises_p6.v`).  So the concrete first move is:
-DELETE `sub_shield` from `a_solve_sub_complete_var`'s premise list and
-re-run the file.  Every row either never used it, or used it through
-`sub_shield_here` / `sub_shield_here_p0` / `sub_shield_step` — grep those
-three names to see exactly which rows owe something, and what they owe is
-`flex_apart` / `flex_apart_p0`, which the ρ pack may now supply directly.
-If it comes out, propagate the deletion up through P6-Ss and P6-L (both take
-it verbatim) and then delete `ss_walk`, `sub_shield` and their kit
-(`prop_look_complete_sub_cstr.v` §§ near the top, `prop_sub_shield_supply.v`
-whole).  ⚠️ Do NOT delete speculatively — delete when the files go through
-without them, which is the rule §5's cleanup list already states.
+**WHERE THE PREMISE ACTUALLY LIVES.**  ⚠️ `sub_shield` is **P6-Ss's**
+premise (`a_looksub_solve_complete_gen` / `_leaf`,
+`prop_look_complete_sub_cstr.v:220`-ish) and **P6-L's**
+(`prop_look_complete_extract.v:1036`, `:1286`).  P6-Sv does **not** take it —
+it takes `flex_apart_walk Θ0 Δρ P0 ψa` (`prop_look_complete_sub_var.v:2053`),
+and P6-Cs takes `flex_apart_p0`.  `sub_shield` is the CLOSURE that supplies
+both along an `ss_walk`, through exactly three lemmas:
+
+| lemma | yields | who consumes it inside P6-Ss |
+|---|---|---|
+| `sub_shield_here` (guarded on `α ∈ ftv R`) | `flex_apart_walk` | the `P = α` leaf → P6-Sv |
+| `sub_shield_here_p0` (unguarded) | `flex_apart_p0` | the Check row → P6-Cs, and the Arrow row's LEFT branch |
+| `sub_shield_step` | the descents | the ∀ / arrow / ghost rows |
+
+**START HERE.**  ⭐ The repair has already killed the witness `sub_shield`
+was invented for — `cex_p6sv_forall_flex.v`'s ∀-over-flexible configuration
+now solves to `∀β.β→β` (`cex/probe_flexr_neutralises_p6.v`).  So the concrete
+first move is to attack the CLOSURE, not the leaves: in
+`prop_look_complete_sub_cstr.v`, replace the `sub_shield` premise by the two
+things its consumers actually take — `flex_apart_walk Θ0 Δρ P0 ψa` and
+`flex_apart_p0 Θ0 Δρ P0 ψa` — and see whether the descents still go through
+(`flex_apart_walk_step` / `flex_apart_p0_step` are the replacements for
+`sub_shield_step`; both already exist and are used elsewhere in the file).
+The three `sub_shield_*` grep hits above are the complete list of rows that
+owe anything.  If it comes out, propagate to P6-L (which takes it verbatim)
+and then delete `ss_walk`, `sub_shield` and their kit
+(`prop_look_complete_sub_cstr.v` §§ near the top, and
+`prop_sub_shield_supply.v` whole).  ⚠️ Do NOT delete speculatively — delete
+when the files go through without them, which is what §5's cleanup list
+already says.
+
+⚠️ And keep `cex/cex_p7_shield_double_occ.v` in view: it refutes the
+POSITIONAL `sub_shield` at a node the algorithm reaches, which is a
+*different* question from whether P6-Ss needs the premise at all.  That
+witness is about `main_forall`'s SUPPLY, and it has not been re-checked
+against the repaired rule.
 
 Then `main_forall` — now OPEN rather than refuted (§3) — and whether it
 becomes discharge-able, which would make `a_sub_complete_bundle_holds` and
