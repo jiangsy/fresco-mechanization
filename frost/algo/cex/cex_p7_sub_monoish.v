@@ -64,6 +64,7 @@ Require Import src.frost.algo.def_decorated.
 Require Import src.frost.algo.def_decl_algo_sub.
 Require Import src.frost.algo.def_decl_algo_sub_hyg.
 Require Import src.frost.algo.prop_look_complete.   (* bskl_monoish *)
+Require Import src.frost.algo.cex.def_flex_shield.  (* [flex_shield], retired *)
 
 Set Implicit Arguments.
 

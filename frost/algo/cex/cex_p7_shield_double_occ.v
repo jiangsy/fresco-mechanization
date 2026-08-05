@@ -77,6 +77,7 @@ Require Import src.frost.algo.prop_sub_msubst_equiv.
 Require Import src.frost.algo.prop_look_complete_sub_var.
 Require Import src.frost.algo.prop_look_complete_sub_cstr.
 Require Import src.frost.algo.cex.cex_p7_shield_forall_flex.
+Require Import src.frost.algo.cex.def_flex_shield.  (* [flex_shield], retired *)
 
 Set Implicit Arguments.
 
