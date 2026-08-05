@@ -960,10 +960,10 @@ Qed.
 (*  rows and [__flex_mono] preserve the fuel and are the structural IH's   *)
 (*  real work.                                                            *)
 (*                                                                        *)
-(*  [Covered] carries the P7a escape.  It is needed only where the motive's    *)
+(*  [PIH] carries the P7a escape.  It is needed only where the motive's    *)
 (*  subject is a bare VARIABLE — the [__arrow] row — but the two           *)
 (*  tophole-stripping rows can EXPOSE such a subject, so the hypothesis    *)
-(*  must be closed under stripping.  Instantiating [Covered] with a constant   *)
+(*  must be closed under stripping.  Instantiating [PIH] with a constant   *)
 (*  gives the general dispatch; instantiating it with "is an arrow" makes  *)
 (*  all three side conditions vacuous and yields [main_arrow] — DESIGN     *)
 (*  §12.1's layer (a) — from the FUEL IH alone.                            *)
@@ -995,7 +995,7 @@ Definition flex_here (n : nat) (Θ0 : aenv) : Prop :=
     [main_all] / [main_arrow] / [main_below]; it was called [main_join] until
     2026-08-05, which read like one of them.
 
-    ⭐ [Covered] is the CLASS OF SUBJECTS this invocation is proved for
+    ⭐ [PIH] is the CLASS OF SUBJECTS this invocation is proved for
     (formerly the opaque [ESC]).  Restricting it is what buys the recursion:
     instantiated with "is an arrow" the two tophole-stripping rows can never
     expose a bare variable, so the P7a flex entry — the third condition
@@ -1005,11 +1005,11 @@ Definition flex_here (n : nat) (Θ0 : aenv) : Prop :=
 Lemma main_dispatch : forall n NM M Ψ Θ R' Q,
   ad_pat_sub_gv n NM M Ψ Θ R' Q ->
   (forall n', n' < n -> main_all n') ->
-  forall Θ0 (Covered : uskl -> Prop),
-    (forall R0, Covered (uskl_tophole R0) -> Covered R0) ->
-    (forall R0, Covered (uskl_topholeg R0) -> Covered R0) ->
-    (forall α, Covered (uskl_var_f α) -> flex_here n Θ0) ->
-    forall P0 P R κ, Covered R ->
+  forall Θ0 (PIH : uskl -> Prop),
+    (forall R0, PIH (uskl_tophole R0) -> PIH R0) ->
+    (forall R0, PIH (uskl_topholeg R0) -> PIH R0) ->
+    (forall α, PIH (uskl_var_f α) -> flex_here n Θ0) ->
+    forall P0 P R κ, PIH R ->
       sub_complete_concl n NM M Θ0 P0 P R R' Ψ Θ κ Q.
 Proof.
   intros n NM M Ψ Θ R' Q HD.
@@ -1026,7 +1026,7 @@ Proof.
     | n0 Ψ0 Θa Ma Rg Qg HM Hsub IHsub
     | n0 Ψ0 Θa Ma Rg Qg HM Hsub IHsub
     | n0 NM0 Ψ0 Θa Ma αd τd Qa Hbd Hsub IHsub ];
-    intros Hfuel Θ0 Covered He1 He2 He3 P0 P R κ HCovered.
+    intros Hfuel Θ0 PIH He1 He2 He3 P0 P R κ HPIH.
   - (* __infer : the row lemma takes any [R] *)
     apply a_sub_complete_infer.
   - (* __check : the row lemma owes [guarded_pskl P0] and the wf of [B] *)
@@ -1079,7 +1079,7 @@ Proof.
       * assert (Hfγ : a_flex_tvar Θ0 γ)
           by (destruct Hfl as [Hb | [τ0 Hb]];
               [ left; exact Hb | right; exists τ0; exact Hb ]).
-        destruct (He3 γ HCovered NM0 Ma γ P0 (uskl_arrow R1 R2) Ψ0 Θa κ
+        destruct (He3 γ HPIH NM0 Ma γ P0 (uskl_arrow R1 R2) Ψ0 Θa κ
                     (bskl_arrow Q1 Q2)
                     a_decls__nil ltac:(simpl; clear; fsetdec)
                     Hwf0 Hwfth HwfP0 Hfγ Hmodsk Hmodty Hinc Hslack HDj Hrs
@@ -1174,8 +1174,8 @@ Proof.
     (* the row is SK-only, so the motive's TY ghost-freeness is VACUOUS *)
     assert (Hgf0 : a_sub_mode_sk = a_sub_mode_ty -> uskl_ghost_free Rg)
       by (intro Habs; discriminate Habs).
-    destruct (IHsub Hfuel Θ0 Covered He1 He2 He3 P0 (⌊ R00 ⌋ˢ) R00 κ
-                (He1 R00 HCovered)
+    destruct (IHsub Hfuel Θ0 PIH He1 He2 He3 P0 (⌊ R00 ⌋ˢ) R00 κ
+                (He1 R00 HPIH)
                 Hwf0 Hwfth HwfP0 HwfP' Hmodsk Hmodty eq_refl Hinc Hslack0
                 Hsub Hrs HwfQ Hgf0)
       as [P1 [Θ1 [Hrun Hopt]]].
@@ -1194,8 +1194,8 @@ Proof.
     (* SK-only, as above *)
     assert (Hgf0 : a_sub_mode_sk = a_sub_mode_ty -> uskl_ghost_free Rg)
       by (intro Habs; discriminate Habs).
-    destruct (IHsub Hfuel Θ0 Covered He1 He2 He3 P0 (⌊ R00 ⌋ˢ) R00 κ
-                (He2 R00 HCovered)
+    destruct (IHsub Hfuel Θ0 PIH He1 He2 He3 P0 (⌊ R00 ⌋ˢ) R00 κ
+                (He2 R00 HPIH)
                 Hwf0 Hwfth HwfP0 HwfP' Hmodsk Hmodty eq_refl Hinc Hslack0
                 Hsub Hrs HwfQ Hgf0)
       as [P1 [Θ1 [Hrun Hopt]]].
@@ -1214,12 +1214,12 @@ Proof.
               uskl_ghost_free (ptyp_to_uskl_syn τd))
       by (intros _; apply mono_ptyp_to_uskl_syn_ghost_free;
           eapply a_wf_aenv_binds_def_mono; [ exact Hwfth | exact Hbd ]).
-    exact (IHsub Hfuel Θ0 Covered He1 He2 He3 P0 P R κ HCovered
+    exact (IHsub Hfuel Θ0 PIH He1 He2 He3 P0 P R κ HPIH
              Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack'
              Hsub Hrs HwfQ Hgfd).
 Qed.
 
-(** ⭐ DESIGN §12.1's LAYER (a).  Instantiating [Covered] with "is an arrow" makes
+(** ⭐ DESIGN §12.1's LAYER (a).  Instantiating [PIH] with "is an arrow" makes
     all three escape side conditions VACUOUS: an arrow is neither a [∀◇] nor a
     [∀◈] nor a variable, so the two tophole-stripping rows can never expose a
     variable subject and the P7a entry is unreachable.  So the main half at an
@@ -1308,7 +1308,7 @@ Qed.
 (*    · [flex_step]         from the two above                             *)
 (*    · [main_dispatch]         from the fuel IH and [flex_step] at [Ξ = ·]    *)
 (*                                                                        *)
-(*  [main_dispatch]'s [Covered] is instantiated with the constant [fun _ => True]: *)
+(*  [main_dispatch]'s [PIH] is instantiated with the constant [fun _ => True]: *)
 (*  its three closure conditions become trivial and the third hands back   *)
 (*  [flex_here n Θ0], which is [flex_step] at [Ξ = nil].                   *)
 (* ===================================================================== *)

@@ -5022,7 +5022,7 @@ three closure conditions —
 The two tophole conditions are needed because `__univ_ghost_l` / `_lg` STRIP
 the subject and can therefore EXPOSE a variable that the conclusion's subject
 hid; that is why the escape cannot be phrased as a bare `R = uskl_var_f α ->
-…`.  Instantiate `Covered` with a constant and you get the general dispatch;
+…`.  Instantiate `PIH` with a constant and you get the general dispatch;
 instantiate it with `fun R => exists Rx Ry, R = uskl_arrow Rx Ry` and all
 three conditions are closed by `discriminate` — an arrow is neither `∀◇` nor
 `∀◈` nor a variable — so P7a is unreachable and layer (a) falls out of layer
@@ -5199,7 +5199,7 @@ Theorem a_sub_complete_bundle_holds :
    → main_dispatch        (fuel IH + flex_step at Ξ = nil, via `flex_here`) *)
 ```
 
-`main_dispatch`'s `Covered` is instantiated with `fun _ => True`: the two tophole
+`main_dispatch`'s `PIH` is instantiated with `fun _ => True`: the two tophole
 closures are `exact I` and the third hands back `flex_here n Θ0`, i.e.
 `flex_step` at `Ξ = nil`.  `a_sub_complete_thm` (algorithmic.tex:1446) follows
 as the `Ψ := ∅`, `R := ⌈P⌉ᵘ` instance.

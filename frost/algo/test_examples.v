@@ -20,7 +20,7 @@
     are not testable this way (non-derivability needs a decidability
     argument), so only accepted ones appear.
 
-    Covered: A1, A2, A4, A5, A10a, A10b, C2, E2b — together they
+    PIH: A1, A2, A4, A5, A10a, A10b, C2, E2b — together they
     exercise AT-Abs/AT-AbsAnno + split/guess^TY, AP-Var/AP-AbsCheck,
     AT-AbsCheck step/base, ForallL + look/constraint-solving/guess
     (both the ghost-input and rigid-input paths), ForallR, Check/Infer,

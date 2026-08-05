@@ -989,9 +989,9 @@ fuel); the two UnivGhostL rows and `__flex_mono` preserve the fuel and are the
 structural IH's work (`⌊∀◈R⌋ˢ` IS `∀◇⌊R⌋ˢ`, so both ghosts use the one
 `a_sub__univ_ghost_l`; `__flex_mono` is a pure peel closed by
 `flex_def_paint_tyequiv` + `a_uskl_tyequiv_trans`).  ⭐ **The P7a escape is
-carried by an ABSTRACT predicate `Covered` on the motive's subject, with three
+carried by an ABSTRACT predicate `PIH` on the motive's subject, with three
 closure conditions** — that is what lets ONE dispatch serve both layers:
-instantiate `Covered` with "is an arrow" and all three become vacuous (an arrow is
+instantiate `PIH` with "is an arrow" and all three become vacuous (an arrow is
 neither `∀◇` nor `∀◈` nor a variable), so the tophole-stripping rows can never
 expose a variable subject and P7a is unreachable.  That is `main_arrow_holds`,
 **layer (a), from the FUEL IH alone**, and it is exactly what
