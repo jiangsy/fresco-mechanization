@@ -164,10 +164,35 @@ mechanization/
         │                             prop_look_complete_sub_var.v = P6-Sv,
         │                             prop_look_complete_sub_cstr.v = P6-Ss,
         │                             prop_look_complete_extract.v = P6-L)
-        ├── test_*.v                 (benchmark / regression checks)
-        └── cex/                     (machine-checked counterexamples, incl.
-                                      cex_p6cs_subject_wf.v)
+        ├── completeness_look/       (P6 — the look judgment's completeness,
+        │                             a strict linear chain: prop_kit ->
+        │                             prop_eq_var (Cv) -> prop_eq_cstr (Cs) ->
+        │                             prop_sub_var (Sv) -> prop_sub_cstr (Ss)
+        │                             -> prop_extract (L).  Facade:
+        │                             algo/prop_completeness_look.v — but see
+        │                             its ⚠️ header before importing it)
+        └── decorated_algo/          (the layer BETWEEN the algorithmic and
+                                      declarative systems: the ε-tagged
+                                      system def_decorated.v +
+                                      prop_decorate*.v, and the declarative
+                                      judgements ported to Θ,
+                                      def_decl_algo*.v)
+├── cex/                  (machine-checked counterexamples + probes; moved
+│                          out of algo/ 2026-08-06 — they are findings, not
+│                          part of the development)
+└── test/                 (benchmark / regression checks)
 ```
+
+**Naming of the soundness / completeness files** (2026-08-06):
+`prop_soundness_<judgment>.v` and `prop_completeness_<judgment>[_<role>].v` —
+`prop_soundness_consis.v`, `prop_completeness_consis.v`,
+`prop_soundness_sub.v`, and for subtyping completeness
+`prop_completeness_sub_precise.v` (P5), `prop_completeness_look.v` (P6),
+`prop_completeness_sub_gen.v` (P7a+b, the GENERALIZED statement) and
+`prop_completeness_sub.v` (P7c, the paper's `a_sub_complete_thm`).  The
+shared kits (`prop_inc`, `prop_metasubst`, `prop_flex`, `prop_swap`,
+`prop_precise`, `prop_pat_sub`, `prop_looksub`, `prop_solve_sub`, …) keep
+their topic names.
 
 (History: the old `decl/{subtyping,typing}/` subdirs and the
 `prop_subtyping.v` / `prop_typing.v` umbrellas were flattened; their contents

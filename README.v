@@ -17,7 +17,7 @@ Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_soundness_consis.
 Require Import src.frost.algo.prop_consis_rename.
 Require Import src.frost.algo.prop_mono_bridge.
-Require Import src.frost.algo.test_unify_regression.
+Require Import src.test.test_unify_regression.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.prop_completeness_consis.
 Require Import src.frost.algo.decorated_algo.prop_decorate_key.
