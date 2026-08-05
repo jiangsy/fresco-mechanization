@@ -743,94 +743,85 @@ well-formedness, re-read as an ftv bound).  `prop_sub_complete_dispatch.v`
 and `cex/probe_payload_reachability.v` needed nothing — the whole tree
 builds (`make coq` clean).
 
-### Step 3 — ✅ **DONE.**  `flex_apart` retired from P6-Cv and P6-Sv;
-###            `sub_shield` collapsed to a DERIVABLE premise (2026-08-05)
+### Step 3 — ✅ **DONE, AND IT WENT ALL THE WAY: SUBTYPING COMPLETENESS IS
+###            UNCONDITIONAL** (2026-08-05)
+
+`a_sub_complete_bundle_holds` and `a_sub_complete_thm` no longer take
+`forall n, main_forall n`.  Both are in `README.v`.  `make coq` clean.
 
 | lemma | premise before | after |
 |---|---|---|
 | P6-Cv | `flex_apart` | **gone** |
-| P6-Sv | `flex_apart_walk` (closure over `fa_walk`) | **gone** |
+| P6-Sv | `flex_apart_walk` | **gone** |
 | P6-Cs | `flex_apart_p0` | unchanged — one genuine consumer, below |
-| P6-Ss / P6-L | `sub_shield` = `flex_apart_p0` ∧ guarded `flex_apart_walk` | `flex_apart_p0` alone, and **derivable** |
+| P6-Ss | `sub_shield` (2 conjuncts) | `flex_apart_p0` alone, **derivable** |
+| P6-L | `sub_shield` | **gone** — discharged internally |
+| P7b ForallL rows | TASK 0's `sub_shield` gate | **gone** |
+| the bundle / the theorem | `forall n, main_forall n` | **gone** |
 
-`fa_step` / `fa_walk` / `flex_apart_walk` and their kit are **deleted**
-(`prop_look_complete.v`, a retraction banner in their place); so are the five
-walk lemmas in `prop_sub_shield_supply.v`.
+#### The chain, in four steps
 
-#### What did it
+1. **P6-Cv stopped consuming `flex_apart`.**  SE-FlexR went through `FLEXMONO`
+   (`uskl_rho_mono_target`: ρ is CONGRUENT at every constructor and
+   non-trivial only at a bare VARIABLE, itself a monotype, so a mono-paint
+   ρ-IMAGE forces a mono-paint GUESS) plus `a_guess_ty_witness_mono_gen`,
+   whose payloads are Θw-scoped POSITION-WISE (`ppre_hole_payload_wf`:
+   `guess^TY` invents only at `Pi`'s HOLES, which `ad_ppre__hole` already
+   keeps Δ-apart).  SE-GhostL gets its cleanliness from that same rule.
+2. **P6-Sv stopped needing `flex_apart_walk`** — every use was a relay into
+   P6-Cv's premise.
+3. **`sub_shield` lost its guess-descending conjunct**, leaving the
+   Δρ-CONSTANT half, which is derivable from `flex_apart_p0`
+   (`flex_apart_p0_sub_shield`).
+4. ⭐⭐⭐ **`sub_shield_empty`**: that half at **Δρ = ∅** — exactly how P6-L
+   and P7b's two ForallL rows instantiate it — is UNCONDITIONALLY TRUE.  The
+   walk's growth condition `Δρ' ∩ ftv ψa ⊆ Δρ` reads as cleanliness there, so
+   every reachable state is `fa_clean`.
 
-Two moves, in this order.
+⚠️ **Step 4 was FALSE before step 3.**  `fa_walk`'s `fastep_all_r` GROWS Δρ,
+so from Δρ = ∅ the guess-descending half reached a state where the opened
+binder sits in Δρ and `fa_clean` is blocked.  That is precisely the
+double-occurrence refutation — now reversed
+(`p7_sub_shield_double_occ_holds`).
 
-1. **P6-Cv stopped consuming `flex_apart`** (commit `165746a`).  Its two
-   consumers were the SE-FlexR row — which wanted "ρ is the identity on the
-   guess", hence the guess's monotype and Θw-scope — and the SE-GhostL row.
-   The first now goes through `FLEXMONO`: `uskl_rho_mono_target` (ρ is
-   CONGRUENT at every constructor and non-trivial only at a bare VARIABLE,
-   itself a monotype, so a mono-paint ρ-IMAGE forces a mono-paint GUESS) plus
-   `a_guess_ty_witness_mono_gen` at the scope slack `Δρ ⊆ Δ`, whose payloads
-   are Θw-scoped POSITION-WISE (`ppre_hole_payload_wf`).  The second gets its
-   cleanliness from `ad_ppre__hole`'s own side condition, free.
+#### ⚠️ Retractions, so they are not lost
 
-2. **Everything above was a relay.**  P6-Sv's every use of `flex_apart_walk`
-   was `flex_apart_walk_here` into P6-Cv's premise; P6-Cs had one such relay
-   too.  Delete the premise and they all fall out.
+- `probe_main_forall_false` / `probe_motive_instance_false` /
+  `probe_no_run` — the refutation of `main_forall`.  It ran through the
+  double-occurrence configuration, where the OLD `SolE-FlexR` discarded the
+  accumulated pattern so no `a_sub` run existed.  The repaired row returns
+  `guess^TY(P)` and the run exists (`cex/probe_flexr_repair.v`).
+- `sub_shield_forall_flex_p0_fails`, `p7_sub_shield_double_fails` — both went
+  through the retired conjunct.  Their stuck-shape lemmas stand.
 
-#### ⭐⭐ The asymmetry that decided it — worth remembering
+#### ⭐⭐ The reusable lesson
 
-An earlier note in this file said the Step-3 move "cannot come out" because
-P6-Ss's Sub-Arrow row has nothing to descend on.  That is true **only of the
-guarded conjunct**: `fa_step` has no guess-fixed arrow descent (two such rows
-existed and made the walk UNSATISFIABLE composed with `fastep_all_r` —
-`cex/cex_p7_shield_realizable.v`).  `flex_apart_p0` closes over `p0_step`,
-which **does** have `p0step_arrow_l/_r`.  So the surviving half descends
-freely, and `flex_apart_p0_sub_shield` proves the whole closure from the root:
+An earlier revision of this section said the move "cannot come out" because
+P6-Ss's Sub-Arrow row has nothing to descend on.  True — but only of the
+GUARDED conjunct: `fa_step` has no guess-fixed arrow descent (deliberately;
+it made the walk unsatisfiable).  `flex_apart_p0` closes over `p0_step`,
+which DOES have `p0step_arrow_l/_r`.  **When a premise is a closure, ask
+WHICH WALK it closes over before concluding it cannot be derived — two
+conjuncts of one definition had opposite answers.**
 
-- `ss_walk_p0_walk` — every P0-move of an `ss_step` is a `p0_step` move
-  (Sub-Arrow takes the right component, Sub-ForallR opens outside the avoid
-  set, every other row moves the SUBJECT only);
-- `flex_apart_delta_grow` — only `fa_clean` and `fa_rho_var` read Δρ, and the
-  walk's growth condition `Δρ' ∩ ftv ψa ⊆ Δρ` suits both (⚠️ the cofinite ∀
-  rows must add `Δρ'` to their avoid set, or the opened binder lands in the
-  payload's ftv).
+#### ⛔ What is left in the tree
 
-**Lesson**: when a premise is a closure, ask which walk it closes over before
-concluding it cannot be derived.  Two conjuncts of one definition had opposite
-answers.
+`flex_apart_p0`, P6-Cs's premise, for ONE site: the **collection-side
+`LE-FlexR`** row (`prop_look_complete_cstr.v` ≈ 2185).  Not for the mono-ness
+— that transfers by the same `uskl_rho_mono_target` route — but for the
+**κ-IMAGE Δρ-CLEANLINESS**: LE-FlexR invents a fresh flexible whose κ-image is
+the whole guess, and P6-Cs's conclusion carries
+`Forall (ftv (snd p) ∩ Δρ = ∅) κc`, which a partly-dirty guess violates; that
+conjunct feeds the arrow row's shielded-ftv premise.
 
-#### ⭐⭐⭐ Two of our own counterexamples died with the conjunct
+⚠️ This does NOT weaken `a_sub_complete_thm`: P7 instantiates Δρ = ∅, where
+the premise is free.  It is an internal premise of P6-Cs's ρ-generalized
+statement, paid for at every call site.  Nothing indicates `LE-FlexR` is
+wrong — there is no witness against it.
 
-- `cex_p7_shield_forall_flex.v` — `sub_shield_forall_flex_p0_fails`
-  RETRACTED.  Its two stuck-shape lemmas about `flex_shield`/`flex_apart`
-  stand and are still cited; only the `sub_shield`-level conclusion died.
-- `cex_p7_shield_double_occ.v` — `p7_sub_shield_double_fails` RETRACTED **and
-  REVERSED**: `p7_sub_shield_double_occ_holds` proves the shield HOLDS there
-  (Δρ = ∅, so every reachable state is `fa_clean`), and the headline
-  `p7_double_occ_row_premises_all_hold` now says every premise of the P7b
-  ForallL row is inhabited at that configuration.  **The double-occurrence
-  obstacle to `main_forall`'s supply is retired.**
-
-#### ⛔ What survives, and why — the next session's target
-
-P6-Cs keeps `flex_apart_p0` for exactly ONE site: the **collection-side
-`LE-FlexR`** row, `prop_look_complete_cstr.v` ≈ 2185
-(`flex_apart_flex_var_clean`).  Not for the mono-ness — that transfers by the
-same `uskl_rho_mono_target` route (plus a "subterm of a mono paint" step,
-since P6-Cs's ρ premise relates the subject to `subst_bskl_in_uskl ψa αs R'`
-rather than to `ψa`).  It survives for the **κ-IMAGE Δρ-CLEANLINESS**:
-LE-FlexR invents a fresh flexible whose κ-image is the whole guess, and
-P6-Cs's conclusion carries `Forall (ftv (snd p) ∩ Δρ = ∅) κc`, which a
-partly-dirty guess (say `α0 → 1` with `α0 ∈ Δρ`) violates.  That conjunct is
-load-bearing: P6-Cs's arrow row re-establishes the shielded-ftv premise from
-it.  The authors' repair touched `SolE-FlexR`, not `LE-FlexR`.
-
-⛔ Nothing here indicates `LE-FlexR` is WRONG — there is no witness against it,
-only a proof obligation.  Deciding it means either (a) weakening the κc
-Δρ-cleanliness conclusion to something the arrow row can still consume, or
-(b) showing a partly-dirty guess is unreachable at a raw-flexible `P0`.
-
-**THEN `main_forall`**: it is now OPEN with its known obstacle removed.  If it
-discharges, `a_sub_complete_bundle_holds` and `a_sub_complete_thm` become
-unconditional and go into `README.v`.
+**NEXT.**  Step 4 (the paper) is no longer gated by the proofs — see §0 for
+the user directive that still holds.  `docs/WF-SIDE-CONDITIONS.md` is the
+list of what `a_sub_complete_thm` carries beyond the paper's own premises.
 
 ---
 
