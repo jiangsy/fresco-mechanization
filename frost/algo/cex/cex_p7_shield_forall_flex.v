@@ -142,30 +142,28 @@ Proof.
       apply (H f); [ simpl; clear; fsetdec | left; exact Hb ] end.
 Qed.
 
-Lemma sub_shield_forall_flex_p0_fails : forall Θ0 Ψ' f e α,
-  uniq Θ0 ->
-  binds f abind_flex_mono Θ0 ->
-  e `in` Ψ' ->
-  ~ sub_shield Θ0 Ψ' empty α
-      (pskl_arrow (pskl_all_syn (pskl_var_b 0)) (pskl_var_f f))
-      (uskl_arrow uskl_unit (uskl_var_f α)) (cexψ e).
-Proof.
-  intros Θ0 Ψ' f e α Huq Hb He Hsh.
-  destruct (Hsh (pskl_var_f f) (uskl_var_f α) empty
-              ltac:(eapply ssw_step; [ apply sss_arrow_r | apply ssw_refl ])
-              ltac:(clear; fsetdec) ltac:(clear; fsetdec))
-    as [_ Hg].
-  pose proof (Hg ltac:(simpl; clear; fsetdec)) as Hfaw.
-  pick fresh β for (empty : atoms).
-  assert (Hw : fa_walk (dom Θ0) empty (pskl_var_f f) (cexψ e)
-                 (add β empty) (pskl_var_f f)
-                 (uskl_arrow (uskl_var_f β) (uskl_var_f β))).
-  { unfold cexψ.
-    eapply fw_step; [ apply fastep_all_r | ].
-    unfold open_uskl_wrt_uskl; simpl. apply fw_refl. }
-  pose proof (Hfaw _ _ _ Hw) as Hleaf.
-  assert (Hβin : β `in` add β empty) by (clear; fsetdec).
-  exact (flex_apart_raw_flex_open_arrow_stuck_gen Huq Hb Hβin Hleaf).
-Qed.
+(* ⭕⭕ RETRACTED (2026-08-05) — [sub_shield_forall_flex_p0_fails].
 
-Print Assumptions sub_shield_forall_flex_p0_fails.
+   It refuted [sub_shield] at the ∀-over-flexible shape THROUGH THE GUARDED
+   CONJUNCT: it walked to the codomain by [sss_arrow_r], read off
+   [flex_apart_walk], and got stuck at [flex_apart_raw_flex_open_arrow_stuck_gen]
+   (which is still proved above, and still true).
+
+   That conjunct NO LONGER EXISTS.  Under the authors' repaired [SolE-FlexR],
+   P6-Cv does not consume [flex_apart] at all, so P6-Sv does not need
+   [flex_apart_walk], so [sub_shield] keeps only its Δρ-constant, P0-only
+   [flex_apart_p0] conjunct — and THAT one is not merely satisfiable here, it
+   is DERIVABLE from [flex_apart_p0] at the root
+   ([flex_apart_p0_sub_shield], prop_look_complete_sub_cstr.v), because every
+   P0-move of an [ss_step] is a [p0_step] move.  So the statement above is now
+   FALSE (its [~ sub_shield …] is refuted by the collapse lemma), and it is
+   deleted rather than repaired.
+
+   ⚠️ The two stuck-shape lemmas ABOVE are untouched and still Qed: they are
+   facts about [flex_shield] / [flex_apart] at a raw flexible facing an opened
+   tagged ∀, and [cex_p7_shield_double_occ.v] and [cex_p7_shield_realizable.v]
+   still cite them.  What died is only the [sub_shield]-level conclusion.
+
+   Coq text at commit `165746a`. *)
+
+

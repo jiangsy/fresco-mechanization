@@ -370,40 +370,38 @@ Proof. clear; fsetdec. Qed.
     one: [open Rjd α = α → α], one [sss_arrow_r] step reaches [(α̂, α)],
     the guard [α ∈ ftv α] is met, and the leaf is the machine-checked
     stuck shape of cex_p7_shield_forall_flex.v. *)
-Theorem p7_sub_shield_double_fails : forall α,
-  ~ sub_shield Θ0d (singleton e) empty α P0d
-      (open_uskl_wrt_uskl Rjd (uskl_var_f α)) ψd.
+(* ⭕⭕ RETRACTED AND REVERSED (2026-08-05) — [p7_sub_shield_double_fails].
+
+   It refuted [sub_shield] here THROUGH THE GUARDED CONJUNCT: one
+   [sss_arrow_r] step reaches [(α̂, α)], the guard [α ∈ ftv α] is met, and
+   [flex_apart_walk] is then stuck at the raw flexible facing the opened
+   tagged ∀.  That conjunct is GONE (prop_look_complete_sub_cstr.v): under
+   the authors' repaired [SolE-FlexR], P6-Cv does not consume [flex_apart],
+   so P6-Sv does not need [flex_apart_walk], so [sub_shield] keeps only its
+   Δρ-constant P0-only half.
+
+   ⭐⭐ AND THE SHIELD NOW *HOLDS* AT THIS VERY CONFIGURATION — see
+   [p7_sub_shield_double_occ_holds] below.  Δρ is ∅ here, so every state the
+   walk reaches is [fa_clean].  The double-occurrence obstacle to
+   [main_forall]'s supply is therefore retired.
+
+   Coq text at commit `165746a`. *)
+
+(** ⭐⭐ The positive statement, replacing the retraction above. *)
+Theorem p7_sub_shield_double_occ_holds : forall α,
+  sub_shield Θ0d (singleton e) empty α P0d
+    (open_uskl_wrt_uskl Rjd (uskl_var_f α)) ψd.
 Proof.
-  intros α Hsh.
-  unfold Rjd, open_uskl_wrt_uskl in Hsh; simpl in Hsh.
-  destruct (Hsh (pskl_var_f f) (uskl_var_f α) empty
-              ltac:(eapply ssw_step; [ apply sss_arrow_r | apply ssw_refl ])
-              ltac:(clear; fsetdec) ltac:(clear; fsetdec))
-    as [_ Hg].
-  pose proof (Hg ltac:(simpl; clear; fsetdec)) as Hfaw.
-  (* since the (dead) [flex_shield] conjunct left [sub_shield] (2026-08-03),
-     the refutation runs through the [flex_apart_walk] half: one
-     [fastep_all_r] opens the tagged guess into [β→β] at [β ∈ Δρ], where the
-     boundary cex's [flex_apart] stuck shape fires. *)
-  pick fresh β for (empty : atoms).
-  assert (Hw : fa_walk (dom Θ0d) empty (pskl_var_f f) ψd
-                 (add β empty) (pskl_var_f f)
-                 (uskl_arrow (uskl_var_f β) (uskl_var_f β))).
-  { unfold ψd, cexψ.
-    eapply fw_step; [ apply fastep_all_r | ].
-    unfold open_uskl_wrt_uskl; simpl. apply fw_refl. }
-  pose proof (Hfaw _ _ _ Hw) as Hleaf.
-  assert (Hβin : β `in` add β empty) by (clear; fsetdec).
-  assert (Huq : uniq Θ0d)
-    by (unfold Θ0d; solve_uniq).
-  exact (flex_apart_raw_flex_open_arrow_stuck_gen Huq binds_f_d Hβin Hleaf).
+  intros α P0' R' Δρ' Hw Hle Hcl P0'' Hw0.
+  (* Δρ = ∅, so the growth condition makes the guess Δρ'-clean outright *)
+  apply fa_clean. clear - Hcl; fsetdec.
 Qed.
 
 (* ===================================================================== *)
 (*  THE HEADLINE — every OTHER hypothesis of the ForallL row holds        *)
 (* ===================================================================== *)
 
-Theorem p7_sub_shield_positional_over_strong :
+Theorem p7_double_occ_row_premises_all_hold :
   (* the completeness configuration … *)
   a_wf_aenv Θ0d /\
   Θ0d ⨟ empty ⊢ₚₛᵃ P0d /\
@@ -426,9 +424,10 @@ Theorem p7_sub_shield_positional_over_strong :
   (* … the FILL … *)
   ad_refine_syn_f empty Θ0d empty
     (pskl_to_bskl_inh (msubst_pskl κd P0d)) Qd /\
-  (* … and the shield — the row's ONE remaining premise — is FALSE at
-     every marker. *)
-  (forall α, ~ sub_shield Θ0d (singleton e) empty α P0d
+  (* … and the shield — the row's ONE remaining premise — HOLDS at every
+     marker (2026-08-05; it was FALSE before the guarded conjunct was
+     retired, which is what this file used to record). *)
+  (forall α, sub_shield Θ0d (singleton e) empty α P0d
        (open_uskl_wrt_uskl Rjd (uskl_var_f α)) ψd).
 Proof.
   repeat split;
@@ -436,13 +435,13 @@ Proof.
           | left; apply P0d_guarded | apply Rd_ghost_free | apply inc_d
           | apply slack_d | apply Qd_wf | apply join_d | apply ψd_tags
           | apply ψd_erase_wf | apply join_premise_d | apply fill_d
-          | exact p7_sub_shield_double_fails
+          | exact p7_sub_shield_double_occ_holds
           | unfold Rd, Rjd; simpl; clear - Het; fsetdec
           | clear; fsetdec ].
 Qed.
 
 End DoubleOccurrence.
 
-Print Assumptions p7_sub_shield_double_fails.
-Print Assumptions p7_sub_shield_positional_over_strong.
+Print Assumptions p7_sub_shield_double_occ_holds.
+Print Assumptions p7_double_occ_row_premises_all_hold.
 Print Assumptions join_at_Rd_is_forall_l.

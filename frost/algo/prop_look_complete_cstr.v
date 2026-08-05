@@ -1983,7 +1983,6 @@ Proof.
       | exact HΔρΔ
       | exact HΔρPi
       | exact Hdfresh
-      | apply flex_apart_p0_here; exact Hfaw
       | exact Hpre
       | clear - HΨs1; fsetdec
       | exact HΨs2 | exact Hconsis | exact Hrefine | exact HL ]. }

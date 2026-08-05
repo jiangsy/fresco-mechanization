@@ -2050,7 +2050,6 @@ Theorem a_solve_sub_complete_var :
   (forall α, α `in` Δρ ->
      α `notin` pskl_shielded_ftv (msubst_pskl κ Pi)) ->
   delta_def_fresh Δ Θ ->
-  flex_apart_walk Θ0 Δρ P0 ψa ->    (* P6-Cv's invariant, ALONG THE WALK *)
   Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
   Ψsub [<=] Ψρ `union` Ψa ->
   Ψa [<=] Ψsub ->
@@ -2081,7 +2080,7 @@ Proof.
   intros n NM M Θ0 Θs Θ Θw κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0.
   intros HwfΘ HwfΘ0 HwfΘw Hmon Hnr Hκw HΔρw
          HwfPi HwfP0 HmodSK HmodTY Hκ Hrho Htags HwfSub
-         Htageq Hinter Hrhof Hdelta Hshield Hdfresh Hapart Hpre
+         Htageq Hinter Hrhof Hdelta Hshield Hdfresh Hpre
          HΨs1 HΨs2 Hext Hsub Hrefine.
   (* everything except the derivation is generalized: ForallR/ForallL both
      extend Θ0 and Θ, ForallL grows Δρ/Δ and rewrites the tag split, and
@@ -2093,7 +2092,7 @@ Proof.
   revert Θ Θ0 κ Δ Δρ Ψρ Ψ' Ψi Ψa ψa Pi P0
          HwfΘ HwfΘ0 Hmon Hnr Hκw HΔρw
          HwfPi HwfP0 HmodSK HmodTY Hκ Hrho Htags HwfSub
-         Htageq Hinter Hrhof Hdelta Hshield Hdfresh Hapart Hpre
+         Htageq Hinter Hrhof Hdelta Hshield Hdfresh Hpre
          HΨs1 HΨs2 Hext Hrefine.
   (* the lemma's [Ψ'] is re-introduced as [Ψt]: [Ψ'] is a BINDER NAME of
      the ForallL rules, so [induction] has already claimed it *)
@@ -2101,7 +2100,7 @@ Proof.
     Θe Θ0 κ Δ Δρ Ψρ Ψt Ψi Ψa ψa Pi P0
     HwfΘ HwfΘ0 Hmon Hnr Hκw HΔρw
     HwfPi HwfP0 HmodSK HmodTY Hκ Hrho Htags HwfSub
-    Htageq Hinter Hrhof Hdelta Hshield Hdfresh Hapart Hpre
+    Htageq Hinter Hrhof Hdelta Hshield Hdfresh Hpre
     (* ⚠️ [L] is a BINDER NAME of the cofinite [ad_pat_sub_g] rules, which
        [induction] has already claimed — the avoid-set comes in as [Lav]. *)
     HΨs1 HΨs2 Hext Hrefine Lav HLav;
@@ -2180,7 +2179,7 @@ Proof.
                 Ψi Ψa Ψ T ψa (pskl_to_bskl_inh B) Pi P0
                 HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfPi HwfP0 Hκ Hκw Hrho Htags
                 ltac:(clear - Htageq; fsetdec) Hinter Hrhof Hdelta Hshield
-                Hdfresh (flex_apart_walk_here Hapart) Hpre HΨs1 HΨs2 H1
+                Hdfresh Hpre HΨs1 HΨs2 H1
                 Hrefine Lav HLav)
       as (Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hp).
     (* the paper's [Θ0 ⊢ P_a] for this row — at [Ξ ++ Θ0] now, since the
@@ -2290,7 +2289,7 @@ Proof.
     pose proof (HmodTY eq_refl) as Hmod.
     inversion Hmod as [ | A HeqA | ]; subst.
     destruct A as [ | nA | αA | A1 A2 | A0 ];
-      cbn [ptyp_to_pskl] in HwfP0, Hrefine, Hshield, Hpre, Hapart |- *.
+      cbn [ptyp_to_pskl] in HwfP0, Hrefine, Hshield, Hpre |- *.
     + (* ⟨⟩ : guarded *)
       exfalso;
         assert (Hbad : guarded_bskl (bskl_all_inh B));
@@ -2424,9 +2423,6 @@ Proof.
                          [ intros x b Hb; apply binds_app_3; exact Hb
                          | exact HwfSub ])
                    Htageq Hinter Hrhofβ Hdelta Hshield Hdfreshβ
-                   ltac:(apply flex_apart_walk_weaken_tvar;
-                         eapply flex_apart_walk_step;
-                           [ exact Hapart | apply fastep_all_l; clear - Fr; solve_notin ])
                    Hpreβ HΨs1 HΨs2
                    ltac:(intros x b Hb;
                          unfold binds in Hb |- *; simpl in Hb |- *;
@@ -2550,7 +2546,6 @@ Proof.
       uskl_rho NM Θ Δρ Ψρ2 R2 ψ2 ->
       Ψρ [=] Ψρ1 `union` Ψρ2 ->
       a_tags_sort NM Ψt (uskl_arrow ψ1 ψ2) ->
-      flex_apart_walk Θ0 Δρ (pskl_arrow P01 P02) (uskl_arrow ψ1 ψ2) ->
       forall Pi1 Pi2 Ψi1 Ψi2 L0,
       Θ0 ⨟ empty ⊢ₚₛᵃ Pi1 -> Θ0 ⨟ empty ⊢ₚₛᵃ Pi2 ->
       (forall α, α `in` Δρ ->
@@ -2572,8 +2567,7 @@ Proof.
         ((Ξ2 ++ Ξ1) ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa2 /\
         Θ ⨟ Δ ⊢ (msubst_pskl ((κ2 ++ κ1) ++ κ) (pskl_arrow Pa1 Pa2))
           ⊑ᵖ[ Ψi `union` Ψa ] (uskl_arrow ψ1 ψ2)).
-    { intros ψ1 ψ2 Ψρ1 Ψρ2 Hrho1 Hrho2 HΨρs Htags0 Hap0
-             Pi1 Pi2 Ψi1 Ψi2 L0 HwfPi1 HwfPi2 Hsh1 Hsh2 HΨis Hpre1 Hpre2.
+    { intros ψ1 ψ2 Ψρ1 Ψρ2 Hrho1 Hrho2 HΨρs Htags0 Pi1 Pi2 Ψi1 Ψi2 L0 HwfPi1 HwfPi2 Hsh1 Hsh2 HΨis Hpre1 Hpre2.
       destruct (a_tags_sort_arrow_inv Htags0)
         as (Ψt1 & Ψt2 & Htags1 & Htags2 & Htdisj & Htun).
       (* per-branch tag flow, exactly P6-Cv's arrow recipe *)
@@ -2604,8 +2598,6 @@ Proof.
                   ltac:(clear - Hsp1; fsetdec)
                   ltac:(clear - Hinter HΨρs Htun; fsetdec)
                   Hrhof Hdelta Hsh1 Hdfresh
-                  (flex_apart_walk_here
-                     (flex_apart_walk_step Hap0 (fastep_arrow_l _ _ _ _ _ _)))
                   Hpre1
                   ltac:(clear - Hft1 HΨs1 Hinter Htun Htdisj Hun HΨρs; fsetdec)
                   ltac:(clear - HΨs2 Hun Htun Hft2 Hinter HΨρs Htdisj; fsetdec)
@@ -2690,18 +2682,6 @@ Proof.
                   Hrhof1 Hdelta
                   ltac:(rewrite Htr2; exact Hsh2)
                   Hdfresh
-                  ltac:(eapply flex_apart_walk_weaken_flex_prefix;
-                        [ eapply flex_apart_walk_step;
-                            [ exact Hap0 | apply fastep_arrow_r ]
-                        | intros x; split; intros Hx;
-                            [ exfalso;
-                              assert (Hx1 : x `in` dom Ξ1) by (clear - Hx; fsetdec);
-                              assert (Hx2 : x `in` ftvar_in_pskl P02)
-                                by (clear - Hx; fsetdec);
-                              pose proof (Hfr1c x Hx1) as Hf;
-                              pose proof (a_wf_pskl_ftv_dom HwfP02) as Hfd;
-                              clear - Hf Hfd Hdf0 Hx2; fsetdec
-                            | clear - Hx; fsetdec ] ])
                   ltac:(rewrite Htr2; exact Hpre2)
                   ltac:(clear - Hft2 HΨs1 Hinter Htun Htdisj Hun HΨρs; fsetdec)
                   ltac:(clear - HΨs2 Hun Htun Hft1 Hinter HΨρs Htdisj; fsetdec)
@@ -2774,7 +2754,7 @@ Proof.
       assert (Hrho2 : uskl_rho NM Θ Δρ empty R2 R2)
         by (apply urho__refl; [ exact Hlc2 | clear; fsetdec ]).
       pose proof (KEY R1 R2 empty empty Hrho1 Hrho2
-                    ltac:(clear - HΨρe; fsetdec) Htags Hapart) as KEY'.
+                    ltac:(clear - HΨρe; fsetdec) Htags ) as KEY'.
       eapply arrow_grid;
         [ exact HwfΘ | exact Hκ | exact Htags | exact Htageq
         | exact HwfP01 | exact HwfP02 | exact KEY'
@@ -2782,7 +2762,7 @@ Proof.
     (* CONGRUENCE *)
     { destruct Hcong as (ψ1 & ψ2 & Ψρ1 & Ψρ2 & Heq & Hrho1 & Hrho2 & HΨρs);
         subst ψa.
-      pose proof (KEY ψ1 ψ2 Ψρ1 Ψρ2 Hrho1 Hrho2 HΨρs Htags Hapart) as KEY'.
+      pose proof (KEY ψ1 ψ2 Ψρ1 Ψρ2 Hrho1 Hrho2 HΨρs Htags ) as KEY'.
       eapply arrow_grid;
         [ exact HwfΘ | exact Hκ | exact Htags | exact Htageq
         | exact HwfP01 | exact HwfP02 | exact KEY'
@@ -2810,13 +2790,12 @@ Proof.
          uskl_rho NM Θ Δρ Ψρ (open_uskl_wrt_uskl R (uskl_var_f α))
                              (open_uskl_wrt_uskl ψsrc (uskl_var_f α))) ->
       a_tags_sort NM Ψt (uskl_all_etag ε ψsrc) ->
-      flex_apart_walk Θ0 Δρ P0 (uskl_all_etag ε ψsrc) ->
       Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_all_etag ε ψsrc) ->
       solve_sub_ext Θ0 Θw M Pi P0 Lav
         (fun κ' Pa =>
            Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) Pa)
              ⊑ᵖ[ Ψi `union` Ψa ] (uskl_all_etag ε ψsrc))).
-    { intros L0 ψsrc Hfam Htags0 Hapart0 Hpre0.
+    { intros L0 ψsrc Hfam Htags0 Hpre0.
       destruct (a_tags_sort_all_etag_inv Htags0)
         as (Lt & Ψt0 & Htbody & Hεt0 & HΨteq).
       (* --- ε is solved by the INPUT, never by the premise --- *)
@@ -3030,11 +3009,6 @@ Proof.
           pose proof (a_wf_ptyp_ftv_dom
                         (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd.
           clear - Hd HβΘ; fsetdec. }
-        assert (Hapartβ : flex_apart_walk ((β ~ abind_tvar) ++ Θ0)
-                  (add β Δρ) P0 (open_uskl_wrt_uskl ψsrc (uskl_var_f β)))
-          by (apply flex_apart_walk_weaken_tvar;
-              eapply flex_apart_walk_step;
-                [ exact Hapart0 | apply fastep_all_r ]).
         assert (Hpreβ : ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
                   ⊢ (msubst_pskl κ (open_pskl_wrt_pskl Pi0 (pskl_var_f β)))
                   ⊑ᵖ[ Ψi0 ] (open_uskl_wrt_uskl ψsrc (uskl_var_f β))).
@@ -3072,7 +3046,7 @@ Proof.
                      Hwfβ Hwfβ0 Hmonβ Hnrβ Hκwβ HΔρwβ
                      HwfPiβ HwfP0β HmodSK HmodTY Hκβ Hrhoβ
                      Htagsβ HwfSubβ Htageqβ Hinterβ Hrhofβ Hdeltaβ Hshieldβ
-                     Hdfreshβ Hapartβ Hpreβ
+                     Hdfreshβ Hpreβ
                      ltac:(clear - HΨs1 HΨρ'mono HΨ'sub; fsetdec)
                      ltac:(clear - HΨs2; fsetdec)
                      ltac:(intros x b Hb; apply binds_app_3; apply Hext;
@@ -3260,7 +3234,7 @@ Proof.
         solve [ intros α Hα; apply urho__refl;
                   [ apply is_tskl_lc; apply Hti; exact Hα
                   | clear - HΨρe; fsetdec ]
-              | exact Htags | exact Hapart | exact Hpre ].
+              | exact Htags | exact Hpre ].
     + (* ρ-leaf: the guess is a replaced rigid variable *)
       destruct Hleaf as (α0 & Ψ'' & Heq & HαΔρ & _ & _ & _); subst ψa.
       eapply a_solve_sub_complete_rho_var;
@@ -3270,7 +3244,7 @@ Proof.
     + (* congruence *)
       destruct Hcong as (L0 & ψsrc & Heq & Hfam); subst ψa.
       eapply MAIN;
-        solve [ exact Hfam | exact Htags | exact Hapart | exact Hpre ].
+        solve [ exact Hfam | exact Htags | exact Hpre ].
   - (* ForallL, untagged : IMPOSSIBLE.  The subject is an UNTAGGED ∀, and a
        decorated skeleton carries a tag on EVERY quantifier ([is_tskl] has
        only [all_etag]) — so neither ψa nor a ρ-image has this shape.  This
@@ -3328,21 +3302,17 @@ Proof.
     assert (KEY : forall ψ0,
       uskl_rho a_sub_mode_sk Θ Δρ Ψρ R ψ0 ->
       a_tags_sort a_sub_mode_sk Ψt (uskl_topholeg ψ0) ->
-      flex_apart_walk Θ0 Δρ P0 (uskl_topholeg ψ0) ->
       Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_topholeg ψ0) ->
       solve_sub_ext Θ0 Θw M Pi P0 Lav
         (fun κ' Pa =>
            Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) Pa)
              ⊑ᵖ[ Ψi `union` Ψa ] (uskl_topholeg ψ0))).
-    { intros ψ0 Hrho0 Htags0 Hapart0 Hpre0.
+    { intros ψ0 Hrho0 Htags0 Hpre0.
       assert (Htags0' : a_tags_sort a_sub_mode_sk Ψt ψ0)
         by (eapply a_tags_sort_topholeg_inv; exact Htags0).
       assert (HwfSub' : Θ ⨟ empty ⊢ₚₛᵃ ⌊ R ⌋ˢ)
         by (cbn [uskl_to_pskl] in HwfSub;
             eapply a_wf_pskl_tophole_inv; exact HwfSub).
-      assert (Hapart0' : flex_apart_walk Θ0 Δρ P0 ψ0)
-        by (eapply flex_apart_walk_step;
-              [ exact Hapart0 | apply fastep_topholeg_r ]).
       (* Pi's shape is pinned by the precision premise: only a ∀◇ or a □
          can be precise to a dotted universal ghost *)
       destruct Pi as [ | nPi | β | Pi1 Pi2 | Pi' | | Pi' ].
@@ -3384,7 +3354,7 @@ Proof.
                      HwfΘ HwfΘ0 Hmon Hnr Hκw HΔρw
                      HwfPi HwfP0 HmodSK HmodTY Hκ Hrho0
                      Htags0' HwfSub' Htageq Hinter Hrhof Hdelta Hshield
-                     Hdfresh Hapart0' Hpre0' HΨs1 HΨs2 Hext Hrefine Lav HLav)
+                     Hdfresh Hpre0' HΨs1 HΨs2 Hext Hrefine Lav HLav)
           as (Ξ & Pa' & κ' & Hs' & Hfm & Hu & Hk & Hfr & HF & Hw' & Hp').
         exists Ξ, Pa', κ'.
         repeat (split; [ solve [ exact Hs' | exact Hfm | exact Hu | exact Hk
@@ -3424,7 +3394,7 @@ Proof.
                        HwfΘ HwfΘ0 Hmon Hnr Hκw HΔρw
                        HwfPi' HwfP0 HmodSK HmodTY Hκ Hrho0
                        Htags0' HwfSub' Htageq Hinter Hrhof Hdelta Hshield'
-                       Hdfresh Hapart0' Hpre' HΨs1 HΨs2 Hext Hrefine Lav HLav)
+                       Hdfresh Hpre' HΨs1 HΨs2 Hext Hrefine Lav HLav)
             as (Ξ & Pa' & κ' & Hs' & Hfm & Hu & Hk & Hfr & HF & Hw' & Hp').
           exists Ξ, (pskl_tophole Pa'), κ'.
           repeat (split;
@@ -3495,8 +3465,6 @@ Proof.
       * exact Hdelta.
       * exact Hshield.
       * exact Hdfresh.
-      * eapply flex_apart_walk_step;
-          [ exact Hapart | apply fastep_flexdef_r; exact Hclean ].
       * (* precision: unfold the definition on the TARGET *)
         eapply ad_ppre_flexdef_target_unfold;
           [ exact HwfΘ | exact Hdfresh | exact Hpre | reflexivity | exact H ].

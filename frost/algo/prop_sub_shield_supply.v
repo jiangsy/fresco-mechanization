@@ -235,10 +235,10 @@ Proof.
   intros Θ0 Ψa α P0 R ψa HΨ Htf P0' R' Δρ' _ _ Hcl.
   assert (Hcl' : (ftvar_in_uskl ψa) ∩ Δρ' [=] empty)
     by (clear - Hcl; fsetdec).
-  (* the guess-FIXED conjunct is free from cleanliness alone; the guarded
-     one does not even need the guard on this branch *)
-  split; [ apply flex_apart_p0_clean; exact Hcl' | intros _ ].
-  apply flex_apart_walk_tag_free; assumption.
+  (* ⭕ (2026-08-05) [sub_shield] has only the guess-FIXED conjunct now, and
+     it is free from cleanliness alone.  The guarded [flex_apart_walk] half
+     this proof also discharged is gone from the definition. *)
+  apply flex_apart_p0_clean; exact Hcl'.
 Qed.
 
 (* ===================================================================== *)
@@ -361,15 +361,10 @@ Proof.
     by (destruct Hshape as [-> | [-> | (α & -> & _)]];
         [ apply pat_unit | apply pat_hole | apply pat_var ]).
   rewrite (ss_walk_atomic Hsw Hat).
-  split; [ | intros _ ].
-  - (* the P0-only walk cannot move an atomic P0 *)
-    intros P0'' Hp0w.
-    rewrite (p0_walk_atomic Hp0w Hat).
-    apply flex_apart_atomic; exact Hshape.
-  - (* the ρ-walk cannot move an atomic P0 either *)
-    intros Δρ'' P0'' ψa'' Hfw.
-    rewrite (fa_walk_atomic_p0 Hfw Hat).
-    apply flex_apart_atomic; exact Hshape.
+  (* the P0-only walk cannot move an atomic P0 *)
+  intros P0'' Hp0w.
+  rewrite (p0_walk_atomic Hp0w Hat).
+  apply flex_apart_atomic; exact Hshape.
 Qed.
 
 Print Assumptions sub_shield_atomic.
@@ -490,8 +485,7 @@ Proof.
   intros Θ0 Ψa Δρ α P0 R ψa Hff P0' R' Δρ' Hsw _ _.
   assert (Hff' : pskl_flex_free Θ0 P0')
     by (eapply ss_walk_flex_free; eassumption).
-  split; [ apply flex_apart_p0_flex_free; exact Hff' | intros _ ].
-  apply flex_apart_walk_flex_free; exact Hff'.
+  apply flex_apart_p0_flex_free; exact Hff'.
 Qed.
 
 Print Assumptions sub_shield_flex_free.

@@ -627,16 +627,14 @@ Theorem p7_sub_shield_repaired_holds : forall α,
     (open_uskl_wrt_uskl Rjw (uskl_var_f α)) ψw.
 Proof.
   intros α P0' R' Δρ' Hw Hle Hcl.
+  (* ⭕ (2026-08-05) the guarded [flex_apart_walk] conjunct is GONE from
+     [sub_shield], so both branches now discharge the P0-only closure alone —
+     which is the half that never descends the guess. *)
   destruct (ss_walk_w_inv Hw) as [[-> ->] | [-> ->]].
-  - split; [ apply apart_p0_w_root_holds | intros _ ].
-    apply apart_w_root_holds.
-  - (* the CODOMAIN, where the OLD premise is false: the P0-only closure
-       still holds (it never descends the guess), and the two that DO
-       descend it are not demanded — the guard [α ∈ ftv unit] is unmet *)
-    split.
-    + intros P0'' _. apply fa_clean.
-      unfold ψw, cexψ; simpl. clear; fsetdec.
-    + simpl. intros Hα. clear - Hα; fsetdec.
+  - apply apart_p0_w_root_holds.
+  - (* the CODOMAIN, where the OLD premise was false *)
+    intros P0'' _. apply fa_clean.
+    unfold ψw, cexψ; simpl. clear; fsetdec.
 Qed.
 
 End Realizable.

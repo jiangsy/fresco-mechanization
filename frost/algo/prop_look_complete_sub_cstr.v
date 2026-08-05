@@ -199,13 +199,25 @@ Qed.
     leaf lemma fed only a regression test (memory: remech-flex-shield-dead).
     The [Ψ'] index is now VESTIGIAL (it only ever fed [flex_shield]); it is
     kept for arity stability until the next sweep. *)
+(** ⭐⭐ THE GUARDED CONJUNCT IS GONE (2026-08-05, the SolE-FlexR repair).
+    [sub_shield] used to carry [flex_apart_walk] as well, guarded on
+    [α ∈ ftv R'], for ONE consumer: the [P = α] leaf, which handed it to
+    P6-Sv.  P6-Sv no longer takes it — under the repaired rule P6-Cv does not
+    consume [flex_apart] at all, and P6-Sv's every use of the walk was a relay
+    into that premise.  What remains is the Δρ-CONSTANT, P0-only closure
+    P6-Cs still needs at its LE-FlexR row.
+
+    ⭐ That half is DERIVABLE from [flex_apart_p0] at the root — see
+    [flex_apart_p0_sub_shield] below — because [ss_step]'s P0-moves are all
+    [p0_step] moves.  The guarded half never was: [fa_step] has no
+    guess-fixed arrow descent (it was deleted for making the walk
+    unsatisfiable, cex/cex_p7_shield_realizable.v), which is exactly why
+    [sub_shield] had to be assumed as a closure rather than derived. *)
 Definition sub_shield (Θ0 : aenv) (Ψ' : atoms) (Δρ : atoms) (α : atom)
   (P0 : pskl) (R : uskl) (ψa : uskl) : Prop :=
   forall P0' R' Δρ', ss_walk (dom Θ0) α P0 R P0' R' ->
     Δρ [<=] Δρ' -> Δρ' ∩ ftvar_in_uskl ψa [<=] Δρ ->
-    flex_apart_p0 Θ0 Δρ' P0' ψa
-    /\ (α `in` ftvar_in_uskl R' ->            (* ⇐ THE POSITIONAL GUARD *)
-        flex_apart_walk Θ0 Δρ' P0' ψa).
+    flex_apart_p0 Θ0 Δρ' P0' ψa.
 
 Lemma ss_walk_trans : forall A α P0 R P1 R1 P2 R2,
   ss_walk A α P0 R P1 R1 -> ss_walk A α P1 R1 P2 R2 -> ss_walk A α P0 R P2 R2.
@@ -223,21 +235,14 @@ Proof.
   intros Θ0 Ψ' Δρ α P0 R ψa H.
   (* ⚙ [sub_shield] is a [Definition], so [apply H] does NOT unfold it —
      apply it to its three explicit arguments. *)
-  refine (proj1 (H P0 R Δρ _ _ _));
+  refine (H P0 R Δρ _ _ _);
     [ apply ssw_refl | clear; fsetdec | clear; fsetdec ].
 Qed.
 
-(** The leaf, guess-descending half: P6-Sv's walk premise — available only
-    where the looked-for [α] actually occurs in the subject. *)
-Lemma sub_shield_here : forall Θ0 Ψ' Δρ α P0 R ψa,
-  sub_shield Θ0 Ψ' Δρ α P0 R ψa ->
-  α `in` ftvar_in_uskl R ->
-  flex_apart_walk Θ0 Δρ P0 ψa.
-Proof.
-  intros Θ0 Ψ' Δρ α P0 R ψa H Hα.
-  refine (proj2 (H P0 R Δρ _ _ _) Hα);
-    [ apply ssw_refl | clear; fsetdec | clear; fsetdec ].
-Qed.
+(* ⭕ [sub_shield_here] DELETED (2026-08-05).  It read the GUARDED conjunct
+   off at reflexivity and handed [flex_apart_walk] to P6-Sv at the [P = α]
+   leaf.  P6-Sv no longer takes that premise, so the lemma had no consumer
+   left and the conjunct it projected is gone from the definition. *)
 
 (** …and the four closures, all free by construction. *)
 Lemma sub_shield_step : forall Θ0 Ψ' Δρ α P0 R P0' R' ψa,
@@ -273,9 +278,7 @@ Proof.
      does not terminate. *)
   assert (Hw0 : ss_walk (dom Θ0) α P0 R P1 R1)
     by (eapply ss_walk_mono; [ exact Hw | simpl; clear; fsetdec ]).
-  destruct (H P1 R1 Δρ' Hw0 Hle Hcl) as [Hap0 Hg].
-  split; [ apply flex_apart_p0_weaken_tvar; exact Hap0 | intros Hα ].
-  apply flex_apart_walk_weaken_tvar; exact (Hg Hα).
+  apply flex_apart_p0_weaken_tvar. exact (H P1 R1 Δρ' Hw0 Hle Hcl).
 Qed.
 
 (** …and the FLEXIBLE-prefix growth Sub-Arrow's right branch needs: it runs
@@ -299,11 +302,91 @@ Proof.
   (* the walk misses [dom Ξ] throughout, so its endpoint does too *)
   assert (HfrP1 : (ftvar_in_pskl P1) ∩ (dom Ξ) [=] empty)
     by (eapply ss_walk_ftv; [ exact HwΞ | exact HfrP0 ]).
-  destruct (H P1 R1 Δρ' Hw0 Hle Hcl) as [Hap0 Hg].
-  split;
-    [ eapply flex_apart_p0_weaken_flex_prefix; [ exact Hap0 | exact HfrP1 ]
-    | intros Hα ].
-  eapply flex_apart_walk_weaken_flex_prefix; [ exact (Hg Hα) | exact HfrP1 ].
+  eapply flex_apart_p0_weaken_flex_prefix;
+    [ exact (H P1 R1 Δρ' Hw0 Hle Hcl) | exact HfrP1 ].
+Qed.
+
+(* ===================================================================== *)
+(*  ⭐⭐ THE COLLAPSE: [sub_shield] IS NOW DERIVABLE (2026-08-05)          *)
+(* ===================================================================== *)
+
+(** Every P0-move an [ss_step] makes is a [p0_step] move: Sub-Arrow takes the
+    right component, Sub-ForallR opens the body at a binder outside the avoid
+    set, and every remaining row moves the SUBJECT only. *)
+Lemma ss_walk_p0_walk : forall A α P0 R P0' R',
+  ss_walk A α P0 R P0' R' -> p0_walk A P0 P0'.
+Proof.
+  intros A α P0 R P0' R' H; induction H; [ apply p0w_refl | ].
+  destruct H.
+  - (* Sub-Arrow : both move *)
+    eapply p0w_step; [ apply p0step_arrow_r | exact IHss_walk ].
+  - (* Sub-ForallR : P0 only, at a binder outside the avoid set *)
+    (* ⚠️ PIN the intermediate: left to unification [p0step_all]'s binder is
+       an evar when its freshness side condition runs. *)
+    match goal with Hγ : ?γ0 `notin` A |- _ =>
+      eapply p0w_step with (P1 := open_pskl_wrt_pskl P0 (pskl_var_f γ0));
+        [ apply p0step_all; exact Hγ | exact IHss_walk ] end.
+  - (* Sub-ForallL *) exact IHss_walk.
+  - (* Sub-ForallL, tagged *) exact IHss_walk.
+  - (* Sub-UnivGhostL *) exact IHss_walk.
+  - (* Sub-UnivGhostLG *) exact IHss_walk.
+Qed.
+
+Lemma p0_walk_trans : forall A P0 P1 P2,
+  p0_walk A P0 P1 -> p0_walk A P1 P2 -> p0_walk A P0 P2.
+Proof.
+  intros A P0 P1 P2 H; induction H; intros Hw; [ exact Hw | ].
+  eapply p0w_step; [ exact H | apply IHp0_walk; exact Hw ].
+Qed.
+
+(** …and [flex_apart] tolerates a Δρ that grows by variables the guess does
+    not mention.  Only two rows read Δρ: [fa_clean], whose disjointness the
+    growth condition preserves, and [fa_rho_var], which is monotone. *)
+Lemma flex_apart_delta_grow : forall Θ0 Δρ Δρ' P0 ψa,
+  flex_apart Θ0 Δρ P0 ψa ->
+  Δρ [<=] Δρ' -> Δρ' ∩ ftvar_in_uskl ψa [<=] Δρ ->
+  flex_apart Θ0 Δρ' P0 ψa.
+Proof.
+  intros Θ0 Δρ Δρ' P0 ψa H; induction H; intros Hle Hcl.
+  - apply fa_clean. clear - H Hcl; fsetdec.
+  - apply fa_unit.
+  - apply fa_var_rigid; assumption.
+  - apply fa_hole.
+  - apply fa_tophole; auto.
+  - apply fa_arrow;
+      [ apply IHflex_apart1 | apply IHflex_apart2 ];
+      solve [ exact Hle | cbn [ftvar_in_uskl] in Hcl; clear - Hcl; fsetdec ].
+  - (* ⚠️ the binder must dodge [Δρ'] too: the growth condition only bounds
+       [Δρ' ∩ ftv ψa], and opening puts the binder INTO the payload's ftv. *)
+    eapply fa_all_etag with (L := L `union` Δρ'); intros α0 Hα0.
+    apply H0; [ clear - Hα0; fsetdec | exact Hle | ].
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ (uskl_var_f α0)) as Hup.
+    cbn [ftvar_in_uskl] in Hcl, Hup. clear - Hcl Hup Hα0; fsetdec.
+  - (* ⚠️ the binder must dodge [Δρ'] too: the growth condition only bounds
+       [Δρ' ∩ ftv ψa], and opening puts the binder INTO the payload's ftv. *)
+    eapply fa_all_syn with (L := L `union` Δρ'); intros α0 Hα0.
+    apply H0; [ clear - Hα0; fsetdec | exact Hle | ].
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ (uskl_var_f α0)) as Hup.
+    cbn [ftvar_in_uskl] in Hcl, Hup. clear - Hcl Hup Hα0; fsetdec.
+  - apply fa_flexfree; assumption.
+  - apply fa_rho_var. clear - H Hle; fsetdec.
+Qed.
+
+(** ⭐⭐ …so the CLOSURE is free: [sub_shield] follows from [flex_apart_p0] at
+    the root.  This is what the guarded conjunct never allowed — [fa_step] has
+    no guess-fixed arrow descent, so [flex_apart_walk] at [P1 → P2] does not
+    give it at [P2] and the walk premise genuinely had to be ASSUMED.  With
+    that half retired, P6-Ss and P6-L can take the plain P6-Cs premise and the
+    whole [ss_walk] indexing becomes bookkeeping. *)
+Lemma flex_apart_p0_sub_shield : forall Θ0 Ψ' Δρ α P0 R ψa,
+  flex_apart_p0 Θ0 Δρ P0 ψa ->
+  sub_shield Θ0 Ψ' Δρ α P0 R ψa.
+Proof.
+  intros Θ0 Ψ' Δρ α P0 R ψa H P0' R' Δρ' Hw Hle Hcl P0'' Hw0.
+  eapply flex_apart_delta_grow;
+    [ apply H; eapply p0_walk_trans;
+        [ eapply ss_walk_p0_walk; exact Hw | exact Hw0 ]
+    | exact Hle | exact Hcl ].
 Qed.
 
 (* ===================================================================== *)
@@ -787,13 +870,12 @@ Proof.
     cbn in HΨs1.        (* ftag_in_uskl (uskl_var_f α) = empty *)
     assert (Hlcψa : lc_uskl ψa)
       by (apply is_tskl_lc; inversion Htags; assumption).
-    (* ⭐ THE POSITIONAL GUARD IS FREE HERE — and this is the ONLY row that
-       consumes the guess-descending half: [R'] has just been pinned to
-       [uskl_var_f α], the very position the guess replaces.  (The
-       [flex_shield] half is DEAD since 2026-08-03 — P6-Sv no longer takes
-       it; only [flex_apart_walk] is consumed.) *)
-    pose proof (sub_shield_here Hshield ltac:(simpl; clear; fsetdec))
-      as Hapart.
+    (* ⭕ (2026-08-05) THE GUESS-DESCENDING HALF IS GONE.  This was the ONLY
+       row that consumed it — [R'] is pinned to [uskl_var_f α] here, the very
+       position the guess replaces, so the positional guard was free.  P6-Sv
+       no longer takes [flex_apart_walk] at all (under the repaired rule P6-Cv
+       does not consume [flex_apart], and every use in P6-Sv was a relay into
+       that premise), so nothing is read off the shield here. *)
     (* ⭐ P6-Sv now returns the whole [solve_sub_ext] package, at the SAME
        [Θw] and the SAME avoid-set [L] — the collection generates nothing on
        this row, so the solve's block IS the conclusion's. *)
@@ -813,7 +895,7 @@ Proof.
       | exact Hrfr
       | exact HΔρΔ
       | exact HΔρPi
-      | exact Hdfresh | exact Hapart | exact Hpre
+      | exact Hdfresh | exact Hpre
       | clear - HΨs1; fsetdec | exact HΨs2
       | exact Hext | exact Hsubty | exact Hrefine | exact HL ]. }
     destruct Hsv as (Ξs & Pa & κs & Hsolve & Hfms & Hus & Hks & Hfrs & HFs
