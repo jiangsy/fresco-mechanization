@@ -66,7 +66,7 @@ point to the same content.
   `P0` and the SUBJECT in lockstep and carries the looked-for `α`, and
   the two GUESS-DESCENDING closures (`flex_apart_walk`, `flex_shield`)
   are demanded only where `α ∈ ftv R'`; the guess-FIXED
-  `flex_apart_p0` is an independent, UNGUARDED conjunct.  `fa_step`
+  `flex_apart_deep` is an independent, UNGUARDED conjunct.  `fa_step`
   lost its two guess-fixed P0 arrow descents (and with them
   `flex_apart_walk_p0`), which is what made the walk satisfiable at
   all.  `p7_sub_shield_repaired_holds` machine-checks the repaired
@@ -76,7 +76,7 @@ point to the same content.
   `frost/algo/prop_sub_complete_dispatch.v` (§1–§12, all `Qed` +
   axiom-free) holds the stuck-check
   (`sub_flex_rigid_head_absurd`), the flex half (`flex_step`), the
-  main half's TWELVE-ROW join dispatch (`main_join`), the
+  main half's TWELVE-ROW join dispatch (`main_dispatch`), the
   arrow-subject layer (`main_arrow_holds`), the ForallL/ForallR JOIN
   PERMUTATION (`sub_gv_all_inh_forall_r_family` +
   `ad_pat_sub_gv_fuel_weaken` + `main_all_inh_counterpart`, §11) and

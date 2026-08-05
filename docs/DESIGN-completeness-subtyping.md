@@ -2756,7 +2756,7 @@ recipe above got right, and the four places it did not:
    is `a_lookeq_solve_complete_gen`; `a_lookeq_solve_complete` is its
    ρ = identity instance and is LITERALLY the pre-generalization statement,
    with no residue.  Making it premise-free is why P6-Cs takes the P0-ONLY
-   walk `flex_apart_p0` (`p0_step` / `p0_walk`, prop_look_complete.v) instead
+   walk `flex_apart_deep` (`p0_step` / `p0_walk`, prop_look_complete.v) instead
    of `flex_apart_walk`: P6-Cs descends P0 alone at a CONSTANT Δρ, so at
    Δρ = ∅ every reachable state is `fa_clean`, whereas `flex_apart_walk`'s
    `fastep_all_r` can grow Δρ and would leave a real premise behind.  P6-Ss
@@ -3966,7 +3966,7 @@ development that the two sides move independently.
 ### 10.3 The refactor
 
 **Delete `flex_apart`, `fa_step`, `fa_walk`, `flex_apart_walk`,
-`flex_apart_p0` and their ~15 lemmas; use `flex_shield` everywhere, at
+`flex_apart_deep` and their ~15 lemmas; use `flex_shield` everywhere, at
 `Ψ' = ∅` on the consistency side (where the tag conjunct is vacuous).**
 `sub_shield`'s two conjuncts collapse to one.
 
@@ -4097,7 +4097,7 @@ to `prop_look_complete.v` (P6-Cv/P6-Cs are upstream of where they live);
 non-mechanical part is that their ∀ rows must now land at `add α Δρ` and a Θ0
 extended by the rigid**, which the ρ-machinery already tolerates elsewhere
 (`a_inc_cons_tvar`); (3) delete `flex_apart`, `fa_step`, `fa_walk`,
-`flex_apart_walk`, `flex_apart_p0`; (4) collapse `sub_shield` to one conjunct,
+`flex_apart_walk`, `flex_apart_deep`; (4) collapse `sub_shield` to one conjunct,
 which is what `cex_p7_shield_arrow.v` demands.  Branch `flexapart-baserules` is
 then superseded — its base-row patch is subsumed.
 
@@ -4490,7 +4490,7 @@ positional re-indexing of `flex_shield` alone does not unblock P7c.
   `fa_var_rigid` by the flexible, and every congruence by a shape mismatch.
 
 ⚙ **What keeps this from spreading further.**  What P6-Ss actually hands P6-Cs
-is `flex_apart_p0` — the P0-only `p0_walk` closure at a FIXED Δρ — and that one
+is `flex_apart_deep` — the P0-only `p0_walk` closure at a FIXED Δρ — and that one
 is TRUE here (at Δρ = ∅ with a closed guess, `fa_clean` discharges every
 position).  So P6-Cv / P6-Cs are NOT themselves implicated; the defect is
 exactly `fa_walk`'s mixing of a Δρ-growing step with a guess-fixed P0 descent.
@@ -4543,7 +4543,7 @@ without `fastep_p0_arrow_{l,r}` the witness IS satisfiable — with the guess a 
 triple is discharged by `fa_clean` (closed guess) or `fa_rho_var` (the guess is a
 Δρ-variable).  If that holds, the repair splits `fa_walk` in two — the
 POSITIONAL closure P6-Sv demands (no guess-fixed P0 descent) and the P0-only
-`flex_apart_p0` P6-Cs already uses separately (and which is TRUE at the
+`flex_apart_deep` P6-Cs already uses separately (and which is TRUE at the
 witness) — and `prop_look_complete.v` IS in the blast radius after all.
 
 **Corrected blast radius**: `prop_look_complete.v` (`fa_step` / `fa_walk` split
@@ -4733,14 +4733,14 @@ produce one).  Only the ROOT is witness-specific: the sole step from
 `(∅, P0w, ψw)` is `fastep_all_r`, landing in `rho_shape`.
 
 **THE SPLIT.**  `fastep_p0_arrow_{l,r}` and `flex_apart_walk_p0` are deleted.
-`flex_apart_p0` is now an independent `sub_shield` conjunct.
+`flex_apart_deep` is now an independent `sub_shield` conjunct.
 
 ⚠️ **§14.2's guard sketch was too coarse — the guard applies to exactly TWO of
-the three closures.**  `flex_apart_p0` never descends the guess, so it is
+the three closures.**  `flex_apart_deep` never descends the guess, so it is
 harmless at any position, and it **must stay unguarded**: P6-Ss's Check and
 Arrow-left rows hand it to P6-Cs at positions where `α` does not occur at all
 (P6-Ss's own premise is `α ∉ ftv P ∨ P = α`, so `α` occurs only at the LS-Var
-leaf, and a guarded `flex_apart_p0` would leave those two rows with nothing).
+leaf, and a guarded `flex_apart_deep` would leave those two rows with nothing).
 The two closures that DO descend the guess are exactly the ones the witness
 refutes, and for them the guard is free where they are consumed.  The landed
 definition is
@@ -4748,7 +4748,7 @@ definition is
     sub_shield Θ0 Ψ' Δρ α P0 R ψa :=
       forall P0' R' Δρ', ss_walk (dom Θ0) α P0 R P0' R' ->
         Δρ [<=] Δρ' -> Δρ' ∩ ftv ψa [<=] Δρ ->
-        flex_apart_p0 Θ0 Δρ' P0' ψa
+        flex_apart_deep Θ0 Δρ' P0' ψa
         /\ (α ∈ ftv R' -> flex_apart_walk Θ0 Δρ' P0' ψa
                           /\ flex_shield Θ0 Ψ' Δρ' P0' ψa)
 
@@ -4757,7 +4757,7 @@ transports as prototyped, each threading the guard through the implication.
 
 **THE ROW MAP, as landed** (`prop_look_complete_sub_cstr.v`): LS-Var takes both
 guarded conjuncts, guard discharged by `simpl; fsetdec` (`R' = α` there);
-Check and Arrow-left take `flex_apart_p0` through the new `sub_shield_here_p0`;
+Check and Arrow-left take `flex_apart_deep` through the new `sub_shield_here_p0`;
 Sub-ForallR steps by `sss_all`; Sub-Arrow-right by `sss_arrow_r` +
 `_weaken_flex_prefix`; the two Sub-ForallL rows step the SUBJECT as well
 (`sss_forall_l_etag` / `sss_forall_l_syn`, whose `β <> α` premise is already on
@@ -4771,7 +4771,7 @@ over-strong at the same witness (take `R = unit → α`, which walks the guess o
 a raw flexible it never meets).  `sub_shield_forall_flex_p0_fails` is now stated
 in exactly that form and is the BOUNDARY the guard exists to respect.  Every
 route in `prop_sub_shield_supply.v` is uniform in `α` and `R`, so all of them
-still discharge it, with `flex_apart_p0` free from `flex_apart_p0_clean` at
+still discharge it, with `flex_apart_deep` free from `flex_apart_deep_clean` at
 Δρ = ∅.
 
 **⭐⭐ THE DECISIVE CHECK** — `p7_sub_shield_repaired_holds`
@@ -5006,10 +5006,10 @@ lemma `Qed` and axiom-free, <1 s to compile.  §12.1's layering is in the tree:
 |---|---|---|
 | (a) | `main_arrow_holds` | the FUEL IH alone — no P7a, no context induction |
 | (b) | `flex_step` | structural on `Θ0`, `Ξ` generalized, total length bounded |
-| (c) | `main_join` | induction on the JOIN (twelve rows) |
+| (c) | `main_dispatch` | induction on the JOIN (twelve rows) |
 
 **THE ONE DESIGN IDEA THAT MADE (a) AND (c) ONE PROOF.**  §12.1 planned them
-as separate developments.  They are not: `main_join` carries the P7a escape as
+as separate developments.  They are not: `main_dispatch` carries the P7a escape as
 an ABSTRACT predicate `ESC : uskl -> Prop` on the *motive's* subject, with
 three closure conditions —
 
@@ -5022,7 +5022,7 @@ three closure conditions —
 The two tophole conditions are needed because `__univ_ghost_l` / `_lg` STRIP
 the subject and can therefore EXPOSE a variable that the conclusion's subject
 hid; that is why the escape cannot be phrased as a bare `R = uskl_var_f α ->
-…`.  Instantiate `ESC` with a constant and you get the general dispatch;
+…`.  Instantiate `Covered` with a constant and you get the general dispatch;
 instantiate it with `fun R => exists Rx Ry, R = uskl_arrow Rx Ry` and all
 three conditions are closed by `discriminate` — an arrow is neither `∀◇` nor
 `∀◈` nor a variable — so P7a is unreachable and layer (a) falls out of layer
@@ -5090,7 +5090,7 @@ Theorem a_sub_complete_bundle_holds : a_sub_complete_bundle.
 (* strong induction on the fuel n; inside, strong induction on |Θ0|:
      main_arrow_holds  (fuel IH)
    → flex_step         (main_arrow + main at shorter contexts)
-   → main_join         (fuel IH + flex_step at Ξ = ·) *)
+   → main_dispatch         (fuel IH + flex_step at Ξ = ·) *)
 ```
 
 ### ⭐ §12.3 Flex-SkipTmVar LANDED (2026-08-03), and what the two P7a rows cost
@@ -5181,7 +5181,7 @@ nothing, because a ∀-headed `P0` forces a ∀-inh counterpart through the FILL
 `p0_wlog_trichotomy` reads the WLOG straight off mode compatibility: at
 `NM = SK` every compatible `P0` is a hole or an arrow; at `NM = TY` the only
 non-guarded, non-hole shape is a `∀`, and only at `M = TC` (`__ti` forces the
-hole, `__fn` forces an arrow).  `main_join`'s two ForallL cases now split on
+hole, `__fn` forces an arrow).  `main_dispatch`'s two ForallL cases now split on
 that trichotomy and send the escaping shape to `main_all_inh_counterpart`,
 so **`main_forall` TAKES `guarded_pskl P0 ∨ P0 = ◇` as a hypothesis** instead
 of owing it.  The bundle's residual is strictly narrower than before.
@@ -5196,10 +5196,10 @@ Theorem a_sub_complete_bundle_holds :
      main_arrow_holds (fuel IH)
    → main_below n k   (length IH)
    → flex_step        (main_arrow + main_below)
-   → main_join        (fuel IH + flex_step at Ξ = nil, via `flex_here`) *)
+   → main_dispatch        (fuel IH + flex_step at Ξ = nil, via `flex_here`) *)
 ```
 
-`main_join`'s `ESC` is instantiated with `fun _ => True`: the two tophole
+`main_dispatch`'s `Covered` is instantiated with `fun _ => True`: the two tophole
 closures are `exact I` and the third hands back `flex_here n Θ0`, i.e.
 `flex_step` at `Ξ = nil`.  `a_sub_complete_thm` (algorithmic.tex:1446) follows
 as the `Ψ := ∅`, `R := ⌈P⌉ᵘ` instance.

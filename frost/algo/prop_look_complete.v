@@ -1786,12 +1786,12 @@ Lemma p6cv_close_leaf :
              Θ ⨟ Δ ⊢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
 Proof.
   intros NM Θ0 Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa ψsub ψa Pi P0
-    HwfΘ Htags Hsub Hfresh Hdelta Hshield Hpre Hleaf.
+    HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf.
   destruct Hleaf as (α & Ψ'' & Heqψa & HαΔρ & Htagsub & Hwfsub & HΨρ).
   subst ψa.
   pose proof (Hfresh α HαΔρ) as (HXb & Hκav & Hdef).
   assert (HαΔ : α `in` Δ) by (clear - Hdelta HαΔρ; fsetdec).
-  pose proof (Hshield α HαΔρ) as Hsh.
+  pose proof (Hapart α HαΔρ) as Hsh.
   destruct (ad_ppre_delta_var_inv Hpre eq_refl HwfΘ HαΔ HXb Hdef Hsh)
     as (Heqm & HΨie).
   assert (HeqPi : Pi = pskl_var_f α)
@@ -6120,9 +6120,9 @@ Qed.
 (*  Θ0-flexible facing the opened body at [β ∈ Δρ]) — machine-checked at a *)
 (*  reachable P7b node in cex/cex_p7_shield_realizable.v.  That absence is *)
 (*  precisely why the guarded conjunct had to be ASSUMED rather than       *)
-(*  derived, and why the surviving [flex_apart_p0] — whose [p0_step] DOES  *)
+(*  derived, and why the surviving [flex_apart_deep] — whose [p0_step] DOES  *)
 (*  have the arrow rows — is derivable instead                             *)
-(*  ([flex_apart_p0_sub_shield], prop_look_complete_sub_cstr.v).           *)
+(*  ([flex_apart_deep_sub_shield], prop_look_complete_sub_cstr.v).           *)
 (*                                                                        *)
 (*  Coq text at commit `dbb4b2c`.                                          *)
 (* ===================================================================== *)
@@ -6145,12 +6145,12 @@ Qed.
 (** ⚠️ The walk carries an AVOID SET [A], and the ∀-descent's binder must miss
     it — exactly as [ss_step] does (prop_look_complete_sub_cstr.v:90) and for
     exactly the same reason.  Without it the walk reaches states mentioning an
-    ARBITRARY γ, and [flex_apart_p0] could then not be transported across a
+    ARBITRARY γ, and [flex_apart_deep] could then not be transported across a
     FLEXIBLE PREFIX at all: [fa_flexfree] is anti-monotone in the context, so
     its transport needs [ftv P0' ∩ dom Ξ = ∅], which only holds if the opened
-    binders miss [dom Ξ].  [flex_apart_p0] instantiates [A := dom Θ0], and
+    binders miss [dom Ξ].  [flex_apart_deep] instantiates [A := dom Θ0], and
     every call site picks its binder fresh for the context anyway — so the
-    condition costs nothing and buys [flex_apart_p0_weaken_flex_prefix]. *)
+    condition costs nothing and buys [flex_apart_deep_weaken_flex_prefix]. *)
 Inductive p0_step (A : atoms) : pskl -> pskl -> Prop :=
 | p0step_arrow_l : forall P1 P2, p0_step A (pskl_arrow P1 P2) P1
 | p0step_arrow_r : forall P1 P2, p0_step A (pskl_arrow P1 P2) P2
@@ -6188,28 +6188,35 @@ Proof.
   simpl in Hup. clear - Hup Hfr H; fsetdec.
 Qed.
 
-Definition flex_apart_p0 (Θ0 : aenv) (Δρ : atoms) (P0 : pskl) (ψa : uskl)
+(** ⭐ [flex_apart_deep]: [flex_apart] HEREDITARILY — at [P0] and at every
+    subterm the recursion can descend to, against the SAME fixed guess.
+
+    ⚙ It was called [flex_apart_p0] until 2026-08-05, which read as "at P0"
+    and is exactly what it does NOT mean.  The [p0] in [p0_walk] below is
+    right, though: that relation really is the descent the COUNTERPART [P0]
+    makes, one constructor at a time. *)
+Definition flex_apart_deep (Θ0 : aenv) (Δρ : atoms) (P0 : pskl) (ψa : uskl)
   : Prop :=
   forall P0', p0_walk (dom Θ0) P0 P0' -> flex_apart Θ0 Δρ P0' ψa.
 
-Lemma flex_apart_p0_here : forall Θ0 Δρ P0 ψa,
-  flex_apart_p0 Θ0 Δρ P0 ψa -> flex_apart Θ0 Δρ P0 ψa.
+Lemma flex_apart_deep_here : forall Θ0 Δρ P0 ψa,
+  flex_apart_deep Θ0 Δρ P0 ψa -> flex_apart Θ0 Δρ P0 ψa.
 Proof. intros Θ0 Δρ P0 ψa H; apply H; apply p0w_refl. Qed.
 
-Lemma flex_apart_p0_step : forall Θ0 Δρ P0 ψa P1,
-  flex_apart_p0 Θ0 Δρ P0 ψa -> p0_step (dom Θ0) P0 P1 ->
-  flex_apart_p0 Θ0 Δρ P1 ψa.
+Lemma flex_apart_deep_step : forall Θ0 Δρ P0 ψa P1,
+  flex_apart_deep Θ0 Δρ P0 ψa -> p0_step (dom Θ0) P0 P1 ->
+  flex_apart_deep Θ0 Δρ P1 ψa.
 Proof.
   intros Θ0 Δρ P0 ψa P1 H Hs P0' Hw.
   apply H; eapply p0w_step; [ exact Hs | exact Hw ].
 Qed.
 
-Lemma flex_apart_p0_weaken : forall Θ0 Δρ P0 ψa,
-  flex_apart_p0 Θ0 Δρ P0 ψa ->
+Lemma flex_apart_deep_weaken : forall Θ0 Δρ P0 ψa,
+  flex_apart_deep Θ0 Δρ P0 ψa ->
   forall Θ0', (forall x b, binds x b Θ0 -> binds x b Θ0') ->
   (forall α, a_flex_tvar Θ0' α -> a_flex_tvar Θ0 α) ->
   (dom Θ0) [<=] (dom Θ0') ->
-  flex_apart_p0 Θ0' Δρ P0 ψa.
+  flex_apart_deep Θ0' Δρ P0 ψa.
 Proof.
   intros Θ0 Δρ P0 ψa H Θ0' Hmon Hfx Hdom P0' Hw.
   eapply flex_apart_weaken;
@@ -6217,12 +6224,12 @@ Proof.
     | exact Hmon | exact Hfx ].
 Qed.
 
-Lemma flex_apart_p0_weaken_tvar : forall Θ0 Δρ P0 ψa β,
-  flex_apart_p0 Θ0 Δρ P0 ψa ->
-  flex_apart_p0 ((β ~ abind_tvar) ++ Θ0) Δρ P0 ψa.
+Lemma flex_apart_deep_weaken_tvar : forall Θ0 Δρ P0 ψa β,
+  flex_apart_deep Θ0 Δρ P0 ψa ->
+  flex_apart_deep ((β ~ abind_tvar) ++ Θ0) Δρ P0 ψa.
 Proof.
   intros Θ0 Δρ P0 ψa β H.
-  eapply flex_apart_p0_weaken;
+  eapply flex_apart_deep_weaken;
     [ exact H | intros x b Hb; apply binds_app_3; exact Hb
     | apply a_flex_tvar_strip_tvar | simpl; clear; fsetdec ].
 Qed.
@@ -6230,10 +6237,10 @@ Qed.
 (** The FLEXIBLE-prefix transport (the [sub_shield_weaken_flex_prefix] mirror):
     the walk misses [dom Ξ] throughout, so its endpoint does, and [fa_flexfree]
     survives.  This is what the avoid set on [p0_step] was added for. *)
-Lemma flex_apart_p0_weaken_flex_prefix : forall Θ0 Δρ P0 ψa Ξ,
-  flex_apart_p0 Θ0 Δρ P0 ψa ->
+Lemma flex_apart_deep_weaken_flex_prefix : forall Θ0 Δρ P0 ψa Ξ,
+  flex_apart_deep Θ0 Δρ P0 ψa ->
   (ftvar_in_pskl P0) ∩ (dom Ξ) [=] empty ->
-  flex_apart_p0 (Ξ ++ Θ0) Δρ P0 ψa.
+  flex_apart_deep (Ξ ++ Θ0) Δρ P0 ψa.
 Proof.
   intros Θ0 Δρ P0 ψa Ξ H HfrP0 P0' Hw.
   assert (HwΞ : p0_walk (dom Ξ) P0 P0')
@@ -6283,25 +6290,25 @@ Qed.
 (** …and the same for the P0-only closure, which is Δρ-CONSTANT: the growth is
     pointwise.  This is what Sub-ForallL needs, where the row's fresh rigid β
     joins Δρ and is fresh for the guess. *)
-Lemma flex_apart_p0_delta_grow : forall Θ0 Δρ Δρ' P0 ψa,
-  flex_apart_p0 Θ0 Δρ P0 ψa ->
+Lemma flex_apart_deep_delta_grow : forall Θ0 Δρ Δρ' P0 ψa,
+  flex_apart_deep Θ0 Δρ P0 ψa ->
   Δρ [<=] Δρ' -> Δρ' ∩ ftvar_in_uskl ψa [<=] Δρ ->
-  flex_apart_p0 Θ0 Δρ' P0 ψa.
+  flex_apart_deep Θ0 Δρ' P0 ψa.
 Proof.
   intros Θ0 Δρ Δρ' P0 ψa H Hle Hcl P0' Hw.
   eapply flex_apart_delta_grow; [ apply H; exact Hw | exact Hle | exact Hcl ].
 Qed.
 
-Lemma flex_apart_p0_clean : forall Θ0 Δρ P0 ψa,
+Lemma flex_apart_deep_clean : forall Θ0 Δρ P0 ψa,
   (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
-  flex_apart_p0 Θ0 Δρ P0 ψa.
+  flex_apart_deep Θ0 Δρ P0 ψa.
 Proof. intros Θ0 Δρ P0 ψa Hc P0' _; apply fa_clean; exact Hc. Qed.
 
 (** ⚠️ There is NO [flex_apart_walk_p0] (DESIGN §14.3, 2026-08-03).  P6-Ss's
     walk used to imply this closure, via the two guess-fixed P0 arrow steps
     [fa_step] carried for exactly that purpose — and those steps made
     [flex_apart_walk] unsatisfiable at a reachable P7b node (see the ⚠️ note
-    on [fa_step]).  [flex_apart_p0] is now an INDEPENDENT [sub_shield]
+    on [fa_step]).  [flex_apart_deep] is now an INDEPENDENT [sub_shield]
     conjunct: P6-Ss reads it off directly instead of deriving it.  The two
     closures are compatible at a [sub_shield] position precisely because the
     Δρ' quantifier there keeps the guess CLEAN for the grown part of Δρ',
@@ -6717,12 +6724,12 @@ Lemma p6cv_close_leaf_mono :
     Θ ⨟ Δ' ⊢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
 Proof.
   intros NM Θ0 Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa ψsub ψa Pi P0
-    HwfΘ Htags Hsub Hfresh Hdelta Hshield Hpre Hleaf.
+    HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf.
   destruct Hleaf as (α & Ψ'' & Heqψa & HαΔρ & Htagsub & Hwfsub & HΨρ).
   subst ψa.
   pose proof (Hfresh α HαΔρ) as (HXb & Hκav & Hdef).
   assert (HαΔ : α `in` Δ) by (clear - Hdelta HαΔρ; fsetdec).
-  pose proof (Hshield α HαΔρ) as Hsh.
+  pose proof (Hapart α HαΔρ) as Hsh.
   destruct (ad_ppre_delta_var_inv Hpre eq_refl HwfΘ HαΔ HXb Hdef Hsh)
     as (Heqm & HΨie).
   assert (HeqPi : Pi = pskl_var_f α)

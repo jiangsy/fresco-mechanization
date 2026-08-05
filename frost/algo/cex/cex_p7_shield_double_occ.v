@@ -387,7 +387,7 @@ Proof. clear; fsetdec. Qed.
    [main_forall]'s supply is therefore retired.
 
    ⚙ (2026-08-05, later) [sub_shield] itself is now DELETED — it had become a
-   synonym for [flex_apart_p0], which is what P6-Ss and P6-L take.  The
+   synonym for [flex_apart_deep], which is what P6-Ss and P6-L take.  The
    positive statement below is therefore phrased in that vocabulary.
 
    Coq text at commit `165746a`. *)
@@ -397,8 +397,8 @@ Proof. clear; fsetdec. Qed.
     configuration.  Δρ = ∅ here, so every state the P0-walk reaches is
     [fa_clean]. *)
 Theorem p7_shield_double_occ_holds :
-  flex_apart_p0 Θ0d empty P0d ψd.
-Proof. apply flex_apart_p0_clean. clear; fsetdec. Qed.
+  flex_apart_deep Θ0d empty P0d ψd.
+Proof. apply flex_apart_deep_clean. clear; fsetdec. Qed.
 
 (* ===================================================================== *)
 (*  THE HEADLINE — every OTHER hypothesis of the ForallL row holds        *)
@@ -430,7 +430,7 @@ Theorem p7_double_occ_row_premises_all_hold :
   (* … and the shield — the row's ONE remaining premise — HOLDS here
      (2026-08-05; it was FALSE before the guarded conjunct was retired, which
      is what this file used to record). *)
-  flex_apart_p0 Θ0d empty P0d ψd.
+  flex_apart_deep Θ0d empty P0d ψd.
 Proof.
   repeat split;
     first [ apply Θ0d_wf | apply P0d_wf | apply Pd_wf | apply P0d_mode

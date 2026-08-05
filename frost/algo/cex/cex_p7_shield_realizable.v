@@ -518,7 +518,7 @@ Qed.
    this configuration, which is still the content.
    Coq text at commit `dbb4b2c`. *)
 
-Theorem apart_p0_w_root_holds : forall Δρ, flex_apart_p0 Θ0w Δρ P0w ψw.
+Theorem apart_p0_w_root_holds : forall Δρ, flex_apart_deep Θ0w Δρ P0w ψw.
 Proof.
   intros Δρ P0' _. apply fa_clean.
   unfold ψw, cexψ; simpl. clear; fsetdec.
@@ -541,16 +541,16 @@ Qed.
 (* --------------------------------------------------------------------- *)
 
 (** ⭐⭐ THE DECISIVE CHECK, in the surviving vocabulary (2026-08-05).  The
-    premise P7b's ForallL rows and P6-L now carry is [flex_apart_p0] at
+    premise P7b's ForallL rows and P6-L now carry is [flex_apart_deep] at
     Δρ = ∅, and it HOLDS at the configuration that refutes the old
     non-positional [sub_shield].
 
     ⚙ The [ss_walk] inversion this proof used to need — the guard leaves
     exactly the root, the codomain is one [sss_arrow_r] step away — is gone
     with [ss_walk] itself: [sub_shield] had become a synonym for
-    [flex_apart_p0], so P6-Ss takes the latter directly and there is no walk
+    [flex_apart_deep], so P6-Ss takes the latter directly and there is no walk
     index left to invert. *)
-Theorem p7_shield_repaired_holds : flex_apart_p0 Θ0w empty P0w ψw.
+Theorem p7_shield_repaired_holds : flex_apart_deep Θ0w empty P0w ψw.
 Proof. apply apart_p0_w_root_holds. Qed.
 
 End Realizable.

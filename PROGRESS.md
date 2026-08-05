@@ -109,8 +109,8 @@ refutation — now reversed (`p7_sub_shield_double_occ_holds`).
 
 Consequently: P6-L drops the premise and discharges it internally; P7b's
 `a_sub_complete_forall_l_tagged` / `_untagged` drop TASK 0's gate; §9's two
-ForallL branches of `main_join` apply those row lemmas DIRECTLY, on exactly
-the join rule's own premises; `main_join`, `main_arrow_holds` and the bundle
+ForallL branches of `main_dispatch` apply those row lemmas DIRECTLY, on exactly
+the join rule's own premises; `main_dispatch`, `main_arrow_holds` and the bundle
 drop the hypothesis.  `main_forall` is retired (kept as documentation, no
 consumers).
 
@@ -129,15 +129,15 @@ rewritten to record all of this, including the retraction.
 ## 2026-08-05 — ⭐⭐⭐ **`flex_apart` RETIRED FROM P6-Cv AND P6-Sv; `sub_shield` COLLAPSES TO A DERIVABLE PREMISE**
 
 `make coq` clean, every `.v` fresh, P6-Cv / P6-Sv / P6-Ss / P6-L /
-`a_sub_sound_thm` / the new `flex_apart_p0_sub_shield` all
+`a_sub_sound_thm` / the new `flex_apart_deep_sub_shield` all
 `Closed under the global context`.
 
 | lemma | premise before | after |
 |---|---|---|
 | P6-Cv | `flex_apart` | **gone** |
 | P6-Sv | `flex_apart_walk` (closure over `fa_walk`) | **gone** |
-| P6-Cs | `flex_apart_p0` | unchanged — one genuine consumer |
-| P6-Ss / P6-L | `sub_shield` = `flex_apart_p0` ∧ guarded `flex_apart_walk` | `flex_apart_p0` alone, and **derivable** |
+| P6-Cs | `flex_apart_deep` | unchanged — one genuine consumer |
+| P6-Ss / P6-L | `sub_shield` = `flex_apart_deep` ∧ guarded `flex_apart_walk` | `flex_apart_deep` alone, and **derivable** |
 
 `fa_step` / `fa_walk` / `flex_apart_walk` and their kit are DELETED
 (retraction banner in `prop_look_complete.v`), as are the five walk lemmas in
@@ -155,9 +155,9 @@ that premise.
 come out" because P6-Ss's Sub-Arrow row has nothing to descend on.  True — but
 only of the GUARDED conjunct: `fa_step` has no guess-fixed arrow descent (two
 such rows existed and made the walk UNSATISFIABLE composed with `fastep_all_r`,
-`cex/cex_p7_shield_realizable.v`).  `flex_apart_p0` closes over `p0_step`,
+`cex/cex_p7_shield_realizable.v`).  `flex_apart_deep` closes over `p0_step`,
 which DOES have `p0step_arrow_l/_r`.  So the surviving half descends freely and
-`flex_apart_p0_sub_shield` derives the whole closure from the root, via
+`flex_apart_deep_sub_shield` derives the whole closure from the root, via
 `ss_walk_p0_walk` and `flex_apart_delta_grow`.  **Lesson: when a premise is a
 closure, ask which walk it closes over before concluding it cannot be
 derived — two conjuncts of one definition had opposite answers.**
@@ -170,7 +170,7 @@ double-occurrence configuration (Δρ = ∅ there), and the headline is now
 `p7_double_occ_row_premises_all_hold`.  **The double-occurrence obstacle to
 `main_forall`'s supply is retired.**
 
-⛔ **WHAT SURVIVES.**  P6-Cs keeps `flex_apart_p0` for ONE site — the
+⛔ **WHAT SURVIVES.**  P6-Cs keeps `flex_apart_deep` for ONE site — the
 COLLECTION-side `LE-FlexR` row (`prop_look_complete_cstr.v` ≈ 2185).  Not for
 the mono-ness (that transfers), but for the κ-IMAGE Δρ-CLEANLINESS: LE-FlexR
 invents a fresh flexible whose image is the whole guess, and P6-Cs's
@@ -184,7 +184,7 @@ nothing indicates `LE-FlexR` is wrong, only that this obligation is open.
 
 Step 3 of `docs/HANDOFF-solve-flexr-repair.md`, and the prescribed move in it
 was **wrong**.  Replacing P6-Ss's `sub_shield` by `flex_apart_walk` +
-`flex_apart_p0` cannot come out: `sub_shield`'s `sss_arrow_r` moves `P0` and
+`flex_apart_deep` cannot come out: `sub_shield`'s `sss_arrow_r` moves `P0` and
 the subject with the GUESS FIXED, and the matching `fastep_p0_arrow_r` was
 deliberately deleted (it made the walk unsatisfiable at a reachable P7b node,
 `cex/cex_p7_shield_realizable.v`).  Carrying both facts across an arrow is
@@ -220,7 +220,7 @@ position-wise against `Pi`, whose holes the precision premise already keeps
 
 ⛔ NOT YET DELETED.  The premise stays on P6-Cv's statement (annotated
 `⭕ RETAINED BUT UNUSED`) and threaded internally, because removing it breaks
-the whole downstream cluster at once — `flex_apart_p0` (P6-Cs),
+the whole downstream cluster at once — `flex_apart_deep` (P6-Cs),
 `flex_apart_walk` (P6-Sv), `sub_shield` (P6-Ss, P6-L) all exist to supply it.
 The strip of P6-Cv alone was machine-checked to go through; the recipe is in
 the hand-off.  ⚠️ And the cascade is NOT pure threading: P6-Cs has a genuine
@@ -799,7 +799,7 @@ NOT a defect and must not be reported as one.  Its mechanical content is
 * ⭐ **and A2 is DISCHARGED INSIDE the dispatch**: `p0_wlog_trichotomy` reads
   the WLOG off mode compatibility (at SK every compatible `P0` is a hole or an
   arrow; at TY the only non-guarded, non-hole shape is a `∀`, and only at
-  `M = TC`), `main_join`'s two ForallL cases split on it, and the escaping
+  `M = TC`), `main_dispatch`'s two ForallL cases split on it, and the escaping
   shape goes to `main_all_inh_counterpart`.  So **`main_forall` now TAKES
   `guarded_pskl P0 ∨ P0 = ◇` as a hypothesis** — the bundle's residual is
   strictly narrower.
@@ -808,7 +808,7 @@ NOT a defect and must not be reported as one.  Its mechanical content is
 (`prop_sub_complete_dispatch.v` §12) is exactly DESIGN §12.1's three layers
 glued by `lt_wf_ind` on the fuel and, inside it, `lt_wf_ind` on the CONTEXT
 LENGTH: `main_arrow_holds` (fuel IH) → `main_below n k` (length IH) →
-`flex_step` → `main_join` with `ESC := fun _ => True` (the two tophole
+`flex_step` → `main_dispatch` with `ESC := fun _ => True` (the two tophole
 closures are `exact I`; the third hands back `flex_here n Θ0`, which is
 `flex_step` at `Ξ = nil`).  `a_sub_complete_thm` (algorithmic.tex:1446) is the
 `Ψ := ∅`, `R := ⌈P⌉ᵘ` instance.
@@ -946,15 +946,15 @@ cross-half IH gains `length Θ0' <= length Ξ + length Θ0`, and **solve's
 cross-half IH is restricted to an ARROW subject** — the only thing that breaks
 §12.1's non-decreasing cycle.
 
-**§9 — THE MAIN HALF's TWELVE-ROW JOIN DISPATCH (`main_join`), layer (c).**
+**§9 — THE MAIN HALF's TWELVE-ROW JOIN DISPATCH (`main_dispatch`), layer (c).**
 Nine rows delegate to their `Qed` row lemma (fuel IH where the row consumes
 fuel); the two UnivGhostL rows and `__flex_mono` preserve the fuel and are the
 structural IH's work (`⌊∀◈R⌋ˢ` IS `∀◇⌊R⌋ˢ`, so both ghosts use the one
 `a_sub__univ_ghost_l`; `__flex_mono` is a pure peel closed by
 `flex_def_paint_tyequiv` + `a_uskl_tyequiv_trans`).  ⭐ **The P7a escape is
-carried by an ABSTRACT predicate `ESC` on the motive's subject, with three
+carried by an ABSTRACT predicate `Covered` on the motive's subject, with three
 closure conditions** — that is what lets ONE dispatch serve both layers:
-instantiate `ESC` with "is an arrow" and all three become vacuous (an arrow is
+instantiate `Covered` with "is an arrow" and all three become vacuous (an arrow is
 neither `∀◇` nor `∀◈` nor a variable), so the tophole-stripping rows can never
 expose a variable subject and P7a is unreachable.  That is `main_arrow_holds`,
 **layer (a), from the FUEL IH alone**, and it is exactly what
@@ -998,7 +998,7 @@ motive, so the restriction would have to move INTO `sub_complete_concl` and
 every row would owe walkability of the contexts it recurses at.
 
 **⭕ (A) `main_forall n` — the two ForallL rows**, isolated as the single
-residual hypothesis of `main_join`.  It bundles TWO independent problems:
+residual hypothesis of `main_dispatch`.  It bundles TWO independent problems:
 
   * **A1** — TASK 0's `sub_shield`.  Unchanged: `prop_sub_shield_supply.v`
     covers flex-free / atomic / mono-counterpart / inh-free-counterpart /
@@ -1095,7 +1095,7 @@ is VACUOUS on it (an ε-tagged ∀ is not `etag_free`), and `fastep_flexdef_r`
 re-enters the clean branch because a monotype PAINTING carries no tag.
 
 **THE SPLIT.**  `fastep_p0_arrow_{l,r}` and `flex_apart_walk_p0` are DELETED.
-`flex_apart_p0` — P6-Cs's Δρ-CONSTANT closure — is now an independent
+`flex_apart_deep` — P6-Cs's Δρ-CONSTANT closure — is now an independent
 `sub_shield` conjunct instead of a consequence of `flex_apart_walk`.  The two
 are compatible *at a `sub_shield` position* precisely because that definition's
 Δρ' quantifier keeps ψa clean for whatever Δρ' adds, which `fastep_all_r` does
@@ -1109,12 +1109,12 @@ both, `sss_all` moves P0 (Sub-ForallR), `sss_forall_l_{syn,etag}` and
     sub_shield Θ0 Ψ' Δρ α P0 R ψa :=
       forall P0' R' Δρ', ss_walk (dom Θ0) α P0 R P0' R' ->
         Δρ [<=] Δρ' -> Δρ' ∩ ftv ψa [<=] Δρ ->
-        flex_apart_p0 Θ0 Δρ' P0' ψa
+        flex_apart_deep Θ0 Δρ' P0' ψa
         /\ (α ∈ ftv R' -> flex_apart_walk Θ0 Δρ' P0' ψa
                           /\ flex_shield Θ0 Ψ' Δρ' P0' ψa)
 
 ⚠️ **The guard applies to EXACTLY TWO of the three closures**, and this is the
-one place §14.2's sketch was wrong.  `flex_apart_p0` never descends the guess,
+one place §14.2's sketch was wrong.  `flex_apart_deep` never descends the guess,
 so it is harmless anywhere — and it MUST stay unguarded, because P6-Ss's Check
 and Arrow rows hand it to P6-Cs at positions where `α` does not occur at all
 (P6-Ss's own premise is `α ∉ ftv P ∨ P = α`, so `α` occurs only at the LS-Var
@@ -1123,7 +1123,7 @@ leaf).  The two closures that DO descend the guess (`fastep_all_r` /
 is FREE exactly where they are consumed — the LS-Var row, where `R' = α`.
 
 **ROW MAP** (P6-Ss, `prop_look_complete_sub_cstr.v`): LS-Var takes both guarded
-conjuncts (guard free); Check and Arrow-left take `flex_apart_p0` via the new
+conjuncts (guard free); Check and Arrow-left take `flex_apart_deep` via the new
 `sub_shield_here_p0`; Sub-ForallR steps by `sss_all`; Sub-Arrow-right by
 `sss_arrow_r` + `_weaken_flex_prefix`; the two Sub-ForallL rows now ALSO step
 the SUBJECT (`sss_forall_l_etag` / `sss_forall_l_syn`, premise `β <> α`, already
@@ -1138,7 +1138,7 @@ which walks the guess onto a raw flexible it never meets;
 BOUNDARY the guard exists to respect).  Every supply route
 (`prop_sub_shield_supply.v`) is uniform in `α` and `R`, so it discharges it:
 tag-free / atomic / flex-free / inh-free / ∀-free all still apply, with
-`flex_apart_p0` free from `flex_apart_p0_clean` at Δρ = ∅.
+`flex_apart_deep` free from `flex_apart_deep_clean` at Δρ = ∅.
 
 ⭐⭐ **THE DECISIVE CHECK.**  `p7_sub_shield_repaired_holds` (Qed, axiom-free)
 proves the repaired premise, in exactly the form P7b's rows take, AT the §14.1
@@ -2157,7 +2157,7 @@ Run against the actual consumer sets (`grep -rn NAME frost | grep '\.v:'`):
   which has no `β` — `a_solve_cstr_strip_tvar_mid` and `a_wf_pskl_strip_tvar`
   demand it whatever the binder encoding.  The conjunct is also the ONLY
   surviving bound on `𝒞` now that `a_looksub_lookeq_ftv` is disjunctive, and
-  the arrow row was found to need it (above).  `Θs`, `Δρ`, `flex_apart_p0` and
+  the arrow row was found to need it (above).  `Θs`, `Δρ`, `flex_apart_deep` and
   the ρ apparatus therefore stay too.  The same argument applies to P6-Ss's
   mode-guarded ftv-𝒞 disjunction.
 - **`a_looksub_lookeq_subst_stable` (§4)** — consumers are exactly
@@ -4241,7 +4241,7 @@ Use it unless you are threading a ρ down from a Sub-ForallL; P6-Ss's Check row
 and the counterexample file both do.
 
 Making the corollary premise-free needed one more definition: P6-Cs takes the
-**P0-ONLY walk** `flex_apart_p0` (`p0_step` / `p0_walk`, prop_look_complete.v)
+**P0-ONLY walk** `flex_apart_deep` (`p0_step` / `p0_walk`, prop_look_complete.v)
 rather than `flex_apart_walk`.  P6-Cs descends P0 alone at a CONSTANT Δρ, so
 at Δρ = ∅ every reachable state is `fa_clean` — whereas `flex_apart_walk`'s
 `fastep_all_r` can grow Δρ and would have left a real premise behind.  P6-Ss

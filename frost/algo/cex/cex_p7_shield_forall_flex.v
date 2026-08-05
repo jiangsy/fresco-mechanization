@@ -153,9 +153,9 @@ Qed.
    That conjunct NO LONGER EXISTS.  Under the authors' repaired [SolE-FlexR],
    P6-Cv does not consume [flex_apart] at all, so P6-Sv does not need
    [flex_apart_walk], so [sub_shield] keeps only its Δρ-constant, P0-only
-   [flex_apart_p0] conjunct — and THAT one is not merely satisfiable here, it
-   is DERIVABLE from [flex_apart_p0] at the root
-   ([flex_apart_p0_sub_shield], prop_look_complete_sub_cstr.v), because every
+   [flex_apart_deep] conjunct — and THAT one is not merely satisfiable here, it
+   is DERIVABLE from [flex_apart_deep] at the root
+   ([flex_apart_deep_sub_shield], prop_look_complete_sub_cstr.v), because every
    P0-move of an [ss_step] is a [p0_step] move.  So the statement above is now
    FALSE (its [~ sub_shield …] is refuted by the collapse lemma), and it is
    deleted rather than repaired.

@@ -241,7 +241,7 @@ side condition: `a_wf_pskl_top_guarded` derives it from the paper's own
   replacement does not.
 
 ⭕ **Still to reconsider at Step 3 below**: `sub_shield`, `flex_apart_walk`,
-`flex_apart_p0`, and the whole `ss_walk` machinery. These were invented as
+`flex_apart_deep`, and the whole `ss_walk` machinery. These were invented as
 the mech's repair of `lemma:complete-look` — *the very lemma the repaired
 rule may now make provable as stated*. Do not delete them speculatively;
 delete them when P6-L goes through without them.
@@ -753,8 +753,8 @@ builds (`make coq` clean).
 |---|---|---|
 | P6-Cv | `flex_apart` | **gone** |
 | P6-Sv | `flex_apart_walk` | **gone** |
-| P6-Cs | `flex_apart_p0` | unchanged — one genuine consumer, below |
-| P6-Ss | `sub_shield` (2 conjuncts) | `flex_apart_p0` alone, **derivable** |
+| P6-Cs | `flex_apart_deep` | unchanged — one genuine consumer, below |
+| P6-Ss | `sub_shield` (2 conjuncts) | `flex_apart_deep` alone, **derivable** |
 | P6-L | `sub_shield` | **gone** — discharged internally |
 | P7b ForallL rows | TASK 0's `sub_shield` gate | **gone** |
 | the bundle / the theorem | `forall n, main_forall n` | **gone** |
@@ -771,8 +771,8 @@ builds (`make coq` clean).
 2. **P6-Sv stopped needing `flex_apart_walk`** — every use was a relay into
    P6-Cv's premise.
 3. **`sub_shield` lost its guess-descending conjunct**, leaving the
-   Δρ-CONSTANT half, which is derivable from `flex_apart_p0`
-   (`flex_apart_p0_sub_shield`).
+   Δρ-CONSTANT half, which is derivable from `flex_apart_deep`
+   (`flex_apart_deep_sub_shield`).
 4. ⭐⭐⭐ **`sub_shield_empty`**: that half at **Δρ = ∅** — exactly how P6-L
    and P7b's two ForallL rows instantiate it — is UNCONDITIONALLY TRUE.  The
    walk's growth condition `Δρ' ∩ ftv ψa ⊆ Δρ` reads as cleanliness there, so
@@ -799,14 +799,14 @@ double-occurrence refutation — now reversed
 An earlier revision of this section said the move "cannot come out" because
 P6-Ss's Sub-Arrow row has nothing to descend on.  True — but only of the
 GUARDED conjunct: `fa_step` has no guess-fixed arrow descent (deliberately;
-it made the walk unsatisfiable).  `flex_apart_p0` closes over `p0_step`,
+it made the walk unsatisfiable).  `flex_apart_deep` closes over `p0_step`,
 which DOES have `p0step_arrow_l/_r`.  **When a premise is a closure, ask
 WHICH WALK it closes over before concluding it cannot be derived — two
 conjuncts of one definition had opposite answers.**
 
 #### ⛔ What is left in the tree
 
-`flex_apart_p0`, P6-Cs's premise, for ONE site: the **collection-side
+`flex_apart_deep`, P6-Cs's premise, for ONE site: the **collection-side
 `LE-FlexR`** row (`prop_look_complete_cstr.v` ≈ 2185).  Not for the mono-ness
 — that transfers by the same `uskl_rho_mono_target` route — but for the
 **κ-IMAGE Δρ-CLEANLINESS**: LE-FlexR invents a fresh flexible whose κ-image is
@@ -836,13 +836,13 @@ premise (`a_looksub_solve_complete_gen` / `_leaf`,
 `prop_look_complete_sub_cstr.v:220`-ish) and **P6-L's**
 (`prop_look_complete_extract.v:1036`, `:1286`).  P6-Sv does **not** take it —
 it takes `flex_apart_walk Θ0 Δρ P0 ψa` (`prop_look_complete_sub_var.v:2053`),
-and P6-Cs takes `flex_apart_p0`.  `sub_shield` is the CLOSURE that supplies
+and P6-Cs takes `flex_apart_deep`.  `sub_shield` is the CLOSURE that supplies
 both along an `ss_walk`, through exactly three lemmas:
 
 | lemma | yields | who consumes it inside P6-Ss |
 |---|---|---|
 | `sub_shield_here` (guarded on `α ∈ ftv R`) | `flex_apart_walk` | the `P = α` leaf → P6-Sv |
-| `sub_shield_here_p0` (unguarded) | `flex_apart_p0` | the Check row → P6-Cs, and the Arrow row's LEFT branch |
+| `sub_shield_here_p0` (unguarded) | `flex_apart_deep` | the Check row → P6-Cs, and the Arrow row's LEFT branch |
 | `sub_shield_step` | the descents | the ∀ / arrow / ghost rows |
 
 **START HERE.**  ⭐ The repair has already killed the witness `sub_shield`
@@ -851,8 +851,8 @@ now solves to `∀β.β→β` (`cex/probe_flexr_neutralises_p6.v`).  So the conc
 first move is to attack the CLOSURE, not the leaves: in
 `prop_look_complete_sub_cstr.v`, replace the `sub_shield` premise by the two
 things its consumers actually take — `flex_apart_walk Θ0 Δρ P0 ψa` and
-`flex_apart_p0 Θ0 Δρ P0 ψa` — and see whether the descents still go through
-(`flex_apart_walk_step` / `flex_apart_p0_step` are the replacements for
+`flex_apart_deep Θ0 Δρ P0 ψa` — and see whether the descents still go through
+(`flex_apart_walk_step` / `flex_apart_deep_step` are the replacements for
 `sub_shield_step`; both already exist and are used elsewhere in the file).
 The three `sub_shield_*` grep hits above are the complete list of rows that
 owe anything.  If it comes out, propagate to P6-L (which takes it verbatim)

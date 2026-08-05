@@ -960,10 +960,10 @@ Qed.
 (*  rows and [__flex_mono] preserve the fuel and are the structural IH's   *)
 (*  real work.                                                            *)
 (*                                                                        *)
-(*  [ESC] carries the P7a escape.  It is needed only where the motive's    *)
+(*  [Covered] carries the P7a escape.  It is needed only where the motive's    *)
 (*  subject is a bare VARIABLE — the [__arrow] row — but the two           *)
 (*  tophole-stripping rows can EXPOSE such a subject, so the hypothesis    *)
-(*  must be closed under stripping.  Instantiating [ESC] with a constant   *)
+(*  must be closed under stripping.  Instantiating [Covered] with a constant   *)
 (*  gives the general dispatch; instantiating it with "is an arrow" makes  *)
 (*  all three side conditions vacuous and yields [main_arrow] — DESIGN     *)
 (*  §12.1's layer (a) — from the FUEL IH alone.                            *)
@@ -990,14 +990,26 @@ Definition flex_here (n : nat) (Θ0 : aenv) : Prop :=
    [main_forall]'s shape; their headers carry the statement inline.  Coq text
    at commit `4351531`. *)
 
-Lemma main_join : forall n NM M Ψ Θ R' Q,
+(** ⭐ [main_dispatch]: the main half, BY INDUCTION ON THE JOIN — its twelve-row
+    dispatch.  It is a proof engine, not a statement, unlike its neighbours
+    [main_all] / [main_arrow] / [main_below]; it was called [main_join] until
+    2026-08-05, which read like one of them.
+
+    ⭐ [Covered] is the CLASS OF SUBJECTS this invocation is proved for
+    (formerly the opaque [ESC]).  Restricting it is what buys the recursion:
+    instantiated with "is an arrow" the two tophole-stripping rows can never
+    expose a bare variable, so the P7a flex entry — the third condition
+    below — is unreachable and the arrow layer follows from the FUEL IH
+    alone.  Instantiated with the constant [True] it gives the general
+    dispatch, and the third condition hands back [flex_here]. *)
+Lemma main_dispatch : forall n NM M Ψ Θ R' Q,
   ad_pat_sub_gv n NM M Ψ Θ R' Q ->
   (forall n', n' < n -> main_all n') ->
-  forall Θ0 (ESC : uskl -> Prop),
-    (forall R0, ESC (uskl_tophole R0) -> ESC R0) ->
-    (forall R0, ESC (uskl_topholeg R0) -> ESC R0) ->
-    (forall α, ESC (uskl_var_f α) -> flex_here n Θ0) ->
-    forall P0 P R κ, ESC R ->
+  forall Θ0 (Covered : uskl -> Prop),
+    (forall R0, Covered (uskl_tophole R0) -> Covered R0) ->
+    (forall R0, Covered (uskl_topholeg R0) -> Covered R0) ->
+    (forall α, Covered (uskl_var_f α) -> flex_here n Θ0) ->
+    forall P0 P R κ, Covered R ->
       sub_complete_concl n NM M Θ0 P0 P R R' Ψ Θ κ Q.
 Proof.
   intros n NM M Ψ Θ R' Q HD.
@@ -1014,7 +1026,7 @@ Proof.
     | n0 Ψ0 Θa Ma Rg Qg HM Hsub IHsub
     | n0 Ψ0 Θa Ma Rg Qg HM Hsub IHsub
     | n0 NM0 Ψ0 Θa Ma αd τd Qa Hbd Hsub IHsub ];
-    intros Hfuel Θ0 ESC He1 He2 He3 P0 P R κ HESC.
+    intros Hfuel Θ0 Covered He1 He2 He3 P0 P R κ HCovered.
   - (* __infer : the row lemma takes any [R] *)
     apply a_sub_complete_infer.
   - (* __check : the row lemma owes [guarded_pskl P0] and the wf of [B] *)
@@ -1067,7 +1079,7 @@ Proof.
       * assert (Hfγ : a_flex_tvar Θ0 γ)
           by (destruct Hfl as [Hb | [τ0 Hb]];
               [ left; exact Hb | right; exists τ0; exact Hb ]).
-        destruct (He3 γ HESC NM0 Ma γ P0 (uskl_arrow R1 R2) Ψ0 Θa κ
+        destruct (He3 γ HCovered NM0 Ma γ P0 (uskl_arrow R1 R2) Ψ0 Θa κ
                     (bskl_arrow Q1 Q2)
                     a_decls__nil ltac:(simpl; clear; fsetdec)
                     Hwf0 Hwfth HwfP0 Hfγ Hmodsk Hmodty Hinc Hslack HDj Hrs
@@ -1162,8 +1174,8 @@ Proof.
     (* the row is SK-only, so the motive's TY ghost-freeness is VACUOUS *)
     assert (Hgf0 : a_sub_mode_sk = a_sub_mode_ty -> uskl_ghost_free Rg)
       by (intro Habs; discriminate Habs).
-    destruct (IHsub Hfuel Θ0 ESC He1 He2 He3 P0 (⌊ R00 ⌋ˢ) R00 κ
-                (He1 R00 HESC)
+    destruct (IHsub Hfuel Θ0 Covered He1 He2 He3 P0 (⌊ R00 ⌋ˢ) R00 κ
+                (He1 R00 HCovered)
                 Hwf0 Hwfth HwfP0 HwfP' Hmodsk Hmodty eq_refl Hinc Hslack0
                 Hsub Hrs HwfQ Hgf0)
       as [P1 [Θ1 [Hrun Hopt]]].
@@ -1182,8 +1194,8 @@ Proof.
     (* SK-only, as above *)
     assert (Hgf0 : a_sub_mode_sk = a_sub_mode_ty -> uskl_ghost_free Rg)
       by (intro Habs; discriminate Habs).
-    destruct (IHsub Hfuel Θ0 ESC He1 He2 He3 P0 (⌊ R00 ⌋ˢ) R00 κ
-                (He2 R00 HESC)
+    destruct (IHsub Hfuel Θ0 Covered He1 He2 He3 P0 (⌊ R00 ⌋ˢ) R00 κ
+                (He2 R00 HCovered)
                 Hwf0 Hwfth HwfP0 HwfP' Hmodsk Hmodty eq_refl Hinc Hslack0
                 Hsub Hrs HwfQ Hgf0)
       as [P1 [Θ1 [Hrun Hopt]]].
@@ -1202,12 +1214,12 @@ Proof.
               uskl_ghost_free (ptyp_to_uskl_syn τd))
       by (intros _; apply mono_ptyp_to_uskl_syn_ghost_free;
           eapply a_wf_aenv_binds_def_mono; [ exact Hwfth | exact Hbd ]).
-    exact (IHsub Hfuel Θ0 ESC He1 He2 He3 P0 P R κ HESC
+    exact (IHsub Hfuel Θ0 Covered He1 He2 He3 P0 P R κ HCovered
              Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack'
              Hsub Hrs HwfQ Hgfd).
 Qed.
 
-(** ⭐ DESIGN §12.1's LAYER (a).  Instantiating [ESC] with "is an arrow" makes
+(** ⭐ DESIGN §12.1's LAYER (a).  Instantiating [Covered] with "is an arrow" makes
     all three escape side conditions VACUOUS: an arrow is neither a [∀◇] nor a
     [∀◈] nor a variable, so the two tophole-stripping rows can never expose a
     variable subject and the P7a entry is unreachable.  So the main half at an
@@ -1221,7 +1233,7 @@ Proof.
   intros n Hfuel NM M Θ0 P0 P Ra Rb R' Ψ Θ κ Q.
   intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
          Hgf.
-  exact (@main_join n NM M Ψ Θ R' Q HDj Hfuel Θ0
+  exact (@main_dispatch n NM M Ψ Θ R' Q HDj Hfuel Θ0
            (fun R0 => exists Rx Ry, R0 = uskl_arrow Rx Ry)
            ltac:(intros R0 [Rx [Ry HH]]; discriminate HH)
            ltac:(intros R0 [Rx [Ry HH]]; discriminate HH)
@@ -1242,7 +1254,7 @@ Qed.
 (*        FUEL IH alone.  This is what breaks §12's non-decreasing cycle.  *)
 (*    (b) [flex_step]        — the flex half, structural on [Θ0] with [Ξ]  *)
 (*        generalized and the total context length bounded.                *)
-(*    (c) [main_join]        — the main half's twelve-row join dispatch.   *)
+(*    (c) [main_dispatch]        — the main half's twelve-row join dispatch.   *)
 (*                                                                        *)
 (*  ⭐⭐⭐ AND THE RESIDUAL IS DISCHARGED.  [main_forall] — the two ForallL   *)
 (*  rows — was the assembly's ONE hypothesis for a year of this campaign.  *)
@@ -1294,9 +1306,9 @@ Qed.
 (*    · [main_below n k]    the main half at contexts SHORTER than k, by   *)
 (*                          the length IH                                  *)
 (*    · [flex_step]         from the two above                             *)
-(*    · [main_join]         from the fuel IH and [flex_step] at [Ξ = ·]    *)
+(*    · [main_dispatch]         from the fuel IH and [flex_step] at [Ξ = ·]    *)
 (*                                                                        *)
-(*  [main_join]'s [ESC] is instantiated with the constant [fun _ => True]: *)
+(*  [main_dispatch]'s [Covered] is instantiated with the constant [fun _ => True]: *)
 (*  its three closure conditions become trivial and the third hands back   *)
 (*  [flex_here n Θ0], which is [flex_step] at [Ξ = nil].                   *)
 (* ===================================================================== *)
@@ -1322,7 +1334,7 @@ Proof.
     intros NM M Θ0 P0 P R R' Ψ Θ κ Q Hlen.
     intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
            Hgf.
-    refine (@main_join n NM M Ψ Θ R' Q HDj Hfuel Θ0
+    refine (@main_dispatch n NM M Ψ Θ R' Q HDj Hfuel Θ0
               (fun _ => True) _ _ _ P0 P R κ I
               Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
               HwfQ Hgf);
@@ -1384,7 +1396,7 @@ Proof.
            (uskl_to_pskl_pskl_to_uskl P) Hinc Hslack HDj Hrs HwfQ Hgf).
 Qed.
 
-Print Assumptions main_join.
+Print Assumptions main_dispatch.
 Print Assumptions main_arrow_holds.
 Print Assumptions flex_step.
 Print Assumptions check_row_guarded_p0.

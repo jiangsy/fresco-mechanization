@@ -618,18 +618,18 @@ Proof.
   intros NM Θ Θ0 Θw Θtv Θr Θ0r κ Δ Δρ Δr Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0.
   intros HspΘ HspΘ0 HwfΘr Htvs HΔrd HΔρtv HwfΘ HwfΘ0 HwfΘw Hmon Hnr
          HwfPi HwfP0 Hκ Hκw Hrho Htags
-         Hsub Hinter Hfresh Hdelta Hshield Hdfresh Hpre
+         Hsub Hinter Hfresh Hdelta Hapart Hdfresh Hpre
          Hsubeq1 Hsubeq2 Hconsis Hrefine.
   revert NM Θ0 Θtv Θr Θ0r κ Δ Δρ Δr Ψρ Ψ' Ψi Ψa ψa Pi P0
          HspΘ HspΘ0 HwfΘr Htvs HΔrd HΔρtv HwfΘ HwfΘ0 Hmon Hnr
          HwfPi HwfP0 Hκ Hκw Hrho Htags
-         Hsub Hinter Hfresh Hdelta Hshield Hdfresh Hpre
+         Hsub Hinter Hfresh Hdelta Hapart Hdfresh Hpre
          Hsubeq1 Hsubeq2 Hrefine.
   induction Hconsis; intros
     NM Θ0 Θtv Θr Θ0r κ Δ Δρ Δr Ψρ Ψ' Ψi Ψa ψa Pi P0
     HspΘ HspΘ0 HwfΘr Htvs HΔrd HΔρtv HwfΘ HwfΘ0 Hmon Hnr
     HwfPi HwfP0 Hκ Hκw Hrho Htags
-    Hsub Hinter Hfresh Hdelta Hshield Hdfresh Hpre
+    Hsub Hinter Hfresh Hdelta Hapart Hdfresh Hpre
     (* ⚙️ [Lav], not [L]: the consistency rules' own cofinite binder is [L] in
        several rows, and [intros] runs in all of them. *)
     Hsubeq1 Hsubeq2 Hrefine Lav HLav;
@@ -658,7 +658,7 @@ Proof.
             [ exact Hprec | simpl; clear; fsetdec | exact HS3 ]
         | clear - HΨae; fsetdec ].
     + destruct (@p6cv_close_leaf_mono _ Θ0 _ _ _ _ _ _ _ _ _ _ _ P0
-                  HwfΘ Htags Hsub Hfresh Hdelta Hshield Hpre Hleaf)
+                  HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf)
         as (Pa & Hs & Hq).
       eapply solve_ext_nil; [ exact Hs | ].
       intros Δ' HS1 HS2 HS3. cbn [app]. apply Hq. clear; fsetdec.
@@ -718,7 +718,7 @@ Proof.
               | clear; fsetdec ]
           | clear - HΨae; fsetdec ].
     + destruct (@p6cv_close_leaf_mono _ Θ0 _ _ _ _ _ _ _ _ _ _ _ P0
-                  HwfΘ Htags Hsub Hfresh Hdelta Hshield Hpre Hleaf)
+                  HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf)
         as (Pa & Hs & Hq).
       eapply solve_ext_nil; [ exact Hs | ].
       intros Δ' HS1 HS2 HS3. cbn [app]. apply Hq. clear; fsetdec.
@@ -1017,7 +1017,7 @@ Proof.
               ⊳ (bskl_arrow Q1 Q2) ->
         p6cv_concl Θ0 Θ Θw Θr κ Δ Ψi Ψa (uskl_arrow ψa1 ψa2) Pi P0 Lav).
       { intros n; induction n as [ | n IHn ];
-          intros Pi0 P00 Ψi0 Hn HwfPi0 HwfP00 Hshield0 Hpre1
+          intros Pi0 P00 Ψi0 Hn HwfPi0 HwfP00 Hapart0 Hpre1
             Hrefine1.
         { pose proof (size_pskl_min Pi0); pose proof (size_pskl_min P00);
           lia. }
@@ -1167,13 +1167,13 @@ Proof.
                       [ exact HwfΘ | exact Hpb2
                       | exact (a_tags_sort_d_tags Htags2) ]).
               clear - Hts; fsetdec. }
-            assert (Hshld1 : forall α, α `in` Δρ ->
+            assert (Hapart1 : forall α, α `in` Δρ ->
                       α `notin` pskl_shielded_ftv (msubst_pskl κ Pi1)).
-            { intros α0 HX0; pose proof (Hshield0 α0 HX0) as Hs0;
+            { intros α0 HX0; pose proof (Hapart0 α0 HX0) as Hs0;
               simpl in Hs0; clear - Hs0; fsetdec. }
-            assert (Hshld2 : forall α, α `in` Δρ ->
+            assert (Hapart2 : forall α, α `in` Δρ ->
                       α `notin` pskl_shielded_ftv (msubst_pskl κ Pi2)).
-            { intros α0 HX0; pose proof (Hshield0 α0 HX0) as Hs0;
+            { intros α0 HX0; pose proof (Hapart0 α0 HX0) as Hs0;
               simpl in Hs0; clear - Hs0; fsetdec. }
             (* ⭐ THE TWO BRANCHES' κ-EXTENSIONS MERGE.  [SE-Arrow] THREADS —
                its second premise runs at [Ξ1 ++ Θ0] — but both branches come
@@ -1187,7 +1187,7 @@ Proof.
                         ψa1 Pi1 P01
                         HspΘ HspΘ0 HwfΘr Htvs HΔrd HΔρtv
                         HwfΘ HwfΘ0 Hmon Hnr HwfPi1 HwfP01 Hκ Hκw Hrho1 Htags1
-                        Hsubk1 Hint1 Hfresh Hdelta Hshld1 Hdfresh Hpb1 Hbs1 Hba1 Hrb1
+                        Hsubk1 Hint1 Hfresh Hdelta Hapart1 Hdfresh Hpb1 Hbs1 Hba1 Hrb1
                         (Lav `union` ftvar_in_pskl Pi1
                            `union` ftvar_in_pskl Pi2
                            `union` ftvar_in_pskl P01
@@ -1198,7 +1198,7 @@ Proof.
                         ψa2 Pi2 P02
                         HspΘ HspΘ0 HwfΘr Htvs HΔrd HΔρtv
                         HwfΘ HwfΘ0 Hmon Hnr HwfPi2 HwfP02 Hκ Hκw Hrho2 Htags2
-                        Hsubk2 Hint2 Hfresh Hdelta Hshld2 Hdfresh Hpb2 Hbs2 Hba2 Hrb2
+                        Hsubk2 Hint2 Hfresh Hdelta Hapart2 Hdfresh Hpb2 Hbs2 Hba2 Hrb2
                         (Lav `union` ftvar_in_pskl Pi1
                            `union` ftvar_in_pskl Pi2
                            `union` ftvar_in_pskl P01
@@ -1289,7 +1289,7 @@ Proof.
               eapply p6cv_step;
                 [ | exact (IHn (pskl_arrow Pi1 Pi2) P0' Ψi0
                              ltac:(simpl in Hn; simpl; lia)
-                             HwfPi0 HwfP0' Hshield0
+                             HwfPi0 HwfP0' Hapart0
                              Hpre1 Hin) ]
             end.
             intros Ξ0 Pa0 Hs0. apply a_solve_eq__tophole_r_guarded;
@@ -1450,10 +1450,10 @@ Proof.
           | Hp' : _ ⨟ _ ⊢ msubst_pskl κ Pi' ⊑ᵖ[ _ ] uskl_arrow ψa1 ψa2
             |- _ => rename Hp' into Hpre'
           end.
-          assert (Hshield' : forall α, α `in` Δρ ->
+          assert (Hapart' : forall α, α `in` Δρ ->
                     α `notin` pskl_shielded_ftv (msubst_pskl κ Pi')).
           { intros α0 HX0.
-            pose proof (Hshield0 α0 HX0) as Hsh0. simpl in Hsh0.
+            pose proof (Hapart0 α0 HX0) as Hsh0. simpl in Hsh0.
             pose proof (pskl_shielded_ftv_sub_ftv (msubst_pskl κ Pi')).
             fsetdec. }
           destruct P00 as [ | nb0 | β | P01 P02 | P0b | | P0' ].
@@ -1463,7 +1463,7 @@ Proof.
                   [ apply guarded_pskl__unit | exact Hs ]
               | exact (IHn Pi' pskl_unit Ψi0
                         ltac:(simpl in Hn; simpl; lia)
-                        HwfPi' HwfP00 Hshield' Hpre' Hrefine1) ].
+                        HwfPi' HwfP00 Hapart' Hpre' Hrefine1) ].
           + (* P0 = var_b *) inversion HwfP00.
           + (* P0 = var: GhostGuarded (a var is guarded) *)
             eapply p6cv_step;
@@ -1471,7 +1471,7 @@ Proof.
                   [ apply guarded_pskl__var | exact Hs ]
               | exact (IHn Pi' (pskl_var_f β) Ψi0
                         ltac:(simpl in Hn; simpl; lia)
-                        HwfPi' HwfP00 Hshield' Hpre' Hrefine1) ].
+                        HwfPi' HwfP00 Hapart' Hpre' Hrefine1) ].
           + (* P0 = arrow: GhostGuarded *)
             assert (HwfP01 : Θ0 ⨟ empty ⊢ₚₛᵃ P01)
               by (inversion HwfP00; assumption).
@@ -1485,7 +1485,7 @@ Proof.
                   | exact Hs ]
               | exact (IHn Pi' (pskl_arrow P01 P02) Ψi0
                         ltac:(simpl in Hn; simpl; lia)
-                        HwfPi' HwfP00 Hshield' Hpre' Hrefine1) ].
+                        HwfPi' HwfP00 Hapart' Hpre' Hrefine1) ].
           + (* P0 = all_syn: refinement absurd *)
             simpl in Hrefine1. inversion Hrefine1.
           + (* P0 = □: SE-VacuousR *)
@@ -1515,13 +1515,13 @@ Proof.
               apply (p6cv_tophole_both
                        (IHn Pi' P0' Ψi0
                           ltac:(simpl in Hn; lia)
-                          HwfPi' HwfP0' Hshield'
+                          HwfPi' HwfP0' Hapart'
                           Hpre' Hin))
             end. }
       assert (Hsz : size_pskl Pi + size_pskl P0
                       <= size_pskl Pi + size_pskl P0) by lia.
       eapply CORE;
-        [ exact Hsz | exact HwfPi | exact HwfP0 | exact Hshield
+        [ exact Hsz | exact HwfPi | exact HwfP0 | exact Hapart
         | exact Hpre0 | exact Hrefine ]. }
     destruct (uskl_rho_arrow_l_inv Hrho)
       as [[Heqψa HΨρe]
@@ -1540,7 +1540,7 @@ Proof.
         | clear - HΨρe; fsetdec
         | exact Htags | exact Hpre ].
     + destruct (@p6cv_close_leaf_mono _ Θ0 _ _ _ _ _ _ _ _ _ _ _ P0
-                  HwfΘ Htags Hsub Hfresh Hdelta Hshield Hpre Hleaf)
+                  HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf)
         as (Pa & Hs & Hq).
       eapply solve_ext_nil with (Pa := Pa); [ exact Hs | ].
       intros Δ' HS1 HS2 HS3. apply Hq. clear; fsetdec.
@@ -1684,7 +1684,7 @@ Proof.
                 ⊢ (msubst_pskl (κ0 ++ κ) Pa0)
                   ⊑ᵖ[ Ψi0 `union` (remove ε Ψa) ]
                   (open_uskl_wrt_uskl ψR (uskl_var_f α))).
-        { intros α Pi0 Ψi0 Δx HXf HΔρx HΔxs HwfPi0 Hshld0 Hpre0x HΨi0s.
+        { intros α Pi0 Ψi0 Δx HXf HΔρx HΔxs HwfPi0 Hapart0 Hpre0x HΨi0s.
           apply (H0 α ltac:(clear - HXf; solve_notin)
                    NM ((α ~ abind_tvar) ++ Θ0)
                    ((α ~ abind_tvar) ++ Θtv) Θr Θ0r κ
@@ -1726,7 +1726,7 @@ Proof.
               destruct (binds_cons_1 _ _ _ _ _ _ Hbd) as [[_ Hc] | Hbd'];
                 [ discriminate Hc | exact (Hdef _ _ Hbd') ].
           - exact HΔρx.
-          - exact Hshld0.
+          - exact Hapart0.
           - intros Yd αd τ HYd Hbd.
             destruct (binds_cons_1 _ _ _ _ _ _ Hbd) as [[_ Hc] | Hbd'];
               [ discriminate Hc | ].
@@ -1911,7 +1911,7 @@ Proof.
                       ltac:(clear; fsetdec)
                       (HwfPif α ltac:(clear - Fr; solve_notin))
                       ltac:(intros α0 HX0;
-                            pose proof (Hshield α0 HX0) as Hs0;
+                            pose proof (Hapart α0 HX0) as Hs0;
                             simpl in Hs0;
                             rewrite msubst_pskl_open_lc_local;
                               [ | exact Hlcκ | clear - Fr; solve_notin ];
@@ -2127,7 +2127,7 @@ Proof.
                               [ intros x b Hb; apply binds_cons_3;
                                 exact Hb
                               | exact HwfPi ])
-                        Hshield
+                        Hapart
                         (HF α ltac:(clear - Fr; solve_notin))
                         HΨiS)
               as (ΞX & PaX & κX & HsX & HfmX & HuX & HkX & HfrX & HFX & HqX).
@@ -2261,7 +2261,7 @@ Proof.
             [ apply is_tskl_lc; apply Htskf; exact Hα0 | exact HΨρe ]
         | exact Htags | exact Hpre ].
     + destruct (@p6cv_close_leaf_mono _ Θ0 _ _ _ _ _ _ _ _ _ _ _ P0
-                  HwfΘ Htags Hsub Hfresh Hdelta Hshield Hpre Hleaf)
+                  HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf)
         as (Pa & Hs & Hq).
       eapply solve_ext_nil with (Pa := Pa); [ exact Hs | ].
       intros Δ' HS1 HS2 HS3. apply Hq. clear; fsetdec.
@@ -2460,7 +2460,7 @@ Proof.
                 ⊢ (msubst_pskl (κ0 ++ κ) Pa0)
                   ⊑ᵖ[ Ψi0 `union` Ψa ]
                   (open_uskl_wrt_uskl ψR (uskl_var_f α0))).
-        { intros α0 Pi0 Ψi0 P0i Δx HXf HΔρx HΔxs HwfPi0 HwfP0i Hshld0
+        { intros α0 Pi0 Ψi0 P0i Δx HXf HΔρx HΔxs HwfPi0 HwfP0i Hapart0
                  Hpre0x HΨi0s Hrefi.
           apply (H0 α0 ltac:(clear - HXf; solve_notin)
                    NM ((α0 ~ abind_tvar) ++ Θ0)
@@ -2505,7 +2505,7 @@ Proof.
               destruct (binds_cons_1 _ _ _ _ _ _ Hbd) as [[_ Hc] | Hbd'];
                 [ discriminate Hc | exact (Hdef _ _ Hbd') ].
           - exact HΔρx.
-          - exact Hshld0.
+          - exact Hapart0.
           - intros Yd αd τ HYd Hbd.
             destruct (binds_cons_1 _ _ _ _ _ _ Hbd) as [[_ Hc] | Hbd'];
               [ discriminate Hc | ].
@@ -2691,7 +2691,7 @@ Proof.
                             [ intros x b Hb; apply binds_cons_3; exact Hb
                             | exact HwfP0 ])
                       ltac:(intros α0 HX0;
-                            pose proof (Hshield α0 HX0) as Hs0;
+                            pose proof (Hapart α0 HX0) as Hs0;
                             simpl in Hs0;
                             rewrite msubst_pskl_open_lc_local;
                               [ | exact Hlcκ | clear - Fr; solve_notin ];
@@ -2911,7 +2911,7 @@ Proof.
                         ltac:(eapply a_wf_pskl_weaken;
                               [ intros x b Hb; apply binds_cons_3; exact Hb
                               | exact HwfP0 ])
-                        Hshield
+                        Hapart
                         (HF α ltac:(clear - Fr; solve_notin))
                         HΨiS
                         ltac:(apply Hrefb; clear - Fr; solve_notin))
@@ -3059,7 +3059,7 @@ Proof.
             [ apply is_tskl_lc; apply Htskf; exact Hα0 | exact HΨρe ]
         | exact Htags | exact Hpre ].
     + destruct (@p6cv_close_leaf_mono _ Θ0 _ _ _ _ _ _ _ _ _ _ _ P0
-                  HwfΘ Htags Hsub Hfresh Hdelta Hshield Hpre Hleaf)
+                  HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf)
         as (Pa & Hs & Hq).
       eapply solve_ext_nil with (Pa := Pa); [ exact Hs | ].
       intros Δ' HS1 HS2 HS3. apply Hq. clear; fsetdec.
@@ -3090,7 +3090,7 @@ Proof.
             [ exact Hprec | simpl; clear; fsetdec | exact HS3 ]
         | clear - HΨae; fsetdec ].
     + destruct (@p6cv_close_leaf_mono _ Θ0 _ _ _ _ _ _ _ _ _ _ _ P0
-                  HwfΘ Htags Hsub Hfresh Hdelta Hshield Hpre Hleaf)
+                  HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf)
         as (Pa & Hs & Hq).
       eapply solve_ext_nil with (Pa := Pa); [ exact Hs | ].
       intros Δ' HS1 HS2 HS3. apply Hq. clear; fsetdec.
@@ -3252,10 +3252,10 @@ Proof.
           | Hp' : _ ⨟ _ ⊢ msubst_pskl κ Pi' ⊑ᵖ[ _ ] ψa0 |- _ =>
             rename Hp' into Hpre1
           end.
-          assert (Hshield' : forall α, α `in` Δρ ->
+          assert (Hapart' : forall α, α `in` Δρ ->
                     α `notin` pskl_shielded_ftv (msubst_pskl κ Pi')).
           { intros α0 HX0.
-            pose proof (Hshield α0 HX0) as Hsh. simpl in Hsh.
+            pose proof (Hapart α0 HX0) as Hsh. simpl in Hsh.
             pose proof (pskl_shielded_ftv_sub_ftv (msubst_pskl κ Pi')).
             fsetdec. }
           destruct P0 as [ | nb0 | β | P01 P02 | P0b | | P0' ].
@@ -3332,7 +3332,7 @@ Proof.
                              HspΘ HspΘ0 HwfΘr Htvs HΔrd HΔρtv
                              HwfΘ HwfΘ0 Hmon Hnr HwfPi' HwfP0' Hκ Hκw
                              Hrho0 Htags1 Hsub Hinter Hfresh Hdelta
-                             Hshield' Hdfresh
+                             Hapart' Hdfresh
                              Hpre1 Hsubeq1 Hsubeq2 Hin Lav HLav)
                    as (Ξ' & Pa' & κ' & Hs' & Hfm' & Hu' & Hk' & Hfr' & HF' & Hq')
                end.
@@ -3361,7 +3361,7 @@ Proof.
         [ apply urho__refl; [ exact HlcR | exact HΨρ ]
         | exact Htags | exact Hpre ].
     + destruct (@p6cv_close_leaf_mono _ Θ0 _ _ _ _ _ _ _ _ _ _ _ P0
-                  HwfΘ Htags Hsub Hfresh Hdelta Hshield Hpre Hleaf)
+                  HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf)
         as (Pa & Hs & Hq).
       eapply solve_ext_nil with (Pa := Pa); [ exact Hs | ].
       intros Δ' HS1 HS2 HS3. apply Hq. clear; fsetdec.
@@ -3396,7 +3396,7 @@ Proof.
   - (* flex_l: switch the whole problem to the definition's mono paint *)
     destruct (uskl_rho_var_l_inv Hrho) as [[-> HΨρ] | Hleaf];
       [ | destruct (@p6cv_close_leaf_mono _ Θ0 _ _ _ _ _ _ _ _ _ _ _ P0
-                      HwfΘ Htags Hsub Hfresh Hdelta Hshield Hpre Hleaf)
+                      HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf)
             as (Pa & Hs & Hq);
           eapply solve_ext_nil with (Pa := Pa);
             [ exact Hs
@@ -3419,7 +3419,7 @@ Proof.
                 ltac:(apply a_tags_sort_mono_paint; exact Hmd)
                 ltac:(clear - HΨie; fsetdec)
                 ltac:(clear; fsetdec)
-                Hfresh Hdelta Hshield Hdfresh
+                Hfresh Hdelta Hapart Hdfresh
                 ltac:(eapply ad_ppre_flexdef_target_unfold;
                         [ exact HwfΘ | exact Hdfresh | exact Hpre
                         | reflexivity | eassumption ])
@@ -3543,7 +3543,7 @@ Theorem a_solve_eq_complete_var :
 Proof.
   intros NM Θ0 Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0.
   intros HwfΘ HwfΘ0 HwfPi HwfP0 Hκ Hrho Htags Hsub Hinter Hfresh Hdelta
-         Hshield Hdfresh Hpre Hsubeq1 Hsubeq2 Hconsis Hrefine L HL.
+         Hapart Hdfresh Hpre Hsubeq1 Hsubeq2 Hconsis Hrefine L HL.
   destruct (@a_solve_eq_complete_var_gen NM Θ Θ0 Θ nil Θ Θ0 κ Δ Δρ empty
               Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0
               (aenv_split_nil Θ) (aenv_split_nil Θ0) HwfΘ
@@ -3560,7 +3560,7 @@ Proof.
               ltac:(intros α Hf;
                     eapply a_inc_lookup_flex_ftv_dom; [ exact Hκ | exact Hf ])
               Hrho Htags Hsub Hinter Hfresh
-              Hdelta Hshield Hdfresh Hpre Hsubeq1 Hsubeq2 Hconsis
+              Hdelta Hapart Hdfresh Hpre Hsubeq1 Hsubeq2 Hconsis
               Hrefine L HL)
     as (Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hfam).
   exists Ξ, Pa, κ'.
@@ -3620,7 +3620,7 @@ Proof.
   intros NM Θ0 Θ Θw κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0.
   intros HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfPi HwfP0 Hκ Hκw
          Hrho Htags Hsub Hinter Hfresh Hdelta
-         Hshield Hdfresh Hpre Hsubeq1 Hsubeq2 Hconsis Hrefine L HL.
+         Hapart Hdfresh Hpre Hsubeq1 Hsubeq2 Hconsis Hrefine L HL.
   destruct (@a_solve_eq_complete_var_gen NM Θ Θ0 Θw nil Θ Θ0 κ Δ Δρ empty
               Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0
               (aenv_split_nil Θ) (aenv_split_nil Θ0) HwfΘ
@@ -3630,7 +3630,7 @@ Proof.
               HwfΘ HwfΘ0 HwfΘw Hmon Hnr
               HwfPi HwfP0 Hκ Hκw
               Hrho Htags Hsub Hinter Hfresh
-              Hdelta Hshield Hdfresh Hpre Hsubeq1 Hsubeq2 Hconsis
+              Hdelta Hapart Hdfresh Hpre Hsubeq1 Hsubeq2 Hconsis
               Hrefine L HL)
     as (Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hfam).
   exists Ξ, Pa, κ'.

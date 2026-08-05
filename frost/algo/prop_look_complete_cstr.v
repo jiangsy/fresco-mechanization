@@ -1801,7 +1801,7 @@ Theorem a_lookeq_solve_complete_gen :
      — and being Δρ-constant it is discharged by [fa_clean] at Δρ = ∅, which
      is what makes the ρ = identity corollary premise-free.  P6-Ss threads the
      full [flex_apart_walk] and converts with [flex_apart_walk_p0]. *)
-  flex_apart_p0 Θ0 Δρ P0 ψa ->
+  flex_apart_deep Θ0 Δρ P0 ψa ->
   (* THE IDEAL GUESS-SKELETON IS ρ-APART.  ψa never moves inside P6-Cs and Δρ
      never grows here (consistency has no ForallL), so this is threaded
      unchanged by every row; P6-Ss maintains it because its own ψa is fixed
@@ -2182,7 +2182,7 @@ Proof.
            LE-FlexR but its image is then UNCONSTRAINED, so ⟨⟩ serves — and ⟨⟩
            is Δρ-clean, which the [α0] image would NOT have been. *)
         destruct (flex_apart_flex_var_clean
-                    (flex_apart_p0_here Hfaw) Hnrig Hflx)
+                    (flex_apart_deep_here Hfaw) Hnrig Hflx)
           as [Hclean | (α0 & Hψeq & Hα0)].
         2:{ (* ---- the ρ-VARIABLE leaf ---- *)
           subst ψa.
@@ -2593,10 +2593,10 @@ Proof.
           clear - Hf2 Hr2 Hb2 Hm2 Hψatag; fsetdec. }
         assert (HΨρ1e : Ψρ1 ∩ Ψ' [=] empty) by (clear - HΨρ HΨρeq; fsetdec).
         assert (HΨρ2e : Ψρ2 ∩ Ψ' [=] empty) by (clear - HΨρ HΨρeq; fsetdec).
-        assert (Hfawa : flex_apart_p0 Θ0 Δρ P01 ψa)
-          by (eapply flex_apart_p0_step; [ exact Hfaw | apply p0step_arrow_l ]).
-        assert (Hfawb : flex_apart_p0 Θ0 Δρ P02 ψa)
-          by (eapply flex_apart_p0_step; [ exact Hfaw | apply p0step_arrow_r ]).
+        assert (Hfawa : flex_apart_deep Θ0 Δρ P01 ψa)
+          by (eapply flex_apart_deep_step; [ exact Hfaw | apply p0step_arrow_l ]).
+        assert (Hfawb : flex_apart_deep Θ0 Δρ P02 ψa)
+          by (eapply flex_apart_deep_step; [ exact Hfaw | apply p0step_arrow_r ]).
         assert (HscopeSa : ftvar_in_uskl Ra [<=] add α (dom Θ0 `union` dom Θ))
           by (clear - HscopeS; simpl in HscopeS; fsetdec).
         assert (HscopeSb : ftvar_in_uskl Rb [<=] add α (dom Θ0 `union` dom Θ))
@@ -2833,9 +2833,9 @@ Proof.
           pose proof (Hfrs1 α0 Hm1) as Hf.
           assert (Hm2 : α0 `in` ftvar_in_pskl P02) by (clear - Hmem; fsetdec).
           clear - Hfd Hf Hm2 Hdf0 HL; fsetdec. }
-        assert (HfawbR : flex_apart_p0 (Ξs1 ++ Ξc1 ++ Θ0) Δρ P02 ψa).
-        { eapply flex_apart_p0_weaken_flex_prefix;
-            [ eapply flex_apart_p0_weaken_flex_prefix;
+        assert (HfawbR : flex_apart_deep (Ξs1 ++ Ξc1 ++ Θ0) Δρ P02 ψa).
+        { eapply flex_apart_deep_weaken_flex_prefix;
+            [ eapply flex_apart_deep_weaken_flex_prefix;
                 [ exact Hfawb | exact HfrP02Ξ ]
             | exact HfrP02Ξs ]. }
         (* ⭐ THE ARROW MERGE (2026-08-04, the SolE-FlexR repair).
@@ -3120,7 +3120,7 @@ Proof.
                      ltac:(eapply rho_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; fsetdec
                           | cbn; clear; fsetdec ]) HΔρPi
-                     ltac:(eapply flex_apart_p0_step;
+                     ltac:(eapply flex_apart_deep_step;
                              [ exact Hfaw | apply p0step_tophole ]) Hψaap L HL)
           as (𝒞 & Ξc & Ξs & Pa & κc & κs
                 & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
@@ -3300,10 +3300,10 @@ Proof.
                           + size_pskl (open_pskl_wrt_pskl P0' (pskl_var_f β)) <= n).
         { rewrite size_uskl_open_uskl_wrt_uskl_var.
           rewrite size_pskl_open_pskl_wrt_pskl_var. cbn in Hn |- *; lia. }
-        assert (Hfawβ : flex_apart_p0 ((β ~ abind_tvar) ++ Θ0) Δρ
+        assert (Hfawβ : flex_apart_deep ((β ~ abind_tvar) ++ Θ0) Δρ
                   (open_pskl_wrt_pskl P0' (pskl_var_f β)) ψa).
-        { apply flex_apart_p0_weaken_tvar.
-          eapply flex_apart_p0_step;
+        { apply flex_apart_deep_weaken_tvar.
+          eapply flex_apart_deep_step;
             [ exact Hfaw | apply p0step_all; clear - Fr; solve_notin ]. }
         (* ⭐ THE Θw PACK UNDER A BINDER (2026-08-04).  [Θw] does NOT move — it
            is the fixed context the SOLVE block's payloads are well-formed in,
@@ -3447,8 +3447,8 @@ Proof.
            (guarded) body cannot reach an inherited quantifier *)
         exfalso.
         destruct (a_wf_pskl_tophole_inv HwfP0) as [HgP0s HwfP0s].
-        assert (Hfawt : flex_apart_p0 Θ0 Δρ P0s ψa)
-          by (eapply flex_apart_p0_step; [ exact Hfaw | apply p0step_tophole ]).
+        assert (Hfawt : flex_apart_deep Θ0 Δρ P0s ψa)
+          by (eapply flex_apart_deep_step; [ exact Hfaw | apply p0step_tophole ]).
         assert (HgL : guarded_bskl (pskl_to_bskl_inh (msubst_pskl κ P0s)))
           by (apply guarded_pskl_to_bskl_inh;
               eapply guarded_pskl_msubst_inc; [ exact Hκ | exact HgP0s ]).
@@ -3494,8 +3494,8 @@ Proof.
       * (* hole : excluded by HP0nh *) exfalso; apply HP0nh; reflexivity.
       * (* P0 = ∀◇P0s : LE-ForallSyn *)
         destruct (a_wf_pskl_tophole_inv HwfP0) as [HgP0s HwfP0s].
-        assert (Hfawt : flex_apart_p0 Θ0 Δρ P0s ψa)
-          by (eapply flex_apart_p0_step; [ exact Hfaw | apply p0step_tophole ]).
+        assert (Hfawt : flex_apart_deep Θ0 Δρ P0s ψa)
+          by (eapply flex_apart_deep_step; [ exact Hfaw | apply p0step_tophole ]).
         assert (HgL : guarded_bskl (pskl_to_bskl_inh (msubst_pskl κ P0s)))
           by (apply guarded_pskl_to_bskl_inh;
               eapply guarded_pskl_msubst_inc; [ exact Hκ | exact HgP0s ]).
@@ -3589,9 +3589,9 @@ Proof.
            assert (Hmeas : size_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))
                              + size_pskl (pskl_tophole P0s) <= n).
            { rewrite size_uskl_open_uskl_wrt_uskl_var. cbn in Hn |- *; lia. }
-           assert (Hfawβ : flex_apart_p0 ((β ~ abind_tvar) ++ Θ0) Δρ
+           assert (Hfawβ : flex_apart_deep ((β ~ abind_tvar) ++ Θ0) Δρ
                      (pskl_tophole P0s) ψa)
-             by (apply flex_apart_p0_weaken_tvar; exact Hfaw).
+             by (apply flex_apart_deep_weaken_tvar; exact Hfaw).
            (* the Θw pack under the binder — see the C-ForallInh row above *)
            assert (Hmonβ : forall x b, binds x b Θw ->
                      binds x b ((β ~ abind_tvar) ++ Θ))
@@ -3905,10 +3905,10 @@ Proof.
                           + size_pskl (open_pskl_wrt_pskl P0' (pskl_var_f β)) <= n).
         { rewrite size_uskl_open_uskl_wrt_uskl_var.
           rewrite size_pskl_open_pskl_wrt_pskl_var. cbn in Hn |- *; lia. }
-        assert (Hfawβ : flex_apart_p0 ((β ~ abind_tvar) ++ Θ0) Δρ
+        assert (Hfawβ : flex_apart_deep ((β ~ abind_tvar) ++ Θ0) Δρ
                   (open_pskl_wrt_pskl P0' (pskl_var_f β)) ψa).
-        { apply flex_apart_p0_weaken_tvar.
-          eapply flex_apart_p0_step;
+        { apply flex_apart_deep_weaken_tvar.
+          eapply flex_apart_deep_step;
             [ exact Hfaw | apply p0step_all; clear - Fr; solve_notin ]. }
         (* ⭐ THE Θw PACK UNDER A BINDER (2026-08-04).  [Θw] does NOT move — it
            is the fixed context the SOLVE block's payloads are well-formed in,
@@ -4052,8 +4052,8 @@ Proof.
            (guarded) body cannot reach an inherited quantifier *)
         exfalso.
         destruct (a_wf_pskl_tophole_inv HwfP0) as [HgP0s HwfP0s].
-        assert (Hfawt : flex_apart_p0 Θ0 Δρ P0s ψa)
-          by (eapply flex_apart_p0_step; [ exact Hfaw | apply p0step_tophole ]).
+        assert (Hfawt : flex_apart_deep Θ0 Δρ P0s ψa)
+          by (eapply flex_apart_deep_step; [ exact Hfaw | apply p0step_tophole ]).
         assert (HgL : guarded_bskl (pskl_to_bskl_inh (msubst_pskl κ P0s)))
           by (apply guarded_pskl_to_bskl_inh;
               eapply guarded_pskl_msubst_inc; [ exact Hκ | exact HgP0s ]).
@@ -4099,8 +4099,8 @@ Proof.
       * (* hole : excluded by HP0nh *) exfalso; apply HP0nh; reflexivity.
       * (* P0 = ∀◇P0s : LE-ForallSyn *)
         destruct (a_wf_pskl_tophole_inv HwfP0) as [HgP0s HwfP0s].
-        assert (Hfawt : flex_apart_p0 Θ0 Δρ P0s ψa)
-          by (eapply flex_apart_p0_step; [ exact Hfaw | apply p0step_tophole ]).
+        assert (Hfawt : flex_apart_deep Θ0 Δρ P0s ψa)
+          by (eapply flex_apart_deep_step; [ exact Hfaw | apply p0step_tophole ]).
         assert (HgL : guarded_bskl (pskl_to_bskl_inh (msubst_pskl κ P0s)))
           by (apply guarded_pskl_to_bskl_inh;
               eapply guarded_pskl_msubst_inc; [ exact Hκ | exact HgP0s ]).
@@ -4224,9 +4224,9 @@ Proof.
            assert (Hmeas : size_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))
                              + size_pskl (pskl_tophole P0s) <= n).
            { rewrite size_uskl_open_uskl_wrt_uskl_var. cbn in Hn |- *; lia. }
-           assert (Hfawβ : flex_apart_p0 ((β ~ abind_tvar) ++ Θ0) Δρ
+           assert (Hfawβ : flex_apart_deep ((β ~ abind_tvar) ++ Θ0) Δρ
                      (pskl_tophole P0s) ψa)
-             by (apply flex_apart_p0_weaken_tvar; exact Hfaw).
+             by (apply flex_apart_deep_weaken_tvar; exact Hfaw).
            (* the Θw pack under the binder — see the C-ForallInh row above *)
            assert (Hmonβ : forall x b, binds x b Θw ->
                      binds x b ((β ~ abind_tvar) ++ Θ))
@@ -4528,10 +4528,10 @@ Proof.
              pose proof (HΔρftv α0 Hα0) as Hd0. pose proof (HΔρΘ α0 Hα0) as Hd1.
              cbn [ftvar_in_pskl] in Hup, Hd0.
              clear - Hup Hd0 Hd1 HβΘ; fsetdec. }
-           assert (Hfawβ : flex_apart_p0 ((β ~ abind_tvar) ++ Θ0) Δρ
+           assert (Hfawβ : flex_apart_deep ((β ~ abind_tvar) ++ Θ0) Δρ
                      (open_pskl_wrt_pskl P0s (pskl_var_f β)) ψa).
-           { apply flex_apart_p0_weaken_tvar.
-             eapply flex_apart_p0_step;
+           { apply flex_apart_deep_weaken_tvar.
+             eapply flex_apart_deep_step;
             [ exact Hfaw | apply p0step_all; clear - Fr; solve_notin ]. }
            assert (Hrefβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣᵃ
                      (pskl_to_bskl_inh (msubst_pskl κ (open_pskl_wrt_pskl P0s
@@ -4693,8 +4693,8 @@ Proof.
     + (* P0 = hole : excluded by HP0nh *) exfalso; apply HP0nh; reflexivity.
     + (* P0 = ∀◇P0s : LE-UnivGhost (ghost kept on both sides) *)
       destruct (a_wf_pskl_tophole_inv HwfP0) as [HgP0s HwfP0s].
-      assert (Hfawt : flex_apart_p0 Θ0 Δρ P0s ψa)
-        by (eapply flex_apart_p0_step; [ exact Hfaw | apply p0step_tophole ]).
+      assert (Hfawt : flex_apart_deep Θ0 Δρ P0s ψa)
+        by (eapply flex_apart_deep_step; [ exact Hfaw | apply p0step_tophole ]).
       assert (HgL : guarded_bskl (pskl_to_bskl_inh (msubst_pskl κ P0s)))
         by (apply guarded_pskl_to_bskl_inh;
             eapply guarded_pskl_msubst_inc; [ exact Hκ | exact HgP0s ]).
@@ -4842,8 +4842,8 @@ Proof.
     + (* P0 = ∀◇P0s : the surviving shape — LE-UnivGhost *)
       clear Hsrc.
       destruct (a_wf_pskl_tophole_inv HwfP0) as [HgP0s HwfP0s].
-      assert (Hfawt : flex_apart_p0 Θ0 Δρ P0s ψa)
-        by (eapply flex_apart_p0_step; [ exact Hfaw | apply p0step_tophole ]).
+      assert (Hfawt : flex_apart_deep Θ0 Δρ P0s ψa)
+        by (eapply flex_apart_deep_step; [ exact Hfaw | apply p0step_tophole ]).
       cbn [msubst_pskl pskl_to_bskl_inh] in Href0.
       (* the source's ∀◇ must be KEPT: its body is guarded, so it cannot
          itself refine to the ∀◇ target *)
@@ -4885,7 +4885,7 @@ Print Assumptions a_lookeq_solve_complete_gen.
 (*    · [Θs := ·] keeps the ftv-𝒞 bound at exactly the paper's;            *)
 (*    · [rho_fresh] / [Δρ ⊆ Δ] / [Δρ ∩ dom Θ0] / the shielded-ftv          *)
 (*      condition are all vacuous over an empty Δρ;                       *)
-(*    · [flex_apart_p0] is [fa_clean] everywhere — this is why P6-Cs takes *)
+(*    · [flex_apart_deep] is [fa_clean] everywhere — this is why P6-Cs takes *)
 (*      the P0-ONLY walk and not [flex_apart_walk], whose [fastep_all_r]   *)
 (*      could grow Δρ and would leave a real premise behind.               *)
 (*  Use THIS one unless you are threading a ρ down from a Sub-ForallL.     *)
@@ -4995,7 +4995,7 @@ Proof.
     | clear; fsetdec
     | intros α0 Hα0; clear - Hα0; exfalso; fsetdec
     | intros α0 Hα0; clear - Hα0; exfalso; fsetdec
-    | apply flex_apart_p0_clean; clear; fsetdec
+    | apply flex_apart_deep_clean; clear; fsetdec
     | clear; fsetdec
     | exact HL
     | ].

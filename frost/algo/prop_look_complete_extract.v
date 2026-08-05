@@ -1059,7 +1059,7 @@ Proof.
          Htags Hdisj HΔψ Hψaw Hwfψ Hdfresh HΨsubU HΨsubL Hsubty
          HwfSubj Hrefine.
   (* ⭐⭐⭐ (2026-08-05) TASK 0's shield supply is GONE from both statements:
-     P6-Ss's repair premise is [flex_apart_p0 Θ0 Δρ P0 ψa], and at the Δρ = ∅
+     P6-Ss's repair premise is [flex_apart_deep Θ0 Δρ P0 ψa], and at the Δρ = ∅
      this row uses it is [fa_clean] at every reachable state, so P6-Ss's own
      corollary discharges it and P6-L never sees it. *)
   (* ---- (a)-(f) : P6-Ss at [Pi := □], [Ψi := ∅] ---- *)
