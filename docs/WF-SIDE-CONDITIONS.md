@@ -477,4 +477,4 @@ carries ONLY TASK 0's `sub_shield` component.
 **Related:** the ForallL rows' third premise, the WLOG
 `guarded_pskl P0 \/ P0 = pskl_hole`, USED to be part of the same residual and
 is now discharged inside the dispatch (`p0_wlog_trichotomy` +
-`main_all_inh_counterpart`, §8b) — it is a case split, not a side condition.
+`sub_complete_all_inh_counterpart`, §8b) — it is a case split, not a side condition.

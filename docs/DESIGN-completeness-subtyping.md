@@ -5004,19 +5004,19 @@ lemma `Qed` and axiom-free, <1 s to compile.  §12.1's layering is in the tree:
 
 | layer | lemma | how it terminates |
 |---|---|---|
-| (a) | `main_arrow_holds` | the FUEL IH alone — no P7a, no context induction |
-| (b) | `flex_step` | structural on `Θ0`, `Ξ` generalized, total length bounded |
-| (c) | `main_dispatch` | induction on the JOIN (twelve rows) |
+| (a) | `sub_complete_arrow_holds` | the FUEL IH alone — no P7a, no context induction |
+| (b) | `sub_flex_complete_holds` | structural on `Θ0`, `Ξ` generalized, total length bounded |
+| (c) | `sub_complete_assemble` | induction on the JOIN (twelve rows) |
 
 **THE ONE DESIGN IDEA THAT MADE (a) AND (c) ONE PROOF.**  §12.1 planned them
-as separate developments.  They are not: `main_dispatch` carries the P7a escape as
+as separate developments.  They are not: `sub_complete_assemble` carries the P7a escape as
 an ABSTRACT predicate `ESC : uskl -> Prop` on the *motive's* subject, with
 three closure conditions —
 
 ```coq
 (forall R0, ESC (uskl_tophole R0) -> ESC R0) ->
 (forall R0, ESC (uskl_topholeg R0) -> ESC R0) ->
-(forall α, ESC (uskl_var_f α) -> flex_here n Θ0) ->
+(forall α, ESC (uskl_var_f α) -> sub_flex_complete n Θ0) ->
 ```
 
 The two tophole conditions are needed because `__univ_ghost_l` / `_lg` STRIP
@@ -5076,7 +5076,7 @@ covers it with a one-sentence WLOG (subtyping-proofs.tex:3385).
 **(B) ⛔ THE TERM-VARIABLE GAP.**  See docs/PAPER-GAPS.md.  **⭐ CLOSED
 2026-08-03 — see §12.4.**  What matters for
 the DESIGN is the shape of the workaround and why it does not scale: the
-premise `a_sub_flex_walkable Θ0` sits on `flex_step` only.  It cannot be
+premise `a_sub_flex_walkable Θ0` sits on `sub_flex_complete_holds` only.  It cannot be
 carried to the bundle, because the row lemmas' fuel IH is the UNRESTRICTED
 `sub_complete_concl` — the restriction would have to move INTO the motive, and
 then every row would owe walkability of the contexts it recurses at (Sub-Arrow
@@ -5088,9 +5088,9 @@ deposited block).  Adding `Flex-SkipTmVar` is strictly the smaller change.
 ```coq
 Theorem a_sub_complete_bundle_holds : a_sub_complete_bundle.
 (* strong induction on the fuel n; inside, strong induction on |Θ0|:
-     main_arrow_holds  (fuel IH)
-   → flex_step         (main_arrow + main at shorter contexts)
-   → main_dispatch         (fuel IH + flex_step at Ξ = ·) *)
+     sub_complete_arrow_holds  (fuel IH)
+   → sub_flex_complete_holds         (sub_complete_arrow + main at shorter contexts)
+   → sub_complete_assemble         (fuel IH + sub_flex_complete_holds at Ξ = ·) *)
 ```
 
 ### ⭐ §12.3 Flex-SkipTmVar LANDED (2026-08-03), and what the two P7a rows cost
@@ -5135,7 +5135,7 @@ increase's witness is `kswap_msubst β β1 ζ` rather than `msubst_compose ζ κ
 close the gap with `msubst_ptyp_kswap` (prop_swap.v:1983), whose hypotheses are
 free because `β`/`β1` are fresh for the payload (it is scoped in `Θ0`).
 
-With both rows, `flex_step`'s `a_sub_flex_walkable Θ0` premise is deleted and
+With both rows, `sub_flex_complete_holds`'s `a_sub_flex_walkable Θ0` premise is deleted and
 its two `exfalso` branches become ordinary delegations.
 
 ### ⭐⭐⭐ §12.4 THE BUNDLE IS ASSEMBLED (2026-08-03) — one hypothesis left
@@ -5151,7 +5151,7 @@ and the semantic middle.  The one place to be careful when transcribing is the
 **two sides of the entry**: occurrences inside `Ξv ++ …` are the `a_inc`
 TARGET and become `(β ~ abind_var_typ A')`; every other occurrence is the
 SOURCE and stays `(β ~ abind_var_typ Qv)`.  `a_sub_flex_walkable` and its two
-lemmas are DELETED; `flex_step` takes no side condition on `Θ0`; obstacle (B)
+lemmas are DELETED; `sub_flex_complete_holds` takes no side condition on `Θ0`; obstacle (B)
 is closed.
 
 **(2) Obstacle (A2) is closed, and the paper was right all along.**
@@ -5172,7 +5172,7 @@ defect.**  Its mechanical content is two lemmas in dispatch.v §11:
   at exactly `n` for a conclusion at `S n`.  A 20-line induction: only the four
   rules whose conclusion fuel is `S n` need `destruct m`.
 
-`main_all_inh_counterpart` composes them: **whenever the counterpart is ∀-inh
+`sub_complete_all_inh_counterpart` composes them: **whenever the counterpart is ∀-inh
 the row goes through ForallR, whatever the join's last rule and whatever
 `P0`** — so the ForallL rows' `guarded_pskl P0 ∨ P0 = ◇` premise costs
 nothing, because a ∀-headed `P0` forces a ∀-inh counterpart through the FILL.
@@ -5181,8 +5181,8 @@ nothing, because a ∀-headed `P0` forces a ∀-inh counterpart through the FILL
 `p0_wlog_trichotomy` reads the WLOG straight off mode compatibility: at
 `NM = SK` every compatible `P0` is a hole or an arrow; at `NM = TY` the only
 non-guarded, non-hole shape is a `∀`, and only at `M = TC` (`__ti` forces the
-hole, `__fn` forces an arrow).  `main_dispatch`'s two ForallL cases now split on
-that trichotomy and send the escaping shape to `main_all_inh_counterpart`,
+hole, `__fn` forces an arrow).  `sub_complete_assemble`'s two ForallL cases now split on
+that trichotomy and send the escaping shape to `sub_complete_all_inh_counterpart`,
 so **`main_forall` TAKES `guarded_pskl P0 ∨ P0 = ◇` as a hypothesis** instead
 of owing it.  The bundle's residual is strictly narrower than before.
 
@@ -5193,15 +5193,15 @@ of owing it.  The bundle's residual is strictly narrower than before.
 Theorem a_sub_complete_bundle_holds :
   (forall n, main_forall n) -> a_sub_complete_bundle.
 (* lt_wf_ind on the fuel; inside, lt_wf_ind on the CONTEXT LENGTH:
-     main_arrow_holds (fuel IH)
-   → main_below n k   (length IH)
-   → flex_step        (main_arrow + main_below)
-   → main_dispatch        (fuel IH + flex_step at Ξ = nil, via `flex_here`) *)
+     sub_complete_arrow_holds (fuel IH)
+   → sub_complete_ctx_lt n k   (length IH)
+   → sub_flex_complete_holds        (sub_complete_arrow + sub_complete_ctx_lt)
+   → sub_complete_assemble        (fuel IH + sub_flex_complete_holds at Ξ = nil, via `sub_flex_complete`) *)
 ```
 
-`main_dispatch`'s `PIH` is instantiated with `fun _ => True`: the two tophole
-closures are `exact I` and the third hands back `flex_here n Θ0`, i.e.
-`flex_step` at `Ξ = nil`.  `a_sub_complete_thm` (algorithmic.tex:1446) follows
+`sub_complete_assemble`'s `PIH` is instantiated with `fun _ => True`: the two tophole
+closures are `exact I` and the third hands back `sub_flex_complete n Θ0`, i.e.
+`sub_flex_complete_holds` at `Ξ = nil`.  `a_sub_complete_thm` (algorithmic.tex:1446) follows
 as the `Ψ := ∅`, `R := ⌈P⌉ᵘ` instance.
 
 ⭕ **THE RESIDUAL is `main_forall n`, and (2026-08-03, later) it is down to

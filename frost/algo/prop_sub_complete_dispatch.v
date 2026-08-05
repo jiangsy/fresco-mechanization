@@ -24,7 +24,7 @@
     escape into P7a needs a VARIABLE subject, and no join row shrinks an arrow
     to a variable.  So the layering is
 
-      §3  [main_arrow_subject]  — the main half at an ARROW subject, from the
+      §3  [sub_complete_arrow_subject]  — the main half at an ARROW subject, from the
           fuel IH ALONE (no P7a, no context induction);
       §4  the flex half, by induction on |Θ0| inside an induction on the FULL
           context, using §3 for Flex-Solve and the main half at a SMALLER
@@ -315,7 +315,7 @@ Qed.
 (*  subject, [__flex_mono] leaves [R] alone).  So the layering that works  *)
 (*  is                                                                     *)
 (*                                                                        *)
-(*    (a) [main_arrow_subject] — the main half at an ARROW subject, from   *)
+(*    (a) [sub_complete_arrow_subject] — the main half at an ARROW subject, from   *)
 (*        the fuel IH ALONE: no P7a, no context induction.                 *)
 (*    (b) the flex half at |Ξ ++ Θ0| = k, by an inner induction on |Θ0|    *)
 (*        (Flex-Depend keeps the total and shrinks Θ0), using (a) for      *)
@@ -627,7 +627,7 @@ Qed.
 (*                                                                        *)
 (*  ⭐ AND SO ARE THEIR COMPLETENESS ROWS (2026-08-03):                      *)
 (*  [a_sub_flex_complete_skip_tm_var] / [_skip_tm_skl]                      *)
-(*  (prop_sub_complete_thm.v §(N)/§(O)), so [flex_step] below dispatches a  *)
+(*  (prop_sub_complete_thm.v §(N)/§(O)), so [sub_flex_complete_holds] below dispatches a  *)
 (*  term-variable head like any other and needs no side condition on [Θ0].  *)
 (*  Each row is [a_sub_flex_complete_skip_rigid]'s ⇓-truncation apparatus   *)
 (*  with the tvar pieces swapped for the var ones ([a_inc_var_inv],         *)
@@ -649,22 +649,22 @@ Qed.
 (*  shrinks [Θ0] (so it is the structural IH), Flex-Skip / Flex-SkipRigid  *)
 (*  shrink both, Flex-Assign CONSUMES the definition and re-enters the     *)
 (*  main half one entry SHORTER, and Flex-Solve re-enters it at an ARROW   *)
-(*  subject over a LARGER context — which is why [main_arrow] is a         *)
+(*  subject over a LARGER context — which is why [sub_complete_arrow] is a         *)
 (*  separate hypothesis, discharged from the FUEL IH alone.                *)
 (* ===================================================================== *)
 
-Definition main_arrow (n : nat) : Prop :=
+Definition sub_complete_arrow (n : nat) : Prop :=
   forall NM M Θ0 P0 P Ra Rb R' Ψ Θ κ Q,
     sub_complete_concl n NM M Θ0 P0 P (uskl_arrow Ra Rb) R' Ψ Θ κ Q.
 
-Definition main_below (n k : nat) : Prop :=
+Definition sub_complete_ctx_lt (n k : nat) : Prop :=
   forall NM M Θ0 P0 P R R' Ψ Θ κ Q,
     length Θ0 < k ->
     sub_complete_concl n NM M Θ0 P0 P R R' Ψ Θ κ Q.
 
-Lemma flex_step : forall n k,
-  main_arrow n ->
-  main_below n k ->
+Lemma sub_flex_complete_holds : forall n k,
+  sub_complete_arrow n ->
+  sub_complete_ctx_lt n k ->
   forall NM M Θ0 Ξ α P0 R' Ψ Θ κ Q,
     length Ξ + length Θ0 <= k ->
     sub_flex_complete_concl n NM M Θ0 Ξ α P0 R' Ψ Θ κ Q.
@@ -742,7 +742,7 @@ Qed.
 
 Print Assumptions sub_flex_rigid_head_absurd.
 Print Assumptions slack_arrow_rigid_absurd.
-Print Assumptions flex_step.
+Print Assumptions sub_flex_complete_holds.
 
 (* ===================================================================== *)
 (*  §8  THE CHECK ROW's ONE OBLIGATION — [guarded_pskl P0]                 *)
@@ -901,7 +901,7 @@ Qed.
     nothing: the configuration it excludes is exactly the one this lemma
     covers, and a ∀-headed [P0] forces a ∀-inh counterpart through the FILL
     ([ad_refine_syn_f_all_inh_l_shape], §8). *)
-Lemma main_all_inh_counterpart : forall n Θ0 P0 P R R' Ψ Θ κ B,
+Lemma sub_complete_all_inh_counterpart : forall n Θ0 P0 P R R' Ψ Θ κ B,
   (forall NM' M' Θ0' P0' P' R'' T'' Ψ' Θ' κ' Q',
      sub_complete_concl n NM' M' Θ0' P0' P' R'' T'' Ψ' Θ' κ' Q') ->
   sub_complete_concl (S n) a_sub_mode_ty mode_tc Θ0 P0 P R R' Ψ Θ κ
@@ -964,16 +964,16 @@ Qed.
 (*  subject is a bare VARIABLE — the [__arrow] row — but the two           *)
 (*  tophole-stripping rows can EXPOSE such a subject, so the hypothesis    *)
 (*  must be closed under stripping.  Instantiating [PIH] with a constant   *)
-(*  gives the general dispatch; instantiating it with "is an arrow" makes  *)
-(*  all three side conditions vacuous and yields [main_arrow] — DESIGN     *)
-(*  §12.1's layer (a) — from the FUEL IH alone.                            *)
+(*  gives the general assembly; instantiating it with "is an arrow" makes  *)
+(*  all three side conditions vacuous and yields [sub_complete_arrow] —     *)
+(*  DESIGN §12.1's layer (a) — from the FUEL IH alone.                      *)
 (* ===================================================================== *)
 
-Definition main_all (n : nat) : Prop :=
+Definition sub_complete (n : nat) : Prop :=
   forall NM M Θ0 P0 P R R' Ψ Θ κ Q,
     sub_complete_concl n NM M Θ0 P0 P R R' Ψ Θ κ Q.
 
-Definition flex_here (n : nat) (Θ0 : aenv) : Prop :=
+Definition sub_flex_complete (n : nat) (Θ0 : aenv) : Prop :=
   forall NM M α P0 R' Ψ Θ κ Q,
     sub_flex_complete_concl n NM M Θ0 nil α P0 R' Ψ Θ κ Q.
 
@@ -990,25 +990,43 @@ Definition flex_here (n : nat) (Θ0 : aenv) : Prop :=
    [main_forall]'s shape; their headers carry the statement inline.  Coq text
    at commit `4351531`. *)
 
-(** ⭐ [main_dispatch]: the main half, BY INDUCTION ON THE JOIN — its twelve-row
-    dispatch.  It is a proof engine, not a statement, unlike its neighbours
-    [main_all] / [main_arrow] / [main_below]; it was called [main_join] until
-    2026-08-05, which read like one of them.
+(** ⭐ [sub_complete_assemble] ASSEMBLES [sub_complete_concl] from the join's
+    twelve rows, by induction on the join derivation.  It is a proof engine;
+    its neighbours [sub_complete] / [sub_complete_arrow] / [sub_complete_ctx_lt]
+    are STATEMENTS.
 
-    ⭐ [PIH] is the CLASS OF SUBJECTS this invocation is proved for
-    (formerly the opaque [ESC]).  Restricting it is what buys the recursion:
-    instantiated with "is an arrow" the two tophole-stripping rows can never
-    expose a bare variable, so the P7a flex entry — the third condition
-    below — is unreachable and the arrow layer follows from the FUEL IH
-    alone.  Instantiated with the constant [True] it gives the general
-    dispatch, and the third condition hands back [flex_here]. *)
-Lemma main_dispatch : forall n NM M Ψ Θ R' Q,
+    ⚙ NAMING (2026-08-05).  This family used to be [main_*] — [main_all],
+    [main_arrow], [main_below], [main_join] — where "main" named nothing.  It
+    meant completeness of [a_sub], as opposed to the auxiliary judgment
+    [a_sub_flex] it is mutual with (def_extra.v's two boxes).  The motive was
+    already called [sub_complete_concl], so the family now says the same
+    thing, and each name says what RESTRICTS it: [_arrow] to arrow subjects,
+    [_ctx_lt] to contexts shorter than [k], [sub_flex_complete] to the
+    auxiliary judgment.
+
+    ⭐ [PIH] is the induction's subject-shape parameter: which subjects this
+    invocation is proved for.  Its three conditions read
+
+      [PIH (∀◇R0) -> PIH R0]                       the class survives stripping
+      [PIH (∀◈R0) -> PIH R0]                                 ” ”
+      [PIH (uskl_var_f α) -> sub_flex_complete n Θ0]   if a BARE VARIABLE is
+                                                      admitted, the auxiliary
+                                                      judgment is OWED
+
+    and restricting it is what buys the recursion: instantiated with "is an
+    arrow", the two tophole-stripping rows can never expose a bare variable,
+    so the third condition is vacuous, the P7a entry into [a_sub_flex] is
+    unreachable, and [sub_complete_arrow] follows from the FUEL IH alone —
+    which is what breaks §12's non-decreasing cycle between the two
+    judgments.  Instantiated with the constant [True] it gives the general
+    assembly, and the third condition hands back [sub_flex_complete]. *)
+Lemma sub_complete_assemble : forall n NM M Ψ Θ R' Q,
   ad_pat_sub_gv n NM M Ψ Θ R' Q ->
-  (forall n', n' < n -> main_all n') ->
+  (forall n', n' < n -> sub_complete n') ->
   forall Θ0 (PIH : uskl -> Prop),
     (forall R0, PIH (uskl_tophole R0) -> PIH R0) ->
     (forall R0, PIH (uskl_topholeg R0) -> PIH R0) ->
-    (forall α, PIH (uskl_var_f α) -> flex_here n Θ0) ->
+    (forall α, PIH (uskl_var_f α) -> sub_flex_complete n Θ0) ->
     forall P0 P R κ, PIH R ->
       sub_complete_concl n NM M Θ0 P0 P R R' Ψ Θ κ Q.
 Proof.
@@ -1119,7 +1137,7 @@ Proof.
       subst NM0 Ma P0.
       cbn in Hrs.
       destruct (ad_refine_syn_f_all_inh_l_shape Hrs) as [B HB]. subst Qa.
-      exact (@main_all_inh_counterpart n0 Θ0 (pskl_all_syn Pb) P
+      exact (@sub_complete_all_inh_counterpart n0 Θ0 (pskl_all_syn Pb) P
                (uskl_all_etag εa R0)
                (uskl_all_etag εa Rj) Ψ0 Θa κ B (Hfuel n0 ltac:(lia))
                Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
@@ -1150,7 +1168,7 @@ Proof.
     + subst NM0 Ma P0.
       cbn in Hrs.
       destruct (ad_refine_syn_f_all_inh_l_shape Hrs) as [B HB]. subst Qa.
-      exact (@main_all_inh_counterpart n0 Θ0 (pskl_all_syn Pb) P
+      exact (@sub_complete_all_inh_counterpart n0 Θ0 (pskl_all_syn Pb) P
                (uskl_all_syn R0)
                (uskl_all_syn Rj) Ψ0 Θa κ B (Hfuel n0 ltac:(lia))
                Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
@@ -1226,14 +1244,14 @@ Qed.
     ARROW subject follows from the FUEL IH alone — no P7a, no induction on the
     context.  That is exactly what [a_sub_flex_complete_solve] needs, and it
     is what breaks §12's non-decreasing main ⇄ flex cycle. *)
-Lemma main_arrow_holds : forall n,
-  (forall n', n' < n -> main_all n') ->
-  main_arrow n.
+Lemma sub_complete_arrow_holds : forall n,
+  (forall n', n' < n -> sub_complete n') ->
+  sub_complete_arrow n.
 Proof.
   intros n Hfuel NM M Θ0 P0 P Ra Rb R' Ψ Θ κ Q.
   intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
          Hgf.
-  exact (@main_dispatch n NM M Ψ Θ R' Q HDj Hfuel Θ0
+  exact (@sub_complete_assemble n NM M Ψ Θ R' Q HDj Hfuel Θ0
            (fun R0 => exists Rx Ry, R0 = uskl_arrow Rx Ry)
            ltac:(intros R0 [Rx [Ry HH]]; discriminate HH)
            ltac:(intros R0 [Rx [Ry HH]]; discriminate HH)
@@ -1250,11 +1268,11 @@ Qed.
 (*                                                                        *)
 (*  The three layers of DESIGN §12.1 are in the tree and all [Qed]:        *)
 (*                                                                        *)
-(*    (a) [main_arrow_holds] — the main half at an ARROW subject, from the *)
+(*    (a) [sub_complete_arrow_holds] — the main half at an ARROW subject, from the *)
 (*        FUEL IH alone.  This is what breaks §12's non-decreasing cycle.  *)
-(*    (b) [flex_step]        — the flex half, structural on [Θ0] with [Ξ]  *)
+(*    (b) [sub_flex_complete_holds]        — the flex half, structural on [Θ0] with [Ξ]  *)
 (*        generalized and the total context length bounded.                *)
-(*    (c) [main_dispatch]        — the main half's twelve-row join dispatch.   *)
+(*    (c) [sub_complete_assemble]        — the main half's twelve-row join dispatch.   *)
 (*                                                                        *)
 (*  ⭐⭐⭐ AND THE RESIDUAL IS DISCHARGED.  [main_forall] — the two ForallL   *)
 (*  rows — was the assembly's ONE hypothesis for a year of this campaign.  *)
@@ -1273,7 +1291,7 @@ Qed.
 (*  ⭕ The other former components, for the record:                         *)
 (*    · RESIDUAL A2 (the WLOG [guarded P0 ∨ P0 = □]) — CLOSED 2026-08-03,  *)
 (*      §8b: [p0_wlog_trichotomy] leaves exactly one escaping shape (a     *)
-(*      ∀-headed [P0] at NM = TY, M = TC) and [main_all_inh_counterpart]   *)
+(*      ∀-headed [P0] at NM = TY, M = TC) and [sub_complete_all_inh_counterpart]   *)
 (*      sends it through ForallR.  That is the mechanical content of the   *)
 (*      paper's one-sentence WLOG, subtyping-proofs.tex:3385.              *)
 (*    · The TY-only ghost-freeness of the join's subject — CLOSED, it sits *)
@@ -1302,15 +1320,15 @@ Qed.
 (*  DESIGN §12.1's three layers, glued: strong induction on the FUEL, and  *)
 (*  inside it strong induction on the CONTEXT LENGTH.                      *)
 (*                                                                        *)
-(*    · [main_arrow_holds]  from the fuel IH alone                         *)
-(*    · [main_below n k]    the main half at contexts SHORTER than k, by   *)
+(*    · [sub_complete_arrow_holds]  from the fuel IH alone                         *)
+(*    · [sub_complete_ctx_lt n k]    the main half at contexts SHORTER than k, by   *)
 (*                          the length IH                                  *)
-(*    · [flex_step]         from the two above                             *)
-(*    · [main_dispatch]         from the fuel IH and [flex_step] at [Ξ = ·]    *)
+(*    · [sub_flex_complete_holds]         from the two above                             *)
+(*    · [sub_complete_assemble]         from the fuel IH and [sub_flex_complete_holds] at [Ξ = ·]    *)
 (*                                                                        *)
-(*  [main_dispatch]'s [PIH] is instantiated with the constant [fun _ => True]: *)
+(*  [sub_complete_assemble]'s [PIH] is instantiated with the constant [fun _ => True]: *)
 (*  its three closure conditions become trivial and the third hands back   *)
-(*  [flex_here n Θ0], which is [flex_step] at [Ξ = nil].                   *)
+(*  [sub_flex_complete n Θ0], which is [sub_flex_complete_holds] at [Ξ = nil].                   *)
 (* ===================================================================== *)
 
 (** ⭐⭐⭐ UNCONDITIONAL (2026-08-05).  This used to take
@@ -1324,30 +1342,30 @@ Theorem a_sub_complete_bundle_holds : a_sub_complete_bundle.
 Proof.
   intros n.
   induction n as [n IHfuel] using lt_wf_ind.
-  assert (Hfuel : forall n', n' < n -> main_all n')
+  assert (Hfuel : forall n', n' < n -> sub_complete n')
     by (intros n' Hn'; exact (proj1 (IHfuel n' Hn'))).
-  assert (Harrow : main_arrow n)
-    by (apply main_arrow_holds; exact Hfuel).
+  assert (Harrow : sub_complete_arrow n)
+    by (apply sub_complete_arrow_holds; exact Hfuel).
   (* the main half at every context, by strong induction on the LENGTH *)
-  assert (Hbelow : forall k, main_below n k).
+  assert (Hbelow : forall k, sub_complete_ctx_lt n k).
   { intro k. induction k as [k IHk] using lt_wf_ind.
     intros NM M Θ0 P0 P R R' Ψ Θ κ Q Hlen.
     intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
            Hgf.
-    refine (@main_dispatch n NM M Ψ Θ R' Q HDj Hfuel Θ0
+    refine (@sub_complete_assemble n NM M Ψ Θ R' Q HDj Hfuel Θ0
               (fun _ => True) _ _ _ P0 P R κ I
               Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
               HwfQ Hgf);
       [ intros; exact I | intros; exact I | ].
     intros γ _ NM' M' α' P0' R'' Ψ' Θ' κ' Q'.
-    apply (@flex_step n (length Θ0) Harrow
+    apply (@sub_flex_complete_holds n (length Θ0) Harrow
              (IHk (length Θ0) Hlen) NM' M' Θ0 nil α' P0' R'' Ψ' Θ' κ' Q').
     simpl. lia. }
   split.
   - intros NM M Θ0 P0 P R R' Ψ Θ κ Q.
     apply (Hbelow (S (length Θ0)) NM M Θ0 P0 P R R' Ψ Θ κ Q). lia.
   - intros NM M Θ0 Ξ α P0 R' Ψ Θ κ Q.
-    apply (@flex_step n (length Ξ + length Θ0) Harrow
+    apply (@sub_flex_complete_holds n (length Ξ + length Θ0) Harrow
              (Hbelow (length Ξ + length Θ0))
              NM M Θ0 Ξ α P0 R' Ψ Θ κ Q). lia.
 Qed.
@@ -1396,12 +1414,12 @@ Proof.
            (uskl_to_pskl_pskl_to_uskl P) Hinc Hslack HDj Hrs HwfQ Hgf).
 Qed.
 
-Print Assumptions main_dispatch.
-Print Assumptions main_arrow_holds.
-Print Assumptions flex_step.
+Print Assumptions sub_complete_assemble.
+Print Assumptions sub_complete_arrow_holds.
+Print Assumptions sub_flex_complete_holds.
 Print Assumptions check_row_guarded_p0.
 Print Assumptions sub_flex_rigid_head_absurd.
 Print Assumptions sub_gv_all_inh_forall_r_family.
-Print Assumptions main_all_inh_counterpart.
+Print Assumptions sub_complete_all_inh_counterpart.
 Print Assumptions a_sub_complete_bundle_holds.
 Print Assumptions a_sub_complete_thm.

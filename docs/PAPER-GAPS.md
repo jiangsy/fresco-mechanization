@@ -2100,7 +2100,7 @@ entry does not have: the SEMANTIC MIDDLE `Θ' ⊢ A' ≡ᵗ κ A`, cribbed from 
 consistency twin's `Assign-SkipTmVar` case (prop_consis_complete.v:5595-5690)
 and read back through the junk swap with `msubst_ptyp_kswap`.  Both rows are
 axiom-free.  The stop-gap `a_sub_flex_walkable Θ0` premise on P7c's
-`flex_step` is DELETED; the walk now dispatches a term-variable head like any
+`sub_flex_complete_holds` is DELETED; the walk now dispatches a term-variable head like any
 other head.
 
 ---
@@ -2159,7 +2159,7 @@ proved by induction on the join: the ForallL chain must bottom out in
 counterpart.  Each ForallL step is re-applied under the new binder.  It needs
 one companion, `ad_pat_sub_gv_fuel_weaken`, because the extraction returns the
 family at whatever height it finds while `a_sub_complete_forall_r` wants it at
-exactly `n`.  `main_all_inh_counterpart` then closes the excluded
+exactly `n`.  `sub_complete_all_inh_counterpart` then closes the excluded
 configuration outright: **whenever the counterpart is `∀`-inh the row goes
 through ForallR, whatever the join's last rule and whatever `P_0`.**
 

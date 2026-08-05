@@ -146,8 +146,8 @@ refutation — now reversed (`p7_sub_shield_double_occ_holds`).
 
 Consequently: P6-L drops the premise and discharges it internally; P7b's
 `a_sub_complete_forall_l_tagged` / `_untagged` drop TASK 0's gate; §9's two
-ForallL branches of `main_dispatch` apply those row lemmas DIRECTLY, on exactly
-the join rule's own premises; `main_dispatch`, `main_arrow_holds` and the bundle
+ForallL branches of `sub_complete_assemble` apply those row lemmas DIRECTLY, on exactly
+the join rule's own premises; `sub_complete_assemble`, `sub_complete_arrow_holds` and the bundle
 drop the hypothesis.  `main_forall` is retired (kept as documentation, no
 consumers).
 
@@ -808,7 +808,7 @@ entry.**  Occurrences inside `Ξv ++ …` are the `a_inc` TARGET and become
 `(β ~ abind_var_typ Qv)`.
 
 Consequence: `a_sub_flex_walkable` and its two lemmas are **deleted**,
-`flex_step` takes no side condition on `Θ0`, and its two `exfalso` branches
+`sub_flex_complete_holds` takes no side condition on `Θ0`, and its two `exfalso` branches
 are ordinary delegations.  Obstacle (B) of DESIGN §12.2 is closed.
 
 **TASK 2a — the ForallL/ForallR overlap is closed, and the paper was right.**
@@ -829,25 +829,25 @@ NOT a defect and must not be reported as one.  Its mechanical content is
   `a_sub_complete_forall_r` wants it at exactly `n` for a conclusion at `S n`.
   A 20-line induction; only the four rules whose conclusion fuel is `S n` need
   `destruct m`.
-* `main_all_inh_counterpart` composes them — **whenever the counterpart is
+* `sub_complete_all_inh_counterpart` composes them — **whenever the counterpart is
   ∀-inh the row goes through ForallR, whatever the join's last rule and
   whatever `P0`**, so the ForallL rows' `guarded_pskl P0 ∨ P0 = ◇` premise
   costs nothing (a ∀-headed `P0` forces a ∀-inh counterpart through the FILL).
 * ⭐ **and A2 is DISCHARGED INSIDE the dispatch**: `p0_wlog_trichotomy` reads
   the WLOG off mode compatibility (at SK every compatible `P0` is a hole or an
   arrow; at TY the only non-guarded, non-hole shape is a `∀`, and only at
-  `M = TC`), `main_dispatch`'s two ForallL cases split on it, and the escaping
-  shape goes to `main_all_inh_counterpart`.  So **`main_forall` now TAKES
+  `M = TC`), `sub_complete_assemble`'s two ForallL cases split on it, and the escaping
+  shape goes to `sub_complete_all_inh_counterpart`.  So **`main_forall` now TAKES
   `guarded_pskl P0 ∨ P0 = ◇` as a hypothesis** — the bundle's residual is
   strictly narrower.
 
 **TASK 3 — the assembly.**  `a_sub_complete_bundle_holds`
 (`prop_sub_complete_dispatch.v` §12) is exactly DESIGN §12.1's three layers
 glued by `lt_wf_ind` on the fuel and, inside it, `lt_wf_ind` on the CONTEXT
-LENGTH: `main_arrow_holds` (fuel IH) → `main_below n k` (length IH) →
-`flex_step` → `main_dispatch` with `ESC := fun _ => True` (the two tophole
-closures are `exact I`; the third hands back `flex_here n Θ0`, which is
-`flex_step` at `Ξ = nil`).  `a_sub_complete_thm` (algorithmic.tex:1446) is the
+LENGTH: `sub_complete_arrow_holds` (fuel IH) → `sub_complete_ctx_lt n k` (length IH) →
+`sub_flex_complete_holds` → `sub_complete_assemble` with `ESC := fun _ => True` (the two tophole
+closures are `exact I`; the third hands back `sub_flex_complete n Θ0`, which is
+`sub_flex_complete_holds` at `Ξ = nil`).  `a_sub_complete_thm` (algorithmic.tex:1446) is the
 `Ψ := ∅`, `R := ⌈P⌉ᵘ` instance.
 
 ⭕ **The residual is `main_forall n`, and it has exactly TWO components** — a
@@ -925,7 +925,7 @@ witness is a solvable problem EVERY run of which goes through it
 it has no run at all.  That is the permanent record of why the rules are
 needed.
 
-⭕ **STILL OWED: P7a's two COMPLETENESS rows.**  They are why `flex_step` still
+⭕ **STILL OWED: P7a's two COMPLETENESS rows.**  They are why `sub_flex_complete_holds` still
 carries `a_sub_flex_walkable Θ0`.  Their shape is fully determined
 (DESIGN §12.3): `a_inc__var` / `a_inc__var_skl` shrink the `a_inc` TARGET
 exactly as `a_inc__tvar` does, so each row is
@@ -972,7 +972,7 @@ subject at the `__arrow` row: `κ` never touches a rigid variable, a rigid
 variable is its own ⇓-normal form (`downarrow_rigid`, on the new
 `aenv_msubst_dom_flex`), and ⇓ of an arrow is an arrow.
 
-**§7 — THE FLEX HALF (`flex_step`), DESIGN §12.1's layer (b).**  Structural
+**§7 — THE FLEX HALF (`sub_flex_complete_holds`), DESIGN §12.1's layer (b).**  Structural
 induction on `Θ0` with the suffix `Ξ` GENERALIZED and the total context length
 bounded: Flex-Depend keeps the total and shrinks `Θ0` (the structural IH),
 Skip/SkipRigid shrink both, Flex-Assign consumes the definition and re-enters
@@ -983,7 +983,7 @@ cross-half IH gains `length Θ0' <= length Ξ + length Θ0`, and **solve's
 cross-half IH is restricted to an ARROW subject** — the only thing that breaks
 §12.1's non-decreasing cycle.
 
-**§9 — THE MAIN HALF's TWELVE-ROW JOIN DISPATCH (`main_dispatch`), layer (c).**
+**§9 — THE MAIN HALF's TWELVE-ROW JOIN DISPATCH (`sub_complete_assemble`), layer (c).**
 Nine rows delegate to their `Qed` row lemma (fuel IH where the row consumes
 fuel); the two UnivGhostL rows and `__flex_mono` preserve the fuel and are the
 structural IH's work (`⌊∀◈R⌋ˢ` IS `∀◇⌊R⌋ˢ`, so both ghosts use the one
@@ -993,7 +993,7 @@ carried by an ABSTRACT predicate `PIH` on the motive's subject, with three
 closure conditions** — that is what lets ONE dispatch serve both layers:
 instantiate `PIH` with "is an arrow" and all three become vacuous (an arrow is
 neither `∀◇` nor `∀◈` nor a variable), so the tophole-stripping rows can never
-expose a variable subject and P7a is unreachable.  That is `main_arrow_holds`,
+expose a variable subject and P7a is unreachable.  That is `sub_complete_arrow_holds`,
 **layer (a), from the FUEL IH alone**, and it is exactly what
 `a_sub_flex_complete_solve` now takes.
 
@@ -1028,14 +1028,14 @@ the paper's own idiom, but it is a RULE change: `a_sub_flex` + `a_subtag_flex`
 each gain two constructors, three mutual inductions reopen
 (`prop_sub_sound.v`, `prop_decorate_key.v`, `prop_swap.v`), and P7a gains two
 rows carrying `Flex-SkipRigid`'s whole ⇓-truncation apparatus (the consistency
-twin's two cases are ~670 lines).  So it is the authors' call, and `flex_step`
+twin's two cases are ~670 lines).  So it is the authors' call, and `sub_flex_complete_holds`
 carries the explicit premise `a_sub_flex_walkable Θ0` meanwhile.  ⚠️ It cannot
 simply be carried to the bundle: the row lemmas' fuel IH is the UNRESTRICTED
 motive, so the restriction would have to move INTO `sub_complete_concl` and
 every row would owe walkability of the contexts it recurses at.
 
 **⭕ (A) `main_forall n` — the two ForallL rows**, isolated as the single
-residual hypothesis of `main_dispatch`.  It bundles TWO independent problems:
+residual hypothesis of `sub_complete_assemble`.  It bundles TWO independent problems:
 
   * **A1** — TASK 0's `sub_shield`.  Unchanged: `prop_sub_shield_supply.v`
     covers flex-free / atomic / mono-counterpart / inh-free-counterpart /

@@ -121,7 +121,7 @@ HAZARDS (all paid for already)
 ⚠️ `Set Implicit Arguments` — on "term X has type T, expected U", write
   `@lemma` with the full argument list; do NOT trust rules of thumb about
   which args stay explicit.
-⚠️ `apply H` does not unfold a Definition-shaped HYPOTHESIS (`main_below`,
+⚠️ `apply H` does not unfold a Definition-shaped HYPOTHESIS (`sub_complete_ctx_lt`,
   `main_forall`, `sub_shield`) — apply it to its explicit arguments.  A row
   lemma whose conclusion is `sub_complete_concl …` CAN be `exact`ed against
   the intro'd goal.
