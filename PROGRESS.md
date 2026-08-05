@@ -198,6 +198,23 @@ it), after which DESIGN:166 requires transporting it to `_gv`.
 plain `ad_pat_sub`, completeness *assumes* `ad_pat_sub_gv`.  Soundness produces
 strictly less than completeness consumes.
 
+⭐ **BUT THE MISSING CONTENT IS ALREADY PROVED — the fix is threading, not new
+mathematics.**  `_gv`'s leaf premise is `Θ ⨟ ∅ ⊢ᵣₚᵃ ⌊R⌋ˢ ⊳ ⌊Q⌋` (the subject's
+erasure refines to the leaf counterpart).  That is *literally* the last
+conjunct both consistency-soundness results already export:
+
+| | last conjunct |
+|---|---|
+| `a_consis_sound` (:5598) | `Θ1 ⨟ ∅ ⊢ᵣₚᵃ P ⊳ P'` |
+| `a_consistag_sound_aux` (:4650) | `ad_refine_pskl_f Δ2 Θ1 Δ2 ⌊R⌋ˢ P'` |
+
+So the route to composition is to strengthen `a_subtag_sound_bundle` /
+`a_sub_sound_thm` to CONCLUDE `ad_pat_sub_gv` — i.e. stop DROPPING a conjunct
+the leaves already hand back — rather than to derive `_gv` from an arbitrary
+declarative join, which is refuted.  ⚙ The one real cost is that `_gv` is
+FUEL-indexed, so soundness would have to produce an `exists n`
+(`ad_pat_sub_to_n` is the precedent).
+
 ### 5. ⛔ What was NOT retired, and why
 
 `a_assign_unify_consis_rename_tvar` (prop_consis_rename.v §8, **591 lines**)
