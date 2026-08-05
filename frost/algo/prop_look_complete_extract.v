@@ -56,6 +56,7 @@ Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_looksub.
+Require Import src.frost.algo.prop_solve_sub.
 Require Import src.frost.algo.prop_inc_strengthen.
 Require Import src.frost.algo.prop_compose.
 Require Import src.frost.algo.prop_metasubst.
@@ -1026,6 +1027,10 @@ Theorem a_extract_complete_gen :
   a_tags_sort NM Ψa ψa ->
   (ftag_in_uskl R') ∩ Ψa [=] empty ->       (* the paper's "Ψ disjoint from Ψa" *)
   Δ ∩ ftvar_in_uskl ψa [=] empty ->         (* ⌐ the precision HOLE rule's side condition *)
+  (* ⭐ THE IDEAL GUESS IS Θ-SCOPED (2026-08-05, the SolE-FlexR repair): the
+     repaired SolE-FlexR reads the SOLVE block's payloads off [ψa].
+     [paper-external wf side condition — docs/WF-SIDE-CONDITIONS.md] *)
+  ftvar_in_uskl ψa [<=] dom Θ ->
   Θ ⨟ Δ ⊢ₚₛᵃ ⌊ ψa ⌋ˢ ->                     (* the paper's wf premise for ψa *)
   delta_def_fresh Δ Θ ->
   sub_shield Θ0 Ψa empty α P0 R' ψa ->
@@ -1052,55 +1057,103 @@ Theorem a_extract_complete_gen :
 Proof.
   intros n NM M Θ0 Θ κ Δ Ψa Ψsub ψa Q P P0 R' α.
   intros HwfΘ HwfΘ0 HwfP0 HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR
-         Htags Hdisj HΔψ Hwfψ Hdfresh Hshield HΨsubU HΨsubL Hsubty
+         Htags Hdisj HΔψ Hψaw Hwfψ Hdfresh Hshield HΨsubU HΨsubL Hsubty
          HwfSubj Hrefine.
   (* ---- (a)-(f) : P6-Ss at [Pi := □], [Ψi := ∅] ---- *)
+  (* ⭐ THE SOLVE'S OWN BLOCK [Ξs] (2026-08-05, the SolE-FlexR repair).  The
+     look's suffix is now three blocks, [Ξc ++ Ξs ++ Ξ'] — collection,
+     solving, final guess — and each stage's avoid-input is everything
+     generated before it ([a_extract__solve], def_extra.v).  So P6-Ss's
+     avoid-set parameter is instantiated at the CONTEXT's own variables, the
+     guess is run at [Ξs ++ Ξc ++ Θ0], and the three blocks are pairwise
+     disjoint by construction rather than by a side condition. *)
   destruct (@a_looksub_solve_complete n NM M Θ0 Θ κ Δ Ψa empty Ψa Ψsub ψa Q
               P P0 pskl_hole R' α
               HwfΘ HwfΘ0 HwfP0 ltac:(apply a_wf_pskl__hole)
               HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR Htags Hdisj
-              ltac:(clear; fsetdec) Hdfresh Hshield
+              ltac:(clear; fsetdec) Hψaw Hdfresh Hshield
               ltac:(cbn [msubst_pskl];
                     apply ad_ppre__hole; [ clear; fsetdec | exact HΔψ ])
               HΨsubU HΨsubL
-              Hsubty HwfSubj Hrefine)
-    as (𝒞 & Ξc & Pa & κc & Hlook & Hsolve & HwfPa & HwfΞc & HαΞc & Hkeysc
+              Hsubty HwfSubj Hrefine
+              (ftvar_in_aenv Θ0) ltac:(clear; fsetdec))
+    as (𝒞 & Ξc & Ξs & Pa & κc & κs
+        & Hlook & Hsolve & Hfms & Hus & Hks & Hfrs & HFs
+        & HwfPa & HwfΞc & HαΞc & Hkeysc
         & HForc & Hincc & Heqv & Hκcfresh & Hprec & _).
   (* ---- (g) : P5b-i upgrades ⊑ᵖ[Ψa] to plain ⊑ ⌊ψa⌋ˢ ---- *)
-  assert (Hpre : Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_pskl (κc ++ κ) Pa) ⊑ ⌊ ψa ⌋ˢ).
+  assert (Hpre : Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ ⌊ ψa ⌋ˢ).
   { eapply ad_partial_precise_complete;
       [ exact HwfΘ | exact Htags | exact Hwfψ | ].
     eapply ad_partial_precise_psi_cong; [ exact Hprec | clear; fsetdec ]. }
   (* ---- the reorder kit's prerequisites on the COLLECTED block ---- *)
   assert (HfmΞc : all_flex_mono Ξc)
     by (eapply a_looksub_all_flex_mono; exact Hlook).
-  assert (HwmΞc : Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κc)
-    by (destruct (@a_inc_flex_prefix_split Ξc κc Θ0 κ Θ HfmΞc Hkeysc Hincc)
-          as [Hw _]; exact Hw).
+  assert (HwmΞc : Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κc).
+  { destruct (@a_inc_flex_prefix_split Ξs κs (Ξc ++ Θ0) (κc ++ κ) Θ
+                Hfms Hks Hincc) as [_ HincC].
+    destruct (@a_inc_flex_prefix_split Ξc κc Θ0 κ Θ HfmΞc Hkeysc HincC)
+      as [Hw _]; exact Hw. }
+  assert (HwmΞs : Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κs)
+    by (destruct (@a_inc_flex_prefix_split Ξs κs (Ξc ++ Θ0) (κc ++ κ) Θ
+                    Hfms Hks Hincc) as [Hw _]; exact Hw).
   assert (HuqΞc : uniq (Ξc ++ Θ0)) by (apply a_wf_aenv_uniq; exact HwfΞc).
+  (* the SOLVE block dodges everything its own context MENTIONS — the Ξ
+     scoping kit's master invariant, and what makes [Ξs ++ Ξc ++ Θ0] wf *)
+  assert (HfrsC : forall x, x `in` dom Ξs ->
+            x `notin` ftvar_in_aenv (Ξc ++ Θ0))
+    by (intros x Hx; eapply a_solve_cstr_generated_fresh;
+          [ exact Hsolve | exact Hx ]).
+  assert (HwfΞs : a_wf_aenv (Ξs ++ Ξc ++ Θ0)).
+  { apply a_wf_aenv_flex_prefix; [ exact Hfms | | exact HwfΞc ].
+    assert (Hdd : dom Ξs ∩ dom (Ξc ++ Θ0) [<=] empty).
+    { intros x Hx.
+      assert (Hx1 : x `in` dom Ξs) by (clear - Hx; fsetdec).
+      assert (Hx2 : x `in` dom (Ξc ++ Θ0)) by (clear - Hx; fsetdec).
+      pose proof (HfrsC x Hx1) as Hf.
+      pose proof (dom_subset_ftvar_in_aenv (Ξc ++ Θ0)) as Hds.
+      exfalso; clear - Hf Hds Hx2; fsetdec. }
+    apply uniq_app_4; [ exact Hus | exact HuqΞc | exact Hdd ]. }
+  assert (HuqΞsc : uniq (Ξs ++ Ξc ++ Θ0)) by (apply a_wf_aenv_uniq; exact HwfΞs).
+  assert (Hdcs : forall β0, β0 `in` dom κc -> β0 `notin` dom κs).
+  { intros β0 Hβ0 Hc.
+    pose proof (@keys_eq_dom _ _ κc Ξc Hkeysc) as Hdc0.
+    pose proof (@keys_eq_dom _ _ κs Ξs Hks) as Hds0.
+    assert (Hinc : β0 `in` dom Ξc) by (clear - Hβ0 Hdc0; fsetdec).
+    assert (Hins : β0 `in` dom Ξs) by (clear - Hc Hds0; fsetdec).
+    pose proof (HfrsC β0 Hins) as Hf.
+    pose proof (dom_subset_ftvar_in_aenv (Ξc ++ Θ0)) as Hdd.
+    rewrite dom_app in Hdd. clear - Hf Hdd Hinc; fsetdec. }
   (* ---- (h) : the guess.  SK is the identity; TY is §9 ---- *)
   destruct NM.
   - (* ================================ TY ============================== *)
     assert (Hgfψ : pskl_ghost_free ⌊ ψa ⌋ˢ)
       by (inversion Htags; subst; apply uskl_ghost_free_to_pskl; assumption).
     assert (Hlcψ : lc_pskl ⌊ ψa ⌋ˢ) by (eapply a_wf_pskl_lc; exact Hwfψ).
-    destruct (@a_guess_ty_witness (size_pskl Pa) (Ξc ++ Θ0) Θ (κc ++ κ)
-                Δ empty Pa ⌊ ψa ⌋ˢ
+    destruct (@a_guess_ty_witness (size_pskl Pa) (Ξs ++ Ξc ++ Θ0) Θ
+                (κs ++ κc ++ κ) Δ empty Pa ⌊ ψa ⌋ˢ
                 (le_n _) HwfΘ HwfPa
                 ltac:(unfold msubst_lc; intros α0;
                       eapply a_inc_lookup_lc; exact Hincc)
                 ltac:(intros α0; eapply a_inc_lookup_ftv; exact Hincc)
                 Hgfψ Hlcψ Hpre
-                (* the guess runs at [Ξc ++ Θ0] ([a_extract__solve]), so the
-                   L-bound must cover that context's PAYLOADS too, not just
+                (* the guess runs at [Ξs ++ Ξc ++ Θ0] ([a_extract__solve]), so
+                   the L-bound must cover that context's PAYLOADS too, not just
                    its domain — cluster 3's avoid-input is [ftvar_in_aenv] *)
-                (add α (ftvar_in_aenv (Ξc ++ Θ0) `union` dom Θ
-                          `union` dom Θ0 `union` dom Ξc `union` dom κ)))
+                (add α (ftvar_in_aenv (Ξs ++ Ξc ++ Θ0) `union` dom Θ
+                          `union` dom Θ0 `union` dom Ξc `union` dom Ξs
+                          `union` dom κ)))
       as (Ξ' & A & κ' & Hgu & HfmΞ' & HuqΞ' & Hkeys' & Hfr' & HF' & Hwf'
           & Hpr').
     assert (HdomΞ' : dom κ' [=] dom Ξ') by (apply keys_eq_dom; exact Hkeys').
-    assert (HuqAll : uniq (Ξc ++ Ξ' ++ Θ0)).
+    assert (Hdc : dom κc [=] dom Ξc) by (apply keys_eq_dom; exact Hkeysc).
+    assert (Hds : dom κs [=] dom Ξs) by (apply keys_eq_dom; exact Hks).
+    assert (HuqAll : uniq (Ξc ++ Ξs ++ Ξ' ++ Θ0)).
     { assert (Hd1 : disjoint Ξ' Ξc)
+        by (unfold disjoint; intros α0 Hα0;
+            assert (Hin : α0 `in` dom Ξ') by (clear - Hα0; fsetdec);
+            specialize (Hfr' α0 Hin); clear - Hα0 Hfr'; fsetdec).
+      assert (Hd1s : disjoint Ξ' Ξs)
         by (unfold disjoint; intros α0 Hα0;
             assert (Hin : α0 `in` dom Ξ') by (clear - Hα0; fsetdec);
             specialize (Hfr' α0 Hin); clear - Hα0 Hfr'; fsetdec).
@@ -1108,58 +1161,85 @@ Proof.
         by (unfold disjoint; intros α0 Hα0;
             assert (Hin : α0 `in` dom Ξ') by (clear - Hα0; fsetdec);
             specialize (Hfr' α0 Hin); clear - Hα0 Hfr'; fsetdec).
-      clear - HuqΞc HuqΞ' Hd1 Hd2; solve_uniq. }
-    exists (Ξc ++ Ξ'), (ptyp_to_pskl A), (κc ++ κ').
+      clear - HuqΞsc HuqΞ' Hd1 Hd1s Hd2; solve_uniq. }
+    exists (Ξc ++ Ξs ++ Ξ'), (ptyp_to_pskl A), (κc ++ κs ++ κ').
     split.
     { eapply a_extract__solve;
         [ exact Hlook | exact Hsolve
         | apply a_guess__ty; apply Hgu; clear; fsetdec ]. }
     split.
-    { rewrite app_assoc. apply a_wf_pskl_swap_app. exact Hwf'. }
+    { (* [Ξ' ++ Ξs ++ Ξc ++ Θ0] → [Ξc ++ Ξs ++ Ξ' ++ Θ0]: all three blocks are
+         undefined flexibles, so any reordering is binds-preserving *)
+      eapply a_wf_pskl_weaken; [ | exact Hwf' ].
+      intros x b Hb. simpl_env. analyze_binds Hb. }
     split.
-    { rewrite app_assoc.
-      apply (@a_wf_aenv_flex_prefix Ξc (Ξ' ++ Θ0));
-        [ exact HfmΞc | exact HuqAll | ].
-      apply (@a_wf_aenv_flex_prefix Ξ' Θ0);
-        [ exact HfmΞ' | clear - HuqAll; solve_uniq | exact HwfΘ0 ]. }
+    { apply (@a_wf_aenv_flex_prefix (Ξc ++ Ξs ++ Ξ') Θ0);
+        [ repeat apply all_flex_mono_app; assumption
+        | simpl_env; clear - HuqAll; solve_uniq
+        | exact HwfΘ0 ]. }
     split.
-    { apply all_flex_mono_a_decls. apply all_flex_mono_app; assumption. }
-    split; [ rewrite ! keys_app; rewrite Hkeysc, Hkeys'; reflexivity | ].
+    { apply all_flex_mono_a_decls. repeat apply all_flex_mono_app; assumption. }
+    split; [ rewrite ! keys_app; rewrite Hkeysc, Hks, Hkeys'; reflexivity | ].
     split.
-    { (* the goal IS [(κa ++ κb) ∷ (Ξ ++ Θ0) ⊑ Θ] on the nose — do NOT
-         reassociate, or the split becomes ambiguous *)
-      apply (@a_inc_flex_prefix_build (Ξc ++ Ξ') (κc ++ κ') Θ0 κ Θ);
-        [ apply all_flex_mono_app; assumption
-        | rewrite ! keys_app; rewrite Hkeysc, Hkeys'; reflexivity
-        | apply Forall_app; split; assumption
+    { apply (@a_inc_flex_prefix_build (Ξc ++ Ξs ++ Ξ') (κc ++ κs ++ κ') Θ0 κ Θ);
+        [ repeat apply all_flex_mono_app; assumption
+        | rewrite ! keys_app; rewrite Hkeysc, Hks, Hkeys'; reflexivity
+        | repeat (apply Forall_app; split); assumption
         | exact Hκ ]. }
     split; [ exact Heqv | ].
-    (* the ONE reorder on the metasubstitution side: §9 built [κ',κc,κ],
-       [a_extract] wants [κc,κ',κ]; the two blocks are apart *)
-    rewrite app_assoc.
-    rewrite <- (@msubst_pskl_app_swap κ' κc κ (ptyp_to_pskl A));
-      [ exact Hpr' | ].
-    intros α0 Hα0.
-    assert (Hin : α0 `in` dom Ξ') by (clear - Hα0 HdomΞ'; fsetdec).
-    specialize (Hfr' α0 Hin).
-    assert (Hdc : dom κc [=] dom Ξc) by (apply keys_eq_dom; exact Hkeysc).
-    clear - Hfr' Hdc; fsetdec.
+    (* the ONE reorder on the metasubstitution side: §9 built [κ',κs,κc,κ],
+       [a_extract] wants [κc,κs,κ',κ]; the blocks are pairwise apart, so it is
+       a lookup-level identity *)
+    assert (Hd'c : forall β0, β0 `in` dom κ' -> β0 `notin` dom κc)
+      by (intros β0 Hβ0;
+          assert (Hin : β0 `in` dom Ξ') by (clear - Hβ0 HdomΞ'; fsetdec);
+          specialize (Hfr' β0 Hin); clear - Hfr' Hdc; fsetdec).
+    assert (Hd's : forall β0, β0 `in` dom κ' -> β0 `notin` dom κs)
+      by (intros β0 Hβ0;
+          assert (Hin : β0 `in` dom Ξ') by (clear - Hβ0 HdomΞ'; fsetdec);
+          specialize (Hfr' β0 Hin); clear - Hfr' Hds; fsetdec).
+    assert (Hdc' : forall β0, β0 `in` dom κc -> β0 `notin` dom κ')
+      by (intros β0 Hβ0 Hc; exact (Hd'c β0 Hc Hβ0)).
+    assert (Hperm : msubst_pskl ((κc ++ κs ++ κ') ++ κ) (ptyp_to_pskl A)
+                  = msubst_pskl (κ' ++ κs ++ κc ++ κ) (ptyp_to_pskl A)).
+    { rewrite (list_app_assoc κc (κs ++ κ') κ).
+      rewrite (list_app_assoc κs κ' κ).
+      apply msubst_pskl_lookup_congr. intro β0.
+      (* bring BOTH sides to a common [κs] head, then peel and swap once *)
+      rewrite (@msubst_lookup_app_swap κc κs (κ' ++ κ) β0 Hdcs).
+      rewrite (@msubst_lookup_app_swap κ' κs (κc ++ κ) β0 Hd's).
+      apply msubst_lookup_app_congr. intro β1.
+      apply (@msubst_lookup_app_swap κc κ' κ β1 Hdc'). }
+    rewrite Hperm. exact Hpr'.
   - (* ================================ SK ============================== *)
     (* [a_guess__sk] : Ξ' = ·, Q' = Q, so κ' = · and every conclusion is
-       P6-Ss's verbatim *)
-    exists (Ξc ++ nil), Pa, (κc ++ nil).
+       P6-Ss's verbatim — modulo the SOLVE's own block, which stays *)
+    exists (Ξc ++ Ξs ++ nil), Pa, (κc ++ κs ++ nil).
     split.
     { eapply a_extract__solve;
         [ exact Hlook | exact Hsolve | apply a_guess__sk ]. }
     (* only NOW may the empty guess block be absorbed — [a_extract__solve]'s
-       conclusion is [Ξ ++ Ξ'], which no longer unifies once it is gone *)
+       conclusion is [Ξ ++ Ξs ++ Ξ'], which no longer unifies once it is gone *)
     rewrite ! app_nil_r.
-    split; [ exact HwfPa | ].
-    split; [ exact HwfΞc | ].
-    split; [ apply all_flex_mono_a_decls; exact HfmΞc | ].
-    split; [ exact Hkeysc | ].
-    split; [ exact Hincc | ].
+    split.
+    { eapply a_wf_pskl_weaken; [ | exact HwfPa ].
+      intros x b Hb. simpl_env. analyze_binds Hb. }
+    split.
+    { apply (@a_wf_aenv_flex_prefix (Ξc ++ Ξs) Θ0);
+        [ apply all_flex_mono_app; assumption
+        | simpl_env; clear - HuqΞsc; solve_uniq
+        | exact HwfΘ0 ]. }
+    split; [ apply all_flex_mono_a_decls; apply all_flex_mono_app; assumption | ].
+    split; [ rewrite ! keys_app; rewrite Hkeysc, Hks; reflexivity | ].
+    split.
+    { apply (@a_inc_flex_prefix_build (Ξc ++ Ξs) (κc ++ κs) Θ0 κ Θ);
+        [ apply all_flex_mono_app; assumption
+        | rewrite ! keys_app; rewrite Hkeysc, Hks; reflexivity
+        | apply Forall_app; split; assumption
+        | exact Hκ ]. }
     split; [ exact Heqv | ].
+    rewrite (list_app_assoc κc κs κ).
+    rewrite (@msubst_pskl_app_swap κc κs κ Pa Hdcs).
     exact Hpre.
 Qed.
 
@@ -1199,6 +1279,9 @@ Corollary a_extract_complete :
   lc_uskl R' ->
   a_tags_sort NM Ψa ψa ->
   (ftag_in_uskl R') ∩ Ψa [=] empty ->
+  (* ⭐ THE IDEAL GUESS IS Θ-SCOPED (2026-08-05, the SolE-FlexR repair).
+     [paper-external wf side condition — docs/WF-SIDE-CONDITIONS.md] *)
+  ftvar_in_uskl ψa [<=] dom Θ ->
   Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψa ⌋ˢ ->
   sub_shield Θ0 Ψa empty α P0 R' ψa ->
   ad_pat_sub_g n NM M Ψa Θ
@@ -1218,12 +1301,13 @@ Corollary a_extract_complete :
 Proof.
   intros n NM M Θ0 Θ κ Ψa ψa Q P P0 R' α.
   intros HwfΘ HwfΘ0 HwfP0 HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR
-         Htags Hdisj Hwfψ Hshield Hsubty HwfSubj Hrefine.
+         Htags Hdisj Hψaw Hwfψ Hshield Hsubty HwfSubj Hrefine.
   eapply a_extract_complete_gen with (Ψsub := Ψa);
     [ exact HwfΘ | exact HwfΘ0 | exact HwfP0 | exact HmodSK | exact HmodTY
     | exact Hκ | exact HαΘ | exact HαΘ0 | exact HeraseR | exact HscopeR
     | exact HlcR | exact Htags | exact Hdisj
     | clear; fsetdec                                 (* ∅ ∩ ftv ψa = ∅ *)
+    | exact Hψaw
     | exact Hwfψ
     | intros β α0 τ Hβ; exfalso; clear - Hβ; fsetdec (* delta_def_fresh ∅ Θ *)
     | exact Hshield
