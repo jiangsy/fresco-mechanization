@@ -73,12 +73,37 @@ files were `Admitted` scaffolding subsumed by the current algo development.
 - 🟢 Completeness of flexible-variable subtyping (subtyping-proofs:2836, P7a) — **ALL FIVE ROWS CLOSED 2026-08-03**, `Qed` + axiom-free, in `frost/algo/prop_sub_complete_thm.v`: §(F) `a_sub_flex_complete_depend`, §(G) `_skip`, §(I) `_assign`, §(K) `_solve`, §(M) `a_sub_flex_complete_skip_rigid`.  §(I)/§(K) are the CROSS-HALF rows (both re-enter the MAIN judgment, so their IH is the **P7b** motive).  §(M) needed the ⇓-apparatus of §(L0)/§(L1)/§(L) — `a_inc__tvar` shrinks the TARGET, so the IH runs at the truncation `Θ'` and every solution-side premise is ⇓-normalized before being strengthened there; its one obligation beyond the consistency walk's `Assign-SkipRigid` is `ad_precise_downarrow` (`⇓ˢP ⊑ P`), which brings the motive's PRECISION conjunct back from `⇓ᵇQ` to `Q`.  The motive's flexibility premise was STRENGTHENED to `a_flex_tvar Θ0 α` (the walk's own invariant, as in `assign_complete_at`); no downstream statement changed.  The remaining P7 work is the DISPATCHER (§12) plus its STUCK-CHECK.  What follows is the pre-closure record.  TASK 0 (supplying P6-L's `sub_shield` premise at P7b's Sub-ForallL) lives in `frost/algo/prop_sub_shield_supply.v`, all Qed + axiom-free: a mono-ish counterpart (§4, covers a raw FLEXIBLE `P0`), the non-composite shapes (§5), any **flex-free** `P0` (§6, uniformly in ψa and Δρ), and — the generalization that does the real work — any **inh-free counterpart** / any `P0` **with no ∀** (§7/§8: `ad_pat_consis_inh_free_tag_free`, `ad_pat_sub_g_inh_free_tag_free`, `ad_refine_syn_inh_free`, `sub_shield_supply_all_free_p0`).  ⚠️ Residual SETTLED 2026-08-03 and it is NEGATIVE: a `P0` carrying a ∀ below its head is not merely uncovered, it makes `sub_shield` FALSE at a REACHABLE configuration (`cex/cex_p7_shield_realizable.v`, Qed + axiom-free — the full completeness input, the ForallL join node, the fill, and `~ sub_shield` all machine-checked, plus `join_at_Rw_is_forall_l`: no other join rule applies there).  `sub_shield` is a MECH-INVENTED repair premise, so no paper statement is refuted and P6-Sv/P6-Ss stay `Qed`; what is refuted is its NON-POSITIONAL indexing, and the repair is a positional re-indexing replayed through P6-Ss and P7b's two ForallL rows.  Until then P7c's two ForallL cases are BLOCKED (the other ten are not).  DESIGN-completeness-subtyping.md §14.1 / §9.0.2
 - 🟡 Theorem: Completeness and optimality of subtyping (subtyping-proofs:3050, P7b/P7c) — **IN PROGRESS**.  Motive locked AND REPAIRED 2026-07-30 (`sub_complete_concl` / `sub_flex_complete_concl` / `a_sub_complete_bundle`, `frost/algo/prop_sub_complete_thm.v`): the join is the LEAF-VALID mirror `ad_pat_sub_gv` (def_decl_algo_sub_hyg.v) carrying the subject refinement at the consistency leaves, with NO root-level third premise — the first-cut root premise was REFUTED as a lockstep condition (machine-checked `cex/cex_p7_univ_ghost_r_vacuous.v` + `cex/cex_p7_third_premise_forall.v`: it lost Sub-UnivGhostR entirely and the head-disagreeing ForallL/ForallR solutions `∀a.a ⩽ unit`, `unit ⩽ ∀a.unit`).  FIVE of P7b's rows closed, Qed + axiom-free — Sub-Ghost, Sub-GhostG, **Sub-Infer**, **Sub-Check** and **Sub-UnivGhostR** (a REAL proof: algorithmic UnivGhostR + the `□`-P0 precision core at the stripped counterpart + a `∀◇`-wrap).  The enabling lemma is `a_inc_equiv_precise_msubst` (precision is stable under equivalent metasubstitutions), with the shared core `a_sub_complete_hole_p0_precision`.  ⚠️ Remaining obligation: transport P5's precision-substitution + the freshening kits to `_gv` for ForallL/ForallR.  See docs/PAPER-GAPS.md and DESIGN §9.1.3 / §1.  ⚠️ The property the paper marks with its own TODO at `:3243` ("input `P_0` concrete ⟹ RHS is `P_0`") is **FALSE** — machine-checked `frost/algo/cex/cex_p7_concrete_rhs.v` (`p7_concrete_rhs_is_false`).  Sub-Check / Sub-ForallR are unaffected: both already argue via the EQUIVALENCE, and BOTH halves of it are proved in `frost/algo/prop_sub_concrete_rhs.v` — `a_consis_concrete_output_equiv` and `a_sub_concrete_output_equiv`, each `Θ1 ⊢ P0 ≡ˢ P'`, both falling out of the SOUNDNESS theorems' refinement conjunct plus `ad_refine_syn_ghost_free_equiv`.  See docs/PAPER-GAPS.md and DESIGN §9.1
 
-**D. proofs.tex** (§Proofs for Algorithms)
-- ⬜ Suffix moving; Suffix erasure; Splitting refines
-- ⬜ Precision extends skeleton subtyping; Precision preserves refinement
-- ⬜ Context precision (+ preserves skeleton inference)
-- ⬜ Theorems: Soundness / Completeness+optimality of type inference
-- ⬜ Theorems: Soundness / Completeness+optimality of skeleton inference
+**D. proofs.tex** (§Proofs for Algorithms) — STARTED 2026-08-06.  🟢 the
+DEFINITIONAL layer is in (`decorated_algo/def_decl_algo_typing.v`: `ad_pat`,
+`ad_sd_typing`); the lemma/theorem block is teed up with per-item design in
+[`docs/HANDOFF-section-d.md`](docs/HANDOFF-section-d.md).
+⚠️ Three of these are marked "straightforward induction" in the paper and are
+NOT straightforward in the mechanization — reasons recorded per lemma there.
+- ⬜ Suffix moving; Suffix erasure — **do these first**, everything downstream
+  quotes them.  Two hidden costs: the paper's "Ξ does not depend on Θ₂" has no
+  mech counterpart yet (nearest: `no_flex_dep` / `flex_above_free` /
+  `a_suffix`), and `ad_sd_typing` embeds FIVE context-sensitive premise forms,
+  each needing its own moving/erasure kit before the typing induction can close
+  one base rule
+- ⬜ Splitting refines — 2 of 3 rows trivial (`ad_refine_pskl_refl`, which
+  forces an EXTERNAL wf premise); the `a_split__flex` row is a real proof: its
+  premise is a full `a_consis` run.  ⭐ Route scouted: `a_assign_sound` →
+  invert `ad_pat_consis__flex_r` (the only applicable rule) → `binds α
+  (abind_flex_mono_def τ) Θ1`, leaving a mono-level `≡ˢ ⟹ ⊳` obligation
+- ⬜ Precision extends skeleton subtyping — ⚠️ SCOUT FIRST: `P' ⊑ P` admits
+  `P' = □`, where the only applicable row is `ad_pat_sub__ghost` (inherited
+  painting + `mod_comp_sk`), so the statement may need a side condition
+- ✅ Precision preserves refinement — `ad_precise_preserves_refine`
+  (`algo/prop_precise.v:585`), Qed, audited in `README.v`
+- ⬜ Context precision (+ preserves skeleton inference) — new `⪯ctx` inductive
+  + one lemma over `ad_pat`; needs a "same non-variable entries ⟹ preserved"
+  context-change lemma for `ad_pat_sub` / `ad_refine_syn` that does not exist
+  yet.  GATED on "Precision extends skeleton subtyping" (the `ad_pat__var` row)
+- ⬜ Theorems: Soundness of skeleton inference / of type inference — both
+  independent of the `ad_pat_sub_gv` question, so do them first
+- ⬜ Theorems: Completeness+optimality of skeleton / type inference — ⚠️ these
+  hit §4b's composition gap (they consume `a_sub_complete_thm`, which assumes
+  `ad_pat_sub_gv`, while soundness only concludes plain `ad_pat_sub`)
 
 **A. full-decl-proofs.tex** (declarative metatheory — REBASED onto the synced defs)
 - ✅ Soundness/Completeness of syntax-directed rules (`d_sd_typing_sound` / `d_sd_typing_complete`, `prop_syntax_directed.v`, 0 admits)
