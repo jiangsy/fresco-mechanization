@@ -369,6 +369,7 @@ bundle at :466–:1286):
 | `Infer`, `UnivGhostR` | leaf refinement = `ad_refine_pskl_refl` (prop_refine.v:177) at the wf subject — both rows already build their target as the subject's own erasure |
 | `Arrow` (domain) | ⚙ DIRECT: `a_consistag_sound_aux`'s dropped conjunct IS `⌊R1⌋ˢ ⊳ P'1` and the row's `Q1` satisfies `bskl_to_pskl Q1 = P'1`.  `ad_refine_pskl_f_forget` then `ad_refine_pskl_f_isub` to reach Θ2 |
 | `Check` | ✅ **its missing lemma is BUILT** (2026-08-06, prop_soundness_sub.v §1a–§1d, Qed and axiom-free).  §6.1 had under-estimated this row: the dropped conjunct gives `⌊T⌋ˢ ⊳ ⌊Qt⌋` for the CONSISTENCY's output `Qt`, but the row re-targets its conclusion to `inh B` (audit-F2: the output is not literally `B`), so the leaf needs `⌊T⌋ˢ ⊳ B`.  `ad_refine_pskl_refine_inh_target` supplies exactly that.  See below |
+| `ForallR` | ⛔ **NEWLY FOUND (2026-08-06): needs `ad_pat_sub_gv_rename_tvar`, which does not exist.**  The algorithmic rule is exists-fresh (ONE α) while `_gv__forall_r` is cofinite, so the row must rename — exactly as the plain proof does with `ad_pat_sub_rename_tvar` (prop_pat_sub.v:1217, ~110 lines).  The `_gv` version must be FUEL-PRESERVING.  See the ingredient list below |
 | `ForallL` ×2 | widen the avoid-set (above); the hygiene premise is then `Hint0` |
 | `ForallR`, `UnivGhostL/LG`, `FlexMono`, ghosts | pass through |
 | fuel | leaves take any `n` (use `0`); `ForallR`/`Arrow`/`ForallL` conclude at `S n`.  Each rule has ≤ 1 recursive `_gv` premise, so no `max` is needed |
@@ -422,6 +423,34 @@ hypothesis is quantified over BOTH a Θ-extension and a Δ, because its two
 - `ad_refine_syn_f__all` keeps `Q P` EXPLICIT while `F L Θ Δ` are implicit,
   so the family goes in THIRD (§7.4: read the arity, don't count
   underscores).
+
+#### ⛔ NEXT UNIT — `ad_pat_sub_gv_rename_tvar` (the ForallR row's prerequisite)
+
+Adapt `ad_pat_sub_rename_tvar` (prop_pat_sub.v:1217–1330).  Home:
+`prop_soundness_sub.v` §1e — it is the file that imports everything below.
+The statement is the plain one plus a fuel index carried UNCHANGED:
+
+    Lemma ad_pat_sub_gv_rename_tvar : forall n NM M Ψ Θ1 α Θ0 R Q β',
+      ad_pat_sub_gv n NM M Ψ (Θ1 ++ (α ~ abind_tvar) ++ Θ0) R Q ->
+      α `notin` dom (Θ1 ++ Θ0) ->
+      (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
+         α `notin` ftvar_in_ptyp τ) ->
+      ad_pat_sub_gv n NM M Ψ (Θ1 ++ (β' ~ abind_tvar) ++ Θ0)
+        (subst_bskl_in_uskl (uskl_var_f β') α R)
+        (subst_bskl_in_bskl (bskl_var_f β') α Q).
+
+**Ingredients — three of five are already in scope from `prop_soundness_sub.v`:**
+
+| need | status |
+|---|---|
+| `ad_pat_consis_rename_tvar` | ✅ prop_pat_sub.v |
+| `⌊subst R⌋ˢ = subst ⌊R⌋ˢ` | ✅ `uskl_to_pskl_subst_mono` (prop_pat_sub.v:1019), at `τ := ptyp_var_f β'` |
+| `bskl_to_pskl` vs subst | ✅ `bskl_to_pskl_subst_var` (prop_completeness_consis.v:1590) |
+| the LEAF refinement renamed | ⚙ `ad_refine_pskl_f_rename_ctx` (prop_soundness_consis.v:1343) has the exact shape, at `F = ∅`, `Δ = ∅` — but the plain→`_f` bridge **`ad_refine_pskl_f_of_plain` does not exist** (~15 lines; the `__hole` side condition is vacuous at `F = ∅`, the two cofinite rows need writing out) |
+| the ForallL hygiene premise under the rename | ⚙ `ftag_in_uskl (subst …) [<=] ftag_in_uskl …` — `ftag_in_uskl_subst_bskl_in_uskl` (completeness_look/prop_eq_cstr.v:158) says exactly this, but that file is DOWNSTREAM.  Prove a ~10-line local copy (or move it up, as the `_gv` bridges were moved) |
+
+⚙ Renaming a TYPE variable cannot change TAGS, so the hygiene premise
+survives in the ⊆ direction, which is all the intersection needs.
 
 ### 6.2 ⭐⭐ WHERE `ad_pat_sub_gv` ENTERS — SETTLED 2026-08-06 (scouting item 1)
 
