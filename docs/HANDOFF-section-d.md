@@ -1,17 +1,27 @@
 # HANDOFF — section D (`proofs.tex`): soundness and completeness of skeleton and type inference
 
-**Status 2026-08-06 (sixth pass).**  ⭐ Theorem 2 (`thm:sound-type-inference`)
-has two of its five prerequisites CLOSED — `ad_sd_typing_mod_comp_ty` (§8)
-and `a_guess_mono_refine` (§9), both Qed and axiom-free in
-`algo/prop_soundness_typing.v` — and the third, §1's suffix ERASURE, is
-🟡 UNDER CONSTRUCTION in the NEW `algo/prop_suffix_erase.v` (§1–§7, Qed and
-axiom-free): the substitution kit, `a_wf_ptyp`/`a_wf_pskl`, `a_tyequiv`,
-`ad_refine_syn`, `ad_pat_consis`, and the two suffix drivers.  ⛔ `ad_pat`
-and `ad_sd_typing` are left — see §1's table.  ⚙ `ad_pat_sub`'s own driver
-(`ad_pat_sub_strip_suffix`) ALREADY EXISTED in prop_pat_sub.v; reuse it and
-its `_subst_mono` closure family.  §2's split-refine and `AT-App`'s `≡ᵗ`
-transport each have a scouted route recorded in §7.5's "Left for the
-theorem".
+**Status 2026-08-06 (SEVENTH pass).**  Theorem 2
+(`thm:sound-type-inference`) has FOUR of its five prerequisites CLOSED, all
+Qed and axiom-free:
+
+| # | prerequisite | where |
+|---|---|---|
+| 1 | `ad_sd_typing_mod_comp_ty` | `prop_soundness_typing.v` §8 |
+| 2 | `lemma:suffix-erasure`, all six judgements | NEW `prop_suffix_erase.v` |
+| 3 | `lemma:split-refine`, COLOURED | `prop_soundness_typing.v` §11 |
+| 4a | `AT-App`'s typing-under-`≡ᵗ` transport | ⛔ **THE ONE LEFT** |
+| 4b | `AT-Abs`'s `guess^TY` refinement | `prop_soundness_typing.v` §9 |
+| 5 | the eleven-row induction | ⛔ not started |
+
+⛔ **What 4a needs**: an `ad_pat_consis` **TARGET** transport along `≡ᵗ`,
+in BOTH directions at once (so `≡ᵗ`'s `sym` row closes) — the mirror of
+`skl_tyequiv_consis_transport` (prop_completeness_consis.v), which does
+exactly this for the SUBJECT along `≡ˢ`.  Its `arrow` and `all` rows need a
+NESTED induction on the consistency, because several rules can produce an
+arrow/∀ target (`__arrow`, `__flex_l`, `__tophole_drop`, `__tophole_inh`).
+Its `flex_def` row is the interesting one and is easy: one direction IS
+`__flex_r`, the other inverts the target and re-folds through `__flex_l` +
+`consis_mono_refl`.
 
 **Status 2026-08-06 (fifth pass).** The definitional layer is DONE
 (`dd1f176`), suffix MOVING is closed (`prop_ctx_mono.v`), and ⭐⭐⭐
@@ -613,32 +623,35 @@ species as thm:sound-skeleton-inference's AbsAnno step):
    the mech has no lemma for (prop_flex.v has only its freshness / decls /
    ftv facts).
 
-**Left for the theorem itself** (status 2026-08-06, sixth pass):
+**Left for the theorem itself** (status 2026-08-06, SEVENTH pass):
 
 1. ✅ **DONE** — `ad_sd_typing_mod_comp_ty` (§8 above).
-2. ⛔ **§1's suffix ERASURE** — confirmed a prerequisite (four CHECK rows),
-   and confirmed NOT the paper's "straightforward induction".  §1 now
-   records the obstruction (`ad_pat_sub`'s `ForallL` instantiates with a
-   freely-chosen `ψ` that may mention Ξ), the working route (erase by
-   SOLVING: `Ξ ++ Θ ⊢ J ⟹ Θ ⊢ κJ`), and a strictly-weaker fallback.
-   **This is the biggest remaining item** — five per-judgement transports.
-3. ⛔ **§2's `lemma:split-refine`, COLOURED** — also the same four check
-   rows only.  ⚙ Its `a_split__flex` row now has a fully scouted route:
-   `a_assign_sound` → invert to `ad_pat_consis__flex_r` → `consis_mono_join`
-   (prop_mono_bridge.v) reads the assignment's definition `τ` off the run as
-   `Θ1 ⊢ (β̂ → α1̂) ≡ᵗ τ`.  The one genuinely NEW fact left is the converse
-   of `refine_mono_join`: **`≡ᵗ` between monotypes gives `⊳` between their
-   paintings**.  ⛔ Do NOT prove that by induction on `≡ᵗ` — its `sym` and
-   `trans` rows would need refinement symmetry and TRANSITIVITY, and
-   transitivity is false in the mech (`cex/cex_refine_not_transitive.v`).
-   Go through `prop_normal.v`'s `a_tyequiv_downarrow` normal form instead,
-   the way `a_tyequiv_arrow_inv` (prop_sub_msubst_equiv.v) does.
-4. ⛔ **`AT-App`'s typing-under-`≡ᵗ` transport at TC** (PAPER-GAPS, WATCH 1).
-   Its equivalence half is `ad_refine_syn_inh_tyequiv` (§2), already proved;
-   what is missing is the transport itself, which bottoms out in an
-   `ad_pat_sub` TARGET transport at `ty|tc` — the mirror of
-   `ad_pat_sub_g_tyequiv_subject` / `ad_pat_consis_tyequiv_subject`
-   (prop_sub_msubst_equiv.v), which exist only on the SUBJECT side.
+2. ✅ **DONE** — §1's suffix ERASURE, all six judgements
+   (`algo/prop_suffix_erase.v`, Qed and axiom-free).  The two the theorem
+   quotes are `ad_pat_strip_suffix` and `ad_sd_typing_strip_suffix`.
+3. ✅ **DONE** — §2's `lemma:split-refine`, COLOURED (`a_split_refines`,
+   prop_soundness_typing.v §11).  ⭐ Its enabler is NOT the `≡ᵗ ⟹ ⊳`
+   bridge this hand-off previously scouted: it is
+   `ad_pat_consis_mono_to_refine` (§10) — **a monotype CONSISTENCY is a
+   refinement** — because once the subject is a monotype painting the two
+   judgements have the same five rows.  Going through the consistency needs
+   neither refinement symmetry nor TRANSITIVITY (the latter is false:
+   `cex/cex_refine_not_transitive.v`); `consis_mono_sym`
+   (prop_mono_bridge.v) supplies the direction change that was the only
+   reason the `≡ᵗ` route wanted symmetry.
+   ⚠️ It carries a FRESHNESS side condition: `a_split__flex` invents two
+   flexibles and the mech's rule records no freshness for them.
+4. ⛔ **`AT-App`'s typing-under-`≡ᵗ` transport at TC** (PAPER-GAPS, WATCH 1)
+   — **the last missing ingredient**.  Its equivalence half is
+   `ad_refine_syn_inh_tyequiv` (§2), already proved; what is missing is the
+   transport itself, which bottoms out in an `ad_pat_consis` **TARGET**
+   transport along `≡ᵗ` — the mirror of `skl_tyequiv_consis_transport`
+   (prop_completeness_consis.v) and `ad_pat_consis_tyequiv_subject`
+   (prop_sub_msubst_equiv.v), which exist only on the SUBJECT side.  ⚙ Do
+   it in BOTH directions at once, the way `skl_tyequiv_consis_transport`
+   does, so `≡ᵗ`'s `sym` row closes.  ⛔ There is no dodge: B1 is
+   existentially chosen by `sd-App`, but every way of re-choosing it needs
+   the same species of transport in the function's DOMAIN instead.
    ⚙ Cheaper alternative to raise with the authors first: `sd-App` may
    simply be MISSING the fourth `≡ᵗ` premise, the appendix already having
    added one to `sd-Freeze` / `sd-AbsAnnoCheck` / `sd-AbsAnno` for exactly

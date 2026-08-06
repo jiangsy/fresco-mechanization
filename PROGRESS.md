@@ -98,7 +98,8 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   SHELVES the avoid-set evar `?L`, so the premise never reaches the following
   tactic and resurfaces at `Qed` as "incomplete proof" — supply `L` by hand
   (that is also what keeps the file under a second)
-- 🟡 Suffix erasure — NOT a `binds`-monotone statement (it must show the
+- ✅ Suffix erasure — CLOSED 2026-08-06 (all six judgements,
+  `algo/prop_suffix_erase.v`).  NOT a `binds`-monotone statement (it must show the
   derivation never LOOKED into Ξ).  ⚠️ **CONFIRMED 2026-08-06 to be needed**
   (the four CHECK rows of `a_typing` DROP the pending suffix from their
   output, unlike `a_pat`'s, which keep it), and **CONFIRMED not to be the
@@ -123,7 +124,9 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   the binder rows that push TERM entries).  The fallback (weaker, read the
   conclusion up to a flexible suffix) is no longer needed.
   docs/PAPER-GAPS.md + HANDOFF §1
-- ⬜ Splitting refines — 2 of 3 rows trivial (`ad_refine_pskl_refl`, which
+- ✅ Splitting refines — CLOSED 2026-08-06, COLOURED (`a_split_refines`,
+  prop_soundness_typing.v §11), via `ad_pat_consis_mono_to_refine`.
+  Historical route notes: 2 of 3 rows trivial (`ad_refine_pskl_refl`, which
   forces an EXTERNAL wf premise); the `a_split__flex` row is a real proof: its
   premise is a full `a_consis` run.  ⭐ Route scouted: `a_assign_sound` →
   invert `ad_pat_consis__flex_r` (the only applicable rule) → `binds α
@@ -192,7 +195,38 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-06 (latest) — ⭐ **SECTION D: suffix erasure BUILT for four of six judgements — by SOLVING, not by dropping**
+## 2026-08-06 (latest) — ⭐⭐ **SECTION D: FOUR of theorem 2's five prerequisites are CLOSED — suffix erasure (all six judgements) and split-refine included**
+
+`make coq` clean; everything Qed and axiom-free.
+
+- ✅ **`lemma:suffix-erasure`, all six judgements** (`prop_suffix_erase.v`
+  §1–§11).  See the entry below for the SOLVING generalization and the two
+  design points that make the lookup rows collapse.  The two the theorem
+  quotes are `ad_pat_strip_suffix` and `ad_sd_typing_strip_suffix`.
+  §8 re-does `ad_pat_sub`'s transport in the SUBSTITUTED-CONTEXT form
+  (prop_pat_sub.v's concludes at the un-substituted tail, which does not
+  compose with binder rows that push TERM entries); §9/§10 are `ad_pat` and
+  `ad_sd_typing`, whose subject is an EXPRESSION so `subst_ptyp_in_exp`
+  enters, and whose colour predicates need the `btyp` mirrors
+  `is_styp_subst_mono` / `is_ityp_subst_mono` / `mod_comp_ty_subst_mono`.
+- ✅ **`lemma:split-refine`, COLOURED** (`a_split_refines`,
+  prop_soundness_typing.v §11).  ⭐ Its enabler is
+  `ad_pat_consis_mono_to_refine` (§10) — **a monotype CONSISTENCY is a
+  refinement**: once the subject is a monotype painting the two judgements
+  have the SAME five rows (`unit`, `var`, `arrow`, the two flexible
+  lookups), and everything that distinguishes them is unreachable.
+  ⛔ This deliberately replaces the previously-scouted `≡ᵗ ⟹ ⊳` bridge,
+  which would have needed refinement symmetry AND TRANSITIVITY — and
+  transitivity is FALSE (`cex/cex_refine_not_transitive.v`).
+  `consis_mono_sym` supplies the direction change instead.
+  ⚠️ Carries a FRESHNESS side condition: `a_split__flex` invents two
+  flexibles and the mech's rule records no freshness for them.
+- ⛔ **LEFT**: `AT-App`'s typing-under-`≡ᵗ` transport at TC — which bottoms
+  out in an `ad_pat_consis` TARGET transport along `≡ᵗ`, the mirror of
+  `skl_tyequiv_consis_transport`'s SUBJECT one — and then the eleven-row
+  induction itself.
+
+## 2026-08-06 — ⭐ **SECTION D: suffix erasure BUILT for four of six judgements — by SOLVING, not by dropping**
 
 New `algo/prop_suffix_erase.v` (§1–§7), Qed and axiom-free; `make coq`
 clean.  The repair of `lemma:suffix-erasure`, whose stated proof does not
