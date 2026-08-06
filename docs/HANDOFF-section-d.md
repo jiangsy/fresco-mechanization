@@ -386,6 +386,39 @@ positionally (`prop_decorate_key.v:4155`,
 `prop_completeness_sub_gen.v:3165` and `:3389`) and want the PLAIN
 `ad_pat_sub`; they now recover it with the single `ad_pat_sub_of_gv`.
 
+#### ⛔ (c) THE CONVERSION IS BIGGER THAN "THREADING" — the rows consume FOUR structural lemmas over `ad_pat_sub`, each needing a `_gv` mirror
+
+Discovered by surveying the 15 rows (2026-08-06).  A `_gv` mirror is the plain
+lemma with the fuel carried UNCHANGED plus the LEAF datum transported by the
+matching `ad_refine_pskl` lemma:
+
+| used by row | mirror | status |
+|---|---|---|
+| `FlexMono` | `ad_pat_sub_gv_psi_cong` | ✅ §1f (leaf carries no Ψ) |
+| `Flex-Skip` | `ad_pat_sub_gv_isub` | ✅ §1f (`ad_refine_pskl_isub`, prop_stability.v:121) |
+| `Flex-Assign` | `ad_pat_sub_gv_weaken` | ✅ §1f (`ad_refine_pskl_weaken`, prop_refine.v:98) |
+| `ForallR` | `ad_pat_sub_gv_strip_suffix` | ⛔ **NEXT — a two-lemma chain with a missing ingredient** |
+
+⛔ **The `strip_suffix` chain.**  The plain `ad_pat_sub_strip_suffix`
+(prop_pat_sub.v:1158) does not induct on the judgement — it iterates
+`ad_pat_sub_subst_flex` (prop_pat_sub.v:749, ~120 lines) head-first over Ξ,
+substituting each undefined flexible by `1`.  So the mirror needs, in order:
+
+1. **`ad_refine_pskl_subst_flex`** — ⛔ DOES NOT EXIST in any form (no
+   `ad_refine_pskl`/`_f` substitution-strip).  ~60 lines: the refinement under
+   `Θ1 ++ (β ~ abind_flex_mono) ++ Θ2 → Θ1 ++ Θ2` with `β ↦ 1`.
+2. `ad_pat_sub_gv_subst_flex` (~120 lines, mirrors prop_pat_sub.v:749).
+3. `ad_pat_sub_gv_strip_suffix` (~50 lines, mirrors prop_pat_sub.v:1158).
+
+⚙ Only then can `subtag_sound_concl` / `subtag_flex_sound_concl` change and
+the 15 rows be rewritten — and that last step is ATOMIC (the file will not
+compile until every row is converted; `git checkout` the file if it does not
+converge).  Row-by-row leaf sources: `Infer`/`UnivGhostR` →
+`ad_refine_pskl_refl` at the wf subject; `Check` → §1a–§1d's
+`ad_refine_pskl_refine_inh_target`; `Arrow` (domain) →
+`a_consistag_sound_aux`'s dropped conjunct via `ad_refine_pskl_f_forget`;
+`Ghost`/`GhostG`/`ForallL`/`UnivGhostL(G)`/the flex walk → pass through.
+
 #### ✅ The `Check` row's missing lemma — BUILT (2026-08-06)
 
 `prop_soundness_sub.v` §1a–§1d, all **Qed and axiom-free**, ~180 lines:

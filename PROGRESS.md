@@ -254,6 +254,21 @@ terminate — `a_wf_pskl_delta_mono`'s `Δ0` is left an evar by the
 Δ-polymorphic `a_wf_pskl_mono_ptyp`, and the wrapper was not needed.
 Profile-first paid: imports alone were 0.3 s, so it was never I/O.
 
+**7. ✅ THREE of the FOUR `_gv` STRUCTURAL MIRRORS the bundle's rows consume**
+— `prop_soundness_sub.v` §1f, Qed and axiom-free: `ad_pat_sub_gv_psi_cong`
+(the leaf carries no Ψ), `_isub` and `_weaken` (leaf via
+`ad_refine_pskl_isub` / `_weaken`, both already in the tree).
+
+⛔ **And the survey that produced them is the session's other finding: §6.1's
+conversion is BIGGER than "threading".**  The 15 rows consume four structural
+lemmas over `ad_pat_sub`, each needing a `_gv` mirror.  The fourth,
+`ad_pat_sub_gv_strip_suffix` (the `ForallR` row), is a THREE-lemma chain with
+a missing ingredient: the plain `ad_pat_sub_strip_suffix`
+(prop_pat_sub.v:1158) does not induct on the judgement — it iterates
+`ad_pat_sub_subst_flex` (prop_pat_sub.v:749, ~120 lines) head-first over Ξ —
+and **`ad_refine_pskl_subst_flex` does not exist in any form**.  Details in
+HANDOFF §6.1(c).
+
 **6. ✅ `ad_pat_sub_gv_rename_tvar` is BUILT** — `prop_soundness_sub.v` §1e,
 Qed and axiom-free.  §6.1's `ForallR` row needs it because the ALGORITHMIC
 subtyping rule is EXISTS-FRESH (one α) while `ad_pat_sub_gv__forall_r` is

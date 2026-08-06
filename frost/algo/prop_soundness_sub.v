@@ -955,6 +955,144 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
+(*  §1f  The [_gv] STRUCTURAL MIRRORS the bundle's rows consume.          *)
+(*                                                                        *)
+(*  Each is the plain lemma of prop_pat_sub.v with the fuel carried        *)
+(*  UNCHANGED and the LEAF datum transported by the matching refinement    *)
+(*  lemma ([ad_refine_pskl_isub] / [_weaken]; [_psi_cong] needs none, the  *)
+(*  leaf carries no Ψ).                                                    *)
+(* ===================================================================== *)
+
+(** Re-tag under set equality.  The LEAF datum carries no Ψ, so it passes
+    through untouched. *)
+Lemma ad_pat_sub_gv_psi_cong : forall n NM M Ψ Θ R Q,
+  ad_pat_sub_gv n NM M Ψ Θ R Q ->
+  forall Ψc, Ψ [=] Ψc ->
+  ad_pat_sub_gv n NM M Ψc Θ R Q.
+Proof.
+  intros n NM M Ψ Θ R Q H; induction H; intros Ψc Heq.
+  - apply ad_pat_sub_gv__infer;
+      [ clear - H Heq; fsetdec | assumption | assumption | assumption ].
+  - apply ad_pat_sub_gv__check; try assumption.
+    eapply ad_pat_consis_psi_cong; [ eassumption | exact Heq ].
+  - eapply ad_pat_sub_gv__forall_r with (L := L).
+    intros α Hα. apply (H0 α Hα _ Heq).
+  - apply ad_pat_sub_gv__univ_ghost_r; try assumption.
+    clear - H Heq; fsetdec.
+  - eapply ad_pat_sub_gv__arrow;
+      [ eassumption | eassumption | eassumption | clear - H2 Heq; fsetdec ].
+  - eapply ad_pat_sub_gv__forall_l_tagged with (Ψ' := Ψ') (ψ := ψ);
+      [ assumption | clear - H0 Heq; fsetdec | assumption | assumption
+      | assumption | ].
+    apply IHad_pat_sub_gv. clear - Heq; fsetdec.
+  - eapply ad_pat_sub_gv__forall_l_untagged with (Ψ' := Ψ') (ψ := ψ);
+      [ assumption | clear - H0 Heq; fsetdec | assumption | assumption
+      | assumption | ].
+    apply IHad_pat_sub_gv. clear - Heq; fsetdec.
+  - apply ad_pat_sub_gv__ghost;
+      [ clear - H Heq; fsetdec | assumption | assumption ].
+  - apply ad_pat_sub_gv__ghostg; [ clear - H Heq; fsetdec | assumption ].
+  - apply ad_pat_sub_gv__univ_ghost_l; [ assumption | apply IHad_pat_sub_gv; exact Heq ].
+  - apply ad_pat_sub_gv__univ_ghost_lg; [ assumption | apply IHad_pat_sub_gv; exact Heq ].
+  - eapply ad_pat_sub_gv__flex_mono; [ eassumption | apply IHad_pat_sub_gv; exact Heq ].
+Qed.
+
+(** Stability under information increase. *)
+Lemma ad_pat_sub_gv_isub : forall n NM M Ψ Θ R Q,
+  ad_pat_sub_gv n NM M Ψ Θ R Q ->
+  forall Θ', Θ ⊴ Θ' ->
+  ad_pat_sub_gv n NM M Ψ Θ' R Q.
+Proof.
+  intros n NM M Ψ Θ R Q H; induction H; intros Θ' Hle.
+  - apply ad_pat_sub_gv__infer;
+      [ assumption
+      | eapply ad_pat_consis_isub; eassumption
+      | assumption
+      | eapply ad_refine_pskl_isub; eassumption ].
+  - apply ad_pat_sub_gv__check;
+      [ assumption | assumption
+      | eapply ad_pat_consis_isub; eassumption
+      | eapply ad_refine_pskl_isub; eassumption ].
+  - eapply ad_pat_sub_gv__forall_r with (L := L `union` dom Θ').
+    intros α Hα.
+    apply H0;
+      first [ clear - Hα; fsetdec
+            | apply a_isub_cons_tvar; exact Hle ].
+  - apply ad_pat_sub_gv__univ_ghost_r;
+      [ assumption | assumption | assumption | assumption
+      | eapply ad_pat_consis_isub; eassumption
+      | eapply ad_refine_pskl_isub; eassumption ].
+  - eapply ad_pat_sub_gv__arrow;
+      [ eapply ad_pat_consis_isub; eassumption
+      | eapply ad_refine_pskl_isub; eassumption
+      | apply IHad_pat_sub_gv; exact Hle | assumption ].
+  - eapply ad_pat_sub_gv__forall_l_tagged with (Ψ' := Ψ') (ψ := ψ);
+      [ assumption | assumption | assumption | assumption
+      | eapply a_wf_pskl_isub; eassumption
+      | apply IHad_pat_sub_gv; exact Hle ].
+  - eapply ad_pat_sub_gv__forall_l_untagged with (Ψ' := Ψ') (ψ := ψ);
+      [ assumption | assumption | assumption | assumption
+      | eapply a_wf_pskl_isub; eassumption
+      | apply IHad_pat_sub_gv; exact Hle ].
+  - apply ad_pat_sub_gv__ghost;
+      [ assumption | eapply a_wf_pskl_isub; eassumption | assumption ].
+  - apply ad_pat_sub_gv__ghostg; [ assumption | assumption ].
+  - apply ad_pat_sub_gv__univ_ghost_l; [ assumption | apply IHad_pat_sub_gv; exact Hle ].
+  - apply ad_pat_sub_gv__univ_ghost_lg; [ assumption | apply IHad_pat_sub_gv; exact Hle ].
+  - eapply ad_pat_sub_gv__flex_mono;
+      [ destruct Hle as [_ Hdefs]; apply Hdefs; eassumption | apply IHad_pat_sub_gv; exact Hle ].
+Qed.
+
+(** Weakening along an arbitrary binding-preserving map. *)
+Lemma ad_pat_sub_gv_weaken : forall n NM M Ψ Θ R Q,
+  ad_pat_sub_gv n NM M Ψ Θ R Q ->
+  forall Θ', (forall x b, binds x b Θ -> binds x b Θ') ->
+  ad_pat_sub_gv n NM M Ψ Θ' R Q.
+Proof.
+  intros n NM M Ψ Θ R Q H; induction H; intros Θ' Hmon.
+  - apply ad_pat_sub_gv__infer;
+      [ assumption
+      | eapply ad_pat_consis_weaken; eassumption
+      | assumption
+      | eapply ad_refine_pskl_weaken; eassumption ].
+  - apply ad_pat_sub_gv__check;
+      [ assumption | assumption
+      | eapply ad_pat_consis_weaken; eassumption
+      | eapply ad_refine_pskl_weaken; eassumption ].
+  - eapply ad_pat_sub_gv__forall_r with (L := L).
+    intros α Hα.
+    apply H0;
+      first [ exact Hα
+            | (* the map must keep the freshly pushed rigid, so case-split *)
+              intros x b Hb;
+              destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> ->] | Hb'];
+                [ unfold binds; simpl; left; reflexivity
+                | unfold binds; simpl; right; apply Hmon; exact Hb' ] ].
+  - apply ad_pat_sub_gv__univ_ghost_r;
+      [ assumption | assumption | assumption | assumption
+      | eapply ad_pat_consis_weaken; eassumption
+      | eapply ad_refine_pskl_weaken; eassumption ].
+  - eapply ad_pat_sub_gv__arrow;
+      [ eapply ad_pat_consis_weaken; eassumption
+      | eapply ad_refine_pskl_weaken; eassumption
+      | apply IHad_pat_sub_gv; exact Hmon | assumption ].
+  - eapply ad_pat_sub_gv__forall_l_tagged with (Ψ' := Ψ') (ψ := ψ);
+      [ assumption | assumption | assumption | assumption
+      | eapply a_wf_pskl_weaken; eassumption
+      | apply IHad_pat_sub_gv; exact Hmon ].
+  - eapply ad_pat_sub_gv__forall_l_untagged with (Ψ' := Ψ') (ψ := ψ);
+      [ assumption | assumption | assumption | assumption
+      | eapply a_wf_pskl_weaken; eassumption
+      | apply IHad_pat_sub_gv; exact Hmon ].
+  - apply ad_pat_sub_gv__ghost;
+      [ assumption | eapply a_wf_pskl_weaken; eassumption | assumption ].
+  - apply ad_pat_sub_gv__ghostg; [ assumption | assumption ].
+  - apply ad_pat_sub_gv__univ_ghost_l; [ assumption | apply IHad_pat_sub_gv; exact Hmon ].
+  - apply ad_pat_sub_gv__univ_ghost_lg; [ assumption | apply IHad_pat_sub_gv; exact Hmon ].
+  - eapply ad_pat_sub_gv__flex_mono; [ apply Hmon; eassumption | apply IHad_pat_sub_gv; exact Hmon ].
+Qed.
+
+(* ===================================================================== *)
 (*  §2  The mutual soundness statement                                    *)
 (* ===================================================================== *)
 
