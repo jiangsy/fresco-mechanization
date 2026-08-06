@@ -240,6 +240,20 @@ Registered in `docs/PAPER-GAPS.md`.
 `_step` rows, which needs an invariant no lemma states yet ("a TC run's result
 type is scoped BELOW any suffix the run deposits").
 
+**5. ✅ The `Check` row's missing lemma is BUILT** — `prop_soundness_sub.v`
+§1a–§1d, Qed and axiom-free, ~180 lines: `ad_refine_pskl_unfold_def_target`,
+⭐ `ad_refine_syn_f_inh_wf_transfer`, `refine_transport_arrow` / `_all`, and
+`ad_refine_pskl_refine_inh_gen` / `_target`.  ⭐ **It needs TWO FEWER
+hypotheses than its consistency twin**: `ad_pat_consis_refine_inh_gen` carries
+a Δ-free wf of the source plus "every Δ-variable is Θ-visible", and neither
+survives the mirror because **refinement's `__all` extends Δ while
+consistency's ∀-rows extend Θ**.  The Δ-RELATIVE wf transfer replaces the
+first and the second turns out to have no consumer at all.
+⚠️ Trap that cost 97 s per run: `fsetdec` on an EVAR avoid-set does not
+terminate — `a_wf_pskl_delta_mono`'s `Δ0` is left an evar by the
+Δ-polymorphic `a_wf_pskl_mono_ptyp`, and the wrapper was not needed.
+Profile-first paid: imports alone were 0.3 s, so it was never I/O.
+
 **4. §6.1's dependency-order blocker is GONE.**  `ad_pat_sub_g_of` (was
 `prop_completeness_sub_precise.v`) and `ad_pat_sub_gv_fuel_weaken` (was
 `prop_completeness_sub.v`) MOVED to `decorated_algo/def_decl_algo_sub_hyg.v`,

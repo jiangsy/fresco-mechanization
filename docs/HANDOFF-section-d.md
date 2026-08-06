@@ -368,7 +368,7 @@ bundle at :466–:1286):
 | `subtag_sound_concl` / `subtag_flex_sound_concl` | conclusion becomes `exists n, ad_pat_sub_gv n NM M Ψ Θ1 R Qt` |
 | `Infer`, `UnivGhostR` | leaf refinement = `ad_refine_pskl_refl` (prop_refine.v:177) at the wf subject — both rows already build their target as the subject's own erasure |
 | `Arrow` (domain) | ⚙ DIRECT: `a_consistag_sound_aux`'s dropped conjunct IS `⌊R1⌋ˢ ⊳ P'1` and the row's `Q1` satisfies `bskl_to_pskl Q1 = P'1`.  `ad_refine_pskl_f_forget` then `ad_refine_pskl_f_isub` to reach Θ2 |
-| `Check` | ⛔ **the one row with real content, and §6.1 previously under-estimated it.**  The dropped conjunct gives `⌊T⌋ˢ ⊳ ⌊Qt⌋` for the CONSISTENCY's output `Qt`, but the row's conclusion re-targets to `inh B` (audit-F2: the output is not literally `B`).  So the leaf needs `⌊T⌋ˢ ⊳ B`, i.e. the **`ad_refine_pskl` mirror of `ad_pat_consis_refine_inh_target`** (prop_soundness_sub.v:366): from `X ⊳ ⌊Qt⌋`, `inh B ⊳ Qt` (`ad_refine_syn_f`) and `pskl_ghost_free B`, conclude `X ⊳ B`.  Same induction on the fill, one judgement over — `ad_pat_consis_refine_inh_gen` is the crib |
+| `Check` | ✅ **its missing lemma is BUILT** (2026-08-06, prop_soundness_sub.v §1a–§1d, Qed and axiom-free).  §6.1 had under-estimated this row: the dropped conjunct gives `⌊T⌋ˢ ⊳ ⌊Qt⌋` for the CONSISTENCY's output `Qt`, but the row re-targets its conclusion to `inh B` (audit-F2: the output is not literally `B`), so the leaf needs `⌊T⌋ˢ ⊳ B`.  `ad_refine_pskl_refine_inh_target` supplies exactly that.  See below |
 | `ForallL` ×2 | widen the avoid-set (above); the hygiene premise is then `Hint0` |
 | `ForallR`, `UnivGhostL/LG`, `FlexMono`, ghosts | pass through |
 | fuel | leaves take any `n` (use `0`); `ForallR`/`Arrow`/`ForallL` conclude at `S n`.  Each rule has ≤ 1 recursive `_gv` premise, so no `max` is needed |
@@ -384,6 +384,44 @@ old sites keep a pointer comment.
 positionally (`prop_decorate_key.v:4155`,
 `prop_completeness_sub_gen.v:3165` and `:3389`) and want the PLAIN
 `ad_pat_sub`; they now recover it with the single `ad_pat_sub_of_gv`.
+
+#### ✅ The `Check` row's missing lemma — BUILT (2026-08-06)
+
+`prop_soundness_sub.v` §1a–§1d, all **Qed and axiom-free**, ~180 lines:
+
+| § | lemma | what it is |
+|---|---|---|
+| §1a | `ad_refine_pskl_unfold_def_target` | unfold a flexible DEFINITION on the TARGET of a refinement (the `flex_r` step) |
+| §1b | `ad_refine_syn_f_inh_wf_transfer` | ⭐ the fill transfers Δ-RELATIVE well-formedness |
+| §1c | `refine_transport_arrow` / `refine_transport_all` | the `consis_transport_*` mirrors |
+| §1d | `ad_refine_pskl_refine_inh_gen` + `ad_refine_pskl_refine_inh_target` | the transport itself |
+
+⭐ **The mirror needs TWO FEWER hypotheses than its consistency twin**, and
+§1b is why.  `ad_pat_consis_refine_inh_gen` carries a Δ-free wf of the source
+plus "every Δ-variable is Θ-visible"; neither survives the mirror, because
+**refinement's `__all` extends Δ while consistency's ∀-rows extend Θ**.  §1b
+replaces both: the ghost branch of each transport helper rebuilds its fill
+from §1b at `Δ = ∅`, and the visibility premise turns out to have no consumer
+on the refinement side at all.  ⚙ `refine_transport_all`'s per-binder
+hypothesis is quantified over BOTH a Θ-extension and a Δ, because its two
+∀-ish rows (`__all`, `__tophole_fill`) extend different contexts.
+
+⚠️ **Three traps this cost time to** (all already in §7.4's spirit):
+
+- `fsetdec` on an EVAR avoid-set **does not terminate** — 97 s, then the
+  timeout.  `a_wf_pskl_delta_mono`'s `Δ0` is left an evar by the
+  Δ-polymorphic `a_wf_pskl_mono_ptyp`, and the wrapper was not needed at all.
+  ⚙ Profile-first paid: imports alone were 0.3 s, so it was never I/O; a
+  `k`-live-cases bisect found the row in one pass.
+- a `match goal` pattern `forall α, α ∉ ?L -> _` also matches a COFINITE
+  HYPOTHESIS of the lemma itself (here the transport premise).  Fix: move the
+  `α ∉ L` binder AFTER the others in that hypothesis so its head differs.
+- `induction` renames the lemma's own `Θ'` to the branch's `Θ`, so any
+  explicitly written `Θ'` term inside a branch is out of scope — let
+  unification supply it.
+- `ad_refine_syn_f__all` keeps `Q P` EXPLICIT while `F L Θ Δ` are implicit,
+  so the family goes in THIRD (§7.4: read the arity, don't count
+  underscores).
 
 ### 6.2 ⭐⭐ WHERE `ad_pat_sub_gv` ENTERS — SETTLED 2026-08-06 (scouting item 1)
 

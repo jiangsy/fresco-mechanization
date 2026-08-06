@@ -379,6 +379,357 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
+(*  ⭐ THE [ad_refine_pskl] MIRROR OF [ad_pat_consis_refine_inh_target].   *)
+(*                                                                        *)
+(*  §6.1's Check row needs it.  [a_consistag_sound_aux]'s dropped leaf     *)
+(*  conjunct is [⌊T⌋ˢ ⊳ ⌊Qt⌋] for the CONSISTENCY's output [Qt], while the *)
+(*  row re-targets its conclusion to [inh B] (audit-F2: the output is not  *)
+(*  literally [B]).  So [ad_pat_sub_gv__check]'s leaf premise [⌊T⌋ˢ ⊳ B]   *)
+(*  needs the same transport, one judgement over.                          *)
+(* ===================================================================== *)
+
+(* ===================================================================== *)
+(*  §1a  Unfolding a flexible DEFINITION on the TARGET of a refinement      *)
+(* ===================================================================== *)
+
+Lemma ad_refine_pskl_unfold_def_target : forall Θ Δ X α τ,
+  a_wf_aenv Θ ->
+  binds α (abind_flex_mono_def τ) Θ ->
+  Θ ⨟ Δ ⊢ᵣₚᵃ X ⊳ (pskl_var_f α) ->
+  Θ ⨟ Δ ⊢ᵣₚᵃ X ⊳ (ptyp_to_pskl τ).
+Proof.
+  intros Θ Δ X α τ Hwf Hb H.
+  remember (pskl_var_f α) as T eqn:HT.
+  revert α τ Hb HT.
+  induction H; intros α0 τ0 Hb HT; try discriminate HT.
+  - (* __var : the subject IS the flexible; unfold it on the LEFT *)
+    inversion HT; subst.
+    eapply ad_refine_pskl__flex_l; [ exact Hb | ].
+    apply ad_refine_pskl_refl.
+    eapply a_wf_pskl_mono_ptyp;
+      [ eapply a_wf_aenv_binds_def_mono; eauto
+      | eapply a_wf_aenv_binds_def_wf; eauto ].
+  - (* __hole : the fill becomes the definition *)
+    inversion HT; subst.
+    apply ad_refine_pskl__hole.
+    eapply a_wf_pskl_mono_ptyp;
+      [ eapply a_wf_aenv_binds_def_mono; eauto
+      | eapply a_wf_aenv_binds_def_wf; eauto ].
+  - (* __tophole_remove *)
+    apply ad_refine_pskl__tophole_remove. eapply IHad_refine_pskl; eauto.
+  - (* __flex_l *)
+    eapply ad_refine_pskl__flex_l; [ eassumption | ].
+    eapply IHad_refine_pskl; eauto.
+  - (* __flex_r : the same variable, hence the same definition *)
+    inversion HT; subst.
+    match goal with
+    | Hprem : _ ⨟ _ ⊢ᵣₚᵃ ?Xp ⊳ (ptyp_to_pskl ?t)
+      |- _ ⨟ _ ⊢ᵣₚᵃ ?Xp ⊳ (ptyp_to_pskl _) =>
+        replace τ0 with t; [ exact Hprem | ]
+    end.
+    match goal with
+    | Hb1 : binds ?a (abind_flex_mono_def ?t) ?E |- ?t = _ =>
+        assert (Heq : abind_flex_mono_def t = abind_flex_mono_def τ0)
+          by (eapply binds_unique;
+                [ exact Hb1 | exact Hb | apply a_wf_aenv_uniq_local; exact Hwf ]);
+        inversion Heq; reflexivity
+    end.
+Qed.
+
+(* ===================================================================== *)
+(*  §1b  The fill transfers Δ-relative well-formedness                     *)
+(*                                                                        *)
+(*  ⭐ This is what lets the mirror DROP the two hypotheses its consistency *)
+(*  twin carries: the Δ-free wf of the source, and the premise saying      *)
+(*  Δ-variables are Θ-visible.  Neither survives the mirror, because       *)
+(*  refinement's [__all] extends Δ while consistency's ∀-rows extend Θ.    *)
+(* ===================================================================== *)
+
+Lemma ad_refine_syn_f_inh_wf_transfer : forall F Θ Δ Qsrc Qt,
+  ad_refine_syn_f F Θ Δ Qsrc Qt ->
+  forall Psrc, Qsrc = pskl_to_bskl_inh Psrc ->
+  pskl_ghost_free Psrc ->
+  forall Θ',
+  (forall x b, binds x b Θ -> binds x b Θ') ->
+  a_wf_aenv Θ' ->
+  forall Δ', Θ' ⨟ Δ' ⊢ₚₛᵃ (bskl_to_pskl Qt) -> Θ' ⨟ Δ' ⊢ₚₛᵃ Psrc.
+Proof.
+  intros F Θ Δ Qsrc Qt Hfill.
+  induction Hfill; intros Bsrc HeqSrc Hgf Θ' Hmon Hwf' Δ' Hw.
+  - (* unit *)
+    destruct Bsrc; simpl in HeqSrc; try discriminate HeqSrc.
+    apply a_wf_pskl__unit.
+  - (* var *)
+    destruct Bsrc; simpl in HeqSrc; try discriminate HeqSrc.
+    inversion HeqSrc; subst. exact Hw.
+  - (* arrow *)
+    destruct Bsrc; simpl in HeqSrc, Hgf; try discriminate HeqSrc.
+    inversion HeqSrc; subst. destruct Hgf as [Hgf1 Hgf2].
+    simpl in Hw. inversion Hw; subst.
+    apply a_wf_pskl__arrow;
+      [ eapply IHHfill1; try eassumption; reflexivity
+      | eapply IHHfill2; try eassumption; reflexivity ].
+  - (* all *)
+    destruct Bsrc; simpl in HeqSrc, Hgf; try discriminate HeqSrc.
+    inversion HeqSrc; subst.
+    simpl in Hw.
+    inversion Hw as [ | | | Lw Θz Δz Pz Hbody Heqz | | ]; subst.
+    apply a_wf_pskl__all with (L := L `union` Lw).
+    intros α Hα.
+    (* ⚙ PERF: pre-assert the freshness side conditions.  An [ltac:(...)]
+       inside a PARTIALLY APPLIED cofinite IH re-runs the tactic under every
+       unification attempt (the 2026-08-01 freshness-campaign rule). *)
+    assert (HαL : α `notin` L) by (clear - Hα; fsetdec).
+    assert (HαLw : α `notin` Lw) by (clear - Hα; fsetdec).
+    assert (Heqo : open_bskl_wrt_bskl (pskl_to_bskl_inh Bsrc) (bskl_var_f α)
+                   = pskl_to_bskl_inh (open_pskl_wrt_pskl Bsrc (pskl_var_f α)))
+      by (symmetry; apply pskl_to_bskl_inh_open).
+    assert (Hgfo : pskl_ghost_free (open_pskl_wrt_pskl Bsrc (pskl_var_f α)))
+      by (unfold open_pskl_wrt_pskl; apply pskl_ghost_free_open_rec; exact Hgf).
+    match goal with
+    | IH : forall α0, α0 `notin` ?L0 ->
+             forall Bsrc0, _ = pskl_to_bskl_inh Bsrc0 -> _ |- _ =>
+        pose proof (IH α HαL) as IHα
+    end.
+    eapply (IHα (open_pskl_wrt_pskl Bsrc (pskl_var_f α)) Heqo Hgfo
+              Θ' Hmon Hwf' (add α Δ')).
+    rewrite bskl_to_pskl_open. apply Hbody. exact HαLw.
+  - (* hole : ghost source, excluded *)
+    destruct Bsrc; simpl in HeqSrc, Hgf; try discriminate HeqSrc; contradiction.
+  - (* tophole_remove *)
+    destruct Bsrc; simpl in HeqSrc, Hgf; try discriminate HeqSrc; contradiction.
+  - (* tophole_fill *)
+    destruct Bsrc; simpl in HeqSrc, Hgf; try discriminate HeqSrc; contradiction.
+  - (* tophole_keep *)
+    destruct Bsrc; simpl in HeqSrc, Hgf; try discriminate HeqSrc; contradiction.
+  - (* flex_l : the source IS a defined flexible of Θ, hence tvar-ish in Θ' *)
+    destruct Bsrc; simpl in HeqSrc, Hgf; try discriminate HeqSrc.
+    inversion HeqSrc; subst.
+    apply a_wf_pskl__var. right. right; right. eexists. apply Hmon. eassumption.
+  - (* flex_r : the target is a defined flexible; unfold it *)
+    eapply (IHHfill Bsrc HeqSrc Hgf Θ' Hmon Hwf' Δ').
+    replace (bskl_to_pskl (ptyp_to_bskl_syn τ)) with (ptyp_to_pskl τ)
+      by (unfold ptyp_to_bskl_syn; rewrite bskl_to_pskl_pskl_to_bskl_syn;
+          reflexivity).
+    (* ⚠️ NOT via [a_wf_pskl_delta_mono]: its [Δ0] is left an EVAR by the
+       Δ-polymorphic [a_wf_pskl_mono_ptyp], and [fsetdec] on an evar
+       avoid-set DOES NOT TERMINATE.  The mono lemma already gives the wf at
+       ANY Δ, so the wrapper is not needed. *)
+    eapply a_wf_pskl_mono_ptyp;
+      [ eapply a_wf_aenv_binds_def_mono; [ exact Hwf' | apply Hmon; eassumption ]
+      | eapply a_wf_aenv_binds_def_wf; [ exact Hwf' | apply Hmon; eassumption ] ].
+Qed.
+
+(* ===================================================================== *)
+(*  §1c  The two transport helpers                                         *)
+(*  (mirrors of [consis_transport_arrow] / [consis_transport_all])        *)
+(*                                                                        *)
+(*  ⚠️ The [match goal] patterns pin the family's CONCLUSION to a          *)
+(*  refinement.  Without that they also match the transport hypothesis     *)
+(*  [Htr], which is cofinite in α too and is NOT reverted by [induction].  *)
+(* ===================================================================== *)
+
+Lemma refine_transport_arrow : forall Θ' Δ' X Qa Qb Pa Pb,
+  Θ' ⨟ Δ' ⊢ᵣₚᵃ X ⊳ (pskl_arrow Qa Qb) ->
+  (Θ' ⨟ empty ⊢ₚₛᵃ (pskl_arrow Qa Qb) -> Θ' ⨟ empty ⊢ₚₛᵃ (pskl_arrow Pa Pb)) ->
+  (forall Δ0 X', Θ' ⨟ Δ0 ⊢ᵣₚᵃ X' ⊳ Qa -> Θ' ⨟ Δ0 ⊢ᵣₚᵃ X' ⊳ Pa) ->
+  (forall Δ0 X', Θ' ⨟ Δ0 ⊢ᵣₚᵃ X' ⊳ Qb -> Θ' ⨟ Δ0 ⊢ᵣₚᵃ X' ⊳ Pb) ->
+  Θ' ⨟ Δ' ⊢ᵣₚᵃ X ⊳ (pskl_arrow Pa Pb).
+Proof.
+  intros Θ' Δ' X Qa Qb Pa Pb H Hwf HRa HRb.
+  remember (pskl_arrow Qa Qb) as T eqn:HT.
+  induction H; try discriminate HT.
+  - (* __arrow *)
+    inversion HT; subst.
+    apply ad_refine_pskl__arrow; [ apply HRa | apply HRb ]; assumption.
+  - (* __hole : the fill becomes the transported arrow *)
+    inversion HT; subst.
+    apply ad_refine_pskl__hole. apply Hwf. assumption.
+  - (* __tophole_remove *)
+    apply ad_refine_pskl__tophole_remove. apply IHad_refine_pskl; assumption.
+  - (* __flex_l *)
+    eapply ad_refine_pskl__flex_l; [ eassumption | ].
+    apply IHad_refine_pskl; assumption.
+Qed.
+
+(** ⭐ The two ∀-ish rows extend DIFFERENT contexts — [__all] extends Δ,
+    [__tophole_fill] extends Θ — so the per-binder transport has to be
+    quantified over BOTH a Θ-extension and a Δ. *)
+Lemma refine_transport_all : forall Θ' Δ' X Qa Pa L,
+  Θ' ⨟ Δ' ⊢ᵣₚᵃ X ⊳ (pskl_all_syn Qa) ->
+  a_wf_aenv Θ' ->
+  dom Θ' [<=] L ->
+  (Θ' ⨟ empty ⊢ₚₛᵃ (pskl_all_syn Qa) -> Θ' ⨟ empty ⊢ₚₛᵃ (pskl_all_syn Pa)) ->
+  (* ⚙ [α `notin` L] comes AFTER the other binders on purpose: it keeps this
+     hypothesis from matching the [forall α, α `notin` ?L -> _] pattern that
+     picks the RULE's cofinite family out of the context below. *)
+  (forall α Θ0 Δ0 X', α `notin` L ->
+     (forall x b, binds x b Θ' -> binds x b Θ0) ->
+     a_wf_aenv Θ0 ->
+     Θ0 ⨟ Δ0 ⊢ᵣₚᵃ X' ⊳ (open_pskl_wrt_pskl Qa (pskl_var_f α)) ->
+     Θ0 ⨟ Δ0 ⊢ᵣₚᵃ X' ⊳ (open_pskl_wrt_pskl Pa (pskl_var_f α))) ->
+  Θ' ⨟ Δ' ⊢ᵣₚᵃ X ⊳ (pskl_all_syn Pa).
+Proof.
+  intros Θ' Δ' X Qa Pa L H Hwfth HdomL Hwf Htr.
+  remember (pskl_all_syn Qa) as T eqn:HT.
+  induction H; try discriminate HT.
+  - (* __all : the binder goes into Δ *)
+    inversion HT; subst.
+    match goal with
+    | Hfam : forall α, α `notin` ?L0 -> _ |- _ =>
+        apply ad_refine_pskl__all with (L := L `union` L0);
+        intros α Hα;
+        assert (HαL : α `notin` L) by (clear - Hα; fsetdec);
+        assert (HαL0 : α `notin` L0) by (clear - Hα; fsetdec);
+        apply (Htr α _ _ _ HαL);
+          [ intros y c Hb; exact Hb
+          | exact Hwfth
+          | apply (Hfam α HαL0) ]
+    end.
+  - (* __hole *)
+    inversion HT; subst.
+    apply ad_refine_pskl__hole. apply Hwf. assumption.
+  - (* __tophole_remove *)
+    apply ad_refine_pskl__tophole_remove. apply IHad_refine_pskl; assumption.
+  - (* __tophole_fill : the binder goes into Θ *)
+    inversion HT; subst.
+    match goal with
+    | Hfam : forall α, α `notin` ?L0 -> _ |- _ =>
+        apply ad_refine_pskl__tophole_fill with (L := L `union` L0);
+        intros α Hα;
+        assert (HαL : α `notin` L) by (clear - Hα; fsetdec);
+        assert (HαL0 : α `notin` L0) by (clear - Hα; fsetdec);
+        apply (Htr α _ _ _ HαL);
+          [ intros y c Hb; unfold binds; simpl; right; exact Hb
+          | apply a_wf_aenv__tvar;
+              [ clear - HαL HdomL; fsetdec | exact Hwfth ]
+          | apply (Hfam α HαL0) ]
+    end.
+  - (* __flex_l *)
+    eapply ad_refine_pskl__flex_l; [ eassumption | ].
+    apply IHad_refine_pskl; assumption.
+Qed.
+
+(* ===================================================================== *)
+(*  §1d  THE MIRROR — a refinement's TARGET transports along the fill      *)
+(* ===================================================================== *)
+
+Lemma ad_refine_pskl_refine_inh_gen : forall F Θ Δ Qsrc Qt,
+  ad_refine_syn_f F Θ Δ Qsrc Qt ->
+  forall Psrc, Qsrc = pskl_to_bskl_inh Psrc ->
+  pskl_ghost_free Psrc ->
+  forall Θ',
+  (forall x b, binds x b Θ -> binds x b Θ') ->
+  a_wf_aenv Θ' ->
+  forall Δ' X, Θ' ⨟ Δ' ⊢ᵣₚᵃ X ⊳ (bskl_to_pskl Qt) ->
+               Θ' ⨟ Δ' ⊢ᵣₚᵃ X ⊳ Psrc.
+Proof.
+  intros F Θ Δ Qsrc Qt Hfill.
+  induction Hfill; intros Bsrc HeqSrc Hgf Θ' Hmon Hwf' Δ' X Hc.
+  - (* unit *)
+    destruct Bsrc; simpl in HeqSrc; try discriminate HeqSrc. exact Hc.
+  - (* var *)
+    destruct Bsrc; simpl in HeqSrc; try discriminate HeqSrc.
+    inversion HeqSrc; subst. exact Hc.
+  - (* arrow *)
+    destruct Bsrc; simpl in HeqSrc, Hgf; try discriminate HeqSrc.
+    inversion HeqSrc; subst. destruct Hgf as [Hgf1 Hgf2].
+    simpl in Hc.
+    eapply refine_transport_arrow; [ exact Hc | | | ].
+    + (* the wf transfer, on the REBUILT arrow fill *)
+      intros Hwq.
+      eapply (ad_refine_syn_f_inh_wf_transfer
+                (ad_refine_syn_f__arrow Hfill1 Hfill2));
+        [ reflexivity | split; assumption | exact Hmon | exact Hwf' | exact Hwq ].
+    + intros Δ0 X' HX'. eapply IHHfill1; try eassumption; reflexivity.
+    + intros Δ0 X' HX'. eapply IHHfill2; try eassumption; reflexivity.
+  - (* all *)
+    destruct Bsrc; simpl in HeqSrc, Hgf; try discriminate HeqSrc.
+    inversion HeqSrc; subst.
+    simpl in Hc.
+    eapply refine_transport_all with (L := L `union` dom Θ');
+      [ exact Hc | exact Hwf' | clear; fsetdec | | ].
+    + (* the wf transfer, on the REBUILT ∀ fill *)
+      intros Hwq.
+      match goal with
+      | Hfam : forall α, α `notin` ?L0 -> ad_refine_syn_f _ _ _ _ _ |- _ =>
+          (* ⚠️ [ad_refine_syn_f__all] keeps [Q P] EXPLICIT while [F L Θ Δ]
+             are implicit (HANDOFF §7.4: read the arity, do not count
+             underscores), so the family goes in THIRD. *)
+          eapply (ad_refine_syn_f_inh_wf_transfer
+                    (ad_refine_syn_f__all _ _ Hfam))
+      end;
+        [ reflexivity | exact Hgf | exact Hmon | exact Hwf' | exact Hwq ].
+    + intros α Θ0 Δ0 X' Hα Hmon0 Hwf0 Hr.
+      assert (HαL : α `notin` L) by (clear - Hα; fsetdec).
+      assert (Heqo : open_bskl_wrt_bskl (pskl_to_bskl_inh Bsrc) (bskl_var_f α)
+                     = pskl_to_bskl_inh (open_pskl_wrt_pskl Bsrc (pskl_var_f α)))
+        by (symmetry; apply pskl_to_bskl_inh_open).
+      assert (Hgfo : pskl_ghost_free (open_pskl_wrt_pskl Bsrc (pskl_var_f α)))
+        by (unfold open_pskl_wrt_pskl; apply pskl_ghost_free_open_rec; exact Hgf).
+      assert (Hmon1 : forall x b, binds x b Θ -> binds x b Θ0)
+        by (intros x b Hb; apply Hmon0; apply Hmon; exact Hb).
+      match goal with
+      | IH : forall α0, α0 `notin` ?L0 ->
+               forall Bsrc0, _ = pskl_to_bskl_inh Bsrc0 -> _ |- _ =>
+          pose proof (IH α HαL) as IHα
+      end.
+      eapply (IHα (open_pskl_wrt_pskl Bsrc (pskl_var_f α)) Heqo Hgfo
+                Θ0 Hmon1 Hwf0 Δ0 X').
+      rewrite bskl_to_pskl_open. exact Hr.
+  - (* hole : ghost source, excluded *)
+    destruct Bsrc; simpl in HeqSrc, Hgf; try discriminate HeqSrc; contradiction.
+  - (* tophole_remove *)
+    destruct Bsrc; simpl in HeqSrc, Hgf; try discriminate HeqSrc; contradiction.
+  - (* tophole_fill *)
+    destruct Bsrc; simpl in HeqSrc, Hgf; try discriminate HeqSrc; contradiction.
+  - (* tophole_keep *)
+    destruct Bsrc; simpl in HeqSrc, Hgf; try discriminate HeqSrc; contradiction.
+  - (* flex_l : the SOURCE is a defined flexible; re-fold it on the target *)
+    destruct Bsrc; simpl in HeqSrc, Hgf; try discriminate HeqSrc.
+    inversion HeqSrc; subst.
+    (* ⚙ the rule's [α]/[τ] are renamed by the [destruct]+[subst] above, so
+       reach them through the binding hypothesis rather than by name. *)
+    match goal with
+    | Hb : binds ?a (abind_flex_mono_def ?t) _ |- _ =>
+        assert (Hbα' : binds a (abind_flex_mono_def t) Θ')
+          by (apply Hmon; exact Hb);
+        assert (Hmτ : mono_ptyp t)
+          by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf' | exact Hbα' ]);
+        eapply ad_refine_pskl__flex_r; [ exact Hbα' | ];
+        eapply (IHHfill (ptyp_to_pskl t));
+          [ symmetry; apply (mono_inh_eq_syn Hmτ)
+          | apply ptyp_to_pskl_ghost_free
+          | exact Hmon | exact Hwf' | exact Hc ]
+    end.
+  - (* flex_r : the TARGET is a defined flexible; unfold it (§A) *)
+    eapply (IHHfill Bsrc HeqSrc Hgf Θ' Hmon Hwf' Δ' X).
+    match goal with
+    | Hb : binds ?a (abind_flex_mono_def ?t) _ |- _ =>
+        replace (bskl_to_pskl (ptyp_to_bskl_syn t)) with (ptyp_to_pskl t)
+          by (unfold ptyp_to_bskl_syn; rewrite bskl_to_pskl_pskl_to_bskl_syn;
+              reflexivity);
+        eapply ad_refine_pskl_unfold_def_target;
+          [ exact Hwf' | apply Hmon; exact Hb | exact Hc ]
+    end.
+Qed.
+
+(** ⭐ THE CONSUMER FORM — §6.1's Check row.  Mirrors
+    [ad_pat_consis_refine_inh_target] (prop_soundness_sub.v:366) exactly, but
+    with TWO FEWER hypotheses (see §B). *)
+Lemma ad_refine_pskl_refine_inh_target : forall Θ Qt,
+  a_wf_aenv Θ ->
+  forall P, pskl_ghost_free P ->
+  ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh P) Qt ->
+  forall Δ X, Θ ⨟ Δ ⊢ᵣₚᵃ X ⊳ (bskl_to_pskl Qt) ->
+              Θ ⨟ Δ ⊢ᵣₚᵃ X ⊳ P.
+Proof.
+  intros Θ Qt Hwf P Hgf Href Δ X Hc.
+  eapply (ad_refine_pskl_refine_inh_gen Href);
+    [ reflexivity | exact Hgf | intros x b Hb; exact Hb | exact Hwf | exact Hc ].
+Qed.
+
+(* ===================================================================== *)
 (*  §2  The mutual soundness statement                                    *)
 (* ===================================================================== *)
 
