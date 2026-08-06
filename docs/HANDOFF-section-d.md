@@ -399,16 +399,26 @@ matching `ad_refine_pskl` lemma:
 | `Flex-Assign` | `ad_pat_sub_gv_weaken` | ✅ §1f (`ad_refine_pskl_weaken`, prop_refine.v:98) |
 | `ForallR` | `ad_pat_sub_gv_strip_suffix` | ⛔ **NEXT — a two-lemma chain with a missing ingredient** |
 
-⛔ **The `strip_suffix` chain.**  The plain `ad_pat_sub_strip_suffix`
-(prop_pat_sub.v:1158) does not induct on the judgement — it iterates
-`ad_pat_sub_subst_flex` (prop_pat_sub.v:749, ~120 lines) head-first over Ξ,
-substituting each undefined flexible by `1`.  So the mirror needs, in order:
+⛔ **The `strip_suffix` chain — HALF BUILT (§1g).**  The plain
+`ad_pat_sub_strip_suffix` (prop_pat_sub.v:1158) does not induct on the
+judgement: it iterates a SUBSTITUTION strip head-first over Ξ, and its head
+splits on whether the flexible is DEFINED.  So the mirror needs FIVE lemmas,
+two per head plus the driver:
 
-1. **`ad_refine_pskl_subst_flex`** — ⛔ DOES NOT EXIST in any form (no
-   `ad_refine_pskl`/`_f` substitution-strip).  ~60 lines: the refinement under
-   `Θ1 ++ (β ~ abind_flex_mono) ++ Θ2 → Θ1 ++ Θ2` with `β ↦ 1`.
-2. `ad_pat_sub_gv_subst_flex` (~120 lines, mirrors prop_pat_sub.v:749).
-3. `ad_pat_sub_gv_strip_suffix` (~50 lines, mirrors prop_pat_sub.v:1158).
+| # | lemma | status |
+|---|---|---|
+| 1 | `ad_refine_pskl_subst_flex` (undefined head, `β ↦ 1`) | ✅ §1g |
+| 2 | `ad_pat_sub_gv_subst_flex` (mirrors prop_pat_sub.v:749) | ✅ §1g |
+| 3 | `ad_refine_pskl_subst_flex_def` (DEFINED head, `β ↦ τ`) | ⛔ does not exist |
+| 4 | `ad_pat_sub_gv_subst_flex_def` (mirrors prop_pat_sub.v:1031) | ⛔ |
+| 5 | `ad_pat_sub_gv_strip_suffix` (mirrors prop_pat_sub.v:1158) | ⛔ |
+
+⚙ Also landed in §1g: `bskl_to_pskl_subst_unit` and ⭐
+`ftag_in_uskl_subst_unit` (substituting `1` cannot change TAGS either — the
+`ForallL` hygiene premise again).  ⚠️ §1g forced
+`Require Import src.frost.decl.prop_skeleton` into this file (for
+`guarded_pskl_subst_unit`); it is placed EARLY on purpose, so the later
+imports keep winning the homonym races §1e ran into.
 
 ⚙ Only then can `subtag_sound_concl` / `subtag_flex_sound_concl` change and
 the 15 rows be rewritten — and that last step is ATOMIC (the file will not

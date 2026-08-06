@@ -254,6 +254,20 @@ terminate — `a_wf_pskl_delta_mono`'s `Δ0` is left an evar by the
 Δ-polymorphic `a_wf_pskl_mono_ptyp`, and the wrapper was not needed.
 Profile-first paid: imports alone were 0.3 s, so it was never I/O.
 
+**8. ✅ The `strip_suffix` chain, UNDEFINED-HEAD half** — `prop_soundness_sub.v`
+§1g, Qed and axiom-free: ⭐ `ad_refine_pskl_subst_flex` (which did not exist in
+any form — no `ad_refine_pskl`/`_f` substitution-strip), then
+`ad_pat_sub_gv_subst_flex`, plus `bskl_to_pskl_subst_unit` and
+`ftag_in_uskl_subst_unit` (substituting `1` cannot change TAGS either).
+
+⛔ **And the chain turned out FIVE lemmas deep, not three.**  The plain driver
+`ad_pat_sub_strip_suffix` (prop_pat_sub.v:1158) does not induct on the
+judgement — it iterates a SUBSTITUTION strip head-first over Ξ, and its head
+**splits on whether the flexible is DEFINED**, calling
+`ad_pat_sub_subst_flex_def` (prop_pat_sub.v:1031) in that branch.  So the
+DEFINED half (`ad_refine_pskl_subst_flex_def`, `ad_pat_sub_gv_subst_flex_def`)
+and the driver itself remain.
+
 **7. ✅ THREE of the FOUR `_gv` STRUCTURAL MIRRORS the bundle's rows consume**
 — `prop_soundness_sub.v` §1f, Qed and axiom-free: `ad_pat_sub_gv_psi_cong`
 (the leaf carries no Ψ), `_isub` and `_weaken` (leaf via
