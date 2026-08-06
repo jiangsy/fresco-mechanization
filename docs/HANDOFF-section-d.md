@@ -1,12 +1,15 @@
 # HANDOFF — section D (`proofs.tex`): soundness and completeness of skeleton and type inference
 
-**Status 2026-08-06 (third pass).** The definitional layer is DONE (`dd1f176`),
-suffix MOVING is closed (`prop_ctx_mono.v`), and **thm:sound-skeleton-inference
-itself is now assembled**: `a_pat_sound` (`algo/prop_soundness_pat.v` §5) is
-Qed over all ten `a_pat` rows, with `Print Assumptions` showing exactly ONE
-axiom — the isolated `a_consis_chk_annot_refine`, which is AbsAnno at the
-ARROW split shape.  §7 has the proved statement, the kit, and the now-concrete
-route for that one lemma.  Headlines discovered while building it:
+**Status 2026-08-06 (fifth pass).** The definitional layer is DONE
+(`dd1f176`), suffix MOVING is closed (`prop_ctx_mono.v`), and ⭐⭐⭐
+**thm:sound-skeleton-inference is CLOSED**: `a_pat_sound`
+(`algo/prop_soundness_pat.v` §5) is Qed over all ten `a_pat` rows and *Closed
+under the global context* — no admits, no axioms — and it is `Check`ed and
+audited in `README.v`.  The last open piece, AbsAnno's refinement-target
+transport, is now `a_consis_chk_annot_refine` (§4), which supplies a lemma the
+paper asserts inline and never states (docs/PAPER-GAPS.md).  §7 records the
+proved statement, the kit, and the design that made the transport go through.
+Headlines discovered while building it:
 
 - ⭐ **Theorem 1 needs NEITHER lemma:split-refine NOR refinement
   transitivity** (`a_split_sk_shape`, prop_soundness_pat.v §3b): under the
@@ -242,12 +245,12 @@ Do that between 2 and 3.
 
 ---
 
-## 7. thm:sound-skeleton-inference — ✅ ASSEMBLED (2026-08-06, third pass); ONE open lemma left
+## 7. thm:sound-skeleton-inference — ✅ CLOSED (2026-08-06, fifth pass)
 
-`a_pat_sound` (`frost/algo/prop_soundness_pat.v` §5) is **Qed**, `make coq`
-clean.  `Print Assumptions a_pat_sound` lists exactly one axiom, §7.3's
-`a_consis_chk_annot_refine`; every support lemma is *Closed under the global
-context*.
+`a_pat_sound` (`frost/algo/prop_soundness_pat.v` §5) is **Qed** and *Closed
+under the global context*; `make coq` clean; `Check`ed and audited in
+`README.v`.  §7.3 records how its last piece — AbsAnno's refinement-target
+transport — was closed.
 
 ### 7.1 The statement as proved
 
@@ -289,7 +292,7 @@ at `Ξ,Θ2` the peeled entry drops by payload shape (a definition is never a
 term entry) and no freshness is needed, whereas at `Θ2` it would need a
 freshness fact the statement does not carry.
 
-### 7.3 ⛔ THE ONE OPEN LEMMA — the design, corrected (2026-08-06, fourth pass)
+### 7.3 ✅ AbsAnno's refinement-target transport — CLOSED (fifth pass)
 
     Lemma a_consis_chk_annot_refine : forall Θ0 A P Θ1,
       a_consis_chk Θ0 (ptyp_to_pskl A) P Θ1 ->
@@ -297,103 +300,80 @@ freshness fact the statement does not carry.
       exists B, btyp_to_ptyp B = A /\
         Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B).
 
-It is needed by `AP-AbsAnno` at the **ARROW** split shape only; at the HOLE
-shape the row answers with the all-synthesised painting `ptyp_to_btyp_syn A`
-through `ad_refine_syn__hole`, and that is proved.  The paper asserts the
-lemma inline ("by preservation of refinement under type equivalence") and
-never states it (docs/PAPER-GAPS.md).
+Needed by `AP-AbsAnno` at the ARROW split shape (at the HOLE shape the row
+answers with the all-synthesised painting and needs none of this).  It is the
+paper's inline "preservation of refinement under type equivalence", which
+exists nowhere as a lemma.
 
-**Do NOT prove it by induction on `a_consis`** — its ∀ rows bind the fresh α
-in Θ while refinement's `__all` binds it in Δ, which is what
-`ad_refine_syn_f`'s hygiene set exists to manage, so that route re-does
-consistency soundness.  Prove instead a **TARGET TRANSPORT** on the
-declarative layer: `a_consis_chk_sound` already hands back, at one context,
-the consistency `∅ ⨟ Θ1 ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ Qt` beside the refinement
-`Θ1 ⨟ ∅ ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ Qt`, so only the target is wrong.
+**⛔ The dead end, first.**  Do NOT prove it by induction on `a_consis`: its ∀
+rows bind the fresh witness in **Θ** while refinement's `__all` binds it in
+**Δ**, which is exactly what `ad_refine_syn_f`'s hygiene set exists to manage,
+so that route re-does consistency soundness.
 
-#### ⭐ The statement must DECOUPLE the two contexts
+**The route that works** is a TARGET TRANSPORT on the declarative layer —
+`a_consis_chk_sound` already hands back the consistency and the refinement at
+one context, so only the target is wrong:
 
-This is the correction the ∀ rows forced.  With one shared Θ the `__all` row
-cannot be closed in either direction: the consistency premise lives at
-`(α~tvar),Θ` and the refinement premise at `Θ ⨟ α,Δ`, and moving the
-CONSTRUCTED output back (Θ → Δ) is **unsound** — `__hole`'s fill is Δ-free by
-rule, so a fill mentioning α cannot survive the move.  Keep the binder where
-each judgement puts it:
+    Lemma ad_refine_syn_target_transport : forall Ψ Θc R Qt,
+      Ψ ⨟ Θc ⊢ₛᵃ R ∼ Qt -> a_wf_aenv Θc ->
+      forall A, R = ptyp_to_uskl_syn A -> lc_ptyp A ->
+      forall Θr Δ Qb,
+      a_wf_aenv Θr ->
+      (forall β τ, binds β (abind_flex_mono_def τ) Θc ->
+                   binds β (abind_flex_mono_def τ) Θr) ->        (* Hdefs *)
+      (forall γ, a_flex_tvar Θc γ -> a_binds_tvar γ Θr) ->        (* Hflex *)
+      (forall γ, γ `in` ftvar_in_ptyp A ->
+                 γ `in` Δ \/ a_binds_tvar γ Θr) ->               (* Hvis  *)
+      Θr ⨟ Δ ⊢ᵣᵃ Qb ⊳ Qt ->
+      exists B, btyp_to_ptyp B = A /\ Θr ⨟ Δ ⊢ᵣᵃ Qb ⊳ (btyp_to_bskl B)
 
-    forall Ψ Θc R Qt, Ψ ⨟ Θc ⊢ₛᵃ R ∼ Qt ->
-      forall Θr Δ A Qb,
-        a_wf_aenv Θr -> a_wf_aenv Θc -> lc_ptyp A ->
-        R = ptyp_to_uskl_syn A ->
-        (forall β τ, binds β (abind_flex_mono_def τ) Θc ->
-                     binds β (abind_flex_mono_def τ) Θr) ->
-        (forall γ, a_binds_tvar γ Θc -> γ `in` Δ \/ a_binds_tvar γ Θr) ->
-        (forall γ, γ `in` ftvar_in_ptyp A -> γ `in` Δ \/ a_binds_tvar γ Θr) ->
-        Θr ⨟ Δ ⊢ᵣᵃ Qb ⊳ Qt ->
-        exists B, btyp_to_ptyp B = A /\ Θr ⨟ Δ ⊢ᵣᵃ Qb ⊳ (btyp_to_bskl B)
+by a NESTED induction — outer on the consistency, inner (with `remember` on
+the target) on the refinement, in the four rows whose target does not pin the
+refinement's last rule.  Eight consistency rows are dead on the subject's
+shape: a `ptyp` painting is never `uskl_hole` / `uskl_topholeg` /
+`uskl_all_etag`.
 
-Then **both ∀ rows land exactly where their rule wants them and no context
-move is needed at all**: `__all` recurses at `Θc' = (α~tvar),Θc`, `Θr' = Θr`,
-`Δ' = α,Δ`; `__tophole_fill` recurses at `Θc' = (α~tvar),Θc`,
-`Θr' = (α~tvar),Θr`, `Δ' = Δ`.
+#### ⭐⭐ The three things that made it go through
 
-#### The induction, row by row
+1. **The two contexts must be DECOUPLED.**  With one shared Θ the `__all` row
+   cannot be closed in either direction: the consistency premise lives at
+   `(α~tvar),Θ` and the refinement premise at `Θ ⨟ α,Δ`, and moving the
+   CONSTRUCTED output back (Θ → Δ) is unsound — `ad_refine_syn__hole`'s fill
+   is Δ-free BY RULE, while the transport's fills are `ptyp_to_pskl A` for the
+   sub-annotations, which do mention α.  Decoupled, **both ∀ rows land exactly
+   where their own rule puts the binder and no context move is needed
+   anywhere**: `__all` recurses at `Θc' = (α~tvar),Θc`, `Θr' = Θr`,
+   `Δ' = α,Δ`; `__tophole_fill` at `Θc' = (α~tvar),Θc`, `Θr' = (α~tvar),Θr`,
+   `Δ' = Δ`.
+2. **The `__hole` row needs an OCCURRENCE lemma**
+   (`ad_pat_consis_subject_ftv`, §4d): a free variable of a type-painting
+   subject either survives into the consistency's target, or is a flexible, or
+   escapes into a definition's body.  The rule wants its fill well-formed at
+   EMPTY Δ — A must be Δ-free — while `Hvis` only gives "in Δ or a tvar of
+   Θr"; at `__hole` the target is a synthesised painting well-formed at empty
+   Δ, so all three disjuncts land in `dom Θr` and a Δ-bound ∀ witness (fresh
+   for Θr) is excluded.
+3. **The two flexible rows are sound because a definition is a MONOTYPE**,
+   hence uniquely coloured (`btyp_to_bskl_mono_syn`, §4a) — that is what makes
+   the recursive answer be exactly the synthesised painting
+   `ad_refine_syn__flex_l` / `__flex_r` demand.
 
-NESTED: outer on the consistency, inner (with `remember` on the target) on
-the refinement, in the four rows whose target does not pin the refinement's
-last rule.
+#### The kit (all in `prop_soundness_pat.v`)
 
-- the subject is a `ptyp` painting, so it is never `uskl_hole` /
-  `uskl_topholeg` / `uskl_all_etag` — **eight** consistency rows are dead;
-- `__unit` / `__var`: `Qt` already IS `btyp_to_bskl` of `btyp_unit` /
-  `btyp_var_f α`; the given refinement is the answer;
-- `__arrow` / the two ∀ rows / `__flex_r`: invert the refinement.  Uniform
-  inner rows: `__tophole_remove` and `__flex_l` shrink the refinement (inner
-  IH, rebuild); `__hole` answers with the all-synthesised painting;
-- ⛔ `__hole` is what the third (visibility) invariant is for: the rule needs
-  `Θr ⨟ ∅ ⊢ₚₛᵃ (ptyp_to_pskl A)`, i.e. **A must be Δ-free**, while under a ∀
-  the invariant only gives `γ ∈ Δ ∨ tvar-ish Θr`.  Upgrade it with an
-  **occurrence lemma** for a type-painting subject (still to prove):
+| § | contents |
+|---|---|
+| §4a | `ptyp_to_uskl_syn_via_pskl`, `ptyp_to_uskl_syn_open`, `btyp_to_{ptyp,bskl}_close`, `btyp_to_bskl_open`, ⭐ `btyp_to_bskl_mono_syn` |
+| §4b | `a_wf_pskl_delta_to_ctx` — the Δ→Θ move for skeleton wf (safe direction; the refinement analogue is NOT sound) |
+| §4c | ⭐ `ad_refine_syn_rename_delta` — renaming a Δ-member; supplies `__all`'s cofinite family from its one witness |
+| §4d | ⭐ `ad_pat_consis_subject_ftv` — the occurrence lemma |
+| §4e | ⭐ `ad_refine_syn_rename_tvar` (+ `a_wf_pskl_rename_tvar`, `a_tvar_block`, `binds_swap_mid_tvar`, `a_wf_aenv_strip_prefix`) — renaming a rigid Θ-variable, in MID-CONTEXT form because the rule stacks binders on Θ; supplies `__tophole_fill`'s family |
+| §4f | `transport_hole_answer`, `ad_refine_syn_target_transport`, `a_consis_chk_annot_refine` |
 
-      Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ Qt -> γ `in` ftvar_in_ptyp A ->
-        γ `in` ftvar_in_bskl Qt \/ a_flex_tvar Θ γ \/
-        (exists β τ, binds β (abind_flex_mono_def τ) Θ /\
-                     γ `in` ftvar_in_ptyp τ)
+⚙ Read as consis-to-`≡ᵗ`, the same fact is what thm:sound-type-inference's
+`Freeze` case needs ("which further gives `Θ2 ⊢ B ≡ A`").  **Derive it from
+this transport rather than rebuilding it.**
 
-  — a free variable of the subject either survives into the target or
-  escapes through a DEFINITION.  At `__hole` the target is
-  `pskl_to_bskl_syn P` with `Θr ⨟ ∅ ⊢ₚₛᵃ P`, so all three disjuncts land in
-  `dom Θr`; a Δ-bound ∀ witness is fresh for Θr, hence excluded, and the
-  answer's well-formedness follows by `a_scope_pskl_of_ptyp_vis`;
-- `__flex_l` / `__flex_r` rebuild through `ad_refine_syn__flex_r` /
-  `__flex_l`.  ⭐ Sound because **a definition is a monotype**, so the
-  recursive answer is forced to be the synthesised painting — that is
-  `btyp_to_bskl_mono_syn`, PROVED (§4a).
-
-#### What is already banked, and what is left
-
-PROVED and axiom-free in `prop_soundness_pat.v`:
-
-| §4a | `ptyp_to_uskl_syn_via_pskl`, `btyp_to_{ptyp,bskl}_close`, `btyp_to_bskl_open`, ⭐ `btyp_to_bskl_mono_syn` |
-| §4b | `a_wf_pskl_delta_to_ctx` — the Δ→Θ move for skeleton wf (the SAFE direction) |
-| §4c | ⭐ `ad_refine_syn_rename_delta` — renaming a Δ-member of a refinement, which turns the `__all` row's ONE fresh witness into the cofinite family the rule demands |
-
-LEFT, in order:
-
-1. the occurrence lemma above (mechanical: eight rows die on the subject's
-   shape, the ∀ rows use the open/close free-variable bounds);
-2. a Θ-renaming for `ad_refine_syn` in **mid-context** form
-   `Θa ++ (α~tvar) ++ Θ` — the `__tophole_fill` row needs its cofinite family
-   the same way `__all` does, but with the binder in Θ; it needs an
-   `a_wf_pskl` renaming for the `__hole` fill.  (§4c is the Δ analogue and is
-   the template.)
-3. the transport itself; then `a_consis_chk_annot_refine` is three lines.
-
-⚙ **Build it once for both theorems.**  Read as consis-to-`≡ᵗ` this is
-exactly what thm:sound-type-inference's `Freeze` case needs (the paper's
-"which further gives `Θ2 ⊢ B ≡ A`").  Prove whichever form is more
-convenient and derive the other.
-
-### 7.4 Traps this pass cost time to
+### 7.4 Traps these passes cost time to
 
 - A bare `subst` consumes the erasure equation `bskl_to_pskl Qt = Q` — the RHS
   is a bare variable, so `subst` orients it and CLEARS the hypothesis.  Use
@@ -409,13 +389,29 @@ convenient and derive the other.
   `bskl_to_pskl Q = …`, `Ξ1 ++ (x ~ b1) ++ Θ1 = …`) are NOT strict-implicit
   under `Set Implicit Arguments`; give them an `Arguments … : ` line rather
   than counting underscores at each call site.
+- The converse also bites: under `Set Implicit Arguments` a lemma's LATER
+  universals can silently become implicit while one of them stays explicit
+  (`ad_refine_syn_rename_delta` made `α`/`Δ` implicit but not `β`).  At call
+  sites inside a nested induction, use `@`-application with `_` for the
+  inferable prefix — named arguments only work for the ones Coq kept.
+- `induction Href` inside a case of an outer induction: `revert` every
+  hypothesis mentioning the refinement's context/Δ FIRST, `remember` the
+  target, `revert` its equation, and give an explicit `as [...]` pattern —
+  otherwise the generated names (`Θ0`, `Q0`, `Q3`) drift every time the proof
+  is edited.  And state any auxiliary fact (here the reconstructed
+  consistency) AFTER the `remember`, so it does not pick up the abstracted
+  target and end up as an extra premise of every inner IH.
+- A `- bullet is not finished` with nothing focused means the previous bullet
+  ended with an `auto` that could not apply a ∀-quantified IH whose first
+  premise is a context EQUATION (higher-order unification); apply the IH
+  explicitly.
 
 ### 7.5 What is next
 
-1. Close §7.3 (it unblocks nothing else in theorem 1, but theorem 2 needs the
-   same content).
-2. thm:sound-type-inference — same shape, plus `a_tyequiv` for the appendix's
-   three equivalence premises.  §1's suffix ERASURE is still open and is
-   TYPE-inference-only, as is §2's `lemma:split-refine`.
-3. Then the `ad_pat_sub_gv` composition gap (§6) before the two completeness
+1. **thm:sound-type-inference** — same shape as theorem 1, plus `a_tyequiv`
+   for the appendix's three equivalence premises.  Its `Freeze` case wants
+   §7.3's transport in its `≡ᵗ` reading; derive, do not rebuild.  §1's suffix
+   ERASURE is still open and is TYPE-inference-only, as is §2's
+   `lemma:split-refine`.
+2. Then the `ad_pat_sub_gv` composition gap (§6) before the two completeness
    theorems.

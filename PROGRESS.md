@@ -116,13 +116,14 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   + one lemma over `ad_pat`; needs a "same non-variable entries ⟹ preserved"
   context-change lemma for `ad_pat_sub` / `ad_refine_syn` that does not exist
   yet.  GATED on "Precision extends skeleton subtyping" (the `ad_pat__var` row)
-- 🟡 **Theorem: Soundness of skeleton inference — ASSEMBLED 2026-08-06**,
-  `a_pat_sound` (`algo/prop_soundness_pat.v` §5), Qed; all ten `a_pat` rows
-  proved.  `Print Assumptions` shows exactly ONE axiom, the isolated
-  `a_consis_chk_annot_refine` (AbsAnno at the ARROW split shape — the paper's
-  inline "preservation of refinement under type equivalence", proofs.tex,
-  which exists nowhere as a lemma; the HOLE shape needs none of it and is
-  proved).  ⚠️ The statement carries TWO hypotheses beyond the paper's list:
+- ✅ **Theorem: Soundness of skeleton inference — CLOSED 2026-08-06**,
+  `a_pat_sound` (`algo/prop_soundness_pat.v` §5), Qed and *Closed under the
+  global context*; all ten `a_pat` rows proved; `Check`ed and audited in
+  `README.v`.  Its last piece, AbsAnno's refinement-target transport, is
+  `a_consis_chk_annot_refine` (§4) — the paper's inline "preservation of
+  refinement under type equivalence", which exists nowhere as a lemma
+  (docs/PAPER-GAPS.md).  ⚠️ The statement carries TWO hypotheses beyond the
+  paper's list:
   `a_wf_exp Θ0 e` (the problem definition's "M wf in Θ0") and the paper's
   implicit `Θ ⊢ ctx` at skeleton term entries
   (`∀ x P, binds x (abind_var_skl P) Θ0 → Θ0 ⨟ ∅ ⊢ₚₛᵃ P`), because
@@ -142,7 +143,73 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-06 (latest) — ⭐ **SECTION D: the open lemma's kit starts landing, and its design is CORRECTED** — the ∀ rows force the two contexts apart
+## 2026-08-06 (latest) — ⭐⭐⭐ **SECTION D: `thm:sound-skeleton-inference` IS CLOSED** — `a_pat_sound` is axiom-free, and the paper's un-stated "preservation of refinement under type equivalence" is supplied
+
+`make coq` clean.  `Print Assumptions a_pat_sound` = **Closed under the
+global context**; the theorem is now `Check`ed and audited in `README.v`
+beside `a_sub_sound_thm`.
+
+The last piece was `a_consis_chk_annot_refine` — AbsAnno at the ARROW split
+shape, i.e. the step the paper writes as one clause, "by preservation of
+refinement under type equivalence", and never states as a lemma.  It is a
+TARGET TRANSPORT: `a_consis_chk_sound` hands back the consistency and the
+refinement at one context, so only the refinement's TARGET has to be
+re-coloured into a painting of the annotation.
+
+**⛔ The dead end, recorded because it costs the most to discover.**  Do NOT
+induct on `a_consis`: its ∀ rows bind the fresh witness in **Θ** while
+refinement's `__all` binds it in **Δ**, which is exactly what
+`ad_refine_syn_f`'s hygiene set exists to manage — that route re-does
+consistency soundness.
+
+**⭐⭐ The three things that made the declarative-layer route go through:**
+
+1. **The two contexts must be DECOUPLED** (`Θc` for the consistency,
+   `Θr ⨟ Δ` for the refinement, tied by a definitions-visible condition and a
+   flexibles-visible one).  With one shared Θ the `__all` row cannot be closed
+   in either direction: moving the CONSTRUCTED output back (Θ → Δ) is
+   **unsound**, because `ad_refine_syn__hole`'s fill is Δ-free BY RULE while
+   the transport's fills are `ptyp_to_pskl A` for the sub-annotations, which
+   do mention the witness.  Decoupled, both ∀ rows land exactly where their
+   own rule puts the binder and NO context move is needed anywhere.
+2. **The `__hole` row needs an OCCURRENCE lemma**
+   (`ad_pat_consis_subject_ftv`): a free variable of a type-painting SUBJECT
+   either survives into the consistency's TARGET, or is a flexible, or escapes
+   into a definition's body.  The rule wants its fill well-formed at EMPTY Δ —
+   the annotation must be Δ-FREE — while the invariant only gives "in Δ or a
+   tvar of Θr"; at `__hole` the target is a synthesised painting well-formed
+   at empty Δ, so all three disjuncts land in `dom Θr`, and a Δ-bound ∀
+   witness (fresh for Θr) is excluded.
+3. **The two flexible rows are sound because A DEFINITION IS A MONOTYPE**,
+   hence uniquely coloured (`btyp_to_bskl_mono_syn`) — that is what forces the
+   recursive answer to be exactly the synthesised painting
+   `ad_refine_syn__flex_l` / `__flex_r` demand.
+
+**The kit** (`prop_soundness_pat.v` §4a–§4f): coercion identities incl.
+`btyp_to_bskl_mono_syn`; `a_wf_pskl_delta_to_ctx` (Δ→Θ for skeleton wf, the
+safe direction); ⭐ `ad_refine_syn_rename_delta` (renaming a Δ-member —
+supplies `__all`'s cofinite family from its one fresh witness); ⭐
+`ad_pat_consis_subject_ftv`; ⭐ `ad_refine_syn_rename_tvar` in MID-CONTEXT
+form, with `a_wf_pskl_rename_tvar` and the `a_tvar_block` predicate (the
+`__tophole_fill` row stacks binders on Θ, so the renamed slot is not at the
+head) — supplies `__tophole_fill`'s family; then `transport_hole_answer`,
+`ad_refine_syn_target_transport` and the lemma itself.
+
+⚙ **Build the `≡ᵗ` reading from this transport, do not rebuild it**:
+thm:sound-type-inference's `Freeze` case invokes exactly the same fact ("which
+further gives `Θ2 ⊢ B ≡ A`").
+
+⚙ **New traps** (HANDOFF §7.4): under `Set Implicit Arguments` a lemma's later
+universals can go implicit while one of them stays explicit — inside a nested
+induction, use `@`-application with `_` for the inferable prefix.  For an
+inner `induction Href`, `revert` everything mentioning the refinement's
+context/Δ first, `remember` the target, `revert` its equation, and give an
+explicit `as [...]` pattern; state any auxiliary fact AFTER the `remember`, or
+it picks up the abstracted target and becomes a premise of every inner IH.
+A `- bullet is not finished` with nothing focused means an `auto` failed to
+apply a ∀-quantified IH whose first premise is a context EQUATION.
+
+## 2026-08-06 — ⭐ **SECTION D: the open lemma's kit starts landing, and its design is CORRECTED** — the ∀ rows force the two contexts apart
 
 Three more lemmas Qed and axiom-free in `algo/prop_soundness_pat.v`
 (§4a–§4c); `make coq` clean; `a_pat_sound` unchanged, still exactly one

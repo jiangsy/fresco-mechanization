@@ -17,6 +17,11 @@ point to the same content.
   - Consistency: both directions (`a_consis_sound` / `a_unify_sound` /
     `a_assign_sound`; `a_consis_complete_thm` / `complete_mu`).
   - Subtyping SOUNDNESS: `a_sub_sound_thm`.
+  - ⭐⭐⭐ Skeleton-inference SOUNDNESS (section D, thm:sound-skeleton-
+    inference): `a_pat_sound` — Qed, axiom-free, `Check`ed in `README.v`.
+    Its last piece supplies a lemma the paper asserts inline and never
+    states ("preservation of refinement under type equivalence",
+    `a_consis_chk_annot_refine`); see `docs/HANDOFF-section-d.md` §7.
   - ⭐⭐⭐ Subtyping COMPLETENESS: `a_sub_complete_bundle_holds` and
     `a_sub_complete_thm` (thm:complete-subtyping), with **no residual
     hypothesis** — both are `Check`ed and audited in `README.v`.  P5, all

@@ -28,7 +28,7 @@ recently P6-Sv at the end of this file)}.
 > Several judgments looked broken until that condition was restored.  **Check
 > that file before concluding a lemma is unprovable.**
 
-## MISSING LEMMA (2026-08-06) — `thm:sound-skeleton-inference`, AbsAnno: "preservation of refinement under type equivalence" is asserted inline and never stated
+## MISSING LEMMA — ✅ SUPPLIED BY THE MECH (2026-08-06) — `thm:sound-skeleton-inference`, AbsAnno: "preservation of refinement under type equivalence" is asserted inline and never stated
 
 In the AbsAnno case of `thm:sound-skeleton-inference` the proof runs
 `thm:sound-consistency` on the annotation check `\aconsis{\Theta_1}{A}{P}{\Theta_2}`,
@@ -45,19 +45,31 @@ SYNTHESISED painting on the right).  The same step is used again, in the
 `≡`-only direction, by `thm:sound-type-inference`'s Freeze case ("which
 further gives `Θ2 ⊢ B ≡ A`").
 
-**Status in the mech.** Isolated as `a_consis_chk_annot_refine`
-(`frost/algo/prop_soundness_pat.v` §4) — the ONLY axiom
-`Print Assumptions a_pat_sound` reports.  Everything else in
-`thm:sound-skeleton-inference` is Qed, including the whole AbsAnno row at the
-`□` split shape, where the answer is the all-synthesised painting of the
-annotation and no transport is needed.  A concrete proof route (a target
-transport on the declarative layer, by a nested induction on the consistency
-and the refinement, with two small new lemmas) is recorded in
-`docs/HANDOFF-section-d.md` §7.3.
+**Status in the mech: SUPPLIED AND PROVED** (2026-08-06).
+`a_consis_chk_annot_refine` (`frost/algo/prop_soundness_pat.v` §4) is Qed and
+axiom-free, so `thm:sound-skeleton-inference` (`a_pat_sound`) is now *Closed
+under the global context*.  What the proof needed, and what the authors would
+have to write down:
 
-**What the authors should do**: state it as a lemma, in whichever of the two
-forms is primary — the refinement-target form or the `≡ᵗ` form — and prove the
-other from it.
+- it is a **target transport** on the DECLARATIVE layer — going back through
+  the algorithmic consistency re-does consistency soundness, because that
+  judgement binds a ∀'s witness in Θ while refinement binds it in Δ;
+- ⭐ the transport's statement must **decouple the consistency's context from
+  the refinement's**.  With one shared context the ∀ row cannot be closed in
+  either direction: moving the constructed output back (Θ → Δ) is unsound,
+  since the `□` rule's fill is Δ-free *by rule* while the transport's fills
+  are paintings of the sub-annotations, which do mention the witness;
+- ⭐ the `□` row additionally needs an **occurrence lemma** — a free variable
+  of a type-painting subject either survives into the consistency's target or
+  escapes through a definition — which is what shows the annotation is
+  Δ-free there;
+- ⭐ the two flexible rows are sound only because **a definition is a
+  monotype**, hence uniquely coloured.
+
+**What the authors should do**: state the lemma, in whichever of the two
+forms is primary — the refinement-target form or the `≡ᵗ` form — and prove
+the other from it.  The `≡ᵗ` form is the one `thm:sound-type-inference`'s
+Freeze case invokes ("which further gives `Θ2 ⊢ B ≡ A`").
 
 ## ⭐⭐ RETRACTION (2026-08-05) — the `SolE-FlexR` repair NEUTRALISES two of OUR OWN counterexamples, and the whole P6 cluster now goes through
 

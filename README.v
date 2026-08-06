@@ -28,6 +28,7 @@ Require Import src.frost.algo.completeness_look.prop_sub_var.
 Require Import src.frost.algo.completeness_look.prop_sub_cstr.
 Require Import src.frost.algo.completeness_look.prop_extract.
 Require Import src.frost.algo.prop_completeness_sub.
+Require Import src.frost.algo.prop_soundness_pat.
 
 (* ===================================================================== *)
 (*  full-decl-proofs.tex / app:syntax-directed                            *)
@@ -155,6 +156,21 @@ Check a_extract_complete.
 Check a_sub_complete_bundle_holds.
 Check a_sub_complete_thm.
 
+(* ⭐⭐⭐ Theorem [Soundness of skeleton inference] (thm:sound-skeleton-
+   inference, proofs.tex) — an [a_pat] run is an information increase whose
+   output context carries the DECLARATIVE skeleton inference at a colouring
+   of the output, refining the inherited painting of the input skeleton.
+   Premises beyond the paper's are the EXTERNAL side conditions of
+   docs/WF-SIDE-CONDITIONS.md: well-formedness of the term ([a_wf_exp], the
+   problem definition's "M is well-formed in Θ0") and the paper's implicit
+   [Θ ⊢ ctx] at skeleton term entries, which [a_wf_aenv__var] under-
+   approximates by storing only the entry's SCOPE.
+   ⭐ [a_consis_chk_annot_refine] supplies the paper's inline "preservation
+   of refinement under type equivalence" (AbsAnno), which the paper asserts
+   and never states — see docs/PAPER-GAPS.md. *)
+Check a_pat_sound.
+Check a_consis_chk_annot_refine.
+
 (* ===================================================================== *)
 (*  Assumption audit — all must be "Closed under the global context"      *)
 (* ===================================================================== *)
@@ -185,5 +201,7 @@ Print Assumptions a_looksub_solve_complete.
 Print Assumptions a_extract_complete.
 Print Assumptions a_sub_complete_bundle_holds.
 Print Assumptions a_sub_complete_thm.
+Print Assumptions a_pat_sound.
+Print Assumptions a_consis_chk_annot_refine.
 Print Assumptions a_extract_complete_gen.
 Print Assumptions a_extract_complete.
