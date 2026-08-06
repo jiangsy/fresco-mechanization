@@ -221,10 +221,25 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   `consis_mono_sym` supplies the direction change instead.
   ⚠️ Carries a FRESHNESS side condition: `a_split__flex` invents two
   flexibles and the mech's rule records no freshness for them.
-- ⛔ **LEFT**: `AT-App`'s typing-under-`≡ᵗ` transport at TC — which bottoms
-  out in an `ad_pat_consis` TARGET transport along `≡ᵗ`, the mirror of
-  `skl_tyequiv_consis_transport`'s SUBJECT one — and then the eleven-row
-  induction itself.
+- ✅ **`AT-App`'s `≡ᵗ` step — resolved by ADDING THE PREMISE.**
+  ⭐ [paper-gap] It was a MISSING APPENDIX PREMISE, not a missing lemma.
+  The appendix adds an explicit `≡ᵗ` premise to exactly three
+  syntax-directed rules "because in an algorithmic context a flexible may
+  stand for either type", then says "we only need to extend freezing and
+  annotated lambda rules" — but its own AT-App case needs a fourth, since
+  `sd-App` reuses the function's domain BY EQUALITY as the argument's
+  checked type.  `ad_sd_typing__app` now carries
+  `Θ ⊢ (btyp_to_ptyp B1) ≡ᵗ A2` beside `Θ ⊢ˢᵃ[TC] e2 ⦂ inh{A2}`.
+  ⚙ Ripple: four construction sites, each discharged by the `a_tyequiv`
+  transport already sitting beside the one it accompanies.
+  ⛔ The alternative (keep the rule, prove the transport) costs an
+  `ad_pat_consis` TARGET transport along `≡ᵗ` — both directions at once,
+  nested induction, the mirror of `skl_tyequiv_consis_transport`'s SUBJECT
+  one — PLUS a mode-indexed generalization over a NEW colour-preserving
+  `btyp` equivalence, because `sd-App`'s conclusion type is the function's
+  CODOMAIN.  ⚠️ Changing a rule is reserved for the WF-SIDE-CONDITIONS
+  pattern, so this is flagged for the authors' call.
+- ⛔ **LEFT**: the eleven-row induction itself.
 
 ## 2026-08-06 — ⭐ **SECTION D: suffix erasure BUILT for four of six judgements — by SOLVING, not by dropping**
 

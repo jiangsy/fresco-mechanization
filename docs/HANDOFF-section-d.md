@@ -9,19 +9,22 @@ Qed and axiom-free:
 | 1 | `ad_sd_typing_mod_comp_ty` | `prop_soundness_typing.v` §8 |
 | 2 | `lemma:suffix-erasure`, all six judgements | NEW `prop_suffix_erase.v` |
 | 3 | `lemma:split-refine`, COLOURED | `prop_soundness_typing.v` §11 |
-| 4a | `AT-App`'s typing-under-`≡ᵗ` transport | ⛔ **THE ONE LEFT** |
+| 4a | `AT-App`'s `≡ᵗ` step | ✅ resolved by ADDING THE PREMISE |
 | 4b | `AT-Abs`'s `guess^TY` refinement | `prop_soundness_typing.v` §9 |
-| 5 | the eleven-row induction | ⛔ not started |
+| 5 | the eleven-row induction | ⛔ **THE ONE LEFT** |
 
-⛔ **What 4a needs**: an `ad_pat_consis` **TARGET** transport along `≡ᵗ`,
-in BOTH directions at once (so `≡ᵗ`'s `sym` row closes) — the mirror of
-`skl_tyequiv_consis_transport` (prop_completeness_consis.v), which does
-exactly this for the SUBJECT along `≡ˢ`.  Its `arrow` and `all` rows need a
-NESTED induction on the consistency, because several rules can produce an
-arrow/∀ target (`__arrow`, `__flex_l`, `__tophole_drop`, `__tophole_inh`).
-Its `flex_def` row is the interesting one and is easy: one direction IS
-`__flex_r`, the other inverts the target and re-folds through `__flex_l` +
-`consis_mono_refl`.
+⭐ **4a was a MISSING APPENDIX PREMISE, not a missing lemma.**
+`ad_sd_typing__app` now carries `Θ ⊢ (btyp_to_ptyp B1) ≡ᵗ A2` beside
+`Θ ⊢ˢᵃ[TC] e2 ⦂ inh{A2}` — the appendix's own idiom, applied to the fourth
+rule that needs it (docs/PAPER-GAPS.md).  The mech's `AT-App` case will
+discharge it from `ad_refine_syn_inh_tyequiv` (§2), the same lemma `Freeze`
+uses.  ⚠️ This CHANGES A RULE; if the authors prefer `sd-App` unchanged,
+the repair to revert to is the `ad_pat_consis` TARGET transport along `≡ᵗ`
+(both directions at once, nested induction — the mirror of
+`skl_tyequiv_consis_transport`) PLUS a mode-indexed generalization over a
+new colour-preserving `btyp` equivalence, because `sd-App`'s conclusion
+type is the function's CODOMAIN.
+
 
 **Status 2026-08-06 (fifth pass).** The definitional layer is DONE
 (`dd1f176`), suffix MOVING is closed (`prop_ctx_mono.v`), and ⭐⭐⭐

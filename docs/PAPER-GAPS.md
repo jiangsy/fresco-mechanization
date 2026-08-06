@@ -98,7 +98,10 @@ GAP because the mechanization has not yet reached these rows — the
 statements are believed true, and the first one's hard half is already
 proved.
 
-1. **`\tilab{App}`** — "Thus by ⑧ and ⑬, we have `\typc{\Theta_3}{N}{\inh{A}}`".
+1. ✅ **RESOLVED (2026-08-06) BY ADDING THE PREMISE** — see the note at the
+   end of this item.
+
+   **`\tilab{App}`** — "Thus by ⑧ and ⑬, we have `\typc{\Theta_3}{N}{\inh{A}}`".
    The induction hypothesis checks the argument at `inh{A'}` and the rule
    wants it at `inh{A}`; the bridge is `Θ3 ⊢ A ≡ A'`.  That is a
    **transport of the typing judgement along type equivalence at TC**, which
@@ -108,16 +111,32 @@ proved.
    paintings IS a type equivalence — which was built for `Freeze` and turns
    out to be needed here too.
 
-   ⭐ **Note for the authors: this may be a MISSING APPENDIX PREMISE rather
-   than a missing lemma.**  The appendix already adds an explicit
-   `Θ ⊢ _ ≡ _` premise to exactly three syntax-directed rules
-   (`sd-Freeze`, `sd-AbsAnnoCheck`, `sd-AbsAnno`) for precisely this
-   reason — the algorithm's flexibles make the two types equivalent, not
-   equal.  `sd-App`'s argument premise has the same problem and no such
-   premise; adding a fourth one there would discharge this step by rule
-   instead of by an unstated transport.  The mech has not yet chosen
-   between the two (adding the premise changes a rule, which the tree's
-   ground rules do not permit mid-campaign).
+   ⭐ **It is a MISSING APPENDIX PREMISE, not a missing lemma.**  The
+   appendix already adds an explicit `Θ ⊢ _ ≡ _` premise to exactly three
+   syntax-directed rules (`sd-Freeze`, `sd-AbsAnnoCheck`, `sd-AbsAnno`) for
+   precisely this reason — in an algorithmic context a flexible may stand
+   for either type, so the two are equivalent, not equal — and then says
+   "we only need to extend freezing and annotated lambda rules".  `sd-App`
+   is the fourth rule that needs it: its argument premise reuses the
+   function's domain by equality.
+
+   **What the mech did (2026-08-06)**: added the premise.
+   `ad_sd_typing__app` now carries
+   `Θ ⊢ (btyp_to_ptyp B1) ≡ᵗ A2` beside `Θ ⊢ˢᵃ[TC] N ⦂ inh{A2}`.  Four
+   construction sites needed the accompanying `a_tyequiv` transport, each
+   of which already existed.
+
+   ⛔ **The alternative, and its cost.**  Keeping `sd-App` unchanged makes
+   the step a TYPING-under-`≡ᵗ` transport at TC, which bottoms out in an
+   `ad_pat_consis` **TARGET** transport along `≡ᵗ` — both directions at
+   once (so `≡ᵗ`'s `sym` row closes), by a nested induction, the mirror of
+   `skl_tyequiv_consis_transport`'s SUBJECT one — and, because `sd-App`'s
+   own conclusion type is the function's CODOMAIN, a mode-indexed
+   generalization over a new colour-preserving `btyp` equivalence.  Several
+   hundred lines and a new relation, to recover a premise the appendix adds
+   to three sibling rules already.  ⛔ There is no third way: `B1` is
+   existentially chosen by the rule, but every way of re-choosing it needs
+   the same transport in the function's DOMAIN instead.
 2. **`\tilab{Abs}`** — "By ⑯ and definition of `\guessMono{P}`, we have
    `Θ1,ᾱ ⊢ inh{P} ⊳ inh{A}`".  A refinement property of `guess^TY` used as
    if definitional; the mech had no such lemma (prop_flex.v carries only its
