@@ -34,6 +34,8 @@ Require Import src.frost.ltac_utils.
 Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
+Require Import src.frost.decl.prop_basic.
+Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.decorated_algo.def_decl_algo.
@@ -560,3 +562,223 @@ Qed.
 Corollary btyp_check_colouring : forall B A,
   is_ityp B -> btyp_to_ptyp B = A -> B = ptyp_to_btyp_inh A.
 Proof. intros B A Hi Heq. subst A. apply btyp_inh_painting_inv; exact Hi. Qed.
+
+(* ===================================================================== *)
+(*  §8  [ad_sd_typing] respects the colour/mode discipline [skmod{TY}]     *)
+(* ===================================================================== *)
+
+(** The [ad_pat_mod_comp_sk] mirror one layer up (prop_soundness_pat.v §5),
+    and the algorithmic-context reading of [d_typing_skmod]
+    (decl/prop_wellformed.v).  Where the SK layer could read
+    [mod_comp_sk] straight off its subtyping premise — the premise's target
+    IS a [bskl] — the TY layer's [mod_comp_ty] is stated on a [btyp] while
+    the premise's target is that [btyp]'s SKELETON, so the two shapes have
+    to be bridged, and the bridge at CHECK mode needs local closure. *)
+
+(* --- §8a  local closure of a consistency's target -------------------- *)
+
+(** Every row builds its target from locally-closed pieces; the only row
+    that is not immediate is [__hole], whose fill carries the skeleton
+    well-formedness that supplies it. *)
+Lemma ad_pat_consis_lc_r : forall Ψ Θ R Q,
+  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q -> lc_bskl Q.
+Proof.
+  intros Ψ Θ R Q H; induction H.
+  - (* unit *) apply lc_bskl_unit.
+  - (* var *) apply lc_bskl_var_f.
+  - (* arrow *) apply lc_bskl_arrow; assumption.
+  - (* forall_inh_tagged *)
+    destruct (atom_fresh L) as [α Hα].
+    apply lc_bskl_all_inh_exists with (α1 := α); auto.
+  - (* forall_inh_untagged *)
+    destruct (atom_fresh L) as [α Hα].
+    apply lc_bskl_all_inh_exists with (α1 := α); auto.
+  - (* forall_syn_tagged *)
+    destruct (atom_fresh L) as [α Hα].
+    apply lc_bskl_all_syn_exists with (α1 := α); auto.
+  - (* forall_syn *)
+    destruct (atom_fresh L) as [α Hα].
+    apply lc_bskl_all_syn_exists with (α1 := α); auto.
+  - (* ghostg *) apply lc_bskl_hole.
+  - (* topholeg *) apply lc_bskl_tophole; assumption.
+  - (* hole : the fill's well-formedness is the local closure *)
+    apply lc_pskl_to_bskl_inh. eapply a_wf_pskl_lc; eassumption.
+  - (* tophole *) apply lc_bskl_tophole; assumption.
+  - (* tophole_inh *)
+    destruct (atom_fresh L) as [α Hα].
+    apply lc_bskl_all_inh_exists with (α1 := α); auto.
+  - (* tophole_drop *) assumption.
+  - (* flex_l *) assumption.
+  - (* flex_r *) apply lc_bskl_var_f.
+Qed.
+
+(* --- §8b  the two [btyp] / [bskl] shape bridges ---------------------- *)
+
+(** Erasing to the skeleton reflects local closure. *)
+Lemma degree_btyp_of_degree_bskl_erase : forall B k,
+  degree_bskl_wrt_bskl k (btyp_to_bskl B) -> degree_btyp_wrt_btyp k B.
+Proof.
+  induction B; intros k H; simpl in H; inversion H; subst; constructor; auto.
+Qed.
+
+Lemma lc_btyp_of_lc_bskl_erase : forall B,
+  lc_bskl (btyp_to_bskl B) -> lc_btyp B.
+Proof.
+  intros B H. apply lc_btyp_of_degree.
+  apply degree_btyp_of_degree_bskl_erase.
+  apply degree_bskl_wrt_bskl_of_lc_bskl; exact H.
+Qed.
+
+(** ⭐ Bridge 1 (INFER mode): a [btyp] whose skeleton is SYNTHESISED is
+    itself all-synthesised.  No local closure needed — [is_sskl] carries
+    it, and its [hole] / [tophole] rows are unreachable because a [btyp]
+    has no ghost. *)
+Lemma is_styp_of_is_sskl_erase : forall Q,
+  is_sskl Q -> forall B0, Q = btyp_to_bskl B0 -> is_styp B0.
+Proof.
+  (* [B0], not [B]: [is_sskl__arrow]'s own binders are [A] and [B]. *)
+  intros Q H; induction H; intros B0 Heq;
+    destruct B0; simpl in Heq; try discriminate.
+  - (* unit *) apply is_styp__unit.
+  - (* var *) inversion Heq; subst. apply is_styp__var.
+  - (* arrow *)
+    inversion Heq; subst.
+    apply is_styp__arrow; [ apply IHis_sskl1 | apply IHis_sskl2 ]; reflexivity.
+  - (* all *)
+    inversion Heq; subst.
+    apply is_styp__all with (L := L). intros α Hα.
+    apply (H0 α Hα). rewrite btyp_to_bskl_open. reflexivity.
+Qed.
+
+(** ⭐ Bridge 2 (CHECK mode): a [btyp] whose skeleton is an INHERITED
+    painting is itself all-inherited.  ⚠️ Unlike bridge 1 this one DOES
+    need local closure — [btyp_to_bskl (btyp_var_b n)] and
+    [pskl_to_bskl_inh (pskl_var_b n)] agree, and a bound variable is not
+    [is_ityp]. *)
+Lemma is_ityp_of_erase_inh : forall B,
+  lc_btyp B -> forall P, btyp_to_bskl B = pskl_to_bskl_inh P -> is_ityp B.
+Proof.
+  intros B H; induction H; intros P Heq;
+    destruct P; simpl in Heq; try discriminate.
+  - (* unit *) apply is_ityp__unit.
+  - (* var *) apply is_ityp__var.
+  - (* arrow *)
+    inversion Heq. apply is_ityp__arrow;
+      [ eapply IHlc_btyp1 | eapply IHlc_btyp2 ]; eassumption.
+  - (* all_inh : the only [pskl_to_bskl_inh] row that yields a quantifier *)
+    inversion Heq.
+    apply is_ityp__all with (L := empty). intros α _.
+    apply (H0 α (open_pskl_wrt_pskl P (pskl_var_f α))).
+    rewrite btyp_to_bskl_open, pskl_to_bskl_inh_open. simpl.
+    rewrite H2. reflexivity.
+Qed.
+
+(* --- §8c  the SK-sorted [ad_pat_sub_mod_comp_sk]'s TY analogue -------- *)
+
+Lemma mod_comp_ty_fn_inv : forall B1 B2 m,
+  mod_comp_ty (btyp_arrow B1 B2) (mode_fn m) -> mod_comp_ty B2 m.
+Proof. intros * H; inversion H; subst; assumption. Qed.
+
+Lemma mod_comp_ty_tc_inv : forall B, mod_comp_ty B mode_tc -> is_ityp B.
+Proof. intros * H; inversion H; subst; assumption. Qed.
+
+(** The TY-sorted all-in-one subtyping run's target is mode-compatible —
+    the paper's (commented-out) "refinement preserves correspondence" for
+    TYPES.  [Infer] and [Check] are the two leaves; [Check]'s local
+    closure comes off its own consistency premise (§8a). *)
+Lemma ad_pat_sub_mod_comp_ty : forall M Ψ Θ R Q,
+  Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_ty | M ] R ⩽ Q ->
+  forall Bt, Q = btyp_to_bskl Bt -> mod_comp_ty Bt M.
+Proof.
+  (* [Bt] for the colouring the target erases from — [B] is [Check]'s and
+     [ForallR]'s own binder. *)
+  intros M Ψ Θ R Q H.
+  remember a_sub_mode_ty as NM eqn:HNM.
+  induction H; subst; try discriminate; intros Bt HeqB.
+  - (* infer *)
+    apply mod_comp_ty__ti. eapply is_styp_of_is_sskl_erase; eassumption.
+  - (* check *)
+    apply mod_comp_ty__tc.
+    eapply is_ityp_of_erase_inh; [ | symmetry; exact HeqB ].
+    apply lc_btyp_of_lc_bskl_erase. rewrite <- HeqB.
+    eapply ad_pat_consis_lc_r; eassumption.
+  - (* forall_r *)
+    destruct Bt as [ | n | α | B1 B2 | B0 | B0 ]; simpl in HeqB;
+      try discriminate.
+    inversion HeqB; subst.
+    apply mod_comp_ty__tc. apply is_ityp__all with (L := L). intros α Hα.
+    apply mod_comp_ty_tc_inv.
+    apply (H0 α Hα eq_refl (open_btyp_wrt_btyp B0 (btyp_var_f α))).
+    rewrite btyp_to_bskl_open. reflexivity.
+  - (* arrow *)
+    destruct Bt as [ | n | α | B1 B2 | B0 | B0 ]; simpl in HeqB;
+      try discriminate.
+    inversion HeqB; subst.
+    apply mod_comp_ty__fn. apply (IHad_pat_sub eq_refl B2). reflexivity.
+  - (* forall_l_tagged *) apply (IHad_pat_sub eq_refl Bt); exact HeqB.
+  - (* forall_l_untagged *) apply (IHad_pat_sub eq_refl Bt); exact HeqB.
+  - (* flex_mono *) apply (IHad_pat_sub eq_refl Bt); exact HeqB.
+Qed.
+
+(* --- §8d  local closure off an equivalence --------------------------- *)
+
+(** [≡ᵗ]'s [flex_def] row hands back a flexible's DEFINITION, whose local
+    closure is only available from the context — hence the [a_wf_aenv]
+    hypothesis, exactly as [d_typing_skmod] carries [d_wf_denv]. *)
+Lemma a_tyequiv_lc : forall Θ A A',
+  Θ ⊢ A ≡ᵗ A' -> a_wf_aenv Θ -> lc_ptyp A /\ lc_ptyp A'.
+Proof.
+  intros Θ A A' H; induction H; intros Hwf.
+  - (* refl *) split; assumption.
+  - (* sym *) destruct (IHa_tyequiv Hwf); split; assumption.
+  - (* trans *)
+    destruct (IHa_tyequiv1 Hwf); destruct (IHa_tyequiv2 Hwf);
+      split; assumption.
+  - (* flex_def : a definition is a MONOTYPE *)
+    split; [ apply lc_ptyp_var_f | ].
+    apply mono_ptyp_lc. eapply a_wf_aenv_binds_def_mono; eassumption.
+  - (* arrow *)
+    destruct (IHa_tyequiv1 Hwf); destruct (IHa_tyequiv2 Hwf).
+    split; apply lc_ptyp_arrow; assumption.
+  - (* all *)
+    destruct (atom_fresh L) as [α Hα].
+    destruct (H0 α Hα Hwf) as [Hl Hr].
+    split; eapply lc_ptyp_all_exists; eassumption.
+Qed.
+
+Corollary a_tyequiv_lc_r : forall Θ A A',
+  Θ ⊢ A ≡ᵗ A' -> a_wf_aenv Θ -> lc_ptyp A'.
+Proof. intros * H Hwf. apply (proj2 (a_tyequiv_lc H Hwf)). Qed.
+
+(* --- §8e  the theorem of this section --------------------------------- *)
+
+(** ⭐ The [ad_pat_mod_comp_sk] mirror: a type-inference colouring is
+    mode-compatible.  The two Abs rows carry it outright, the three base
+    rows read it off their subtyping premise (§8c), the two check-Abs
+    pairs rebuild it from [is_ityp], [Freeze] and [AbsAnnoCheck] take
+    their local closure off the appendix's [≡ᵗ] premise (§8d), and [App]
+    inverts its function premise's. *)
+Lemma ad_sd_typing_mod_comp_ty : forall M Θ e B,
+  Θ ⊢ˢᵃ[ M ] e ⦂ B -> a_wf_aenv Θ -> mod_comp_ty B M.
+Proof.
+  intros M Θ e B H; induction H; intros Hwf.
+  - (* unit *) eapply ad_pat_sub_mod_comp_ty; [ eassumption | reflexivity ].
+  - (* var *) eapply ad_pat_sub_mod_comp_ty; [ eassumption | reflexivity ].
+  - (* anno *) eapply ad_pat_sub_mod_comp_ty; [ eassumption | reflexivity ].
+  - (* freeze *)
+    apply mod_comp_ty__tc. apply is_ityp_paint.
+    eapply a_tyequiv_lc_r; eassumption.
+  - (* abs_check_step *) apply mod_comp_ty__tc; assumption.
+  - (* abs_check_base *)
+    apply mod_comp_ty__tc. apply is_ityp__arrow;
+      [ apply is_ityp_paint; eapply a_wf_ptyp_lc; eassumption | assumption ].
+  - (* abs_anno_check_step *) apply mod_comp_ty__tc; assumption.
+  - (* abs_anno_check_base *)
+    apply mod_comp_ty__tc. apply is_ityp__arrow;
+      [ apply is_ityp_paint; eapply a_tyequiv_lc_r; eassumption
+      | assumption ].
+  - (* abs *) assumption.
+  - (* abs_anno *) assumption.
+  - (* app *)
+    eapply mod_comp_ty_fn_inv. apply IHad_sd_typing1; exact Hwf.
+Qed.
