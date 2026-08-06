@@ -1,11 +1,35 @@
 # HANDOFF — section D (`proofs.tex`): soundness and completeness of skeleton and type inference
 
-**Status 2026-08-06.** The definitional layer is DONE and green (`dd1f176`):
-`frost/decorated_algo/def_decl_algo_typing.v` defines `ad_pat` (skeleton
-inference over Θ) and `ad_sd_typing` (syntax-directed typing over Θ), which is
-what `PROGRESS.md`'s map had flagged as the one missing definitional piece.
-Everything below is what remains: six support lemmas (one already proved) and
-four theorems.
+**Status 2026-08-06 (second pass).** The definitional layer is DONE (`dd1f176`),
+suffix MOVING is closed (`prop_ctx_mono.v`), and the ENTIRE support kit for
+thm:sound-skeleton-inference is now Qed and axiom-free — see §7 below for what
+landed and what the theorem assembly still needs.  Headlines discovered while
+building it:
+
+- ⭐ **Theorem 1 needs NEITHER lemma:split-refine NOR refinement
+  transitivity** (`a_split_sk_shape`, prop_soundness_pat.v §3b): under the
+  judgement's own `skmod{SK}` side condition the split can only be the ARROW
+  or HOLE row — `a_sk_mode_compat` has no rule for a flexible input, so the
+  flex row (§2's hard case) is reachable only from TYPE inference.  At the
+  arrow shape the composed refinement is one `__arrow` of a reflexivity and
+  the IH; at the hole shape one `__hole` over the IH's syn-painting inversion
+  (`ad_refine_syn_syn_l` at `P := pskl_hole` + `ad_refine_syn_hole_l_target_wf`).
+- ⭐ **The paper's "stability" is not free, and the repair is the
+  TM-VERBATIM invariant**: `⊴` preserves a term entry only up to `≡ᵗ`
+  (`a_inc__var`), so `ad_pat` does not transport along `⊴` alone.  What the
+  paper leaves implicit is that the algorithm NEVER rewrites a term entry;
+  both directions are now proved for the whole cluster (forward
+  `*_tm_le` in prop_stability.v; reverse `*_tm_ge` in prop_soundness_pat.v),
+  and `ad_pat_isub_tm` = stability under `⊴` + tm-verbatim.
+- ⚠️ **`a_wf_aenv` under-approximates the paper's `Θ ⊢ ctx` at skeleton
+  term entries** (`a_wf_aenv__var` stores only `a_scope_pskl`, the paper's
+  figure requires `Θ ⊢ P`).  The `AP-Var(skl)` case must feed the entry to
+  `a_sub_sound_thm`, which demands the DISCIPLINED `⊢ₚₛᵃ` — so the theorem
+  carries the paper's implicit condition as a hypothesis
+  (`forall x P, binds x (abind_var_skl P) Θ0 -> Θ0 ⨟ ∅ ⊢ₚₛᵃ P`), sustained
+  through the induction by tm_le/tm_ge + `a_wf_pskl_isub`.
+  WF-SIDE-CONDITIONS.md pattern; do NOT change the `a_wf_aenv` rule
+  mid-campaign.
 
 ⚠️ **The paper marks three of these lemmas "straightforward induction".  In the
 mechanization they are not**, for reasons recorded per-lemma below.  Read those
@@ -70,7 +94,7 @@ reusable for the two soundness theorems.
 
 ---
 
-## 2. `lemma:split-refine` — NOT a straightforward induction
+## 2. `lemma:split-refine` — NOT a straightforward induction (⚠ now TYPE-inference-only: theorem 1 does not use it, see §7)
 
     Lemma a_split_refines : forall Θ0 P0 P Q Θ1,
       Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 ->
@@ -213,3 +237,91 @@ is already proved (it is the last conjunct of `a_consis_sound` and
 `a_consistag_sound_aux`), the only real cost being that `_gv` is fuel-indexed
 so soundness must produce an `exists n` (`ad_pat_sub_to_n` is the precedent).
 Do that between 2 and 3.
+
+---
+
+## 7. thm:sound-skeleton-inference — the KIT IS DONE, assembly remains (2026-08-06, second pass)
+
+Everything below is Qed and axiom-free in `frost/algo/prop_soundness_pat.v`
+(plus the reworked `decorated_algo/prop_ctx_mono.v` and
+`algo/prop_stability.v`); `make coq` clean.
+
+**What is banked, by section of the file:**
+
+- §1 `a_wf_exp` — the problem definition's "M is well-formed in Θ0"
+  (annotations wf; term-variable occurrences need nothing — the run's own
+  `binds` premises supply them), with `_mono` (term-blind) and `_isub`
+  transports.
+- §2 `ad_pat_isub_tm` — stability of `ad_pat` under `⊴` PLUS the tm-verbatim
+  relation (`aenv_tm_le`, prop_stability.v).  Enablers: `a_isub_cons_var_typ`
+  / `a_isub_cons_var_skl` (the `≡`-premise of `a_inc__var` is reflexivity at
+  an identity κ).
+- §3a reverse tm-verbatim (`a_assign_unify_consis_tm_ge`,
+  `a_sub_sub_flex_tm_ge`, `a_sub_tm_ge`, `a_split_tm_ge`): a run's output has
+  NO NEW term entries (suffixes are `a_decls`/`a_suffix`, flexible-only).
+  Forward (`*_tm_le`, incl. `a_pat_tm_le` / `a_typing_tm_le`) is in
+  prop_stability.v.
+- §3b `pskl_to_uskl_via_bskl_syn` (the Var/Anno subject coercion),
+  `a_split_sk_shape` (⭐ split is arrow-or-hole under `skmod{SK}` — kills
+  split-refine AND transitivity for this theorem), `a_sk_mode_compat_*_inv`.
+- §3c `ad_pat_sub_mod_comp_sk` — an SK-sorted subtyping target satisfies
+  `skmod{SK}` (feeds the `mod_comp_sk` premises of `ad_pat__abs`/`__abs_anno`;
+  derive the body's from its `ad_pat` via the same lemma at the embedded
+  premise, or prove `ad_pat_mod_comp_sk` as a corollary).
+- §3d `ad_pat_subst_tm` / `ad_pat_rename_tm` — term-variable renaming, the
+  exists-fresh → cofinite bridge the Abs cases need (ONE fresh witness
+  generates the family; context-surgery form, no weaken-then-strengthen).
+
+**What the assembly still needs (in order):**
+
+1. `a_pat_tm_ge` — reverse tm-verbatim for `a_pat` itself (mirror of
+   `a_pat_tm_le`; at the Abs rows pick the binder fresh from the looked-up
+   name, same trick as the forward proof).  Needed to sustain the skl-entry-wf
+   hypothesis through sequential premises.
+2. `a_wf_aenv_strip_tm_mid` (drop a term entry mid-context; payloads cannot
+   mention term KEYS type-wise, transport by `a_wf_ptyp_mono` /
+   a NEW `a_scope_pskl_mono` over `aenv_tbinds_le`) — for the conclusion's
+   `a_wf_aenv (Ξ ++ Θ2)` at the Abs rows.
+3. The `⊴`-peel at the Abs rows: from
+   `((x~b) ++ Θ1) ⊴ (Ξ ++ (x~b) ++ Θ2)` conclude `Θ1 ⊴ (Ξ ++ Θ2)`.
+   Route: `a_inc_var_skl_inv` / `a_inc_var_inv` (prop_inc.v:260) + a
+   uniq-mid list-surgery lemma (uniq from the body IH's `a_wf_aenv`), then
+   re-attach the suffix with `a_isub_weaken_suffix` + `a_isub_trans`; the
+   defs-component strips the term entry by name (`x ∉ dom Θ1`).
+4. The statement (add BOTH hypotheses):
+
+       Theorem a_pat_sound : forall m Θ0 P0 e P Θ1,
+         Θ0 ⊢ₐ[ m ; P0 ] e ⇨ P ⊣ Θ1 ->
+         a_wf_aenv Θ0 ->
+         (forall x Ps, binds x (abind_var_skl Ps) Θ0 ->
+            Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->                  (* paper's Θ ⊢ ctx *)
+         Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+         a_sk_mode_compat m P0 ->
+         a_wf_exp Θ0 e ->
+         Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
+         exists Qt, bskl_to_pskl Qt = P /\
+           (Θ1 ⊢ᵃ[ m ] e ⇨ Qt) /\
+           (Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ Qt).
+
+   Per-case routes are scouted in this file's header comment and §3
+   comments; Var(typ) needs `a_wf_aenv_binds_var_typ_wf` (mirror
+   `a_wf_aenv_binds_def_wf`, prop_precise.v) + `a_wf_ptyp_to_wf_pskl`;
+   App's e2-premise wf comes from `ad_refine_syn_hole_l_target_wf`
+   (prop_completeness_sub_gen.v) on the IH's `□ ⊳ Qt` refinement, and its
+   output's syn-painting SHAPE from `ad_refine_syn_syn_l` at
+   `P := pskl_hole`.
+5. ⛔ THE ONE OPEN LEMMA — AbsAnno's refinement-target transport (the
+   paper's inline "preservation of refinement under type equivalence",
+   proofs.tex:1578, which exists nowhere as a lemma): from the consis run's
+   `Θ ⨟ ∅ ⊢ᵣᵃ (pskl_to_bskl_inh P0a) ⊳ Qt` (target = OUTPUT colouring) and
+   `∅ ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (ptyp_to_pskl A)) ∼ Qt` (subject-painting ∼
+   output), conclude refinement into the ANNOTATION's painting
+   `btyp_to_bskl B`, `btyp_to_ptyp B = A`.  Ingredients scouted: with a
+   ghost-free subject every `a_consis` output is ghost-free (check each row;
+   Ghost/UnivGhost rows are dead), so `Qt` is a TYPE colouring; then the
+   transport is consis-to-≡ᵗ at type level + a poly-level
+   `tyequiv_refine_syn` (only the MONO version exists,
+   prop_precise_recover.v:90).  This same consis-to-≡ᵗ fact is needed AGAIN
+   by thm:sound-type-inference's Freeze case (paper: "which further gives
+   Θ2 ⊢ B ≡ A") — build it once, for both.  At the HOLE split shape AbsAnno
+   needs none of this (the `__hole` route, as in Abs).

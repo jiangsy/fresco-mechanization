@@ -129,7 +129,53 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-06 (latest) — ⚙⚙ **HOUSEKEEPING: the pre-restart `.legacy` corpus deleted, `def_tags`+`predicates` folded into `def_extra`, `decorated_algo/` promoted, and two more renames retired into the SWAP kit**
+## 2026-08-06 (latest) — ⭐⭐ **SECTION D: the whole support kit for thm:sound-skeleton-inference is Qed** — tm-verbatim stability, term-var renaming, and the split-shape analysis that retires split-refine + transitivity for theorem 1
+
+`make coq` clean, no admits, all new lemmas Closed under the global context.
+Three files: `decorated_algo/prop_ctx_mono.v` (reworked),
+`algo/prop_stability.v` (extended), `algo/prop_soundness_pat.v` (NEW — §1–§3
+kit; the theorem assembly is next, per-case routes in
+`docs/HANDOFF-section-d.md` §7).
+
+1. ⭐ **`a_split_sk_shape`**: under `skmod{SK}` the split is the ARROW or HOLE
+   row only (no `skmod{SK}` rule for a flexible input), so
+   thm:sound-skeleton-inference needs NEITHER lemma:split-refine NOR
+   refinement transitivity — the composed refinement is one `__arrow` of a
+   reflexivity + IH, or one `__hole` over the IH's syn-painting inversion.
+   Both hard prerequisites the hand-off feared are TYPE-inference-only.
+2. ⭐ **The paper's "stability" (proofs.tex:19-26) is a real gap, and the
+   repair is the TM-VERBATIM invariant**: `⊴` preserves a term entry only up
+   to `≡ᵗ` (`a_inc__var`'s semantic-entries relaxation), so the typing
+   judgements do NOT transport along `⊴` alone.  The algorithm never rewrites
+   a term entry — now proved in BOTH directions across the whole cluster
+   (assign/unify/consis, sub/sub_flex, split, pat, typing): forward `*_tm_le`
+   (prop_stability.v), reverse `*_tm_ge` (prop_soundness_pat.v §3a; suffixes
+   are `a_decls`, so output term entries all come from the input).
+   `ad_pat_isub_tm` = stability under `⊴` + tm-verbatim, no ≡-slack needed.
+3. **The ctx-monotonicity kit is now TERM-BLIND where it can be**
+   (`aenv_tbinds_le`, prop_ctx_mono.v §1b): every judgement except
+   `ad_pat`/`ad_sd_typing` reads only type-level entries, so their `_mono`
+   lemmas take the weaker relation — and the paper's "refinement judgements
+   are stable under dropping term variables" is the `strip_tm` instance,
+   for free (§6 corollaries).
+4. **Term-variable renaming for `ad_pat`** (`ad_pat_subst_tm` /
+   `ad_pat_rename_tm`): the exists-fresh → cofinite bridge the Abs cases
+   need — context-surgery form (the renamed KEY moves, payloads cannot
+   mention term keys), all type-level premises by the term-blind kit.
+5. `a_wf_exp` (the problem definition's "M well-formed in Θ0" — annotations
+   only), `pskl_to_uskl_via_bskl_syn`, `a_sk_mode_compat` inversions,
+   `ad_pat_sub_mod_comp_sk` (SK-sorted subtyping targets satisfy
+   `skmod{SK}`).
+6. ⚠️ FOUND: `a_wf_aenv__var` stores only `a_scope_pskl` where the paper's
+   `Θ ⊢ ctx` requires `Θ ⊢ P` — the `AP-Var(skl)` soundness case needs the
+   disciplined wf, so the theorem carries it as a hypothesis
+   (WF-SIDE-CONDITIONS pattern; hand-off §7 has the exact statement).
+   ⛔ ONE open lemma identified for AbsAnno: refinement-target transport
+   along type-level consistency (the paper's inline "preservation of
+   refinement under type equivalence", proofs.tex:1578) — also needed by
+   theorem 2's Freeze case; build once for both.
+
+## 2026-08-06 — ⚙⚙ **HOUSEKEEPING: the pre-restart `.legacy` corpus deleted, `def_tags`+`predicates` folded into `def_extra`, `decorated_algo/` promoted, and two more renames retired into the SWAP kit**
 
 `make coq` clean; README.v still audits **28 × Closed under the global
 context**.  No statement of any paper-facing theorem changed — this is a

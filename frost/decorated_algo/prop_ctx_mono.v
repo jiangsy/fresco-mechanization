@@ -90,6 +90,61 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
+(*  §1b  The TYPE-LEVEL restriction of the relation                       *)
+(*                                                                        *)
+(*  The paper's soundness proofs say refinement judgements are stable     *)
+(*  under dropping term variables (proofs.tex, Abs cases).  Dropping an   *)
+(*  entry is NOT [binds]-monotone, but every judgement in §2–§4 except     *)
+(*  [ad_pat] / [ad_sd_typing] reads the context ONLY at type-level         *)
+(*  entries ([a_binds_tvar], a flexible's definition) — term entries are   *)
+(*  invisible to them.  So those lemmas take the weaker premise below,     *)
+(*  and "drop a term variable" ([aenv_tbinds_le_strip_tm]) is one          *)
+(*  instance of it, alongside everything [aenv_binds_le] already gave.     *)
+(* ===================================================================== *)
+
+(** Type-level entries: what [a_binds_tvar] and the FlexL/FlexR lookups
+    can see.  The two term forms are the invisible ones. *)
+Definition abind_is_ty (b : abind) : Prop :=
+  match b with
+  | abind_tvar | abind_flex_mono | abind_flex_mono_def _ => True
+  | abind_var_typ _ | abind_var_skl _ => False
+  end.
+
+(** [Θ'] sees every TYPE-LEVEL entry [Θ] sees. *)
+Definition aenv_tbinds_le (Θ Θ' : aenv) : Prop :=
+  forall α b, abind_is_ty b -> binds α b Θ -> binds α b Θ'.
+
+Lemma aenv_tbinds_le_of_binds_le : forall Θ Θ',
+  aenv_binds_le Θ Θ' -> aenv_tbinds_le Θ Θ'.
+Proof. intros Θ Θ' Hle α b _ H; auto. Qed.
+
+Lemma aenv_tbinds_le_cons : forall Θ Θ' x (b : abind),
+  aenv_tbinds_le Θ Θ' -> aenv_tbinds_le ((x ~ b) ++ Θ) ((x ~ b) ++ Θ').
+Proof.
+  intros Θ Θ' x b Hle y c Hc Hy.
+  apply binds_app_1 in Hy as [Hy | Hy]; [ apply binds_app_2 | ]; auto.
+Qed.
+
+(** ⭐ Dropping a TERM entry loses no type-level lookup. *)
+Lemma aenv_tbinds_le_strip_tm : forall Θ1 x (b : abind) Θ2,
+  ~ abind_is_ty b ->
+  aenv_tbinds_le (Θ1 ++ (x ~ b) ++ Θ2) (Θ1 ++ Θ2).
+Proof.
+  intros Θ1 x b Θ2 Htm y c Hc Hy.
+  apply binds_app_1 in Hy as [Hy | Hy]; [ apply binds_app_2; exact Hy | ].
+  apply binds_app_1 in Hy as [Hy | Hy]; [ | apply binds_app_3; exact Hy ].
+  apply binds_one_1 in Hy as Heq. destruct Hy as [Hpair | []].
+  inversion Hpair; subst. contradiction.
+Qed.
+
+(** The two lookup shapes the judgements actually perform. *)
+Lemma aenv_tbinds_le_flex_def : forall Θ Θ' α τ,
+  aenv_tbinds_le Θ Θ' ->
+  binds α (abind_flex_mono_def τ) Θ ->
+  binds α (abind_flex_mono_def τ) Θ'.
+Proof. intros Θ Θ' α τ Hle H; apply Hle; [ exact I | exact H ]. Qed.
+
+(* ===================================================================== *)
 (*  §2  The syntactic / well-formedness layer                             *)
 (*                                                                        *)
 (*  ⚙ Every proof below is EXPLICIT per constructor rather than            *)
@@ -101,27 +156,28 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_binds_tvar_mono : forall Θ Θ' α,
-  aenv_binds_le Θ Θ' -> a_binds_tvar α Θ -> a_binds_tvar α Θ'.
+  aenv_tbinds_le Θ Θ' -> a_binds_tvar α Θ -> a_binds_tvar α Θ'.
 Proof.
   intros Θ Θ' α Hle [H | [H | [τ H]]];
-    [ left | right; left | right; right; exists τ ]; auto.
+    [ left | right; left | right; right; exists τ ];
+    apply Hle; solve [ exact I | exact H ].
 Qed.
 
 Lemma a_wf_ptyp_mono : forall Θ A,
   a_wf_ptyp Θ A ->
-  forall Θ', aenv_binds_le Θ Θ' -> a_wf_ptyp Θ' A.
+  forall Θ', aenv_tbinds_le Θ Θ' -> a_wf_ptyp Θ' A.
 Proof.
   intros Θ A H; induction H; intros Θ' Hle.
   - apply a_wf_ptyp__unit.
   - apply a_wf_ptyp__var. eapply a_binds_tvar_mono; eauto.
   - apply a_wf_ptyp__arrow; auto.
   - apply a_wf_ptyp__all with (L := L). intros α Hα.
-    apply H0; [ exact Hα | apply aenv_binds_le_cons; exact Hle ].
+    apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
 Qed.
 
 Lemma a_wf_pskl_mono : forall Θ Δ P,
   a_wf_pskl Θ Δ P ->
-  forall Θ', aenv_binds_le Θ Θ' -> a_wf_pskl Θ' Δ P.
+  forall Θ', aenv_tbinds_le Θ Θ' -> a_wf_pskl Θ' Δ P.
 Proof.
   intros Θ Δ P H; induction H; intros Θ' Hle.
   - apply a_wf_pskl__unit.
@@ -137,13 +193,13 @@ Qed.
 
 Lemma a_tyequiv_mono : forall Θ A B,
   Θ ⊢ A ≡ᵗ B ->
-  forall Θ', aenv_binds_le Θ Θ' -> Θ' ⊢ A ≡ᵗ B.
+  forall Θ', aenv_tbinds_le Θ Θ' -> Θ' ⊢ A ≡ᵗ B.
 Proof.
   intros Θ A B H; induction H; intros Θ' Hle.
   - apply a_tyequiv__refl; assumption.
   - apply a_tyequiv__sym; auto.
   - eapply a_tyequiv__trans; eauto.
-  - eapply a_tyequiv__flex_def; eauto.
+  - eapply a_tyequiv__flex_def. eapply aenv_tbinds_le_flex_def; eauto.
   - apply a_tyequiv__arrow; auto.
   - (* ∀ : the equational theory does not bind into Θ *)
     apply a_tyequiv__all with (L := L). intros α Hα. apply H0; auto.
@@ -155,35 +211,37 @@ Qed.
 
 Lemma ad_pat_consis_mono : forall Ψ Θ R Q,
   Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
-  forall Θ', aenv_binds_le Θ Θ' -> Ψ ⨟ Θ' ⊢ₛᵃ R ∼ Q.
+  forall Θ', aenv_tbinds_le Θ Θ' -> Ψ ⨟ Θ' ⊢ₛᵃ R ∼ Q.
 Proof.
   intros Ψ Θ R Q H; induction H; intros Θ' Hle.
   - apply ad_pat_consis__unit; assumption.
   - apply ad_pat_consis__var; [ assumption | eapply a_binds_tvar_mono; eauto ].
   - eapply ad_pat_consis__arrow; eauto.
   - eapply ad_pat_consis__forall_inh_tagged with (L := L);
-      [ intros α Hα; apply H0; [ exact Hα | apply aenv_binds_le_cons; exact Hle ]
+      [ intros α Hα; apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ]
       | eassumption ].
   - eapply ad_pat_consis__forall_inh_untagged with (L := L).
-    intros α Hα; apply H0; [ exact Hα | apply aenv_binds_le_cons; exact Hle ].
+    intros α Hα; apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
   - eapply ad_pat_consis__forall_syn_tagged with (L := L).
-    intros α Hα; apply H0; [ exact Hα | apply aenv_binds_le_cons; exact Hle ].
+    intros α Hα; apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
   - eapply ad_pat_consis__forall_syn with (L := L).
-    intros α Hα; apply H0; [ exact Hα | apply aenv_binds_le_cons; exact Hle ].
+    intros α Hα; apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
   - apply ad_pat_consis__ghostg; assumption.
   - apply ad_pat_consis__topholeg; auto.
   - apply ad_pat_consis__hole; [ assumption | eapply a_wf_pskl_mono; eauto ].
   - apply ad_pat_consis__tophole; auto.
   - eapply ad_pat_consis__tophole_inh with (L := L).
-    intros α Hα; apply H0; [ exact Hα | apply aenv_binds_le_cons; exact Hle ].
+    intros α Hα; apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
   - apply ad_pat_consis__tophole_drop; auto.
-  - eapply ad_pat_consis__flex_l; eauto.
-  - eapply ad_pat_consis__flex_r; eauto.
+  - eapply ad_pat_consis__flex_l;
+      [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
+  - eapply ad_pat_consis__flex_r;
+      [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
 Qed.
 
 Lemma ad_refine_syn_mono : forall Θ Δ Q P,
   Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ P ->
-  forall Θ', aenv_binds_le Θ Θ' -> Θ' ⨟ Δ ⊢ᵣᵃ Q ⊳ P.
+  forall Θ', aenv_tbinds_le Θ Θ' -> Θ' ⨟ Δ ⊢ᵣᵃ Q ⊳ P.
 Proof.
   intros Θ Δ Q P H; induction H; intros Θ' Hle.
   - apply ad_refine_syn__unit.
@@ -197,15 +255,17 @@ Proof.
   - apply ad_refine_syn__tophole_remove; auto.
   - (* tophole_fill : binds into Θ *)
     apply ad_refine_syn__tophole_fill with (L := L). intros α Hα.
-    apply H0; [ exact Hα | apply aenv_binds_le_cons; exact Hle ].
+    apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
   - apply ad_refine_syn__tophole_keep; auto.
-  - eapply ad_refine_syn__flex_l; eauto.
-  - eapply ad_refine_syn__flex_r; eauto.
+  - eapply ad_refine_syn__flex_l;
+      [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
+  - eapply ad_refine_syn__flex_r;
+      [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
 Qed.
 
 Lemma ad_refine_pskl_mono : forall Θ Δ P Q,
   Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q ->
-  forall Θ', aenv_binds_le Θ Θ' -> Θ' ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q.
+  forall Θ', aenv_tbinds_le Θ Θ' -> Θ' ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q.
 Proof.
   intros Θ Δ P Q H; induction H; intros Θ' Hle.
   - apply ad_refine_pskl__unit.
@@ -217,10 +277,12 @@ Proof.
   - apply ad_refine_pskl__hole. eapply a_wf_pskl_mono; eauto.
   - apply ad_refine_pskl__tophole_remove; auto.
   - apply ad_refine_pskl__tophole_fill with (L := L). intros α Hα.
-    apply H0; [ exact Hα | apply aenv_binds_le_cons; exact Hle ].
+    apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
   - apply ad_refine_pskl__tophole_keep; auto.
-  - eapply ad_refine_pskl__flex_l; eauto.
-  - eapply ad_refine_pskl__flex_r; eauto.
+  - eapply ad_refine_pskl__flex_l;
+      [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
+  - eapply ad_refine_pskl__flex_r;
+      [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
 Qed.
 
 (* ===================================================================== *)
@@ -229,7 +291,7 @@ Qed.
 
 Lemma ad_pat_sub_mono : forall NM M Ψ Θ R Q,
   Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q ->
-  forall Θ', aenv_binds_le Θ Θ' -> Ψ ⨟ Θ' ⊢ₛᵃ[ NM | M ] R ⩽ Q.
+  forall Θ', aenv_tbinds_le Θ Θ' -> Ψ ⨟ Θ' ⊢ₛᵃ[ NM | M ] R ⩽ Q.
 Proof.
   intros NM M Ψ Θ R Q H; induction H; intros Θ' Hle.
   - apply ad_pat_sub__infer;
@@ -237,7 +299,7 @@ Proof.
   - apply ad_pat_sub__check;
       [ assumption | assumption | eapply ad_pat_consis_mono; eauto ].
   - apply ad_pat_sub__forall_r with (L := L). intros α Hα.
-    apply H0; [ exact Hα | apply aenv_binds_le_cons; exact Hle ].
+    apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
   - apply ad_pat_sub__univ_ghost_r;
       [ assumption | assumption | assumption | assumption
       | eapply ad_pat_consis_mono; eauto ].
@@ -254,14 +316,19 @@ Proof.
   - apply ad_pat_sub__ghostg; assumption.
   - apply ad_pat_sub__univ_ghost_l; auto.
   - apply ad_pat_sub__univ_ghost_lg; auto.
-  - eapply ad_pat_sub__flex_mono; eauto.
+  - eapply ad_pat_sub__flex_mono;
+      [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
 Qed.
 
+(** [ad_pat] / [ad_sd_typing] DO read term entries (their Var rules), so
+    these two keep the full [aenv_binds_le]; the embedded type-level
+    premises go through [aenv_tbinds_le_of_binds_le]. *)
 Lemma ad_pat_mono : forall M Θ e Q,
   Θ ⊢ᵃ[ M ] e ⇨ Q ->
   forall Θ', aenv_binds_le Θ Θ' -> Θ' ⊢ᵃ[ M ] e ⇨ Q.
 Proof.
-  intros M Θ e Q H; induction H; intros Θ' Hle.
+  intros M Θ e Q H; induction H; intros Θ' Hle;
+    pose proof (aenv_tbinds_le_of_binds_le Hle) as Htle.
   - apply ad_pat__unit. eapply ad_pat_sub_mono; eauto.
   - eapply ad_pat__var;
       [ eauto | eassumption | eapply ad_pat_sub_mono; eauto ].
@@ -287,7 +354,8 @@ Lemma ad_sd_typing_mono : forall M Θ e B,
   Θ ⊢ˢᵃ[ M ] e ⦂ B ->
   forall Θ', aenv_binds_le Θ Θ' -> Θ' ⊢ˢᵃ[ M ] e ⦂ B.
 Proof.
-  intros M Θ e B H; induction H; intros Θ' Hle.
+  intros M Θ e B H; induction H; intros Θ' Hle;
+    pose proof (aenv_tbinds_le_of_binds_le Hle) as Htle.
   - apply ad_sd_typing__unit. eapply ad_pat_sub_mono; eauto.
   - eapply ad_sd_typing__var; [ eauto | eapply ad_pat_sub_mono; eauto ].
   - eapply ad_sd_typing__anno; [ auto | eapply ad_pat_sub_mono; eauto ].
@@ -360,4 +428,45 @@ Corollary ad_pat_weaken_suffix : forall M Θ Ξ e Q,
 Proof.
   intros M Θ Ξ e Q H.
   eapply ad_pat_mono; [ exact H | apply aenv_binds_le_weaken_l ].
+Qed.
+
+(* ===================================================================== *)
+(*  §6  Dropping a term variable                                          *)
+(*                                                                        *)
+(*  The paper's phrase — refinement judgements are stable under dropping   *)
+(*  term variables (proofs.tex, the Abs cases of both soundness proofs) —  *)
+(*  instances of the §1b relation.  Stated in the [Ξ ++ (x~b) ++ Θ] shape  *)
+(*  the algorithmic Abs rows produce.                                      *)
+(* ===================================================================== *)
+
+Corollary ad_refine_syn_strip_tm_typ : forall Ξ x A Θ Δ Q P,
+  (Ξ ++ (x ~ abind_var_typ A) ++ Θ) ⨟ Δ ⊢ᵣᵃ Q ⊳ P ->
+  (Ξ ++ Θ) ⨟ Δ ⊢ᵣᵃ Q ⊳ P.
+Proof.
+  intros * H. eapply ad_refine_syn_mono;
+    [ exact H | apply aenv_tbinds_le_strip_tm; intros [] ].
+Qed.
+
+Corollary ad_refine_syn_strip_tm_skl : forall Ξ x P0 Θ Δ Q P,
+  (Ξ ++ (x ~ abind_var_skl P0) ++ Θ) ⨟ Δ ⊢ᵣᵃ Q ⊳ P ->
+  (Ξ ++ Θ) ⨟ Δ ⊢ᵣᵃ Q ⊳ P.
+Proof.
+  intros * H. eapply ad_refine_syn_mono;
+    [ exact H | apply aenv_tbinds_le_strip_tm; intros [] ].
+Qed.
+
+Corollary ad_refine_pskl_strip_tm_typ : forall Ξ x A Θ Δ P Q,
+  (Ξ ++ (x ~ abind_var_typ A) ++ Θ) ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q ->
+  (Ξ ++ Θ) ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q.
+Proof.
+  intros * H. eapply ad_refine_pskl_mono;
+    [ exact H | apply aenv_tbinds_le_strip_tm; intros [] ].
+Qed.
+
+Corollary ad_refine_pskl_strip_tm_skl : forall Ξ x P0 Θ Δ P Q,
+  (Ξ ++ (x ~ abind_var_skl P0) ++ Θ) ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q ->
+  (Ξ ++ Θ) ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q.
+Proof.
+  intros * H. eapply ad_refine_pskl_mono;
+    [ exact H | apply aenv_tbinds_le_strip_tm; intros [] ].
 Qed.
