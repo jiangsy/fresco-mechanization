@@ -239,7 +239,19 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   `btyp` equivalence, because `sd-App`'s conclusion type is the function's
   CODOMAIN.  ⚠️ Changing a rule is reserved for the WF-SIDE-CONDITIONS
   pattern, so this is flagged for the authors' call.
-- ⛔ **LEFT**: the eleven-row induction itself.
+- ⚙ **`a_split__flex` now carries its FRESHNESS on the rule.**  The paper
+  says "fresh" in prose and the mech's rule recorded nothing, so
+  `a_split_refines` could not reach `a_assign_sound` (whose premise is that
+  the extended context is well-formed).  Added INPUT-only, against
+  `ftvar_in_aenv` rather than `dom`, exactly as `a_guess_mono__hole` does —
+  a payload `α̂ ≔ τ` may mention the invented variables and must not.
+  WF-SIDE-CONDITIONS pattern, rule-premise variant; no construction sites
+  outside the definition, so the ripple is inversion-only.
+- ⛔ **LEFT**: the eleven-row induction itself.  HANDOFF §7.5 now carries a
+  ROW-BY-ROW plan keyed to `a_pat_sound`'s corresponding rows: eight of the
+  eleven have a direct counterpart there, rows 7–10 (the four CHECK ones,
+  whose output drops the pending suffix) are the ones needing BOTH new
+  lemmas, and `AT-Abs` is the one with no counterpart at all.
 
 ## 2026-08-06 — ⭐ **SECTION D: suffix erasure BUILT for four of six judgements — by SOLVING, not by dropping**
 

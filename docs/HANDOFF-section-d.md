@@ -626,6 +626,37 @@ species as thm:sound-skeleton-inference's AbsAnno step):
    the mech has no lemma for (prop_flex.v has only its freshness / decls /
    ftv facts).
 
+#### ⭐ THE ELEVEN-ROW INDUCTION — row-by-row plan (2026-08-06)
+
+Model it on `a_pat_sound` (prop_soundness_pat.v:2034, ~420 lines): the
+skeleton is identical, and eight of the eleven rows have a direct
+counterpart there.  Statement: §7.5's `a_typing_sound`, with the SAME two
+extra hypotheses theorem 1 carries (`a_wf_exp` + the disciplined skl-entry
+wf), and `a_ty_mode_compat` in place of `a_sk_mode_compat`.
+
+| # | `a_typing` row | theorem 1's counterpart | what is NEW |
+|---|---|---|---|
+| 1 | `AT-Unit` | `AP-Unit` | `a_sub_sound_thm` at the **TY** sort |
+| 2 | `AT-Var` | `AP-Var(typ)` | — (no skeleton entry: `a_typing`'s Var reads `abind_var_typ` only) |
+| 3 | `AT-Anno` | `AP-Anno` | ⚠️ TWO sequential premises — `a_pat`'s Anno does not recurse.  Chain Θ0→Θ1→Θ2 and sustain the skl-entry-wf hypothesis with `a_typing_tm_le`/`_tm_ge` (§4) |
+| 4 | `AT-Freeze` | `AP-Freeze` | `a_consis_chk_sound` + ⭐ `a_consis_chk_tyequiv` (§3) for `sd-Freeze`'s `≡ᵗ`, and `btyp_syn_painting_inv` (§1) for its `syn` shape |
+| 5 | `AT-Abs` | `AP-Abs` | ⭐⭐ the `guess^TY` block `αs` sits BETWEEN the binder and the context, so the ⊴-peel must cross it (`a_guess_mono_decls` says it is flexible-only — that is how `a_typing_tm_ge` crosses it).  Its refinement obligation is `a_guess_mono_refine` (§9) |
+| 6 | `AT-AbsAnno` | `AP-AbsAnno` | split + `a_consis_chk` + body; the `≡ᵗ` of `sd-AbsAnno` from `a_consis_chk_tyequiv` |
+| 7 | `AT-AbsCheck(∀)` | — | ⭐ `ad_sd_typing_strip_suffix` (the output DROPS Ξ) + `btyp_inh_painting_inv` (§7): at TC the colouring is forced, so the IH's `B` is already `open … α`-shaped |
+| 8 | `AT-AbsCheck(→)` | — | ⭐ erasure + `a_split_refines` (§11) — here `a_ty_mode_compat`'s TC row admits any `ptyp_to_pskl A`, so `a_split__flex` IS reachable |
+| 9 | `AT-AbsAnnoCheck(∀)` | — | erasure, as row 7 |
+| 10 | `AT-AbsAnnoCheck(→)` | — | erasure + split-refine + `a_consis_chk_tyequiv` |
+| 11 | `AT-App` | `AP-App` | `a_pat_sound` (theorem 1!) on premise 1; ⭐ invert the IH's arrow refinement (`ad_refine_syn_arrow_inv`) to get `sd-App`'s premise 2; the NEW fourth `≡ᵗ` premise from `ad_refine_syn_inh_tyequiv` (§2) |
+
+⚙ Rows 7–10 are the four that need BOTH new lemmas (erasure and
+split-refine), and they are the four whose output drops the pending suffix.
+Rows 1–6 and 11 need neither — theorem 1's dodge (`a_split_sk_shape`)
+applies at 5/6 because the mode is not TC there.
+
+⚙ The `a_wf_exp` inversions (`a_wf_exp_abs_inv`, `_abs_anno_inv`, …) and
+the ⊴-peel kit (`uniq_mid_eq`, `a_inc_weaken_suffix_target`,
+`a_isub_peel_var_typ_mid`) are all in prop_soundness_pat.v §3–§4 already.
+
 **Left for the theorem itself** (status 2026-08-06, SEVENTH pass):
 
 1. ✅ **DONE** — `ad_sd_typing_mod_comp_ty` (§8 above).

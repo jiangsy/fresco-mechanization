@@ -946,22 +946,18 @@ Qed.
     COLOURED — the shape `a_typing`'s four CHECK rows consume — rather than
     in the uncoloured `ad_refine_pskl` form.
 
-    ⚠️ THE FRESHNESS SIDE CONDITION.  `a_split__flex` invents two flexible
-    variables and the mech's rule records NO freshness for them (the paper
-    says "fresh" in prose).  `a_assign_sound` needs the extended context
-    well-formed, so the condition is carried as a hypothesis in the only
-    shape the statement can express it — quantified over the row's own
-    outputs.  WF-SIDE-CONDITIONS pattern. *)
+    ⚙ THE FRESHNESS the flexible row needs — `a_assign_sound` demands the
+    extended context well-formed — now sits ON THE RULE
+    (`a_split__flex`, algo/def_extra.v), the way `a_guess_mono__hole`
+    carries its own.  WF-SIDE-CONDITIONS pattern, rule-premise variant. *)
 Lemma a_split_refines : forall Θ0 P0 P Q Θ1,
   Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
-  (forall β α1, P = pskl_var_f β -> Q = pskl_var_f α1 ->
-     β `notin` dom Θ0 /\ α1 `notin` (dom Θ0 `union` singleton β)) ->
   Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0)
                 ⊳ (pskl_to_bskl_inh (pskl_arrow P Q)).
 Proof.
-  intros Θ0 P0 P Q Θ1 Hs Hwf HwfP Hfresh; inversion Hs; subst.
+  intros Θ0 P0 P Q Θ1 Hs Hwf HwfP; inversion Hs; subst.
   - (* arrow : reflexivity at the inherited painting *)
     apply ad_refine_syn_refl_inh. exact HwfP.
   - (* hole : the fill is [□ → □] *)
@@ -971,7 +967,14 @@ Proof.
     apply ad_refine_syn__hole.
     apply a_wf_pskl__arrow; apply a_wf_pskl__hole.
   - (* flex : the row's premise is a full consistency run *)
-    destruct (Hfresh _ _ eq_refl eq_refl) as [Hfrβ Hfrα1].
+    match goal with
+    | Hf1 : β `notin` ftvar_in_aenv Θ0,
+      Hf2 : α1 `notin` add β (ftvar_in_aenv Θ0) |- _ =>
+        pose proof (dom_subset_ftvar_in_aenv Θ0) as Hds;
+        assert (Hfrβ : β `notin` dom Θ0) by (clear - Hf1 Hds; fsetdec);
+        assert (Hfrα1 : α1 `notin` add β (dom Θ0))
+          by (clear - Hf2 Hds; fsetdec)
+    end.
     assert (HwfX : a_wf_aenv ((α1 ~ abind_flex_mono)
                                ++ (β ~ abind_flex_mono) ++ Θ0)).
     { apply a_wf_aenv__flex;

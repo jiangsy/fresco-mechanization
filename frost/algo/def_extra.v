@@ -1354,6 +1354,15 @@ Inductive a_split : aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
 | a_split__hole : forall Θ0,
     Θ0 ⊲ pskl_hole ▹ pskl_hole ⇢ pskl_hole ⊣ Θ0
 | a_split__flex : forall Θ0 Θ1 α β α1 Q,                 (* split[α̂] = β̂→α1̂ *)
+    (* The two invented flexibles are FRESH.  The paper says so in prose
+       ("fresh"); the mech makes it a rule premise, INPUT-only and against
+       [ftvar_in_aenv] rather than [dom], exactly as [a_guess_mono__hole]
+       does — a payload [α̂ ≔ τ] may mention them, and it must not.  Without
+       this, [a_split_refines] (prop_soundness_typing.v) cannot reach
+       [a_assign_sound], whose own premise is that the extended context is
+       well-formed.  WF-SIDE-CONDITIONS.md pattern. *)
+    β `notin` ftvar_in_aenv Θ0 ->
+    α1 `notin` add β (ftvar_in_aenv Θ0) ->
     (* [paper-gap] The paper writes this premise as [unify{α̂}{β̂ → α1̂}]
        (full-algo-spec.tex:393 / algorithmic.tex:330), and that [∼] is
        CONSISTENCY — subject [α̂], input [β̂ → α1̂], output dropped.  It CANNOT be
