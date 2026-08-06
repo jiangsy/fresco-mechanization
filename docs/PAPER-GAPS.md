@@ -28,6 +28,37 @@ recently P6-Sv at the end of this file)}.
 > Several judgments looked broken until that condition was restored.  **Check
 > that file before concluding a lemma is unprovable.**
 
+## MISSING LEMMA (2026-08-06) — `thm:sound-skeleton-inference`, AbsAnno: "preservation of refinement under type equivalence" is asserted inline and never stated
+
+In the AbsAnno case of `thm:sound-skeleton-inference` the proof runs
+`thm:sound-consistency` on the annotation check `\aconsis{\Theta_1}{A}{P}{\Theta_2}`,
+gets the hidden output `A'` with
+
+    inc{Θ1}{Θ2}     Θ2 ⊢ inh{P} ⊳ bid{A'}     Θ2 ⊢ A' ≡ A
+
+and then says: **"Thus, by preservation of refinement under type equivalence,
+we have `Θ2 ⊢ inh{P} ⊳ bid{A}`."**  There is no such lemma anywhere in the
+paper, and it is not a one-liner: the refinement judgement's TARGET must be
+re-coloured, and `≡` is colour-blind while refinement is not (`⊳`'s ∀ row
+demands an INHERITED quantifier on both sides, its `□` row demands a
+SYNTHESISED painting on the right).  The same step is used again, in the
+`≡`-only direction, by `thm:sound-type-inference`'s Freeze case ("which
+further gives `Θ2 ⊢ B ≡ A`").
+
+**Status in the mech.** Isolated as `a_consis_chk_annot_refine`
+(`frost/algo/prop_soundness_pat.v` §4) — the ONLY axiom
+`Print Assumptions a_pat_sound` reports.  Everything else in
+`thm:sound-skeleton-inference` is Qed, including the whole AbsAnno row at the
+`□` split shape, where the answer is the all-synthesised painting of the
+annotation and no transport is needed.  A concrete proof route (a target
+transport on the declarative layer, by a nested induction on the consistency
+and the refinement, with two small new lemmas) is recorded in
+`docs/HANDOFF-section-d.md` §7.3.
+
+**What the authors should do**: state it as a lemma, in whichever of the two
+forms is primary — the refinement-target form or the `≡ᵗ` form — and prove the
+other from it.
+
 ## ⭐⭐ RETRACTION (2026-08-05) — the `SolE-FlexR` repair NEUTRALISES two of OUR OWN counterexamples, and the whole P6 cluster now goes through
 
 **Not a paper gap — a correction to two findings we raised.**  Both

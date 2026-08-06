@@ -116,8 +116,21 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   + one lemma over `ad_pat`; needs a "same non-variable entries ⟹ preserved"
   context-change lemma for `ad_pat_sub` / `ad_refine_syn` that does not exist
   yet.  GATED on "Precision extends skeleton subtyping" (the `ad_pat__var` row)
-- ⬜ Theorems: Soundness of skeleton inference / of type inference — both
-  independent of the `ad_pat_sub_gv` question, so do them first
+- 🟡 **Theorem: Soundness of skeleton inference — ASSEMBLED 2026-08-06**,
+  `a_pat_sound` (`algo/prop_soundness_pat.v` §5), Qed; all ten `a_pat` rows
+  proved.  `Print Assumptions` shows exactly ONE axiom, the isolated
+  `a_consis_chk_annot_refine` (AbsAnno at the ARROW split shape — the paper's
+  inline "preservation of refinement under type equivalence", proofs.tex,
+  which exists nowhere as a lemma; the HOLE shape needs none of it and is
+  proved).  ⚠️ The statement carries TWO hypotheses beyond the paper's list:
+  `a_wf_exp Θ0 e` (the problem definition's "M wf in Θ0") and the paper's
+  implicit `Θ ⊢ ctx` at skeleton term entries
+  (`∀ x P, binds x (abind_var_skl P) Θ0 → Θ0 ⨟ ∅ ⊢ₚₛᵃ P`), because
+  `a_wf_aenv__var` stores only `a_scope_pskl` while `a_sub_sound_thm` demands
+  the disciplined `⊢ₚₛᵃ`.  WF-SIDE-CONDITIONS pattern
+- ⬜ Theorem: Soundness of type inference — same shape; additionally needs
+  `a_tyequiv` for the appendix's three equivalence premises, and its Freeze
+  case needs the SAME consis-to-`≡ᵗ` fact as `a_consis_chk_annot_refine`
 - ⬜ Theorems: Completeness+optimality of skeleton / type inference — ⚠️ these
   hit §4b's composition gap (they consume `a_sub_complete_thm`, which assumes
   `ad_pat_sub_gv`, while soundness only concludes plain `ad_pat_sub`)
@@ -129,7 +142,90 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-06 (latest) — ⭐⭐ **SECTION D: the whole support kit for thm:sound-skeleton-inference is Qed** — tm-verbatim stability, term-var renaming, and the split-shape analysis that retires split-refine + transitivity for theorem 1
+## 2026-08-06 (latest) — ⭐⭐⭐ **SECTION D: `thm:sound-skeleton-inference` IS ASSEMBLED** — all ten `a_pat` rows proved, one isolated open lemma left
+
+`a_pat_sound` (`algo/prop_soundness_pat.v` §5) is **Qed**; `make coq` clean.
+`Print Assumptions a_pat_sound` lists exactly ONE axiom — the isolated
+`a_consis_chk_annot_refine` — and every new support lemma is *Closed under the
+global context*.
+
+**What landed (the four hand-off items, in order):**
+
+1. `a_pat_tm_ge` — the reverse tm-verbatim invariant for `a_pat` itself
+   (`aenv_tm_le_via_binder_ge` is the mirror of prop_stability's
+   `aenv_tm_le_via_binder`; it needs NO `a_suffix` premise, because the
+   pending suffix is crossed on the SOURCE side where a lookup is only
+   weakened).  With `a_pat_tm_le` this says a run's term entries are the SAME
+   at input and output — which is what sustains the disciplined-wf hypothesis
+   through App's and AbsAnno's sequential premises.
+2. `a_wf_aenv_strip_tm_mid` (+ the new `a_scope_pskl_mono` in
+   `prop_ctx_mono.v`) — dropping a term entry from the MIDDLE of a well-formed
+   context.  ⭐ The content: no payload can mention a term KEY type-wise —
+   every payload is checked by `a_wf_ptyp` / `a_scope_pskl`, both term-blind,
+   so both transport along `aenv_tbinds_le_strip_tm`; freshness only shrinks.
+3. The **⊴-peel** at the Abs rows (`a_isub_peel_var_skl_mid` /
+   `a_isub_peel_var_typ_mid`): from `(x:P),Θ1 ⊴ Ξ,(x:P),Θ2` conclude
+   `Θ1 ⊴ Ξ,Θ2`.  ⭐ Two findings.  (i) The conclusion must be stated AT
+   `Ξ ++ Θ2`, not at `Θ2`: the definition-preservation component of `⊴` maps
+   into the whole target, and a definition of `Θ1` could a priori be found in
+   the pending suffix — at `Ξ,Θ2` that is not a problem (the peeled entry is
+   dropped by PAYLOAD SHAPE, no freshness needed), at `Θ2` it would need a
+   freshness fact the statement does not carry.  (ii) The κ-component peels
+   by `a_inc_var_skl_inv` + a `uniq`-mid list-surgery lemma (`uniq_mid_eq`)
+   and re-grows the suffix by the new `a_inc_weaken_suffix_target`
+   (= `a_inc_refl_gen` ∘ `a_inc_trans`) — there was no target-weakening lemma
+   for `a_inc`.
+4. The **ten-row induction**.  Var(typ) needed the new
+   `a_wf_aenv_binds_var_typ_wf` (the `a_wf_aenv_binds_def_wf` mirror) +
+   `a_wf_ptyp_to_wf_pskl`; App reads its second premise's input wf off
+   `ad_refine_syn_hole_l_target_wf` and its syn-painting shape off
+   `ad_refine_syn_syn_l` at `P := □`; the four binder rows go
+   suffix-moving (`ad_pat_suffix_moving`) then exists-fresh→cofinite
+   (`ad_pat_rename_tm`).
+
+**⭐ `ad_pat_mod_comp_sk` is provable standalone** — the `mod_comp_sk` premise
+of `ad_pat__abs` / `__abs_anno` does NOT force strengthening the theorem's
+conclusion.  The two Abs rows carry it, the base rows read it off their
+subtyping premise (`ad_pat_sub_mod_comp_sk`), Freeze and App invert theirs,
+and the two Check rows get their codomain's `is_sskl` from the IH and their
+domain's from the rule's own `a_wf_ptyp` — no local-closure side condition
+is needed anywhere.
+
+**⛔ THE ONE OPEN LEMMA**, isolated and honestly marked:
+
+    a_consis_chk_annot_refine : a_consis_chk Θ0 A P Θ1 -> … ->
+      exists B, btyp_to_ptyp B = A /\
+        Θ1 ⨟ ∅ ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B)
+
+It is AbsAnno at the ARROW split shape only (the HOLE shape answers with the
+all-synthesised painting `ptyp_to_btyp_syn A` and is proved).  The paper
+asserts it inline — "by preservation of refinement under type equivalence" —
+and it exists nowhere as a lemma.  ⭐ **The route is now concrete** (full plan
+in the file's §4 header): it is a TARGET TRANSPORT provable on the
+DECLARATIVE layer alone, by a NESTED induction (outer on `ad_pat_consis`,
+inner on `ad_refine_syn`), and every row has an answer.  Going back through
+`a_consis` instead is a dead end — its ∀ rows bind the fresh α in Θ while
+refinement's bind it in Δ, which is exactly what `ad_refine_syn_f`'s hygiene
+set exists to manage, so that route re-does consistency soundness.  Two small
+new lemmas are needed: `ad_refine_syn_delta_to_ctx` (the Δ→Θ direction only —
+a weakening, and the reverse is neither true nor needed) and the
+monotype-colouring collapse `mono_ptyp (btyp_to_ptyp B) → btyp_to_bskl B =
+ptyp_to_bskl_syn (btyp_to_ptyp B)`, which is what makes the `flex_l`/`flex_r`
+rows rebuild.  ⚙ The same fact, read as consis-to-`≡ᵗ`, is what
+thm:sound-type-inference's Freeze case needs — build ONE of the two and
+derive the other.
+
+⚙ **Session traps.** A bare `subst` will happily consume the erasure equation
+`bskl_to_pskl Qt = Q` (its RHS is a bare variable), CLEARING it — use
+`subst m` / `subst P0 P Q0` in the split-shape case splits.  `eapply` on
+`a_wf_aenv_strip_tm_mid` leaves the peeled binding an evar, so `intros []`
+on `~ abind_is_ty ?b` fails: put the `a_wf_aenv` goal first
+(`eapply …; [ | exact H ]; intros []`).  `simpl_env in H |- *` is not accepted
+— write the two calls.  And `simpl in Heq` unfolds metalib's `one`, which
+then breaks any `match goal` pattern written with `~`; prove the shape facts
+by `inversion Heq; subst; first [reflexivity | assumption]` instead.
+
+## 2026-08-06 — ⭐⭐ **SECTION D: the whole support kit for thm:sound-skeleton-inference is Qed** — tm-verbatim stability, term-var renaming, and the split-shape analysis that retires split-refine + transitivity for theorem 1
 
 `make coq` clean, no admits, all new lemmas Closed under the global context.
 Three files: `decorated_algo/prop_ctx_mono.v` (reworked),

@@ -1,10 +1,12 @@
 # HANDOFF — section D (`proofs.tex`): soundness and completeness of skeleton and type inference
 
-**Status 2026-08-06 (second pass).** The definitional layer is DONE (`dd1f176`),
-suffix MOVING is closed (`prop_ctx_mono.v`), and the ENTIRE support kit for
-thm:sound-skeleton-inference is now Qed and axiom-free — see §7 below for what
-landed and what the theorem assembly still needs.  Headlines discovered while
-building it:
+**Status 2026-08-06 (third pass).** The definitional layer is DONE (`dd1f176`),
+suffix MOVING is closed (`prop_ctx_mono.v`), and **thm:sound-skeleton-inference
+itself is now assembled**: `a_pat_sound` (`algo/prop_soundness_pat.v` §5) is
+Qed over all ten `a_pat` rows, with `Print Assumptions` showing exactly ONE
+axiom — the isolated `a_consis_chk_annot_refine`, which is AbsAnno at the
+ARROW split shape.  §7 has the proved statement, the kit, and the now-concrete
+route for that one lemma.  Headlines discovered while building it:
 
 - ⭐ **Theorem 1 needs NEITHER lemma:split-refine NOR refinement
   transitivity** (`a_split_sk_shape`, prop_soundness_pat.v §3b): under the
@@ -240,88 +242,136 @@ Do that between 2 and 3.
 
 ---
 
-## 7. thm:sound-skeleton-inference — the KIT IS DONE, assembly remains (2026-08-06, second pass)
+## 7. thm:sound-skeleton-inference — ✅ ASSEMBLED (2026-08-06, third pass); ONE open lemma left
 
-Everything below is Qed and axiom-free in `frost/algo/prop_soundness_pat.v`
-(plus the reworked `decorated_algo/prop_ctx_mono.v` and
-`algo/prop_stability.v`); `make coq` clean.
+`a_pat_sound` (`frost/algo/prop_soundness_pat.v` §5) is **Qed**, `make coq`
+clean.  `Print Assumptions a_pat_sound` lists exactly one axiom, §7.3's
+`a_consis_chk_annot_refine`; every support lemma is *Closed under the global
+context*.
 
-**What is banked, by section of the file:**
+### 7.1 The statement as proved
 
-- §1 `a_wf_exp` — the problem definition's "M is well-formed in Θ0"
-  (annotations wf; term-variable occurrences need nothing — the run's own
-  `binds` premises supply them), with `_mono` (term-blind) and `_isub`
-  transports.
-- §2 `ad_pat_isub_tm` — stability of `ad_pat` under `⊴` PLUS the tm-verbatim
-  relation (`aenv_tm_le`, prop_stability.v).  Enablers: `a_isub_cons_var_typ`
-  / `a_isub_cons_var_skl` (the `≡`-premise of `a_inc__var` is reflexivity at
-  an identity κ).
-- §3a reverse tm-verbatim (`a_assign_unify_consis_tm_ge`,
-  `a_sub_sub_flex_tm_ge`, `a_sub_tm_ge`, `a_split_tm_ge`): a run's output has
-  NO NEW term entries (suffixes are `a_decls`/`a_suffix`, flexible-only).
-  Forward (`*_tm_le`, incl. `a_pat_tm_le` / `a_typing_tm_le`) is in
-  prop_stability.v.
-- §3b `pskl_to_uskl_via_bskl_syn` (the Var/Anno subject coercion),
-  `a_split_sk_shape` (⭐ split is arrow-or-hole under `skmod{SK}` — kills
-  split-refine AND transitivity for this theorem), `a_sk_mode_compat_*_inv`.
-- §3c `ad_pat_sub_mod_comp_sk` — an SK-sorted subtyping target satisfies
-  `skmod{SK}` (feeds the `mod_comp_sk` premises of `ad_pat__abs`/`__abs_anno`;
-  derive the body's from its `ad_pat` via the same lemma at the embedded
-  premise, or prove `ad_pat_mod_comp_sk` as a corollary).
-- §3d `ad_pat_subst_tm` / `ad_pat_rename_tm` — term-variable renaming, the
-  exists-fresh → cofinite bridge the Abs cases need (ONE fresh witness
-  generates the family; context-surgery form, no weaken-then-strengthen).
+    Theorem a_pat_sound : forall m Θ0 P0 e P Θ1,
+      Θ0 ⊢ₐ[ m ; P0 ] e ⇨ P ⊣ Θ1 ->
+      a_wf_aenv Θ0 ->
+      (forall x Ps, binds x (abind_var_skl Ps) Θ0 ->
+         Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->                  (* the paper's Θ ⊢ ctx *)
+      Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+      a_sk_mode_compat m P0 ->
+      a_wf_exp Θ0 e ->                            (* "M is wf in Θ0" *)
+      Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
+      exists Qt, bskl_to_pskl Qt = P /\
+        (Θ1 ⊢ᵃ[ m ] e ⇨ Qt) /\
+        (Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ Qt).
 
-**What the assembly still needs (in order):**
+⚠️ The two hypotheses beyond the paper's list are the WF-SIDE-CONDITIONS
+pattern: `a_wf_aenv__var` stores only `a_scope_pskl` where the paper's
+`Θ ⊢ ctx` figure requires `Θ ⊢ P`, and `AP-Var(skl)` feeds that entry to
+`a_sub_sound_thm`, which demands the DISCIPLINED `⊢ₚₛᵃ`.  Do NOT change the
+`a_wf_aenv` rule to fix this — it would ripple through the whole tree.
 
-1. `a_pat_tm_ge` — reverse tm-verbatim for `a_pat` itself (mirror of
-   `a_pat_tm_le`; at the Abs rows pick the binder fresh from the looked-up
-   name, same trick as the forward proof).  Needed to sustain the skl-entry-wf
-   hypothesis through sequential premises.
-2. `a_wf_aenv_strip_tm_mid` (drop a term entry mid-context; payloads cannot
-   mention term KEYS type-wise, transport by `a_wf_ptyp_mono` /
-   a NEW `a_scope_pskl_mono` over `aenv_tbinds_le`) — for the conclusion's
-   `a_wf_aenv (Ξ ++ Θ2)` at the Abs rows.
-3. The `⊴`-peel at the Abs rows: from
-   `((x~b) ++ Θ1) ⊴ (Ξ ++ (x~b) ++ Θ2)` conclude `Θ1 ⊴ (Ξ ++ Θ2)`.
-   Route: `a_inc_var_skl_inv` / `a_inc_var_inv` (prop_inc.v:260) + a
-   uniq-mid list-surgery lemma (uniq from the body IH's `a_wf_aenv`), then
-   re-attach the suffix with `a_isub_weaken_suffix` + `a_isub_trans`; the
-   defs-component strips the term entry by name (`x ∉ dom Θ1`).
-4. The statement (add BOTH hypotheses):
+### 7.2 What was added to close it (all in `prop_soundness_pat.v` unless noted)
 
-       Theorem a_pat_sound : forall m Θ0 P0 e P Θ1,
-         Θ0 ⊢ₐ[ m ; P0 ] e ⇨ P ⊣ Θ1 ->
-         a_wf_aenv Θ0 ->
-         (forall x Ps, binds x (abind_var_skl Ps) Θ0 ->
-            Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->                  (* paper's Θ ⊢ ctx *)
-         Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
-         a_sk_mode_compat m P0 ->
-         a_wf_exp Θ0 e ->
-         Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
-         exists Qt, bskl_to_pskl Qt = P /\
-           (Θ1 ⊢ᵃ[ m ] e ⇨ Qt) /\
-           (Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ Qt).
+| lemma | role |
+|---|---|
+| `a_pat_tm_ge` (+ `aenv_tm_le_via_binder_ge`) | reverse tm-verbatim for `a_pat`; with `a_pat_tm_le` it says a run's term entries are unchanged, which sustains the skl-entry-wf hypothesis through App/AbsAnno |
+| `a_wf_aenv_strip_tm_mid`, `a_scope_pskl_mono` (prop_ctx_mono.v) | drop the walked term entry from the middle of a wf context; payloads are term-blind |
+| `uniq_mid_eq`, `a_inc_weaken_suffix_target`, `a_isub_peel_var_skl_mid`, `a_isub_peel_var_typ_mid` | the ⊴-peel at the four binder rows |
+| `a_wf_aenv_binds_var_typ_wf` | the `a_wf_aenv_binds_def_wf` mirror, for `AP-Var(typ)` |
+| `ad_pat_mod_comp_sk` | ⭐ provable STANDALONE — the theorem does NOT need a strengthened conclusion |
+| `mod_comp_sk_{ti,tc,fn}_inv`, `bskl_to_pskl_arrow_inv`, `ad_refine_syn_arrow_inv`, `btyp_to_bskl_ptyp_to_btyp_syn`, `bskl_to_pskl_btyp_to_bskl`, `a_wf_pskl_scope`, `a_wf_{pskl,ptyp,exp}_weaken_cons`, `a_wf_exp_*_inv` | small inversions/coercions the rows quote |
+| `a_consis_chk_sound` | `a_consis_sound_aux` in the output-suppressed form, keeping `a_wf_aenv Θ1` |
 
-   Per-case routes are scouted in this file's header comment and §3
-   comments; Var(typ) needs `a_wf_aenv_binds_var_typ_wf` (mirror
-   `a_wf_aenv_binds_def_wf`, prop_precise.v) + `a_wf_ptyp_to_wf_pskl`;
-   App's e2-premise wf comes from `ad_refine_syn_hole_l_target_wf`
-   (prop_completeness_sub_gen.v) on the IH's `□ ⊳ Qt` refinement, and its
-   output's syn-painting SHAPE from `ad_refine_syn_syn_l` at
-   `P := pskl_hole`.
-5. ⛔ THE ONE OPEN LEMMA — AbsAnno's refinement-target transport (the
-   paper's inline "preservation of refinement under type equivalence",
-   proofs.tex:1578, which exists nowhere as a lemma): from the consis run's
-   `Θ ⨟ ∅ ⊢ᵣᵃ (pskl_to_bskl_inh P0a) ⊳ Qt` (target = OUTPUT colouring) and
-   `∅ ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (ptyp_to_pskl A)) ∼ Qt` (subject-painting ∼
-   output), conclude refinement into the ANNOTATION's painting
-   `btyp_to_bskl B`, `btyp_to_ptyp B = A`.  Ingredients scouted: with a
-   ghost-free subject every `a_consis` output is ghost-free (check each row;
-   Ghost/UnivGhost rows are dead), so `Qt` is a TYPE colouring; then the
-   transport is consis-to-≡ᵗ at type level + a poly-level
-   `tyequiv_refine_syn` (only the MONO version exists,
-   prop_precise_recover.v:90).  This same consis-to-≡ᵗ fact is needed AGAIN
-   by thm:sound-type-inference's Freeze case (paper: "which further gives
-   Θ2 ⊢ B ≡ A") — build it once, for both.  At the HOLE split shape AbsAnno
-   needs none of this (the `__hole` route, as in Abs).
+⭐ **The ⊴-peel must conclude at `Ξ ++ Θ2`, not at `Θ2`.** The
+definition-preservation component of `⊴` maps into the WHOLE target, so a
+definition of the source could a priori be matched inside the pending suffix;
+at `Ξ,Θ2` the peeled entry drops by payload shape (a definition is never a
+term entry) and no freshness is needed, whereas at `Θ2` it would need a
+freshness fact the statement does not carry.
+
+### 7.3 ⛔ THE ONE OPEN LEMMA — and its now-concrete route
+
+    Lemma a_consis_chk_annot_refine : forall Θ0 A P Θ1,
+      a_consis_chk Θ0 (ptyp_to_pskl A) P Θ1 ->
+      a_wf_aenv Θ0 -> a_wf_ptyp Θ0 A -> Θ0 ⨟ empty ⊢ₚₛᵃ P ->
+      exists B, btyp_to_ptyp B = A /\
+        Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B).
+
+It is needed by `AP-AbsAnno` at the **ARROW** split shape only; at the HOLE
+shape the row answers with the all-synthesised painting `ptyp_to_btyp_syn A`
+through `ad_refine_syn__hole`, and that is proved.  The paper asserts the
+lemma inline ("by preservation of refinement under type equivalence") and
+never states it.
+
+**Do NOT prove it by induction on `a_consis`.**  Consistency's ∀ rows bind the
+fresh α in **Θ**, refinement's bind it in **Δ**; reconciling that is precisely
+what `ad_refine_syn_f`'s hygiene set exists for, so that route re-does
+consistency soundness.
+
+**Prove it as a TARGET TRANSPORT on the declarative layer.**
+`a_consis_chk_sound` already hands back, at the SAME context,
+
+    empty ⨟ Θ1 ⊢ₛᵃ (pskl_to_uskl (ptyp_to_pskl A)) ∼ Qt
+    Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ Qt
+
+so what is missing is
+
+    forall Θ Δ Qb Qt A,
+      a_wf_aenv Θ -> a_wf_ptyp Θ A ->
+      empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (ptyp_to_pskl A)) ∼ Qt ->
+      Θ ⨟ Δ ⊢ᵣᵃ Qb ⊳ Qt ->
+      exists B, btyp_to_ptyp B = A /\ Θ ⨟ Δ ⊢ᵣᵃ Qb ⊳ (btyp_to_bskl B)
+
+by a **nested** induction — outer on the consistency, inner on the refinement
+in the rows whose target does not pin the refinement's last rule.  Every row
+has an answer (the full per-row map is the §4 header comment in
+`prop_soundness_pat.v`); the headlines:
+
+- the subject is a `ptyp` painting, so it is never `uskl_hole` / `uskl_topholeg`
+  / `uskl_all_etag` — **eight** consistency rows are dead on arrival;
+- ⭐ `Qb = bskl_hole` is ALWAYS answerable by `B := ptyp_to_btyp_syn A`; that
+  is what the `a_wf_ptyp Θ A` hypothesis buys, and it is the same move the
+  AbsAnno HOLE shape already makes;
+- ⭐ the `flex_l` / `flex_r` rows rebuild because **a definition is a
+  monotype**, so its colouring is unique — the missing one-liner is
+  `mono_ptyp (btyp_to_ptyp B) -> btyp_to_bskl B = ptyp_to_bskl_syn (btyp_to_ptyp B)`
+  (the `ptyp_to_bskl_inh_syn_eq` pattern, prop_mono_bridge.v);
+- ⛔ the two live ∀ rows need a new `ad_refine_syn_delta_to_ctx`
+  (`Θ ⨟ add α Δ ⊢ᵣᵃ … -> (α~tvar),Θ ⨟ Δ ⊢ᵣᵃ …`).  That direction is a
+  WEAKENING and holds — `__var` already accepts either side, `__hole`'s
+  `Θ ⨟ ∅ ⊢ₚₛᵃ P` only grows, `__tophole_fill` needs one exchange via
+  `ad_refine_syn_mono`.  The REVERSE direction is false and is not needed.
+  `__tophole_fill` additionally closes an α-dependent witness,
+  `B := btyp_all_syn (close_btyp_wrt_btyp α B0)`.
+
+⚙ **Build it once for both theorems.**  Read as consis-to-`≡ᵗ` this is exactly
+what thm:sound-type-inference's `Freeze` case needs (the paper's "which further
+gives `Θ2 ⊢ B ≡ A`").  Prove whichever form is more convenient and derive the
+other; do not build both.
+
+### 7.4 Traps this pass cost time to
+
+- A bare `subst` consumes the erasure equation `bskl_to_pskl Qt = Q` — the RHS
+  is a bare variable, so `subst` orients it and CLEARS the hypothesis.  Use
+  `subst m` / `subst P0 P Q0` in the split-shape case splits.
+- `eapply a_wf_aenv_strip_tm_mid` leaves the peeled binding an evar, so
+  `intros []` on `~ abind_is_ty ?b` fails ("Not an inductive product").  Put
+  the `a_wf_aenv` goal first: `eapply …; [ | exact H ]; intros []`.
+- `simpl_env in H |- *` is a syntax error; write the two calls.
+- `simpl in Heq` unfolds metalib's `one`, which then breaks any `match goal`
+  pattern written with `~`.  Prove the shape facts with
+  `inversion Heq; subst; first [ reflexivity | assumption ]` instead.
+- Lemmas whose variables occur only under a function application (e.g.
+  `bskl_to_pskl Q = …`, `Ξ1 ++ (x ~ b1) ++ Θ1 = …`) are NOT strict-implicit
+  under `Set Implicit Arguments`; give them an `Arguments … : ` line rather
+  than counting underscores at each call site.
+
+### 7.5 What is next
+
+1. Close §7.3 (it unblocks nothing else in theorem 1, but theorem 2 needs the
+   same content).
+2. thm:sound-type-inference — same shape, plus `a_tyequiv` for the appendix's
+   three equivalence premises.  §1's suffix ERASURE is still open and is
+   TYPE-inference-only, as is §2's `lemma:split-refine`.
+3. Then the `ad_pat_sub_gv` composition gap (§6) before the two completeness
+   theorems.

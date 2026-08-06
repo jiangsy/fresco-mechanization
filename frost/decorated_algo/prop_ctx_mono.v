@@ -191,6 +191,24 @@ Proof.
   - apply a_wf_pskl__tophole; auto.
 Qed.
 
+(** The Δ-free scoping judgement — same proof as [a_wf_pskl_mono], except
+    that here the ∀-binder enters the CONTEXT rather than Δ.  Needed to
+    transport a term entry's payload when a term entry is dropped from the
+    middle of a well-formed context ([a_wf_aenv_strip_tm_mid]). *)
+Lemma a_scope_pskl_mono : forall Θ P,
+  a_scope_pskl Θ P ->
+  forall Θ', aenv_tbinds_le Θ Θ' -> a_scope_pskl Θ' P.
+Proof.
+  intros Θ P H; induction H; intros Θ' Hle.
+  - apply a_scope_pskl__unit.
+  - apply a_scope_pskl__var. eapply a_binds_tvar_mono; eauto.
+  - apply a_scope_pskl__arrow; auto.
+  - apply a_scope_pskl__all with (L := L). intros α Hα.
+    apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
+  - apply a_scope_pskl__hole.
+  - apply a_scope_pskl__tophole; auto.
+Qed.
+
 Lemma a_tyequiv_mono : forall Θ A B,
   Θ ⊢ A ≡ᵗ B ->
   forall Θ', aenv_tbinds_le Θ Θ' -> Θ' ⊢ A ≡ᵗ B.
