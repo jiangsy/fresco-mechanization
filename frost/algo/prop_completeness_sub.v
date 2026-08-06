@@ -799,37 +799,10 @@ Qed.
 (*  §8b  A2 — THE JOIN PERMUTATION (the paper's WLOG, mechanized)         *)
 (* ===================================================================== *)
 
-(** Fuel monotonicity for the leaf-valid hygienic join.  The fuel is the
-    declarative derivation's HEIGHT, so a derivation of height [n] is also
-    one of every larger height.  Needed because the permutation below
-    returns the family at whatever height the extraction yields, while
-    [a_sub_complete_forall_r] wants it at exactly [n] for a conclusion at
-    [S n]. *)
-Lemma ad_pat_sub_gv_fuel_weaken : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_gv n NM M Ψ Θ R Q ->
-  forall m, n <= m -> ad_pat_sub_gv m NM M Ψ Θ R Q.
-Proof.
-  intros n NM M Ψ Θ R Q H; induction H; intros m Hle;
-    try solve [ econstructor; eauto ].
-  - (* forall_r : the conclusion's fuel is [S n] *)
-    destruct m as [ | m' ]; [ lia | ].
-    apply ad_pat_sub_gv__forall_r with (L := L).
-    intros α Hα. apply H0; [ exact Hα | lia ].
-  - (* arrow *)
-    destruct m as [ | m' ]; [ lia | ].
-    eapply ad_pat_sub_gv__arrow;
-      [ exact H | exact H0 | apply IHad_pat_sub_gv; lia | assumption ].
-  - (* forall_l_tagged *)
-    destruct m as [ | m' ]; [ lia | ].
-    eapply ad_pat_sub_gv__forall_l_tagged;
-      [ eassumption | eassumption | eassumption | eassumption | eassumption
-      | apply IHad_pat_sub_gv; lia ].
-  - (* forall_l_untagged *)
-    destruct m as [ | m' ]; [ lia | ].
-    eapply ad_pat_sub_gv__forall_l_untagged;
-      [ eassumption | eassumption | eassumption | eassumption | eassumption
-      | apply IHad_pat_sub_gv; lia ].
-Qed.
+(** ⚙ [ad_pat_sub_gv_fuel_weaken] moved to
+    decorated_algo/def_decl_algo_sub_hyg.v (2026-08-06) — the SOUNDNESS side
+    now has to build [_gv] derivations too (hand-off §6.1/§6.2), and
+    prop_soundness_sub.v sits BEFORE this file in the dependency order. *)
 
 (** ⭐ THE JOIN PERMUTATION.  From ANY TY/TC join onto a [bskl_all_inh]
     target — however many ForallL steps sit on top of it — recover the

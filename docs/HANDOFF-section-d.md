@@ -366,21 +366,24 @@ bundle at :466–:1286):
 | row | change |
 |---|---|
 | `subtag_sound_concl` / `subtag_flex_sound_concl` | conclusion becomes `exists n, ad_pat_sub_gv n NM M Ψ Θ1 R Qt` |
-| `Infer` | leaf refinement = reflexivity at the wf subject (`ad_refine_pskl` mirror of `ad_pat_consis_refl_erase`) |
-| `Check`, `UnivGhostR`, `Arrow` (domain) | name the dropped conjunct; `ad_refine_pskl_f_forget`; ⊴-transport where the row already transports `Hcons` |
+| `Infer`, `UnivGhostR` | leaf refinement = `ad_refine_pskl_refl` (prop_refine.v:177) at the wf subject — both rows already build their target as the subject's own erasure |
+| `Arrow` (domain) | ⚙ DIRECT: `a_consistag_sound_aux`'s dropped conjunct IS `⌊R1⌋ˢ ⊳ P'1` and the row's `Q1` satisfies `bskl_to_pskl Q1 = P'1`.  `ad_refine_pskl_f_forget` then `ad_refine_pskl_f_isub` to reach Θ2 |
+| `Check` | ⛔ **the one row with real content, and §6.1 previously under-estimated it.**  The dropped conjunct gives `⌊T⌋ˢ ⊳ ⌊Qt⌋` for the CONSISTENCY's output `Qt`, but the row's conclusion re-targets to `inh B` (audit-F2: the output is not literally `B`).  So the leaf needs `⌊T⌋ˢ ⊳ B`, i.e. the **`ad_refine_pskl` mirror of `ad_pat_consis_refine_inh_target`** (prop_soundness_sub.v:366): from `X ⊳ ⌊Qt⌋`, `inh B ⊳ Qt` (`ad_refine_syn_f`) and `pskl_ghost_free B`, conclude `X ⊳ B`.  Same induction on the fill, one judgement over — `ad_pat_consis_refine_inh_gen` is the crib |
 | `ForallL` ×2 | widen the avoid-set (above); the hygiene premise is then `Hint0` |
 | `ForallR`, `UnivGhostL/LG`, `FlexMono`, ghosts | pass through |
 | fuel | leaves take any `n` (use `0`); `ForallR`/`Arrow`/`ForallL` conclude at `S n`.  Each rule has ≤ 1 recursive `_gv` premise, so no `max` is needed |
 
-⚠️ **Two things to settle first.**  (a) `ad_pat_sub_gv_fuel_weaken`
-(prop_completeness_sub.v) and `ad_pat_sub_g_of`
-(prop_completeness_sub_precise.v) sit AFTER `prop_soundness_sub.v` in the
-dependency order — either re-prove fuel-weakening locally (≈15 lines) or
-move both down to a def/early-prop file.  (b) THREE consumers read the
-bundle's conclusion positionally (`prop_decorate_key.v:4155`,
+✅ **(a) SETTLED 2026-08-06 — the dependency order.**  `ad_pat_sub_g_of` and
+`ad_pat_sub_gv_fuel_weaken` MOVED to
+`decorated_algo/def_decl_algo_sub_hyg.v` (they are plain inductions over the
+mirrors and need nothing else), joined there by the composite
+`ad_pat_sub_of_gv : ad_pat_sub_gv n … -> Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q`.  Both
+old sites keep a pointer comment.
+
+⚠️ **(b) still to do.**  THREE consumers read the bundle's conclusion
+positionally (`prop_decorate_key.v:4155`,
 `prop_completeness_sub_gen.v:3165` and `:3389`) and want the PLAIN
-`ad_pat_sub`; they recover it with `ad_pat_sub_gv_forget` then
-`ad_pat_sub_g_of`, which is the same dependency question.
+`ad_pat_sub`; they now recover it with the single `ad_pat_sub_of_gv`.
 
 ### 6.2 ⭐⭐ WHERE `ad_pat_sub_gv` ENTERS — SETTLED 2026-08-06 (scouting item 1)
 

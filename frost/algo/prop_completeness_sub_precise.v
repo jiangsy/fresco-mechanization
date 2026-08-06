@@ -448,25 +448,8 @@ Qed.
 (*  [ad_pat_sub_g] (def_decl_algo_sub_hyg.v; DESIGN §5.4).                 *)
 (* ===================================================================== *)
 
-(** Erase hygiene + fuel: a hygienic derivation is a plain one. *)
-Lemma ad_pat_sub_g_of : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_g n NM M Ψ Θ R Q ->
-  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q.
-Proof.
-  intros n NM M Ψ Θ R Q H. induction H.
-  - eapply ad_pat_sub__infer; eauto.
-  - eapply ad_pat_sub__check; eauto.
-  - eapply ad_pat_sub__forall_r; eauto.
-  - eapply ad_pat_sub__univ_ghost_r; eauto.
-  - eapply ad_pat_sub__arrow; eauto.
-  - eapply ad_pat_sub__forall_l_tagged; eauto.
-  - eapply ad_pat_sub__forall_l_untagged; eauto.
-  - eapply ad_pat_sub__ghost; eauto.
-  - eapply ad_pat_sub__ghostg; eauto.
-  - eapply ad_pat_sub__univ_ghost_l; eauto.
-  - eapply ad_pat_sub__univ_ghost_lg; eauto.
-  - eapply ad_pat_sub__flex_mono; eauto.
-Qed.
+(** ⚙ [ad_pat_sub_g_of] moved to decorated_algo/def_decl_algo_sub_hyg.v
+    (2026-08-06) — see the note there. *)
 
 (** Re-tag under set equality. *)
 Lemma ad_pat_sub_g_psi_cong : forall n NM M Ψ Θ R Q,

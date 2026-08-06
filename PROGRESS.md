@@ -240,6 +240,21 @@ Registered in `docs/PAPER-GAPS.md`.
 `_step` rows, which needs an invariant no lemma states yet ("a TC run's result
 type is scoped BELOW any suffix the run deposits").
 
+**4. §6.1's dependency-order blocker is GONE.**  `ad_pat_sub_g_of` (was
+`prop_completeness_sub_precise.v`) and `ad_pat_sub_gv_fuel_weaken` (was
+`prop_completeness_sub.v`) MOVED to `decorated_algo/def_decl_algo_sub_hyg.v`,
+joined by the composite `ad_pat_sub_of_gv`.  Both are plain inductions over
+the mirrors, so they need nothing that file does not already import — and
+`algo/prop_soundness_sub.v`, which now has to CONCLUDE `_gv`, sits before both
+completeness files.  `make coq` clean.
+
+⭐ **And §6.1's row table gained a row it under-estimated**: the `Check` row's
+leaf datum is `⌊T⌋ˢ ⊳ ⌊Qt⌋` for the CONSISTENCY's output `Qt`, while the row
+re-targets its conclusion to `inh B` (audit-F2 — the output is not literally
+`B`).  So it needs the `ad_refine_pskl` MIRROR of
+`ad_pat_consis_refine_inh_target` (prop_soundness_sub.v:366).  `Arrow`'s
+domain leaf, by contrast, is direct.
+
 **3. `lemma:precision-sub` — the Ghost row is NOT the obstacle**
 (`cex/probe_precision_sub_ghost_row.v`; hand-off §3).  `ad_precise P Q` is
 `inh{P} ⊳ inh{Q}`, and `ad_refine_syn__hole`'s fill is a SYNTHESISED painting
