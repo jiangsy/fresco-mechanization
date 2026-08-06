@@ -25,6 +25,7 @@
     hand-off asks for (docs/HANDOFF-section-d.md §7.3). *)
 
 Require Import Coq.Lists.List.
+Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
@@ -782,3 +783,95 @@ Proof.
   - (* app *)
     eapply mod_comp_ty_fn_inv. apply IHad_sd_typing1; exact Hwf.
 Qed.
+
+(* ===================================================================== *)
+(*  §9  guess^TY REFINES its input skeleton                               *)
+(* ===================================================================== *)
+
+(** ⭐ The paper asserts this inline, with no lemma: [AT-Abs]'s case reads
+    "By ⑯ and definition of [guess^TY], we have [Θ1,ᾱ ⊢ inh{P} ⊳ inh{A}]"
+    (proofs.tex, thm:sound-type-inference).  [prop_flex.v] has [guess^TY]'s
+    freshness / decls / ftv facts and its CONSISTENCY
+    ([a_guess_mono_consis]) but no refinement one — see docs/PAPER-GAPS.md.
+
+    The content is that filling a ghost with a fresh flexible IS a
+    refinement step: [ad_refine_syn__hole]'s fill may be any well-formed
+    skeleton, and a bare flexible is one.  Universal ghosts are dropped by
+    [__tophole_remove], and the concrete rows are congruences.
+
+    ⚙ SIZE INDUCTION, not derivation induction — for the same reason
+    [a_guess_mono_consis_size] is one: the source [a_guess_mono] is
+    exists-fresh while the target [ad_refine_syn] is cofinite, so the ∀
+    row turns ONE guess instance into a family through
+    [a_guess_mono_open_at], whose output is no sub-derivation.
+
+    ⭐ Note the ∀ row puts its witness in [Δ], not in [Θ1] — which is why
+    the statement carries a [Δ] at all.  The two contexts must be
+    DECOUPLED here exactly as in [ad_refine_syn_target_transport]
+    (prop_soundness_pat.v §4f): [ad_refine_syn__hole]'s fill is Δ-free BY
+    RULE, and here it is — the fills are the generated flexibles, which
+    live in [Θ1]. *)
+Lemma a_guess_mono_refine_size : forall n Θ P Ξ A,
+  size_pskl P <= n ->
+  a_guess_mono Θ P Ξ A ->
+  forall Θ1 Δ,
+  (forall α, α `in` ftvar_in_pskl P -> α `in` Δ \/ a_binds_tvar α Θ1) ->
+  (forall α1, binds α1 abind_flex_mono Ξ -> a_binds_tvar α1 Θ1) ->
+  Θ1 ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)).
+Proof.
+  induction n as [| n IHn]; intros Θ P Ξ A Hsz H;
+    [ destruct H; cbn in Hsz; lia | ].
+  destruct H as [ Θ α Hα | Θ P Ξ A Hg | Θ α | Θ
+                | Θ P Q Ξ1 Ξ2 A B Hg1 Hg2
+                | Θ P Ξ A β Hfr Hg ];
+    cbn in Hsz; intros Θ1 Δ Hvars HΞ.
+  - (* hole ↦ fresh flexible : the FILL of [__hole], Δ-free by construction *)
+    replace (pskl_to_bskl_inh (ptyp_to_pskl (ptyp_var_f α)))
+      with (pskl_to_bskl_syn (pskl_var_f α)) by reflexivity.
+    apply ad_refine_syn__hole.
+    apply a_wf_pskl__var. right. apply HΞ.
+    unfold binds; left; reflexivity.
+  - (* ∀◇P : the universal ghost is DROPPED, so the row is [tophole_remove] *)
+    apply ad_refine_syn__tophole_remove.
+    eapply IHn; [ lia | exact Hg | exact Hvars | exact HΞ ].
+  - (* variable *)
+    apply ad_refine_syn__var. apply Hvars. simpl. fsetdec.
+  - (* unit *) apply ad_refine_syn__unit.
+  - (* arrow *)
+    apply ad_refine_syn__arrow;
+      [ eapply IHn with (P := P) | eapply IHn with (P := Q) ];
+      solve [ lia | eassumption
+            | intros α Hα; apply Hvars; simpl; clear - Hα; fsetdec
+            | intros α1 Hb; apply HΞ; unfold binds in *;
+              apply in_or_app; auto ].
+  - (* ∀ : exists-fresh source, cofinite target *)
+    apply ad_refine_syn__all
+      with (L := dom Ξ `union` dom Θ1 `union` Δ `union` ftvar_in_aenv Θ
+                   `union` ftvar_in_pskl P `union` ftvar_in_ptyp A
+                   `union` singleton β).
+    intros α Hα.
+    repeat rewrite <- pskl_to_bskl_inh_open.
+    rewrite <- ptyp_to_pskl_open.
+    eapply IHn with (P := open_pskl_wrt_pskl P (pskl_var_f α))
+                    (Θ := (α ~ abind_tvar) ++ Θ);
+      [ rewrite size_pskl_open_pskl_wrt_pskl_var; lia | | | ].
+    + apply a_guess_mono_open_at;
+        [ apply a_guess_mono__forall with (β := β); [ exact Hfr | exact Hg ]
+        | clear - Hα; fsetdec ].
+    + intros β0 Hβ0.
+      apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in Hβ0.
+      simpl in Hβ0.
+      destruct (union_1 Hβ0) as [HY' | HY'].
+      * apply singleton_1 in HY'; subst. left. clear; fsetdec.
+      * destruct (Hvars _ HY') as [HΔ | Htv];
+          [ left; clear - HΔ; fsetdec | right; exact Htv ].
+    + exact HΞ.
+Qed.
+
+(** The paper's inline step, in the shape [AT-Abs] consumes it. *)
+Corollary a_guess_mono_refine : forall Θ P Ξ A Θ1 Δ,
+  a_guess_mono Θ P Ξ A ->
+  (forall α, α `in` ftvar_in_pskl P -> α `in` Δ \/ a_binds_tvar α Θ1) ->
+  (forall α1, binds α1 abind_flex_mono Ξ -> a_binds_tvar α1 Θ1) ->
+  Θ1 ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)).
+Proof. intros. eapply a_guess_mono_refine_size; eauto. Qed.
