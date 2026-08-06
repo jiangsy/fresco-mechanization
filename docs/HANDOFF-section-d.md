@@ -1,5 +1,13 @@
 # HANDOFF — section D (`proofs.tex`): soundness and completeness of skeleton and type inference
 
+**Status 2026-08-06 (sixth pass).**  ⭐ Theorem 2 (`thm:sound-type-inference`)
+has two more of its five prerequisites closed — `ad_sd_typing_mod_comp_ty`
+(§8) and `a_guess_mono_refine` (§9), both Qed and axiom-free in
+`algo/prop_soundness_typing.v`.  ⛔ Of the three left, §1's suffix ERASURE is
+now KNOWN not to be the paper's "straightforward induction" (§1 items 1–2
+and docs/PAPER-GAPS.md); §2's split-refine and `AT-App`'s `≡ᵗ` transport
+each have a scouted route recorded in §7.5's "Left for the theorem".
+
 **Status 2026-08-06 (fifth pass).** The definitional layer is DONE
 (`dd1f176`), suffix MOVING is closed (`prop_ctx_mono.v`), and ⭐⭐⭐
 **thm:sound-skeleton-inference is CLOSED**: `a_pat_sound`
@@ -62,7 +70,7 @@ their flexible rows.  What IS carried are the appendix's three explicit
 
 ---
 
-## 1. `lemma:suffix-moving` + `lemma:suffix-erasure` — the big one, do it FIRST
+## 1. `lemma:suffix-moving` ✅ + `lemma:suffix-erasure` ⛔ — moving was free, ERASURE is the big one
 
     (* moving:  Θ1,Θ2,Ξ  ⟹  Θ1,Ξ,Θ2   — mech lists grow at the FRONT,
        so the paper's [Θ1,Θ2,Ξ] is [Ξ ++ Θ2 ++ Θ1] in Coq *)
@@ -76,26 +84,50 @@ their flexible rows.  What IS carried are the appendix's three explicit
       <Ξ fresh for B> ->
       Θ ⊢ˢᵃ[ M ] e ⦂ B.
 
-⛔ **Two things the paper's "straightforward induction on the typing
-derivation" hides.**
+✅ **MOVING IS CLOSED** and cost almost nothing: `ad_sd_typing_suffix_moving`
+/ `ad_pat_suffix_moving` (prop_ctx_mono.v) fall out of
+`aenv_binds_le_perm3`, because permuting context BLOCKS changes no `binds`
+fact at all — so no dependency relation is needed for it, and item 1 below
+never bit.
 
-1. **The dependency relation does not exist yet.**  Closest existing pieces:
-   `a_suffix` (algo/def_extra.v — a block of flexible-only entries),
-   `no_flex_dep Δ Θ` and `flex_above_free Δ Θ`
-   (prop_soundness_consis.v:1452/1457).  Neither is the paper's "Ξ does not
-   depend on entries in Θ₂".  Decide its shape ONCE — every later lemma quotes
-   it.  Suggested: `forall β τ, binds β (abind_flex_mono_def τ) Ξ ->
-   ftvar_in_ptyp τ ∩ dom Θ2 [=] empty`, plus `dom Ξ ∩ dom Θ2 [=] empty`.
-2. **The induction is not over one judgement.**  `ad_sd_typing` embeds SIX
+⛔ **ERASURE IS THE OPEN ONE, and the paper's "straightforward induction on
+the typing derivation" does not go through.**  Scouted 2026-08-06; see
+docs/PAPER-GAPS.md, "`lemma:suffix-erasure` is NOT a straightforward
+induction".
+
+1. **The obstruction is `ad_pat_sub`'s `ForallL` row.**  It instantiates
+   with a decorated skeleton `ψ` the rule chooses freely — the only
+   conditions are `a_tags_sort NM Ψ' ψ` and `Θ ⨟ ∅ ⊢ₚₛᵃ ⌊ψ⌋ˢ`, and
+   `is_tskl__var` admits a `ψ` that mentions `Ξ`.  The recursive premise is
+   then at `open R ψ`, which is NOT Ξ-fresh, so the IH does not apply even
+   though the conclusion is.  Reachable: with `α̂ ∈ Ξ` DEFINED (its
+   definition is a monotype scoped in Θ by wf), `∀a. a → 1 ⩽ Q` goes
+   through `ψ = α̂` with an entirely Ξ-free `Q`.  Every OTHER way into Ξ
+   surfaces in the types — the FlexL/FlexR lookups and the rigid rows all
+   put the variable in the subject or the target.
+2. **The route that works: erase by SOLVING, not by dropping.**  A flexible
+   suffix always admits a metasubstitution κ into Θ (undefined `α̂ ↦ 1`,
+   defined `α̂ ↦` the image of its definition, which is tail-scoped by wf).
+   State each judgement's lemma as `Ξ ++ Θ ⊢ J ⟹ Θ ⊢ κJ` and recover the
+   paper's form from `κ` being the identity on Ξ-free types; at `ForallL`
+   the instantiation becomes `κψ`, still `is_tskl` + ghost-free + same tags,
+   because κ's images are monotypes.
+3. **The induction is not over one judgement.**  `ad_sd_typing` embeds SIX
    different premise forms — `ad_pat_sub` at `a_sub_mode_ty`, `ad_pat`,
    `ad_refine_syn`, `a_wf_ptyp`, `a_tyequiv`, `mod_comp_ty` — and each needs
-   its OWN moving/erasure lemma before the typing induction can close a single
-   base rule.  That per-judgement kit is the bulk of the work; the typing
-   induction on top of it really is routine.  `mod_comp_ty` is context-free, so
-   five kits, not six.
-
-Do these first: everything downstream in section D quotes them, and the kit is
-reusable for the two soundness theorems.
+   its OWN erasure lemma before the typing induction can close a single base
+   rule.  That per-judgement kit is the bulk of the work; the typing
+   induction on top of it really is routine.  `mod_comp_ty` is context-free,
+   so five kits, not six.
+4. ⚠️ **The cheap FALLBACK, if the kit is judged too expensive**: read the
+   theorem's conclusion up to a flexible suffix (`exists Ξ, a_suffix Ξ /\
+   (Ξ ++ Θ1) ⊢ˢᵃ …`).  Then the four check rows close by suffix MOVING
+   alone, and the sequential rows (`Anno`, `Freeze`, `App`) still compose,
+   because `Θ2 ⊴ Θ3` lifts to `(Ξ2 ++ Θ2) ⊴ (Ξ2 ++ Ξ3 ++ Θ3)` — peel Ξ2
+   with identity images (`a_inc__flex` needs only `a_wf_ptyp` of the
+   variable in the target, and the target keeps Ξ2), then
+   `a_inc_target_weaken`.  ⛔ This is STRICTLY WEAKER than the paper's
+   statement, so it is a fallback to be flagged, not a repair.
 
 ---
 
@@ -436,6 +468,56 @@ axiom-free.  The statement to aim at is theorem 1's mirror, one layer up
 | §5 | `a_tyequiv_isub_le`, `ad_sd_typing_isub_tm` — stability under `⊴` + tm-verbatim; the ∀-peeling rows push a RIGID entry, so they use `a_isub_cons_tvar` |
 | §6 | `ad_sd_typing_subst_tm` / `ad_sd_typing_rename_tm` — term-variable renaming, the exists-fresh → cofinite bridge the SIX term-binder rows need.  Its App row substitutes into the embedded SKELETON-inference premise, which is what `ad_pat_subst_tm` is for |
 | §7 | ⭐ `btyp_inh_painting_inv` / `btyp_check_colouring` — **in CHECK mode the colouring is FORCED** |
+| §8 | ✅ `ad_sd_typing_mod_comp_ty` (item 1 of "left", below) + its kit |
+| §9 | ✅ `a_guess_mono_refine` (item 4's second half) |
+
+#### ✅ §8 — `ad_sd_typing_mod_comp_ty` (2026-08-06, sixth pass)
+
+The `ad_pat_mod_comp_sk` mirror, Qed and axiom-free.  ⭐ **It is not that
+proof one sort up.**  At the SK layer `mod_comp_sk` is stated on a `bskl` —
+exactly what the subtyping premise's target IS — so the base rows read the
+fact straight off the premise.  At the TY layer `mod_comp_ty` is stated on a
+`btyp` while the premise's target is that `btyp`'s SKELETON, so two shape
+bridges are needed:
+
+| bridge | statement | needs lc? |
+|---|---|---|
+| `is_styp_of_is_sskl_erase` | `is_sskl (btyp_to_bskl B) -> is_styp B` | no — `is_sskl` carries it |
+| `is_ityp_of_erase_inh` | `btyp_to_bskl B = pskl_to_bskl_inh P -> is_ityp B` | ⚠️ YES |
+
+The CHECK bridge needs local closure because `btyp_to_bskl (btyp_var_b n)`
+and `pskl_to_bskl_inh (pskl_var_b n)` agree while a BOUND variable is not
+`is_ityp`.  It is supplied from the `Check` row's own consistency premise —
+hence `ad_pat_consis_lc_r` (a consistency's target is locally closed; the
+only non-immediate row is `__hole`, whose fill carries the skeleton wf) and
+`lc_btyp_of_lc_bskl_erase` (erasure to the skeleton reflects lc, via
+degree).
+
+The other lc source is the appendix's `≡ᵗ` premises, at `Freeze` and
+`AbsAnnoCheck(→)`: `a_tyequiv_lc` carries **`a_wf_aenv Θ`**, because the
+`flex_def` row hands back a flexible's DEFINITION and only the context says
+it is a monotype.  That is the same hypothesis `d_typing_skmod` carries as
+`d_wf_denv`, so the statement matches the declarative one's shape.
+
+⭐ The induction never goes under a binder: every row but `App` discharges
+its goal from its own premises, and `App` recurses at the SAME context.
+
+#### ✅ §9 — `a_guess_mono_refine` (2026-08-06, sixth pass)
+
+    Corollary a_guess_mono_refine : forall Θ P Ξ A Θ1 Δ,
+      a_guess_mono Θ P Ξ A ->
+      (forall α, α `in` ftvar_in_pskl P -> α `in` Δ \/ a_binds_tvar α Θ1) ->
+      (forall α1, binds α1 abind_flex_mono Ξ -> a_binds_tvar α1 Θ1) ->
+      Θ1 ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A))
+
+Filling a ghost with a fresh flexible IS a refinement step; a universal
+ghost is DROPPED, so `⫯.P` is `__tophole_remove`, not `__tophole_keep`.
+⚙ SIZE induction, exactly like `a_guess_mono_consis_size` (prop_flex.v):
+the source is exists-fresh, the target cofinite, so the ∀ row turns ONE
+guess instance into a family via `a_guess_mono_open_at`.  ⭐ The ∀ row puts
+its witness in **Δ**, not Θ — the §7.3 decoupling — and that is sound here
+for the reason it was unsound there: `__hole`'s fill is Δ-free BY RULE, and
+guess^TY's fills are the generated flexibles, which live in Θ1.
 
 ⭐ **§7 removes an item this hand-off previously listed.**  The two ∀-peeling
 rows (`AT-AbsCheck`/`AT-AbsAnnoCheck` `_step`) are cofinite in a RIGID α, so
@@ -497,21 +579,42 @@ species as thm:sound-skeleton-inference's AbsAnno step):
    the mech has no lemma for (prop_flex.v has only its freshness / decls /
    ftv facts).
 
-**Left for the theorem itself:**
+**Left for the theorem itself** (status 2026-08-06, sixth pass):
 
-1. `ad_sd_typing_mod_comp_ty` (the `ad_pat_mod_comp_sk` mirror).  Its
-   `unit`/`var`/`anno` rows need a TY analogue of `ad_pat_sub_mod_comp_sk`,
-   i.e. `Ψ ⨟ Θ ⊢ₛᵃ[ty|M] R ⩽ (btyp_to_bskl B) -> mod_comp_ty B M`, plus two
-   shape bridges (`is_sskl (btyp_to_bskl B) -> is_styp B`, and
-   `btyp_to_bskl B = pskl_to_bskl_inh P -> is_ityp B`).  Its `freeze` row
-   wants `lc_ptyp A`, which has to come off the rule's `≡ᵗ` premise.
-2. The eleven-row induction.  ⭐ The one row with no counterpart in theorem 1
-   is `AT-Abs`: it deposits a `guess^TY` block `αs` BETWEEN the binder and
-   the context, so the ⊴-peel has to cross it (`a_guess_mono_decls` says the
-   block is flexible-only, which is also how `a_typing_tm_ge` crosses it).
-3. §1's suffix ERASURE and §2's `lemma:split-refine` are still open and are
-   TYPE-inference-only — check whether the `AT-Abs`/`AT-App` rows really need
-   them before building either; theorem 1 turned out not to.
+1. ✅ **DONE** — `ad_sd_typing_mod_comp_ty` (§8 above).
+2. ⛔ **§1's suffix ERASURE** — confirmed a prerequisite (four CHECK rows),
+   and confirmed NOT the paper's "straightforward induction".  §1 now
+   records the obstruction (`ad_pat_sub`'s `ForallL` instantiates with a
+   freely-chosen `ψ` that may mention Ξ), the working route (erase by
+   SOLVING: `Ξ ++ Θ ⊢ J ⟹ Θ ⊢ κJ`), and a strictly-weaker fallback.
+   **This is the biggest remaining item** — five per-judgement transports.
+3. ⛔ **§2's `lemma:split-refine`, COLOURED** — also the same four check
+   rows only.  ⚙ Its `a_split__flex` row now has a fully scouted route:
+   `a_assign_sound` → invert to `ad_pat_consis__flex_r` → `consis_mono_join`
+   (prop_mono_bridge.v) reads the assignment's definition `τ` off the run as
+   `Θ1 ⊢ (β̂ → α1̂) ≡ᵗ τ`.  The one genuinely NEW fact left is the converse
+   of `refine_mono_join`: **`≡ᵗ` between monotypes gives `⊳` between their
+   paintings**.  ⛔ Do NOT prove that by induction on `≡ᵗ` — its `sym` and
+   `trans` rows would need refinement symmetry and TRANSITIVITY, and
+   transitivity is false in the mech (`cex/cex_refine_not_transitive.v`).
+   Go through `prop_normal.v`'s `a_tyequiv_downarrow` normal form instead,
+   the way `a_tyequiv_arrow_inv` (prop_sub_msubst_equiv.v) does.
+4. ⛔ **`AT-App`'s typing-under-`≡ᵗ` transport at TC** (PAPER-GAPS, WATCH 1).
+   Its equivalence half is `ad_refine_syn_inh_tyequiv` (§2), already proved;
+   what is missing is the transport itself, which bottoms out in an
+   `ad_pat_sub` TARGET transport at `ty|tc` — the mirror of
+   `ad_pat_sub_g_tyequiv_subject` / `ad_pat_consis_tyequiv_subject`
+   (prop_sub_msubst_equiv.v), which exist only on the SUBJECT side.
+   ⚙ Cheaper alternative to raise with the authors first: `sd-App` may
+   simply be MISSING the fourth `≡ᵗ` premise, the appendix already having
+   added one to `sd-Freeze` / `sd-AbsAnnoCheck` / `sd-AbsAnno` for exactly
+   this reason.
+   ✅ **DONE** — the other half, `AT-Abs`'s `guess^TY` refinement (§9).
+5. ⛔ The eleven-row induction.  ⭐ The one row with no counterpart in
+   theorem 1 is `AT-Abs`: it deposits a `guess^TY` block `αs` BETWEEN the
+   binder and the context, so the ⊴-peel has to cross it
+   (`a_guess_mono_decls` says the block is flexible-only, which is also how
+   `a_typing_tm_ge` crosses it).
 
 Then the `ad_pat_sub_gv` composition gap (§6) before the two completeness
 theorems.

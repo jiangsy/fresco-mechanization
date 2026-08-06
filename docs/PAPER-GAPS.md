@@ -28,6 +28,50 @@ recently P6-Sv at the end of this file)}.
 > Several judgments looked broken until that condition was restored.  **Check
 > that file before concluding a lemma is unprovable.**
 
+## ⛔ GAP (2026-08-06) — `lemma:suffix-erasure` is NOT a "straightforward induction on the typing derivation"; its ForallL row is a genuine obstruction
+
+    Lemma (Suffix erasure).  If typp[M]{Θ,Ξ}{M}{bid A} and Ξ is fresh for
+    bid{A}, then typp[M]{Θ}{M}{bid A}.
+    Proof.  Straightforward induction on the typing derivation.
+
+**The statement is believed TRUE.  The proof is not the stated one**, and
+the obstruction is not bookkeeping.
+
+The typing judgement embeds the all-in-one subtyping judgement, whose
+`ForallL` row **instantiates with a decorated skeleton `ψ` that the rule
+chooses freely** — its only conditions are `Θ ⊢ tags{Ψ'}{ψ}` and
+`Θ,Ξ ⊢ ⌊ψ⌋`, both of which admit a `ψ` mentioning `Ξ`'s variables.  The
+sub-derivation then runs on `open R ψ`, which is *not* fresh for `Ξ`, so
+the induction hypothesis does not apply — even though the conclusion is
+`Ξ`-free.  The configuration is reachable: with `α̂ ∈ Ξ` **defined**, its
+definition is a monotype scoped in `Θ`, so `∀a. a → 1 ⩽ Q` can be derived
+through `ψ = α̂` with a completely `Ξ`-free `Q`.  Every other way a
+derivation reaches into `Ξ` does surface in the types (the FlexL/FlexR
+lookups and the rigid-variable rows all put the variable in the subject or
+the target); `ForallL` is the one row that does not.
+
+**The route that works** (scouted in the mech, not yet built): erase by
+**solving**, not by dropping.  A suffix of flexible entries always admits
+a metasubstitution `θ` into `Θ` — map an undefined `α̂` to `1` and a
+defined one to (the image of) its definition, which is well-scoped in the
+tail by context well-formedness — so state the lemma as
+
+    Θ,Ξ ⊢ J   ⟹   Θ ⊢ θJ            (θ solves Ξ into Θ)
+
+and recover the paper's form because `θ` is the identity on `Ξ`-free
+types.  At `ForallL` the instantiation becomes `θψ`, which is `Ξ`-free and
+still a decorated skeleton (θ's images are monotypes: no quantifiers, no
+ghosts, no tags).  Cost: one such transport per judgement the typing
+derivation embeds (`⩽`, `⇨`, `∼`, `⊳`, `≡`, wf) — five context-carrying
+ones, since `skmod{TY}` is context-free.
+
+⚠️ **A weaker statement needs none of this**, and the mech may fall back
+to it: if the theorem's conclusion is read up to a flexible suffix
+("`typp{Ξ,Θ1}{M}{bid A}` for some suffix `Ξ`"), the four check rows close
+by `lemma:suffix-moving` alone — which is free, because moving a block
+changes no `binds` fact at all.  That is strictly weaker than the paper's
+claim, so it is a fallback, not a fix.
+
 ## WATCH (2026-08-06) — `thm:sound-type-inference` has TWO more inline steps with no lemma
 
 Found while checking the mechanization's route against `proofs.tex`
@@ -46,10 +90,31 @@ proved.
    (`algo/prop_soundness_typing.v` §2) — a refinement between two ghost-free
    paintings IS a type equivalence — which was built for `Freeze` and turns
    out to be needed here too.
+
+   ⭐ **Note for the authors: this may be a MISSING APPENDIX PREMISE rather
+   than a missing lemma.**  The appendix already adds an explicit
+   `Θ ⊢ _ ≡ _` premise to exactly three syntax-directed rules
+   (`sd-Freeze`, `sd-AbsAnnoCheck`, `sd-AbsAnno`) for precisely this
+   reason — the algorithm's flexibles make the two types equivalent, not
+   equal.  `sd-App`'s argument premise has the same problem and no such
+   premise; adding a fourth one there would discharge this step by rule
+   instead of by an unstated transport.  The mech has not yet chosen
+   between the two (adding the premise changes a rule, which the tree's
+   ground rules do not permit mid-campaign).
 2. **`\tilab{Abs}`** — "By ⑯ and definition of `\guessMono{P}`, we have
    `Θ1,ᾱ ⊢ inh{P} ⊳ inh{A}`".  A refinement property of `guess^TY` used as
-   if definitional; the mech has no such lemma (prop_flex.v carries only its
+   if definitional; the mech had no such lemma (prop_flex.v carries only its
    freshness, `a_decls` and ftv facts).
+   **✅ SUPPLIED AND PROVED (2026-08-06)**: `a_guess_mono_refine`
+   (`algo/prop_soundness_typing.v` §9), Qed and axiom-free.  What the
+   authors would have to write down: the statement carries a **Δ**, because
+   the ∀ row must put its witness in the refinement's own tag context
+   rather than in Θ — the same decoupling `a_consis_chk_annot_refine`
+   needed below — and it is sound here for the reason it was unsound
+   there, namely that `guess^TY`'s fills are the generated flexibles,
+   which live in Θ and are therefore Δ-free as the `□` rule requires.
+   Note also that a universal ghost `⫯.P` is DROPPED by `guess^TY`, so its
+   row is refinement's `tophole_remove`, not `tophole_keep`.
 
 ## MISSING LEMMA — ✅ SUPPLIED BY THE MECH (2026-08-06) — `thm:sound-skeleton-inference`, AbsAnno: "preservation of refinement under type equivalence" is asserted inline and never stated
 

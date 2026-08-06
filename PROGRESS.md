@@ -98,15 +98,30 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   SHELVES the avoid-set evar `?L`, so the premise never reaches the following
   tactic and resurfaces at `Qed` as "incomplete proof" — supply `L` by hand
   (that is also what keeps the file under a second)
-- ⬜ Suffix erasure — NOT a `binds`-monotone statement (it must show the
-  derivation never LOOKED into Ξ), so it needs the freshness invariant the
-  paper states and the dependency relation that still has no mech counterpart
-  (nearest: `no_flex_dep` / `flex_above_free` / `a_suffix`)
+- ⛔ Suffix erasure — NOT a `binds`-monotone statement (it must show the
+  derivation never LOOKED into Ξ).  ⚠️ **CONFIRMED 2026-08-06 to be needed**
+  (the four CHECK rows of `a_typing` DROP the pending suffix from their
+  output, unlike `a_pat`'s, which keep it), and **CONFIRMED not to be the
+  paper's "straightforward induction on the typing derivation"**: the
+  obstruction is `ad_pat_sub`'s `ForallL`, which instantiates with a
+  freely-chosen decorated skeleton `ψ` that may mention Ξ, so the recursive
+  premise is not Ξ-fresh even when the conclusion is.  Reachable with a
+  DEFINED `α̂ ∈ Ξ`.  ⭐ Working route: erase by SOLVING —
+  `Ξ ++ Θ ⊢ J ⟹ Θ ⊢ κJ` for a κ solving Ξ into Θ, identity on Ξ-free types
+  (five per-judgement transports).  Fallback (strictly weaker, flagged as
+  such): read the theorem's conclusion up to a flexible suffix, which needs
+  only suffix MOVING.  docs/PAPER-GAPS.md + HANDOFF §1
 - ⬜ Splitting refines — 2 of 3 rows trivial (`ad_refine_pskl_refl`, which
   forces an EXTERNAL wf premise); the `a_split__flex` row is a real proof: its
   premise is a full `a_consis` run.  ⭐ Route scouted: `a_assign_sound` →
   invert `ad_pat_consis__flex_r` (the only applicable rule) → `binds α
-  (abind_flex_mono_def τ) Θ1`, leaving a mono-level `≡ˢ ⟹ ⊳` obligation
+  (abind_flex_mono_def τ) Θ1`, leaving a mono-level `≡ˢ ⟹ ⊳` obligation.
+  ⚙ 2026-08-06: that last obligation is `consis_mono_join`'s output fed to
+  the CONVERSE of `refine_mono_join` (prop_mono_bridge.v).  ⛔ Do not prove
+  the converse by induction on `≡ᵗ` — `sym`/`trans` would need refinement
+  symmetry and TRANSITIVITY, and transitivity is false
+  (`cex/cex_refine_not_transitive.v`); go through `prop_normal.v`'s
+  `a_tyequiv_downarrow` normal form, as `a_tyequiv_arrow_inv` does
 - ⬜ Precision extends skeleton subtyping — ⚠️ SCOUT FIRST: `P' ⊑ P` admits
   `P' = □`, where the only applicable row is `ad_pat_sub__ghost` (inherited
   painting + `mod_comp_sk`), so the statement may need a side condition
@@ -140,9 +155,19 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   generating set).  Also banked: `a_typing_tm_ge`, `ad_sd_typing_isub_tm`,
   `btyp_syn_painting_inv`, `ad_sd_typing_subst_tm`/`_rename_tm`, and ⭐
   `btyp_inh_painting_inv` (in CHECK mode the colouring is FORCED, which
-  removes the need for a TYPE-variable renaming at this layer).  LEFT:
-  `ad_sd_typing_mod_comp_ty` (+ a TY analogue of `ad_pat_sub_mod_comp_sk`
-  and two shape bridges), then the eleven-row induction; see
+  removes the need for a TYPE-variable renaming at this layer).
+  **2026-08-06 sixth pass — two more prerequisites CLOSED**, both Qed and
+  axiom-free: §8 `ad_sd_typing_mod_comp_ty` (⭐ not the SK proof one sort up
+  — `mod_comp_ty` is stated on a `btyp` while the premise's target is that
+  `btyp`'s SKELETON, so it needs `is_styp_of_is_sskl_erase` and
+  `is_ityp_of_erase_inh`, the second of which genuinely needs local closure,
+  supplied by `ad_pat_consis_lc_r` + `lc_btyp_of_lc_bskl_erase`; the `≡ᵗ`
+  rows take theirs from `a_tyequiv_lc`, which carries `a_wf_aenv` exactly as
+  `d_typing_skmod` carries `d_wf_denv`) and §9 `a_guess_mono_refine` (the
+  paper's inline "by definition of `guess^TY`, `Θ1,ᾱ ⊢ inh{P} ⊳ inh{A}`" —
+  a SIZE induction, with the ∀ witness going into **Δ**).
+  LEFT: suffix ERASURE (see above), COLOURED split-refine, `AT-App`'s
+  typing-under-`≡ᵗ` transport at TC, then the eleven-row induction; see
   docs/HANDOFF-section-d.md §7.5
 - ⬜ Theorems: Completeness+optimality of skeleton / type inference — ⚠️ these
   hit §4b's composition gap (they consume `a_sub_complete_thm`, which assumes
@@ -155,7 +180,62 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-06 (latest) — ⭐ **SECTION D: thm:sound-type-inference STARTED — its `Freeze` ingredient is DERIVED from theorem 1's transport, not rebuilt**
+## 2026-08-06 (latest) — ⭐ **SECTION D: two more of theorem 2's prerequisites CLOSED — and `lemma:suffix-erasure` is NOT the "straightforward induction" the paper claims**
+
+`algo/prop_soundness_typing.v` §8–§9, both Qed and axiom-free; `make coq`
+clean.
+
+**§8 `ad_sd_typing_mod_comp_ty`.**  ⭐ Not `ad_pat_mod_comp_sk` one sort up.
+At the SK layer `mod_comp_sk` is stated on a `bskl` — exactly what the
+subtyping premise's target IS — so the base rows read the fact off the
+premise.  At the TY layer `mod_comp_ty` is on a `btyp` while the premise's
+target is that `btyp`'s SKELETON, so two shape bridges are needed:
+`is_styp_of_is_sskl_erase` (INFER) and `is_ityp_of_erase_inh` (CHECK).
+⚠️ Only the CHECK one needs local closure — `is_sskl` carries lc itself,
+whereas `btyp_to_bskl (btyp_var_b n)` and `pskl_to_bskl_inh (pskl_var_b n)`
+agree while a BOUND variable is not `is_ityp`.  It is supplied from the
+`Check` row's own consistency premise (`ad_pat_consis_lc_r`,
+`lc_btyp_of_lc_bskl_erase`).  The other lc source is the appendix's `≡ᵗ`
+premises at `Freeze` / `AbsAnnoCheck(→)`: `a_tyequiv_lc` carries
+`a_wf_aenv Θ`, because the `flex_def` row hands back a DEFINITION and only
+the context says it is a monotype — the same hypothesis `d_typing_skmod`
+carries as `d_wf_denv`.  ⭐ The induction never goes under a binder.
+
+**§9 `a_guess_mono_refine`.**  The paper's "By ⑯ and definition of
+`guess^TY`, we have `Θ1,ᾱ ⊢ inh{P} ⊳ inh{A}`" (AT-Abs), which exists
+nowhere as a lemma.  Filling a ghost with a fresh flexible IS a refinement
+step; a universal ghost is DROPPED, so `⫯.P` is `tophole_remove`, not
+`tophole_keep`.  ⚙ SIZE induction (source exists-fresh, target cofinite —
+the ∀ row goes through `a_guess_mono_open_at`).  ⭐ The statement carries a
+**Δ** and the ∀ row puts its witness there, the same decoupling
+`ad_refine_syn_target_transport` needed; sound here for the reason it was
+unsound there — `__hole`'s fill is Δ-free BY RULE, and guess^TY's fills are
+the generated flexibles, which live in Θ.
+
+**⛔ The scouting result that changes the plan: `lemma:suffix-erasure`.**
+It IS needed (the four CHECK rows of `a_typing` drop the pending suffix
+from their output; `a_pat`'s keep it, which is why theorem 1 dodged it),
+and it is NOT "a straightforward induction on the typing derivation".  The
+obstruction is `ad_pat_sub`'s `ForallL`: it instantiates with a decorated
+skeleton `ψ` the rule chooses freely — `is_tskl__var` admits one that
+mentions Ξ — so the recursive premise sits at `open R ψ`, not Ξ-fresh, even
+though the conclusion is.  The configuration is reachable with a DEFINED
+`α̂ ∈ Ξ`.  Every OTHER route into Ξ surfaces in the types.  ⭐ The route
+that works: erase by SOLVING, not dropping — `Ξ ++ Θ ⊢ J ⟹ Θ ⊢ κJ` where κ
+solves Ξ into Θ (undefined `α̂ ↦ 1`, defined `α̂ ↦` its definition's image),
+which is the identity on Ξ-free types and turns `ψ` into an Ξ-free `κψ`
+that is still `is_tskl` + ghost-free + same-tags.  Recorded in
+docs/PAPER-GAPS.md and HANDOFF §1, together with a strictly-weaker fallback
+(read the conclusion up to a flexible suffix; then suffix MOVING alone
+suffices, and the sequential rows still compose via
+`(Ξ2 ++ Θ2) ⊴ (Ξ2 ++ Ξ3 ++ Θ3)`).
+
+Also recorded, for the authors: `sd-App` may simply be MISSING a fourth
+`≡ᵗ` premise.  The appendix already adds one to `sd-Freeze`,
+`sd-AbsAnnoCheck` and `sd-AbsAnno` for exactly the reason `AT-App`'s
+"Thus by ⑧ and ⑬" needs a transport the paper never states.
+
+## 2026-08-06 — ⭐ **SECTION D: thm:sound-type-inference STARTED — its `Freeze` ingredient is DERIVED from theorem 1's transport, not rebuilt**
 
 New file `algo/prop_soundness_typing.v`; all Qed and axiom-free; `make coq`
 clean.
