@@ -431,22 +431,35 @@ axiom-free.  The statement to aim at is theorem 1's mirror, one layer up
 |---|---|
 | §1 | `btyp_to_bskl_ptyp_to_btyp_inh`, `btyp_to_ptyp_open`, `ptyp_to_btyp_inh_open`, and `btyp_syn_painting_inv` (a colouring whose painting is SYNTHESISED is the all-synthesised one — how `sd-Freeze`'s `ptyp_to_btyp_syn B` shape is read off the IH's `◇ ⊳ bid(B)` through `ad_refine_syn_syn_l`) |
 | §2 | ⭐ `ad_refine_syn_inh_tyequiv` — **a refinement between two GHOST-FREE paintings IS a type equivalence**.  Refinement's job is filling ghosts; between paintings of plain types only the structural rows and the two flexible lookups can fire, which is exactly `≡ᵗ`'s generating set.  Δ plays no part, because `a_tyequiv__all` binds nothing in Θ |
-| §3 | ⭐ `a_consis_chk_tyequiv` — **the `Freeze` ingredient**, i.e. the paper's "which further gives `Θ2 ⊢ B ≡ A`", DERIVED from §7.3's transport as prescribed: the transport turns the consistency run's own output colouring into a colouring of the SUBJECT, and §2 reads the resulting ghost-free refinement as an equivalence |
+| §3 | ⭐ `a_consis_chk_tyequiv` — **the `Freeze` ingredient**, i.e. the paper's "which further gives `Θ2 ⊢ B ≡ A`", DERIVED from §7.3's transport as prescribed |
 | §4 | `a_typing_tm_ge` — reverse tm-verbatim for `a_typing` (the `AT-Abs` row additionally crosses the `guess^TY` block `αs`, which is flexible-only) |
-| §5 | `a_tyequiv_isub_le`, `ad_sd_typing_isub_tm` — stability of the declarative typing judgement under `⊴` + tm-verbatim; the ∀-peeling rows push a RIGID entry, so they use `a_isub_cons_tvar` |
+| §5 | `a_tyequiv_isub_le`, `ad_sd_typing_isub_tm` — stability under `⊴` + tm-verbatim; the ∀-peeling rows push a RIGID entry, so they use `a_isub_cons_tvar` |
+| §6 | `ad_sd_typing_subst_tm` / `ad_sd_typing_rename_tm` — term-variable renaming, the exists-fresh → cofinite bridge the SIX term-binder rows need.  Its App row substitutes into the embedded SKELETON-inference premise, which is what `ad_pat_subst_tm` is for |
+| §7 | ⭐ `btyp_inh_painting_inv` / `btyp_check_colouring` — **in CHECK mode the colouring is FORCED** |
+
+⭐ **§7 removes an item this hand-off previously listed.**  The two ∀-peeling
+rows (`AT-AbsCheck`/`AT-AbsAnnoCheck` `_step`) are cofinite in a RIGID α, so
+the naive route to their declarative counterparts wants a type-variable
+renaming for `ad_sd_typing` — which would mean renaming lemmas for every
+judgement it embeds.  It is not needed: those rows run at TC, where
+`mod_comp_ty B mode_tc` is `is_ityp B` and an inherited type has only ONE
+colouring, so the IH's colouring at each α is already
+`ptyp_to_btyp_inh` of its erasure — i.e. of the `open … (btyp_var_f α)`
+shape the rule wants.  Only the TERM-binder rows need a renaming (§6).
 
 **Left for the theorem itself:**
 
-1. `ad_sd_typing_rename_tm` (the `ad_pat_rename_tm` mirror — exists-fresh →
-   cofinite for the six binder rows) and, for the two `_step` rows, a
-   TYPE-variable renaming for `ad_sd_typing`, which is new at this layer.
-2. `ad_sd_typing_mod_comp_ty` (the `ad_pat_mod_comp_sk` mirror) and the
-   `is_ityp` obligations the four check rows carry.
-3. The eleven-row induction.  `AT-Abs` is the one row with no counterpart in
-   theorem 1: it deposits a `guess^TY` block `αs` between the binder and the
-   context, so the ⊴-peel has to cross it (`a_guess_mono_decls` says the
-   block is flexible-only).
-4. §1's suffix ERASURE and §2's `lemma:split-refine` are still open and are
+1. `ad_sd_typing_mod_comp_ty` (the `ad_pat_mod_comp_sk` mirror).  Its
+   `unit`/`var`/`anno` rows need a TY analogue of `ad_pat_sub_mod_comp_sk`,
+   i.e. `Ψ ⨟ Θ ⊢ₛᵃ[ty|M] R ⩽ (btyp_to_bskl B) -> mod_comp_ty B M`, plus two
+   shape bridges (`is_sskl (btyp_to_bskl B) -> is_styp B`, and
+   `btyp_to_bskl B = pskl_to_bskl_inh P -> is_ityp B`).  Its `freeze` row
+   wants `lc_ptyp A`, which has to come off the rule's `≡ᵗ` premise.
+2. The eleven-row induction.  ⭐ The one row with no counterpart in theorem 1
+   is `AT-Abs`: it deposits a `guess^TY` block `αs` BETWEEN the binder and
+   the context, so the ⊴-peel has to cross it (`a_guess_mono_decls` says the
+   block is flexible-only, which is also how `a_typing_tm_ge` crosses it).
+3. §1's suffix ERASURE and §2's `lemma:split-refine` are still open and are
    TYPE-inference-only — check whether the `AT-Abs`/`AT-App` rows really need
    them before building either; theorem 1 turned out not to.
 

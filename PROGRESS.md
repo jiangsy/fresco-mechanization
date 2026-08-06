@@ -138,9 +138,11 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   (refinement's job is filling ghosts; between paintings of plain types only
   the structural rows and the two flexible lookups can fire — exactly `≡ᵗ`'s
   generating set).  Also banked: `a_typing_tm_ge`, `ad_sd_typing_isub_tm`,
-  `btyp_syn_painting_inv`.  LEFT: `ad_sd_typing` renamings (term AND type
-  variable — the two `_step` rows peel ∀s), `ad_sd_typing_mod_comp_ty` +
-  the `is_ityp` obligations, then the eleven-row induction; see
+  `btyp_syn_painting_inv`, `ad_sd_typing_subst_tm`/`_rename_tm`, and ⭐
+  `btyp_inh_painting_inv` (in CHECK mode the colouring is FORCED, which
+  removes the need for a TYPE-variable renaming at this layer).  LEFT:
+  `ad_sd_typing_mod_comp_ty` (+ a TY analogue of `ad_pat_sub_mod_comp_sk`
+  and two shape bridges), then the eleven-row induction; see
   docs/HANDOFF-section-d.md §7.5
 - ⬜ Theorems: Completeness+optimality of skeleton / type inference — ⚠️ these
   hit §4b's composition gap (they consume `a_sub_complete_thm`, which assumes
@@ -187,13 +189,28 @@ painting is synthesised is the all-synthesised one — how `sd-Freeze`'s
 `ptyp_to_btyp_syn B` shape is read off the IH's `◇ ⊳ bid(B)`);
 `a_tyequiv_isub_le`.
 
-**LEFT** (HANDOFF §7.5, which now carries the target statement and a per-item
-list): `ad_sd_typing` renamings — term AND type variable, the latter new at
-this layer because the two `_step` rows peel ∀s; `ad_sd_typing_mod_comp_ty`
-plus the `is_ityp` obligations of the four check rows; then the eleven-row
-induction, whose one genuinely new row is `AT-Abs` (it deposits the
-`guess^TY` block between the binder and the context, so the ⊴-peel has to
-cross it).
+**Also banked, second pass**: `ad_sd_typing_subst_tm` / `_rename_tm` (the
+term-variable renaming the six term-binder rows need; its App row
+substitutes into the embedded SKELETON-inference premise, which is what
+`ad_pat_subst_tm` is for), and ⭐ `btyp_inh_painting_inv`:
+
+**⭐ IN CHECK MODE THE COLOURING IS FORCED**, which REMOVES an item from the
+hand-off's list.  The two ∀-peeling rows (`AT-AbsCheck`/`AT-AbsAnnoCheck`
+`_step`) are cofinite in a RIGID α, so the naive route to their declarative
+counterparts wants a TYPE-variable renaming for `ad_sd_typing` — which would
+mean renaming lemmas for every judgement it embeds.  It is not needed: those
+rows run at TC, where `mod_comp_ty B mode_tc` is `is_ityp B` and an inherited
+type has only ONE colouring, so the IH's colouring at each α is already
+`ptyp_to_btyp_inh` of its erasure — exactly the `open … (btyp_var_f α)` shape
+the rule wants.  Only the TERM-binder rows need a renaming.
+
+**LEFT** (HANDOFF §7.5): `ad_sd_typing_mod_comp_ty` — its `unit`/`var`/`anno`
+rows want a TY analogue of `ad_pat_sub_mod_comp_sk` plus two shape bridges
+(`is_sskl (btyp_to_bskl B) -> is_styp B`, `btyp_to_bskl B =
+pskl_to_bskl_inh P -> is_ityp B`), and its `freeze` row wants `lc_ptyp A` off
+the rule's `≡ᵗ` premise; then the eleven-row induction, whose one genuinely
+new row is `AT-Abs` (it deposits the `guess^TY` block between the binder and
+the context, so the ⊴-peel has to cross it).
 
 ## 2026-08-06 — ⭐⭐⭐ **SECTION D: `thm:sound-skeleton-inference` IS CLOSED** — `a_pat_sound` is axiom-free, and the paper's un-stated "preservation of refinement under type equivalence" is supplied
 

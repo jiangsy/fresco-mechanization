@@ -363,3 +363,200 @@ Proof.
       | apply IHad_sd_typing1; assumption
       | apply IHad_sd_typing2; assumption ].
 Qed.
+
+(* ===================================================================== *)
+(*  §6  Term-variable renaming for [ad_sd_typing]                         *)
+(* ===================================================================== *)
+
+(** The [ad_pat_subst_tm] mirror one layer up: types and skeletons contain
+    no term variables, so only the subject and the renamed KEY move, and
+    every type-level premise transports along the term-blind relation.
+    The App row substitutes into its SKELETON-inference premise too, which
+    is exactly what [ad_pat_subst_tm] is for. *)
+Lemma ad_sd_typing_subst_tm : forall M Θ' e B,
+  Θ' ⊢ˢᵃ[ M ] e ⦂ B ->
+  forall Θa x (b : abind) Θ0 y,
+  Θ' = Θa ++ (x ~ b) ++ Θ0 ->
+  abind_is_tm b ->
+  x `notin` dom Θa `union` dom Θ0 ->
+  (Θa ++ (y ~ b) ++ Θ0) ⊢ˢᵃ[ M ] (subst_exp_in_exp (exp_var_f y) x e) ⦂ B.
+Proof.
+  intros M Θ' e B H; induction H;
+    intros Θa x0 b0 Θb y Heq Htm Hx0; subst; simpl.
+  - (* unit *)
+    apply ad_sd_typing__unit.
+    eapply ad_pat_sub_mono;
+      [ eassumption | apply aenv_tbinds_le_rename_tm;
+                      apply abind_is_tm_not_ty; exact Htm ].
+  - (* var *)
+    destruct_if as [Heqx | Hne].
+    + subst x.
+      assert (Hb0 : abind_var_typ A = b0).
+      { apply binds_app_1 in H as [Hb | Hb];
+          [ exfalso; apply binds_In in Hb; clear - Hb Hx0; fsetdec | ].
+        apply binds_app_1 in Hb as [Hb | Hb];
+          [ | exfalso; apply binds_In in Hb; clear - Hb Hx0; fsetdec ].
+        destruct Hb as [Hp | []]. inversion Hp; reflexivity. }
+      eapply ad_sd_typing__var;
+        [ rewrite Hb0; apply binds_app_3;
+          unfold binds; simpl; left; reflexivity
+        | eapply ad_pat_sub_mono;
+            [ eassumption | apply aenv_tbinds_le_rename_tm;
+                            apply abind_is_tm_not_ty; exact Htm ] ].
+    + eapply ad_sd_typing__var;
+        [ | eapply ad_pat_sub_mono;
+              [ eassumption | apply aenv_tbinds_le_rename_tm;
+                              apply abind_is_tm_not_ty; exact Htm ] ].
+      apply binds_app_1 in H as [Hb | Hb];
+        [ apply binds_app_2; exact Hb | ].
+      apply binds_app_1 in Hb as [Hb | Hb];
+        [ destruct Hb as [Hp | []]; inversion Hp; subst; exfalso; auto | ].
+      apply binds_app_3; unfold binds; simpl; right; exact Hb.
+  - (* anno *)
+    eapply ad_sd_typing__anno;
+      [ apply IHad_sd_typing; auto
+      | eapply ad_pat_sub_mono;
+          [ eassumption | apply aenv_tbinds_le_rename_tm;
+                          apply abind_is_tm_not_ty; exact Htm ] ].
+  - (* freeze *)
+    eapply ad_sd_typing__freeze;
+      [ apply IHad_sd_typing; auto
+      | eapply a_tyequiv_mono;
+          [ eassumption | apply aenv_tbinds_le_rename_tm;
+                          apply abind_is_tm_not_ty; exact Htm ] ].
+  - (* abs_check_step : a RIGID binder joins the prefix *)
+    apply ad_sd_typing__abs_check_step
+      with (L := L `union` singleton x0 `union` singleton y);
+      [ assumption | ].
+    intros α Hα.
+    apply (H1 α ltac:(clear - Hα; fsetdec)
+             ((α ~ abind_tvar) ++ Θa) x0 b0 Θb y);
+      [ reflexivity | exact Htm | simpl; clear - Hx0 Hα; fsetdec ].
+  - (* abs_check_base *)
+    apply ad_sd_typing__abs_check_base
+      with (L := L `union` singleton x0 `union` singleton y);
+      [ eapply a_wf_ptyp_mono;
+          [ eassumption | apply aenv_tbinds_le_rename_tm;
+                          apply abind_is_tm_not_ty; exact Htm ]
+      | assumption | ].
+    intros z Hz.
+    rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
+      [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
+    apply (H2 z ltac:(clear - Hz; fsetdec)
+             ((z ~ abind_var_typ A) ++ Θa) x0 b0 Θb y);
+      [ reflexivity | exact Htm | simpl; clear - Hx0 Hz; fsetdec ].
+  - (* abs_anno_check_step *)
+    apply ad_sd_typing__abs_anno_check_step
+      with (L := L `union` singleton x0 `union` singleton y);
+      [ assumption | ].
+    intros α Hα.
+    apply (H1 α ltac:(clear - Hα; fsetdec)
+             ((α ~ abind_tvar) ++ Θa) x0 b0 Θb y);
+      [ reflexivity | exact Htm | simpl; clear - Hx0 Hα; fsetdec ].
+  - (* abs_anno_check_base *)
+    apply ad_sd_typing__abs_anno_check_base
+      with (L := L `union` singleton x0 `union` singleton y) (A' := A');
+      [ eapply a_wf_ptyp_mono;
+          [ eassumption | apply aenv_tbinds_le_rename_tm;
+                          apply abind_is_tm_not_ty; exact Htm ]
+      | eapply a_tyequiv_mono;
+          [ eassumption | apply aenv_tbinds_le_rename_tm;
+                          apply abind_is_tm_not_ty; exact Htm ]
+      | assumption | ].
+    intros z Hz.
+    rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
+      [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
+    apply (H3 z ltac:(clear - Hz; fsetdec)
+             ((z ~ abind_var_typ A) ++ Θa) x0 b0 Θb y);
+      [ reflexivity | exact Htm | simpl; clear - Hx0 Hz; fsetdec ].
+  - (* abs *)
+    apply ad_sd_typing__abs
+      with (L := L `union` singleton x0 `union` singleton y);
+      [ assumption
+      | eapply a_wf_ptyp_mono;
+          [ eassumption | apply aenv_tbinds_le_rename_tm;
+                          apply abind_is_tm_not_ty; exact Htm ]
+      | assumption | ].
+    intros z Hz.
+    rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
+      [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
+    apply (H3 z ltac:(clear - Hz; fsetdec)
+             ((z ~ abind_var_typ A) ++ Θa) x0 b0 Θb y);
+      [ reflexivity | exact Htm | simpl; clear - Hx0 Hz; fsetdec ].
+  - (* abs_anno *)
+    eapply ad_sd_typing__abs_anno
+      with (L := L `union` singleton x0 `union` singleton y);
+      try assumption; try reflexivity;
+      try (eapply a_wf_ptyp_mono;
+           [ eassumption | apply aenv_tbinds_le_rename_tm;
+                           apply abind_is_tm_not_ty; exact Htm ]);
+      try (eapply a_tyequiv_mono;
+           [ eassumption | apply aenv_tbinds_le_rename_tm;
+                           apply abind_is_tm_not_ty; exact Htm ]).
+    intros z Hz.
+    rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
+      [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
+    apply (H5 z ltac:(clear - Hz; fsetdec)
+             ((z ~ abind_var_typ A) ++ Θa) x0 b0 Θb y);
+      [ reflexivity | exact Htm | simpl; clear - Hx0 Hz; fsetdec ].
+  - (* app : the skeleton-inference premise is substituted too *)
+    eapply ad_sd_typing__app;
+      [ eapply ad_pat_subst_tm; [ eassumption | reflexivity | exact Htm
+                                | exact Hx0 ]
+      | eapply ad_refine_syn_mono;
+          [ eassumption | apply aenv_tbinds_le_rename_tm;
+                          apply abind_is_tm_not_ty; exact Htm ]
+      | apply IHad_sd_typing1; auto
+      | apply IHad_sd_typing2; auto ].
+Qed.
+
+(** The exists-fresh → cofinite bridge the six term-binder rows need. *)
+Corollary ad_sd_typing_rename_tm : forall M x (b : abind) Θ0 e B y,
+  ((x ~ b) ++ Θ0) ⊢ˢᵃ[ M ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ B ->
+  abind_is_tm b ->
+  x `notin` dom Θ0 `union` fvar_in_exp e ->
+  ((y ~ b) ++ Θ0) ⊢ˢᵃ[ M ] (open_exp_wrt_exp e (exp_var_f y)) ⦂ B.
+Proof.
+  intros * Hd Htm Hx.
+  rewrite (subst_exp_in_exp_intro x); [ | clear - Hx; fsetdec ].
+  change ((y ~ b) ++ Θ0) with (nil ++ (y ~ b) ++ Θ0).
+  eapply ad_sd_typing_subst_tm;
+    [ exact Hd | reflexivity | exact Htm | simpl; clear - Hx; fsetdec ].
+Qed.
+
+(* ===================================================================== *)
+(*  §7  ⭐ In CHECK mode the colouring is FORCED                          *)
+(* ===================================================================== *)
+
+(** [mod_comp_ty B mode_tc] is [is_ityp B], and an inherited type has only
+    one colouring — so at TC the declarative judgement's [btyp] is a
+    FUNCTION of its erasure.
+
+    ⭐ WHY THIS MATTERS.  The two [∀]-peeling rows of [a_typing]
+    ([AT-AbsCheck]/[AT-AbsAnnoCheck] `_step`) are cofinite in a RIGID α, so
+    the naive route to their declarative counterparts needs a
+    type-variable renaming for [ad_sd_typing] — which would mean renaming
+    lemmas for every judgement it embeds.  It is not needed: those rows run
+    at TC, where the IH's colouring at each α is forced to be
+    [ptyp_to_btyp_inh] of the erasure, hence already of the
+    [open … (btyp_var_f α)] shape the rule wants.  Only the TERM-binder
+    rows need a renaming (§6). *)
+Lemma btyp_inh_painting_inv : forall B,
+  is_ityp B -> B = ptyp_to_btyp_inh (btyp_to_ptyp B).
+Proof.
+  intros B H; induction H; simpl; try reflexivity.
+  - f_equal; assumption.
+  - f_equal.
+    destruct (atom_fresh (L `union` ftvar_in_btyp A
+                            `union` ftvar_in_btyp
+                                      (ptyp_to_btyp_inh (btyp_to_ptyp A))))
+      as [α Hα].
+    apply (open_btyp_wrt_btyp_inj _ _ α);
+      [ clear - Hα; fsetdec | clear - Hα; fsetdec | ].
+    rewrite <- ptyp_to_btyp_inh_open, <- btyp_to_ptyp_open.
+    apply H0. clear - Hα; fsetdec.
+Qed.
+
+Corollary btyp_check_colouring : forall B A,
+  is_ityp B -> btyp_to_ptyp B = A -> B = ptyp_to_btyp_inh A.
+Proof. intros B A Hi Heq. subst A. apply btyp_inh_painting_inv; exact Hi. Qed.
