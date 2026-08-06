@@ -875,3 +875,139 @@ Corollary a_guess_mono_refine : forall Θ P Ξ A Θ1 Δ,
   (forall α1, binds α1 abind_flex_mono Ξ -> a_binds_tvar α1 Θ1) ->
   Θ1 ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)).
 Proof. intros. eapply a_guess_mono_refine_size; eauto. Qed.
+
+(* ===================================================================== *)
+(*  §10  A MONOTYPE consistency IS a refinement                          *)
+(* ===================================================================== *)
+
+(** ⭐ The two judgements have the SAME five rows once the subject is a
+    monotype painting — [unit], [var], [arrow] and the two flexible
+    lookups — so the derivation maps across one row at a time.  Everything
+    that distinguishes them (refinement's ghost-filling, consistency's
+    quantifier rows) is unreachable from a monotype subject.
+
+    This is the fact `lemma:split-refine`'s flexible row needs, and it is
+    the one the hand-off flagged as genuinely new.  ⛔ Note it is NOT
+    proved by induction on `≡ᵗ`: that route would need refinement's
+    symmetry and TRANSITIVITY, and transitivity is FALSE in the mech
+    (cex/cex_refine_not_transitive.v).  Going through the CONSISTENCY
+    instead needs neither — `consis_mono_sym` (prop_mono_bridge.v) supplies
+    the direction change. *)
+Lemma ad_pat_consis_mono_to_refine : forall Ψ Θ R Qt,
+  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Qt ->
+  a_wf_aenv Θ ->
+  forall A Δ, R = ptyp_to_uskl_syn A -> mono_ptyp A ->
+  Θ ⨟ Δ ⊢ᵣᵃ (ptyp_to_bskl_syn A) ⊳ Qt.
+Proof.
+  intros Ψ Θ R Qt Hc Hwf; induction Hc; intros A0 Δ HeqS HmA0;
+    unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn in *.
+  - (* unit *)
+    destruct HmA0; simpl in HeqS; try discriminate.
+    simpl. apply ad_refine_syn__unit.
+  - (* var *)
+    destruct HmA0 as [ | α0 | ]; simpl in HeqS; try discriminate.
+    inversion HeqS; subst. simpl. apply ad_refine_syn__var. right; assumption.
+  - (* arrow *)
+    destruct HmA0 as [ | | A1 A2 Hm1 Hm2 ]; simpl in HeqS; try discriminate.
+    inversion HeqS; subst.
+    simpl. apply ad_refine_syn__arrow; [ eapply IHHc1 | eapply IHHc2 ];
+      solve [ reflexivity | assumption ].
+  - (* forall_inh_tagged *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* forall_inh_untagged *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* forall_syn_tagged *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* forall_syn *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* ghostg *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* topholeg *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* hole *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* tophole *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* tophole_inh *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* tophole_drop *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* flex_l : the lookup is refinement's own [flex_l] *)
+    destruct HmA0 as [ | α0 | ]; simpl in HeqS; try discriminate.
+    inversion HeqS; subst.
+    assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
+    simpl. eapply ad_refine_syn__flex_l; [ eassumption | ].
+    eapply IHHc; solve [ reflexivity | assumption ].
+  - (* flex_r : and the mirror *)
+    assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
+    eapply ad_refine_syn__flex_r; [ eassumption | ].
+    eapply IHHc; solve [ reflexivity | assumption ].
+Qed.
+
+(* ===================================================================== *)
+(*  §11  lemma:split-refine, COLOURED                                    *)
+(* ===================================================================== *)
+
+(** The paper's `lemma:split-refine` (proofs.tex): a split refines.  Stated
+    COLOURED — the shape `a_typing`'s four CHECK rows consume — rather than
+    in the uncoloured `ad_refine_pskl` form.
+
+    ⚠️ THE FRESHNESS SIDE CONDITION.  `a_split__flex` invents two flexible
+    variables and the mech's rule records NO freshness for them (the paper
+    says "fresh" in prose).  `a_assign_sound` needs the extended context
+    well-formed, so the condition is carried as a hypothesis in the only
+    shape the statement can express it — quantified over the row's own
+    outputs.  WF-SIDE-CONDITIONS pattern. *)
+Lemma a_split_refines : forall Θ0 P0 P Q Θ1,
+  Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 ->
+  a_wf_aenv Θ0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  (forall β α1, P = pskl_var_f β -> Q = pskl_var_f α1 ->
+     β `notin` dom Θ0 /\ α1 `notin` (dom Θ0 `union` singleton β)) ->
+  Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0)
+                ⊳ (pskl_to_bskl_inh (pskl_arrow P Q)).
+Proof.
+  intros Θ0 P0 P Q Θ1 Hs Hwf HwfP Hfresh; inversion Hs; subst.
+  - (* arrow : reflexivity at the inherited painting *)
+    apply ad_refine_syn_refl_inh. exact HwfP.
+  - (* hole : the fill is [□ → □] *)
+    simpl.
+    replace (bskl_arrow bskl_hole bskl_hole)
+      with (pskl_to_bskl_syn (pskl_arrow pskl_hole pskl_hole)) by reflexivity.
+    apply ad_refine_syn__hole.
+    apply a_wf_pskl__arrow; apply a_wf_pskl__hole.
+  - (* flex : the row's premise is a full consistency run *)
+    destruct (Hfresh _ _ eq_refl eq_refl) as [Hfrβ Hfrα1].
+    assert (HwfX : a_wf_aenv ((α1 ~ abind_flex_mono)
+                               ++ (β ~ abind_flex_mono) ++ Θ0)).
+    { apply a_wf_aenv__flex;
+        [ simpl_env; repeat rewrite dom_app; simpl;
+          clear - Hfrα1; fsetdec | ].
+      apply a_wf_aenv__flex; [ clear - Hfrβ; fsetdec | exact Hwf ]. }
+    assert (HwfArr : ((α1 ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θ0)
+                       ⨟ empty ⊢ₚₛᵃ (pskl_arrow (pskl_var_f β)
+                                                (pskl_var_f α1))).
+    { apply a_wf_pskl__arrow; apply a_wf_pskl__var; right; right; left;
+        [ unfold binds; simpl; right; left; reflexivity
+        | unfold binds; simpl; left; reflexivity ]. }
+    (* ⭐ ONLY FlexL can fire: the subject is a VARIABLE and the input an
+       ARROW, and no other row admits that pair. *)
+    match goal with
+    | Hc : a_consis _ _ _ _ _ _ _ |- _ => inversion Hc; subst
+    end.
+    match goal with
+    | Ha : _ ⊲[ nil ] _ ≔ _ ⊣ _ |- _ =>
+        pose proof (a_assign_sound Ha a_decls__nil
+                      ltac:(simpl_env; exact HwfX)
+                      ltac:(simpl_env; exact HwfArr)) as [Hle Hcons];
+        pose proof (a_assign_preserves_wf Ha a_decls__nil
+                      ltac:(simpl_env; exact HwfX)
+                      ltac:(simpl_env; exact HwfArr)) as Hwf1
+    end.
+    (* the run's own consistency can only be FlexR: an ARROW subject
+       against a bare variable target *)
+    inversion Hcons; subst.
+    match goal with
+    | Hb : binds _ (abind_flex_mono_def ?τ0) Θ1,
+      Hc2 : _ ⨟ Θ1 ⊢ₛᵃ _ ∼ (ptyp_to_bskl_syn ?τ0) |- _ =>
+        assert (Hmτ : mono_ptyp τ0)
+          by (eapply a_wf_aenv_binds_def_mono; eassumption);
+        eapply ad_refine_syn__flex_l; [ exact Hb | ];
+        eapply ad_pat_consis_mono_to_refine with (A := τ0);
+          [ eapply consis_mono_sym with
+              (A := ptyp_arrow (ptyp_var_f β) (ptyp_var_f α1)) (A' := τ0);
+              [ exact Hc2 | exact Hwf1 | reflexivity | reflexivity
+              | repeat constructor | exact Hmτ ]
+          | exact Hwf1 | reflexivity | exact Hmτ ]
+    end.
+Qed.
