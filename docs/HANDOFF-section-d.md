@@ -406,12 +406,49 @@ this transport rather than rebuilding it.**
   premise is a context EQUATION (higher-order unification); apply the IH
   explicitly.
 
-### 7.5 What is next
+### 7.5 What is next — thm:sound-type-inference (STARTED)
 
-1. **thm:sound-type-inference** — same shape as theorem 1, plus `a_tyequiv`
-   for the appendix's three equivalence premises.  Its `Freeze` case wants
-   §7.3's transport in its `≡ᵗ` reading; derive, do not rebuild.  §1's suffix
-   ERASURE is still open and is TYPE-inference-only, as is §2's
-   `lemma:split-refine`.
-2. Then the `ad_pat_sub_gv` composition gap (§6) before the two completeness
-   theorems.
+`frost/algo/prop_soundness_typing.v` (NEW) holds the kit so far, all Qed and
+axiom-free.  The statement to aim at is theorem 1's mirror, one layer up
+(paper: "our goal is to show `typp[M]{Θ1}{M}{bid A}` where
+`Θ1 ⊢ inh{P} ⊳ bid{A}` and `inc{Θ0}{Θ1}`"):
+
+    Theorem a_typing_sound : forall m Θ0 P0 e A Θ1,
+      Θ0 ⊢ₐ[ m ; P0 ] e ⦂ A ⊣ Θ1 ->
+      a_wf_aenv Θ0 ->
+      (forall x Ps, binds x (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
+      Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+      a_ty_mode_compat m P0 ->
+      a_wf_exp Θ0 e ->
+      Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
+      exists B, btyp_to_ptyp B = A /\
+        (Θ1 ⊢ˢᵃ[ m ] e ⦂ B) /\
+        (Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl B))
+
+**Banked (`prop_soundness_typing.v`):**
+
+| § | contents |
+|---|---|
+| §1 | `btyp_to_bskl_ptyp_to_btyp_inh`, `btyp_to_ptyp_open`, `ptyp_to_btyp_inh_open`, and `btyp_syn_painting_inv` (a colouring whose painting is SYNTHESISED is the all-synthesised one — how `sd-Freeze`'s `ptyp_to_btyp_syn B` shape is read off the IH's `◇ ⊳ bid(B)` through `ad_refine_syn_syn_l`) |
+| §2 | ⭐ `ad_refine_syn_inh_tyequiv` — **a refinement between two GHOST-FREE paintings IS a type equivalence**.  Refinement's job is filling ghosts; between paintings of plain types only the structural rows and the two flexible lookups can fire, which is exactly `≡ᵗ`'s generating set.  Δ plays no part, because `a_tyequiv__all` binds nothing in Θ |
+| §3 | ⭐ `a_consis_chk_tyequiv` — **the `Freeze` ingredient**, i.e. the paper's "which further gives `Θ2 ⊢ B ≡ A`", DERIVED from §7.3's transport as prescribed: the transport turns the consistency run's own output colouring into a colouring of the SUBJECT, and §2 reads the resulting ghost-free refinement as an equivalence |
+| §4 | `a_typing_tm_ge` — reverse tm-verbatim for `a_typing` (the `AT-Abs` row additionally crosses the `guess^TY` block `αs`, which is flexible-only) |
+| §5 | `a_tyequiv_isub_le`, `ad_sd_typing_isub_tm` — stability of the declarative typing judgement under `⊴` + tm-verbatim; the ∀-peeling rows push a RIGID entry, so they use `a_isub_cons_tvar` |
+
+**Left for the theorem itself:**
+
+1. `ad_sd_typing_rename_tm` (the `ad_pat_rename_tm` mirror — exists-fresh →
+   cofinite for the six binder rows) and, for the two `_step` rows, a
+   TYPE-variable renaming for `ad_sd_typing`, which is new at this layer.
+2. `ad_sd_typing_mod_comp_ty` (the `ad_pat_mod_comp_sk` mirror) and the
+   `is_ityp` obligations the four check rows carry.
+3. The eleven-row induction.  `AT-Abs` is the one row with no counterpart in
+   theorem 1: it deposits a `guess^TY` block `αs` between the binder and the
+   context, so the ⊴-peel has to cross it (`a_guess_mono_decls` says the
+   block is flexible-only).
+4. §1's suffix ERASURE and §2's `lemma:split-refine` are still open and are
+   TYPE-inference-only — check whether the `AT-Abs`/`AT-App` rows really need
+   them before building either; theorem 1 turned out not to.
+
+Then the `ad_pat_sub_gv` composition gap (§6) before the two completeness
+theorems.

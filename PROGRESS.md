@@ -129,9 +129,19 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   (`∀ x P, binds x (abind_var_skl P) Θ0 → Θ0 ⨟ ∅ ⊢ₚₛᵃ P`), because
   `a_wf_aenv__var` stores only `a_scope_pskl` while `a_sub_sound_thm` demands
   the disciplined `⊢ₚₛᵃ`.  WF-SIDE-CONDITIONS pattern
-- ⬜ Theorem: Soundness of type inference — same shape; additionally needs
-  `a_tyequiv` for the appendix's three equivalence premises, and its Freeze
-  case needs the SAME consis-to-`≡ᵗ` fact as `a_consis_chk_annot_refine`
+- 🟡 **Theorem: Soundness of type inference — STARTED 2026-08-06**
+  (`algo/prop_soundness_typing.v`, NEW; all Qed and axiom-free).  ⭐ The
+  `Freeze` ingredient is DONE and was DERIVED from theorem 1's transport, not
+  rebuilt: `a_consis_chk_tyequiv` (the paper's "which further gives
+  `Θ2 ⊢ B ≡ A`") = the transport + ⭐ `ad_refine_syn_inh_tyequiv`, which says
+  **a refinement between two GHOST-FREE paintings IS a type equivalence**
+  (refinement's job is filling ghosts; between paintings of plain types only
+  the structural rows and the two flexible lookups can fire — exactly `≡ᵗ`'s
+  generating set).  Also banked: `a_typing_tm_ge`, `ad_sd_typing_isub_tm`,
+  `btyp_syn_painting_inv`.  LEFT: `ad_sd_typing` renamings (term AND type
+  variable — the two `_step` rows peel ∀s), `ad_sd_typing_mod_comp_ty` +
+  the `is_ityp` obligations, then the eleven-row induction; see
+  docs/HANDOFF-section-d.md §7.5
 - ⬜ Theorems: Completeness+optimality of skeleton / type inference — ⚠️ these
   hit §4b's composition gap (they consume `a_sub_complete_thm`, which assumes
   `ad_pat_sub_gv`, while soundness only concludes plain `ad_pat_sub`)
@@ -143,7 +153,49 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-06 (latest) — ⭐⭐⭐ **SECTION D: `thm:sound-skeleton-inference` IS CLOSED** — `a_pat_sound` is axiom-free, and the paper's un-stated "preservation of refinement under type equivalence" is supplied
+## 2026-08-06 (latest) — ⭐ **SECTION D: thm:sound-type-inference STARTED — its `Freeze` ingredient is DERIVED from theorem 1's transport, not rebuilt**
+
+New file `algo/prop_soundness_typing.v`; all Qed and axiom-free; `make coq`
+clean.
+
+**⭐ The headline.** `sd-Freeze` carries an explicit `Θ ⊢ B ≡ᵗ A` premise
+(one of the appendix's three added premises), and the paper discharges it
+with a single clause off thm:sound-consistency — "which further gives
+`Θ2 ⊢ B ≡ A`".  The mechanized consistency soundness hands back a REFINEMENT
+into the run's own output colouring instead, so the equivalence is recovered
+in two steps, and both were already paid for:
+
+1. the refinement-target transport of `prop_soundness_pat.v` §4 turns that
+   output colouring into a colouring of the SUBJECT, giving
+   `inh(A) ⊳ bid(B)`;
+2. ⭐ `ad_refine_syn_inh_tyequiv`: **a refinement between two GHOST-FREE
+   paintings IS a type equivalence.**  Refinement's whole job is filling
+   ghosts; between paintings of plain types the only rows that can fire are
+   the structural ones and the two flexible lookups — which is exactly the
+   generating set of `≡ᵗ`.  Δ plays no part, because `a_tyequiv__all` binds
+   nothing in Θ, so the ∀ row goes straight through.
+
+That is `a_consis_chk_tyequiv`, and it is the "derive it from the transport,
+do not rebuild it" the previous entry's hand-off asked for.
+
+**Also banked**: `a_typing_tm_ge` (reverse tm-verbatim for `a_typing`; its
+`AT-Abs` row additionally crosses the `guess^TY` block, which
+`a_guess_mono_decls` says is flexible-only); `ad_sd_typing_isub_tm`
+(stability under `⊴` + tm-verbatim — the ∀-peeling rows push a RIGID entry,
+so they use `a_isub_cons_tvar`); `btyp_syn_painting_inv` (a colouring whose
+painting is synthesised is the all-synthesised one — how `sd-Freeze`'s
+`ptyp_to_btyp_syn B` shape is read off the IH's `◇ ⊳ bid(B)`);
+`a_tyequiv_isub_le`.
+
+**LEFT** (HANDOFF §7.5, which now carries the target statement and a per-item
+list): `ad_sd_typing` renamings — term AND type variable, the latter new at
+this layer because the two `_step` rows peel ∀s; `ad_sd_typing_mod_comp_ty`
+plus the `is_ityp` obligations of the four check rows; then the eleven-row
+induction, whose one genuinely new row is `AT-Abs` (it deposits the
+`guess^TY` block between the binder and the context, so the ⊴-peel has to
+cross it).
+
+## 2026-08-06 — ⭐⭐⭐ **SECTION D: `thm:sound-skeleton-inference` IS CLOSED** — `a_pat_sound` is axiom-free, and the paper's un-stated "preservation of refinement under type equivalence" is supplied
 
 `make coq` clean.  `Print Assumptions a_pat_sound` = **Closed under the
 global context**; the theorem is now `Check`ed and audited in `README.v`
