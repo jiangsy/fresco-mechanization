@@ -364,6 +364,7 @@ Proof.
     eapply ad_sd_typing__app;
       [ eapply ad_pat_isub_tm; eauto | eapply ad_refine_syn_isub; eauto
       | apply IHad_sd_typing1; assumption
+      | eapply a_tyequiv_isub_le; eauto
       | apply IHad_sd_typing2; assumption ].
 Qed.
 
@@ -510,6 +511,9 @@ Proof.
           [ eassumption | apply aenv_tbinds_le_rename_tm;
                           apply abind_is_tm_not_ty; exact Htm ]
       | apply IHad_sd_typing1; auto
+      | eapply a_tyequiv_mono;
+          [ eassumption | apply aenv_tbinds_le_rename_tm;
+                          apply abind_is_tm_not_ty; exact Htm ]
       | apply IHad_sd_typing2; auto ].
 Qed.
 

@@ -1440,6 +1440,7 @@ Proof.
   - (* app *)
     eapply ad_sd_typing__app
       with (P := subst_pskl_in_pskl (ptyp_to_pskl τs) α0 P)
+           (A2 := subst_ptyp_in_ptyp τs α0 A2)
            (B1 := subst_btyp_in_btyp (ptyp_to_btyp_syn τs) α0 B1).
     + pose proof (@ad_pat_subst_mid _ _ _ _ H τs α0 b0 Θa Θ0
                     eq_refl Hs Hu) as Hx.
@@ -1450,9 +1451,13 @@ Proof.
         [ eassumption | reflexivity | exact Hs | exact Hu | clear; fsetdec ].
     + pose proof (IHad_sd_typing1 τs α0 b0 Θa Θ0 eq_refl Hs Hu) as IHx.
       simpl in IHx. exact IHx.
+    + (* the appendix's fourth [≡ᵗ] premise travels along the substitution *)
+      rewrite <- subst_btyp_to_ptyp_eq.
+      eapply a_tyequiv_subst_mid;
+        [ eassumption | reflexivity | exact Hs | exact Hu ].
     + pose proof (IHad_sd_typing2 τs α0 b0 Θa Θ0 eq_refl Hs Hu) as IHy.
       rewrite <- ptyp_to_btyp_inh_subst_mono in IHy; [ | assumption ].
-      rewrite subst_btyp_to_ptyp_eq in IHy. exact IHy.
+      exact IHy.
 Qed.
 
 (* ===================================================================== *)

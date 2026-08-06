@@ -207,10 +207,23 @@ Inductive ad_sd_typing : mode -> aenv -> exp -> btyp -> Prop :=
        ((x ~ abind_var_typ A) ++ Θ) ⊢ˢᵃ[ decr_mode m ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ B2) ->
     Θ ⊢ˢᵃ[ m ] (exp_abs_anno A e) ⦂ (btyp_arrow B1 B2)
-| ad_sd_typing__app : forall Θ m e1 e2 P B1 B2,                  (* sd-App *)
+| ad_sd_typing__app : forall Θ m e1 e2 P A2 B1 B2,               (* sd-App *)
     Θ ⊢ᵃ[ mode_tc ] e2 ⇨ (pskl_to_bskl_syn P) ->
     Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B1) ->
     Θ ⊢ˢᵃ[ (mode_fn m) ] e1 ⦂ (btyp_arrow B1 B2) ->
-    Θ ⊢ˢᵃ[ mode_tc ] e2 ⦂ (ptyp_to_btyp_inh (btyp_to_ptyp B1)) ->
+    (* ⭐ [paper-gap] THE APPENDIX'S FOURTH TYPE-EQUIVALENCE PREMISE.  The
+       appendix (full-algo-spec.tex, fig:declarative-in-algo-context) says
+       "for syntax-directed typing, we only need to extend freezing and
+       annotated lambda rules with explicit type equivalence premises" —
+       but its own proof of thm:sound-type-inference needs one HERE too:
+       the AT-App case checks the argument at [inh{A'}] and this rule wants
+       it at [inh{A}], and the step "Thus by ⑧ and ⑬, we have
+       [Θ3 ⊢ N ⦂ inh{A}]" is exactly the missing bridge.  The reason is the
+       appendix's own reason for the other three: in an ALGORITHMIC context
+       a flexible may stand for either type, so the function's domain and
+       the argument's checked type need only be EQUIVALENT, not equal.
+       docs/PAPER-GAPS.md. *)
+    Θ ⊢ (btyp_to_ptyp B1) ≡ᵗ A2 ->
+    Θ ⊢ˢᵃ[ mode_tc ] e2 ⦂ (ptyp_to_btyp_inh A2) ->
     Θ ⊢ˢᵃ[ m ] (exp_app e1 e2) ⦂ B2
 where "Θ ⊢ˢᵃ[ M ] e ⦂ B" := (ad_sd_typing M Θ e B) : type_scope.

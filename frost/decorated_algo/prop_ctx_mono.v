@@ -398,7 +398,7 @@ Proof.
     intros x Hx. apply H5; [ exact Hx | apply aenv_binds_le_cons; exact Hle ].
   - eapply ad_sd_typing__app;
       [ eapply ad_pat_mono; eauto | eapply ad_refine_syn_mono; eauto
-      | auto | auto ].
+      | auto | eapply a_tyequiv_mono; eauto | auto ].
 Qed.
 
 (* ===================================================================== *)
