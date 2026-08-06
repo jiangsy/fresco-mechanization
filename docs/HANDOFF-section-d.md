@@ -313,6 +313,56 @@ Order them soundness-first; the two soundness theorems are independent of the
 3. **Completeness + optimality of skeleton inference**
 4. **Completeness + optimality of type inference**
 
+### 6.1 ⭐ The `ad_pat_sub_gv` composition gap — SCOPED (2026-08-06), and the ~300-line "freshening bridge" is NOT part of it
+
+**The finding: `a_subtag`'s ForallL rows are COFINITE in the tag set**
+(`a_subtag__forall_l_{tagged,untagged}`, def_decorated.v: *"forall Ψg ψg,
+Ψg ∩ L = ∅ → a_tags_sort NM Ψg ψg → ⌊ψg⌋ˢ = P1 → …"*), and
+`a_subtag_sound_bundle` ALREADY instantiates that family with a freshly
+chosen decoration —
+
+    destruct (a_tags_sort_decorate_exists (Hex α Hα) HlcP1 (L ∪ Ψ)) …
+
+So `ad_pat_sub_g`'s extra hygiene premise
+`Ψ' ∩ ftag_in_uskl (subject) = ∅` costs **ONE WIDER AVOID-SET**,
+`(L ∪ Ψ ∪ ftag_in_uskl (uskl_all_etag ε R))`, not a tag-RENAMING kit.  The
+`_n → _g` bridge DESIGN §5.4 defers at ≈300 lines is only needed if you go
+UP from `ad_pat_sub_n`; going down from the DECORATED system, the freshness
+is available before the tags are ever chosen.  ⚙ Nothing else in the bundle
+touches tags.
+
+**The rest is threading, exactly as PROGRESS.md §4b predicted.**  Every
+consistency-leaf row of the bundle already destructs
+`a_consistag_sound_aux`'s conclusion as
+
+    [Hle [Hwf1 [_ [_ [[Qt [HeQt [Hcons Hfill]]] _]]]]]
+
+and that FINAL `_` **is** `ad_pat_sub_gv`'s leaf premise
+(`ad_refine_pskl_f Δ2 Θ1 Δ2 ⌊R⌋ˢ P'`, plain at `Δ2 = ∅` via
+`ad_refine_pskl_f_forget`).  It is being dropped, not missing.
+
+**Row-by-row plan** (`frost/algo/prop_soundness_sub.v`, the ~820-line
+bundle at :466–:1286):
+
+| row | change |
+|---|---|
+| `subtag_sound_concl` / `subtag_flex_sound_concl` | conclusion becomes `exists n, ad_pat_sub_gv n NM M Ψ Θ1 R Qt` |
+| `Infer` | leaf refinement = reflexivity at the wf subject (`ad_refine_pskl` mirror of `ad_pat_consis_refl_erase`) |
+| `Check`, `UnivGhostR`, `Arrow` (domain) | name the dropped conjunct; `ad_refine_pskl_f_forget`; ⊴-transport where the row already transports `Hcons` |
+| `ForallL` ×2 | widen the avoid-set (above); the hygiene premise is then `Hint0` |
+| `ForallR`, `UnivGhostL/LG`, `FlexMono`, ghosts | pass through |
+| fuel | leaves take any `n` (use `0`); `ForallR`/`Arrow`/`ForallL` conclude at `S n`.  Each rule has ≤ 1 recursive `_gv` premise, so no `max` is needed |
+
+⚠️ **Two things to settle first.**  (a) `ad_pat_sub_gv_fuel_weaken`
+(prop_completeness_sub.v) and `ad_pat_sub_g_of`
+(prop_completeness_sub_precise.v) sit AFTER `prop_soundness_sub.v` in the
+dependency order — either re-prove fuel-weakening locally (≈15 lines) or
+move both down to a def/early-prop file.  (b) THREE consumers read the
+bundle's conclusion positionally (`prop_decorate_key.v:4155`,
+`prop_completeness_sub_gen.v:3165` and `:3389`) and want the PLAIN
+`ad_pat_sub`; they recover it with `ad_pat_sub_gv_forget` then
+`ad_pat_sub_g_of`, which is the same dependency question.
+
 ⚠️ **3 and 4 will hit the `ad_pat_sub_gv` composition gap** (PROGRESS.md §4b):
 they consume `a_sub_complete_thm`, which ASSUMES `ad_pat_sub_gv`, while
 `a_sub_sound_thm` only CONCLUDES the plain `ad_pat_sub`.  The fix identified
