@@ -254,6 +254,22 @@ terminate — `a_wf_pskl_delta_mono`'s `Δ0` is left an evar by the
 Δ-polymorphic `a_wf_pskl_mono_ptyp`, and the wrapper was not needed.
 Profile-first paid: imports alone were 0.3 s, so it was never I/O.
 
+**9. ✅ THE `strip_suffix` CHAIN IS COMPLETE — and with it EVERY structural
+prerequisite of §6.1** (`prop_soundness_sub.v` §1h, Qed and axiom-free):
+`ad_refine_pskl_subst_flex_def`, `ad_pat_sub_gv_subst_flex_def`, and the
+driver `ad_pat_sub_gv_strip_suffix`, plus `bskl_to_pskl_subst_mono` and ⭐
+`ftag_in_uskl_subst_mono` (a MONOTYPE's painting is tag-free, so substituting
+it cannot add tags — the `ForallL` hygiene premise for the third time).
+
+⚙ All four `_gv` structural mirrors (`psi_cong`, `isub`, `weaken`,
+`strip_suffix`), the fuel-preserving `rename_tvar`, and the `Check` row's
+`ad_refine_pskl_refine_inh_target` are now in the tree.  What is left of §6.1
+is the ATOMIC step: change the two `*_concl` definitions and rewrite the 15
+rows.
+
+⚠️ `guarded_pskl_subst` had to be written FULLY QUALIFIED here — the bare name
+resolves to prop_looksub.v's homonym, which carries a DISEQUALITY premise.
+
 **8. ✅ The `strip_suffix` chain, UNDEFINED-HEAD half** — `prop_soundness_sub.v`
 §1g, Qed and axiom-free: ⭐ `ad_refine_pskl_subst_flex` (which did not exist in
 any form — no `ad_refine_pskl`/`_f` substitution-strip), then

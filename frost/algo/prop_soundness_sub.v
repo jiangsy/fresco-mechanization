@@ -1359,6 +1359,393 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
+(*  §1h  THE [strip_suffix] CHAIN, DEFINED-HEAD HALF + THE DRIVER.        *)
+(*                                                                        *)
+(*  With §1g this closes §6.1's LAST structural prerequisite: the ForallR *)
+(*  row can now strip the trailing suffix off a leaf-valid derivation.    *)
+(* ===================================================================== *)
+
+(** Step 3: drop a DEFINED flexible mid entry from a refinement by unfolding
+    it to its definition — the companion of [ad_pat_sub_subst_flex_def]. *)
+Lemma ad_refine_pskl_subst_flex_def : forall Θ Δ P P',
+  Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ P' ->
+  forall Θ1 β τ0 Θ2,
+  Θ = Θ1 ++ (β ~ abind_flex_mono_def τ0) ++ Θ2 ->
+  β `notin` dom (Θ1 ++ Θ2) ->
+  mono_ptyp τ0 ->
+  β `notin` ftvar_in_ptyp τ0 ->
+  (forall α, α `in` ftvar_in_ptyp τ0 -> a_binds_tvar α (Θ1 ++ Θ2)) ->
+  (forall α1 τ, binds α1 (abind_flex_mono_def τ) (Θ1 ++ Θ2) ->
+     β `notin` ftvar_in_ptyp τ) ->
+  (Θ1 ++ Θ2) ⨟ Δ ⊢ᵣₚᵃ (subst_pskl_in_pskl (ptyp_to_pskl τ0) β P)
+                     ⊳ (subst_pskl_in_pskl (ptyp_to_pskl τ0) β P').
+Proof.
+  intros Θ Δ P P' H; induction H;
+    intros Θ1 β τ0 Θ2 Heqc Hfr Hm Hfrτ Hvis Hdefs; subst; simpl.
+  - (* __unit *)
+    apply ad_refine_pskl__unit.
+  - (* __var *)
+    destruct_if as [-> | Hne].
+    + (* the variable IS the unfolded definition *)
+      apply ad_refine_pskl_refl.
+      apply a_scope_pskl_of_ptyp_vis;
+        [ apply mono_ptyp_lc; assumption
+        | intros α0 Hα0; right; apply Hvis; assumption ].
+    + apply ad_refine_pskl__var.
+      match goal with
+      | Hv : _ \/ a_binds_tvar _ _ |- _ =>
+          destruct Hv as [HΔ | Hb]; [ left; exact HΔ | right ]
+      end.
+      eapply a_binds_tvar_strip_mid;
+        [ eassumption
+        | intro He; inversion He; subst; exact (Hne eq_refl)
+        | intro He; inversion He; subst; exact (Hne eq_refl)
+        | intros τ1 He; inversion He; subst; exact (Hne eq_refl) ].
+  - (* __arrow *)
+    apply ad_refine_pskl__arrow;
+      [ apply IHad_refine_pskl1 | apply IHad_refine_pskl2 ];
+      first [ reflexivity | assumption ].
+  - (* __all *)
+    apply ad_refine_pskl__all with (L := L `union` singleton β).
+    intros α Hα.
+    assert (Hβα : β <> α) by (clear - Hα; fsetdec).
+    rewrite (subst_pskl_in_pskl_open_pskl_wrt_pskl_var
+               P (ptyp_to_pskl τ0) β α Hβα
+               (mono_ptyp_to_pskl_lc Hm)).
+    rewrite (subst_pskl_in_pskl_open_pskl_wrt_pskl_var
+               Q (ptyp_to_pskl τ0) β α Hβα
+               (mono_ptyp_to_pskl_lc Hm)).
+    apply H0; first [ clear - Hα; fsetdec | reflexivity | assumption ].
+  - (* __hole *)
+    apply ad_refine_pskl__hole.
+    eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ0);
+      [ eassumption | reflexivity | exact Hfr | clear; fsetdec
+      | apply mono_ptyp_to_pskl_guarded; assumption
+      | apply a_scope_pskl_of_ptyp_vis;
+          [ apply mono_ptyp_lc; assumption
+          | intros α0 Hα0; right; apply Hvis; assumption ] ].
+  - (* __tophole_remove *)
+    apply ad_refine_pskl__tophole_remove.
+    apply IHad_refine_pskl; first [ reflexivity | assumption ].
+  - (* __tophole_fill *)
+    apply ad_refine_pskl__tophole_fill
+      with (L := L `union` singleton β `union` dom (Θ1 ++ Θ2)).
+    intros α Hα.
+    assert (Hβα : β <> α) by (clear - Hα; fsetdec).
+    rewrite (subst_pskl_in_pskl_open_pskl_wrt_pskl_var
+               Q (ptyp_to_pskl τ0) β α Hβα
+               (mono_ptyp_to_pskl_lc Hm)).
+    specialize (H0 α ltac:(clear - Hα; fsetdec)
+                  ((α ~ abind_tvar) ++ Θ1) β τ0 Θ2).
+    simpl_env in H0. simpl_env. apply H0;
+      [ reflexivity
+      | clear - Hfr Hα; simpl_env in *; fsetdec
+      | assumption
+      | assumption
+      | intros β0 Hβ0; apply a_binds_tvar_weaken_cons; auto
+      | intros α1 τ Hb;
+        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
+        [ discriminate | eauto ] ].
+  - (* __tophole_keep *)
+    apply ad_refine_pskl__tophole_keep;
+      [ (* ⚠️ QUALIFIED: bare [guarded_pskl_subst] resolves to prop_looksub.v's
+             homonym here, which carries a DISEQUALITY premise (§1e). *)
+          apply src.frost.algo.prop_pat_sub.guarded_pskl_subst;
+          [ assumption
+          | apply mono_ptyp_to_pskl_guarded; assumption
+          | apply mono_ptyp_to_pskl_lc; assumption ]
+      | apply IHad_refine_pskl; first [ reflexivity | assumption ] ].
+  - (* __flex_l : the source may BE the unfolded variable *)
+    specialize (IHad_refine_pskl Θ1 β τ0 Θ2 ltac:(reflexivity)
+                  Hfr Hm Hfrτ Hvis Hdefs).
+    destruct_if as [-> | Hne].
+    + assert (Heqdef : τ = τ0)
+        by (eapply binds_mid_def_eq; eassumption).
+      subst τ.
+      rewrite (subst_pskl_in_pskl_fresh_eq (ptyp_to_pskl τ0)
+                 (ptyp_to_pskl τ0) β
+                 ltac:(rewrite ftvar_in_pskl_ptyp_to_pskl; exact Hfrτ))
+        in IHad_refine_pskl.
+      exact IHad_refine_pskl.
+    + assert (Hb' : binds α (abind_flex_mono_def τ) (Θ1 ++ Θ2)).
+      { eapply binds_strip_mid;
+          [ eassumption | intro He; inversion He; subst; exact (Hne eq_refl) ]. }
+      eapply ad_refine_pskl__flex_l; [ exact Hb' | ].
+      rewrite (subst_pskl_in_pskl_fresh_eq (ptyp_to_pskl τ)
+                 (ptyp_to_pskl τ0) β
+                 ltac:(rewrite ftvar_in_pskl_ptyp_to_pskl;
+                       eapply Hdefs; exact Hb'))
+        in IHad_refine_pskl.
+      exact IHad_refine_pskl.
+  - (* __flex_r : likewise on the TARGET *)
+    specialize (IHad_refine_pskl Θ1 β τ0 Θ2 ltac:(reflexivity)
+                  Hfr Hm Hfrτ Hvis Hdefs).
+    destruct_if as [-> | Hne].
+    + assert (Heqdef : τ = τ0)
+        by (eapply binds_mid_def_eq; eassumption).
+      subst τ.
+      rewrite (subst_pskl_in_pskl_fresh_eq (ptyp_to_pskl τ0)
+                 (ptyp_to_pskl τ0) β
+                 ltac:(rewrite ftvar_in_pskl_ptyp_to_pskl; exact Hfrτ))
+        in IHad_refine_pskl.
+      exact IHad_refine_pskl.
+    + assert (Hb' : binds α (abind_flex_mono_def τ) (Θ1 ++ Θ2)).
+      { eapply binds_strip_mid;
+          [ eassumption | intro He; inversion He; subst; exact (Hne eq_refl) ]. }
+      eapply ad_refine_pskl__flex_r; [ exact Hb' | ].
+      rewrite (subst_pskl_in_pskl_fresh_eq (ptyp_to_pskl τ)
+                 (ptyp_to_pskl τ0) β
+                 ltac:(rewrite ftvar_in_pskl_ptyp_to_pskl;
+                       eapply Hdefs; exact Hb'))
+        in IHad_refine_pskl.
+      exact IHad_refine_pskl.
+Qed.
+
+(** Erasure commutes with the monotype substitution. *)
+Lemma bskl_to_pskl_subst_mono : forall Q τ β,
+  bskl_to_pskl (subst_bskl_in_bskl (ptyp_to_bskl_syn τ) β Q)
+  = subst_pskl_in_pskl (ptyp_to_pskl τ) β (bskl_to_pskl Q).
+Proof.
+  induction Q; intros τ β; simpl;
+    try solve [ reflexivity
+              | rewrite IHQ; reflexivity
+              | rewrite IHQ1, IHQ2; reflexivity ].
+  destruct_if; [ | reflexivity ].
+  unfold ptyp_to_bskl_syn. rewrite bskl_to_pskl_pskl_to_bskl_syn. reflexivity.
+Qed.
+
+(** ⭐ A MONOTYPE's painting is tag-free, so substituting it cannot add tags. *)
+Lemma ftag_in_uskl_subst_mono : forall R τ β,
+  ftag_in_uskl (subst_bskl_in_uskl (ptyp_to_uskl_syn τ) β R)
+  [=] ftag_in_uskl R.
+Proof.
+  induction R; intros τ β; simpl;
+    try solve [ reflexivity
+              | rewrite IHR; reflexivity
+              | rewrite IHR1, IHR2; reflexivity ].
+  destruct_if; [ | reflexivity ].
+  induction τ; simpl; try reflexivity.
+  - rewrite IHτ1, IHτ2. clear; fsetdec.
+  - rewrite IHτ. reflexivity.
+Qed.
+
+(** Step 4: the [_gv] mirror of [ad_pat_sub_subst_flex_def]
+    (prop_pat_sub.v:1031), fuel-preserving, leaves transported by step 3. *)
+Lemma ad_pat_sub_gv_subst_flex_def : forall n NM M Ψ Θ R Q,
+  ad_pat_sub_gv n NM M Ψ Θ R Q ->
+  forall Θ1 β τ0 Θ2,
+  Θ = Θ1 ++ (β ~ abind_flex_mono_def τ0) ++ Θ2 ->
+  β `notin` dom (Θ1 ++ Θ2) ->
+  mono_ptyp τ0 ->
+  β `notin` ftvar_in_ptyp τ0 ->
+  (forall α, α `in` ftvar_in_ptyp τ0 -> a_binds_tvar α (Θ1 ++ Θ2)) ->
+  (forall α1 τ, binds α1 (abind_flex_mono_def τ) (Θ1 ++ Θ2) ->
+     β `notin` ftvar_in_ptyp τ) ->
+  ad_pat_sub_gv n NM M Ψ (Θ1 ++ Θ2)
+    (subst_bskl_in_uskl (ptyp_to_uskl_syn τ0) β R)
+    (subst_bskl_in_bskl (ptyp_to_bskl_syn τ0) β Q).
+Proof.
+  intros n NM M Ψ Θ R Q H; induction H;
+    intros Θ1 β τ0 Θ2 Heqc Hfr Hm Hfrτ Hvis Hdefs; subst; simpl.
+  - (* __infer *)
+    apply ad_pat_sub_gv__infer;
+      [ assumption
+      | eapply ad_pat_consis_subst_flex_def; eauto
+      | apply is_sskl_subst_mono; assumption
+      | rewrite uskl_to_pskl_subst_mono; rewrite bskl_to_pskl_subst_mono;
+        eapply ad_refine_pskl_subst_flex_def; eauto ].
+  - (* __check *)
+    rewrite pskl_to_bskl_inh_subst_mono; [ | assumption ].
+    apply ad_pat_sub_gv__check;
+      [ apply guarded_uskl_subst_mono; assumption
+      | (* ⚠️ QUALIFIED: bare [guarded_pskl_subst] resolves to prop_looksub.v's
+             homonym here, which carries a DISEQUALITY premise (§1e). *)
+          apply src.frost.algo.prop_pat_sub.guarded_pskl_subst;
+          [ assumption
+          | apply mono_ptyp_to_pskl_guarded; assumption
+          | apply mono_ptyp_to_pskl_lc; assumption ]
+      | rewrite <- pskl_to_bskl_inh_subst_mono; [ | assumption ];
+        eapply ad_pat_consis_subst_flex_def; eauto
+      | rewrite uskl_to_pskl_subst_mono;
+        eapply ad_refine_pskl_subst_flex_def; eauto ].
+  - (* __forall_r *)
+    apply ad_pat_sub_gv__forall_r
+      with (L := L `union` singleton β `union` dom (Θ1 ++ Θ2)).
+    intros α Hα.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
+      [ | intro He; subst; clear - Hα; fsetdec
+        | apply mono_ptyp_to_bskl_syn_lc; assumption ].
+    specialize (H0 α ltac:(clear - Hα; fsetdec)
+                  ((α ~ abind_tvar) ++ Θ1) β τ0 Θ2).
+    simpl_env in H0. simpl_env. apply H0;
+      [ reflexivity
+      | clear - Hfr Hα; simpl_env in *; fsetdec
+      | assumption
+      | assumption
+      | intros β0 Hβ0; apply a_binds_tvar_weaken_cons; auto
+      | intros α1 τ Hb;
+        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
+        [ discriminate | eauto ] ].
+  - (* __univ_ghost_r *)
+    apply ad_pat_sub_gv__univ_ghost_r;
+      [ assumption
+      | apply guarded_uskl_subst_mono; assumption
+      | apply guarded_bskl_subst_mono; assumption
+      | apply is_sskl_subst_mono; assumption
+      | eapply ad_pat_consis_subst_flex_def; eauto
+      | rewrite uskl_to_pskl_subst_mono; rewrite bskl_to_pskl_subst_mono;
+        eapply ad_refine_pskl_subst_flex_def; eauto ].
+  - (* __arrow *)
+    eapply ad_pat_sub_gv__arrow;
+      [ eapply ad_pat_consis_subst_flex_def; eauto
+      | rewrite uskl_to_pskl_subst_mono; rewrite bskl_to_pskl_subst_mono;
+        eapply ad_refine_pskl_subst_flex_def; eauto
+      | apply IHad_pat_sub_gv; first [ reflexivity | assumption ]
+      | assumption ].
+  - (* __forall_l_tagged *)
+    specialize (IHad_pat_sub_gv Θ1 β τ0 Θ2
+                  ltac:(reflexivity) Hfr Hm Hfrτ Hvis Hdefs).
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub_gv;
+      [ | apply mono_ptyp_to_uskl_syn_lc; assumption ].
+    eapply ad_pat_sub_gv__forall_l_tagged.
+    6: exact IHad_pat_sub_gv.
+    + assumption.
+    + eassumption.
+    + simpl. rewrite ftag_in_uskl_subst_mono. assumption.
+    + apply a_tags_sort_subst_mono; eassumption.
+    + rewrite uskl_to_pskl_subst_mono;
+        eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ0);
+          [ eassumption | reflexivity | exact Hfr | clear; fsetdec
+          | apply mono_ptyp_to_pskl_guarded; assumption
+          | apply a_scope_pskl_of_ptyp_vis;
+              [ apply mono_ptyp_lc; assumption
+              | intros β0 Hβ0; right; apply Hvis; assumption ] ].
+  - (* __forall_l_untagged *)
+    specialize (IHad_pat_sub_gv Θ1 β τ0 Θ2
+                  ltac:(reflexivity) Hfr Hm Hfrτ Hvis Hdefs).
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub_gv;
+      [ | apply mono_ptyp_to_uskl_syn_lc; assumption ].
+    eapply ad_pat_sub_gv__forall_l_untagged.
+    6: exact IHad_pat_sub_gv.
+    + assumption.
+    + eassumption.
+    + simpl. rewrite ftag_in_uskl_subst_mono. assumption.
+    + apply a_tags_sort_subst_mono; eassumption.
+    + rewrite uskl_to_pskl_subst_mono;
+        eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ0);
+          [ eassumption | reflexivity | exact Hfr | clear; fsetdec
+          | apply mono_ptyp_to_pskl_guarded; assumption
+          | apply a_scope_pskl_of_ptyp_vis;
+              [ apply mono_ptyp_lc; assumption
+              | intros β0 Hβ0; right; apply Hvis; assumption ] ].
+  - (* __ghost *)
+    rewrite pskl_to_bskl_inh_subst_mono; [ | assumption ].
+    apply ad_pat_sub_gv__ghost;
+      [ assumption
+      | eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ0);
+          [ eassumption | reflexivity | exact Hfr | clear; fsetdec
+          | apply mono_ptyp_to_pskl_guarded; assumption
+          | apply a_scope_pskl_of_ptyp_vis;
+              [ apply mono_ptyp_lc; assumption
+              | intros β0 Hβ0; right; apply Hvis; assumption ] ]
+      | rewrite <- pskl_to_bskl_inh_subst_mono; [ | assumption ];
+        apply mod_comp_sk_subst_mono; assumption ].
+  - (* __ghostg *)
+    apply ad_pat_sub_gv__ghostg; [ assumption | ].
+    change bskl_hole
+      with (subst_bskl_in_bskl (ptyp_to_bskl_syn τ0) β bskl_hole).
+    apply mod_comp_sk_subst_mono; assumption.
+  - (* __univ_ghost_l *)
+    apply ad_pat_sub_gv__univ_ghost_l;
+      [ assumption
+      | apply IHad_pat_sub_gv; first [ reflexivity | assumption ] ].
+  - (* __univ_ghost_lg *)
+    apply ad_pat_sub_gv__univ_ghost_lg;
+      [ assumption
+      | apply IHad_pat_sub_gv; first [ reflexivity | assumption ] ].
+  - (* __flex_mono : the subject may BE the unfolded variable *)
+    specialize (IHad_pat_sub_gv Θ1 β τ0 Θ2
+                  ltac:(reflexivity) Hfr Hm Hfrτ Hvis Hdefs).
+    destruct_if as [-> | Hne].
+    + assert (Heqdef : τ = τ0) by (eapply binds_mid_def_eq; eassumption).
+      subst τ.
+      rewrite (subst_bskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ0)
+                 (ptyp_to_uskl_syn τ0) β
+                 ltac:(rewrite ftvar_in_uskl_ptyp_to_uskl_syn; exact Hfrτ))
+        in IHad_pat_sub_gv.
+      exact IHad_pat_sub_gv.
+    + assert (Hb' : binds α (abind_flex_mono_def τ) (Θ1 ++ Θ2)).
+      { eapply binds_strip_mid;
+          [ eassumption | intro He; inversion He; subst; exact (Hne eq_refl) ]. }
+      eapply ad_pat_sub_gv__flex_mono; [ exact Hb' | ].
+      rewrite (subst_bskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ)
+                 (ptyp_to_uskl_syn τ0) β
+                 ltac:(rewrite ftvar_in_uskl_ptyp_to_uskl_syn;
+                       eapply Hdefs; exact Hb'))
+        in IHad_pat_sub_gv.
+      exact IHad_pat_sub_gv.
+Qed.
+
+(** Step 5: THE SUFFIX DRIVER for the leaf-valid mirror — discard a trailing
+    fresh, well-formed suffix Ξ, iterating the two substitution strips
+    head-first (mirrors prop_pat_sub.v:1158). *)
+Lemma ad_pat_sub_gv_strip_suffix : forall Ξ n NM M Ψ Θ R Q,
+  a_suffix Ξ ->
+  a_wf_aenv (Ξ ++ Θ) ->
+  (forall α1, α1 `in` dom Ξ ->
+     α1 `notin` (ftvar_in_uskl R `union` ftvar_in_bskl Q)) ->
+  ad_pat_sub_gv n NM M Ψ (Ξ ++ Θ) R Q ->
+  ad_pat_sub_gv n NM M Ψ Θ R Q.
+Proof.
+  induction Ξ as [ | [β b] Ξ' IH ]; intros * Hsuf Hwf Hfv H; [ exact H | ].
+  inversion Hsuf as [ | ? ? ? Hsuf' Hbind ]; subst.
+  assert (Hβfv : β `notin` (ftvar_in_uskl R `union` ftvar_in_bskl Q))
+    by (apply Hfv; simpl; fsetdec).
+  inversion Hbind; subst.
+  - (* undefined head *)
+    inversion Hwf as [ | ? ? Hβd Hwf' | | | | ]; subst.
+    assert (Hstr : ad_pat_sub_gv n NM M Ψ (Ξ' ++ Θ)
+                     (subst_bskl_in_uskl uskl_unit β R)
+                     (subst_bskl_in_bskl bskl_unit β Q)).
+    { eapply ad_pat_sub_gv_subst_flex with (Θ1 := nil);
+        [ exact H | simpl_env; reflexivity | simpl; exact Hβd
+        | intros α1 τ Hb; simpl in Hb;
+          assert (Hsc : ftvar_in_ptyp τ [<=] dom (Ξ' ++ Θ))
+            by (eapply a_wf_aenv_def_ftv_dom; eauto);
+          clear - Hsc Hβd; fsetdec ]. }
+    rewrite subst_bskl_in_uskl_fresh_eq in Hstr;
+      [ | clear - Hβfv; fsetdec ].
+    rewrite subst_bskl_in_bskl_fresh_eq in Hstr;
+      [ | clear - Hβfv; fsetdec ].
+    apply IH; auto.
+    intros α1 Hα1. apply Hfv. simpl. clear - Hα1. fsetdec.
+  - (* defined head *)
+    inversion Hwf as [ | | ? τ0' ? Hβd Hwfτ Hmono Hwf' | | | ]; subst.
+    assert (Hfrτ : β `notin` ftvar_in_ptyp A).
+    { intro Hα.
+      pose proof (a_wf_ptyp_ftv_tvarish Hwfτ Hα) as Ht.
+      destruct Ht as [Hb | [Hb | [τ1 Hb]]]; apply binds_In in Hb;
+        clear - Hb Hβd; fsetdec. }
+    assert (Hstr : ad_pat_sub_gv n NM M Ψ (Ξ' ++ Θ)
+                     (subst_bskl_in_uskl (ptyp_to_uskl_syn A) β R)
+                     (subst_bskl_in_bskl (ptyp_to_bskl_syn A) β Q)).
+    { eapply ad_pat_sub_gv_subst_flex_def with (Θ1 := nil);
+        [ exact H | simpl_env; reflexivity | simpl; exact Hβd
+        | exact Hmono | exact Hfrτ
+        | intros α Hα; eapply a_wf_ptyp_ftv_tvarish; eauto
+        | intros α1 τ Hb; simpl in Hb;
+          assert (Hsc : ftvar_in_ptyp τ [<=] dom (Ξ' ++ Θ))
+            by (eapply a_wf_aenv_def_ftv_dom; eauto);
+          clear - Hsc Hβd; fsetdec ]. }
+    rewrite subst_bskl_in_uskl_fresh_eq in Hstr;
+      [ | clear - Hβfv; fsetdec ].
+    rewrite subst_bskl_in_bskl_fresh_eq in Hstr;
+      [ | clear - Hβfv; fsetdec ].
+    apply IH; auto.
+    intros α1 Hα1. apply Hfv. simpl. clear - Hα1. fsetdec.
+Qed.
+
+(* ===================================================================== *)
 (*  §2  The mutual soundness statement                                    *)
 (* ===================================================================== *)
 

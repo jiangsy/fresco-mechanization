@@ -409,9 +409,16 @@ two per head plus the driver:
 |---|---|---|
 | 1 | `ad_refine_pskl_subst_flex` (undefined head, `β ↦ 1`) | ✅ §1g |
 | 2 | `ad_pat_sub_gv_subst_flex` (mirrors prop_pat_sub.v:749) | ✅ §1g |
-| 3 | `ad_refine_pskl_subst_flex_def` (DEFINED head, `β ↦ τ`) | ⛔ does not exist |
-| 4 | `ad_pat_sub_gv_subst_flex_def` (mirrors prop_pat_sub.v:1031) | ⛔ |
-| 5 | `ad_pat_sub_gv_strip_suffix` (mirrors prop_pat_sub.v:1158) | ⛔ |
+| 3 | `ad_refine_pskl_subst_flex_def` (DEFINED head, `β ↦ τ`) | ✅ §1h |
+| 4 | `ad_pat_sub_gv_subst_flex_def` (mirrors prop_pat_sub.v:1031) | ✅ §1h |
+| 5 | `ad_pat_sub_gv_strip_suffix` (mirrors prop_pat_sub.v:1158) | ✅ §1h |
+
+✅ **ALL of §6.1's structural prerequisites are now in the tree.**  §1h also
+adds `bskl_to_pskl_subst_mono` and ⭐ `ftag_in_uskl_subst_mono` (a MONOTYPE's
+painting is tag-free, so substituting it cannot add tags — the `ForallL`
+hygiene premise for the third time).  ⚠️ `guarded_pskl_subst` had to be
+written FULLY QUALIFIED (`src.frost.algo.prop_pat_sub.guarded_pskl_subst`):
+the bare name resolves to prop_looksub.v's homonym here.
 
 ⚙ Also landed in §1g: `bskl_to_pskl_subst_unit` and ⭐
 `ftag_in_uskl_subst_unit` (substituting `1` cannot change TAGS either — the
