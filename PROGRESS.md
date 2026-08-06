@@ -79,12 +79,29 @@ DEFINITIONAL layer is in (`decorated_algo/def_decl_algo_typing.v`: `ad_pat`,
 [`docs/HANDOFF-section-d.md`](docs/HANDOFF-section-d.md).
 ⚠️ Three of these are marked "straightforward induction" in the paper and are
 NOT straightforward in the mechanization — reasons recorded per lemma there.
-- ⬜ Suffix moving; Suffix erasure — **do these first**, everything downstream
-  quotes them.  Two hidden costs: the paper's "Ξ does not depend on Θ₂" has no
-  mech counterpart yet (nearest: `no_flex_dep` / `flex_above_free` /
-  `a_suffix`), and `ad_sd_typing` embeds FIVE context-sensitive premise forms,
-  each needing its own moving/erasure kit before the typing induction can close
-  one base rule
+- 🟢 **Suffix moving — CLOSED 2026-08-06**, Qed + axiom-free
+  (`decorated_algo/prop_ctx_mono.v`): `ad_sd_typing_suffix_moving`,
+  `ad_pat_suffix_moving`, plus the two "stability" corollaries
+  `ad_sd_typing_weaken_suffix` / `ad_pat_weaken_suffix`.  ⭐ ONE lemma, not
+  five: every `ad_*` judgement reads its context only through `binds` and
+  `a_binds_tvar` (itself a disjunction of `binds`), and NOTHING in the layer is
+  anti-monotone — the negative side conditions (`a_non_flex`, `a_flex_tvar`)
+  live in the ALGORITHMIC judgments.  So one relation `aenv_binds_le` gives
+  weakening, exchange and block permutation for `a_wf_ptyp` / `a_wf_pskl` /
+  `a_tyequiv` / `ad_pat_consis` / `ad_refine_syn` / `ad_refine_pskl` /
+  `ad_pat_sub` / `ad_pat` / `ad_sd_typing` at once.  ⚙ **The mech statement
+  needs NO side condition**: the paper's "Ξ does not depend on entries in Θ₂"
+  is what keeps the RESULT context well-formed (`Θ ⊢ ctx` orders definitions
+  before uses), not what makes the judgement move — a block permutation
+  preserves `binds` in BOTH directions.  A dropped premise only strengthens the
+  lemma.  ⚠️ TRAP for the rest of section D: `econstructor` on a cofinite rule
+  SHELVES the avoid-set evar `?L`, so the premise never reaches the following
+  tactic and resurfaces at `Qed` as "incomplete proof" — supply `L` by hand
+  (that is also what keeps the file under a second)
+- ⬜ Suffix erasure — NOT a `binds`-monotone statement (it must show the
+  derivation never LOOKED into Ξ), so it needs the freshness invariant the
+  paper states and the dependency relation that still has no mech counterpart
+  (nearest: `no_flex_dep` / `flex_above_free` / `a_suffix`)
 - ⬜ Splitting refines — 2 of 3 rows trivial (`ad_refine_pskl_refl`, which
   forces an EXTERNAL wf premise); the `a_split__flex` row is a real proof: its
   premise is a full `a_consis` run.  ⭐ Route scouted: `a_assign_sound` →
