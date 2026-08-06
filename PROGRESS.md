@@ -159,7 +159,18 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   (`∀ x P, binds x (abind_var_skl P) Θ0 → Θ0 ⨟ ∅ ⊢ₚₛᵃ P`), because
   `a_wf_aenv__var` stores only `a_scope_pskl` while `a_sub_sound_thm` demands
   the disciplined `⊢ₚₛᵃ`.  WF-SIDE-CONDITIONS pattern
-- 🟡 **Theorem: Soundness of type inference — STARTED 2026-08-06**
+- ✅ **Theorem: Soundness of type inference — CLOSED 2026-08-06**,
+  `a_typing_sound` (`algo/prop_soundness_typing.v` §13), Qed and *Closed under
+  the global context*; all eleven `a_typing` rows proved; `Check`ed and audited
+  in `README.v`.  Carries theorem 1's two extra hypotheses, plus ONE extra
+  conclusion conjunct (`a_wf_ptyp Θ1 A`, the output type scoped in the output
+  context, which `AT-App` consumes).  ⚠️ FOUR rule-level side conditions the
+  paper leaves to prose are now stated on `fig:alg-type-inference`
+  (docs/PAPER-GAPS.md): the two Barendregt conditions the four suffix-DISCARDING
+  check rows need for `lemma:suffix-erasure`, the `uniq` filter `AT-Abs` needs
+  on `guess^TY`'s block, and the correction of `AT-AbsAnnoCheck`'s result
+  domain.  History of the build-up:
+- 🟡 (history) **Theorem: Soundness of type inference — STARTED 2026-08-06**
   (`algo/prop_soundness_typing.v`, NEW; all Qed and axiom-free).  ⭐ The
   `Freeze` ingredient is DONE and was DERIVED from theorem 1's transport, not
   rebuilt: `a_consis_chk_tyequiv` (the paper's "which further gives
@@ -195,7 +206,81 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-06 (latest) — ⭐⭐ **SECTION D: FOUR of theorem 2's five prerequisites are CLOSED — suffix erasure (all six judgements) and split-refine included**
+## 2026-08-06 (latest) — ⭐⭐⭐ **SECTION D: `thm:sound-type-inference` IS CLOSED** — `a_typing_sound` is Qed and axiom-free, and four side conditions the paper leaves to prose are now on the rules
+
+`make coq` clean; `a_typing_sound` `Check`ed and `Print Assumptions`-audited in
+`README.v` beside `a_pat_sound`.  The eleven-row induction
+(`algo/prop_soundness_typing.v` §13) is theorem 1's mirror one layer up, with
+the SAME two extra hypotheses (`a_wf_exp` + the disciplined skeleton-entry wf)
+and `a_ty_mode_compat` in place of `a_sk_mode_compat`.
+
+**⚙ The conclusion carries one conjunct beyond the hand-off's target**:
+`a_wf_ptyp Θ1 A`, the output type scoped in the output context.  `AT-App`
+consumes it — its third premise runs at input `⌈A⌉`, and nothing else in the
+derivation says the FUNCTION's domain is scoped where the argument is checked.
+It is the paper's ambient "all inputs are well-formed", threaded; and the four
+CHECK rows can now prove it exactly because of the Barendregt premises below.
+
+**⭐ Row by row.**  Rows 1–4 (`Unit`/`Var`/`Anno`/`Freeze`) are theorem 1's with
+`a_sub_sound_thm` at the TY sort, plus `btyp_of_erased_ptyp` (a `bskl` whose
+erasure is a painting of a TYPE is itself a colouring — the sort bridge the SK
+layer did not need).  `Anno`'s two sequential premises thread the skeleton-entry
+hypothesis through `a_typing_tm_ge`.  Rows 5/6 (`Abs`/`AbsAnno`) use
+`a_split_ty_shape`: AWAY from check mode the split is arrow-or-hole, so
+`a_split__flex` — and with it `lemma:split-refine` — is out of reach, exactly as
+at theorem 1.  ⭐ `AT-Abs` is the one row with no counterpart: its `guess^TY`
+block sits BETWEEN the binder and the context, so the ⊴-peel crosses it with
+`a_isub_strengthen_decls_src` (the block is declaration-only), and its
+refinement obligation is `a_guess_mono_refine`.  Rows 7–10 are the four CHECK
+rows whose output DROPS the pending suffix; they are exactly the ones that need
+`ad_sd_typing_strip_suffix` AND `a_split_refines`, because `a_ty_mode_compat`'s
+TC row admits any `⌈A⌉` and `a_split__flex` IS reachable there.  ⭐ NO
+type-variable renaming for `ad_sd_typing` is needed at the two ∀-peeling rows:
+at TC the colouring is FORCED (`btyp_inh_painting_inv`), so the induction
+hypothesis is simply re-run at every member of the cofinite family.  Row 11
+(`AT-App`) runs theorem 1 on premise 1, inverts the IH's arrow refinement, and
+gets the appendix's fourth `≡ᵗ` premise from `ad_refine_syn_inh_tyequiv`.
+
+**⚠️ FOUR RULE CHANGES, all in `algo/def_extra.v`, all documented in
+[`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md) and cleanly revertible.**
+
+1. **The four CHECK rows get the paper's two prose side conditions**:
+   `uniq (Ξ ++ Θ)` (verbatim `Sub-ForallR`'s own Barendregt premise for its own
+   discarded suffix) and "`Ξ` does not occur in the RESULT type".  The paper's
+   proof of this very theorem ASSUMES both — "since all variables in Ξ do not
+   appear in `inh{B}`" — and ⛔ neither is derivable: a scoping theorem cannot
+   supply the second, because at the ∀-peeling rows the body's result may
+   legitimately mention flexibles the body created and the rule offers no
+   handle saying those were re-deposited BELOW the discarded prefix.
+2. **`AT-Abs` gets `uniq (αs ++ Θ1)`**, the consumer-side filter for
+   `guess^TY`'s block.  `uniq αs` is NOT derivable (the guess's ARROW row runs
+   both halves at the same `Θ`) — this registry already records that for the
+   collection walk, where `Sub-ForallL`'s `uniq (Ξ, Θ₀)` filters it downstream.
+   `AT-Abs` is the other consumer: it puts the block INTO the context.
+3. ⭐ **`AT-AbsAnnoCheck`'s result domain is the SPLIT's `A'`, not the written
+   annotation.**  The paper's (commented-out) rule writes `A → B` while
+   orienting its consistency `A' ∼ A` — subject the split's domain, input the
+   annotation, the REVERSE of `AT-AbsAnno`'s `A ∼ P`.  The two cannot both
+   stand: with `A → B` soundness owes `inh⌈A'⌉ ⊳ ⌈A⌉` while the consistency
+   run transports the other way, and refinement is neither symmetric nor
+   transitive.  `A' → B` is also what the un-annotated `AT-AbsCheck` already
+   returns, and it is exactly what the appendix's `≡ᵗ` premise on
+   `sd-AbsAnnoCheck` is FOR.
+4. (previous pass) `ad_sd_typing__app`'s fourth `≡ᵗ` premise and
+   `a_split__flex`'s freshness.
+
+**New in the kit** (`prop_soundness_typing.v` §12): `a_wf_ptyp_of_wf_pskl` /
+`_of_scope_pskl` (reading a painting's skeleton well-formedness as a type's),
+`a_wf_exp_ftv_dom`, `btyp_of_erased_ptyp`, `a_ty_mode_compat_{hole,arrow}_inv`
++ `a_split_ty_shape`, `a_split_wf` (the split's increase, wf and BOTH
+components), `a_guess_mono_wf`, `a_wf_aenv_decls_app`,
+`a_isub_strip_var_typ_mid` (the term-entry ⊴-peel that DROPS the suffix — the
+`a_isub_strip_tvar_mid` mirror) and `a_wf_ptyp_strip_mid`.
+
+⛔ **Next**: the `ad_pat_sub_gv` composition gap (hand-off §6), then the two
+completeness theorems.
+
+## 2026-08-06 — ⭐⭐ **SECTION D: FOUR of theorem 2's five prerequisites are CLOSED — suffix erasure (all six judgements) and split-refine included**
 
 `make coq` clean; everything Qed and axiom-free.
 

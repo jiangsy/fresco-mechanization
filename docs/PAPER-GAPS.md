@@ -2740,3 +2740,90 @@ the hypothesis of `a_sub_complete_bundle_holds` is no longer known-false.
 Re-deciding it is the pay-off the campaign is aiming at, since the mech's
 `sub_shield` premise was invented as a repair of exactly the lemma that
 configuration refuted.
+
+---
+
+## ⭐⭐ RULE-LEVEL SIDE CONDITIONS `thm:sound-type-inference` NEEDS (2026-08-06)
+
+Closing theorem 2 (`a_typing_sound`, `frost/algo/prop_soundness_typing.v` §13,
+Qed and axiom-free) forced **three** additions to `fig:alg-type-inference` and
+**one** correction.  All four are one-line, INVERSION-only for every existing
+consumer, and cleanly revertible; the benchmark derivations (`test/`) discharge
+every one of them at `Ξ = ·`.  They join the two already recorded above:
+`sd-App`'s fourth `≡ᵗ` premise and `a_split__flex`'s freshness.
+
+### 1. The four CHECK rows DISCARD the pending suffix — and the paper's proof knows it
+
+`AT-AbsCheck` and `AT-AbsAnnoCheck` (both the `∀`-peeling and the `→` rows)
+return an output context that DROPS the suffix `Ξ` the body's run deposited,
+exactly as the figure writes them.  `AP-*` keeps its suffix, which is why
+`thm:sound-skeleton-inference` never met this.  The paper's own proof
+discharges the mismatch with `lemma:suffix-erasure`, *"since all variables in
+Ξ do not appear in `inh{B}`"* — i.e. it ASSUMES two facts no rule states:
+
+1. **`uniq (Ξ, Θ)`** — the run's new names avoid the input context.  This is
+   verbatim the premise `Sub-ForallR` already carries for its own discarded
+   suffix, and `Sub-ForallL` for the extract's.
+2. **`Ξ` does not occur in the RESULT type.**
+
+⛔ Neither is derivable.  A scoping theorem cannot supply (2): at the
+`∀`-peeling rows the body's own result may legitimately mention flexibles the
+body created, and nothing in the rule says those flexibles were re-deposited
+BELOW the discarded prefix.  (Positionally they always are — the assignment
+walk re-inserts a solved flexible at the solved variable's position — but that
+is a property of the SOLVER's placement, several judgements away, not
+something `AT-AbsCheck` can see.)
+
+⚙ With them, the mechanization gets both halves it owes: `lemma:suffix-erasure`
+for `ad_sd_typing` (`algo/prop_suffix_erase.v`) and the same strip for the
+information increase (`a_isub_strip_tvar_mid` / the new
+`a_isub_strip_var_typ_mid`), whose ⊴-obligation also has to lose `Ξ`.
+
+**Suggested action:** state both on the four rules, or say in prose that the
+suffix returned by a checking body is fresh for the result.
+
+### 2. `AT-Abs` must filter `guess^TY`'s block: `uniq (ᾱ, Θ₁)`
+
+`guess^TY`'s ARROW row runs both halves at the same `Θ`, so two
+independently-invented blocks can pick the same atom and **`uniq ᾱ` is not
+derivable** — this registry already records the same fact for the collection
+walk ("two independent generators", above), where it is filtered downstream by
+`Sub-ForallL`'s `uniq (Ξ, Θ₀)`.  `AT-Abs` is the other consumer: it puts the
+block INTO the context, so without the filter the body's premise runs at a
+context that is not well-formed, and the soundness proof has no induction
+hypothesis to appeal to.  Same premise, same idiom.
+
+### 3. `AT-AbsAnnoCheck`'s result domain is the SPLIT's `A'`, not the annotation
+
+The rule (`algorithmic.tex:296-303`, currently commented out) reads
+
+```
+  Θ₀,ᾱ ⊢ split(A₀) = A' → B ⊣ Θ₁,ᾱ     Θ₁,ᾱ ⊢ A' ∼ A ⊣ Θ₂,ᾱ
+  Θ₂,ᾱ,x:A ⊢[TC][B] M ⦂ B ⊣ Θ₃,ᾱ,x:A,Ξ
+  ───────────────────────────────────────────────────────────
+  Θ₀ ⊢[TC][∀ᾱ.A₀] λx^A.M ⦂ ∀ᾱ.A → B ⊣ Θ₃
+```
+
+Its consistency is oriented `A' ∼ A` — **subject the split's domain, input the
+annotation** — the reverse of `AT-AbsAnno`'s `A ∼ P`.  The two cannot both
+stand with the result `A → B`: soundness then owes `inh⌈A'⌉ ⊳ ⌈A⌉`, while a
+consistency run transports the OTHER way (`inh⌈A⌉ ⊳` a colouring of `A'`), and
+refinement is neither symmetric nor transitive
+(`cex/cex_refine_not_transitive.v`).
+
+`A' → B` resolves it, and is independently the right answer:
+
+- the un-annotated `AT-AbsCheck` already returns the SPLIT's domain;
+- it is exactly what the appendix's `≡ᵗ` premise on `sd-AbsAnnoCheck` is FOR
+  ("the binding keeps the written annotation `A`; the conclusion's domain is
+  any Θ-equivalent `A'`") — with `A → B` that premise is dead weight, with
+  `A' → B` it is discharged by reading the consistency run as `Θ₂ ⊢ A ≡ᵗ A'`
+  (`a_consis_chk_tyequiv`, prop_soundness_typing.v §3).
+
+**Suggested action:** either change the conclusion to `∀ᾱ. A' → B`, or flip
+the consistency to `A ∼ A'` and keep `A → B`.  The mechanization takes the
+first (`a_typing__abs_anno_check_base`, algo/def_extra.v).
+
+### 4. (already recorded) `sd-App`'s fourth `≡ᵗ`, and `a_split__flex`'s freshness
+
+See the two entries above.

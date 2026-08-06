@@ -312,6 +312,7 @@ Proof.
   - discriminate.
   - apply a_split__hole.
   - apply a_guess_mono__hole. crush_guess_fresh.
+  - crush_uniq.
   - repeat constructor.
   - intros x Hx. simpl_open.
     eapply a_typing__abs with (L := dom Θlib `union` singleton fa `union` singleton fb) (Ξ := nil)
@@ -321,6 +322,7 @@ Proof.
     + discriminate.
     + apply a_split__hole.
     + apply a_guess_mono__hole. crush_guess_fresh.
+    + crush_uniq.
     + constructor.
     + intros y _. simpl_open.
       eapply a_typing__var; [ crush_binds | ].
@@ -421,16 +423,22 @@ Proof.
     + apply consis_sigid_tophole.
     + apply a_sub__infer.
   - (* λx.x ⦂[TC; skel σ_id]  σ_id *)
-    eapply a_typing__abs_check_step with (L := {}) (Ξ := nil)
+    eapply a_typing__abs_check_step with (L := dom Θlib) (Ξ := nil)
       (A0 := ptyp_arrow b0 b0) (A := ptyp_arrow b0 b0) (Θ1 := Θlib).
     + constructor.
-    + intros α _. simpl_open.
-      eapply a_typing__abs_check_base with (L := dom Θlib `union` singleton fa `union` singleton fb) (Ξ := nil)
+    + crush_uniq.
+    + intros γ Hγ; simpl in Hγ; clear - Hγ; fsetdec.
+    + intros α Hα. simpl_open.
+      eapply a_typing__abs_check_base
+        with (L := dom Θlib `union` singleton fa `union` singleton fb
+                     `union` singleton α) (Ξ := nil)
         (A0 := ptyp_arrow (ptyp_var_f α) (ptyp_var_f α))
         (A := ptyp_var_f α) (B := ptyp_var_f α)
         (Θ2 := (α ~ abind_tvar) ++ Θlib).
       * apply a_split__arrow.
       * constructor.
+      * crush_uniq.
+      * intros γ Hγ; simpl in Hγ; clear - Hγ; fsetdec.
       * intros x Hx. simpl_open.
         eapply a_typing__var; [ crush_binds | ].
         apply a_sub__check.
@@ -718,32 +726,47 @@ Proof.
         eapply a_consis__arrow; apply a_consis__ghost_r; fsetdec.
     + apply a_sub__infer.
   - (* λx.λy.y ⦂[TC; skel(∀a.a→∀b.b→b)]  ∀a.a→∀b.b→b *)
-    eapply a_typing__abs_check_step with (L := {}) (Ξ := nil)
+    eapply a_typing__abs_check_step with (L := dom Θlib) (Ξ := nil)
       (A0 := ptyp_arrow b0 (ptyp_all (ptyp_arrow b0 b0)))
       (A := ptyp_arrow b0 (ptyp_all (ptyp_arrow b0 b0)))
       (Θ1 := Θlib).
     + constructor.
-    + intros α _. simpl_open.
-      eapply a_typing__abs_check_base with (L := dom Θlib `union` singleton fa `union` singleton fb) (Ξ := nil)
+    + crush_uniq.
+    + intros γ Hγ; simpl in Hγ; clear - Hγ; fsetdec.
+    + intros α Hα. simpl_open.
+      eapply a_typing__abs_check_base
+        with (L := dom Θlib `union` singleton fa `union` singleton fb
+                     `union` singleton α) (Ξ := nil)
         (A0 := ptyp_arrow (ptyp_var_f α) (ptyp_all (ptyp_arrow b0 b0)))
         (A := ptyp_var_f α) (B := ptyp_all (ptyp_arrow b0 b0))
         (Θ2 := (α ~ abind_tvar) ++ Θlib).
       * apply a_split__arrow.
       * constructor.
+      * crush_uniq.
+      * intros γ Hγ; simpl in Hγ; clear - Hγ; fsetdec.
       * intros x Hx. simpl_open.
-        eapply a_typing__abs_check_step with (L := {}) (Ξ := nil)
+        eapply a_typing__abs_check_step
+          with (L := dom Θlib `union` singleton α `union` singleton x)
+          (Ξ := nil)
           (A0 := ptyp_arrow b0 b0) (A := ptyp_arrow b0 b0)
           (Θ1 := (x ~ abind_var_typ (ptyp_var_f α))
                  ++ (α ~ abind_tvar) ++ Θlib).
         { constructor. }
-        { intros β _. simpl_open.
-          eapply a_typing__abs_check_base with (L := dom Θlib `union` singleton fa `union` singleton fb) (Ξ := nil)
+        { crush_uniq. }
+        { intros γ Hγ; simpl in Hγ; clear - Hγ; fsetdec. }
+        { intros β Hβ. simpl_open.
+          eapply a_typing__abs_check_base
+            with (L := dom Θlib `union` singleton fa `union` singleton fb
+                         `union` singleton α `union` singleton x
+                         `union` singleton β) (Ξ := nil)
             (A0 := ptyp_arrow (ptyp_var_f β) (ptyp_var_f β))
             (A := ptyp_var_f β) (B := ptyp_var_f β)
             (Θ2 := (β ~ abind_tvar) ++ (x ~ abind_var_typ (ptyp_var_f α))
                    ++ (α ~ abind_tvar) ++ Θlib).
           - apply a_split__arrow.
           - constructor.
+          - crush_uniq.
+          - intros γ Hγ; simpl in Hγ; clear - Hγ; fsetdec.
           - intros y _. simpl_open.
             eapply a_typing__var; [ crush_binds | ].
             apply a_sub__check; [ simpl; intuition | simpl; intuition | crush_lc | crush_lc | ].
@@ -768,6 +791,8 @@ Proof.
       (Θ2 := Θlib).
     + apply a_split__arrow.
     + constructor.
+    + crush_uniq.
+    + intros γ Hγ; simpl in Hγ; clear - Hγ; fsetdec.
     + intros x Hx. simpl_open.
       eapply a_typing__app
         with (A := σ_id)

@@ -485,7 +485,55 @@ this transport rather than rebuilding it.**
   premise is a context EQUATION (higher-order unification); apply the IH
   explicitly.
 
-### 7.5 What is next — thm:sound-type-inference (STARTED)
+### 7.5 thm:sound-type-inference — ✅ CLOSED (2026-08-06, eighth pass)
+
+`a_typing_sound` (`frost/algo/prop_soundness_typing.v` §13) is **Qed and
+axiom-free**, `Check`ed and `Print Assumptions`-audited in `README.v` beside
+`a_pat_sound`.  The statement is §7.5's target plus ONE conjunct:
+
+    Theorem a_typing_sound : forall m Θ0 P0 e A Θ1,
+      Θ0 ⊢ₐ[ m ; P0 ] e ⦂ A ⊣ Θ1 ->
+      a_wf_aenv Θ0 ->
+      (forall x Ps, binds x (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
+      Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+      a_ty_mode_compat m P0 ->
+      a_wf_exp Θ0 e ->
+      Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
+      exists Bt, btyp_to_ptyp Bt = A /\
+        (Θ1 ⊢ˢᵃ[ m ] e ⦂ Bt) /\
+        (Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt))
+
+⚙ **Why the extra conjunct.**  `AT-App`'s third premise runs at input `⌈A⌉`,
+and nothing else in the derivation says the FUNCTION's domain is scoped in the
+context the argument is checked in.  It is the paper's ambient "all inputs are
+well-formed", threaded — and the four CHECK rows can prove it only because of
+the Barendregt premises below (`a_wf_ptyp_strip_mid` is the strip).
+
+⚠️ **FOUR RULE CHANGES landed with it** (all `algo/def_extra.v`, all
+INVERSION-only for existing consumers, all in docs/PAPER-GAPS.md, all cleanly
+revertible; the benchmark derivations discharge each at `Ξ = ·`):
+
+1. the four CHECK rows carry `uniq (Ξ ++ Θ)` and "`Ξ` does not occur in the
+   RESULT type" — the two facts the paper's own proof of this theorem assumes
+   when it invokes `lemma:suffix-erasure`, and ⛔ neither is derivable;
+2. `AT-Abs` carries `uniq (αs ++ Θ1)`, the consumer-side filter for
+   `guess^TY`'s block (`uniq αs` is not derivable — two independent
+   generators — exactly as `Sub-ForallL` filters the collection walk's);
+3. `AT-AbsAnnoCheck`'s result domain is the SPLIT's `A'`, not the annotation;
+4. (previous pass) `sd-App`'s fourth `≡ᵗ` and `a_split__flex`'s freshness.
+
+⚙ The §12 kit that closed it: `a_wf_ptyp_of_wf_pskl` / `_of_scope_pskl`,
+`a_wf_exp_ftv_dom`, `btyp_of_erased_ptyp` (a ghost-free `bskl` IS a colouring
+— the sort bridge the SK layer did not need), `a_ty_mode_compat_{hole,arrow}_inv`
++ `a_split_ty_shape`, `a_split_wf`, `a_guess_mono_wf`, `a_wf_aenv_decls_app`,
+`a_isub_strip_var_typ_mid`, `a_wf_ptyp_strip_mid`.
+
+⛔ **NEXT: the `ad_pat_sub_gv` composition gap (§6), then the two completeness
+theorems.**
+
+---
+
+### 7.5-history What was next — thm:sound-type-inference (STARTED)
 
 `frost/algo/prop_soundness_typing.v` (NEW) holds the kit so far, all Qed and
 axiom-free.  The statement to aim at is theorem 1's mirror, one layer up
@@ -675,7 +723,8 @@ the ⊴-peel kit (`uniq_mid_eq`, `a_inc_weaken_suffix_target`,
    reason the `≡ᵗ` route wanted symmetry.
    ⚠️ It carries a FRESHNESS side condition: `a_split__flex` invents two
    flexibles and the mech's rule records no freshness for them.
-4. ⛔ **`AT-App`'s typing-under-`≡ᵗ` transport at TC** (PAPER-GAPS, WATCH 1)
+4. ✅ **DONE** (by adding the appendix's fourth premise) — `AT-App`'s
+   typing-under-`≡ᵗ` transport at TC (PAPER-GAPS, WATCH 1).  Original note:
    — **the last missing ingredient**.  Its equivalence half is
    `ad_refine_syn_inh_tyequiv` (§2), already proved; what is missing is the
    transport itself, which bottoms out in an `ad_pat_consis` **TARGET**
@@ -691,11 +740,14 @@ the ⊴-peel kit (`uniq_mid_eq`, `a_inc_weaken_suffix_target`,
    added one to `sd-Freeze` / `sd-AbsAnnoCheck` / `sd-AbsAnno` for exactly
    this reason.
    ✅ **DONE** — the other half, `AT-Abs`'s `guess^TY` refinement (§9).
-5. ⛔ The eleven-row induction.  ⭐ The one row with no counterpart in
+5. ✅ **DONE** — the eleven-row induction (see §7.5's header).  Original note:  ⭐ The one row with no counterpart in
    theorem 1 is `AT-Abs`: it deposits a `guess^TY` block `αs` BETWEEN the
    binder and the context, so the ⊴-peel has to cross it
    (`a_guess_mono_decls` says the block is flexible-only, which is also how
    `a_typing_tm_ge` crosses it).
+
+⭐ **ALL FIVE ARE CLOSED, and so is the theorem** — see §7.5's header for the
+statement as proved, the four rule changes it forced, and the §12 kit.
 
 Then the `ad_pat_sub_gv` composition gap (§6) before the two completeness
 theorems.

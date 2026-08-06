@@ -22,6 +22,15 @@ point to the same content.
     Its last piece supplies a lemma the paper asserts inline and never
     states ("preservation of refinement under type equivalence",
     `a_consis_chk_annot_refine`); see `docs/HANDOFF-section-d.md` §7.
+  - ⭐⭐⭐ Type-inference SOUNDNESS (section D, thm:sound-type-inference):
+    `a_typing_sound` — Qed, axiom-free, `Check`ed in `README.v`.  Its
+    prerequisites are `lemma:suffix-erasure` for all six judgements
+    (`algo/prop_suffix_erase.v`) and `lemma:split-refine` COLOURED
+    (`a_split_refines`).  ⚠️ It required FOUR side conditions the paper
+    leaves to prose to be stated ON the rules — the two Barendregt
+    conditions the suffix-DISCARDING check rows need, the `uniq` filter
+    `AT-Abs` needs on `guess^TY`'s block, and the correction of
+    `AT-AbsAnnoCheck`'s result domain.  All in `docs/PAPER-GAPS.md`.
   - ⭐⭐⭐ Subtyping COMPLETENESS: `a_sub_complete_bundle_holds` and
     `a_sub_complete_thm` (thm:complete-subtyping), with **no residual
     hypothesis** — both are `Check`ed and audited in `README.v`.  P5, all

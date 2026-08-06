@@ -477,7 +477,7 @@ Proof.
     destruct (atom_fresh (L `union` singleton y)) as [x Hx].
     apply binds_app_3.
     eapply aenv_tm_le_via_binder with (x := x);
-      [ exact H2 | apply H4; clear - Hx; fsetdec | exact Htm
+      [ exact H3 | apply H5; clear - Hx; fsetdec | exact Htm
       | intros Heq; subst; clear - Hx; fsetdec
       | apply binds_app_3; apply H0; [ exact Htm | exact Hb ] ].
   - (* abs_anno *)
@@ -494,21 +494,21 @@ Proof.
     intros y b Htm Hb.
     destruct (atom_fresh (L `union` singleton y)) as [α Hα].
     eapply aenv_tm_le_via_binder with (x := α);
-      [ exact H | apply H1; clear - Hα; fsetdec | exact Htm
+      [ exact H | apply H3; clear - Hα; fsetdec | exact Htm
       | intros Heq; subst; clear - Hα; fsetdec | exact Hb ].
   - (* abs_check_base *)
     intros y b Htm Hb.
     apply a_split_tm_le in H.
     destruct (atom_fresh (L `union` singleton y)) as [x Hx].
     eapply aenv_tm_le_via_binder with (x := x);
-      [ exact H0 | apply H2; clear - Hx; fsetdec | exact Htm
+      [ exact H0 | apply H4; clear - Hx; fsetdec | exact Htm
       | intros Heq; subst; clear - Hx; fsetdec
       | apply H; [ exact Htm | exact Hb ] ].
   - (* abs_anno_check_step *)
     intros y b Htm Hb.
     destruct (atom_fresh (L `union` singleton y)) as [α Hα].
     eapply aenv_tm_le_via_binder with (x := α);
-      [ exact H | apply H1; clear - Hα; fsetdec | exact Htm
+      [ exact H | apply H3; clear - Hα; fsetdec | exact Htm
       | intros Heq; subst; clear - Hα; fsetdec | exact Hb ].
   - (* abs_anno_check_base *)
     intros y b Htm Hb.
@@ -516,7 +516,7 @@ Proof.
     apply a_consis_chk_tm_le in H0.
     destruct (atom_fresh (L `union` singleton y)) as [x Hx].
     eapply aenv_tm_le_via_binder with (x := x);
-      [ exact H1 | apply H3; clear - Hx; fsetdec | exact Htm
+      [ exact H1 | apply H5; clear - Hx; fsetdec | exact Htm
       | intros Heq; subst; clear - Hx; fsetdec
       | apply H0; [ exact Htm | apply H; [ exact Htm | exact Hb ] ] ].
   - (* app *)

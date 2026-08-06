@@ -1462,6 +1462,15 @@ Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
     m <> mode_tc ->
     Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 ->
     a_guess_mono Θ1 P αs A ->
+    (* [paper-gap] The consumer-side filter for [guess^TY]'s block, verbatim
+       the premise [a_sub__forall_l] already carries for the same reason:
+       [a_guess_mono]'s ARROW row runs both halves at the same [Θ], so two
+       independently-invented blocks can pick the same atom and [uniq αs] is
+       NOT derivable ("two independent generators", docs/PAPER-GAPS.md).  The
+       implementation's global counter is what rules it out; a relational rule
+       has to filter it downstream, at the rule that puts the block in the
+       context.  Without it the body's run has no well-formed input context. *)
+    uniq (αs ++ Θ1) ->
     a_suffix Ξ ->
     (forall x, x `notin` L ->
        ((x ~ abind_var_typ A) ++ αs ++ Θ1) ⊢ₐ[ (decr_mode m) ; Q ]
@@ -1480,8 +1489,31 @@ Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
    [∀] at a time — [_step] peels one rigid quantifier from the input type and
    the result, [_base] splits the (non-∀) input type into [A→B] and checks
    the body.  Mirrors [d_sd_typing__abs_check_step]/[_base]. *)
+(* ⭐ [paper-gap] THE PENDING SUFFIX IS DISCARDED HERE, and the paper's two
+   prose side conditions on that discard are made premises (docs/PAPER-GAPS.md,
+   WF-SIDE-CONDITIONS.md).  These four rows — and only these four — return an
+   output context that DROPS the suffix [Ξ] the body's run deposited, exactly
+   as fig:alg-type-inference does; [a_pat]'s check rows keep theirs, which is
+   why thm:sound-skeleton-inference never met this.  The paper's own proof of
+   thm:sound-type-inference discharges the resulting mismatch with
+   lemma:suffix-erasure, "since all variables in Ξ do not appear in inh{B}"
+   (proofs.tex, AbsCheck case) — i.e. it ASSUMES the two facts below, which
+   no rule states and which are NOT derivable from the rules:
+
+   (1) [uniq (Ξ ++ Θ)] — the run's new names avoid the input context.  This
+       is verbatim the premise [a_sub__forall_r] already carries for its own
+       discarded suffix ("Barendregt: the run's new names avoid the input").
+   (2) [Ξ] does not occur in the RESULT type.  A scoping theorem cannot
+       supply it: at [_step] the body's own result may legitimately mention
+       flexibles the body created, and the rule offers no handle saying
+       those flexibles were re-deposited BELOW the discarded prefix.
+
+   Both are INVERSION-only for every existing consumer, and both are
+   discharged by [Ξ = ·] in the benchmark derivations (test/). *)
 | a_typing__abs_check_step : forall L Θ0 Θ1 A0 e A Ξ,
     a_suffix Ξ ->
+    uniq (Ξ ++ Θ0) ->                                   (* Barendregt (1) *)
+    (forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_ptyp A) ->  (* (2) *)
     (forall α, α `notin` L ->
        ((α ~ abind_tvar) ++ Θ0)
          ⊢ₐ[ mode_tc ; (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))) ]
@@ -1491,12 +1523,16 @@ Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
 | a_typing__abs_check_base : forall L Θ0 Θ1 Θ2 A0 A B e Ξ,
     Θ0 ⊲ (ptyp_to_pskl A0) ▹ (ptyp_to_pskl A) ⇢ (ptyp_to_pskl B) ⊣ Θ1 ->
     a_suffix Ξ ->
+    uniq (Ξ ++ Θ1) ->                                   (* Barendregt (1) *)
+    (forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_ptyp B) ->  (* (2) *)
     (forall x, x `notin` L ->
        ((x ~ abind_var_typ A) ++ Θ1) ⊢ₐ[ mode_tc ; (ptyp_to_pskl B) ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ B ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ2)) ->
     Θ0 ⊢ₐ[ mode_tc ; (ptyp_to_pskl A0) ] (exp_abs e) ⦂ (ptyp_arrow A B) ⊣ Θ2
 | a_typing__abs_anno_check_step : forall L Θ0 Θ1 A0 Aan e A Ξ,
     a_suffix Ξ ->
+    uniq (Ξ ++ Θ0) ->                                   (* Barendregt (1) *)
+    (forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_ptyp A) ->  (* (2) *)
     (forall α, α `notin` L ->
        ((α ~ abind_tvar) ++ Θ0)
          ⊢ₐ[ mode_tc ; (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))) ]
@@ -1507,10 +1543,24 @@ Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
     Θ0 ⊲ (ptyp_to_pskl A0) ▹ (ptyp_to_pskl A') ⇢ (ptyp_to_pskl B) ⊣ Θ1 ->
     a_consis_chk Θ1 (ptyp_to_pskl A') (ptyp_to_pskl A) Θ2 ->
     a_suffix Ξ ->
+    uniq (Ξ ++ Θ2) ->                                   (* Barendregt (1) *)
+    (forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_ptyp B) ->  (* (2) *)
     (forall x, x `notin` L ->
        ((x ~ abind_var_typ A) ++ Θ2) ⊢ₐ[ mode_tc ; (ptyp_to_pskl B) ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ B ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ3)) ->
-    Θ0 ⊢ₐ[ mode_tc ; (ptyp_to_pskl A0) ] (exp_abs_anno A e) ⦂ (ptyp_arrow A B) ⊣ Θ3
+    (* ⭐ [paper-gap] THE RESULT'S DOMAIN IS THE SPLIT'S [A'], NOT THE WRITTEN
+       ANNOTATION [A].  The paper's (commented-out) AT-AbsAnnoCheck writes
+       [A → B] (algorithmic.tex:296-303) while orienting its consistency
+       [A' ∼ A] — subject the split's domain, input the annotation — the
+       reverse of AT-AbsAnno's [A ∼ P].  The two cannot both hold: with
+       [A → B] the soundness proof owes [inh⌈A'⌉ ⊳ ⌈A⌉], and the consistency
+       run transports the OTHER way ([inh⌈A⌉ ⊳ colouring of A']), which would
+       need refinement symmetry.  [A' → B] is also what the un-annotated
+       AT-AbsCheck already returns (its domain is the split's), and it is
+       exactly what the appendix's [≡ᵗ] premise on sd-AbsAnnoCheck is FOR:
+       "the conclusion's domain is any Θ-equivalent A'".  docs/PAPER-GAPS.md *)
+    Θ0 ⊢ₐ[ mode_tc ; (ptyp_to_pskl A0) ] (exp_abs_anno A e)
+      ⦂ (ptyp_arrow A' B) ⊣ Θ3
 | a_typing__app : forall m Θ0 Θ1 Θ2 Θ3 P Q A A' B e1 e2,    (* AT-App *)
     Θ0 ⊢ₐ[ mode_tc ; pskl_hole ] e2 ⇨ P ⊣ Θ1 ->
     Θ1 ⊢ₐ[ (mode_fn m) ; (pskl_arrow P Q) ] e1 ⦂ (ptyp_arrow A B) ⊣ Θ2 ->

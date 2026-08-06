@@ -29,6 +29,8 @@ Require Import src.frost.algo.completeness_look.prop_sub_cstr.
 Require Import src.frost.algo.completeness_look.prop_extract.
 Require Import src.frost.algo.prop_completeness_sub.
 Require Import src.frost.algo.prop_soundness_pat.
+Require Import src.frost.algo.prop_suffix_erase.
+Require Import src.frost.algo.prop_soundness_typing.
 
 (* ===================================================================== *)
 (*  full-decl-proofs.tex / app:syntax-directed                            *)
@@ -171,6 +173,31 @@ Check a_sub_complete_thm.
 Check a_pat_sound.
 Check a_consis_chk_annot_refine.
 
+(* ⭐⭐⭐ Theorem [Soundness of type inference] (thm:sound-type-inference,
+   proofs.tex) — the same statement one layer up: an [a_typing] run is an
+   information increase whose output context carries the syntax-directed
+   DECLARATIVE typing at a colouring of the inferred type, refining the
+   inherited painting of the input skeleton.  The extra premises are
+   theorem 1's ([a_wf_exp] + the disciplined skeleton-entry wf), with
+   [a_ty_mode_compat] in place of [a_sk_mode_compat].
+   ⚙ The conclusion additionally carries [a_wf_ptyp Θ1 A] — the output type
+   is scoped in the output context, which [AT-App] consumes.
+   ⚠️ FOUR rule-level side conditions the paper leaves to prose are stated
+   on the rules (docs/PAPER-GAPS.md): the two Barendregt conditions the
+   four suffix-DISCARDING check rows need for lemma:suffix-erasure, the
+   [uniq] filter [AT-Abs] needs on guess^TY's block, and the correction of
+   [AT-AbsAnnoCheck]'s result domain.  Three supporting facts the paper
+   asserts inline and never states: [a_guess_mono_refine] (guess^TY
+   refines), [a_split_refines] (lemma:split-refine, COLOURED) and
+   [ad_refine_syn_inh_tyequiv] (a refinement between ghost-free paintings
+   IS a type equivalence — [Freeze]'s and [AT-App]'s bridge). *)
+Check a_typing_sound.
+Check a_guess_mono_refine.
+Check a_split_refines.
+Check ad_refine_syn_inh_tyequiv.
+Check ad_pat_strip_suffix.
+Check ad_sd_typing_strip_suffix.
+
 (* ===================================================================== *)
 (*  Assumption audit — all must be "Closed under the global context"      *)
 (* ===================================================================== *)
@@ -203,5 +230,8 @@ Print Assumptions a_sub_complete_bundle_holds.
 Print Assumptions a_sub_complete_thm.
 Print Assumptions a_pat_sound.
 Print Assumptions a_consis_chk_annot_refine.
+Print Assumptions a_typing_sound.
+Print Assumptions ad_sd_typing_strip_suffix.
+Print Assumptions a_split_refines.
 Print Assumptions a_extract_complete_gen.
 Print Assumptions a_extract_complete.
