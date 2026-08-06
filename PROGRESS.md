@@ -254,6 +254,25 @@ terminate — `a_wf_pskl_delta_mono`'s `Δ0` is left an evar by the
 Δ-polymorphic `a_wf_pskl_mono_ptyp`, and the wrapper was not needed.
 Profile-first paid: imports alone were 0.3 s, so it was never I/O.
 
+**6. ✅ `ad_pat_sub_gv_rename_tvar` is BUILT** — `prop_soundness_sub.v` §1e,
+Qed and axiom-free.  §6.1's `ForallR` row needs it because the ALGORITHMIC
+subtyping rule is EXISTS-FRESH (one α) while `ad_pat_sub_gv__forall_r` is
+COFINITE; the `_gv` version carries the fuel UNCHANGED.  Two new bridges:
+`ad_refine_pskl_f_of_plain` (the `__hole` hygiene side condition is vacuous at
+`F = ∅`) and ⭐ `ftag_in_uskl_subst_var` — **renaming a TYPE variable cannot
+change TAGS**, an EQUALITY, so the local copy is 6 lines and the downstream
+`ftag_in_uskl_subst_bskl_in_uskl` was not needed.
+
+⚠️ Four traps, all from moving scratch-proved script INTO the tree — a scratch
+file's hint context and name resolution are NOT the target file's: `; auto`
+closes a different NUMBER of goals (and the "Wrong bullet" then points at the
+NEXT row, not the guilty one); **`guarded_pskl_subst` resolves to
+`prop_looksub.v`'s homonym here**, which carries a DISEQUALITY premise (use
+`guarded_pskl_subst_var`); `apply` does not present premises in source order,
+so `first [ … ]` per goal beats a positional chain; and in the two ForallL
+rows the RECURSIVE premise must be discharged FIRST because it is what fixes
+`ψ` — otherwise `ψ` is still an evar at the `a_tags_sort` goal.
+
 **4. §6.1's dependency-order blocker is GONE.**  `ad_pat_sub_g_of` (was
 `prop_completeness_sub_precise.v`) and `ad_pat_sub_gv_fuel_weaken` (was
 `prop_completeness_sub.v`) MOVED to `decorated_algo/def_decl_algo_sub_hyg.v`,

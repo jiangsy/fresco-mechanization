@@ -424,11 +424,14 @@ hypothesis is quantified over BOTH a Θ-extension and a Δ, because its two
   so the family goes in THIRD (§7.4: read the arity, don't count
   underscores).
 
-#### ⛔ NEXT UNIT — `ad_pat_sub_gv_rename_tvar` (the ForallR row's prerequisite)
+#### ✅ `ad_pat_sub_gv_rename_tvar` — BUILT (2026-08-06), `prop_soundness_sub.v` §1e
 
-Adapt `ad_pat_sub_rename_tvar` (prop_pat_sub.v:1217–1330).  Home:
-`prop_soundness_sub.v` §1e — it is the file that imports everything below.
-The statement is the plain one plus a fuel index carried UNCHANGED:
+Qed and axiom-free, with the two bridges it needed:
+`ad_refine_pskl_f_of_plain`, `ftag_in_uskl_subst_var` (⭐ renaming a TYPE
+variable cannot change TAGS), `ad_refine_pskl_rename_ctx`, and the
+fuel-preserving renaming itself.  The statement is the plain one
+(`ad_pat_sub_rename_tvar`, prop_pat_sub.v:1217–1330) plus a fuel index
+carried UNCHANGED:
 
     Lemma ad_pat_sub_gv_rename_tvar : forall n NM M Ψ Θ1 α Θ0 R Q β',
       ad_pat_sub_gv n NM M Ψ (Θ1 ++ (α ~ abind_tvar) ++ Θ0) R Q ->
@@ -446,11 +449,28 @@ The statement is the plain one plus a fuel index carried UNCHANGED:
 | `ad_pat_consis_rename_tvar` | ✅ prop_pat_sub.v |
 | `⌊subst R⌋ˢ = subst ⌊R⌋ˢ` | ✅ `uskl_to_pskl_subst_mono` (prop_pat_sub.v:1019), at `τ := ptyp_var_f β'` |
 | `bskl_to_pskl` vs subst | ✅ `bskl_to_pskl_subst_var` (prop_completeness_consis.v:1590) |
-| the LEAF refinement renamed | ⚙ `ad_refine_pskl_f_rename_ctx` (prop_soundness_consis.v:1343) has the exact shape, at `F = ∅`, `Δ = ∅` — but the plain→`_f` bridge **`ad_refine_pskl_f_of_plain` does not exist** (~15 lines; the `__hole` side condition is vacuous at `F = ∅`, the two cofinite rows need writing out) |
-| the ForallL hygiene premise under the rename | ⚙ `ftag_in_uskl (subst …) [<=] ftag_in_uskl …` — `ftag_in_uskl_subst_bskl_in_uskl` (completeness_look/prop_eq_cstr.v:158) says exactly this, but that file is DOWNSTREAM.  Prove a ~10-line local copy (or move it up, as the `_gv` bridges were moved) |
+| the LEAF refinement renamed | ✅ NEW `ad_refine_pskl_f_of_plain` + `ad_refine_pskl_rename_ctx` (§1e-i/ii), on top of `ad_refine_pskl_f_rename_ctx` at `F = Δ = ∅` |
+| the ForallL hygiene premise under the rename | ✅ NEW `ftag_in_uskl_subst_var`: `ftag_in_uskl (subst_bskl_in_uskl (uskl_var_f β) α R) [=] ftag_in_uskl R`.  ⭐ Renaming a TYPE variable cannot change TAGS — an EQUALITY, so the local copy is 6 lines and the downstream `ftag_in_uskl_subst_bskl_in_uskl` was not needed |
 
-⚙ Renaming a TYPE variable cannot change TAGS, so the hygiene premise
-survives in the ⊆ direction, which is all the intersection needs.
+⚠️ **Four more traps, all from moving scratch-proved script INTO the tree.**
+A scratch file's hint context and name resolution are NOT the target file's:
+
+- `; auto` closes a DIFFERENT NUMBER of goals in `prop_soundness_sub.v` than
+  in a scratch file, and the bullets silently stop lining up ("Wrong bullet"
+  pointing at the NEXT row, not the guilty one).  State every premise chain
+  explicitly.
+- **`guarded_pskl_subst` resolves to `prop_looksub.v:466`'s homonym here**
+  (it is the last `Require`), and that one carries a DISEQUALITY premise.
+  Use the unambiguous one-premise `guarded_pskl_subst_var`
+  (prop_soundness_consis.v:541).  ⚙ Same hazard for `a_wf_pskl_rename_tvar`
+  (prop_soundness_consis.v:553 vs prop_soundness_pat.v:1413) — the latter is
+  not imported here, so it happens to be safe.
+- `apply` does NOT present a lemma's premises in source order; use
+  `first [ … ]` per goal rather than a positional `[ … | … ]` chain.
+- ⭐ In the two ForallL rows the recursive premise must be discharged FIRST
+  (`6: exact IH…`), because it is what fixes `ψ`; in a left-to-right chain
+  `ψ` is still an evar at the `a_tags_sort` goal and `assumption` cannot
+  instantiate it.
 
 ### 6.2 ⭐⭐ WHERE `ad_pat_sub_gv` ENTERS — SETTLED 2026-08-06 (scouting item 1)
 
