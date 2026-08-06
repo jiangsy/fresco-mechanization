@@ -142,7 +142,56 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-06 (latest) — ⭐⭐⭐ **SECTION D: `thm:sound-skeleton-inference` IS ASSEMBLED** — all ten `a_pat` rows proved, one isolated open lemma left
+## 2026-08-06 (latest) — ⭐ **SECTION D: the open lemma's kit starts landing, and its design is CORRECTED** — the ∀ rows force the two contexts apart
+
+Three more lemmas Qed and axiom-free in `algo/prop_soundness_pat.v`
+(§4a–§4c); `make coq` clean; `a_pat_sound` unchanged, still exactly one
+axiom.  This entry is about `a_consis_chk_annot_refine`, the one axiom.
+
+**⭐ THE CORRECTION.**  The previous pass's plan had the target transport
+share ONE context between the consistency and the refinement.  That does not
+work at the `__all` row: the consistency premise lives at `(α~tvar),Θ` and
+the refinement premise at `Θ ⨟ α,Δ`, and moving the CONSTRUCTED output back
+(Θ → Δ) is **unsound** — `ad_refine_syn__hole`'s fill is Δ-free BY RULE, so a
+fill mentioning α cannot survive the move, and in the transport the fills are
+exactly `ptyp_to_pskl A` for the sub-annotations, which do mention α.  The
+repair is to DECOUPLE the two contexts (`Θc` for the consistency, `Θr ⨟ Δ`
+for the refinement) and relate them by two conditions — definitions of `Θc`
+visible in `Θr`, and every `Θc`-tvar either in `Δ` or a tvar of `Θr`.  Then
+BOTH ∀ rows land exactly where their own rule puts the binder and **no
+context move is needed anywhere**: `__all` keeps α in Δ, `__tophole_fill`
+puts it in Θr.  Full statement + per-row map in
+`docs/HANDOFF-section-d.md` §7.3 and the file's §4 header.
+
+**⭐ The second correction: the `__hole` row needs an OCCURRENCE LEMMA.**
+`ad_refine_syn__hole` demands `Θr ⨟ ∅ ⊢ₚₛᵃ (ptyp_to_pskl A)` — A must be
+Δ-FREE — while under a ∀ the invariant only gives "in Δ or tvar-ish in Θr".
+The upgrade is: a free variable of a type-painting SUBJECT either survives
+into the consistency's TARGET or escapes through a DEFINITION.  At `__hole`
+the target is `pskl_to_bskl_syn P` with `Θr ⨟ ∅ ⊢ₚₛᵃ P`, so all disjuncts
+land in `dom Θr`, and a Δ-bound ∀ witness (fresh for Θr) is excluded.
+
+**Banked this pass:**
+
+- §4a coercion identities, incl. ⭐ `btyp_to_bskl_mono_syn`: **a monotype has
+  only one colouring**.  That is what lets the two flexible rows rebuild —
+  a definition `α̂ ≔ τ` is a monotype, so whatever colouring the recursive
+  call produces for it IS the synthesised painting `__flex_l` / `__flex_r`
+  demand.
+- §4b `a_wf_pskl_delta_to_ctx` — the Δ→Θ move for skeleton well-formedness
+  (the safe direction; the refinement analogue is NOT sound, see above).
+- §4c ⭐ `ad_refine_syn_rename_delta` — renaming a Δ-member of a refinement.
+  This is what turns the `__all` row's ONE fresh witness into the cofinite
+  family the rule demands.  Its `__hole` and flexible rows are the
+  interesting ones: `α ∉ dom Θ` makes the fill and the definitions invisible
+  to the substitution, so the payloads are untouched.
+
+**LEFT** (HANDOFF §7.3): the occurrence lemma; a Θ-renaming for
+`ad_refine_syn` in mid-context form (the `__tophole_fill` row's family, with
+§4c as the template) plus its `a_wf_pskl` renaming; then the transport
+itself, after which the axiom is three lines.
+
+## 2026-08-06 — ⭐⭐⭐ **SECTION D: `thm:sound-skeleton-inference` IS ASSEMBLED** — all ten `a_pat` rows proved, one isolated open lemma left
 
 `a_pat_sound` (`algo/prop_soundness_pat.v` §5) is **Qed**; `make coq` clean.
 `Print Assumptions a_pat_sound` lists exactly ONE axiom — the isolated

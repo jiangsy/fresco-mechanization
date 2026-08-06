@@ -1027,65 +1027,292 @@ Proof. intros * H; inversion H; subst; auto. Qed.
 (*  syn] (only the MONO version exists, prop_precise_recover.v).           *)
 (* ===================================================================== *)
 
-(** THE PLAN (scouted 2026-08-06, second pass).  [a_consis_chk_sound] turns
-    the run into the pair
+(* --- §4a  the transport's kit (1): coercion identities ------------------ *)
 
-      empty ⨟ Θ1 ⊢ₛᵃ (pskl_to_uskl (ptyp_to_pskl A)) ∼ Qt      (subject painting
-                                                                ∼ output)
-      Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ Qt                  (the refinement,
-                                                                wrong target)
+Lemma ptyp_to_uskl_syn_via_pskl : forall A,
+  ptyp_to_uskl_syn A = pskl_to_uskl (ptyp_to_pskl A).
+Proof.
+  intros A. unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn.
+  apply pskl_to_uskl_via_bskl_syn.
+Qed.
 
-    so what is missing is a TARGET TRANSPORT, provable on the DECLARATIVE
-    layer alone (going back through [a_consis] instead re-does consistency
-    soundness: its ∀ rows put the binder in Θ while refinement's put it in
-    Δ, which is what [ad_refine_syn_f]'s hygiene set exists to manage):
+Lemma btyp_to_ptyp_close_rec : forall B α k,
+  btyp_to_ptyp (close_btyp_wrt_btyp_rec k α B)
+  = close_ptyp_wrt_ptyp_rec k α (btyp_to_ptyp B).
+Proof.
+  intros B; induction B; intros α0 k; default_simp.
+Qed.
 
-      forall Θ Δ Qb Qt A,
-        a_wf_aenv Θ -> a_wf_ptyp Θ A ->
-        empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (ptyp_to_pskl A)) ∼ Qt ->
-        Θ ⨟ Δ ⊢ᵣᵃ Qb ⊳ Qt ->
-        exists B, btyp_to_ptyp B = A /\ Θ ⨟ Δ ⊢ᵣᵃ Qb ⊳ (btyp_to_bskl B)
+Lemma btyp_to_ptyp_close : forall B α,
+  btyp_to_ptyp (close_btyp_wrt_btyp α B)
+  = close_ptyp_wrt_ptyp α (btyp_to_ptyp B).
+Proof.
+  intros. unfold close_btyp_wrt_btyp, close_ptyp_wrt_ptyp.
+  apply btyp_to_ptyp_close_rec.
+Qed.
 
-    NESTED induction: outer on the CONSISTENCY, inner (inside the rows whose
-    target does not determine the refinement's last rule) on the REFINEMENT.
-    Every row has an answer:
+Lemma btyp_to_bskl_close_rec : forall B α k,
+  btyp_to_bskl (close_btyp_wrt_btyp_rec k α B)
+  = close_bskl_wrt_bskl_rec k α (btyp_to_bskl B).
+Proof.
+  intros B; induction B; intros α0 k; default_simp.
+Qed.
 
-    - subject shape kills the ghost rows outright — a [ptyp] painting is
-      never [uskl_hole] / [uskl_topholeg] / [uskl_all_etag], so __ghostg,
-      __hole, __tophole, __topholeg, __tophole_inh, __tophole_drop and the
-      two _tagged ∀ rows are DEAD.
+Lemma btyp_to_bskl_close : forall B α,
+  btyp_to_bskl (close_btyp_wrt_btyp α B)
+  = close_bskl_wrt_bskl α (btyp_to_bskl B).
+Proof.
+  intros. unfold close_btyp_wrt_btyp, close_bskl_wrt_bskl.
+  apply btyp_to_bskl_close_rec.
+Qed.
+
+Lemma btyp_to_bskl_open_rec : forall B B' k,
+  btyp_to_bskl (open_btyp_wrt_btyp_rec k B' B)
+  = open_bskl_wrt_bskl_rec k (btyp_to_bskl B') (btyp_to_bskl B).
+Proof.
+  intros B; induction B; intros B' k; default_simp.
+Qed.
+
+Lemma btyp_to_bskl_open : forall B B',
+  btyp_to_bskl (open_btyp_wrt_btyp B B')
+  = open_bskl_wrt_bskl (btyp_to_bskl B) (btyp_to_bskl B').
+Proof.
+  intros. unfold open_btyp_wrt_btyp, open_bskl_wrt_bskl.
+  apply btyp_to_bskl_open_rec.
+Qed.
+
+(** ⭐ A MONOTYPE HAS ONLY ONE COLOURING — which is what lets the two
+    flexible rows of the transport rebuild their answer: a definition
+    [α̂ ≔ τ] is a monotype ([a_wf_aenv__flex_def]), so whatever colouring
+    the recursive call produces for it IS the synthesised painting the
+    [__flex_l] / [__flex_r] refinement rows demand. *)
+Lemma btyp_to_bskl_mono_syn : forall B,
+  mono_ptyp (btyp_to_ptyp B) ->
+  btyp_to_bskl B = ptyp_to_bskl_syn (btyp_to_ptyp B).
+Proof.
+  unfold ptyp_to_bskl_syn.
+  intros B; induction B; intros Hm; simpl in *; try inversion Hm; subst; auto.
+  f_equal; auto.
+Qed.
+
+(* --- §4b  the transport's kit (2): a Δ-variable moved into the context -- *)
+
+(** Consistency binds a ∀'s witness in Θ, refinement binds it in Δ.  Going
+    Δ → Θ is a WEAKENING and holds — [__var] already accepts either side and
+    [__tophole]'s [Θ ⨟ ∅ ⊢ₚₛᵃ P] only grows.  (The reverse direction is
+    false; the transport is arranged so it is never needed.) *)
+Lemma a_wf_pskl_delta_to_ctx : forall Θ Δ P,
+  Θ ⨟ Δ ⊢ₚₛᵃ P ->
+  forall α Δ', Δ [<=] add α Δ' ->
+  ((α ~ abind_tvar) ++ Θ) ⨟ Δ' ⊢ₚₛᵃ P.
+Proof.
+  intros Θ Δ P H; induction H; intros α0 Δ' Hsub.
+  - apply a_wf_pskl__unit.
+  - apply a_wf_pskl__var.
+    destruct H as [HΔ | Ht].
+    + destruct (α == α0) as [-> | Hne].
+      * right. left. unfold binds; simpl; left; reflexivity.
+      * left. clear - HΔ Hsub Hne. fsetdec.
+    + right. destruct Ht as [Hb | [Hb | [τ Hb]]];
+        [ left | right; left | right; right; exists τ ];
+        unfold binds; simpl; right; exact Hb.
+  - apply a_wf_pskl__arrow; auto.
+  - apply a_wf_pskl__all with (L := L `union` singleton α0). intros β Hβ.
+    apply H0; [ clear - Hβ; fsetdec | clear - Hsub; fsetdec ].
+  - apply a_wf_pskl__hole.
+  - apply a_wf_pskl__tophole;
+      [ assumption | apply IHa_wf_pskl; clear; fsetdec ].
+Qed.
+
+(* --- §4c  the transport's kit (3): renaming a Δ-variable --------------- *)
+
+(** The refinement rules never look a Δ-variable up in Θ, so a Δ-member can
+    be renamed.  This is what turns the ONE fresh witness the transport's
+    [__all] row produces into the cofinite family the rule demands.
+    [α ∉ dom Θ] is what makes the two payload-carrying rows ([__hole]'s
+    fill, the flexible definitions) invisible to the substitution. *)
+Lemma ad_refine_syn_rename_delta : forall Θ Δ0 Q P,
+  Θ ⨟ Δ0 ⊢ᵣᵃ Q ⊳ P ->
+  a_wf_aenv Θ ->
+  forall α β Δ,
+  Δ0 [=] add α Δ ->
+  α `notin` dom Θ `union` Δ ->
+  Θ ⨟ (add β Δ) ⊢ᵣᵃ (subst_bskl_in_bskl (bskl_var_f β) α Q)
+                  ⊳ (subst_bskl_in_bskl (bskl_var_f β) α P).
+Proof.
+  intros Θ Δ0 Q P H; induction H; intros Hwf α0 β Δ' Heq Hα; simpl.
+  - (* unit *) apply ad_refine_syn__unit.
+  - (* var *)
+    destruct_if as [Heqα | Hne].
+    + apply ad_refine_syn__var. left. clear; fsetdec.
+    + apply ad_refine_syn__var.
+      destruct H as [HΔ | Ht]; [ left | right; exact Ht ].
+      clear - HΔ Heq Hne. fsetdec.
+  - (* arrow *) apply ad_refine_syn__arrow; auto.
+  - (* all : the binder goes into Δ *)
+    apply ad_refine_syn__all
+      with (L := L `union` singleton α0 `union` singleton β
+                   `union` dom Θ `union` Δ').
+    intros γ Hγ.
+    rewrite !subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
+      try solve [ clear - Hγ; fsetdec | apply lc_bskl_var_f ].
+    eapply ad_refine_syn_delta_mono;
+      [ apply (H0 γ ltac:(clear - Hγ; fsetdec) Hwf α0 β (add γ Δ'));
+          [ clear - Heq; fsetdec | clear - Hα Hγ; fsetdec ]
+      | clear; fsetdec ].
+  - (* hole : the fill is well-formed in Θ alone, so α0 cannot occur in it *)
+    assert (Hfr : α0 `notin` ftvar_in_pskl P).
+    { intros Hin.
+      apply a_wf_pskl_scope in H.
+      apply a_scope_pskl_ftv_dom in H.
+      clear - H Hin Hα. fsetdec. }
+    rewrite subst_bskl_in_bskl_fresh_eq;
+      [ | rewrite ftvar_in_bskl_syn; exact Hfr ].
+    apply ad_refine_syn__hole. exact H.
+  - (* tophole_remove *) apply ad_refine_syn__tophole_remove; auto.
+  - (* tophole_fill : the binder goes into Θ *)
+    apply ad_refine_syn__tophole_fill
+      with (L := L `union` singleton α0 `union` singleton β
+                   `union` dom Θ `union` Δ').
+    intros γ Hγ.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
+      try solve [ clear - Hγ; fsetdec | apply lc_bskl_var_f ].
+    change (bskl_tophole (subst_bskl_in_bskl (bskl_var_f β) α0 Q))
+      with (subst_bskl_in_bskl (bskl_var_f β) α0 (bskl_tophole Q)).
+    apply (H0 γ ltac:(clear - Hγ; fsetdec));
+      [ apply a_wf_aenv__tvar; [ clear - Hγ; fsetdec | exact Hwf ]
+      | exact Heq
+      | simpl; clear - Hα Hγ; fsetdec ].
+  - (* tophole_keep *)
+    apply ad_refine_syn__tophole_keep; [ | auto ].
+    inversion H; subst; simpl;
+      [ apply guarded_bskl__unit
+      | destruct_if; apply guarded_bskl__var
+      | apply guarded_bskl__arrow; apply subst_bskl_in_bskl_lc_bskl;
+        solve [ assumption | apply lc_bskl_var_f ] ].
+  - (* flex_l : the definition lives in Θ, so α0 cannot occur in it *)
+    assert (Hne : α <> α0)
+      by (intros ->; apply binds_In in H; clear - H Hα; fsetdec).
+    assert (Hfr : α0 `notin` ftvar_in_ptyp τ).
+    { intros Hin.
+      assert (Hwfτ : a_wf_ptyp Θ τ)
+        by (eapply a_wf_aenv_binds_def_wf; eassumption).
+      assert (Ht : a_binds_tvar α0 Θ)
+        by (eapply a_wf_ptyp_ftv_tvarish; eassumption).
+      destruct Ht as [Hb | [Hb | [t Hb]]]; apply binds_In in Hb;
+        clear - Hb Hα; fsetdec. }
+    destruct_if as [Heqα | Hne2]; [ contradiction | ].
+    eapply ad_refine_syn__flex_l; [ exact H | ].
+    pose proof (IHad_refine_syn Hwf α0 β Δ' Heq Hα) as IH2.
+    rewrite (subst_bskl_in_bskl_fresh_eq (ptyp_to_bskl_syn τ)
+               (bskl_var_f β) α0) in IH2;
+      [ exact IH2 | rewrite ftvar_in_bskl_ptyp_syn; exact Hfr ].
+  - (* flex_r *)
+    assert (Hne : α <> α0)
+      by (intros ->; apply binds_In in H; clear - H Hα; fsetdec).
+    assert (Hfr : α0 `notin` ftvar_in_ptyp τ).
+    { intros Hin.
+      assert (Hwfτ : a_wf_ptyp Θ τ)
+        by (eapply a_wf_aenv_binds_def_wf; eassumption).
+      assert (Ht : a_binds_tvar α0 Θ)
+        by (eapply a_wf_ptyp_ftv_tvarish; eassumption).
+      destruct Ht as [Hb | [Hb | [t Hb]]]; apply binds_In in Hb;
+        clear - Hb Hα; fsetdec. }
+    destruct_if as [Heqα | Hne2]; [ contradiction | ].
+    eapply ad_refine_syn__flex_r; [ exact H | ].
+    pose proof (IHad_refine_syn Hwf α0 β Δ' Heq Hα) as IH2.
+    rewrite (subst_bskl_in_bskl_fresh_eq (ptyp_to_bskl_syn τ)
+               (bskl_var_f β) α0) in IH2;
+      [ exact IH2 | rewrite ftvar_in_bskl_ptyp_syn; exact Hfr ].
+Qed.
+
+(** THE PLAN (revised 2026-08-06, fourth pass — the ∀ rows corrected the
+    earlier design; §4a–§4c below are the part of the kit that is PROVED).
+
+    [a_consis_chk_sound] turns the run into the pair, at ONE context,
+
+      empty ⨟ Θ1 ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ Qt      (subject painting ∼ output)
+      Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ Qt      (the refinement, whose
+                                                     TARGET is wrong)
+
+    so all that is missing is a TARGET TRANSPORT.  Going back through
+    [a_consis] instead is a dead end: its ∀ rows put the binder in Θ while
+    refinement's [__all] puts it in Δ, which is exactly what
+    [ad_refine_syn_f]'s hygiene set exists to manage, so that route re-does
+    consistency soundness.
+
+    ⭐ THE STATEMENT MUST DECOUPLE THE TWO CONTEXTS.  With a single shared Θ
+    the [__all] row cannot be closed in either direction: the consistency
+    premise lives at [(α~tvar),Θ] and the refinement premise at [Θ ⨟ α,Δ], and
+    moving the CONSTRUCTED output back (Θ → Δ) is unsound — [__hole]'s fill
+    is Δ-free by rule, so a fill mentioning α cannot survive the move.  Keep
+    the ∀ binder where each judgement puts it:
+
+      forall Ψ Θc R Qt, Ψ ⨟ Θc ⊢ₛᵃ R ∼ Qt ->
+        forall Θr Δ A Qb,
+          a_wf_aenv Θr -> a_wf_aenv Θc -> lc_ptyp A ->
+          R = ptyp_to_uskl_syn A ->
+          (forall β τ, binds β (abind_flex_mono_def τ) Θc ->
+                       binds β (abind_flex_mono_def τ) Θr) ->
+          (forall γ, a_binds_tvar γ Θc -> γ `in` Δ \/ a_binds_tvar γ Θr) ->
+          (forall γ, γ `in` ftvar_in_ptyp A ->
+                     γ `in` Δ \/ a_binds_tvar γ Θr) ->
+          Θr ⨟ Δ ⊢ᵣᵃ Qb ⊳ Qt ->
+          exists B, btyp_to_ptyp B = A /\ Θr ⨟ Δ ⊢ᵣᵃ Qb ⊳ (btyp_to_bskl B)
+
+    Then BOTH ∀ rows land exactly where their rule wants them and NO context
+    move is needed at all: [__all] recurses at [Θc' = (α~tvar),Θc], [Θr' = Θr],
+    [Δ' = α,Δ]; [__tophole_fill] recurses at [Θc' = (α~tvar),Θc],
+    [Θr' = (α~tvar),Θr], [Δ' = Δ].
+
+    NESTED induction: outer on the CONSISTENCY, inner (with [remember] on the
+    target) on the REFINEMENT, in the four rows whose target does not pin the
+    refinement's last rule.  Row by row:
+
+    - the subject is a [ptyp] painting, so it is never [uskl_hole] /
+      [uskl_topholeg] / [uskl_all_etag] — EIGHT consistency rows are dead.
     - __unit / __var: [Qt] already IS [btyp_to_bskl] of [btyp_unit] /
-      [btyp_var_f α].  Nothing to do.
-    - __arrow / __forall_inh_untagged / __forall_syn: invert the refinement.
-      ⭐ [Qb = bskl_hole] (__hole) is always answerable by the ALL-SYNTHESISED
-      painting [B := ptyp_to_btyp_syn A] — that is what [a_wf_ptyp Θ A] is
-      for, and it is the same move the AbsAnno HOLE shape makes above.
-      [__tophole_remove] and [__flex_l] shrink the refinement (inner IH);
-      [__arrow] / [__all] recurse on the outer IH.
-    - ⛔ the ∀ rows need [ad_refine_syn_delta_to_ctx]: consistency binds the
-      fresh α in Θ, refinement in Δ.  The Δ→Θ direction is a WEAKENING and
-      holds ([__var] already accepts either side; [__hole]'s
-      [Θ ⨟ ∅ ⊢ₚₛᵃ P] only grows; [__tophole_fill] needs one exchange, by
-      [ad_refine_syn_mono]).  The reverse direction does NOT hold and is not
-      needed.  [__tophole_fill] additionally closes an α-dependent witness:
-      [B := btyp_all_syn (close_btyp_wrt_btyp α B0)].
-    - __flex_l (subject α ≔ τ): recurse at τ, then rebuild the answer
-      [B := btyp_var_f α] with [ad_refine_syn__flex_r].  ⭐ This needs the
-      recursive answer to be exactly [ptyp_to_bskl_syn τ], which holds
-      because a DEFINITION IS A MONOTYPE ([a_wf_aenv__flex_def]) and a
-      monotype has only one colouring — the missing one-liner is
-      [mono_ptyp (btyp_to_ptyp B) -> btyp_to_bskl B
-                                     = ptyp_to_bskl_syn (btyp_to_ptyp B)],
-      the [ptyp_to_bskl_inh_syn_eq] (prop_mono_bridge.v) pattern.
+      [btyp_var_f α]; the given refinement is the answer.
+    - __arrow / the two ∀ rows / __flex_r: invert the refinement.  Uniform
+      inner rows: [__tophole_remove] and [__flex_l] shrink the refinement
+      (inner IH, rebuild); [__hole] answers with the ALL-SYNTHESISED painting
+      [B := ptyp_to_btyp_syn A].
+    - ⛔ [__hole] is the row the visibility invariant is for: the rule needs
+      [Θr ⨟ ∅ ⊢ₚₛᵃ (ptyp_to_pskl A)], i.e. A must be Δ-FREE, while under a ∀
+      the invariant only gives [γ ∈ Δ ∨ tvar-ish Θr].  It is upgraded by an
+      OCCURRENCE LEMMA for a type-painting subject, still to prove:
+
+        Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ Qt -> γ ∈ ftvar_in_ptyp A ->
+          γ ∈ ftvar_in_bskl Qt \/ a_flex_tvar Θ γ \/
+          (exists β τ, binds β (abind_flex_mono_def τ) Θ /\ γ ∈ ftvar_in_ptyp τ)
+
+      — a free variable of the subject either survives into the target or
+      escapes through a DEFINITION.  At [__hole] the target is
+      [pskl_to_bskl_syn P] with [Θr ⨟ ∅ ⊢ₚₛᵃ P], so all three disjuncts land
+      in [dom Θr]; a Δ-bound ∀ witness is fresh for Θr, hence excluded, and
+      the answer's well-formedness follows by [a_scope_pskl_of_ptyp_vis].
+    - __flex_l (subject α ≔ τ): recurse at τ, rebuild [B := btyp_var_f α] by
+      [ad_refine_syn__flex_r].  ⭐ Sound because A DEFINITION IS A MONOTYPE,
+      so the recursive answer is forced to be the synthesised painting —
+      that is [btyp_to_bskl_mono_syn] (§4a, PROVED).
     - __flex_r (output α ≔ τ): invert the refinement — [__flex_r] recurses,
       [__var] rebuilds through [ad_refine_syn__flex_l] over the refinement
-      reflexivity [ad_refine_syn_refl_inh] at the monotype τ, [__hole] takes
-      the all-synthesised painting again.
+      reflexivity [ad_refine_syn_refl_inh] at the monotype τ (again
+      [btyp_to_bskl_mono_syn]), [__hole] takes the synthesised painting.
 
-    The consis-to-[≡ᵗ] reading of the same fact (the paper's
-    [Θ2 ⊢ A' ≡ A]) is what thm:sound-type-inference's Freeze case needs;
-    build whichever of the two is more convenient FIRST and derive the
-    other, but do not build both. *)
+    ⛔ WHAT IS LEFT TO BUILD, in order:
+    1. the occurrence lemma above (mechanical: eight rows die on the subject's
+       shape, the ∀ rows use the open/close free-variable bounds);
+    2. a Θ-renaming for [ad_refine_syn] in MID-CONTEXT form
+       [Θa ++ (α~tvar) ++ Θ] (the [__tophole_fill] row of the transport needs
+       the cofinite family from its one witness, exactly as §4c's
+       [ad_refine_syn_rename_delta] does for [__all]); it needs an
+       [a_wf_pskl] renaming for the [__hole] fill;
+    3. the transport itself, then this lemma is three lines from it.
+
+    ⚙ Read as consis-to-[≡ᵗ], the same fact is what
+    thm:sound-type-inference's Freeze case needs — build ONE of the two and
+    derive the other, do not build both. *)
 Lemma a_consis_chk_annot_refine : forall Θ0 A P Θ1,
   a_consis_chk Θ0 (ptyp_to_pskl A) P Θ1 ->
   a_wf_aenv Θ0 ->
