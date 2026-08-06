@@ -206,7 +206,55 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-06 (latest) — ⭐⭐⭐ **SECTION D: `thm:sound-type-inference` IS CLOSED** — `a_typing_sound` is Qed and axiom-free, and four side conditions the paper leaves to prose are now on the rules
+## 2026-08-06 (latest) — ⭐⭐ **SECTION D completeness: the three SCOUTING questions are settled — the leaf-validity gap is REAL (machine-checked), and `lemma:precision-sub`'s flagged obstruction is DEAD**
+
+Two new files in `cex/`, both compiling; no change to the development yet.
+
+**1. Where `ad_pat_sub_gv` enters — ON THE RULE**
+(`cex/cex_ad_pat_join_not_leaf_valid.v`; hand-off §6.2).  `a_sub_complete_thm`
+takes its join as the LEAF-VALID `ad_pat_sub_gv`, while `ad_pat` /
+`ad_sd_typing` embed the plain `ad_pat_sub`, so a completeness induction
+arrives at a base row it cannot use.  The gap is not bookkeeping: at the
+CAPTURE configuration (subject `∀X.◇`, counterpart `∀ˢX.X`) the plain join
+EXISTS (`cap_plain`), the leaf-valid one does NOT (`cap_no_gv`), and the
+configuration is REACHABLE from `ad_pat` as `P-Var` at an entry `x : ∀X.◇`
+(`cap_reachable`).  ⭐ The mechanism is the paper's own asymmetry —
+**consistency's ∀-rows push the rigid into `Θ` so the ghost's fill may capture
+it, refinement's ∀-row pushes it into `Δ` and `ad_refine_pskl__hole`'s fill is
+`Δ`-free BY RULE**.
+
+⚙ This is the paper's AUGMENTED consistency-solution notion propagating one
+layer up (`a_consis_complete_thm` already carries the same datum at its root;
+subtyping carries it at the LEAVES because at the root it is vacuous —
+`cex_p7_univ_ghost_r_vacuous.v`).  Consequence: §6.1's soundness-side repair
+(make `a_subtag_sound_bundle` conclude `_gv`) is now a hard PREREQUISITE, not
+an option — the rule change breaks theorems 1 and 2 until it lands.
+Registered in `docs/PAPER-GAPS.md`.
+
+**2. The four rule-level side conditions, from the completeness side**
+(hand-off §6.3).  None refuted.  `uniq (Ξ ++ Θ)` is derivable from
+`a_typing_sound` + `⊴`; `AT-AbsAnnoCheck`'s split-domain result is free;
+`uniq (αs ++ Θ1)` needs a NEW `a_guess_mono` existence lemma with an avoid set
+(`prop_flex.v` has only `_decls` / `_generated_fresh` / `_ftv` / `_open_at`);
+⚠️ the one to watch is "`Ξ` does not occur in the result type" at the two
+`_step` rows, which needs an invariant no lemma states yet ("a TC run's result
+type is scoped BELOW any suffix the run deposits").
+
+**3. `lemma:precision-sub` — the Ghost row is NOT the obstacle**
+(`cex/probe_precision_sub_ghost_row.v`; hand-off §3).  `ad_precise P Q` is
+`inh{P} ⊳ inh{Q}`, and `ad_refine_syn__hole`'s fill is a SYNTHESISED painting
+while the target is an INHERITED one — the two images meet exactly on the
+`pskl_all_syn`-free skeletons.  So `□ ⊑ P` hands back a Θ-well-scoped `P1`
+with `inh P = syn P1` (`ad_precise_hole_inv`), which IS `ad_pat_sub__ghost`'s
+obligation, and `□ ⊑ ∀X.P` is outright FALSE
+(`ad_precise_hole_all_absurd`).  ⚠️ A second candidate counterexample — a
+DEFINED flexible subject at `M = TC`, where `ad_pat_sub__flex_mono` is
+function-mode only — is also REFUTED: `Sub-UnivGhostR` takes any *guarded*
+subject and a variable is guarded (`ps_concl`).  What a full proof still owes
+is the Ghost row's `Ψ [=] ∅` (automatic: a `pskl_to_uskl P` subject is
+tag-free) and a `mod_comp_sk` transport.
+
+## 2026-08-06 — ⭐⭐⭐ **SECTION D: `thm:sound-type-inference` IS CLOSED** — `a_typing_sound` is Qed and axiom-free, and four side conditions the paper leaves to prose are now on the rules
 
 `make coq` clean; `a_typing_sound` `Check`ed and `Print Assumptions`-audited in
 `README.v` beside `a_pat_sound`.  The eleven-row induction

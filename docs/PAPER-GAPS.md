@@ -28,6 +28,49 @@ recently P6-Sv at the end of this file)}.
 > Several judgments looked broken until that condition was restored.  **Check
 > that file before concluding a lemma is unprovable.**
 
+## ⛔ GAP (2026-08-06) — the SOLUTION notion for the two INFERENCE problems must carry the leaf data, exactly as the consistency one already does
+
+`thm:complete-skeleton-inference` and `thm:complete-type-inference` are
+stated over a declarative derivation `Θ ⊢[M] M ⇨ bid Q` / `typp[M]`, whose
+`Unit` / `Var` / `Anno` rows embed a declarative SUBTYPING premise.  Their
+proofs then invoke `thm:complete-subtyping` on that premise (proofs.tex:731,
+:1811).
+
+But `thm:complete-subtyping`'s own solution notion is not the paper's
+2-condition one: the mechanization had to add the third condition of the
+paper's AUGMENTED `thm:complete-consistency` (consistency-proofs.tex:
+2230-2242) at every consistency LEAF of the join rather than at its root —
+at the root it is vacuous, cutting exactly the ForallL / ForallR /
+UnivGhostR solutions subtyping exists to produce (`cex_p7_univ_ghost_r_
+vacuous.v`, `cex_p7_third_premise_forall.v`).
+
+⭐ **So the inference problems' solution notion must carry it too, and the
+gap is real rather than bookkeeping.**  Machine-checked in
+`cex/cex_ad_pat_join_not_leaf_valid.v`, at the CAPTURE configuration of
+DESIGN-subtyping.md §3.1:
+
+    subject  ∀X.◇        counterpart  ∀ˢX.X
+
+- the plain declarative subtyping derivation EXISTS (`Sub-Infer` on the
+  consistency `∀X.◇ ∼ ∀X.X`, filling the ghost with the bound `X`);
+- the leaf datum `Θ ⊢ ⌊∀X.◇⌋ ⊳ ⌊∀ˢX.X⌋` does NOT hold;
+- and the configuration is reachable as `P-Var` at a context entry
+  `x : ∀X.◇`.
+
+⭐ The mechanism is the paper's own asymmetry: **consistency's ∀-rows put
+the rigid `X` into `Θ`, so the ghost's fill may capture it; refinement's
+∀-row puts it into `Δ` and the hole rule's fill is `Δ`-free** — which is
+precisely the no-capture discipline the augmented consistency solution was
+introduced to enforce.
+
+For the authors: the fix is uniform — state "solution to the skeleton /
+type inference problem" so that the embedded subtyping premise is itself a
+solution in the augmented sense.  The mechanization carries this by making
+the `ad_pat` / `ad_sd_typing` base rows embed the leaf-valid mirror
+`ad_pat_sub_gv`.
+
+---
+
 ## ⛔ GAP (2026-08-06) — `lemma:suffix-erasure` is NOT a "straightforward induction on the typing derivation"; its ForallL row is a genuine obstruction
 
     Lemma (Suffix erasure).  If typp[M]{Θ,Ξ}{M}{bid A} and Ξ is fresh for

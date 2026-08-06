@@ -240,22 +240,41 @@ Two of the three rows are easy; the third is a genuine proof.
 
 ---
 
-## 3. `lemma:precision-sub` — check the Ghost row before believing the statement
+## 3. `lemma:precision-sub` — ✅ SCOUTED 2026-08-06; the flagged obstruction is DEAD
 
     Lemma ad_precise_extends_pat_sub : forall Θ Δ P' P Ψ M Q,
       Θ ⨟ Δ ⊢ₚᵣᵃ P' ⊑ P ->
       Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] (pskl_to_uskl P) ⩽ Q ->
       Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] (pskl_to_uskl P') ⩽ Q.
 
-⚠️ **Scout this one before committing to the statement.**  `P' ⊑ P` permits
-`P' = □` (`ad_refine_pskl__hole`, which only needs `Q` well-formed) and
-`P' = ⫯P''` (`__tophole_remove`) and `P' = α̂` (`__flex_l`).  At `P' = □` the
-only applicable subtyping row is `ad_pat_sub__ghost`, whose target must be an
-INHERITED PAINTING `pskl_to_bskl_inh P` and which carries `mod_comp_sk` — so
-for an arbitrary `Q` produced by the `P` derivation the conclusion is not
-immediate.  Either the paper's `precise` is implicitly restricted here, or the
-statement needs a side condition.  Settle that with a small probe first (a
-`cex/` file if it turns out false — the tree's standing rule).
+⚙ Probe: `cex/probe_precision_sub_ghost_row.v` (compiles).
+
+⭐ **`P' = □` is not the problem — `□ ⊑ P` hands back exactly the Ghost row's
+fill.**  `ad_precise P Q` is `inh{P} ⊳ inh{Q}`, so at `P' = □` the subject is
+`◇` and only two refinement rows apply: `__hole`, whose fill is a
+**SYNTHESISED** painting, and `__flex_r`.  Since `pskl_to_bskl_inh` paints ∀
+as `bskl_all_inh` while `pskl_to_bskl_syn` paints it `bskl_all_syn`, the two
+images meet exactly on the `pskl_all_syn`-free skeletons.  Hence
+
+- `ad_precise_hole_inv` : `□ ⊑ P` ⟹ ∃ `P1`, `inh P = syn P1` and
+  `Θ ⨟ ∅ ⊢ₚₛᵃ P1` — which IS `ad_pat_sub__ghost`'s target-and-wf obligation;
+- `ad_precise_hole_all_absurd` : `□ ⊑ ∀X.P` is **FALSE**, so the Ghost row
+  never faces a quantified counterpart.
+
+⚠️ **A second candidate counterexample, also refuted** (recorded so it is not
+re-tried).  `ad_pat_sub__flex_mono` is FUNCTION-mode only, so a DEFINED
+flexible `α̂ ⊑ 1` looks like it should strand `α̂ ⩽ ∀◇.1` at `M = TC`.  It does
+not: `ad_pat_sub__univ_ghost_r` takes ANY *guarded* subject and a variable is
+guarded, so that row covers flexible subjects outside function mode
+(`ps_concl` in the probe).
+
+⛔ **What a full proof still owes** (neither is the flagged obstruction):
+
+1. the Ghost row's `Ψ [=] ∅`.  Automatic, but it needs a lemma: a
+   `pskl_to_uskl P` subject is TAG-FREE (`pskl_to_uskl` never builds
+   `uskl_all_etag`), so no tag-introducing row can fire and the ROOT `Ψ` of
+   any derivation over such a subject is empty.
+2. a `mod_comp_sk` transport along the precision (Ghost / GhostG carry it).
 
 ---
 
@@ -362,6 +381,73 @@ bundle's conclusion positionally (`prop_decorate_key.v:4155`,
 `prop_completeness_sub_gen.v:3165` and `:3389`) and want the PLAIN
 `ad_pat_sub`; they recover it with `ad_pat_sub_gv_forget` then
 `ad_pat_sub_g_of`, which is the same dependency question.
+
+### 6.2 ⭐⭐ WHERE `ad_pat_sub_gv` ENTERS — SETTLED 2026-08-06 (scouting item 1)
+
+**The answer: on the RULE.**  `ad_pat`'s and `ad_sd_typing`'s embedded
+subtyping premise must be the LEAF-VALID mirror for the completeness
+direction.  Machine-checked in `cex/cex_ad_pat_join_not_leaf_valid.v`.
+
+**Why nothing cheaper works.**  `a_sub_complete_thm` takes its join as
+`ad_pat_sub_gv`; `ad_pat` / `ad_sd_typing` embed the PLAIN `ad_pat_sub`.  The
+gap is not bookkeeping — the CAPTURE configuration of DESIGN-subtyping.md
+§3.1,
+
+    subject  ∀X.◇      counterpart  ∀ˢX.X
+
+has a plain join (`cap_plain`), has NO leaf-valid one (`cap_no_gv`), and is
+REACHABLE from `ad_pat` as `P-Var` at an entry `x : ∀X.◇` (`cap_reachable`).
+⭐ The mechanism: **consistency's ∀-rows push the rigid into `Θ`, refinement's
+push it into `Δ`, and `ad_refine_pskl__hole`'s fill is Δ-free BY RULE** — so
+the ghost may be filled with the bound variable in the consistency and never
+in the refinement.
+
+⚙ So this is NOT the same thing as §6.1: §6.1 makes SOUNDNESS *produce* `_gv`
+(needed to keep theorems 1 and 2 once the rule changes); §6.2 is that the
+completeness direction must be able to *consume* it, which only a rule change
+supplies.  Both are now required, and §6.1 becomes a hard prerequisite.
+
+⚙ **This is the paper's own augmentation, propagated one layer up.**  The
+solution notion for CONSISTENCY already carries the subject-refinement
+condition (`a_consis_complete_thm`'s
+`ad_refine_pskl_f empty Θ empty (msubst_pskl κ P) (bskl_to_pskl Qb)`,
+consistency-proofs.tex:2230-2242).  Subtyping carries the same datum at the
+LEAVES rather than the root, because at the root it is vacuous
+(`cex_p7_univ_ghost_r_vacuous.v`, `cex_p7_third_premise_forall.v`).  Skeleton
+and type inference must therefore carry it at each embedded subtyping
+premise's leaves.  Registered in docs/PAPER-GAPS.md.
+
+**Shape to land** (`decorated_algo/def_decl_algo_typing.v`): replace the
+`ad_pat_sub` premise of `ad_pat__{unit,var,anno}` and
+`ad_sd_typing__{unit,var,anno}` with
+
+    exists n, ad_pat_sub_gv n <NM> m empty Θ <R> <Q>
+
+(a `Definition ad_pat_sub_v` wrapper keeps the rules readable).  Then:
+
+- theorems 1 and 2 must produce it → **§6.1's bundle repair is mandatory**;
+- every existing INVERSION consumer recovers the plain premise with
+  `ad_pat_sub_gv_forget` then `ad_pat_sub_g_of` — the same dependency-order
+  question §6.1(a) already raises.
+
+### 6.3 The four rule-level side conditions, seen from COMPLETENESS (scouting item 2)
+
+Theorem 2 put four conditions ON the rules (docs/PAPER-GAPS.md, 2026-08-06).
+Completeness must now DISCHARGE them when it builds the `a_typing`
+derivation.  Status after scouting — none is refuted, one needs a new
+existence lemma, one needs a real invariant:
+
+| # | condition | where | discharge |
+|---|---|---|---|
+| 1 | `uniq (Ξ ++ Θ)` | 4 CHECK rows | ✅ derivable: `a_typing_sound` on the body's run gives `a_wf_aenv (Ξ ++ …)` hence `uniq`; `Θ0 ⊴ Θ1` moves it down to the rule's own input |
+| 2 | `dom Ξ` ∉ `ftvar_in_ptyp` (result) | 4 CHECK rows | ⚠️ **the one to watch.**  At the two `_base` rows it is easy — the result's `A`/`B` are the SPLIT's halves, scoped in the pre-body context, so #1 plus `a_wf_ptyp` closes it.  At the two `_step` rows the result is the body run's own output type and the argument has to be an INVARIANT ("a TC run's result type is scoped BELOW any suffix the run deposits"), which no lemma states yet |
+| 3 | `uniq (αs ++ Θ1)` | `AT-Abs` | ✅ satisfiable, but needs a lemma the tree does not have: `a_guess_mono` EXISTENCE with an avoid set (`prop_flex.v` has only `_decls` / `_generated_fresh` / `_ftv` / `_open_at`).  Completeness CHOOSES this block, so an avoid-set-indexed generator settles it |
+| 4 | `AT-AbsAnnoCheck`'s result domain is the split's `A'` | — | ✅ free: it is what `sd-AbsAnnoCheck`'s `≡ᵗ` premise is for, and the completeness side reads the domain off the split it performs |
+
+⚙ Item 2's probe order when the induction reaches rows 7–10: build #3's
+generator first (it is a plain structural existence proof), then #2's
+invariant; if #2's `_step` case cannot be proved, machine-check the run in
+`cex/` rather than weakening the rule.
 
 ⚠️ **3 and 4 will hit the `ad_pat_sub_gv` composition gap** (PROGRESS.md §4b):
 they consume `a_sub_complete_thm`, which ASSUMES `ad_pat_sub_gv`, while
