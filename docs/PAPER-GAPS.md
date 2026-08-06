@@ -28,6 +28,29 @@ recently P6-Sv at the end of this file)}.
 > Several judgments looked broken until that condition was restored.  **Check
 > that file before concluding a lemma is unprovable.**
 
+## WATCH (2026-08-06) — `thm:sound-type-inference` has TWO more inline steps with no lemma
+
+Found while checking the mechanization's route against `proofs.tex`
+app:proof-type-inference case by case.  Same species as the AbsAnno step
+below: a clause of prose standing in for a lemma.  Marked WATCH rather than
+GAP because the mechanization has not yet reached these rows — the
+statements are believed true, and the first one's hard half is already
+proved.
+
+1. **`\tilab{App}`** — "Thus by ⑧ and ⑬, we have `\typc{\Theta_3}{N}{\inh{A}}`".
+   The induction hypothesis checks the argument at `inh{A'}` and the rule
+   wants it at `inh{A}`; the bridge is `Θ3 ⊢ A ≡ A'`.  That is a
+   **transport of the typing judgement along type equivalence at TC**, which
+   the paper states nowhere.  ⭐ The equivalence `Θ3 ⊢ A ≡ A'` itself is
+   already available in the mech: it is `ad_refine_syn_inh_tyequiv`
+   (`algo/prop_soundness_typing.v` §2) — a refinement between two ghost-free
+   paintings IS a type equivalence — which was built for `Freeze` and turns
+   out to be needed here too.
+2. **`\tilab{Abs}`** — "By ⑯ and definition of `\guessMono{P}`, we have
+   `Θ1,ᾱ ⊢ inh{P} ⊳ inh{A}`".  A refinement property of `guess^TY` used as
+   if definitional; the mech has no such lemma (prop_flex.v carries only its
+   freshness, `a_decls` and ftv facts).
+
 ## MISSING LEMMA — ✅ SUPPLIED BY THE MECH (2026-08-06) — `thm:sound-skeleton-inference`, AbsAnno: "preservation of refinement under type equivalence" is asserted inline and never stated
 
 In the AbsAnno case of `thm:sound-skeleton-inference` the proof runs

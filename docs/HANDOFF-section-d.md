@@ -447,6 +447,56 @@ colouring, so the IH's colouring at each α is already
 `ptyp_to_btyp_inh` of its erasure — i.e. of the `open … (btyp_var_f α)`
 shape the rule wants.  Only the TERM-binder rows need a renaming (§6).
 
+#### ⭐ Consistency check against the paper's proof (2026-08-06)
+
+Read `proofs.tex` app:proof-type-inference case by case.  The route matches;
+the deviations are the ones already recorded, plus two NEW obligations the
+paper asserts inline.
+
+**Same route**: base rows via thm:sound-subtyping; `Freeze` via
+thm:sound-consistency plus a `≡ᵗ` step; the Abs rows via
+lemma:suffix-moving and the declarative Abs rule; `App` via
+thm:sound-skeleton-inference plus stability; "refinement judgements are
+stable under dropping term variables" = the `ad_refine_syn_strip_tm_*`
+corollaries.
+
+**⚠️ Suffix ERASURE really is needed here — the asymmetry is the paper's
+own.**  Theorem 1 got away without it because `a_pat`'s check rows KEEP the
+pending suffix in their output (`⊣ Ξ,Θ1`), so the theorem's conclusion
+context already contains it.  `a_typing`'s four CHECK rows DROP it
+(`abs_check_step ⊣ Θ1`, `abs_check_base ⊣ Θ2`, the two anno ones likewise),
+exactly as the paper's rules do, and the paper's `AbsCheck` case discharges
+the mismatch with lemma:suffix-erasure ("since all variables in Ξ do not
+appear in `inh{B}`").  The two INFER-mode rows (`AT-Abs`, `AT-AbsAnno`) keep
+the suffix and need no erasure.  So §1's erasure is now a REAL prerequisite,
+for four rows only.
+
+**⚠️ lemma:split-refine is needed here too, and only in the same four rows.**
+`a_ty_mode_compat`'s TC row admits ANY `ptyp_to_pskl A`, so at
+`abs_check_base` the split's input can be a flexible variable and
+`a_split__flex` IS reachable — §2's hard row.  But at `AT-Abs` /
+`AT-AbsAnno` the mode is not TC, so `a_ty_mode_compat` forces `□` or an
+arrow and the theorem-1 dodge (`a_split_sk_shape`'s analogue) still applies:
+NO split-refine and NO refinement transitivity there, even though the paper
+invokes both.  ⚙ When you do build split-refine, state it COLOURED —
+`Θ1 ⨟ ∅ ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ (pskl_to_bskl_inh (pskl_arrow P Q))` —
+not in §2's uncoloured `ad_refine_pskl` form, which is not what the rows
+consume.
+
+**⛔ TWO NEW inline steps with no lemma** (candidates for PAPER-GAPS, same
+species as thm:sound-skeleton-inference's AbsAnno step):
+
+1. `AT-App`, "Thus by ⑧ and ⑬, we have `Θ3 ⊢ N ⦂ inh{A}`": the IH gives the
+   argument checked at `inh{A'}` and the rule wants it at `inh{A}`, bridged
+   by `Θ3 ⊢ A ≡ᵗ A'`.  That is a TYPING-under-`≡ᵗ` transport at TC, stated
+   nowhere.  ⭐ Note `Θ3 ⊢ A ≡ᵗ A'` itself is §2's
+   `ad_refine_syn_inh_tyequiv` again — a SECOND consumer of it, which is
+   good evidence the lemma is the right shape.
+2. `AT-Abs`, "By ⑯ and definition of `guess^TY`, we have
+   `Θ1,ᾱ ⊢ inh{P} ⊳ inh{A}`": a refinement property of `a_guess_mono` that
+   the mech has no lemma for (prop_flex.v has only its freshness / decls /
+   ftv facts).
+
 **Left for the theorem itself:**
 
 1. `ad_sd_typing_mod_comp_ty` (the `ad_pat_mod_comp_sk` mirror).  Its
