@@ -50,7 +50,18 @@ derivation reaches into `Ξ` does surface in the types (the FlexL/FlexR
 lookups and the rigid-variable rows all put the variable in the subject or
 the target); `ForallL` is the one row that does not.
 
-**The route that works** (scouted in the mech, not yet built): erase by
+⚙ **The mechanization already had this insight one layer down.**
+`ad_pat_sub_strip_suffix` (`algo/prop_pat_sub.v`), built during the
+subtyping-soundness campaign, IS this lemma for the all-in-one subtyping
+judgement, and `ad_pat_sub_subst_flex`'s header states the reason
+verbatim: *"the ForallL witnesses are rewritten too, which is exactly why
+this is provable where naive strengthening is not"*.  So the obstruction
+is not news to the tree — but it is news to the paper, whose proof of
+`lemma:suffix-erasure` is the one-line induction quoted above, for the
+TYPING judgement, which sits above subtyping and inherits the problem.
+
+**The route that works** (built for refinement, type equivalence and
+consistency 2026-08-06; `algo/prop_suffix_erase.v`): erase by
 **solving**, not by dropping.  A suffix of flexible entries always admits
 a metasubstitution `θ` into `Θ` — map an undefined `α̂` to `1` and a
 defined one to (the image of) its definition, which is well-scoped in the
@@ -70,7 +81,13 @@ to it: if the theorem's conclusion is read up to a flexible suffix
 ("`typp{Ξ,Θ1}{M}{bid A}` for some suffix `Ξ`"), the four check rows close
 by `lemma:suffix-moving` alone — which is free, because moving a block
 changes no `binds` fact at all.  That is strictly weaker than the paper's
-claim, so it is a fallback, not a fix.
+claim, so it is a fallback, not a fix.  **It is no longer needed**: the
+solving route is being built and is already Qed for four of the six
+judgements.
+
+**What the authors should do**: replace the one-line proof with the
+solving generalization, and say why — the ForallL instantiation is the
+whole content of the lemma.
 
 ## WATCH (2026-08-06) — `thm:sound-type-inference` has TWO more inline steps with no lemma
 

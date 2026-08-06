@@ -98,7 +98,7 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   SHELVES the avoid-set evar `?L`, so the premise never reaches the following
   tactic and resurfaces at `Qed` as "incomplete proof" — supply `L` by hand
   (that is also what keeps the file under a second)
-- ⛔ Suffix erasure — NOT a `binds`-monotone statement (it must show the
+- 🟡 Suffix erasure — NOT a `binds`-monotone statement (it must show the
   derivation never LOOKED into Ξ).  ⚠️ **CONFIRMED 2026-08-06 to be needed**
   (the four CHECK rows of `a_typing` DROP the pending suffix from their
   output, unlike `a_pat`'s, which keep it), and **CONFIRMED not to be the
@@ -108,9 +108,21 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   premise is not Ξ-fresh even when the conclusion is.  Reachable with a
   DEFINED `α̂ ∈ Ξ`.  ⭐ Working route: erase by SOLVING —
   `Ξ ++ Θ ⊢ J ⟹ Θ ⊢ κJ` for a κ solving Ξ into Θ, identity on Ξ-free types
-  (five per-judgement transports).  Fallback (strictly weaker, flagged as
-  such): read the theorem's conclusion up to a flexible suffix, which needs
-  only suffix MOVING.  docs/PAPER-GAPS.md + HANDOFF §1
+  (five per-judgement transports).  ⚙ `ad_pat_sub`'s own driver
+  (`ad_pat_sub_strip_suffix`, prop_pat_sub.v) ALREADY EXISTED — the tree
+  solved this at the subtyping layer during the subtyping-soundness
+  campaign, with the same ForallL insight recorded in
+  `ad_pat_sub_subst_flex`'s header.  🟡 NEW `algo/prop_suffix_erase.v`
+  (Qed, axiom-free) adds the layers above it: the substitution kit
+  (`subst_abind`/`subst_aenv` + the coercion commutations),
+  `a_wf_ptyp`/`a_wf_pskl`, `a_tyequiv`, `ad_refine_syn`, `ad_pat_consis`,
+  and the drivers `ad_refine_syn_strip_suffix` / `a_tyequiv_strip_suffix`.
+  ⛔ LEFT: `ad_pat` and `ad_sd_typing`, which additionally need
+  `ad_pat_sub_subst_mid` in the SUBSTITUTED-CONTEXT style (prop_pat_sub.v's
+  version concludes at the un-substituted tail, which does not compose with
+  the binder rows that push TERM entries).  The fallback (weaker, read the
+  conclusion up to a flexible suffix) is no longer needed.
+  docs/PAPER-GAPS.md + HANDOFF §1
 - ⬜ Splitting refines — 2 of 3 rows trivial (`ad_refine_pskl_refl`, which
   forces an EXTERNAL wf premise); the `a_split__flex` row is a real proof: its
   premise is a full `a_consis` run.  ⭐ Route scouted: `a_assign_sound` →
@@ -180,7 +192,57 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-06 (latest) — ⭐ **SECTION D: two more of theorem 2's prerequisites CLOSED — and `lemma:suffix-erasure` is NOT the "straightforward induction" the paper claims**
+## 2026-08-06 (latest) — ⭐ **SECTION D: suffix erasure BUILT for four of six judgements — by SOLVING, not by dropping**
+
+New `algo/prop_suffix_erase.v` (§1–§7), Qed and axiom-free; `make coq`
+clean.  The repair of `lemma:suffix-erasure`, whose stated proof does not
+go through (see the entry below and docs/PAPER-GAPS.md).
+
+**The generalization**: `Θa,α̂,Θ0 ⊢ J ⟹ [τ/α̂](Θa,Θ0) ⊢ [τ/α̂]J`, with the
+paper's statement the case where the conclusion's types are Ξ-free.  At
+`ForallL` the freely-chosen instantiation ψ becomes `[τ/α̂]ψ` — Ξ-free,
+still a decorated skeleton, still the same tags, because τ is a MONOTYPE.
+
+⭐⭐ **Two design points make the rows COLLAPSE instead of needing
+transports.**  (1) `solves_flex` demands τ to BE the definition, not merely
+to be equivalent to it: then at `flex_def`/`FlexL`/`FlexR` on the
+eliminated variable the rule's subject and its unfolding become the SAME
+term, so the row disappears.  (2) The substitution is applied to the WHOLE
+remaining context, not just the prefix above α̂ — leaving the tail alone is
+sound but needs an "α̂ does not occur here" argument at EVERY lookup row,
+while substituting uniformly is discharged ONCE, at the driver
+(`subst_aenv_fresh_eq` + `a_wf_aenv_ftv_dom`: a well-formed context
+mentions only its own domain).
+
+Landed: §1 `subst_abind`/`subst_aenv`; §2 the coercion commutations (⭐ a
+MONOTYPE has one colouring, so a single τ serves the `inh` and `syn` rows
+of the same derivation); §3 `solves_flex` + `a_wf_ptyp`/`a_wf_pskl` +
+`a_wf_ptyp_tbinds_mono` (these judgements read the context only through
+`a_binds_tvar`, so they travel along a map of type-level occurrences —
+plain `binds`-monotonicity would forbid the payloads to change); §4
+`a_tyequiv_subst_mid`; §5 `ad_refine_syn_mono_refl` +
+`ad_refine_syn_subst_mid`; §6 `ad_pat_consis_subst_mid` (its `var` row
+becomes consistency's REFLEXIVITY on the substituted monotype); §7 the
+drivers `ad_refine_syn_strip_suffix` / `a_tyequiv_strip_suffix` +
+`solves_flex_of_wf_head`.
+
+⚙⚙ **CORRECTION**: the tree ALREADY had this, one layer down.
+`ad_pat_sub_strip_suffix` (prop_pat_sub.v) IS `lemma:suffix-erasure` for
+`ad_pat_sub`, and `ad_pat_sub_subst_flex`'s header states the reason
+verbatim — "the ForallL witnesses are rewritten too, which is exactly why
+this is provable where naive strengthening is not".  So the obstruction is
+a REDISCOVERY at the tree level; the PAPER gap stands unchanged.  The whole
+`_subst_mono` closure family is reused rather than rebuilt.
+
+⛔ LEFT: `ad_pat` and `ad_sd_typing`.  They additionally need
+`ad_pat_sub_subst_mid` in the SUBSTITUTED-CONTEXT style — prop_pat_sub.v's
+`ad_pat_sub_subst_flex_def` concludes at the UN-substituted tail (with an
+extra "no definition in the tail mentions β" hypothesis), and that shape
+does not compose with binder rows that push TERM entries whose payloads the
+substitution rewrites.  Their subject is an EXPRESSION, so
+`subst_ptyp_in_exp` enters too.
+
+## 2026-08-06 — ⭐ **SECTION D: two more of theorem 2's prerequisites CLOSED — and `lemma:suffix-erasure` is NOT the "straightforward induction" the paper claims**
 
 `algo/prop_soundness_typing.v` §8–§9, both Qed and axiom-free; `make coq`
 clean.

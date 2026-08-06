@@ -1,12 +1,17 @@
 # HANDOFF — section D (`proofs.tex`): soundness and completeness of skeleton and type inference
 
 **Status 2026-08-06 (sixth pass).**  ⭐ Theorem 2 (`thm:sound-type-inference`)
-has two more of its five prerequisites closed — `ad_sd_typing_mod_comp_ty`
-(§8) and `a_guess_mono_refine` (§9), both Qed and axiom-free in
-`algo/prop_soundness_typing.v`.  ⛔ Of the three left, §1's suffix ERASURE is
-now KNOWN not to be the paper's "straightforward induction" (§1 items 1–2
-and docs/PAPER-GAPS.md); §2's split-refine and `AT-App`'s `≡ᵗ` transport
-each have a scouted route recorded in §7.5's "Left for the theorem".
+has two of its five prerequisites CLOSED — `ad_sd_typing_mod_comp_ty` (§8)
+and `a_guess_mono_refine` (§9), both Qed and axiom-free in
+`algo/prop_soundness_typing.v` — and the third, §1's suffix ERASURE, is
+🟡 UNDER CONSTRUCTION in the NEW `algo/prop_suffix_erase.v` (§1–§7, Qed and
+axiom-free): the substitution kit, `a_wf_ptyp`/`a_wf_pskl`, `a_tyequiv`,
+`ad_refine_syn`, `ad_pat_consis`, and the two suffix drivers.  ⛔ `ad_pat`
+and `ad_sd_typing` are left — see §1's table.  ⚙ `ad_pat_sub`'s own driver
+(`ad_pat_sub_strip_suffix`) ALREADY EXISTED in prop_pat_sub.v; reuse it and
+its `_subst_mono` closure family.  §2's split-refine and `AT-App`'s `≡ᵗ`
+transport each have a scouted route recorded in §7.5's "Left for the
+theorem".
 
 **Status 2026-08-06 (fifth pass).** The definitional layer is DONE
 (`dd1f176`), suffix MOVING is closed (`prop_ctx_mono.v`), and ⭐⭐⭐
@@ -105,29 +110,58 @@ induction".
    through `ψ = α̂` with an entirely Ξ-free `Q`.  Every OTHER way into Ξ
    surfaces in the types — the FlexL/FlexR lookups and the rigid rows all
    put the variable in the subject or the target.
-2. **The route that works: erase by SOLVING, not by dropping.**  A flexible
-   suffix always admits a metasubstitution κ into Θ (undefined `α̂ ↦ 1`,
-   defined `α̂ ↦` the image of its definition, which is tail-scoped by wf).
-   State each judgement's lemma as `Ξ ++ Θ ⊢ J ⟹ Θ ⊢ κJ` and recover the
-   paper's form from `κ` being the identity on Ξ-free types; at `ForallL`
-   the instantiation becomes `κψ`, still `is_tskl` + ghost-free + same tags,
-   because κ's images are monotypes.
+   ⚙ **The tree already knew this, one layer down.**
+   `ad_pat_sub_strip_suffix` (algo/prop_pat_sub.v) IS this lemma for
+   `ad_pat_sub`, and `ad_pat_sub_subst_flex`'s header says why in one line:
+   "the ForallL witnesses are rewritten too, which is exactly why this is
+   provable where naive strengthening is not".  ⭐ **REUSE IT**, and reuse
+   its whole `_subst_mono` closure family (`is_tskl_subst_mono`,
+   `a_tags_sort_subst_mono`, `uskl_ghost_free_subst_mono`,
+   `mod_comp_sk_subst_mono`, `guarded_*_subst_mono`, `is_sskl_subst_mono`,
+   `uskl_to_pskl_subst_mono`, `pskl_to_bskl_inh_subst_mono`).
+2. **The route that works: erase by SOLVING, not by dropping** — 🟡 BUILT,
+   `algo/prop_suffix_erase.v` (§1–§7, Qed, axiom-free).  A flexible suffix
+   always admits a monotype per entry (undefined `α̂ ↦ 1`, defined `α̂ ↦`
+   its own definition, which is tail-scoped by wf), so each judgement gets
+
+       Θa,α̂,Θ0 ⊢ J   ⟹   [τ/α̂](Θa,Θ0) ⊢ [τ/α̂]J
+
+   and the paper's form follows because the substitution is the identity on
+   Ξ-free types.  At `ForallL` the instantiation becomes `[τ/α̂]ψ`, still
+   `is_tskl` + ghost-free + same tags, because τ is a monotype.
+   ⭐⭐ TWO DESIGN POINTS that make the rows COLLAPSE instead of needing
+   transports: (a) `solves_flex` demands τ to BE the definition, not merely
+   be equivalent to it — then the FlexL/FlexR/flex_def rows' subject and
+   unfolding become the SAME term and the row disappears; (b) the
+   substitution is applied to the WHOLE remaining context, not just the
+   prefix above α̂ — leaving the tail alone is sound but needs an "α̂ does
+   not occur here" argument at EVERY lookup row, whereas substituting
+   uniformly is discharged ONCE, at the driver (`subst_aenv_fresh_eq` +
+   `a_wf_aenv_ftv_dom`).
 3. **The induction is not over one judgement.**  `ad_sd_typing` embeds SIX
    different premise forms — `ad_pat_sub` at `a_sub_mode_ty`, `ad_pat`,
    `ad_refine_syn`, `a_wf_ptyp`, `a_tyequiv`, `mod_comp_ty` — and each needs
    its OWN erasure lemma before the typing induction can close a single base
-   rule.  That per-judgement kit is the bulk of the work; the typing
-   induction on top of it really is routine.  `mod_comp_ty` is context-free,
-   so five kits, not six.
-4. ⚠️ **The cheap FALLBACK, if the kit is judged too expensive**: read the
-   theorem's conclusion up to a flexible suffix (`exists Ξ, a_suffix Ξ /\
-   (Ξ ++ Θ1) ⊢ˢᵃ …`).  Then the four check rows close by suffix MOVING
-   alone, and the sequential rows (`Anno`, `Freeze`, `App`) still compose,
-   because `Θ2 ⊴ Θ3` lifts to `(Ξ2 ++ Θ2) ⊴ (Ξ2 ++ Ξ3 ++ Θ3)` — peel Ξ2
-   with identity images (`a_inc__flex` needs only `a_wf_ptyp` of the
-   variable in the target, and the target keeps Ξ2), then
-   `a_inc_target_weaken`.  ⛔ This is STRICTLY WEAKER than the paper's
-   statement, so it is a fallback to be flagged, not a repair.
+   rule.  `mod_comp_ty` is context-free, so five kits, not six.
+
+   | judgement | transport | driver |
+   |---|---|---|
+   | `a_wf_ptyp` / `a_wf_pskl` | ✅ §3 | (used inline) |
+   | `a_tyequiv` | ✅ §4 | ✅ §7 |
+   | `ad_refine_syn` | ✅ §5 | ✅ §7 |
+   | `ad_pat_consis` | ✅ §6 | (via `ad_pat_sub`'s) |
+   | `ad_pat_sub` | ✅ prop_pat_sub.v | ✅ prop_pat_sub.v |
+   | `ad_pat` | ⛔ | ⛔ |
+   | `ad_sd_typing` | ⛔ | ⛔ |
+
+   ⚠️ The two remaining ones need `ad_pat_sub_subst_mid` in the
+   SUBSTITUTED-CONTEXT style: prop_pat_sub.v's `ad_pat_sub_subst_flex_def`
+   concludes at the UN-substituted `Θ1 ++ Θ2` (with an extra "no definition
+   in the tail mentions β" hypothesis), and that shape does not compose
+   with `ad_pat`/`ad_sd_typing`, whose binder rows push TERM entries whose
+   payloads the substitution changes (`ad_pat__abs_anno` pushes
+   `x : A` for the term's own annotation, which the substitution rewrites).
+   Also note the subject is an EXPRESSION, so `subst_ptyp_in_exp` enters.
 
 ---
 
