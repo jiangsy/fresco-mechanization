@@ -409,9 +409,24 @@ about the term, and it threads through the induction.  ⚠️ The tempting
 alternative `dom κ ∩ dom Θ = ∅` is FALSE — an identity increase PRESERVES
 flexibles.
 
-⛔ **What remains**: the `size_exp` induction over six cases (Freeze, Abs,
-AbsAnno, AbsCheck, AbsAnnoCheck, App), with the base rows plugging in
-directly.  Full per-case recipe: memory `remech-theorem3-plan`.
+⛔ **What remains**: the `size_exp` induction.  `Freeze` is DONE
+(`a_pat_complete_freeze`, step-lemma style: the IH is an explicit premise,
+so the final induction is pure glue).  The five other rows need:
+
+⛔⛔ **K6 — the gap the induction actually hit.**  The ALGORITHM's four
+binder rules are COFINITE in the term variable and share their outputs
+`Ξ`/`Θ1`/`Q` across the family, while the IH delivers ONE instance at one
+fresh `x`.  So completeness needs the ALGORITHMIC twin of
+`ad_pat_rename_tm` / `ad_pat_subst_tm` — theorem 1 built those for the
+DECLARATIVE judgement only, and no `a_pat_rename_tm` exists.  Route
+(standing directive: equivariance is THE renaming primitive): mirror
+prop_swap.v's `a_sub_sub_flex_swap` / `a_assign_unify_consis_swap` /
+`a_guess_mono_swap` into `a_pat_swap`, then derive the renaming from
+equivariance + freshness.  ⚠️ Theorem 4's binder rows need the same thing —
+build it once, for both `a_pat` and `a_typing`.
+
+Order for the next session and the full per-case recipe: memory
+`remech-theorem3-plan`.
 
 ### 6.1 ⭐ The `ad_pat_sub_gv` composition gap — SCOPED (2026-08-06), and the ~300-line "freshening bridge" is NOT part of it
 
