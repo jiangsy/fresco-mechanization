@@ -419,10 +419,14 @@ binder rules are COFINITE in the term variable and share their outputs
 fresh `x`.  So completeness needs the ALGORITHMIC twin of
 `ad_pat_rename_tm` / `ad_pat_subst_tm` — theorem 1 built those for the
 DECLARATIVE judgement only, and no `a_pat_rename_tm` exists.  Route
-(standing directive: equivariance is THE renaming primitive): mirror
-prop_swap.v's `a_sub_sub_flex_swap` / `a_assign_unify_consis_swap` /
-`a_guess_mono_swap` into `a_pat_swap`, then derive the renaming from
-equivariance + freshness.  ⚠️ Theorem 4's binder rows need the same thing —
+(standing directive: equivariance is THE renaming primitive), and it is
+CHEAPER than expected — ✅ the bridge and the first consumer are DONE:
+`swap_aenv_tm_head` (a swap of two atoms fresh for everything else IS the
+renaming of a term binder) makes `a_sub_rename_tm` a three-line corollary
+of `a_sub_sub_flex_swap`.  Left: the same three lines for the consistency
+walk and for `a_split`, then `a_pat_rename_tm` itself — ⚠️ which cannot go
+through swap alone, since prop_swap.v has no `swap_exp`; state it with
+`subst_exp_in_exp` and mirror the DECLARATIVE `ad_pat_subst_tm`.  ⚠️ Theorem 4's binder rows need the same thing —
 build it once, for both `a_pat` and `a_typing`.
 
 Order for the next session and the full per-case recipe: memory
