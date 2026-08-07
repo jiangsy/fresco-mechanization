@@ -67,6 +67,7 @@ Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.prop_consis_rename.
 Require Import src.frost.algo.prop_soundness_consis.
 Require Import src.frost.algo.prop_wf_output.
+Require Import src.frost.algo.prop_normal.
 
 Set Implicit Arguments.
 Require Import src.frost.algo.prop_soundness_sub.
@@ -1057,4 +1058,347 @@ Proof.
     [ apply a_tyequiv__sym; exact HeqIOΘ | ].
   eapply a_tyequiv__trans;
     [ apply a_tyequiv__sym; exact HeqW | exact HeqAll ].
+Qed.
+
+(* ===================================================================== *)
+(*  The App row's glue helper                                             *)
+(* ===================================================================== *)
+
+(** Composing two IDENTITY metasubstitutions is the inner one VERBATIM
+    (each entry (α, `α) maps to (α, κc·`α) = (α, `α)). *)
+Lemma msubst_compose_id_id : forall κb κc,
+  is_id_msubst κb ->
+  is_id_msubst κc ->
+  msubst_compose κc κb = κb.
+Proof.
+  intros κb κc Hb Hc.
+  induction κb as [ | [α τ] κb' IH ]; [ reflexivity | ].
+  apply is_id_msubst_inv in Hb as [-> Hb'].
+  unfold msubst_compose in *. simpl.
+  rewrite (IH Hb'). f_equal. f_equal.
+  clear IH Hb'.
+  induction κc as [ | [β σ] κc' IHc ]; [ reflexivity | ].
+  apply is_id_msubst_inv in Hc as [-> Hc'].
+  simpl. destruct (α == β) as [-> | Hne]; [ reflexivity | exact (IHc Hc') ].
+Qed.
+
+(* ===================================================================== *)
+(*  The App row — THREE stages: the argument's SKELETON (THEOREM 3, at    *)
+(*  (TC, ◇)), the function (the e1 IH at (fn M, P' → P0) — its domain     *)
+(*  refinement is the paper's lemma:precision-preserves-refinement step,  *)
+(*  its output a SYNTACTIC arrow by [a_typing_fn_arrow_shape]), and the   *)
+(*  argument's CHECK (the e2 IH at (TC, ⌈Af⌉), the refinement subject-    *)
+(*  transported along ≡ˢ).  The optimality glues all three factorings:    *)
+(*  inner glue on stages 2+3, then the outer one with the composed        *)
+(*  identity collapsed by [msubst_compose_id_id].                          *)
+(* ===================================================================== *)
+
+Lemma a_typing_complete_app : forall M Θ0 P0 e1 e2 κ Θ B,
+  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  a_ty_mode_compat M P0 ->
+  κ ∷ Θ0 ⊑ Θ ->
+  (forall α, α `in` ftvar_in_exp (exp_app e1 e2) -> binds α abind_tvar Θ0) ->
+  (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
+  (forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps) ->
+  lc_exp (exp_app e1 e2) ->
+  (* the e1 IH *)
+  (forall M' Θ0' P0' κ' Θ' B',
+     a_wf_aenv Θ0' -> a_wf_aenv Θ' ->
+     Θ0' ⨟ empty ⊢ₚₛᵃ P0' ->
+     a_ty_mode_compat M' P0' ->
+     κ' ∷ Θ0' ⊑ Θ' ->
+     (forall α, α `in` ftvar_in_exp e1 -> binds α abind_tvar Θ0') ->
+     (forall y Ps, binds y (abind_var_skl Ps) Θ0' -> Θ0' ⨟ empty ⊢ₚₛᵃ Ps) ->
+     (forall y Ps, binds y (abind_var_skl Ps) Θ' -> Θ' ⨟ empty ⊢ₚₛᵃ Ps) ->
+     lc_exp e1 ->
+     Θ' ⊢ˢᵃ[ M' ] e1 ⦂ B' ->
+     Θ' ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ' P0'))
+       ⊳ (btyp_to_bskl B') ->
+     typ_complete_concl M' Θ0' P0' e1 κ' Θ' B') ->
+  (* the e2 IH *)
+  (forall M' Θ0' P0' κ' Θ' B',
+     a_wf_aenv Θ0' -> a_wf_aenv Θ' ->
+     Θ0' ⨟ empty ⊢ₚₛᵃ P0' ->
+     a_ty_mode_compat M' P0' ->
+     κ' ∷ Θ0' ⊑ Θ' ->
+     (forall α, α `in` ftvar_in_exp e2 -> binds α abind_tvar Θ0') ->
+     (forall y Ps, binds y (abind_var_skl Ps) Θ0' -> Θ0' ⨟ empty ⊢ₚₛᵃ Ps) ->
+     (forall y Ps, binds y (abind_var_skl Ps) Θ' -> Θ' ⨟ empty ⊢ₚₛᵃ Ps) ->
+     lc_exp e2 ->
+     Θ' ⊢ˢᵃ[ M' ] e2 ⦂ B' ->
+     Θ' ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ' P0'))
+       ⊳ (btyp_to_bskl B') ->
+     typ_complete_concl M' Θ0' P0' e2 κ' Θ' B') ->
+  Θ ⊢ˢᵃ[ M ] (exp_app e1 e2) ⦂ B ->
+  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (btyp_to_bskl B) ->
+  typ_complete_concl M Θ0 P0 (exp_app e1 e2) κ Θ B.
+Proof.
+  intros M Θ0 P0 e1 e2 κ Θ B Hwf0 HwfΘ HwfP0 Hmod Hinc Hrig Hskl HsklT
+         Hlc IH1 IH2 Hd Href.
+  inversion Hd; subst.
+  match goal with
+  | H : ad_pat mode_tc Θ e2 (pskl_to_bskl_syn ?PP) |- _ =>
+      rename H into Hd2s; rename PP into P
+  end.
+  match goal with
+  | H : Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl ?BB) |- _ =>
+      rename H into HrefP; rename BB into B1
+  end.
+  match goal with
+  | H : ad_sd_typing (mode_fn M) Θ e1 (btyp_arrow B1 ?BB) |- _ =>
+      rename H into Hd1; rename BB into B2
+  end.
+  match goal with
+  | H : Θ ⊢ (btyp_to_ptyp B1) ≡ᵗ ?AA |- _ =>
+      rename H into HeqA2; rename AA into A2
+  end.
+  match goal with
+  | H : ad_sd_typing mode_tc Θ e2 (ptyp_to_btyp_inh A2) |- _ =>
+      rename H into Hd2
+  end.
+  simpl in Hrig.
+  assert (Hrig1 : forall α, α `in` ftvar_in_exp e1 -> binds α abind_tvar Θ0)
+    by (intros α Hα; apply Hrig; clear - Hα; fsetdec).
+  assert (Hrig2 : forall α, α `in` ftvar_in_exp e2 -> binds α abind_tvar Θ0)
+    by (intros α Hα; apply Hrig; clear - Hα; fsetdec).
+  assert (Hlc1 : lc_exp e1) by (inversion Hlc; assumption).
+  assert (Hlc2 : lc_exp e2) by (inversion Hlc; assumption).
+  assert (Hexp2 : a_wf_exp Θ0 e2)
+    by (apply a_wf_exp_of_tvarish;
+        [ exact Hlc2 | intros α Hα; left; apply Hrig2; exact Hα ]).
+  (* the fn premise's target is wf — components pulled by inversion *)
+  assert (HwfArr : a_wf_ptyp Θ (btyp_to_ptyp (btyp_arrow B1 B2)))
+    by (eapply ad_sd_typing_target_wf; [ exact Hd1 | exact HwfΘ ]).
+  simpl in HwfArr.
+  inversion HwfArr; subst.
+  match goal with
+  | H1 : a_wf_ptyp Θ (btyp_to_ptyp B1),
+    H2 : a_wf_ptyp Θ (btyp_to_ptyp B2) |- _ =>
+      rename H1 into HwfB1; rename H2 into HwfB2
+  end.
+  assert (HwfP : Θ ⨟ empty ⊢ₚₛᵃ P).
+  { pose proof (ad_pat_target_wf Hd2s HwfΘ) as Hw.
+    rewrite bskl_to_pskl_pskl_to_bskl_syn in Hw. exact Hw. }
+  (* ---- 1. the SKELETON stage : THEOREM 3 at (TC, ◇) ---- *)
+  destruct (@a_pat_complete e2 mode_tc Θ0 pskl_hole κ Θ (pskl_to_bskl_syn P)
+              Hwf0 HwfΘ (a_wf_pskl__hole _ _) a_sk_mode_compat__tc Hinc
+              Hrig2 Hskl HsklT Hlc2 Hd2s
+              ltac:(cbn [msubst_pskl pskl_to_bskl_inh];
+                    apply ad_refine_syn__hole; exact HwfP))
+    as [P' [Θ1' [Hrun1 Hopt1]]].
+  destruct (a_pat_sound Hrun1 Hwf0 Hskl (a_wf_pskl__hole _ _)
+              a_sk_mode_compat__tc Hexp2)
+    as [Hle1 [Hwf1 _]].
+  destruct Hle1 as [[κ1b [Hid1b Hinc1b]] _].
+  destruct (Hopt1 κ1b Hid1b Hinc1b) as [ζ1 [Hζ1 [Heqv1 Hprec1]]].
+  rewrite bskl_to_pskl_pskl_to_bskl_syn in Hprec1.
+  (* ---- 2. the FUNCTION stage : IH1 at (fn M, P' → P0) ---- *)
+  assert (HwfP' : Θ1' ⨟ empty ⊢ₚₛᵃ P')
+    by (eapply a_pat_output_wf;
+        [ exact Hrun1 | exact Hwf0 | exact Hskl
+        | apply a_wf_pskl__hole | apply a_sk_mode_compat__tc | exact Hexp2 ]).
+  assert (HwfP0m : Θ1' ⨟ empty ⊢ₚₛᵃ P0).
+  { pose proof (a_wf_pskl_msubst_inc Hinc1b Hwf0 HwfP0
+                  ltac:(intros α Hα; clear - Hα; fsetdec)) as Hw.
+    rewrite (msubst_pskl_id P0 Hid1b) in Hw. exact Hw. }
+  assert (Hskl1 : forall y Ps, binds y (abind_var_skl Ps) Θ1' ->
+             Θ1' ⨟ empty ⊢ₚₛᵃ Ps).
+  { intros y Ps Hb.
+    assert (Hb0 : binds y (abind_var_skl Ps) Θ0)
+      by (eapply a_pat_tm_ge; [ exact Hrun1 | exact I | exact Hb ]).
+    pose proof (a_wf_pskl_msubst_inc Hinc1b Hwf0 (Hskl _ _ Hb0)
+                  ltac:(intros α Hα; clear - Hα; fsetdec)) as Hw.
+    rewrite (msubst_pskl_id Ps Hid1b) in Hw. exact Hw. }
+  assert (Hrig1m : forall α, α `in` ftvar_in_exp e1 -> binds α abind_tvar Θ1')
+    by (intros α Hα; eapply a_inc_binds_tvar;
+        [ exact Hinc1b | apply Hrig1; exact Hα ]).
+  (* the codomain refinement, transported to ζ1 (the Anno idiom) *)
+  assert (Hσ1 : msubst_compose ζ1 κ1b ∷ Θ0 ⊑ Θ)
+    by (eapply a_inc_compose;
+        [ exact Hinc1b | exact Hwf0 | exact Hwf1 | exact Hζ1 ]).
+  assert (HwfQ2 : Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl (btyp_to_bskl B2))).
+  { rewrite bskl_to_pskl_btyp.
+    apply a_wf_ptyp_to_wf_pskl. exact HwfB2. }
+  assert (Hpp1 : Θ ⨟ empty ⊢ₚᵣᵃ
+                   (msubst_pskl (msubst_compose ζ1 κ1b) P0)
+                   ⊑ (msubst_pskl κ P0)).
+  { eapply a_inc_equiv_precise_msubst_flip with (Θ0 := Θ0) (Δ0 := empty);
+      [ exact HwfP0 | exact Hwf0 | exact HwfΘ | exact Hinc | exact Hσ1
+      | exact Heqv1 | clear; fsetdec ]. }
+  assert (Hcod : Θ ⨟ empty ⊢ᵣᵃ
+                   (pskl_to_bskl_inh (msubst_pskl (msubst_compose ζ1 κ1b) P0))
+                   ⊳ (btyp_to_bskl B2)).
+  { eapply ad_precise_preserves_refine;
+      [ exact Hpp1 | exact Href | exact HwfΘ
+      | intros α Hα; clear - Hα; fsetdec | exact HwfQ2 ]. }
+  assert (Hms1 : msubst_pskl (msubst_compose ζ1 κ1b) P0 = msubst_pskl ζ1 P0).
+  { eapply msubst_compose_id_pskl;
+      [ exact Hwf0 | exact Hwf1 | exact Hid1b | exact Hinc1b | exact Hζ1
+      | eapply a_wf_pskl_to_a_scope_pskl;
+          [ exact HwfP0 | intros z b Hb; exact Hb
+          | intros α Hα; clear - Hα; fsetdec ] ]. }
+  rewrite Hms1 in Hcod.
+  (* the domain refinement : precision preserves the rule's own (paper's
+     lemma:precision-preserves-refinement, verbatim) *)
+  assert (HwfB1e : Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl (btyp_to_bskl B1))).
+  { rewrite bskl_to_pskl_btyp.
+    apply a_wf_ptyp_to_wf_pskl. exact HwfB1. }
+  assert (Hdom : Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl ζ1 P'))
+                   ⊳ (btyp_to_bskl B1)).
+  { eapply ad_precise_preserves_refine;
+      [ exact Hprec1 | exact HrefP | exact HwfΘ
+      | intros α Hα; clear - Hα; fsetdec | exact HwfB1e ]. }
+  destruct (IH1 (mode_fn M) Θ1' (pskl_arrow P' P0) ζ1 Θ (btyp_arrow B1 B2)
+              Hwf1 HwfΘ
+              ltac:(apply a_wf_pskl__arrow; [ exact HwfP' | exact HwfP0m ])
+              ltac:(apply a_ty_mode_compat__fn; exact Hmod)
+              Hζ1 Hrig1m Hskl1 HsklT Hlc1 Hd1
+              ltac:(cbn [msubst_pskl pskl_to_bskl_inh btyp_to_bskl];
+                    apply ad_refine_syn__arrow; [ exact Hdom | exact Hcod ]))
+    as [C [Θ2' [Hrun2 Hopt2]]].
+  (* the output is a SYNTACTIC arrow *)
+  pose proof (a_typing_fn_arrow_shape Hrun2) as Hshape.
+  inversion Hshape; subst.
+  match goal with
+  | Hs : fn_arrow_shape M ?BB |- _ => idtac
+  end.
+  match goal with
+  | H : a_typing (mode_fn M) Θ1' _ e1 (ptyp_arrow ?AA ?BB) _ |- _ =>
+      rename AA into Af; rename BB into Bf
+  end.
+  (* soundness of the function run *)
+  assert (Hexp1 : a_wf_exp Θ1' e1)
+    by (apply a_wf_exp_of_tvarish;
+        [ exact Hlc1 | intros α Hα; left; apply Hrig1m; exact Hα ]).
+  destruct (a_typing_sound Hrun2 Hwf1 Hskl1
+              ltac:(apply a_wf_pskl__arrow; [ exact HwfP' | exact HwfP0m ])
+              ltac:(apply a_ty_mode_compat__fn; exact Hmod)
+              Hexp1)
+    as [Hle2 [Hwf2 [HwfC _]]].
+  destruct Hle2 as [[κ2b [Hid2b Hinc2b]] _].
+  destruct (Hopt2 κ2b Hid2b Hinc2b) as [ζ2 [Hζ2 [Heqv2 Heq2]]].
+  simpl in Heq2.
+  (* invert the arrow equivalence *)
+  inversion HwfC; subst.
+  match goal with
+  | H1 : a_wf_ptyp Θ2' Af, H2 : a_wf_ptyp Θ2' Bf |- _ =>
+      rename H1 into HwfAf; rename H2 into HwfBf
+  end.
+  destruct (a_tyequiv_arrow_inv HwfΘ
+              ltac:(eapply msubst_ptyp_lc;
+                    [ exact Hζ2 | eapply a_wf_ptyp_lc; exact HwfAf ])
+              ltac:(eapply msubst_ptyp_lc;
+                    [ exact Hζ2 | eapply a_wf_ptyp_lc; exact HwfBf ])
+              ltac:(eapply a_wf_ptyp_lc; exact HwfB1)
+              ltac:(eapply a_wf_ptyp_lc; exact HwfB2)
+              Heq2)
+    as [HeqDom HeqCod].
+  (* ---- 3. the ARGUMENT stage : IH2 at (TC, ⌈Af⌉) ---- *)
+  assert (HwfA2 : a_wf_ptyp Θ A2)
+    by (eapply (proj1 (a_tyequiv_wf_iff HeqA2 (fun x b h => h) HwfΘ));
+        exact HwfB1).
+  assert (Hrig2m : forall α, α `in` ftvar_in_exp e2 -> binds α abind_tvar Θ2')
+    by (intros α Hα; eapply a_inc_binds_tvar;
+        [ exact Hinc2b
+        | eapply a_inc_binds_tvar;
+            [ exact Hinc1b | apply Hrig2; exact Hα ] ]).
+  assert (Hskl2 : forall y Ps, binds y (abind_var_skl Ps) Θ2' ->
+             Θ2' ⨟ empty ⊢ₚₛᵃ Ps).
+  { intros y Ps Hb.
+    assert (Hb1 : binds y (abind_var_skl Ps) Θ1')
+      by (exact (a_typing_tm_ge Hrun2 y (abind_var_skl Ps) I Hb)).
+    pose proof (a_wf_pskl_msubst_inc Hinc2b Hwf1 (Hskl1 _ _ Hb1)
+                  ltac:(intros α Hα; clear - Hα; fsetdec)) as Hw.
+    rewrite (msubst_pskl_id Ps Hid2b) in Hw. exact Hw. }
+  assert (Hexp2m : a_wf_exp Θ2' e2)
+    by (apply a_wf_exp_of_tvarish;
+        [ exact Hlc2 | intros α Hα; left; apply Hrig2m; exact Hα ]).
+  assert (HeqChain : Θ ⊢ (msubst_ptyp ζ2 Af) ≡ᵗ A2)
+    by (eapply a_tyequiv__trans; [ exact HeqDom | exact HeqA2 ]).
+  assert (Heqs : Θ ⊢ (ptyp_to_pskl (msubst_ptyp ζ2 Af)) ≡ˢ (ptyp_to_pskl A2))
+    by (apply a_tyequiv_embed_pskl; exact HeqChain).
+  assert (Href3 : Θ ⨟ empty ⊢ᵣᵃ
+                    (pskl_to_bskl_inh (msubst_pskl ζ2 (ptyp_to_pskl Af)))
+                    ⊳ (btyp_to_bskl (ptyp_to_btyp_inh A2))).
+  { rewrite msubst_pskl_embed_ptyp, <- (pskl_to_bskl_inh_ptyp A2).
+    eapply ad_refine_syn_f_forget.
+    eapply (proj2 (skl_tyequiv_refine_syn_f_transport Heqs HwfΘ
+                     (fun x b h => h))).
+    apply ad_refine_syn_f_of_plain.
+    apply ad_refine_syn_refl_inh.
+    apply a_wf_ptyp_to_wf_pskl. exact HwfA2. }
+  destruct (IH2 mode_tc Θ2' (ptyp_to_pskl Af) ζ2 Θ (ptyp_to_btyp_inh A2)
+              Hwf2 HwfΘ
+              ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfAf)
+              (a_ty_mode_compat__tc Af)
+              Hζ2 Hrig2m Hskl2 HsklT Hlc2 Hd2 Href3)
+    as [A3 [Θ3' [Hrun3 Hopt3]]].
+  (* ---- 4. the run ---- *)
+  exists Bf, Θ3'.
+  split.
+  { eapply a_typing__app; [ exact Hrun1 | exact Hrun2 | exact Hrun3 ]. }
+  (* ---- 5. optimality : the TRIPLE glue ---- *)
+  intros κ1 Hκid Hκinc.
+  assert (Heqκ : κ1 = κ1b)
+    by (eapply a_inc_id_msubst_unique;
+        [ exact Hκinc | exact Hinc1b | exact Hκid | exact Hid1b ]).
+  destruct (a_typing_sound Hrun3 Hwf2 Hskl2
+              ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfAf)
+              (a_ty_mode_compat__tc Af) Hexp2m)
+    as [Hle3 [Hwf3 _]].
+  destruct Hle3 as [[κ3b [Hid3b Hinc3b]] _].
+  destruct (Hopt3 κ3b Hid3b Hinc3b) as [ζ3 [Hζ3 [Heqv3 _]]].
+  exists ζ3.
+  split; [ exact Hζ3 | ].
+  split.
+  { (* inner glue: stages 2+3 *)
+    assert (Hglue23 : a_inc_equiv Θ1' ζ1 (msubst_compose ζ3 κ2b) Θ).
+    { eapply a_inc_equiv_glue with
+        (Θmid := Θ2') (Θfin := Θ3') (κ1b := κ3b) (ζ1 := ζ2);
+        [ exact Hwf1 | exact Hwf2 | exact Hwf3 | exact HwfΘ
+        | exact Hid2b | exact Hid3b
+        | intros α Hα;
+          pose proof (a_inc_dom_flex Hinc2b Hα) as Hfα;
+          eapply a_inc_flex_dom;
+            [ exact Hinc3b | exact Hwf2
+            | eapply a_inc_id_flex_preserve;
+                [ exact Hinc2b | exact Hid2b | exact Hwf1 | exact Hfα ] ]
+        | exact Hinc2b | exact Hinc3b | exact Hζ2 | exact Hζ3
+        | exact Heqv2 | exact Heqv3 ]. }
+    (* outer glue: stage 1 + the combined tail; the composed identity
+       collapses to the inner one VERBATIM ([msubst_compose_id_id]) *)
+    assert (Hinc23 : msubst_compose κ3b κ2b ∷ Θ1' ⊑ Θ3')
+      by (eapply a_inc_compose;
+          [ exact Hinc2b | exact Hwf1 | exact Hwf2 | exact Hinc3b ]).
+    rewrite (msubst_compose_id_id Hid2b Hid3b) in Hinc23.
+    assert (Hglue : a_inc_equiv Θ0 κ (msubst_compose ζ3 κ1b) Θ).
+    { eapply a_inc_equiv_glue with
+        (Θmid := Θ1') (Θfin := Θ3') (κ1b := κ2b) (ζ1 := ζ1);
+        [ exact Hwf0 | exact Hwf1 | exact Hwf3 | exact HwfΘ
+        | exact Hid1b | exact Hid2b
+        | intros α Hα;
+          pose proof (a_inc_dom_flex Hinc1b Hα) as Hfα;
+          eapply a_inc_flex_dom;
+            [ exact Hinc23 | exact Hwf1
+            | eapply a_inc_id_flex_preserve;
+                [ exact Hinc1b | exact Hid1b | exact Hwf0 | exact Hfα ] ]
+        | exact Hinc1b | exact Hinc23 | exact Hζ1 | exact Hζ3
+        | exact Heqv1 | exact Hglue23 ]. }
+    rewrite Heqκ. exact Hglue. }
+  (* ---- 6. the ≡ᵗ conclusion : the codomain pushed ζ2 → ζ3 ---- *)
+  assert (HmsBf : msubst_ptyp (msubst_compose ζ3 κ3b) Bf = msubst_ptyp ζ3 Bf)
+    by (eapply msubst_compose_id_ptyp;
+        [ exact Hwf2 | exact Hwf3 | exact Hid3b | exact Hinc3b | exact Hζ3
+        | exact HwfBf ]).
+  assert (HeqW : Θ ⊢ (msubst_ptyp ζ2 Bf) ≡ᵗ (msubst_ptyp ζ3 Bf)).
+  { rewrite <- HmsBf.
+    apply (@a_inc_equiv_msubst_ptyp Bf Θ2' ζ2 (msubst_compose ζ3 κ3b) Θ
+             HwfBf Heqv3 Hwf2
+             ltac:(eapply a_inc_msubst_lc; exact Hζ2)
+             ltac:(apply msubst_lc_compose;
+                   [ eapply a_inc_msubst_lc; exact Hζ3
+                   | exact (is_id_msubst_values_lc Hid3b) ])). }
+  eapply a_tyequiv__trans;
+    [ apply a_tyequiv__sym; exact HeqW | exact HeqCod ].
 Qed.
