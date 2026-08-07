@@ -365,7 +365,13 @@ bundle at :466–:1286):
 
 | row | change |
 |---|---|
-| `subtag_sound_concl` / `subtag_flex_sound_concl` | conclusion becomes `exists n, ad_pat_sub_gv n NM M Ψ Θ1 R Qt` |
+✅ **§6.1 IS CLOSED (2026-08-07).**  `a_subtag_sound_bundle` now concludes the
+LEAF-VALID join; `make coq` clean, all audits *Closed under the global
+context*.  The table below is the record of what each row needed.
+
+| row | change |
+|---|---|
+| `subtag_sound_concl` / `subtag_flex_sound_concl` | ✅ conclusion is now `exists n, ad_pat_sub_gv n NM M Ψ Θ1 R Qt` |
 | `Infer`, `UnivGhostR` | leaf refinement = `ad_refine_pskl_refl` (prop_refine.v:177) at the wf subject — both rows already build their target as the subject's own erasure |
 | `Arrow` (domain) | ⚙ DIRECT: `a_consistag_sound_aux`'s dropped conjunct IS `⌊R1⌋ˢ ⊳ P'1` and the row's `Q1` satisfies `bskl_to_pskl Q1 = P'1`.  `ad_refine_pskl_f_forget` then `ad_refine_pskl_f_isub` to reach Θ2 |
 | `Check` | ✅ **its missing lemma is BUILT** (2026-08-06, prop_soundness_sub.v §1a–§1d, Qed and axiom-free).  §6.1 had under-estimated this row: the dropped conjunct gives `⌊T⌋ˢ ⊳ ⌊Qt⌋` for the CONSISTENCY's output `Qt`, but the row re-targets its conclusion to `inh B` (audit-F2: the output is not literally `B`), so the leaf needs `⌊T⌋ˢ ⊳ B`.  `ad_refine_pskl_refine_inh_target` supplies exactly that.  See below |
@@ -381,10 +387,20 @@ mirrors and need nothing else), joined there by the composite
 `ad_pat_sub_of_gv : ad_pat_sub_gv n … -> Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q`.  Both
 old sites keep a pointer comment.
 
-⚠️ **(b) still to do.**  THREE consumers read the bundle's conclusion
-positionally (`prop_decorate_key.v:4155`,
-`prop_completeness_sub_gen.v:3165` and `:3389`) and want the PLAIN
-`ad_pat_sub`; they now recover it with the single `ad_pat_sub_of_gv`.
+✅ **(b) DONE.**  Of the three positional consumers, one
+(`prop_completeness_sub_gen.v:3165`) never touched the join; the other two
+(`prop_decorate_key.v:4155`, `prop_completeness_sub_gen.v:3389`) recover the
+plain form with `ad_pat_sub_of_gv`.  ⚙ `prop_decorate_key.v` needed
+`Require Import …def_decl_algo_sub_hyg` added — a `Require Import` does not
+re-export, so the name was not in scope through `prop_soundness_sub`.
+
+⚙ **`a_sub_sound_thm`'s own statement is UNCHANGED** — it still concludes the
+plain `ad_pat_sub`, recovered at the call site.  That is deliberate: its
+consumers (`a_pat_sound`, `a_typing_sound`) still feed the plain join into
+`ad_pat` / `ad_sd_typing`'s rules.  ⛔ **NEXT: change those two rules to embed
+`exists n, ad_pat_sub_gv n …` (§6.2) and hand the `_gv` on from
+`a_sub_sound_thm` instead of forgetting it** — that is the one remaining step
+before theorems 3 and 4 can start.
 
 #### ⛔ (c) THE CONVERSION IS BIGGER THAN "THREADING" — the rows consume FOUR structural lemmas over `ad_pat_sub`, each needing a `_gv` mirror
 

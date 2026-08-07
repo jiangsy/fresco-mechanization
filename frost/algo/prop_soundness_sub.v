@@ -1811,7 +1811,11 @@ Definition subtag_sound_concl
   (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
   (exists Qt, bskl_to_pskl Qt = Q /\
-     Ψ ⨟ Θ1 ⊢ₛᵃ[ NM | M ] R ⩽ Qt /\
+     (* ⭐ LEAF-VALID (hand-off §6.2): the completeness direction can only
+        consume [ad_pat_sub_gv], and the capture configuration shows the leaf
+        datum is NOT recoverable from a plain join
+        (cex/cex_ad_pat_join_not_leaf_valid.v). *)
+     (exists n, ad_pat_sub_gv n NM M Ψ Θ1 R Qt) /\
      ad_refine_syn_f empty Θ1 empty (pskl_to_bskl_inh P0) Qt).
 
 (** The flexible-walk conclusion (paper lemma:sound-decorated-flex-subtyping:
@@ -1827,7 +1831,7 @@ Definition subtag_flex_sound_concl
   (NM = a_sub_mode_ty -> a_ty_mode_compat (mode_fn M) P0) ->
   (Ξ ++ Θ0) ⊴ Θ1 /\ a_wf_aenv Θ1 /\
   (exists Qt, bskl_to_pskl Qt = A /\
-     empty ⨟ Θ1 ⊢ₛᵃ[ NM | mode_fn M ] (uskl_var_f α) ⩽ Qt /\
+     (exists n, ad_pat_sub_gv n NM (mode_fn M) empty Θ1 (uskl_var_f α) Qt) /\
      ad_refine_syn_f empty Θ1 empty (pskl_to_bskl_inh P0) Qt).
 
 Theorem a_subtag_sound_bundle :
@@ -1857,10 +1861,13 @@ Proof.
       destruct (a_wf_pskl_ftv_tvarish HwfS Hα0) as [HΔ | Ht];
         [ exfalso; clear - HΔ; fsetdec | exact Ht ]. }
     split.
-    + apply ad_pat_sub__infer;
+    + exists 0. apply ad_pat_sub_gv__infer;
         [ exact HΨ
         | apply ad_pat_consis_refl_erase; assumption
-        | apply is_sskl_pskl_to_bskl_syn; eauto using a_wf_pskl_lc ].
+        | apply is_sskl_pskl_to_bskl_syn; eauto using a_wf_pskl_lc
+        | (* leaf: reflexivity at the wf subject *)
+          rewrite bskl_to_pskl_pskl_to_bskl_syn;
+          apply ad_refine_pskl_refl; exact HwfS ].
     + (* P0 = ◇ : the fill is the hole rule *)
       simpl. apply ad_refine_syn_f__hole;
         [ clear; fsetdec | exact HwfS ].
@@ -1881,7 +1888,7 @@ Proof.
                 ltac:(intros Θa β b Θb Heq Hne;
                       apply inter_empty_pointwise;
                       intros α0 Hα0; clear - Hα0; fsetdec))
-      as [Hle [Hwf1 [_ [_ [[Qt [HeQt [Hcons Hfill]]] _]]]]].
+      as [Hle [Hwf1 [_ [_ [[Qt [HeQt [Hcons Hfill]]] Hleaf]]]]].
     assert (HwfB1 : Θ1 ⨟ empty ⊢ₚₛᵃ B)
       by (eapply a_wf_pskl_isub; [ exact HwfB | exact Hle ]).
     assert (Hcons' : Ψ ⨟ Θ1 ⊢ₛᵃ T ∼ (pskl_to_bskl_inh B))
@@ -1893,7 +1900,15 @@ Proof.
     exists (pskl_to_bskl_inh B).
     split; [ apply bskl_to_pskl_pskl_to_bskl_inh | ].
     split.
-    + apply ad_pat_sub__check; [ exact HgT | exact HgB | exact Hcons' ].
+    + exists 0. apply ad_pat_sub_gv__check;
+        [ exact HgT | exact HgB | exact Hcons'
+        | (* ⭐ the leaf is [⌊T⌋ˢ ⊳ ⌊Qt⌋] for the CONSISTENCY's output [Qt];
+             transport it to [B] along the fill (§1a-§1d) *)
+          eapply ad_refine_pskl_refine_inh_target;
+            [ exact Hwf1
+            | apply a_ty_mode_compat_tc_ghost_free; exact Hgf
+            | exact Hfill
+            | rewrite HeQt; exact (ad_refine_pskl_f_forget Hleaf) ] ].
     + apply ad_refine_syn_f_refl_inh; exact HwfB1.
 
   - (* ForallR (TY) : open the binder, run the body, strip the trailing
@@ -1919,7 +1934,7 @@ Proof.
                 (ltac:(intro He; apply pskl_ghost_free_ty_mode_compat_tc;
                        unfold open_pskl_wrt_pskl;
                        apply pskl_ghost_free_open_rec; exact HgfB)))
-      as [Hle [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
+      as [Hle [Hwf1 [Qt [HeQt [[nsub Hsub] Hfill]]]]].
     assert (HuqT : uniq (Ξ ++ (α ~ abind_tvar) ++ Θ1))
       by (apply a_wf_aenv_uniq_local; exact Hwf1).
     assert (HαΘ1 : α `notin` dom Θ1)
@@ -1957,9 +1972,9 @@ Proof.
       assert (Hγα : γ <> α) by (intros ->; clear - HαΞ Hγ; fsetdec).
       clear - HγΘ0 Hγα HS HQt HB. fsetdec. }
     (* the suffix-stripped subtyping, α0-independent *)
-    assert (Hsub1 : Ψ ⨟ ((α ~ abind_tvar) ++ Θ1)
-                      ⊢ₛᵃ[ a_sub_mode_ty | mode_tc ] R ⩽ Qt).
-    { eapply ad_pat_sub_strip_suffix with (Ξ := Ξ);
+    assert (Hsub1 : ad_pat_sub_gv nsub a_sub_mode_ty mode_tc Ψ
+                      ((α ~ abind_tvar) ++ Θ1) R Qt).
+    { eapply ad_pat_sub_gv_strip_suffix with (Ξ := Ξ);
         [ exact Hsuf
         | simpl_env; simpl_env in Hwf1; exact Hwf1
         | exact Hfresh
@@ -1981,7 +1996,7 @@ Proof.
       rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
         [ reflexivity | clear - Hfr; fsetdec ]. }
     split.
-    + apply ad_pat_sub__forall_r
+    + exists (S nsub). apply ad_pat_sub_gv__forall_r
         with (L := dom Θ1 `union` singleton α `union` ftvar_in_pskl B
                      `union` ftvar_in_uskl R `union` ftvar_in_bskl Qt).
       intros α0 Hα0.
@@ -1994,7 +2009,7 @@ Proof.
         [ | clear - Hfr; fsetdec ].
       change ((α0 ~ abind_tvar) ++ Θ1)
         with (nil ++ (α0 ~ abind_tvar) ++ Θ1).
-      apply ad_pat_sub_rename_tvar;
+      apply ad_pat_sub_gv_rename_tvar;
         [ simpl_env; exact Hsub1
         | simpl; exact HαΘ1
         | simpl; exact Hdefs1 ].
@@ -2063,11 +2078,13 @@ Proof.
         [ exfalso; clear - HΔ; fsetdec | exact Ht ]. }
     assert (Hg : guarded_pskl ⌊ R ⌋ˢ) by (apply guarded_uskl_to_pskl; auto).
     split.
-    + apply ad_pat_sub__univ_ghost_r;
+    + exists 0. apply ad_pat_sub_gv__univ_ghost_r;
         [ exact HΨ | exact HgS
         | apply guarded_pskl_to_bskl_syn; exact Hg
         | apply is_sskl_pskl_to_bskl_syn; eauto using a_wf_pskl_lc
-        | apply ad_pat_consis_refl_erase; assumption ].
+        | apply ad_pat_consis_refl_erase; assumption
+        | rewrite bskl_to_pskl_pskl_to_bskl_syn;
+          apply ad_refine_pskl_refl; exact HwfS ].
     + (* P0 = ◇ : hole rule against the syn painting of ∀◇⌊R⌋ *)
       simpl.
       change (bskl_tophole (pskl_to_bskl_syn ⌊ R ⌋ˢ))
@@ -2096,7 +2113,7 @@ Proof.
                 ltac:(intros Θa β b Θb Heq Hne;
                       apply inter_empty_pointwise;
                       intros α0 Hα0; clear - Hα0; fsetdec))
-      as [Hle1 [Hwf1 [_ [_ [[Qt1 [HeQt1 [Hcons1 Hfill1]]] _]]]]].
+      as [Hle1 [Hwf1 [_ [_ [[Qt1 [HeQt1 [Hcons1 Hfill1]]] Hleaf1]]]]].
     assert (HwfP0b1 : Θ1 ⨟ empty ⊢ₚₛᵃ P0b)
       by (eapply a_wf_pskl_isub; eauto).
     assert (HwfS21 : Θ1 ⨟ empty ⊢ₚₛᵃ ⌊ S2 ⌋ˢ)
@@ -2106,14 +2123,18 @@ Proof.
                       inversion Hmod; subst; assumption)
                 ltac:(intro HNMe; specialize (Hgf HNMe);
                       inversion Hgf; subst; assumption))
-      as [Hle2 [Hwf2 [Qt2 [HeQt2 [Hsub2 Hfill2]]]]].
+      as [Hle2 [Hwf2 [Qt2 [HeQt2 [[nsub2 Hsub2] Hfill2]]]]].
     split; [ eapply a_isub_trans; eauto | ].
     split; [ exact Hwf2 | ].
     exists (bskl_arrow Qt1 Qt2).
     split; [ simpl; f_equal; assumption | ].
     split.
-    + eapply ad_pat_sub__arrow;
-        [ eapply ad_pat_consis_isub; eauto | exact Hsub2 | exact HΨ ].
+    + exists (S nsub2). eapply ad_pat_sub_gv__arrow;
+        [ eapply ad_pat_consis_isub; eauto
+        | (* domain leaf: DIRECT from the dropped conjunct, ⊴-transported *)
+          rewrite HeQt1; eapply ad_refine_pskl_isub;
+            [ exact (ad_refine_pskl_f_forget Hleaf1) | exact Hle2 ]
+        | exact Hsub2 | exact HΨ ].
     + simpl. apply ad_refine_syn_f__arrow;
         [ eapply ad_refine_syn_f_isub; eauto | exact Hfill2 ].
 
@@ -2128,9 +2149,15 @@ Proof.
     assert (Hdecls : a_decls Ξ) by (eapply a_extract_decls; eauto).
     (* pick a fresh decoration of P1 to instantiate the cofinite family *)
     assert (HlcP1 : lc_pskl P1) by (eapply a_wf_pskl_lc; eauto).
-    destruct (a_tags_sort_decorate_exists (Hex α Hα) HlcP1 (L `union` Ψ))
+    (* ⭐ ONE WIDER AVOID-SET (hand-off §6.1): the decoration is chosen fresh
+       anyway, so [_gv]'s extra ForallL hygiene premise costs nothing but
+       naming the subject's tags in the set we avoid. *)
+    destruct (a_tags_sort_decorate_exists (Hex α Hα) HlcP1
+                (L `union` Ψ `union` ftag_in_uskl (uskl_all_etag ε R)))
       as [Ψg [ψg [Hint0 [Hsort Herase]]]].
     assert (Hint : Ψg ∩ Ψ [=] empty)
+      by (clear - Hint0; fsetdec).
+    assert (Hhyg : Ψg ∩ (ftag_in_uskl (uskl_all_etag ε R)) [=] empty)
       by (clear - Hint0; fsetdec).
     assert (Hprem := Hfam Ψg ψg ltac:(clear - Hint0; fsetdec) Hsort Herase).
     assert (IH := IHfam Ψg ψg ltac:(clear - Hint0; fsetdec) Hsort Herase).
@@ -2164,13 +2191,14 @@ Proof.
           eapply a_wf_pskl_weaken; [ exact Hmono | apply Hbody; auto ]
         | exact HwfP1 ]. }
     destruct (IH HwfΞΘ HlcSψ HwfP0' HwfSψ Hmod Hgf)
-      as [Hle [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
+      as [Hle [Hwf1 [Qt [HeQt [[nsub Hsub] Hfill]]]]].
     split; [ eapply a_isub_strengthen_decls_src; eauto | ].
     split; [ exact Hwf1 | ].
     exists Qt. split; [ exact HeQt | ].
     split; [ | exact Hfill ].
-    apply ad_pat_sub__forall_l_tagged with (Ψ' := Ψg) (ψ := ψg);
-      [ exact Hneq | exact Hint | exact Hsort | | exact Hsub ].
+    exists (S nsub).
+    apply ad_pat_sub_gv__forall_l_tagged with (Ψ' := Ψg) (ψ := ψg);
+      [ exact Hneq | exact Hint | exact Hhyg | exact Hsort | | exact Hsub ].
     rewrite Herase. eapply a_wf_pskl_isub; eauto.
 
   - (* ForallL (untagged) : same as tagged. *)
@@ -2181,9 +2209,12 @@ Proof.
     assert (Hdecls : a_decls Ξ) by (eapply a_extract_decls; eauto).
     (* pick a fresh decoration of P1 to instantiate the cofinite family *)
     assert (HlcP1 : lc_pskl P1) by (eapply a_wf_pskl_lc; eauto).
-    destruct (a_tags_sort_decorate_exists (Hex α Hα) HlcP1 (L `union` Ψ))
+    destruct (a_tags_sort_decorate_exists (Hex α Hα) HlcP1
+                (L `union` Ψ `union` ftag_in_uskl (uskl_all_syn R)))
       as [Ψg [ψg [Hint0 [Hsort Herase]]]].
     assert (Hint : Ψg ∩ Ψ [=] empty)
+      by (clear - Hint0; fsetdec).
+    assert (Hhyg : Ψg ∩ (ftag_in_uskl (uskl_all_syn R)) [=] empty)
       by (clear - Hint0; fsetdec).
     assert (Hprem := Hfam Ψg ψg ltac:(clear - Hint0; fsetdec) Hsort Herase).
     assert (IH := IHfam Ψg ψg ltac:(clear - Hint0; fsetdec) Hsort Herase).
@@ -2216,13 +2247,14 @@ Proof.
           eapply a_wf_pskl_weaken; [ exact Hmono | apply Hbody; auto ]
         | exact HwfP1 ]. }
     destruct (IH HwfΞΘ HlcSψ HwfP0' HwfSψ Hmod Hgf)
-      as [Hle [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
+      as [Hle [Hwf1 [Qt [HeQt [[nsub Hsub] Hfill]]]]].
     split; [ eapply a_isub_strengthen_decls_src; eauto | ].
     split; [ exact Hwf1 | ].
     exists Qt. split; [ exact HeQt | ].
     split; [ | exact Hfill ].
-    apply ad_pat_sub__forall_l_untagged with (Ψ' := Ψg) (ψ := ψg);
-      [ exact Hneq | exact Hint | exact Hsort | | exact Hsub ].
+    exists (S nsub).
+    apply ad_pat_sub_gv__forall_l_untagged with (Ψ' := Ψg) (ψ := ψg);
+      [ exact Hneq | exact Hint | exact Hhyg | exact Hsort | | exact Hsub ].
     rewrite Herase. eapply a_wf_pskl_isub; eauto.
 
   - (* Ghost (SK) : ◇ below the input P0 *)
@@ -2232,7 +2264,8 @@ Proof.
     exists (pskl_to_bskl_inh P0).
     split; [ apply bskl_to_pskl_pskl_to_bskl_inh | ].
     split.
-    + apply ad_pat_sub__ghost; [ exact HΨ | exact HwfP0 | exact (Hmod eq_refl) ].
+    + exists 0. apply ad_pat_sub_gv__ghost;
+        [ exact HΨ | exact HwfP0 | exact (Hmod eq_refl) ].
     + apply ad_refine_syn_f_refl_inh; exact HwfP0.
 
   - (* GhostG (SK) : dotted ghost below ◇ *)
@@ -2242,7 +2275,7 @@ Proof.
     exists bskl_hole.
     split; [ reflexivity | ].
     split.
-    + apply ad_pat_sub__ghostg; [ exact HΨ | ].
+    + exists 0. apply ad_pat_sub_gv__ghostg; [ exact HΨ | ].
       specialize (Hmod eq_refl). simpl in Hmod. exact Hmod.
     + simpl. change bskl_hole with (pskl_to_bskl_syn pskl_hole).
       apply ad_refine_syn_f__hole;
@@ -2254,10 +2287,11 @@ Proof.
     simpl in HwfS.
     inversion HwfS; subst.
     destruct (IH Hwf ltac:(assumption) HwfP0 ltac:(assumption) Hmod Hgf)
-      as [Hle [Hwf1 [Qt [HeqQt [Hsub Hfill]]]]].
+      as [Hle [Hwf1 [Qt [HeqQt [[nsub Hsub] Hfill]]]]].
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     exists Qt. split; [ exact HeqQt | ].
-    split; [ apply ad_pat_sub__univ_ghost_l; assumption | exact Hfill ].
+    split; [ exists nsub; apply ad_pat_sub_gv__univ_ghost_l; assumption
+           | exact Hfill ].
 
   - (* UnivGhostLG (SK) : drop the subject's dotted ∀◇ *)
     intros M Ψ Θ0 Θ1 P0 R P' Hne Hprem IH Hwf HlcS HwfP0 HwfS Hmod Hgf.
@@ -2265,10 +2299,11 @@ Proof.
     simpl in HwfS.
     inversion HwfS; subst.
     destruct (IH Hwf ltac:(assumption) HwfP0 ltac:(assumption) Hmod Hgf)
-      as [Hle [Hwf1 [Qt [HeqQt [Hsub Hfill]]]]].
+      as [Hle [Hwf1 [Qt [HeqQt [[nsub Hsub] Hfill]]]]].
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     exists Qt. split; [ exact HeqQt | ].
-    split; [ apply ad_pat_sub__univ_ghost_lg; assumption | exact Hfill ].
+    split; [ exists nsub; apply ad_pat_sub_gv__univ_ghost_lg; assumption
+           | exact Hfill ].
 
   - (* FlexMono : hand off to the decorated walk (Ξ = nil) *)
     intros NM M P0 Ψ Θ0 Θ1 α P Hflex IH HΨ Hwf HlcS HwfP0 HwfS Hmod Hgf.
@@ -2279,11 +2314,12 @@ Proof.
                         as [HΔx | Htx];
                       [ exfalso; clear - HΔx; fsetdec | exact Htx ])
                 Hmod Hgf)
-      as [Hle [Hwf1 [Qt [HeqQt [Hsub Hfill]]]]].
+      as [Hle [Hwf1 [Qt [HeqQt [[nsub Hsub] Hfill]]]]].
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     exists Qt. split; [ exact HeqQt | ].
     split; [ | exact Hfill ].
-    eapply ad_pat_sub_psi_cong; [ exact Hsub | clear - HΨ; fsetdec ].
+    exists nsub.
+    eapply ad_pat_sub_gv_psi_cong; [ exact Hsub | clear - HΨ; fsetdec ].
 
   - (* Flex-Solve : deposit α̂0 := α̂→β̂ and recurse on the arrow.  The
        source lifts into the deposited context by a ⊴ (suffix-weaken the
@@ -2359,12 +2395,12 @@ Proof.
         (unfold Θ'; unfold binds; apply in_or_app; right; simpl;
          right; auto). }
     destruct (IH HwfΘ' ltac:(repeat constructor) HwfP0' Hwfarr Hmod Hgf)
-      as [Hle' [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
+      as [Hle' [Hwf1 [Qt [HeQt [[nsub Hsub] Hfill]]]]].
     split. { eapply a_isub_trans; [ exact Hlift | exact Hle' ]. }
     split; [ exact Hwf1 | ].
     exists Qt. split; [ exact HeQt | ].
     split; [ | exact Hfill ].
-    eapply ad_pat_sub__flex_mono with (τ := τab).
+    exists nsub. eapply ad_pat_sub_gv__flex_mono with (τ := τab).
     + destruct Hle' as [_ Hdefs]. apply Hdefs. exact Hbα0'.
     + exact Hsub.
 
@@ -2414,7 +2450,7 @@ Proof.
                 ltac:(intro HTY; specialize (Hgf HTY);
                       apply a_ty_mode_compat_subst_mono;
                         [ exact Hgf | exact Hm ]))
-      as [Hle [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
+      as [Hle [Hwf1 [Qt [HeQt [[nsub Hsub] Hfill]]]]].
     assert (Hle0 : Θ0 ⊴ Θ1)
       by (eapply a_isub_strengthen_decls_src; eauto).
     split.
@@ -2434,19 +2470,20 @@ Proof.
     split; [ exact HeQt | ].
     split.
     + (* subtyping : the walked variable against Qt at the def-context *)
-      assert (Hsub' : empty ⨟ ((β ~ abind_flex_mono_def τ) ++ Θ1)
-                        ⊢ₛᵃ[ NM | mode_fn M ]
+      exists nsub.
+      assert (Hsub' : ad_pat_sub_gv nsub NM (mode_fn M) empty
+                        ((β ~ abind_flex_mono_def τ) ++ Θ1)
                         (pskl_to_uskl
                            (subst_pskl_in_pskl (ptyp_to_pskl τ) β
-                              (pskl_var_f α))) ⩽ Qt).
-      { eapply ad_pat_sub_weaken; [ exact Hsub | ].
+                              (pskl_var_f α))) Qt).
+      { eapply ad_pat_sub_gv_weaken; [ exact Hsub | ].
         intros x b Hb. unfold binds in *. simpl. right. exact Hb. }
       simpl in Hsub'.
       match type of Hsub' with
       | context [ if ?e then _ else _ ] => destruct e as [-> | HneAB]
       end.
       * (* α = β : the subject reduced to the assigned monotype *)
-        eapply ad_pat_sub__flex_mono.
+        eapply ad_pat_sub_gv__flex_mono.
         { unfold binds. left. reflexivity. }
         rewrite <- ptyp_to_uskl_syn_eq. exact Hsub'.
       * (* α ≠ β : the subject is untouched *)
@@ -2470,10 +2507,12 @@ Proof.
     destruct (IH ltac:(simpl_env; simpl_env in Hwf; exact Hwf) Hdecl'
                 ltac:(simpl_env; simpl_env in HwfP0; exact HwfP0)
                 ltac:(simpl_env; simpl_env in Hαb; exact Hαb) Hmod Hgf)
-      as [Hle [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
+      as [Hle [Hwf1 [Qt [HeQt [[nsub Hsub] Hfill]]]]].
     split; [ simpl_env in Hle; simpl_env; exact Hle | ].
     split; [ exact Hwf1 | ].
-    exists Qt. auto.
+    exists Qt.
+    split; [ exact HeQt
+           | split; [ exists nsub; exact Hsub | exact Hfill ] ].
 
   - (* Flex-Skip : strip the mid entry, IH, re-cons + lift the outputs. *)
     intros NM M P0 Θ0 Θ1 Ξ α β P Hne Hni Hβ1 Hprem IH Hwf Hdecl HwfP0 Hαb Hmod Hgf.
@@ -2491,7 +2530,7 @@ Proof.
                         | intros τ1 He; inversion He; subst;
                           exact (Hne eq_refl) ])
                 Hmod Hgf)
-      as [Hle [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
+      as [Hle [Hwf1 [Qt [HeQt [[nsub Hsub] Hfill]]]]].
     assert (Hlift : Θ1 ⊴ ((β ~ abind_flex_mono) ++ Θ1)).
     { apply a_isub_weaken_suffix;
         [ apply a_wf_aenv_lc_aenv; exact Hwf1 | ].
@@ -2506,7 +2545,7 @@ Proof.
       eapply a_isub_strengthen_decls_src; eauto. }
     split; [ apply a_wf_aenv__flex; auto | ].
     exists Qt. split; [ exact HeQt | ].
-    split; [ eapply ad_pat_sub_isub; eauto
+    split; [ exists nsub; eapply ad_pat_sub_gv_isub; eauto
            | eapply ad_refine_syn_f_isub; eauto ].
 
   - (* Flex-SkipRigid : as Flex-Skip with a rigid head. *)
@@ -2525,7 +2564,7 @@ Proof.
                         | intros τ1 He; inversion He; subst;
                           exact (Hne eq_refl) ])
                 Hmod Hgf)
-      as [Hle [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
+      as [Hle [Hwf1 [Qt [HeQt [[nsub Hsub] Hfill]]]]].
     split.
     { apply a_isub_prepend_decls_src; auto.
       { intros γ Hb.
@@ -2537,7 +2576,7 @@ Proof.
     split; [ apply a_wf_aenv__tvar; auto | ].
     exists Qt. split; [ exact HeQt | ].
     split.
-    + eapply ad_pat_sub_weaken; [ exact Hsub | ].
+    + exists nsub. eapply ad_pat_sub_gv_weaken; [ exact Hsub | ].
       intros x b0 Hb; unfold binds; right; exact Hb.
     + eapply ad_refine_syn_f_weaken_ctx; [ exact Hfill | ].
       intros x b0 Hb; unfold binds; right; exact Hb.
@@ -2576,7 +2615,7 @@ Proof.
                         | intro He; discriminate He
                         | intros τ1 He; discriminate He ])
                 Hmod Hgf)
-      as [Hle [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
+      as [Hle [Hwf1 [Qt [HeQt [[nsub Hsub] Hfill]]]]].
     split.
     { apply a_isub_prepend_decls_src; auto.
       { intros γ Hb.
@@ -2591,7 +2630,7 @@ Proof.
       eapply a_wf_ptyp_isub; [ exact HwfQ' | exact Hle ]. }
     exists Qt. split; [ exact HeQt | ].
     split.
-    + eapply ad_pat_sub_weaken; [ exact Hsub | ].
+    + exists nsub. eapply ad_pat_sub_gv_weaken; [ exact Hsub | ].
       intros y b0 Hb; unfold binds; right; exact Hb.
     + eapply ad_refine_syn_f_weaken_ctx; [ exact Hfill | ].
       intros y b0 Hb; unfold binds; right; exact Hb.
@@ -2627,7 +2666,7 @@ Proof.
                         | intro He; discriminate He
                         | intros τ1 He; discriminate He ])
                 Hmod Hgf)
-      as [Hle [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
+      as [Hle [Hwf1 [Qt [HeQt [[nsub Hsub] Hfill]]]]].
     split.
     { apply a_isub_prepend_decls_src; auto.
       { intros γ Hb.
@@ -2642,7 +2681,7 @@ Proof.
       eapply a_scope_pskl_isub; [ exact HscQ' | exact Hle ]. }
     exists Qt. split; [ exact HeQt | ].
     split.
-    + eapply ad_pat_sub_weaken; [ exact Hsub | ].
+    + exists nsub. eapply ad_pat_sub_gv_weaken; [ exact Hsub | ].
       intros y b0 Hb; unfold binds; right; exact Hb.
     + eapply ad_refine_syn_f_weaken_ctx; [ exact Hfill | ].
       intros y b0 Hb; unfold binds; right; exact Hb.

@@ -20,6 +20,7 @@ Require Import src.frost.algo.def_meta.
 Require Import src.frost.decorated_algo.def_decl_algo.
 Require Import src.frost.decorated_algo.def_decorated.
 Require Import src.frost.decorated_algo.def_decl_algo_sub.
+Require Import src.frost.decorated_algo.def_decl_algo_sub_hyg.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_precise.
@@ -4161,6 +4162,11 @@ Proof.
                     apply Hmod; exact HSK)
               Hgf)
     as (Hisub & Hwf1 & Qt & HeQt & Hjoin & Hrs).
+  (* ⚙ the bundle now concludes the LEAF-VALID join (hand-off §6.2); this
+     theorem's own statement keeps the PLAIN one, recovered here.  When
+     [ad_pat] / [ad_sd_typing] switch to [_gv], this is where the [_gv]
+     is handed on instead. *)
+  destruct Hjoin as [njoin Hjoin]; apply ad_pat_sub_of_gv in Hjoin.
   exact (conj Hisub (conj Hwf1
            (ex_intro _ Qt (conj HeQt (conj Hjoin
               (ad_refine_syn_f_forget Hrs)))))).

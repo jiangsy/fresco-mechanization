@@ -254,6 +254,40 @@ terminate — `a_wf_pskl_delta_mono`'s `Δ0` is left an evar by the
 Δ-polymorphic `a_wf_pskl_mono_ptyp`, and the wrapper was not needed.
 Profile-first paid: imports alone were 0.3 s, so it was never I/O.
 
+## 2026-08-07 — ⭐⭐⭐ **SECTION D: §6.1 IS CLOSED — `a_subtag_sound_bundle` concludes the LEAF-VALID join**
+
+`make coq` clean; every `Print Assumptions` audit still *Closed under the
+global context*.  `subtag_sound_concl` / `subtag_flex_sound_concl`'s third
+conjunct is now `exists n, ad_pat_sub_gv n NM M Ψ Θ1 R Qt`, and all fifteen
+rows are converted.
+
+Row-by-row leaf sources, as landed: `Infer` / `UnivGhostR` →
+`ad_refine_pskl_refl` at the wf subject (after
+`bskl_to_pskl_pskl_to_bskl_syn`); `Check` → §1a–§1d's
+`ad_refine_pskl_refine_inh_target`, transporting the dropped conjunct from the
+CONSISTENCY's output `Qt` to `B`; `Arrow` (domain) → the dropped conjunct
+DIRECTLY, `⊴`-transported with `ad_refine_pskl_isub`; `ForallR` →
+`ad_pat_sub_gv_strip_suffix` + `ad_pat_sub_gv_rename_tvar`; ⭐ `ForallL` ×2 →
+ONE WIDER AVOID-SET on `a_tags_sort_decorate_exists` (the decoration is chosen
+fresh anyway, so `_gv`'s extra hygiene premise costs only naming the subject's
+tags), exactly as §6.1 predicted; the ghost rows and the flex walk pass
+through, using `_gv_psi_cong` / `_isub` / `_weaken`.
+
+⚙ Fuel: leaves take `0`; `ForallR` / `Arrow` / `ForallL` conclude at `S n`;
+`UnivGhostL(G)` / `FlexMono` / the whole flex walk are NON-incrementing, so
+they reuse the IH's `n`.
+
+⚙ Consumers: of the three positional readers, one never touched the join; the
+other two recover the plain form with `ad_pat_sub_of_gv`.
+`prop_decorate_key.v` needed the `def_decl_algo_sub_hyg` import added — a
+`Require Import` does not re-export.  ⭐ `a_sub_sound_thm`'s own statement is
+UNCHANGED (still the plain join, recovered at the call site), deliberately:
+its consumers still feed the plain join into `ad_pat` / `ad_sd_typing`.
+
+⛔ **NEXT:** change those two rules to embed `exists n, ad_pat_sub_gv n …`
+(§6.2) and hand the `_gv` on from `a_sub_sound_thm` — the last step before
+theorems 3 and 4.
+
 **9. ✅ THE `strip_suffix` CHAIN IS COMPLETE — and with it EVERY structural
 prerequisite of §6.1** (`prop_soundness_sub.v` §1h, Qed and axiom-free):
 `ad_refine_pskl_subst_flex_def`, `ad_pat_sub_gv_subst_flex_def`, and the

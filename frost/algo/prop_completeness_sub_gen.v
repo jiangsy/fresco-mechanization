@@ -3391,7 +3391,8 @@ Proof.
               ltac:(intros HSK; apply a_sk_mode_compat_mod_comp_sk;
                     apply Hmod; exact HSK)
               Hgf)
-    as [_ [_ [Qt [HeqQt [Hjoin _]]]]].
+    as [_ [_ [Qt [HeqQt [[njoin Hjoin] _]]]]].
+  apply ad_pat_sub_of_gv in Hjoin.
   rewrite <- HeqQt. eapply ad_pat_sub_target_wf; exact Hjoin.
 Qed.
 
