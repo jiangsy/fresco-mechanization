@@ -906,3 +906,43 @@ Proof.
   exists ζ. split; [ exact Hζ | ]. split; [ exact Heqv | ].
   rewrite <- msubst_bskl_syn_erase. exact Hprec.
 Qed.
+
+(* ===================================================================== *)
+(*  K5 — splitting is COMPLETE at a mode-compatible input (the four       *)
+(*  binder rows' first step).                                            *)
+(* ===================================================================== *)
+
+(** ⭐ K5 — the four binder rows need a split of the input skeleton, and at
+    a mode-compatible input one always exists WITHOUT touching the context.
+
+    ⭐⭐ The flexible row [a_split__flex] — the only one that extends the
+    context, and the only one whose premise is a consistency run — is
+    UNREACHABLE here: [a_sk_mode_compat] leaves exactly two shapes, the
+    ghost (at TI/TC) and a SYNTACTIC arrow (at FN).  That is what spares
+    theorem 3 the split's own completeness obligation.
+
+    The disjunction is what the caller inverts the solution's refinement
+    along ([msubst_pskl] is structural, so it commutes with both shapes). *)
+Lemma a_split_complete : forall M Θ0 P0,
+  a_sk_mode_compat M P0 ->
+  M <> mode_tc ->
+  exists P1 Q1,
+    (Θ0 ⊲ P0 ▹ P1 ⇢ Q1 ⊣ Θ0) /\
+    a_sk_mode_compat (decr_mode M) Q1 /\
+    ((P0 = pskl_hole /\ P1 = pskl_hole /\ Q1 = pskl_hole)
+     \/ P0 = pskl_arrow P1 Q1).
+Proof.
+  intros M Θ0 P0 Hmod Hne; destruct Hmod.
+  - (* TI at the ghost *)
+    exists pskl_hole, pskl_hole.
+    split; [ apply a_split__hole | ].
+    split; [ apply a_sk_mode_compat__ti | ].
+    left; repeat split; reflexivity.
+  - (* TC : excluded by the rule's own [m <> TC] *)
+    exfalso; apply Hne; reflexivity.
+  - (* FN at a syntactic arrow *)
+    exists P, Q.
+    split; [ apply a_split__arrow | ].
+    split; [ simpl; exact Hmod | ].
+    right; reflexivity.
+Qed.
