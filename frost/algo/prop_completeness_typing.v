@@ -1491,3 +1491,595 @@ Proof.
       [ apply a_guess_mono__tophole; exact Hg
       | exact Hd | exact Hu | exact Hav ].
 Qed.
+
+(* ===================================================================== *)
+(*  THE GUESS-COMPLETENESS KIT — the Abs row's heart.  The paper's own    *)
+(*  proof marks its ⑯⑰ step "WT: A bit sketchy"; [a_guess_mono_complete]  *)
+(*  below is that step made explicit.                                      *)
+(* ===================================================================== *)
+
+(** Embedding commutes with closing (the [ptyp] mirror of
+    [pskl_to_bskl_syn_close]). *)
+Lemma ptyp_to_pskl_close_rec : forall A α k,
+  ptyp_to_pskl (close_ptyp_wrt_ptyp_rec k α A)
+  = close_pskl_wrt_pskl_rec k α (ptyp_to_pskl A).
+Proof.
+  induction A; intros; simpl; f_equal; auto;
+    repeat match goal with
+    | |- context [ if ?t then _ else _ ] => destruct t
+    | |- context [ lt_ge_dec ?a ?b ] => destruct (lt_ge_dec a b)
+    end; reflexivity.
+Qed.
+
+Lemma ptyp_to_pskl_close : forall A α,
+  ptyp_to_pskl (close_ptyp_wrt_ptyp α A)
+  = close_pskl_wrt_pskl α (ptyp_to_pskl A).
+Proof. intros; apply ptyp_to_pskl_close_rec. Qed.
+
+(** A ghost-free skeleton guesses to ITSELF: no block, the type is the
+    skeleton's own reading. *)
+Lemma a_guess_mono_ghost_free_id : forall Θg P blk A',
+  a_guess_mono Θg P blk A' ->
+  pskl_ghost_free P ->
+  blk = nil /\ ptyp_to_pskl A' = P.
+Proof.
+  intros Θg P blk A' H; induction H; intros Hg; simpl in Hg;
+    try contradiction.
+  - (* var *) split; reflexivity.
+  - (* unit *) split; reflexivity.
+  - (* arrow *)
+    destruct Hg as [Hg1 Hg2].
+    destruct (IHa_guess_mono1 Hg1) as [-> HA].
+    destruct (IHa_guess_mono2 Hg2) as [-> HB].
+    split; [ reflexivity | simpl; rewrite HA, HB; reflexivity ].
+  - (* forall *)
+    destruct (IHa_guess_mono ltac:(apply pskl_ghost_free_open; exact Hg))
+      as [-> HA].
+    split; [ reflexivity | ].
+    simpl. f_equal.
+    rewrite ptyp_to_pskl_close.
+    rewrite HA.
+    apply close_pskl_wrt_pskl_open_pskl_wrt_pskl.
+    match goal with
+    | Hfr : β `notin` _ |- _ => clear - Hfr; fsetdec
+    end.
+Qed.
+
+(** A [btyp] painting that IS a syn painting names a MONOTYPE (the two
+    colourings clash at any ∀, and a painting has no ghosts). *)
+Lemma syn_painting_ityp_inv : forall (Bt : btyp) Pf,
+  btyp_to_bskl Bt = pskl_to_bskl_syn Pf ->
+  is_ityp Bt ->
+  exists τ, mono_ptyp τ /\ Pf = ptyp_to_pskl τ /\ btyp_to_ptyp Bt = τ.
+Proof.
+  intros Bt; induction Bt; intros Pf Heq Hit; simpl in Heq;
+    destruct Pf; simpl in Heq; try discriminate; inversion Hit; subst.
+  - exists ptyp_unit.
+    split; [ apply mono_ptyp__unit | split; reflexivity ].
+  - inversion Heq; subst.
+    eexists.
+    split; [ apply mono_ptyp__var | split; reflexivity ].
+  - inversion Heq; subst.
+    match goal with
+    | H1 : btyp_to_bskl Bt1 = pskl_to_bskl_syn ?p1,
+      H2 : btyp_to_bskl Bt2 = pskl_to_bskl_syn ?p2 |- _ =>
+        destruct (IHBt1 _ H1 ltac:(assumption)) as [τ1 [Hm1 [-> He1]]];
+        destruct (IHBt2 _ H2 ltac:(assumption)) as [τ2 [Hm2 [-> He2]]]
+    end.
+    exists (ptyp_arrow τ1 τ2).
+    split; [ apply mono_ptyp__arrow; assumption | ].
+    split; [ reflexivity | simpl; rewrite He1, He2; reflexivity ].
+Qed.
+
+(** …and a monotype's syn painting is (vacuously) inherited. *)
+Lemma mono_ptyp_to_btyp_syn_ityp : forall τ,
+  mono_ptyp τ ->
+  is_ityp (ptyp_to_btyp_syn τ).
+Proof.
+  intros τ Hm; induction Hm; simpl.
+  - apply is_ityp__unit.
+  - apply is_ityp__var.
+  - apply is_ityp__arrow; assumption.
+Qed.
+
+(** Ghost-freeness is decidable. *)
+Lemma pskl_ghost_free_dec : forall P,
+  sumbool (pskl_ghost_free P) (~ pskl_ghost_free P).
+Proof.
+  induction P; simpl; auto.
+  destruct IHP1; destruct IHP2; [ left; split; assumption | | | ];
+    right; intros [H1 H2]; contradiction.
+Qed.
+
+(** Looking up past a block the atom avoids. *)
+Lemma msubst_lookup_app_notin : forall (ζ κ : metasubst) α,
+  α `notin` dom ζ ->
+  msubst_lookup (ζ ++ κ) α = msubst_lookup κ α.
+Proof.
+  intros ζ; induction ζ as [ | [β τ] ζ' IH ]; intros κ α Hα;
+    [ reflexivity | ].
+  simpl in *.
+  destruct (α == β) as [-> | Hne]; [ exfalso; clear - Hα; fsetdec | ].
+  apply IH. clear - Hα; fsetdec.
+Qed.
+
+(** ⭐ The GHOST-FREE shortcut: a ghost-free subtree guesses to itself, and
+    a refinement between two ghost-free paintings IS the equivalence. *)
+Lemma a_guess_mono_complete_ghost_free : forall Θ Δ κ P (Bt : btyp) Θg blk A',
+  pskl_ghost_free P ->
+  ad_refine_syn Θ Δ (pskl_to_bskl_inh (msubst_pskl κ P)) (btyp_to_bskl Bt) ->
+  a_wf_aenv Θ ->
+  a_guess_mono Θg P blk A' ->
+  blk = nil /\ Θ ⊢ (msubst_ptyp κ A') ≡ᵗ (btyp_to_ptyp Bt).
+Proof.
+  intros Θ Δ κ P Bt Θg blk A' Hgf Href HwfΘ Hg.
+  destruct (a_guess_mono_ghost_free_id Hg Hgf) as [-> HPA].
+  split; [ reflexivity | ].
+  rewrite <- HPA in Href.
+  rewrite msubst_pskl_embed_ptyp in Href.
+  exact (ad_refine_syn_inh_tyequiv Href HwfΘ
+           (msubst_ptyp κ A') Bt eq_refl eq_refl).
+Qed.
+
+(** Stacking a block of guessed flexibles onto an increase. *)
+Lemma a_inc_extend_flex_block : forall (blk : aenv) (ζg κ : metasubst) Θ1 Θ,
+  κ ∷ Θ1 ⊑ Θ ->
+  List.map fst ζg = List.map fst blk ->
+  a_decls blk ->
+  (forall α τ, In (α, τ) ζg -> mono_ptyp τ /\ a_wf_ptyp Θ τ) ->
+  (ζg ++ κ) ∷ (blk ++ Θ1) ⊑ Θ.
+Proof.
+  intros blk; induction blk as [ | [α b] blk' IH ];
+    intros ζg κ Θ1 Θ Hinc Hmap Hd Hwf.
+  - destruct ζg; simpl in Hmap; [ exact Hinc | discriminate ].
+  - destruct ζg as [ | [α' τ] ζg' ]; simpl in Hmap; [ discriminate | ].
+    inversion Hmap; subst α'.
+    inversion Hd; subst.
+    simpl_env.
+    apply a_inc__flex.
+    + apply IH; try assumption.
+      intros β τ2 Hin. apply (Hwf β τ2). right. exact Hin.
+    + assert (Hin : In (α, τ) ((α, τ) :: ζg')) by (left; reflexivity).
+      exact (proj2 (Hwf _ _ Hin)).
+    + assert (Hin : In (α, τ) ((α, τ) :: ζg')) by (left; reflexivity).
+      exact (proj1 (Hwf _ _ Hin)).
+Qed.
+
+(** The one place the subject's head is NOT the input's: a FLEXIBLE input
+    variable, whose κ-image (a monotype) is what the refinement sees.  The
+    guess is the identity there, and the refinement between the image's
+    painting and the target IS the equivalence. *)
+Lemma guess_complete_var_image : forall Θ Δ κ β (Bt : btyp) Θg blk A',
+  ad_refine_syn Θ Δ (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f β)))
+    (btyp_to_bskl Bt) ->
+  a_wf_aenv Θ ->
+  a_guess_mono Θg (pskl_var_f β) blk A' ->
+  blk = nil /\ Θ ⊢ (msubst_ptyp κ A') ≡ᵗ (btyp_to_ptyp Bt).
+Proof.
+  intros Θ Δ κ β Bt Θg blk A' Href HwfΘ Hg.
+  inversion Hg; subst.
+  split; [ reflexivity | ].
+  change (pskl_var_f β) with (ptyp_to_pskl (ptyp_var_f β)) in Href.
+  rewrite msubst_pskl_embed_ptyp in Href.
+  exact (ad_refine_syn_inh_tyequiv Href HwfΘ
+           (msubst_ptyp κ (ptyp_var_f β)) Bt eq_refl eq_refl).
+Qed.
+
+(** A monotype's embedding is never a ghost or a quantifier. *)
+Lemma mono_embed_no_tophole : forall τ P1,
+  mono_ptyp τ -> ptyp_to_pskl τ <> pskl_tophole P1.
+Proof. intros τ P1 Hm; destruct Hm; simpl; discriminate. Qed.
+
+Lemma mono_embed_no_all : forall τ P1,
+  mono_ptyp τ -> ptyp_to_pskl τ <> pskl_all_syn P1.
+Proof. intros τ P1 Hm; destruct Hm; simpl; discriminate. Qed.
+
+Lemma mono_embed_no_hole : forall τ,
+  mono_ptyp τ -> ptyp_to_pskl τ <> pskl_hole.
+Proof. intros τ Hm; destruct Hm; simpl; discriminate. Qed.
+
+(** An in-domain lookup through an increase is a Θ-wf image. *)
+Lemma a_inc_lookup_in_wf : forall Θ1 κg Θ β,
+  κg ∷ Θ1 ⊑ Θ ->
+  β `in` dom κg ->
+  a_wf_ptyp Θ (msubst_lookup κg β).
+Proof.
+  intros Θ1 κg Θ β Hinc; induction Hinc; intros Hd; simpl in *.
+  - exfalso; clear - Hd; fsetdec.
+  - destruct (β == α) as [-> | Hne]; [ assumption | ].
+    apply IHHinc. clear - Hd Hne; fsetdec.
+  - destruct (β == α) as [-> | Hne]; [ assumption | ].
+    apply IHHinc. clear - Hd Hne; fsetdec.
+  - eapply a_wf_ptyp_weaken;
+      [ intros y c Hc; apply binds_app_3; apply binds_cons_3; exact Hc
+      | apply IHHinc; exact Hd ].
+  - eapply a_wf_ptyp_weaken;
+      [ intros y c Hc; apply binds_app_3; apply binds_cons_3; exact Hc
+      | apply IHHinc; exact Hd ].
+  - eapply a_wf_ptyp_weaken;
+      [ intros y c Hc; apply binds_app_3; apply binds_cons_3; exact Hc
+      | apply IHHinc; exact Hd ].
+Qed.
+
+(** A fresh atom stays out of a κ-image (the entries are Θ-scoped). *)
+Lemma msubst_ptyp_ftv_notin_inc : forall A (κg : metasubst) Θ1 Θ α0,
+  κg ∷ Θ1 ⊑ Θ ->
+  α0 `notin` ftvar_in_ptyp A ->
+  α0 `notin` dom Θ ->
+  α0 `notin` ftvar_in_ptyp (msubst_ptyp κg A).
+Proof.
+  intros A; induction A; intros κg Θ1 Θ α0 Hinc HA Hd; simpl in *;
+    try solve [ fsetdec
+              | intros Hc; apply (IHA _ _ _ _ Hinc HA Hd); exact Hc ].
+  - (* var β *)
+    destruct (AtomSetProperties.In_dec α (dom κg)) as [Hin | Hni].
+    + pose proof (a_inc_lookup_in_wf Hinc Hin) as Hwfl.
+      intros Hc.
+      pose proof (a_wf_ptyp_ftv_tvarish Hwfl Hc) as Ht.
+      destruct Ht as [Hr | [Hm | [τ Hdf]]];
+        [ apply binds_In in Hr; clear - Hd Hr; fsetdec
+        | apply binds_In in Hm; clear - Hd Hm; fsetdec
+        | apply binds_In in Hdf; clear - Hd Hdf; fsetdec ].
+    + rewrite msubst_lookup_notin; [ | exact Hni ].
+      simpl. clear - HA; fsetdec.
+  - (* arrow *)
+    intros Hc.
+    assert (HA1 : α0 `notin` ftvar_in_ptyp A1) by (clear - HA; fsetdec).
+    assert (HA2 : α0 `notin` ftvar_in_ptyp A2) by (clear - HA; fsetdec).
+    destruct (union_1 Hc) as [H1 | H2];
+      [ exact (IHA1 _ _ _ _ Hinc HA1 Hd H1)
+      | exact (IHA2 _ _ _ _ Hinc HA2 Hd H2) ].
+Qed.
+
+Lemma msubst_lookup_app_agree : forall (ζ X Y : metasubst) α,
+  msubst_lookup X α = msubst_lookup Y α ->
+  msubst_lookup (ζ ++ X) α = msubst_lookup (ζ ++ Y) α.
+Proof.
+  intros ζ; induction ζ as [ | [β τ] ζ' IH ]; intros X Y α Hxy;
+    [ exact Hxy | ].
+  simpl. destruct (α == β); [ reflexivity | apply IH; exact Hxy ].
+Qed.
+
+Lemma map_fst_eq_dom : forall (ζ : metasubst) (blk : aenv),
+  List.map fst ζ = List.map fst blk ->
+  dom ζ [=] dom blk.
+Proof.
+  intros ζ; induction ζ as [ | [α τ] ζ' IH ]; intros blk Hmap;
+    destruct blk as [ | [β b] blk' ]; simpl in Hmap; try discriminate.
+  - simpl. fsetdec.
+  - inversion Hmap; subst. simpl.
+    pose proof (IH _ H1). fsetdec.
+Qed.
+
+(** The composite that is never a syn painting's ∀-free companion. *)
+Lemma ptyp_to_bskl_syn_via_pskl : forall τ,
+  ptyp_to_bskl_syn τ = pskl_to_bskl_syn (ptyp_to_pskl τ).
+Proof. induction τ; simpl; f_equal; auto. Qed.
+
+(** ⭐⭐ GUESS-COMPLETENESS — the paper's Abs step ⑯⑰, which its authors
+    flag as "a bit sketchy", made explicit.  If the κ-image of [P] refines
+    to (the painting of) an INHERITED type [Bt], the ghost fills are
+    Δ-free Θ-monotypes — refinement's ∀ rows keep binders in Δ while
+    [__hole]'s fill is wf at [Θ ⨟ ∅] — and they assemble into a block
+    substitution under which guess^TY's output is EQUIVALENT to the
+    target.  Induction on the REFINEMENT (its flex rows recurse at the
+    same [P]); the input's flexible variables are invisible (their images
+    are monotypes, [guess_complete_var_image]); the ∀ row takes ONE fresh
+    instance ([a_guess_mono_open_at]) and re-generates the ≡ᵗ family by
+    the α0 ⇄ α transposition. *)
+Lemma a_guess_mono_complete : forall Θ Δ Qs Qt,
+  ad_refine_syn Θ Δ Qs Qt ->
+  forall P0 (Bt : btyp) Θg blk A' κ Θ1,
+  a_wf_aenv Θ ->
+  Qs = pskl_to_bskl_inh (msubst_pskl κ P0) ->
+  Qt = btyp_to_bskl Bt ->
+  is_ityp Bt ->
+  a_guess_mono Θg P0 blk A' ->
+  κ ∷ Θ1 ⊑ Θ ->
+  uniq blk ->
+  (forall α, α `in` dom blk ->
+     α `notin` ftvar_in_pskl P0 `union` dom κ
+       `union` dom Θ `union` ftvar_in_aenv Θ) ->
+  exists ζg,
+    List.map fst ζg = List.map fst blk /\
+    (forall α τ, In (α, τ) ζg -> mono_ptyp τ /\ a_wf_ptyp Θ τ) /\
+    Θ ⊢ (msubst_ptyp (ζg ++ κ) A') ≡ᵗ (btyp_to_ptyp Bt).
+Proof.
+  intros Θ Δ Qs Qt Href.
+  (* the two head-generic moves, packaged: *)
+  (* [var_image_case] — the input head is a flexible/rigid VARIABLE; its
+     κ-image is what the row sees, and the guess is the identity there *)
+  (* [mono_clash] — a variable input's image is a MONOTYPE, whose painting
+     never matches a ghost/quantifier subject *)
+  induction Href;
+    intros P0 Bt Θg blk A' κ Θ1 HwfΘ HeqS HeqT Hit Hg Hinc Huq Hav.
+  - (* unit *)
+    destruct P0 as [ | nb | βv | Pa Pb | Pw | | Pt ]; simpl in HeqS;
+      try discriminate HeqS.
+    + (* unit head *)
+      inversion Hg; subst.
+      destruct Bt; simpl in HeqT; try discriminate.
+      exists nil. split; [ reflexivity | ].
+      split; [ intros α2 τ2 Hin; inversion Hin | ].
+      simpl. apply a_tyequiv__refl. apply lc_ptyp_unit.
+    + (* var head : the image *)
+      assert (Href' : ad_refine_syn Θ Δ
+                (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f βv)))
+                (btyp_to_bskl Bt))
+        by (simpl; rewrite <- HeqS, <- HeqT; apply ad_refine_syn__unit).
+      destruct (@guess_complete_var_image Θ Δ κ βv Bt Θg blk A' Href' HwfΘ Hg) as [-> Heqc].
+      exists nil; split;
+        [ reflexivity
+        | split; [ intros α2 τ2 Hin; inversion Hin | exact Heqc ] ].
+  - (* var *)
+    destruct P0 as [ | nb | βv | Pa Pb | Pw | | Pt ]; simpl in HeqS;
+      try discriminate HeqS.
+    assert (Href' : ad_refine_syn Θ Δ
+              (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f βv)))
+              (btyp_to_bskl Bt))
+      by (simpl; rewrite <- HeqS, <- HeqT;
+          apply ad_refine_syn__var; assumption).
+    destruct (@guess_complete_var_image Θ Δ κ βv Bt Θg blk A' Href' HwfΘ Hg) as [-> Heqc].
+    exists nil; split;
+      [ reflexivity
+      | split; [ intros α2 τ2 Hin; inversion Hin | exact Heqc ] ].
+  - (* arrow *)
+    destruct P0 as [ | nb | βv | Pa Pb | Pw | | Pt ]; simpl in HeqS;
+      try discriminate HeqS.
+    + (* var head *)
+      assert (Href' : ad_refine_syn Θ Δ
+                (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f βv)))
+                (btyp_to_bskl Bt))
+        by (simpl; rewrite <- HeqS, <- HeqT;
+            apply ad_refine_syn__arrow; assumption).
+      destruct (@guess_complete_var_image Θ Δ κ βv Bt Θg blk A' Href' HwfΘ Hg) as [-> Heqc].
+      exists nil; split;
+        [ reflexivity
+        | split; [ intros α2 τ2 Hin; inversion Hin | exact Heqc ] ].
+    + (* arrow head *)
+      inversion HeqS; subst Q1 Q2.
+      destruct Bt as [ | n | γ | B1 B2 | B0 | B0 ]; simpl in HeqT;
+        try discriminate HeqT.
+      inversion HeqT; subst P1 P2.
+      inversion Hit; subst.
+      inversion Hg; subst.
+      match goal with
+      | H1 : a_guess_mono _ Pa ?X1 ?AA, H2 : a_guess_mono _ Pb ?X2 ?BB |- _ =>
+          rename H1 into Hg1; rename H2 into Hg2;
+          rename X1 into Ξ1; rename X2 into Ξ2;
+          rename AA into A1; rename BB into A2
+      end.
+      assert (Hu1 : uniq Ξ1) by (clear - Huq; solve_uniq).
+      assert (Hu2 : uniq Ξ2) by (clear - Huq; solve_uniq).
+      destruct (IHHref1 Pa B1 Θg Ξ1 A1 κ Θ1 HwfΘ eq_refl eq_refl
+                  ltac:(assumption) Hg1 Hinc Hu1
+                  ltac:(intros α Hα; simpl in Hav;
+                        pose proof (Hav α ltac:(rewrite dom_app;
+                                                clear - Hα; fsetdec)) as Hn;
+                        clear - Hn; fsetdec))
+        as [ζg1 [Hmap1 [Hent1 Heqc1]]].
+      destruct (IHHref2 Pb B2 Θg Ξ2 A2 κ Θ1 HwfΘ eq_refl eq_refl
+                  ltac:(assumption) Hg2 Hinc Hu2
+                  ltac:(intros α Hα; simpl in Hav;
+                        pose proof (Hav α ltac:(rewrite dom_app;
+                                                clear - Hα; fsetdec)) as Hn;
+                        clear - Hn; fsetdec))
+        as [ζg2 [Hmap2 [Hent2 Heqc2]]].
+      pose proof (map_fst_eq_dom _ _ Hmap1) as Hd1.
+      pose proof (map_fst_eq_dom _ _ Hmap2) as Hd2.
+      pose proof (a_guess_mono_ftv Hg1) as Hftv1.
+      pose proof (a_guess_mono_ftv Hg2) as Hftv2.
+      assert (Hdisj : dom Ξ1 ∩ dom Ξ2 [=] empty)
+        by (clear - Huq; solve_uniq).
+      exists (ζg1 ++ ζg2).
+      split; [ rewrite !List.map_app, Hmap1, Hmap2; reflexivity | ].
+      split.
+      { intros α τ Hin.
+        apply in_app_or in Hin as [Hin | Hin];
+          [ exact (Hent1 _ _ Hin) | exact (Hent2 _ _ Hin) ]. }
+      simpl.
+      apply a_tyequiv__arrow.
+      * rewrite app_assoc.
+        erewrite (msubst_ptyp_agree (ζg1 ++ ζg2 ++ κ) (ζg1 ++ κ));
+          [ exact Heqc1 | ].
+        intros α Hα.
+        apply msubst_lookup_app_agree.
+        apply msubst_lookup_app_notin.
+        assert (HαP : α `in` ftvar_in_pskl Pa `union` dom Ξ1)
+          by (clear - Hα Hftv1; fsetdec).
+        intros Hc. rewrite Hd2 in Hc.
+        simpl in Hav.
+        pose proof (Hav α ltac:(rewrite dom_app; clear - Hc; fsetdec)) as Hn.
+        clear - Hn HαP Hc Hdisj. fsetdec.
+      * rewrite app_assoc.
+        erewrite (msubst_ptyp_agree (ζg1 ++ ζg2 ++ κ) (ζg2 ++ κ));
+          [ exact Heqc2 | ].
+        intros α Hα.
+        apply msubst_lookup_app_notin.
+        assert (HαP : α `in` ftvar_in_pskl Pb `union` dom Ξ2)
+          by (clear - Hα Hftv2; fsetdec).
+        intros Hc. rewrite Hd1 in Hc.
+        simpl in Hav.
+        pose proof (Hav α ltac:(rewrite dom_app; clear - Hc; fsetdec)) as Hn.
+        clear - Hn HαP Hc Hdisj. fsetdec.
+  - (* all *)
+    destruct P0 as [ | nb | βv | Pa Pb | Pw | | Pt ]; simpl in HeqS;
+      try discriminate HeqS.
+    + (* var head : a monotype image is never a quantifier *)
+      exfalso.
+      pose proof (a_inc_lookup_mono βv Hinc) as Hm.
+      destruct Hm; simpl in HeqS; discriminate HeqS.
+    + (* all head *)
+      inversion HeqS; subst Q.
+      destruct Bt as [ | n | γ | B1 B2 | B0 | B0 ]; simpl in HeqT;
+        try discriminate HeqT.
+      inversion HeqT; subst P.
+      inversion Hit; subst.
+      match goal with
+      | Hfam : forall α, α `notin` ?LL ->
+                 is_ityp (open_btyp_wrt_btyp _ _) |- _ =>
+          rename Hfam into Hit1; rename LL into L2
+      end.
+      inversion Hg; subst.
+      match goal with
+      | Hg1 : a_guess_mono ((?bb ~ abind_tvar) ++ _) _ _ ?AA,
+        Hfr : ?bb `notin` _ |- _ =>
+          rename Hg1 into Hg0; rename Hfr into Hfrβ;
+          rename bb into β; rename AA into A0
+      end.
+      destruct (atom_fresh (L `union` L2 `union` dom blk
+                  `union` ftvar_in_pskl Pw `union` ftvar_in_aenv Θg
+                  `union` dom κ `union` dom Θ `union` ftvar_in_aenv Θ
+                  `union` ftvar_in_ptyp (close_ptyp_wrt_ptyp β A0)
+                  `union` ftvar_in_btyp B0 `union` singleton β)) as [α0 Hα0].
+      assert (Hgα0 : a_guess_mono ((α0 ~ abind_tvar) ++ Θg)
+                       (open_pskl_wrt_pskl Pw (pskl_var_f α0)) blk
+                       (open_ptyp_wrt_ptyp (close_ptyp_wrt_ptyp β A0)
+                          (ptyp_var_f α0))).
+      { apply a_guess_mono_open_at;
+          [ apply a_guess_mono__forall with (β := β);
+              [ exact Hfrβ | exact Hg0 ]
+          | clear - Hα0; fsetdec ]. }
+      destruct (H0 α0 ltac:(clear - Hα0; fsetdec)
+                  (open_pskl_wrt_pskl Pw (pskl_var_f α0))
+                  (open_btyp_wrt_btyp B0 (btyp_var_f α0))
+                  ((α0 ~ abind_tvar) ++ Θg) blk
+                  (open_ptyp_wrt_ptyp (close_ptyp_wrt_ptyp β A0)
+                     (ptyp_var_f α0))
+                  κ Θ1 HwfΘ
+                  ltac:(assert (Hfr0 : α0 `notin` dom κ)
+                          by (clear - Hα0; fsetdec);
+                        rewrite (@msubst_pskl_open Θ1 κ Θ Pw α0 Hinc Hfr0);
+                        rewrite pskl_to_bskl_inh_open; reflexivity)
+                  ltac:(rewrite btyp_to_bskl_open; reflexivity)
+                  (Hit1 α0 ltac:(clear - Hα0; fsetdec))
+                  Hgα0 Hinc Huq
+                  ltac:(intros α Hα;
+                        pose proof (Hav α Hα) as Hn;
+                        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
+                                      Pw (pskl_var_f α0)) as Hup;
+                        simpl in Hup, Hn;
+                        assert (Hne : α <> α0)
+                          by (intros ->; clear - Hα Hα0; fsetdec);
+                        clear - Hn Hup Hne; fsetdec))
+        as [ζg [Hmap [Hent Heqc0]]].
+      exists ζg.
+      split; [ exact Hmap | ].
+      split; [ exact Hent | ].
+      assert (Hincg : (ζg ++ κ) ∷ (blk ++ Θ1) ⊑ Θ)
+        by (apply a_inc_extend_flex_block;
+            [ exact Hinc | exact Hmap
+            | eapply a_guess_mono_decls; exact Hg0 | exact Hent ]).
+      pose proof (map_fst_eq_dom _ _ Hmap) as Hdζ.
+      assert (Hfrg : α0 `notin` dom (ζg ++ κ))
+        by (rewrite dom_app; rewrite Hdζ; clear - Hα0; fsetdec).
+      rewrite (@msubst_ptyp_open (blk ++ Θ1) (ζg ++ κ) Θ
+                 (close_ptyp_wrt_ptyp β A0) α0 Hincg Hfrg)
+        in Heqc0.
+      rewrite btyp_to_ptyp_open in Heqc0.
+      simpl.
+      set (X := msubst_ptyp (ζg ++ κ) (close_ptyp_wrt_ptyp β A0)) in *.
+      apply a_tyequiv__all with
+        (L := ftvar_in_ptyp X `union` ftvar_in_ptyp (btyp_to_ptyp B0)
+                `union` singleton α0 `union` dom Θ `union` ftvar_in_aenv Θ).
+      intros α Hα.
+      pose proof (a_tyequiv_swap α0 α _ _ _ Heqc0) as Hsw.
+      assert (Hfe1 : α0 `notin` (dom Θ `union` ftvar_in_aenv Θ))
+        by (clear - Hα0; fsetdec).
+      assert (Hfe2 : α `notin` (dom Θ `union` ftvar_in_aenv Θ))
+        by (clear - Hα; fsetdec).
+      rewrite (@swap_aenv_fresh_eq α0 α Θ Hfe1 Hfe2) in Hsw.
+      rewrite !swap_ptyp_open in Hsw.
+      cbn [swap_ptyp] in Hsw.
+      rewrite swap_atom_l in Hsw.
+      rewrite (swap_ptyp_fresh_id α0 α X) in Hsw;
+        [ | | clear - Hα; fsetdec ].
+      2:{ (* α0 avoids X : it avoids the closed body and the Θ-scoped
+             images *)
+        unfold X.
+        eapply msubst_ptyp_ftv_notin_inc;
+          [ exact Hincg | clear - Hα0; fsetdec | clear - Hα0; fsetdec ]. }
+      rewrite (swap_ptyp_fresh_id α0 α (btyp_to_ptyp B0)) in Hsw;
+        [ | | clear - Hα; fsetdec ].
+      2:{ rewrite ftvar_in_ptyp_btyp_to_ptyp. clear - Hα0; fsetdec. }
+      exact Hsw.
+  - (* hole *)
+    destruct P0 as [ | nb | βv | Pa Pb | Pw | | Pt ]; simpl in HeqS;
+      try discriminate HeqS.
+    + (* var head : a monotype image is never a ghost *)
+      exfalso.
+      pose proof (a_inc_lookup_mono βv Hinc) as Hm.
+      destruct Hm; simpl in HeqS; discriminate HeqS.
+    + (* hole head : the fill is a monotype *)
+      inversion Hg; subst.
+      destruct (@syn_painting_ityp_inv Bt P (eq_sym HeqT) Hit)
+        as [τ [Hmτ [-> Hbtτ]]].
+      assert (Hwfτ : a_wf_ptyp Θ τ).
+      { eapply a_wf_ptyp_of_scope_pskl; [ | reflexivity ].
+        eapply a_wf_pskl_to_a_scope_pskl;
+          [ eassumption | intros z b Hb; exact Hb
+          | intros α2 Hα2; clear - Hα2; fsetdec ]. }
+      eexists ((_, τ) :: nil).
+      split; [ reflexivity | ].
+      split.
+      { intros α2 τ2 Hin.
+        destruct Hin as [Heq2 | []].
+        inversion Heq2; subst. split; assumption. }
+      simpl.
+      destruct (α == α) as [_ | Hc]; [ | exfalso; apply Hc; reflexivity ].
+      rewrite Hbtτ.
+      apply a_tyequiv__refl. eapply a_wf_ptyp_lc; exact Hwfτ.
+  - (* tophole_remove *)
+    destruct P0 as [ | nb | βv | Pa Pb | Pw | | Pt ]; simpl in HeqS;
+      try discriminate HeqS.
+    + (* var head : a monotype image is never a ghost *)
+      exfalso.
+      pose proof (a_inc_lookup_mono βv Hinc) as Hm.
+      destruct Hm; simpl in HeqS; discriminate HeqS.
+    + (* tophole head *)
+      inversion HeqS; subst Q.
+      inversion Hg; subst.
+      match goal with
+      | Hg1 : a_guess_mono _ Pt _ _ |- _ => rename Hg1 into Hg0
+      end.
+      destruct (IHHref Pt Bt Θg blk A' κ Θ1 HwfΘ eq_refl eq_refl Hit Hg0
+                  Hinc Huq
+                  ltac:(intros α Hα; exact (Hav α Hα)))
+        as [ζg [Hmap [Hent Heqc]]].
+      exists ζg. split; [ exact Hmap | split; [ exact Hent | exact Heqc ] ].
+  - (* tophole_fill : an inherited target has no syn quantifier *)
+    destruct Bt; simpl in HeqT; try discriminate HeqT.
+    inversion Hit.
+  - (* tophole_keep : a btyp painting is never a ghost *)
+    destruct Bt; simpl in HeqT; discriminate HeqT.
+  - (* flex_l : only a variable input paints to a bare variable *)
+    destruct P0 as [ | nb | βv | Pa Pb | Pw | | Pt ]; simpl in HeqS;
+      try discriminate HeqS.
+    assert (Href' : ad_refine_syn Θ Δ
+              (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f βv)))
+              (btyp_to_bskl Bt))
+      by (simpl; rewrite <- HeqS, <- HeqT;
+          eapply ad_refine_syn__flex_l; eassumption).
+    destruct (@guess_complete_var_image Θ Δ κ βv Bt Θg blk A' Href' HwfΘ Hg) as [-> Heqc].
+    exists nil; split;
+      [ reflexivity
+      | split; [ intros α2 τ2 Hin; inversion Hin | exact Heqc ] ].
+  - (* flex_r : unfold the target's definition and recurse (any input) *)
+    destruct Bt as [ | n | γ | B1 B2 | B0 | B0 ]; simpl in HeqT;
+      try discriminate HeqT.
+    inversion HeqT; subst γ.
+    assert (Hmτ : mono_ptyp τ)
+      by (eapply a_wf_aenv_binds_def_mono; eassumption).
+    destruct (IHHref P0 (ptyp_to_btyp_syn τ) Θg blk A' κ Θ1 HwfΘ HeqS
+                ltac:(rewrite <- pskl_to_bskl_syn_ptyp,
+                        <- ptyp_to_bskl_syn_via_pskl; reflexivity)
+                (mono_ptyp_to_btyp_syn_ityp Hmτ)
+                Hg Hinc Huq Hav)
+      as [ζg [Hmap [Hent Heqc]]].
+    exists ζg. split; [ exact Hmap | split; [ exact Hent | ] ].
+    rewrite btyp_to_ptyp_ptyp_to_btyp_syn in Heqc.
+    simpl.
+    eapply a_tyequiv__trans;
+      [ exact Heqc
+      | apply a_tyequiv__sym; apply a_tyequiv__flex_def; assumption ].
+Qed.
