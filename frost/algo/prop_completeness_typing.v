@@ -1402,3 +1402,92 @@ Proof.
   eapply a_tyequiv__trans;
     [ apply a_tyequiv__sym; exact HeqW | exact HeqCod ].
 Qed.
+
+(* ===================================================================== *)
+(*  §6.3 #3 — guess^TY EXISTENCE with an AVOID SET.  Completeness         *)
+(*  CHOOSES the block, so this settles [AT-Abs]'s [uniq (αs ++ Θ1)]       *)
+(*  premise; the "two independent generators" gap closes because the      *)
+(*  arrow case feeds the first half's names into the second's avoid set.  *)
+(* ===================================================================== *)
+
+(** Two uniq lists with disjoint domains append to a uniq list. *)
+Lemma uniq_app_of : forall (Ξ1 Ξ2 : aenv),
+  uniq Ξ1 -> uniq Ξ2 ->
+  (forall α, α `in` dom Ξ1 -> α `notin` dom Ξ2) ->
+  uniq (Ξ1 ++ Ξ2).
+Proof.
+  intros Ξ1; induction Ξ1 as [ | [α b] Ξ1' IH ]; intros Ξ2 Hu1 Hu2 Hdj;
+    [ exact Hu2 | ].
+  inversion Hu1; subst.
+  simpl_env. apply uniq_cons.
+  - apply IH; [ assumption | exact Hu2 | ].
+    intros β Hβ. apply Hdj. simpl. clear - Hβ; fsetdec.
+  - rewrite dom_app.
+    assert (Hα2 : α `notin` dom Ξ2)
+      by (apply Hdj; simpl; clear; fsetdec).
+    match goal with
+    | Hn : α `notin` dom Ξ1' |- _ => clear - Hn Hα2; fsetdec
+    end.
+Qed.
+
+(** ⭐ [guess^TY] EXISTENCE, with an AVOID SET: completeness CHOOSES the
+    block, so an avoid-set-indexed generator settles [AT-Abs]'s
+    [uniq (αs ++ Θ1)] premise (hand-off §6.3 #3; the "two independent
+    generators" gap is closed by feeding the first half's names into the
+    second half's avoid set at the arrow). *)
+Lemma a_guess_mono_exists : forall P Θ L,
+  lc_pskl P ->
+  exists Ξ A,
+    a_guess_mono Θ P Ξ A /\
+    a_decls Ξ /\ uniq Ξ /\
+    (forall α, α `in` dom Ξ -> α `notin` L).
+Proof.
+  intros P Θ L Hlc; revert Θ L; induction Hlc; intros Θ L.
+  - (* unit *)
+    exists nil, ptyp_unit. repeat split;
+      [ apply a_guess_mono__unit | apply a_decls__nil | apply uniq_nil
+      | intros β Hβ; simpl in Hβ; clear - Hβ; fsetdec ].
+  - (* var_f *)
+    exists nil, (ptyp_var_f α). repeat split;
+      [ apply a_guess_mono__var | apply a_decls__nil | apply uniq_nil
+      | intros β Hβ; simpl in Hβ; clear - Hβ; fsetdec ].
+  - (* arrow *)
+    destruct (IHHlc1 Θ L) as [Ξ1 [A [Hg1 [Hd1 [Hu1 Hav1]]]]].
+    destruct (IHHlc2 Θ (L `union` dom Ξ1)) as [Ξ2 [B [Hg2 [Hd2 [Hu2 Hav2]]]]].
+    exists (Ξ1 ++ Ξ2), (ptyp_arrow A B).
+    repeat split.
+    + apply a_guess_mono__arrow; [ exact Hg1 | exact Hg2 ].
+    + clear - Hd1 Hd2. induction Hd1; simpl_env;
+        [ exact Hd2 | apply a_decls__cons; assumption ].
+    + apply uniq_app_of; [ exact Hu1 | exact Hu2 | ].
+      intros α Hα Hα2.
+      pose proof (Hav2 α Hα2) as Hn. clear - Hn Hα; fsetdec.
+    + intros α Hα. rewrite dom_app in Hα.
+      destruct (AtomSetImpl.union_1 Hα) as [H1 | H2];
+        [ apply Hav1; exact H1 | apply Hav2 in H2; clear - H2; fsetdec ].
+  - (* all *)
+    destruct (atom_fresh (ftvar_in_aenv Θ `union` ftvar_in_pskl P1 `union` L))
+      as [β Hβ].
+    destruct (H0 β ((β ~ abind_tvar) ++ Θ) L) as [Ξ [A [Hg [Hd [Hu Hav]]]]].
+    exists Ξ, (ptyp_all (close_ptyp_wrt_ptyp β A)).
+    repeat split;
+      [ apply a_guess_mono__forall;
+          [ clear - Hβ; fsetdec | exact Hg ]
+      | exact Hd | exact Hu | exact Hav ].
+  - (* hole *)
+    destruct (atom_fresh (ftvar_in_aenv Θ `union` L)) as [α Hα].
+    exists ((α ~ abind_flex_mono) ++ nil), (ptyp_var_f α).
+    repeat split;
+      [ apply a_guess_mono__hole; clear - Hα; fsetdec
+      | apply a_decls__cons; apply a_decls__nil
+      | apply uniq_cons; [ apply uniq_nil | simpl; clear; fsetdec ]
+      | intros β Hβ; simpl in Hβ;
+        assert (β = α) by (clear - Hβ; fsetdec); subst;
+        clear - Hα; fsetdec ].
+  - (* tophole *)
+    destruct (IHHlc Θ L) as [Ξ [A [Hg [Hd [Hu Hav]]]]].
+    exists Ξ, A.
+    repeat split;
+      [ apply a_guess_mono__tophole; exact Hg
+      | exact Hd | exact Hu | exact Hav ].
+Qed.
