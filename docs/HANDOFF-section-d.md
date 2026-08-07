@@ -240,7 +240,33 @@ Two of the three rows are easy; the third is a genuine proof.
 
 ---
 
-## 3. `lemma:precision-sub` — ✅ SCOUTED 2026-08-06; the flagged obstruction is DEAD
+## 3. `lemma:precision-sub` — ⛔ IN PROGRESS 2026-08-07: the ENGINE is BUILT, the induction is not
+
+✅ **The transitivity engine landed** (`1a31643`, prop_precise.v tail, Qed +
+axiom-free): `ad_refine_pskl_trans_gen` / `_trans`, `ad_refine_pskl_hole_l`,
+`ad_refine_pskl_ftv_delta_free`, `ad_refine_pskl_of_inh_paintings`, and the
+composition `ad_precise_preserves_refine_pskl` — the uncoloured
+precision-preserves-refinement that transports the `_gv` LEAF datum.
+⭐⭐ NOT a row-for-row mirror of `ad_refine_syn_trans`: the pskl `__all` row
+fires (syn's dies on painting shape) and its inner `__tophole_fill`
+composite needs the IH at a REASSOCIATED context (∀-witness moved Δ→Θ) —
+solved by generalizing the statement over a context map (Hmap/Hsplit), NOT
+by a fuel mirror.
+
+⚠️⚠️ **The induction itself must NOT be stated naively.**  `_gv`'s ForallL
+opens the subject with a ghost decoration ψ, leaving the `pskl_to_uskl`
+image — the motive "subject is `⌈P⌉ᵘ`, precision `P' ⊑ P`" has no IH there
+(the P7 lockstep problem again).  Mirror
+`ad_pat_consis_subject_refine`'s statement shape
+(prop_consis_precise.v:568) — consistency's version of the same transport —
+and note its precision corollary `ad_pat_consis_subject_precise` (:692)
+discharges the consis premises of `__infer`/`__check`/`__univ_ghost_r`/
+`__arrow` directly.  Landing spot: NEW `algo/prop_precise_sub.v`
+(needs prop_consis_precise + def_decl_algo_sub_hyg, which
+prop_consis_precise does not import).  Full ingredient list:
+memory `remech-pskl-trans-kit`.
+
+### 3-history (scouting, 2026-08-06)
 
     Lemma ad_precise_extends_pat_sub : forall Θ Δ P' P Ψ M Q,
       Θ ⨟ Δ ⊢ₚᵣᵃ P' ⊑ P ->
