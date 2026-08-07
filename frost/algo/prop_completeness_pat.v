@@ -574,3 +574,131 @@ Proof.
     rewrite <- msubst_pskl_to_uskl.
     apply a_pskl_tyequiv_to_uskl; [ exact Heq | exact HwfΘ ].
 Qed.
+
+(* ===================================================================== *)
+(*  K4 — erasing a term entry from BOTH sides of an increase (the paper's *)
+(*  "by erasing the term variable from ⓒ and ⓕ": the four binder rows     *)
+(*  apply the IH at a context extended by the binder on both sides, and   *)
+(*  the conclusion needs it gone from both).                              *)
+(* ===================================================================== *)
+
+(** Stripping a TERM entry never disturbs a type's well-formedness — the
+    entry is not [a_binds_tvar]. *)
+Lemma a_wf_ptyp_strip_tm_head : forall x (b : abind) Θ A,
+  ~ abind_is_ty b ->
+  a_wf_ptyp ((x ~ b) ++ Θ) A ->
+  a_wf_ptyp Θ A.
+Proof.
+  intros x b Θ A Hty Hwa.
+  eapply a_wf_ptyp_mono;
+    [ exact Hwa | apply (@aenv_tbinds_le_strip_tm nil x b Θ); exact Hty ].
+Qed.
+
+(** ⭐ K4 — the paper's "by erasing the term variable from ⓒ and ⓕ"
+    (proofs.tex, the Abs / AbsCheck / AbsAnno / AbsAnnoCheck cases).  The
+    IH is applied at a context extended by the binder on BOTH sides; the
+    conclusion needs it gone from both.
+
+    The suffix [Ξ] the run deposits is what makes this an induction rather
+    than an inversion: its flexible DECLARATIONS re-attach above the
+    stripped entry (their images stay well-formed because a term entry is
+    never a type variable), and its DEFINITIONS additionally re-attach an
+    equational premise, strengthened across the entry by
+    [a_tyequiv_strengthen_mono_mid]. *)
+Lemma a_inc_strip_tm_head : forall Ξ x (b b' : abind) Θ1 κ Θ,
+  a_suffix Ξ ->
+  ~ abind_is_ty b -> ~ abind_is_ty b' ->
+  a_wf_aenv (Ξ ++ (x ~ b) ++ Θ1) ->
+  a_wf_aenv ((x ~ b') ++ Θ) ->
+  κ ∷ (Ξ ++ (x ~ b) ++ Θ1) ⊑ ((x ~ b') ++ Θ) ->
+  κ ∷ (Ξ ++ Θ1) ⊑ Θ.
+Proof.
+  induction Ξ as [ | [α bΞ] Ξ' IH ];
+    intros x b b' Θ1 κ Θ Hsuf Htm Htm' HwfS HwfT Hinc; simpl_env in *.
+  - (* no suffix : the increase's head rule IS the entry's *)
+    destruct b; simpl in Htm; try solve [ exfalso; apply Htm; exact I ].
+    + (* type entry *)
+      destruct (a_inc_var_inv Hinc) as [Ξ2 [A' [Θ2 [Heq [Heqv [Hsuf2 Hrest]]]]]].
+      destruct Ξ2 as [ | [y c] Ξ2' ]; simpl_env in Heq.
+      * inversion Heq; subst. exact Hrest.
+      * (* a suffix entry cannot be the target's TERM head *)
+        exfalso. inversion Heq; subst.
+        inversion Hsuf2 as [ | ? ? ? ? Hbind ]; subst.
+        apply Htm'. destruct Hbind; exact I.
+    + (* skeleton entry *)
+      destruct (a_inc_var_skl_inv Hinc)
+        as [Ξ2 [P' [Θ2 [Heq [Heqv [Hsuf2 Hrest]]]]]].
+      destruct Ξ2 as [ | [y c] Ξ2' ]; simpl_env in Heq.
+      * inversion Heq; subst. exact Hrest.
+      * exfalso. inversion Heq; subst.
+        inversion Hsuf2 as [ | ? ? ? ? Hbind ]; subst.
+        apply Htm'. destruct Hbind; exact I.
+  - (* a suffix entry : re-attach it above the stripped target *)
+    inversion Hsuf as [ | ? ? ? Hsuf' Hbind ]; subst.
+    (* the suffix's binding is FLEXIBLE — split on that first, so the two
+       [inversion]s below face a known head shape *)
+    destruct Hbind as [ | τz ].
+    + (* flexible declaration *)
+      inversion HwfS as [ | αz Θz HαS HwfS' | | | | ]; subst.
+      inversion Hinc as [ | Θq κq Θtq αq τq Hrest Hwfτ Hmτ
+                        | | | | ]; subst.
+      apply a_inc__flex;
+        [ eapply IH;
+            [ exact Hsuf' | exact Htm | exact Htm' | exact HwfS' | exact HwfT
+            | exact Hrest ]
+        | eapply a_wf_ptyp_strip_tm_head; [ exact Htm' | exact Hwfτ ]
+        | exact Hmτ ].
+    + (* flexible definition *)
+      inversion HwfS as [ | | αz τw Θz HαS HwfτS HmτS HwfS' | | | ]; subst.
+      inversion Hinc as [ | | Θq κq Θtq αq τq τ'q Hrest Hwfτ' Hmτ' Heqv
+                        | | | ]; subst.
+      assert (Hrec : κq ∷ (Ξ' ++ Θ1) ⊑ Θ)
+        by (eapply IH;
+              [ exact Hsuf' | exact Htm | exact Htm' | exact HwfS' | exact HwfT
+              | exact Hrest ]).
+      assert (Hwfτ0 : a_wf_ptyp (Ξ' ++ Θ1) τz).
+      { eapply a_wf_ptyp_mono;
+          [ exact HwfτS
+          | apply (@aenv_tbinds_le_strip_tm Ξ' x b Θ1); exact Htm ]. }
+      apply a_inc__flex_def;
+        [ exact Hrec
+        | eapply a_wf_ptyp_strip_tm_head; [ exact Htm' | exact Hwfτ' ]
+        | exact Hmτ'
+        | ].
+      (* the equational premise, strengthened across the stripped entry *)
+      eapply (@a_tyequiv_strengthen_mono_mid nil x b' Θ);
+        [ simpl_env; exact HwfT
+        | eapply a_wf_ptyp_strip_tm_head; [ exact Htm' | exact Hwfτ' ]
+        | exact Hmτ'
+        | eapply a_wf_ptyp_msubst;
+            [ exact Hwfτ0 | eapply a_wf_aenv_strip_tm_mid; [ exact Htm | exact HwfS' ]
+            | exact Hrec ]
+        | apply msubst_ptyp_mono_pointwise;
+            [ intros β; eapply a_inc_lookup_mono; exact Hrec | exact HmτS ]
+        | simpl_env; exact Heqv ].
+Qed.
+
+(** The identity-increase companion: [⊴] loses a term entry the same way.
+    ([a_isub] is [a_inc] at an identity witness plus the definition-
+    preservation component, which a strip cannot disturb.) *)
+Lemma a_isub_strip_tm_head : forall Ξ x (b b' : abind) Θ1 Θ,
+  a_suffix Ξ ->
+  ~ abind_is_ty b -> ~ abind_is_ty b' ->
+  a_wf_aenv (Ξ ++ (x ~ b) ++ Θ1) ->
+  a_wf_aenv ((x ~ b') ++ Θ) ->
+  (Ξ ++ (x ~ b) ++ Θ1) ⊴ ((x ~ b') ++ Θ) ->
+  (Ξ ++ Θ1) ⊴ Θ.
+Proof.
+  intros Ξ x b b' Θ1 Θ Hsuf Htm Htm' HwfS HwfT [[κ [Hid Hinc]] Hdefs].
+  split.
+  - exists κ. split; [ exact Hid | ].
+    eapply (@a_inc_strip_tm_head Ξ x b b' Θ1 κ Θ); assumption.
+  - intros α τ Hb.
+    assert (Hb' : binds α (abind_flex_mono_def τ) (Ξ ++ (x ~ b) ++ Θ1))
+      by (apply binds_app_1 in Hb as [Hb | Hb];
+          [ apply binds_app_2; exact Hb
+          | apply binds_app_3; apply binds_cons_3; exact Hb ]).
+    pose proof (Hdefs α τ Hb') as Hbt.
+    destruct (binds_cons_1 _ _ _ _ _ _ Hbt) as [[_ Heq] | Hbt'];
+      [ subst; exfalso; apply Htm'; exact I | exact Hbt' ].
+Qed.
