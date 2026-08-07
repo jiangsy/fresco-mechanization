@@ -206,7 +206,35 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-07 (latest) — ⭐⭐ **§3's ENGINE: the UNCOLOURED refinement-transitivity kit is Qed** — `ad_refine_pskl_trans_gen` + `ad_precise_preserves_refine_pskl` (prop_precise.v tail)
+## 2026-08-07 (latest) — ⭐⭐⭐ **§3 IS CLOSED: `lemma:precision-sub` over the LEAF-VALID join — as a 133-line COROLLARY of P5c, not a new induction**
+
+`ad_precise_extends_pat_sub_gv` / `_v` (prop_completeness_sub_precise.v
+tail, Qed + axiom-free, FUEL PRESERVED, both sorts).  The planned ~400-line
+subject-precision induction was NOT needed: **P5c's precision-substitution
+`ad_pat_sub_precise_upre_gv` already IS the transport over `ad_pat_sub_gv`**
+— built for P7b's Sub-ForallL, leaf refinements carried through
+(`uskl_precise_erase_refine`), fuel preserved by `_gv`'s non-incrementing
+admin rows (that fuel discipline was DESIGNED for precision-substitution).
+What §3 needed on top is only the BRIDGE `uskl_precise_of_ad_precise`: the
+paper's pskl precision (a refinement between two INHERITED paintings) is a
+decorated subject-precision `uskl_precise Θ ∅ ⌈P'⌉ᵘ ⌈P⌉ᵘ` — rows map
+one-to-one, `tophole_fill` dead (an inh painting is never `bskl_all_syn`),
+the `__hole` row's ∀-freeness by `inh_eq_syn_no_forall`, the flex rows by
+`mono_inh_eq_syn`.  The corollary instantiates P5c at
+`Ψrep = Ψsup = Ψna = ∅` with the identity context map.
+
+⭐ LESSON (now a standing rule): before mirroring a structural lemma to a
+new syntactic level, grep the P5–P7 completeness files for an existing
+`precise`/`upre`/`transport` — the campaign already built level-crossing
+machinery for everything ForallL's ψ-instantiation touches.  The previous
+entry's transitivity kit was built before this search; it stays (it is the
+pskl-level counterpart the tree lacked) but §3 does not consume it.
+
+⛔ NEXT: §5 `ad_ctx_precise` + `ad_ctx_precise_pat` (Var row consumes
+`ad_precise_extends_pat_sub_v`; the other rows use prop_ctx_mono's
+`aenv_tbinds_le` `_mono` family), then theorem 3.
+
+## 2026-08-07 — ⭐⭐ **§3's ENGINE: the UNCOLOURED refinement-transitivity kit is Qed** — `ad_refine_pskl_trans_gen` + `ad_precise_preserves_refine_pskl` (prop_precise.v tail)
 
 The first component of `lemma:precision-sub` over the leaf-valid join: the
 pskl-level mirror of prop_precise.v's `ad_refine_syn_trans` chain, all Qed

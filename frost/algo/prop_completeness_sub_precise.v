@@ -2934,3 +2934,142 @@ Proof.
       | exact HΨf | exact HΨa | exact Hdisj | exact Hftag
       | exact Hwfq | exact Hgf ].
 Qed.
+
+(* ===================================================================== *)
+(*  §3 of HANDOFF-section-d — lemma:precision-sub ("Precision extends     *)
+(*  skeleton subtyping", proofs.tex) — a COROLLARY of P5c.                *)
+(* ===================================================================== *)
+
+(** ⭐ THE BRIDGE: the paper's precision [P' ⊑ P] — a refinement between the
+    two INHERITED paintings — is a decorated subject-precision between the
+    two UNRESOLVED paintings, with NO replaced tags.  Rows map one-to-one
+    ([tophole_fill] is dead: an inh painting is never [bskl_all_syn]); the
+    [__hole] row supplies [upre__hole]'s ∀-freeness by
+    [inh_eq_syn_no_forall] — the fill being a SYN painting is exactly what
+    confines the ghost's counterpart. *)
+Lemma uskl_precise_of_ad_precise : forall Θ Δ Qs Qt,
+  Θ ⨟ Δ ⊢ᵣᵃ Qs ⊳ Qt ->
+  a_wf_aenv Θ ->
+  forall P' P,
+  Qs = pskl_to_bskl_inh P' ->
+  Qt = pskl_to_bskl_inh P ->
+  uskl_precise Θ empty (pskl_to_uskl P') (pskl_to_uskl P).
+Proof.
+  intros Θ Δ Qs Qt H; induction H; intros Hwf F' F HeqS HeqT.
+  - (* unit *)
+    destruct F' as [ | | | | | | ]; simpl in HeqS; try discriminate.
+    destruct F as [ | | | | | | ]; simpl in HeqT; try discriminate.
+    apply upre__refl; [ constructor | clear; fsetdec ].
+  - (* var *)
+    destruct F' as [ | | | | | | ]; simpl in HeqS; try discriminate.
+    destruct F as [ | | | | | | ]; simpl in HeqT; try discriminate.
+    inversion HeqS; inversion HeqT; subst.
+    apply upre__refl; [ constructor | clear; fsetdec ].
+  - (* arrow *)
+    destruct F' as [ | | | Fa' Fb' | | | ]; simpl in HeqS; try discriminate.
+    destruct F as [ | | | Fa Fb | | | ]; simpl in HeqT; try discriminate.
+    inversion HeqS; inversion HeqT; subst. simpl.
+    eapply upre__arrow;
+      [ apply IHad_refine_syn1; solve [ exact Hwf | reflexivity ]
+      | apply IHad_refine_syn2; solve [ exact Hwf | reflexivity ]
+      | clear; fsetdec ].
+  - (* all : both sides are ∀ⁱ paintings of ∀ˢ skeletons *)
+    destruct F' as [ | | | | F0' | | ]; simpl in HeqS; try discriminate.
+    destruct F as [ | | | | F0 | | ]; simpl in HeqT; try discriminate.
+    inversion HeqS; inversion HeqT; subst. simpl.
+    apply upre__all_syn with (L := L).
+    intros α Hα.
+    rewrite <- !pskl_to_uskl_open_var.
+    apply (H0 α Hα Hwf);
+      [ symmetry; apply pskl_to_bskl_inh_open
+      | symmetry; apply pskl_to_bskl_inh_open ].
+  - (* hole : the counterpart is a syn painting, hence ∀-free and wf *)
+    destruct F' as [ | | | | | | ]; simpl in HeqS; try discriminate.
+    simpl. apply upre__hole;
+      [ clear; fsetdec
+      | rewrite uskl_to_pskl_pskl_to_uskl;
+        eapply inh_eq_syn_no_forall; symmetry; exact HeqT
+      | ].
+    rewrite uskl_to_pskl_pskl_to_uskl.
+    replace F with (bskl_to_pskl (pskl_to_bskl_syn P));
+      [ | rewrite HeqT; apply bskl_to_pskl_pskl_to_bskl_inh ].
+    rewrite bskl_to_pskl_pskl_to_bskl_syn. exact H.
+  - (* tophole_remove *)
+    destruct F' as [ | | | | | | F0' ]; simpl in HeqS; try discriminate.
+    inversion HeqS; subst. simpl.
+    apply upre__tophole_remove. apply IHad_refine_syn; auto.
+  - (* tophole_fill : an inh painting is never [bskl_all_syn] — dead *)
+    destruct F as [ | | | | F0 | | ]; simpl in HeqT; discriminate.
+  - (* tophole_keep *)
+    destruct F' as [ | | | | | | F0' ]; simpl in HeqS; try discriminate.
+    destruct F as [ | | | | | | F0 ]; simpl in HeqT; try discriminate.
+    inversion HeqS; inversion HeqT; subst. simpl.
+    apply upre__tophole.
+    apply IHad_refine_syn; [ exact Hwf | reflexivity | reflexivity ].
+  - (* flex_l : a definition is a MONOTYPE, so its two paintings agree *)
+    destruct F' as [ | | α0 | | | | ]; simpl in HeqS; try discriminate.
+    inversion HeqS; subst.
+    assert (Hm : mono_ptyp τ)
+      by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | eassumption ]).
+    simpl. eapply upre__flex_l; [ eassumption | ].
+    rewrite <- pskl_to_uskl_ptyp.
+    apply IHad_refine_syn;
+      first [ exact Hwf | reflexivity
+            | symmetry; apply mono_inh_eq_syn; exact Hm ].
+  - (* flex_r *)
+    destruct F as [ | | α0 | | | | ]; simpl in HeqT; try discriminate.
+    inversion HeqT; subst.
+    assert (Hm : mono_ptyp τ)
+      by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | eassumption ]).
+    simpl. eapply upre__flex_r; [ eassumption | ].
+    rewrite <- pskl_to_uskl_ptyp.
+    apply IHad_refine_syn;
+      first [ exact Hwf | reflexivity
+            | symmetry; apply mono_inh_eq_syn; exact Hm ].
+Qed.
+
+(** ⭐⭐ lemma:precision-sub (proofs.tex, "Precision extends skeleton
+    subtyping"), over the LEAF-VALID join and at BOTH sorts, FUEL PRESERVED
+    — a corollary of P5c's precision-substitution
+    [ad_pat_sub_precise_upre_gv] at [Ψrep = Ψsup = Ψna = ∅].  The wf of the
+    counterpart's erasure is the paper's EXTERNAL wf side condition
+    (WF-SIDE-CONDITIONS.md); the TY ghost-freeness is the motive's usual
+    external condition, automatic for a painting of a TYPE. *)
+Lemma ad_precise_extends_pat_sub_gv : forall n NM M Ψ Θ Δ P' P Q,
+  Θ ⨟ Δ ⊢ₚᵣᵃ P' ⊑ P ->
+  ad_pat_sub_gv n NM M Ψ Θ (pskl_to_uskl P) Q ->
+  a_wf_aenv Θ ->
+  Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
+  (NM = a_sub_mode_ty -> uskl_ghost_free (pskl_to_uskl P')) ->
+  ad_pat_sub_gv n NM M Ψ Θ (pskl_to_uskl P') Q.
+Proof.
+  intros n NM M Ψ Θ Δ P' P Q Hprec HD Hwf HwfQ Hgf.
+  eapply ad_pat_sub_precise_upre_gv with
+    (Θb := Θ) (Ψr := empty) (Ψsup := empty) (Ψna := empty);
+    [ exact HD
+    | eapply uskl_precise_of_ad_precise;
+        [ exact Hprec | exact Hwf | reflexivity | reflexivity ]
+    | exact Hwf
+    | clear; fsetdec
+    | intros x b Hb; exact Hb
+    | exact Hwf
+    | clear; fsetdec
+    | clear; fsetdec
+    | clear; fsetdec
+    | clear; fsetdec
+    | exact HwfQ
+    | exact Hgf ].
+Qed.
+
+(** The fuel-forgotten form the [ad_ctx_precise_pat] Var row consumes. *)
+Lemma ad_precise_extends_pat_sub_v : forall NM M Ψ Θ Δ P' P Q,
+  Θ ⨟ Δ ⊢ₚᵣᵃ P' ⊑ P ->
+  ad_pat_sub_v NM M Ψ Θ (pskl_to_uskl P) Q ->
+  a_wf_aenv Θ ->
+  Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
+  (NM = a_sub_mode_ty -> uskl_ghost_free (pskl_to_uskl P')) ->
+  ad_pat_sub_v NM M Ψ Θ (pskl_to_uskl P') Q.
+Proof.
+  intros NM M Ψ Θ Δ P' P Q Hprec [n HD] Hwf HwfQ Hgf.
+  exists n. eapply ad_precise_extends_pat_sub_gv; eassumption.
+Qed.
