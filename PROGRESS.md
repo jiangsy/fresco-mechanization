@@ -206,7 +206,49 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-07 (latest) — ⭐⭐⭐ **SECTION D: §6.2's RULE CHANGE LANDS — the six base rows embed `ad_pat_sub_v`, and both soundness theorems survive AXIOM-FREE**
+## 2026-08-07 (latest) — ⭐⭐ **§3's ENGINE: the UNCOLOURED refinement-transitivity kit is Qed** — `ad_refine_pskl_trans_gen` + `ad_precise_preserves_refine_pskl` (prop_precise.v tail)
+
+The first component of `lemma:precision-sub` over the leaf-valid join: the
+pskl-level mirror of prop_precise.v's `ad_refine_syn_trans` chain, all Qed
+and axiom-free.  `ad_precise_preserves_refine_pskl` is what transports the
+`_gv` leaf datum (`Θ ⨟ ∅ ⊢ᵣₚᵃ P ⊳ ⌊Q⌋`) down a precision `P' ⊑ P`.
+
+⭐⭐ **The mirror is NOT row-for-row**: the syn template's ghost-left crux
+kills the `__all` row outright (a syn painting has no `bskl_all_inh`), but
+the pskl `__all` row FIRES and its inner `__tophole_fill` case composes a
+`∀◇`-fill under a `∀ˢ∘∀ˢ` step — which needs the transitivity IH at a
+REASSOCIATED context (the ∀-witness moved from Δ into Θ as a rigid).  A
+fuel mirror was NOT needed: the statement is GENERALIZED over a context map
+(`Hmap` : bindings preserved into `Θx`; `Hsplit` : each source Δ-variable
+is still in `Δx` or has become a rigid of `Θx`), so the structural IH is
+available at the moved context.  The Δ-freeness propagation
+(`ad_refine_pskl_ftv_delta_free`) and the ghost-left package
+(`ad_refine_pskl_hole_l`) carry the same map.  Consumers use the plain
+instance `ad_refine_pskl_trans` (identity map).
+
+`ad_refine_pskl_of_inh_paintings` drops a precision (refinement of two
+INHERITED paintings) to the uncoloured judgement — sound because the pskl
+`__hole` fill demands strictly less than the syn one (any wf skeleton vs a
+synthesised painting), with `__tophole_fill` dead (an inh painting is never
+`bskl_all_syn`) and the flex rows closed by `mono_inh_eq_syn`.
+
+⚙ Traps this cost: Coq 8.20's `induction` on a hypothesis whose context
+indices are pinned by other hypotheses AUTO-REVERTS those hypotheses and
+re-introduces the variables under FRESH names (`Θx` → `Θ0`) — hypothesis
+NAMES survive, so the fix is a type-directed
+`match type of Hmap with ... => rename ... end` preamble in the subcases
+that name the context; `inversion HwfQr; subst` substitutes the context
+variable away entirely (use the new `a_wf_pskl_{arrow,all,tophole}_inv_x`
+stable inversions instead).
+
+⛔ NEXT for §3: the `_gv` precision-sub induction itself
+(`ad_precise_extends_pat_sub_gv`) — its consis premises transport by
+`ad_pat_consis_subject_precise` (prop_consis_precise.v:692, already built),
+its leaves by this kit, its `Ψ [=] ∅` by `ftag_in_pskl_to_uskl`; then §5's
+`ad_ctx_precise` + `ad_ctx_precise_pat` (the "context-change lemma" §5 asks
+for now EXISTS as the `aenv_tbinds_le` `_mono` family in prop_ctx_mono.v).
+
+## 2026-08-07 — ⭐⭐⭐ **SECTION D: §6.2's RULE CHANGE LANDS — the six base rows embed `ad_pat_sub_v`, and both soundness theorems survive AXIOM-FREE**
 
 `make coq` clean; all 33 `Print Assumptions` audits in `README.v` — including
 `a_pat_sound` and `a_typing_sound` — still *Closed under the global context*.
