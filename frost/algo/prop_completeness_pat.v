@@ -407,3 +407,170 @@ Proof.
   - (* tophole *)
     simpl. apply a_uskl_tyequiv__tophole. auto.
 Qed.
+
+(* ===================================================================== *)
+(*  K3b — the three BASE rows' SLACK premises.                           *)
+(*                                                                       *)
+(*  [a_sub_complete_thm] takes its subject up to [≡ᵘ] slack              *)
+(*  ([Θ ⊢ R' ≡ᵘ κ⌈P⌉ᵘ], prop_completeness_sub.v) precisely because the    *)
+(*  QUESTION context's entry and the SOLUTION context's are related only  *)
+(*  semantically.  Here are the three instances theorem 3 needs:          *)
+(*                                                                       *)
+(*  - [P-Unit]: reflexive (a constant is a metasubstitution fixpoint).    *)
+(*  - [P-Var]: K2's entry equivalence IS the slack — no side condition.   *)
+(*  - [P-Anno]: ⭐ reflexive TOO, but for a reason worth stating: an      *)
+(*    annotation is SOURCE syntax, so its free type variables are RIGID,  *)
+(*    and [a_inc]'s domain is exactly the source context's FLEXIBLES      *)
+(*    ([a_inc_dom_flex]) — so the metasubstitution cannot touch it.       *)
+(*    That rigidity is the paper's own reading of an annotation and the   *)
+(*    ONE side condition theorem 3 carries about the term.                *)
+(* ===================================================================== *)
+
+(* --- the painting / metasubstitution commutes ------------------------- *)
+
+Lemma msubst_pskl_to_uskl : forall κ P,
+  pskl_to_uskl (msubst_pskl κ P) = msubst_uskl_syn κ (pskl_to_uskl P).
+Proof.
+  intros κ P; induction P; simpl; f_equal; auto.
+  apply pskl_to_uskl_ptyp.
+Qed.
+
+Lemma msubst_ptyp_to_uskl_syn : forall κ A,
+  ptyp_to_uskl_syn (msubst_ptyp κ A) = msubst_uskl_syn κ (ptyp_to_uskl_syn A).
+Proof.
+  intros κ A.
+  rewrite <- !pskl_to_uskl_ptyp, <- msubst_pskl_to_uskl.
+  f_equal. induction A; simpl; f_equal; auto.
+Qed.
+
+(* --- ≡ᵗ lifts to the paintings (the ptyp twin of [a_pskl_tyequiv_to_uskl]) *)
+
+(** The painting's two structural equations, folded (the composite
+    [bskl_to_uskl ∘ pskl_to_bskl_syn ∘ ptyp_to_pskl] is structural, so both
+    hold by [reflexivity] — they exist only to keep [ptyp_to_uskl_syn]
+    FOLDED, which is what the [_open] rewrite matches on). *)
+Lemma ptyp_to_uskl_syn_arrow : forall A B,
+  ptyp_to_uskl_syn (ptyp_arrow A B)
+  = uskl_arrow (ptyp_to_uskl_syn A) (ptyp_to_uskl_syn B).
+Proof. reflexivity. Qed.
+
+Lemma ptyp_to_uskl_syn_all : forall A,
+  ptyp_to_uskl_syn (ptyp_all A) = uskl_all_syn (ptyp_to_uskl_syn A).
+Proof. reflexivity. Qed.
+
+Lemma a_tyequiv_to_uskl : forall Θ A B,
+  Θ ⊢ A ≡ᵗ B ->
+  a_wf_aenv Θ ->
+  Θ ⊢ (ptyp_to_uskl_syn A) ≡ᵘ (ptyp_to_uskl_syn B).
+Proof.
+  intros Θ A B H; induction H; intros Hwf.
+  - (* refl *)
+    apply a_uskl_tyequiv_refl.
+    rewrite <- pskl_to_uskl_ptyp. apply pskl_to_uskl_lc.
+    apply lc_ptyp_to_pskl. exact H.
+  - (* sym *) apply a_uskl_tyequiv_sym; auto.
+  - (* trans *) eapply a_uskl_tyequiv_trans; auto.
+  - (* flex_def : a variable against its MONO definition *)
+    assert (Hm : mono_ptyp τ)
+      by (eapply a_wf_aenv_binds_def_mono; eassumption).
+    apply a_uskl_tyequiv__mono;
+      [ apply mono_ptyp__var
+      | exact Hm
+      | apply a_wf_ptyp__var; right; right; eauto
+      | eapply a_wf_aenv_binds_def_wf; eassumption
+      | apply a_tyequiv__flex_def; exact H ].
+  - (* arrow *)
+    rewrite !ptyp_to_uskl_syn_arrow.
+    apply a_uskl_tyequiv__arrow; auto.
+  - (* all *)
+    rewrite !ptyp_to_uskl_syn_all.
+    apply a_uskl_tyequiv__all_syn with (L := L).
+    intros α Hα.
+    rewrite <- !ptyp_to_uskl_syn_open.
+    apply H0; [ exact Hα | exact Hwf ].
+Qed.
+
+(* --- the three base rows' SLACK premises ------------------------------ *)
+
+(** ⭐ A RIGID variable of the question context is untouched by any
+    solution's metasubstitution: [a_inc]'s domain is exactly the source's
+    FLEXIBLES ([a_inc_dom_flex]). *)
+Lemma a_inc_rigid_notin_dom : forall Θ0 κ Θ α,
+  κ ∷ Θ0 ⊑ Θ ->
+  a_wf_aenv Θ0 ->
+  binds α abind_tvar Θ0 ->
+  α `notin` dom κ.
+Proof.
+  intros Θ0 κ Θ α Hinc Hwf Hb Hin.
+  destruct (a_inc_dom_flex Hinc Hin) as [Hf | [τ Hf]];
+    pose proof (binds_unique _ _ _ _ _ Hb Hf (a_wf_aenv_uniq Hwf)) as Hc;
+    discriminate Hc.
+Qed.
+
+(** …hence a type all of whose free variables are rigid is a FIXPOINT of
+    the metasubstitution.  This is what makes [P-Anno]'s slack REFLEXIVE:
+    an annotation is SOURCE syntax, so it cannot mention a flexible the
+    algorithm invented (docs/PAPER-GAPS.md). *)
+Lemma msubst_ptyp_rigid_id : forall Θ0 κ Θ A,
+  κ ∷ Θ0 ⊑ Θ ->
+  a_wf_aenv Θ0 ->
+  (forall α, α `in` ftvar_in_ptyp A -> binds α abind_tvar Θ0) ->
+  msubst_ptyp κ A = A.
+Proof.
+  intros Θ0 κ Θ A Hinc Hwf Hrig.
+  apply msubst_ptyp_notin. intros α Hα.
+  eapply a_inc_rigid_notin_dom; [ exact Hinc | exact Hwf | apply Hrig; exact Hα ].
+Qed.
+
+(** [P-Unit]'s slack. *)
+Lemma slack_unit : forall Θ κ,
+  Θ ⊢ uskl_unit ≡ᵘ (msubst_uskl_syn κ (pskl_to_uskl pskl_unit)).
+Proof. intros. simpl. apply a_uskl_tyequiv__unit. Qed.
+
+(** [P-Anno]'s slack — reflexive, by the fixpoint above.  [lc_ptyp A] comes
+    from the declarative rule's own [a_wf_ptyp Θ A]. *)
+Lemma slack_anno : forall Θ0 κ Θ A,
+  κ ∷ Θ0 ⊑ Θ ->
+  a_wf_aenv Θ0 ->
+  lc_ptyp A ->
+  (forall α, α `in` ftvar_in_ptyp A -> binds α abind_tvar Θ0) ->
+  Θ ⊢ (ptyp_to_uskl_syn A)
+    ≡ᵘ (msubst_uskl_syn κ (pskl_to_uskl (ptyp_to_pskl A))).
+Proof.
+  intros Θ0 κ Θ A Hinc Hwf Hlc Hrig.
+  rewrite pskl_to_uskl_ptyp, <- msubst_ptyp_to_uskl_syn.
+  rewrite (@msubst_ptyp_rigid_id Θ0 κ Θ A Hinc Hwf Hrig).
+  apply a_uskl_tyequiv_refl.
+  rewrite <- pskl_to_uskl_ptyp. apply pskl_to_uskl_lc.
+  apply lc_ptyp_to_pskl. exact Hlc.
+Qed.
+
+(** ⭐ [P-Var]'s slack — NO side condition: the entry's own equivalence,
+    handed over by K2, IS the slack.  The two [abind] term forms are
+    unified through [abind_to_pskl], as in the rule. *)
+Lemma slack_var : forall Θ0 κ Θ x (b : abind) (P : pskl),
+  κ ∷ Θ0 ⊑ Θ ->
+  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  binds x b Θ ->
+  abind_to_pskl b = Some P ->
+  exists (b0 : abind) (P0 : pskl),
+    binds x b0 Θ0 /\ abind_to_pskl b0 = Some P0 /\
+    Θ ⊢ (pskl_to_uskl P) ≡ᵘ (msubst_uskl_syn κ (pskl_to_uskl P0)).
+Proof.
+  intros Θ0 κ Θ x b P Hinc Hwf0 HwfΘ Hb HP.
+  destruct b; simpl in HP; try discriminate HP.
+  - (* type entry *)
+    inversion HP; subst.
+    destruct (@a_inc_binds_var_typ_rev Θ0 κ Θ x _ Hinc Hwf0 Hb) as [A0 [Hb0 Heq]].
+    exists (abind_var_typ A0), (ptyp_to_pskl A0).
+    split; [ exact Hb0 | ]. split; [ reflexivity | ].
+    rewrite !pskl_to_uskl_ptyp, <- msubst_ptyp_to_uskl_syn.
+    apply a_tyequiv_to_uskl; [ exact Heq | exact HwfΘ ].
+  - (* skeleton entry *)
+    inversion HP; subst.
+    destruct (@a_inc_binds_var_skl_rev Θ0 κ Θ x _ Hinc Hwf0 Hb) as [P0 [Hb0 Heq]].
+    exists (abind_var_skl P0), P0.
+    split; [ exact Hb0 | ]. split; [ reflexivity | ].
+    rewrite <- msubst_pskl_to_uskl.
+    apply a_pskl_tyequiv_to_uskl; [ exact Heq | exact HwfΘ ].
+Qed.
