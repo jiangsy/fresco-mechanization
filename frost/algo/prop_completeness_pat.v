@@ -946,3 +946,43 @@ Proof.
     split; [ simpl; exact Hmod | ].
     right; reflexivity.
 Qed.
+
+(* ===================================================================== *)
+(*  The remaining rows, as STEP LEMMAS: each takes its induction          *)
+(*  hypothesis as an explicit premise, so the final induction is pure     *)
+(*  glue (the P7 development's own factoring — cf.                        *)
+(*  [sub_complete_arrow_holds], prop_completeness_sub.v).                 *)
+(*                                                                       *)
+(*  ⛔ THE FOUR BINDER ROWS NEED A KIT PIECE THAT DOES NOT EXIST YET      *)
+(*  (K6, found 2026-08-07 when the induction reached them).  The          *)
+(*  ALGORITHM's binder rules are COFINITE in the term variable and share  *)
+(*  their outputs [Ξ]/[Θ1]/[Q] across the family, while the induction     *)
+(*  hypothesis delivers ONE instance at one fresh [x] — so completeness   *)
+(*  must generate the family from an instance, i.e. it needs the          *)
+(*  ALGORITHMIC twin of [ad_pat_rename_tm] / [ad_pat_subst_tm]            *)
+(*  (prop_soundness_pat.v §4, which theorem 1 built for the DECLARATIVE   *)
+(*  judgement only).  Route: equivariance, per the standing directive —   *)
+(*  [prop_swap.v] already has [a_sub_sub_flex_swap] (:1303),              *)
+(*  [a_assign_unify_consis_swap] (:1078) and [a_guess_mono_swap] (:435),  *)
+(*  so [a_pat_swap] mirrors them row by row and the renaming follows from *)
+(*  equivariance plus freshness.  ⚙ Note the walk's own [Flex-SkipTmVar]  *)
+(*  rows traverse term entries, so they must transport too — they do,     *)
+(*  since the entry is skipped regardless of its name.                    *)
+(* ===================================================================== *)
+
+(** [P-Freeze] — the mode drops from TC to TI at the SAME ghost input, so
+    the row is pure transport: the solution's refinement is literally the
+    IH's, and the run re-wraps by [AP-Freeze]. *)
+Lemma a_pat_complete_freeze : forall Θ0 e κ Θ Q,
+  (forall Q', Θ ⊢ᵃ[ mode_ti ] e ⇨ Q' ->
+     Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ pskl_hole)) ⊳ Q' ->
+     pat_complete_concl mode_ti Θ0 pskl_hole e κ Θ Q') ->
+  Θ ⊢ᵃ[ mode_tc ] (exp_freeze e) ⇨ Q ->
+  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ pskl_hole)) ⊳ Q ->
+  pat_complete_concl mode_tc Θ0 pskl_hole (exp_freeze e) κ Θ Q.
+Proof.
+  intros Θ0 e κ Θ Q IH Hd Href.
+  inversion Hd; subst.
+  destruct (IH _ ltac:(eassumption) Href) as [P1 [Θ1 [Hrun Hopt]]].
+  exists P1, Θ1. split; [ apply a_pat__freeze; exact Hrun | exact Hopt ].
+Qed.
