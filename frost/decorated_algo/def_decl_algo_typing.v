@@ -83,17 +83,31 @@ Reserved Notation "Θ ⊢ˢᵃ[ M ] e ⦂ B"
 
 Inductive ad_pat : mode -> aenv -> exp -> bskl -> Prop :=
 | ad_pat__unit : forall Θ m Q,                                   (* P-Unit *)
+    (* ⭐ [paper-gap] THE COUNTERPART'S DISCIPLINED WF, on all three base
+       rows (2026-08-07, hand-off §5).  The embedded subtyping's external
+       side condition is well-formedness of BOTH sides (declarative.tex:1427;
+       WF-SIDE-CONDITIONS.md), and [Q] is otherwise unconstrained here —
+       [ad_pat_sub_target_wf] gives only scope, and the wf cannot propagate
+       top-down (it dies at [ad_pat__app]'s existential premise skeleton, and
+       refinement does not preserve wf: cex/cex_refine_not_transitive.v).
+       lemma:context-precision's Var case and thm:complete-skeleton-
+       inference's Sub case both consume exactly this premise; soundness
+       supplies it from the run by [a_sub_output_wf] (algo/prop_wf_output.v
+       — the algorithm's outputs ARE well-formed). *)
+    Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
     ad_pat_sub_v a_sub_mode_sk m empty Θ uskl_unit Q ->
     Θ ⊢ᵃ[ m ] exp_unit ⇨ Q
 | ad_pat__var : forall Θ m x (P : pskl) b Q,                      (* P-Var *)
     (* the paper's single [x : P] entry, in either of its two [abind] forms *)
     binds x b Θ ->
     abind_to_pskl b = Some P ->
+    Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
     ad_pat_sub_v a_sub_mode_sk m empty Θ
       (bskl_to_uskl (pskl_to_bskl_syn P)) Q ->
     Θ ⊢ᵃ[ m ] (exp_var_f x) ⇨ Q
 | ad_pat__anno : forall Θ m e (A : ptyp) Q,                      (* P-Anno *)
     a_wf_ptyp Θ A ->
+    Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
     ad_pat_sub_v a_sub_mode_sk m empty Θ
       (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl A))) Q ->
     Θ ⊢ᵃ[ m ] (exp_anno e A) ⇨ Q

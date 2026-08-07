@@ -323,33 +323,42 @@ WF-SIDE-CONDITIONS pattern again.  Nothing to do.
 
 ---
 
-## 5. Context precision — a new definition plus one lemma
+## 5. Context precision — ✅ CLOSED 2026-08-07, on a NEW FOUNDATION
 
-The paper's `⪯ctx` (proofs.tex, "Definition (Context precision)"), three rules:
-empty; a non-term-variable entry copied verbatim; a term-variable entry made
-more precise.  In mech terms the third is
-`Θ' ⨟ ∅ ⊢ₚᵣᵃ P' ⊑ P` over the two `abind` term forms (`abind_var_skl` directly,
-`abind_var_typ` through `ptyp_to_pskl` — cf. the new `abind_to_pskl`).
+**DONE**: `ad_ctx_precise` (the paper's `⪯ctx`) + `ad_ctx_precise_pat`, NEW
+`algo/prop_precise_sub.v`, Qed + axiom-free, audited in README.v.  The
+"context-change lemma" the paper's sketch names turned out to ALREADY exist
+as prop_ctx_mono.v's `aenv_tbinds_le` `_mono` family; `ad_ctx_precise_tbinds_le`
+/`_ge` connect `⪯ctx` to it (same type-level entries, both directions), and
+the binder rows extend `⪯ctx` reflexively (`ad_precise_refl`).
 
-    Inductive ad_ctx_precise : aenv -> aenv -> Prop := (* Θ' ⪯ctx Θ *) ...
+⭐⭐ **The flagged rule-change decision RESOLVED — but NOT as recorded.**  The
+memory's route (put `Θ ⨟ ∅ ⊢ₚₛᵃ P` on `ad_pat__app`, propagate a top-level
+target-wf hypothesis down) is REFUTED: the capture configuration of
+`cex/cex_refine_not_transitive.v` sits inside `ad_pat__app`'s own refinement
+premise, so wf CANNOT propagate into the function premise's domain `Q1` even
+with that premise (refinement from a wf source can produce a nowhere-wf
+target).  A first attempt with BOTH `wf P` and `wf ⌊Q1⌋` on the rule then
+strands `a_pat_sound`'s App case (the run's arrow domain has no wf source
+short of an output-wf conjunct through all ten rows).  The repair that
+LANDED: `Θ ⨟ empty ⊢ₚₛᵃ ⌊Q⌋` on the three BASE rows of `ad_pat` — where the
+consumers (this lemma's Var case, theorem 3's Sub case feeding
+`a_sub_complete_thm`'s counterpart-wf) actually sit, and nothing needs to
+propagate.  `ad_sd_typing`'s base rows are NOT changed: at TY, scope +
+ghost-freeness already give wf (`a_wf_ptyp_of_scope_pskl`).
 
-    Lemma ad_ctx_precise_pat : forall Θ' Θ M e Q,
-      ad_ctx_precise Θ' Θ ->
-      Θ ⊢ᵃ[ M ] e ⇨ Q ->
-      Θ' ⊢ᵃ[ M ] e ⇨ Q.
-
-The paper's proof sketch names the load-bearing step: "refinement and subtyping
-judgements that do not involve a term-variable lookup are preserved because the
-contexts have the same non-variable entries".  That is a **context-change
-lemma for `ad_pat_sub` and `ad_refine_syn`** which does not exist yet — the
-closest existing shapes are `a_looksub_lookeq_ctx_ftv_mono` (prop_looksub.v)
-and `a_solve_sub_eq_ctx_change`.  Prove it over "same non-variable entries"
-(same `abind_tvar` / `abind_flex_mono` / `abind_flex_mono_def` entries at the
-same positions) and the rest follows.
-
-`ad_pat__var` is the only interesting row: it reads the bound skeleton through
-`abind_to_pskl`, then runs `ad_pat_sub` on its painting — so it needs §3's
-`lemma:precision-sub` to push the entry's precision through.  **§3 gates §5.**
+⭐⭐⭐ **The soundness supply is a NEW FOUNDATION — the algorithm's outputs are
+well-formed** (`algo/prop_wf_output.v`, both Qed + axiom-free):
+`a_consis_output_wf` (14-row induction over `a_consis`; motive = wf-at-∅ +
+shielded-set avoidance of Δ1∪Δ2 + ftv provenance + guardedness propagation —
+the run's Δ-trackers and the Ghost/GhostR `Δ ∩ ftv` side conditions exist
+precisely to make the three close-rows' re-binding sound; the P6 kit's
+`pskl_shielded_ftv` + `a_wf_pskl_tvar_to_delta` + `a_wf_pskl_all_of_one` are
+the assembly) and `a_sub_output_wf` (mutual with the flex walk, context
+surgeries cribbed row-for-row from `a_subtag_sound_bundle`).
+`a_pat_sound`'s base rows supply the new premise via `a_sub_output_wf`;
+consumer sweep = the §6.2 five files + `subst_bskl_to_pskl_eq`
+(prop_suffix_erase.v §"target-shape rewrites").
 
 ---
 

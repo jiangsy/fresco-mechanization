@@ -397,11 +397,14 @@ Lemma ad_pat_mono : forall M Θ e Q,
 Proof.
   intros M Θ e Q H; induction H; intros Θ' Hle;
     pose proof (aenv_tbinds_le_of_binds_le Hle) as Htle.
-  - apply ad_pat__unit. eapply ad_pat_sub_v_mono; eauto.
+  - apply ad_pat__unit;
+      [ eapply a_wf_pskl_mono; eauto | eapply ad_pat_sub_v_mono; eauto ].
   - eapply ad_pat__var;
-      [ eauto | eassumption | eapply ad_pat_sub_v_mono; eauto ].
+      [ eauto | eassumption | eapply a_wf_pskl_mono; eauto
+      | eapply ad_pat_sub_v_mono; eauto ].
   - apply ad_pat__anno;
-      [ eapply a_wf_ptyp_mono; eauto | eapply ad_pat_sub_v_mono; eauto ].
+      [ eapply a_wf_ptyp_mono; eauto | eapply a_wf_pskl_mono; eauto
+      | eapply ad_pat_sub_v_mono; eauto ].
   - apply ad_pat__freeze; auto.
   - apply ad_pat__abs with (L := L);
       [ assumption | eapply a_wf_pskl_mono; eauto | assumption | ].

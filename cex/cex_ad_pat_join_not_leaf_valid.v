@@ -159,9 +159,11 @@ Proof.
     by (clear - H1; cbn in H1; destruct H1 as [Heq | Habs];
         [ congruence | contradiction ]).
   subst b. cbn in H2. inversion H2; subst.
-  cbn [pskl_to_bskl_syn bskl_to_uskl] in H5.
+  (* the join premise sits one hypothesis later since the base rows gained
+     the counterpart-wf premise (hand-off §5) *)
+  cbn [pskl_to_bskl_syn bskl_to_uskl] in H6.
   (* ⚙ [NM]/[Θ] are strict-implicit here (Set Implicit Arguments) *)
-  exact (cap_no_gv H5).
+  exact (cap_no_gv H6).
 Qed.
 
 (** §3b — and it is ONLY the leaf datum that rejects it: the context entry,

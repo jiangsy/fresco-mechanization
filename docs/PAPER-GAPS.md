@@ -2870,3 +2870,41 @@ first (`a_typing__abs_anno_check_base`, algo/def_extra.v).
 ### 4. (already recorded) `sd-App`'s fourth `≡ᵗ`, and `a_split__flex`'s freshness
 
 See the two entries above.
+
+## ⭐⭐ WF-SIDE-CONDITION + PROSE-COMPLETION — the base rows of skeleton inference need the counterpart's wf, and the ALGORITHM's outputs must be proven well-formed to supply it (2026-08-07)
+
+**Where.** `lemma:context-precision-skeleton` (proofs.tex, "Context precision
+preserves skeleton inference") and `thm:complete-skeleton-inference`'s Sub
+case; the declarative-in-algo skeleton-inference rules `P-Unit` / `P-Var` /
+`P-Anno` (`ad_pat`'s base rows, decorated_algo/def_decl_algo_typing.v).
+
+**The gap.**  Both proofs invoke `lemma:precision-sub` at a base-term leaf,
+whose external side condition (the paper's usual prose convention) is
+well-formedness of the leaf's subtyping counterpart `bid{Q}`.  Nothing in the
+rules supplies it:
+
+- `ad_pat_sub_target_wf` gives only SCOPE — the leaf-valid join does not pin
+  wf either (its leaf datum is a refinement, and refinement does not preserve
+  wf: the capture configuration of `cex/cex_refine_not_transitive.v` has a
+  wf source);
+- it cannot be carried as a hypothesis of the lemma and propagated top-down:
+  the descent dies at `P-App`, whose premise skeleton `P` and refined domain
+  `Q1` are EXISTENTIAL in the rule — a first repair attempt put
+  `Θ ⊢ P` on `P-App`, and the capture configuration sits inside `P-App`'s
+  own refinement premise, so even that does not reach the function premise's
+  domain.
+
+**The repair** (WF-SIDE-CONDITIONS.md pattern, premise-on-the-rule): the
+three base rows each carry `Θ ⊢ ⌊Q⌋` — the counterpart's disciplined wf —
+which is exactly where the two proofs consume it, and nothing propagates.
+
+**The soundness obligation this creates is a theorem about the ALGORITHM
+the paper never states**: the outputs of the consistency and subtyping runs
+are well-formed (`a_consis_output_wf` / `a_sub_output_wf`,
+algo/prop_wf_output.v — both Qed, axiom-free).  The consistency induction is
+where the content is: the run's `Δ1`/`Δ2` rigid-trackers and the Ghost /
+GhostR rules' `Δ ∩ ftv` side conditions are PRECISELY what makes it go
+through — the close-rows re-bind an opened rigid, which is sound only
+because ghost fills avoid the tracked variables (the same asymmetry that
+makes refinement non-transitive).  The paper's global "all types are
+well-formed" convention silently assumes this result.

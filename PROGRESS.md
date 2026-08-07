@@ -206,7 +206,38 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-07 (latest) — ⭐⭐⭐ **§3 IS CLOSED: `lemma:precision-sub` over the LEAF-VALID join — as a 133-line COROLLARY of P5c, not a new induction**
+## 2026-08-07 (latest) — ⭐⭐⭐ **§5 IS CLOSED: `lemma:context-precision-skeleton` — and the ALGORITHM'S OUTPUTS ARE PROVEN WELL-FORMED (a new foundation)**
+
+Section D §5 (`ad_ctx_precise` + `ad_ctx_precise_pat`, NEW
+`algo/prop_precise_sub.v`) is Qed + axiom-free and audited in README.v,
+together with the flagged rule-change decision — RESOLVED differently than
+recorded:
+
+- ⚠️ the recorded route (wf premise on `ad_pat__app` + top-down propagation)
+  is REFUTED by analysis: the non-transitivity cex's capture configuration
+  sits inside `P-App`'s own refinement premise, so target-wf cannot reach
+  the function premise's domain.  The landing repair puts
+  `Θ ⨟ empty ⊢ₚₛᵃ ⌊Q⌋` on the three BASE rows of `ad_pat` — exactly where
+  lemma:precision-sub's external counterpart-wf is consumed (this lemma's
+  Var case; theorem 3's Sub case).  `ad_sd_typing` unchanged (TY derives wf
+  from scope + ghost-freeness).
+- ⭐⭐⭐ soundness supplies the premise from a NEW foundation,
+  `algo/prop_wf_output.v`: **`a_consis_output_wf`** (the consistency run's
+  output is wf — a 14-row induction whose motive pairs wf-at-∅ with a
+  `pskl_shielded_ftv`-avoidance of the run's Δ1∪Δ2 trackers, an ftv
+  provenance bound, and guardedness propagation; the Ghost/GhostR
+  `Δ ∩ ftv` side conditions are exactly what make the close-rows' re-binding
+  sound) and **`a_sub_output_wf`** (mutual with the flex walk; context
+  surgeries cribbed from `a_subtag_sound_bundle`).  Both Qed + axiom-free.
+  The P6 kit supplied the gadget and the strip (`pskl_shielded_ftv`,
+  `a_wf_pskl_tvar_to_delta`, `a_wf_pskl_all_of_one`) — the
+  grep-completeness-kits-first rule again.
+- consumer sweep: prop_ctx_mono / prop_soundness_pat / prop_suffix_erase
+  (+ NEW `subst_bskl_to_pskl_eq`) / the cex file; `a_pat_sound`'s base rows
+  supply via `a_sub_output_wf`.  Full `make coq` green, all README audits
+  Closed.
+
+## 2026-08-07 — ⭐⭐⭐ **§3 IS CLOSED: `lemma:precision-sub` over the LEAF-VALID join — as a 133-line COROLLARY of P5c, not a new induction**
 
 `ad_precise_extends_pat_sub_gv` / `_v` (prop_completeness_sub_precise.v
 tail, Qed + axiom-free, FUEL PRESERVED, both sorts).  The planned ~400-line

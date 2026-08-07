@@ -63,6 +63,7 @@ Require Import src.frost.algo.prop_completeness_consis.
 Require Import src.frost.algo.prop_completeness_sub_gen.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_looksub.
+Require Import src.frost.algo.prop_wf_output.
 Require Import src.frost.decorated_algo.prop_decorate.
 Require Import src.frost.decorated_algo.prop_decorate_key.
 
@@ -182,15 +183,19 @@ Lemma ad_pat_isub_tm : forall M Θ e Q,
   Θ' ⊢ᵃ[ M ] e ⇨ Q.
 Proof.
   intros M Θ e Q H; induction H; intros Θ' Hle Htm.
-  - (* unit *) apply ad_pat__unit. eapply ad_pat_sub_v_isub; eauto.
+  - (* unit *)
+    apply ad_pat__unit;
+      [ eapply a_wf_pskl_isub; eauto | eapply ad_pat_sub_v_isub; eauto ].
   - (* var *)
     eapply ad_pat__var;
       [ apply Htm; [ eapply abind_to_pskl_is_tm; eauto | exact H ]
       | eassumption
+      | eapply a_wf_pskl_isub; eauto
       | eapply ad_pat_sub_v_isub; eauto ].
   - (* anno *)
     apply ad_pat__anno;
-      [ eapply a_wf_ptyp_isub; eauto | eapply ad_pat_sub_v_isub; eauto ].
+      [ eapply a_wf_ptyp_isub; eauto | eapply a_wf_pskl_isub; eauto
+      | eapply ad_pat_sub_v_isub; eauto ].
   - (* freeze *) apply ad_pat__freeze; auto.
   - (* abs *)
     apply ad_pat__abs with (L := L);
@@ -590,10 +595,13 @@ Proof.
   intros M Θ' e Q H; induction H;
     intros Θa x0 b0 Θb y Heq Htm Hx0; subst; simpl.
   - (* unit *)
-    apply ad_pat__unit.
-    eapply ad_pat_sub_v_mono;
-      [ eassumption | apply aenv_tbinds_le_rename_tm;
-                      apply abind_is_tm_not_ty; exact Htm ].
+    apply ad_pat__unit;
+      [ eapply a_wf_pskl_mono;
+          [ eassumption | apply aenv_tbinds_le_rename_tm;
+                          apply abind_is_tm_not_ty; exact Htm ]
+      | eapply ad_pat_sub_v_mono;
+          [ eassumption | apply aenv_tbinds_le_rename_tm;
+                          apply abind_is_tm_not_ty; exact Htm ] ].
   - (* var *)
     destruct_if as [Heq | Hne].
     + (* the renamed variable itself: its entry is exactly [b0] *)
@@ -608,12 +616,18 @@ Proof.
       eapply ad_pat__var with (b := b0);
         [ apply binds_app_3; unfold binds; simpl; left; reflexivity
         | eassumption
+        | eapply a_wf_pskl_mono;
+            [ eassumption | apply aenv_tbinds_le_rename_tm;
+                            apply abind_is_tm_not_ty; exact Htm ]
         | eapply ad_pat_sub_v_mono;
             [ eassumption | apply aenv_tbinds_le_rename_tm;
                             apply abind_is_tm_not_ty; exact Htm ] ].
     + (* any other variable: its entry is untouched *)
       eapply ad_pat__var with (b := b);
         [ | eassumption
+        | eapply a_wf_pskl_mono;
+            [ eassumption | apply aenv_tbinds_le_rename_tm;
+                            apply abind_is_tm_not_ty; exact Htm ]
         | eapply ad_pat_sub_v_mono;
             [ eassumption | apply aenv_tbinds_le_rename_tm;
                             apply abind_is_tm_not_ty; exact Htm ] ].
@@ -625,6 +639,9 @@ Proof.
   - (* anno *)
     apply ad_pat__anno;
       [ eapply a_wf_ptyp_mono;
+          [ eassumption | apply aenv_tbinds_le_rename_tm;
+                          apply abind_is_tm_not_ty; exact Htm ]
+      | eapply a_wf_pskl_mono;
           [ eassumption | apply aenv_tbinds_le_rename_tm;
                           apply abind_is_tm_not_ty; exact Htm ]
       | eapply ad_pat_sub_v_mono;
@@ -2051,9 +2068,12 @@ Proof.
                 ltac:(intros _; exact Hmod)
                 ltac:(intros Hd; discriminate))
       as [Hle [Hwf1 [Qt [HeQt [Hjoin Href]]]]].
+    assert (HwfQt : Θ1 ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qt))
+      by (rewrite HeQt; eapply a_sub_output_wf;
+          [ exact H | exact Hwf | exact HwfP0 | apply a_wf_pskl__unit ]).
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     exists Qt. split; [ exact HeQt | ].
-    split; [ apply ad_pat__unit; exact Hjoin | exact Href ].
+    split; [ apply ad_pat__unit; [ exact HwfQt | exact Hjoin ] | exact Href ].
   - (* AP-Var, type entry *)
     assert (HwfA : a_wf_ptyp Θ0 A)
       by (eapply a_wf_aenv_binds_var_typ_wf; eassumption).
@@ -2062,11 +2082,16 @@ Proof.
                 ltac:(intros _; exact Hmod)
                 ltac:(intros Hd; discriminate))
       as [Hle [Hwf1 [Qt [HeQt [Hjoin Href]]]]].
+    assert (HwfQt : Θ1 ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qt))
+      by (rewrite HeQt; eapply a_sub_output_wf;
+          [ exact H0 | exact Hwf | exact HwfP0
+          | apply a_wf_ptyp_to_wf_pskl; exact HwfA ]).
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     exists Qt. split; [ exact HeQt | ]. split; [ | exact Href ].
     eapply ad_pat__var with (b := abind_var_typ A);
       [ apply (a_sub_tm_le H0); [ exact I | exact H ]
       | reflexivity
+      | exact HwfQt
       | rewrite pskl_to_uskl_via_bskl_syn; exact Hjoin ].
   - (* AP-Var, skeleton entry — the entry's DISCIPLINED wf comes from the
        theorem's hypothesis, [a_wf_aenv] storing only its scope *)
@@ -2074,11 +2099,15 @@ Proof.
                 ltac:(intros _; exact Hmod)
                 ltac:(intros Hd; discriminate))
       as [Hle [Hwf1 [Qt [HeQt [Hjoin Href]]]]].
+    assert (HwfQt : Θ1 ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qt))
+      by (rewrite HeQt; eapply a_sub_output_wf;
+          [ exact H0 | exact Hwf | exact HwfP0 | exact (Hskl _ _ H) ]).
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     exists Qt. split; [ exact HeQt | ]. split; [ | exact Href ].
     eapply ad_pat__var with (b := abind_var_skl P);
       [ apply (a_sub_tm_le H0); [ exact I | exact H ]
       | reflexivity
+      | exact HwfQt
       | rewrite pskl_to_uskl_via_bskl_syn; exact Hjoin ].
   - (* AP-Anno *)
     destruct (a_wf_exp_anno_inv Hexp) as [HwfA Hexp0].
@@ -2087,10 +2116,15 @@ Proof.
                 ltac:(intros _; exact Hmod)
                 ltac:(intros Hd; discriminate))
       as [Hle [Hwf1 [Qt [HeQt [Hjoin Href]]]]].
+    assert (HwfQt : Θ1 ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qt))
+      by (rewrite HeQt; eapply a_sub_output_wf;
+          [ exact H | exact Hwf | exact HwfP0
+          | apply a_wf_ptyp_to_wf_pskl; exact HwfA ]).
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     exists Qt. split; [ exact HeQt | ]. split; [ | exact Href ].
     apply ad_pat__anno;
       [ eapply a_wf_ptyp_isub; [ exact HwfA | exact Hle ]
+      | exact HwfQt
       | rewrite pskl_to_uskl_via_bskl_syn; exact Hjoin ].
   - (* AP-Freeze *)
     destruct (IHa_pat Hwf Hskl ltac:(apply a_wf_pskl__hole)

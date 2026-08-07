@@ -31,6 +31,8 @@ Require Import src.frost.algo.prop_completeness_sub.
 Require Import src.frost.algo.prop_soundness_pat.
 Require Import src.frost.algo.prop_suffix_erase.
 Require Import src.frost.algo.prop_soundness_typing.
+Require Import src.frost.algo.prop_wf_output.
+Require Import src.frost.algo.prop_precise_sub.
 
 (* ===================================================================== *)
 (*  full-decl-proofs.tex / app:syntax-directed                            *)
@@ -198,6 +200,24 @@ Check ad_refine_syn_inh_tyequiv.
 Check ad_pat_strip_suffix.
 Check ad_sd_typing_strip_suffix.
 
+(* ⭐⭐ Lemma [Precision extends skeleton subtyping] (lemma:precision-sub,
+   proofs.tex) — over the LEAF-VALID join, fuel preserved, both sorts; a
+   corollary of P5c's precision-substitution.  The wf of the counterpart's
+   erasure is the paper's EXTERNAL wf side condition. *)
+Check ad_precise_extends_pat_sub_v.
+
+(* ⭐⭐ Lemma [Context precision preserves skeleton inference]
+   (lemma:context-precision-skeleton, proofs.tex), over the paper's [⪯ctx]
+   ([ad_ctx_precise]).  Its Var case consumes lemma:precision-sub, whose
+   external counterpart-wf condition the base rows of [ad_pat] now carry —
+   supplied from the run by [a_sub_output_wf]: the ALGORITHM's outputs are
+   well-formed ([a_consis_output_wf] / [a_sub_output_wf],
+   algo/prop_wf_output.v), the algorithmic half of the paper's implicit
+   "all inputs are well-formed" convention. *)
+Check ad_ctx_precise_pat.
+Check a_consis_output_wf.
+Check a_sub_output_wf.
+
 (* ===================================================================== *)
 (*  Assumption audit — all must be "Closed under the global context"      *)
 (* ===================================================================== *)
@@ -232,6 +252,10 @@ Print Assumptions a_pat_sound.
 Print Assumptions a_consis_chk_annot_refine.
 Print Assumptions a_typing_sound.
 Print Assumptions ad_sd_typing_strip_suffix.
+Print Assumptions ad_precise_extends_pat_sub_v.
+Print Assumptions a_consis_output_wf.
+Print Assumptions a_sub_output_wf.
+Print Assumptions ad_ctx_precise_pat.
 Print Assumptions a_split_refines.
 Print Assumptions a_extract_complete_gen.
 Print Assumptions a_extract_complete.

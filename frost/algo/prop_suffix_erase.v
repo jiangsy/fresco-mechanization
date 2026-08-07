@@ -1375,6 +1375,22 @@ Proof.
   reflexivity.
 Qed.
 
+(** Erasure commutes with a painting-image substitution — what the App row's
+    target-wf premise needs under [ad_pat_subst_mid]. *)
+Lemma subst_bskl_to_pskl_eq : forall τ α Q,
+  bskl_to_pskl (subst_bskl_in_bskl (ptyp_to_bskl_syn τ) α Q)
+  = subst_pskl_in_pskl (ptyp_to_pskl τ) α (bskl_to_pskl Q).
+Proof.
+  intros τ α Q; induction Q; simpl;
+    try solve [ reflexivity
+              | rewrite IHQ; reflexivity
+              | rewrite IHQ1, IHQ2; reflexivity ].
+  destruct_if;
+    [ unfold ptyp_to_bskl_syn; rewrite bskl_to_pskl_pskl_to_bskl_syn;
+      reflexivity
+    | reflexivity ].
+Qed.
+
 Lemma ad_pat_subst_mid : forall M Θ e Q,
   Θ ⊢ᵃ[ M ] e ⇨ Q ->
   forall τs α0 (b0 : abind) Θa Θ0,
@@ -1391,9 +1407,12 @@ Proof.
     (assert (Hlcτ : lc_ptyp τs) by (apply mono_ptyp_lc; exact Hm)).
   - (* unit *)
     apply ad_pat__unit.
-    pose proof (@ad_pat_sub_v_subst_mid _ _ _ _ _ _ H τs α0 b0 Θa Θ0
-                  eq_refl Hs Hu) as Hx.
-    simpl in Hx. exact Hx.
+    + rewrite subst_bskl_to_pskl_eq.
+      eapply a_wf_pskl_subst_mid;
+        [ exact H | reflexivity | exact Hs | clear; fsetdec ].
+    + pose proof (@ad_pat_sub_v_subst_mid _ _ _ _ _ _ H0 τs α0 b0 Θa Θ0
+                    eq_refl Hs Hu) as Hx.
+      simpl in Hx. exact Hx.
   - (* var *)
     assert (Hne : x <> α0)
       by (eapply binds_tm_neq_flex;
@@ -1401,16 +1420,24 @@ Proof.
           | eapply solves_flex_binding; eassumption ]).
     eapply ad_pat__var;
       [ eapply binds_subst_strip_mid; eassumption
-      | apply abind_to_pskl_subst; eassumption | ].
-    pose proof (@ad_pat_sub_v_subst_mid _ _ _ _ _ _ H1 τs α0 b0 Θa Θ0
+      | apply abind_to_pskl_subst; eassumption
+      | rewrite subst_bskl_to_pskl_eq;
+        eapply a_wf_pskl_subst_mid;
+          [ exact H1 | reflexivity | exact Hs | clear; fsetdec ]
+      | ].
+    pose proof (@ad_pat_sub_v_subst_mid _ _ _ _ _ _ H2 τs α0 b0 Θa Θ0
                   eq_refl Hs Hu) as Hx.
     rewrite !pskl_to_uskl_via_bskl_syn in Hx |- *.
     rewrite pskl_to_uskl_subst. exact Hx.
   - (* anno *)
     eapply ad_pat__anno;
       [ eapply a_wf_ptyp_subst_mid;
-          [ eassumption | reflexivity | exact Hs ] | ].
-    pose proof (@ad_pat_sub_v_subst_mid _ _ _ _ _ _ H0 τs α0 b0 Θa Θ0
+          [ eassumption | reflexivity | exact Hs ]
+      | rewrite subst_bskl_to_pskl_eq;
+        eapply a_wf_pskl_subst_mid;
+          [ exact H0 | reflexivity | exact Hs | clear; fsetdec ]
+      | ].
+    pose proof (@ad_pat_sub_v_subst_mid _ _ _ _ _ _ H1 τs α0 b0 Θa Θ0
                   eq_refl Hs Hu) as Hx.
     rewrite !pskl_to_uskl_via_bskl_syn in Hx |- *.
     rewrite ptyp_to_pskl_subst, pskl_to_uskl_subst. exact Hx.
