@@ -1047,6 +1047,16 @@ Proof.
 Qed.
 
 (** Weakening along an arbitrary binding-preserving map. *)
+(** The fuel-forgotten wrappers the [ad_pat] / [ad_sd_typing] consumers use
+    (their base rules embed [ad_pat_sub_v]). *)
+Lemma ad_pat_sub_v_isub : forall NM M Ψ Θ R Q,
+  ad_pat_sub_v NM M Ψ Θ R Q ->
+  forall Θ', Θ ⊴ Θ' -> ad_pat_sub_v NM M Ψ Θ' R Q.
+Proof.
+  intros NM M Ψ Θ R Q [n H] Θ' Hle.
+  exists n. eapply ad_pat_sub_gv_isub; eassumption.
+Qed.
+
 Lemma ad_pat_sub_gv_weaken : forall n NM M Ψ Θ R Q,
   ad_pat_sub_gv n NM M Ψ Θ R Q ->
   forall Θ', (forall x b, binds x b Θ -> binds x b Θ') ->
@@ -1093,6 +1103,15 @@ Proof.
   - apply ad_pat_sub_gv__univ_ghost_l; [ assumption | apply IHad_pat_sub_gv; exact Hmon ].
   - apply ad_pat_sub_gv__univ_ghost_lg; [ assumption | apply IHad_pat_sub_gv; exact Hmon ].
   - eapply ad_pat_sub_gv__flex_mono; [ apply Hmon; eassumption | apply IHad_pat_sub_gv; exact Hmon ].
+Qed.
+
+Lemma ad_pat_sub_v_weaken : forall NM M Ψ Θ R Q,
+  ad_pat_sub_v NM M Ψ Θ R Q ->
+  forall Θ', (forall x b, binds x b Θ -> binds x b Θ') ->
+  ad_pat_sub_v NM M Ψ Θ' R Q.
+Proof.
+  intros NM M Ψ Θ R Q [n H] Θ' Hmon.
+  exists n. eapply ad_pat_sub_gv_weaken; eassumption.
 Qed.
 
 (* ===================================================================== *)

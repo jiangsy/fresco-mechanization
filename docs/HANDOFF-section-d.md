@@ -397,10 +397,47 @@ re-export, so the name was not in scope through `prop_soundness_sub`.
 ⚙ **`a_sub_sound_thm`'s own statement is UNCHANGED** — it still concludes the
 plain `ad_pat_sub`, recovered at the call site.  That is deliberate: its
 consumers (`a_pat_sound`, `a_typing_sound`) still feed the plain join into
-`ad_pat` / `ad_sd_typing`'s rules.  ⛔ **NEXT: change those two rules to embed
-`exists n, ad_pat_sub_gv n …` (§6.2) and hand the `_gv` on from
-`a_sub_sound_thm` instead of forgetting it** — that is the one remaining step
-before theorems 3 and 4 can start.
+`ad_pat` / `ad_sd_typing`'s rules.
+
+#### ⛔ §6.2's RULE CHANGE — ATTEMPTED 2026-08-07, REVERTED, NOW FULLY SCOPED
+
+The plumbing below IS in the tree and green; the rule change itself is not.
+
+| in the tree | what it is |
+|---|---|
+| `ad_pat_sub_v` + `ad_pat_sub_of_v` (def_decl_algo_sub_hyg.v) | the leaf-valid join with the fuel forgotten — what the rules are to embed |
+| `a_sub_sound_thm_v` (prop_decorate_key.v) | ⭐ the leaf-valid companion: hands the bundle's `_gv` ON instead of forgetting it.  The PLAIN version stays for its ~10 other consumers |
+| `ad_pat_sub_gv_mono` / `_v_mono` (prop_ctx_mono.v) | context-monotonicity |
+| `ad_pat_sub_v_isub` / `_v_weaken` (prop_soundness_sub.v §1f) | the fuel-forgotten wrappers |
+| the cex's §1/§2 at an ARBITRARY Θ | the refutation never needed `Θ = ·` |
+
+⛔ **What blocked it.**  Changing the six base rows breaks EVERY proof over
+`ad_pat` / `ad_sd_typing` that REBUILDS a base row, and each needs a `_v`
+mirror of the structural lemma it used.  The attempt found them one rebuild
+at a time and built all but one:
+
+| consumer | mirror | status |
+|---|---|---|
+| `ad_pat_mono` / `ad_sd_typing_mono` | `ad_pat_sub_v_mono` | ✅ |
+| `ad_pat_isub_tm` / `ad_sd_typing_isub_tm` | `ad_pat_sub_v_isub` | ✅ |
+| the tm-swap rows (prop_soundness_pat.v) | `ad_pat_sub_v_mono` | ✅ |
+| `ad_pat_mod_comp_sk` | none — recover the plain premise with `ad_pat_sub_of_v` | ✅ |
+| ⛔ `ad_pat_strip_suffix` / `ad_sd_typing_strip_suffix` (prop_suffix_erase.v) | `ad_pat_sub_v_subst_mid`, mirroring `ad_pat_sub_subst_mid` (:929) | **NOT built** |
+
+⛔ The last one is where it stopped: its leaf needs
+**`ad_refine_pskl_subst_mid`, which does not exist**.  prop_suffix_erase.v has
+only the `bskl` form `ad_refine_syn_subst_mid` (:499, ~105 lines), and the two
+judgements' `__hole` rows differ (the `bskl` one's fill is a SYNTHESISED
+painting), so there is no bridge.  Budget: ~105 lines for the refinement
+lemma + ~100 for the `_gv` mirror, and then the rule change lands.
+
+⚙ **Then do the rule change in ONE go**: the six rows, the consumer mirrors
+above, `a_sub_sound_thm_v` at the seven call sites in `a_pat_sound` /
+`a_typing_sound`, and the cex's §3 — which becomes `cap_not_reachable`, the
+change's own witness (the configuration is REJECTED once the rows embed
+`ad_pat_sub_v`).  ⚙ Several files need `Require Import …def_decl_algo_sub_hyg`
+added; a `Require Import` does not re-export.  ⚙ The reverted attempt is kept
+at `scratchpad/section62-attempt.patch`.
 
 #### ⛔ (c) THE CONVERSION IS BIGGER THAN "THREADING" — the rows consume FOUR structural lemmas over `ad_pat_sub`, each needing a `_gv` mirror
 

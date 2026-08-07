@@ -293,3 +293,22 @@ Lemma ad_pat_sub_of_gv : forall n NM M Ψ Θ R Q,
   ad_pat_sub_gv n NM M Ψ Θ R Q ->
   Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q.
 Proof. intros * H. exact (ad_pat_sub_g_of (ad_pat_sub_gv_forget H)). Qed.
+
+(** ⭐ THE LEAF-VALID JOIN WITH THE FUEL FORGOTTEN — what the
+    declarative-in-algo judgements [ad_pat] / [ad_sd_typing] embed in their
+    base rows (hand-off §6.2).  The fuel is an artefact of the completeness
+    measure, so it has no business in a judgement's premise; what those rules
+    must carry is the LEAF DATUM, which the capture configuration shows is not
+    recoverable from a plain join (cex/cex_ad_pat_join_not_leaf_valid.v).
+
+    ⚙ No notation, deliberately: like [ad_pat_sub_g] / [_gv] / [_n], this is a
+    mech-internal variant of the paper's box, not a paper judgement. *)
+Definition ad_pat_sub_v (NM : a_sub_mode) (M : mode) (Ψ : atoms)
+    (Θ : aenv) (R : uskl) (Q : bskl) : Prop :=
+  exists n, ad_pat_sub_gv n NM M Ψ Θ R Q.
+
+(** A leaf-valid join IS a plain declarative subtyping derivation. *)
+Lemma ad_pat_sub_of_v : forall NM M Ψ Θ R Q,
+  ad_pat_sub_v NM M Ψ Θ R Q ->
+  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q.
+Proof. intros * [n H]. exact (ad_pat_sub_of_gv H). Qed.

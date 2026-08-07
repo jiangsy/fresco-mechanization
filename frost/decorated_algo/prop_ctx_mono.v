@@ -42,6 +42,7 @@ Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.decorated_algo.def_decl_algo.
 Require Import src.frost.decorated_algo.def_decl_algo_sub.
+Require Import src.frost.decorated_algo.def_decl_algo_sub_hyg.
 Require Import src.frost.decorated_algo.def_decl_algo_typing.
 
 Set Implicit Arguments.
@@ -336,6 +337,55 @@ Proof.
   - apply ad_pat_sub__univ_ghost_lg; auto.
   - eapply ad_pat_sub__flex_mono;
       [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
+Qed.
+
+(** The LEAF-VALID mirror, fuel carried unchanged: the four leaf rows'
+    refinement datum travels by [ad_refine_pskl_mono]. *)
+Lemma ad_pat_sub_gv_mono : forall n NM M Ψ Θ R Q,
+  ad_pat_sub_gv n NM M Ψ Θ R Q ->
+  forall Θ', aenv_tbinds_le Θ Θ' -> ad_pat_sub_gv n NM M Ψ Θ' R Q.
+Proof.
+  intros n NM M Ψ Θ R Q H; induction H; intros Θ' Hle.
+  - apply ad_pat_sub_gv__infer;
+      [ assumption | eapply ad_pat_consis_mono; eauto | assumption
+      | eapply ad_refine_pskl_mono; eauto ].
+  - apply ad_pat_sub_gv__check;
+      [ assumption | assumption | eapply ad_pat_consis_mono; eauto
+      | eapply ad_refine_pskl_mono; eauto ].
+  - apply ad_pat_sub_gv__forall_r with (L := L). intros α Hα.
+    apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
+  - apply ad_pat_sub_gv__univ_ghost_r;
+      [ assumption | assumption | assumption | assumption
+      | eapply ad_pat_consis_mono; eauto
+      | eapply ad_refine_pskl_mono; eauto ].
+  - eapply ad_pat_sub_gv__arrow;
+      [ eapply ad_pat_consis_mono; eauto
+      | eapply ad_refine_pskl_mono; eauto
+      | apply IHad_pat_sub_gv; exact Hle | eassumption ].
+  - eapply ad_pat_sub_gv__forall_l_tagged;
+      [ assumption | eassumption | eassumption | eassumption
+      | eapply a_wf_pskl_mono; eauto | apply IHad_pat_sub_gv; exact Hle ].
+  - eapply ad_pat_sub_gv__forall_l_untagged;
+      [ assumption | eassumption | eassumption | eassumption
+      | eapply a_wf_pskl_mono; eauto | apply IHad_pat_sub_gv; exact Hle ].
+  - apply ad_pat_sub_gv__ghost;
+      [ assumption | eapply a_wf_pskl_mono; eauto | assumption ].
+  - apply ad_pat_sub_gv__ghostg; assumption.
+  - apply ad_pat_sub_gv__univ_ghost_l;
+      [ assumption | apply IHad_pat_sub_gv; exact Hle ].
+  - apply ad_pat_sub_gv__univ_ghost_lg;
+      [ assumption | apply IHad_pat_sub_gv; exact Hle ].
+  - eapply ad_pat_sub_gv__flex_mono;
+      [ eapply aenv_tbinds_le_flex_def; eauto
+      | apply IHad_pat_sub_gv; exact Hle ].
+Qed.
+
+Lemma ad_pat_sub_v_mono : forall NM M Ψ Θ R Q,
+  ad_pat_sub_v NM M Ψ Θ R Q ->
+  forall Θ', aenv_tbinds_le Θ Θ' -> ad_pat_sub_v NM M Ψ Θ' R Q.
+Proof.
+  intros NM M Ψ Θ R Q [n H] Θ' Hle.
+  exists n. eapply ad_pat_sub_gv_mono; eauto.
 Qed.
 
 (** [ad_pat] / [ad_sd_typing] DO read term entries (their Var rules), so

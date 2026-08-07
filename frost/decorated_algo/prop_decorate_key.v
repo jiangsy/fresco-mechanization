@@ -4171,3 +4171,38 @@ Proof.
            (ex_intro _ Qt (conj HeQt (conj Hjoin
               (ad_refine_syn_f_forget Hrs)))))).
 Qed.
+
+(** ⭐ THE LEAF-VALID COMPANION (hand-off §6.2).  Identical to
+    [a_sub_sound_thm] except that it hands the bundle's join on as
+    [ad_pat_sub_v] instead of forgetting it — which is what [ad_pat] /
+    [ad_sd_typing]'s base rows now demand, and hence what [a_pat_sound] /
+    [a_typing_sound] consume.  The PLAIN version stays for the ~10 consumers
+    that only need a declarative subtyping derivation. *)
+Theorem a_sub_sound_thm_v : forall NM M P0 Θ0 P P' Θ1,
+  a_sub NM M P0 Θ0 P P' Θ1 ->
+  a_wf_aenv Θ0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
+  (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->
+  (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
+  Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
+  exists Qt,
+    bskl_to_pskl Qt = P' /\
+    ad_pat_sub_v NM M empty Θ1 (pskl_to_uskl P) Qt /\
+    Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ Qt.
+Proof.
+  intros NM M P0 Θ0 P P' Θ1 Hrun Hwf HwfP0 HwfP Hmod Hgf.
+  pose proof (a_sub_decorate Hrun Hwf HwfP0 HwfP Hmod) as Htag.
+  destruct ((proj1 a_subtag_sound_bundle) _ _ _ _ _ _ _ _ Htag
+              Hwf
+              ltac:(apply pskl_to_uskl_lc; eapply a_wf_pskl_lc; eauto)
+              HwfP0
+              ltac:(rewrite uskl_to_pskl_pskl_to_uskl; exact HwfP)
+              ltac:(intros HSK; apply a_sk_mode_compat_mod_comp_sk;
+                    apply Hmod; exact HSK)
+              Hgf)
+    as (Hisub & Hwf1 & Qt & HeQt & Hjoin & Hrs).
+  exact (conj Hisub (conj Hwf1
+           (ex_intro _ Qt (conj HeQt (conj Hjoin
+              (ad_refine_syn_f_forget Hrs)))))).
+Qed.
