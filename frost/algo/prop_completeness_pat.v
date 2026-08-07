@@ -37,6 +37,8 @@ Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_inc_strengthen.
 Require Import src.frost.algo.prop_compose.
+Require Import src.frost.decorated_algo.prop_decorate.
+Require Import src.frost.algo.prop_sub_msubst_equiv.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_refine.
@@ -362,4 +364,46 @@ Proof.
       eapply a_tyequiv_weaken;
         [ intros y c Hc; apply binds_app_3; apply binds_cons_3; exact Hc
         | exact Heq ].
+Qed.
+
+(* ===================================================================== *)
+(*  K3a — the ≡ˢ→≡ᵘ painting bridge (the Var case's slack subject)        *)
+(* ===================================================================== *)
+
+(** K3a — a skeleton equivalence between two pskls lifts to their
+    synthesised paintings.  The flex-def retrieval row lands in [≡ᵘ]'s one
+    semantic row ([__mono] — a variable IS the painting of a mono type). *)
+Lemma a_pskl_tyequiv_to_uskl : forall Θ P Q,
+  Θ ⊢ P ≡ˢ Q ->
+  a_wf_aenv Θ ->
+  Θ ⊢ (pskl_to_uskl P) ≡ᵘ (pskl_to_uskl Q).
+Proof.
+  intros Θ P Q H; induction H; intros Hwf.
+  - (* refl *)
+    apply a_uskl_tyequiv_refl. apply pskl_to_uskl_lc. exact H.
+  - (* sym *)
+    apply a_uskl_tyequiv_sym. auto.
+  - (* trans *)
+    eapply a_uskl_tyequiv_trans; auto.
+  - (* flex_def : α ≡ˢ ⌊τ⌋, i.e. two mono paintings *)
+    assert (Hm : mono_ptyp τ)
+      by (eapply a_wf_aenv_binds_def_mono; eassumption).
+    change (pskl_to_uskl (pskl_var_f α))
+      with (ptyp_to_uskl_syn (ptyp_var_f α)).
+    rewrite pskl_to_uskl_ptyp.
+    apply a_uskl_tyequiv__mono;
+      [ apply mono_ptyp__var
+      | exact Hm
+      | apply a_wf_ptyp__var; right; right; eauto
+      | eapply a_wf_aenv_binds_def_wf; eassumption
+      | apply a_tyequiv__flex_def; exact H ].
+  - (* arrow *)
+    simpl. apply a_uskl_tyequiv__arrow; auto.
+  - (* all *)
+    simpl. apply a_uskl_tyequiv__all_syn with (L := L).
+    intros α Hα.
+    rewrite <- !pskl_to_uskl_open_var.
+    apply H0; [ exact Hα | exact Hwf ].
+  - (* tophole *)
+    simpl. apply a_uskl_tyequiv__tophole. auto.
 Qed.
