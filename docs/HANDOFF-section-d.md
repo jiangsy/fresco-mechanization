@@ -379,7 +379,35 @@ Order them soundness-first; the two soundness theorems are independent of the
    six remaining cases are what is left.  See §6.4.
 4. **Completeness + optimality of type inference**
 
-### 6.4 thm:complete-skeleton-inference — the kit + the base rows are CLOSED (2026-08-07)
+### 6.4 thm:complete-skeleton-inference — ✅ CLOSED (2026-08-07, third pass)
+
+**DONE.**  `a_pat_complete` (algo/prop_completeness_pat.v tail) — Qed,
+axiom-free, `Check`ed + audited in README.v.  The induction is `size_exp`
+alone; each row is a STEP LEMMA (`a_pat_complete_unit`/`_var`/`_anno`/
+`_freeze`/`_abs_check`/`_abs_anno_check`/`_abs`/`_abs_anno`/`_app`) taking
+its IH as an explicit premise, and the glue (`a_pat_complete_gen`) is pure
+dispatch.  Headlines:
+
+- ⚠️ K6's recorded `a_pat_rename_tm` statement needed a THIRD freshness
+  premise `b ∉ fvar_in_exp e` — without it the `AP-Var` rows are a
+  counterexample (the swap moves `b`'s entry to key `a` while the
+  substitution leaves the term reading `b`).
+- ⭐ The binder rows hand the caller's identity witness to the IH THROUGH
+  the run's own, because **an identity witness is determined by its
+  source** (`a_inc_id_msubst_unique`; `is_id_inc_unique` in
+  prop_completeness_consis is the same fact — candidates for the cleanup
+  pass).
+- ⭐ The two transports the paper leaves implicit both fell to EXISTING
+  kit: precision-along-the-equivalence is `a_inc_equiv_precise_msubst_flip`
+  + `ad_precise_preserves_refine`; the AbsAnno/App two-stage compositions
+  glue by `a_inc_equiv_glue` (the consistency Arrow node's own idiom).
+- ⭐ NEW general pieces: `ad_ctx_precise_refl` (needs the payload-wf
+  DISCIPLINE of the context's skeleton entries — hence theorem 3 carries
+  that discipline for BOTH contexts), `ad_pat_consis_syn_bid`,
+  `a_wf_exp_of_tvarish`, `a_inc_id_flex_preserve`, and the K8 freshness
+  pack (a term-bound atom is never type-level bound).
+
+### 6.4-history thm:complete-skeleton-inference — the kit + the base rows (2026-08-07, second pass)
 
 Everything lives in NEW `algo/prop_completeness_pat.v`; all Qed, axiom-free.
 

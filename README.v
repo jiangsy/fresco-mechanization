@@ -33,6 +33,7 @@ Require Import src.frost.algo.prop_suffix_erase.
 Require Import src.frost.algo.prop_soundness_typing.
 Require Import src.frost.algo.prop_wf_output.
 Require Import src.frost.algo.prop_precise_sub.
+Require Import src.frost.algo.prop_completeness_pat.
 
 (* ===================================================================== *)
 (*  full-decl-proofs.tex / app:syntax-directed                            *)
@@ -200,6 +201,31 @@ Check ad_refine_syn_inh_tyequiv.
 Check ad_pat_strip_suffix.
 Check ad_sd_typing_strip_suffix.
 
+(* ⭐⭐⭐ Theorem [Completeness + optimality of skeleton inference]
+   (thm:complete-skeleton-inference, proofs.tex) — whenever the DECLARATIVE
+   system infers a skeleton [Q] at a solution [κ] of the question
+   [(Θ0; M; P0)], the ALGORITHM's run succeeds, and for every identity
+   increase out of the question context the answer factors through the
+   solution: a composing witness [ζ] equivalent to [κ] whose image of the
+   run's output is MORE PRECISE than the declarative target — the same
+   factored optimality as [a_sub_complete_thm].
+   ⚙ TERM-SIZE induction only: the mech FUSED the paper's [P-Sub] into the
+   three base rows, so every recursive premise is at a strict subterm.
+   Hypotheses beyond the paper's statement (WF-SIDE-CONDITIONS.md): wf of
+   the two contexts and the input skeleton, the payload-wf DISCIPLINE of
+   both contexts' skeleton term entries, mode compatibility, [lc], and the
+   term side condition — an annotation is SOURCE syntax, so its type
+   variables are RIGID (docs/PAPER-GAPS.md).
+   ⭐ The binder rows generate the algorithm's cofinite families from ONE
+   fresh instance by [a_pat_rename_tm] (equivariance: swap the type-level
+   data, substitute in the term); the AbsAnno and App rows GLUE two
+   composed factorings ([a_inc_equiv_glue]), their witnesses aligned by
+   identity-uniqueness ([a_inc_id_msubst_unique]). *)
+Check a_pat_complete.
+Check a_pat_rename_tm.
+Check ad_ctx_precise_refl.
+Check ad_pat_consis_syn_bid.
+
 (* ⭐⭐ Lemma [Precision extends skeleton subtyping] (lemma:precision-sub,
    proofs.tex) — over the LEAF-VALID join, fuel preserved, both sorts; a
    corollary of P5c's precision-substitution.  The wf of the counterpart's
@@ -256,6 +282,7 @@ Print Assumptions ad_precise_extends_pat_sub_v.
 Print Assumptions a_consis_output_wf.
 Print Assumptions a_sub_output_wf.
 Print Assumptions ad_ctx_precise_pat.
+Print Assumptions a_pat_complete.
 Print Assumptions a_split_refines.
 Print Assumptions a_extract_complete_gen.
 Print Assumptions a_extract_complete.

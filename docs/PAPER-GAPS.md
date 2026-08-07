@@ -28,6 +28,39 @@ recently P6-Sv at the end of this file)}.
 > Several judgments looked broken until that condition was restored.  **Check
 > that file before concluding a lemma is unprovable.**
 
+## PROSE-COMPLETIONS (2026-08-07) — three facts thm:complete-skeleton-inference uses and never states
+
+The mechanized `a_pat_complete` (algo/prop_completeness_pat.v) had to state
+and prove three facts the paper's proof of thm:complete-skeleton-inference
+(proofs.tex:1711-2197) uses silently:
+
+1. **The Anno slack is the annotation's RIGIDITY.**  The `P-Anno` case
+   needs `θ` to fix the annotation (`θA = A`).  This is true because an
+   annotation is SOURCE syntax — its type variables are rigid, and an
+   increase's domain is exactly the source context's FLEXIBLES — but it is
+   a genuine side condition ON THE TERM, which the mech carries explicitly
+   (`forall α ∈ ftv(annotations of e), Θ0 ∋ α rigid`; `msubst_ptyp_rigid_id`).
+   ⚠️ The tempting `dom θ ∩ dom Θ = ∅` is FALSE for identity increases.
+2. **"Consistency of syn{A} with bid{A}"** (the AbsAnno case, :2005) —
+   a type's SYN painting is consistent with any of its BID paintings.
+   Stated and proved as `ad_pat_consis_syn_bid` (induction over the wf
+   derivation; the two ∀-colourings go through `forall_syn` /
+   `forall_inh_untagged`).
+3. **Reflexivity of context precision** (:1915) is NOT free at the mech's
+   `Θ ⊢ ctx`: `a_wf_aenv` deliberately stores only SCOPE for skeleton term
+   entries, and an unguarded scope-only payload refutes refinement
+   reflexivity.  The paper's convention (every context wf in its own
+   figure's sense, payload-wf included) is restored as a hypothesis — the
+   payload-wf DISCIPLINE of both contexts' skeleton entries
+   (`ad_ctx_precise_refl`) — the WF-SIDE-CONDITIONS.md pattern.
+
+Also worth the authors' eyes: the paper's step "the solution θ' extends to
+the binder-extended contexts" (⟨27⟩, :1927) is justified in the mech by
+**identity witnesses being determined by their source** — any two identity
+increases out of the same question context carry the same substitution
+(`a_inc_id_msubst_unique`) — which is what lets the run's own identity
+witness stand in for the universally-quantified one.
+
 ## ⛔ GAP (2026-08-06) — the SOLUTION notion for the two INFERENCE problems must carry the leaf data, exactly as the consistency one already does
 
 `thm:complete-skeleton-inference` and `thm:complete-type-inference` are

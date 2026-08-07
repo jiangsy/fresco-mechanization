@@ -206,7 +206,61 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-07 (latest) — ⭐⭐ **THEOREM 3's KIT and its THREE BASE ROWS are CLOSED** (NEW `algo/prop_completeness_pat.v`)
+## 2026-08-07 (latest) — ⭐⭐⭐ **THEOREM 3 IS CLOSED: `a_pat_complete` (thm:complete-skeleton-inference), Qed + axiom-free**
+
+All nine rows and the glue are in `algo/prop_completeness_pat.v`; the theorem
+is `Check`ed and `Print Assumptions`-audited in `README.v`.  The induction is
+on `size_exp e` alone (P-Sub is FUSED into the base rows), each row a STEP
+LEMMA taking its IH as an explicit premise (the P7 factoring).
+
+⭐ **K6 (the binder rows' renaming) closed as a HYBRID**: `a_pat_rename_tm`
+swaps the type-level data (contexts and both skeletons — equivariance, so no
+freshness is needed for it) and SUBSTITUTES in the term.  ⚠️ The recorded
+statement needed one repair: a third freshness premise `b ∉ fvar_in_exp e`
+(the NEW name avoids the term) — without it the `AP-Var` rows are a
+counterexample (`e = var b` with `b`'s entry in `Θ0` and `a ∉ dom Θ0`).
+
+⭐⭐ **The binder rows' shared skeleton** (AbsCheck / AbsAnnoCheck / Abs /
+AbsAnno): ONE fresh binder; the IH once; `a_pat_sound`'s identity increase
+decomposes the run's output around the VERBATIM term entry
+(`a_inc_var_skl_inv` / `binds_mid_eq` + tm-verbatim); a freshness pack from
+the KIND DISCIPLINE (a term-bound atom is never type-level bound, so wf data
+cannot mention it — K8); `a_pat_rename_tm` generates the cofinite family from
+the instance; and the optimality's three conjuncts strip by K4 +
+`a_inc_equiv_strip_var_*_head`.  ⭐ The caller's identity witness reaches the
+IH through the run's own because **an identity witness is determined by its
+source** (`a_inc_id_msubst_unique`).
+
+⭐⭐ **The two transports the paper leaves implicit** both fell to EXISTING
+kit (grep-the-completeness-kits-first paid twice): the Abs domain's
+"precision along the metasubstitution equivalence" is
+`a_inc_equiv_precise_msubst_flip` + `ad_precise_preserves_refine` +
+`msubst_pskl_compose`/`_id`; AbsAnno's and App's two-stage compositions glue
+by `a_inc_equiv_glue`, the dom condition by
+`a_assign_unify_consis_flex_preserve` (AbsAnno) or the NEW
+`a_inc_id_flex_preserve` (App — an identity increase preserves flexibility,
+via `a_inc_binds_tvar_rev`).
+
+⭐ New general-purpose pieces beyond the step lemmas: `ad_ctx_precise_refl`
+(context precision is reflexive on a PAPER-wf context — the skeleton
+entries' payload-wf discipline is a hypothesis, `a_wf_pskl_strengthen`-ed to
+each tail), `ad_pat_consis_syn_bid` (a type's SYN painting is consistent
+with any of its BID paintings — the paper's "consistency of syn{A} with
+bid{A}"), `a_wf_exp_of_tvarish` (theorem 1's `a_wf_exp` from lc + the
+rigidity side condition — so theorem 3 carries `lc_exp` only).
+
+⚙ The theorem's hypothesis set beyond the paper (all WF-SIDE-CONDITIONS.md
+externals): wf of both contexts + the input skeleton, the payload-wf
+discipline of BOTH contexts' skeleton term entries (the solution side is new
+— `⪯ᶜᵗˣ`-reflexivity needs it), mode compatibility, `lc_exp`, and the
+annotation-rigidity side condition.
+
+⛔ NEXT: theorem 4 (thm:complete-type-inference, proofs.tex:617–1395) — needs
+the height-indexed mirror `ad_sd_typing_n` (its `__abs_check_step` recurses
+on the SAME term), `a_typing_rename_tm` (same swaps), and §6.3's two open
+side conditions.  Then the cleanup debt.
+
+## 2026-08-07 — ⭐⭐ **THEOREM 3's KIT and its THREE BASE ROWS are CLOSED** (NEW `algo/prop_completeness_pat.v`)
 
 `thm:complete-skeleton-inference` is under way.  Its conclusion is factored
 as `pat_complete_concl`, in `a_sub_complete_thm`'s own shape.  ⭐ Two
