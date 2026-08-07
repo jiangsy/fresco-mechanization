@@ -240,7 +240,17 @@ Two of the three rows are easy; the third is a genuine proof.
 
 ---
 
-## 3. `lemma:precision-sub` — ⛔ IN PROGRESS 2026-08-07: the ENGINE is BUILT, the induction is not
+## 3. `lemma:precision-sub` — ✅ CLOSED 2026-08-07 (`799b1a8`), as a COROLLARY of P5c
+
+**DONE**: `ad_precise_extends_pat_sub_gv` / `_v`
+(prop_completeness_sub_precise.v tail) — fuel preserved, both sorts.  P5c's
+`ad_pat_sub_precise_upre_gv` already was the transport; the new content is
+the bridge `uskl_precise_of_ad_precise` (pskl precision ⟹ `uskl_precise` at
+`Ψrep = ∅`).  ⚠️ For §5: the corollary's `Θ ⨟ ∅ ⊢ₚₛᵃ ⌊Q⌋` hypothesis is NOT
+derivable inside `ad_ctx_precise_pat` (target_wf gives only scope; wf does
+not propagate past `ad_pat__app`'s existential P) — the WF-SIDE-CONDITIONS
+route is to put `Θ ⨟ empty ⊢ₚₛᵃ P` ON `ad_pat__app`; take that rule change
+deliberately, §6.2-style.  History below.
 
 ✅ **The transitivity engine landed** (`1a31643`, prop_precise.v tail, Qed +
 axiom-free): `ad_refine_pskl_trans_gen` / `_trans`, `ad_refine_pskl_hole_l`,
