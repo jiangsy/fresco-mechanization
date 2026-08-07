@@ -374,8 +374,44 @@ Order them soundness-first; the two soundness theorems are independent of the
 2. **Soundness of type inference** — `a_typing` ⟹ increase + `ad_sd_typing`.
    Same shape; additionally needs `a_tyequiv` to discharge the appendix's three
    equivalence premises, which is where the algorithm's flexibles show up.
-3. **Completeness + optimality of skeleton inference**
+3. **Completeness + optimality of skeleton inference** — ⏳ IN PROGRESS
+   (2026-08-07): the KIT and the THREE BASE ROWS are closed; the induction's
+   six remaining cases are what is left.  See §6.4.
 4. **Completeness + optimality of type inference**
+
+### 6.4 thm:complete-skeleton-inference — the kit + the base rows are CLOSED (2026-08-07)
+
+Everything lives in NEW `algo/prop_completeness_pat.v`; all Qed, axiom-free.
+
+**The statement** is `pat_complete_concl`, factored exactly like
+`a_sub_complete_thm`'s (prop_completeness_sub.v): the run, plus for EVERY
+identity increase out of the question context a composing witness `ζ` that is
+`a_inc_equiv` to the given solution and whose image is more precise than the
+declarative target.
+
+⭐ **No lexicographic measure, and no wf hypothesis.**  The mech FUSED the
+paper's `P-Sub` into the three base rows, so every recursive premise is at a
+strict subterm — `size_exp e` alone.  And `ad_pat_target_wf` (K1) is provable
+BOTTOM-UP now that the base rows carry the counterpart's wf (§5), so the
+theorem derives any sub-derivation's target wf on demand instead of assuming
+it.
+
+**The kit** (`K1` `ad_pat_target_wf`, `K7` `a_pat_output_wf`, `K2` the two
+reverse term-entry lookups, `K3a/b` the painting bridges + the three slack
+lemmas, `K4` the two-sided term-entry strip, `K5` split-completeness) and the
+three base rows (`a_pat_complete_unit` / `_var` / `_anno`) are done.
+
+⭐⭐ **The one design point the scouting had left open is settled**: `P-Anno`'s
+slack is REFLEXIVE, because an annotation is SOURCE syntax — its type
+variables are RIGID, and `a_inc`'s domain is exactly the source context's
+FLEXIBLES (`a_inc_dom_flex`).  That rigidity is theorem 3's ONE side condition
+about the term, and it threads through the induction.  ⚠️ The tempting
+alternative `dom κ ∩ dom Θ = ∅` is FALSE — an identity increase PRESERVES
+flexibles.
+
+⛔ **What remains**: the `size_exp` induction over six cases (Freeze, Abs,
+AbsAnno, AbsCheck, AbsAnnoCheck, App), with the base rows plugging in
+directly.  Full per-case recipe: memory `remech-theorem3-plan`.
 
 ### 6.1 ⭐ The `ad_pat_sub_gv` composition gap — SCOPED (2026-08-06), and the ~300-line "freshening bridge" is NOT part of it
 

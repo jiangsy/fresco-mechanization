@@ -206,7 +206,37 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-07 (latest) — ⭐⭐⭐ **§5 IS CLOSED: `lemma:context-precision-skeleton` — and the ALGORITHM'S OUTPUTS ARE PROVEN WELL-FORMED (a new foundation)**
+## 2026-08-07 (latest) — ⭐⭐ **THEOREM 3's KIT and its THREE BASE ROWS are CLOSED** (NEW `algo/prop_completeness_pat.v`)
+
+`thm:complete-skeleton-inference` is under way.  Its conclusion is factored
+as `pat_complete_concl`, in `a_sub_complete_thm`'s own shape.  ⭐ Two
+structural simplifications, both consequences of earlier decisions: the mech
+FUSED the paper's `P-Sub` into the three base rows, so the induction is on
+`size_exp e` ALONE (the paper's lexicographic measure is theorem-4-only); and
+`ad_pat_target_wf` is now provable BOTTOM-UP (§5's rule change), so the
+statement needs no target-wf hypothesis at all.
+
+Banked, all Qed + axiom-free: K1 `ad_pat_target_wf`, K7 `a_pat_output_wf`,
+K2 `a_inc_binds_var_skl_rev`/`_var_typ_rev` (the solution context's term
+entry comes from a question-context one — `a_inc`'s term rows are SEMANTIC),
+K3a/K3b the painting bridges (`a_pskl_tyequiv_to_uskl`, `a_tyequiv_to_uskl`,
+the two msubst commutes) and the three slack lemmas, K4
+`a_inc_strip_tm_head` + `a_isub_strip_tm_head` (the paper's "erasing the term
+variable", an INDUCTION because of the deposited suffix), K5
+`a_split_complete`, and the three base rows `a_pat_complete_unit` / `_var` /
+`_anno`.
+
+⭐⭐ The scouting's one open design point is SETTLED: `P-Anno`'s slack is
+REFLEXIVE, because an annotation is SOURCE syntax — its type variables are
+RIGID, and `a_inc`'s domain is exactly the source's FLEXIBLES.  That rigidity
+is theorem 3's ONE side condition about the term.  ⚠️ `dom κ ∩ dom Θ = ∅` is
+NOT the right condition — it is false for identity increases.
+
+⛔ LEFT: the induction's six remaining cases (Freeze, Abs, AbsAnno,
+AbsCheck, AbsAnnoCheck, App); per-case recipe in memory `remech-theorem3-plan`
+and HANDOFF §6.4.
+
+## 2026-08-07 — ⭐⭐⭐ **§5 IS CLOSED: `lemma:context-precision-skeleton` — and the ALGORITHM'S OUTPUTS ARE PROVEN WELL-FORMED (a new foundation)**
 
 Section D §5 (`ad_ctx_precise` + `ad_ctx_precise_pat`, NEW
 `algo/prop_precise_sub.v`) is Qed + axiom-free and audited in README.v,
