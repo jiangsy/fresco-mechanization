@@ -1136,3 +1136,56 @@ Proof.
     | clear - Hx HxQ; fsetdec
     | clear - Hy HyQ; fsetdec ].
 Qed.
+(** Splitting is equivariant — three rows, the flexible one reusing the
+    consistency walk's own equivariance. *)
+Lemma a_split_swap : forall a b Θ0 P0 P Q Θ1,
+  Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 ->
+  (swap_aenv a b Θ0) ⊲ (swap_pskl a b P0) ▹ (swap_pskl a b P)
+    ⇢ (swap_pskl a b Q) ⊣ (swap_aenv a b Θ1).
+Proof.
+  intros a b Θ0 P0 P Q Θ1 H; induction H; simpl.
+  - apply a_split__arrow.
+  - apply a_split__hole.
+  - (* flexible : the invented pair is swapped along *)
+    eapply a_split__flex with (β := swap_atom a b β) (α1 := swap_atom a b α1).
+    + apply swap_aenv_ftvar_notin. exact H.
+    + (* [α1 ∉ add β (ftv Θ0)] transports pointwise through the swap *)
+      apply notin_add_3;
+        [ intros Hc; apply swap_atom_inj in Hc; subst;
+          clear - H0; fsetdec
+        | apply swap_aenv_ftvar_notin; clear - H0; fsetdec ].
+    + pose proof ((proj2 (proj2 (a_assign_unify_consis_swap a b)))
+                    _ _ _ _ _ _ _ H1 empty empty
+                    (empty_eq_swap_atoms_empty a b)
+                    (empty_eq_swap_atoms_empty a b)) as Hsw.
+      simpl in Hsw. exact Hsw.
+Qed.
+
+(** …hence splitting's term renaming, by the bridge. *)
+Lemma a_split_rename_tm : forall Θ0 P0 P Q Ξ Θ1 x y (b : abind),
+  ((x ~ b) ++ Θ0) ⊲ P0 ▹ P ⇢ Q ⊣ (Ξ ++ (x ~ b) ++ Θ1) ->
+  x `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
+             `union` dom Θ1 `union` ftvar_in_aenv Θ1
+             `union` dom Ξ `union` ftvar_in_aenv Ξ
+             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
+             `union` ftvar_in_pskl Q) ->
+  y `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
+             `union` dom Θ1 `union` ftvar_in_aenv Θ1
+             `union` dom Ξ `union` ftvar_in_aenv Ξ
+             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
+             `union` ftvar_in_pskl Q) ->
+  ((y ~ b) ++ Θ0) ⊲ P0 ▹ P ⇢ Q ⊣ (Ξ ++ (y ~ b) ++ Θ1).
+Proof.
+  intros Θ0 P0 P Q Ξ Θ1 x y b Hrun Hx Hy.
+  pose proof (a_split_swap x y Hrun) as Hsw.
+  rewrite (@swap_aenv_tm_head x y b Θ0
+             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+  rewrite swap_aenv_app in Hsw.
+  rewrite (@swap_aenv_tm_head x y b Θ1
+             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+  rewrite (@swap_aenv_fresh_eq x y Ξ
+             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+  rewrite !swap_pskl_fresh_id in Hsw;
+    try solve [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
+  exact Hsw.
+Qed.
