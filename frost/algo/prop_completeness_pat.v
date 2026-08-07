@@ -39,6 +39,7 @@ Require Import src.frost.algo.prop_inc_strengthen.
 Require Import src.frost.algo.prop_compose.
 Require Import src.frost.decorated_algo.prop_decorate.
 Require Import src.frost.algo.prop_sub_msubst_equiv.
+Require Import src.frost.algo.prop_completeness_sub.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_refine.
@@ -701,4 +702,207 @@ Proof.
     pose proof (Hdefs α τ Hb') as Hbt.
     destruct (binds_cons_1 _ _ _ _ _ _ Hbt) as [[_ Heq] | Hbt'];
       [ subst; exfalso; apply Htm'; exact I | exact Hbt' ].
+Qed.
+
+(* ===================================================================== *)
+(*  THEOREM 3, the THREE BASE ROWS.                                      *)
+(*                                                                       *)
+(*  ⭐ The mech FUSED the paper's [P-Sub] into these rows, so each is     *)
+(*  exactly ONE invocation of thm:complete-subtyping at the row's own     *)
+(*  subject — no separate Sub case, and no lexicographic measure (every   *)
+(*  recursive premise of the remaining rows is at a strict subterm).      *)
+(*  What each needs beyond the run: the counterpart's wf, which the rule  *)
+(*  now CARRIES (hand-off §5), and the subject slack, which is K3b.       *)
+(* ===================================================================== *)
+
+(** Erasing a metasubstituted painting is the metasubstitution of the
+    erasure — the bridge between [a_sub_complete_thm]'s bskl-shaped
+    precision conclusion and the pskl-shaped one theorem 3 carries. *)
+Lemma msubst_bskl_syn_erase : forall ζ P,
+  bskl_to_pskl (msubst_bskl ζ (pskl_to_bskl_syn P)) = msubst_pskl ζ P.
+Proof.
+  intros ζ P; induction P; simpl; f_equal; auto.
+  apply bskl_to_pskl_pskl_to_bskl_syn.
+Qed.
+
+(** Building [a_wf_ptyp] from local closure and tvar-ish free variables —
+    the direction the annotation's RIGIDITY hypothesis gives (the algo twin
+    of decl's [d_wf_ptyp_of_lc_ftvar]). *)
+Lemma a_wf_ptyp_of_lc_tvarish : forall Θ A,
+  lc_ptyp A ->
+  (forall α, α `in` ftvar_in_ptyp A -> a_binds_tvar α Θ) ->
+  a_wf_ptyp Θ A.
+Proof.
+  intros Θ A Hlc; revert Θ; induction Hlc; intros Θ Hftv; simpl in Hftv.
+  - apply a_wf_ptyp__unit.
+  - apply a_wf_ptyp__var. apply Hftv. clear; fsetdec.
+  - apply a_wf_ptyp__arrow.
+    + apply IHHlc1. intros α Hα; apply Hftv; clear - Hα; fsetdec.
+    + apply IHHlc2. intros α Hα; apply Hftv; clear - Hα; fsetdec.
+  - apply a_wf_ptyp__all with (L := dom Θ `union` ftvar_in_ptyp A).
+    intros α Hα. apply H0.
+    intros β Hβ.
+    pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A (ptyp_var_f α)) as Hup.
+    simpl in Hup.
+    destruct (β == α) as [->|Hne];
+      [ left; unfold binds; simpl; left; reflexivity | ].
+    apply a_binds_tvar_weaken_cons.
+    apply Hftv. clear - Hβ Hup Hne. fsetdec.
+Qed.
+
+(** Theorem 3's conclusion, factored (the shape of [a_sub_complete_thm]'s:
+    the run, and for EVERY identity increase out of the question context a
+    composing witness that is equivalent to the given solution and whose
+    image is more precise than the declarative target). *)
+Definition pat_complete_concl (M : mode) (Θ0 : aenv) (P0 : pskl) (e : exp)
+    (κ : metasubst) (Θ : aenv) (Q : bskl) : Prop :=
+  exists P1 Θ1,
+    a_pat M Θ0 P0 e P1 Θ1 /\
+    (forall κ1, is_id_msubst κ1 -> κ1 ∷ Θ0 ⊑ Θ1 ->
+       exists ζ,
+         ζ ∷ Θ1 ⊑ Θ /\
+         a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ /\
+         Θ ⨟ empty ⊢ₚᵣᵃ (msubst_pskl ζ P1) ⊑ (bskl_to_pskl Q)).
+
+(* ===================================================================== *)
+(*  The three BASE rows.  The mech FUSED the paper's [P-Sub] into them,   *)
+(*  so each is exactly one invocation of thm:complete-subtyping at the    *)
+(*  row's own subject, with K3b's slack.                                  *)
+(* ===================================================================== *)
+
+Lemma a_pat_complete_unit : forall M Θ0 P0 κ Θ Q,
+  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  a_sk_mode_compat M P0 ->
+  κ ∷ Θ0 ⊑ Θ ->
+  Θ ⊢ᵃ[ M ] exp_unit ⇨ Q ->
+  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+  pat_complete_concl M Θ0 P0 exp_unit κ Θ Q.
+Proof.
+  intros M Θ0 P0 κ Θ Q Hwf0 HwfΘ HwfP0 Hmod Hinc Hd Href.
+  inversion Hd; subst.
+  (* ⚙ name the two premises by SHAPE — an inversion pattern cannot
+     destructure the fuel-forgotten join's existential *)
+  match goal with
+  | H : ad_pat_sub_v _ _ _ _ _ _ |- _ => destruct H as [njoin Hjoin]
+  end.
+  match goal with
+  | H : _ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl _) |- _ => rename H into HwfQ
+  end.
+  (* ⚙ pin the instantiation: the two mode-compat arguments discriminate on
+     [NM], which is still an evar if it is left to unify positionally *)
+  destruct (@a_sub_complete_thm njoin a_sub_mode_sk M Θ0 P0
+              pskl_unit uskl_unit Θ κ Q
+              Hwf0 HwfΘ HwfP0
+              ltac:(apply a_wf_pskl__unit)
+              ltac:(intros _; exact Hmod)
+              ltac:(intros Hd0; discriminate)
+              Hinc
+              (slack_unit Θ κ)
+              Hjoin Href HwfQ
+              ltac:(intros Hd0; discriminate))
+    as [P1 [Θ1 [Hrun Hopt]]].
+  exists P1, Θ1. split; [ apply a_pat__unit; exact Hrun | ].
+  intros κ1 Hid Hinc1.
+  destruct (Hopt κ1 Hid Hinc1) as [ζ [Hζ [Heqv Hprec]]].
+  exists ζ. split; [ exact Hζ | ]. split; [ exact Heqv | ].
+  rewrite <- msubst_bskl_syn_erase. exact Hprec.
+Qed.
+
+Lemma a_pat_complete_var : forall M Θ0 P0 x κ Θ Q,
+  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  a_sk_mode_compat M P0 ->
+  κ ∷ Θ0 ⊑ Θ ->
+  (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
+  Θ ⊢ᵃ[ M ] (exp_var_f x) ⇨ Q ->
+  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+  pat_complete_concl M Θ0 P0 (exp_var_f x) κ Θ Q.
+Proof.
+  intros M Θ0 P0 x κ Θ Q Hwf0 HwfΘ HwfP0 Hmod Hinc Hskl Hd Href.
+  inversion Hd; subst.
+  match goal with
+  | H : ad_pat_sub_v _ _ _ _ _ _ |- _ => destruct H as [njoin Hjoin]
+  end.
+  match goal with
+  | H : _ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl _) |- _ => rename H into HwfQ
+  end.
+  (* K2 : the SOLUTION context's entry comes from a QUESTION context one,
+     and its equivalence IS thm:complete-subtyping's subject slack (K3b) *)
+  match goal with
+  | Hb : binds x ?b Θ, He : abind_to_pskl ?b = Some ?P |- _ =>
+      destruct (@slack_var Θ0 κ Θ x b P Hinc Hwf0 HwfΘ Hb He)
+        as [b0 [P0' [Hb0 [He0 Hslack]]]]
+  end.
+  (* the question-side subject is well-formed: a type entry by [a_wf_aenv],
+     a skeleton entry by the theorem's disciplined-entry hypothesis *)
+  assert (HwfP0' : Θ0 ⨟ empty ⊢ₚₛᵃ P0').
+  { destruct b0; simpl in He0; try discriminate He0; inversion He0; subst.
+    - apply a_wf_ptyp_to_wf_pskl.
+      eapply a_wf_aenv_binds_var_typ_wf; [ exact Hwf0 | exact Hb0 ].
+    - eapply Hskl; exact Hb0. }
+  rewrite pskl_to_uskl_via_bskl_syn in Hjoin.
+  destruct (@a_sub_complete_thm njoin a_sub_mode_sk M Θ0 P0
+              P0' (pskl_to_uskl P) Θ κ Q
+              Hwf0 HwfΘ HwfP0 HwfP0'
+              ltac:(intros _; exact Hmod)
+              ltac:(intros Hd0; discriminate)
+              Hinc Hslack Hjoin Href HwfQ
+              ltac:(intros Hd0; discriminate))
+    as [P1 [Θ1 [Hrun Hopt]]].
+  exists P1, Θ1. split.
+  { destruct b0; simpl in He0; try discriminate He0; inversion He0; subst.
+    - eapply a_pat__var; [ exact Hb0 | exact Hrun ].
+    - eapply a_pat__var_skl; [ exact Hb0 | exact Hrun ]. }
+  intros κ1 Hid Hinc1.
+  destruct (Hopt κ1 Hid Hinc1) as [ζ [Hζ [Heqv Hprec]]].
+  exists ζ. split; [ exact Hζ | ]. split; [ exact Heqv | ].
+  rewrite <- msubst_bskl_syn_erase. exact Hprec.
+Qed.
+
+Lemma a_pat_complete_anno : forall M Θ0 P0 e A κ Θ Q,
+  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  a_sk_mode_compat M P0 ->
+  κ ∷ Θ0 ⊑ Θ ->
+  (* ⭐ the ONE side condition theorem 3 carries about the term: an
+     annotation is SOURCE syntax, so its type variables are RIGID *)
+  (forall α, α `in` ftvar_in_ptyp A -> binds α abind_tvar Θ0) ->
+  Θ ⊢ᵃ[ M ] (exp_anno e A) ⇨ Q ->
+  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+  pat_complete_concl M Θ0 P0 (exp_anno e A) κ Θ Q.
+Proof.
+  intros M Θ0 P0 e A κ Θ Q Hwf0 HwfΘ HwfP0 Hmod Hinc Hrig Hd Href.
+  inversion Hd; subst.
+  match goal with
+  | H : ad_pat_sub_v _ _ _ _ _ _ |- _ => destruct H as [njoin Hjoin]
+  end.
+  match goal with
+  | H : _ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl _) |- _ => rename H into HwfQ
+  end.
+  match goal with
+  | H : a_wf_ptyp Θ A |- _ => rename H into HwfA
+  end.
+  assert (HwfpA : Θ0 ⨟ empty ⊢ₚₛᵃ (ptyp_to_pskl A)).
+  { apply a_wf_ptyp_to_wf_pskl. apply a_wf_ptyp_of_lc_tvarish;
+      [ eapply a_wf_ptyp_lc; exact HwfA
+      | intros α Hα; left; apply Hrig; exact Hα ]. }
+  rewrite pskl_to_uskl_via_bskl_syn in Hjoin.
+  destruct (@a_sub_complete_thm njoin a_sub_mode_sk M Θ0 P0
+              (ptyp_to_pskl A) (ptyp_to_uskl_syn A) Θ κ Q
+              Hwf0 HwfΘ HwfP0 HwfpA
+              ltac:(intros _; exact Hmod)
+              ltac:(intros Hd0; discriminate)
+              Hinc
+              (@slack_anno Θ0 κ Θ A Hinc Hwf0
+                 ltac:(eapply a_wf_ptyp_lc; exact HwfA) Hrig)
+              ltac:(rewrite pskl_to_uskl_ptyp in Hjoin; exact Hjoin)
+              Href HwfQ
+              ltac:(intros Hd0; discriminate))
+    as [P1 [Θ1 [Hrun Hopt]]].
+  exists P1, Θ1. split; [ eapply a_pat__anno; exact Hrun | ].
+  intros κ1 Hid Hinc1.
+  destruct (Hopt κ1 Hid Hinc1) as [ζ [Hζ [Heqv Hprec]]].
+  exists ζ. split; [ exact Hζ | ]. split; [ exact Heqv | ].
+  rewrite <- msubst_bskl_syn_erase. exact Hprec.
 Qed.
