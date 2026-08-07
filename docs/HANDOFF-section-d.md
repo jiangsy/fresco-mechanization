@@ -423,10 +423,13 @@ DECLARATIVE judgement only, and no `a_pat_rename_tm` exists.  Route
 CHEAPER than expected — ✅ the bridge and the first consumer are DONE:
 `swap_aenv_tm_head` (a swap of two atoms fresh for everything else IS the
 renaming of a term binder) makes `a_sub_rename_tm` a three-line corollary
-of `a_sub_sub_flex_swap`.  Left: the same three lines for the consistency
-walk and for `a_split`, then `a_pat_rename_tm` itself — ⚠️ which cannot go
-through swap alone, since prop_swap.v has no `swap_exp`; state it with
-`subst_exp_in_exp` and mirror the DECLARATIVE `ad_pat_subst_tm`.  ⚠️ Theorem 4's binder rows need the same thing —
+of `a_sub_sub_flex_swap`.  ✅ The whole SUPPORTING LAYER is now done —
+`a_sub_rename_tm`, `a_consis_rename_tm`/`_chk_`, and `a_split_swap` (the
+one equivariance prop_swap.v lacked) + `a_split_rename_tm`.  Left:
+`a_pat_rename_tm` itself, whose statement is SETTLED and recorded verbatim
+at the end of `prop_completeness_pat.v` — ⚠️ a HYBRID (swap the type-level
+data, substitute in the term), because the obvious substitute-everything
+form dies on `AP-App`'s EXISTENTIAL intermediate skeleton.  ⚠️ Theorem 4's binder rows need the same thing —
 build it once, for both `a_pat` and `a_typing`.
 
 Order for the next session and the full per-case recipe: memory
