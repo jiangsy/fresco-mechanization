@@ -8,10 +8,30 @@
     (prop_completeness_pat.v): SWAP the type-level data, SUBSTITUTE in the
     term.
 
-    ⛔ Still owed (hand-off §6.3 + memory `remech-theorem3-closed`): the
-    height-indexed mirror [ad_sd_typing_n] (the paper inducts on the
-    DERIVATION and [__abs_check_step] recurses on the SAME term), the
-    eleven-row induction, and the two open rule-level invariants. *)
+    ⭐ MEASURE SETTLED (2026-08-07 scouting): plain STRUCTURAL induction on
+    [ad_sd_typing] suffices — NO height mirror [ad_sd_typing_n].  Every IH
+    application in the paper's proof (proofs.tex:617-1395) is on a direct
+    premise derivation, and the force that broke structural induction in
+    theorem 3 — the binder entry being only ⪯-related to the rule's, needing
+    [ad_ctx_precise_pat] on the DERIVATION — has no typing analogue:
+    [a_inc__var] relates term entries up to [≡ᵗ] BY RULE (def_meta.v), which
+    absorbs exactly the [θ''A' ≡ᵗ A] discrepancy the binder cases produce
+    ("precision on types is equivalence", literally).  The [_step] rows'
+    same-term recursion only kills [size_exp], which is not needed.
+
+    The statement is [typ_complete_concl] below, factored like
+    [pat_complete_concl]; the base rows feed [a_sub_complete_thm] at TY,
+    with the run's output packaged as a painted [ptyp] by
+    [a_sub_ty_ghost_free_output] (prop_ty_core.v) and the optimality
+    conclusion converted by [ad_precise_painting_tyequiv]'s idiom (a
+    precision between two type paintings IS a type equivalence, via
+    [ad_refine_syn_inh_tyequiv]).
+
+    ⛔ Still owed: the Var/Anno base rows (Anno consumes prop_ty_core's
+    [a_typing_tc_rigid_output]), Freeze, the binder rows (term-binder
+    family via [a_typing_rename_tm]; the two tvar-[_step] rows need a
+    tvar family generation), App (invokes THEOREM 3), the glue, and
+    §6.3's #2/#3 rule-level obligations. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -53,6 +73,7 @@ Require Import src.frost.algo.prop_suffix_erase.
 Require Import src.frost.algo.prop_soundness_typing.
 Require Import src.frost.algo.prop_precise_sub.
 Require Import src.frost.algo.prop_completeness_pat.
+Require Import src.frost.algo.prop_ty_core.
 
 (* ===================================================================== *)
 (*  Theorem 4's K6 — [a_typing]'s own term renaming, the same HYBRID as   *)
@@ -313,4 +334,75 @@ Proof.
                     ltac:(clear - Hbv; fsetdec)) as IH.
       rewrite swap_pskl_ptyp_to_pskl in IH.
       exact IH.
+Qed.
+
+(* ===================================================================== *)
+(*  THEOREM 4 — the statement, factored like [pat_complete_concl]         *)
+(* ===================================================================== *)
+
+Definition typ_complete_concl (M : mode) (Θ0 : aenv) (P0 : pskl) (e : exp)
+    (κ : metasubst) (Θ : aenv) (B : btyp) : Prop :=
+  exists A1 Θ1,
+    a_typing M Θ0 P0 e A1 Θ1 /\
+    (forall κ1, is_id_msubst κ1 -> κ1 ∷ Θ0 ⊑ Θ1 ->
+       exists ζ,
+         ζ ∷ Θ1 ⊑ Θ /\
+         a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ /\
+         Θ ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B)).
+
+(* ===================================================================== *)
+(*  The Unit base row                                                     *)
+(* ===================================================================== *)
+
+Lemma a_typing_complete_unit : forall M Θ0 P0 κ Θ B,
+  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  a_ty_mode_compat M P0 ->
+  κ ∷ Θ0 ⊑ Θ ->
+  Θ ⊢ˢᵃ[ M ] exp_unit ⦂ B ->
+  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (btyp_to_bskl B) ->
+  typ_complete_concl M Θ0 P0 exp_unit κ Θ B.
+Proof.
+  intros M Θ0 P0 κ Θ B Hwf0 HwfΘ HwfP0 Hmod Hinc Hd Href.
+  inversion Hd; subst.
+  match goal with
+  | H : ad_pat_sub_v _ _ _ _ _ _ |- _ => destruct H as [njoin Hjoin]
+  end.
+  (* the counterpart's wf : scope from the join, ghost-freeness structurally *)
+  assert (HwfQ : Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl (btyp_to_bskl B))).
+  { rewrite bskl_to_pskl_btyp.
+    apply a_wf_ptyp_to_wf_pskl.
+    eapply a_wf_ptyp_of_scope_pskl;
+      [ | rewrite <- bskl_to_pskl_btyp; reflexivity ].
+    eapply ad_pat_sub_target_wf. exact (ad_pat_sub_of_v (ex_intro _ njoin Hjoin)). }
+  destruct (@a_sub_complete_thm njoin a_sub_mode_ty M Θ0 P0
+              pskl_unit (ptyp_to_uskl_syn ptyp_unit) Θ κ (btyp_to_bskl B)
+              Hwf0 HwfΘ HwfP0
+              ltac:(apply a_wf_pskl__unit)
+              ltac:(intros Hc; discriminate)
+              ltac:(intros _; exact Hmod)
+              Hinc
+              (slack_unit Θ κ)
+              Hjoin Href HwfQ
+              ltac:(intros _; rewrite <- pskl_to_uskl_ptyp;
+                    apply pskl_to_uskl_ptyp_ghost_free; apply lc_ptyp_unit))
+    as [P1 [Θ1 [Hrun Hopt]]].
+  (* the run's output is a painted type (T4-K1) *)
+  assert (HgfP1 : pskl_ghost_free P1)
+    by (eapply a_sub_ty_ghost_free_output; [ exact Hrun | exact I ]).
+  destruct (pskl_ghost_free_to_ptyp P1 HgfP1) as [A1 ->].
+  exists A1, Θ1. split; [ apply a_typing__unit; exact Hrun | ].
+  intros κ1 Hid Hinc1.
+  destruct (Hopt κ1 Hid Hinc1) as [ζ [Hζ [Heqv Hprec]]].
+  exists ζ. split; [ exact Hζ | ]. split; [ exact Heqv | ].
+  (* precision between two type paintings IS the equivalence *)
+  rewrite msubst_bskl_syn_erase, msubst_pskl_embed_ptyp, bskl_to_pskl_btyp
+    in Hprec.
+  unfold ad_precise in Hprec.
+  rewrite (pskl_to_bskl_inh_ptyp (btyp_to_ptyp B)) in Hprec.
+  pose proof (ad_refine_syn_inh_tyequiv Hprec HwfΘ
+                (msubst_ptyp ζ A1) (ptyp_to_btyp_inh (btyp_to_ptyp B))
+                eq_refl eq_refl) as Heq.
+  rewrite btyp_to_ptyp_ptyp_to_btyp_inh in Heq.
+  exact Heq.
 Qed.
