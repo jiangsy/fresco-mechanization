@@ -1232,3 +1232,113 @@ Lemma pskl_to_bskl_inh_ptyp : forall A,
   pskl_to_bskl_inh (ptyp_to_pskl A) = btyp_to_bskl (ptyp_to_btyp_inh A).
 Proof. induction A; simpl; f_equal; auto. Qed.
 
+(* ===================================================================== *)
+(*  The fn-mode output SHAPE: [AT-App]'s function premise demands a       *)
+(*  SYNTACTIC arrow, so completeness must know every fn-mode output is    *)
+(*  one.  Indexed by the mode so the App row's recursion closes.          *)
+(* ===================================================================== *)
+
+Inductive fn_arrow_shape_pskl : mode -> pskl -> Prop :=
+| fn_arrow_shape_pskl__ti : forall P,
+    fn_arrow_shape_pskl mode_ti P
+| fn_arrow_shape_pskl__tc : forall P,
+    fn_arrow_shape_pskl mode_tc P
+| fn_arrow_shape_pskl__fn : forall M P Q,
+    fn_arrow_shape_pskl M Q ->
+    fn_arrow_shape_pskl (mode_fn M) (pskl_arrow P Q).
+
+Inductive fn_arrow_shape : mode -> ptyp -> Prop :=
+| fn_arrow_shape__ti : forall A,
+    fn_arrow_shape mode_ti A
+| fn_arrow_shape__tc : forall A,
+    fn_arrow_shape mode_tc A
+| fn_arrow_shape__fn : forall M A B,
+    fn_arrow_shape M B ->
+    fn_arrow_shape (mode_fn M) (ptyp_arrow A B).
+
+Lemma fn_arrow_shape_of_pskl : forall M A,
+  fn_arrow_shape_pskl M (ptyp_to_pskl A) ->
+  fn_arrow_shape M A.
+Proof.
+  intros M A H.
+  remember (ptyp_to_pskl A) as P eqn:HP.
+  revert A HP; induction H; intros A0 HP; subst.
+  - apply fn_arrow_shape__ti.
+  - apply fn_arrow_shape__tc.
+  - destruct A0; simpl in HP; try discriminate.
+    inversion HP; subst.
+    apply fn_arrow_shape__fn. apply IHfn_arrow_shape_pskl. reflexivity.
+Qed.
+
+(** Every TY-sorted subtyping output has the fn-arrow shape of its mode. *)
+Lemma a_sub_sub_flex_fn_arrow_shape :
+  (forall NM M P0 Θ0 P Q Θ1,
+     a_sub NM M P0 Θ0 P Q Θ1 ->
+     NM = a_sub_mode_ty ->
+     fn_arrow_shape_pskl M Q) /\
+  (forall NM M P0 Θ0 Ξ α Q Θ1,
+     a_sub_flex NM M P0 Θ0 Ξ α Q Θ1 ->
+     NM = a_sub_mode_ty ->
+     fn_arrow_shape_pskl (mode_fn M) Q).
+Proof.
+  apply (a_sub_sub_flex_tm_mutind
+           (fun NM M P0 Θ0 P Q Θ1 _ =>
+              NM = a_sub_mode_ty -> fn_arrow_shape_pskl M Q)
+           (fun NM M P0 Θ0 Ξ α Q Θ1 _ =>
+              NM = a_sub_mode_ty -> fn_arrow_shape_pskl (mode_fn M) Q));
+    intros;
+    try match goal with
+        | H : a_sub_mode_sk = a_sub_mode_ty |- _ => discriminate H
+        end;
+    try (apply fn_arrow_shape_pskl__ti);
+    try (apply fn_arrow_shape_pskl__tc);
+    try match goal with
+        | IH : _ = a_sub_mode_ty -> fn_arrow_shape_pskl _ _ |- _ =>
+            apply IH; assumption
+        end.
+  - (* Arrow *)
+    apply fn_arrow_shape_pskl__fn.
+    match goal with
+    | IH : _ = a_sub_mode_ty -> fn_arrow_shape_pskl _ _ |- _ =>
+        apply IH; assumption
+    end.
+Qed.
+
+Definition a_sub_ty_fn_arrow_shape := proj1 a_sub_sub_flex_fn_arrow_shape.
+
+(** …hence every fn-mode [a_typing] output is a SYNTACTIC arrow chain. *)
+Lemma a_typing_fn_arrow_shape : forall M Θ0 P0 e C Θ1,
+  Θ0 ⊢ₐ[ M ; P0 ] e ⦂ C ⊣ Θ1 ->
+  fn_arrow_shape M C.
+Proof.
+  intros M Θ0 P0 e C Θ1 H; induction H;
+    try (apply fn_arrow_shape__tc);
+    try (apply fn_arrow_shape_of_pskl;
+         eapply a_sub_ty_fn_arrow_shape; [ eassumption | reflexivity ]).
+  - (* abs *)
+    destruct m as [ | | M' ];
+      [ apply fn_arrow_shape__ti
+      | exfalso; apply H; reflexivity
+      | ].
+    apply fn_arrow_shape__fn.
+    destruct (atom_fresh L) as [x Hx].
+    cbn [decr_mode] in *.
+    match goal with
+    | IHf : forall y, y `notin` L -> fn_arrow_shape _ _ |- _ =>
+        exact (IHf x Hx)
+    end.
+  - (* abs_anno *)
+    destruct m as [ | | M' ];
+      [ apply fn_arrow_shape__ti
+      | exfalso; apply H; reflexivity
+      | ].
+    apply fn_arrow_shape__fn.
+    destruct (atom_fresh L) as [x Hx].
+    cbn [decr_mode] in *.
+    match goal with
+    | IHf : forall y, y `notin` L -> fn_arrow_shape _ _ |- _ =>
+        exact (IHf x Hx)
+    end.
+  - (* app : the function's shape at (fn m) peels to the output's at m *)
+    inversion IHa_typing1; subst; assumption.
+Qed.
