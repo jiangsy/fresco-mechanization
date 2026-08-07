@@ -1079,3 +1079,60 @@ Proof.
     try solve [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
   exact Hsw.
 Qed.
+
+(** The consistency walk's term renaming — the same three lines as
+    [a_sub_rename_tm], off [a_assign_unify_consis_swap].  This is what
+    [AP-AbsAnno]'s [a_consis_chk] premise needs. *)
+Lemma a_consis_rename_tm : forall Θ0 P0 P Q Ξ Θ1 x y (b : abind),
+  a_consis empty empty ((x ~ b) ++ Θ0) P0 P Q (Ξ ++ (x ~ b) ++ Θ1) ->
+  x `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
+             `union` dom Θ1 `union` ftvar_in_aenv Θ1
+             `union` dom Ξ `union` ftvar_in_aenv Ξ
+             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
+             `union` ftvar_in_pskl Q) ->
+  y `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
+             `union` dom Θ1 `union` ftvar_in_aenv Θ1
+             `union` dom Ξ `union` ftvar_in_aenv Ξ
+             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
+             `union` ftvar_in_pskl Q) ->
+  a_consis empty empty ((y ~ b) ++ Θ0) P0 P Q (Ξ ++ (y ~ b) ++ Θ1).
+Proof.
+  intros Θ0 P0 P Q Ξ Θ1 x y b Hrun Hx Hy.
+  pose proof ((proj2 (proj2 (a_assign_unify_consis_swap x y)))
+                _ _ _ _ _ _ _ Hrun empty empty
+                (empty_eq_swap_atoms_empty x y)
+                (empty_eq_swap_atoms_empty x y)) as Hsw.
+  rewrite (@swap_aenv_tm_head x y b Θ0
+             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+  rewrite swap_aenv_app in Hsw.
+  rewrite (@swap_aenv_tm_head x y b Θ1
+             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+  rewrite (@swap_aenv_fresh_eq x y Ξ
+             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+  rewrite !swap_pskl_fresh_id in Hsw;
+    try solve [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
+  exact Hsw.
+Qed.
+
+(** …in the output-suppressed form the rule states. *)
+Corollary a_consis_chk_rename_tm : forall Θ0 P P0 Ξ Θ1 x y (b : abind),
+  (forall Q, a_consis empty empty ((x ~ b) ++ Θ0) P0 P Q (Ξ ++ (x ~ b) ++ Θ1) ->
+     x `notin` ftvar_in_pskl Q /\ y `notin` ftvar_in_pskl Q) ->
+  a_consis_chk ((x ~ b) ++ Θ0) P P0 (Ξ ++ (x ~ b) ++ Θ1) ->
+  x `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
+             `union` dom Θ1 `union` ftvar_in_aenv Θ1
+             `union` dom Ξ `union` ftvar_in_aenv Ξ
+             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P) ->
+  y `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
+             `union` dom Θ1 `union` ftvar_in_aenv Θ1
+             `union` dom Ξ `union` ftvar_in_aenv Ξ
+             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P) ->
+  a_consis_chk ((y ~ b) ++ Θ0) P P0 (Ξ ++ (y ~ b) ++ Θ1).
+Proof.
+  intros Θ0 P P0 Ξ Θ1 x y b HQ [Q Hrun] Hx Hy.
+  destruct (HQ Q Hrun) as [HxQ HyQ].
+  exists Q. eapply a_consis_rename_tm;
+    [ exact Hrun
+    | clear - Hx HxQ; fsetdec
+    | clear - Hy HyQ; fsetdec ].
+Qed.
