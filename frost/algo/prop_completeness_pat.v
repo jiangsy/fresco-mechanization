@@ -39,6 +39,7 @@ Require Import src.frost.algo.prop_inc_strengthen.
 Require Import src.frost.algo.prop_compose.
 Require Import src.frost.decorated_algo.prop_decorate.
 Require Import src.frost.algo.prop_sub_msubst_equiv.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.prop_completeness_sub.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_flex.
@@ -985,4 +986,96 @@ Proof.
   inversion Hd; subst.
   destruct (IH _ ltac:(eassumption) Href) as [P1 [Θ1 [Hrun Hopt]]].
   exists P1, Θ1. split; [ apply a_pat__freeze; exact Hrun | exact Hopt ].
+Qed.
+
+(* ===================================================================== *)
+(*  K6 — TERM-VARIABLE RENAMING for the cofinite binder rows.            *)
+(*                                                                       *)
+(*  ⭐ The route is the standing directive's: EQUIVARIANCE is the one     *)
+(*  renaming primitive.  prop_swap.v already proves it for the whole      *)
+(*  algorithmic tower; what was missing is the bridge that turns a SWAP   *)
+(*  of two atoms into the RENAMING of a term binder — which it is        *)
+(*  exactly when both atoms are fresh for everything else in sight        *)
+(*  ([swap_aenv_tm_head] below).  [a_sub_rename_tm] is the first          *)
+(*  consumer; the same three lines give the consistency walk's and,       *)
+(*  above them, [a_pat]'s own.                                           *)
+(* ===================================================================== *)
+
+(** A binding the two swapped atoms do not occur in is untouched. *)
+Lemma swap_abind_fresh_eq : forall x y (b : abind),
+  x `notin` ftvar_in_abind b ->
+  y `notin` ftvar_in_abind b ->
+  swap_abind x y b = b.
+Proof.
+  intros x y b Hx Hy; destruct b; simpl in *; try reflexivity; f_equal;
+    first [ apply swap_ptyp_fresh_id | apply swap_pskl_fresh_id ];
+    assumption.
+Qed.
+
+(** …hence a whole context the two atoms are fresh for. *)
+Lemma swap_aenv_fresh_eq : forall x y Θ,
+  x `notin` (dom Θ `union` ftvar_in_aenv Θ) ->
+  y `notin` (dom Θ `union` ftvar_in_aenv Θ) ->
+  swap_aenv x y Θ = Θ.
+Proof.
+  induction Θ as [ | [z c] Θ' IH ]; intros Hx Hy; simpl in *;
+    [ reflexivity | ].
+  f_equal.
+  - f_equal.
+    + unfold swap_atom.
+      destruct (z == x) as [->|Hzx]; [ exfalso; clear - Hx; fsetdec | ].
+      destruct (z == y) as [->|Hzy]; [ exfalso; clear - Hy; fsetdec | ].
+      reflexivity.
+    + apply swap_abind_fresh_eq; [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
+  - apply IH; [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
+Qed.
+
+(** ⭐ THE BRIDGE.  Swapping a TERM binder's name with a fresh one renames
+    exactly that entry: the tail is untouched (both atoms are fresh for it)
+    and the payload is untouched (a term entry's payload is a TYPE, and the
+    two atoms are term variables). *)
+Lemma swap_aenv_tm_head : forall x y (b : abind) Θ,
+  x `notin` (dom Θ `union` ftvar_in_aenv Θ `union` ftvar_in_abind b) ->
+  y `notin` (dom Θ `union` ftvar_in_aenv Θ `union` ftvar_in_abind b) ->
+  swap_aenv x y ((x ~ b) ++ Θ) = (y ~ b) ++ Θ.
+Proof.
+  intros x y b Θ Hx Hy. simpl. f_equal.
+  - f_equal.
+    + unfold swap_atom. destruct (x == x) as [_|Hc];
+        [ reflexivity | exfalso; apply Hc; reflexivity ].
+    + apply swap_abind_fresh_eq; [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
+  - apply swap_aenv_fresh_eq; [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
+Qed.
+
+(** ⭐ K6's payload for the binder rows: the ALGORITHMIC subtyping walk is
+    stable under renaming a TERM binder.  Equivariance does the work
+    ([a_sub_sub_flex_swap]); the bridge above turns the swapped contexts
+    back into the renamed ones, and the type-level data is untouched
+    because both atoms are fresh for it. *)
+Lemma a_sub_rename_tm : forall NM M P0 Θ0 P Q Ξ Θ1 x y (b : abind),
+  a_sub NM M P0 ((x ~ b) ++ Θ0) P Q (Ξ ++ (x ~ b) ++ Θ1) ->
+  x `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
+             `union` dom Θ1 `union` ftvar_in_aenv Θ1
+             `union` dom Ξ `union` ftvar_in_aenv Ξ
+             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
+             `union` ftvar_in_pskl Q) ->
+  y `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
+             `union` dom Θ1 `union` ftvar_in_aenv Θ1
+             `union` dom Ξ `union` ftvar_in_aenv Ξ
+             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
+             `union` ftvar_in_pskl Q) ->
+  a_sub NM M P0 ((y ~ b) ++ Θ0) P Q (Ξ ++ (y ~ b) ++ Θ1).
+Proof.
+  intros NM M P0 Θ0 P Q Ξ Θ1 x y b Hrun Hx Hy.
+  pose proof ((proj1 (a_sub_sub_flex_swap x y)) _ _ _ _ _ _ _ Hrun) as Hsw.
+  rewrite (@swap_aenv_tm_head x y b Θ0
+             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+  rewrite swap_aenv_app in Hsw.
+  rewrite (@swap_aenv_tm_head x y b Θ1
+             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+  rewrite (@swap_aenv_fresh_eq x y Ξ
+             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+  rewrite !swap_pskl_fresh_id in Hsw;
+    try solve [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
+  exact Hsw.
 Qed.
