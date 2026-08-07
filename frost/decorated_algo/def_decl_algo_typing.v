@@ -32,6 +32,16 @@
                                                conclusion's domain)
       [sdtylab{AbsAnno}]       [Θ ⊢ A ≡ᵗ A']  (same, in the non-check modes)
 
+    ⭐ LEAF-VALID EMBEDDING (2026-08-07, hand-off §6.2).  The three BASE rows
+    of each judgement embed [ad_pat_sub_v] — the leaf-valid join — not the
+    plain [ad_pat_sub].  thm:complete-subtyping can only CONSUME a leaf-valid
+    join, and the capture configuration (subject [∀X.◇], counterpart [∀ˢX.X])
+    shows the leaf datum is NOT recoverable from a plain one and IS reachable
+    here: cex/cex_ad_pat_join_not_leaf_valid.v.  This is the paper's own
+    AUGMENTED consistency-solution notion propagating one layer up.
+    [ad_pat_sub_of_v] recovers the plain premise wherever only a declarative
+    subtyping derivation is wanted.
+
     ⚙ SORTS.  [ad_pat_sub] is the paper's ALL-IN-ONE subtyping box
     [typsub[N][M][Ψ]] — one judgement over [uskl]/[bskl] carrying the paper's
     N ∈ {TY, SK} as an index (def_decl_algo_sub.v).  So the declarative
@@ -56,6 +66,7 @@ Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.decorated_algo.def_decl_algo.
 Require Import src.frost.decorated_algo.def_decl_algo_sub.
+Require Import src.frost.decorated_algo.def_decl_algo_sub_hyg.
 
 Set Implicit Arguments.
 
@@ -72,19 +83,19 @@ Reserved Notation "Θ ⊢ˢᵃ[ M ] e ⦂ B"
 
 Inductive ad_pat : mode -> aenv -> exp -> bskl -> Prop :=
 | ad_pat__unit : forall Θ m Q,                                   (* P-Unit *)
-    empty ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | m ] uskl_unit ⩽ Q ->
+    ad_pat_sub_v a_sub_mode_sk m empty Θ uskl_unit Q ->
     Θ ⊢ᵃ[ m ] exp_unit ⇨ Q
 | ad_pat__var : forall Θ m x (P : pskl) b Q,                      (* P-Var *)
     (* the paper's single [x : P] entry, in either of its two [abind] forms *)
     binds x b Θ ->
     abind_to_pskl b = Some P ->
-    empty ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | m ]
-      (bskl_to_uskl (pskl_to_bskl_syn P)) ⩽ Q ->
+    ad_pat_sub_v a_sub_mode_sk m empty Θ
+      (bskl_to_uskl (pskl_to_bskl_syn P)) Q ->
     Θ ⊢ᵃ[ m ] (exp_var_f x) ⇨ Q
 | ad_pat__anno : forall Θ m e (A : ptyp) Q,                      (* P-Anno *)
     a_wf_ptyp Θ A ->
-    empty ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | m ]
-      (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl A))) ⩽ Q ->
+    ad_pat_sub_v a_sub_mode_sk m empty Θ
+      (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl A))) Q ->
     Θ ⊢ᵃ[ m ] (exp_anno e A) ⇨ Q
 | ad_pat__freeze : forall Θ e P,                               (* P-Freeze *)
     Θ ⊢ᵃ[ mode_ti ] e ⇨ (pskl_to_bskl_syn P) ->
@@ -134,18 +145,18 @@ where "Θ ⊢ᵃ[ M ] e ⇨ Q" := (ad_pat M Θ e Q) : type_scope.
 
 Inductive ad_sd_typing : mode -> aenv -> exp -> btyp -> Prop :=
 | ad_sd_typing__unit : forall Θ m B,                            (* sd-Unit *)
-    empty ⨟ Θ ⊢ₛᵃ[ a_sub_mode_ty | m ]
-      (ptyp_to_uskl_syn ptyp_unit) ⩽ (btyp_to_bskl B) ->
+    ad_pat_sub_v a_sub_mode_ty m empty Θ
+      (ptyp_to_uskl_syn ptyp_unit) (btyp_to_bskl B) ->
     Θ ⊢ˢᵃ[ m ] exp_unit ⦂ B
 | ad_sd_typing__var : forall Θ m x A B,                          (* sd-Var *)
     binds x (abind_var_typ A) Θ ->
-    empty ⨟ Θ ⊢ₛᵃ[ a_sub_mode_ty | m ]
-      (ptyp_to_uskl_syn A) ⩽ (btyp_to_bskl B) ->
+    ad_pat_sub_v a_sub_mode_ty m empty Θ
+      (ptyp_to_uskl_syn A) (btyp_to_bskl B) ->
     Θ ⊢ˢᵃ[ m ] (exp_var_f x) ⦂ B
 | ad_sd_typing__anno : forall Θ m e A B,                        (* sd-Anno *)
     Θ ⊢ˢᵃ[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) ->
-    empty ⨟ Θ ⊢ₛᵃ[ a_sub_mode_ty | m ]
-      (ptyp_to_uskl_syn A) ⩽ (btyp_to_bskl B) ->
+    ad_pat_sub_v a_sub_mode_ty m empty Θ
+      (ptyp_to_uskl_syn A) (btyp_to_bskl B) ->
     Θ ⊢ˢᵃ[ m ] (exp_anno e A) ⦂ B
 | ad_sd_typing__freeze : forall Θ e A B,                      (* sd-Freeze *)
     (* ⭐ the appendix's first added premise: the synthesised premise's type

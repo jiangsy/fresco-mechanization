@@ -397,11 +397,11 @@ Lemma ad_pat_mono : forall M Θ e Q,
 Proof.
   intros M Θ e Q H; induction H; intros Θ' Hle;
     pose proof (aenv_tbinds_le_of_binds_le Hle) as Htle.
-  - apply ad_pat__unit. eapply ad_pat_sub_mono; eauto.
+  - apply ad_pat__unit. eapply ad_pat_sub_v_mono; eauto.
   - eapply ad_pat__var;
-      [ eauto | eassumption | eapply ad_pat_sub_mono; eauto ].
+      [ eauto | eassumption | eapply ad_pat_sub_v_mono; eauto ].
   - apply ad_pat__anno;
-      [ eapply a_wf_ptyp_mono; eauto | eapply ad_pat_sub_mono; eauto ].
+      [ eapply a_wf_ptyp_mono; eauto | eapply ad_pat_sub_v_mono; eauto ].
   - apply ad_pat__freeze; auto.
   - apply ad_pat__abs with (L := L);
       [ assumption | eapply a_wf_pskl_mono; eauto | assumption | ].
@@ -424,9 +424,9 @@ Lemma ad_sd_typing_mono : forall M Θ e B,
 Proof.
   intros M Θ e B H; induction H; intros Θ' Hle;
     pose proof (aenv_tbinds_le_of_binds_le Hle) as Htle.
-  - apply ad_sd_typing__unit. eapply ad_pat_sub_mono; eauto.
-  - eapply ad_sd_typing__var; [ eauto | eapply ad_pat_sub_mono; eauto ].
-  - eapply ad_sd_typing__anno; [ auto | eapply ad_pat_sub_mono; eauto ].
+  - apply ad_sd_typing__unit. eapply ad_pat_sub_v_mono; eauto.
+  - eapply ad_sd_typing__var; [ eauto | eapply ad_pat_sub_v_mono; eauto ].
+  - eapply ad_sd_typing__anno; [ auto | eapply ad_pat_sub_v_mono; eauto ].
   - eapply ad_sd_typing__freeze; [ auto | eapply a_tyequiv_mono; eauto ].
   - apply ad_sd_typing__abs_check_step with (L := L); [ assumption | ].
     intros α Hα. apply H1; [ exact Hα | apply aenv_binds_le_cons; exact Hle ].

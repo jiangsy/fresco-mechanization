@@ -206,7 +206,61 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-06 (latest) — ⭐⭐ **SECTION D completeness: the three SCOUTING questions are settled — the leaf-validity gap is REAL (machine-checked), and `lemma:precision-sub`'s flagged obstruction is DEAD**
+## 2026-08-07 (latest) — ⭐⭐⭐ **SECTION D: §6.2's RULE CHANGE LANDS — the six base rows embed `ad_pat_sub_v`, and both soundness theorems survive AXIOM-FREE**
+
+`make coq` clean; all 33 `Print Assumptions` audits in `README.v` — including
+`a_pat_sound` and `a_typing_sound` — still *Closed under the global context*.
+The capture configuration is now REJECTED by the rules themselves:
+`cex_ad_pat_join_not_leaf_valid.v` §3 flips from `cap_reachable` to
+`cap_not_reachable`, the change's own machine-checked witness.
+
+**1. The missing pair is built first** (`prop_suffix_erase.v` §5 / §8,
+~270 lines, Qed + axiom-free on the FIRST compile):
+
+- `ad_refine_pskl_subst_mid` — the `ad_refine_pskl` mirror of
+  `ad_refine_syn_subst_mid` (:499).  The two judgements' `__hole` rows differ
+  (the `bskl` one's fill is a SYNTHESISED painting, the `pskl` one's a plain
+  wf fill), so the induction is mirrored, not bridged — and the `pskl`
+  `__hole` row is in fact SIMPLER (no painting rewrite), while the `__var`
+  row closes by `ad_refine_pskl_refl` + `a_wf_pskl_mono_ptyp`.
+- `ad_pat_sub_gv_subst_mid` + `ad_pat_sub_v_subst_mid` — the `_gv` mirror of
+  `ad_pat_sub_subst_mid` (:929), fuel carried UNCHANGED; the four leaf rows'
+  refinement datum travels by the new lemma, re-shaped by
+  `uskl_to_pskl_subst_mono` / `bskl_to_pskl_subst_mono`.  The ForallL rows
+  reuse §1h's idiom exactly (`6: exact IH` first — it is what fixes ψ — then
+  `simpl; rewrite ftag_in_uskl_subst_mono; assumption` for the hygiene
+  premise).
+
+**2. Then the rule change in ONE pass**, exactly as scoped
+(hand-off §6.2; the reverted attempt's patch served as the map):
+`ad_pat__{unit,var,anno}` and `ad_sd_typing__{unit,var,anno}` now embed
+`ad_pat_sub_v <NM> m empty Θ <R> <Q>`.  Consumer sites converted:
+`ad_pat_sub_mono` → `_v_mono` (6 in prop_ctx_mono.v, 4 tm-swap rows EACH in
+prop_soundness_pat.v and prop_soundness_typing.v), `ad_pat_sub_isub` →
+`_v_isub` (3 + 3), `ad_pat_sub_mod_comp_sk` + ⭐ its TY analogue
+`ad_pat_sub_mod_comp_ty` recover the plain premise via `ad_pat_sub_of_v`
+(3 + 3 — the TY triple was NOT on the attempt's consumer table), the seven
+`a_sub_sound_thm` sites in `a_pat_sound` / `a_typing_sound` become
+`a_sub_sound_thm_v`, and ⭐ `a_typing_sound`'s `a_wf_ptyp Θ1 A` conjunct
+reads the join through `ad_pat_sub_target_wf` — plain again, via
+`ad_pat_sub_of_v` (3 sites, also not on the table).  The six
+`@ad_pat_sub_subst_mid` base-row sites in `ad_pat_subst_mid` /
+`ad_sd_typing_subst_mid` become `@ad_pat_sub_v_subst_mid` — same @-shape,
+since the wrapper keeps the plain lemma's quantifier prefix.
+
+⚙ The predicted several-rebuild loop took exactly three: (i)
+prop_soundness_typing.v needed `Require Import …prop_soundness_sub` (a
+`Require Import` does not re-export — fourth occurrence of this trap), (ii)
+the `mod_comp_ty` triple, (iii) the `target_wf` triple.  Everything else —
+including the cex rewrite — compiled on the first attempt.
+
+⛔ NEXT (hand-off §6.3 + the theorem-3 row map): theorem 3
+(`thm:complete-skeleton-inference`, proofs.tex:1711–2197), whose Sub case
+still wants `lemma:precision-sub` (§3) and §5's `ad_ctx_precise`; then
+theorem 4.  The completeness direction now RECEIVES `ad_pat_sub_v` from the
+hypothesis derivation's base rows and feeds it to `a_sub_complete_thm`.
+
+## 2026-08-06 — ⭐⭐ **SECTION D completeness: the three SCOUTING questions are settled — the leaf-validity gap is REAL (machine-checked), and `lemma:precision-sub`'s flagged obstruction is DEAD**
 
 Two new files in `cex/`, both compiling; no change to the development yet.
 

@@ -46,6 +46,7 @@ Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.decorated_algo.def_decl_algo.
 Require Import src.frost.decorated_algo.def_decl_algo_sub.
+Require Import src.frost.decorated_algo.def_decl_algo_sub_hyg.
 Require Import src.frost.decorated_algo.def_decl_algo_typing.
 Require Import src.frost.decorated_algo.def_decorated.
 Require Import src.frost.decorated_algo.prop_ctx_mono.
@@ -181,15 +182,15 @@ Lemma ad_pat_isub_tm : forall M Θ e Q,
   Θ' ⊢ᵃ[ M ] e ⇨ Q.
 Proof.
   intros M Θ e Q H; induction H; intros Θ' Hle Htm.
-  - (* unit *) apply ad_pat__unit. eapply ad_pat_sub_isub; eauto.
+  - (* unit *) apply ad_pat__unit. eapply ad_pat_sub_v_isub; eauto.
   - (* var *)
     eapply ad_pat__var;
       [ apply Htm; [ eapply abind_to_pskl_is_tm; eauto | exact H ]
       | eassumption
-      | eapply ad_pat_sub_isub; eauto ].
+      | eapply ad_pat_sub_v_isub; eauto ].
   - (* anno *)
     apply ad_pat__anno;
-      [ eapply a_wf_ptyp_isub; eauto | eapply ad_pat_sub_isub; eauto ].
+      [ eapply a_wf_ptyp_isub; eauto | eapply ad_pat_sub_v_isub; eauto ].
   - (* freeze *) apply ad_pat__freeze; auto.
   - (* abs *)
     apply ad_pat__abs with (L := L);
@@ -590,7 +591,7 @@ Proof.
     intros Θa x0 b0 Θb y Heq Htm Hx0; subst; simpl.
   - (* unit *)
     apply ad_pat__unit.
-    eapply ad_pat_sub_mono;
+    eapply ad_pat_sub_v_mono;
       [ eassumption | apply aenv_tbinds_le_rename_tm;
                       apply abind_is_tm_not_ty; exact Htm ].
   - (* var *)
@@ -607,13 +608,13 @@ Proof.
       eapply ad_pat__var with (b := b0);
         [ apply binds_app_3; unfold binds; simpl; left; reflexivity
         | eassumption
-        | eapply ad_pat_sub_mono;
+        | eapply ad_pat_sub_v_mono;
             [ eassumption | apply aenv_tbinds_le_rename_tm;
                             apply abind_is_tm_not_ty; exact Htm ] ].
     + (* any other variable: its entry is untouched *)
       eapply ad_pat__var with (b := b);
         [ | eassumption
-        | eapply ad_pat_sub_mono;
+        | eapply ad_pat_sub_v_mono;
             [ eassumption | apply aenv_tbinds_le_rename_tm;
                             apply abind_is_tm_not_ty; exact Htm ] ].
       apply binds_app_1 in H as [H | H];
@@ -626,7 +627,7 @@ Proof.
       [ eapply a_wf_ptyp_mono;
           [ eassumption | apply aenv_tbinds_le_rename_tm;
                           apply abind_is_tm_not_ty; exact Htm ]
-      | eapply ad_pat_sub_mono;
+      | eapply ad_pat_sub_v_mono;
           [ eassumption | apply aenv_tbinds_le_rename_tm;
                           apply abind_is_tm_not_ty; exact Htm ] ].
   - (* freeze *)
@@ -960,9 +961,9 @@ Lemma ad_pat_mod_comp_sk : forall M Θ e Q,
   Θ ⊢ᵃ[ M ] e ⇨ Q -> mod_comp_sk Q M.
 Proof.
   intros M Θ e Q H; induction H.
-  - (* unit *) eapply ad_pat_sub_mod_comp_sk; eassumption.
-  - (* var *) eapply ad_pat_sub_mod_comp_sk; eassumption.
-  - (* anno *) eapply ad_pat_sub_mod_comp_sk; eassumption.
+  - (* unit *) eapply ad_pat_sub_mod_comp_sk; apply ad_pat_sub_of_v; eassumption.
+  - (* var *) eapply ad_pat_sub_mod_comp_sk; apply ad_pat_sub_of_v; eassumption.
+  - (* anno *) eapply ad_pat_sub_mod_comp_sk; apply ad_pat_sub_of_v; eassumption.
   - (* freeze *) apply mod_comp_sk__tc. apply mod_comp_sk_ti_inv; assumption.
   - (* abs *) assumption.
   - (* abs_anno *) assumption.
@@ -2045,7 +2046,7 @@ Theorem a_pat_sound : forall m Θ0 P0 e P Θ1,
 Proof.
   intros m Θ0 P0 e P Θ1 H; induction H; intros Hwf Hskl HwfP0 Hmod Hexp.
   - (* AP-Unit *)
-    destruct (a_sub_sound_thm H Hwf HwfP0
+    destruct (a_sub_sound_thm_v H Hwf HwfP0
                 ltac:(apply a_wf_pskl__unit)
                 ltac:(intros _; exact Hmod)
                 ltac:(intros Hd; discriminate))
@@ -2056,7 +2057,7 @@ Proof.
   - (* AP-Var, type entry *)
     assert (HwfA : a_wf_ptyp Θ0 A)
       by (eapply a_wf_aenv_binds_var_typ_wf; eassumption).
-    destruct (a_sub_sound_thm H0 Hwf HwfP0
+    destruct (a_sub_sound_thm_v H0 Hwf HwfP0
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA)
                 ltac:(intros _; exact Hmod)
                 ltac:(intros Hd; discriminate))
@@ -2069,7 +2070,7 @@ Proof.
       | rewrite pskl_to_uskl_via_bskl_syn; exact Hjoin ].
   - (* AP-Var, skeleton entry — the entry's DISCIPLINED wf comes from the
        theorem's hypothesis, [a_wf_aenv] storing only its scope *)
-    destruct (a_sub_sound_thm H0 Hwf HwfP0 (Hskl _ _ H)
+    destruct (a_sub_sound_thm_v H0 Hwf HwfP0 (Hskl _ _ H)
                 ltac:(intros _; exact Hmod)
                 ltac:(intros Hd; discriminate))
       as [Hle [Hwf1 [Qt [HeQt [Hjoin Href]]]]].
@@ -2081,7 +2082,7 @@ Proof.
       | rewrite pskl_to_uskl_via_bskl_syn; exact Hjoin ].
   - (* AP-Anno *)
     destruct (a_wf_exp_anno_inv Hexp) as [HwfA Hexp0].
-    destruct (a_sub_sound_thm H Hwf HwfP0
+    destruct (a_sub_sound_thm_v H Hwf HwfP0
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA)
                 ltac:(intros _; exact Hmod)
                 ltac:(intros Hd; discriminate))

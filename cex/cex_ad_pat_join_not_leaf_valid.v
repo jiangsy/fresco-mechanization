@@ -135,21 +135,46 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §3  … and the configuration is REACHABLE from [ad_pat]                *)
+(*  §3  … and the configuration WAS reachable from [ad_pat] — which is     *)
+(*  why the rule had to change                                             *)
 (*                                                                        *)
-(*  ⚠️ This is what forces the rule change of hand-off §6.2: as long as     *)
-(*  [ad_pat]'s base rows embed the PLAIN [ad_pat_sub], the judgement below *)
-(*  is derivable and thm:complete-skeleton-inference can say NOTHING about *)
-(*  it, because §2 refutes its leaf datum.  Once the rows embed            *)
-(*  [ad_pat_sub_v] this derivation disappears — which is the point.        *)
+(*  ⭐ UPDATED 2026-08-07.  When [ad_pat]'s base rows embedded the PLAIN    *)
+(*  [ad_pat_sub], this section derived                                     *)
+(*      x : ∀X.◇  ⊢ᵃ[TI]  x  ⇨  ∀ˢX.X                                      *)
+(*  by [P-Var] on §1's plain join — a judgement thm:complete-skeleton-      *)
+(*  inference could say NOTHING about, since §2 refutes its leaf datum.    *)
+(*  The rules now embed [ad_pat_sub_v], so the same derivation is REJECTED  *)
+(*  (§3a), and the two halves the rule change rests on are §3b:            *)
+(*  everything BUT the join still goes through, so the leaf datum is the   *)
+(*  one and only thing that excludes the configuration.                    *)
 (* ===================================================================== *)
 
-Lemma cap_reachable : forall x,
-  ((x ~ abind_var_skl capP) ++ nil) ⊢ᵃ[ mode_ti ] (exp_var_f x) ⇨ capQ.
+(** §3a — [P-Var] can no longer reach the capture configuration. *)
+Lemma cap_not_reachable : forall x,
+  ~ (((x ~ abind_var_skl capP) ++ nil) ⊢ᵃ[ mode_ti ] (exp_var_f x) ⇨ capQ).
 Proof.
-  intros x.
-  apply ad_pat__var with (P := capP) (b := abind_var_skl capP);
-    [ eauto | reflexivity | ].
-  cbn [pskl_to_bskl_syn bskl_to_uskl].
+  intros x H. inversion H; subst.
+  (* the singleton context pins the bound skeleton to [capP] *)
+  assert (Hb : b = abind_var_skl capP)
+    by (clear - H1; cbn in H1; destruct H1 as [Heq | Habs];
+        [ congruence | contradiction ]).
+  subst b. cbn in H2. inversion H2; subst.
+  cbn [pskl_to_bskl_syn bskl_to_uskl] in H5.
+  (* ⚙ [NM]/[Θ] are strict-implicit here (Set Implicit Arguments) *)
+  exact (cap_no_gv H5).
+Qed.
+
+(** §3b — and it is ONLY the leaf datum that rejects it: the context entry,
+    the lookup and the plain join are all still there. *)
+Lemma cap_entry_wf : forall x,
+  binds x (abind_var_skl capP) ((x ~ abind_var_skl capP) ++ nil)
+  /\ abind_to_pskl (abind_var_skl capP) = Some capP.
+Proof. intros x. split; [ cbn; left; reflexivity | reflexivity ]. Qed.
+
+Lemma cap_var_plain_join : forall x,
+  empty ⨟ ((x ~ abind_var_skl capP) ++ nil) ⊢ₛᵃ[ a_sub_mode_sk | mode_ti ]
+    (bskl_to_uskl (pskl_to_bskl_syn capP)) ⩽ capQ.
+Proof.
+  intros x. cbn [pskl_to_bskl_syn bskl_to_uskl].
   apply cap_plain.
 Qed.

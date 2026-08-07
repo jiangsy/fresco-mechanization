@@ -399,7 +399,17 @@ plain `ad_pat_sub`, recovered at the call site.  That is deliberate: its
 consumers (`a_pat_sound`, `a_typing_sound`) still feed the plain join into
 `ad_pat` / `ad_sd_typing`'s rules.
 
-#### ⛔ §6.2's RULE CHANGE — ATTEMPTED 2026-08-07, REVERTED, NOW FULLY SCOPED
+#### ✅ §6.2's RULE CHANGE — LANDED 2026-08-07 (second pass)
+
+**DONE.**  The six base rows embed `ad_pat_sub_v`; `make coq` clean and every
+`Print Assumptions` audit (including `a_pat_sound` / `a_typing_sound`) still
+axiom-free.  The missing pair (`ad_refine_pskl_subst_mid` +
+`ad_pat_sub_v_subst_mid`, prop_suffix_erase.v §5/§8) was built FIRST, then the
+change went in one pass.  Two consumer triples the table below missed:
+`ad_pat_sub_mod_comp_ty` (prop_soundness_typing.v §8e) and
+`ad_pat_sub_target_wf` at `a_typing_sound`'s `a_wf_ptyp Θ1 A` conjunct — both
+recover the plain premise with `ad_pat_sub_of_v`.  The cex's §3 is now
+`cap_not_reachable`.  The subsection below is kept as the historical record.
 
 The plumbing below IS in the tree and green; the rule change itself is not.
 
