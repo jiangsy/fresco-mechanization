@@ -33,6 +33,10 @@ Require Import src.frost.decorated_algo.def_decl_algo_sub.
 Require Import src.frost.decorated_algo.def_decl_algo_sub_hyg.
 Require Import src.frost.decorated_algo.def_decl_algo_typing.
 Require Import src.frost.decorated_algo.prop_ctx_mono.
+Require Import src.frost.algo.prop_inc.
+Require Import src.frost.algo.prop_metasubst.
+Require Import src.frost.algo.prop_inc_strengthen.
+Require Import src.frost.algo.prop_compose.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_refine.
@@ -160,4 +164,202 @@ Proof.
   destruct (a_pat_sound Hrun Hwf Hskl HwfP0 Hmod Hexp)
     as [Hle [Hwf1 [Qt [HeQt [Hpat _]]]]].
   rewrite <- HeQt. eapply ad_pat_target_wf; [ exact Hpat | exact Hwf1 ].
+Qed.
+
+(* ===================================================================== *)
+(*  K2 — reverse term-entry lookups along an information increase (the    *)
+(*  Var case reads the SOLUTION context's entry; the run subtypes the     *)
+(*  QUESTION context's, and [a_inc]'s term rows relate them only up to    *)
+(*  the equational theory).                                               *)
+(* ===================================================================== *)
+
+(* A pending suffix carries no term entry. *)
+Lemma a_suffix_no_var_skl : forall Ξ x (P : pskl),
+  a_suffix Ξ -> binds x (abind_var_skl P) Ξ -> False.
+Proof.
+  intros Ξ x P H; induction H; intros Hb; [ inversion Hb | ].
+  destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'];
+    [ subst; inversion H0 | auto ].
+Qed.
+
+Lemma a_suffix_no_var_typ : forall Ξ x (A : ptyp),
+  a_suffix Ξ -> binds x (abind_var_typ A) Ξ -> False.
+Proof.
+  intros Ξ x A H; induction H; intros Hb; [ inversion Hb | ].
+  destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'];
+    [ subst; inversion H0 | auto ].
+Qed.
+
+(** A skeleton entry's payload is scoped in the WHOLE context (its own
+    tail suffices, so a fortiori). *)
+Lemma a_wf_aenv_binds_var_skl_ftv : forall Θ x (P : pskl),
+  a_wf_aenv Θ ->
+  binds x (abind_var_skl P) Θ ->
+  ftvar_in_pskl P [<=] dom Θ.
+Proof.
+  intros Θ x P H; induction H; intros Hb; try solve [ inversion Hb ];
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heq] | Hb'];
+    try discriminate Heq; simpl;
+    try solve [ pose proof (IHa_wf_aenv Hb'); fsetdec ].
+  inversion Heq; subst.
+  pose proof (a_scope_pskl_ftv_dom' H0). fsetdec.
+Qed.
+
+Lemma a_wf_aenv_binds_var_typ_ftv : forall Θ x (A : ptyp),
+  a_wf_aenv Θ ->
+  binds x (abind_var_typ A) Θ ->
+  ftvar_in_ptyp A [<=] dom Θ.
+Proof.
+  intros Θ x A H; induction H; intros Hb; try solve [ inversion Hb ];
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heq] | Hb'];
+    try discriminate Heq; simpl;
+    try solve [ pose proof (IHa_wf_aenv Hb'); fsetdec ].
+  inversion Heq; subst.
+  pose proof (a_wf_ptyp_ftv_dom H0) as Hs. simpl. clear - Hs. fsetdec.
+Qed.
+
+(** ⭐ K2 — the Θ-side term entry of an increase comes from a Θ0-side one,
+    with the payloads related by the equational theory under the FULL κ.
+    The flex rows shrink κ, which is harmless because the source tail's
+    payloads cannot mention the peeled flexible (wf-ordering). *)
+Lemma a_inc_binds_var_skl_rev : forall Θ0 κ Θ x (P : pskl),
+  κ ∷ Θ0 ⊑ Θ ->
+  a_wf_aenv Θ0 ->
+  binds x (abind_var_skl P) Θ ->
+  exists P0,
+    binds x (abind_var_skl P0) Θ0 /\
+    Θ ⊢ P ≡ˢ (msubst_pskl κ P0).
+Proof.
+  intros Θ0 κ Θ x P Hinc; induction Hinc; intros Hwf Hb.
+  - (* empty : the target is a pure suffix *)
+    exfalso; eapply a_suffix_no_var_skl; eassumption.
+  - (* flex : target unchanged, κ gains (α,τ) — the payload is α-free *)
+    inversion Hwf as [ | αz Θz Hα Hwf0 | | | | ]; subst.
+    destruct (IHHinc Hwf0 Hb) as [P0 [Hb0 Heq]].
+    exists P0. split; [ apply binds_cons_3; exact Hb0 | ].
+    assert (Hfr : α `notin` ftvar_in_pskl P0).
+    { pose proof (@a_wf_aenv_binds_var_skl_ftv _ _ _ Hwf0 Hb0) as Hs.
+      clear - Hs Hα. fsetdec. }
+    replace ((α, τ) :: κ) with (nil ++ ((α, τ) :: nil) ++ κ)
+      by reflexivity.
+    rewrite msubst_pskl_mid_skip;
+      [ exact Heq
+      | intros α0 Hα0; simpl in Hα0;
+        assert (α0 = α) by (clear - Hα0; fsetdec); subst; exact Hfr ].
+  - (* flex_def : same shape *)
+    inversion Hwf as [ | | αz τz Θz Hα Hwfτ Hmz Hwf0 | | | ]; subst.
+    destruct (IHHinc Hwf0 Hb) as [P0 [Hb0 Heq]].
+    exists P0. split; [ apply binds_cons_3; exact Hb0 | ].
+    assert (Hfr : α `notin` ftvar_in_pskl P0).
+    { pose proof (@a_wf_aenv_binds_var_skl_ftv _ _ _ Hwf0 Hb0) as Hs.
+      clear - Hs Hα. fsetdec. }
+    replace ((α, τ') :: κ) with (nil ++ ((α, τ') :: nil) ++ κ)
+      by reflexivity.
+    rewrite msubst_pskl_mid_skip;
+      [ exact Heq
+      | intros α0 Hα0; simpl in Hα0;
+        assert (α0 = α) by (clear - Hα0; fsetdec); subst; exact Hfr ].
+  - (* var (type entry) : x may be THIS entry (wrong sort) or below *)
+    inversion Hwf as [ | | | | xz Az Θz Hx HwfA Hwf0 | ]; subst.
+    apply binds_app_1 in Hb as [Hb | Hb];
+      [ exfalso; eapply a_suffix_no_var_skl; eassumption | ].
+    apply binds_app_1 in Hb as [Hb | Hb].
+    + destruct Hb as [Hp | []]. inversion Hp.
+    + destruct (IHHinc Hwf0 Hb) as [P0 [Hb0 Heq]].
+      exists P0. split; [ apply binds_cons_3; exact Hb0 | ].
+      eapply a_pskl_tyequiv_weaken;
+        [ intros y c Hc; apply binds_app_3; apply binds_cons_3; exact Hc
+        | exact Heq ].
+  - (* var_skl : the entry itself, or below *)
+    inversion Hwf as [ | | | xz Pz Θz Hx Hsc Hwf0 | | ]; subst.
+    apply binds_app_1 in Hb as [Hb | Hb];
+      [ exfalso; eapply a_suffix_no_var_skl; eassumption | ].
+    apply binds_app_1 in Hb as [Hb | Hb].
+    + destruct Hb as [Hp | []]. inversion Hp; subst.
+      eexists. split; [ unfold binds; simpl; left; reflexivity | ].
+      eapply a_pskl_tyequiv_weaken;
+        [ intros y c Hc; apply binds_app_3; apply binds_cons_3; exact Hc
+        | exact H ].
+    + destruct (IHHinc Hwf0 Hb) as [P1 [Hb0 Heq]].
+      exists P1. split; [ apply binds_cons_3; exact Hb0 | ].
+      eapply a_pskl_tyequiv_weaken;
+        [ intros y c Hc; apply binds_app_3; apply binds_cons_3; exact Hc
+        | exact Heq ].
+  - (* tvar *)
+    inversion Hwf as [ | | | | | αz Θz Hα Hwf0 ]; subst.
+    apply binds_app_1 in Hb as [Hb | Hb];
+      [ exfalso; eapply a_suffix_no_var_skl; eassumption | ].
+    apply binds_app_1 in Hb as [Hb | Hb].
+    + destruct Hb as [Hp | []]. inversion Hp.
+    + destruct (IHHinc Hwf0 Hb) as [P0 [Hb0 Heq]].
+      exists P0. split; [ apply binds_cons_3; exact Hb0 | ].
+      eapply a_pskl_tyequiv_weaken;
+        [ intros y c Hc; apply binds_app_3; apply binds_cons_3; exact Hc
+        | exact Heq ].
+Qed.
+
+(** The type-entry mirror, at [≡ᵗ]. *)
+Lemma a_inc_binds_var_typ_rev : forall Θ0 κ Θ x (A : ptyp),
+  κ ∷ Θ0 ⊑ Θ ->
+  a_wf_aenv Θ0 ->
+  binds x (abind_var_typ A) Θ ->
+  exists A0,
+    binds x (abind_var_typ A0) Θ0 /\
+    Θ ⊢ A ≡ᵗ (msubst_ptyp κ A0).
+Proof.
+  intros Θ0 κ Θ x A Hinc; induction Hinc; intros Hwf Hb.
+  - exfalso; eapply a_suffix_no_var_typ; eassumption.
+  - (* flex *)
+    inversion Hwf as [ | αz Θz Hα Hwf0 | | | | ]; subst.
+    destruct (IHHinc Hwf0 Hb) as [A0 [Hb0 Heq]].
+    exists A0. split; [ apply binds_cons_3; exact Hb0 | ].
+    assert (Hfr : α `notin` ftvar_in_ptyp A0).
+    { pose proof (@a_wf_aenv_binds_var_typ_ftv _ _ _ Hwf0 Hb0) as Hs.
+      clear - Hs Hα. fsetdec. }
+    rewrite msubst_ptyp_cons_notin; [ exact Heq | exact Hfr ].
+  - (* flex_def *)
+    inversion Hwf as [ | | αz τz Θz Hα Hwfτ Hmz Hwf0 | | | ]; subst.
+    destruct (IHHinc Hwf0 Hb) as [A0 [Hb0 Heq]].
+    exists A0. split; [ apply binds_cons_3; exact Hb0 | ].
+    assert (Hfr : α `notin` ftvar_in_ptyp A0).
+    { pose proof (@a_wf_aenv_binds_var_typ_ftv _ _ _ Hwf0 Hb0) as Hs.
+      clear - Hs Hα. fsetdec. }
+    rewrite msubst_ptyp_cons_notin; [ exact Heq | exact Hfr ].
+  - (* var (type entry) : the entry itself, or below *)
+    inversion Hwf as [ | | | | xz Az Θz Hx HwfA Hwf0 | ]; subst.
+    apply binds_app_1 in Hb as [Hb | Hb];
+      [ exfalso; eapply a_suffix_no_var_typ; eassumption | ].
+    apply binds_app_1 in Hb as [Hb | Hb].
+    + destruct Hb as [Hp | []]. inversion Hp; subst.
+      eexists. split; [ unfold binds; simpl; left; reflexivity | ].
+      eapply a_tyequiv_weaken;
+        [ intros y c Hc; apply binds_app_3; apply binds_cons_3; exact Hc
+        | exact H ].
+    + destruct (IHHinc Hwf0 Hb) as [A1 [Hb0 Heq]].
+      exists A1. split; [ apply binds_cons_3; exact Hb0 | ].
+      eapply a_tyequiv_weaken;
+        [ intros y c Hc; apply binds_app_3; apply binds_cons_3; exact Hc
+        | exact Heq ].
+  - (* var_skl : wrong sort at the entry, or below *)
+    inversion Hwf as [ | | | xz Pz Θz Hx Hsc Hwf0 | | ]; subst.
+    apply binds_app_1 in Hb as [Hb | Hb];
+      [ exfalso; eapply a_suffix_no_var_typ; eassumption | ].
+    apply binds_app_1 in Hb as [Hb | Hb].
+    + destruct Hb as [Hp | []]. inversion Hp.
+    + destruct (IHHinc Hwf0 Hb) as [A0 [Hb0 Heq]].
+      exists A0. split; [ apply binds_cons_3; exact Hb0 | ].
+      eapply a_tyequiv_weaken;
+        [ intros y c Hc; apply binds_app_3; apply binds_cons_3; exact Hc
+        | exact Heq ].
+  - (* tvar *)
+    inversion Hwf as [ | | | | | αz Θz Hα Hwf0 ]; subst.
+    apply binds_app_1 in Hb as [Hb | Hb];
+      [ exfalso; eapply a_suffix_no_var_typ; eassumption | ].
+    apply binds_app_1 in Hb as [Hb | Hb].
+    + destruct Hb as [Hp | []]. inversion Hp.
+    + destruct (IHHinc Hwf0 Hb) as [A0 [Hb0 Heq]].
+      exists A0. split; [ apply binds_cons_3; exact Hb0 | ].
+      eapply a_tyequiv_weaken;
+        [ intros y c Hc; apply binds_app_3; apply binds_cons_3; exact Hc
+        | exact Heq ].
 Qed.
