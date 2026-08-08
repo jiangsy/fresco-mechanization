@@ -1458,7 +1458,7 @@ Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
     Θ0 ⊢ₐ[ mode_ti ; pskl_hole ] e ⦂ B ⊣ Θ1 ->
     a_consis_chk Θ1 (ptyp_to_pskl B) (ptyp_to_pskl A) Θ2 ->
     Θ0 ⊢ₐ[ mode_tc ; (ptyp_to_pskl A) ] (exp_freeze e) ⦂ A ⊣ Θ2
-| a_typing__abs : forall L m Θ0 Θ1 Θ2 P0 P Q αs A e B Ξ,    (* AT-Abs *)
+| a_typing__abs : forall x m Θ0 Θ1 Θ2 P0 P Q αs A e B Ξ,    (* AT-Abs *)
     m <> mode_tc ->
     Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 ->
     a_guess_mono Θ1 P αs A ->
@@ -1472,82 +1472,108 @@ Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
        context.  Without it the body's run has no well-formed input context. *)
     uniq (αs ++ Θ1) ->
     a_suffix Ξ ->
-    (forall x, x `notin` L ->
-       ((x ~ abind_var_typ A) ++ αs ++ Θ1) ⊢ₐ[ (decr_mode m) ; Q ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⦂ B ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ2)) ->
+    (* EXISTS-FRESH binder, uniformly with the check rows below. *)
+    x `notin` dom (Ξ ++ αs ++ Θ1) `union` dom Θ2 `union` fvar_in_exp e ->
+    ((x ~ abind_var_typ A) ++ αs ++ Θ1) ⊢ₐ[ (decr_mode m) ; Q ]
+      (open_exp_wrt_exp e (exp_var_f x)) ⦂ B ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ2) ->
     Θ0 ⊢ₐ[ m ; P0 ] (exp_abs e) ⦂ (ptyp_arrow A B) ⊣ (Ξ ++ Θ2)
-| a_typing__abs_anno : forall L m Θ0 Θ1 Θ2 Θ3 P0 P Q A e B Ξ,   (* AT-AbsAnno *)
+| a_typing__abs_anno : forall x m Θ0 Θ1 Θ2 Θ3 P0 P Q A e B Ξ,   (* AT-AbsAnno *)
     m <> mode_tc ->
     Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 ->
     a_consis_chk Θ1 (ptyp_to_pskl A) P Θ2 ->
     a_suffix Ξ ->
-    (forall x, x `notin` L ->
-       ((x ~ abind_var_typ A) ++ Θ2) ⊢ₐ[ (decr_mode m) ; Q ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⦂ B ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ3)) ->
+    x `notin` dom (Ξ ++ Θ2) `union` dom Θ3 `union` fvar_in_exp e ->
+    ((x ~ abind_var_typ A) ++ Θ2) ⊢ₐ[ (decr_mode m) ; Q ]
+      (open_exp_wrt_exp e (exp_var_f x)) ⦂ B ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ3) ->
     Θ0 ⊢ₐ[ m ; P0 ] (exp_abs_anno A e) ⦂ (ptyp_arrow A B) ⊣ (Ξ ++ Θ3)
 (* AT-AbsCheck / AT-AbsAnnoCheck (input [∀ᾱ.A₀]): the ᾱ-prefix is folded one
    [∀] at a time — [_step] peels one rigid quantifier from the input type and
    the result, [_base] splits the (non-∀) input type into [A→B] and checks
    the body.  Mirrors [d_sd_typing__abs_check_step]/[_base]. *)
-(* ⭐ [paper-gap] THE PENDING SUFFIX IS DISCARDED HERE, and the paper's two
-   prose side conditions on that discard are made premises (docs/PAPER-GAPS.md,
+(* ⭐ [paper-gap] THE PENDING SUFFIX IS DISCARDED HERE, and the discard forced
+   THREE repairs against fig:alg-type-inference (docs/PAPER-GAPS.md,
    WF-SIDE-CONDITIONS.md).  These four rows — and only these four — return an
-   output context that DROPS the suffix [Ξ] the body's run deposited, exactly
-   as fig:alg-type-inference does; [a_pat]'s check rows keep theirs, which is
-   why thm:sound-skeleton-inference never met this.  The paper's own proof of
-   thm:sound-type-inference discharges the resulting mismatch with
-   lemma:suffix-erasure, "since all variables in Ξ do not appear in inh{B}"
-   (proofs.tex, AbsCheck case) — i.e. it ASSUMES the two facts below, which
-   no rule states and which are NOT derivable from the rules:
+   output context that DROPS the suffix [Ξ] the body's run deposited;
+   [a_pat]'s check rows keep theirs, which is why thm:sound-skeleton-inference
+   never met any of this.
 
    (1) [uniq (Ξ ++ Θ)] — the run's new names avoid the input context.  This
        is verbatim the premise [a_sub__forall_r] already carries for its own
        discarded suffix ("Barendregt: the run's new names avoid the input").
-   (2) [Ξ] does not occur in the RESULT type.  A scoping theorem cannot
-       supply it: at [_step] the body's own result may legitimately mention
-       flexibles the body created, and the rule offers no handle saying
-       those flexibles were re-deposited BELOW the discarded prefix.
-
-   Both are INVERSION-only for every existing consumer, and both are
-   discharged by [Ξ = ·] in the benchmark derivations (test/). *)
-| a_typing__abs_check_step : forall L Θ0 Θ1 A0 e A Ξ,
+       The paper's soundness proof assumes it when invoking
+       lemma:suffix-erasure ("since all variables in Ξ do not appear in
+       inh{B}", proofs.tex AbsCheck case).
+   (2) [Ξ] does not occur in the RESULT type — the other fact that same
+       proof step assumes.  It is a real invariant of the algorithm
+       (thm:complete-type-inference discharges it when BUILDING these rows),
+       but no scoping theorem local to the rule supplies it, so it stays a
+       premise.
+   (3) THE [_base] BODY PREMISE'S RESULT IS A FREE [B1], NOT pinned to the
+       split codomain [B], and the conclusion's codomain is that [B1].  The
+       figure's pinned premise [Θ1,ᾱ,x:A ⊢[TC;B] M ⦂ B] is UNSATISFIABLE
+       whenever the split codomain [B] is a flexible and the body is itself
+       a lambda (the inner run concludes the INNER split's arrow, never the
+       flexible itself) or an application (the function run returns the
+       solved codomain) — so terms the implementation accepts, e.g.
+       λy.λz.e checked against a flexible, would have NO derivation and
+       completeness fails.  The reference implementation never looks at the
+       body's returned type (type.ml I-AbsCheck: [end_rule (t, ...)] after
+       [let* _, m = finfer (Check b) m e]), and the paper's own completeness
+       proof concludes with the body's [B_1], not the split's [B]
+       (proofs.tex AbsCheck case, [∀ᾱ.A'→B_1]) — the rule follows the proof.
+   (4) ALL FOUR rows quantify their binder EXISTS-FRESH, not cofinitely —
+       verbatim [a_sub__forall_r]'s 2026-07-31 repair.  For the [_step]
+       rows it is forced: the discarded junk [Ξ] may legitimately MENTION
+       the peeled [α] (an AbsAnnoCheck body's consistency stage can solve a
+       deposited flexible against it), and the [_base] rows' [Ξ] and result
+       [B1] may likewise mention data the run invented for that one binder,
+       so a COFINITE premise sharing [Ξ]/[B1] (resp. [Ξ]/[A]) across the
+       whole family is unsatisfiable in reachable configurations and breaks
+       completeness.  Consumers that need the binder away from ambient data
+       re-freshen via the decl-side renaming lemmas. *)
+| a_typing__abs_check_step : forall α Θ0 Θ1 A0 e A Ξ,
     a_suffix Ξ ->
     uniq (Ξ ++ Θ0) ->                                   (* Barendregt (1) *)
     (forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_ptyp A) ->  (* (2) *)
-    (forall α, α `notin` L ->
-       ((α ~ abind_tvar) ++ Θ0)
-         ⊢ₐ[ mode_tc ; (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))) ]
-         (exp_abs e) ⦂ (open_ptyp_wrt_ptyp A (ptyp_var_f α))
-         ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ1)) ->
+    α `notin` dom (Ξ ++ Θ0) `union` dom Θ1 `union`
+      ftvar_in_ptyp A0 `union` ftvar_in_ptyp A `union`
+      ftvar_in_exp (exp_abs e) ->
+    ((α ~ abind_tvar) ++ Θ0)
+      ⊢ₐ[ mode_tc ; (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))) ]
+      (exp_abs e) ⦂ (open_ptyp_wrt_ptyp A (ptyp_var_f α))
+      ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ1) ->
     Θ0 ⊢ₐ[ mode_tc ; (ptyp_to_pskl (ptyp_all A0)) ] (exp_abs e) ⦂ (ptyp_all A) ⊣ Θ1
-| a_typing__abs_check_base : forall L Θ0 Θ1 Θ2 A0 A B e Ξ,
+| a_typing__abs_check_base : forall x Θ0 Θ1 Θ2 A0 A B B1 e Ξ,
     Θ0 ⊲ (ptyp_to_pskl A0) ▹ (ptyp_to_pskl A) ⇢ (ptyp_to_pskl B) ⊣ Θ1 ->
     a_suffix Ξ ->
     uniq (Ξ ++ Θ1) ->                                   (* Barendregt (1) *)
-    (forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_ptyp B) ->  (* (2) *)
-    (forall x, x `notin` L ->
-       ((x ~ abind_var_typ A) ++ Θ1) ⊢ₐ[ mode_tc ; (ptyp_to_pskl B) ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⦂ B ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ2)) ->
-    Θ0 ⊢ₐ[ mode_tc ; (ptyp_to_pskl A0) ] (exp_abs e) ⦂ (ptyp_arrow A B) ⊣ Θ2
-| a_typing__abs_anno_check_step : forall L Θ0 Θ1 A0 Aan e A Ξ,
+    (forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_ptyp B1) ->  (* (2) *)
+    x `notin` dom (Ξ ++ Θ1) `union` dom Θ2 `union` fvar_in_exp e ->
+    ((x ~ abind_var_typ A) ++ Θ1) ⊢ₐ[ mode_tc ; (ptyp_to_pskl B) ]
+      (open_exp_wrt_exp e (exp_var_f x)) ⦂ B1 ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ2) ->
+    Θ0 ⊢ₐ[ mode_tc ; (ptyp_to_pskl A0) ] (exp_abs e) ⦂ (ptyp_arrow A B1) ⊣ Θ2
+| a_typing__abs_anno_check_step : forall α Θ0 Θ1 A0 Aan e A Ξ,
     a_suffix Ξ ->
     uniq (Ξ ++ Θ0) ->                                   (* Barendregt (1) *)
     (forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_ptyp A) ->  (* (2) *)
-    (forall α, α `notin` L ->
-       ((α ~ abind_tvar) ++ Θ0)
-         ⊢ₐ[ mode_tc ; (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))) ]
-         (exp_abs_anno Aan e) ⦂ (open_ptyp_wrt_ptyp A (ptyp_var_f α))
-         ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ1)) ->
-    Θ0 ⊢ₐ[ mode_tc ; (ptyp_to_pskl (ptyp_all A0)) ] (exp_abs_anno Aan e) ⦂ (ptyp_all A) ⊣ Θ1
-| a_typing__abs_anno_check_base : forall L Θ0 Θ1 Θ2 Θ3 A0 A' A B e Ξ,
+    α `notin` dom (Ξ ++ Θ0) `union` dom Θ1 `union`
+      ftvar_in_ptyp A0 `union` ftvar_in_ptyp A `union`
+      ftvar_in_exp (exp_abs_anno Aan e) ->
+    ((α ~ abind_tvar) ++ Θ0)
+      ⊢ₐ[ mode_tc ; (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))) ]
+      (exp_abs_anno Aan e) ⦂ (open_ptyp_wrt_ptyp A (ptyp_var_f α))
+      ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ1) ->
+    Θ0 ⊢ₐ[ mode_tc ; (ptyp_to_pskl (ptyp_all A0)) ] (exp_abs_anno Aan e)
+      ⦂ (ptyp_all A) ⊣ Θ1
+| a_typing__abs_anno_check_base : forall x Θ0 Θ1 Θ2 Θ3 A0 A' A B B1 e Ξ,
     Θ0 ⊲ (ptyp_to_pskl A0) ▹ (ptyp_to_pskl A') ⇢ (ptyp_to_pskl B) ⊣ Θ1 ->
     a_consis_chk Θ1 (ptyp_to_pskl A') (ptyp_to_pskl A) Θ2 ->
     a_suffix Ξ ->
     uniq (Ξ ++ Θ2) ->                                   (* Barendregt (1) *)
-    (forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_ptyp B) ->  (* (2) *)
-    (forall x, x `notin` L ->
-       ((x ~ abind_var_typ A) ++ Θ2) ⊢ₐ[ mode_tc ; (ptyp_to_pskl B) ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⦂ B ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ3)) ->
+    (forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_ptyp B1) ->  (* (2) *)
+    x `notin` dom (Ξ ++ Θ2) `union` dom Θ3 `union` fvar_in_exp e ->
+    ((x ~ abind_var_typ A) ++ Θ2) ⊢ₐ[ mode_tc ; (ptyp_to_pskl B) ]
+      (open_exp_wrt_exp e (exp_var_f x)) ⦂ B1 ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ3) ->
     (* ⭐ [paper-gap] THE RESULT'S DOMAIN IS THE SPLIT'S [A'], NOT THE WRITTEN
        ANNOTATION [A].  The paper's (commented-out) AT-AbsAnnoCheck writes
        [A → B] (algorithmic.tex:296-303) while orienting its consistency
@@ -1560,7 +1586,7 @@ Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
        exactly what the appendix's [≡ᵗ] premise on sd-AbsAnnoCheck is FOR:
        "the conclusion's domain is any Θ-equivalent A'".  docs/PAPER-GAPS.md *)
     Θ0 ⊢ₐ[ mode_tc ; (ptyp_to_pskl A0) ] (exp_abs_anno A e)
-      ⦂ (ptyp_arrow A' B) ⊣ Θ3
+      ⦂ (ptyp_arrow A' B1) ⊣ Θ3
 | a_typing__app : forall m Θ0 Θ1 Θ2 Θ3 P Q A A' B e1 e2,    (* AT-App *)
     Θ0 ⊢ₐ[ mode_tc ; pskl_hole ] e2 ⇨ P ⊣ Θ1 ->
     Θ1 ⊢ₐ[ (mode_fn m) ; (pskl_arrow P Q) ] e1 ⦂ (ptyp_arrow A B) ⊣ Θ2 ->

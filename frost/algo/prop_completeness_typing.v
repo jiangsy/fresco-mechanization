@@ -80,266 +80,6 @@ Require Import src.frost.algo.prop_precise_sub.
 Require Import src.frost.algo.prop_completeness_pat.
 Require Import src.frost.algo.prop_ty_core.
 
-(* ===================================================================== *)
-(*  Theorem 4's K6 — [a_typing]'s own term renaming, the same HYBRID as   *)
-(*  [a_pat_rename_tm]: SWAP the type-level data, SUBSTITUTE in the term.  *)
-(*  The four check rows' TYPE-variable families swap by the bijection     *)
-(*  ([swap_atoms] avoid-set, instance at the preimage), their Barendregt  *)
-(*  side conditions transport pointwise.                                  *)
-(* ===================================================================== *)
-
-Lemma a_typing_rename_tm : forall a b m Θ0 P0 e A Θ1,
-  Θ0 ⊢ₐ[ m ; P0 ] e ⦂ A ⊣ Θ1 ->
-  a `notin` ftvar_in_exp e -> b `notin` ftvar_in_exp e ->
-  b `notin` fvar_in_exp e ->
-  a_typing m (swap_aenv a b Θ0) (swap_pskl a b P0)
-    (subst_exp_in_exp (exp_var_f b) a e) (swap_ptyp a b A)
-    (swap_aenv a b Θ1).
-Proof.
-  intros a b m Θ0 P0 e A Θ1 H.
-  induction H; intros Ha Hb Hbv;
-    simpl in Ha, Hb, Hbv; cbn [subst_exp_in_exp].
-  - (* unit *)
-    apply a_typing__unit.
-    pose proof (proj1 (a_sub_sub_flex_swap a b) _ _ _ _ _ _ _ H) as h.
-    rewrite swap_pskl_ptyp_to_pskl in h.
-    exact h.
-  - (* var *)
-    pose proof (proj1 (a_sub_sub_flex_swap a b) _ _ _ _ _ _ _ H0) as hsub.
-    rewrite !swap_pskl_ptyp_to_pskl in hsub.
-    pose proof (swap_aenv_binds a b _ _ _ H) as hb.
-    cbn [swap_abind] in hb.
-    destruct_if as [Heq | Hne].
-    + subst x. rewrite swap_atom_l in hb.
-      eapply a_typing__var; [ exact hb | exact hsub ].
-    + assert (Hxb : x <> b) by (intros ->; clear - Hbv; fsetdec).
-      rewrite (swap_atom_other a b x Hne Hxb) in hb.
-      eapply a_typing__var; [ exact hb | exact hsub ].
-  - (* anno *)
-    pose proof (proj1 (a_sub_sub_flex_swap a b) _ _ _ _ _ _ _ H0) as hsub.
-    rewrite !swap_pskl_ptyp_to_pskl in hsub.
-    rewrite (swap_ptyp_fresh_id a b A) in hsub;
-      [ | clear - Ha; fsetdec | clear - Hb; fsetdec ].
-    apply a_typing__anno with (Θ1 := swap_aenv a b Θ1);
-      [ | exact hsub ].
-    pose proof (IHa_typing ltac:(clear - Ha; fsetdec)
-                  ltac:(clear - Hb; fsetdec)
-                  ltac:(clear - Hbv; fsetdec)) as IH.
-    rewrite swap_pskl_ptyp_to_pskl in IH.
-    rewrite (swap_ptyp_fresh_id a b A) in IH;
-      [ | clear - Ha; fsetdec | clear - Hb; fsetdec ].
-    exact IH.
-  - (* freeze *)
-    rewrite swap_pskl_ptyp_to_pskl.
-    apply a_typing__freeze with (B := swap_ptyp a b B)
-      (Θ1 := swap_aenv a b Θ1).
-    + pose proof (IHa_typing Ha Hb Hbv) as IH. exact IH.
-    + pose proof (a_consis_chk_swap a b _ _ _ _ H0) as hc.
-      rewrite !swap_pskl_ptyp_to_pskl in hc.
-      exact hc.
-  - (* abs (guess^TY) *)
-    rewrite !swap_aenv_app.
-    eapply a_typing__abs
-      with (L := L `union` singleton a `union` singleton b);
-      [ assumption
-      | apply a_split_swap; eassumption
-      | apply a_guess_mono_swap; eassumption
-      | rewrite <- swap_aenv_app; apply swap_aenv_uniq; assumption
-      | apply a_suffix_swap; assumption
-      | ].
-    intros z Hz.
-    rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
-      [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
-    assert (Hza : z <> a) by (clear - Hz; fsetdec).
-    assert (Hzb : z <> b) by (clear - Hz; fsetdec).
-    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hfu.
-    pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hvu.
-    simpl in hfu, hvu.
-    pose proof (H5 z ltac:(clear - Hz; fsetdec)
-                  ltac:(clear - Ha hfu; fsetdec)
-                  ltac:(clear - Hb hfu; fsetdec)
-                  ltac:(clear - Hbv hvu Hzb; fsetdec)) as IH.
-    rewrite !swap_aenv_app, !swap_aenv_one,
-      (swap_atom_other a b z Hza Hzb) in IH.
-    cbn [swap_abind] in IH.
-    exact IH.
-  - (* abs_anno *)
-    rewrite swap_aenv_app.
-    cbn [swap_ptyp].
-    rewrite (swap_ptyp_fresh_id a b A);
-      [ | clear - Ha; fsetdec | clear - Hb; fsetdec ].
-    eapply a_typing__abs_anno
-      with (L := L `union` singleton a `union` singleton b)
-           (Θ1 := swap_aenv a b Θ1) (Θ2 := swap_aenv a b Θ2)
-           (P := swap_pskl a b P);
-      [ assumption
-      | apply a_split_swap; eassumption
-      | pose proof (a_consis_chk_swap a b _ _ _ _ H1) as hc;
-        rewrite swap_pskl_ptyp_to_pskl in hc;
-        rewrite (swap_ptyp_fresh_id a b A) in hc;
-        [ exact hc | clear - Ha; fsetdec | clear - Hb; fsetdec ]
-      | apply a_suffix_swap; assumption
-      | ].
-    intros z Hz.
-    rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
-      [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
-    assert (Hza : z <> a) by (clear - Hz; fsetdec).
-    assert (Hzb : z <> b) by (clear - Hz; fsetdec).
-    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hfu.
-    pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hvu.
-    simpl in hfu, hvu.
-    pose proof (H4 z ltac:(clear - Hz; fsetdec)
-                  ltac:(clear - Ha hfu; fsetdec)
-                  ltac:(clear - Hb hfu; fsetdec)
-                  ltac:(clear - Hbv hvu Hzb; fsetdec)) as IH.
-    rewrite !swap_aenv_app, !swap_aenv_one,
-      (swap_atom_other a b z Hza Hzb) in IH.
-    cbn [swap_abind] in IH.
-    rewrite (swap_ptyp_fresh_id a b A) in IH;
-      [ | clear - Ha; fsetdec | clear - Hb; fsetdec ].
-    exact IH.
-  - (* abs_check_step : the TYPE-variable family swaps by the bijection *)
-    rewrite swap_pskl_ptyp_to_pskl.
-    cbn [swap_ptyp].
-    eapply a_typing__abs_check_step
-      with (L := swap_atoms a b L) (Ξ := swap_aenv a b Ξ);
-      [ apply a_suffix_swap; assumption
-      | rewrite <- swap_aenv_app; apply swap_aenv_uniq; assumption
-      | intros γ Hγ;
-        pose proof (swap_aenv_dom_in_rev a b Ξ _ Hγ) as hd;
-        pose proof (H1 _ hd) as hf;
-        pose proof (swap_ptyp_ftv_notin a b A _ hf) as hnf;
-        rewrite swap_atom_invol in hnf; exact hnf
-      | ].
-    intros β Hβ.
-    assert (hin : swap_atom a b β `notin` L)
-      by (intro hc; apply Hβ; apply swap_atoms_iff; exact hc).
-    pose proof (H3 _ hin Ha Hb Hbv) as IH.
-    rewrite !swap_aenv_app, !swap_aenv_one in IH.
-    cbn [swap_abind] in IH.
-    rewrite swap_atom_invol in IH.
-    rewrite swap_pskl_ptyp_to_pskl in IH.
-    rewrite !swap_ptyp_open in IH.
-    cbn [swap_ptyp] in IH.
-    rewrite !swap_atom_invol in IH.
-    exact IH.
-  - (* abs_check_base *)
-    rewrite swap_pskl_ptyp_to_pskl.
-    cbn [swap_ptyp].
-    eapply a_typing__abs_check_base
-      with (L := L `union` singleton a `union` singleton b)
-           (Θ1 := swap_aenv a b Θ1) (Ξ := swap_aenv a b Ξ);
-      [ pose proof (a_split_swap a b H) as hs;
-        rewrite !swap_pskl_ptyp_to_pskl in hs; exact hs
-      | apply a_suffix_swap; assumption
-      | rewrite <- swap_aenv_app; apply swap_aenv_uniq; assumption
-      | intros γ Hγ;
-        pose proof (swap_aenv_dom_in_rev a b Ξ _ Hγ) as hd;
-        pose proof (H2 _ hd) as hf;
-        pose proof (swap_ptyp_ftv_notin a b B _ hf) as hnf;
-        rewrite swap_atom_invol in hnf; exact hnf
-      | ].
-    intros z Hz.
-    rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
-      [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
-    assert (Hza : z <> a) by (clear - Hz; fsetdec).
-    assert (Hzb : z <> b) by (clear - Hz; fsetdec).
-    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hfu.
-    pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hvu.
-    simpl in hfu, hvu.
-    pose proof (H4 z ltac:(clear - Hz; fsetdec)
-                  ltac:(clear - Ha hfu; fsetdec)
-                  ltac:(clear - Hb hfu; fsetdec)
-                  ltac:(clear - Hbv hvu Hzb; fsetdec)) as IH.
-    rewrite !swap_aenv_app, !swap_aenv_one,
-      (swap_atom_other a b z Hza Hzb) in IH.
-    cbn [swap_abind] in IH.
-    rewrite swap_pskl_ptyp_to_pskl in IH.
-    exact IH.
-  - (* abs_anno_check_step *)
-    rewrite swap_pskl_ptyp_to_pskl.
-    cbn [swap_ptyp].
-    eapply a_typing__abs_anno_check_step
-      with (L := swap_atoms a b L) (Ξ := swap_aenv a b Ξ);
-      [ apply a_suffix_swap; assumption
-      | rewrite <- swap_aenv_app; apply swap_aenv_uniq; assumption
-      | intros γ Hγ;
-        pose proof (swap_aenv_dom_in_rev a b Ξ _ Hγ) as hd;
-        pose proof (H1 _ hd) as hf;
-        pose proof (swap_ptyp_ftv_notin a b A _ hf) as hnf;
-        rewrite swap_atom_invol in hnf; exact hnf
-      | ].
-    intros β Hβ.
-    assert (hin : swap_atom a b β `notin` L)
-      by (intro hc; apply Hβ; apply swap_atoms_iff; exact hc).
-    pose proof (H3 _ hin Ha Hb Hbv) as IH.
-    rewrite !swap_aenv_app, !swap_aenv_one in IH.
-    cbn [swap_abind] in IH.
-    rewrite swap_atom_invol in IH.
-    rewrite swap_pskl_ptyp_to_pskl in IH.
-    rewrite !swap_ptyp_open in IH.
-    cbn [swap_ptyp] in IH.
-    rewrite !swap_atom_invol in IH.
-    exact IH.
-  - (* abs_anno_check_base *)
-    rewrite swap_pskl_ptyp_to_pskl.
-    cbn [swap_ptyp].
-    eapply a_typing__abs_anno_check_base
-      with (L := L `union` singleton a `union` singleton b)
-           (Θ1 := swap_aenv a b Θ1) (Θ2 := swap_aenv a b Θ2)
-           (Ξ := swap_aenv a b Ξ);
-      [ pose proof (a_split_swap a b H) as hs;
-        rewrite !swap_pskl_ptyp_to_pskl in hs; exact hs
-      | pose proof (a_consis_chk_swap a b _ _ _ _ H0) as hc;
-        rewrite !swap_pskl_ptyp_to_pskl in hc;
-        rewrite (swap_ptyp_fresh_id a b A) in hc;
-        [ exact hc | clear - Ha; fsetdec | clear - Hb; fsetdec ]
-      | apply a_suffix_swap; assumption
-      | rewrite <- swap_aenv_app; apply swap_aenv_uniq; assumption
-      | intros γ Hγ;
-        pose proof (swap_aenv_dom_in_rev a b Ξ _ Hγ) as hd;
-        pose proof (H3 _ hd) as hf;
-        pose proof (swap_ptyp_ftv_notin a b B _ hf) as hnf;
-        rewrite swap_atom_invol in hnf; exact hnf
-      | ].
-    intros z Hz.
-    rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
-      [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
-    assert (Hza : z <> a) by (clear - Hz; fsetdec).
-    assert (Hzb : z <> b) by (clear - Hz; fsetdec).
-    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hfu.
-    pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hvu.
-    simpl in hfu, hvu.
-    pose proof (H5 z ltac:(clear - Hz; fsetdec)
-                  ltac:(clear - Ha hfu; fsetdec)
-                  ltac:(clear - Hb hfu; fsetdec)
-                  ltac:(clear - Hbv hvu Hzb; fsetdec)) as IH.
-    rewrite !swap_aenv_app, !swap_aenv_one,
-      (swap_atom_other a b z Hza Hzb) in IH.
-    cbn [swap_abind] in IH.
-    rewrite swap_pskl_ptyp_to_pskl in IH.
-    rewrite (swap_ptyp_fresh_id a b A) in IH;
-      [ | clear - Ha; fsetdec | clear - Hb; fsetdec ].
-    exact IH.
-  - (* app *)
-    eapply a_typing__app
-      with (Θ1 := swap_aenv a b Θ1) (Θ2 := swap_aenv a b Θ2)
-           (P := swap_pskl a b P) (A := swap_ptyp a b A).
-    + pose proof (@a_pat_rename_tm a b _ _ _ _ _ _ H
-                    ltac:(clear - Ha; fsetdec)
-                    ltac:(clear - Hb; fsetdec)
-                    ltac:(clear - Hbv; fsetdec)) as h.
-      exact h.
-    + pose proof (IHa_typing1 ltac:(clear - Ha; fsetdec)
-                    ltac:(clear - Hb; fsetdec)
-                    ltac:(clear - Hbv; fsetdec)) as IH.
-      exact IH.
-    + pose proof (IHa_typing2 ltac:(clear - Ha; fsetdec)
-                    ltac:(clear - Hb; fsetdec)
-                    ltac:(clear - Hbv; fsetdec)) as IH.
-      rewrite swap_pskl_ptyp_to_pskl in IH.
-      exact IH.
-Qed.
 
 (* ===================================================================== *)
 (*  THEOREM 4 — the statement, factored like [pat_complete_concl]         *)
@@ -694,22 +434,7 @@ Lemma pskl_to_bskl_syn_ptyp : forall A,
   pskl_to_bskl_syn (ptyp_to_pskl A) = btyp_to_bskl (ptyp_to_btyp_syn A).
 Proof. induction A; simpl; f_equal; auto. Qed.
 
-(** [≡ᵗ] embeds into [≡ˢ] on the paintings (row for row). *)
-Lemma a_tyequiv_embed_pskl : forall Θ A B,
-  Θ ⊢ A ≡ᵗ B ->
-  Θ ⊢ (ptyp_to_pskl A) ≡ˢ (ptyp_to_pskl B).
-Proof.
-  intros Θ A B H; induction H.
-  - apply a_pskl_tyequiv__refl. apply lc_ptyp_to_pskl. exact H.
-  - apply a_pskl_tyequiv__sym. exact IHa_tyequiv.
-  - eapply a_pskl_tyequiv__trans; eassumption.
-  - apply a_pskl_tyequiv__flex_def. exact H.
-  - simpl. apply a_pskl_tyequiv__arrow; assumption.
-  - simpl. apply a_pskl_tyequiv__all with (L := L).
-    intros α Hα.
-    rewrite <- !ptyp_to_pskl_open.
-    apply H0. exact Hα.
-Qed.
+(* [a_tyequiv_embed_pskl] moved to prop_soundness_typing.v (2026-08-08). *)
 
 (** Well-formedness transports along [≡ᵗ], both ways (the flex-def row
     swaps a variable for its definition, both wf in a wf context).  Stated
@@ -2473,52 +2198,20 @@ Proof.
   (* ---- 8. the run ---- *)
   exists (ptyp_arrow A' B'), (Ξ ++ Θ2).
   split.
-  { eapply a_typing__abs
-      with (L := dom Θ0 `union` ftvar_in_aenv Θ0
-                 `union` dom blk
-                 `union` dom Ξ `union` ftvar_in_aenv Ξ
-                 `union` dom Θ2 `union` ftvar_in_aenv Θ2
-                 `union` ftvar_in_ptyp A' `union` ftvar_in_ptyp B'
-                 `union` ftvar_in_pskl P `union` ftvar_in_pskl Q
-                 `union` fvar_in_exp e `union` ftvar_in_exp e
-                 `union` singleton x);
-      [ exact HMne | exact Hsplit | exact Hguess
-      | apply uniq_app_of;
-          [ exact Huqb | apply a_wf_aenv_uniq; exact Hwf0
-          | intros α Hα Hc;
-            pose proof (Havb α Hα) as Hn;
-            assert (Hd0 : α `in` dom Θ0) by (clear - Hc; fsetdec);
-            clear - Hn Hd0; fsetdec ]
-      | exact Hsuf | ].
-    intros z Hz.
-    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hup.
-    pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hvup.
-    simpl in Hup, Hvup.
-    pose proof (@a_typing_rename_tm x z _ _ _ _ _ _ HrunB
-                  ltac:(clear - Hx Hup; fsetdec)
-                  ltac:(clear - Hz Hup; fsetdec)
-                  ltac:(clear - Hz Hvup; fsetdec)) as Hsw.
-    rewrite (@swap_aenv_tm_head x z (abind_var_typ A') (blk ++ Θ0)
-               ltac:(simpl; rewrite dom_app, ftvar_in_aenv_app;
-                     clear - Hx Hftvblk; fsetdec)
-               ltac:(simpl; rewrite dom_app, ftvar_in_aenv_app;
-                     clear - Hz Hftvblk; fsetdec)) in Hsw.
-    rewrite swap_aenv_app in Hsw.
-    rewrite (@swap_aenv_tm_head x z (abind_var_typ A') Θ2
-               ltac:(simpl; clear - HxΘ2 Hx; fsetdec)
-               ltac:(simpl; clear - Hz; fsetdec)) in Hsw.
-    rewrite (@swap_aenv_fresh_eq x z Ξ
-               ltac:(clear - HxΞ; fsetdec)
-               ltac:(clear - Hz; fsetdec)) in Hsw.
-    rewrite (@swap_pskl_fresh_id x z Q
-               ltac:(clear - Hx; fsetdec)
-               ltac:(clear - Hz; fsetdec)) in Hsw.
-    rewrite (@swap_ptyp_fresh_id x z B'
-               ltac:(clear - HxB'; fsetdec)
-               ltac:(clear - Hz; fsetdec)) in Hsw.
-    rewrite <- (@subst_exp_in_exp_intro x e (exp_var_f z)
-                  ltac:(clear - Hx; fsetdec)) in Hsw.
-    exact Hsw. }
+  { eapply a_typing__abs with (x := x) (Ξ := Ξ) (Θ2 := Θ2)
+      (P := P) (Q := Q) (αs := blk) (Θ1 := Θ0).
+    - exact HMne.
+    - exact Hsplit.
+    - exact Hguess.
+    - apply uniq_app_of;
+        [ exact Huqb | apply a_wf_aenv_uniq; exact Hwf0
+        | intros α Hα Hc;
+          pose proof (Havb α Hα) as Hn;
+          assert (Hd0 : α `in` dom Θ0) by (clear - Hc; fsetdec);
+          clear - Hn Hd0; fsetdec ].
+    - exact Hsuf.
+    - rewrite !dom_app. clear - Hx HxΞ HxΘ2. solve_notin.
+    - exact HrunB. }
   (* ---- 9. optimality ---- *)
   intros κ1 Hid1 Hinc1.
   (* the body's witness, target-weakened across the suffix, is THE id *)
@@ -2907,43 +2600,14 @@ Proof.
   (* ---- 7. the run ---- *)
   exists (ptyp_arrow A B'), (Ξ ++ Θ3).
   split.
-  { eapply a_typing__abs_anno
-      with (L := dom Θ0 `union` ftvar_in_aenv Θ0
-                 `union` dom Θmid `union` ftvar_in_aenv Θmid
-                 `union` dom Ξ `union` ftvar_in_aenv Ξ
-                 `union` dom Θ3 `union` ftvar_in_aenv Θ3
-                 `union` ftvar_in_ptyp A `union` ftvar_in_ptyp B'
-                 `union` ftvar_in_pskl P `union` ftvar_in_pskl Q
-                 `union` fvar_in_exp e `union` ftvar_in_exp e
-                 `union` singleton x);
-      [ exact HMne | exact Hsplit | exists Qc; exact HcRun | exact Hsuf | ].
-    intros z Hz.
-    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hup.
-    pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hvup.
-    simpl in Hup, Hvup.
-    pose proof (@a_typing_rename_tm x z _ _ _ _ _ _ HrunB
-                  ltac:(clear - Hx Hup; fsetdec)
-                  ltac:(clear - Hz Hup; fsetdec)
-                  ltac:(clear - Hz Hvup; fsetdec)) as Hsw.
-    rewrite (@swap_aenv_tm_head x z (abind_var_typ A) Θmid
-               ltac:(simpl; clear - Hx; fsetdec)
-               ltac:(simpl; clear - Hz; fsetdec)) in Hsw.
-    rewrite swap_aenv_app in Hsw.
-    rewrite (@swap_aenv_tm_head x z (abind_var_typ A) Θ3
-               ltac:(simpl; clear - HxΘ3 Hx; fsetdec)
-               ltac:(simpl; clear - Hz; fsetdec)) in Hsw.
-    rewrite (@swap_aenv_fresh_eq x z Ξ
-               ltac:(clear - HxΞ; fsetdec)
-               ltac:(clear - Hz; fsetdec)) in Hsw.
-    rewrite (@swap_pskl_fresh_id x z Q
-               ltac:(clear - Hx; fsetdec)
-               ltac:(clear - Hz; fsetdec)) in Hsw.
-    rewrite (@swap_ptyp_fresh_id x z B'
-               ltac:(clear - HxB'; fsetdec)
-               ltac:(clear - Hz; fsetdec)) in Hsw.
-    rewrite <- (@subst_exp_in_exp_intro x e (exp_var_f z)
-                  ltac:(clear - Hx; fsetdec)) in Hsw.
-    exact Hsw. }
+  { eapply a_typing__abs_anno with (x := x) (Ξ := Ξ) (Θ3 := Θ3)
+      (P := P) (Θ1 := Θ0) (Θ2 := Θmid).
+    - exact HMne.
+    - exact Hsplit.
+    - exists Qc; exact HcRun.
+    - exact Hsuf.
+    - rewrite !dom_app. clear - Hx HxΞ HxΘ3. solve_notin.
+    - exact HrunB. }
   (* ---- 8. optimality : glue the two stages ---- *)
   intros κ1 Hid1 Hinc1.
   assert (Heqκ : κ1 = κc)

@@ -471,54 +471,64 @@ Proof.
   - (* freeze *)
     eapply aenv_tm_le_trans;
       [ eassumption | eapply a_consis_chk_tm_le; eassumption ].
-  - (* abs — the body also sits under the [a_guess_mono] flexibles [αs] *)
+  - (* abs — the body also sits under the [a_guess_mono] flexibles [αs].
+       The rule's own binder serves everywhere below: a tm entry pins
+       y ∈ dom of the context the binder avoids. *)
     intros y b Htm Hb.
     apply a_split_tm_le in H0.
-    destruct (atom_fresh (L `union` singleton y)) as [x Hx].
+    assert (Hb1 : binds y b Θ1) by (apply H0; [ exact Htm | exact Hb ]).
+    pose proof (binds_In _ y b _ Hb1) as Hy.
     apply binds_app_3.
     eapply aenv_tm_le_via_binder with (x := x);
-      [ exact H3 | apply H5; clear - Hx; fsetdec | exact Htm
-      | intros Heq; subst; clear - Hx; fsetdec
-      | apply binds_app_3; apply H0; [ exact Htm | exact Hb ] ].
+      [ exact H3 | exact IHa_typing | exact Htm
+      | intros Heq; subst; clear - H4 Hy; rewrite !dom_app in H4; fsetdec
+      | apply binds_app_3; exact Hb1 ].
   - (* abs_anno *)
     intros y b Htm Hb.
     apply a_split_tm_le in H0.
     apply a_consis_chk_tm_le in H1.
-    destruct (atom_fresh (L `union` singleton y)) as [x Hx].
+    assert (Hb1 : binds y b Θ2)
+      by (apply H1; [ exact Htm | apply H0; [ exact Htm | exact Hb ] ]).
+    pose proof (binds_In _ y b _ Hb1) as Hy.
     apply binds_app_3.
     eapply aenv_tm_le_via_binder with (x := x);
-      [ exact H2 | apply H4; clear - Hx; fsetdec | exact Htm
-      | intros Heq; subst; clear - Hx; fsetdec
-      | apply H1; [ exact Htm | apply H0; [ exact Htm | exact Hb ] ] ].
+      [ exact H2 | exact IHa_typing | exact Htm
+      | intros Heq; subst; clear - H3 Hy; rewrite !dom_app in H3; fsetdec
+      | exact Hb1 ].
   - (* abs_check_step — the α entry is type-level, so the strip is by shape *)
     intros y b Htm Hb.
-    destruct (atom_fresh (L `union` singleton y)) as [α Hα].
+    pose proof (binds_In _ y b _ Hb) as Hy.
     eapply aenv_tm_le_via_binder with (x := α);
-      [ exact H | apply H3; clear - Hα; fsetdec | exact Htm
-      | intros Heq; subst; clear - Hα; fsetdec | exact Hb ].
+      [ exact H | exact IHa_typing | exact Htm
+      | intros Heq; subst; clear - H2 Hy; rewrite !dom_app in H2; fsetdec
+      | exact Hb ].
   - (* abs_check_base *)
     intros y b Htm Hb.
     apply a_split_tm_le in H.
-    destruct (atom_fresh (L `union` singleton y)) as [x Hx].
+    assert (Hb1 : binds y b Θ1) by (apply H; [ exact Htm | exact Hb ]).
+    pose proof (binds_In _ y b _ Hb1) as Hy.
     eapply aenv_tm_le_via_binder with (x := x);
-      [ exact H0 | apply H4; clear - Hx; fsetdec | exact Htm
-      | intros Heq; subst; clear - Hx; fsetdec
-      | apply H; [ exact Htm | exact Hb ] ].
+      [ exact H0 | exact IHa_typing | exact Htm
+      | intros Heq; subst; clear - H3 Hy; rewrite !dom_app in H3; fsetdec
+      | exact Hb1 ].
   - (* abs_anno_check_step *)
     intros y b Htm Hb.
-    destruct (atom_fresh (L `union` singleton y)) as [α Hα].
+    pose proof (binds_In _ y b _ Hb) as Hy.
     eapply aenv_tm_le_via_binder with (x := α);
-      [ exact H | apply H3; clear - Hα; fsetdec | exact Htm
-      | intros Heq; subst; clear - Hα; fsetdec | exact Hb ].
+      [ exact H | exact IHa_typing | exact Htm
+      | intros Heq; subst; clear - H2 Hy; rewrite !dom_app in H2; fsetdec
+      | exact Hb ].
   - (* abs_anno_check_base *)
     intros y b Htm Hb.
     apply a_split_tm_le in H.
     apply a_consis_chk_tm_le in H0.
-    destruct (atom_fresh (L `union` singleton y)) as [x Hx].
+    assert (Hb1 : binds y b Θ2)
+      by (apply H0; [ exact Htm | apply H; [ exact Htm | exact Hb ] ]).
+    pose proof (binds_In _ y b _ Hb1) as Hy.
     eapply aenv_tm_le_via_binder with (x := x);
-      [ exact H1 | apply H5; clear - Hx; fsetdec | exact Htm
-      | intros Heq; subst; clear - Hx; fsetdec
-      | apply H0; [ exact Htm | apply H; [ exact Htm | exact Hb ] ] ].
+      [ exact H1 | exact IHa_typing | exact Htm
+      | intros Heq; subst; clear - H4 Hy; rewrite !dom_app in H4; fsetdec
+      | exact Hb1 ].
   - (* app *)
     eapply aenv_tm_le_trans; [ eapply a_pat_tm_le; eassumption | ].
     eapply aenv_tm_le_trans; eassumption.

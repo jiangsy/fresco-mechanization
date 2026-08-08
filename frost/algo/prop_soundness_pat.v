@@ -969,6 +969,67 @@ Lemma a_wf_exp_abs_anno_inv : forall Θ A e,
     a_wf_exp Θ (open_exp_wrt_exp e (exp_var_f x)).
 Proof. intros * H; inversion H; subst; eauto. Qed.
 
+(** The binder rows are EXISTS-FRESH on the algorithm side (2026-08-08), so
+    soundness receives ONE binder name and must open the [a_wf_exp] families
+    at exactly it.  Term-variable renaming is invisible to [a_wf_exp] — it
+    reads only type-level entries — so the cofinite families are in fact
+    name-independent. *)
+Lemma a_wf_exp_subst_var : forall Θ e x z,
+  a_wf_exp Θ e ->
+  a_wf_exp Θ (subst_exp_in_exp (exp_var_f x) z e).
+Proof.
+  intros Θ e x z H; induction H; simpl.
+  - apply a_wf_exp__unit.
+  - destruct_if; apply a_wf_exp__var.
+  - apply a_wf_exp__anno; auto.
+  - apply a_wf_exp__freeze; auto.
+  - apply a_wf_exp__abs with (L := L `union` singleton z `union` singleton x).
+    intros y Hy.
+    rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
+      [ | clear - Hy; fsetdec | apply lc_exp_var_f ].
+    apply H0. clear - Hy; fsetdec.
+  - apply a_wf_exp__abs_anno
+      with (L := L `union` singleton z `union` singleton x);
+      [ assumption | ].
+    intros y Hy.
+    rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
+      [ | clear - Hy; fsetdec | apply lc_exp_var_f ].
+    apply H1. clear - Hy; fsetdec.
+  - apply a_wf_exp__app; auto.
+Qed.
+
+Lemma a_wf_exp_abs_pick : forall Θ e x,
+  a_wf_exp Θ (exp_abs e) ->
+  a_wf_exp Θ (open_exp_wrt_exp e (exp_var_f x)).
+Proof.
+  intros Θ e x H; inversion H; subst.
+  destruct (atom_fresh (L `union` fvar_in_exp e `union` singleton x))
+    as [z Hz].
+  rewrite (subst_exp_in_exp_intro z e (exp_var_f x));
+    [ | clear - Hz; fsetdec ].
+  apply a_wf_exp_subst_var.
+  match goal with
+  | Hf : forall y, y `notin` L -> a_wf_exp _ _ |- _ => apply Hf
+  end.
+  clear - Hz; fsetdec.
+Qed.
+
+Lemma a_wf_exp_abs_anno_pick : forall Θ A e x,
+  a_wf_exp Θ (exp_abs_anno A e) ->
+  a_wf_exp Θ (open_exp_wrt_exp e (exp_var_f x)).
+Proof.
+  intros Θ A e x H; inversion H; subst.
+  destruct (atom_fresh (L `union` fvar_in_exp e `union` singleton x))
+    as [z Hz].
+  rewrite (subst_exp_in_exp_intro z e (exp_var_f x));
+    [ | clear - Hz; fsetdec ].
+  apply a_wf_exp_subst_var.
+  match goal with
+  | Hf : forall y, y `notin` L -> a_wf_exp _ _ |- _ => apply Hf
+  end.
+  clear - Hz; fsetdec.
+Qed.
+
 (** ⭐ The paper's (commented-out) "refinement preserves correspondence",
     inferred-skeleton half, at the level of the DECLARATIVE judgement: a
     skeleton-inference colouring is mode-compatible.  The two Abs rows

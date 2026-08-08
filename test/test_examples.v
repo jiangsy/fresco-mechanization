@@ -306,7 +306,9 @@ Example ex_A1 :
         (ptyp_arrow (ptyp_var_f fb) (ptyp_var_f fb)))
     ⊣ ((fb ~ abind_flex_mono) ++ (fa ~ abind_flex_mono) ++ Θlib).
 Proof.
-  eapply a_typing__abs with (L := dom Θlib `union` singleton fa `union` singleton fb)
+  destruct (atom_fresh (dom Θlib `union` singleton fa `union` singleton fb))
+    as [x Hx].
+  eapply a_typing__abs with (x := x)
     (Ξ := (fb ~ abind_flex_mono))
     (Θ2 := (fa ~ abind_flex_mono) ++ Θlib).
   - discriminate.
@@ -314,8 +316,11 @@ Proof.
   - apply a_guess_mono__hole. crush_guess_fresh.
   - crush_uniq.
   - repeat constructor.
-  - intros x Hx. simpl_open.
-    eapply a_typing__abs with (L := dom Θlib `union` singleton fa `union` singleton fb) (Ξ := nil)
+  - simpl_env; simpl fvar_in_exp; clear - Hx; fsetdec.
+  - simpl_open.
+    destruct (atom_fresh (dom Θlib `union` singleton fa `union` singleton fb
+                `union` singleton x)) as [y Hy].
+    eapply a_typing__abs with (x := y) (Ξ := nil)
       (Θ2 := (fb ~ abind_flex_mono)
              ++ (x ~ abind_var_typ (ptyp_var_f fa))
              ++ (fa ~ abind_flex_mono) ++ Θlib).
@@ -324,7 +329,8 @@ Proof.
     + apply a_guess_mono__hole. crush_guess_fresh.
     + crush_uniq.
     + constructor.
-    + intros y _. simpl_open.
+    + simpl_env; simpl fvar_in_exp; clear - Hy; fsetdec.
+    + simpl_open.
       eapply a_typing__var; [ crush_binds | ].
       apply a_sub__infer.
 Qed.
@@ -423,15 +429,19 @@ Proof.
     + apply consis_sigid_tophole.
     + apply a_sub__infer.
   - (* λx.x ⦂[TC; skel σ_id]  σ_id *)
-    eapply a_typing__abs_check_step with (L := dom Θlib) (Ξ := nil)
+    destruct (atom_fresh (dom Θlib `union` singleton fa `union` singleton fb))
+      as [α Hα].
+    eapply a_typing__abs_check_step with (α := α) (Ξ := nil)
       (A0 := ptyp_arrow b0 b0) (A := ptyp_arrow b0 b0) (Θ1 := Θlib).
     + constructor.
     + crush_uniq.
     + intros γ Hγ; simpl in Hγ; clear - Hγ; fsetdec.
-    + intros α Hα. simpl_open.
+    + simpl_env; simpl ftvar_in_ptyp; simpl ftvar_in_exp; clear - Hα; fsetdec.
+    + simpl_open.
+      destruct (atom_fresh (dom Θlib `union` singleton fa
+                  `union` singleton fb `union` singleton α)) as [x Hx].
       eapply a_typing__abs_check_base
-        with (L := dom Θlib `union` singleton fa `union` singleton fb
-                     `union` singleton α) (Ξ := nil)
+        with (x := x) (Ξ := nil)
         (A0 := ptyp_arrow (ptyp_var_f α) (ptyp_var_f α))
         (A := ptyp_var_f α) (B := ptyp_var_f α)
         (Θ2 := (α ~ abind_tvar) ++ Θlib).
@@ -439,7 +449,8 @@ Proof.
       * constructor.
       * crush_uniq.
       * intros γ Hγ; simpl in Hγ; clear - Hγ; fsetdec.
-      * intros x Hx. simpl_open.
+      * simpl_env; simpl fvar_in_exp; clear - Hx; fsetdec.
+      * simpl_open.
         eapply a_typing__var; [ crush_binds | ].
         apply a_sub__check.
         { simpl; intuition. }
@@ -561,7 +572,9 @@ Example ex_A4 :
     ⊣ ((fa ~ abind_flex_mono_def (ptyp_var_f fb))
        ++ (fb ~ abind_flex_mono) ++ Θlib).
 Proof.
-  eapply a_typing__abs_anno with (L := dom Θlib `union` singleton fa `union` singleton fb)
+  destruct (atom_fresh (dom Θlib `union` singleton fa `union` singleton fb))
+    as [x Hx].
+  eapply a_typing__abs_anno with (x := x)
     (Ξ := (fa ~ abind_flex_mono_def (ptyp_var_f fb))
           ++ (fb ~ abind_flex_mono))
     (P := pskl_hole) (Q := pskl_hole)
@@ -570,7 +583,8 @@ Proof.
   - apply a_split__hole.
   - eexists. apply a_consis__ghost_r. fsetdec.
   - repeat constructor.
-  - intros x Hx. simpl_open. cbn [decr_mode].
+  - simpl_env; simpl fvar_in_exp; clear - Hx; fsetdec.
+  - simpl_open. cbn [decr_mode].
     eapply a_typing__app
       with (A := ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb))
            (P := pskl_tophole (pskl_arrow pskl_hole pskl_hole))
@@ -726,17 +740,21 @@ Proof.
         eapply a_consis__arrow; apply a_consis__ghost_r; fsetdec.
     + apply a_sub__infer.
   - (* λx.λy.y ⦂[TC; skel(∀a.a→∀b.b→b)]  ∀a.a→∀b.b→b *)
-    eapply a_typing__abs_check_step with (L := dom Θlib) (Ξ := nil)
+    destruct (atom_fresh (dom Θlib `union` singleton fa `union` singleton fb))
+      as [α Hα].
+    eapply a_typing__abs_check_step with (α := α) (Ξ := nil)
       (A0 := ptyp_arrow b0 (ptyp_all (ptyp_arrow b0 b0)))
       (A := ptyp_arrow b0 (ptyp_all (ptyp_arrow b0 b0)))
       (Θ1 := Θlib).
     + constructor.
     + crush_uniq.
     + intros γ Hγ; simpl in Hγ; clear - Hγ; fsetdec.
-    + intros α Hα. simpl_open.
+    + simpl_env; simpl ftvar_in_ptyp; simpl ftvar_in_exp; clear - Hα; fsetdec.
+    + simpl_open.
+      destruct (atom_fresh (dom Θlib `union` singleton fa
+                  `union` singleton fb `union` singleton α)) as [x Hx].
       eapply a_typing__abs_check_base
-        with (L := dom Θlib `union` singleton fa `union` singleton fb
-                     `union` singleton α) (Ξ := nil)
+        with (x := x) (Ξ := nil)
         (A0 := ptyp_arrow (ptyp_var_f α) (ptyp_all (ptyp_arrow b0 b0)))
         (A := ptyp_var_f α) (B := ptyp_all (ptyp_arrow b0 b0))
         (Θ2 := (α ~ abind_tvar) ++ Θlib).
@@ -744,21 +762,26 @@ Proof.
       * constructor.
       * crush_uniq.
       * intros γ Hγ; simpl in Hγ; clear - Hγ; fsetdec.
-      * intros x Hx. simpl_open.
+      * simpl_env; simpl fvar_in_exp; clear - Hx; fsetdec.
+      * simpl_open.
+        destruct (atom_fresh (dom Θlib `union` singleton fa
+                    `union` singleton fb `union` singleton α
+                    `union` singleton x)) as [β Hβ].
         eapply a_typing__abs_check_step
-          with (L := dom Θlib `union` singleton α `union` singleton x)
-          (Ξ := nil)
+          with (α := β) (Ξ := nil)
           (A0 := ptyp_arrow b0 b0) (A := ptyp_arrow b0 b0)
           (Θ1 := (x ~ abind_var_typ (ptyp_var_f α))
                  ++ (α ~ abind_tvar) ++ Θlib).
         { constructor. }
         { crush_uniq. }
         { intros γ Hγ; simpl in Hγ; clear - Hγ; fsetdec. }
-        { intros β Hβ. simpl_open.
+        { simpl_env; simpl ftvar_in_ptyp; simpl ftvar_in_exp; clear - Hβ; fsetdec. }
+        { simpl_open.
+          destruct (atom_fresh (dom Θlib `union` singleton fa
+                      `union` singleton fb `union` singleton α
+                      `union` singleton x `union` singleton β)) as [y Hy].
           eapply a_typing__abs_check_base
-            with (L := dom Θlib `union` singleton fa `union` singleton fb
-                         `union` singleton α `union` singleton x
-                         `union` singleton β) (Ξ := nil)
+            with (x := y) (Ξ := nil)
             (A0 := ptyp_arrow (ptyp_var_f β) (ptyp_var_f β))
             (A := ptyp_var_f β) (B := ptyp_var_f β)
             (Θ2 := (β ~ abind_tvar) ++ (x ~ abind_var_typ (ptyp_var_f α))
@@ -767,7 +790,8 @@ Proof.
           - constructor.
           - crush_uniq.
           - intros γ Hγ; simpl in Hγ; clear - Hγ; fsetdec.
-          - intros y _. simpl_open.
+          - simpl_env; simpl fvar_in_exp; clear - Hy; fsetdec.
+          - simpl_open.
             eapply a_typing__var; [ crush_binds | ].
             apply a_sub__check; [ simpl; intuition | simpl; intuition | crush_lc | crush_lc | ].
             eexists. apply a_consis__rigid. crush_binds. }
@@ -786,14 +810,17 @@ Example ex_E2b :
 Proof.
   eapply a_typing__anno with (Θ1 := Θlib).
   - (* λx. poly x ⦂[TC; skel(σ_id→σ_prodIB)]  σ_id→σ_prodIB *)
-    eapply a_typing__abs_check_base with (L := dom Θlib `union` singleton fa `union` singleton fb) (Ξ := nil)
+    destruct (atom_fresh (dom Θlib `union` singleton fa `union` singleton fb
+                `union` singleton x_poly)) as [x Hx].
+    eapply a_typing__abs_check_base with (x := x) (Ξ := nil)
       (A0 := ptyp_arrow σ_id σ_prodIB) (A := σ_id) (B := σ_prodIB)
       (Θ2 := Θlib).
     + apply a_split__arrow.
     + constructor.
     + crush_uniq.
     + intros γ Hγ; simpl in Hγ; clear - Hγ; fsetdec.
-    + intros x Hx. simpl_open.
+    + simpl_env; simpl fvar_in_exp; clear - Hx; fsetdec.
+    + simpl_open.
       eapply a_typing__app
         with (A := σ_id)
              (P := pskl_tophole (pskl_arrow pskl_hole pskl_hole))

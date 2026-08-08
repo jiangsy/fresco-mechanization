@@ -206,7 +206,58 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-07 (latest) — ⭐⭐⭐ **THEOREM 3 IS CLOSED: `a_pat_complete` (thm:complete-skeleton-inference), Qed + axiom-free**
+## 2026-08-08 (latest) — ⭐⭐⭐ **THE CHECK-ROW RULE SURGERY: the four suffix-discarding rows repaired against completeness, all six `a_typing` binder rows EXISTS-FRESH, `thm:sound-type-inference` re-proved on the repaired rules**
+
+Theorem 4's check-row work found the four suffix-discarding check rows, as
+transcribed from fig:alg-type-inference, incompatible with completeness in
+two independent ways (docs/PAPER-GAPS.md, 2026-08-08 entry):
+
+1. **The `_base` body premise's pinned result is unsatisfiable** whenever
+   the split codomain is a flexible and the body is itself a lambda (the
+   inner run concludes the INNER split's arrow, never the flexible) — yet
+   the implementation accepts such programs and never reads the body's
+   returned type (type.ml I-AbsCheck).  The paper's own completeness proof
+   concludes with the body's `B₁`, not the figure's `B`.  The rules now
+   take a free `B1` and conclude `A → B1`; the "Ξ ∉ result" side condition
+   moves onto `B1`.
+2. **Cofinite binder families are unsatisfiable**: the discarded `Ξ` can
+   mention the one binder the run used, so a family sharing `Ξ` has no
+   members — verbatim `a_sub__forall_r`'s 2026-07-31 situation.  All six
+   binder rows (the four check rows + AT-Abs + AT-AbsAnno, the latter two
+   per user direction for uniformity) are now EXISTS-FRESH with Barendregt
+   avoid-sets.
+
+Consequences proved, all Qed and axiom-free:
+- `a_split_refines_gen` (prop_soundness_typing) — the split refinement
+  with an arbitrary refinement of the codomain painting; the flex row goes
+  consistency → refinement → `ad_refine_syn_inh_tyequiv` (ghost-free
+  painting refinement IS `≡ᵗ`) → subject transport along `≡ˢ`.
+- NEW `algo/prop_rename_decl.v` (712 lines): `a_tyequiv_rename_tvar`,
+  `ad_pat_rename_tvar`, `ad_sd_typing_rename_tvar` + leaf bridges —
+  `thm:sound-type-inference` now receives ONE binder instance and rebuilds
+  the DECLARATIVE cofinite families by renaming (type binders; term
+  binders keep the existing `ad_sd_typing_rename_tm` route).
+- `a_typing_sound` re-proved end to end on the repaired rules (the two
+  `_step` cases via the renaming cluster; the two `_base` cases via
+  `a_split_refines_gen` and the body's own refinement suffix-stripped).
+- The 330-line `a_typing_rename_tm` walker (theorem 4's K6) is DEAD under
+  exists-fresh rules and was deleted; the seven landed completeness rows
+  now instantiate the binder rules directly.
+- Fallout repaired across prop_stability, prop_ty_core (the ty_core check
+  cases now pin `B1 = B` through the IH under `core_rigid`),
+  prop_soundness_pat (new wf-exp pick lemmas), test/test_examples.
+- ⚙ **Build time**: the Abs/AbsAnno rows' binder-rule applications hung
+  `prop_completeness_typing.v` (≫40 min on one sentence) for TWO stacked
+  reasons: an `eapply … with (x := x); [ … ]` left the rule's context
+  arguments as EVARS under the freshness branch's `fsetdec` (pin ALL the
+  `with`-arguments), and the freshness goal itself put the row's 12-leaf
+  avoid-set hypothesis in `fsetdec`'s scope — the decision procedure is
+  exponential in the number of set atoms (~16 here), so even `clear`-scoped
+  it needs ≫40 min.  Repair: bullet the application with every context
+  argument pinned and close the freshness goal by LINEAR decomposition
+  (`solve_notin`, 0.002 s).  The file's total sentence time is now 14.6 s.
+
+## 2026-08-07 — ⭐⭐⭐ **THEOREM 3 IS CLOSED: `a_pat_complete` (thm:complete-skeleton-inference), Qed + axiom-free**
 
 All nine rows and the glue are in `algo/prop_completeness_pat.v`; the theorem
 is `Check`ed and `Print Assumptions`-audited in `README.v`.  The induction is

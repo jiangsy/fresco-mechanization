@@ -2941,3 +2941,65 @@ through — the close-rows re-bind an opened rigid, which is sound only
 because ghost fills avoid the tracked variables (the same asymmetry that
 makes refinement non-transitive).  The paper's global "all types are
 well-formed" convention silently assumes this result.
+
+## ⭐⭐⭐ RULE REPAIRS on the four check rows of `TI-AbsCheck`/`TI-AbsAnnoCheck` — the figure's pinned body result is UNSATISFIABLE, and cofinite binder families break completeness (2026-08-08)
+
+Found while proving `thm:complete-type-inference`.  Three related repairs to
+the four suffix-discarding check rows (and, for uniformity, the two `AT-Abs`
+rows), all now in `frost/algo/def_extra.v` with the mech following the
+IMPLEMENTATION and the paper's own PROOF where they diverge from the figure.
+
+### 1. The body premise's result must be FREE, and the conclusion's codomain is the BODY's result
+
+The spec figure (full-algo-spec.tex:348-366) writes the `_base` body premise
+as `Θ₁,ᾱ,x:A ⊢[TC;B] M ⦂ B ⊣ …` — input `B` (the split codomain), output
+pinned to the SAME `B` — and concludes `∀ᾱ.A→B`.  The pin is unsatisfiable
+whenever `B` is a flexible and the body is itself a lambda or an
+application: a lambda checked against a flexible `β̂` concludes via its own
+split with the arrow `γ̂→δ̂`, never with `β̂` itself, and an application
+returns the function run's (possibly solved) codomain.  So e.g. checking
+`λy.λz.e` against a flexible — reachable through `TI-App`'s argument checks
+— has NO derivation under the figure's rules, while the reference
+implementation accepts it: type.ml's I-AbsCheck never even looks at the
+body's returned type (`let* _, m = finfer (Check b) m e` ... `end_rule (t, ...)`).
+The paper's own completeness proof agrees: its AbsCheck case concludes
+`⊢[TC;∀ᾱ.A'→B'] λx.M ⦂ ∀ᾱ.A'→B₁` with the BODY's `B₁` (proofs.tex, AbsCheck
+subcase 1) — which is NOT an instance of the figure's rule.  The mech rules
+now take a free `B1` in the body premise and conclude `A → B1`; the "`Ξ` not
+in the result" side condition (entry `RULE-LEVEL SIDE CONDITIONS` §1,
+2026-08-06) accordingly moves onto `B1`.
+
+Soundness consequence: the split-refinement lemma generalizes to an
+arbitrary refinement of the codomain painting
+(`a_split_refines_gen`, algo/prop_soundness_typing.v) — at the flex row the
+definition the split assigned is a monotype, so its consistency is an
+equivalence and the refinement subject transports along it.
+
+### 2. ALL SIX binder rows of `a_typing` are EXISTS-FRESH, not cofinite
+
+Same repair, same reason, and same shape as `a_sub__forall_r`'s 2026-07-31
+fix (entry `RESOLVED BY THE AUTHORS`, FINDING 3 area): the four check rows
+DISCARD a suffix `Ξ` that may legitimately mention data specific to the one
+binder the run actually used — the peeled `α` itself (an AbsAnnoCheck
+body's consistency stage can solve a deposited flexible against it), or the
+body's own result `B1` — so a COFINITE premise sharing `Ξ`/`B1`/the result
+across a whole binder family is unsatisfiable in reachable configurations
+and breaks completeness.  The locally-nameless rendering of the paper's
+named rule therefore must be exists-fresh with a Barendregt side condition
+(the paper's convention, prose-completed), not cofinite.  `AT-Abs` and
+`AT-AbsAnno` were converted too, for uniformity.
+
+Proof-machinery consequence: `thm:sound-type-inference` now receives ONE
+binder instance and must rebuild the DECLARATIVE side's cofinite families
+itself — term binders via the existing `ad_sd_typing_rename_tm`/wf-exp
+renaming, type binders via NEW declarative-over-Θ renaming lemmas
+(`ad_pat_rename_tvar` / `ad_sd_typing_rename_tvar` / `a_tyequiv_rename_tvar`,
+algo/prop_rename_decl.v).
+
+### 3. What did NOT change
+
+The suffix-discard structure, the `uniq (Ξ ++ Θ)` Barendregt premise, the
+`A' ∼ A` consistency orientation and the `A' → B1` result domain at
+`AT-AbsAnnoCheck` (entry §3, 2026-08-06), and the declarative rules — all
+stand.  The `_step` rows keep their result binder (`∀A` with the premise at
+`A^α`); only the quantification of `α` changed.
