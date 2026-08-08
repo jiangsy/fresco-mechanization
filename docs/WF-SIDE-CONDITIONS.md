@@ -478,3 +478,34 @@ carries ONLY TASK 0's `sub_shield` component.
 `guarded_pskl P0 \/ P0 = pskl_hole`, USED to be part of the same residual and
 is now discharged inside the dispatch (`p0_wlog_trichotomy` +
 `sub_complete_all_inh_counterpart`, §8b) — it is a case split, not a side condition.
+
+## Skeleton term entries — the payload-wf DISCIPLINE is needed for the TARGET context too, on every completeness row (registered 2026-08-08)
+
+`a_wf_aenv__var` stores only `a_scope_pskl` for an `x : P` entry, while the
+subtyping/consistency theorems demand the disciplined `Θ ⨟ ∅ ⊢ₚₛᵃ P`
+(see *Skeleton wf in the algo layer* above).  Both soundness theorems
+therefore carry
+
+```coq
+forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps
+```
+
+for the QUESTION context.  ⭐ The two COMPLETENESS theorems
+(`a_pat_complete`, `a_typing_complete`) carry it for the SOLUTION context
+`Θ` as well, and every step lemma with an induction hypothesis carries it
+INSIDE that hypothesis, for the solution context `Θ'` the hypothesis
+quantifies over.
+
+Why the target one is not optional: the binder rows push the term entry into
+BOTH contexts (`x : A'` into the question context, `x : A` into the
+solution's) before invoking the IH, so the IH is used at a *changed* target.
+And the glue supplies each row's IH at a UNIVERSALLY QUANTIFIED `Θ'`, so a
+row whose IH premise omits the condition is unusable: nothing in scope can
+discharge it.  This is what forced the 2026-08-08 addition of the premise to
+`a_typing_complete_anno` and `a_typing_complete_freeze` — the only two rows
+that had been provable without it, because they happen to use their IH at an
+unchanged target.
+
+⚙ Transport across a run is by `a_wf_pskl_isub` composed with the run's own
+`⊴` and its `_tm_ge` stability lemma (`a_split_tm_ge`, `a_consis_tm_ge`, …):
+the entry itself is untouched, only the context around it grows.

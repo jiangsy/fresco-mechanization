@@ -1,5 +1,33 @@
 # HANDOFF — section D (`proofs.tex`): soundness and completeness of skeleton and type inference
 
+> ## ✅ CLOSED 2026-08-08 — ALL FOUR THEOREMS ARE MECHANIZED
+>
+> | paper theorem | Coq | file |
+> |---|---|---|
+> | `thm:sound-skeleton-inference` | `a_pat_sound` | `algo/prop_soundness_pat.v` |
+> | `thm:sound-type-inference` | `a_typing_sound` | `algo/prop_soundness_typing.v` |
+> | `thm:complete-skeleton-inference` | `a_pat_complete` | `algo/prop_completeness_pat.v` |
+> | `thm:complete-type-inference` | `a_typing_complete` | `algo/prop_completeness_typing.v` |
+>
+> All four are Qed, axiom-free, `Check`ed and audited in `README.v` (the
+> tree's `Print Assumptions` count is 39/39 *Closed under the global
+> context*).  **Everything below this banner is HISTORY** — the per-pass
+> design notes and the obstacles as they were found.  Read it for the
+> reasoning behind a design point, not for what is left to do.
+>
+> The findings the paper's authors should see are in
+> [`docs/PAPER-GAPS.md`](PAPER-GAPS.md); the external well-formedness
+> conditions the statements carry are in
+> [`docs/WF-SIDE-CONDITIONS.md`](WF-SIDE-CONDITIONS.md); the dated build-up
+> is [`PROGRESS.md`](../PROGRESS.md) Part 2.
+>
+> ⛔ Two prerequisites that this hand-off did NOT anticipate, both closed
+> along the way and worth knowing about: the run-result SCOPING invariant
+> (`algo/prop_ty_scope.v`, which discharges the suffix-discarding check
+> rows' premise (2)) and **`a_split_complete_tc`**, completeness of
+> SPLITTING at check mode — the paper's AbsCheck subcase 2, where the
+> split's flexible row has to be built out of a full consistency run.
+
 **Status 2026-08-06 (SEVENTH pass).**  Theorem 2
 (`thm:sound-type-inference`) has FOUR of its five prerequisites CLOSED, all
 Qed and axiom-free:

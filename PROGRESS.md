@@ -195,9 +195,35 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   LEFT: suffix ERASURE (see above), COLOURED split-refine, `AT-App`'s
   typing-under-`≡ᵗ` transport at TC, then the eleven-row induction; see
   docs/HANDOFF-section-d.md §7.5
-- ⬜ Theorems: Completeness+optimality of skeleton / type inference — ⚠️ these
-  hit §4b's composition gap (they consume `a_sub_complete_thm`, which assumes
-  `ad_pat_sub_gv`, while soundness only concludes plain `ad_pat_sub`)
+- ✅ **Theorem: Completeness + optimality of skeleton inference — CLOSED
+  2026-08-07**, `a_pat_complete` (`algo/prop_completeness_pat.v`), Qed and
+  *Closed under the global context*; `Check`ed and audited in `README.v`.
+  Nine step lemmas glued by strong induction on `size_exp` (the mech FUSED
+  the paper's `P-Sub` into the base rows, so every recursive premise is at a
+  strict subterm).  Carries theorem 1's hypotheses, plus the payload-wf
+  DISCIPLINE of the TARGET context's skeleton term entries.
+- ✅ **Theorem: Completeness + optimality of type inference — CLOSED
+  2026-08-08**, `a_typing_complete` (`algo/prop_completeness_typing.v`), Qed
+  and *Closed under the global context*; `Check`ed and audited in `README.v`.
+  Twelve step lemmas glued by strong induction on the LEXICOGRAPHIC
+  `(size_exp e, size_btyp B)`: ten rows recurse at a strictly smaller
+  SUBJECT, and only the two ∀-peeling AbsCheck rows recurse at the same
+  subject, dropping one `∀` off the declarative result.
+  ⭐ Its two unrecorded prerequisites, both closed here: `a_split_complete_tc`
+  — completeness of SPLITTING at check mode, i.e. the paper's AbsCheck
+  **subcase 2**, where the split's flexible row has to be BUILT out of a full
+  consistency run — and the §6.3#2 SCOPING invariant
+  (`algo/prop_ty_scope.v`), which discharges the suffix-discarding rows'
+  premise (2).  ⚠️ Three findings on the paper's own AbsCheck proof are
+  registered in [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md) (the shape
+  enumeration is incomplete; the subcase-2 metasubstitution extension maps
+  a flexible to a NON-monotype; the split run and the scoping step are
+  asserted).
+- ⚙ §4b's composition gap (completeness consumes `a_sub_complete_thm`, which
+  assumes `ad_pat_sub_gv`, while soundness only concludes plain
+  `ad_pat_sub`) is CLOSED — the fused base rows embed `ad_pat_sub_v`
+  (2026-08-06 rule change) and the consumers rebuild the plain triple via
+  `ad_pat_sub_of_v`.
 
 **A. full-decl-proofs.tex** (declarative metatheory — REBASED onto the synced defs)
 - ✅ Soundness/Completeness of syntax-directed rules (`d_sd_typing_sound` / `d_sd_typing_complete`, `prop_syntax_directed.v`, 0 admits)

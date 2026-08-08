@@ -3003,3 +3003,116 @@ The suffix-discard structure, the `uniq (Ξ ++ Θ)` Barendregt premise, the
 `AT-AbsAnnoCheck` (entry §3, 2026-08-06), and the declarative rules — all
 stand.  The `_step` rows keep their result binder (`∀A` with the premise at
 `A^α`); only the quantification of `α` changed.
+
+## ⭐⭐⭐ `thm:complete-type-inference`, the AbsCheck case — THREE findings: the shape enumeration is incomplete, the subcase-2 metasubstitution extension is not well-typed, and two "we have" steps are theorems (2026-08-08)
+
+Found while proving `thm:complete-type-inference` (proofs.tex:820-950).  The
+theorem is now mechanized in full (`a_typing_complete`,
+`algo/prop_completeness_typing.v`, Qed and axiom-free), and the statement
+stands unchanged; what follows are findings on its PROOF.
+
+The case in question is `sd-AbsCheck`, whose paper proof opens
+
+> We have $\Theta\vdash\inh{\theta A_p}\fillsyn\inh{\forall\ol\alpha.A\to B}$.
+> By this refinement, the only possible shapes of $A_p$ are
+> $\forall\ol\alpha.A'\to B'$ and $\forall\ol\alpha.\hat\alpha$.
+
+and then splits into subcase 1 (the arrow — the identity split) and subcase 2
+(the bare flexible).
+
+### 1. The shape enumeration is INCOMPLETE — a RIGID variable has to be excluded separately, and a flexible's image is an arrow only UP TO flex-definition unfolding
+
+`A_p` is a TYPE (`skmod[TY] A_p TC`), so after the `∀`s are peeled it can be
+`1`, a variable, an arrow, or a `∀`.  `1` and `∀` die on the refinement
+immediately.  A VARIABLE does not: the paper's `\hat\alpha` silently assumes
+the variable is FLEXIBLE, and the rigid case has to be refuted, because the
+split's flexible row is what the subcase is about and `a_split__flex` on a
+rigid variable is absurd (`a_split_rigid_var_absurd`, `algo/prop_ty_core.v`).
+The refutation is short but is a lemma: a variable painting that refines to
+an ARROW must be a *defined* flexible, since refinement's `__var` and
+`__flex_r` rows both conclude at a VARIABLE target, so only `__flex_l` can
+fire (`refine_var_arrow_flex_def`).  For a rigid `α` the metasubstitution is
+the identity, and `binds α abind_tvar Θ` contradicts the `flex_mono_def`
+binding `__flex_l` demands.
+
+The flexible case needs a second observation the prose skips.  `θ\hat\alpha`
+is a MONOTYPE (every metasubstitution image is), but it need not be a
+syntactic arrow: it can be a chain of DEFINED flexibles that only bottoms out
+in one.  So "θα̂ is equivalent to A→B" has to be produced, not read off.  The
+mech proves it as `mono_refine_arrow_inv` — *a monotype painting that refines
+to an arrow IS an arrow up to `≡ᵗ`* — by induction on the REFINEMENT, whose
+`__flex_l` row unfolds the definition and recurses (the same shape as
+`ad_pat_consis_mono_to_refine`).  It returns monotypes `τ1`, `τ2` with
+`Θ ⊢ θα̂ ≡ᵗ τ1 → τ2` together with the two component refinements.
+
+### 2. ⚠️ Subcase 2's step ⑯ extends the metasubstitution with `β̂ ↦ A` and `γ̂ ↦ B` — and those are NOT monotypes
+
+The paper writes:
+
+> By ⑫ and ⑬, we have a metasubstitution $\theta'$ extending $\theta$ with
+> $\hat\beta\mapsto A$ and $\hat\gamma\mapsto B$ …
+
+but a metasubstitution's images must be well-formed MONOTYPES in the target
+— the paper's own prose side condition on `θ` (algorithmic.tex:123), and the
+`mono` premise on the two flexible rows of the information-increase judgment.
+`A` and `B` come from the DECLARATIVE arrow `∀ᾱ.A→B` and are arbitrary types,
+so `θ' = θ, β̂↦A, γ̂↦B` is not an information increase as stated.
+
+⭐ **The repair goes through the monotype decomposition of finding 1, and it
+is the natural one**: extend with `β̂ ↦ τ1` and `γ̂ ↦ τ2` instead, where
+`θα̂ ≡ᵗ τ1 → τ2` from `mono_refine_arrow_inv`.  Nothing downstream weakens:
+the component refinements `inh⌈τ1⌉ ⊳ inh{A}` and `inh⌈τ2⌉ ⊳ inh{B}` are
+refinements between paintings of PLAIN types, hence type EQUIVALENCES
+(`ad_refine_syn_inh_tyequiv`), so `Θ ⊢ τ1 ≡ᵗ A` and `Θ ⊢ τ2 ≡ᵗ B` — which is
+exactly what steps ⑮/⑭ use `β̂`'s and `γ̂`'s images for.  In other words the
+paper's `A`/`B` may be read as "up to `≡ᵗ`", but then the witness has to be
+the monotype, and the two equivalences become proof obligations rather than
+definitional.
+
+### 3. Subcase 2's ⑬ (the split RUN) and its scoping step are THEOREMS, not "we have"
+
+> Assuming fresh $\hat\beta$ and $\hat\gamma$, we have
+> ⑬ $\mov{\Theta_0,\ol\alpha}{\split[\hat\alpha][\hat\beta\to\hat\gamma]{}}{\Theta_1,\ol\alpha}$.
+
+Splitting a bare flexible is not a syntactic step: `SplitFlex`'s premise is a
+full CONSISTENCY run `α̂ ∼ (β̂ → γ̂)` in the extended context (which is what
+solves `α̂`), so ⑬ must be BUILT, and its output context `Θ1` is that run's.
+This is the one genuinely missing prerequisite of the theorem, mechanized as
+**`a_split_complete_tc`** — *completeness of splitting at CHECK mode*.  (The
+non-check modes need nothing: `skmod[TY]` leaves only the ghost and a
+syntactic arrow there, so the split is the identity — the mech's
+`a_split_complete`.  At TC the input is a TYPE painting, which is why the
+flexible row is reachable at all.)  The run comes from
+`thm:complete-consistency` at the reflexive declarative consistency of
+`τ1 → τ2`, with the subject transported along `≡ᵗ`; the lemma returns the run
+together with its own identity increase and a factoring witness, so the row
+consumes it exactly like any other stage.
+
+The same subcase then argues scoping in prose:
+
+> Since $\theta\hat\alpha$ is equivalent to $A\to B$, and by definition of
+> splitting $\hat\beta$ and $\hat\gamma$ are introduced immediately before the
+> assignment for $\hat\alpha$, the components $A$ and $B$ are well-scoped at
+> the positions of $\hat\beta$ and $\hat\gamma$ in $\Theta_1$.
+
+and, throughout the four check rows, uses without proof that the DISCARDED
+pending suffix `Ξ` does not occur in the run's result (the side condition
+registered as `RULE-LEVEL SIDE CONDITIONS` §1, 2026-08-06, which the rules
+now carry as a premise and which completeness has to DISCHARGE when it builds
+those rows).  Both are consequences of one invariant, now proved in a
+dedicated file `algo/prop_ty_scope.v`: a run's result is scoped in the region
+at-or-below any marker of its input context, EXCEPT for atoms that are rigid
+there.  It is a SCOPE-PROPAGATION statement over the subtyping and typing
+towers plus a region walk over assignment/unification/consistency; naive
+"core preservation" is FALSE at this granularity (both `a_sub_flex__assign`,
+which substitutes the input skeleton, and the check `_base` rows, which reach
+the flexible split at TC, are counterexamples recorded at the lemmas).  The
+two `Ξ0 = nil` corollaries `a_typing_scope_tvar_nil` / `a_typing_scope_tm_nil`
+are what the four check rows consume.
+
+### 4. What did NOT change
+
+The theorem's statement, the declarative rules, and the subcase-1 argument
+all stand verbatim.  Subcase 1's steps ⑫/⑬ ("by the solution, `θA' ≡ᵗ A` and
+`θB' ≡ᵗ B`") are read off the arrow refinement by `ad_refine_syn_inh_tyequiv`,
+the same lemma `Freeze` uses.
