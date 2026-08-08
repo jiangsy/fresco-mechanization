@@ -157,12 +157,15 @@ Inductive is_iskl : bskl -> Prop :=
 (*  Guarded and value predicates                                          *)
 (* ===================================================================== *)
 
-(** Guarded: no top-level forall (any flavour) or hole/tophole. *)
-Inductive guarded_ptyp : ptyp -> Prop :=
-| guarded_ptyp__unit  : guarded_ptyp ptyp_unit
-| guarded_ptyp__var   : forall α, guarded_ptyp (ptyp_var_f α)
-| guarded_ptyp__arrow : forall A1 A2, lc_ptyp A1 -> lc_ptyp A2 -> guarded_ptyp (ptyp_arrow A1 A2).
+(** Guarded: no top-level forall (any flavour) or hole/tophole.
 
+    ⚙ There is deliberately NO [guarded_ptyp] (deleted 2026-08-09, cleanup
+    audit §5.5): it had zero uses.  Guardedness is a premise of the SUBTYPING
+    and CONSISTENCY rules, which range over the coloured / skeleton sorts, so
+    the plain source sort never needs it — a [ptyp] reaches those rules only
+    through a painting, and the painting's guardedness is what gets asserted
+    ([ptyp_to_uskl_syn_guarded], algo/prop_sub_msubst_equiv.v).  Do not add it
+    back without a consumer. *)
 Inductive guarded_pskl : pskl -> Prop :=
 | guarded_pskl__unit  : guarded_pskl pskl_unit
 | guarded_pskl__var   : forall α, guarded_pskl (pskl_var_f α)
@@ -295,5 +298,5 @@ Fixpoint bskl_ghost_free (Q : bskl) : Prop :=
    large relational judgments are deliberately NOT hinted (they would make
    [eauto] explode). *)
 #[export] Hint Constructors mono_ptyp is_ttyp is_tskl is_styp is_ityp is_sskl
-  is_iskl guarded_ptyp guarded_pskl guarded_btyp guarded_utyp guarded_bskl
+  is_iskl guarded_pskl guarded_btyp guarded_utyp guarded_bskl
   guarded_uskl mod_comp_ty mod_comp_sk : frost.

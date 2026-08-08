@@ -1,3 +1,16 @@
+> ## ⛔ SUPERSEDED — HISTORY ONLY (marked 2026-08-09)
+>
+> This hand-off describes the May-2026 removal of `typ_all_plain` from a
+> single `typ` grammar, with a parallel colourless `ctyp`.  **Both `typ` and
+> `ctyp` are gone.**  The Phase-A type-hierarchy refactor replaced them with
+> six sorts — `ptyp` / `btyp` / `utyp` / `pskl` / `bskl` / `uskl` — and
+> `grep -rn 'typ_all_plain\|\bctyp\b' frost/` now returns nothing.  The
+> "Build RED" status below refers to a tree that no longer exists.
+>
+> Kept because it records *why* the plain ∀ had to leave the decorated
+> universe — the argument that Phase A then generalised.  Do not follow its
+> instructions.
+
 # Handoff — typ_all_plain removal refactor (in progress)
 
 **Status as of this commit:** Build RED. Foundation laid (commits `7bd8962`, `acfbd03`); decl-side proof cascade ~5% done.

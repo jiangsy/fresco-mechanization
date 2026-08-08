@@ -1,12 +1,16 @@
 (** COMPLETENESS OF TYPE INFERENCE (section D, thm:complete-type-inference)
-    — the landing file for theorem 4 and its kit.
+    — the landing file for theorem 4 and its kit.  ✅ CLOSED: [a_typing_complete]
+    (:4615) is Qed and axiom-free, [Check]ed in README.v.
 
-    So far: [a_typing_rename_tm], theorem 4's K6 — the binder rows of
-    [a_typing] are cofinite in the term variable and share their outputs
-    across the family, so completeness must generate the family from the
-    IH's one fresh instance.  Same HYBRID as [a_pat_rename_tm]
-    (prop_completeness_pat.v): SWAP the type-level data, SUBSTITUTE in the
-    term.
+    ⚙ NO TERM-BINDER RENAMING KIT IS NEEDED HERE, and that is the point of the
+    EXISTS-FRESH conversion (2026-08-08, `7061d31`).  While [a_typing]'s six
+    binder rows were cofinite they shared their outputs across the family, so
+    completeness would have had to generate the family from the IH's one fresh
+    instance — theorem 4's "K6", the analogue of [a_pat_rename_tm]
+    (prop_completeness_pat.v §K6).  Exists-fresh rows are INTRODUCED at a
+    chosen witness instead, so every binder row below just applies its rule
+    [with (x := x)] and the obligation disappears.  ⚠️ [a_pat] is still
+    cofinite, which is exactly why prop_completeness_pat.v still carries K6.
 
     ⭐ MEASURE SETTLED (2026-08-07 scouting): plain STRUCTURAL induction on
     [ad_sd_typing] suffices — NO height mirror [ad_sd_typing_n].  Every IH
@@ -22,16 +26,19 @@
     The statement is [typ_complete_concl] below, factored like
     [pat_complete_concl]; the base rows feed [a_sub_complete_thm] at TY,
     with the run's output packaged as a painted [ptyp] by
-    [a_sub_ty_ghost_free_output] (prop_ty_core.v) and the optimality
+    [a_sub_ty_ghost_free_output] (completeness_typing/prop_rigidity.v) and the optimality
     conclusion converted by [ad_precise_painting_tyequiv]'s idiom (a
     precision between two type paintings IS a type equivalence, via
     [ad_refine_syn_inh_tyequiv]).
 
-    ⛔ Still owed: the Var/Anno base rows (Anno consumes prop_ty_core's
-    [a_typing_tc_rigid_output]), Freeze, the binder rows (term-binder
-    family via [a_typing_rename_tm]; the two tvar-[_step] rows need a
-    tvar family generation), App (invokes THEOREM 3), the glue, and
-    §6.3's #2/#3 rule-level obligations. *)
+    THE NINE ROWS, all closed: Unit/Var (direct), Anno (consumes
+    prop_rigidity's [a_typing_tc_rigid_output]), Freeze, Abs / AbsAnno, the four
+    check rows [abs{,_anno}_check_{step,base}] — whose [_base] halves needed
+    the MISSING prerequisite [a_split_complete_tc] (:3580), completeness of
+    splitting at check mode, i.e. the paper's AbsCheck subcase 2 — and App
+    (invokes THEOREM 3).  Glue: lexicographic [(size_exp, size_btyp)] in
+    [a_typing_complete_gen] (:4495).  The suffix-discarding rows' scoping
+    premise is discharged from algo/completeness_typing/prop_scope.v. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -66,7 +73,7 @@ Require Import src.frost.algo.prop_completeness_consis.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.prop_consis_rename.
 Require Import src.frost.algo.prop_soundness_consis.
-Require Import src.frost.algo.prop_wf_output.
+Require Import src.frost.algo.prop_wf_preservation.
 Require Import src.frost.algo.prop_normal.
 Require Import src.frost.algo.prop_solve_sub.
 Require Import Coq.micromega.Lia.
@@ -78,8 +85,9 @@ Require Import src.frost.algo.prop_suffix_erase.
 Require Import src.frost.algo.prop_soundness_typing.
 Require Import src.frost.algo.prop_precise_sub.
 Require Import src.frost.algo.prop_completeness_pat.
-Require Import src.frost.algo.prop_ty_core.
-Require Import src.frost.algo.prop_ty_scope.
+Require Import src.frost.algo.completeness_typing.prop_rigidity.
+Require Import src.frost.algo.completeness_typing.prop_shape.
+Require Import src.frost.algo.completeness_typing.prop_scope.
 
 
 (* ===================================================================== *)
@@ -239,7 +247,7 @@ Qed.
 (*  The Anno base row — TWO stages: the body at [(TC, ⌈A⌉)] (the IH),     *)
 (*  then the fused subtyping ([a_sub_complete_thm]).  ⭐ The body run      *)
 (*  returns the annotation ITSELF ([a_typing_tc_rigid_output],            *)
-(*  prop_ty_core.v) — the fact [AT-Anno]'s premise demands and the        *)
+(*  completeness_typing/prop_rigidity.v) — the fact [AT-Anno]'s premise demands and the        *)
 (*  paper's Anno case asserts by metavariable pun.  The optimality glues  *)
 (*  the two factorings by [a_inc_equiv_glue]; the dom side condition is   *)
 (*  [a_inc_id_flex_preserve] at the body run's own identity increase.     *)
@@ -310,7 +318,7 @@ Proof.
                     apply ad_refine_syn_refl_inh;
                     apply a_wf_ptyp_to_wf_pskl; exact HwfAΘ))
     as [A1' [Θmid [HrunB HoptB]]].
-  (* ⭐ the run returned the ANNOTATION ITSELF (prop_ty_core) *)
+  (* ⭐ the run returned the ANNOTATION ITSELF (completeness_typing/prop_rigidity.v) *)
   assert (HA1' : A1' = A).
   { eapply a_typing_tc_rigid_output; [ exact HrunB | ].
     intros α Hα.
@@ -2834,7 +2842,7 @@ Qed.
 (* ===================================================================== *)
 (*  The two rows, discharging premise (2) with the §6.3#2 scoping         *)
 (*  invariant — [a_typing_scope_tvar_nil], the TVAR-marker corollary at   *)
-(*  [Ξ0 = nil] (algo/prop_ty_scope.v).                                    *)
+(*  [Ξ0 = nil] (algo/completeness_typing/prop_scope.v).                                    *)
 (* ===================================================================== *)
 
 (* --- the AbsCheck ∀ row ------------------------------------------------ *)

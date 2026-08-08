@@ -1,8 +1,13 @@
-# AGENTS.md
+# CLAUDE.md
 
 Onboarding + ground rules for agents (and humans) touching this Coq
-mechanization. **CLAUDE.md is a symlink to this file** — both names
-point to the same content.
+mechanization.
+
+⚙ This file used to claim it was `AGENTS.md` with `CLAUDE.md` a symlink to it.
+That has not been true for some time — there is no `mechanization/AGENTS.md`;
+this file is the only copy.  (The repo ROOT has its own separate
+[`../AGENTS.md`](../AGENTS.md), which is about the paper, not the
+mechanization.)  Corrected 2026-08-09.
 
 ## TL;DR
 
@@ -39,7 +44,7 @@ point to the same content.
     `Check`ed in `README.v`.  Its one unrecorded prerequisite was
     `a_split_complete_tc`, completeness of SPLITTING at check mode (the
     paper's AbsCheck subcase 2); the suffix-discarding rows' scoping
-    premise comes from `algo/prop_ty_scope.v`.
+    premise comes from `algo/completeness_typing/prop_scope.v`.
   - ⭐⭐⭐ Subtyping COMPLETENESS: `a_sub_complete_bundle_holds` and
     `a_sub_complete_thm` (thm:complete-subtyping), with **no residual
     hypothesis** — both are `Check`ed and audited in `README.v`.  P5, all
@@ -189,7 +194,9 @@ mechanization/
 │       │                         ⊴, msubst_{ptyp,btyp,pskl,uskl_syn})
 │       ├── prop_inc*.v / prop_metasubst.v / prop_compose.v   (θ-algebra)
 │       ├── prop_flex.v / prop_normal.v / prop_mono_bridge.v  (flex + monotypes)
-│       ├── prop_swap.v          (EQUIVARIANCE — the one renaming primitive)
+│       ├── prop_swap.v          (EQUIVARIANCE — the one renaming primitive.
+│       │                         §1-§5 type variables, §6 TERM binders)
+│       ├── prop_wf_preservation.v  (a run's OUTPUT context is well-formed)
 │       ├── prop_soundness_consis.v / prop_soundness_sub.v
 │       ├── prop_completeness_consis.v
 │       ├── prop_completeness_sub_precise.v (P5)
@@ -202,7 +209,20 @@ mechanization/
 │       │                             algo/prop_completeness_look.v — but see
 │       │                             its ⚠️ header before importing it)
 │       ├── prop_completeness_sub_gen.v (P7a+b, the GENERALIZED statement)
-│       └── prop_completeness_sub.v     (P7c, the paper's a_sub_complete_thm)
+│       ├── prop_completeness_sub.v     (P7c, the paper's a_sub_complete_thm)
+│       └── completeness_typing/    (theorem 4 — thm:complete-type-inference,
+│                                    and the three kit files that serve it and
+│                                    nothing else.  Created 2026-08-09 from
+│                                    four badly-named algo/ files:
+│                                    prop_typing.v   the theorem
+│                                                    (was prop_completeness_typing.v)
+│                                    prop_rigidity.v rigid data survives a run
+│                                                    (was prop_ty_core.v)
+│                                    prop_scope.v    a run's result never
+│                                                    mentions the suffix it
+│                                                    dropped (was prop_ty_scope.v)
+│                                    prop_shape.v    an FN-mode run returns a
+│                                                    syntactic arrow chain)
 ├── cex/                  (machine-checked counterexamples + probes; moved
 │                          out of algo/ 2026-08-06 — they are findings, not
 │                          part of the development)
@@ -252,8 +272,27 @@ before changing any of them.
 - **Skeleton-scope context `Ψ`** is `list atom`, distinct from the
   term-context `Γ`. Used in skeleton well-formedness and refinement.
 - **Locally-nameless via lngen**, including for ε tag variables.
-  Cofinite quantification on binder rules. Imports go through
-  `Metalib.Metatheory`.
+  Imports go through `Metalib.Metatheory`.
+- **Binder rules: COFINITE in the declarative layers, EXISTS-FRESH in the
+  algorithmic one.**  A declarative rule quantifies over all but finitely many
+  atoms (`forall α, α ∉ L -> …`) — the standard LN idiom, and it gives the
+  strong elimination the metatheory leans on.  An algorithmic rule describes a
+  RUN, and a run opens its binder at one atom of its own choosing, so those
+  rules name the atom and constrain it (`x ∉ dom (Ξ ++ Θ1) ∪ dom Θ2 ∪
+  fvar_in_exp e`).  The trade is real: cofinite is cheap to USE and expensive
+  to BUILD — completeness must regenerate the whole family from the IH's one
+  instance, which is exactly what `prop_swap.v` §6's `*_rename_tm` bridges
+  exist for — and exists-fresh is the reverse.  Layer by layer:
+  - `decl/def_extra.v`, `decorated_algo/*` — cofinite. ✅
+  - `algo/def_extra.v` operational judgments (`a_looksub`, `a_solve_*`,
+    `a_assign` / `a_unify` / `a_consis`, `a_sub`, `a_typing`) — exists-fresh. ✅
+  - `algo/def_extra.v` WELL-FORMEDNESS (`a_wf_ptyp`, `a_scope_pskl`,
+    `a_wf_pskl`) — cofinite, deliberately.  These are static judgments, not
+    runs; do not "fix" them to match their file-mates.
+  - ⚠️ `a_pat`'s four binder rows — still cofinite, the one outstanding
+    violation.  `a_typing`'s six were converted 2026-08-08 (`7061d31`);
+    `a_pat` was not, because converting it re-opens theorems 1 and 3.  See
+    [`docs/REPORT-remech-cleanup-audit.md`](docs/REPORT-remech-cleanup-audit.md) §3.
 
 ## Build and workflow
 

@@ -12,7 +12,7 @@
     ([ad_precise_extends_pat_sub_v], prop_completeness_sub_precise.v) — whose
     external wf side condition is discharged by the counterpart-wf premise
     the base rows now carry (hand-off §5; supplied from the algorithm by
-    prop_wf_output.v). *)
+    prop_wf_preservation.v). *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.

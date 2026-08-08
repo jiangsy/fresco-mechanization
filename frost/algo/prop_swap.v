@@ -37,6 +37,7 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.def_extra.
 Require Import src.frost.coercions.
+Require Import src.frost.ltac_utils.        (* destruct_if — §6's term-binder rows *)
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 
@@ -2390,3 +2391,426 @@ Proof.
       | simpl in Hb; fsetdec
       | intros bd hbd; apply Ha; right; exact hbd ].
 Qed.
+
+
+(* ##################################################################### *)
+(*  §6 — TERM BINDERS.                                                    *)
+(*                                                                        *)
+(*  ⚙ MOVED HERE 2026-08-09 from algo/prop_completeness_pat.v, where this  *)
+(*  block sat under a "K6" banner (cleanup audit §1.2).  It is kit, not   *)
+(*  completeness: it is the term-variable half of the equivariance        *)
+(*  primitive, and one of its members ([a_split_swap]) is a per-judgment  *)
+(*  equivariance lemma whose eleven siblings are all above.               *)
+(*  [swap_aenv_fresh_eq] was already being reached from                   *)
+(*  completeness_typing/prop_typing.v THROUGH prop_completeness_pat.v; it now    *)
+(*  comes from its own home.                                             *)
+(*                                                                        *)
+(*  ⚠️ These ten were elaborated under [Set Implicit Arguments] in their    *)
+(*  old home, and this file deliberately has none (see the header).  The  *)
+(*  EXTERNAL call sites are all [@]-applications, which are insensitive   *)
+(*  to it — but the block's INTERNAL ones are not ([a_split_rename_tm]    *)
+(*  writes [a_split_swap x y Hrun], leaving five type-level arguments to  *)
+(*  implicit inference).  So the flag is turned on for this section ONLY  *)
+(*  and off again at the end: §1–§5 keep the explicit-argument policy the *)
+(*  header argues for, and §6 keeps the elaboration it was written under. *)
+(* ##################################################################### *)
+
+Set Implicit Arguments.
+
+(* ===================================================================== *)
+(*  K6 — TERM-VARIABLE RENAMING for the cofinite binder rows.            *)
+(*                                                                       *)
+(*  ⭐ The route is the standing directive's: EQUIVARIANCE is the one     *)
+(*  renaming primitive.  prop_swap.v already proves it for the whole      *)
+(*  algorithmic tower; what was missing is the bridge that turns a SWAP   *)
+(*  of two atoms into the RENAMING of a term binder — which it is        *)
+(*  exactly when both atoms are fresh for everything else in sight        *)
+(*  ([swap_aenv_tm_head] below).  [a_sub_rename_tm] is the first          *)
+(*  consumer; the same three lines give the consistency walk's and,       *)
+(*  above them, [a_pat]'s own.                                           *)
+(* ===================================================================== *)
+
+(** A binding the two swapped atoms do not occur in is untouched. *)
+Lemma swap_abind_fresh_eq : forall x y (b : abind),
+  x `notin` ftvar_in_abind b ->
+  y `notin` ftvar_in_abind b ->
+  swap_abind x y b = b.
+Proof.
+  intros x y b Hx Hy; destruct b; simpl in *; try reflexivity; f_equal;
+    first [ apply swap_ptyp_fresh_id | apply swap_pskl_fresh_id ];
+    assumption.
+Qed.
+
+(** …hence a whole context the two atoms are fresh for. *)
+Lemma swap_aenv_fresh_eq : forall x y Θ,
+  x `notin` (dom Θ `union` ftvar_in_aenv Θ) ->
+  y `notin` (dom Θ `union` ftvar_in_aenv Θ) ->
+  swap_aenv x y Θ = Θ.
+Proof.
+  induction Θ as [ | [z c] Θ' IH ]; intros Hx Hy; simpl in *;
+    [ reflexivity | ].
+  f_equal.
+  - f_equal.
+    + unfold swap_atom.
+      destruct (z == x) as [->|Hzx]; [ exfalso; clear - Hx; fsetdec | ].
+      destruct (z == y) as [->|Hzy]; [ exfalso; clear - Hy; fsetdec | ].
+      reflexivity.
+    + apply swap_abind_fresh_eq; [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
+  - apply IH; [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
+Qed.
+
+(** ⭐ THE BRIDGE.  Swapping a TERM binder's name with a fresh one renames
+    exactly that entry: the tail is untouched (both atoms are fresh for it)
+    and the payload is untouched (a term entry's payload is a TYPE, and the
+    two atoms are term variables). *)
+Lemma swap_aenv_tm_head : forall x y (b : abind) Θ,
+  x `notin` (dom Θ `union` ftvar_in_aenv Θ `union` ftvar_in_abind b) ->
+  y `notin` (dom Θ `union` ftvar_in_aenv Θ `union` ftvar_in_abind b) ->
+  swap_aenv x y ((x ~ b) ++ Θ) = (y ~ b) ++ Θ.
+Proof.
+  intros x y b Θ Hx Hy. simpl. f_equal.
+  - f_equal.
+    + unfold swap_atom. destruct (x == x) as [_|Hc];
+        [ reflexivity | exfalso; apply Hc; reflexivity ].
+    + apply swap_abind_fresh_eq; [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
+  - apply swap_aenv_fresh_eq; [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
+Qed.
+
+(** ⭐ K6's payload for the binder rows: the ALGORITHMIC subtyping walk is
+    stable under renaming a TERM binder.  Equivariance does the work
+    ([a_sub_sub_flex_swap]); the bridge above turns the swapped contexts
+    back into the renamed ones, and the type-level data is untouched
+    because both atoms are fresh for it. *)
+Lemma a_sub_rename_tm : forall NM M P0 Θ0 P Q Ξ Θ1 x y (b : abind),
+  a_sub NM M P0 ((x ~ b) ++ Θ0) P Q (Ξ ++ (x ~ b) ++ Θ1) ->
+  x `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
+             `union` dom Θ1 `union` ftvar_in_aenv Θ1
+             `union` dom Ξ `union` ftvar_in_aenv Ξ
+             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
+             `union` ftvar_in_pskl Q) ->
+  y `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
+             `union` dom Θ1 `union` ftvar_in_aenv Θ1
+             `union` dom Ξ `union` ftvar_in_aenv Ξ
+             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
+             `union` ftvar_in_pskl Q) ->
+  a_sub NM M P0 ((y ~ b) ++ Θ0) P Q (Ξ ++ (y ~ b) ++ Θ1).
+Proof.
+  intros NM M P0 Θ0 P Q Ξ Θ1 x y b Hrun Hx Hy.
+  pose proof ((proj1 (a_sub_sub_flex_swap x y)) _ _ _ _ _ _ _ Hrun) as Hsw.
+  rewrite (@swap_aenv_tm_head x y b Θ0
+             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+  rewrite swap_aenv_app in Hsw.
+  rewrite (@swap_aenv_tm_head x y b Θ1
+             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+  rewrite (@swap_aenv_fresh_eq x y Ξ
+             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+  rewrite !swap_pskl_fresh_id in Hsw;
+    try solve [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
+  exact Hsw.
+Qed.
+
+(** The consistency walk's term renaming — the same three lines as
+    [a_sub_rename_tm], off [a_assign_unify_consis_swap].  This is what
+    [AP-AbsAnno]'s [a_consis_chk] premise needs. *)
+Lemma a_consis_rename_tm : forall Θ0 P0 P Q Ξ Θ1 x y (b : abind),
+  a_consis empty empty ((x ~ b) ++ Θ0) P0 P Q (Ξ ++ (x ~ b) ++ Θ1) ->
+  x `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
+             `union` dom Θ1 `union` ftvar_in_aenv Θ1
+             `union` dom Ξ `union` ftvar_in_aenv Ξ
+             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
+             `union` ftvar_in_pskl Q) ->
+  y `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
+             `union` dom Θ1 `union` ftvar_in_aenv Θ1
+             `union` dom Ξ `union` ftvar_in_aenv Ξ
+             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
+             `union` ftvar_in_pskl Q) ->
+  a_consis empty empty ((y ~ b) ++ Θ0) P0 P Q (Ξ ++ (y ~ b) ++ Θ1).
+Proof.
+  intros Θ0 P0 P Q Ξ Θ1 x y b Hrun Hx Hy.
+  pose proof ((proj2 (proj2 (a_assign_unify_consis_swap x y)))
+                _ _ _ _ _ _ _ Hrun empty empty
+                (empty_eq_swap_atoms_empty x y)
+                (empty_eq_swap_atoms_empty x y)) as Hsw.
+  rewrite (@swap_aenv_tm_head x y b Θ0
+             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+  rewrite swap_aenv_app in Hsw.
+  rewrite (@swap_aenv_tm_head x y b Θ1
+             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+  rewrite (@swap_aenv_fresh_eq x y Ξ
+             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+  rewrite !swap_pskl_fresh_id in Hsw;
+    try solve [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
+  exact Hsw.
+Qed.
+
+(** …in the output-suppressed form the rule states. *)
+Corollary a_consis_chk_rename_tm : forall Θ0 P P0 Ξ Θ1 x y (b : abind),
+  (forall Q, a_consis empty empty ((x ~ b) ++ Θ0) P0 P Q (Ξ ++ (x ~ b) ++ Θ1) ->
+     x `notin` ftvar_in_pskl Q /\ y `notin` ftvar_in_pskl Q) ->
+  a_consis_chk ((x ~ b) ++ Θ0) P P0 (Ξ ++ (x ~ b) ++ Θ1) ->
+  x `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
+             `union` dom Θ1 `union` ftvar_in_aenv Θ1
+             `union` dom Ξ `union` ftvar_in_aenv Ξ
+             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P) ->
+  y `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
+             `union` dom Θ1 `union` ftvar_in_aenv Θ1
+             `union` dom Ξ `union` ftvar_in_aenv Ξ
+             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P) ->
+  a_consis_chk ((y ~ b) ++ Θ0) P P0 (Ξ ++ (y ~ b) ++ Θ1).
+Proof.
+  intros Θ0 P P0 Ξ Θ1 x y b HQ [Q Hrun] Hx Hy.
+  destruct (HQ Q Hrun) as [HxQ HyQ].
+  exists Q. eapply a_consis_rename_tm;
+    [ exact Hrun
+    | clear - Hx HxQ; fsetdec
+    | clear - Hy HyQ; fsetdec ].
+Qed.
+(** Splitting is equivariant — three rows, the flexible one reusing the
+    consistency walk's own equivariance. *)
+Lemma a_split_swap : forall a b Θ0 P0 P Q Θ1,
+  Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 ->
+  (swap_aenv a b Θ0) ⊲ (swap_pskl a b P0) ▹ (swap_pskl a b P)
+    ⇢ (swap_pskl a b Q) ⊣ (swap_aenv a b Θ1).
+Proof.
+  intros a b Θ0 P0 P Q Θ1 H; induction H; simpl.
+  - apply a_split__arrow.
+  - apply a_split__hole.
+  - (* flexible : the invented pair is swapped along *)
+    eapply a_split__flex with (β := swap_atom a b β) (α1 := swap_atom a b α1).
+    + apply swap_aenv_ftvar_notin. exact H.
+    + (* [α1 ∉ add β (ftv Θ0)] transports pointwise through the swap *)
+      apply notin_add_3;
+        [ intros Hc; apply swap_atom_inj in Hc; subst;
+          clear - H0; fsetdec
+        | apply swap_aenv_ftvar_notin; clear - H0; fsetdec ].
+    + pose proof ((proj2 (proj2 (a_assign_unify_consis_swap a b)))
+                    _ _ _ _ _ _ _ H1 empty empty
+                    (empty_eq_swap_atoms_empty a b)
+                    (empty_eq_swap_atoms_empty a b)) as Hsw.
+      simpl in Hsw. exact Hsw.
+Qed.
+
+(** …hence splitting's term renaming, by the bridge. *)
+Lemma a_split_rename_tm : forall Θ0 P0 P Q Ξ Θ1 x y (b : abind),
+  ((x ~ b) ++ Θ0) ⊲ P0 ▹ P ⇢ Q ⊣ (Ξ ++ (x ~ b) ++ Θ1) ->
+  x `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
+             `union` dom Θ1 `union` ftvar_in_aenv Θ1
+             `union` dom Ξ `union` ftvar_in_aenv Ξ
+             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
+             `union` ftvar_in_pskl Q) ->
+  y `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
+             `union` dom Θ1 `union` ftvar_in_aenv Θ1
+             `union` dom Ξ `union` ftvar_in_aenv Ξ
+             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
+             `union` ftvar_in_pskl Q) ->
+  ((y ~ b) ++ Θ0) ⊲ P0 ▹ P ⇢ Q ⊣ (Ξ ++ (y ~ b) ++ Θ1).
+Proof.
+  intros Θ0 P0 P Q Ξ Θ1 x y b Hrun Hx Hy.
+  pose proof (a_split_swap x y Hrun) as Hsw.
+  rewrite (@swap_aenv_tm_head x y b Θ0
+             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+  rewrite swap_aenv_app in Hsw.
+  rewrite (@swap_aenv_tm_head x y b Θ1
+             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+  rewrite (@swap_aenv_fresh_eq x y Ξ
+             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+  rewrite !swap_pskl_fresh_id in Hsw;
+    try solve [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
+  exact Hsw.
+Qed.
+(* ===================================================================== *)
+(*  K6, LAST PIECE — [a_pat]'s own term renaming.                         *)
+(*                                                                       *)
+(*  The obvious statement — substitute the term variable, keep            *)
+(*  everything else, assume x,y fresh for it — CANNOT be proved: the      *)
+(*  [AP-App] row's intermediate skeleton (the argument's OUTPUT, [P0] of  *)
+(*  the function premise) is EXISTENTIAL, so no freshness for it can be   *)
+(*  carried from the statement's hypotheses.                             *)
+(*                                                                       *)
+(*  ⭐ The statement that works is the HYBRID: SWAP the type-level data   *)
+(*  (contexts and both skeletons — so nothing needs to be fresh for it,   *)
+(*  exactly as in the equivariance lemmas this file already consumes) and *)
+(*  SUBSTITUTE in the term, whose freshness obligations shrink with the   *)
+(*  term.  This is why no [swap_exp] is needed (prop_swap.v has none, and *)
+(*  adding one would have to swap ANNOTATION types too).  The ten rows    *)
+(*  transport by [a_sub_sub_flex_swap], [a_assign_unify_consis_swap] and  *)
+(*  [a_split_swap] — the SWAP forms directly, not the renaming            *)
+(*  corollaries above, which are for the CONSUMERS.  The binder rows      *)
+(*  follow [ad_pat_subst_tm]'s cofinite dance (prop_soundness_pat.v §4).  *)
+(*  Consumers read the conclusion back with [swap_aenv_tm_head] /         *)
+(*  [swap_aenv_fresh_eq] / [swap_pskl_fresh_id].                         *)
+(* ===================================================================== *)
+
+(** Swapping distributes over a one-entry block. *)
+Lemma swap_aenv_one : forall a b x (bd : abind),
+  swap_aenv a b (x ~ bd) = (swap_atom a b x) ~ (swap_abind a b bd).
+Proof. reflexivity. Qed.
+
+(** [a_pat] is equivariant in the swapped type-level data and renames its
+    term variable by substitution — the hybrid statement above.
+
+    ⚠️ The design note's recorded statement lacked the THIRD freshness
+    premise, and without it the lemma is FALSE at the [AP-Var] rows: take
+    [e = exp_var_f b] with [b]'s entry in [Θ0] and [a ∉ dom Θ0] — the swap
+    moves the entry to key [a] while the substitution leaves the term
+    reading [b], and no rule derives the conclusion.  [b ∉ fvar_in_exp e]
+    (the NEW name avoids the term) restores it; the consumers have that
+    for free (they rename TO a fresh atom), and it still shrinks with the
+    term, which is all the [AP-App] row needs. *)
+Lemma a_pat_rename_tm : forall a b m Θ0 P0 e P Θ1,
+  Θ0 ⊢ₐ[ m ; P0 ] e ⇨ P ⊣ Θ1 ->
+  a `notin` ftvar_in_exp e -> b `notin` ftvar_in_exp e ->
+  b `notin` fvar_in_exp e ->
+  a_pat m (swap_aenv a b Θ0) (swap_pskl a b P0)
+    (subst_exp_in_exp (exp_var_f b) a e) (swap_pskl a b P)
+    (swap_aenv a b Θ1).
+Proof.
+  intros a b m Θ0 P0 e P Θ1 H.
+  induction H; intros Ha Hb Hbv;
+    simpl in Ha, Hb, Hbv; cbn [subst_exp_in_exp].
+  - (* unit *)
+    apply a_pat__unit.
+    pose proof (proj1 (a_sub_sub_flex_swap a b) _ _ _ _ _ _ _ H) as h.
+    exact h.
+  - (* var (type-bound) *)
+    pose proof (proj1 (a_sub_sub_flex_swap a b) _ _ _ _ _ _ _ H0) as hsub.
+    rewrite swap_pskl_ptyp_to_pskl in hsub.
+    pose proof (swap_aenv_binds a b _ _ _ H) as hb.
+    cbn [swap_abind] in hb.
+    destruct_if as [Heq | Hne].
+    + subst x. rewrite swap_atom_l in hb.
+      eapply a_pat__var; [ exact hb | exact hsub ].
+    + assert (Hxb : x <> b) by (intros ->; clear - Hbv; fsetdec).
+      rewrite (swap_atom_other a b x Hne Hxb) in hb.
+      eapply a_pat__var; [ exact hb | exact hsub ].
+  - (* var (skeleton-bound) *)
+    pose proof (proj1 (a_sub_sub_flex_swap a b) _ _ _ _ _ _ _ H0) as hsub.
+    pose proof (swap_aenv_binds a b _ _ _ H) as hb.
+    cbn [swap_abind] in hb.
+    destruct_if as [Heq | Hne].
+    + subst x. rewrite swap_atom_l in hb.
+      eapply a_pat__var_skl; [ exact hb | exact hsub ].
+    + assert (Hxb : x <> b) by (intros ->; clear - Hbv; fsetdec).
+      rewrite (swap_atom_other a b x Hne Hxb) in hb.
+      eapply a_pat__var_skl; [ exact hb | exact hsub ].
+  - (* anno *)
+    apply a_pat__anno.
+    pose proof (proj1 (a_sub_sub_flex_swap a b) _ _ _ _ _ _ _ H) as h.
+    rewrite swap_pskl_ptyp_to_pskl in h.
+    rewrite swap_ptyp_fresh_id in h;
+      [ exact h | clear - Ha; fsetdec | clear - Hb; fsetdec ].
+  - (* freeze *)
+    apply a_pat__freeze. apply IHa_pat; assumption.
+  - (* abs *)
+    rewrite swap_aenv_app.
+    eapply a_pat__abs with (L := L `union` singleton a `union` singleton b);
+      [ assumption
+      | apply a_split_swap; eassumption
+      | apply a_suffix_swap; assumption
+      | ].
+    intros z Hz.
+    rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
+      [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
+    assert (Hza : z <> a) by (clear - Hz; fsetdec).
+    assert (Hzb : z <> b) by (clear - Hz; fsetdec).
+    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hfu.
+    pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hvu.
+    simpl in hfu, hvu.
+    pose proof (H3 z ltac:(clear - Hz; fsetdec)
+                  ltac:(clear - Ha hfu; fsetdec)
+                  ltac:(clear - Hb hfu; fsetdec)
+                  ltac:(clear - Hbv hvu Hzb; fsetdec)) as IH.
+    rewrite !swap_aenv_app, !swap_aenv_one,
+      (swap_atom_other a b z Hza Hzb) in IH.
+    cbn [swap_abind] in IH.
+    exact IH.
+  - (* abs_anno *)
+    rewrite swap_aenv_app.
+    cbn [swap_pskl].
+    rewrite swap_pskl_ptyp_to_pskl.
+    rewrite (swap_ptyp_fresh_id a b A);
+      [ | clear - Ha; fsetdec | clear - Hb; fsetdec ].
+    eapply a_pat__abs_anno with (L := L `union` singleton a `union` singleton b);
+      [ assumption
+      | apply a_split_swap; eassumption
+      | pose proof (a_consis_chk_swap a b _ _ _ _ H1) as hc;
+        rewrite swap_pskl_ptyp_to_pskl in hc;
+        rewrite (swap_ptyp_fresh_id a b A) in hc;
+        [ exact hc | clear - Ha; fsetdec | clear - Hb; fsetdec ]
+      | apply a_suffix_swap; assumption
+      | ].
+    intros z Hz.
+    rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
+      [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
+    assert (Hza : z <> a) by (clear - Hz; fsetdec).
+    assert (Hzb : z <> b) by (clear - Hz; fsetdec).
+    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hfu.
+    pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hvu.
+    simpl in hfu, hvu.
+    pose proof (H4 z ltac:(clear - Hz; fsetdec)
+                  ltac:(clear - Ha hfu; fsetdec)
+                  ltac:(clear - Hb hfu; fsetdec)
+                  ltac:(clear - Hbv hvu Hzb; fsetdec)) as IH.
+    rewrite !swap_aenv_app, !swap_aenv_one,
+      (swap_atom_other a b z Hza Hzb) in IH.
+    cbn [swap_abind] in IH.
+    rewrite (swap_ptyp_fresh_id a b A) in IH;
+      [ | clear - Ha; fsetdec | clear - Hb; fsetdec ].
+    exact IH.
+  - (* abs_check *)
+    rewrite swap_aenv_app.
+    eapply a_pat__abs_check
+      with (L := L `union` singleton a `union` singleton b);
+      [ apply a_suffix_swap; assumption | ].
+    intros z Hz.
+    rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
+      [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
+    assert (Hza : z <> a) by (clear - Hz; fsetdec).
+    assert (Hzb : z <> b) by (clear - Hz; fsetdec).
+    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hfu.
+    pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hvu.
+    simpl in hfu, hvu.
+    pose proof (H1 z ltac:(clear - Hz; fsetdec)
+                  ltac:(clear - Ha hfu; fsetdec)
+                  ltac:(clear - Hb hfu; fsetdec)
+                  ltac:(clear - Hbv hvu Hzb; fsetdec)) as IH.
+    rewrite !swap_aenv_app, !swap_aenv_one,
+      (swap_atom_other a b z Hza Hzb) in IH.
+    cbn [swap_abind] in IH.
+    exact IH.
+  - (* abs_anno_check *)
+    rewrite swap_aenv_app.
+    cbn [swap_pskl].
+    rewrite swap_pskl_ptyp_to_pskl.
+    rewrite (swap_ptyp_fresh_id a b A);
+      [ | clear - Ha; fsetdec | clear - Hb; fsetdec ].
+    eapply a_pat__abs_anno_check
+      with (L := L `union` singleton a `union` singleton b);
+      [ apply a_suffix_swap; assumption | ].
+    intros z Hz.
+    rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
+      [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
+    assert (Hza : z <> a) by (clear - Hz; fsetdec).
+    assert (Hzb : z <> b) by (clear - Hz; fsetdec).
+    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hfu.
+    pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hvu.
+    simpl in hfu, hvu.
+    pose proof (H1 z ltac:(clear - Hz; fsetdec)
+                  ltac:(clear - Ha hfu; fsetdec)
+                  ltac:(clear - Hb hfu; fsetdec)
+                  ltac:(clear - Hbv hvu Hzb; fsetdec)) as IH.
+    rewrite !swap_aenv_app, !swap_aenv_one,
+      (swap_atom_other a b z Hza Hzb) in IH.
+    cbn [swap_abind] in IH.
+    rewrite (swap_ptyp_fresh_id a b A) in IH;
+      [ | clear - Ha; fsetdec | clear - Hb; fsetdec ].
+    exact IH.
+  - (* app *)
+    eapply a_pat__app.
+    + apply IHa_pat1;
+        [ clear - Ha; fsetdec | clear - Hb; fsetdec | clear - Hbv; fsetdec ].
+    + apply IHa_pat2;
+        [ clear - Ha; fsetdec | clear - Hb; fsetdec | clear - Hbv; fsetdec ].
+Qed.
+
+Unset Implicit Arguments.

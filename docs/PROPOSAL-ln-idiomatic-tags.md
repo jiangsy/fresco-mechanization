@@ -1,3 +1,16 @@
+> ## ⛔ NOT ADOPTED — HISTORY ONLY (marked 2026-08-09)
+>
+> This proposal was never taken up.  Tag freshness is still encoded
+> set-theoretically: `Ψ` is `atoms` / `list atom`, `εvar` is a plain `var`
+> (`def_ott.v:7`), and the ε-tagged constructors `uskl_all_etag` /
+> `utyp_all_etag` bind no LN variable.  What actually closed the
+> obstruction that motivated this note was a different route — the
+> **swap kit** (`algo/prop_swap.v`), which makes equivariance the single
+> renaming primitive and so needs no LN-idiomatic tag encoding at all.
+>
+> Kept for its §1 analysis of the current encoding, which is still accurate.
+> Do not treat §2 onward as a plan of record.
+
 # Proposal: LN-idiomatic tag (`εvar`) freshness — for review before refactor
 
 Status: DRAFT for owner validation. Motivated by the safety-fill obstruction

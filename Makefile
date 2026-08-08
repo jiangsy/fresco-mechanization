@@ -94,6 +94,11 @@ quick : ${COQ_MAKEFILE}
 clean :
 	${MAKE} -f ${COQ_MAKEFILE} clean
 	rm */prop_ln.v */def_ott.v ${COQ_MAKEFILE} ${COQ_MAKEFILE}.conf .FILE_LIST
+	# Litter coq_makefile's own `clean` does not know about: the .aux
+	# per-proof timing files, and the .glob/.vo left behind by scratch
+	# and probe buffers whose .v has since been deleted.
+	rm -f .*.aux */.*.aux */*/.*.aux .lia.cache .DS_Store */.DS_Store
+	rm -f scratch_*.glob scratch_*.vo scratch_*.vok scratch_*.vos
 
 # Sync paper Lemma/Theorem numbers from the compiled paper into:
 #   - `[paper-ref: ...]`-marked comments in .v files

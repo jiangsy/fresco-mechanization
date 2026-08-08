@@ -1,3 +1,19 @@
+> ## ⛔ STALE — HISTORY ONLY (marked 2026-08-09)
+>
+> The `d_pat` safety / totality development this note plans **was never
+> built in the re-mechanization**: there is no `d_pat_safety`, no
+> `safe_fn_skel` and no `d_pat_total` in `frost/`.  What survives are the
+> supporting lemmas in `decl/prop_skeleton.v` (consistency reflexivity, the
+> tvar-strengthening cascade), which still cite `d_pat_total` in their
+> comments as the motivation they were built for.
+>
+> Section D reached its four theorems by a different route entirely —
+> soundness and completeness of skeleton inference against `ad_pat`, not a
+> totality/safety witness.  See `docs/HANDOFF-section-d.md`.
+>
+> Kept because §2's enumeration of the dead-ends is still the record of why
+> the direct route was abandoned.  Do not treat it as an open task.
+
 # Design note: closing the `forall` (and `abs`/`abs_anno`) cases of `d_pat` safety
 
 Status: open. Records the obstruction and the candidate designs for the safety

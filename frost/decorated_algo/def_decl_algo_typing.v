@@ -92,7 +92,7 @@ Inductive ad_pat : mode -> aenv -> exp -> bskl -> Prop :=
        refinement does not preserve wf: cex/cex_refine_not_transitive.v).
        lemma:context-precision's Var case and thm:complete-skeleton-
        inference's Sub case both consume exactly this premise; soundness
-       supplies it from the run by [a_sub_output_wf] (algo/prop_wf_output.v
+       supplies it from the run by [a_sub_output_wf] (algo/prop_wf_preservation.v
        — the algorithm's outputs ARE well-formed). *)
     Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
     ad_pat_sub_v a_sub_mode_sk m empty Θ uskl_unit Q ->

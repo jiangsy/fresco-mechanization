@@ -152,6 +152,14 @@ Definition a_binds_tvar (α : atom) (Θ : aenv) : Prop :=
    of ForallL mean; crucially, [a_inc]'s flex rule checks the solving monotype
    here, which is what forces identity information-increases to KEEP flexible
    variables in the target (stability of variable lookups depends on it). *)
+(* ⚙ COFINITE, DELIBERATELY — and so are [a_scope_pskl] and [a_wf_pskl] below,
+   against the exists-fresh discipline every OPERATIONAL judgment in this file
+   follows.  Well-formedness is not a run: nothing here opens a binder at a
+   name it chose, so there is no witness to name, and the cofinite form gives
+   the strong elimination the whole tree leans on.  Do not "fix" these three to
+   match their file-mates.  (The one genuine violation is [a_pat]'s four binder
+   rows at the bottom of this file — see docs/REPORT-remech-cleanup-audit.md
+   §3.) *)
 Inductive a_wf_ptyp : aenv -> ptyp -> Prop :=
 | a_wf_ptyp__unit : forall Θ,
     a_wf_ptyp Θ ptyp_unit
@@ -1381,6 +1389,19 @@ where "Θ ⊲ P0 ▹ P ⇢ Q ⊣ Θ'" := (a_split Θ P0 P Q Θ') : type_scope
 (*  Algorithmic skeleton inference  [Θ ⊢[M][P0] M ⇨ P ⊣ Θ']               *)
 (*  (fig:alg-skeleton-inference)                                          *)
 (* ===================================================================== *)
+(* ⚠️ THE FOUR BINDER ROWS BELOW ARE STILL COFINITE, and that is the tree's one
+   remaining departure from the exists-fresh discipline for algorithmic rules
+   (docs/REPORT-remech-cleanup-audit.md §3).  [a_typing]'s six counterparts
+   were converted 2026-08-08 (`7061d31`) and now name their witness.
+
+   The cost is paid, and visible: because the IH delivers ONE instance while
+   these rows share their outputs [Ξ]/[Θ1]/[Q] across the whole family,
+   completeness has to REGENERATE the family — which is the only reason
+   prop_swap.v §6's [a_pat_rename_tm] and its four supporting bridges exist.
+   Converting these four would retire that block, but it re-opens BOTH
+   [a_pat_sound] (theorem 1) and [a_pat_complete] (theorem 3), and [a_typing]
+   invokes [a_pat], so theorems 2 and 4 feel it too.  Do it on a branch or not
+   at all. *)
 Inductive a_pat : mode -> aenv -> pskl -> exp -> pskl -> aenv -> Prop :=
 | a_pat__unit : forall m Θ0 Θ1 P0 P,                        (* AP-Unit *)
     Θ0 ⊢ₐ[ a_sub_mode_sk | m | P0 ] pskl_unit ⩽ P ⊣ Θ1 ->

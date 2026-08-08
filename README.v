@@ -31,10 +31,11 @@ Require Import src.frost.algo.prop_completeness_sub.
 Require Import src.frost.algo.prop_soundness_pat.
 Require Import src.frost.algo.prop_suffix_erase.
 Require Import src.frost.algo.prop_soundness_typing.
-Require Import src.frost.algo.prop_wf_output.
+Require Import src.frost.algo.prop_wf_preservation.
 Require Import src.frost.algo.prop_precise_sub.
+Require Import src.frost.algo.prop_swap.        (* a_pat_rename_tm, §6 *)
 Require Import src.frost.algo.prop_completeness_pat.
-Require Import src.frost.algo.prop_completeness_typing.
+Require Import src.frost.algo.completeness_typing.prop_typing.
 
 (* ===================================================================== *)
 (*  full-decl-proofs.tex / app:syntax-directed                            *)
@@ -218,8 +219,8 @@ Check ad_sd_typing_strip_suffix.
    term side condition — an annotation is SOURCE syntax, so its type
    variables are RIGID (docs/PAPER-GAPS.md).
    ⭐ The binder rows generate the algorithm's cofinite families from ONE
-   fresh instance by [a_pat_rename_tm] (equivariance: swap the type-level
-   data, substitute in the term); the AbsAnno and App rows GLUE two
+   fresh instance by [a_pat_rename_tm] (algo/prop_swap.v §6 — equivariance:
+   swap the type-level data, substitute in the term); the AbsAnno and App rows GLUE two
    composed factorings ([a_inc_equiv_glue]), their witnesses aligned by
    identity-uniqueness ([a_inc_id_msubst_unique]). *)
 Check a_pat_complete.
@@ -245,7 +246,7 @@ Check ad_pat_consis_syn_bid.
    where the input is a TYPE painting and [a_split__flex] IS reachable (the
    paper's AbsCheck subcase 2: invent [β̂1]/[α̂1] and solve them by a full
    consistency run) — and the §6.3#2 SCOPING invariant
-   [a_typing_scope_tm_nil] (algo/prop_ty_scope.v), which discharges the
+   [a_typing_scope_tm_nil] (algo/completeness_typing/prop_scope.v), which discharges the
    suffix-discarding rows' premise (2). *)
 Check a_typing_complete.
 Check a_split_complete_tc.
@@ -262,7 +263,7 @@ Check ad_precise_extends_pat_sub_v.
    external counterpart-wf condition the base rows of [ad_pat] now carry —
    supplied from the run by [a_sub_output_wf]: the ALGORITHM's outputs are
    well-formed ([a_consis_output_wf] / [a_sub_output_wf],
-   algo/prop_wf_output.v), the algorithmic half of the paper's implicit
+   algo/prop_wf_preservation.v), the algorithmic half of the paper's implicit
    "all inputs are well-formed" convention. *)
 Check ad_ctx_precise_pat.
 Check a_consis_output_wf.

@@ -155,7 +155,12 @@ substitutions
   single Q Xbs  :: subst_bskl_in
   single R Xus  :: subst_bskl_in
   single e x    :: subst_exp_in
-  single e Xpt  :: subst_typ_in
+% NB no `single e Xpt` line.  Substituting a ptyp for Xpt is already declared
+% above as `single A Xpt :: subst_ptyp_in`, and ott generates it for EVERY
+% grammar that can contain Xpt — so `subst_ptyp_in_exp` (def_ott.v) comes from
+% that one line.  A second declaration of the same pair under another name was
+% here until 2026-08-09 and was inert: ott kept the first, and no
+% `subst_typ_in*` constant was ever generated.
 
 freevars
   A Xpt :: ftvar_in

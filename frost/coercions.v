@@ -287,37 +287,13 @@ Fixpoint uskl_to_bskl (R : uskl) : bskl :=
 
 Coercion uskl_to_bskl : uskl >-> bskl.
 
-(* The DOTTED witness conversion (for the ∀-instantiation in the pattern
-   producer): a pskl's ghost holes map to DOTTED ghosts (holeg / topholeg),
-   which are [is_tskl] — unlike [bskl_to_uskl] / [uskl_to_bskl] which use the
-   PLAIN hole/tophole (not decorated).  Used to instantiate a poly source ∀ at
-   the argument pattern. *)
-Fixpoint pskl_to_tskl (P : pskl) : uskl :=
-  match P with
-  | pskl_unit => uskl_unit
-  | pskl_var_b n => uskl_var_b n
-  | pskl_var_f α => uskl_var_f α
-  | pskl_arrow P1 P2 => uskl_arrow (pskl_to_tskl P1) (pskl_to_tskl P2)
-  | pskl_all_syn P0 => uskl_all_syn (pskl_to_tskl P0)
-  | pskl_hole => uskl_holeg
-  | pskl_tophole P0 => uskl_topholeg (pskl_to_tskl P0)
-  end.
+(* RESTART NOTE (deleted 2026-08-09, cleanup audit §5.2) — [pskl_to_tskl],
+   the DOTTED witness conversion, plus its [_open_rec] / [_open] lemmas.  It
+   sent a pskl's ghost holes to DOTTED ghosts ([holeg] / [topholeg], which are
+   [is_tskl]) and was written for the ∀-instantiation in the pattern producer.
+   It had ZERO uses outside this file; whatever consumed it is gone.
 
-Lemma pskl_to_tskl_open_rec : forall P1 P2 k,
-    pskl_to_tskl (open_pskl_wrt_pskl_rec k P2 P1) =
-    open_uskl_wrt_uskl_rec k (pskl_to_tskl P2) (pskl_to_tskl P1).
-Proof.
-  induction P1; intros P2 k; simpl; try reflexivity.
-  - destruct (lt_eq_lt_dec n k) as [[|]|]; reflexivity.
-  - rewrite IHP1_1. rewrite IHP1_2. reflexivity.
-  - rewrite IHP1. reflexivity.
-  - rewrite IHP1. reflexivity.
-Qed.
-
-Lemma pskl_to_tskl_open : forall P1 P2,
-    pskl_to_tskl (open_pskl_wrt_pskl P1 P2) =
-    open_uskl_wrt_uskl (pskl_to_tskl P1) (pskl_to_tskl P2).
-Proof.
-  intros P1 P2. unfold open_pskl_wrt_pskl, open_uskl_wrt_uskl.
-  apply pskl_to_tskl_open_rec.
-Qed.
+   ⚠️ It is NOT the same map as [pskl_to_uskl] (decorated_algo/def_decorated.v),
+   which is live: that one sends [pskl_hole] to the PLAIN [uskl_hole] and
+   [pskl_tophole] to [uskl_tophole].  If a dotted witness is ever needed again,
+   re-derive it here — the two lemmas were three-line inductions. *)

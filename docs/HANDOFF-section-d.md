@@ -7,7 +7,7 @@
 > | `thm:sound-skeleton-inference` | `a_pat_sound` | `algo/prop_soundness_pat.v` |
 > | `thm:sound-type-inference` | `a_typing_sound` | `algo/prop_soundness_typing.v` |
 > | `thm:complete-skeleton-inference` | `a_pat_complete` | `algo/prop_completeness_pat.v` |
-> | `thm:complete-type-inference` | `a_typing_complete` | `algo/prop_completeness_typing.v` |
+> | `thm:complete-type-inference` | `a_typing_complete` | `algo/completeness_typing/prop_typing.v` |
 >
 > All four are Qed, axiom-free, `Check`ed and audited in `README.v` (the
 > tree's `Print Assumptions` count is 39/39 *Closed under the global
@@ -23,7 +23,7 @@
 >
 > ⛔ Two prerequisites that this hand-off did NOT anticipate, both closed
 > along the way and worth knowing about: the run-result SCOPING invariant
-> (`algo/prop_ty_scope.v`, which discharges the suffix-discarding check
+> (`algo/completeness_typing/prop_scope.v`, which discharges the suffix-discarding check
 > rows' premise (2)) and **`a_split_complete_tc`**, completeness of
 > SPLITTING at check mode — the paper's AbsCheck subcase 2, where the
 > split's flexible row has to be built out of a full consistency run.
@@ -376,7 +376,7 @@ propagate.  `ad_sd_typing`'s base rows are NOT changed: at TY, scope +
 ghost-freeness already give wf (`a_wf_ptyp_of_scope_pskl`).
 
 ⭐⭐⭐ **The soundness supply is a NEW FOUNDATION — the algorithm's outputs are
-well-formed** (`algo/prop_wf_output.v`, both Qed + axiom-free):
+well-formed** (`algo/prop_wf_preservation.v`, both Qed + axiom-free):
 `a_consis_output_wf` (14-row induction over `a_consis`; motive = wf-at-∅ +
 shielded-set avoidance of Δ1∪Δ2 + ftv provenance + guardedness propagation —
 the run's Δ-trackers and the Ghost/GhostR `Δ ∩ ftv` side conditions exist

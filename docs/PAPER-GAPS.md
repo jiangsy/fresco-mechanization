@@ -606,9 +606,12 @@ Status: **argued, not proved.**  See the DEFERRED entry below.
 
 ## DEFERRED — `a_consis_sym` (would turn the above from argued-benign into proved-benign)
 
-Archived at `algo/prop_symmetry.v.deferred` (OUT of the build; the Makefile
-globs `*.v`).  **Do not un-archive as-is: the file HANGS** (90s+ of CPU at 98%
-without terminating).
+The 1011-line archived attempt (`algo/prop_symmetry.v.deferred`) was DELETED
+2026-08-09 — recoverable from git history, but there is no reason to want it.
+It never compiled (it HANGS: 90s+ of CPU at 98% without terminating, reason 1
+below), its approach is the wrong one (reason 2 below), and 28 of its 65
+definitions have since been re-proved — correctly, and in the build — by the
+swap kit `algo/prop_swap.v`.  Everything it recorded is in this section.
 
 Intended statement:
 
@@ -2934,7 +2937,7 @@ which is exactly where the two proofs consume it, and nothing propagates.
 **The soundness obligation this creates is a theorem about the ALGORITHM
 the paper never states**: the outputs of the consistency and subtyping runs
 are well-formed (`a_consis_output_wf` / `a_sub_output_wf`,
-algo/prop_wf_output.v — both Qed, axiom-free).  The consistency induction is
+algo/prop_wf_preservation.v — both Qed, axiom-free).  The consistency induction is
 where the content is: the run's `Δ1`/`Δ2` rigid-trackers and the Ghost /
 GhostR rules' `Δ ∩ ftv` side conditions are PRECISELY what makes it go
 through — the close-rows re-bind an opened rigid, which is sound only
@@ -3008,7 +3011,7 @@ stand.  The `_step` rows keep their result binder (`∀A` with the premise at
 
 Found while proving `thm:complete-type-inference` (proofs.tex:820-950).  The
 theorem is now mechanized in full (`a_typing_complete`,
-`algo/prop_completeness_typing.v`, Qed and axiom-free), and the statement
+`algo/completeness_typing/prop_typing.v`, Qed and axiom-free), and the statement
 stands unchanged; what follows are findings on its PROOF.
 
 The case in question is `sd-AbsCheck`, whose paper proof opens
@@ -3027,7 +3030,7 @@ and then splits into subcase 1 (the arrow — the identity split) and subcase 2
 immediately.  A VARIABLE does not: the paper's `\hat\alpha` silently assumes
 the variable is FLEXIBLE, and the rigid case has to be refuted, because the
 split's flexible row is what the subcase is about and `a_split__flex` on a
-rigid variable is absurd (`a_split_rigid_var_absurd`, `algo/prop_ty_core.v`).
+rigid variable is absurd (`a_split_rigid_var_absurd`, `algo/completeness_typing/prop_rigidity.v`).
 The refutation is short but is a lemma: a variable painting that refines to
 an ARROW must be a *defined* flexible, since refinement's `__var` and
 `__flex_r` rows both conclude at a VARIABLE target, so only `__flex_l` can
@@ -3100,7 +3103,7 @@ pending suffix `Ξ` does not occur in the run's result (the side condition
 registered as `RULE-LEVEL SIDE CONDITIONS` §1, 2026-08-06, which the rules
 now carry as a premise and which completeness has to DISCHARGE when it builds
 those rows).  Both are consequences of one invariant, now proved in a
-dedicated file `algo/prop_ty_scope.v`: a run's result is scoped in the region
+dedicated file `algo/completeness_typing/prop_scope.v`: a run's result is scoped in the region
 at-or-below any marker of its input context, EXCEPT for atoms that are rigid
 there.  It is a SCOPE-PROPAGATION statement over the subtyping and typing
 towers plus a region walk over assignment/unification/consistency; naive

@@ -5349,7 +5349,7 @@ Proof.
     rewrite (msubst_bskl_pskl_to_bskl_inh (aenv_msubst Θ) B
                ltac:(intros; apply aenv_msubst_image_mono; exact Hwf)).
     apply ad_pat_sub_gv__check;
-      [ apply guarded_ptyp_to_uskl_syn; exact Hmd
+      [ apply mono_ptyp_to_uskl_syn_guarded; exact Hmd
       | apply guarded_pskl_msubst_mono;
           [ apply aenv_msubst_lc; exact Hwf
           | intros; apply aenv_msubst_image_mono; exact Hwf
@@ -5390,7 +5390,7 @@ Proof.
       by (apply mono_downarrow; [ exact Hwf | exact HwfA | exact HmA ]).
     simpl. apply ad_pat_sub_gv__univ_ghost_r;
       [ assumption
-      | apply guarded_ptyp_to_uskl_syn; exact Hmd
+      | apply mono_ptyp_to_uskl_syn_guarded; exact Hmd
       | apply guarded_bskl_msubst_mono;
           [ apply aenv_msubst_lc; exact Hwf
           | intros; apply aenv_msubst_image_mono; exact Hwf
