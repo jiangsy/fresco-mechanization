@@ -206,7 +206,49 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-08 (latest) — ⭐⭐⭐ **THE CHECK-ROW RULE SURGERY: the four suffix-discarding rows repaired against completeness, all six `a_typing` binder rows EXISTS-FRESH, `thm:sound-type-inference` re-proved on the repaired rules**
+## 2026-08-08 (latest) — ⭐⭐⭐ **§6.3 #2 IS CLOSED: the run-result SCOPING invariant (`algo/prop_ty_scope.v`), and the two `_step` completeness rows land on it**
+
+The four suffix-discarding check rows carry premise (2) — *the discarded
+suffix `Ξ` does not occur in the run's result* — which
+`thm:complete-type-inference` has to DISCHARGE when it builds those rows.
+That invariant is now proved, in a new `frost/algo/prop_ty_scope.v`
+(2622 lines, zero admits, every result axiom-free):
+
+- `a_sub_sub_flex_scope` — the SUB-level walk, and `a_typing_scope` — the
+  TYPING-level walk, both in **scope-propagation** form.  ⚠️ Core
+  PRESERVATION (the shape `a_sub_sub_flex_ty_core` / `a_typing_ty_core` use)
+  is FALSE once `core_rigid` is relativized to the above-marker region, for
+  two independent reasons recorded at the lemmas: `a_sub_flex__assign`
+  substitutes the input skeleton, and the check `_base` rows reach
+  `a_split__flex` at TC.
+- `a_typing_scope_tvar_nil` / `a_typing_scope_tm_nil` — the two `Ξ0 = nil`
+  corollaries, where the marker sits at the top of the input (so the
+  hypothesis is vacuous) and `suffix_no_rigid_mid` turns the conclusion into
+  premise (2) verbatim.
+- ⭐ **`a_assign_unify_consis_region`** — a NEW region walk over the
+  assignment / unification / consistency bundle, which the `_base` rows'
+  `a_split__flex` case genuinely needs: output well-formedness alone covers
+  only the `Assign-SolveM` shape, and `a_assign__assign` merges the pending
+  suffix into a recursive consistency run whose subject's binding never
+  mentions the split's invented flexibles.  The walk says the above-marker
+  region never grows and every undefined flexible the payload names lands
+  at-or-below the marker — which is the DEPOSIT discipline (`Assign-Depend`
+  parks, `Assign-SolveM` deposits at the subject's entry) made formal.
+  Specializing the consistency motive to a VARIABLE subject with a
+  non-variable payload makes thirteen of the fourteen consistency rows
+  vacuous and leaves `a_unify`'s motive literally `True`.
+
+On top of it, `a_typing_complete_abs_check_step` and
+`a_typing_complete_abs_anno_check_step` are landed in
+`prop_completeness_typing.v` (ten of twelve rows of
+`thm:complete-type-inference` now closed).  Both carry the measure guard
+`size_btyp B' < size_btyp (btyp_all_inh B)` on their IH premise: those rows
+recurse on the SAME subject, so the glue's measure has to be the
+lexicographic `(size_exp e, size_btyp B)`.
+
+Still open for theorem 4: the two `_base` completeness rows and the glue.
+
+## 2026-08-08 — ⭐⭐⭐ **THE CHECK-ROW RULE SURGERY: the four suffix-discarding rows repaired against completeness, all six `a_typing` binder rows EXISTS-FRESH, `thm:sound-type-inference` re-proved on the repaired rules**
 
 Theorem 4's check-row work found the four suffix-discarding check rows, as
 transcribed from fig:alg-type-inference, incompatible with completeness in
