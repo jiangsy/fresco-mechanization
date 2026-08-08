@@ -34,6 +34,7 @@ Require Import src.frost.algo.prop_soundness_typing.
 Require Import src.frost.algo.prop_wf_output.
 Require Import src.frost.algo.prop_precise_sub.
 Require Import src.frost.algo.prop_completeness_pat.
+Require Import src.frost.algo.prop_completeness_typing.
 
 (* ===================================================================== *)
 (*  full-decl-proofs.tex / app:syntax-directed                            *)
@@ -226,6 +227,29 @@ Check a_pat_rename_tm.
 Check ad_ctx_precise_refl.
 Check ad_pat_consis_syn_bid.
 
+(* ⭐⭐⭐ Theorem [Completeness + optimality of type inference]
+   (thm:complete-type-inference, proofs.tex) — the typing analogue of
+   [a_pat_complete]: whenever the DECLARATIVE system types [e] at [B] under
+   a solution [κ] of the question [(Θ0; M; P0)], the ALGORITHM's run
+   succeeds, and for every identity increase out of the question context
+   the answer factors through the solution, the run's result being
+   Θ-EQUIVALENT to the declarative type (precision on TYPES is equivalence).
+   ⚙ LEXICOGRAPHIC [(size_exp e, size_btyp B)] induction: ten of the twelve
+   rows recurse at a strictly smaller subject; only the two ∀-peeling
+   AbsCheck rows recurse at the SAME subject, and they drop one [∀] off the
+   declarative result.
+   Hypotheses beyond the paper's statement are [a_pat_complete]'s
+   (WF-SIDE-CONDITIONS.md).
+   ⭐ The two AbsCheck (→) rows rest on TWO results the paper leaves
+   implicit: [a_split_complete_tc] — splitting is COMPLETE at CHECK mode,
+   where the input is a TYPE painting and [a_split__flex] IS reachable (the
+   paper's AbsCheck subcase 2: invent [β̂1]/[α̂1] and solve them by a full
+   consistency run) — and the §6.3#2 SCOPING invariant
+   [a_typing_scope_tm_nil] (algo/prop_ty_scope.v), which discharges the
+   suffix-discarding rows' premise (2). *)
+Check a_typing_complete.
+Check a_split_complete_tc.
+
 (* ⭐⭐ Lemma [Precision extends skeleton subtyping] (lemma:precision-sub,
    proofs.tex) — over the LEAF-VALID join, fuel preserved, both sorts; a
    corollary of P5c's precision-substitution.  The wf of the counterpart's
@@ -283,6 +307,7 @@ Print Assumptions a_consis_output_wf.
 Print Assumptions a_sub_output_wf.
 Print Assumptions ad_ctx_precise_pat.
 Print Assumptions a_pat_complete.
+Print Assumptions a_typing_complete.
 Print Assumptions a_split_refines.
 Print Assumptions a_extract_complete_gen.
 Print Assumptions a_extract_complete.

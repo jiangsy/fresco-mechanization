@@ -206,7 +206,57 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-08 (latest) — ⭐⭐⭐ **§6.3 #2 IS CLOSED: the run-result SCOPING invariant (`algo/prop_ty_scope.v`), and the two `_step` completeness rows land on it**
+## 2026-08-08 (latest) — ⭐⭐⭐⭐ **THEOREM 4 IS CLOSED: `a_typing_complete` (thm:complete-type-inference), Qed + axiom-free**
+
+Section D's last theorem.  `Theorem a_typing_complete`
+(`algo/prop_completeness_typing.v`, 4638 lines, zero admits) is `Check`ed
+and audited in `README.v`; the `Print Assumptions` count is now 39/39
+*Closed under the global context*.
+
+What the last two rows needed, beyond the ten already committed:
+
+- ⭐⭐ **`a_split_complete_tc` — COMPLETENESS OF SPLITTING AT CHECK MODE, a
+  lemma the recorded plan assumed was already covered and is not.**
+  `a_split_complete` (prop_completeness_pat.v) is stated for `M <> mode_tc`
+  and returns the IDENTITY split; at TC the input is a TYPE painting
+  `⌈A0⌉`, so `a_split__flex` IS reachable (`a_split_ty_shape`'s "whole
+  asymmetry") and the row has to be built.  This is the paper's AbsCheck
+  **subcase 2**: from the declarative refinement of `κ⌈A0⌉` to an arrow only
+  two shapes of `A0` survive — a syntactic arrow (the identity split) and a
+  FLEXIBLE, where two fresh `β̂1`/`α̂1` are invented and SOLVED by a full
+  consistency run supplied by `a_consis_complete_thm`, at the monotypes the
+  flexible's own `κ`-image decomposes into (NEW `mono_refine_arrow_inv`:
+  a monotype painting that refines to an arrow IS an arrow up to `≡ᵗ`,
+  by induction on the REFINEMENT, its `flex_l` row unfolding the
+  definition).  `unit` / `∀` / a RIGID variable all die on the refinement
+  (NEW `refine_var_arrow_flex_def`).  The conclusion is the standard stage
+  package — the run, its own identity increase, and a factoring witness `ζ`
+  carrying BOTH the binder's `≡ᵗ` (what `a_inc__var` consumes) and the
+  codomain's refinement (what the body's IH consumes).
+  ⚙ Its ARROW row needs NEW `msubst_compose_inc_id_r` (composing an
+  increment with its own source's identity is the increment itself — both
+  metasubstitutions enumerate the source's flexibles in the same order).
+- `a_typing_complete_abs_check_base` / `a_typing_complete_abs_anno_check_base`
+  — the `a_typing_complete_abs` template MINUS the `guess^TY` block (the
+  domain comes from the split) PLUS the suffix discard, whose premise (2) is
+  discharged by **`a_typing_scope_tm_nil`** (§6.3#2 at the TERM marker).
+  The anno row is THREE-staged (split, annotation consistency, body), so its
+  optimality is the App row's TRIPLE glue; its consistency is oriented
+  SUBJECT = the split's domain, INPUT = the written annotation, the reverse
+  of `AT-AbsAnno`'s (docs/PAPER-GAPS.md).
+- **The glue** `a_typing_complete_gen`: strong induction on the
+  LEXICOGRAPHIC `(size_exp e, size_btyp B)`, `n`/`m`-bounded in theorem 3's
+  style.  Ten rows recurse at a strictly smaller SUBJECT (any second
+  component is then allowed); only the two ∀-peeling AbsCheck rows recurse
+  at the SAME subject, and their IH premise's measure guard
+  `size_btyp B' < size_btyp (btyp_all_inh B)` is discharged by
+  `size_btyp_open_btyp_wrt_btyp_var`.
+- ⚙ The Anno and Freeze rows gained the TARGET context's skeleton-entry
+  discipline (`binds y (abind_var_skl Ps) Θ -> Θ ⨟ ∅ ⊢ Ps`), as a row
+  hypothesis and inside their IH premise — the glue cannot supply an IH at
+  an arbitrary target without it.  Every other row already carried it.
+
+## 2026-08-08 — ⭐⭐⭐ **§6.3 #2 IS CLOSED: the run-result SCOPING invariant (`algo/prop_ty_scope.v`), and the two `_step` completeness rows land on it**
 
 The four suffix-discarding check rows carry premise (2) — *the discarded
 suffix `Ξ` does not occur in the run's result* — which

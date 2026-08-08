@@ -31,6 +31,15 @@ point to the same content.
     conditions the suffix-DISCARDING check rows need, the `uniq` filter
     `AT-Abs` needs on `guess^TY`'s block, and the correction of
     `AT-AbsAnnoCheck`'s result domain.  All in `docs/PAPER-GAPS.md`.
+  - ⭐⭐⭐ Skeleton-inference COMPLETENESS (section D,
+    thm:complete-skeleton-inference): `a_pat_complete` — Qed, axiom-free,
+    `Check`ed in `README.v`.
+  - ⭐⭐⭐ Type-inference COMPLETENESS (section D,
+    thm:complete-type-inference): `a_typing_complete` — Qed, axiom-free,
+    `Check`ed in `README.v`.  Its one unrecorded prerequisite was
+    `a_split_complete_tc`, completeness of SPLITTING at check mode (the
+    paper's AbsCheck subcase 2); the suffix-discarding rows' scoping
+    premise comes from `algo/prop_ty_scope.v`.
   - ⭐⭐⭐ Subtyping COMPLETENESS: `a_sub_complete_bundle_holds` and
     `a_sub_complete_thm` (thm:complete-subtyping), with **no residual
     hypothesis** — both are `Check`ed and audited in `README.v`.  P5, all
