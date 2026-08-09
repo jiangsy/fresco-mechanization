@@ -41,6 +41,41 @@ and prove three facts the paper's proof of thm:complete-skeleton-inference
    a genuine side condition ON THE TERM, which the mech carries explicitly
    (`forall α ∈ ftv(annotations of e), Θ0 ∋ α rigid`; `msubst_ptyp_rigid_id`).
    ⚠️ The tempting `dom θ ∩ dom Θ = ∅` is FALSE for identity increases.
+
+   ⭐ **`θA = A` IS NOT THE WHOLE REASON, and on its own it would NOT justify
+   rigidity** (sharpened 2026-08-09, after the obvious weakening was
+   questioned).  An UNRESOLVED flexible satisfies `θA = A` perfectly well:
+   `is_id_entry` is literally `snd e = ptyp_var_f (fst e)`, so an identity
+   increase maps each flexible to ITSELF.  The premise is carrying TWO
+   obligations, and only the first is about `θ`:
+
+   - (A) *the solution fixes the annotation* — `msubst_ptyp κ A = A`.  Needs
+     only `α ∉ dom κ` (`a_inc_rigid_notin_dom`), which rigidity gives but so
+     does an unresolved flexible under an identity `κ`.  **Weakenable.**
+   - (B) *the RUN cannot rewrite the annotation* — `A' = A`
+     (`a_typing_tc_rigid_output`), via `core_rigid` in `a_typing_ty_core`.
+     This mentions no `κ` at all: it is about what the algorithm's own
+     subtyping rows may do to `Θ0`.  `a_sub_sub_flex_ty_core` consumes the two
+     NEGATIVE conjuncts of `a_rigid_only` at one row each —
+     **Flex-Solve** uses `~ binds α' abind_flex_mono` to show the variable
+     being solved is not a core variable (so an *unresolved* flexible is
+     excluded: the row would solve it and the core would move), and
+     **Flex-Assign** uses `forall τ, ~ binds α' (abind_flex_mono_def τ)` to
+     show the walked definition misses the core (so a *defined* flexible is
+     excluded: the row replaces it by `τ`).  **Not weakenable** — both kinds
+     of flexible are ruled out, each for its own reason.
+
+   So the premise is already the WEAKEST form of (B): with the `uniq` that
+   `a_wf_aenv` supplies, `binds α abind_tvar Θ0` implies all three conjuncts of
+   `a_rigid_only` (that is exactly how the Anno rows discharge them, by
+   `binds_unique`), and nothing less does.  ⚠️ Allowing flexibles therefore
+   requires RESTATING the Anno rows, not relaxing a hypothesis: `A' = A` would
+   become something like `Θ1 ⊢ A' ≡ᵗ κA`, and the rows of theorems 3 and 4 that
+   consume the equality would be re-proved against the weaker identity.  No
+   caller wants this — no `a_typing`/`a_pat` rule substitutes a type into a
+   term (`open_exp_wrt_exp` is the only rewriting of `e`), so a source
+   expression's annotations can never come to mention the algorithm's own
+   flexibles.
 2. **"Consistency of syn{A} with bid{A}"** (the AbsAnno case, :2005) —
    a type's SYN painting is consistent with any of its BID paintings.
    Stated and proved as `ad_pat_consis_syn_bid` (induction over the wf
