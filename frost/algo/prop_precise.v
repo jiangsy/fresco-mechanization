@@ -97,20 +97,6 @@ Proof.
 Qed.
 
 (** A flexible variable's definition is well-formed in its own context. *)
-Lemma a_wf_aenv_binds_def_wf : forall Θ α1 τ,
-  a_wf_aenv Θ ->
-  binds α1 (abind_flex_mono_def τ) Θ ->
-  a_wf_ptyp Θ τ.
-Proof.
-  intros Θ α1 τ Hwf; induction Hwf; intros Hb; try solve [ inversion Hb ];
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqx Heqb] | Hb'];
-    try discriminate;
-    try (eapply a_wf_ptyp_weaken;
-         [ intros y b Hby; unfold binds; right; exact Hby | ];
-         first [ apply IHHwf; exact Hb'
-               | inversion Heqb; subst; assumption ]).
-Qed.
-
 (** A monotype's skeleton is a well-formed skeleton.  Stated in VISIBILITY
     form: [a_wf_ptyp] puts a quantifier's variable in the CONTEXT, whereas
     [a_wf_pskl] puts it in the Δ-slot, so a direct transfer would have to

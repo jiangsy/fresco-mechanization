@@ -591,14 +591,6 @@ Proof.
     [ left; exact Hin | right; apply in_or_app; right; exact Hin ].
 Qed.
 
-Lemma a_binds_tvar_insert_mid : forall α Θ1 e Θ2,
-  a_binds_tvar α (Θ1 ++ Θ2) -> a_binds_tvar α (Θ1 ++ e ++ Θ2).
-Proof.
-  intros α Θ1 e Θ2 [Hb | [Hb | [τ Hb]]];
-    [ left | right; left | right; right; exists τ ];
-    apply binds_insert_mid; exact Hb.
-Qed.
-
 Lemma a_wf_pskl_reassoc_mid : forall Θ Δ P,
   Θ ⨟ Δ ⊢ₚₛᵃ P ->
   forall Θ1 Θ2 α, Θ = Θ1 ++ Θ2 ->

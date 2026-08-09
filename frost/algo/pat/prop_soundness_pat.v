@@ -142,36 +142,6 @@ Qed.
 
 (** [⊴] extended by the SAME term entry on both sides (mirrors
     [a_isub_cons_tvar]; the [≡]-premise of [a_inc__var] is reflexivity). *)
-Lemma a_isub_cons_var_typ : forall Θ Θ' x A,
-  lc_ptyp A ->
-  Θ ⊴ Θ' ->
-  ((x ~ abind_var_typ A) ++ Θ) ⊴ ((x ~ abind_var_typ A) ++ Θ').
-Proof.
-  intros * Hlc [[κ [Hid Hinc]] Hd]. split.
-  - exists κ. split; [ exact Hid | ].
-    apply (a_inc__var (Ξ := nil)); [ exact Hinc | | constructor ].
-    rewrite msubst_ptyp_id; auto. apply a_tyequiv__refl; exact Hlc.
-  - intros α τ Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
-      [ discriminate | ].
-    unfold binds; apply in_or_app; right. apply Hd; auto.
-Qed.
-
-Lemma a_isub_cons_var_skl : forall Θ Θ' x P,
-  lc_pskl P ->
-  Θ ⊴ Θ' ->
-  ((x ~ abind_var_skl P) ++ Θ) ⊴ ((x ~ abind_var_skl P) ++ Θ').
-Proof.
-  intros * Hlc [[κ [Hid Hinc]] Hd]. split.
-  - exists κ. split; [ exact Hid | ].
-    apply (a_inc__var_skl (Ξ := nil)); [ exact Hinc | | constructor ].
-    rewrite msubst_pskl_id; auto. apply a_pskl_tyequiv__refl; exact Hlc.
-  - intros α τ Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
-      [ discriminate | ].
-    unfold binds; apply in_or_app; right. apply Hd; auto.
-Qed.
-
 (** A term entry looked up through [abind_to_pskl] is a term entry. *)
 Lemma abind_to_pskl_is_tm : forall (b : abind) P,
   abind_to_pskl b = Some P -> abind_is_tm b.
@@ -203,7 +173,7 @@ Proof.
     intros x Hx. apply H3;
       [ exact Hx
       | apply a_isub_cons_var_skl;
-          [ eapply a_wf_pskl_lc; eauto | exact Hle ]
+          [ exact Hle | eapply a_wf_pskl_lc; eauto ]
       | apply aenv_tm_le_cons; exact Htm ].
   - (* abs_anno *)
     eapply ad_pat__abs_anno with (L := L);
@@ -212,7 +182,7 @@ Proof.
     intros x Hx. apply H4;
       [ exact Hx
       | apply a_isub_cons_var_typ;
-          [ eapply a_wf_ptyp_lc; eauto | exact Hle ]
+          [ exact Hle | eapply a_wf_ptyp_lc; eauto ]
       | apply aenv_tm_le_cons; exact Htm ].
   - (* app *)
     eapply ad_pat__app;
@@ -221,7 +191,7 @@ Proof.
     apply ad_pat__abs_check with (L := L). intros x Hx.
     apply H0;
       [ exact Hx
-      | apply a_isub_cons_var_skl; [ apply lc_pskl_hole | exact Hle ]
+      | apply a_isub_cons_var_skl; [ exact Hle | apply lc_pskl_hole ]
       | apply aenv_tm_le_cons; exact Htm ].
   - (* abs_anno_check *)
     apply ad_pat__abs_anno_check with (L := L);
@@ -229,7 +199,7 @@ Proof.
     intros x Hx. apply H1;
       [ exact Hx
       | apply a_isub_cons_var_typ;
-          [ eapply a_wf_ptyp_lc; eauto | exact Hle ]
+          [ exact Hle | eapply a_wf_ptyp_lc; eauto ]
       | apply aenv_tm_le_cons; exact Htm ].
 Qed.
 

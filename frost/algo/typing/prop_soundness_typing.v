@@ -328,7 +328,7 @@ Proof.
       [ eapply a_wf_ptyp_isub; eauto | assumption | ].
     intros x Hx. apply H2;
       [ exact Hx
-      | apply a_isub_cons_var_typ; [ eapply a_wf_ptyp_lc; eauto | exact Hle ]
+      | apply a_isub_cons_var_typ; [ exact Hle | eapply a_wf_ptyp_lc; eauto ]
       | apply aenv_tm_le_cons; exact Htm ].
   - (* abs_anno_check_step *)
     apply ad_sd_typing__abs_anno_check_step with (L := L); [ assumption | ].
@@ -341,14 +341,14 @@ Proof.
       | assumption | ].
     intros x Hx. apply H3;
       [ exact Hx
-      | apply a_isub_cons_var_typ; [ eapply a_wf_ptyp_lc; eauto | exact Hle ]
+      | apply a_isub_cons_var_typ; [ exact Hle | eapply a_wf_ptyp_lc; eauto ]
       | apply aenv_tm_le_cons; exact Htm ].
   - (* abs *)
     apply ad_sd_typing__abs with (L := L);
       [ assumption | eapply a_wf_ptyp_isub; eauto | assumption | ].
     intros x Hx. apply H3;
       [ exact Hx
-      | apply a_isub_cons_var_typ; [ eapply a_wf_ptyp_lc; eauto | exact Hle ]
+      | apply a_isub_cons_var_typ; [ exact Hle | eapply a_wf_ptyp_lc; eauto ]
       | apply aenv_tm_le_cons; exact Htm ].
   - (* abs_anno *)
     eapply ad_sd_typing__abs_anno with (L := L) (A' := A');
@@ -356,7 +356,7 @@ Proof.
       | eapply a_tyequiv_isub_le; eauto | eassumption | assumption | ].
     intros x Hx. apply H5;
       [ exact Hx
-      | apply a_isub_cons_var_typ; [ eapply a_wf_ptyp_lc; eauto | exact Hle ]
+      | apply a_isub_cons_var_typ; [ exact Hle | eapply a_wf_ptyp_lc; eauto ]
       | apply aenv_tm_le_cons; exact Htm ].
   - (* app *)
     eapply ad_sd_typing__app;

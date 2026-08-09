@@ -2134,13 +2134,6 @@ Qed.
    [Θ1 ⊢ α ≡ᵗ β] instead, and [a_tyequiv__sym] provides the flip. *)
 
 (** [a_flex_tvar] transport under mid-insertion / permutation. *)
-Lemma a_flex_tvar_insert_mid : forall α Ξ (e : list (atom * abind)) Θ,
-  a_flex_tvar (Ξ ++ Θ) α -> a_flex_tvar (Ξ ++ e ++ Θ) α.
-Proof.
-  intros * [Hb | [τ Hb]]; [ left | right; exists τ ];
-    apply binds_insert_mid; auto.
-Qed.
-
 Lemma a_flex_tvar_permute_mid : forall α (e : list (atom * abind)) Ξ Θ,
   a_flex_tvar (e ++ Ξ ++ Θ) α -> a_flex_tvar (Ξ ++ e ++ Θ) α.
 Proof.

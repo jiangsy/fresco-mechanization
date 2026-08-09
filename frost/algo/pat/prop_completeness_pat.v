@@ -183,50 +183,8 @@ Qed.
 (* ===================================================================== *)
 
 (* A pending suffix carries no term entry. *)
-Lemma a_suffix_no_var_skl : forall Ξ x (P : pskl),
-  a_suffix Ξ -> binds x (abind_var_skl P) Ξ -> False.
-Proof.
-  intros Ξ x P H; induction H; intros Hb; [ inversion Hb | ].
-  destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'];
-    [ subst; inversion H0 | auto ].
-Qed.
-
-Lemma a_suffix_no_var_typ : forall Ξ x (A : ptyp),
-  a_suffix Ξ -> binds x (abind_var_typ A) Ξ -> False.
-Proof.
-  intros Ξ x A H; induction H; intros Hb; [ inversion Hb | ].
-  destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'];
-    [ subst; inversion H0 | auto ].
-Qed.
-
 (** A skeleton entry's payload is scoped in the WHOLE context (its own
     tail suffices, so a fortiori). *)
-Lemma a_wf_aenv_binds_var_skl_ftv : forall Θ x (P : pskl),
-  a_wf_aenv Θ ->
-  binds x (abind_var_skl P) Θ ->
-  ftvar_in_pskl P [<=] dom Θ.
-Proof.
-  intros Θ x P H; induction H; intros Hb; try solve [ inversion Hb ];
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heq] | Hb'];
-    try discriminate Heq; simpl;
-    try solve [ pose proof (IHa_wf_aenv Hb'); fsetdec ].
-  inversion Heq; subst.
-  pose proof (a_scope_pskl_ftv_dom' H0). fsetdec.
-Qed.
-
-Lemma a_wf_aenv_binds_var_typ_ftv : forall Θ x (A : ptyp),
-  a_wf_aenv Θ ->
-  binds x (abind_var_typ A) Θ ->
-  ftvar_in_ptyp A [<=] dom Θ.
-Proof.
-  intros Θ x A H; induction H; intros Hb; try solve [ inversion Hb ];
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heq] | Hb'];
-    try discriminate Heq; simpl;
-    try solve [ pose proof (IHa_wf_aenv Hb'); fsetdec ].
-  inversion Heq; subst.
-  pose proof (a_wf_ptyp_ftv_dom H0) as Hs. simpl. clear - Hs. fsetdec.
-Qed.
-
 (** ⭐ K2 — the Θ-side term entry of an increase comes from a Θ0-side one,
     with the payloads related by the equational theory under the FULL κ.
     The flex rows shrink κ, which is harmless because the source tail's
