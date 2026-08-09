@@ -711,7 +711,7 @@ carried UNCHANGED:
       (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
          α `notin` ftvar_in_ptyp τ) ->
       ad_pat_sub_gv n NM M Ψ (Θ1 ++ (β' ~ abind_tvar) ++ Θ0)
-        (subst_bskl_in_uskl (uskl_var_f β') α R)
+        (subst_uskl_in_uskl (uskl_var_f β') α R)
         (subst_bskl_in_bskl (bskl_var_f β') α Q).
 
 **Ingredients — three of five are already in scope from `prop_soundness_sub.v`:**
@@ -722,7 +722,7 @@ carried UNCHANGED:
 | `⌊subst R⌋ˢ = subst ⌊R⌋ˢ` | ✅ `uskl_to_pskl_subst_mono` (prop_pat_sub.v:1019), at `τ := ptyp_var_f β'` |
 | `bskl_to_pskl` vs subst | ✅ `bskl_to_pskl_subst_var` (prop_completeness_consis.v:1590) |
 | the LEAF refinement renamed | ✅ NEW `ad_refine_pskl_f_of_plain` + `ad_refine_pskl_rename_ctx` (§1e-i/ii), on top of `ad_refine_pskl_f_rename_ctx` at `F = Δ = ∅` |
-| the ForallL hygiene premise under the rename | ✅ NEW `ftag_in_uskl_subst_var`: `ftag_in_uskl (subst_bskl_in_uskl (uskl_var_f β) α R) [=] ftag_in_uskl R`.  ⭐ Renaming a TYPE variable cannot change TAGS — an EQUALITY, so the local copy is 6 lines and the downstream `ftag_in_uskl_subst_bskl_in_uskl` was not needed |
+| the ForallL hygiene premise under the rename | ✅ NEW `ftag_in_uskl_subst_var`: `ftag_in_uskl (subst_uskl_in_uskl (uskl_var_f β) α R) [=] ftag_in_uskl R`.  ⭐ Renaming a TYPE variable cannot change TAGS — an EQUALITY, so the local copy is 6 lines and the downstream `ftag_in_uskl_subst_uskl_in_uskl` was not needed |
 
 ⚠️ **Four more traps, all from moving scratch-proved script INTO the tree.**
 A scratch file's hint context and name resolution are NOT the target file's:

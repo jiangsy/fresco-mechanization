@@ -8251,10 +8251,10 @@ Qed.
 
 (* begin hide *)
 
-Lemma ftvar_in_uskl_subst_bskl_in_uskl_fresh_mutual :
+Lemma ftvar_in_uskl_subst_uskl_in_uskl_fresh_mutual :
 (forall R1 R2 α1,
   α1 `notin` ftvar_in_uskl R1 ->
-  ftvar_in_uskl (subst_bskl_in_uskl R2 α1 R1) [=] ftvar_in_uskl R1).
+  ftvar_in_uskl (subst_uskl_in_uskl R2 α1 R1) [=] ftvar_in_uskl R1).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp; fsetdec.
@@ -8262,16 +8262,16 @@ Qed.
 
 (* end hide *)
 
-Lemma ftvar_in_uskl_subst_bskl_in_uskl_fresh :
+Lemma ftvar_in_uskl_subst_uskl_in_uskl_fresh :
 forall R1 R2 α1,
   α1 `notin` ftvar_in_uskl R1 ->
-  ftvar_in_uskl (subst_bskl_in_uskl R2 α1 R1) [=] ftvar_in_uskl R1.
+  ftvar_in_uskl (subst_uskl_in_uskl R2 α1 R1) [=] ftvar_in_uskl R1.
 Proof.
-pose proof ftvar_in_uskl_subst_bskl_in_uskl_fresh_mutual as H; intuition eauto.
+pose proof ftvar_in_uskl_subst_uskl_in_uskl_fresh_mutual as H; intuition eauto.
 Qed.
 
-#[export] Hint Resolve ftvar_in_uskl_subst_bskl_in_uskl_fresh : lngen.
-#[export] Hint Rewrite ftvar_in_uskl_subst_bskl_in_uskl_fresh using solve [auto] : lngen.
+#[export] Hint Resolve ftvar_in_uskl_subst_uskl_in_uskl_fresh : lngen.
+#[export] Hint Rewrite ftvar_in_uskl_subst_uskl_in_uskl_fresh using solve [auto] : lngen.
 
 (* begin hide *)
 
@@ -8450,9 +8450,9 @@ Qed.
 
 (* begin hide *)
 
-Lemma ftvar_in_uskl_subst_bskl_in_uskl_lower_mutual :
+Lemma ftvar_in_uskl_subst_uskl_in_uskl_lower_mutual :
 (forall R1 R2 α1,
-  remove α1 (ftvar_in_uskl R1) [<=] ftvar_in_uskl (subst_bskl_in_uskl R2 α1 R1)).
+  remove α1 (ftvar_in_uskl R1) [<=] ftvar_in_uskl (subst_uskl_in_uskl R2 α1 R1)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp; fsetdec.
@@ -8460,14 +8460,14 @@ Qed.
 
 (* end hide *)
 
-Lemma ftvar_in_uskl_subst_bskl_in_uskl_lower :
+Lemma ftvar_in_uskl_subst_uskl_in_uskl_lower :
 forall R1 R2 α1,
-  remove α1 (ftvar_in_uskl R1) [<=] ftvar_in_uskl (subst_bskl_in_uskl R2 α1 R1).
+  remove α1 (ftvar_in_uskl R1) [<=] ftvar_in_uskl (subst_uskl_in_uskl R2 α1 R1).
 Proof.
-pose proof ftvar_in_uskl_subst_bskl_in_uskl_lower_mutual as H; intuition eauto.
+pose proof ftvar_in_uskl_subst_uskl_in_uskl_lower_mutual as H; intuition eauto.
 Qed.
 
-#[export] Hint Resolve ftvar_in_uskl_subst_bskl_in_uskl_lower : lngen.
+#[export] Hint Resolve ftvar_in_uskl_subst_uskl_in_uskl_lower : lngen.
 
 (* begin hide *)
 
@@ -8680,11 +8680,11 @@ Qed.
 
 (* begin hide *)
 
-Lemma ftvar_in_uskl_subst_bskl_in_uskl_notin_mutual :
+Lemma ftvar_in_uskl_subst_uskl_in_uskl_notin_mutual :
 (forall R1 R2 α1 α2,
   α2 `notin` ftvar_in_uskl R1 ->
   α2 `notin` ftvar_in_uskl R2 ->
-  α2 `notin` ftvar_in_uskl (subst_bskl_in_uskl R2 α1 R1)).
+  α2 `notin` ftvar_in_uskl (subst_uskl_in_uskl R2 α1 R1)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp; fsetdec.
@@ -8692,16 +8692,16 @@ Qed.
 
 (* end hide *)
 
-Lemma ftvar_in_uskl_subst_bskl_in_uskl_notin :
+Lemma ftvar_in_uskl_subst_uskl_in_uskl_notin :
 forall R1 R2 α1 α2,
   α2 `notin` ftvar_in_uskl R1 ->
   α2 `notin` ftvar_in_uskl R2 ->
-  α2 `notin` ftvar_in_uskl (subst_bskl_in_uskl R2 α1 R1).
+  α2 `notin` ftvar_in_uskl (subst_uskl_in_uskl R2 α1 R1).
 Proof.
-pose proof ftvar_in_uskl_subst_bskl_in_uskl_notin_mutual as H; intuition eauto.
+pose proof ftvar_in_uskl_subst_uskl_in_uskl_notin_mutual as H; intuition eauto.
 Qed.
 
-#[export] Hint Resolve ftvar_in_uskl_subst_bskl_in_uskl_notin : lngen.
+#[export] Hint Resolve ftvar_in_uskl_subst_uskl_in_uskl_notin : lngen.
 
 (* begin hide *)
 
@@ -8908,9 +8908,9 @@ Qed.
 
 (* begin hide *)
 
-Lemma ftvar_in_uskl_subst_bskl_in_uskl_upper_mutual :
+Lemma ftvar_in_uskl_subst_uskl_in_uskl_upper_mutual :
 (forall R1 R2 α1,
-  ftvar_in_uskl (subst_bskl_in_uskl R2 α1 R1) [<=] ftvar_in_uskl R2 `union` remove α1 (ftvar_in_uskl R1)).
+  ftvar_in_uskl (subst_uskl_in_uskl R2 α1 R1) [<=] ftvar_in_uskl R2 `union` remove α1 (ftvar_in_uskl R1)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp; fsetdec.
@@ -8918,14 +8918,14 @@ Qed.
 
 (* end hide *)
 
-Lemma ftvar_in_uskl_subst_bskl_in_uskl_upper :
+Lemma ftvar_in_uskl_subst_uskl_in_uskl_upper :
 forall R1 R2 α1,
-  ftvar_in_uskl (subst_bskl_in_uskl R2 α1 R1) [<=] ftvar_in_uskl R2 `union` remove α1 (ftvar_in_uskl R1).
+  ftvar_in_uskl (subst_uskl_in_uskl R2 α1 R1) [<=] ftvar_in_uskl R2 `union` remove α1 (ftvar_in_uskl R1).
 Proof.
-pose proof ftvar_in_uskl_subst_bskl_in_uskl_upper_mutual as H; intuition eauto.
+pose proof ftvar_in_uskl_subst_uskl_in_uskl_upper_mutual as H; intuition eauto.
 Qed.
 
-#[export] Hint Resolve ftvar_in_uskl_subst_bskl_in_uskl_upper : lngen.
+#[export] Hint Resolve ftvar_in_uskl_subst_uskl_in_uskl_upper : lngen.
 
 (* begin hide *)
 
@@ -9155,12 +9155,12 @@ Qed.
 
 (* begin hide *)
 
-Lemma subst_bskl_in_uskl_close_uskl_wrt_uskl_rec_mutual :
+Lemma subst_uskl_in_uskl_close_uskl_wrt_uskl_rec_mutual :
 (forall R2 R1 α1 α2 n1,
   degree_uskl_wrt_uskl n1 R1 ->
   α1 <> α2 ->
   α2 `notin` ftvar_in_uskl R1 ->
-  subst_bskl_in_uskl R1 α1 (close_uskl_wrt_uskl_rec n1 α2 R2) = close_uskl_wrt_uskl_rec n1 α2 (subst_bskl_in_uskl R1 α1 R2)).
+  subst_uskl_in_uskl R1 α1 (close_uskl_wrt_uskl_rec n1 α2 R2) = close_uskl_wrt_uskl_rec n1 α2 (subst_uskl_in_uskl R1 α1 R2)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -9168,17 +9168,17 @@ Qed.
 
 (* end hide *)
 
-Lemma subst_bskl_in_uskl_close_uskl_wrt_uskl_rec :
+Lemma subst_uskl_in_uskl_close_uskl_wrt_uskl_rec :
 forall R2 R1 α1 α2 n1,
   degree_uskl_wrt_uskl n1 R1 ->
   α1 <> α2 ->
   α2 `notin` ftvar_in_uskl R1 ->
-  subst_bskl_in_uskl R1 α1 (close_uskl_wrt_uskl_rec n1 α2 R2) = close_uskl_wrt_uskl_rec n1 α2 (subst_bskl_in_uskl R1 α1 R2).
+  subst_uskl_in_uskl R1 α1 (close_uskl_wrt_uskl_rec n1 α2 R2) = close_uskl_wrt_uskl_rec n1 α2 (subst_uskl_in_uskl R1 α1 R2).
 Proof.
-pose proof subst_bskl_in_uskl_close_uskl_wrt_uskl_rec_mutual as H; intuition eauto.
+pose proof subst_uskl_in_uskl_close_uskl_wrt_uskl_rec_mutual as H; intuition eauto.
 Qed.
 
-#[export] Hint Resolve subst_bskl_in_uskl_close_uskl_wrt_uskl_rec : lngen.
+#[export] Hint Resolve subst_uskl_in_uskl_close_uskl_wrt_uskl_rec : lngen.
 
 (* begin hide *)
 
@@ -9335,16 +9335,16 @@ Qed.
 
 #[export] Hint Resolve subst_bskl_in_bskl_close_bskl_wrt_bskl : lngen.
 
-Lemma subst_bskl_in_uskl_close_uskl_wrt_uskl :
+Lemma subst_uskl_in_uskl_close_uskl_wrt_uskl :
 forall R2 R1 α1 α2,
   lc_uskl R1 ->  α1 <> α2 ->
   α2 `notin` ftvar_in_uskl R1 ->
-  subst_bskl_in_uskl R1 α1 (close_uskl_wrt_uskl α2 R2) = close_uskl_wrt_uskl α2 (subst_bskl_in_uskl R1 α1 R2).
+  subst_uskl_in_uskl R1 α1 (close_uskl_wrt_uskl α2 R2) = close_uskl_wrt_uskl α2 (subst_uskl_in_uskl R1 α1 R2).
 Proof.
 unfold close_uskl_wrt_uskl; default_simp.
 Qed.
 
-#[export] Hint Resolve subst_bskl_in_uskl_close_uskl_wrt_uskl : lngen.
+#[export] Hint Resolve subst_uskl_in_uskl_close_uskl_wrt_uskl : lngen.
 
 Lemma subst_ptyp_in_exp_close_exp_wrt_ptyp :
 forall e1 A1 α1 α2,
@@ -9514,11 +9514,11 @@ Qed.
 
 (* begin hide *)
 
-Lemma subst_bskl_in_uskl_degree_uskl_wrt_uskl_mutual :
+Lemma subst_uskl_in_uskl_degree_uskl_wrt_uskl_mutual :
 (forall R1 R2 α1 n1,
   degree_uskl_wrt_uskl n1 R1 ->
   degree_uskl_wrt_uskl n1 R2 ->
-  degree_uskl_wrt_uskl n1 (subst_bskl_in_uskl R2 α1 R1)).
+  degree_uskl_wrt_uskl n1 (subst_uskl_in_uskl R2 α1 R1)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -9526,16 +9526,16 @@ Qed.
 
 (* end hide *)
 
-Lemma subst_bskl_in_uskl_degree_uskl_wrt_uskl :
+Lemma subst_uskl_in_uskl_degree_uskl_wrt_uskl :
 forall R1 R2 α1 n1,
   degree_uskl_wrt_uskl n1 R1 ->
   degree_uskl_wrt_uskl n1 R2 ->
-  degree_uskl_wrt_uskl n1 (subst_bskl_in_uskl R2 α1 R1).
+  degree_uskl_wrt_uskl n1 (subst_uskl_in_uskl R2 α1 R1).
 Proof.
-pose proof subst_bskl_in_uskl_degree_uskl_wrt_uskl_mutual as H; intuition eauto.
+pose proof subst_uskl_in_uskl_degree_uskl_wrt_uskl_mutual as H; intuition eauto.
 Qed.
 
-#[export] Hint Resolve subst_bskl_in_uskl_degree_uskl_wrt_uskl : lngen.
+#[export] Hint Resolve subst_uskl_in_uskl_degree_uskl_wrt_uskl : lngen.
 
 (* begin hide *)
 
@@ -9757,10 +9757,10 @@ Qed.
 
 (* begin hide *)
 
-Lemma subst_bskl_in_uskl_fresh_eq_mutual :
+Lemma subst_uskl_in_uskl_fresh_eq_mutual :
 (forall R2 R1 α1,
   α1 `notin` ftvar_in_uskl R2 ->
-  subst_bskl_in_uskl R1 α1 R2 = R2).
+  subst_uskl_in_uskl R1 α1 R2 = R2).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -9768,16 +9768,16 @@ Qed.
 
 (* end hide *)
 
-Lemma subst_bskl_in_uskl_fresh_eq :
+Lemma subst_uskl_in_uskl_fresh_eq :
 forall R2 R1 α1,
   α1 `notin` ftvar_in_uskl R2 ->
-  subst_bskl_in_uskl R1 α1 R2 = R2.
+  subst_uskl_in_uskl R1 α1 R2 = R2.
 Proof.
-pose proof subst_bskl_in_uskl_fresh_eq_mutual as H; intuition eauto.
+pose proof subst_uskl_in_uskl_fresh_eq_mutual as H; intuition eauto.
 Qed.
 
-#[export] Hint Resolve subst_bskl_in_uskl_fresh_eq : lngen.
-#[export] Hint Rewrite subst_bskl_in_uskl_fresh_eq using solve [auto] : lngen.
+#[export] Hint Resolve subst_uskl_in_uskl_fresh_eq : lngen.
+#[export] Hint Rewrite subst_uskl_in_uskl_fresh_eq using solve [auto] : lngen.
 
 (* begin hide *)
 
@@ -9944,10 +9944,10 @@ Qed.
 
 (* begin hide *)
 
-Lemma subst_bskl_in_uskl_fresh_same_mutual :
+Lemma subst_uskl_in_uskl_fresh_same_mutual :
 (forall R2 R1 α1,
   α1 `notin` ftvar_in_uskl R1 ->
-  α1 `notin` ftvar_in_uskl (subst_bskl_in_uskl R1 α1 R2)).
+  α1 `notin` ftvar_in_uskl (subst_uskl_in_uskl R1 α1 R2)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -9955,15 +9955,15 @@ Qed.
 
 (* end hide *)
 
-Lemma subst_bskl_in_uskl_fresh_same :
+Lemma subst_uskl_in_uskl_fresh_same :
 forall R2 R1 α1,
   α1 `notin` ftvar_in_uskl R1 ->
-  α1 `notin` ftvar_in_uskl (subst_bskl_in_uskl R1 α1 R2).
+  α1 `notin` ftvar_in_uskl (subst_uskl_in_uskl R1 α1 R2).
 Proof.
-pose proof subst_bskl_in_uskl_fresh_same_mutual as H; intuition eauto.
+pose proof subst_uskl_in_uskl_fresh_same_mutual as H; intuition eauto.
 Qed.
 
-#[export] Hint Resolve subst_bskl_in_uskl_fresh_same : lngen.
+#[export] Hint Resolve subst_uskl_in_uskl_fresh_same : lngen.
 
 (* begin hide *)
 
@@ -10138,11 +10138,11 @@ Qed.
 
 (* begin hide *)
 
-Lemma subst_bskl_in_uskl_fresh_mutual :
+Lemma subst_uskl_in_uskl_fresh_mutual :
 (forall R2 R1 α1 α2,
   α1 `notin` ftvar_in_uskl R2 ->
   α1 `notin` ftvar_in_uskl R1 ->
-  α1 `notin` ftvar_in_uskl (subst_bskl_in_uskl R1 α2 R2)).
+  α1 `notin` ftvar_in_uskl (subst_uskl_in_uskl R1 α2 R2)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -10150,16 +10150,16 @@ Qed.
 
 (* end hide *)
 
-Lemma subst_bskl_in_uskl_fresh :
+Lemma subst_uskl_in_uskl_fresh :
 forall R2 R1 α1 α2,
   α1 `notin` ftvar_in_uskl R2 ->
   α1 `notin` ftvar_in_uskl R1 ->
-  α1 `notin` ftvar_in_uskl (subst_bskl_in_uskl R1 α2 R2).
+  α1 `notin` ftvar_in_uskl (subst_uskl_in_uskl R1 α2 R2).
 Proof.
-pose proof subst_bskl_in_uskl_fresh_mutual as H; intuition eauto.
+pose proof subst_uskl_in_uskl_fresh_mutual as H; intuition eauto.
 Qed.
 
-#[export] Hint Resolve subst_bskl_in_uskl_fresh : lngen.
+#[export] Hint Resolve subst_uskl_in_uskl_fresh : lngen.
 
 (* begin hide *)
 
@@ -10266,16 +10266,16 @@ Qed.
 
 #[export] Hint Resolve subst_bskl_in_bskl_lc_bskl : lngen.
 
-Lemma subst_bskl_in_uskl_lc_uskl :
+Lemma subst_uskl_in_uskl_lc_uskl :
 forall R1 R2 α1,
   lc_uskl R1 ->
   lc_uskl R2 ->
-  lc_uskl (subst_bskl_in_uskl R2 α1 R1).
+  lc_uskl (subst_uskl_in_uskl R2 α1 R1).
 Proof.
 default_simp.
 Qed.
 
-#[export] Hint Resolve subst_bskl_in_uskl_lc_uskl : lngen.
+#[export] Hint Resolve subst_uskl_in_uskl_lc_uskl : lngen.
 
 Lemma subst_ptyp_in_exp_lc_exp :
 forall e1 A1 α1,
@@ -10436,10 +10436,10 @@ Qed.
 
 (* begin hide *)
 
-Lemma subst_bskl_in_uskl_open_uskl_wrt_uskl_rec_mutual :
+Lemma subst_uskl_in_uskl_open_uskl_wrt_uskl_rec_mutual :
 (forall R3 R1 R2 α1 n1,
   lc_uskl R1 ->
-  subst_bskl_in_uskl R1 α1 (open_uskl_wrt_uskl_rec n1 R2 R3) = open_uskl_wrt_uskl_rec n1 (subst_bskl_in_uskl R1 α1 R2) (subst_bskl_in_uskl R1 α1 R3)).
+  subst_uskl_in_uskl R1 α1 (open_uskl_wrt_uskl_rec n1 R2 R3) = open_uskl_wrt_uskl_rec n1 (subst_uskl_in_uskl R1 α1 R2) (subst_uskl_in_uskl R1 α1 R3)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -10449,15 +10449,15 @@ Qed.
 
 (* begin hide *)
 
-Lemma subst_bskl_in_uskl_open_uskl_wrt_uskl_rec :
+Lemma subst_uskl_in_uskl_open_uskl_wrt_uskl_rec :
 forall R3 R1 R2 α1 n1,
   lc_uskl R1 ->
-  subst_bskl_in_uskl R1 α1 (open_uskl_wrt_uskl_rec n1 R2 R3) = open_uskl_wrt_uskl_rec n1 (subst_bskl_in_uskl R1 α1 R2) (subst_bskl_in_uskl R1 α1 R3).
+  subst_uskl_in_uskl R1 α1 (open_uskl_wrt_uskl_rec n1 R2 R3) = open_uskl_wrt_uskl_rec n1 (subst_uskl_in_uskl R1 α1 R2) (subst_uskl_in_uskl R1 α1 R3).
 Proof.
-pose proof subst_bskl_in_uskl_open_uskl_wrt_uskl_rec_mutual as H; intuition eauto.
+pose proof subst_uskl_in_uskl_open_uskl_wrt_uskl_rec_mutual as H; intuition eauto.
 Qed.
 
-#[export] Hint Resolve subst_bskl_in_uskl_open_uskl_wrt_uskl_rec : lngen.
+#[export] Hint Resolve subst_uskl_in_uskl_open_uskl_wrt_uskl_rec : lngen.
 
 (* end hide *)
 
@@ -10617,15 +10617,15 @@ Qed.
 
 #[export] Hint Resolve subst_bskl_in_bskl_open_bskl_wrt_bskl : lngen.
 
-Lemma subst_bskl_in_uskl_open_uskl_wrt_uskl :
+Lemma subst_uskl_in_uskl_open_uskl_wrt_uskl :
 forall R3 R1 R2 α1,
   lc_uskl R1 ->
-  subst_bskl_in_uskl R1 α1 (open_uskl_wrt_uskl R3 R2) = open_uskl_wrt_uskl (subst_bskl_in_uskl R1 α1 R3) (subst_bskl_in_uskl R1 α1 R2).
+  subst_uskl_in_uskl R1 α1 (open_uskl_wrt_uskl R3 R2) = open_uskl_wrt_uskl (subst_uskl_in_uskl R1 α1 R3) (subst_uskl_in_uskl R1 α1 R2).
 Proof.
 unfold open_uskl_wrt_uskl; default_simp.
 Qed.
 
-#[export] Hint Resolve subst_bskl_in_uskl_open_uskl_wrt_uskl : lngen.
+#[export] Hint Resolve subst_uskl_in_uskl_open_uskl_wrt_uskl : lngen.
 
 Lemma subst_ptyp_in_exp_open_exp_wrt_ptyp :
 forall e1 A1 A2 α1,
@@ -10721,16 +10721,16 @@ Qed.
 
 #[export] Hint Resolve subst_bskl_in_bskl_open_bskl_wrt_bskl_var : lngen.
 
-Lemma subst_bskl_in_uskl_open_uskl_wrt_uskl_var :
+Lemma subst_uskl_in_uskl_open_uskl_wrt_uskl_var :
 forall R2 R1 α1 α2,
   α1 <> α2 ->
   lc_uskl R1 ->
-  open_uskl_wrt_uskl (subst_bskl_in_uskl R1 α1 R2) (uskl_var_f α2) = subst_bskl_in_uskl R1 α1 (open_uskl_wrt_uskl R2 (uskl_var_f α2)).
+  open_uskl_wrt_uskl (subst_uskl_in_uskl R1 α1 R2) (uskl_var_f α2) = subst_uskl_in_uskl R1 α1 (open_uskl_wrt_uskl R2 (uskl_var_f α2)).
 Proof.
-intros; rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl; default_simp.
+intros; rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl; default_simp.
 Qed.
 
-#[export] Hint Resolve subst_bskl_in_uskl_open_uskl_wrt_uskl_var : lngen.
+#[export] Hint Resolve subst_uskl_in_uskl_open_uskl_wrt_uskl_var : lngen.
 
 Lemma subst_ptyp_in_exp_open_exp_wrt_ptyp_var :
 forall e1 A1 α1 α2,
@@ -10900,9 +10900,9 @@ Qed.
 
 (* begin hide *)
 
-Lemma subst_bskl_in_uskl_spec_rec_mutual :
+Lemma subst_uskl_in_uskl_spec_rec_mutual :
 (forall R1 R2 α1 n1,
-  subst_bskl_in_uskl R2 α1 R1 = open_uskl_wrt_uskl_rec n1 R2 (close_uskl_wrt_uskl_rec n1 α1 R1)).
+  subst_uskl_in_uskl R2 α1 R1 = open_uskl_wrt_uskl_rec n1 R2 (close_uskl_wrt_uskl_rec n1 α1 R1)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -10912,14 +10912,14 @@ Qed.
 
 (* begin hide *)
 
-Lemma subst_bskl_in_uskl_spec_rec :
+Lemma subst_uskl_in_uskl_spec_rec :
 forall R1 R2 α1 n1,
-  subst_bskl_in_uskl R2 α1 R1 = open_uskl_wrt_uskl_rec n1 R2 (close_uskl_wrt_uskl_rec n1 α1 R1).
+  subst_uskl_in_uskl R2 α1 R1 = open_uskl_wrt_uskl_rec n1 R2 (close_uskl_wrt_uskl_rec n1 α1 R1).
 Proof.
-pose proof subst_bskl_in_uskl_spec_rec_mutual as H; intuition eauto.
+pose proof subst_uskl_in_uskl_spec_rec_mutual as H; intuition eauto.
 Qed.
 
-#[export] Hint Resolve subst_bskl_in_uskl_spec_rec : lngen.
+#[export] Hint Resolve subst_uskl_in_uskl_spec_rec : lngen.
 
 (* end hide *)
 
@@ -11018,14 +11018,14 @@ Qed.
 
 #[export] Hint Resolve subst_bskl_in_bskl_spec : lngen.
 
-Lemma subst_bskl_in_uskl_spec :
+Lemma subst_uskl_in_uskl_spec :
 forall R1 R2 α1,
-  subst_bskl_in_uskl R2 α1 R1 = open_uskl_wrt_uskl (close_uskl_wrt_uskl α1 R1) R2.
+  subst_uskl_in_uskl R2 α1 R1 = open_uskl_wrt_uskl (close_uskl_wrt_uskl α1 R1) R2.
 Proof.
 unfold close_uskl_wrt_uskl; unfold open_uskl_wrt_uskl; default_simp.
 Qed.
 
-#[export] Hint Resolve subst_bskl_in_uskl_spec : lngen.
+#[export] Hint Resolve subst_uskl_in_uskl_spec : lngen.
 
 Lemma subst_ptyp_in_exp_spec :
 forall e1 A1 α1,
@@ -11172,11 +11172,11 @@ Qed.
 
 (* begin hide *)
 
-Lemma subst_bskl_in_uskl_subst_bskl_in_uskl_mutual :
+Lemma subst_uskl_in_uskl_subst_uskl_in_uskl_mutual :
 (forall R1 R2 R3 α2 α1,
   α2 `notin` ftvar_in_uskl R2 ->
   α2 <> α1 ->
-  subst_bskl_in_uskl R2 α1 (subst_bskl_in_uskl R3 α2 R1) = subst_bskl_in_uskl (subst_bskl_in_uskl R2 α1 R3) α2 (subst_bskl_in_uskl R2 α1 R1)).
+  subst_uskl_in_uskl R2 α1 (subst_uskl_in_uskl R3 α2 R1) = subst_uskl_in_uskl (subst_uskl_in_uskl R2 α1 R3) α2 (subst_uskl_in_uskl R2 α1 R1)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -11184,16 +11184,16 @@ Qed.
 
 (* end hide *)
 
-Lemma subst_bskl_in_uskl_subst_bskl_in_uskl :
+Lemma subst_uskl_in_uskl_subst_uskl_in_uskl :
 forall R1 R2 R3 α2 α1,
   α2 `notin` ftvar_in_uskl R2 ->
   α2 <> α1 ->
-  subst_bskl_in_uskl R2 α1 (subst_bskl_in_uskl R3 α2 R1) = subst_bskl_in_uskl (subst_bskl_in_uskl R2 α1 R3) α2 (subst_bskl_in_uskl R2 α1 R1).
+  subst_uskl_in_uskl R2 α1 (subst_uskl_in_uskl R3 α2 R1) = subst_uskl_in_uskl (subst_uskl_in_uskl R2 α1 R3) α2 (subst_uskl_in_uskl R2 α1 R1).
 Proof.
-pose proof subst_bskl_in_uskl_subst_bskl_in_uskl_mutual as H; intuition eauto.
+pose proof subst_uskl_in_uskl_subst_uskl_in_uskl_mutual as H; intuition eauto.
 Qed.
 
-#[export] Hint Resolve subst_bskl_in_uskl_subst_bskl_in_uskl : lngen.
+#[export] Hint Resolve subst_uskl_in_uskl_subst_uskl_in_uskl : lngen.
 
 (* begin hide *)
 
@@ -11456,13 +11456,13 @@ Qed.
 
 (* begin hide *)
 
-Lemma subst_bskl_in_uskl_close_uskl_wrt_uskl_rec_open_uskl_wrt_uskl_rec_mutual :
+Lemma subst_uskl_in_uskl_close_uskl_wrt_uskl_rec_open_uskl_wrt_uskl_rec_mutual :
 (forall R2 R1 α1 α2 n1,
   α2 `notin` ftvar_in_uskl R2 ->
   α2 `notin` ftvar_in_uskl R1 ->
   α2 <> α1 ->
   degree_uskl_wrt_uskl n1 R1 ->
-  subst_bskl_in_uskl R1 α1 R2 = close_uskl_wrt_uskl_rec n1 α2 (subst_bskl_in_uskl R1 α1 (open_uskl_wrt_uskl_rec n1 (uskl_var_f α2) R2))).
+  subst_uskl_in_uskl R1 α1 R2 = close_uskl_wrt_uskl_rec n1 α2 (subst_uskl_in_uskl R1 α1 (open_uskl_wrt_uskl_rec n1 (uskl_var_f α2) R2))).
 Proof.
 apply_mutual_ind uskl_mutrec;
 default_simp.
@@ -11472,18 +11472,18 @@ Qed.
 
 (* begin hide *)
 
-Lemma subst_bskl_in_uskl_close_uskl_wrt_uskl_rec_open_uskl_wrt_uskl_rec :
+Lemma subst_uskl_in_uskl_close_uskl_wrt_uskl_rec_open_uskl_wrt_uskl_rec :
 forall R2 R1 α1 α2 n1,
   α2 `notin` ftvar_in_uskl R2 ->
   α2 `notin` ftvar_in_uskl R1 ->
   α2 <> α1 ->
   degree_uskl_wrt_uskl n1 R1 ->
-  subst_bskl_in_uskl R1 α1 R2 = close_uskl_wrt_uskl_rec n1 α2 (subst_bskl_in_uskl R1 α1 (open_uskl_wrt_uskl_rec n1 (uskl_var_f α2) R2)).
+  subst_uskl_in_uskl R1 α1 R2 = close_uskl_wrt_uskl_rec n1 α2 (subst_uskl_in_uskl R1 α1 (open_uskl_wrt_uskl_rec n1 (uskl_var_f α2) R2)).
 Proof.
-pose proof subst_bskl_in_uskl_close_uskl_wrt_uskl_rec_open_uskl_wrt_uskl_rec_mutual as H; intuition eauto.
+pose proof subst_uskl_in_uskl_close_uskl_wrt_uskl_rec_open_uskl_wrt_uskl_rec_mutual as H; intuition eauto.
 Qed.
 
-#[export] Hint Resolve subst_bskl_in_uskl_close_uskl_wrt_uskl_rec_open_uskl_wrt_uskl_rec : lngen.
+#[export] Hint Resolve subst_uskl_in_uskl_close_uskl_wrt_uskl_rec_open_uskl_wrt_uskl_rec : lngen.
 
 (* end hide *)
 
@@ -11676,18 +11676,18 @@ Qed.
 
 #[export] Hint Resolve subst_bskl_in_bskl_close_bskl_wrt_bskl_open_bskl_wrt_bskl : lngen.
 
-Lemma subst_bskl_in_uskl_close_uskl_wrt_uskl_open_uskl_wrt_uskl :
+Lemma subst_uskl_in_uskl_close_uskl_wrt_uskl_open_uskl_wrt_uskl :
 forall R2 R1 α1 α2,
   α2 `notin` ftvar_in_uskl R2 ->
   α2 `notin` ftvar_in_uskl R1 ->
   α2 <> α1 ->
   lc_uskl R1 ->
-  subst_bskl_in_uskl R1 α1 R2 = close_uskl_wrt_uskl α2 (subst_bskl_in_uskl R1 α1 (open_uskl_wrt_uskl R2 (uskl_var_f α2))).
+  subst_uskl_in_uskl R1 α1 R2 = close_uskl_wrt_uskl α2 (subst_uskl_in_uskl R1 α1 (open_uskl_wrt_uskl R2 (uskl_var_f α2))).
 Proof.
 unfold close_uskl_wrt_uskl; unfold open_uskl_wrt_uskl; default_simp.
 Qed.
 
-#[export] Hint Resolve subst_bskl_in_uskl_close_uskl_wrt_uskl_open_uskl_wrt_uskl : lngen.
+#[export] Hint Resolve subst_uskl_in_uskl_close_uskl_wrt_uskl_open_uskl_wrt_uskl : lngen.
 
 Lemma subst_ptyp_in_exp_close_exp_wrt_ptyp_open_exp_wrt_ptyp :
 forall e1 A1 α1 α2,
@@ -11826,27 +11826,27 @@ Qed.
 
 #[export] Hint Resolve subst_bskl_in_bskl_bskl_all_inh : lngen.
 
-Lemma subst_bskl_in_uskl_uskl_all_syn :
+Lemma subst_uskl_in_uskl_uskl_all_syn :
 forall α2 R2 R1 α1,
   lc_uskl R1 ->
   α2 `notin` ftvar_in_uskl R1 `union` ftvar_in_uskl R2 `union` singleton α1 ->
-  subst_bskl_in_uskl R1 α1 (uskl_all_syn R2) = uskl_all_syn (close_uskl_wrt_uskl α2 (subst_bskl_in_uskl R1 α1 (open_uskl_wrt_uskl R2 (uskl_var_f α2)))).
+  subst_uskl_in_uskl R1 α1 (uskl_all_syn R2) = uskl_all_syn (close_uskl_wrt_uskl α2 (subst_uskl_in_uskl R1 α1 (open_uskl_wrt_uskl R2 (uskl_var_f α2)))).
 Proof.
 default_simp.
 Qed.
 
-#[export] Hint Resolve subst_bskl_in_uskl_uskl_all_syn : lngen.
+#[export] Hint Resolve subst_uskl_in_uskl_uskl_all_syn : lngen.
 
-Lemma subst_bskl_in_uskl_uskl_all_etag :
+Lemma subst_uskl_in_uskl_uskl_all_etag :
 forall α2 ε1 R2 R1 α1,
   lc_uskl R1 ->
   α2 `notin` ftvar_in_uskl R1 `union` ftvar_in_uskl R2 `union` singleton α1 ->
-  subst_bskl_in_uskl R1 α1 (uskl_all_etag ε1 R2) = uskl_all_etag (ε1) (close_uskl_wrt_uskl α2 (subst_bskl_in_uskl R1 α1 (open_uskl_wrt_uskl R2 (uskl_var_f α2)))).
+  subst_uskl_in_uskl R1 α1 (uskl_all_etag ε1 R2) = uskl_all_etag (ε1) (close_uskl_wrt_uskl α2 (subst_uskl_in_uskl R1 α1 (open_uskl_wrt_uskl R2 (uskl_var_f α2)))).
 Proof.
 default_simp.
 Qed.
 
-#[export] Hint Resolve subst_bskl_in_uskl_uskl_all_etag : lngen.
+#[export] Hint Resolve subst_uskl_in_uskl_uskl_all_etag : lngen.
 
 Lemma subst_ptyp_in_exp_exp_abs :
 forall x1 e1 A1 α1,
@@ -12014,10 +12014,10 @@ Qed.
 
 (* begin hide *)
 
-Lemma subst_bskl_in_uskl_intro_rec_mutual :
+Lemma subst_uskl_in_uskl_intro_rec_mutual :
 (forall R1 α1 R2 n1,
   α1 `notin` ftvar_in_uskl R1 ->
-  open_uskl_wrt_uskl_rec n1 R2 R1 = subst_bskl_in_uskl R2 α1 (open_uskl_wrt_uskl_rec n1 (uskl_var_f α1) R1)).
+  open_uskl_wrt_uskl_rec n1 R2 R1 = subst_uskl_in_uskl R2 α1 (open_uskl_wrt_uskl_rec n1 (uskl_var_f α1) R1)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -12025,16 +12025,16 @@ Qed.
 
 (* end hide *)
 
-Lemma subst_bskl_in_uskl_intro_rec :
+Lemma subst_uskl_in_uskl_intro_rec :
 forall R1 α1 R2 n1,
   α1 `notin` ftvar_in_uskl R1 ->
-  open_uskl_wrt_uskl_rec n1 R2 R1 = subst_bskl_in_uskl R2 α1 (open_uskl_wrt_uskl_rec n1 (uskl_var_f α1) R1).
+  open_uskl_wrt_uskl_rec n1 R2 R1 = subst_uskl_in_uskl R2 α1 (open_uskl_wrt_uskl_rec n1 (uskl_var_f α1) R1).
 Proof.
-pose proof subst_bskl_in_uskl_intro_rec_mutual as H; intuition eauto.
+pose proof subst_uskl_in_uskl_intro_rec_mutual as H; intuition eauto.
 Qed.
 
-#[export] Hint Resolve subst_bskl_in_uskl_intro_rec : lngen.
-#[export] Hint Rewrite subst_bskl_in_uskl_intro_rec using solve [auto] : lngen.
+#[export] Hint Resolve subst_uskl_in_uskl_intro_rec : lngen.
+#[export] Hint Rewrite subst_uskl_in_uskl_intro_rec using solve [auto] : lngen.
 
 (* begin hide *)
 
@@ -12134,15 +12134,15 @@ Qed.
 
 #[export] Hint Resolve subst_bskl_in_bskl_intro : lngen.
 
-Lemma subst_bskl_in_uskl_intro :
+Lemma subst_uskl_in_uskl_intro :
 forall α1 R1 R2,
   α1 `notin` ftvar_in_uskl R1 ->
-  open_uskl_wrt_uskl R1 R2 = subst_bskl_in_uskl R2 α1 (open_uskl_wrt_uskl R1 (uskl_var_f α1)).
+  open_uskl_wrt_uskl R1 R2 = subst_uskl_in_uskl R2 α1 (open_uskl_wrt_uskl R1 (uskl_var_f α1)).
 Proof.
 unfold open_uskl_wrt_uskl; default_simp.
 Qed.
 
-#[export] Hint Resolve subst_bskl_in_uskl_intro : lngen.
+#[export] Hint Resolve subst_uskl_in_uskl_intro : lngen.
 
 Lemma subst_ptyp_in_exp_intro :
 forall α1 e1 A1,

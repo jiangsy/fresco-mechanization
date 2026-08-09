@@ -124,7 +124,7 @@ Lemma subst_var_ptyp_to_pskl : forall A α β',
 Proof. intros. rewrite ptyp_to_pskl_subst. reflexivity. Qed.
 
 Lemma subst_var_pskl_to_uskl_syn : forall P α β',
-  subst_bskl_in_uskl (uskl_var_f β') α (bskl_to_uskl (pskl_to_bskl_syn P))
+  subst_uskl_in_uskl (uskl_var_f β') α (bskl_to_uskl (pskl_to_bskl_syn P))
   = bskl_to_uskl (pskl_to_bskl_syn (subst_pskl_in_pskl (pskl_var_f β') α P)).
 Proof.
   intros. rewrite <- subst_var_bskl_syn, bskl_to_uskl_subst. reflexivity.
@@ -151,7 +151,7 @@ Lemma subst_var_ptyp_to_btyp_inh : forall A α β',
 Proof. intros. rewrite ptyp_to_btyp_inh_subst. reflexivity. Qed.
 
 Lemma subst_var_ptyp_to_uskl_syn : forall A α β',
-  subst_bskl_in_uskl (uskl_var_f β') α (ptyp_to_uskl_syn A)
+  subst_uskl_in_uskl (uskl_var_f β') α (ptyp_to_uskl_syn A)
   = ptyp_to_uskl_syn (subst_ptyp_in_ptyp (ptyp_var_f β') α A).
 Proof. intros. rewrite ptyp_to_uskl_syn_subst. reflexivity. Qed.
 
@@ -317,7 +317,7 @@ Lemma ad_pat_sub_v_rename_paint : forall NM M Ψ Θ1 α Θ0 R Q β',
      α `notin` ftvar_in_ptyp τ) ->
   ad_pat_sub_v NM M Ψ
     ((subst_aenv (ptyp_var_f β') α Θ1) ++ (β' ~ abind_tvar) ++ Θ0)
-    (subst_bskl_in_uskl (uskl_var_f β') α R)
+    (subst_uskl_in_uskl (uskl_var_f β') α R)
     (subst_bskl_in_bskl (bskl_var_f β') α Q).
 Proof.
   intros * [n Hn] Hdom Hdefs.

@@ -832,7 +832,7 @@ COFINITE; the `_gv` version carries the fuel UNCHANGED.  Two new bridges:
 `ad_refine_pskl_f_of_plain` (the `__hole` hygiene side condition is vacuous at
 `F = ∅`) and ⭐ `ftag_in_uskl_subst_var` — **renaming a TYPE variable cannot
 change TAGS**, an EQUALITY, so the local copy is 6 lines and the downstream
-`ftag_in_uskl_subst_bskl_in_uskl` was not needed.
+`ftag_in_uskl_subst_uskl_in_uskl` was not needed.
 
 ⚠️ Four traps, all from moving scratch-proved script INTO the tree — a scratch
 file's hint context and name resolution are NOT the target file's: `; auto`
@@ -3449,7 +3449,7 @@ INDEPENDENT runs, so no input-only side condition on the rule can separate them
 (the TWO-INDEPENDENT-GENERATORS gap, tag instance).  Going exists-fresh there
 would require either an avoid-set hand-back threaded through both decoration
 inductions or a genuine RETAGGING lemma — and retagging would have to be built
-from scratch, since lngen generated only `subst_bskl_in_uskl` and there is no
+from scratch, since lngen generated only `subst_uskl_in_uskl` and there is no
 tag substitution on `uskl`.  Worth revisiting only if retagging gets built
 anyway.
 
@@ -4333,7 +4333,7 @@ the located kit:
     `R' := open Rb (var α)`: subject premise = forget(HD) slack-erased
     by `ad_pat_sub_g_tyequiv_subject` along `a_uskl_tyequiv_open`
     (sym'd body family, lc ψa via `is_tskl_lc`), then rewritten to the
-    subst-form by `subst_bskl_in_uskl_intro` + κ-open commute
+    subst-form by `subst_uskl_in_uskl_intro` + κ-open commute
     (`msubst_uskl_syn_open`, α ∉ dom κ); ftag conditions via the
     body-instance of `a_uskl_tyequiv_ftag` + `ftag_in_uskl_open_var` +
     `ftag_in_uskl_msubst_uskl_syn` (prop_look_complete_cstr:171);
@@ -4505,7 +4505,7 @@ forms:
   induction over `lc_uskl R`; every occurrence replaces the SAME
   `Ψrep` and sets absorb (the arrow case pins `upre__arrow`'s
   `Ψ1`/`Ψ2` by explicit `with`-bindings — `Ψrep`/`Ψrep`, or
-  `Ψrep`/`∅` via `subst_bskl_in_uskl_fresh_eq` + `upre__refl` when a
+  `Ψrep`/`∅` via `subst_uskl_in_uskl_fresh_eq` + `upre__refl` when a
   component misses the variable; NB `apply IH; assumption` cannot
   instantiate the Ψ-evars — `assumption` never instantiates evars, and
   pinning also dodges the evar-fsetdec wedge on the union equality).
@@ -4517,12 +4517,12 @@ forms:
   one `Ψrep`, which is why the occurring form is the primitive.
 - `uskl_precise_open_into` — the OPENING form the ForallL join rows
   actually consume (their premise runs at subject
-  `open_uskl_wrt_uskl R ψ`): `subst_bskl_in_uskl_intro` at a fresh α +
+  `open_uskl_wrt_uskl R ψ`): `subst_uskl_in_uskl_intro` at a fresh α +
   the packaged form; body-lc premise stated as
   `∀ α, lc_uskl (R ^ α)` so it inverts from either `lc_uskl
   (uskl_all_syn R)` or `lc_uskl (uskl_all_etag ε R)`.
 
-Note `subst_bskl_in_uskl` IS the uskl-into-uskl substitution (ott
+Note `subst_uskl_in_uskl` IS the uskl-into-uskl substitution (ott
 sort-naming quirk — its payload argument is a `uskl`); there is no
 `subst_uskl_in_uskl`.
 
@@ -4812,7 +4812,7 @@ that consumers no longer choose the binder):
   `a_looksub_open_target`; its LS-ForallR case renames ONE representative
   with `a_looksub_lookeq_rename_tvar`, which keeps the shared 𝒞 because
   the representative avoids `ftv 𝒞`), and the detour collapses by the NEW
-  `subst_bskl_in_uskl_rename_compose`.  This per-case re-freshening is the
+  `subst_uskl_in_uskl_rename_compose`.  This per-case re-freshening is the
   exists-fresh discipline's standing recipe for substitution transports.
 - `a_looksub_lookeq_rename_tvar` (+ `ftv_subst_var_keep`,
   `subst_var_pskl_neq_var`) MOVED from prop_look_complete_cstr.v to
@@ -6300,7 +6300,7 @@ dead weight and was removed.)
     (`ad_refine_flexdef_target_unfold`), so `__flex_r` never becomes a separate
     case;
   - `msubst_uskl` (+ erasure/tag/open/prepend-fresh lemmas), which makes the
-    subject `subst_bskl_in_uskl ψa α (msubst_uskl κ S)` the paper's
+    subject `subst_uskl_in_uskl ψa α (msubst_uskl κ S)` the paper's
     `(κS)[ψa/α]` exactly.  TODO: promote the definition to `algo/def_meta.v`
     when P6-Ss needs it (it forces a full algo rebuild, so it is deferred).
 
@@ -6465,7 +6465,7 @@ axiom-free** (commit f5b3e72; `Print Assumptions` closed; `make coq`
 green) — fuel-PRESERVING precision-substitution over the tag-hygienic
 mirror, in ⊑ᵤ-form.  Completed this pass: the remaining six per-rule
 ⊑ᵤ-transports (Arrow; ForallL tagged/untagged — the crux, via cofinite
-body-⊑ᵤ + `uskl_precise_subst` + `subst_bskl_in_uskl_intro` + recursion
+body-⊑ᵤ + `uskl_precise_subst` + `subst_uskl_in_uskl_intro` + recursion
 at `Ψsup ∖ Ψ'`; UnivGhostL/LG incl. the keepg→L root; FlexMono with the
 flex_r root via `binds_unique`) and the 12-case main assembly.  All P5
 milestones are now closed except two deferred bridges: the subst-form

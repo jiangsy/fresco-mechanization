@@ -232,6 +232,10 @@ Inductive a_wf_aenv : aenv -> Prop :=
 (*  (algorithmic.tex:239-244, 442-444)                                    *)
 (* ===================================================================== *)
 
+(** ⚠️ These are the algorithmic counterparts of [mod_comp_ty] / [mod_comp_sk]
+    (frost/def_extra.v) — same concept, but the words are in the opposite order
+    AND so are the arguments (this pair is mode-first, that one subject-first).
+    See the ⛔ note at [mod_comp_ty] before trying to unify them. *)
 Inductive a_ty_mode_compat : mode -> pskl -> Prop :=
 | a_ty_mode_compat__ti :                                  (* skmod[TY] □ TI *)
     a_ty_mode_compat mode_ti pskl_hole

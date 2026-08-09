@@ -153,7 +153,11 @@ substitutions
   single C Xut  :: subst_utyp_in
   single P Xps  :: subst_pskl_in
   single Q Xbs  :: subst_bskl_in
-  single R Xus  :: subst_bskl_in
+% ⚙ Was `subst_bskl_in` until 2026-08-09 — a copy-paste of the line above, and
+% the generated name lied: `subst_bskl_in_uskl` for what is uskl-INTO-uskl
+% substitution (def_ott.v: `(R_5:uskl) (α5:usklvar) (R__6:uskl)`).  Every other
+% sort is named for its own source, so this was the one outlier.
+  single R Xus  :: subst_uskl_in
   single e x    :: subst_exp_in
 % NB no `single e Xpt` line.  Substituting a ptyp for Xpt is already declared
 % above as `single A Xpt :: subst_ptyp_in`, and ott generates it for EVERY

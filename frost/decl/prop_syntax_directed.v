@@ -437,7 +437,7 @@ Qed.
 (* [bskl_to_uskl] commutes with the tvar→unit substitution (the [d_pat_sub]
    premise of [d_pat__sub] is over the [uskl]-erasure of the syn skeleton). *)
 Lemma bskl_to_uskl_subst_unit : forall Q α',
-    subst_bskl_in_uskl uskl_unit α' (bskl_to_uskl Q)
+    subst_uskl_in_uskl uskl_unit α' (bskl_to_uskl Q)
     = bskl_to_uskl (subst_bskl_in_bskl bskl_unit α' Q).
 Proof.
   induction Q; intros α'; simpl; try reflexivity;
@@ -804,7 +804,7 @@ Proof.
   intros m Γ e Q H. induction H; intros Γ1 α0 Γ2 Heq Hclean; subst; simpl.
   - (* unit: embedded [d_pat_sub] over [Γ1++Γ2] → swap to mapped context. *)
     apply d_pat__unit.
-    change uskl_unit with (subst_bskl_in_uskl uskl_unit α0 uskl_unit).
+    change uskl_unit with (subst_uskl_in_uskl uskl_unit α0 uskl_unit).
     eapply d_pat_sub_same_tvar;
       [ eapply d_pat_sub_subst_unit; [ eassumption | reflexivity ]
       | apply same_tvar_map_subst_unit ].

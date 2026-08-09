@@ -796,13 +796,13 @@ Lemma a_uskl_tyequiv_subst : forall Θ X Y,
   forall β ψ,
   lc_uskl ψ ->
   β `notin` dom Θ ->
-  Θ ⊢ (subst_bskl_in_uskl ψ β X) ≡ᵘ (subst_bskl_in_uskl ψ β Y).
+  Θ ⊢ (subst_uskl_in_uskl ψ β X) ≡ᵘ (subst_uskl_in_uskl ψ β Y).
 Proof.
   intros Θ X Y H; induction H; intros β ψ Hlcψ HβΘ.
   - (* __mono : both paintings are β-free *)
-    rewrite (subst_bskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ1) ψ β
+    rewrite (subst_uskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ1) ψ β
                (a_wf_ptyp_paint_notin H1 HβΘ)).
-    rewrite (subst_bskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ2) ψ β
+    rewrite (subst_uskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ2) ψ β
                (a_wf_ptyp_paint_notin H2 HβΘ)).
     apply a_uskl_tyequiv__mono; assumption.
   - (* __unit *) cbn. apply a_uskl_tyequiv__unit.
@@ -816,15 +816,15 @@ Proof.
     cbn. apply a_uskl_tyequiv__all_syn with (L := L `union` singleton β).
     intros γ Hγ.
     assert (Hne : β <> γ) by (clear - Hγ; fsetdec).
-    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R ψ β γ Hne Hlcψ).
-    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R' ψ β γ Hne Hlcψ).
+    rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψ β γ Hne Hlcψ).
+    rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R' ψ β γ Hne Hlcψ).
     apply H0; [ clear - Hγ; fsetdec | exact Hlcψ | exact HβΘ ].
   - (* __all_etag *)
     cbn. apply a_uskl_tyequiv__all_etag with (L := L `union` singleton β).
     intros γ Hγ.
     assert (Hne : β <> γ) by (clear - Hγ; fsetdec).
-    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R ψ β γ Hne Hlcψ).
-    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R' ψ β γ Hne Hlcψ).
+    rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψ β γ Hne Hlcψ).
+    rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R' ψ β γ Hne Hlcψ).
     apply H0; [ clear - Hγ; fsetdec | exact Hlcψ | exact HβΘ ].
   - (* __hole *) cbn. apply a_uskl_tyequiv__hole.
   - (* __holeg *) cbn. apply a_uskl_tyequiv__holeg.
@@ -845,8 +845,8 @@ Proof.
   destruct (atom_fresh
     (L `union` dom Θ `union` ftvar_in_uskl R `union` ftvar_in_uskl R'))
     as [β Fr].
-  rewrite (subst_bskl_in_uskl_intro β R ψ ltac:(clear - Fr; solve_notin_auto)).
-  rewrite (subst_bskl_in_uskl_intro β R' ψ ltac:(clear - Fr; solve_notin_auto)).
+  rewrite (subst_uskl_in_uskl_intro β R ψ ltac:(clear - Fr; solve_notin_auto)).
+  rewrite (subst_uskl_in_uskl_intro β R' ψ ltac:(clear - Fr; solve_notin_auto)).
   apply a_uskl_tyequiv_subst;
     [ apply Hfam; clear - Fr; fsetdec | exact Hlcψ | clear - Fr; fsetdec ].
 Qed.

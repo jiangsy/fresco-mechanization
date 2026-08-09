@@ -236,10 +236,10 @@ Qed.
     subject-freshness delivers the third conjunct. *)
 Lemma ftag_in_uskl_subst_lower : forall ψ α R,
   α `in` ftvar_in_uskl R ->
-  ftag_in_uskl ψ [<=] ftag_in_uskl (subst_bskl_in_uskl ψ α R).
+  ftag_in_uskl ψ [<=] ftag_in_uskl (subst_uskl_in_uskl ψ α R).
 Proof.
   intros ψ α R; induction R;
-    cbn [ftvar_in_uskl subst_bskl_in_uskl ftag_in_uskl]; intros Hin;
+    cbn [ftvar_in_uskl subst_uskl_in_uskl ftag_in_uskl]; intros Hin;
     try solve [ clear - Hin; exfalso; fsetdec
               | specialize (IHR Hin); clear - IHR; fsetdec ].
   - (* var_f *)
@@ -465,7 +465,7 @@ Lemma a_looksub_solve_complete_leaf :
   Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
   (* --- the ρ pack (all vacuous at ρ = identity) --- *)
   uskl_rho NM Θ Δρ Ψρ Rsub
-    (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')) ->
+    (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) ->
   Ψρ ∩ Ψ' [=] empty ->
   rho_fresh Δρ Θ κ ->
   Δρ [<=] Δ ->
@@ -538,7 +538,7 @@ Proof.
         apply msubst_pskl_ftv_avoid; [ exact Hκav | exact Hnin ]. }
       (* under ρ the tag bound reads off the IMAGE, so ρ's own tags join it —
          and they are ⊥ Ψ' by [HΨρ], as R'-tags are by [Hdisj] *)
-      rewrite (subst_bskl_in_uskl_fresh_eq (msubst_uskl_syn κ R') ψa α HαMS)
+      rewrite (subst_uskl_in_uskl_fresh_eq (msubst_uskl_syn κ R') ψa α HαMS)
         in Hrho.
       assert (HΨsR : Ψsub [<=] ftag_in_uskl Rsub)
         by (apply (ad_pat_sub_g_ftag_sub Hsubty)).
@@ -582,7 +582,7 @@ Proof.
     (* under ρ it is the IDEAL side of [Hrho] that collapses to ψa —
        [Hsubty] / [HwfSubj] are already in the shape P6-Sv wants *)
     rewrite Hms in Hrho.
-    assert (Hsubj : subst_bskl_in_uskl ψa α (uskl_var_f α) = ψa).
+    assert (Hsubj : subst_uskl_in_uskl ψa α (uskl_var_f α) = ψa).
     { cbn. match goal with |- context [if ?c then _ else _] => destruct c end;
         [ reflexivity | contradiction ]. }
     rewrite Hsubj in Hrho.
@@ -722,7 +722,7 @@ Theorem a_looksub_solve_complete_gen :
   Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
   (* --- the ρ pack (all VACUOUS at ρ = identity) --- *)
   uskl_rho NM Θ Δρ Ψρ Rsub
-    (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')) ->
+    (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) ->
   Ψρ ∩ Ψ' [=] empty ->
   rho_fresh Δρ Θ κ ->
   Δρ [<=] Δ ->
@@ -1154,7 +1154,7 @@ Proof.
         eapply flex_apart_deep_step;
           [ exact Hapart | apply p0step_all; clear - Fr; solve_notin ]. }
       assert (Hrhoβ : uskl_rho a_sub_mode_ty ((β ~ abind_tvar) ++ Θ) Δρ Ψρ T
-                (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')))
+                (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')))
         by (eapply uskl_rho_weaken; [ exact Hrho | exact Hweak ]).
       assert (HΔρftvβ : forall α0, α0 `in` Δρ ->
                 α0 `notin` ftvar_in_pskl
@@ -1505,14 +1505,14 @@ Proof.
     assert (HΨ1sub : Ψ1 [<=] union (ftag_in_uskl Ra) (union Ψρ1 Ψ')).
     { pose proof (ad_pat_consis_ftag_sub H) as Hf1.
       pose proof (uskl_rho_ftag_sub Hrhoa) as Hr1.
-      pose proof (ftag_in_uskl_subst_bskl_in_uskl ψa α
+      pose proof (ftag_in_uskl_subst_uskl_in_uskl ψa α
                     (msubst_uskl_syn κ Ra)) as Hb1.
       pose proof (ftag_in_uskl_msubst_uskl_syn κ Ra) as Hm1.
       clear - Hf1 Hr1 Hb1 Hm1 Hψatag; fsetdec. }
     assert (HΨ2sub : Ψ2 [<=] union (ftag_in_uskl Rb) (union Ψρ2 Ψ')).
     { pose proof (ad_pat_sub_g_ftag_sub Hsubty) as Hf2.
       pose proof (uskl_rho_ftag_sub Hrhob) as Hr2.
-      pose proof (ftag_in_uskl_subst_bskl_in_uskl ψa α
+      pose proof (ftag_in_uskl_subst_uskl_in_uskl ψa α
                     (msubst_uskl_syn κ Rb)) as Hb2.
       pose proof (ftag_in_uskl_msubst_uskl_syn κ Rb) as Hm2.
       clear - Hf2 Hr2 Hb2 Hm2 Hψatag; fsetdec. }
@@ -2129,7 +2129,7 @@ Proof.
                     (msubst_uskl_syn κ (uskl_all_etag εr R0))
                     (@msubst_uskl_syn_ftv_keep κ α (uskl_all_etag εr R0)
                        Hακdom HαR)) as Hl.
-      cbn [ftag_in_uskl subst_bskl_in_uskl msubst_uskl_syn] in Ht, Hl |- *.
+      cbn [ftag_in_uskl subst_uskl_in_uskl msubst_uskl_syn] in Ht, Hl |- *.
       clear - Ht Hl Hψatag; fsetdec. }
     assert (HΨgfresh : Ψ'0 ∩ Ψ' [=] empty) by (clear - H1 HΨ'sub; fsetdec).
     (* --- the fresh RIGID β, and ρ_b = ρ ∘ [ψ/β] --- *)
@@ -2159,12 +2159,12 @@ Proof.
     destruct (@uskl_rho_subst NM Θ Δρ Ψρ
                 (open_uskl_wrt_uskl R (uskl_var_f β))
                 (open_uskl_wrt_uskl
-                   (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R0))
+                   (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R0))
                    (uskl_var_f β))
                 (Hfam β ltac:(clear - Fr; solve_notin))
                 β ψ Ψ'0 H2 Hwfψ Hlcψ HβΘ HβΔρ)
       as (Ψρ' & HΨρ'sub & HΨρ'mono & _ & Hrho').
-    rewrite <- (@subst_bskl_in_uskl_intro β R ψ) in Hrho'; [ | exact HβR ].
+    rewrite <- (@subst_uskl_in_uskl_intro β R ψ) in Hrho'; [ | exact HβR ].
     rewrite <- (@p6cs_subject_open Θ0 κ Θ ψa α R0 β Hκ Hακdom Hβκ Hβα Hlcψa)
       in Hrho'.
     (* --- the recursive call's premises at Θ0,β / Θ,β / add β Δ / add β Δρ --- *)
@@ -2215,7 +2215,7 @@ Proof.
       rewrite ftag_in_uskl_open_var.
       pose proof (ad_pat_sub_g_ftag_sub Hsubty) as Hs.
       pose proof (uskl_rho_ftag_sub Hrho') as Hr.
-      pose proof (@ftag_in_uskl_subst_bskl_in_uskl ψa α
+      pose proof (@ftag_in_uskl_subst_uskl_in_uskl ψa α
                     (msubst_uskl_syn κ
                        (open_uskl_wrt_uskl R0 (uskl_var_f β)))) as Hb.
       pose proof (ftag_in_uskl_msubst_uskl_syn κ
@@ -2267,7 +2267,7 @@ Proof.
       by (eapply ad_refine_syn_weaken; [ exact Hrefine | exact Hweak ]).
     assert (Hrhoβ : uskl_rho NM ((β ~ abind_tvar) ++ Θ) (add β Δρ) Ψρ'
               (open_uskl_wrt_uskl R ψ)
-              (subst_bskl_in_uskl ψa α
+              (subst_uskl_in_uskl ψa α
                  (msubst_uskl_syn κ (open_uskl_wrt_uskl R0 (uskl_var_f β)))))
       by (eapply uskl_rho_weaken; [ exact Hrho' | exact Hweak ]).
     assert (HΨρβ : Ψρ' ∩ Ψ' [=] empty)
@@ -2581,7 +2581,7 @@ Proof.
                     (msubst_uskl_syn κ (uskl_all_syn R0))
                     (@msubst_uskl_syn_ftv_keep κ α (uskl_all_syn R0)
                        Hακdom HαR)) as Hl.
-      cbn [ftag_in_uskl subst_bskl_in_uskl msubst_uskl_syn] in Ht, Hl |- *.
+      cbn [ftag_in_uskl subst_uskl_in_uskl msubst_uskl_syn] in Ht, Hl |- *.
       clear - Ht Hl Hψatag; fsetdec. }
     assert (HΨgfresh : Ψ'0 ∩ Ψ' [=] empty) by (clear - H1 HΨ'sub; fsetdec).
     (* --- the fresh RIGID β, and ρ_b = ρ ∘ [ψ/β] --- *)
@@ -2611,12 +2611,12 @@ Proof.
     destruct (@uskl_rho_subst NM Θ Δρ Ψρ
                 (open_uskl_wrt_uskl R (uskl_var_f β))
                 (open_uskl_wrt_uskl
-                   (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R0))
+                   (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R0))
                    (uskl_var_f β))
                 (Hfam β ltac:(clear - Fr; solve_notin))
                 β ψ Ψ'0 H2 Hwfψ Hlcψ HβΘ HβΔρ)
       as (Ψρ' & HΨρ'sub & HΨρ'mono & _ & Hrho').
-    rewrite <- (@subst_bskl_in_uskl_intro β R ψ) in Hrho'; [ | exact HβR ].
+    rewrite <- (@subst_uskl_in_uskl_intro β R ψ) in Hrho'; [ | exact HβR ].
     rewrite <- (@p6cs_subject_open Θ0 κ Θ ψa α R0 β Hκ Hακdom Hβκ Hβα Hlcψa)
       in Hrho'.
     (* --- the recursive call's premises at Θ0,β / Θ,β / add β Δ / add β Δρ --- *)
@@ -2666,7 +2666,7 @@ Proof.
       rewrite ftag_in_uskl_open_var.
       pose proof (ad_pat_sub_g_ftag_sub Hsubty) as Hs.
       pose proof (uskl_rho_ftag_sub Hrho') as Hr.
-      pose proof (@ftag_in_uskl_subst_bskl_in_uskl ψa α
+      pose proof (@ftag_in_uskl_subst_uskl_in_uskl ψa α
                     (msubst_uskl_syn κ
                        (open_uskl_wrt_uskl R0 (uskl_var_f β)))) as Hb.
       pose proof (ftag_in_uskl_msubst_uskl_syn κ
@@ -2718,7 +2718,7 @@ Proof.
       by (eapply ad_refine_syn_weaken; [ exact Hrefine | exact Hweak ]).
     assert (Hrhoβ : uskl_rho NM ((β ~ abind_tvar) ++ Θ) (add β Δρ) Ψρ'
               (open_uskl_wrt_uskl R ψ)
-              (subst_bskl_in_uskl ψa α
+              (subst_uskl_in_uskl ψa α
                  (msubst_uskl_syn κ (open_uskl_wrt_uskl R0 (uskl_var_f β)))))
       by (eapply uskl_rho_weaken; [ exact Hrho' | exact Hweak ]).
     assert (HΨρβ : Ψρ' ∩ Ψ' [=] empty)
@@ -3322,9 +3322,9 @@ Theorem a_looksub_solve_complete :
   Ψa [<=] Ψsub ->
   (* subject = (κR')[ψa/α], EXACTLY the paper's form *)
   ad_pat_sub_g n NM M Ψsub Θ
-    (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')) Q ->
+    (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) Q ->
   Θ ⨟ empty ⊢ₚₛᵃ
-    (uskl_to_pskl (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R'))) ->
+    (uskl_to_pskl (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R'))) ->
   Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
   (* ⭐ THE AVOID-SET PARAMETER: the SOLVE generates its own block now, and at
      a binder row the witness must be fixed BEFORE that block is picked. *)
@@ -3380,7 +3380,7 @@ Proof.
      identity and the κ-image bound is [a_inc_lookup_flex_ftv_dom] on [Hκ]. *)
   edestruct (@a_looksub_solve_complete_gen n NM M Θ0 Θ Θ Θ κ Δ empty empty Ψ'
                Ψi Ψa Ψsub ψa Q P P0 Pi R'
-               (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')) α)
+               (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) α)
     as (𝒞 & Ξc & Ξs & Pa & κc & κs
         & Hlook & Hsolve & Hfms & Hus & Hks & Hfrs & HFs
         & HwfPa & HwfΞ & HαΞ & Hkeys

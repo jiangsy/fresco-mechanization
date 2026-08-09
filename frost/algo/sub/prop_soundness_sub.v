@@ -743,7 +743,7 @@ Qed.
 
 (** ⭐ Renaming a TYPE variable cannot change TAGS. *)
 Lemma ftag_in_uskl_subst_var : forall R β1 α1,
-  ftag_in_uskl (subst_bskl_in_uskl (uskl_var_f β1) α1 R) [=] ftag_in_uskl R.
+  ftag_in_uskl (subst_uskl_in_uskl (uskl_var_f β1) α1 R) [=] ftag_in_uskl R.
 Proof.
   (* ⚙ [β1]/[α1], not [β']/[α]: the [uskl_var_f] case's own binder is [α]. *)
   induction R; intros β1 α1; simpl;
@@ -783,7 +783,7 @@ Lemma ad_pat_sub_gv_rename_tvar : forall n NM M Ψ Θ1 α Θ0 R Q β',
   (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
      α `notin` ftvar_in_ptyp τ) ->
   ad_pat_sub_gv n NM M Ψ (Θ1 ++ (β' ~ abind_tvar) ++ Θ0)
-    (subst_bskl_in_uskl (uskl_var_f β') α R)
+    (subst_uskl_in_uskl (uskl_var_f β') α R)
     (subst_bskl_in_bskl (bskl_var_f β') α Q).
 Proof.
   intros * H.
@@ -858,7 +858,7 @@ Proof.
       | eassumption ].
   - (* __forall_l_tagged *)
     specialize (IHad_pat_sub_gv Θ1 ltac:(reflexivity) Hdom Hdefs).
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub_gv;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub_gv;
       [ | apply lc_uskl_var_f ].
     (* ⚙ discharge the RECURSIVE premise first: it is what fixes [ψ].
        In a left-to-right chain [ψ] is still an evar at the
@@ -878,7 +878,7 @@ Proof.
         first [ assumption | clear; fsetdec ].
   - (* __forall_l_untagged *)
     specialize (IHad_pat_sub_gv Θ1 ltac:(reflexivity) Hdom Hdefs).
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub_gv;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub_gv;
       [ | apply lc_uskl_var_f ].
     (* ⚙ discharge the RECURSIVE premise first: it is what fixes [ψ].
        In a left-to-right chain [ψ] is still an evar at the
@@ -937,7 +937,7 @@ Proof.
         destruct Hb' as [Hb' | Hb'];
           [ left; exact Hb' | right; simpl; right; exact Hb' ]. }
       specialize (IHad_pat_sub_gv Θ1 ltac:(reflexivity) Hdom Hdefs).
-      rewrite subst_bskl_in_uskl_fresh_eq in IHad_pat_sub_gv;
+      rewrite subst_uskl_in_uskl_fresh_eq in IHad_pat_sub_gv;
         [ exact IHad_pat_sub_gv | ].
       rewrite ftvar_in_uskl_ptyp_syn. eauto.
 Qed.
@@ -1227,7 +1227,7 @@ Qed.
 
 (** ⭐ Substituting [1] cannot change TAGS either. *)
 Lemma ftag_in_uskl_subst_unit : forall R β,
-  ftag_in_uskl (subst_bskl_in_uskl uskl_unit β R) [=] ftag_in_uskl R.
+  ftag_in_uskl (subst_uskl_in_uskl uskl_unit β R) [=] ftag_in_uskl R.
 Proof.
   induction R; intros β; simpl;
     try solve [ reflexivity
@@ -1246,7 +1246,7 @@ Lemma ad_pat_sub_gv_subst_flex : forall n NM M Ψ Θ R Q,
   (forall α1 τ, binds α1 (abind_flex_mono_def τ) (Θ1 ++ Θ2) ->
      β `notin` ftvar_in_ptyp τ) ->
   ad_pat_sub_gv n NM M Ψ (Θ1 ++ Θ2)
-    (subst_bskl_in_uskl uskl_unit β R)
+    (subst_uskl_in_uskl uskl_unit β R)
     (subst_bskl_in_bskl bskl_unit β Q).
 Proof.
   intros n NM M Ψ Θ R Q H; induction H;
@@ -1299,7 +1299,7 @@ Proof.
       | assumption ].
   - (* __forall_l_tagged *)
     specialize (IHad_pat_sub_gv Θ1 β Θ2 ltac:(reflexivity) Hfr Hdefs).
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub_gv;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub_gv;
       [ | apply lc_uskl_unit ].
     eapply ad_pat_sub_gv__forall_l_tagged.
     6: exact IHad_pat_sub_gv.
@@ -1313,7 +1313,7 @@ Proof.
           | apply guarded_pskl__unit | apply a_wf_pskl__unit ].
   - (* __forall_l_untagged *)
     specialize (IHad_pat_sub_gv Θ1 β Θ2 ltac:(reflexivity) Hfr Hdefs).
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub_gv;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub_gv;
       [ | apply lc_uskl_unit ].
     eapply ad_pat_sub_gv__forall_l_untagged.
     6: exact IHad_pat_sub_gv.
@@ -1356,7 +1356,7 @@ Proof.
       assert (Hfrτ : β `notin` ftvar_in_uskl (ptyp_to_uskl_syn τ))
         by (rewrite ftvar_in_uskl_ptyp_to_uskl_syn; eapply Hdefs; exact Hb').
       specialize (IHad_pat_sub_gv Θ1 β Θ2 ltac:(reflexivity) Hfr Hdefs).
-      rewrite (subst_bskl_in_uskl_fresh_eq
+      rewrite (subst_uskl_in_uskl_fresh_eq
                  (ptyp_to_uskl_syn τ) uskl_unit β Hfrτ)
         in IHad_pat_sub_gv.
       exact IHad_pat_sub_gv.
@@ -1520,7 +1520,7 @@ Qed.
 
 (** ⭐ A MONOTYPE's painting is tag-free, so substituting it cannot add tags. *)
 Lemma ftag_in_uskl_subst_mono : forall R τ β,
-  ftag_in_uskl (subst_bskl_in_uskl (ptyp_to_uskl_syn τ) β R)
+  ftag_in_uskl (subst_uskl_in_uskl (ptyp_to_uskl_syn τ) β R)
   [=] ftag_in_uskl R.
 Proof.
   induction R; intros τ β; simpl;
@@ -1546,7 +1546,7 @@ Lemma ad_pat_sub_gv_subst_flex_def : forall n NM M Ψ Θ R Q,
   (forall α1 τ, binds α1 (abind_flex_mono_def τ) (Θ1 ++ Θ2) ->
      β `notin` ftvar_in_ptyp τ) ->
   ad_pat_sub_gv n NM M Ψ (Θ1 ++ Θ2)
-    (subst_bskl_in_uskl (ptyp_to_uskl_syn τ0) β R)
+    (subst_uskl_in_uskl (ptyp_to_uskl_syn τ0) β R)
     (subst_bskl_in_bskl (ptyp_to_bskl_syn τ0) β Q).
 Proof.
   intros n NM M Ψ Θ R Q H; induction H;
@@ -1609,7 +1609,7 @@ Proof.
   - (* __forall_l_tagged *)
     specialize (IHad_pat_sub_gv Θ1 β τ0 Θ2
                   ltac:(reflexivity) Hfr Hm Hfrτ Hvis Hdefs).
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub_gv;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub_gv;
       [ | apply mono_ptyp_to_uskl_syn_lc; assumption ].
     eapply ad_pat_sub_gv__forall_l_tagged.
     6: exact IHad_pat_sub_gv.
@@ -1627,7 +1627,7 @@ Proof.
   - (* __forall_l_untagged *)
     specialize (IHad_pat_sub_gv Θ1 β τ0 Θ2
                   ltac:(reflexivity) Hfr Hm Hfrτ Hvis Hdefs).
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub_gv;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub_gv;
       [ | apply mono_ptyp_to_uskl_syn_lc; assumption ].
     eapply ad_pat_sub_gv__forall_l_untagged.
     6: exact IHad_pat_sub_gv.
@@ -1673,7 +1673,7 @@ Proof.
     destruct_if as [-> | Hne].
     + assert (Heqdef : τ = τ0) by (eapply binds_mid_def_eq; eassumption).
       subst τ.
-      rewrite (subst_bskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ0)
+      rewrite (subst_uskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ0)
                  (ptyp_to_uskl_syn τ0) β
                  ltac:(rewrite ftvar_in_uskl_ptyp_to_uskl_syn; exact Hfrτ))
         in IHad_pat_sub_gv.
@@ -1682,7 +1682,7 @@ Proof.
       { eapply binds_strip_mid;
           [ eassumption | intro He; inversion He; subst; exact (Hne eq_refl) ]. }
       eapply ad_pat_sub_gv__flex_mono; [ exact Hb' | ].
-      rewrite (subst_bskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ)
+      rewrite (subst_uskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ)
                  (ptyp_to_uskl_syn τ0) β
                  ltac:(rewrite ftvar_in_uskl_ptyp_to_uskl_syn;
                        eapply Hdefs; exact Hb'))
@@ -1709,7 +1709,7 @@ Proof.
   - (* undefined head *)
     inversion Hwf as [ | ? ? Hβd Hwf' | | | | ]; subst.
     assert (Hstr : ad_pat_sub_gv n NM M Ψ (Ξ' ++ Θ)
-                     (subst_bskl_in_uskl uskl_unit β R)
+                     (subst_uskl_in_uskl uskl_unit β R)
                      (subst_bskl_in_bskl bskl_unit β Q)).
     { eapply ad_pat_sub_gv_subst_flex with (Θ1 := nil);
         [ exact H | simpl_env; reflexivity | simpl; exact Hβd
@@ -1717,7 +1717,7 @@ Proof.
           assert (Hsc : ftvar_in_ptyp τ [<=] dom (Ξ' ++ Θ))
             by (eapply a_wf_aenv_def_ftv_dom; eauto);
           clear - Hsc Hβd; fsetdec ]. }
-    rewrite subst_bskl_in_uskl_fresh_eq in Hstr;
+    rewrite subst_uskl_in_uskl_fresh_eq in Hstr;
       [ | clear - Hβfv; fsetdec ].
     rewrite subst_bskl_in_bskl_fresh_eq in Hstr;
       [ | clear - Hβfv; fsetdec ].
@@ -1731,7 +1731,7 @@ Proof.
       destruct Ht as [Hb | [Hb | [τ1 Hb]]]; apply binds_In in Hb;
         clear - Hb Hβd; fsetdec. }
     assert (Hstr : ad_pat_sub_gv n NM M Ψ (Ξ' ++ Θ)
-                     (subst_bskl_in_uskl (ptyp_to_uskl_syn A) β R)
+                     (subst_uskl_in_uskl (ptyp_to_uskl_syn A) β R)
                      (subst_bskl_in_bskl (ptyp_to_bskl_syn A) β Q)).
     { eapply ad_pat_sub_gv_subst_flex_def with (Θ1 := nil);
         [ exact H | simpl_env; reflexivity | simpl; exact Hβd
@@ -1741,7 +1741,7 @@ Proof.
           assert (Hsc : ftvar_in_ptyp τ [<=] dom (Ξ' ++ Θ))
             by (eapply a_wf_aenv_def_ftv_dom; eauto);
           clear - Hsc Hβd; fsetdec ]. }
-    rewrite subst_bskl_in_uskl_fresh_eq in Hstr;
+    rewrite subst_uskl_in_uskl_fresh_eq in Hstr;
       [ | clear - Hβfv; fsetdec ].
     rewrite subst_bskl_in_bskl_fresh_eq in Hstr;
       [ | clear - Hβfv; fsetdec ].
@@ -2008,7 +2008,7 @@ Proof.
                  (bskl_var_f α0));
         [ | rewrite ftvar_in_bskl_close_bskl_wrt_bskl; clear; fsetdec ].
       rewrite open_bskl_wrt_bskl_close_bskl_wrt_bskl.
-      rewrite <- (subst_bskl_in_uskl_fresh_eq R (uskl_var_f α0) α)
+      rewrite <- (subst_uskl_in_uskl_fresh_eq R (uskl_var_f α0) α)
         at 1;
         [ | clear - Hfr; fsetdec ].
       change ((α0 ~ abind_tvar) ++ Θ1)

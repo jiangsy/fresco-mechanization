@@ -530,7 +530,7 @@ Proof.
 Qed.
 
 Lemma subst_var_uskl : forall P α α',
-  subst_bskl_in_uskl (uskl_var_f α') α (pskl_to_uskl P)
+  subst_uskl_in_uskl (uskl_var_f α') α (pskl_to_uskl P)
   = pskl_to_uskl (subst_pskl_in_pskl (pskl_var_f α') α P).
 Proof.
   induction P; intros; simpl; f_equal; auto.
@@ -607,7 +607,7 @@ Lemma ad_pat_consis_rename_tvar : forall Ψ Θ1 α Θ0 R Q β',
   (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
      α `notin` ftvar_in_ptyp τ) ->
   ad_pat_consis Ψ (Θ1 ++ (β' ~ abind_tvar) ++ Θ0)
-    (subst_bskl_in_uskl (uskl_var_f β') α R)
+    (subst_uskl_in_uskl (uskl_var_f β') α R)
     (subst_bskl_in_bskl (bskl_var_f β') α Q).
 Proof.
   intros * H.
@@ -633,7 +633,7 @@ Proof.
       with (L := L `union` singleton α); eauto.
     intros α0 Hα0.
     assert (Hαx : α <> α0) by fsetdec.
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       auto using lc_uskl_var_f.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       auto using lc_bskl_var_f.
@@ -648,7 +648,7 @@ Proof.
       with (L := L `union` singleton α); eauto.
     intros α0 Hα0.
     assert (Hαx : α <> α0) by fsetdec.
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       auto using lc_uskl_var_f.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       auto using lc_bskl_var_f.
@@ -663,7 +663,7 @@ Proof.
       with (L := L `union` singleton α); eauto.
     intros α0 Hα0.
     assert (Hαx : α <> α0) by fsetdec.
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       auto using lc_uskl_var_f.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       auto using lc_bskl_var_f.
@@ -678,7 +678,7 @@ Proof.
       with (L := L `union` singleton α); eauto.
     intros α0 Hα0.
     assert (Hαx : α <> α0) by fsetdec.
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       auto using lc_uskl_var_f.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       auto using lc_bskl_var_f.
@@ -725,7 +725,7 @@ Proof.
       with (τ := τ);
       [ apply (@binds_insert_mid (abind_flex_mono_def τ) α0
                  Θ1 (β' ~ abind_tvar) Θ0); auto | ].
-    rewrite <- (subst_bskl_in_uskl_fresh_eq
+    rewrite <- (subst_uskl_in_uskl_fresh_eq
                   (ptyp_to_uskl_syn τ) (uskl_var_f β') α Hfr).
     auto.
   - (* flex_r *)
@@ -3866,7 +3866,7 @@ Proof.
       * simpl. apply ad_pat_consis__forall_inh_untagged
           with (L := dom Θ1 `union` singleton α `union` ftvar_in_pskl P).
         intros α0 Hα0.
-        rewrite (subst_bskl_in_uskl_intro α (pskl_to_uskl P) (uskl_var_f α0));
+        rewrite (subst_uskl_in_uskl_intro α (pskl_to_uskl P) (uskl_var_f α0));
           [ | rewrite ftvar_in_uskl_pskl; clear - Fr; fsetdec ].
         rewrite (subst_bskl_in_bskl_intro α (close_bskl_wrt_bskl α Qtα)
                    (bskl_var_f α0));
@@ -4021,7 +4021,7 @@ Proof.
       * simpl. apply ad_pat_consis__forall_syn
           with (L := dom Θ1 `union` singleton α `union` ftvar_in_pskl P).
         intros α0 Hα0.
-        rewrite (subst_bskl_in_uskl_intro α (pskl_to_uskl P) (uskl_var_f α0));
+        rewrite (subst_uskl_in_uskl_intro α (pskl_to_uskl P) (uskl_var_f α0));
           [ | rewrite ftvar_in_uskl_pskl; clear - Fr; fsetdec ].
         rewrite (subst_bskl_in_bskl_intro α (close_bskl_wrt_bskl α Qtα)
                    (bskl_var_f α0));
@@ -4204,9 +4204,9 @@ Proof.
           [ | rewrite ftvar_in_bskl_close_bskl_wrt_bskl; clear; fsetdec ].
         rewrite open_bskl_wrt_bskl_close_bskl_wrt_bskl.
         replace (uskl_tophole (pskl_to_uskl P))
-          with (subst_bskl_in_uskl (uskl_var_f α0) α
+          with (subst_uskl_in_uskl (uskl_var_f α0) α
                   (uskl_tophole (pskl_to_uskl P)))
-          by (simpl; rewrite subst_bskl_in_uskl_fresh_eq;
+          by (simpl; rewrite subst_uskl_in_uskl_fresh_eq;
               [ reflexivity
               | rewrite ftvar_in_uskl_pskl; clear - Fr; fsetdec ]).
         change ((α0 ~ abind_tvar) ++ Θ1)
@@ -4918,7 +4918,7 @@ Proof.
                (L := dom Θ1 `union` singleton α `union` ftvar_in_uskl R);
           [ | exact H1 ].
         intros α0 Hα0.
-        rewrite (subst_bskl_in_uskl_intro α R (uskl_var_f α0));
+        rewrite (subst_uskl_in_uskl_intro α R (uskl_var_f α0));
           [ | clear - Fr; fsetdec ].
         rewrite (subst_bskl_in_bskl_intro α (close_bskl_wrt_bskl α Qtα)
                    (bskl_var_f α0));
@@ -5039,7 +5039,7 @@ Proof.
       * simpl. apply ad_pat_consis__forall_inh_untagged
           with (L := dom Θ1 `union` singleton α `union` ftvar_in_uskl R).
         intros α0 Hα0.
-        rewrite (subst_bskl_in_uskl_intro α R (uskl_var_f α0));
+        rewrite (subst_uskl_in_uskl_intro α R (uskl_var_f α0));
           [ | clear - Fr; fsetdec ].
         rewrite (subst_bskl_in_bskl_intro α (close_bskl_wrt_bskl α Qtα)
                    (bskl_var_f α0));
@@ -5160,7 +5160,7 @@ Proof.
       * simpl. apply ad_pat_consis__forall_syn_tagged
           with (ε := ε) (L := dom Θ1 `union` singleton α `union` ftvar_in_uskl R).
         intros α0 Hα0.
-        rewrite (subst_bskl_in_uskl_intro α R (uskl_var_f α0));
+        rewrite (subst_uskl_in_uskl_intro α R (uskl_var_f α0));
           [ | clear - Fr; fsetdec ].
         rewrite (subst_bskl_in_bskl_intro α (close_bskl_wrt_bskl α Qtα)
                    (bskl_var_f α0));
@@ -5280,7 +5280,7 @@ Proof.
       * simpl. apply ad_pat_consis__forall_syn
           with (L := dom Θ1 `union` singleton α `union` ftvar_in_uskl R).
         intros α0 Hα0.
-        rewrite (subst_bskl_in_uskl_intro α R (uskl_var_f α0));
+        rewrite (subst_uskl_in_uskl_intro α R (uskl_var_f α0));
           [ | clear - Fr; fsetdec ].
         rewrite (subst_bskl_in_bskl_intro α (close_bskl_wrt_bskl α Qtα)
                    (bskl_var_f α0));
@@ -5438,8 +5438,8 @@ Proof.
           [ | rewrite ftvar_in_bskl_close_bskl_wrt_bskl; clear; fsetdec ].
         rewrite open_bskl_wrt_bskl_close_bskl_wrt_bskl.
         replace (uskl_tophole R)
-          with (subst_bskl_in_uskl (uskl_var_f α0) α (uskl_tophole R))
-          by (simpl; rewrite subst_bskl_in_uskl_fresh_eq;
+          with (subst_uskl_in_uskl (uskl_var_f α0) α (uskl_tophole R))
+          by (simpl; rewrite subst_uskl_in_uskl_fresh_eq;
               [ reflexivity | clear - Fr; fsetdec ]).
         change ((α0 ~ abind_tvar) ++ Θ1)
           with (nil ++ (α0 ~ abind_tvar) ++ Θ1).

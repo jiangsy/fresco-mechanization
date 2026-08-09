@@ -51,20 +51,20 @@ Set Implicit Arguments.
 (*  clear of guessed flexible names (Barendregt prose-completion).        *)
 (* ===================================================================== *)
 
-Lemma subst_bskl_in_uskl_decompose : forall ψ α α' R,
+Lemma subst_uskl_in_uskl_decompose : forall ψ α α' R,
   α `notin` ftvar_in_uskl ψ ->
   α' `notin` ftvar_in_uskl R ->
   α' <> α ->
-  subst_bskl_in_uskl ψ α' (subst_bskl_in_uskl (uskl_var_f α') α R)
-  = subst_bskl_in_uskl ψ α R.
+  subst_uskl_in_uskl ψ α' (subst_uskl_in_uskl (uskl_var_f α') α R)
+  = subst_uskl_in_uskl ψ α R.
 Proof.
   intros ψ α α' R Hαψ Hα'S Hne.
-  rewrite subst_bskl_in_uskl_subst_bskl_in_uskl;
+  rewrite subst_uskl_in_uskl_subst_uskl_in_uskl;
     [ | assumption | auto ].
   simpl.
   destruct_if as [_ | Hc];
       [ | exfalso; congruence ].
-  rewrite (subst_bskl_in_uskl_fresh_eq R); [ reflexivity | assumption ].
+  rewrite (subst_uskl_in_uskl_fresh_eq R); [ reflexivity | assumption ].
 Qed.
 
 Lemma pskl_to_uskl_not_etag : forall P ε ψ,
@@ -84,18 +84,18 @@ Proof. destruct P; simpl; discriminate. Qed.
     [αv]-freshness make the detour invisible.  (The exists-fresh ForallR
     case below re-freshens its substitution variable away from the rule's
     Barendregt binder.) *)
-Lemma subst_bskl_in_uskl_rename_compose : forall ψ αv αv' R0,
+Lemma subst_uskl_in_uskl_rename_compose : forall ψ αv αv' R0,
   αv `notin` ftvar_in_uskl ψ ->
   αv' `notin` ftvar_in_uskl R0 ->
   αv <> αv' ->
-  subst_bskl_in_uskl ψ αv' (subst_bskl_in_uskl (uskl_var_f αv') αv R0)
-  = subst_bskl_in_uskl ψ αv R0.
+  subst_uskl_in_uskl ψ αv' (subst_uskl_in_uskl (uskl_var_f αv') αv R0)
+  = subst_uskl_in_uskl ψ αv R0.
 Proof.
   intros ψ αv αv' R0 Hψ HR Hne.
-  rewrite subst_bskl_in_uskl_subst_bskl_in_uskl;
+  rewrite subst_uskl_in_uskl_subst_uskl_in_uskl;
     [ | exact Hψ | exact Hne ].
   simpl. destruct_if; [ | congruence ].
-  rewrite (subst_bskl_in_uskl_fresh_eq R0); [ reflexivity | exact HR ].
+  rewrite (subst_uskl_in_uskl_fresh_eq R0); [ reflexivity | exact HR ].
 Qed.
 
 Lemma a_subtag_decoration : forall NM M P0 Ψ Θ0 R' P Θ1,
@@ -106,7 +106,7 @@ Lemma a_subtag_decoration : forall NM M P0 Ψ Θ0 R' P Θ1,
      rows genuinely need a different one (their recursive call hands on a run
      that lives under the look rule's own binder).  Cluster 3. *)
   forall Θl R0 ψa Ψa αv Ξc 𝒞,
-    R' = subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) αv R0 ->
+    R' = subst_uskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) αv R0 ->
     Θl ⊢ ⌊ R0 ⌋ˢ ≼[ αv , M ] P0 ⤳ Ξc ⨾ 𝒞 ->
     𝒞 ⊩ᵗ ψa ⤳ Ψa ->
     αv `notin` ftvar_in_uskl ψa ->
@@ -118,7 +118,7 @@ Lemma a_subtag_decoration : forall NM M P0 Ψ Θ0 R' P Θ1,
     Θ0 ⨟ empty ⊢ₚₛᵃ ⌊ R' ⌋ˢ ->
     (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) M) ->
     Θ0 ⊢ᵗ[ NM | M | P0 | (Ψ `union` Ψa) ]
-      (subst_bskl_in_uskl ψa αv R0) ⩽˙ P ⊣ Θ1.
+      (subst_uskl_in_uskl ψa αv R0) ⩽˙ P ⊣ Θ1.
 Proof.
   intros NM M P0 Ψ Θ0 R' P Θ1 Hsub.
   induction Hsub;
@@ -160,10 +160,10 @@ Proof.
     + (* LS-Absent : both substitutions are the identity *)
       assert (HαR : αv `notin` ftvar_in_uskl R0).
       { rewrite <- (ftvar_in_pskl_uskl_to_pskl R0). assumption. }
-      rewrite subst_bskl_in_uskl_fresh_eq; [ | exact HαR ].
+      rewrite subst_uskl_in_uskl_fresh_eq; [ | exact HαR ].
       match goal with
       | Hg1 : guarded_uskl _, Hc : _ ⊢ᵗ[ _ | _ | _ | _ ] _ ∼˙ _ ⊣ _ |- _ =>
-          rewrite subst_bskl_in_uskl_fresh_eq in Hg1, Hc; try exact HαR
+          rewrite subst_uskl_in_uskl_fresh_eq in Hg1, Hc; try exact HαR
       end.
       inversion Hst; subst.
       eapply a_subtag_psi_cong with (Ψ := Ψ);
@@ -231,7 +231,7 @@ Proof.
               γ `notin` ftvar_in_uskl R0).
     { intros γ Hγ Hγv Hc.
       apply Hγ. rewrite HeqT.
-      pose proof (ftvar_in_uskl_subst_bskl_in_uskl_lower
+      pose proof (ftvar_in_uskl_subst_uskl_in_uskl_lower
                     R0 (pskl_to_uskl (uskl_to_pskl ψa)) αv) as Hlo.
       clear - Hlo Hγv Hc. fsetdec. }
     (* the re-freshened substitution variable *)
@@ -243,9 +243,9 @@ Proof.
                    renamed onto, so the new looked-for variable must differ
                    from every name the run produced *)
                 `union` dom Ξc `union` ftvar_in_cstrs C)) as [αv' Hαv'].
-    assert (HeqT' : R = subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa))
-                          αv' (subst_bskl_in_uskl (uskl_var_f αv') αv R0)).
-    { rewrite subst_bskl_in_uskl_rename_compose;
+    assert (HeqT' : R = subst_uskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa))
+                          αv' (subst_uskl_in_uskl (uskl_var_f αv') αv R0)).
+    { rewrite subst_uskl_in_uskl_rename_compose;
         [ exact HeqT
         | pose proof Hαψ as Hαψ0;
           rewrite <- (ftvar_in_pskl_uskl_to_pskl ψa) in Hαψ0;
@@ -255,7 +255,7 @@ Proof.
         | clear - Hαv'; fsetdec
         | intros ->; clear - Hαv'; fsetdec ]. }
     (* the look run, moved to αv' *)
-    assert (HD1 : Θl ⊢ ⌊ subst_bskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
+    assert (HD1 : Θl ⊢ ⌊ subst_uskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
                     ≼[ αv' , mode_tc ] (pskl_all_syn B) ⤳ Ξc ⨾ C).
     { rewrite uskl_to_pskl_subst. simpl.
       apply a_looksub_rename_var;
@@ -265,8 +265,8 @@ Proof.
         | clear - Hαv'; fsetdec ]. }
     (* …and opened at the rule's binder α *)
     assert (HαR0' : α `notin`
-              ftvar_in_uskl (subst_bskl_in_uskl (uskl_var_f αv') αv R0)).
-    { pose proof (ftvar_in_uskl_subst_bskl_in_uskl_upper
+              ftvar_in_uskl (subst_uskl_in_uskl (uskl_var_f αv') αv R0)).
+    { pose proof (ftvar_in_uskl_subst_uskl_in_uskl_upper
                     R0 (uskl_var_f αv') αv) as Hup.
       simpl in Hup.
       assert (HαRR : α `notin` ftvar_in_uskl R)
@@ -290,16 +290,16 @@ Proof.
        the run's generated names, so freshen the run away from it first
        (cluster 3: the same two-independent-generators gap as §8) *)
     assert (HαP : α `notin` ftvar_in_pskl
-                    ⌊ subst_bskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ).
+                    ⌊ subst_uskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ).
     { pose proof (ftvar_in_pskl_uskl_to_pskl
-                    (subst_bskl_in_uskl (uskl_var_f αv') αv R0)) as Hepq.
+                    (subst_uskl_in_uskl (uskl_var_f αv') αv R0)) as Hepq.
       clear - HαR0' Hepq; fsetdec. }
     assert (HαB : α `notin` ftvar_in_pskl (pskl_all_syn B))
       by (cbn; clear - Hfr; fsetdec).
     assert (Hααv' : α <> αv') by (intros ->; clear - Hαv'; fsetdec).
     destruct (atom_fresh (singleton α `union` singleton αv'
                 `union` ftvar_in_pskl
-                    ⌊ subst_bskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
+                    ⌊ subst_uskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
                 `union` ftvar_in_pskl B `union` dom Ξc
                 `union` ftvar_in_cstrs C)) as [δ Hδ].
     (* every side condition is ASSERTED and passed BY NAME: an [ltac:] inside a
@@ -308,12 +308,12 @@ Proof.
     assert (Hδα : δ <> α) by (intros ->; clear - Hδ; fsetdec).
     assert (Hβin : α `notin` ftvar_in_aenv (nil : aenv)
                      `union` ftvar_in_pskl
-                         ⌊ subst_bskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
+                         ⌊ subst_uskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
                      `union` ftvar_in_pskl (pskl_all_syn B))
       by (cbn; clear - HαP HαB; cbn in HαB; fsetdec).
     assert (Hδin : δ `notin` ftvar_in_aenv (nil : aenv)
                      `union` ftvar_in_pskl
-                         ⌊ subst_bskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
+                         ⌊ subst_uskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
                      `union` ftvar_in_pskl (pskl_all_syn B)
                      `union` dom Ξc `union` ftvar_in_cstrs C)
       by (cbn; clear - Hδ; fsetdec).
@@ -321,7 +321,7 @@ Proof.
       as (Ξf & Cf & HDf & Hstf & Hαf).
     assert (Hopen : α `notin` ftvar_in_aenv (nil : aenv)
                       `union` ftvar_in_pskl
-                          ⌊ subst_bskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
+                          ⌊ subst_uskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
                       `union` ftvar_in_pskl B
                       `union` dom Ξf `union` ftvar_in_cstrs Cf)
       by (cbn in HαB |- *; clear - HαP HαB Hαf; fsetdec).
@@ -332,8 +332,8 @@ Proof.
         ((α ~ abind_tvar) ++ Θ0)
           ⊢ᵗ[ a_sub_mode_ty | mode_tc
             | (open_pskl_wrt_pskl B (pskl_var_f α)) | (Ψ `union` Ψa) ]
-          (subst_bskl_in_uskl ψa αv'
-             (subst_bskl_in_uskl (uskl_var_f αv') αv R0))
+          (subst_uskl_in_uskl ψa αv'
+             (subst_uskl_in_uskl (uskl_var_f αv') αv R0))
           ⩽˙ (open_pskl_wrt_pskl B (pskl_var_f α))
           ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ1)).
     { eapply IHprem.
@@ -345,7 +345,7 @@ Proof.
                       B (pskl_var_f α)) as Hup.
         simpl in Hup. clear - Hαv' Hup. fsetdec. }
       { exact Hlcψ. }
-      { apply subst_bskl_in_uskl_lc_uskl;
+      { apply subst_uskl_in_uskl_lc_uskl;
           [ exact HlcS0 | constructor ]. }
       { apply a_wf_aenv__tvar; [ clear - Hfr; fsetdec | exact Hwf ]. }
       { eapply a_wf_pskl_all_syn_open_tvar;
@@ -355,10 +355,10 @@ Proof.
           | exact HwfT ]. }
       { intros Hsk; discriminate Hsk. } }
     (* collapse the detour in the transported subject *)
-    assert (Hcollapse : subst_bskl_in_uskl ψa αv'
-                          (subst_bskl_in_uskl (uskl_var_f αv') αv R0)
-                        = subst_bskl_in_uskl ψa αv R0).
-    { apply subst_bskl_in_uskl_rename_compose;
+    assert (Hcollapse : subst_uskl_in_uskl ψa αv'
+                          (subst_uskl_in_uskl (uskl_var_f αv') αv R0)
+                        = subst_uskl_in_uskl ψa αv R0).
+    { apply subst_uskl_in_uskl_rename_compose;
         [ exact Hαψ
         | clear - Hαv'; fsetdec
         | intros ->; clear - Hαv'; fsetdec ]. }
@@ -367,10 +367,10 @@ Proof.
     eapply a_subtag__forall_r with (α := α) (Ξ := Ξ);
       [ assumption | exact Hsuf | exact Huq | | exact Htrans ].
     rewrite dom_app.
-    assert (Hfteq : ftvar_in_uskl (subst_bskl_in_uskl ψa αv R0)
+    assert (Hfteq : ftvar_in_uskl (subst_uskl_in_uskl ψa αv R0)
                     [=] ftvar_in_uskl R).
     { rewrite <- (ftvar_in_pskl_uskl_to_pskl
-                    (subst_bskl_in_uskl ψa αv R0)).
+                    (subst_uskl_in_uskl ψa αv R0)).
       rewrite <- (ftvar_in_pskl_uskl_to_pskl R).
       rewrite uskl_to_pskl_subst. rewrite HeqE. reflexivity. }
     clear - Hfr Hfteq. fsetdec.
@@ -415,8 +415,8 @@ Proof.
     + (* LS-Absent *)
       assert (HαR : αv `notin` ftvar_in_uskl R0).
       { rewrite <- (ftvar_in_pskl_uskl_to_pskl R0). assumption. }
-      rewrite subst_bskl_in_uskl_fresh_eq; [ | exact HαR ].
-      rewrite subst_bskl_in_uskl_fresh_eq in HeqT; [ | exact HαR ].
+      rewrite subst_uskl_in_uskl_fresh_eq; [ | exact HαR ].
+      rewrite subst_uskl_in_uskl_fresh_eq in HeqT; [ | exact HαR ].
       inversion Hst; subst.
       eapply a_subtag_psi_cong with (Ψ := Ψ);
         [ first [ rewrite HeqT | idtac ]; eapply a_subtag__arrow; eassumption
@@ -441,7 +441,7 @@ Proof.
         Hs2 : ?Θm ⊢ᵗ[ _ | _ | ?P0b | ?Ψ2 ] _ ⩽˙ ?Q2 ⊣ _,
         HΨc : _ [=] union ?Ψ1 ?Ψ2 |- _ =>
           destruct (a_consistag_sound_aux Hc1 Hwf
-                      ltac:(apply subst_bskl_in_uskl_lc_uskl;
+                      ltac:(apply subst_uskl_in_uskl_lc_uskl;
                             [ assumption
                             | apply pskl_to_uskl_lc;
                               apply lc_uskl_to_pskl_local; assumption ])
@@ -496,7 +496,7 @@ Proof.
       | discriminate HeqT ].
     + (* R0 = all_etag ε0 R0 *)
       match goal with
-      | He : uskl_all_etag _ _ = uskl_all_etag ?e (subst_bskl_in_uskl _ _ ?Rb)
+      | He : uskl_all_etag _ _ = uskl_all_etag ?e (subst_uskl_in_uskl _ _ ?Rb)
         |- _ => idtac
       end.
       inversion HeqT; subst. clear HeqT.
@@ -510,13 +510,13 @@ Proof.
           by (simpl in HαR; exact HαR).
         assert (Hnode : Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ]
                           (uskl_all_etag ε0
-                             (subst_bskl_in_uskl
+                             (subst_uskl_in_uskl
                                 (pskl_to_uskl (uskl_to_pskl ψa)) αv R0))
                           ⩽˙ Q ⊣ Θ1)
           by (eapply a_subtag__forall_l_tagged
                 with (L := L) (Ξ := Ξ) (P1 := P1); eassumption).
-        rewrite subst_bskl_in_uskl_fresh_eq in Hnode; [ | exact HαR' ].
-        simpl. rewrite subst_bskl_in_uskl_fresh_eq; [ | exact HαR' ].
+        rewrite subst_uskl_in_uskl_fresh_eq in Hnode; [ | exact HαR' ].
+        simpl. rewrite subst_uskl_in_uskl_fresh_eq; [ | exact HαR' ].
         inversion Hst; subst.
         eapply a_subtag_psi_cong;
           [ exact Hnode
@@ -524,7 +524,7 @@ Proof.
       * (* LS-Vacuous : P0 = ◇, erasure-determined *)
         assert (Hnode : Θ0 ⊢ᵗ[ NM | M | pskl_hole | Ψ ]
                           (uskl_all_etag ε0
-                             (subst_bskl_in_uskl
+                             (subst_uskl_in_uskl
                                 (pskl_to_uskl (uskl_to_pskl ψa)) αv R0))
                           ⩽˙ Q ⊣ Θ1)
           by (eapply a_subtag__forall_l_tagged
@@ -534,7 +534,7 @@ Proof.
           [ | fsetdec_empty ].
         eapply a_subtag_vacuous_erasure;
           [ exact Hnode | reflexivity
-          | apply subst_bskl_in_uskl_lc_uskl; assumption
+          | apply subst_uskl_in_uskl_lc_uskl; assumption
           | apply erase_swap_subst ].
       * (* LS-Check : a ∀-headed source is not guarded *)
         match goal with
@@ -633,9 +633,9 @@ Proof.
         [ assumption | assumption | | assumption | assumption | ].
       { intros α1 Hα1.
         replace (⌊ open_uskl_wrt_uskl
-                     (subst_bskl_in_uskl ψa αv R0) (uskl_var_f α1) ⌋ˢ)
+                     (subst_uskl_in_uskl ψa αv R0) (uskl_var_f α1) ⌋ˢ)
           with (⌊ open_uskl_wrt_uskl
-                    (subst_bskl_in_uskl
+                    (subst_uskl_in_uskl
                        (pskl_to_uskl (uskl_to_pskl ψa)) αv R0)
                     (uskl_var_f α1) ⌋ˢ)
           by (rewrite ! uskl_to_pskl_open;
@@ -652,26 +652,26 @@ Proof.
         { rewrite <- (ftvar_in_pskl_uskl_to_pskl ψg'). rewrite Hera.
           clear - Hαt; fsetdec. }
         assert (Hsubject :
-            subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) αt
+            subst_uskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) αt
               (open_uskl_wrt_uskl
-                 (subst_bskl_in_uskl (uskl_var_f αt) αv R0) ψg')
+                 (subst_uskl_in_uskl (uskl_var_f αt) αv R0) ψg')
             = open_uskl_wrt_uskl
-                (subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) αv R0)
+                (subst_uskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) αv R0)
                 ψg').
-        { rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl; [ | exact Hlcstrip ].
-          rewrite subst_bskl_in_uskl_decompose;
+        { rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl; [ | exact Hlcstrip ].
+          rewrite subst_uskl_in_uskl_decompose;
             [ | exact HαvStrip | clear - Hαt; fsetdec | clear - Hαt; fsetdec ].
-          rewrite (subst_bskl_in_uskl_fresh_eq ψg'); [ | exact Hαtg ].
+          rewrite (subst_uskl_in_uskl_fresh_eq ψg'); [ | exact Hαtg ].
           reflexivity. }
         assert (Hresult :
-            subst_bskl_in_uskl ψa αt
+            subst_uskl_in_uskl ψa αt
               (open_uskl_wrt_uskl
-                 (subst_bskl_in_uskl (uskl_var_f αt) αv R0) ψg')
-            = open_uskl_wrt_uskl (subst_bskl_in_uskl ψa αv R0) ψg').
-        { rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl; [ | exact Hlcψ ].
-          rewrite subst_bskl_in_uskl_decompose;
+                 (subst_uskl_in_uskl (uskl_var_f αt) αv R0) ψg')
+            = open_uskl_wrt_uskl (subst_uskl_in_uskl ψa αv R0) ψg').
+        { rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl; [ | exact Hlcψ ].
+          rewrite subst_uskl_in_uskl_decompose;
             [ | exact Hαψ | clear - Hαt; fsetdec | clear - Hαt; fsetdec ].
-          rewrite (subst_bskl_in_uskl_fresh_eq ψg'); [ | exact Hαtg ].
+          rewrite (subst_uskl_in_uskl_fresh_eq ψg'); [ | exact Hαtg ].
           reflexivity. }
         (* the run now lives under the look rule's OWN binder, and carries the
            outputs §8 handed back — read the context off the derivation, since
@@ -680,7 +680,7 @@ Proof.
         | ?Θb ⊢ _ ≼[ _ , _ ] _ ⤳ _ ⨾ _ =>
             assert (HDg : Θb ⊢
                 ⌊ open_uskl_wrt_uskl
-                    (subst_bskl_in_uskl (uskl_var_f αt) αv R0) ψg' ⌋ˢ
+                    (subst_uskl_in_uskl (uskl_var_f αt) αv R0) ψg' ⌋ˢ
                 ≼[ αt , M ] P0 ⤳ Ξg ⨾ Cg)
               by (rewrite uskl_to_pskl_open_gen;
                   rewrite uskl_to_pskl_subst; simpl;
@@ -688,30 +688,30 @@ Proof.
         end.
         assert (HlcSg : lc_uskl
             (open_uskl_wrt_uskl
-               (subst_bskl_in_uskl (uskl_var_f αt) αv R0) ψg')).
+               (subst_uskl_in_uskl (uskl_var_f αt) αv R0) ψg')).
         { apply lc_body_uskl_wrt_uskl; [ | exact Hlcg ].
           match goal with
           | |- body_uskl_wrt_uskl _ =>
               eapply lc_body_uskl_all_etag_2
                 with (ε1 := ε0);
               change (uskl_all_etag ε0
-                        (subst_bskl_in_uskl (uskl_var_f αt) αv R0))
-                with (subst_bskl_in_uskl (uskl_var_f αt) αv
+                        (subst_uskl_in_uskl (uskl_var_f αt) αv R0))
+                with (subst_uskl_in_uskl (uskl_var_f αt) αv
                         (uskl_all_etag ε0 R0));
-              apply subst_bskl_in_uskl_lc_uskl;
+              apply subst_uskl_in_uskl_lc_uskl;
                 [ exact HlcS0 | constructor ]
           end. }
         assert (HwfSg : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ
             ⌊ open_uskl_wrt_uskl
-                (subst_bskl_in_uskl
+                (subst_uskl_in_uskl
                    (pskl_to_uskl (uskl_to_pskl ψa)) αv R0) ψg' ⌋ˢ).
         { unfold open_uskl_wrt_uskl. rewrite uskl_to_pskl_open_rec.
           rewrite Hera.
           change (open_pskl_wrt_pskl_rec 0 P1
-                    ⌊ subst_bskl_in_uskl
+                    ⌊ subst_uskl_in_uskl
                         (pskl_to_uskl (uskl_to_pskl ψa)) αv R0 ⌋ˢ)
             with (open_pskl_wrt_pskl
-                    ⌊ subst_bskl_in_uskl
+                    ⌊ subst_uskl_in_uskl
                         (pskl_to_uskl (uskl_to_pskl ψa)) αv R0 ⌋ˢ P1).
           simpl in HwfT.
           inversion HwfT; subst.
@@ -730,7 +730,7 @@ Proof.
                 eapply (IHfam Ψg' ψg' ltac:(clear - Hfr; solve_notin_auto) Hsort Hera
                           _
                           (open_uskl_wrt_uskl
-                             (subst_bskl_in_uskl (uskl_var_f αt) αv R0) ψg')
+                             (subst_uskl_in_uskl (uskl_var_f αt) αv R0) ψg')
                           ψa Ψa αt Ξg Cg);
                 [ rewrite Hsubject; reflexivity
                 | exact HDg
@@ -813,13 +813,13 @@ Proof.
           by (simpl in HαR; exact HαR).
         assert (Hnode : Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ]
                           (uskl_all_syn
-                             (subst_bskl_in_uskl
+                             (subst_uskl_in_uskl
                                 (pskl_to_uskl (uskl_to_pskl ψa)) αv R0))
                           ⩽˙ Q ⊣ Θ1)
           by (eapply a_subtag__forall_l_untagged
                 with (L := L) (Ξ := Ξ) (P1 := P1); eassumption).
-        rewrite subst_bskl_in_uskl_fresh_eq in Hnode; [ | exact HαR' ].
-        simpl. rewrite subst_bskl_in_uskl_fresh_eq; [ | exact HαR' ].
+        rewrite subst_uskl_in_uskl_fresh_eq in Hnode; [ | exact HαR' ].
+        simpl. rewrite subst_uskl_in_uskl_fresh_eq; [ | exact HαR' ].
         inversion Hst; subst.
         eapply a_subtag_psi_cong;
           [ exact Hnode
@@ -827,7 +827,7 @@ Proof.
       * (* LS-Vacuous *)
         assert (Hnode : Θ0 ⊢ᵗ[ NM | M | pskl_hole | Ψ ]
                           (uskl_all_syn
-                             (subst_bskl_in_uskl
+                             (subst_uskl_in_uskl
                                 (pskl_to_uskl (uskl_to_pskl ψa)) αv R0))
                           ⩽˙ Q ⊣ Θ1)
           by (eapply a_subtag__forall_l_untagged
@@ -837,7 +837,7 @@ Proof.
           [ | fsetdec_empty ].
         eapply a_subtag_vacuous_erasure;
           [ exact Hnode | reflexivity
-          | apply subst_bskl_in_uskl_lc_uskl; assumption
+          | apply subst_uskl_in_uskl_lc_uskl; assumption
           | apply erase_swap_subst ].
       * (* LS-Check : a ∀-headed source is not guarded *)
         match goal with
@@ -931,9 +931,9 @@ Proof.
         [ assumption | assumption | | assumption | assumption | ].
       { intros α1 Hα1.
         replace (⌊ open_uskl_wrt_uskl
-                     (subst_bskl_in_uskl ψa αv R0) (uskl_var_f α1) ⌋ˢ)
+                     (subst_uskl_in_uskl ψa αv R0) (uskl_var_f α1) ⌋ˢ)
           with (⌊ open_uskl_wrt_uskl
-                    (subst_bskl_in_uskl
+                    (subst_uskl_in_uskl
                        (pskl_to_uskl (uskl_to_pskl ψa)) αv R0)
                     (uskl_var_f α1) ⌋ˢ)
           by (rewrite ! uskl_to_pskl_open;
@@ -950,32 +950,32 @@ Proof.
         { rewrite <- (ftvar_in_pskl_uskl_to_pskl ψg'). rewrite Hera.
           clear - Hαt; fsetdec. }
         assert (Hsubject :
-            subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) αt
+            subst_uskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) αt
               (open_uskl_wrt_uskl
-                 (subst_bskl_in_uskl (uskl_var_f αt) αv R0) ψg')
+                 (subst_uskl_in_uskl (uskl_var_f αt) αv R0) ψg')
             = open_uskl_wrt_uskl
-                (subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) αv R0)
+                (subst_uskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) αv R0)
                 ψg').
-        { rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl; [ | exact Hlcstrip ].
-          rewrite subst_bskl_in_uskl_decompose;
+        { rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl; [ | exact Hlcstrip ].
+          rewrite subst_uskl_in_uskl_decompose;
             [ | exact HαvStrip | clear - Hαt; fsetdec | clear - Hαt; fsetdec ].
-          rewrite (subst_bskl_in_uskl_fresh_eq ψg'); [ | exact Hαtg ].
+          rewrite (subst_uskl_in_uskl_fresh_eq ψg'); [ | exact Hαtg ].
           reflexivity. }
         assert (Hresult :
-            subst_bskl_in_uskl ψa αt
+            subst_uskl_in_uskl ψa αt
               (open_uskl_wrt_uskl
-                 (subst_bskl_in_uskl (uskl_var_f αt) αv R0) ψg')
-            = open_uskl_wrt_uskl (subst_bskl_in_uskl ψa αv R0) ψg').
-        { rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl; [ | exact Hlcψ ].
-          rewrite subst_bskl_in_uskl_decompose;
+                 (subst_uskl_in_uskl (uskl_var_f αt) αv R0) ψg')
+            = open_uskl_wrt_uskl (subst_uskl_in_uskl ψa αv R0) ψg').
+        { rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl; [ | exact Hlcψ ].
+          rewrite subst_uskl_in_uskl_decompose;
             [ | exact Hαψ | clear - Hαt; fsetdec | clear - Hαt; fsetdec ].
-          rewrite (subst_bskl_in_uskl_fresh_eq ψg'); [ | exact Hαtg ].
+          rewrite (subst_uskl_in_uskl_fresh_eq ψg'); [ | exact Hαtg ].
           reflexivity. }
         match type of Dβ0 with
         | ?Θb ⊢ _ ≼[ _ , _ ] _ ⤳ _ ⨾ _ =>
             assert (HDg : Θb ⊢
                 ⌊ open_uskl_wrt_uskl
-                    (subst_bskl_in_uskl (uskl_var_f αt) αv R0) ψg' ⌋ˢ
+                    (subst_uskl_in_uskl (uskl_var_f αt) αv R0) ψg' ⌋ˢ
                 ≼[ αt , M ] P0 ⤳ Ξg ⨾ Cg)
               by (rewrite uskl_to_pskl_open_gen;
                   rewrite uskl_to_pskl_subst; simpl;
@@ -983,29 +983,29 @@ Proof.
         end.
         assert (HlcSg : lc_uskl
             (open_uskl_wrt_uskl
-               (subst_bskl_in_uskl (uskl_var_f αt) αv R0) ψg')).
+               (subst_uskl_in_uskl (uskl_var_f αt) αv R0) ψg')).
         { apply lc_body_uskl_wrt_uskl; [ | exact Hlcg ].
           match goal with
           | |- body_uskl_wrt_uskl _ =>
               eapply lc_body_uskl_all_syn_1;
               change (uskl_all_syn
-                        (subst_bskl_in_uskl (uskl_var_f αt) αv R0))
-                with (subst_bskl_in_uskl (uskl_var_f αt) αv
+                        (subst_uskl_in_uskl (uskl_var_f αt) αv R0))
+                with (subst_uskl_in_uskl (uskl_var_f αt) αv
                         (uskl_all_syn R0));
-              apply subst_bskl_in_uskl_lc_uskl;
+              apply subst_uskl_in_uskl_lc_uskl;
                 [ exact HlcS0 | constructor ]
           end. }
         assert (HwfSg : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ
             ⌊ open_uskl_wrt_uskl
-                (subst_bskl_in_uskl
+                (subst_uskl_in_uskl
                    (pskl_to_uskl (uskl_to_pskl ψa)) αv R0) ψg' ⌋ˢ).
         { unfold open_uskl_wrt_uskl. rewrite uskl_to_pskl_open_rec.
           rewrite Hera.
           change (open_pskl_wrt_pskl_rec 0 P1
-                    ⌊ subst_bskl_in_uskl
+                    ⌊ subst_uskl_in_uskl
                         (pskl_to_uskl (uskl_to_pskl ψa)) αv R0 ⌋ˢ)
             with (open_pskl_wrt_pskl
-                    ⌊ subst_bskl_in_uskl
+                    ⌊ subst_uskl_in_uskl
                         (pskl_to_uskl (uskl_to_pskl ψa)) αv R0 ⌋ˢ P1).
           simpl in HwfT.
           inversion HwfT; subst.
@@ -1024,7 +1024,7 @@ Proof.
                 eapply (IHfam Ψg' ψg' ltac:(clear - Hfr; solve_notin_auto) Hsort Hera
                           _
                           (open_uskl_wrt_uskl
-                             (subst_bskl_in_uskl (uskl_var_f αt) αv R0) ψg')
+                             (subst_uskl_in_uskl (uskl_var_f αt) αv R0) ψg')
                           ψa Ψa αt Ξg Cg);
                 [ rewrite Hsubject; reflexivity
                 | exact HDg
@@ -1185,11 +1185,11 @@ Proof.
         assert (HαR' : αv `notin` ftvar_in_uskl R0)
           by (simpl in HαR; exact HαR).
         inversion Hst; subst.
-        simpl. rewrite subst_bskl_in_uskl_fresh_eq; [ | exact HαR' ].
+        simpl. rewrite subst_uskl_in_uskl_fresh_eq; [ | exact HαR' ].
         match goal with
         | Hs' : _ ⊢ᵗ[ _ | _ | _ | _ ]
-                  (subst_bskl_in_uskl _ _ _) ⩽˙ _ ⊣ _ |- _ =>
-            rewrite subst_bskl_in_uskl_fresh_eq in Hs'; [ | exact HαR' ]
+                  (subst_uskl_in_uskl _ _ _) ⩽˙ _ ⊣ _ |- _ =>
+            rewrite subst_uskl_in_uskl_fresh_eq in Hs'; [ | exact HαR' ]
         end.
         eapply a_subtag_psi_cong with (Ψ := Ψ);
           [ apply a_subtag__univ_ghost_l; eassumption
@@ -1201,7 +1201,7 @@ Proof.
         eapply a_subtag_vacuous_erasure;
           [ apply a_subtag__univ_ghost_l; eassumption
           | reflexivity
-          | apply subst_bskl_in_uskl_lc_uskl; assumption
+          | apply subst_uskl_in_uskl_lc_uskl; assumption
           | apply erase_swap_subst ].
       * (* LS-Check : a ∀◇-headed source is not guarded *)
         match goal with
@@ -1248,11 +1248,11 @@ Proof.
         assert (HαR' : αv `notin` ftvar_in_uskl R0)
           by (simpl in HαR; exact HαR).
         inversion Hst; subst.
-        simpl. rewrite subst_bskl_in_uskl_fresh_eq; [ | exact HαR' ].
+        simpl. rewrite subst_uskl_in_uskl_fresh_eq; [ | exact HαR' ].
         match goal with
         | Hs' : _ ⊢ᵗ[ _ | _ | _ | _ ]
-                  (subst_bskl_in_uskl _ _ _) ⩽˙ _ ⊣ _ |- _ =>
-            rewrite subst_bskl_in_uskl_fresh_eq in Hs'; [ | exact HαR' ]
+                  (subst_uskl_in_uskl _ _ _) ⩽˙ _ ⊣ _ |- _ =>
+            rewrite subst_uskl_in_uskl_fresh_eq in Hs'; [ | exact HαR' ]
         end.
         eapply a_subtag_psi_cong with (Ψ := Ψ);
           [ apply a_subtag__univ_ghost_lg; eassumption
@@ -1264,7 +1264,7 @@ Proof.
         eapply a_subtag_vacuous_erasure;
           [ apply a_subtag__univ_ghost_lg; eassumption
           | reflexivity
-          | apply subst_bskl_in_uskl_lc_uskl; assumption
+          | apply subst_uskl_in_uskl_lc_uskl; assumption
           | apply erase_swap_subst ].
       * (* LS-Check : a ∀◇-headed source is not guarded *)
         match goal with
@@ -1415,18 +1415,18 @@ Qed.
 
 (** Guardedness / ghost-freeness survive a skeleton-variable rename. *)
 Lemma guarded_uskl_subst_var : forall ψ α β,
-  guarded_uskl ψ -> guarded_uskl (subst_bskl_in_uskl (uskl_var_f β) α ψ).
+  guarded_uskl ψ -> guarded_uskl (subst_uskl_in_uskl (uskl_var_f β) α ψ).
 Proof.
   intros ψ α β H; inversion H; subst; simpl.
   - auto with frost.
   - destruct_if; auto with frost.
   - apply guarded_uskl__arrow;
-      apply subst_bskl_in_uskl_lc_uskl; auto; apply lc_uskl_var_f.
+      apply subst_uskl_in_uskl_lc_uskl; auto; apply lc_uskl_var_f.
 Qed.
 
 Lemma uskl_ghost_free_subst_var : forall ψ α β,
   uskl_ghost_free ψ ->
-  uskl_ghost_free (subst_bskl_in_uskl (uskl_var_f β) α ψ).
+  uskl_ghost_free (subst_uskl_in_uskl (uskl_var_f β) α ψ).
 Proof.
   intros ψ α β H; induction H; simpl.
   - auto with frost.
@@ -1434,12 +1434,12 @@ Proof.
   - auto with frost.
   - apply uskl_ghost_free__all_etag with (L := L `union` singleton α);
       intros α2 Hα2;
-      rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
         [ apply H0; clear - Hα2; fsetdec
         | clear - Hα2; fsetdec | apply lc_uskl_var_f ].
   - apply uskl_ghost_free__all_syn with (L := L `union` singleton α);
       intros α2 Hα2;
-      rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
         [ apply H0; clear - Hα2; fsetdec
         | clear - Hα2; fsetdec | apply lc_uskl_var_f ].
 Qed.
@@ -1448,18 +1448,18 @@ Qed.
     subject and target (the tags are ε-markers, untouched). *)
 Lemma a_solvetag_sub_eq_rename_var :
   (forall ψ M P Ψ, ψ ≼ᵗ[ M ] P ⤳ Ψ ->
-     forall α β0, (subst_bskl_in_uskl (uskl_var_f β0) α ψ) ≼ᵗ[ M ]
+     forall α β0, (subst_uskl_in_uskl (uskl_var_f β0) α ψ) ≼ᵗ[ M ]
                  (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ) /\
   (forall ψ P Ψ, ψ ∼ᵗ P ⤳ Ψ ->
-     forall α β0, (subst_bskl_in_uskl (uskl_var_f β0) α ψ) ∼ᵗ
+     forall α β0, (subst_uskl_in_uskl (uskl_var_f β0) α ψ) ∼ᵗ
                  (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ).
 Proof.
   apply (a_solvetag_sub_eq_mutind
            (fun ψ M P Ψ _ => forall α β0,
-              (subst_bskl_in_uskl (uskl_var_f β0) α ψ) ≼ᵗ[ M ]
+              (subst_uskl_in_uskl (uskl_var_f β0) α ψ) ≼ᵗ[ M ]
               (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ)
            (fun ψ P Ψ _ => forall α β0,
-              (subst_bskl_in_uskl (uskl_var_f β0) α ψ) ∼ᵗ
+              (subst_uskl_in_uskl (uskl_var_f β0) α ψ) ∼ᵗ
               (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ));
     intros; simpl.
   - (* SSub-Var *)
@@ -1467,7 +1467,7 @@ Proof.
       apply a_solvetag_sub__var; assumption.
   - (* SSub-ForallL *)
     apply a_solvetag_sub__forall_l with (L := L `union` singleton α); intros β Hβ.
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hβ; fsetdec | apply lc_uskl_var_f ].
     match goal with IH : forall b, _ |- _ => apply IH; clear - Hβ; fsetdec end.
   - (* SSub-UnivGhostLG *)
@@ -1499,7 +1499,7 @@ Proof.
   - (* SEq-ForallInh *)
     eapply a_solvetag_eq__forall_inh with (L := L `union` singleton α);
       [ intros β Hβ;
-        rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+        rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
           [ | clear - Hβ; fsetdec | apply lc_uskl_var_f ];
         rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
           [ | clear - Hβ; fsetdec | apply lc_pskl_var_f ];
@@ -1509,7 +1509,7 @@ Proof.
     apply a_solvetag_eq__univ_ghostg; auto.
   - (* SEq-ForallSyn *)
     apply a_solvetag_eq__forall_syn with (L := L `union` singleton α); intros β Hβ.
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hβ; fsetdec | apply lc_uskl_var_f ].
     match goal with IH : forall b, _ |- _ =>
       specialize (IH β ltac:(clear - Hβ; solve_notin_auto) α β0); simpl in IH; exact IH end.
@@ -2066,14 +2066,14 @@ Qed.
 
 (** Skeleton-variable rename lemmas (for the ∀ case's cofinite reconstruction). *)
 Lemma is_tskl_rename_var : forall ψ α β,
-  is_tskl ψ -> is_tskl (subst_bskl_in_uskl (uskl_var_f β) α ψ).
+  is_tskl ψ -> is_tskl (subst_uskl_in_uskl (uskl_var_f β) α ψ).
 Proof.
   intros ψ α β H; induction H; simpl.
   - auto with frost.
   - destruct_if; auto with frost.
   - auto with frost.
   - apply is_tskl__all_etag with (L := L `union` singleton α); intros α2 Hα2.
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hα2; fsetdec | apply lc_uskl_var_f ].
     match goal with IH : forall α, α `notin` L -> _ |- _ =>
       apply (IH α2 ltac:(clear - Hα2; solve_notin_auto)) end.
@@ -2082,7 +2082,7 @@ Proof.
 Qed.
 
 Lemma d_tags_skl_rename_var : forall Ψ ψ α β,
-  d_tags_skl Ψ ψ -> d_tags_skl Ψ (subst_bskl_in_uskl (uskl_var_f β) α ψ).
+  d_tags_skl Ψ ψ -> d_tags_skl Ψ (subst_uskl_in_uskl (uskl_var_f β) α ψ).
 Proof.
   intros Ψ ψ α β H; induction H; simpl.
   - auto with frost.
@@ -2090,7 +2090,7 @@ Proof.
   - eauto with frost.
   - eapply d_tags_skl__all_etag with (L := L `union` singleton α) (Ψ0 := Ψ0);
       [ intros α2 Hα2 | assumption | assumption ].
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hα2; fsetdec | apply lc_uskl_var_f ].
     match goal with IH : forall α, α `notin` L -> _ |- _ =>
       apply (IH α2 ltac:(clear - Hα2; solve_notin_auto)) end.
@@ -2101,7 +2101,7 @@ Qed.
 Lemma dec_ext_rename_var : forall P ψ Ψ,
   dec_ext P ψ Ψ ->
   forall α β, dec_ext (subst_pskl_in_pskl (pskl_var_f β) α P)
-                      (subst_bskl_in_uskl (uskl_var_f β) α ψ) Ψ.
+                      (subst_uskl_in_uskl (uskl_var_f β) α ψ) Ψ.
 Proof.
   intros P ψ Ψ H; induction H; intros αr βr; simpl.
   - auto using is_tskl_rename_var, d_tags_skl_rename_var with frost.
@@ -2111,7 +2111,7 @@ Proof.
   - apply dec_ext__all with (L := L `union` singleton αr); intros α2 Hα2.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
       [ | clear - Hα2; fsetdec | apply lc_pskl_var_f ].
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hα2; fsetdec | apply lc_uskl_var_f ].
     match goal with IH : forall a, a `notin` L -> forall b c, _ |- _ =>
       apply (IH α2 ltac:(clear - Hα2; solve_notin_auto)) end.
@@ -2121,7 +2121,7 @@ Proof.
   - apply dec_ext__topholeg; apply IHdec_ext.
   - eapply dec_ext__absorb_all with (L := L `union` singleton αr);
       [ intros α2 Hα2;
-        rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+        rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
           [ | clear - Hα2; fsetdec | apply lc_uskl_var_f ];
         match goal with IH : forall a, a `notin` L -> forall b c, _ |- _ =>
           apply (IH α2 ltac:(clear - Hα2; solve_notin_auto)) end
@@ -2227,7 +2227,7 @@ Proof.
             (L := L `union` ftvar_in_uskl ψ0 `union` ftvar_in_pskl P0
                   `union` singleton α0) (Ψ0 := Ψi0); [ | reflexivity ];
           intros β Hβ;
-          rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
+          rewrite (subst_uskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
                      ltac:(clear - HX0; solve_notin_auto));
           rewrite (subst_pskl_in_pskl_intro α0 P0 (pskl_var_f β)
                      ltac:(clear - HX0; solve_notin_auto));
@@ -2259,7 +2259,7 @@ Proof.
             (L := L `union` ftvar_in_uskl ψ0 `union` ftvar_in_pskl P0
                   `union` singleton α0);
           intros β Hβ;
-          rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
+          rewrite (subst_uskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
                      ltac:(clear - HX0; solve_notin_auto));
           rewrite <- (subst_pskl_in_pskl_fresh_eq (pskl_tophole P0)
                        (pskl_var_f β) α0 ltac:(simpl; clear - HX0; solve_notin_auto));
@@ -2382,7 +2382,7 @@ Proof.
       intros α1 Hα1.
       rewrite (subst_pskl_in_pskl_intro α0 P0 (pskl_var_f α1))
         by (clear - Hα0; fsetdec).
-      rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f α1))
+      rewrite (subst_uskl_in_uskl_intro α0 ψ0 (uskl_var_f α1))
         by (clear - Hα0; fsetdec).
       exact (dec_ext_rename_var Hdp α0 α1).
     + (* flex_forget *)
@@ -2411,7 +2411,7 @@ Proof.
         pick fresh α0 for (L `union` ftvar_in_uskl psi0);
         apply uskl_ghost_free__all_etag with (L := ftvar_in_uskl psi0);
         intros α1 Hα1;
-        rewrite (subst_bskl_in_uskl_intro α0 psi0 (uskl_var_f α1))
+        rewrite (subst_uskl_in_uskl_intro α0 psi0 (uskl_var_f α1))
           by (clear - Fr; fsetdec);
         apply uskl_ghost_free_subst_var
     end.
@@ -2573,7 +2573,7 @@ Proof.
           (L := ftvar_in_uskl ψ0 `union` ftvar_in_pskl Q
                 `union` singleton α0) (Ψ0 := Ψi0); [ | reflexivity ].
         intros β Hβ.
-        rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
+        rewrite (subst_uskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
                    ltac:(clear - HX0; solve_notin_auto)).
         rewrite (subst_pskl_in_pskl_intro α0 Q (pskl_var_f β)
                    ltac:(clear - HX0; solve_notin_auto)).
@@ -2586,7 +2586,7 @@ Proof.
            intros α2 Hα2.
            rewrite (subst_pskl_in_pskl_intro α0 P (pskl_var_f α2)
                       ltac:(clear - HX0; solve_notin_auto)).
-           rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f α2)
+           rewrite (subst_uskl_in_uskl_intro α0 ψ0 (uskl_var_f α2)
                       ltac:(clear - HX0; solve_notin_auto)).
            exact (dec_ext_rename_var Hd0 α0 α2).
         -- clear - Hu0; fsetdec.
@@ -2638,7 +2638,7 @@ Proof.
           (L := L `union` ftvar_in_uskl ψ0 `union` ftvar_in_pskl Q
                 `union` singleton α0).
         intros β Hβ.
-        rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
+        rewrite (subst_uskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
                    ltac:(clear - HX0; solve_notin_auto)).
         rewrite <- (subst_pskl_in_pskl_fresh_eq (pskl_tophole Q)
                      (pskl_var_f β) α0 ltac:(simpl; clear - HX0; solve_notin_auto)).
@@ -2648,7 +2648,7 @@ Proof.
              (L := L `union` ftvar_in_uskl ψ0 `union` ftvar_in_pskl P
                    `union` singleton α0) (Ψ0 := Ψp0); [ | reflexivity ].
            intros α2 Hα2.
-           rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f α2)
+           rewrite (subst_uskl_in_uskl_intro α0 ψ0 (uskl_var_f α2)
                       ltac:(clear - HX0; solve_notin_auto)).
            rewrite <- (subst_pskl_in_pskl_fresh_eq (pskl_tophole P)
                         (pskl_var_f α2) α0 ltac:(simpl; clear - HX0; solve_notin_auto)).
@@ -2691,7 +2691,7 @@ Proof.
           (L := ftvar_in_uskl ψ0 `union` ftvar_in_pskl Q
                 `union` singleton α0) (Ψ0 := Ψi0); [ | reflexivity ].
         intros β Hβ.
-        rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
+        rewrite (subst_uskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
                    ltac:(clear - HX0; solve_notin_auto)).
         rewrite (subst_pskl_in_pskl_intro α0 Q (pskl_var_f β)
                    ltac:(clear - HX0; solve_notin_auto)).
@@ -2701,7 +2701,7 @@ Proof.
              (L := ftvar_in_uskl ψ0 `union` ftvar_in_pskl P
                    `union` singleton α0) (Ψ0 := Ψp0); [ | reflexivity ].
            intros α2 Hα2.
-           rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f α2)
+           rewrite (subst_uskl_in_uskl_intro α0 ψ0 (uskl_var_f α2)
                       ltac:(clear - HX0; solve_notin_auto)).
            rewrite <- (subst_pskl_in_pskl_fresh_eq (pskl_tophole P)
                         (pskl_var_f α2) α0 ltac:(simpl; clear - HX0; solve_notin_auto)).
@@ -2762,7 +2762,7 @@ Proof.
           (L := ftvar_in_uskl ψ0 `union` ftvar_in_pskl Q
                 `union` singleton α0).
         intros β Hβ.
-        rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
+        rewrite (subst_uskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
                    ltac:(clear - HX0; solve_notin_auto)).
         rewrite <- (subst_pskl_in_pskl_fresh_eq (pskl_tophole Q)
                      (pskl_var_f β) α0 ltac:(simpl; clear - HX0; solve_notin_auto)).
@@ -2774,7 +2774,7 @@ Proof.
            intros α2 Hα2.
            rewrite (subst_pskl_in_pskl_intro α0 P (pskl_var_f α2)
                       ltac:(clear - HX0; solve_notin_auto)).
-           rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f α2)
+           rewrite (subst_uskl_in_uskl_intro α0 ψ0 (uskl_var_f α2)
                       ltac:(clear - HX0; solve_notin_auto)).
            exact (dec_ext_rename_var Hd0 α0 α2).
         -- clear - Hu0; fsetdec.
@@ -2890,7 +2890,7 @@ Proof.
       exists Ψi0, Ψp0; split.
       * apply a_solvetag_sub__forall_l with
           (L := ftvar_in_uskl ψ0 `union` singleton α0). intros β Hβ.
-        rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
+        rewrite (subst_uskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
                    ltac:(clear - HX0; solve_notin_auto)).
         rewrite <- (subst_pskl_in_pskl_fresh_eq Q (pskl_var_f β) α0
                      ltac:(clear - HX0; solve_notin_auto)).
@@ -2901,7 +2901,7 @@ Proof.
            intros α2 Hα2.
            rewrite (subst_pskl_in_pskl_intro α0 P (pskl_var_f α2)
                       ltac:(clear - HX0; solve_notin_auto)).
-           rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f α2)
+           rewrite (subst_uskl_in_uskl_intro α0 ψ0 (uskl_var_f α2)
                       ltac:(clear - HX0; solve_notin_auto)).
            exact (dec_ext_rename_var Hd0 α0 α2).
         -- clear - Hu0; fsetdec.
@@ -2952,7 +2952,7 @@ Proof.
       * apply a_solvetag_sub__forall_l with
           (L := ftvar_in_uskl ψ0 `union` ftvar_in_pskl Q `union` singleton α0).
         intros β Hβ.
-        rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
+        rewrite (subst_uskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
                    ltac:(clear - HX0; solve_notin_auto)).
         rewrite <- (subst_pskl_in_pskl_fresh_eq Q (pskl_var_f β) α0
                      ltac:(clear - HX0; solve_notin_auto)).
@@ -2962,7 +2962,7 @@ Proof.
              (L := L `union` ftvar_in_uskl ψ0 `union` ftvar_in_pskl P
                    `union` singleton α0) (Ψ0 := Ψp0); [ | reflexivity ].
            intros α2 Hα2.
-           rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f α2)
+           rewrite (subst_uskl_in_uskl_intro α0 ψ0 (uskl_var_f α2)
                       ltac:(clear - HX0; solve_notin_auto)).
            rewrite <- (subst_pskl_in_pskl_fresh_eq (pskl_tophole P)
                         (pskl_var_f α2) α0 ltac:(simpl; clear - HX0; solve_notin_auto)).
@@ -3114,7 +3114,7 @@ Proof.
           (L := ftvar_in_uskl ψ0 `union` ftvar_in_pskl Q1 `union` ftvar_in_pskl Q2
                 `union` singleton α0).
         intros β Hβ.
-        rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
+        rewrite (subst_uskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
                    ltac:(clear - HX0; solve_notin_auto)).
         rewrite <- (subst_pskl_in_pskl_fresh_eq (pskl_arrow Q1 Q2)
                      (pskl_var_f β) α0 ltac:(simpl; clear - HX0; solve_notin_auto)).
@@ -3185,7 +3185,7 @@ Proof.
       * apply a_solvetag_sub__forall_l with
           (L := ftvar_in_uskl ψ0 `union` ftvar_in_pskl B `union` singleton α0).
         intros β Hβ.
-        rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
+        rewrite (subst_uskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
                    ltac:(clear - HX0; solve_notin_auto)).
         rewrite <- (subst_pskl_in_pskl_fresh_eq B (pskl_var_f β) α0
                      ltac:(clear - HX0; solve_notin_auto)).
@@ -3797,10 +3797,10 @@ Proof.
       clear - Hα. fsetdec. }
     assert (HeqSubj :
         pskl_to_uskl (open_pskl_wrt_pskl P P1)
-        = subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψg)) α
+        = subst_uskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψg)) α
             (open_uskl_wrt_uskl (pskl_to_uskl P) (uskl_var_f α))).
     { rewrite pskl_to_uskl_open.
-      rewrite (subst_bskl_in_uskl_intro α);
+      rewrite (subst_uskl_in_uskl_intro α);
         [ | rewrite <- (ftvar_in_pskl_uskl_to_pskl (pskl_to_uskl P));
             rewrite uskl_to_pskl_pskl_to_uskl; clear - Hα; fsetdec ].
       rewrite Hera. reflexivity. }
@@ -3813,10 +3813,10 @@ Proof.
             rewrite uskl_to_pskl_pskl_to_uskl; reflexivity).
       exact HDlk. }
     assert (Hresult :
-        subst_bskl_in_uskl ψg α
+        subst_uskl_in_uskl ψg α
           (open_uskl_wrt_uskl (pskl_to_uskl P) (uskl_var_f α))
         = open_uskl_wrt_uskl (pskl_to_uskl P) ψg).
-    { symmetry. apply subst_bskl_in_uskl_intro.
+    { symmetry. apply subst_uskl_in_uskl_intro.
       rewrite <- (ftvar_in_pskl_uskl_to_pskl (pskl_to_uskl P)).
       rewrite uskl_to_pskl_pskl_to_uskl. clear - Hα. fsetdec. }
     assert (HwfOpen : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ open_pskl_wrt_pskl P P1).

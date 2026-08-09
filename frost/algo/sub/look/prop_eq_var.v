@@ -235,7 +235,7 @@ Lemma ad_partial_precise_rename_tvar : forall Θfull Δ Ψ P ψ,
      α1 `notin` ftvar_in_ptyp τ /\ β1 `notin` ftvar_in_ptyp τ) ->
   (Θ1 ++ (β1 ~ abind_tvar) ++ Θ0) ⨟ Δ ⊢
     (subst_pskl_in_pskl (pskl_var_f β1) α1 P)
-    ⊑ᵖ[ Ψ ] (subst_bskl_in_uskl (uskl_var_f β1) α1 ψ).
+    ⊑ᵖ[ Ψ ] (subst_uskl_in_uskl (uskl_var_f β1) α1 ψ).
 Proof.
   intros Θfull Δ Ψ P ψ H; induction H;
     intros α1 β1 Θ1 Θ0 Hu Heq HWd Hβ2Δ HWP Hβ2ψ Hdefs; subst; simpl in *.
@@ -268,7 +268,7 @@ Proof.
     intros β Hβ.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
       [ | clear - Hβ; fsetdec | apply lc_pskl_var_f ].
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hβ; fsetdec | apply lc_uskl_var_f ].
     apply (H0 β ltac:(clear - Hβ; solve_notin_auto) α1 β1 Θ1 Θ0 Hu eq_refl HWd);
       [ clear - Hβ2Δ Hβ; fsetdec
@@ -284,7 +284,7 @@ Proof.
       by (destruct (AtomSetProperties.In_dec α1 (ftvar_in_uskl ψ));
           [ right | left ]; assumption).
     apply ad_ppre__hole; [ assumption | ].
-    pose proof (ftvar_in_uskl_subst_bskl_in_uskl_upper ψ (uskl_var_f β1) α1)
+    pose proof (ftvar_in_uskl_subst_uskl_in_uskl_upper ψ (uskl_var_f β1) α1)
       as Hup. simpl in Hup.
     match goal with Hint : Δ ∩ _ [=] empty |- _ =>
       clear - Hint Hβ2Δ Hup; fsetdec end.
@@ -298,7 +298,7 @@ Proof.
       (L := L `union` singleton α1 `union` singleton β1
               `union` Δ `union` dom (Θ1 ++ (α1 ~ abind_tvar) ++ Θ0)).
     intros β Hβ.
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hβ; fsetdec | apply lc_uskl_var_f ].
     replace (pskl_tophole (subst_pskl_in_pskl (pskl_var_f β1) α1 P))
       with (subst_pskl_in_pskl (pskl_var_f β1) α1 (pskl_tophole P))
@@ -352,7 +352,7 @@ Proof.
       [ eapply binds_swap_mid; [ exact H | exact Hne ] | ].
     assert (Hfr : α1 `notin` ftvar_in_uskl (ptyp_to_uskl_syn τ))
       by (rewrite ftvar_in_uskl_ptyp_to_uskl_syn; exact Hα2τ).
-    rewrite <- (subst_bskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ)
+    rewrite <- (subst_uskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ)
                (uskl_var_f β1) α1 Hfr).
     apply IHad_partial_precise;
       [ exact Hu | reflexivity | exact HWd | exact Hβ2Δ
@@ -1789,7 +1789,7 @@ Proof.
                    ⊢ (subst_pskl_in_pskl (pskl_var_f α') α
                         (msubst_pskl (κ0 ++ κ) PaR))
                    ⊑ᵖ[ Ψc ]
-                   (subst_bskl_in_uskl (uskl_var_f α') α
+                   (subst_uskl_in_uskl (uskl_var_f α') α
                         (open_uskl_wrt_uskl ψR (uskl_var_f α)))).
           { eapply ad_partial_precise_rename;
               [ exact Hst
@@ -1807,7 +1807,7 @@ Proof.
                       [ exact HwfΘ | exact Hbd ]);
                 split; [ clear - Hd HXf; destruct_notin; fsetdec
                        | clear - Hd HX'f; destruct_notin; fsetdec ] ]. }
-          rewrite <- (subst_bskl_in_uskl_intro α ψR (uskl_var_f α')
+          rewrite <- (subst_uskl_in_uskl_intro α ψR (uskl_var_f α')
                         ltac:(clear - HXf; solve_notin)) in Hrn.
           rewrite (@msubst_pskl_subst_var_paired (κ0 ++ κ) PaR α α'
                      ltac:(clear - HXf Hdκ0; destruct_notin; solve_notin_auto)
@@ -2567,7 +2567,7 @@ Proof.
                    ⊢ (subst_pskl_in_pskl (pskl_var_f α') α
                         (msubst_pskl (κ0 ++ κ) PaR))
                    ⊑ᵖ[ Ψc ]
-                   (subst_bskl_in_uskl (uskl_var_f α') α
+                   (subst_uskl_in_uskl (uskl_var_f α') α
                         (open_uskl_wrt_uskl ψR (uskl_var_f α)))).
           { eapply ad_partial_precise_rename;
               [ exact Hst
@@ -2585,7 +2585,7 @@ Proof.
                       [ exact HwfΘ | exact Hbd ]);
                 split; [ clear - Hd HXf; destruct_notin; fsetdec
                        | clear - Hd HX'f; destruct_notin; fsetdec ] ]. }
-          rewrite <- (subst_bskl_in_uskl_intro α ψR (uskl_var_f α')
+          rewrite <- (subst_uskl_in_uskl_intro α ψR (uskl_var_f α')
                         ltac:(clear - HXf; solve_notin)) in Hrn.
           rewrite (@msubst_pskl_subst_var_paired (κ0 ++ κ) PaR α α'
                      ltac:(clear - HXf Hdκ0; destruct_notin; solve_notin_auto)
@@ -2849,7 +2849,7 @@ Proof.
           rewrite (subst_pskl_in_pskl_fresh_eq _ (pskl_var_f α') α)
             in Hren;
             [ | simpl in HXPaX; exact HXPaX ].
-          rewrite <- (subst_bskl_in_uskl_intro α ψR (uskl_var_f α')
+          rewrite <- (subst_uskl_in_uskl_intro α ψR (uskl_var_f α')
                         ltac:(clear - Fr; solve_notin)) in Hren.
           exact Hren.
         + (* Pi = ∀◇.Pi' — UnivGhost row.  WRAPPED IHX (Pi0:=∀◇.Pi',
@@ -3013,7 +3013,7 @@ Proof.
             rewrite (subst_pskl_in_pskl_fresh_eq _ (pskl_var_f α') α)
               in Hren;
               [ | simpl in HXPaX; exact HXPaX ].
-            rewrite <- (subst_bskl_in_uskl_intro α ψR (uskl_var_f α')
+            rewrite <- (subst_uskl_in_uskl_intro α ψR (uskl_var_f α')
                           ltac:(clear - Fr; solve_notin)) in Hren.
             eapply ad_partial_precise_delta_cong;
               [ eapply ad_partial_precise_delta_weaken_fresh

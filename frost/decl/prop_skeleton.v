@@ -121,12 +121,12 @@ Proof.
 Qed.
 
 Lemma guarded_uskl_subst_unit : forall R α,
-    guarded_uskl R -> guarded_uskl (subst_bskl_in_uskl uskl_unit α R).
+    guarded_uskl R -> guarded_uskl (subst_uskl_in_uskl uskl_unit α R).
 Proof.
   intros R α H. induction H; simpl.
   - auto with frost.
   - destruct_if; auto with frost.
-  - apply guarded_uskl__arrow; apply subst_bskl_in_uskl_lc_uskl; (assumption || apply lc_uskl_unit).
+  - apply guarded_uskl__arrow; apply subst_uskl_in_uskl_lc_uskl; (assumption || apply lc_uskl_unit).
 Qed.
 
 Lemma d_wf_pskl_subst_unit : forall Ψ Γ P,
@@ -153,7 +153,7 @@ Qed.
 Lemma d_wf_uskl_subst_unit : forall Ψ Γ R,
     Γ ⨟ Ψ ⊢ᵤₛ R ->
     forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
-    (Γ1 ++ Γ2) ⨟ Ψ ⊢ᵤₛ (subst_bskl_in_uskl uskl_unit α R).
+    (Γ1 ++ Γ2) ⨟ Ψ ⊢ᵤₛ (subst_uskl_in_uskl uskl_unit α R).
 Proof.
   intros Ψ Γ R H. induction H; intros Γ1 α0 Γ2 Heq; subst.
   - apply d_wf_uskl__unit.
@@ -163,11 +163,11 @@ Proof.
       analyze_binds Hb; auto.
   - simpl. apply d_wf_uskl__arrow; [ eapply IHd_wf_uskl1 | eapply IHd_wf_uskl2 ]; eauto.
   - simpl. apply d_wf_uskl__all_syn with (L := L `union` {{α0}}).
-    intros β Hβ. rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    intros β Hβ. rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       try (apply lc_uskl_unit); try fsetdec.
     eapply (H0 β ltac:(auto) Γ1 α0 Γ2); reflexivity.
   - simpl. apply d_wf_uskl__all_etag with (L := L `union` {{α0}}).
-    intros β Hβ. rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    intros β Hβ. rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       try (apply lc_uskl_unit); try fsetdec.
     eapply (H0 β ltac:(auto) Γ1 α0 Γ2); reflexivity.
   - apply d_wf_uskl__hole.
@@ -214,14 +214,14 @@ Proof.
 Qed.
 
 Lemma is_tskl_subst_unit : forall R α,
-    is_tskl R -> is_tskl (subst_bskl_in_uskl uskl_unit α R).
+    is_tskl R -> is_tskl (subst_uskl_in_uskl uskl_unit α R).
 Proof.
   intros R α H. induction H; simpl.
   - auto with frost.
   - destruct_if; auto with frost.
   - auto with frost.
   - apply is_tskl__all_etag with (L := L `union` {{α}}). intros β Hβ.
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       try (apply lc_uskl_unit); try fsetdec. auto.
   - auto with frost.
   - auto with frost.
@@ -237,7 +237,7 @@ Proof.
 Qed.
 
 Lemma d_tags_skl_subst_unit : forall Δ R α,
-    d_tags_skl Δ R -> d_tags_skl Δ (subst_bskl_in_uskl uskl_unit α R).
+    d_tags_skl Δ R -> d_tags_skl Δ (subst_uskl_in_uskl uskl_unit α R).
 Proof.
   intros Δ R α H. induction H; simpl.
   - apply d_tags_skl__unit; (assumption || fsetdec).
@@ -246,7 +246,7 @@ Proof.
       | apply d_tags_skl__var; (assumption || fsetdec) ].
   - apply d_tags_skl__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2); assumption.
   - apply d_tags_skl__all_etag with (L := L `union` {{α}}) (Ψ0 := Ψ0); [ | assumption | assumption ]. intros β Hβ.
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       try (apply lc_uskl_unit); try fsetdec. auto.
   - apply d_tags_skl__holeg; (assumption || fsetdec).
   - apply d_tags_skl__topholeg; assumption.
@@ -256,7 +256,7 @@ Lemma d_pat_consis_subst_unit : forall Δ Γ R Q,
     Δ ⨟ Γ ⊢ₛ R ∼ Q ->
     forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
     Δ ⨟ (Γ1 ++ Γ2) ⊢ₛ
-      (subst_bskl_in_uskl uskl_unit α R) ∼ (subst_bskl_in_bskl bskl_unit α Q).
+      (subst_uskl_in_uskl uskl_unit α R) ∼ (subst_bskl_in_bskl bskl_unit α Q).
 Proof.
   intros Δ Γ R Q H. induction H; intros Γ1 α0 Γ2 Heq; subst.
   - apply d_pat_consis__unit; (assumption || fsetdec).
@@ -266,22 +266,22 @@ Proof.
   - simpl. eapply d_pat_consis__arrow; [ eapply IHd_pat_consis1 | eapply IHd_pat_consis2 | (eassumption || fsetdec) ]; eauto.
   - simpl. apply d_pat_consis__forall_inh_tagged with (L := L `union` {{α0}}) (Ψ0 := Ψ0). 2: assumption.
     intros α2 Hα2. rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_unit); try fsetdec.
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_unit); try fsetdec.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_unit); try fsetdec.
     eapply (H0 α2 ltac:(auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2); simpl_env; reflexivity.
   - simpl. apply d_pat_consis__forall_inh_untagged with (L := L `union` {{α0}}).
     intros α2 Hα2. rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_unit); try fsetdec.
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_unit); try fsetdec.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_unit); try fsetdec.
     eapply (H0 α2 ltac:(auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2); simpl_env; reflexivity.
   - simpl. apply d_pat_consis__forall_syn_tagged with (L := L `union` {{α0}}).
     intros α2 Hα2. rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_unit); try fsetdec.
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_unit); try fsetdec.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_unit); try fsetdec.
     eapply (H0 α2 ltac:(auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2); simpl_env; reflexivity.
   - simpl. apply d_pat_consis__forall_syn with (L := L `union` {{α0}}).
     intros α2 Hα2. rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_unit); try fsetdec.
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_unit); try fsetdec.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_unit); try fsetdec.
     eapply (H0 α2 ltac:(auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2); simpl_env; reflexivity.
   - apply d_pat_consis__ghostg; (assumption || fsetdec).
@@ -291,8 +291,8 @@ Proof.
   - simpl. apply d_pat_consis__tophole_inh with (L := L `union` {{α0}}).
     intros α2 Hα2. rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_unit); try fsetdec.
-    change (uskl_tophole (subst_bskl_in_uskl uskl_unit α0 R))
-      with (subst_bskl_in_uskl uskl_unit α0 (uskl_tophole R)).
+    change (uskl_tophole (subst_uskl_in_uskl uskl_unit α0 R))
+      with (subst_uskl_in_uskl uskl_unit α0 (uskl_tophole R)).
     eapply (H0 α2 ltac:(auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2); simpl_env; reflexivity.
   - simpl. apply d_pat_consis__tophole_drop. eapply IHd_pat_consis; eauto.
 Qed.
@@ -301,7 +301,7 @@ Lemma d_pat_sub_subst_unit : forall Δ Γ m R Q,
     Δ ⨟ Γ ⊢ₛ[ m ] R ⩽ Q ->
     forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
     Δ ⨟ (Γ1 ++ Γ2) ⊢ₛ[ m ]
-      (subst_bskl_in_uskl uskl_unit α R) ⩽ (subst_bskl_in_bskl bskl_unit α Q).
+      (subst_uskl_in_uskl uskl_unit α R) ⩽ (subst_bskl_in_bskl bskl_unit α Q).
 Proof.
   intros Δ Γ m R Q H. induction H; intros Γ1 α0 Γ2 Heq; subst.
   - apply d_pat_sub__infer; [ (assumption || fsetdec) | eapply d_pat_consis_subst_unit; eauto | apply is_sskl_subst_unit; assumption ].
@@ -314,16 +314,16 @@ Proof.
   - simpl. eapply d_pat_sub__arg;
       [ eapply d_pat_consis_subst_unit; eauto | eapply IHd_pat_sub; eauto | (eassumption || fsetdec) ].
   - simpl. eapply d_pat_sub__forall_l_tagged with
-      (psi := subst_bskl_in_uskl uskl_unit α0 psi);
+      (psi := subst_uskl_in_uskl uskl_unit α0 psi);
       [ assumption | eassumption | apply d_tags_skl_subst_unit; assumption
       | eapply d_wf_uskl_subst_unit; eauto | apply is_tskl_subst_unit; assumption | ].
-    rewrite <- subst_bskl_in_uskl_open_uskl_wrt_uskl; try (apply lc_uskl_unit).
+    rewrite <- subst_uskl_in_uskl_open_uskl_wrt_uskl; try (apply lc_uskl_unit).
     eapply IHd_pat_sub; eauto.
   - simpl. eapply d_pat_sub__forall_l_untagged with
-      (psi := subst_bskl_in_uskl uskl_unit α0 psi);
+      (psi := subst_uskl_in_uskl uskl_unit α0 psi);
       [ assumption | eassumption | apply d_tags_skl_subst_unit; assumption
       | eapply d_wf_uskl_subst_unit; eauto | apply is_tskl_subst_unit; assumption | ].
-    rewrite <- subst_bskl_in_uskl_open_uskl_wrt_uskl; try (apply lc_uskl_unit).
+    rewrite <- subst_uskl_in_uskl_open_uskl_wrt_uskl; try (apply lc_uskl_unit).
     eapply IHd_pat_sub; eauto.
   - simpl. rewrite pskl_to_bskl_inh_subst_unit. apply d_pat_sub__ghost;
       [ (assumption || fsetdec)

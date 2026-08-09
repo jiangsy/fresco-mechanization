@@ -484,18 +484,18 @@ Fixpoint subst_exp_in_exp (e_5:exp) (x5:expvar) (e__6:exp) {struct e__6} : exp :
   | (exp_freeze e) => exp_freeze (subst_exp_in_exp e_5 x5 e)
 end.
 
-Fixpoint subst_bskl_in_uskl (R_5:uskl) (α5:usklvar) (R__6:uskl) {struct R__6} : uskl :=
+Fixpoint subst_uskl_in_uskl (R_5:uskl) (α5:usklvar) (R__6:uskl) {struct R__6} : uskl :=
   match R__6 with
   | uskl_unit => uskl_unit 
   | (uskl_var_b nat) => uskl_var_b nat
   | (uskl_var_f α) => (if eq_var α α5 then R_5 else (uskl_var_f α))
-  | (uskl_arrow R1 R2) => uskl_arrow (subst_bskl_in_uskl R_5 α5 R1) (subst_bskl_in_uskl R_5 α5 R2)
-  | (uskl_all_syn R) => uskl_all_syn (subst_bskl_in_uskl R_5 α5 R)
-  | (uskl_all_etag ε R) => uskl_all_etag ε (subst_bskl_in_uskl R_5 α5 R)
+  | (uskl_arrow R1 R2) => uskl_arrow (subst_uskl_in_uskl R_5 α5 R1) (subst_uskl_in_uskl R_5 α5 R2)
+  | (uskl_all_syn R) => uskl_all_syn (subst_uskl_in_uskl R_5 α5 R)
+  | (uskl_all_etag ε R) => uskl_all_etag ε (subst_uskl_in_uskl R_5 α5 R)
   | uskl_hole => uskl_hole 
-  | (uskl_tophole R) => uskl_tophole (subst_bskl_in_uskl R_5 α5 R)
+  | (uskl_tophole R) => uskl_tophole (subst_uskl_in_uskl R_5 α5 R)
   | uskl_holeg => uskl_holeg 
-  | (uskl_topholeg R) => uskl_topholeg (subst_bskl_in_uskl R_5 α5 R)
+  | (uskl_topholeg R) => uskl_topholeg (subst_uskl_in_uskl R_5 α5 R)
 end.
 
 Fixpoint subst_bskl_in_bskl (Q_5:bskl) (α5:bsklvar) (Q__6:bskl) {struct Q__6} : bskl :=

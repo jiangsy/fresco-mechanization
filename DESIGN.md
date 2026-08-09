@@ -361,7 +361,7 @@ quantifier supplies that by fiat; an exists-fresh pack would have to PROVE it,
 which needs either an avoid-set hand-back through both decoration inductions or
 a genuine RETAGGING lemma ("a derivation is generic in its inert tag names").
 Retagging does not exist and would have to be built from scratch — lngen
-generated only `subst_bskl_in_uskl`, no tag substitution on `uskl`.  This is
+generated only `subst_uskl_in_uskl`, no tag substitution on `uskl`.  This is
 fine as it stands: the decorated system is a proof device, and a proof device is
 allowed to assume more than the algorithm.  It is only worth revisiting if
 retagging gets built for another reason.

@@ -1031,9 +1031,9 @@ Theorem a_extract_complete_gen :
   Ψa [<=] Ψsub ->
   (* subject = (κR')[ψa/α], EXACTLY the paper's form *)
   ad_pat_sub_g n NM M Ψsub Θ
-    (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')) Q ->
+    (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) Q ->
   Θ ⨟ empty ⊢ₚₛᵃ
-    (uskl_to_pskl (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R'))) ->
+    (uskl_to_pskl (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R'))) ->
   Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
   exists Ξ Pa κa,
     (Θ0 ⊢ P ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ Pa) /\      (* look succeeds *)
@@ -1278,9 +1278,9 @@ Corollary a_extract_complete :
   ftvar_in_uskl ψa [<=] dom Θ ->
   Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψa ⌋ˢ ->
   ad_pat_sub_g n NM M Ψa Θ
-    (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')) Q ->
+    (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) Q ->
   Θ ⨟ empty ⊢ₚₛᵃ
-    (uskl_to_pskl (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R'))) ->
+    (uskl_to_pskl (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R'))) ->
   Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
   exists Ξ Pa κa,
     (Θ0 ⊢ P ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ Pa) /\

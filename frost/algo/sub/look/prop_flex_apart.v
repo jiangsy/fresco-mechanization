@@ -1867,7 +1867,7 @@ Lemma ad_partial_precise_rename : forall Θ Δ Ψ P ψ,
      αr `notin` ftvar_in_ptyp τ /\ βr `notin` ftvar_in_ptyp τ) ->
   Θ ⨟ (add βr (remove αr Δ)) ⊢
     (subst_pskl_in_pskl (pskl_var_f βr) αr P)
-    ⊑ᵖ[ Ψ ] (subst_bskl_in_uskl (uskl_var_f βr) αr ψ).
+    ⊑ᵖ[ Ψ ] (subst_uskl_in_uskl (uskl_var_f βr) αr ψ).
 Proof.
   intros Θ Δ Ψ P ψ H; induction H;
     intros αr βr HαΔ HαΘ HβΘ HβΔ HYP Hβψ Hdefs; simpl in *.
@@ -1893,7 +1893,7 @@ Proof.
     intros α2 Hα2.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
       [ | clear - Hα2; fsetdec | apply lc_pskl_var_f ].
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hα2; fsetdec | apply lc_uskl_var_f ].
     eapply ad_partial_precise_delta_cong;
       [ apply (H0 α2 ltac:(clear - Hα2; solve_notin_auto) αr βr);
@@ -1912,7 +1912,7 @@ Proof.
     match goal with Hint : _ ∩ _ [=] empty |- _ =>
       assert (Hαψ : αr `notin` ftvar_in_uskl ψ)
         by (clear - Hint HαΔ; fsetdec);
-      rewrite (subst_bskl_in_uskl_fresh_eq _ _ _ Hαψ);
+      rewrite (subst_uskl_in_uskl_fresh_eq _ _ _ Hαψ);
       apply ad_ppre__hole; [ assumption | clear - Hint Hβψ; fsetdec ]
     end.
   - (* tophole_remove *)
@@ -1923,7 +1923,7 @@ Proof.
       with (L := L `union` singleton αr `union` singleton βr
                    `union` Δ `union` dom Θ).
     intros α2 Hα2.
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hα2; fsetdec | apply lc_uskl_var_f ].
     replace (pskl_tophole (subst_pskl_in_pskl (pskl_var_f βr) αr P))
       with (subst_pskl_in_pskl (pskl_var_f βr) αr (pskl_tophole P))
@@ -1963,7 +1963,7 @@ Proof.
     eapply ad_ppre__flex_r; [ eassumption | ].
     assert (Hfr : αr `notin` ftvar_in_uskl (ptyp_to_uskl_syn τ))
       by (rewrite ftvar_in_uskl_ptyp_to_uskl_syn; exact Hατ).
-    rewrite <- (subst_bskl_in_uskl_fresh_eq
+    rewrite <- (subst_uskl_in_uskl_fresh_eq
                   (ptyp_to_uskl_syn τ) (uskl_var_f βr) αr Hfr).
     apply IHad_partial_precise; auto.
     rewrite ftvar_in_uskl_ptyp_to_uskl_syn. exact Hβτ.

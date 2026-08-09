@@ -442,6 +442,46 @@ removed developments).
 > dependency surface cost the base's consumers?  Each of the three now carries
 > a ⚠️ DO NOT MERGE header note, so the next audit does not re-propose them.
 >
+> ### ✅ §7.1 FIXED AT THE SOURCE — `subst_bskl_in_uskl` → `subst_uskl_in_uskl`
+>
+> `language.ott:156` read `single R Xus :: subst_bskl_in` — a copy of the line
+> above it — where `R` is a **uskl**.  So lngen generated `subst_bskl_in_uskl`
+> for what is uskl-INTO-uskl substitution (`def_ott.v`: `(R_5:uskl)
+> (α5:usklvar) (R__6:uskl)`), the one sort named for the wrong source.  Fixed
+> in the ott, regenerated, and swept: **707 occurrences**, 0 residual,
+> `subst_bskl_in_bskl` (373 uses, the legitimate one) untouched.
+>
+> ⚙ **Verify generator reproducibility BEFORE editing an ott.**  `def_ott.v`
+> and `prop_ln.v` are tracked, so a regeneration can smuggle in unrelated
+> generator drift.  Regenerating them with the ott UNCHANGED first confirmed
+> byte-identity with the committed versions — which is what made the post-edit
+> diff checkable: 121 changed lines, every one containing only that identifier.
+>
+> ⚠️ **A trailing `\b` silently blocks a PREFIX rename.**  `_` is a word
+> character, so `s/\bsubst_bskl_in_uskl\b/…/` matched none of the derived
+> lngen names (`…_open_uskl_wrt_uskl`, `…_fresh_eq`, …) — and the per-file loop
+> reported success for every file while changing nothing.  The trailing
+> boundary that was REQUIRED for the `_thm` rename is the one that breaks this
+> one; the difference is whether the target is a whole name or a prefix.
+> **Check the residual count, never the exit status.**
+> ⚙ Also: zsh does not word-split unquoted expansions, so `perl … $FILES`
+> passes the entire newline-separated list as one filename.
+>
+> ### ⛔ §4(b) is a PAIRED change — do not do half of it
+>
+> `mod_comp_ty` / `mod_comp_sk` are SUBJECT-first; their algorithmic
+> counterparts `a_ty_mode_compat` / `a_sk_mode_compat` are MODE-first, as are
+> `fn_arrow_shape*` and `pskl_ty_core` / `ptyp_ty_core` (mode-first is 6 of the
+> 8).  The report proposed renaming to unify the words.  **Renaming alone would
+> make it worse**: same-shaped names taking their arguments in opposite orders
+> is a sharper trap than two visibly different names.
+>
+> Cost of doing it properly: ~60 applications pass a compound first argument
+> (`mod_comp_ty (btyp_arrow B1 B2) (mode_fn m)`), so the flip needs
+> balanced-paren rewriting rather than a sed, plus 110 bare references and 58
+> constructor references.  Both definition sites now carry a ⚠️ note so the
+> halves are not separated.
+>
 > ## Remaining
 >
 > ### ⚙ "39 duplicated names" is not "39 deletions"
@@ -518,7 +558,7 @@ removed developments).
 >   generic lemma subsumes both — but the two state their arguments in
 >   DIFFERENT ORDERS and 13 call sites apply them positionally with `@`, so the
 >   merge is not a rename.  Much of §8.2's list is the same shape.
-> - §8.2 `prop_aenv.v`, §5.3 composite chains, §7.1 `subst_bskl_in_uskl`
+> - §8.2 `prop_aenv.v`, §5.3 composite chains, §7.1 `subst_uskl_in_uskl`
 >   rename, §4 the `mode_spine` work.
 > - ⚙ Deliberately NOT done: renaming the five skeleton conversions' var-form
 >   `_open` lemmas to `_open_var` for uniformity with the type conversions.
@@ -551,7 +591,7 @@ the **eight mode-spine inductives**, the **82 duplicated names**, and the
 | 4 | `fn_arrow_shape` / `mode_compat` | C | **eight** inductives over the same arrow-spine-on-`mode` shape, in three files, with inconsistent argument order |
 | 5 | coercions / predicates | A + B | 14 conversions in `coercions.v` + ≥4 more elsewhere; 2 dead; no composite names (35+32 raw nested chains); commuting squares scattered over 5 files |
 | 6 | `ty_core` | A | `prop_ty_core.v` is coherent for 2 of its 3 clusters; `fn_arrow_shape*` (lines 1215-1300) does not belong there |
-| 7 | metavar names | A + B | `subst_bskl_in_uskl` is misnamed at the **ott** level; `T`/`B` used for `uskl`/`pskl` inside rule definitions; ~34 annotated binders violate the letter convention |
+| 7 | metavar names | A + B | `subst_uskl_in_uskl` is misnamed at the **ott** level; `T`/`B` used for `uskl`/`pskl` inside rule definitions; ~34 annotated binders violate the letter convention |
 | 8 | file / lemma names, restructure | A + B | **82 duplicated names** (28 in the `completeness_look/` cluster — this is what blocks the already-written facade); ~50 generic list/binds helpers with no home; build litter |
 
 ---
@@ -931,14 +971,14 @@ instantiations.
   single R Xus  :: subst_bskl_in      <-- should be subst_uskl_in
 ```
 
-so lngen generates **`subst_bskl_in_uskl`** — "substitute a *bskl* in a
+so lngen generates **`subst_uskl_in_uskl`** — "substitute a *bskl* in a
 `uskl`" — for what is `uskl`-into-`uskl` substitution
 (`def_ott.v:487`: `(R_5:uskl) (α5:usklvar) (R__6:uskl)`).  Every other sort is
 named correctly (`subst_ptyp_in_ptyp`, `subst_btyp_in_btyp`, …).
 
 **Cost:** 661 occurrences tree-wide, 540 of them in hand-written files.  But the
 name is unique, so it is a one-line ott edit + `make ott lngen` +
-`sed -i 's/subst_bskl_in_uskl/subst_uskl_in_uskl/g'` over `frost/`.  Grade **B**
+`sed -i 's/subst_uskl_in_uskl/subst_uskl_in_uskl/g'` over `frost/`.  Grade **B**
 — wide but the compiler verifies it completely.
 
 Also in that block: `single e Xpt :: subst_typ_in` is **inert** — ott takes the
@@ -1113,7 +1153,7 @@ serves — that is the information needed to eventually break it up.
 9. §5.4 create `frost/prop_coercions.v`; this closes ~8 more duplicates.
 10. §8.2 create `frost/prop_aenv.v`; closes 3 more.
 11. §5.3 name the composite chains, sweep the ~90 inline uses.
-12. §7.1 `subst_bskl_in_uskl` → `subst_uskl_in_uskl` (ott + sed, 540 sites).
+12. §7.1 `subst_uskl_in_uskl` → `subst_uskl_in_uskl` (ott + sed, 540 sites).
 13. §4(a) collapse `fn_arrow_shape` onto `fn_arrow_shape_pskl`.
 14. §4(b) unify `mod_comp_*` / `*_mode_compat` naming and argument order.
 15. §1.1 retire `rename_aenv`.

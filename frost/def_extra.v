@@ -230,6 +230,18 @@ Inductive is_value : exp -> Prop :=
     function type whose result is [M]-compatible at [FN M] (the argument colour
     is unconstrained / bidirectional).  Implicitly required of every typing
     judgement; embedded as a premise on each rule's conclusion mode+type. *)
+(** ⚠️ ARGUMENT ORDER: this pair is SUBJECT-first, while their algorithmic
+    counterparts [a_ty_mode_compat] / [a_sk_mode_compat] (algo/def_extra.v) are
+    MODE-first, as are [fn_arrow_shape*] and [pskl_ty_core] / [ptyp_ty_core].
+    Mode-first is the majority (6 of the 8 arrow-spine relations).
+
+    ⛔ Do NOT "fix" this by renaming one pair to match the other WITHOUT also
+    flipping the argument order — same-shaped names taking their arguments in
+    opposite orders is worse than two visibly different names.  The two halves
+    must land together, and the flip is not a sed: ~60 of the applications pass
+    a compound first argument ([mod_comp_ty (btyp_arrow B1 B2) (mode_fn m)]),
+    so it needs balanced-paren rewriting plus 58 constructor references.
+    Measured 2026-08-09; see docs/REPORT-remech-cleanup-audit.md §4. *)
 Inductive mod_comp_ty : btyp -> mode -> Prop :=
 | mod_comp_ty__ti : forall B, is_styp B -> mod_comp_ty B mode_ti
 | mod_comp_ty__tc : forall B, is_ityp B -> mod_comp_ty B mode_tc

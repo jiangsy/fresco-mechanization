@@ -139,8 +139,8 @@ Proof.
 Qed.
 
 (* Tags of a var-substitution are bounded by the target's ∪ the payload's. *)
-Lemma ftag_in_uskl_subst_bskl_in_uskl : forall R0 α R',
-  ftag_in_uskl (subst_bskl_in_uskl R0 α R')
+Lemma ftag_in_uskl_subst_uskl_in_uskl : forall R0 α R',
+  ftag_in_uskl (subst_uskl_in_uskl R0 α R')
     [<=] ftag_in_uskl R' `union` ftag_in_uskl R0.
 Proof.
   intros R0 α R'; induction R' as [ | n | α0 | β1 IHR'1 β2 IHR'2 | β0 IHR'0
@@ -493,8 +493,8 @@ Proof.
     end.
 Qed.
 
-Lemma subst_bskl_in_uskl_var_self : forall R α,
-  subst_bskl_in_uskl R α (uskl_var_f α) = R.
+Lemma subst_uskl_in_uskl_var_self : forall R α,
+  subst_uskl_in_uskl R α (uskl_var_f α) = R.
 Proof. intros; simpl; destruct (eq_var α α); [ reflexivity | contradiction ]. Qed.
 
 (* A mono-paint consistency subject is well-formed as a monotype: every
@@ -545,7 +545,7 @@ Lemma ad_pat_consis_subst_psia_mono : forall Ψs Θ Rsubj Q,
   a_wf_aenv Θ ->
   bskl_monoish Q ->
   forall R' ψa αs,
-    Rsubj = subst_bskl_in_uskl ψa αs R' ->
+    Rsubj = subst_uskl_in_uskl ψa αs R' ->
     is_tskl ψa ->
     αs `in` ftvar_in_uskl R' ->
     exists τψ, mono_ptyp τψ /\ ψa = ptyp_to_uskl_syn τψ /\ a_wf_ptyp Θ τψ.
@@ -661,7 +661,7 @@ Lemma psia_rho_leaf_step : forall Ψs Θ Rsubj Q NM Δρ Ψρ ψa αs R',
   Ψs ⨟ Θ ⊢ₛᵃ Rsubj ∼ Q ->
   a_wf_aenv Θ ->
   bskl_monoish Q ->
-  uskl_rho NM Θ Δρ Ψρ Rsubj (subst_bskl_in_uskl ψa αs R') ->
+  uskl_rho NM Θ Δρ Ψρ Rsubj (subst_uskl_in_uskl ψa αs R') ->
   R' = uskl_var_f αs ->
   (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
   is_tskl ψa ->
@@ -669,7 +669,7 @@ Lemma psia_rho_leaf_step : forall Ψs Θ Rsubj Q NM Δρ Ψρ ψa αs R',
 Proof.
   intros Ψs Θ Rsubj Q NM Δρ Ψρ ψa αs R' Hcons HwfΘ Hmi Hrho HeqR Hclean Htsk.
   subst R'.
-  assert (Hid : subst_bskl_in_uskl ψa αs (uskl_var_f αs) = ψa)
+  assert (Hid : subst_uskl_in_uskl ψa αs (uskl_var_f αs) = ψa)
     by (simpl; match goal with |- context [if ?c then _ else _] => destruct c end;
         [ reflexivity | congruence ]).
   rewrite Hid in Hrho.
@@ -684,7 +684,7 @@ Qed.
 
 (** The [urho__leaf] disjunct never fires on an αs-carrying ideal. *)
 Lemma psia_rho_leaf_impossible : forall ψa αs R' βρ Δρ,
-  subst_bskl_in_uskl ψa αs R' = uskl_var_f βρ ->
+  subst_uskl_in_uskl ψa αs R' = uskl_var_f βρ ->
   βρ `in` Δρ ->
   (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
   αs `notin` Δρ ->
@@ -707,7 +707,7 @@ Lemma ad_pat_consis_rho_subst_psia_mono : forall Ψs Θ Rsubj Q,
   a_wf_aenv Θ ->
   bskl_monoish Q ->
   forall NM Δρ Ψρ R' ψa αs,
-    uskl_rho NM Θ Δρ Ψρ Rsubj (subst_bskl_in_uskl ψa αs R') ->
+    uskl_rho NM Θ Δρ Ψρ Rsubj (subst_uskl_in_uskl ψa αs R') ->
     (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
     αs `notin` Δρ ->
     is_tskl ψa ->
@@ -1190,13 +1190,13 @@ Lemma p6cs_subject_open : forall Θ1 κ Θ ψa α R0 β,
   β `notin` dom κ ->
   β <> α ->
   lc_uskl ψa ->
-  subst_bskl_in_uskl ψa α (msubst_uskl_syn κ (open_uskl_wrt_uskl R0 (uskl_var_f β)))
+  subst_uskl_in_uskl ψa α (msubst_uskl_syn κ (open_uskl_wrt_uskl R0 (uskl_var_f β)))
   = open_uskl_wrt_uskl
-      (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R0)) (uskl_var_f β).
+      (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R0)) (uskl_var_f β).
 Proof.
   intros Θ1 κ Θ ψa α R0 β Hinc Hα Hβ Hne Hlc.
   rewrite (@msubst_uskl_syn_open Θ1 κ Θ R0 β Hinc Hβ).
-  rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+  rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
     [ reflexivity | auto | exact Hlc ].
 Qed.
 
@@ -1468,7 +1468,7 @@ Lemma p6cs_subject_guarded_head : forall Θ0 κ Θ ψa α R0,
   R0 <> uskl_var_f α ->
   α `notin` dom κ ->
   (forall p, In p κ -> α `notin` ftvar_in_ptyp (snd p)) ->
-  uskl_guarded_head (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R0)).
+  uskl_guarded_head (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R0)).
 Proof.
   intros Θ0 κ Θ ψa α R0 Hκ Hg Hne Hακ Hκav.
   destruct R0; simpl in Hg; try solve [ inversion Hg ].
@@ -1675,7 +1675,7 @@ Theorem a_lookeq_solve_complete_gen :
   Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->   (* Θ ⊢ inh(κP0) ⊳ Q *)
   (* --- the ρ-generalization pack (all VACUOUS at ρ = identity) --- *)
   uskl_rho NM Θs Δρ Ψρ Rsub
-    (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')) ->   (* Rsub = ρ((κR)[ψa/α]) *)
+    (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) ->   (* Rsub = ρ((κR)[ψa/α]) *)
   (forall x b, binds x b Θs -> binds x b Θ) ->  (* Θs ⊆ Θ: ρ's images predate Θ's growth *)
   Ψρ ∩ Ψ' [=] empty ->                     (* ρ's tags ⊥ ψa's *)
   rho_fresh Δρ Θ κ ->                      (* P6-Cv's ρ-freshness pack *)
@@ -1871,7 +1871,7 @@ Proof.
     (* under ρ the SUBJECT is [Rsub], so it is the IDEAL side of [Hrho] that
        collapses to ψa — [Hconsis] is already in the shape P6-Cv wants. *)
     rewrite Hms in Hrho.
-    assert (Hsubj : subst_bskl_in_uskl ψa α (uskl_var_f α) = ψa).
+    assert (Hsubj : subst_uskl_in_uskl ψa α (uskl_var_f α) = ψa).
     { cbn. match goal with |- context [if ?c then _ else _] => destruct c end;
         [ reflexivity | contradiction ]. }
     rewrite Hsubj in Hrho.
@@ -1952,7 +1952,7 @@ Proof.
       rewrite HeraseR. apply msubst_pskl_ftv_avoid; [ exact Hκav | exact Hnin ]. }
     (* under ρ the tag bound reads off the IMAGE, so ρ's own tags Ψρ join it —
        and they are ⊥ Ψ' by [HΨρ], exactly as R'-tags are by [Hdisj] *)
-    rewrite (subst_bskl_in_uskl_fresh_eq (msubst_uskl_syn κ R') ψa α HαMS) in Hrho.
+    rewrite (subst_uskl_in_uskl_fresh_eq (msubst_uskl_syn κ R') ψa α HαMS) in Hrho.
     assert (HΨsR : Ψsub [<=] ftag_in_uskl Rsub)
       by (apply (ad_pat_consis_ftag_sub Hconsis)).
     pose proof (uskl_rho_ftag_sub Hrho) as Hftr.
@@ -2002,7 +2002,7 @@ Proof.
        is an arrow of ρ-images and the row's text survives with those in place
        of the ideal's components. *)
     pose proof Hrho as Hrho0.  (* FOLDED copy for the flexible-P0 row *)
-    cbn [msubst_uskl_syn subst_bskl_in_uskl] in Hrho.
+    cbn [msubst_uskl_syn subst_uskl_in_uskl] in Hrho.
     destruct (uskl_rho_arrow_r_inv Hrho)
       as (Ra' & Rb' & Ψρ1 & Ψρ2 & HRs & Hrhoa & Hrhob & HΨρeq).
     subst Rsub.
@@ -2495,13 +2495,13 @@ Proof.
         assert (HΨ1sub : Ψ1 [<=] union (ftag_in_uskl Ra) (union Ψρ1 Ψ')).
         { pose proof (ad_pat_consis_ftag_sub H1) as Hf1.
           pose proof (uskl_rho_ftag_sub Hrhoa) as Hr1.
-          pose proof (ftag_in_uskl_subst_bskl_in_uskl ψa α (msubst_uskl_syn κ Ra)) as Hb1.
+          pose proof (ftag_in_uskl_subst_uskl_in_uskl ψa α (msubst_uskl_syn κ Ra)) as Hb1.
           pose proof (ftag_in_uskl_msubst_uskl_syn κ Ra) as Hm1.
           clear - Hf1 Hr1 Hb1 Hm1 Hψatag; fsetdec. }
         assert (HΨ2sub : Ψ2 [<=] union (ftag_in_uskl Rb) (union Ψρ2 Ψ')).
         { pose proof (ad_pat_consis_ftag_sub H4) as Hf2.
           pose proof (uskl_rho_ftag_sub Hrhob) as Hr2.
-          pose proof (ftag_in_uskl_subst_bskl_in_uskl ψa α (msubst_uskl_syn κ Rb)) as Hb2.
+          pose proof (ftag_in_uskl_subst_uskl_in_uskl ψa α (msubst_uskl_syn κ Rb)) as Hb2.
           pose proof (ftag_in_uskl_msubst_uskl_syn κ Rb) as Hm2.
           clear - Hf2 Hr2 Hb2 Hm2 Hψatag; fsetdec. }
         assert (HΨρ1e : Ψρ1 ∩ Ψ' [=] empty) by (clear - HΨρ HΨρeq; fsetdec).
@@ -3067,7 +3067,7 @@ Proof.
     cbn [uskl_to_pskl] in HeraseR; subst P.
     (* ρ-INVERSION: a ∀ˢ ideal forces a ∀ˢ image with the SAME Ψρ, and the
        cofinite family is exactly what the IH at the opened body wants. *)
-    cbn [msubst_uskl_syn subst_bskl_in_uskl] in Hrho.
+    cbn [msubst_uskl_syn subst_uskl_in_uskl] in Hrho.
     destruct (uskl_rho_all_syn_r_inv Hrho) as (Lρ & Rsub0 & HRs & Hrhobody).
     subst Rsub.
     assert (Hlcψa : lc_uskl ψa) by (apply is_tskl_lc; inversion Htags; assumption).
@@ -3175,7 +3175,7 @@ Proof.
            [p6cs_subject_open] moves to the ρ premise, the only one still ideal-side *)
         assert (Hrhoβ : uskl_rho NM Θs Δρ Ψρ
                   (open_uskl_wrt_uskl Rsub0 (uskl_var_f β))
-                  (subst_bskl_in_uskl ψa α
+                  (subst_uskl_in_uskl ψa α
                      (msubst_uskl_syn κ (open_uskl_wrt_uskl R0 (uskl_var_f β))))).
         { rewrite (@p6cs_subject_open Θ0 κ Θ ψa α R0 β Hκ Hακdom Hβκ Hβα Hlcψa).
           apply Hrhobody; auto. }
@@ -3480,7 +3480,7 @@ Proof.
               [p6cs_subject_open] moves to the ρ premise, the only one still ideal-side *)
            assert (Hrhoβ : uskl_rho NM Θs Δρ Ψρ
                      (open_uskl_wrt_uskl Rsub0 (uskl_var_f β))
-                     (subst_bskl_in_uskl ψa α
+                     (subst_uskl_in_uskl ψa α
                         (msubst_uskl_syn κ (open_uskl_wrt_uskl R0 (uskl_var_f β))))).
            { rewrite (@p6cs_subject_open Θ0 κ Θ ψa α R0 β Hκ Hακdom Hβκ Hβα Hlcψa).
              apply Hrhobody; auto. }
@@ -3633,7 +3633,7 @@ Proof.
        (C-ForallInh's tagged row splits the index [Ψ = Ψ0, ε]). *)
     cbn [uskl_to_pskl] in HeraseR; subst P.
     (* ρ-INVERSION: a ∀^ε ideal forces a ∀^ε image with the SAME ε and Ψρ *)
-    cbn [msubst_uskl_syn subst_bskl_in_uskl] in Hrho.
+    cbn [msubst_uskl_syn subst_uskl_in_uskl] in Hrho.
     destruct (uskl_rho_all_etag_r_inv Hrho) as (Lρ & Rsub0 & HRs & Hrhobody).
     subst Rsub.
     assert (Hlcψa : lc_uskl ψa) by (apply is_tskl_lc; inversion Htags; assumption).
@@ -3731,7 +3731,7 @@ Proof.
           (* …and the image's tags are ρ's plus the ideal's *)
           pose proof (uskl_rho_ftag_sub (Hrhobody β ltac:(auto))) as Hrft.
           rewrite !ftag_in_uskl_open_var in Hrft.
-          pose proof (ftag_in_uskl_subst_bskl_in_uskl ψa α
+          pose proof (ftag_in_uskl_subst_uskl_in_uskl ψa α
                         (msubst_uskl_syn κ R0)) as Hsb.
           rewrite ftag_in_uskl_msubst_uskl_syn in Hsb.
           pose proof (d_tags_skl_ftag (a_tags_sort_d_tags Htags)) as Hψatag.
@@ -3780,7 +3780,7 @@ Proof.
            [p6cs_subject_open] moves to the ρ premise, the only one still ideal-side *)
         assert (Hrhoβ : uskl_rho NM Θs Δρ Ψρ
                   (open_uskl_wrt_uskl Rsub0 (uskl_var_f β))
-                  (subst_bskl_in_uskl ψa α
+                  (subst_uskl_in_uskl ψa α
                      (msubst_uskl_syn κ (open_uskl_wrt_uskl R0 (uskl_var_f β))))).
         { rewrite (@p6cs_subject_open Θ0 κ Θ ψa α R0 β Hκ Hακdom Hβκ Hβα Hlcψa).
           apply Hrhobody; auto. }
@@ -4077,7 +4077,7 @@ Proof.
              rewrite ftag_in_uskl_open_var in Hfb.   (* Ψ0 ⊆ the IMAGE's tags *)
              pose proof (uskl_rho_ftag_sub (Hrhobody β ltac:(auto))) as Hrft.
              rewrite !ftag_in_uskl_open_var in Hrft.
-             pose proof (ftag_in_uskl_subst_bskl_in_uskl ψa α
+             pose proof (ftag_in_uskl_subst_uskl_in_uskl ψa α
                            (msubst_uskl_syn κ R0)) as Hsb.
              rewrite ftag_in_uskl_msubst_uskl_syn in Hsb.
              pose proof (d_tags_skl_ftag (a_tags_sort_d_tags Htags)) as Hψatag.
@@ -4115,7 +4115,7 @@ Proof.
               [p6cs_subject_open] moves to the ρ premise, the only one still ideal-side *)
            assert (Hrhoβ : uskl_rho NM Θs Δρ Ψρ
                      (open_uskl_wrt_uskl Rsub0 (uskl_var_f β))
-                     (subst_bskl_in_uskl ψa α
+                     (subst_uskl_in_uskl ψa α
                         (msubst_uskl_syn κ (open_uskl_wrt_uskl R0 (uskl_var_f β))))).
            { rewrite (@p6cs_subject_open Θ0 κ Θ ψa α R0 β Hκ Hακdom Hβκ Hβα Hlcψa).
              apply Hrhobody; auto. }
@@ -4273,7 +4273,7 @@ Proof.
     pose proof (lc_uskl_tophole_inv HlcS) as HlcS0.
     (* ρ-INVERSION: a ∀◇ ideal forces a ∀◇ image at the SAME Ψρ *)
     pose proof Hrho as Hrho0.   (* FOLDED copy: the ∀-P0 row keeps R' = ∀◇R0 *)
-    cbn [msubst_uskl_syn subst_bskl_in_uskl] in Hrho.
+    cbn [msubst_uskl_syn subst_uskl_in_uskl] in Hrho.
     destruct (uskl_rho_tophole_r_inv Hrho) as (Rsub0 & HRs & Hrhobody).
     subst Rsub.
     cbn [uskl_to_pskl] in HwfSub.
@@ -4727,7 +4727,7 @@ Proof.
     cbn [uskl_to_pskl] in HeraseR; subst P.
     pose proof (lc_uskl_topholeg_inv HlcS) as HlcS0.
     (* ρ-INVERSION: a ∀◈ ideal forces a ∀◈ image at the SAME Ψρ *)
-    cbn [msubst_uskl_syn subst_bskl_in_uskl] in Hrho.
+    cbn [msubst_uskl_syn subst_uskl_in_uskl] in Hrho.
     destruct (uskl_rho_topholeg_r_inv Hrho) as (Rsub0 & HRs & Hrhobody).
     subst Rsub.
     cbn [uskl_to_pskl] in HwfSub.
@@ -4842,11 +4842,11 @@ Theorem a_lookeq_solve_complete :
   (* subject = (κR)[ψa/α], EXACTLY the paper's form.  Note it is α-FREE — the
      guess has replaced every α-occurrence — which is why a Θ-scoped judgment
      is content never to have seen α. *)
-  Ψsub ⨟ Θ ⊢ₛᵃ (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')) ∼ Q ->
+  Ψsub ⨟ Θ ⊢ₛᵃ (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) ∼ Q ->
   (* … and that subject is WELL-FORMED — the paper's prose side condition;
      without it the statement is FALSE (frost/algo/cex/cex_p6cs_subject_wf.v).
      [paper-external wf side condition — docs/WF-SIDE-CONDITIONS.md] *)
-  Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R'))) ->
+  Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R'))) ->
   Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
   (* ⭐ the avoid-set parameter of the repaired statement: the SOLVE generates
      its own block now, and P6-L needs to place that block's names.  [Θ0]'s own
@@ -4884,7 +4884,7 @@ Proof.
                (size_uskl R' + size_pskl P0)
                NM Θ0 Θ Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α
                nil empty empty
-               (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')))
+               (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')))
     as (𝒞 & Ξc & Ξs & Pa & κc & κs
         & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
         & HwfPa & HwfΞ & HαΞ & Hmapfst

@@ -682,7 +682,7 @@ Lemma ad_pat_consis_fold_def : forall Θ β τ Ψ R' Q,
   binds β (abind_flex_mono_def τ) Θ ->
   mono_ptyp τ ->
   forall S0x,
-  R' = subst_bskl_in_uskl (ptyp_to_uskl_syn τ) β S0x ->
+  R' = subst_uskl_in_uskl (ptyp_to_uskl_syn τ) β S0x ->
   ad_pat_consis Ψ Θ S0x Q.
 Proof.
   intros Θ β τ Ψ R' Q H Hb Hm.
@@ -723,7 +723,7 @@ Proof.
       eapply ad_pat_consis__forall_inh_tagged with (L := L `union` {{β}});
         eauto.
       intros α Hα. eapply H0; auto.
-      rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; auto.
+      rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var; auto.
   - (* forall_inh_untagged *)
     destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
@@ -733,7 +733,7 @@ Proof.
     + inversion HeqS; subst.
       eapply ad_pat_consis__forall_inh_untagged with (L := L `union` {{β}}).
       intros α Hα. eapply H0; auto.
-      rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; auto.
+      rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var; auto.
   - (* forall_syn_tagged *)
     destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
@@ -743,7 +743,7 @@ Proof.
     + inversion HeqS; subst.
       eapply ad_pat_consis__forall_syn_tagged with (L := L `union` {{β}}).
       intros α Hα. eapply H0; auto.
-      rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; auto.
+      rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var; auto.
   - (* forall_syn *)
     destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
@@ -753,7 +753,7 @@ Proof.
     + inversion HeqS; subst.
       eapply ad_pat_consis__forall_syn with (L := L `union` {{β}}).
       intros α Hα. eapply H0; auto.
-      rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; auto.
+      rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var; auto.
   - (* ghostg *)
     destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
@@ -963,7 +963,7 @@ Qed.
 
 Lemma pskl_to_uskl_subst : forall P τ β,
   pskl_to_uskl (subst_pskl_in_pskl (ptyp_to_pskl τ) β P)
-  = subst_bskl_in_uskl (ptyp_to_uskl_syn τ) β (pskl_to_uskl P).
+  = subst_uskl_in_uskl (ptyp_to_uskl_syn τ) β (pskl_to_uskl P).
 Proof.
   induction P; intros; simpl; f_equal; auto.
   destruct (eq_var α β); simpl; auto using pskl_to_uskl_ptyp.

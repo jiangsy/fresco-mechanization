@@ -109,7 +109,7 @@ Lemma ad_pat_sub_n_rename_tvar : forall n NM M Ψ Θ1 α Θ0 R Q β',
   (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
      α `notin` ftvar_in_ptyp τ) ->
   ad_pat_sub_n n NM M Ψ (Θ1 ++ (β' ~ abind_tvar) ++ Θ0)
-      (subst_bskl_in_uskl (uskl_var_f β') α R)
+      (subst_uskl_in_uskl (uskl_var_f β') α R)
       (subst_bskl_in_bskl (bskl_var_f β') α Q).
 Proof.
   intros * H.
@@ -153,7 +153,7 @@ Proof.
     + exact IHad_pat_sub_n.
     + eassumption.
   - specialize (IHad_pat_sub_n Θ1 ltac:(reflexivity) Hdom Hdefs).
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub_n;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub_n;
       [ | apply lc_uskl_var_f ].
     eapply ad_pat_sub_n__forall_l_tagged.
     5: exact IHad_pat_sub_n.
@@ -167,7 +167,7 @@ Proof.
       apply a_wf_pskl_rename_tvar;
         first [ assumption | clear; fsetdec ].
   - specialize (IHad_pat_sub_n Θ1 ltac:(reflexivity) Hdom Hdefs).
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub_n;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub_n;
       [ | apply lc_uskl_var_f ].
     eapply ad_pat_sub_n__forall_l_untagged.
     5: exact IHad_pat_sub_n.
@@ -212,7 +212,7 @@ Proof.
         destruct Hb' as [Hb' | Hb'];
           [ left; exact Hb' | right; simpl; right; exact Hb' ]. }
       specialize (IHad_pat_sub_n Θ1 ltac:(reflexivity) Hdom Hdefs).
-      rewrite subst_bskl_in_uskl_fresh_eq in IHad_pat_sub_n;
+      rewrite subst_uskl_in_uskl_fresh_eq in IHad_pat_sub_n;
         [ exact IHad_pat_sub_n | ].
       rewrite ftvar_in_uskl_ptyp_syn. eauto.
 Qed.
@@ -241,7 +241,7 @@ Proof.
     intros α Hα.
     rewrite (subst_bskl_in_bskl_intro α0);
       [ | clear - Fr; fsetdec ].
-    rewrite <- (subst_bskl_in_uskl_fresh_eq T (uskl_var_f α) α0);
+    rewrite <- (subst_uskl_in_uskl_fresh_eq T (uskl_var_f α) α0);
       [ | clear - Fr; fsetdec ].
     replace ((α ~ abind_tvar) ++ Θ)
        with (nil ++ (α ~ abind_tvar) ++ Θ) by (simpl_env; reflexivity).
@@ -731,7 +731,7 @@ Lemma uskl_ghost_free_subst : forall R ψ α,
   uskl_ghost_free R ->
   uskl_ghost_free ψ ->
   lc_uskl ψ ->
-  uskl_ghost_free (subst_bskl_in_uskl ψ α R).
+  uskl_ghost_free (subst_uskl_in_uskl ψ α R).
 Proof.
   intros R ψ α HR; revert α; induction HR; intros α0 Hψ Hlc; simpl.
   - apply uskl_ghost_free__unit.
@@ -740,12 +740,12 @@ Proof.
   - apply uskl_ghost_free__all_etag with (L := L `union` singleton α0).
     intros β Hβ.
     assert (HYX : α0 <> β) by (clear - Hβ; fsetdec).
-    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R ψ α0 β HYX Hlc).
+    rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψ α0 β HYX Hlc).
     apply H0; [ clear - Hβ; fsetdec | assumption | assumption ].
   - apply uskl_ghost_free__all_syn with (L := L `union` singleton α0).
     intros β Hβ.
     assert (HYX : α0 <> β) by (clear - Hβ; fsetdec).
-    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R ψ α0 β HYX Hlc).
+    rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψ α0 β HYX Hlc).
     apply H0; [ clear - Hβ; fsetdec | assumption | assumption ].
 Qed.
 
@@ -1133,8 +1133,8 @@ Proof.
     pose proof (H α ltac:(clear - Fr; solve_notin_auto)) as Hbody.
     assert (Hsub : uskl_precise Θb Ψrep
         (open_uskl_wrt_uskl R' ψg) (open_uskl_wrt_uskl Rg0 ψg)).
-    { rewrite (subst_bskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
-      rewrite (subst_bskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
+    { rewrite (subst_uskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
+      rewrite (subst_uskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
       apply uskl_precise_subst;
         [ exact Hbody | exact Hlcψ | exact Hwfb | clear - Fr; fsetdec ]. }
     pose proof (uskl_precise_ftag_sub Hbody) as Hfsb.
@@ -1150,7 +1150,7 @@ Proof.
     { intro He.
       destruct (uskl_ghost_free_all_etag_inv (Hgf He)) as [Lg Hgb].
       pick fresh β for (Lg `union` ftvar_in_uskl R').
-      rewrite (subst_bskl_in_uskl_intro β R' ψg
+      rewrite (subst_uskl_in_uskl_intro β R' ψg
                  ltac:(clear - Fr0; solve_notin_auto)).
       apply uskl_ghost_free_subst;
         [ apply Hgb; clear - Fr0; fsetdec
@@ -1183,8 +1183,8 @@ Proof.
     pose proof (H α ltac:(clear - Fr; solve_notin_auto)) as Hbody.
     assert (Hsub : uskl_precise Θb Ψ0
         (open_uskl_wrt_uskl R' ψg) (open_uskl_wrt_uskl Rg0 ψg)).
-    { rewrite (subst_bskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
-      rewrite (subst_bskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
+    { rewrite (subst_uskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
+      rewrite (subst_uskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
       apply uskl_precise_subst;
         [ exact Hbody | exact Hlcψ | exact Hwfb | clear - Fr; fsetdec ]. }
     pose proof (uskl_precise_ftag_sub Hbody) as Hfsb.
@@ -1200,7 +1200,7 @@ Proof.
     { intro He.
       destruct (uskl_ghost_free_all_syn_inv (Hgf He)) as [Lg Hgb].
       pick fresh β for (Lg `union` ftvar_in_uskl R').
-      rewrite (subst_bskl_in_uskl_intro β R' ψg
+      rewrite (subst_uskl_in_uskl_intro β R' ψg
                  ltac:(clear - Fr0; solve_notin_auto)).
       apply uskl_ghost_free_subst;
         [ apply Hgb; clear - Fr0; fsetdec
@@ -1308,8 +1308,8 @@ Proof.
     pose proof (H α ltac:(clear - Fr; solve_notin_auto)) as Hbody.
     assert (Hsub : uskl_precise Θb Ψrep
         (open_uskl_wrt_uskl R' ψg) (open_uskl_wrt_uskl Rg0 ψg)).
-    { rewrite (subst_bskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
-      rewrite (subst_bskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
+    { rewrite (subst_uskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
+      rewrite (subst_uskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
       apply uskl_precise_subst;
         [ exact Hbody | exact Hlcψ | exact Hwfb | clear - Fr; fsetdec ]. }
     pose proof (uskl_precise_ftag_sub Hbody) as Hfsb.
@@ -1325,7 +1325,7 @@ Proof.
     { intro He.
       destruct (uskl_ghost_free_all_syn_inv (Hgf He)) as [Lg Hgb].
       pick fresh β for (Lg `union` ftvar_in_uskl R').
-      rewrite (subst_bskl_in_uskl_intro β R' ψg
+      rewrite (subst_uskl_in_uskl_intro β R' ψg
                  ltac:(clear - Fr0; solve_notin_auto)).
       apply uskl_ghost_free_subst;
         [ apply Hgb; clear - Fr0; fsetdec
@@ -2316,8 +2316,8 @@ Proof.
     pose proof (H α ltac:(clear - Fr; solve_notin_auto)) as Hbody.
     assert (Hsub : uskl_precise Θb Ψrep
         (open_uskl_wrt_uskl R' ψg) (open_uskl_wrt_uskl Rg0 ψg)).
-    { rewrite (subst_bskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
-      rewrite (subst_bskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
+    { rewrite (subst_uskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
+      rewrite (subst_uskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
       apply uskl_precise_subst;
         [ exact Hbody | exact Hlcψ | exact Hwfb | clear - Fr; fsetdec ]. }
     pose proof (uskl_precise_ftag_sub Hbody) as Hfsb.
@@ -2333,7 +2333,7 @@ Proof.
     { intro He.
       destruct (uskl_ghost_free_all_etag_inv (Hgf He)) as [Lg Hgb].
       pick fresh β for (Lg `union` ftvar_in_uskl R').
-      rewrite (subst_bskl_in_uskl_intro β R' ψg
+      rewrite (subst_uskl_in_uskl_intro β R' ψg
                  ltac:(clear - Fr0; solve_notin_auto)).
       apply uskl_ghost_free_subst;
         [ apply Hgb; clear - Fr0; fsetdec
@@ -2366,8 +2366,8 @@ Proof.
     pose proof (H α ltac:(clear - Fr; solve_notin_auto)) as Hbody.
     assert (Hsub : uskl_precise Θb Ψ0
         (open_uskl_wrt_uskl R' ψg) (open_uskl_wrt_uskl Rg0 ψg)).
-    { rewrite (subst_bskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
-      rewrite (subst_bskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
+    { rewrite (subst_uskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
+      rewrite (subst_uskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
       apply uskl_precise_subst;
         [ exact Hbody | exact Hlcψ | exact Hwfb | clear - Fr; fsetdec ]. }
     pose proof (uskl_precise_ftag_sub Hbody) as Hfsb.
@@ -2383,7 +2383,7 @@ Proof.
     { intro He.
       destruct (uskl_ghost_free_all_syn_inv (Hgf He)) as [Lg Hgb].
       pick fresh β for (Lg `union` ftvar_in_uskl R').
-      rewrite (subst_bskl_in_uskl_intro β R' ψg
+      rewrite (subst_uskl_in_uskl_intro β R' ψg
                  ltac:(clear - Fr0; solve_notin_auto)).
       apply uskl_ghost_free_subst;
         [ apply Hgb; clear - Fr0; fsetdec
@@ -2491,8 +2491,8 @@ Proof.
     pose proof (H α ltac:(clear - Fr; solve_notin_auto)) as Hbody.
     assert (Hsub : uskl_precise Θb Ψrep
         (open_uskl_wrt_uskl R' ψg) (open_uskl_wrt_uskl Rg0 ψg)).
-    { rewrite (subst_bskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
-      rewrite (subst_bskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
+    { rewrite (subst_uskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
+      rewrite (subst_uskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
       apply uskl_precise_subst;
         [ exact Hbody | exact Hlcψ | exact Hwfb | clear - Fr; fsetdec ]. }
     pose proof (uskl_precise_ftag_sub Hbody) as Hfsb.
@@ -2508,7 +2508,7 @@ Proof.
     { intro He.
       destruct (uskl_ghost_free_all_syn_inv (Hgf He)) as [Lg Hgb].
       pick fresh β for (Lg `union` ftvar_in_uskl R').
-      rewrite (subst_bskl_in_uskl_intro β R' ψg
+      rewrite (subst_uskl_in_uskl_intro β R' ψg
                  ltac:(clear - Fr0; solve_notin_auto)).
       apply uskl_ghost_free_subst;
         [ apply Hgb; clear - Fr0; fsetdec

@@ -165,7 +165,7 @@ Qed.
 
 Lemma bskl_to_uskl_subst : forall Q0 α Q,
   bskl_to_uskl (subst_bskl_in_bskl Q0 α Q)
-  = subst_bskl_in_uskl (bskl_to_uskl Q0) α (bskl_to_uskl Q).
+  = subst_uskl_in_uskl (bskl_to_uskl Q0) α (bskl_to_uskl Q).
 Proof.
   intros Q0 α Q; induction Q; simpl; try congruence.
   destruct_if; reflexivity.
@@ -222,7 +222,7 @@ Qed.
 
 Lemma ptyp_to_uskl_syn_subst : forall τ α A,
   ptyp_to_uskl_syn (subst_ptyp_in_ptyp τ α A)
-  = subst_bskl_in_uskl (ptyp_to_uskl_syn τ) α (ptyp_to_uskl_syn A).
+  = subst_uskl_in_uskl (ptyp_to_uskl_syn τ) α (ptyp_to_uskl_syn A).
 Proof.
   intros. unfold ptyp_to_uskl_syn.
   rewrite ptyp_to_bskl_syn_subst, bskl_to_uskl_subst. reflexivity.
@@ -743,7 +743,7 @@ Lemma ad_pat_consis_subst_mid : forall Ψ Θ R Q,
   solves_flex τs α0 b Θ0 ->
   uniq (Θa ++ (α0 ~ b) ++ Θ0) ->
   Ψ ⨟ (subst_aenv τs α0 (Θa ++ Θ0))
-    ⊢ₛᵃ (subst_bskl_in_uskl (ptyp_to_uskl_syn τs) α0 R)
+    ⊢ₛᵃ (subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0 R)
       ∼ (subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 Q).
 Proof.
   intros Ψ Θ R Q H; induction H;
@@ -763,7 +763,7 @@ Proof.
       with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0);
       [ | eassumption ].
     intros β Hβ.
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hβ; fsetdec
         | apply mono_ptyp_to_uskl_syn_lc; eapply solves_flex_mono;
           eassumption ].
@@ -777,7 +777,7 @@ Proof.
     eapply ad_pat_consis__forall_inh_untagged
       with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
     intros β Hβ.
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hβ; fsetdec
         | apply mono_ptyp_to_uskl_syn_lc; eapply solves_flex_mono;
           eassumption ].
@@ -791,7 +791,7 @@ Proof.
     eapply ad_pat_consis__forall_syn_tagged
       with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
     intros β Hβ.
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hβ; fsetdec
         | apply mono_ptyp_to_uskl_syn_lc; eapply solves_flex_mono;
           eassumption ].
@@ -805,7 +805,7 @@ Proof.
     eapply ad_pat_consis__forall_syn
       with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
     intros β Hβ.
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hβ; fsetdec
         | apply mono_ptyp_to_uskl_syn_lc; eapply solves_flex_mono;
           eassumption ].
@@ -847,9 +847,9 @@ Proof.
       { destruct Hs as [_ [_ [_ [Heqb | Heqb]]]];
           rewrite Heqb in Hb; [ discriminate | inversion Hb; reflexivity ]. }
       subst τ.
-      assert (Hid : subst_bskl_in_uskl (ptyp_to_uskl_syn τs) α0
+      assert (Hid : subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0
                       (ptyp_to_uskl_syn τs) = ptyp_to_uskl_syn τs)
-        by (apply subst_bskl_in_uskl_fresh_eq;
+        by (apply subst_uskl_in_uskl_fresh_eq;
             rewrite ftvar_in_uskl_ptyp_to_uskl_syn; exact Hfrτs).
       match goal with
       | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
@@ -1047,7 +1047,7 @@ Lemma ad_pat_sub_subst_mid : forall NM M Ψ Θ R Q,
   solves_flex τs α0 b Θ0 ->
   uniq (Θa ++ (α0 ~ b) ++ Θ0) ->
   Ψ ⨟ (subst_aenv τs α0 (Θa ++ Θ0))
-    ⊢ₛᵃ[ NM | M ] (subst_bskl_in_uskl (ptyp_to_uskl_syn τs) α0 R)
+    ⊢ₛᵃ[ NM | M ] (subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0 R)
                 ⩽ (subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 Q).
 Proof.
   intros NM M Ψ Θ R Q H; induction H;
@@ -1096,7 +1096,7 @@ Proof.
     | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
         pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu) as IHx
     end.
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl in IHx;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl in IHx;
       [ | apply mono_ptyp_to_uskl_syn_lc; assumption ].
     eapply ad_pat_sub__forall_l_tagged;
       [ assumption | eassumption
@@ -1110,7 +1110,7 @@ Proof.
     | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
         pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu) as IHx
     end.
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl in IHx;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl in IHx;
       [ | apply mono_ptyp_to_uskl_syn_lc; assumption ].
     eapply ad_pat_sub__forall_l_untagged;
       [ assumption | eassumption
@@ -1145,9 +1145,9 @@ Proof.
       { destruct Hs as [_ [_ [_ [Heqb | Heqb]]]];
           rewrite Heqb in Hb; [ discriminate | inversion Hb; reflexivity ]. }
       subst τ.
-      assert (Hid : subst_bskl_in_uskl (ptyp_to_uskl_syn τs) α0
+      assert (Hid : subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0
                       (ptyp_to_uskl_syn τs) = ptyp_to_uskl_syn τs)
-        by (apply subst_bskl_in_uskl_fresh_eq;
+        by (apply subst_uskl_in_uskl_fresh_eq;
             rewrite ftvar_in_uskl_ptyp_to_uskl_syn; exact Hfrτs).
       match goal with
       | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
@@ -1172,7 +1172,7 @@ Lemma ad_pat_sub_gv_subst_mid : forall n NM M Ψ Θ R Q,
   solves_flex τs α0 b Θ0 ->
   uniq (Θa ++ (α0 ~ b) ++ Θ0) ->
   ad_pat_sub_gv n NM M Ψ (subst_aenv τs α0 (Θa ++ Θ0))
-    (subst_bskl_in_uskl (ptyp_to_uskl_syn τs) α0 R)
+    (subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0 R)
     (subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 Q).
 Proof.
   intros n NM M Ψ Θ R Q H; induction H;
@@ -1237,7 +1237,7 @@ Proof.
     | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
         pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu) as IHx
     end.
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl in IHx;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl in IHx;
       [ | apply mono_ptyp_to_uskl_syn_lc; assumption ].
     eapply ad_pat_sub_gv__forall_l_tagged.
     6: exact IHx.
@@ -1253,7 +1253,7 @@ Proof.
     | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
         pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu) as IHx
     end.
-    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl in IHx;
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl in IHx;
       [ | apply mono_ptyp_to_uskl_syn_lc; assumption ].
     eapply ad_pat_sub_gv__forall_l_untagged.
     6: exact IHx.
@@ -1292,9 +1292,9 @@ Proof.
       { destruct Hs as [_ [_ [_ [Heqb | Heqb]]]];
           rewrite Heqb in Hb; [ discriminate | inversion Hb; reflexivity ]. }
       subst τ.
-      assert (Hid : subst_bskl_in_uskl (ptyp_to_uskl_syn τs) α0
+      assert (Hid : subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0
                       (ptyp_to_uskl_syn τs) = ptyp_to_uskl_syn τs)
-        by (apply subst_bskl_in_uskl_fresh_eq;
+        by (apply subst_uskl_in_uskl_fresh_eq;
             rewrite ftvar_in_uskl_ptyp_to_uskl_syn; exact Hfrτs).
       match goal with
       | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
@@ -1318,7 +1318,7 @@ Lemma ad_pat_sub_v_subst_mid : forall NM M Ψ Θ R Q,
   solves_flex τs α0 b Θ0 ->
   uniq (Θa ++ (α0 ~ b) ++ Θ0) ->
   ad_pat_sub_v NM M Ψ (subst_aenv τs α0 (Θa ++ Θ0))
-    (subst_bskl_in_uskl (ptyp_to_uskl_syn τs) α0 R)
+    (subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0 R)
     (subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 Q).
 Proof.
   intros NM M Ψ Θ R Q [n H] τs α0 b Θa Θ0 Heq Hs Hu.

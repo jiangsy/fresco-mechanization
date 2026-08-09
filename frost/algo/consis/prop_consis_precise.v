@@ -856,7 +856,7 @@ Lemma ad_pat_consis_precise_subst : forall Θb Δ α ψa Pa Ψ' NM,
   forall Ψfull Θ' Rsub Qc,
   Ψfull ⨟ Θ' ⊢ₛᵃ Rsub ∼ Qc ->
   forall R Ψ Ψa,
-  Rsub = subst_bskl_in_uskl ψa α R ->
+  Rsub = subst_uskl_in_uskl ψa α R ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
   (forall α0, α0 `in` Δ -> a_binds_tvar α0 Θ') ->
   a_wf_aenv Θ' ->
@@ -866,7 +866,7 @@ Lemma ad_pat_consis_precise_subst : forall Θb Δ α ψa Pa Ψ' NM,
   Ψ' ∩ Ψ [=] empty ->
   Ψ' ∩ ftag_in_uskl R [=] empty ->
   Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qc) ->
-  Ψ ⨟ Θ' ⊢ₛᵃ (subst_bskl_in_uskl (pskl_to_uskl Pa) α R) ∼ Qc.
+  Ψ ⨟ Θ' ⊢ₛᵃ (subst_uskl_in_uskl (pskl_to_uskl Pa) α R) ∼ Qc.
 Proof.
   intros Θb Δ α ψa Pa Ψ' NM Hlcψa HlcPa Htags Hpre.
   intros Ψfull Θ' Rsub Qc Hc.
@@ -947,12 +947,12 @@ Proof.
         (Ψ0 := Ψ0 ∖ Ψ').
       * intros α0 Hα0.
         assert (Hα0α : α <> α0) by (clear - Hα0; fsetdec).
-        rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+        rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
           [ | exact Hα0α | apply pskl_to_uskl_lc; exact HlcPa ].
         specialize (H0 α0 ltac:(clear - Hα0; solve_notin_auto)).
         eapply H0 with (R := open_uskl_wrt_uskl R09 (uskl_var_f α0))
                        (Ψa := Ψ0 ∩ Ψ');
-          [ apply subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+          [ apply subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
               [ exact Hα0α | exact Hlcψa ]
           | intros x b Hb; unfold binds; simpl; right; apply Hmon; exact Hb
           | intros β Hβ; apply a_binds_tvar_weaken_cons; apply Hrig; exact Hβ
@@ -982,11 +982,11 @@ Proof.
         (L := L `union` Lw `union` dom Θ `union` singleton α).
       intros α0 Hα0.
       assert (Hα0α : α <> α0) by (clear - Hα0; fsetdec).
-      rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
         [ | exact Hα0α | apply pskl_to_uskl_lc; exact HlcPa ].
       specialize (H0 α0 ltac:(clear - Hα0; solve_notin_auto)).
       eapply H0 with (R := open_uskl_wrt_uskl R09 (uskl_var_f α0)) (Ψa := Ψna);
-        [ apply subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+        [ apply subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
             [ exact Hα0α | exact Hlcψa ]
         | intros x b Hb; unfold binds; simpl; right; apply Hmon; exact Hb
         | intros β Hβ; apply a_binds_tvar_weaken_cons; apply Hrig; exact Hβ
@@ -1014,11 +1014,11 @@ Proof.
         (L := L `union` Lw `union` dom Θ `union` singleton α).
       intros α0 Hα0.
       assert (Hα0α : α <> α0) by (clear - Hα0; fsetdec).
-      rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
         [ | exact Hα0α | apply pskl_to_uskl_lc; exact HlcPa ].
       specialize (H0 α0 ltac:(clear - Hα0; solve_notin_auto)).
       eapply H0 with (R := open_uskl_wrt_uskl R09 (uskl_var_f α0)) (Ψa := Ψna);
-        [ apply subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+        [ apply subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
             [ exact Hα0α | exact Hlcψa ]
         | intros x b Hb; unfold binds; simpl; right; apply Hmon; exact Hb
         | intros β Hβ; apply a_binds_tvar_weaken_cons; apply Hrig; exact Hβ
@@ -1046,11 +1046,11 @@ Proof.
         (L := L `union` Lw `union` dom Θ `union` singleton α).
       intros α0 Hα0.
       assert (Hα0α : α <> α0) by (clear - Hα0; fsetdec).
-      rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
         [ | exact Hα0α | apply pskl_to_uskl_lc; exact HlcPa ].
       specialize (H0 α0 ltac:(clear - Hα0; solve_notin_auto)).
       eapply H0 with (R := open_uskl_wrt_uskl R09 (uskl_var_f α0)) (Ψa := Ψna);
-        [ apply subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+        [ apply subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
             [ exact Hα0α | exact Hlcψa ]
         | intros x b Hb; unfold binds; simpl; right; apply Hmon; exact Hb
         | intros β Hβ; apply a_binds_tvar_weaken_cons; apply Hrig; exact Hβ
@@ -1137,8 +1137,8 @@ Proof.
         (L := L `union` Lw `union` dom Θ `union` singleton α).
       intros α0 Hα0.
       specialize (H0 α0 ltac:(clear - Hα0; solve_notin_auto)).
-      change (uskl_tophole (subst_bskl_in_uskl (pskl_to_uskl Pa) α R09))
-        with (subst_bskl_in_uskl (pskl_to_uskl Pa) α (uskl_tophole R09)).
+      change (uskl_tophole (subst_uskl_in_uskl (pskl_to_uskl Pa) α R09))
+        with (subst_uskl_in_uskl (pskl_to_uskl Pa) α (uskl_tophole R09)).
       eapply H0 with (R := uskl_tophole R09) (Ψa := Ψna);
         [ reflexivity
         | intros x b Hb; unfold binds; simpl; right; apply Hmon; exact Hb
@@ -1184,10 +1184,10 @@ Proof.
         clear - Hαd Hsc; fsetdec. }
       eapply ad_pat_consis__flex_l; [ exact H | ].
       replace (ptyp_to_uskl_syn τ)
-         with (subst_bskl_in_uskl (pskl_to_uskl Pa) α (ptyp_to_uskl_syn τ))
-           by (apply subst_bskl_in_uskl_fresh_eq; exact Hfr).
+         with (subst_uskl_in_uskl (pskl_to_uskl Pa) α (ptyp_to_uskl_syn τ))
+           by (apply subst_uskl_in_uskl_fresh_eq; exact Hfr).
       eapply IHHc with (R := ptyp_to_uskl_syn τ) (Ψa := Ψna);
-        [ symmetry; apply subst_bskl_in_uskl_fresh_eq; exact Hfr
+        [ symmetry; apply subst_uskl_in_uskl_fresh_eq; exact Hfr
         | exact Hmon | exact Hrig | exact Hwf | exact Hαd
         | exact HΨfull | exact HΨa | exact Hdisj
         | pose proof (ftag_in_uskl_ptyp_syn τ) as Hpt; clear - Hpt; fsetdec
@@ -1362,12 +1362,12 @@ Lemma uskl_precise_subst : forall Θ Ψrep R' R,
   a_wf_aenv Θ ->
   α' `notin` dom Θ ->
   uskl_precise Θ Ψrep
-    (subst_bskl_in_uskl ψs α' R') (subst_bskl_in_uskl ψs α' R).
+    (subst_uskl_in_uskl ψs α' R') (subst_uskl_in_uskl ψs α' R).
 Proof.
   intros Θ Ψrep R' R Hup; induction Hup; intros α0 ψs Hlc Hwf Hα; simpl.
   - (* refl *)
     apply upre__refl;
-      [ apply subst_bskl_in_uskl_lc_uskl; assumption | assumption ].
+      [ apply subst_uskl_in_uskl_lc_uskl; assumption | assumption ].
   - (* arrow *)
     eapply upre__arrow;
       [ apply IHHup1; assumption | apply IHHup2; assumption | assumption ].
@@ -1375,23 +1375,23 @@ Proof.
     apply upre__all_syn with (L := L `union` singleton α0).
     intros β Hβ.
     assert (HYX : α0 <> β) by (clear - Hβ; fsetdec).
-    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R' ψs α0 β HYX Hlc).
-    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R ψs α0 β HYX Hlc).
+    rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R' ψs α0 β HYX Hlc).
+    rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψs α0 β HYX Hlc).
     apply H0; [ clear - Hβ; fsetdec | exact Hlc | exact Hwf | exact Hα ].
   - (* all_etag cong *)
     apply upre__all_etag with (L := L `union` singleton α0).
     intros β Hβ.
     assert (HYX : α0 <> β) by (clear - Hβ; fsetdec).
-    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R' ψs α0 β HYX Hlc).
-    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R ψs α0 β HYX Hlc).
+    rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R' ψs α0 β HYX Hlc).
+    rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψs α0 β HYX Hlc).
     apply H0; [ clear - Hβ; fsetdec | exact Hlc | exact Hwf | exact Hα ].
   - (* all_inst *)
     apply upre__all_inst with (L := L `union` singleton α0) (Ψ0 := Ψ0);
       [ | assumption ].
     intros β Hβ.
     assert (HYX : α0 <> β) by (clear - Hβ; fsetdec).
-    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R' ψs α0 β HYX Hlc).
-    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R ψs α0 β HYX Hlc).
+    rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R' ψs α0 β HYX Hlc).
+    rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψs α0 β HYX Hlc).
     apply H0; [ clear - Hβ; fsetdec | exact Hlc | exact Hwf | exact Hα ].
   - (* tophole cong *)
     apply upre__tophole; apply IHHup; assumption.
@@ -1404,7 +1404,7 @@ Proof.
     { pose proof (a_wf_pskl_ftv_dom H1) as Hsc.
       rewrite ftvar_in_pskl_uskl_to_pskl in Hsc.
       clear - Hsc Hα. fsetdec. }
-    rewrite (subst_bskl_in_uskl_fresh_eq R ψs α0 Hfr).
+    rewrite (subst_uskl_in_uskl_fresh_eq R ψs α0 Hfr).
     apply upre__hole; assumption.
   - (* tophole_remove *)
     apply upre__tophole_remove; apply IHHup; assumption.
@@ -1418,7 +1418,7 @@ Proof.
         by (eapply a_wf_aenv_def_ftv_dom; [ exact Hwf | exact H ]).
       clear - Hsc Hα; fsetdec. }
     pose proof (IHHup α0 ψs Hlc Hwf Hα) as Hrec.
-    rewrite (subst_bskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ) ψs α0 Hfrτ)
+    rewrite (subst_uskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ) ψs α0 Hfrτ)
       in Hrec.
     exact Hrec.
   - (* flex_r *)
@@ -1431,7 +1431,7 @@ Proof.
         by (eapply a_wf_aenv_def_ftv_dom; [ exact Hwf | exact H ]).
       clear - Hsc Hα; fsetdec. }
     pose proof (IHHup α0 ψs Hlc Hwf Hα) as Hrec.
-    rewrite (subst_bskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ) ψs α0 Hfrτ)
+    rewrite (subst_uskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ) ψs α0 Hfrτ)
       in Hrec.
     exact Hrec.
 Qed.
@@ -2113,7 +2113,7 @@ Lemma uskl_precise_subst_into_in : forall R,
   lc_uskl ψ ->
   α0 `in` ftvar_in_uskl R ->
   uskl_precise Θ Ψrep
-    (subst_bskl_in_uskl ψ' α0 R) (subst_bskl_in_uskl ψ α0 R).
+    (subst_uskl_in_uskl ψ' α0 R) (subst_uskl_in_uskl ψ α0 R).
 Proof.
   intros R Hlc; induction Hlc; intros Θ Ψrep ψ' ψ α0 Hp Hlcψ Hin;
     simpl in Hin |- *.
@@ -2131,13 +2131,13 @@ Proof.
         | clear; fsetdec ].
     + apply upre__arrow with (Ψ1 := Ψrep) (Ψ2 := empty);
         [ apply IHHlc1; assumption
-        | rewrite (subst_bskl_in_uskl_fresh_eq R2 ψ' α0 Hni2);
-          rewrite (subst_bskl_in_uskl_fresh_eq R2 ψ α0 Hni2);
+        | rewrite (subst_uskl_in_uskl_fresh_eq R2 ψ' α0 Hni2);
+          rewrite (subst_uskl_in_uskl_fresh_eq R2 ψ α0 Hni2);
           apply upre__refl; [ assumption | reflexivity ]
         | clear; fsetdec ].
     + apply upre__arrow with (Ψ1 := empty) (Ψ2 := Ψrep);
-        [ rewrite (subst_bskl_in_uskl_fresh_eq R1 ψ' α0 Hni1);
-          rewrite (subst_bskl_in_uskl_fresh_eq R1 ψ α0 Hni1);
+        [ rewrite (subst_uskl_in_uskl_fresh_eq R1 ψ' α0 Hni1);
+          rewrite (subst_uskl_in_uskl_fresh_eq R1 ψ α0 Hni1);
           apply upre__refl; [ assumption | reflexivity ]
         | apply IHHlc2; assumption
         | clear; fsetdec ].
@@ -2147,8 +2147,8 @@ Proof.
     apply upre__all_syn with (L := singleton α0).
     intros β Hβ.
     assert (Hne : α0 <> β) by (clear - Hβ; fsetdec).
-    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R ψ' α0 β Hne Hlcψ').
-    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R ψ α0 β Hne Hlcψ).
+    rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψ' α0 β Hne Hlcψ').
+    rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψ α0 β Hne Hlcψ).
     apply H0; [ exact Hp | exact Hlcψ | ].
     pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
       as Hlo.
@@ -2158,8 +2158,8 @@ Proof.
     apply upre__all_etag with (L := singleton α0).
     intros β Hβ.
     assert (Hne : α0 <> β) by (clear - Hβ; fsetdec).
-    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R ψ' α0 β Hne Hlcψ').
-    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R ψ α0 β Hne Hlcψ).
+    rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψ' α0 β Hne Hlcψ').
+    rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψ α0 β Hne Hlcψ).
     apply H0; [ exact Hp | exact Hlcψ | ].
     pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
       as Hlo.
@@ -2180,15 +2180,15 @@ Lemma uskl_precise_subst_into : forall R Θ Ψrep ψ' ψ α0,
   exists Ψrep',
     (Ψrep' [=] Ψrep \/ Ψrep' [=] empty) /\
     uskl_precise Θ Ψrep'
-      (subst_bskl_in_uskl ψ' α0 R) (subst_bskl_in_uskl ψ α0 R).
+      (subst_uskl_in_uskl ψ' α0 R) (subst_uskl_in_uskl ψ α0 R).
 Proof.
   intros R Θ Ψrep ψ' ψ α0 Hlc Hp Hlcψ.
   destruct (AtomSetProperties.In_dec α0 (ftvar_in_uskl R)) as [Hin | Hni].
   - exists Ψrep. split; [ left; reflexivity | ].
     eapply uskl_precise_subst_into_in; eauto.
   - exists empty. split; [ right; reflexivity | ].
-    rewrite (subst_bskl_in_uskl_fresh_eq R ψ' α0 Hni).
-    rewrite (subst_bskl_in_uskl_fresh_eq R ψ α0 Hni).
+    rewrite (subst_uskl_in_uskl_fresh_eq R ψ' α0 Hni).
+    rewrite (subst_uskl_in_uskl_fresh_eq R ψ α0 Hni).
     apply upre__refl; [ exact Hlc | reflexivity ].
 Qed.
 
@@ -2206,8 +2206,8 @@ Lemma uskl_precise_open_into : forall R Θ Ψrep ψ' ψ,
 Proof.
   intros R Θ Ψrep ψ' ψ Hbody Hp Hlcψ.
   pick fresh α for (ftvar_in_uskl R).
-  rewrite (subst_bskl_in_uskl_intro α R ψ' ltac:(clear - Fr; solve_notin_auto)).
-  rewrite (subst_bskl_in_uskl_intro α R ψ ltac:(clear - Fr; solve_notin_auto)).
+  rewrite (subst_uskl_in_uskl_intro α R ψ' ltac:(clear - Fr; solve_notin_auto)).
+  rewrite (subst_uskl_in_uskl_intro α R ψ ltac:(clear - Fr; solve_notin_auto)).
   eapply uskl_precise_subst_into;
     [ apply Hbody | exact Hp | exact Hlcψ ].
 Qed.

@@ -343,13 +343,13 @@ Lemma uskl_rho_rename : forall NM Θ Δρ Ψρ R' R,
   uskl_rho NM Θ Δρ Ψρ R' R ->
   forall α1 α2,
   α1 `notin` dom Θ -> α1 `notin` Δρ ->
-  uskl_rho NM Θ Δρ Ψρ (subst_bskl_in_uskl (uskl_var_f α2) α1 R')
-                      (subst_bskl_in_uskl (uskl_var_f α2) α1 R).
+  uskl_rho NM Θ Δρ Ψρ (subst_uskl_in_uskl (uskl_var_f α2) α1 R')
+                      (subst_uskl_in_uskl (uskl_var_f α2) α1 R).
 Proof.
   intros NM Θ Δρ Ψρ R' R H; induction H; intros α1 α2 HαΘ HαΔ.
   - (* refl *)
     apply urho__refl;
-      [ apply subst_bskl_in_uskl_lc_uskl; [ exact H | apply lc_uskl_var_f ]
+      [ apply subst_uskl_in_uskl_lc_uskl; [ exact H | apply lc_uskl_var_f ]
       | exact H0 ].
   - (* leaf: the replaced variable is in Δρ (so not α1), and the image is
        Θ-scoped (so α1-free) *)
@@ -357,32 +357,32 @@ Proof.
     assert (Hfr : α1 `notin` ftvar_in_uskl ψ'').
     { pose proof (a_wf_pskl_ftv_dom H1) as Hd.
       rewrite uskl_to_pskl_ftv in Hd. clear - Hd HαΘ; fsetdec. }
-    rewrite (@subst_bskl_in_uskl_fresh_eq ψ'' (uskl_var_f α2) α1 Hfr).
-    cbn [subst_bskl_in_uskl].
+    rewrite (@subst_uskl_in_uskl_fresh_eq ψ'' (uskl_var_f α2) α1 Hfr).
+    cbn [subst_uskl_in_uskl].
     match goal with |- context [if ?c then _ else _] =>
       destruct c as [Heq | _]; [ subst; contradiction | ] end.
     eapply urho__leaf; [ exact H | exact H0 | exact H1 | exact H2 ].
   - (* arrow *)
-    cbn [subst_bskl_in_uskl].
+    cbn [subst_uskl_in_uskl].
     eapply urho__arrow; [ apply IHuskl_rho1 | apply IHuskl_rho2 | exact H1 ];
       assumption.
   - (* ∀ *)
-    cbn [subst_bskl_in_uskl].
+    cbn [subst_uskl_in_uskl].
     apply urho__all_syn with (L := L `union` singleton α1); intros α Hα.
     assert (Hne : α1 <> α) by (apply notin_singleton_1; clear - Hα; solve_notin).
-    repeat rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    repeat rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       solve [ apply H0; solve [ clear - Hα; solve_notin | assumption ]
             | exact Hne | apply lc_uskl_var_f ].
   - (* ∀^ε *)
-    cbn [subst_bskl_in_uskl].
+    cbn [subst_uskl_in_uskl].
     apply urho__all_etag with (L := L `union` singleton α1) (ε := ε);
       intros α Hα.
     assert (Hne : α1 <> α) by (apply notin_singleton_1; clear - Hα; solve_notin).
-    repeat rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+    repeat rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       solve [ apply H0; solve [ clear - Hα; solve_notin | assumption ]
             | exact Hne | apply lc_uskl_var_f ].
-  - (* ∀◇ *) cbn [subst_bskl_in_uskl]; apply urho__tophole; auto.
-  - (* ∀◈ *) cbn [subst_bskl_in_uskl]; apply urho__topholeg; auto.
+  - (* ∀◇ *) cbn [subst_uskl_in_uskl]; apply urho__tophole; auto.
+  - (* ∀◈ *) cbn [subst_uskl_in_uskl]; apply urho__topholeg; auto.
 Qed.
 
 Lemma uskl_rho_subst_refl : forall NM Θ Δρ R β ψb Ψb,
@@ -393,10 +393,10 @@ Lemma uskl_rho_subst_refl : forall NM Θ Δρ R β ψb Ψb,
   exists Ψρ',
     Ψρ' [<=] Ψb /\
     (β `in` ftvar_in_uskl R -> Ψb [<=] Ψρ') /\
-    uskl_rho NM Θ (add β Δρ) Ψρ' (subst_bskl_in_uskl ψb β R) R.
+    uskl_rho NM Θ (add β Δρ) Ψρ' (subst_uskl_in_uskl ψb β R) R.
 Proof.
   intros NM Θ Δρ R β ψb Ψb Hlc Htags Hwf Hlcb.
-  induction Hlc; cbn [subst_bskl_in_uskl ftvar_in_uskl].
+  induction Hlc; cbn [subst_uskl_in_uskl ftvar_in_uskl].
   - (* ⟨⟩ *)
     exists empty; repeat split;
       [ clear; fsetdec | intros Hin; clear - Hin; fsetdec
@@ -458,16 +458,16 @@ Proof.
             clear - Hα; solve_notin).
       (* push the rename PAST the instantiation (α0 avoids ψb), then read
          both sides back as openings at α *)
-      rewrite (@subst_bskl_in_uskl_subst_bskl_in_uskl
+      rewrite (@subst_uskl_in_uskl_subst_uskl_in_uskl
                  (open_uskl_wrt_uskl R (uskl_var_f α0)) (uskl_var_f α) ψb
                  β α0
                  ltac:(cbn [ftvar_in_uskl]; clear - Hβα; solve_notin_auto)
                  ltac:(apply not_eq_sym; exact Hα0β)) in Hren.
-      rewrite (@subst_bskl_in_uskl_fresh_eq ψb (uskl_var_f α) α0 Hα0ψb)
+      rewrite (@subst_uskl_in_uskl_fresh_eq ψb (uskl_var_f α) α0 Hα0ψb)
         in Hren.
-      rewrite <- (@subst_bskl_in_uskl_intro α0 R (uskl_var_f α) Hα0R)
+      rewrite <- (@subst_uskl_in_uskl_intro α0 R (uskl_var_f α) Hα0R)
         in Hren.
-      rewrite (@subst_bskl_in_uskl_open_uskl_wrt_uskl_var R ψb β α Hβα Hlcb).
+      rewrite (@subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψb β α Hβα Hlcb).
       exact Hren.
   - (* ∀^ε : the same, with the tag carried through *)
     match goal with IH : forall α, _ |- _ =>
@@ -504,16 +504,16 @@ Proof.
             clear - Hα; solve_notin).
       (* push the rename PAST the instantiation (α0 avoids ψb), then read
          both sides back as openings at α *)
-      rewrite (@subst_bskl_in_uskl_subst_bskl_in_uskl
+      rewrite (@subst_uskl_in_uskl_subst_uskl_in_uskl
                  (open_uskl_wrt_uskl R (uskl_var_f α0)) (uskl_var_f α) ψb
                  β α0
                  ltac:(cbn [ftvar_in_uskl]; clear - Hβα; solve_notin_auto)
                  ltac:(apply not_eq_sym; exact Hα0β)) in Hren.
-      rewrite (@subst_bskl_in_uskl_fresh_eq ψb (uskl_var_f α) α0 Hα0ψb)
+      rewrite (@subst_uskl_in_uskl_fresh_eq ψb (uskl_var_f α) α0 Hα0ψb)
         in Hren.
-      rewrite <- (@subst_bskl_in_uskl_intro α0 R (uskl_var_f α) Hα0R)
+      rewrite <- (@subst_uskl_in_uskl_intro α0 R (uskl_var_f α) Hα0R)
         in Hren.
-      rewrite (@subst_bskl_in_uskl_open_uskl_wrt_uskl_var R ψb β α Hβα Hlcb).
+      rewrite (@subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψb β α Hβα Hlcb).
       exact Hren.
   - (* ⟨⟩ hole *)
     exists empty; repeat split;
@@ -579,7 +579,7 @@ Lemma uskl_rho_subst : forall NM Θ Δρ Ψρ R' R,
     Ψρ' [<=] Ψρ `union` Ψb /\
     Ψρ [<=] Ψρ' /\
     (β `in` ftvar_in_uskl R -> Ψb [<=] Ψρ') /\
-    uskl_rho NM Θ (add β Δρ) Ψρ' (subst_bskl_in_uskl ψb β R') R.
+    uskl_rho NM Θ (add β Δρ) Ψρ' (subst_uskl_in_uskl ψb β R') R.
 Proof.
   intros NM Θ Δρ Ψρ R' R H; induction H;
     intros β ψb Ψb Htags Hwfb Hlcb HβΘ HβΔ.
@@ -592,7 +592,7 @@ Proof.
     assert (Hfr : β `notin` ftvar_in_uskl ψ'').
     { pose proof (a_wf_pskl_ftv_dom H1) as Hd.
       rewrite uskl_to_pskl_ftv in Hd. clear - Hd HβΘ; fsetdec. }
-    rewrite (@subst_bskl_in_uskl_fresh_eq ψ'' ψb β Hfr).
+    rewrite (@subst_uskl_in_uskl_fresh_eq ψ'' ψb β Hfr).
     exists Ψρ; repeat split;
       [ clear; fsetdec | clear; fsetdec
       | (* β is not a ρ-replaced variable, so it is not THIS one *)
@@ -614,7 +614,7 @@ Proof.
         [ pose proof (Hocc1 Hi); clear - H2; fsetdec
         | assert (Hi2 : β `in` ftvar_in_uskl R2) by (clear - Hin Hi; fsetdec);
           pose proof (Hocc2 Hi2); clear - H2; fsetdec ].
-    + cbn [subst_bskl_in_uskl].
+    + cbn [subst_uskl_in_uskl].
       eapply urho__arrow; [ exact Hr1 | exact Hr2 | clear; fsetdec ].
   - (* ∀ : one fresh instance, renamed into the family *)
     pick fresh α0 for (L `union` dom Θ `union` Δρ `union` singleton β
@@ -629,7 +629,7 @@ Proof.
       pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R
                     (uskl_var_f α0)) as Hlo.
       cbn [ftvar_in_uskl] in Hin. clear - Hin Hlo; fsetdec.
-    + cbn [subst_bskl_in_uskl].
+    + cbn [subst_uskl_in_uskl].
       apply urho__all_syn with (L := L `union` dom Θ `union` Δρ
                                        `union` singleton α0
                                        `union` singleton β
@@ -651,18 +651,18 @@ Proof.
       assert (Hβα : β <> α)
         by (apply not_eq_sym; apply notin_singleton_1;
             clear - Hα; solve_notin).
-      rewrite (@subst_bskl_in_uskl_subst_bskl_in_uskl
+      rewrite (@subst_uskl_in_uskl_subst_uskl_in_uskl
                  (open_uskl_wrt_uskl R' (uskl_var_f α0)) (uskl_var_f α) ψb
                  β α0
                  ltac:(cbn [ftvar_in_uskl]; clear - Hβα; solve_notin_auto)
                  ltac:(apply not_eq_sym; exact Hα0β)) in Hren.
-      rewrite (@subst_bskl_in_uskl_fresh_eq ψb (uskl_var_f α) α0 Hα0ψb)
+      rewrite (@subst_uskl_in_uskl_fresh_eq ψb (uskl_var_f α) α0 Hα0ψb)
         in Hren.
-      rewrite <- (@subst_bskl_in_uskl_intro α0 R' (uskl_var_f α)
+      rewrite <- (@subst_uskl_in_uskl_intro α0 R' (uskl_var_f α)
                     ltac:(clear - Fr; solve_notin)) in Hren.
-      rewrite <- (@subst_bskl_in_uskl_intro α0 R (uskl_var_f α)
+      rewrite <- (@subst_uskl_in_uskl_intro α0 R (uskl_var_f α)
                     ltac:(clear - Fr; solve_notin)) in Hren.
-      rewrite (@subst_bskl_in_uskl_open_uskl_wrt_uskl_var R' ψb β α Hβα Hlcb).
+      rewrite (@subst_uskl_in_uskl_open_uskl_wrt_uskl_var R' ψb β α Hβα Hlcb).
       exact Hren.
   - (* ∀^ε : the same, with the tag carried through *)
     pick fresh α0 for (L `union` dom Θ `union` Δρ `union` singleton β
@@ -677,7 +677,7 @@ Proof.
       pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R
                     (uskl_var_f α0)) as Hlo.
       cbn [ftvar_in_uskl] in Hin. clear - Hin Hlo; fsetdec.
-    + cbn [subst_bskl_in_uskl].
+    + cbn [subst_uskl_in_uskl].
       apply urho__all_etag with (ε := ε)
         (L := L `union` dom Θ `union` Δρ `union` singleton α0
                 `union` singleton β `union` ftvar_in_uskl R
@@ -697,31 +697,31 @@ Proof.
       assert (Hβα : β <> α)
         by (apply not_eq_sym; apply notin_singleton_1;
             clear - Hα; solve_notin).
-      rewrite (@subst_bskl_in_uskl_subst_bskl_in_uskl
+      rewrite (@subst_uskl_in_uskl_subst_uskl_in_uskl
                  (open_uskl_wrt_uskl R' (uskl_var_f α0)) (uskl_var_f α) ψb
                  β α0
                  ltac:(cbn [ftvar_in_uskl]; clear - Hβα; solve_notin_auto)
                  ltac:(apply not_eq_sym; exact Hα0β)) in Hren.
-      rewrite (@subst_bskl_in_uskl_fresh_eq ψb (uskl_var_f α) α0 Hα0ψb)
+      rewrite (@subst_uskl_in_uskl_fresh_eq ψb (uskl_var_f α) α0 Hα0ψb)
         in Hren.
-      rewrite <- (@subst_bskl_in_uskl_intro α0 R' (uskl_var_f α)
+      rewrite <- (@subst_uskl_in_uskl_intro α0 R' (uskl_var_f α)
                     ltac:(clear - Fr; solve_notin)) in Hren.
-      rewrite <- (@subst_bskl_in_uskl_intro α0 R (uskl_var_f α)
+      rewrite <- (@subst_uskl_in_uskl_intro α0 R (uskl_var_f α)
                     ltac:(clear - Fr; solve_notin)) in Hren.
-      rewrite (@subst_bskl_in_uskl_open_uskl_wrt_uskl_var R' ψb β α Hβα Hlcb).
+      rewrite (@subst_uskl_in_uskl_open_uskl_wrt_uskl_var R' ψb β α Hβα Hlcb).
       exact Hren.
   - (* ∀◇ *)
     destruct (IHuskl_rho β ψb Ψb Htags Hwfb Hlcb HβΘ HβΔ)
       as (Ψ1 & Hs1 & Hm1 & Hocc1 & Hr1).
     exists Ψ1; repeat split;
       [ exact Hs1 | exact Hm1 | exact Hocc1
-      | cbn [subst_bskl_in_uskl]; apply urho__tophole; exact Hr1 ].
+      | cbn [subst_uskl_in_uskl]; apply urho__tophole; exact Hr1 ].
   - (* ∀◈ *)
     destruct (IHuskl_rho β ψb Ψb Htags Hwfb Hlcb HβΘ HβΔ)
       as (Ψ1 & Hs1 & Hm1 & Hocc1 & Hr1).
     exists Ψ1; repeat split;
       [ exact Hs1 | exact Hm1 | exact Hocc1
-      | cbn [subst_bskl_in_uskl]; apply urho__topholeg; exact Hr1 ].
+      | cbn [subst_uskl_in_uskl]; apply urho__topholeg; exact Hr1 ].
 Qed.
 
 (* [fa_step] / [fa_walk] / [flex_apart_walk] and its three lemmas MOVED to
@@ -2370,7 +2370,7 @@ Proof.
                     (Hfam β ltac:(clear - Fr; solve_notin))
                     β ψ Ψ' Htagsg Hwfg Hlcg HβΘ HβΔρ)
           as (Ψρ' & HΨρ'sub & HΨρ'mono & HΨρ'occ & Hrho').
-        rewrite <- (@subst_bskl_in_uskl_intro β R ψ) in Hrho';
+        rewrite <- (@subst_uskl_in_uskl_intro β R ψ) in Hrho';
           [ | exact HβR ].
         (* the instantiation's tags are ρ-dirt — unless the binder is UNUSED,
            in which case the instantiation solves nothing at all *)
@@ -2385,8 +2385,8 @@ Proof.
             clear - Hb Hni HβΘ; fsetdec. }
           assert (Heqo : open_uskl_wrt_uskl R ψ
                          = open_uskl_wrt_uskl R (uskl_var_f β)).
-          { rewrite (@subst_bskl_in_uskl_intro β R ψ); [ | exact HβR ].
-            apply subst_bskl_in_uskl_fresh_eq; exact HβRo. }
+          { rewrite (@subst_uskl_in_uskl_intro β R ψ); [ | exact HβR ].
+            apply subst_uskl_in_uskl_fresh_eq; exact HβRo. }
           pose proof (ad_pat_sub_g_ftag_sub Hprem) as Hb.
           rewrite Heqo in Hb. rewrite (ftag_in_uskl_open_var R β) in Hb.
           cbn [ftag_in_uskl] in Hgfresh.
@@ -2677,7 +2677,7 @@ Proof.
                         Hdefs) as Hrn.
           rewrite <- (@subst_pskl_in_pskl_intro β (msubst_pskl (κ' ++ κ) Pb)
                         (pskl_var_f α)) in Hrn; [ | exact HβPbκ ].
-          rewrite <- (@subst_bskl_in_uskl_intro β ψsrc (uskl_var_f α))
+          rewrite <- (@subst_uskl_in_uskl_intro β ψsrc (uskl_var_f α))
             in Hrn; [ | clear - Fr; solve_notin ].
           eapply ad_partial_precise_delta_cong;
             [ exact Hrn | clear - HβΔ; fsetdec ].

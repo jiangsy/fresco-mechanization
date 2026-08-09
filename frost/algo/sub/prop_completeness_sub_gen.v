@@ -2570,24 +2570,24 @@ Proof.
       [ intros β Hβ; exact (a_uskl_tyequiv_sym (Hrelb β Hβ))
       | exact Hlcψa ]. }
   assert (Hsubty : ad_pat_sub_g n NM M (Ψ `union` Ψa) Θ
-                     (subst_bskl_in_uskl ψa α
+                     (subst_uskl_in_uskl ψa α
                         (msubst_uskl_syn κ
                            (open_uskl_wrt_uskl Rb (uskl_var_f α)))) Q).
   { rewrite (msubst_uskl_syn_open Rb Hinc
                (α := α) ltac:(clear - Fr; solve_notin_auto)).
-    rewrite <- (subst_bskl_in_uskl_intro α (msubst_uskl_syn κ Rb) ψa
+    rewrite <- (subst_uskl_in_uskl_intro α (msubst_uskl_syn κ Rb) ψa
                   ltac:(clear - Fr; solve_notin_auto)).
     eapply ad_pat_sub_g_tyequiv_subject;
       [ apply ad_pat_sub_gv_forget; exact HD | exact Hwfth
       | exact Hbody_eq ]. }
   assert (HwfSubj : Θ ⨟ empty ⊢ₚₛᵃ
             (uskl_to_pskl
-               (subst_bskl_in_uskl ψa α
+               (subst_uskl_in_uskl ψa α
                   (msubst_uskl_syn κ
                      (open_uskl_wrt_uskl Rb (uskl_var_f α)))))).
   { rewrite (msubst_uskl_syn_open Rb Hinc
                (α := α) ltac:(clear - Fr; solve_notin_auto)).
-    rewrite <- (subst_bskl_in_uskl_intro α (msubst_uskl_syn κ Rb) ψa
+    rewrite <- (subst_uskl_in_uskl_intro α (msubst_uskl_syn κ Rb) ψa
                   ltac:(clear - Fr; solve_notin_auto)).
     rewrite uskl_to_pskl_open_gen.
     apply a_wf_pskl_all_open; [ | exact Hwfψa ].
@@ -2668,7 +2668,7 @@ Proof.
         [ eapply a_wf_pskl_lc; exact HwfPaΘ | reflexivity ]. }
     destruct (uskl_ghost_free_all_etag_inv (Hgf eq_refl)) as [Lg Hgb].
     destruct (atom_fresh (Lg `union` ftvar_in_uskl Rj)) as [γ Frγ].
-    rewrite (subst_bskl_in_uskl_intro γ Rj
+    rewrite (subst_uskl_in_uskl_intro γ Rj
                (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa))
                ltac:(clear - Frγ; solve_notin_auto)).
     apply uskl_ghost_free_subst;
@@ -2881,24 +2881,24 @@ Proof.
       [ intros β Hβ; exact (a_uskl_tyequiv_sym (Hrelb β Hβ))
       | exact Hlcψa ]. }
   assert (Hsubty : ad_pat_sub_g n NM M (Ψ `union` Ψa) Θ
-                     (subst_bskl_in_uskl ψa α
+                     (subst_uskl_in_uskl ψa α
                         (msubst_uskl_syn κ
                            (open_uskl_wrt_uskl Rb (uskl_var_f α)))) Q).
   { rewrite (msubst_uskl_syn_open Rb Hinc
                (α := α) ltac:(clear - Fr; solve_notin_auto)).
-    rewrite <- (subst_bskl_in_uskl_intro α (msubst_uskl_syn κ Rb) ψa
+    rewrite <- (subst_uskl_in_uskl_intro α (msubst_uskl_syn κ Rb) ψa
                   ltac:(clear - Fr; solve_notin_auto)).
     eapply ad_pat_sub_g_tyequiv_subject;
       [ apply ad_pat_sub_gv_forget; exact HD | exact Hwfth
       | exact Hbody_eq ]. }
   assert (HwfSubj : Θ ⨟ empty ⊢ₚₛᵃ
             (uskl_to_pskl
-               (subst_bskl_in_uskl ψa α
+               (subst_uskl_in_uskl ψa α
                   (msubst_uskl_syn κ
                      (open_uskl_wrt_uskl Rb (uskl_var_f α)))))).
   { rewrite (msubst_uskl_syn_open Rb Hinc
                (α := α) ltac:(clear - Fr; solve_notin_auto)).
-    rewrite <- (subst_bskl_in_uskl_intro α (msubst_uskl_syn κ Rb) ψa
+    rewrite <- (subst_uskl_in_uskl_intro α (msubst_uskl_syn κ Rb) ψa
                   ltac:(clear - Fr; solve_notin_auto)).
     rewrite uskl_to_pskl_open_gen.
     apply a_wf_pskl_all_open; [ | exact Hwfψa ].
@@ -2979,7 +2979,7 @@ Proof.
         [ eapply a_wf_pskl_lc; exact HwfPaΘ | reflexivity ]. }
     destruct (uskl_ghost_free_all_syn_inv (Hgf eq_refl)) as [Lg Hgb].
     destruct (atom_fresh (Lg `union` ftvar_in_uskl Rj)) as [γ Frγ].
-    rewrite (subst_bskl_in_uskl_intro γ Rj
+    rewrite (subst_uskl_in_uskl_intro γ Rj
                (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa))
                ltac:(clear - Frγ; solve_notin_auto)).
     apply uskl_ghost_free_subst;

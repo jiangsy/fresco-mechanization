@@ -360,19 +360,19 @@ under `Δ ∩ ftv = ∅` (check WF-SIDE-CONDITIONS.md / prop for an existing
 
 ## 5.2 P5b-ii `ad_pat_sub_precise_subst` — statement + tag-flow (execute next)
 
-Term-level substitution encoding (confirmed against `subst_bskl_in_uskl`,
+Term-level substitution encoding (confirmed against `subst_uskl_in_uskl`,
 def_ott.v:487 — replacement is a `uskl`, var is the `usklvar` α):
-`S[ψa/α] = subst_bskl_in_uskl ψa α S`;
-`S[Pa/α] = subst_bskl_in_uskl (pskl_to_uskl Pa) α S`.
+`S[ψa/α] = subst_uskl_in_uskl ψa α S`;
+`S[Pa/α] = subst_uskl_in_uskl (pskl_to_uskl Pa) α S`.
 
 ```coq
 Lemma ad_pat_sub_precise_subst : forall n NM M Ψ Ψa Ψ' Θ S α ψa Pa Q,
-  ad_pat_sub_n n NM M (Ψ `union` Ψa) Θ (subst_bskl_in_uskl ψa α S) Q ->
+  ad_pat_sub_n n NM M (Ψ `union` Ψa) Θ (subst_uskl_in_uskl ψa α S) Q ->
   Θ ⨟ empty ⊢ₚᵣᵃ Pa ⊑ ⌊ ψa ⌋ˢ ->          (* precision Pa ⊑ ⌊ψa⌋ *)
   a_tags_sort NM Ψ' ψa ->                    (* Ψ' = ψa's tags *)
   Ψa [<=] Ψ' ->
   (* possibly: (NM = ty -> «Pa is a type») — add iff a case needs it *)
-  ad_pat_sub_n n NM M Ψ Θ (subst_bskl_in_uskl (pskl_to_uskl Pa) α S) Q.
+  ad_pat_sub_n n NM M Ψ Θ (subst_uskl_in_uskl (pskl_to_uskl Pa) α S) Q.
 ```
 
 **Tag flow (RESOLVED — the paper elides it).**  In `ad_pat_sub`/`ad_pat_sub_n`
@@ -387,7 +387,7 @@ subject and flowing to whichever consistency premise reads the ψa part.
 context drops to `[Ψ]`.  The paper's premises are correct as stated.
 
 **Proof shape.**  Induction on the `ad_pat_sub_n` derivation, generalizing
-`S`, `Ψ`, `Ψa` (`remember (subst_bskl_in_uskl ψa α S)`).  In each rule,
+`S`, `Ψ`, `Ψa` (`remember (subst_uskl_in_uskl ψa α S)`).  In each rule,
 `destruct S`: the *structural* sub-case reconstructs the same rule with
 `subst … (pskl_to_uskl Pa) α …` and recurses (fuel preserved); the **`S =
 uskl_var α` sub-case is the crux** — the subject becomes `ψa` (resp.
@@ -1910,7 +1910,7 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   (`lemma:precision-substitution`) in ⊑ᵤ-form over the hygienic mirror,
   FUEL-PRESERVING: all nine per-rule ⊑ᵤ-transports + the 12-case
   assembly.  The ForallL crux went exactly as scripted (fresh
-  X ∉ dom Θb, body-⊑ᵤ, `uskl_precise_subst`, `subst_bskl_in_uskl_intro`
+  X ∉ dom Θb, body-⊑ᵤ, `uskl_precise_subst`, `subst_uskl_in_uskl_intro`
   both sides, recursion at `Ψsup ∖ Ψ'`); `all_inst` rebuilds the
   untagged ForallL with no ε-bookkeeping (sub-level ForallL does not
   consume its tag).  PAPER-GAPS entries written (global-freshness
@@ -1954,7 +1954,7 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   `diff/inter Ψsup` exactly as in (2')'s arrow transporter),
   **ForallL ×2** (the crux: pick a fresh X ∉ dom Θb, take the cofinite
   body-⊑ᵤ at X, `uskl_precise_subst` with ψ (lc via `is_tskl_lc`),
-  rewrite both sides with `subst_bskl_in_uskl_intro`, recurse the main IH
+  rewrite both sides with `subst_uskl_in_uskl_intro`, recurse the main IH
   at Ψsup' := Ψsup ∖ Ψ' — all six side conditions verified in §5.4's
   worked notes; TY threads ghost-freeness via `uskl_ghost_free_subst` +
   the tags_sort-TY ghost-free component; all_inst rebuilds the UNTAGGED
@@ -2314,12 +2314,12 @@ pskl` and no separate `S` currently exist.  Two candidate encodings:
   P≠α, α∈ftv P).  Reused: `a_solve_eq_complete_var` (P6-Cv corollary) at the
   P=α leaf with `urho__refl`/Δρ:=∅/`fa_clean`; `ad_pat_consis_sskl_tags` +
   `ad_refine_syn_hole_sskl` (P0=□); `ad_pat_consis_ftag_sub` +
-  `subst_bskl_in_uskl_fresh_eq` + `msubst_pskl_ftv_avoid` +
+  `subst_uskl_in_uskl_fresh_eq` + `msubst_pskl_ftv_avoid` +
   `a_inc_image_ftv_dom` (α∉ftv P).  **Main-induction plan:** `induction
   Hconsis` on the GENERAL statement (do NOT dispatch special cases at top —
   the IH must stay general; the current scratch's top-level dispatch is a
   scaffold to be folded per-case).  In each consistency case: (i) invert
-  `subst_bskl_in_uskl ψa α R` on R's shape (R=`uskl_var α` → the P=α leaf,
+  `subst_uskl_in_uskl ψa α R` on R's shape (R=`uskl_var α` → the P=α leaf,
   delegate to P6-Cv; congruence → structural); (ii) dispatch P0=□ (LE-Vacuous)
   and α∉ftv P (LE-Absent); (iii) structural: build `a_lookeq` via the matching
   LE-rule + thread `a_solve_cstr` (Arrow = sequential `a_solve_cstr__eq`/
@@ -2340,20 +2340,20 @@ delegation to P6-Cv cannot type: P6-Cv's `ψa` would have to equal both the
 leaf image AND the global precision target.  So the images must be pinned to
 `ψa`, which `uskl_rho` does not express.
 
-**Decision: encoding (a-lite) — `subst_bskl_in_uskl ψa α R`.**  The
-uskl-for-var substitution `subst_bskl_in_uskl : uskl → usklvar → uskl → uskl`
+**Decision: encoding (a-lite) — `subst_uskl_in_uskl ψa α R`.**  The
+uskl-for-var substitution `subst_uskl_in_uskl : uskl → usklvar → uskl → uskl`
 ALREADY EXISTS (def_ott.v:487, full lngen kit: open/subst commutation, spec,
-fresh_eq, lc, degree) — `S[ψa/α] = subst_bskl_in_uskl ψa α S` (the P5b-ii
+fresh_eq, lc, degree) — `S[ψa/α] = subst_uskl_in_uskl ψa α S` (the P5b-ii
 convention).  So:
 
 1. Carry `R : uskl` (playing `syn κS`) tied to P by
    **`⌊ R ⌋ˢ = msubst_pskl κ P`** — erasure commutes with the monotype
    substitution κ, so `erase(κS) = κ(erase S) = κP`.  `msubst_uskl` is NOT
    needed: R is posited, not built.
-2. **The consistency subject is `subst_bskl_in_uskl ψa α R`** — this PINS
+2. **The consistency subject is `subst_uskl_in_uskl ψa α R`** — this PINS
    every α-image to the one `ψa`, exactly `(κS)[ψa/α]`.  Inverting it against
    the consistency derivation is the same leaf/congruence split as `uskl_rho`
-   but via the Fixpoint's computation: `subst_bskl_in_uskl ψa α R = arrow …`
+   but via the Fixpoint's computation: `subst_uskl_in_uskl ψa α R = arrow …`
    forces R = `uskl_var α` (leaf, subject = ψa, the P=α case) or R = arrow
    (congruence).  At each node `⌊R⌋ˢ = msubst_pskl κ P` recovers P's shape
    (msubst_pskl is structural on non-var P; the bare-var P cases are the
@@ -2362,7 +2362,7 @@ convention).  So:
    corollary takes a `uskl_rho` premise, discharged by `urho__refl` on ψa
    (Δρ:=∅, ρ=id) — "the identity substitution, empty tag context" the paper
    names.  So P6-Cv's own kit is reused wholesale at the leaf; P6-Cs's own
-   induction uses `subst_bskl_in_uskl`, not `uskl_rho`.
+   induction uses `subst_uskl_in_uskl`, not `uskl_rho`.
 
 3. **P6-Cs is SIMPLER than P6-Cv — NO `flex_apart`, NO freshness pack, NO
    aenv-split `_gen`.**  P6-Cs's induction recurses via ITSELF (the paper's
@@ -2609,7 +2609,7 @@ No `flex_shield`: that is P6-Sv's premise, not P6-Cv's.
 STATEMENT DELTA (mirrors what P6-Cv already takes):
 ```
   + params Δρ Ψρ Rsub
-  + uskl_rho NM Θ Δρ Ψρ Rsub (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R'))
+  + uskl_rho NM Θ Δρ Ψρ Rsub (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R'))
   ~ Ψsub ⨟ Θ ⊢ₛᵃ Rsub ∼ Q                         (was: on the ideal)
   ~ Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl Rsub)             (was: on the ideal)
   + Ψρ ∩ Ψ' [=] empty
@@ -2692,7 +2692,7 @@ premise).  The Arrow row's ρ-inversion (`uskl_rho_arrow_r_inv`, then
 WHERE IT STOPS — the **flexible-P0 row** (`P0 = var β0`,
 prop_look_complete_cstr.v:~1948).  It applies
 `ad_pat_consis_subst_psia_mono` to a subject of the shape
-`subst_bskl_in_uskl ψa α X`, concluding that ψa is a MONO PAINT.  Under ρ
+`subst_uskl_in_uskl ψa α X`, concluding that ψa is a MONO PAINT.  Under ρ
 the subject is `Rsub`, which is not syntactically of that shape.  It IS, up
 to a commutation: α ∉ dom Θs (α ∉ dom Θ and Θs ⊆ Θ) so α ∉ Δρ, hence
 
