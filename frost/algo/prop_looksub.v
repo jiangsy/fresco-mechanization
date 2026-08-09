@@ -96,15 +96,6 @@ Proof. intros; eapply (proj2 a_looksub_lookeq_generated_ftvar); eauto. Qed.
 
 (** The constraint-LIST solve's block, assembled from the per-constraint
     ones ([a_solve_sub_decls] / [a_solve_eq_decls], prop_solve_sub.v). *)
-Lemma a_solve_cstr_decls : forall Θ 𝒞 P Ξ P',
-  Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' -> a_decls Ξ.
-Proof.
-  intros Θ 𝒞 P Ξ P' H; induction H.
-  - apply a_decls__nil.
-  - eapply a_solve_sub_decls; eauto.
-  - apply a_decls_app; [ assumption | eapply a_solve_eq_decls; eauto ].
-Qed.
-
 (** ⭐ THREE blocks now (2026-08-04): collection, SOLVING, final guess. *)
 Lemma a_extract_decls : forall Θ0 NM α m P P' Ξ P0,
   Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ P0 -> a_decls Ξ.

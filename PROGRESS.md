@@ -232,12 +232,17 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-09 (latest) — ⚙ **CLEANUP PHASE 3: `frost/prop_coercions.v`, the `_thm` retirement, `make tidy`; duplicates 53 → 39**
+## 2026-08-09 (latest) — ⚙ **CLEANUP PHASE 3: `frost/prop_coercions.v`, the `_thm` retirement, `make tidy`, §8.1d; duplicates 53 → 33**
 
 Continues the post-theorem-4 cleanup audit
 ([`docs/REPORT-remech-cleanup-audit.md`](docs/REPORT-remech-cleanup-audit.md),
-Phase 3 banner).  No rule, statement or proof obligation changed; 39/39 still
-`Closed under the global context`.
+Phase 3 banner).  No rule, statement or proof obligation changed.  Verified by
+a CLEAN full rebuild (`make clean && make coq`, exit 0, 97 files): **108/108**
+`Print Assumptions` in the tree report `Closed under the global context`, zero
+`Axioms:`/`Parameters:`/`Variables:`, zero `Admitted`/`Axiom`.  ⚙ 108 is the
+whole-tree figure; the older "39/39" in earlier banners counted a smaller set
+and an INCREMENTAL build only emits the reports of the files it rebuilds (98
+here), so a clean run is the only way to see them all at once.
 
 - **§5.4 — `frost/prop_coercions.v` (409 lines, 38 lemmas).**  Everything about
   the paint/erase conversions, gathered from ELEVEN files: §1 retractions, §2
@@ -268,6 +273,20 @@ Phase 3 banner).  No rule, statement or proof obligation changed; 39/39 still
   `a_consis_complete`, `a_sub_flex_sound`, `a_sub_sound_v`).  It marked nothing
   — no bare name was taken — while `a_pat_sound` / `a_typing_complete` already
   set the no-suffix convention.  Conventions recorded in `CLAUDE.md`.
+- **§8.1d closed + 6 more duplicates (39 → 33).**  `prop_completeness_sub_gen.v`
+  is flipped onto `algo/prop_completeness_look.v`.  ⚙ TWO checks are needed
+  before flipping any consumer and tree-wide collision-freedom is not one of
+  them: (1) the consumer must declare no name that a NEWLY-exposed cluster file
+  declares, and (2) no cycle — safe here because the three added files are
+  EARLIER in the linear chain.  Recorded in the facade header.
+- ⚙ **The test for whether a duplicate pair can be deduped IN PLACE**: one
+  declaring file must already see the other (direct import or `Export` chain —
+  reachability is the wrong test) AND every other consumer must see the
+  survivor.  Only 6 of the 13 true duplicates pass; the rest need the lemma
+  LIFTED to a common ancestor.  ⚠️ `guarded_pskl_subst_var` and
+  `a_wf_aenv_binds_def_mono` look deletable but are not — some consumers see
+  only the losing copy, and ADDING an import to fix that is the move that has
+  broken this build before.
 - **`make tidy`.**  Phase 1's hand sweep regrew (11 `.glob`, 66 `.aux`): `clean`
   globbed only two directory levels and the tree is three deep, and it knew only
   the `scratch_*` prefix.  `tidy` deletes an artifact iff its companion `.v` is

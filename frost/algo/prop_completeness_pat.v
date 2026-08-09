@@ -456,11 +456,6 @@ Qed.
     [bskl_to_uskl ∘ pskl_to_bskl_syn ∘ ptyp_to_pskl] is structural, so both
     hold by [reflexivity] — they exist only to keep [ptyp_to_uskl_syn]
     FOLDED, which is what the [_open] rewrite matches on). *)
-Lemma ptyp_to_uskl_syn_arrow : forall A B,
-  ptyp_to_uskl_syn (ptyp_arrow A B)
-  = uskl_arrow (ptyp_to_uskl_syn A) (ptyp_to_uskl_syn B).
-Proof. reflexivity. Qed.
-
 Lemma ptyp_to_uskl_syn_all : forall A,
   ptyp_to_uskl_syn (ptyp_all A) = uskl_all_syn (ptyp_to_uskl_syn A).
 Proof. reflexivity. Qed.

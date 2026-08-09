@@ -1810,11 +1810,6 @@ Proof.
 Qed.
 
 (** A guarded skeleton is locally closed. *)
-Lemma guarded_pskl_lc : forall P, guarded_pskl P -> lc_pskl P.
-Proof.
-  intros P H; inversion H; subst; auto.
-Qed.
-
 (** Head-shape predicate: the skeleton's head is unit/var/arrow (the shapes
     [guarded_pskl] admits, without its lc payload; bound vars included so the
     predicate is stable under opening). *)

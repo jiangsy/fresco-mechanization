@@ -36,15 +36,22 @@
     [pskl_to_bskl_inh_tophole_inv_eq], [msubst_pskl_subst_var_paired]).
     **Cluster-vs-outside collisions: 0.**
 
-    ⚙ Flipping [prop_completeness_sub_gen.v] and the other piecewise importers
-    onto this facade is therefore now safe in principle, but it has NOT been
-    done or built (audit §8.1d).  Whoever does it should know the trap that
-    made this cleanup expensive: [Require Import] is NOT transitive for name
-    visibility, and ADDING an import can silently change which copy of a
-    still-duplicated name resolves.  That is not hypothetical — adding
-    [Require Import prop_compose] to prop_kit.v flipped four call sites of
-    [a_wf_aenv_def_ftv_dom] and broke the build; 53 duplicated names remain
-    tree-wide.  Re-run the duplicate scan in the audit report before flipping. *)
+    ✅ [prop_completeness_sub_gen.v] IS FLIPPED onto this facade (2026-08-09,
+    audit §8.1d) — its three piecewise imports are one line, and the build is
+    green.  The two remaining piecewise importers, [prop_wf_preservation.v] and
+    [prop_sub_msubst_equiv.v], are NOT flipped: each wants only one or two
+    files, so the facade would buy them nothing but a wider name surface.
+
+    ⚠️ Before flipping any further consumer, run BOTH checks — being
+    collision-free tree-wide is not enough:
+    1. **Own-name collisions.**  Does the consumer DECLARE a name that any
+       newly-exposed cluster file also declares?  ([Require Import] is not
+       transitive for name visibility, so only the files the facade adds
+       matter.)  Adding one import has silently rerouted four call sites of
+       [a_wf_aenv_def_ftv_dom] and broken the build before.
+    2. **Cycles.**  The facade pulls in all six.  It is safe for a consumer of
+       the LATE chain (the extra files are earlier, hence already required),
+       and dangerous for one the cluster itself imports. *)
 
 Require Export src.frost.algo.completeness_look.prop_kit.
 Require Export src.frost.algo.completeness_look.prop_eq_var.

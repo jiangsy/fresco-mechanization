@@ -375,12 +375,58 @@ removed developments).
 > rename or a generalisation, never a merge.  The target to drive to zero is
 > **collisions**, not names.
 >
-> - §8.1d — flip `prop_completeness_sub_gen.v` onto the facade.  ⚙ Verified this
->   pass: it has **0** own-name collisions with the three cluster files the
->   facade would newly expose, and no cycle (they are all EARLIER in the linear
->   chain, so already transitively required).  Untested.
-> - The 13 true duplicates: `a_wf_*` / `guarded_pskl_*` / `d_wf_ptyp_*` /
->   `msubst_*`.
+> ### ✅ VERIFIED BY A CLEAN REBUILD — 108/108
+>
+> `make clean && make coq`, exit 0, 97 files: **every one of the 108
+> `Print Assumptions` in the tree reports `Closed under the global context`**,
+> with zero `Axioms:`/`Parameters:`/`Variables:` and zero `Admitted`/`Axiom`.
+>
+> ⚠️ Do this at the end of a refactor, and quote the clean figure.  An
+> INCREMENTAL `make coq` only emits the reports of the files it happens to
+> rebuild — 98 of 108 here — so "all reports closed" from an incremental run is
+> a weaker claim than it looks, and the gap is invisible unless you count.
+> (The "39/39" in the older banners is a smaller, earlier count; 108 is the
+> whole tree.)
+>
+> ### ✅ §8.1d IS DONE, and six more duplicates went — 39 → **33**
+>
+> `prop_completeness_sub_gen.v`'s three piecewise imports are now one facade
+> line.  Two checks were run first, and BOTH are needed — tree-wide
+> collision-freedom is not sufficient: (1) the consumer must declare no name
+> that a NEWLY-exposed cluster file declares (0 here), and (2) no cycle — safe
+> because the three added files are EARLIER in the linear chain and so already
+> transitively required.  Both are now recorded in the facade's header.
+>
+> ⚙ `prop_wf_preservation.v` and `prop_sub_msubst_equiv.v` stay piecewise
+> deliberately: each wants one or two files, so the facade would buy them
+> nothing but a wider name surface.
+>
+> Deleted (identical statements; the surviving copy verified visible at every
+> consumer): `a_solve_cstr_decls`, `d_wf_ptyp_ftvar`, `d_wf_ptyp_lc_loc`,
+> `guarded_pskl_lc`, `bskl_to_pskl_msubst_bskl`, `ptyp_to_uskl_syn_arrow`.
+>
+> ### ⚙ The visibility test that decides whether a pair CAN be deduped in place
+>
+> A pair is deletable-in-place only if **(a)** one declaring file already sees
+> the other (via a direct import or an `Export` chain — reachability is the
+> WRONG test), and **(b)** every OTHER consumer of the name sees the survivor.
+> Computed over the 13 true duplicates, only 6 pass both.  The rest need a
+> lemma LIFTED to a common ancestor, because the two declaring files do not see
+> each other at all (`a_wf_ptyp_ftv_dom`, `a_wf_aenv_uniq_local`,
+> `a_scope_pskl_ftv_dom`, `ad_pat_sub_gv_psi_cong`, `mod_comp_ty_tc_inv`) — the
+> same situation that forced `is_sskl_pskl_to_bskl_syn` up to `prop_basic.v` in
+> Phase 2.
+>
+> ⚠️ `guarded_pskl_subst_var` looks deletable and is not: 3 of its 4 consumers
+> see the better survivor but `algo/prop_consis_rename.v` sees only the other
+> copy.  Fixing it by ADDING an import is exactly the move that has broken this
+> build before, so it is left alone.
+> ⚠️ `a_wf_aenv_binds_def_mono` is the same shape at larger scale — 21 of 22
+> consumers see one copy, 14 the other.
+>
+> ## Remaining
+>
+> - The 7 true duplicates that need a lift to a common ancestor (above).
 > - `binds_insert_mid` is the instructive one in the "26": both copies are
 >   stated over `abind` when the fact is **polymorphic in the payload**, so one
 >   generic lemma subsumes both — but the two state their arguments in

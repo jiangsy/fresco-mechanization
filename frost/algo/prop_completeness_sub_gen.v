@@ -87,9 +87,12 @@ Require Import src.frost.decorated_algo.prop_decorate.       (* pskl_to_uskl kit
 Require Import src.frost.algo.prop_soundness_sub.      (* a_wf_pskl_subst_tvar *)
 Require Import src.frost.algo.prop_consis_precise.   (* uskl_precise kit *)
 Require Import src.frost.algo.prop_completeness_sub_precise.     (* P5 + the _gv transports *)
-Require Import src.frost.algo.completeness_look.prop_eq_cstr.
-Require Import src.frost.algo.completeness_look.prop_sub_cstr.
-Require Import src.frost.algo.completeness_look.prop_extract.
+(* P6 — via the facade (audit §8.1d).  The three piecewise imports this
+   replaced were a workaround for the cluster-vs-outside name collisions, which
+   are now at 0; verified this file has no own-name collision with the three
+   files the facade newly exposes, and no cycle (all are EARLIER in the linear
+   chain, so already transitively required). *)
+Require Import src.frost.algo.prop_completeness_look.
 Require Import src.frost.algo.prop_swap.                  (* THE SWAP KIT — P7a's renaming primitive *)
 
 Set Implicit Arguments.
@@ -5072,17 +5075,6 @@ Qed.
 
 (** Erasure commutes with a metasubstitution (the join's leaves state their
     refinement on [⌊·⌋ˢ] / [bskl_to_pskl], so ⇓ has to pass through both). *)
-Lemma bskl_to_pskl_msubst_bskl : forall κ Q,
-  bskl_to_pskl (msubst_bskl κ Q) = msubst_pskl κ (bskl_to_pskl Q).
-Proof.
-  intros κ Q; induction Q; simpl; try reflexivity.
-  - rewrite bskl_to_pskl_pskl_to_bskl_syn. reflexivity.
-  - rewrite IHQ1, IHQ2. reflexivity.
-  - rewrite IHQ. reflexivity.
-  - rewrite IHQ. reflexivity.
-  - rewrite IHQ. reflexivity.
-Qed.
-
 (** ⇓-NORMALIZING THE REFINEMENT LEAF.  Same five reachable rows as
     [consis_downarrow_mono], for the same reason: at a monotype source the
     ∀ / hole / tophole rows cannot fire. *)

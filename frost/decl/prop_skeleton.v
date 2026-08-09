@@ -42,21 +42,6 @@ Set Implicit Arguments.
 (** A well-scoped type's skeleton is a well-formed [pskl].  ([ptyp_to_pskl]
     images are ghost-free, so a scope-coverage premise lets the [∀] case
     route the bound var into [Ψ].) *)
-Lemma d_wf_ptyp_ftvar : forall Γ A,
-    d_wf_ptyp Γ A ->
-    forall α, α `in` ftvar_in_ptyp A -> binds α dbind_tvar Γ.
-Proof.
-  intros Γ A H. induction H; intros β Hβ; simpl in Hβ.
-  - fsetdec.
-  - apply singleton_1 in Hβ. subst. assumption.
-  - apply union_1 in Hβ. destruct Hβ as [Hβ | Hβ]; auto.
-  - pick fresh α for (L `union` ftvar_in_ptyp A `union` dom Γ `union` singleton β).
-    assert (HYo : β `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A (ptyp_var_f α))).
-    { eapply ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower. eassumption. }
-    specialize (H0 α ltac:(auto) β HYo).
-    analyze_binds H0.
-Qed.
-
 (** Hence a well-formed type's skeleton is a well-formed [pskl] (any scope). *)
 Lemma d_wf_pskl_strengthen : forall Ψ Γ P,
     Γ ⨟ Ψ ⊢ₚₛ P ->
@@ -384,15 +369,6 @@ Qed.
     therefore skeleton-determined (sub-[ti] only re-types to a consistent
     variant, same skeleton). *)
 
-
-Lemma d_wf_ptyp_lc_loc : forall Γ A, d_wf_ptyp Γ A -> lc_ptyp A.
-Proof.
-  intros Γ A H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; assumption.
-  - pick fresh α. apply (lc_ptyp_all_exists α). apply H0. auto.
-Qed.
 
 (** A well-formed type's free tvars are all bound in the context. *)
 Lemma is_value_subst_var : forall e x y,
