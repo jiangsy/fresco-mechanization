@@ -42,9 +42,11 @@
       ⊑ (bare) is information increase, above   ⪯ᶜᵗˣ ctx precision
 
     TURNSTILE DECORATIONS — two axes, two devices (legend: frost/notations.v).
-      SUPERSCRIPT = the SYSTEM.  [⊢] declarative, [⊢ᵃᵈ] declarative-over-Θ
-        ([ad_*]), [⊢ᵃ] algorithmic ([a_*]), [⊢ᵗ] ε-tagged decorated,
-        [⊢ˢ] syntax-directed.
+      SUPERSCRIPT = the SYSTEM, and nothing else — never two marks at once.
+        [⊢] declarative, [⊢ᵃᵈ] declarative-over-Θ ([ad_*]), [⊢ᵃ] algorithmic
+        ([a_*]), [⊢ᵗ] ε-tagged decorated, [⊢ˢ] syntax-directed (declarative
+        only — the ad system has no other typing judgement, so [ad_sd_typing]
+        is plain [⊢ᵃᵈ]).
       SUBSCRIPT = the SORT.  bare = types, [⊢ₛ] = skeletons — used exactly
         where the system has one relation PER sort ([⊢ₛ[M] e ⦂ P] skeleton
         inference vs [⊢[M] e ⦂ A] typing).  Where one relation covers both,
@@ -259,7 +261,7 @@ Check a_typing_sound :
   a_wf_exp Θ0 e ->
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
   exists Bt, btyp_to_ptyp Bt = A /\
-    (Θ1 ⊢ˢᵃᵈ[ m ] e ⦂ Bt) /\
+    (Θ1 ⊢ᵃᵈ[ m ] e ⦂ Bt) /\
     (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt)).
 Print Assumptions a_typing_sound.
 
@@ -308,7 +310,7 @@ Check a_typing_complete :
     (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
     (forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps) ->
     lc_exp e ->
-    Θ ⊢ˢᵃᵈ[ M ] e ⦂ B ->
+    Θ ⊢ᵃᵈ[ M ] e ⦂ B ->
     Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (btyp_to_bskl B) ->
     exists A1 Θ1,
       Θ0 ⊢ᵃ[ M ; P0 ] e ⦂ A1 ⊣ Θ1 /\

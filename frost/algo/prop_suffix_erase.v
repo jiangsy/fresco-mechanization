@@ -1584,13 +1584,13 @@ Proof.
 Qed.
 
 Lemma ad_sd_typing_subst_mid : forall M Θ e B,
-  Θ ⊢ˢᵃᵈ[ M ] e ⦂ B ->
+  Θ ⊢ᵃᵈ[ M ] e ⦂ B ->
   forall τs α0 (b0 : abind) Θa Θ0,
   Θ = Θa ++ (α0 ~ b0) ++ Θ0 ->
   solves_flex τs α0 b0 Θ0 ->
   uniq (Θa ++ (α0 ~ b0) ++ Θ0) ->
   (subst_aenv τs α0 (Θa ++ Θ0))
-    ⊢ˢᵃᵈ[ M ] (subst_ptyp_in_exp τs α0 e)
+    ⊢ᵃᵈ[ M ] (subst_ptyp_in_exp τs α0 e)
           ⦂ (subst_btyp_in_btyp (ptyp_to_btyp_syn τs) α0 B).
 Proof.
   intros M Θ e B H; induction H;
@@ -1797,8 +1797,8 @@ Lemma ad_sd_typing_strip_suffix : forall Ξ Θ M e B,
   a_wf_aenv (Ξ ++ Θ) ->
   (forall α, α `in` dom Ξ ->
      α `notin` (ftvar_in_btyp B `union` ftvar_in_exp e)) ->
-  (Ξ ++ Θ) ⊢ˢᵃᵈ[ M ] e ⦂ B ->
-  Θ ⊢ˢᵃᵈ[ M ] e ⦂ B.
+  (Ξ ++ Θ) ⊢ᵃᵈ[ M ] e ⦂ B ->
+  Θ ⊢ᵃᵈ[ M ] e ⦂ B.
 Proof.
   induction Ξ as [ | [β b] Ξ' IH ]; intros * Hsuf Hwf Hfv H; [ exact H | ].
   inversion Hsuf as [ | ? ? ? Hsuf' Hbind ]; subst.

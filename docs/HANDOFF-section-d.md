@@ -43,7 +43,7 @@ Qed and axiom-free:
 
 ⭐ **4a was a MISSING APPENDIX PREMISE, not a missing lemma.**
 `ad_sd_typing__app` now carries `Θ ⊢ (btyp_to_ptyp B1) ≡ᵗ A2` beside
-`Θ ⊢ˢᵃᵈ[TC] e2 ⦂ inh{A2}` — the appendix's own idiom, applied to the fourth
+`Θ ⊢ᵃᵈ[TC] e2 ⦂ inh{A2}` — the appendix's own idiom, applied to the fourth
 rule that needs it (docs/PAPER-GAPS.md).  The mech's `AT-App` case will
 discharge it from `ad_refine_syn_inh_tyequiv` (§2), the same lemma `Freeze`
 uses.  ⚠️ This CHANGES A RULE; if the authors prefer `sd-App` unchanged,
@@ -101,7 +101,7 @@ before estimating.
 | Coq | notation | paper |
 |---|---|---|
 | `ad_pat M Θ e Q` | `Θ ⊢ₛᵃᵈ[ M ] e ⦂ Q` | `\patp[\M]{\Theta}{M}{\bid{Q}}` |
-| `ad_sd_typing M Θ e B` | `Θ ⊢ˢᵃᵈ[ M ] e ⦂ B` | `\typp[\M]{\Theta}{M}{\bid{A}}` |
+| `ad_sd_typing M Θ e B` | `Θ ⊢ᵃᵈ[ M ] e ⦂ B` | `\typp[\M]{\Theta}{M}{\bid{A}}` |
 | `a_pat m Θ0 P0 e P Θ1` | `Θ ⊢ₛᵃ[ m ; P0 ] e ⦂ P ⊣ Θ'` | fig:alg-skeleton-inference |
 | `a_typing m Θ0 P0 e A Θ1` | `Θ ⊢ᵃ[ m ; P0 ] e ⦂ B ⊣ Θ'` | fig:alg-type-inference |
 | `a_split Θ P0 P Q Θ'` | `Θ ⊲ P0 ▹ P ⇢ Q ⊣ Θ'` | `\split` |
@@ -121,14 +121,14 @@ their flexible rows.  What IS carried are the appendix's three explicit
     (* moving:  Θ1,Θ2,Ξ  ⟹  Θ1,Ξ,Θ2   — mech lists grow at the FRONT,
        so the paper's [Θ1,Θ2,Ξ] is [Ξ ++ Θ2 ++ Θ1] in Coq *)
     Lemma ad_sd_typing_suffix_moving : forall M Θ1 Θ2 Ξ e B,
-      (Ξ ++ Θ2 ++ Θ1) ⊢ˢᵃᵈ[ M ] e ⦂ B ->
+      (Ξ ++ Θ2 ++ Θ1) ⊢ᵃᵈ[ M ] e ⦂ B ->
       <Ξ does not depend on Θ2> ->
-      (Θ2 ++ Ξ ++ Θ1) ⊢ˢᵃᵈ[ M ] e ⦂ B.
+      (Θ2 ++ Ξ ++ Θ1) ⊢ᵃᵈ[ M ] e ⦂ B.
 
     Lemma ad_sd_typing_suffix_erasure : forall M Θ Ξ e B,
-      (Ξ ++ Θ) ⊢ˢᵃᵈ[ M ] e ⦂ B ->
+      (Ξ ++ Θ) ⊢ᵃᵈ[ M ] e ⦂ B ->
       <Ξ fresh for B> ->
-      Θ ⊢ˢᵃᵈ[ M ] e ⦂ B.
+      Θ ⊢ᵃᵈ[ M ] e ⦂ B.
 
 ✅ **MOVING IS CLOSED** and cost almost nothing: `ad_sd_typing_suffix_moving`
 / `ad_pat_suffix_moving` (prop_ctx_mono.v) fall out of
@@ -998,7 +998,7 @@ axiom-free**, `Check`ed and `Print Assumptions`-audited in `README.v` beside
       a_wf_exp Θ0 e ->
       Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
       exists Bt, btyp_to_ptyp Bt = A /\
-        (Θ1 ⊢ˢᵃᵈ[ m ] e ⦂ Bt) /\
+        (Θ1 ⊢ᵃᵈ[ m ] e ⦂ Bt) /\
         (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt))
 
 ⚙ **Why the extra conjunct.**  `AT-App`'s third premise runs at input `⌈A⌉`,
@@ -1047,7 +1047,7 @@ axiom-free.  The statement to aim at is theorem 1's mirror, one layer up
       a_wf_exp Θ0 e ->
       Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
       exists B, btyp_to_ptyp B = A /\
-        (Θ1 ⊢ˢᵃᵈ[ m ] e ⦂ B) /\
+        (Θ1 ⊢ᵃᵈ[ m ] e ⦂ B) /\
         (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl B))
 
 **Banked (`prop_soundness_typing.v`):**

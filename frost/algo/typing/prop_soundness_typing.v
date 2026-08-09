@@ -303,9 +303,9 @@ Qed.
     transports; the [∀]-peeling rows push a RIGID entry, so they use
     [a_isub_cons_tvar]. *)
 Lemma ad_sd_typing_isub_tm : forall M Θ e B,
-  Θ ⊢ˢᵃᵈ[ M ] e ⦂ B ->
+  Θ ⊢ᵃᵈ[ M ] e ⦂ B ->
   forall Θ', Θ ⊴ Θ' -> aenv_tm_le Θ Θ' ->
-  Θ' ⊢ˢᵃᵈ[ M ] e ⦂ B.
+  Θ' ⊢ᵃᵈ[ M ] e ⦂ B.
 Proof.
   intros M Θ e B H; induction H; intros Θ' Hle Htm.
   - (* unit *) apply ad_sd_typing__unit. eapply ad_pat_sub_v_isub; eauto.
@@ -376,12 +376,12 @@ Qed.
     The App row substitutes into its SKELETON-inference premise too, which
     is exactly what [ad_pat_subst_tm] is for. *)
 Lemma ad_sd_typing_subst_tm : forall M Θ' e B,
-  Θ' ⊢ˢᵃᵈ[ M ] e ⦂ B ->
+  Θ' ⊢ᵃᵈ[ M ] e ⦂ B ->
   forall Θa x (b : abind) Θ0 y,
   Θ' = Θa ++ (x ~ b) ++ Θ0 ->
   abind_is_tm b ->
   x `notin` dom Θa `union` dom Θ0 ->
-  (Θa ++ (y ~ b) ++ Θ0) ⊢ˢᵃᵈ[ M ] (subst_exp_in_exp (exp_var_f y) x e) ⦂ B.
+  (Θa ++ (y ~ b) ++ Θ0) ⊢ᵃᵈ[ M ] (subst_exp_in_exp (exp_var_f y) x e) ⦂ B.
 Proof.
   intros M Θ' e B H; induction H;
     intros Θa x0 b0 Θb y Heq Htm Hx0; subst; simpl.
@@ -517,10 +517,10 @@ Qed.
 
 (** The exists-fresh → cofinite bridge the six term-binder rows need. *)
 Corollary ad_sd_typing_rename_tm : forall M x (b : abind) Θ0 e B y,
-  ((x ~ b) ++ Θ0) ⊢ˢᵃᵈ[ M ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ B ->
+  ((x ~ b) ++ Θ0) ⊢ᵃᵈ[ M ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ B ->
   abind_is_tm b ->
   x `notin` dom Θ0 `union` fvar_in_exp e ->
-  ((y ~ b) ++ Θ0) ⊢ˢᵃᵈ[ M ] (open_exp_wrt_exp e (exp_var_f y)) ⦂ B.
+  ((y ~ b) ++ Θ0) ⊢ᵃᵈ[ M ] (open_exp_wrt_exp e (exp_var_f y)) ⦂ B.
 Proof.
   intros * Hd Htm Hx.
   rewrite (subst_exp_in_exp_intro x); [ | clear - Hx; fsetdec ].
@@ -759,7 +759,7 @@ Proof. intros * H Hwf. apply (proj2 (a_tyequiv_lc H Hwf)). Qed.
     their local closure off the appendix's [≡ᵗ] premise (§8d), and [App]
     inverts its function premise's. *)
 Lemma ad_sd_typing_mod_comp_ty : forall M Θ e B,
-  Θ ⊢ˢᵃᵈ[ M ] e ⦂ B -> a_wf_aenv Θ -> mod_comp_ty B M.
+  Θ ⊢ᵃᵈ[ M ] e ⦂ B -> a_wf_aenv Θ -> mod_comp_ty B M.
 Proof.
   intros M Θ e B H; induction H; intros Hwf.
   - (* unit *) eapply ad_pat_sub_mod_comp_ty;
@@ -1663,7 +1663,7 @@ Theorem a_typing_sound : forall m Θ0 P0 e A Θ1,
   a_wf_exp Θ0 e ->
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
   exists Bt, btyp_to_ptyp Bt = A /\
-    (Θ1 ⊢ˢᵃᵈ[ m ] e ⦂ Bt) /\
+    (Θ1 ⊢ᵃᵈ[ m ] e ⦂ Bt) /\
     (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt)).
 Proof.
   intros m Θ0 P0 e A Θ1 H; induction H; intros Hwf Hskl HwfP0 Hmod Hexp.
@@ -1846,7 +1846,7 @@ Proof.
       - destruct (a_ty_mode_compat_arrow_inv Hmod H) as [m' [Hm Hm']];
           subst m. apply mod_comp_ty__fn. exact Hmq. }
     assert (Hbody : forall y,
-              ((y ~ abind_var_typ A) ++ (Ξ ++ Θ2)) ⊢ˢᵃᵈ[ decr_mode m ]
+              ((y ~ abind_var_typ A) ++ (Ξ ++ Θ2)) ⊢ᵃᵈ[ decr_mode m ]
                 (open_exp_wrt_exp e (exp_var_f y)) ⦂ Bt).
     { intros y. apply ad_sd_typing_rename_tm with (x := x);
         [ apply ad_sd_typing_suffix_moving
@@ -1953,7 +1953,7 @@ Proof.
     { eapply a_wf_ptyp_mono;
         [ exact HwfBout | apply aenv_tbinds_le_strip_tm; intros [] ]. }
     assert (Hbody : forall y,
-              ((y ~ abind_var_typ A) ++ (Ξ ++ Θ3)) ⊢ˢᵃᵈ[ decr_mode m ]
+              ((y ~ abind_var_typ A) ++ (Ξ ++ Θ3)) ⊢ᵃᵈ[ decr_mode m ]
                 (open_exp_wrt_exp e (exp_var_f y)) ⦂ Bt).
     { intros y. apply ad_sd_typing_rename_tm with (x := x);
         [ apply ad_sd_typing_suffix_moving
@@ -2114,7 +2114,7 @@ Proof.
         [ clear - HΔ; fsetdec
         | apply a_binds_tvar_in_dom in Ht; clear - Hα Ht; fsetdec ]. }
     (* the declarative instance, suffix-stripped, then the family *)
-    assert (Hdα1 : ((α ~ abind_tvar) ++ Θ1) ⊢ˢᵃᵈ[ mode_tc ] (exp_abs e)
+    assert (Hdα1 : ((α ~ abind_tvar) ++ Θ1) ⊢ᵃᵈ[ mode_tc ] (exp_abs e)
                      ⦂ (ptyp_to_btyp_inh
                           (open_ptyp_wrt_ptyp A (ptyp_var_f α)))).
     { eapply ad_sd_typing_strip_suffix;
@@ -2253,7 +2253,7 @@ Proof.
       eapply a_wf_ptyp_mono;
         [ exact HwfBout | apply aenv_tbinds_le_strip_tm; intros [] ]. }
     assert (Hbody : forall y,
-              ((y ~ abind_var_typ A) ++ Θ2) ⊢ˢᵃᵈ[ mode_tc ]
+              ((y ~ abind_var_typ A) ++ Θ2) ⊢ᵃᵈ[ mode_tc ]
                 (open_exp_wrt_exp e (exp_var_f y)) ⦂ (ptyp_to_btyp_inh B1)).
     { intros y. apply ad_sd_typing_rename_tm with (x := x);
         [ eapply ad_sd_typing_strip_suffix;
@@ -2398,7 +2398,7 @@ Proof.
       destruct (a_wf_pskl_ftv_tvarish Hwps Hc) as [HΔ | Ht];
         [ clear - HΔ; fsetdec
         | apply a_binds_tvar_in_dom in Ht; clear - Hα Ht; fsetdec ]. }
-    assert (Hdα1 : ((α ~ abind_tvar) ++ Θ1) ⊢ˢᵃᵈ[ mode_tc ]
+    assert (Hdα1 : ((α ~ abind_tvar) ++ Θ1) ⊢ᵃᵈ[ mode_tc ]
                      (exp_abs_anno Aan e)
                      ⦂ (ptyp_to_btyp_inh
                           (open_ptyp_wrt_ptyp A (ptyp_var_f α)))).
@@ -2562,7 +2562,7 @@ Proof.
     assert (HwfA3 : a_wf_ptyp Θ3 A')
       by (eapply a_wf_ptyp_isub; [ exact HwfAs | exact Hle13 ]).
     assert (Hbody : forall y,
-              ((y ~ abind_var_typ A) ++ Θ3) ⊢ˢᵃᵈ[ mode_tc ]
+              ((y ~ abind_var_typ A) ++ Θ3) ⊢ᵃᵈ[ mode_tc ]
                 (open_exp_wrt_exp e (exp_var_f y)) ⦂ (ptyp_to_btyp_inh B1)).
     { intros y. apply ad_sd_typing_rename_tm with (x := x);
         [ eapply ad_sd_typing_strip_suffix;

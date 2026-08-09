@@ -153,7 +153,7 @@ Lemma a_typing_complete_unit : forall M Θ0 P0 κ Θ B,
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   a_ty_mode_compat M P0 ->
   κ ∷ Θ0 ⊑ Θ ->
-  Θ ⊢ˢᵃᵈ[ M ] exp_unit ⦂ B ->
+  Θ ⊢ᵃᵈ[ M ] exp_unit ⦂ B ->
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (btyp_to_bskl B) ->
   typ_complete_concl M Θ0 P0 exp_unit κ Θ B.
 Proof.
@@ -197,7 +197,7 @@ Lemma a_typing_complete_var : forall M Θ0 P0 x κ Θ B,
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   a_ty_mode_compat M P0 ->
   κ ∷ Θ0 ⊑ Θ ->
-  Θ ⊢ˢᵃᵈ[ M ] (exp_var_f x) ⦂ B ->
+  Θ ⊢ᵃᵈ[ M ] (exp_var_f x) ⦂ B ->
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (btyp_to_bskl B) ->
   typ_complete_concl M Θ0 P0 (exp_var_f x) κ Θ B.
 Proof.
@@ -271,11 +271,11 @@ Lemma a_typing_complete_anno : forall M Θ0 P0 e A κ Θ B,
      (forall y Ps, binds y (abind_var_skl Ps) Θ0' -> Θ0' ⨟ empty ⊢ₚₛᵃ Ps) ->
      (forall y Ps, binds y (abind_var_skl Ps) Θ' -> Θ' ⨟ empty ⊢ₚₛᵃ Ps) ->
      lc_exp e ->
-     Θ' ⊢ˢᵃᵈ[ M' ] e ⦂ B' ->
+     Θ' ⊢ᵃᵈ[ M' ] e ⦂ B' ->
      Θ' ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ' P0'))
        ⊳ (btyp_to_bskl B') ->
      typ_complete_concl M' Θ0' P0' e κ' Θ' B') ->
-  Θ ⊢ˢᵃᵈ[ M ] (exp_anno e A) ⦂ B ->
+  Θ ⊢ᵃᵈ[ M ] (exp_anno e A) ⦂ B ->
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (btyp_to_bskl B) ->
   typ_complete_concl M Θ0 P0 (exp_anno e A) κ Θ B.
 Proof.
@@ -524,7 +524,7 @@ Qed.
     type is well formed (the base rows read it off their joins, the ≡ᵗ
     premises transport it, the binder rows strip their term entry). *)
 Lemma ad_sd_typing_target_wf : forall M Θ e (B : btyp),
-  Θ ⊢ˢᵃᵈ[ M ] e ⦂ B ->
+  Θ ⊢ᵃᵈ[ M ] e ⦂ B ->
   a_wf_aenv Θ ->
   a_wf_ptyp Θ (btyp_to_ptyp B).
 Proof.
@@ -630,11 +630,11 @@ Lemma a_typing_complete_freeze : forall Θ0 P0 e κ Θ B,
      (forall y Ps, binds y (abind_var_skl Ps) Θ0' -> Θ0' ⨟ empty ⊢ₚₛᵃ Ps) ->
      (forall y Ps, binds y (abind_var_skl Ps) Θ' -> Θ' ⨟ empty ⊢ₚₛᵃ Ps) ->
      lc_exp e ->
-     Θ' ⊢ˢᵃᵈ[ M' ] e ⦂ B' ->
+     Θ' ⊢ᵃᵈ[ M' ] e ⦂ B' ->
      Θ' ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ' P0'))
        ⊳ (btyp_to_bskl B') ->
      typ_complete_concl M' Θ0' P0' e κ' Θ' B') ->
-  Θ ⊢ˢᵃᵈ[ mode_tc ] (exp_freeze e) ⦂ B ->
+  Θ ⊢ᵃᵈ[ mode_tc ] (exp_freeze e) ⦂ B ->
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (btyp_to_bskl B) ->
   typ_complete_concl mode_tc Θ0 P0 (exp_freeze e) κ Θ B.
 Proof.
@@ -854,7 +854,7 @@ Lemma a_typing_complete_app : forall M Θ0 P0 e1 e2 κ Θ B,
      (forall y Ps, binds y (abind_var_skl Ps) Θ0' -> Θ0' ⨟ empty ⊢ₚₛᵃ Ps) ->
      (forall y Ps, binds y (abind_var_skl Ps) Θ' -> Θ' ⨟ empty ⊢ₚₛᵃ Ps) ->
      lc_exp e1 ->
-     Θ' ⊢ˢᵃᵈ[ M' ] e1 ⦂ B' ->
+     Θ' ⊢ᵃᵈ[ M' ] e1 ⦂ B' ->
      Θ' ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ' P0'))
        ⊳ (btyp_to_bskl B') ->
      typ_complete_concl M' Θ0' P0' e1 κ' Θ' B') ->
@@ -868,11 +868,11 @@ Lemma a_typing_complete_app : forall M Θ0 P0 e1 e2 κ Θ B,
      (forall y Ps, binds y (abind_var_skl Ps) Θ0' -> Θ0' ⨟ empty ⊢ₚₛᵃ Ps) ->
      (forall y Ps, binds y (abind_var_skl Ps) Θ' -> Θ' ⨟ empty ⊢ₚₛᵃ Ps) ->
      lc_exp e2 ->
-     Θ' ⊢ˢᵃᵈ[ M' ] e2 ⦂ B' ->
+     Θ' ⊢ᵃᵈ[ M' ] e2 ⦂ B' ->
      Θ' ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ' P0'))
        ⊳ (btyp_to_bskl B') ->
      typ_complete_concl M' Θ0' P0' e2 κ' Θ' B') ->
-  Θ ⊢ˢᵃᵈ[ M ] (exp_app e1 e2) ⦂ B ->
+  Θ ⊢ᵃᵈ[ M ] (exp_app e1 e2) ⦂ B ->
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (btyp_to_bskl B) ->
   typ_complete_concl M Θ0 P0 (exp_app e1 e2) κ Θ B.
 Proof.
@@ -1971,12 +1971,12 @@ Lemma a_typing_complete_abs : forall M Θ0 P0 e κ Θ B,
      (forall y Ps, binds y (abind_var_skl Ps) Θ0' -> Θ0' ⨟ empty ⊢ₚₛᵃ Ps) ->
      (forall y Ps, binds y (abind_var_skl Ps) Θ' -> Θ' ⨟ empty ⊢ₚₛᵃ Ps) ->
      lc_exp (open_exp_wrt_exp e (exp_var_f x)) ->
-     Θ' ⊢ˢᵃᵈ[ M' ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ B' ->
+     Θ' ⊢ᵃᵈ[ M' ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ B' ->
      Θ' ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ' P0'))
        ⊳ (btyp_to_bskl B') ->
      typ_complete_concl M' Θ0' P0' (open_exp_wrt_exp e (exp_var_f x))
        κ' Θ' B') ->
-  Θ ⊢ˢᵃᵈ[ M ] (exp_abs e) ⦂ B ->
+  Θ ⊢ᵃᵈ[ M ] (exp_abs e) ⦂ B ->
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (btyp_to_bskl B) ->
   typ_complete_concl M Θ0 P0 (exp_abs e) κ Θ B.
 Proof.
@@ -2336,12 +2336,12 @@ Lemma a_typing_complete_abs_anno : forall M Θ0 P0 A e κ Θ B,
      (forall y Ps, binds y (abind_var_skl Ps) Θ0' -> Θ0' ⨟ empty ⊢ₚₛᵃ Ps) ->
      (forall y Ps, binds y (abind_var_skl Ps) Θ' -> Θ' ⨟ empty ⊢ₚₛᵃ Ps) ->
      lc_exp (open_exp_wrt_exp e (exp_var_f x)) ->
-     Θ' ⊢ˢᵃᵈ[ M' ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ B' ->
+     Θ' ⊢ᵃᵈ[ M' ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ B' ->
      Θ' ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ' P0'))
        ⊳ (btyp_to_bskl B') ->
      typ_complete_concl M' Θ0' P0' (open_exp_wrt_exp e (exp_var_f x))
        κ' Θ' B') ->
-  Θ ⊢ˢᵃᵈ[ M ] (exp_abs_anno A e) ⦂ B ->
+  Θ ⊢ᵃᵈ[ M ] (exp_abs_anno A e) ⦂ B ->
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (btyp_to_bskl B) ->
   typ_complete_concl M Θ0 P0 (exp_abs_anno A e) κ Θ B.
 Proof.
@@ -2861,11 +2861,11 @@ Lemma a_typing_complete_abs_check_step : forall Θ0 P0 e κ Θ B,
      (forall y Ps, binds y (abind_var_skl Ps) Θ0' -> Θ0' ⨟ empty ⊢ₚₛᵃ Ps) ->
      (forall y Ps, binds y (abind_var_skl Ps) Θ' -> Θ' ⨟ empty ⊢ₚₛᵃ Ps) ->
      lc_exp (exp_abs e) ->
-     Θ' ⊢ˢᵃᵈ[ M' ] (exp_abs e) ⦂ B' ->
+     Θ' ⊢ᵃᵈ[ M' ] (exp_abs e) ⦂ B' ->
      Θ' ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ' P0'))
        ⊳ (btyp_to_bskl B') ->
      typ_complete_concl M' Θ0' P0' (exp_abs e) κ' Θ' B') ->
-  Θ ⊢ˢᵃᵈ[ mode_tc ] (exp_abs e) ⦂ (btyp_all_inh B) ->
+  Θ ⊢ᵃᵈ[ mode_tc ] (exp_abs e) ⦂ (btyp_all_inh B) ->
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0))
     ⊳ (btyp_to_bskl (btyp_all_inh B)) ->
   typ_complete_concl mode_tc Θ0 P0 (exp_abs e) κ Θ (btyp_all_inh B).
@@ -3148,11 +3148,11 @@ Lemma a_typing_complete_abs_anno_check_step : forall Θ0 P0 A e κ Θ B,
      (forall y Ps, binds y (abind_var_skl Ps) Θ0' -> Θ0' ⨟ empty ⊢ₚₛᵃ Ps) ->
      (forall y Ps, binds y (abind_var_skl Ps) Θ' -> Θ' ⨟ empty ⊢ₚₛᵃ Ps) ->
      lc_exp (exp_abs_anno A e) ->
-     Θ' ⊢ˢᵃᵈ[ M' ] (exp_abs_anno A e) ⦂ B' ->
+     Θ' ⊢ᵃᵈ[ M' ] (exp_abs_anno A e) ⦂ B' ->
      Θ' ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ' P0'))
        ⊳ (btyp_to_bskl B') ->
      typ_complete_concl M' Θ0' P0' (exp_abs_anno A e) κ' Θ' B') ->
-  Θ ⊢ˢᵃᵈ[ mode_tc ] (exp_abs_anno A e) ⦂ (btyp_all_inh B) ->
+  Θ ⊢ᵃᵈ[ mode_tc ] (exp_abs_anno A e) ⦂ (btyp_all_inh B) ->
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0))
     ⊳ (btyp_to_bskl (btyp_all_inh B)) ->
   typ_complete_concl mode_tc Θ0 P0 (exp_abs_anno A e) κ Θ (btyp_all_inh B).
@@ -3853,12 +3853,12 @@ Lemma a_typing_complete_abs_check_base : forall Θ0 P0 e κ Θ Ba (B1 : btyp),
      (forall y Ps, binds y (abind_var_skl Ps) Θ0' -> Θ0' ⨟ empty ⊢ₚₛᵃ Ps) ->
      (forall y Ps, binds y (abind_var_skl Ps) Θ' -> Θ' ⨟ empty ⊢ₚₛᵃ Ps) ->
      lc_exp (open_exp_wrt_exp e (exp_var_f x)) ->
-     Θ' ⊢ˢᵃᵈ[ M' ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ B' ->
+     Θ' ⊢ᵃᵈ[ M' ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ B' ->
      Θ' ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ' P0'))
        ⊳ (btyp_to_bskl B') ->
      typ_complete_concl M' Θ0' P0' (open_exp_wrt_exp e (exp_var_f x))
        κ' Θ' B') ->
-  Θ ⊢ˢᵃᵈ[ mode_tc ] (exp_abs e) ⦂ (btyp_arrow Ba B1) ->
+  Θ ⊢ᵃᵈ[ mode_tc ] (exp_abs e) ⦂ (btyp_arrow Ba B1) ->
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0))
     ⊳ (btyp_to_bskl (btyp_arrow Ba B1)) ->
   typ_complete_concl mode_tc Θ0 P0 (exp_abs e) κ Θ (btyp_arrow Ba B1).
@@ -4109,12 +4109,12 @@ Lemma a_typing_complete_abs_anno_check_base :
      (forall y Ps, binds y (abind_var_skl Ps) Θ0' -> Θ0' ⨟ empty ⊢ₚₛᵃ Ps) ->
      (forall y Ps, binds y (abind_var_skl Ps) Θ' -> Θ' ⨟ empty ⊢ₚₛᵃ Ps) ->
      lc_exp (open_exp_wrt_exp e (exp_var_f x)) ->
-     Θ' ⊢ˢᵃᵈ[ M' ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ B' ->
+     Θ' ⊢ᵃᵈ[ M' ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ B' ->
      Θ' ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ' P0'))
        ⊳ (btyp_to_bskl B') ->
      typ_complete_concl M' Θ0' P0' (open_exp_wrt_exp e (exp_var_f x))
        κ' Θ' B') ->
-  Θ ⊢ˢᵃᵈ[ mode_tc ] (exp_abs_anno Aan e) ⦂ (btyp_arrow Ba B1) ->
+  Θ ⊢ᵃᵈ[ mode_tc ] (exp_abs_anno Aan e) ⦂ (btyp_arrow Ba B1) ->
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0))
     ⊳ (btyp_to_bskl (btyp_arrow Ba B1)) ->
   typ_complete_concl mode_tc Θ0 P0 (exp_abs_anno Aan e) κ Θ (btyp_arrow Ba B1).
@@ -4485,7 +4485,7 @@ Lemma a_typing_complete_gen : forall n m e M Θ0 P0 κ Θ B,
   (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
   (forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps) ->
   lc_exp e ->
-  Θ ⊢ˢᵃᵈ[ M ] e ⦂ B ->
+  Θ ⊢ᵃᵈ[ M ] e ⦂ B ->
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (btyp_to_bskl B) ->
   typ_complete_concl M Θ0 P0 e κ Θ B.
 Proof.
@@ -4604,7 +4604,7 @@ Theorem a_typing_complete : forall e M Θ0 P0 κ Θ B,
   (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
   (forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps) ->
   lc_exp e ->
-  Θ ⊢ˢᵃᵈ[ M ] e ⦂ B ->
+  Θ ⊢ᵃᵈ[ M ] e ⦂ B ->
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (btyp_to_bskl B) ->
   exists A1 Θ1,
     a_typing M Θ0 P0 e A1 Θ1 /\

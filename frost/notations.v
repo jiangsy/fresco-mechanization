@@ -23,7 +23,17 @@
         `⊢ᵃᵈ`   declarative over algorithmic contexts (`ad_*`, over Θ)
         `⊢ᵃ`    algorithmic        (`a_*`,  over Θ, with `⊣ Θ'`)
         `⊢ᵗ`    ε-tagged decorated (`a_subtag` / `a_consistag`, dotted `⩽˙`/`∼˙`)
-        `⊢ˢ`    syntax-directed    (`d_sd_typing`; composes: `⊢ˢᵃᵈ`)
+        `⊢ˢ`    syntax-directed    (`d_sd_typing`)
+      ⚠️ The superscript holds the system and NOTHING ELSE — never two marks
+      at once.  `ad_sd_typing` used to read `⊢ˢᵃᵈ`, stacking the variant mark
+      `ˢ` on the system mark `ᵃᵈ`, which invites reading `ˢᵃᵈ` as one opaque
+      system name.  It is plain `Θ ⊢ᵃᵈ[ M ] e ⦂ B` now: the ad system has NO
+      other typing judgement (there is no `ad_typing`), so `ˢ` had nothing to
+      disambiguate from — the same reason `ad_pat_consis` carries no `ₛ`.
+      `⊢ˢ` survives only in the declarative system, where `d_typing` and
+      `d_sd_typing` genuinely coexist.  Dropping it also makes the three
+      copies of typing differ by the system mark ALONE: `⊢[ M ] e ⦂ A`,
+      `⊢ᵃᵈ[ M ] e ⦂ B`, `⊢ᵃ[ m ; P0 ] e ⦂ B ⊣ Θ'`.
     - SUBSCRIPT = WHICH JUDGEMENT — the sort first of all, and it is the SAME
       in every system, so the superscript is the only thing that changes
       between one relation's copies.  Absence is the type sort:

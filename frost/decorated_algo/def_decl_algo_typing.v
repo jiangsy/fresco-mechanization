@@ -72,7 +72,7 @@ Set Implicit Arguments.
 
 Reserved Notation "Θ ⊢ₛᵃᵈ[ M ] e ⦂ Q"
   (at level 100, M at level 0, e at level 75, Q at level 75, no associativity).
-Reserved Notation "Θ ⊢ˢᵃᵈ[ M ] e ⦂ B"
+Reserved Notation "Θ ⊢ᵃᵈ[ M ] e ⦂ B"
   (at level 100, M at level 0, e at level 75, B at level 75, no associativity).
 
 (* ===================================================================== *)
@@ -161,43 +161,43 @@ Inductive ad_sd_typing : mode -> aenv -> exp -> btyp -> Prop :=
 | ad_sd_typing__unit : forall Θ m B,                            (* sd-Unit *)
     ad_pat_sub_v a_sub_mode_ty m empty Θ
       (ptyp_to_uskl_syn ptyp_unit) (btyp_to_bskl B) ->
-    Θ ⊢ˢᵃᵈ[ m ] exp_unit ⦂ B
+    Θ ⊢ᵃᵈ[ m ] exp_unit ⦂ B
 | ad_sd_typing__var : forall Θ m x A B,                          (* sd-Var *)
     binds x (abind_var_typ A) Θ ->
     ad_pat_sub_v a_sub_mode_ty m empty Θ
       (ptyp_to_uskl_syn A) (btyp_to_bskl B) ->
-    Θ ⊢ˢᵃᵈ[ m ] (exp_var_f x) ⦂ B
+    Θ ⊢ᵃᵈ[ m ] (exp_var_f x) ⦂ B
 | ad_sd_typing__anno : forall Θ m e A B,                        (* sd-Anno *)
-    Θ ⊢ˢᵃᵈ[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) ->
+    Θ ⊢ᵃᵈ[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) ->
     ad_pat_sub_v a_sub_mode_ty m empty Θ
       (ptyp_to_uskl_syn A) (btyp_to_bskl B) ->
-    Θ ⊢ˢᵃᵈ[ m ] (exp_anno e A) ⦂ B
+    Θ ⊢ᵃᵈ[ m ] (exp_anno e A) ⦂ B
 | ad_sd_typing__freeze : forall Θ e A B,                      (* sd-Freeze *)
     (* ⭐ the appendix's first added premise: the synthesised premise's type
        and the inherited conclusion's need only be EQUIVALENT under Θ, not
        syntactically equal — a flexible in either may stand for the other. *)
-    Θ ⊢ˢᵃᵈ[ mode_ti ] e ⦂ (ptyp_to_btyp_syn B) ->
+    Θ ⊢ᵃᵈ[ mode_ti ] e ⦂ (ptyp_to_btyp_syn B) ->
     Θ ⊢ B ≡ᵗ A ->
-    Θ ⊢ˢᵃᵈ[ mode_tc ] (exp_freeze e) ⦂ (ptyp_to_btyp_inh A)
+    Θ ⊢ᵃᵈ[ mode_tc ] (exp_freeze e) ⦂ (ptyp_to_btyp_inh A)
 | ad_sd_typing__abs_check_step : forall L Θ e B,        (* sd-AbsCheck (∀) *)
     is_ityp (btyp_all_inh B) ->
     (forall α, α `notin` L ->
-       ((α ~ abind_tvar) ++ Θ) ⊢ˢᵃᵈ[ mode_tc ] (exp_abs e)
+       ((α ~ abind_tvar) ++ Θ) ⊢ᵃᵈ[ mode_tc ] (exp_abs e)
          ⦂ (open_btyp_wrt_btyp B (btyp_var_f α))) ->
-    Θ ⊢ˢᵃᵈ[ mode_tc ] (exp_abs e) ⦂ (btyp_all_inh B)
+    Θ ⊢ᵃᵈ[ mode_tc ] (exp_abs e) ⦂ (btyp_all_inh B)
 | ad_sd_typing__abs_check_base : forall L Θ e A B,      (* sd-AbsCheck (→) *)
     a_wf_ptyp Θ A ->
     is_ityp B ->
     (forall x, x `notin` L ->
-       ((x ~ abind_var_typ A) ++ Θ) ⊢ˢᵃᵈ[ mode_tc ]
+       ((x ~ abind_var_typ A) ++ Θ) ⊢ᵃᵈ[ mode_tc ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ B) ->
-    Θ ⊢ˢᵃᵈ[ mode_tc ] (exp_abs e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B)
+    Θ ⊢ᵃᵈ[ mode_tc ] (exp_abs e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B)
 | ad_sd_typing__abs_anno_check_step : forall L Θ A e B,
     is_ityp (btyp_all_inh B) ->                     (* sd-AbsAnnoCheck (∀) *)
     (forall α, α `notin` L ->
-       ((α ~ abind_tvar) ++ Θ) ⊢ˢᵃᵈ[ mode_tc ] (exp_abs_anno A e)
+       ((α ~ abind_tvar) ++ Θ) ⊢ᵃᵈ[ mode_tc ] (exp_abs_anno A e)
          ⦂ (open_btyp_wrt_btyp B (btyp_var_f α))) ->
-    Θ ⊢ˢᵃᵈ[ mode_tc ] (exp_abs_anno A e) ⦂ (btyp_all_inh B)
+    Θ ⊢ᵃᵈ[ mode_tc ] (exp_abs_anno A e) ⦂ (btyp_all_inh B)
 | ad_sd_typing__abs_anno_check_base : forall L Θ e A A' B,
     (* ⭐ the appendix's second added premise.  The BINDING keeps the written
        annotation [A]; the conclusion's domain is any Θ-equivalent [A'].
@@ -207,18 +207,18 @@ Inductive ad_sd_typing : mode -> aenv -> exp -> btyp -> Prop :=
     Θ ⊢ A ≡ᵗ A' ->
     is_ityp B ->
     (forall x, x `notin` L ->
-       ((x ~ abind_var_typ A) ++ Θ) ⊢ˢᵃᵈ[ mode_tc ]
+       ((x ~ abind_var_typ A) ++ Θ) ⊢ᵃᵈ[ mode_tc ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ B) ->
-    Θ ⊢ˢᵃᵈ[ mode_tc ] (exp_abs_anno A e)
+    Θ ⊢ᵃᵈ[ mode_tc ] (exp_abs_anno A e)
       ⦂ (btyp_arrow (ptyp_to_btyp_inh A') B)
 | ad_sd_typing__abs : forall L Θ m e A B,                        (* sd-Abs *)
     m <> mode_tc ->
     a_wf_ptyp Θ A ->
     mod_comp_ty (btyp_arrow (ptyp_to_btyp_inh A) B) m ->
     (forall x, x `notin` L ->
-       ((x ~ abind_var_typ A) ++ Θ) ⊢ˢᵃᵈ[ decr_mode m ]
+       ((x ~ abind_var_typ A) ++ Θ) ⊢ᵃᵈ[ decr_mode m ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ B) ->
-    Θ ⊢ˢᵃᵈ[ m ] (exp_abs e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B)
+    Θ ⊢ᵃᵈ[ m ] (exp_abs e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B)
 | ad_sd_typing__abs_anno : forall L Θ m e A A' B1 B2,        (* sd-AbsAnno *)
     (* ⭐ the appendix's third added premise, same reading as AbsAnnoCheck's:
        the arrow's domain [B1] erases to a Θ-EQUIVALENT [A'], not to the
@@ -229,13 +229,13 @@ Inductive ad_sd_typing : mode -> aenv -> exp -> btyp -> Prop :=
     btyp_to_ptyp B1 = A' ->
     mod_comp_ty (btyp_arrow B1 B2) m ->
     (forall x, x `notin` L ->
-       ((x ~ abind_var_typ A) ++ Θ) ⊢ˢᵃᵈ[ decr_mode m ]
+       ((x ~ abind_var_typ A) ++ Θ) ⊢ᵃᵈ[ decr_mode m ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ B2) ->
-    Θ ⊢ˢᵃᵈ[ m ] (exp_abs_anno A e) ⦂ (btyp_arrow B1 B2)
+    Θ ⊢ᵃᵈ[ m ] (exp_abs_anno A e) ⦂ (btyp_arrow B1 B2)
 | ad_sd_typing__app : forall Θ m e1 e2 P A2 B1 B2,               (* sd-App *)
     Θ ⊢ₛᵃᵈ[ mode_tc ] e2 ⦂ (pskl_to_bskl_syn P) ->
     Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B1) ->
-    Θ ⊢ˢᵃᵈ[ (mode_fn m) ] e1 ⦂ (btyp_arrow B1 B2) ->
+    Θ ⊢ᵃᵈ[ (mode_fn m) ] e1 ⦂ (btyp_arrow B1 B2) ->
     (* ⭐ [paper-gap] THE APPENDIX'S FOURTH TYPE-EQUIVALENCE PREMISE.  The
        appendix (full-algo-spec.tex, fig:declarative-in-algo-context) says
        "for syntax-directed typing, we only need to extend freezing and
@@ -249,6 +249,6 @@ Inductive ad_sd_typing : mode -> aenv -> exp -> btyp -> Prop :=
        the argument's checked type need only be EQUIVALENT, not equal.
        docs/PAPER-GAPS.md. *)
     Θ ⊢ (btyp_to_ptyp B1) ≡ᵗ A2 ->
-    Θ ⊢ˢᵃᵈ[ mode_tc ] e2 ⦂ (ptyp_to_btyp_inh A2) ->
-    Θ ⊢ˢᵃᵈ[ m ] (exp_app e1 e2) ⦂ B2
-where "Θ ⊢ˢᵃᵈ[ M ] e ⦂ B" := (ad_sd_typing M Θ e B) : type_scope.
+    Θ ⊢ᵃᵈ[ mode_tc ] e2 ⦂ (ptyp_to_btyp_inh A2) ->
+    Θ ⊢ᵃᵈ[ m ] (exp_app e1 e2) ⦂ B2
+where "Θ ⊢ᵃᵈ[ M ] e ⦂ B" := (ad_sd_typing M Θ e B) : type_scope.

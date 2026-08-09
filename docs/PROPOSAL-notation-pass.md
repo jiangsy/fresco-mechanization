@@ -199,9 +199,19 @@ The canonical legend is the header of [`frost/notations.v`](../frost/notations.v
 | `ad_pat_sub` | `Ψ ⨟ Θ ⊢ₛᵃ[ NM \| M ] R ⩽ Q` | `Ψ ⨟ Θ ⊢ᵃᵈ[ NM \| M ] R ⩽ Q` |
 | `ad_refine_syn` | `Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ P` | `Θ ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ P` |
 | `ad_refine_pskl`| `Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q`             | `Θ ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ Q` |
-| `ad_sd_typing`  | `Θ ⊢ˢᵃ[ M ] e ⦂ B`             | `Θ ⊢ˢᵃᵈ[ M ] e ⦂ B` |
+| `ad_sd_typing`  | `Θ ⊢ˢᵃ[ M ] e ⦂ B`             | `Θ ⊢ᵃᵈ[ M ] e ⦂ B` |
 | `ad_partial_precise` | `Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ`     | `Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ` |
 | `a_wf_pskl`     | `Θ ⨟ Δ ⊢ₚₛᵃ P`                 | unchanged — already correct |
+
+⭐ And the `ˢ` did not survive in the ad system either — for the same reason
+one step further.  `ad_sd_typing` first became `⊢ˢᵃᵈ`, which stacks the VARIANT
+mark `ˢ` on the SYSTEM mark `ᵃᵈ` and invites reading `ˢᵃᵈ` as one opaque system
+name; the superscript must hold the system and nothing else.  Since there is no
+`ad_typing`, `ˢ` had nothing to disambiguate from, so it is plain
+`Θ ⊢ᵃᵈ[ M ] e ⦂ B`.  This also makes the three copies of typing differ by the
+system mark ALONE — `⊢[ M ] e ⦂ A`, `⊢ᵃᵈ[ M ] e ⦂ B`,
+`⊢ᵃ[ m ; P0 ] e ⦂ B ⊣ Θ'` — which is what §5 was for.  `⊢ˢ` survives only in
+the declarative system, where `d_typing` and `d_sd_typing` genuinely coexist.
 
 ⭐ Note where the `ₛ` did NOT survive: `ad_pat_consis` lost it because the ad
 system has no type-sort sibling to be told apart from, and `ad_pat_sub` lost it

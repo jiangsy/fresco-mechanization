@@ -198,7 +198,7 @@ proved.
 
    **What the mech did (2026-08-06)**: added the premise.
    `ad_sd_typing__app` now carries
-   `Θ ⊢ (btyp_to_ptyp B1) ≡ᵗ A2` beside `Θ ⊢ˢᵃᵈ[TC] N ⦂ inh{A2}`.  Four
+   `Θ ⊢ (btyp_to_ptyp B1) ≡ᵗ A2` beside `Θ ⊢ᵃᵈ[TC] N ⦂ inh{A2}`.  Four
    construction sites needed the accompanying `a_tyequiv` transport, each
    of which already existed.
 

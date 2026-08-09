@@ -267,7 +267,14 @@ Three defects, all reported by the user:
    and `ad_pat_sub` LOST their `ₛ`: the ad system has no type-sort sibling to
    be told apart from, and `ad_pat_sub`'s `NM` already names the sort — the
    same reason `a_sub` never had one.  Stating it twice is how `⊢ₛᵃ[ TY | … ]`
-   came to read as a contradiction.
+   came to read as a contradiction.  ⭐ And the same rule one step further:
+   `ad_sd_typing` first became `⊢ˢᵃᵈ`, which stacks the VARIANT mark `ˢ` on the
+   SYSTEM mark `ᵃᵈ` — the superscript must hold the system and NOTHING else,
+   or `ˢᵃᵈ` reads as one opaque system name.  There is no `ad_typing`, so `ˢ`
+   had nothing to disambiguate from: it is plain `Θ ⊢ᵃᵈ[ M ] e ⦂ B`, and the
+   three copies of typing now differ by the system mark ALONE (`⊢[ M ] e ⦂ A`,
+   `⊢ᵃᵈ[ M ] e ⦂ B`, `⊢ᵃ[ m ; P0 ] e ⦂ B ⊣ Θ'`).  `⊢ˢ` survives only in the
+   declarative system, where `d_typing` and `d_sd_typing` genuinely coexist.
 3. **`blk : aenv` violated the greek-context convention** — and it turned out
    to be a stray ALIAS: the rest of the tree already calls that object `Ξg`
    (`a_guess_mono Θg Pi0 Ξg A`, `algo/sub/look/prop_eq_cstr.v:2212`).  Renamed
@@ -1042,7 +1049,7 @@ completeness theorems.
   annotated lambda rules" — but its own AT-App case needs a fourth, since
   `sd-App` reuses the function's domain BY EQUALITY as the argument's
   checked type.  `ad_sd_typing__app` now carries
-  `Θ ⊢ (btyp_to_ptyp B1) ≡ᵗ A2` beside `Θ ⊢ˢᵃᵈ[TC] e2 ⦂ inh{A2}`.
+  `Θ ⊢ (btyp_to_ptyp B1) ≡ᵗ A2` beside `Θ ⊢ᵃᵈ[TC] e2 ⦂ inh{A2}`.
   ⚙ Ripple: four construction sites, each discharged by the `a_tyequiv`
   transport already sitting beside the one it accompanies.
   ⛔ The alternative (keep the rule, prove the transport) costs an

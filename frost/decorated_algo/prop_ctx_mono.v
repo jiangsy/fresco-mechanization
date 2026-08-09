@@ -422,8 +422,8 @@ Proof.
 Qed.
 
 Lemma ad_sd_typing_mono : forall M Θ e B,
-  Θ ⊢ˢᵃᵈ[ M ] e ⦂ B ->
-  forall Θ', aenv_binds_le Θ Θ' -> Θ' ⊢ˢᵃᵈ[ M ] e ⦂ B.
+  Θ ⊢ᵃᵈ[ M ] e ⦂ B ->
+  forall Θ', aenv_binds_le Θ Θ' -> Θ' ⊢ᵃᵈ[ M ] e ⦂ B.
 Proof.
   intros M Θ e B H; induction H; intros Θ' Hle;
     pose proof (aenv_tbinds_le_of_binds_le Hle) as Htle.
@@ -468,8 +468,8 @@ Qed.
     their uses), which is a separate obligation a caller discharges where it
     needs [a_wf_aenv].  A dropped premise only strengthens the lemma. *)
 Corollary ad_sd_typing_suffix_moving : forall M Θ1 Θ2 Ξ e B,
-  (Ξ ++ Θ2 ++ Θ1) ⊢ˢᵃᵈ[ M ] e ⦂ B ->
-  (Θ2 ++ Ξ ++ Θ1) ⊢ˢᵃᵈ[ M ] e ⦂ B.
+  (Ξ ++ Θ2 ++ Θ1) ⊢ᵃᵈ[ M ] e ⦂ B ->
+  (Θ2 ++ Ξ ++ Θ1) ⊢ᵃᵈ[ M ] e ⦂ B.
 Proof.
   intros M Θ1 Θ2 Ξ e B H.
   eapply ad_sd_typing_mono; [ exact H | apply aenv_binds_le_perm3 ].
@@ -488,7 +488,7 @@ Qed.
     that only ADDS entries — the [Ξ ++ Θ] shape every algorithmic step
     produces. *)
 Corollary ad_sd_typing_weaken_suffix : forall M Θ Ξ e B,
-  Θ ⊢ˢᵃᵈ[ M ] e ⦂ B -> (Ξ ++ Θ) ⊢ˢᵃᵈ[ M ] e ⦂ B.
+  Θ ⊢ᵃᵈ[ M ] e ⦂ B -> (Ξ ++ Θ) ⊢ᵃᵈ[ M ] e ⦂ B.
 Proof.
   intros M Θ Ξ e B H.
   eapply ad_sd_typing_mono; [ exact H | apply aenv_binds_le_weaken_l ].

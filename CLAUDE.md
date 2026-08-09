@@ -446,7 +446,10 @@ before changing any of them.
     read it before adding or changing any judgment notation. Two axes, one
     device each: **SUPERSCRIPT = system** (bare `⊢` declarative, `⊢ᵃᵈ`
     declarative-over-Θ, `⊢ᵃ` algorithmic, `⊢ᵗ` ε-tagged, `⊢ˢ`
-    syntax-directed) and **SUBSCRIPT = sort** (bare types, `⊢ₛ` skeletons,
+    syntax-directed — **one mark, never two stacked**: `ad_sd_typing` is
+    plain `⊢ᵃᵈ`, not `⊢ˢᵃᵈ`, because the ad system has no other typing
+    judgment for `ˢ` to disambiguate from) and
+    **SUBSCRIPT = sort** (bare types, `⊢ₛ` skeletons,
     spelled out as `⊢ₚ`/`⊢ᵦ`/`⊢ᵤ`/`⊢ₚₛ`/`⊢ᵤₛ` for well-formedness). The
     sort is stated ONCE: as the subscript when the system has one relation
     per sort, as the bracket index `N`/`NM` when one relation covers both.
