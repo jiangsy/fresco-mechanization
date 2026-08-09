@@ -422,6 +422,26 @@ removed developments).
 > `Require`d `src.*` module resolves to a real file (73 of 73 here).  It costs
 > a second and catches the whole class.
 >
+> ### ⛔ The three "small files that should be merged" must NOT be merged
+>
+> §5.3/§8.3 read `prop_inc_strengthen.v` (444), `prop_precise_sub.v` (269) and
+> `prop_precise_recover.v` (313) as merge candidates — same topic as their
+> base, small enough to fold in.  Measured against the import graph, all three
+> are wrong:
+>
+> | merge | verdict |
+> |---|---|
+> | `prop_inc_strengthen` → `prop_inc` | **CYCLE** — needs `prop_flex`, `prop_compose`, `prop_normal`, all of which import `prop_inc` |
+> | `prop_precise_sub` → `prop_precise` | **CYCLE** — context precision is stated over the SUBTYPING and PATTERN judgements, which reach back to `prop_precise` |
+> | `prop_precise_recover` → `prop_precise` | no cycle, but it imports `consis/prop_soundness_consis.v` (5610 lines) and `prop_precise` has **24** consumers |
+>
+> **A `_<qualifier>` sibling is usually a LAYER, not a size accident.**  The
+> suffix records that the file sits ABOVE its topical base in the dependency
+> order.  The check before any same-topic merge is: does any extra dependency
+> of the smaller file reach the larger (cycle), and what does the merged
+> dependency surface cost the base's consumers?  Each of the three now carries
+> a ⚠️ DO NOT MERGE header note, so the next audit does not re-propose them.
+>
 > ## Remaining
 >
 > ### ⚙ "39 duplicated names" is not "39 deletions"

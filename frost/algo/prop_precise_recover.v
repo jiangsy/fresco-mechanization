@@ -1,3 +1,9 @@
+(** ⚠️ DO NOT MERGE THIS INTO [prop_precise.v].  No cycle — but it imports
+    [algo/consis/prop_soundness_consis.v] (5610 lines), and [prop_precise] has
+    24 consumers, so the merge would put that dependency on all of them and
+    make every edit to consistency soundness rebuild the precision layer and
+    everything above it.  Checked 2026-08-09 during the file-reorg pass. *)
+
 (** PRECISION RECOVERY at the flexible consistency nodes
     (Flex / FlexL / FlexR of [a_consis]).
 

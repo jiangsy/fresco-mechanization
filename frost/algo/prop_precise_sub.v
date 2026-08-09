@@ -1,3 +1,8 @@
+(** ⚠️ DO NOT MERGE THIS INTO [prop_precise.v] — import CYCLE.  Context
+    precision is stated over the SUBTYPING and PATTERN judgements, so this file
+    sits above [algo/sub/] and [algo/pat/], both of which reach back to
+    [prop_precise].  Checked 2026-08-09 during the file-reorg pass. *)
+
 (** CONTEXT PRECISION (hand-off section D §5) — the paper's [⪯ctx]
     ("Definition (Context precision)", proofs.tex) and
     lemma:context-precision-skeleton ("Context precision preserves skeleton

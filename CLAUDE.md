@@ -274,6 +274,16 @@ their topic names.
   `lc_bskl_to_pskl`.  ⚠️ NOT `ftvar_in_<target>_<conversion>` and NOT
   `ftvar_in_<conversion>`: the tree accumulated all three and ended up with
   **four names for one fact**.  All such lemmas live in `frost/prop_coercions.v`.
+- ⚠️ **A `_<qualifier>` sibling is usually a LAYER, not a size accident.**
+  `prop_inc_strengthen.v`, `prop_precise_sub.v`, `prop_precise_recover.v` look
+  like small files that want folding into their topical base.  They do not:
+  the first two would be import CYCLES (their extra dependencies reach back to
+  the base), and the third would put a 5610-line consistency-soundness
+  dependency onto the base's 24 consumers.  **Before merging two same-topic
+  files, check whether any extra dependency of the smaller one reaches the
+  larger** — a five-line reachability script over the `Require` graph — and
+  check what the merged dependency surface costs the base's consumers.
+  Measured 2026-08-09; each of the three now carries a ⚠️ DO NOT MERGE note.
 - ⚠️ **One fact, one name, one file, in its STRONGEST form.**  Duplicated
   top-level names are a correctness hazard, not untidiness: Coq resolves an
   unqualified `apply foo` by import order, so adding one `Require Import` can
