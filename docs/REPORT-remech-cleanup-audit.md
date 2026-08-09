@@ -120,37 +120,99 @@ removed developments).
 >    probes in the scratchpad.
 > 4. **Piping `make` into `grep` masks its exit status** — `$?` is grep's.
 >
-> ## ⚠️ PERF — diagnosed, NOT fixed
+> ## ✅ PERF — FIXED.  `test_examples.v` 467 s → 23.8 s (20×); one call 426 s → 0.09 s
 >
-> The build is slow for one reason: **`test/test_examples.v` is 467 s of a
+> The build was slow for one reason: **`test/test_examples.v` was 467 s of a
 > ~646 s wall-clock build** (`-j8`; total serial proof time ≈ 1229 s).  It is a
-> leaf depending on nearly everything, so it sits on the critical path and
-> cannot overlap.  Within it, `ex_C2` alone is 442 s — 36% of the tree.
+> leaf that depends on nearly everything, so it could not overlap — it *was*
+> the tail of the critical path.
 >
-> `Set Ltac Profiling` pins it exactly: **`crush_uniq` is 99.9% of the proof in
-> 4 calls**, all inside `fsetdec` → `tauto` → `simplif`, running up 15.5 M
-> `is_conj` and 13 M `is_disj` calls.
+> ### How it was found
 >
-> **Root cause (measured):** `fsetdec` must UNFOLD `dom Θlib` — seven entries
-> carrying full σ-types.  `Opaque Θlib` makes it fail outright in 6 s
-> ("beyond the scope of this tactic"), which proves the unfolding is
-> load-bearing, not incidental.
+> 1. `.aux` files (they record `proof_build_time` per proof — no rebuild
+>    needed) ranked the files and pointed at `ex_C2`: 442 s, 36% of the tree.
+> 2. `Set Ltac Profiling` put 99.9% of that inside `crush_uniq` → `fsetdec` →
+>    `tauto` → `simplif` (15.5 M `is_conj`, 13 M `is_disj`).
+> 3. **Per-call `time "siteN"` was the step that actually cracked it**, and it
+>    is the step I should have taken first.  Of the four `crush_uniq` calls:
 >
-> **Five fixes tried and refuted** (all recorded at the tactic in
-> `test/test_examples.v` so they are not re-tried blind): `solve_notin`;
-> `destruct_notin` then `fsetdec`/`solve_notin`/`auto`; adding disequality
-> symmetry; context scoping both generically and use-site
-> (`clear - Hα Hx Hβ Hy …` at each of the 4 calls); and characterising
-> `dom Θlib` as seven singletons with `Opaque Θlib`.  Notably, use-site
-> scoping did **not** help — so the blow-up is not driven by the ambient
-> hypothesis count, only by the `Θlib` expansion.
+>    | site1 | site2 | site3 | site4 |
+>    |---|---|---|---|
+>    | 0.00 s | 0.04 s | 1.92 s | **425.95 s** |
 >
-> **Next lead:** discharge these goals without `fsetdec` at all.  They are all
-> of the shape `v ∉ <concrete union of singletons> ∪ dom Θlib`; with `Θlib`
-> opaque and the needed `∉ dom Θlib` facts supplied as pre-proved lemmas,
-> `fsetdec` never has to see the library term.  I stopped here rather than
-> spend more of the budget; the diagnosis is solid and the file is reverted to
-> its committed state plus that note.
+>    Everything before this was averaged over all four calls, which is what
+>    made three different fixes look plausible and fail.
+>
+> ### The actual cause
+>
+> Site 4 is `AT-AbsCheck`'s base row at the innermost binder.  Its residual
+> goals after `uniq_push` are **trivial**:
+>
+> ```text
+> α ∉ dom Θlib        x ∉ {α} ∪ dom Θlib        β ∉ {x} ∪ {α} ∪ dom Θlib
+> ```
+>
+> each a one-step weakening of the single hypothesis `atom_fresh` produced for
+> that variable.  The cost was never the goal — it was that `fsetdec` also
+> reads the *other three* freshness hypotheses (up to six leaves each), and its
+> internal `tauto` is exponential in the leaves it can see.  Same cliff the
+> 2026-08-06 pass recorded ("12-leaf avoid-set hypothesis ⟹ cliff").
+>
+> ### The fix
+>
+> `keep_only_subject` — for a goal `v ∉ S`, drop every `notin` hypothesis whose
+> subject is not `v`, then `fsetdec`.  Unscoped `fsetdec` stays as a fallback
+> for any goal genuinely needing two hypotheses; it is cheap to reach because
+> the scoped attempt either succeeds in ~0.02 s or fails fast.
+>
+> ### ⛔ Five things that do NOT work (all measured; recorded at the tactic)
+>
+> 1. `solve_notin` — fails outright.
+> 2. `destruct_notin` then `fsetdec` / `solve_notin` / `auto` — fail fast.
+> 3. Adding disequality symmetry (`destruct_notin` never flips a `<>`) — fails.
+> 4. **Clearing every non-atom-set hypothesis, or use-site
+>    `clear - Hα Hx Hβ Hy …`** — no help, and this is the instructive one:
+>    both keep all four freshness hypotheses, i.e. every leaf.  Scoping has to
+>    be **by subject**, not by relevance-to-the-call.
+> 5. Characterising `dom Θlib` as seven singletons + `Opaque Θlib` — no help.
+>    (⚠️ `Opaque Θlib` *alone* makes `fsetdec` fail in 6 s, which shows it does
+>    need to see the library — that is not where the blow-up came from.)
+>
+> ### End-to-end
+>
+> Full clean rebuild after the fix: **13:04** (`make NJOBS=8 coq`, exit 0,
+> 39/39 closed).  I do not have a matched clean baseline from *before* the fix
+> — the earlier 646 s figure was a partial rebuild that then failed at
+> `README.v`, so it is not comparable.  But the inference is sound: the
+> `.aux`-derived serial proof time was ≈1229 s and is now ≈786 s, and the
+> measured wall clock is 784 s — i.e. **wall clock ≈ serial sum**, so the 443 s
+> removed from the file comes off the wall clock essentially one-for-one.
+> Pre-fix clean build would have been ≈20.5 min.
+>
+> ### ⚠️ SECOND FINDING — the build barely parallelises
+>
+> That last equality is not a coincidence, and it is a separate opportunity:
+>
+> ```text
+> make NJOBS=8 coq   854.82s user  12.32s system  110% cpu  13:04.26 total
+> ```
+>
+> **110% CPU on `-j8`** — an average of ~1.1 cores busy.  The tree is a nearly
+> linear dependency chain, so eight jobs buy almost nothing.  Two consequences:
+>
+> - Any single slow proof is felt in full at the wall clock (which is why one
+>   tactic could own 36% of the build).
+> - There is a structural win available that is independent of any tactic:
+>   breaking the chain.  The `completeness_look/` facade header already notes
+>   the cluster is strictly linear "so the directory buys no build
+>   parallelism".  Worth measuring where the chain is artificial (an import
+>   kept for one lemma) versus real.
+>
+> ### Lesson for the next perf pass
+>
+> Profile to the **individual call**, not the tactic.  An aggregate that says
+> "this tactic is 99.9%" is compatible with three cheap calls and one
+> catastrophic one, and the fixes those two situations need are different.
 >
 > ## Remaining in Phase 2
 >

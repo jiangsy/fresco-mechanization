@@ -180,51 +180,70 @@ Hypothesis HΘlib_uniq : uniq Θlib.
 (* Discharge the ForallL freshness premise [uniq (Ξ ++ Θ0)]: peel the
    fresh entries structurally, close the ambient tail by assumption.
 
-   ⚠️⚠️ THIS TACTIC IS THE TREE'S #1 BUILD HOT SPOT, AND IT IS NOT YET FIXED.
-   Profiled 2026-08-09 ([Set Ltac Profiling] on [ex_C2] alone):
+   ⚙ PERF (2026-08-09) — this tactic WAS the tree's #1 build hot spot, at
+   426 s in one call.  It is now 0.09 s.  Keep the scoping below.
 
-     crush_uniq   99.9% of the proof, in FOUR calls
-       -> fsetdec -> tauto -> simplif, 15.5 M is_conj + 13 M is_disj calls
+   [Set Ltac Profiling] on [ex_C2] put 99.9% of a 442 s proof inside
+   [crush_uniq] -> [fsetdec] -> [tauto] -> [simplif] (15.5 M is_conj,
+   13 M is_disj).  Per-call timing then isolated it to ONE of the four calls:
 
-   That is 442 s in [ex_C2] — 36% of the whole tree's proof time — and since
-   this file is a LEAF that depends on nearly everything, it is 442 s sitting
-   on the build's CRITICAL PATH (wall clock ≈ 646 s at -j8 for a tree whose
-   total serial proof time is ≈ 1229 s).  Fixing it is the single biggest
-   available build-time win.
+       site1 0.00 s   site2 0.04 s   site3 1.92 s   site4 425.95 s
 
-   ROOT CAUSE (measured, not guessed): [fsetdec] calls [tauto] internally, and
-   to discharge these goals it must UNFOLD [dom Θlib] — seven entries carrying
-   full σ-types.  Marking [Θlib] [Opaque] makes [fsetdec] fail outright in 6 s
-   with "the goal is beyond the scope of this tactic", which is the proof that
-   the unfolding is load-bearing rather than incidental.
+   Site 4 is the innermost binder of [AT-AbsCheck]'s base row.  Its residual
+   goals after [uniq_push] are TRIVIAL —
 
-   ⛔ FOUR FIXES TRIED AND REFUTED — do not re-try these blind:
-     1. [solve_notin]                      — FAILS on all three residual goals
-                                             (they are [fb ∉ {x} ∪ {fa} ∪ dom Θlib];
-                                             its closing [auto; try tauto] cannot
-                                             bridge them).
-     2. [destruct_notin] first, then [fsetdec] / [solve_notin] / [auto]
-                                           — all FAIL fast (5-16 s).
-     3. adding disequality SYMMETRY ([Hfafb : fa <> fb] is needed as [fb <> fa];
-        [destruct_notin] never flips a [<>])  — still FAILS.
-     4. scoping the context — both a generic "keep only atom-set facts" pass and
-        USE-SITE [clear - Hα Hx Hβ Hy Hfa_lib Hfb_lib Hfafb HΘlib_uniq] at each
-        of the four call sites — still ≥250 s.  So the blow-up is NOT driven by
-        the number of ambient hypotheses; it is the [dom Θlib] expansion.
-     5. characterising [dom Θlib] as a union of seven singletons + [Opaque Θlib]
-        + rewriting before [fsetdec]  — still ≥250 s.
+       α ∉ dom Θlib      x ∉ {α} ∪ dom Θlib      β ∉ {x} ∪ {α} ∪ dom Θlib
 
-   NEXT LEAD: keep [Θlib] opaque and supply the needed [dom]/[∉] facts as
-   pre-proved lemmas so [fsetdec] never sees the library term at all — i.e.
-   discharge these goals WITHOUT [fsetdec] (the goals are all of the shape
-   [v ∉ <concrete union of singletons> ∪ dom Θlib]).  See
-   docs/REPORT-remech-cleanup-audit.md §PERF. *)
+   — and each is a one-step weakening of the single hypothesis [atom_fresh]
+   produced for that variable.  The cost was never the goal: it was that
+   [fsetdec] also reads the OTHER three freshness hypotheses (up to six leaves
+   each), and its internal [tauto] is exponential in the leaves it can see.
+   That is the same cliff the 2026-08-06 pass recorded ("12-leaf avoid-set
+   hypothesis ⟹ cliff").  [keep_only_subject] drops them.  4800x.
+
+   ⛔ FIVE THINGS THAT DO NOT WORK — do not re-try them:
+     1. [solve_notin] — fails outright; its closing [auto; try tauto] cannot
+        bridge [fb ∉ {x} ∪ {fa} ∪ dom Θlib].
+     2. [destruct_notin] first, then fsetdec / solve_notin / auto — all fail
+        fast (5-16 s).
+     3. adding disequality SYMMETRY ([Hfafb : fa <> fb] is also needed as
+        [fb <> fa]; [destruct_notin] never flips a [<>]) — still fails.
+     4. clearing every non-atom-set hypothesis, or use-site
+        [clear - Hα Hx Hβ Hy …] — NO help, because those keep all four
+        freshness hypotheses, i.e. every leaf.  Scoping must be BY SUBJECT.
+     5. characterising [dom Θlib] as seven singletons + [Opaque Θlib] — no
+        help.  (⚠️ [Opaque Θlib] alone makes fsetdec FAIL in 6 s, which shows
+        it does need to see the library; it is not the source of the blow-up.)
+
+   See docs/REPORT-remech-cleanup-audit.md §PERF. *)
+(** ⭐ Keep ONLY the freshness hypothesis about the goal's own subject.
+
+    [uniq_push] leaves goals of the form [v ∉ {…} ∪ dom Θlib], and each is a
+    direct weakening of the ONE hypothesis [atom_fresh] produced for [v].  But
+    [fsetdec] reads the whole context, and by the innermost binder that context
+    holds four such hypotheses of up to six leaves each — past the point where
+    its internal [tauto] stays polynomial.  Dropping the other three is the
+    entire fix; see the measurements at [crush_uniq]. *)
+Ltac keep_only_subject :=
+  match goal with
+  | |- ?v `notin` _ =>
+      repeat match goal with
+             | H : ?w `notin` _ |- _ =>
+                 tryif constr_eq w v then fail else clear H
+             end
+  end.
+
 Ltac crush_uniq :=
   first [ assumption
         | simpl_env;
           first [ assumption
                 | repeat (first [ assumption | apply uniq_push ]);
-                  simpl_env; fsetdec ] ].
+                  simpl_env;
+                  (* scoped first; the unscoped [fsetdec] stays as a fallback
+                     for any goal that genuinely needs two hypotheses — and it
+                     is cheap to reach, because the scoped attempt either
+                     succeeds in ~0.02 s or fails fast. *)
+                  first [ solve [ keep_only_subject; fsetdec ] | fsetdec ] ] ].
 
 (* ===================================================================== *)
 (*  Shared sub-derivations                                                *)
