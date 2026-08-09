@@ -1459,7 +1459,7 @@ Qed.
 (** Skeleton well-formedness under the same rename.  No condition on the
     block: [a_wf_pskl] reads the context only through [a_binds_tvar], and
     the renamed slot is a plain rigid variable on both sides. *)
-Lemma a_wf_pskl_rename_tvar : forall Θ0 Δ P,
+Lemma a_wf_pskl_rename_tvar_eq : forall Θ0 Δ P,
   Θ0 ⨟ Δ ⊢ₚₛᵃ P ->
   forall Θa α Θ β,
   Θ0 = Θa ++ (α ~ abind_tvar) ++ Θ ->
@@ -1541,7 +1541,7 @@ Proof.
   - (* hole *)
     rewrite subst_pskl_to_bskl_syn.
     apply ad_refine_syn__hole.
-    eapply a_wf_pskl_rename_tvar; [ exact H | reflexivity | clear; fsetdec ].
+    eapply a_wf_pskl_rename_tvar_eq; [ exact H | reflexivity | clear; fsetdec ].
   - (* tophole_remove *)
     apply ad_refine_syn__tophole_remove.
     apply IHad_refine_syn; solve [ reflexivity | exact Hblk | exact Hwf | exact Hβ ].

@@ -210,7 +210,7 @@ Proof.
   - apply a_scope_pskl__tophole; auto.
 Qed.
 
-Lemma a_tyequiv_mono : forall Θ A B,
+Lemma a_tyequiv_ctx_mono : forall Θ A B,
   Θ ⊢ A ≡ᵗ B ->
   forall Θ', aenv_tbinds_le Θ Θ' -> Θ' ⊢ A ≡ᵗ B.
 Proof.
@@ -430,7 +430,7 @@ Proof.
   - apply ad_sd_typing__unit. eapply ad_pat_sub_v_mono; eauto.
   - eapply ad_sd_typing__var; [ eauto | eapply ad_pat_sub_v_mono; eauto ].
   - eapply ad_sd_typing__anno; [ auto | eapply ad_pat_sub_v_mono; eauto ].
-  - eapply ad_sd_typing__freeze; [ auto | eapply a_tyequiv_mono; eauto ].
+  - eapply ad_sd_typing__freeze; [ auto | eapply a_tyequiv_ctx_mono; eauto ].
   - apply ad_sd_typing__abs_check_step with (L := L); [ assumption | ].
     intros α Hα. apply H1; [ exact Hα | apply aenv_binds_le_cons; exact Hle ].
   - apply ad_sd_typing__abs_check_base with (L := L);
@@ -439,7 +439,7 @@ Proof.
   - apply ad_sd_typing__abs_anno_check_step with (L := L); [ assumption | ].
     intros α Hα. apply H1; [ exact Hα | apply aenv_binds_le_cons; exact Hle ].
   - apply ad_sd_typing__abs_anno_check_base with (L := L);
-      [ eapply a_wf_ptyp_mono; eauto | eapply a_tyequiv_mono; eauto
+      [ eapply a_wf_ptyp_mono; eauto | eapply a_tyequiv_ctx_mono; eauto
       | assumption | ].
     intros x Hx. apply H3; [ exact Hx | apply aenv_binds_le_cons; exact Hle ].
   - apply ad_sd_typing__abs with (L := L);
@@ -447,11 +447,11 @@ Proof.
     intros x Hx. apply H3; [ exact Hx | apply aenv_binds_le_cons; exact Hle ].
   - eapply ad_sd_typing__abs_anno with (L := L);
       [ assumption | eapply a_wf_ptyp_mono; eauto
-      | eapply a_tyequiv_mono; eauto | eassumption | assumption | ].
+      | eapply a_tyequiv_ctx_mono; eauto | eassumption | assumption | ].
     intros x Hx. apply H5; [ exact Hx | apply aenv_binds_le_cons; exact Hle ].
   - eapply ad_sd_typing__app;
       [ eapply ad_pat_mono; eauto | eapply ad_refine_syn_mono; eauto
-      | auto | eapply a_tyequiv_mono; eauto | auto ].
+      | auto | eapply a_tyequiv_ctx_mono; eauto | auto ].
 Qed.
 
 (* ===================================================================== *)

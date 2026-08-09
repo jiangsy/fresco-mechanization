@@ -1921,7 +1921,7 @@ Proof.
 Qed.
 
 (** A fresh declarations block extends a wf context. *)
-Lemma a_wf_aenv_decls_app : forall (blk : aenv) Θ0,
+Lemma a_wf_aenv_decls_app_disjoint : forall (blk : aenv) Θ0,
   a_decls blk ->
   uniq blk ->
   (forall α, α `in` dom blk -> α `notin` dom Θ0) ->
@@ -2089,7 +2089,7 @@ Proof.
                           `union` ftvar_in_pskl P `union` ftvar_in_pskl Q))
     as [x Hx].
   assert (Hwfblk : a_wf_aenv (blk ++ Θ0)).
-  { apply a_wf_aenv_decls_app; [ exact Hdecls | exact Huqb | | exact Hwf0 ].
+  { apply a_wf_aenv_decls_app_disjoint; [ exact Hdecls | exact Huqb | | exact Hwf0 ].
     intros α Hα. pose proof (Havb α Hα) as Hn. clear - Hn; fsetdec. }
   assert (HwfA' : a_wf_ptyp (blk ++ Θ0) A').
   { apply a_wf_ptyp_of_lc_tvarish;
@@ -2308,7 +2308,7 @@ Proof.
   - rewrite btyp_to_ptyp_ptyp_to_btyp_inh.
     eapply a_tyequiv__trans;
       [ apply a_tyequiv__sym; exact Hpush | exact HeqA' ].
-  - eapply prop_ctx_mono.a_tyequiv_mono;
+  - eapply a_tyequiv_ctx_mono;
       [ exact Heqcb
       | apply (@aenv_tbinds_le_strip_tm nil x (abind_var_typ A) Θ);
         intros h; exact h ].
@@ -2675,7 +2675,7 @@ Proof.
   apply a_tyequiv__arrow.
   - rewrite HmsAζb, HB1.
     exact HeqAA'.
-  - eapply prop_ctx_mono.a_tyequiv_mono;
+  - eapply a_tyequiv_ctx_mono;
       [ exact Heqcb
       | apply (@aenv_tbinds_le_strip_tm nil x (abind_var_typ A) Θ);
         intros h; exact h ].
@@ -4073,7 +4073,7 @@ Proof.
   apply a_tyequiv__arrow.
   - eapply a_tyequiv__trans; [ apply a_tyequiv__sym; exact Hpush | exact Heqd ].
   - rewrite <- Hagree.
-    eapply prop_ctx_mono.a_tyequiv_mono;
+    eapply a_tyequiv_ctx_mono;
       [ exact Heqcb
       | apply (@aenv_tbinds_le_strip_tm nil x (abind_var_typ A) Θ);
         intros h; exact h ].
@@ -4460,7 +4460,7 @@ Proof.
   apply a_tyequiv__arrow.
   - eapply a_tyequiv__trans; [ apply a_tyequiv__sym; exact Hpush | exact Heqd ].
   - rewrite <- Hagree.
-    eapply prop_ctx_mono.a_tyequiv_mono;
+    eapply a_tyequiv_ctx_mono;
       [ exact Heqcb
       | apply (@aenv_tbinds_le_strip_tm nil x (abind_var_typ Aan) Θ);
         intros h; exact h ].

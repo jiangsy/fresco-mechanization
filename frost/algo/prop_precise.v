@@ -687,7 +687,7 @@ Qed.
 
 (** The ghost-left package: whatever a ∅-wf skeleton refines to (over the
     source context), the ghost refines to at the working context. *)
-Lemma ad_refine_pskl_hole_l : forall Θ Δa Pm Pr,
+Lemma ad_refine_pskl_hole_l_gen : forall Θ Δa Pm Pr,
   Θ ⨟ Δa ⊢ᵣₚᵃ Pm ⊳ Pr ->
   forall Θx Δx,
   (forall x b, binds x b Θ -> binds x b Θx) ->
@@ -757,7 +757,7 @@ Proof.
       destruct (a_wf_pskl_arrow_inv_x HwfQr) as [Hw1 Hw2].
       apply ad_refine_pskl__arrow;
         [ eapply IHHr1 | eapply IHHr2 ]; try eassumption.
-    + subst. eapply ad_refine_pskl_hole_l with (Pm := pskl_arrow Pa Pb);
+    + subst. eapply ad_refine_pskl_hole_l_gen with (Pm := pskl_arrow Pa Pb);
         [ apply ad_refine_pskl__arrow; eassumption
         | exact Hmap | exact Hwf | exact Hdisj | eassumption | exact HwfQr ].
     + apply ad_refine_pskl__tophole_remove. apply IHHp; auto.
@@ -794,7 +794,7 @@ Proof.
           | apply Hdisj; clear - Hβ Hne; fsetdec ]
         | apply Hbody; clear - Hα; fsetdec
         | apply H1; clear - Hα; fsetdec ].
-    + subst. eapply ad_refine_pskl_hole_l with (Pm := pskl_all_syn Pb);
+    + subst. eapply ad_refine_pskl_hole_l_gen with (Pm := pskl_all_syn Pb);
         [ eapply ad_refine_pskl__all with (L := L); eassumption
         | exact Hmap | exact Hwf | exact Hdisj | eassumption | exact HwfQr ].
     + apply ad_refine_pskl__tophole_remove. apply IHHp; auto.
@@ -849,7 +849,7 @@ Proof.
     rename P into Pb. rename Q into Qb.
     remember (pskl_tophole Pb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
-    + subst. eapply ad_refine_pskl_hole_l with (Pm := pskl_tophole Pb);
+    + subst. eapply ad_refine_pskl_hole_l_gen with (Pm := pskl_tophole Pb);
         [ apply ad_refine_pskl__tophole_remove; eassumption
         | exact Hmap | exact Hwf | exact Hdisj | eassumption | exact HwfQr ].
     + apply ad_refine_pskl__tophole_remove. apply IHHp; auto.
@@ -862,7 +862,7 @@ Proof.
     destruct (a_wf_pskl_all_inv_x HwfQr) as [L2 Hbody].
     remember (pskl_tophole Pb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
-    + subst. eapply ad_refine_pskl_hole_l with (Pm := pskl_tophole Pb);
+    + subst. eapply ad_refine_pskl_hole_l_gen with (Pm := pskl_tophole Pb);
         [ eapply ad_refine_pskl__tophole_fill with (L := L); eassumption
         | exact Hmap | exact Hwf | exact Hdisj | eassumption | exact HwfQr ].
     + apply ad_refine_pskl__tophole_remove. apply IHHp; auto.
@@ -910,7 +910,7 @@ Proof.
     rename P into Pb. rename Q into Qb.
     remember (pskl_tophole Pb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
-    + subst. eapply ad_refine_pskl_hole_l with (Pm := pskl_tophole Pb);
+    + subst. eapply ad_refine_pskl_hole_l_gen with (Pm := pskl_tophole Pb);
         [ apply ad_refine_pskl__tophole_keep; eassumption
         | exact Hmap | exact Hwf | exact Hdisj | eassumption | exact HwfQr ].
     + apply ad_refine_pskl__tophole_remove. apply IHHp; auto.
@@ -931,7 +931,7 @@ Proof.
       apply ad_refine_pskl_refl.
       apply a_wf_ptyp_to_wf_pskl.
       eapply a_wf_aenv_binds_def_wf; [ exact Hwf | apply Hmap; eassumption ].
-    + subst. eapply ad_refine_pskl_hole_l with (Pm := pskl_var_f α);
+    + subst. eapply ad_refine_pskl_hole_l_gen with (Pm := pskl_var_f α);
         [ eapply ad_refine_pskl__flex_l; eassumption
         | exact Hmap | exact Hwf | exact Hdisj | eassumption | exact HwfQr ].
     + apply ad_refine_pskl__tophole_remove. apply IHHp; auto.

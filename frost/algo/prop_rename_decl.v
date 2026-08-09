@@ -288,7 +288,7 @@ Lemma a_tyequiv_rename_paint : forall Θ1 α Θ0 A B β',
     (subst_ptyp_in_ptyp (ptyp_var_f β') α B).
 Proof.
   intros * H Hdom Hdefs.
-  eapply a_tyequiv_mono;
+  eapply a_tyequiv_ctx_mono;
     [ exact (@a_tyequiv_rename_tvar _ _ _ H Θ1 α Θ0 β' eq_refl Hdom Hdefs)
     | apply tbinds_le_subst_mid; exact Hdefs ].
 Qed.

@@ -423,7 +423,7 @@ Proof.
   - (* freeze *)
     eapply ad_sd_typing__freeze;
       [ apply IHad_sd_typing; auto
-      | eapply a_tyequiv_mono;
+      | eapply a_tyequiv_ctx_mono;
           [ eassumption | apply aenv_tbinds_le_rename_tm;
                           apply abind_is_tm_not_ty; exact Htm ] ].
   - (* abs_check_step : a RIGID binder joins the prefix *)
@@ -461,7 +461,7 @@ Proof.
       [ eapply a_wf_ptyp_mono;
           [ eassumption | apply aenv_tbinds_le_rename_tm;
                           apply abind_is_tm_not_ty; exact Htm ]
-      | eapply a_tyequiv_mono;
+      | eapply a_tyequiv_ctx_mono;
           [ eassumption | apply aenv_tbinds_le_rename_tm;
                           apply abind_is_tm_not_ty; exact Htm ]
       | assumption | ].
@@ -492,7 +492,7 @@ Proof.
       try (eapply a_wf_ptyp_mono;
            [ eassumption | apply aenv_tbinds_le_rename_tm;
                            apply abind_is_tm_not_ty; exact Htm ]);
-      try (eapply a_tyequiv_mono;
+      try (eapply a_tyequiv_ctx_mono;
            [ eassumption | apply aenv_tbinds_le_rename_tm;
                            apply abind_is_tm_not_ty; exact Htm ]).
     intros z Hz.
@@ -509,7 +509,7 @@ Proof.
           [ eassumption | apply aenv_tbinds_le_rename_tm;
                           apply abind_is_tm_not_ty; exact Htm ]
       | apply IHad_sd_typing1; auto
-      | eapply a_tyequiv_mono;
+      | eapply a_tyequiv_ctx_mono;
           [ eassumption | apply aenv_tbinds_le_rename_tm;
                           apply abind_is_tm_not_ty; exact Htm ]
       | apply IHad_sd_typing2; auto ].

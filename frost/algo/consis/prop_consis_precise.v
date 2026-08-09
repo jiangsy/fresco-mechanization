@@ -549,7 +549,7 @@ Qed.
 
 
 (** Monotonicity of [a_binds_tvar] under context extension. *)
-Lemma a_binds_tvar_mono : forall α Θ Θ',
+Lemma a_binds_tvar_binds_le : forall α Θ Θ',
   a_binds_tvar α Θ ->
   (forall x b, binds x b Θ -> binds x b Θ') ->
   a_binds_tvar α Θ'.
@@ -654,7 +654,7 @@ Proof.
     eapply IHHr with (Ptgt := Pt0);
       [ reflexivity | reflexivity
       | intros x b Hb; apply Hincl''; apply Hmon; exact Hb
-      | intros β HβΔ; eapply a_binds_tvar_mono;
+      | intros β HβΔ; eapply a_binds_tvar_binds_le;
           [ apply Hrig; exact HβΔ | exact Hincl'' ]
       | exact Hwf'' | exact Hc'' | exact Hwfq'' ].
   - (* flex_l: Qsrc = bskl_var α (α ≔ τ), premise syn τ ⊳ Qtgt *)

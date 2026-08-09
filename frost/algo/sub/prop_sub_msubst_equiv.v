@@ -1152,7 +1152,7 @@ Proof.
     split; intro Hm; inversion Hm.
 Qed.
 
-Lemma a_tyequiv_mono : forall Θ A B,
+Lemma a_tyequiv_preserves_mono : forall Θ A B,
   Θ ⊢ A ≡ᵗ B ->
   a_wf_aenv Θ ->
   mono_ptyp A ->
@@ -1239,7 +1239,7 @@ Qed.
 (*  the pskl-level [skl_tyequiv_consis_transport] through the painting    *)
 (*  roundtrip (no monotype restriction there).  The [mono] premise makes  *)
 (*  the ≡ᵗ [__all] row vacuous — under a wf base context, ≡ᵗ never        *)
-(*  relates a monotype to a quantifier ([a_tyequiv_mono]).                *)
+(*  relates a monotype to a quantifier ([a_tyequiv_preserves_mono]).                *)
 (* ===================================================================== *)
 
 (** Consistency at a painting subject transports along ≡ᵗ (any types). *)
@@ -1278,13 +1278,13 @@ Proof.
     split; intros n NM M Ψ Q HD; exact HD.
   - (* sym *)
     assert (Hm' : mono_ptyp A)
-      by (eapply a_tyequiv_mono;
+      by (eapply a_tyequiv_preserves_mono;
           [ apply a_tyequiv__sym; exact Heq | exact Hwf | exact Hm ]).
     destruct (IHHeq Hwf Θ' Hm' Hwf' Hmon) as [d1 d2].
     split; [ exact d2 | exact d1 ].
   - (* trans *)
     assert (HmB : mono_ptyp B)
-      by (eapply a_tyequiv_mono; [ exact Heq1 | exact Hwf | exact Hm ]).
+      by (eapply a_tyequiv_preserves_mono; [ exact Heq1 | exact Hwf | exact Hm ]).
     destruct (IHHeq1 Hwf Θ' Hm Hwf' Hmon) as [d1a d1b].
     destruct (IHHeq2 Hwf Θ' HmB Hwf' Hmon) as [d2a d2b].
     split; intros n NM M Ψ Q HD;
@@ -1304,9 +1304,9 @@ Proof.
         rename Hma into Hm1; rename Hmb into Hm2
     end.
     assert (HmB1 : mono_ptyp B1)
-      by (eapply a_tyequiv_mono; [ exact Heq1 | exact Hwf | exact Hm1 ]).
+      by (eapply a_tyequiv_preserves_mono; [ exact Heq1 | exact Hwf | exact Hm1 ]).
     assert (HmB2 : mono_ptyp B2)
-      by (eapply a_tyequiv_mono; [ exact Heq2 | exact Hwf | exact Hm2 ]).
+      by (eapply a_tyequiv_preserves_mono; [ exact Heq2 | exact Hwf | exact Hm2 ]).
     split.
     + (* A-painting → B-painting *)
       intros n NM M Ψ Q HD.

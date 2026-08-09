@@ -171,11 +171,11 @@ Proof.
 Qed.
 
 (** Local closure of every range skeleton lets ρ commute with opening. *)
-Definition msubst_lc (ρ : list (atom * uskl)) : Prop :=
+Definition rho_lc (ρ : list (atom * uskl)) : Prop :=
   forall β ψg, binds β ψg ρ -> lc_uskl ψg.
 
 Lemma msubst_uskl_open_comm : forall ρ R α,
-  msubst_lc ρ ->
+  rho_lc ρ ->
   α `notin` dom ρ ->
   (forall β ψg, binds β ψg ρ -> α `notin` ftvar_in_uskl ψg) ->
   msubst_uskl ρ (open_uskl_wrt_uskl R (uskl_var_f α))
@@ -185,7 +185,7 @@ Proof.
     simpl; [ reflexivity | ].
   assert (Hlcγ : lc_uskl ψg)
     by (eapply Hlc; unfold binds; simpl; left; reflexivity).
-  assert (Hlc' : msubst_lc ρ')
+  assert (Hlc' : rho_lc ρ')
     by (intros b p Hb; eapply Hlc; unfold binds; simpl; right; exact Hb).
   assert (Hdom' : α `notin` dom ρ')
     by (simpl in Hdom; clear - Hdom; fsetdec).
@@ -494,7 +494,7 @@ Qed.
 
 (** ρ preserves local closure. *)
 Lemma msubst_uskl_lc : forall ρ R,
-  msubst_lc ρ -> lc_uskl R -> lc_uskl (msubst_uskl ρ R).
+  rho_lc ρ -> lc_uskl R -> lc_uskl (msubst_uskl ρ R).
 Proof.
   induction ρ as [ | [β ψg] ρ' IH ]; intros R Hlc HT; simpl; [ exact HT | ].
   apply subst_uskl_in_uskl_lc_uskl.
@@ -680,7 +680,7 @@ Proof. intros R H; inversion H; auto. Qed.
 Lemma a_consistag_decoration_var : forall ψ P0 Ψa,
   ψ ∼ᵗ P0 ⤳ Ψa ->
   forall Δ1 Δ2 Ψ Θ0 P Θ1 ρ,
-    msubst_lc ρ ->
+    rho_lc ρ ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ]
       (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ))) ∼˙ P ⊣ Θ1 ->
     (* external well-formedness (paper's prose side conditions): only the
@@ -1236,7 +1236,7 @@ Proof. induction ρ as [|[α1 g] ρ' IH]; simpl; [reflexivity|]; rewrite IH; ref
     stripped ρ-image (the head shapes coincide except at variables, where
     the two sources are the same term). *)
 Lemma guarded_msubst_decorate : forall ρ ψ,
-  msubst_lc ρ ->
+  rho_lc ρ ->
   lc_uskl ψ ->
   guarded_uskl (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ))) ->
   guarded_uskl (msubst_uskl ρ ψ).
@@ -1278,7 +1278,7 @@ Lemma faf_empty : forall Θ, flex_above_free (empty `union` empty) Θ.
 Proof. intros Θ Θ1 β b Θ2 Heq Hne. clear. fsetdec. Qed.
 
 Lemma lc_msubst_strip : forall ρ ψ,
-  msubst_lc ρ -> lc_uskl ψ ->
+  rho_lc ρ -> lc_uskl ψ ->
   lc_uskl (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ))).
 Proof.
   intros. apply msubst_uskl_lc; [ assumption | ].
@@ -1299,7 +1299,7 @@ Lemma a_subtag_decoration_var : forall NM M P0 Ψ Θ0 R P Θ1,
   forall ψ Ψa ρ,
     R = msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ)) ->
     ψ ≼ᵗ[ M ] P0 ⤳ Ψa ->
-    msubst_lc ρ ->
+    rho_lc ρ ->
     lc_uskl ψ ->
     a_wf_aenv Θ0 ->
     lc_uskl R ->
@@ -1543,7 +1543,7 @@ Proof.
                         β `notin` ftvar_in_uskl ψg0).
         { intros α1 ψg0 Hb. pose proof (msubst_ftv_binds _ _ _ Hb) as Hsc.
           clear - Hβ Hsc. fsetdec. }
-        assert (Hlcρ' : msubst_lc ((β, ψg) :: ρ)).
+        assert (Hlcρ' : rho_lc ((β, ψg) :: ρ)).
         { intros α1 ψg0 Hb. unfold binds in Hb. simpl in Hb.
           destruct Hb as [Hb | Hb];
             [ inversion Hb; subst; exact Hlcg | eapply Hlcρ; exact Hb ]. }
