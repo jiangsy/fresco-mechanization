@@ -1,10 +1,11 @@
 (** Frost re-mechanization — the compilable paper-to-Coq theorem index.
 
     THIS FILE IS A HEADLINE INDEX, NOT A CATALOGUE.  It lists the results a
-    reader of the paper would come looking for: the flagship theorems, the
-    P5/P6 chain thm:complete-subtyping is assembled from, and the handful of
-    statements that go BEYOND the paper and that a referee should therefore
-    see.
+    reader of the paper would come looking for: the flagship theorems, and the
+    P5/P6 chain thm:complete-subtyping is assembled from.  Everything the
+    mechanization found BEYOND the paper — the facts it asserts inline and
+    never states, the external wf conditions, the refuted statements — is
+    recorded in docs/PAPER-GAPS.md and docs/WF-SIDE-CONDITIONS.md, not here.
 
     ⚠️ A lemma having a paper label is NOT a reason to appear here.  The tree
     has hundreds of supporting results — generalized forms (`*_gen`), fuel/μ
@@ -68,10 +69,8 @@ Require Import src.frost.algo.completeness_look.prop_extract.
 Require Import src.frost.algo.prop_completeness_sub.
 Require Import src.frost.algo.prop_soundness_pat.
 Require Import src.frost.algo.prop_soundness_typing.
-Require Import src.frost.algo.prop_wf_preservation.
+Require Import src.frost.algo.prop_precise.      (* the ⊢ₚᵣᵃ _ ⊑ _ notation *)
 Require Import src.frost.algo.prop_precise_sub.
-Require Import src.frost.algo.prop_precise.
-Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_completeness_pat.
 Require Import src.frost.algo.completeness_typing.prop_typing.
 
@@ -260,7 +259,25 @@ Print Assumptions a_typing_sound.
      ∀κ₁ identity out of Θ₀. ∃ζ.  ζ ∷ Θ₁ ⊑ Θ  ∧  ζ ∘ κ₁ ≡ κ  ∧  ζP₁ ⊑ ⌊Q⌋
    ⚙ TERM-SIZE induction only: the mech FUSED the paper's P-Sub into the three
    base rows, so every recursive premise is at a strict subterm. *)
-Check a_pat_complete.
+Check a_pat_complete :
+  forall e M Θ0 P0 κ Θ Q,
+    a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+    Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+    a_sk_mode_compat M P0 ->
+    κ ∷ Θ0 ⊑ Θ ->
+    (forall α, α `in` ftvar_in_exp e -> binds α abind_tvar Θ0) ->
+    (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
+    (forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps) ->
+    lc_exp e ->
+    Θ ⊢ᵃ[ M ] e ⇨ Q ->
+    Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+    exists P1 Θ1,
+      Θ0 ⊢ₐ[ M ; P0 ] e ⇨ P1 ⊣ Θ1 /\
+      (forall κ1, is_id_msubst κ1 -> κ1 ∷ Θ0 ⊑ Θ1 ->
+         exists ζ,
+           ζ ∷ Θ1 ⊑ Θ /\
+           a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ /\
+           Θ ⨟ empty ⊢ₚᵣᵃ (msubst_pskl ζ P1) ⊑ (bskl_to_pskl Q)).
 Print Assumptions a_pat_complete.
 
 (* ⭐⭐⭐ Theorem [Completeness + optimality of type inference]
@@ -269,7 +286,25 @@ Print Assumptions a_pat_complete.
    ⚙ LEXICOGRAPHIC (size_exp e, size_btyp B) induction: ten of the twelve rows
    recurse at a strictly smaller subject; only the two ∀-peeling AbsCheck rows
    recurse at the SAME subject, and they drop one ∀ off the declarative result. *)
-Check a_typing_complete.
+Check a_typing_complete :
+  forall e M Θ0 P0 κ Θ B,
+    a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+    Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+    a_ty_mode_compat M P0 ->
+    κ ∷ Θ0 ⊑ Θ ->
+    (forall α, α `in` ftvar_in_exp e -> binds α abind_tvar Θ0) ->
+    (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
+    (forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps) ->
+    lc_exp e ->
+    Θ ⊢ˢᵃ[ M ] e ⦂ B ->
+    Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (btyp_to_bskl B) ->
+    exists A1 Θ1,
+      Θ0 ⊢ₐ[ M ; P0 ] e ⦂ A1 ⊣ Θ1 /\
+      (forall κ1, is_id_msubst κ1 -> κ1 ∷ Θ0 ⊑ Θ1 ->
+         exists ζ,
+           ζ ∷ Θ1 ⊑ Θ /\
+           a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ /\
+           Θ ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B)).
 Print Assumptions a_typing_complete.
 
 (* --- the two section-D lemmas the paper states in its own right -------- *)
@@ -285,73 +320,3 @@ Check ad_ctx_precise_pat :
   Θ ⊢ᵃ[ M ] e ⇨ Q ->
   forall Θ', Θ' ⪯ᶜᵗˣ Θ -> a_wf_aenv Θ -> a_wf_aenv Θ' -> Θ' ⊢ᵃ[ M ] e ⇨ Q.
 Print Assumptions ad_ctx_precise_pat.
-
-
-(* ##################################################################### *)
-(*  V.  BEYOND THE PAPER — what a referee should see                     *)
-(*                                                                       *)
-(*  NOT paper lemmas.  Each is either a fact the paper ASSERTS INLINE and *)
-(*  never states, or a foundation the mechanization had to invent.  Full  *)
-(*  registry: docs/PAPER-GAPS.md + docs/WF-SIDE-CONDITIONS.md.           *)
-(* ##################################################################### *)
-
-(* ⭐ Asserted inline, never stated: AbsAnno's "preservation of refinement
-   under type equivalence"; that guess^TY refines; and that a refinement
-   between ghost-free paintings IS a type equivalence (Freeze's / AT-App's
-   bridge). *)
-Check a_consis_chk_annot_refine.
-Print Assumptions a_consis_chk_annot_refine.
-Check a_guess_mono_refine.
-Print Assumptions a_guess_mono_refine.
-Check ad_refine_syn_inh_tyequiv :
-  forall Θ Δ Qs Qt,
-  Θ ⨟ Δ ⊢ᵣᵃ Qs ⊳ Qt ->
-  a_wf_aenv Θ ->
-  forall A B,
-  Qs = pskl_to_bskl_inh (ptyp_to_pskl A) ->
-  Qt = btyp_to_bskl B ->
-  Θ ⊢ A ≡ᵗ (btyp_to_ptyp B).
-Print Assumptions ad_refine_syn_inh_tyequiv.
-
-(* ⭐ Lemma [Precision preserves refinement]  lemma:precision-preserves-refinement
-   — it holds EXACTLY because the paper requires refinement's arguments to be
-   well-formed (declarative.tex:1427).  Without that condition refinement is
-   NOT transitive: cex/cex_refine_not_transitive.v. *)
-Check ad_precise_preserves_refine :
-  forall Θ Δ P P' Q,
-  Θ ⨟ Δ ⊢ₚᵣᵃ P ⊑ P' ->
-  Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh P') ⊳ Q ->
-  a_wf_aenv Θ ->
-  (forall α, α `in` Δ -> α `notin` dom Θ) ->
-  Θ ⨟ Δ ⊢ₚₛᵃ (bskl_to_pskl Q) ->
-  Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ Q.
-Print Assumptions ad_precise_preserves_refine.
-
-(* ⭐ THE ALGORITHM'S OUTPUTS ARE WELL-FORMED — a foundation the paper leaves
-   to its implicit "all inputs are well-formed" convention, and what supplies
-   lemma:precision-sub's external condition FROM THE RUN. *)
-Check a_sub_output_wf :
-  forall NM M P0 Θ0 P P' Θ1,
-  Θ0 ⊢ₐ[ NM | M | P0 ] P ⩽ P' ⊣ Θ1 ->
-  a_wf_aenv Θ0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
-  Θ1 ⨟ empty ⊢ₚₛᵃ P'.
-Print Assumptions a_sub_output_wf.
-Check a_consis_output_wf.
-Print Assumptions a_consis_output_wf.
-
-(* ⭐ THE MONOTYPE BRIDGE — what the CORRECTED [Flex-Flex-Assign] produces and
-   consumes.  The pre-fix [a_unify] was machine-checked STUCK on an instance
-   that now succeeds (test/test_unify_regression.v). *)
-Check consis_refine_mono_tyequiv :
-  forall Θ A A' Qt,
-  a_wf_aenv Θ ->
-  mono_ptyp A ->
-  mono_ptyp A' ->
-  empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ Qt ->
-  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (ptyp_to_pskl A')) ⊳ Qt ->
-  Θ ⊢ A ≡ᵗ A'.
-Print Assumptions consis_refine_mono_tyequiv.
-Check tyequiv_mono_consis.
-Print Assumptions tyequiv_mono_consis.
