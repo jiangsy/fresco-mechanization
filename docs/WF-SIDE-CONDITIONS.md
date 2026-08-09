@@ -499,10 +499,22 @@ is now discharged inside the dispatch (`p0_wlog_trichotomy` +
 
 ## Skeleton term entries — the payload-wf DISCIPLINE is needed for the TARGET context too, on every completeness row (registered 2026-08-08)
 
-`a_wf_aenv__var` stores only `a_scope_pskl` for an `x : P` entry, while the
-subtyping/consistency theorems demand the disciplined `Θ ⨟ ∅ ⊢ₚₛᵃ P`
-(see *Skeleton wf in the algo layer* above).  Both soundness theorems
-therefore carry
+✅ **RETIRED FROM THE TWO FLAGSHIP COMPLETENESS STATEMENTS, 2026-08-09.**
+`a_pat_complete` and `a_typing_complete` no longer carry either copy: with
+`a_wf_aenv__var` storing the disciplined entry wf, both follow from the
+`a_wf_aenv` premises the theorems already have, by
+`a_wf_aenv_binds_var_skl_wf` (algo/prop_inc_strengthen.v — the entry's stored
+wf, weakened past the entry).  They were EXTERNAL side conditions; they are
+theorems.  ⚙ The `_gen` lemmas and the step rows still THREAD them — the
+paragraph below still explains why the target copy is not optional there —
+but that is now internal bookkeeping, invisible in the paper-facing statement.
+The soundness theorems' question-context copy is likewise derivable; it has
+not been swept yet.
+
+The original entry, for the reasoning: `a_wf_aenv__var` stored only
+`a_scope_pskl` for an `x : P` entry, while the subtyping/consistency theorems
+demand the disciplined `Θ ⨟ ∅ ⊢ₚₛᵃ P` (see *Skeleton wf in the algo layer*
+above).  Both soundness theorems therefore carry
 
 ```coq
 forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps

@@ -919,7 +919,7 @@ Proof.
   (* ---- 1. the SKELETON stage : THEOREM 3 at (TC, ◇) ---- *)
   destruct (@a_pat_complete e2 mode_tc Θ0 pskl_hole κ Θ (pskl_to_bskl_syn P)
               Hwf0 HwfΘ (a_wf_pskl__hole _ _) a_sk_mode_compat__tc Hinc
-              Hrig2 Hskl HsklT Hlc2 Hd2s
+              Hrig2 Hlc2 Hd2s
               ltac:(cbn [msubst_pskl pskl_to_bskl_inh];
                     apply ad_refine_syn__hole; exact HwfP))
     as [P' [Θ1' [Hrun1 Hopt1]]].
@@ -4585,8 +4585,11 @@ Theorem a_typing_complete : forall e M Θ0 P0 κ Θ B,
   a_ty_mode_compat M P0 ->
   κ ∷ Θ0 ⊑ Θ ->
   (forall α, α `in` ftvar_in_exp e -> binds α abind_tvar Θ0) ->
-  (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
-  (forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps) ->
+  (* ⭐ the two [binds y (abind_var_skl Ps) … -> … ⊢ₚₛᵃ Ps] hypotheses this
+     used to carry are GONE: since 2026-08-09 [a_wf_aenv__var] stores the
+     disciplined entry wf, so they follow from the two [a_wf_aenv] premises
+     above by [a_wf_aenv_binds_var_skl_wf].  They were external wf side
+     conditions (docs/WF-SIDE-CONDITIONS.md); they are theorems now. *)
   lc_exp e ->
   Θ ⊢ᵃᵈ[ M ] e ⦂ B ->
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (btyp_to_bskl B) ->
@@ -4598,8 +4601,10 @@ Theorem a_typing_complete : forall e M Θ0 P0 κ Θ B,
          a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ /\
          Θ ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B)).
 Proof.
-  intros.
+  intros e M Θ0 P0 κ Θ B Hwf0 HwfΘ HwfP0 Hmod Hinc Hrig Hlc Had Href.
   eapply a_typing_complete_gen
     with (n := S (size_exp e)) (m := S (size_btyp B));
-    try eassumption; clear; lia.
+    try eassumption;
+    try solve [ intros y Ps Hb; eapply a_wf_aenv_binds_var_skl_wf; eassumption ];
+    clear; lia.
 Qed.

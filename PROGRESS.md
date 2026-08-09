@@ -285,10 +285,18 @@ premise was tried and REVERTED for this reason.  Making the join-target lemma
 disciplined is a real proof obligation — its `∀◇` cases would have to
 establish guardedness and the Δ-reset — not a rename.
 
-⛔ NOT done: the two theorems' `binds y (abind_var_skl Ps) -> … ⊢ₚₛᵃ Ps`
-hypotheses are now DERIVABLE from `a_wf_aenv` but are still stated.  Dropping
-them means re-proving every row that consumes them from the context instead;
-that is its own pass.
+✅ **AND THEN DROPPED (same day).**  `a_pat_complete` and `a_typing_complete`
+no longer state the two `binds y (abind_var_skl Ps) -> … ⊢ₚₛᵃ Ps` hypotheses.
+The predicted cost — "re-proving every row that consumes them" — did not
+materialise: the rows keep threading them through `a_pat_complete_gen` /
+`a_typing_complete_gen`, and the FLAGSHIP simply discharges them from its own
+`a_wf_aenv` premises with the new `a_wf_aenv_binds_var_skl_wf`
+(algo/prop_inc_strengthen.v, beside its `_ftv` sibling: the entry's stored wf
+weakened past the entry).  Two external wf side conditions became theorems, and
+`README.v`'s ascriptions shrank accordingly.  ⚙ One internal caller
+(`a_typing_complete_abs`'s use of theorem 3) had to drop two positional
+arguments.  ⛔ Still stated, not swept: the SOUNDNESS theorems' question-context
+copy, which is derivable the same way.
 
 ## 2026-08-09 (latest) — ⚙ **NOTATION PASS: the system/sort AXES, `⇨` retired, `blk` → `Ξg`**
 

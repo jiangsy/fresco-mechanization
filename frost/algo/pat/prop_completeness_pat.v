@@ -2788,8 +2788,11 @@ Theorem a_pat_complete : forall e M Θ0 P0 κ Θ Q,
   a_sk_mode_compat M P0 ->
   κ ∷ Θ0 ⊑ Θ ->
   (forall α, α `in` ftvar_in_exp e -> binds α abind_tvar Θ0) ->
-  (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
-  (forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps) ->
+  (* ⭐ the two [binds y (abind_var_skl Ps) … -> … ⊢ₚₛᵃ Ps] hypotheses this
+     used to carry are GONE: since 2026-08-09 [a_wf_aenv__var] stores the
+     disciplined entry wf, so they follow from the two [a_wf_aenv] premises
+     above by [a_wf_aenv_binds_var_skl_wf].  They were external wf side
+     conditions (docs/WF-SIDE-CONDITIONS.md); they are theorems now. *)
   lc_exp e ->
   Θ ⊢ₛᵃᵈ[ M ] e ⦂ Q ->
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
@@ -2801,7 +2804,8 @@ Theorem a_pat_complete : forall e M Θ0 P0 κ Θ Q,
          a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ /\
          Θ ⨟ empty ⊢ₚᵣᵃᵈ (msubst_pskl ζ P1) ⊑ (bskl_to_pskl Q)).
 Proof.
-  intros.
-  eapply a_pat_complete_gen with (n := S (size_exp e)); try eassumption.
+  intros e M Θ0 P0 κ Θ Q Hwf0 HwfΘ HwfP0 Hmod Hinc Hrig Hlc Had Href.
+  eapply a_pat_complete_gen with (n := S (size_exp e)); try eassumption;
+    try solve [ intros y Ps Hb; eapply a_wf_aenv_binds_var_skl_wf; eassumption ].
   clear; lia.
 Qed.

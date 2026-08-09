@@ -272,7 +272,13 @@ Print Assumptions a_typing_sound.
    thm:complete-subtyping:
      ∀κ₁ identity out of Θ₀. ∃ζ.  ζ ∷ Θ₁ ⊑ Θ  ∧  ζ ∘ κ₁ ≡ κ  ∧  ζP₁ ⊑ ⌊Q⌋
    ⚙ TERM-SIZE induction only: the mech FUSED the paper's P-Sub into the three
-   base rows, so every recursive premise is at a strict subterm. *)
+   base rows, so every recursive premise is at a strict subterm.
+   ⭐ Both completeness theorems used to carry
+   [binds y (abind_var_skl Ps) … -> … ⊢ₚₛᵃ Ps] for BOTH contexts, as external
+   wf side conditions.  Retired 2026-08-09: [a_wf_aenv__var] stores the
+   disciplined entry wf, so they follow from the [a_wf_aenv] premises
+   ([a_wf_aenv_binds_var_skl_wf]).  What is left BEYOND the paper's own
+   premises is registered in docs/WF-SIDE-CONDITIONS.md. *)
 Check a_pat_complete :
   forall e M Θ0 P0 κ Θ Q,
     a_wf_aenv Θ0 -> a_wf_aenv Θ ->
@@ -280,8 +286,6 @@ Check a_pat_complete :
     a_sk_mode_compat M P0 ->
     κ ∷ Θ0 ⊑ Θ ->
     (forall α, α `in` ftvar_in_exp e -> binds α abind_tvar Θ0) ->
-    (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
-    (forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps) ->
     lc_exp e ->
     Θ ⊢ₛᵃᵈ[ M ] e ⦂ Q ->
     Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
@@ -307,8 +311,6 @@ Check a_typing_complete :
     a_ty_mode_compat M P0 ->
     κ ∷ Θ0 ⊑ Θ ->
     (forall α, α `in` ftvar_in_exp e -> binds α abind_tvar Θ0) ->
-    (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
-    (forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps) ->
     lc_exp e ->
     Θ ⊢ᵃᵈ[ M ] e ⦂ B ->
     Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (btyp_to_bskl B) ->

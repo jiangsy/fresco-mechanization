@@ -398,6 +398,30 @@ Proof.
   pose proof (a_wf_ptyp_ftv_dom' H0) as Hs. simpl. clear - Hs. fsetdec.
 Qed.
 
+(** ⭐ A well-formed context's term entry is DISCIPLINED-well-formed in the
+    WHOLE context.  [a_wf_aenv__var] stores it in the entry's TAIL (2026-08-09);
+    this weakens that to the full context, which is the form every consumer
+    wants.  It is what retired the two
+    [binds y (abind_var_skl Ps) Θ -> Θ ⨟ ∅ ⊢ₚₛᵃ Ps] hypotheses from
+    [a_pat_complete] / [a_typing_complete] — before the constructor was
+    strengthened they were EXTERNAL side conditions (docs/WF-SIDE-CONDITIONS.md),
+    and now they are theorems. *)
+Lemma a_wf_aenv_binds_var_skl_wf : forall Θ x P,
+  a_wf_aenv Θ -> binds x (abind_var_skl P) Θ ->
+  Θ ⨟ empty ⊢ₚₛᵃ P.
+Proof.
+  intros Θ x P Hwf; induction Hwf; intros Hb; try solve [ inversion Hb ];
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq1 Heq2] | Hb'];
+    try discriminate;
+    try solve [ eapply a_wf_pskl_weaken;
+                  [ intros ? ? Hb2; apply binds_cons_3; exact Hb2
+                  | exact (IHHwf Hb') ] ].
+  (* var_skl head : the entry's own stored wf, weakened past the entry *)
+  injection Heq2 as Heq2. subst.
+  eapply a_wf_pskl_weaken;
+    [ intros ? ? Hb2; apply binds_cons_3; exact Hb2 | exact H0 ].
+Qed.
+
 Lemma a_wf_aenv_binds_var_skl_ftv : forall Θ x P,
   a_wf_aenv Θ -> binds x (abind_var_skl P) Θ ->
   ftvar_in_pskl P [<=] dom Θ.
