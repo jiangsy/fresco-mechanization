@@ -1,24 +1,62 @@
-(** Frost re-mechanization — compilable paper-to-Coq theorem index.
+(** Frost re-mechanization — the compilable paper-to-Coq theorem index.
 
-    One [Check] per mechanized paper claim, plus [Print Assumptions] for the
-    flagship theorems (the build tail shows them; they must all print
-    "Closed under the global context"). *)
+    THIS FILE IS A HEADLINE INDEX, NOT A CATALOGUE.  It lists the results a
+    reader of the paper would come looking for: the flagship theorems, the
+    P5/P6 chain thm:complete-subtyping is assembled from, and the handful of
+    statements that go BEYOND the paper and that a referee should therefore
+    see.
 
+    ⚠️ A lemma having a paper label is NOT a reason to appear here.  The tree
+    has hundreds of supporting results — generalized forms (`*_gen`), fuel/μ
+    bundles, renaming kits, scoping invariants — and they belong in their own
+    files.  The exhaustive per-lemma map is [PROGRESS.md] Part 1; this file
+    stays short enough to read in one sitting.
+
+    EVERY ENTRY HAS THE SAME THREE PARTS:
+      (1) the paper's Lemma/Theorem name and label;
+      (2) [Check name : <type>] — the statement ASCRIBED, in the paper's own
+          notation, so the paper form is MACHINE-CHECKED rather than a prose
+          comment.  A bare [Check name.] is used where the full type is
+          bookkeeping (ρ / Ψ / Θw indices) that would obscure more than it
+          shows — the statement is then in the cited file;
+      (3) [Print Assumptions name] IMMEDIATELY AFTER, so a claim and its axiom
+          status sit together.
+
+    The build tail prints one assumption report per entry and EVERY one must
+    read "Closed under the global context".
+
+    ⚙ "External wf" premises are the ones the paper states in PROSE, outside
+    its rules ("as usual, all inputs are well-formed").  A Coq [Inductive] has
+    no such notion, so each becomes an explicit hypothesis; the registry is
+    docs/WF-SIDE-CONDITIONS.md.  Departures from the paper's own statements
+    are in docs/PAPER-GAPS.md and flagged ⚠️ at the entry.
+
+    NOTATION
+      Γ / Θ  declarative / algorithmic context      Ξ  suffix (fresh block)
+      Δ, Ψ   tag context, tag scope                 κ, ζ  metasubstitutions
+      A B C  ptyp, btyp, utyp                       P Q R  pskl, bskl, uskl
+      κ ∷ Θ₀ ⊑ Θ  information increase              Θ₀ ⊴ Θ₁  its relational form
+      ∼ consistency   ⩽ subtyping   ⇨ skeleton inference   ⦂ type inference
+      ⊳ refinement    ⊑ precision   ≡ᵗ/≡ˢ/≡ᵘ equivalence   ⪯ᶜᵗˣ ctx precision  *)
+
+Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
+Require Import src.frost.decorated_algo.def_decorated.
+Require Import src.frost.def_extra.
+Require Import src.frost.coercions.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
+Require Import src.frost.algo.def_extra.          (* the algorithmic judgement notations *)
+Require Import src.frost.algo.def_meta.            (* κ ∷ Θ ⊑ Θ', Θ ⊴ Θ' *)
+Require Import src.frost.decorated_algo.def_decl_algo.
+Require Import src.frost.decorated_algo.def_decl_algo_sub.
+Require Import src.frost.decorated_algo.def_decl_algo_typing.
+Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.decl.prop_syntax_directed.
 Require Import src.frost.decl.prop_general_subsumption.
-Require Import src.frost.decorated_algo.prop_decorate.
-Require Import src.frost.algo.prop_inc.
-Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_soundness_consis.
-Require Import src.frost.algo.prop_consis_rename.
-Require Import src.frost.algo.prop_mono_bridge.
-Require Import src.test.test_unify_regression.
-Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.prop_completeness_consis.
 Require Import src.frost.decorated_algo.prop_decorate_key.
 Require Import src.frost.algo.prop_completeness_sub_precise.
@@ -29,286 +67,291 @@ Require Import src.frost.algo.completeness_look.prop_sub_cstr.
 Require Import src.frost.algo.completeness_look.prop_extract.
 Require Import src.frost.algo.prop_completeness_sub.
 Require Import src.frost.algo.prop_soundness_pat.
-Require Import src.frost.algo.prop_suffix_erase.
 Require Import src.frost.algo.prop_soundness_typing.
 Require Import src.frost.algo.prop_wf_preservation.
 Require Import src.frost.algo.prop_precise_sub.
-Require Import src.frost.algo.prop_swap.        (* a_pat_rename_tm, §6 *)
+Require Import src.frost.algo.prop_precise.
+Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_completeness_pat.
 Require Import src.frost.algo.completeness_typing.prop_typing.
 
-(* ===================================================================== *)
-(*  full-decl-proofs.tex / app:syntax-directed                            *)
-(* ===================================================================== *)
 
-(* Lemma [Soundness of Syntax-Directed Rule] (lemma:typing-syn-soundness) *)
+(* ##################################################################### *)
+(*  I.  THE DECLARATIVE SYSTEM — full-decl-proofs.tex                     *)
+(* ##################################################################### *)
+
+(* Lemma [Soundness of the syntax-directed rules]  lemma:typing-syn-soundness *)
 Check d_sd_typing_sound :
-  forall M Γ e A, d_sd_typing M Γ e A -> d_typing M Γ e A.
+  forall M Γ e B, Γ ⊢ˢ[ M ] e ⦂ B -> Γ ⊢[ M ] e ⦂ B.
+Print Assumptions d_sd_typing_sound.
 
-(* Lemma [Completeness of Syntax-Directed Rule] (lemma:typing-syn-completeness) *)
-Check d_sd_typing_complete.
+(* Lemma [Completeness of the syntax-directed rules]  lemma:typing-syn-completeness *)
+Check d_sd_typing_complete :
+  forall M Γ e B, Γ ⊢[ M ] e ⦂ B -> d_wf_denv Γ -> Γ ⊢ˢ[ M ] e ⦂ B.
+Print Assumptions d_sd_typing_complete.
 
-(* ===================================================================== *)
-(*  consistency-proofs.tex (appendix B)                                   *)
-(* ===================================================================== *)
+(* Theorem [General subsumption] — proved on the SYNTAX-DIRECTED system (the
+   "Removed base terms" rework moved it there); the [d_typing] form is a
+   corollary. *)
+Check d_sd_typing_general_subsumption :
+  forall Γ e A B m,
+  d_wf_denv Γ ->
+  Γ ⊢ˢ[ mode_ti ] e ⦂ (ptyp_to_btyp_syn A) ->
+  empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⩽ B ->
+  Γ ⊢ˢ[ m ] e ⦂ B.
+Print Assumptions d_sd_typing_general_subsumption.
 
-(* Lemma [Decorating algorithmic consistency]
-   (lemma:decorating-algorithmic-consistency) *)
-Check a_consis_decorate.
+Check d_typing_general_subsumption :
+  forall Γ e A B m,
+  Γ ⊢[ mode_ti ] e ⦂ (ptyp_to_btyp_syn A) ->
+  empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⩽ B ->
+  Γ ⊢[ m ] e ⦂ B.
+Print Assumptions d_typing_general_subsumption.
 
-(* Lemma [Soundness of consistency] (thm:sound-consistency): the MUTUAL
-   soundness bundle over [a_assign] + [a_unify] + [a_consis].  BOTH auxiliary
-   judgments drop back into consistency — the paper's two-slot [∼] is the
-   OUTPUT-SUPPRESSED CONSISTENCY abbreviation (full-algo-spec.tex:1440-1442),
-   so [Flex-Flex-Assign] AND [Assign-Assign] both recurse into it (the
-   reference implementation agrees: both call [join_sk], type.ml:316-321,
-   :358-363).  All three are therefore one SCC, and their soundness is ONE
-   3-WAY mutual induction — exactly as the paper organises its own proof
-   ("together with the two auxiliary judgements of variable unification and
-   assignment", consistency-proofs.tex:1562).  Parts 2 & 3 packaged below. *)
-Check a_assign_unify_consis_sound.
-Check a_unify_sound.
-Check a_assign_sound.
 
-(* The BRIDGE both ways (algo/prop_mono_bridge.v): on monotypes,
-   consistency's join + the input's refinement yield a type EQUIVALENCE,
-   and conversely a type equivalence yields consistency of the paintings —
-   what the corrected [Flex-Flex-Assign] produces and consumes. *)
-Check consis_refine_mono_tyequiv.
-Check tyequiv_mono_consis.
-Check consis_mono_trans.
+(* ##################################################################### *)
+(*  II.  CONSISTENCY — consistency-proofs.tex (appendix B)                *)
+(* ##################################################################### *)
 
-(* REGRESSION (algo/test_unify_regression.v): the instance the pre-fix
-   [a_unify] was machine-checked to be STUCK on now succeeds. *)
-Check a_unify_succeeds_on_arrow_definition.
+(* ⭐ Theorem [Soundness of consistency]  thm:sound-consistency
+   A run is an information increase whose output is a declarative consistency
+   at a colouring of the result, refining the inherited painting of the input.
+   ⚙ Derived from the DECORATED induction.  The paper's two-slot [∼] is the
+   output-suppressed abbreviation, so assign / unify / consis form ONE SCC and
+   their soundness is a single 3-way mutual induction — exactly as the paper
+   organises its own proof. *)
+Check a_consis_sound :
+  forall Θ0 P0 P P' Θ1,
+  Θ0 ⊢ₐ[ P0 ] P ∼ P' ⊣ Θ1 ->
+  a_wf_aenv Θ0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
+  Θ0 ⊴ Θ1 /\
+  (exists Qt, bskl_to_pskl Qt = P' /\
+     empty ⨟ Θ1 ⊢ₛᵃ (pskl_to_uskl P) ∼ Qt /\
+     Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ Qt) /\
+  Θ1 ⨟ empty ⊢ᵣₚᵃ P ⊳ P'.
+Print Assumptions a_consis_sound.
 
-(* Lemma [Soundness of decorated consistency]
-   (lemma:sound-decorated-consistency): the main induction, over the
-   tagged/decorated consistency judgment, threading the tag context Ψ. *)
-Check a_consistag_sound_aux.
-
-(* Lemma [Precision preserves refinement]
-   (lemma:precision-preserves-refinement, full-algo-spec.tex:716).
-   Precision is refinement between the two inherited paintings, so this is
-   transitivity of refinement — which holds exactly because the paper requires
-   the refinement judgment's arguments to be well-formed (declarative.tex:1427).
-   Without that condition refinement is NOT transitive: see
-   algo/cex_refine_not_transitive.v.  Cf. docs/WF-SIDE-CONDITIONS.md. *)
-Check ad_refine_syn_trans.
-Check ad_precise_preserves_refine.
-
-(* Lemma [Soundness of consistency] (thm:sound-consistency), part 1:
-   the paper-shaped corollary (Δ-contexts empty).  The ordinary
-   induction is DERIVED from the decorated one via [a_consis_decorate]. *)
-Check a_consis_sound.
-
-(* Information-increase algebra (the paper's "stability" infrastructure) *)
-Check a_isub_refl.
-Check a_isub_weaken_suffix.
-Check a_isub_trans.
-
-(* Theorem [Completeness and optimality of consistency]
-   (thm:complete-consistency, consistency-proofs.tex:2225-3167), all three
-   parts: the μ-indexed bundle [complete_mu] and the paper-shaped corollary. *)
+(* ⭐ Theorem [Completeness and optimality of consistency]
+   thm:complete-consistency.  Whenever a solution κ of the question (Θ₀; P₀)
+   makes the declarative judgement hold, the algorithm SUCCEEDS, and its answer
+   FACTORS through the solution — ∃ζ. ζ ∷ Θ₁ ⊑ Θ ∧ ζ ∘ κ₁ ≡ κ ∧ ζP₁ ⊑ ⌊Qb⌋.
+   That factoring IS the optimality.
+   ⚠️ The paper's 2-condition statement is FALSE as literally given; what is
+   proved is the AUGMENTED one.  docs/PAPER-GAPS.md. *)
 Check a_consis_complete_thm.
-Check complete_mu.
+Print Assumptions a_consis_complete_thm.
 
-(* Theorem [Soundness of subtyping] (thm:sound-subtyping): an algorithmic
-   subtyping run is an information increase whose output is a declarative
-   subtype of the subject and a valid fill of the input skeleton.  Assembled
-   from decoration ([a_sub_decorate]) + soundness of the DECORATED system
-   ([a_subtag_sound_bundle]). *)
-Check a_sub_sound_thm.
 
-(* Lemma [Stability of subtyping under more precise substitution]
-   (subtyping-proofs.tex:1664) — P5, the first half of thm:complete-subtyping. *)
-Check ad_pat_sub_precise_upre.
+(* ##################################################################### *)
+(*  III.  SUBTYPING — subtyping-proofs.tex                                *)
+(* ##################################################################### *)
 
-(* Lemma [Completeness of consistency constraint collection and solving]
-   (consistency-proofs.tex:920) and its variable case (:1180) — P6-Cs / P6-Cv.
-   P6-Cs carries one paper-external wf side condition (well-formedness of the
-   consistency subject) whose NECESSITY is machine-checked in
-   algo/cex/cex_p6cs_subject_wf.v; see docs/WF-SIDE-CONDITIONS.md. *)
-Check a_lookeq_solve_complete.
-Check a_solve_eq_complete_var.
+(* ⭐ Theorem [Soundness of subtyping]  thm:sound-subtyping *)
+Check a_sub_sound_thm :
+  forall NM M P0 Θ0 P P' Θ1,
+  Θ0 ⊢ₐ[ NM | M | P0 ] P ⩽ P' ⊣ Θ1 ->
+  a_wf_aenv Θ0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
+  (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->
+  (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
+  Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
+  exists Qt,
+    bskl_to_pskl Qt = P' /\
+    (empty ⨟ Θ1 ⊢ₛᵃ[ NM | M ] (pskl_to_uskl P) ⩽ Qt) /\
+    Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ Qt.
+Print Assumptions a_sub_sound_thm.
 
-(* Lemma [Completeness of subtyping constraint collection and solving]
-   (subtyping-proofs.tex:1696) and its variable case — P6-Ss / P6-Sv.  BOTH are
-   REPAIRED statements: the paper's P6-Sv is FALSE (machine-checked counter-
-   example algo/cex/cex_p6sv_forall_flex.v), and P6-Ss's Sub-ForallR needs a
-   mode-guarded ftv-𝒞 disjunction because the sub-side analogue of
-   [ad_pat_consis_target_ftv] is FALSE (algo/cex/cex_p6ss_sub_target_ftv.v).
-   See docs/PAPER-GAPS.md. *)
-Check a_looksub_solve_complete.
-Check a_solve_sub_complete_var.
-
-(* Lemma [Look completeness] (subtyping-proofs.tex:2730) — P6-L, the last of
-   P6's five lemmas.  Wraps P6-Ss at [Pi = □] / [Ψi = ∅], upgrades ⊑ᵖ to ⊑ via
-   [ad_partial_precise_complete] (P5b-i) and supplies the guess^N step — at TY
-   by building [a_guess_mono] and the metasubstitution extension at once
-   ([a_guess_ty_witness]). *)
-Check a_extract_complete_gen.
-Check a_extract_complete.
-
-(* ⭐⭐⭐ Theorem [Completeness of subtyping] (thm:complete-subtyping,
-   algorithmic.tex:1446) — P7, and UNCONDITIONAL since 2026-08-05.  It used to
-   take [forall n, main_forall n] as a hypothesis, whose one unsupplied
-   premise was the mech-invented [sub_shield]; under the authors' repaired
-   [SolE-FlexR] that gate is discharged outright ([sub_shield_empty]).
-   [a_sub_complete_bundle_holds] is the mutual main ⇄ flex bundle;
-   [a_sub_complete_thm] is its [Ψ := ∅], [R := ⌈P⌉ᵘ] instance.
-   Premises beyond the paper's are the EXTERNAL wf side conditions of
-   docs/WF-SIDE-CONDITIONS.md (well-formedness of the counterpart, and the
-   subject's ghost-freeness at the TY sort). *)
-Check a_sub_complete_bundle_holds.
+(* ⭐⭐⭐ Theorem [Completeness and optimality of subtyping]
+   thm:complete-subtyping (algorithmic.tex:1446) — UNCONDITIONAL since
+   2026-08-05.  It used to take [forall n, main_forall n] as a hypothesis,
+   whose one unsupplied premise was the mech-invented [sub_shield]; under the
+   authors' repaired [SolE-FlexR] that gate is discharged outright.
+   Premises beyond the paper's are the EXTERNAL wf side conditions
+   (docs/WF-SIDE-CONDITIONS.md): wf of the counterpart, and the subject's
+   ghost-freeness at the TY sort. *)
 Check a_sub_complete_thm.
+Print Assumptions a_sub_complete_thm.
 
-(* ⭐⭐⭐ Theorem [Soundness of skeleton inference] (thm:sound-skeleton-
-   inference, proofs.tex) — an [a_pat] run is an information increase whose
-   output context carries the DECLARATIVE skeleton inference at a colouring
-   of the output, refining the inherited painting of the input skeleton.
-   Premises beyond the paper's are the EXTERNAL side conditions of
-   docs/WF-SIDE-CONDITIONS.md: well-formedness of the term ([a_wf_exp], the
-   problem definition's "M is well-formed in Θ0") and the paper's implicit
-   [Θ ⊢ ctx] at skeleton term entries, which [a_wf_aenv__var] under-
-   approximates by storing only the entry's SCOPE.
-   ⭐ [a_consis_chk_annot_refine] supplies the paper's inline "preservation
-   of refinement under type equivalence" (AbsAnno), which the paper asserts
-   and never states — see docs/PAPER-GAPS.md. *)
-Check a_pat_sound.
-Check a_consis_chk_annot_refine.
+(* --- the chain thm:complete-subtyping is assembled from ----------------
+     P5        stability of subtyping under more precise substitution  :1664
+     P6-Cv/Cs  completeness of CONSISTENCY constraint collection + solving
+                                       (consistency-proofs :1180 / :920)
+     P6-Sv/Ss  the SUBTYPING analogues                      :1696 / :2202
+     P6-L      look completeness                                     :2730
+   ⚠️ P6-Ss's Sub-ForallR needs a MODE-GUARDED ftv-𝒞 disjunction: the sub-side
+   analogue of [ad_pat_consis_target_ftv] is FALSE
+   (cex/cex_p6ss_sub_target_ftv.v).  ⚠️ P6-Cs carries one paper-EXTERNAL wf
+   side condition whose NECESSITY is machine-checked
+   (cex/cex_p6cs_subject_wf.v).  Both in docs/PAPER-GAPS.md.
+   ⚙ Bare [Check]s deliberately: these statements carry the ρ / Ψ / Θw
+   bookkeeping that makes the induction go through, and printing it here would
+   bury the chain.  The statements are in the files named above. *)
+Check ad_pat_sub_precise_upre.
+Print Assumptions ad_pat_sub_precise_upre.
+Check a_solve_eq_complete_var.
+Print Assumptions a_solve_eq_complete_var.
+Check a_lookeq_solve_complete.
+Print Assumptions a_lookeq_solve_complete.
+Check a_solve_sub_complete_var.
+Print Assumptions a_solve_sub_complete_var.
+Check a_looksub_solve_complete.
+Print Assumptions a_looksub_solve_complete.
+Check a_extract_complete.
+Print Assumptions a_extract_complete.
 
-(* ⭐⭐⭐ Theorem [Soundness of type inference] (thm:sound-type-inference,
-   proofs.tex) — the same statement one layer up: an [a_typing] run is an
-   information increase whose output context carries the syntax-directed
-   DECLARATIVE typing at a colouring of the inferred type, refining the
-   inherited painting of the input skeleton.  The extra premises are
-   theorem 1's ([a_wf_exp] + the disciplined skeleton-entry wf), with
-   [a_ty_mode_compat] in place of [a_sk_mode_compat].
-   ⚙ The conclusion additionally carries [a_wf_ptyp Θ1 A] — the output type
-   is scoped in the output context, which [AT-App] consumes.
-   ⚠️ FOUR rule-level side conditions the paper leaves to prose are stated
-   on the rules (docs/PAPER-GAPS.md): the two Barendregt conditions the
-   four suffix-DISCARDING check rows need for lemma:suffix-erasure, the
-   [uniq] filter [AT-Abs] needs on guess^TY's block, and the correction of
-   [AT-AbsAnnoCheck]'s result domain.  Three supporting facts the paper
-   asserts inline and never states: [a_guess_mono_refine] (guess^TY
-   refines), [a_split_refines] (lemma:split-refine, COLOURED) and
-   [ad_refine_syn_inh_tyequiv] (a refinement between ghost-free paintings
-   IS a type equivalence — [Freeze]'s and [AT-App]'s bridge). *)
-Check a_typing_sound.
-Check a_guess_mono_refine.
-Check a_split_refines.
-Check ad_refine_syn_inh_tyequiv.
-Check ad_pat_strip_suffix.
-Check ad_sd_typing_strip_suffix.
+
+(* ##################################################################### *)
+(*  IV.  SKELETON + TYPE INFERENCE — proofs.tex (section D)               *)
+(*       ⭐⭐⭐ THE FOUR FLAGSHIP THEOREMS                                  *)
+(* ##################################################################### *)
+
+(* ⭐⭐⭐ Theorem [Soundness of skeleton inference]  thm:sound-skeleton-inference
+   An [a_pat] run is an information increase whose output context carries the
+   DECLARATIVE skeleton inference at a colouring of the output, refining the
+   inherited painting of the input skeleton.
+   External side conditions: wf of the term ([a_wf_exp] — the problem
+   definition's "M is well-formed in Θ₀") and the paper's implicit [Θ ⊢ ctx]
+   at skeleton term entries. *)
+Check a_pat_sound :
+  forall m Θ0 P0 e P Θ1,
+  Θ0 ⊢ₐ[ m ; P0 ] e ⇨ P ⊣ Θ1 ->
+  a_wf_aenv Θ0 ->
+  (forall x Ps, binds x (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  a_sk_mode_compat m P0 ->
+  a_wf_exp Θ0 e ->
+  Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
+  exists Qt, bskl_to_pskl Qt = P /\
+    (Θ1 ⊢ᵃ[ m ] e ⇨ Qt) /\
+    (Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ Qt).
+Print Assumptions a_pat_sound.
+
+(* ⭐⭐⭐ Theorem [Soundness of type inference]  thm:sound-type-inference
+   The same statement one layer up, with [a_ty_mode_compat] for
+   [a_sk_mode_compat].  ⚙ The conclusion additionally carries [a_wf_ptyp Θ1 A]
+   — the output type is scoped in the output context, which AT-App consumes.
+   ⚠️ FOUR rule-level side conditions the paper leaves to prose are stated ON
+   the rules (docs/PAPER-GAPS.md): the two Barendregt conditions the four
+   suffix-DISCARDING check rows need for lemma:suffix-erasure, the [uniq]
+   filter AT-Abs needs on guess^TY's block, and the correction of
+   AT-AbsAnnoCheck's result domain. *)
+Check a_typing_sound :
+  forall m Θ0 P0 e A Θ1,
+  Θ0 ⊢ₐ[ m ; P0 ] e ⦂ A ⊣ Θ1 ->
+  a_wf_aenv Θ0 ->
+  (forall x Ps, binds x (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  a_ty_mode_compat m P0 ->
+  a_wf_exp Θ0 e ->
+  Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
+  exists Bt, btyp_to_ptyp Bt = A /\
+    (Θ1 ⊢ˢᵃ[ m ] e ⦂ Bt) /\
+    (Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt)).
+Print Assumptions a_typing_sound.
 
 (* ⭐⭐⭐ Theorem [Completeness + optimality of skeleton inference]
-   (thm:complete-skeleton-inference, proofs.tex) — whenever the DECLARATIVE
-   system infers a skeleton [Q] at a solution [κ] of the question
-   [(Θ0; M; P0)], the ALGORITHM's run succeeds, and for every identity
-   increase out of the question context the answer factors through the
-   solution: a composing witness [ζ] equivalent to [κ] whose image of the
-   run's output is MORE PRECISE than the declarative target — the same
-   factored optimality as [a_sub_complete_thm].
-   ⚙ TERM-SIZE induction only: the mech FUSED the paper's [P-Sub] into the
-   three base rows, so every recursive premise is at a strict subterm.
-   Hypotheses beyond the paper's statement (WF-SIDE-CONDITIONS.md): wf of
-   the two contexts and the input skeleton, the payload-wf DISCIPLINE of
-   both contexts' skeleton term entries, mode compatibility, [lc], and the
-   term side condition — an annotation is SOURCE syntax, so its type
-   variables are RIGID (docs/PAPER-GAPS.md).
-   ⭐ The binder rows generate the algorithm's cofinite families from ONE
-   fresh instance by [a_pat_rename_tm] (algo/prop_swap.v §6 — equivariance:
-   swap the type-level data, substitute in the term); the AbsAnno and App rows GLUE two
-   composed factorings ([a_inc_equiv_glue]), their witnesses aligned by
-   identity-uniqueness ([a_inc_id_msubst_unique]). *)
+   thm:complete-skeleton-inference.  Whenever the DECLARATIVE system infers Q
+   at a solution κ of the question (Θ₀; M; P₀), the ALGORITHM succeeds and its
+   answer FACTORS through the solution — the same factored optimality as
+   thm:complete-subtyping:
+     ∀κ₁ identity out of Θ₀. ∃ζ.  ζ ∷ Θ₁ ⊑ Θ  ∧  ζ ∘ κ₁ ≡ κ  ∧  ζP₁ ⊑ ⌊Q⌋
+   ⚙ TERM-SIZE induction only: the mech FUSED the paper's P-Sub into the three
+   base rows, so every recursive premise is at a strict subterm. *)
 Check a_pat_complete.
-Check a_pat_rename_tm.
-Check ad_ctx_precise_refl.
-Check ad_pat_consis_syn_bid.
+Print Assumptions a_pat_complete.
 
 (* ⭐⭐⭐ Theorem [Completeness + optimality of type inference]
-   (thm:complete-type-inference, proofs.tex) — the typing analogue of
-   [a_pat_complete]: whenever the DECLARATIVE system types [e] at [B] under
-   a solution [κ] of the question [(Θ0; M; P0)], the ALGORITHM's run
-   succeeds, and for every identity increase out of the question context
-   the answer factors through the solution, the run's result being
+   thm:complete-type-inference — the typing analogue, with the run's result
    Θ-EQUIVALENT to the declarative type (precision on TYPES is equivalence).
-   ⚙ LEXICOGRAPHIC [(size_exp e, size_btyp B)] induction: ten of the twelve
-   rows recurse at a strictly smaller subject; only the two ∀-peeling
-   AbsCheck rows recurse at the SAME subject, and they drop one [∀] off the
-   declarative result.
-   Hypotheses beyond the paper's statement are [a_pat_complete]'s
-   (WF-SIDE-CONDITIONS.md).
-   ⭐ The two AbsCheck (→) rows rest on TWO results the paper leaves
-   implicit: [a_split_complete_tc] — splitting is COMPLETE at CHECK mode,
-   where the input is a TYPE painting and [a_split__flex] IS reachable (the
-   paper's AbsCheck subcase 2: invent [β̂1]/[α̂1] and solve them by a full
-   consistency run) — and the §6.3#2 SCOPING invariant
-   [a_typing_scope_tm_nil] (algo/completeness_typing/prop_scope.v), which discharges the
-   suffix-discarding rows' premise (2). *)
+   ⚙ LEXICOGRAPHIC (size_exp e, size_btyp B) induction: ten of the twelve rows
+   recurse at a strictly smaller subject; only the two ∀-peeling AbsCheck rows
+   recurse at the SAME subject, and they drop one ∀ off the declarative result. *)
 Check a_typing_complete.
-Check a_split_complete_tc.
-
-(* ⭐⭐ Lemma [Precision extends skeleton subtyping] (lemma:precision-sub,
-   proofs.tex) — over the LEAF-VALID join, fuel preserved, both sorts; a
-   corollary of P5c's precision-substitution.  The wf of the counterpart's
-   erasure is the paper's EXTERNAL wf side condition. *)
-Check ad_precise_extends_pat_sub_v.
-
-(* ⭐⭐ Lemma [Context precision preserves skeleton inference]
-   (lemma:context-precision-skeleton, proofs.tex), over the paper's [⪯ctx]
-   ([ad_ctx_precise]).  Its Var case consumes lemma:precision-sub, whose
-   external counterpart-wf condition the base rows of [ad_pat] now carry —
-   supplied from the run by [a_sub_output_wf]: the ALGORITHM's outputs are
-   well-formed ([a_consis_output_wf] / [a_sub_output_wf],
-   algo/prop_wf_preservation.v), the algorithmic half of the paper's implicit
-   "all inputs are well-formed" convention. *)
-Check ad_ctx_precise_pat.
-Check a_consis_output_wf.
-Check a_sub_output_wf.
-
-(* ===================================================================== *)
-(*  Assumption audit — all must be "Closed under the global context"      *)
-(* ===================================================================== *)
-
-Print Assumptions d_sd_typing_sound.
-Print Assumptions d_sd_typing_complete.
-Print Assumptions d_sd_typing_general_subsumption.
-Print Assumptions d_typing_general_subsumption.
-Print Assumptions d_sd_typing_general_subsumption_spine.
-Print Assumptions a_consis_decorate.
-Print Assumptions a_isub_trans.
-Print Assumptions a_assign_unify_consis_sound.
-Print Assumptions a_unify_sound.
-Print Assumptions a_assign_sound.
-Print Assumptions tyequiv_mono_consis.
-Print Assumptions a_unify_succeeds_on_arrow_definition.
-Print Assumptions a_consistag_sound_aux.
-Print Assumptions ad_precise_preserves_refine.
-Print Assumptions a_consis_sound.
-Print Assumptions a_consis_complete_thm.
-Print Assumptions complete_mu.
-Print Assumptions a_sub_sound_thm.
-Print Assumptions ad_pat_sub_precise_upre.
-Print Assumptions a_solve_eq_complete_var.
-Print Assumptions a_lookeq_solve_complete.
-Print Assumptions a_solve_sub_complete_var.
-Print Assumptions a_looksub_solve_complete.
-Print Assumptions a_extract_complete.
-Print Assumptions a_sub_complete_bundle_holds.
-Print Assumptions a_sub_complete_thm.
-Print Assumptions a_pat_sound.
-Print Assumptions a_consis_chk_annot_refine.
-Print Assumptions a_typing_sound.
-Print Assumptions ad_sd_typing_strip_suffix.
-Print Assumptions ad_precise_extends_pat_sub_v.
-Print Assumptions a_consis_output_wf.
-Print Assumptions a_sub_output_wf.
-Print Assumptions ad_ctx_precise_pat.
-Print Assumptions a_pat_complete.
 Print Assumptions a_typing_complete.
-Print Assumptions a_split_refines.
-Print Assumptions a_extract_complete_gen.
-Print Assumptions a_extract_complete.
+
+(* --- the two section-D lemmas the paper states in its own right -------- *)
+
+(* Lemma [Precision extends skeleton subtyping]  lemma:precision-sub *)
+Check ad_precise_extends_pat_sub_v.
+Print Assumptions ad_precise_extends_pat_sub_v.
+
+(* Lemma [Context precision preserves skeleton inference]
+   lemma:context-precision-skeleton, over the paper's ⪯ᶜᵗˣ *)
+Check ad_ctx_precise_pat :
+  forall M Θ e Q,
+  Θ ⊢ᵃ[ M ] e ⇨ Q ->
+  forall Θ', Θ' ⪯ᶜᵗˣ Θ -> a_wf_aenv Θ -> a_wf_aenv Θ' -> Θ' ⊢ᵃ[ M ] e ⇨ Q.
+Print Assumptions ad_ctx_precise_pat.
+
+
+(* ##################################################################### *)
+(*  V.  BEYOND THE PAPER — what a referee should see                     *)
+(*                                                                       *)
+(*  NOT paper lemmas.  Each is either a fact the paper ASSERTS INLINE and *)
+(*  never states, or a foundation the mechanization had to invent.  Full  *)
+(*  registry: docs/PAPER-GAPS.md + docs/WF-SIDE-CONDITIONS.md.           *)
+(* ##################################################################### *)
+
+(* ⭐ Asserted inline, never stated: AbsAnno's "preservation of refinement
+   under type equivalence"; that guess^TY refines; and that a refinement
+   between ghost-free paintings IS a type equivalence (Freeze's / AT-App's
+   bridge). *)
+Check a_consis_chk_annot_refine.
+Print Assumptions a_consis_chk_annot_refine.
+Check a_guess_mono_refine.
+Print Assumptions a_guess_mono_refine.
+Check ad_refine_syn_inh_tyequiv :
+  forall Θ Δ Qs Qt,
+  Θ ⨟ Δ ⊢ᵣᵃ Qs ⊳ Qt ->
+  a_wf_aenv Θ ->
+  forall A B,
+  Qs = pskl_to_bskl_inh (ptyp_to_pskl A) ->
+  Qt = btyp_to_bskl B ->
+  Θ ⊢ A ≡ᵗ (btyp_to_ptyp B).
+Print Assumptions ad_refine_syn_inh_tyequiv.
+
+(* ⭐ Lemma [Precision preserves refinement]  lemma:precision-preserves-refinement
+   — it holds EXACTLY because the paper requires refinement's arguments to be
+   well-formed (declarative.tex:1427).  Without that condition refinement is
+   NOT transitive: cex/cex_refine_not_transitive.v. *)
+Check ad_precise_preserves_refine :
+  forall Θ Δ P P' Q,
+  Θ ⨟ Δ ⊢ₚᵣᵃ P ⊑ P' ->
+  Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh P') ⊳ Q ->
+  a_wf_aenv Θ ->
+  (forall α, α `in` Δ -> α `notin` dom Θ) ->
+  Θ ⨟ Δ ⊢ₚₛᵃ (bskl_to_pskl Q) ->
+  Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ Q.
+Print Assumptions ad_precise_preserves_refine.
+
+(* ⭐ THE ALGORITHM'S OUTPUTS ARE WELL-FORMED — a foundation the paper leaves
+   to its implicit "all inputs are well-formed" convention, and what supplies
+   lemma:precision-sub's external condition FROM THE RUN. *)
+Check a_sub_output_wf :
+  forall NM M P0 Θ0 P P' Θ1,
+  Θ0 ⊢ₐ[ NM | M | P0 ] P ⩽ P' ⊣ Θ1 ->
+  a_wf_aenv Θ0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
+  Θ1 ⨟ empty ⊢ₚₛᵃ P'.
+Print Assumptions a_sub_output_wf.
+Check a_consis_output_wf.
+Print Assumptions a_consis_output_wf.
+
+(* ⭐ THE MONOTYPE BRIDGE — what the CORRECTED [Flex-Flex-Assign] produces and
+   consumes.  The pre-fix [a_unify] was machine-checked STUCK on an instance
+   that now succeeds (test/test_unify_regression.v). *)
+Check consis_refine_mono_tyequiv :
+  forall Θ A A' Qt,
+  a_wf_aenv Θ ->
+  mono_ptyp A ->
+  mono_ptyp A' ->
+  empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ Qt ->
+  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (ptyp_to_pskl A')) ⊳ Qt ->
+  Θ ⊢ A ≡ᵗ A'.
+Print Assumptions consis_refine_mono_tyequiv.
+Check tyequiv_mono_consis.
+Print Assumptions tyequiv_mono_consis.
