@@ -300,10 +300,10 @@ Proof.
       by (clear - Hα Hfree; fsetdec).
     assert (Ha := IHHref1 Hwf Fa eq_refl Hdisj
              ltac:(apply inter_empty_pointwise; intros β Hβ;
-                   clear - Hβ Hfree; fsetdec)).
+                   clear - Hβ Hfree; solve_notin_auto)).
     assert (Hb := IHHref2 Hwf Fb eq_refl Hdisj
              ltac:(apply inter_empty_pointwise; intros β Hβ;
-                   clear - Hβ Hfree; fsetdec)).
+                   clear - Hβ Hfree; solve_notin_auto)).
     clear - Hα Ha Hb. fsetdec.
   - (* all : impossible — a syn painting is never [bskl_all_inh] *)
     destruct F; simpl in Heq; discriminate.
@@ -517,7 +517,7 @@ Proof.
       { rewrite bskl_to_pskl_open.
         eapply a_wf_pskl_delta_mono;
           [ apply (a_wf_pskl_reassoc
-                     (Hbody α ltac:(clear - Hα; fsetdec)) α)
+                     (Hbody α ltac:(clear - Hα; solve_notin_auto)) α)
           | clear; fsetdec ]. }
       { eapply ad_refine_syn_weaken;
           [ apply ad_refine_syn__tophole_keep; eassumption
@@ -637,10 +637,10 @@ Proof.
     apply inter_empty_pointwise. intros α Hα.
     assert (Ha := IHHref1 Θx Hmap Hwf Δ' Hdisj
              ltac:(apply inter_empty_pointwise; intros β Hβ;
-                   clear - Hβ Hfree; fsetdec)).
+                   clear - Hβ Hfree; solve_notin_auto)).
     assert (Hb := IHHref2 Θx Hmap Hwf Δ' Hdisj
              ltac:(apply inter_empty_pointwise; intros β Hβ;
-                   clear - Hβ Hfree; fsetdec)).
+                   clear - Hβ Hfree; solve_notin_auto)).
     clear - Hα Ha Hb. fsetdec.
   - (* all : the witness is fresh for Δ', and gets closed over *)
     pick fresh α for (L `union` Δ' `union` ftvar_in_pskl P
@@ -648,7 +648,7 @@ Proof.
     assert (Hsub : Δ' ∩
                      (ftvar_in_pskl (open_pskl_wrt_pskl Q (pskl_var_f α)))
                    [=] empty).
-    { apply (H0 α ltac:(clear - Fr; fsetdec) Θx Hmap Hwf Δ' Hdisj).
+    { apply (H0 α ltac:(clear - Fr; solve_notin_auto) Θx Hmap Hwf Δ' Hdisj).
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
                     P (pskl_var_f α)) as Hup.
       simpl in Hup. simpl in Hfree.
@@ -690,9 +690,9 @@ Proof.
     assert (Hsub : Δ' ∩
                      (ftvar_in_pskl (open_pskl_wrt_pskl Q (pskl_var_f α)))
                    [=] empty).
-    { apply (H0 α ltac:(clear - Fr; fsetdec) ((α ~ abind_tvar) ++ Θx) HmapX
+    { apply (H0 α ltac:(clear - Fr; solve_notin_auto) ((α ~ abind_tvar) ++ Θx) HmapX
                ltac:(apply a_wf_aenv__tvar;
-                       [ clear - Fr; fsetdec | exact Hwf ])
+                       [ clear - Fr; solve_notin_auto | exact Hwf ])
                Δ' HdisjX).
       simpl in Hfree |- *. exact Hfree. }
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower Q (pskl_var_f α))
@@ -819,7 +819,7 @@ Proof.
           intros β Hβ;
           destruct (β == α) as [->|Hne];
           [ left; clear - Hα; fsetdec
-          | destruct (Hsplit β ltac:(clear - Hβ Hne; fsetdec)) as [HβΔ | Hβt];
+          | destruct (Hsplit β ltac:(clear - Hβ Hne; solve_notin_auto)) as [HβΔ | Hβt];
             [ left; clear - HβΔ; fsetdec | right; exact Hβt ] ]
         | exact Hwf
         | intros β Hβ;
@@ -852,7 +852,7 @@ Proof.
           intros β Hβ;
           destruct (β == α) as [->|Hne];
           [ right; unfold binds; simpl; left; reflexivity
-          | destruct (Hsplit β ltac:(clear - Hβ Hne; fsetdec)) as [HβΔ | Hβt];
+          | destruct (Hsplit β ltac:(clear - Hβ Hne; solve_notin_auto)) as [HβΔ | Hβt];
             [ left; exact HβΔ
             | right; unfold binds; simpl; right; exact Hβt ] ]
         | apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]
@@ -866,7 +866,7 @@ Proof.
         | (* wf of the opened counterpart at the reassociated context *)
           eapply a_wf_pskl_delta_mono;
             [ apply (a_wf_pskl_reassoc
-                       (Hbody α ltac:(clear - Hα; fsetdec)) α)
+                       (Hbody α ltac:(clear - Hα; solve_notin_auto)) α)
             | clear - Hα; fsetdec ]
         | apply H1; clear - Hα; fsetdec ].
     + eapply ad_refine_pskl__flex_l; [ eassumption | ]. apply IHHp; auto.
@@ -931,7 +931,7 @@ Proof.
         | (* wf of the opened counterpart at the reassociated context *)
           eapply a_wf_pskl_delta_mono;
             [ apply (a_wf_pskl_reassoc
-                       (Hbody α ltac:(clear - Hα; fsetdec)) α)
+                       (Hbody α ltac:(clear - Hα; solve_notin_auto)) α)
             | clear - Hα; fsetdec ]
         | (* the peeled pair, weakened to the extended Θx *)
           apply ad_refine_pskl__tophole_keep;

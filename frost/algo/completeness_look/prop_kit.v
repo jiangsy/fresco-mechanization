@@ -167,13 +167,13 @@ Proof.
     fsetdec.
   - (* all_syn *)
     pick fresh α for L.
-    pose proof (H0 α ltac:(fsetdec)) as Hα.
+    pose proof (H0 α ltac:(solve_notin_auto)) as Hα.
     pose proof (ftag_in_uskl_open_var R' α).
     pose proof (ftag_in_uskl_open_var R α).
     fsetdec.
   - (* all_etag *)
     pick fresh α for L.
-    pose proof (H0 α ltac:(fsetdec)) as Hα.
+    pose proof (H0 α ltac:(solve_notin_auto)) as Hα.
     pose proof (ftag_in_uskl_open_var R' α).
     pose proof (ftag_in_uskl_open_var R α).
     fsetdec.
@@ -761,7 +761,7 @@ Proof.
     inversion Hsk; subst.
     match goal with HskB : forall α, α `notin` ?L0 -> is_sskl _ |- _ =>
       pick fresh α for (L `union` L0 `union` dom Θ);
-      apply (H0 α ltac:(fsetdec));
+      apply (H0 α ltac:(solve_notin_auto));
       [ apply a_wf_aenv__tvar; [ fsetdec | exact Hwf ]
       | apply HskB; fsetdec ]
     end.
@@ -769,7 +769,7 @@ Proof.
     inversion Hsk; subst.
     match goal with HskB : forall α, α `notin` ?L0 -> is_sskl _ |- _ =>
       pick fresh α for (L `union` L0 `union` dom Θ);
-      apply (H0 α ltac:(fsetdec));
+      apply (H0 α ltac:(solve_notin_auto));
       [ apply a_wf_aenv__tvar; [ fsetdec | exact Hwf ]
       | apply HskB; fsetdec ]
     end.
@@ -1192,8 +1192,8 @@ Proof.
     try solve [ clear; fsetdec
               | apply IHuskl_rho; clear - Hap; fsetdec
               | (* arrow *)
-                pose proof (IHuskl_rho1 ltac:(clear - Hap; fsetdec));
-                pose proof (IHuskl_rho2 ltac:(clear - Hap; fsetdec));
+                pose proof (IHuskl_rho1 ltac:(clear - Hap; solve_notin_auto));
+                pose proof (IHuskl_rho2 ltac:(clear - Hap; solve_notin_auto));
                 clear - H2 H3; fsetdec ].
   - (* leaf : the ideal IS a Δρ-variable, which the premise forbids *)
     exfalso. clear - H Hap; fsetdec.
@@ -1204,7 +1204,7 @@ Proof.
     pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R (uskl_var_f α)) as Hup.
     cbn [ftvar_in_uskl] in Hup.
     pose proof (H0 α ltac:(clear - Fr; solve_notin)
-                  ltac:(clear - Hap Hup Fr; fsetdec)) as Hα.
+                  ltac:(clear - Hap Hup Fr; solve_notin_auto)) as Hα.
     clear - Hα Hlo Hup Fr; fsetdec.
   - (* ∀^ε *)
     pick fresh α for (L `union` Δρ `union` ftvar_in_uskl R'
@@ -1213,7 +1213,7 @@ Proof.
     pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R (uskl_var_f α)) as Hup.
     cbn [ftvar_in_uskl] in Hup.
     pose proof (H0 α ltac:(clear - Fr; solve_notin)
-                  ltac:(clear - Hap Hup Fr; fsetdec)) as Hα.
+                  ltac:(clear - Hap Hup Fr; solve_notin_auto)) as Hα.
     clear - Hα Hlo Hup Fr; fsetdec.
 Qed.
 
@@ -1457,7 +1457,7 @@ Proof.
   - (* ∀ : the body's shielded set only GROWS when opened, so the cofinite
        premise's bound already covers it *)
     pick fresh α for (L `union` dom Θ `union` ftvar_in_pskl P `union` Δ).
-    pose proof (H0 α ltac:(clear - Fr; fsetdec)) as Hb.
+    pose proof (H0 α ltac:(clear - Fr; solve_notin_auto)) as Hb.
     pose proof (pskl_shielded_ftv_open_lower P (pskl_var_f α)) as Hlo.
     clear - Hb Hlo; fsetdec.
   - (* ∀◇ : the body is wf at the EMPTY Δ, so ALL of its ftv is in dom Θ *)
@@ -1649,10 +1649,10 @@ Proof.
       (* β is fresh for Θ, and a WF input shields only [dom Θ] *)
       pose proof (a_wf_pskl_shielded_dom
                     (a_wf_pskl_all_inv_at HwfP (β := β)
-                       ltac:(clear - H; fsetdec))) as HsP.
+                       ltac:(clear - H; solve_notin_auto))) as HsP.
       pose proof (a_wf_pskl_shielded_dom
                     (a_wf_pskl_all_inv_at HwfQ (β := β)
-                       ltac:(clear - H; fsetdec))) as HsQ.
+                       ltac:(clear - H; solve_notin_auto))) as HsQ.
       clear - Hb HsP HsQ HβΘ HβΞ. fsetdec. }
     apply (@a_wf_pskl_all_of_one (Ξ ++ Θ) Δ (close_pskl_wrt_pskl β P') β).
     + rewrite open_pskl_wrt_pskl_close_pskl_wrt_pskl.
@@ -1689,7 +1689,7 @@ Proof.
       cbn [pskl_shielded_ftv] in HsP.
       pose proof (a_wf_pskl_shielded_dom
                     (a_wf_pskl_all_inv_at HwfQ (β := β)
-                       ltac:(clear - H; fsetdec))) as HsQ.
+                       ltac:(clear - H; solve_notin_auto))) as HsQ.
       clear - Hb HsP HsQ HβΘ HβΞ. fsetdec. }
     apply (@a_wf_pskl_all_of_one (Ξ ++ Θ) Δ (close_pskl_wrt_pskl β P') β).
     + rewrite open_pskl_wrt_pskl_close_pskl_wrt_pskl.
@@ -1722,7 +1722,7 @@ Proof.
       cbn [pskl_shielded_ftv] in Hb.
       pose proof (a_wf_pskl_shielded_dom
                     (a_wf_pskl_all_inv_at HwfP (β := β)
-                       ltac:(clear - H; fsetdec))) as HsP.
+                       ltac:(clear - H; solve_notin_auto))) as HsP.
       pose proof (a_wf_pskl_shielded_dom HwfQ) as HsQ.
       cbn [pskl_shielded_ftv] in HsQ.
       clear - Hb HsP HsQ HβΘ HβΞ. fsetdec. }
@@ -3476,7 +3476,7 @@ Proof.
         | intros α Hα; specialize (Hfr α Hα); simpl;
           assert (Hne : α `notin` singleton δ) by (clear - Hα Hδ; fsetdec);
           clear - Hfr Hne; fsetdec ]. }
-    rewrite <- (@close_ptyp_subst_var Ab b0 δ ltac:(clear - Hδ; fsetdec)).
+    rewrite <- (@close_ptyp_subst_var Ab b0 δ ltac:(clear - Hδ; solve_notin_auto)).
     apply a_guess_mono__forall with (β := δ);
       [ clear - Hδ; fsetdec | exact Hgδ ].
 Qed.
@@ -3636,13 +3636,13 @@ Proof.
            `union` ftvar_in_pskl P `union` ftvar_in_pskl Q
            `union` ftvar_in_pskl P' `union` singleton b).
       pose proof (@a_solve_sub_move_binder_l _ _ _ _ _ _ _ δ Hp
-                    ltac:(clear - Hfr; fsetdec)
-                    ltac:(clear - Fr; fsetdec)) as Hr.
+                    ltac:(clear - Hfr; solve_notin_auto)
+                    ltac:(clear - Fr; solve_notin_auto)) as Hr.
       rewrite (swap_aenv_fresh_id b δ (Ξl ++ Θ0)) in Hr
         by (clear - Hfr Fr; fsetdec).
       rewrite (swap_aenv_fresh_id b δ Ξ) in Hr
         by (clear - HbΞ Fr HΞf; fsetdec).
-      rewrite <- (@close_pskl_subst_var P' b δ ltac:(clear - Fr; fsetdec)).
+      rewrite <- (@close_pskl_subst_var P' b δ ltac:(clear - Fr; solve_notin_auto)).
       apply a_solve_sub__forall_l with (β := δ);
         [ rewrite ftvar_in_aenv_weaken_mid by exact Hfm;
           clear - Fr; fsetdec | ].
@@ -3692,8 +3692,8 @@ Proof.
              `union` ftvar_in_pskl A `union` ftvar_in_pskl B
              `union` ftvar_in_pskl P' `union` singleton b).
         pose proof (@a_solve_sub_move_binder_r _ _ _ _ _ _ δ Hp
-                      ltac:(clear - Hfr; fsetdec)
-                      ltac:(clear - Fr; fsetdec)) as Hr.
+                      ltac:(clear - Hfr; solve_notin_auto)
+                      ltac:(clear - Fr; solve_notin_auto)) as Hr.
         rewrite (swap_aenv_fresh_id b δ (Ξl ++ Θ0)) in Hr
           by (clear - Hfr Fr; fsetdec).
         rewrite (swap_aenv_fresh_id b δ Ξ) in Hr
@@ -3837,13 +3837,13 @@ Proof.
            `union` ftvar_in_pskl P `union` ftvar_in_pskl Q
            `union` ftvar_in_pskl P' `union` singleton b).
       pose proof (@a_solve_eq_move_binder _ _ _ _ _ _ δ Hp
-                    ltac:(clear - Hfr; fsetdec)
-                    ltac:(clear - Fr; fsetdec)) as Hr.
+                    ltac:(clear - Hfr; solve_notin_auto)
+                    ltac:(clear - Fr; solve_notin_auto)) as Hr.
       rewrite (swap_aenv_fresh_id b δ (Ξl ++ Θ0)) in Hr
         by (clear - Hfr Fr; fsetdec).
       rewrite (swap_aenv_fresh_id b δ Ξ) in Hr
         by (clear - HbΞ Fr HΞf; fsetdec).
-      rewrite <- (@close_pskl_subst_var P' b δ ltac:(clear - Fr; fsetdec)).
+      rewrite <- (@close_pskl_subst_var P' b δ ltac:(clear - Fr; solve_notin_auto)).
       apply a_solve_eq__forall with (β := δ);
         [ rewrite ftvar_in_aenv_weaken_mid by exact Hfm;
           clear - Fr; fsetdec | ].
@@ -3883,13 +3883,13 @@ Proof.
            `union` ftvar_in_pskl P `union` ftvar_in_pskl Q
            `union` ftvar_in_pskl P' `union` singleton b).
       pose proof (@a_solve_eq_move_binder_tophole_l _ _ _ _ _ _ δ Hp
-                    ltac:(clear - Hfr; cbn in Hfr; fsetdec)
-                    ltac:(clear - Fr; fsetdec)) as Hr.
+                    ltac:(clear - Hfr; cbn in Hfr; solve_notin_auto)
+                    ltac:(clear - Fr; solve_notin_auto)) as Hr.
       rewrite (swap_aenv_fresh_id b δ (Ξl ++ Θ0)) in Hr
         by (clear - Hfr Fr; fsetdec).
       rewrite (swap_aenv_fresh_id b δ Ξ) in Hr
         by (clear - HbΞ Fr HΞf; fsetdec).
-      rewrite <- (@close_pskl_subst_var P' b δ ltac:(clear - Fr; fsetdec)).
+      rewrite <- (@close_pskl_subst_var P' b δ ltac:(clear - Fr; solve_notin_auto)).
       apply a_solve_eq__tophole_l_all with (β := δ);
         [ rewrite ftvar_in_aenv_weaken_mid by exact Hfm;
           clear - Fr; fsetdec | ].
@@ -3924,13 +3924,13 @@ Proof.
            `union` ftvar_in_pskl P `union` ftvar_in_pskl Q
            `union` ftvar_in_pskl P' `union` singleton b).
       pose proof (@a_solve_eq_move_binder_tophole_r _ _ _ _ _ _ δ Hp
-                    ltac:(clear - Hfr; cbn in Hfr; fsetdec)
-                    ltac:(clear - Fr; fsetdec)) as Hr.
+                    ltac:(clear - Hfr; cbn in Hfr; solve_notin_auto)
+                    ltac:(clear - Fr; solve_notin_auto)) as Hr.
       rewrite (swap_aenv_fresh_id b δ (Ξl ++ Θ0)) in Hr
         by (clear - Hfr Fr; fsetdec).
       rewrite (swap_aenv_fresh_id b δ Ξ) in Hr
         by (clear - HbΞ Fr HΞf; fsetdec).
-      rewrite <- (@close_pskl_subst_var P' b δ ltac:(clear - Fr; fsetdec)).
+      rewrite <- (@close_pskl_subst_var P' b δ ltac:(clear - Fr; solve_notin_auto)).
       apply a_solve_eq__all_l_tophole with (β := δ);
         [ rewrite ftvar_in_aenv_weaken_mid by exact Hfm;
           clear - Fr; fsetdec | ].
@@ -5181,7 +5181,7 @@ Proof.
     simpl in Hclean.
     pick fresh α for
       (L `union` Δρ `union` ftvar_in_uskl R' `union` ftvar_in_uskl R).
-    destruct (H0 α ltac:(fsetdec)) as [Heq HΨ].
+    destruct (H0 α ltac:(solve_notin_auto)) as [Heq HΨ].
     { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R (uskl_var_f α)).
       simpl in *. clear - Hclean H1 Fr. fsetdec. }
     split; [ | exact HΨ ].
@@ -5192,7 +5192,7 @@ Proof.
     simpl in Hclean.
     pick fresh α for
       (L `union` Δρ `union` ftvar_in_uskl R' `union` ftvar_in_uskl R).
-    destruct (H0 α ltac:(fsetdec)) as [Heq HΨ].
+    destruct (H0 α ltac:(solve_notin_auto)) as [Heq HΨ].
     { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R (uskl_var_f α)).
       simpl in *. clear - Hclean H1 Fr. fsetdec. }
     split; [ | exact HΨ ].
@@ -5690,7 +5690,7 @@ Proof.
         as Hup.
       simpl in Hup. clear - HΔ' Hα0 Hup. fsetdec. }
     eapply ad_partial_precise_delta_cong;
-      [ apply (H0 α0 ltac:(clear - Hα0; fsetdec) Δ' HSX Hdf)
+      [ apply (H0 α0 ltac:(clear - Hα0; solve_notin_auto) Δ' HSX Hdf)
       | clear; fsetdec ].
   - (* hole *)
     apply ad_ppre__hole; [ assumption | ].
@@ -5710,7 +5710,7 @@ Proof.
     { intros β α τ Hβ Hb.
       destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
         [ discriminate Hc | exact (Hdf β α τ Hβ Hb') ]. }
-    apply (H0 α0 ltac:(clear - Hα0; fsetdec) Δ' HSX Hdf').
+    apply (H0 α0 ltac:(clear - Hα0; solve_notin_auto) Δ' HSX Hdf').
   - (* tophole_keep *)
     simpl in HΔ'.
     apply ad_ppre__tophole_keep; apply IHad_partial_precise; auto.
@@ -5807,7 +5807,7 @@ Proof.
               ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β)))
       by (pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R
                         (uskl_var_f β)) as Hlow; clear - HX0 Hlow; fsetdec).
-    destruct (H0 β ltac:(clear - Fr; fsetdec) α0 HX0')
+    destruct (H0 β ltac:(clear - Fr; solve_notin_auto) α0 HX0')
       as [Hin | (α & τ & Hb & Hor)].
     + left.
       pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q
@@ -5822,7 +5822,7 @@ Proof.
               ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β)))
       by (pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R
                         (uskl_var_f β)) as Hlow; clear - HX0 Hlow; fsetdec).
-    destruct (H0 β ltac:(clear - Fr; fsetdec) α0 HX0')
+    destruct (H0 β ltac:(clear - Fr; solve_notin_auto) α0 HX0')
       as [Hin | (α & τ & Hb & Hor)].
     + left.
       pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q
@@ -5837,7 +5837,7 @@ Proof.
               ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β)))
       by (pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R
                         (uskl_var_f β)) as Hlow; clear - HX0 Hlow; fsetdec).
-    destruct (H0 β ltac:(clear - Fr; fsetdec) α0 HX0')
+    destruct (H0 β ltac:(clear - Fr; solve_notin_auto) α0 HX0')
       as [Hin | (α & τ & Hb & Hor)].
     + left.
       pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q
@@ -5852,7 +5852,7 @@ Proof.
               ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β)))
       by (pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R
                         (uskl_var_f β)) as Hlow; clear - HX0 Hlow; fsetdec).
-    destruct (H0 β ltac:(clear - Fr; fsetdec) α0 HX0')
+    destruct (H0 β ltac:(clear - Fr; solve_notin_auto) α0 HX0')
       as [Hin | (α & τ & Hb & Hor)].
     + left.
       pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q
@@ -5871,7 +5871,7 @@ Proof.
   - (* tophole_inh: subject fixed under the counterpart binder *)
     pick fresh β for
       (L `union` singleton α0 `union` ftvar_in_bskl Q).
-    destruct (H0 β ltac:(clear - Fr; fsetdec) α0 ltac:(simpl; exact HX0))
+    destruct (H0 β ltac:(clear - Fr; solve_notin_auto) α0 ltac:(simpl; exact HX0))
       as [Hin | (α & τ & Hb & Hor)].
     + left.
       pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q
@@ -5936,14 +5936,14 @@ Proof.
   - (* all_syn *)
     pick fresh α for
       (L `union` ftvar_in_uskl R' `union` ftvar_in_uskl R).
-    pose proof (H0 α ltac:(clear - Fr; fsetdec)) as Hα.
+    pose proof (H0 α ltac:(clear - Fr; solve_notin_auto)) as Hα.
     pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f α)).
     pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R' (uskl_var_f α)).
     simpl in *. clear - Hα H1 H2 Fr. fsetdec.
   - (* all_etag *)
     pick fresh α for
       (L `union` ftvar_in_uskl R' `union` ftvar_in_uskl R).
-    pose proof (H0 α ltac:(clear - Fr; fsetdec)) as Hα.
+    pose proof (H0 α ltac:(clear - Fr; solve_notin_auto)) as Hα.
     pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f α)).
     pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R' (uskl_var_f α)).
     simpl in *. clear - Hα H1 H2 Fr. fsetdec.
@@ -6286,7 +6286,7 @@ Proof.
     intros α2 Hα2.
     destruct (AtomSetProperties.In_dec α2 (add α Δr')) as [Hin | Hnin];
       [ left; exact Hin | ].
-    destruct (Habs α2 ltac:(clear - Hα2 Hnin; fsetdec)) as [HΔ' | Hb];
+    destruct (Habs α2 ltac:(clear - Hα2 Hnin; solve_notin_auto)) as [HΔ' | Hb];
       [ left; clear - HΔ' Hnin; fsetdec | right; exact Hb ].
   - apply ad_refine_syn__hole; assumption.
   - apply ad_refine_syn__tophole_remove; auto.
@@ -6378,7 +6378,7 @@ Proof.
     pick fresh α for
       (L `union` ftvar_in_bskl Q `union` ftvar_in_bskl P
          `union` dom Θ).
-    pose proof (H0 α ltac:(clear - Fr; fsetdec) HwfΘ) as Hα.
+    pose proof (H0 α ltac:(clear - Fr; solve_notin_auto) HwfΘ) as Hα.
     pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_lower P (bskl_var_f α))
       as Hlow.
     pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f α))
@@ -6396,7 +6396,7 @@ Proof.
          `union` dom Θ).
     assert (HwfΘ' : a_wf_aenv ((α ~ abind_tvar) ++ Θ))
       by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact HwfΘ ]).
-    pose proof (H0 α ltac:(clear - Fr; fsetdec) HwfΘ') as Hα.
+    pose proof (H0 α ltac:(clear - Fr; solve_notin_auto) HwfΘ') as Hα.
     pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_lower P (bskl_var_f α))
       as Hlow.
     simpl in *. clear - Hα Hlow Fr. fsetdec.
@@ -6745,7 +6745,7 @@ Proof.
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hα2; fsetdec | apply lc_uskl_var_f ].
     eapply ad_partial_precise_delta_cong;
-      [ apply (H0 α2 ltac:(clear - Hα2; fsetdec) αr βr);
+      [ apply (H0 α2 ltac:(clear - Hα2; solve_notin_auto) αr βr);
         [ clear - HαΔ; fsetdec
         | exact HαΘ | exact HβΘ
         | clear - HβΔ Hα2; fsetdec
@@ -6777,7 +6777,7 @@ Proof.
     replace (pskl_tophole (subst_pskl_in_pskl (pskl_var_f βr) αr P))
       with (subst_pskl_in_pskl (pskl_var_f βr) αr (pskl_tophole P))
       by reflexivity.
-    apply (H0 α2 ltac:(clear - Hα2; fsetdec) αr βr).
+    apply (H0 α2 ltac:(clear - Hα2; solve_notin_auto) αr βr).
     + exact HαΔ.
     + simpl. clear - HαΘ Hα2; fsetdec.
     + simpl. clear - HβΘ Hα2; fsetdec.

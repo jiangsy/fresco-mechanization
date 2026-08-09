@@ -138,11 +138,11 @@ Proof.
   - exfalso. clear - Hα. fsetdec.
   - destruct (α' == α) as [->|Hne].
     + left. unfold binds; left; reflexivity.
-    + destruct (IHa_inc α' ltac:(clear - Hα Hne; fsetdec)) as [Hb | [τ0 Hb]];
+    + destruct (IHa_inc α' ltac:(clear - Hα Hne; solve_notin_auto)) as [Hb | [τ0 Hb]];
         [ left | right; exists τ0 ]; unfold binds; right; exact Hb.
   - destruct (α' == α) as [->|Hne].
     + right. exists τ. unfold binds; left; reflexivity.
-    + destruct (IHa_inc α' ltac:(clear - Hα Hne; fsetdec)) as [Hb | [τ0 Hb]];
+    + destruct (IHa_inc α' ltac:(clear - Hα Hne; solve_notin_auto)) as [Hb | [τ0 Hb]];
         [ left | right; exists τ0 ]; unfold binds; right; exact Hb.
   - destruct (IHa_inc α' Hα) as [Hb | [τ0 Hb]];
       [ left | right; exists τ0 ]; unfold binds; right; exact Hb.

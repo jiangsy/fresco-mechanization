@@ -83,7 +83,7 @@ Proof.
             [ exact H0 | intros y b1 Hb1; exact Hb1
             | intros α Hα; exfalso; clear - Hα; fsetdec ]
         | exact Hwf ]. }
-    pose proof (H3 x ltac:(clear - Hx; fsetdec) Hwfx) as HwfQ.
+    pose proof (H3 x ltac:(clear - Hx; solve_notin_auto) Hwfx) as HwfQ.
     simpl. apply a_wf_pskl__arrow.
     + rewrite bskl_to_pskl_pskl_to_bskl_inh. exact H0.
     + eapply a_wf_pskl_mono;
@@ -95,7 +95,7 @@ Proof.
     assert (Hwfx : a_wf_aenv ((x ~ abind_var_typ A) ++ Θ)).
     { apply a_wf_aenv__var_typ;
         [ clear - Hx; fsetdec | exact H0 | exact Hwf ]. }
-    pose proof (H4 x ltac:(clear - Hx; fsetdec) Hwfx) as HwfQ.
+    pose proof (H4 x ltac:(clear - Hx; solve_notin_auto) Hwfx) as HwfQ.
     simpl. apply a_wf_pskl__arrow.
     + rewrite bskl_to_pskl_btyp_to_bskl. rewrite H1.
       apply a_wf_ptyp_to_wf_pskl. exact H0.
@@ -113,7 +113,7 @@ Proof.
     assert (Hwfx : a_wf_aenv ((x ~ abind_var_skl pskl_hole) ++ Θ)).
     { apply a_wf_aenv__var;
         [ clear - Hx; fsetdec | apply a_scope_pskl__hole | exact Hwf ]. }
-    pose proof (H0 x ltac:(clear - Hx; fsetdec) Hwfx) as HwfQ.
+    pose proof (H0 x ltac:(clear - Hx; solve_notin_auto) Hwfx) as HwfQ.
     assert (HwfQ' : Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl (pskl_to_bskl_syn P)))
       by (eapply a_wf_pskl_mono;
           [ exact HwfQ
@@ -133,7 +133,7 @@ Proof.
     assert (Hwfx : a_wf_aenv ((x ~ abind_var_typ A) ++ Θ)).
     { apply a_wf_aenv__var_typ;
         [ clear - Hx; fsetdec | exact H | exact Hwf ]. }
-    pose proof (H1 x ltac:(clear - Hx; fsetdec) Hwfx) as HwfQ.
+    pose proof (H1 x ltac:(clear - Hx; solve_notin_auto) Hwfx) as HwfQ.
     assert (HwfQ' : Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl (pskl_to_bskl_syn P)))
       by (eapply a_wf_pskl_mono;
           [ exact HwfQ
@@ -1274,7 +1274,7 @@ Proof.
       intros α c _ Hc. apply binds_cons_3. exact Hc. }
   (* the body target is wf at the extended contexts (K1) *)
   assert (HwfP : ((x ~ bx) ++ Θ) ⨟ empty ⊢ₚₛᵃ P).
-  { pose proof (ad_pat_target_wf (Hbody x ltac:(clear - Hx; fsetdec)) HwfΘx)
+  { pose proof (ad_pat_target_wf (Hbody x ltac:(clear - Hx; solve_notin_auto)) HwfΘx)
       as Hw.
     rewrite bskl_to_pskl_pskl_to_bskl_syn in Hw. exact Hw. }
   (* ---- 2. the IH, once ---- *)
@@ -1284,7 +1284,7 @@ Proof.
               ltac:(apply a_wf_pskl__hole)
               ltac:(apply a_sk_mode_compat__tc)
               Hincx Hrigx Hsklx HsklTx Hlcbody
-              (Hbody x ltac:(clear - Hx; fsetdec))
+              (Hbody x ltac:(clear - Hx; solve_notin_auto))
               ltac:(apply ad_refine_syn__hole; exact HwfP))
     as [Q' [Θ1' [Hrun Hopt]]].
   (* ---- 3. the run's identity increase shapes the output ---- *)
@@ -1337,24 +1337,24 @@ Proof.
     pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hvup.
     simpl in Hup, Hvup.
     pose proof (@a_pat_rename_tm x z _ _ _ _ _ _ Hrun
-                  ltac:(clear - Hx Hup; fsetdec)
-                  ltac:(clear - Hz Hup; fsetdec)
-                  ltac:(clear - Hz Hvup; fsetdec)) as Hsw.
+                  ltac:(clear - Hx Hup; solve_notin_auto)
+                  ltac:(clear - Hz Hup; solve_notin_auto)
+                  ltac:(clear - Hz Hvup; solve_notin_auto)) as Hsw.
     rewrite (@swap_aenv_tm_head x z bx Θ0
-               ltac:(simpl; clear - Hx; fsetdec)
-               ltac:(simpl; clear - Hz; fsetdec)) in Hsw.
+               ltac:(simpl; clear - Hx; solve_notin_auto)
+               ltac:(simpl; clear - Hz; solve_notin_auto)) in Hsw.
     rewrite swap_aenv_app in Hsw.
     rewrite (@swap_aenv_tm_head x z (abind_var_skl pskl_hole) Θ2
-               ltac:(simpl; clear - HxΘ2; fsetdec)
-               ltac:(simpl; clear - Hz; fsetdec)) in Hsw.
+               ltac:(simpl; clear - HxΘ2; solve_notin_auto)
+               ltac:(simpl; clear - Hz; solve_notin_auto)) in Hsw.
     rewrite (@swap_aenv_fresh_eq x z Ξ
-               ltac:(clear - HxΞ; fsetdec)
-               ltac:(clear - Hz; fsetdec)) in Hsw.
+               ltac:(clear - HxΞ; solve_notin_auto)
+               ltac:(clear - Hz; solve_notin_auto)) in Hsw.
     rewrite (@swap_pskl_fresh_id x z Q'
-               ltac:(clear - HxQ'; fsetdec)
-               ltac:(clear - Hz; fsetdec)) in Hsw.
+               ltac:(clear - HxQ'; solve_notin_auto)
+               ltac:(clear - Hz; solve_notin_auto)) in Hsw.
     rewrite <- (@subst_exp_in_exp_intro x e (exp_var_f z)
-                  ltac:(clear - Hx; fsetdec)) in Hsw.
+                  ltac:(clear - Hx; solve_notin_auto)) in Hsw.
     exact Hsw. }
   (* ---- 6. optimality ---- *)
   intros κ1 Hid1 Hinc1.
@@ -1483,7 +1483,7 @@ Proof.
     eapply a_wf_pskl_mono; [ eapply HsklT; exact Hb' | ].
     intros α c _ Hc. apply binds_cons_3. exact Hc. }
   assert (HwfP : ((x ~ bx) ++ Θ) ⨟ empty ⊢ₚₛᵃ P).
-  { pose proof (ad_pat_target_wf (Hbody x ltac:(clear - Hx; fsetdec)) HwfΘx)
+  { pose proof (ad_pat_target_wf (Hbody x ltac:(clear - Hx; solve_notin_auto)) HwfΘx)
       as Hw.
     rewrite bskl_to_pskl_pskl_to_bskl_syn in Hw. exact Hw. }
   (* ---- 2. the IH, once ---- *)
@@ -1493,7 +1493,7 @@ Proof.
               ltac:(apply a_wf_pskl__hole)
               ltac:(apply a_sk_mode_compat__tc)
               Hincx Hrigx Hsklx HsklTx Hlcbody
-              (Hbody x ltac:(clear - Hx; fsetdec))
+              (Hbody x ltac:(clear - Hx; solve_notin_auto))
               ltac:(apply ad_refine_syn__hole; exact HwfP))
     as [Q' [Θ1' [Hrun Hopt]]].
   (* ---- 3. the run's identity increase shapes the output ---- *)
@@ -1545,24 +1545,24 @@ Proof.
     pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hvup.
     simpl in Hup, Hvup.
     pose proof (@a_pat_rename_tm x z _ _ _ _ _ _ Hrun
-                  ltac:(clear - Hx Hup; fsetdec)
-                  ltac:(clear - Hz Hup; fsetdec)
-                  ltac:(clear - Hz Hvup; fsetdec)) as Hsw.
+                  ltac:(clear - Hx Hup; solve_notin_auto)
+                  ltac:(clear - Hz Hup; solve_notin_auto)
+                  ltac:(clear - Hz Hvup; solve_notin_auto)) as Hsw.
     rewrite (@swap_aenv_tm_head x z bx Θ0
-               ltac:(simpl; clear - Hx; fsetdec)
-               ltac:(simpl; clear - Hz; fsetdec)) in Hsw.
+               ltac:(simpl; clear - Hx; solve_notin_auto)
+               ltac:(simpl; clear - Hz; solve_notin_auto)) in Hsw.
     rewrite swap_aenv_app in Hsw.
     rewrite (@swap_aenv_tm_head x z (abind_var_typ A) Θ2
-               ltac:(simpl; clear - HxΘ2 Hx; fsetdec)
-               ltac:(simpl; clear - Hz; fsetdec)) in Hsw.
+               ltac:(simpl; clear - HxΘ2 Hx; solve_notin_auto)
+               ltac:(simpl; clear - Hz; solve_notin_auto)) in Hsw.
     rewrite (@swap_aenv_fresh_eq x z Ξ
-               ltac:(clear - HxΞ; fsetdec)
-               ltac:(clear - Hz; fsetdec)) in Hsw.
+               ltac:(clear - HxΞ; solve_notin_auto)
+               ltac:(clear - Hz; solve_notin_auto)) in Hsw.
     rewrite (@swap_pskl_fresh_id x z Q'
-               ltac:(clear - HxQ'; fsetdec)
-               ltac:(clear - Hz; fsetdec)) in Hsw.
+               ltac:(clear - HxQ'; solve_notin_auto)
+               ltac:(clear - Hz; solve_notin_auto)) in Hsw.
     rewrite <- (@subst_exp_in_exp_intro x e (exp_var_f z)
-                  ltac:(clear - Hx; fsetdec)) in Hsw.
+                  ltac:(clear - Hx; solve_notin_auto)) in Hsw.
     exact Hsw. }
   (* ---- 6. optimality ---- *)
   intros κ1 Hid1 Hinc1.
@@ -1849,7 +1849,7 @@ Proof.
       [ simpl; reflexivity | simpl; reflexivity
       | exact Hprec13
       | apply ad_ctx_precise_refl; [ exact HwfΘ | exact HsklT ] ]. }
-  pose proof (ad_ctx_precise_pat (Hbody x ltac:(clear - Hx; fsetdec))
+  pose proof (ad_ctx_precise_pat (Hbody x ltac:(clear - Hx; solve_notin_auto))
                 Hctx HwfΘxP HwfΘx) as Hbodyx.
   (* ---- 5. the IH, once ---- *)
   destruct (IH x (decr_mode M) ((x ~ bq) ++ Θ0) Q1 κ ((x ~ bs) ++ Θ) Q0
@@ -1912,27 +1912,27 @@ Proof.
     pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hvup.
     simpl in Hup, Hvup.
     pose proof (@a_pat_rename_tm x z _ _ _ _ _ _ Hrun
-                  ltac:(clear - Hx Hup; fsetdec)
-                  ltac:(clear - Hz Hup; fsetdec)
-                  ltac:(clear - Hz Hvup; fsetdec)) as Hsw.
+                  ltac:(clear - Hx Hup; solve_notin_auto)
+                  ltac:(clear - Hz Hup; solve_notin_auto)
+                  ltac:(clear - Hz Hvup; solve_notin_auto)) as Hsw.
     rewrite (@swap_aenv_tm_head x z bq Θ0
-               ltac:(simpl; clear - Hx; fsetdec)
-               ltac:(simpl; clear - Hz; fsetdec)) in Hsw.
+               ltac:(simpl; clear - Hx; solve_notin_auto)
+               ltac:(simpl; clear - Hz; solve_notin_auto)) in Hsw.
     rewrite swap_aenv_app in Hsw.
     rewrite (@swap_aenv_tm_head x z (abind_var_skl P1) Θ2
-               ltac:(simpl; clear - HxΘ2 Hx; fsetdec)
-               ltac:(simpl; clear - Hz; fsetdec)) in Hsw.
+               ltac:(simpl; clear - HxΘ2 Hx; solve_notin_auto)
+               ltac:(simpl; clear - Hz; solve_notin_auto)) in Hsw.
     rewrite (@swap_aenv_fresh_eq x z Ξ
-               ltac:(clear - HxΞ; fsetdec)
-               ltac:(clear - Hz; fsetdec)) in Hsw.
+               ltac:(clear - HxΞ; solve_notin_auto)
+               ltac:(clear - Hz; solve_notin_auto)) in Hsw.
     rewrite (@swap_pskl_fresh_id x z Q'
-               ltac:(clear - HxQ'; fsetdec)
-               ltac:(clear - Hz; fsetdec)) in Hsw.
+               ltac:(clear - HxQ'; solve_notin_auto)
+               ltac:(clear - Hz; solve_notin_auto)) in Hsw.
     rewrite (@swap_pskl_fresh_id x z Q1
-               ltac:(clear - Hx; fsetdec)
-               ltac:(clear - Hz; fsetdec)) in Hsw.
+               ltac:(clear - Hx; solve_notin_auto)
+               ltac:(clear - Hz; solve_notin_auto)) in Hsw.
     rewrite <- (@subst_exp_in_exp_intro x e (exp_var_f z)
-                  ltac:(clear - Hx; fsetdec)) in Hsw.
+                  ltac:(clear - Hx; solve_notin_auto)) in Hsw.
     exact Hsw. }
   (* ---- 9. optimality ---- *)
   intros κ1 Hid1 Hinc1.
@@ -2206,7 +2206,7 @@ Proof.
     by (inversion Hlc; auto).
   (* ---- 5. transport the codomain refinement to the composed κ' ---- *)
   assert (HwfQb : Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q0)).
-  { pose proof (ad_pat_target_wf (Hbody x ltac:(clear - Hx; fsetdec)) HwfΘx)
+  { pose proof (ad_pat_target_wf (Hbody x ltac:(clear - Hx; solve_notin_auto)) HwfΘx)
       as Hw.
     eapply a_wf_pskl_mono;
       [ exact Hw
@@ -2247,7 +2247,7 @@ Proof.
     assert (Hb0 : binds y (abind_var_skl Ps) Θ0)
       by (eapply a_consis_tm_ge; [ exact HcRun | exact I | exact Hb ]).
     pose proof (a_wf_pskl_msubst_inc Hincc Hwf0 (Hskl _ _ Hb0)
-                  ltac:(intros α Hα; clear - Hα; fsetdec)) as Hw.
+                  ltac:(intros α Hα; clear - Hα; solve_notin_auto)) as Hw.
     rewrite (msubst_pskl_id Ps Hidc) in Hw. exact Hw. }
   assert (Hsklx : forall y Ps, binds y (abind_var_skl Ps) ((x ~ bA) ++ Θmid) ->
              ((x ~ bA) ++ Θmid) ⨟ empty ⊢ₚₛᵃ Ps).
@@ -2265,7 +2265,7 @@ Proof.
     intros α c _ Hc. apply binds_cons_3. exact Hc. }
   assert (HwfQ1mid : Θmid ⨟ empty ⊢ₚₛᵃ Q1).
   { pose proof (a_wf_pskl_msubst_inc Hincc Hwf0 HwfQ1
-                  ltac:(intros α Hα; clear - Hα; fsetdec)) as Hw.
+                  ltac:(intros α Hα; clear - Hα; solve_notin_auto)) as Hw.
     rewrite (msubst_pskl_id Q1 Hidc) in Hw. exact Hw. }
   destruct (IH x (decr_mode M) ((x ~ bA) ++ Θmid) Q1 ζc0 ((x ~ bA) ++ Θ) Q0
               Hwf0x HwfΘx
@@ -2273,7 +2273,7 @@ Proof.
                     [ exact HwfQ1mid
                     | intros α c _ Hc; apply binds_cons_3; exact Hc ])
               HmodQ1 Hincx Hrigx Hsklx HsklTx Hlcbody
-              (Hbody x ltac:(clear - Hx; fsetdec))
+              (Hbody x ltac:(clear - Hx; solve_notin_auto))
               ltac:(eapply ad_refine_syn_mono;
                     [ exact Href14σ
                     | intros α c Hty Hc; apply binds_cons_3; exact Hc ]))
@@ -2329,27 +2329,27 @@ Proof.
     pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hvup.
     simpl in Hup, Hvup.
     pose proof (@a_pat_rename_tm x z _ _ _ _ _ _ HrunB
-                  ltac:(clear - Hx Hup; fsetdec)
-                  ltac:(clear - Hz Hup; fsetdec)
-                  ltac:(clear - Hz Hvup; fsetdec)) as Hsw.
+                  ltac:(clear - Hx Hup; solve_notin_auto)
+                  ltac:(clear - Hz Hup; solve_notin_auto)
+                  ltac:(clear - Hz Hvup; solve_notin_auto)) as Hsw.
     rewrite (@swap_aenv_tm_head x z bA Θmid
-               ltac:(simpl; clear - Hx; fsetdec)
-               ltac:(simpl; clear - Hz; fsetdec)) in Hsw.
+               ltac:(simpl; clear - Hx; solve_notin_auto)
+               ltac:(simpl; clear - Hz; solve_notin_auto)) in Hsw.
     rewrite swap_aenv_app in Hsw.
     rewrite (@swap_aenv_tm_head x z (abind_var_typ A) Θ3
-               ltac:(simpl; clear - HxΘ3 Hx; fsetdec)
-               ltac:(simpl; clear - Hz; fsetdec)) in Hsw.
+               ltac:(simpl; clear - HxΘ3 Hx; solve_notin_auto)
+               ltac:(simpl; clear - Hz; solve_notin_auto)) in Hsw.
     rewrite (@swap_aenv_fresh_eq x z Ξ
-               ltac:(clear - HxΞ; fsetdec)
-               ltac:(clear - Hz; fsetdec)) in Hsw.
+               ltac:(clear - HxΞ; solve_notin_auto)
+               ltac:(clear - Hz; solve_notin_auto)) in Hsw.
     rewrite (@swap_pskl_fresh_id x z Q'
-               ltac:(clear - HxQ'; fsetdec)
-               ltac:(clear - Hz; fsetdec)) in Hsw.
+               ltac:(clear - HxQ'; solve_notin_auto)
+               ltac:(clear - Hz; solve_notin_auto)) in Hsw.
     rewrite (@swap_pskl_fresh_id x z Q1
-               ltac:(clear - Hx; fsetdec)
-               ltac:(clear - Hz; fsetdec)) in Hsw.
+               ltac:(clear - Hx; solve_notin_auto)
+               ltac:(clear - Hz; solve_notin_auto)) in Hsw.
     rewrite <- (@subst_exp_in_exp_intro x e (exp_var_f z)
-                  ltac:(clear - Hx; fsetdec)) in Hsw.
+                  ltac:(clear - Hx; solve_notin_auto)) in Hsw.
     exact Hsw. }
   (* ---- 10. optimality: glue the two stages ---- *)
   intros κ1 Hid1 Hinc1.
@@ -2670,7 +2670,7 @@ Proof.
         | apply a_wf_pskl__hole | apply a_sk_mode_compat__tc | exact Hexp2 ]).
   assert (HwfP0mid : Θ1 ⨟ empty ⊢ₚₛᵃ P0).
   { pose proof (a_wf_pskl_msubst_inc Hinca Hwf0 HwfP0
-                  ltac:(intros α Hα; clear - Hα; fsetdec)) as Hw.
+                  ltac:(intros α Hα; clear - Hα; solve_notin_auto)) as Hw.
     rewrite (msubst_pskl_id P0 Hida) in Hw. exact Hw. }
   assert (Hskl1 : forall y Ps, binds y (abind_var_skl Ps) Θ1 ->
              Θ1 ⨟ empty ⊢ₚₛᵃ Ps).
@@ -2678,7 +2678,7 @@ Proof.
     assert (Hb0 : binds y (abind_var_skl Ps) Θ0)
       by (eapply a_pat_tm_ge; [ exact Hrun2 | exact I | exact Hb ]).
     pose proof (a_wf_pskl_msubst_inc Hinca Hwf0 (Hskl _ _ Hb0)
-                  ltac:(intros α Hα; clear - Hα; fsetdec)) as Hw.
+                  ltac:(intros α Hα; clear - Hα; solve_notin_auto)) as Hw.
     rewrite (msubst_pskl_id Ps Hida) in Hw. exact Hw. }
   assert (Hrig1mid : forall α, α `in` ftvar_in_exp e1 ->
              binds α abind_tvar Θ1)

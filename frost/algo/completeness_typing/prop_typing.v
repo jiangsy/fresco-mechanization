@@ -353,7 +353,7 @@ Proof.
         [ exact Hζb | exact Hwfmid | exact HrigMid ]).
   assert (HwfP0mid : Θmid ⨟ empty ⊢ₚₛᵃ P0).
   { pose proof (a_wf_pskl_msubst_inc Hincb Hwf0 HwfP0
-                  ltac:(intros α Hα; clear - Hα; fsetdec)) as Hw.
+                  ltac:(intros α Hα; clear - Hα; solve_notin_auto)) as Hw.
     rewrite (msubst_pskl_id P0 Hidb) in Hw. exact Hw. }
   (* ---- 2. transport the refinement to ζb ---- *)
   assert (Hσ : msubst_compose ζb κb ∷ Θ0 ⊑ Θ)
@@ -491,9 +491,9 @@ Proof.
                    binds x b Θ -> binds x b ((α ~ abind_tvar) ++ Θ'))
           by (intros x b Hb; apply binds_cons_3; apply Hincl; exact Hb));
         first
-          [ eapply (proj1 (H0 α ltac:(clear - Hα; fsetdec) _ Hinclx Hwfx));
+          [ eapply (proj1 (H0 α ltac:(clear - Hα; solve_notin_auto) _ Hinclx Hwfx));
             apply Hfam; clear - Hα; fsetdec
-          | eapply (proj2 (H0 α ltac:(clear - Hα; fsetdec) _ Hinclx Hwfx));
+          | eapply (proj2 (H0 α ltac:(clear - Hα; solve_notin_auto) _ Hinclx Hwfx));
             apply Hfam; clear - Hα; fsetdec ]
     end.
 Qed.
@@ -683,7 +683,7 @@ Proof.
     by (eapply a_tyequiv__trans; [ exact HeqB' | exact Heq0 ]).
   assert (HwfApmid : Θmid ⨟ empty ⊢ₚₛᵃ (ptyp_to_pskl Ap)).
   { pose proof (a_wf_pskl_msubst_inc Hincb Hwf0 HwfP0
-                  ltac:(intros α Hα; clear - Hα; fsetdec)) as Hw.
+                  ltac:(intros α Hα; clear - Hα; solve_notin_auto)) as Hw.
     rewrite (msubst_pskl_id _ Hidb) in Hw. exact Hw. }
   (* ---- 2. the transports for the consistency stage ---- *)
   assert (Hσ : msubst_compose ζb κb ∷ Θ0 ⊑ Θ)
@@ -942,7 +942,7 @@ Proof.
         | apply a_wf_pskl__hole | apply a_sk_mode_compat__tc | exact Hexp2 ]).
   assert (HwfP0m : Θ1' ⨟ empty ⊢ₚₛᵃ P0).
   { pose proof (a_wf_pskl_msubst_inc Hinc1b Hwf0 HwfP0
-                  ltac:(intros α Hα; clear - Hα; fsetdec)) as Hw.
+                  ltac:(intros α Hα; clear - Hα; solve_notin_auto)) as Hw.
     rewrite (msubst_pskl_id P0 Hid1b) in Hw. exact Hw. }
   assert (Hskl1 : forall y Ps, binds y (abind_var_skl Ps) Θ1' ->
              Θ1' ⨟ empty ⊢ₚₛᵃ Ps).
@@ -950,7 +950,7 @@ Proof.
     assert (Hb0 : binds y (abind_var_skl Ps) Θ0)
       by (eapply a_pat_tm_ge; [ exact Hrun1 | exact I | exact Hb ]).
     pose proof (a_wf_pskl_msubst_inc Hinc1b Hwf0 (Hskl _ _ Hb0)
-                  ltac:(intros α Hα; clear - Hα; fsetdec)) as Hw.
+                  ltac:(intros α Hα; clear - Hα; solve_notin_auto)) as Hw.
     rewrite (msubst_pskl_id Ps Hid1b) in Hw. exact Hw. }
   assert (Hrig1m : forall α, α `in` ftvar_in_exp e1 -> binds α abind_tvar Θ1')
     by (intros α Hα; eapply a_inc_binds_tvar;
@@ -1051,7 +1051,7 @@ Proof.
     assert (Hb1 : binds y (abind_var_skl Ps) Θ1')
       by (exact (a_typing_tm_ge Hrun2 y (abind_var_skl Ps) I Hb)).
     pose proof (a_wf_pskl_msubst_inc Hinc2b Hwf1 (Hskl1 _ _ Hb1)
-                  ltac:(intros α Hα; clear - Hα; fsetdec)) as Hw.
+                  ltac:(intros α Hα; clear - Hα; solve_notin_auto)) as Hw.
     rewrite (msubst_pskl_id Ps Hid2b) in Hw. exact Hw. }
   assert (Hexp2m : a_wf_exp Θ2' e2)
     by (apply a_wf_exp_of_tvarish;
@@ -1597,14 +1597,14 @@ Proof.
                   ltac:(assumption) Hg1 Hinc Hu1
                   ltac:(intros α Hα; simpl in Hav;
                         pose proof (Hav α ltac:(rewrite dom_app;
-                                                clear - Hα; fsetdec)) as Hn;
+                                                clear - Hα; solve_notin_auto)) as Hn;
                         clear - Hn; fsetdec))
         as [ζg1 [Hmap1 [Hent1 Heqc1]]].
       destruct (IHHref2 Pb B2 Θg Ξ2 A2 κ Θ1 HwfΘ eq_refl eq_refl
                   ltac:(assumption) Hg2 Hinc Hu2
                   ltac:(intros α Hα; simpl in Hav;
                         pose proof (Hav α ltac:(rewrite dom_app;
-                                                clear - Hα; fsetdec)) as Hn;
+                                                clear - Hα; solve_notin_auto)) as Hn;
                         clear - Hn; fsetdec))
         as [ζg2 [Hmap2 [Hent2 Heqc2]]].
       pose proof (map_fst_eq_dom _ _ Hmap1) as Hd1.
@@ -1631,7 +1631,7 @@ Proof.
           by (clear - Hα Hftv1; fsetdec).
         intros Hc. rewrite Hd2 in Hc.
         simpl in Hav.
-        pose proof (Hav α ltac:(rewrite dom_app; clear - Hc; fsetdec)) as Hn.
+        pose proof (Hav α ltac:(rewrite dom_app; clear - Hc; solve_notin_auto)) as Hn.
         clear - Hn HαP Hc Hdisj. fsetdec.
       * rewrite app_assoc.
         erewrite (msubst_ptyp_agree (ζg1 ++ ζg2 ++ κ) (ζg2 ++ κ));
@@ -1642,7 +1642,7 @@ Proof.
           by (clear - Hα Hftv2; fsetdec).
         intros Hc. rewrite Hd1 in Hc.
         simpl in Hav.
-        pose proof (Hav α ltac:(rewrite dom_app; clear - Hc; fsetdec)) as Hn.
+        pose proof (Hav α ltac:(rewrite dom_app; clear - Hc; solve_notin_auto)) as Hn.
         clear - Hn HαP Hc Hdisj. fsetdec.
   - (* all *)
     destruct P0 as [ | nb | βv | Pa Pb | Pw | | Pt ]; simpl in HeqS;
@@ -1682,7 +1682,7 @@ Proof.
           [ apply a_guess_mono__forall with (β := β);
               [ exact Hfrβ | exact Hg0 ]
           | clear - Hα0; fsetdec ]. }
-      destruct (H0 α0 ltac:(clear - Hα0; fsetdec)
+      destruct (H0 α0 ltac:(clear - Hα0; solve_notin_auto)
                   (open_pskl_wrt_pskl Pw (pskl_var_f α0))
                   (open_btyp_wrt_btyp B0 (btyp_var_f α0))
                   ((α0 ~ abind_tvar) ++ Θg) blk
@@ -1690,11 +1690,11 @@ Proof.
                      (ptyp_var_f α0))
                   κ Θ1 HwfΘ
                   ltac:(assert (Hfr0 : α0 `notin` dom κ)
-                          by (clear - Hα0; fsetdec);
+                          by (clear - Hα0; solve_notin_auto);
                         rewrite (@msubst_pskl_open Θ1 κ Θ Pw α0 Hinc Hfr0);
                         rewrite pskl_to_bskl_inh_open; reflexivity)
                   ltac:(rewrite btyp_to_bskl_open; reflexivity)
-                  (Hit1 α0 ltac:(clear - Hα0; fsetdec))
+                  (Hit1 α0 ltac:(clear - Hα0; solve_notin_auto))
                   Hgα0 Hinc Huq
                   ltac:(intros α Hα;
                         pose proof (Hav α Hα) as Hn;
@@ -2071,7 +2071,7 @@ Proof.
               (ptyp_to_btyp_inh_ityp (a_wf_ptyp_lc HwfA))
               Hguess Hinc Huqb
               ltac:(intros α Hα;
-                    pose proof (Havb α Hα) as Hn; clear - Hn; fsetdec))
+                    pose proof (Havb α Hα) as Hn; clear - Hn; solve_notin_auto))
     as [ζg [Hmap [Hents HeqA']]].
   rewrite btyp_to_ptyp_ptyp_to_btyp_inh in HeqA'.
   set (κg := ζg ++ κ) in *.
@@ -2168,7 +2168,7 @@ Proof.
   destruct (IH x (decr_mode M) ((x ~ abind_var_typ A') ++ blk ++ Θ0) Q κg
               ((x ~ abind_var_typ A) ++ Θ) Bc
               Hwf0x HwfΘx HwfQx HmodQ Hincx Hrigx Hsklx HsklTx Hlcbody
-              (Hbody x ltac:(clear - Hx; fsetdec))
+              (Hbody x ltac:(clear - Hx; solve_notin_auto))
               ltac:(eapply ad_refine_syn_mono;
                     [ exact HrefCg
                     | intros α c Hty Hc; apply binds_cons_3; exact Hc ]))
@@ -2539,7 +2539,7 @@ Proof.
     assert (Hb0 : binds y (abind_var_skl Ps) Θ0)
       by (eapply a_consis_tm_ge; [ exact HcRun | exact I | exact Hb ]).
     pose proof (a_wf_pskl_msubst_inc Hincc Hwf0 (Hskl _ _ Hb0)
-                  ltac:(intros α Hα; clear - Hα; fsetdec)) as Hw.
+                  ltac:(intros α Hα; clear - Hα; solve_notin_auto)) as Hw.
     rewrite (msubst_pskl_id Ps Hidc) in Hw. exact Hw. }
   assert (Hsklx : forall y Ps,
              binds y (abind_var_skl Ps) ((x ~ abind_var_typ A) ++ Θmid) ->
@@ -2559,7 +2559,7 @@ Proof.
     intros α c _ Hc. apply binds_cons_3. exact Hc. }
   assert (HwfQmid : Θmid ⨟ empty ⊢ₚₛᵃ Q).
   { pose proof (a_wf_pskl_msubst_inc Hincc Hwf0 HwfQ
-                  ltac:(intros α Hα; clear - Hα; fsetdec)) as Hw.
+                  ltac:(intros α Hα; clear - Hα; solve_notin_auto)) as Hw.
     rewrite (msubst_pskl_id Q Hidc) in Hw. exact Hw. }
   (* ---- 4. the IH, once ---- *)
   destruct (IH x (decr_mode M) ((x ~ abind_var_typ A) ++ Θmid) Q ζc
@@ -2569,7 +2569,7 @@ Proof.
                     [ exact HwfQmid
                     | intros α c _ Hc; apply binds_cons_3; exact Hc ])
               HmodQ Hincx Hrigx Hsklx HsklTx (Hlce x)
-              (Hbody x ltac:(clear - Hx; fsetdec))
+              (Hbody x ltac:(clear - Hx; solve_notin_auto))
               ltac:(eapply ad_refine_syn_mono;
                     [ exact HrefCζ
                     | intros α c Hty Hc; apply binds_cons_3; exact Hc ]))
@@ -2965,7 +2965,7 @@ Proof.
                        (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)))).
     { rewrite ptyp_to_pskl_open.
       eapply a_wf_pskl_delta_to_ctx;
-        [ apply (HwfF α ltac:(clear - Hα; fsetdec)) | clear; fsetdec ]. }
+        [ apply (HwfF α ltac:(clear - Hα; solve_notin_auto)) | clear; fsetdec ]. }
     assert (Hincx : κ ∷ ((α ~ abind_tvar) ++ Θ0) ⊑ ((α ~ abind_tvar) ++ Θ))
       by (apply (@a_inc__tvar Θ0 κ Θ nil α);
           [ exact Hinc | apply a_suffix__nil ]).
@@ -2996,12 +2996,12 @@ Proof.
                       ⊳ (btyp_to_bskl (open_btyp_wrt_btyp B (btyp_var_f α)))).
     { rewrite msubst_pskl_embed_ptyp.
       rewrite (@msubst_ptyp_open Θ0 κ Θ A0 α Hinc
-                 ltac:(clear - Hα; fsetdec)).
+                 ltac:(clear - Hα; solve_notin_auto)).
       rewrite ptyp_to_pskl_open.
       rewrite pskl_to_bskl_inh_open.
       rewrite btyp_to_bskl_open. simpl.
       eapply ad_refine_syn_delta_to_ctx;
-        [ apply (HrefF α ltac:(clear - Hα; fsetdec)) | clear; fsetdec ]. }
+        [ apply (HrefF α ltac:(clear - Hα; solve_notin_auto)) | clear; fsetdec ]. }
     (* ---- 4. the IH, once, at the peeled problem ---- *)
     destruct (IH mode_tc ((α ~ abind_tvar) ++ Θ0)
                 (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)))
@@ -3011,7 +3011,7 @@ Proof.
                       simpl; lia)
                 Hwf0x HwfΘx HwfP0x (a_ty_mode_compat__tc _) Hincx Hrigx
                 Hsklx HsklTx Hlc
-                (Hbody α ltac:(clear - Hα; fsetdec)) Hrefx)
+                (Hbody α ltac:(clear - Hα; solve_notin_auto)) Hrefx)
       as [A1 [Θrun [HrunB HoptB]]].
     (* ---- 5. the run's identity increase shapes the output ---- *)
     assert (Hexpx : a_wf_exp ((α ~ abind_tvar) ++ Θ0) (exp_abs e)).
@@ -3244,7 +3244,7 @@ Proof.
                        (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)))).
     { rewrite ptyp_to_pskl_open.
       eapply a_wf_pskl_delta_to_ctx;
-        [ apply (HwfF α ltac:(clear - Hα; fsetdec)) | clear; fsetdec ]. }
+        [ apply (HwfF α ltac:(clear - Hα; solve_notin_auto)) | clear; fsetdec ]. }
     assert (Hincx : κ ∷ ((α ~ abind_tvar) ++ Θ0) ⊑ ((α ~ abind_tvar) ++ Θ))
       by (apply (@a_inc__tvar Θ0 κ Θ nil α);
           [ exact Hinc | apply a_suffix__nil ]).
@@ -3274,12 +3274,12 @@ Proof.
                       ⊳ (btyp_to_bskl (open_btyp_wrt_btyp B (btyp_var_f α)))).
     { rewrite msubst_pskl_embed_ptyp.
       rewrite (@msubst_ptyp_open Θ0 κ Θ A0 α Hinc
-                 ltac:(clear - Hα; fsetdec)).
+                 ltac:(clear - Hα; solve_notin_auto)).
       rewrite ptyp_to_pskl_open.
       rewrite pskl_to_bskl_inh_open.
       rewrite btyp_to_bskl_open. simpl.
       eapply ad_refine_syn_delta_to_ctx;
-        [ apply (HrefF α ltac:(clear - Hα; fsetdec)) | clear; fsetdec ]. }
+        [ apply (HrefF α ltac:(clear - Hα; solve_notin_auto)) | clear; fsetdec ]. }
     destruct (IH mode_tc ((α ~ abind_tvar) ++ Θ0)
                 (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)))
                 κ ((α ~ abind_tvar) ++ Θ)
@@ -3288,7 +3288,7 @@ Proof.
                       simpl; lia)
                 Hwf0x HwfΘx HwfP0x (a_ty_mode_compat__tc _) Hincx Hrigx
                 Hsklx HsklTx Hlc
-                (Hbody α ltac:(clear - Hα; fsetdec)) Hrefx)
+                (Hbody α ltac:(clear - Hα; solve_notin_auto)) Hrefx)
       as [A1 [Θrun [HrunB HoptB]]].
     assert (Hexpx : a_wf_exp ((α ~ abind_tvar) ++ Θ0) (exp_abs_anno A e)).
     { apply a_wf_exp_of_tvarish; [ exact Hlc | ].
@@ -3437,8 +3437,8 @@ Proof.
     assert (Hcut : msubst_compose ((α, τ) :: κ) κa = msubst_compose κ κa)
       by (exact (@msubst_compose_id_app_agree κa [(α, τ)] κ Hid1'
                    ltac:(intros y Hy Hc; simpl in Hc;
-                         assert (Hya : y = α) by (clear - Hc; fsetdec);
-                         subst; clear - Hnd1 Hy; fsetdec))).
+                         assert (Hya : y = α) by (clear - Hc; solve_notin_auto);
+                         subst; clear - Hnd1 Hy; solve_notin_auto))).
     rewrite msubst_compose_cons, Hcut.
     cbn [msubst_ptyp msubst_lookup].
     destruct (α == α) as [_ | Hc]; [ | exfalso; apply Hc; reflexivity ].
@@ -3455,8 +3455,8 @@ Proof.
     assert (Hcut : msubst_compose ((α, τ') :: κ) κa = msubst_compose κ κa)
       by (exact (@msubst_compose_id_app_agree κa [(α, τ')] κ Hid1'
                    ltac:(intros y Hy Hc; simpl in Hc;
-                         assert (Hya : y = α) by (clear - Hc; fsetdec);
-                         subst; clear - Hnd1 Hy; fsetdec))).
+                         assert (Hya : y = α) by (clear - Hc; solve_notin_auto);
+                         subst; clear - Hnd1 Hy; solve_notin_auto))).
     rewrite msubst_compose_cons, Hcut.
     cbn [msubst_ptyp msubst_lookup].
     destruct (α == α) as [_ | Hc]; [ | exfalso; apply Hc; reflexivity ].
@@ -3967,7 +3967,7 @@ Proof.
               ((x ~ abind_var_typ A) ++ Θ) B1
               Hwf0x HwfΘx HwfBcx (a_ty_mode_compat__tc _) Hincx Hrigx
               Hsklx HsklTx Hlcbody
-              (Hbody x ltac:(clear - Hx; fsetdec))
+              (Hbody x ltac:(clear - Hx; solve_notin_auto))
               ltac:(eapply ad_refine_syn_mono;
                     [ exact Hrefc
                     | intros α c Hty Hc; apply binds_cons_3; exact Hc ]))
@@ -4308,7 +4308,7 @@ Proof.
     assert (Hb1 : binds y (abind_var_skl Ps) Θ1)
       by (eapply a_consis_tm_ge; [ exact HcRun | exact I | exact Hb ]).
     pose proof (a_wf_pskl_msubst_inc Hincc Hwf1 (Hskl1 _ _ Hb1)
-                  ltac:(intros α Hα; clear - Hα; fsetdec)) as Hw.
+                  ltac:(intros α Hα; clear - Hα; solve_notin_auto)) as Hw.
     rewrite (msubst_pskl_id Ps Hidc) in Hw. exact Hw. }
   assert (Hsklx : forall y Ps,
              binds y (abind_var_skl Ps) ((x ~ abind_var_typ Aan) ++ Θ2) ->
@@ -4326,7 +4326,7 @@ Proof.
     apply a_wf_pskl_weaken_cons. exact (HsklT _ _ Hb'). }
   assert (HwfBc2 : Θ2 ⨟ empty ⊢ₚₛᵃ (ptyp_to_pskl Bc)).
   { pose proof (a_wf_pskl_msubst_inc Hincc Hwf1 HwfBcP1
-                  ltac:(intros α Hα; clear - Hα; fsetdec)) as Hw.
+                  ltac:(intros α Hα; clear - Hα; solve_notin_auto)) as Hw.
     rewrite (msubst_pskl_id (ptyp_to_pskl Bc) Hidc) in Hw. exact Hw. }
   assert (HwfBcx : ((x ~ abind_var_typ Aan) ++ Θ2) ⨟ empty ⊢ₚₛᵃ
                      (ptyp_to_pskl Bc))
@@ -4336,7 +4336,7 @@ Proof.
               ((x ~ abind_var_typ Aan) ++ Θ) B1
               Hwf0x HwfΘx HwfBcx (a_ty_mode_compat__tc _) Hincx Hrigx
               Hsklx HsklTx (Hlce x)
-              (Hbody x ltac:(clear - Hx; fsetdec))
+              (Hbody x ltac:(clear - Hx; solve_notin_auto))
               ltac:(eapply ad_refine_syn_mono;
                     [ exact HrefCζ
                     | intros α c Hty Hc; apply binds_cons_3; exact Hc ]))

@@ -95,8 +95,8 @@ Proof.
   inversion Hwf as [ | | | L Θz Δz Pz Hbody Heq | | ]; subst.
   destruct (atom_fresh (L `union` dom Θ `union` ftvar_in_pskl P
                           `union` singleton α)) as [β Hβ].
-  pose proof (a_wf_pskl_shielded_dom (Hbody β ltac:(fsetdec))) as Hdom.
-  rewrite (subst_pskl_in_pskl_intro β P (pskl_var_f α) ltac:(fsetdec)).
+  pose proof (a_wf_pskl_shielded_dom (Hbody β ltac:(solve_notin_auto))) as Hdom.
+  rewrite (subst_pskl_in_pskl_intro β P (pskl_var_f α) ltac:(solve_notin_auto)).
   rewrite pskl_shielded_ftv_subst_var_notin; [ exact Hdom | ].
   clear - Hdom Hβ. fsetdec.
 Qed.
@@ -215,7 +215,7 @@ Proof.
     { pose proof (pskl_shielded_ftv_open_upper P0 (pskl_var_f α)) as Hup.
       simpl in Hup.
       pose proof (a_wf_pskl_all_shielded_open (α := α) HwfP0
-                    ltac:(clear - HαΘ0 HαP0; fsetdec)) as Hdo.
+                    ltac:(clear - HαΘ0 HαP0; solve_notin_auto)) as Hdo.
       clear - Hup Hdo Hsh0 HαΘ0 HαΔ. fsetdec. }
     assert (Hshx : (add α Δ1 `union` add α Δ2) ∩
                    pskl_shielded_ftv (open_pskl_wrt_pskl P (pskl_var_f α))
@@ -223,7 +223,7 @@ Proof.
     { pose proof (pskl_shielded_ftv_open_upper P (pskl_var_f α)) as Hup.
       simpl in Hup.
       pose proof (a_wf_pskl_all_shielded_open (α := α) HwfP
-                    ltac:(clear - HαΘ0 HαP; fsetdec)) as Hdo.
+                    ltac:(clear - HαΘ0 HαP; solve_notin_auto)) as Hdo.
       clear - Hup Hdo Hsh HαΘ0 HαΔ. fsetdec. }
     destruct (IHHc Hwfx HwfP0o HwfPo Hcovx Hnfdx Hfafx Hsh0x Hshx)
       as [HwfQ [HshQ [HprovQ _]]].
@@ -251,7 +251,7 @@ Proof.
       rewrite ftvar_in_pskl_close_pskl_wrt_pskl in Hft.
       assert (Hα0α : α0 <> α) by (clear - Hft; fsetdec).
       assert (Hα0Q : α0 `in` ftvar_in_pskl Q) by (clear - Hft; fsetdec).
-      pose proof (HprovQ α0 ltac:(clear - Hα0; fsetdec) Hα0Q) as Hp.
+      pose proof (HprovQ α0 ltac:(clear - Hα0; solve_notin_auto) Hα0Q) as Hp.
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
                     P0 (pskl_var_f α)) as Hu0.
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
@@ -298,7 +298,7 @@ Proof.
     { pose proof (pskl_shielded_ftv_open_upper P (pskl_var_f α)) as Hup.
       simpl in Hup.
       pose proof (a_wf_pskl_all_shielded_open (α := α) HwfP
-                    ltac:(clear - HαΘ0 HαP; fsetdec)) as Hdo.
+                    ltac:(clear - HαΘ0 HαP; solve_notin_auto)) as Hdo.
       clear - Hup Hdo Hsh HαΘ0 HαΔ. fsetdec. }
     destruct (IHHc Hwfx HwfP0x HwfPo Hcovx Hnfdx Hfafx Hsh0x Hshx)
       as [HwfQ [HshQ [HprovQ _]]].
@@ -326,7 +326,7 @@ Proof.
       rewrite ftvar_in_pskl_close_pskl_wrt_pskl in Hft.
       assert (Hα0α : α0 <> α) by (clear - Hft; fsetdec).
       assert (Hα0Q : α0 `in` ftvar_in_pskl Q) by (clear - Hft; fsetdec).
-      pose proof (HprovQ α0 ltac:(clear - Hα0; fsetdec) Hα0Q) as Hp.
+      pose proof (HprovQ α0 ltac:(clear - Hα0; solve_notin_auto) Hα0Q) as Hp.
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
                     P (pskl_var_f α)) as Hu1.
       simpl in Hu1. simpl.
@@ -393,7 +393,7 @@ Proof.
     { pose proof (pskl_shielded_ftv_open_upper P0 (pskl_var_f α)) as Hup.
       simpl in Hup.
       pose proof (a_wf_pskl_all_shielded_open (α := α) HwfP0
-                    ltac:(clear - HαΘ0 HαP0; fsetdec)) as Hdo.
+                    ltac:(clear - HαΘ0 HαP0; solve_notin_auto)) as Hdo.
       clear - Hup Hdo Hsh0 HαΘ0 HαΔ. fsetdec. }
     assert (Hshx : (add α Δ1 `union` Δ2) ∩
                    pskl_shielded_ftv (pskl_tophole P) [=] empty)
@@ -424,7 +424,7 @@ Proof.
       rewrite ftvar_in_pskl_close_pskl_wrt_pskl in Hft.
       assert (Hα0α : α0 <> α) by (clear - Hft; fsetdec).
       assert (Hα0Q : α0 `in` ftvar_in_pskl Q) by (clear - Hft; fsetdec).
-      pose proof (HprovQ α0 ltac:(clear - Hα0; fsetdec) Hα0Q) as Hp.
+      pose proof (HprovQ α0 ltac:(clear - Hα0; solve_notin_auto) Hα0Q) as Hp.
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
                     P0 (pskl_var_f α)) as Hu0.
       simpl in Hu0. simpl.
@@ -518,11 +518,11 @@ Corollary a_consis_output_wf_nil : forall Θ0 P0 P Q Θ1,
 Proof.
   intros * Hc Hwf HwfP0 HwfP.
   destruct (a_consis_output_wf Hc Hwf HwfP0 HwfP
-              ltac:(intros α Hα; exfalso; clear - Hα; fsetdec)
-              ltac:(intros β τ Hb; clear; fsetdec)
-              ltac:(intros Θa β b Θb Heq Hne; clear; fsetdec)
-              ltac:(clear; fsetdec)
-              ltac:(clear; fsetdec))
+              ltac:(intros α Hα; exfalso; clear - Hα; solve_notin_auto)
+              ltac:(intros β τ Hb; clear; solve_notin_auto)
+              ltac:(intros Θa β b Θb Heq Hne; clear; solve_notin_auto)
+              ltac:(clear; solve_notin_auto)
+              ltac:(clear; solve_notin_auto))
     as [HwfQ _].
   exact HwfQ.
 Qed.
@@ -537,9 +537,9 @@ Corollary a_consis_isub_wf_nil : forall Θ0 P0 P Q Θ1,
 Proof.
   intros * Hc Hwf HwfP0 HwfP.
   destruct (a_consis_sound_aux Hc Hwf HwfP0 HwfP
-              ltac:(intros α Hα; exfalso; clear - Hα; fsetdec)
-              ltac:(intros β τ Hb; clear; fsetdec)
-              ltac:(intros Θa β b Θb Heq Hne; clear; fsetdec))
+              ltac:(intros α Hα; exfalso; clear - Hα; solve_notin_auto)
+              ltac:(intros β τ Hb; clear; solve_notin_auto)
+              ltac:(intros Θa β b Θb Heq Hne; clear; solve_notin_auto))
     as [Hle [Hwf1 _]].
   exact (conj Hle Hwf1).
 Qed.
@@ -589,9 +589,9 @@ Proof.
     destruct (IH ltac:(apply a_wf_aenv__tvar;
                          [ exact HαΘ0 | exact Hwf ])
                 ltac:(eapply a_wf_pskl_all_syn_open_tvar;
-                        [ exact HwfP0 | clear - Hfr HαΘ0; simpl in Hfr; fsetdec ])
+                        [ exact HwfP0 | clear - Hfr HαΘ0; simpl in Hfr; solve_notin_auto ])
                 ltac:(eapply a_wf_pskl_delta_mono;
-                        [ apply (a_wf_pskl_reassoc HwfP α) | clear; fsetdec ]))
+                        [ apply (a_wf_pskl_reassoc HwfP α) | clear; solve_notin_auto ]))
       as [Hle [Hwf1 HwfOut]].
     assert (HuqT : uniq (Ξ ++ (α ~ abind_tvar) ++ Θ1))
       by (apply a_wf_aenv_uniq_local; exact Hwf1).

@@ -29,6 +29,7 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.def_extra.
+Require Import src.frost.ltac_utils.   (* solve_notin_auto *)
 Require Import src.frost.coercions.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
@@ -208,7 +209,7 @@ Proof.
   induction Hlc; intros Θ0 κ σ Θ Hftv Hie Hincκ Hincσ Hwf0; cbn.
   - (* unit *) apply a_uskl_tyequiv__unit.
   - (* var_f α *)
-    destruct (Hftv α ltac:(cbn; fsetdec)) as [Hbt | [Hκ Hσ]].
+    destruct (Hftv α ltac:(cbn; solve_notin_auto)) as [Hbt | [Hκ Hσ]].
     + apply a_uskl_tyequiv__mono;
         [ eapply a_inc_lookup_mono; exact Hincκ
         | eapply a_inc_lookup_mono; exact Hincσ
@@ -305,10 +306,10 @@ Proof.
   - split; apply lc_uskl_var_f.
   - destruct IHa_uskl_tyequiv1, IHa_uskl_tyequiv2.
     split; apply lc_uskl_arrow; assumption.
-  - pick fresh α. destruct (H0 α ltac:(clear - Fr; fsetdec)) as [Hl Hr].
+  - pick fresh α. destruct (H0 α ltac:(clear - Fr; solve_notin_auto)) as [Hl Hr].
     split; [ eapply lc_uskl_all_syn_exists; exact Hl
            | eapply lc_uskl_all_syn_exists; exact Hr ].
-  - pick fresh α. destruct (H0 α ltac:(clear - Fr; fsetdec)) as [Hl Hr].
+  - pick fresh α. destruct (H0 α ltac:(clear - Fr; solve_notin_auto)) as [Hl Hr].
     split; [ eapply lc_uskl_all_etag_exists; exact Hl
            | eapply lc_uskl_all_etag_exists; exact Hr ].
   - split; apply lc_uskl_hole.
@@ -843,8 +844,8 @@ Proof.
   destruct (atom_fresh
     (L `union` dom Θ `union` ftvar_in_uskl R `union` ftvar_in_uskl R'))
     as [β Fr].
-  rewrite (subst_bskl_in_uskl_intro β R ψ ltac:(clear - Fr; fsetdec)).
-  rewrite (subst_bskl_in_uskl_intro β R' ψ ltac:(clear - Fr; fsetdec)).
+  rewrite (subst_bskl_in_uskl_intro β R ψ ltac:(clear - Fr; solve_notin_auto)).
+  rewrite (subst_bskl_in_uskl_intro β R' ψ ltac:(clear - Fr; solve_notin_auto)).
   apply a_uskl_tyequiv_subst;
     [ apply Hfam; clear - Fr; fsetdec | exact Hlcψ | clear - Fr; fsetdec ].
 Qed.
@@ -866,13 +867,13 @@ Proof.
     clear - IHa_uskl_tyequiv1 IHa_uskl_tyequiv2; fsetdec.
   - (* __all_syn *)
     pick fresh α for L.
-    pose proof (H0 α ltac:(clear - Fr; fsetdec)) as Hb.
+    pose proof (H0 α ltac:(clear - Fr; solve_notin_auto)) as Hb.
     pose proof (ftag_in_uskl_open_var R α) as Ho1.
     pose proof (ftag_in_uskl_open_var R' α) as Ho2.
     clear - Hb Ho1 Ho2; fsetdec.
   - (* __all_etag *)
     pick fresh α for L.
-    pose proof (H0 α ltac:(clear - Fr; fsetdec)) as Hb.
+    pose proof (H0 α ltac:(clear - Fr; solve_notin_auto)) as Hb.
     pose proof (ftag_in_uskl_open_var R α) as Ho1.
     pose proof (ftag_in_uskl_open_var R' α) as Ho2.
     clear - Hb Ho1 Ho2; fsetdec.
@@ -989,7 +990,7 @@ Proof.
         eapply ad_pat_consis__forall_inh_tagged
           with (L := L `union` LL `union` dom Θ) (Ψ0 := Ψ0);
         [ intros α Hα | exact H1 ];
-        eapply (H0 α ltac:(clear - Hα; fsetdec));
+        eapply (H0 α ltac:(clear - Hα; solve_notin_auto));
         [ apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]
         | apply a_uskl_tyequiv_weaken_cons;
           apply Hfam; clear - Hα; fsetdec ]
@@ -1005,7 +1006,7 @@ Proof.
         eapply ad_pat_consis__forall_inh_untagged
           with (L := L `union` LL `union` dom Θ);
         intros α Hα;
-        eapply (H0 α ltac:(clear - Hα; fsetdec));
+        eapply (H0 α ltac:(clear - Hα; solve_notin_auto));
         [ apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]
         | apply a_uskl_tyequiv_weaken_cons;
           apply Hfam; clear - Hα; fsetdec ]
@@ -1021,7 +1022,7 @@ Proof.
         eapply ad_pat_consis__forall_syn_tagged
           with (L := L `union` LL `union` dom Θ);
         intros α Hα;
-        eapply (H0 α ltac:(clear - Hα; fsetdec));
+        eapply (H0 α ltac:(clear - Hα; solve_notin_auto));
         [ apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]
         | apply a_uskl_tyequiv_weaken_cons;
           apply Hfam; clear - Hα; fsetdec ]
@@ -1037,7 +1038,7 @@ Proof.
         eapply ad_pat_consis__forall_syn
           with (L := L `union` LL `union` dom Θ);
         intros α Hα;
-        eapply (H0 α ltac:(clear - Hα; fsetdec));
+        eapply (H0 α ltac:(clear - Hα; solve_notin_auto));
         [ apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]
         | apply a_uskl_tyequiv_weaken_cons;
           apply Hfam; clear - Hα; fsetdec ]
@@ -1082,7 +1083,7 @@ Proof.
     | Ht0 : Θ ⊢ ?T0 ≡ᵘ R |- _ =>
         eapply ad_pat_consis__tophole_inh with (L := L `union` dom Θ);
         intros α Hα;
-        eapply (H0 α ltac:(clear - Hα; fsetdec));
+        eapply (H0 α ltac:(clear - Hα; solve_notin_auto));
         [ apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]
         | apply a_uskl_tyequiv_weaken_cons;
           apply a_uskl_tyequiv__tophole; exact Ht0 ]
@@ -1207,7 +1208,7 @@ Proof.
   - (* forall_r *)
     eapply ad_pat_sub_g__forall_r with (L := L `union` dom Θ).
     intros β Hβ.
-    eapply (H0 β ltac:(clear - Hβ; fsetdec) α0 τ0 HeqS);
+    eapply (H0 β ltac:(clear - Hβ; solve_notin_auto) α0 τ0 HeqS);
       [ unfold binds; simpl; right; exact Hb
       | apply a_wf_aenv__tvar; [ clear - Hβ; fsetdec | exact Hwf ] ].
   - (* univ_ghost_r *)
@@ -1333,7 +1334,7 @@ Proof.
       * (* forall_r *)
         eapply ad_pat_sub_g__forall_r with (L := L `union` dom Θ0).
         intros β Hβ.
-        eapply (H0 β ltac:(clear - Hβ; fsetdec));
+        eapply (H0 β ltac:(clear - Hβ; solve_notin_auto));
           [ exact HeqS
           | apply a_wf_aenv__tvar; [ clear - Hβ; fsetdec | exact Hwf' ]
           | intros x b Hb; unfold binds; simpl; right; apply Hmon; exact Hb ].
@@ -1390,7 +1391,7 @@ Proof.
       * (* forall_r *)
         eapply ad_pat_sub_g__forall_r with (L := L `union` dom Θ0).
         intros β Hβ.
-        eapply (H0 β ltac:(clear - Hβ; fsetdec));
+        eapply (H0 β ltac:(clear - Hβ; solve_notin_auto));
           [ exact HeqS
           | apply a_wf_aenv__tvar; [ clear - Hβ; fsetdec | exact Hwf' ]
           | intros x b Hb; unfold binds; simpl; right; apply Hmon; exact Hb ].
@@ -1461,7 +1462,7 @@ Proof.
   - (* forall_r *)
     eapply ad_pat_sub_g__forall_r with (L := L `union` dom Θ).
     intros α Hα.
-    eapply (H0 α ltac:(clear - Hα; fsetdec));
+    eapply (H0 α ltac:(clear - Hα; solve_notin_auto));
       [ apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]
       | apply a_uskl_tyequiv_weaken_cons; exact Htyeq ].
   - (* univ_ghost_r *)

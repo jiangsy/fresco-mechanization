@@ -216,22 +216,9 @@ Hypothesis HΘlib_uniq : uniq Θlib.
         it does need to see the library; it is not the source of the blow-up.)
 
    See docs/REPORT-remech-cleanup-audit.md §PERF. *)
-(** ⭐ Keep ONLY the freshness hypothesis about the goal's own subject.
-
-    [uniq_push] leaves goals of the form [v ∉ {…} ∪ dom Θlib], and each is a
-    direct weakening of the ONE hypothesis [atom_fresh] produced for [v].  But
-    [fsetdec] reads the whole context, and by the innermost binder that context
-    holds four such hypotheses of up to six leaves each — past the point where
-    its internal [tauto] stays polynomial.  Dropping the other three is the
-    entire fix; see the measurements at [crush_uniq]. *)
-Ltac keep_only_subject :=
-  match goal with
-  | |- ?v `notin` _ =>
-      repeat match goal with
-             | H : ?w `notin` _ |- _ =>
-                 tryif constr_eq w v then fail else clear H
-             end
-  end.
+(* ⚙ [keep_only_subject] and [solve_notin_auto] were promoted to
+   frost/ltac_utils.v on 2026-08-09 — this file's local copy is gone; see the
+   ∉-kit comment there for why [fsetdec] is the wrong default on a [∉] goal. *)
 
 Ltac crush_uniq :=
   first [ assumption
@@ -243,7 +230,7 @@ Ltac crush_uniq :=
                      for any goal that genuinely needs two hypotheses — and it
                      is cheap to reach, because the scoped attempt either
                      succeeds in ~0.02 s or fails fast. *)
-                  first [ solve [ keep_only_subject; fsetdec ] | fsetdec ] ] ].
+                  solve_notin_auto ] ].
 
 (* ===================================================================== *)
 (*  Shared sub-derivations                                                *)

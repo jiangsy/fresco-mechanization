@@ -1562,8 +1562,8 @@ Proof.
   apply notin_union_split in H1; destruct H1 as [h1' h1''].
   pose proof (proj2 (proj2 (a_assign_unify_consis_swap β0 β1))
                 _ _ _ _ _ _ _ Hd Δ1 Δ2
-                (eq_swap_atoms_fresh β0 β1 Δ1 ltac:(fsetdec) ltac:(fsetdec))
-                (eq_swap_atoms_fresh β0 β1 Δ2 ltac:(fsetdec) ltac:(fsetdec)))
+                (eq_swap_atoms_fresh β0 β1 Δ1 ltac:(solve_notin_auto) ltac:(solve_notin_auto))
+                (eq_swap_atoms_fresh β0 β1 Δ2 ltac:(solve_notin_auto) ltac:(solve_notin_auto)))
     as h.
   rewrite (swap_aenv_fresh_id β0 β1 Θ0) in h; auto.
   rewrite (swap_pskl_fresh_id β0 β1 P0) in h; auto.
@@ -2498,12 +2498,12 @@ Proof.
   intros NM M P0 Θ0 P Q Ξ Θ1 x y b Hrun Hx Hy.
   pose proof ((proj1 (a_sub_sub_flex_swap x y)) _ _ _ _ _ _ _ Hrun) as Hsw.
   rewrite (@swap_aenv_tm_head x y b Θ0
-             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+             ltac:(clear - Hx; solve_notin_auto) ltac:(clear - Hy; solve_notin_auto)) in Hsw.
   rewrite swap_aenv_app in Hsw.
   rewrite (@swap_aenv_tm_head x y b Θ1
-             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+             ltac:(clear - Hx; solve_notin_auto) ltac:(clear - Hy; solve_notin_auto)) in Hsw.
   rewrite (@swap_aenv_fresh_eq x y Ξ
-             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+             ltac:(clear - Hx; solve_notin_auto) ltac:(clear - Hy; solve_notin_auto)) in Hsw.
   rewrite !swap_pskl_fresh_id in Hsw;
     try solve [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
   exact Hsw.
@@ -2532,12 +2532,12 @@ Proof.
                 (empty_eq_swap_atoms_empty x y)
                 (empty_eq_swap_atoms_empty x y)) as Hsw.
   rewrite (@swap_aenv_tm_head x y b Θ0
-             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+             ltac:(clear - Hx; solve_notin_auto) ltac:(clear - Hy; solve_notin_auto)) in Hsw.
   rewrite swap_aenv_app in Hsw.
   rewrite (@swap_aenv_tm_head x y b Θ1
-             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+             ltac:(clear - Hx; solve_notin_auto) ltac:(clear - Hy; solve_notin_auto)) in Hsw.
   rewrite (@swap_aenv_fresh_eq x y Ξ
-             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+             ltac:(clear - Hx; solve_notin_auto) ltac:(clear - Hy; solve_notin_auto)) in Hsw.
   rewrite !swap_pskl_fresh_id in Hsw;
     try solve [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
   exact Hsw.
@@ -2608,12 +2608,12 @@ Proof.
   intros Θ0 P0 P Q Ξ Θ1 x y b Hrun Hx Hy.
   pose proof (a_split_swap x y Hrun) as Hsw.
   rewrite (@swap_aenv_tm_head x y b Θ0
-             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+             ltac:(clear - Hx; solve_notin_auto) ltac:(clear - Hy; solve_notin_auto)) in Hsw.
   rewrite swap_aenv_app in Hsw.
   rewrite (@swap_aenv_tm_head x y b Θ1
-             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+             ltac:(clear - Hx; solve_notin_auto) ltac:(clear - Hy; solve_notin_auto)) in Hsw.
   rewrite (@swap_aenv_fresh_eq x y Ξ
-             ltac:(clear - Hx; fsetdec) ltac:(clear - Hy; fsetdec)) in Hsw.
+             ltac:(clear - Hx; solve_notin_auto) ltac:(clear - Hy; solve_notin_auto)) in Hsw.
   rewrite !swap_pskl_fresh_id in Hsw;
     try solve [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
   exact Hsw.
@@ -2716,10 +2716,10 @@ Proof.
     pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hfu.
     pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hvu.
     simpl in hfu, hvu.
-    pose proof (H3 z ltac:(clear - Hz; fsetdec)
-                  ltac:(clear - Ha hfu; fsetdec)
-                  ltac:(clear - Hb hfu; fsetdec)
-                  ltac:(clear - Hbv hvu Hzb; fsetdec)) as IH.
+    pose proof (H3 z ltac:(clear - Hz; solve_notin_auto)
+                  ltac:(clear - Ha hfu; solve_notin_auto)
+                  ltac:(clear - Hb hfu; solve_notin_auto)
+                  ltac:(clear - Hbv hvu Hzb; solve_notin_auto)) as IH.
     rewrite !swap_aenv_app, !swap_aenv_one,
       (swap_atom_other a b z Hza Hzb) in IH.
     cbn [swap_abind] in IH.
@@ -2747,10 +2747,10 @@ Proof.
     pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hfu.
     pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hvu.
     simpl in hfu, hvu.
-    pose proof (H4 z ltac:(clear - Hz; fsetdec)
-                  ltac:(clear - Ha hfu; fsetdec)
-                  ltac:(clear - Hb hfu; fsetdec)
-                  ltac:(clear - Hbv hvu Hzb; fsetdec)) as IH.
+    pose proof (H4 z ltac:(clear - Hz; solve_notin_auto)
+                  ltac:(clear - Ha hfu; solve_notin_auto)
+                  ltac:(clear - Hb hfu; solve_notin_auto)
+                  ltac:(clear - Hbv hvu Hzb; solve_notin_auto)) as IH.
     rewrite !swap_aenv_app, !swap_aenv_one,
       (swap_atom_other a b z Hza Hzb) in IH.
     cbn [swap_abind] in IH.
@@ -2770,10 +2770,10 @@ Proof.
     pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hfu.
     pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hvu.
     simpl in hfu, hvu.
-    pose proof (H1 z ltac:(clear - Hz; fsetdec)
-                  ltac:(clear - Ha hfu; fsetdec)
-                  ltac:(clear - Hb hfu; fsetdec)
-                  ltac:(clear - Hbv hvu Hzb; fsetdec)) as IH.
+    pose proof (H1 z ltac:(clear - Hz; solve_notin_auto)
+                  ltac:(clear - Ha hfu; solve_notin_auto)
+                  ltac:(clear - Hb hfu; solve_notin_auto)
+                  ltac:(clear - Hbv hvu Hzb; solve_notin_auto)) as IH.
     rewrite !swap_aenv_app, !swap_aenv_one,
       (swap_atom_other a b z Hza Hzb) in IH.
     cbn [swap_abind] in IH.
@@ -2795,10 +2795,10 @@ Proof.
     pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hfu.
     pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hvu.
     simpl in hfu, hvu.
-    pose proof (H1 z ltac:(clear - Hz; fsetdec)
-                  ltac:(clear - Ha hfu; fsetdec)
-                  ltac:(clear - Hb hfu; fsetdec)
-                  ltac:(clear - Hbv hvu Hzb; fsetdec)) as IH.
+    pose proof (H1 z ltac:(clear - Hz; solve_notin_auto)
+                  ltac:(clear - Ha hfu; solve_notin_auto)
+                  ltac:(clear - Hb hfu; solve_notin_auto)
+                  ltac:(clear - Hbv hvu Hzb; solve_notin_auto)) as IH.
     rewrite !swap_aenv_app, !swap_aenv_one,
       (swap_atom_other a b z Hza Hzb) in IH.
     cbn [swap_abind] in IH.

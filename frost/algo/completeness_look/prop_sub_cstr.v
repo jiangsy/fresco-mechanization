@@ -154,7 +154,7 @@ Proof.
       cbn [ftvar_in_uskl] in Hup. clear - HΔ' Hα0 Hup. fsetdec. }
     (* Δ and Δ' MUST be pinned: left as evars the [=] goal below is an
        evar-fsetdec and does not terminate *)
-    eapply (H0 α0 ltac:(clear - Hα0; fsetdec) (add α0 Δ0) Δ');
+    eapply (H0 α0 ltac:(clear - Hα0; solve_notin_auto) (add α0 Δ0) Δ');
       [ clear - Heq; fsetdec | exact HSX | exact Hdf ].
   - (* hole : the side condition is antitone in Δ *)
     apply ad_ppre__hole; [ assumption | ].
@@ -175,7 +175,7 @@ Proof.
     { intros β0 α3 τ3 Hβ0 Hb.
       destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
         [ discriminate Hc | exact (Hdf β0 α3 τ3 Hβ0 Hb') ]. }
-    eapply (H0 α0 ltac:(clear - Hα0; fsetdec) Δ0 Δ');
+    eapply (H0 α0 ltac:(clear - Hα0; solve_notin_auto) Δ0 Δ');
       [ exact Heq | exact HSX | exact Hdf' ].
   - (* tophole_keep *)
     cbn [ftvar_in_uskl] in HΔ'.
@@ -1530,7 +1530,7 @@ Proof.
       by (intros α0 Hα0; pose proof (HΔρftv α0 Hα0) as Hd0;
           cbn [ftvar_in_pskl] in Hd0; clear - Hd0; fsetdec).
     (* ⚠️ THE AVOID-SET MUST BE NAMED BEFORE THE CALL.  [L] is the LAST
-       ∀-bound variable of P6-Cs, so an [ltac:(… fsetdec)] in its premise slot
+       ∀-bound variable of P6-Cs, so an [ltac:(… solve_notin_auto)] in its premise slot
        runs against a goal whose [?L] is still an EVAR — and [fsetdec] on a
        goal with a set metavariable does not terminate in any useful time
        (measured: >200 s for this one call).  Naming it first makes [exact]
@@ -2415,7 +2415,7 @@ Proof.
                     Hrfrβ HΔρΔβ HΔρftvβ HΔρPiβ Hextβ Hne0 Hin0 HαRβ
                     HwfSubjβ
                     (* ρ-apartness survives the fresh binder: β ∉ ftv ψa *)
-                    ltac:(clear - Hψaap Hβψa; fsetdec)
+                    ltac:(clear - Hψaap Hβψa; solve_notin_auto)
                     (add β Lav) HLavβ).
       - (* leaf, absent *)
         eapply (@a_looksub_solve_complete_leaf n NM M
@@ -2866,7 +2866,7 @@ Proof.
                     Hrfrβ HΔρΔβ HΔρftvβ HΔρPiβ Hextβ Hne0 Hin0 HαRβ
                     HwfSubjβ
                     (* ρ-apartness survives the fresh binder: β ∉ ftv ψa *)
-                    ltac:(clear - Hψaap Hβψa; fsetdec)
+                    ltac:(clear - Hψaap Hβψa; solve_notin_auto)
                     (add β Lav) HLavβ).
       - (* leaf, absent *)
         eapply (@a_looksub_solve_complete_leaf n NM M

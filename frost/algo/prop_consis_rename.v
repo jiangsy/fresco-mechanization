@@ -1023,18 +1023,18 @@ Proof.
     assert (HYo1 : β0 `notin` dom Θ1).
     { pose proof (auc_dom_mono_consis Hc2) as Hd.
       clear - HYo Hd. fsetdec. }
-    destruct (IH1 β0 ltac:(clear - HL; fsetdec) Ξr Θb Heq Htv Hu HYi HYo1
-                ltac:(clear - HYP0; fsetdec)
-                ltac:(clear - HYP; fsetdec)
-                ltac:(clear - HYQ; fsetdec)
+    destruct (IH1 β0 ltac:(clear - HL; solve_notin_auto) Ξr Θb Heq Htv Hu HYi HYo1
+                ltac:(clear - HYP0; solve_notin_auto)
+                ltac:(clear - HYP; solve_notin_auto)
+                ltac:(clear - HYQ; solve_notin_auto)
                 Hβ0Δ1 Hβ0Δ2) as [Θm [HeqΘ1 Hren1]].
     assert (Hu1 : uniq Θ1)
       by (apply (auc_uniq_consis Hc1); subst; exact Hu).
     assert (HYi1 : β0 `notin` dom Θ1) by exact HYo1.
-    destruct (IH2 β0 ltac:(clear - HL; fsetdec) Ξr Θm HeqΘ1 Htv Hu1 HYi1 HYo
-                ltac:(clear - HYP0; fsetdec)
-                ltac:(clear - HYP; fsetdec)
-                ltac:(clear - HYQ; fsetdec)
+    destruct (IH2 β0 ltac:(clear - HL; solve_notin_auto) Ξr Θm HeqΘ1 Htv Hu1 HYi1 HYo
+                ltac:(clear - HYP0; solve_notin_auto)
+                ltac:(clear - HYP; solve_notin_auto)
+                ltac:(clear - HYQ; solve_notin_auto)
                 Hβ0Δ1 Hβ0Δ2) as [Θt [HeqΘ2 Hren2]].
     exists Θt. split; [ exact HeqΘ2 | ].
     simpl. eapply a_consis__arrow; [ exact Hren1 | exact Hren2 ].
@@ -1061,20 +1061,20 @@ Proof.
     assert (HYQ' : β0 `notin` ftvar_in_pskl Q).
     { rewrite ftvar_in_pskl_close_pskl_wrt_pskl in HYQ.
       clear - HYQ Hβ0α0. fsetdec. }
-    destruct (IH β0 ltac:(clear - HL; fsetdec)
+    destruct (IH β0 ltac:(clear - HL; solve_notin_auto)
                 ((α0, abind_tvar) :: Ξr) Θb
                 ltac:(rewrite Heq; reflexivity)
                 (tvar_prefix_cons Htv)
                 ltac:(apply uniq_push; [ exact Hu | exact Hα0Θ0 ])
-                ltac:(simpl dom; clear - HYi Hβ0α0; fsetdec)
-                ltac:(simpl dom; clear - HYo Hβ0α0; fsetdec)
+                ltac:(simpl dom; clear - HYi Hβ0α0; solve_notin_auto)
+                ltac:(simpl dom; clear - HYo Hβ0α0; solve_notin_auto)
                 ltac:(apply notin_ftvar_open_pskl_var;
                       [ exact Hβ0α0 | exact HYP0 ])
                 ltac:(apply notin_ftvar_open_pskl_var;
                       [ exact Hβ0α0 | exact HYP ])
                 ltac:(exact HYQ')
-                ltac:(clear - Hβ0Δ1 Hβ0α0; fsetdec)
-                ltac:(clear - Hβ0Δ2 Hβ0α0; fsetdec))
+                ltac:(clear - Hβ0Δ1 Hβ0α0; solve_notin_auto)
+                ltac:(clear - Hβ0Δ2 Hβ0α0; solve_notin_auto))
       as [Θt [HeqO Hren]].
     simpl in HeqO. inversion HeqO as [HeqO'].
     exists Θt.
@@ -1098,7 +1098,7 @@ Proof.
     simpl.
     rewrite (subst_pskl_in_pskl_close_pskl_wrt_pskl Q (pskl_var_f β0) α α0
                (lc_pskl_var_f β0) Hαα0
-               ltac:(simpl; clear - Hα0β0; fsetdec)).
+               ltac:(simpl; clear - Hα0β0; solve_notin_auto)).
     simpl_env in Hren. simpl_env.
     apply a_consis__forall_inh with (α := α0).
     + (* the rule's side condition, transported across the rename *)
@@ -1146,19 +1146,19 @@ Proof.
     assert (HYQ' : β0 `notin` ftvar_in_pskl Q).
     { rewrite ftvar_in_pskl_close_pskl_wrt_pskl in HYQ.
       clear - HYQ Hβ0α0. fsetdec. }
-    destruct (IH β0 ltac:(clear - HL; fsetdec)
+    destruct (IH β0 ltac:(clear - HL; solve_notin_auto)
                 ((α0, abind_tvar) :: Ξr) Θb
                 ltac:(rewrite Heq; reflexivity)
                 (tvar_prefix_cons Htv)
                 ltac:(apply uniq_push; [ exact Hu | exact Hα0Θ0 ])
-                ltac:(simpl dom; clear - HYi Hβ0α0; fsetdec)
-                ltac:(simpl dom; clear - HYo Hβ0α0; fsetdec)
+                ltac:(simpl dom; clear - HYi Hβ0α0; solve_notin_auto)
+                ltac:(simpl dom; clear - HYo Hβ0α0; solve_notin_auto)
                 ltac:(simpl; exact HYP0)
                 ltac:(apply notin_ftvar_open_pskl_var;
                       [ exact Hβ0α0 | exact HYP ])
                 ltac:(exact HYQ')
-                ltac:(clear - Hβ0Δ1; fsetdec)
-                ltac:(clear - Hβ0Δ2 Hβ0α0; fsetdec))
+                ltac:(clear - Hβ0Δ1; solve_notin_auto)
+                ltac:(clear - Hβ0Δ2 Hβ0α0; solve_notin_auto))
       as [Θt [HeqO Hren]].
     simpl in HeqO. inversion HeqO as [HeqO'].
     exists Θt.
@@ -1174,7 +1174,7 @@ Proof.
     simpl.
     rewrite (subst_pskl_in_pskl_close_pskl_wrt_pskl Q (pskl_var_f β0) α α0
                (lc_pskl_var_f β0) Hαα0
-               ltac:(simpl; clear - Hα0β0; fsetdec)).
+               ltac:(simpl; clear - Hα0β0; solve_notin_auto)).
     simpl_env in Hren. simpl_env.
     apply a_consis__forall_syn with (α := α0).
     + (* the rule's side condition, transported across the rename *)
@@ -1231,19 +1231,19 @@ Proof.
     assert (HYQ' : β0 `notin` ftvar_in_pskl Q).
     { rewrite ftvar_in_pskl_close_pskl_wrt_pskl in HYQ.
       clear - HYQ Hβ0α0. fsetdec. }
-    destruct (IH β0 ltac:(clear - HL; fsetdec)
+    destruct (IH β0 ltac:(clear - HL; solve_notin_auto)
                 ((α0, abind_tvar) :: Ξr) Θb
                 ltac:(rewrite Heq; reflexivity)
                 (tvar_prefix_cons Htv)
                 ltac:(apply uniq_push; [ exact Hu | exact Hα0Θ0 ])
-                ltac:(simpl dom; clear - HYi Hβ0α0; fsetdec)
-                ltac:(simpl dom; clear - HYo Hβ0α0; fsetdec)
+                ltac:(simpl dom; clear - HYi Hβ0α0; solve_notin_auto)
+                ltac:(simpl dom; clear - HYo Hβ0α0; solve_notin_auto)
                 ltac:(apply notin_ftvar_open_pskl_var;
                       [ exact Hβ0α0 | exact HYP0 ])
                 ltac:(simpl; exact HYP)
                 ltac:(exact HYQ')
-                ltac:(clear - Hβ0Δ1 Hβ0α0; fsetdec)
-                ltac:(clear - Hβ0Δ2; fsetdec))
+                ltac:(clear - Hβ0Δ1 Hβ0α0; solve_notin_auto)
+                ltac:(clear - Hβ0Δ2; solve_notin_auto))
       as [Θt [HeqO Hren]].
     simpl in HeqO. inversion HeqO as [HeqO'].
     exists Θt.
@@ -1259,7 +1259,7 @@ Proof.
     simpl.
     rewrite (subst_pskl_in_pskl_close_pskl_wrt_pskl Q (pskl_var_f β0) α α0
                (lc_pskl_var_f β0) Hαα0
-               ltac:(simpl; clear - Hα0β0; fsetdec)).
+               ltac:(simpl; clear - Hα0β0; solve_notin_auto)).
     simpl_env in Hren. simpl_env.
     apply a_consis__univ_ghost1 with (α := α0).
     + (* the rule's side condition, transported across the rename *)
@@ -1290,7 +1290,7 @@ Proof.
     intros β0 HL Ξr Θb Heq Htv Hu HYi HYo HYP0 HYP HYQ Hβ0Δ1 Hβ0Δ2.
     simpl in HYP.
     destruct (IH β0 HL Ξr Θb Heq Htv Hu HYi HYo HYP0
-                ltac:(clear - HYP; fsetdec) HYQ Hβ0Δ1 Hβ0Δ2)
+                ltac:(clear - HYP; solve_notin_auto) HYQ Hβ0Δ1 Hβ0Δ2)
       as [Θt [HeqO Hren]].
     exists Θt. split; [ exact HeqO | ].
     simpl. apply a_consis__univ_ghost2.
@@ -1364,7 +1364,7 @@ Proof.
     intros β0 HL Ξr Θb Heq Htv Hu HYi HYo HYP0 HYP HYQ Hβ0Δ1 Hβ0Δ2.
     simpl in HYP0.
     destruct (IH β0 HL Ξr Θb Heq Htv Hu HYi HYo
-                ltac:(clear - HYP0; fsetdec) HYP HYQ Hβ0Δ1 Hβ0Δ2)
+                ltac:(clear - HYP0; solve_notin_auto) HYP HYQ Hβ0Δ1 Hβ0Δ2)
       as [Θt [HeqO Hren]].
     exists Θt. split; [ exact HeqO | ].
     simpl. apply a_consis__univ_ghost_r.
@@ -1553,7 +1553,7 @@ Proof.
     assert (Hb5 : β `notin` ftvar_in_pskl Q) by (clear - Hβ; fsetdec).
     assert (Hb6 : β `notin` add α Δ1) by (clear - Hβ Hβα; fsetdec).
     assert (Hb7 : β `notin` add α Δ2) by (clear - Hβ Hβα; fsetdec).
-    destruct (Hrn β ltac:(clear - Hβ; fsetdec) nil Θ0 eq_refl
+    destruct (Hrn β ltac:(clear - Hβ; solve_notin_auto) nil Θ0 eq_refl
                 tvar_prefix_nil HuΘ
                 Hb1 Hb2 Hb3 Hb4 Hb5 Hb6 Hb7) as [Θt [Heq Hren]].
     simpl in Heq. inversion Heq. subst Θt. clear Heq. simpl in Hren.
@@ -1596,7 +1596,7 @@ Proof.
     assert (Hb5 : β `notin` ftvar_in_pskl Q) by (clear - Hβ; fsetdec).
     assert (Hb6 : β `notin` Δ1) by (clear - Hβ; fsetdec).
     assert (Hb7 : β `notin` add α Δ2) by (clear - Hβ Hβα; fsetdec).
-    destruct (Hrn β ltac:(clear - Hβ; fsetdec) nil Θ0 eq_refl
+    destruct (Hrn β ltac:(clear - Hβ; solve_notin_auto) nil Θ0 eq_refl
                 tvar_prefix_nil HuΘ
                 Hb1 Hb2 Hb3 Hb4 Hb5 Hb6 Hb7) as [Θt [Heq Hren]].
     simpl in Heq. inversion Heq. subst Θt. clear Heq. simpl in Hren.
@@ -1642,7 +1642,7 @@ Proof.
     assert (Hb5 : β `notin` ftvar_in_pskl Q) by (clear - Hβ; fsetdec).
     assert (Hb6 : β `notin` add α Δ1) by (clear - Hβ Hβα; fsetdec).
     assert (Hb7 : β `notin` Δ2) by (clear - Hβ; fsetdec).
-    destruct (Hrn β ltac:(clear - Hβ; fsetdec) nil Θ0 eq_refl
+    destruct (Hrn β ltac:(clear - Hβ; solve_notin_auto) nil Θ0 eq_refl
                 tvar_prefix_nil HuΘ
                 Hb1 Hb2 Hb3 Hb4 Hb5 Hb6 Hb7) as [Θt [Heq Hren]].
     simpl in Heq. inversion Heq. subst Θt. clear Heq. simpl in Hren.

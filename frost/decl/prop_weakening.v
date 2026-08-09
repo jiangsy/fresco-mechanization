@@ -35,19 +35,19 @@ Proof.
   - eapply d_consis__forall_inh_tagged with (L := L `union` dom (Γ1 ++ Γ3)); [ | eassumption ].
     intros α2 Hα2.
     rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
-    eapply (H0 α2 ltac:(fsetdec) ((α2 ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
+    eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
   - apply d_consis__forall_inh_untagged with (L := L `union` dom (Γ1 ++ Γ3)).
     intros α2 Hα2.
     rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
-    eapply (H0 α2 ltac:(fsetdec) ((α2 ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
+    eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
   - apply d_consis__forall_syn_tagged with (L := L `union` dom (Γ1 ++ Γ3)).
     intros α2 Hα2.
     rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
-    eapply (H0 α2 ltac:(fsetdec) ((α2 ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
+    eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
   - apply d_consis__forall_syn with (L := L `union` dom (Γ1 ++ Γ3)).
     intros α2 Hα2.
     rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
-    eapply (H0 α2 ltac:(fsetdec) ((α2 ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
+    eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
 Qed.
 
 Lemma d_consis_weakening_head : forall Γ Γ' Δ C B,
@@ -72,7 +72,7 @@ Proof.
   - apply d_sub__forall_r with (L := L `union` dom (Γ1 ++ Γ3)); [ assumption | ].
     intros α2 Hα2.
     rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
-    eapply (H1 α2 ltac:(fsetdec) ((α2 ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
+    eapply (H1 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
   - eapply d_sub__arg.
     + apply d_consis_weakening; eassumption.
     + match goal with IH : forall _ _, _ -> d_sub _ _ _ _ _ |- _ => apply (IH Γ1 Γ3 eq_refl) end.
@@ -115,12 +115,12 @@ Proof.
       [ left; assumption | right; analyze_binds Hb ].
   - apply d_refine_syn__arrow; auto.
   - apply d_refine_syn__all with (L := L `union` dom (Γ1 ++ Γ3)). intros α Hα.
-    eapply (H0 α ltac:(fsetdec) Γ1 Γ3). reflexivity.
+    eapply (H0 α ltac:(solve_notin_auto) Γ1 Γ3). reflexivity.
   - apply d_refine_syn__hole. apply d_wf_pskl_weakening. assumption.
   - apply d_refine_syn__tophole_remove; auto.
   - (* [tophole_fill] now PREPENDS the bound var to [Γ]; weaken at [α::Γ1]. *)
     apply d_refine_syn__tophole_fill with (L := L `union` dom (Γ1 ++ Γ3)). intros α Hα.
-    eapply (H0 α ltac:(fsetdec) ((α ~ dbind_tvar) ++ Γ1) Γ3). simpl_env. reflexivity.
+    eapply (H0 α ltac:(solve_notin_auto) ((α ~ dbind_tvar) ++ Γ1) Γ3). simpl_env. reflexivity.
   - apply d_refine_syn__tophole_keep; [ assumption | auto ].
 Qed.
 
@@ -140,24 +140,24 @@ Proof.
       | eassumption ].
   - apply d_pat_consis__forall_inh_tagged with (L := L `union` dom (Γ1 ++ Γ3)) (Ψ0 := Ψ0);
       [ intros α2 Hα2; rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3);
-        eapply (H0 α2 ltac:(fsetdec) ((α2 ~ dbind_tvar) ++ Γ1) Γ3); simpl; reflexivity
+        eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) Γ3); simpl; reflexivity
       | eassumption ].
   - apply d_pat_consis__forall_inh_untagged with (L := L `union` dom (Γ1 ++ Γ3)).
     intros α2 Hα2. rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
-    eapply (H0 α2 ltac:(fsetdec) ((α2 ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
+    eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
   - apply d_pat_consis__forall_syn_tagged with (L := L `union` dom (Γ1 ++ Γ3)).
     intros α2 Hα2. rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
-    eapply (H0 α2 ltac:(fsetdec) ((α2 ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
+    eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
   - apply d_pat_consis__forall_syn with (L := L `union` dom (Γ1 ++ Γ3)).
     intros α2 Hα2. rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
-    eapply (H0 α2 ltac:(fsetdec) ((α2 ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
+    eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
   - apply d_pat_consis__ghostg. assumption.
   - apply d_pat_consis__topholeg. eapply IHd_pat_consis; reflexivity.
   - apply d_pat_consis__hole; [ assumption | apply d_wf_pskl_weakening; assumption ].
   - apply d_pat_consis__tophole. eapply IHd_pat_consis; reflexivity.
   - apply d_pat_consis__tophole_inh with (L := L `union` dom (Γ1 ++ Γ3)).
     intros α2 Hα2. rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
-    eapply (H0 α2 ltac:(fsetdec) ((α2 ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
+    eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
   - apply d_pat_consis__tophole_drop. eapply IHd_pat_consis; reflexivity.
 Qed.
 

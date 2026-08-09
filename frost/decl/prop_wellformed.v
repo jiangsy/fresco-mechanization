@@ -542,7 +542,7 @@ Proof.
     apply open_btyp_wrt_btyp_inj with (α1 := α).
     + rewrite ftvar_ptyp_to_btyp_inh, ftvar_btyp_to_ptyp. fsetdec.
     + fsetdec.
-    + specialize (H0 α ltac:(fsetdec)).
+    + specialize (H0 α ltac:(solve_notin_auto)).
       unfold open_btyp_wrt_btyp in H0 |- *.
       rewrite btyp_to_ptyp_open_rec, ptyp_to_btyp_inh_open_rec in H0.
       simpl in H0. exact H0.

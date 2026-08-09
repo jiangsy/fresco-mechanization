@@ -659,7 +659,7 @@ Proof.
     intros z Hz.
     rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
       [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
-    apply (H3 z ltac:(clear - Hz; fsetdec)
+    apply (H3 z ltac:(clear - Hz; solve_notin_auto)
              ((z ~ abind_var_skl P) ++ Θa) x0 b0 Θb y);
       [ reflexivity | exact Htm | ].
     simpl. clear - Hx0 Hz. fsetdec.
@@ -674,7 +674,7 @@ Proof.
     intros z Hz.
     rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
       [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
-    apply (H4 z ltac:(clear - Hz; fsetdec)
+    apply (H4 z ltac:(clear - Hz; solve_notin_auto)
              ((z ~ abind_var_typ (btyp_to_ptyp B)) ++ Θa) x0 b0 Θb y);
       [ reflexivity | exact Htm | ].
     simpl. clear - Hx0 Hz. fsetdec.
@@ -691,7 +691,7 @@ Proof.
     intros z Hz.
     rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
       [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
-    apply (H0 z ltac:(clear - Hz; fsetdec)
+    apply (H0 z ltac:(clear - Hz; solve_notin_auto)
              ((z ~ abind_var_skl pskl_hole) ++ Θa) x0 b0 Θb y);
       [ reflexivity | exact Htm | ].
     simpl. clear - Hx0 Hz. fsetdec.
@@ -704,7 +704,7 @@ Proof.
     intros z Hz.
     rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
       [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
-    apply (H1 z ltac:(clear - Hz; fsetdec)
+    apply (H1 z ltac:(clear - Hz; solve_notin_auto)
              ((z ~ abind_var_typ A) ++ Θa) x0 b0 Θb y);
       [ reflexivity | exact Htm | ].
     simpl. clear - Hx0 Hz. fsetdec.
@@ -1073,12 +1073,12 @@ Corollary a_consis_chk_sound : forall Θ0 P P0 Θ1,
 Proof.
   intros * [Q Hc] Hwf HwfP0 HwfP.
   destruct (a_consis_sound_aux Hc Hwf HwfP0 HwfP
-              ltac:(intros α Hα; clear - Hα; fsetdec)
+              ltac:(intros α Hα; clear - Hα; solve_notin_auto)
               ltac:(intros β τ Hb; apply inter_empty_pointwise;
-                    intros α Hα; clear - Hα; fsetdec)
+                    intros α Hα; clear - Hα; solve_notin_auto)
               ltac:(intros Θa β b Θb Heq Hne;
                     apply inter_empty_pointwise;
-                    intros α Hα; clear - Hα; fsetdec))
+                    intros α Hα; clear - Hα; solve_notin_auto))
     as [Hle [Hwf1 [_ [_ [[Qt [_ [Hcons Hrs]]] _]]]]].
   split; [ exact Hle | ]. split; [ exact Hwf1 | ].
   exists Qt. split; [ exact Hcons | ]. eapply ad_refine_syn_f_forget; exact Hrs.
@@ -1238,7 +1238,7 @@ Proof.
     rewrite !subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       try solve [ clear - Hγ; fsetdec | apply lc_bskl_var_f ].
     eapply ad_refine_syn_delta_mono;
-      [ apply (H0 γ ltac:(clear - Hγ; fsetdec) Hwf α0 β (add γ Δ'));
+      [ apply (H0 γ ltac:(clear - Hγ; solve_notin_auto) Hwf α0 β (add γ Δ'));
           [ clear - Heq; fsetdec | clear - Hα Hγ; fsetdec ]
       | clear; fsetdec ].
   - (* hole : the fill is well-formed in Θ alone, so α0 cannot occur in it *)
@@ -1260,7 +1260,7 @@ Proof.
       try solve [ clear - Hγ; fsetdec | apply lc_bskl_var_f ].
     change (bskl_tophole (subst_bskl_in_bskl (bskl_var_f β) α0 Q))
       with (subst_bskl_in_bskl (bskl_var_f β) α0 (bskl_tophole Q)).
-    apply (H0 γ ltac:(clear - Hγ; fsetdec));
+    apply (H0 γ ltac:(clear - Hγ; solve_notin_auto));
       [ apply a_wf_aenv__tvar; [ clear - Hγ; fsetdec | exact Hwf ]
       | exact Heq
       | simpl; clear - Hα Hγ; fsetdec ].
@@ -1367,7 +1367,7 @@ Proof.
     assert (Hopen : γ `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A0 (ptyp_var_f β))).
     { pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower A0 (ptyp_var_f β)) as Hlow.
       clear - Hγ Hlow. fsetdec. }
-    destruct (H0 β ltac:(clear - Hβ; fsetdec)
+    destruct (H0 β ltac:(clear - Hβ; solve_notin_auto)
                 (open_ptyp_wrt_ptyp A0 (ptyp_var_f β))
                 ltac:(rewrite ptyp_to_uskl_syn_open; reflexivity)
                 γ Hopen) as [Hl | [Hm | Hr]].
@@ -1395,7 +1395,7 @@ Proof.
     assert (Hopen : γ `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A0 (ptyp_var_f β))).
     { pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower A0 (ptyp_var_f β)) as Hlow.
       clear - Hγ Hlow. fsetdec. }
-    destruct (H0 β ltac:(clear - Hβ; fsetdec)
+    destruct (H0 β ltac:(clear - Hβ; solve_notin_auto)
                 (open_ptyp_wrt_ptyp A0 (ptyp_var_f β))
                 ltac:(rewrite ptyp_to_uskl_syn_open; reflexivity)
                 γ Hopen) as [Hl | [Hm | Hr]].
@@ -1585,7 +1585,7 @@ Proof.
     change (bskl_tophole (subst_bskl_in_bskl (bskl_var_f β) α0 Q))
       with (subst_bskl_in_bskl (bskl_var_f β) α0 (bskl_tophole Q)).
     simpl_env.
-    apply (H0 γ ltac:(clear - Hγ; fsetdec)
+    apply (H0 γ ltac:(clear - Hγ; solve_notin_auto)
              ((γ ~ abind_tvar) ++ Θa) α0 Θ' β);
       [ simpl_env; reflexivity
       | apply a_tvar_block__cons; exact Hblk
@@ -1752,11 +1752,11 @@ Proof.
       inversion HQt; subst.
       destruct (IHad_pat_consis1 Hwfc A1 eq_refl ltac:(assumption)
                   Θx Δx Qs1 Hwfr Hdefs Hflex
-                  ltac:(intros γ Hγ; apply Hvis; simpl; clear - Hγ; fsetdec)
+                  ltac:(intros γ Hγ; apply Hvis; simpl; clear - Hγ; solve_notin_auto)
                   HrA) as [B1 [HeqB1 HrA']].
       destruct (IHad_pat_consis2 Hwfc A2 eq_refl ltac:(assumption)
                   Θx Δx Qs2 Hwfr Hdefs Hflex
-                  ltac:(intros γ Hγ; apply Hvis; simpl; clear - Hγ; fsetdec)
+                  ltac:(intros γ Hγ; apply Hvis; simpl; clear - Hγ; solve_notin_auto)
                   HrB) as [B2 [HeqB2 HrB']].
       exists (btyp_arrow B1 B2). split;
         [ simpl; rewrite HeqB1, HeqB2; reflexivity
@@ -1802,8 +1802,8 @@ Proof.
                               `union` Δx `union` ftvar_in_ptyp A0
                               `union` ftvar_in_bskl Q `union` ftvar_in_bskl Qs))
         as [α Hα].
-      destruct (H0 α ltac:(clear - Hα; fsetdec)
-                  ltac:(apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwfc ])
+      destruct (H0 α ltac:(clear - Hα; solve_notin_auto)
+                  ltac:(apply a_wf_aenv__tvar; [ clear - Hα; solve_notin_auto | exact Hwfc ])
                   (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))
                   ltac:(rewrite ptyp_to_uskl_syn_open; reflexivity)
                   ltac:(inversion HlcA; subst; auto)
@@ -1827,7 +1827,7 @@ Proof.
                             by (clear - Hγ Hup Hne; fsetdec);
                           destruct (Hvis γ ltac:(simpl; exact Hγ0)) as [Hd | Ht];
                           [ left; clear - Hd; fsetdec | right; exact Ht ] ])
-                  (Hfam α ltac:(clear - Hα; fsetdec)))
+                  (Hfam α ltac:(clear - Hα; solve_notin_auto)))
         as [B0 [HeqB0 Href0]].
       exists (btyp_all_inh (close_btyp_wrt_btyp α B0)). split.
       * simpl. rewrite btyp_to_ptyp_close, HeqB0.
@@ -1838,8 +1838,8 @@ Proof.
                        `union` singleton α `union` ftvar_in_bskl Qs).
         intros β Hβ.
         pose proof (@ad_refine_syn_rename_delta _ _ _ _ Href0 Hwfr α β Δx
-                      ltac:(clear; fsetdec)
-                      ltac:(clear - Hα; fsetdec)) as Hren.
+                      ltac:(clear; solve_notin_auto)
+                      ltac:(clear - Hα; solve_notin_auto)) as Hren.
         rewrite <- subst_bskl_in_bskl_intro in Hren;
           [ | clear - Hα; fsetdec ].
         rewrite subst_bskl_in_bskl_spec in Hren.
@@ -1894,13 +1894,13 @@ Proof.
                               `union` Δx `union` ftvar_in_ptyp A0
                               `union` ftvar_in_bskl Q `union` ftvar_in_bskl Qs))
         as [α Hα].
-      destruct (H0 α ltac:(clear - Hα; fsetdec)
-                  ltac:(apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwfc ])
+      destruct (H0 α ltac:(clear - Hα; solve_notin_auto)
+                  ltac:(apply a_wf_aenv__tvar; [ clear - Hα; solve_notin_auto | exact Hwfc ])
                   (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))
                   ltac:(rewrite ptyp_to_uskl_syn_open; reflexivity)
                   ltac:(inversion HlcA; subst; auto)
                   ((α ~ abind_tvar) ++ Θx) Δx (bskl_tophole Qs)
-                  ltac:(apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwfr ])
+                  ltac:(apply a_wf_aenv__tvar; [ clear - Hα; solve_notin_auto | exact Hwfr ])
                   ltac:(intros β τ Hbd;
                         destruct (binds_cons_1 _ _ _ _ _ _ Hbd) as [[_ Hcx] | Hb'];
                         [ discriminate
@@ -1927,7 +1927,7 @@ Proof.
                           | right; eapply a_binds_tvar_mono;
                               [ apply aenv_tbinds_le_of_binds_le;
                                 apply aenv_binds_le_weaken_l | exact Ht ] ] ])
-                  (Hfam α ltac:(clear - Hα; fsetdec)))
+                  (Hfam α ltac:(clear - Hα; solve_notin_auto)))
         as [B0 [HeqB0 Href0]].
       exists (btyp_all_syn (close_btyp_wrt_btyp α B0)). split.
       * simpl. rewrite btyp_to_ptyp_close, HeqB0.
@@ -1942,8 +1942,8 @@ Proof.
                       ltac:(simpl_env; reflexivity)
                       a_tvar_block__nil
                       ltac:(apply a_wf_aenv__tvar;
-                            [ clear - Hα; fsetdec | exact Hwfr ])
-                      ltac:(simpl_env; clear - Hβ Hα; fsetdec)) as Hren.
+                            [ clear - Hα; solve_notin_auto | exact Hwfr ])
+                      ltac:(simpl_env; clear - Hβ Hα; solve_notin_auto)) as Hren.
         simpl_env in Hren. simpl in Hren.
         rewrite subst_bskl_in_bskl_fresh_eq in Hren;
           [ | clear - Hα; simpl; fsetdec ].
@@ -2221,10 +2221,10 @@ Proof.
       destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heqb] | Hb'];
         [ inversion Heqb; subst; apply a_wf_pskl_weaken_cons; exact HwfPP
         | apply a_wf_pskl_weaken_cons; exact (Hskl _ _ Hb') ]. }
-    destruct (H3 x ltac:(clear - Hx; fsetdec) Hwfx Hsklx
+    destruct (H3 x ltac:(clear - Hx; solve_notin_auto) Hwfx Hsklx
                 (a_wf_pskl_weaken_cons x (abind_var_skl P) HwfQ0) Hmod'
                 (a_wf_exp_weaken_cons x (abind_var_skl P)
-                   (Hexp0 x ltac:(clear - Hx; fsetdec))))
+                   (Hexp0 x ltac:(clear - Hx; solve_notin_auto))))
       as [Hle [Hwfout [Qt [HeQt [Hpat Href]]]]].
     assert (Huniq : uniq (Ξ ++ (x ~ abind_var_skl P) ++ Θ2))
       by (apply a_wf_aenv_uniq; exact Hwfout).
@@ -2310,12 +2310,12 @@ Proof.
     { intros y Ps Hb.
       destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heqb] | Hb'];
         [ discriminate | apply a_wf_pskl_weaken_cons; exact (Hsklc _ _ Hb') ]. }
-    destruct (H4 x ltac:(clear - Hx; fsetdec) Hwfx Hsklx
+    destruct (H4 x ltac:(clear - Hx; solve_notin_auto) Hwfx Hsklx
                 (a_wf_pskl_weaken_cons x (abind_var_typ A)
                    ltac:(eapply a_wf_pskl_isub; [ exact HwfQ0 | exact Hlec ]))
                 Hmod'
                 (a_wf_exp_weaken_cons x (abind_var_typ A)
-                   (a_wf_exp_isub (Hexp0 x ltac:(clear - Hx; fsetdec)) Hlec)))
+                   (a_wf_exp_isub (Hexp0 x ltac:(clear - Hx; solve_notin_auto)) Hlec)))
       as [Hle [Hwfout [Qt [HeQt [Hpat Href]]]]].
     assert (Huniq : uniq (Ξ ++ (x ~ abind_var_typ A) ++ Θ3))
       by (apply a_wf_aenv_uniq; exact Hwfout).
@@ -2411,10 +2411,10 @@ Proof.
       destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heqb] | Hb'];
         [ inversion Heqb; subst; apply a_wf_pskl__hole
         | apply a_wf_pskl_weaken_cons; exact (Hskl _ _ Hb') ]. }
-    destruct (H1 x ltac:(clear - Hx; fsetdec) Hwfx Hsklx
+    destruct (H1 x ltac:(clear - Hx; solve_notin_auto) Hwfx Hsklx
                 ltac:(apply a_wf_pskl__hole) a_sk_mode_compat__tc
                 (a_wf_exp_weaken_cons x (abind_var_skl pskl_hole)
-                   (Hexp0 x ltac:(clear - Hx; fsetdec))))
+                   (Hexp0 x ltac:(clear - Hx; solve_notin_auto))))
       as [Hle [Hwfout [Qt [HeQt [Hpat Href]]]]].
     destruct (ad_refine_syn_syn_l Href pskl_hole eq_refl) as [P' HQt].
     subst Qt.
@@ -2466,10 +2466,10 @@ Proof.
     { intros y Ps Hb.
       destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heqb] | Hb'];
         [ discriminate | apply a_wf_pskl_weaken_cons; exact (Hskl _ _ Hb') ]. }
-    destruct (H1 x ltac:(clear - Hx; fsetdec) Hwfx Hsklx
+    destruct (H1 x ltac:(clear - Hx; solve_notin_auto) Hwfx Hsklx
                 ltac:(apply a_wf_pskl__hole) a_sk_mode_compat__tc
                 (a_wf_exp_weaken_cons x (abind_var_typ A)
-                   (Hexp0 x ltac:(clear - Hx; fsetdec))))
+                   (Hexp0 x ltac:(clear - Hx; solve_notin_auto))))
       as [Hle [Hwfout [Qt [HeQt [Hpat Href]]]]].
     destruct (ad_refine_syn_syn_l Href pskl_hole eq_refl) as [P' HQt].
     subst Qt.

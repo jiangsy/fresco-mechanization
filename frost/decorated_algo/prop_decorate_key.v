@@ -727,7 +727,7 @@ Proof.
         eapply a_subtag_psi_cong;
           [ match goal with
             | IHfam : forall (a : atoms) (b : uskl), _ |- _ =>
-                eapply (IHfam Ψg' ψg' ltac:(clear - Hfr; fsetdec) Hsort Hera
+                eapply (IHfam Ψg' ψg' ltac:(clear - Hfr; solve_notin_auto) Hsort Hera
                           _
                           (open_uskl_wrt_uskl
                              (subst_bskl_in_uskl (uskl_var_f αt) αv R0) ψg')
@@ -1021,7 +1021,7 @@ Proof.
         eapply a_subtag_psi_cong;
           [ match goal with
             | IHfam : forall (a : atoms) (b : uskl), _ |- _ =>
-                eapply (IHfam Ψg' ψg' ltac:(clear - Hfr; fsetdec) Hsort Hera
+                eapply (IHfam Ψg' ψg' ltac:(clear - Hfr; solve_notin_auto) Hsort Hera
                           _
                           (open_uskl_wrt_uskl
                              (subst_bskl_in_uskl (uskl_var_f αt) αv R0) ψg')
@@ -1096,7 +1096,7 @@ Proof.
         end.
     + (* R0 = ◇ : nothing to decorate *)
       destruct ((proj1 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ _ HD
-                  ltac:(simpl; clear; fsetdec)) as [-> ->].
+                  ltac:(simpl; clear; solve_notin_auto)) as [-> ->].
       inversion Hst; subst.
       simpl.
       eapply a_subtag_psi_cong with (Ψ := Ψ);
@@ -1113,7 +1113,7 @@ Proof.
       | discriminate HeqT ].
     + (* R0 = ◈ : P0 = ◇ is pinned by the rule *)
       destruct ((proj1 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ _ HD
-                  ltac:(simpl; clear; fsetdec)) as [-> ->].
+                  ltac:(simpl; clear; solve_notin_auto)) as [-> ->].
       inversion Hst; subst.
       simpl.
       eapply a_subtag_psi_cong with (Ψ := Ψ);
@@ -1337,7 +1337,7 @@ Proof.
     + (* neq : the subject is an untouched variable *)
       inversion HeqT; subst.
       destruct ((proj1 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ _ HD
-                  ltac:(simpl; clear - Hc; fsetdec)) as [-> ->].
+                  ltac:(simpl; clear - Hc; solve_notin_auto)) as [-> ->].
       inversion Hst; subst.
       simpl.
       destruct_if as [Habs | _];
@@ -1405,8 +1405,8 @@ Proof.
       Hbody : forall α, α `notin` ?Lb -> d_tags_skl ?Ψb _,
       _ : Ψ' [=] add ε ?Ψb |- _ =>
         destruct (atom_fresh (La `union` Lb)) as [α Hα];
-        pose proof (HIH α ltac:(clear - Hα; fsetdec)
-                      Ψb (Hbody α ltac:(clear - Hα; fsetdec))) as He
+        pose proof (HIH α ltac:(clear - Hα; solve_notin_auto)
+                      Ψb (Hbody α ltac:(clear - Hα; solve_notin_auto))) as He
     end.
     fsetdec.
   - (* holeg *) fsetdec.
@@ -1512,7 +1512,7 @@ Proof.
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hβ; fsetdec | apply lc_uskl_var_f ].
     match goal with IH : forall b, _ |- _ =>
-      specialize (IH β ltac:(clear - Hβ; fsetdec) α β0); simpl in IH; exact IH end.
+      specialize (IH β ltac:(clear - Hβ; solve_notin_auto) α β0); simpl in IH; exact IH end.
   - (* SEq-UnivGhostR *)
     apply a_solvetag_eq__univ_ghost_r;
       [ rewrite uskl_to_pskl_subst; simpl;
@@ -1579,7 +1579,7 @@ Proof.
   - (* SEq-ForallSyn : only ψ opens *)
     apply a_solvetag_eq__forall_syn with (L := L); intros β Hβ.
     match goal with IH : forall b, _ |- _ =>
-      specialize (IH β ltac:(clear - Hβ; fsetdec) α β0); simpl in IH; exact IH end.
+      specialize (IH β ltac:(clear - Hβ; solve_notin_auto) α β0); simpl in IH; exact IH end.
   - (* SEq-UnivGhostR *)
     apply a_solvetag_eq__univ_ghost_r; [ assumption | auto ].
   - (* SEq-FlexR : the target IS a variable — either way it stays one *)
@@ -1608,8 +1608,8 @@ Proof.
     | Hb : forall α, α `notin` ?L1 -> d_tags_skl ?Ψ0 _,
       Heq : Ψtot [=] add ?e ?Ψ0 |- _ =>
         destruct (atom_fresh (L `union` L1)) as [β Hβ];
-        pose proof (IH β ltac:(clear - Hβ; fsetdec) Ψ0
-                      (Hb β ltac:(clear - Hβ; fsetdec))) as Hs;
+        pose proof (IH β ltac:(clear - Hβ; solve_notin_auto) Ψ0
+                      (Hb β ltac:(clear - Hβ; solve_notin_auto))) as Hs;
         clear - Hs Heq; fsetdec
     end.
   - (* SSub-UnivGhostLG : subject topholeg ψ *)
@@ -1618,7 +1618,7 @@ Proof.
   - (* SSub-Vacuous *) intros ψ M Ψ He Ψtot Hdt; clear - He; fsetdec.
   - (* SSub-Check *) intros ψ B Ψ Hgf Hgψ HgB Hprem IH Ψtot Hdt; exact (IH Ψtot Hdt).
   - (* SSub-ForallR *) intros L ψ B Ψ Hgf Hprem IH Ψtot Hdt;
-      destruct (atom_fresh L) as [β Hβ]; exact (IH β ltac:(clear - Hβ; fsetdec) Ψtot Hdt).
+      destruct (atom_fresh L) as [β Hβ]; exact (IH β ltac:(clear - Hβ; solve_notin_auto) Ψtot Hdt).
   - (* SSub-Arrow : subject arrow ψ1 ψ2 *)
     intros ψ1 ψ2 M Q1 Q2 Ψ Ψ1 Ψ2 Hp1 IH1 Hp2 IH2 He Ψtot Hdt; inversion Hdt; subst.
     match goal with
@@ -1642,8 +1642,8 @@ Proof.
     | Hb : forall α, α `notin` ?L1 -> d_tags_skl ?Ψt0 _,
       Heq : Ψtot [=] add ?e ?Ψt0 |- _ =>
         destruct (atom_fresh (L `union` L1)) as [β Hβ];
-        pose proof (IH β ltac:(clear - Hβ; fsetdec) Ψt0
-                      (Hb β ltac:(clear - Hβ; fsetdec))) as Hs;
+        pose proof (IH β ltac:(clear - Hβ; solve_notin_auto) Ψt0
+                      (Hb β ltac:(clear - Hβ; solve_notin_auto))) as Hs;
         clear - Hs Heq He; fsetdec
     end.
   - (* SEq-UnivGhostG : subject topholeg ψ *)
@@ -1655,8 +1655,8 @@ Proof.
     | Hb : forall α, α `notin` ?L1 -> d_tags_skl ?Ψt0 _,
       Heq : Ψtot [=] add ?e ?Ψt0 |- _ =>
         destruct (atom_fresh (L `union` L1)) as [β Hβ];
-        pose proof (IH β ltac:(clear - Hβ; fsetdec) Ψt0
-                      (Hb β ltac:(clear - Hβ; fsetdec))) as Hs;
+        pose proof (IH β ltac:(clear - Hβ; solve_notin_auto) Ψt0
+                      (Hb β ltac:(clear - Hβ; solve_notin_auto))) as Hs;
         clear - Hs Heq; fsetdec
     end.
   - (* SEq-UnivGhostR : subject ψ, target ∀◇P *)
@@ -1803,7 +1803,7 @@ Proof.
     rewrite <- uskl_to_pskl_open.
     match goal with
     | IH : forall α, α `notin` L -> dec_ext _ _ empty |- _ =>
-        exact (IH α ltac:(clear - Hα; fsetdec))
+        exact (IH α ltac:(clear - Hα; solve_notin_auto))
     end.
   - apply dec_ext__hole; [ apply is_tskl__holeg | apply d_tags_skl__holeg; fsetdec ].
   - auto with frost.
@@ -2081,7 +2081,7 @@ Proof.
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hα2; fsetdec | apply lc_uskl_var_f ].
     match goal with IH : forall α, α `notin` L -> _ |- _ =>
-      apply (IH α2 ltac:(clear - Hα2; fsetdec)) end.
+      apply (IH α2 ltac:(clear - Hα2; solve_notin_auto)) end.
   - auto with frost.
   - auto with frost.
 Qed.
@@ -2098,7 +2098,7 @@ Proof.
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hα2; fsetdec | apply lc_uskl_var_f ].
     match goal with IH : forall α, α `notin` L -> _ |- _ =>
-      apply (IH α2 ltac:(clear - Hα2; fsetdec)) end.
+      apply (IH α2 ltac:(clear - Hα2; solve_notin_auto)) end.
   - auto with frost.
   - auto with frost.
 Qed.
@@ -2119,7 +2119,7 @@ Proof.
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hα2; fsetdec | apply lc_uskl_var_f ].
     match goal with IH : forall a, a `notin` L -> forall b c, _ |- _ =>
-      apply (IH α2 ltac:(clear - Hα2; fsetdec)) end.
+      apply (IH α2 ltac:(clear - Hα2; solve_notin_auto)) end.
   - apply dec_ext__skip_tophole;
       [ rewrite uskl_to_pskl_subst; apply guarded_pskl_subst_var; assumption
       | apply IHdec_ext ].
@@ -2129,7 +2129,7 @@ Proof.
         rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
           [ | clear - Hα2; fsetdec | apply lc_uskl_var_f ];
         match goal with IH : forall a, a `notin` L -> forall b c, _ |- _ =>
-          apply (IH α2 ltac:(clear - Hα2; fsetdec)) end
+          apply (IH α2 ltac:(clear - Hα2; solve_notin_auto)) end
       | assumption ].
   - destruct_if; auto with frost.
 Qed.
@@ -2224,8 +2224,8 @@ Proof.
       IH : forall α, α `notin` ?Lh -> forall Ψ2, _ -> _ |- _ =>
         destruct (atom_fresh (L `union` L1 `union` ftvar_in_uskl ψ0
                     `union` ftvar_in_pskl P0)) as [α0 HX0];
-        destruct (IH α0 ltac:(clear - HX0; fsetdec) Ψt0
-                    (Hb α0 ltac:(clear - HX0; fsetdec)))
+        destruct (IH α0 ltac:(clear - HX0; solve_notin_auto) Ψt0
+                    (Hb α0 ltac:(clear - HX0; solve_notin_auto)))
                   as [Ψi0 [Hs0 Hsub0]];
         exists (add ε Ψi0); split;
         [ eapply a_solvetag_eq__forall_inh with
@@ -2233,9 +2233,9 @@ Proof.
                   `union` singleton α0) (Ψ0 := Ψi0); [ | reflexivity ];
           intros β Hβ;
           rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
-                     ltac:(clear - HX0; fsetdec));
+                     ltac:(clear - HX0; solve_notin_auto));
           rewrite (subst_pskl_in_pskl_intro α0 P0 (pskl_var_f β)
-                     ltac:(clear - HX0; fsetdec));
+                     ltac:(clear - HX0; solve_notin_auto));
           exact ((proj2 a_solvetag_sub_eq_rename_var) _ _ _ Hs0 α0 β)
         | clear - Heq Hsub0; fsetdec ]
     end.
@@ -2256,8 +2256,8 @@ Proof.
       IH : forall α, α `notin` ?Lh -> forall Ψ2, _ -> _ |- _ =>
         destruct (atom_fresh (L `union` L1 `union` ftvar_in_uskl ψ0
                     `union` ftvar_in_pskl P0)) as [α0 HX0];
-        destruct (IH α0 ltac:(clear - HX0; fsetdec) Ψt0
-                    (Hb α0 ltac:(clear - HX0; fsetdec)))
+        destruct (IH α0 ltac:(clear - HX0; solve_notin_auto) Ψt0
+                    (Hb α0 ltac:(clear - HX0; solve_notin_auto)))
                   as [Ψi0 [Hs0 Hsub0]];
         exists Ψi0; split;
         [ apply a_solvetag_eq__forall_syn with
@@ -2265,9 +2265,9 @@ Proof.
                   `union` singleton α0);
           intros β Hβ;
           rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
-                     ltac:(clear - HX0; fsetdec));
+                     ltac:(clear - HX0; solve_notin_auto));
           rewrite <- (subst_pskl_in_pskl_fresh_eq (pskl_tophole P0)
-                       (pskl_var_f β) α0 ltac:(simpl; clear - HX0; fsetdec));
+                       (pskl_var_f β) α0 ltac:(simpl; clear - HX0; solve_notin_auto));
           exact ((proj2 a_solvetag_sub_eq_rename_var) _ _ _ Hs0 α0 β)
         | match goal with Heq0 : Ψ [=] add ε _ |- _ =>
             clear - Heqt Heq0 Hsub0; fsetdec end ]
@@ -2422,7 +2422,7 @@ Proof.
     end.
     match goal with
     | IH : forall α, α `notin` L -> pskl_ghost_free _ -> _ |- _ =>
-        apply (IH α0 ltac:(clear - Fr; fsetdec));
+        apply (IH α0 ltac:(clear - Fr; solve_notin_auto));
         apply pskl_ghost_free_open_rec; exact Hgf
     end.
 Qed.
@@ -2570,7 +2570,7 @@ Proof.
       { rewrite subst_pskl_in_pskl_spec.
         apply H0; clear - HX0; fsetdec. }
       destruct (IHn _ _ _ _ _ _ _ _ Hszr Hr Htgα Hdecr
-                  (H2 α0 ltac:(clear - HX0; fsetdec)))
+                  (H2 α0 ltac:(clear - HX0; solve_notin_auto)))
                 as [Ψi0 [Ψp0 [Hs0 [Hd0 Hu0]]]].
       exists (add ε Ψi0), Ψp0; split.
       * (* solvetag : SEq-ForallInh, rename α0 ⤳ β *)
@@ -2579,9 +2579,9 @@ Proof.
                 `union` singleton α0) (Ψ0 := Ψi0); [ | reflexivity ].
         intros β Hβ.
         rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
-                   ltac:(clear - HX0; fsetdec)).
+                   ltac:(clear - HX0; solve_notin_auto)).
         rewrite (subst_pskl_in_pskl_intro α0 Q (pskl_var_f β)
-                   ltac:(clear - HX0; fsetdec)).
+                   ltac:(clear - HX0; solve_notin_auto)).
         exact ((proj2 a_solvetag_sub_eq_rename_var) _ _ _ Hs0 α0 β).
       * split.
         -- (* dec_ext : dec_ext__all, rename α0 ⤳ α2 *)
@@ -2590,9 +2590,9 @@ Proof.
                    `union` singleton α0).
            intros α2 Hα2.
            rewrite (subst_pskl_in_pskl_intro α0 P (pskl_var_f α2)
-                      ltac:(clear - HX0; fsetdec)).
+                      ltac:(clear - HX0; solve_notin_auto)).
            rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f α2)
-                      ltac:(clear - HX0; fsetdec)).
+                      ltac:(clear - HX0; solve_notin_auto)).
            exact (dec_ext_rename_var Hd0 α0 α2).
         -- clear - Hu0; fsetdec.
     + (* flex_forget *)
@@ -2634,8 +2634,8 @@ Proof.
         |- _ =>
           destruct (atom_fresh (L `union` L1 `union` Lih `union` ftvar_in_uskl ψ0
                       `union` ftvar_in_pskl P `union` ftvar_in_pskl Q)) as [α0 HX0];
-          destruct (IH α0 ltac:(clear - HX0; fsetdec) Wt0
-                      (Hb α0 ltac:(clear - HX0; fsetdec)) eq_refl)
+          destruct (IH α0 ltac:(clear - HX0; solve_notin_auto) Wt0
+                      (Hb α0 ltac:(clear - HX0; solve_notin_auto)) eq_refl)
                     as [Ψi0 [Ψp0 [Hs0 [Hd0 Hu0]]]]
       end.
       exists Ψi0, (add ε Ψp0); split.
@@ -2644,9 +2644,9 @@ Proof.
                 `union` singleton α0).
         intros β Hβ.
         rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
-                   ltac:(clear - HX0; fsetdec)).
+                   ltac:(clear - HX0; solve_notin_auto)).
         rewrite <- (subst_pskl_in_pskl_fresh_eq (pskl_tophole Q)
-                     (pskl_var_f β) α0 ltac:(simpl; clear - HX0; fsetdec)).
+                     (pskl_var_f β) α0 ltac:(simpl; clear - HX0; solve_notin_auto)).
         exact ((proj2 a_solvetag_sub_eq_rename_var) _ _ _ Hs0 α0 β).
       * split.
         -- eapply dec_ext__absorb_all with
@@ -2654,9 +2654,9 @@ Proof.
                    `union` singleton α0) (Ψ0 := Ψp0); [ | reflexivity ].
            intros α2 Hα2.
            rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f α2)
-                      ltac:(clear - HX0; fsetdec)).
+                      ltac:(clear - HX0; solve_notin_auto)).
            rewrite <- (subst_pskl_in_pskl_fresh_eq (pskl_tophole P)
-                        (pskl_var_f α2) α0 ltac:(simpl; clear - HX0; fsetdec)).
+                        (pskl_var_f α2) α0 ltac:(simpl; clear - HX0; solve_notin_auto)).
            exact (dec_ext_rename_var Hd0 α0 α2).
         -- clear - HeqAbs Hu0; fsetdec.
     + (* flex_forget *)
@@ -2689,7 +2689,7 @@ Proof.
       { rewrite subst_pskl_in_pskl_spec.
         apply H0; clear - HX0; fsetdec. }
       destruct (IHn _ _ _ _ _ _ _ _ Hszr Hr Htg Hdecr
-                  (H2 α0 ltac:(clear - HX0; fsetdec)))
+                  (H2 α0 ltac:(clear - HX0; solve_notin_auto)))
                 as [Ψi0 [Ψp0 [Hs0 [Hd0 Hu0]]]].
       exists (add ε Ψi0), (add ε Ψp0); split.
       * eapply a_solvetag_eq__forall_inh with
@@ -2697,9 +2697,9 @@ Proof.
                 `union` singleton α0) (Ψ0 := Ψi0); [ | reflexivity ].
         intros β Hβ.
         rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
-                   ltac:(clear - HX0; fsetdec)).
+                   ltac:(clear - HX0; solve_notin_auto)).
         rewrite (subst_pskl_in_pskl_intro α0 Q (pskl_var_f β)
-                   ltac:(clear - HX0; fsetdec)).
+                   ltac:(clear - HX0; solve_notin_auto)).
         exact ((proj2 a_solvetag_sub_eq_rename_var) _ _ _ Hs0 α0 β).
       * split.
         -- eapply dec_ext__absorb_all with
@@ -2707,9 +2707,9 @@ Proof.
                    `union` singleton α0) (Ψ0 := Ψp0); [ | reflexivity ].
            intros α2 Hα2.
            rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f α2)
-                      ltac:(clear - HX0; fsetdec)).
+                      ltac:(clear - HX0; solve_notin_auto)).
            rewrite <- (subst_pskl_in_pskl_fresh_eq (pskl_tophole P)
-                        (pskl_var_f α2) α0 ltac:(simpl; clear - HX0; fsetdec)).
+                        (pskl_var_f α2) α0 ltac:(simpl; clear - HX0; solve_notin_auto)).
            exact (dec_ext_rename_var Hd0 α0 α2).
         -- clear - Hu0; fsetdec.
     + (* flex_forget *)
@@ -2760,7 +2760,7 @@ Proof.
       { rewrite subst_pskl_in_pskl_spec.
         apply H0; clear - HX0; fsetdec. }
       destruct (IHn _ _ _ _ _ _ _ _ Hszr Hr Htgα Hdecr
-                  (H2 α0 ltac:(clear - HX0; fsetdec)))
+                  (H2 α0 ltac:(clear - HX0; solve_notin_auto)))
                 as [Ψi0 [Ψp0 [Hs0 [Hd0 Hu0]]]].
       exists Ψi0, Ψp0; split.
       * apply a_solvetag_eq__forall_syn with
@@ -2768,9 +2768,9 @@ Proof.
                 `union` singleton α0).
         intros β Hβ.
         rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
-                   ltac:(clear - HX0; fsetdec)).
+                   ltac:(clear - HX0; solve_notin_auto)).
         rewrite <- (subst_pskl_in_pskl_fresh_eq (pskl_tophole Q)
-                     (pskl_var_f β) α0 ltac:(simpl; clear - HX0; fsetdec)).
+                     (pskl_var_f β) α0 ltac:(simpl; clear - HX0; solve_notin_auto)).
         exact ((proj2 a_solvetag_sub_eq_rename_var) _ _ _ Hs0 α0 β).
       * split.
         -- apply dec_ext__all with
@@ -2778,9 +2778,9 @@ Proof.
                    `union` singleton α0).
            intros α2 Hα2.
            rewrite (subst_pskl_in_pskl_intro α0 P (pskl_var_f α2)
-                      ltac:(clear - HX0; fsetdec)).
+                      ltac:(clear - HX0; solve_notin_auto)).
            rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f α2)
-                      ltac:(clear - HX0; fsetdec)).
+                      ltac:(clear - HX0; solve_notin_auto)).
            exact (dec_ext_rename_var Hd0 α0 α2).
         -- clear - Hu0; fsetdec.
     + (* flex_forget *)
@@ -2890,24 +2890,24 @@ Proof.
       { rewrite subst_pskl_in_pskl_spec.
         apply H0; clear - HX0; fsetdec. }
       destruct (IHn _ _ _ _ _ _ _ _ _ Hszr Hr Htgα Hdecr
-                  (H2 α0 ltac:(clear - HX0; fsetdec)))
+                  (H2 α0 ltac:(clear - HX0; solve_notin_auto)))
                 as [Ψi0 [Ψp0 [Hs0 [Hd0 Hu0]]]].
       exists Ψi0, Ψp0; split.
       * apply a_solvetag_sub__forall_l with
           (L := ftvar_in_uskl ψ0 `union` singleton α0). intros β Hβ.
         rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
-                   ltac:(clear - HX0; fsetdec)).
+                   ltac:(clear - HX0; solve_notin_auto)).
         rewrite <- (subst_pskl_in_pskl_fresh_eq Q (pskl_var_f β) α0
-                     ltac:(clear - HX0; fsetdec)).
+                     ltac:(clear - HX0; solve_notin_auto)).
         exact ((proj1 a_solvetag_sub_eq_rename_var) _ _ _ _ Hs0 α0 β).
       * split.
         -- apply dec_ext__all with
              (L := ftvar_in_uskl ψ0 `union` ftvar_in_pskl P `union` singleton α0).
            intros α2 Hα2.
            rewrite (subst_pskl_in_pskl_intro α0 P (pskl_var_f α2)
-                      ltac:(clear - HX0; fsetdec)).
+                      ltac:(clear - HX0; solve_notin_auto)).
            rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f α2)
-                      ltac:(clear - HX0; fsetdec)).
+                      ltac:(clear - HX0; solve_notin_auto)).
            exact (dec_ext_rename_var Hd0 α0 α2).
         -- clear - Hu0; fsetdec.
     + (* flex_forget *)
@@ -2949,8 +2949,8 @@ Proof.
         |- _ =>
           destruct (atom_fresh (L `union` L1 `union` Lih `union` ftvar_in_uskl ψ0
                       `union` ftvar_in_pskl P `union` ftvar_in_pskl Q)) as [α0 HX0];
-          destruct (IH α0 ltac:(clear - HX0; fsetdec) Wt0
-                      (Hb α0 ltac:(clear - HX0; fsetdec)) eq_refl)
+          destruct (IH α0 ltac:(clear - HX0; solve_notin_auto) Wt0
+                      (Hb α0 ltac:(clear - HX0; solve_notin_auto)) eq_refl)
                     as [Ψi0 [Ψp0 [Hs0 [Hd0 Hu0]]]]
       end.
       exists Ψi0, (add ε Ψp0); split.
@@ -2958,9 +2958,9 @@ Proof.
           (L := ftvar_in_uskl ψ0 `union` ftvar_in_pskl Q `union` singleton α0).
         intros β Hβ.
         rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
-                   ltac:(clear - HX0; fsetdec)).
+                   ltac:(clear - HX0; solve_notin_auto)).
         rewrite <- (subst_pskl_in_pskl_fresh_eq Q (pskl_var_f β) α0
-                     ltac:(clear - HX0; fsetdec)).
+                     ltac:(clear - HX0; solve_notin_auto)).
         exact ((proj1 a_solvetag_sub_eq_rename_var) _ _ _ _ Hs0 α0 β).
       * split.
         -- eapply dec_ext__absorb_all with
@@ -2968,9 +2968,9 @@ Proof.
                    `union` singleton α0) (Ψ0 := Ψp0); [ | reflexivity ].
            intros α2 Hα2.
            rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f α2)
-                      ltac:(clear - HX0; fsetdec)).
+                      ltac:(clear - HX0; solve_notin_auto)).
            rewrite <- (subst_pskl_in_pskl_fresh_eq (pskl_tophole P)
-                        (pskl_var_f α2) α0 ltac:(simpl; clear - HX0; fsetdec)).
+                        (pskl_var_f α2) α0 ltac:(simpl; clear - HX0; solve_notin_auto)).
            exact (dec_ext_rename_var Hd0 α0 α2).
         -- clear - HeqAbs Hu0; fsetdec.
     + (* flex_forget *)
@@ -3008,7 +3008,7 @@ Proof.
         [ assumption | ].
       intros β Hβ.
       rewrite (subst_pskl_in_pskl_intro b B (pskl_var_f β)
-                 ltac:(clear - Hfr; fsetdec)).
+                 ltac:(clear - Hfr; solve_notin_auto)).
       exact ((proj1 a_solvetag_sub_eq_rename_target) _ _ _ _ Hst0 b β).
     + split; [ exact Hd0 | exact Hu0 ].
   - (* arrow : domain via eq_step, codomain via sub IH *)
@@ -3108,10 +3108,10 @@ Proof.
         |- _ =>
           destruct (atom_fresh (L `union` L1 `union` Lih `union` ftvar_in_uskl ψ0
                       `union` ftvar_in_pskl Q1 `union` ftvar_in_pskl Q2)) as [α0 HX0];
-          destruct (IH α0 ltac:(clear - HX0; fsetdec) Wt0
-                      (Hb α0 ltac:(clear - HX0; fsetdec)) eq_refl)
+          destruct (IH α0 ltac:(clear - HX0; solve_notin_auto) Wt0
+                      (Hb α0 ltac:(clear - HX0; solve_notin_auto)) eq_refl)
                     as [Ψi0 [Ψp0 [Hs0 [Hd0 Hu0]]]];
-          pose proof (dec_ext_hole_tags Hd0 (Hb α0 ltac:(clear - HX0; fsetdec)))
+          pose proof (dec_ext_hole_tags Hd0 (Hb α0 ltac:(clear - HX0; solve_notin_auto)))
             as He0
       end.
       exists Ψi0, Ψtot; split.
@@ -3120,9 +3120,9 @@ Proof.
                 `union` singleton α0).
         intros β Hβ.
         rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
-                   ltac:(clear - HX0; fsetdec)).
+                   ltac:(clear - HX0; solve_notin_auto)).
         rewrite <- (subst_pskl_in_pskl_fresh_eq (pskl_arrow Q1 Q2)
-                     (pskl_var_f β) α0 ltac:(simpl; clear - HX0; fsetdec)).
+                     (pskl_var_f β) α0 ltac:(simpl; clear - HX0; solve_notin_auto)).
         exact ((proj1 a_solvetag_sub_eq_rename_var) _ _ _ _ Hs0 α0 β).
       * split;
           [ apply dec_ext__hole;
@@ -3180,10 +3180,10 @@ Proof.
         |- _ =>
           destruct (atom_fresh (L `union` L1 `union` Lih `union` ftvar_in_uskl ψ0
                       `union` ftvar_in_pskl B)) as [α0 HX0];
-          destruct (IH α0 ltac:(clear - HX0; fsetdec) Wt0
-                      (Hb α0 ltac:(clear - HX0; fsetdec)) eq_refl)
+          destruct (IH α0 ltac:(clear - HX0; solve_notin_auto) Wt0
+                      (Hb α0 ltac:(clear - HX0; solve_notin_auto)) eq_refl)
                     as [Ψi0 [Ψp0 [Hs0 [Hd0 Hu0]]]];
-          pose proof (dec_ext_hole_tags Hd0 (Hb α0 ltac:(clear - HX0; fsetdec)))
+          pose proof (dec_ext_hole_tags Hd0 (Hb α0 ltac:(clear - HX0; solve_notin_auto)))
             as He0
       end.
       exists Ψi0, Ψtot; split.
@@ -3191,9 +3191,9 @@ Proof.
           (L := ftvar_in_uskl ψ0 `union` ftvar_in_pskl B `union` singleton α0).
         intros β Hβ.
         rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
-                   ltac:(clear - HX0; fsetdec)).
+                   ltac:(clear - HX0; solve_notin_auto)).
         rewrite <- (subst_pskl_in_pskl_fresh_eq B (pskl_var_f β) α0
-                     ltac:(clear - HX0; fsetdec)).
+                     ltac:(clear - HX0; solve_notin_auto)).
         exact ((proj1 a_solvetag_sub_eq_rename_var) _ _ _ _ Hs0 α0 β).
       * split;
           [ apply dec_ext__hole;
@@ -3722,7 +3722,7 @@ Proof.
     { simpl. exact HwfP0. }
     { simpl.
       destruct (a_wf_pskl_ftv_tvarish HwfP (α := α)
-                  ltac:(simpl; clear; fsetdec))
+                  ltac:(simpl; clear; solve_notin_auto))
         as [HΔx | Htx];
         [ exfalso; clear - HΔx; fsetdec | exact Htx ]. }
     { exact Hmod. }
@@ -3758,7 +3758,7 @@ Proof.
     intros α0 NM M P0 Θ0 Θ1 P P' Ξ P1 Hne Hgor Hfr0 Hex Huq HwfP1 Hsub IHsub
       Hwf HwfP0 HwfP Hmod Hgf0.
     destruct (@a_extract_family_of_instance Θ0 NM M α0 P P0 Ξ P1 Hex
-                ltac:(clear - Hfr0; fsetdec)) as [L Hfam].
+                ltac:(clear - Hfr0; solve_notin_auto)) as [L Hfam].
     assert (Hdecls : a_decls Ξ) by (eapply a_extract_decls; eauto).
     assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0)).
     { apply a_wf_aenv_prepend_decls; auto.
@@ -3795,7 +3795,7 @@ Proof.
        straight from [HwfP0] rather than from the mode-guarded [Hgf0] *)
     assert (HtgP0 : pskl_top_guarded P0)
       by (eapply a_wf_pskl_top_guarded; exact HwfP0).
-    destruct (a_extract_decorate (Hfam α ltac:(clear - Hα; fsetdec))
+    destruct (a_extract_decorate (Hfam α ltac:(clear - Hα; solve_notin_auto))
                 HtgP0 Hsort Hera) as [Ξc [C [HDlk Hst]]].
     assert (Hαg : α `notin` ftvar_in_uskl ψg).
     { rewrite <- (ftvar_in_pskl_uskl_to_pskl ψg). rewrite Hera.

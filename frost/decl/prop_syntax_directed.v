@@ -403,7 +403,7 @@ Proof.
     intros α2 Hα2.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var
       by (first [ apply lc_bskl_unit | fsetdec ]).
-    eapply (H0 α2 ltac:(fsetdec) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2);
+    eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2);
       simpl_env; reflexivity.
   - apply d_refine_syn__tophole_keep;
       [ apply guarded_bskl_subst_unit; assumption | eapply IHd_refine_syn; reflexivity ].
@@ -860,7 +860,7 @@ Proof.
       rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_unit | fsetdec ]).
       rewrite_env (((x ~ subst_unit_dbind α0 (dbind_skl P)) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
       rewrite map_subst_unit_dbind_cons.
-      eapply (H3 x ltac:(fsetdec) ((x ~ dbind_skl P) ++ Γ1) α0 Γ2);
+      eapply (H3 x ltac:(solve_notin_auto) ((x ~ dbind_skl P) ++ Γ1) α0 Γ2);
         [ simpl_env; reflexivity | assumption ].
   - (* abs_anno (cofinite) *)
     rewrite btyp_to_bskl_subst_unit.
@@ -876,7 +876,7 @@ Proof.
       rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_unit | fsetdec ]).
       rewrite_env (((x ~ subst_unit_dbind α0 (dbind_typ (btyp_to_ptyp B))) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
       rewrite map_subst_unit_dbind_cons.
-      eapply (H4 x ltac:(fsetdec) ((x ~ dbind_typ (btyp_to_ptyp B)) ++ Γ1) α0 Γ2);
+      eapply (H4 x ltac:(solve_notin_auto) ((x ~ dbind_typ (btyp_to_ptyp B)) ++ Γ1) α0 Γ2);
         [ simpl_env; reflexivity | assumption ].
   - (* app *)
     eapply d_pat__app.
@@ -896,7 +896,7 @@ Proof.
     rewrite_env (((x ~ subst_unit_dbind α0 (dbind_skl pskl_hole)) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
     rewrite map_subst_unit_dbind_cons.
     rewrite <- pskl_to_bskl_syn_subst_unit.
-    eapply (H0 x ltac:(fsetdec) ((x ~ dbind_skl pskl_hole) ++ Γ1) α0 Γ2);
+    eapply (H0 x ltac:(solve_notin_auto) ((x ~ dbind_skl pskl_hole) ++ Γ1) α0 Γ2);
       [ simpl_env; reflexivity | assumption ].
   - (* abs_anno_check (cofinite) *)
     rewrite btyp_to_bskl_subst_unit. rewrite ptyp_to_btyp_syn_subst_unit.
@@ -909,7 +909,7 @@ Proof.
       rewrite_env (((x ~ subst_unit_dbind α0 (dbind_typ A)) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
       rewrite map_subst_unit_dbind_cons.
       rewrite <- pskl_to_bskl_syn_subst_unit.
-      eapply (H1 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) α0 Γ2);
+      eapply (H1 x ltac:(solve_notin_auto) ((x ~ dbind_typ A) ++ Γ1) α0 Γ2);
         [ simpl_env; reflexivity | assumption ].
 Qed.
 
@@ -966,7 +966,7 @@ Proof.
       rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (first [ apply lc_btyp_unit | fsetdec ]).
       rewrite_env (((α ~ subst_unit_dbind α0 dbind_tvar) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
       rewrite map_subst_unit_dbind_cons.
-      eapply (H1 α ltac:(fsetdec) ((α ~ dbind_tvar) ++ Γ1) α0 Γ2);
+      eapply (H1 α ltac:(solve_notin_auto) ((α ~ dbind_tvar) ++ Γ1) α0 Γ2);
         [ simpl_env; reflexivity | assumption ].
   - (* abs_check_base *)
     rewrite ptyp_to_btyp_inh_subst_unit.
@@ -977,7 +977,7 @@ Proof.
       rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_unit | fsetdec ]).
       rewrite_env (((x ~ subst_unit_dbind α0 (dbind_typ A)) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
       rewrite map_subst_unit_dbind_cons.
-      eapply (H2 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) α0 Γ2);
+      eapply (H2 x ltac:(solve_notin_auto) ((x ~ dbind_typ A) ++ Γ1) α0 Γ2);
         [ simpl_env; reflexivity | assumption ].
   - (* abs_anno_check_step *)
     apply d_sd_typing__abs_anno_check_step with (L := L `union` {{α0}}).
@@ -986,7 +986,7 @@ Proof.
       rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (first [ apply lc_btyp_unit | fsetdec ]).
       rewrite_env (((α ~ subst_unit_dbind α0 dbind_tvar) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
       rewrite map_subst_unit_dbind_cons.
-      eapply (H1 α ltac:(fsetdec) ((α ~ dbind_tvar) ++ Γ1) α0 Γ2);
+      eapply (H1 α ltac:(solve_notin_auto) ((α ~ dbind_tvar) ++ Γ1) α0 Γ2);
         [ simpl_env; reflexivity | assumption ].
   - (* abs_anno_check_base *)
     rewrite ptyp_to_btyp_inh_subst_unit.
@@ -997,7 +997,7 @@ Proof.
       rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_unit | fsetdec ]).
       rewrite_env (((x ~ subst_unit_dbind α0 (dbind_typ A)) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
       rewrite map_subst_unit_dbind_cons.
-      eapply (H2 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) α0 Γ2);
+      eapply (H2 x ltac:(solve_notin_auto) ((x ~ dbind_typ A) ++ Γ1) α0 Γ2);
         [ simpl_env; reflexivity | assumption ].
   - (* abs (m ≠ tc, cofinite) *)
     rewrite ptyp_to_btyp_inh_subst_unit.
@@ -1013,7 +1013,7 @@ Proof.
       rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_unit | fsetdec ]).
       rewrite_env (((x ~ subst_unit_dbind α0 (dbind_typ A)) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
       rewrite map_subst_unit_dbind_cons.
-      eapply (H3 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) α0 Γ2);
+      eapply (H3 x ltac:(solve_notin_auto) ((x ~ dbind_typ A) ++ Γ1) α0 Γ2);
         [ simpl_env; reflexivity | assumption ].
   - (* abs_anno (m ≠ tc, cofinite) *)
     apply d_sd_typing__abs_anno with (L := L `union` {{α0}})
@@ -1026,7 +1026,7 @@ Proof.
       rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_unit | fsetdec ]).
       rewrite_env (((x ~ subst_unit_dbind α0 (dbind_typ (btyp_to_ptyp B1))) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
       rewrite map_subst_unit_dbind_cons.
-      eapply (H4 x ltac:(fsetdec) ((x ~ dbind_typ (btyp_to_ptyp B1)) ++ Γ1) α0 Γ2);
+      eapply (H4 x ltac:(solve_notin_auto) ((x ~ dbind_typ (btyp_to_ptyp B1)) ++ Γ1) α0 Γ2);
         [ simpl_env; reflexivity | assumption ].
   - (* app *)
     eapply d_sd_typing__app.
@@ -1129,25 +1129,25 @@ Proof.
   intros Δ Γ C B H. induction H; simpl; try fsetdec.
   - (* forall_inh_tagged *)
     pick fresh α for (L `union` ftvar_in_btyp B `union` ftvar_in_utyp C).
-    specialize (H0 α ltac:(fsetdec)).
+    specialize (H0 α ltac:(solve_notin_auto)).
     pose proof (ftvar_in_btyp_open_btyp_wrt_btyp_lower B (btyp_var_f α)) as HL.
     pose proof (ftvar_in_utyp_open_utyp_wrt_utyp_upper C (utyp_var_f α)) as HU.
     simpl in HU. fsetdec.
   - (* forall_inh_untagged *)
     pick fresh α for (L `union` ftvar_in_btyp B `union` ftvar_in_utyp C).
-    specialize (H0 α ltac:(fsetdec)).
+    specialize (H0 α ltac:(solve_notin_auto)).
     pose proof (ftvar_in_btyp_open_btyp_wrt_btyp_lower B (btyp_var_f α)) as HL.
     pose proof (ftvar_in_utyp_open_utyp_wrt_utyp_upper C (utyp_var_f α)) as HU.
     simpl in HU. fsetdec.
   - (* forall_syn_tagged *)
     pick fresh α for (L `union` ftvar_in_btyp B `union` ftvar_in_utyp C).
-    specialize (H0 α ltac:(fsetdec)).
+    specialize (H0 α ltac:(solve_notin_auto)).
     pose proof (ftvar_in_btyp_open_btyp_wrt_btyp_lower B (btyp_var_f α)) as HL.
     pose proof (ftvar_in_utyp_open_utyp_wrt_utyp_upper C (utyp_var_f α)) as HU.
     simpl in HU. fsetdec.
   - (* forall_syn *)
     pick fresh α for (L `union` ftvar_in_btyp B `union` ftvar_in_utyp C).
-    specialize (H0 α ltac:(fsetdec)).
+    specialize (H0 α ltac:(solve_notin_auto)).
     pose proof (ftvar_in_btyp_open_btyp_wrt_btyp_lower B (btyp_var_f α)) as HL.
     pose proof (ftvar_in_utyp_open_utyp_wrt_utyp_upper C (utyp_var_f α)) as HU.
     simpl in HU. fsetdec.
@@ -1176,7 +1176,7 @@ Proof.
   inversion Hv; subst.
   - (* unit *)
     pick fresh α0 for (L `union` dom Γ `union` ftvar_in_btyp B).
-    pose proof (IH α0 ltac:(fsetdec)) as IH0. inversion IH0; subst.
+    pose proof (IH α0 ltac:(solve_notin_auto)) as IH0. inversion IH0; subst.
     match goal with
     | Hs : empty ⨟ _ ⊢[ mode_tc ] ptyp_to_utyp_syn ptyp_unit ⩽ _ |- _ =>
         rename Hs into Hs0
@@ -1191,14 +1191,14 @@ Proof.
       [ exact Hia | ].
     intros α Hα.
     pose proof (d_sub_rename_tvar (β := α) Hs0 nil Γ α0
-                  ltac:(reflexivity) ltac:(simpl; fsetdec)) as Hren.
+                  ltac:(reflexivity) ltac:(simpl; solve_notin_auto)) as Hren.
     simpl in Hren.
     (* [simpl] already reduced the [α0 := α] substitution on the closed LHS. *)
     rewrite <- (subst_btyp_in_btyp_intro α0 B (btyp_var_f α)) in Hren by fsetdec.
     exact Hren.
   - (* var *)
     pick fresh α0 for (L `union` dom Γ `union` ftvar_in_btyp B `union` ftvar_in_denv Γ).
-    pose proof (IH α0 ltac:(fsetdec)) as IH0. inversion IH0; subst.
+    pose proof (IH α0 ltac:(solve_notin_auto)) as IH0. inversion IH0; subst.
     match goal with
     | Hb : binds _ (dbind_typ _) ((α0 ~ dbind_tvar) ++ Γ),
       Hs : empty ⨟ _ ⊢[ mode_tc ] ptyp_to_utyp_syn _ ⩽ _ |- _ =>
@@ -1220,7 +1220,7 @@ Proof.
       [ exact Hia | ].
     intros α Hα.
     pose proof (d_sub_rename_tvar (β := α) Hs0 nil Γ α0
-                  ltac:(reflexivity) ltac:(simpl; fsetdec)) as Hren.
+                  ltac:(reflexivity) ltac:(simpl; solve_notin_auto)) as Hren.
     simpl in Hren.
     rewrite (subst_utyp_in_utyp_fresh_eq _ (utyp_var_f α) α0)
       in Hren by (rewrite ftvar_ptyp_to_utyp_syn; exact HX0A).
@@ -1242,7 +1242,7 @@ Proof.
        (identity: [α0] fresh for [e] and [A]); the subtyping is re-wrapped. *)
     pick fresh α0 for (L `union` dom Γ `union` ftvar_in_btyp B `union` ftvar_in_denv Γ
                          `union` ftvar_in_exp (exp_anno e A)).
-    pose proof (IH α0 ltac:(fsetdec)) as IH0. inversion IH0; subst.
+    pose proof (IH α0 ltac:(solve_notin_auto)) as IH0. inversion IH0; subst.
     match goal with
     | Hp : d_sd_typing mode_tc ((α0 ~ dbind_tvar) ++ Γ) e (ptyp_to_btyp_inh A),
       Hs : empty ⨟ _ ⊢[ mode_tc ] ptyp_to_utyp_syn A ⩽ _ |- _ =>
@@ -1256,7 +1256,7 @@ Proof.
       exact Hir. }
     eapply d_sd_typing__anno.
     + pose proof (d_sd_typing_subst_unit _ _ _ _ Hp0 nil α0 Γ
-                    ltac:(reflexivity) ltac:(apply tvar_clean_fresh; fsetdec)) as Hsg.
+                    ltac:(reflexivity) ltac:(apply tvar_clean_fresh; solve_notin_auto)) as Hsg.
       simpl in Hsg.
       rewrite subst_ptyp_in_exp_fresh_eq in Hsg by (simpl in Fr; fsetdec).
       rewrite ptyp_to_btyp_inh_subst_unit in Hsg.
@@ -1267,7 +1267,7 @@ Proof.
         [ exact Hia | ].
       intros α Hα.
       pose proof (d_sub_rename_tvar (β := α) Hs0 nil Γ α0
-                    ltac:(reflexivity) ltac:(simpl; fsetdec)) as Hren.
+                    ltac:(reflexivity) ltac:(simpl; solve_notin_auto)) as Hren.
       simpl in Hren.
       rewrite (subst_utyp_in_utyp_fresh_eq (ptyp_to_utyp_syn A) (utyp_var_f α) α0)
         in Hren by (rewrite ftvar_ptyp_to_utyp_syn; exact HX0A).

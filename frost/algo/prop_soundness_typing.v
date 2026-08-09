@@ -447,7 +447,7 @@ Proof.
       with (L := L `union` singleton x0 `union` singleton y);
       [ assumption | ].
     intros α Hα.
-    apply (H1 α ltac:(clear - Hα; fsetdec)
+    apply (H1 α ltac:(clear - Hα; solve_notin_auto)
              ((α ~ abind_tvar) ++ Θa) x0 b0 Θb y);
       [ reflexivity | exact Htm | simpl; clear - Hx0 Hα; fsetdec ].
   - (* abs_check_base *)
@@ -460,7 +460,7 @@ Proof.
     intros z Hz.
     rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
       [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
-    apply (H2 z ltac:(clear - Hz; fsetdec)
+    apply (H2 z ltac:(clear - Hz; solve_notin_auto)
              ((z ~ abind_var_typ A) ++ Θa) x0 b0 Θb y);
       [ reflexivity | exact Htm | simpl; clear - Hx0 Hz; fsetdec ].
   - (* abs_anno_check_step *)
@@ -468,7 +468,7 @@ Proof.
       with (L := L `union` singleton x0 `union` singleton y);
       [ assumption | ].
     intros α Hα.
-    apply (H1 α ltac:(clear - Hα; fsetdec)
+    apply (H1 α ltac:(clear - Hα; solve_notin_auto)
              ((α ~ abind_tvar) ++ Θa) x0 b0 Θb y);
       [ reflexivity | exact Htm | simpl; clear - Hx0 Hα; fsetdec ].
   - (* abs_anno_check_base *)
@@ -484,7 +484,7 @@ Proof.
     intros z Hz.
     rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
       [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
-    apply (H3 z ltac:(clear - Hz; fsetdec)
+    apply (H3 z ltac:(clear - Hz; solve_notin_auto)
              ((z ~ abind_var_typ A) ++ Θa) x0 b0 Θb y);
       [ reflexivity | exact Htm | simpl; clear - Hx0 Hz; fsetdec ].
   - (* abs *)
@@ -498,7 +498,7 @@ Proof.
     intros z Hz.
     rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
       [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
-    apply (H3 z ltac:(clear - Hz; fsetdec)
+    apply (H3 z ltac:(clear - Hz; solve_notin_auto)
              ((z ~ abind_var_typ A) ++ Θa) x0 b0 Θb y);
       [ reflexivity | exact Htm | simpl; clear - Hx0 Hz; fsetdec ].
   - (* abs_anno *)
@@ -514,7 +514,7 @@ Proof.
     intros z Hz.
     rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
       [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
-    apply (H5 z ltac:(clear - Hz; fsetdec)
+    apply (H5 z ltac:(clear - Hz; solve_notin_auto)
              ((z ~ abind_var_typ A) ++ Θa) x0 b0 Θb y);
       [ reflexivity | exact Htm | simpl; clear - Hx0 Hz; fsetdec ].
   - (* app : the skeleton-inference premise is substituted too *)
@@ -1612,7 +1612,7 @@ Proof.
               simpl in Hn; clear - Hn; fsetdec ].
   - apply a_wf_ptyp__all with (L := L `union` dom Ξ). intros α Hα.
     rewrite_env (((α ~ abind_tvar) ++ Θa) ++ Θ).
-    apply (H0 α ltac:(clear - Hα; fsetdec));
+    apply (H0 α ltac:(clear - Hα; solve_notin_auto));
       [ simpl_env; reflexivity | ].
     intros γ Hγ.
     pose proof (Hfv γ Hγ) as Hn.
@@ -2072,12 +2072,12 @@ Proof.
           destruct (atom_fresh (Lw0 `union` ftvar_in_ptyp A0
                                   `union` singleton α)) as [β0 Hβ0];
           pose proof (@a_wf_ptyp_rename_tvar _ _
-                        (Hf β0 ltac:(clear - Hβ0; fsetdec))
+                        (Hf β0 ltac:(clear - Hβ0; solve_notin_auto))
                         nil β0 Θ0 α eq_refl) as Hr
       end.
       simpl in Hr.
       rewrite <- (subst_ptyp_in_ptyp_intro β0 A0 (ptyp_var_f α)
-                    ltac:(clear - Hβ0; fsetdec)) in Hr.
+                    ltac:(clear - Hβ0; solve_notin_auto)) in Hr.
       exact Hr. }
     destruct (IHa_typing Hwfα
                 ltac:(intros y Ps Hb;
@@ -2120,7 +2120,7 @@ Proof.
         as Hr.
       simpl in Hr.
       rewrite <- (subst_ptyp_in_ptyp_intro α A (ptyp_var_f β)
-                    ltac:(clear - Hα; fsetdec)) in Hr.
+                    ltac:(clear - Hα; solve_notin_auto)) in Hr.
       exact Hr. }
     (* Θ1's entries avoid α — the renaming's hypotheses *)
     assert (Hdefs1 : forall β0 τ,
@@ -2180,8 +2180,8 @@ Proof.
         rewrite <- ptyp_to_btyp_inh_open.
         pose proof (@ad_sd_typing_rename_tvar _ _ _ _ Hdα1 nil α Θ1 β
                       eq_refl
-                      ltac:(simpl; clear - Hα; fsetdec)
-                      ltac:(simpl; clear - Hβ; fsetdec)
+                      ltac:(simpl; clear - Hα; solve_notin_auto)
+                      ltac:(simpl; clear - Hβ; solve_notin_auto)
                       ltac:(simpl; exact Hdefs1)
                       ltac:(exact Hvt1)
                       ltac:(exact Hvs1)) as Hr.
@@ -2190,7 +2190,7 @@ Proof.
           in Hr; [ | clear - Hα; simpl in Hα; fsetdec ].
         rewrite subst_var_ptyp_to_btyp_inh in Hr.
         rewrite <- (subst_ptyp_in_ptyp_intro α A (ptyp_var_f β)
-                      ltac:(clear - Hα; fsetdec)) in Hr.
+                      ltac:(clear - Hα; solve_notin_auto)) in Hr.
         exact Hr.
     + rewrite btyp_to_bskl_ptyp_to_btyp_inh. simpl.
       apply ad_refine_syn__all
@@ -2213,8 +2213,8 @@ Proof.
         rewrite <- ptyp_to_pskl_subst.
         rewrite <- (subst_ptyp_in_ptyp_intro α X (ptyp_var_f β) HX).
         reflexivity. }
-      rewrite <- (Hsub A0 ltac:(clear - Hα; fsetdec)).
-      rewrite <- (Hsub A ltac:(clear - Hα; fsetdec)).
+      rewrite <- (Hsub A0 ltac:(clear - Hα; solve_notin_auto)).
+      rewrite <- (Hsub A ltac:(clear - Hα; solve_notin_auto)).
       eapply ad_refine_syn_f_forget.
       eapply ad_refine_syn_f_delta_mono;
         [ eapply ad_refine_syn_f_ghost_free_strip_rename;
@@ -2234,7 +2234,7 @@ Proof.
                 by (intros HA Hin; exact (H1 γ Hin HA));
               assert (HγA0 : γ `in` ftvar_in_ptyp A0 -> γ `notin` dom Ξ)
                 by (intros HA0 Hin;
-                    exact (HΞΘ0 γ Hin ltac:(clear - HA0 HftvA0; fsetdec)));
+                    exact (HΞΘ0 γ Hin ltac:(clear - HA0 HftvA0; solve_notin_auto)));
               assert (Hγα : γ = α -> γ `notin` dom Ξ)
                 by (intros ->; clear - Hα; fsetdec);
               clear - Hγ Hup0 HupA HγA HγA0 Hγα; fsetdec ]
@@ -2358,12 +2358,12 @@ Proof.
           destruct (atom_fresh (Lw0 `union` ftvar_in_ptyp A0
                                   `union` singleton α)) as [β0 Hβ0];
           pose proof (@a_wf_ptyp_rename_tvar _ _
-                        (Hf β0 ltac:(clear - Hβ0; fsetdec))
+                        (Hf β0 ltac:(clear - Hβ0; solve_notin_auto))
                         nil β0 Θ0 α eq_refl) as Hr
       end.
       simpl in Hr.
       rewrite <- (subst_ptyp_in_ptyp_intro β0 A0 (ptyp_var_f α)
-                    ltac:(clear - Hβ0; fsetdec)) in Hr.
+                    ltac:(clear - Hβ0; solve_notin_auto)) in Hr.
       exact Hr. }
     destruct (IHa_typing Hwfα
                 ltac:(intros y Ps Hb;
@@ -2406,7 +2406,7 @@ Proof.
         as Hr.
       simpl in Hr.
       rewrite <- (subst_ptyp_in_ptyp_intro α A (ptyp_var_f β)
-                    ltac:(clear - Hα; fsetdec)) in Hr.
+                    ltac:(clear - Hα; solve_notin_auto)) in Hr.
       exact Hr. }
     assert (Hdefs1 : forall β0 τ,
               binds β0 (abind_flex_mono_def τ) Θ1 ->
@@ -2466,8 +2466,8 @@ Proof.
         rewrite <- ptyp_to_btyp_inh_open.
         pose proof (@ad_sd_typing_rename_tvar _ _ _ _ Hdα1 nil α Θ1 β
                       eq_refl
-                      ltac:(simpl; clear - Hα; fsetdec)
-                      ltac:(simpl; clear - Hβ; fsetdec)
+                      ltac:(simpl; clear - Hα; solve_notin_auto)
+                      ltac:(simpl; clear - Hβ; solve_notin_auto)
                       ltac:(simpl; exact Hdefs1)
                       ltac:(exact Hvt1)
                       ltac:(exact Hvs1)) as Hr.
@@ -2478,7 +2478,7 @@ Proof.
           in Hr; [ | clear - Hα; simpl in Hα; fsetdec ].
         rewrite subst_var_ptyp_to_btyp_inh in Hr.
         rewrite <- (subst_ptyp_in_ptyp_intro α A (ptyp_var_f β)
-                      ltac:(clear - Hα; fsetdec)) in Hr.
+                      ltac:(clear - Hα; solve_notin_auto)) in Hr.
         exact Hr.
     + rewrite btyp_to_bskl_ptyp_to_btyp_inh. simpl.
       apply ad_refine_syn__all
@@ -2501,8 +2501,8 @@ Proof.
         rewrite <- ptyp_to_pskl_subst.
         rewrite <- (subst_ptyp_in_ptyp_intro α X (ptyp_var_f β) HX).
         reflexivity. }
-      rewrite <- (Hsub A0 ltac:(clear - Hα; fsetdec)).
-      rewrite <- (Hsub A ltac:(clear - Hα; fsetdec)).
+      rewrite <- (Hsub A0 ltac:(clear - Hα; solve_notin_auto)).
+      rewrite <- (Hsub A ltac:(clear - Hα; solve_notin_auto)).
       eapply ad_refine_syn_f_forget.
       eapply ad_refine_syn_f_delta_mono;
         [ eapply ad_refine_syn_f_ghost_free_strip_rename;
@@ -2522,7 +2522,7 @@ Proof.
                 by (intros HA Hin; exact (H1 γ Hin HA));
               assert (HγA0 : γ `in` ftvar_in_ptyp A0 -> γ `notin` dom Ξ)
                 by (intros HA0 Hin;
-                    exact (HΞΘ0 γ Hin ltac:(clear - HA0 HftvA0; fsetdec)));
+                    exact (HΞΘ0 γ Hin ltac:(clear - HA0 HftvA0; solve_notin_auto)));
               assert (Hγα : γ = α -> γ `notin` dom Ξ)
                 by (intros ->; clear - Hα; fsetdec);
               clear - Hγ Hup0 HupA HγA HγA0 Hγα; fsetdec ]

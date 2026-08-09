@@ -766,11 +766,11 @@ Proof.
       clear - Hβ Hsc. fsetdec. }
     assert (HβΘ : β `notin` dom Θ0) by (clear - Hβ; fsetdec).
     rewrite <- (@msubst_uskl_open_comm ρ ψ β Hlcρ Hβρ Hβf).
-    eapply (H0 β ltac:(clear - Hβ; fsetdec));
+    eapply (H0 β ltac:(clear - Hβ; solve_notin_auto));
       [ exact Hlcρ
       | (* consistency premise *)
         rewrite strip_open;
-        pose proof (Hcbody β ltac:(clear - Hβ; fsetdec)) as Hcβ;
+        pose proof (Hcbody β ltac:(clear - Hβ; solve_notin_auto)) as Hcβ;
         rewrite <- (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
                       Hlcρ Hβρ Hβf) in Hcβ;
         exact Hcβ
@@ -782,7 +782,7 @@ Proof.
         apply HlcSbody
       | (* wf of opened input *)
         eapply a_wf_pskl_delta_mono;
-          [ apply (a_wf_pskl_reassoc (Hbody0 β ltac:(clear - Hβ; fsetdec)) β)
+          [ apply (a_wf_pskl_reassoc (Hbody0 β ltac:(clear - Hβ; solve_notin_auto)) β)
           | clear; fsetdec ]
       | (* wf of opened subject-erasure *)
         rewrite strip_open;
@@ -790,7 +790,7 @@ Proof.
                    Hlcρ Hβρ Hβf);
         rewrite uskl_to_pskl_open;
         eapply a_wf_pskl_delta_mono;
-          [ apply (a_wf_pskl_reassoc (HbodyS β ltac:(clear - Hβ; fsetdec)) β)
+          [ apply (a_wf_pskl_reassoc (HbodyS β ltac:(clear - Hβ; solve_notin_auto)) β)
           | clear; fsetdec ]
       | (* Hrig *)
         intros α Hα; destruct (α == β) as [ -> | Hne ];
@@ -849,10 +849,10 @@ Proof.
       clear - Hβ Hsc. fsetdec. }
     assert (HβΘ : β `notin` dom Θ0) by (clear - Hβ; fsetdec).
     rewrite <- (@msubst_uskl_open_comm ρ ψ β Hlcρ Hβρ Hβf).
-    eapply (H0 β ltac:(clear - Hβ; fsetdec));
+    eapply (H0 β ltac:(clear - Hβ; solve_notin_auto));
       [ exact Hlcρ
       | rewrite strip_open;
-        pose proof (Hcbody β ltac:(clear - Hβ; fsetdec)) as Hcβ;
+        pose proof (Hcbody β ltac:(clear - Hβ; solve_notin_auto)) as Hcβ;
         rewrite <- (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
                       Hlcρ Hβρ Hβf) in Hcβ;
         exact Hcβ
@@ -869,7 +869,7 @@ Proof.
                    Hlcρ Hβρ Hβf);
         rewrite uskl_to_pskl_open;
         eapply a_wf_pskl_delta_mono;
-          [ apply (a_wf_pskl_reassoc (HbodyS β ltac:(clear - Hβ; fsetdec)) β)
+          [ apply (a_wf_pskl_reassoc (HbodyS β ltac:(clear - Hβ; solve_notin_auto)) β)
           | clear; fsetdec ]
       | intros α Hα; destruct (α == β) as [ -> | Hne ];
           [ unfold binds; left; reflexivity
@@ -1188,7 +1188,7 @@ Proof.
     destruct (atom_fresh (L `union` ftvar_in_pskl B0 `union` singleton β0))
       as [β' Hβ'].
     (* [H] is now the row's SORT premise; the cofinite one is [H0] *)
-    pose proof (H0 β' ltac:(clear - Hβ'; fsetdec)) as Hinst.
+    pose proof (H0 β' ltac:(clear - Hβ'; solve_notin_auto)) as Hinst.
     pose proof (proj1 a_solvetag_sub_eq_target_rename _ _ _ _ Hinst β' β0)
       as Hren.
     rewrite <- subst_pskl_in_pskl_intro in Hren;
@@ -2160,7 +2160,7 @@ Proof.
       intros β Hβ.
       rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
         [ | clear - Hβ; fsetdec | exact Hlcψ ].
-      pose proof (Hcbody β ltac:(clear - Hβ; fsetdec)) as HcI.
+      pose proof (Hcbody β ltac:(clear - Hβ; solve_notin_auto)) as HcI.
       rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var in HcI;
         [ | clear - Hβ; fsetdec | exact Hlcstrip ].
       (* MOVE the look run from its own binder [b] to this opener [β] *)
@@ -2184,14 +2184,14 @@ Proof.
                   [ clear - Hβ; fsetdec | exact Hwf ]
               | eapply a_wf_pskl_delta_mono;
                   [ apply (a_wf_pskl_reassoc
-                             (HbodyP β ltac:(clear - Hβ; fsetdec)) β)
+                             (HbodyP β ltac:(clear - Hβ; solve_notin_auto)) β)
                   | clear; fsetdec ]
               | rewrite <- subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
                   [ | clear - Hβ; fsetdec | exact Hlcstrip ];
                 rewrite uskl_to_pskl_open;
                 eapply a_wf_pskl_delta_mono;
                   [ apply (a_wf_pskl_reassoc
-                             (HbodyS β ltac:(clear - Hβ; fsetdec)) β)
+                             (HbodyS β ltac:(clear - Hβ; solve_notin_auto)) β)
                   | clear; fsetdec ]
               | intros α0 Hα0; destruct (α0 == β) as [ -> | Hne ];
                   [ unfold binds; left; reflexivity
@@ -2238,7 +2238,7 @@ Proof.
         [ intros β Hβ | clear - HΨc; fsetdec ].
       rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
         [ | clear - Hβ; fsetdec | exact Hlcψ ].
-      pose proof (Hcbody β ltac:(clear - Hβ; fsetdec)) as HcI.
+      pose proof (Hcbody β ltac:(clear - Hβ; solve_notin_auto)) as HcI.
       rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var in HcI;
         [ | clear - Hβ; fsetdec | exact Hlcstrip ].
       (* MOVE the look run from its own binder [b] to this opener [β] *)
@@ -2262,14 +2262,14 @@ Proof.
                   [ clear - Hβ; fsetdec | exact Hwf ]
               | eapply a_wf_pskl_delta_mono;
                   [ apply (a_wf_pskl_reassoc
-                             (HbodyP β ltac:(clear - Hβ; fsetdec)) β)
+                             (HbodyP β ltac:(clear - Hβ; solve_notin_auto)) β)
                   | clear; fsetdec ]
               | rewrite <- subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
                   [ | clear - Hβ; fsetdec | exact Hlcstrip ];
                 rewrite uskl_to_pskl_open;
                 eapply a_wf_pskl_delta_mono;
                   [ apply (a_wf_pskl_reassoc
-                             (HbodyS β ltac:(clear - Hβ; fsetdec)) β)
+                             (HbodyS β ltac:(clear - Hβ; solve_notin_auto)) β)
                   | clear; fsetdec ]
               | intros α0 Hα0; destruct (α0 == β) as [ -> | Hne ];
                   [ unfold binds; left; reflexivity
@@ -2320,7 +2320,7 @@ Proof.
       intros β Hβ.
       rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
         [ | clear - Hβ; fsetdec | exact Hlcψ ].
-      pose proof (Hcbody β ltac:(clear - Hβ; fsetdec)) as HcI.
+      pose proof (Hcbody β ltac:(clear - Hβ; solve_notin_auto)) as HcI.
       rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var in HcI;
         [ | clear - Hβ; fsetdec | exact Hlcstrip ].
       assert (Hβα : β <> α)
@@ -2348,7 +2348,7 @@ Proof.
                 rewrite uskl_to_pskl_open;
                 eapply a_wf_pskl_delta_mono;
                   [ apply (a_wf_pskl_reassoc
-                             (HbodyS β ltac:(clear - Hβ; fsetdec)) β)
+                             (HbodyS β ltac:(clear - Hβ; solve_notin_auto)) β)
                   | clear; fsetdec ]
               | intros α0 Hα0; destruct (α0 == β) as [ -> | Hne ];
                   [ unfold binds; left; reflexivity
@@ -2392,7 +2392,7 @@ Proof.
       intros β Hβ.
       rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
         [ | clear - Hβ; fsetdec | exact Hlcψ ].
-      pose proof (Hcbody β ltac:(clear - Hβ; fsetdec)) as HcI.
+      pose proof (Hcbody β ltac:(clear - Hβ; solve_notin_auto)) as HcI.
       rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var in HcI;
         [ | clear - Hβ; fsetdec | exact Hlcstrip ].
       assert (Hβα : β <> α)
@@ -2420,7 +2420,7 @@ Proof.
                 rewrite uskl_to_pskl_open;
                 eapply a_wf_pskl_delta_mono;
                   [ apply (a_wf_pskl_reassoc
-                             (HbodyS β ltac:(clear - Hβ; fsetdec)) β)
+                             (HbodyS β ltac:(clear - Hβ; solve_notin_auto)) β)
                   | clear; fsetdec ]
               | intros α0 Hα0; destruct (α0 == β) as [ -> | Hne ];
                   [ unfold binds; left; reflexivity
@@ -2508,7 +2508,7 @@ Proof.
                        `union` ftvar_in_cstrs C)
       end.
       intros β Hβ.
-      pose proof (Hcbody β ltac:(clear - Hβ; fsetdec)) as HcI.
+      pose proof (Hcbody β ltac:(clear - Hβ; solve_notin_auto)) as HcI.
       change (uskl_tophole (subst_bskl_in_uskl ψa α R))
         with (subst_bskl_in_uskl ψa α (uskl_tophole R)).
       assert (Hβα : β <> α)
@@ -2530,7 +2530,7 @@ Proof.
       { apply a_wf_aenv__tvar; [ clear - Hβ; fsetdec | exact Hwf ]. }
       { eapply a_wf_pskl_delta_mono;
           [ apply (a_wf_pskl_reassoc
-                     (HbodyP β ltac:(clear - Hβ; fsetdec)) β)
+                     (HbodyP β ltac:(clear - Hβ; solve_notin_auto)) β)
           | clear; fsetdec ]. }
       { eapply a_wf_pskl_weaken;
           [ intros x b0 Hb0; unfold binds; simpl; right; exact Hb0
@@ -3575,7 +3575,7 @@ Lemma a_looksub_avoid_atom : forall Θ α m P P' Ξ 𝒞 ψa Ψa β δ,
     β `notin` dom Ξ' `union` ftvar_in_cstrs 𝒞'.
 Proof.
   intros Θ α m P P' Ξ 𝒞 ψa Ψa β δ Hlk Hst Hβα Hδα Hδβ Hβ Hδ.
-  pose proof (a_looksub_rename_tvar Hlk Hβα Hδα ltac:(clear - Hδ; fsetdec))
+  pose proof (a_looksub_rename_tvar Hlk Hβα Hδα ltac:(clear - Hδ; solve_notin_auto))
     as H1.
   rewrite (@rename_aenv_fresh_eq Θ δ β) in H1 by (clear - Hβ; fsetdec).
   rewrite (subst_pskl_in_pskl_fresh_eq P) in H1 by (clear - Hβ; fsetdec).

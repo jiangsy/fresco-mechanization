@@ -119,8 +119,8 @@ Qed.
 Ltac binder_ih IHn HszA HH HH0 AA α :=
   let HcX := fresh "HcX" in
   let HdX := fresh "HdX" in
-  pose proof (HH α ltac:(fsetdec)) as HcX;
-  pose proof (HH0 α ltac:(fsetdec)) as HdX;
+  pose proof (HH α ltac:(solve_notin_auto)) as HcX;
+  pose proof (HH0 α ltac:(solve_notin_auto)) as HdX;
   change (btyp_var_f α) with (ptyp_to_btyp_syn (ptyp_var_f α)) in HcX;
   rewrite <- ptyp_to_btyp_syn_open in HcX;
   change (utyp_var_f α) with (ptyp_to_utyp_syn (ptyp_var_f α)) in HdX;
@@ -257,7 +257,7 @@ Proof.
     + pose proof (ftvar_ptyp_to_btyp_syn (btyp_to_ptyp B)).
       pose proof (ftvar_btyp_to_ptyp B). fsetdec.
     + fsetdec.
-    + specialize (H0 α ltac:(fsetdec)).
+    + specialize (H0 α ltac:(solve_notin_auto)).
       rewrite btyp_to_ptyp_open in H0.
       rewrite ptyp_to_btyp_syn_open in H0.
       exact H0.
@@ -500,7 +500,7 @@ Proof.
       | fsetdec
       | match goal with
         | H0 : forall _ : atom, _ -> _ = _ |- _ =>
-            specialize (H0 α ltac:(fsetdec));
+            specialize (H0 α ltac:(solve_notin_auto));
             rewrite utyp_to_btyp_open, !btyp_to_ptyp_open in H0; simpl in H0; exact H0
         end ].
 Qed.
@@ -617,7 +617,7 @@ Proof.
     pick fresh α0 for (L `union` dom Γ
        `union` ftvar_in_utyp (btyp_to_utyp_syn (utyp_to_btyp C))
        `union` ftvar_in_btyp B).
-    destruct (H0 α0 ltac:(fsetdec)) as [Ψ'0 HΨ'0].
+    destruct (H0 α0 ltac:(solve_notin_auto)) as [Ψ'0 HΨ'0].
     rewrite erase_open in HΨ'0.
     exists Ψ'0. simpl.
     apply d_consis__forall_inh_untagged with
@@ -631,7 +631,7 @@ Proof.
     pick fresh α0 for (L `union` dom Γ
        `union` ftvar_in_utyp (btyp_to_utyp_syn (utyp_to_btyp C))
        `union` ftvar_in_btyp B).
-    destruct (H0 α0 ltac:(fsetdec)) as [Ψ'0 HΨ'0].
+    destruct (H0 α0 ltac:(solve_notin_auto)) as [Ψ'0 HΨ'0].
     rewrite erase_open in HΨ'0.
     exists Ψ'0. simpl.
     apply d_consis__forall_inh_untagged with
@@ -645,7 +645,7 @@ Proof.
     pick fresh α0 for (L `union` dom Γ
        `union` ftvar_in_utyp (btyp_to_utyp_syn (utyp_to_btyp C))
        `union` ftvar_in_btyp B).
-    destruct (H0 α0 ltac:(fsetdec)) as [Ψ'0 HΨ'0].
+    destruct (H0 α0 ltac:(solve_notin_auto)) as [Ψ'0 HΨ'0].
     rewrite erase_open in HΨ'0.
     exists Ψ'0. simpl.
     apply d_consis__forall_syn with
@@ -659,7 +659,7 @@ Proof.
     pick fresh α0 for (L `union` dom Γ
        `union` ftvar_in_utyp (btyp_to_utyp_syn (utyp_to_btyp C))
        `union` ftvar_in_btyp B).
-    destruct (H0 α0 ltac:(fsetdec)) as [Ψ'0 HΨ'0].
+    destruct (H0 α0 ltac:(solve_notin_auto)) as [Ψ'0 HΨ'0].
     rewrite erase_open in HΨ'0.
     exists Ψ'0. simpl.
     apply d_consis__forall_syn with
@@ -888,7 +888,7 @@ Proof.
       with (open_utyp_wrt_utyp C (utyp_var_f α)).
     change (open_utyp_wrt_utyp_rec 0 (utyp_var_f α) (btyp_to_utyp_syn B))
       with (open_utyp_wrt_utyp (btyp_to_utyp_syn B) (utyp_var_f α)).
-    specialize (H α ltac:(fsetdec)).
+    specialize (H α ltac:(solve_notin_auto)).
     rewrite btyp_to_utyp_syn_open in H. exact H.
 Qed.
 
@@ -932,16 +932,16 @@ Proof.
   - fsetdec.
   - fsetdec.
   - pick fresh α. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
-      specialize (IH α ltac:(fsetdec)) end.
+      specialize (IH α ltac:(solve_notin_auto)) end.
     rewrite compose_tags_open in *. fsetdec.
   - pick fresh α. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
-      specialize (IH α ltac:(fsetdec)) end.
+      specialize (IH α ltac:(solve_notin_auto)) end.
     rewrite compose_tags_open in *. fsetdec.
   - pick fresh α. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
-      specialize (IH α ltac:(fsetdec)) end.
+      specialize (IH α ltac:(solve_notin_auto)) end.
     rewrite compose_tags_open in *. fsetdec.
   - pick fresh α. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
-      specialize (IH α ltac:(fsetdec)) end.
+      specialize (IH α ltac:(solve_notin_auto)) end.
     rewrite compose_tags_open in *. fsetdec.
 Qed.
 
@@ -1045,7 +1045,7 @@ Proof.
   - (* forall_r (tc): IH carries the bound; refinement unchanged. *)
     pick fresh α0 for (L `union` dom Γ `union` ftvar_in_utyp C'
                        `union` ftvar_in_btyp B).
-    destruct (H1 α0 ltac:(fsetdec) Ψ0 C'
+    destruct (H1 α0 ltac:(solve_notin_auto) Ψ0 C'
                 ltac:(apply d_consis_weakening_head; exact Hcons) Href) as [Ψ' [Hbnd HΨ']].
     exists Ψ'. split; [ exact Hbnd | ].
     apply d_sub__forall_r with
@@ -1077,7 +1077,7 @@ Proof.
     pick fresh α for (L `union` dom Γ `union` ftvar_in_utyp T0
                       `union` ftvar_in_utyp C `union` ftvar_in_btyp B
                       `union` Ψ `union` Ψ').
-    pose proof (@d_consis_subst_tvar _ _ _ _ (H4 α ltac:(fsetdec)) nil Γ α ph
+    pose proof (@d_consis_subst_tvar _ _ _ _ (H4 α ltac:(solve_notin_auto)) nil Γ α ph
                   eq_refl ltac:(simpl; exact H2) H3) as Hinst.
     rewrite <- (subst_utyp_in_utyp_intro α T0 ph) in Hinst by fsetdec.
     rewrite <- (subst_btyp_in_btyp_intro α (utyp_to_btyp C) (utyp_to_btyp ph)) in Hinst
@@ -1105,7 +1105,7 @@ Proof.
       pick fresh α for (L `union` dom Γ `union` ftvar_in_utyp C0
                         `union` ftvar_in_utyp C `union` ftvar_in_btyp B
                         `union` Ψ0 `union` Ψ `union` Ψ').
-      pose proof (@d_consis_subst_tvar _ _ _ _ (H4 α ltac:(fsetdec)) nil Γ α ph
+      pose proof (@d_consis_subst_tvar _ _ _ _ (H4 α ltac:(solve_notin_auto)) nil Γ α ph
                     eq_refl ltac:(simpl; exact H2) H3) as Hinst.
       rewrite <- (subst_utyp_in_utyp_intro α C0 ph) in Hinst by fsetdec.
       rewrite <- (subst_btyp_in_btyp_intro α (utyp_to_btyp C) (utyp_to_btyp ph)) in Hinst
@@ -1129,7 +1129,7 @@ Proof.
       pick fresh α for (L `union` dom Γ `union` ftvar_in_utyp C0
                         `union` ftvar_in_utyp C `union` ftvar_in_btyp B
                         `union` Ψ0 `union` Ψ `union` Ψ').
-      pose proof (@d_consis_subst_tvar _ _ _ _ (H4 α ltac:(fsetdec)) nil Γ α ph
+      pose proof (@d_consis_subst_tvar _ _ _ _ (H4 α ltac:(solve_notin_auto)) nil Γ α ph
                     eq_refl ltac:(simpl; exact H2) H3) as Hinst.
       rewrite <- (subst_utyp_in_utyp_intro α C0 ph) in Hinst by fsetdec.
       rewrite <- (subst_btyp_in_btyp_intro α (utyp_to_btyp C) (utyp_to_btyp ph)) in Hinst
@@ -1342,7 +1342,7 @@ Proof.
           | apply d_tags__var; reflexivity
           | apply d_wf_utyp__var; simpl; auto
           | apply is_ttyp__var
-          | specialize (Hc α ltac:(clear -Hα; fsetdec));
+          | specialize (Hc α ltac:(clear -Hα; solve_notin_auto));
             change (utyp_var_f α) with (btyp_to_utyp_syn (btyp_var_f α)) in Hc |- *;
             rewrite <- btyp_to_utyp_syn_open in Hc |- *;
             apply d_sub_equiv with (Δ := Ψ); [ clear; fsetdec | ];
@@ -1405,7 +1405,7 @@ Proof.
     + assumption.
     + apply mod_comp_ty__ti. assumption.
     + intros xv Hxv.
-      eapply (Hbody Γ xv mode_ti Bn2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
+      eapply (Hbody Γ xv mode_ti Bn2 (ctx_weaken_refl Γ) ltac:(solve_notin_auto)).
       apply d_sub_weakening_head.
       apply d_sub__infer; [ | exact (is_styp_arrow_r H2) | reflexivity ].
       eapply d_consis_equiv; [ | eassumption ]. fsetdec.
@@ -1424,7 +1424,7 @@ Proof.
     + assumption.
     + assumption.
     + intros xv Hxv.
-      eapply (Hbody Γ xv mode_tc Bn2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
+      eapply (Hbody Γ xv mode_tc Bn2 (ctx_weaken_refl Γ) ltac:(solve_notin_auto)).
       apply d_sub_weakening_head.
       eapply d_consis_syn_sub_tc;
         [ match goal with Hit : is_ityp Bn2 |- _ => exact Hit end
@@ -1435,7 +1435,7 @@ Proof.
     apply d_sd_typing__abs_check_step with (L := L `union` L0 `union` dom Γ).
     + assumption.
     + intros α Hα.
-      eapply (H1 α ltac:(fsetdec)); [ reflexivity | reflexivity | | ].
+      eapply (H1 α ltac:(solve_notin_auto)); [ reflexivity | reflexivity | | ].
       * apply d_wf_ptyp_ctx_weaken with (Γ := Γ);
           [ apply ctx_weaken_app_front | assumption ].
       * intros Γ'' xv M' B'' Hcw Hfr Hsb.
@@ -1451,7 +1451,7 @@ Proof.
       match goal with Hs : _ ⨟ _ ⊢[ _ ] btyp_to_utyp_syn Bbody ⩽ B2 |- _ =>
         exact (d_sub_skmod Hs) end.
     + intros xv Hxv.
-      eapply (Hbody Γ xv m B2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
+      eapply (Hbody Γ xv m B2 (ctx_weaken_refl Γ) ltac:(solve_notin_auto)).
       apply d_sub_weakening_head.
       match goal with Hs : _ ⨟ _ ⊢[ _ ] btyp_to_utyp_syn Bbody ⩽ B2 |- _ =>
         eapply d_sub_equiv; [ | exact Hs ] end.
@@ -1493,7 +1493,7 @@ Proof.
     + exact Herase.
     + apply mod_comp_ty__ti; assumption.
     + intros xv Hxv.
-      eapply (Hbody Γ xv mode_ti Bn2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
+      eapply (Hbody Γ xv mode_ti Bn2 (ctx_weaken_refl Γ) ltac:(solve_notin_auto)).
       apply d_sub_weakening_head.
       apply d_sub__infer; [ | exact (is_styp_arrow_r H2) | reflexivity ].
       eapply d_consis_equiv; [ | eassumption ]. fsetdec.
@@ -1513,7 +1513,7 @@ Proof.
     + assumption.
     + assumption.
     + intros xv Hxv.
-      eapply (Hbody Γ xv mode_tc Bn2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
+      eapply (Hbody Γ xv mode_tc Bn2 (ctx_weaken_refl Γ) ltac:(solve_notin_auto)).
       apply d_sub_weakening_head.
       eapply d_consis_syn_sub_tc;
         [ match goal with Hit : is_ityp Bn2 |- _ => exact Hit end
@@ -1524,7 +1524,7 @@ Proof.
     apply d_sd_typing__abs_anno_check_step with (L := L `union` L0 `union` dom Γ).
     + assumption.
     + intros α Hα.
-      eapply (H1 α ltac:(fsetdec)); [ reflexivity | reflexivity | | ].
+      eapply (H1 α ltac:(solve_notin_auto)); [ reflexivity | reflexivity | | ].
       * apply d_wf_ptyp_ctx_weaken with (Γ := Γ);
           [ apply ctx_weaken_app_front | assumption ].
       * intros Γ'' xv M' B'' Hcw Hfr Hsb.
@@ -1544,7 +1544,7 @@ Proof.
       match goal with Hs : _ ⨟ _ ⊢[ _ ] btyp_to_utyp_syn Bbody ⩽ B2 |- _ =>
         exact (d_sub_skmod Hs) end.
     + intros xv Hxv.
-      eapply (Hbody Γ xv m B2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
+      eapply (Hbody Γ xv m B2 (ctx_weaken_refl Γ) ltac:(solve_notin_auto)).
       apply d_sub_weakening_head.
       match goal with Hs : _ ⨟ _ ⊢[ _ ] btyp_to_utyp_syn Bbody ⩽ B2 |- _ =>
         eapply d_sub_equiv; [ | exact Hs ] end.
@@ -1611,7 +1611,7 @@ Proof.
   - fsetdec.
   - pick fresh α for (L `union` ftvar_in_utyp C).
     match goal with IH : forall _, _ -> _ [=] _ |- _ =>
-      specialize (IH α ltac:(fsetdec)) end.
+      specialize (IH α ltac:(solve_notin_auto)) end.
     rewrite utyp_etags_open_var in *. fsetdec.
 Qed.
 
@@ -1622,7 +1622,7 @@ Proof.
   intros Δ Γ C B H. induction H; simpl;
     try (pick fresh α for (L `union` ftvar_in_utyp C);
          match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
-           specialize (IH α ltac:(fsetdec)) end;
+           specialize (IH α ltac:(solve_notin_auto)) end;
          rewrite utyp_etags_open_var in *); fsetdec.
 Qed.
 
@@ -1743,7 +1743,7 @@ Proof.
       * match goal with Hs : is_styp (btyp_arrow _ _) |- _ => exact (is_styp_arrow_r Hs) end.
       * eapply d_wf_ptyp_ctx_weaken; eassumption.
       * intros Γ'' x M' B'' Hcw'' Hfr Hsb.
-        eapply (H3 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ'')).
+        eapply (H3 x ltac:(solve_notin_auto) ((x ~ dbind_typ A) ++ Γ'')).
         -- apply ctx_weaken_cons. eapply ctx_weaken_trans; [ exact Hcw | exact Hcw'' ].
         -- apply is_fn_n__ti.
         -- apply btyp_spine__tail.
@@ -1758,7 +1758,7 @@ Proof.
       * eapply d_wf_ptyp_ctx_weaken; eassumption.
       * exact Hskm.
       * intros x Hx.
-        eapply (H3 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ')).
+        eapply (H3 x ltac:(solve_notin_auto) ((x ~ dbind_typ A) ++ Γ')).
         -- apply ctx_weaken_cons. exact Hcw.
         -- eassumption.
         -- eassumption.
@@ -1775,7 +1775,7 @@ Proof.
       * match goal with Hs : is_styp (btyp_arrow _ _) |- _ => exact (is_styp_arrow_r Hs) end.
       * eapply d_wf_ptyp_ctx_weaken; eassumption.
       * intros Γ'' x M' B'' Hcw'' Hfr Hsb.
-        eapply (H4 x ltac:(fsetdec) ((x ~ dbind_typ (btyp_to_ptyp B1)) ++ Γ'')).
+        eapply (H4 x ltac:(solve_notin_auto) ((x ~ dbind_typ (btyp_to_ptyp B1)) ++ Γ'')).
         -- apply ctx_weaken_cons. eapply ctx_weaken_trans; [ exact Hcw | exact Hcw'' ].
         -- apply is_fn_n__ti.
         -- apply btyp_spine__tail.
@@ -1790,7 +1790,7 @@ Proof.
       * eassumption.
       * exact Hskm.
       * intros x Hx.
-        eapply (H4 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ')).
+        eapply (H4 x ltac:(solve_notin_auto) ((x ~ dbind_typ A) ++ Γ')).
         -- apply ctx_weaken_cons. exact Hcw.
         -- eassumption.
         -- eassumption.

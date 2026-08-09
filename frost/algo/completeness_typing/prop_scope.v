@@ -82,7 +82,7 @@ Proof.
   - destruct (y == m) as [-> | Hne].
     + simpl in Hm. exfalso. clear - Hm; fsetdec.
     + simpl in Hm.
-      rewrite (IH Θ ltac:(clear - Hm; fsetdec)).
+      rewrite (IH Θ ltac:(clear - Hm; solve_notin_auto)).
       clear; fsetdec.
 Qed.
 
@@ -685,7 +685,7 @@ Proof.
     + clear; fsetdec.
     + simpl in Hm.
       destruct (z == m) as [-> | Hne]; [ exfalso; clear - Hm; fsetdec | ].
-      pose proof (IHE ltac:(clear - Hm; fsetdec)) as Hrec.
+      pose proof (IHE ltac:(clear - Hm; solve_notin_auto)) as Hrec.
       clear - Hrec; fsetdec.
   - destruct (y == m) as [-> | Hne]; [ clear; fsetdec | ].
     pose proof (IH E Θb Hm) as Hrec. clear - Hrec; fsetdec.
@@ -1011,7 +1011,7 @@ Proof.
                         [ exact (HdΞ γ Hi)
                         | assert (Heγ : γ = β) by (clear - Hγ Hi; fsetdec);
                           subst γ; exact Hin ])
-                ltac:(clear - Hnab; fsetdec)
+                ltac:(clear - Hnab; solve_notin_auto)
                 Hnv)
       as [Hreg Hsafe].
     split.
@@ -1039,7 +1039,7 @@ Proof.
     rewrite (@above_dom_cons_other m β abind_flex_mono Θ0 Hβm) in Hnab.
     destruct (IH m b Hbm0 Hmk
                 ltac:(clear - Huq; simpl_env in *; solve_uniq)
-                Hdec HdΞ ltac:(clear - Hnab; fsetdec) Hnv)
+                Hdec HdΞ ltac:(clear - Hnab; solve_notin_auto) Hnv)
       as [Hreg Hsafe].
     split; [ apply above_dom_cons_mono; [ exact Hβm | exact Hreg ] | ].
     intros γ Hγ Hbγ.
@@ -1066,7 +1066,7 @@ Proof.
     rewrite (@above_dom_cons_other m β abind_tvar Θ0 Hβm) in Hnab.
     destruct (IH m b Hbm0 Hmk
                 ltac:(clear - Huq; simpl_env in *; solve_uniq)
-                Hdec HdΞ ltac:(clear - Hnab; fsetdec) Hnv)
+                Hdec HdΞ ltac:(clear - Hnab; solve_notin_auto) Hnv)
       as [Hreg Hsafe].
     split; [ apply above_dom_cons_mono; [ exact Hβm | exact Hreg ] | ].
     intros γ Hγ Hbγ.
@@ -1093,7 +1093,7 @@ Proof.
     rewrite (@above_dom_cons_other m x (abind_var_typ A) Θ0 Hxm) in Hnab.
     destruct (IH m b Hbm0 Hmk
                 ltac:(clear - Huq; simpl_env in *; solve_uniq)
-                Hdec HdΞ ltac:(clear - Hnab; fsetdec) Hnv)
+                Hdec HdΞ ltac:(clear - Hnab; solve_notin_auto) Hnv)
       as [Hreg Hsafe].
     split; [ apply above_dom_cons_mono; [ exact Hxm | exact Hreg ] | ].
     intros γ Hγ Hbγ.
@@ -1124,7 +1124,7 @@ Proof.
     rewrite (@above_dom_cons_other m x (abind_var_skl Q) Θ0 Hxm) in Hnab.
     destruct (IH m b Hbm0 Hmk
                 ltac:(clear - Huq; simpl_env in *; solve_uniq)
-                Hdec HdΞ ltac:(clear - Hnab; fsetdec) Hnv)
+                Hdec HdΞ ltac:(clear - Hnab; solve_notin_auto) Hnv)
       as [Hreg Hsafe].
     split; [ apply above_dom_cons_mono; [ exact Hxm | exact Hreg ] | ].
     intros γ Hγ Hbγ.
@@ -1416,9 +1416,9 @@ Proof.
                 ltac:(apply a_wf_aenv__tvar; [ exact HαΘ0 | exact Hwf ])
                 ltac:(eapply a_wf_pskl_all_syn_open_tvar;
                         [ exact HwfP0
-                        | clear - Hfr HαΘ0; simpl in Hfr; fsetdec ])
+                        | clear - Hfr HαΘ0; simpl in Hfr; solve_notin_auto ])
                 ltac:(eapply a_wf_pskl_delta_mono;
-                        [ apply (a_wf_pskl_reassoc HwfP α) | clear; fsetdec ]))
+                        [ apply (a_wf_pskl_reassoc HwfP α) | clear; solve_notin_auto ]))
       as [Hle [Hwf1 _]].
     assert (HuqT : uniq (Ξ ++ (α ~ abind_tvar) ++ Θ1))
       by (apply a_wf_aenv_uniq_local; exact Hwf1).
@@ -1917,11 +1917,11 @@ Proof.
   destruct (atom_fresh (L0 `union` ftvar_in_ptyp A0 `union` singleton α))
     as [β0 Hβ0].
   pose proof (@a_wf_ptyp_rename_tvar _ _
-                (Hbody β0 ltac:(clear - Hβ0; fsetdec)) nil β0 Θ α eq_refl)
+                (Hbody β0 ltac:(clear - Hβ0; solve_notin_auto)) nil β0 Θ α eq_refl)
     as Hr.
   simpl in Hr.
   rewrite <- (subst_ptyp_in_ptyp_intro β0 A0 (ptyp_var_f α)
-                ltac:(clear - Hβ0; fsetdec)) in Hr.
+                ltac:(clear - Hβ0; solve_notin_auto)) in Hr.
   exact Hr.
 Qed.
 
@@ -2221,7 +2221,7 @@ Proof.
                         (ptyp_var_f α)) as Hlow; clear - Hγ Hlow; fsetdec).
     assert (HabF : γ `in` above_dom m0 (Ξ ++ (α ~ abind_tvar) ++ Θ1)).
     { pose proof (@above_dom_drop_sub m0 nil (Ξ ++ (α ~ abind_tvar)) Θ1
-                    ltac:(simpl_env; simpl; clear - HmΞ Hαm0; fsetdec)) as Hd.
+                    ltac:(simpl_env; simpl; clear - HmΞ Hαm0; solve_notin_auto)) as Hd.
       simpl_env in Hd. clear - Hab Hd; fsetdec. }
     pose proof (Hout γ HγopA HabF) as Hb.
     destruct (binds_app_1 _ _ _ _ _ Hb) as [HbΞ | Hb'];
@@ -2359,7 +2359,7 @@ Proof.
                         (ptyp_var_f α)) as Hlow; clear - Hγ Hlow; fsetdec).
     assert (HabF : γ `in` above_dom m0 (Ξ ++ (α ~ abind_tvar) ++ Θ1)).
     { pose proof (@above_dom_drop_sub m0 nil (Ξ ++ (α ~ abind_tvar)) Θ1
-                    ltac:(simpl_env; simpl; clear - HmΞ Hαm0; fsetdec)) as Hd.
+                    ltac:(simpl_env; simpl; clear - HmΞ Hαm0; solve_notin_auto)) as Hd.
       simpl_env in Hd. clear - Hab Hd; fsetdec. }
     pose proof (Hout γ HγopA HabF) as Hb.
     destruct (binds_app_1 _ _ _ _ _ Hb) as [HbΞ | Hb'];

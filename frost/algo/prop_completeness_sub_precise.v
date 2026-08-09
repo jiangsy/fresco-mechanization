@@ -233,7 +233,7 @@ Proof.
       (L `union` dom Θ `union` ftvar_in_uskl T `union` ftvar_in_bskl B).
     assert (Hwf0 : a_wf_aenv ((α0 ~ abind_tvar) ++ Θ))
       by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
-    destruct (H0 α0 ltac:(fsetdec) Hwf0) as [n0 Hn0].
+    destruct (H0 α0 ltac:(solve_notin_auto) Hwf0) as [n0 Hn0].
     exists (S n0).
     eapply ad_pat_sub_n__forall_r with
       (L := L `union` dom Θ `union` ftvar_in_uskl T
@@ -291,7 +291,7 @@ Proof.
     fsetdec.
   - apply d_tags_skl_all_etag_inv in Hdt as [L0 [Ψt0 [Hd0 [Hεt Heqt]]]].
     pick fresh α for (L `union` L0).
-    specialize (H0 α ltac:(fsetdec) Hwf _ (Hd0 α ltac:(fsetdec))).
+    specialize (H0 α ltac:(solve_notin_auto) Hwf _ (Hd0 α ltac:(solve_notin_auto))).
     fsetdec.
   - fsetdec.
   - eapply IHad_partial_precise; eauto.
@@ -301,7 +301,7 @@ Proof.
     pick fresh α for (L `union` L0 `union` dom Θ).
     assert (Hwf' : a_wf_aenv ((α ~ abind_tvar) ++ Θ))
       by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
-    specialize (H0 α ltac:(fsetdec) Hwf' _ (Hd0 α ltac:(fsetdec))).
+    specialize (H0 α ltac:(solve_notin_auto) Hwf' _ (Hd0 α ltac:(solve_notin_auto))).
     fsetdec.
   - apply d_tags_skl_topholeg_inv in Hdt. eapply IHad_partial_precise; eauto.
   - eapply IHad_partial_precise; eauto.
@@ -352,8 +352,8 @@ Proof.
        `union` ftvar_in_pskl P `union` ftvar_in_uskl ψ).
     intros α0 Hα0.
     assert (Hs0 : Ψ0 [<=] Ψt) by
-      (eapply (ad_partial_precise_tags_sub Hwf (H α0 ltac:(fsetdec)));
-        exact (a_tags_sort_d_tags (Hta α0 ltac:(fsetdec)))).
+      (eapply (ad_partial_precise_tags_sub Hwf (H α0 ltac:(solve_notin_auto)));
+        exact (a_tags_sort_d_tags (Hta α0 ltac:(solve_notin_auto)))).
     assert (Heq0 : Ψ0 [=] Ψt) by (clear - H1 Hun Hεt Hs0; fsetdec).
     rewrite <- pskl_to_bskl_inh_open.
     rewrite <- pskl_to_bskl_inh_open.
@@ -379,8 +379,8 @@ Proof.
     assert (Hwf' : a_wf_aenv ((α ~ abind_tvar) ++ Θ))
       by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
     assert (Hsub : Ψ [<=] Ψt) by
-      (eapply (ad_partial_precise_tags_sub Hwf' (H α ltac:(fsetdec)));
-        exact (a_tags_sort_d_tags (Hta α ltac:(fsetdec)))).
+      (eapply (ad_partial_precise_tags_sub Hwf' (H α ltac:(solve_notin_auto)));
+        exact (a_tags_sort_d_tags (Hta α ltac:(solve_notin_auto)))).
     clear - Hun Hεt Hsub. fsetdec.
   - (* tophole_keep: ψ = topholeg ψ0 (SK-only; TY gf excludes it) *)
     apply a_wf_pskl_tophole_inv in Hwfp as [Hg Hw0].
@@ -500,7 +500,7 @@ Proof.
     clear - Hcf; fsetdec.
   - (* forall_r *)
     pick fresh α for L.
-    pose proof (H0 α ltac:(clear - Fr; fsetdec)) as Hα.
+    pose proof (H0 α ltac:(clear - Fr; solve_notin_auto)) as Hα.
     clear - Hα; fsetdec.
   - (* univ_ghost_r *) clear - H; fsetdec.
   - (* arrow *)
@@ -580,7 +580,7 @@ Proof.
   - (* forall_r *)
     eapply ad_pat_sub_g__forall_r with (L := L `union` dom Θ).
     intros β Hβ.
-    eapply (H0 β ltac:(clear - Hβ; fsetdec) α0 τ0 HeqS);
+    eapply (H0 β ltac:(clear - Hβ; solve_notin_auto) α0 τ0 HeqS);
       [ unfold binds; simpl; right; exact Hb
       | apply a_wf_aenv__tvar; [ clear - Hβ; fsetdec | exact Hwf ] ].
   - (* univ_ghost_r *)
@@ -1130,11 +1130,11 @@ Proof.
       by (apply is_tskl_lc; inversion Htags; subst; assumption).
     pick fresh α for (L `union` dom Θb
         `union` ftvar_in_uskl R' `union` ftvar_in_uskl Rg0).
-    pose proof (H α ltac:(clear - Fr; fsetdec)) as Hbody.
+    pose proof (H α ltac:(clear - Fr; solve_notin_auto)) as Hbody.
     assert (Hsub : uskl_precise Θb Ψrep
         (open_uskl_wrt_uskl R' ψg) (open_uskl_wrt_uskl Rg0 ψg)).
-    { rewrite (subst_bskl_in_uskl_intro α R' ψg ltac:(clear - Fr; fsetdec)).
-      rewrite (subst_bskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; fsetdec)).
+    { rewrite (subst_bskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
+      rewrite (subst_bskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
       apply uskl_precise_subst;
         [ exact Hbody | exact Hlcψ | exact Hwfb | clear - Fr; fsetdec ]. }
     pose proof (uskl_precise_ftag_sub Hbody) as Hfsb.
@@ -1151,7 +1151,7 @@ Proof.
       destruct (uskl_ghost_free_all_etag_inv (Hgf He)) as [Lg Hgb].
       pick fresh β for (Lg `union` ftvar_in_uskl R').
       rewrite (subst_bskl_in_uskl_intro β R' ψg
-                 ltac:(clear - Fr0; fsetdec)).
+                 ltac:(clear - Fr0; solve_notin_auto)).
       apply uskl_ghost_free_subst;
         [ apply Hgb; clear - Fr0; fsetdec
         | apply Hgfψ; exact He
@@ -1180,11 +1180,11 @@ Proof.
       by (apply is_tskl_lc; inversion Htags; subst; assumption).
     pick fresh α for (L `union` dom Θb
         `union` ftvar_in_uskl R' `union` ftvar_in_uskl Rg0).
-    pose proof (H α ltac:(clear - Fr; fsetdec)) as Hbody.
+    pose proof (H α ltac:(clear - Fr; solve_notin_auto)) as Hbody.
     assert (Hsub : uskl_precise Θb Ψ0
         (open_uskl_wrt_uskl R' ψg) (open_uskl_wrt_uskl Rg0 ψg)).
-    { rewrite (subst_bskl_in_uskl_intro α R' ψg ltac:(clear - Fr; fsetdec)).
-      rewrite (subst_bskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; fsetdec)).
+    { rewrite (subst_bskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
+      rewrite (subst_bskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
       apply uskl_precise_subst;
         [ exact Hbody | exact Hlcψ | exact Hwfb | clear - Fr; fsetdec ]. }
     pose proof (uskl_precise_ftag_sub Hbody) as Hfsb.
@@ -1201,7 +1201,7 @@ Proof.
       destruct (uskl_ghost_free_all_syn_inv (Hgf He)) as [Lg Hgb].
       pick fresh β for (Lg `union` ftvar_in_uskl R').
       rewrite (subst_bskl_in_uskl_intro β R' ψg
-                 ltac:(clear - Fr0; fsetdec)).
+                 ltac:(clear - Fr0; solve_notin_auto)).
       apply uskl_ghost_free_subst;
         [ apply Hgb; clear - Fr0; fsetdec
         | apply Hgfψ; exact He
@@ -1305,11 +1305,11 @@ Proof.
       by (apply is_tskl_lc; inversion Htags; subst; assumption).
     pick fresh α for (L `union` dom Θb
         `union` ftvar_in_uskl R' `union` ftvar_in_uskl Rg0).
-    pose proof (H α ltac:(clear - Fr; fsetdec)) as Hbody.
+    pose proof (H α ltac:(clear - Fr; solve_notin_auto)) as Hbody.
     assert (Hsub : uskl_precise Θb Ψrep
         (open_uskl_wrt_uskl R' ψg) (open_uskl_wrt_uskl Rg0 ψg)).
-    { rewrite (subst_bskl_in_uskl_intro α R' ψg ltac:(clear - Fr; fsetdec)).
-      rewrite (subst_bskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; fsetdec)).
+    { rewrite (subst_bskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
+      rewrite (subst_bskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
       apply uskl_precise_subst;
         [ exact Hbody | exact Hlcψ | exact Hwfb | clear - Fr; fsetdec ]. }
     pose proof (uskl_precise_ftag_sub Hbody) as Hfsb.
@@ -1326,7 +1326,7 @@ Proof.
       destruct (uskl_ghost_free_all_syn_inv (Hgf He)) as [Lg Hgb].
       pick fresh β for (Lg `union` ftvar_in_uskl R').
       rewrite (subst_bskl_in_uskl_intro β R' ψg
-                 ltac:(clear - Fr0; fsetdec)).
+                 ltac:(clear - Fr0; solve_notin_auto)).
       apply uskl_ghost_free_subst;
         [ apply Hgb; clear - Fr0; fsetdec
         | apply Hgfψ; exact He
@@ -1655,7 +1655,7 @@ Proof.
     simpl in Hwfq. destruct (a_wf_pskl_all_inv Hwfq) as [Lw Hwbody].
     eapply ad_pat_sub_g__forall_r with (L := L `union` Lw `union` dom Θ).
     intros α Hα.
-    eapply (H0 α ltac:(clear - Hα; fsetdec)) with (Ψna := Ψna);
+    eapply (H0 α ltac:(clear - Hα; solve_notin_auto)) with (Ψna := Ψna);
       [ exact Hup | exact Hwfb | exact HΨsup
       | intros x b Hb; unfold binds; simpl; right; apply Hmon; exact Hb
       | apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]
@@ -1902,7 +1902,7 @@ Proof.
   - (* forall_r *)
     eapply ad_pat_sub_gv__forall_r with (L := L `union` dom Θ).
     intros β Hβ.
-    eapply (H0 β ltac:(clear - Hβ; fsetdec) α0 τ0 HeqS);
+    eapply (H0 β ltac:(clear - Hβ; solve_notin_auto) α0 τ0 HeqS);
       [ unfold binds; simpl; right; exact Hb
       | apply a_wf_aenv__tvar; [ clear - Hβ; fsetdec | exact Hwf ] ].
   - (* univ_ghost_r *)
@@ -2313,11 +2313,11 @@ Proof.
       by (apply is_tskl_lc; inversion Htags; subst; assumption).
     pick fresh α for (L `union` dom Θb
         `union` ftvar_in_uskl R' `union` ftvar_in_uskl Rg0).
-    pose proof (H α ltac:(clear - Fr; fsetdec)) as Hbody.
+    pose proof (H α ltac:(clear - Fr; solve_notin_auto)) as Hbody.
     assert (Hsub : uskl_precise Θb Ψrep
         (open_uskl_wrt_uskl R' ψg) (open_uskl_wrt_uskl Rg0 ψg)).
-    { rewrite (subst_bskl_in_uskl_intro α R' ψg ltac:(clear - Fr; fsetdec)).
-      rewrite (subst_bskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; fsetdec)).
+    { rewrite (subst_bskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
+      rewrite (subst_bskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
       apply uskl_precise_subst;
         [ exact Hbody | exact Hlcψ | exact Hwfb | clear - Fr; fsetdec ]. }
     pose proof (uskl_precise_ftag_sub Hbody) as Hfsb.
@@ -2334,7 +2334,7 @@ Proof.
       destruct (uskl_ghost_free_all_etag_inv (Hgf He)) as [Lg Hgb].
       pick fresh β for (Lg `union` ftvar_in_uskl R').
       rewrite (subst_bskl_in_uskl_intro β R' ψg
-                 ltac:(clear - Fr0; fsetdec)).
+                 ltac:(clear - Fr0; solve_notin_auto)).
       apply uskl_ghost_free_subst;
         [ apply Hgb; clear - Fr0; fsetdec
         | apply Hgfψ; exact He
@@ -2363,11 +2363,11 @@ Proof.
       by (apply is_tskl_lc; inversion Htags; subst; assumption).
     pick fresh α for (L `union` dom Θb
         `union` ftvar_in_uskl R' `union` ftvar_in_uskl Rg0).
-    pose proof (H α ltac:(clear - Fr; fsetdec)) as Hbody.
+    pose proof (H α ltac:(clear - Fr; solve_notin_auto)) as Hbody.
     assert (Hsub : uskl_precise Θb Ψ0
         (open_uskl_wrt_uskl R' ψg) (open_uskl_wrt_uskl Rg0 ψg)).
-    { rewrite (subst_bskl_in_uskl_intro α R' ψg ltac:(clear - Fr; fsetdec)).
-      rewrite (subst_bskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; fsetdec)).
+    { rewrite (subst_bskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
+      rewrite (subst_bskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
       apply uskl_precise_subst;
         [ exact Hbody | exact Hlcψ | exact Hwfb | clear - Fr; fsetdec ]. }
     pose proof (uskl_precise_ftag_sub Hbody) as Hfsb.
@@ -2384,7 +2384,7 @@ Proof.
       destruct (uskl_ghost_free_all_syn_inv (Hgf He)) as [Lg Hgb].
       pick fresh β for (Lg `union` ftvar_in_uskl R').
       rewrite (subst_bskl_in_uskl_intro β R' ψg
-                 ltac:(clear - Fr0; fsetdec)).
+                 ltac:(clear - Fr0; solve_notin_auto)).
       apply uskl_ghost_free_subst;
         [ apply Hgb; clear - Fr0; fsetdec
         | apply Hgfψ; exact He
@@ -2488,11 +2488,11 @@ Proof.
       by (apply is_tskl_lc; inversion Htags; subst; assumption).
     pick fresh α for (L `union` dom Θb
         `union` ftvar_in_uskl R' `union` ftvar_in_uskl Rg0).
-    pose proof (H α ltac:(clear - Fr; fsetdec)) as Hbody.
+    pose proof (H α ltac:(clear - Fr; solve_notin_auto)) as Hbody.
     assert (Hsub : uskl_precise Θb Ψrep
         (open_uskl_wrt_uskl R' ψg) (open_uskl_wrt_uskl Rg0 ψg)).
-    { rewrite (subst_bskl_in_uskl_intro α R' ψg ltac:(clear - Fr; fsetdec)).
-      rewrite (subst_bskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; fsetdec)).
+    { rewrite (subst_bskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
+      rewrite (subst_bskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
       apply uskl_precise_subst;
         [ exact Hbody | exact Hlcψ | exact Hwfb | clear - Fr; fsetdec ]. }
     pose proof (uskl_precise_ftag_sub Hbody) as Hfsb.
@@ -2509,7 +2509,7 @@ Proof.
       destruct (uskl_ghost_free_all_syn_inv (Hgf He)) as [Lg Hgb].
       pick fresh β for (Lg `union` ftvar_in_uskl R').
       rewrite (subst_bskl_in_uskl_intro β R' ψg
-                 ltac:(clear - Fr0; fsetdec)).
+                 ltac:(clear - Fr0; solve_notin_auto)).
       apply uskl_ghost_free_subst;
         [ apply Hgb; clear - Fr0; fsetdec
         | apply Hgfψ; exact He
@@ -2847,7 +2847,7 @@ Proof.
     simpl in Hwfq. destruct (a_wf_pskl_all_inv Hwfq) as [Lw Hwbody].
     eapply ad_pat_sub_gv__forall_r with (L := L `union` Lw `union` dom Θ).
     intros α Hα.
-    eapply (H0 α ltac:(clear - Hα; fsetdec)) with (Ψna := Ψna);
+    eapply (H0 α ltac:(clear - Hα; solve_notin_auto)) with (Ψna := Ψna);
       [ exact Hup | exact Hwfb | exact HΨsup
       | intros x b Hb; unfold binds; simpl; right; apply Hmon; exact Hb
       | apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]

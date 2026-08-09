@@ -208,6 +208,48 @@ removed developments).
 >   parallelism".  Worth measuring where the chain is artificial (an import
 >   kept for one lemma) versus real.
 >
+> ### Follow-up: the same cliff, a second shape, and one tactic for both
+>
+> The fix above exposed a *second* instance in the next hotspot,
+> `a_pat_complete_abs_anno` (`prop_completeness_pat.v`, 248 s = 31% of the
+> remaining tree).  Profiling: 99.3% inside one
+> `rewrite (swap_aenv_tm_head …)` whose `ltac:(…)` side conditions call
+> `fsetdec` four times, 187 s each.
+>
+> ⚠️ Those calls were **already** `clear - Hx`-scoped to a *single*
+> hypothesis — so the standard `clear -` discipline had been applied and did
+> not help.  The hypothesis itself is the rule's `L` avoid-set, a union of a
+> dozen `dom`/`ftvar_in_aenv` terms.  **Two independent ways to hit the same
+> cliff**, needing opposite fixes:
+>
+> | shape | context | fix |
+> |---|---|---|
+> | (a) | MANY small `notin` hypotheses | `keep_only_subject` — keep only the goal's own subject |
+> | (b) | ONE huge hypothesis | `destruct_notin` — flatten it before `fsetdec` |
+>
+> A plain `first [...]` cascade cannot serve both, because in each case the
+> *wrong* stage still **succeeds — just slowly** — so `first` commits to it:
+> `keep_only_subject` first gives (a) 23.8 s but leaves (b) at 248 s;
+> `destruct_notin` first gives (b) 0.9 s but pushes (a) to 142 s; both
+> combined gives (a) 130 s.
+>
+> So `solve_notin_auto` **dispatches on the shape** — it tests whether the
+> context holds two freshness hypotheses about atoms other than the goal's
+> subject — and then applies the matching order.  It equals hand-picking at
+> every site.  Promoted to `frost/ltac_utils.v` and swept across **934**
+> `ltac:(…fsetdec)` side conditions in 35 files.
+>
+> ### Result
+>
+> | | wall clock |
+> |---|---|
+> | before (inferred, see above) | ~20.5 min |
+> | after the `crush_uniq` fix | 13:04 |
+> | after the `solve_notin_auto` sweep | **9:44** |
+>
+> `test_examples.v` 467 s → 30.8 s.  Parallelism also improved (110% → 150%
+> CPU at `-j8`) simply because the serial tail shrank.
+>
 > ### Lesson for the next perf pass
 >
 > Profile to the **individual call**, not the tactic.  An aggregate that says

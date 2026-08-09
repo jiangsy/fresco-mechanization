@@ -237,7 +237,7 @@ Proof.
     apply Htr; [ clear - Hα; fsetdec | ].
     match goal with
     | Hbody : forall α, α `notin` ?L1 -> _ |- _ =>
-        apply (Hbody α ltac:(clear - Hα; fsetdec))
+        apply (Hbody α ltac:(clear - Hα; solve_notin_auto))
     end.
   - (* forall_inh_untagged : R = uskl_all_syn R *)
     inversion HQ; subst.
@@ -247,7 +247,7 @@ Proof.
     apply Htr; [ clear - Hα; fsetdec | ].
     match goal with
     | Hbody : forall α, α `notin` ?L1 -> _ |- _ =>
-        apply (Hbody α ltac:(clear - Hα; fsetdec))
+        apply (Hbody α ltac:(clear - Hα; solve_notin_auto))
     end.
   - (* hole *) apply ad_pat_consis__hole; [ assumption | exact HwfB ].
   - (* tophole_inh : R = uskl_tophole R *)
@@ -258,7 +258,7 @@ Proof.
     apply Htr; [ clear - Hα; fsetdec | ].
     match goal with
     | Hbody : forall α, α `notin` ?L1 -> _ |- _ =>
-        apply (Hbody α ltac:(clear - Hα; fsetdec))
+        apply (Hbody α ltac:(clear - Hα; solve_notin_auto))
     end.
   - (* tophole_drop *) apply ad_pat_consis__tophole_drop. apply IHHc; assumption.
   - (* flex_l *) eapply ad_pat_consis__flex_l; [ eassumption | ].
@@ -316,7 +316,7 @@ Proof.
     match goal with
     | IH : forall α0, α0 `notin` ?L0 ->
              forall Bsrc0, _ = pskl_to_bskl_inh Bsrc0 -> _ |- _ =>
-        eapply (IH α ltac:(clear - Hα; fsetdec)
+        eapply (IH α ltac:(clear - Hα; solve_notin_auto)
                   (open_pskl_wrt_pskl Bsrc (pskl_var_f α)))
     end;
       [ symmetry; apply pskl_to_bskl_inh_open
@@ -1178,7 +1178,7 @@ Proof.
     assert (Hβα : β <> α) by (clear - Hα; fsetdec).
     rewrite (subst_pskl_in_pskl_open_pskl_wrt_pskl_var
                   Q pskl_unit β α Hβα lc_pskl_unit).
-    specialize (H0 α ltac:(clear - Hα; fsetdec)
+    specialize (H0 α ltac:(clear - Hα; solve_notin_auto)
                   ((α ~ abind_tvar) ++ Θ1) β Θ2).
     simpl_env in H0. simpl_env. apply H0;
       [ reflexivity
@@ -1282,7 +1282,7 @@ Proof.
     intros α Hα.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       [ | intro He; subst; clear - Hα; fsetdec | apply lc_bskl_unit ].
-    specialize (H0 α ltac:(clear - Hα; fsetdec)
+    specialize (H0 α ltac:(clear - Hα; solve_notin_auto)
                   ((α ~ abind_tvar) ++ Θ1) β Θ2).
     simpl_env in H0. simpl_env. apply H0;
       [ reflexivity
@@ -1448,7 +1448,7 @@ Proof.
     rewrite (subst_pskl_in_pskl_open_pskl_wrt_pskl_var
                Q (ptyp_to_pskl τ0) β α Hβα
                (mono_ptyp_to_pskl_lc Hm)).
-    specialize (H0 α ltac:(clear - Hα; fsetdec)
+    specialize (H0 α ltac:(clear - Hα; solve_notin_auto)
                   ((α ~ abind_tvar) ++ Θ1) β τ0 Θ2).
     simpl_env in H0. simpl_env. apply H0;
       [ reflexivity
@@ -1588,7 +1588,7 @@ Proof.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       [ | intro He; subst; clear - Hα; fsetdec
         | apply mono_ptyp_to_bskl_syn_lc; assumption ].
-    specialize (H0 α ltac:(clear - Hα; fsetdec)
+    specialize (H0 α ltac:(clear - Hα; solve_notin_auto)
                   ((α ~ abind_tvar) ++ Θ1) β τ0 Θ2).
     simpl_env in H0. simpl_env. apply H0;
       [ reflexivity
@@ -1895,12 +1895,12 @@ Proof.
     intros Ψ Θ0 Θ1 T B P' Hgfb HgT HgB Hc Hwf HlcT HwfB HwfT Hmod Hgf.
     specialize (Hgf eq_refl).
     destruct (a_consistag_sound_aux Hc Hwf HlcT HwfB HwfT
-                ltac:(intros α0 Hα0; clear - Hα0; fsetdec)
+                ltac:(intros α0 Hα0; clear - Hα0; solve_notin_auto)
                 ltac:(intros β τ Hb; apply inter_empty_pointwise;
-                      intros α0 Hα0; clear - Hα0; fsetdec)
+                      intros α0 Hα0; clear - Hα0; solve_notin_auto)
                 ltac:(intros Θa β b Θb Heq Hne;
                       apply inter_empty_pointwise;
-                      intros α0 Hα0; clear - Hα0; fsetdec))
+                      intros α0 Hα0; clear - Hα0; solve_notin_auto))
       as [Hle [Hwf1 [_ [_ [[Qt [HeQt [Hcons Hfill]]] Hleaf]]]]].
     assert (HwfB1 : Θ1 ⨟ empty ⊢ₚₛᵃ B)
       by (eapply a_wf_pskl_isub; [ exact HwfB | exact Hle ]).
@@ -1935,10 +1935,10 @@ Proof.
     rewrite dom_app in Hfr.
     (* the rule's own Barendregt-fresh binder replaces the old atom_fresh *)
     destruct (IH (ltac:(apply a_wf_aenv__tvar;
-                          [ clear - Hfr; fsetdec | exact Hwf ]))
+                          [ clear - Hfr; solve_notin_auto | exact Hwf ]))
                 HlcS
                 (ltac:(eapply a_wf_pskl_all_syn_open_tvar;
-                         [ exact HwfP0 | clear - Hfr; fsetdec ]))
+                         [ exact HwfP0 | clear - Hfr; solve_notin_auto ]))
                 (ltac:(eapply a_wf_pskl_weaken;
                          [ intros x b Hb; unfold binds in *;
                            simpl; right; exact Hb
@@ -2120,12 +2120,12 @@ Proof.
     match goal with H : Θ0 ⨟ empty ⊢ₚₛᵃ ⌊ S2 ⌋ˢ |- _ => rename H into HwfS2 end.
 
     destruct (a_consistag_sound_aux Hc Hwf HlcS1 HwfP0a HwfS1
-                ltac:(intros α0 Hα0; clear - Hα0; fsetdec)
+                ltac:(intros α0 Hα0; clear - Hα0; solve_notin_auto)
                 ltac:(intros β τ Hb; apply inter_empty_pointwise;
-                      intros α0 Hα0; clear - Hα0; fsetdec)
+                      intros α0 Hα0; clear - Hα0; solve_notin_auto)
                 ltac:(intros Θa β b Θb Heq Hne;
                       apply inter_empty_pointwise;
-                      intros α0 Hα0; clear - Hα0; fsetdec))
+                      intros α0 Hα0; clear - Hα0; solve_notin_auto))
       as [Hle1 [Hwf1 [_ [_ [[Qt1 [HeQt1 [Hcons1 Hfill1]]] Hleaf1]]]]].
     assert (HwfP0b1 : Θ1 ⨟ empty ⊢ₚₛᵃ P0b)
       by (eapply a_wf_pskl_isub; eauto).
@@ -2172,8 +2172,8 @@ Proof.
       by (clear - Hint0; fsetdec).
     assert (Hhyg : Ψg ∩ (ftag_in_uskl (uskl_all_etag ε R)) [=] empty)
       by (clear - Hint0; fsetdec).
-    assert (Hprem := Hfam Ψg ψg ltac:(clear - Hint0; fsetdec) Hsort Herase).
-    assert (IH := IHfam Ψg ψg ltac:(clear - Hint0; fsetdec) Hsort Herase).
+    assert (Hprem := Hfam Ψg ψg ltac:(clear - Hint0; solve_notin_auto) Hsort Herase).
+    assert (IH := IHfam Ψg ψg ltac:(clear - Hint0; solve_notin_auto) Hsort Herase).
     assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0)).
     { apply a_wf_aenv_prepend_decls; auto.
       - clear - Huq. solve_uniq.
@@ -2229,8 +2229,8 @@ Proof.
       by (clear - Hint0; fsetdec).
     assert (Hhyg : Ψg ∩ (ftag_in_uskl (uskl_all_syn R)) [=] empty)
       by (clear - Hint0; fsetdec).
-    assert (Hprem := Hfam Ψg ψg ltac:(clear - Hint0; fsetdec) Hsort Herase).
-    assert (IH := IHfam Ψg ψg ltac:(clear - Hint0; fsetdec) Hsort Herase).
+    assert (Hprem := Hfam Ψg ψg ltac:(clear - Hint0; solve_notin_auto) Hsort Herase).
+    assert (IH := IHfam Ψg ψg ltac:(clear - Hint0; solve_notin_auto) Hsort Herase).
     assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0)).
     { apply a_wf_aenv_prepend_decls; auto.
       - clear - Huq. solve_uniq.
@@ -2323,7 +2323,7 @@ Proof.
     destruct (IH Hwf a_decls__nil HwfP0
                 ltac:(simpl;
                       destruct (a_wf_pskl_ftv_tvarish HwfS (α := α)
-                                  ltac:(simpl; clear; fsetdec))
+                                  ltac:(simpl; clear; solve_notin_auto))
                         as [HΔx | Htx];
                       [ exfalso; clear - HΔx; fsetdec | exact Htx ])
                 Hmod Hgf)

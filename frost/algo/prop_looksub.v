@@ -220,7 +220,7 @@ Proof.
          destruct (AtomSetProperties.In_dec α0 (ftvar_in_cstrs C1))
            as [Hin | Hin];
          [ destruct (H α0 Hin) as [Hd | Hd]
-         | destruct (H0 α0 ltac:(clear - H1 Hin; fsetdec)) as [Hd | Hd] ];
+         | destruct (H0 α0 ltac:(clear - H1 Hin; solve_notin_auto)) as [Hd | Hd] ];
          solve [ left; clear - Hd; fsetdec | right; exact Hd ] ].
   (* The five BINDER rows.  [n] is the rule's own side condition, and the
      right disjunct is inherited because the premise's context only GREW. *)
@@ -638,7 +638,7 @@ Proof.
         let HI := fresh "HI" in
         pose proof (IH _ _ ltac:(eassumption) ltac:(eassumption)
                       ltac:(eassumption) ltac:(match goal with Hsc : ftvar_in_pskl P0 [<=] _ |- _ =>
-      clear - Hsc; cbn; fsetdec end)) as HI;
+      clear - Hsc; cbn; solve_notin_auto end)) as HI;
         simpl in HI; exact HI
     end.
   - (* LE-UnivGhost2 *)
@@ -1880,7 +1880,7 @@ Proof.
                   P (pskl_var_f α)) as Hup.
     simpl in Hup. clear - Hα' Hup; fsetdec. }
   pose proof (a_looksub_rename_var Hlk Hα'P
-                ltac:(clear - Hα'; fsetdec) ltac:(clear - Hα'; fsetdec))
+                ltac:(clear - Hα'; solve_notin_auto) ltac:(clear - Hα'; solve_notin_auto))
     as Hlk'.
   rewrite <- (subst_pskl_in_pskl_intro α P (pskl_var_f α') Hfr) in Hlk'.
   exact Hlk'.

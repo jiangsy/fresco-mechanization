@@ -339,7 +339,7 @@ Proof.
       [ | intro He; subst; clear - Hα; fsetdec | apply lc_bskl_unit ].
     match goal with
     | IH : forall α, α `notin` L -> forall Θ1 : list _, _ |- _ =>
-        specialize (IH α ltac:(clear - Hα; fsetdec)
+        specialize (IH α ltac:(clear - Hα; solve_notin_auto)
                       ((α ~ abind_tvar) ++ Θ1) β Θ2);
         simpl_env in IH; simpl_env; apply IH
     end;
@@ -357,7 +357,7 @@ Proof.
       [ | intro He; subst; clear - Hα; fsetdec | apply lc_bskl_unit ].
     match goal with
     | IH : forall α, α `notin` L -> forall Θ1 : list _, _ |- _ =>
-        specialize (IH α ltac:(clear - Hα; fsetdec)
+        specialize (IH α ltac:(clear - Hα; solve_notin_auto)
                       ((α ~ abind_tvar) ++ Θ1) β Θ2);
         simpl_env in IH; simpl_env; apply IH
     end;
@@ -375,7 +375,7 @@ Proof.
       [ | intro He; subst; clear - Hα; fsetdec | apply lc_bskl_unit ].
     match goal with
     | IH : forall α, α `notin` L -> forall Θ1 : list _, _ |- _ =>
-        specialize (IH α ltac:(clear - Hα; fsetdec)
+        specialize (IH α ltac:(clear - Hα; solve_notin_auto)
                       ((α ~ abind_tvar) ++ Θ1) β Θ2);
         simpl_env in IH; simpl_env; apply IH
     end;
@@ -393,7 +393,7 @@ Proof.
       [ | intro He; subst; clear - Hα; fsetdec | apply lc_bskl_unit ].
     match goal with
     | IH : forall α, α `notin` L -> forall Θ1 : list _, _ |- _ =>
-        specialize (IH α ltac:(clear - Hα; fsetdec)
+        specialize (IH α ltac:(clear - Hα; solve_notin_auto)
                       ((α ~ abind_tvar) ++ Θ1) β Θ2);
         simpl_env in IH; simpl_env; apply IH
     end;
@@ -417,7 +417,7 @@ Proof.
       [ | intro He; subst; clear - Hα; fsetdec | apply lc_bskl_unit ].
     match goal with
     | IH : forall α, α `notin` L -> forall Θ1 : list _, _ |- _ =>
-        specialize (IH α ltac:(clear - Hα; fsetdec)
+        specialize (IH α ltac:(clear - Hα; solve_notin_auto)
                        ((α ~ abind_tvar) ++ Θ1) β Θ2);
         simpl in IH; simpl_env in IH
     end.
@@ -553,7 +553,7 @@ Proof.
         | apply mono_ptyp_to_bskl_syn_lc; assumption ].
     match goal with
     | IH : forall α, α `notin` L -> forall Θ1 : list _, _ |- _ =>
-        specialize (IH α ltac:(clear - Hα; fsetdec)
+        specialize (IH α ltac:(clear - Hα; solve_notin_auto)
                       ((α ~ abind_tvar) ++ Θ1) β τ0 Θ2);
         simpl_env in IH; simpl_env; apply IH
     end;
@@ -576,7 +576,7 @@ Proof.
         | apply mono_ptyp_to_bskl_syn_lc; assumption ].
     match goal with
     | IH : forall α, α `notin` L -> forall Θ1 : list _, _ |- _ =>
-        specialize (IH α ltac:(clear - Hα; fsetdec)
+        specialize (IH α ltac:(clear - Hα; solve_notin_auto)
                       ((α ~ abind_tvar) ++ Θ1) β τ0 Θ2);
         simpl_env in IH; simpl_env; apply IH
     end;
@@ -599,7 +599,7 @@ Proof.
         | apply mono_ptyp_to_bskl_syn_lc; assumption ].
     match goal with
     | IH : forall α, α `notin` L -> forall Θ1 : list _, _ |- _ =>
-        specialize (IH α ltac:(clear - Hα; fsetdec)
+        specialize (IH α ltac:(clear - Hα; solve_notin_auto)
                       ((α ~ abind_tvar) ++ Θ1) β τ0 Θ2);
         simpl_env in IH; simpl_env; apply IH
     end;
@@ -622,7 +622,7 @@ Proof.
         | apply mono_ptyp_to_bskl_syn_lc; assumption ].
     match goal with
     | IH : forall α, α `notin` L -> forall Θ1 : list _, _ |- _ =>
-        specialize (IH α ltac:(clear - Hα; fsetdec)
+        specialize (IH α ltac:(clear - Hα; solve_notin_auto)
                       ((α ~ abind_tvar) ++ Θ1) β τ0 Θ2);
         simpl_env in IH; simpl_env; apply IH
     end;
@@ -653,7 +653,7 @@ Proof.
         | apply mono_ptyp_to_bskl_syn_lc; assumption ].
     match goal with
     | IH : forall α, α `notin` L -> forall Θ1 : list _, _ |- _ =>
-        specialize (IH α ltac:(clear - Hα; fsetdec)
+        specialize (IH α ltac:(clear - Hα; solve_notin_auto)
                        ((α ~ abind_tvar) ++ Θ1) β τ0 Θ2);
         simpl_env in IH; simpl_env; apply IH
     end;
@@ -773,7 +773,7 @@ Proof.
     intros α Hα.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       [ | intro He; subst; clear - Hα; fsetdec | apply lc_bskl_unit ].
-    specialize (H0 α ltac:(clear - Hα; fsetdec)
+    specialize (H0 α ltac:(clear - Hα; solve_notin_auto)
                   ((α ~ abind_tvar) ++ Θ1) β Θ2).
     simpl_env in H0. simpl_env. apply H0;
       [ reflexivity
@@ -1063,7 +1063,7 @@ Proof.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       [ | intro He; subst; clear - Hα; fsetdec
         | apply mono_ptyp_to_bskl_syn_lc; assumption ].
-    specialize (H0 α ltac:(clear - Hα; fsetdec)
+    specialize (H0 α ltac:(clear - Hα; solve_notin_auto)
                   ((α ~ abind_tvar) ++ Θ1) β τ0 Θ2).
     simpl_env in H0. simpl_env. apply H0;
       [ reflexivity
@@ -1462,7 +1462,7 @@ Proof.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       [ | intro He; subst; clear - Hα; fsetdec | apply lc_bskl_var_f ].
     eapply ad_refine_syn_f_delta_mono;
-      [ eapply (H0 α ltac:(clear - Hα; fsetdec) Ξ0 α0 Θt β);
+      [ eapply (H0 α ltac:(clear - Hα; solve_notin_auto) Ξ0 α0 Θt β);
         [ reflexivity
         | apply bskl_ghost_free_open_rec; assumption
         | assumption
@@ -1695,7 +1695,7 @@ Proof.
     intros α Hα.
     match goal with
     | IH : forall α, α `notin` L -> _ |- _ =>
-        eapply (IH α ltac:(clear - Hα; fsetdec))
+        eapply (IH α ltac:(clear - Hα; solve_notin_auto))
     end; [ exact Hb | exact Hm | ].
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       [ reflexivity
@@ -1719,7 +1719,7 @@ Proof.
     intros α Hα.
     match goal with
     | IH : forall α, α `notin` L -> _ |- _ =>
-        eapply (IH α ltac:(clear - Hα; fsetdec))
+        eapply (IH α ltac:(clear - Hα; solve_notin_auto))
     end; [ | exact Hm | simpl; reflexivity ].
     unfold binds. simpl. right. exact Hb.
   - (* tophole_keep / Q0 = var β *)

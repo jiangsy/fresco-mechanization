@@ -47,6 +47,7 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.def_extra.
+Require Import src.frost.ltac_utils.   (* solve_notin_auto *)
 Require Import src.frost.coercions.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
@@ -588,7 +589,7 @@ Proof.
     by (apply msubst_bskl_pskl_to_bskl_inh; exact Hmono_img).
   assert (HO3 : ftvar_in_pskl (⇓ˢ[ Θ ] (msubst_pskl κ P0)) [<=] dom Θ').
   { pose proof (refine_syn_f_downarrow_source_ftv Hrs Hwfth
-                  ltac:(intros x Hx; exfalso; clear - Hx; fsetdec)) as h.
+                  ltac:(intros x Hx; exfalso; clear - Hx; solve_notin_auto)) as h.
     rewrite Heqinh in h. rewrite ftvar_in_bskl_inh in h.
     clear - h HO2. fsetdec. }
   (* ---- 5. …but β SURVIVES the solution, and it is NOT in the truncation ---- *)
@@ -1070,7 +1071,7 @@ Proof.
               [ left; exact Hb | right; exists τ0; exact Hb ]).
         destruct (He3 γ HPIH NM0 Ma γ P0 (uskl_arrow R1 R2) Ψ0 Θa κ
                     (bskl_arrow Q1 Q2)
-                    a_decls__nil ltac:(simpl; clear; fsetdec)
+                    a_decls__nil ltac:(simpl; clear; solve_notin_auto)
                     Hwf0 Hwfth HwfP0 Hfγ Hmodsk Hmodty Hinc Hslack HDj Hrs
                     HwfQ)
           as [P1 [Θ1 [Hrun Hopt]]].

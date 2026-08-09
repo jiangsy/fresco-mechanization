@@ -372,7 +372,7 @@ Proof.
   - apply a_wf_ptyp__all with (L := L `union` singleton α0). intros β Hβ.
     rewrite subst_ptyp_in_ptyp_open_ptyp_wrt_ptyp_var;
       [ | clear - Hβ; fsetdec | eapply solves_flex_lc; eassumption ].
-    apply (H0 β ltac:(clear - Hβ; fsetdec) τ α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
+    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τ α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs ].
 Qed.
 
@@ -407,7 +407,7 @@ Proof.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
       [ | clear - Hβ; fsetdec
       | apply lc_ptyp_to_pskl; eapply solves_flex_lc; eassumption ].
-    apply (H0 β ltac:(clear - Hβ; fsetdec) τ α0 b Θa Θ0);
+    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τ α0 b Θa Θ0);
       [ reflexivity | exact Hs | clear - Hα0 Hβ; fsetdec ].
   - apply a_wf_pskl__hole.
   - apply a_wf_pskl__tophole.
@@ -469,7 +469,7 @@ Proof.
     intros β Hβ.
     repeat rewrite subst_ptyp_in_ptyp_open_ptyp_wrt_ptyp_var;
       try solve [ clear - Hβ; fsetdec | eapply solves_flex_lc; eassumption ].
-    apply (H0 β ltac:(clear - Hβ; fsetdec) τs α0 b Θa Θ0);
+    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b Θa Θ0);
       [ reflexivity | exact Hs | exact Hu ].
 Qed.
 
@@ -526,7 +526,7 @@ Proof.
       try solve [ clear - Hβ; fsetdec
                 | apply mono_ptyp_to_bskl_syn_lc;
                   eapply solves_flex_mono; eassumption ].
-    apply (H0 β ltac:(clear - Hβ; fsetdec) τs α0 b Θa Θ0);
+    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b Θa Θ0);
       [ reflexivity | exact Hs | exact Hu | clear - Hα0 Hβ; fsetdec ].
   - (* hole : the fill is substituted, and stays well-formed *)
     unfold ptyp_to_bskl_syn at 1. rewrite <- pskl_to_bskl_syn_subst.
@@ -542,7 +542,7 @@ Proof.
       [ | clear - Hβ; fsetdec
         | apply mono_ptyp_to_bskl_syn_lc; eapply solves_flex_mono;
           eassumption ].
-    apply (H0 β ltac:(clear - Hβ; fsetdec) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
+    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ | exact Hα0 ].
   - (* tophole_keep *)
     apply ad_refine_syn__tophole_keep;
@@ -639,7 +639,7 @@ Proof.
     repeat rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
       try solve [ clear - Hβ; fsetdec
                 | apply lc_ptyp_to_pskl; eapply solves_flex_lc; eassumption ].
-    apply (H0 β ltac:(clear - Hβ; fsetdec) τs α0 b Θa Θ0);
+    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b Θa Θ0);
       [ reflexivity | exact Hs | exact Hu | clear - Hα0 Hβ; fsetdec ].
   - (* hole : the fill is a plain wf skeleton — no painting rewrite *)
     apply ad_refine_pskl__hole.
@@ -653,7 +653,7 @@ Proof.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
       [ | clear - Hβ; fsetdec
         | apply lc_ptyp_to_pskl; eapply solves_flex_lc; eassumption ].
-    apply (H0 β ltac:(clear - Hβ; fsetdec) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
+    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ | exact Hα0 ].
   - (* tophole_keep *)
     apply ad_refine_pskl__tophole_keep;
@@ -771,7 +771,7 @@ Proof.
       [ | clear - Hβ; fsetdec
         | apply mono_ptyp_to_bskl_syn_lc; eapply solves_flex_mono;
           eassumption ].
-    apply (H0 β ltac:(clear - Hβ; fsetdec) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
+    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
   - (* forall_inh_untagged *)
     eapply ad_pat_consis__forall_inh_untagged
@@ -785,7 +785,7 @@ Proof.
       [ | clear - Hβ; fsetdec
         | apply mono_ptyp_to_bskl_syn_lc; eapply solves_flex_mono;
           eassumption ].
-    apply (H0 β ltac:(clear - Hβ; fsetdec) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
+    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
   - (* forall_syn_tagged *)
     eapply ad_pat_consis__forall_syn_tagged
@@ -799,7 +799,7 @@ Proof.
       [ | clear - Hβ; fsetdec
         | apply mono_ptyp_to_bskl_syn_lc; eapply solves_flex_mono;
           eassumption ].
-    apply (H0 β ltac:(clear - Hβ; fsetdec) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
+    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
   - (* forall_syn *)
     eapply ad_pat_consis__forall_syn
@@ -813,7 +813,7 @@ Proof.
       [ | clear - Hβ; fsetdec
         | apply mono_ptyp_to_bskl_syn_lc; eapply solves_flex_mono;
           eassumption ].
-    apply (H0 β ltac:(clear - Hβ; fsetdec) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
+    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
   - (* ghostg *) apply ad_pat_consis__ghostg; assumption.
   - (* topholeg *) apply ad_pat_consis__topholeg; eauto.
@@ -832,7 +832,7 @@ Proof.
       [ | clear - Hβ; fsetdec
         | apply mono_ptyp_to_bskl_syn_lc; eapply solves_flex_mono;
           eassumption ].
-    apply (H0 β ltac:(clear - Hβ; fsetdec) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
+    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
   - (* tophole_drop *) apply ad_pat_consis__tophole_drop; eauto.
   - (* flex_l *)
@@ -903,7 +903,7 @@ Proof.
   - destruct (atom_fresh (L `union` dom Θ `union` ftvar_in_pskl P))
       as [α Hα].
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P (pskl_var_f α)) as Hlo.
-    specialize (H0 α ltac:(clear - Hα; fsetdec)). simpl in H0.
+    specialize (H0 α ltac:(clear - Hα; solve_notin_auto)). simpl in H0.
     clear - H0 Hlo Hα. fsetdec.
 Qed.
 
@@ -980,7 +980,7 @@ Proof.
   pose proof (@ad_refine_syn_subst_mid _ _ _ _ H τs β b nil (Ξ' ++ Θ)
                 ltac:(simpl_env; reflexivity) Hs
                 ltac:(simpl_env; apply a_wf_aenv_uniq_local; exact Hwf)
-                ltac:(clear - Hβ; fsetdec)) as Hx.
+                ltac:(clear - Hβ; solve_notin_auto)) as Hx.
   simpl_env in Hx.
   assert (Hβd : β `notin` dom (Ξ' ++ Θ))
     by (inversion Hwf; subst; assumption).
@@ -1076,7 +1076,7 @@ Proof.
     intros β Hβ.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       [ | clear - Hβ; fsetdec | apply mono_ptyp_to_bskl_syn_lc; assumption ].
-    apply (H0 β ltac:(clear - Hβ; fsetdec) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
+    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
   - (* univ_ghost_r (SK) *)
     apply ad_pat_sub__univ_ghost_r;
@@ -1208,7 +1208,7 @@ Proof.
     intros β Hβ.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       [ | clear - Hβ; fsetdec | apply mono_ptyp_to_bskl_syn_lc; assumption ].
-    apply (H0 β ltac:(clear - Hβ; fsetdec) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
+    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
   - (* univ_ghost_r (SK) *)
     apply ad_pat_sub_gv__univ_ghost_r;
@@ -1463,7 +1463,7 @@ Proof.
       | ].
     intros x Hx.
     rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var.
-    apply (H3 x ltac:(clear - Hx; fsetdec) τs α0 b0
+    apply (H3 x ltac:(clear - Hx; solve_notin_auto) τs α0 b0
              ((x ~ abind_var_skl P) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hx ].
   - (* abs_anno *)
@@ -1490,7 +1490,7 @@ Proof.
     rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var.
     match goal with
     | IH : forall y, y `notin` _ -> forall _ _ _ _ _, _ = _ -> _ |- _ =>
-        apply (IH x ltac:(clear - Hx; fsetdec) τs α0 b0
+        apply (IH x ltac:(clear - Hx; solve_notin_auto) τs α0 b0
                  ((x ~ abind_var_typ (btyp_to_ptyp B)) ++ Θa) Θ0)
     end;
       [ reflexivity | exact Hs | push_uniq Hu Hx ].
@@ -1511,7 +1511,7 @@ Proof.
     intros x Hx.
     rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var.
     rewrite <- subst_pskl_to_bskl_syn_eq.
-    apply (H0 x ltac:(clear - Hx; fsetdec) τs α0 b0
+    apply (H0 x ltac:(clear - Hx; solve_notin_auto) τs α0 b0
              ((x ~ abind_var_skl pskl_hole) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hx ].
   - (* abs_anno_check *)
@@ -1526,7 +1526,7 @@ Proof.
     intros x Hx.
     rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var.
     rewrite <- subst_pskl_to_bskl_syn_eq.
-    apply (H1 x ltac:(clear - Hx; fsetdec) τs α0 b0
+    apply (H1 x ltac:(clear - Hx; solve_notin_auto) τs α0 b0
              ((x ~ abind_var_typ A) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hx ].
 Qed.
@@ -1656,7 +1656,7 @@ Proof.
     rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var;
       [ | clear - Hβ; fsetdec
         | apply is_styp_lc; apply mono_ptyp_to_btyp_syn_is_styp; assumption ].
-    apply (H1 β ltac:(clear - Hβ; fsetdec) τs α0 b0
+    apply (H1 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b0
              ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
   - (* abs_check_base *)
@@ -1668,7 +1668,7 @@ Proof.
       | ].
     intros x Hx.
     rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var.
-    apply (H2 x ltac:(clear - Hx; fsetdec) τs α0 b0
+    apply (H2 x ltac:(clear - Hx; solve_notin_auto) τs α0 b0
              ((x ~ abind_var_typ A) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hx ].
   - (* abs_anno_check_step *)
@@ -1682,7 +1682,7 @@ Proof.
     rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var;
       [ | clear - Hβ; fsetdec
         | apply is_styp_lc; apply mono_ptyp_to_btyp_syn_is_styp; assumption ].
-    apply (H1 β ltac:(clear - Hβ; fsetdec) τs α0 b0
+    apply (H1 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b0
              ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
   - (* abs_anno_check_base *)
@@ -1697,7 +1697,7 @@ Proof.
       | ].
     intros x Hx.
     rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var.
-    apply (H3 x ltac:(clear - Hx; fsetdec) τs α0 b0
+    apply (H3 x ltac:(clear - Hx; solve_notin_auto) τs α0 b0
              ((x ~ abind_var_typ A) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hx ].
   - (* abs *)
@@ -1716,7 +1716,7 @@ Proof.
       | ].
     intros x Hx.
     rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var.
-    apply (H3 x ltac:(clear - Hx; fsetdec) τs α0 b0
+    apply (H3 x ltac:(clear - Hx; solve_notin_auto) τs α0 b0
              ((x ~ abind_var_typ A) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hx ].
   - (* abs_anno *)
@@ -1739,7 +1739,7 @@ Proof.
     rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var.
     match goal with
     | IH : forall y, y `notin` _ -> forall _ _ _ _ _, _ = _ -> _ |- _ =>
-        apply (IH x ltac:(clear - Hx; fsetdec) τs α0 b0
+        apply (IH x ltac:(clear - Hx; solve_notin_auto) τs α0 b0
                  ((x ~ abind_var_typ A) ++ Θa) Θ0)
     end;
       [ reflexivity | exact Hs | push_uniq Hu Hx ].

@@ -1108,7 +1108,7 @@ Proof.
     eapply IHad_partial_precise; [ reflexivity | exact Hdefs | exact HfrP | exact Hfrψ ].
   - eapply ad_ppre__tophole_fill with (L := L `union` singleton β).
     intros α0 Hα0.
-    eapply (H0 α0 ltac:(clear - Hα0; fsetdec) β ((α0 ~ abind_tvar) ++ Θ1) Θ2);
+    eapply (H0 α0 ltac:(clear - Hα0; solve_notin_auto) β ((α0 ~ abind_tvar) ++ Θ1) Θ2);
       [ reflexivity
       | intros αd τ Hb; eapply Hdefs;
           destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
@@ -1925,7 +1925,7 @@ Proof.
       (* under ρ the consistency bounds ftv Q by the IMAGE [Rsub]; the ρ
          relation carries that back to ψa with NO context slack, because the
          ideal here IS ψa and ψa is Δρ-apart — ρ acts only at a Δρ-variable *)
-      pose proof (uskl_rho_ftv_apart Hrho ltac:(clear - Hψaap; fsetdec))
+      pose proof (uskl_rho_ftv_apart Hrho ltac:(clear - Hψaap; solve_notin_auto))
         as Hbnd.
       pose proof (msubst_pskl_ftv_dom_lower κ P0) as Hlow.
       clear - Hrf Hcf Hbnd Hlow; fsetdec.
@@ -2100,7 +2100,7 @@ Proof.
           destruct (Hrfr α0 Hα0) as (Hbα0 & Hκim & Hdefα0).
           (* the precision premise pins κPi, hence Pi, to α0 — and Ψi = ∅ *)
           destruct (ad_ppre_delta_var_inv Hpre eq_refl HwfΘ
-                      ltac:(clear - Hα0 HΔρΔ; fsetdec) Hbα0 Hdefα0
+                      ltac:(clear - Hα0 HΔρΔ; solve_notin_auto) Hbα0 Hdefα0
                       (HΔρPi α0 Hα0)) as [HκPi HΨie].
           assert (HPieq : Pi = pskl_var_f α0)
             by (eapply msubst_pskl_var_inv; [ exact Hκim | exact HκPi ]).
@@ -2542,8 +2542,8 @@ Proof.
                      HscopeSa HlcSa Htags HdisjSa HsubL Hdfresh Hpre HΨs1L HΨs2L H1 HwfSubA Href1
                      Hrhoa HΘs HΨρ1e Hrfr HΔρΔ HΔρw
                      ltac:(eapply rho_ftv_apart_mono;
-                          [ exact HΔρftv | cbn; clear; fsetdec
-                          | cbn; clear; fsetdec ]) HΔρPi Hfawa Hψaap
+                          [ exact HΔρftv | cbn; clear; solve_notin_auto
+                          | cbn; clear; solve_notin_auto ]) HΔρPi Hfawa Hψaap
                      (add α (union L (dom Θ))) HL1)
           as (C1 & Ξc1 & Ξs1 & Pa1 & κc1 & κs1
                 & HLK1 & HSolve1 & Hfms1 & Hus1 & Hks1 & Hfrs1 & HFs1
@@ -3029,8 +3029,8 @@ Proof.
                      HscopeS HlcS Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hcons0 HwfSub Href'
                      Hrho0 HΘs HΨρ Hrfr HΔρΔ HΔρw
                      ltac:(eapply rho_ftv_apart_mono;
-                          [ exact HΔρftv | cbn; clear; fsetdec
-                          | cbn; clear; fsetdec ]) HΔρPi
+                          [ exact HΔρftv | cbn; clear; solve_notin_auto
+                          | cbn; clear; solve_notin_auto ]) HΔρPi
                      ltac:(eapply flex_apart_deep_step;
                              [ exact Hfaw | apply p0step_tophole ]) Hψaap L HL)
           as (𝒞 & Ξc & Ξs & Pa & κc & κs
@@ -4294,8 +4294,8 @@ Proof.
                    HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0 HwfPi Hκ Hκw Hψaw HαΘ HαΘ0 eq_refl
                    HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 HwfSub0 Href0
                    Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rho_ftv_apart_mono;
-                          [ exact HΔρftv | cbn; clear; fsetdec
-                          | cbn; clear; fsetdec ]) HΔρPi Hfaw Hψaap L HL)
+                          [ exact HΔρftv | cbn; clear; solve_notin_auto
+                          | cbn; clear; solve_notin_auto ]) HΔρPi Hfaw Hψaap L HL)
         as (𝒞 & Ξc & Ξs & Pa & κc & κs
               & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
               & HwfPa & HwfΞ & HαΞ
@@ -4318,8 +4318,8 @@ Proof.
                    HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0 HwfPi Hκ Hκw Hψaw HαΘ HαΘ0 eq_refl
                    HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 HwfSub0 Href0
                    Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rho_ftv_apart_mono;
-                          [ exact HΔρftv | cbn; clear; fsetdec
-                          | cbn; clear; fsetdec ]) HΔρPi Hfaw Hψaap L HL)
+                          [ exact HΔρftv | cbn; clear; solve_notin_auto
+                          | cbn; clear; solve_notin_auto ]) HΔρPi Hfaw Hψaap L HL)
         as (𝒞 & Ξc & Ξs & Pa & κc & κs
               & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
               & HwfPa & HwfΞ & HαΞ
@@ -4343,8 +4343,8 @@ Proof.
                    HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0 HwfPi Hκ Hκw Hψaw HαΘ HαΘ0 eq_refl
                    HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 HwfSub0 Href0
                    Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rho_ftv_apart_mono;
-                          [ exact HΔρftv | cbn; clear; fsetdec
-                          | cbn; clear; fsetdec ]) HΔρPi Hfaw Hψaap L HL)
+                          [ exact HΔρftv | cbn; clear; solve_notin_auto
+                          | cbn; clear; solve_notin_auto ]) HΔρPi Hfaw Hψaap L HL)
         as (𝒞 & Ξc & Ξs & Pa & κc & κs
               & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
               & HwfPa & HwfΞ & HαΞ
@@ -4629,8 +4629,8 @@ Proof.
                      HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0s HwfPi Hκ Hκw Hψaw HαΘ HαΘ0 eq_refl
                      HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 HwfSub0 Href2
                      Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rho_ftv_apart_mono;
-                          [ exact HΔρftv | cbn; clear; fsetdec
-                          | cbn; clear; fsetdec ]) HΔρPi Hfawt Hψaap L HL)
+                          [ exact HΔρftv | cbn; clear; solve_notin_auto
+                          | cbn; clear; solve_notin_auto ]) HΔρPi Hfawt Hψaap L HL)
           as (𝒞 & Ξc & Ξs & Pa & κc & κs
               & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
               & HwfPa & HwfΞ & HαΞ
@@ -4671,8 +4671,8 @@ Proof.
                         HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2
                         Hc0 HwfSub0 Href1
                         Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rho_ftv_apart_mono;
-                          [ exact HΔρftv | cbn; clear; fsetdec
-                          | cbn; clear; fsetdec ]) HΔρPi Hfawt Hψaap L HL)
+                          [ exact HΔρftv | cbn; clear; solve_notin_auto
+                          | cbn; clear; solve_notin_auto ]) HΔρPi Hfawt Hψaap L HL)
              as (𝒞 & Ξc & Ξs & Pa & κc & κs
               & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
               & HwfPa & HwfΞ & HαΞ
@@ -4709,8 +4709,8 @@ Proof.
                      HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0s HwfPi Hκ Hκw Hψaw HαΘ HαΘ0 eq_refl
                      HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 HwfSub0 Href2
                      Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rho_ftv_apart_mono;
-                          [ exact HΔρftv | cbn; clear; fsetdec
-                          | cbn; clear; fsetdec ]) HΔρPi Hfawt Hψaap L HL)
+                          [ exact HΔρftv | cbn; clear; solve_notin_auto
+                          | cbn; clear; solve_notin_auto ]) HΔρPi Hfawt Hψaap L HL)
           as (𝒞 & Ξc & Ξs & Pa & κc & κs
               & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
               & HwfPa & HwfΞ & HαΞ
@@ -4769,8 +4769,8 @@ Proof.
                    HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0
                    HwfSub0 Href1
                    Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rho_ftv_apart_mono;
-                          [ exact HΔρftv | cbn; clear; fsetdec
-                          | cbn; clear; fsetdec ]) HΔρPi Hfawt Hψaap L HL)
+                          [ exact HΔρftv | cbn; clear; solve_notin_auto
+                          | cbn; clear; solve_notin_auto ]) HΔρPi Hfawt Hψaap L HL)
         as (𝒞 & Ξc & Ξs & Pa & κc & κs
               & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
               & HwfPa & HwfΞ & HαΞ

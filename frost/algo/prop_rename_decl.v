@@ -191,7 +191,7 @@ Proof.
     assert (Hne : α0 <> α1) by (clear - Hα1; fsetdec).
     rewrite subst_ptyp_in_ptyp_open_ptyp_wrt_ptyp_var;
       auto using lc_ptyp_var_f.
-    apply (H0 α1 ltac:(clear - Hα1; fsetdec) ((α1 ~ abind_tvar) ++ Θ1));
+    apply (H0 α1 ltac:(clear - Hα1; solve_notin_auto) ((α1 ~ abind_tvar) ++ Θ1));
       simpl_env; reflexivity.
 Qed.
 
@@ -240,7 +240,7 @@ Proof.
     assert (Hne : α0 <> α1) by (clear - Hα1; fsetdec).
     rewrite !subst_ptyp_in_ptyp_open_ptyp_wrt_ptyp_var;
       auto using lc_ptyp_var_f.
-    apply (H0 α1 ltac:(clear - Hα1; fsetdec) Θ1); auto.
+    apply (H0 α1 ltac:(clear - Hα1; solve_notin_auto) Θ1); auto.
 Qed.
 
 (* ===================================================================== *)
@@ -418,7 +418,7 @@ Proof.
       apply mod_comp_sk_subst_mono; [ exact H1 | apply mono_ptyp__var ].
     + intros x Hx.
       rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var.
-      apply (H3 x ltac:(clear - Hx; fsetdec)
+      apply (H3 x ltac:(clear - Hx; solve_notin_auto)
                ((x ~ abind_var_skl P) ++ Θ1));
         [ simpl_env; reflexivity
         | clear - Hdom Hx; simpl; repeat rewrite dom_app in *; fsetdec
@@ -446,7 +446,7 @@ Proof.
       apply mod_comp_sk_subst_mono; [ exact H2 | apply mono_ptyp__var ].
     + intros x Hx.
       rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var.
-      apply (H4 x ltac:(clear - Hx; fsetdec)
+      apply (H4 x ltac:(clear - Hx; solve_notin_auto)
                ((x ~ abind_var_typ A) ++ Θ1));
         [ simpl_env; reflexivity
         | clear - Hdom Hx; simpl; repeat rewrite dom_app in *; fsetdec
@@ -473,7 +473,7 @@ Proof.
     intros x Hx.
     rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var.
     rewrite <- subst_var_bskl_syn.
-    apply (H0 x ltac:(clear - Hx; fsetdec)
+    apply (H0 x ltac:(clear - Hx; solve_notin_auto)
              ((x ~ abind_var_skl pskl_hole) ++ Θ1));
       [ simpl_env; reflexivity
       | clear - Hdom Hx; simpl; repeat rewrite dom_app in *; fsetdec
@@ -492,7 +492,7 @@ Proof.
     intros x Hx.
     rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var.
     rewrite <- subst_var_bskl_syn.
-    apply (H1 x ltac:(clear - Hx; fsetdec)
+    apply (H1 x ltac:(clear - Hx; solve_notin_auto)
              ((x ~ abind_var_typ A) ++ Θ1));
       [ simpl_env; reflexivity
       | clear - Hdom Hx; simpl; repeat rewrite dom_app in *; fsetdec
@@ -578,7 +578,7 @@ Proof.
     + intros α1 Hα1.
       rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var;
         [ | clear - Hα1; fsetdec | apply lc_btyp_var_f ].
-      apply (H1 α1 ltac:(clear - Hα1; fsetdec) ((α1 ~ abind_tvar) ++ Θ1));
+      apply (H1 α1 ltac:(clear - Hα1; solve_notin_auto) ((α1 ~ abind_tvar) ++ Θ1));
         [ simpl_env; reflexivity
         | clear - Hdom Hα1; simpl; repeat rewrite dom_app in *; fsetdec
         | clear - Hβ' Hα1; simpl; repeat rewrite dom_app in *; fsetdec
@@ -595,7 +595,7 @@ Proof.
       apply is_ityp_subst_mono; [ exact H0 | apply mono_ptyp__var ].
     + intros x Hx.
       rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var.
-      apply (H2 x ltac:(clear - Hx; fsetdec)
+      apply (H2 x ltac:(clear - Hx; solve_notin_auto)
                ((x ~ abind_var_typ A) ++ Θ1));
         [ simpl_env; reflexivity
         | clear - Hdom Hx; simpl; repeat rewrite dom_app in *; fsetdec
@@ -614,7 +614,7 @@ Proof.
     + intros α1 Hα1.
       rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var;
         [ | clear - Hα1; fsetdec | apply lc_btyp_var_f ].
-      apply (H1 α1 ltac:(clear - Hα1; fsetdec) ((α1 ~ abind_tvar) ++ Θ1));
+      apply (H1 α1 ltac:(clear - Hα1; solve_notin_auto) ((α1 ~ abind_tvar) ++ Θ1));
         [ simpl_env; reflexivity
         | clear - Hdom Hα1; simpl; repeat rewrite dom_app in *; fsetdec
         | clear - Hβ' Hα1; simpl; repeat rewrite dom_app in *; fsetdec
@@ -633,7 +633,7 @@ Proof.
       apply is_ityp_subst_mono; [ exact H1 | apply mono_ptyp__var ].
     + intros x Hx.
       rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var.
-      apply (H3 x ltac:(clear - Hx; fsetdec)
+      apply (H3 x ltac:(clear - Hx; solve_notin_auto)
                ((x ~ abind_var_typ A) ++ Θ1));
         [ simpl_env; reflexivity
         | clear - Hdom Hx; simpl; repeat rewrite dom_app in *; fsetdec
@@ -659,7 +659,7 @@ Proof.
       apply mod_comp_ty_subst_mono; [ exact H1 | apply mono_ptyp__var ].
     + intros x Hx.
       rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var.
-      apply (H3 x ltac:(clear - Hx; fsetdec)
+      apply (H3 x ltac:(clear - Hx; solve_notin_auto)
                ((x ~ abind_var_typ A) ++ Θ1));
         [ simpl_env; reflexivity
         | clear - Hdom Hx; simpl; repeat rewrite dom_app in *; fsetdec
@@ -685,7 +685,7 @@ Proof.
       apply mod_comp_ty_subst_mono; [ exact H3 | apply mono_ptyp__var ].
     + intros x Hx.
       rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var.
-      apply (H5 x ltac:(clear - Hx; fsetdec)
+      apply (H5 x ltac:(clear - Hx; solve_notin_auto)
                ((x ~ abind_var_typ A) ++ Θ1));
         [ simpl_env; reflexivity
         | clear - Hdom Hx; simpl; repeat rewrite dom_app in *; fsetdec

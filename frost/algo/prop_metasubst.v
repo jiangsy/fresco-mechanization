@@ -3,6 +3,7 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
 Require Import src.frost.def_extra.
+Require Import src.frost.ltac_utils.   (* solve_notin_auto *)
 Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.prop_basic.
@@ -1256,7 +1257,7 @@ Proof.
     assert (HxΘ : α `notin` dom Θ) by (clear - Hα; fsetdec).
     assert (Hwfx : a_wf_aenv ((α ~ abind_tvar) ++ Θ))
       by (apply a_wf_aenv__tvar; [ exact HxΘ | exact Hwf ]).
-    specialize (H0 α ltac:(clear - Hα; fsetdec) Hwfx).
+    specialize (H0 α ltac:(clear - Hα; solve_notin_auto) Hwfx).
     assert (Hcomm : ⇓ᵗ[ (α ~ abind_tvar) ++ Θ ] (open_ptyp_wrt_ptyp A (ptyp_var_f α))
                     = open_ptyp_wrt_ptyp (⇓ᵗ[ Θ ] A) (ptyp_var_f α)).
     { replace (aenv_msubst ((α ~ abind_tvar) ++ Θ)) with (aenv_msubst Θ)
@@ -1726,7 +1727,7 @@ Proof.
     assert (Hlkc : msubst_lookup ((c, t) :: κa') c = t)
       by (simpl; destruct (c == c); [ reflexivity | contradiction ]).
     assert (Hgrc : ftvar_in_ptyp (⇓ᵗ[ Θ ] t) [<=] dom Θ').
-    { pose proof (Hgr c ltac:(simpl; clear; fsetdec)) as Hg.
+    { pose proof (Hgr c ltac:(simpl; clear; solve_notin_auto)) as Hg.
       rewrite Hlkc in Hg. exact Hg. }
     assert (Hwfd : a_wf_ptyp Θ' (⇓ᵗ[ Θ ] t)).
     { apply mono_ftv_wf; [ apply mono_downarrow; auto | ].

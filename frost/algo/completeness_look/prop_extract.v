@@ -597,8 +597,8 @@ Proof.
                  [<=] ftvar_in_ptyp (msubst_lookup κ α))
       by (apply ptyp_to_pskl_ftv).
     specialize (Hsc α). clear - Hb Hsc HβP HβΘ; fsetdec.
-  - specialize (IH1 ltac:(clear - HβP; fsetdec) HβΘ).
-    specialize (IH2 ltac:(clear - HβP; fsetdec) HβΘ).
+  - specialize (IH1 ltac:(clear - HβP; solve_notin_auto) HβΘ).
+    specialize (IH2 ltac:(clear - HβP; solve_notin_auto) HβΘ).
     clear - IH1 IH2; fsetdec.
   - apply IH0; assumption.
   - apply IH0; assumption.
@@ -838,7 +838,7 @@ Proof.
                 (msubst_pskl κs (open_pskl_wrt_pskl Ps0 (pskl_var_f β)))
                 ⊑ (open_pskl_wrt_pskl X0 (pskl_var_f β))).
       { rewrite (@msubst_pskl_open_lc_local κs Ps0 β Hκlc
-                   ltac:(clear - Fr; fsetdec)).
+                   ltac:(clear - Fr; solve_notin_auto)).
         apply HprF; clear - Fr; fsetdec. }
       destruct (IH Θ0 Θ κs (add β Δ) (add β Δ0)
                    (open_pskl_wrt_pskl Ps0 (pskl_var_f β))
@@ -916,7 +916,7 @@ Proof.
                     ltac:(rewrite dom_app;
                           assert (Hd : dom κ' [=] dom Ξ')
                             by (apply keys_eq_dom; exact Hk);
-                          clear - Hd HβΞ Fr; fsetdec)).
+                          clear - Hd HβΞ Fr; solve_notin_auto)).
       rewrite <- HopenPA. exact Hpr.
     + (* ------------------------------- ◇ -------------------------------- *)
       assert (Hpre' : Θ ⨟ Δ ⊢ₚᵣᵃ pskl_hole ⊑ X)
@@ -1063,12 +1063,12 @@ Proof.
               P P0 pskl_hole R' α
               HwfΘ HwfΘ0 HwfP0 ltac:(apply a_wf_pskl__hole)
               HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR Htags Hdisj
-              ltac:(clear; fsetdec) Hψaw Hdfresh
+              ltac:(clear; solve_notin_auto) Hψaw Hdfresh
               ltac:(cbn [msubst_pskl];
-                    apply ad_ppre__hole; [ clear; fsetdec | exact HΔψ ])
+                    apply ad_ppre__hole; [ clear; solve_notin_auto | exact HΔψ ])
               HΨsubU HΨsubL
               Hsubty HwfSubj Hrefine
-              (ftvar_in_aenv Θ0) ltac:(clear; fsetdec))
+              (ftvar_in_aenv Θ0) ltac:(clear; solve_notin_auto))
     as (𝒞 & Ξc & Ξs & Pa & κc & κs
         & Hlook & Hsolve & Hfms & Hus & Hks & Hfrs & HFs
         & HwfPa & HwfΞc & HαΞc & Hkeysc

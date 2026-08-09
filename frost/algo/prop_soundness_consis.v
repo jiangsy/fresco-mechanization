@@ -1774,12 +1774,12 @@ Proof.
   intros Θ Δ P β H HβP.
   inversion H as [ | | | L1 ? ? ? Hb | | ]; subst.
   pick fresh α for (L1 `union` dom Θ `union` ftvar_in_pskl P `union` Δ).
-  pose proof (Hb α ltac:(clear - Fr; fsetdec)) as Hα.
+  pose proof (Hb α ltac:(clear - Fr; solve_notin_auto)) as Hα.
   pose proof (@a_wf_pskl_rename_delta Θ (add α Δ)
                 (open_pskl_wrt_pskl P (pskl_var_f α)) α β Hα
-                ltac:(clear - Fr; fsetdec)) as Hr.
+                ltac:(clear - Fr; solve_notin_auto)) as Hr.
   rewrite <- (subst_pskl_in_pskl_intro α P (pskl_var_f β)
-                ltac:(clear - Fr; fsetdec)) in Hr.
+                ltac:(clear - Fr; solve_notin_auto)) in Hr.
   eapply a_wf_pskl_delta_mono; [ exact Hr | clear; fsetdec ].
 Qed.
 
@@ -1824,10 +1824,10 @@ Proof.
   assert (H1 : ((β ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ₚₛᵃ
                  (open_pskl_wrt_pskl B (pskl_var_f β))).
   { eapply a_wf_pskl_delta_mono;
-      [ apply (a_wf_pskl_reassoc (Hbody β ltac:(clear - Hβ; fsetdec)) β)
+      [ apply (a_wf_pskl_reassoc (Hbody β ltac:(clear - Hβ; solve_notin_auto)) β)
       | clear - Hβ; fsetdec ]. }
   rewrite (subst_pskl_in_pskl_intro β B (pskl_var_f α)
-             ltac:(clear - Hβ; fsetdec)).
+             ltac:(clear - Hβ; solve_notin_auto)).
   apply (@a_wf_pskl_rename_tvar nil β Θ Δ _ α);
     [ simpl; exact H1 | clear - Hβ; fsetdec ].
 Qed.
@@ -2870,9 +2870,9 @@ Proof.
     { rewrite subst_pskl_var_ptyp.
       apply mono_ptyp_wf_pskl; [ exact Hmsub | exact Hsubvis ]. }
     destruct (IHc HwfΞΘ HwfP0 HwfS
-                ltac:(intros α0 Hα0; exfalso; clear - Hα0; fsetdec)
-                ltac:(intros β' τ' _; clear; fsetdec)
-                ltac:(intros Θa βa ba Θb Heq Hne; clear; fsetdec))
+                ltac:(intros α0 Hα0; exfalso; clear - Hα0; solve_notin_auto)
+                ltac:(intros β' τ' _; clear; solve_notin_auto)
+                ltac:(intros Θa βa ba Θb Heq Hne; clear; solve_notin_auto))
       as [Hle [Hwf1 [Hdom [Hinv [[Qt [HeQt [HconsQ Hrs]]] Hrp]]]]].
     (* the walked head misses the output: the rule says so *)
     assert (Hβ1 : β `notin` dom Θ1) by exact Hbar.
@@ -2918,7 +2918,7 @@ Proof.
            output is in the conclusion's too, and it is not the walked head
            (the rule's own premise says the head misses that output) *)
         intros α0 Hα0.
-        assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; fsetdec)).
+        assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; solve_notin_auto)).
         clear - HXc Hα0 Hbar.
         repeat rewrite dom_app in *. simpl in *. fsetdec. }
       { intros α0 Hα0Δ HXd.
@@ -3013,7 +3013,7 @@ Proof.
     destruct (tyequiv_mono_consis_transport_q Heqα Hwf1'
                 (mono_ptyp__var α)
                 ltac:(intros α0 Hα0; simpl in Hα0;
-                      assert (α0 = α) by (clear - Hα0; fsetdec); subst;
+                      assert (α0 = α) by (clear - Hα0; solve_notin_auto); subst;
                       exact Hbα1))
       as [Hq _].
     replace (bskl_var_f α) with (ptyp_to_bskl_syn (ptyp_var_f α))
@@ -3097,7 +3097,7 @@ Proof.
            output is in the conclusion's too, and it is not the walked head
            (the rule's own premise says the head misses that output) *)
         intros α0 Hα0.
-        assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; fsetdec)).
+        assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; solve_notin_auto)).
         clear - HXc Hα0 Hbar.
         repeat rewrite dom_app in *. simpl in *. fsetdec. }
       { intros α0 Hα0Δ HXd. apply HP; auto. simpl.
@@ -3162,7 +3162,7 @@ Proof.
            output is in the conclusion's too, and it is not the walked head
            (the rule's own premise says the head misses that output) *)
         intros α0 Hα0.
-        assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; fsetdec)).
+        assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; solve_notin_auto)).
         clear - HXc Hα0 Hbar.
         repeat rewrite dom_app in *. simpl in *. fsetdec. }
       { intros α0 Hα0Δ HXd.
@@ -3236,7 +3236,7 @@ Proof.
            output is in the conclusion's too, and it is not the walked head
            (the rule's own premise says the head misses that output) *)
         intros α0 Hα0.
-        assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; fsetdec)).
+        assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; solve_notin_auto)).
         clear - HXc Hα0 Hbar.
         repeat rewrite dom_app in *. simpl in *. fsetdec. }
       { intros α0 Hα0Δ HXd. apply HP; auto. simpl.
@@ -3320,7 +3320,7 @@ Proof.
            output is in the conclusion's too, and it is not the walked head
            (the rule's own premise says the head misses that output) *)
         intros α0 Hα0.
-        assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; fsetdec)).
+        assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; solve_notin_auto)).
         clear - HXc Hα0 Hbar.
         repeat rewrite dom_app in *. simpl in *. fsetdec. }
       { intros α0 Hα0Δ HXd. apply HP; auto. simpl.
@@ -3526,7 +3526,7 @@ Proof.
       { eapply no_flex_dep_tail; eauto. }
       { eapply faf_tail; eauto. }
       { intros α0 Hα0.
-        assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; fsetdec)).
+        assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; solve_notin_auto)).
         clear - HXc Hα0 Hbar. simpl in *. fsetdec. }
       { intros α0 Hα0 _.
         pose proof (Hsubfree β Hfβ α0 Hα0).
@@ -3581,7 +3581,7 @@ Proof.
       { eapply no_flex_dep_tail; eauto. }
       { eapply faf_tail; eauto. }
       { intros α0 Hα0.
-        assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; fsetdec)).
+        assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; solve_notin_auto)).
         clear - HXc Hα0 Hbar. simpl in *. fsetdec. }
       split; [ | split ].
       - intros β' τ' Hb.
@@ -3635,7 +3635,7 @@ Proof.
       { eapply no_flex_dep_tail; eauto. }
       { eapply faf_tail; eauto. }
       { intros α0 Hα0.
-        assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; fsetdec)).
+        assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; solve_notin_auto)).
         clear - HXc Hα0 Hbar. simpl in *. fsetdec. }
       split; [ | split ].
       - intros β' τ' Hb'.
@@ -3735,7 +3735,7 @@ Proof.
     split; [ clear - Hdom1 Hdom2; fsetdec | ].
     split.
     { intros Δ Hnd Hfa Hcov Hft.
-      destruct (Hinv1 Δ Hnd Hfa ltac:(clear - Hcov Hdom2; fsetdec))
+      destruct (Hinv1 Δ Hnd Hfa ltac:(clear - Hcov Hdom2; solve_notin_auto))
         as [Hnd1' [Hfa1' Hbk1']].
       { intros α0 Hα0 HXd HXin. apply (Hft α0 Hα0 HXd).
         simpl. clear - HXin. fsetdec. }
@@ -3902,7 +3902,7 @@ Proof.
         apply ad_refine_syn_f_rename;
           [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
         exact (ad_refine_syn_f_strip nil Θ1 Hrsα
-                 ltac:(clear; fsetdec) ltac:(clear; fsetdec)).
+                 ltac:(clear; solve_notin_auto) ltac:(clear; solve_notin_auto)).
     + simpl. apply ad_refine_pskl_f__all
         with (L := dom Θ1 `union` singleton α
                    `union` ftvar_in_pskl P `union` ftvar_in_pskl P3).
@@ -3919,7 +3919,7 @@ Proof.
       apply ad_refine_pskl_f_rename;
         [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
       exact (ad_refine_pskl_f_strip nil Θ1 Hrpα
-               ltac:(clear; fsetdec) ltac:(clear; fsetdec)).
+               ltac:(clear; solve_notin_auto) ltac:(clear; solve_notin_auto)).
   - (* C-ForallSyn : ∀α.P ∼ ∀α.P3 against input ∀◇P0 *)
     (* cluster 4: exists-fresh opener — see C-ForallInh for the pattern *)
     intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfrα Hprem0 IH Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
@@ -4073,7 +4073,7 @@ Proof.
       apply ad_refine_pskl_f_rename;
         [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
       exact (ad_refine_pskl_f_strip nil Θ1 Hrpα
-               ltac:(clear; fsetdec) ltac:(clear; fsetdec)).
+               ltac:(clear; solve_notin_auto) ltac:(clear; solve_notin_auto)).
   - (* C-UnivGhost : ∀◇P ∼ ∀◇P3 against input ∀◇P0 *)
     intros Δ1 Δ2 Θ0 Θ1 P0 P P3 Hc IHc Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     simpl in HwfP0, HwfP.
@@ -4239,7 +4239,7 @@ Proof.
         apply ad_refine_syn_f_rename;
           [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
         exact (ad_refine_syn_f_strip nil Θ1 Hrsα
-                 ltac:(clear; fsetdec) ltac:(clear; fsetdec)).
+                 ltac:(clear; solve_notin_auto) ltac:(clear; solve_notin_auto)).
     + apply ad_refine_pskl_f__tophole_fill
         with (L := dom Θ1 `union` singleton α
                    `union` ftvar_in_pskl P `union` ftvar_in_pskl P3
@@ -4749,8 +4749,8 @@ Proof.
     { destruct (a_assign_preserves_inv (Δ := Δ1 `union` Δ2) H0
                   a_decls__nil Hwf HwfP0
                   ltac:(simpl; exact Hnfd) Hfaf
-                  ltac:(simpl; fsetdec)
-                  ltac:(simpl; rewrite <- HΔdom; fsetdec)
+                  ltac:(simpl; solve_notin_auto)
+                  ltac:(simpl; rewrite <- HΔdom; solve_notin_auto)
                   ltac:(intros α0 Hα0 Hnd0; exfalso; apply Hnd0;
                         apply HΔdom; exact Hα0))
         as [Hnd [Hfaf' _]].
@@ -4795,8 +4795,8 @@ Proof.
     { destruct (a_assign_preserves_inv (Δ := Δ1 `union` Δ2) H0
                   a_decls__nil Hwf HwfS
                   ltac:(simpl; exact Hnfd) Hfaf
-                  ltac:(simpl; fsetdec)
-                  ltac:(simpl; rewrite <- HΔdom; fsetdec)
+                  ltac:(simpl; solve_notin_auto)
+                  ltac:(simpl; rewrite <- HΔdom; solve_notin_auto)
                   ltac:(intros α0 Hα0 Hnd0; exfalso; apply Hnd0;
                         apply HΔdom; exact Hα0))
         as [Hnd [Hfaf' _]].
@@ -4953,7 +4953,7 @@ Proof.
         apply ad_refine_syn_f_rename;
           [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
         exact (ad_refine_syn_f_strip nil Θ1 Hrsα
-                 ltac:(clear; fsetdec) ltac:(clear; fsetdec)).
+                 ltac:(clear; solve_notin_auto) ltac:(clear; solve_notin_auto)).
     + simpl. apply ad_refine_pskl_f__all
         with (L := dom Θ1 `union` singleton α
                    `union` ftvar_in_uskl R `union` ftvar_in_pskl Q).
@@ -4974,7 +4974,7 @@ Proof.
       apply ad_refine_pskl_f_rename;
         [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
       exact (ad_refine_pskl_f_strip nil Θ1 Hrpα'
-               ltac:(clear; fsetdec) ltac:(clear; fsetdec)).
+               ltac:(clear; solve_notin_auto) ltac:(clear; solve_notin_auto)).
   - (* ForallInh untagged : decorated *)
     simpl in HwfP0, HwfS.
     inversion HwfP0 as [ | | | L0 Θa Δa P0a Hbody0 Heqa | | ]; subst.
@@ -5074,7 +5074,7 @@ Proof.
         apply ad_refine_syn_f_rename;
           [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
         exact (ad_refine_syn_f_strip nil Θ1 Hrsα
-                 ltac:(clear; fsetdec) ltac:(clear; fsetdec)).
+                 ltac:(clear; solve_notin_auto) ltac:(clear; solve_notin_auto)).
     + simpl. apply ad_refine_pskl_f__all
         with (L := dom Θ1 `union` singleton α
                    `union` ftvar_in_uskl R `union` ftvar_in_pskl Q).
@@ -5095,7 +5095,7 @@ Proof.
       apply ad_refine_pskl_f_rename;
         [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
       exact (ad_refine_pskl_f_strip nil Θ1 Hrpα'
-               ltac:(clear; fsetdec) ltac:(clear; fsetdec)).
+               ltac:(clear; solve_notin_auto) ltac:(clear; solve_notin_auto)).
   - (* ForallSyn tagged : decorated *)
     simpl in HwfP0, HwfS.
     inversion HwfP0 as [ | | | | | Θc Δc P0c Hg0 Hwf0c Heqc ]; subst.
@@ -5215,7 +5215,7 @@ Proof.
       apply ad_refine_pskl_f_rename;
         [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
       exact (ad_refine_pskl_f_strip nil Θ1 Hrpα'
-               ltac:(clear; fsetdec) ltac:(clear; fsetdec)).
+               ltac:(clear; solve_notin_auto) ltac:(clear; solve_notin_auto)).
   - (* ForallSyn untagged : decorated *)
     simpl in HwfP0, HwfS.
     inversion HwfP0 as [ | | | | | Θc Δc P0c Hg0 Hwf0c Heqc ]; subst.
@@ -5335,7 +5335,7 @@ Proof.
       apply ad_refine_pskl_f_rename;
         [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
       exact (ad_refine_pskl_f_strip nil Θ1 Hrpα'
-               ltac:(clear; fsetdec) ltac:(clear; fsetdec)).
+               ltac:(clear; solve_notin_auto) ltac:(clear; solve_notin_auto)).
   - (* UnivGhost *)
     simpl in HwfP0, HwfS.
     inversion HlcS; subst.
@@ -5470,7 +5470,7 @@ Proof.
         apply ad_refine_syn_f_rename;
           [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
         exact (ad_refine_syn_f_strip nil Θ1 Hrsα
-                 ltac:(clear; fsetdec) ltac:(clear; fsetdec)).
+                 ltac:(clear; solve_notin_auto) ltac:(clear; solve_notin_auto)).
     + simpl.
       assert (Hrpα' : ad_refine_pskl_f Δ2 ((α ~ abind_tvar) ++ Θ1) Δ2
                         (pskl_tophole (uskl_to_pskl R))
@@ -5599,12 +5599,12 @@ Corollary a_consis_sound : forall Θ0 P0 P P' Θ1,
 Proof.
   intros * Hc Hwf HwfP0 HwfP.
   destruct (a_consis_sound_aux Hc Hwf HwfP0 HwfP
-              ltac:(intros α Hα; clear - Hα; fsetdec)
+              ltac:(intros α Hα; clear - Hα; solve_notin_auto)
               ltac:(intros β τ Hb; apply inter_empty_pointwise;
-                    intros α Hα; clear - Hα; fsetdec)
+                    intros α Hα; clear - Hα; solve_notin_auto)
               ltac:(intros Θa β b Θb Heq Hne;
                     apply inter_empty_pointwise;
-                    intros α Hα; clear - Hα; fsetdec))
+                    intros α Hα; clear - Hα; solve_notin_auto))
     as [Hle [Hwf1 [Hnfd [Hfaf [[Qt [HeQt [Hcons Hrs]]] Hrp]]]]].
   split; [ exact Hle | ].
   split.
