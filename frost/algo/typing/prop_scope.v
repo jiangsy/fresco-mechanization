@@ -44,6 +44,7 @@ Require Import src.frost.def_extra.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.prop_basic.
 Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_flex.

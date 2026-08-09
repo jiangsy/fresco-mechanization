@@ -40,6 +40,7 @@ Require Import src.frost.ltac_utils.
 Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.decorated_algo.def_decorated.
 Require Import src.frost.decorated_algo.def_decl_algo.
@@ -913,8 +914,8 @@ Proof.
       by (eapply a_wf_aenv_app_r; exact Hwf).
     apply a_wf_aenv_var_skl_inv in HwfT.
     destruct HwfT as [_ [HscQ0 _]].
-    assert (HscQ' : a_scope_pskl (Ξ ++ Θ0) Qpay)
-      by (eapply a_scope_pskl_weaken;
+    assert (HscQ' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ Qpay)
+      by (eapply a_wf_pskl_weaken;
           [ intros y b0 Hb; apply binds_app_3; exact Hb | exact HscQ0 ]).
     destruct (IH Hwf' Hdecl
                 ltac:(eapply a_wf_pskl_strip_mid; [ exact HwfP0 | exact Hxfr ])
@@ -932,10 +933,10 @@ Proof.
         unfold binds; apply in_or_app; left; exact Hb. }
       apply a_isub_cons_var_skl;
         [ eapply a_isub_strengthen_decls_src; eauto
-        | eapply a_scope_pskl_lc; exact HscQ0 ]. }
+        | eapply a_scope_pskl_lc; eauto ]. }
     split.
     { apply a_wf_aenv__var; [ exact Hxout | | exact Hwf1 ].
-      eapply a_scope_pskl_isub; [ exact HscQ' | exact Hle ]. }
+      eapply a_wf_pskl_isub; [ exact HscQ' | exact Hle ]. }
     eapply a_wf_pskl_weaken;
       [ intros y b0 Hb; unfold binds; right; exact Hb | exact HwfQ ].
 Qed.

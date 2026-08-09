@@ -37,6 +37,7 @@ Require Import src.frost.ltac_utils.
 Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.decorated_algo.def_decorated.
 Require Import src.frost.decorated_algo.def_decl_algo.
@@ -2025,9 +2026,13 @@ Lemma a_wf_aenv_var_typ_inv : forall x A Θ,
   x `notin` dom Θ /\ a_wf_ptyp Θ A /\ a_wf_aenv Θ.
 Proof. intros * H; inversion H; subst; auto. Qed.
 
+(* ⭐ The middle conjunct is the DISCIPLINED [a_wf_pskl], not [a_scope_pskl]:
+   [a_wf_aenv__var] stores that since 2026-08-09.  A caller that only wants
+   scoping composes with [a_scope_pskl_of_wf] (or lets [eauto] do it — the
+   conversion is an exported hint). *)
 Lemma a_wf_aenv_var_skl_inv : forall x P Θ,
   a_wf_aenv ((x ~ abind_var_skl P) ++ Θ) ->
-  x `notin` dom Θ /\ a_scope_pskl Θ P /\ a_wf_aenv Θ.
+  x `notin` dom Θ /\ Θ ⨟ empty ⊢ₚₛᵃ P /\ a_wf_aenv Θ.
 Proof. intros * H; inversion H; subst; auto. Qed.
 
 (* [a_unify_preserves_wf] is now a CONJUNCT of the mutual soundness bundle
@@ -2039,26 +2044,9 @@ Proof. intros * H; inversion H; subst; auto. Qed.
    conjuncts of the bundle's ASSIGN motive and re-exported below. *)
 
 (** Free variables of a well-formed skeleton are tvar-ish or in Δ. *)
-Lemma a_wf_pskl_ftv_tvarish : forall Θ Δ P,
-  Θ ⨟ Δ ⊢ₚₛᵃ P ->
-  forall α, α `in` ftvar_in_pskl P -> α `in` Δ \/ a_binds_tvar α Θ.
-Proof.
-  intros Θ Δ P H; induction H; intros β Hβ; simpl in Hβ.
-  - fsetdec.
-  - assert (β = α) by fsetdec. subst. auto.
-  - destruct (union_1 Hβ); auto.
-  - pick fresh α2 for (L `union` ftvar_in_pskl P `union` Δ `union` {{β}}
-                        `union` dom Θ).
-    assert (HZL : α2 `notin` L) by fsetdec.
-    assert (HY' : β `in` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α2))).
-    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P (pskl_var_f α2)).
-      fsetdec. }
-    destruct (H0 α2 HZL β HY') as [HΔ | Htv].
-    + left. assert (β <> α2) by fsetdec. clear - HΔ H1. fsetdec.
-    + auto.
-  - fsetdec.
-  - destruct (IHa_wf_pskl β Hβ) as [HΔ | Htv]; [ fsetdec | auto ].
-Qed.
+(* [a_wf_pskl_ftv_tvarish] relocated to algo/prop_swap.v §0 — the
+   strengthened [a_wf_aenv__var] needs it at the BOTTOM of the algo order
+   (prop_swap.v), long before this file. *)
 
 (* [a_assign_preserves_wf] is now the 2nd CONJUNCT of the ASSIGN motive of
    the mutual bundle [a_assign_unify_consis_sound] below (Assign-Assign's
@@ -3303,10 +3291,10 @@ Proof.
         apply a_binds_tvar_weaken_cons.
         eapply a_isub_binds_flex; [ exact Hle | ].
         unfold binds; apply in_or_app; left; exact Hb. }
-      apply a_isub_cons_var_skl; [ exact Hle0 | eapply a_scope_pskl_lc; exact HQwf ]. }
+      apply a_isub_cons_var_skl; [ exact Hle0 | eapply a_scope_pskl_lc; exact (a_scope_pskl_of_wf HQwf) ]. }
     split.
     { apply a_wf_aenv__var; auto.
-      eapply a_scope_pskl_isub; eauto. }
+      eapply a_wf_pskl_isub; eauto. }
     split.
     { clear - Hdom. repeat rewrite dom_app in *; simpl in *. fsetdec. }
     split.
@@ -3621,7 +3609,7 @@ Proof.
           eapply a_wf_ptyp_lc; exact HQwf
         | apply a_isub_cons_var_skl; auto;
           apply a_wf_aenv_var_skl_inv in Hwf; destruct Hwf as [_ [HQwf _]];
-          eapply a_scope_pskl_lc; exact HQwf ]. }
+          eapply a_scope_pskl_lc; exact (a_scope_pskl_of_wf HQwf) ]. }
     split.
     { destruct Hb as [-> | [[Qb ->] | [Qb ->]]].
       - apply a_wf_aenv__tvar; auto.
@@ -3629,7 +3617,7 @@ Proof.
         apply a_wf_ptyp_isub with (Θ := Θ0); auto.
         apply a_wf_aenv_var_typ_inv in Hwf; tauto.
       - apply a_wf_aenv__var; auto.
-        apply a_scope_pskl_isub with (Θ := Θ0); auto.
+        apply a_wf_pskl_isub with (Θ := Θ0); auto.
         apply a_wf_aenv_var_skl_inv in Hwf; tauto. }
     split; [ simpl; clear - Hdom; fsetdec | ].
     split.

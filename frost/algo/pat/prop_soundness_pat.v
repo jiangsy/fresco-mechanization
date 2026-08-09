@@ -43,6 +43,7 @@ Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.decorated_algo.def_decl_algo.
 Require Import src.frost.decorated_algo.def_decl_algo_sub.
@@ -727,7 +728,7 @@ Proof.
     + apply a_wf_aenv__flex_def; try assumption.
       eapply a_wf_ptyp_mono; eassumption.
     + apply a_wf_aenv__var; try assumption.
-      eapply a_scope_pskl_mono; eassumption.
+      eapply a_wf_pskl_mono; eassumption.
     + apply a_wf_aenv__var_typ; try assumption.
       eapply a_wf_ptyp_mono; eassumption.
     + apply a_wf_aenv__tvar; assumption.
@@ -883,13 +884,9 @@ Qed.
 Arguments bskl_to_pskl_arrow_inv {Q P1 P2} _.
 
 (** The Δ-free reading of skeleton well-formedness at [Δ = ∅]. *)
-Lemma a_wf_pskl_scope : forall Θ P,
-  Θ ⨟ empty ⊢ₚₛᵃ P -> a_scope_pskl Θ P.
-Proof.
-  intros Θ P H.
-  eapply a_wf_pskl_to_a_scope_pskl;
-    [ exact H | intros y b Hb; exact Hb | intros α Hα; clear - Hα; fsetdec ].
-Qed.
+(* [a_wf_pskl_scope] retired 2026-08-09: it was this file's private copy of
+   [a_scope_pskl_of_wf] (algo/prop_swap.v §0), which the strengthened
+   [a_wf_aenv__var] needs at the bottom of the algo order anyway. *)
 
 Lemma a_wf_pskl_weaken_cons : forall Θ Δ P x (b : abind),
   Θ ⨟ Δ ⊢ₚₛᵃ P -> ((x ~ b) ++ Θ) ⨟ Δ ⊢ₚₛᵃ P.
@@ -1214,7 +1211,7 @@ Proof.
   - (* hole : the fill is well-formed in Θ alone, so α0 cannot occur in it *)
     assert (Hfr : α0 `notin` ftvar_in_pskl P).
     { intros Hin.
-      apply a_wf_pskl_scope in H.
+      apply a_scope_pskl_of_wf in H.
       apply a_scope_pskl_ftv_dom in H.
       clear - H Hin Hα. fsetdec. }
     rewrite subst_bskl_in_bskl_fresh_eq;
@@ -1661,7 +1658,7 @@ Proof.
   intros γ Hγ. right.
   destruct (ad_pat_consis_subject_ftv Hc A eq_refl Hγ) as [Hl | [Hm | Hr]].
   - subst Qt. rewrite ftvar_in_bskl_syn in Hl.
-    apply a_wf_pskl_scope in HwfP.
+    apply a_scope_pskl_of_wf in HwfP.
     eapply a_scope_pskl_ftv_tvarish; eassumption.
   - apply Hflex; exact Hm.
   - destruct Hr as [β [τ [Hb Hin]]].
@@ -2183,7 +2180,7 @@ Proof.
                             `union` dom Θ2 `union` fvar_in_exp e)) as [x Hx].
     assert (Hwfx : a_wf_aenv ((x ~ abind_var_skl P) ++ Θ0)).
     { apply a_wf_aenv__var;
-        [ clear - Hx; fsetdec | apply a_wf_pskl_scope; exact HwfPP | exact Hwf ]. }
+        [ clear - Hx; fsetdec | exact HwfPP | exact Hwf ]. }
     assert (Hsklx : forall y Ps,
               binds y (abind_var_skl Ps) ((x ~ abind_var_skl P) ++ Θ0) ->
               ((x ~ abind_var_skl P) ++ Θ0) ⨟ empty ⊢ₚₛᵃ Ps).
@@ -2373,7 +2370,7 @@ Proof.
                             `union` dom Θ1 `union` fvar_in_exp e)) as [x Hx].
     assert (Hwfx : a_wf_aenv ((x ~ abind_var_skl pskl_hole) ++ Θ0))
       by (apply a_wf_aenv__var;
-          [ clear - Hx; fsetdec | apply a_scope_pskl__hole | exact Hwf ]).
+          [ clear - Hx; fsetdec | apply a_wf_pskl__hole | exact Hwf ]).
     assert (Hsklx : forall y Ps,
               binds y (abind_var_skl Ps) ((x ~ abind_var_skl pskl_hole) ++ Θ0) ->
               ((x ~ abind_var_skl pskl_hole) ++ Θ0) ⨟ empty ⊢ₚₛᵃ Ps).

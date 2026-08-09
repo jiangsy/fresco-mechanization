@@ -47,6 +47,7 @@ Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.decorated_algo.def_decorated.
 Require Import src.frost.decorated_algo.def_decl_algo.
@@ -3590,37 +3591,8 @@ Qed.
 
 (** Bridge to the Δ-free skeleton wf (the form the ≡ˢ/V lemmas take):
     Δ-variables must be tvar-ish in the receiving context. *)
-Lemma a_wf_pskl_to_a_scope_pskl : forall Θ Δ P,
-  a_wf_pskl Θ Δ P ->
-  forall Θa,
-  (forall x b, binds x b Θ -> binds x b Θa) ->
-  (forall α, α `in` Δ -> a_binds_tvar α Θa) ->
-  a_scope_pskl Θa P.
-Proof.
-  intros Θ Δ P Hwfd; induction Hwfd; intros Θa Hincl HΔ.
-  - apply a_scope_pskl__unit.
-  - apply a_scope_pskl__var.
-    destruct H as [HαΔ | Hbt]; [ apply HΔ; exact HαΔ | ].
-    destruct Hbt as [Hb | [Hb | [τ Hb]]];
-      [ left | right; left | right; right; exists τ ];
-      apply Hincl; exact Hb.
-  - apply a_scope_pskl__arrow;
-      [ apply IHHwfd1 | apply IHHwfd2 ]; assumption.
-  - apply a_scope_pskl__all with (L := L).
-    intros α Hα.
-    apply H0; [ exact Hα | | ].
-    + intros x b Hb. apply binds_cons_3. apply Hincl; exact Hb.
-    + intros β Hβ. destruct (β == α) as [-> | Hne].
-      * left. unfold binds. left. reflexivity.
-      * destruct (HΔ β ltac:(clear - Hβ Hne; solve_notin_auto))
-          as [Hb | [Hb | [τ Hb]]];
-          [ left | right; left | right; right; exists τ ];
-          apply binds_cons_3; exact Hb.
-  - apply a_scope_pskl__hole.
-  - apply a_scope_pskl__tophole.
-    apply IHHwfd; [ exact Hincl | ].
-    intros β Hβ. exfalso. clear - Hβ. fsetdec.
-Qed.
+(* [a_wf_pskl_to_a_scope_pskl] relocated to algo/prop_swap.v §0 (with the
+   [Δ = ∅] corollary [a_scope_pskl_of_wf]) — see that file's header. *)
 
 (** The join's target erases to a well-formed (Δ-free) skeleton — the
     output-regularity C-Arrow's precision transport needs. *)
@@ -3648,9 +3620,7 @@ Proof.
   - apply a_scope_pskl__tophole; assumption.
   - (* hole : the fill is wf by the rule's own premise *)
     rewrite bskl_to_pskl_pskl_to_bskl_inh.
-    eapply a_wf_pskl_to_a_scope_pskl;
-      [ exact H0 | intros x b Hb; exact Hb
-      | intros β Hβ; exfalso; clear - Hβ; fsetdec ].
+    exact (a_scope_pskl_of_wf H0).
   - apply a_scope_pskl__tophole; assumption.
   - (* tophole_inh *)
     apply a_scope_pskl__all with (L := L).
@@ -3997,9 +3967,10 @@ Proof.
       as [[[w [Hidw Hincw]] _] [Hwf1' _]].
     assert (Hbridge : Θ2 ⊢ P' ≡ˢ (msubst_pskl ζ' Q)).
     { eapply a_pskl_tyequiv__trans; [ exact HP'eq | ].
-      rewrite <- (msubst_compose_id_pskl Hwf0 Hwf1' Hid Hinc1' Hζ' HwfQ).
+      rewrite <- (msubst_compose_id_pskl Hwf0 Hwf1' Hid Hinc1' Hζ'
+                    (a_scope_pskl_of_wf HwfQ)).
       eapply a_inc_equiv_msubst_pskl;
-        [ exact HwfQ | exact Hie' | exact Hwf0
+        [ exact (a_scope_pskl_of_wf HwfQ) | exact Hie' | exact Hwf0
         | eapply a_inc_msubst_lc; exact Hinc'
         | eapply msubst_lc_compose;
             [ eapply a_inc_msubst_lc; exact Hζ'
@@ -5924,10 +5895,10 @@ Proof.
       assert (HwfaΘ0x : a_wf_aenv ((α1 ~ abind_var_skl Q) ++ Θ0'))
         by (eapply a_wf_aenv_app_r; exact Hwf).
       destruct (a_wf_aenv_var_skl_inv HwfaΘ0x) as [_ [HwfQ0 _]].
-      assert (HwfQ : a_scope_pskl (Ξ ++ Θ0') Q)
-        by (eapply a_scope_pskl_weaken;
+      assert (HwfQ : (Ξ ++ Θ0') ⨟ empty ⊢ₚₛᵃ Q)
+        by (eapply a_wf_pskl_weaken;
             [ intros ? ? Hb; apply binds_app_3; exact Hb | exact HwfQ0 ]).
-      assert (HlcQ : lc_pskl Q) by (eapply a_scope_pskl_lc; exact HwfQ0).
+      assert (HlcQ : lc_pskl Q) by (eapply a_scope_pskl_lc; eauto).
       assert (HwfΘ1 : a_wf_aenv Θ1)
         by (eapply a_assign_preserves_wf;
             [ exact Ha' | exact Hdecl | exact Hwf' | exact HwfP' ]).
@@ -5937,9 +5908,11 @@ Proof.
       { apply msubst_lc_compose; [ eapply a_inc_msubst_lc; exact Hζ' | ].
         intros a t Hin. eapply is_id_msubst_values_lc;
           [ exact Hid | exact Hin ]. }
-      pose proof (a_inc_equiv_msubst_pskl HwfQ Hie' Hwf' Hlc1 Hlc2)
+      pose proof (a_inc_equiv_msubst_pskl (a_scope_pskl_of_wf HwfQ) Hie' Hwf'
+                   Hlc1 Hlc2)
         as Hmid.
-      rewrite (msubst_compose_id_pskl Hwf' HwfΘ1 Hid Hinc1_s Hζ' HwfQ)
+      rewrite (msubst_compose_id_pskl Hwf' HwfΘ1 Hid Hinc1_s Hζ'
+                 (a_scope_pskl_of_wf HwfQ))
         in Hmid.
       assert (Hag : msubst_pskl (msubst_compose (aenv_msubst Θ) κ) Q
                   = msubst_pskl (msubst_compose (aenv_msubst Θ) κb') Q).
@@ -5948,8 +5921,9 @@ Proof.
         apply msubst_lookup_app_notin.
         rewrite dom_msubst_compose. rewrite Hdκa.
         assert (Hα0Θ0 : α0 `in` dom Θ0')
-          by (apply a_scope_pskl_ftv_dom' in HwfQ0;
-              clear - HwfQ0 HXQ; fsetdec).
+          by (pose proof (a_scope_pskl_ftv_dom' (a_scope_pskl_of_wf HwfQ0))
+                as HwfQ0';
+              clear - HwfQ0' HXQ; fsetdec).
         clear - Huqf Hα0Θ0. simpl_env in Huqf. solve_uniq. }
       rewrite Hag in Hmid.
       eapply a_pskl_tyequiv__trans; [ exact HeqQ' | ].
@@ -5968,7 +5942,7 @@ Proof.
       assert (HwfaΘ0x : a_wf_aenv ((α1 ~ abind_var_skl Q) ++ Θ0'))
         by (eapply a_wf_aenv_app_r; exact Hwf).
       destruct (a_wf_aenv_var_skl_inv HwfaΘ0x) as [_ [HwfQ0 _]].
-      assert (HlcQ : lc_pskl Q) by (eapply a_scope_pskl_lc; exact HwfQ0).
+      assert (HlcQ : lc_pskl Q) by (eapply a_scope_pskl_lc; eauto).
       destruct (@a_inc_strip_decls_prefix Ξ ((α1 ~ abind_var_skl Q) ++ Θ0')
                   κ1 ((α1 ~ abind_var_skl Q) ++ Θ1) Hdecl Hinc1)
         as [κ1a [κ1b' [Heqκ1' [Hdκ1a Hinc1x]]]].
@@ -6308,9 +6282,7 @@ Proof.
     assert (HwfPart : a_scope_pskl
               ((α1 ~ abind_flex_mono_def τdef) ++ Ξ ++ Θ0') P).
     { eapply a_scope_pskl_weaken;
-        [ | eapply a_wf_pskl_to_a_scope_pskl;
-            [ exact HwfP | intros x b Hb; exact Hb
-            | intros β Hβ; exfalso; clear - Hβ; fsetdec ] ].
+        [ | exact (a_scope_pskl_of_wf HwfP) ].
       intros x b Hb. unfold binds in *.
       apply in_app_or in Hb. apply in_or_app.
       destruct Hb as [Hb | Hb];
@@ -6916,13 +6888,9 @@ Proof.
       split; [ exists w1; split; assumption | exact Hdefs1 ]. }
     (* ---- transport the second component's premises from κ to ζ1 ---- *)
     assert (HawfPPb : a_scope_pskl Θ0 PPb).
-    { eapply a_wf_pskl_to_a_scope_pskl;
-        [ exact HwfPPb | intros x b Hb; exact Hb
-        | intros β Hβ; exfalso; clear - Hβ; fsetdec ]. }
+    { exact (a_scope_pskl_of_wf HwfPPb). }
     assert (HawfP0b : a_scope_pskl Θ0 P0b).
-    { eapply a_wf_pskl_to_a_scope_pskl;
-        [ exact HwfP0b | intros x b Hb; exact Hb
-        | intros β Hβ; exfalso; clear - Hβ; fsetdec ]. }
+    { exact (a_scope_pskl_of_wf HwfP0b). }
     assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hinc).
     assert (Hlcζ1 : msubst_lc ζ1) by (eapply a_inc_msubst_lc; exact Hζ1).
     assert (Hlcc1 : msubst_lc (msubst_compose ζ1 w1))
@@ -6933,7 +6901,7 @@ Proof.
         with (msubst_pskl (msubst_compose ζ1 w1) PPb)
         by (eapply msubst_compose_id_pskl;
             [ exact Hwf0 | exact Hwf1 | exact Hidw1 | exact Hincw1
-            | exact Hζ1 | exact HawfPPb ]).
+            | exact Hζ1 | exact (a_scope_pskl_of_wf HwfPPb) ]).
       eapply a_inc_equiv_msubst_pskl;
         [ exact HawfPPb | exact Hie1 | exact Hwf0
         | exact Hlcκ | exact Hlcc1 ]. }
@@ -6942,7 +6910,7 @@ Proof.
         with (msubst_pskl (msubst_compose ζ1 w1) P0b)
         by (eapply msubst_compose_id_pskl;
             [ exact Hwf0 | exact Hwf1 | exact Hidw1 | exact Hincw1
-            | exact Hζ1 | exact HawfP0b ]).
+            | exact Hζ1 | exact (a_scope_pskl_of_wf HwfP0b) ]).
       eapply a_inc_equiv_msubst_pskl;
         [ exact HawfP0b | exact Hie1 | exact Hwf0
         | exact Hlcκ | exact Hlcc1 ]. }
@@ -6962,7 +6930,7 @@ Proof.
       - unfold Vpskl.
         erewrite (msubst_compose_id_pskl (P := PPb));
           [ reflexivity | exact Hwf0 | exact Hwf1 | exact Hidw1
-          | exact Hincw1 | exact Hζ1 | exact HawfPPb ].
+          | exact Hincw1 | exact Hζ1 | exact (a_scope_pskl_of_wf HwfPPb) ].
       - symmetry.
         eapply Vpskl_inc_equiv;
           [ exact Hie1 | exact Hwf0 | exact Hwfth | exact HawfPPb ]. }
@@ -6971,7 +6939,7 @@ Proof.
       - unfold Vpskl.
         erewrite (msubst_compose_id_pskl (P := P0b));
           [ reflexivity | exact Hwf0 | exact Hwf1 | exact Hidw1
-          | exact Hincw1 | exact Hζ1 | exact HawfP0b ].
+          | exact Hincw1 | exact Hζ1 | exact (a_scope_pskl_of_wf HwfP0b) ].
       - symmetry.
         eapply Vpskl_inc_equiv;
           [ exact Hie1 | exact Hwf0 | exact Hwfth | exact HawfP0b ]. }

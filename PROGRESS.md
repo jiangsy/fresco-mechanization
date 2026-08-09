@@ -232,6 +232,64 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-08-09 (latest) — ⭐ **`a_wf_aenv__var` NOW STORES THE DISCIPLINED SKELETON WF** (`a_scope_pskl` has no rule site left)
+
+`make coq` exit 0; 20/20 `Print Assumptions` closed, zero
+Axioms/Parameters/Variables/Admitted.  Registry entry updated:
+[`docs/WF-SIDE-CONDITIONS.md`](docs/WF-SIDE-CONDITIONS.md) — the section that
+had this as a QUEUED CLEANUP now records it as done, with what the note got
+wrong.
+
+A context's term entry `x : P` used to carry only `a_scope_pskl Θ P`
+(scoping), so the two flagship completeness theorems had to hypothesise
+`forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps` for BOTH
+their contexts.  The entry now carries `Θ ⨟ empty ⊢ₚₛᵃ P` directly.
+
+⚙ **The obstruction was ORDERING, and it was shallow.**  `a_wf_pskl` was
+declared AFTER `a_wf_aenv` in `algo/def_extra.v`, so naming it in the
+constructor was a forward reference — which is plausibly why the weak
+judgement was introduced at all (`a_scope_pskl` sits immediately before
+`a_wf_aenv`).  It depends only on `a_binds_tvar` and `guarded_pskl`, so its
+block moved up: 28 lines.
+
+⭐ **The feared new lemma pack was already in the tree.**  The registry
+predicted "split/guess outputs are disciplined" would have to be proved.  It
+does not: `a_split_wf` already yields `Θ1 ⨟ empty ⊢ₚₛᵃ P` for the split's left
+output — exactly what `a_pat__abs` pushes — `a_pat__abs_check` pushes `□`
+(`a_wf_pskl__hole`), and `ad_pat__abs` carries the premise on the rule.  So no
+row can push a skeleton it cannot justify; that was checked BEFORE starting,
+because a row pushing (say) `∀◇□` would have made the constructor
+*unprovable* rather than merely tedious.
+
+⚙ Migration shape (22 build rounds, ~30 sites): consumers convert with
+`a_scope_pskl_of_wf`, which is also an `#[export] Hint Resolve` — so every
+site that discharged an entry's scope through `eauto` needed NO edit.  Only
+the `exact H` forms did.  `a_wf_pskl_ftv_tvarish` and
+`a_wf_pskl_to_a_scope_pskl` moved out of the two consistency files into
+`algo/prop_swap.v` §0: the strengthening makes them needed at the BOTTOM of
+the algo order, and prop_flex.v — the topical home, it already holds
+`a_wf_pskl_weaken`/`_strip_mid` — IMPORTS prop_swap.v, so that direction is a
+cycle.  ⚠️ prop_swap.v has no global `Set Implicit Arguments` **by design**
+(its header says why), so §0 scopes its own — without that the moved lemmas
+silently gain explicit arguments and their ~70 call sites break as
+`match goal` branches that no longer fire.  Retired: `a_wf_pskl_scope`,
+pat/prop_soundness_pat.v's private copy of the same conversion.
+
+⚠️ **`a_scope_pskl` CANNOT be deleted**, contrary to the registry's endgame.
+It has no rule site now, but 182 statement uses, and the weak form is
+genuinely irreducible at one of them: `ad_pat_consis_target_wf` says a
+consistency JOIN'S target erases to a *scoped* skeleton and gives nothing
+stronger, while `msubst_compose_id_pskl` and `a_inc_equiv_msubst_pskl` are
+applied at exactly that subject.  Strengthening `msubst_compose_id_pskl`'s
+premise was tried and REVERTED for this reason.  Making the join-target lemma
+disciplined is a real proof obligation — its `∀◇` cases would have to
+establish guardedness and the Δ-reset — not a rename.
+
+⛔ NOT done: the two theorems' `binds y (abind_var_skl Ps) -> … ⊢ₚₛᵃ Ps`
+hypotheses are now DERIVABLE from `a_wf_aenv` but are still stated.  Dropping
+them means re-proving every row that consumes them from the context instead;
+that is its own pass.
+
 ## 2026-08-09 (latest) — ⚙ **NOTATION PASS: the system/sort AXES, `⇨` retired, `blk` → `Ξg`**
 
 Notation only — no rule, statement or proof obligation changed; the diff is

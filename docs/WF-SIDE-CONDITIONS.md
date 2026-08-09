@@ -229,19 +229,37 @@ The algo layer has TWO skeleton judgments, both in algo/def_extra.v:
   Transport kit exists: `a_wf_pskl_isub` / `_weaken` / `_delta_mono` /
   `_mono_subst` / `_msubst_inc` / `_subst_tvar` / `_open`.
 
-- `a_scope_pskl`'s ONLY remaining rule site is `a_wf_aenv__var` (x:P context
-  entries).  This is NOT load-bearing discipline — entry wf is only ever
-  consumed for scoping facts (ftv ⊆ dom, freshness).  We do not fundamentally
-  need the weak judgment: entries never sit under a ∀-binder, so for the
-  shapes the algorithm actually stores the two judgments agree, and
-  disciplined entry-wf would transport (`a_wf_pskl_isub`, `_msubst_inc`).
-  It survives for (a) cost — strengthening `a_wf_aenv__var` reopens every
-  a_wf_aenv construction/preservation site (notably the a_pat push sites,
-  where "split/guess outputs are disciplined" would become a new lemma pack)
-  across the Qed consistency corpus, for zero current benefit; and (b) impl
-  parity with `is_wf_`.  QUEUED CLEANUP: strengthen `a_wf_aenv__var` to
-  `Θ ⨟ ∅ ⊢ₚₛᵃ P`, prove the split/guess-discipline pack, delete
-  `a_scope_pskl`.  Do it when a_pat metatheory is mechanized anyway.
+- ✅ **DONE 2026-08-09 — `a_wf_aenv__var` now stores the DISCIPLINED
+  `Θ ⨟ ∅ ⊢ₚₛᵃ P`.**  `a_scope_pskl` has NO rule site left; it survives only in
+  lemma statements.  What the queued-cleanup note above predicted, and what it
+  got wrong:
+  - The feared "split/guess outputs are disciplined" lemma pack was **already
+    there**: `a_split_wf` (typing/prop_soundness_typing.v) yields
+    `Θ1 ⨟ ∅ ⊢ₚₛᵃ P` for the split's left output — exactly what `a_pat__abs`
+    pushes — and `a_pat__abs_check` pushes `□`, discharged by
+    `a_wf_pskl__hole`.  `ad_pat__abs` already carried the premise on the rule.
+    No new pack was needed.
+  - ⚙ **The real obstruction was ORDERING, and it was shallow**: `a_wf_pskl`
+    was declared AFTER `a_wf_aenv` in algo/def_extra.v, so naming it in the
+    constructor was a forward reference.  It depends only on `a_binds_tvar`
+    and `guarded_pskl`, so its block moved above `a_wf_aenv` — 28 lines.
+  - ⚠️ **The endgame "delete `a_scope_pskl`" is NOT reachable as stated.**  The
+    weak judgment is genuinely needed: `ad_pat_consis_target_wf` (a
+    consistency JOIN'S target erases to a scoped skeleton) yields
+    `a_scope_pskl` and nothing stronger, and `msubst_compose_id_pskl` /
+    `a_inc_equiv_msubst_pskl` are applied at exactly that subject.  Demanding
+    the disciplined form there was tried and reverted.  Strengthening
+    `ad_pat_consis_target_wf` is a real proof obligation (its `∀◇` cases would
+    have to establish guardedness and the Δ-reset), not a rename.
+  - Migration shape, for the record: consumers convert with
+    `a_scope_pskl_of_wf` (prop_swap.v §0), which is also an `#[export] Hint
+    Resolve`, so every site that discharged an entry's scope by `eauto` needed
+    no edit at all.  `a_wf_pskl_ftv_tvarish` and `a_wf_pskl_to_a_scope_pskl`
+    moved from the two consistency files to prop_swap.v §0 (the earliest algo
+    proof file; prop_flex.v would be the topical home but it IMPORTS
+    prop_swap.v).  `a_wf_pskl_scope` — pat/prop_soundness_pat.v's private copy
+    of the same conversion — was retired.  ⚠️ prop_swap.v has NO global
+    `Set Implicit Arguments` by design, so §0 scopes its own.
 
 **Rule of thumb** (unchanged): a premise consumed locally by its rule (like
 ForallL's) may be disciplined at the rule; a condition threaded through the

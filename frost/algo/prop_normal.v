@@ -41,6 +41,7 @@ Require Import src.frost.prop_ln.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_compose.

@@ -31,6 +31,7 @@ Require Import src.frost.def_extra.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_compose.
@@ -407,7 +408,7 @@ Proof.
     try solve [ pose proof (IHHwf Hb') as Hs; simpl; clear - Hs; fsetdec ].
   (* var_skl head : P is wf in the tail *)
   injection Heq2 as Heq2. subst.
-  pose proof (a_scope_pskl_ftv_dom' H0) as Hs. simpl. clear - Hs. fsetdec.
+  pose proof (a_scope_pskl_ftv_dom' (a_scope_pskl_of_wf H0)) as Hs. simpl. clear - Hs. fsetdec.
 Qed.
 
 (* ===================================================================== *)

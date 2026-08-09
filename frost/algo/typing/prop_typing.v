@@ -376,9 +376,7 @@ Proof.
   assert (Hms : msubst_pskl (msubst_compose ζb κb) P0 = msubst_pskl ζb P0).
   { eapply msubst_compose_id_pskl;
       [ exact Hwf0 | exact Hwfmid | exact Hidb | exact Hincb | exact Hζb
-      | eapply a_wf_pskl_to_a_scope_pskl;
-          [ exact HwfP0 | intros z b Hb; exact Hb
-          | intros α Hα; clear - Hα; fsetdec ] ]. }
+      | exact (a_scope_pskl_of_wf HwfP0) ]. }
   rewrite Hms in HrefT.
   (* ---- 3. the SUB stage ---- *)
   destruct (@a_sub_complete njoin a_sub_mode_ty M Θmid P0
@@ -710,9 +708,7 @@ Proof.
                 = msubst_pskl ζb (ptyp_to_pskl Ap)).
   { eapply msubst_compose_id_pskl;
       [ exact Hwf0 | exact Hwfmid | exact Hidb | exact Hincb | exact Hζb
-      | eapply a_wf_pskl_to_a_scope_pskl;
-          [ exact HwfP0 | intros z b Hb; exact Hb
-          | intros α Hα; clear - Hα; fsetdec ] ]. }
+      | exact (a_scope_pskl_of_wf HwfP0) ]. }
   rewrite Hms in HrefT.
   assert (Heqs : Θ ⊢ (ptyp_to_pskl (msubst_ptyp ζb B')) ≡ˢ (ptyp_to_pskl A))
     by (apply a_tyequiv_embed_pskl; exact HeqAll).
@@ -774,9 +770,7 @@ Proof.
   (* the ≡ᵗ conclusion via the run's own subject-≡-input *)
   assert (HwfApP : a_wf_ptyp Θmid Ap).
   { eapply a_wf_ptyp_of_scope_pskl; [ | reflexivity ].
-    eapply a_wf_pskl_to_a_scope_pskl;
-      [ exact HwfApmid | intros z b Hb; exact Hb
-      | intros α Hα; clear - Hα; fsetdec ]. }
+    exact (a_scope_pskl_of_wf HwfApmid). }
   assert (HeqIO : Θ2 ⊢ B' ≡ᵗ Ap)
     by (eapply a_consis_chk_tyequiv;
         [ exists Qc; exact HcRun | exact Hwfmid | exact HwfApP
@@ -977,9 +971,7 @@ Proof.
   assert (Hms1 : msubst_pskl (msubst_compose ζ1 κ1b) P0 = msubst_pskl ζ1 P0).
   { eapply msubst_compose_id_pskl;
       [ exact Hwf0 | exact Hwf1 | exact Hid1b | exact Hinc1b | exact Hζ1
-      | eapply a_wf_pskl_to_a_scope_pskl;
-          [ exact HwfP0 | intros z b Hb; exact Hb
-          | intros α Hα; clear - Hα; fsetdec ] ]. }
+      | exact (a_scope_pskl_of_wf HwfP0) ]. }
   rewrite Hms1 in Hcod.
   (* the domain refinement : precision preserves the rule's own (paper's
      lemma:precision-preserves-refinement, verbatim) *)
@@ -2509,9 +2501,7 @@ Proof.
   assert (HmsQ : msubst_pskl (msubst_compose ζc κc) Q = msubst_pskl ζc Q).
   { eapply msubst_compose_id_pskl;
       [ exact Hwf0 | exact Hwfmid | exact Hidc | exact Hincc | exact Hζc
-      | eapply a_wf_pskl_to_a_scope_pskl;
-          [ exact HwfQ | intros z b Hb; exact Hb
-          | intros α Hα; clear - Hα; fsetdec ] ]. }
+      | exact (a_scope_pskl_of_wf HwfQ) ]. }
   rewrite HmsQ in HrefCζ.
   (* the remaining IH side data *)
   assert (Hrigx : forall α,
@@ -3810,14 +3800,10 @@ Proof.
   exists Ad, Bc, Θ1, κs, ζ.
   repeat split; try assumption.
   - eapply a_wf_ptyp_of_scope_pskl;
-      [ eapply a_wf_pskl_to_a_scope_pskl;
-          [ exact HwfAd | intros z b Hb; exact Hb
-          | intros γ Hγ; exfalso; clear - Hγ; fsetdec ]
+      [ exact (a_scope_pskl_of_wf HwfAd)
       | reflexivity ].
   - eapply a_wf_ptyp_of_scope_pskl;
-      [ eapply a_wf_pskl_to_a_scope_pskl;
-          [ exact HwfBc | intros z b Hb; exact Hb
-          | intros γ Hγ; exfalso; clear - Hγ; fsetdec ]
+      [ exact (a_scope_pskl_of_wf HwfBc)
       | reflexivity ].
   - apply Heqv; assumption.
 Qed.
@@ -4263,9 +4249,7 @@ Proof.
                  = msubst_pskl ζc (ptyp_to_pskl Bc)).
   { eapply msubst_compose_id_pskl;
       [ exact Hwf1 | exact Hwf2 | exact Hidc | exact Hincc | exact Hζc
-      | eapply a_wf_pskl_to_a_scope_pskl;
-          [ exact HwfBcP1 | intros z b Hb; exact Hb
-          | intros α Hα; exfalso; clear - Hα; fsetdec ] ]. }
+      | exact (a_scope_pskl_of_wf HwfBcP1) ]. }
   rewrite HmsQ in HrefCζ.
   (* the remaining IH side data *)
   assert (Hrigx : forall α,

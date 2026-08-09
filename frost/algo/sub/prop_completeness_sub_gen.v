@@ -3334,7 +3334,8 @@ Proof.
   - clear; fsetdec.
   - clear - IHa_wf_aenv; fsetdec.
   - pose proof (a_wf_ptyp_ftv_dom H0); clear - IHa_wf_aenv H3; fsetdec.
-  - pose proof (a_scope_pskl_ftv_dom H0); clear - IHa_wf_aenv H2; fsetdec.
+  - pose proof (a_scope_pskl_ftv_dom (a_scope_pskl_of_wf H0));
+    clear - IHa_wf_aenv H2; fsetdec.
   - pose proof (a_wf_ptyp_ftv_dom H0); clear - IHa_wf_aenv H2; fsetdec.
   - clear - IHa_wf_aenv; fsetdec.
 Qed.
@@ -7039,12 +7040,12 @@ Proof.
   assert (HwfaΘ0x : a_wf_aenv ((β ~ abind_var_skl Qv) ++ Θ0))
     by (eapply a_wf_aenv_app_r; exact Hwf).
   destruct (a_wf_aenv_var_skl_inv HwfaΘ0x) as [_ [HwfQv0 _]].
-  assert (HwfQv : a_scope_pskl (Ξ ++ Θ0) Qv)
-    by (eapply a_scope_pskl_weaken;
+  assert (HwfQv : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ Qv)
+    by (eapply a_wf_pskl_weaken;
         [ intros ? ? Hb; apply binds_app_3; exact Hb | exact HwfQv0 ]).
-  assert (HlcQv : lc_pskl Qv) by (eapply a_scope_pskl_lc; exact HwfQv0).
+  assert (HlcQv : lc_pskl Qv) by (eapply a_scope_pskl_lc; eauto).
   assert (HftvQv : ftvar_in_pskl Qv [<=] dom Θ0)
-    by (apply a_scope_pskl_ftv_dom'; exact HwfQv0).
+    by (apply a_scope_pskl_ftv_dom'; exact (a_scope_pskl_of_wf HwfQv0)).
   assert (HβQv : β `notin` ftvar_in_pskl Qv).
   { clear - HftvQv HβΞΘ0. simpl_env in HβΞΘ0. fsetdec. }
   assert (Hαb0 : a_binds_tvar α Θ0)
@@ -7332,8 +7333,10 @@ Proof.
       { apply msubst_lc_compose; [ eapply a_inc_msubst_lc; exact Hζ | ].
         intros a t Hin. eapply is_id_msubst_values_lc;
           [ exact Hidf | exact Hin ]. }
-      pose proof (a_inc_equiv_msubst_pskl HwfQv Hie Hwf' Hlc1 Hlc2) as Hmid.
-      rewrite (msubst_compose_id_pskl Hwf' HwfΘ1 Hidf Hincw Hζ HwfQv)
+      pose proof (a_inc_equiv_msubst_pskl (a_scope_pskl_of_wf HwfQv) Hie Hwf'
+                   Hlc1 Hlc2) as Hmid.
+      rewrite (msubst_compose_id_pskl Hwf' HwfΘ1 Hidf Hincw Hζ
+                 (a_scope_pskl_of_wf HwfQv))
         in Hmid.
       rewrite Hag in Hmid.
       eapply a_pskl_tyequiv__trans; [ exact Hmiddle | exact Hmid ]. }

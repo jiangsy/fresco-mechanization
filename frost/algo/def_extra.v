@@ -181,6 +181,35 @@ Inductive a_scope_pskl : aenv -> pskl -> Prop :=
     a_scope_pskl Θ P ->
     a_scope_pskl Θ (pskl_tophole P).
 
+Reserved Notation "Θ ⨟ Δ ⊢ₚₛᵃ P"
+  (at level 75, Δ at level 74, P at level 75, no associativity).
+
+(* ===================================================================== *)
+(*  Skeleton well-formedness over Θ  (decl [Γ ⨟ Δ ⊢ₚₛ P])                *)
+(* ===================================================================== *)
+
+Inductive a_wf_pskl : aenv -> atoms -> pskl -> Prop :=
+| a_wf_pskl__unit : forall Θ Δ,
+    Θ ⨟ Δ ⊢ₚₛᵃ pskl_unit
+| a_wf_pskl__var : forall Θ Δ α,
+    α `in` Δ \/ a_binds_tvar α Θ ->
+    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_var_f α)
+| a_wf_pskl__arrow : forall Θ Δ P1 P2,
+    Θ ⨟ Δ ⊢ₚₛᵃ P1 ->
+    Θ ⨟ Δ ⊢ₚₛᵃ P2 ->
+    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_arrow P1 P2)
+| a_wf_pskl__all : forall L Θ Δ P,
+    (forall α, α `notin` L ->
+       Θ ⨟ (add α Δ) ⊢ₚₛᵃ (open_pskl_wrt_pskl P (pskl_var_f α))) ->
+    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_all_syn P)
+| a_wf_pskl__hole : forall Θ Δ,
+    Θ ⨟ Δ ⊢ₚₛᵃ pskl_hole
+| a_wf_pskl__tophole : forall Θ Δ P,
+    guarded_pskl P ->
+    Θ ⨟ empty ⊢ₚₛᵃ P ->
+    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_tophole P)
+where "Θ ⨟ Δ ⊢ₚₛᵃ P" := (a_wf_pskl Θ Δ P) : type_scope.
+
 (** Context well-formedness [Θ ⊢ ctx] (full-algo-spec.tex:224): each
     definition's body is a well-formed monotype in its tail, each term
     variable's skeleton is well-formed in its tail; atom freshness is the
@@ -200,7 +229,7 @@ Inductive a_wf_aenv : aenv -> Prop :=
     a_wf_aenv ((α ~ abind_flex_mono_def τ) ++ Θ)
 | a_wf_aenv__var : forall x P Θ,
     x `notin` dom Θ ->
-    a_scope_pskl Θ P ->
+    Θ ⨟ empty ⊢ₚₛᵃ P ->
     a_wf_aenv Θ ->
     a_wf_aenv ((x ~ abind_var_skl P) ++ Θ)
 | a_wf_aenv__var_typ : forall x A Θ,
@@ -259,34 +288,6 @@ Inductive a_flex : aenv -> pskl -> Prop :=
 Definition a_non_flex (Θ : aenv) (P : pskl) : Prop :=
   lc_pskl P /\ ~ a_flex Θ P.
 
-Reserved Notation "Θ ⨟ Δ ⊢ₚₛᵃ P"
-  (at level 75, Δ at level 74, P at level 75, no associativity).
-
-(* ===================================================================== *)
-(*  Skeleton well-formedness over Θ  (decl [Γ ⨟ Δ ⊢ₚₛ P])                *)
-(* ===================================================================== *)
-
-Inductive a_wf_pskl : aenv -> atoms -> pskl -> Prop :=
-| a_wf_pskl__unit : forall Θ Δ,
-    Θ ⨟ Δ ⊢ₚₛᵃ pskl_unit
-| a_wf_pskl__var : forall Θ Δ α,
-    α `in` Δ \/ a_binds_tvar α Θ ->
-    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_var_f α)
-| a_wf_pskl__arrow : forall Θ Δ P1 P2,
-    Θ ⨟ Δ ⊢ₚₛᵃ P1 ->
-    Θ ⨟ Δ ⊢ₚₛᵃ P2 ->
-    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_arrow P1 P2)
-| a_wf_pskl__all : forall L Θ Δ P,
-    (forall α, α `notin` L ->
-       Θ ⨟ (add α Δ) ⊢ₚₛᵃ (open_pskl_wrt_pskl P (pskl_var_f α))) ->
-    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_all_syn P)
-| a_wf_pskl__hole : forall Θ Δ,
-    Θ ⨟ Δ ⊢ₚₛᵃ pskl_hole
-| a_wf_pskl__tophole : forall Θ Δ P,
-    guarded_pskl P ->
-    Θ ⨟ empty ⊢ₚₛᵃ P ->
-    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_tophole P)
-where "Θ ⨟ Δ ⊢ₚₛᵃ P" := (a_wf_pskl Θ Δ P) : type_scope.
 
 (* [α̂ ∈ Θ] as a flexible variable — the paper's hatted metavariable
    convention, made explicit where a rule's variable must be hatted. *)

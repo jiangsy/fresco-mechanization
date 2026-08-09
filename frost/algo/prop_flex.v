@@ -213,7 +213,7 @@ Qed.
 Lemma a_wf_aenv_lc_aenv : forall Θ, a_wf_aenv Θ -> lc_aenv Θ.
 Proof.
   intros Θ H; induction H; constructor; simpl; auto.
-  - eapply a_scope_pskl_lc; eauto.
+  - eapply a_scope_pskl_lc; eapply a_scope_pskl_of_wf; eauto.
   - eapply a_wf_ptyp_lc; eauto.
 Qed.
 

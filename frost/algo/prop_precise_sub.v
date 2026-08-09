@@ -29,6 +29,7 @@ Require Import src.frost.ltac_utils.
 Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.decorated_algo.def_decorated.
 Require Import src.frost.decorated_algo.def_decl_algo.
@@ -204,15 +205,11 @@ Proof.
       | apply a_wf_aenv__var;
           [ pose proof (ad_ctx_precise_dom Hctx) as Hd;
             clear - Hx Hd; fsetdec
-          | eapply a_wf_pskl_to_a_scope_pskl;
-              [ exact H0 | intros y b1 Hb1; exact Hb1
-              | intros α Hα; exfalso; clear - Hα; fsetdec ]
+          | exact H0
           | exact HwfΘ ]
       | apply a_wf_aenv__var;
           [ clear - Hx; fsetdec
-          | eapply a_wf_pskl_to_a_scope_pskl;
-              [ exact HwfP' | intros y b1 Hb1; exact Hb1
-              | intros α Hα; exfalso; clear - Hα; fsetdec ]
+          | exact HwfP'
           | exact HwfΘ' ] ].
   - (* abs_anno *)
     assert (HwfA' : a_wf_ptyp Θ' A)
@@ -248,9 +245,9 @@ Proof.
       | apply a_wf_aenv__var;
           [ pose proof (ad_ctx_precise_dom Hctx) as Hd;
             clear - Hx Hd; fsetdec
-          | apply a_scope_pskl__hole | exact HwfΘ ]
+          | apply a_wf_pskl__hole | exact HwfΘ ]
       | apply a_wf_aenv__var;
-          [ clear - Hx; fsetdec | apply a_scope_pskl__hole | exact HwfΘ' ] ].
+          [ clear - Hx; fsetdec | apply a_wf_pskl__hole | exact HwfΘ' ] ].
   - (* abs_anno_check *)
     assert (HwfA' : a_wf_ptyp Θ' A)
       by (eapply a_wf_ptyp_mono; eauto).

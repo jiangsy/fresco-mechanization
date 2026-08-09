@@ -906,7 +906,7 @@ Proof.
           eapply a_wf_ptyp_ftv_tvarish; eassumption).
     clear - IHa_wf_aenv H3. fsetdec.
   - assert (ftvar_in_pskl P [<=] dom Θ)
-      by (apply a_scope_pskl_ftv_dom; assumption).
+      by (apply a_scope_pskl_ftv_dom; eauto).
     clear - IHa_wf_aenv H2. fsetdec.
   - assert (ftvar_in_ptyp A [<=] dom Θ)
       by (intros β Hβ; apply a_binds_tvar_in_dom;

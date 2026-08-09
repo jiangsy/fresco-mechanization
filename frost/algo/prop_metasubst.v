@@ -9,6 +9,7 @@ Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.decorated_algo.prop_decorate.
@@ -364,6 +365,10 @@ Lemma msubst_compose_id_pskl : forall Θ0 κ1 Θ1 ζ Θ2 P,
   is_id_msubst κ1 ->
   κ1 ∷ Θ0 ⊑ Θ1 ->
   ζ ∷ Θ1 ⊑ Θ2 ->
+  (* ⚠️ the WEAK [a_scope_pskl], deliberately: this lemma's own proof needs
+     only scoping, and one caller's subject is a consistency JOIN'S TARGET,
+     for which [ad_pat_consis_target_wf] gives scope and nothing stronger.
+     Callers holding the disciplined form convert with [a_scope_pskl_of_wf]. *)
   a_scope_pskl Θ0 P ->
   msubst_pskl (msubst_compose ζ κ1) P = msubst_pskl ζ P.
 Proof.
@@ -1483,7 +1488,7 @@ Proof.
         -- intros α0 Hα0. eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf0' | ].
            destruct (a_inc_dom_flex Hinc Hα0) as [Hb | [t0 Hb]];
              [ right; left | right; right; exists t0 ]; exact Hb.
-        -- eapply a_scope_pskl_lc; exact HwpP.
+        -- eapply a_scope_pskl_lc; eauto.
     + apply a_inc_equiv__var_skl; [ | exact H | exact H0 ].
       replace (Θpre ++ Ξ ++ x ~ abind_var_skl P' ++ Θ')
          with ((Θpre ++ Ξ ++ x ~ abind_var_skl P') ++ Θ') by (simpl_env; reflexivity).

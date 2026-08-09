@@ -79,9 +79,7 @@ Proof.
     assert (Hwfx : a_wf_aenv ((x ~ abind_var_skl P) ++ Θ)).
     { apply a_wf_aenv__var;
         [ clear - Hx; fsetdec
-        | eapply a_wf_pskl_to_a_scope_pskl;
-            [ exact H0 | intros y b1 Hb1; exact Hb1
-            | intros α Hα; exfalso; clear - Hα; fsetdec ]
+        | exact H0
         | exact Hwf ]. }
     pose proof (H3 x ltac:(clear - Hx; solve_notin_auto) Hwfx) as HwfQ.
     simpl. apply a_wf_pskl__arrow.
@@ -112,7 +110,7 @@ Proof.
     destruct (atom_fresh (L `union` dom Θ)) as [x Hx].
     assert (Hwfx : a_wf_aenv ((x ~ abind_var_skl pskl_hole) ++ Θ)).
     { apply a_wf_aenv__var;
-        [ clear - Hx; fsetdec | apply a_scope_pskl__hole | exact Hwf ]. }
+        [ clear - Hx; fsetdec | apply a_wf_pskl__hole | exact Hwf ]. }
     pose proof (H0 x ltac:(clear - Hx; solve_notin_auto) Hwfx) as HwfQ.
     assert (HwfQ' : Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl (pskl_to_bskl_syn P)))
       by (eapply a_wf_pskl_mono;
@@ -1193,10 +1191,10 @@ Proof.
   set (bx := abind_var_skl pskl_hole).
   assert (Hwf0x : a_wf_aenv ((x ~ bx) ++ Θ0))
     by (apply a_wf_aenv__var;
-        [ clear - Hx; fsetdec | apply a_scope_pskl__hole | exact Hwf0 ]).
+        [ clear - Hx; fsetdec | apply a_wf_pskl__hole | exact Hwf0 ]).
   assert (HwfΘx : a_wf_aenv ((x ~ bx) ++ Θ))
     by (apply a_wf_aenv__var;
-        [ clear - Hx; fsetdec | apply a_scope_pskl__hole | exact HwfΘ ]).
+        [ clear - Hx; fsetdec | apply a_wf_pskl__hole | exact HwfΘ ]).
   assert (Hincx : κ ∷ ((x ~ bx) ++ Θ0) ⊑ ((x ~ bx) ++ Θ)).
   { apply (@a_inc__var_skl Θ0 κ Θ nil x pskl_hole pskl_hole);
       [ exact Hinc
@@ -1614,7 +1612,7 @@ Proof.
         | intros z Hz; clear - Hz; fsetdec
         | intros z b Hb'; apply binds_cons_3; exact Hb'
         | intros β Hβ; right;
-          pose proof (a_scope_pskl_ftv_dom' H0) as Hsub;
+          pose proof (a_scope_pskl_ftv_dom' (a_scope_pskl_of_wf H0)) as Hsub;
           clear - Hβ Hsub; fsetdec ].
     + apply IHHwf. intros y Ps Hb.
       eapply a_wf_pskl_strengthen with (Θ := (x ~ abind_var_skl P) ++ Θ);
@@ -1745,23 +1743,17 @@ Proof.
   assert (Hwf0x : a_wf_aenv ((x ~ bq) ++ Θ0)).
   { apply a_wf_aenv__var;
       [ clear - Hx; fsetdec
-      | eapply a_wf_pskl_to_a_scope_pskl;
-          [ exact HwfP1 | intros z b Hb; exact Hb
-          | intros α Hα; clear - Hα; fsetdec ]
+      | exact HwfP1
       | exact Hwf0 ]. }
   assert (HwfΘx : a_wf_aenv ((x ~ bs) ++ Θ)).
   { apply a_wf_aenv__var;
       [ clear - Hx; fsetdec
-      | eapply a_wf_pskl_to_a_scope_pskl;
-          [ exact HwfP1κ | intros z b Hb; exact Hb
-          | intros α Hα; clear - Hα; fsetdec ]
+      | exact HwfP1κ
       | exact HwfΘ ]. }
   assert (HwfΘxP : a_wf_aenv ((x ~ abind_var_skl P) ++ Θ)).
   { apply a_wf_aenv__var;
       [ clear - Hx; fsetdec
-      | eapply a_wf_pskl_to_a_scope_pskl;
-          [ exact HwfPrule | intros z b Hb; exact Hb
-          | intros α Hα; clear - Hα; fsetdec ]
+      | exact HwfPrule
       | exact HwfΘ ]. }
   assert (Hincx : κ ∷ ((x ~ bq) ++ Θ0) ⊑ ((x ~ bs) ++ Θ)).
   { apply (@a_inc__var_skl Θ0 κ Θ nil x P1 (msubst_pskl κ P1));
@@ -2181,9 +2173,7 @@ Proof.
   assert (Hmsc : msubst_pskl (msubst_compose ζc0 κc) Q1 = msubst_pskl ζc0 Q1).
   { eapply msubst_compose_id_pskl;
       [ exact Hwf0 | exact Hwfmid | exact Hidc | exact Hincc | exact Hζc0
-      | eapply a_wf_pskl_to_a_scope_pskl;
-          [ exact HwfQ1 | intros z b Hb; exact Hb
-          | intros α Hα; clear - Hα; fsetdec ] ]. }
+      | exact (a_scope_pskl_of_wf HwfQ1) ]. }
   rewrite Hmsc in Href14σ.
   (* ---- 6. the extended side data and the IH ---- *)
   assert (Hrigx : forall α,
@@ -2612,9 +2602,7 @@ Proof.
   assert (Hms1 : msubst_pskl (msubst_compose ζ1 κa) P0 = msubst_pskl ζ1 P0).
   { eapply msubst_compose_id_pskl;
       [ exact Hwf0 | exact Hwf1 | exact Hida | exact Hinca | exact Hζ1
-      | eapply a_wf_pskl_to_a_scope_pskl;
-          [ exact HwfP0 | intros z b Hb; exact Hb
-          | intros α Hα; clear - Hα; fsetdec ] ]. }
+      | exact (a_scope_pskl_of_wf HwfP0) ]. }
   rewrite Hms1 in Hi.
   (* ---- 3. the function's run (e1 at FN M, P1 → P0) ---- *)
   assert (HwfP1 : Θ1 ⨟ empty ⊢ₚₛᵃ P1)
