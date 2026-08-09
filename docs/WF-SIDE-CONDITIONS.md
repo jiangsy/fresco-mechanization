@@ -440,7 +440,7 @@ carries
 
     NM = a_sub_mode_ty  ->  uskl_ghost_free R'
 
-on the JOIN-side subject, as its last premise (`Hgf`); `a_sub_complete_thm`
+on the JOIN-side subject, as its last premise (`Hgf`); `a_sub_complete`
 (the paper-facing corollary, `prop_sub_complete_dispatch.v` §12) states the
 same premise, so this is an EXTERNAL side condition of the final theorem — at
 the paper's own reflexive instance `R' := κ⌈P⌉ᵘ` it is ghost-freeness of the

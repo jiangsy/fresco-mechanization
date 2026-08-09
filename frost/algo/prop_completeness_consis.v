@@ -32,7 +32,7 @@
 (*  and — for consistency — the PRECISION of the output (⊑ against the    *)
 (*  competing solution's join target), on the AUGMENTED problem           *)
 (*  (Δ₁;Δ₂;Ψ;Θ₀;P₀;R) of :2230-2242.  COMPLETE — no admits; the whole      *)
-(*  bundle (and [a_consis_complete_thm]) is axiom-free.                   *)
+(*  bundle (and [a_consis_complete]) is axiom-free.                   *)
 (* ===================================================================== *)
 Require Import Coq.Lists.List.
 Require Import Coq.Arith.Wf_nat.
@@ -319,17 +319,6 @@ Qed.
 (* ===================================================================== *)
 
 (** [ptyp_to_pskl] carries local closure. *)
-Lemma ptyp_to_pskl_lc : forall A, lc_ptyp A -> lc_pskl (ptyp_to_pskl A).
-Proof.
-  induction 1; simpl.
-  - constructor.
-  - constructor.
-  - constructor; auto.
-  - pick fresh α.
-    apply lc_pskl_all_syn_exists with (α1 := α).
-    rewrite <- ptyp_to_pskl_open. auto.
-Qed.
-
 (** [msubst_pskl] commutes with recursive opening when the map's images are
     locally closed (they have no bound variable to be captured). *)
 Lemma msubst_pskl_open_rec_lc : forall κ,
@@ -465,7 +454,7 @@ Qed.
     with the problem/solution/optimality definitions it was stated against.
     That development is SUPERSEDED: completeness AND optimality are proved
     together by the μ-measure bundle in algo/prop_consis_complete.v
-    ([complete_mu], [a_consis_complete_thm] — all Qed, axiom-free), whose
+    ([complete_mu], [a_consis_complete] — all Qed, axiom-free), whose
     fused statement is the paper's (full-algo-spec.tex:1476-1519).  The
     Admitted bundle, its corollaries, the problem/solution definitions, and
     the OPT-only helpers ([skip_tm_var_case], [consis_tophole_solution_inv],
@@ -505,7 +494,7 @@ Proof.
     inversion HeqS; subst.
     destruct C0; simpl in HeqC; try discriminate.
     inversion HeqC; subst.
-    simpl. rewrite ftvar_in_ptyp_to_pskl.
+    simpl. rewrite ftvar_ptyp_to_pskl.
     match goal with
     | |- context[msubst_lookup ?r ?α] =>
         replace (msubst_lookup r α) with (⇓ᵗ[ Θ ] (ptyp_var_f α)) by reflexivity
@@ -1122,10 +1111,6 @@ Proof.
     apply IHad_refine_syn. exact Hnh.
 Qed.
 
-Lemma ftvar_in_pskl_bskl_to_pskl : forall Q,
-  ftvar_in_pskl (bskl_to_pskl Q) [=] ftvar_in_bskl Q.
-Proof. induction Q; simpl; fsetdec. Qed.
-
 (** F-extension along ftv-avoidance of the TARGET: every hole fill is a
     target subterm, so new [F]-atoms that avoid the target's free names —
     and every definition of the context (the [flex_r] unfolding can route
@@ -1640,7 +1625,7 @@ Proof.
     destruct (msubst_lookup_in_or ζ β) as [Hin | [Hni Heq]].
     + apply subst_pskl_in_pskl_fresh_eq.
       pose proof (Him _ _ Hin) as Hfr.
-      pose proof (ftvar_in_ptyp_to_pskl (msubst_lookup ζ β)) as Hfe.
+      pose proof (ftvar_ptyp_to_pskl (msubst_lookup ζ β)) as Hfe.
       clear - Hfr Hfe. fsetdec.
     + rewrite Heq. simpl.
       destruct_if as [Hc | _]; [ congruence | reflexivity ].
@@ -1686,7 +1671,7 @@ Proof.
   - clear - Hα; fsetdec.
   - clear - Hα; fsetdec.
   - exists α2. split; [ fsetdec | ].
-    rewrite ftvar_in_ptyp_to_pskl in Hα. exact Hα.
+    rewrite ftvar_ptyp_to_pskl in Hα. exact Hα.
   - apply union_1 in Hα. destruct Hα as [H1 | H2].
     + destruct (IHa α' H1) as [β [HY1 HY2]].
       exists β; split; [ fsetdec | exact HY2 ].
@@ -3743,7 +3728,7 @@ Proof.
     replace (ptyp_to_bskl_syn τ)
       with (pskl_to_bskl_syn (ptyp_to_pskl τ)) by reflexivity.
     apply ad_refine_syn_f__hole.
-    + rewrite ftvar_in_ptyp_to_pskl. exact Hdisj.
+    + rewrite ftvar_ptyp_to_pskl. exact Hdisj.
     + apply a_wf_ptyp_to_wf_pskl. exact Hwfτ.
   - (* __tophole_remove : arbitrary target; recurse under the source strip *)
     apply ad_refine_syn_f__tophole_remove.
@@ -3785,7 +3770,7 @@ Proof.
   - (* __hole *)
     inversion HeqT; subst Q.
     apply ad_refine_pskl_f__hole.
-    + rewrite ftvar_in_ptyp_to_pskl. exact Hdisj.
+    + rewrite ftvar_ptyp_to_pskl. exact Hdisj.
     + apply a_wf_ptyp_to_wf_pskl. exact Hwfτ.
   - (* __tophole_remove *)
     apply ad_refine_pskl_f__tophole_remove.
@@ -5084,7 +5069,7 @@ Proof.
           | exact Hjoin | ].
         pose proof (ftvar_in_bskl_syn
                       (ptyp_to_pskl (msubst_lookup κ α))) as Hf1.
-        pose proof (ftvar_in_ptyp_to_pskl (msubst_lookup κ α)) as Hf2.
+        pose proof (ftvar_ptyp_to_pskl (msubst_lookup κ α)) as Hf2.
         clear - Hf1 Hf2 Hftvα. fsetdec. }
       pose proof (ftvar_in_uskl_pskl (msubst_pskl κ P)) as Hf3.
       clear - HγnS Hα1κP Hf3. fsetdec.
@@ -5269,7 +5254,7 @@ Proof.
         - intros α2 Hα2. rewrite ftvar_in_uskl_pskl in Hα2.
           clear - HO2 Hα2. fsetdec.
         - intros α2 Hα2. rewrite ftvar_in_bskl_syn in Hα2.
-          rewrite ftvar_in_ptyp_to_pskl in Hα2.
+          rewrite ftvar_ptyp_to_pskl in Hα2.
           rewrite Hddα in Hα2.
           assert (Hwfd : a_wf_ptyp Θ' (⇓ᵗ[ Θ' ] (msubst_lookup κ α)))
             by (apply a_wf_ptyp_downarrow_mono;
@@ -5546,7 +5531,7 @@ Proof.
       - intros α2 Hα2. rewrite ftvar_in_uskl_pskl in Hα2.
         clear - HO2 Hα2. fsetdec.
       - intros α2 Hα2. rewrite ftvar_in_bskl_syn in Hα2.
-        rewrite ftvar_in_ptyp_to_pskl in Hα2.
+        rewrite ftvar_ptyp_to_pskl in Hα2.
         rewrite Hddα in Hα2.
         assert (Hwfd : a_wf_ptyp Θ' (⇓ᵗ[ Θ' ] (msubst_lookup κ α)))
           by (apply a_wf_ptyp_downarrow_mono;
@@ -5878,7 +5863,7 @@ Proof.
       - intros α2 Hα2. rewrite ftvar_in_uskl_pskl in Hα2.
         clear - HO2 Hα2. fsetdec.
       - intros α2 Hα2. rewrite ftvar_in_bskl_syn in Hα2.
-        rewrite ftvar_in_ptyp_to_pskl in Hα2.
+        rewrite ftvar_ptyp_to_pskl in Hα2.
         rewrite Hddα in Hα2.
         assert (Hwfd : a_wf_ptyp Θ' (⇓ᵗ[ Θ' ] (msubst_lookup κ α)))
           by (apply a_wf_ptyp_downarrow_mono;
@@ -6298,7 +6283,7 @@ Proof.
     { intro β2.
       pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
                     β2 (ptyp_to_pskl τdef) α1) as Hup.
-      pose proof (ftvar_in_ptyp_to_pskl τdef) as Hfe.
+      pose proof (ftvar_ptyp_to_pskl τdef) as Hfe.
       clear - Hup Hfe. fsetdec. }
     assert (HwfP0s : (Ξ ++ Θ0') ⨟ empty ⊢ₚₛᵃ
               (subst_pskl_in_pskl (ptyp_to_pskl τdef) α1 P)).
@@ -8672,7 +8657,7 @@ Proof.
             [ exact Hrs | exact Hwfth
             | clear - Hα1Δ1; fsetdec | exact Hbγ ]).
       pose proof (ftvar_in_bskl_inh (bskl_to_pskl Qb)) as Hfe.
-      pose proof (ftvar_in_pskl_bskl_to_pskl Qb) as Hfe2.
+      pose proof (ftvar_bskl_to_pskl Qb) as Hfe2.
       clear - Hnq Hfe Hfe2. fsetdec.
     + intros β τ Hb.
       pose proof (Hnfdth β τ Hb) as Hi.
@@ -8786,7 +8771,7 @@ Qed.
 (*  instantiating the augmentation to Δ1 = Δ2 = ∅, Ψ = ∅.  The paper's    *)
 (*  unaugmented statement (this is the [TODO] the old bundle left open).  *)
 (* ===================================================================== *)
-Lemma a_consis_complete_thm : forall Θ0 P0 P,
+Lemma a_consis_complete : forall Θ0 P0 P,
   a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->

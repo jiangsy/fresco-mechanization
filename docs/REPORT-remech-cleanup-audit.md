@@ -256,12 +256,142 @@ removed developments).
 > "this tactic is 99.9%" is compatible with three cheap calls and one
 > catastrophic one, and the fixes those two situations need are different.
 >
-> ## Remaining in Phase 2
+> ## ✅ PHASE 3 (2026-08-09) — §5.4 LANDED, duplicates **53 → 39**, `_thm` retired
 >
-> - §8.1d — flip `prop_completeness_sub_gen.v` onto the facade (now unblocked, untested).
-> - The other 53 duplicated names outside the `completeness_look` cluster.
-> - §5.4 `prop_coercions.v`, §8.2 `prop_aenv.v`, §5.3 composite chains,
->   §7.1 `subst_bskl_in_uskl` rename, §4 the `mode_spine` work.
+> | | |
+> |---|---|
+> | §5.4 | **`frost/prop_coercions.v` created** (409 lines, 38 lemmas) — the conversion property layer, gathered from ELEVEN files.  `coercions.v` is now definitions-only; `prop_basic.v` is the predicate layer and `Require Export`s the new file, so its ~99 consumers needed no change |
+> | naming | the `_thm` suffix retired from all 5 names that carried it |
+> | litter | 77 orphaned artifacts removed; **`make tidy`** added; `make clean`'s depth bug fixed |
+> | dedupe | 53 → **39** duplicated names |
+>
+> ### The `_thm` suffix meant nothing
+>
+> `a_pat_sound` beside `a_sub_sound_thm` — the user flagged the inconsistency.
+> It was not a distinction: for all four (`a_sub_sound_thm`,
+> `a_sub_complete_thm`, `a_consis_complete_thm`, `a_sub_flex_sound_thm`, plus
+> `a_sub_sound_thm_v`) **the bare name was unoccupied**.  Meanwhile
+> `a_typing_complete` carries twelve row-siblings and no suffix, so the tree's
+> own majority convention was already "no suffix".  Renamed; the rule is now in
+> `CLAUDE.md`.
+>
+> ### §5.4 — what was actually wrong
+>
+> The report predicted a tidiness win.  It is bigger than that, because the
+> same fact was proved **two, three and four times** under DIFFERENT names,
+> which no name-keyed duplicate scan can see:
+>
+> | fact | copies | names it went under |
+> |---|---|---|
+> | `ftvar_in_pskl (ptyp_to_pskl A) [=] ftvar_in_ptyp A` | **4** | `ftvar_in_pskl_ptyp_to_pskl`, `ftvar_in_ptyp_to_pskl`, `ftvar_ptyp_to_pskl`, `ftvar_in_pskl_ptyp_to_pskl_local` |
+> | `ftvar_in_btyp (ptyp_to_btyp_syn A) = ftvar_in_ptyp A` | **3** | twice as `ftvar_ptyp_to_btyp_syn` (once weakened to `[<=]`), once as `ftvar_paint_btyp_syn_eq` |
+> | `ftvar_in_ptyp (btyp_to_ptyp B) = ftvar_in_btyp B` | **3** | `ftvar_btyp_to_ptyp` ×2 (`=` and `[<=]`), `ftvar_in_ptyp_btyp_to_ptyp` (`[=]`) |
+> | `mono_ptyp_to_pskl_lc` / `mono_ptyp_lc` / `ptyp_to_pskl_lc` / `is_tskl_lc` | 3/3/2/2 | one name each |
+>
+> ⚠️ **The tree contained written proof that this is a correctness hazard.**
+> `decl/prop_syntax_directed.v`'s `ftvar_paint_btyp_syn_eq` existed for no
+> reason except to escape a name collision — its own comment said so: *"the
+> imported `ftvar_ptyp_to_btyp_syn` is the weaker `[<=]` variant (it shadows
+> the `=` one from prop_wellformed); we need both inclusions here."*  Someone
+> re-proved a two-line induction rather than fight the shadow.  By the time it
+> was found it had **zero uses** — dead code left behind by a name clash.
+>
+> ### The resolution rule: keep the STRONGEST form, derive the rest
+>
+> Three of the collisions were not duplicates — they were the same fact at
+> different strengths (`=` vs `[=]` vs `[<=]`; general `open` vs its variable
+> instance).  Keeping both under different names would have been the wrong
+> fix.  Each is now stated ONCE in its strongest form and the weak uses
+> `rewrite` with it.
+>
+> ⚠️ **But "strongest form" does NOT mean "most general statement".**  I first
+> deleted the variable-instance `_open` lemmas outright, reasoning that the
+> general form subsumes them — `decl/` files see only the general form and were
+> already doing `rewrite <- ptyp_to_btyp_inh_open` against it successfully.
+> `make coq` refuted that: `rewrite`'s matching is **syntactic**, so unifying
+> the pattern's `ptyp_to_btyp_inh ?A2` against a bare `btyp_var_f α` in the goal
+> would need the fixpoint unfolded, and it will not do that.  Logical
+> subsumption is not rewrite-subsumption.
+>
+> The resolution keeps the spirit without the error: `_open_var` exists as a
+> **one-line corollary** (`exact (…_open A (ptyp_var_f α))` — the two differ
+> only up to conversion), not a second induction.  So there is still one proof,
+> and the two names now make visible an asymmetry that used to be settled by
+> import order: `decl/` goals want the general form, `algo/` goals want the
+> variable one.
+>
+> ### ⚙ `make tidy`
+>
+> Phase 1 swept litter by hand; it came straight back (11 `.glob`, 66 `.aux`),
+> because `clean` matched `*/.*.aux */*/.*.aux` and the tree is now THREE deep,
+> and because it knew only the `scratch_*` prefix, not `probe_*` / `chk_*` /
+> `zz_*`.  `make tidy` instead deletes an artifact iff its companion `.v` is
+> gone — no name patterns to maintain, and unlike `clean` it PRESERVES the live
+> `.aux` timing data that every perf pass starts from.
+>
+> ### ⚠️ The trap that cost the two failed `make coq` runs
+>
+> **`Set Implicit Arguments` is per-FILE, so moving a lemma silently
+> re-elaborates its signature.**  `mono_ptyp_to_pskl_lc : forall τ, mono_ptyp τ
+> -> …` has a STRICTLY implicit subject; it came from `algo/prop_flex.v`, which
+> sets the flag, so three call sites wrote `mono_ptyp_to_pskl_lc Hm`.  In a file
+> without the flag τ turns explicit and `Hm` is read as the `ptyp`.  Fix: the
+> flag is now SCOPED to §3 of `prop_coercions.v`, which is exactly the block
+> whose lemmas have the `forall x, Pred x -> Pred' (f x)` shape.  §1/§2/§4 must
+> stay outside it — their arguments are explicit everywhere and are passed
+> explicitly (`ftvar_ptyp_to_btyp_syn (btyp_to_ptyp B)`).
+>
+> ⚙ Same hazard as `prop_swap.v` §6, recorded in Phase 1, but in the opposite
+> direction — that one moved SIA-elaborated lemmas INTO a non-SIA file.  The
+> lesson generalises: **a cross-file lemma move is not signature-preserving.**
+>
+> ### ⚠️ `make quick` cannot verify a refactor of this kind
+>
+> `vos` mode skips everything between `Proof` and `Qed`, so it checks
+> statements, imports and statement-level name visibility and nothing else.
+> Three `make quick` runs went green on changes that `make coq` then rejected
+> (a moved lemma used inside a proof body; the implicit-argument break above).
+> A name-visibility scan over the import graph found the first class but is
+> blind to the second.  **For a dedupe or a move, `make coq` is the only gate.**
+> Related: `make coq > log; echo $?` reports the *echo's* status — a failed
+> build reads as exit 0.
+>
+> ## Remaining
+>
+> ### ⚙ "39 duplicated names" is not "39 deletions"
+>
+> The scan keys on NAMES, so its output mixes two unrelated problems.  Measured
+> over the 39 that remain:
+>
+> | class | count | correct fix |
+> |---|---|---|
+> | identical statement | 12 | delete one copy |
+> | alpha-variant | 1 | delete one copy |
+> | **genuinely different statements** | **26** | **rename, or generalise one to subsume the other — merging would be WRONG** |
+>
+> So the floor is not zero deletions-to-go: only ~13 are true duplicates.  The
+> 26 are *name collisions between different lemmas*, which is the more
+> dangerous class (that is what silently reroutes an `apply`), and the fix is a
+> rename or a generalisation, never a merge.  The target to drive to zero is
+> **collisions**, not names.
+>
+> - §8.1d — flip `prop_completeness_sub_gen.v` onto the facade.  ⚙ Verified this
+>   pass: it has **0** own-name collisions with the three cluster files the
+>   facade would newly expose, and no cycle (they are all EARLIER in the linear
+>   chain, so already transitively required).  Untested.
+> - The 13 true duplicates: `a_wf_*` / `guarded_pskl_*` / `d_wf_ptyp_*` /
+>   `msubst_*`.
+> - `binds_insert_mid` is the instructive one in the "26": both copies are
+>   stated over `abind` when the fact is **polymorphic in the payload**, so one
+>   generic lemma subsumes both — but the two state their arguments in
+>   DIFFERENT ORDERS and 13 call sites apply them positionally with `@`, so the
+>   merge is not a rename.  Much of §8.2's list is the same shape.
+> - §8.2 `prop_aenv.v`, §5.3 composite chains, §7.1 `subst_bskl_in_uskl`
+>   rename, §4 the `mode_spine` work.
+> - ⚙ Deliberately NOT done: renaming the five skeleton conversions' var-form
+>   `_open` lemmas to `_open_var` for uniformity with the type conversions.
+>   144 call sites, no collision to fix, no semantic change — churn.  The two
+>   names that DID collide are resolved above.
 
 **Scope** the eight aspects the user named.  Findings are graded
 

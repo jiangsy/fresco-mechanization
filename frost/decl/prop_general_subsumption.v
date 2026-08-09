@@ -211,33 +211,6 @@ Proof. induction B; simpl; fsetdec. Qed.
 (** A synthesised [btyp] is the syn-painting of its own forgetful image, so
     [d_consis_compose]'s [ptyp_to_btyp_syn A] middle can be fed an arbitrary
     [is_styp] btyp via [A := btyp_to_ptyp B]. *)
-Lemma btyp_to_ptyp_open_rec : forall B1 B2 k,
-    btyp_to_ptyp (open_btyp_wrt_btyp_rec k B2 B1) =
-    open_ptyp_wrt_ptyp_rec k (btyp_to_ptyp B2) (btyp_to_ptyp B1).
-Proof.
-  induction B1; intros B2 k; simpl; try reflexivity.
-  - destruct (lt_eq_lt_dec n k) as [[|]|]; reflexivity.
-  - rewrite IHB1_1, IHB1_2; reflexivity.
-  - rewrite IHB1; reflexivity.
-  - rewrite IHB1; reflexivity.
-Qed.
-
-Lemma btyp_to_ptyp_open : forall B1 B2,
-    btyp_to_ptyp (open_btyp_wrt_btyp B1 B2) =
-    open_ptyp_wrt_ptyp (btyp_to_ptyp B1) (btyp_to_ptyp B2).
-Proof.
-  intros. unfold open_btyp_wrt_btyp, open_ptyp_wrt_ptyp.
-  apply btyp_to_ptyp_open_rec.
-Qed.
-
-Lemma ftvar_ptyp_to_btyp_syn : forall A,
-    ftvar_in_btyp (ptyp_to_btyp_syn A) [<=] ftvar_in_ptyp A.
-Proof. induction A; simpl; fsetdec. Qed.
-
-Lemma ftvar_btyp_to_ptyp : forall B,
-    ftvar_in_ptyp (btyp_to_ptyp B) [<=] ftvar_in_btyp B.
-Proof. induction B; simpl; fsetdec. Qed.
-
 Lemma ptyp_to_utyp_syn_btyp_to_ptyp : forall B,
     ptyp_to_utyp_syn (btyp_to_ptyp B) = btyp_to_utyp_syn B.
 Proof.
@@ -254,8 +227,7 @@ Proof.
   - f_equal.
     pick fresh α for (L `union` ftvar_in_btyp B).
     apply open_btyp_wrt_btyp_inj with (α1 := α).
-    + pose proof (ftvar_ptyp_to_btyp_syn (btyp_to_ptyp B)).
-      pose proof (ftvar_btyp_to_ptyp B). fsetdec.
+    + rewrite ftvar_ptyp_to_btyp_syn, ftvar_btyp_to_ptyp. solve_notin_auto.
     + fsetdec.
     + specialize (H0 α ltac:(solve_notin_auto)).
       rewrite btyp_to_ptyp_open in H0.

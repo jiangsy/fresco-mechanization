@@ -8,12 +8,12 @@
     |---|---|---|---|
     | P7a | [a_sub_flex_complete] | lemma:complete-flex-subtyping (:2836) | the contexts [Θ0 ∣ Ξ] |
     | P7b | [a_sub_complete_gen]  | generalised thm:complete-subtyping (:3050) | lex(fuel, ∣Ψ∣) |
-    | P7c | [a_sub_complete_thm]  | thm (algorithmic.tex:1446) | instantiate R := P, Ψ := ∅ |
+    | P7c | [a_sub_complete]  | thm (algorithmic.tex:1446) | instantiate R := P, Ψ := ∅ |
 
     P7a's proof is "by induction on the contexts of the subtyping judgement,
     MUTUALLY with the generalised version of thm:complete-subtyping below", and
     P7b's [P = α̂ ∧ M = FN M'] case calls P7a at [Ξ = ·].  So they are ONE
-    bundle; [a_consis_complete_thm]'s 3-way mutual block is the shape precedent.
+    bundle; [a_consis_complete]'s 3-way mutual block is the shape precedent.
 
     THREE DECISIONS, and two of them CORRECT DESIGN §1 as written.
 
@@ -26,7 +26,7 @@
         does not survive the Arrow split).  P5's [ad_pat_sub_precise_upre] and
         ALL FIVE P6 lemmas are stated over [_g], so P7 must be too.
 
-    (2) THE CONCLUSION KEEPS [a_consis_complete_thm]'s FACTORED SHAPE — the
+    (2) THE CONCLUSION KEEPS [a_consis_complete]'s FACTORED SHAPE — the
         [forall κ1, is_id_msubst κ1 → … → exists ζ] wrapper — rather than the
         paper's flat [exists θ1].  This is not a stylistic choice and it is
         not optional: [a_inc_equiv] is POSITIONAL (def_meta.v:268 pairs the two
@@ -36,16 +36,16 @@
         in the middle rather than at the end.  The factored form says the same
         thing the paper's [inc[θ≡θ1]{Θ0}{Θ}] does while staying well-formed:
         the restriction of ζ along an identity κ1 is what is compared to κ.
-        Four of P7b's seven cases are applications of [a_consis_complete_thm],
+        Four of P7b's seven cases are applications of [a_consis_complete],
         and they pass this conclusion straight through.
 
     (3) THE THIRD SOLUTION PREMISE STAYS (§1's "lesson 1"): besides the
         subtyping derivation and the P0-fill, the SUBJECT's own refinement
         [⊢ᵣₚᵃ κ⌊R⌋ˢ ⊳ ⌊Q⌋].  It is exactly what [a_consis_sound] /
-        [a_sub_sound_thm] PRODUCE for every algorithmic output, so the
+        [a_sub_sound] PRODUCE for every algorithmic output, so the
         sound/complete pair still characterises the algorithm exactly.
 
-    The wf / mode premises are P6-L's and [a_sub_sound_thm]'s verbatim, which is
+    The wf / mode premises are P6-L's and [a_sub_sound]'s verbatim, which is
     what lets the two be composed without re-deriving side conditions. *)
 
 Require Import Coq.Lists.List.
@@ -82,7 +82,7 @@ Require Import src.frost.algo.prop_pat_sub.       (* uskl_to_pskl_ptyp_to_uskl_s
 Require Import src.frost.algo.prop_sub_msubst_equiv. (* ≡ᵘ + erasure + generation *)
 Require Import src.frost.algo.prop_stability.     (* a_wf_pskl_isub *)
 Require Import src.frost.algo.prop_inc_strengthen. (* a_assign_unify_consis_flex_preserve *)
-Require Import src.frost.decorated_algo.prop_decorate_key.  (* a_sub_sound_thm *)
+Require Import src.frost.decorated_algo.prop_decorate_key.  (* a_sub_sound *)
 Require Import src.frost.decorated_algo.prop_decorate.       (* pskl_to_uskl kit *)
 Require Import src.frost.algo.prop_soundness_sub.      (* a_wf_pskl_subst_tvar *)
 Require Import src.frost.algo.prop_consis_precise.   (* uskl_precise kit *)
@@ -309,7 +309,7 @@ Qed.
 
 (** At the empty forbidden set the hygienic refinement IS the plain one; this
     is the converse of [ad_refine_pskl_f_forget], used to hand the join's
-    leaf refinements to [a_consis_complete_thm] (whose premises are [_f]). *)
+    leaf refinements to [a_consis_complete] (whose premises are [_f]). *)
 Lemma ad_refine_pskl_f_empty_intro : forall Θ Δ P Q,
   Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q ->
   ad_refine_pskl_f empty Θ Δ P Q.
@@ -524,7 +524,7 @@ Print Assumptions a_sub_complete_ghostg.
 (*                                                                        *)
 (*  Sub-Check is NOT one of them: its counterpart is [pskl_to_bskl_inh B]  *)
 (*  for a merely GUARDED B, which is [is_sskl] only when B is ∀-free.  It  *)
-(*  takes the paper's own route instead — [a_consis_complete_thm] for the  *)
+(*  takes the paper's own route instead — [a_consis_complete] for the  *)
 (*  run and the precision, then [a_consis_concrete_output_equiv]           *)
 (*  (prop_sub_concrete_rhs.v) to move that precision from the consistency  *)
 (*  OUTPUT to [P0].                                                       *)
@@ -538,7 +538,7 @@ Print Assumptions a_sub_complete_ghostg.
 (*  why the F-indexed mirror exists: [ad_refine_syn_f_strip]               *)
 (*  (prop_soundness_consis.v:750) does the move under [α ∈ F].  So state the   *)
 (*  lemma over [ad_precise_f] and forget at the end — exactly how          *)
-(*  [a_consis_complete_thm] is structured.                                 *)
+(*  [a_consis_complete] is structured.                                 *)
 (*                                                                        *)
 (*  Row-by-row the rest is mechanical: unit / var are reflexivity and      *)
 (*  [__var]; arrow is a congruence ([is_sskl] and wf both split);          *)
@@ -840,7 +840,7 @@ Qed.
 (*                                                                        *)
 (*  Re-reading :3134, the paper does NOT read a precision off the          *)
 (*  consistency premise.  It invokes thm:complete-consistency — which is   *)
-(*  mechanized, [a_consis_complete_thm] — on the consistency problem       *)
+(*  mechanized, [a_consis_complete] — on the consistency problem       *)
 (*  [(Θ0; □; P)], and takes the precision from THAT.  Since [skmod] forces *)
 (*  [P0 = □] in both rows, the only thing needed to line the two up is     *)
 (*  that the algorithmic consistency OUTPUT at [P0 = □] is the SUBJECT.    *)
@@ -881,7 +881,7 @@ Print Assumptions a_consis_hole_p0_output.
 (*      [ad_pat_consis_strip_tags] (prop_consis_precise.v:275) turns       *)
 (*      [Ψ ⨟ Θ ⊢ₛᵃ κR ∼ Q] into [∅ ⨟ Θ ⊢ₛᵃ pskl_to_uskl ⌊κR⌋ˢ ∼ Q], and   *)
 (*      [⌊κR⌋ˢ = κ⌊R⌋ˢ = κP] by a one-line commutation;                    *)
-(*   4. [a_consis_complete_thm] on the problem [(Θ0; □; P)] — its other    *)
+(*   4. [a_consis_complete] on the problem [(Θ0; □; P)] — its other    *)
 (*      two premises ARE this motive's refinement premises at [P0 = □];    *)
 (*   5. [a_consis_hole_p0_output] (above) says the run's output is [P], so *)
 (*      the theorem's precision IS a precision about [P].                  *)
@@ -1078,7 +1078,7 @@ Print Assumptions a_inc_equiv_precise_msubst_flip.
 (*  Both rows have [skmod] forcing [P0 = □], both algorithmic counterparts *)
 (*  return the INPUT skeleton (or [∀◇] of it) at the INPUT context, and    *)
 (*  both take their precision from thm:complete-consistency —              *)
-(*  [a_consis_complete_thm] — on the consistency problem [(Θ0; □; P)].     *)
+(*  [a_consis_complete] — on the consistency problem [(Θ0; □; P)].     *)
 (*  The two conjuncts about the increase are [ζ := κ] + [opt_axiom_factor] *)
 (*  exactly as in [a_sub_complete_ghost].                                  *)
 (* ===================================================================== *)
@@ -1122,7 +1122,7 @@ Lemma a_sub_complete_hole_p0_precision : forall Θ0 P Θ κ Q,
 Proof.
   intros Θ0 P Θ κ Q Hwf0 Hwfth HwfP Hinc Hconsis Hrs Hrp.
   (* 1. thm:complete-consistency at [(Θ0; □; P)] *)
-  destruct (a_consis_complete_thm Hwf0 (a_wf_pskl__hole Θ0 empty)
+  destruct (a_consis_complete Hwf0 (a_wf_pskl__hole Θ0 empty)
               HwfP Hinc Hwfth Hconsis Hrs Hrp)
     as [P1 [Θ1 [Hrun Hopt]]].
   (* 2. at [P0 = □] the run's output IS the subject *)
@@ -1377,7 +1377,7 @@ Print Assumptions a_sub_complete_univ_ghost_r.
 (* ===================================================================== *)
 (*  Sub-Check — THE SAME SHAPE ONE LEVEL UP                               *)
 (*                                                                        *)
-(*  [a_consis_complete_thm] supplies BOTH the run (algorithmic [Check] is  *)
+(*  [a_consis_complete] supplies BOTH the run (algorithmic [Check] is  *)
 (*  a consistency run under [a_consis_chk]) and the two increase           *)
 (*  conjuncts.  The PRECISION, on the other hand, is free: [a_sub__check]  *)
 (*  outputs [P0] itself, so the goal is [κ'P0 ⊑ ⌊Q⌋] — and at [Q =         *)
@@ -1455,7 +1455,7 @@ Proof.
     destruct (skl_tyequiv_consis_transport Herase Hwfth
                 (fun x b Hb => Hb)) as [Hct _].
     exact (Hct _ _ H0). }
-  destruct (a_consis_complete_thm Hwf0 HwfP0 HwfP Hinc Hwfth Hc Hrs Hrp)
+  destruct (a_consis_complete Hwf0 HwfP0 HwfP Hinc Hwfth Hc Hrs Hrp)
     as [P1 [Θ1 [Hrun Hopt]]].
   destruct (a_consis_sound_aux Hrun Hwf0 HwfP0 HwfP
               ltac:(intros α Hα; clear - Hα; solve_notin_auto)
@@ -1645,7 +1645,7 @@ Proof.
     destruct (skl_tyequiv_refine_pskl_f_transport Herase1 Hwfth
                 (fun x b Hb => Hb)) as [Hrpt _].
     exact (Hrpt _ _ _ H0). }
-  destruct (a_consis_complete_thm Hwf0 HwfP0a HwfPa Hinc Hwfth Hc1
+  destruct (a_consis_complete Hwf0 HwfP0a HwfPa Hinc Hwfth Hc1
               Hrs1 Hrp1)
     as [Q1' [Θ1 [Hrun1 Hopt1]]].
   (* the domain run's soundness: id-witness, wf, join at Θ1 *)
@@ -1748,7 +1748,7 @@ Proof.
   { eapply a_sub__arrow; [ exact Hrun1 | exact Hrun2 ]. }
   (* ---- the optimality package ---- *)
   intros κf Hidf Hincf.
-  destruct (a_sub_sound_thm Hrun2 Hwf1 HwfP0b1 HwfPb1 HmodSKb HmodTYb)
+  destruct (a_sub_sound Hrun2 Hwf1 HwfP0b1 HwfPb1 HmodSKb HmodTYb)
     as [[[w2 [Hidw2 Hincw2]] Hdefs2] [Hwf2 _]].
   destruct (Hopt2 w2 Hidw2 Hincw2) as [ζ2 [Hζ2 [Hie2 Hprec2]]].
   assert (Heqw : w1 = κf) by (eapply is_id_inc_unique; eauto).
@@ -2229,7 +2229,7 @@ Proof.
     as [P1 [Θo [Hrun Hopt]]].
   pose proof (a_sub_ty_tc_output Hrun) as ->.
   (* ---- 5. the run's id increase shapes the output ---- *)
-  destruct (a_sub_sound_thm Hrun Hwf0' HwfP0α HwfPα HmodSKα HmodTYα)
+  destruct (a_sub_sound Hrun Hwf0' HwfP0α HwfPα HmodSKα HmodTYα)
     as [[[w1 [Hidw1 Hincw1]] Hdefs1] [HwfΘo _]].
   destruct (a_inc_tvar_inv Hincw1) as [Ξj [Θ1 [-> [Hsufj Hincw1']]]].
   assert (HuqΘo : uniq (Ξj ++ (α ~ abind_tvar) ++ Θ1))
@@ -2365,7 +2365,7 @@ Proof.
                   (pskl_var_f β) ltac:(clear - Fr; solve_notin_auto)) in Hp1.
     rewrite <- (subst_pskl_in_pskl_intro α (bskl_to_pskl B)
                   (pskl_var_f β)) in Hp1.
-    2: { pose proof (ftvar_in_pskl_bskl_to_pskl B) as Hfb.
+    2: { pose proof (ftvar_bskl_to_pskl B) as Hfb.
          clear - Fr Hfb. simpl in Fr. fsetdec. }
     rewrite (msubst_pskl_open_lc (ptyp_to_pskl A0) Hlcζ Hβζ) in Hp1.
     rewrite pskl_to_bskl_inh_open in Hp1.
@@ -2756,7 +2756,7 @@ Proof.
       | exact Hrun ]. }
   (* ---- 6. the package ---- *)
   intros κf Hidf Hincf.
-  destruct (a_sub_sound_thm Hrun HwfΞΘ0 HwfP0' HwfPnew HmodSK HmodTY)
+  destruct (a_sub_sound Hrun HwfΞΘ0 HwfP0' HwfPnew HmodSK HmodTY)
     as [[[w [Hidw Hincw]] Hdefs] [HwfΘ1 _]].
   destruct (Hopt w Hidw Hincw) as [ζ' [Hζ' [Hie' Hprec']]].
   exists ζ'. split; [ exact Hζ' | ]. split.
@@ -3067,7 +3067,7 @@ Proof.
       | exact Hrun ]. }
   (* ---- 6. the package ---- *)
   intros κf Hidf Hincf.
-  destruct (a_sub_sound_thm Hrun HwfΞΘ0 HwfP0' HwfPnew HmodSK HmodTY)
+  destruct (a_sub_sound Hrun HwfΞΘ0 HwfP0' HwfPnew HmodSK HmodTY)
     as [[[w [Hidw Hincw]] Hdefs] [HwfΘ1 _]].
   destruct (Hopt w Hidw Hincw) as [ζ' [Hζ' [Hie' Hprec']]].
   exists ζ'. split; [ exact Hζ' | ]. split.
@@ -3143,7 +3143,7 @@ Print Assumptions a_sub_complete_forall_l_untagged.
 (*  (A)  The flexible walk's SOUNDNESS corollary                          *)
 (* ===================================================================== *)
 
-Lemma a_sub_flex_sound_thm : forall NM M P0 Θ0 Ξ α A Θ1,
+Lemma a_sub_flex_sound : forall NM M P0 Θ0 Ξ α A Θ1,
   a_sub_flex NM M P0 Θ0 Ξ α A Θ1 ->
   a_decls Ξ ->
   a_wf_aenv (Ξ ++ Θ0) ->
@@ -3223,7 +3223,7 @@ Lemma a_sub_flex_out_flex_only : forall NM M P0 Θ0 Ξ α A Θ1 β,
     bd = abind_flex_mono \/ exists τ, bd = abind_flex_mono_def τ.
 Proof.
   intros * Hrun Hdecls Hwf HwfP0 Hαb Hmod Hgf Hβ bd Hb.
-  destruct (a_sub_flex_sound_thm Hrun Hdecls Hwf HwfP0 Hαb Hmod Hgf)
+  destruct (a_sub_flex_sound Hrun Hdecls Hwf HwfP0 Hαb Hmod Hgf)
     as [[[w [Hidw Hincw]] _] _].
   assert (Hprov : a_suffix_binding bd \/ β `in` dom (Ξ ++ Θ0))
     by (eapply a_inc_binds_provenance; eassumption).
@@ -3559,7 +3559,7 @@ Proof.
               HdeclsΞ HdomΞ Hwf' Hwfth HwfP0'
               Hfα' HmodSK HmodTY Hincih Hslack HD Hrs HwfQ)
     as [P1 [Θ1 [Hrun Hopt]]].
-  destruct (a_sub_flex_sound_thm Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY)
+  destruct (a_sub_flex_sound Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY)
     as [[[w [Hidw Hincw]] Hdefs] HwfΘ1].
   assert (HscP1 : a_scope_pskl Θ1 P1)
     by (eapply a_sub_flex_out_scope;
@@ -4036,7 +4036,7 @@ Proof.
               (subst_pskl_in_pskl (ptyp_to_pskl τ) β P0))
     by (intros HTY; apply a_ty_mode_compat_subst_mono;
         [ apply HmodTY; exact HTY | exact Hmτ ]).
-  destruct (a_sub_sound_thm Hrun Hwf' HwfP0' HwfS HmodSK' HmodTY')
+  destruct (a_sub_sound Hrun Hwf' HwfP0' HwfS HmodSK' HmodTY')
     as [[[w [Hidw Hincw]] Hdefs] [HwfΘ1 [Qt [HeqQt [Hjoin1 _]]]]].
   assert (HscP1 : a_scope_pskl Θ1 P1)
     by (rewrite <- HeqQt; eapply ad_pat_sub_target_wf; exact Hjoin1).
@@ -4056,13 +4056,13 @@ Proof.
             (subst_pskl_in_pskl (ptyp_to_pskl τ) β P0)).
   { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P0
                   (ptyp_to_pskl τ) β) as h.
-    pose proof (ftvar_in_ptyp_to_pskl τ) as h2.
+    pose proof (ftvar_ptyp_to_pskl τ) as h2.
     clear - h h2 Hβτ. fsetdec. }
   assert (HβS : β `notin` ftvar_in_pskl
             (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α))).
   { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper (pskl_var_f α)
                   (ptyp_to_pskl τ) β) as h.
-    pose proof (ftvar_in_ptyp_to_pskl τ) as h2.
+    pose proof (ftvar_ptyp_to_pskl τ) as h2.
     clear - h h2 Hβτ. fsetdec. }
   destruct (atom_fresh (dom Θ1 `union` ftvar_in_aenv Θ1
                         `union` ftvar_in_pskl P1
@@ -4702,7 +4702,7 @@ Proof.
 
   (* ---- 10. the package: the paper's ⓖ+⑫ ⇒ ⑭ collapse ---- *)
   intros κf Hidf Hincf.
-  destruct (a_sub_sound_thm Hrun HwfΘsrc HwfP0src HwfSsrc HmodSK HmodTY)
+  destruct (a_sub_sound Hrun HwfΘsrc HwfP0src HwfSsrc HmodSK HmodTY)
     as [[[w [Hidw Hincw]] _] [HwfΘ1 _]].
   destruct (Hopt w Hidw Hincw) as [ζ [Hζ [Hie Hprec]]].
   exists ζ. split; [ exact Hζ | ]. split; [ | exact Hprec ].
@@ -4827,7 +4827,7 @@ Lemma ftvar_in_bskl_ptyp_to_bskl_syn : forall A,
   ftvar_in_bskl (ptyp_to_bskl_syn A) [=] ftvar_in_ptyp A.
 Proof.
   intros A. unfold ptyp_to_bskl_syn.
-  rewrite ftvar_in_bskl_syn. apply ftvar_in_ptyp_to_pskl.
+  rewrite ftvar_in_bskl_syn. apply ftvar_ptyp_to_pskl.
 Qed.
 
 (** THE MIRROR.  [join_pskl_downarrow_mono_scoped] scopes the ⇓ of the
@@ -4862,7 +4862,7 @@ Proof.
   - (* var : the counterpart IS the subject's variable *)
     destruct A0; cbn in HeqR; try discriminate HeqR.
     inversion HeqR; subst. simpl.
-    rewrite ftvar_in_bskl_syn. rewrite ftvar_in_ptyp_to_pskl.
+    rewrite ftvar_in_bskl_syn. rewrite ftvar_ptyp_to_pskl.
     simpl in HAD. exact HAD.
   - (* arrow *)
     destruct A0 as [ | nb | γ0 | A1 A2 | A0' ];
@@ -4918,7 +4918,7 @@ Proof.
     pose proof (IHHc Hwf A0 D HeqR HmA HAD) as IH.
     rewrite msubst_bskl_ptyp_to_bskl_syn in IH.
     rewrite ftvar_in_bskl_ptyp_to_bskl_syn in IH.
-    rewrite ftvar_in_bskl_syn. rewrite ftvar_in_ptyp_to_pskl.
+    rewrite ftvar_in_bskl_syn. rewrite ftvar_ptyp_to_pskl.
     exact IH.
 Qed.
 
@@ -4965,7 +4965,7 @@ Proof.
   intros Θ κ Q β Hsc; revert Q;
     induction Q; intros HβQ HβΘ; cbn in *; try solve [ clear; fsetdec ].
   - (* var_f *)
-    rewrite ftvar_in_bskl_syn. rewrite ftvar_in_ptyp_to_pskl.
+    rewrite ftvar_in_bskl_syn. rewrite ftvar_ptyp_to_pskl.
     specialize (Hsc α). clear - Hsc HβQ HβΘ; fsetdec.
   - (* arrow *)
     specialize (IHQ1 ltac:(clear - HβQ; solve_notin_auto) HβΘ).
@@ -5671,7 +5671,7 @@ Proof.
     assert (hw : a_wf_ptyp Θ' τ)
       by (eapply a_wf_aenv_binds_def_wf; [ exact Hwf' | exact Hb' ]).
     apply a_wf_ptyp_ftv_dom in hw.
-    rewrite ftvar_in_ptyp_to_pskl in Hγ. clear - hw Hγ. fsetdec.
+    rewrite ftvar_ptyp_to_pskl in Hγ. clear - hw Hγ. fsetdec.
   - (* flex_r *)
     assert (hd : α `in` dom Θ').
     { destruct (HscQ α ltac:(clear; solve_notin_auto)) as [h | h]; [ exfalso | exact h ].
@@ -5686,7 +5686,7 @@ Proof.
     assert (hw : a_wf_ptyp Θ' τ)
       by (eapply a_wf_aenv_binds_def_wf; [ exact Hwf' | exact Hb' ]).
     apply a_wf_ptyp_ftv_dom in hw.
-    rewrite ftvar_in_ptyp_to_pskl in Hγ. clear - hw Hγ. fsetdec.
+    rewrite ftvar_ptyp_to_pskl in Hγ. clear - hw Hγ. fsetdec.
 Qed.
 
 (** THE JOIN STRENGTHENS AT A MONOTYPE SUBJECT.  In general it does NOT: the
@@ -5725,7 +5725,7 @@ Proof.
         intros γ Hγ; right;
         solve [ apply HscR; rewrite ftvar_in_pskl_uskl_to_pskl in Hγ;
                 clear - Hγ HftvR; fsetdec
-              | apply HscQ; rewrite ftvar_in_pskl_bskl_to_pskl in Hγ;
+              | apply HscQ; rewrite ftvar_bskl_to_pskl in Hγ;
                 clear - Hγ; fsetdec ].
   - (* check *)
     apply ad_pat_sub_gv__check; try assumption.
@@ -5770,7 +5770,7 @@ Proof.
         solve [ apply HscR; rewrite ftvar_in_pskl_uskl_to_pskl in Hγ;
                 clear - Hγ HftvR; fsetdec
               | apply HscQ; simpl;
-                rewrite ftvar_in_pskl_bskl_to_pskl in Hγ;
+                rewrite ftvar_bskl_to_pskl in Hγ;
                 clear - Hγ; fsetdec ].
   - (* arrow *)
     destruct τ0; cbn in HeqR; try discriminate HeqR.
@@ -5787,7 +5787,7 @@ Proof.
         rewrite ftvar_in_pskl_uskl_to_pskl in Hγ.
         simpl in HftvR. clear - Hγ HftvR. fsetdec.
       * intros γ Hγ. right. apply HscQ. simpl.
-        rewrite ftvar_in_pskl_bskl_to_pskl in Hγ. clear - Hγ. fsetdec.
+        rewrite ftvar_bskl_to_pskl in Hγ. clear - Hγ. fsetdec.
     + eapply IHad_pat_sub_gv;
         [ reflexivity | assumption | exact Hu | exact Hwf' | exact Hsub | | ].
       * intros γ Hγ. apply HscR. simpl. simpl in HftvR.
@@ -5927,7 +5927,7 @@ Proof.
       by (eapply a_wf_aenv_binds_def_wf; [ exact Hwf' | exact Hb' ]).
     apply a_wf_ptyp_ftv_dom in hw.
     unfold ptyp_to_bskl_syn in Hγ. rewrite ftvar_in_bskl_syn in Hγ.
-    rewrite ftvar_in_ptyp_to_pskl in Hγ. clear - hw Hγ. fsetdec.
+    rewrite ftvar_ptyp_to_pskl in Hγ. clear - hw Hγ. fsetdec.
   - (* flex_r *)
     assert (hd : α `in` dom Θ').
     { destruct (HscP α ltac:(clear; solve_notin_auto)) as [h | h]; [ exfalso | exact h ].
@@ -5943,7 +5943,7 @@ Proof.
       by (eapply a_wf_aenv_binds_def_wf; [ exact Hwf' | exact Hb' ]).
     apply a_wf_ptyp_ftv_dom in hw.
     unfold ptyp_to_bskl_syn in Hγ. rewrite ftvar_in_bskl_syn in Hγ.
-    rewrite ftvar_in_ptyp_to_pskl in Hγ. clear - hw Hγ. fsetdec.
+    rewrite ftvar_ptyp_to_pskl in Hγ. clear - hw Hγ. fsetdec.
 Qed.
 
 (* ===================================================================== *)
@@ -6504,7 +6504,7 @@ Proof.
       | exact HuqΘ | intros x Hx; exfalso; clear - Hx; fsetdec | exact Hsub'
       | intros γ Hγ; right;
         rewrite <- bskl_to_pskl_msubst_bskl in Hγ;
-        rewrite ftvar_in_pskl_bskl_to_pskl in Hγ;
+        rewrite ftvar_bskl_to_pskl in Hγ;
         clear - HO2 Hγ; fsetdec ]. }
   (* ---- 9. the slack, at the ⇓-composed metasubstitution ---- *)
   assert (Hακdom : α `in` dom κ).
@@ -6529,7 +6529,7 @@ Proof.
               Hinc_sub Hslack' Hjoin' Hrs' HwfQ')
     as [P1 [Θ1 [Hrun Hopt]]].
   (* ---- 11. the junk rename, and the re-attachment ---- *)
-  destruct (a_sub_flex_sound_thm Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY)
+  destruct (a_sub_flex_sound Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY)
     as [[[w [Hidw Hincw]] Hdefs] HwfΘ1].
   assert (HscP1 : a_scope_pskl Θ1 P1)
     by (eapply a_sub_flex_out_scope;
@@ -6892,7 +6892,7 @@ Proof.
       | exact HuqΘ | intros x Hx; exfalso; clear - Hx; fsetdec | exact Hsub'
       | intros γ Hγ; right;
         rewrite <- bskl_to_pskl_msubst_bskl in Hγ;
-        rewrite ftvar_in_pskl_bskl_to_pskl in Hγ;
+        rewrite ftvar_bskl_to_pskl in Hγ;
         clear - HO2 Hγ; fsetdec ]. }
   (* ---- 9. the slack, at the ⇓-composed metasubstitution ---- *)
   assert (Hακdom : α `in` dom κ).
@@ -6916,7 +6916,7 @@ Proof.
               Hinc_sub Hslack' Hjoin' Hrs' HwfQ')
     as [P1 [Θ1 [Hrun Hopt]]].
   (* ---- 11. the junk rename, and the re-attachment ---- *)
-  destruct (a_sub_flex_sound_thm Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY)
+  destruct (a_sub_flex_sound Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY)
     as [[[w [Hidw Hincw]] Hdefs] HwfΘ1].
   assert (HscP1 : a_scope_pskl Θ1 P1)
     by (eapply a_sub_flex_out_scope;
@@ -7312,7 +7312,7 @@ Proof.
       | exact HuqΘ | intros x Hx; exfalso; clear - Hx; fsetdec | exact Hsub'
       | intros γ Hγ; right;
         rewrite <- bskl_to_pskl_msubst_bskl in Hγ;
-        rewrite ftvar_in_pskl_bskl_to_pskl in Hγ;
+        rewrite ftvar_bskl_to_pskl in Hγ;
         clear - HO2 Hγ; fsetdec ]. }
   (* ---- 9. the slack, at the ⇓-composed metasubstitution ---- *)
   assert (Hακdom : α `in` dom κ).
@@ -7336,7 +7336,7 @@ Proof.
               Hinc_sub Hslack' Hjoin' Hrs' HwfQ')
     as [P1 [Θ1 [Hrun Hopt]]].
   (* ---- 11. the junk rename, and the re-attachment ---- *)
-  destruct (a_sub_flex_sound_thm Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY)
+  destruct (a_sub_flex_sound Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY)
     as [[[w [Hidw Hincw]] Hdefs] HwfΘ1].
   assert (HscP1 : a_scope_pskl Θ1 P1)
     by (eapply a_sub_flex_out_scope;

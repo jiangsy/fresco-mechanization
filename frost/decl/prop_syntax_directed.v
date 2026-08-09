@@ -1114,13 +1114,6 @@ Proof. intros s t Heq; subst; reflexivity. Qed.
 (* Leibniz [=] form of [ftvar_in_btyp ∘ ptyp_to_btyp_syn] — the imported
    [ftvar_ptyp_to_btyp_syn] is the weaker [<=] variant (it shadows the [=] one
    from prop_wellformed); we need both inclusions here. *)
-Lemma ftvar_paint_btyp_syn_eq : forall A,
-    ftvar_in_btyp (ptyp_to_btyp_syn A) = ftvar_in_ptyp A.
-Proof.
-  induction A; simpl; try reflexivity;
-    try (rewrite IHA1, IHA2; reflexivity); try (rewrite IHA; reflexivity).
-Qed.
-
 (* Consistency only relates types with the same free variables (it never
    instantiates), so [B]'s ftvars are bounded by [C]'s. *)
 Lemma d_consis_ftvar_gen : forall Δ Γ C B,

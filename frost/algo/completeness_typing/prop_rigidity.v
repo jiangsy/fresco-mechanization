@@ -657,7 +657,7 @@ Lemma pskl_ty_core_ftv : forall M P C,
   pskl_ty_core M P C -> ftvar_in_ptyp C [<=] ftvar_in_pskl P.
 Proof.
   intros M P C H; induction H; simpl.
-  - rewrite ftvar_in_pskl_ptyp_to_pskl. fsetdec.
+  - rewrite ftvar_ptyp_to_pskl. fsetdec.
   - fsetdec.
 Qed.
 
@@ -682,7 +682,7 @@ Proof.
   intros M P C ψ β H; induction H; intros Hβ; simpl.
   - rewrite subst_pskl_in_pskl_fresh_eq;
       [ apply pskl_ty_core__tc
-      | rewrite ftvar_in_pskl_ptyp_to_pskl; exact Hβ ].
+      | rewrite ftvar_ptyp_to_pskl; exact Hβ ].
   - apply pskl_ty_core__fn. apply IHpskl_ty_core. exact Hβ.
 Qed.
 

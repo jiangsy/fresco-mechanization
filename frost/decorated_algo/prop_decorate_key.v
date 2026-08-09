@@ -4130,7 +4130,7 @@ Qed.
 (*  false under capture; soundness yields the refinement conjunct).       *)
 (* ===================================================================== *)
 
-Theorem a_sub_sound_thm : forall NM M P0 Θ0 P P' Θ1,
+Theorem a_sub_sound : forall NM M P0 Θ0 P P' Θ1,
   a_sub NM M P0 Θ0 P P' Θ1 ->
   a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
@@ -4173,12 +4173,12 @@ Proof.
 Qed.
 
 (** ⭐ THE LEAF-VALID COMPANION (hand-off §6.2).  Identical to
-    [a_sub_sound_thm] except that it hands the bundle's join on as
+    [a_sub_sound] except that it hands the bundle's join on as
     [ad_pat_sub_v] instead of forgetting it — which is what [ad_pat] /
     [ad_sd_typing]'s base rows now demand, and hence what [a_pat_sound] /
     [a_typing_sound] consume.  The PLAIN version stays for the ~10 consumers
     that only need a declarative subtyping derivation. *)
-Theorem a_sub_sound_thm_v : forall NM M P0 Θ0 P P' Θ1,
+Theorem a_sub_sound_v : forall NM M P0 Θ0 P P' Θ1,
   a_sub NM M P0 Θ0 P P' Θ1 ->
   a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->

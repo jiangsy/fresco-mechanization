@@ -525,7 +525,7 @@ Proof.
     split; [ exact HΨα | ].
     simpl. f_equal.
     eapply open_bskl_wrt_bskl_inj with (α1 := α).
-    + rewrite ftvar_in_bskl_inh, ftvar_in_pskl_bskl_to_pskl. fsetdec.
+    + rewrite ftvar_in_bskl_inh, ftvar_bskl_to_pskl. fsetdec.
     + fsetdec.
     + rewrite <- pskl_to_bskl_inh_open, <- bskl_to_pskl_open. exact HeqX.
   - (* tophole_drop: Q arbitrary *)

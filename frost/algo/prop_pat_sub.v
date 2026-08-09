@@ -270,23 +270,19 @@ Proof.
 Qed.
 
 (** Free variables of monotype paintings. *)
-Lemma ftvar_in_pskl_ptyp_to_pskl : forall τ,
-  ftvar_in_pskl (ptyp_to_pskl τ) [=] ftvar_in_ptyp τ.
-Proof. induction τ; simpl; fsetdec. Qed.
-
 Lemma ftvar_in_uskl_ptyp_to_uskl_syn : forall τ,
   ftvar_in_uskl (ptyp_to_uskl_syn τ) [=] ftvar_in_ptyp τ.
 Proof.
   intros. rewrite <- ptyp_to_uskl_syn_eq.
-  rewrite ftvar_in_uskl_pskl. apply ftvar_in_pskl_ptyp_to_pskl.
+  rewrite ftvar_in_uskl_pskl. apply ftvar_ptyp_to_pskl.
 Qed.
 
 Lemma ftvar_in_bskl_ptyp_to_bskl_syn : forall τ,
   ftvar_in_bskl (ptyp_to_bskl_syn τ) [=] ftvar_in_ptyp τ.
 Proof.
-  intros. rewrite <- (ftvar_in_pskl_bskl_to_pskl (ptyp_to_bskl_syn τ)).
+  intros. rewrite <- (ftvar_bskl_to_pskl (ptyp_to_bskl_syn τ)).
   unfold ptyp_to_bskl_syn. rewrite bskl_to_pskl_pskl_to_bskl_syn.
-  apply ftvar_in_pskl_ptyp_to_pskl.
+  apply ftvar_ptyp_to_pskl.
 Qed.
 
 (** A definition cannot live on an undefined-flex mid entry. *)
@@ -471,12 +467,6 @@ Lemma mono_ptyp_to_bskl_syn_lc : forall τ,
 Proof.
   induction 1; simpl;
     [ apply lc_bskl_unit | apply lc_bskl_var_f | apply lc_bskl_arrow; auto ].
-Qed.
-
-Lemma mono_ptyp_lc : forall τ, mono_ptyp τ -> lc_ptyp τ.
-Proof.
-  induction 1; [ apply lc_ptyp_unit | apply lc_ptyp_var_f
-               | apply lc_ptyp_arrow; auto ].
 Qed.
 
 (** The inh painting commutes with substitution by a monotype: syn and
@@ -1802,13 +1792,6 @@ Lemma uskl_to_pskl_close : forall ψ α,
 Proof.
   intros. unfold close_uskl_wrt_uskl, close_pskl_wrt_pskl.
   apply uskl_to_pskl_close_rec.
-Qed.
-
-Lemma is_tskl_lc : forall ψ, is_tskl ψ -> lc_uskl ψ.
-Proof.
-  intros ψ H; induction H; try (constructor; auto; fail).
-  destruct (atom_fresh L) as [α Hα].
-  eapply lc_uskl_all_etag_exists; eauto.
 Qed.
 
 Lemma pskl_decorate_exists : forall P,

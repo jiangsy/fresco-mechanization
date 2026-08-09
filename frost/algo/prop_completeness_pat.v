@@ -418,7 +418,7 @@ Qed.
 (* ===================================================================== *)
 (*  K3b — the three BASE rows' SLACK premises.                           *)
 (*                                                                       *)
-(*  [a_sub_complete_thm] takes its subject up to [≡ᵘ] slack              *)
+(*  [a_sub_complete] takes its subject up to [≡ᵘ] slack              *)
 (*  ([Θ ⊢ R' ≡ᵘ κ⌈P⌉ᵘ], prop_completeness_sub.v) precisely because the    *)
 (*  QUESTION context's entry and the SOLUTION context's are related only  *)
 (*  semantically.  Here are the three instances theorem 3 needs:          *)
@@ -722,7 +722,7 @@ Qed.
 (* ===================================================================== *)
 
 (** Erasing a metasubstituted painting is the metasubstitution of the
-    erasure — the bridge between [a_sub_complete_thm]'s bskl-shaped
+    erasure — the bridge between [a_sub_complete]'s bskl-shaped
     precision conclusion and the pskl-shaped one theorem 3 carries. *)
 Lemma msubst_bskl_syn_erase : forall ζ P,
   bskl_to_pskl (msubst_bskl ζ (pskl_to_bskl_syn P)) = msubst_pskl ζ P.
@@ -756,7 +756,7 @@ Proof.
     apply Hftv. clear - Hβ Hup Hne. fsetdec.
 Qed.
 
-(** Theorem 3's conclusion, factored (the shape of [a_sub_complete_thm]'s:
+(** Theorem 3's conclusion, factored (the shape of [a_sub_complete]'s:
     the run, and for EVERY identity increase out of the question context a
     composing witness that is equivalent to the given solution and whose
     image is more precise than the declarative target). *)
@@ -797,7 +797,7 @@ Proof.
   end.
   (* ⚙ pin the instantiation: the two mode-compat arguments discriminate on
      [NM], which is still an evar if it is left to unify positionally *)
-  destruct (@a_sub_complete_thm njoin a_sub_mode_sk M Θ0 P0
+  destruct (@a_sub_complete njoin a_sub_mode_sk M Θ0 P0
               pskl_unit uskl_unit Θ κ Q
               Hwf0 HwfΘ HwfP0
               ltac:(apply a_wf_pskl__unit)
@@ -848,7 +848,7 @@ Proof.
       eapply a_wf_aenv_binds_var_typ_wf; [ exact Hwf0 | exact Hb0 ].
     - eapply Hskl; exact Hb0. }
   rewrite pskl_to_uskl_via_bskl_syn in Hjoin.
-  destruct (@a_sub_complete_thm njoin a_sub_mode_sk M Θ0 P0
+  destruct (@a_sub_complete njoin a_sub_mode_sk M Θ0 P0
               P0' (pskl_to_uskl P) Θ κ Q
               Hwf0 HwfΘ HwfP0 HwfP0'
               ltac:(intros _; exact Hmod)
@@ -894,7 +894,7 @@ Proof.
       [ eapply a_wf_ptyp_lc; exact HwfA
       | intros α Hα; left; apply Hrig; exact Hα ]. }
   rewrite pskl_to_uskl_via_bskl_syn in Hjoin.
-  destruct (@a_sub_complete_thm njoin a_sub_mode_sk M Θ0 P0
+  destruct (@a_sub_complete njoin a_sub_mode_sk M Θ0 P0
               (ptyp_to_pskl A) (ptyp_to_uskl_syn A) Θ κ Q
               Hwf0 HwfΘ HwfP0 HwfpA
               ltac:(intros _; exact Hmod)
@@ -2037,7 +2037,7 @@ Proof.
       change (bskl_var_f α) with (btyp_to_bskl (btyp_var_f α)).
       rewrite <- btyp_to_bskl_open.
       apply H0; [ exact Hα | ].
-      rewrite btyp_to_ptyp_open. reflexivity.
+      rewrite btyp_to_ptyp_open_var. reflexivity.
     + (* syn ∀ against inh ∀ *)
       apply ad_pat_consis__forall_inh_untagged
         with (L := L) (R := ptyp_to_uskl_syn (btyp_to_ptyp B0)).
@@ -2046,7 +2046,7 @@ Proof.
       change (bskl_var_f α) with (btyp_to_bskl (btyp_var_f α)).
       rewrite <- btyp_to_bskl_open.
       apply H0; [ exact Hα | ].
-      rewrite btyp_to_ptyp_open. reflexivity.
+      rewrite btyp_to_ptyp_open_var. reflexivity.
 Qed.
 
 (* ===================================================================== *)
@@ -2167,7 +2167,7 @@ Proof.
     apply ad_refine_pskl_f_of_plain.
     apply ad_refine_pskl_refl.
     apply a_wf_ptyp_to_wf_pskl; exact HwfA. }
-  destruct (a_consis_complete_thm Hwf0 HwfP1 HwfpA0 Hinc HwfΘ Hjoin Hrs Hrp)
+  destruct (a_consis_complete Hwf0 HwfP1 HwfpA0 Hinc HwfΘ Hjoin Hrs Hrp)
     as [Ac [Θmid [HcRun HoptC]]].
   destruct (a_consis_isub_wf_nil HcRun Hwf0 HwfP1 HwfpA0) as [Hlec Hwfmid].
   destruct Hlec as [[κc [Hidc Hincc]] _].

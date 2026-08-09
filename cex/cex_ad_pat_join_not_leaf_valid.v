@@ -4,12 +4,12 @@
 
     Section D, scouting item 1 (docs/HANDOFF-section-d.md §6.1 / §6.2).
 
-    THE SITUATION.  [a_sub_complete_thm] (thm:complete-subtyping) takes its
+    THE SITUATION.  [a_sub_complete] (thm:complete-subtyping) takes its
     declarative join as [ad_pat_sub_gv] — the LEAF-VALID mirror, which carries
     at every consistency leaf the subject-refinement datum
     [Θ ⨟ ∅ ⊢ᵣₚᵃ ⌊R⌋ˢ ⊳ ⌊Q⌋].  That is the third solution condition of the
     paper's own AUGMENTED thm:complete-consistency (consistency-proofs.tex:
-    2230-2242), which [a_consis_complete_thm] also carries; subtyping needs it
+    2230-2242), which [a_consis_complete] also carries; subtyping needs it
     at the LEAVES rather than at the root because at the root it is vacuous
     (cex_p7_univ_ghost_r_vacuous.v, cex_p7_third_premise_forall.v).
 

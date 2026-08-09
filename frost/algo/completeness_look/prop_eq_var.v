@@ -331,12 +331,12 @@ Proof.
     eapply ad_ppre__flex_l;
       [ eapply binds_swap_mid; [ exact H | exact Hne ] | ].
     assert (Hfr : α1 `notin` ftvar_in_pskl (ptyp_to_pskl τ))
-      by (rewrite ftvar_in_pskl_ptyp_to_pskl; exact Hα2τ).
+      by (rewrite ftvar_ptyp_to_pskl; exact Hα2τ).
     rewrite <- (subst_pskl_in_pskl_fresh_eq (ptyp_to_pskl τ)
                   (pskl_var_f β1) α1 Hfr).
     apply IHad_partial_precise;
       [ exact Hu | reflexivity | exact HWd | exact Hβ2Δ
-      | rewrite ftvar_in_pskl_ptyp_to_pskl; exact Hβ2τ
+      | rewrite ftvar_ptyp_to_pskl; exact Hβ2τ
       | clear - Hβ2ψ; solve_notin | exact Hdefs ].
   - (* flex_r: α ≠ α1 (uniq); the def τ is α1-free (Hdefs) *)
     assert (Hne : α <> α1).

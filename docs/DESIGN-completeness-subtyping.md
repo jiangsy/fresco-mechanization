@@ -2,7 +2,7 @@
 
 Companion to `DESIGN-subtyping.md` (which covers both halves at the map
 level and whose §2.2 / §4 / §5 this doc refines).  Soundness
-(`a_sub_sound_thm`) is **DONE, Qed, axiom-free**
+(`a_sub_sound`) is **DONE, Qed, axiom-free**
 (`prop_decorate_key.v:3406`).  This doc is the concrete plan for the
 completeness half (paper `thm:complete-subtyping`), written **after**
 finishing soundness so the two hard lessons of that effort are baked in.
@@ -28,7 +28,7 @@ avoidable here by a decision made *before* the first proof.
    already carries the fix: a **third** solution premise beyond join +
    fill, namely subject refinement `ad_refine_pskl_f ∅ Θ ∅ (κP) Q`.  Our
    subtyping motive carries the analog **from the start** (see §1), and
-   its shape is copied *verbatim* from `a_consis_complete_thm`
+   its shape is copied *verbatim* from `a_consis_complete`
    (`prop_consis_complete.v:8648`) — every deviation costs a transport
    lemma later.
 
@@ -62,7 +62,7 @@ THEN ∃ P1 Θ1 κ1:
   κ1:Θ1⇒Θ  ∧  Θ ⊢ κ1 P1 ⊑ Q (precision)  ∧  κ ≡ κ1 : Θ0⇒Θ.
 ```
 
-**Mech motive** — copy `a_consis_complete_thm`'s shape (the id-witness
+**Mech motive** — copy `a_consis_complete`'s shape (the id-witness
 `ρ1`/`ζ` factoring), swap consistency's judgment for `ad_pat_sub`, and
 add the *third* solution premise (lesson 1).  Skeleton:
 
@@ -72,7 +72,7 @@ Lemma a_sub_complete_gen : forall n,          (* fuel; strong induction *)
     a_wf_aenv Θ0 ->  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
     ⌊S⌋ˢ = P ->                               (* erasure of the unresolved subject *)
     ρ ∷ Θ0 ⊑ Θ ->  a_wf_aenv Θ ->
-    (* solution, 3 conditions — matching a_consis_complete_thm: *)
+    (* solution, 3 conditions — matching a_consis_complete: *)
     ad_pat_sub_n n NM M Ψ Θ (msubst_uskl ρ S) Q ->                       (* join, fuel n *)
     ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh (msubst_pskl ρ P0)) Q ->  (* P0-fill *)
     ad_refine_pskl_f empty Θ empty (msubst_pskl ρ ⌊S⌋ˢ) (bskl_to_pskl Q) ->   (* SUBJECT refinement — lesson 1 *)
@@ -101,7 +101,7 @@ calls the same thing `R'`).  Writing them out corrected the skeleton above in tw
   against `Θ0`'s entries), so the paper's flat `inc[θ≡θ1]{Θ0}{Θ}` rendered as
   `a_inc_equiv Θ0 κ ζ Θ` with `ζ ∷ Θ1 ⊑ Θ` is not even the right SHAPE: ζ is
   keyed by `Θ1`, which has entries `Θ0` does not — and at Flex-Solve in the
-  MIDDLE rather than at the end.  Keeping `a_consis_complete_thm`'s
+  MIDDLE rather than at the end.  Keeping `a_consis_complete`'s
   `forall κ1, is_id_msubst κ1 → … → exists ζ` wrapper says the same thing while
   staying well-formed, and the four consistency cases then pass their conclusion
   straight through.
@@ -113,7 +113,7 @@ keeps the walked-past entries in `Ξ` and the rest in `Θ0`; the FULL context is
 `a_sub__flex_mono` enters at `Ξ = ·`.  So P7a's premises and its `a_inc_equiv`
 are stated at `Ξ ++ Θ0`, and the measure is lex(n, |Θ0|).
 
-Notes on shape (verify each against `a_consis_complete_thm` when writing):
+Notes on shape (verify each against `a_consis_complete` when writing):
 - `κ` is the mech's `ρ ∷ Θ0 ⊑ Θ` (an `a_inc` metasubstitution).
 - `bid Q` target: `ad_pat_sub`'s target sort is **`bskl`** (`Q : bskl`),
   matching `a_consis`'s `Qb`.  Precision conclusion compares `pskl` to
@@ -131,7 +131,7 @@ Notes on shape (verify each against `a_consis_complete_thm` when writing):
   LOCKSTEP condition and truncates the theorem far beyond a ghost corner.**
   Two machine-checked findings (`cex/cex_p7_univ_ghost_r_vacuous.v`,
   `cex/cex_p7_third_premise_forall.v`, both Qed + axiom-free):
-  (i) the justification above is wrong for subtyping — `a_sub_sound_thm`
+  (i) the justification above is wrong for subtyping — `a_sub_sound`
   exports NO subject-refinement conjunct (algorithmic `UnivGhostR` outputs
   `∀◇.P` from input `P`, which refinement cannot mirror), so the premise is
   not the sound/complete mirror it is for consistency; (ii) because
@@ -144,7 +144,7 @@ Notes on shape (verify each against `a_consis_complete_thm` when writing):
   REPAIR is to move the condition to the CONSISTENCY LEAVES of the
   declarative derivation (`__infer` / `__check` / `__univ_ghost_r`, the
   latter at the STRIPPED counterpart) — exactly the data the
-  `a_consis_complete_thm` invocations consume; the closed rows survive
+  `a_consis_complete` invocations consume; the closed rows survive
   (Ghost / GhostG never use the premise; Infer / Check use it only to feed
   consistency).  Full analysis + author options in `PAPER-GAPS.md`
   ("MECH-PREMISE … third solution condition").
@@ -168,7 +168,7 @@ Notes on shape (verify each against `a_consis_complete_thm` when writing):
   subject refinement (the substituted subject is GHOSTIER, so its erasure
   refines further — but the new holes' fills must stay Δ-clean; state it
   with the same care as the `uskl_precise` wf side conditions).
-- **Corollary** `a_sub_complete_thm` (paper-facing): `S:=` a decoration
+- **Corollary** `a_sub_complete` (paper-facing): `S:=` a decoration
   with `⌊S⌋=P` (any `is_tskl` witness, e.g. via `pskl_decorate_exists`,
   or just `S = pskl_to_uskl P` if the subject can be the plain skeleton),
   `Ψ:=∅`, `n` from `ad_pat_sub_to_n`.
@@ -242,8 +242,8 @@ form against how ForallL builds `refi`.)
 | **P6b** | `a_looksolve_complete` | complete-cc-solving (2203) | via P6a | wraps P6a at `Pi=Hole`, `Ψi=∅` |
 | **P6c** | `a_extract_complete_gen` | complete-look (2730) | — | P6b + P5b + guess^TY sub-induction = `guess_join_witness` pattern |
 | **P7a** | `a_sub_flex_complete` | complete-flex (2835) | `lex(n,|Ξ|)` mutual | assign/unify walk recipes (mid-strip/insert) |
-| **P7b** | `a_sub_complete_gen` | thm generalized (3050) | `lex(n,|Ψ|)` | mutual w/ P7a; cases → `a_consis_complete_thm` [Qed], P6c, P7a |
-| **P7c** | `a_sub_complete_thm` | thm (algorithmic.tex:1446) | — | instantiate `S=P`, `Ψ=∅`, `n` via `_to_n` |
+| **P7b** | `a_sub_complete_gen` | thm generalized (3050) | `lex(n,|Ψ|)` | mutual w/ P7a; cases → `a_consis_complete` [Qed], P6c, P7a |
+| **P7c** | `a_sub_complete` | thm (algorithmic.tex:1446) | — | instantiate `S=P`, `Ψ=∅`, `n` via `_to_n` |
 
 Greenfield support still needed alongside (from `DESIGN-subtyping.md
 §3.3`, mostly for P6): `a_looksub`/`a_solve_*`/`a_extract` wf+ftv+decls
@@ -260,7 +260,7 @@ cleanest self-contained first Qed — start there to validate the
 
 ## 4. Black boxes / kits (invoke, don't reprove)
 
-- `a_consis_complete_thm` (`prop_consis_complete.v:8648`, Qed,
+- `a_consis_complete` (`prop_consis_complete.v:8648`, Qed,
   axiom-free) — the motive-shape template AND the Infer/Check/UnivGhostR/
   Arrow cases.  Its 3-premise form (join + P0-fill + **subject
   refinement**) is why our motive has the third premise.
@@ -1827,7 +1827,7 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   INDEPENDENT completeness falsifier (defined flexible nested in a
   structural counterpart: solve stuck in mech, fine on paper; survives
   any repair of the (d) gap).  Fallout: prop_look_complete.v transport
-  helpers only; soundness stack untouched (a_sub_sound_thm still
+  helpers only; soundness stack untouched (a_sub_sound still
   Closed under the global context); make coq green.  The (d)
   counterexample is unaffected (it uses an undefined flexible — the
   widening does not repair it; the failure is in the conclusion
@@ -1922,7 +1922,7 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   tag-renaming freshening bridge (only P7c consumes it).  NEXT: **P6**
   (`a_solve_complete_var` / `a_looksolve_complete` /
   `a_extract_complete_gen`) — remember the Infer/Check cases must re-route
-  through `consis_complete`/`a_consis_complete_thm` (the paper's
+  through `consis_complete`/`a_consis_complete` (the paper's
   consistency-side `-var` lemma was never mechanized; the μ-bundle
   route replaced it).
 - 2026-07-24: **§5.4 EXECUTED through (2') and most of (3)'s
@@ -1998,10 +1998,10 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   `complete-consistency-cc-solving-var`, consistency-proofs.tex:1182,
   which the mech never built — consistency completeness went through the
   μ-bundle — so P6a's Infer/Check cases must re-route through
-  `consis_complete` / `a_consis_complete_thm` or grow a `-var` wrapper).
+  `consis_complete` / `a_consis_complete` or grow a `-var` wrapper).
 - 2026-07-22: doc written.  Soundness done.  Completeness = greenfield
   (inventory: no `a_sub_complete*`, no `ad_pat_sub_n`, no
-  `precision_subst`; `a_consis_complete_thm` Qed; build green, 0 admits
+  `precision_subst`; `a_consis_complete` Qed; build green, 0 admits
   in `frost/algo/`).
 - 2026-07-22: **P5b-i DONE** — `ad_partial_precise_complete` **Qed, axiom-free**
   (`Print Assumptions` = Closed under the global context; `make coq` green).
@@ -3345,12 +3345,12 @@ induction**, per §3's rows:
 |---|---|---|---|
 | **P7a** | `a_sub_flex_complete` | lemma:complete-flex-subtyping (:2836) | induction on the contexts `Θ0 ∣ Ξ` |
 | **P7b** | `a_sub_complete_gen` | generalised thm:complete-subtyping (:3050) | `lex(decl height, |Ψ|)`, after a case split on "P is a flexible in FN mode" |
-| **P7c** | `a_sub_complete_thm` | thm (algorithmic.tex:1446) | instantiate `S := P`, `Ψ := ∅` |
+| **P7c** | `a_sub_complete` | thm (algorithmic.tex:1446) | instantiate `S := P`, `Ψ := ∅` |
 
 P7a's proof says *"by induction on the contexts of the subtyping judgement,
 **mutually** with the generalised version of thm:complete-subtyping below"*, and
 P7b's `P = α̂ ∧ M = FN M'` case calls P7a at `Ξ = ·`.  So the two are one bundle;
-`a_consis_complete_thm`'s 3-way mutual block is the shape precedent.
+`a_consis_complete`'s 3-way mutual block is the shape precedent.
 
 ### 9.0 ⚠️ TASK 0 — SUPPLY `sub_shield` AT P7b's ForallL.  SETTLE THIS FIRST
 
@@ -3623,10 +3623,10 @@ content is already a Qed black box.
 | declarative rule | route | note |
 |---|---|---|
 | `P = α̂`, `M = FN M'` | **P7a at Ξ = ·**, then algorithmic `FlexMono` | the mutual edge |
-| Sub-Infer | `a_consis_complete_thm` | `M = TI ⇒ Ψ = ∅` and `skmod` forces `P0 = □` |
-| Sub-Check | `a_consis_complete_thm` | needs "`P0` concrete ⇒ the consistency output is equivalent to `P0`" |
-| Sub-UnivGhostR | `a_consis_complete_thm` | `N = SK`, `M = TC`, `P0 = □` |
-| Sub-Arrow | `a_consis_complete_thm` on the domain + IH on the codomain | ⚠️ threads `Θ0 → Θ1 → Θ2` and composes THREE `a_inc_equiv`s |
+| Sub-Infer | `a_consis_complete` | `M = TI ⇒ Ψ = ∅` and `skmod` forces `P0 = □` |
+| Sub-Check | `a_consis_complete` | needs "`P0` concrete ⇒ the consistency output is equivalent to `P0`" |
+| Sub-UnivGhostR | `a_consis_complete` | `N = SK`, `M = TC`, `P0 = □` |
+| Sub-Arrow | `a_consis_complete` on the domain + IH on the codomain | ⚠️ threads `Θ0 → Θ1 → Θ2` and composes THREE `a_inc_equiv`s |
 | Sub-ForallR | IH at `Θ0,α` | ⚠️ output context is `Θ1,α,Ξ` — the Ξ-suffix strip is the work |
 | Sub-ForallL | **P6-L** then **P5c** (`ad_pat_sub_precise_subst`) | Task 0 lives here; also the WLOG-by-congruence hazard H3 |
 
@@ -3687,7 +3687,7 @@ the only surviving rows are the two flexible lookups, which are
 
 ✅ **AND THE `a_sub` HALF TOO** (Sub-ForallR's ":3238"), `a_sub_concrete_output_equiv`.
 It was planned as a MUTUAL induction with `a_sub_flex`; that induction is NOT
-needed.  `a_sub_sound_thm` (prop_decorate_key.v:3326) already exports the
+needed.  `a_sub_sound` (prop_decorate_key.v:3326) already exports the
 output's refinement FROM the input skeleton — the very same conjunct
 `a_consis_sound` exports, in the very same shape — so the same
 `ad_refine_syn_ghost_free_equiv` applies verbatim and the whole half collapses
@@ -3707,7 +3707,7 @@ definition, once made, is never rewritten" is exactly and only what it uses),
 ⚠️ Note `a_sub__check` itself already OUTPUTS `P0` (`a_consis_chk` hides the
 consistency output existentially), so the mech's Sub-Check does not need (†)
 to build the derivation — only to transport the PRECISION conclusion from
-`a_consis_complete_thm`'s output `P1` to `P0`.
+`a_consis_complete`'s output `P1` to `P0`.
 
 ### 9.1.1 The remaining IH-free rows — FOLLOW THE PAPER; a shortcut around it is false
 
@@ -3721,7 +3721,7 @@ MISREADING the paper.  It writes, at :3134,
 
 which is not "read a precision off the consistency premise" but "invoke
 **thm:complete-consistency**" — a theorem, already mechanized as
-`a_consis_complete_thm` — on the consistency problem `(Θ_0; □; P)`, and take the
+`a_consis_complete` — on the consistency problem `(Θ_0; □; P)`, and take the
 precision from its conclusion.  `skmod` forces `P_0 = □` in both rows, so the
 problem is exactly the one the theorem is about.
 
@@ -3734,7 +3734,7 @@ and each returns its own subject; `__univ_ghost2` is the only row that does not
 fix `P_0`'s shape and its `guarded_pskl P_0` premise excludes the ghost.
 
 **So write these two cases the paper's way.**  Sub-Check is the same shape one
-level up: `a_consis_complete_thm` for the run and the precision, then
+level up: `a_consis_complete` for the run and the precision, then
 `a_consis_concrete_output_equiv` (§9.1) to move that precision from the
 consistency output to `P_0`.
 
@@ -3748,7 +3748,7 @@ consistency output to `P_0`.
    (prop_consis_precise.v:275) turns `Ψ ⨟ Θ ⊢ₛᵃ κR ∼ Q` into
    `∅ ⨟ Θ ⊢ₛᵃ pskl_to_uskl ⌊κR⌋ˢ ∼ Q`, and `⌊κR⌋ˢ = κ⌊R⌋ˢ = κP` by a one-line
    commutation.
-4. `a_consis_complete_thm` on `(Θ_0; □; P)` — its other two premises ARE this
+4. `a_consis_complete` on `(Θ_0; □; P)` — its other two premises ARE this
    motive's refinement premises at `P_0 = □`.
 5. `a_consis_hole_p0_output` says the run's output is `P`, so the theorem's
    precision IS a precision about `P`.
@@ -3833,7 +3833,7 @@ Two things the writing-out corrected:
 ✅ **Sub-Infer** (`a_sub_complete_infer`) and ✅ **Sub-Check**
 (`a_sub_complete_check`) are Qed, both by the paper's route.  The shared core is
 `a_sub_complete_hole_p0_precision`: at `P0 = □` the motive's three solution
-premises ARE `a_consis_complete_thm`'s, `a_consis_hole_p0_output` says the run
+premises ARE `a_consis_complete`'s, `a_consis_hole_p0_output` says the run
 returns the SUBJECT, and the stability lemma + `ad_refine_syn_trans` move the
 result from the theorem's ζ to κ.  Supporting facts, all Qed:
 `uskl_to_pskl_msubst_uskl_syn` (the one-line commutation), `ad_pat_sub_g_ti_consis`
@@ -3845,7 +3845,7 @@ its precision through the consistency OUTPUT, but the algorithm never returns
 that output: `a_sub__check` hides it existentially inside `a_consis_chk` and
 returns `P0`.  So the precision goal is `ζP0 ⊑ ⌊Q⌋`, and at `Q = inh{B}` the
 motive's **P0-fill premise IS `κP0 ⊑ B` by definition of `ad_precise`** — the
-goal closes outright, modulo the κ→ζ move.  What `a_consis_complete_thm`
+goal closes outright, modulo the κ→ζ move.  What `a_consis_complete`
 supplies at Sub-Check is the RUN and the two increase conjuncts, not the
 precision.  (§9.1's closing note already observed that `a_sub__check` outputs
 `P0`; what it did not observe is that the fill premise then finishes the job.)
@@ -3873,8 +3873,8 @@ theorem says nothing about the solutions it describes.
 
 ⚠️ **The third premise is the MECH's, not the paper's**, and §1's justification
 for it does not survive contact.  §1 said it "is exactly what `a_consis_sound` /
-`a_sub_sound_thm` PRODUCE for every algorithmic output".  `a_consis_sound` does.
-**`a_sub_sound_thm` (prop_decorate_key.v:3326) does NOT** — its conclusion has
+`a_sub_sound` PRODUCE for every algorithmic output".  `a_consis_sound` does.
+**`a_sub_sound` (prop_decorate_key.v:3326) does NOT** — its conclusion has
 `Θ0 ⊴ Θ1`, wf, the decorated subtyping judgment and the P0-fill, and no subject
 refinement.  It could not have one: algorithmic `UnivGhostR` outputs `∀◇.P` from
 the input `P`.  So for subtyping the third premise is not the sound/complete
@@ -3910,7 +3910,7 @@ that UnivGhostR / UnivGhostL insert.
 
 - The homogeneous-flex reorder kit (`prop_look_complete_cstr.v`) — see §7.5.
 - The `_f` fill-hygiene transports for renaming a Δ-bound variable — §7.5.
-- `a_consis_complete_thm` and `complete_mu` are Qed black boxes; four of P7b's
+- `a_consis_complete` and `complete_mu` are Qed black boxes; four of P7b's
   seven cases are just their application.
 
 ---
@@ -4156,7 +4156,7 @@ them — and that difference is real.
 ## §12 P7c — the DISPATCHER, scoped (2026-08-02)
 
 P7b's seven row lemmas are all `Qed` and axiom-free; what is missing is the
-bundle that assembles them, `a_sub_complete_thm` (algorithmic.tex:1446),
+bundle that assembles them, `a_sub_complete` (algorithmic.tex:1446),
 referenced in prop_sub_complete_thm.v's roadmap but never written — the file
 ends after the seventh row.  This is the scoping, done against the tree.
 
@@ -5202,7 +5202,7 @@ Theorem a_sub_complete_bundle_holds :
 
 `sub_complete_assemble`'s `PIH` is instantiated with `fun _ => True`: the two tophole
 closures are `exact I` and the third hands back `sub_flex_complete n Θ0`, i.e.
-`sub_flex_complete_holds` at `Ξ = nil`.  `a_sub_complete_thm` (algorithmic.tex:1446) follows
+`sub_flex_complete_holds` at `Ξ = nil`.  `a_sub_complete` (algorithmic.tex:1446) follows
 as the `Ψ := ∅`, `R := ⌈P⌉ᵘ` instance.
 
 ⭕ **THE RESIDUAL is `main_forall n`, and (2026-08-03, later) it is down to
@@ -5218,7 +5218,7 @@ of the two and the P7c hand-off listed only the other:
    condition (HANDOFF-completeness-repair.md TASKS 2–3).**
 2. ⭐ **CLOSED (2026-08-03): `NM = TY -> uskl_ghost_free R'`** is ON THE
    MOTIVE — `sub_complete_concl`'s last premise, on the JOIN-side subject,
-   with `a_sub_complete_thm` carrying it as the external side condition
+   with `a_sub_complete` carrying it as the external side condition
    (WF-SIDE-CONDITIONS.md).  The suppliers were exactly the predicted six and
    all cheap: Sub-Arrow inverts, Sub-ForallR passes through, both ForallL
    rows' construction became the shared `Hgfswap` assert (their own `Hgfj`

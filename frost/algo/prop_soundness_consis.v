@@ -585,14 +585,14 @@ Lemma ftvar_in_uskl_ptyp_syn : forall A,
   ftvar_in_uskl (ptyp_to_uskl_syn A) [=] ftvar_in_ptyp A.
 Proof.
   intros. rewrite <- pskl_to_uskl_ptyp.
-  rewrite ftvar_in_uskl_pskl. apply ftvar_in_ptyp_to_pskl.
+  rewrite ftvar_in_uskl_pskl. apply ftvar_ptyp_to_pskl.
 Qed.
 
 Lemma ftvar_in_bskl_ptyp_syn : forall A,
   ftvar_in_bskl (ptyp_to_bskl_syn A) [=] ftvar_in_ptyp A.
 Proof.
   intros. unfold ptyp_to_bskl_syn.
-  rewrite ftvar_in_bskl_syn. apply ftvar_in_ptyp_to_pskl.
+  rewrite ftvar_in_bskl_syn. apply ftvar_ptyp_to_pskl.
 Qed.
 
 (** Case-split every renaming decision in the goal; contradictory
@@ -1008,7 +1008,7 @@ Proof.
     assert (Hαne : α0 <> α).
     { intro; subst. apply binds_In in H. fsetdec. }
     assert (Hfr : α `notin` ftvar_in_pskl (ptyp_to_pskl τ)).
-    { rewrite ftvar_in_ptyp_to_pskl. eauto. }
+    { rewrite ftvar_ptyp_to_pskl. eauto. }
     destruct_var_eqs.
     apply ad_refine_pskl_f__flex_l with (τ := τ); [ exact H | ].
     rewrite <- (subst_pskl_in_pskl_fresh_eq
@@ -1018,7 +1018,7 @@ Proof.
     assert (Hαne : α0 <> α).
     { intro; subst. apply binds_In in H. fsetdec. }
     assert (Hfr : α `notin` ftvar_in_pskl (ptyp_to_pskl τ)).
-    { rewrite ftvar_in_ptyp_to_pskl. eauto. }
+    { rewrite ftvar_ptyp_to_pskl. eauto. }
     destruct_var_eqs.
     apply ad_refine_pskl_f__flex_r with (τ := τ); [ exact H | ].
     rewrite <- (subst_pskl_in_pskl_fresh_eq
@@ -1410,7 +1410,7 @@ Proof.
     assert (Hαne : α0 <> α).
     { intro; subst. apply binds_In in Hb'. fsetdec. }
     assert (Hfr : α `notin` ftvar_in_pskl (ptyp_to_pskl τ)).
-    { rewrite ftvar_in_ptyp_to_pskl. eauto. }
+    { rewrite ftvar_ptyp_to_pskl. eauto. }
     destruct_var_eqs.
     apply ad_refine_pskl_f__flex_l with (τ := τ);
       [ apply (@binds_insert_mid (abind_flex_mono_def τ) α0
@@ -1424,7 +1424,7 @@ Proof.
     assert (Hαne : α0 <> α).
     { intro; subst. apply binds_In in Hb'. fsetdec. }
     assert (Hfr : α `notin` ftvar_in_pskl (ptyp_to_pskl τ)).
-    { rewrite ftvar_in_ptyp_to_pskl. eauto. }
+    { rewrite ftvar_ptyp_to_pskl. eauto. }
     destruct_var_eqs.
     apply ad_refine_pskl_f__flex_r with (τ := τ);
       [ apply (@binds_insert_mid (abind_flex_mono_def τ) α0
@@ -2052,10 +2052,6 @@ Qed.
    Re-exported from the bundle under its original name. *)
 
 (** Monotype skeletons are locally closed and guarded. *)
-Lemma mono_ptyp_to_pskl_lc : forall τ,
-  mono_ptyp τ -> lc_pskl (ptyp_to_pskl τ).
-Proof. induction 1; simpl; auto using lc_pskl. Qed.
-
 (* [mono_ptyp_to_pskl_guarded] relocated to prop_flex.v (pure base lemma needed by prop_metasubst). *)
 
 Lemma mono_bskl_lc : forall Q,
@@ -2863,7 +2859,7 @@ Proof.
       - apply a_wf_pskl_mono_subst; auto.
       - pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
                       P (ptyp_to_pskl τ) β) as Hup.
-        rewrite ftvar_in_ptyp_to_pskl in Hup.
+        rewrite ftvar_ptyp_to_pskl in Hup.
         clear - Hup Hβτ. fsetdec. }
     assert (HwfS : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ
                      (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α))).
@@ -2934,7 +2930,7 @@ Proof.
                           (subst_pskl_in_pskl (ptyp_to_pskl τ) β P)).
         { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
                         P (ptyp_to_pskl τ) β) as Hup.
-          rewrite ftvar_in_ptyp_to_pskl in Hup.
+          rewrite ftvar_ptyp_to_pskl in Hup.
           clear - Hup Hα0τ HXP. fsetdec. }
         assert (Hα0α : α0 <> α).
         { intro; subst α0.
@@ -2945,7 +2941,7 @@ Proof.
         assert (HXv : α0 `notin` ftvar_in_pskl
                         (subst_pskl_in_pskl (ptyp_to_pskl τ) β
                            (pskl_var_f α))).
-        { rewrite subst_pskl_var_ptyp. rewrite ftvar_in_ptyp_to_pskl.
+        { rewrite subst_pskl_var_ptyp. rewrite ftvar_ptyp_to_pskl.
           pose proof (ftvar_in_ptyp_subst_ptyp_in_ptyp_upper
                         (ptyp_var_f α) τ β) as Hup.
           simpl in Hup. clear - Hup Hα0τ Hα0α. fsetdec. }
@@ -3510,7 +3506,7 @@ Proof.
           α0 `notin` ftvar_in_pskl
               (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f β1)))).
       { intros β1 Hfδ α0 Hα0Δ.
-        rewrite ftvar_in_ptyp_to_pskl.
+        rewrite ftvar_ptyp_to_pskl.
         pose proof (ftvar_in_ptyp_subst_ptyp_in_ptyp_upper
                       (ptyp_var_f β1) τ α1) as Hup.
         intros HXin.

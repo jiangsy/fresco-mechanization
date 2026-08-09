@@ -304,7 +304,7 @@ under the published `SolE-FlexR` — and their headers, at `18cc7e4^`.
 | deleted file | what it claimed | why it is retracted |
 |---|---|---|
 | `cex/cex_p6_flex_counterpart.v` | the `-var` completeness lemmas are false at a flexible solve counterpart (`cex_solve_forces_flex`: "the only solve derivation forces `P_a = β̂`") | that central lemma is now FALSE — the repaired row returns `guess^TY(P_i) = c → ⟨⟩`, and the obligation becomes reflexivity (row 1 of the table above).  Its OTHER half — that the configuration is unreachable because `LE-FlexR` freshens a flexible target facing a compound subject — survives untouched in `cex/cex_p6_flex_freshened.v` (still green), and the `a_flex_tvar` WIDENING it motivated (`algo/def_extra.v`, `SolE-FlexR`'s comment) still stands: that is about which counterparts the rule ACCEPTS, not what it RETURNS |
-| `cex/cex_thm_complete_subtyping.v` | `thm_complete_subtyping_false` — Theorem 4.6 is false, by the double-occurrence instance `Θ0 = f̂`, `P0 = (∀γ.γ→γ) → f̂`, `P = ∀β.β→β` at `NM = TY`, `M = FN(TC)` | the authors accepted the refutation and replaced the row.  `guess^TY(β→β) = (·; β→β)`, so nothing is invented and nothing lost, the close re-binds a REAL occurrence, and A FULL RUN EXISTS.  Its direct negation is `cex/probe_flexr_repair.v` (`new_extract`, `new_run_exists`; Qed, axiom-free).  ⭐ Soundness of subtyping survived the repair unchanged (`a_sub_sound_thm`) |
+| `cex/cex_thm_complete_subtyping.v` | `thm_complete_subtyping_false` — Theorem 4.6 is false, by the double-occurrence instance `Θ0 = f̂`, `P0 = (∀γ.γ→γ) → f̂`, `P = ∀β.β→β` at `NM = TY`, `M = FN(TC)` | the authors accepted the refutation and replaced the row.  `guess^TY(β→β) = (·; β→β)`, so nothing is invented and nothing lost, the close re-binds a REAL occurrence, and A FULL RUN EXISTS.  Its direct negation is `cex/probe_flexr_repair.v` (`new_extract`, `new_run_exists`; Qed, axiom-free).  ⭐ Soundness of subtyping survived the repair unchanged (`a_sub_sound`) |
 | `cex/probe_solve_flexr.v` | `run_exists_at_correct_instantiation` — localizing the failure to that one row by showing the continuation succeeds if handed the right instantiation | SUPERSEDED, not false: under the repair the algorithm *chooses* that instantiation itself, so the hypothetical is the TAIL of `new_run_exists` in `cex/probe_flexr_repair.v`, which additionally rests on nothing but `algo/def_extra.v` |
 
 ⛔ **What this does NOT settle.**  The mech's `sub_shield` premise was
@@ -2028,7 +2028,7 @@ which is what the mechanization proves, for BOTH judgments
 which is where the definition the equivalence uses was recorded.
 
 Worth reporting: neither needed a new induction.  Both soundness theorems
-(`a_consis_sound`, `a_sub_sound_thm`) already export the output's REFINEMENT
+(`a_consis_sound`, `a_sub_sound`) already export the output's REFINEMENT
 from the input skeleton, and refinement out of a ghost-free source can only
 unfold definitions — every ghost row of refinement demands a ghost on the left,
 and the two flexible-lookup rows ARE the equivalence's `flex_def` rule, one on
@@ -2054,7 +2054,7 @@ The paper writes, at Sub-Infer:
 I read that as "read a precision off the consistency premise" and refuted THAT
 (`frost/algo/cex/cex_p7_sskl_precise.v`).  But the paper says what it means: it
 invokes **thm:complete-consistency** — a theorem, already mechanized as
-`a_consis_complete_thm` — on the consistency problem `(Θ_0; □; P)`, and takes
+`a_consis_complete` — on the consistency problem `(Θ_0; □; P)`, and takes
 the precision from its conclusion.  That route is sound.
 
 **The only thing it needs is small and now proved** (`a_consis_hole_p0_output`,
@@ -2112,7 +2112,7 @@ produces for every algorithmic output, so that the sound/complete pair still
 characterizes the algorithm exactly.
 
 **That ground holds for consistency and fails for subtyping.**
-`a_consis_sound` really does export `Θ_1 ⊢ᵣₚ P ⊳ P'`.  `a_sub_sound_thm`
+`a_consis_sound` really does export `Θ_1 ⊢ᵣₚ P ⊳ P'`.  `a_sub_sound`
 exports NO such conjunct — and it cannot, because algorithmic `UnivGhostR`
 outputs `∀◇.P` from the input `P`, while refinement has no rule putting a `∀◇`
 on the RIGHT of a non-ghost left-hand side.
@@ -2654,7 +2654,7 @@ P7b motive instance is false (`probe_motive_instance_false`), and
 pay its tag: `consis_d` discharges ε against a `bskl_all_inh` counterpart at
 the arrow's DOMAIN, so `join_d` is a legitimate declarative solution there.
 The mech-side consequence is unchanged — `a_sub_complete_bundle_holds` and
-`a_sub_complete_thm` are vacuous as stated.
+`a_sub_complete` are vacuous as stated.
 
 ### The question that is REOPENED
 
@@ -2733,7 +2733,7 @@ things the authors need to know about the repaired rule itself.**
 
 ### FINDING 1 — soundness of subtyping survives, and its STATEMENT does not move
 
-`a_sub_sound_thm` (prop_decorate_key.v) is `Qed` and axiom-free under the
+`a_sub_sound` (prop_decorate_key.v) is `Qed` and axiom-free under the
 repaired row, with the *same statement*.  Every new obligation is absorbed
 inside the proof out of well-formedness premises the theorem already had.
 The one real obligation the repair creates — *a decoration of the guess is a

@@ -199,7 +199,7 @@ TASK 3 — the repaired theorem + the endgame
      discriminate on the head; get R' ∀-headed from R via
      a_uskl_tyequiv_sym + a_uskl_tyequiv_all_{syn,etag}_l_inv,
      dispatch.v §2).  Drop the hypothesis from both §12 theorems, add
-     a_sub_complete_thm to README.v, Print Assumptions on the flagships.
+     a_sub_complete to README.v, Print Assumptions on the flagships.
  (c) PAPER-GAPS: rewrite the retraction note into the REAL entry —
      thm:complete-subtyping needs the payload side condition; the
      algorithm is fine on programs; witness = TASK 1's machine-checked

@@ -114,15 +114,6 @@ Qed.
 
 (** Decorated skeletons are locally closed ([is_tskl] is cofinite at its
     binder). *)
-Lemma is_tskl_lc : forall ψ,
-  is_tskl ψ ->
-  lc_uskl ψ.
-Proof.
-  intros ψ H; induction H; try (constructor; auto; fail).
-  destruct (atom_fresh L) as [α Hα].
-  eapply lc_uskl_all_etag_exists; eauto.
-Qed.
-
 (** Substituting a well-formed skeleton for a Δ-variable preserves
     (disciplined) well-formedness.  The ∀◇ case is where the freshness
     hypothesis earns its keep: a ∀◇-body is well-formed at the EMPTY Δ,
@@ -1200,7 +1191,7 @@ Proof.
       (* ⚠️ pin the rewrite to the DEFINITION's occurrence: an unapplied
          [subst_pskl_in_pskl_fresh_eq] matches the SUBJECT first. *)
       assert (Hfrτ : β `notin` ftvar_in_pskl (ptyp_to_pskl τ))
-        by (rewrite ftvar_in_pskl_ptyp_to_pskl; eapply Hdefs; exact Hb').
+        by (rewrite ftvar_ptyp_to_pskl; eapply Hdefs; exact Hb').
       specialize (IHad_refine_pskl Θ1 β Θ2 ltac:(reflexivity) Hfr Hdefs).
       rewrite (subst_pskl_in_pskl_fresh_eq (ptyp_to_pskl τ) pskl_unit β Hfrτ)
         in IHad_refine_pskl.
@@ -1215,7 +1206,7 @@ Proof.
       (* ⚠️ pin the rewrite to the DEFINITION's occurrence: an unapplied
          [subst_pskl_in_pskl_fresh_eq] matches the SUBJECT first. *)
       assert (Hfrτ : β `notin` ftvar_in_pskl (ptyp_to_pskl τ))
-        by (rewrite ftvar_in_pskl_ptyp_to_pskl; eapply Hdefs; exact Hb').
+        by (rewrite ftvar_ptyp_to_pskl; eapply Hdefs; exact Hb').
       specialize (IHad_refine_pskl Θ1 β Θ2 ltac:(reflexivity) Hfr Hdefs).
       rewrite (subst_pskl_in_pskl_fresh_eq (ptyp_to_pskl τ) pskl_unit β Hfrτ)
         in IHad_refine_pskl.
@@ -1477,7 +1468,7 @@ Proof.
       subst τ.
       rewrite (subst_pskl_in_pskl_fresh_eq (ptyp_to_pskl τ0)
                  (ptyp_to_pskl τ0) β
-                 ltac:(rewrite ftvar_in_pskl_ptyp_to_pskl; exact Hfrτ))
+                 ltac:(rewrite ftvar_ptyp_to_pskl; exact Hfrτ))
         in IHad_refine_pskl.
       exact IHad_refine_pskl.
     + assert (Hb' : binds α (abind_flex_mono_def τ) (Θ1 ++ Θ2)).
@@ -1486,7 +1477,7 @@ Proof.
       eapply ad_refine_pskl__flex_l; [ exact Hb' | ].
       rewrite (subst_pskl_in_pskl_fresh_eq (ptyp_to_pskl τ)
                  (ptyp_to_pskl τ0) β
-                 ltac:(rewrite ftvar_in_pskl_ptyp_to_pskl;
+                 ltac:(rewrite ftvar_ptyp_to_pskl;
                        eapply Hdefs; exact Hb'))
         in IHad_refine_pskl.
       exact IHad_refine_pskl.
@@ -1499,7 +1490,7 @@ Proof.
       subst τ.
       rewrite (subst_pskl_in_pskl_fresh_eq (ptyp_to_pskl τ0)
                  (ptyp_to_pskl τ0) β
-                 ltac:(rewrite ftvar_in_pskl_ptyp_to_pskl; exact Hfrτ))
+                 ltac:(rewrite ftvar_ptyp_to_pskl; exact Hfrτ))
         in IHad_refine_pskl.
       exact IHad_refine_pskl.
     + assert (Hb' : binds α (abind_flex_mono_def τ) (Θ1 ++ Θ2)).
@@ -1508,7 +1499,7 @@ Proof.
       eapply ad_refine_pskl__flex_r; [ exact Hb' | ].
       rewrite (subst_pskl_in_pskl_fresh_eq (ptyp_to_pskl τ)
                  (ptyp_to_pskl τ0) β
-                 ltac:(rewrite ftvar_in_pskl_ptyp_to_pskl;
+                 ltac:(rewrite ftvar_ptyp_to_pskl;
                        eapply Hdefs; exact Hb'))
         in IHad_refine_pskl.
       exact IHad_refine_pskl.
@@ -1972,7 +1963,7 @@ Proof.
     assert (HQt : ftvar_in_bskl Qt [<=]
                     (ftvar_in_pskl B `union` singleton α)).
     { intros α2 Hα2.
-      rewrite <- (ftvar_in_pskl_bskl_to_pskl Qt) in Hα2.
+      rewrite <- (ftvar_bskl_to_pskl Qt) in Hα2.
       rewrite HeQt in Hα2.
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
                     B (pskl_var_f α)) as Hup.
@@ -2053,7 +2044,7 @@ Proof.
               assert (HZin : α2 `in` (ftvar_in_pskl (open_pskl_wrt_pskl
                                        B (pskl_var_f α))
                                      `union` ftvar_in_bskl Qt))
-                by (rewrite <- (ftvar_in_pskl_bskl_to_pskl
+                by (rewrite <- (ftvar_bskl_to_pskl
                                   (pskl_to_bskl_inh
                                      (open_pskl_wrt_pskl B (pskl_var_f α))))
                       in Hα2;

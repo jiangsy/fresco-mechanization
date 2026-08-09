@@ -47,7 +47,7 @@ Require Import src.frost.decorated_algo.def_decl_algo.
 Require Import src.frost.algo.prop_precise.   (* bskl_to_pskl_open *)
 Require Import src.frost.algo.prop_pat_sub.   (* {pskl,bskl}_ghost_free *)
 Require Import src.frost.algo.prop_soundness_consis.  (* a_consis_sound, ad_refine_syn_f_forget *)
-Require Import src.frost.decorated_algo.prop_decorate_key.   (* a_sub_sound_thm *)
+Require Import src.frost.decorated_algo.prop_decorate_key.   (* a_sub_sound *)
 
 Set Implicit Arguments.
 
@@ -57,9 +57,6 @@ Set Implicit Arguments.
 
 (** A TYPE has no ghosts, whatever it is — no monotype side condition, unlike
     [mono_ptyp_to_bskl_syn_ghost_free] (prop_pat_sub.v). *)
-Lemma ptyp_to_pskl_ghost_free : forall A, pskl_ghost_free (ptyp_to_pskl A).
-Proof. intros A; induction A; cbn; tauto. Qed.
-
 Lemma pskl_to_bskl_syn_ghost_free : forall P,
   pskl_ghost_free P -> bskl_ghost_free (pskl_to_bskl_syn P).
 Proof. intros P; induction P; cbn; tauto. Qed.
@@ -155,7 +152,7 @@ Print Assumptions a_consis_concrete_output_equiv.
 (** (a) MONOTONICITY along [⊴].  P7b's Sub-Arrow reads its domain equivalence
     off at Θ1 (§3) and must state it at Θ2.  [a_isub]'s second component — "a
     definition, once made, is never rewritten" (def_meta.v:255) — is exactly and
-    only what the proof uses; [a_consis_sound] / [a_sub_sound_thm] both export
+    only what the proof uses; [a_consis_sound] / [a_sub_sound] both export
     the [⊴] it needs. *)
 Lemma a_pskl_tyequiv_isub_mono : forall Θ P Q,
   Θ ⊢ P ≡ˢ Q ->
@@ -195,12 +192,6 @@ Qed.
     runs its premise at [P0[τ/β̂]] while its conclusion is about [P0], and the
     two are related by exactly the rule that records the definition — so any
     statement threaded through that row crosses this gap. *)
-Lemma mono_ptyp_to_pskl_lc : forall τ, mono_ptyp τ -> lc_pskl (ptyp_to_pskl τ).
-Proof.
-  intros τ H; induction H; cbn;
-    [ apply lc_pskl_unit | apply lc_pskl_var_f | apply lc_pskl_arrow; assumption ].
-Qed.
-
 Lemma a_pskl_tyequiv_subst_flex_def : forall Θ β τ P,
   binds β (abind_flex_mono_def τ) Θ ->
   mono_ptyp τ ->            (* what [a_wf_aenv_binds_def_mono] gives at any call site *)
@@ -230,7 +221,7 @@ Print Assumptions a_pskl_tyequiv_subst_flex_def.
 (*                                                                        *)
 (*  The paper's "P'_0 and P_1 are equivalent through Q" (:3238).  §4 was   *)
 (*  written for a MUTUAL INDUCTION over [a_sub] / [a_sub_flex]; that       *)
-(*  induction is not needed.  [a_sub_sound_thm] (Qed,                     *)
+(*  induction is not needed.  [a_sub_sound] (Qed,                     *)
 (*  prop_decorate_key.v:3326) already exports the refinement of the OUTPUT *)
 (*  FROM the input skeleton — the very same conjunct [a_consis_sound]      *)
 (*  exports, in the very same shape — so §2 applies verbatim and the whole *)
@@ -252,7 +243,7 @@ Corollary a_sub_concrete_output_equiv : forall NM M P0 Θ0 P P' Θ1,
   Θ1 ⊢ P0 ≡ˢ P'.
 Proof.
   intros NM M P0 Θ0 P P' Θ1 Hrun Hwf HwfP0 HwfP HmodSK HmodTY Hgf.
-  destruct (a_sub_sound_thm Hrun Hwf HwfP0 HwfP HmodSK HmodTY)
+  destruct (a_sub_sound Hrun Hwf HwfP0 HwfP HmodSK HmodTY)
     as (_ & _ & Qt & HeQt & _ & Hrs).
   subst P'.
   pose proof (ad_refine_syn_ghost_free_equiv

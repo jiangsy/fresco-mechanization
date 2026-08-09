@@ -12,6 +12,7 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
+Require Import src.frost.prop_coercions.
 Require Import src.frost.def_extra.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.decl.def_extra.
@@ -29,9 +30,6 @@ Set Implicit Arguments.
 (* ===================================================================== *)
 (*  Monotype / wf bookkeeping                                             *)
 (* ===================================================================== *)
-
-Lemma mono_ptyp_lc : forall A, mono_ptyp A -> lc_ptyp A.
-Proof. intros A H; induction H; auto. Qed.
 
 Lemma mono_ptyp_subst : forall A τ α1,
   mono_ptyp A -> mono_ptyp τ ->
@@ -313,22 +311,6 @@ Qed.
 (* ===================================================================== *)
 (*  Embedding/open commutation (local; coercions.v lacks these two)       *)
 (* ===================================================================== *)
-
-Lemma ptyp_to_pskl_open_rec : forall A1 A2 k,
-  ptyp_to_pskl (open_ptyp_wrt_ptyp_rec k A2 A1)
-  = open_pskl_wrt_pskl_rec k (ptyp_to_pskl A2) (ptyp_to_pskl A1).
-Proof.
-  induction A1; intros; simpl; f_equal; auto.
-  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
-Qed.
-
-Lemma pskl_to_bskl_syn_open_rec : forall P1 P2 k,
-  pskl_to_bskl_syn (open_pskl_wrt_pskl_rec k P2 P1)
-  = open_bskl_wrt_bskl_rec k (pskl_to_bskl_syn P2) (pskl_to_bskl_syn P1).
-Proof.
-  induction P1; intros; simpl; f_equal; auto.
-  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
-Qed.
 
 Lemma ptyp_to_bskl_syn_open_var : forall A α,
   ptyp_to_bskl_syn (open_ptyp_wrt_ptyp A (ptyp_var_f α))
@@ -1064,12 +1046,6 @@ Proof.
     try (intros x b Hb; unfold binds; apply in_or_app; auto).
 Qed.
 
-Lemma ftvar_in_ptyp_to_pskl : forall τ,
-  ftvar_in_pskl (ptyp_to_pskl τ) [=] ftvar_in_ptyp τ.
-Proof.
-  induction τ; simpl; try fsetdec.
-Qed.
-
 (** Extracting a definition's payload facts from a wf context with a
     declaration-only prefix. *)
 Lemma a_wf_aenv_mid_def_inv : forall Ξ β τ Θ,
@@ -1124,10 +1100,6 @@ Qed.
 
 (** A monotype's skeleton is guarded / locally closed.  (Duplicated from
     [prop_consis_sound], which is DOWNSTREAM of this file.) *)
-Lemma mono_ptyp_to_pskl_lc : forall τ,
-  mono_ptyp τ -> lc_pskl (ptyp_to_pskl τ).
-Proof. induction 1; simpl; auto using lc_pskl. Qed.
-
 Lemma mono_ptyp_to_pskl_guarded : forall τ,
   mono_ptyp τ -> guarded_pskl (ptyp_to_pskl τ).
 Proof.

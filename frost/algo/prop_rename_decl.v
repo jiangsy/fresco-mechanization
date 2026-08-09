@@ -375,7 +375,7 @@ Proof.
     + (* x ∈ Θ0 : untouched — its payload avoids α by hypothesis *)
       assert (Hfr : α `notin` ftvar_in_pskl P).
       { destruct b; simpl in H0; try discriminate; inversion H0; subst.
-        - rewrite ftvar_in_ptyp_to_pskl. eauto.
+        - rewrite ftvar_ptyp_to_pskl. eauto.
         - eauto. }
       apply ad_pat__var with (b := b) (P := P).
       * apply binds_app_3. simpl. right. exact Hb0.

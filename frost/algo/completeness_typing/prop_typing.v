@@ -24,7 +24,7 @@
     same-term recursion only kills [size_exp], which is not needed.
 
     The statement is [typ_complete_concl] below, factored like
-    [pat_complete_concl]; the base rows feed [a_sub_complete_thm] at TY,
+    [pat_complete_concl]; the base rows feed [a_sub_complete] at TY,
     with the run's output packaged as a painted [ptyp] by
     [a_sub_ty_ghost_free_output] (completeness_typing/prop_rigidity.v) and the optimality
     conclusion converted by [ad_precise_painting_tyequiv]'s idiom (a
@@ -165,7 +165,7 @@ Proof.
   assert (HwfQ : Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl (btyp_to_bskl B)))
     by (eapply typ_counterpart_wf;
         exact (ad_pat_sub_of_v (ex_intro _ njoin Hjoin))).
-  destruct (@a_sub_complete_thm njoin a_sub_mode_ty M Θ0 P0
+  destruct (@a_sub_complete njoin a_sub_mode_ty M Θ0 P0
               pskl_unit (ptyp_to_uskl_syn ptyp_unit) Θ κ (btyp_to_bskl B)
               Hwf0 HwfΘ HwfP0
               ltac:(apply a_wf_pskl__unit)
@@ -215,7 +215,7 @@ Proof.
     by (eapply a_wf_aenv_binds_var_typ_wf; eassumption).
   assert (HwfA : a_wf_ptyp Θ A)
     by (eapply a_wf_aenv_binds_var_typ_wf; eassumption).
-  destruct (@a_sub_complete_thm njoin a_sub_mode_ty M Θ0 P0
+  destruct (@a_sub_complete njoin a_sub_mode_ty M Θ0 P0
               (ptyp_to_pskl A0) (ptyp_to_uskl_syn A) Θ κ (btyp_to_bskl B)
               Hwf0 HwfΘ HwfP0
               ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA0)
@@ -245,7 +245,7 @@ Qed.
 
 (* ===================================================================== *)
 (*  The Anno base row — TWO stages: the body at [(TC, ⌈A⌉)] (the IH),     *)
-(*  then the fused subtyping ([a_sub_complete_thm]).  ⭐ The body run      *)
+(*  then the fused subtyping ([a_sub_complete]).  ⭐ The body run      *)
 (*  returns the annotation ITSELF ([a_typing_tc_rigid_output],            *)
 (*  completeness_typing/prop_rigidity.v) — the fact [AT-Anno]'s premise demands and the        *)
 (*  paper's Anno case asserts by metavariable pun.  The optimality glues  *)
@@ -381,7 +381,7 @@ Proof.
           | intros α Hα; clear - Hα; fsetdec ] ]. }
   rewrite Hms in HrefT.
   (* ---- 3. the SUB stage ---- *)
-  destruct (@a_sub_complete_thm njoin a_sub_mode_ty M Θmid P0
+  destruct (@a_sub_complete njoin a_sub_mode_ty M Θmid P0
               (ptyp_to_pskl A) (ptyp_to_uskl_syn A) Θ ζb (btyp_to_bskl B)
               Hwfmid HwfΘ HwfP0mid
               ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfAmid)
@@ -546,7 +546,7 @@ Proof.
     simpl.
     apply a_wf_ptyp__all with (L := L `union` dom Θ).
     intros α Hα.
-    rewrite <- btyp_to_ptyp_open.
+    rewrite <- btyp_to_ptyp_open_var.
     apply H1; [ clear - Hα; fsetdec | ].
     apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ].
   - (* abs_check_base *)
@@ -562,7 +562,7 @@ Proof.
     simpl.
     apply a_wf_ptyp__all with (L := L `union` dom Θ).
     intros α Hα.
-    rewrite <- btyp_to_ptyp_open.
+    rewrite <- btyp_to_ptyp_open_var.
     apply H1; [ clear - Hα; fsetdec | ].
     apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ].
   - (* abs_anno_check_base *)
@@ -606,7 +606,7 @@ Qed.
 
 (* ===================================================================== *)
 (*  The Freeze row — TWO stages: the body at [(TI, ◇)] (the IH), then     *)
-(*  the consistency stage ([a_consis_complete_thm]) with the subject      *)
+(*  the consistency stage ([a_consis_complete]) with the subject      *)
 (*  transported along [≡ˢ] to the declarative types.  The conclusion's    *)
 (*  [≡ᵗ] comes from the consis run's own subject-≡-input                  *)
 (*  ([a_consis_chk_tyequiv]) pushed through the witnesses.                *)
@@ -734,7 +734,7 @@ Proof.
     apply ad_refine_pskl_refl.
     apply a_wf_ptyp_to_wf_pskl. exact HwfA. }
   (* ---- 3. the consistency stage ---- *)
-  destruct (a_consis_complete_thm Hwfmid HwfApmid
+  destruct (a_consis_complete Hwfmid HwfApmid
               ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfB'mid)
               Hζb HwfΘ Hjoin
               ltac:(apply ad_refine_syn_f_of_plain; exact HrefT)
@@ -1718,7 +1718,7 @@ Proof.
       rewrite (@msubst_ptyp_open (blk ++ Θ1) (ζg ++ κ) Θ
                  (close_ptyp_wrt_ptyp β A0) α0 Hincg Hfrg)
         in Heqc0.
-      rewrite btyp_to_ptyp_open in Heqc0.
+      rewrite btyp_to_ptyp_open_var in Heqc0.
       simpl.
       set (X := msubst_ptyp (ζg ++ κ) (close_ptyp_wrt_ptyp β A0)) in *.
       apply a_tyequiv__all with
@@ -1743,7 +1743,7 @@ Proof.
           [ exact Hincg | clear - Hα0; fsetdec | clear - Hα0; fsetdec ]. }
       rewrite (swap_ptyp_fresh_id α0 α (btyp_to_ptyp B0)) in Hsw;
         [ | | clear - Hα; fsetdec ].
-      2:{ rewrite ftvar_in_ptyp_btyp_to_ptyp. clear - Hα0; fsetdec. }
+      2:{ rewrite ftvar_btyp_to_ptyp. clear - Hα0; fsetdec. }
       exact Hsw.
   - (* hole *)
     destruct P0 as [ | nb | βv | Pa Pb | Pw | | Pt ]; simpl in HeqS;
@@ -1916,7 +1916,7 @@ Proof.
   - apply is_ityp__arrow; assumption.
   - apply is_ityp__all with (L := empty).
     intros α _.
-    rewrite <- ptyp_to_btyp_inh_open.
+    rewrite <- ptyp_to_btyp_inh_open_var.
     auto.
 Qed.
 
@@ -2458,7 +2458,7 @@ Proof.
     apply ad_refine_pskl_f_of_plain.
     apply ad_refine_pskl_refl.
     apply a_wf_ptyp_to_wf_pskl. exact HwfA'. }
-  destruct (a_consis_complete_thm Hwf0 HwfP HwfpA0 Hinc HwfΘ Hjoin
+  destruct (a_consis_complete Hwf0 HwfP HwfpA0 Hinc HwfΘ Hjoin
               ltac:(apply ad_refine_syn_f_of_plain; exact HrefD)
               Hrp)
     as [Qc [Θmid [HcRun HoptC]]].
@@ -3087,7 +3087,7 @@ Proof.
       rewrite Hdomζp. intros Hc.
       exact (Hscope γ Hc Hγ). }
     rewrite Hagree in Heqcb.
-    rewrite btyp_to_ptyp_open in Heqcb.
+    rewrite btyp_to_ptyp_open_var in Heqcb.
     assert (Hαζbt : α `notin` dom ζbt).
     { intros Hc.
       pose proof (a_inc_dom_sub Hstrip Hc) as Hc2.
@@ -3110,7 +3110,7 @@ Proof.
         | rewrite ftvar_in_ptyp_close_ptyp_wrt_ptyp; clear; fsetdec
         | clear - Hα; fsetdec ]. }
     assert (HαB : α `notin` ftvar_in_ptyp (btyp_to_ptyp B))
-      by (rewrite ftvar_in_ptyp_btyp_to_ptyp; clear - Hα; fsetdec).
+      by (rewrite ftvar_btyp_to_ptyp; clear - Hα; fsetdec).
     apply a_tyequiv__all with
       (L := ftvar_in_ptyp X `union` ftvar_in_ptyp (btyp_to_ptyp B)
               `union` singleton α `union` dom Θ `union` ftvar_in_aenv Θ).
@@ -3355,7 +3355,7 @@ Proof.
       rewrite Hdomζp. intros Hc.
       exact (Hscope γ Hc Hγ). }
     rewrite Hagree in Heqcb.
-    rewrite btyp_to_ptyp_open in Heqcb.
+    rewrite btyp_to_ptyp_open_var in Heqcb.
     assert (Hαζbt : α `notin` dom ζbt).
     { intros Hc.
       pose proof (a_inc_dom_sub Hstrip Hc) as Hc2.
@@ -3378,7 +3378,7 @@ Proof.
         | rewrite ftvar_in_ptyp_close_ptyp_wrt_ptyp; clear; fsetdec
         | clear - Hα; fsetdec ]. }
     assert (HαB : α `notin` ftvar_in_ptyp (btyp_to_ptyp B))
-      by (rewrite ftvar_in_ptyp_btyp_to_ptyp; clear - Hα; fsetdec).
+      by (rewrite ftvar_btyp_to_ptyp; clear - Hα; fsetdec).
     apply a_tyequiv__all with
       (L := ftvar_in_ptyp X `union` ftvar_in_ptyp (btyp_to_ptyp B)
               `union` singleton α `union` dom Θ `union` ftvar_in_aenv Θ).
@@ -3575,7 +3575,7 @@ Qed.
 (*  The declarative side hands us a refinement of [κ⌈A0⌉] to an ARROW, and *)
 (*  only two shapes of [A0] survive it: a syntactic arrow (⟹ the identity  *)
 (*  split) and a FLEXIBLE (⟹ invent [β̂1]/[α̂1] and solve them by a full     *)
-(*  consistency run, which [a_consis_complete_thm] supplies at the         *)
+(*  consistency run, which [a_consis_complete] supplies at the         *)
 (*  monotypes [τ1]/[τ2] the flexible's own image decomposes into).         *)
 (*  [unit] / [∀] / a RIGID variable all die on the refinement.             *)
 (*                                                                        *)
@@ -3735,7 +3735,7 @@ Proof.
         apply ad_refine_pskl_f_refl.
         apply a_wf_ptyp_to_wf_pskl; exact HwfA12. }
       (* THE CONSISTENCY RUN *)
-      destruct (a_consis_complete_thm Hwf0'
+      destruct (a_consis_complete Hwf0'
                   ltac:(apply a_wf_pskl__arrow; apply a_wf_pskl__var;
                         right; right; left;
                         [ unfold binds; simpl; right; left; reflexivity
@@ -4227,7 +4227,7 @@ Proof.
     by (apply a_wf_ptyp_to_wf_pskl; exact HwfAd).
   assert (HwfBcP1 : Θ1 ⨟ empty ⊢ₚₛᵃ (ptyp_to_pskl Bc))
     by (apply a_wf_ptyp_to_wf_pskl; exact HwfBc).
-  destruct (a_consis_complete_thm Hwf1 HwfAanP1 HwfAdP1 Hζ HwfΘ Hjoin Hrs Hrp)
+  destruct (a_consis_complete Hwf1 HwfAanP1 HwfAdP1 Hζ HwfΘ Hjoin Hrs Hrp)
     as [Qc [Θ2 [HcRun HoptC]]].
   destruct (a_consis_isub_wf_nil HcRun Hwf1 HwfAanP1 HwfAdP1) as [HleC Hwf2].
   destruct HleC as [[κc [Hidc Hincc]] _].

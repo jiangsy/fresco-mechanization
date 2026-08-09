@@ -85,22 +85,6 @@ Proof.
 Qed.
 
 (** Colour erasure commutes with opening. *)
-Lemma bskl_to_pskl_open_rec : forall Q Q' k,
-  bskl_to_pskl (open_bskl_wrt_bskl_rec k Q' Q)
-  = open_pskl_wrt_pskl_rec k (bskl_to_pskl Q') (bskl_to_pskl Q).
-Proof.
-  induction Q; intros; simpl; f_equal; auto.
-  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
-Qed.
-
-Lemma bskl_to_pskl_open : forall Q α,
-  bskl_to_pskl (open_bskl_wrt_bskl Q (bskl_var_f α))
-  = open_pskl_wrt_pskl (bskl_to_pskl Q) (pskl_var_f α).
-Proof.
-  intros. unfold open_bskl_wrt_bskl, open_pskl_wrt_pskl.
-  apply bskl_to_pskl_open_rec.
-Qed.
-
 (** Guardedness transfers back across the synthesised painting (the
     local-closure side conditions come from the skeleton's own wf). *)
 Lemma guarded_pskl_of_bskl_syn : forall P,
@@ -597,12 +581,8 @@ Proof.
     [ exact Href | exact Hwf | exact Hdisj | exact HwfA | exact Hprec ].
 Qed.
 
-(** ⚙ Local copy of prop_pat_sub.v's [ftvar_in_pskl_ptyp_to_pskl] —
+(** ⚙ Local copy of prop_pat_sub.v's [ftvar_ptyp_to_pskl] —
     prop_pat_sub sits ABOVE this file in the dependency order. *)
-Lemma ftvar_in_pskl_ptyp_to_pskl_local : forall τ,
-  ftvar_in_pskl (ptyp_to_pskl τ) [=] ftvar_in_ptyp τ.
-Proof. induction τ; simpl; fsetdec. Qed.
-
 (* ===================================================================== *)
 (*  The UNCOLOURED mirror of the [ad_refine_syn_trans] chain.              *)
 (*                                                                         *)
@@ -710,7 +690,7 @@ Proof.
     apply (Hdisj β Hβ).
     assert (Hwτ : a_wf_ptyp Θx τ)
       by (eapply a_wf_aenv_binds_def_wf; [ exact Hwf | apply Hmap; exact H ]).
-    rewrite ftvar_in_pskl_ptyp_to_pskl_local in HYτ.
+    rewrite ftvar_ptyp_to_pskl in HYτ.
     destruct (a_wf_ptyp_ftv_tvarish Hwτ HYτ) as [Hb | [Hb | [τ0 Hb]]];
       apply binds_In in Hb; exact Hb.
   - (* flex_r : the result is a bare variable bound in Θ, hence in Θx *)

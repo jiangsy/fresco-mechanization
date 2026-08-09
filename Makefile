@@ -25,7 +25,7 @@ PAPER_AUX := ../paper/frost.aux
 # Use `make NJOBS=N coq` (or quick) for parallel compilation. Default 4.
 NJOBS ?= 4
 
-.PHONY: coq quick clean sync-paper-refs sync-paper-refs-md
+.PHONY: coq quick clean tidy sync-paper-refs sync-paper-refs-md
 
 %/def_ott.v : %/language.ott
 	ott -i $^ -o $@ ${OTT_FLAGS}
@@ -91,14 +91,34 @@ coq : ${COQ_MAKEFILE}
 quick : ${COQ_MAKEFILE}
 	${MAKE} -j ${NJOBS} -f ${COQ_MAKEFILE} vos
 
-clean :
+clean : tidy
 	${MAKE} -f ${COQ_MAKEFILE} clean
 	rm */prop_ln.v */def_ott.v ${COQ_MAKEFILE} ${COQ_MAKEFILE}.conf .FILE_LIST
 	# Litter coq_makefile's own `clean` does not know about: the .aux
-	# per-proof timing files, and the .glob/.vo left behind by scratch
-	# and probe buffers whose .v has since been deleted.
-	rm -f .*.aux */.*.aux */*/.*.aux .lia.cache .DS_Store */.DS_Store
-	rm -f scratch_*.glob scratch_*.vo scratch_*.vok scratch_*.vos
+	# per-proof timing files, and .DS_Store.  `find` rather than a glob
+	# list, because the tree is three levels deep (algo/completeness_look/)
+	# and the old `*/.*.aux */*/.*.aux` pair silently missed level three.
+	find . -name '.*.aux' -delete
+	find . -name '.DS_Store' -delete
+	rm -f .lia.cache
+
+# `tidy` removes ONLY orphaned build artifacts — a .glob/.vo/.vok/.vos/.aux
+# whose companion .v no longer exists.  Safe to run at any time, and unlike
+# `clean` it PRESERVES the live .aux files, which record proof_build_time per
+# proof and are the starting point of every performance pass (see CLAUDE.md).
+#
+# Orphans accumulate silently: every deleted scratch buffer, every renamed
+# file (the 2026-08-09 audit renamed six) leaves its artifacts behind, and
+# they are a grep hazard — a stale .glob still names lemmas that are gone.
+# Detection is by companion-file existence, not by a `scratch_*`/`probe_*`
+# name pattern, so it needs no maintenance as new prefixes get invented.
+.PHONY: tidy
+tidy :
+	@find . \( -name '*.glob' -o -name '*.vo' -o -name '*.vok' -o -name '*.vos' \) \
+	  | while read f; do [ -f "$${f%.*}.v" ] || { echo "  tidy: $$f"; rm -f "$$f"; }; done
+	@find . -name '.*.aux' \
+	  | while read a; do b=`basename "$$a"`; d=`dirname "$$a"`; v="$$d/$${b#.}"; \
+	      [ -f "$${v%.aux}.v" ] || { echo "  tidy: $$a"; rm -f "$$a"; }; done
 
 # Sync paper Lemma/Theorem numbers from the compiled paper into:
 #   - `[paper-ref: ...]`-marked comments in .v files

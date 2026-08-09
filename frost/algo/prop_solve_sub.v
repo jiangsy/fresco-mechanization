@@ -40,14 +40,6 @@ Combined Scheme a_solve_sub_eq_mutind
 (*  TYPE, read back into [pskl] — the shape SE-FlexR now returns.          *)
 (* ===================================================================== *)
 
-Lemma ptyp_to_pskl_lc : forall A, lc_ptyp A -> lc_pskl (ptyp_to_pskl A).
-Proof.
-  intros A H; induction H; cbn; try solve [ constructor; auto ].
-  (* ∀ : the cofinite family transports through the coercion *)
-  apply lc_pskl_all_syn. intros α.
-  rewrite <- ptyp_to_pskl_open. auto.
-Qed.
-
 (** [guess^TY] of an (openable) skeleton is locally closed.  Local closure
     of the SOURCE is not a hypothesis: [a_guess_mono] has no row for a bound
     variable, so a derivation exists only for a locally-closed subject. *)
@@ -426,7 +418,7 @@ Proof.
         | Hg : a_guess_mono ?Th ?p ?X ?a
           |- ftvar_in_pskl (ptyp_to_pskl ?a) [<=] _ =>
             pose proof (a_guess_mono_ftv Hg) as Hgf;
-            pose proof (ftvar_in_ptyp_to_pskl a) as Hco;
+            pose proof (ftvar_ptyp_to_pskl a) as Hco;
             clear - Hgf Hco; fsetdec
         end
       | (* sub half has no FlexR row; this arm is inert there *)
@@ -641,7 +633,7 @@ Proof.
       [ match goal with
         | Hg : a_guess_mono _ _ ?X ?A0 |- dom ?X [<=] _ =>
             pose proof (a_guess_mono_generated_occurs Hg) as Ho;
-            pose proof (ftvar_in_ptyp_to_pskl A0) as Hco;
+            pose proof (ftvar_ptyp_to_pskl A0) as Hco;
             clear - Ho Hco; fsetdec
         end ];
     (* the THREADING rows *)

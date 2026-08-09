@@ -73,22 +73,6 @@ Lemma btyp_to_bskl_ptyp_to_btyp_inh : forall A,
   btyp_to_bskl (ptyp_to_btyp_inh A) = pskl_to_bskl_inh (ptyp_to_pskl A).
 Proof. induction A; simpl; congruence. Qed.
 
-Lemma btyp_to_ptyp_open : forall B α,
-  btyp_to_ptyp (open_btyp_wrt_btyp B (btyp_var_f α))
-  = open_ptyp_wrt_ptyp (btyp_to_ptyp B) (ptyp_var_f α).
-Proof.
-  intros. unfold open_btyp_wrt_btyp, open_ptyp_wrt_ptyp.
-  apply (btyp_to_ptyp_open_rec B (btyp_var_f α) 0).
-Qed.
-
-Lemma ptyp_to_btyp_inh_open : forall A α,
-  ptyp_to_btyp_inh (open_ptyp_wrt_ptyp A (ptyp_var_f α))
-  = open_btyp_wrt_btyp (ptyp_to_btyp_inh A) (btyp_var_f α).
-Proof.
-  intros A α. unfold open_ptyp_wrt_ptyp, open_btyp_wrt_btyp.
-  generalize 0 as k. induction A; intros k; default_simp.
-Qed.
-
 (** A colouring whose painting is SYNTHESISED is the all-synthesised one —
     the [Freeze] premise's [ptyp_to_btyp_syn B] shape, read off the IH's
     [◇ ⊳ bid(B)] refinement through [ad_refine_syn_syn_l]. *)
@@ -146,7 +130,7 @@ Proof.
       try discriminate.
     inversion HeqS; inversion HeqT; subst.
     apply a_tyequiv__all with (L := L). intros α Hα.
-    rewrite <- btyp_to_ptyp_open.
+    rewrite <- btyp_to_ptyp_open_var.
     apply (H0 α Hα Hwf (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))
              (open_btyp_wrt_btyp B0 (btyp_var_f α)));
       [ rewrite ptyp_to_pskl_open, pskl_to_bskl_inh_open; reflexivity
@@ -574,7 +558,7 @@ Proof.
       as [α Hα].
     apply (open_btyp_wrt_btyp_inj _ _ α);
       [ clear - Hα; fsetdec | clear - Hα; fsetdec | ].
-    rewrite <- ptyp_to_btyp_inh_open, <- btyp_to_ptyp_open.
+    rewrite <- ptyp_to_btyp_inh_open_var, <- btyp_to_ptyp_open_var.
     apply H0. clear - Hα; fsetdec.
 Qed.
 
@@ -1284,13 +1268,9 @@ Proof.
   - (* app *) clear - IHa_wf_exp1 IHa_wf_exp2; fsetdec.
 Qed.
 
-Lemma ftvar_in_ptyp_btyp_to_ptyp : forall B,
-  ftvar_in_ptyp (btyp_to_ptyp B) [=] ftvar_in_btyp B.
-Proof. induction B; simpl; fsetdec. Qed.
-
 (* --- §12c  a ghost-free bskl IS a colouring -------------------------- *)
 
-(** [a_sub_sound_thm] hands back a [bskl]; the TY-sorted declarative
+(** [a_sub_sound] hands back a [bskl]; the TY-sorted declarative
     judgements want a [btyp].  Whenever the erasure is a painting of a type
     the two are interchangeable — the ghost rows cannot have fired. *)
 Lemma btyp_of_erased_ptyp : forall Q A,
@@ -1668,13 +1648,6 @@ Lemma ftvar_in_bskl_inh_ptyp : forall A,
   ftvar_in_bskl (pskl_to_bskl_inh (ptyp_to_pskl A)) [=] ftvar_in_ptyp A.
 Proof. induction A; simpl; fsetdec. Qed.
 
-Lemma ftvar_in_btyp_ptyp_to_btyp_inh : forall A,
-  ftvar_in_btyp (ptyp_to_btyp_inh A) [=] ftvar_in_ptyp A.
-Proof.
-  intros A. rewrite <- (ftvar_in_ptyp_btyp_to_ptyp (ptyp_to_btyp_inh A)).
-  rewrite btyp_to_ptyp_ptyp_to_btyp_inh. reflexivity.
-Qed.
-
 (* ===================================================================== *)
 (*  §13  thm:sound-type-inference                                        *)
 (* ===================================================================== *)
@@ -1705,7 +1678,7 @@ Theorem a_typing_sound : forall m Θ0 P0 e A Θ1,
 Proof.
   intros m Θ0 P0 e A Θ1 H; induction H; intros Hwf Hskl HwfP0 Hmod Hexp.
   - (* AT-Unit *)
-    destruct (a_sub_sound_thm_v H Hwf HwfP0
+    destruct (a_sub_sound_v H Hwf HwfP0
                 ltac:(apply a_wf_pskl__unit)
                 ltac:(intros Hd; discriminate)
                 ltac:(intros _; exact Hmod))
@@ -1721,7 +1694,7 @@ Proof.
   - (* AT-Var *)
     assert (HwfA : a_wf_ptyp Θ0 A)
       by (eapply a_wf_aenv_binds_var_typ_wf; eassumption).
-    destruct (a_sub_sound_thm_v H0 Hwf HwfP0
+    destruct (a_sub_sound_v H0 Hwf HwfP0
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA)
                 ltac:(intros Hd; discriminate)
                 ltac:(intros _; exact Hmod))
@@ -1751,7 +1724,7 @@ Proof.
     { intros y Ps Hb. eapply a_wf_pskl_isub; [ | exact Hle1 ].
       apply (Hskl y). apply (a_typing_tm_ge H); [ exact I | exact Hb ]. }
     assert (HwfA1 : a_wf_ptyp Θ1 A) by (eapply a_wf_ptyp_isub; eassumption).
-    destruct (a_sub_sound_thm_v H0 Hwf1
+    destruct (a_sub_sound_v H0 Hwf1
                 ltac:(eapply a_wf_pskl_isub; [ exact HwfP0 | exact Hle1 ])
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA1)
                 ltac:(intros Hd; discriminate)
@@ -2157,7 +2130,7 @@ Proof.
     { eapply ad_sd_typing_strip_suffix;
         [ exact H | exact Hwfo | | exact Hdα ].
       intros γ Hγ.
-      rewrite ftvar_in_btyp_ptyp_to_btyp_inh.
+      rewrite ftvar_ptyp_to_btyp_inh.
       pose proof (H1 γ Hγ) as Hn.
       pose proof (HΞΘ0 γ Hγ) as Hdd.
       pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A (ptyp_var_f α))
@@ -2177,7 +2150,7 @@ Proof.
           with (ptyp_to_btyp_inh (ptyp_all A)).
         apply is_ityp_paint. eapply a_wf_ptyp_lc; exact HwfAll.
       * intros β Hβ.
-        rewrite <- ptyp_to_btyp_inh_open.
+        rewrite <- ptyp_to_btyp_inh_open_var.
         pose proof (@ad_sd_typing_rename_tvar _ _ _ _ Hdα1 nil α Θ1 β
                       eq_refl
                       ltac:(simpl; clear - Hα; solve_notin_auto)
@@ -2298,7 +2271,7 @@ Proof.
         | exact I
         | clear - Hx; fsetdec ].
       intros γ Hγ.
-      rewrite ftvar_in_btyp_ptyp_to_btyp_inh.
+      rewrite ftvar_ptyp_to_btyp_inh.
       pose proof (H2 γ Hγ) as Hn. pose proof (HΞΘ1 γ Hγ) as Hd1.
       pose proof (a_wf_exp_ftv_dom Hexpx) as Hfv.
       clear - Hn Hd1 Hfv; fsetdec. }
@@ -2442,7 +2415,7 @@ Proof.
     { eapply ad_sd_typing_strip_suffix;
         [ exact H | exact Hwfo | | exact Hdα ].
       intros γ Hγ.
-      rewrite ftvar_in_btyp_ptyp_to_btyp_inh.
+      rewrite ftvar_ptyp_to_btyp_inh.
       pose proof (H1 γ Hγ) as Hn.
       pose proof (HΞΘ0 γ Hγ) as Hdd.
       pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A (ptyp_var_f α))
@@ -2463,7 +2436,7 @@ Proof.
           with (ptyp_to_btyp_inh (ptyp_all A)).
         apply is_ityp_paint. eapply a_wf_ptyp_lc; exact HwfAll.
       * intros β Hβ.
-        rewrite <- ptyp_to_btyp_inh_open.
+        rewrite <- ptyp_to_btyp_inh_open_var.
         pose proof (@ad_sd_typing_rename_tvar _ _ _ _ Hdα1 nil α Θ1 β
                       eq_refl
                       ltac:(simpl; clear - Hα; solve_notin_auto)
@@ -2607,7 +2580,7 @@ Proof.
         | exact I
         | clear - Hx; fsetdec ].
       intros γ Hγ.
-      rewrite ftvar_in_btyp_ptyp_to_btyp_inh.
+      rewrite ftvar_ptyp_to_btyp_inh.
       pose proof (H3 γ Hγ) as Hn. pose proof (HΞΘ2 γ Hγ) as Hd2.
       pose proof (a_wf_exp_ftv_dom Hexpx) as Hfv.
       clear - Hn Hd2 Hfv; fsetdec. }

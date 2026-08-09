@@ -27,7 +27,7 @@ The consistency stack absorbs most of the mathematical difficulty: **both
 subtyping proofs consume the consistency theorems as black boxes** at every
 `Infer`/`Check`/`UnivGhostR`/`Arrow`-premise node, and those black boxes are
 now fully Qed (`a_consis_sound`, `a_consistag_sound_aux`,
-`a_consis_complete_thm`/`complete_mu`, `a_consis_decorate`).  The genuinely
+`a_consis_complete`/`complete_mu`, `a_consis_decorate`).  The genuinely
 new content is:
 
 1. the **constraint-collection/solving layer** (`a_looksub`, `a_solve_sub`,
@@ -89,7 +89,7 @@ the flexible-variable *lookup* rules.  Notes:
   prop_ln (it should; grep before hand-rolling).
 
 **(D2) subtyping problems/solutions** — inline the solution conditions in the
-theorem statements, as `a_consis_complete_thm` does (the old standalone
+theorem statements, as `a_consis_complete` does (the old standalone
 problem/solution definitions were deleted with the OPT-bundle file — inline
 conditions are what the proofs actually consume).  The fill condition
 `Θ1 ⊢ inh(κ1 P0) ⋈syn bid(P1)` is `ad_refine_syn` with an inherited-painted
@@ -193,7 +193,7 @@ unresolved `S` with `⌊S⌋ = P`, and a solution `(Θ0 ≤[κ] Θ; Q)`:
 ```
 
 (Note the mech statement will phrase `κ ≡ ζ∘ρ1`-style factoring through the
-id-witness exactly as `a_consis_complete_thm` does — reuse that statement
+id-witness exactly as `a_consis_complete` does — reuse that statement
 shape verbatim, replacing the `ad_precise_f` conjunct with plain precision.)
 
 ```
@@ -201,9 +201,9 @@ thm:complete-subtyping (generalized)
  │  induction: lex (height of the ad_pat_sub derivation, |Ψ|),
  │  mutual with complete-flex-subtyping (induction on contexts Θ0∣Ξ)
  ├─ case P = α̂ flexible, M = FN M'  → complete-flex-subtyping
- ├─ Infer / Check / UnivGhostR      → a_consis_complete_thm   [Qed ✓]
+ ├─ Infer / Check / UnivGhostR      → a_consis_complete   [Qed ✓]
  ├─ ForallR                         → IH + fill-inversion + rigid-head re-attach
- ├─ Arrow                           → a_consis_complete_thm (premise 1)
+ ├─ Arrow                           → a_consis_complete (premise 1)
  │                                    + a_inc_equiv transport + IH (premise 2)
  ├─ ForallL                         → complete-look → complete-constraint-
  │                                    collection-solving(-var)  [THE core]
@@ -240,7 +240,7 @@ thm:complete-subtyping (generalized)
 
 | paper use | mech lemma | file |
 |---|---|---|
-| thm:complete-consistency (4 case families) | `a_consis_complete_thm`, `consis_complete`, `complete_mu` | prop_consis_complete.v |
+| thm:complete-consistency (4 case families) | `a_consis_complete`, `consis_complete`, `complete_mu` | prop_consis_complete.v |
 | sound-decorated-consistency | `a_consistag_sound_aux` (decorated), `a_consis_sound(_aux)` | prop_consis_sound.v |
 | decorating-algorithmic-consistency | `a_consis_decorate(_gen)` — the *template* for L-A | prop_decorate.v |
 
@@ -252,7 +252,7 @@ opens by **augmenting the definition of a solution** to require three
 conditions — the join, the `P0`-fill at Δ₁, **and**
 `skctx[Δ2]{Θ} κ⌊S⌋ ⋈ Q` (consistency-proofs.tex:2230-2242) — and the
 standalone 2-condition Definition of consistency solutions is *commented
-out* in algorithmic.tex.  So `a_consis_complete_thm` is faithful to the
+out* in algorithmic.tex.  So `a_consis_complete` is faithful to the
 paper's proof-level statement.
 
 Deriving the third condition from the other two is **FALSE**:
@@ -388,7 +388,7 @@ registry as each is placed.
 
 ### 4.5 Statement-shape drift
 Follow the consistency statements' shapes exactly where analogous
-(`a_consis_complete_thm` for the completeness motive;
+(`a_consis_complete` for the completeness motive;
 `a_consistag_sound_aux`'s conjunct list for L-B): every deviation costs a
 transport lemma later.  In particular keep the hygienic `_f` discipline — the
 ∀-cases of consistency completeness only closed after the precision conjunct
@@ -440,5 +440,5 @@ assign-walk and guess-witness recipes).
 | complete-constraint-collection-solving | `a_looksolve_complete` | P6 |
 | complete-look | `a_extract_complete_gen` | P6 |
 | complete-flex-subtyping | `a_sub_flex_complete` | P7 |
-| thm:sound-subtyping | `a_sub_sound_thm` | P3+P4 |
-| thm:complete-subtyping | `a_sub_complete_thm` | P7 |
+| thm:sound-subtyping | `a_sub_sound` | P3+P4 |
+| thm:complete-subtyping | `a_sub_complete` | P7 |

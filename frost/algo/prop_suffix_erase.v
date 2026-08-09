@@ -677,7 +677,7 @@ Proof.
       assert (Hid : subst_pskl_in_pskl (ptyp_to_pskl τs) α0
                       (ptyp_to_pskl τs) = ptyp_to_pskl τs)
         by (apply subst_pskl_in_pskl_fresh_eq;
-            rewrite ftvar_in_pskl_ptyp_to_pskl; exact Hfrτs).
+            rewrite ftvar_ptyp_to_pskl; exact Hfrτs).
       match goal with
       | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
           pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu Hα0) as IHx
@@ -703,7 +703,7 @@ Proof.
       assert (Hid : subst_pskl_in_pskl (ptyp_to_pskl τs) α0
                       (ptyp_to_pskl τs) = ptyp_to_pskl τs)
         by (apply subst_pskl_in_pskl_fresh_eq;
-            rewrite ftvar_in_pskl_ptyp_to_pskl; exact Hfrτs).
+            rewrite ftvar_ptyp_to_pskl; exact Hfrτs).
       match goal with
       | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
           pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu Hα0) as IHx

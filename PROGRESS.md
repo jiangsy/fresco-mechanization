@@ -57,7 +57,7 @@ files were `Admitted` scaffolding subsumed by the current algo development.
 - ✅ Soundness of Consistency, all three parts: part 1 `a_consis_sound` / `a_consis_sound_aux` (`algo/prop_consis_sound.v`, the aconsis main induction), parts 2–3 `a_unify_sound` / `a_assign_sound` (mutual bundle `a_assign_unify_consis_sound`)
 - ✅ Consistency constraint decoration for variables (`algo/prop_decorate_sub.v`, consistency-proofs:606)
 - ✅ Completeness of consistency constraint collection & solving: `a_lookeq_solve_complete` (P6-Cs, `algo/prop_look_complete_cstr.v`) and `a_solve_eq_complete_var` (P6-Cv, `algo/prop_look_complete_var.v`) — both axiom-free; P6-Cs carries one paper-external wf side condition whose necessity is machine-checked (`algo/cex/cex_p6cs_subject_wf.v`, docs/WF-SIDE-CONDITIONS.md)
-- ✅ Completeness and optimality of Consistency, all three parts (`a_consis_complete_thm` / `complete_mu` / `assign_complete_step`, `algo/prop_consis_complete.v`)
+- ✅ Completeness and optimality of Consistency, all three parts (`a_consis_complete` / `complete_mu` / `assign_complete_step`, `algo/prop_consis_complete.v`)
 
 **C. subtyping-proofs.tex** (§Subtyping)
 - ✅ Decorating algorithmic subtyping (`a_sub_decorate` / `a_sub_decorate_bundle`, `algo/prop_decorate_sub.v` + `algo/prop_decorate_key.v`); Soundness of decorated subtyping (`a_subtag_sound_bundle`, `algo/prop_sub_sound.v`)
@@ -65,7 +65,7 @@ files were `Admitted` scaffolding subsumed by the current algo development.
 - ✅ Subtyping decoration (variables → general) (`algo/prop_decorate_sub.v`, subtyping-proofs:175/541); Vacuous subtyping decoration (same file, :483)
 - ✅ Stability of constraint collection (`a_looksub_lookeq_subst_stable`); Look freshness (`a_extract_output_fresh`) — both `algo/prop_looksub.v`
 - ✅ Decorating instantiation (`a_extract_decorate`, `algo/prop_decorate_key.v`); Soundness of decorated algorithmic subtyping of flexible variables (the flex half of `a_subtag_sound_bundle`)
-- ✅ **Theorem: Soundness of subtyping** (`a_sub_sound_thm`, `algo/prop_decorate_key.v`, axiom-free)
+- ✅ **Theorem: Soundness of subtyping** (`a_sub_sound`, `algo/prop_decorate_key.v`, axiom-free)
 - ✅ Complete partial precision (`algo/prop_sub_complete.v` P5b, lemma:partial-precision-complete); Stability of subtyping under more precise substitution (`ad_pat_sub_precise_upre`, same file — P5)
 - ✅ Completeness of constraint collection & solving **for variables** (subtyping-proofs:1696, P6-Sv) — `a_solve_sub_complete_var` in `frost/algo/prop_look_complete_sub_var.v`, **Qed and axiom-free** (`Print Assumptions`: closed under the global context).  The paper's statement is **FALSE as given**, machine-checked counterexample `frost/algo/cex/cex_p6sv_forall_flex.v` (`p6sv_with_p6cv_premises_is_false`): its own ForallL case builds, from a ρ = IDENTITY instance, the raw-flexible-payload configuration that `cex_p6_flex_freshened.v` rules unreachable on the constraint-collection route.  What is proved is the REPAIRED statement, which adds the positional premise `flex_shield Θ0 Ψ' Δρ P0 ψa` (plus `flex_apart_walk`, and a `binds`-monotone context generalization so Sub-ForallL can run the IH at `Θ,β`).  `flex_shield_excludes_cex` is kept as the regression test tying the premise to the counterexample.  See docs/PAPER-GAPS.md and DESIGN-completeness-subtyping.md §6 (x)–(a3)
 - 🟢 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_looksub_solve_complete_gen` (ρ-generalized) + the paper's premise-free ρ = identity corollary `a_looksub_solve_complete` in `frost/algo/prop_look_complete_sub_cstr.v`; **11 of 12 rows closed**, ALL TWELVE ROWS closed.  ⚠️ Phase B's planned prerequisite — a sub-side `ad_pat_consis_target_ftv` — is FALSE at `ad_pat_sub_g__forall_l_tagged` even under `is_tskl` (`cex/cex_p6ss_sub_target_ftv.v`); what Sub-ForallR carries instead is a MODE-GUARDED DISJUNCTION (DESIGN §8 (h)), whose right disjunct (`alpha_stack`) is the shape that never descends the target.  Like P6-Sv it is a REPAIRED statement (`sub_shield`).  ⚠️ P6-Cs's `Δρ ∩ dom Θ0 = ∅` premise was VACUOUS — `cex/cex_p6cs_rho_delta_vacuous.v` — and is now the ftv-level one.
@@ -157,7 +157,7 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   `a_wf_exp Θ0 e` (the problem definition's "M wf in Θ0") and the paper's
   implicit `Θ ⊢ ctx` at skeleton term entries
   (`∀ x P, binds x (abind_var_skl P) Θ0 → Θ0 ⨟ ∅ ⊢ₚₛᵃ P`), because
-  `a_wf_aenv__var` stores only `a_scope_pskl` while `a_sub_sound_thm` demands
+  `a_wf_aenv__var` stores only `a_scope_pskl` while `a_sub_sound` demands
   the disciplined `⊢ₚₛᵃ`.  WF-SIDE-CONDITIONS pattern
 - ✅ **Theorem: Soundness of type inference — CLOSED 2026-08-06**,
   `a_typing_sound` (`algo/prop_soundness_typing.v` §13), Qed and *Closed under
@@ -219,7 +219,7 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   enumeration is incomplete; the subcase-2 metasubstitution extension maps
   a flexible to a NON-monotype; the split run and the scoping step are
   asserted).
-- ⚙ §4b's composition gap (completeness consumes `a_sub_complete_thm`, which
+- ⚙ §4b's composition gap (completeness consumes `a_sub_complete`, which
   assumes `ad_pat_sub_gv`, while soundness only concludes plain
   `ad_pat_sub`) is CLOSED — the fused base rows embed `ad_pat_sub_v`
   (2026-08-06 rule change) and the consumers rebuild the plain triple via
@@ -232,7 +232,49 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-08 (latest) — ⭐⭐⭐⭐ **THEOREM 4 IS CLOSED: `a_typing_complete` (thm:complete-type-inference), Qed + axiom-free**
+## 2026-08-09 (latest) — ⚙ **CLEANUP PHASE 3: `frost/prop_coercions.v`, the `_thm` retirement, `make tidy`; duplicates 53 → 39**
+
+Continues the post-theorem-4 cleanup audit
+([`docs/REPORT-remech-cleanup-audit.md`](docs/REPORT-remech-cleanup-audit.md),
+Phase 3 banner).  No rule, statement or proof obligation changed; 39/39 still
+`Closed under the global context`.
+
+- **§5.4 — `frost/prop_coercions.v` (409 lines, 38 lemmas).**  Everything about
+  the paint/erase conversions, gathered from ELEVEN files: §1 retractions, §2
+  `open`/`open_rec` commutation, §3 `lc` + shape-predicate transport, §4 `ftvar`
+  transport.  `coercions.v` is now definitions-only; `prop_basic.v` is the
+  predicate layer (ghost-freeness) and `Require Export`s the new file, so its
+  ~99 consumers needed no edit.
+- ⚠️ **The audit undercounted, because the worst duplication used DIFFERENT
+  names.**  `ftvar_in_pskl (ptyp_to_pskl A) [=] ftvar_in_ptyp A` was proved
+  **four times** (`ftvar_in_pskl_ptyp_to_pskl`, `ftvar_in_ptyp_to_pskl`,
+  `ftvar_ptyp_to_pskl`, `…_local`); the `ptyp_to_btyp_syn` and `btyp_to_ptyp`
+  ftvar facts three times each.  A name-keyed scan is blind to all of it.
+- ⚠️ **The tree already documented the hazard.**
+  `decl/prop_syntax_directed.v`'s `ftvar_paint_btyp_syn_eq` existed only to
+  escape a shadow (its comment says so), and by now had **zero uses**.  Deleted.
+- **Rule adopted: one fact, one name, one file, in its STRONGEST form.**  Where
+  copies differed in strength (`=` / `[=]` / `[<=]`, or general `open` vs its
+  variable instance) the strong one is kept and weak uses `rewrite` with it.
+- ⚠️ **"Strongest form" is not "most general statement".**  Deleting the
+  variable-instance `_open` lemmas in favour of the general ones was WRONG and
+  `make coq` caught it: `rewrite`'s matching is syntactic, so the pattern's
+  `ptyp_to_btyp_inh ?A2` will not match a bare `btyp_var_f α` — that needs the
+  fixpoint unfolded.  Logical subsumption is not rewrite-subsumption.  `_var`
+  is now a **one-line corollary** of the general form, not a second induction,
+  and the two names make explicit an asymmetry that used to be settled by
+  import order (`decl/` wants general, `algo/` wants the variable instance).
+- **Naming: the `_thm` suffix is retired** (`a_sub_sound`, `a_sub_complete`,
+  `a_consis_complete`, `a_sub_flex_sound`, `a_sub_sound_v`).  It marked nothing
+  — no bare name was taken — while `a_pat_sound` / `a_typing_complete` already
+  set the no-suffix convention.  Conventions recorded in `CLAUDE.md`.
+- **`make tidy`.**  Phase 1's hand sweep regrew (11 `.glob`, 66 `.aux`): `clean`
+  globbed only two directory levels and the tree is three deep, and it knew only
+  the `scratch_*` prefix.  `tidy` deletes an artifact iff its companion `.v` is
+  gone, and PRESERVES the live `.aux` timing data perf passes depend on.
+
+
+## 2026-08-08 — ⭐⭐⭐⭐ **THEOREM 4 IS CLOSED: `a_typing_complete` (thm:complete-type-inference), Qed + axiom-free**
 
 Section D's last theorem.  `Theorem a_typing_complete`
 (`algo/prop_completeness_typing.v`, 4638 lines, zero admits) is `Check`ed
@@ -250,7 +292,7 @@ What the last two rows needed, beyond the ten already committed:
   **subcase 2**: from the declarative refinement of `κ⌈A0⌉` to an arrow only
   two shapes of `A0` survive — a syntactic arrow (the identity split) and a
   FLEXIBLE, where two fresh `β̂1`/`α̂1` are invented and SOLVED by a full
-  consistency run supplied by `a_consis_complete_thm`, at the monotypes the
+  consistency run supplied by `a_consis_complete`, at the monotypes the
   flexible's own `κ`-image decomposes into (NEW `mono_refine_arrow_inv`:
   a monotype painting that refines to an arrow IS an arrow up to `≡ᵗ`,
   by induction on the REFINEMENT, its `flex_l` row unfolding the
@@ -432,7 +474,7 @@ side conditions.  Then the cleanup debt.
 ## 2026-08-07 — ⭐⭐ **THEOREM 3's KIT and its THREE BASE ROWS are CLOSED** (NEW `algo/prop_completeness_pat.v`)
 
 `thm:complete-skeleton-inference` is under way.  Its conclusion is factored
-as `pat_complete_concl`, in `a_sub_complete_thm`'s own shape.  ⭐ Two
+as `pat_complete_concl`, in `a_sub_complete`'s own shape.  ⭐ Two
 structural simplifications, both consequences of earlier decisions: the mech
 FUSED the paper's `P-Sub` into the three base rows, so the induction is on
 `size_exp e` ALONE (the paper's lexicographic measure is theorem-4-only); and
@@ -594,8 +636,8 @@ prop_soundness_pat.v and prop_soundness_typing.v), `ad_pat_sub_isub` →
 `_v_isub` (3 + 3), `ad_pat_sub_mod_comp_sk` + ⭐ its TY analogue
 `ad_pat_sub_mod_comp_ty` recover the plain premise via `ad_pat_sub_of_v`
 (3 + 3 — the TY triple was NOT on the attempt's consumer table), the seven
-`a_sub_sound_thm` sites in `a_pat_sound` / `a_typing_sound` become
-`a_sub_sound_thm_v`, and ⭐ `a_typing_sound`'s `a_wf_ptyp Θ1 A` conjunct
+`a_sub_sound` sites in `a_pat_sound` / `a_typing_sound` become
+`a_sub_sound_v`, and ⭐ `a_typing_sound`'s `a_wf_ptyp Θ1 A` conjunct
 reads the join through `ad_pat_sub_target_wf` — plain again, via
 `ad_pat_sub_of_v` (3 sites, also not on the table).  The six
 `@ad_pat_sub_subst_mid` base-row sites in `ad_pat_subst_mid` /
@@ -612,14 +654,14 @@ including the cex rewrite — compiled on the first attempt.
 (`thm:complete-skeleton-inference`, proofs.tex:1711–2197), whose Sub case
 still wants `lemma:precision-sub` (§3) and §5's `ad_ctx_precise`; then
 theorem 4.  The completeness direction now RECEIVES `ad_pat_sub_v` from the
-hypothesis derivation's base rows and feeds it to `a_sub_complete_thm`.
+hypothesis derivation's base rows and feeds it to `a_sub_complete`.
 
 ## 2026-08-06 — ⭐⭐ **SECTION D completeness: the three SCOUTING questions are settled — the leaf-validity gap is REAL (machine-checked), and `lemma:precision-sub`'s flagged obstruction is DEAD**
 
 Two new files in `cex/`, both compiling; no change to the development yet.
 
 **1. Where `ad_pat_sub_gv` enters — ON THE RULE**
-(`cex/cex_ad_pat_join_not_leaf_valid.v`; hand-off §6.2).  `a_sub_complete_thm`
+(`cex/cex_ad_pat_join_not_leaf_valid.v`; hand-off §6.2).  `a_sub_complete`
 takes its join as the LEAF-VALID `ad_pat_sub_gv`, while `ad_pat` /
 `ad_sd_typing` embed the plain `ad_pat_sub`, so a completeness induction
 arrives at a base row it cannot use.  The gap is not bookkeeping: at the
@@ -632,7 +674,7 @@ it, refinement's ∀-row pushes it into `Δ` and `ad_refine_pskl__hole`'s fill i
 `Δ`-free BY RULE**.
 
 ⚙ This is the paper's AUGMENTED consistency-solution notion propagating one
-layer up (`a_consis_complete_thm` already carries the same datum at its root;
+layer up (`a_consis_complete` already carries the same datum at its root;
 subtyping carries it at the LEAVES because at the root it is vacuous —
 `cex_p7_univ_ghost_r_vacuous.v`).  Consequence: §6.1's soundness-side repair
 (make `a_subtag_sound_bundle` conclude `_gv`) is now a hard PREREQUISITE, not
@@ -688,12 +730,12 @@ they reuse the IH's `n`.
 ⚙ Consumers: of the three positional readers, one never touched the join; the
 other two recover the plain form with `ad_pat_sub_of_gv`.
 `prop_decorate_key.v` needed the `def_decl_algo_sub_hyg` import added — a
-`Require Import` does not re-export.  ⭐ `a_sub_sound_thm`'s own statement is
+`Require Import` does not re-export.  ⭐ `a_sub_sound`'s own statement is
 UNCHANGED (still the plain join, recovered at the call site), deliberately:
 its consumers still feed the plain join into `ad_pat` / `ad_sd_typing`.
 
 ⛔ **NEXT:** change those two rules to embed `exists n, ad_pat_sub_gv n …`
-(§6.2) and hand the `_gv` on from `a_sub_sound_thm` — the last step before
+(§6.2) and hand the `_gv` on from `a_sub_sound` — the last step before
 theorems 3 and 4.
 
 **9. ✅ THE `strip_suffix` CHAIN IS COMPLETE — and with it EVERY structural
@@ -805,7 +847,7 @@ It is the paper's ambient "all inputs are well-formed", threaded; and the four
 CHECK rows can now prove it exactly because of the Barendregt premises below.
 
 **⭐ Row by row.**  Rows 1–4 (`Unit`/`Var`/`Anno`/`Freeze`) are theorem 1's with
-`a_sub_sound_thm` at the TY sort, plus `btyp_of_erased_ptyp` (a `bskl` whose
+`a_sub_sound` at the TY sort, plus `btyp_of_erased_ptyp` (a `bskl` whose
 erasure is a painting of a TYPE is itself a colouring — the sort bridge the SK
 layer did not need).  `Anno`'s two sequential premises thread the skeleton-entry
 hypothesis through `a_typing_tm_ge`.  Rows 5/6 (`Abs`/`AbsAnno`) use
@@ -1087,7 +1129,7 @@ the context, so the ⊴-peel has to cross it).
 
 `make coq` clean.  `Print Assumptions a_pat_sound` = **Closed under the
 global context**; the theorem is now `Check`ed and audited in `README.v`
-beside `a_sub_sound_thm`.
+beside `a_sub_sound`.
 
 The last piece was `a_consis_chk_annot_refine` — AbsAnno at the ARROW split
 shape, i.e. the step the paper writes as one clause, "by preservation of
@@ -1407,7 +1449,7 @@ used (`ftv_subst_var_keep`, `subst_var_pskl_neq_var`, `rename_aenv_same`,
 
 ### 4b. ⚙ Both flagship STATEMENTS lose `ad_refine_syn_f`
 
-`a_sub_sound_thm` and `a_sub_complete_thm` both mentioned `ad_refine_syn_f`
+`a_sub_sound` and `a_sub_complete` both mentioned `ad_refine_syn_f`
 at `F = ∅`.  `F` is consistency soundness' ghost-fill hygiene set
 (prop_soundness_consis.v §"Fill-hygienic refinement"), a proof device: the ∀
 cases must move an opened binder from Θ into the refinement's Δ, and a naive
@@ -1449,7 +1491,7 @@ conjunct both consistency-soundness results already export:
 | `a_consistag_sound_aux` (:4650) | `ad_refine_pskl_f Δ2 Θ1 Δ2 ⌊R⌋ˢ P'` |
 
 So the route to composition is to strengthen `a_subtag_sound_bundle` /
-`a_sub_sound_thm` to CONCLUDE `ad_pat_sub_gv` — i.e. stop DROPPING a conjunct
+`a_sub_sound` to CONCLUDE `ad_pat_sub_gv` — i.e. stop DROPPING a conjunct
 the leaves already hand back — rather than to derive `_gv` from an arbitrary
 declarative join, which is refuted.  ⚙ The one real cost is that `_gv` is
 FUEL-indexed, so soundness would have to produce an `exists n`
@@ -1596,12 +1638,12 @@ history, and the commit is named in each deletion.  This log entry is the
 index into it.
 
 
-## 2026-08-05 — ⭐⭐⭐ **SUBTYPING COMPLETENESS IS UNCONDITIONAL.  `a_sub_complete_thm` GOES INTO README.v**
+## 2026-08-05 — ⭐⭐⭐ **SUBTYPING COMPLETENESS IS UNCONDITIONAL.  `a_sub_complete` GOES INTO README.v**
 
 `make coq` clean, every `.v` fresh, README's audit is 28 ×
 `Closed under the global context` with no axioms.
 
-**`a_sub_complete_bundle_holds` and `a_sub_complete_thm` no longer take
+**`a_sub_complete_bundle_holds` and `a_sub_complete` no longer take
 `forall n, main_forall n`.**  That hypothesis was the assembly's last one
 (§10 RESIDUAL A), and its single unsupplied premise was the mech-invented
 `sub_shield` for a `P0` carrying a ∀ below its head — the residual that
@@ -1647,7 +1689,7 @@ rewritten to record all of this, including the retraction.
 ## 2026-08-05 — ⭐⭐⭐ **`flex_apart` RETIRED FROM P6-Cv AND P6-Sv; `sub_shield` COLLAPSES TO A DERIVABLE PREMISE**
 
 `make coq` clean, every `.v` fresh, P6-Cv / P6-Sv / P6-Ss / P6-L /
-`a_sub_sound_thm` / the new `flex_apart_deep_sub_shield` all
+`a_sub_sound` / the new `flex_apart_deep_sub_shield` all
 `Closed under the global context`.
 
 | lemma | premise before | after |
@@ -1753,7 +1795,7 @@ touch.  That one site decides whether the tower falls.
 global context` under the authors' repaired rule — P6-Cv, P6-Cs, P6-Sv,
 P6-Ss and P6-L (`a_extract_complete`, the paper's `lemma:complete-look`) —
 and so is P7b (`prop_sub_complete_thm.v`) and the whole soundness chain
-including `a_sub_sound_thm`, whose statement never moved.
+including `a_sub_sound`, whose statement never moved.
 
 ### What the repair cost the cluster
 
@@ -2145,7 +2187,7 @@ motive premises already Qed in `p7_sub_shield_positional_over_strong` ⟹
 `n=3, NM=TY, M=FN(TC)` is FALSE) ⟹ `probe_main_forall_false :
 ~ main_forall 3` and `probe_main_forall_hyp_false :
 ~ (forall n, main_forall n)`.  **The bundle's one hypothesis is REFUTED, so
-`a_sub_complete_bundle_holds` / `a_sub_complete_thm` are VACUOUS as
+`a_sub_complete_bundle_holds` / `a_sub_complete` are VACUOUS as
 stated.**  The "`main_forall` is KNOWN-TRUE (an instance of the theorem
 being proved)" line was CIRCULAR exactly at the paper theorem's
 over-quantification of `P0`; the language is retracted in dispatch.v §10,
@@ -2206,7 +2248,7 @@ is SETTLED — in the negative.
 
 **Step A — the TY ghost-freeness is ON THE MOTIVE.**  `sub_complete_concl`
 gained the guarded last premise `NM = a_sub_mode_ty -> uskl_ghost_free R'` on
-the JOIN-side subject; `a_sub_complete_thm` carries it as the paper-facing
+the JOIN-side subject; `a_sub_complete` carries it as the paper-facing
 EXTERNAL side condition (WF-SIDE-CONDITIONS.md updated — at the reflexive
 instance `R' := κ⌈P⌉ᵘ` it is ghost-freeness of the input).  The two ForallL
 rows DROPPED their own `Hgfj` hypothesis (the motive supplies it; their
@@ -2328,7 +2370,7 @@ glued by `lt_wf_ind` on the fuel and, inside it, `lt_wf_ind` on the CONTEXT
 LENGTH: `sub_complete_arrow_holds` (fuel IH) → `sub_complete_ctx_lt n k` (length IH) →
 `sub_flex_complete_holds` → `sub_complete_assemble` with `ESC := fun _ => True` (the two tophole
 closures are `exact I`; the third hands back `sub_flex_complete n Θ0`, which is
-`sub_flex_complete_holds` at `Ξ = nil`).  `a_sub_complete_thm` (algorithmic.tex:1446) is the
+`sub_flex_complete_holds` at `Ξ = nil`).  `a_sub_complete` (algorithmic.tex:1446) is the
 `Ψ := ∅`, `R := ⌈P⌉ᵘ` instance.
 
 ⭕ **The residual is `main_forall n`, and it has exactly TWO components** — a
@@ -2989,7 +3031,7 @@ definition `τ` to be free of its own head — the same extra hypothesis §13b's
 `ftvar_ptyp_to_pskl`.
 
 **Fallout, all mechanical.**  `a_consis_hole_p0_output` and three
-`a_consis_complete_thm` call sites in prop_sub_complete_thm.v lost their `F`
+`a_consis_complete` call sites in prop_sub_complete_thm.v lost their `F`
 argument; `prop_decorate_sub.v`'s `match goal` pattern for `a_assign` lost an
 underscore; `test_unify_regression.v`'s two explicit constructor applications
 lost theirs.  Stale doc comments in `def_extra.v` / `prop_consis_rename.v` /
@@ -3083,7 +3125,7 @@ and axiom-free):
   precision.  Every §14/§15 lemma the K4 commit built is consumed; none was
   wrong or missing.
 - **`a_sub_flex_complete_depend`** — re-association only.
-- **The two en-route facts, both cheap after all**: `a_sub_flex_sound_thm`
+- **The two en-route facts, both cheap after all**: `a_sub_flex_sound`
   (`(Ξ ++ Θ0) ⊴ Θ1 ∧ a_wf_aenv Θ1`, by composing `a_sub_decorate_bundle`'s and
   `a_subtag_sound_bundle`'s SECOND halves — no new mutual), and RIGID
   PROVENANCE, which is `a_inc_binds_provenance` (a target entry is flexible or
@@ -3320,7 +3362,7 @@ needs it now and is a SIBLING of P6-L's file, not a consumer.
 **CONSUMERS.**  Construction got EASIER — prop_sub_complete_thm.v's two P7b
 sites used to build the family explicitly and now hand over P6-L's instance
 verbatim.  Inversion got harder in exactly one place, prop_decorate_key.v's
-`a_sub_sound_thm` ForallL row, which rebuilds the family from the run's ONE
+`a_sub_sound` ForallL row, which rebuilds the family from the run's ONE
 opener (the decorated layer is still cofinite) and then picks its own α for the
 decoration as before.
 
@@ -4031,7 +4073,7 @@ COMPLETENESS direction this is an obligation about the sub-run's
 OUTPUT junk: the run `Θ1` returned by the IH (main-half or flex-half)
 may mention `β` as an incidentally-colliding fresh name, and nothing
 bounds it — `sub_complete_concl`'s conclusion has no dom-bound on
-`Θ1`, `a_consis_complete_thm`'s neither, and no a_sub run-renaming
+`Θ1`, `a_consis_complete`'s neither, and no a_sub run-renaming
 kit exists (`prop_consis_rename.v`'s
 `a_assign_unify_consis_rename_tvar` renames RIGID tvars through the
 consis layer only; the walk's junk is FLEX names in a_sub runs).
@@ -4047,7 +4089,7 @@ Options, all needing a decision:
 (B) Thread an AVOID-SET through the completeness conclusions
     (`dom Θ1`'s new names avoid a caller-supplied finite `V`) — but
     the Infer/Check/Arrow-domain rows get their `Θ1` from
-    `a_consis_complete_thm`, so the closed consistency-completeness
+    `a_consis_complete`, so the closed consistency-completeness
     bundle would re-open with the same parameterization.  Large.
 (C) Re-encode the three walk rules' prose-completion (e.g. re-attach
     through a rename on the output, or thread `β` positionally so no
@@ -4587,7 +4629,7 @@ statements**:
    that makes the □-node's target wf∅-able; the `_gv` leaves are consumed
    through `ad_refine_pskl_f_empty_intro` + the `_f` transports anyway, so
    the F-form is the natural home.  Verify against how
-   `a_consis_complete_thm` threads its own precision (`ad_precise_f` with
+   `a_consis_complete` threads its own precision (`ad_precise_f` with
    F = Δ1∪Δ2) — that is the shape to mirror.  Also note: wf∅-of-target at
    a □-source node IS derivable from the node's own subderivation when the
    source is wf∅ AND the derivation is F-clean along the path — prove
@@ -4771,7 +4813,7 @@ the flex-dispatch-first disambiguation).  Structure: invert the join (only
 keeping the codomain's mode-compat implications; fill inverts componentwise.
 DOMAIN: erase the slack component and transport the `__arrow` leaf data
 (consis via `skl_tyequiv_consis_transport`, refinement via the pskl
-transport) to `κ⌊Ra⌋`, then `a_consis_complete_thm`; its run's
+transport) to `κ⌊Ra⌋`, then `a_consis_complete`; its run's
 `a_consis_sound_aux` gives the id-witness w1 + wf Θ1 + the Θ1-join for the
 output's SCOPE.  CODOMAIN at (Θ1, ζ1): wf's weaken by `a_wf_pskl_isub`; the
 IH's slack = `a_uskl_tyequiv_trans` of the motive component with
@@ -4780,7 +4822,7 @@ IH's slack = `a_uskl_tyequiv_trans` of the motive component with
 `a_wf_pskl_ftv_binds_tvar` + `ftvar_in_pskl_uskl_to_pskl`; rigids are
 outside both domains by `binds_unique` discrimination); the fill moves κ→ζ1
 by `msubst_compose_id_pskl` + `a_inc_equiv_msubst_pskl` + the syn transport.
-ASSEMBLE `a_sub__arrow`; package: `a_sub_sound_thm` gives w2; `is_id_inc_unique`
+ASSEMBLE `a_sub__arrow`; package: `a_sub_sound` gives w2; `is_id_inc_unique`
 identifies κf = w1; `a_inc_equiv_glue` (dom-mono via
 `a_assign_unify_consis_flex_preserve` over the domain run); precision is
 `ad_refine_syn__arrow` with the domain source moved ζ1→ζ2 along ≡ˢ
@@ -4846,7 +4888,7 @@ prop_consis_complete.v).  This mirrors how the paper does it "informally by
 type equivalence" (the author's own margin note at completeSubtyping).
 All five closed rows re-closed under the slack: Ghost/GhostG use the ghost
 inversions, Infer/Check/UnivGhostR erase the slack and transport their
-leaf facts from `R'` to `κP` before the `a_consis_complete_thm` call;
+leaf facts from `R'` to `κP` before the `a_consis_complete` call;
 Check/UnivGhostR get `guarded_pskl P` through `a_uskl_tyequiv_guarded`.
 
 **Naming**: the slack subject is `R'` (uskl ⇒ R-family; the first cut's `T`
@@ -4857,7 +4899,7 @@ inversion-auto-name hazard.
 
 **Sub-Arrow's remaining assembly** (next session).  The row mirrors
 prop_consis_complete.v's arrow case :6631-6790 — domain via
-`a_consis_complete_thm` (its three premises from the `__arrow` leaf data +
+`a_consis_complete` (its three premises from the `__arrow` leaf data +
 fill inversion), run soundness for the id-witness w1 + wf Θ1 + isub,
 package at w1 → (ζ1, Hie1, Hprec1); codomain IH at increase ζ1 with the
 slack; assemble `a_sub__arrow`; glue with `a_inc_equiv_glue` +
@@ -4980,7 +5022,7 @@ untouched (the new file compiles standalone, axiom-free).
 `⊢ᵣₚᵃ κ⌊R⌋ˢ ⊳ ⌊Q⌋` is a **LOCKSTEP** condition — `ad_refine_pskl` descends
 subject and counterpart together, so it can only hold where the two sides
 agree in shape (modulo ghosts on the LEFT and flexible definitions).  It was
-imported verbatim from `a_consis_complete_thm`, where it is the PAPER'S OWN
+imported verbatim from `a_consis_complete`, where it is the PAPER'S OWN
 augmentation (consistency-proofs.tex:2230-2242) and harmless — because
 `ad_pat_consis` is itself lockstep (its ∀-inh-counterpart rows
 `__forall_inh_tagged` / `__forall_inh_untagged` / `__tophole_inh` all demand
@@ -5006,7 +5048,7 @@ declarative derivation: subject-refinement data exactly at `__infer` /
 `__check` / `__univ_ghost_r` (the latter at the STRIPPED counterpart `Q0`),
 either as a leaf-augmented `ad_pat_sub_g` variant or as a mirror predicate
 over the derivation.  Why this is right: (i) it is precisely what the
-`a_consis_complete_thm` invocations consume — Infer/Check use the current
+`a_consis_complete` invocations consume — Infer/Check use the current
 premise ONLY for that (checked: Ghost/GhostG never touch it); (ii) it holds
 in all three cex configurations (each leaf is `unit ⊳ unit`); (iii) it still
 excludes the capture configuration `(P0=◇, P=∀X.◇, Q=∀X.X)` whose Infer leaf
@@ -5055,7 +5097,7 @@ itself is not obviously symmetric.
 
 **Sub-Infer and Sub-Check CLOSED** (`a_sub_complete_infer`,
 `a_sub_complete_check`, Qed + axiom-free), both by the paper's own route
-(:3134): `skmod` forces `P0 = □` at Infer; `a_consis_complete_thm` on the
+(:3134): `skmod` forces `P0 = □` at Infer; `a_consis_complete` on the
 consistency subproblem `(Θ0; □; P)`; `a_consis_hole_p0_output` says the run
 returns the SUBJECT; the stability lemma + `ad_refine_syn_trans` move the
 precision from the theorem's ζ to κ.  Shared core:
@@ -5069,7 +5111,7 @@ fire, and all three carry a TAG-FREE consistency), and
 routed its precision through the consistency OUTPUT, but `a_sub__check` hides
 that output existentially inside `a_consis_chk` and returns `P0` — so the goal
 is `ζP0 ⊑ ⌊Q⌋`, and at `Q = inh{B}` the motive's P0-FILL premise IS `κP0 ⊑ B`
-by definition of `ad_precise`.  What `a_consis_complete_thm` supplies there is
+by definition of `ad_precise`.  What `a_consis_complete` supplies there is
 the RUN and the two increase conjuncts.  Sub-Check does take two hypotheses
 beyond the motive, both for the bundle to supply and both registered in
 docs/WF-SIDE-CONDITIONS.md: `guarded_pskl P0` (the algorithm's
@@ -5086,8 +5128,8 @@ axiom-free) plus `ad_refine_pskl_f_tophole_r_shape`.  The row's subject is
 CONTRADICTION (`a_sub_complete_univ_ghost_r`, Qed) and the theorem says nothing
 about the solutions it describes.  The premise is the MECH's, not the paper's
 (`subtyping-proofs.tex:3054-3074` gives TWO conditions), and DESIGN §1's
-justification for it — "it is what `a_consis_sound` / `a_sub_sound_thm`
-produce" — is HALF WRONG: `a_sub_sound_thm` produces no subject-refinement
+justification for it — "it is what `a_consis_sound` / `a_sub_sound`
+produce" — is HALF WRONG: `a_sub_sound` produces no subject-refinement
 conjunct, and could not, since algorithmic `UnivGhostR` outputs `∀◇.P` from the
 input `P`.  §2 of the cex file exhibits the smallest configuration where the
 paper's two conditions hold and the third fails, so this is a real loss of
@@ -5152,7 +5194,7 @@ Sub-Arrow's `Θ0 → Θ1 → Θ2`, `_weaken`, `_subst_flex_def`).
 
 **And the `a_sub` half is closed too** — `a_sub_concrete_output_equiv`.  It was
 planned as a mutual induction with `a_sub_flex`; that is NOT needed:
-`a_sub_sound_thm` already exports the output's refinement FROM the input
+`a_sub_sound` already exports the output's refinement FROM the input
 skeleton, in the same shape `a_consis_sound` does, so the same lemma applies and
 the half collapses to one `destruct`.  **Both cases the `:3243` TODO was meant to
 simplify therefore get their step from the SOUNDNESS theorems.**  DESIGN §9.1,
@@ -5188,7 +5230,7 @@ are repainted (`msubst_bskl_pskl_to_bskl_syn` +
 my own misreading, and is retracted.**  The paper (:3134) says "the consistency
 premise, together with `⌊S⌋ = P` and **thm:complete-consistency**, gives
 `Θ ⊢ precise{θP}{Q}`" — i.e. it invokes a THEOREM already mechanized as
-`a_consis_complete_thm`, on the consistency problem `(Θ0; □; P)` (`skmod` forces
+`a_consis_complete`, on the consistency problem `(Θ0; □; P)` (`skmod` forces
 `P0 = □` in both rows).  I read it as "read a precision off the consistency
 premise", refuted THAT, and then built a threaded induction and a Θ↔Δ transport
 kit to repair something that was never broken.  ✅ All the paper's route needs
@@ -5208,13 +5250,13 @@ refinement's hygiene index with Sub-ForallR's Ξ-strip the next likely consumer;
 and the context-free `ad_pat_consis_ghost_subject_no_forall` /
 `is_sskl_inh_no_forall`.  **Lesson: when the paper cites one of its own
 theorems, follow the citation before inventing a lemma.**  Sub-Check is the same
-shape one level up (`a_consis_complete_thm` + `a_consis_concrete_output_equiv`).
+shape one level up (`a_consis_complete` + `a_consis_concrete_output_equiv`).
 
 **The two rows are now assembled down to ONE missing lemma.**  `skmod` gives
 `P0 = □`; `a_sub__infer` gives the run (output `P` at `Θ0`, so the increase
 conjuncts are `ζ := κ` + `opt_axiom_factor`); the DECORATED consistency premise
 undecorates by `ad_pat_consis_strip_tags` plus a one-line
-`⌊κR⌋ˢ = κ⌊R⌋ˢ` commutation; `a_consis_complete_thm` applies at `(Θ0; □; P)`
+`⌊κR⌋ˢ = κ⌊R⌋ˢ` commutation; `a_consis_complete` applies at `(Θ0; □; P)`
 because its other two premises ARE the motive's refinement premises at `P0 = □`;
 and `a_consis_hole_p0_output` makes its precision a precision about `P`.  ⚠️ That
 precision arrives under the theorem's own `ζ`, not under `κ`.  The missing lemma
@@ -5275,7 +5317,7 @@ RESTATED with that premise, becoming a COLOUR BRIDGE
 "false on a colour mismatch at ∀◇", then "holds") were both reasoned ahead of the
 checker and are retracted there; the real break is the ∀-over-a-hole row.
 Sub-Check is in neither group — its counterpart is `is_sskl` only when `B` is
-∀-free, so it takes the paper's own route (`a_consis_complete_thm` +
+∀-free, so it takes the paper's own route (`a_consis_complete` +
 `a_consis_concrete_output_equiv`).
 
 **Next unit on the corrected path, measured.**  Threading the subject-refinement
@@ -5331,7 +5373,7 @@ both supplied by the caller.
 (`lemma:complete-flex-subtyping`, :2836) ⇄ P7b (generalised
 `thm:complete-subtyping`, :3050), then P7c — with a case map for P7b (§9.1) and
 P7a's two interesting rows (§9.2).  Four of P7b's seven cases are applications of
-the Qed `a_consis_complete_thm`.
+the Qed `a_consis_complete`.
 
 ⚠️ **TASK 0 — supplying `sub_shield` at P7b's Sub-ForallL — is where P7 stands,
 and its planned route is now REFUTED.**  `cex/cex_p7_sub_monoish.v`
@@ -6326,7 +6368,7 @@ paper-level gap.  Premise widened to `a_flex_tvar Θ α`; fallout was
 confined to prop_look_complete.v's ctx-change/strengthen/weaken/rename
 helpers (adapted); the soundness stack needed ZERO edits (restriction →
 relaxation only adds derivations, and the decorated twin SEq-FlexR was
-already context-free).  Full `make coq` green; `a_sub_sound_thm` still
+already context-free).  Full `make coq` green; `a_sub_sound` still
 Closed under the global context.
 
 ## 2026-07-24 (d) — P6 BLOCKED: the -var completeness lemmas REFUTED (machine-checked)

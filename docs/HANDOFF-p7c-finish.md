@@ -13,7 +13,7 @@ hand-off is about.
 STATE.  Branch `freshness-campaign-cluster3-wip`; `make coq` green,
 admit-free, axiom-free; every flagship `Print Assumptions`-clean.  P5 done;
 P6 complete; P7a/P7b all rows Qed; P7c assembled
-(`a_sub_complete_bundle_holds` + `a_sub_complete_thm`,
+(`a_sub_complete_bundle_holds` + `a_sub_complete`,
 frost/algo/prop_sub_complete_dispatch.v §12) under ONE hypothesis
 `forall n, main_forall n`.
 
@@ -22,7 +22,7 @@ WHAT JUST HAPPENED (2026-08-03, this session):
 ⭐ STEP A of the previous hand-off is DONE — the TY ghost-freeness is ON THE
 MOTIVE.  `sub_complete_concl` (prop_sub_complete_thm.v) carries
 `NM = a_sub_mode_ty -> uskl_ghost_free R'` (JOIN-side subject) as its LAST
-premise; `a_sub_complete_thm` states it as the paper-facing EXTERNAL side
+premise; `a_sub_complete` states it as the paper-facing EXTERNAL side
 condition (WF-SIDE-CONDITIONS.md, last section).  The ForallL rows' own
 `Hgfj` hypothesis is DELETED; their construction is the shared `Hgfswap`
 assert, consumed by both the `ad_pat_sub_precise_upre_gv` swap and the IH.
@@ -106,7 +106,7 @@ inverting the join at a ∀-headed subject (case list is SHORT: only `__infer`,
 `__univ_ghost_r` demand a guarded subject and every other row's subject has a
 different head; get R' ∀-headed from R via `a_uskl_tyequiv_sym` +
 `a_uskl_tyequiv_all_{syn,etag}_l_inv`, dispatch.v §2).  Then drop the
-hypothesis from both §12 theorems, add `a_sub_complete_thm` to README.v,
+hypothesis from both §12 theorems, add `a_sub_complete` to README.v,
 `Print Assumptions` on the flagships, docs.
 
 ================================================================

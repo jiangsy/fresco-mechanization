@@ -1268,7 +1268,7 @@ Qed.
 (*      paper's one-sentence WLOG, subtyping-proofs.tex:3385.              *)
 (*    · The TY-only ghost-freeness of the join's subject — CLOSED, it sits *)
 (*      ON THE MOTIVE ([sub_complete_concl]'s last premise) and            *)
-(*      [a_sub_complete_thm] carries it as a paper-facing EXTERNAL side    *)
+(*      [a_sub_complete] carries it as a paper-facing EXTERNAL side    *)
 (*      condition (docs/WF-SIDE-CONDITIONS.md).                            *)
 (*    · RESIDUAL B (the TERM-VARIABLE gap of §6) — CLOSED 2026-08-03:      *)
 (*      both the rules and P7a's two completeness rows are in the tree.    *)
@@ -1353,7 +1353,7 @@ Qed.
     [sub_shield]; the authors' repaired [SolE-FlexR] retired that gate
     ([sub_shield_empty]).  The premises below are the paper's own plus the
     EXTERNAL wf side conditions registered in docs/WF-SIDE-CONDITIONS.md. *)
-Theorem a_sub_complete_thm :
+Theorem a_sub_complete :
   forall n NM M Θ0 P0 P R' Θ κ Q,
     a_wf_aenv Θ0 -> a_wf_aenv Θ ->
     Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
@@ -1403,4 +1403,4 @@ Print Assumptions sub_flex_rigid_head_absurd.
 Print Assumptions sub_gv_all_inh_forall_r_family.
 Print Assumptions sub_complete_all_inh_counterpart.
 Print Assumptions a_sub_complete_bundle_holds.
-Print Assumptions a_sub_complete_thm.
+Print Assumptions a_sub_complete.

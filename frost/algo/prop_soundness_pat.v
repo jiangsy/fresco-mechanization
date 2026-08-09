@@ -5,7 +5,7 @@
     output context is an information increase of the input, and in it the
     DECLARATIVE judgement [ad_pat] holds at a colouring of the output, which
     refines the (inherited painting of the) input skeleton.  Mirrors
-    [a_sub_sound_thm] (prop_decorate_key.v), which it consumes at the three
+    [a_sub_sound] (prop_decorate_key.v), which it consumes at the three
     base rules; [a_consis_sound] (prop_soundness_consis.v) covers AbsAnno.
 
     ⭐ WHAT THE PAPER'S PROOF LEAVES TO THE MECHANIZATION:
@@ -715,7 +715,7 @@ Qed.
 (** A term variable's TYPE entry is well-formed in its own context — the
     mirror of [a_wf_aenv_binds_def_wf] (prop_precise.v) for the other
     payload-carrying entry form.  [AP-Var] (type-bound) needs it to feed
-    [a_sub_sound_thm], which demands well-formedness of its subject. *)
+    [a_sub_sound], which demands well-formedness of its subject. *)
 Lemma a_wf_aenv_binds_var_typ_wf : forall Θ x A,
   a_wf_aenv Θ ->
   binds x (abind_var_typ A) Θ ->
@@ -2124,7 +2124,7 @@ Theorem a_pat_sound : forall m Θ0 P0 e P Θ1,
 Proof.
   intros m Θ0 P0 e P Θ1 H; induction H; intros Hwf Hskl HwfP0 Hmod Hexp.
   - (* AP-Unit *)
-    destruct (a_sub_sound_thm_v H Hwf HwfP0
+    destruct (a_sub_sound_v H Hwf HwfP0
                 ltac:(apply a_wf_pskl__unit)
                 ltac:(intros _; exact Hmod)
                 ltac:(intros Hd; discriminate))
@@ -2138,7 +2138,7 @@ Proof.
   - (* AP-Var, type entry *)
     assert (HwfA : a_wf_ptyp Θ0 A)
       by (eapply a_wf_aenv_binds_var_typ_wf; eassumption).
-    destruct (a_sub_sound_thm_v H0 Hwf HwfP0
+    destruct (a_sub_sound_v H0 Hwf HwfP0
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA)
                 ltac:(intros _; exact Hmod)
                 ltac:(intros Hd; discriminate))
@@ -2156,7 +2156,7 @@ Proof.
       | rewrite pskl_to_uskl_via_bskl_syn; exact Hjoin ].
   - (* AP-Var, skeleton entry — the entry's DISCIPLINED wf comes from the
        theorem's hypothesis, [a_wf_aenv] storing only its scope *)
-    destruct (a_sub_sound_thm_v H0 Hwf HwfP0 (Hskl _ _ H)
+    destruct (a_sub_sound_v H0 Hwf HwfP0 (Hskl _ _ H)
                 ltac:(intros _; exact Hmod)
                 ltac:(intros Hd; discriminate))
       as [Hle [Hwf1 [Qt [HeQt [Hjoin Href]]]]].
@@ -2172,7 +2172,7 @@ Proof.
       | rewrite pskl_to_uskl_via_bskl_syn; exact Hjoin ].
   - (* AP-Anno *)
     destruct (a_wf_exp_anno_inv Hexp) as [HwfA Hexp0].
-    destruct (a_sub_sound_thm_v H Hwf HwfP0
+    destruct (a_sub_sound_v H Hwf HwfP0
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA)
                 ltac:(intros _; exact Hmod)
                 ltac:(intros Hd; discriminate))

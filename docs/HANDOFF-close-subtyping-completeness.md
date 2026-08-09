@@ -20,7 +20,7 @@ green, admit-free, axiom-free.  Machine-checked (all Qed, axiom-free):
    every fresh name (the collapsed binder is vacuous and swallows them).
  · `probe_main_forall_false : ~ main_forall 3` — the completeness
    assembly's ONE hypothesis is FALSE, so `a_sub_complete_bundle_holds` and
-   `a_sub_complete_thm` are VACUOUS as stated (they stay out of README.v).
+   `a_sub_complete` are VACUOUS as stated (they stay out of README.v).
  · `p6l_look_completeness_fails` — the PAPER's `lemma:complete-look` is
    FALSE as stated at that configuration: every premise holds and the
    precision conclusion fails for the forced output.
@@ -175,7 +175,7 @@ compiled first try).  Then discharge `main_forall` (short join inversion —
 only `__infer`/`__forall_r`/`__forall_l`×2 conclude at a ∀-headed subject;
 get `R'` ∀-headed from `R` via `a_uskl_tyequiv_sym` +
 `a_uskl_tyequiv_all_{syn,etag}_l_inv`, dispatch.v §2), drop the hypothesis
-from both §12 theorems, add `a_sub_complete_thm` to README.v, `Print
+from both §12 theorems, add `a_sub_complete` to README.v, `Print
 Assumptions` on the flagships, and write the PAPER-GAPS repair + author
 report.
 

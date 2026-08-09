@@ -869,7 +869,7 @@ Proof.
   - fsetdec.
   - fsetdec.
   - (* var *)
-    pose proof (ftvar_in_ptyp_to_pskl (msubst_lookup κ β)) as Hp.
+    pose proof (ftvar_ptyp_to_pskl (msubst_lookup κ β)) as Hp.
     assert (HX' : α' `in` ftvar_in_ptyp (msubst_lookup κ β))
       by (clear - Hα Hp; fsetdec).
     apply msubst_lookup_ftv_avoid in HX'; [ subst | exact Hav ].
@@ -919,7 +919,7 @@ Proof.
   destruct Pi as [ | n | β | | | | ]; simpl in Heq; try discriminate Heq.
   f_equal.
   assert (Hα : α' `in` ftvar_in_ptyp (msubst_lookup κ β)).
-  { pose proof (ftvar_in_ptyp_to_pskl (msubst_lookup κ β)) as Hp.
+  { pose proof (ftvar_ptyp_to_pskl (msubst_lookup κ β)) as Hp.
     rewrite Heq in Hp. simpl in Hp. clear - Hp; fsetdec. }
   eapply msubst_lookup_ftv_avoid; eassumption.
 Qed.
@@ -1538,7 +1538,7 @@ Proof.
                         (ptyp_to_pskl_ghost_free A)) as He;
           clear - He; fsetdec ].
     + rewrite dom_app. clear - HβΘ HβΞ; fsetdec.
-    + pose proof (ftvar_in_ptyp_to_pskl (close_ptyp_wrt_ptyp β A)) as Hco.
+    + pose proof (ftvar_ptyp_to_pskl (close_ptyp_wrt_ptyp β A)) as Hco.
       pose proof (ftvar_in_ptyp_close_ptyp_wrt_ptyp A β) as Hcl.
       clear - Hco Hcl; fsetdec.
 Qed.
@@ -5892,7 +5892,7 @@ Proof.
     right; exists α, τ; split;
       [ assumption
       | right;
-        pose proof (ftvar_in_pskl_ptyp_to_pskl τ) as Hp;
+        pose proof (ftvar_ptyp_to_pskl τ) as Hp;
         clear - Hin Hp; fsetdec ].
 Qed.
 
@@ -6408,7 +6408,7 @@ Proof.
       by (eapply a_wf_aenv_def_ftv_dom; eauto).
     unfold ptyp_to_bskl_syn in IHad_refine_syn.
     rewrite ftvar_pskl_to_bskl_syn in IHad_refine_syn.
-    pose proof (ftvar_in_pskl_ptyp_to_pskl τ) as Hp.
+    pose proof (ftvar_ptyp_to_pskl τ) as Hp.
     clear - IHad_refine_syn Hd Hp; fsetdec.
   - (* flex_r *)
     match goal with Hb : binds _ _ _ |- _ =>
@@ -6692,7 +6692,7 @@ Proof.
       default_simp.
     + assert (Hfr : α' `notin`
                 ftvar_in_pskl (ptyp_to_pskl (msubst_lookup κ α))).
-      { rewrite ftvar_in_pskl_ptyp_to_pskl.
+      { rewrite ftvar_ptyp_to_pskl.
         intros Hc.
         assert (Heq : α = α')
           by (eapply msubst_lookup_ftv_avoid; [ exact Hav | exact Hc ]).
@@ -6799,11 +6799,11 @@ Proof.
     destruct (Hdefs _ _ H) as [Hατ Hβτ].
     eapply ad_ppre__flex_l; [ eassumption | ].
     assert (Hfr : αr `notin` ftvar_in_pskl (ptyp_to_pskl τ))
-      by (rewrite ftvar_in_pskl_ptyp_to_pskl; exact Hατ).
+      by (rewrite ftvar_ptyp_to_pskl; exact Hατ).
     rewrite <- (subst_pskl_in_pskl_fresh_eq
                   (ptyp_to_pskl τ) (pskl_var_f βr) αr Hfr).
     apply IHad_partial_precise; auto.
-    rewrite ftvar_in_pskl_ptyp_to_pskl. exact Hβτ.
+    rewrite ftvar_ptyp_to_pskl. exact Hβτ.
   - (* flex_r *)
     assert (Hne : α <> αr).
     { intros ->. apply HαΘ. eapply binds_In; eassumption. }

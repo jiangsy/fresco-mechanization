@@ -1598,7 +1598,7 @@ Proof.
   - clear - Hα; fsetdec.
   - clear - Hα; fsetdec.
   - assert (α' = β) by (clear - Hα; fsetdec); subst.
-    rewrite ftvar_in_ptyp_to_pskl. clear; fsetdec.
+    rewrite ftvar_ptyp_to_pskl. clear; fsetdec.
   - apply union_1 in Hα; destruct Hα as [HXa | HXb];
       [ pose proof (IHa α' HXa) | pose proof (IHb α' HXb) ]; clear - H; fsetdec.
   - pose proof (IHall α' Hα). clear - H; fsetdec.

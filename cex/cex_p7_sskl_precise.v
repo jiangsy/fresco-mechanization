@@ -8,7 +8,7 @@
        Cref{thm:complete-consistency}, gives Θ ⊢ precise{θP}{Q}."
 
     — i.e. it invokes thm:complete-consistency, a THEOREM (mechanized as
-    [a_consis_complete_thm]), on the consistency problem (Θ0; □; P).  That route
+    [a_consis_complete]), on the consistency problem (Θ0; □; P).  That route
     is sound, and all it needs besides the theorem is
     [a_consis_hole_p0_output] (prop_sub_complete_thm.v, Qed): at [P0 = □] the
     algorithmic consistency OUTPUT is the SUBJECT, so the theorem's precision —

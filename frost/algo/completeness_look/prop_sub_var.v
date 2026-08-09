@@ -1092,7 +1092,7 @@ Qed.
     with three differences:
 
     1. the mode [M] and the paper's [skmod{N}{P0}{M}], in the two-implication
-       form used by [a_sub_sound_thm] (prop_decorate_key.v:3331);
+       form used by [a_sub_sound] (prop_decorate_key.v:3331);
     2. the subtyping premise [ad_pat_sub_g] (the tag-hygienic fuel mirror)
        in place of consistency — the fuel rides inertly here, since ForallL's
        premise is a structural sub-derivation of [ad_pat_sub_g]; the fuel is

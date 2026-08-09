@@ -83,7 +83,7 @@ Headlines discovered while building it:
 - ⚠️ **`a_wf_aenv` under-approximates the paper's `Θ ⊢ ctx` at skeleton
   term entries** (`a_wf_aenv__var` stores only `a_scope_pskl`, the paper's
   figure requires `Θ ⊢ P`).  The `AP-Var(skl)` case must feed the entry to
-  `a_sub_sound_thm`, which demands the DISCIPLINED `⊢ₚₛᵃ` — so the theorem
+  `a_sub_sound`, which demands the DISCIPLINED `⊢ₚₛᵃ` — so the theorem
   carries the paper's implicit condition as a hypothesis
   (`forall x P, binds x (abind_var_skl P) Θ0 -> Θ0 ⨟ ∅ ⊢ₚₛᵃ P`), sustained
   through the induction by tm_le/tm_ge + `a_wf_pskl_isub`.
@@ -371,7 +371,7 @@ strands `a_pat_sound`'s App case (the run's arrow domain has no wf source
 short of an output-wf conjunct through all ten rows).  The repair that
 LANDED: `Θ ⨟ empty ⊢ₚₛᵃ ⌊Q⌋` on the three BASE rows of `ad_pat` — where the
 consumers (this lemma's Var case, theorem 3's Sub case feeding
-`a_sub_complete_thm`'s counterpart-wf) actually sit, and nothing needs to
+`a_sub_complete`'s counterpart-wf) actually sit, and nothing needs to
 propagate.  `ad_sd_typing`'s base rows are NOT changed: at TY, scope +
 ghost-freeness already give wf (`a_wf_ptyp_of_scope_pskl`).
 
@@ -396,7 +396,7 @@ Order them soundness-first; the two soundness theorems are independent of the
 `ad_pat_sub_gv` question, the two completeness ones are not.
 
 1. **Soundness of skeleton inference** — `a_pat` ⟹ information increase +
-   `ad_pat` at the output context.  Consumes `a_sub_sound_thm`
+   `ad_pat` at the output context.  Consumes `a_sub_sound`
    (prop_decorate_key.v; since `9189ba8` it concludes the PLAIN
    `Θ1 ⨟ ∅ ⊢ᵣᵃ … ⊳ …`) and §1's suffix kit.
 2. **Soundness of type inference** — `a_typing` ⟹ increase + `ad_sd_typing`.
@@ -440,7 +440,7 @@ dispatch.  Headlines:
 Everything lives in NEW `algo/prop_completeness_pat.v`; all Qed, axiom-free.
 
 **The statement** is `pat_complete_concl`, factored exactly like
-`a_sub_complete_thm`'s (prop_completeness_sub.v): the run, plus for EVERY
+`a_sub_complete`'s (prop_completeness_sub.v): the run, plus for EVERY
 identity increase out of the question context a composing witness `ζ` that is
 `a_inc_equiv` to the given solution and whose image is more precise than the
 declarative target.
@@ -553,7 +553,7 @@ plain form with `ad_pat_sub_of_gv`.  ⚙ `prop_decorate_key.v` needed
 `Require Import …def_decl_algo_sub_hyg` added — a `Require Import` does not
 re-export, so the name was not in scope through `prop_soundness_sub`.
 
-⚙ **`a_sub_sound_thm`'s own statement is UNCHANGED** — it still concludes the
+⚙ **`a_sub_sound`'s own statement is UNCHANGED** — it still concludes the
 plain `ad_pat_sub`, recovered at the call site.  That is deliberate: its
 consumers (`a_pat_sound`, `a_typing_sound`) still feed the plain join into
 `ad_pat` / `ad_sd_typing`'s rules.
@@ -575,7 +575,7 @@ The plumbing below IS in the tree and green; the rule change itself is not.
 | in the tree | what it is |
 |---|---|
 | `ad_pat_sub_v` + `ad_pat_sub_of_v` (def_decl_algo_sub_hyg.v) | the leaf-valid join with the fuel forgotten — what the rules are to embed |
-| `a_sub_sound_thm_v` (prop_decorate_key.v) | ⭐ the leaf-valid companion: hands the bundle's `_gv` ON instead of forgetting it.  The PLAIN version stays for its ~10 other consumers |
+| `a_sub_sound_v` (prop_decorate_key.v) | ⭐ the leaf-valid companion: hands the bundle's `_gv` ON instead of forgetting it.  The PLAIN version stays for its ~10 other consumers |
 | `ad_pat_sub_gv_mono` / `_v_mono` (prop_ctx_mono.v) | context-monotonicity |
 | `ad_pat_sub_v_isub` / `_v_weaken` (prop_soundness_sub.v §1f) | the fuel-forgotten wrappers |
 | the cex's §1/§2 at an ARBITRARY Θ | the refutation never needed `Θ = ·` |
@@ -601,7 +601,7 @@ painting), so there is no bridge.  Budget: ~105 lines for the refinement
 lemma + ~100 for the `_gv` mirror, and then the rule change lands.
 
 ⚙ **Then do the rule change in ONE go**: the six rows, the consumer mirrors
-above, `a_sub_sound_thm_v` at the seven call sites in `a_pat_sound` /
+above, `a_sub_sound_v` at the seven call sites in `a_pat_sound` /
 `a_typing_sound`, and the cex's §3 — which becomes `cap_not_reachable`, the
 change's own witness (the configuration is REJECTED once the rows embed
 `ad_pat_sub_v`).  ⚙ Several files need `Require Import …def_decl_algo_sub_hyg`
@@ -750,7 +750,7 @@ A scratch file's hint context and name resolution are NOT the target file's:
 subtyping premise must be the LEAF-VALID mirror for the completeness
 direction.  Machine-checked in `cex/cex_ad_pat_join_not_leaf_valid.v`.
 
-**Why nothing cheaper works.**  `a_sub_complete_thm` takes its join as
+**Why nothing cheaper works.**  `a_sub_complete` takes its join as
 `ad_pat_sub_gv`; `ad_pat` / `ad_sd_typing` embed the PLAIN `ad_pat_sub`.  The
 gap is not bookkeeping — the CAPTURE configuration of DESIGN-subtyping.md
 §3.1,
@@ -771,7 +771,7 @@ supplies.  Both are now required, and §6.1 becomes a hard prerequisite.
 
 ⚙ **This is the paper's own augmentation, propagated one layer up.**  The
 solution notion for CONSISTENCY already carries the subject-refinement
-condition (`a_consis_complete_thm`'s
+condition (`a_consis_complete`'s
 `ad_refine_pskl_f empty Θ empty (msubst_pskl κ P) (bskl_to_pskl Qb)`,
 consistency-proofs.tex:2230-2242).  Subtyping carries the same datum at the
 LEAVES rather than the root, because at the root it is vacuous
@@ -812,8 +812,8 @@ invariant; if #2's `_step` case cannot be proved, machine-check the run in
 `cex/` rather than weakening the rule.
 
 ⚠️ **3 and 4 will hit the `ad_pat_sub_gv` composition gap** (PROGRESS.md §4b):
-they consume `a_sub_complete_thm`, which ASSUMES `ad_pat_sub_gv`, while
-`a_sub_sound_thm` only CONCLUDES the plain `ad_pat_sub`.  The fix identified
+they consume `a_sub_complete`, which ASSUMES `ad_pat_sub_gv`, while
+`a_sub_sound` only CONCLUDES the plain `ad_pat_sub`.  The fix identified
 there is to strengthen `a_subtag_sound_bundle` to conclude `_gv` — the content
 is already proved (it is the last conjunct of `a_consis_sound` and
 `a_consistag_sound_aux`), the only real cost being that `_gv` is fuel-indexed
@@ -847,7 +847,7 @@ transport — was closed.
 ⚠️ The two hypotheses beyond the paper's list are the WF-SIDE-CONDITIONS
 pattern: `a_wf_aenv__var` stores only `a_scope_pskl` where the paper's
 `Θ ⊢ ctx` figure requires `Θ ⊢ P`, and `AP-Var(skl)` feeds that entry to
-`a_sub_sound_thm`, which demands the DISCIPLINED `⊢ₚₛᵃ`.  Do NOT change the
+`a_sub_sound`, which demands the DISCIPLINED `⊢ₚₛᵃ`.  Do NOT change the
 `a_wf_aenv` rule to fix this — it would ripple through the whole tree.
 
 ### 7.2 What was added to close it (all in `prop_soundness_pat.v` unless noted)
@@ -1182,7 +1182,7 @@ wf), and `a_ty_mode_compat` in place of `a_sk_mode_compat`.
 
 | # | `a_typing` row | theorem 1's counterpart | what is NEW |
 |---|---|---|---|
-| 1 | `AT-Unit` | `AP-Unit` | `a_sub_sound_thm` at the **TY** sort |
+| 1 | `AT-Unit` | `AP-Unit` | `a_sub_sound` at the **TY** sort |
 | 2 | `AT-Var` | `AP-Var(typ)` | — (no skeleton entry: `a_typing`'s Var reads `abind_var_typ` only) |
 | 3 | `AT-Anno` | `AP-Anno` | ⚠️ TWO sequential premises — `a_pat`'s Anno does not recurse.  Chain Θ0→Θ1→Θ2 and sustain the skl-entry-wf hypothesis with `a_typing_tm_le`/`_tm_ge` (§4) |
 | 4 | `AT-Freeze` | `AP-Freeze` | `a_consis_chk_sound` + ⭐ `a_consis_chk_tyequiv` (§3) for `sd-Freeze`'s `≡ᵗ`, and `btyp_syn_painting_inv` (§1) for its `syn` shape |

@@ -430,18 +430,6 @@ Proof.
     specialize (H0 α). rewrite ptyp_to_utyp_syn_open in H0. simpl in H0. exact H0.
 Qed.
 
-Lemma ftvar_ptyp_to_btyp_syn : forall A,
-    ftvar_in_btyp (ptyp_to_btyp_syn A) = ftvar_in_ptyp A.
-Proof. induction A; simpl; try reflexivity; try (rewrite IHA1, IHA2); auto. Qed.
-
-Lemma ftvar_ptyp_to_btyp_inh : forall A,
-    ftvar_in_btyp (ptyp_to_btyp_inh A) = ftvar_in_ptyp A.
-Proof. induction A; simpl; try reflexivity; try (rewrite IHA1, IHA2); auto. Qed.
-
-Lemma ftvar_ptyp_to_utyp_syn : forall A,
-    ftvar_in_utyp (ptyp_to_utyp_syn A) = ftvar_in_ptyp A.
-Proof. induction A; simpl; try reflexivity; try (rewrite IHA1, IHA2); auto. Qed.
-
 Lemma d_wf_btyp_painting_syn : forall Γ A,
     d_wf_ptyp Γ A -> d_wf_btyp Γ (ptyp_to_btyp_syn A).
 Proof.
@@ -523,10 +511,6 @@ Qed.
 (** [btyp_to_ptyp] (the erasing coercion) preserves free vars and reflects
     local closure — lets the [AbsAnno]/[App] cases recover [Barg]'s wf from
     its erasure's wf. *)
-Lemma ftvar_btyp_to_ptyp : forall B,
-    ftvar_in_ptyp (btyp_to_ptyp B) = ftvar_in_btyp B.
-Proof. induction B; simpl; try reflexivity; try (rewrite IHB1, IHB2); auto. Qed.
-
 (** A fully-inherited [btyp] is the inh-painting of its own erasure: re-painting
     every (already-inh) quantifier returns the same type.  Needed by the
     [forall_r] case of the abstraction-tail subsumption lemmas, where the result

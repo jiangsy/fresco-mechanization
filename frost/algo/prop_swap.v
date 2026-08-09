@@ -37,6 +37,7 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.def_extra.
 Require Import src.frost.coercions.
+Require Import src.frost.prop_coercions.
 Require Import src.frost.ltac_utils.        (* destruct_if — §6's term-binder rows *)
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
@@ -1691,10 +1692,6 @@ Qed.
 (*  premise.  So none of the eight can reject where a premise-free         *)
 (*  version would fire.                                                    *)
 (* ===================================================================== *)
-
-Lemma ftvar_ptyp_to_pskl : forall A,
-  ftvar_in_pskl (ptyp_to_pskl A) [=] ftvar_in_ptyp A.
-Proof. induction A; simpl; fsetdec. Qed.
 
 (* ---------------------------------------------------------- a_assign --- *)
 

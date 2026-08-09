@@ -124,7 +124,7 @@ side. It does **not** strip `∀`s. Those fresh flexibles are the `Ξ`.
 `test_examples` · `cex/cex_solve_sub_wf_leak` ·
 ⭐ **`cex/probe_flexr_repair`**.
 
-⭐ **`a_sub_sound_thm` — subtyping soundness holds under the repaired rule,
+⭐ **`a_sub_sound` — subtyping soundness holds under the repaired rule,
 and its STATEMENT DID NOT MOVE.** Every new obligation is absorbed inside
 the proof out of wf premises the theorem already had.
 
@@ -406,7 +406,7 @@ what P6-Sv's Check row wants.
 
 `prop_look_complete.v`, ⭐ **`prop_look_complete_var.v` (P6-Cv)** and ⭐⭐
 **`prop_look_complete_cstr.v` (P6-Cs)** all compile, `Qed`, `Closed under the
-global context`. `a_sub_sound_thm` and the whole soundness chain are unchanged
+global context`. `a_sub_sound` and the whole soundness chain are unchanged
 and still green
 (`make -j10 -f CoqMakefile frost/algo/prop_decorate_key.vo`, ~15 s warm).
 
@@ -751,7 +751,7 @@ builds (`make coq` clean).
 ### Step 3 — ✅ **DONE, AND IT WENT ALL THE WAY: SUBTYPING COMPLETENESS IS
 ###            UNCONDITIONAL** (2026-08-05)
 
-`a_sub_complete_bundle_holds` and `a_sub_complete_thm` no longer take
+`a_sub_complete_bundle_holds` and `a_sub_complete` no longer take
 `forall n, main_forall n`.  Both are in `README.v`.  `make coq` clean.
 
 | lemma | premise before | after |
@@ -819,14 +819,14 @@ the whole guess, and P6-Cs's conclusion carries
 `Forall (ftv (snd p) ∩ Δρ = ∅) κc`, which a partly-dirty guess violates; that
 conjunct feeds the arrow row's shielded-ftv premise.
 
-⚠️ This does NOT weaken `a_sub_complete_thm`: P7 instantiates Δρ = ∅, where
+⚠️ This does NOT weaken `a_sub_complete`: P7 instantiates Δρ = ∅, where
 the premise is free.  It is an internal premise of P6-Cs's ρ-generalized
 statement, paid for at every call site.  Nothing indicates `LE-FlexR` is
 wrong — there is no witness against it.
 
 **NEXT.**  Step 4 (the paper) is no longer gated by the proofs — see §0 for
 the user directive that still holds.  `docs/WF-SIDE-CONDITIONS.md` is the
-list of what `a_sub_complete_thm` carries beyond the paper's own premises.
+list of what `a_sub_complete` carries beyond the paper's own premises.
 
 ---
 
@@ -875,7 +875,7 @@ against the repaired rule.
 
 Then `main_forall` — now OPEN rather than refuted (§3) — and whether it
 becomes discharge-able, which would make `a_sub_complete_bundle_holds` and
-`a_sub_complete_thm` unconditional and put them in `README.v`.
+`a_sub_complete` unconditional and put them in `README.v`.
 
 ⚙️ Before touching anything, re-read `cex/probe_flexr_neutralises_p6.v`'s
 header: it says precisely what the two dead witnesses do and do not settle.

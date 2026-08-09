@@ -49,12 +49,6 @@ Qed.
 
 (** * Local closure for shape predicates. *)
 
-Lemma mono_ptyp_lc : forall A, mono_ptyp A -> lc_ptyp A.
-Proof.
-  intros A H. induction H; constructor; auto.
-Qed.
-
-
 Lemma is_ityp_lc : forall B, is_ityp B -> lc_btyp B.
 Proof.
   intros B H. induction H; eauto.

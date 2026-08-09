@@ -27,7 +27,7 @@
 
     THAT GROUND HOLDS FOR CONSISTENCY AND FAILS FOR SUBTYPING.
     [a_consis_sound] (prop_consis_sound.v:5582) really does export
-    [Θ1 ⨟ ∅ ⊢ᵣₚᵃ P ⊳ P'].  [a_sub_sound_thm] (prop_decorate_key.v:3326)
+    [Θ1 ⨟ ∅ ⊢ᵣₚᵃ P ⊳ P'].  [a_sub_sound] (prop_decorate_key.v:3326)
     exports NO such conjunct — and it could not, because algorithmic
     [UnivGhostR] ([a_sub__univ_ghost_r]) outputs [∀◇.P] from the input [P],
     and refinement has no rule putting a [∀◇] on the RIGHT of a non-ghost
@@ -42,7 +42,7 @@
 
     WHAT THE AUTHORS MUST DECIDE.  Either (a) the third premise is dropped for
     subtyping and Sub-Infer / Sub-Check reacquire the subject refinement they
-    need for their [a_consis_complete_thm] call some other way, or (b) it is
+    need for their [a_consis_complete] call some other way, or (b) it is
     kept and the theorem is documented as not covering ∀◇-counterpart
     solutions, or (c) it is weakened to hold modulo the ∀◇s that UnivGhostR /
     UnivGhostL insert.  Registered in docs/PAPER-GAPS.md.

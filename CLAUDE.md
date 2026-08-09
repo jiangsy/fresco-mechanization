@@ -20,8 +20,8 @@ mechanization.)  Corrected 2026-08-09.
   admit-free and axiom-free, and both directions of subtyping are
   CLOSED AND UNCONDITIONAL.**
   - Consistency: both directions (`a_consis_sound` / `a_unify_sound` /
-    `a_assign_sound`; `a_consis_complete_thm` / `complete_mu`).
-  - Subtyping SOUNDNESS: `a_sub_sound_thm`.
+    `a_assign_sound`; `a_consis_complete` / `complete_mu`).
+  - Subtyping SOUNDNESS: `a_sub_sound`.
   - ⭐⭐⭐ Skeleton-inference SOUNDNESS (section D, thm:sound-skeleton-
     inference): `a_pat_sound` — Qed, axiom-free, `Check`ed in `README.v`.
     Its last piece supplies a lemma the paper asserts inline and never
@@ -46,7 +46,7 @@ mechanization.)  Corrected 2026-08-09.
     paper's AbsCheck subcase 2); the suffix-discarding rows' scoping
     premise comes from `algo/completeness_typing/prop_scope.v`.
   - ⭐⭐⭐ Subtyping COMPLETENESS: `a_sub_complete_bundle_holds` and
-    `a_sub_complete_thm` (thm:complete-subtyping), with **no residual
+    `a_sub_complete` (thm:complete-subtyping), with **no residual
     hypothesis** — both are `Check`ed and audited in `README.v`.  P5, all
     five P6 lemmas (Cv/Cs/Sv/Ss/L) and P7a/b/c are green.
   - What the completeness statement carries BEYOND the paper's own
@@ -125,7 +125,7 @@ mechanization.)  Corrected 2026-08-09.
 |---|---|---|
 | 1 | Syntactic / judgment **definitions** for the declarative system; algorithmic placeholder. | 🟢 **done** |
 | 2 | Declarative metatheory (subsumption, subtyping soundness, refinement preserves wf, skeleton validity/safety, stability lemmas). | 🟢 **admit-free** — D1 / D12 and the restored chain are all Qed; `frost/decl/` has no `admit`/`Admitted` left. See [PROGRESS.md Part 1](PROGRESS.md#part-1-paper--mechanization-mapping). |
-| 3 | Algorithmic system definitions and soundness/completeness vs. declarative. | 🟢 **admit-free and axiom-free; both directions of subtyping CLOSED**.  Consistency soundness AND completeness/optimality closed; subtyping soundness (`a_sub_sound_thm`) closed; ⭐⭐⭐ subtyping COMPLETENESS closed and UNCONDITIONAL (`a_sub_complete_bundle_holds`, `a_sub_complete_thm`, both in `README.v`) — P5, all five P6 lemmas and P7a/b/c green.  The remaining work is the PAPER, not the mechanization (hand-off §6 Step 4). |
+| 3 | Algorithmic system definitions and soundness/completeness vs. declarative. | 🟢 **admit-free and axiom-free; both directions of subtyping CLOSED**.  Consistency soundness AND completeness/optimality closed; subtyping soundness (`a_sub_sound`) closed; ⭐⭐⭐ subtyping COMPLETENESS closed and UNCONDITIONAL (`a_sub_complete_bundle_holds`, `a_sub_complete`, both in `README.v`) — P5, all five P6 lemmas and P7a/b/c green.  The remaining work is the PAPER, not the mechanization (hand-off §6 Step 4). |
 
 ## Directory map
 
@@ -153,10 +153,17 @@ mechanization/
 │   │                      pskl_ghost_free / bskl_ghost_free.  The former
 │   │                      def_tags.v and predicates.v folded in here
 │   │                      2026-08-06)
-│   ├── coercions.v       (paint/erase conversions: ptyp_to_btyp_syn,
-│   │                      ptyp_to_utyp_syn, btyp_to_utyp_syn, btyp_to_ptyp, …
-│   │                      + their open/commute lemmas)
-│   ├── prop_basic.v      (lemmas about top-level extras)
+│   ├── coercions.v       (paint/erase conversions — DEFINITIONS ONLY:
+│   │                      ptyp_to_btyp_syn, ptyp_to_utyp_syn,
+│   │                      btyp_to_utyp_syn, btyp_to_ptyp, … + the 4 Coercions)
+│   ├── prop_coercions.v  (everything ABOUT those conversions, and the only
+│   │                      place any of it goes: §1 retractions, §2 open /
+│   │                      open_rec commutation, §3 lc + shape-predicate
+│   │                      transport, §4 ftvar transport.  Created 2026-08-09
+│   │                      from eleven scattered files — see the ⚠️ below)
+│   ├── prop_basic.v      (the PREDICATE layer: the ghost-freeness kit and
+│   │                      ghost_free_auto.  Re-exports prop_coercions.v, so
+│   │                      its ~99 consumers see both)
 │   ├── notations.v       (paper-faithful scoped notations)
 │   ├── ltac_utils.v      (tactics; coqhammer-backed)
 │   ├── decl/             (declarative system — FLAT, no subdirs)
@@ -187,7 +194,7 @@ mechanization/
 │   │   │                         inference `ad_pat` + syntax-directed typing
 │   │   │                         `ad_sd_typing`, which section D is stated over)
 │   │   └── prop_decorate*.v     (decoration of consistency/subtyping;
-│   │                             prop_decorate_key.v holds a_sub_sound_thm)
+│   │                             prop_decorate_key.v holds a_sub_sound)
 │   └── algo/             (algorithmic system — all admit-free)
 │       ├── def_extra.v          (the algorithmic rules + their notations)
 │       ├── def_meta.v           (metasubstitutions κ, a_inc / a_inc_equiv /
@@ -209,7 +216,7 @@ mechanization/
 │       │                             algo/prop_completeness_look.v — but see
 │       │                             its ⚠️ header before importing it)
 │       ├── prop_completeness_sub_gen.v (P7a+b, the GENERALIZED statement)
-│       ├── prop_completeness_sub.v     (P7c, the paper's a_sub_complete_thm)
+│       ├── prop_completeness_sub.v     (P7c, the paper's a_sub_complete)
 │       └── completeness_typing/    (theorem 4 — thm:complete-type-inference,
 │                                    and the three kit files that serve it and
 │                                    nothing else.  Created 2026-08-09 from
@@ -235,10 +242,31 @@ mechanization/
 `prop_soundness_sub.v`, and for subtyping completeness
 `prop_completeness_sub_precise.v` (P5), `prop_completeness_look.v` (P6),
 `prop_completeness_sub_gen.v` (P7a+b, the GENERALIZED statement) and
-`prop_completeness_sub.v` (P7c, the paper's `a_sub_complete_thm`).  The
+`prop_completeness_sub.v` (P7c, the paper's `a_sub_complete`).  The
 shared kits (`prop_inc`, `prop_metasubst`, `prop_flex`, `prop_swap`,
 `prop_precise`, `prop_pat_sub`, `prop_looksub`, `prop_solve_sub`, …) keep
 their topic names.
+
+**Naming of LEMMAS** (2026-08-09):
+
+- **A flagship theorem takes NO suffix.**  It is `a_pat_sound`,
+  `a_typing_complete`, `a_sub_sound`, `a_sub_complete` — even though each has
+  a dozen row-siblings (`a_typing_complete_var`, `…_app`, …).  ⚙ Four names
+  carried a `_thm` suffix that meant nothing (no bare name was ever taken);
+  they were renamed, so `_thm` is now free of meaning and must not come back.
+- **A fact about a conversion is `<relation>_<conversion>`** — the conversion's
+  own name, unabbreviated: `ftvar_ptyp_to_pskl`, `btyp_to_ptyp_open`,
+  `lc_bskl_to_pskl`.  ⚠️ NOT `ftvar_in_<target>_<conversion>` and NOT
+  `ftvar_in_<conversion>`: the tree accumulated all three and ended up with
+  **four names for one fact**.  All such lemmas live in `frost/prop_coercions.v`.
+- ⚠️ **One fact, one name, one file, in its STRONGEST form.**  Duplicated
+  top-level names are a correctness hazard, not untidiness: Coq resolves an
+  unqualified `apply foo` by import order, so adding one `Require Import` can
+  silently switch which `foo` a call site means — this has broken the build
+  twice.  Before adding a helper, grep for it.  When two copies differ in
+  strength (`=` vs `[=]` vs `[<=]`, general vs variable-instance), keep the
+  STRONG one and let the weak uses `rewrite` with it; do not keep both.
+  Duplicate count: 82 → 39 as of 2026-08-09.
 
 (History: the old `decl/{subtyping,typing}/` subdirs and the
 `prop_subtyping.v` / `prop_typing.v` umbrellas were flattened; their contents
@@ -299,10 +327,19 @@ before changing any of them.
 - **Full kernel check**: `make coq` from `mechanization/`. Parallelism
   on by default (`-j 4`); override with `make NJOBS=8 coq` on bigger
   machines. **This is the bar for committing / pushing.**
-- **Fast dev iteration**: `make quick` runs in `vos` mode (skips
-  opaque-proof checking — ~3–4× faster). Useful when iterating on
-  large files; the axiom/admit count is NOT verified in `vos` mode,
-  re-run `make coq` before committing.
+- **Fast dev iteration**: `make quick` runs in `vos` mode (~3–4× faster).
+  ⚠️ **It does not check proof BODIES at all** — `vos` skips everything
+  between `Proof` and `Qed`, so it validates statements, imports and name
+  visibility *at the statement level* and nothing else. A refactor that
+  touches proof scripts (a rename, a dedupe, a moved lemma) can go green
+  under `make quick` and still fail `make coq`: on 2026-08-09 three files
+  used a moved lemma inside a proof and `quick` passed twice before `coq`
+  caught them. Treat `quick` as an interface check; `make coq` is the only
+  real gate, and the axiom/admit count is only verified there.
+- ⚠️ **Do not write `make coq > log; echo $?`** — with a trailing command the
+  shell reports the *echo's* status, so a failed build looks like exit 0.
+  (Same trap as piping `make` into `grep`.) Capture with
+  `make coq > log 2>&1; rc=$?; …; exit $rc`.
 - **Sync paper refs**: `make sync-paper-refs` rewrites `[paper-ref:
   ...]`-marked comments in .v files and the auto-managed reference-
   link block at the bottom of [`PROGRESS.md`](PROGRESS.md). The Markdown-only

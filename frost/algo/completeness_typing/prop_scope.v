@@ -1224,7 +1224,7 @@ Proof.
   assert (Huq : uniq Θ0) by (apply a_wf_aenv_uniq; exact Hwf).
   assert (HftvA0 : ftvar_in_ptyp A0 [<=] dom Θ0).
   { pose proof (prop_soundness_consis.a_wf_pskl_ftv_dom HwfP0) as Hd.
-    rewrite ftvar_in_pskl_ptyp_to_pskl in Hd. clear - Hd; fsetdec. }
+    rewrite ftvar_ptyp_to_pskl in Hd. clear - Hd; fsetdec. }
   destruct A0 as [ | n | α | A1 A2 | A1 ]; simpl in Hs; simpl in HftvA0.
   - inversion Hs.
   - inversion Hs.
@@ -1302,10 +1302,10 @@ Proof.
       by (apply Hsafe; [ simpl; clear; fsetdec
                        | unfold binds; simpl; auto ]).
     assert (HftvA : ftvar_in_ptyp A [<=] singleton β).
-    { rewrite <- ftvar_in_pskl_ptyp_to_pskl.
+    { rewrite <- ftvar_ptyp_to_pskl.
       rewrite <- HeqA. simpl. clear; fsetdec. }
     assert (HftvB : ftvar_in_ptyp B [<=] singleton α1).
-    { rewrite <- ftvar_in_pskl_ptyp_to_pskl.
+    { rewrite <- ftvar_ptyp_to_pskl.
       rewrite <- HeqB. simpl. clear; fsetdec. }
     split; intros γ Hγ Hab; exfalso;
       [ assert (Heγ : γ = β) by (clear - Hγ HftvA; fsetdec)

@@ -139,8 +139,8 @@ Print Assumptions a_consis_sound.
    That factoring IS the optimality.
    ⚠️ The paper's 2-condition statement is FALSE as literally given; what is
    proved is the AUGMENTED one.  docs/PAPER-GAPS.md. *)
-Check a_consis_complete_thm.
-Print Assumptions a_consis_complete_thm.
+Check a_consis_complete.
+Print Assumptions a_consis_complete.
 
 
 (* ##################################################################### *)
@@ -148,7 +148,7 @@ Print Assumptions a_consis_complete_thm.
 (* ##################################################################### *)
 
 (* ⭐ Theorem [Soundness of subtyping]  thm:sound-subtyping *)
-Check a_sub_sound_thm :
+Check a_sub_sound :
   forall NM M P0 Θ0 P P' Θ1,
   Θ0 ⊢ₐ[ NM | M | P0 ] P ⩽ P' ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
@@ -161,7 +161,7 @@ Check a_sub_sound_thm :
     bskl_to_pskl Qt = P' /\
     (empty ⨟ Θ1 ⊢ₛᵃ[ NM | M ] (pskl_to_uskl P) ⩽ Qt) /\
     Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ Qt.
-Print Assumptions a_sub_sound_thm.
+Print Assumptions a_sub_sound.
 
 (* ⭐⭐⭐ Theorem [Completeness and optimality of subtyping]
    thm:complete-subtyping (algorithmic.tex:1446) — UNCONDITIONAL since
@@ -171,8 +171,8 @@ Print Assumptions a_sub_sound_thm.
    Premises beyond the paper's are the EXTERNAL wf side conditions
    (docs/WF-SIDE-CONDITIONS.md): wf of the counterpart, and the subject's
    ghost-freeness at the TY sort. *)
-Check a_sub_complete_thm.
-Print Assumptions a_sub_complete_thm.
+Check a_sub_complete.
+Print Assumptions a_sub_complete.
 
 (* --- the chain thm:complete-subtyping is assembled from ----------------
      P5        stability of subtyping under more precise substitution  :1664
