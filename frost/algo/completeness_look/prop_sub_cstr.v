@@ -1,7 +1,7 @@
 (** P6-Ss — completeness of subtyping CONSTRAINT COLLECTION AND SOLVING
     (paper [lemma:complete-constraint-collection-solving],
     subtyping-proofs.tex:2202).  The subtyping twin of the closed P6-Cs
-    ([a_lookeq_solve_complete], prop_look_complete_cstr.v).
+    ([a_lookeq_solve_complete], completeness_look/prop_eq_cstr.v).
 
     ⚠️ THE PAPER'S STATEMENT INHERITS P6-Sv'S FALSITY.  Its first special
     case ("if P = α then S = α") applies P6-Sv WITH THE IDENTITY
@@ -111,7 +111,7 @@ Require Import src.frost.algo.completeness_look.prop_sub_var.
 (* ===================================================================== *)
 
 (** The mirror of [ad_partial_precise_delta_weaken_fresh]
-    (prop_look_complete.v): a Δ-entry the TARGET does not mention can be
+    (completeness_look/prop_kit.v): a Δ-entry the TARGET does not mention can be
     dropped again.  Sub-ForallL needs both directions — it hands the IH the
     precision premise at [add β Δ] (β joins Δρ, and [Δρ ⊆ Δ]) and must
     return the IH's conclusion at plain Δ.
@@ -456,7 +456,7 @@ Lemma a_looksub_solve_complete_leaf :
      cannot move, so every other premise speaks of a [Θ] related to [Θs] only
      by binds-monotonicity ([Hext], the last premise).  At the top level and
      in every non-∀ row [Θs = Θ].  This is P6-Sv's device
-     (prop_look_complete_sub_var.v:1674) and NOT P6-Cs's same-named one
+     (completeness_look/prop_sub_var.v:1674) and NOT P6-Cs's same-named one
      (whose [Θs] fixes the ρ-IMAGES' scope for the ftv-𝒞 bound — Phase B). *)
   ad_pat_sub_g n NM M Ψsub Θs Rsub Q ->
   Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl Rsub) ->
@@ -674,7 +674,7 @@ Qed.
     its cofinite family ([a_looksub_lookeq_rename_tvar]).
 
     TWO context parameters, and they are NOT the same device:
-      · [Θs] — the DERIVATION's context (P6-Sv's, prop_look_complete_sub_var.v:1674).
+      · [Θs] — the DERIVATION's context (P6-Sv's, completeness_look/prop_sub_var.v:1674).
         The ∀ rows must run the recursion at [Θ,β] while the derivation's own
         context is an INDEX and cannot move.
       · P6-Cs's [Θs] (the ρ-images' fixed scope, for its ftv-𝒞 conclusion) is
@@ -806,7 +806,7 @@ Proof.
   destruct (AtomSetProperties.In_dec α (ftvar_in_pskl P)) as [Hin | Hnin];
     [ | eapply a_looksub_solve_complete_leaf;
         solve [ eassumption | left; exact Hnin ] ].
-  destruct (pskl_var_dec P α) as [Heqα | HPnα];
+  destruct (pskl_eq_var_dec P α) as [Heqα | HPnα];
     [ eapply a_looksub_solve_complete_leaf;
         solve [ eassumption | right; exact Heqα ] | ].
   (* ---------------------------------------------------------------- *)
@@ -1039,11 +1039,11 @@ Proof.
                    [a_cstr_sub tc P0] at the UNDESCENDED P0, so the binder is
                    never introduced.  The IH still supplies the solve, and
                    lifting it over the ∀ is P6-Sv's strengthen-then-rename
-                   recipe (prop_look_complete_sub_var.v:2036). *)
+                   recipe (completeness_look/prop_sub_var.v:2036). *)
     (* [skmod{TY}] makes P0 a TYPE, so the refinement's inherited-∀ target
        forces P0 = ∀.P0': every other type shape is GUARDED, and a guarded
        source refines only to a guarded target.  This block is P6-Sv's
-       (prop_look_complete_sub_var.v:1880) verbatim. *)
+       (completeness_look/prop_sub_var.v:1880) verbatim. *)
     pose proof (HmodTY eq_refl) as Hmod.
     inversion Hmod as [ | A HeqA | ]; subst.
     destruct A as [ | nA | αA | A1 A2 | A0 ];
@@ -1142,7 +1142,7 @@ Proof.
       { rewrite (@msubst_pskl_open Θ0 κ Θ (ptyp_to_pskl A0) β Hκ Hβκ).
         rewrite pskl_to_bskl_inh_open.
         eapply ad_refine_syn_delta_to_tvar_mid
-          with (α1 := β) (Θ1 := nil) (Θ2 := Θ) (Δ' := empty);
+          with (α1 := β) (Θ1 := nil) (Θ0 := Θ) (Δr' := empty);
           [ apply (Hrbody β ltac:(clear - Fr; solve_notin))
           | reflexivity | clear; fsetdec ]. }
       (* Sub-ForallR OPENS P0, which is a [p0_step]; then weaken to Θ0,β *)
@@ -1336,7 +1336,7 @@ Proof.
              descended 𝒞 (cex/cex_p6ss_sub_target_ftv.v).  The IH still
              supplies the solve, at the descended target; lifting it over
              the ∀ is P6-Sv's strengthen-then-rename recipe
-             (prop_look_complete_sub_var.v:2036). ---- *)
+             (completeness_look/prop_sub_var.v:2036). ---- *)
         cbn [ftvar_in_cstrs] in *.
         (* the IH's solve is a ONE-constraint run, so it inverts to SS *)
         assert (Hss : ((β ~ abind_tvar) ++ Θ0) ⊢ₛ Pi
@@ -1347,7 +1347,7 @@ Proof.
            the target here legitimately mentions β (that is the whole point of
            this branch), so [a_solve_sub_ftv] is useless.  Precision bounds the
            SOURCE by ψa ∪ Δ ∪ def_ftv Θ, all β-free.  P6-Sv's ForallR row does
-           exactly this (prop_look_complete_sub_var.v:2020). *)
+           exactly this (completeness_look/prop_sub_var.v:2020). *)
         cbn [app] in Hprec.
         assert (Hdκs : dom κs [=] dom Ξs) by (apply keys_eq_dom; exact Hks).
         assert (HβPaκ0 : β `notin`
@@ -1781,7 +1781,7 @@ Proof.
              /\ 𝒞 = a_cstr_sub M P02 :: nil))).
     { destruct (AtomSetProperties.In_dec α (ftvar_in_pskl ⌊ Rb ⌋ˢ))
         as [Hin0 | Hnin0].
-      - destruct (pskl_var_dec ⌊ Rb ⌋ˢ α) as [Heq0 | Hne0].
+      - destruct (pskl_eq_var_dec ⌊ Rb ⌋ˢ α) as [Heq0 | Hne0].
         + (* leaf, var *)
           eapply (@a_looksub_solve_complete_leaf n NM M
                     (Ξs1 ++ Ξc1 ++ Θ0) Θsm Θ Θw
@@ -2093,7 +2093,7 @@ Proof.
        SCOPE OF THE REPAIR, MEASURED.  The Check row hands its WHOLE
        subject to P6-Cs, and a ForallL can sit above a Check, so **P6-Cs
        must be ρ-generalized too**.  That is threading, not new theory:
-       P6-Cv ([a_solve_eq_complete_var_gen], prop_look_complete_var.v:505)
+       P6-Cv ([a_solve_eq_complete_var_gen], completeness_look/prop_eq_var.v:505)
        ALREADY takes [uskl_rho NM Θ Δρ Ψρ ψsub ψa]; the [uskl_rho_*_l_inv]
        kit exists; P6-Cs's measure ([size R' + size P0], on the ρ-FREE
        ideal subject) is unaffected; its ∀ rows open with fresh VARIABLES
@@ -2104,7 +2104,7 @@ Proof.
        statement below instantiates it at [empty], so nothing has moved
        yet) with [sub_shield_add_fresh] / [_weaken_tvar], and
        [ad_partial_precise_delta_shrink_fresh] is the Δ-return the row
-       needs.  P6-Sv's ForallL row (prop_look_complete_sub_var.v:2308) is
+       needs.  P6-Sv's ForallL row (completeness_look/prop_sub_var.v:2308) is
        the line-by-line template for the rest — with one simplification:
        P6-Ss's ∀ comes from the SUBJECT, so ψa, P0, Pi, Ψi and Ψa do NOT
        move, and only Θ0/Θ/Δ/Δρ grow by β. *)
@@ -2384,7 +2384,7 @@ Proof.
     { destruct (AtomSetProperties.In_dec α
                   (ftvar_in_pskl ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ))
         as [Hin0 | Hnin0].
-      - destruct (pskl_var_dec
+      - destruct (pskl_eq_var_dec
                     ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ α)
           as [Heq0 | Hne0].
         + (* leaf, var *)
@@ -2835,7 +2835,7 @@ Proof.
     { destruct (AtomSetProperties.In_dec α
                   (ftvar_in_pskl ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ))
         as [Hin0 | Hnin0].
-      - destruct (pskl_var_dec
+      - destruct (pskl_eq_var_dec
                     ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ α)
           as [Heq0 | Hne0].
         + (* leaf, var *)
@@ -3036,7 +3036,7 @@ Proof.
        So every recursive site dispatches:
 
          destruct (In_dec α (ftv ⌊R0⌋ˢ)) as [Hin0 | Hnin0];
-           [ destruct (pskl_var_dec ⌊R0⌋ˢ α) as [Heq0 | Hne0];
+           [ destruct (pskl_eq_var_dec ⌊R0⌋ˢ α) as [Heq0 | Hne0];
                [ (* leaf, var  *) eapply a_looksub_solve_complete_leaf …
                | (* recurse    *) eapply IHHsubty … ]
            | (* leaf, absent *) eapply a_looksub_solve_complete_leaf … ].
@@ -3090,7 +3090,7 @@ Proof.
             eapply a_wf_pskl_tophole_inv; exact HwfSubj).
       destruct (AtomSetProperties.In_dec α (ftvar_in_pskl ⌊ R0 ⌋ˢ))
         as [Hin0 | Hnin0].
-      - destruct (pskl_var_dec ⌊ R0 ⌋ˢ α) as [Heq0 | Hne0].
+      - destruct (pskl_eq_var_dec ⌊ R0 ⌋ˢ α) as [Heq0 | Hne0].
         + (* leaf, var *)
           eapply (a_looksub_solve_complete_leaf
                     (Θ0 := Θ0) (Θs := Θsm) (Θ := Θ) (Θw := Θw) (κ := κ)
@@ -3187,7 +3187,7 @@ Proof.
             eapply a_wf_pskl_tophole_inv; exact HwfSubj).
       destruct (AtomSetProperties.In_dec α (ftvar_in_pskl ⌊ R0 ⌋ˢ))
         as [Hin0 | Hnin0].
-      - destruct (pskl_var_dec ⌊ R0 ⌋ˢ α) as [Heq0 | Hne0].
+      - destruct (pskl_eq_var_dec ⌊ R0 ⌋ˢ α) as [Heq0 | Hne0].
         + (* leaf, var *)
           eapply (a_looksub_solve_complete_leaf
                     (Θ0 := Θ0) (Θs := Θsm) (Θ := Θ) (Θw := Θw) (κ := κ)

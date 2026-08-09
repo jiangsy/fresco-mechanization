@@ -9,11 +9,11 @@
     paintings at the flexible leaves — never equal.
 
     The motive absorbs this by carrying the join at an arbitrary subject [T]
-    with [Θ ⊢ T ≡ᵘ msubst κ R] (see prop_sub_complete_thm.v): the IH then
+    with [Θ ⊢ T ≡ᵘ msubst κ R] (see prop_completeness_sub.v): the IH then
     takes the ORIGINAL join derivation unchanged, and only the consistency
     LEAVES ever transport — via the erasure of ≡ᵘ into ≡ˢ and the EXISTING
     pskl-level transports (skl_tyequiv_{consis,refine_syn_f,refine_pskl_f}_
-    transport, prop_consis_complete.v).
+    transport, prop_completeness_consis.v (PART B)).
 
     Design notes:
     - STRUCTURAL rows only (no sym/trans/refl closure): inversion at a known

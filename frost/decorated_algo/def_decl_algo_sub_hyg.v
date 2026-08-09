@@ -11,7 +11,7 @@
        subject still carries it on the other), and precision-substitution
        is FALSE over such derivations.  Both ForallL rules therefore also
        require the instantiation's tags fresh from the SUBJECT's syntactic
-       tags ([ftag_in_uskl], def_tags.v).
+       tags ([ftag_in_uskl], def_extra.v).
 
     2. FUEL DISCIPLINE.  Precision-substitution must be fuel-PRESERVING
        (the completeness ForallL case applies its induction hypothesis to

@@ -59,14 +59,8 @@ Combined Scheme a_subtag_subtag_flex_mutind
 (* ===================================================================== *)
 
 (** The syn painting of an lc skeleton is synthesised. *)
-Lemma is_sskl_pskl_to_bskl_syn : forall P,
-  lc_pskl P ->
-  is_sskl (pskl_to_bskl_syn P).
-Proof.
-  intros P Hlc; induction Hlc; simpl; try (constructor; auto; fail).
-  apply is_sskl__all with (L := {}).
-  intros α _. rewrite <- pskl_to_bskl_syn_open. auto.
-Qed.
+(* ⚙ [is_sskl_pskl_to_bskl_syn] MOVED 2026-08-09 to frost/prop_basic.v
+   (cleanup audit §8.1) — see the note there. *)
 
 (** Erasure preserves local closure. *)
 Lemma lc_uskl_to_pskl : forall R,

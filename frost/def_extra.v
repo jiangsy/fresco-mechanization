@@ -3,7 +3,7 @@
     One leaf module over the generated syntax: the tag collector, the
     monotype / tagged / colour-discipline / guardedness / ghost-freeness
     shape predicates, and the mode-compatibility relations.  (Formerly split
-    across [def_tags.v] and [predicates.v]; the split bought nothing — every
+    across [def_extra.v] and [def_extra.v]; the split bought nothing — every
     consumer imported all three.) *)
 
 Require Import Metalib.Metatheory.

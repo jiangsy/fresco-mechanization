@@ -19,7 +19,7 @@
     - **We CHOOSE the guess.**  P6-L's conclusion is existential in Ξ and the
       extract's output, so the induction may build [a_guess_mono] and κ'
       SIMULTANEOUSLY rather than consuming a given guess.
-    - **[guess_join_witness] (prop_consis_complete.v:4624) does NOT serve
+    - **[guess_join_witness] (prop_completeness_consis.v (PART B):4624) does NOT serve
       here**, though DESIGN §7's table said so: it is CONSISTENCY-driven and
       demands a MONOTYPE counterpart, whereas guess^TY passes ∀ through
       ([a_guess_mono__forall] returns a [ptyp_all]) and P6-L's counterpart
@@ -272,21 +272,8 @@ Qed.
 (** [a_tags_sort a_sub_mode_ty] gives ghost-freeness of the DECORATED ψa;
     the witness induction runs against the erasure.  The ε-tagged ∀ erases
     to a plain [pskl_all_syn], which is exactly [pgf_all]. *)
-Lemma uskl_ghost_free_to_pskl : forall ψ,
-  uskl_ghost_free ψ -> pskl_ghost_free ⌊ ψ ⌋ˢ.
-Proof.
-  intros ψ H; induction H; cbn.
-  - exact I.
-  - exact I.
-  - split; assumption.
-  - (* ∀ε : erases to a plain ∀; one instance suffices, by the open-invariance *)
-    pick fresh α for L.
-    eapply pskl_ghost_free_open_inv with (α := α).
-    rewrite <- uskl_to_pskl_open. apply H0. clear - Fr; fsetdec.
-  - pick fresh α for L.
-    eapply pskl_ghost_free_open_inv with (α := α).
-    rewrite <- uskl_to_pskl_open. apply H0. clear - Fr; fsetdec.
-Qed.
+(* ⚙ [uskl_ghost_free_to_pskl] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
+   one in prop_pat_sub.v, which this file imports. *)
 
 (** The converse of [a_wf_ptyp_to_wf_pskl] on a MONOTYPE: a monotype has no
     binder, so its painting's well-formedness is its own — and the Δ slot is
@@ -326,7 +313,9 @@ Qed.
     it is outside [dom Θ] — every hole fill is wf at its own context, hence
     can never BE it.  (The ftv-keyed [ad_refine_syn_f_fextend_ftv] would NOT
     do: β occurs in the target [X0^β], which is the whole point.) *)
-Lemma ad_refine_syn_rename_delta : forall Θ Δ Q Q' β α0,
+(* ⚙ RENAMED from [ad_refine_syn_rename_delta] 2026-08-09 (cleanup audit §8.1c): it collided with a
+   DIFFERENT lemma of that name, and this one delivers Δ as [add α0 (remove β Δ)]; prop_soundness_pat.v's takes [Δ0 [=] add α Δ]. *)
+Lemma ad_refine_syn_rename_delta_remove : forall Θ Δ Q Q' β α0,
   Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ Q' ->
   a_wf_aenv Θ ->
   β `notin` dom Θ ->
@@ -357,7 +346,7 @@ Lemma ad_precise_rename_delta : forall Θ Δ P X β α0,
 Proof.
   intros Θ Δ P X β α0 H HwfΘ Hβ. unfold ad_precise in *.
   rewrite <- ! subst_var_bskl_inh.
-  apply ad_refine_syn_rename_delta; assumption.
+  apply ad_refine_syn_rename_delta_remove; assumption.
 Qed.
 
 (* ===================================================================== *)
@@ -522,7 +511,7 @@ Qed.
 (* ⭐ MOVED UPSTREAM (2026-08-04) to frost/algo/prop_metasubst.v:
    [msubst_pskl_lookup_congr_ftv], [msubst_lookup_mid_skip],
    [msubst_pskl_mid_skip].  Same reason as the [keys] kit — the κ-extension
-   is now built from prop_look_complete.v onwards, above this file. *)
+   is now built from completeness_look/prop_kit.v onwards, above this file. *)
 
 (** Precision is monotone in Δ (the [_f]-kit transport, at [F = ∅]). *)
 Lemma ad_precise_delta_mono : forall Θ Δ0 Δ P X,
@@ -536,9 +525,9 @@ Proof.
 Qed.
 
 (* [a_wf_pskl_rename_delta] — the wf twin of §5's [ad_precise_rename_delta] —
-   MOVED to prop_consis_complete.v (beside [a_wf_pskl_ftv_dom], which its ∀◇
+   MOVED to prop_completeness_consis.v (PART B) (beside [a_wf_pskl_ftv_dom], which its ∀◇
    case needs): the freshness campaign's solve cluster needs it in
-   prop_look_complete.v too, and that file and this one are independent. *)
+   completeness_look/prop_kit.v too, and that file and this one are independent. *)
 
 (* ===================================================================== *)
 (*  §8  THE TWO PROPERTIES OF THE INCOMING κ THE INDUCTION NEEDS           *)
@@ -575,7 +564,7 @@ Qed.
 
 (** Both properties survive prefixing a block of wf monotype images — which
     is what the ∀ / arrow cases hand back up.  [msubst_lc_app_wf] MOVED UP to
-    prop_look_complete.v (2026-08-04): under the SolE-FlexR repair every P6 ∀
+    completeness_look/prop_kit.v (2026-08-04): under the SolE-FlexR repair every P6 ∀
     row prefixes such a block, not only P6-L. *)
 
 Lemma msubst_ftv_app_wf : forall Θ κa κb,
@@ -619,7 +608,9 @@ Qed.
     well-formedness and for precision.  Both bodies are the same three moves:
     re-express the α-instance as a β-renaming of the β-instance
     ([subst_*_intro]), rename ([*_rename_delta]), then relax Δ. *)
-Lemma a_wf_pskl_all_of_one : forall Θ Δ P β,
+(* ⚙ RENAMED from [a_wf_pskl_all_of_one] 2026-08-09 (cleanup audit §8.1c): it collided with a
+   DIFFERENT lemma of that name, and this one carries the extra premise [β ∉ Δ]; prop_completeness_consis.v's is strictly stronger. *)
+Lemma a_wf_pskl_all_of_one_delta : forall Θ Δ P β,
   Θ ⨟ (add β Δ) ⊢ₚₛᵃ (open_pskl_wrt_pskl P (pskl_var_f β)) ->
   β `notin` dom Θ -> β `notin` Δ -> β `notin` ftvar_in_pskl P ->
   Θ ⨟ Δ ⊢ₚₛᵃ (pskl_all_syn P).
@@ -813,7 +804,7 @@ Proof.
       split.
       { rewrite app_assoc. cbn [ptyp_to_pskl]. apply a_wf_pskl__arrow.
         - eapply a_wf_pskl_weaken; [ | exact Hwf1 ].
-          intros x b Hb. apply binds_weaken_mid. exact Hb.
+          intros x b Hb. apply binds_weaken_inner. exact Hb.
         - eapply a_wf_pskl_weaken; [ | exact Hwf2 ].
           intros x b Hb. apply binds_app_3. exact Hb. }
       rewrite app_assoc. cbn [ptyp_to_pskl msubst_pskl].
@@ -902,7 +893,7 @@ Proof.
       split; [ exact HF | ].
       split.
       { cbn [ptyp_to_pskl].
-        eapply a_wf_pskl_all_of_one with (β := β);
+        eapply a_wf_pskl_all_of_one_delta with (β := β);
           [ rewrite <- HopenPA; exact Hwf'
           | rewrite dom_app; clear - HβΞ Fr; fsetdec
           | clear - Fr; fsetdec
@@ -997,7 +988,7 @@ Qed.
 (*   (13)     [a_extract__solve] on (a), (b) and the guess.                *)
 (*                                                                        *)
 (*  The [a_inc] and wf conclusions are assembled with the HOMOGENEOUS-FLEX *)
-(*  REORDER KIT of prop_look_complete_cstr.v: [a_extract] emits [Ξc,Ξ']    *)
+(*  REORDER KIT of completeness_look/prop_eq_cstr.v: [a_extract] emits [Ξc,Ξ']    *)
 (*  where the natural build order is [Ξ',Ξc] (both blocks are undefined    *)
 (*  flexibles, so the order is immaterial — but not syntactically so).     *)
 (*                                                                        *)

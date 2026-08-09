@@ -73,6 +73,92 @@ removed developments).
 >    `a_pat_rename_tm` out of `prop_completeness_pat.v` broke `README.v`, which
 >    imports that file but not `prop_swap.v`.
 
+> ## ✅ PHASE 2 (dedupe) DONE — 82 → 53 duplicated names, **0** cluster-vs-outside collisions
+>
+> | | |
+> |---|---|
+> | deleted | **17** duplicate declarations — 6 exact, 9 alpha-variants, 2 (`a_inc_dom_flex`, `a_inc_lookup_mono`) after adding an explicit `prop_compose` import |
+> | moved | `is_sskl_pskl_to_bskl_syn` → `frost/prop_basic.v` (it was proved in two files that don't import each other, so it could not be deduped in place) |
+> | renamed | **11** — the 10 where the two lemmas genuinely differ, plus `a_wf_aenv_def_ftv_dom` → `a_wf_aenv_def_ftv_dom_in` (below) |
+> | result | `algo/prop_completeness_look.v`'s ⚠️⚠️ blocker is cleared; its header now records that flipping consumers onto the facade is safe. **The flip itself (§8.1d) is NOT done** — see Remaining. |
+>
+> ### ⚠️ The finding that justifies this whole item
+>
+> §8.1 argued the duplicates were a *maintenance* smell.  They are worse than
+> that, and the cleanup itself proved it.  Adding one line —
+> `Require Import prop_compose` to `prop_kit.v` — silently changed which copy
+> of `a_wf_aenv_def_ftv_dom` four call sites resolved to, and broke the build.
+> The two copies state the same fact in `[<=]` form and in pointwise form: they
+> are logically equal but **not `apply`-compatible**, so the flip is invisible
+> until the kernel rejects it.  With 53 duplicated names still in the tree,
+> **any added import can do this again.**  That is the real cost, and it is why
+> §8.1 is worth finishing rather than tolerating.
+>
+> ### Two more classes the original scan could not see
+>
+> - **Different names, same lemma.**  `guarded_ptyp_to_uskl_syn` vs
+>   `mono_ptyp_to_uskl_syn_guarded` (Phase 1), and `a_wf_aenv_def_ftv_dom` vs
+>   its pointwise twin.  A name-keyed scan is blind to these, so the true
+>   duplicate count is above 82.
+> - **Same name, incompatible *binder* names.**  Merging an alpha-variant
+>   breaks `apply … with (Θ2 := …)` at call sites that named the deleted copy's
+>   binders — 5 such sites had to be repointed.
+>
+> ### ⚙ Traps, all of which cost a build cycle
+>
+> 1. **`Require Import` is not transitive for name visibility.**  Bit me three
+>    times: `README.v`, `prop_eq_var.v`, and a `cex/` probe.  Reachability in
+>    the import graph is *not* the test — only a DIRECT import makes a name
+>    visible, and my first over-rename check used reachability and passed
+>    files it should have flagged.
+> 2. **A blanket rename over-reaches.**  Renaming a cluster copy also rewrote
+>    uses that resolved to the *outside* copy — 5 sites across 3 files.  The
+>    correct predicate is "does this file DIRECTLY import the declaring file".
+> 3. **zsh aborts a whole command on a non-matching glob.**  `rm -f a* b*` with
+>    `a*` unmatched runs neither, so three probe `.v` files silently survived
+>    into `test/` and broke the build twice (the Makefile globs `*.v`).  Keep
+>    probes in the scratchpad.
+> 4. **Piping `make` into `grep` masks its exit status** — `$?` is grep's.
+>
+> ## ⚠️ PERF — diagnosed, NOT fixed
+>
+> The build is slow for one reason: **`test/test_examples.v` is 467 s of a
+> ~646 s wall-clock build** (`-j8`; total serial proof time ≈ 1229 s).  It is a
+> leaf depending on nearly everything, so it sits on the critical path and
+> cannot overlap.  Within it, `ex_C2` alone is 442 s — 36% of the tree.
+>
+> `Set Ltac Profiling` pins it exactly: **`crush_uniq` is 99.9% of the proof in
+> 4 calls**, all inside `fsetdec` → `tauto` → `simplif`, running up 15.5 M
+> `is_conj` and 13 M `is_disj` calls.
+>
+> **Root cause (measured):** `fsetdec` must UNFOLD `dom Θlib` — seven entries
+> carrying full σ-types.  `Opaque Θlib` makes it fail outright in 6 s
+> ("beyond the scope of this tactic"), which proves the unfolding is
+> load-bearing, not incidental.
+>
+> **Five fixes tried and refuted** (all recorded at the tactic in
+> `test/test_examples.v` so they are not re-tried blind): `solve_notin`;
+> `destruct_notin` then `fsetdec`/`solve_notin`/`auto`; adding disequality
+> symmetry; context scoping both generically and use-site
+> (`clear - Hα Hx Hβ Hy …` at each of the 4 calls); and characterising
+> `dom Θlib` as seven singletons with `Opaque Θlib`.  Notably, use-site
+> scoping did **not** help — so the blow-up is not driven by the ambient
+> hypothesis count, only by the `Θlib` expansion.
+>
+> **Next lead:** discharge these goals without `fsetdec` at all.  They are all
+> of the shape `v ∉ <concrete union of singletons> ∪ dom Θlib`; with `Θlib`
+> opaque and the needed `∉ dom Θlib` facts supplied as pre-proved lemmas,
+> `fsetdec` never has to see the library term.  I stopped here rather than
+> spend more of the budget; the diagnosis is solid and the file is reverted to
+> its committed state plus that note.
+>
+> ## Remaining in Phase 2
+>
+> - §8.1d — flip `prop_completeness_sub_gen.v` onto the facade (now unblocked, untested).
+> - The other 53 duplicated names outside the `completeness_look` cluster.
+> - §5.4 `prop_coercions.v`, §8.2 `prop_aenv.v`, §5.3 composite chains,
+>   §7.1 `subst_bskl_in_uskl` rename, §4 the `mode_spine` work.
+
 **Scope** the eight aspects the user named.  Findings are graded
 
 - **A** — zero risk to any proof: dead code, litter, doc drift, pure renames

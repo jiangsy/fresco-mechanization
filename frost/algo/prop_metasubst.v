@@ -21,7 +21,7 @@ Set Implicit Arguments.
    COMPLETENESS-SIDE METASUBSTITUTION THEORY
 
    The pure metasubst / a_inc_equiv / downarrow (⇓) / msubst-compose lemmas
-   used by the optimality development.  Extracted from prop_consis_complete.v
+   used by the optimality development.  Extracted from prop_completeness_consis.v (PART B)
    (which kept only the optimality defs, the consis<->metasubst bridge, and the
    theorem).  Imports NO consistency definitions (def_decl_algo/def_decorated),
    so the module graph enforces the layering:
@@ -1801,10 +1801,10 @@ Qed.
 (* ===================================================================== *)
 (*  ⭐ THE κ-EXTENSION PACKAGE (moved here 2026-08-04).                     *)
 (*                                                                        *)
-(*  These lived in prop_look_complete_cstr.v and prop_look_complete_       *)
+(*  These lived in completeness_look/prop_eq_cstr.v and prop_look_complete_       *)
 (*  extract.v, where the ONLY consumer used to be the final guess's block. *)
 (*  The SolE-FlexR repair makes the SOLVE emit a flexible block too, so    *)
-(*  every P6 statement from prop_look_complete.v onwards has to extend its *)
+(*  every P6 statement from completeness_look/prop_kit.v onwards has to extend its *)
 (*  metasubstitution over one — and that file sits ABOVE both of the old   *)
 (*  homes.  Nothing here is specific to the collection or extract layer:   *)
 (*  it is list algebra plus "msubst only reads free variables".           *)

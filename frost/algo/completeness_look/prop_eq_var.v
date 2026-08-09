@@ -2,7 +2,7 @@
    case — [a_solve_eq_complete_var] (consistency-proofs.tex:1180), CLOSED
    axiom-free and PREMISE-FAITHFUL to the paper (the earlier mech-only
    [pskl_no_hole P0] side condition was removed by the [aenv_split] bag
-   rework, 2026-07-27).  Extends prop_look_complete.v with the ForallSyn
+   rework, 2026-07-27).  Extends completeness_look/prop_kit.v with the ForallSyn
    machinery (the bag-split generalized theorem, the aenv-tvar precision
    rename, and the three ForallGhost / GhostL / UnivGhost rows). *)
 Require Import Coq.Lists.List.
@@ -40,11 +40,12 @@ Require Import src.frost.algo.prop_completeness_sub_precise.
 Require Import src.frost.algo.prop_normal.
 Require Import src.frost.algo.prop_inc_strengthen.
 Require Import src.frost.algo.prop_metasubst.
+Require Import src.frost.algo.prop_compose.   (* a_inc_lookup_mono, a_inc_dom_flex *)
 Require Import src.frost.algo.completeness_look.prop_kit.
 
 Set Implicit Arguments.
 
-(* Most P6-Cv leaf/absurd helpers live in prop_look_complete.v; this file
+(* Most P6-Cv leaf/absurd helpers live in completeness_look/prop_kit.v; this file
    adds the ForallSyn-specific kit and the main induction over the whole
    consistency judgment. *)
 
@@ -88,14 +89,8 @@ Proof.
       [ intros x b Hb; apply binds_weaken; exact Hb | eassumption ].
 Qed.
 
-Lemma a_wf_pskl_delta_to_tvar : forall Θ Δ P α1 Δ',
-  Θ ⨟ Δ ⊢ₚₛᵃ P ->
-  Δ [<=] add α1 Δ' ->
-  ((α1 ~ abind_tvar) ++ Θ) ⨟ Δ' ⊢ₚₛᵃ P.
-Proof.
-  intros Θ Δ P α1 Δ' H Hsub.
-  exact (@a_wf_pskl_delta_to_tvar_mid _ _ _ H α1 nil Θ Δ' eq_refl Hsub).
-Qed.
+(* ⚙ [a_wf_pskl_delta_to_tvar] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
+   one in prop_completeness_consis.v, which this file imports. *)
 
 (** a_inc images are Θ-scoped (the prose wf side-condition, pointwise). *)
 Lemma a_inc_image_ftv_dom : forall Θ0 κ Θ,
@@ -509,7 +504,7 @@ Qed.
 
 (* ===================================================================== *)
 (*  ⭐ THE CONCLUSION CARRIES THE κ-EXTENSION (2026-08-04, the SolE-FlexR  *)
-(*  repair).  [solve_ext] (prop_look_complete.v) supplies the six          *)
+(*  repair).  [solve_ext] (completeness_look/prop_kit.v) supplies the six          *)
 (*  components every P6 statement now shares — the solve, its generated    *)
 (*  block [Ξ], and the aligned extension [κ'] of the metasubstitution      *)
 (*  over that block; P6-Cv's own post-condition is the Δ'-FAMILY of        *)
@@ -1812,7 +1807,7 @@ Proof.
                        | clear - Hd HX'f; destruct_notin; fsetdec ] ]. }
           rewrite <- (subst_bskl_in_uskl_intro α ψR (uskl_var_f α')
                         ltac:(clear - HXf; solve_notin)) in Hrn.
-          rewrite (@msubst_pskl_subst_var (κ0 ++ κ) PaR α α'
+          rewrite (@msubst_pskl_subst_var_paired (κ0 ++ κ) PaR α α'
                      ltac:(clear - HXf Hdκ0; destruct_notin; fsetdec)
                      ltac:(clear - HX'f Hdκ0; destruct_notin; fsetdec)
                      ltac:(intros p Hp;
@@ -2590,7 +2585,7 @@ Proof.
                        | clear - Hd HX'f; destruct_notin; fsetdec ] ]. }
           rewrite <- (subst_bskl_in_uskl_intro α ψR (uskl_var_f α')
                         ltac:(clear - HXf; solve_notin)) in Hrn.
-          rewrite (@msubst_pskl_subst_var (κ0 ++ κ) PaR α α'
+          rewrite (@msubst_pskl_subst_var_paired (κ0 ++ κ) PaR α α'
                      ltac:(clear - HXf Hdκ0; destruct_notin; fsetdec)
                      ltac:(clear - HX'f Hdκ0; destruct_notin; fsetdec)
                      ltac:(intros p Hp;
@@ -3480,7 +3475,7 @@ Qed.
 (*      since Δρ = ∅ — only the P6-Rv ForallL descent maintains it.       *)
 (*   4. the rho_fresh / Δρ ⊆ Δ / shielded pack — replaces the paper's     *)
 (*      positional "Pi has the same rigid variable at every ρ-position"   *)
-(*      side condition ([paper-gap], see the prop_look_complete.v         *)
+(*      side condition ([paper-gap], see the completeness_look/prop_kit.v         *)
 (*      header); established at the one leaf-creating call site, P6-Rv    *)
 (*      ForallL.                                                          *)
 (*  CONCLUSION vs paper: κa is instantiated to κ itself (a strengthening  *)

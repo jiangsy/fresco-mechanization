@@ -391,7 +391,13 @@ Qed.
 (*  silently false, which is why the fold computed the wrong composite.)   *)
 (* ===================================================================== *)
 
-Lemma a_wf_aenv_def_ftv_dom : forall Θ β τ,
+(* ⚙ RENAMED from [a_wf_aenv_def_ftv_dom] 2026-08-09 (cleanup audit §8.1c):
+   it collided with prop_soundness_consis.v:1586's, which concludes the same
+   fact in [ [<=] ] form.  The two are logically equal but NOT apply-compatible,
+   so which one an unqualified reference picked up depended on import ORDER —
+   adding a [Require Import] to prop_kit.v silently flipped four call sites and
+   broke the build.  This one is the POINTWISE form; hence the suffix. *)
+Lemma a_wf_aenv_def_ftv_dom_in : forall Θ β τ,
   a_wf_aenv Θ ->
   binds β (abind_flex_mono_def τ) Θ ->
   forall α', α' `in` ftvar_in_ptyp τ -> α' `in` dom Θ.
@@ -440,7 +446,7 @@ Proof.
   assert (Hnd : α0 `notin` dom Θ' /\ a_wf_aenv Θ')
     by (inversion Hwf; subst; auto).
   destruct Hnd as [Hnd Hwf'].
-  apply Hnd. eapply a_wf_aenv_def_ftv_dom; eauto.
+  apply Hnd. eapply a_wf_aenv_def_ftv_dom_in; eauto.
 Qed.
 
 (** Two metasubstitutions agreeing on a type's free variables act alike. *)

@@ -69,26 +69,8 @@ Set Implicit Arguments.
 
 (* Reusable: retag the tag index of a partial-precision derivation.
    (mirror of [ad_partial_precise_delta_cong]; migrate to prop_precise.v). *)
-Lemma ad_partial_precise_psi_cong : forall Θ Δ Ψ P ψ,
-  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
-  forall Ψ', Ψ [=] Ψ' ->
-  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ' ] ψ.
-Proof.
-  intros Θ Δ Ψ P ψ H; induction H; intros Ψ' Heq.
-  - apply ad_ppre__unit; fsetdec.
-  - apply ad_ppre__var; [ fsetdec | assumption ].
-  - apply ad_ppre__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
-      [ exact H | exact H0 | fsetdec ].
-  - apply ad_ppre__forall with (L := L) (Ψ0 := Ψ0);
-      [ intros α Hα; exact (H α Hα) | fsetdec ].
-  - apply ad_ppre__hole; [ fsetdec | assumption ].
-  - apply ad_ppre__tophole_remove; apply IHad_partial_precise; assumption.
-  - apply ad_ppre__tophole_fill with (L := L);
-      intros α Hα; apply (H0 α Hα); assumption.
-  - apply ad_ppre__tophole_keep; apply IHad_partial_precise; assumption.
-  - apply ad_ppre__flex_l with (τ := τ); [ exact H | apply IHad_partial_precise; assumption ].
-  - apply ad_ppre__flex_r with (τ := τ); [ exact H | apply IHad_partial_precise; assumption ].
-Qed.
+(* ⚙ [ad_partial_precise_psi_cong] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
+   one in prop_pat_sub.v, which this file imports. *)
 
 (* ===================================================================== *)
 (*  msubst on DECORATED skeletons (uskl) — the κ of the paper's [κ R].     *)
@@ -206,7 +188,9 @@ Qed.
 Lemma pskl_hole_dec : forall (P : pskl), P = pskl_hole \/ P <> pskl_hole.
 Proof. destruct P; solve [ left; reflexivity | right; discriminate ]. Qed.
 
-Lemma pskl_var_dec : forall (P : pskl) (a : atom),
+(* ⚙ RENAMED from [pskl_var_dec] 2026-08-09 (cleanup audit §8.1c): it collided with a
+   DIFFERENT lemma of that name, and this one decides P = var a for a GIVEN a; prop_completeness_consis.v's decides 'is a var at all'. *)
+Lemma pskl_eq_var_dec : forall (P : pskl) (a : atom),
   P = pskl_var_f a \/ P <> pskl_var_f a.
 Proof.
   intros P a.
@@ -224,7 +208,7 @@ Qed.
 (* ⭐ MOVED UPSTREAM (2026-08-04) to frost/algo/prop_metasubst.v:
    [keys], [keys_app], [keys_eq_dom], [all_flex_mono], [all_flex_mono_app].
    The SolE-FlexR repair made the solve emit its own flexible block, so the
-   κ-EXTENSION package these describe is now needed from prop_look_complete.v
+   κ-EXTENSION package these describe is now needed from completeness_look/prop_kit.v
    onwards — i.e. ABOVE this file.  Nothing about them was specific to the
    collection layer: they are list/metasubst algebra. *)
 
@@ -245,8 +229,8 @@ Proof.
   - assumption.                                           (* univ_ghost_r *)
 Qed.
 
-(* ⚙️ MOVED UP to prop_look_complete.v (2026-08-04, the SolE-FlexR repair).
-   The whole mid-block weakening kit — [binds_weaken_mid],
+(* ⚙️ MOVED UP to completeness_look/prop_kit.v (2026-08-04, the SolE-FlexR repair).
+   The whole mid-block weakening kit — [binds_weaken_inner],
    [binds_strengthen_mid], [a_flex_tvar_weaken_mid], [a_non_flex_weaken_mid],
    [a_solve_sub_eq_weaken_mid_flex_size] and its two corollaries
    [a_solve_sub_weaken_mid_flex] / [a_solve_eq_weaken_mid_flex], plus
@@ -382,44 +366,11 @@ Qed.
    SWAPS, where the domains are equal. *)
 (* Both flex conditions ride under an appended prefix — the shape the eq row's
    THREADED tail needs (it runs at [Ξ1 ++ Θ], not at [Θ]). *)
-Lemma a_flex_tvar_app_mono : forall Ξ Θ Θ' α,
-  (forall α0, a_flex_tvar Θ α0 -> a_flex_tvar Θ' α0) ->
-  a_flex_tvar (Ξ ++ Θ) α -> a_flex_tvar (Ξ ++ Θ') α.
-Proof.
-  intros Ξ Θ Θ' α Hft Hf.
-  assert (Hd : a_flex_tvar Ξ α \/ a_flex_tvar Θ α)
-    by (destruct Hf as [Hb | (τ & Hb)];
-        apply binds_app_1 in Hb; destruct Hb as [Hb | Hb];
-        solve [ left; left; exact Hb | left; right; exists τ; exact Hb
-              | right; left; exact Hb | right; right; exists τ; exact Hb ]).
-  destruct Hd as [Hd | Hd].
-  - destruct Hd as [Hb | (τ & Hb)];
-      [ left | right; exists τ ]; apply binds_app_2; exact Hb.
-  - destruct (Hft _ Hd) as [Hb | (τ & Hb)];
-      [ left | right; exists τ ]; apply binds_app_3; exact Hb.
-Qed.
+(* ⚙ [a_flex_tvar_app_mono] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
+   one in prop_kit.v, which this file imports. *)
 
-Lemma a_flex_app_anti : forall Ξ Θ Θ' P,
-  (forall P0, a_flex Θ' P0 -> a_flex Θ P0) ->
-  a_flex (Ξ ++ Θ') P -> a_flex (Ξ ++ Θ) P.
-Proof.
-  (* the tail-half of the [a_flex Θ' -> a_flex Θ] hypothesis is applied at the
-     SAME subject, so its output is again a variable and rides back under Ξ *)
-  assert (Hlift : forall (Θ0 Ξ0 : aenv) P0,
-            a_flex Θ0 P0 -> a_flex (Ξ0 ++ Θ0) P0).
-  { intros Θ0 Ξ0 P0 Hf; inversion Hf as [ Θx αx Hb | Θx αx τ Hb ]; subst;
-      [ apply a_flex__var with (α := αx)
-      | apply a_flex__var_def with (α := αx) (τ := τ) ];
-      apply binds_app_3; exact Hb. }
-  intros Ξ Θ Θ' P Hfl Hf.
-  inversion Hf as [ Θx αx Hb | Θx αx τ Hb ]; subst;
-    apply binds_app_1 in Hb; destruct Hb as [Hb | Hb].
-  - apply a_flex__var with (α := αx); apply binds_app_2; exact Hb.
-  - apply Hlift; apply Hfl; apply a_flex__var with (α := αx); exact Hb.
-  - apply a_flex__var_def with (α := αx) (τ := τ); apply binds_app_2; exact Hb.
-  - apply Hlift; apply Hfl;
-      apply a_flex__var_def with (α := αx) (τ := τ); exact Hb.
-Qed.
+(* ⚙ [a_flex_app_anti] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
+   one in prop_kit.v, which this file imports. *)
 
 Lemma a_solve_cstr_ctx_change : forall Θ 𝒞 P Ξ P',
   Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' ->
@@ -904,14 +855,7 @@ Proof.
           [ exact HwfΘ | exact Href | reflexivity | eassumption ] ].
 Qed.
 
-Lemma guarded_pskl_to_bskl_inh : forall P,
-  guarded_pskl P -> guarded_bskl (pskl_to_bskl_inh P).
-Proof.
-  intros P Hg; inversion Hg; subst; cbn [pskl_to_bskl_inh].
-  - apply guarded_bskl__unit.
-  - apply guarded_bskl__var.
-  - apply guarded_bskl__arrow; apply lc_pskl_to_bskl_inh; assumption.
-Qed.
+(* ⚙ [guarded_pskl_to_bskl_inh] was re-proved here; deleted 2026-08-09 (cleanup audit §8.1) — identical to the one in prop_refine.v, which this file imports. *)
 
 (* ---- plain (non-hygienic) mirrors of the [_f] refinement inversions ---- *)
 
@@ -1120,7 +1064,7 @@ Proof.
       [ left | right; exists τ ]; analyze_binds Hb.
   - intros P0 Hf; inversion Hf; subst;
       [ eapply a_flex__var | eapply a_flex__var_def ];
-      apply binds_weaken_mid; eassumption.
+      apply binds_weaken_inner; eassumption.
 Qed.
 
 (* (iv) partial precision: strip a rigid binder that neither side mentions
@@ -1204,42 +1148,8 @@ Qed.
    (rule [ad_refine_syn__all]) enters Δ; the IH wants both in Θ.  Mirrors
    [a_wf_pskl_delta_to_tvar_mid] (mid-insertion, so the [tophole_fill] rule's
    own Θ-binder can be absorbed into Θ1). *)
-Lemma ad_refine_syn_delta_to_tvar_mid : forall Θfull Δ Q Q',
-  Θfull ⨟ Δ ⊢ᵣᵃ Q ⊳ Q' ->
-  forall α1 Θ1 Θ2 Δ', Θfull = Θ1 ++ Θ2 ->
-  Δ [<=] add α1 Δ' ->
-  (Θ1 ++ (α1 ~ abind_tvar) ++ Θ2) ⨟ Δ' ⊢ᵣᵃ Q ⊳ Q'.
-Proof.
-  intros Θfull Δ Q Q' H; induction H; intros α1 Θ1 Θ2 Δ' HeqΘ Hsub; subst.
-  - apply ad_refine_syn__unit.
-  - apply ad_refine_syn__var.
-    match goal with Hor : _ \/ a_binds_tvar ?α0 _ |- _ =>
-      destruct Hor as [HΔ | Hbt];
-      [ destruct (α0 == α1) as [-> | Hne];
-        [ right; left; unfold binds;
-          apply in_or_app; right; left; reflexivity
-        | left; clear - HΔ Hsub Hne; fsetdec ]
-      | right;
-        destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-        [ left | right; left | right; right; exists τ0 ];
-        apply binds_weaken; exact Hb ]
-    end.
-  - apply ad_refine_syn__arrow; eauto.
-  - apply ad_refine_syn__all with (L := L).
-    intros α Hα.
-    apply (H0 α Hα α1 Θ1 Θ2 (add α Δ') eq_refl).
-    clear - Hsub; fsetdec.
-  - apply ad_refine_syn__hole.
-    eapply a_wf_pskl_weaken; [ | eassumption ].
-    intros x b Hb; apply binds_weaken; exact Hb.
-  - apply ad_refine_syn__tophole_remove; eauto.
-  - apply ad_refine_syn__tophole_fill with (L := L).
-    intros α Hα.
-    apply (H0 α Hα α1 ((α ~ abind_tvar) ++ Θ1) Θ2 Δ' eq_refl Hsub).
-  - apply ad_refine_syn__tophole_keep; [ assumption | eauto ].
-  - eapply ad_refine_syn__flex_l; [ apply binds_weaken; eassumption | eauto ].
-  - eapply ad_refine_syn__flex_r; [ apply binds_weaken; eassumption | eauto ].
-Qed.
+(* ⚙ [ad_refine_syn_delta_to_tvar_mid] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
+   one in prop_kit.v, which this file imports. *)
 
 (* (vi) [msubst_uskl_syn] commutes with opening (mirror of [msubst_pskl_open]):
    every image is a MONOTYPE painting, hence locally closed. *)
@@ -1667,7 +1577,7 @@ Qed.
       from the [ftv ⊆ ftv ψa] conjunct; [κs] has no such bound, so its
       payloads must be wf in a context that does not have β — i.e. a FIXED
       [Θw], exactly as in P6-Cv.  This is why [a_solve_eq_complete_var_at]
-      (prop_look_complete_var.v, after the paper statement) exists: the
+      (completeness_look/prop_eq_var.v, after the paper statement) exists: the
       paper-facing [a_solve_eq_complete_var] pins [Θw := Θ] and is unusable
       under a binder.
 
@@ -1943,7 +1853,7 @@ Proof.
   (* Special case P = α (LE-Var): R = var α ⇒ subject = ψa; delegate   *)
   (* to P6-Cv (a_solve_eq_complete_var) with the identity ρ.           *)
   (* ---------------------------------------------------------------- *)
-  destruct (pskl_var_dec P α) as [-> | HPnα].
+  destruct (pskl_eq_var_dec P α) as [-> | HPnα].
   { (* P = α *)
     assert (Hlk : msubst_lookup κ α = ptyp_var_f α).
     { apply msubst_lookup_notin_dom.
@@ -3295,7 +3205,7 @@ Proof.
         { rewrite (@msubst_pskl_open Θ0 κ Θ P0' β Hκ Hβκ).
           rewrite pskl_to_bskl_inh_open.
           eapply ad_refine_syn_delta_to_tvar_mid
-            with (α1 := β) (Θ1 := nil) (Θ2 := Θ) (Δ' := empty);
+            with (α1 := β) (Θ1 := nil) (Θ0 := Θ) (Δr' := empty);
             [ apply (Hrbody β ltac:(auto)) | reflexivity | clear; fsetdec ]. }
         assert (Hmeas : size_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))
                           + size_pskl (open_pskl_wrt_pskl P0' (pskl_var_f β)) <= n).
@@ -3900,7 +3810,7 @@ Proof.
         { rewrite (@msubst_pskl_open Θ0 κ Θ P0' β Hκ Hβκ).
           rewrite pskl_to_bskl_inh_open.
           eapply ad_refine_syn_delta_to_tvar_mid
-            with (α1 := β) (Θ1 := nil) (Θ2 := Θ) (Δ' := empty);
+            with (α1 := β) (Θ1 := nil) (Θ0 := Θ) (Δr' := empty);
             [ apply (Hrbody β ltac:(auto)) | reflexivity | clear; fsetdec ]. }
         assert (Hmeas : size_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))
                           + size_pskl (open_pskl_wrt_pskl P0' (pskl_var_f β)) <= n).
@@ -4541,7 +4451,7 @@ Proof.
            { rewrite (@msubst_pskl_open Θ0 κ Θ P0s β Hκ Hβκ).
              rewrite pskl_to_bskl_inh_open.
              eapply ad_refine_syn_delta_to_tvar_mid
-               with (α1 := β) (Θ1 := nil) (Θ2 := Θ) (Δ' := empty);
+               with (α1 := β) (Θ1 := nil) (Θ0 := Θ) (Δr' := empty);
                [ apply (Hrbody β ltac:(auto)) | reflexivity | clear; fsetdec ]. }
            assert (Hmeas : size_uskl (uskl_tophole R0)
                              + size_pskl (open_pskl_wrt_pskl P0s (pskl_var_f β))

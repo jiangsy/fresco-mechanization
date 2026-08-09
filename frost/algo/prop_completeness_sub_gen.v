@@ -146,7 +146,7 @@ Qed.
     type equivalence" (its author's own margin note).  With the slack the IH
     takes the ORIGINAL join derivation and only the LEAVES transport, via
     [a_uskl_tyequiv_erase] + the pskl-level skl_tyequiv transports
-    (prop_sub_msubst_equiv.v; prop_consis_complete.v). *)
+    (prop_sub_msubst_equiv.v; prop_completeness_consis.v (PART B)). *)
 Definition sub_complete_concl
   (n : nat) (NM : a_sub_mode) (M : mode)
   (Θ0 : aenv) (P0 P : pskl) (R R' : uskl) (Ψ : atoms)
@@ -215,7 +215,7 @@ Definition sub_flex_complete_concl
   a_decls Ξ ->                                  (* Ξ holds only flexible decls *)
   (* …and every one of them is a P0-DEPENDENCY.  The consistency walk's
      motive carries the same invariant ([assign_complete_at],
-     prop_consis_complete.v:2249) and this one used to lack it.  It is
+     prop_completeness_consis.v (PART B):2249) and this one used to lack it.  It is
      supplied at [a_sub__flex_mono] (Ξ = ·) and preserved by every walk row —
      [Flex-Depend] adds exactly a [β ∈ ftv P0], the others leave Ξ alone, and
      [Flex-Assign]'s [P0[τ/β̂]] keeps every OTHER variable of [P0].  It is
@@ -231,7 +231,7 @@ Definition sub_flex_complete_concl
      [Flex-Depend] moves only a [β ≠ α] into Ξ and [Flex-Skip] /
      [Flex-SkipRigid] drop only a [β ≠ α] — and it is what the consistency
      walk's motive states too ([assign_complete_at],
-     prop_consis_complete.v:2249).  It is load-bearing at [Flex-SkipRigid]:
+     prop_completeness_consis.v (PART B):2249).  It is load-bearing at [Flex-SkipRigid]:
      it makes [α ∉ dom Ξ], hence [α ∉ dom κa], hence the subject's image
      readable off the TRUNCATED increase [κb ∷ Θ0 ⊑ Θ'].  Read off the
      Ξ-block instead it would be CIRCULAR — Ξ's images are confined only by
@@ -535,7 +535,7 @@ Print Assumptions a_sub_complete_ghostg.
 (*  [ad_refine_syn__hole]'s fill [P] may mention the stripped binder and   *)
 (*  its wf premise is at [Δ = ∅], so [α ∈ Δ] does not save it.  That is    *)
 (*  why the F-indexed mirror exists: [ad_refine_syn_f_strip]               *)
-(*  (prop_consis_sound.v:750) does the move under [α ∈ F].  So state the   *)
+(*  (prop_soundness_consis.v:750) does the move under [α ∈ F].  So state the   *)
 (*  lemma over [ad_precise_f] and forget at the end — exactly how          *)
 (*  [a_consis_complete_thm] is structured.                                 *)
 (*                                                                        *)
@@ -575,7 +575,7 @@ Print Assumptions a_sub_complete_ghostg.
 (*                                                                        *)
 (*  [a_wf_pskl_reassoc_mid] is the same statement for well-formedness, and *)
 (*  is what the refinement's own [__hole] row consumes.  Note the existing *)
-(*  [a_wf_pskl_reassoc] (prop_consis_sound.v:1727) is the head-only form,  *)
+(*  [a_wf_pskl_reassoc] (prop_soundness_consis.v:1727) is the head-only form,  *)
 (*  which suffices there only because wf's ∀ rule puts its binder in Δ.    *)
 (* ===================================================================== *)
 
@@ -1165,12 +1165,8 @@ Print Assumptions a_sub_complete_hole_p0_precision.
     metasubstituted subject is metasubstituting its erasure.  The only
     interesting node is a variable, where both sides are the image's
     [ptyp_to_pskl]. *)
-Lemma uskl_to_pskl_msubst_uskl_syn : forall κ R,
-  ⌊ msubst_uskl_syn κ R ⌋ˢ = msubst_pskl κ ⌊ R ⌋ˢ.
-Proof.
-  intros κ R; induction R; cbn; try reflexivity; try (f_equal; assumption).
-  apply uskl_to_pskl_ptyp_to_uskl_syn.
-Qed.
+(* ⚙ [uskl_to_pskl_msubst_uskl_syn] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
+   one in completeness_look/prop_eq_cstr.v, which this file imports. *)
 
 (** At [M = TI] every admissible row of [ad_pat_sub_g] carries a TAG-FREE
     consistency between the same two skeletons: [__infer] has it on the rule,
@@ -1503,7 +1499,7 @@ Print Assumptions a_sub_complete_check.
 (* ===================================================================== *)
 (*  Sub-Arrow (paper :3295-3419) — thm:complete-consistency on the        *)
 (*  DOMAIN, the fuel-n IH on the CODOMAIN at the domain package's ζ1,      *)
-(*  mirroring the consistency Arrow case (prop_consis_complete.v:6631):    *)
+(*  mirroring the consistency Arrow case (prop_completeness_consis.v (PART B):6631):    *)
 (*  the codomain's premises transport SEMANTICALLY at the fixed Θ — the    *)
 (*  fill along ≡ˢ, the join via the motive's ≡ᵘ slack — and the domain     *)
 (*  precision moves ζ1 → ζ2 by the same ≡ˢ route (scope from              *)
@@ -4803,13 +4799,13 @@ Qed.
 (*  normalizes before it truncates.                                       *)
 (*                                                                        *)
 (*  These two lemmas are the MIRROR of [join_pskl_downarrow_mono_scoped]   *)
-(*  (prop_consis_complete.v): there the monotype is the COUNTERPART and    *)
+(*  (prop_completeness_consis.v (PART B)): there the monotype is the COUNTERPART and    *)
 (*  the ⇓ of the SUBJECT is scoped; here — the flexible subtyping walk's   *)
 (*  subject is [syn{κα̂}] — the monotype is the SUBJECT and the ⇓ of the    *)
 (*  COUNTERPART is scoped.  Same induction, same def-closed [D].           *)
 (*                                                                        *)
 (*  (The [ad_pat_consis] half would sit just as well next to its mirror in *)
-(*  prop_consis_complete.v; it lives here because P7a is its only          *)
+(*  prop_completeness_consis.v (PART B); it lives here because P7a is its only          *)
 (*  consumer.)                                                            *)
 (* ===================================================================== *)
 
@@ -6306,7 +6302,7 @@ Qed.
 (*  ([sub_gv_bskl_downarrow_mono_scoped]) for the counterpart and out of   *)
 (*  [refine_syn_f_downarrow_source_ftv] for the fill's source.  The rest   *)
 (*  is the consistency walk's [Assign-SkipRigid] transcribed              *)
-(*  (prop_consis_complete.v:5091-5355): [a_inc_downarrow_prefix] over the  *)
+(*  (prop_completeness_consis.v (PART B):5091-5355): [a_inc_downarrow_prefix] over the  *)
 (*  Ξ-images (confined by the motive's [dom Ξ ⊆ ftv P0]), the junk swap    *)
 (*  for the rule's Barendregt premise, and [a_inc__tvar] /                 *)
 (*  [a_inc_equiv_mid_insert_tvar] / [a_inc_equiv_self_downarrow] for the   *)
@@ -6674,7 +6670,7 @@ Print Assumptions a_sub_flex_complete_skip_rigid.
 (*  [a_inc_equiv_mid_insert_var] demand a SEMANTIC MIDDLE                  *)
 (*  [Θ' ⊢ A' ≡ᵗ κQv] that the rigid row has no counterpart for.  The       *)
 (*  consistency walk's [Assign-SkipTmVar] proves exactly it                *)
-(*  (prop_consis_complete.v:5595-5690).  ONE step beyond that twin:        *)
+(*  (prop_completeness_consis.v (PART B):5595-5690).  ONE step beyond that twin:        *)
 (*  subtyping re-attaches through the JUNK SWAP, so the witness is         *)
 (*  [kswap_msubst β β1 ζ] and the middle is read back through              *)
 (*  [msubst_ptyp_kswap] — free, since β and β1 are both fresh for a        *)
@@ -6978,7 +6974,7 @@ Proof.
            | intro Hc; subst; clear - hd Fr; simpl_env in hd; fsetdec ]. }
   (* ⚙ THE SEMANTIC MIDDLE.  Both [a_inc__var] and
      [a_inc_equiv_mid_insert_var] want [Θ' ⊢ A' ≡ᵗ (·)Qv]; this is the
-     consistency twin's [Hmiddle] (prop_consis_complete.v:5658). *)
+     consistency twin's [Hmiddle] (prop_completeness_consis.v (PART B):5658). *)
   assert (Hmiddle : Θ' ⊢ A' ≡ᵗ
             msubst_ptyp (msubst_compose (aenv_msubst Θ) κb) Qv).
   { eapply a_tyequiv__trans; [ exact HeqA' | ].
@@ -7096,7 +7092,7 @@ Print Assumptions a_sub_flex_complete_skip_tm_var.
 (*                                                                        *)
 (*  §(N) with the ≡ˢ semantic middle throughout, exactly as the twin       *)
 (*  walk's [Assign-SkipTmSkl] mirrors its [Assign-SkipTmVar]               *)
-(*  (prop_consis_complete.v:5692-6023).  The mech splits the paper's       *)
+(*  (prop_completeness_consis.v (PART B):5692-6023).  The mech splits the paper's       *)
 (*  single [x : P] entry into a type binding and a skeleton binding, so    *)
 (*  the paper's one rule owes two completeness rows.                       *)
 (* ===================================================================== *)
@@ -7398,7 +7394,7 @@ Proof.
            | intro Hc; subst; clear - hd Fr; simpl_env in hd; fsetdec ]. }
   (* ⚙ THE SEMANTIC MIDDLE.  Both [a_inc__var_skl] and
      [a_inc_equiv_mid_insert_var_skl] want [Θ' ⊢ Qv' ≡ˢ (·)Qv]; this is the
-     consistency twin's [Hmiddle] (prop_consis_complete.v:5990). *)
+     consistency twin's [Hmiddle] (prop_completeness_consis.v (PART B):5990). *)
   assert (Hmiddle : Θ' ⊢ Qv' ≡ˢ
             msubst_pskl (msubst_compose (aenv_msubst Θ) κb) Qv).
   { eapply a_pskl_tyequiv__trans; [ exact HeqQv' | ].
@@ -7530,7 +7526,7 @@ Print Assumptions a_sub_flex_complete_skip_tm_skl.
 (*  [__skip_rigid] wants [β ∉ ftv P0]), so the dispatcher REFUTES that     *)
 (*  configuration from the solution — [sub_flex_rigid_head_absurd], the    *)
 (*  subtyping-level twin of [rigid_survives_solution] +                    *)
-(*  [ad_pat_consis_rigid_ftv_rev_scoped] (prop_consis_complete.v:5060-5090,*)
+(*  [ad_pat_consis_rigid_ftv_rev_scoped] (prop_completeness_consis.v (PART B):5060-5090,*)
 (*  where the consistency walk pays exactly this).  A TERM-VARIABLE head   *)
 (*  needs no such check: §(N)/§(O) apply unconditionally.                  *)
 (* ===================================================================== *)

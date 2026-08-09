@@ -2,7 +2,7 @@
     ([thm:complete-subtyping], algorithmic.tex:1446).
 
     P7b's seven row lemmas and P7a's five walk rows are all [Qed] in
-    prop_sub_complete_thm.v; what is missing is the bundle that ASSEMBLES
+    prop_completeness_sub.v; what is missing is the bundle that ASSEMBLES
     them.  This file is that assembly.
 
     ⭐ THE DISPATCH IS ON THE JOIN, and it determines the subject.  Each row
@@ -38,7 +38,7 @@
     dropped, P0 depends on it), so the dispatcher must REFUTE that
     configuration from the solution.  §4.1 is that refutation; it is the twin
     of consistency's ([assign_complete_step]'s rigid-head case,
-    prop_consis_complete.v:5000-5090). *)
+    prop_completeness_consis.v (PART B):5000-5090). *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.Arith.Wf_nat.
@@ -302,7 +302,7 @@ Qed.
 (*  halves call each other at the SAME fuel: [a_sub__flex_mono] enters P7a *)
 (*  at the same context, and P7a's [Flex-Solve] re-enters P7b at the same  *)
 (*  fuel with a context TWO ENTRIES LARGER (it deposits [α̂0 ≔ α̂→β̂] plus    *)
-(*  the two fresh flexibles — prop_sub_complete_thm.v:4586).  So on that   *)
+(*  the two fresh flexibles — prop_completeness_sub.v:4586).  So on that   *)
 (*  cycle neither component decreases.  [Flex-Assign] is fine (it consumes *)
 (*  the definition, so the context shrinks by one).                        *)
 (*                                                                        *)
@@ -338,7 +338,7 @@ Qed.
 (*     flexible declarations) and it cannot be dropped ([Flex-SkipRigid]   *)
 (*     needs [β ∉ ftv P0]) — so the dispatcher must REFUTE it from the      *)
 (*     solution.  Consistency's twin is [assign_complete_step]'s rigid     *)
-(*     head case (prop_consis_complete.v:5000-5090): [rigid_survives_      *)
+(*     head case (prop_completeness_consis.v (PART B):5000-5090): [rigid_survives_      *)
 (*     solution] puts β in [ftv (κP)], and [ad_pat_consis_rigid_ftv_rev_   *)
 (*     scoped] confines the subject's rigid ftv to [κα̂]'s scope.           *)
 (*     ⚠️ THE SUBTYPING CHAIN IS NOT THE SAME.  There the pattern IS the    *)
@@ -483,7 +483,7 @@ Qed.
 (*  that configuration from the SOLUTION.                                  *)
 (*                                                                        *)
 (*  ⚠️ THE CHAIN IS NOT CONSISTENCY'S.  There ([assign_complete_step]'s     *)
-(*  rigid-head case, prop_consis_complete.v:5000-5090) the pattern IS the  *)
+(*  rigid-head case, prop_completeness_consis.v (PART B):5000-5090) the pattern IS the  *)
 (*  join's subject, so [ad_pat_consis_rigid_ftv_rev_scoped] closes it in   *)
 (*  one step.  Here [P0] sits on the FILL side ([Θ ⊢ᵣ inh{κP0} ⊳ Q]) and   *)
 (*  the join's subject is [κα̂], so the chain must run                      *)
@@ -625,14 +625,14 @@ Qed.
 (*                                                                        *)
 (*  ⭐ AND SO ARE THEIR COMPLETENESS ROWS (2026-08-03):                      *)
 (*  [a_sub_flex_complete_skip_tm_var] / [_skip_tm_skl]                      *)
-(*  (prop_sub_complete_thm.v §(N)/§(O)), so [sub_flex_complete_holds] below dispatches a  *)
+(*  (prop_completeness_sub.v §(N)/§(O)), so [sub_flex_complete_holds] below dispatches a  *)
 (*  term-variable head like any other and needs no side condition on [Θ0].  *)
 (*  Each row is [a_sub_flex_complete_skip_rigid]'s ⇓-truncation apparatus   *)
 (*  with the tvar pieces swapped for the var ones ([a_inc_var_inv],         *)
 (*  [a_inc_var_mid_strip_id], [a_inc_equiv_mid_insert_var]) plus the        *)
 (*  SEMANTIC MIDDLE [Θ' ⊢ A' ≡ᵗ κ A] that a payload-free rigid entry does   *)
 (*  not have, cribbed from the consistency twin's [Assign-SkipTmVar]        *)
-(*  (prop_consis_complete.v:5595-5690) and read back through the junk swap  *)
+(*  (prop_completeness_consis.v (PART B):5595-5690) and read back through the junk swap  *)
 (*  with [msubst_ptyp_kswap].  ⭐ Neither row carries the rigid row's        *)
 (*  [α ≠ β] / [β ∉ ftv P0] premises: a term entry is never [a_binds_tvar],  *)
 (*  so under [uniq] both are DERIVED — which is why the RULES carry none    *)
@@ -1255,7 +1255,7 @@ Qed.
 (*  [flex_apart_walk], so [sub_shield] lost its guess-descending conjunct  *)
 (*  — and what remains is Δρ-CONSTANT, hence at the Δρ = ∅ these rows      *)
 (*  instantiate it at, unconditionally TRUE ([sub_shield_empty],           *)
-(*  prop_look_complete_sub_cstr.v).  P6-L discharges it internally and no  *)
+(*  completeness_look/prop_sub_cstr.v).  P6-L discharges it internally and no  *)
 (*  longer takes it; §9's two ForallL branches now apply their row lemmas  *)
 (*  DIRECTLY, on exactly the join rule's own premises.                     *)
 (*                                                                        *)

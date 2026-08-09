@@ -16,7 +16,7 @@
       its plain skeleton (tags → ∅);
     - crux (1b) [ad_pat_consis_subject_refine]: transport the subject DOWN a
       refinement (subject-side mirror of the Qed target-side
-      [ad_pat_consis_refine_inh_gen], prop_sub_sound.v), with the
+      [ad_pat_consis_refine_inh_gen], prop_soundness_sub.v), with the
       wf-carrying transporters it needs;
     - crux (1) [ad_pat_consis_subject_precise] = (1a);(1b);
     - step (2) [ad_pat_consis_precise_subst]: the general subject
@@ -258,7 +258,7 @@ Proof. intros Θ Δ P H. inversion H; subst. auto. Qed.
 (*  consistency.  Built in two steps (DESIGN §5.2): (1a) strip the          *)
 (*  decorated subject to plain (tags drop to ∅); (1b) transport the erased  *)
 (*  subject along the refinement — the SUBJECT-side mirror of the Qed       *)
-(*  target-side [ad_pat_consis_refine_inh_gen] (prop_sub_sound.v).          *)
+(*  target-side [ad_pat_consis_refine_inh_gen] (prop_soundness_sub.v).          *)
 (* ===================================================================== *)
 
 (** [strip ψ := pskl_to_uskl ⌊ψ⌋ˢ] commutes with opening. *)
@@ -310,7 +310,7 @@ Qed.
     [Θ' ⊢ bskl_to_pskl Q'] premise: the reconstruction at a subject HOLE
     ([B = uskl_hole]) needs the erased target well-formed (via
     [consis_concrete_target_inh] + [__hole]).  The wf-less transporters
-    ([consis_forall/tophole_subject_transport], prop_consis_complete.v) cannot
+    ([consis_forall/tophole_subject_transport], prop_completeness_consis.v (PART B)) cannot
     carry it, so these are genuine wf-variants, not duplicates. *)
 Lemma consis_subj_transport_arrow_wf : forall Ψ Θ' R1 R2 R1' R2' Q,
   Ψ ⨟ Θ' ⊢ₛᵃ (uskl_arrow R1 R2) ∼ Q ->
@@ -564,7 +564,7 @@ Qed.
     [Ptgt] is consistent with the GHOSTIER subject [Psrc].  Well-formedness of
     the (erased) target is THREADED as an input (the hole reconstruction needs
     it; see [consis_concrete_target_inh]).  Subject-side mirror of the target
-    template [ad_pat_consis_refine_inh_gen] (prop_sub_sound.v). *)
+    template [ad_pat_consis_refine_inh_gen] (prop_soundness_sub.v). *)
 Lemma ad_pat_consis_subject_refine : forall Θ Δ Qsrc Qtgt,
   ad_refine_syn Θ Δ Qsrc Qtgt ->
   forall Psrc Ptgt, Qsrc = pskl_to_bskl_inh Psrc -> Qtgt = pskl_to_bskl_inh Ptgt ->
@@ -711,7 +711,7 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  Step (2) infrastructure — syntactic tags [ftag_in_uskl] (def_tags.v). *)
+(*  Step (2) infrastructure — syntactic tags [ftag_in_uskl] (def_extra.v). *)
 (* ===================================================================== *)
 
 Lemma ftag_in_uskl_open_rec_var : forall α' R k,

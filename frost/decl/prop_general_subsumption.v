@@ -1,6 +1,6 @@
 (** Frost declarative general subsumption (paper Lemma 3.1 / B.5), in the
     [utyp]/[btyp] split syntax.  Self-contained: the consistency-composition
-    and tag-refinement machinery (formerly [prop_subsumption_aux.v]),
+    and tag-refinement machinery (formerly [prop_general_subsumption.v]),
     Consistency-Subtyping Transitivity, the [FN^n] spine transitivity, and the
     headline [d_sd_typing_general_subsumption] ("Closed under the global
     context").  Since the base-term restriction on [d_typing__sub] was removed
@@ -30,7 +30,7 @@ Require Import src.frost.decl.prop_renaming.
 Set Implicit Arguments.
 
 (* ======================================================================== *)
-(*  Auxiliary facts (formerly prop_subsumption_aux.v): the compose_tags      *)
+(*  Auxiliary facts (formerly prop_general_subsumption.v): the compose_tags      *)
 (*  witness + consistency composition (paper B.2), coercion / opening /      *)
 (*  free-variable lemmas, and consistency basics.                            *)
 (* ======================================================================== *)

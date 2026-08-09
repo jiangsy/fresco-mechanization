@@ -1708,7 +1708,7 @@ Proof. intros; apply bskl_to_pskl_close_rec. Qed.
 (** [a_consis]'s ∀ rows are exists-fresh now, so they hand their consumers
     ONE opener — an atom the cofinite [a_wf_pskl__all] has no reason to have
     avoided.  [a_wf_pskl_all_inv_at] manufactures the wf instance at that
-    opener; it and its two supports moved up from prop_consis_complete.v,
+    opener; it and its two supports moved up from prop_completeness_consis.v (PART B),
     which is downstream and still sees them. *)
 
 Lemma a_wf_pskl_ftv_dom : forall Θ Δ P,
@@ -2549,7 +2549,7 @@ Qed.
 (*  The used-name index [F] and its "new names avoid F" conjunct are GONE   *)
 (*  (2026-08-03): the walk's re-attaching rules state the obligation        *)
 (*  directly, and completeness carries the matching avoid set on its own    *)
-(*  motive (prop_consis_complete.v §2).                                     *)
+(*  motive (prop_completeness_consis.v (PART B) §2).                                     *)
 (* ===================================================================== *)
 
 (* [a_assign_unify_consis_mutind] (+ the per-judgment Induction schemes)

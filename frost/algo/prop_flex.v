@@ -187,7 +187,7 @@ Qed.
 (*  Soundness of variable unification (thm:sound-consistency part 2)      *)
 (* ===================================================================== *)
 
-(* [a_unify_sound] MOVED to prop_consis_sound.v: with the corrected
+(* [a_unify_sound] MOVED to prop_soundness_consis.v: with the corrected
    [Flex-Flex-Assign] (whose premise is CONSISTENCY, not [unifyvar]),
    [a_unify] and [a_consis] are MUTUALLY inductive, so their soundness is one
    mutual induction ([a_unify_consis_mutind]).  That is also how the paper
@@ -493,7 +493,7 @@ Proof.
 Qed.
 
 (** guess^TY scopes its result by the source and the generated names.
-    (Moved here from prop_consis_sound.v: the kit derives target-side
+    (Moved here from prop_soundness_consis.v: the kit derives target-side
     freshness from it instead of assuming output-side hypotheses.) *)
 Lemma a_guess_mono_ftv : forall Θ P Ξ A,
   a_guess_mono Θ P Ξ A ->
@@ -1227,7 +1227,7 @@ Qed.
 (*  and is re-exported from there under its original name.                *)
 (* ===================================================================== *)
 
-(* --- relocated from prop_consis_sound.v (pure base lemma needed by the
+(* --- relocated from prop_soundness_consis.v (pure base lemma needed by the
    metasubst layer prop_metasubst.v, which must not import consistency) --- *)
 Lemma a_wf_aenv_uniq : forall Θ,
   a_wf_aenv Θ -> uniq Θ.

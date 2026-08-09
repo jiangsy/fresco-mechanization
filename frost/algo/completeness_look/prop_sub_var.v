@@ -2,57 +2,34 @@
     subtyping side ([lemma:complete-constraint-collection-solving-var],
     subtyping-proofs.tex:1696).
 
-    ⚠️  READ FIRST: the paper's statement is FALSE as given —
-    `frost/algo/cex/cex_p6sv_forall_flex.v` refutes it (Qed, axiom-free) at
-    ρ = IDENTITY, with the full premise set that closes the consistency twin
-    P6-Cv.  This file builds the REPAIRED statement, whose one extra premise
-    is [flex_shield] below.  Rationale, call-site analysis and the
-    implementation experiments behind it: docs/PAPER-GAPS.md (final entries)
-    and docs/DESIGN-completeness-subtyping.md §6 (x)/(y)/(z).
+    ✅ UNCONDITIONAL.  [a_solve_sub_complete_var] (:1515) carries NO repair
+    premise: it is the paper's statement, modulo the [Θw] pack that every P6
+    lemma takes and the EXTERNAL wf side conditions of
+    docs/WF-SIDE-CONDITIONS.md.
 
-    THE REPAIR IN ONE LINE.  Wherever the constraint payload [P0] has a raw
-    Θ0-FLEXIBLE, the facing part of the guess [ψa] must be Δρ-CLEAN *and*
-    TAG-FREE.  The Δρ half is P6-Cv's [flex_apart] (a ρ-replaced rigid
-    variable opposite a flexible payload is unreachable — LE-FlexR
-    freshening).  The TAG half is what the subtyping level adds, and it is
-    forced: [Sub-ForallL] turns a TAGGED quantifier of ψa into a ρ-replaced
-    variable one step later, so "clean now" is worthless unless "no tags
-    now" keeps it clean later.
+    ⚠️  HISTORY — this header said the opposite until 2026-08-09, and the
+    correction matters to anyone reading the P6 development.  It claimed the
+    paper's statement was FALSE, refuted by [cex_p6sv_forall_flex.v], and that
+    this file proved a REPAIRED statement whose extra premise was
+    [flex_shield].  All three claims are now void:
 
-    TWO FAILURE SHAPES (why the premise must be POSITIONAL and TAG-AWARE):
+      · the counterexample was RETRACTED — under the authors' repaired
+        [SolE-FlexR] (which threads the fresh suffix Ξ and returns
+        guess^TY(P), and which this tree now mechanizes) the configuration is
+        no longer derivable.  `cex_p6sv_forall_flex.v` no longer exists;
+      · [flex_shield] and its whole transport tower were DELETED with it —
+        `grep -rn "flex_shield" frost/` finds no declaration, only prose;
+      · so the theorem below has no shield premise, and the two failure
+        shapes the old header analysed at length ((1) machine-checked,
+        (2) hand-verified) are configurations the repaired rule excludes.
 
-      (1) machine-checked, cex_p6sv_forall_flex.v — the payload is the whole
-          flexible:  Pi = ∀β.β→β,  P0 = α̂,  ψa = ∀^ε β.β→β.
-          SolS-ForallL, then SolE-FlexR at the body, gives Pa = ∀β.α̂ and
-          the obligation ⟨⟩ ⊑ᵖ β.
+    What survives from that episode is [flex_apart] — P6-Cv's Δρ-cleanliness
+    condition, which is a genuine premise of the constraint-collection lemmas
+    and is NOT the shield.  Do not conflate them.
 
-      (2) hand-verified (NOT yet machine-checked) — the flexible sits at an
-          ARROW-LEFT, i.e. at a CONSISTENCY position, under the same
-          ForallL:  Pi = ∀β.((β→β)→⟨⟩),  P0 = α̂→⟨⟩,
-          ψa = ∀^ε β.((β→β)→⟨⟩),  M = FN TC,  κα̂ = ⟨⟩→⟨⟩.
-          SolS-ForallL, SolS-Arrow, then SolE-FlexR on the left (Pi's left
-          component is an ARROW, so SolE-Var does not shield it) gives
-          Pa = ∀β.(α̂→⟨⟩) and again ⟨⟩ ⊑ᵖ β.
-          ⇒ a premise guarding only the RESULT SPINE of P0 is TOO WEAK, and
-            a global "P0 flex-free ∨ ψa tag-free" is TOO STRONG (it would
-            reject the legitimate arrow shape α̂→⟨⟩ against ⟨⟩→∀^ε β.…).
-
-    …and one row in the OTHER direction, which keeps the premise from being
-    too strong: a ρ-REPLACED RIGID VARIABLE ([fsh_rho_var]) is safe opposite
-    ANY payload.  With [ψa = ∀^ε β.β] and [P0 = α̂] the algorithm SUCCEEDS
-    (precision forces [Pi = ∀β.β]; SolS-ForallL then SolS-Var — the body is
-    a VARIABLE — returns [Pa = ∀β.β]); it is only a COMPOUND body like the
-    counterexample's [β→β] that sends the solve to SolE-FlexR.  See
-    [flex_shield_excludes_cex]; this direction is recorded in
-    [fsh_rho_var]'s own comment, which is what keeps the premise from
-    being made too strong.
-
-    Hence [flex_shield]: positional, with the non-aligned base case
-    demanding BOTH conditions.  Its rules are chosen so that every descent
-    of THIS induction (arrow = both sides, Sub-ForallR = P0 only,
-    Sub-ForallL = ψa only, Sub-UnivGhostL/LG = ψa only) pushes it down —
-    see the descent lemmas, whose one-sided cases go through precisely
-    because the induction hypothesis re-derives the OPPOSITE-sided rule. *)
+    The retraction and the repair are recorded in docs/PAPER-GAPS.md and, in
+    the paper's own notation, docs/refutations.tex; the design history is
+    docs/DESIGN-completeness-subtyping.md §6. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -97,21 +74,24 @@ Set Implicit Arguments.
 (*  Raw-flexible-freedom of a payload                                     *)
 (* ===================================================================== *)
 
-(** [pskl_flex_free] and its kit MOVED UP to prop_look_complete.v — it is
+(** [pskl_flex_free] and its kit MOVED UP to completeness_look/prop_kit.v — it is
     now a base rule of [flex_apart] too ([fa_flexfree]), so it must be in
     scope before P6-Cv.  See DESIGN §10. *)
 
 (* ===================================================================== *)
 (*  ⭕⭕ [flex_shield] AND ITS KIT MOVED OUT (2026-08-05)                    *)
-(*      → frost/algo/cex/def_flex_shield.v                                 *)
+(*      → DELETED.  (It went to frost/algo/cex/def_flex_shield.v, then    *)
+(*      the cex/ tree moved to mechanization/cex/ and the shield tower was  *)
+(*      dropped outright when subtyping completeness became unconditional.) *)
 (*                                                                        *)
-(*  It was P6-Sv's repair premise, invented against                        *)
-(*  cex/cex_p6sv_forall_flex.v.  It has had NO consumer in this file since *)
+(*  It was P6-Sv's repair premise, invented against the (since RETRACTED)  *)
+(*  cex_p6sv_forall_flex.v.  It has had NO consumer in this file since     *)
 (*  2026-08-03 (every use was a relay), and under the authors' repaired    *)
 (*  [SolE-FlexR] that counterexample is retracted outright.  What still    *)
 (*  refers to it is exactly the cex/ files that record the history —       *)
-(*  which is where the definition, its transport kit and the regression    *)
-(*  test [flex_shield_excludes_cex] now live.                              *)
+(*  ⚠️ 2026-08-09: those cex/ files are gone too, so the names            *)
+(*  [flex_shield_excludes_cex] / [fsh_rho_var] / [flex_shield_*] mentioned  *)
+(*  in comments below no longer resolve to anything.  They are HISTORY.     *)
 (* ===================================================================== *)
 
 
@@ -577,7 +557,7 @@ Qed.
 
 (** ρ preserves decoratedness: images are tags-sorted and the congruences
     keep the shape. *)
-(* [uskl_rho_is_tskl] MOVED to prop_look_complete.v (P6-Cs needs it under
+(* [uskl_rho_is_tskl] MOVED to completeness_look/prop_kit.v (P6-Cs needs it under
    the ρ-generalization, and this file is downstream of P6-Cs). *)
 
 (** THE ρ-EXTENSION.  Sub-ForallL's [ρ_b = ρ ∘ [ψ_b/β]] in full: recurse on
@@ -743,7 +723,7 @@ Proof.
 Qed.
 
 (* [fa_step] / [fa_walk] / [flex_apart_walk] and its three lemmas MOVED to
-   prop_look_complete.v, next to [flex_apart] itself: P6-Cs needs them too
+   completeness_look/prop_kit.v, next to [flex_apart] itself: P6-Cs needs them too
    under the ρ-generalization, and this file is DOWNSTREAM of P6-Cs. *)
 
 (* ===================================================================== *)
@@ -753,7 +733,7 @@ Qed.
 (** When the guess at this position is a ρ-REPLACED RIGID VARIABLE, the
     freshness pack forces [Pi] to be that very variable, SolS-Var solves
     with [Pa := Pi], and the conclusion's precision is the var rule.  This
-    is the subtyping twin of [p6cv_close_leaf] (prop_look_complete.v:1134):
+    is the subtyping twin of [p6cv_close_leaf] (completeness_look/prop_kit.v:1134):
     same argument, [a_solve_sub__var] in place of [a_solve_eq__var].
 
     It serves BOTH leaf sources: the [rho_leaf] disjunct of the [uskl_rho]
@@ -829,35 +809,17 @@ Qed.
     the IMAGE's free variables are the source's plus the context's.  Sub-
     ForallL needs it to know that a source binder unused under ρ is unused
     in the image too. *)
-(* [uskl_rho_ftv_subject_bound] MOVED to prop_look_complete.v — P6-Cs needs
+(* [uskl_rho_ftv_subject_bound] MOVED to completeness_look/prop_kit.v — P6-Cs needs
    it under the ρ-generalization, and this file is downstream of P6-Cs. *)
 
-(** A ∀◇ body is well-formed at the EMPTY Δ ([a_wf_pskl__tophole]), so no
-    SHIELDED variable of a well-formed skeleton can be a locally bound one:
-    they are all in [dom Θ].  This is the discipline DESIGN §7 names when it
-    says the freshly opened binder "stays out of ∀◇ bodies" — it is what
-    lets Sub-ForallL add its binder to Δρ. *)
-Lemma a_wf_pskl_shielded_dom : forall Θ Δ P,
-  Θ ⨟ Δ ⊢ₚₛᵃ P ->
-  pskl_shielded_ftv P [<=] dom Θ.
-Proof.
-  intros Θ Δ P H; induction H; cbn [pskl_shielded_ftv];
-    try solve [ clear; fsetdec | clear - IHa_wf_pskl1 IHa_wf_pskl2; fsetdec ].
-  - (* ∀ : the shielded variables of a body are already the binder's *)
-    pick fresh α for (L `union` pskl_shielded_ftv P).
-    pose proof (H0 α ltac:(clear - Fr; solve_notin)) as Hα.
-    pose proof (pskl_shielded_ftv_open_lower P (pskl_var_f α)) as Hlo.
-    clear - Hα Hlo; fsetdec.
-  - (* ∀◇ : the body is well-formed at Δ = ∅ *)
-    pose proof (a_wf_pskl_ftv_dom H0) as Hd. clear - Hd; fsetdec.
-Qed.
+(* ⚙ [a_wf_pskl_shielded_dom] was re-proved here; deleted 2026-08-09 (cleanup audit §8.1) — identical to the one in prop_kit.v, which this file imports. *)
 
 (** The converse of [a_wf_pskl_delta_to_tvar_mid], for PRECISION: a rigid
     binder that ALREADY sits in Δ may be dropped from the aenv.  Sub-ForallL
     needs exactly this — the recursive call runs at [Θ,β] because
     [rho_fresh] insists every ρ-replaced variable be a rigid of the context,
     while the precision the case must REBUILD lives at Θ with β only in Δ.
-    (The [strip] version in prop_look_complete_cstr.v instead demands β free
+    (The [strip] version in completeness_look/prop_eq_cstr.v instead demands β free
     in NEITHER side; here β is free in both, and Δ-membership is what keeps
     the var rule alive.) *)
 Lemma ad_partial_precise_tvar_to_delta_mid : forall Θf Δ Ψ P ψ,
@@ -1125,7 +1087,7 @@ Qed.
 (* ===================================================================== *)
 
 (** Premises are the paper's, threaded exactly as in the CLOSED consistency
-    twin [a_solve_eq_complete_var] (prop_look_complete_var.v:3070) —
+    twin [a_solve_eq_complete_var] (completeness_look/prop_eq_var.v:3070) —
     ρ/[uskl_rho], the tag bookkeeping, the freshness pack, [flex_apart] —
     with three differences:
 
@@ -1231,15 +1193,8 @@ Lemma in_dom_app_r : forall (x : atom) (E F : aenv),
   x `in` dom F -> x `in` dom (E ++ F).
 Proof. intros x E F H; rewrite dom_app; clear - H; fsetdec. Qed.
 
-Lemma pskl_shielded_ftv_ptyp_to_pskl : forall A,
-  pskl_shielded_ftv (ptyp_to_pskl A) [=] empty.
-Proof.
-  induction A as [ | nA | αA | A1 IH1 A2 IH2 | A0 IH0 ];
-    cbn [ptyp_to_pskl pskl_shielded_ftv];
-    solve [ clear; fsetdec
-          | rewrite IH1; rewrite IH2; clear; fsetdec
-          | exact IH0 ].
-Qed.
+(* ⚙ [pskl_shielded_ftv_ptyp_to_pskl] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
+   one in prop_kit.v, which this file imports. *)
 
 Lemma solve_binder_apart_dom : forall (b β0 : atom) (Θ : aenv) S,
   b `notin` S ->
@@ -1504,7 +1459,7 @@ Qed.
 
 (* ⭐⭐ P6-Sv UNDER THE SolE-FlexR REPAIR — GREEN (2026-08-05).
 
-   The conclusion is [solve_sub_ext] (prop_look_complete.v): the block [Ξ] the
+   The conclusion is [solve_sub_ext] (completeness_look/prop_kit.v): the block [Ξ] the
    solve now generates, its aligned extension [κ'], the freshness against an
    avoid-set PARAMETER [L], the payloads' well-formedness at a FIXED [Θw], and
    the paper's [Θ0 ⊢ P_a] — restated at [Ξ ++ Θ0], since the repaired
@@ -1589,7 +1544,7 @@ Theorem a_solve_sub_complete_var :
   (* ⭐ THE AVOID-SET PARAMETER: the SOLVE generates its own block now, and at
      a binder row the witness has to be fixed BEFORE the block is picked. *)
   forall L, ftvar_in_aenv Θ0 [<=] L ->
-  (* [solve_sub_ext] (prop_look_complete.v) packages the block [Ξ], its
+  (* [solve_sub_ext] (completeness_look/prop_kit.v) packages the block [Ξ], its
      aligned extension [κ'], the freshness, the payloads' well-formedness at
      the FIXED [Θw], and the paper's [Θ0 ⊢ P_a] — which is a CONCLUSION of
      this lemma, not a consequence of a general "solving preserves
@@ -1932,7 +1887,7 @@ Proof.
       { rewrite (@msubst_pskl_open Θ0 κ Θ (ptyp_to_pskl A0) β Hκ Hβκ).
         rewrite pskl_to_bskl_inh_open.
         eapply ad_refine_syn_delta_to_tvar_mid
-          with (α1 := β) (Θ1 := nil) (Θ2 := Θ) (Δ' := empty);
+          with (α1 := β) (Θ1 := nil) (Θ0 := Θ) (Δr' := empty);
           [ apply (Hrbody β ltac:(clear - Fr; solve_notin))
           | reflexivity | clear; fsetdec ]. }
       edestruct (H0 β ltac:(clear - Fr; solve_notin)

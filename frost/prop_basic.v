@@ -166,6 +166,21 @@ Proof.
   - apply lc_bskl_tophole; auto.
 Qed.
 
+(** The syn painting of an lc skeleton is synthesised.
+
+    ⚙ MOVED HERE 2026-08-09 (cleanup audit §8.1): it was proved TWICE, in
+    algo/prop_soundness_sub.v and algo/completeness_look/prop_kit.v, and
+    neither file imports the other — so it could not simply be deduped in
+    place.  It belongs next to [lc_pskl_to_bskl_syn] anyway: same painting,
+    same one-line induction, same [pskl_to_bskl_syn_open] step. *)
+Lemma is_sskl_pskl_to_bskl_syn : forall P,
+    lc_pskl P -> is_sskl (pskl_to_bskl_syn P).
+Proof.
+  intros P Hlc; induction Hlc; simpl; try solve [ constructor; auto ].
+  apply is_sskl__all with (L := {}).
+  intros α _. rewrite <- pskl_to_bskl_syn_open. auto.
+Qed.
+
 (** [bskl_to_uskl] preserves local closure (both ∀-colours collapse to
     [uskl_all_syn]). *)
 Lemma lc_bskl_to_uskl : forall Q,

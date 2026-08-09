@@ -79,6 +79,7 @@ Require Import src.frost.algo.prop_looksub.
 Require Import src.frost.algo.prop_solve_sub.
 Require Import src.frost.algo.prop_completeness_sub_precise.
 Require Import src.frost.algo.prop_metasubst.
+Require Import src.frost.algo.prop_compose.   (* a_inc_dom_flex, a_inc_lookup_mono *)
 
 Set Implicit Arguments.
 
@@ -446,7 +447,7 @@ Qed.
    change is FALSE (a new entry can capture a recorded witness).  A context
    that MENTIONS LESS keeps every side condition; growth needs the witness
    to be re-picked, which is the mid-block weakening
-   [a_solve_sub_eq_weaken_mid_flex_size] (prop_look_complete_cstr.v). *)
+   [a_solve_sub_eq_weaken_mid_flex_size] (completeness_look/prop_eq_cstr.v). *)
 (* ⭐ THE AVOID-SET IS [ftvar_in_aenv], AND [dom] IS NO LONGER A CONDITION
    (2026-08-04).  SE-FlexR now calls [guess^TY], whose freshness is against
    [ftvar_in_aenv Θ] — a flexible's PAYLOAD may mention a name that is in no
@@ -669,7 +670,7 @@ Qed.
 (*  ⭐ IT HAS NO CONSUMERS, and had none at the pre-repair baseline        *)
 (*  [d5f9169] either.  What the tree actually calls is the MID-BLOCK       *)
 (*  twin [a_solve_sub_eq_weaken_mid_flex_size]                            *)
-(*  (prop_look_complete_cstr.v, P6-Cs), which inserts an [all_flex_mono]   *)
+(*  (completeness_look/prop_eq_cstr.v, P6-Cs), which inserts an [all_flex_mono]   *)
 (*  block in the MIDDLE — a different statement, derivable neither way     *)
 (*  from this one.  The solve's ∀ rows now push their witness onto the     *)
 (*  context, but that is a rigid a MID-insertion absorbs by taking         *)
@@ -692,7 +693,9 @@ Qed.
 (* ===================================================================== *)
 
 (** Rename preserves non-flexibility when both names are fresh from Θ. *)
-Lemma a_non_flex_rename : forall Θ P α' β,
+(* ⚙ RENAMED from [a_non_flex_rename] 2026-08-09 (cleanup audit §8.1c): it collided with a
+   DIFFERENT lemma of that name, and this one substitutes in P at a FIXED context; prop_consis_rename.v's renames a context entry. *)
+Lemma a_non_flex_subst_var : forall Θ P α' β,
   α' `notin` dom Θ -> β `notin` dom Θ ->
   a_non_flex Θ P ->
   a_non_flex Θ (subst_pskl_in_pskl (pskl_var_f β) α' P).
@@ -720,13 +723,9 @@ Qed.
 (* ===================================================================== *)
 
 (** Syn-paintings are synthesized skeletons. *)
-Lemma is_sskl_pskl_to_bskl_syn : forall P,
-  lc_pskl P -> is_sskl (pskl_to_bskl_syn P).
-Proof.
-  intros P Hlc; induction Hlc; simpl; try solve [ constructor; auto ].
-  apply is_sskl__all with (L := {}).
-  intros α _. rewrite <- pskl_to_bskl_syn_open. auto.
-Qed.
+(* ⚙ [is_sskl_pskl_to_bskl_syn] MOVED 2026-08-09 to frost/prop_basic.v
+   (cleanup audit §8.1): it was proved here AND in prop_soundness_sub.v, and
+   neither file imports the other, so the shared home is prop_basic.v. *)
 
 (** Refining the hole yields a synthesized skeleton (paper: "by inversion
     on the refinement premise, Q is a synthesised skeleton"). *)
@@ -1481,7 +1480,9 @@ Proof.
   intros x b Hb. apply binds_app_3; exact Hb.
 Qed.
 
-Lemma a_guess_mono_wf : forall Θ P Ξ A,
+(* ⚙ RENAMED from [a_guess_mono_wf] 2026-08-09 (cleanup audit §8.1c): it collided with a
+   DIFFERENT lemma of that name, and this one concludes a_wf_pskl of the PAINTING, not a_wf_ptyp (prop_soundness_typing.v's). *)
+Lemma a_guess_mono_wf_pskl : forall Θ P Ξ A,
   a_guess_mono Θ P Ξ A ->
   forall Δ, Θ ⨟ Δ ⊢ₚₛᵃ P -> (Ξ ++ Θ) ⨟ Δ ⊢ₚₛᵃ (ptyp_to_pskl A).
 Proof.
@@ -1622,7 +1623,7 @@ Proof.
               | cbn [app]; exact HwfP
               | cbn [app]; exact HwfQ ].
   - (* SE-FlexR — the one generating row *)
-    eapply a_guess_mono_wf; eassumption.
+    eapply a_guess_mono_wf_pskl; eassumption.
   - (* SE-Arrow — the blocks split, and the second premise already ran at
        [Ξ1 ++ Θ], so its IH needs the inputs weakened there *)
     inversion HwfP; subst; inversion HwfQ; subst.
@@ -1793,9 +1794,11 @@ Qed.
 
 (** Painting inversions.  An inherited painting equals a compound [bskl]
     only for the matching [pskl] source; since [κ] maps flexibles to
-    MONOTYPES, [pskl_to_bskl_inh_all_inh_inv] is what excludes a flexible
+    MONOTYPES, [pskl_to_bskl_inh_all_inh_inv_eq] is what excludes a flexible
     [P0] in the ForallInh/ForallSyn cases (a genuine [∀]-source is forced). *)
-Lemma pskl_to_bskl_inh_all_inh_inv : forall P Q0,
+(* ⚙ RENAMED from [pskl_to_bskl_inh_all_inh_inv] 2026-08-09 (cleanup audit §8.1c): it collided with a
+   DIFFERENT lemma of that name, and this one orients the equation as [f P0 = Q0]; prop_completeness_sub_gen.v's as [A = f X0]. *)
+Lemma pskl_to_bskl_inh_all_inh_inv_eq : forall P Q0,
   pskl_to_bskl_inh P = bskl_all_inh Q0 ->
   exists P0, P = pskl_all_syn P0 /\ pskl_to_bskl_inh P0 = Q0.
 Proof.
@@ -1812,7 +1815,9 @@ Proof.
   inversion H; subst. exists P1, P2; repeat split; reflexivity.
 Qed.
 
-Lemma pskl_to_bskl_inh_tophole_inv : forall P Q0,
+(* ⚙ RENAMED from [pskl_to_bskl_inh_tophole_inv] 2026-08-09 (cleanup audit §8.1c): it collided with a
+   DIFFERENT lemma of that name, and this one also returns [f P0 = Q0]; prop_completeness_sub_gen.v's returns only the shape. *)
+Lemma pskl_to_bskl_inh_tophole_inv_eq : forall P Q0,
   pskl_to_bskl_inh P = bskl_tophole Q0 ->
   exists P0, P = pskl_tophole P0 /\ pskl_to_bskl_inh P0 = Q0.
 Proof.
@@ -1867,35 +1872,8 @@ Proof.
   apply IH. auto.
 Qed.
 
-Lemma a_inc_dom_flex : forall Θ0 κ Θ α',
-  κ ∷ Θ0 ⊑ Θ ->
-  α' `in` dom κ ->
-  a_flex_tvar Θ0 α'.
-Proof.
-  intros Θ0 κ Θ α' Hinc; induction Hinc; intros Hin; simpl in Hin.
-  - fsetdec.
-  - destruct (α' == α) as [->|Hne].
-    + left. simpl_env. auto.
-    + assert (Ht : α' `in` dom κ) by (clear - Hin Hne; fsetdec).
-      destruct (IHHinc Ht) as [Hb | [τ0 Hb]].
-      * left. apply binds_cons_3; assumption.
-      * right; exists τ0. apply binds_cons_3; assumption.
-  - destruct (α' == α) as [->|Hne].
-    + right; exists τ. simpl_env. auto.
-    + assert (Ht : α' `in` dom κ) by (clear - Hin Hne; fsetdec).
-      destruct (IHHinc Ht) as [Hb | [τ0 Hb]].
-      * left. apply binds_cons_3; assumption.
-      * right; exists τ0. apply binds_cons_3; assumption.
-  - destruct (IHHinc Hin) as [Hb | [τ0 Hb]].
-    + left. apply binds_cons_3; assumption.
-    + right; exists τ0. apply binds_cons_3; assumption.
-  - destruct (IHHinc Hin) as [Hb | [τ0 Hb]].
-    + left. apply binds_cons_3; assumption.
-    + right; exists τ0. apply binds_cons_3; assumption.
-  - destruct (IHHinc Hin) as [Hb | [τ0 Hb]].
-    + left. apply binds_cons_3; assumption.
-    + right; exists τ0. apply binds_cons_3; assumption.
-Qed.
+(* ⚙ [a_inc_dom_flex] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant
+   of prop_compose.v:133's, now imported explicitly above. *)
 
 Lemma msubst_pskl_tvar_id : forall Θ0 κ Θ α,
   a_wf_aenv Θ0 ->
@@ -2161,15 +2139,8 @@ Proof. intros τ H; destruct τ; simpl in H; discriminate. Qed.
 
 (* ---- κ-image monotypes ---- *)
 
-Lemma a_inc_lookup_mono : forall Θ0 κ Θ α',
-  κ ∷ Θ0 ⊑ Θ ->
-  mono_ptyp (msubst_lookup κ α').
-Proof.
-  intros Θ0 κ Θ α' Hinc; induction Hinc; simpl; auto.
-  - auto with frost.
-  - destruct (α' == α); subst; auto.
-  - destruct (α' == α); subst; auto.
-Qed.
+(* ⚙ [a_inc_lookup_mono] deleted 2026-08-09 (cleanup audit §8.1): an
+   alpha-variant of prop_compose.v:242's. *)
 
 (** Its companion: a FLEXIBLE's image is SCOPED BY THE TARGET.  ([a_inc]'s
     two flex rows carry [a_wf_ptyp Θ' τ] as a premise; the flexibility is what
@@ -2839,7 +2810,7 @@ Qed.
 (*  at a monotype.  ([ad_ppre__hole] — a ghost is precise into ANYTHING at *)
 (*  [Ψ = ∅] — is what licenses the descent reaching a ◇ at all.)           *)
 (*                                                                        *)
-(*  Same shape as [a_guess_ty_witness] (prop_look_complete_extract.v §9),  *)
+(*  Same shape as [a_guess_ty_witness] (completeness_look/prop_extract.v §9),  *)
 (*  which does this for the FINAL guess against the refinement; this is    *)
 (*  the SOLVE's guess against the precision judgment, and it is the easier *)
 (*  of the two because the target is a MONOTYPE.                           *)
@@ -2907,7 +2878,9 @@ Qed.
     carries no definition, so [Hdefs] is immediate at every such row. *)
 (** A tvar-ish binding survives into a SUBCONTEXT that still has the
     variable: the two contexts agree on the binding by uniqueness. *)
-Lemma a_binds_tvar_strengthen : forall Θ Θw α,
+(* ⚙ RENAMED from [a_binds_tvar_strengthen] 2026-08-09 (cleanup audit §8.1c): it collided with a
+   DIFFERENT lemma of that name, and this one same theorem as prop_metasubst.v's with the premises in a different ORDER. *)
+Lemma a_binds_tvar_strengthen_kit : forall Θ Θw α,
   uniq Θ ->
   (forall x b, binds x b Θw -> binds x b Θ) ->
   a_binds_tvar α Θ ->
@@ -2939,7 +2912,7 @@ Proof.
   intros Θ Θw τ HwfΘ Hmon Hm Hwf Hsub.
   apply mono_ptyp_wf; [ exact Hm | ].
   intros α Hα.
-  eapply a_binds_tvar_strengthen;
+  eapply a_binds_tvar_strengthen_kit;
     [ apply a_wf_aenv_uniq; exact HwfΘ
     | exact Hmon
     | eapply a_wf_ptyp_ftv_binds; [ exact Hwf | exact Hα ]
@@ -3314,7 +3287,7 @@ Qed.
 
 (* ===================================================================== *)
 (*  THE FLEX-BLOCK EXTENSION KIT — moved up from                          *)
-(*  prop_look_complete_cstr.v (2026-08-04).                               *)
+(*  completeness_look/prop_eq_cstr.v (2026-08-04).                               *)
 (*                                                                        *)
 (*  Nothing in it is specific to the collection layer: it is the algebra   *)
 (*  of prepending an ALIGNED, wf-mono flexible block to a metasubstitution *)
@@ -3393,7 +3366,7 @@ Qed.
 
 (** The extended context is well-formed as soon as the block is uniq and
     apart from the old domain.  (A local copy of [a_wf_aenv_prepend_decls],
-    which lives in prop_sub_sound.v — a file this one does not import.) *)
+    which lives in prop_soundness_sub.v — a file this one does not import.) *)
 Lemma a_wf_aenv_prepend_flex_block : forall Ξ Θ,
   all_flex_mono Ξ ->
   uniq Ξ ->
@@ -3428,19 +3401,8 @@ Qed.
 (*  implementation's global counter enforces.)                             *)
 (* ===================================================================== *)
 
-(** The [ptyp] twin of [swap_pskl_as_subst] (prop_swap.v §7). *)
-Lemma swap_ptyp_as_subst : forall a b A,
-  b `notin` ftvar_in_ptyp A ->
-  swap_ptyp a b A = subst_ptyp_in_ptyp (ptyp_var_f b) a A.
-Proof.
-  induction A; simpl; intros Hb; f_equal;
-    try solve [ reflexivity | apply IHA; fsetdec
-              | apply IHA1; fsetdec | apply IHA2; fsetdec ].
-  destruct (α == a) as [-> | Hne].
-  - rewrite swap_atom_l. destruct (a == a); [ reflexivity | contradiction ].
-  - rewrite swap_atom_other; [ | fsetdec | simpl in Hb; fsetdec ].
-    destruct (α == a); [ contradiction | reflexivity ].
-Qed.
+(* ⚙ [swap_ptyp_as_subst] was re-proved here; deleted 2026-08-09 (cleanup
+   audit §8.1) — identical to prop_swap.v's, which this file imports. *)
 
 (** The [pskl] twin of [close_ptyp_subst_var] (prop_flex.v).  It used to live
     in prop_solve_sub.v, alongside the double-RENAME witness-move the repair
@@ -3531,7 +3493,7 @@ Qed.
 (* ===================================================================== *)
 (*  ⭐ WEAKENING A SOLVE BY A FRESH FLEXIBLE BLOCK IN THE MIDDLE.          *)
 (*                                                                        *)
-(*  MOVED UP from prop_look_complete_cstr.v (P6-Cs) and REPAIRED for the   *)
+(*  MOVED UP from completeness_look/prop_eq_cstr.v (P6-Cs) and REPAIRED for the   *)
 (*  SolE-FlexR threading, 2026-08-04.  Why it moved: every completeness    *)
 (*  file's ARROW case now has to put its two branches at DIFFERENT         *)
 (*  contexts, because [SS-Arrow] / [SE-Arrow] / [a_solve_cstr__eq] thread  *)
@@ -3558,7 +3520,9 @@ Qed.
 (*    are exactly [swap_aenv_fresh_id] at the rule's own freshness.        *)
 (* ===================================================================== *)
 
-Lemma binds_weaken_mid : forall (x : atom) (b : abind) Ξl Ξm Θ0,
+(* ⚙ RENAMED from [binds_weaken_mid] 2026-08-09 (cleanup audit §8.1c): it collided with a
+   DIFFERENT lemma of that name, and this one inserts Ξm INSIDE an existing Ξl++Θ0; prop_inc.v's weakens a bare Θ on both sides. *)
+Lemma binds_weaken_inner : forall (x : atom) (b : abind) Ξl Ξm Θ0,
   binds x b (Ξl ++ Θ0) -> binds x b (Ξl ++ Ξm ++ Θ0).
 Proof.
   intros x b Ξl Ξm Θ0 H. apply binds_app_1 in H as [H | H].
@@ -3580,7 +3544,7 @@ Lemma a_flex_tvar_weaken_mid : forall Ξl Ξm Θ0 α,
   a_flex_tvar (Ξl ++ Θ0) α -> a_flex_tvar (Ξl ++ Ξm ++ Θ0) α.
 Proof.
   intros Ξl Ξm Θ0 α [Hb | [τ Hb]];
-    [ left | right; exists τ ]; apply binds_weaken_mid; exact Hb.
+    [ left | right; exists τ ]; apply binds_weaken_inner; exact Hb.
 Qed.
 
 Lemma a_non_flex_weaken_mid : forall Ξl Ξm Θ0 P,
@@ -5992,48 +5956,8 @@ Lemma is_tskl_all_etag_inv : forall ε ψ,
     is_tskl (open_uskl_wrt_uskl ψ (uskl_var_f α)).
 Proof. intros ε ψ H; inversion H; subst. eexists; eassumption. Qed.
 
-Lemma uskl_ghost_free_all_etag_inv : forall ε ψ,
-  uskl_ghost_free (uskl_all_etag ε ψ) ->
-  exists L, forall α, α `notin` L ->
-    uskl_ghost_free (open_uskl_wrt_uskl ψ (uskl_var_f α)).
-Proof. intros ε ψ H; inversion H; subst. eexists; eassumption. Qed.
-
-(** [a_tags_sort] inversion at a tagged ∀ (all components cofinite). *)
-Lemma a_tags_sort_all_etag_inv : forall NM Ψ ε ψ,
-  a_tags_sort NM Ψ (uskl_all_etag ε ψ) ->
-  exists L Ψ0,
-    (forall α, α `notin` L ->
-       a_tags_sort NM Ψ0 (open_uskl_wrt_uskl ψ (uskl_var_f α))) /\
-    ε `notin` Ψ0 /\ Ψ [=] add ε Ψ0.
-Proof.
-  intros NM Ψ ε ψ H.
-  inversion H; subst.
-  - (* SK *)
-    match goal with Hts : is_tskl _ |- _ =>
-      destruct (is_tskl_all_etag_inv Hts) as (L1 & Hti) end.
-    match goal with Hd : d_tags_skl _ _ |- _ =>
-      destruct (d_tags_skl_all_etag_inv Hd)
-        as (L2 & Ψ0 & Hd0 & Hnin & Heq) end.
-    exists (L1 `union` L2), Ψ0.
-    split; [ | split; [ exact Hnin | exact Heq ] ].
-    intros α Hα; apply a_tags_sort__sk;
-      [ apply Hti; clear - Hα; fsetdec
-      | apply Hd0; clear - Hα; fsetdec ].
-  - (* TY *)
-    match goal with Hts : is_tskl _ |- _ =>
-      destruct (is_tskl_all_etag_inv Hts) as (L1 & Hti) end.
-    match goal with Hd : d_tags_skl _ _ |- _ =>
-      destruct (d_tags_skl_all_etag_inv Hd)
-        as (L2 & Ψ0 & Hd0 & Hnin & Heq) end.
-    match goal with Hg : uskl_ghost_free _ |- _ =>
-      destruct (uskl_ghost_free_all_etag_inv Hg) as (L3 & Hgf) end.
-    exists (L1 `union` L2 `union` L3), Ψ0.
-    split; [ | split; [ exact Hnin | exact Heq ] ].
-    intros α Hα; apply a_tags_sort__ty;
-      [ apply Hti; clear - Hα; fsetdec
-      | apply Hd0; clear - Hα; fsetdec
-      | apply Hgf; clear - Hα; fsetdec ].
-Qed.
+(* ⚙ [uskl_ghost_free_all_etag_inv] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
+   one in prop_completeness_sub_precise.v, which this file imports. *)
 
 (** [flex_apart] aenv weakening (binds-monotone).  ⚠️ Since [fa_flexfree]
     (DESIGN §10) reads the context NEGATIVELY, the map must also create no new
@@ -6113,7 +6037,7 @@ Qed.
 (*  precisely why the guarded conjunct had to be ASSUMED rather than       *)
 (*  derived, and why the surviving [flex_apart_deep] — whose [p0_step] DOES  *)
 (*  have the arrow rows — is derivable instead                             *)
-(*  ([flex_apart_deep_sub_shield], prop_look_complete_sub_cstr.v).           *)
+(*  ([flex_apart_deep_sub_shield], completeness_look/prop_sub_cstr.v).           *)
 (*                                                                        *)
 (*  Coq text at commit `dbb4b2c`.                                          *)
 (* ===================================================================== *)
@@ -6134,7 +6058,7 @@ Qed.
 (* ===================================================================== *)
 
 (** ⚠️ The walk carries an AVOID SET [A], and the ∀-descent's binder must miss
-    it — exactly as [ss_step] does (prop_look_complete_sub_cstr.v:90) and for
+    it — exactly as [ss_step] does (completeness_look/prop_sub_cstr.v:90) and for
     exactly the same reason.  Without it the walk reaches states mentioning an
     ARBITRARY γ, and [flex_apart_deep] could then not be transported across a
     FLEXIBLE PREFIX at all: [fa_flexfree] is anti-monotone in the context, so
@@ -6376,18 +6300,16 @@ Proof.
   - eapply ad_refine_syn__flex_r; eauto.
 Qed.
 
-(** Hole-free skeletons: for them partial precision is fully Δ-MONOTONE
-    (the □-rule — the only Δ-antitone rule — never fires). *)
-Fixpoint pskl_no_hole (P : pskl) : Prop :=
-  match P with
-  | pskl_unit => True
-  | pskl_var_b _ => True
-  | pskl_var_f _ => True
-  | pskl_arrow P1 P2 => pskl_no_hole P1 /\ pskl_no_hole P2
-  | pskl_all_syn P0 => pskl_no_hole P0
-  | pskl_hole => False
-  | pskl_tophole P0 => pskl_no_hole P0
-  end.
+(* ⚙ [pskl_no_hole] (hole-free skeletons — for them partial precision is fully
+   Δ-MONOTONE, since the □-rule, the only Δ-antitone one, never fires) was
+   REDEFINED here, verbatim.  Deleted 2026-08-09 (cleanup audit §8.1):
+   prop_completeness_consis.v:1047 defines it and this file imports that.
+
+   ⚠️ Only the DEFINITION and the one duplicated satellite
+   ([ptyp_to_pskl_no_hole]) went.  The rest of the family below — _open,
+   _open_rec, their _inv converses, _close, and the msubst_* transports — has
+   no counterpart there and stays.  The two Fixpoint bodies were identical, so
+   every [simpl]/[induction] proof below is unaffected. *)
 
 Lemma pskl_no_hole_open_rec : forall P P' k,
   pskl_no_hole P -> pskl_no_hole P' ->
@@ -6405,9 +6327,7 @@ Proof.
   intros P α HP. apply pskl_no_hole_open_rec; simpl; auto.
 Qed.
 
-Lemma ptyp_to_pskl_no_hole : forall τ,
-  pskl_no_hole (ptyp_to_pskl τ).
-Proof. induction τ; simpl; auto. Qed.
+(* [ptyp_to_pskl_no_hole] likewise — prop_completeness_consis.v:1074. *)
 
 Lemma ad_ppre_no_hole_subject_delta_mono : forall Θ Δ Ψ P ψ,
   Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
@@ -6754,7 +6674,9 @@ Qed.
 (*  commutation.                                                           *)
 (* ===================================================================== *)
 
-Lemma msubst_pskl_subst_var : forall κ P' α' β,
+(* ⚙ RENAMED from [msubst_pskl_subst_var] 2026-08-09 (cleanup audit §8.1c): it collided with a
+   DIFFERENT lemma of that name, and this one takes its image side condition PAIRED (forall p, In p κ -> .. (snd p)); prop_completeness_consis.v's takes it curried. *)
+Lemma msubst_pskl_subst_var_paired : forall κ P' α' β,
   α' `notin` dom κ -> β `notin` dom κ ->
   (forall p, In p κ -> α' `notin` ftvar_in_ptyp (snd p)) ->
   subst_pskl_in_pskl (pskl_var_f β) α' (msubst_pskl κ P')
@@ -7003,7 +6925,7 @@ Proof.
 Qed.
 
 (** The package's payloads are context-SCOPED — the form
-    [msubst_pskl_subst_var] and the ∀-row renamings ask for. *)
+    [msubst_pskl_subst_var_paired] and the ∀-row renamings ask for. *)
 Lemma forall_wf_mono_images_dom : forall (Θ : aenv) (κ' : metasubst),
   Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κ' ->
   forall p, In p κ' -> ftvar_in_ptyp (snd p) [<=] dom Θ.
@@ -7014,7 +6936,7 @@ Proof.
   eapply a_wf_ptyp_ftv_dom; exact Hw.
 Qed.
 
-(* MOVED UP from prop_look_complete_extract.v §8 (2026-08-04): the P6 tower
+(* MOVED UP from completeness_look/prop_extract.v §8 (2026-08-04): the P6 tower
    now prefixes a block of wf monotype images at EVERY ∀ row, not only in
    P6-L. *)
 Lemma msubst_lc_app_wf : forall Θ κa κb,

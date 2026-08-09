@@ -239,7 +239,7 @@ Proof.
 Qed.
 
 (* A CONSISTENCY collection only ever deposits eq constraints.  MOVED here
-   from prop_look_complete_cstr.v (2026-08-01): it is a basic property of the
+   from completeness_look/prop_eq_cstr.v (2026-08-01): it is a basic property of the
    judgment, and the source-substitution lemma of prop_decorate_sub.v needs it
    for its arrow rows — that file is UPSTREAM of P6-Cs.
    EXISTS-FRESH SIMPLIFICATION (cluster 3): the three ∀ rows used to hand back
@@ -1840,7 +1840,7 @@ Qed.
 
 (* ===================================================================== *)
 (*  §11. The [a_extract] FAMILY from one instance                         *)
-(*  (moved here from prop_look_complete_extract.v, campaign cluster 5:    *)
+(*  (moved here from completeness_look/prop_extract.v, campaign cluster 5:    *)
 (*   [prop_decorate_key.v] needs it too, and that file is a sibling of    *)
 (*   P6-L's, not a consumer.)                                            *)
 (* ===================================================================== *)

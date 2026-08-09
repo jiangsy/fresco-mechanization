@@ -2,7 +2,7 @@
     (docs/DESIGN-subtyping.md P2).
 
     The tag-context congruences and the [⊴]-stability lemmas — the exact
-    mirrors of [ad_pat_consis_psi_cong] (prop_consis_sound.v) and of the
+    mirrors of [ad_pat_consis_psi_cong] (prop_soundness_consis.v) and of the
     [prop_stability.v] family: every declarative-over-Θ judgment is stable
     under information increase, because its only context-sensitive rules are
     variable visibility ([a_isub_binds_tvarish]), definition lookups

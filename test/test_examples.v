@@ -178,7 +178,47 @@ Ltac crush_guess_fresh :=
 Hypothesis HΘlib_uniq : uniq Θlib.
 
 (* Discharge the ForallL freshness premise [uniq (Ξ ++ Θ0)]: peel the
-   fresh entries structurally, close the ambient tail by assumption. *)
+   fresh entries structurally, close the ambient tail by assumption.
+
+   ⚠️⚠️ THIS TACTIC IS THE TREE'S #1 BUILD HOT SPOT, AND IT IS NOT YET FIXED.
+   Profiled 2026-08-09 ([Set Ltac Profiling] on [ex_C2] alone):
+
+     crush_uniq   99.9% of the proof, in FOUR calls
+       -> fsetdec -> tauto -> simplif, 15.5 M is_conj + 13 M is_disj calls
+
+   That is 442 s in [ex_C2] — 36% of the whole tree's proof time — and since
+   this file is a LEAF that depends on nearly everything, it is 442 s sitting
+   on the build's CRITICAL PATH (wall clock ≈ 646 s at -j8 for a tree whose
+   total serial proof time is ≈ 1229 s).  Fixing it is the single biggest
+   available build-time win.
+
+   ROOT CAUSE (measured, not guessed): [fsetdec] calls [tauto] internally, and
+   to discharge these goals it must UNFOLD [dom Θlib] — seven entries carrying
+   full σ-types.  Marking [Θlib] [Opaque] makes [fsetdec] fail outright in 6 s
+   with "the goal is beyond the scope of this tactic", which is the proof that
+   the unfolding is load-bearing rather than incidental.
+
+   ⛔ FOUR FIXES TRIED AND REFUTED — do not re-try these blind:
+     1. [solve_notin]                      — FAILS on all three residual goals
+                                             (they are [fb ∉ {x} ∪ {fa} ∪ dom Θlib];
+                                             its closing [auto; try tauto] cannot
+                                             bridge them).
+     2. [destruct_notin] first, then [fsetdec] / [solve_notin] / [auto]
+                                           — all FAIL fast (5-16 s).
+     3. adding disequality SYMMETRY ([Hfafb : fa <> fb] is needed as [fb <> fa];
+        [destruct_notin] never flips a [<>])  — still FAILS.
+     4. scoping the context — both a generic "keep only atom-set facts" pass and
+        USE-SITE [clear - Hα Hx Hβ Hy Hfa_lib Hfb_lib Hfafb HΘlib_uniq] at each
+        of the four call sites — still ≥250 s.  So the blow-up is NOT driven by
+        the number of ambient hypotheses; it is the [dom Θlib] expansion.
+     5. characterising [dom Θlib] as a union of seven singletons + [Opaque Θlib]
+        + rewriting before [fsetdec]  — still ≥250 s.
+
+   NEXT LEAD: keep [Θlib] opaque and supply the needed [dom]/[∉] facts as
+   pre-proved lemmas so [fsetdec] never sees the library term at all — i.e.
+   discharge these goals WITHOUT [fsetdec] (the goals are all of the shape
+   [v ∉ <concrete union of singletons> ∪ dom Θlib]).  See
+   docs/REPORT-remech-cleanup-audit.md §PERF. *)
 Ltac crush_uniq :=
   first [ assumption
         | simpl_env;

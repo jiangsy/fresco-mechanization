@@ -16,7 +16,7 @@
 (*  measure.md §3): the back-edges Flex-Flex-Assign / Assign-Assign hand  *)
 (*  part 1 a declarative derivation that can be strictly LARGER than the  *)
 (*  caller's, and UnivGhostR recurses with the SAME one.  The repaired    *)
-(*  measure (design doc §4, infrastructure green in prop_consis_exist.v)  *)
+(*  measure (design doc §4, infrastructure green in prop_completeness_consis.v (PART A))  *)
 (*                                                                        *)
 (*      μ = (V, n, t, k)   lexicographic on ℕ⁴                            *)
 (*                                                                        *)
@@ -70,7 +70,7 @@ Set Implicit Arguments.
 (* ##################################################################### *)
 (*  PART A — THE μ-MEASURE (formerly algo/prop_consis_exist.v, merged     *)
 (*  2026-07-18; that file and the deprecated OPT-bundle file               *)
-(*  prop_consis_complete.v were folded into this one).                     *)
+(*  prop_completeness_consis.v (PART B) were folded into this one).                     *)
 (* ##################################################################### *)
 
 (** EXISTENCE for [thm:complete-consistency] — the well-founded-measure half.
@@ -902,7 +902,7 @@ Qed.
    (subject msubst κ P, RHS syn(mono κα)) onto the ⇓-normalized subject,
    which [join_pskl_downarrow_mono_scoped] shows is scoped to the
    sub-target Θ'.  (Consumed by the ⇓-truncation walk cases of the
-   μ-bundle in prop_consis_complete.v.) *)
+   μ-bundle in prop_completeness_consis.v (PART B).) *)
 Lemma consis_downarrow_subject : forall Ψ Θ R Q,
   ad_pat_consis Ψ Θ R Q ->
   a_wf_aenv Θ ->
@@ -1264,7 +1264,7 @@ Qed.
     fresh for the body and the substitution is a no-op there.
 
     (Lives here, beside [a_wf_pskl_ftv_dom] which its ∀◇ case needs, so that
-    BOTH prop_look_complete.v and prop_look_complete_extract.v can see it —
+    BOTH completeness_look/prop_kit.v and completeness_look/prop_extract.v can see it —
     the two files are independent of each other.) *)
 
 (** ∀-INTRODUCTION FROM ONE INSTANCE — the exists-fresh idiom of DESIGN §4.3
@@ -2872,7 +2872,7 @@ Proof.
 Qed.
 
 (** The non-mono RE-INHERIT bridge (the OPT C-GhostR plan,
-    prop_consis_complete.v:1752): an uncoloured refinement [A ⊳ B] whose two
+    prop_completeness_consis.v (PART B):1752): an uncoloured refinement [A ⊳ B] whose two
     sides are JOINED at the syn painting re-inherits to the coloured
     refinement of the inh paintings.  [Θr] is the refinement context; [Θj]
     the join context, which extends [Θr] by rigid opens only (at the top
@@ -5354,7 +5354,7 @@ Proof.
           as Hself.
         simpl in Hself. apply Hself; [ exact Hwfth | exact HuqΘ | exact Hwf ].
   - (* head [α1 ~ var_typ A] : Assign-SkipTmVar — the EX+OPT fusion of the
-       CLOSED OPT twin [skip_tm_var_case] (prop_consis_complete.v:990):
+       CLOSED OPT twin [skip_tm_var_case] (prop_completeness_consis.v (PART B):990):
        ⇓-normalize the competing increment below the middle, strengthen
        the join to the truncated target, recurse through the μ-IH (V is
        exactly constant by ⇓-idempotence, §1e), rebuild with the semantic
