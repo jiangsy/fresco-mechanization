@@ -65,13 +65,13 @@ Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_normal.
 Require Import src.frost.algo.prop_metasubst.
-Require Import src.frost.algo.prop_soundness_consis.
-Require Import src.frost.algo.prop_completeness_consis.
-Require Import src.frost.algo.prop_sub_msubst_equiv.
+Require Import src.frost.algo.consis.prop_soundness_consis.
+Require Import src.frost.algo.consis.prop_completeness_consis.
+Require Import src.frost.algo.sub.prop_sub_msubst_equiv.
 Require Import src.frost.algo.prop_precise.       (* ad_precise, ⊢ₚᵣᵃ *)
 Require Import src.frost.decorated_algo.prop_decorate.      (* uskl_to_pskl_pskl_to_uskl *)
 Require Import src.frost.algo.prop_pat_sub.       (* mono_ptyp_to_uskl_syn_ghost_free *)
-Require Import src.frost.algo.prop_completeness_sub_gen.
+Require Import src.frost.algo.sub.prop_completeness_sub_gen.
 
 Set Implicit Arguments.
 
@@ -1256,7 +1256,7 @@ Qed.
 (*  [flex_apart_walk], so [sub_shield] lost its guess-descending conjunct  *)
 (*  — and what remains is Δρ-CONSTANT, hence at the Δρ = ∅ these rows      *)
 (*  instantiate it at, unconditionally TRUE ([sub_shield_empty],           *)
-(*  completeness_look/prop_sub_cstr.v).  P6-L discharges it internally and no  *)
+(*  sub/look/prop_sub_cstr.v).  P6-L discharges it internally and no  *)
 (*  longer takes it; §9's two ForallL branches now apply their row lemmas  *)
 (*  DIRECTLY, on exactly the join rule's own premises.                     *)
 (*                                                                        *)

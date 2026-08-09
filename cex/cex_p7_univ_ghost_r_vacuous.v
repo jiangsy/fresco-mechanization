@@ -69,12 +69,12 @@ Require Import src.frost.decorated_algo.def_decl_algo.
 Require Import src.frost.decorated_algo.def_decorated.
 Require Import src.frost.decorated_algo.def_decl_algo_sub.
 Require Import src.frost.decorated_algo.def_decl_algo_sub_hyg.
-Require Import src.frost.algo.prop_soundness_consis.
-Require Import src.frost.algo.prop_completeness_sub_gen.
+Require Import src.frost.algo.consis.prop_soundness_consis.
+Require Import src.frost.algo.sub.prop_completeness_sub_gen.
 (* [uskl_to_pskl_msubst_uskl_syn] — it used to be re-proved in
    prop_completeness_sub_gen.v too; that copy was deleted 2026-08-09
    (cleanup audit §8.1), so name it from its one surviving home. *)
-Require Import src.frost.algo.completeness_look.prop_eq_cstr.
+Require Import src.frost.algo.sub.look.prop_eq_cstr.
 
 Set Implicit Arguments.
 

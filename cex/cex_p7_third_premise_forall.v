@@ -56,7 +56,7 @@ Require Import src.frost.decorated_algo.def_decl_algo.
 Require Import src.frost.decorated_algo.def_decorated.
 Require Import src.frost.decorated_algo.def_decl_algo_sub.
 Require Import src.frost.decorated_algo.def_decl_algo_sub_hyg.
-Require Import src.frost.algo.prop_soundness_consis.
+Require Import src.frost.algo.consis.prop_soundness_consis.
 
 Set Implicit Arguments.
 

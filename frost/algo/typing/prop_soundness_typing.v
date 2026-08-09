@@ -53,12 +53,12 @@ Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.prop_pat_sub.
-Require Import src.frost.algo.prop_soundness_consis.
-Require Import src.frost.algo.prop_soundness_sub.
-Require Import src.frost.algo.prop_soundness_pat.
-Require Import src.frost.algo.prop_completeness_consis.
+Require Import src.frost.algo.consis.prop_soundness_consis.
+Require Import src.frost.algo.sub.prop_soundness_sub.
+Require Import src.frost.algo.pat.prop_soundness_pat.
+Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_rename_decl.
-Require Import src.frost.algo.prop_completeness_sub_gen.
+Require Import src.frost.algo.sub.prop_completeness_sub_gen.
 Require Import src.frost.algo.prop_suffix_erase.
 Require Import src.frost.decorated_algo.prop_decorate.
 Require Import src.frost.decorated_algo.prop_decorate_key.

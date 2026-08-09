@@ -36,7 +36,7 @@ Require Import src.frost.ltac_utils.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_inc.
-Require Import src.frost.algo.completeness_look.prop_kit.
+Require Import src.frost.algo.sub.look.prop_rho_relation.
 
 Set Implicit Arguments.
 

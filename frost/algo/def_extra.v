@@ -564,7 +564,7 @@ where "Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C" := (a_looksub Θ α m P P' Ξ C) 
 (*  wrong avoid-set for anything that touches the guess — and SE-FlexR     *)
 (*  now does.  Concretely it is what makes the WITNESS-MOVE work: the      *)
 (*  swap [swap_aenv b δ Θ] collapses to [Θ] exactly when both atoms dodge  *)
-(*  [ftvar_in_aenv Θ] ([a_solve_eq_weaken_tvar], completeness_look/prop_kit.v),    *)
+(*  [ftvar_in_aenv Θ] ([a_solve_eq_weaken_tvar], sub/look/prop_rho_relation.v),    *)
 (*  and the same set is what [a_solve_sub_eq_ctx_change] transports.       *)
 (*  The change only SHRINKS the judgment, so every consumer (soundness,    *)
 (*  decoration) is unaffected; the completeness proofs CONSTRUCT these     *)
@@ -717,7 +717,7 @@ with a_solve_eq : aenv -> pskl -> pskl -> aenv -> pskl -> Prop :=
        because on paper the two rows agreed.  Restoring the exclusion costs
        completeness NOTHING: at [◇] SE-GhostL is strictly more informative,
        and at [∀◇P0] SE-GhostGuarded peels to the same place.  It also keeps
-       [a_solve_eq_hole_subject_inv] (completeness_look/prop_kit.v) — "solving with
+       [a_solve_eq_hole_subject_inv] (sub/look/prop_rho_relation.v) — "solving with
        the ghost subject returns the target verbatim", which the paper uses
        silently in every [P_i = □] subcase — TRUE. *)
     a_flex_tvar Θ α ->
@@ -820,7 +820,7 @@ Reserved Notation "Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q"
    final guess — and each stage's avoid-input is everything generated before
    it.  All three are blocks of UNDEFINED flexibles, so their relative order
    is semantically immaterial (the homogeneous-flex reorder kit of
-   completeness_look/prop_eq_cstr.v moves between them); it is fixed here only
+   sub/look/prop_eq_cstr.v moves between them); it is fixed here only
    because [app] is not commutative on the nose. *)
 Inductive a_extract : aenv -> a_sub_mode -> atom -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
 | a_extract__solve : forall Θ0 NM α m P P' Ξ Ξs Ξ' C Q Q',
@@ -1256,7 +1256,7 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
        under the binder and not re-bound, because the look cluster's generated
        names already avoid the looked-for variable, so ONE instance generates
        the whole family with the SAME [Ξ ↪ P1]
-       ([a_extract_family_of_instance], completeness_look/prop_extract.v).
+       ([a_extract_family_of_instance], sub/look/prop_extract.v).
        Consumers that want a family apply that lemma. *)
     α `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P
       `union` ftvar_in_pskl P0 ->

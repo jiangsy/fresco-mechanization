@@ -2399,7 +2399,7 @@ Qed.
 (*  primitive, and one of its members ([a_split_swap]) is a per-judgment  *)
 (*  equivariance lemma whose eleven siblings are all above.               *)
 (*  [swap_aenv_fresh_eq] was already being reached from                   *)
-(*  completeness_typing/prop_typing.v THROUGH prop_completeness_pat.v; it now    *)
+(*  typing/prop_typing.v THROUGH prop_completeness_pat.v; it now    *)
 (*  comes from its own home.                                             *)
 (*                                                                        *)
 (*  ⚠️ These ten were elaborated under [Set Implicit Arguments] in their    *)

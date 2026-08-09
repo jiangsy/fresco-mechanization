@@ -44,7 +44,7 @@ mechanization.)  Corrected 2026-08-09.
     `Check`ed in `README.v`.  Its one unrecorded prerequisite was
     `a_split_complete_tc`, completeness of SPLITTING at check mode (the
     paper's AbsCheck subcase 2); the suffix-discarding rows' scoping
-    premise comes from `algo/completeness_typing/prop_scope.v`.
+    premise comes from `algo/typing/prop_scope.v`.
   - ⭐⭐⭐ Subtyping COMPLETENESS: `a_sub_complete_bundle_holds` and
     `a_sub_complete` (thm:complete-subtyping), with **no residual
     hypothesis** — both are `Check`ed and audited in `README.v`.  P5, all
@@ -195,41 +195,56 @@ mechanization/
 │   │   │                         `ad_sd_typing`, which section D is stated over)
 │   │   └── prop_decorate*.v     (decoration of consistency/subtyping;
 │   │                             prop_decorate_key.v holds a_sub_sound)
-│   └── algo/             (algorithmic system — all admit-free)
+│   └── algo/             (algorithmic system — all admit-free.  Grouped BY
+│       │                  JUDGEMENT 2026-08-09; the shared machinery stays
+│       │                  FLAT because there is no soundness-only file —
+│       │                  soundness is kit for completeness, so a
+│       │                  soundness/ vs completeness/ split would lie)
 │       ├── def_extra.v          (the algorithmic rules + their notations)
 │       ├── def_meta.v           (metasubstitutions κ, a_inc / a_inc_equiv /
 │       │                         ⊴, msubst_{ptyp,btyp,pskl,uskl_syn})
 │       ├── prop_inc*.v / prop_metasubst.v / prop_compose.v   (θ-algebra)
 │       ├── prop_flex.v / prop_normal.v / prop_mono_bridge.v  (flex + monotypes)
+│       ├── prop_precise*.v      (precision)
 │       ├── prop_swap.v          (EQUIVARIANCE — the one renaming primitive.
 │       │                         §1-§5 type variables, §6 TERM binders)
+│       ├── prop_pat_sub.v / prop_refine.v / prop_stability.v
+│       ├── prop_suffix_erase.v / prop_rename_decl.v
 │       ├── prop_wf_preservation.v  (a run's OUTPUT context is well-formed)
-│       ├── prop_soundness_consis.v / prop_soundness_sub.v
-│       ├── prop_completeness_consis.v
-│       ├── prop_completeness_sub_precise.v (P5)
-│       ├── prop_looksub.v / prop_solve_sub.v  (constraint collection + solving)
-│       ├── completeness_look/       (P6 — the look judgment's completeness,
-│       │                             a strict linear chain: prop_kit ->
-│       │                             prop_eq_var (Cv) -> prop_eq_cstr (Cs) ->
-│       │                             prop_sub_var (Sv) -> prop_sub_cstr (Ss)
-│       │                             -> prop_extract (L).  Facade:
-│       │                             algo/prop_completeness_look.v — but see
-│       │                             its ⚠️ header before importing it)
-│       ├── prop_completeness_sub_gen.v (P7a+b, the GENERALIZED statement)
-│       ├── prop_completeness_sub.v     (P7c, the paper's a_sub_complete)
-│       └── completeness_typing/    (theorem 4 — thm:complete-type-inference,
-│                                    and the three kit files that serve it and
-│                                    nothing else.  Created 2026-08-09 from
-│                                    four badly-named algo/ files:
-│                                    prop_typing.v   the theorem
-│                                                    (was prop_completeness_typing.v)
-│                                    prop_rigidity.v rigid data survives a run
-│                                                    (was prop_ty_core.v)
-│                                    prop_scope.v    a run's result never
-│                                                    mentions the suffix it
-│                                                    dropped (was prop_ty_scope.v)
-│                                    prop_shape.v    an FN-mode run returns a
-│                                                    syntactic arrow chain)
+│       ├── consis/       (consistency: prop_soundness_consis.v,
+│       │                  prop_completeness_consis.v, prop_consis_rename.v,
+│       │                  prop_consis_precise.v)
+│       ├── sub/          (subtyping — both directions and the collection layer)
+│       │   ├── prop_soundness_sub.v
+│       │   ├── prop_looksub.v / prop_solve_sub.v  (collection + solving)
+│       │   ├── prop_sub_msubst_equiv.v
+│       │   ├── prop_completeness_sub_precise.v (P5)
+│       │   ├── prop_completeness_look.v  (P6 FACADE over look/ — read its
+│       │   │                              ⚠️ header before pointing a new
+│       │   │                              consumer at it)
+│       │   ├── prop_completeness_sub_gen.v (P7a+b, the GENERALIZED statement)
+│       │   ├── prop_completeness_sub.v     (P7c, the paper's a_sub_complete)
+│       │   └── look/    (P6 — the look judgment's completeness, a strict
+│       │                 linear chain over a THREE-file shared substrate:
+│       │                   prop_rho_relation.v  the ρ relation + inversions
+│       │                   prop_solve_ext.v     solve_ext / solve_sub_ext /
+│       │                                        cv_mono_concl packages
+│       │                   prop_flex_apart.v    flex_apart + Arrow repair
+│       │                 then prop_eq_var (Cv) -> prop_eq_cstr (Cs) ->
+│       │                 prop_sub_var (Sv) -> prop_sub_cstr (Ss) ->
+│       │                 prop_extract (L).  ⚙ The substrate was ONE 6952-line
+│       │                 prop_kit.v until 2026-08-09; "kit" named nothing and
+│       │                 it was the tree's main source of duplicate names)
+│       ├── pat/          (skeleton inference: prop_soundness_pat.v,
+│       │                  prop_completeness_pat.v)
+│       └── typing/       (type inference — theorem 4 and the three files that
+│                          serve it and nothing else:
+│                          prop_soundness_typing.v
+│                          prop_typing.v   the completeness theorem
+│                          prop_rigidity.v rigid data survives a run
+│                          prop_scope.v    a run's result never mentions the
+│                                          suffix it dropped
+│                          prop_shape.v    an FN-mode run returns an arrow chain)
 ├── cex/                  (machine-checked counterexamples + probes; moved
 │                          out of algo/ 2026-08-06 — they are findings, not
 │                          part of the development)

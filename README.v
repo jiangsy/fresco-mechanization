@@ -57,22 +57,22 @@ Require Import src.frost.decorated_algo.def_decl_algo_typing.
 Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.decl.prop_syntax_directed.
 Require Import src.frost.decl.prop_general_subsumption.
-Require Import src.frost.algo.prop_soundness_consis.
-Require Import src.frost.algo.prop_completeness_consis.
+Require Import src.frost.algo.consis.prop_soundness_consis.
+Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.decorated_algo.prop_decorate_key.
-Require Import src.frost.algo.prop_completeness_sub_precise.
-Require Import src.frost.algo.completeness_look.prop_eq_var.
-Require Import src.frost.algo.completeness_look.prop_eq_cstr.
-Require Import src.frost.algo.completeness_look.prop_sub_var.
-Require Import src.frost.algo.completeness_look.prop_sub_cstr.
-Require Import src.frost.algo.completeness_look.prop_extract.
-Require Import src.frost.algo.prop_completeness_sub.
-Require Import src.frost.algo.prop_soundness_pat.
-Require Import src.frost.algo.prop_soundness_typing.
+Require Import src.frost.algo.sub.prop_completeness_sub_precise.
+Require Import src.frost.algo.sub.look.prop_eq_var.
+Require Import src.frost.algo.sub.look.prop_eq_cstr.
+Require Import src.frost.algo.sub.look.prop_sub_var.
+Require Import src.frost.algo.sub.look.prop_sub_cstr.
+Require Import src.frost.algo.sub.look.prop_extract.
+Require Import src.frost.algo.sub.prop_completeness_sub.
+Require Import src.frost.algo.pat.prop_soundness_pat.
+Require Import src.frost.algo.typing.prop_soundness_typing.
 Require Import src.frost.algo.prop_precise.      (* the ⊢ₚᵣᵃ _ ⊑ _ notation *)
 Require Import src.frost.algo.prop_precise_sub.
-Require Import src.frost.algo.prop_completeness_pat.
-Require Import src.frost.algo.completeness_typing.prop_typing.
+Require Import src.frost.algo.pat.prop_completeness_pat.
+Require Import src.frost.algo.typing.prop_typing.
 
 
 (* ##################################################################### *)

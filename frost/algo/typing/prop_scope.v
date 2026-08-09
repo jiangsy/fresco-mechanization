@@ -19,7 +19,7 @@
     reaches into it beyond the binders the run itself peeled.  The peeled
     binders are RIGID, so the side condition needed on the way in is
     [core_rigid_above]: a core atom bound above the marker is rigid.  That
-    is [core_rigid] (completeness_typing/prop_rigidity.v) relativized to the above-marker
+    is [core_rigid] (typing/prop_rigidity.v) relativized to the above-marker
     region, and it is exactly what the Flex-Assign row needs — see
     [core_rigid_above_head_flex].
 
@@ -30,7 +30,7 @@
 
     ⛔ WHAT IS STILL OWED (the two walks): at the SUB level, core
     PRESERVATION under [core_rigid_above] (mirroring
-    [a_sub_sub_flex_ty_core], completeness_typing/prop_rigidity.v:759); at the TYPING level,
+    [a_sub_sub_flex_ty_core], typing/prop_rigidity.v:759); at the TYPING level,
     SCOPE PROPAGATION — ⚠️ preservation is FALSE there, see the
     counterexample in the ⛔ comment at the end of this file, which also
     carries the case map. *)
@@ -48,20 +48,20 @@ Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_inc.
-Require Import src.frost.algo.prop_soundness_pat.
-Require Import src.frost.algo.prop_soundness_consis.
+Require Import src.frost.algo.pat.prop_soundness_pat.
+Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.prop_wf_preservation.
-Require Import src.frost.algo.completeness_typing.prop_rigidity.
+Require Import src.frost.algo.typing.prop_rigidity.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.prop_metasubst.
-Require Import src.frost.algo.prop_looksub.
-Require Import src.frost.algo.prop_soundness_sub.
+Require Import src.frost.algo.sub.prop_looksub.
+Require Import src.frost.algo.sub.prop_soundness_sub.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_mono_bridge.
-Require Import src.frost.algo.prop_completeness_sub_gen.
+Require Import src.frost.algo.sub.prop_completeness_sub_gen.
 Require Import src.frost.algo.prop_rename_decl.
-Require Import src.frost.algo.prop_soundness_typing.
+Require Import src.frost.algo.typing.prop_soundness_typing.
 
 Set Implicit Arguments.
 
@@ -1328,7 +1328,7 @@ Qed.
 (* ===================================================================== *)
 
 (** ⚠️ WHY THIS IS SCOPE PROPAGATION AND NOT CORE PRESERVATION.  The shape
-    [a_sub_sub_flex_ty_core] uses (completeness_typing/prop_rigidity.v:759) — the OUTPUT's core
+    [a_sub_sub_flex_ty_core] uses (typing/prop_rigidity.v:759) — the OUTPUT's core
     IS the input's — is FALSE once [core_rigid] is relaxed to
     [core_rigid_above]: [a_sub_flex__assign] SUBSTITUTES the input skeleton
     ([subst_pskl_in_pskl ⌈τ⌉ β P0], algo/def_extra.v:1300), so when the

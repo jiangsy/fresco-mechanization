@@ -74,7 +74,7 @@ Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_compose.
 Require Import src.frost.algo.prop_mono_bridge.
-Require Import src.frost.algo.prop_soundness_consis.
+Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.prop_precise.
 
 Set Implicit Arguments.

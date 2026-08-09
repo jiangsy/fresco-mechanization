@@ -1,7 +1,7 @@
 (** P6-Ss — completeness of subtyping CONSTRAINT COLLECTION AND SOLVING
     (paper [lemma:complete-constraint-collection-solving],
     subtyping-proofs.tex:2202).  The subtyping twin of the closed P6-Cs
-    ([a_lookeq_solve_complete], completeness_look/prop_eq_cstr.v).
+    ([a_lookeq_solve_complete], sub/look/prop_eq_cstr.v).
 
     ⚠️ THE PAPER'S STATEMENT INHERITS P6-Sv'S FALSITY.  Its first special
     case ("if P = α then S = α") applies P6-Sv WITH THE IDENTITY
@@ -46,29 +46,31 @@ Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_refine.
-Require Import src.frost.algo.prop_soundness_consis.
-Require Import src.frost.algo.prop_completeness_consis.
+Require Import src.frost.algo.consis.prop_soundness_consis.
+Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.decorated_algo.prop_decorate.
 Require Import src.frost.decorated_algo.prop_decorate_sub.
 Require Import src.frost.algo.prop_pat_sub.
-Require Import src.frost.algo.prop_consis_precise.
-Require Import src.frost.algo.prop_looksub.
-Require Import src.frost.algo.prop_soundness_sub.    (* a_wf_pskl_open *)
-Require Import src.frost.algo.prop_solve_sub.
-Require Import src.frost.algo.prop_completeness_sub_precise.
+Require Import src.frost.algo.consis.prop_consis_precise.
+Require Import src.frost.algo.sub.prop_looksub.
+Require Import src.frost.algo.sub.prop_soundness_sub.    (* a_wf_pskl_open *)
+Require Import src.frost.algo.sub.prop_solve_sub.
+Require Import src.frost.algo.sub.prop_completeness_sub_precise.
 Require Import src.frost.algo.prop_normal.
 Require Import src.frost.algo.prop_inc_strengthen.
 Require Import src.frost.algo.prop_compose.
 Require Import src.frost.algo.prop_metasubst.
-Require Import src.frost.algo.completeness_look.prop_kit.
-Require Import src.frost.algo.completeness_look.prop_eq_var.
+Require Import src.frost.algo.sub.look.prop_rho_relation.
+Require Import src.frost.algo.sub.look.prop_solve_ext.
+Require Import src.frost.algo.sub.look.prop_flex_apart.
+Require Import src.frost.algo.sub.look.prop_eq_var.
 
 Set Implicit Arguments.
 
-Require Import src.frost.algo.completeness_look.prop_eq_cstr.
-Require Import src.frost.algo.completeness_look.prop_sub_var.
+Require Import src.frost.algo.sub.look.prop_eq_cstr.
+Require Import src.frost.algo.sub.look.prop_sub_var.
 
 (* ===================================================================== *)
 (*  ⭕⭕ [ss_step] / [ss_walk] / [sub_shield] AND THEIR KIT DELETED          *)
@@ -111,7 +113,7 @@ Require Import src.frost.algo.completeness_look.prop_sub_var.
 (* ===================================================================== *)
 
 (** The mirror of [ad_partial_precise_delta_weaken_fresh]
-    (completeness_look/prop_kit.v): a Δ-entry the TARGET does not mention can be
+    (sub/look/prop_rho_relation.v): a Δ-entry the TARGET does not mention can be
     dropped again.  Sub-ForallL needs both directions — it hands the IH the
     precision premise at [add β Δ] (β joins Δρ, and [Δρ ⊆ Δ]) and must
     return the IH's conclusion at plain Δ.
@@ -456,7 +458,7 @@ Lemma a_looksub_solve_complete_leaf :
      cannot move, so every other premise speaks of a [Θ] related to [Θs] only
      by binds-monotonicity ([Hext], the last premise).  At the top level and
      in every non-∀ row [Θs = Θ].  This is P6-Sv's device
-     (completeness_look/prop_sub_var.v:1674) and NOT P6-Cs's same-named one
+     (sub/look/prop_sub_var.v:1674) and NOT P6-Cs's same-named one
      (whose [Θs] fixes the ρ-IMAGES' scope for the ftv-𝒞 bound — Phase B). *)
   ad_pat_sub_g n NM M Ψsub Θs Rsub Q ->
   Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl Rsub) ->
@@ -674,7 +676,7 @@ Qed.
     its cofinite family ([a_looksub_lookeq_rename_tvar]).
 
     TWO context parameters, and they are NOT the same device:
-      · [Θs] — the DERIVATION's context (P6-Sv's, completeness_look/prop_sub_var.v:1674).
+      · [Θs] — the DERIVATION's context (P6-Sv's, sub/look/prop_sub_var.v:1674).
         The ∀ rows must run the recursion at [Θ,β] while the derivation's own
         context is an INDEX and cannot move.
       · P6-Cs's [Θs] (the ρ-images' fixed scope, for its ftv-𝒞 conclusion) is
@@ -1039,11 +1041,11 @@ Proof.
                    [a_cstr_sub tc P0] at the UNDESCENDED P0, so the binder is
                    never introduced.  The IH still supplies the solve, and
                    lifting it over the ∀ is P6-Sv's strengthen-then-rename
-                   recipe (completeness_look/prop_sub_var.v:2036). *)
+                   recipe (sub/look/prop_sub_var.v:2036). *)
     (* [skmod{TY}] makes P0 a TYPE, so the refinement's inherited-∀ target
        forces P0 = ∀.P0': every other type shape is GUARDED, and a guarded
        source refines only to a guarded target.  This block is P6-Sv's
-       (completeness_look/prop_sub_var.v:1880) verbatim. *)
+       (sub/look/prop_sub_var.v:1880) verbatim. *)
     pose proof (HmodTY eq_refl) as Hmod.
     inversion Hmod as [ | A HeqA | ]; subst.
     destruct A as [ | nA | αA | A1 A2 | A0 ];
@@ -1336,7 +1338,7 @@ Proof.
              descended 𝒞 (cex/cex_p6ss_sub_target_ftv.v).  The IH still
              supplies the solve, at the descended target; lifting it over
              the ∀ is P6-Sv's strengthen-then-rename recipe
-             (completeness_look/prop_sub_var.v:2036). ---- *)
+             (sub/look/prop_sub_var.v:2036). ---- *)
         cbn [ftvar_in_cstrs] in *.
         (* the IH's solve is a ONE-constraint run, so it inverts to SS *)
         assert (Hss : ((β ~ abind_tvar) ++ Θ0) ⊢ₛ Pi
@@ -1347,7 +1349,7 @@ Proof.
            the target here legitimately mentions β (that is the whole point of
            this branch), so [a_solve_sub_ftv] is useless.  Precision bounds the
            SOURCE by ψa ∪ Δ ∪ def_ftv Θ, all β-free.  P6-Sv's ForallR row does
-           exactly this (completeness_look/prop_sub_var.v:2020). *)
+           exactly this (sub/look/prop_sub_var.v:2020). *)
         cbn [app] in Hprec.
         assert (Hdκs : dom κs [=] dom Ξs) by (apply keys_eq_dom; exact Hks).
         assert (HβPaκ0 : β `notin`
@@ -2093,7 +2095,7 @@ Proof.
        SCOPE OF THE REPAIR, MEASURED.  The Check row hands its WHOLE
        subject to P6-Cs, and a ForallL can sit above a Check, so **P6-Cs
        must be ρ-generalized too**.  That is threading, not new theory:
-       P6-Cv ([a_solve_eq_complete_var_gen], completeness_look/prop_eq_var.v:505)
+       P6-Cv ([a_solve_eq_complete_var_gen], sub/look/prop_eq_var.v:505)
        ALREADY takes [uskl_rho NM Θ Δρ Ψρ ψsub ψa]; the [uskl_rho_*_l_inv]
        kit exists; P6-Cs's measure ([size R' + size P0], on the ρ-FREE
        ideal subject) is unaffected; its ∀ rows open with fresh VARIABLES
@@ -2104,7 +2106,7 @@ Proof.
        statement below instantiates it at [empty], so nothing has moved
        yet) with [sub_shield_add_fresh] / [_weaken_tvar], and
        [ad_partial_precise_delta_shrink_fresh] is the Δ-return the row
-       needs.  P6-Sv's ForallL row (completeness_look/prop_sub_var.v:2308) is
+       needs.  P6-Sv's ForallL row (sub/look/prop_sub_var.v:2308) is
        the line-by-line template for the rest — with one simplification:
        P6-Ss's ∀ comes from the SUBJECT, so ψa, P0, Pi, Ψi and Ψa do NOT
        move, and only Θ0/Θ/Δ/Δρ grow by β. *)

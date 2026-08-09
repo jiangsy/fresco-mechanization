@@ -2,7 +2,7 @@
    case — [a_solve_eq_complete_var] (consistency-proofs.tex:1180), CLOSED
    axiom-free and PREMISE-FAITHFUL to the paper (the earlier mech-only
    [pskl_no_hole P0] side condition was removed by the [aenv_split] bag
-   rework, 2026-07-27).  Extends completeness_look/prop_kit.v with the ForallSyn
+   rework, 2026-07-27).  Extends sub/look/prop_rho_relation.v with the ForallSyn
    machinery (the bag-split generalized theorem, the aenv-tvar precision
    rename, and the three ForallGhost / GhostL / UnivGhost rows). *)
 Require Import Coq.Lists.List.
@@ -27,25 +27,27 @@ Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_refine.
-Require Import src.frost.algo.prop_soundness_consis.
-Require Import src.frost.algo.prop_completeness_consis.
+Require Import src.frost.algo.consis.prop_soundness_consis.
+Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.decorated_algo.prop_decorate.
 Require Import src.frost.algo.prop_pat_sub.
-Require Import src.frost.algo.prop_consis_precise.
-Require Import src.frost.algo.prop_looksub.
-Require Import src.frost.algo.prop_solve_sub.
-Require Import src.frost.algo.prop_completeness_sub_precise.
+Require Import src.frost.algo.consis.prop_consis_precise.
+Require Import src.frost.algo.sub.prop_looksub.
+Require Import src.frost.algo.sub.prop_solve_sub.
+Require Import src.frost.algo.sub.prop_completeness_sub_precise.
 Require Import src.frost.algo.prop_normal.
 Require Import src.frost.algo.prop_inc_strengthen.
 Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_compose.   (* a_inc_lookup_mono, a_inc_dom_flex *)
-Require Import src.frost.algo.completeness_look.prop_kit.
+Require Import src.frost.algo.sub.look.prop_rho_relation.
+Require Import src.frost.algo.sub.look.prop_solve_ext.
+Require Import src.frost.algo.sub.look.prop_flex_apart.
 
 Set Implicit Arguments.
 
-(* Most P6-Cv leaf/absurd helpers live in completeness_look/prop_kit.v; this file
+(* Most P6-Cv leaf/absurd helpers live in sub/look/prop_rho_relation.v; this file
    adds the ForallSyn-specific kit and the main induction over the whole
    consistency judgment. *)
 
@@ -504,7 +506,7 @@ Qed.
 
 (* ===================================================================== *)
 (*  ⭐ THE CONCLUSION CARRIES THE κ-EXTENSION (2026-08-04, the SolE-FlexR  *)
-(*  repair).  [solve_ext] (completeness_look/prop_kit.v) supplies the six          *)
+(*  repair).  [solve_ext] (sub/look/prop_rho_relation.v) supplies the six          *)
 (*  components every P6 statement now shares — the solve, its generated    *)
 (*  block [Ξ], and the aligned extension [κ'] of the metasubstitution      *)
 (*  over that block; P6-Cv's own post-condition is the Δ'-FAMILY of        *)
@@ -3475,7 +3477,7 @@ Qed.
 (*      since Δρ = ∅ — only the P6-Rv ForallL descent maintains it.       *)
 (*   4. the rho_fresh / Δρ ⊆ Δ / shielded pack — replaces the paper's     *)
 (*      positional "Pi has the same rigid variable at every ρ-position"   *)
-(*      side condition ([paper-gap], see the completeness_look/prop_kit.v         *)
+(*      side condition ([paper-gap], see the sub/look/prop_rho_relation.v         *)
 (*      header); established at the one leaf-creating call site, P6-Rv    *)
 (*      ForallL.                                                          *)
 (*  CONCLUSION vs paper: κa is instantiated to κ itself (a strengthening  *)

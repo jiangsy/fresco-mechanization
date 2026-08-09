@@ -67,8 +67,8 @@ Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_pat_sub.
-Require Import src.frost.algo.prop_soundness_sub.
-Require Import src.frost.algo.prop_soundness_pat.
+Require Import src.frost.algo.sub.prop_soundness_sub.
+Require Import src.frost.algo.pat.prop_soundness_pat.
 Require Import src.frost.decl.prop_basic.
 
 Set Implicit Arguments.

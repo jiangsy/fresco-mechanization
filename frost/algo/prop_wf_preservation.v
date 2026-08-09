@@ -47,15 +47,16 @@ Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_refine.
-Require Import src.frost.algo.prop_consis_rename.
-Require Import src.frost.algo.prop_soundness_consis.
-Require Import src.frost.algo.completeness_look.prop_kit.
-Require Import src.frost.algo.completeness_look.prop_sub_var.
-Require Import src.frost.algo.prop_completeness_consis.
+Require Import src.frost.algo.consis.prop_consis_rename.
+Require Import src.frost.algo.consis.prop_soundness_consis.
+Require Import src.frost.algo.sub.look.prop_rho_relation.
+Require Import src.frost.algo.sub.look.prop_solve_ext.
+Require Import src.frost.algo.sub.look.prop_sub_var.
+Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_metasubst.
-Require Import src.frost.algo.prop_looksub.
-Require Import src.frost.algo.prop_soundness_sub.
+Require Import src.frost.algo.sub.prop_looksub.
+Require Import src.frost.algo.sub.prop_soundness_sub.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
 

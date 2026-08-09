@@ -232,7 +232,7 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-09 (latest) — ⚙ **CLEANUP PHASE 3: `frost/prop_coercions.v`, the `_thm` retirement, `make tidy`, §8.1d; duplicates 53 → 33**
+## 2026-08-09 (latest) — ⚙ **CLEANUP PHASE 3: `frost/prop_coercions.v`, the `_thm` retirement, `make tidy`, §8.1d, and the algo/ FILE REORG; duplicates 53 → 33**
 
 Continues the post-theorem-4 cleanup audit
 ([`docs/REPORT-remech-cleanup-audit.md`](docs/REPORT-remech-cleanup-audit.md),
@@ -287,6 +287,29 @@ here), so a clean run is the only way to see them all at once.
   `a_wf_aenv_binds_def_mono` look deletable but are not — some consumers see
   only the losing copy, and ADDING an import to fix that is the move that has
   broken this build before.
+- **FILE REORG (phase 3c).**  `completeness_look/prop_kit.v` — 6952 lines,
+  three concerns, the audit's named source of most duplicate names — is split
+  into `sub/look/prop_rho_relation.v` (3286), `sub/look/prop_solve_ext.v`
+  (1692) and `sub/look/prop_flex_apart.v` (2103).  "kit" named nothing.
+- **`algo/` grouped BY JUDGEMENT**: 35 flat files → 18 flat + `consis/` (4),
+  `sub/` (8, with `sub/look/` 8), `pat/` (2), `typing/` (5).  ⚠️ A
+  `soundness/` vs `completeness/` split would be FALSE — there is no
+  soundness-only file; `prop_soundness_consis.v` is imported by 13
+  completeness files, so soundness is kit for completeness.  ⚠️ No `kit/`
+  folder either: 9 files whose only shared property is "shared" repeats the
+  `prop_kit.v` mistake at directory scale.  27 module paths rewritten.
+- `prop_sub_concrete_rhs.v` → `cex/probe_sub_concrete_rhs.v` (zero consumers;
+  it is a finding, not machinery).
+- ⚠️ **`Set Implicit Arguments` is per-FILE, so splitting a file drops it from
+  every half but the first** — third appearance of this trap today, now from
+  splitting rather than moving.  ⚙ And the failure is SILENT inside
+  `match goal`: a branch whose BODY fails to elaborate is reported only as
+  "No matching clauses for match", pointing at a pattern that does match.
+- ⚠️ **A stale `.vo` lets a dead import resolve** rather than fail — three
+  `cex/` files still imported the deleted `prop_kit` and surfaced only as
+  "makes inconsistent assumptions over library".  Run `make tidy` after any
+  rename.  ⚙ Cheap pre-build check for a path change: verify every `Require`d
+  `src.*` module resolves to a real file.
 - **`make tidy`.**  Phase 1's hand sweep regrew (11 `.glob`, 66 `.aux`): `clean`
   globbed only two directory levels and the tree is three deep, and it knew only
   the `scratch_*` prefix.  `tidy` deletes an artifact iff its companion `.v` is

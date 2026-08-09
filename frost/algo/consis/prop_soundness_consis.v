@@ -47,7 +47,7 @@ Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_mono_bridge.
 (* cluster 4: [a_consis_decorate] moved downstream, into §10 there *)
-Require Import src.frost.algo.prop_consis_rename.
+Require Import src.frost.algo.consis.prop_consis_rename.
 
 Set Implicit Arguments.
 

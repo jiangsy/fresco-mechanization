@@ -48,21 +48,23 @@ Require Import src.frost.decorated_algo.def_decorated.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_refine.
-Require Import src.frost.algo.prop_soundness_consis.
-Require Import src.frost.algo.prop_completeness_consis.
+Require Import src.frost.algo.consis.prop_soundness_consis.
+Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.prop_pat_sub.
-Require Import src.frost.algo.prop_looksub.
-Require Import src.frost.algo.prop_solve_sub.
+Require Import src.frost.algo.sub.prop_looksub.
+Require Import src.frost.algo.sub.prop_solve_sub.
 Require Import src.frost.algo.prop_inc_strengthen.
 Require Import src.frost.algo.prop_compose.
 Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_normal.
-Require Import src.frost.algo.prop_completeness_sub_precise.
-Require Import src.frost.algo.completeness_look.prop_kit.
-Require Import src.frost.algo.completeness_look.prop_eq_cstr.
-Require Import src.frost.algo.completeness_look.prop_sub_cstr.
+Require Import src.frost.algo.sub.prop_completeness_sub_precise.
+Require Import src.frost.algo.sub.look.prop_rho_relation.
+Require Import src.frost.algo.sub.look.prop_solve_ext.
+Require Import src.frost.algo.sub.look.prop_flex_apart.
+Require Import src.frost.algo.sub.look.prop_eq_cstr.
+Require Import src.frost.algo.sub.look.prop_sub_cstr.
 
 Set Implicit Arguments.
 
@@ -511,7 +513,7 @@ Qed.
 (* ⭐ MOVED UPSTREAM (2026-08-04) to frost/algo/prop_metasubst.v:
    [msubst_pskl_lookup_congr_ftv], [msubst_lookup_mid_skip],
    [msubst_pskl_mid_skip].  Same reason as the [keys] kit — the κ-extension
-   is now built from completeness_look/prop_kit.v onwards, above this file. *)
+   is now built from sub/look/prop_rho_relation.v onwards, above this file. *)
 
 (** Precision is monotone in Δ (the [_f]-kit transport, at [F = ∅]). *)
 Lemma ad_precise_delta_mono : forall Θ Δ0 Δ P X,
@@ -527,7 +529,7 @@ Qed.
 (* [a_wf_pskl_rename_delta] — the wf twin of §5's [ad_precise_rename_delta] —
    MOVED to prop_completeness_consis.v (PART B) (beside [a_wf_pskl_ftv_dom], which its ∀◇
    case needs): the freshness campaign's solve cluster needs it in
-   completeness_look/prop_kit.v too, and that file and this one are independent. *)
+   sub/look/prop_rho_relation.v too, and that file and this one are independent. *)
 
 (* ===================================================================== *)
 (*  §8  THE TWO PROPERTIES OF THE INCOMING κ THE INDUCTION NEEDS           *)
@@ -564,7 +566,7 @@ Qed.
 
 (** Both properties survive prefixing a block of wf monotype images — which
     is what the ∀ / arrow cases hand back up.  [msubst_lc_app_wf] MOVED UP to
-    completeness_look/prop_kit.v (2026-08-04): under the SolE-FlexR repair every P6 ∀
+    sub/look/prop_rho_relation.v (2026-08-04): under the SolE-FlexR repair every P6 ∀
     row prefixes such a block, not only P6-L. *)
 
 Lemma msubst_ftv_app_wf : forall Θ κa κb,
@@ -988,7 +990,7 @@ Qed.
 (*   (13)     [a_extract__solve] on (a), (b) and the guess.                *)
 (*                                                                        *)
 (*  The [a_inc] and wf conclusions are assembled with the HOMOGENEOUS-FLEX *)
-(*  REORDER KIT of completeness_look/prop_eq_cstr.v: [a_extract] emits [Ξc,Ξ']    *)
+(*  REORDER KIT of sub/look/prop_eq_cstr.v: [a_extract] emits [Ξc,Ξ']    *)
 (*  where the natural build order is [Ξ',Ξc] (both blocks are undefined    *)
 (*  flexibles, so the order is immaterial — but not syntactically so).     *)
 (*                                                                        *)

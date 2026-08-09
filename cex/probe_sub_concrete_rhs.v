@@ -1,3 +1,11 @@
+(** ⚙ MOVED here from algo/ 2026-08-09 (file-reorg pass).  It has ZERO
+    consumers — nothing in the development imports it — because it is a
+    FINDING, not machinery: it proves the reading of the paper's `:3243` TODO
+    that its two cases actually need, against [cex_p7_concrete_rhs.v], which
+    refutes the syntactic reading the TODO states.  That is exactly what cex/
+    is for ("machine-checked counterexamples + probes; they are findings, not
+    part of the development").  Renamed probe_* to match its neighbours. *)
+
 (** THE EQUIVALENCE P7b's Sub-Check AND Sub-ForallR ACTUALLY NEED.
 
     `subtyping-proofs.tex:3243` records, inside P7b's Sub-ForallR case, a
@@ -46,7 +54,7 @@ Require Import src.frost.algo.def_meta.     (* ≡ˢ *)
 Require Import src.frost.decorated_algo.def_decl_algo.
 Require Import src.frost.algo.prop_precise.   (* bskl_to_pskl_open *)
 Require Import src.frost.algo.prop_pat_sub.   (* {pskl,bskl}_ghost_free *)
-Require Import src.frost.algo.prop_soundness_consis.  (* a_consis_sound, ad_refine_syn_f_forget *)
+Require Import src.frost.algo.consis.prop_soundness_consis.  (* a_consis_sound, ad_refine_syn_f_forget *)
 Require Import src.frost.decorated_algo.prop_decorate_key.   (* a_sub_sound *)
 
 Set Implicit Arguments.

@@ -3011,7 +3011,7 @@ stand.  The `_step` rows keep their result binder (`∀A` with the premise at
 
 Found while proving `thm:complete-type-inference` (proofs.tex:820-950).  The
 theorem is now mechanized in full (`a_typing_complete`,
-`algo/completeness_typing/prop_typing.v`, Qed and axiom-free), and the statement
+`algo/typing/prop_typing.v`, Qed and axiom-free), and the statement
 stands unchanged; what follows are findings on its PROOF.
 
 The case in question is `sd-AbsCheck`, whose paper proof opens
@@ -3030,7 +3030,7 @@ and then splits into subcase 1 (the arrow — the identity split) and subcase 2
 immediately.  A VARIABLE does not: the paper's `\hat\alpha` silently assumes
 the variable is FLEXIBLE, and the rigid case has to be refuted, because the
 split's flexible row is what the subcase is about and `a_split__flex` on a
-rigid variable is absurd (`a_split_rigid_var_absurd`, `algo/completeness_typing/prop_rigidity.v`).
+rigid variable is absurd (`a_split_rigid_var_absurd`, `algo/typing/prop_rigidity.v`).
 The refutation is short but is a lemma: a variable painting that refines to
 an ARROW must be a *defined* flexible, since refinement's `__var` and
 `__flex_r` rows both conclude at a VARIABLE target, so only `__flex_l` can
@@ -3103,7 +3103,7 @@ pending suffix `Ξ` does not occur in the run's result (the side condition
 registered as `RULE-LEVEL SIDE CONDITIONS` §1, 2026-08-06, which the rules
 now carry as a premise and which completeness has to DISCHARGE when it builds
 those rows).  Both are consequences of one invariant, now proved in a
-dedicated file `algo/completeness_typing/prop_scope.v`: a run's result is scoped in the region
+dedicated file `algo/typing/prop_scope.v`: a run's result is scoped in the region
 at-or-below any marker of its input context, EXCEPT for atoms that are rigid
 there.  It is a SCOPE-PROPAGATION statement over the subtyping and typing
 towers plus a region walk over assignment/unification/consistency; naive

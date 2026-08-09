@@ -60,10 +60,10 @@ Require Import src.frost.algo.prop_normal.
 Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.prop_mono_bridge.
-Require Import src.frost.algo.prop_soundness_consis.
+Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.prop_inc_strengthen.
 Require Import src.frost.algo.prop_precise_recover.
-Require Import src.frost.algo.prop_consis_rename.
+Require Import src.frost.algo.consis.prop_consis_rename.
 
 Set Implicit Arguments.
 
@@ -1249,7 +1249,7 @@ Qed.
     fresh for the body and the substitution is a no-op there.
 
     (Lives here, beside [a_wf_pskl_ftv_dom] which its ∀◇ case needs, so that
-    BOTH completeness_look/prop_kit.v and completeness_look/prop_extract.v can see it —
+    BOTH sub/look/prop_rho_relation.v and sub/look/prop_extract.v can see it —
     the two files are independent of each other.) *)
 
 (** ∀-INTRODUCTION FROM ONE INSTANCE — the exists-fresh idiom of DESIGN §4.3

@@ -53,19 +53,21 @@ Require Import src.frost.algo.prop_compose.
 Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
-Require Import src.frost.algo.prop_consis_precise.  (* d_tags_skl_var_inv *)
-Require Import src.frost.algo.prop_soundness_consis.    (* a_wf_pskl_lc *)
+Require Import src.frost.algo.consis.prop_consis_precise.  (* d_tags_skl_var_inv *)
+Require Import src.frost.algo.consis.prop_soundness_consis.    (* a_wf_pskl_lc *)
 Require Import src.frost.decorated_algo.prop_decorate_sub.    (* lc_uskl_to_pskl_local *)
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_refine.       (* ad_refine_syn_weaken *)
-Require Import src.frost.algo.prop_looksub.
-Require Import src.frost.algo.prop_soundness_sub.    (* a_wf_pskl_open *)
-Require Import src.frost.algo.prop_solve_sub.
-Require Import src.frost.algo.prop_completeness_consis.  (* a_wf_pskl_ftv_dom *)
-Require Import src.frost.algo.prop_completeness_sub_precise.
-Require Import src.frost.algo.completeness_look.prop_kit.
-Require Import src.frost.algo.completeness_look.prop_eq_var.
-Require Import src.frost.algo.completeness_look.prop_eq_cstr.  (* the ∀-binder kit,
+Require Import src.frost.algo.sub.prop_looksub.
+Require Import src.frost.algo.sub.prop_soundness_sub.    (* a_wf_pskl_open *)
+Require Import src.frost.algo.sub.prop_solve_sub.
+Require Import src.frost.algo.consis.prop_completeness_consis.  (* a_wf_pskl_ftv_dom *)
+Require Import src.frost.algo.sub.prop_completeness_sub_precise.
+Require Import src.frost.algo.sub.look.prop_rho_relation.
+Require Import src.frost.algo.sub.look.prop_solve_ext.
+Require Import src.frost.algo.sub.look.prop_flex_apart.
+Require Import src.frost.algo.sub.look.prop_eq_var.
+Require Import src.frost.algo.sub.look.prop_eq_cstr.  (* the ∀-binder kit,
     [mono_ptyp_to_uskl_syn_tskl], [ftag_in_uskl_ptyp_to_uskl_syn], … *)
 
 Set Implicit Arguments.
@@ -74,7 +76,7 @@ Set Implicit Arguments.
 (*  Raw-flexible-freedom of a payload                                     *)
 (* ===================================================================== *)
 
-(** [pskl_flex_free] and its kit MOVED UP to completeness_look/prop_kit.v — it is
+(** [pskl_flex_free] and its kit MOVED UP to sub/look/prop_flex_apart.v — it is
     now a base rule of [flex_apart] too ([fa_flexfree]), so it must be in
     scope before P6-Cv.  See DESIGN §10. *)
 
@@ -557,7 +559,7 @@ Qed.
 
 (** ρ preserves decoratedness: images are tags-sorted and the congruences
     keep the shape. *)
-(* [uskl_rho_is_tskl] MOVED to completeness_look/prop_kit.v (P6-Cs needs it under
+(* [uskl_rho_is_tskl] MOVED to sub/look/prop_rho_relation.v (P6-Cs needs it under
    the ρ-generalization, and this file is downstream of P6-Cs). *)
 
 (** THE ρ-EXTENSION.  Sub-ForallL's [ρ_b = ρ ∘ [ψ_b/β]] in full: recurse on
@@ -723,7 +725,7 @@ Proof.
 Qed.
 
 (* [fa_step] / [fa_walk] / [flex_apart_walk] and its three lemmas MOVED to
-   completeness_look/prop_kit.v, next to [flex_apart] itself: P6-Cs needs them too
+   sub/look/prop_flex_apart.v, next to [flex_apart] itself: P6-Cs needs them too
    under the ρ-generalization, and this file is DOWNSTREAM of P6-Cs. *)
 
 (* ===================================================================== *)
@@ -733,7 +735,7 @@ Qed.
 (** When the guess at this position is a ρ-REPLACED RIGID VARIABLE, the
     freshness pack forces [Pi] to be that very variable, SolS-Var solves
     with [Pa := Pi], and the conclusion's precision is the var rule.  This
-    is the subtyping twin of [p6cv_close_leaf] (completeness_look/prop_kit.v:1134):
+    is the subtyping twin of [p6cv_close_leaf] (sub/look/prop_rho_relation.v:1134):
     same argument, [a_solve_sub__var] in place of [a_solve_eq__var].
 
     It serves BOTH leaf sources: the [rho_leaf] disjunct of the [uskl_rho]
@@ -809,17 +811,17 @@ Qed.
     the IMAGE's free variables are the source's plus the context's.  Sub-
     ForallL needs it to know that a source binder unused under ρ is unused
     in the image too. *)
-(* [uskl_rho_ftv_subject_bound] MOVED to completeness_look/prop_kit.v — P6-Cs needs
+(* [uskl_rho_ftv_subject_bound] MOVED to sub/look/prop_rho_relation.v — P6-Cs needs
    it under the ρ-generalization, and this file is downstream of P6-Cs. *)
 
-(* ⚙ [a_wf_pskl_shielded_dom] was re-proved here; deleted 2026-08-09 (cleanup audit §8.1) — identical to the one in prop_kit.v, which this file imports. *)
+(* ⚙ [a_wf_pskl_shielded_dom] was re-proved here; deleted 2026-08-09 (cleanup audit §8.1) — identical to the one in prop_rho_relation.v, which this file imports. *)
 
 (** The converse of [a_wf_pskl_delta_to_tvar_mid], for PRECISION: a rigid
     binder that ALREADY sits in Δ may be dropped from the aenv.  Sub-ForallL
     needs exactly this — the recursive call runs at [Θ,β] because
     [rho_fresh] insists every ρ-replaced variable be a rigid of the context,
     while the precision the case must REBUILD lives at Θ with β only in Δ.
-    (The [strip] version in completeness_look/prop_eq_cstr.v instead demands β free
+    (The [strip] version in sub/look/prop_eq_cstr.v instead demands β free
     in NEITHER side; here β is free in both, and Δ-membership is what keeps
     the var rule alive.) *)
 Lemma ad_partial_precise_tvar_to_delta_mid : forall Θf Δ Ψ P ψ,
@@ -1087,7 +1089,7 @@ Qed.
 (* ===================================================================== *)
 
 (** Premises are the paper's, threaded exactly as in the CLOSED consistency
-    twin [a_solve_eq_complete_var] (completeness_look/prop_eq_var.v:3070) —
+    twin [a_solve_eq_complete_var] (sub/look/prop_eq_var.v:3070) —
     ρ/[uskl_rho], the tag bookkeeping, the freshness pack, [flex_apart] —
     with three differences:
 
@@ -1194,7 +1196,7 @@ Lemma in_dom_app_r : forall (x : atom) (E F : aenv),
 Proof. intros x E F H; rewrite dom_app; clear - H; fsetdec. Qed.
 
 (* ⚙ [pskl_shielded_ftv_ptyp_to_pskl] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
-   one in prop_kit.v, which this file imports. *)
+   one in prop_rho_relation.v, which this file imports. *)
 
 Lemma solve_binder_apart_dom : forall (b β0 : atom) (Θ : aenv) S,
   b `notin` S ->
@@ -1459,7 +1461,7 @@ Qed.
 
 (* ⭐⭐ P6-Sv UNDER THE SolE-FlexR REPAIR — GREEN (2026-08-05).
 
-   The conclusion is [solve_sub_ext] (completeness_look/prop_kit.v): the block [Ξ] the
+   The conclusion is [solve_sub_ext] (sub/look/prop_rho_relation.v): the block [Ξ] the
    solve now generates, its aligned extension [κ'], the freshness against an
    avoid-set PARAMETER [L], the payloads' well-formedness at a FIXED [Θw], and
    the paper's [Θ0 ⊢ P_a] — restated at [Ξ ++ Θ0], since the repaired
@@ -1544,7 +1546,7 @@ Theorem a_solve_sub_complete_var :
   (* ⭐ THE AVOID-SET PARAMETER: the SOLVE generates its own block now, and at
      a binder row the witness has to be fixed BEFORE the block is picked. *)
   forall L, ftvar_in_aenv Θ0 [<=] L ->
-  (* [solve_sub_ext] (completeness_look/prop_kit.v) packages the block [Ξ], its
+  (* [solve_sub_ext] (sub/look/prop_rho_relation.v) packages the block [Ξ], its
      aligned extension [κ'], the freshness, the payloads' well-formedness at
      the FIXED [Θw], and the paper's [Θ0 ⊢ P_a] — which is a CONCLUSION of
      this lemma, not a consequence of a general "solving preserves

@@ -46,7 +46,7 @@ Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.prop_flex.   (* the guess freshness kit *)
 (* cluster 4: the ∀ rows are exists-fresh + close now, so these concrete
    examples go through the cofinite ADMISSIBILITY lemmas (§9) *)
-Require Import src.frost.algo.prop_consis_rename.
+Require Import src.frost.algo.consis.prop_consis_rename.
 
 (* ===================================================================== *)
 (*  Tactic kit                                                            *)

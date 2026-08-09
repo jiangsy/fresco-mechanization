@@ -395,7 +395,7 @@ Qed.
    it collided with prop_soundness_consis.v:1586's, which concludes the same
    fact in [ [<=] ] form.  The two are logically equal but NOT apply-compatible,
    so which one an unqualified reference picked up depended on import ORDER —
-   adding a [Require Import] to prop_kit.v silently flipped four call sites and
+   adding a [Require Import] to prop_rho_relation.v silently flipped four call sites and
    broke the build.  This one is the POINTWISE form; hence the suffix. *)
 Lemma a_wf_aenv_def_ftv_dom_in : forall Θ β τ,
   a_wf_aenv Θ ->

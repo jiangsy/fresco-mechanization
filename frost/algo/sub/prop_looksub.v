@@ -23,8 +23,8 @@ Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_swap.
-Require Import src.frost.algo.prop_solve_sub.
-Require Import src.frost.algo.prop_soundness_consis.
+Require Import src.frost.algo.sub.prop_solve_sub.
+Require Import src.frost.algo.consis.prop_soundness_consis.
 
 Set Implicit Arguments.
 
@@ -230,7 +230,7 @@ Proof.
 Qed.
 
 (* A CONSISTENCY collection only ever deposits eq constraints.  MOVED here
-   from completeness_look/prop_eq_cstr.v (2026-08-01): it is a basic property of the
+   from sub/look/prop_eq_cstr.v (2026-08-01): it is a basic property of the
    judgment, and the source-substitution lemma of prop_decorate_sub.v needs it
    for its arrow rows — that file is UPSTREAM of P6-Cs.
    EXISTS-FRESH SIMPLIFICATION (cluster 3): the three ∀ rows used to hand back
@@ -1831,7 +1831,7 @@ Qed.
 
 (* ===================================================================== *)
 (*  §11. The [a_extract] FAMILY from one instance                         *)
-(*  (moved here from completeness_look/prop_extract.v, campaign cluster 5:    *)
+(*  (moved here from sub/look/prop_extract.v, campaign cluster 5:    *)
 (*   [prop_decorate_key.v] needs it too, and that file is a sibling of    *)
 (*   P6-L's, not a consumer.)                                            *)
 (* ===================================================================== *)

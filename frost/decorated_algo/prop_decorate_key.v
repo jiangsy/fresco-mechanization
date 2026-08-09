@@ -24,17 +24,17 @@ Require Import src.frost.decorated_algo.def_decl_algo_sub_hyg.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_precise.
-Require Import src.frost.algo.prop_soundness_consis.
+Require Import src.frost.algo.consis.prop_soundness_consis.
 (* cluster 4: [a_consis_decorate] moved to prop_consis_rename.v §10 *)
-Require Import src.frost.algo.prop_consis_rename.
+Require Import src.frost.algo.consis.prop_consis_rename.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.decorated_algo.prop_decorate.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_flex.
-Require Import src.frost.algo.prop_solve_sub.
-Require Import src.frost.algo.prop_looksub.
-Require Import src.frost.algo.prop_soundness_sub.
+Require Import src.frost.algo.sub.prop_solve_sub.
+Require Import src.frost.algo.sub.prop_looksub.
+Require Import src.frost.algo.sub.prop_soundness_sub.
 Require Import src.frost.decorated_algo.prop_decorate_sub.
 
 Set Implicit Arguments.

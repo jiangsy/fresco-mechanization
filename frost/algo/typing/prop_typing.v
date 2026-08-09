@@ -26,7 +26,7 @@
     The statement is [typ_complete_concl] below, factored like
     [pat_complete_concl]; the base rows feed [a_sub_complete] at TY,
     with the run's output packaged as a painted [ptyp] by
-    [a_sub_ty_ghost_free_output] (completeness_typing/prop_rigidity.v) and the optimality
+    [a_sub_ty_ghost_free_output] (typing/prop_rigidity.v) and the optimality
     conclusion converted by [ad_precise_painting_tyequiv]'s idiom (a
     precision between two type paintings IS a type equivalence, via
     [ad_refine_syn_inh_tyequiv]).
@@ -38,7 +38,7 @@
     splitting at check mode, i.e. the paper's AbsCheck subcase 2 — and App
     (invokes THEOREM 3).  Glue: lexicographic [(size_exp, size_btyp)] in
     [a_typing_complete_gen] (:4495).  The suffix-discarding rows' scoping
-    premise is discharged from algo/completeness_typing/prop_scope.v. *)
+    premise is discharged from algo/typing/prop_scope.v. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -62,32 +62,32 @@ Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_inc_strengthen.
 Require Import src.frost.algo.prop_compose.
 Require Import src.frost.decorated_algo.prop_decorate.
-Require Import src.frost.algo.prop_sub_msubst_equiv.
+Require Import src.frost.algo.sub.prop_sub_msubst_equiv.
 Require Import src.frost.algo.prop_swap.
-Require Import src.frost.algo.prop_completeness_sub_gen.
-Require Import src.frost.algo.prop_completeness_sub.
+Require Import src.frost.algo.sub.prop_completeness_sub_gen.
+Require Import src.frost.algo.sub.prop_completeness_sub.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_refine.
-Require Import src.frost.algo.prop_completeness_consis.
+Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_precise.
-Require Import src.frost.algo.prop_consis_rename.
-Require Import src.frost.algo.prop_soundness_consis.
+Require Import src.frost.algo.consis.prop_consis_rename.
+Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.prop_wf_preservation.
 Require Import src.frost.algo.prop_normal.
-Require Import src.frost.algo.prop_solve_sub.
+Require Import src.frost.algo.sub.prop_solve_sub.
 Require Import Coq.micromega.Lia.
 
 Set Implicit Arguments.
-Require Import src.frost.algo.prop_soundness_sub.
-Require Import src.frost.algo.prop_soundness_pat.
+Require Import src.frost.algo.sub.prop_soundness_sub.
+Require Import src.frost.algo.pat.prop_soundness_pat.
 Require Import src.frost.algo.prop_suffix_erase.
-Require Import src.frost.algo.prop_soundness_typing.
+Require Import src.frost.algo.typing.prop_soundness_typing.
 Require Import src.frost.algo.prop_precise_sub.
-Require Import src.frost.algo.prop_completeness_pat.
-Require Import src.frost.algo.completeness_typing.prop_rigidity.
-Require Import src.frost.algo.completeness_typing.prop_shape.
-Require Import src.frost.algo.completeness_typing.prop_scope.
+Require Import src.frost.algo.pat.prop_completeness_pat.
+Require Import src.frost.algo.typing.prop_rigidity.
+Require Import src.frost.algo.typing.prop_shape.
+Require Import src.frost.algo.typing.prop_scope.
 
 
 (* ===================================================================== *)
@@ -247,7 +247,7 @@ Qed.
 (*  The Anno base row — TWO stages: the body at [(TC, ⌈A⌉)] (the IH),     *)
 (*  then the fused subtyping ([a_sub_complete]).  ⭐ The body run      *)
 (*  returns the annotation ITSELF ([a_typing_tc_rigid_output],            *)
-(*  completeness_typing/prop_rigidity.v) — the fact [AT-Anno]'s premise demands and the        *)
+(*  typing/prop_rigidity.v) — the fact [AT-Anno]'s premise demands and the        *)
 (*  paper's Anno case asserts by metavariable pun.  The optimality glues  *)
 (*  the two factorings by [a_inc_equiv_glue]; the dom side condition is   *)
 (*  [a_inc_id_flex_preserve] at the body run's own identity increase.     *)
@@ -318,7 +318,7 @@ Proof.
                     apply ad_refine_syn_refl_inh;
                     apply a_wf_ptyp_to_wf_pskl; exact HwfAΘ))
     as [A1' [Θmid [HrunB HoptB]]].
-  (* ⭐ the run returned the ANNOTATION ITSELF (completeness_typing/prop_rigidity.v) *)
+  (* ⭐ the run returned the ANNOTATION ITSELF (typing/prop_rigidity.v) *)
   assert (HA1' : A1' = A).
   { eapply a_typing_tc_rigid_output; [ exact HrunB | ].
     intros α Hα.
@@ -2842,7 +2842,7 @@ Qed.
 (* ===================================================================== *)
 (*  The two rows, discharging premise (2) with the §6.3#2 scoping         *)
 (*  invariant — [a_typing_scope_tvar_nil], the TVAR-marker corollary at   *)
-(*  [Ξ0 = nil] (algo/completeness_typing/prop_scope.v).                                    *)
+(*  [Ξ0 = nil] (algo/typing/prop_scope.v).                                    *)
 (* ===================================================================== *)
 
 (* --- the AbsCheck ∀ row ------------------------------------------------ *)

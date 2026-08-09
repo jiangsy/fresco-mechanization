@@ -46,7 +46,7 @@ removed developments).
 > mirroring the existing `completeness_look/`:
 >
 > ```text
-> algo/completeness_typing/
+> algo/typing/
 >   prop_typing.v      the theorem      (was algo/prop_completeness_typing.v)
 >   prop_rigidity.v    rigid data survives a run          (was prop_ty_core.v)
 >   prop_scope.v       a run's result never mentions the
@@ -355,6 +355,72 @@ removed developments).
 > blind to the second.  **For a dedupe or a move, `make coq` is the only gate.**
 > Related: `make coq > log; echo $?` reports the *echo's* status — a failed
 > build reads as exit 0.
+>
+> ## ✅ PHASE 3c (2026-08-09) — FILE REORG: the "kit" is gone, `algo/` is grouped by judgement
+>
+> ### The `prop_kit.v` rename became a three-way split
+>
+> "kit" named nothing, and a rename alone could not be honest: the file was
+> **6952 lines and three separable concerns**, and §8.3 had already called it
+> "the grab-bag, and the source of most §8.1 duplicates".  Now:
+>
+> | file | lines | owns |
+> |---|---|---|
+> | `sub/look/prop_rho_relation.v` | 3286 | the ρ relation `uskl_rho`, its inversions by subject and by target, shielded ftv / `rho_fresh`, the solve-context transports |
+> | `sub/look/prop_solve_ext.v` | 1692 | the flex-block extension algebra and the three packages P6 is stated over — `solve_ext`, `solve_sub_ext`, `cv_mono_concl` |
+> | `sub/look/prop_flex_apart.v` | 2103 | `flex_apart` and the Arrow-case repair |
+>
+> ⚙ Cuts in a linear Coq file are always dependency-clean (nothing can use what
+> is not yet defined), so the only question is COHERENCE.  The second seam took
+> care: the ρ inversions appear at two separate points, so the cut is at the
+> flex-block extension kit, which puts all three `solve_*` definitions on one
+> side and all four ρ definitions on the other.
+>
+> ### `algo/` grouped BY JUDGEMENT — 35 flat files → 18 flat + 4 folders
+>
+> ```text
+> algo/  def_extra def_meta + the shared machinery, deliberately FLAT
+>        consis/  4    sub/  8 (+ look/ 8)    pat/  2    typing/  5
+> ```
+>
+> ⚠️ **A `soundness/` vs `completeness/` split would have been a lie**, and the
+> import graph says so: there is **no soundness-only file in the tree**.
+> `prop_soundness_consis.v` is imported by 13 completeness files,
+> `prop_soundness_sub.v` by 6.  Soundness results ARE kit for completeness.
+> Judgement is the axis that matches the dependencies.
+>
+> ⚠️ **No `kit/` folder either** — 9 files whose only shared property is
+> "shared" would have repeated the `prop_kit.v` mistake at directory scale.
+> The machinery stays flat until a real cluster emerges.
+>
+> `prop_sub_concrete_rhs.v` → `cex/probe_sub_concrete_rhs.v`: **zero
+> consumers**, because it is a FINDING, not machinery — it proves the reading
+> of the paper's `:3243` TODO that its two cases need, opposite
+> `cex_p7_concrete_rhs.v` which refutes the reading the TODO states.
+>
+> ### ⚠️ Three traps, each one a failed build
+>
+> 1. **`Set Implicit Arguments` is per-FILE.**  It was line 84 of `prop_kit.v`,
+>    so every split half needed its own copy; without it
+>    `pskl_flex_free_arrow_inv Hff` reads `Hff` as the `aenv`.  Third
+>    appearance today — after moving lemmas INTO a non-SIA file
+>    (`prop_coercions.v`) and now after SPLITTING an SIA file.  **A cross-file
+>    lemma move is not signature-preserving, in either direction.**
+> 2. **The failure was SILENT inside `match goal`.**  The error read
+>    `No matching clauses for match` and pointed at a pattern that — as the Coq
+>    MCP confirmed against the live proof state — *did* match: the hypothesis
+>    was right there.  When a branch's BODY fails to elaborate, `match goal`
+>    reports only that no clause matched.  Read the error as "pattern matched
+>    but body failed" before doubting the pattern.
+> 3. **A stale `.vo` let a dead import resolve.**  Three `cex/` files still
+>    imported `prop_kit` (I had grepped `frost/` only), and the leftover
+>    `prop_kit.vo` meant they *resolved* instead of failing cleanly — surfacing
+>    much later as "makes inconsistent assumptions over library".  `make tidy`
+>    removes exactly this; run it after ANY rename.
+>
+> ⚙ Verification for a path change: before building, check that every
+> `Require`d `src.*` module resolves to a real file (73 of 73 here).  It costs
+> a second and catches the whole class.
 >
 > ## Remaining
 >
@@ -918,7 +984,7 @@ because lemmas proved about one copy do not `apply` to the other:
 
 - **`pskl_no_hole`** — the identical 9-line `Fixpoint` at
   `algo/prop_completeness_consis.v:1047` **and**
-  `algo/completeness_look/prop_kit.v:6381`, each with its own satellite lemmas
+  `algo/sub/look/prop_kit.v:6381`, each with its own satellite lemmas
   (`ptyp_to_pskl_no_hole` is duplicated too).  `prop_kit.v` **imports**
   `prop_completeness_consis.v`, so the second shadows the first.
 - **`msubst_lc`** — `decorated_algo/prop_decorate_sub.v:173` and
@@ -954,7 +1020,7 @@ defined ad hoc in **20 different proof files**:
 
 ```
 binds_insert_mid       ×2 (prop_soundness_consis.v, prop_completeness_sub_gen.v)
-binds_weaken_mid       ×2 (prop_inc.v, completeness_look/prop_kit.v)  ← different shapes
+binds_weaken_mid       ×2 (prop_inc.v, sub/look/prop_kit.v)  ← different shapes
 binds_strengthen_mid, binds_swap_mid, binds_swap_app, binds_rot_app,
 binds_rot_app_rev, binds_app_perm5, binds_mid_drop, binds_mid_swap,
 binds_permute_mid, binds_split_mid, binds_strip_mid, binds_app_mid,
@@ -978,7 +1044,7 @@ directly above the algo layer and move the sort-agnostic ones there.  This kills
 |---|---|---|
 | `algo/prop_completeness_consis.v` | 8830 | self-documented as PART A (ex-`prop_consis_exist.v`) + PART B (ex-`prop_consis_complete.v`) |
 | `algo/prop_completeness_sub_gen.v` | 7536 | no internal PART banners at all |
-| `completeness_look/prop_kit.v` | 7030 | "the shared kit" — the grab-bag, and the source of most §8.1 duplicates |
+| `sub/look/prop_kit.v` | 7030 | "the shared kit" — the grab-bag, and the source of most §8.1 duplicates |
 | `algo/prop_completeness_typing.v` | 4638 | theorem 4 |
 | `decorated_algo/prop_decorate_key.v` | 4208 | — |
 

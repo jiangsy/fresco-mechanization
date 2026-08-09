@@ -81,7 +81,7 @@ Require Import src.frost.decorated_algo.def_decl_algo.
 Require Import src.frost.decorated_algo.def_decorated.
 Require Import src.frost.decorated_algo.def_decl_algo_sub.
 Require Import src.frost.decorated_algo.def_decl_algo_sub_hyg.
-Require Import src.frost.algo.completeness_look.prop_eq_cstr.   (* def_ftv *)
+Require Import src.frost.algo.sub.look.prop_eq_cstr.   (* def_ftv *)
 
 Set Implicit Arguments.
 

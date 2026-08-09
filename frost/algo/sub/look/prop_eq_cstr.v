@@ -47,23 +47,25 @@ Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_refine.
-Require Import src.frost.algo.prop_soundness_consis.
-Require Import src.frost.algo.prop_completeness_consis.
+Require Import src.frost.algo.consis.prop_soundness_consis.
+Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.decorated_algo.prop_decorate.
 Require Import src.frost.decorated_algo.prop_decorate_sub.
 Require Import src.frost.algo.prop_pat_sub.
-Require Import src.frost.algo.prop_consis_precise.
-Require Import src.frost.algo.prop_looksub.
-Require Import src.frost.algo.prop_solve_sub.
-Require Import src.frost.algo.prop_completeness_sub_precise.
+Require Import src.frost.algo.consis.prop_consis_precise.
+Require Import src.frost.algo.sub.prop_looksub.
+Require Import src.frost.algo.sub.prop_solve_sub.
+Require Import src.frost.algo.sub.prop_completeness_sub_precise.
 Require Import src.frost.algo.prop_normal.
 Require Import src.frost.algo.prop_inc_strengthen.
 Require Import src.frost.algo.prop_compose.
 Require Import src.frost.algo.prop_metasubst.
-Require Import src.frost.algo.completeness_look.prop_kit.
-Require Import src.frost.algo.completeness_look.prop_eq_var.
+Require Import src.frost.algo.sub.look.prop_rho_relation.
+Require Import src.frost.algo.sub.look.prop_solve_ext.
+Require Import src.frost.algo.sub.look.prop_flex_apart.
+Require Import src.frost.algo.sub.look.prop_eq_var.
 
 Set Implicit Arguments.
 
@@ -208,7 +210,7 @@ Qed.
 (* ⭐ MOVED UPSTREAM (2026-08-04) to frost/algo/prop_metasubst.v:
    [keys], [keys_app], [keys_eq_dom], [all_flex_mono], [all_flex_mono_app].
    The SolE-FlexR repair made the solve emit its own flexible block, so the
-   κ-EXTENSION package these describe is now needed from completeness_look/prop_kit.v
+   κ-EXTENSION package these describe is now needed from sub/look/prop_rho_relation.v
    onwards — i.e. ABOVE this file.  Nothing about them was specific to the
    collection layer: they are list/metasubst algebra. *)
 
@@ -229,7 +231,7 @@ Proof.
   - assumption.                                           (* univ_ghost_r *)
 Qed.
 
-(* ⚙️ MOVED UP to completeness_look/prop_kit.v (2026-08-04, the SolE-FlexR repair).
+(* ⚙️ MOVED UP to sub/look/prop_rho_relation.v (2026-08-04, the SolE-FlexR repair).
    The whole mid-block weakening kit — [binds_weaken_inner],
    [binds_strengthen_mid], [a_flex_tvar_weaken_mid], [a_non_flex_weaken_mid],
    [a_solve_sub_eq_weaken_mid_flex_size] and its two corollaries
@@ -367,10 +369,10 @@ Qed.
 (* Both flex conditions ride under an appended prefix — the shape the eq row's
    THREADED tail needs (it runs at [Ξ1 ++ Θ], not at [Θ]). *)
 (* ⚙ [a_flex_tvar_app_mono] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
-   one in prop_kit.v, which this file imports. *)
+   one in prop_rho_relation.v, which this file imports. *)
 
 (* ⚙ [a_flex_app_anti] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
-   one in prop_kit.v, which this file imports. *)
+   one in prop_rho_relation.v, which this file imports. *)
 
 Lemma a_solve_cstr_ctx_change : forall Θ 𝒞 P Ξ P',
   Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' ->
@@ -1149,7 +1151,7 @@ Qed.
    [a_wf_pskl_delta_to_tvar_mid] (mid-insertion, so the [tophole_fill] rule's
    own Θ-binder can be absorbed into Θ1). *)
 (* ⚙ [ad_refine_syn_delta_to_tvar_mid] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
-   one in prop_kit.v, which this file imports. *)
+   one in prop_rho_relation.v, which this file imports. *)
 
 (* (vi) [msubst_uskl_syn] commutes with opening (mirror of [msubst_pskl_open]):
    every image is a MONOTYPE painting, hence locally closed. *)
@@ -1577,7 +1579,7 @@ Qed.
       from the [ftv ⊆ ftv ψa] conjunct; [κs] has no such bound, so its
       payloads must be wf in a context that does not have β — i.e. a FIXED
       [Θw], exactly as in P6-Cv.  This is why [a_solve_eq_complete_var_at]
-      (completeness_look/prop_eq_var.v, after the paper statement) exists: the
+      (sub/look/prop_eq_var.v, after the paper statement) exists: the
       paper-facing [a_solve_eq_complete_var] pins [Θw := Θ] and is unusable
       under a binder.
 

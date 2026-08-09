@@ -390,7 +390,7 @@ Proof. induction 1; simpl; auto using lc_pskl. Qed.
 (** The syn painting of an lc skeleton is synthesised.
 
     ⚙ It was proved TWICE, in algo/prop_soundness_sub.v and
-    algo/completeness_look/prop_kit.v, and neither file imports the other — so
+    algo/sub/look/prop_rho_relation.v, and neither file imports the other — so
     it could not be deduped in place, and was lifted to prop_basic.v on
     2026-08-09 before landing here.  It belongs next to [lc_pskl_to_bskl_syn]:
     same painting, same one-line induction, same [pskl_to_bskl_syn_open]

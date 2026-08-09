@@ -1210,7 +1210,7 @@ Proof. induction A; simpl; f_equal; auto. Qed.
 
 (* ⚙ THE FN-MODE OUTPUT SHAPE ([fn_arrow_shape_pskl] / [fn_arrow_shape],
    [a_sub_ty_fn_arrow_shape], [a_typing_fn_arrow_shape]) MOVED OUT 2026-08-09
-   to algo/completeness_typing/prop_shape.v (cleanup audit §6).  It is a structural fact about
+   to algo/typing/prop_shape.v (cleanup audit §6).  It is a structural fact about
    arrow spines, not about rigidity or the TC-core, so it did not belong at the
-   tail of this file.  completeness_typing/prop_typing.v — its only consumer — imports
+   tail of this file.  typing/prop_typing.v — its only consumer — imports
    the new file directly. *)
