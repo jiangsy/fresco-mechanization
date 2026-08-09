@@ -55,7 +55,7 @@ Set Implicit Arguments.
 (* ===================================================================== *)
 
 Lemma refine_syn_hole_inv : forall Θ Δ S T,
-  Θ ⨟ Δ ⊢ᵣᵃ S ⊳ T ->
+  Θ ⨟ Δ ⊢ᵣᵃᵈ S ⊳ T ->
   S = bskl_hole ->
   exists P1, T = pskl_to_bskl_syn P1 /\ Θ ⨟ empty ⊢ₚₛᵃ P1.
 Proof.
@@ -70,13 +70,13 @@ Proof.
 Qed.
 
 Lemma ad_precise_hole_inv : forall Θ Δ P,
-  Θ ⨟ Δ ⊢ₚᵣᵃ pskl_hole ⊑ P ->
+  Θ ⨟ Δ ⊢ₚᵣᵃᵈ pskl_hole ⊑ P ->
   exists P1, pskl_to_bskl_inh P = pskl_to_bskl_syn P1
              /\ Θ ⨟ empty ⊢ₚₛᵃ P1.
 Proof. intros Θ Δ P H. exact (refine_syn_hole_inv H eq_refl). Qed.
 
 Lemma ad_precise_hole_all_absurd : forall Θ Δ P,
-  ~ (Θ ⨟ Δ ⊢ₚᵣᵃ pskl_hole ⊑ (pskl_all_syn P)).
+  ~ (Θ ⨟ Δ ⊢ₚᵣᵃᵈ pskl_hole ⊑ (pskl_all_syn P)).
 Proof.
   intros Θ Δ P H. destruct (ad_precise_hole_inv H) as [P1 [Heq _]].
   cbn in Heq. destruct P1; cbn in Heq; discriminate.
@@ -91,7 +91,7 @@ Section FlexSubjectAtCheck.
   Variable α : atom.
   Definition psTh : aenv := (α ~ abind_flex_mono_def ptyp_unit) ++ nil.
 
-  Lemma ps_precise : psTh ⨟ empty ⊢ₚᵣᵃ (pskl_var_f α) ⊑ pskl_unit.
+  Lemma ps_precise : psTh ⨟ empty ⊢ₚᵣᵃᵈ (pskl_var_f α) ⊑ pskl_unit.
   Proof.
     unfold ad_precise. cbn.
     apply ad_refine_syn__flex_l with (τ := ptyp_unit);
@@ -100,7 +100,7 @@ Section FlexSubjectAtCheck.
 
   (** the [P]-side derivation *)
   Lemma ps_hyp :
-    empty ⨟ psTh ⊢ₛᵃ[ a_sub_mode_sk | mode_tc ]
+    empty ⨟ psTh ⊢ᵃᵈ[ a_sub_mode_sk | mode_tc ]
       (pskl_to_uskl pskl_unit) ⩽ (bskl_tophole bskl_unit).
   Proof.
     cbn. apply ad_pat_sub__univ_ghost_r;
@@ -112,7 +112,7 @@ Section FlexSubjectAtCheck.
       guarded subject, and the flexible is reached through the consistency
       premise's own FlexL. *)
   Lemma ps_concl :
-    empty ⨟ psTh ⊢ₛᵃ[ a_sub_mode_sk | mode_tc ]
+    empty ⨟ psTh ⊢ᵃᵈ[ a_sub_mode_sk | mode_tc ]
       (pskl_to_uskl (pskl_var_f α)) ⩽ (bskl_tophole bskl_unit).
   Proof.
     cbn. apply ad_pat_sub__univ_ghost_r;

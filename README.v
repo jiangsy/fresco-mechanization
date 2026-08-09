@@ -37,8 +37,20 @@
       Δ, Ψ   tag context, tag scope                 κ, ζ  metasubstitutions
       A B C  ptyp, btyp, utyp                       P Q R  pskl, bskl, uskl
       κ ∷ Θ₀ ⊑ Θ  information increase              Θ₀ ⊴ Θ₁  its relational form
-      ∼ consistency   ⩽ subtyping   ⇨ skeleton inference   ⦂ type inference
-      ⊳ refinement    ⊑ precision   ≡ᵗ/≡ˢ/≡ᵘ equivalence   ⪯ᶜᵗˣ ctx precision  *)
+      ∼ consistency   ⩽ subtyping   ⦂ a term's type / skeleton (at any mode)
+      ⊳ refinement    ⊑ᵖ partial precision   ≡ᵗ/≡ˢ/≡ᵘ equivalence
+      ⊑ (bare) is information increase, above   ⪯ᶜᵗˣ ctx precision
+
+    TURNSTILE DECORATIONS — two axes, two devices (legend: frost/notations.v).
+      SUPERSCRIPT = the SYSTEM.  [⊢] declarative, [⊢ᵃᵈ] declarative-over-Θ
+        ([ad_*]), [⊢ᵃ] algorithmic ([a_*]), [⊢ᵗ] ε-tagged decorated,
+        [⊢ˢ] syntax-directed.
+      SUBSCRIPT = the SORT.  bare = types, [⊢ₛ] = skeletons — used exactly
+        where the system has one relation PER sort ([⊢ₛ[M] e ⦂ P] skeleton
+        inference vs [⊢[M] e ⦂ A] typing).  Where one relation covers both,
+        the sort is the bracket index instead ([⊢ᵃ[ N | m | P0 ]]).
+      [ … ] carries the indices, [⊣ Θ'] the output context.  ⚠️ [⦂] is used at
+      every mode: [⇨] would claim synthesis, which only holds at [M = TI].  *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -69,7 +81,7 @@ Require Import src.frost.algo.sub.look.prop_extract.
 Require Import src.frost.algo.sub.prop_completeness_sub.
 Require Import src.frost.algo.pat.prop_soundness_pat.
 Require Import src.frost.algo.typing.prop_soundness_typing.
-Require Import src.frost.algo.prop_precise.      (* the ⊢ₚᵣᵃ _ ⊑ _ notation *)
+Require Import src.frost.algo.prop_precise.      (* the ⊢ₚᵣᵃᵈ _ ⊑ _ notation *)
 Require Import src.frost.algo.prop_precise_sub.
 Require Import src.frost.algo.pat.prop_completeness_pat.
 Require Import src.frost.algo.typing.prop_typing.
@@ -121,15 +133,15 @@ Print Assumptions d_typing_general_subsumption.
    organises its own proof. *)
 Check a_consis_sound :
   forall Θ0 P0 P P' Θ1,
-  Θ0 ⊢ₐ[ P0 ] P ∼ P' ⊣ Θ1 ->
+  Θ0 ⊢ᵃ[ P0 ] P ∼ P' ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
   Θ0 ⊴ Θ1 /\
   (exists Qt, bskl_to_pskl Qt = P' /\
-     empty ⨟ Θ1 ⊢ₛᵃ (pskl_to_uskl P) ∼ Qt /\
-     Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ Qt) /\
-  Θ1 ⨟ empty ⊢ᵣₚᵃ P ⊳ P'.
+     empty ⨟ Θ1 ⊢ᵃᵈ (pskl_to_uskl P) ∼ Qt /\
+     Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ Qt) /\
+  Θ1 ⨟ empty ⊢ᵣₚᵃᵈ P ⊳ P'.
 Print Assumptions a_consis_sound.
 
 (* ⭐ Theorem [Completeness and optimality of consistency]
@@ -150,7 +162,7 @@ Print Assumptions a_consis_complete.
 (* ⭐ Theorem [Soundness of subtyping]  thm:sound-subtyping *)
 Check a_sub_sound :
   forall NM M P0 Θ0 P P' Θ1,
-  Θ0 ⊢ₐ[ NM | M | P0 ] P ⩽ P' ⊣ Θ1 ->
+  Θ0 ⊢ᵃ[ NM | M | P0 ] P ⩽ P' ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
@@ -159,8 +171,8 @@ Check a_sub_sound :
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
   exists Qt,
     bskl_to_pskl Qt = P' /\
-    (empty ⨟ Θ1 ⊢ₛᵃ[ NM | M ] (pskl_to_uskl P) ⩽ Qt) /\
-    Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ Qt.
+    (empty ⨟ Θ1 ⊢ᵃᵈ[ NM | M ] (pskl_to_uskl P) ⩽ Qt) /\
+    Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ Qt.
 Print Assumptions a_sub_sound.
 
 (* ⭐⭐⭐ Theorem [Completeness and optimality of subtyping]
@@ -216,7 +228,7 @@ Print Assumptions a_extract_complete.
    at skeleton term entries. *)
 Check a_pat_sound :
   forall m Θ0 P0 e P Θ1,
-  Θ0 ⊢ₐ[ m ; P0 ] e ⇨ P ⊣ Θ1 ->
+  Θ0 ⊢ₛᵃ[ m ; P0 ] e ⦂ P ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
   (forall x Ps, binds x (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
@@ -224,8 +236,8 @@ Check a_pat_sound :
   a_wf_exp Θ0 e ->
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
   exists Qt, bskl_to_pskl Qt = P /\
-    (Θ1 ⊢ᵃ[ m ] e ⇨ Qt) /\
-    (Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ Qt).
+    (Θ1 ⊢ₛᵃᵈ[ m ] e ⦂ Qt) /\
+    (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ Qt).
 Print Assumptions a_pat_sound.
 
 (* ⭐⭐⭐ Theorem [Soundness of type inference]  thm:sound-type-inference
@@ -239,7 +251,7 @@ Print Assumptions a_pat_sound.
    AT-AbsAnnoCheck's result domain. *)
 Check a_typing_sound :
   forall m Θ0 P0 e A Θ1,
-  Θ0 ⊢ₐ[ m ; P0 ] e ⦂ A ⊣ Θ1 ->
+  Θ0 ⊢ᵃ[ m ; P0 ] e ⦂ A ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
   (forall x Ps, binds x (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
@@ -247,8 +259,8 @@ Check a_typing_sound :
   a_wf_exp Θ0 e ->
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
   exists Bt, btyp_to_ptyp Bt = A /\
-    (Θ1 ⊢ˢᵃ[ m ] e ⦂ Bt) /\
-    (Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt)).
+    (Θ1 ⊢ˢᵃᵈ[ m ] e ⦂ Bt) /\
+    (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt)).
 Print Assumptions a_typing_sound.
 
 (* ⭐⭐⭐ Theorem [Completeness + optimality of skeleton inference]
@@ -269,15 +281,15 @@ Check a_pat_complete :
     (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
     (forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps) ->
     lc_exp e ->
-    Θ ⊢ᵃ[ M ] e ⇨ Q ->
-    Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+    Θ ⊢ₛᵃᵈ[ M ] e ⦂ Q ->
+    Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
     exists P1 Θ1,
-      Θ0 ⊢ₐ[ M ; P0 ] e ⇨ P1 ⊣ Θ1 /\
+      Θ0 ⊢ₛᵃ[ M ; P0 ] e ⦂ P1 ⊣ Θ1 /\
       (forall κ1, is_id_msubst κ1 -> κ1 ∷ Θ0 ⊑ Θ1 ->
          exists ζ,
            ζ ∷ Θ1 ⊑ Θ /\
            a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ /\
-           Θ ⨟ empty ⊢ₚᵣᵃ (msubst_pskl ζ P1) ⊑ (bskl_to_pskl Q)).
+           Θ ⨟ empty ⊢ₚᵣᵃᵈ (msubst_pskl ζ P1) ⊑ (bskl_to_pskl Q)).
 Print Assumptions a_pat_complete.
 
 (* ⭐⭐⭐ Theorem [Completeness + optimality of type inference]
@@ -296,10 +308,10 @@ Check a_typing_complete :
     (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
     (forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps) ->
     lc_exp e ->
-    Θ ⊢ˢᵃ[ M ] e ⦂ B ->
-    Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (btyp_to_bskl B) ->
+    Θ ⊢ˢᵃᵈ[ M ] e ⦂ B ->
+    Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (btyp_to_bskl B) ->
     exists A1 Θ1,
-      Θ0 ⊢ₐ[ M ; P0 ] e ⦂ A1 ⊣ Θ1 /\
+      Θ0 ⊢ᵃ[ M ; P0 ] e ⦂ A1 ⊣ Θ1 /\
       (forall κ1, is_id_msubst κ1 -> κ1 ∷ Θ0 ⊑ Θ1 ->
          exists ζ,
            ζ ∷ Θ1 ⊑ Θ /\
@@ -317,6 +329,6 @@ Print Assumptions ad_precise_extends_pat_sub_v.
    lemma:context-precision-skeleton, over the paper's ⪯ᶜᵗˣ *)
 Check ad_ctx_precise_pat :
   forall M Θ e Q,
-  Θ ⊢ᵃ[ M ] e ⇨ Q ->
-  forall Θ', Θ' ⪯ᶜᵗˣ Θ -> a_wf_aenv Θ -> a_wf_aenv Θ' -> Θ' ⊢ᵃ[ M ] e ⇨ Q.
+  Θ ⊢ₛᵃᵈ[ M ] e ⦂ Q ->
+  forall Θ', Θ' ⪯ᶜᵗˣ Θ -> a_wf_aenv Θ -> a_wf_aenv Θ' -> Θ' ⊢ₛᵃᵈ[ M ] e ⦂ Q.
 Print Assumptions ad_ctx_precise_pat.

@@ -208,7 +208,7 @@ HAZARDS — all paid for; the first two are the retracted claims
   the only refuters needed are (i) `α ∉ ftv` freshness clashes → `simpl` +
   `fsetdec`, (ii) `x ≠ x` → `eq_refl`, (iii) `guarded_pskl (pskl_all_syn _)`
   → empty inversion; close computations via local `close_*_var_f_neq`
-  lemmas.  Match hypotheses by NOTATION (`_ ⨟ _ ⊢ᵣᵃ _ ⊳ _`), not by the
+  lemmas.  Match hypotheses by NOTATION (`_ ⨟ _ ⊢ᵣᵃᵈ _ ⊳ _`), not by the
   inductive's name.
 ✍️ In chat output write the unit type as `1` and NEVER show the modality
   boxes `[]` (the .mle artifacts keep both).

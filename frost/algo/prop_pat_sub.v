@@ -42,9 +42,9 @@ Set Implicit Arguments.
 (* ===================================================================== *)
 
 Lemma ad_pat_sub_psi_cong : forall NM M Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q ->
   forall Ψc, Ψ [=] Ψc ->
-  Ψc ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q.
+  Ψc ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q.
 Proof.
   intros NM M Ψ Θ R Q H; induction H; intros Ψc Heq.
   - (* Infer *) apply ad_pat_sub__infer; auto. fsetdec.
@@ -74,9 +74,9 @@ Proof.
 Qed.
 
 Lemma ad_partial_precise_psi_cong : forall Θ Δ Ψ P ψ,
-  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ ->
   forall Ψc, Ψ [=] Ψc ->
-  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψc ] ψ.
+  Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψc ] ψ.
 Proof.
   intros Θ Δ Ψ P ψ H; induction H; intros Ψc Heq;
     econstructor; eauto; fsetdec.
@@ -87,9 +87,9 @@ Qed.
 (* ===================================================================== *)
 
 Lemma ad_pat_sub_isub : forall NM M Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q ->
   forall Θ', Θ ⊴ Θ' ->
-  Ψ ⨟ Θ' ⊢ₛᵃ[ NM | M ] R ⩽ Q.
+  Ψ ⨟ Θ' ⊢ᵃᵈ[ NM | M ] R ⩽ Q.
 Proof.
   intros NM M Ψ Θ R Q H; induction H; intros Θ' Hle.
   - apply ad_pat_sub__infer; eauto using ad_pat_consis_isub.
@@ -108,9 +108,9 @@ Proof.
 Qed.
 
 Lemma ad_partial_precise_isub : forall Θ Δ Ψ P ψ,
-  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ ->
   forall Θ', Θ ⊴ Θ' ->
-  Θ' ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ.
+  Θ' ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ.
 Proof.
   intros Θ Δ Ψ P ψ H; induction H; intros Θ' Hle.
   - apply ad_ppre__unit; auto.
@@ -132,10 +132,10 @@ Qed.
 (* ===================================================================== *)
 
 Lemma ad_pat_sub_weaken : forall NM M Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q ->
   forall Θ',
   (forall x b, binds x b Θ -> binds x b Θ') ->
-  Ψ ⨟ Θ' ⊢ₛᵃ[ NM | M ] R ⩽ Q.
+  Ψ ⨟ Θ' ⊢ᵃᵈ[ NM | M ] R ⩽ Q.
 Proof.
   intros NM M Ψ Θ R Q H; induction H; intros Θ' Hmon.
   - apply ad_pat_sub__infer; eauto using ad_pat_consis_weaken.
@@ -158,10 +158,10 @@ Proof.
 Qed.
 
 Lemma ad_partial_precise_weaken : forall Θ Δ Ψ P ψ,
-  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ ->
   forall Θ',
   (forall x b, binds x b Θ -> binds x b Θ') ->
-  Θ' ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ.
+  Θ' ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ.
 Proof.
   intros Θ Δ Ψ P ψ H; induction H; intros Θ' Hmon.
   - apply ad_ppre__unit; auto.
@@ -302,13 +302,13 @@ Qed.
 (** STRIP an undefined flexible mid entry from [ad_pat_consis] by
     substituting unit for it (witness-rewriting; see the §4 header). *)
 Lemma ad_pat_consis_subst_flex : forall Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
   forall Θ1 β Θ2,
   Θ = Θ1 ++ (β ~ abind_flex_mono) ++ Θ2 ->
   β `notin` dom (Θ1 ++ Θ2) ->
   (forall α1 τ, binds α1 (abind_flex_mono_def τ) (Θ1 ++ Θ2) ->
      β `notin` ftvar_in_ptyp τ) ->
-  Ψ ⨟ (Θ1 ++ Θ2) ⊢ₛᵃ (subst_uskl_in_uskl uskl_unit β R)
+  Ψ ⨟ (Θ1 ++ Θ2) ⊢ᵃᵈ (subst_uskl_in_uskl uskl_unit β R)
                     ∼ (subst_bskl_in_bskl bskl_unit β Q).
 Proof.
   intros Ψ Θ R Q H; induction H;
@@ -418,7 +418,7 @@ Proof.
         simpl in IH; simpl_env in IH
     end.
     match goal with
-    | IH : _ -> _ -> _ -> _ ⨟ _ ⊢ₛᵃ _ ∼ _ |- _ => simpl_env; apply IH
+    | IH : _ -> _ -> _ -> _ ⨟ _ ⊢ᵃᵈ _ ∼ _ |- _ => simpl_env; apply IH
     end;
       [ reflexivity
       | clear - Hfr Hα; simpl_env in *; fsetdec
@@ -503,7 +503,7 @@ Qed.
     substituting its definition's paintings for it (msubst-style collapse;
     the lookup rules at the stripped variable dissolve into their premise). *)
 Lemma ad_pat_consis_subst_flex_def : forall Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
   forall Θ1 β τ0 Θ2,
   Θ = Θ1 ++ (β ~ abind_flex_mono_def τ0) ++ Θ2 ->
   β `notin` dom (Θ1 ++ Θ2) ->
@@ -512,7 +512,7 @@ Lemma ad_pat_consis_subst_flex_def : forall Ψ Θ R Q,
   (forall α, α `in` ftvar_in_ptyp τ0 -> a_binds_tvar α (Θ1 ++ Θ2)) ->
   (forall α1 τ, binds α1 (abind_flex_mono_def τ) (Θ1 ++ Θ2) ->
      β `notin` ftvar_in_ptyp τ) ->
-  Ψ ⨟ (Θ1 ++ Θ2) ⊢ₛᵃ (subst_uskl_in_uskl (ptyp_to_uskl_syn τ0) β R)
+  Ψ ⨟ (Θ1 ++ Θ2) ⊢ᵃᵈ (subst_uskl_in_uskl (ptyp_to_uskl_syn τ0) β R)
                     ∼ (subst_bskl_in_bskl (ptyp_to_bskl_syn τ0) β Q).
 Proof.
   intros Ψ Θ R Q H; induction H;
@@ -737,13 +737,13 @@ Qed.
     substituting unit — the ForallL witnesses are rewritten too, which is
     exactly why this is provable where naive strengthening is not. *)
 Lemma ad_pat_sub_subst_flex : forall NM M Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q ->
   forall Θ1 β Θ2,
   Θ = Θ1 ++ (β ~ abind_flex_mono) ++ Θ2 ->
   β `notin` dom (Θ1 ++ Θ2) ->
   (forall α1 τ, binds α1 (abind_flex_mono_def τ) (Θ1 ++ Θ2) ->
      β `notin` ftvar_in_ptyp τ) ->
-  Ψ ⨟ (Θ1 ++ Θ2) ⊢ₛᵃ[ NM | M ] (subst_uskl_in_uskl uskl_unit β R)
+  Ψ ⨟ (Θ1 ++ Θ2) ⊢ᵃᵈ[ NM | M ] (subst_uskl_in_uskl uskl_unit β R)
                               ⩽ (subst_bskl_in_bskl bskl_unit β Q).
 Proof.
   intros NM M Ψ Θ R Q H; induction H;
@@ -1019,7 +1019,7 @@ Qed.
     its definition's paintings (the FlexMono lookup at the stripped
     variable dissolves into its premise). *)
 Lemma ad_pat_sub_subst_flex_def : forall NM M Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q ->
   forall Θ1 β τ0 Θ2,
   Θ = Θ1 ++ (β ~ abind_flex_mono_def τ0) ++ Θ2 ->
   β `notin` dom (Θ1 ++ Θ2) ->
@@ -1028,7 +1028,7 @@ Lemma ad_pat_sub_subst_flex_def : forall NM M Ψ Θ R Q,
   (forall α, α `in` ftvar_in_ptyp τ0 -> a_binds_tvar α (Θ1 ++ Θ2)) ->
   (forall α1 τ, binds α1 (abind_flex_mono_def τ) (Θ1 ++ Θ2) ->
      β `notin` ftvar_in_ptyp τ) ->
-  Ψ ⨟ (Θ1 ++ Θ2) ⊢ₛᵃ[ NM | M ]
+  Ψ ⨟ (Θ1 ++ Θ2) ⊢ᵃᵈ[ NM | M ]
       (subst_uskl_in_uskl (ptyp_to_uskl_syn τ0) β R)
     ⩽ (subst_bskl_in_bskl (ptyp_to_bskl_syn τ0) β Q).
 Proof.
@@ -1150,8 +1150,8 @@ Lemma ad_pat_sub_strip_suffix : forall Ξ NM M Ψ Θ R Q,
   a_wf_aenv (Ξ ++ Θ) ->
   (forall α1, α1 `in` dom Ξ ->
      α1 `notin` (ftvar_in_uskl R `union` ftvar_in_bskl Q)) ->
-  Ψ ⨟ (Ξ ++ Θ) ⊢ₛᵃ[ NM | M ] R ⩽ Q ->
-  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q.
+  Ψ ⨟ (Ξ ++ Θ) ⊢ᵃᵈ[ NM | M ] R ⩽ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q.
 Proof.
   induction Ξ as [ | [β b] Ξ' IH ]; intros * Hsuf Hwf Hfv H; [ exact H | ].
   inversion Hsuf as [ | ? ? ? Hsuf' Hbind ]; subst.
@@ -1160,7 +1160,7 @@ Proof.
   inversion Hbind; subst.
   - (* undefined head *)
     inversion Hwf as [ | ? ? Hβd Hwf' | | | | ]; subst.
-    assert (Hstr : Ψ ⨟ (Ξ' ++ Θ) ⊢ₛᵃ[ NM | M ]
+    assert (Hstr : Ψ ⨟ (Ξ' ++ Θ) ⊢ᵃᵈ[ NM | M ]
                      (subst_uskl_in_uskl uskl_unit β R)
                    ⩽ (subst_bskl_in_bskl bskl_unit β Q)).
     { eapply ad_pat_sub_subst_flex with (Θ1 := nil);
@@ -1182,7 +1182,7 @@ Proof.
       pose proof (a_wf_ptyp_ftv_tvarish Hwfτ Hα) as Ht.
       destruct Ht as [Hb | [Hb | [τ1 Hb]]]; apply binds_In in Hb;
         clear - Hb Hβd; fsetdec. }
-    assert (Hstr : Ψ ⨟ (Ξ' ++ Θ) ⊢ₛᵃ[ NM | M ]
+    assert (Hstr : Ψ ⨟ (Ξ' ++ Θ) ⊢ᵃᵈ[ NM | M ]
                      (subst_uskl_in_uskl (ptyp_to_uskl_syn A) β R)
                    ⩽ (subst_bskl_in_bskl (ptyp_to_bskl_syn A) β Q)).
     { eapply ad_pat_sub_subst_flex_def with (Θ1 := nil);
@@ -1205,11 +1205,11 @@ Qed.
     [ad_pat_consis_rename_tvar]; the tag/guardedness closures come from
     the [_mono] pack at [τ := ptyp_var_f β]). *)
 Lemma ad_pat_sub_rename_tvar : forall NM M Ψ Θ1 α Θ0 R Q β',
-  Ψ ⨟ (Θ1 ++ (α ~ abind_tvar) ++ Θ0) ⊢ₛᵃ[ NM | M ] R ⩽ Q ->
+  Ψ ⨟ (Θ1 ++ (α ~ abind_tvar) ++ Θ0) ⊢ᵃᵈ[ NM | M ] R ⩽ Q ->
   α `notin` dom (Θ1 ++ Θ0) ->
   (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
      α `notin` ftvar_in_ptyp τ) ->
-  Ψ ⨟ (Θ1 ++ (β' ~ abind_tvar) ++ Θ0) ⊢ₛᵃ[ NM | M ]
+  Ψ ⨟ (Θ1 ++ (β' ~ abind_tvar) ++ Θ0) ⊢ᵃᵈ[ NM | M ]
       (subst_uskl_in_uskl (uskl_var_f β') α R)
     ⩽ (subst_bskl_in_bskl (bskl_var_f β') α Q).
 Proof.

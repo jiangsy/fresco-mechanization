@@ -68,7 +68,7 @@ Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.sub.prop_sub_msubst_equiv.
-Require Import src.frost.algo.prop_precise.       (* ad_precise, ⊢ₚᵣᵃ *)
+Require Import src.frost.algo.prop_precise.       (* ad_precise, ⊢ₚᵣᵃᵈ *)
 Require Import src.frost.decorated_algo.prop_decorate.      (* uskl_to_pskl_pskl_to_uskl *)
 Require Import src.frost.algo.prop_pat_sub.       (* mono_ptyp_to_uskl_syn_ghost_free *)
 Require Import src.frost.algo.sub.prop_completeness_sub_gen.
@@ -1366,7 +1366,7 @@ Theorem a_sub_complete :
        [ad_refine_syn_f_forget]).  So [_f] in a HYPOTHESIS was scaffolding
        leaking into the statement — and, being the stronger of the two, it
        was also gratuitously weakening the theorem.  Dropped 2026-08-06. *)
-    Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+    Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
     Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
     (* the subject's TY ghost-freeness — the motive's EXTERNAL side
        condition (WF-SIDE-CONDITIONS.md); at the paper's own reflexive
@@ -1378,7 +1378,7 @@ Theorem a_sub_complete :
          exists ζ,
            ζ ∷ Θ1 ⊑ Θ /\
            a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ /\
-           Θ ⨟ empty ⊢ₚᵣᵃ
+           Θ ⨟ empty ⊢ₚᵣᵃᵈ
              (msubst_bskl ζ (pskl_to_bskl_syn P1)) ⊑ (bskl_to_pskl Q)).
 Proof.
   intros n NM M Θ0 P0 P R' Θ κ Q

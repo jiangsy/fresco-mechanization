@@ -65,7 +65,7 @@ Inductive ad_ctx_precise : aenv -> aenv -> Prop :=
 | ad_ctx_precise__tm : forall Θ' Θ x (b' b : abind) (P' P : pskl),
     abind_to_pskl b' = Some P' ->
     abind_to_pskl b = Some P ->
-    Θ' ⨟ empty ⊢ₚᵣᵃ P' ⊑ P ->
+    Θ' ⨟ empty ⊢ₚᵣᵃᵈ P' ⊑ P ->
     Θ' ⪯ᶜᵗˣ Θ ->
     ((x ~ b') ++ Θ') ⪯ᶜᵗˣ ((x ~ b) ++ Θ)
 where "Θ' ⪯ᶜᵗˣ Θ" := (ad_ctx_precise Θ' Θ) : type_scope.
@@ -118,7 +118,7 @@ Lemma ad_ctx_precise_binds_tm : forall Θ' Θ x (b : abind) (P : pskl),
   abind_to_pskl b = Some P ->
   exists (b' : abind) (P' : pskl),
     binds x b' Θ' /\ abind_to_pskl b' = Some P' /\
-    Θ' ⨟ empty ⊢ₚᵣᵃ P' ⊑ P.
+    Θ' ⨟ empty ⊢ₚᵣᵃᵈ P' ⊑ P.
 Proof.
   intros Θ' Θ x b P H; induction H; intros Huq Hb HP.
   - inversion Hb.
@@ -156,12 +156,12 @@ Qed.
 (* ===================================================================== *)
 
 Theorem ad_ctx_precise_pat : forall M Θ e Q,
-  Θ ⊢ᵃ[ M ] e ⇨ Q ->
+  Θ ⊢ₛᵃᵈ[ M ] e ⦂ Q ->
   forall Θ',
   Θ' ⪯ᶜᵗˣ Θ ->
   a_wf_aenv Θ ->
   a_wf_aenv Θ' ->
-  Θ' ⊢ᵃ[ M ] e ⇨ Q.
+  Θ' ⊢ₛᵃᵈ[ M ] e ⦂ Q.
 Proof.
   intros M Θ e Q H; induction H; intros Θ' Hctx HwfΘ HwfΘ';
     pose proof (ad_ctx_precise_tbinds_le Hctx) as Htle.

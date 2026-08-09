@@ -32,7 +32,7 @@
     relation the two rows that break syntactic equality live in.
 
     THE PROOF IS ON THE REFINEMENT, NOT ON CONSISTENCY.  [a_consis_sound]
-    already exports [Θ1 ⨟ ∅ ⊢ᵣᵃ inh{P0} ⊳ Qt] with [⌊Qt⌋ = P'] — the output
+    already exports [Θ1 ⨟ ∅ ⊢ᵣᵃᵈ inh{P0} ⊳ Qt] with [⌊Qt⌋ = P'] — the output
     REFINES FROM the input skeleton — so all that is left is: refinement out of
     a GHOST-FREE source only ever unfolds definitions.  That is one induction
     with no context threading at all, because refinement keeps its context
@@ -87,7 +87,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma ad_refine_syn_ghost_free_equiv : forall Θ Δ Q' Q,
-  Θ ⨟ Δ ⊢ᵣᵃ Q' ⊳ Q ->
+  Θ ⨟ Δ ⊢ᵣᵃᵈ Q' ⊳ Q ->
   bskl_ghost_free Q' ->
   Θ ⊢ (bskl_to_pskl Q') ≡ˢ (bskl_to_pskl Q).
 Proof.
@@ -129,7 +129,7 @@ Qed.
 (* ===================================================================== *)
 
 Corollary a_consis_concrete_output_equiv : forall Θ0 P0 P P' Θ1,
-  Θ0 ⊢ₐ[ P0 ] P ∼ P' ⊣ Θ1 ->
+  Θ0 ⊢ᵃ[ P0 ] P ∼ P' ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->

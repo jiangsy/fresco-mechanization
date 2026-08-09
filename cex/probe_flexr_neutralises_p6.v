@@ -81,7 +81,7 @@ Qed.
     [⟨⟩ ⊑ᵖ c] has no rule.) *)
 Lemma flexctp_precision_now_holds : forall (c : atom) (Θ : aenv) Δ,
   binds c abind_tvar Θ ->
-  Θ ⨟ Δ ⊢ (pskl_arrow (pskl_var_f c) pskl_unit)
+  Θ ⨟ Δ ⊢ᵃᵈ (pskl_arrow (pskl_var_f c) pskl_unit)
         ⊑ᵖ[ empty ] (uskl_arrow (uskl_var_f c) uskl_unit).
 Proof.
   intros c Θ Δ Hb.

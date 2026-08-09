@@ -184,13 +184,13 @@ Qed.
     the ARROW and ∀ structural cases of [ad_pat_consis_refine_inh_gen]. *)
 
 Lemma consis_transport_arrow : forall Ψ Θ' R Q1 Q2 P1 P2,
-  Ψ ⨟ Θ' ⊢ₛᵃ R ∼ (bskl_arrow Q1 Q2) ->
+  Ψ ⨟ Θ' ⊢ᵃᵈ R ∼ (bskl_arrow Q1 Q2) ->
   Θ' ⨟ empty ⊢ₚₛᵃ (pskl_arrow P1 P2) ->
-  (forall Ψ' R', Ψ' ⨟ Θ' ⊢ₛᵃ R' ∼ Q1 ->
-     Ψ' ⨟ Θ' ⊢ₛᵃ R' ∼ (pskl_to_bskl_inh P1)) ->
-  (forall Ψ' R', Ψ' ⨟ Θ' ⊢ₛᵃ R' ∼ Q2 ->
-     Ψ' ⨟ Θ' ⊢ₛᵃ R' ∼ (pskl_to_bskl_inh P2)) ->
-  Ψ ⨟ Θ' ⊢ₛᵃ R ∼ (pskl_to_bskl_inh (pskl_arrow P1 P2)).
+  (forall Ψ' R', Ψ' ⨟ Θ' ⊢ᵃᵈ R' ∼ Q1 ->
+     Ψ' ⨟ Θ' ⊢ᵃᵈ R' ∼ (pskl_to_bskl_inh P1)) ->
+  (forall Ψ' R', Ψ' ⨟ Θ' ⊢ᵃᵈ R' ∼ Q2 ->
+     Ψ' ⨟ Θ' ⊢ᵃᵈ R' ∼ (pskl_to_bskl_inh P2)) ->
+  Ψ ⨟ Θ' ⊢ᵃᵈ R ∼ (pskl_to_bskl_inh (pskl_arrow P1 P2)).
 Proof.
   intros Ψ Θ' R Q1 Q2 P1 P2 Hc HwfB HR1 HR2.
   remember (bskl_arrow Q1 Q2) as Qout eqn:HQ.
@@ -206,15 +206,15 @@ Proof.
 Qed.
 
 Lemma consis_transport_all : forall Ψ Θ' R Q0 P0 L,
-  Ψ ⨟ Θ' ⊢ₛᵃ R ∼ (bskl_all_inh Q0) ->
+  Ψ ⨟ Θ' ⊢ᵃᵈ R ∼ (bskl_all_inh Q0) ->
   Θ' ⨟ empty ⊢ₚₛᵃ (pskl_all_syn P0) ->
   (forall α, α `notin` L ->
      forall Ψ' R',
-       Ψ' ⨟ ((α ~ abind_tvar) ++ Θ') ⊢ₛᵃ
+       Ψ' ⨟ ((α ~ abind_tvar) ++ Θ') ⊢ᵃᵈ
          R' ∼ (open_bskl_wrt_bskl Q0 (bskl_var_f α)) ->
-       Ψ' ⨟ ((α ~ abind_tvar) ++ Θ') ⊢ₛᵃ
+       Ψ' ⨟ ((α ~ abind_tvar) ++ Θ') ⊢ᵃᵈ
          R' ∼ (pskl_to_bskl_inh (open_pskl_wrt_pskl P0 (pskl_var_f α)))) ->
-  Ψ ⨟ Θ' ⊢ₛᵃ R ∼ (pskl_to_bskl_inh (pskl_all_syn P0)).
+  Ψ ⨟ Θ' ⊢ᵃᵈ R ∼ (pskl_to_bskl_inh (pskl_all_syn P0)).
 Proof.
   intros Ψ Θ' R Q0 P0 L Hc HwfB Htr.
   remember (bskl_all_inh Q0) as Qout eqn:HQ.
@@ -273,7 +273,7 @@ Lemma ad_pat_consis_refine_inh_gen : forall Θ Δ Qsrc Qt,
   (forall α, α `in` Δ -> a_binds_tvar α Θ') ->
   a_wf_aenv Θ' ->
   Θ' ⨟ empty ⊢ₚₛᵃ Psrc ->
-  forall Ψ R, Ψ ⨟ Θ' ⊢ₛᵃ R ∼ Qt -> Ψ ⨟ Θ' ⊢ₛᵃ R ∼ (pskl_to_bskl_inh Psrc).
+  forall Ψ R, Ψ ⨟ Θ' ⊢ᵃᵈ R ∼ Qt -> Ψ ⨟ Θ' ⊢ᵃᵈ R ∼ (pskl_to_bskl_inh Psrc).
 Proof.
   intros Θ Δ Qsrc Qt Hfill.
   induction Hfill; intros Bsrc HeqSrc Hgf Θ' Hmon Hrig Hwf' HwfB Ψ T Hc.
@@ -344,7 +344,7 @@ Proof.
       | exact Hc ].
   - (* flex_r : output is a defined flex var; unfold the consistency *)
     assert (Hbα' : binds α (abind_flex_mono_def τ) Θ') by (apply Hmon; exact H).
-    assert (Hunf : Ψ ⨟ Θ' ⊢ₛᵃ T ∼ (ptyp_to_bskl_syn τ))
+    assert (Hunf : Ψ ⨟ Θ' ⊢ᵃᵈ T ∼ (ptyp_to_bskl_syn τ))
       by (eapply consis_unfold_def_join;
             [ exact Hc | exact Hwf' | reflexivity | exact Hbα' ]).
     eapply IHHfill with (Psrc := Bsrc) (Θ' := Θ');
@@ -353,13 +353,13 @@ Proof.
 Qed.
 
 Lemma ad_pat_consis_refine_inh_target : forall Ψ Θ R Qt,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Qt ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Qt ->
   a_wf_aenv Θ ->
   forall P,
   Θ ⨟ empty ⊢ₚₛᵃ P ->
   pskl_ghost_free P ->
   ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh P) Qt ->
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ (pskl_to_bskl_inh P).
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ (pskl_to_bskl_inh P).
 Proof.
   intros Ψ Θ R Qt Hc Hwf P HwfB Hgf Href.
   eapply ad_pat_consis_refine_inh_gen with (Θ := Θ) (Δ := empty) (Psrc := P);
@@ -384,8 +384,8 @@ Qed.
 Lemma ad_refine_pskl_unfold_def_target : forall Θ Δ X α τ,
   a_wf_aenv Θ ->
   binds α (abind_flex_mono_def τ) Θ ->
-  Θ ⨟ Δ ⊢ᵣₚᵃ X ⊳ (pskl_var_f α) ->
-  Θ ⨟ Δ ⊢ᵣₚᵃ X ⊳ (ptyp_to_pskl τ).
+  Θ ⨟ Δ ⊢ᵣₚᵃᵈ X ⊳ (pskl_var_f α) ->
+  Θ ⨟ Δ ⊢ᵣₚᵃᵈ X ⊳ (ptyp_to_pskl τ).
 Proof.
   intros Θ Δ X α τ Hwf Hb H.
   remember (pskl_var_f α) as T eqn:HT.
@@ -412,8 +412,8 @@ Proof.
   - (* __flex_r : the same variable, hence the same definition *)
     inversion HT; subst.
     match goal with
-    | Hprem : _ ⨟ _ ⊢ᵣₚᵃ ?Xp ⊳ (ptyp_to_pskl ?t)
-      |- _ ⨟ _ ⊢ᵣₚᵃ ?Xp ⊳ (ptyp_to_pskl _) =>
+    | Hprem : _ ⨟ _ ⊢ᵣₚᵃᵈ ?Xp ⊳ (ptyp_to_pskl ?t)
+      |- _ ⨟ _ ⊢ᵣₚᵃᵈ ?Xp ⊳ (ptyp_to_pskl _) =>
         replace τ0 with t; [ exact Hprem | ]
     end.
     match goal with
@@ -519,11 +519,11 @@ Qed.
 (* ===================================================================== *)
 
 Lemma refine_transport_arrow : forall Θ' Δ' X Qa Qb Pa Pb,
-  Θ' ⨟ Δ' ⊢ᵣₚᵃ X ⊳ (pskl_arrow Qa Qb) ->
+  Θ' ⨟ Δ' ⊢ᵣₚᵃᵈ X ⊳ (pskl_arrow Qa Qb) ->
   (Θ' ⨟ empty ⊢ₚₛᵃ (pskl_arrow Qa Qb) -> Θ' ⨟ empty ⊢ₚₛᵃ (pskl_arrow Pa Pb)) ->
-  (forall Δ0 X', Θ' ⨟ Δ0 ⊢ᵣₚᵃ X' ⊳ Qa -> Θ' ⨟ Δ0 ⊢ᵣₚᵃ X' ⊳ Pa) ->
-  (forall Δ0 X', Θ' ⨟ Δ0 ⊢ᵣₚᵃ X' ⊳ Qb -> Θ' ⨟ Δ0 ⊢ᵣₚᵃ X' ⊳ Pb) ->
-  Θ' ⨟ Δ' ⊢ᵣₚᵃ X ⊳ (pskl_arrow Pa Pb).
+  (forall Δ0 X', Θ' ⨟ Δ0 ⊢ᵣₚᵃᵈ X' ⊳ Qa -> Θ' ⨟ Δ0 ⊢ᵣₚᵃᵈ X' ⊳ Pa) ->
+  (forall Δ0 X', Θ' ⨟ Δ0 ⊢ᵣₚᵃᵈ X' ⊳ Qb -> Θ' ⨟ Δ0 ⊢ᵣₚᵃᵈ X' ⊳ Pb) ->
+  Θ' ⨟ Δ' ⊢ᵣₚᵃᵈ X ⊳ (pskl_arrow Pa Pb).
 Proof.
   intros Θ' Δ' X Qa Qb Pa Pb H Hwf HRa HRb.
   remember (pskl_arrow Qa Qb) as T eqn:HT.
@@ -545,7 +545,7 @@ Qed.
     [__tophole_fill] extends Θ — so the per-binder transport has to be
     quantified over BOTH a Θ-extension and a Δ. *)
 Lemma refine_transport_all : forall Θ' Δ' X Qa Pa L,
-  Θ' ⨟ Δ' ⊢ᵣₚᵃ X ⊳ (pskl_all_syn Qa) ->
+  Θ' ⨟ Δ' ⊢ᵣₚᵃᵈ X ⊳ (pskl_all_syn Qa) ->
   a_wf_aenv Θ' ->
   dom Θ' [<=] L ->
   (Θ' ⨟ empty ⊢ₚₛᵃ (pskl_all_syn Qa) -> Θ' ⨟ empty ⊢ₚₛᵃ (pskl_all_syn Pa)) ->
@@ -555,9 +555,9 @@ Lemma refine_transport_all : forall Θ' Δ' X Qa Pa L,
   (forall α Θ0 Δ0 X', α `notin` L ->
      (forall x b, binds x b Θ' -> binds x b Θ0) ->
      a_wf_aenv Θ0 ->
-     Θ0 ⨟ Δ0 ⊢ᵣₚᵃ X' ⊳ (open_pskl_wrt_pskl Qa (pskl_var_f α)) ->
-     Θ0 ⨟ Δ0 ⊢ᵣₚᵃ X' ⊳ (open_pskl_wrt_pskl Pa (pskl_var_f α))) ->
-  Θ' ⨟ Δ' ⊢ᵣₚᵃ X ⊳ (pskl_all_syn Pa).
+     Θ0 ⨟ Δ0 ⊢ᵣₚᵃᵈ X' ⊳ (open_pskl_wrt_pskl Qa (pskl_var_f α)) ->
+     Θ0 ⨟ Δ0 ⊢ᵣₚᵃᵈ X' ⊳ (open_pskl_wrt_pskl Pa (pskl_var_f α))) ->
+  Θ' ⨟ Δ' ⊢ᵣₚᵃᵈ X ⊳ (pskl_all_syn Pa).
 Proof.
   intros Θ' Δ' X Qa Pa L H Hwfth HdomL Hwf Htr.
   remember (pskl_all_syn Qa) as T eqn:HT.
@@ -610,8 +610,8 @@ Lemma ad_refine_pskl_refine_inh_gen : forall F Θ Δ Qsrc Qt,
   forall Θ',
   (forall x b, binds x b Θ -> binds x b Θ') ->
   a_wf_aenv Θ' ->
-  forall Δ' X, Θ' ⨟ Δ' ⊢ᵣₚᵃ X ⊳ (bskl_to_pskl Qt) ->
-               Θ' ⨟ Δ' ⊢ᵣₚᵃ X ⊳ Psrc.
+  forall Δ' X, Θ' ⨟ Δ' ⊢ᵣₚᵃᵈ X ⊳ (bskl_to_pskl Qt) ->
+               Θ' ⨟ Δ' ⊢ᵣₚᵃᵈ X ⊳ Psrc.
 Proof.
   intros F Θ Δ Qsrc Qt Hfill.
   induction Hfill; intros Bsrc HeqSrc Hgf Θ' Hmon Hwf' Δ' X Hc.
@@ -710,8 +710,8 @@ Lemma ad_refine_pskl_refine_inh_target : forall Θ Qt,
   a_wf_aenv Θ ->
   forall P, pskl_ghost_free P ->
   ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh P) Qt ->
-  forall Δ X, Θ ⨟ Δ ⊢ᵣₚᵃ X ⊳ (bskl_to_pskl Qt) ->
-              Θ ⨟ Δ ⊢ᵣₚᵃ X ⊳ P.
+  forall Δ X, Θ ⨟ Δ ⊢ᵣₚᵃᵈ X ⊳ (bskl_to_pskl Qt) ->
+              Θ ⨟ Δ ⊢ᵣₚᵃᵈ X ⊳ P.
 Proof.
   intros Θ Qt Hwf P Hgf Href Δ X Hc.
   eapply (ad_refine_pskl_refine_inh_gen Href);
@@ -725,7 +725,7 @@ Qed.
 (** At [F = ∅] the hole rule's hygiene side condition is vacuous, so the
     plain refinement IS the fill-hygienic one. *)
 Lemma ad_refine_pskl_f_of_plain : forall Θ Δ P P',
-  Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ P' ->
+  Θ ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ P' ->
   ad_refine_pskl_f empty Θ Δ P P'.
 Proof.
   intros Θ Δ P P' H; induction H.
@@ -758,11 +758,11 @@ Qed.
 (* ===================================================================== *)
 
 Lemma ad_refine_pskl_rename_ctx : forall Θ1 α Θ0 P P' β',
-  Θ1 ++ (α ~ abind_tvar) ++ Θ0 ⨟ empty ⊢ᵣₚᵃ P ⊳ P' ->
+  Θ1 ++ (α ~ abind_tvar) ++ Θ0 ⨟ empty ⊢ᵣₚᵃᵈ P ⊳ P' ->
   α `notin` dom (Θ1 ++ Θ0) ->
   (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
      α `notin` ftvar_in_ptyp τ) ->
-  Θ1 ++ (β' ~ abind_tvar) ++ Θ0 ⨟ empty ⊢ᵣₚᵃ
+  Θ1 ++ (β' ~ abind_tvar) ++ Θ0 ⨟ empty ⊢ᵣₚᵃᵈ
     (subst_pskl_in_pskl (pskl_var_f β') α P)
     ⊳ (subst_pskl_in_pskl (pskl_var_f β') α P').
 Proof.
@@ -1080,13 +1080,13 @@ Qed.
     with [1] — the refinement-side companion of [ad_pat_sub_subst_flex]
     (prop_pat_sub.v:749), and the ingredient its [_gv] mirror was missing. *)
 Lemma ad_refine_pskl_subst_flex : forall Θ Δ P P',
-  Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ P' ->
+  Θ ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ P' ->
   forall Θ1 β Θ2,
   Θ = Θ1 ++ (β ~ abind_flex_mono) ++ Θ2 ->
   β `notin` dom (Θ1 ++ Θ2) ->
   (forall α1 τ, binds α1 (abind_flex_mono_def τ) (Θ1 ++ Θ2) ->
      β `notin` ftvar_in_ptyp τ) ->
-  (Θ1 ++ Θ2) ⨟ Δ ⊢ᵣₚᵃ (subst_pskl_in_pskl pskl_unit β P)
+  (Θ1 ++ Θ2) ⨟ Δ ⊢ᵣₚᵃᵈ (subst_pskl_in_pskl pskl_unit β P)
                      ⊳ (subst_pskl_in_pskl pskl_unit β P').
 Proof.
   intros Θ Δ P P' H; induction H;
@@ -1340,7 +1340,7 @@ Qed.
 (** Step 3: drop a DEFINED flexible mid entry from a refinement by unfolding
     it to its definition — the companion of [ad_pat_sub_subst_flex_def]. *)
 Lemma ad_refine_pskl_subst_flex_def : forall Θ Δ P P',
-  Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ P' ->
+  Θ ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ P' ->
   forall Θ1 β τ0 Θ2,
   Θ = Θ1 ++ (β ~ abind_flex_mono_def τ0) ++ Θ2 ->
   β `notin` dom (Θ1 ++ Θ2) ->
@@ -1349,7 +1349,7 @@ Lemma ad_refine_pskl_subst_flex_def : forall Θ Δ P P',
   (forall α, α `in` ftvar_in_ptyp τ0 -> a_binds_tvar α (Θ1 ++ Θ2)) ->
   (forall α1 τ, binds α1 (abind_flex_mono_def τ) (Θ1 ++ Θ2) ->
      β `notin` ftvar_in_ptyp τ) ->
-  (Θ1 ++ Θ2) ⨟ Δ ⊢ᵣₚᵃ (subst_pskl_in_pskl (ptyp_to_pskl τ0) β P)
+  (Θ1 ++ Θ2) ⨟ Δ ⊢ᵣₚᵃᵈ (subst_pskl_in_pskl (ptyp_to_pskl τ0) β P)
                      ⊳ (subst_pskl_in_pskl (ptyp_to_pskl τ0) β P').
 Proof.
   intros Θ Δ P P' H; induction H;
@@ -1902,7 +1902,7 @@ Proof.
       as [Hle [Hwf1 [_ [_ [[Qt [HeQt [Hcons Hfill]]] Hleaf]]]]].
     assert (HwfB1 : Θ1 ⨟ empty ⊢ₚₛᵃ B)
       by (eapply a_wf_pskl_isub; [ exact HwfB | exact Hle ]).
-    assert (Hcons' : Ψ ⨟ Θ1 ⊢ₛᵃ T ∼ (pskl_to_bskl_inh B))
+    assert (Hcons' : Ψ ⨟ Θ1 ⊢ᵃᵈ T ∼ (pskl_to_bskl_inh B))
       by (eapply ad_pat_consis_refine_inh_target;
             [ exact Hcons | exact Hwf1 | exact HwfB1
             | apply a_ty_mode_compat_tc_ghost_free; exact Hgf | exact Hfill ]).

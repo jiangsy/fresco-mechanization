@@ -24,7 +24,7 @@ design to build.
 
 - `frost/decl/prop_safety.v`
   - `gpat m Γ e B` — the per-mode safety property (`Definition`, ~L1840):
-    `tc` case = `exists Q, Γ ⊢tc e ⇨ Q /\ FILL(Q,Γ)` where
+    `tc` case = `exists Q, Γ ⊢tc e ⦂ Q /\ FILL(Q,Γ)` where
     `FILL(Q,Γ) := forall Γext Γt A0, ctx_weaken Γ Γext -> ctx_refines Γext Γt ->
        d_wf_denv Γt -> Γt ⊢tc e ⦂ inh A0 -> Γext ⊢ᵣ inh(bskl_to_pskl Q) ⊳ colour(inh(bskl_to_pskl Q)) A0`.
     Note: the `tc` fill **does not mention the type `B`** — it quantifies its own `A0`.
@@ -85,13 +85,13 @@ d_look : mode → denv → pskl (looking input P0) → exp → bskl (output)
  var-typ : binds x (typ A); canonical (ptyp_to_pskl A ⊑ P0) ⇒ Q
  var-skl : binds x (skl P);  canonical (P ⊑ P0) ⇒ Q
  anno    : canonical (ptyp_to_pskl A ⊑ P0) ⇒ Q
- freeze  : d_look ti □ e ⇒ Q                      (⊢tc freeze e ⇨ Q)
- abs(m≠tc): split P0 = P→Q0; ∀x, d_look M⁻ Q0 (e^x) ⇒ Q ;  ⇨ arrow P Q
- abs_check: ∀x:□, d_look tc □ (e^x) ⇒ Q ;  ⇨ tophole(□→Q)
+ freeze  : d_look ti □ e ⇒ Q                      (⊢tc freeze e ⦂ Q)
+ abs(m≠tc): split P0 = P→Q0; ∀x, d_look M⁻ Q0 (e^x) ⇒ Q ;  ⦂ arrow P Q
+ abs_check: ∀x:□, d_look tc □ (e^x) ⇒ Q ;  ⦂ tophole(□→Q)
  abs_anno / abs_anno_check / app : analogous to a_pat (def_extra.v:655)
 ```
 
-Bridges: `d_look_sound : d_look m Γ P0 e Q → Γ ⊢[m] e ⇨ Q`; `d_look_fills :
+Bridges: `d_look_sound : d_look m Γ P0 e Q → Γ ⊢ₛ[m] e ⦂ Q`; `d_look_fills :
 d_look … → FILL(Q,Γ)` (uses the proven engines `d_refine_syn_hole_fills`,
 `d_refine_syn_tophole_hole_fills`, `colour_erasure`). `d_pat_total_gen` then
 produces the `d_look` witness; forall is X-independent because `d_look` recurses
@@ -119,7 +119,7 @@ then **definitional** (forall becomes trivial: same function value).
 
 ### C. Principality lemma (`≼`-optimal witness)
 
-Strengthen the intermediate to `∃Q, Γ ⊢tc e ⇨ Q ∧ ∀Q', Γ⊢tc e⇨Q' → Q ≼ Q'`
+Strengthen the intermediate to `∃Q, Γ ⊢tc e ⦂ Q ∧ ∀Q', Γ⊢tc e⦂Q' → Q ≼ Q'`
 (canonical = `≼`-least), then `principal ⇒ fills-every-type` (optimality ⇒ fills,
 à la `a_pat_optimal`). Forall: a principal witness over `(X0::Γ')` strengthens to
 a principal one over `Γ'` (any `Γ'`-inference weakens to an `(X0::Γ')`-inference,
@@ -206,12 +206,12 @@ was wrong — I conflated "concrete **guarded** syn" with "syn-painted `is_sskl`
 - True: `d_pat_sub` at `m=tc` from a *guarded* LHS forces `bskl_tophole _`
   (`univ_ghost_r`); a *hole* LHS gives `inh P` (`ghost`). So no **concrete
   guarded** syn tc output (only `freeze`).
-- BUT `d_pat__abs_check`'s body premise is `⇨ pskl_to_bskl_syn P` where `P` may
+- BUT `d_pat__abs_check`'s body premise is `⦂ pskl_to_bskl_syn P` where `P` may
   be a **ghost**. The tc safe witness is `ghost_of P`, whose outputs are
   `bskl_tophole(...)` / `bskl_hole` (prop_skeleton.v:332) — these **are
   `is_sskl`** (`is_sskl` has `__hole`,`__tophole`). And
   `is_sskl_syn_roundtrip : is_sskl Q → pskl_to_bskl_syn (bskl_to_pskl Q) = Q`.
-  So the ghost body witness **already satisfies** the `⇨ syn P` premise with
+  So the ghost body witness **already satisfies** the `⦂ syn P` premise with
   `P := bskl_to_pskl Q`. The principal-body-skeleton is **NOT false**.
 
 **RESOLUTION (tractable):** strengthen `gpat`'s **tc** case to bundle
@@ -220,7 +220,7 @@ freeze's, are already `is_sskl`). Re-prove the closed tc cases to carry it
 (easy). Then:
 - `abs`/`abs_anno`: IH gives `is_sskl Q_body` ⇒ `is_sskl_syn_roundtrip` ⇒
   `Q_body = pskl_to_bskl_syn P` ⇒ `d_pat__abs_check` gives
-  `λ ⇨ bskl_tophole(bskl_arrow bskl_hole Q_body)` (itself `is_sskl`), and
+  `λ ⦂ bskl_tophole(bskl_arrow bskl_hole Q_body)` (itself `is_sskl`), and
   `abs_check_fill` (Qed) gives the fill from the IH's body fill.
 - `forall`: the value's witness is `is_sskl` and X-independent (built from `e`);
   the ∀-checking-types are peeled inside `abs_check_fill`'s machinery.

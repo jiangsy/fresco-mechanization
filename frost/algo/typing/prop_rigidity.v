@@ -494,7 +494,7 @@ Qed.
 Definition a_sub_rigid_only := proj1 a_sub_sub_flex_rigid_only.
 
 Lemma a_pat_rigid_only : forall m Θ0 P0 e Q Θ1,
-  Θ0 ⊢ₐ[ m ; P0 ] e ⇨ Q ⊣ Θ1 ->
+  Θ0 ⊢ₛᵃ[ m ; P0 ] e ⦂ Q ⊣ Θ1 ->
   forall γ, a_rigid_only Θ0 γ -> a_rigid_only Θ1 γ.
 Proof.
   intros m Θ0 P0 e Q Θ1 H; induction H; intros γ Hr.
@@ -554,7 +554,7 @@ Proof.
 Qed.
 
 Lemma a_typing_rigid_only : forall m Θ0 P0 e A Θ1,
-  Θ0 ⊢ₐ[ m ; P0 ] e ⦂ A ⊣ Θ1 ->
+  Θ0 ⊢ᵃ[ m ; P0 ] e ⦂ A ⊣ Θ1 ->
   forall γ, a_rigid_only Θ0 γ -> a_rigid_only Θ1 γ.
 Proof.
   intros m Θ0 P0 e A Θ1 H; induction H; intros γ Hr.
@@ -890,7 +890,7 @@ Qed.
 Definition a_sub_ty_core := proj1 a_sub_sub_flex_ty_core.
 
 Lemma a_typing_ty_core : forall M Θ0 P0 e A' Θ1,
-  Θ0 ⊢ₐ[ M ; P0 ] e ⦂ A' ⊣ Θ1 ->
+  Θ0 ⊢ᵃ[ M ; P0 ] e ⦂ A' ⊣ Θ1 ->
   forall C, pskl_ty_core M P0 C ->
   core_rigid Θ0 C ->
   ptyp_ty_core M A' C.
@@ -1082,7 +1082,7 @@ Qed.
 (** ⭐ The consumer AT-Anno needs: a TC run at a RIGID-only type returns
     that type SYNTACTICALLY. *)
 Lemma a_typing_tc_rigid_output : forall Θ0 (A : ptyp) e A' Θ1,
-  Θ0 ⊢ₐ[ mode_tc ; (ptyp_to_pskl A) ] e ⦂ A' ⊣ Θ1 ->
+  Θ0 ⊢ᵃ[ mode_tc ; (ptyp_to_pskl A) ] e ⦂ A' ⊣ Θ1 ->
   (forall α, α `in` ftvar_in_ptyp A -> a_rigid_only Θ0 α) ->
   A' = A.
 Proof.

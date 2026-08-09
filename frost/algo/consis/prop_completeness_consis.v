@@ -421,7 +421,7 @@ Qed.
            [α̂]; hence [κα̂] is well-formed in a target BELOW [β] and cannot
            mention it.  Needs an [a_inc]-position / target-wf lemma.
       (ii) [β ∈ ftv(κα̂)]: the assignment solution's JOIN
-           [empty ⨟ Θ ⊢ₛᵃ ⌊κP⌋ ∼ syn(κα̂)] against the MONOTYPE [κα̂]
+           [empty ⨟ Θ ⊢ᵃᵈ ⌊κP⌋ ∼ syn(κα̂)] against the MONOTYPE [κα̂]
            ([a_inc_lookup_mono]) transports (via [consis_refine_mono_tyequiv],
            prop_mono_bridge.v) to [κP ≡ᵗ κα̂]; combined with [β ∈ ftv(κP)]
            (this lemma) it should force [β ∈ ftv(κα̂)].  The subtlety flagged in
@@ -474,7 +474,7 @@ Qed.
 
 
 Lemma join_pskl_downarrow_mono_scoped : forall Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
   a_wf_aenv Θ ->
   forall P0 A D,
     R = pskl_to_uskl P0 ->
@@ -618,12 +618,12 @@ Ltac str_forall H0 Hu Hwf' Hsub HscS HscQ Rr Qq α Hα openU openB :=
     simpl; apply add_2; apply HscQ; clear - Hβ HupB Hne; fsetdec ].
 
 Lemma ad_pat_consis_strengthen : forall Ψ Θ R' Q,
-  Ψ ⨟ Θ ⊢ₛᵃ R' ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R' ∼ Q ->
   forall Θ', uniq Θ -> a_wf_aenv Θ' ->
   (forall x b, binds x b Θ' -> binds x b Θ) ->
   (forall α0, α0 `in` ftvar_in_uskl R' -> α0 `in` dom Θ') ->
   (forall α0, α0 `in` ftvar_in_bskl Q -> α0 `in` dom Θ') ->
-  Ψ ⨟ Θ' ⊢ₛᵃ R' ∼ Q.
+  Ψ ⨟ Θ' ⊢ᵃᵈ R' ∼ Q.
 Proof.
   intros Ψ Θ R' Q H; induction H;
     intros Θ' Hu Hwf' Hsub HscS HscQ; simpl in *.
@@ -714,8 +714,8 @@ Lemma consis_precise_mono_join : forall Θ Δ A Qb,
   a_wf_aenv Θ ->
   mono_ptyp A ->
   (forall α, α `in` ftvar_in_ptyp A -> a_binds_tvar α Θ) ->
-  empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ Qb ->
-  Θ ⨟ Δ ⊢ₚᵣᵃ (ptyp_to_pskl A) ⊑ (bskl_to_pskl Qb).
+  empty ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn A) ∼ Qb ->
+  Θ ⨟ Δ ⊢ₚᵣᵃᵈ (ptyp_to_pskl A) ⊑ (bskl_to_pskl Qb).
 Proof.
   intros Θ Δ A Qb Hwf HmA Hvis Hjoin.
   destruct (consis_mono_join Hjoin Hwf (A := A) eq_refl HmA) as [C [HmC [HQb Heq]]].
@@ -746,7 +746,7 @@ Qed.
     an [inh] painting, and [__flex_r], whose target is a defined-flex variable
     — both fixed points of [inh ∘ erase].) *)
 Lemma consis_hole_target_inh : forall Ψ Θ Qb,
-  Ψ ⨟ Θ ⊢ₛᵃ uskl_hole ∼ Qb ->
+  Ψ ⨟ Θ ⊢ᵃᵈ uskl_hole ∼ Qb ->
   pskl_to_bskl_inh (bskl_to_pskl Qb) = Qb.
 Proof.
   intros Ψ Θ Qb H.
@@ -762,7 +762,7 @@ Qed.
     separate regularity development.  A left-side defined-flex lookup recurs
     on its definition; a right-side lookup lands at a guarded variable. *)
 Lemma ad_pat_consis_guarded_r : forall Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
   a_wf_aenv Θ ->
   forall P,
     R = pskl_to_uskl P ->
@@ -835,10 +835,10 @@ Qed.
     unfolded recursively and folded back afterwards. *)
 Lemma ad_pat_consis_tophole_guarded_inv : forall Ψ Θ P Q,
   a_wf_aenv Θ ->
-  Ψ ⨟ Θ ⊢ₛᵃ (uskl_tophole (pskl_to_uskl P)) ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ (uskl_tophole (pskl_to_uskl P)) ∼ Q ->
   guarded_pskl P ->
   guarded_bskl Q ->
-  Ψ ⨟ Θ ⊢ₛᵃ (pskl_to_uskl P) ∼ Q.
+  Ψ ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl P) ∼ Q.
 Proof.
   intros Ψ Θ P Q Hwf Hc.
   remember (uskl_tophole (pskl_to_uskl P)) as R eqn:HeqS.
@@ -1014,7 +1014,7 @@ Definition ad_precise_f (F : atoms) (Θ : aenv) (Δ : atoms)
   ad_refine_syn_f F Θ Δ (pskl_to_bskl_inh P) (pskl_to_bskl_inh Q).
 
 Lemma ad_precise_f_forget : forall F Θ Δ P P',
-  ad_precise_f F Θ Δ P P' -> Θ ⨟ Δ ⊢ₚᵣᵃ P ⊑ P'.
+  ad_precise_f F Θ Δ P P' -> Θ ⨟ Δ ⊢ₚᵣᵃᵈ P ⊑ P'.
 Proof.
   intros * H. apply ad_refine_syn_f_forget in H. exact H.
 Qed.
@@ -1090,7 +1090,7 @@ Proof.
 Qed.
 
 Lemma ad_refine_syn_f_of_plain_no_hole : forall Θ Δ Q Q',
-  Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ Q' ->
+  Θ ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ Q' ->
   bskl_no_hole Q ->
   forall F, ad_refine_syn_f F Θ Δ Q Q'.
 Proof.
@@ -2220,7 +2220,7 @@ Definition consis_complete_at (m : mu_ty) : Prop :=
     a_wf_aenv Θ ->
     no_flex_dep (Δ1 `union` Δ2) Θ ->
     Ψ [=] empty ->
-    Ψ ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κ P)) ∼ Qb ->
+    Ψ ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl (msubst_pskl κ P)) ∼ Qb ->
     ad_refine_syn_f Δ1 Θ Δ1 (pskl_to_bskl_inh (msubst_pskl κ P0)) Qb ->
     ad_refine_pskl_f Δ2 Θ Δ2 (msubst_pskl κ P) (bskl_to_pskl Qb) ->
     exists P1 Θ1,
@@ -2261,7 +2261,7 @@ Definition assign_complete_at (m : mu_ty) : Prop :=
     dom Ξ [<=] ftvar_in_pskl P ->
     κ ∷ (Ξ ++ Θ0) ⊑ Θ ->
     a_wf_aenv Θ ->
-    empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κ P))
+    empty ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl (msubst_pskl κ P))
                  ∼ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup κ α))) ->
     exists Θ1,
       Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 /\
@@ -2541,7 +2541,7 @@ Lemma ad_pat_consis_rigid_ftv_rev : forall Ψ Θ R' Qt α',
   binds α' abind_tvar Θ ->
   (forall β τ, binds β (abind_flex_mono_def τ) Θ ->
                α' `notin` ftvar_in_ptyp τ) ->
-  Ψ ⨟ Θ ⊢ₛᵃ R' ∼ Qt ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R' ∼ Qt ->
   α' `notin` ftvar_in_bskl Qt ->
   α' `notin` ftvar_in_uskl R'.
 Proof.
@@ -2648,7 +2648,7 @@ Lemma ad_pat_consis_rigid_ftv_rev_scoped : forall Ψ Θ R' Qt α' D,
   α' `notin` D ->
   (forall α1 τ, binds α1 (abind_flex_mono_def τ) Θ -> α1 `in` D ->
                ftvar_in_ptyp τ [<=] D) ->
-  Ψ ⨟ Θ ⊢ₛᵃ R' ∼ Qt ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R' ∼ Qt ->
   ftvar_in_bskl Qt [<=] D ->
   α' `notin` ftvar_in_uskl R'.
 Proof.
@@ -2871,7 +2871,7 @@ Lemma refine_join_reinherit : forall F Θr Δ P' P0,
   a_wf_aenv Θj ->
   (forall x b, binds x b Θr -> binds x b Θj) ->
   Θr ⨟ Δ ⊢ₚₛᵃ P' ->
-  empty ⨟ Θj ⊢ₛᵃ (pskl_to_uskl P') ∼ (pskl_to_bskl_syn P0) ->
+  empty ⨟ Θj ⊢ᵃᵈ (pskl_to_uskl P') ∼ (pskl_to_bskl_syn P0) ->
   ad_refine_syn_f F Θr Δ (pskl_to_bskl_inh P') (pskl_to_bskl_inh P0).
 Proof.
   intros F Θr Δ P' P0 Hr.
@@ -2972,7 +2972,7 @@ Proof.
     (* only __tophole_drop survives the target shape; its stripped subject
        is guarded against a ∀-syn target *)
     match goal with
-    | Hdrop : _ ⨟ _ ⊢ₛᵃ (pskl_to_uskl P) ∼ _ |- _ =>
+    | Hdrop : _ ⨟ _ ⊢ᵃᵈ (pskl_to_uskl P) ∼ _ |- _ =>
         pose proof (ad_pat_consis_guarded_r Hdrop Hwf eq_refl HgP HlcQ)
           as Hbad
     end.
@@ -2993,7 +2993,7 @@ Proof.
       { apply lc_bskl_tophole. apply pskl_to_bskl_syn_lc.
         eapply ad_refine_pskl_f_lc_r; exact Hr. }
       match goal with
-      | Hdrop : _ ⨟ _ ⊢ₛᵃ (pskl_to_uskl P) ∼ _ |- _ =>
+      | Hdrop : _ ⨟ _ ⊢ᵃᵈ (pskl_to_uskl P) ∼ _ |- _ =>
           pose proof (ad_pat_consis_guarded_r Hdrop Hwf eq_refl HgP HlcQt)
             as Hbad
       end.
@@ -3035,15 +3035,15 @@ Qed.
 (** Transport a ∀-syn subject componentwise: only [forall_inh_untagged] /
     [forall_syn] / [flex_r] can have an [all_syn] subject. *)
 Lemma consis_forall_subject_transport : forall Ψ Θ R Qt,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Qt ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Qt ->
   forall R0 R0' L0,
   R = uskl_all_syn R0 ->
   (forall α, α `notin` L0 -> forall Ψ' Q',
-     Ψ' ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ₛᵃ
+     Ψ' ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ᵃᵈ
        (open_uskl_wrt_uskl R0 (uskl_var_f α)) ∼ Q' ->
-     Ψ' ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ₛᵃ
+     Ψ' ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ᵃᵈ
        (open_uskl_wrt_uskl R0' (uskl_var_f α)) ∼ Q') ->
-  Ψ ⨟ Θ ⊢ₛᵃ (uskl_all_syn R0') ∼ Qt.
+  Ψ ⨟ Θ ⊢ᵃᵈ (uskl_all_syn R0') ∼ Qt.
 Proof.
   intros Ψ Θ R Qt Hc; induction Hc; intros R0 R0' L0 HeqS Htr;
     try discriminate HeqS.
@@ -3068,15 +3068,15 @@ Qed.
     context-generalized because [tophole_inh] keeps the SAME subject under
     an extended context. *)
 Lemma consis_tophole_subject_transport : forall Ψ Θ R Qt,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Qt ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Qt ->
   a_wf_aenv Θ ->
   forall R0 R0',
   R = uskl_tophole R0 ->
   (forall Θ' Ψ' Q',
      a_wf_aenv Θ' ->
      (forall x b, binds x b Θ -> binds x b Θ') ->
-     Ψ' ⨟ Θ' ⊢ₛᵃ R0 ∼ Q' -> Ψ' ⨟ Θ' ⊢ₛᵃ R0' ∼ Q') ->
-  Ψ ⨟ Θ ⊢ₛᵃ (uskl_tophole R0') ∼ Qt.
+     Ψ' ⨟ Θ' ⊢ᵃᵈ R0 ∼ Q' -> Ψ' ⨟ Θ' ⊢ᵃᵈ R0' ∼ Q') ->
+  Ψ ⨟ Θ ⊢ᵃᵈ (uskl_tophole R0') ∼ Qt.
 Proof.
   intros Ψ Θ R Qt Hc; induction Hc; intros HwfΘ R0 R0' HeqS Htr;
     try discriminate HeqS.
@@ -3111,10 +3111,10 @@ Lemma skl_tyequiv_consis_transport : forall Θ P P',
   forall Θ',
   a_wf_aenv Θ' ->
   (forall x b, binds x b Θ -> binds x b Θ') ->
-  (forall Ψ Qt, Ψ ⨟ Θ' ⊢ₛᵃ (pskl_to_uskl P) ∼ Qt ->
-                Ψ ⨟ Θ' ⊢ₛᵃ (pskl_to_uskl P') ∼ Qt) /\
-  (forall Ψ Qt, Ψ ⨟ Θ' ⊢ₛᵃ (pskl_to_uskl P') ∼ Qt ->
-                Ψ ⨟ Θ' ⊢ₛᵃ (pskl_to_uskl P) ∼ Qt).
+  (forall Ψ Qt, Ψ ⨟ Θ' ⊢ᵃᵈ (pskl_to_uskl P) ∼ Qt ->
+                Ψ ⨟ Θ' ⊢ᵃᵈ (pskl_to_uskl P') ∼ Qt) /\
+  (forall Ψ Qt, Ψ ⨟ Θ' ⊢ᵃᵈ (pskl_to_uskl P') ∼ Qt ->
+                Ψ ⨟ Θ' ⊢ᵃᵈ (pskl_to_uskl P) ∼ Qt).
 Proof.
   intros Θ P P' Heq; induction Heq; intros Θ' Hwf' Hincl.
   - (* refl *) split; intros Ψ Qt Hc; exact Hc.
@@ -3625,7 +3625,7 @@ Qed.
 (** The join's target erases to a well-formed (Δ-free) skeleton — the
     output-regularity C-Arrow's precision transport needs. *)
 Lemma ad_pat_consis_target_wf : forall Ψ Θ R Qt,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Qt ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Qt ->
   a_scope_pskl Θ (bskl_to_pskl Qt).
 Proof.
   intros Ψ Θ R Qt Hc; induction Hc; simpl.
@@ -3665,7 +3665,7 @@ Qed.
     fill-hygienic one at [F = ∅] (the hole rule's ∅-disjointness is
     trivial).  Lets the precision goal reuse the [_f] transports. *)
 Lemma ad_refine_syn_f_of_plain : forall Θ Δ Q Q',
-  Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ Q' ->
+  Θ ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ Q' ->
   ad_refine_syn_f empty Θ Δ Q Q'.
 Proof.
   intros Θ Δ Q Q' H; induction H;
@@ -4141,13 +4141,13 @@ Proof.
     { eapply a_tyequiv__trans; [ exact HeqAκ | ].
       eapply a_tyequiv__trans; [ exact Heq | ].
       apply a_tyequiv__sym; exact HeqBκ. }
-    assert (Hjoin0 : empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn (msubst_ptyp κs Aσ))
+    assert (Hjoin0 : empty ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn (msubst_ptyp κs Aσ))
                        ∼ (ptyp_to_bskl_syn (msubst_ptyp κs Bσ))).
     { apply tyequiv_mono_consis;
         [ exact HeqAB | exact Hwfth | exact HmA'
         | intros α0 Hα0; eapply a_wf_ptyp_ftv_tvarish;
             [ exact HwfA' | exact Hα0 ] ]. }
-    assert (Hjoin' : empty ⨟ Θ ⊢ₛᵃ
+    assert (Hjoin' : empty ⨟ Θ ⊢ᵃᵈ
               (pskl_to_uskl (msubst_pskl κs (ptyp_to_pskl Aσ)))
               ∼ (ptyp_to_bskl_syn (msubst_ptyp κs Bσ)))
       by (rewrite msubst_pskl_ptyp_to_pskl, pskl_to_uskl_ptyp; exact Hjoin0).
@@ -4340,7 +4340,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma join_var_tyequiv : forall Ψ Θ A A',
-  Ψ ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (ptyp_to_pskl A)) ∼ (ptyp_to_bskl_syn A') ->
+  Ψ ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl (ptyp_to_pskl A)) ∼ (ptyp_to_bskl_syn A') ->
   a_wf_aenv Θ ->
   mono_ptyp A ->
   mono_ptyp A' ->
@@ -4360,7 +4360,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma occurs_join_size_aux : forall Ψ Θ R' Q,
-  Ψ ⨟ Θ ⊢ₛᵃ R' ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R' ∼ Q ->
   a_wf_aenv Θ ->
   forall κm,
   (forall α', mono_ptyp (msubst_lookup κm α')) ->
@@ -4491,7 +4491,7 @@ Qed.
 
 (** The wrapper: full occurs-size fact, var case included. *)
 Lemma occurs_join_size : forall Ψ Θ κm α P A Θw Δw,
-  Ψ ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κm P)) ∼ (ptyp_to_bskl_syn A) ->
+  Ψ ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl (msubst_pskl κm P)) ∼ (ptyp_to_bskl_syn A) ->
   a_wf_aenv Θ ->
   (forall α0, mono_ptyp (msubst_lookup κm α0)) ->
   mono_ptyp A ->
@@ -4546,7 +4546,7 @@ Proof.
 Qed.
 
 Lemma guess_join_witness_aux : forall Ψ Θ R' Q,
-  Ψ ⨟ Θ ⊢ₛᵃ R' ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R' ∼ Q ->
   a_wf_aenv Θ ->
   forall κm,
   (forall α, mono_ptyp (msubst_lookup κm α)) ->
@@ -4788,7 +4788,7 @@ Qed.
 
 (** The wrapper: var case included. *)
 Lemma guess_join_witness : forall Ψ Θ κm P A,
-  Ψ ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κm P)) ∼ (ptyp_to_bskl_syn A) ->
+  Ψ ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl (msubst_pskl κm P)) ∼ (ptyp_to_bskl_syn A) ->
   a_wf_aenv Θ ->
   (forall α, mono_ptyp (msubst_lookup κm α)) ->
   mono_ptyp A ->
@@ -4825,7 +4825,7 @@ Lemma assign_solve_m_complete : forall (N : atoms) Θ0' Ξ α P κ Θ,
   P <> pskl_tophole (pskl_var_f α) ->
   κ ∷ (Ξ ++ (α ~ abind_flex_mono) ++ Θ0') ⊑ Θ ->
   a_wf_aenv Θ ->
-  empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κ P))
+  empty ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl (msubst_pskl κ P))
              ∼ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup κ α))) ->
   exists Θ1,
     ((α ~ abind_flex_mono) ++ Θ0') ⊲[ Ξ ] α ≔ P ⊣ Θ1 /\
@@ -5266,7 +5266,7 @@ Proof.
           by (eapply a_inc_flex_dom;
               [ exact Hincb | exact Hwf0 | exact Hfα0 ]).
         clear - Hαb. fsetdec. }
-      assert (Hjoin_sub : empty ⨟ Θ' ⊢ₛᵃ
+      assert (Hjoin_sub : empty ⨟ Θ' ⊢ᵃᵈ
                 (pskl_to_uskl (msubst_pskl
                    (msubst_compose (aenv_msubst Θ) κ) P))
               ∼ (pskl_to_bskl_syn (ptyp_to_pskl
@@ -5543,7 +5543,7 @@ Proof.
         by (eapply a_inc_flex_dom;
             [ exact Hincb | exact Hwf0 | exact Hfα0 ]).
       clear - Hαb. fsetdec. }
-    assert (Hjoin_sub : empty ⨟ Θ' ⊢ₛᵃ
+    assert (Hjoin_sub : empty ⨟ Θ' ⊢ᵃᵈ
               (pskl_to_uskl (msubst_pskl
                  (msubst_compose (aenv_msubst Θ) κ) P))
             ∼ (pskl_to_bskl_syn (ptyp_to_pskl
@@ -5875,7 +5875,7 @@ Proof.
         by (eapply a_inc_flex_dom;
             [ exact Hincb | exact Hwf0 | exact Hfα0 ]).
       clear - Hαb. fsetdec. }
-    assert (Hjoin_sub : empty ⨟ Θ' ⊢ₛᵃ
+    assert (Hjoin_sub : empty ⨟ Θ' ⊢ᵃᵈ
               (pskl_to_uskl (msubst_pskl
                  (msubst_compose (aenv_msubst Θ) κ) P))
             ∼ (pskl_to_bskl_syn (ptyp_to_pskl
@@ -6099,7 +6099,7 @@ Proof.
           clear - Hα0 Hγni. intro; subst α0; contradiction. }
         assert (Hlkα : msubst_lookup (κa ++ κb) α = msubst_lookup κ α)
           by (rewrite Heqκ; symmetry; apply msubst_lookup_mid_drop; exact Hαα1).
-        assert (Hjoin' : empty ⨟ Θ ⊢ₛᵃ
+        assert (Hjoin' : empty ⨟ Θ ⊢ᵃᵈ
                   (pskl_to_uskl (msubst_pskl (κa ++ κb) P))
                 ∼ (pskl_to_bskl_syn (ptyp_to_pskl
                      (msubst_lookup (κa ++ κb) α))))
@@ -6357,7 +6357,7 @@ Proof.
       by (intros β Hβ; eapply a_wf_ptyp_ftv_tvarish;
           [ exact HwfC | exact Hβ ]).
     (* sub-join : reflexivity on κα̂, transported to the subject image *)
-    assert (Hjrefl : empty ⨟ Θ ⊢ₛᵃ
+    assert (Hjrefl : empty ⨟ Θ ⊢ᵃᵈ
               (pskl_to_uskl (msubst_pskl κ (pskl_var_f α)))
               ∼ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup κ α)))).
     { cbn [msubst_pskl].
@@ -6586,7 +6586,7 @@ Qed.
     unfolds [flex_r] — those keep the measure constant but shrink the join.
     All structural sub-nodes recurse through the measure hypothesis [IH]. *)
 Lemma consis_complete_core : forall Ψ Θ R' Qb,
-  Ψ ⨟ Θ ⊢ₛᵃ R' ∼ Qb ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R' ∼ Qb ->
   forall (N : atoms) Δ1 Δ2 Θ0 P0 P κ,
     (forall m', mu_lt m' (mu_consis Θ κ P0 P Θ0) -> complete_at m') ->
     a_wf_aenv Θ0 ->
@@ -6790,10 +6790,10 @@ Proof.
        factorings compose by [a_inc_equiv_glue]; the first component's
        precision transports from ζ1 to ζ2 the same way. *)
     match goal with
-    | Hpm : ?x ⨟ _ ⊢ₛᵃ R1 ∼ _ |- _ => rename Hpm into Hj1
+    | Hpm : ?x ⨟ _ ⊢ᵃᵈ R1 ∼ _ |- _ => rename Hpm into Hj1
     end.
     match goal with
-    | Hpm : ?x ⨟ _ ⊢ₛᵃ R2 ∼ _ |- _ => rename Hpm into Hj2
+    | Hpm : ?x ⨟ _ ⊢ᵃᵈ R2 ∼ _ |- _ => rename Hpm into Hj2
     end.
     match goal with
     | Hpe : Ψ [=] union _ _ |- _ => rename Hpe into HΨu
@@ -6948,7 +6948,7 @@ Proof.
         | exact Hlcκ | exact Hlcc1 ]. }
     destruct (skl_tyequiv_consis_transport Heqb Hwfth
                 (fun x b Hb => Hb)) as [Hjt _].
-    assert (Hj2' : Ψ2 ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl ζ1 PPb)) ∼ Q2)
+    assert (Hj2' : Ψ2 ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl (msubst_pskl ζ1 PPb)) ∼ Q2)
       by (apply Hjt; exact Hj2).
     destruct (skl_tyequiv_refine_syn_f_transport Heqb0 Hwfth
                 (fun x b Hb => Hb)) as [Hrst _].
@@ -7064,7 +7064,7 @@ Proof.
        as [(α~tvar) ++ Θ1] and L9 renames the single instance to the
        cofinite premise of [a_consis__forall_inh]. *)
     match goal with
-    | Hpm : forall α, α `notin` _ -> _ ⨟ _ ⊢ₛᵃ _ ∼ _ |- _ =>
+    | Hpm : forall α, α `notin` _ -> _ ⨟ _ ⊢ᵃᵈ _ ∼ _ |- _ =>
         rename Hpm into Hjoin
     end.
     (* SUBJECT: PP = ∀ PPb. *)
@@ -7220,7 +7220,7 @@ Proof.
         [ | eapply no_flex_dep_open_tvar;
             [ exact Hwfth | exact Hnfdth | exact HαΘ ] ].
       clear. fsetdec. }
-    assert (Hjα : Ψ ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ₛᵃ
+    assert (Hjα : Ψ ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ᵃᵈ
               (pskl_to_uskl (msubst_pskl κ
                  (open_pskl_wrt_pskl PPb (pskl_var_f α))))
               ∼ (open_bskl_wrt_bskl Q (bskl_var_f α))).
@@ -7376,7 +7376,7 @@ Proof.
        Δ1-refinement's [tophole_fill] premise arrives ALREADY at the
        α-extended context). *)
     match goal with
-    | Hpm : forall α, α `notin` _ -> _ ⨟ _ ⊢ₛᵃ _ ∼ _ |- _ =>
+    | Hpm : forall α, α `notin` _ -> _ ⨟ _ ⊢ᵃᵈ _ ∼ _ |- _ =>
         rename Hpm into Hjoin
     end.
     (* SUBJECT: PP = ∀ PPb. *)
@@ -7522,7 +7522,7 @@ Proof.
         [ | eapply no_flex_dep_open_tvar;
             [ exact Hwfth | exact Hnfdth | exact HαΘ ] ].
       clear. fsetdec. }
-    assert (Hjα : Ψ ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ₛᵃ
+    assert (Hjα : Ψ ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ᵃᵈ
               (pskl_to_uskl (msubst_pskl κ
                  (open_pskl_wrt_pskl PPb (pskl_var_f α))))
               ∼ (open_bskl_wrt_bskl Q (bskl_var_f α))).
@@ -7772,7 +7772,7 @@ Proof.
        the input to be a ∀◇ as well (a guarded input's refinement target is
        guarded, never a ∀◇); V drops by 2, recurse through the μ-IH. *)
     match goal with
-    | Hpm : _ ⨟ _ ⊢ₛᵃ _ ∼ _ |- _ => rename Hpm into Hj
+    | Hpm : _ ⨟ _ ⊢ᵃᵈ _ ∼ _ |- _ => rename Hpm into Hj
     end.
     (* SUBJECT: PP = ∀◇PPt (var subjects are rigid, their image a var). *)
     destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
@@ -7875,7 +7875,7 @@ Proof.
        rigid α added to Θ0 and Δ1; the subject ∀◇.PPt is carried
        unchanged through the μ-IH and the L9 rename. *)
     match goal with
-    | Hpm : forall α, α `notin` _ -> _ ⨟ _ ⊢ₛᵃ _ ∼ _ |- _ =>
+    | Hpm : forall α, α `notin` _ -> _ ⨟ _ ⊢ᵃᵈ _ ∼ _ |- _ =>
         rename Hpm into Hjoin
     end.
     (* SUBJECT: PP = ∀◇ PPt. *)
@@ -8027,7 +8027,7 @@ Proof.
         [ | eapply no_flex_dep_open_tvar;
             [ exact Hwfth | exact Hnfdth | exact HαΘ ] ].
       clear. fsetdec. }
-    assert (Hjα : Ψ ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ₛᵃ
+    assert (Hjα : Ψ ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ᵃᵈ
               (pskl_to_uskl (msubst_pskl κ (pskl_tophole PPt)))
               ∼ (open_bskl_wrt_bskl Q (bskl_var_f α))).
     { simpl. apply Hjoin. clear - Fr. fsetdec. }
@@ -8166,7 +8166,7 @@ Proof.
        BOTH sub-cases: input ∀◇P0t (strip on all three, [univ_ghost]) or
        input guarded (subject-only strip, [univ_ghost2]). *)
     match goal with
-    | Hpm : _ ⨟ _ ⊢ₛᵃ _ ∼ _ |- _ => rename Hpm into Hj
+    | Hpm : _ ⨟ _ ⊢ᵃᵈ _ ∼ _ |- _ => rename Hpm into Hj
     end.
     (* SUBJECT: PP = ∀◇PPt. *)
     destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
@@ -8354,10 +8354,10 @@ Proof.
   destruct (a_flex_shape_dec HwfP) as [[β [-> Hfβ]] | HnfP].
   { destruct (a_flex_shape_dec HwfP0) as [[β10 [-> Hfδ0]] | HnfP0].
     - (* C-Flex : both hatted — part 2 (unification). *)
-      assert (Hjoin' : empty ⨟ Θ ⊢ₛᵃ
+      assert (Hjoin' : empty ⨟ Θ ⊢ᵃᵈ
                 (pskl_to_uskl (msubst_pskl κ (pskl_var_f β))) ∼ Qb)
         by (eapply consis_psi_cong_local; [ exact Hjoin | exact HΨ ]).
-      assert (Hjoin'' : empty ⨟ Θ ⊢ₛᵃ
+      assert (Hjoin'' : empty ⨟ Θ ⊢ᵃᵈ
                 (ptyp_to_uskl_syn (msubst_lookup κ β)) ∼ Qb).
       { replace (msubst_pskl κ (pskl_var_f β))
           with (ptyp_to_pskl (msubst_lookup κ β)) in Hjoin' by reflexivity.
@@ -8417,10 +8417,10 @@ Proof.
          refine→join mono bridge [refine_inh_mono_consis] (design doc §9.1)
          plus the Q-side mono transport [tyequiv_mono_consis_transport_q];
          precision recovers by [consis_precise_via_join]. *)
-      assert (Hjoin' : empty ⨟ Θ ⊢ₛᵃ
+      assert (Hjoin' : empty ⨟ Θ ⊢ᵃᵈ
                 (pskl_to_uskl (msubst_pskl κ (pskl_var_f β))) ∼ Qb)
         by (eapply consis_psi_cong_local; [ exact Hjoin | exact HΨ ]).
-      assert (Hjoin'' : empty ⨟ Θ ⊢ₛᵃ
+      assert (Hjoin'' : empty ⨟ Θ ⊢ᵃᵈ
                 (ptyp_to_uskl_syn (msubst_lookup κ β)) ∼ Qb).
       { replace (msubst_pskl κ (pskl_var_f β))
           with (ptyp_to_pskl (msubst_lookup κ β)) in Hjoin' by reflexivity.
@@ -8433,7 +8433,7 @@ Proof.
       subst Qb.
       (* refine→join bridge on the Δ1-refinement *)
       apply ad_refine_syn_f_forget in Hrs.
-      assert (Hbr : empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κ P0))
+      assert (Hbr : empty ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl (msubst_pskl κ P0))
                       ∼ (ptyp_to_bskl_syn C)).
       { eapply refine_inh_mono_consis;
           [ exact Hrs | exact Hwfth
@@ -8449,7 +8449,7 @@ Proof.
           [ exact Hinc | exact Hwf0 | right; exact Hfβ ]. }
       destruct (tyequiv_mono_consis_transport_q HeqβC Hwfth Hmβ Hvβ)
         as [Htq _].
-      assert (Hjoin3 : empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κ P0))
+      assert (Hjoin3 : empty ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl (msubst_pskl κ P0))
                         ∼ (ptyp_to_bskl_syn (msubst_lookup κ β)))
         by (apply Htq; exact Hbr).
       (* the measure: V constant (pairing), n constant, t breaks the tie *)
@@ -8498,7 +8498,7 @@ Proof.
        join's TARGET transports from C to κβ1̂0 along the equivalence
        ([tyequiv_mono_consis_transport_q] — general subject); precision by
        [consis_precise_via_refine]. *)
-    assert (Hjoin' : empty ⨟ Θ ⊢ₛᵃ
+    assert (Hjoin' : empty ⨟ Θ ⊢ᵃᵈ
               (pskl_to_uskl (msubst_pskl κ P)) ∼ Qb)
       by (eapply consis_psi_cong_local; [ exact Hjoin | exact HΨ ]).
     assert (Hmδ0 : mono_ptyp (msubst_lookup κ β10))
@@ -8519,7 +8519,7 @@ Proof.
         [ exact Hinc | exact Hwf0 | right; exact Hfδ0 ]. }
     destruct (tyequiv_mono_consis_transport_q HeqδC Hwfth Hmδ0 Hvδ)
       as [Htq _].
-    assert (Hjoin3 : empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κ P))
+    assert (Hjoin3 : empty ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl (msubst_pskl κ P))
                       ∼ (ptyp_to_bskl_syn (msubst_lookup κ β10))).
     { apply Htq. rewrite <- HeqQb. exact Hjoin'. }
     (* the measure: V constant (pairing), n constant, t breaks the tie *)
@@ -8568,7 +8568,7 @@ Proof.
        ([ad_pat_consis_rigid_ftv_rev]) against the Δ1-hygiene of the hole
        fill in Hrs; precision re-inherits the Δ2-refinement through the
        join by [refine_join_reinherit]. *)
-    assert (Hjoin' : empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κ P)) ∼ Qb)
+    assert (Hjoin' : empty ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl (msubst_pskl κ P)) ∼ Qb)
       by (eapply consis_psi_cong_local; [ exact Hjoin | exact HΨ ]).
     change (ad_refine_syn_f Δ1 Θ Δ1 bskl_hole Qb) in Hrs.
     (* Qb is a syn-painting fixed point (its refinement source is ◇) *)
@@ -8731,7 +8731,7 @@ Qed.
 (** The join-shaped statement the earlier scaffold stated directly (kept
     verbatim for downstream compatibility); now an instance of the bundle. *)
 Lemma consis_complete : forall Ψ Θ R Qb,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Qb ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Qb ->
   forall Δ1 Δ2 Θ0 P0 P κ,
     a_wf_aenv Θ0 ->
     Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
@@ -8778,7 +8778,7 @@ Lemma a_consis_complete : forall Θ0 P0 P,
   forall κ Θ Qb,
     κ ∷ Θ0 ⊑ Θ ->
     a_wf_aenv Θ ->
-    empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κ P)) ∼ Qb ->
+    empty ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl (msubst_pskl κ P)) ∼ Qb ->
     ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh (msubst_pskl κ P0)) Qb ->
     ad_refine_pskl_f empty Θ empty (msubst_pskl κ P) (bskl_to_pskl Qb) ->
     exists P1 Θ1,
@@ -8787,7 +8787,7 @@ Lemma a_consis_complete : forall Θ0 P0 P,
          exists ζ,
            ζ ∷ Θ1 ⊑ Θ /\
            a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ /\
-           Θ ⨟ empty ⊢ₚᵣᵃ
+           Θ ⨟ empty ⊢ₚᵣᵃᵈ
              (msubst_bskl ζ (pskl_to_bskl_syn P1)) ⊑ (bskl_to_pskl Qb)).
 Proof.
   intros Θ0 P0 P Hwf0 HwfP0 HwfP κ Θ Qb Hinc Hwfth Hjoin Hrs Hrp.

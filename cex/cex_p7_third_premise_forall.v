@@ -15,7 +15,7 @@
     Companion to [cex_p7_univ_ghost_r_vacuous.v] (which see for where the
     premise came from).  That file shows the ROW Sub-UnivGhostR closes by
     contradiction.  This file shows the damage is not confined to a ghost
-    corner: the third premise [⊢ᵣₚᵃ κ⌊R⌋ˢ ⊳ ⌊Q⌋] is a LOCKSTEP condition —
+    corner: the third premise [⊢ᵣₚᵃᵈ κ⌊R⌋ˢ ⊳ ⌊Q⌋] is a LOCKSTEP condition —
     [ad_refine_pskl] descends both sides together, so it can only hold when
     subject and counterpart agree in shape (modulo ghosts on the LEFT and
     flexibles) — while declarative subtyping exists precisely to relate

@@ -294,11 +294,11 @@ Proof.
 Qed.
 
 Lemma ad_refine_syn_rename_paint : forall Θ1 α Θ0 Q P β',
-  (Θ1 ++ (α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ᵣᵃ Q ⊳ P ->
+  (Θ1 ++ (α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ᵣᵃᵈ Q ⊳ P ->
   α `notin` dom (Θ1 ++ Θ0) ->
   (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
      α `notin` ftvar_in_ptyp τ) ->
-  ((subst_aenv (ptyp_var_f β') α Θ1) ++ (β' ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ᵣᵃ
+  ((subst_aenv (ptyp_var_f β') α Θ1) ++ (β' ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ᵣᵃᵈ
     (subst_bskl_in_bskl (bskl_var_f β') α Q) ⊳
     (subst_bskl_in_bskl (bskl_var_f β') α P).
 Proof.
@@ -332,7 +332,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma ad_pat_rename_tvar : forall M Θfull e Q,
-  Θfull ⊢ᵃ[ M ] e ⇨ Q ->
+  Θfull ⊢ₛᵃᵈ[ M ] e ⦂ Q ->
   forall Θ1 α Θ0 β',
   Θfull = Θ1 ++ (α ~ abind_tvar) ++ Θ0 ->
   α `notin` dom (Θ1 ++ Θ0) ->
@@ -341,8 +341,8 @@ Lemma ad_pat_rename_tvar : forall M Θfull e Q,
      α `notin` ftvar_in_ptyp τ) ->
   (forall y A', binds y (abind_var_typ A') Θ0 -> α `notin` ftvar_in_ptyp A') ->
   (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> α `notin` ftvar_in_pskl Ps) ->
-  ((subst_aenv (ptyp_var_f β') α Θ1) ++ (β' ~ abind_tvar) ++ Θ0) ⊢ᵃ[ M ]
-    (subst_ptyp_in_exp (ptyp_var_f β') α e) ⇨
+  ((subst_aenv (ptyp_var_f β') α Θ1) ++ (β' ~ abind_tvar) ++ Θ0) ⊢ₛᵃᵈ[ M ]
+    (subst_ptyp_in_exp (ptyp_var_f β') α e) ⦂
     (subst_bskl_in_bskl (bskl_var_f β') α Q).
 Proof.
   intros M Θfull e Q H Θ1 α Θ0 β' HeqΘ Hdom Hβ' Hdefs Hvt Hvs.
@@ -507,7 +507,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma ad_sd_typing_rename_tvar : forall M Θfull e B,
-  Θfull ⊢ˢᵃ[ M ] e ⦂ B ->
+  Θfull ⊢ˢᵃᵈ[ M ] e ⦂ B ->
   forall Θ1 α Θ0 β',
   Θfull = Θ1 ++ (α ~ abind_tvar) ++ Θ0 ->
   α `notin` dom (Θ1 ++ Θ0) ->
@@ -516,7 +516,7 @@ Lemma ad_sd_typing_rename_tvar : forall M Θfull e B,
      α `notin` ftvar_in_ptyp τ) ->
   (forall y A', binds y (abind_var_typ A') Θ0 -> α `notin` ftvar_in_ptyp A') ->
   (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> α `notin` ftvar_in_pskl Ps) ->
-  ((subst_aenv (ptyp_var_f β') α Θ1) ++ (β' ~ abind_tvar) ++ Θ0) ⊢ˢᵃ[ M ]
+  ((subst_aenv (ptyp_var_f β') α Θ1) ++ (β' ~ abind_tvar) ++ Θ0) ⊢ˢᵃᵈ[ M ]
     (subst_ptyp_in_exp (ptyp_var_f β') α e) ⦂
     (subst_btyp_in_btyp (btyp_var_f β') α B).
 Proof.

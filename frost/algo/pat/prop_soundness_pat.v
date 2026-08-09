@@ -148,9 +148,9 @@ Lemma abind_to_pskl_is_tm : forall (b : abind) P,
 Proof. intros [] P H; simpl in *; congruence || exact I. Qed.
 
 Lemma ad_pat_isub_tm : forall M Θ e Q,
-  Θ ⊢ᵃ[ M ] e ⇨ Q ->
+  Θ ⊢ₛᵃᵈ[ M ] e ⦂ Q ->
   forall Θ', Θ ⊴ Θ' -> aenv_tm_le Θ Θ' ->
-  Θ' ⊢ᵃ[ M ] e ⇨ Q.
+  Θ' ⊢ₛᵃᵈ[ M ] e ⦂ Q.
 Proof.
   intros M Θ e Q H; induction H; intros Θ' Hle Htm.
   - (* unit *)
@@ -431,7 +431,7 @@ Qed.
     term entries (the disciplined well-formedness of skeleton entries) all
     the way through a sequence of premises. *)
 Lemma a_pat_tm_ge : forall m Θ0 P0 e P Θ1,
-  Θ0 ⊢ₐ[ m ; P0 ] e ⇨ P ⊣ Θ1 -> aenv_tm_le Θ1 Θ0.
+  Θ0 ⊢ₛᵃ[ m ; P0 ] e ⦂ P ⊣ Θ1 -> aenv_tm_le Θ1 Θ0.
 Proof.
   intros m Θ0 P0 e P Θ1 H; induction H.
   - (* unit *) eapply a_sub_tm_ge; eassumption.
@@ -515,7 +515,7 @@ Proof. intros * H; inversion H; auto. Qed.
     target satisfies [skmod{SK}] — each leaf either states [is_sskl] or
     carries [mod_comp_sk] outright, and the structural rows rebuild it. *)
 Lemma ad_pat_sub_mod_comp_sk : forall M Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] R ⩽ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ[ a_sub_mode_sk | M ] R ⩽ Q ->
   mod_comp_sk Q M.
 Proof.
   intros M Ψ Θ R Q H.
@@ -555,12 +555,12 @@ Qed.
     variables, so only the subject and the renamed KEY move; type-level
     premises transport by the term-blind kit. *)
 Lemma ad_pat_subst_tm : forall M Θ' e Q,
-  Θ' ⊢ᵃ[ M ] e ⇨ Q ->
+  Θ' ⊢ₛᵃᵈ[ M ] e ⦂ Q ->
   forall Θa x (b : abind) Θ0 y,
   Θ' = Θa ++ (x ~ b) ++ Θ0 ->
   abind_is_tm b ->
   x `notin` dom Θa `union` dom Θ0 ->
-  (Θa ++ (y ~ b) ++ Θ0) ⊢ᵃ[ M ] (subst_exp_in_exp (exp_var_f y) x e) ⇨ Q.
+  (Θa ++ (y ~ b) ++ Θ0) ⊢ₛᵃᵈ[ M ] (subst_exp_in_exp (exp_var_f y) x e) ⦂ Q.
 Proof.
   intros M Θ' e Q H; induction H;
     intros Θa x0 b0 Θb y Heq Htm Hx0; subst; simpl.
@@ -841,10 +841,10 @@ Qed.
 (** The exists-fresh → cofinite bridge the Abs cases need: one fresh
     witness generates the whole family. *)
 Corollary ad_pat_rename_tm : forall M x (b : abind) Θ0 e Q y,
-  ((x ~ b) ++ Θ0) ⊢ᵃ[ M ] (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q ->
+  ((x ~ b) ++ Θ0) ⊢ₛᵃᵈ[ M ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q ->
   abind_is_tm b ->
   x `notin` dom Θ0 `union` fvar_in_exp e ->
-  ((y ~ b) ++ Θ0) ⊢ᵃ[ M ] (open_exp_wrt_exp e (exp_var_f y)) ⇨ Q.
+  ((y ~ b) ++ Θ0) ⊢ₛᵃᵈ[ M ] (open_exp_wrt_exp e (exp_var_f y)) ⦂ Q.
 Proof.
   intros * Hd Htm Hx.
   rewrite (subst_exp_in_exp_intro x); [ | clear - Hx; fsetdec ].
@@ -1006,7 +1006,7 @@ Qed.
     carry it outright; the base rows read it off their subtyping premise
     (§3c); [Freeze] and [App] invert their premise's. *)
 Lemma ad_pat_mod_comp_sk : forall M Θ e Q,
-  Θ ⊢ᵃ[ M ] e ⇨ Q -> mod_comp_sk Q M.
+  Θ ⊢ₛᵃᵈ[ M ] e ⦂ Q -> mod_comp_sk Q M.
 Proof.
   intros M Θ e Q H; induction H.
   - (* unit *) eapply ad_pat_sub_mod_comp_sk; apply ad_pat_sub_of_v; eassumption.
@@ -1038,8 +1038,8 @@ Corollary a_consis_chk_sound : forall Θ0 P P0 Θ1,
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
-  exists Qt, (empty ⨟ Θ1 ⊢ₛᵃ (pskl_to_uskl P) ∼ Qt) /\
-             Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ Qt.
+  exists Qt, (empty ⨟ Θ1 ⊢ᵃᵈ (pskl_to_uskl P) ∼ Qt) /\
+             Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ Qt.
 Proof.
   intros * [Q Hc] Hwf HwfP0 HwfP.
   destruct (a_consis_sound_aux Hc Hwf HwfP0 HwfP
@@ -1059,8 +1059,8 @@ Lemma bskl_to_pskl_btyp_to_bskl : forall B,
 Proof. induction B; simpl; congruence. Qed.
 
 Lemma ad_refine_syn_arrow_inv : forall Θ Δ Q1 Q2 P1 P2,
-  Θ ⨟ Δ ⊢ᵣᵃ (bskl_arrow Q1 Q2) ⊳ (bskl_arrow P1 P2) ->
-  Θ ⨟ Δ ⊢ᵣᵃ Q1 ⊳ P1 /\ Θ ⨟ Δ ⊢ᵣᵃ Q2 ⊳ P2.
+  Θ ⨟ Δ ⊢ᵣᵃᵈ (bskl_arrow Q1 Q2) ⊳ (bskl_arrow P1 P2) ->
+  Θ ⨟ Δ ⊢ᵣᵃᵈ Q1 ⊳ P1 /\ Θ ⨟ Δ ⊢ᵣᵃᵈ Q2 ⊳ P2.
 Proof. intros * H; inversion H; subst; auto. Qed.
 
 (* ===================================================================== *)
@@ -1183,12 +1183,12 @@ Qed.
     [α ∉ dom Θ] is what makes the two payload-carrying rows ([__hole]'s
     fill, the flexible definitions) invisible to the substitution. *)
 Lemma ad_refine_syn_rename_delta : forall Θ Δ0 Q P,
-  Θ ⨟ Δ0 ⊢ᵣᵃ Q ⊳ P ->
+  Θ ⨟ Δ0 ⊢ᵣᵃᵈ Q ⊳ P ->
   a_wf_aenv Θ ->
   forall α β Δ,
   Δ0 [=] add α Δ ->
   α `notin` dom Θ `union` Δ ->
-  Θ ⨟ (add β Δ) ⊢ᵣᵃ (subst_bskl_in_bskl (bskl_var_f β) α Q)
+  Θ ⨟ (add β Δ) ⊢ᵣᵃᵈ (subst_bskl_in_bskl (bskl_var_f β) α Q)
                   ⊳ (subst_bskl_in_bskl (bskl_var_f β) α P).
 Proof.
   intros Θ Δ0 Q P H; induction H; intros Hwf α0 β Δ' Heq Hα; simpl.
@@ -1297,7 +1297,7 @@ Qed.
     well-formed at EMPTY Δ, so all three disjuncts land in [dom Θr], and a
     Δ-bound ∀ witness — fresh for Θr — is excluded. *)
 Lemma ad_pat_consis_subject_ftv : forall Ψ Θ R Qt,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Qt ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Qt ->
   forall A, R = ptyp_to_uskl_syn A ->
   forall γ, γ `in` ftvar_in_ptyp A ->
   γ `in` ftvar_in_bskl Qt \/ a_flex_tvar Θ γ \/
@@ -1502,13 +1502,13 @@ Qed.
     which is how the two flexible rows keep their payload untouched: a
     definition then lives BELOW [α], so [α] cannot occur in it. *)
 Lemma ad_refine_syn_rename_tvar : forall Θ0 Δ Q P,
-  Θ0 ⨟ Δ ⊢ᵣᵃ Q ⊳ P ->
+  Θ0 ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ P ->
   forall Θa α Θ β,
   Θ0 = Θa ++ (α ~ abind_tvar) ++ Θ ->
   a_tvar_block Θa ->
   a_wf_aenv Θ0 ->
   β `notin` dom Θ0 `union` Δ ->
-  (Θa ++ (β ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ᵣᵃ
+  (Θa ++ (β ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ᵣᵃᵈ
     (subst_bskl_in_bskl (bskl_var_f β) α Q)
     ⊳ (subst_bskl_in_bskl (bskl_var_f β) α P).
 Proof.
@@ -1643,7 +1643,7 @@ Qed.
     synthesised painting well-formed at empty Δ, so each of the three
     disjuncts lands in [Θr]. *)
 Lemma transport_hole_answer : forall Ψ Θc A Qt Θr Δ P,
-  Ψ ⨟ Θc ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ Qt ->
+  Ψ ⨟ Θc ⊢ᵃᵈ (ptyp_to_uskl_syn A) ∼ Qt ->
   a_wf_aenv Θr ->
   lc_ptyp A ->
   (forall β τ, binds β (abind_flex_mono_def τ) Θc ->
@@ -1651,7 +1651,7 @@ Lemma transport_hole_answer : forall Ψ Θc A Qt Θr Δ P,
   (forall γ, a_flex_tvar Θc γ -> a_binds_tvar γ Θr) ->
   Qt = pskl_to_bskl_syn P ->
   Θr ⨟ empty ⊢ₚₛᵃ P ->
-  exists B, btyp_to_ptyp B = A /\ Θr ⨟ Δ ⊢ᵣᵃ bskl_hole ⊳ (btyp_to_bskl B).
+  exists B, btyp_to_ptyp B = A /\ Θr ⨟ Δ ⊢ᵣᵃᵈ bskl_hole ⊳ (btyp_to_bskl B).
 Proof.
   intros Ψ Θc A Qt Θr Δ P Hc Hwfr HlcA Hdefs Hflex HQt HwfP.
   exists (ptyp_to_btyp_syn A). split; [ apply btyp_to_ptyp_ptyp_to_btyp_syn | ].
@@ -1673,7 +1673,7 @@ Qed.
 (** ⭐ THE TARGET TRANSPORT.  See the plan below for why the two contexts
     are decoupled and what each hypothesis buys. *)
 Lemma ad_refine_syn_target_transport : forall Ψ Θc R Qt,
-  Ψ ⨟ Θc ⊢ₛᵃ R ∼ Qt ->
+  Ψ ⨟ Θc ⊢ᵃᵈ R ∼ Qt ->
   a_wf_aenv Θc ->
   forall A, R = ptyp_to_uskl_syn A -> lc_ptyp A ->
   forall Θr Δ Qb,
@@ -1682,8 +1682,8 @@ Lemma ad_refine_syn_target_transport : forall Ψ Θc R Qt,
                binds β (abind_flex_mono_def τ) Θr) ->
   (forall γ, a_flex_tvar Θc γ -> a_binds_tvar γ Θr) ->
   (forall γ, γ `in` ftvar_in_ptyp A -> γ `in` Δ \/ a_binds_tvar γ Θr) ->
-  Θr ⨟ Δ ⊢ᵣᵃ Qb ⊳ Qt ->
-  exists B, btyp_to_ptyp B = A /\ Θr ⨟ Δ ⊢ᵣᵃ Qb ⊳ (btyp_to_bskl B).
+  Θr ⨟ Δ ⊢ᵣᵃᵈ Qb ⊳ Qt ->
+  exists B, btyp_to_ptyp B = A /\ Θr ⨟ Δ ⊢ᵣᵃᵈ Qb ⊳ (btyp_to_bskl B).
 Proof.
   intros Ψ Θc R Qt H; induction H;
     intros Hwfc A HeqA HlcA Θr Δ Qb Hwfr Hdefs Hflex Hvis Href;
@@ -1701,7 +1701,7 @@ Proof.
     inversion HlcA; subst.
     revert Hwfr Hdefs Hflex Hvis.
     remember (bskl_arrow Q1 Q2) as Qt0 eqn:HQt.
-    assert (Hc : Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn (ptyp_arrow A1 A2))
+    assert (Hc : Ψ ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn (ptyp_arrow A1 A2))
                    ∼ (bskl_arrow Q1 Q2))
       by (unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn; simpl;
           eapply ad_pat_consis__arrow; eassumption).
@@ -1750,7 +1750,7 @@ Proof.
     inversion HeqA; subst. clear HeqA.
     revert Hwfr Hdefs Hflex Hvis.
     remember (bskl_all_inh Q) as Qt0 eqn:HQt.
-    assert (Hc : Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn (ptyp_all A0)) ∼ (bskl_all_inh Q))
+    assert (Hc : Ψ ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn (ptyp_all A0)) ∼ (bskl_all_inh Q))
       by (unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn; simpl;
           eapply ad_pat_consis__forall_inh_untagged with (L := L); eassumption).
     revert HQt.
@@ -1834,7 +1834,7 @@ Proof.
     inversion HeqA; subst. clear HeqA.
     revert Hwfr Hdefs Hflex Hvis.
     remember (bskl_all_syn Q) as Qt0 eqn:HQt.
-    assert (Hc : Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn (ptyp_all A0)) ∼ (bskl_all_syn Q))
+    assert (Hc : Ψ ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn (ptyp_all A0)) ∼ (bskl_all_syn Q))
       by (unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn; simpl;
           eapply ad_pat_consis__forall_syn with (L := L); eassumption).
     revert HQt.
@@ -1963,7 +1963,7 @@ Proof.
     subst R.
     revert Hwfr Hdefs Hflex Hvis Hbr Hmono Hwfτ.
     remember (bskl_var_f α) as Qt0 eqn:HQt.
-    assert (Hc : Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ (bskl_var_f α))
+    assert (Hc : Ψ ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn A) ∼ (bskl_var_f α))
       by (unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn;
           eapply ad_pat_consis__flex_r; eassumption).
     revert HQt.
@@ -2058,7 +2058,7 @@ Lemma a_consis_chk_annot_refine : forall Θ0 A P Θ1,
   a_wf_ptyp Θ0 A ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
   exists B, btyp_to_ptyp B = A /\
-    Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B).
+    Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B).
 Proof.
   intros Θ0 A P Θ1 Hchk Hwf HwfA HwfP.
   destruct (a_consis_chk_sound Hchk Hwf HwfP
@@ -2081,7 +2081,7 @@ Qed.
 (* ===================================================================== *)
 
 Theorem a_pat_sound : forall m Θ0 P0 e P Θ1,
-  Θ0 ⊢ₐ[ m ; P0 ] e ⇨ P ⊣ Θ1 ->
+  Θ0 ⊢ₛᵃ[ m ; P0 ] e ⦂ P ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
   (forall x Ps, binds x (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
@@ -2089,8 +2089,8 @@ Theorem a_pat_sound : forall m Θ0 P0 e P Θ1,
   a_wf_exp Θ0 e ->
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
   exists Qt, bskl_to_pskl Qt = P /\
-    (Θ1 ⊢ᵃ[ m ] e ⇨ Qt) /\
-    (Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ Qt).
+    (Θ1 ⊢ₛᵃᵈ[ m ] e ⦂ Qt) /\
+    (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ Qt).
 Proof.
   intros m Θ0 P0 e P Θ1 H; induction H; intros Hwf Hskl HwfP0 Hmod Hexp.
   - (* AP-Unit *)
@@ -2215,7 +2215,7 @@ Proof.
           [ apply is_sskl__hole | apply mod_comp_sk_ti_inv; exact Hmq ].
       - destruct (a_sk_mode_compat_arrow_inv Hmod) as [m' [Hm Hm']]; subst m.
         apply mod_comp_sk__fn; exact Hmq. }
-    assert (Href2 : (Ξ ++ Θ2) ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0)
+    assert (Href2 : (Ξ ++ Θ2) ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0)
                       ⊳ (bskl_arrow (pskl_to_bskl_inh P) Qt)).
     { destruct Hshape as [[HP0 [HP HQ0]] | HP0]; subst; simpl.
       - destruct (ad_refine_syn_syn_l Href pskl_hole eq_refl) as [P' HQt].
@@ -2299,8 +2299,8 @@ Proof.
       by (eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []).
     assert (Hisub0 : Θ0 ⊴ (Ξ ++ Θ3)) by (eapply a_isub_trans; eassumption).
     assert (Hbody : forall y,
-              ((y ~ abind_var_typ A) ++ (Ξ ++ Θ3)) ⊢ᵃ[ decr_mode m ]
-                (open_exp_wrt_exp e (exp_var_f y)) ⇨ Qt).
+              ((y ~ abind_var_typ A) ++ (Ξ ++ Θ3)) ⊢ₛᵃᵈ[ decr_mode m ]
+                (open_exp_wrt_exp e (exp_var_f y)) ⦂ Qt).
     { intros y. apply ad_pat_rename_tm with (x := x);
         [ apply ad_pat_suffix_moving with (Ξ := Ξ) (Θ2 := (x ~ abind_var_typ A));
             exact Hpat

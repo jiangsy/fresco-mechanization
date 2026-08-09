@@ -17,8 +17,8 @@
     WHAT IS ACTUALLY REFUTED, then, is the SHORTCUT: proving that precision
     directly from the consistency premise, without going through completeness.
 
-        Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q  →  is_sskl Q  →  Θ ⨟ Δ ⊢ₚₛᵃ ⌊Q⌋
-          →  a_wf_aenv Θ  →  Θ ⨟ Δ ⊢ₚᵣᵃ ⌊R⌋ˢ ⊑ ⌊Q⌋
+        Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q  →  is_sskl Q  →  Θ ⨟ Δ ⊢ₚₛᵃ ⌊Q⌋
+          →  a_wf_aenv Θ  →  Θ ⨟ Δ ⊢ₚᵣᵃᵈ ⌊R⌋ˢ ⊑ ⌊Q⌋
 
     THE WITNESS.  Take [R = ∀◇.] (a ∀ whose body is the GHOST) and [Q = ∀α. α].
     Consistency relates them: its ∀ rule opens BOTH sides at a fresh α and puts
@@ -80,7 +80,7 @@ Qed.
 
 (** Consistency DOES relate them: its ∀ rule puts the fresh binder into Θ, and
     the ghost is then filled with that very binder. *)
-Lemma cex_consis : empty ⨟ nil ⊢ₛᵃ Rw ∼ Qw.
+Lemma cex_consis : empty ⨟ nil ⊢ᵃᵈ Rw ∼ Qw.
 Proof.
   unfold Rw, Qw.
   apply ad_pat_consis__forall_syn with (L := empty); intros α _; cbn.
@@ -100,7 +100,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma refine_syn_hole_var : forall Θ Δ Qs Qt,
-  Θ ⨟ Δ ⊢ᵣᵃ Qs ⊳ Qt ->
+  Θ ⨟ Δ ⊢ᵣᵃᵈ Qs ⊳ Qt ->
   Qs = bskl_hole ->
   forall α, Qt = bskl_var_f α ->
   a_binds_tvar α Θ.
@@ -133,7 +133,7 @@ Proof.
 Qed.
 
 Lemma cex_not_precise : forall Δ,
-  ~ nil ⨟ Δ ⊢ₚᵣᵃ (uskl_to_pskl Rw) ⊑ (bskl_to_pskl Qw).
+  ~ nil ⨟ Δ ⊢ₚᵣᵃᵈ (uskl_to_pskl Rw) ⊑ (bskl_to_pskl Qw).
 Proof.
   intros Δ H; unfold ad_precise, Rw, Qw in H; cbn in H.
   inversion H as [ | | | L Θa Δa Qa Pa Hfam | | | | | | ]; subst.
@@ -149,11 +149,11 @@ Qed.
 
 Definition p7_sskl_precise_property : Prop :=
   forall Ψ Θ R Q,
-    Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+    Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
     a_wf_aenv Θ ->
     is_sskl Q ->
     forall Δ, Θ ⨟ Δ ⊢ₚₛᵃ (bskl_to_pskl Q) ->
-    Θ ⨟ Δ ⊢ₚᵣᵃ (uskl_to_pskl R) ⊑ (bskl_to_pskl Q).
+    Θ ⨟ Δ ⊢ₚᵣᵃᵈ (uskl_to_pskl R) ⊑ (bskl_to_pskl Q).
 
 Theorem p7_sskl_precise_is_false : ~ p7_sskl_precise_property.
 Proof.

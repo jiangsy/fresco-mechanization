@@ -363,7 +363,7 @@ Qed.
 (* Mono paints never refine into a ∀-painted RHS. *)
 Lemma ad_refine_mono_paint_allinh_rhs_absurd : forall Θ Δr Q' Q,
   a_wf_aenv Θ ->
-  Θ ⨟ Δr ⊢ᵣᵃ Q' ⊳ Q ->
+  Θ ⨟ Δr ⊢ᵣᵃᵈ Q' ⊳ Q ->
   forall Q0, Q = bskl_all_inh Q0 ->
   forall τb, Q' = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
   False.
@@ -383,7 +383,7 @@ Qed.
 
 Lemma ad_refine_mono_paint_allsyn_rhs_absurd : forall Θ Δr Q' Q,
   a_wf_aenv Θ ->
-  Θ ⨟ Δr ⊢ᵣᵃ Q' ⊳ Q ->
+  Θ ⨟ Δr ⊢ᵣᵃᵈ Q' ⊳ Q ->
   forall Q0, Q = bskl_all_syn Q0 ->
   forall τb, Q' = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
   False.
@@ -417,7 +417,7 @@ Proof. intros τ Hm; induction Hm; simpl; constructor; auto. Qed.
 
 Lemma ad_refine_mono_paint_rhs_monoish : forall Θ Δr Q' Q,
   a_wf_aenv Θ ->
-  Θ ⨟ Δr ⊢ᵣᵃ Q' ⊳ Q ->
+  Θ ⨟ Δr ⊢ᵣᵃᵈ Q' ⊳ Q ->
   forall τb, Q' = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
   bskl_monoish Q.
 Proof.
@@ -451,7 +451,7 @@ Qed.
 (* Against a mono-ish counterpart, a tag-sorted consistency subject is
    itself a mono paint and the derivation solves no tags. *)
 Lemma ad_pat_consis_monoish_counterpart : forall Ψs Θ ψa Q,
-  Ψs ⨟ Θ ⊢ₛᵃ ψa ∼ Q ->
+  Ψs ⨟ Θ ⊢ᵃᵈ ψa ∼ Q ->
   a_wf_aenv Θ ->
   is_tskl ψa ->
   bskl_monoish Q ->
@@ -506,18 +506,18 @@ Qed.
    component/continuation obligations passed as functionals. *)
 Lemma ppre_paint_arrow_chase : forall Θ Δr Q' Q,
   a_wf_aenv Θ ->
-  Θ ⨟ Δr ⊢ᵣᵃ Q' ⊳ Q ->
+  Θ ⨟ Δr ⊢ᵣᵃᵈ Q' ⊳ Q ->
   forall Q1 Q2 (ψ1 ψ2 : uskl),
   Q = bskl_arrow Q1 Q2 ->
   (forall Δr' τ1, Δr' [=] empty -> mono_ptyp τ1 ->
-     Θ ⨟ Δr' ⊢ᵣᵃ (ptyp_to_bskl_syn τ1) ⊳ Q1 ->
-     forall Δ, Θ ⨟ Δ ⊢ (ptyp_to_pskl τ1) ⊑ᵖ[ empty ] ψ1) ->
+     Θ ⨟ Δr' ⊢ᵣᵃᵈ (ptyp_to_bskl_syn τ1) ⊳ Q1 ->
+     forall Δ, Θ ⨟ Δ ⊢ᵃᵈ (ptyp_to_pskl τ1) ⊑ᵖ[ empty ] ψ1) ->
   (forall Δr' τ2, Δr' [=] empty -> mono_ptyp τ2 ->
-     Θ ⨟ Δr' ⊢ᵣᵃ (ptyp_to_bskl_syn τ2) ⊳ Q2 ->
-     forall Δ, Θ ⨟ Δ ⊢ (ptyp_to_pskl τ2) ⊑ᵖ[ empty ] ψ2) ->
+     Θ ⨟ Δr' ⊢ᵣᵃᵈ (ptyp_to_bskl_syn τ2) ⊳ Q2 ->
+     forall Δ, Θ ⨟ Δ ⊢ᵃᵈ (ptyp_to_pskl τ2) ⊑ᵖ[ empty ] ψ2) ->
   forall τb, Q' = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
   Δr [=] empty ->
-  forall Δ, Θ ⨟ Δ ⊢ (ptyp_to_pskl τb) ⊑ᵖ[ empty ] (uskl_arrow ψ1 ψ2).
+  forall Δ, Θ ⨟ Δ ⊢ᵃᵈ (ptyp_to_pskl τb) ⊑ᵖ[ empty ] (uskl_arrow ψ1 ψ2).
 Proof.
   intros Θ Δr Q' Q HwfΘ H;
     induction H; intros Q1' Q2' ψ1 ψ2 HeqQ CONT1 CONT2 τb HeqL Hmb HΔr Δo;
@@ -552,16 +552,16 @@ Qed.
 
 Lemma ppre_paint_flexvar_chase : forall Θ Δr Q' Q,
   a_wf_aenv Θ ->
-  Θ ⨟ Δr ⊢ᵣᵃ Q' ⊳ Q ->
+  Θ ⨟ Δr ⊢ᵣᵃᵈ Q' ⊳ Q ->
   forall α1 τα1 (ψa : uskl),
   Q = bskl_var_f α1 ->
   binds α1 (abind_flex_mono_def τα1) Θ ->
   (forall Δr' τc, Δr' [=] empty -> mono_ptyp τc ->
-     Θ ⨟ Δr' ⊢ᵣᵃ (ptyp_to_bskl_syn τc) ⊳ (ptyp_to_bskl_syn τα1) ->
-     forall Δ, Θ ⨟ Δ ⊢ (ptyp_to_pskl τc) ⊑ᵖ[ empty ] ψa) ->
+     Θ ⨟ Δr' ⊢ᵣᵃᵈ (ptyp_to_bskl_syn τc) ⊳ (ptyp_to_bskl_syn τα1) ->
+     forall Δ, Θ ⨟ Δ ⊢ᵃᵈ (ptyp_to_pskl τc) ⊑ᵖ[ empty ] ψa) ->
   forall τb, Q' = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
   Δr [=] empty ->
-  forall Δ, Θ ⨟ Δ ⊢ (ptyp_to_pskl τb) ⊑ᵖ[ empty ] ψa.
+  forall Δ, Θ ⨟ Δ ⊢ᵃᵈ (ptyp_to_pskl τb) ⊑ᵖ[ empty ] ψa.
 Proof.
   intros Θ Δr Q' Q HwfΘ H;
     induction H; intros α1 τα1 ψa HeqQ Hbγ CONT τb HeqL Hmb HΔr Δo;
@@ -594,7 +594,7 @@ Proof.
     inversion HeqQ; subst.
     match goal with
     | Hb2 : binds _ (abind_flex_mono_def ?t) Θ,
-      Hr0 : _ ⨟ _ ⊢ᵣᵃ _ ⊳ ptyp_to_bskl_syn ?t |- _ =>
+      Hr0 : _ ⨟ _ ⊢ᵣᵃᵈ _ ⊳ ptyp_to_bskl_syn ?t |- _ =>
         pose proof (binds_unique _ _ _ _ _ Hb2 Hbγ (a_wf_aenv_uniq HwfΘ))
           as Hcc;
         injection Hcc; intros ->;
@@ -605,12 +605,12 @@ Qed.
 (* (B2) The bridge: a mono paint refining the counterpart of a MONO-PAINT
    consistency subject is partially precise against that subject. *)
 Lemma mono_paint_paint_refine_consis_ppre : forall Ψs Θ R Q,
-  Ψs ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  Ψs ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
   a_wf_aenv Θ ->
   forall τa, R = ptyp_to_uskl_syn τa -> mono_ptyp τa ->
   forall Δr τb, Δr [=] empty -> mono_ptyp τb ->
-  Θ ⨟ Δr ⊢ᵣᵃ (ptyp_to_bskl_syn τb) ⊳ Q ->
-  forall Δ, Θ ⨟ Δ ⊢ (ptyp_to_pskl τb) ⊑ᵖ[ empty ] (ptyp_to_uskl_syn τa).
+  Θ ⨟ Δr ⊢ᵣᵃᵈ (ptyp_to_bskl_syn τb) ⊳ Q ->
+  forall Δ, Θ ⨟ Δ ⊢ᵃᵈ (ptyp_to_pskl τb) ⊑ᵖ[ empty ] (ptyp_to_uskl_syn τa).
 Proof.
   intros Ψs Θ R Q H; induction H;
     intros HwfΘ τa HeqS Hma Δr τb HΔr Hmb Hrefine Δo.
@@ -693,20 +693,20 @@ Qed.
 (** Component inversions at both-arrow nodes (names controlled by the
     caller, unlike a raw [inversion]). *)
 Lemma ad_ppre_arrow_arrow_inv : forall Θ Δ Ψ P1 P2 ψ1 ψ2,
-  Θ ⨟ Δ ⊢ (pskl_arrow P1 P2) ⊑ᵖ[ Ψ ] (uskl_arrow ψ1 ψ2) ->
-  exists Ψ1 Ψ2, (Θ ⨟ Δ ⊢ P1 ⊑ᵖ[ Ψ1 ] ψ1) /\ (Θ ⨟ Δ ⊢ P2 ⊑ᵖ[ Ψ2 ] ψ2)
+  Θ ⨟ Δ ⊢ᵃᵈ (pskl_arrow P1 P2) ⊑ᵖ[ Ψ ] (uskl_arrow ψ1 ψ2) ->
+  exists Ψ1 Ψ2, (Θ ⨟ Δ ⊢ᵃᵈ P1 ⊑ᵖ[ Ψ1 ] ψ1) /\ (Θ ⨟ Δ ⊢ᵃᵈ P2 ⊑ᵖ[ Ψ2 ] ψ2)
     /\ Ψ [=] Ψ1 `union` Ψ2.
 Proof.
   intros Θ Δ Ψ P1 P2 ψ1 ψ2 H; inversion H; subst.
   match goal with
-  | Hp1 : Θ ⨟ Δ ⊢ P1 ⊑ᵖ[ ?A ] ψ1, Hp2 : Θ ⨟ Δ ⊢ P2 ⊑ᵖ[ ?B ] ψ2 |- _ =>
+  | Hp1 : Θ ⨟ Δ ⊢ᵃᵈ P1 ⊑ᵖ[ ?A ] ψ1, Hp2 : Θ ⨟ Δ ⊢ᵃᵈ P2 ⊑ᵖ[ ?B ] ψ2 |- _ =>
     exists A, B; split; [ exact Hp1 | split; [ exact Hp2 | assumption ] ]
   end.
 Qed.
 
 Lemma ad_refine_arrow_arrow_inv : forall Θ Δr Q1' Q2' Q1 Q2,
-  Θ ⨟ Δr ⊢ᵣᵃ (bskl_arrow Q1' Q2') ⊳ (bskl_arrow Q1 Q2) ->
-  (Θ ⨟ Δr ⊢ᵣᵃ Q1' ⊳ Q1) /\ (Θ ⨟ Δr ⊢ᵣᵃ Q2' ⊳ Q2).
+  Θ ⨟ Δr ⊢ᵣᵃᵈ (bskl_arrow Q1' Q2') ⊳ (bskl_arrow Q1 Q2) ->
+  (Θ ⨟ Δr ⊢ᵣᵃᵈ Q1' ⊳ Q1) /\ (Θ ⨟ Δr ⊢ᵣᵃᵈ Q2' ⊳ Q2).
 Proof.
   intros Θ Δr Q1' Q2' Q1 Q2 H; inversion H; subst; split; assumption.
 Qed.
@@ -720,7 +720,7 @@ Qed.
     the [Pi = var] rows of the tagged-∀ cases. *)
 Lemma ad_ppre_mono_subject_target_tags_empty : forall Θ Δ Ψ P ψ,
   a_wf_aenv Θ ->
-  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ ->
   forall τ, P = ptyp_to_pskl τ -> mono_ptyp τ ->
   forall Ψt, d_tags_skl Ψt ψ -> Ψt [=] empty.
 Proof.
@@ -785,9 +785,9 @@ Qed.
 
 (** Precision respects set-equality of Δ. *)
 Lemma ad_partial_precise_delta_cong : forall Θ Δ Ψ P ψ,
-  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ ->
   forall Δ', Δ [=] Δ' ->
-  Θ ⨟ Δ' ⊢ P ⊑ᵖ[ Ψ ] ψ.
+  Θ ⨟ Δ' ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ.
 Proof.
   intros Θ Δ Ψ P ψ H; induction H; intros Δ' Heq.
   - apply ad_ppre__unit; assumption.
@@ -813,11 +813,11 @@ Qed.
     Δ-disjointness is antitone — but target-fresh extensions never meet a
     □-instance's side condition.) *)
 Lemma ad_partial_precise_delta_weaken_fresh : forall Θ Δ Ψ P ψ,
-  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ ->
   forall Δ',
   Δ' ∩ ftvar_in_uskl ψ [=] empty ->
   delta_def_fresh Δ' Θ ->
-  Θ ⨟ (Δ `union` Δ') ⊢ P ⊑ᵖ[ Ψ ] ψ.
+  Θ ⨟ (Δ `union` Δ') ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ.
 Proof.
   intros Θ Δ Ψ P ψ H; induction H; intros Δ' HΔ' Hdf.
   - apply ad_ppre__unit; assumption.
@@ -878,10 +878,10 @@ Qed.
 (** Moving a Δr-entry of the refinement into the aenv as a rigid tvar
     (mid-insertion general, for the fill rule's context growth). *)
 Lemma ad_refine_syn_delta_to_tvar_mid : forall Θfull Δr Q' Q,
-  Θfull ⨟ Δr ⊢ᵣᵃ Q' ⊳ Q ->
+  Θfull ⨟ Δr ⊢ᵣᵃᵈ Q' ⊳ Q ->
   forall α1 Θ1 Θ0 Δr', Θfull = Θ1 ++ Θ0 ->
   Δr [<=] add α1 Δr' ->
-  (Θ1 ++ (α1 ~ abind_tvar) ++ Θ0) ⨟ Δr' ⊢ᵣᵃ Q' ⊳ Q.
+  (Θ1 ++ (α1 ~ abind_tvar) ++ Θ0) ⨟ Δr' ⊢ᵣᵃᵈ Q' ⊳ Q.
 Proof.
   intros Θfull Δr Q' Q H; induction H;
     intros α2 Θ1 Θt Δr' HeqΘ Hsub; subst.
@@ -923,9 +923,9 @@ Proof.
 Qed.
 
 Lemma ad_refine_syn_delta_to_tvar : forall Θ Δr Q' Q α1 Δr',
-  Θ ⨟ Δr ⊢ᵣᵃ Q' ⊳ Q ->
+  Θ ⨟ Δr ⊢ᵣᵃᵈ Q' ⊳ Q ->
   Δr [<=] add α1 Δr' ->
-  ((α1 ~ abind_tvar) ++ Θ) ⨟ Δr' ⊢ᵣᵃ Q' ⊳ Q.
+  ((α1 ~ abind_tvar) ++ Θ) ⨟ Δr' ⊢ᵣᵃᵈ Q' ⊳ Q.
 Proof.
   intros Θ Δr Q' Q α1 Δr' H Hsub.
   exact (@ad_refine_syn_delta_to_tvar_mid _ _ _ _ H α1 nil Θ Δr'
@@ -937,7 +937,7 @@ Qed.
     rigid tvar entries never pollute it — which is what survives the
     ∀-descent's context extensions.) *)
 Lemma ad_pat_consis_ftv_bound : forall Ψ Θ R' Q,
-  Ψ ⨟ Θ ⊢ₛᵃ R' ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R' ∼ Q ->
   forall α', α' `in` ftvar_in_uskl R' ->
   α' `in` ftvar_in_bskl Q \/
   (exists α τ, binds α (abind_flex_mono_def τ) Θ /\
@@ -1419,9 +1419,9 @@ Qed.
 (** Absorb Δr-entries that are rigid tvars of the aenv (the Δr-refinement
     → statement-form transfer, given Δr ⊆ dom Θtv and Θ ⊇ Θtv). *)
 Lemma ad_refine_syn_delta_absorb : forall Θ Δr Q' Q,
-  Θ ⨟ Δr ⊢ᵣᵃ Q' ⊳ Q ->
+  Θ ⨟ Δr ⊢ᵣᵃᵈ Q' ⊳ Q ->
   forall Δr', (forall α2, α2 `in` Δr -> α2 `in` Δr' \/ binds α2 abind_tvar Θ) ->
-  Θ ⨟ Δr' ⊢ᵣᵃ Q' ⊳ Q.
+  Θ ⨟ Δr' ⊢ᵣᵃᵈ Q' ⊳ Q.
 Proof.
   intros Θ Δr Q' Q H; induction H; intros Δr' Habs.
   - apply ad_refine_syn__unit.
@@ -1481,10 +1481,10 @@ Qed.
 (* [ptyp_to_pskl_no_hole] likewise — prop_completeness_consis.v:1074. *)
 
 Lemma ad_ppre_no_hole_subject_delta_mono : forall Θ Δ Ψ P ψ,
-  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ ->
   pskl_no_hole P ->
   forall Δ', Δ [<=] Δ' ->
-  Θ ⨟ Δ' ⊢ P ⊑ᵖ[ Ψ ] ψ.
+  Θ ⨟ Δ' ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ.
 Proof.
   intros Θ Δ Ψ P ψ H; induction H; intros Hnh Δ' Hsub.
   - apply ad_ppre__unit; assumption.
@@ -1516,7 +1516,7 @@ Qed.
     (fills are wf at empty Δ; definitions are Θ-scoped). *)
 Lemma ad_refine_syn_ftv_rhs_bound : forall Θ Δr Qh Q,
   a_wf_aenv Θ ->
-  Θ ⨟ Δr ⊢ᵣᵃ Qh ⊳ Q ->
+  Θ ⨟ Δr ⊢ᵣᵃᵈ Qh ⊳ Q ->
   ftvar_in_bskl Q [<=] ftvar_in_bskl Qh `union` dom Θ.
 Proof.
   intros Θ Δr Qh Q HwfΘ H; induction H; simpl; try (clear; fsetdec).
@@ -1588,8 +1588,8 @@ Qed.
 Lemma refine_primary_to_plain : forall Θtv Θr Δr Q' Q,
   (forall x b, binds x b Θtv -> b = abind_tvar) ->
   Δr [=] dom Θtv ->
-  Θr ⨟ Δr ⊢ᵣᵃ Q' ⊳ Q ->
-  (Θtv ++ Θr) ⨟ empty ⊢ᵣᵃ Q' ⊳ Q.
+  Θr ⨟ Δr ⊢ᵣᵃᵈ Q' ⊳ Q ->
+  (Θtv ++ Θr) ⨟ empty ⊢ᵣᵃᵈ Q' ⊳ Q.
 Proof.
   intros Θtv Θr Δr Q' Q Htvs HΔr H.
   eapply ad_refine_syn_delta_absorb with (Δr := Δr).
@@ -1685,7 +1685,7 @@ Qed.
     aenv) forces a hole-free source: the □-fill would have to BE that
     variable, which is not Θr-wf; flex hops never reach it. *)
 Lemma ad_refine_inh_deltar_var_rhs_no_hole : forall Θr Δr Q' Q,
-  Θr ⨟ Δr ⊢ᵣᵃ Q' ⊳ Q ->
+  Θr ⨟ Δr ⊢ᵣᵃᵈ Q' ⊳ Q ->
   forall α0 P', Q = bskl_var_f α0 -> Q' = pskl_to_bskl_inh P' ->
   α0 `notin` dom Θr ->
   pskl_no_hole P'.
@@ -1725,7 +1725,7 @@ Qed.
     variables or Θr-scoped flex-definition data (the Θtv binders never
     pollute the bound). *)
 Lemma consis_subject_ftv_split_bound : forall Ψ Θ R Q Θtv Θr,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
   Θ = Θtv ++ Θr ->
   (forall x b, binds x b Θtv -> b = abind_tvar) ->
   a_wf_aenv Θ ->
@@ -1752,7 +1752,7 @@ Qed.
     sub-context version (the def-lookup transports along binds-inclusion
     into the full context, where uniqueness kills it). *)
 Lemma ad_refine_syn_rigid_var_nonvar_absurd_sub : forall Θr Δr β Q,
-  Θr ⨟ Δr ⊢ᵣᵃ (bskl_var_f β) ⊳ Q ->
+  Θr ⨟ Δr ⊢ᵣᵃᵈ (bskl_var_f β) ⊳ Q ->
   forall Θfull, (forall x b, binds x b Θr -> binds x b Θfull) ->
   uniq Θfull ->
   binds β abind_tvar Θfull ->
@@ -1778,12 +1778,12 @@ Lemma p6cv_close_leaf_mono :
   rho_fresh Δρ Θ κ ->
   Δρ [<=] Δ ->
   (forall α, α `in` Δρ -> α `notin` pskl_shielded_ftv (msubst_pskl κ Pi)) ->
-  Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
+  Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
   rho_leaf NM Θ Δρ Ψρ ψsub ψa ->
   (* closes by SE-Var, so the block is [nil] and no κ-extension arises *)
   exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ nil ⨾ Pa /\
     forall Δ', Δ [<=] Δ' ->
-    Θ ⨟ Δ' ⊢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
+    Θ ⨟ Δ' ⊢ᵃᵈ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
 Proof.
   intros NM Θ0 Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa ψsub ψa Pi P0
     HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf.
@@ -1857,7 +1857,7 @@ Qed.
     fresh; the □-rule survives because its Δ-disjointness already forces
     α out of the local target. *)
 Lemma ad_partial_precise_rename : forall Θ Δ Ψ P ψ,
-  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ ->
   forall αr βr,
   αr `in` Δ ->
   αr `notin` dom Θ ->
@@ -1865,7 +1865,7 @@ Lemma ad_partial_precise_rename : forall Θ Δ Ψ P ψ,
   βr `notin` ftvar_in_pskl P -> βr `notin` ftvar_in_uskl ψ ->
   (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
      αr `notin` ftvar_in_ptyp τ /\ βr `notin` ftvar_in_ptyp τ) ->
-  Θ ⨟ (add βr (remove αr Δ)) ⊢
+  Θ ⨟ (add βr (remove αr Δ)) ⊢ᵃᵈ
     (subst_pskl_in_pskl (pskl_var_f βr) αr P)
     ⊑ᵖ[ Ψ ] (subst_uskl_in_uskl (uskl_var_f βr) αr ψ).
 Proof.
@@ -1996,7 +1996,7 @@ Qed.
     — whose fill is only [Θ]-scoped — and a mono paint has no hole. *)
 Lemma ad_refine_mono_paint_ftv_bound : forall Θ Δr Q' Q,
   a_wf_aenv Θ ->
-  Θ ⨟ Δr ⊢ᵣᵃ Q' ⊳ Q ->
+  Θ ⨟ Δr ⊢ᵣᵃᵈ Q' ⊳ Q ->
   forall τb S, Q' = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
   ftvar_in_ptyp τb [<=] S ->
   (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
@@ -2046,7 +2046,7 @@ Qed.
 (** The [consis_subject_ftv_bag_bound] of P6-Cv, but over the DEFINITIONS
     of [Θ] rather than over a domain — same reason as above. *)
 Lemma consis_subject_ftv_defs_bound : forall Ψ Θ R Q S,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
   (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
      α `in` S /\ ftvar_in_ptyp τ0 [<=] S) ->
   ftvar_in_uskl R [<=] ftvar_in_bskl Q `union` S.

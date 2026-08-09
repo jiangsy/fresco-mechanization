@@ -440,10 +440,28 @@ before changing any of them.
   statements — and keep them consistent with the paper's judgment forms.**
   Every judgment `Inductive` should be bound to a paper-shaped notation via
   a `where`-clause and its rules written in that notation; lemma statements
-  use the notations too. See [`decl/notations.v`](frost/decl/notations.v)
-  for the legend (`Γ ⊢[ M ] e ⇒ A` for `d_typing`, `Δ ⨟ Γ ⊨ T ≈ A`
-  for `d_consis`, etc.). Only relations with no paper counterpart may use
+  use the notations too. Only relations with no paper counterpart may use
   application form.
+  - ⭐ **THE TURNSTILE LEGEND IS IN [`frost/notations.v`](frost/notations.v)** —
+    read it before adding or changing any judgment notation. Two axes, one
+    device each: **SUPERSCRIPT = system** (bare `⊢` declarative, `⊢ᵃᵈ`
+    declarative-over-Θ, `⊢ᵃ` algorithmic, `⊢ᵗ` ε-tagged, `⊢ˢ`
+    syntax-directed) and **SUBSCRIPT = sort** (bare types, `⊢ₛ` skeletons,
+    spelled out as `⊢ₚ`/`⊢ᵦ`/`⊢ᵤ`/`⊢ₚₛ`/`⊢ᵤₛ` for well-formedness). The
+    sort is stated ONCE: as the subscript when the system has one relation
+    per sort, as the bracket index `N`/`NM` when one relation covers both.
+  - ⚠️ **The axes must never swap devices, and one marker must never mean two
+    systems.** Both happened and were fixed 2026-08-09: `a_consis`/`a_sub`/
+    `a_pat`/`a_typing` wrote the SYSTEM as a subscript (`⊢ₐ`), which reads as
+    a sort, and `ᵃ` meant `a_` in `a_wf_pskl` (`⊢ₚₛᵃ`) but `ad_` in
+    `ad_pat_consis` (`⊢ₛᵃ`) — so the two systems' turnstiles differed by
+    sub- vs superscript alone.
+  - ⚠️ **A mode-generic judgment writes `⦂`, never `⇨`.** `⇨` claims the term
+    SYNTHESISES its skeleton, which holds only at `M = TI`; at `TC` the
+    skeleton is an input. So `d_pat`/`ad_pat`/`a_pat` read `⊢ₛ[ M ] e ⦂ P`,
+    the sort subscript carrying what the arrow used to hint at. The paper
+    writes its own mode-generic typing with a plain colon for the same
+    reason (`\typp`, `paper/macro.tex:1087`).
 - **Atom sets never name a module.** `frost/notations.v` completes what
   `Metalib.Metatheory` abbreviates only partly: it adds `inter` / `diff` /
   `mem` and the `AtomSetImpl` lemma names we use (`union_1`, `inter_3`,

@@ -563,12 +563,12 @@ where "Ψ ⨟ Γ ⊢ₛ[ M ] R ⩽ Q" := (d_pat_sub M Ψ Γ R Q) : type_scope.
 
 Reserved Notation "Γ ⊢[ M ] e ⦂ A"
   (at level 100, M at level 0, e at level 75, A at level 75, no associativity).
-Reserved Notation "Γ ⊢[ M ] e ⇨ P"
+Reserved Notation "Γ ⊢ₛ[ M ] e ⦂ P"
   (at level 100, M at level 0, e at level 75, P at level 75, no associativity).
 Reserved Notation "Γ ⊢ˢ[ M ] e ⦂ A"
   (at level 100, M at level 0, e at level 75, A at level 75, no associativity).
 
-(** Skeleton inference [d_pat] ([⇨]) is SELF-CONTAINED — no [d_typing] premises
+(** Skeleton inference [d_pat] ([⦂]) is SELF-CONTAINED — no [d_typing] premises
     (the paper's P-App infers the function, declarative.tex:1560) — so it is
     defined standalone, BEFORE [d_typing], rather than mutually. *)
 (* Check fully passed *)
@@ -579,19 +579,19 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
    there is no standalone P-Sub rule and no base-term restriction. *)
 | d_pat__unit : forall Γ m Q,
     empty ⨟ Γ ⊢ₛ[ m ] uskl_unit ⩽ Q ->
-    Γ ⊢[ m ] exp_unit ⇨ Q
+    Γ ⊢ₛ[ m ] exp_unit ⦂ Q
 | d_pat__var : forall Γ m x (P : pskl) d Q,
     binds x d Γ ->
     dbind_to_pskl d = Some P ->
     empty ⨟ Γ ⊢ₛ[ m ] (bskl_to_uskl (pskl_to_bskl_syn P)) ⩽ Q ->
-    Γ ⊢[ m ] (exp_var_f x) ⇨ Q
+    Γ ⊢ₛ[ m ] (exp_var_f x) ⦂ Q
 | d_pat__anno : forall Γ m e (A : ptyp) Q,
     Γ ⊢ₚ A ->
     empty ⨟ Γ ⊢ₛ[ m ] (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl A))) ⩽ Q ->
-    Γ ⊢[ m ] (exp_anno e A) ⇨ Q
+    Γ ⊢ₛ[ m ] (exp_anno e A) ⦂ Q
 | d_pat__freeze : forall Γ e P,
-    Γ ⊢[ mode_ti ] e ⇨ (pskl_to_bskl_syn P) ->
-    Γ ⊢[ mode_tc ] (exp_freeze e) ⇨ (pskl_to_bskl_syn P)
+    Γ ⊢ₛ[ mode_ti ] e ⦂ (pskl_to_bskl_syn P) ->
+    Γ ⊢ₛ[ mode_tc ] (exp_freeze e) ⦂ (pskl_to_bskl_syn P)
 | d_pat__abs : forall L Γ m e P Q,
     (* [mod_comp_sk … m] is the paper's [skmod{SK}] colour/mode discipline on the
        inferred arrow, mirroring [d_typing__abs]'s [mod_comp_ty]: at [ti] it forces
@@ -602,9 +602,9 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
     Γ ⨟ nil ⊢ₚₛ P ->
     mod_comp_sk (bskl_arrow (pskl_to_bskl_inh P) Q) m ->
     (forall x, x `notin` L ->
-       ((x ~ dbind_skl P) ++ Γ) ⊢[ decr_mode m ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
-    Γ ⊢[ m ] (exp_abs e) ⇨ (bskl_arrow (pskl_to_bskl_inh P) Q)
+       ((x ~ dbind_skl P) ++ Γ) ⊢ₛ[ decr_mode m ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q) ->
+    Γ ⊢ₛ[ m ] (exp_abs e) ⦂ (bskl_arrow (pskl_to_bskl_inh P) Q)
 | d_pat__abs_anno : forall L Γ m e (A : ptyp) (B : btyp) Q,
     (* The arrow-arg skeleton [Sarg] is bidirectional, [bskl_to_pskl Sarg]
        the annotation's pattern.  [mod_comp_sk … m] as in [abs]. *)
@@ -613,29 +613,29 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
     btyp_to_ptyp B = A ->
     mod_comp_sk (bskl_arrow (btyp_to_bskl B) Q) m ->
     (forall x, x `notin` L ->
-       ((x ~ dbind_typ A) ++ Γ) ⊢[ decr_mode m ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
-    Γ ⊢[ m ] (exp_abs_anno A e) ⇨ (bskl_arrow (btyp_to_bskl B) Q)
+       ((x ~ dbind_typ A) ++ Γ) ⊢ₛ[ decr_mode m ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q) ->
+    Γ ⊢ₛ[ m ] (exp_abs_anno A e) ⦂ (bskl_arrow (btyp_to_bskl B) Q)
 | d_pat__app : forall Γ m e1 e2 P (Q1 Q2 : bskl),
     (* Paper P-App (declarative.tex:1560): the function [e1] is SKELETON-
-       INFERRED ([⇨]) in [FN] mode, not typed — d_pat is self-contained
+       INFERRED ([⦂]) in [FN] mode, not typed — d_pat is self-contained
        skeleton inference.  [P'] is the fill output (the arg skeleton). *)
-    Γ ⊢[ mode_tc ] e2 ⇨ (pskl_to_bskl_syn P) ->
+    Γ ⊢ₛ[ mode_tc ] e2 ⦂ (pskl_to_bskl_syn P) ->
     Γ ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ Q1 ->
-    Γ ⊢[ mode_fn m ] e1 ⇨ (bskl_arrow Q1 Q2) ->
-    Γ ⊢[ m ] (exp_app e1 e2) ⇨ Q2
+    Γ ⊢ₛ[ mode_fn m ] e1 ⦂ (bskl_arrow Q1 Q2) ->
+    Γ ⊢ₛ[ m ] (exp_app e1 e2) ⦂ Q2
 | d_pat__abs_check : forall L Γ e P,
     (forall x, x `notin` L ->
-       ((x ~ dbind_skl pskl_hole) ++ Γ) ⊢[ mode_tc ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⇨ (pskl_to_bskl_syn P)) ->
-    Γ ⊢[ mode_tc ] (exp_abs e) ⇨ (bskl_tophole (bskl_arrow bskl_hole (pskl_to_bskl_syn P)))
+       ((x ~ dbind_skl pskl_hole) ++ Γ) ⊢ₛ[ mode_tc ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⦂ (pskl_to_bskl_syn P)) ->
+    Γ ⊢ₛ[ mode_tc ] (exp_abs e) ⦂ (bskl_tophole (bskl_arrow bskl_hole (pskl_to_bskl_syn P)))
 | d_pat__abs_anno_check : forall L Γ e A P,
     Γ ⊢ₚ A ->
     (forall x, x `notin` L ->
-       ((x ~ dbind_typ A) ++ Γ) ⊢[ mode_tc ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⇨ (pskl_to_bskl_syn P)) ->
-    Γ ⊢[ mode_tc ] (exp_abs_anno A e) ⇨ (bskl_tophole (bskl_arrow (btyp_to_bskl (ptyp_to_btyp_syn A)) (pskl_to_bskl_syn P)))
-where "Γ ⊢[ M ] e ⇨ P" := (d_pat M Γ e P) : type_scope.
+       ((x ~ dbind_typ A) ++ Γ) ⊢ₛ[ mode_tc ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⦂ (pskl_to_bskl_syn P)) ->
+    Γ ⊢ₛ[ mode_tc ] (exp_abs_anno A e) ⦂ (bskl_tophole (bskl_arrow (btyp_to_bskl (ptyp_to_btyp_syn A)) (pskl_to_bskl_syn P)))
+where "Γ ⊢ₛ[ M ] e ⦂ P" := (d_pat M Γ e P) : type_scope.
 
 (** Typing [d_typing] ([⦂]) uses [d_pat] in [App] (it infers the argument's
     skeleton), so it is defined after [d_pat]. *)
@@ -697,7 +697,7 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
        the refinement and the function premise; the argument is checked at the
        same [inh A].  (Previously the function domain was an arbitrary [Barg]
        with erasure [A], not justified by the [inh A] refinement output.) *)
-    Γ ⊢[ mode_tc ] e2 ⇨ (pskl_to_bskl_syn P) ->
+    Γ ⊢ₛ[ mode_tc ] e2 ⦂ (pskl_to_bskl_syn P) ->
     Γ ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B1) ->
     Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow B1 B2) ->
     Γ ⊢[ mode_tc ] e2 ⦂ (ptyp_to_btyp_inh (btyp_to_ptyp B1)) ->
@@ -785,7 +785,7 @@ Inductive d_sd_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
     (* Paper [App]: ONE domain [B1] used by both the refinement (its skeleton
        [btyp_to_bskl B1]) and the function premise; the argument is checked at
        the inherited colouring of the same domain. *)
-    Γ ⊢[ mode_tc ] e2 ⇨ (pskl_to_bskl_syn P) ->
+    Γ ⊢ₛ[ mode_tc ] e2 ⦂ (pskl_to_bskl_syn P) ->
     Γ ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B1) ->
     Γ ⊢ˢ[ (mode_fn m) ] e1 ⦂ (btyp_arrow B1 B2) ->
     Γ ⊢ˢ[ mode_tc ] e2 ⦂ (ptyp_to_btyp_inh (btyp_to_ptyp B1)) ->

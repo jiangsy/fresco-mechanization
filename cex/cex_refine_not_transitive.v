@@ -66,7 +66,7 @@ Qed.
 
 (* Step 1: □ ⊳ syn(∀◇(□→□))   by the ghost rule. *)
 Lemma step1 : forall Θ Δ,
-  Θ ⨟ Δ ⊢ᵣᵃ bskl_hole ⊳ (pskl_to_bskl_syn Pfill).
+  Θ ⨟ Δ ⊢ᵣᵃᵈ bskl_hole ⊳ (pskl_to_bskl_syn Pfill).
 Proof. intros. apply ad_refine_syn__hole. apply Pfill_wf. Qed.
 
 (* Step 2: syn(∀◇(□→□)) ⊳ ∀α. ∀◇(α→α)   by tophole_fill, filling both
@@ -75,7 +75,7 @@ Definition Bres : bskl :=
   bskl_all_syn (bskl_tophole (bskl_arrow (bskl_var_b 0) (bskl_var_b 0))).
 
 Lemma step2 : forall Θ Δ,
-  Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_syn Pfill) ⊳ Bres.
+  Θ ⨟ Δ ⊢ᵣᵃᵈ (pskl_to_bskl_syn Pfill) ⊳ Bres.
 Proof.
   intros. simpl. apply ad_refine_syn__tophole_fill with (L := dom Θ).
   intros α Hα. simpl.
@@ -117,7 +117,7 @@ Qed.
    painting).  So anything □ refines to is a syn painting of a WELL-FORMED
    skeleton. *)
 Lemma hole_inv : forall Θ Δ Q',
-  Θ ⨟ Δ ⊢ᵣᵃ bskl_hole ⊳ Q' ->
+  Θ ⨟ Δ ⊢ᵣᵃᵈ bskl_hole ⊳ Q' ->
   exists P, Q' = pskl_to_bskl_syn P /\ Θ ⨟ empty ⊢ₚₛᵃ P.
 Proof.
   intros Θ Δ Q' H. remember bskl_hole as Q eqn:HQ.
@@ -127,7 +127,7 @@ Proof.
     apply a_wf_pskl__var. right. right. right. exists τ. exact H.
 Qed.
 
-Lemma no_hole_to_Bres : forall Θ Δ, ~ (Θ ⨟ Δ ⊢ᵣᵃ bskl_hole ⊳ Bres).
+Lemma no_hole_to_Bres : forall Θ Δ, ~ (Θ ⨟ Δ ⊢ᵣᵃᵈ bskl_hole ⊳ Bres).
 Proof.
   intros Θ Δ H.
   destruct (hole_inv _ _ _ H) as [P [Heq HwfP]].
@@ -153,7 +153,7 @@ Qed.
    Refinement's [tophole_fill], by contrast, binds α in the CONTEXT. *)
 Theorem ad_refine_syn_not_transitive :
   ~ (forall Θ Δ Q1 Q2 Q3,
-       Θ ⨟ Δ ⊢ᵣᵃ Q1 ⊳ Q2 -> Θ ⨟ Δ ⊢ᵣᵃ Q2 ⊳ Q3 -> Θ ⨟ Δ ⊢ᵣᵃ Q1 ⊳ Q3).
+       Θ ⨟ Δ ⊢ᵣᵃᵈ Q1 ⊳ Q2 -> Θ ⨟ Δ ⊢ᵣᵃᵈ Q2 ⊳ Q3 -> Θ ⨟ Δ ⊢ᵣᵃᵈ Q1 ⊳ Q3).
 Proof.
   intros Htrans.
   eapply (no_hole_to_Bres nil empty).

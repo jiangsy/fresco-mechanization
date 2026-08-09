@@ -105,7 +105,7 @@ Lemma ad_ppre_guarded_topholeg_absurd : forall Θ0 Θ κ Δ Ψ P ψ0,
   a_wf_aenv Θ ->
   κ ∷ Θ0 ⊑ Θ ->
   guarded_pskl P ->
-  Θ ⨟ Δ ⊢ (msubst_pskl κ P) ⊑ᵖ[ Ψ ] (uskl_topholeg ψ0) ->
+  Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ P) ⊑ᵖ[ Ψ ] (uskl_topholeg ψ0) ->
   False.
 Proof.
   intros Θ0 Θ κ Δ Ψ P ψ0 HwfΘ Hκ Hg Hpre.
@@ -158,7 +158,7 @@ Qed.
 (** A □ subject solves no tags: the only rules with a hole subject are
     [P-Ghost] and the target-side flexible unfolding. *)
 Lemma ad_ppre_hole_subject_tags : forall Θ Δ Ψ ψ,
-  Θ ⨟ Δ ⊢ pskl_hole ⊑ᵖ[ Ψ ] ψ ->
+  Θ ⨟ Δ ⊢ᵃᵈ pskl_hole ⊑ᵖ[ Ψ ] ψ ->
   Ψ [=] empty.
 Proof.
   intros Θ Δ Ψ ψ H.
@@ -173,9 +173,9 @@ Qed.
     rebuilt after recursing through the (monotype) definition. *)
 Lemma ad_ppre_tophole_strip : forall Θ Δ Ψ B ψ,
   a_wf_aenv Θ ->
-  Θ ⨟ Δ ⊢ (pskl_tophole B) ⊑ᵖ[ Ψ ] ψ ->
+  Θ ⨟ Δ ⊢ᵃᵈ (pskl_tophole B) ⊑ᵖ[ Ψ ] ψ ->
   guarded_pskl ⌊ ψ ⌋ˢ ->
-  Θ ⨟ Δ ⊢ B ⊑ᵖ[ Ψ ] ψ.
+  Θ ⨟ Δ ⊢ᵃᵈ B ⊑ᵖ[ Ψ ] ψ.
 Proof.
   intros Θ Δ Ψ B ψ HwfΘ H.
   remember (pskl_tophole B) as P eqn:HeqP.
@@ -202,11 +202,11 @@ Qed.
     needed ([a_solve_sub_hole_output]). *)
 Lemma ad_ppre_lift_topholeg : forall Θ Δ Ψ P ψ0,
   a_wf_aenv Θ ->
-  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ0 ->
+  Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ0 ->
   Δ ∩ ftvar_in_uskl ψ0 [=] empty ->
   guarded_pskl ⌊ ψ0 ⌋ˢ ->
   (P = pskl_hole \/ exists B, P = pskl_tophole B) ->
-  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] (uskl_topholeg ψ0).
+  Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] (uskl_topholeg ψ0).
 Proof.
   intros Θ Δ Ψ P ψ0 HwfΘ Hpre HΔ Hg Hshape.
   destruct Hshape as [-> | (B & ->)].
@@ -233,7 +233,7 @@ Qed.
     flexible of Θ into the subject, and [flex_r] unfolds a definition, so a
     definition's own variables can surface there. *)
 Lemma ad_partial_precise_src_ftv_avoid : forall Θ Δ Ψ P ψ,
-  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ ->
   forall α, α `notin` ftvar_in_uskl ψ ->
   α `notin` Δ ->
   (forall τ, ~ binds α (abind_flex_mono_def τ) Θ) ->
@@ -750,14 +750,14 @@ Lemma a_solve_sub_complete_rho_var :
   (forall α0, α0 `in` Δρ ->
      α0 `notin` pskl_shielded_ftv (msubst_pskl κ Pi)) ->
   Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
-  Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_var_f α) ->
+  Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_var_f α) ->
   (* SolS-Var GENERATES NOTHING, so the package is the trivial one: this is
      [solve_sub_ext_nil] with [Ξ := ·] and [κ' := ·], and [Θw] and [L] are
      therefore unconstrained. *)
   forall L,
   solve_sub_ext Θ0 Θw m Pi P0 L
     (fun κ' Pa =>
-       Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] (uskl_var_f α)).
+       Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κ' ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] (uskl_var_f α)).
 Proof.
   intros NM m Θ0 Θ Θw κ Δ Δρ Ψ' Ψi Ψa α Pi P0
     HwfΘ Htags Hsub Hfresh Hdelta HαΔρ Hapart HwfPi Hpre L.
@@ -824,11 +824,11 @@ Qed.
     in NEITHER side; here β is free in both, and Δ-membership is what keeps
     the var rule alive.) *)
 Lemma ad_partial_precise_tvar_to_delta_mid : forall Θf Δ Ψ P ψ,
-  Θf ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  Θf ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ ->
   forall β Θ1 Θ2, Θf = Θ1 ++ (β ~ abind_tvar) ++ Θ2 ->
   β `notin` dom Θ1 -> β `notin` dom Θ2 ->
   β `in` Δ ->
-  (Θ1 ++ Θ2) ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ.
+  (Θ1 ++ Θ2) ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ.
 Proof.
   intros Θf Δ Ψ P ψ H; induction H;
     intros β Θ1 Θ2 Heq Hd1 Hd2 HβΔ; subst.
@@ -900,7 +900,7 @@ Lemma ad_ppre_guarded_all_etag_absurd : forall Θ0 Θ κ Δ Ψ Ψd P ε ψ,
   κ ∷ Θ0 ⊑ Θ ->
   guarded_pskl P ->
   d_tags_skl Ψd (uskl_all_etag ε ψ) ->
-  Θ ⨟ Δ ⊢ (msubst_pskl κ P) ⊑ᵖ[ Ψ ] (uskl_all_etag ε ψ) ->
+  Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ P) ⊑ᵖ[ Ψ ] (uskl_all_etag ε ψ) ->
   False.
 Proof.
   intros Θ0 Θ κ Δ Ψ Ψd P ε ψ HwfΘ Hκ Hg Hd Hpre.
@@ -944,8 +944,8 @@ Lemma arrow_grid : forall NM M Θ0 Θ Θw κ Δ Δρ Ψt Ψi Ψa ψ1 ψ2 Pi P01 
      (forall α, α `in` Δρ ->
         α `notin` pskl_shielded_ftv (msubst_pskl κ Pi2)) ->
      Ψi [=] Ψi1 `union` Ψi2 ->
-     Θ ⨟ Δ ⊢ (msubst_pskl κ Pi1) ⊑ᵖ[ Ψi1 ] ψ1 ->
-     Θ ⨟ Δ ⊢ (msubst_pskl κ Pi2) ⊑ᵖ[ Ψi2 ] ψ2 ->
+     Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi1) ⊑ᵖ[ Ψi1 ] ψ1 ->
+     Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi2) ⊑ᵖ[ Ψi2 ] ψ2 ->
      exists Ξ1 Ξ2 Pa1 Pa2 κ1 κ2,
        Θ0 ⊢ₑ Pi1 ∼ P01 ⤳ Ξ1 ⨾ Pa1 /\
        (Ξ1 ++ Θ0) ⊢ₛ Pi2 ≼[ M ] P02 ⤳ Ξ2 ⨾ Pa2 /\
@@ -956,15 +956,15 @@ Lemma arrow_grid : forall NM M Θ0 Θ Θw κ Δ Δρ Ψt Ψi Ψa ψ1 ψ2 Pi P01 
        Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) (κ2 ++ κ1) /\
        ((Ξ2 ++ Ξ1) ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa1 /\
        ((Ξ2 ++ Ξ1) ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa2 /\
-       Θ ⨟ Δ ⊢ (msubst_pskl ((κ2 ++ κ1) ++ κ) (pskl_arrow Pa1 Pa2))
+       Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl ((κ2 ++ κ1) ++ κ) (pskl_arrow Pa1 Pa2))
          ⊑ᵖ[ Ψi `union` Ψa ] (uskl_arrow ψ1 ψ2)) ->
   Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
   (forall α, α `in` Δρ -> α `notin` pskl_shielded_ftv (msubst_pskl κ Pi)) ->
-  Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_arrow ψ1 ψ2) ->
+  Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_arrow ψ1 ψ2) ->
   forall L,
   solve_sub_ext Θ0 Θw (mode_fn M) Pi (pskl_arrow P01 P02) L
     (fun κ' Pa =>
-       Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) Pa)
+       Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κ' ++ κ) Pa)
          ⊑ᵖ[ Ψi `union` Ψa ] (uskl_arrow ψ1 ψ2)).
 Proof.
   intros NM M Θ0 Θ Θw κ Δ Δρ Ψt Ψi Ψa ψ1 ψ2 Pi P01 P02
@@ -994,8 +994,8 @@ Proof.
        the two blocks (SS-Arrow threads) *)
     inversion Hpre; subst.
     match goal with
-      Hp1 : _ ⨟ _ ⊢ msubst_pskl κ Pi1 ⊑ᵖ[ ?Ψa1 ] ψ1,
-      Hp2 : _ ⨟ _ ⊢ msubst_pskl κ Pi2 ⊑ᵖ[ ?Ψa2 ] ψ2,
+      Hp1 : _ ⨟ _ ⊢ᵃᵈ msubst_pskl κ Pi1 ⊑ᵖ[ ?Ψa1 ] ψ1,
+      Hp2 : _ ⨟ _ ⊢ᵃᵈ msubst_pskl κ Pi2 ⊑ᵖ[ ?Ψa2 ] ψ2,
       Hun : Ψi [=] _ |- _ =>
       destruct (KEY Pi1 Pi2 Ψa1 Ψa2 L
                   ltac:(inversion HwfPi; assumption)
@@ -1052,7 +1052,7 @@ Proof.
        guess), recurse, and wrap the output — a PASS-THROUGH row, so the
        block and the extension come back unchanged *)
     inversion Hpre; subst.
-    match goal with Hbody : _ ⨟ _ ⊢ msubst_pskl κ Pi0 ⊑ᵖ[ Ψi ] _ |- _ =>
+    match goal with Hbody : _ ⨟ _ ⊢ᵃᵈ msubst_pskl κ Pi0 ⊑ᵖ[ Ψi ] _ |- _ =>
       destruct (IH0 Ψi Ψa Htageq KEY
                   ltac:(eapply a_wf_pskl_tophole_inv; exact HwfPi)
                   ltac:(intros α0 Hα0; pose proof (Hapart α0 Hα0) as Hs;
@@ -1530,7 +1530,7 @@ Theorem a_solve_sub_complete_var :
   (forall α, α `in` Δρ ->
      α `notin` pskl_shielded_ftv (msubst_pskl κ Pi)) ->
   delta_def_fresh Δ Θ ->
-  Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
+  Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
   Ψsub [<=] Ψρ `union` Ψa ->
   Ψa [<=] Ψsub ->
   (* the derivation lives in a SMALLER context [Θs]: Sub-ForallL must run
@@ -1541,7 +1541,7 @@ Theorem a_solve_sub_complete_var :
      (subtyping-proofs.tex:2153); at the top level [Θs = Θ]. *)
   (forall x b, binds x b Θs -> binds x b Θ) ->
   ad_pat_sub_g n NM M Ψsub Θs ψsub Q ->
-  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+  Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
   (* ⭐ THE AVOID-SET PARAMETER: the SOLVE generates its own block now, and at
      a binder row the witness has to be fixed BEFORE the block is picked. *)
   forall L, ftvar_in_aenv Θ0 [<=] L ->
@@ -1555,7 +1555,7 @@ Theorem a_solve_sub_complete_var :
      lets the output mention the generated block. *)
   solve_sub_ext Θ0 Θw M Pi P0 L
     (fun κ' Pa =>
-       Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
+       Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κ' ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
 Proof.
   intros n NM M Θ0 Θs Θ Θw κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0.
   intros HwfΘ HwfΘ0 HwfΘw Hmon Hnr Hκw HΔρw
@@ -1594,7 +1594,7 @@ Proof.
   all: match goal with
        | Hx : forall x b, binds x b ?S -> binds x b _ |- _ =>
          repeat match goal with
-         | H : _ ⨟ S ⊢ₛᵃ _ ∼ _ |- _ =>
+         | H : _ ⨟ S ⊢ᵃᵈ _ ∼ _ |- _ =>
              let H' := fresh "Hw" in
              pose proof (ad_pat_consis_weaken H _ Hx) as H';
              clear H; rename H' into H
@@ -1809,7 +1809,7 @@ Proof.
     + (* P0 = ∀.P0' : the real row *)
       cbn [msubst_pskl pskl_to_bskl_inh] in Hrefine.
       inversion Hrefine; subst.
-      match goal with Hr : forall α, α `notin` ?Lr -> _ ⨟ _ ⊢ᵣᵃ _ ⊳ _ |- _ =>
+      match goal with Hr : forall α, α `notin` ?Lr -> _ ⨟ _ ⊢ᵣᵃᵈ _ ⊳ _ |- _ =>
         rename Hr into Hrbody; remember Lr as Lr0 eqn:HeqLr; clear HeqLr end.
       inversion HwfP0; subst.
       match goal with Hw : forall α, α `notin` ?Lw -> _ ⨟ _ ⊢ₚₛᵃ _ |- _ =>
@@ -1877,10 +1877,10 @@ Proof.
         destruct (binds_cons_1 _ _ _ _ _ _ Hb1) as [[_ Habs] | Hb'];
           [ discriminate Habs | exact Hb' ]. }
       assert (Hpreβ : ((β ~ abind_tvar) ++ Θ) ⨟ Δ
-                ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa)
+                ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa)
         by (eapply ad_partial_precise_weaken;
               [ exact Hpre | intros x b Hb; apply binds_app_3; exact Hb ]).
-      assert (Hrefβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣᵃ
+      assert (Hrefβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣᵃᵈ
                 (pskl_to_bskl_inh
                    (msubst_pskl κ (open_pskl_wrt_pskl (ptyp_to_pskl A0)
                                      (pskl_var_f β))))
@@ -1998,7 +1998,7 @@ Proof.
        IH.  Tags split by [arrow_tag_split]; the per-branch flow facts are
        P6-Cv's own arrow recipe ([ad_pat_sub_g_ftag_sub] /
        [ad_pat_consis_ftag_sub] + [uskl_rho_ftag_sub] + [d_tags_skl_ftag]). *)
-    match goal with Hc : _ ⨟ Θ ⊢ₛᵃ R1 ∼ Q1 |- _ => rename Hc into Hcons end.
+    match goal with Hc : _ ⨟ Θ ⊢ᵃᵈ R1 ∼ Q1 |- _ => rename Hc into Hcons end.
     match goal with Hu : Ψ [=] _ `union` _ |- _ => rename Hu into Hun end.
     assert (HP0 : exists P01 P02, P0 = pskl_arrow P01 P02 /\
                     (NM = a_sub_mode_sk -> a_sk_mode_compat M P02) /\
@@ -2018,8 +2018,8 @@ Proof.
     cbn [msubst_pskl pskl_to_bskl_inh] in Hrefine.
     inversion Hrefine; subst.
     match goal with
-      Hr1 : _ ⨟ _ ⊢ᵣᵃ pskl_to_bskl_inh (msubst_pskl κ P01) ⊳ _,
-      Hr2 : _ ⨟ _ ⊢ᵣᵃ pskl_to_bskl_inh (msubst_pskl κ P02) ⊳ _ |- _ =>
+      Hr1 : _ ⨟ _ ⊢ᵣᵃᵈ pskl_to_bskl_inh (msubst_pskl κ P01) ⊳ _,
+      Hr2 : _ ⨟ _ ⊢ᵣᵃᵈ pskl_to_bskl_inh (msubst_pskl κ P02) ⊳ _ |- _ =>
       rename Hr1 into Href1; rename Hr2 into Href2
     end.
     (* the two branches, once the guess is known to be an arrow.
@@ -2040,8 +2040,8 @@ Proof.
       (forall α, α `in` Δρ ->
          α `notin` pskl_shielded_ftv (msubst_pskl κ Pi2)) ->
       Ψi [=] Ψi1 `union` Ψi2 ->
-      Θ ⨟ Δ ⊢ (msubst_pskl κ Pi1) ⊑ᵖ[ Ψi1 ] ψ1 ->
-      Θ ⨟ Δ ⊢ (msubst_pskl κ Pi2) ⊑ᵖ[ Ψi2 ] ψ2 ->
+      Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi1) ⊑ᵖ[ Ψi1 ] ψ1 ->
+      Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi2) ⊑ᵖ[ Ψi2 ] ψ2 ->
       exists Ξ1 Ξ2 Pa1 Pa2 κ1 κ2,
         Θ0 ⊢ₑ Pi1 ∼ P01 ⤳ Ξ1 ⨾ Pa1 /\
         (Ξ1 ++ Θ0) ⊢ₛ Pi2 ≼[ M ] P02 ⤳ Ξ2 ⨾ Pa2 /\
@@ -2052,7 +2052,7 @@ Proof.
         Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) (κ2 ++ κ1) /\
         ((Ξ2 ++ Ξ1) ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa1 /\
         ((Ξ2 ++ Ξ1) ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa2 /\
-        Θ ⨟ Δ ⊢ (msubst_pskl ((κ2 ++ κ1) ++ κ) (pskl_arrow Pa1 Pa2))
+        Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl ((κ2 ++ κ1) ++ κ) (pskl_arrow Pa1 Pa2))
           ⊑ᵖ[ Ψi `union` Ψa ] (uskl_arrow ψ1 ψ2)).
     { intros ψ1 ψ2 Ψρ1 Ψρ2 Hrho1 Hrho2 HΨρs Htags0 Pi1 Pi2 Ψi1 Ψi2 L0 HwfPi1 HwfPi2 Hsh1 Hsh2 HΨis Hpre1 Hpre2.
       destruct (a_tags_sort_arrow_inv Htags0)
@@ -2277,10 +2277,10 @@ Proof.
          uskl_rho NM Θ Δρ Ψρ (open_uskl_wrt_uskl R (uskl_var_f α))
                              (open_uskl_wrt_uskl ψsrc (uskl_var_f α))) ->
       a_tags_sort NM Ψt (uskl_all_etag ε ψsrc) ->
-      Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_all_etag ε ψsrc) ->
+      Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_all_etag ε ψsrc) ->
       solve_sub_ext Θ0 Θw M Pi P0 Lav
         (fun κ' Pa =>
-           Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) Pa)
+           Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κ' ++ κ) Pa)
              ⊑ᵖ[ Ψi `union` Ψa ] (uskl_all_etag ε ψsrc))).
     { intros L0 ψsrc Hfam Htags0 Hpre0.
       destruct (a_tags_sort_all_etag_inv Htags0)
@@ -2335,7 +2335,7 @@ Proof.
         assert (Hex : exists Lp Ψi0,
                   (forall α, α `notin` Lp ->
                      Θ ⨟ (add α Δ)
-                       ⊢ (open_pskl_wrt_pskl (msubst_pskl κ Pi0)
+                       ⊢ᵃᵈ (open_pskl_wrt_pskl (msubst_pskl κ Pi0)
                             (pskl_var_f α))
                        ⊑ᵖ[ Ψi0 ] (open_uskl_wrt_uskl ψsrc (uskl_var_f α)))
                   /\ Ψi [=] add ε Ψi0).
@@ -2497,12 +2497,12 @@ Proof.
                         (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd.
           clear - Hd HβΘ; fsetdec. }
         assert (Hpreβ : ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
-                  ⊢ (msubst_pskl κ (open_pskl_wrt_pskl Pi0 (pskl_var_f β)))
+                  ⊢ᵃᵈ (msubst_pskl κ (open_pskl_wrt_pskl Pi0 (pskl_var_f β)))
                   ⊑ᵖ[ Ψi0 ] (open_uskl_wrt_uskl ψsrc (uskl_var_f β))).
         { rewrite (@msubst_pskl_open Θ0 κ Θ Pi0 β Hκ Hβκ).
           eapply ad_partial_precise_weaken;
             [ apply (Hpbody β ltac:(clear - Fr; solve_notin)) | exact Hweak ]. }
-        assert (Hrefβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣᵃ
+        assert (Hrefβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣᵃᵈ
                   (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q)
           by (eapply ad_refine_syn_weaken; [ exact Hrefine | exact Hweak ]).
         (* the Θw pack under the binder: [Θw] itself does NOT move, and the
@@ -2608,7 +2608,7 @@ Proof.
         + (* precision: β lives in Δ, so it can leave the aenv
              ([ad_partial_precise_tvar_to_delta_mid]); then rename it into
              P-Forall's family *)
-          assert (Hp' : Θ ⨟ (add β Δ) ⊢ (msubst_pskl (κ' ++ κ) Pa)
+          assert (Hp' : Θ ⨟ (add β Δ) ⊢ᵃᵈ (msubst_pskl (κ' ++ κ) Pa)
                     ⊑ᵖ[ Ψi0 `union` Ψa ]
                     (open_uskl_wrt_uskl ψsrc (uskl_var_f β)))
             by (eapply ad_partial_precise_tvar_to_delta_mid
@@ -2694,7 +2694,7 @@ Proof.
             | exact (a_tags_sort_d_tags Htags0) | eassumption ].
         + (* P-UnivGhostFill: the body carries no ε, so Ψi cannot either *)
           assert (Hexf : exists Lf Pf, forall α, α `notin` Lf ->
-                    ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ Pf ⊑ᵖ[ Ψi ]
+                    ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ᵃᵈ Pf ⊑ᵖ[ Ψi ]
                       (open_uskl_wrt_uskl ψsrc (uskl_var_f α)))
             by (eexists; eexists; eassumption).
           destruct Hexf as (Lf & Pf & Hfill).
@@ -2789,10 +2789,10 @@ Proof.
     assert (KEY : forall ψ0,
       uskl_rho a_sub_mode_sk Θ Δρ Ψρ R ψ0 ->
       a_tags_sort a_sub_mode_sk Ψt (uskl_topholeg ψ0) ->
-      Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_topholeg ψ0) ->
+      Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_topholeg ψ0) ->
       solve_sub_ext Θ0 Θw M Pi P0 Lav
         (fun κ' Pa =>
-           Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) Pa)
+           Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κ' ++ κ) Pa)
              ⊑ᵖ[ Ψi `union` Ψa ] (uskl_topholeg ψ0))).
     { intros ψ0 Hrho0 Htags0 Hpre0.
       assert (Htags0' : a_tags_sort a_sub_mode_sk Ψt ψ0)
@@ -2835,7 +2835,7 @@ Proof.
         { (* only [P-Ghost] can conclude with a ∀◈ target from a □ subject:
              the target-side flexible unfolding needs a VARIABLE target *)
           inversion Hpre0; subst; cbn [ftvar_in_uskl] in *; assumption. }
-        assert (Hpre0' : Θ ⨟ Δ ⊢ (msubst_pskl κ pskl_hole) ⊑ᵖ[ Ψi ] ψ0)
+        assert (Hpre0' : Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ pskl_hole) ⊑ᵖ[ Ψi ] ψ0)
           by (cbn [msubst_pskl]; apply ad_ppre__hole; assumption).
         edestruct (IHHsub Θ Θ0 κ Δ Δρ Ψρ Ψt Ψi Ψa ψ0 pskl_hole P0
                      HwfΘ HwfΘ0 Hmon Hnr Hκw HΔρw
@@ -2869,7 +2869,7 @@ Proof.
           exfalso; eapply ad_ppre_guarded_topholeg_absurd;
             [ exact HwfΘ | exact Hκ | exact HgPi' | eassumption ].
         + (* P-UnivGhostKeep *)
-          match goal with Hbody : _ ⨟ _ ⊢ _ ⊑ᵖ[ _ ] ψ0 |- _ =>
+          match goal with Hbody : _ ⨟ _ ⊢ᵃᵈ _ ⊑ᵖ[ _ ] ψ0 |- _ =>
             rename Hbody into Hpre' end.
           assert (Hapart' : forall α0, α0 `in` Δρ ->
                     α0 `notin` pskl_shielded_ftv (msubst_pskl κ Pi')).

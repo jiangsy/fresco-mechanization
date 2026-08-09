@@ -2,7 +2,7 @@
     subtyping, subtyping-proofs.tex:32-58) — the R-B enabler of
     thm:sound-subtyping (docs/DESIGN-subtyping.md §2.2, phase P4).
 
-    An algorithmic subtyping run [Θ0 ⊢ₐ[N|M|P0] P ⩽ Q ⊣ Θ1] can be
+    An algorithmic subtyping run [Θ0 ⊢ᵃ[N|M|P0] P ⩽ Q ⊣ Θ1] can be
     replayed as a DECORATED run [Θ0 ⊢ᵗ[N|M|P0|∅] ⌊P⌋ᵘ ⩽˙ Q ⊣ Θ1] whose
     ForallL instantiations use decorated skeletons whose tags the run
     solves.  This file builds the auxiliary lemmas bottom-up. *)
@@ -584,7 +584,7 @@ Proof. induction 1; simpl; constructor; auto. Qed.
     subject: erasure of a flex-var assignment can only remove tags that are
     not there.  Def-variable lookups use [a_wf_aenv_binds_def_mono]. *)
 Lemma ad_pat_consis_mono_no_all_syn : forall Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
   a_wf_aenv Θ ->
   mono_bskl Q ->
   no_all_syn_uskl R.

@@ -107,7 +107,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_consis_output_wf : forall Δ1 Δ2 Θ0 P0 P Q Θ1,
-  Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
+  Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
@@ -511,7 +511,7 @@ Qed.
 (** The ∅|∅ instance of [a_consis_output_wf] — what [a_sub__arrow]'s domain
     premise and [a_sub__check]'s leaf need. *)
 Corollary a_consis_output_wf_nil : forall Θ0 P0 P Q Θ1,
-  Θ0 ⊢ₐ[ P0 ] P ∼ Q ⊣ Θ1 ->
+  Θ0 ⊢ᵃ[ P0 ] P ∼ Q ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
@@ -530,7 +530,7 @@ Qed.
 
 (** The ∅|∅ ⊴/wf facts off the packaged soundness corollary. *)
 Corollary a_consis_isub_wf_nil : forall Θ0 P0 P Q Θ1,
-  Θ0 ⊢ₐ[ P0 ] P ∼ Q ⊣ Θ1 ->
+  Θ0 ⊢ᵃ[ P0 ] P ∼ Q ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->

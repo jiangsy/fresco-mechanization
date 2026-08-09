@@ -49,13 +49,13 @@ Inductive ad_pat_sub_g :
   nat -> a_sub_mode -> mode -> atoms -> aenv -> uskl -> bskl -> Prop :=
 | ad_pat_sub_g__infer : forall n NM Ψ Θ R Q,                  (* Infer *)
     Ψ [=] empty ->
-    empty ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+    empty ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
     is_sskl Q ->
     ad_pat_sub_g n NM mode_ti Ψ Θ R Q
 | ad_pat_sub_g__check : forall n Ψ Θ T B,                     (* Check (TY) *)
     guarded_uskl T ->
     guarded_pskl B ->
-    Ψ ⨟ Θ ⊢ₛᵃ T ∼ (pskl_to_bskl_inh B) ->
+    Ψ ⨟ Θ ⊢ᵃᵈ T ∼ (pskl_to_bskl_inh B) ->
     ad_pat_sub_g n a_sub_mode_ty mode_tc Ψ Θ T (pskl_to_bskl_inh B)
 | ad_pat_sub_g__forall_r : forall n L Ψ Θ T B,               (* ForallR (TY) *)
     (forall α, α `notin` L ->
@@ -67,10 +67,10 @@ Inductive ad_pat_sub_g :
     guarded_uskl R ->
     guarded_bskl Q ->
     is_sskl Q ->
-    empty ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+    empty ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
     ad_pat_sub_g n a_sub_mode_sk mode_tc Ψ Θ R (bskl_tophole Q)
 | ad_pat_sub_g__arrow : forall n NM Ψ Ψ1 Ψ2 Θ M R1 R2 Q1 Q2, (* Arrow *)
-    Ψ1 ⨟ Θ ⊢ₛᵃ R1 ∼ Q1 ->
+    Ψ1 ⨟ Θ ⊢ᵃᵈ R1 ∼ Q1 ->
     ad_pat_sub_g n NM M Ψ2 Θ R2 Q2 ->
     Ψ [=] Ψ1 `union` Ψ2 ->
     ad_pat_sub_g (S n) NM (mode_fn M) Ψ Θ (uskl_arrow R1 R2) (bskl_arrow Q1 Q2)
@@ -126,7 +126,7 @@ Inductive ad_pat_sub_g :
 (*  invokes there — and that condition is NOT derivable from the paper's  *)
 (*  two subtyping-solution conditions (the capture configuration          *)
 (*  [(P0=◇, P=∀X.◇, Q=∀X.X)] passes both).  Stating it at the ROOT        *)
-(*  instead — as one [⊢ᵣₚᵃ κ⌊S⌋ˢ ⊳ ⌊Q⌋] premise on the theorem — is       *)
+(*  instead — as one [⊢ᵣₚᵃᵈ κ⌊S⌋ˢ ⊳ ⌊Q⌋] premise on the theorem — is       *)
 (*  WRONG: refinement is a lockstep relation, so a root condition         *)
 (*  excludes every solution whose sides disagree at a head through       *)
 (*  ForallL / ForallR / UnivGhostR, i.e. instantiation and               *)
@@ -144,15 +144,15 @@ Inductive ad_pat_sub_gv :
   nat -> a_sub_mode -> mode -> atoms -> aenv -> uskl -> bskl -> Prop :=
 | ad_pat_sub_gv__infer : forall n NM Ψ Θ R Q,                 (* Infer *)
     Ψ [=] empty ->
-    empty ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+    empty ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
     is_sskl Q ->
-    Θ ⨟ empty ⊢ᵣₚᵃ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) ->
+    Θ ⨟ empty ⊢ᵣₚᵃᵈ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) ->
     ad_pat_sub_gv n NM mode_ti Ψ Θ R Q
 | ad_pat_sub_gv__check : forall n Ψ Θ T B,                    (* Check (TY) *)
     guarded_uskl T ->
     guarded_pskl B ->
-    Ψ ⨟ Θ ⊢ₛᵃ T ∼ (pskl_to_bskl_inh B) ->
-    Θ ⨟ empty ⊢ᵣₚᵃ ⌊ T ⌋ˢ ⊳ B ->
+    Ψ ⨟ Θ ⊢ᵃᵈ T ∼ (pskl_to_bskl_inh B) ->
+    Θ ⨟ empty ⊢ᵣₚᵃᵈ ⌊ T ⌋ˢ ⊳ B ->
     ad_pat_sub_gv n a_sub_mode_ty mode_tc Ψ Θ T (pskl_to_bskl_inh B)
 | ad_pat_sub_gv__forall_r : forall n L Ψ Θ T B,              (* ForallR (TY) *)
     (forall α, α `notin` L ->
@@ -164,15 +164,15 @@ Inductive ad_pat_sub_gv :
     guarded_uskl R ->
     guarded_bskl Q ->
     is_sskl Q ->
-    empty ⨟ Θ ⊢ₛᵃ R ∼ Q ->
-    Θ ⨟ empty ⊢ᵣₚᵃ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) ->
+    empty ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
+    Θ ⨟ empty ⊢ᵣₚᵃᵈ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) ->
     ad_pat_sub_gv n a_sub_mode_sk mode_tc Ψ Θ R (bskl_tophole Q)
 | ad_pat_sub_gv__arrow : forall n NM Ψ Ψ1 Ψ2 Θ M R1 R2 Q1 Q2, (* Arrow *)
-    Ψ1 ⨟ Θ ⊢ₛᵃ R1 ∼ Q1 ->
+    Ψ1 ⨟ Θ ⊢ᵃᵈ R1 ∼ Q1 ->
     (* the DOMAIN premise is itself a consistency leaf — Sub-Arrow invokes
        thm:complete-consistency on it (:3334), so it carries the same
        subject-refinement data as [__infer] *)
-    Θ ⨟ empty ⊢ᵣₚᵃ ⌊ R1 ⌋ˢ ⊳ (bskl_to_pskl Q1) ->
+    Θ ⨟ empty ⊢ᵣₚᵃᵈ ⌊ R1 ⌋ˢ ⊳ (bskl_to_pskl Q1) ->
     ad_pat_sub_gv n NM M Ψ2 Θ R2 Q2 ->
     Ψ [=] Ψ1 `union` Ψ2 ->
     ad_pat_sub_gv (S n) NM (mode_fn M) Ψ Θ (uskl_arrow R1 R2) (bskl_arrow Q1 Q2)
@@ -238,7 +238,7 @@ Qed.
 (** Erase hygiene + fuel: a hygienic derivation is a plain one. *)
 Lemma ad_pat_sub_g_of : forall n NM M Ψ Θ R Q,
   ad_pat_sub_g n NM M Ψ Θ R Q ->
-  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q.
+  Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q.
 Proof.
   intros n NM M Ψ Θ R Q H. induction H.
   - eapply ad_pat_sub__infer; eauto.
@@ -291,7 +291,7 @@ Qed.
     a leaf-valid join IS a plain declarative subtyping derivation. *)
 Lemma ad_pat_sub_of_gv : forall n NM M Ψ Θ R Q,
   ad_pat_sub_gv n NM M Ψ Θ R Q ->
-  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q.
+  Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q.
 Proof. intros * H. exact (ad_pat_sub_g_of (ad_pat_sub_gv_forget H)). Qed.
 
 (** ⭐ THE LEAF-VALID JOIN WITH THE FUEL FORGOTTEN — what the
@@ -310,5 +310,5 @@ Definition ad_pat_sub_v (NM : a_sub_mode) (M : mode) (Ψ : atoms)
 (** A leaf-valid join IS a plain declarative subtyping derivation. *)
 Lemma ad_pat_sub_of_v : forall NM M Ψ Θ R Q,
   ad_pat_sub_v NM M Ψ Θ R Q ->
-  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q.
+  Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q.
 Proof. intros * [n H]. exact (ad_pat_sub_of_gv H). Qed.

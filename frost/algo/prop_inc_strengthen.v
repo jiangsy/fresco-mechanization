@@ -123,7 +123,7 @@ Lemma a_assign_unify_consis_flex_preserve :
      Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
      forall α1, a_flex_tvar Θ0 α1 -> a_flex_tvar Θ1 α1) /\
   (forall Δ1 Δ2 Θ0 P0 P P' Θ1,
-     Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
+     Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
      forall α1, a_flex_tvar Θ0 α1 -> a_flex_tvar Θ1 α1).
 Proof.
   apply (a_assign_unify_consis_mutind

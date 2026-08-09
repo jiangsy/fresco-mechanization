@@ -1313,8 +1313,8 @@ Qed.
 
 
 Lemma a_consis_empty_swap : forall a b Θ0 P0 P Q Θ1,
-  Θ0 ⊢ₐ[ P0 ] P ∼ Q ⊣ Θ1 ->
-  (swap_aenv a b Θ0) ⊢ₐ[ swap_pskl a b P0 ]
+  Θ0 ⊢ᵃ[ P0 ] P ∼ Q ⊣ Θ1 ->
+  (swap_aenv a b Θ0) ⊢ᵃ[ swap_pskl a b P0 ]
     (swap_pskl a b P) ∼ (swap_pskl a b Q) ⊣ (swap_aenv a b Θ1).
 Proof.
   intros * H.
@@ -1578,14 +1578,14 @@ Proof.
 Qed.
 
 Lemma a_consis_swap_junk : forall β0 β1 Δ1 Δ2 Θ0 P0 P Q Θ1,
-  Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
+  Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
   β0 `notin` Δ1 `union` Δ2 ->
   β1 `notin` Δ1 `union` Δ2 ->
   β0 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
      `union` ftvar_in_pskl P ->
   β1 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
      `union` ftvar_in_pskl P ->
-  Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ (swap_pskl β0 β1 Q)
+  Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ (swap_pskl β0 β1 Q)
     ⊣ (swap_aenv β0 β1 Θ1).
 Proof.
   intros * Hd HS0 HS1 H0 H1.
@@ -1815,7 +1815,7 @@ Qed.
     because every [β] of [P] is replaced and the replacement [τ] is β-free.
     [α = β] is allowed, exactly as in the rule. *)
 Lemma a_assign_assign_no_loss : forall Θ0 Θ1 Ξ α β τ P Q,
-  (Ξ ++ Θ0) ⊢ₐ[ empty | empty
+  (Ξ ++ Θ0) ⊢ᵃ[ empty | empty
        | (subst_pskl_in_pskl (ptyp_to_pskl τ) β P) ]
     (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)) ∼ Q ⊣ Θ1 ->
   a_flex_tvar ((β ~ abind_flex_mono_def τ) ++ Θ0) α ->
@@ -1904,7 +1904,7 @@ Qed.
     definition [τ] cannot mention its own [α1] (scope discipline) — the same
     extra hypothesis §13b's [a_sub_flex_assign_no_loss] carries. *)
 Lemma a_unify_flex_assign_no_loss : forall Θ0 Θ1 α1 τ α β Q,
-  Θ0 ⊢ₐ[ empty | empty
+  Θ0 ⊢ᵃ[ empty | empty
        | (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f β))) ]
     (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f α))) ∼ Q ⊣ Θ1 ->
   a_flex_tvar ((α1 ~ abind_flex_mono_def τ) ++ Θ0) α ->
@@ -2687,7 +2687,7 @@ Proof. reflexivity. Qed.
     for free (they rename TO a fresh atom), and it still shrinks with the
     term, which is all the [AP-App] row needs. *)
 Lemma a_pat_rename_tm : forall a b m Θ0 P0 e P Θ1,
-  Θ0 ⊢ₐ[ m ; P0 ] e ⇨ P ⊣ Θ1 ->
+  Θ0 ⊢ₛᵃ[ m ; P0 ] e ⦂ P ⊣ Θ1 ->
   a `notin` ftvar_in_exp e -> b `notin` ftvar_in_exp e ->
   b `notin` fvar_in_exp e ->
   a_pat m (swap_aenv a b Θ0) (swap_pskl a b P0)

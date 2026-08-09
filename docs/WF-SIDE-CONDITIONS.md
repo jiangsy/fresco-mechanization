@@ -156,7 +156,7 @@ which requires `a_wf_aenv Θ`. Without the side condition the case is stuck.
 
 ## 7. Completeness Δ (P6) — freshness w.r.t. Θ's definition images. **[P6-Cv; via (B)]**
 
-> The `-var` completeness lemmas' precision premise `Δ ⨟ Θ ⊢ κPi ⊑ᵖ[Ψi] ψa`
+> The `-var` completeness lemmas' precision premise `Δ ⨟ Θ ⊢ᵃᵈ κPi ⊑ᵖ[Ψi] ψa`
 > carries a binder context Δ that the paper only ever populates with
 > instantiation binders — all introduced AFTER Θ's definitions exist. The
 > paper never states this; its rules and lemma statement leave Δ abstract.

@@ -64,7 +64,7 @@ witness stand in for the universally-quantified one.
 ## ⛔ GAP (2026-08-06) — the SOLUTION notion for the two INFERENCE problems must carry the leaf data, exactly as the consistency one already does
 
 `thm:complete-skeleton-inference` and `thm:complete-type-inference` are
-stated over a declarative derivation `Θ ⊢[M] M ⇨ bid Q` / `typp[M]`, whose
+stated over a declarative derivation `Θ ⊢ₛ[M] M ⦂ bid Q` / `typp[M]`, whose
 `Unit` / `Var` / `Anno` rows embed a declarative SUBTYPING premise.  Their
 proofs then invoke `thm:complete-subtyping` on that premise (proofs.tex:731,
 :1811).
@@ -149,7 +149,7 @@ and recover the paper's form because `θ` is the identity on `Ξ`-free
 types.  At `ForallL` the instantiation becomes `θψ`, which is `Ξ`-free and
 still a decorated skeleton (θ's images are monotypes: no quantifiers, no
 ghosts, no tags).  Cost: one such transport per judgement the typing
-derivation embeds (`⩽`, `⇨`, `∼`, `⊳`, `≡`, wf) — five context-carrying
+derivation embeds (`⩽`, `⦂`, `∼`, `⊳`, `≡`, wf) — five context-carrying
 ones, since `skmod{TY}` is context-free.
 
 ⚠️ **A weaker statement needs none of this**, and the mech may fall back
@@ -198,7 +198,7 @@ proved.
 
    **What the mech did (2026-08-06)**: added the premise.
    `ad_sd_typing__app` now carries
-   `Θ ⊢ (btyp_to_ptyp B1) ≡ᵗ A2` beside `Θ ⊢ˢᵃ[TC] N ⦂ inh{A2}`.  Four
+   `Θ ⊢ (btyp_to_ptyp B1) ≡ᵗ A2` beside `Θ ⊢ˢᵃᵈ[TC] N ⦂ inh{A2}`.  Four
    construction sites needed the accompanying `a_tyequiv` transport, each
    of which already existed.
 
@@ -617,8 +617,8 @@ Intended statement:
 
 ```coq
 Theorem a_consis_sym : forall F Δ1 Δ2 Θ0 P0 P Q Θ1,
-  Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 ->
-  exists Q', Θ0 ⊢ₐ[ F ][ Δ2 | Δ1 | P ] P0 ≈ Q' ⊣ Θ1.
+  Θ0 ⊢ᵃ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 ->
+  exists Q', Θ0 ⊢ᵃ[ F ][ Δ2 | Δ1 | P ] P0 ≈ Q' ⊣ Θ1.
 ```
 (mutually with `a_unify_sym`; `a_assign` needs no symmetry and no IH, since
 `FlexL` and `FlexR` carry the *same* assign premise and re-use it as a black
@@ -1669,7 +1669,7 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
   the `univ_ghost_lg` case in `frost/algo/prop_look_complete_sub_var.v`
   (now proved).
 - The paper writes "We know that `P_i` must have a top-level `∀◇`", reading
-  the precision premise `Δ|Θ ⊢ precise[Ψi]{θP_i}{∀◈ψ'}` as if only
+  the precision premise `Δ|Θ ⊢ᵃᵈ precise[Ψi]{θP_i}{∀◈ψ'}` as if only
   `P-UnivGhostKeep` — whose subject is `∀◇P` — could target a `∀◈`.  But
   **`P-Ghost` is target-agnostic**: `□ ⊑ᵖ[·] ψ` holds for ANY `ψ` (given its
   Δ-disjointness side condition), so a hole input skeleton is precise to a

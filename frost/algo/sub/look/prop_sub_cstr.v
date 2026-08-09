@@ -123,11 +123,11 @@ Require Import src.frost.algo.sub.look.prop_sub_var.
     and so only gets easier.  (Unrestricted Δ-shrinking is of course fine
     for the □ row and false for the var row — hence the freshness.) *)
 Lemma ad_partial_precise_delta_shrink_fresh : forall Θ Δf Ψ P ψ,
-  Θ ⨟ Δf ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  Θ ⨟ Δf ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ ->
   forall Δ Δ', Δf [=] Δ `union` Δ' ->
   Δ' ∩ ftvar_in_uskl ψ [=] empty ->
   delta_def_fresh Δ' Θ ->
-  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ.
+  Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ.
 Proof.
   intros Θ Δf Ψ P ψ H; induction H; intros Δ0 Δ' Heq HΔ' Hdf.
   - apply ad_ppre__unit; assumption.
@@ -447,7 +447,7 @@ Lemma a_looksub_solve_complete_leaf :
   Ψi `union` Ψa [=] Ψ' ->                   (* the paper's Ψi,Ψa = Ψ' *)
   delta_def_fresh Δ Θ ->
   flex_apart_deep Θ0 Δρ P0 ψa ->              (* ⇐ THE REPAIR (see the header) *)
-  Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
+  Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
   Ψsub [<=] ftag_in_uskl R' `union` Ψρ `union` Ψa ->
   Ψa [<=] Ψsub ->
   (* subject = the ρ-IMAGE of the paper's (κR')[ψa/α] (ρ = id ⇒ the paper's).
@@ -460,7 +460,7 @@ Lemma a_looksub_solve_complete_leaf :
      (whose [Θs] fixes the ρ-IMAGES' scope for the ftv-𝒞 bound — Phase B). *)
   ad_pat_sub_g n NM M Ψsub Θs Rsub Q ->
   Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl Rsub) ->
-  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+  Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
   (* --- the ρ pack (all vacuous at ρ = identity) --- *)
   uskl_rho NM Θ Δρ Ψρ Rsub
     (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) ->
@@ -500,7 +500,7 @@ Lemma a_looksub_solve_complete_leaf :
     a_inc_equiv Θ0 κ κ Θ /\
     (forall α0, α0 `in` dom κc ->
        α0 `notin` add α (dom Θ0 `union` dom Θ `union` ftvar_in_uskl ψa)) /\
-    Θ ⨟ Δ ⊢ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+    Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
     (* PHASE B.  The collected constraints are ψa-RELATIVE — so a Sub-ForallR
        above can strip its fresh binder β from them (β is fresh for ψa, Ξc and
        κ, and is a rigid, hence not in [def_ftv Θ]).  UNLESS the lookup
@@ -598,7 +598,7 @@ Proof.
        this row, so the solve's block IS the conclusion's. *)
     assert (Hsv : solve_sub_ext Θ0 Θw M Pi P0 L
                     (fun κ' Pa =>
-                       Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) Pa)
+                       Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κ' ++ κ) Pa)
                          ⊑ᵖ[ Ψi `union` Ψa ] ψa)).
     { eapply a_solve_sub_complete_var
         with (Δρ := Δρ) (Ψρ := Ψρ) (ψsub := Rsub) (Ψsub := Ψsub)
@@ -710,14 +710,14 @@ Theorem a_looksub_solve_complete_gen :
   Ψi `union` Ψa [=] Ψ' ->                   (* the paper's Ψi,Ψa = Ψ' *)
   delta_def_fresh Δ Θ ->
   flex_apart_deep Θ0 Δρ P0 ψa ->              (* ⇐ THE REPAIR (see the header) *)
-  Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
+  Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
   Ψsub [<=] ftag_in_uskl R' `union` Ψρ `union` Ψa ->
   Ψa [<=] Ψsub ->
   (* subject = the ρ-IMAGE of the paper's (κR')[ψa/α] (ρ = id ⇒ the paper's),
      in the DERIVATION's context Θs (see the header) *)
   ad_pat_sub_g n NM M Ψsub Θs Rsub Q ->
   Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl Rsub) ->
-  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+  Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
   (* --- the ρ pack (all VACUOUS at ρ = identity) --- *)
   uskl_rho NM Θ Δρ Ψρ Rsub
     (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) ->
@@ -773,7 +773,7 @@ Theorem a_looksub_solve_complete_gen :
     a_inc_equiv Θ0 κ κ Θ /\
     (forall α0, α0 `in` dom κc ->
        α0 `notin` add α (dom Θ0 `union` dom Θ `union` ftvar_in_uskl ψa)) /\
-    Θ ⨟ Δ ⊢ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+    Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
     (* PHASE B.  The collected constraints are ψa-RELATIVE — so a Sub-ForallR
        above can strip its fresh binder β from them (β is fresh for ψa, Ξc and
        κ, and is a rigid, hence not in [def_ftv Θ]).  UNLESS the lookup
@@ -859,7 +859,7 @@ Proof.
   all: match goal with
        | Hx : forall x b, binds x b ?S -> binds x b _ |- _ =>
          repeat match goal with
-         | H : _ ⨟ S ⊢ₛᵃ _ ∼ _ |- _ =>
+         | H : _ ⨟ S ⊢ᵃᵈ _ ∼ _ |- _ =>
              let H' := fresh "Hw" in
              pose proof (ad_pat_consis_weaken H _ Hx) as H';
              clear H; rename H' into H
@@ -1082,7 +1082,7 @@ Proof.
     + (* P0 = ∀.P0' : the real row *)
       cbn [msubst_pskl pskl_to_bskl_inh] in Hrefine.
       inversion Hrefine; subst.
-      match goal with Hr : forall α, α `notin` ?Lr -> _ ⨟ _ ⊢ᵣᵃ _ ⊳ _ |- _ =>
+      match goal with Hr : forall α, α `notin` ?Lr -> _ ⨟ _ ⊢ᵣᵃᵈ _ ⊳ _ |- _ =>
         rename Hr into Hrbody; remember Lr as Lr0 eqn:HeqLr; clear HeqLr end.
       inversion HwfP0; subst.
       match goal with Hw : forall α, α `notin` ?Lw -> _ ⨟ _ ⊢ₚₛᵃ _ |- _ =>
@@ -1132,9 +1132,9 @@ Proof.
       assert (Hrfrβ : rho_fresh Δρ ((β ~ abind_tvar) ++ Θ) κ)
         by (apply rho_fresh_weaken_tvar; exact Hrfr).
       assert (Hpreβ : ((β ~ abind_tvar) ++ Θ) ⨟ Δ
-                ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa)
+                ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa)
         by (eapply ad_partial_precise_weaken; [ exact Hpre | exact Hweak ]).
-      assert (Hrefβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣᵃ
+      assert (Hrefβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣᵃᵈ
                 (pskl_to_bskl_inh
                    (msubst_pskl κ (open_pskl_wrt_pskl (ptyp_to_pskl A0)
                                      (pskl_var_f β))))
@@ -1656,7 +1656,7 @@ Proof.
       pose proof (a_wf_pskl_ftv_dom HwfP02) as Hfd.
       clear - Hf Hfd HLav Hdf0; fsetdec. }
     rewrite <- Htr_c in Hrhob.
-    assert (Href2' : Θ ⨟ empty ⊢ᵣᵃ
+    assert (Href2' : Θ ⨟ empty ⊢ᵣᵃᵈ
               (pskl_to_bskl_inh (msubst_pskl (κs1 ++ κc1 ++ κ) P02)) ⊳ Q2)
       by (rewrite Htr_r; exact Href2).
     (* the shield descends with [sss_arrow_r] and then crosses BOTH blocks *)
@@ -1772,7 +1772,7 @@ Proof.
       (forall α0, α0 `in` dom κc ->
          α0 `notin` add α (dom (Ξs1 ++ Ξc1 ++ Θ0) `union` dom Θ
                              `union` ftvar_in_uskl ψa)) /\
-      Θ ⨟ Δ ⊢ (msubst_pskl (κs ++ κc ++ (κs1 ++ κc1 ++ κ)) Pa)
+      Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κs ++ κc ++ (κs1 ++ κc1 ++ κ)) Pa)
         ⊑ᵖ[ (Ψi `union` (Ψ1 ∩ Ψ')) `union` (Ψ2 ∩ Ψ') ] ψa /\
       (M = mode_tc ->
          ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
@@ -2242,12 +2242,12 @@ Proof.
             [ exact Hapart | clear; fsetdec
             | clear - Hβψa; fsetdec ]).
     assert (Hpreβ : ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
-              ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa).
+              ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa).
     { (* the Δ-congruence's set argument is PINNED by a named [assert] —
          inline, its Δ is an evar when the [=] side goal runs and [fsetdec]
          does not terminate *)
       assert (Hp0 : ((β ~ abind_tvar) ++ Θ) ⨟ (Δ `union` singleton β)
-                ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa).
+                ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa).
       { eapply ad_partial_precise_delta_weaken_fresh;
           [ eapply ad_partial_precise_weaken; [ exact Hpre | exact Hweak ]
           | clear - Hβψa; fsetdec
@@ -2260,7 +2260,7 @@ Proof.
                           (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd;
             clear - Hd HβΘ; fsetdec ]. }
       eapply ad_partial_precise_delta_cong; [ exact Hp0 | clear; fsetdec ]. }
-    assert (Hrefβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣᵃ
+    assert (Hrefβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣᵃᵈ
               (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q)
       by (eapply ad_refine_syn_weaken; [ exact Hrefine | exact Hweak ]).
     assert (Hrhoβ : uskl_rho NM ((β ~ abind_tvar) ++ Θ) (add β Δρ) Ψρ'
@@ -2374,7 +2374,7 @@ Proof.
                              `union` dom ((β ~ abind_tvar) ++ Θ)
                              `union` ftvar_in_uskl ψa)) /\
       ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
-        ⊢ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+        ⊢ᵃᵈ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
       (M = mode_tc ->
          ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom κ
@@ -2693,12 +2693,12 @@ Proof.
             [ exact Hapart | clear; fsetdec
             | clear - Hβψa; fsetdec ]).
     assert (Hpreβ : ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
-              ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa).
+              ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa).
     { (* the Δ-congruence's set argument is PINNED by a named [assert] —
          inline, its Δ is an evar when the [=] side goal runs and [fsetdec]
          does not terminate *)
       assert (Hp0 : ((β ~ abind_tvar) ++ Θ) ⨟ (Δ `union` singleton β)
-                ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa).
+                ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa).
       { eapply ad_partial_precise_delta_weaken_fresh;
           [ eapply ad_partial_precise_weaken; [ exact Hpre | exact Hweak ]
           | clear - Hβψa; fsetdec
@@ -2711,7 +2711,7 @@ Proof.
                           (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd;
             clear - Hd HβΘ; fsetdec ]. }
       eapply ad_partial_precise_delta_cong; [ exact Hp0 | clear; fsetdec ]. }
-    assert (Hrefβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣᵃ
+    assert (Hrefβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣᵃᵈ
               (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q)
       by (eapply ad_refine_syn_weaken; [ exact Hrefine | exact Hweak ]).
     assert (Hrhoβ : uskl_rho NM ((β ~ abind_tvar) ++ Θ) (add β Δρ) Ψρ'
@@ -2825,7 +2825,7 @@ Proof.
                              `union` dom ((β ~ abind_tvar) ++ Θ)
                              `union` ftvar_in_uskl ψa)) /\
       ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
-        ⊢ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+        ⊢ᵃᵈ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
       (M = mode_tc ->
          ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom κ
@@ -3077,7 +3077,7 @@ Proof.
       a_inc_equiv Θ0 κ κ Θ /\
       (forall α0, α0 `in` dom κc ->
        α0 `notin` add α (dom Θ0 `union` dom Θ `union` ftvar_in_uskl ψa)) /\
-      Θ ⨟ Δ ⊢ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+      Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
       (M = mode_tc ->
          ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom κ `union` def_ftv Θ
@@ -3174,7 +3174,7 @@ Proof.
       a_inc_equiv Θ0 κ κ Θ /\
       (forall α0, α0 `in` dom κc ->
        α0 `notin` add α (dom Θ0 `union` dom Θ `union` ftvar_in_uskl ψa)) /\
-      Θ ⨟ Δ ⊢ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+      Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
       (M = mode_tc ->
          ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom κ `union` def_ftv Θ
@@ -3313,7 +3313,7 @@ Theorem a_looksub_solve_complete :
   (* ⭕ (2026-08-05) the repair premise [flex_apart_deep Θ0 ∅ P0 ψa] is GONE:
      at Δρ = ∅ it is [fa_clean] at every reachable state, so the corollary
      discharges it internally ([flex_apart_deep_clean]). *)
-  Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
+  Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
   Ψsub [<=] ftag_in_uskl R' `union` Ψa ->
   Ψa [<=] Ψsub ->
   (* subject = (κR')[ψa/α], EXACTLY the paper's form *)
@@ -3321,7 +3321,7 @@ Theorem a_looksub_solve_complete :
     (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) Q ->
   Θ ⨟ empty ⊢ₚₛᵃ
     (uskl_to_pskl (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R'))) ->
-  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+  Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
   (* ⭐ THE AVOID-SET PARAMETER: the SOLVE generates its own block now, and at
      a binder row the witness must be fixed BEFORE that block is picked. *)
   forall L, ftvar_in_aenv Θ0 [<=] L ->
@@ -3344,7 +3344,7 @@ Theorem a_looksub_solve_complete :
     a_inc_equiv Θ0 κ κ Θ /\
     (forall α0, α0 `in` dom κc ->
        α0 `notin` add α (dom Θ0 `union` dom Θ `union` ftvar_in_uskl ψa)) /\
-    Θ ⨟ Δ ⊢ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+    Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
     (* PHASE B.  The collected constraints are ψa-RELATIVE — so a Sub-ForallR
        above can strip its fresh binder β from them (β is fresh for ψa, Ξc and
        κ, and is a rigid, hence not in [def_ftv Θ]).  UNLESS the lookup

@@ -1021,10 +1021,10 @@ Proof.
 Qed.
 
 Lemma ad_pat_consis_weaken : forall Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
   forall Θ',
   (forall x b, binds x b Θ -> binds x b Θ') ->
-  Ψ ⨟ Θ' ⊢ₛᵃ R ∼ Q.
+  Ψ ⨟ Θ' ⊢ᵃᵈ R ∼ Q.
 Proof.
   intros Ψ Θ R Q H; induction H; intros Θ' Hmon.
   - apply ad_pat_consis__unit; auto.
@@ -1072,8 +1072,8 @@ Proof.
 Qed.
 
 Lemma ad_pat_consis_weaken_cons : forall Ψ Θ (e : list (atom * abind)) R Q,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
-  Ψ ⨟ (e ++ Θ) ⊢ₛᵃ R ∼ Q.
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
+  Ψ ⨟ (e ++ Θ) ⊢ᵃᵈ R ∼ Q.
 Proof.
   intros. eapply ad_pat_consis_weaken; eauto;
     try (intros x b Hb; unfold binds; apply in_or_app; auto).

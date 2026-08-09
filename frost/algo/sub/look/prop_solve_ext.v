@@ -790,7 +790,7 @@ Qed.
    definition it looks up: a defined flexible is tvar-ish.)  No new external
    side condition — the fact was already in the derivation. *)
 Lemma ad_pat_consis_mono_subject_wf : forall Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
   forall τ, R = ptyp_to_uskl_syn τ -> mono_ptyp τ ->
   a_wf_ptyp Θ τ.
 Proof.
@@ -1033,11 +1033,11 @@ Definition cv_mono_concl (Θ0 Θ Θw : aenv) (κ : metasubst) (Δ Ψi : atoms)
     (τ : ptyp) (Pi P0 : pskl) (L : atoms) : Prop :=
   solve_ext Θ0 Θw Pi P0 L
     (fun κ' Pa =>
-       Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) Pa) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ)).
+       Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κ' ++ κ) Pa) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ)).
 
 Lemma cv_mono_nil : forall Θ0 Θ Θw κ Δ Ψi τ Pi P0 L Pa,
   Θ0 ⊢ₑ Pi ∼ P0 ⤳ nil ⨾ Pa ->
-  Θ ⨟ Δ ⊢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ) ->
+  Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ) ->
   cv_mono_concl Θ0 Θ Θw κ Δ Ψi τ Pi P0 L.
 Proof.
   intros Θ0 Θ Θw κ Δ Ψi τ Pi P0 L Pa Hs Hq.
@@ -1077,8 +1077,8 @@ Lemma a_solve_eq_cv_mono : forall n Θ0 Θ Θw κ Δ Ψi τ Pi P0,
      ([a_def_chain_rigid_var_inv]). *)
   (a_wf_ptyp Θw τ \/ (exists α0, τ = ptyp_var_f α0 /\ binds α0 abind_tvar Θ)) ->
   delta_def_fresh Δ Θ ->
-  Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ) ->
-  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (ptyp_to_bskl_syn τ) ->
+  Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ) ->
+  Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (ptyp_to_bskl_syn τ) ->
   forall L, ftvar_in_aenv Θ0 [<=] L ->
   cv_mono_concl Θ0 Θ Θw κ Δ Ψi τ Pi P0 L.
 Proof.
@@ -1092,7 +1092,7 @@ Proof.
       as [Hc HΨi].
     pose proof (ad_refine_chain_unfold Hc HwfΘ Hrefine) as Href'.
     simpl in Href'.
-    assert (Hpre_u : Θ ⨟ Δ ⊢ (msubst_pskl κ pskl_unit) ⊑ᵖ[ Ψi ] uskl_unit)
+    assert (Hpre_u : Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ pskl_unit) ⊑ᵖ[ Ψi ] uskl_unit)
       by (simpl; apply ad_ppre__unit; exact HΨi).
     destruct (a_solve_eq_cv_unit (n := S n) (Θ := Θ) (Δ := Δ)
                 Hn HwfΘ HwfΘ0 HwfPi HwfP0 Hκ Hpre_u Href')
@@ -1191,8 +1191,8 @@ Proof.
       simpl in Href'.
       inversion Href'; subst.
       match goal with
-      | Hr1 : _ ⨟ _ ⊢ᵣᵃ pskl_to_bskl_inh (msubst_pskl κ P01) ⊳ _,
-        Hr2 : _ ⨟ _ ⊢ᵣᵃ pskl_to_bskl_inh (msubst_pskl κ P02) ⊳ _ |- _ =>
+      | Hr1 : _ ⨟ _ ⊢ᵣᵃᵈ pskl_to_bskl_inh (msubst_pskl κ P01) ⊳ _,
+        Hr2 : _ ⨟ _ ⊢ᵣᵃᵈ pskl_to_bskl_inh (msubst_pskl κ P02) ⊳ _ |- _ =>
         rename Hr1 into Href1; rename Hr2 into Href2
       end.
       (* ---- branch 1, at [Θ0], avoiding both sources ---- *)
@@ -1235,10 +1235,10 @@ Proof.
         assert (Hin : α0 `in` dom Ξ1) by (clear - Hα0 Hdκa; fsetdec).
         specialize (Hfr1 α0 Hin). clear - Hfr1; fsetdec. }
       cbn [app] in Heqi2, Heqp2.
-      assert (Hp2' : Θ ⨟ Δ ⊢ (msubst_pskl (κa ++ κ) Pi2)
+      assert (Hp2' : Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κa ++ κ) Pi2)
                              ⊑ᵖ[ Ψ2 ] (ptyp_to_uskl_syn τ2))
         by (rewrite Heqi2; exact Hp2).
-      assert (Href2' : Θ ⨟ empty ⊢ᵣᵃ
+      assert (Href2' : Θ ⨟ empty ⊢ᵣᵃᵈ
                 (pskl_to_bskl_inh (msubst_pskl (κa ++ κ) P02))
                 ⊳ (ptyp_to_bskl_syn τ2))
         by (rewrite Heqp2; exact Href2).
@@ -1305,14 +1305,14 @@ Proof.
               [ exact Hc | exact HwfΘw | exact Hdefs | exact Hwfτ' ]).
       simpl in Href'.
       inversion Href'; subst.
-      assert (Hpre' : Θ ⨟ Δ ⊢ msubst_pskl κ (pskl_arrow Pi1 Pi2) ⊑ᵖ[ Ψi ]
+      assert (Hpre' : Θ ⨟ Δ ⊢ᵃᵈ msubst_pskl κ (pskl_arrow Pi1 Pi2) ⊑ᵖ[ Ψi ]
                         (ptyp_to_uskl_syn (ptyp_arrow τ1 τ2)))
         by (simpl; eapply ad_ppre__arrow;
               [ exact Hp1 | exact Hp2 | exact HΨ ]).
       assert (Hcv : cv_mono_concl Θ0 Θ Θw κ Δ Ψi (ptyp_arrow τ1 τ2)
                       (pskl_arrow Pi1 Pi2) P0' L).
       { match goal with
-        | Hin : _ ⨟ _ ⊢ᵣᵃ pskl_to_bskl_inh (msubst_pskl κ P0') ⊳ _ |- _ =>
+        | Hin : _ ⨟ _ ⊢ᵣᵃᵈ pskl_to_bskl_inh (msubst_pskl κ P0') ⊳ _ |- _ =>
           apply (IHn Θ0 Θ Θw κ Δ Ψi (ptyp_arrow τ1 τ2) (pskl_arrow Pi1 Pi2) P0'
                    ltac:(simpl in Hn; simpl; lia)
                    HwfΘ HwfΘ0 HwfΘw Hmon Hdefs HwfPi HwfP0' Hκ
@@ -1443,8 +1443,8 @@ Lemma a_solve_eq_cv_var : forall n Θ0 Θ Θw κ Δ Ψi α Pi P0,
   κ ∷ Θ0 ⊑ Θ ->
   (a_binds_tvar α Θw \/ binds α abind_tvar Θ) ->
   delta_def_fresh Δ Θ ->
-  Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_var_f α) ->
-  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (bskl_var_f α) ->
+  Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_var_f α) ->
+  Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (bskl_var_f α) ->
   forall L, ftvar_in_aenv Θ0 [<=] L ->
   cv_mono_concl Θ0 Θ Θw κ Δ Ψi (ptyp_var_f α) Pi P0 L.
 Proof.
@@ -1469,7 +1469,7 @@ Proof. intros Ψ H; inversion H; subst; auto. Qed.
 
 Lemma ad_ppre_mono_paint_holeg_absurd : forall Θ Δ Ψ P ψ,
   a_wf_aenv Θ ->
-  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ ->
   ψ = uskl_holeg ->
   forall τb, P = ptyp_to_pskl τb -> mono_ptyp τb ->
   False.
@@ -1490,7 +1490,7 @@ Qed.
 
 Lemma ad_refine_mono_paint_hole_rhs_absurd : forall Θ Δr Q' Q,
   a_wf_aenv Θ ->
-  Θ ⨟ Δr ⊢ᵣᵃ Q' ⊳ Q ->
+  Θ ⨟ Δr ⊢ᵣᵃᵈ Q' ⊳ Q ->
   Q = bskl_hole ->
   forall τb, Q' = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
   False.
@@ -1516,23 +1516,23 @@ Lemma a_solve_eq_cv_ghostg : forall Θ0 Θ κ Δ Ψi Pi P0,
   a_wf_aenv Θ -> a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ Pi -> Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   κ ∷ Θ0 ⊑ Θ ->
-  Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] uskl_holeg ->
-  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ bskl_hole ->
+  Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] uskl_holeg ->
+  Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ bskl_hole ->
   (* the block is pinned to [nil]: the only non-absurd row is SE-GhostL,
      which generates nothing, so no κ-extension is needed here *)
   exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ nil ⨾ Pa /\
-             Θ ⨟ Δ ⊢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi ] uskl_holeg.
+             Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi ] uskl_holeg.
 Proof.
   intros Θ0 Θ κ Δ Ψi Pi P0 HwfΘ HwfΘ0 HwfPi HwfP0 Hκ Hpre Hrefine.
   assert (Habs_pre_var : forall v Ψ',
-            Θ ⨟ Δ ⊢ (msubst_pskl κ (pskl_var_f v)) ⊑ᵖ[ Ψ' ] uskl_holeg ->
+            Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ (pskl_var_f v)) ⊑ᵖ[ Ψ' ] uskl_holeg ->
             False).
   { intros v Ψ' Hp. simpl in Hp.
     eapply ad_ppre_mono_paint_holeg_absurd;
       [ exact HwfΘ | exact Hp | reflexivity | reflexivity
       | eapply a_inc_lookup_mono; eauto ]. }
   assert (Habs_ref_var : forall v,
-            Θ ⨟ empty ⊢ᵣᵃ
+            Θ ⨟ empty ⊢ᵣᵃᵈ
               (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f v))) ⊳ bskl_hole ->
             False).
   { intros v Hr. simpl in Hr.
@@ -1567,17 +1567,17 @@ Proof.
       inversion HgP0'; subst.
       * (* unit *)
         match goal with
-        | Hin : _ ⨟ _ ⊢ᵣᵃ pskl_to_bskl_inh (msubst_pskl κ pskl_unit) ⊳ _
+        | Hin : _ ⨟ _ ⊢ᵣᵃᵈ pskl_to_bskl_inh (msubst_pskl κ pskl_unit) ⊳ _
           |- _ => simpl in Hin; inversion Hin
         end.
       * (* var *)
         match goal with
-        | Hin : _ ⨟ _ ⊢ᵣᵃ pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f _)) ⊳ _
+        | Hin : _ ⨟ _ ⊢ᵣᵃᵈ pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f _)) ⊳ _
           |- _ => eapply Habs_ref_var; exact Hin
         end.
       * (* arrow *)
         match goal with
-        | Hin : _ ⨟ _ ⊢ᵣᵃ pskl_to_bskl_inh (msubst_pskl κ (pskl_arrow _ _)) ⊳ _
+        | Hin : _ ⨟ _ ⊢ᵣᵃᵈ pskl_to_bskl_inh (msubst_pskl κ (pskl_arrow _ _)) ⊳ _
           |- _ => simpl in Hin; inversion Hin
         end.
   - (* Pi = ∀◇.Pi': strip; the guarded body dies *)
@@ -1587,17 +1587,17 @@ Proof.
     inversion HgPi'; subst.
     + (* unit *)
       match goal with
-      | Hp' : _ ⨟ _ ⊢ msubst_pskl κ pskl_unit ⊑ᵖ[ _ ] _ |- _ =>
+      | Hp' : _ ⨟ _ ⊢ᵃᵈ msubst_pskl κ pskl_unit ⊑ᵖ[ _ ] _ |- _ =>
           simpl in Hp'; inversion Hp'
       end.
     + (* var *)
       match goal with
-      | Hp' : _ ⨟ _ ⊢ msubst_pskl κ (pskl_var_f _) ⊑ᵖ[ _ ] _ |- _ =>
+      | Hp' : _ ⨟ _ ⊢ᵃᵈ msubst_pskl κ (pskl_var_f _) ⊑ᵖ[ _ ] _ |- _ =>
           eapply Habs_pre_var; exact Hp'
       end.
     + (* arrow *)
       match goal with
-      | Hp' : _ ⨟ _ ⊢ msubst_pskl κ (pskl_arrow _ _) ⊑ᵖ[ _ ] _ |- _ =>
+      | Hp' : _ ⨟ _ ⊢ᵃᵈ msubst_pskl κ (pskl_arrow _ _) ⊑ᵖ[ _ ] _ |- _ =>
           simpl in Hp'; inversion Hp'
       end.
 Qed.
@@ -1653,7 +1653,7 @@ Qed.
 
 Lemma ad_ppre_mono_paint_topholeg_absurd : forall Θ Δ Ψ P ψ,
   a_wf_aenv Θ ->
-  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ ->
   forall ψ0, ψ = uskl_topholeg ψ0 ->
   forall τb, P = ptyp_to_pskl τb -> mono_ptyp τb ->
   False.
@@ -1673,7 +1673,7 @@ Qed.
 
 Lemma ad_refine_mono_paint_tophole_rhs_absurd : forall Θ Δr Q' Q,
   a_wf_aenv Θ ->
-  Θ ⨟ Δr ⊢ᵣᵃ Q' ⊳ Q ->
+  Θ ⨟ Δr ⊢ᵣᵃᵈ Q' ⊳ Q ->
   forall Q0, Q = bskl_tophole Q0 ->
   forall τb, Q' = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
   False.

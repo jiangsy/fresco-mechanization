@@ -17,7 +17,7 @@
     whose MIDDLE link is "a decorated subject's counterpart only mentions the
     subject's own variables and the context's DEFINITIONS":
 
-        Ψ ⨟ Θ ⊢ₛᵃ ψ ∼ Q  →  is_tskl ψ  →  ftv Q ⊆ ftv ψ ∪ def_ftv Θ.
+        Ψ ⨟ Θ ⊢ᵃᵈ ψ ∼ Q  →  is_tskl ψ  →  ftv Q ⊆ ftv ψ ∪ def_ftv Θ.
 
     The sub-side needs the same statement over [ad_pat_sub_g].  It was known
     to fail for [ad_pat_sub_g__ghost] (subject ◇, target an ARBITRARY

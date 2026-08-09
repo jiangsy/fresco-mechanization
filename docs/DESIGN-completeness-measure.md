@@ -62,7 +62,7 @@ recurses on the head; a definition `γ̂ ≔ τ` has `τ` well-formed in the *ta
 |---|---|---|
 | assignment | `a_assign F Θ₀ Ξ α P Θ₁` = `Θ₀ ⊲[F][Ξ] α ≔ P ⊣ Θ₁` | `Θ₀ ∣ Ξ ⊲ α̂ ≔ P ⊣ Θ₁` |
 | unification | `a_unify F Θ₀ α β Θ₁` = `Θ₀ ⊲[F] α ≈ᵘ β ⊣ Θ₁` | `Θ₀ ⊲ α̂ ≈ β̂ ⊣ Θ₁` |
-| consistency | `a_consis F Δ₁ Δ₂ Θ₀ P₀ P Q Θ₁` = `Θ₀ ⊢ₐ[F][Δ₁∣Δ₂∣P₀] P ≈ Q ⊣ Θ₁` | `Θ₀ ⊢[Δ₁∣Δ₂][P₀] P ≈ Q ⊣ Θ₁` |
+| consistency | `a_consis F Δ₁ Δ₂ Θ₀ P₀ P Q Θ₁` = `Θ₀ ⊢ᵃ[F][Δ₁∣Δ₂∣P₀] P ≈ Q ⊣ Θ₁` | `Θ₀ ⊢[Δ₁∣Δ₂][P₀] P ≈ Q ⊣ Θ₁` |
 
 `F` (the used-name set) is a prose-completion and is **measure-irrelevant**: the
 completeness statement quantifies over `F` universally in the conclusion
@@ -393,8 +393,8 @@ exists, and so reuses the *existing* `Combined Scheme`.
 
 * **(OPT)** `a_assign_unify_consis_optimal` — by mutual induction on the
   algorithmic derivation (`a_assign_unify_consis_mutind`, `prop_consis_sound.v:2486`).
-  *Given* `Θ₀ ⊢ₐ[…] P ≈ Q₁ ⊣ Θ₁` and *any* solution `(κ, Θ, Q)`, produce
-  `ζ : Θ₁ ≤[ζ] Θ`, `a_inc_equiv Θ₀ κ ζ Θ`, and `Θ ⨟ Δ₁∪Δ₂ ⊢ₚᵣᵃ ζ Q₁ ⊑ Q`.
+  *Given* `Θ₀ ⊢ᵃ[…] P ≈ Q₁ ⊣ Θ₁` and *any* solution `(κ, Θ, Q)`, produce
+  `ζ : Θ₁ ≤[ζ] Θ`, `a_inc_equiv Θ₀ κ ζ Θ`, and `Θ ⨟ Δ₁∪Δ₂ ⊢ₚᵣᵃᵈ ζ Q₁ ⊑ Q`.
   Every back-edge premise (`Flex-Flex-Assign`, `Assign-Assign`) *is* an
   algorithmic consistency derivation, so the IH is right there.  **No measure.**
 * **(EX)** `a_assign_unify_consis_complete` — by well-founded induction on `μ`.
@@ -456,15 +456,15 @@ Definition consis_complete_post
   (* hypotheses: (κ;Θ;Q) is a solution to (Δ1;Δ2;Ψ;Θ0;P0;⌊S⌋ˢ) *)
   Θ0 ≤[ κ ] Θ ->
   Ψ ⨟ Θ ⊨ₛᵃ (msubst_uskl κ S) ≈ Q ->                       (* decl consistency *)
-  Θ ⨟ Δ1 ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->  (* Δ1 refinement   *)
-  Θ ⨟ Δ2 ⊢ᵣᵃ ... (msubst_pskl κ ⌊S⌋ˢ) ⊳ Q ->               (* Δ2 refinement   *)
+  Θ ⨟ Δ1 ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->  (* Δ1 refinement   *)
+  Θ ⨟ Δ2 ⊢ᵣᵃᵈ ... (msubst_pskl κ ⌊S⌋ˢ) ⊳ Q ->               (* Δ2 refinement   *)
   no_flex_dep (Δ1 ∪ Δ2) Θ -> flex_above_free (Δ1 ∪ Δ2) Θ ->
   (* conclusion, :2246-2255 *)
   exists Θ1 P1 κ1,
-    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] ⌊S⌋ˢ ≈ P1 ⊣ Θ1 /\
+    Θ0 ⊢ᵃ[ F ][ Δ1 | Δ2 | P0 ] ⌊S⌋ˢ ≈ P1 ⊣ Θ1 /\
     Θ1 ≤[ κ1 ] Θ /\
     a_inc_equiv Θ0 κ κ1 Θ /\
-    Θ ⨟ (Δ1 ∪ Δ2) ⊢ₚᵣᵃ (msubst_pskl κ1 P1) ⊑ (bskl_to_pskl Q).
+    Θ ⨟ (Δ1 ∪ Δ2) ⊢ₚᵣᵃᵈ (msubst_pskl κ1 P1) ⊑ (bskl_to_pskl Q).
 
 Definition unify_complete_post (F : atoms) (Θ0 : aenv) (α β : atom)
     (κ : metasubst) (Θ : aenv) : Prop :=

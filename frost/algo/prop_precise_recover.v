@@ -13,7 +13,7 @@
     [thm:complete-consistency]'s OPTIMALITY half concludes, for a consistency
     node, a PRECISION statement
 
-        Θ ⨟ (Δ₁ ∪ Δ₂) ⊢ₚᵣᵃ (msubst_bskl ζ Qt) ⊑ (bskl_to_pskl Qb)
+        Θ ⨟ (Δ₁ ∪ Δ₂) ⊢ₚᵣᵃᵈ (msubst_bskl ζ Qt) ⊑ (bskl_to_pskl Qb)
 
     (see [consis_optimal_post], algo/prop_consis_complete.v:189).  For the
     three flexible rules the algorithmic OUTPUT painting is [Qt = α̂] (a
@@ -32,7 +32,7 @@
     so both the algorithm's ζ-solved output [ζα̂] and the competing solution's
     join [Qb] are monotype paintings, and PRECISION between monotype INHERITED
     paintings collapses (via [ptyp_to_bskl_inh_syn_eq]) to the plain
-    refinement [⊢ᵣᵃ syn(ζα̂) ⊳ syn(Qb)].  The whole thing reduces to a TYPE
+    refinement [⊢ᵣᵃᵈ syn(ζα̂) ⊳ syn(Qb)].  The whole thing reduces to a TYPE
     EQUIVALENCE [Θ ⊢ ζα̂ ≡ᵗ Qb], recovered as follows:
 
       * the COMPETING solution's join / Δ-refinement, run through the mono
@@ -98,10 +98,10 @@ Lemma tyequiv_mono_refine_syn : forall Θ Δ A A',
   mono_ptyp A -> mono_ptyp A' ->
   Θ ⊢ A ≡ᵗ A' ->
   (forall α, α `in` ftvar_in_ptyp A -> a_binds_tvar α Θ) ->
-  Θ ⨟ Δ ⊢ᵣᵃ (ptyp_to_bskl_syn A) ⊳ (ptyp_to_bskl_syn A').
+  Θ ⨟ Δ ⊢ᵣᵃᵈ (ptyp_to_bskl_syn A) ⊳ (ptyp_to_bskl_syn A').
 Proof.
   intros Θ Δ A A' Hwf HmA HmB Heq Hvis.
-  assert (Hc : empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A'))
+  assert (Hc : empty ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A'))
     by (apply tyequiv_mono_consis; auto).
   eapply (ad_refine_syn_f_forget (F := empty)).
   replace (ptyp_to_bskl_syn A)
@@ -125,7 +125,7 @@ Lemma consis_precise_core : forall Θ Δ ζ α Qb A,
   mono_ptyp A ->
   Qb = ptyp_to_bskl_syn A ->
   Θ ⊢ (msubst_lookup ζ α) ≡ᵗ A ->
-  Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb).
+  Θ ⨟ Δ ⊢ₚᵣᵃᵈ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb).
 Proof.
   intros Θ Δ ζ α Qb A Hwf HmA Hvis HmC HQb Heq.
   unfold ad_precise.
@@ -246,7 +246,7 @@ Lemma consis_precise_close : forall Θ0 Θ1 Θ Δ κ κ1 ζ α Qb A,
   mono_ptyp A ->
   Qb = ptyp_to_bskl_syn A ->
   Θ ⊢ (msubst_lookup κ α) ≡ᵗ A ->
-  Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb).
+  Θ ⨟ Δ ⊢ₚᵣᵃᵈ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb).
 Proof.
   intros Θ0 Θ1 Θ Δ κ κ1 ζ α Qb A
          Hwf Hflex HbΘ1 HζΘ Hwf1 Hie Hdom Hid HmC HQb HeqκαC.
@@ -275,8 +275,8 @@ Lemma consis_precise_via_join : forall Θ0 Θ1 Θ Δ κ κ1 ζ α Qb,
   a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ ->
   α `in` dom κ1 ->
   msubst_lookup κ1 α = ptyp_var_f α ->
-  empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κ (pskl_var_f α))) ∼ Qb ->
-  Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb).
+  empty ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl (msubst_pskl κ (pskl_var_f α))) ∼ Qb ->
+  Θ ⨟ Δ ⊢ₚᵣᵃᵈ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb).
 Proof.
   intros Θ0 Θ1 Θ Δ κ κ1 ζ α Qb
          Hwf Hflex HκΘ HbΘ1 HζΘ Hwf1 Hie Hdom Hid Hjoin.
@@ -303,7 +303,7 @@ Lemma consis_precise_via_refine : forall Θ0 Θ1 Θ Δ Δ1 κ κ1 ζ α Qb,
   α `in` dom κ1 ->
   msubst_lookup κ1 α = ptyp_var_f α ->
   ad_refine_syn_f Δ1 Θ Δ1 (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f α))) Qb ->
-  Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb).
+  Θ ⨟ Δ ⊢ₚᵣᵃᵈ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb).
 Proof.
   intros Θ0 Θ1 Θ Δ Δ1 κ κ1 ζ α Qb
          Hwf Hflex HκΘ HbΘ1 HζΘ Hwf1 Hie Hdom Hid Hrs.

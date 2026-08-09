@@ -7,7 +7,7 @@
     THE SITUATION.  [a_sub_complete] (thm:complete-subtyping) takes its
     declarative join as [ad_pat_sub_gv] — the LEAF-VALID mirror, which carries
     at every consistency leaf the subject-refinement datum
-    [Θ ⨟ ∅ ⊢ᵣₚᵃ ⌊R⌋ˢ ⊳ ⌊Q⌋].  That is the third solution condition of the
+    [Θ ⨟ ∅ ⊢ᵣₚᵃᵈ ⌊R⌋ˢ ⊳ ⌊Q⌋].  That is the third solution condition of the
     paper's own AUGMENTED thm:complete-consistency (consistency-proofs.tex:
     2230-2242), which [a_consis_complete] also carries; subtyping needs it
     at the LEAVES rather than at the root because at the root it is vacuous
@@ -75,7 +75,7 @@ Qed.
 (** ⭐ Consistency's ∀-row puts the rigid [α] into **Θ**, so the ghost's fill
     [ad_pat_consis__hole] — which demands the fill Θ-well-scoped — may pick
     [α] itself.  This is the capture the refinement judgement forbids. *)
-Lemma cap_consis : forall Θ, empty ⨟ Θ ⊢ₛᵃ capR ∼ capQ.
+Lemma cap_consis : forall Θ, empty ⨟ Θ ⊢ᵃᵈ capR ∼ capQ.
 Proof.
   intros Θ. apply ad_pat_consis__forall_syn with (L := empty).
   intros α Hα. cbn.
@@ -83,7 +83,7 @@ Proof.
   apply a_wf_pskl__var. right. unfold a_binds_tvar. eauto.
 Qed.
 
-Lemma cap_plain : forall NM Θ, empty ⨟ Θ ⊢ₛᵃ[ NM | mode_ti ] capR ⩽ capQ.
+Lemma cap_plain : forall NM Θ, empty ⨟ Θ ⊢ᵃᵈ[ NM | mode_ti ] capR ⩽ capQ.
 Proof.
   intros NM Θ. apply ad_pat_sub__infer;
     [ reflexivity | apply cap_consis | apply cap_is_sskl ].
@@ -98,7 +98,7 @@ Qed.
     that does not already contain the rigid refutes the fill. *)
 Lemma cap_hole_no_fill : forall Θ α,
   α `notin` dom Θ ->
-  ~ (Θ ⨟ (add α empty) ⊢ᵣₚᵃ pskl_hole ⊳ (pskl_var_f α)).
+  ~ (Θ ⨟ (add α empty) ⊢ᵣₚᵃᵈ pskl_hole ⊳ (pskl_var_f α)).
 Proof.
   intros Θ α Hα H. inversion H; subst.
   - (* __hole : the fill would have to be well-scoped in Θ alone *)
@@ -113,7 +113,7 @@ Proof.
 Qed.
 
 Lemma cap_no_refine : forall Θ,
-  ~ (Θ ⨟ empty ⊢ᵣₚᵃ capP ⊳ (bskl_to_pskl capQ)).
+  ~ (Θ ⨟ empty ⊢ᵣₚᵃᵈ capP ⊳ (bskl_to_pskl capQ)).
 Proof.
   intros Θ H. unfold capP, capQ in H. cbn in H.
   inversion H; subst.
@@ -140,7 +140,7 @@ Qed.
 (*                                                                        *)
 (*  ⭐ UPDATED 2026-08-07.  When [ad_pat]'s base rows embedded the PLAIN    *)
 (*  [ad_pat_sub], this section derived                                     *)
-(*      x : ∀X.◇  ⊢ᵃ[TI]  x  ⇨  ∀ˢX.X                                      *)
+(*      x : ∀X.◇  ⊢ₛᵃᵈ[TI]  x  ⦂  ∀ˢX.X                                      *)
 (*  by [P-Var] on §1's plain join — a judgement thm:complete-skeleton-      *)
 (*  inference could say NOTHING about, since §2 refutes its leaf datum.    *)
 (*  The rules now embed [ad_pat_sub_v], so the same derivation is REJECTED  *)
@@ -151,7 +151,7 @@ Qed.
 
 (** §3a — [P-Var] can no longer reach the capture configuration. *)
 Lemma cap_not_reachable : forall x,
-  ~ (((x ~ abind_var_skl capP) ++ nil) ⊢ᵃ[ mode_ti ] (exp_var_f x) ⇨ capQ).
+  ~ (((x ~ abind_var_skl capP) ++ nil) ⊢ₛᵃᵈ[ mode_ti ] (exp_var_f x) ⦂ capQ).
 Proof.
   intros x H. inversion H; subst.
   (* the singleton context pins the bound skeleton to [capP] *)
@@ -174,7 +174,7 @@ Lemma cap_entry_wf : forall x,
 Proof. intros x. split; [ cbn; left; reflexivity | reflexivity ]. Qed.
 
 Lemma cap_var_plain_join : forall x,
-  empty ⨟ ((x ~ abind_var_skl capP) ++ nil) ⊢ₛᵃ[ a_sub_mode_sk | mode_ti ]
+  empty ⨟ ((x ~ abind_var_skl capP) ++ nil) ⊢ᵃᵈ[ a_sub_mode_sk | mode_ti ]
     (bskl_to_uskl (pskl_to_bskl_syn capP)) ⩽ capQ.
 Proof.
   intros x. cbn [pskl_to_bskl_syn bskl_to_uskl].

@@ -3,7 +3,7 @@
 
     On the CONSISTENCY side,
 
-        Ψs ⨟ Θ ⊢ₛᵃ ψ ∼ Q  →  is_tskl ψ  →  bskl_monoish Q
+        Ψs ⨟ Θ ⊢ᵃᵈ ψ ∼ Q  →  is_tskl ψ  →  bskl_monoish Q
           →  Ψs = ∅  ∧  ψ is a mono PAINT      ([ad_pat_consis_monoish_counterpart])
 
     holds, and it is load-bearing — it is how P6-Cv reads the counterpart

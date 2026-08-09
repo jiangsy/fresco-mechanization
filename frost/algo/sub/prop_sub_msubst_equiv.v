@@ -896,8 +896,8 @@ Lemma ad_pat_consis_mono_row_subject : forall Θ τ1 τ2 Ψ Q,
   a_wf_ptyp Θ τ1 -> a_wf_ptyp Θ τ2 ->
   Θ ⊢ τ1 ≡ᵗ τ2 ->
   a_wf_aenv Θ ->
-  Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn τ2) ∼ Q ->
-  Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn τ1) ∼ Q.
+  Ψ ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn τ2) ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn τ1) ∼ Q.
 Proof.
   intros Θ τ1 τ2 Ψ Q Hm1 Hm2 Hw1 Hw2 Ht Hwf Hc.
   assert (Heq : Θ ⊢ (ptyp_to_uskl_syn τ2) ≡ᵘ (ptyp_to_uskl_syn τ1))
@@ -913,10 +913,10 @@ Proof.
 Qed.
 
 Lemma ad_pat_consis_tyequiv_subject : forall Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
   a_wf_aenv Θ ->
   forall T, Θ ⊢ T ≡ᵘ R ->
-  Ψ ⨟ Θ ⊢ₛᵃ T ∼ Q.
+  Ψ ⨟ Θ ⊢ᵃᵈ T ∼ Q.
 Proof.
   intros Ψ Θ R Q Hc; induction Hc; intros Hwf T Htyeq.
   - (* __unit *)
@@ -1246,8 +1246,8 @@ Lemma ad_pat_consis_paint_skl_transport : forall Θ A B,
   forall Θ', a_wf_aenv Θ' ->
   (forall x b, binds x b Θ -> binds x b Θ') ->
   forall Ψ Q,
-  Ψ ⨟ Θ' ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ Q ->
-  Ψ ⨟ Θ' ⊢ₛᵃ (ptyp_to_uskl_syn B) ∼ Q.
+  Ψ ⨟ Θ' ⊢ᵃᵈ (ptyp_to_uskl_syn A) ∼ Q ->
+  Ψ ⨟ Θ' ⊢ᵃᵈ (ptyp_to_uskl_syn B) ∼ Q.
 Proof.
   intros Θ A B Heq Θ' Hwf' Hmon Ψ Q Hc.
   pose proof (a_tyequiv_pskl Heq) as Hs.

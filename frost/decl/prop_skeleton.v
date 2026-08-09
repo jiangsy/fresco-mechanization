@@ -383,9 +383,9 @@ Proof.
 Qed.
 
 Lemma d_pat_subst_var : forall m Γ e Q,
-    Γ ⊢[ m ] e ⇨ Q ->
+    Γ ⊢ₛ[ m ] e ⦂ Q ->
     forall x y d, uniq Γ -> binds x d Γ -> binds y d Γ ->
-    Γ ⊢[ m ] (subst_exp_in_exp (exp_var_f y) x e) ⇨ Q.
+    Γ ⊢ₛ[ m ] (subst_exp_in_exp (exp_var_f y) x e) ⦂ Q.
 Proof.
   intros m Γ e Q H. induction H; intros x0 y0 d0 Huniq Hbx Hby; simpl.
   - apply d_pat__unit. exact H.

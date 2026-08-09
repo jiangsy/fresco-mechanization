@@ -722,7 +722,7 @@ whatever actually discharges the binder rows.
 | `ad_pat_sub_v` | `def_decl_algo_sub_hyg.v` (Definition) | — | `∃n, _gv` |
 
 `_g` and `_gv` differ in **four** premises across three rows (`__infer`,
-`__check`, `__univ_ghost_r` gain a `⊢ᵣₚᵃ` premise; `__arrow` gains one on the
+`__check`, `__univ_ghost_r` gain a `⊢ᵣₚᵃᵈ` premise; `__arrow` gains one on the
 domain).  The other eight rows are character-for-character identical — 113
 lines duplicated in `def_decl_algo_sub_hyg.v` alone, and ~560 lines of rule
 text across the five mirrors.
@@ -756,7 +756,7 @@ Two options, both **C**:
 - **(C-cheap) Parameterise the leaf datum.**  Replace `_g` and `_gv` with one
   inductive taking a `Prop`-valued flag, e.g.
   `ad_pat_sub_h (leaf : bool) : nat -> … -> Prop`, whose three leaf rows carry
-  `leaf = true -> Θ ⨟ empty ⊢ᵣₚᵃ … ⊳ …`.  Then `_g := _h false`,
+  `leaf = true -> Θ ⨟ empty ⊢ᵣₚᵃᵈ … ⊳ …`.  Then `_g := _h false`,
   `_gv := _h true`, `_gv_forget` becomes a one-line monotonicity lemma, and the
   25 duplicated transports collapse to 25 single lemmas generic in `leaf`.
   **Risk:** every `induction H` on `_g`/`_gv` in
@@ -1039,7 +1039,7 @@ itself* uses `T` for a `uskl` and `B` for a `pskl`:
 ```coq
 | ad_pat_sub_g__check : forall n Ψ Θ T B,        (* T : uskl, B : pskl *)
     guarded_uskl T -> guarded_pskl B ->
-    Ψ ⨟ Θ ⊢ₛᵃ T ∼ (pskl_to_bskl_inh B) -> …
+    Ψ ⨟ Θ ⊢ᵃᵈ T ∼ (pskl_to_bskl_inh B) -> …
 ```
 
 Tree-wide idiom counts against the convention:

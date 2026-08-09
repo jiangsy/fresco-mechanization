@@ -14,7 +14,7 @@
       in [Θlib].
 
     Each test constructs the full algorithmic derivation
-    [Θlib ⊢ₐ[TI;□] e ⦂ B ⊣ Θ'] — with the CONCRETE result type and
+    [Θlib ⊢ᵃ[TI;□] e ⦂ B ⊣ Θ'] — with the CONCRETE result type and
     output context, so the tests also pin down what the algorithm
     computes, not just acceptance.  Rejected examples (A8, C1a, E2a, …)
     are not testable this way (non-derivability needs a decidability
@@ -237,13 +237,13 @@ Ltac crush_uniq :=
 (* ===================================================================== *)
 
 (** Skeleton inference of a [σ_id]-typed variable in checking mode with
-    no input skeleton: [Θ ⊢ₐ[TC;□] x ⇨ ∀◇(□→□) ⊣ Θ]
+    no input skeleton: [Θ ⊢ₛᵃ[TC;□] x ⦂ ∀◇(□→□) ⊣ Θ]
     (ForallL instantiates [a := □], then UnivGhostR guards the result). *)
 Lemma pat_var_sigid : forall Θ x,
   uniq Θ ->
   binds x (abind_var_typ σ_id) Θ ->
-  Θ ⊢ₐ[ mode_tc ; pskl_hole ] (exp_var_f x)
-    ⇨ (pskl_tophole (pskl_arrow pskl_hole pskl_hole)) ⊣ Θ.
+  Θ ⊢ₛᵃ[ mode_tc ; pskl_hole ] (exp_var_f x)
+    ⦂ (pskl_tophole (pskl_arrow pskl_hole pskl_hole)) ⊣ Θ.
 Proof.
   intros Θ x Hu Hb.
   eapply a_pat__var; [ exact Hb | ].
@@ -346,7 +346,7 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_A1 :
-  Θlib ⊢ₐ[ mode_ti ; pskl_hole ]
+  Θlib ⊢ᵃ[ mode_ti ; pskl_hole ]
     (exp_abs (exp_abs (exp_var_b 0)))
     ⦂ (ptyp_arrow (ptyp_var_f fa)
         (ptyp_arrow (ptyp_var_f fb) (ptyp_var_f fb)))
@@ -387,13 +387,13 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_A5 :
-  Θlib ⊢ₐ[ mode_ti ; pskl_hole ]
+  Θlib ⊢ᵃ[ mode_ti ; pskl_hole ]
     (exp_app (exp_var_f x_id) (exp_var_f x_auto))
     ⦂ σ_auto ⊣ Θlib.
 Proof.
   eapply a_typing__app with (A := σ_auto)
     (P := pskl_tophole (ptyp_to_pskl σ_auto)) (Θ2 := Θlib).
-  - (* auto ⇨[TC;□] ∀◇(σ_auto's skeleton) *)
+  - (* auto ⦂[TC;□] ∀◇(σ_auto's skeleton) *)
     eapply a_pat__var; [ crush_binds | ].
     apply a_sub__univ_ghost_r.
     unfold σ_auto, σ_id; simpl. crush_lc.
@@ -456,13 +456,13 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_A10b :
-  Θlib ⊢ₐ[ mode_ti ; pskl_hole ]
+  Θlib ⊢ᵃ[ mode_ti ; pskl_hole ]
     (exp_app (exp_var_f x_poly) (exp_abs (exp_var_b 0)))
     ⦂ σ_prodIB ⊣ Θlib.
 Proof.
   eapply a_typing__app with (A := σ_id)
     (P := pskl_tophole (pskl_arrow pskl_hole pskl_hole)) (Θ2 := Θlib).
-  - (* λx.x ⇨[TC;□] ∀◇(□→□) *)
+  - (* λx.x ⦂[TC;□] ∀◇(□→□) *)
     eapply a_pat__abs_check with (L := dom Θlib `union` singleton fa `union` singleton fb) (Ξ := nil) (Θ1 := Θlib).
     + constructor.
     + intros x Hx. simpl_open.
@@ -513,7 +513,7 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_A2 :
-  Θlib ⊢ₐ[ mode_ti ; pskl_hole ]
+  Θlib ⊢ᵃ[ mode_ti ; pskl_hole ]
     (exp_app (exp_var_f x_choose) (exp_var_f x_id))
     ⦂ (ptyp_arrow (ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb))
                   (ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb)))
@@ -524,7 +524,7 @@ Proof.
     with (A := ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb))
          (P := pskl_tophole (pskl_arrow pskl_hole pskl_hole))
          (Θ2 := (fa ~ abind_flex_mono) ++ (fb ~ abind_flex_mono) ++ Θlib).
-  - (* id ⇨[TC;□] ∀◇(□→□) *)
+  - (* id ⦂[TC;□] ∀◇(□→□) *)
     apply pat_var_sigid; [ crush_uniq | crush_binds ].
   - (* choose ⦂[FN TI; ∀◇(□→□) → □]  (α̂→β̂) → (α̂→β̂) → α̂→β̂ *)
     eapply a_typing__var; [ crush_binds | ].
@@ -612,7 +612,7 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_A4 :
-  Θlib ⊢ₐ[ mode_ti ; pskl_hole ]
+  Θlib ⊢ᵃ[ mode_ti ; pskl_hole ]
     (exp_abs_anno σ_id (exp_app (exp_var_b 0) (exp_var_b 0)))
     ⦂ (ptyp_arrow σ_id (ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb)))
     ⊣ ((fa ~ abind_flex_mono_def (ptyp_var_f fb))
@@ -636,7 +636,7 @@ Proof.
            (P := pskl_tophole (pskl_arrow pskl_hole pskl_hole))
            (Θ2 := (fa ~ abind_flex_mono) ++ (fb ~ abind_flex_mono)
                   ++ (x ~ abind_var_typ σ_id) ++ Θlib).
-    + (* x ⇨[TC;□] ∀◇(□→□) *)
+    + (* x ⦂[TC;□] ∀◇(□→□) *)
       apply pat_var_sigid; [ crush_uniq | crush_binds ].
     + (* x ⦂[FN TI; ∀◇(□→□) → □]  (α̂→β̂) → α̂→β̂ *)
       eapply a_typing__var; [ crush_binds | ].
@@ -726,13 +726,13 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_A10a :
-  Θlib ⊢ₐ[ mode_ti ; pskl_hole ]
+  Θlib ⊢ᵃ[ mode_ti ; pskl_hole ]
     (exp_app (exp_var_f x_poly) (exp_var_f x_id))
     ⦂ σ_prodIB ⊣ Θlib.
 Proof.
   eapply a_typing__app with (A := σ_id)
     (P := pskl_tophole (pskl_arrow pskl_hole pskl_hole)) (Θ2 := Θlib).
-  - (* id ⇨[TC;□] ∀◇(□→□) *)
+  - (* id ⦂[TC;□] ∀◇(□→□) *)
     apply pat_var_sigid; [ crush_uniq | crush_binds ].
   - (* poly ⦂[FN TI; ∀◇(□→□) → □]  σ_id → σ_prodIB *)
     eapply a_typing__var; [ crush_binds | ].
@@ -751,7 +751,7 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_C2 :
-  Θlib ⊢ₐ[ mode_ti ; pskl_hole ]
+  Θlib ⊢ᵃ[ mode_ti ; pskl_hole ]
     (exp_app (exp_var_f x_r) (exp_abs (exp_abs (exp_var_b 0))))
     ⦂ tInt ⊣ Θlib.
 Proof.
@@ -760,7 +760,7 @@ Proof.
          (P := pskl_tophole (pskl_arrow pskl_hole
                  (pskl_tophole (pskl_arrow pskl_hole pskl_hole))))
          (Θ2 := Θlib).
-  - (* λx.λy.y ⇨[TC;□] ∀◇(□ → ∀◇(□→□)) *)
+  - (* λx.λy.y ⦂[TC;□] ∀◇(□ → ∀◇(□→□)) *)
     eapply a_pat__abs_check with (L := dom Θlib `union` singleton fa `union` singleton fb) (Ξ := nil) (Θ1 := Θlib).
     + constructor.
     + intros x Hx. simpl_open.
@@ -849,7 +849,7 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_E2b :
-  Θlib ⊢ₐ[ mode_ti ; pskl_hole ]
+  Θlib ⊢ᵃ[ mode_ti ; pskl_hole ]
     (exp_anno (exp_abs (exp_app (exp_var_f x_poly) (exp_var_b 0)))
               (ptyp_arrow σ_id σ_prodIB))
     ⦂ (ptyp_arrow σ_id σ_prodIB) ⊣ Θlib.
@@ -871,7 +871,7 @@ Proof.
         with (A := σ_id)
              (P := pskl_tophole (pskl_arrow pskl_hole pskl_hole))
              (Θ2 := (x ~ abind_var_typ σ_id) ++ Θlib).
-      * (* x ⇨[TC;□] ∀◇(□→□) *)
+      * (* x ⦂[TC;□] ∀◇(□→□) *)
         apply pat_var_sigid; [ crush_uniq | crush_binds ].
       * (* poly ⦂[FN TC; ∀◇(□→□) → skel σ_prodIB] *)
         eapply a_typing__var; [ crush_binds | ].

@@ -71,9 +71,9 @@ Proof.
 Qed.
 
 Lemma ad_pat_consis_isub : forall Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
   forall Θ', Θ ⊴ Θ' ->
-  Ψ ⨟ Θ' ⊢ₛᵃ R ∼ Q.
+  Ψ ⨟ Θ' ⊢ᵃᵈ R ∼ Q.
 Proof.
   intros Ψ Θ R Q H; induction H; intros Θ' Hle.
   - apply ad_pat_consis__unit; auto.
@@ -99,9 +99,9 @@ Proof.
 Qed.
 
 Lemma ad_refine_syn_isub : forall Θ Δ Q Q',
-  Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ Q' ->
+  Θ ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ Q' ->
   forall Θ', Θ ⊴ Θ' ->
-  Θ' ⨟ Δ ⊢ᵣᵃ Q ⊳ Q'.
+  Θ' ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ Q'.
 Proof.
   intros Θ Δ Q Q' H; induction H; intros Θ' Hle.
   - apply ad_refine_syn__unit.
@@ -119,9 +119,9 @@ Proof.
 Qed.
 
 Lemma ad_refine_pskl_isub : forall Θ Δ P P',
-  Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ P' ->
+  Θ ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ P' ->
   forall Θ', Θ ⊴ Θ' ->
-  Θ' ⨟ Δ ⊢ᵣₚᵃ P ⊳ P'.
+  Θ' ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ P'.
 Proof.
   intros Θ Δ P P' H; induction H; intros Θ' Hle.
   - apply ad_refine_pskl__unit.
@@ -414,7 +414,7 @@ Qed.
     the output; the invariant survives because a fresh [x] can be chosen
     away from any looked-up name. *)
 Lemma a_pat_tm_le : forall m Θ0 P0 e P Θ1,
-  Θ0 ⊢ₐ[ m ; P0 ] e ⇨ P ⊣ Θ1 -> aenv_tm_le Θ0 Θ1.
+  Θ0 ⊢ₛᵃ[ m ; P0 ] e ⦂ P ⊣ Θ1 -> aenv_tm_le Θ0 Θ1.
 Proof.
   intros m Θ0 P0 e P Θ1 H; induction H.
   - (* unit *) eapply a_sub_tm_le; eassumption.
@@ -461,7 +461,7 @@ Qed.
 (** Type inference runs — same shapes; the Check rows additionally drop
     the peeled binder and the pending suffix from the OUTPUT. *)
 Lemma a_typing_tm_le : forall m Θ0 P0 e A Θ1,
-  Θ0 ⊢ₐ[ m ; P0 ] e ⦂ A ⊣ Θ1 -> aenv_tm_le Θ0 Θ1.
+  Θ0 ⊢ᵃ[ m ; P0 ] e ⦂ A ⊣ Θ1 -> aenv_tm_le Θ0 Θ1.
 Proof.
   intros m Θ0 P0 e A Θ1 H; induction H.
   - (* unit *) eapply a_sub_tm_le; eassumption.

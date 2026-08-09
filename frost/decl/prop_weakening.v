@@ -205,14 +205,14 @@ Ltac wk_cof :=
 (** Apply the direct IH for subterm [ex]. *)
 Ltac wk_dir ex :=
   match goal with
-  | IH : forall _ _ : list (atom * dbind), _ = _ -> _ ⊢[ _ ] ex ⇨ _ |- _ => apply IH; reflexivity
+  | IH : forall _ _ : list (atom * dbind), _ = _ -> _ ⊢ₛ[ _ ] ex ⦂ _ |- _ => apply IH; reflexivity
   | IH : forall _ _ : list (atom * dbind), _ = _ -> _ ⊢[ _ ] ex ⦂ _ |- _ => apply IH; reflexivity
   end.
 
 (** [d_pat] is self-contained, so its weakening is a standalone induction. *)
 Lemma d_pat_weakening_mid : forall Γ2 m Γ e Q,
-    Γ ⊢[ m ] e ⇨ Q ->
-    forall Γ1 Γ3, Γ = Γ1 ++ Γ3 -> (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⇨ Q.
+    Γ ⊢ₛ[ m ] e ⦂ Q ->
+    forall Γ1 Γ3, Γ = Γ1 ++ Γ3 -> (Γ1 ++ Γ2 ++ Γ3) ⊢ₛ[ m ] e ⦂ Q.
 Proof.
   intros Γ2 m Γ e Q H. induction H; intros Γ1 Γ3 Heq; subst.
   (* Paper P-Unit/P-Var/P-Anno now embed the skeleton-subtyping premise. *)
@@ -240,13 +240,13 @@ Proof.
 Qed.
 
 Lemma d_pat_weakening : forall Γ1 Γ2 Γ3 m e Q,
-    (Γ1 ++ Γ3) ⊢[ m ] e ⇨ Q ->
-    (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⇨ Q.
+    (Γ1 ++ Γ3) ⊢ₛ[ m ] e ⦂ Q ->
+    (Γ1 ++ Γ2 ++ Γ3) ⊢ₛ[ m ] e ⦂ Q.
 Proof.
   intros Γ1 Γ2 Γ3 m e Q H. eapply d_pat_weakening_mid; [ exact H | reflexivity ].
 Qed.
 
-(** [d_typing] weakening — its [App] [⇨] premise is closed by [d_pat_weakening]. *)
+(** [d_typing] weakening — its [App] [⦂] premise is closed by [d_pat_weakening]. *)
 Lemma d_typing_weakening_mid : forall Γ2 m Γ e B,
     Γ ⊢[ m ] e ⦂ B ->
     forall Γ1 Γ3, Γ = Γ1 ++ Γ3 -> (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⦂ B.
@@ -298,7 +298,7 @@ Proof.
 Qed.
 
 Lemma d_pat_ctx_weaken : forall Γ Γ',
-    ctx_weaken Γ Γ' -> forall m e Q, Γ ⊢[ m ] e ⇨ Q -> Γ' ⊢[ m ] e ⇨ Q.
+    ctx_weaken Γ Γ' -> forall m e Q, Γ ⊢ₛ[ m ] e ⦂ Q -> Γ' ⊢ₛ[ m ] e ⦂ Q.
 Proof.
   induction 1; intros m e Q Hp; [ assumption | ].
   apply IHctx_weaken. apply d_pat_weakening. exact Hp.

@@ -114,7 +114,7 @@ Qed.
 
 (* and [⟨⟩] is not precise to [∀◈⟨⟩] under ANY tag index *)
 Lemma cex_precision_fails : forall Θ Δ Ψ,
-  ~ (Θ ⨟ Δ ⊢ pskl_unit ⊑ᵖ[ Ψ ] cex_ψa).
+  ~ (Θ ⨟ Δ ⊢ᵃᵈ pskl_unit ⊑ᵖ[ Ψ ] cex_ψa).
 Proof.
   intros Θ Δ Ψ H. unfold cex_ψa in H. inversion H.
 Qed.
@@ -137,19 +137,19 @@ Theorem p6cs_without_subject_wf_is_false :
        (ftag_in_uskl R) ∩ Ψ' [=] empty ->
        Ψi `union` Ψa [<=] Ψ' ->
        delta_def_fresh Δ Θ ->
-       Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
+       Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
        Ψsub [<=] ftag_in_uskl R `union` Ψa ->
        Ψa [<=] Ψsub ->
-       Ψsub ⨟ Θ ⊢ₛᵃ (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R)) ∼ Q ->
+       Ψsub ⨟ Θ ⊢ᵃᵈ (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R)) ∼ Q ->
        (* NB: the subject-wf premise
             [Θ ⨟ empty ⊢ₚₛᵃ ⌊ (κR)[ψa/α] ⌋ˢ]
           is exactly what is MISSING here *)
-       Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+       Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
        (* conclusion, weakened to its three essential conjuncts *)
        exists 𝒞 Ξc Ξs Pa (ρc : list (atom * ptyp)),
          (Θ0 ⊢ P ∼[ α ] P0 ⤳ Ξc ⨾ 𝒞) /\
          (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa /\
-         Θ ⨟ Δ ⊢ (msubst_pskl (ρc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
+         Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (ρc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
 Proof.
   intros Hthm.
   pick fresh α.
@@ -216,7 +216,7 @@ Theorem p6cs_fires_when_the_subject_is_wf : forall α,
   exists 𝒞 Ξc Ξs Pa (ρc : list (atom * ptyp)),
     (nil ⊢ cex_P α ∼[ α ] cex_P0 ⤳ Ξc ⨾ 𝒞) /\
     (Ξc ++ nil) ⊩ 𝒞 ⨾ cex_P0 ⤳ Ξs ⨾ Pa /\
-    nil ⨟ empty ⊢ (msubst_pskl ρc Pa)
+    nil ⨟ empty ⊢ᵃᵈ (msubst_pskl ρc Pa)
       ⊑ᵖ[ union empty empty ] uskl_unit.
 Proof.
   intros α.

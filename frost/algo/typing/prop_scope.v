@@ -885,7 +885,7 @@ Lemma a_assign_unify_consis_region :
      Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 -> assign_region_concl Θ0 Ξ α P Θ1) /\
   (forall Θ0 α β Θ1, Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 -> True) /\
   (forall Δ1 Δ2 Θ0 P0 P P' Θ1,
-     Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
+     Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
      consis_region_concl Θ0 P0 P Θ1).
 Proof.
   apply (a_assign_unify_consis_mutind
@@ -1941,7 +1941,7 @@ Definition typing_scope_concl (M : mode) (Θ0 : aenv) (P0 : pskl)
        core_rigid_above m0 Θ0 C -> core_rigid_above m0 Θ1 C').
 
 Lemma a_typing_scope : forall M Θ0 P0 e A' Θ1,
-  Θ0 ⊢ₐ[ M ; P0 ] e ⦂ A' ⊣ Θ1 ->
+  Θ0 ⊢ᵃ[ M ; P0 ] e ⦂ A' ⊣ Θ1 ->
   typing_scope_concl M Θ0 P0 e A' Θ1.
 Proof.
   intros M Θ0 P0 e A' Θ1 H; unfold typing_scope_concl in *;
@@ -2556,7 +2556,7 @@ Qed.
     atom lying in the discarded suffix would have to be RIGID — which
     [suffix_no_rigid_mid] forbids.  That IS premise (2). *)
 Corollary a_typing_scope_tvar_nil : forall α Θ0 A0 e A1 Ξ Θ2,
-  ((α ~ abind_tvar) ++ Θ0) ⊢ₐ[ mode_tc ; (ptyp_to_pskl A0) ] e ⦂ A1
+  ((α ~ abind_tvar) ++ Θ0) ⊢ᵃ[ mode_tc ; (ptyp_to_pskl A0) ] e ⦂ A1
     ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ2) ->
   a_wf_aenv ((α ~ abind_tvar) ++ Θ0) ->
   (forall y Ps, binds y (abind_var_skl Ps) ((α ~ abind_tvar) ++ Θ0) ->
@@ -2588,7 +2588,7 @@ Qed.
 
 (** The [_base] rows' instance: the marker is the TERM binder. *)
 Corollary a_typing_scope_tm_nil : forall x Apay Θ0 A0 e A1 Ξ Θ2,
-  ((x ~ abind_var_typ Apay) ++ Θ0) ⊢ₐ[ mode_tc ; (ptyp_to_pskl A0) ] e ⦂ A1
+  ((x ~ abind_var_typ Apay) ++ Θ0) ⊢ᵃ[ mode_tc ; (ptyp_to_pskl A0) ] e ⦂ A1
     ⊣ (Ξ ++ (x ~ abind_var_typ Apay) ++ Θ2) ->
   a_wf_aenv ((x ~ abind_var_typ Apay) ++ Θ0) ->
   (forall y Ps, binds y (abind_var_skl Ps) ((x ~ abind_var_typ Apay) ++ Θ0) ->

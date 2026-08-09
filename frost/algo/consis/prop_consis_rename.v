@@ -108,7 +108,7 @@ Lemma a_assign_unify_consis_dom_mono :
   (forall Θ0 α β Θ1,
      Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 -> dom Θ0 [<=] dom Θ1) /\
   (forall Δ1 Δ2 Θ0 P0 P P' Θ1,
-     Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 -> dom Θ0 [<=] dom Θ1).
+     Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 -> dom Θ0 [<=] dom Θ1).
 Proof.
   apply (a_assign_unify_consis_mutind
            (fun Θ0 Ξ α P Θ1 _ => dom (Ξ ++ Θ0) [<=] dom Θ1)
@@ -141,7 +141,7 @@ Lemma a_assign_unify_consis_tvar_prefix :
      forall Ξr Θt, Θi = Ξr ++ Θt -> tvar_prefix Ξr ->
      exists Θt', Θo = Ξr ++ Θt') /\
   (forall Δ1 Δ2 Θi P0 P P' Θo,
-     Θi ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θo ->
+     Θi ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θo ->
      forall Ξr Θt, Θi = Ξr ++ Θt -> tvar_prefix Ξr ->
      exists Θt', Θo = Ξr ++ Θt').
 Proof.
@@ -262,16 +262,16 @@ Lemma a_assign_unify_consis_delta_compat :
   (forall Θ0 Ξ α P Θ1, Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 -> True) /\
   (forall Θ0 α β Θ1, Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 -> True) /\
   (forall Δ1 Δ2 Θ0 P0 P P' Θ1,
-     Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
+     Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
      forall Δ1' Δ2', Δ1 [=] Δ1' -> Δ2 [=] Δ2' ->
-     Θ0 ⊢ₐ[ Δ1' | Δ2' | P0 ] P ∼ P' ⊣ Θ1).
+     Θ0 ⊢ᵃ[ Δ1' | Δ2' | P0 ] P ∼ P' ⊣ Θ1).
 Proof.
   apply (a_assign_unify_consis_mutind
            (fun Θ0 Ξ α P Θ1 _ => True)
            (fun Θ0 α β Θ1 _ => True)
            (fun Δ1 Δ2 Θ0 P0 P P' Θ1 _ =>
               forall Δ1' Δ2', Δ1 [=] Δ1' -> Δ2 [=] Δ2' ->
-              Θ0 ⊢ₐ[ Δ1' | Δ2' | P0 ] P ∼ P' ⊣ Θ1));
+              Θ0 ⊢ᵃ[ Δ1' | Δ2' | P0 ] P ∼ P' ⊣ Θ1));
     (* the assign / unify motives are trivial — but their cases still
        quantify over the rule's variables, so [exact I] needs the intros *)
     try (intros; exact I).
@@ -358,7 +358,7 @@ Lemma a_assign_unify_subject_flex :
   (forall Θ0 α β Θ1,
      Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 -> a_flex_tvar Θ0 α /\ a_flex_tvar Θ0 β) /\
   (forall Δ1 Δ2 Θ0 P0 P P' Θ1,
-     Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 -> True).
+     Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 -> True).
 Proof.
   apply (a_assign_unify_consis_mutind
            (fun Θ0 Ξ α P Θ1 _ => a_flex_tvar (Ξ ++ Θ0) α)
@@ -432,7 +432,7 @@ Lemma a_assign_unify_consis_uniq :
   (forall Θ0 α β Θ1,
      Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 -> uniq Θ0 -> uniq Θ1) /\
   (forall Δ1 Δ2 Θ0 P0 P P' Θ1,
-     Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 -> uniq Θ0 -> uniq Θ1).
+     Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 -> uniq Θ0 -> uniq Θ1).
 Proof.
   apply (a_assign_unify_consis_mutind
            (fun Θ0 Ξ α P Θ1 _ => uniq (Ξ ++ Θ0) -> uniq Θ1)
@@ -813,7 +813,7 @@ Lemma a_assign_unify_consis_rename_tvar : forall (α : atom),
        (Ξr ++ (β0 ~ abind_tvar) ++ Θb) ⊲ s1 ≈ᵘ s2
          ⊣ (Ξr ++ (β0 ~ abind_tvar) ++ Θt)) /\
   (forall Δ1 Δ2 Θi P0 P P' Θo,
-     Θi ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θo ->
+     Θi ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θo ->
      exists L, forall (β0 : atom), β0 `notin` L ->
      forall Ξr Θb, Θi = Ξr ++ (α ~ abind_tvar) ++ Θb ->
      tvar_prefix Ξr ->
@@ -828,7 +828,7 @@ Lemma a_assign_unify_consis_rename_tvar : forall (α : atom),
      exists Θt,
        Θo = Ξr ++ (α ~ abind_tvar) ++ Θt /\
        (Ξr ++ (β0 ~ abind_tvar) ++ Θb)
-         ⊢ₐ[ (rn_set β0 α Δ1) | (rn_set β0 α Δ2)
+         ⊢ᵃ[ (rn_set β0 α Δ1) | (rn_set β0 α Δ2)
          | (subst_pskl_in_pskl (pskl_var_f β0) α P0) ]
          (subst_pskl_in_pskl (pskl_var_f β0) α P)
          ∼ (subst_pskl_in_pskl (pskl_var_f β0) α P')
@@ -877,7 +877,7 @@ Proof.
               exists Θt,
                 Θo = Ξr ++ (α ~ abind_tvar) ++ Θt /\
                 (Ξr ++ (β0 ~ abind_tvar) ++ Θb)
-                  ⊢ₐ[ (rn_set β0 α Δ1) | (rn_set β0 α Δ2)
+                  ⊢ᵃ[ (rn_set β0 α Δ1) | (rn_set β0 α Δ2)
                   | (subst_pskl_in_pskl (pskl_var_f β0) α P0) ]
                   (subst_pskl_in_pskl (pskl_var_f β0) α P)
                   ∼ (subst_pskl_in_pskl (pskl_var_f β0) α P')
@@ -1394,12 +1394,12 @@ Qed.
 Lemma a_consis_forall_inh_cofinite : forall L Δ1 Δ2 Θ0 Θ1 P0 P Q,
   (forall α, α `notin` L ->
      ((α ~ abind_tvar) ++ Θ0)
-       ⊢ₐ[ (add α Δ1) | (add α Δ2)
+       ⊢ᵃ[ (add α Δ1) | (add α Δ2)
          | (open_pskl_wrt_pskl P0 (pskl_var_f α)) ]
        (open_pskl_wrt_pskl P (pskl_var_f α)) ∼
        (open_pskl_wrt_pskl Q (pskl_var_f α))
        ⊣ ((α ~ abind_tvar) ++ Θ1)) ->
-  Θ0 ⊢ₐ[ Δ1 | Δ2 | (pskl_all_syn P0) ]
+  Θ0 ⊢ᵃ[ Δ1 | Δ2 | (pskl_all_syn P0) ]
     (pskl_all_syn P) ∼ (pskl_all_syn Q) ⊣ Θ1.
 Proof.
   intros L Δ1 Δ2 Θ0 Θ1 P0 P Q Hbody.
@@ -1417,11 +1417,11 @@ Qed.
 Lemma a_consis_forall_syn_cofinite : forall L Δ1 Δ2 Θ0 Θ1 P0 P Q,
   (forall α, α `notin` L ->
      ((α ~ abind_tvar) ++ Θ0)
-       ⊢ₐ[ Δ1 | (add α Δ2) | (pskl_tophole P0) ]
+       ⊢ᵃ[ Δ1 | (add α Δ2) | (pskl_tophole P0) ]
        (open_pskl_wrt_pskl P (pskl_var_f α)) ∼
        (open_pskl_wrt_pskl Q (pskl_var_f α))
        ⊣ ((α ~ abind_tvar) ++ Θ1)) ->
-  Θ0 ⊢ₐ[ Δ1 | Δ2 | (pskl_tophole P0) ]
+  Θ0 ⊢ᵃ[ Δ1 | Δ2 | (pskl_tophole P0) ]
     (pskl_all_syn P) ∼ (pskl_all_syn Q) ⊣ Θ1.
 Proof.
   intros L Δ1 Δ2 Θ0 Θ1 P0 P Q Hbody.
@@ -1439,11 +1439,11 @@ Qed.
 Lemma a_consis_univ_ghost1_cofinite : forall L Δ1 Δ2 Θ0 Θ1 P0 P Q,
   (forall α, α `notin` L ->
      ((α ~ abind_tvar) ++ Θ0)
-       ⊢ₐ[ (add α Δ1) | Δ2
+       ⊢ᵃ[ (add α Δ1) | Δ2
          | (open_pskl_wrt_pskl P0 (pskl_var_f α)) ]
        (pskl_tophole P) ∼ (open_pskl_wrt_pskl Q (pskl_var_f α))
        ⊣ ((α ~ abind_tvar) ++ Θ1)) ->
-  Θ0 ⊢ₐ[ Δ1 | Δ2 | (pskl_all_syn P0) ]
+  Θ0 ⊢ᵃ[ Δ1 | Δ2 | (pskl_all_syn P0) ]
     (pskl_tophole P) ∼ (pskl_all_syn Q) ⊣ Θ1.
 Proof.
   intros L Δ1 Δ2 Θ0 Θ1 P0 P Q Hbody.
@@ -1484,7 +1484,7 @@ Qed.
 
 Lemma a_consis_decorate_size : forall n Δ1 Δ2 Θ0 P0 P P' Θ1,
   size_pskl P + size_pskl P0 <= n ->
-  Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
+  Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
   uniq Θ0 ->
   Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ∼˙ P' ⊣ Θ1.
 Proof.
@@ -1677,7 +1677,7 @@ Proof.
 Qed.
 
 Lemma a_consis_decorate_gen : forall Δ1 Δ2 Θ0 P0 P P' Θ1,
-  Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
+  Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
   uniq Θ0 ->
   Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ∼˙ P' ⊣ Θ1.
 Proof.
@@ -1688,7 +1688,7 @@ Qed.
 
 (** The paper-shaped instance (no used names at the root). *)
 Lemma a_consis_decorate : forall Δ1 Δ2 Θ0 P0 P P' Θ1,
-  Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
+  Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
   uniq Θ0 ->
   Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ∼˙ P' ⊣ Θ1.
 Proof.

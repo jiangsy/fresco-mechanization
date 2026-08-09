@@ -616,7 +616,7 @@ metasubstitution `κ` with `κ ∷ Θ0 ⊑ Θ`, and that `κ` must now be
 **extended over the solve's new flexible block**. A conclusion of the shape
 
 ```coq
-exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ Pa /\ Θ ⨟ Δ ⊢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψ ] ψa
+exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ Pa /\ Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pa) ⊑ᵖ[ Ψ ] ψa
 ```
 
 becomes, positionally,
@@ -627,7 +627,7 @@ exists Ξ Pa κ',
   all_flex_mono Ξ /\ uniq Ξ /\ keys κ' = keys Ξ /\
   (forall α, α `in` dom Ξ -> α `notin` L) /\
   Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κ' /\
-  Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) Pa) ⊑ᵖ[ Ψ ] ψa
+  Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κ' ++ κ) Pa) ⊑ᵖ[ Ψ ] ψa
 ```
 
 **The template already exists**: `a_guess_ty_witness`
@@ -688,9 +688,9 @@ So write this first — everything downstream is a consumer of it:
 Lemma a_guess_ty_witness_mono : forall n Θ0 Θ κ Δ Ψi τ Pi,
   size_pskl Pi <= n ->
   Θ0 ⨟ empty ⊢ₚₛᵃ Pi -> κ ∷ Θ0 ⊑ Θ -> mono_ptyp τ ->
-  Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ) ->
+  Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ) ->
   forall L, exists Ξ A κ',
-    (forall Θg, ftvar_in_aenv Θg [<=] L -> a_guess_mono Θg Pi Ξ A) /    all_flex_mono Ξ /\ uniq Ξ /\ keys κ' = keys Ξ /    (forall α, α `in` dom Ξ -> α `notin` L) /    Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κ' /    Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) (ptyp_to_pskl A))
+    (forall Θg, ftvar_in_aenv Θg [<=] L -> a_guess_mono Θg Pi Ξ A) /    all_flex_mono Ξ /\ uniq Ξ /\ keys κ' = keys Ξ /    (forall α, α `in` dom Ξ -> α `notin` L) /    Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κ' /    Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κ' ++ κ) (ptyp_to_pskl A))
             ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ).
 ```
 
@@ -707,7 +707,7 @@ what lets the arrow case merge two extensions without them colliding.
 Then the statements become
 
 ```coq
-exists Ξ Pa κ', Θ0 ⊢ₑ Pi ∼ P0 ⤳ Ξ ⨾ Pa /\ <the Ξ/κ' package above> /  Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) Pa) ⊑ᵖ[ Ψi ] …
+exists Ξ Pa κ', Θ0 ⊢ₑ Pi ∼ P0 ⤳ Ξ ⨾ Pa /\ <the Ξ/κ' package above> /  Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κ' ++ κ) Pa) ⊑ᵖ[ Ψi ] …
 ```
 
 and the arrow case of `a_solve_eq_cv_mono` merges the two IHs' extensions,

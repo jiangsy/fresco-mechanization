@@ -792,11 +792,11 @@ Proof.
 Qed.
 
 Lemma d_pat_subst_unit : forall m Γ e Q,
-    Γ ⊢[ m ] e ⇨ Q ->
+    Γ ⊢ₛ[ m ] e ⦂ Q ->
     forall Γ1 α0 Γ2, Γ = Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2 ->
     tvar_clean α0 Γ2 ->
-    (map (subst_unit_dbind α0) Γ1 ++ Γ2) ⊢[ m ]
-      (subst_ptyp_in_exp ptyp_unit α0 e) ⇨ (subst_bskl_in_bskl bskl_unit α0 Q).
+    (map (subst_unit_dbind α0) Γ1 ++ Γ2) ⊢ₛ[ m ]
+      (subst_ptyp_in_exp ptyp_unit α0 e) ⦂ (subst_bskl_in_bskl bskl_unit α0 Q).
 Proof.
   intros m Γ e Q H. induction H; intros Γ1 α0 Γ2 Heq Hclean; subst; simpl.
   - (* unit: embedded [d_pat_sub] over [Γ1++Γ2] → swap to mapped context. *)

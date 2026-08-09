@@ -4135,7 +4135,7 @@ Theorem a_sub_sound : forall NM M P0 Θ0 P P' Θ1,
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
   exists Qt,
     bskl_to_pskl Qt = P' /\
-    (empty ⨟ Θ1 ⊢ₛᵃ[ NM | M ] (pskl_to_uskl P) ⩽ Qt) /\
+    (empty ⨟ Θ1 ⊢ᵃᵈ[ NM | M ] (pskl_to_uskl P) ⩽ Qt) /\
     (* ⚙ the PLAIN refinement, not the internal [ad_refine_syn_f] variant.
        [F] is consistency soundness' ghost-fill hygiene set (prop_soundness_
        consis.v §"Fill-hygienic refinement"); at [F = ∅] — the only value a
@@ -4144,7 +4144,7 @@ Theorem a_sub_sound : forall NM M P0 Θ0 P P' Θ1,
        ([ad_refine_syn_f_forget] / [ad_refine_syn_f_of_plain]).  So [_f] in
        the conclusion was scaffolding leaking into the statement, nothing
        more.  Dropped 2026-08-06. *)
-    Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ Qt.
+    Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ Qt.
 Proof.
   intros NM M P0 Θ0 P P' Θ1 Hrun Hwf HwfP0 HwfP Hmod Hgf.
   pose proof (a_sub_decorate Hrun Hwf HwfP0 HwfP Hmod) as Htag.
@@ -4184,7 +4184,7 @@ Theorem a_sub_sound_v : forall NM M P0 Θ0 P P' Θ1,
   exists Qt,
     bskl_to_pskl Qt = P' /\
     ad_pat_sub_v NM M empty Θ1 (pskl_to_uskl P) Qt /\
-    Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ Qt.
+    Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ Qt.
 Proof.
   intros NM M P0 Θ0 P P' Θ1 Hrun Hwf HwfP0 HwfP Hmod Hgf.
   pose proof (a_sub_decorate Hrun Hwf HwfP0 HwfP Hmod) as Htag.

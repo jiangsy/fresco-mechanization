@@ -18,7 +18,7 @@
     and a concrete type may equally be faced by one.  Consistency's [FlexL]
     row then fires:
 
-        Θ ⊢ₐ[ P0 ] α̂ ∼ α̂ ⊣ Θ'          ([a_consis__flex_l], via [a_assign])
+        Θ ⊢ᵃ[ P0 ] α̂ ∼ α̂ ⊣ Θ'          ([a_consis__flex_l], via [a_assign])
 
     whose OUTPUT is the subject [α̂], not the input skeleton [P0].  Algorithmic
     [Arrow] copies that output into its own, so already at
@@ -108,7 +108,7 @@ Proof.
 Qed.
 
 Lemma cex_consis :
-  Θw ⊢ₐ[ pskl_unit ] (pskl_var_f α) ∼ (pskl_var_f α) ⊣ Θw'.
+  Θw ⊢ᵃ[ pskl_unit ] (pskl_var_f α) ∼ (pskl_var_f α) ⊣ Θw'.
 Proof.
   apply a_consis__flex_l;
     [ split; [ apply lc_pskl_unit | intros Hf; inversion Hf ]

@@ -49,7 +49,7 @@ Set Implicit Arguments.
 (** Erase the fuel: a fuel-indexed derivation IS a plain one. *)
 Lemma ad_pat_sub_of_n : forall n NM M Ψ Θ R Q,
   ad_pat_sub_n n NM M Ψ Θ R Q ->
-  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q.
+  Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q.
 Proof.
   intros n NM M Ψ Θ R Q H. induction H.
   - eapply ad_pat_sub__infer; eauto.
@@ -223,7 +223,7 @@ Qed.
     other opening via [ad_pat_sub_n_rename_tvar]. *)
 Lemma ad_pat_sub_to_n : forall NM M Ψ Θ R Q,
   a_wf_aenv Θ ->
-  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q ->
   exists n, ad_pat_sub_n n NM M Ψ Θ R Q.
 Proof.
   intros NM M Ψ Θ R Q Hwf H. revert Hwf. induction H; intros Hwf.
@@ -280,7 +280,7 @@ Qed.
     complete vacuous. *)
 Lemma ad_partial_precise_tags_sub : forall Θ Δ Ψ P ψ,
   a_wf_aenv Θ ->
-  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ ->
   forall Ψt, d_tags_skl Ψt ψ -> Ψ [<=] Ψt.
 Proof.
   intros Θ Δ Ψ P ψ Hwf H. induction H; intros Ψt Hdt.
@@ -322,8 +322,8 @@ Lemma ad_partial_precise_complete : forall NM Θ Δ Ψ P ψ,
   a_wf_aenv Θ ->
   a_tags_sort NM Ψ ψ ->
   Θ ⨟ Δ ⊢ₚₛᵃ ⌊ ψ ⌋ˢ ->
-  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
-  Θ ⨟ Δ ⊢ₚᵣᵃ P ⊑ ⌊ ψ ⌋ˢ.
+  Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ ->
+  Θ ⨟ Δ ⊢ₚᵣᵃᵈ P ⊑ ⌊ ψ ⌋ˢ.
 Proof.
   intros NM Θ Δ Ψ P ψ Hwf Htags Hwfp H.
   revert Hwf Htags Hwfp. induction H; intros Hwf Htags Hwfp;
@@ -815,7 +815,7 @@ Lemma ad_pat_sub_g_ughost_r_transport : forall Θb Ψrep R' R,
   (forall x b, binds x b Θb -> binds x b Θ') ->
   a_wf_aenv Θ' ->
   guarded_uskl R ->
-  empty ⨟ Θ' ⊢ₛᵃ R ∼ Q ->
+  empty ⨟ Θ' ⊢ᵃᵈ R ∼ Q ->
   guarded_bskl Q ->
   is_sskl Q ->
   Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
@@ -968,7 +968,7 @@ Lemma ad_pat_sub_g_arrow_transport : forall Θb Ψr Rg' Rgarr,
   Ψr [<=] Ψsup ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
   a_wf_aenv Θ' ->
-  Ψc1 ⨟ Θ' ⊢ₛᵃ Rg1 ∼ Qg1 ->
+  Ψc1 ⨟ Θ' ⊢ᵃᵈ Rg1 ∼ Qg1 ->
   ad_pat_sub_g n NM Mg Ψc2 Θ' Rg2 Qg2 ->
   Ψfull [=] Ψc1 `union` Ψc2 ->
   (forall Θb0 Ψr0 Rg2' Ψsup0 Ψn0 Ψna0,
@@ -1760,10 +1760,10 @@ Qed.
 (** Unfold a defined flexible variable on the SUBJECT side of a
     refinement (the ⊳-mirror of [consis_unfold_def_subject]). *)
 Lemma ad_refine_pskl_unfold_def_subject : forall Θ Δ α Qt,
-  Θ ⨟ Δ ⊢ᵣₚᵃ (pskl_var_f α) ⊳ Qt ->
+  Θ ⨟ Δ ⊢ᵣₚᵃᵈ (pskl_var_f α) ⊳ Qt ->
   a_wf_aenv Θ ->
   forall τ, binds α (abind_flex_mono_def τ) Θ ->
-  Θ ⨟ Δ ⊢ᵣₚᵃ (ptyp_to_pskl τ) ⊳ Qt.
+  Θ ⨟ Δ ⊢ᵣₚᵃᵈ (ptyp_to_pskl τ) ⊳ Qt.
 Proof.
   intros Θ Δ α Qt Href.
   remember (pskl_var_f α) as S eqn:HeqS.
@@ -1952,8 +1952,8 @@ Lemma ad_pat_sub_gv_ughost_r_transport : forall Θb Ψrep R' R,
   (forall x b, binds x b Θb -> binds x b Θ') ->
   a_wf_aenv Θ' ->
   guarded_uskl R ->
-  empty ⨟ Θ' ⊢ₛᵃ R ∼ Q ->
-  Θ' ⨟ empty ⊢ᵣₚᵃ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) ->
+  empty ⨟ Θ' ⊢ᵃᵈ R ∼ Q ->
+  Θ' ⨟ empty ⊢ᵣₚᵃᵈ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) ->
   guarded_bskl Q ->
   is_sskl Q ->
   Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
@@ -2019,7 +2019,7 @@ Proof.
       by (apply Hmon; exact H).
     assert (Hm : mono_ptyp τ)
       by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact Hb' ]).
-    assert (Hlf' : Θ' ⨟ empty ⊢ᵣₚᵃ ⌊ ptyp_to_uskl_syn τ ⌋ˢ
+    assert (Hlf' : Θ' ⨟ empty ⊢ᵣₚᵃᵈ ⌊ ptyp_to_uskl_syn τ ⌋ˢ
                      ⊳ (bskl_to_pskl Q0)).
     { rewrite uskl_to_pskl_ptyp.
       eapply ad_refine_pskl_unfold_def_subject;
@@ -2117,8 +2117,8 @@ Lemma ad_pat_sub_gv_arrow_transport : forall Θb Ψr Rg' Rgarr,
   Ψr [<=] Ψsup ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
   a_wf_aenv Θ' ->
-  Ψc1 ⨟ Θ' ⊢ₛᵃ Rg1 ∼ Qg1 ->
-  Θ' ⨟ empty ⊢ᵣₚᵃ ⌊ Rg1 ⌋ˢ ⊳ (bskl_to_pskl Qg1) ->
+  Ψc1 ⨟ Θ' ⊢ᵃᵈ Rg1 ∼ Qg1 ->
+  Θ' ⨟ empty ⊢ᵣₚᵃᵈ ⌊ Rg1 ⌋ˢ ⊳ (bskl_to_pskl Qg1) ->
   ad_pat_sub_gv n NM Mg Ψc2 Θ' Rg2 Qg2 ->
   Ψfull [=] Ψc1 `union` Ψc2 ->
   (forall Θb0 Ψr0 Rg2' Ψsup0 Ψn0 Ψna0,
@@ -2911,7 +2911,7 @@ Qed.
     [inh_eq_syn_no_forall] — the fill being a SYN painting is exactly what
     confines the ghost's counterpart. *)
 Lemma uskl_precise_of_ad_precise : forall Θ Δ Qs Qt,
-  Θ ⨟ Δ ⊢ᵣᵃ Qs ⊳ Qt ->
+  Θ ⨟ Δ ⊢ᵣᵃᵈ Qs ⊳ Qt ->
   a_wf_aenv Θ ->
   forall P' P,
   Qs = pskl_to_bskl_inh P' ->
@@ -2999,7 +2999,7 @@ Qed.
     (WF-SIDE-CONDITIONS.md); the TY ghost-freeness is the motive's usual
     external condition, automatic for a painting of a TYPE. *)
 Lemma ad_precise_extends_pat_sub_gv : forall n NM M Ψ Θ Δ P' P Q,
-  Θ ⨟ Δ ⊢ₚᵣᵃ P' ⊑ P ->
+  Θ ⨟ Δ ⊢ₚᵣᵃᵈ P' ⊑ P ->
   ad_pat_sub_gv n NM M Ψ Θ (pskl_to_uskl P) Q ->
   a_wf_aenv Θ ->
   Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
@@ -3026,7 +3026,7 @@ Qed.
 
 (** The fuel-forgotten form the [ad_ctx_precise_pat] Var row consumes. *)
 Lemma ad_precise_extends_pat_sub_v : forall NM M Ψ Θ Δ P' P Q,
-  Θ ⨟ Δ ⊢ₚᵣᵃ P' ⊑ P ->
+  Θ ⨟ Δ ⊢ₚᵣᵃᵈ P' ⊑ P ->
   ad_pat_sub_v NM M Ψ Θ (pskl_to_uskl P) Q ->
   a_wf_aenv Θ ->
   Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->

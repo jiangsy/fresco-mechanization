@@ -162,7 +162,7 @@ a_subtag_sound_aux :  Θ0 ⊢ᵗ[NM|M|P0|Ψ] S ⊑ Q ⊣ Θ1 ->
   a_wf_aenv Θ0 -> lc_uskl S -> Θ0 ⨟ ∅ ⊢ₚₛᵃ P0 -> Θ0 ⨟ ∅ ⊢ₚₛᵃ ⌊S⌋ ->
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
   (exists Qt, bskl_to_pskl Qt = Q /\
-     Ψ ⨟ Θ1 ⊢ₛᵃ[NM|M] S ⊑ Qt /\
+     Ψ ⨟ Θ1 ⊢ᵃᵈ[NM|M] S ⊑ Qt /\
      ad_refine_syn_f ∅ Θ1 ∅ (pskl_to_bskl_inh P0) Qt)
 ```
 mutual (via `Scheme`) with the flex conclusion at `(Ξ ++ Θ0) ⊴ Θ1` and
@@ -277,7 +277,7 @@ refinement-valid solutions (add `Θ ⊢ κ⌊S⌋ ⋈ Q`-style subject data to t
 solution/motive, threading it through the induction exactly as
 consistency's augmented statement does); soundness already yields the
 condition for every algorithmic output (`a_consis_sound`'s
-`⊢ᵣₚᵃ` conjunct), so the pair still characterizes the algorithm exactly:
+`⊢ᵣₚᵃᵈ` conjunct), so the pair still characterizes the algorithm exactly:
 it succeeds iff a valid solution exists and is ⊑-optimal among valid
 solutions.  A restricted derivation lemma (join ⇒ subject refinement for
 **hole-free** subjects — the TY-mode call sites) is true and avoids

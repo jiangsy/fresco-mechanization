@@ -232,7 +232,68 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-09 (latest) — ⚙ **CLEANUP PHASE 3: `frost/prop_coercions.v`, the `_thm` retirement, `make tidy`, §8.1d, and the algo/ FILE REORG; duplicates 53 → 33**
+## 2026-08-09 (latest) — ⚙ **NOTATION PASS: the system/sort AXES, `⇨` retired, `blk` → `Ξg`**
+
+Notation only — no rule, statement or proof obligation changed; the diff is
+inside notated forms plus one variable rename.  Recorded in
+[`docs/PROPOSAL-notation-pass.md`](docs/PROPOSAL-notation-pass.md) §5 (the
+before/after table) and §6 (what was deliberately left); the canonical legend
+now lives in the header of [`frost/notations.v`](frost/notations.v), which
+`CLAUDE.md`'s style section points at.
+
+Three defects, all reported by the user:
+
+1. **`⇨` was wrong on most of the rules that used it.**  `d_pat` / `ad_pat` /
+   `a_pat` are indexed by an arbitrary mode `M`, and `⇨` claims the term
+   SYNTHESISES its skeleton — true only at `M = TI`; at `TC` the skeleton is an
+   INPUT.  All three now write `⦂`, with the skeleton sort carried by the
+   turnstile subscript: `Γ ⊢ₛ[ M ] e ⦂ P`, `Θ ⊢ₛᵃᵈ[ M ] e ⦂ Q`,
+   `Θ ⊢ₛᵃ[ m ; P0 ] e ⦂ Q ⊣ Θ'`.  ⚙ The paper writes its own mode-generic
+   typing with a plain colon for exactly this reason (`\typp`,
+   `paper/macro.tex:1087`); its `⇛`/`\TTo` marks the SKELETON judgement, not
+   synthesis, so the mech's lookalike `⇨` had imported a meaning the paper's
+   glyph never carried.
+2. **The system marker meant two different systems, and the two axes shared
+   one device.**  `ᵃ` was `a_` in `a_wf_pskl` (`⊢ₚₛᵃ`) but `ad_` in
+   `ad_pat_consis` / `ad_refine_syn` / `ad_sd_typing` / `ad_pat`; meanwhile
+   `a_consis` / `a_sub` / `a_pat` / `a_typing` wrote the SYSTEM as a subscript
+   (`⊢ₐ`), which everywhere else means the SORT.  So the algorithmic and the
+   decorated turnstiles differed by sub- vs superscript `a` alone.  Fixed by
+   one device per axis — **superscript = system** (`⊢` d, `⊢ᵃᵈ` ad, `⊢ᵃ` a,
+   `⊢ᵗ` ε-tagged, `⊢ˢ` syntax-directed), **subscript = sort** (bare types,
+   `⊢ₛ` skeletons) — and by stating the sort exactly ONCE: as the subscript
+   where the system has one relation per sort, as the bracket index `N`/`NM`
+   where one relation covers both.  ⭐ That last rule is why `ad_pat_consis`
+   and `ad_pat_sub` LOST their `ₛ`: the ad system has no type-sort sibling to
+   be told apart from, and `ad_pat_sub`'s `NM` already names the sort — the
+   same reason `a_sub` never had one.  Stating it twice is how `⊢ₛᵃ[ TY | … ]`
+   came to read as a contradiction.
+3. **`blk : aenv` violated the greek-context convention** — and it turned out
+   to be a stray ALIAS: the rest of the tree already calls that object `Ξg`
+   (`a_guess_mono Θg Pi0 Ξg A`, `algo/sub/look/prop_eq_cstr.v:2212`).  Renamed
+   throughout `algo/typing/prop_typing.v` (92 sites, plus `Hwfblk`/`Hftvblk`);
+   `Ξg` and not plain `Ξ` because `a_typing_complete_abs` needs BOTH the guess
+   block and the output suffix at once, and because `a_decls`'s own
+   constructor binds a `Ξ` that `induction` reintroduces.  ⚙ `Hblk` elsewhere
+   (`prop_solve_ext.v`, `prop_eq_cstr.v`, `prop_soundness_pat.v`) is a
+   hypothesis ABOUT a block, not a context, and `a_tvar_block` is a real
+   relation — "block" is legitimate terminology, so those keep their names.
+
+⚙ Sweep mechanics worth keeping: four of the renames are context-SENSITIVE,
+because `⊢ₐ[` and `⊢[` are each shared by two judgements that differ only in a
+relation symbol several tokens later.  Those need a bounded regex whose middle
+forbids every other relation symbol plus `->` / `(*` / `*)` / blank line —
+without the guard, a comment block showing an `a_extract` judgement several
+lines above a prose `⊑ᵖ[∅]` gets its own turnstile marked (this happened in
+`prop_extract.v`).  And the `*_pat` turnstiles must be marked WHILE `⇨` still
+distinguishes them from `*_typing`, before `⇨` becomes `⦂`.
+
+⚠️ Counting notation sites with `grep -r` over the build tree inflates the
+figure ~4×: `.vo` / `.glob` / `.aux` artifacts contain the notation strings
+too, and `*.v.legacy` is not source.  The real size was ~1.7k substitutions in
+79 files, not the ~15k a naive `grep -rn | wc -l` reported.
+
+## 2026-08-09 — ⚙ **CLEANUP PHASE 3: `frost/prop_coercions.v`, the `_thm` retirement, `make tidy`, §8.1d, and the algo/ FILE REORG; duplicates 53 → 33**
 
 Continues the post-theorem-4 cleanup audit
 ([`docs/REPORT-remech-cleanup-audit.md`](docs/REPORT-remech-cleanup-audit.md),
@@ -607,7 +668,7 @@ pskl-level counterpart the tree lacked) but §3 does not consume it.
 The first component of `lemma:precision-sub` over the leaf-valid join: the
 pskl-level mirror of prop_precise.v's `ad_refine_syn_trans` chain, all Qed
 and axiom-free.  `ad_precise_preserves_refine_pskl` is what transports the
-`_gv` leaf datum (`Θ ⨟ ∅ ⊢ᵣₚᵃ P ⊳ ⌊Q⌋`) down a precision `P' ⊑ P`.
+`_gv` leaf datum (`Θ ⨟ ∅ ⊢ᵣₚᵃᵈ P ⊳ ⌊Q⌋`) down a precision `P' ⊑ P`.
 
 ⭐⭐ **The mirror is NOT row-for-row**: the syn template's ghost-left crux
 kills the `__all` row outright (a syn painting has no `bskl_all_inh`), but
@@ -981,7 +1042,7 @@ completeness theorems.
   annotated lambda rules" — but its own AT-App case needs a fourth, since
   `sd-App` reuses the function's domain BY EQUALITY as the argument's
   checked type.  `ad_sd_typing__app` now carries
-  `Θ ⊢ (btyp_to_ptyp B1) ≡ᵗ A2` beside `Θ ⊢ˢᵃ[TC] e2 ⦂ inh{A2}`.
+  `Θ ⊢ (btyp_to_ptyp B1) ≡ᵗ A2` beside `Θ ⊢ˢᵃᵈ[TC] e2 ⦂ inh{A2}`.
   ⚙ Ripple: four construction sites, each discharged by the `a_tyequiv`
   transport already sitting beside the one it accompanies.
   ⛔ The alternative (keep the rule, prove the transport) costs an
@@ -1335,7 +1396,7 @@ is needed anywhere.
 
     a_consis_chk_annot_refine : a_consis_chk Θ0 A P Θ1 -> … ->
       exists B, btyp_to_ptyp B = A /\
-        Θ1 ⨟ ∅ ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B)
+        Θ1 ⨟ ∅ ⊢ᵣᵃᵈ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B)
 
 It is AbsAnno at the ARROW split shape only (the HOLE shape answers with the
 all-synthesised painting `ptyp_to_btyp_syn A` and is proved).  The paper
@@ -1500,7 +1561,7 @@ strip is unsound because a ghost FILL could mention it, so the variant forbids
 two judgments are **inter-derivable** — `ad_refine_syn_f_forget` and
 `ad_refine_syn_f_of_plain` were both already Qed — so this was scaffolding
 leaking into two paper-facing statements.  Both now read the plain
-`Θ ⨟ ∅ ⊢ᵣᵃ … ⊳ …`.  ⭐ For COMPLETENESS this is not cosmetic: `_f` sat in a
+`Θ ⨟ ∅ ⊢ᵣᵃᵈ … ⊳ …`.  ⭐ For COMPLETENESS this is not cosmetic: `_f` sat in a
 HYPOTHESIS, and being the stronger of the two it was gratuitously weakening
 the theorem.  The internal machinery still runs on `_f`; only the statements
 changed.  The one non-README consumer, `a_sub_concrete_output_equiv`, drops
@@ -1523,13 +1584,13 @@ plain `ad_pat_sub`, completeness *assumes* `ad_pat_sub_gv`.  Soundness produces
 strictly less than completeness consumes.
 
 ⭐ **BUT THE MISSING CONTENT IS ALREADY PROVED — the fix is threading, not new
-mathematics.**  `_gv`'s leaf premise is `Θ ⨟ ∅ ⊢ᵣₚᵃ ⌊R⌋ˢ ⊳ ⌊Q⌋` (the subject's
+mathematics.**  `_gv`'s leaf premise is `Θ ⨟ ∅ ⊢ᵣₚᵃᵈ ⌊R⌋ˢ ⊳ ⌊Q⌋` (the subject's
 erasure refines to the leaf counterpart).  That is *literally* the last
 conjunct both consistency-soundness results already export:
 
 | | last conjunct |
 |---|---|
-| `a_consis_sound` (:5598) | `Θ1 ⨟ ∅ ⊢ᵣₚᵃ P ⊳ P'` |
+| `a_consis_sound` (:5598) | `Θ1 ⨟ ∅ ⊢ᵣₚᵃᵈ P ⊳ P'` |
 | `a_consistag_sound_aux` (:4650) | `ad_refine_pskl_f Δ2 Θ1 Δ2 ⌊R⌋ˢ P'` |
 
 So the route to composition is to strengthen `a_subtag_sound_bundle` /
@@ -2852,7 +2913,7 @@ for the package.
   §(L)'s hypothesis for BOTH sides of the fill.  It is FALSE without the ⇓:
   `__flex_l`'s source is a bare variable whose definition is the premise's
   source, and only under ⇓ are the two literally the same term.
-- ⭐ `ad_precise_downarrow` : `Θ ⨟ Δ ⊢ₚᵣᵃ ⇓ˢ[Θ]P ⊑ P`.  **The one obligation the
+- ⭐ `ad_precise_downarrow` : `Θ ⨟ Δ ⊢ₚᵣᵃᵈ ⇓ˢ[Θ]P ⊑ P`.  **The one obligation the
   consistency walk does not have**: P7a's motive carries a PRECISION conjunct,
   so the IH proves it against `⇓ᵇQ` and the conclusion wants it against `Q`.
   The handover's planned route (`skl_tyequiv_refine_syn_f_transport`) does NOT
@@ -2952,8 +3013,8 @@ are SMALL, because at a monotype subject only five rows are reachable — unit,
 var, arrow and the two definition chases — and ⇓ is the identity on the first
 three and exactly the chase on the last two:
 
-- `consis_downarrow_mono` : `Ψ ⨟ Θ ⊢ₛᵃ syn{A} ∼ Q` ⟹
-  `Ψ ⨟ Θ ⊢ₛᵃ syn{⇓ᵗA} ∼ ⇓ᵇQ`.  The `var` row is where both sides collapse to
+- `consis_downarrow_mono` : `Ψ ⨟ Θ ⊢ᵃᵈ syn{A} ∼ Q` ⟹
+  `Ψ ⨟ Θ ⊢ᵃᵈ syn{⇓ᵗA} ∼ ⇓ᵇQ`.  The `var` row is where both sides collapse to
   the same monotype, so it is `consis_mono_refl`.
 - `refine_pskl_downarrow_mono` : the same for the refinement leaf
   (`ad_refine_pskl` at a monotype source), via
@@ -4533,11 +4594,11 @@ Item 1 of the Sub-ForallL plan (the entry below) landed at the end of
 `frost/algo/prop_consis_precise.v`:
 
     Lemma uskl_precise_erase_refine :
-      Θ ⨟ Δ ⊢ᵣₚᵃ Qm ⊳ Qr → a_wf_aenv Θ → (∀ α ∈ Δ, α ∉ dom Θ) →
+      Θ ⨟ Δ ⊢ᵣₚᵃᵈ Qm ⊳ Qr → a_wf_aenv Θ → (∀ α ∈ Δ, α ∉ dom Θ) →
       Θ ⨟ Δ ⊢ₚₛᵃ Qr →
       ∀ Θb Ψr R' R, uskl_precise Θb Ψr R' R →
       (∀ x b, binds x b Θb → binds x b Θ) → ⌊R⌋ˢ = Qm →
-      Θ ⨟ Δ ⊢ᵣₚᵃ ⌊R'⌋ˢ ⊳ Qr
+      Θ ⨟ Δ ⊢ᵣₚᵃᵈ ⌊R'⌋ˢ ⊳ Qr
 
 **DESIGN DEVIATION — the scoping entry's "candidate resolution" (state
 item 1 over the F-indexed mirror `ad_refine_pskl_f` + prove
@@ -4547,7 +4608,7 @@ dissolved the same crux: the TARGET's wf is ASSUMED — the paper's
 external-wf side condition (declarative.tex:1427), which the use site
 already carries (P5's `Hwfq : Θ' ⨟ ∅ ⊢ₚₛᵃ ⌊Q⌋`) — and the □-node's
 empty-Δ form is recovered from the Δ-discipline.  Why this beats the
-F-form: (a) the `_gv` joins' leaf refinements are PLAIN `⊢ᵣₚᵃ` at
+F-form: (a) the `_gv` joins' leaf refinements are PLAIN `⊢ᵣₚᵃᵈ` at
 Δ = ∅, so the plain statement slots into item 3 with zero conversion;
 (b) the conclusion derivation is rebuilt node-by-node at the SAME
 (possibly `__tophole_fill`-extended) context as the input — wf over
@@ -4614,7 +4675,7 @@ statements**:
   `Θ ⨟ Δ ⊢ₚₛᵃ ⌊ψa⌋ˢ`, `delta_def_fresh`, and **`sub_shield Θ0 Ψa ∅ P0 ψa`**.
   Returns Ξ, Pa, κa with the extract run, wf(Pa), wf(Ξ++Θ0),
   `keys κa = keys Ξ`, `(κa++κ) ∷ Ξ++Θ0 ⊑ Θ`, `a_inc_equiv Θ0 κ κ Θ`, and
-  `Θ ⨟ Δ ⊢ₚᵣᵃ msubst (κa++κ) Pa ⊑ ⌊ψa⌋ˢ`.
+  `Θ ⨟ Δ ⊢ₚᵣᵃᵈ msubst (κa++κ) Pa ⊑ ⌊ψa⌋ˢ`.
 - **The shield gate**: supplies exist for `pskl_flex_free Θ0 P0`
   (`sub_shield_flex_free`), ∀-free P0 (`sub_shield_supply_all_free_p0`),
   inh-free counterpart, mono-ish counterpart, atomic P0
@@ -4641,10 +4702,10 @@ statements**:
    FUSED induction (general `ad_refine_pskl_trans` is NOT needed and its
    all-vs-tophole_fill case is nasty — avoid):
 
-       Θ ⨟ Δ ⊢ᵣₚᵃ Qm ⊳ Qr → a_wf_aenv Θ → (Δ ∩ dom Θ = ∅-style disj) →
+       Θ ⨟ Δ ⊢ᵣₚᵃᵈ Qm ⊳ Qr → a_wf_aenv Θ → (Δ ∩ dom Θ = ∅-style disj) →
        (wf sides as needed) →
        ∀ Θb Ψr R' R, uskl_precise Θb Ψr R' R → (binds-mono Θb → Θ) →
-       ⌊R⌋ˢ = Qm → Θ ⨟ Δ ⊢ᵣₚᵃ ⌊R'⌋ˢ ⊳ Qr
+       ⌊R⌋ˢ = Qm → Θ ⨟ Δ ⊢ᵣₚᵃᵈ ⌊R'⌋ˢ ⊳ Qr
 
    Induct on the ⊳-derivation; invert `uskl_precise` at each erasure
    shape.  The upre rows that are Qm-shape-INDEPENDENT (refl / hole /
@@ -4893,7 +4954,7 @@ All Qed + axiom-free; `make coq` green.
 **⚠️ `ad_pat_sub_gv__arrow` gained the DOMAIN leaf premise** — the Arrow
 row's domain-consistency premise is ITSELF a consistency leaf (the paper's
 Sub-Arrow invokes thm:complete-consistency on it, :3334), so it now carries
-`Θ ⨟ ∅ ⊢ᵣₚᵃ ⌊R1⌋ˢ ⊳ ⌊Q1⌋` like `__infer` does.  Caught while planning the
+`Θ ⨟ ∅ ⊢ᵣₚᵃᵈ ⌊R1⌋ˢ ⊳ ⌊Q1⌋` like `__infer` does.  Caught while planning the
 Arrow row; the leaf-valid design's rule of thumb is now explicit: EVERY
 rule field of sort "consistency judgment" is a leaf and carries the
 subject refinement.
@@ -5061,7 +5122,7 @@ correct but UNDERSTATED.  Everything here is machine-checked; `make coq`
 untouched (the new file compiles standalone, axiom-free).
 
 **The diagnosis.**  The motive's third solution premise
-`⊢ᵣₚᵃ κ⌊R⌋ˢ ⊳ ⌊Q⌋` is a **LOCKSTEP** condition — `ad_refine_pskl` descends
+`⊢ᵣₚᵃᵈ κ⌊R⌋ˢ ⊳ ⌊Q⌋` is a **LOCKSTEP** condition — `ad_refine_pskl` descends
 subject and counterpart together, so it can only hold where the two sides
 agree in shape (modulo ghosts on the LEFT and flexible definitions).  It was
 imported verbatim from `a_consis_complete`, where it is the PAPER'S OWN
@@ -5225,7 +5286,7 @@ proposed simplification is refuted; the mech keeps the equivalence route.
 already in the development — `a_pskl_tyequiv` (`≡ˢ`), built for `a_inc`'s
 GMM-style semantic middles, is exactly "definitions of flexible variables
 unfold" — and the proof is on the REFINEMENT, not on consistency:
-`a_consis_sound` already exports `Θ1 ⨟ ∅ ⊢ᵣᵃ inh{P0} ⊳ Qt` with `⌊Qt⌋ = P'`, so
+`a_consis_sound` already exports `Θ1 ⨟ ∅ ⊢ᵣᵃᵈ inh{P0} ⊳ Qt` with `⌊Qt⌋ = P'`, so
 what is left is `ad_refine_syn_ghost_free_equiv` (refinement out of a ghost-free
 source only unfolds definitions — one induction, no context threading, since
 every ghost row is excluded and the two flexible lookups ARE
@@ -5303,7 +5364,7 @@ because its other two premises ARE the motive's refinement premises at `P0 = □
 and `a_consis_hole_p0_output` makes its precision a precision about `P`.  ⚠️ That
 precision arrives under the theorem's own `ζ`, not under `κ`.  The missing lemma
 is **precision is stable under equivalent metasubstitutions** —
-`Θ ⨟ Δ ⊢ₚᵣᵃ msubst_pskl κ P ⊑ msubst_pskl σ P` given `a_inc_equiv Θ0 κ σ Θ` and
+`Θ ⨟ Δ ⊢ₚᵣᵃᵈ msubst_pskl κ P ⊑ msubst_pskl σ P` given `a_inc_equiv Θ0 κ σ Θ` and
 wf of `P` — after which `ad_refine_syn_trans` composes.  ⚠️ Not the general `≡ˢ`
 transport, which an earlier note here asked for and which is awkward (`≡ˢ` is an
 equivalence CLOSURE, so the induction carries both directions and its `trans` row
@@ -6548,7 +6609,7 @@ binder).  Templates: the ordinary flex/∀ cases in a_consis_sound_aux.
 `a_consis_sound_aux` (all 14 cases Qed, axiom-free — "Closed under the
 global context") + the paper-shaped corollary `a_consis_sound`
 (Δ-contexts empty, forgets the fill-hygiene scaffolding via `*_f_forget`
-to land the plain `⊢ᵣᵃ`/`⊢ᵣₚᵃ` refinements).  The 3 ∀-cases used the
+to land the plain `⊢ᵣᵃᵈ`/`⊢ᵣₚᵃᵈ` refinements).  The 3 ∀-cases used the
 strip→rename→fmono / rename_ctx assembly; the flex cases needed
 `a_unify_sym` + `a_unify_subjects_flex`, `a_assign_subject_flex`,
 `a_isub_binds_tvar`, and lc-/guardedness-preservation of refinement.
@@ -6708,7 +6769,7 @@ reflexivity inputs of the appendix-B soundness proof.
 
 `algo/test_examples.v`: ENCODING CHECK per user request — the appendix
 benchmark examples (fig:comparison-table-QL/-new) mechanized as full
-algorithmic derivations `Θlib ⊢ₐ[TI;□] e ⦂ B ⊣ Θ'` with concrete result
+algorithmic derivations `Θlib ⊢ᵃ[TI;□] e ⦂ B ⊣ Θ'` with concrete result
 types/contexts.  Covered: A1, A2, A4, A5, A10a, A10b, C2, E2b (Int/Bool
 as rigid tvars, Int×Bool Church-encoded — the paper's "Ch." column).
 Deferred rows (List-based, pair-constructor, freeze): encoding works,
@@ -6743,7 +6804,7 @@ Closed.
 
 - `algo/def_meta.v` (metasubstitutions, `a_tyequiv`, `a_inc`/`⊴`) and
   `algo/def_decl_algo.v` (decl judgments over Θ with flex lookups:
-  `⊢ₚₛᵃ`/`⊨ₛᵃ`/`⊢ᵣᵃ`/`⊢ᵣₚᵃ`, Δ as `atoms` to align with `a_consis`).
+  `⊢ₚₛᵃ`/`⊨ₛᵃ`/`⊢ᵣᵃᵈ`/`⊢ᵣₚᵃᵈ`, Δ as `atoms` to align with `a_consis`).
 - **First lemma Qed**: `a_consis_decorate` = paper "Decorating algorithmic
   consistency" (`algo/prop_decorate.v`), with the `pskl→uskl` embedding kit.
 - `algo/prop_inc.v`: ⊴-algebra — `msubst_*_id`, `a_suffix_app`,

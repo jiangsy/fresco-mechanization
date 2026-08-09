@@ -41,7 +41,7 @@
 
     (3) THE THIRD SOLUTION PREMISE STAYS (§1's "lesson 1"): besides the
         subtyping derivation and the P0-fill, the SUBJECT's own refinement
-        [⊢ᵣₚᵃ κ⌊R⌋ˢ ⊳ ⌊Q⌋].  It is exactly what [a_consis_sound] /
+        [⊢ᵣₚᵃᵈ κ⌊R⌋ˢ ⊳ ⌊Q⌋].  It is exactly what [a_consis_sound] /
         [a_sub_sound] PRODUCE for every algorithmic output, so the
         sound/complete pair still characterises the algorithm exactly.
 
@@ -70,7 +70,7 @@ Require Import src.frost.algo.prop_refine.        (* lc_pskl_to_bskl_inh, a_wf_p
 Require Import src.frost.algo.consis.prop_completeness_consis. (* ad_precise_f *)
 Require Import src.frost.algo.consis.prop_consis_precise. (* pskl_no_forall *)
 Require Import src.frost.algo.prop_metasubst.     (* opt_axiom_factor *)
-Require Import src.frost.algo.prop_precise.       (* ad_precise, ⊢ₚᵣᵃ *)
+Require Import src.frost.algo.prop_precise.       (* ad_precise, ⊢ₚᵣᵃᵈ *)
 Require Import src.frost.algo.prop_flex.          (* a_decls *)
 Require Import src.frost.algo.consis.prop_soundness_consis.  (* ad_refine_{syn,pskl}_f *)
 Require Import src.frost.algo.prop_compose.       (* a_inc_{dom_flex,lookup_wf,lookup_mono}, msubst_pskl_open *)
@@ -131,7 +131,7 @@ Qed.
     Sub-Check cases genuinely need the AUGMENTED thm:complete-consistency's
     third condition (the subject's refinement) at each consistency leaf.
     The first repair attempt stated that condition ONCE, at the ROOT
-    ([⊢ᵣₚᵃ κ⌊R⌋ˢ ⊳ ⌊Q⌋] as a third motive premise) — REFUTED: refinement is
+    ([⊢ᵣₚᵃᵈ κ⌊R⌋ˢ ⊳ ⌊Q⌋] as a third motive premise) — REFUTED: refinement is
     a lockstep relation, so a root condition excludes every solution whose
     sides disagree at a head through ForallL / ForallR / UnivGhostR, i.e.
     instantiation and generalisation themselves (machine-checked,
@@ -189,7 +189,7 @@ Definition sub_complete_concl
        exists ζ,
          ζ ∷ Θ1 ⊑ Θ /\
          a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ /\
-         Θ ⨟ empty ⊢ₚᵣᵃ
+         Θ ⨟ empty ⊢ₚᵣᵃᵈ
            (msubst_bskl ζ (pskl_to_bskl_syn P1)) ⊑ (bskl_to_pskl Q)).
 
 (* ===================================================================== *)
@@ -257,7 +257,7 @@ Definition sub_flex_complete_concl
        exists ζ,
          ζ ∷ Θ1 ⊑ Θ /\
          a_inc_equiv (Ξ ++ Θ0) κ (msubst_compose ζ κ1) Θ /\
-         Θ ⨟ empty ⊢ₚᵣᵃ
+         Θ ⨟ empty ⊢ₚᵣᵃᵈ
            (msubst_bskl ζ (pskl_to_bskl_syn P1)) ⊑ (bskl_to_pskl Q)).
 
 (* ===================================================================== *)
@@ -313,7 +313,7 @@ Qed.
     is the converse of [ad_refine_pskl_f_forget], used to hand the join's
     leaf refinements to [a_consis_complete] (whose premises are [_f]). *)
 Lemma ad_refine_pskl_f_empty_intro : forall Θ Δ P Q,
-  Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q ->
+  Θ ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ Q ->
   ad_refine_pskl_f empty Θ Δ P Q.
 Proof.
   intros Θ Δ P Q H; induction H.
@@ -336,7 +336,7 @@ Qed.
     Every other row is excluded by its mode. *)
 Lemma ad_pat_sub_gv_ti_refine : forall n NM Ψ Θ R Q,
   ad_pat_sub_gv n NM mode_ti Ψ Θ R Q ->
-  Θ ⨟ empty ⊢ᵣₚᵃ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q).
+  Θ ⨟ empty ⊢ᵣₚᵃᵈ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q).
 Proof.
   intros n NM Ψ Θ R Q H; inversion H; subst; try congruence.
   (* __infer is closed by [congruence] (the goal IS the rule's premise);
@@ -363,7 +363,7 @@ Qed.
     counterpart IS such a painting, and [__flex_r], whose counterpart is a bare
     variable — and a variable is painted the same either way. *)
 Lemma ad_pat_consis_hole_target_inh : forall Ψ Θ Q,
-  Ψ ⨟ Θ ⊢ₛᵃ uskl_hole ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ uskl_hole ∼ Q ->
   pskl_to_bskl_inh (bskl_to_pskl Q) = Q.
 Proof.
   intros Ψ Θ Q H; inversion H; subst;
@@ -450,7 +450,7 @@ Proof.
 Qed.
 
 Lemma ad_pat_consis_holeg_target_inh : forall Ψ Θ Q,
-  Ψ ⨟ Θ ⊢ₛᵃ uskl_holeg ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ uskl_holeg ∼ Q ->
   pskl_to_bskl_inh (bskl_to_pskl Q) = Q.
 Proof. intros Ψ Θ Q H; inversion H; subst; reflexivity. Qed.
 
@@ -517,7 +517,7 @@ Qed.
 (*  algorithmic counterparts return the INPUT skeleton (or [∀◇.] of it) at *)
 (*  the INPUT context, so [ζ := κ] + [opt_axiom_factor] leave only         *)
 (*                                                                        *)
-(*      Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q  →  is_sskl Q  →  Θ ⨟ Δ ⊢ₚₛᵃ ⌊Q⌋                 *)
+(*      Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q  →  is_sskl Q  →  Θ ⨟ Δ ⊢ₚₛᵃ ⌊Q⌋                 *)
 (*        →  a_wf_aenv Θ  →  ⌊R⌋ˢ ⊑ ⌊Q⌋                                   *)
 (*                                                                        *)
 (*  Sub-Check is NOT one of them: its counterpart is [pskl_to_bskl_inh B]  *)
@@ -682,7 +682,7 @@ Proof.
 Qed.
 
 Lemma ad_pat_consis_ghost_subject_no_forall : forall Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
   is_sskl Q ->
   uskl_to_pskl R = pskl_hole ->
   pskl_no_forall (bskl_to_pskl Q).
@@ -856,7 +856,7 @@ Qed.
 (*      two increase conjuncts are [ζ := κ] + [opt_axiom_factor] again;    *)
 (*   3. the DECORATED consistency premise undecorates:                     *)
 (*      [ad_pat_consis_strip_tags] (prop_consis_precise.v:275) turns       *)
-(*      [Ψ ⨟ Θ ⊢ₛᵃ κR ∼ Q] into [∅ ⨟ Θ ⊢ₛᵃ pskl_to_uskl ⌊κR⌋ˢ ∼ Q], and   *)
+(*      [Ψ ⨟ Θ ⊢ᵃᵈ κR ∼ Q] into [∅ ⨟ Θ ⊢ᵃᵈ pskl_to_uskl ⌊κR⌋ˢ ∼ Q], and   *)
 (*      [⌊κR⌋ˢ = κ⌊R⌋ˢ = κP] by a one-line commutation;                    *)
 (*   4. [a_consis_complete] on the problem [(Θ0; □; P)] — its other    *)
 (*      two premises ARE this motive's refinement premises at [P0 = □];    *)
@@ -869,7 +869,7 @@ Qed.
 (*  [msubst_compose_id_pskl] collapses the composite on a Θ0-scoped        *)
 (*  skeleton, so what is wanted is                                        *)
 (*                                                                        *)
-(*      Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_pskl κ P) ⊑ (msubst_pskl σ P)                  *)
+(*      Θ ⨟ Δ ⊢ₚᵣᵃᵈ (msubst_pskl κ P) ⊑ (msubst_pskl σ P)                  *)
 (*        given  a_inc_equiv Θ0 κ σ Θ  and  Θ0 ⨟ Δ0 ⊢ₚₛᵃ P                *)
 (*                                                                        *)
 (*  — "PRECISION IS STABLE UNDER EQUIVALENT METASUBSTITUTIONS" — after     *)
@@ -877,7 +877,7 @@ Qed.
 (*                                                                        *)
 (*  ⚠️ NOTE THIS IS NOT THE GENERAL ≡ˢ TRANSPORT.  An earlier reading of    *)
 (*  this gap asked for                                                    *)
-(*    [Θ ⊢ P1 ≡ˢ P2 → Θ ⨟ Δ ⊢ₚᵣᵃ P2 ⊑ X → Θ ⨟ Δ ⊢ₚᵣᵃ P1 ⊑ X],            *)
+(*    [Θ ⊢ P1 ≡ˢ P2 → Θ ⨟ Δ ⊢ₚᵣᵃᵈ P2 ⊑ X → Θ ⨟ Δ ⊢ₚᵣᵃᵈ P1 ⊑ X],            *)
 (*  which is awkward because ≡ˢ is an equivalence CLOSURE (the induction   *)
 (*  has to carry both directions, and its [trans] row needs wf of a MIDDLE *)
 (*  skeleton nobody supplies).  The statement above avoids all of that: it *)
@@ -927,7 +927,7 @@ Lemma a_inc_equiv_precise_msubst_var : forall Θ0 κ σ Θ Δ α,
   (forall α0, a_binds_tvar α0 Θ0 ->
      Θ ⊢ (msubst_lookup κ α0) ≡ᵗ (msubst_lookup σ α0)) ->
   a_binds_tvar α Θ0 ->
-  Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_pskl κ (pskl_var_f α)) ⊑ (msubst_pskl σ (pskl_var_f α)).
+  Θ ⨟ Δ ⊢ₚᵣᵃᵈ (msubst_pskl κ (pskl_var_f α)) ⊑ (msubst_pskl σ (pskl_var_f α)).
 Proof.
   intros Θ0 κ σ Θ Δ α Hwf0 Hwfth Hκ Hσ Hie Hbt.
   assert (Hmκ : mono_ptyp (msubst_lookup κ α))
@@ -953,7 +953,7 @@ Lemma a_inc_equiv_precise_msubst_gen : forall Θ0 Δ0 P,
     (forall α, a_binds_tvar α Θ0 ->
        Θ ⊢ (msubst_lookup κ α) ≡ᵗ (msubst_lookup σ α)) ->
     Δ0 [<=] Δ ->
-    Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_pskl κ P) ⊑ (msubst_pskl σ P).
+    Θ ⨟ Δ ⊢ₚᵣᵃᵈ (msubst_pskl κ P) ⊑ (msubst_pskl σ P).
 Proof.
   intros Θ0 Δ0 P Hwf.
   induction Hwf as [ Θ0 Δ0 | Θ0 Δ0 α Hbt
@@ -1025,7 +1025,7 @@ Corollary a_inc_equiv_precise_msubst : forall Θ0 Δ0 P κ σ Θ Δ,
   κ ∷ Θ0 ⊑ Θ -> σ ∷ Θ0 ⊑ Θ ->
   a_inc_equiv Θ0 κ σ Θ ->
   Δ0 [<=] Δ ->
-  Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_pskl κ P) ⊑ (msubst_pskl σ P).
+  Θ ⨟ Δ ⊢ₚᵣᵃᵈ (msubst_pskl κ P) ⊑ (msubst_pskl σ P).
 Proof.
   intros Θ0 Δ0 P κ σ Θ Δ HwfP Hwf0 Hwfth Hκ Hσ Hie Hsub.
   eapply a_inc_equiv_precise_msubst_gen; try eassumption.
@@ -1038,7 +1038,7 @@ Corollary a_inc_equiv_precise_msubst_flip : forall Θ0 Δ0 P κ σ Θ Δ,
   κ ∷ Θ0 ⊑ Θ -> σ ∷ Θ0 ⊑ Θ ->
   a_inc_equiv Θ0 κ σ Θ ->
   Δ0 [<=] Δ ->
-  Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_pskl σ P) ⊑ (msubst_pskl κ P).
+  Θ ⨟ Δ ⊢ₚᵣᵃᵈ (msubst_pskl σ P) ⊑ (msubst_pskl κ P).
 Proof.
   intros Θ0 Δ0 P κ σ Θ Δ HwfP Hwf0 Hwfth Hκ Hσ Hie Hsub.
   eapply a_inc_equiv_precise_msubst_gen; try eassumption.
@@ -1064,7 +1064,7 @@ Qed.
     side condition at [P0 = □] — the condition refinement does NOT prove in
     general (cex_refine_not_transitive.v). *)
 Lemma ad_refine_syn_hole_l_target_wf : forall Θ Δ Q,
-  Θ ⨟ Δ ⊢ᵣᵃ bskl_hole ⊳ Q ->
+  Θ ⨟ Δ ⊢ᵣᵃᵈ bskl_hole ⊳ Q ->
   Θ ⨟ Δ ⊢ₚₛᵃ (bskl_to_pskl Q).
 Proof.
   intros Θ Δ Q H.
@@ -1087,10 +1087,10 @@ Lemma a_sub_complete_hole_p0_precision : forall Θ0 P Θ κ Q,
   a_wf_aenv Θ0 -> a_wf_aenv Θ ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
   κ ∷ Θ0 ⊑ Θ ->
-  empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κ P)) ∼ Q ->
+  empty ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl (msubst_pskl κ P)) ∼ Q ->
   ad_refine_syn_f empty Θ empty bskl_hole Q ->
   ad_refine_pskl_f empty Θ empty (msubst_pskl κ P) (bskl_to_pskl Q) ->
-  Θ ⨟ empty ⊢ₚᵣᵃ (msubst_pskl κ P) ⊑ (bskl_to_pskl Q).
+  Θ ⨟ empty ⊢ₚᵣᵃᵈ (msubst_pskl κ P) ⊑ (bskl_to_pskl Q).
 Proof.
   intros Θ0 P Θ κ Q Hwf0 Hwfth HwfP Hinc Hconsis Hrs Hrp.
   (* 1. thm:complete-consistency at [(Θ0; □; P)] *)
@@ -1145,7 +1145,7 @@ Qed.
     excluded by its mode ([M <> TI], [mode_tc], or [mode_fn M]). *)
 Lemma ad_pat_sub_g_ti_consis : forall n NM Ψ Θ R Q,
   ad_pat_sub_g n NM mode_ti Ψ Θ R Q ->
-  empty ⨟ Θ ⊢ₛᵃ R ∼ Q.
+  empty ⨟ Θ ⊢ᵃᵈ R ∼ Q.
 Proof.
   intros n NM Ψ Θ R Q H; inversion H; subst; try congruence;
     try assumption;                                       (* __infer *)
@@ -1186,7 +1186,7 @@ Proof.
   (* 3. the precision, via thm:complete-consistency at [(Θ0; □; P)] *)
   unfold ad_precise.
   rewrite msubst_bskl_pskl_to_bskl_syn, bskl_to_pskl_pskl_to_bskl_syn.
-  change (Θ ⨟ empty ⊢ₚᵣᵃ (msubst_pskl κ P) ⊑ (bskl_to_pskl Q)).
+  change (Θ ⨟ empty ⊢ₚᵣᵃᵈ (msubst_pskl κ P) ⊑ (bskl_to_pskl Q)).
   (* the DECORATED premise undecorates, then the slack moves it to κP *)
   pose proof (ad_pat_consis_strip_tags
                 (ad_pat_sub_g_ti_consis (ad_pat_sub_gv_forget Hsub))) as Hc0.
@@ -1288,8 +1288,8 @@ Qed.
 Lemma a_sub_complete_univ_ghost_r : forall n Θ0 P0 P R R' Ψ Θ κ Q,
   guarded_uskl R' ->                                            (* row premise *)
   guarded_bskl Q ->                                            (* row premise *)
-  empty ⨟ Θ ⊢ₛᵃ R' ∼ Q ->                                       (* row premise *)
-  Θ ⨟ empty ⊢ᵣₚᵃ ⌊ R' ⌋ˢ ⊳ (bskl_to_pskl Q) ->                  (* leaf refinement *)
+  empty ⨟ Θ ⊢ᵃᵈ R' ∼ Q ->                                       (* row premise *)
+  Θ ⨟ empty ⊢ᵣₚᵃᵈ ⌊ R' ⌋ˢ ⊳ (bskl_to_pskl Q) ->                  (* leaf refinement *)
   sub_complete_concl n a_sub_mode_sk mode_tc Θ0 P0 P R R' Ψ Θ κ (bskl_tophole Q).
 Proof.
   intros n Θ0 P0 P R R' Ψ Θ κ Q HgT HgQ Hrow Hrfn.
@@ -1314,7 +1314,7 @@ Proof.
   split; [ exact Hout | split; [ exact Hfact | ] ].
   (* 3. the precision at the STRIPPED counterpart, via the shared core;
         the slack moves both leaf facts from [R'] to [κP] *)
-  assert (Hc : empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κ P)) ∼ Q).
+  assert (Hc : empty ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl (msubst_pskl κ P)) ∼ Q).
   { pose proof (ad_pat_consis_strip_tags Hrow) as H0.
     destruct (skl_tyequiv_consis_transport Herase Hwfth
                 (fun x b Hb => Hb)) as [Hct _].
@@ -1376,8 +1376,8 @@ Qed.
 Lemma a_sub_complete_check : forall n Θ0 P0 P R R' Ψ Θ κ B,
   guarded_uskl R' ->                                           (* row premise *)
   guarded_pskl B ->                                           (* row premise *)
-  Ψ ⨟ Θ ⊢ₛᵃ R' ∼ (pskl_to_bskl_inh B) ->                       (* row premise *)
-  Θ ⨟ empty ⊢ᵣₚᵃ ⌊ R' ⌋ˢ ⊳ B ->                                (* leaf refinement *)
+  Ψ ⨟ Θ ⊢ᵃᵈ R' ∼ (pskl_to_bskl_inh B) ->                       (* row premise *)
+  Θ ⨟ empty ⊢ᵣₚᵃᵈ ⌊ R' ⌋ˢ ⊳ B ->                                (* leaf refinement *)
   guarded_pskl P0 ->                    (* the algorithm's Check/ForallR split *)
   Θ ⨟ empty ⊢ₚₛᵃ B ->                   (* external wf of the counterpart *)
   sub_complete_concl n a_sub_mode_ty mode_tc Θ0 P0 P R R' Ψ Θ κ (pskl_to_bskl_inh B).
@@ -1413,7 +1413,7 @@ Proof.
     apply uskl_ghost_free_to_pskl.
     eapply a_uskl_tyequiv_ghost_free; [ exact Hrel | exact (Hgf eq_refl) ]. }
   (* the DECORATED premise undecorates, then the slack moves it to κP *)
-  assert (Hc : empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κ P))
+  assert (Hc : empty ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl (msubst_pskl κ P))
                             ∼ (pskl_to_bskl_inh B)).
   { pose proof (ad_pat_consis_strip_tags Hrow) as H0.
     destruct (skl_tyequiv_consis_transport Herase Hwfth
@@ -1471,7 +1471,7 @@ Qed.
 
 (** The syn mirror of [ad_refine_pskl_f_empty_intro]. *)
 Lemma ad_refine_syn_f_empty_intro : forall Θ Δ Q Q',
-  Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ Q' ->
+  Θ ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ Q' ->
   ad_refine_syn_f empty Θ Δ Q Q'.
 Proof.
   intros Θ Δ Q Q' H; induction H.
@@ -1561,8 +1561,8 @@ Proof.
   (* the join's last rule is [__arrow]; read its fields off *)
   inversion Hsub; subst.
   match goal with
-  | Hj : _ ⨟ Θ ⊢ₛᵃ R1' ∼ Q1,
-    Hlf : Θ ⨟ empty ⊢ᵣₚᵃ ⌊ R1' ⌋ˢ ⊳ _,
+  | Hj : _ ⨟ Θ ⊢ᵃᵈ R1' ∼ Q1,
+    Hlf : Θ ⨟ empty ⊢ᵣₚᵃᵈ ⌊ R1' ⌋ˢ ⊳ _,
     Hs2 : ad_pat_sub_gv _ _ _ _ Θ R2' Q2 |- _ =>
       rename Hj into Hj1; rename Hlf into Hrfn1; rename Hs2 into Hsub2
   end.
@@ -1596,7 +1596,7 @@ Proof.
   (* ---- DOMAIN: thm:complete-consistency at (Θ0; P0a; ⌊Ra⌋) ---- *)
   pose proof (a_uskl_tyequiv_erase Hrel1) as Herase1.
   rewrite uskl_to_pskl_msubst_uskl_syn in Herase1.
-  assert (Hc1 : empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κ ⌊ Ra ⌋ˢ)) ∼ Q1).
+  assert (Hc1 : empty ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl (msubst_pskl κ ⌊ Ra ⌋ˢ)) ∼ Q1).
   { pose proof (ad_pat_consis_strip_tags Hj1) as H0.
     destruct (skl_tyequiv_consis_transport Herase1 Hwfth
                 (fun x b Hb => Hb)) as [Hct _].
@@ -3266,7 +3266,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma ad_pat_sub_target_wf : forall NM M Ψ Θ R Qt,
-  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Qt ->
+  Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Qt ->
   a_scope_pskl Θ (bskl_to_pskl Qt).
 Proof.
   intros NM M Ψ Θ R Qt H; induction H.
@@ -4757,7 +4757,7 @@ Qed.
     def-closedness side condition unnecessary: the two definition-chasing rows
     now discharge it by [aenv_msubst_lookup_def] alone. *)
 Lemma consis_bskl_downarrow_mono_scoped : forall Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
   a_wf_aenv Θ ->
   forall A D,
     R = ptyp_to_uskl_syn A -> mono_ptyp A ->
@@ -4909,10 +4909,10 @@ Qed.
     normalized leaf is the same derivation with the definitions already
     resolved. *)
 Lemma consis_downarrow_mono : forall Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
   a_wf_aenv Θ ->
   forall A, R = ptyp_to_uskl_syn A -> mono_ptyp A -> a_wf_ptyp Θ A ->
-  Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn (⇓ᵗ[ Θ ] A)) ∼ (⇓ᵇ[ Θ ] Q).
+  Ψ ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn (⇓ᵗ[ Θ ] A)) ∼ (⇓ᵇ[ Θ ] Q).
 Proof.
   intros Ψ Θ R Q Hc Hwf; induction Hc; intros A0 HeqR HmA HwfA;
     unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn in HeqR.
@@ -4986,10 +4986,10 @@ Qed.
     [consis_downarrow_mono], for the same reason: at a monotype source the
     ∀ / hole / tophole rows cannot fire. *)
 Lemma refine_pskl_downarrow_mono : forall Θ Δ P Q,
-  Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q ->
+  Θ ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ Q ->
   a_wf_aenv Θ ->
   forall A, P = ptyp_to_pskl A -> mono_ptyp A -> a_wf_ptyp Θ A ->
-  Θ ⨟ Δ ⊢ᵣₚᵃ (⇓ˢ[ Θ ] P) ⊳ (⇓ˢ[ Θ ] Q).
+  Θ ⨟ Δ ⊢ᵣₚᵃᵈ (⇓ˢ[ Θ ] P) ⊳ (⇓ˢ[ Θ ] Q).
 Proof.
   intros Θ Δ P Q Hr Hwf; induction Hr; intros A0 HeqP HmA HwfA.
   - (* unit *)
@@ -5469,13 +5469,13 @@ Qed.
     definition chases need [Δ] apart from [dom Θ] so that a flexible's ftv
     obligation cannot be discharged by the Δ-disjunct. *)
 Lemma ad_refine_pskl_strengthen : forall Θ Δ P Q,
-  Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q ->
+  Θ ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ Q ->
   forall Θ', uniq Θ -> a_wf_aenv Θ' ->
   (forall x b, binds x b Θ' -> binds x b Θ) ->
   (forall x, x `in` Δ -> x `notin` dom Θ) ->
   (forall γ, γ `in` ftvar_in_pskl P -> γ `in` Δ \/ γ `in` dom Θ') ->
   (forall γ, γ `in` ftvar_in_pskl Q -> γ `in` Δ \/ γ `in` dom Θ') ->
-  Θ' ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q.
+  Θ' ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ Q.
 Proof.
   intros Θ Δ P Q H; induction H;
     intros Θ' Hu Hwf' Hsub Hdisj HscP HscQ; simpl in *.
@@ -6117,7 +6117,7 @@ Lemma ad_precise_downarrow : forall Θ Δ P,
   Θ ⨟ Δ ⊢ₚₛᵃ P ->
   a_wf_aenv Θ ->
   (forall α, α `in` Δ -> α `notin` dom Θ) ->
-  Θ ⨟ Δ ⊢ₚᵣᵃ (⇓ˢ[ Θ ] P) ⊑ P.
+  Θ ⨟ Δ ⊢ₚᵣᵃᵈ (⇓ˢ[ Θ ] P) ⊑ P.
 Proof.
   unfold ad_precise.
   intros Θ Δ P H; induction H; intros Hwf HΔ; simpl.
@@ -6529,7 +6529,7 @@ Proof.
               discriminate
           | eapply a_inc_flex_in_keys; [ exact Hζ | left; exact hbt ]
           | eapply a_inc_flex_in_keys; [ exact Hζ | right; eexists; exact hbt ] ] ].
-    assert (HprecΘ : Θ ⨟ empty ⊢ₚᵣᵃ (msubst_bskl ζ (pskl_to_bskl_syn P1))
+    assert (HprecΘ : Θ ⨟ empty ⊢ₚᵣᵃᵈ (msubst_bskl ζ (pskl_to_bskl_syn P1))
                        ⊑ (bskl_to_pskl (⇓ᵇ[ Θ ] Q))).
     { unfold ad_precise in *.
       apply ad_refine_syn_f_forget with (F := empty).
@@ -6961,7 +6961,7 @@ Proof.
               discriminate
           | eapply a_inc_flex_in_keys; [ exact Hζ | left; exact hbt ]
           | eapply a_inc_flex_in_keys; [ exact Hζ | right; eexists; exact hbt ] ] ].
-    assert (HprecΘ : Θ ⨟ empty ⊢ₚᵣᵃ (msubst_bskl ζ (pskl_to_bskl_syn P1))
+    assert (HprecΘ : Θ ⨟ empty ⊢ₚᵣᵃᵈ (msubst_bskl ζ (pskl_to_bskl_syn P1))
                        ⊑ (bskl_to_pskl (⇓ᵇ[ Θ ] Q))).
     { unfold ad_precise in *.
       apply ad_refine_syn_f_forget with (F := empty).
@@ -7379,7 +7379,7 @@ Proof.
               discriminate
           | eapply a_inc_flex_in_keys; [ exact Hζ | left; exact hbt ]
           | eapply a_inc_flex_in_keys; [ exact Hζ | right; eexists; exact hbt ] ] ].
-    assert (HprecΘ : Θ ⨟ empty ⊢ₚᵣᵃ (msubst_bskl ζ (pskl_to_bskl_syn P1))
+    assert (HprecΘ : Θ ⨟ empty ⊢ₚᵣᵃᵈ (msubst_bskl ζ (pskl_to_bskl_syn P1))
                        ⊑ (bskl_to_pskl (⇓ᵇ[ Θ ] Q))).
     { unfold ad_precise in *.
       apply ad_refine_syn_f_forget with (F := empty).

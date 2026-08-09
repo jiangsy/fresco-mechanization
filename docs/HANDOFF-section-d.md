@@ -43,7 +43,7 @@ Qed and axiom-free:
 
 ⭐ **4a was a MISSING APPENDIX PREMISE, not a missing lemma.**
 `ad_sd_typing__app` now carries `Θ ⊢ (btyp_to_ptyp B1) ≡ᵗ A2` beside
-`Θ ⊢ˢᵃ[TC] e2 ⦂ inh{A2}` — the appendix's own idiom, applied to the fourth
+`Θ ⊢ˢᵃᵈ[TC] e2 ⦂ inh{A2}` — the appendix's own idiom, applied to the fourth
 rule that needs it (docs/PAPER-GAPS.md).  The mech's `AT-App` case will
 discharge it from `ad_refine_syn_inh_tyequiv` (§2), the same lemma `Freeze`
 uses.  ⚠️ This CHANGES A RULE; if the authors prefer `sd-App` unchanged,
@@ -100,12 +100,12 @@ before estimating.
 
 | Coq | notation | paper |
 |---|---|---|
-| `ad_pat M Θ e Q` | `Θ ⊢ᵃ[ M ] e ⇨ Q` | `\patp[\M]{\Theta}{M}{\bid{Q}}` |
-| `ad_sd_typing M Θ e B` | `Θ ⊢ˢᵃ[ M ] e ⦂ B` | `\typp[\M]{\Theta}{M}{\bid{A}}` |
-| `a_pat m Θ0 P0 e P Θ1` | `Θ ⊢ₐ[ m ; P0 ] e ⇨ P ⊣ Θ'` | fig:alg-skeleton-inference |
-| `a_typing m Θ0 P0 e A Θ1` | `Θ ⊢ₐ[ m ; P0 ] e ⦂ B ⊣ Θ'` | fig:alg-type-inference |
+| `ad_pat M Θ e Q` | `Θ ⊢ₛᵃᵈ[ M ] e ⦂ Q` | `\patp[\M]{\Theta}{M}{\bid{Q}}` |
+| `ad_sd_typing M Θ e B` | `Θ ⊢ˢᵃᵈ[ M ] e ⦂ B` | `\typp[\M]{\Theta}{M}{\bid{A}}` |
+| `a_pat m Θ0 P0 e P Θ1` | `Θ ⊢ₛᵃ[ m ; P0 ] e ⦂ P ⊣ Θ'` | fig:alg-skeleton-inference |
+| `a_typing m Θ0 P0 e A Θ1` | `Θ ⊢ᵃ[ m ; P0 ] e ⦂ B ⊣ Θ'` | fig:alg-type-inference |
 | `a_split Θ P0 P Q Θ'` | `Θ ⊲ P0 ▹ P ⇢ Q ⊣ Θ'` | `\split` |
-| `ad_precise Θ Δ P Q` | `Θ ⨟ Δ ⊢ₚᵣᵃ P ⊑ Q` | `\precise{P}{Q}` — **LEFT is the more precise one** (checked against `ad_precise_preserves_refine`) |
+| `ad_precise Θ Δ P Q` | `Θ ⨟ Δ ⊢ₚᵣᵃᵈ P ⊑ Q` | `\precise{P}{Q}` — **LEFT is the more precise one** (checked against `ad_precise_preserves_refine`) |
 
 The appendix's own reason for adding no new rule to either judgement: new rules
 are needed only where a FLEXIBLE variable can appear, and neither judgement
@@ -121,14 +121,14 @@ their flexible rows.  What IS carried are the appendix's three explicit
     (* moving:  Θ1,Θ2,Ξ  ⟹  Θ1,Ξ,Θ2   — mech lists grow at the FRONT,
        so the paper's [Θ1,Θ2,Ξ] is [Ξ ++ Θ2 ++ Θ1] in Coq *)
     Lemma ad_sd_typing_suffix_moving : forall M Θ1 Θ2 Ξ e B,
-      (Ξ ++ Θ2 ++ Θ1) ⊢ˢᵃ[ M ] e ⦂ B ->
+      (Ξ ++ Θ2 ++ Θ1) ⊢ˢᵃᵈ[ M ] e ⦂ B ->
       <Ξ does not depend on Θ2> ->
-      (Θ2 ++ Ξ ++ Θ1) ⊢ˢᵃ[ M ] e ⦂ B.
+      (Θ2 ++ Ξ ++ Θ1) ⊢ˢᵃᵈ[ M ] e ⦂ B.
 
     Lemma ad_sd_typing_suffix_erasure : forall M Θ Ξ e B,
-      (Ξ ++ Θ) ⊢ˢᵃ[ M ] e ⦂ B ->
+      (Ξ ++ Θ) ⊢ˢᵃᵈ[ M ] e ⦂ B ->
       <Ξ fresh for B> ->
-      Θ ⊢ˢᵃ[ M ] e ⦂ B.
+      Θ ⊢ˢᵃᵈ[ M ] e ⦂ B.
 
 ✅ **MOVING IS CLOSED** and cost almost nothing: `ad_sd_typing_suffix_moving`
 / `ad_pat_suffix_moving` (prop_ctx_mono.v) fall out of
@@ -211,7 +211,7 @@ induction".
     Lemma a_split_refines : forall Θ0 P0 P Q Θ1,
       Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 ->
       Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->          (* EXTERNAL wf, see below *)
-      Θ1 ⨟ empty ⊢ᵣₚᵃ P0 ⊳ (pskl_arrow P Q).
+      Θ1 ⨟ empty ⊢ᵣₚᵃᵈ P0 ⊳ (pskl_arrow P Q).
 
 Two of the three rows are easy; the third is a genuine proof.
 
@@ -225,14 +225,14 @@ Two of the three rows are easy; the third is a genuine proof.
   syntactic step.  (The paper writes it `unify{α̂}{β̂ → α1̂}`, but that `∼` is
   CONSISTENCY, not `unifyvar`: `unifyvar`'s subjects are hatted variables and
   the input here is an ARROW — see the `[paper-gap]` note on the rule in
-  `algo/def_extra.v`.)  To reach `Θ1 ⨟ ∅ ⊢ᵣₚᵃ α̂ ⊳ (β̂ → α1̂)` you must
+  `algo/def_extra.v`.)  To reach `Θ1 ⨟ ∅ ⊢ᵣₚᵃᵈ α̂ ⊳ (β̂ → α1̂)` you must
 
   1. invert that run.  Only `a_consis__flex_l` can fire (subject `α̂` flexible,
      `P0 = β̂ → α1̂` non-flex), which hands back
      `((α1~flex) ++ (β~flex) ++ Θ0) ⊲[nil] α ≔ (β̂ → α1̂) ⊣ Θ1`;
   2. read α's DEFINITION out of that assignment — `ad_refine_pskl__flex_l`
      needs exactly `binds α (abind_flex_mono_def τ) Θ1` together with
-     `Θ1 ⨟ ∅ ⊢ᵣₚᵃ (ptyp_to_pskl τ) ⊳ (β̂ → α1̂)`.  ⚠️ τ is NOT syntactically
+     `Θ1 ⨟ ∅ ⊢ᵣₚᵃᵈ (ptyp_to_pskl τ) ⊳ (β̂ → α1̂)`.  ⚠️ τ is NOT syntactically
      `β̂ → α1̂`: the assign walk's skip rows may have moved/refreshed entries,
      and β̂ / α1̂ may themselves have been defined along the way.
 
@@ -253,9 +253,9 @@ Two of the three rows are easy; the third is a genuine proof.
 
       binds α (abind_flex_mono_def τ) Θ1                (* = premise 1 of
                                                            ad_refine_pskl__flex_l *)
-      ∅ ⨟ Θ1 ⊢ₛᵃ (pskl_to_uskl (β̂ → α1̂)) ∼ (ptyp_to_bskl_syn τ)
+      ∅ ⨟ Θ1 ⊢ᵃᵈ (pskl_to_uskl (β̂ → α1̂)) ∼ (ptyp_to_bskl_syn τ)
 
-  leaving one obligation: `Θ1 ⨟ ∅ ⊢ᵣₚᵃ (ptyp_to_pskl τ) ⊳ (β̂ → α1̂)`.  Both
+  leaving one obligation: `Θ1 ⨟ ∅ ⊢ᵣₚᵃᵈ (ptyp_to_pskl τ) ⊳ (β̂ → α1̂)`.  Both
   sides there are MONOTYPE-level (τ is a monotype by construction; `β̂ → α1̂` is
   an arrow of flexibles, hence ghost-free), so this is the mono bridge's
   territory — `consis_refine_mono_tyequiv` / `tyequiv_mono_consis` /
@@ -307,9 +307,9 @@ memory `remech-pskl-trans-kit`.
 ### 3-history (scouting, 2026-08-06)
 
     Lemma ad_precise_extends_pat_sub : forall Θ Δ P' P Ψ M Q,
-      Θ ⨟ Δ ⊢ₚᵣᵃ P' ⊑ P ->
-      Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] (pskl_to_uskl P) ⩽ Q ->
-      Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] (pskl_to_uskl P') ⩽ Q.
+      Θ ⨟ Δ ⊢ₚᵣᵃᵈ P' ⊑ P ->
+      Ψ ⨟ Θ ⊢ᵃᵈ[ a_sub_mode_sk | M ] (pskl_to_uskl P) ⩽ Q ->
+      Ψ ⨟ Θ ⊢ᵃᵈ[ a_sub_mode_sk | M ] (pskl_to_uskl P') ⩽ Q.
 
 ⚙ Probe: `cex/probe_precision_sub_ghost_row.v` (compiles).
 
@@ -398,7 +398,7 @@ Order them soundness-first; the two soundness theorems are independent of the
 1. **Soundness of skeleton inference** — `a_pat` ⟹ information increase +
    `ad_pat` at the output context.  Consumes `a_sub_sound`
    (prop_decorate_key.v; since `9189ba8` it concludes the PLAIN
-   `Θ1 ⨟ ∅ ⊢ᵣᵃ … ⊳ …`) and §1's suffix kit.
+   `Θ1 ⨟ ∅ ⊢ᵣᵃᵈ … ⊳ …`) and §1's suffix kit.
 2. **Soundness of type inference** — `a_typing` ⟹ increase + `ad_sd_typing`.
    Same shape; additionally needs `a_tyequiv` to discharge the appendix's three
    equivalence premises, which is where the algorithm's flexibles show up.
@@ -543,7 +543,7 @@ context*.  The table below is the record of what each row needed.
 `ad_pat_sub_gv_fuel_weaken` MOVED to
 `decorated_algo/def_decl_algo_sub_hyg.v` (they are plain inductions over the
 mirrors and need nothing else), joined there by the composite
-`ad_pat_sub_of_gv : ad_pat_sub_gv n … -> Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q`.  Both
+`ad_pat_sub_of_gv : ad_pat_sub_gv n … -> Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q`.  Both
 old sites keep a pointer comment.
 
 ✅ **(b) DONE.**  Of the three positional consumers, one
@@ -832,7 +832,7 @@ transport — was closed.
 ### 7.1 The statement as proved
 
     Theorem a_pat_sound : forall m Θ0 P0 e P Θ1,
-      Θ0 ⊢ₐ[ m ; P0 ] e ⇨ P ⊣ Θ1 ->
+      Θ0 ⊢ₛᵃ[ m ; P0 ] e ⦂ P ⊣ Θ1 ->
       a_wf_aenv Θ0 ->
       (forall x Ps, binds x (abind_var_skl Ps) Θ0 ->
          Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->                  (* the paper's Θ ⊢ ctx *)
@@ -841,8 +841,8 @@ transport — was closed.
       a_wf_exp Θ0 e ->                            (* "M is wf in Θ0" *)
       Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
       exists Qt, bskl_to_pskl Qt = P /\
-        (Θ1 ⊢ᵃ[ m ] e ⇨ Qt) /\
-        (Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ Qt).
+        (Θ1 ⊢ₛᵃᵈ[ m ] e ⦂ Qt) /\
+        (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ Qt).
 
 ⚠️ The two hypotheses beyond the paper's list are the WF-SIDE-CONDITIONS
 pattern: `a_wf_aenv__var` stores only `a_scope_pskl` where the paper's
@@ -875,7 +875,7 @@ freshness fact the statement does not carry.
       a_consis_chk Θ0 (ptyp_to_pskl A) P Θ1 ->
       a_wf_aenv Θ0 -> a_wf_ptyp Θ0 A -> Θ0 ⨟ empty ⊢ₚₛᵃ P ->
       exists B, btyp_to_ptyp B = A /\
-        Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B).
+        Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B).
 
 Needed by `AP-AbsAnno` at the ARROW split shape (at the HOLE shape the row
 answers with the all-synthesised painting and needs none of this).  It is the
@@ -892,7 +892,7 @@ so that route re-does consistency soundness.
 one context, so only the target is wrong:
 
     Lemma ad_refine_syn_target_transport : forall Ψ Θc R Qt,
-      Ψ ⨟ Θc ⊢ₛᵃ R ∼ Qt -> a_wf_aenv Θc ->
+      Ψ ⨟ Θc ⊢ᵃᵈ R ∼ Qt -> a_wf_aenv Θc ->
       forall A, R = ptyp_to_uskl_syn A -> lc_ptyp A ->
       forall Θr Δ Qb,
       a_wf_aenv Θr ->
@@ -901,8 +901,8 @@ one context, so only the target is wrong:
       (forall γ, a_flex_tvar Θc γ -> a_binds_tvar γ Θr) ->        (* Hflex *)
       (forall γ, γ `in` ftvar_in_ptyp A ->
                  γ `in` Δ \/ a_binds_tvar γ Θr) ->               (* Hvis  *)
-      Θr ⨟ Δ ⊢ᵣᵃ Qb ⊳ Qt ->
-      exists B, btyp_to_ptyp B = A /\ Θr ⨟ Δ ⊢ᵣᵃ Qb ⊳ (btyp_to_bskl B)
+      Θr ⨟ Δ ⊢ᵣᵃᵈ Qb ⊳ Qt ->
+      exists B, btyp_to_ptyp B = A /\ Θr ⨟ Δ ⊢ᵣᵃᵈ Qb ⊳ (btyp_to_bskl B)
 
 by a NESTED induction — outer on the consistency, inner (with `remember` on
 the target) on the refinement, in the four rows whose target does not pin the
@@ -990,7 +990,7 @@ axiom-free**, `Check`ed and `Print Assumptions`-audited in `README.v` beside
 `a_pat_sound`.  The statement is §7.5's target plus ONE conjunct:
 
     Theorem a_typing_sound : forall m Θ0 P0 e A Θ1,
-      Θ0 ⊢ₐ[ m ; P0 ] e ⦂ A ⊣ Θ1 ->
+      Θ0 ⊢ᵃ[ m ; P0 ] e ⦂ A ⊣ Θ1 ->
       a_wf_aenv Θ0 ->
       (forall x Ps, binds x (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
       Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
@@ -998,8 +998,8 @@ axiom-free**, `Check`ed and `Print Assumptions`-audited in `README.v` beside
       a_wf_exp Θ0 e ->
       Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
       exists Bt, btyp_to_ptyp Bt = A /\
-        (Θ1 ⊢ˢᵃ[ m ] e ⦂ Bt) /\
-        (Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt))
+        (Θ1 ⊢ˢᵃᵈ[ m ] e ⦂ Bt) /\
+        (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt))
 
 ⚙ **Why the extra conjunct.**  `AT-App`'s third premise runs at input `⌈A⌉`,
 and nothing else in the derivation says the FUNCTION's domain is scoped in the
@@ -1039,7 +1039,7 @@ axiom-free.  The statement to aim at is theorem 1's mirror, one layer up
 `Θ1 ⊢ inh{P} ⊳ bid{A}` and `inc{Θ0}{Θ1}`"):
 
     Theorem a_typing_sound : forall m Θ0 P0 e A Θ1,
-      Θ0 ⊢ₐ[ m ; P0 ] e ⦂ A ⊣ Θ1 ->
+      Θ0 ⊢ᵃ[ m ; P0 ] e ⦂ A ⊣ Θ1 ->
       a_wf_aenv Θ0 ->
       (forall x Ps, binds x (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
       Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
@@ -1047,8 +1047,8 @@ axiom-free.  The statement to aim at is theorem 1's mirror, one layer up
       a_wf_exp Θ0 e ->
       Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
       exists B, btyp_to_ptyp B = A /\
-        (Θ1 ⊢ˢᵃ[ m ] e ⦂ B) /\
-        (Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl B))
+        (Θ1 ⊢ˢᵃᵈ[ m ] e ⦂ B) /\
+        (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl B))
 
 **Banked (`prop_soundness_typing.v`):**
 
@@ -1101,7 +1101,7 @@ its goal from its own premises, and `App` recurses at the SAME context.
       a_guess_mono Θ P Ξ A ->
       (forall α, α `in` ftvar_in_pskl P -> α `in` Δ \/ a_binds_tvar α Θ1) ->
       (forall α1, binds α1 abind_flex_mono Ξ -> a_binds_tvar α1 Θ1) ->
-      Θ1 ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A))
+      Θ1 ⨟ Δ ⊢ᵣᵃᵈ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A))
 
 Filling a ghost with a fresh flexible IS a refinement step; a universal
 ghost is DROPPED, so `⫯.P` is `__tophole_remove`, not `__tophole_keep`.
@@ -1154,7 +1154,7 @@ for four rows only.
 arrow and the theorem-1 dodge (`a_split_sk_shape`'s analogue) still applies:
 NO split-refine and NO refinement transitivity there, even though the paper
 invokes both.  ⚙ When you do build split-refine, state it COLOURED —
-`Θ1 ⨟ ∅ ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ (pskl_to_bskl_inh (pskl_arrow P Q))` —
+`Θ1 ⨟ ∅ ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ (pskl_to_bskl_inh (pskl_arrow P Q))` —
 not in §2's uncoloured `ad_refine_pskl` form, which is not what the rows
 consume.
 

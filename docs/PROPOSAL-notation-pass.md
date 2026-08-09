@@ -3,8 +3,15 @@
 Goal: (1) stay close to the paper's notation, (2) use notation as much as
 possible, (3) use custom scopes to reduce collisions.
 
-Status: **big-judgment relation symbols DONE and merged** (see §1/§5); small
-operations (§4) catalogued for later, no rush.
+Status: **big-judgment relation symbols DONE and merged** (see §1/§5); the
+**system/sort axes DONE 2026-08-09** (see §5 — that pass is the one that made
+`a/d/ad` legible, and the canonical legend now lives in `frost/notations.v`);
+small operations (§4) catalogued for later, no rush.
+
+⚠️ **This file keeps its ORIGINAL glyphs on purpose** — the "Mech now" columns
+below are a historical record of what the notation *was*, and the combining
+dots in §2/DECISION B are specimens of the hazard. It is the one file the
+2026-08-09 sweep deliberately skipped; do not "fix" its tables.
 
 Paper macro source: `paper/macro.tex`. Rendered forms below use the paper's
 actual glyphs.
@@ -158,3 +165,93 @@ at zero definition cost.
 
 Recommendation: do the big judgments + collisions + scope-leak fixes first;
 tackle §4 as a separate, self-contained pass.
+
+---
+
+## 5. The system / sort axes — DONE 2026-08-09
+
+§1 fixed the relation SYMBOLS. What it did not touch was the turnstile
+DECORATIONS, and those had drifted into two genuine defects:
+
+1. **One marker, two systems.** `ᵃ` meant `a_` in `a_wf_pskl` (`Θ ⨟ Δ ⊢ₚₛᵃ P`)
+   but `ad_` in `ad_pat_consis` (`Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q`) / `ad_refine_syn`
+   (`⊢ᵣᵃ`) / `ad_sd_typing` (`⊢ˢᵃ`) / `ad_pat` (`⊢ᵃ[ M ]`).
+2. **The axes shared a device.** `a_consis` / `a_sub` / `a_pat` / `a_typing`
+   wrote the SYSTEM as a subscript (`⊢ₐ[ … ]`), while the SORT is a
+   subscript everywhere else (`⊢ₛ`, `⊢ₚₛ`, `⊢ᵤₛ`) — so the algorithmic and
+   the decorated turnstile differed by sub- vs superscript `a` alone.
+
+Resolved by giving each axis one device — **superscript = system, subscript =
+sort** — and stating the sort exactly once (subscript where the system has one
+relation per sort, bracket index `N`/`NM` where one relation covers both).
+The canonical legend is the header of [`frost/notations.v`](../frost/notations.v);
+`CLAUDE.md`'s style section points at it. What moved:
+
+| relation | before | after |
+|---|---|---|
+| `d_pat` | `Γ ⊢[ M ] e ⇨ P` | `Γ ⊢ₛ[ M ] e ⦂ P` |
+| `ad_pat` | `Θ ⊢ᵃ[ M ] e ⇨ Q` | `Θ ⊢ₛᵃᵈ[ M ] e ⦂ Q` |
+| `a_pat` | `Θ ⊢ₐ[ m ; P0 ] e ⇨ Q ⊣ Θ'` | `Θ ⊢ₛᵃ[ m ; P0 ] e ⦂ Q ⊣ Θ'` |
+| `a_typing` | `Θ ⊢ₐ[ m ; P0 ] e ⦂ B ⊣ Θ'` | `Θ ⊢ᵃ[ m ; P0 ] e ⦂ B ⊣ Θ'` |
+| `a_consis` | `Θ ⊢ₐ[ Δ1 \| Δ2 \| P0 ] P ∼ Q ⊣ Θ'` | `Θ ⊢ᵃ[ Δ1 \| Δ2 \| P0 ] P ∼ Q ⊣ Θ'` |
+| `a_sub` | `Θ ⊢ₐ[ N \| m \| P0 ] P ⩽ Q ⊣ Θ'` | `Θ ⊢ᵃ[ N \| m \| P0 ] P ⩽ Q ⊣ Θ'` |
+| `ad_pat_consis` | `Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q` | `Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q` |
+| `ad_pat_sub` | `Ψ ⨟ Θ ⊢ₛᵃ[ NM \| M ] R ⩽ Q` | `Ψ ⨟ Θ ⊢ᵃᵈ[ NM \| M ] R ⩽ Q` |
+| `ad_refine_syn` | `Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ P` | `Θ ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ P` |
+| `ad_refine_pskl`| `Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q`             | `Θ ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ Q` |
+| `ad_sd_typing`  | `Θ ⊢ˢᵃ[ M ] e ⦂ B`             | `Θ ⊢ˢᵃᵈ[ M ] e ⦂ B` |
+| `ad_partial_precise` | `Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ`     | `Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ` |
+| `a_wf_pskl`     | `Θ ⨟ Δ ⊢ₚₛᵃ P`                 | unchanged — already correct |
+
+⭐ Note where the `ₛ` did NOT survive: `ad_pat_consis` lost it because the ad
+system has no type-sort sibling to be told apart from, and `ad_pat_sub` lost it
+because its `NM` index already names the sort — the same reason `a_sub` never
+had one. Stating the sort twice is how `⊢ₛᵃ[ TY | … ]` came to read as a
+contradiction.
+
+⚠️ **`⇨` is retired.** It claims the term SYNTHESISES its skeleton, and that
+holds only at `M = TI` — at `TC` the skeleton is an input, so the arrow was
+wrong on the majority of the rules that used it. The three `*_pat` judgements
+now write `⦂` and let the `ₛ` subscript say "skeleton", which is what the
+paper does with its own mode-generic typing (`\typp`, `macro.tex:1087`; the
+paper's `⇛`/`\TTo` marks the skeleton judgement, not synthesis, so the mech's
+lookalike `⇨` was importing a meaning the glyph never had).
+
+⚙ Sweep mechanics, for the next person who has to do one of these: the
+context-free renames are literal-token substitutions, but four are
+context-SENSITIVE, because `⊢ₐ[` and `⊢[` are each shared by two judgements
+that differ only in the relation symbol several tokens later. Those were done
+with a bounded regex whose middle forbids every other relation symbol (plus
+`->`, `(*`, `*)`, blank line) — without that guard a comment block showing an
+`a_extract` judgement several lines above a prose `⊑ᵖ[∅]` gets its own
+turnstile marked (this really happened in `prop_extract.v`). Order matters:
+mark the `*_pat` turnstiles WHILE `⇨` still distinguishes them, and only then
+replace `⇨` with `⦂`. Script kept out of tree; ~1.7k substitutions in 79 files.
+
+⚠️ Counting sites with `grep -r` over the build tree inflates the number ~4×:
+`.vo` / `.glob` / `.aux` artifacts contain the notation strings too, and
+`*.v.legacy` is not source. Restrict to tracked `.v` / `.md`.
+
+## 6. Remaining notation residue (not done, deliberately)
+
+1. **`a_solve_sub`'s `⊢ₛ` and `a_solve_consis`'s `⊢ₑ`** mark the SOLVE layer,
+   not a sort — the one place a subscript still means something other than the
+   sort axis. Fixing it needs a look-vs-solve marker pair (`a_looksub` has a
+   bare `⊢`), and the two judgements cannot simply both become `⊢ᵃ`: `⊢ᵃ P ≼[ α ,
+   m ]` vs `⊢ᵃ P ≼[ m ]` would leave camlp5 to factor two shared-prefix
+   notations whose brackets differ only in ARITY. A separate pass.
+2. **`⊢ˢ` (syntax-directed) sits next to `⊢ₛ` (skeleton)** — one glyph apart,
+   distinguished only by height. It is not a defect under the scheme (the two
+   axes own different devices by construction), and both markers are load-
+   bearing in the declarative system, where `d_typing` / `d_sd_typing` /
+   `d_pat` all coexist. Changing the sd marker means picking an arbitrary
+   third letter; left alone rather than churned.
+3. **Algorithm-internal judgements carry no system marker** (`a_looksub`,
+   `a_solve_*`, `a_extract`, `a_assign`, `a_unify`, `a_split`, `a_tyequiv`).
+   This is a rule, not an omission: the system marker exists to separate one
+   relation's copies across systems, and these have no counterpart. Their own
+   symbols (`≼ … ⤳`, `≔`, `≈ᵘ`, `▹`, `≡ᵗ`) already identify them.
+4. **`a_wf_ptyp` / `a_wf_aenv` / `a_scope_pskl` have no notation** while
+   `d_wf_ptyp` has `⊢ₚ`. `Θ ⊢ₚᵃ A` is the obvious form (~430 application
+   sites); `d_wf_denv` is unnotated too, so the env-wf pair is at least
+   symmetric. Worth doing with §4's small-operation pass.

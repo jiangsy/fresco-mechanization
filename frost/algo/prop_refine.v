@@ -68,10 +68,10 @@ Qed.
 (* ===================================================================== *)
 
 Lemma ad_refine_syn_weaken : forall Θ Δ Q Q',
-  Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ Q' ->
+  Θ ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ Q' ->
   forall Θ',
   (forall x b, binds x b Θ -> binds x b Θ') ->
-  Θ' ⨟ Δ ⊢ᵣᵃ Q ⊳ Q'.
+  Θ' ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ Q'.
 Proof.
   intros Θ Δ Q Q' H; induction H; intros Θ' Hmon.
   - apply ad_refine_syn__unit.
@@ -96,10 +96,10 @@ Proof.
 Qed.
 
 Lemma ad_refine_pskl_weaken : forall Θ Δ P P',
-  Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ P' ->
+  Θ ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ P' ->
   forall Θ',
   (forall x b, binds x b Θ -> binds x b Θ') ->
-  Θ' ⨟ Δ ⊢ᵣₚᵃ P ⊳ P'.
+  Θ' ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ P'.
 Proof.
   intros Θ Δ P P' H; induction H; intros Θ' Hmon.
   - apply ad_refine_pskl__unit.
@@ -130,9 +130,9 @@ Qed.
 (** Helper: refinement from an empty Δ holds at any Δ (occurrences only
     test Δ-membership positively). *)
 Lemma ad_refine_syn_delta_mono : forall Θ Δ0 Q Q',
-  Θ ⨟ Δ0 ⊢ᵣᵃ Q ⊳ Q' ->
+  Θ ⨟ Δ0 ⊢ᵣᵃᵈ Q ⊳ Q' ->
   forall Δ, Δ0 [<=] Δ ->
-  Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ Q'.
+  Θ ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ Q'.
 Proof.
   intros Θ Δ0 Q Q' H; induction H; intros Δ' Hsub;
     eauto using ad_refine_syn.
@@ -143,9 +143,9 @@ Proof.
 Qed.
 
 Lemma ad_refine_pskl_delta_mono : forall Θ Δ0 P P',
-  Θ ⨟ Δ0 ⊢ᵣₚᵃ P ⊳ P' ->
+  Θ ⨟ Δ0 ⊢ᵣₚᵃᵈ P ⊳ P' ->
   forall Δ, Δ0 [<=] Δ ->
-  Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ P'.
+  Θ ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ P'.
 Proof.
   intros Θ Δ0 P P' H; induction H; intros Δ' Hsub;
     eauto using ad_refine_pskl.
@@ -157,7 +157,7 @@ Qed.
 
 Lemma ad_refine_syn_refl_inh : forall Θ Δ P,
   Θ ⨟ Δ ⊢ₚₛᵃ P ->
-  Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh P).
+  Θ ⨟ Δ ⊢ᵣᵃᵈ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh P).
 Proof.
   intros Θ Δ P H; induction H; simpl.
   - apply ad_refine_syn__unit.
@@ -176,7 +176,7 @@ Qed.
 
 Lemma ad_refine_pskl_refl : forall Θ Δ P,
   Θ ⨟ Δ ⊢ₚₛᵃ P ->
-  Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ P.
+  Θ ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ P.
 Proof.
   intros Θ Δ P H; induction H; simpl.
   - apply ad_refine_pskl__unit.

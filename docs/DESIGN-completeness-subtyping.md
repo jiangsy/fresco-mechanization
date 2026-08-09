@@ -81,7 +81,7 @@ Lemma a_sub_complete_gen : forall n,          (* fuel; strong induction *)
       (forall ρ1, is_id_msubst ρ1 -> ρ1 ∷ Θ0 ⊑ Θ1 ->
          exists ζ, ζ ∷ Θ1 ⊑ Θ /\
                    a_inc_equiv Θ0 ρ (msubst_compose ζ ρ1) Θ /\
-                   Θ ⨟ empty ⊢ₚᵣᵃ (msubst_pskl ζ P1) ⊑ (bskl_to_pskl Q)).
+                   Θ ⨟ empty ⊢ₚᵣᵃᵈ (msubst_pskl ζ P1) ⊑ (bskl_to_pskl Q)).
 ```
 
 ✅ **LOCKED 2026-07-30 — `frost/algo/prop_sub_complete_thm.v`** carries the two
@@ -118,9 +118,9 @@ Notes on shape (verify each against `a_consis_complete` when writing):
 - `bid Q` target: `ad_pat_sub`'s target sort is **`bskl`** (`Q : bskl`),
   matching `a_consis`'s `Qb`.  Precision conclusion compares `pskl` to
   `pskl` via `ad_precise` (`⊑ₚᵣᵃ`, `prop_precise.v:47`
-  = `⊢ᵣᵃ inh{·} ⊳ inh{·}`); erase `Q` with `bskl_to_pskl`.
+  = `⊢ᵣᵃᵈ inh{·} ⊳ inh{·}`); erase `Q` with `bskl_to_pskl`.
 - The **third premise** `ad_refine_pskl_f ∅ Θ ∅ (msubst ρ ⌊S⌋ˢ) (bskl_to_pskl Q)`
-  is the repair.  It is exactly what `a_consis_sound`'s `⊢ᵣₚᵃ` conjunct
+  is the repair.  It is exactly what `a_consis_sound`'s `⊢ᵣₚᵃᵈ` conjunct
   *produces* for every algorithmic output, so the sound/complete pair
   still characterizes the algorithm exactly (it succeeds iff a
   refinement-valid solution exists and is ⊑-optimal among them).  Thread
@@ -221,7 +221,7 @@ finished, Qed soundness proofs that consume `ad_pat_sub`).  Bridges:
 (`ad_pat_sub_precise_subst`, P5):
 ```
 ad_pat_sub_n n NM M (Ψ ∪ Ψa) Θ (S[ψa/α]) Q ->
-Θ ⊢ₚᵣᵃ Pa ⊑ ⌊ψa⌋ˢ ->  a_tags_sort NM Ψ' ψa ->  fresh Ψ' ->  Ψa ⊆ Ψ' ->
+Θ ⊢ₚᵣᵃᵈ Pa ⊑ ⌊ψa⌋ˢ ->  a_tags_sort NM Ψ' ψa ->  fresh Ψ' ->  Ψa ⊆ Ψ' ->
 (NM = ty -> «Pa is a type») ->
 ad_pat_sub_n n NM M Ψ Θ (S[Pa/α]) Q.       (* SAME n *)
 ```
@@ -307,8 +307,8 @@ Statement (target is COLOURED precision `ad_precise`, matching the paper's
 Lemma ad_partial_precise_complete : forall NM Θ Δ Ψ P ψ,
   a_tags_sort NM Ψ ψ ->
   Θ ⨟ Δ ⊢ₚₛᵃ ⌊ ψ ⌋ˢ ->            (* wf premise — the paper's "by wf of ψ"; needed by the hole case *)
-  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
-  Θ ⨟ Δ ⊢ₚᵣᵃ P ⊑ ⌊ ψ ⌋ˢ.          (* = ad_refine_syn Θ Δ (inh P) (inh ⌊ψ⌋) *)
+  Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ ->
+  Θ ⨟ Δ ⊢ₚᵣᵃᵈ P ⊑ ⌊ ψ ⌋ˢ.          (* = ad_refine_syn Θ Δ (inh P) (inh ⌊ψ⌋) *)
 ```
 
 Induction on `ad_partial_precise` (revert `a_tags_sort`/wf first, re-derive
@@ -333,12 +333,12 @@ Painting facts: `pskl_to_bskl_inh (pskl_all_syn P) = bskl_all_inh (inh P)`;
   `no_forall_bskl` (was predicates.v:97; DELETED 2026-08-06 as an unused
   duplicate — re-add if this route is taken), `ptyp_to_bskl_inh_syn_eq`
   prop_mono_bridge.v:78 — build the pskl analog).  Then `__hole` needs
-  `Θ ⨟ ∅ ⊢ₚₛᵃ ⌊ψ⌋`: strip Δ from the wf premise via `Δ ∩ ftv ⌊ψ⌋ = ∅`
+  `Θ ⨟ ∅ ⊢ᵃᵈₚₛᵃ ⌊ψ⌋`: strip Δ from the wf premise via `Δ ∩ ftv ⌊ψ⌋ = ∅`
   (the ppre__hole side condition) + a wf Δ-strip lemma.
 - **tophole_remove** `pskl_tophole P ⊑ᵖ[Ψ] ψ` → `__tophole_remove` + IH
   (same ψ, same Ψ; wf/tags unchanged).
 - **tophole_fill** `pskl_tophole P ⊑ᵖ[Ψ] all_etag ε ψ0` → **VACUOUS**.
-  `inh(all_etag ε ψ0)` erases to `bskl_all_inh(...)` but no `⊢ᵣᵃ`
+  `inh(all_etag ε ψ0)` erases to `bskl_all_inh(...)` but no `⊢ᵣᵃᵈ`
   rule gives `∀◇· ⊳ all_INH ·` (tophole_fill of `ad_refine_syn` outputs
   `all_SYN`).  Exclude via NEW helper
   `ad_partial_precise_tags_sub : ad_partial_precise Θ Δ Ψ P ψ ->
@@ -368,7 +368,7 @@ def_ott.v:487 — replacement is a `uskl`, var is the `usklvar` α):
 ```coq
 Lemma ad_pat_sub_precise_subst : forall n NM M Ψ Ψa Ψ' Θ S α ψa Pa Q,
   ad_pat_sub_n n NM M (Ψ `union` Ψa) Θ (subst_uskl_in_uskl ψa α S) Q ->
-  Θ ⨟ empty ⊢ₚᵣᵃ Pa ⊑ ⌊ ψa ⌋ˢ ->          (* precision Pa ⊑ ⌊ψa⌋ *)
+  Θ ⨟ empty ⊢ₚᵣᵃᵈ Pa ⊑ ⌊ ψa ⌋ˢ ->          (* precision Pa ⊑ ⌊ψa⌋ *)
   a_tags_sort NM Ψ' ψa ->                    (* Ψ' = ψa's tags *)
   Ψa [<=] Ψ' ->
   (* possibly: (NM = ty -> «Pa is a type») — add iff a case needs it *)
@@ -411,8 +411,8 @@ the actual induction; each substitution lemma's `S = uskl_var α` sub-case
 is where the subject *becomes* `ψa`, and that is not an IH — it needs a
 subject-precision lemma one level down:
 
-1. **`ad_pat_consis_subject_precise`** (the base crux): `Ψt ⨟ Θ ⊢ₛᵃ ψa ∼ Q`
-   + `Θ ⨟ ∅ ⊢ₚᵣᵃ Pa ⊑ ⌊ψa⌋ˢ` ⇒ `∅ ⨟ Θ ⊢ₛᵃ (pskl_to_uskl Pa) ∼ Q`.
+1. **`ad_pat_consis_subject_precise`** (the base crux): `Ψt ⨟ Θ ⊢ᵃᵈ ψa ∼ Q`
+   + `Θ ⨟ ∅ ⊢ₚᵣᵃᵈ Pa ⊑ ⌊ψa⌋ˢ` ⇒ `∅ ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl Pa) ∼ Q`.
    Output tags `∅` because `pskl_to_uskl Pa` has NO `all_etag` (tag-free);
    `Pa` is the *ghostier* skeleton (`⊳` = refine-toward-filled, so `Pa` has
    holes where `⌊ψa⌋` is concrete), and a ghostier subject is *more*
@@ -460,16 +460,16 @@ hole-free `S`, or `Δ = ∅`), which could collapse (1)'s hard cases.
 Decomposed crux (1) into two steps; (1a) DONE.
 
 - **(1a) `ad_pat_consis_strip_tags` — DONE** (prop_sub_complete.v, Qed,
-  axiom-free): `Ψt ⨟ Θ ⊢ₛᵃ ψa ∼ Q → ∅ ⨟ Θ ⊢ₛᵃ (pskl_to_uskl ⌊ψa⌋ˢ) ∼ Q`.
+  axiom-free): `Ψt ⨟ Θ ⊢ᵃᵈ ψa ∼ Q → ∅ ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl ⌊ψa⌋ˢ) ∼ Q`.
   Strips the decorated subject to plain (`all_etag→all_syn`,
   `holeg→hole`, `topholeg→tophole`); tag ctx drops to ∅.  Helper
   `strip_uskl_open` (open-commute).  GOTCHA: `strip(topholeg R) =
   uskl_tophole(strip R)` (a plain tophole, use `__tophole`, not
   `__topholeg`); `strip(holeg) = uskl_hole` (use `__hole` with
   `pskl_hole`).
-- **(1b) TODO `ad_pat_consis_subject_refine`**: `∅ ⨟ Θ' ⊢ₛᵃ
+- **(1b) TODO `ad_pat_consis_subject_refine`**: `∅ ⨟ Θ' ⊢ᵃᵈ
   (pskl_to_uskl Ptgt) ∼ Q` + `inh Psrc ⊳ inh Ptgt` (Psrc ghostier,
-  i.e. `Pa ⊑ ⌊ψa⌋`) → `∅ ⨟ Θ' ⊢ₛᵃ (pskl_to_uskl Psrc) ∼ Q`.  KEY
+  i.e. `Pa ⊑ ⌊ψa⌋`) → `∅ ⨟ Θ' ⊢ᵃᵈ (pskl_to_uskl Psrc) ∼ Q`.  KEY
   INSIGHT: ghost-free `Psrc` makes this trivial (`Psrc = Ptgt`), so the
   REAL content is **holey `Psrc`** — the hole/∀◇ cases are the point,
   not excludable.  Structure = outer induction on the refinement
@@ -598,7 +598,7 @@ on uskl pairs:
 Kit: reflexivity (Ψrep=∅), **subst-compatibility**
 `⊑ᵤ at (add X Δ) → [ψ''/X] both sides → ⊑ᵤ at Δ` (the ForallL crux
 enabler; provable rule-by-rule given the hole rule's X-freeness), and the
-**embedding** `a_tags_sort NM Ψ' ψ → Θ ⨟ Δ ⊢ₚᵣᵃ Pa ⊑ ⌊ψ⌋ →
+**embedding** `a_tags_sort NM Ψ' ψ → Θ ⨟ Δ ⊢ₚᵣᵃᵈ Pa ⊑ ⌊ψ⌋ →
 paint Pa ⊑ᵤ[Ψ'] ψ` (induction on the precision derivation, re-matching
 erasure structure to decorated structure — all_syn↔all_etag,
 tophole↔topholeg; ~150 lines).  `S[Pa/α] ⊑ᵤ[Ψ'] S[ψa/α]` then falls out
@@ -921,12 +921,12 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
        flexible payload parts face TAG-FREE regions of ψa.  See the (z)
        call-site analysis below for why this form is both supplied and
        simpler to thread. *)
-    Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
+    Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
     Ψsub [<=] Ψρ `union` Ψa -> Ψa [<=] Ψsub ->
     ad_pat_sub_g n NM M Ψsub Θ ψsub Q ->
-    Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+    Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
     exists Pa, Θ0 ⊢ₛ Pi ≼[ M ] P0 ⤳ Pa /\
-      Θ ⨟ Δ ⊢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
+      Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
   ```
 
   Why this premise is exactly right:
@@ -1083,7 +1083,7 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   `Δr:=add X Δr`, refinement `apply Hreff`) — ForallSyn now mirrors it.
   The ONLY ForallSyn-specific twist is the refinement: P0=∀◇.P0' makes
   `Hrefine` a `tophole_fill`, so `Hrefb` = its inverted body at
-  `(X~tvar)++Θr ⨟ Δr ⊢ᵣᵃ bskl_tophole(paint P0') ⊳ open Q X`, and each row
+  `(X~tvar)++Θr ⨟ Δr ⊢ᵣᵃᵈ bskl_tophole(paint P0') ⊳ open Q X`, and each row
   moves X into Δr by `ad_refine_syn_aenv_to_delta` — which WORKS on the
   tophole subject because `bskl_no_hole (bskl_tophole A) = bskl_no_hole A`
   (guarded body ⇒ no hole).  Rows use the WRAPPED IHX (Pi0:=∀◇.Pi',
@@ -1150,7 +1150,7 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   `Θr_ih := (X~tvar)++Θ`, `Δr_ih := empty`, `Δx` a parameter, refinement
   passed explicitly).  Ltac gotcha: after `inversion Hrefine`, the
   cofinite premise must be referenced by its assigned name (`H5`/`L0`),
-  not via a `_ ⨟ _ ⊢ᵣᵃ _ ⊳ _` match pattern under the binder — that
+  not via a `_ ⨟ _ ⊢ᵣᵃᵈ _ ⊳ _` match pattern under the binder — that
   pattern silently fails to bind.
   **THE REMAINING OBSTACLE (fix before the 3 rows): the family premise
   must strengthen from `S ∩ dom Θr = ∅` to `S ∩ dom Θ = ∅`.**  The IHX's
@@ -1182,7 +1182,7 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   the refinement's own tophole_fill)."*  Consequences (all checked):
   - The IH call for ForallSyn uses `Θtv_ih := Θtv` (unchanged),
     `Θr_ih := (Z~tvar)++Θr`, `Θ0r_ih := (Z~tvar)++Θ0r`.  Then the _gen
-    refinement premise `Θr_ih ⨟ Δr ⊢ᵣᵃ …` is literally `refb` (Z in the
+    refinement premise `Θr_ih ⨟ Δr ⊢ᵣᵃᵈ …` is literally `refb` (Z in the
     aenv via tophole_fill; Δr = dom Θtv unchanged since tophole_fill
     doesn't touch Δ).  NO statement change.
   - The family premise `S ∩ dom Θr = ∅` auto-covers Z once Z ∈ dom Θr,
@@ -1362,7 +1362,7 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   1. **Split-context refinement premise.**  `Θ = Θtv ++ Θr` (`Θtv` =
      the ∀-descent binders, all `abind_tvar`; `Θr` = the original
      context; similarly `Θ0 = Θtv ++ Θ0r`), and the refinement premise
-     is `Θr ⨟ Δr ⊢ᵣᵃ inh{κP0} ⊳ Q` with `Δr [=] dom Θtv` and
+     is `Θr ⨟ Δr ⊢ᵣᵃᵈ inh{κP0} ⊳ Q` with `Δr [=] dom Θtv` and
      `inter Δρ (dom Θtv) = ∅`.  Binders never enter the refinement's
      aenv, so its □-rule keeps fills wf at the ORIGINAL context — the
      load-bearing invariant (`ad_refine_syn_ftv_rhs_bound` then bounds
@@ -1375,7 +1375,7 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
      (Δr-entries are Θ-tvars).
   2. **Fresh-extension conclusion family.**  Conclusion:
      `exists Pa, solve ∧ ∀S, inter S Δ = ∅ → inter S (dom Θr) = ∅ →
-     delta_def_fresh S Θ → Θ ⨟ (Δ∪S) ⊢ msubst κ Pa ⊑ᵖ[Ψi∪Ψa] ψa`.
+     delta_def_fresh S Θ → Θ ⨟ (Δ∪S) ⊢ᵃᵈ msubst κ Pa ⊑ᵖ[Ψi∪Ψa] ψa`.
      The premise `Hpre` STAYS single-Δ (a ∀S-premise breaks
      derivation-shape dispatch: different S-instances may invert by
      different rules — verified dead end).  The □/∀◇-fill rows fold
@@ -1500,7 +1500,7 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
     premise fails — the bad configuration cannot arise).  Candidate
     repairs (decide before building the two cases):
     1. **(prefer to explore first) Δr-generalized refinement premise**:
-       change the statement's refinement slot to `Θ ⨟ Δr ⊢ᵣᵃ … ⊳ Q` with
+       change the statement's refinement slot to `Θ ⨟ Δr ⊢ᵣᵃᵈ … ⊳ Q` with
        Δr collecting the ∀-descent binders (side conditions
        Δr ∩ dom Θ = ∅, Δr ⊆ Δ-ish); the binder then stays in Δr — never
        enters Θ — so the refinement's own □-rule wf keeps fills X-free,
@@ -2258,7 +2258,7 @@ Other observations for the statements:
 ### 7.1 P6-Cs execution note (drafted 2026-07-27, after Task A)
 
 Reconnaissance (signatures verified in-tree):
-- Induct on **`ad_pat_consis`** (`Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q`, def_decl_algo.v:52-120;
+- Induct on **`ad_pat_consis`** (`Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q`, def_decl_algo.v:52-120;
   ctors unit/var/arrow/forall_inh_{tagged,untagged}/forall_syn{_tagged,}/
   ghostg/topholeg/hole/tophole/tophole_inh/tophole_drop/flex_{l,r}).  NO fuel.
 - Conclusion judgments: **`a_lookeq α P P0 C Ξc`** (def_extra.v:330) and
@@ -2274,7 +2274,7 @@ Reconnaissance (signatures verified in-tree):
   optimality — the wrong shape here).  Reuse verbatim: `⊑ᵖ`
   (`ad_partial_precise`, def_decl_algo_sub.v:221), `a_inc` (`∷⊑`,
   def_meta.v:184), `a_inc_equiv` (`κ≡κa`, def_meta.v:245), `a_tags_sort`
-  (def_decorated.v:96), `ad_refine_syn` (`⊢ᵣᵃ`, def_decl_algo.v:126).
+  (def_decorated.v:96), `ad_refine_syn` (`⊢ᵣᵃᵈ`, def_decl_algo.v:126).
 
 **Open DESIGN DECISION to make FIRST — how to encode the subject
 `(κ S)[ψa/α]`.**  Unlike P6-Cv (whose subject `ψsub` is `uskl_rho`-related to
@@ -2610,7 +2610,7 @@ STATEMENT DELTA (mirrors what P6-Cv already takes):
 ```
   + params Δρ Ψρ Rsub
   + uskl_rho NM Θ Δρ Ψρ Rsub (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R'))
-  ~ Ψsub ⨟ Θ ⊢ₛᵃ Rsub ∼ Q                         (was: on the ideal)
+  ~ Ψsub ⨟ Θ ⊢ᵃᵈ Rsub ∼ Q                         (was: on the ideal)
   ~ Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl Rsub)             (was: on the ideal)
   + Ψρ ∩ Ψ' [=] empty
   + rho_fresh Δρ Θ κ
@@ -3143,7 +3143,7 @@ closed soundness proof.
 
 - Premises 1–2: **P6-Ss at `Pi := pskl_hole`, `Ψi := ∅`, `Ψ' := Ψa`** (the
   ρ = identity corollary — nothing threads a ρ in from outside).  Its
-  precision premise `Θ ⨟ Δ ⊢ κ□ ⊑ᵖ[∅] ψa` is the precision hole rule.
+  precision premise `Θ ⨟ Δ ⊢ᵃᵈ κ□ ⊑ᵖ[∅] ψa` is the precision hole rule.
 - Then `ad_partial_precise_complete` (P5b-i, Qed) upgrades `⊑ᵖ[Ψa]` to plain
   `⊑ ⌊ψa⌋ˢ`, exactly as complete-look does at tex:2764.
 - **`N = SK`: trivial.**  `a_guess__sk` gives `Ξ' = nil`, `Q' = Q`, so
@@ -3158,7 +3158,7 @@ closed soundness proof.
 
 ⚠️ **CORRECTION to §7's table: `guess_join_witness` does NOT "provide exactly
 the P6-L TY-witness".**  It is CONSISTENCY-driven — its premise is
-`Ψ ⨟ Θ ⊢ₛᵃ pskl_to_uskl (msubst κm P) ∼ ptyp_to_bskl_syn A` with `A` a
+`Ψ ⨟ Θ ⊢ᵃᵈ pskl_to_uskl (msubst κm P) ∼ ptyp_to_bskl_syn A` with `A` a
 monotype (prop_consis_complete.v:4624) — whereas P6-L has PRECISION against
 `⌊ψa⌋ˢ`, which at TY is a general ghost-free skeleton, not a monotype
 painting.  Either a precision-driven analogue must be built, or a bridge
@@ -3583,7 +3583,7 @@ inh-free whatever the monotype is.
 
 LANDED in `prop_sub_shield_supply.v` §7/§8, all Qed and axiom-free:
 
-    ad_pat_consis_inh_free_tag_free   Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q → inh_free Q → Ψ = ∅
+    ad_pat_consis_inh_free_tag_free   Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q → inh_free Q → Ψ = ∅
     ad_pat_sub_g_inh_free_tag_free    ad_pat_sub_g … Ψ … Q → inh_free Q → Ψ = ∅
     ad_refine_syn_inh_free            refinement never CREATES an inherited ∀
     sub_shield_supply_inh_free_counterpart
@@ -3644,7 +3644,7 @@ constraint `skmod[TY]{P0}{TC}` forces `P0 = ptyp_to_pskl A` — that IS the
 paper's "concrete type", and it is the only place the concreteness comes
 from.  But consistency's `FlexL` row returns the SUBJECT:
 
-    Θ ⊢ₐ[ P0 ] α̂ ∼ α̂ ⊣ Θ'          (a_consis__flex_l, via a_assign)
+    Θ ⊢ᵃ[ P0 ] α̂ ∼ α̂ ⊣ Θ'          (a_consis__flex_l, via a_assign)
 
 and algorithmic `Arrow` copies that output into its own.  So already at
 `P0 = unit → unit` (concrete, and entirely flexible-FREE), subject `α̂ → unit`,
@@ -3672,7 +3672,7 @@ relation was already in the development: `a_pskl_tyequiv` (`≡ˢ`,
 def_meta.v:172) is "the `a_tyequiv` equational theory lifted to skeletons:
 definitions of flexible variables unfold, ghosts are inert", introduced for
 `a_inc`'s GMM-style SEMANTIC middles.  And the proof is NOT on consistency —
-`a_consis_sound` already exports `Θ1 ⨟ ∅ ⊢ᵣᵃ inh{P0} ⊳ Qt` with `⌊Qt⌋ = P'`,
+`a_consis_sound` already exports `Θ1 ⨟ ∅ ⊢ᵣᵃᵈ inh{P0} ⊳ Qt` with `⌊Qt⌋ = P'`,
 so all that is left is:
 
     ad_refine_syn_ghost_free_equiv   refinement out of a GHOST-FREE source
@@ -3745,8 +3745,8 @@ consistency output to `P_0`.
    increase conjuncts are `ζ := κ` + `opt_axiom_factor`, as in
    `a_sub_complete_ghost`.
 3. The DECORATED consistency premise undecorates: `ad_pat_consis_strip_tags`
-   (prop_consis_precise.v:275) turns `Ψ ⨟ Θ ⊢ₛᵃ κR ∼ Q` into
-   `∅ ⨟ Θ ⊢ₛᵃ pskl_to_uskl ⌊κR⌋ˢ ∼ Q`, and `⌊κR⌋ˢ = κ⌊R⌋ˢ = κP` by a one-line
+   (prop_consis_precise.v:275) turns `Ψ ⨟ Θ ⊢ᵃᵈ κR ∼ Q` into
+   `∅ ⨟ Θ ⊢ᵃᵈ pskl_to_uskl ⌊κR⌋ˢ ∼ Q`, and `⌊κR⌋ˢ = κ⌊R⌋ˢ = κP` by a one-line
    commutation.
 4. `a_consis_complete` on `(Θ_0; □; P)` — its other two premises ARE this
    motive's refinement premises at `P_0 = □`.
@@ -3757,7 +3757,7 @@ consistency output to `P_0`.
 that is the one piece still missing.  `msubst_compose_id_pskl` collapses the
 package's composite on a Θ0-scoped skeleton, so what is wanted is
 
-    Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_pskl κ P) ⊑ (msubst_pskl σ P)
+    Θ ⨟ Δ ⊢ₚᵣᵃᵈ (msubst_pskl κ P) ⊑ (msubst_pskl σ P)
       given  a_inc_equiv Θ0 κ σ Θ  and  Θ0 ⨟ Δ0 ⊢ₚₛᵃ P
 
 — *precision is stable under equivalent metasubstitutions* — after which
