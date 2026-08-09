@@ -482,6 +482,51 @@ removed developments).
 > constructor references.  Both definition sites now carry a ⚠️ note so the
 > halves are not separated.
 >
+> ## ✅ TIER 1 (2026-08-09) — 6 duplicated names resolved; `rename_aenv` out of the rules file
+>
+> | fact | resolution |
+> |---|---|
+> | `mod_comp_ty_tc_inv` | lifted to `frost/prop_basic.v` (its predicate is declared in `frost/def_extra.v`) |
+> | `a_wf_ptyp_ftv_dom`, `a_binds_tvar_in_dom`, `a_scope_pskl_ftv_dom` | lifted to `algo/prop_flex.v`, joining `a_wf_ptyp_ftv_tvarish` — they are ONE "wf/scope ⟹ ftvar ⊆ dom" family that had been split across four mutually-invisible files |
+> | `ad_pat_sub_gv_psi_cong` | **could not be lifted** — see below; deduped by IMPORT instead |
+> | `a_wf_aenv_uniq_local` ×2 | a THIRD copy of `prop_flex.v`'s `a_wf_aenv_uniq`, byte-identical, under a different name.  Deleted; 11 files repointed |
+>
+> ### ⭐ The lift test has THREE conditions, not two
+>
+> §8.1 and the phase-3b note gave two: (a) one declaring file already sees the
+> other, or a shared ancestor exists; (b) every other consumer sees the
+> survivor.  `ad_pat_sub_gv_psi_cong` shows a third is needed:
+>
+> > **(c) the host must see every prerequisite of the PROOF.**
+>
+> That lemma needs `ad_pat_sub_gv` (`decorated_algo/def_decl_algo_sub_hyg.v`)
+> AND `ad_pat_consis_psi_cong` (`algo/consis/prop_soundness_consis.v`) — from
+> opposite sides of the tree.  Measured: **no** shared ancestor of the two
+> declaring files sees both, so the pair is unliftable.  The dedupe is by
+> IMPORT: keep it in `sub/prop_soundness_sub.v`, the earliest file that sees
+> both, and have `sub/prop_completeness_sub_precise.v` import that (verified
+> cycle-free, 0 name collisions, 0 reroutes before adding the import).
+>
+> ⚙ And when a lemma moves WITHIN a file, it must land above its first use —
+> appending to the end put it 380 lines after the consumer.
+>
+> ### §1.1 — the cheap half done, the retirement not
+>
+> `rename_abind` / `rename_aenv` moved out of `algo/def_extra.v` (which should
+> hold RULES) into `prop_swap.v` next to `swap_aenv`, with a ⚠️ note on which to
+> reach for; their bridge `swap_aenv_as_rename` was already there.  **Retiring
+> `rename_aenv` outright is NOT a rename** — its 23 sites are
+> `rewrite rename_aenv_cons_tvar_eq`-style, so it is a proof change.
+>
+> ### ⛔ §4(a) declined — the report's "low risk" is wrong
+>
+> Collapsing `fn_arrow_shape` into a transparent `Definition` over
+> `fn_arrow_shape_pskl` would break `algo/typing/prop_typing.v:1006`, which
+> pattern-matches `fn_arrow_shape M ?BB` inside a `match goal`.  Whether that
+> still matches depends on how the hypothesis was built, and a failing branch
+> reports as "No matching clauses for match" — the silent-failure mode that
+> cost two builds this session.  Not worth it to remove one 9-line inductive.
+>
 > ## Remaining
 >
 > ### ⚙ "39 duplicated names" is not "39 deletions"

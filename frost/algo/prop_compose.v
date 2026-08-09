@@ -94,9 +94,6 @@ Qed.
 (*  κ's domain is EXACTLY the source's flexible variables                  *)
 (* ===================================================================== *)
 
-Lemma a_wf_aenv_uniq_local : forall Θ, a_wf_aenv Θ -> uniq Θ.
-Proof. intros Θ H; induction H; solve_uniq. Qed.
-
 (** The skeleton mirror of [a_wf_ptyp_ftv_tvarish]. *)
 Lemma a_scope_pskl_ftv_tvarish : forall Θ P α,
   a_scope_pskl Θ P ->
@@ -200,7 +197,7 @@ Lemma a_inc_tvar_notin_dom : forall Θ1 ζ Θ α,
 Proof.
   intros Θ1 ζ Θ α Hinc Hwf Hb Hα.
   pose proof (a_inc_dom_flex Hinc Hα) as Hfx.
-  pose proof (a_wf_aenv_uniq_local Hwf) as Hu.
+  pose proof (a_wf_aenv_uniq Hwf) as Hu.
   destruct Hfx as [Hb' | [τ Hb']];
     pose proof (binds_unique _ _ _ _ _ Hb Hb' Hu) as He; discriminate.
 Qed.
@@ -823,7 +820,7 @@ Proof.
       by (eapply a_inc_peel_suffix; [ eassumption | exact Hinc2 ]).
     destruct Hpeel as [ζ1 [ζ2 [-> [Hd Hinc2']]]].
     assert (Hu1 : uniq (Ξ ++ (x ~ abind_var_typ A') ++ Θ'))
-      by (apply a_wf_aenv_uniq_local; exact Hwf1).
+      by (apply a_wf_aenv_uniq; exact Hwf1).
     assert (Hdisj : forall α0, α0 `in` dom ζ1 -> α0 `notin` dom Θ').
     { intros α0 Hα0. rewrite Hd in Hα0. clear - Hu1 Hα0. solve_uniq. }
     assert (Hceq : msubst_compose (ζ1 ++ ζ2) κ = msubst_compose ζ2 κ)
@@ -852,7 +849,7 @@ Proof.
       by (eapply a_inc_peel_suffix; [ eassumption | exact Hinc2 ]).
     destruct Hpeel as [ζ1 [ζ2 [-> [Hd Hinc2']]]].
     assert (Hu1 : uniq (Ξ ++ (x ~ abind_var_skl P') ++ Θ'))
-      by (apply a_wf_aenv_uniq_local; exact Hwf1).
+      by (apply a_wf_aenv_uniq; exact Hwf1).
     assert (Hdisj : forall α0, α0 `in` dom ζ1 -> α0 `notin` dom Θ').
     { intros α0 Hα0. rewrite Hd in Hα0. clear - Hu1 Hα0. solve_uniq. }
     assert (Hceq : msubst_compose (ζ1 ++ ζ2) κ = msubst_compose ζ2 κ)
@@ -881,7 +878,7 @@ Proof.
       by (eapply a_inc_peel_suffix; [ eassumption | exact Hinc2 ]).
     destruct Hpeel as [ζ1 [ζ2 [-> [Hd Hinc2']]]].
     assert (Hu1 : uniq (Ξ ++ (α ~ abind_tvar) ++ Θ'))
-      by (apply a_wf_aenv_uniq_local; exact Hwf1).
+      by (apply a_wf_aenv_uniq; exact Hwf1).
     assert (Hdisj : forall α0, α0 `in` dom ζ1 -> α0 `notin` dom Θ').
     { intros α0 Hα0. rewrite Hd in Hα0. clear - Hu1 Hα0. solve_uniq. }
     assert (Hceq : msubst_compose (ζ1 ++ ζ2) κ = msubst_compose ζ2 κ)

@@ -55,6 +55,7 @@ Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.decorated_algo.def_decl_algo.
 Require Import src.frost.decorated_algo.def_decl_algo_sub.
@@ -892,21 +893,6 @@ Qed.
 (*  §7  The suffix drivers                                               *)
 (* ===================================================================== *)
 
-Lemma a_binds_tvar_in_dom : forall β Θ, a_binds_tvar β Θ -> β `in` dom Θ.
-Proof. intros β Θ [Hb | [Hb | [τ Hb]]]; apply binds_In in Hb; exact Hb. Qed.
-
-Lemma a_scope_pskl_ftv_dom : forall Θ P,
-  a_scope_pskl Θ P -> ftvar_in_pskl P [<=] dom Θ.
-Proof.
-  intros Θ P H; induction H; simpl; try fsetdec.
-  - apply a_binds_tvar_in_dom in H. fsetdec.
-  - destruct (atom_fresh (L `union` dom Θ `union` ftvar_in_pskl P))
-      as [α Hα].
-    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P (pskl_var_f α)) as Hlo.
-    specialize (H0 α ltac:(clear - Hα; solve_notin_auto)). simpl in H0.
-    clear - H0 Hlo Hα. fsetdec.
-Qed.
-
 (** ⚙ A well-formed context MENTIONS only its own domain: every payload is
     scoped in the tail.  This is what turns the uniform substitution back
     into the identity on the surviving context. *)
@@ -979,7 +965,7 @@ Proof.
     by (inversion Hwf; subst; assumption).
   pose proof (@ad_refine_syn_subst_mid _ _ _ _ H τs β b nil (Ξ' ++ Θ)
                 ltac:(simpl_env; reflexivity) Hs
-                ltac:(simpl_env; apply a_wf_aenv_uniq_local; exact Hwf)
+                ltac:(simpl_env; apply a_wf_aenv_uniq; exact Hwf)
                 ltac:(clear - Hβ; solve_notin_auto)) as Hx.
   simpl_env in Hx.
   assert (Hβd : β `notin` dom (Ξ' ++ Θ))
@@ -1012,7 +998,7 @@ Proof.
     by (inversion Hwf; subst; assumption).
   pose proof (@a_tyequiv_subst_mid _ _ _ H τs β b nil (Ξ' ++ Θ)
                 ltac:(simpl_env; reflexivity) Hs
-                ltac:(simpl_env; apply a_wf_aenv_uniq_local; exact Hwf)) as Hx.
+                ltac:(simpl_env; apply a_wf_aenv_uniq; exact Hwf)) as Hx.
   simpl_env in Hx.
   assert (Hβd : β `notin` dom (Ξ' ++ Θ))
     by (inversion Hwf; subst; assumption).
@@ -1793,7 +1779,7 @@ Proof.
   assert (Hwf' : a_wf_aenv (Ξ' ++ Θ)) by (inversion Hwf; subst; assumption).
   pose proof (@ad_pat_subst_mid _ _ _ _ H τs β b nil (Ξ' ++ Θ)
                 ltac:(simpl_env; reflexivity) Hs
-                ltac:(simpl_env; apply a_wf_aenv_uniq_local; exact Hwf)) as Hx.
+                ltac:(simpl_env; apply a_wf_aenv_uniq; exact Hwf)) as Hx.
   simpl_env in Hx.
   assert (Hβd : β `notin` dom (Ξ' ++ Θ))
     by (inversion Hwf; subst; assumption).
@@ -1823,7 +1809,7 @@ Proof.
   assert (Hwf' : a_wf_aenv (Ξ' ++ Θ)) by (inversion Hwf; subst; assumption).
   pose proof (@ad_sd_typing_subst_mid _ _ _ _ H τs β b nil (Ξ' ++ Θ)
                 ltac:(simpl_env; reflexivity) Hs
-                ltac:(simpl_env; apply a_wf_aenv_uniq_local; exact Hwf)) as Hx.
+                ltac:(simpl_env; apply a_wf_aenv_uniq; exact Hwf)) as Hx.
   simpl_env in Hx.
   assert (Hβd : β `notin` dom (Ξ' ++ Θ))
     by (inversion Hwf; subst; assumption).

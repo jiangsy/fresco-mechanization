@@ -420,7 +420,7 @@ Proof.
     | Hb1 : binds ?a (abind_flex_mono_def ?t) ?E |- ?t = _ =>
         assert (Heq : abind_flex_mono_def t = abind_flex_mono_def τ0)
           by (eapply binds_unique;
-                [ exact Hb1 | exact Hb | apply a_wf_aenv_uniq_local; exact Hwf ]);
+                [ exact Hb1 | exact Hb | apply a_wf_aenv_uniq; exact Hwf ]);
         inversion Heq; reflexivity
     end.
 Qed.
@@ -953,38 +953,6 @@ Qed.
 
 (** Re-tag under set equality.  The LEAF datum carries no Ψ, so it passes
     through untouched. *)
-Lemma ad_pat_sub_gv_psi_cong : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_gv n NM M Ψ Θ R Q ->
-  forall Ψc, Ψ [=] Ψc ->
-  ad_pat_sub_gv n NM M Ψc Θ R Q.
-Proof.
-  intros n NM M Ψ Θ R Q H; induction H; intros Ψc Heq.
-  - apply ad_pat_sub_gv__infer;
-      [ clear - H Heq; fsetdec | assumption | assumption | assumption ].
-  - apply ad_pat_sub_gv__check; try assumption.
-    eapply ad_pat_consis_psi_cong; [ eassumption | exact Heq ].
-  - eapply ad_pat_sub_gv__forall_r with (L := L).
-    intros α Hα. apply (H0 α Hα _ Heq).
-  - apply ad_pat_sub_gv__univ_ghost_r; try assumption.
-    clear - H Heq; fsetdec.
-  - eapply ad_pat_sub_gv__arrow;
-      [ eassumption | eassumption | eassumption | clear - H2 Heq; fsetdec ].
-  - eapply ad_pat_sub_gv__forall_l_tagged with (Ψ' := Ψ') (ψ := ψ);
-      [ assumption | clear - H0 Heq; fsetdec | assumption | assumption
-      | assumption | ].
-    apply IHad_pat_sub_gv. clear - Heq; fsetdec.
-  - eapply ad_pat_sub_gv__forall_l_untagged with (Ψ' := Ψ') (ψ := ψ);
-      [ assumption | clear - H0 Heq; fsetdec | assumption | assumption
-      | assumption | ].
-    apply IHad_pat_sub_gv. clear - Heq; fsetdec.
-  - apply ad_pat_sub_gv__ghost;
-      [ clear - H Heq; fsetdec | assumption | assumption ].
-  - apply ad_pat_sub_gv__ghostg; [ clear - H Heq; fsetdec | assumption ].
-  - apply ad_pat_sub_gv__univ_ghost_l; [ assumption | apply IHad_pat_sub_gv; exact Heq ].
-  - apply ad_pat_sub_gv__univ_ghost_lg; [ assumption | apply IHad_pat_sub_gv; exact Heq ].
-  - eapply ad_pat_sub_gv__flex_mono; [ eassumption | apply IHad_pat_sub_gv; exact Heq ].
-Qed.
-
 (** Stability under information increase. *)
 Lemma ad_pat_sub_gv_isub : forall n NM M Ψ Θ R Q,
   ad_pat_sub_gv n NM M Ψ Θ R Q ->
@@ -1838,6 +1806,45 @@ Definition subtag_flex_sound_concl
      (exists n, ad_pat_sub_gv n NM (mode_fn M) empty Θ1 (uskl_var_f α) Qt) /\
      ad_refine_syn_f empty Θ1 empty (pskl_to_bskl_inh P0) Qt).
 
+(** ⚙ KEPT here (2026-08-09): [prop_completeness_sub_precise.v] proved this
+    identically, but the two are invisible to each other and NO shared ancestor
+    sees both prerequisites — [ad_pat_sub_gv] (decorated_algo/def_decl_algo_sub_hyg.v)
+    and [ad_pat_consis_psi_cong] (algo/consis/prop_soundness_consis.v).  So the
+    dedupe is by IMPORT, not by lifting: this file is the earliest point that
+    sees both, and sub_precise now imports it. *)
+
+Lemma ad_pat_sub_gv_psi_cong : forall n NM M Ψ Θ R Q,
+  ad_pat_sub_gv n NM M Ψ Θ R Q ->
+  forall Ψc, Ψ [=] Ψc ->
+  ad_pat_sub_gv n NM M Ψc Θ R Q.
+Proof.
+  intros n NM M Ψ Θ R Q H; induction H; intros Ψc Heq.
+  - apply ad_pat_sub_gv__infer;
+      [ clear - H Heq; fsetdec | assumption | assumption | assumption ].
+  - apply ad_pat_sub_gv__check; try assumption.
+    eapply ad_pat_consis_psi_cong; [ eassumption | exact Heq ].
+  - eapply ad_pat_sub_gv__forall_r with (L := L).
+    intros α Hα. apply (H0 α Hα _ Heq).
+  - apply ad_pat_sub_gv__univ_ghost_r; try assumption.
+    clear - H Heq; fsetdec.
+  - eapply ad_pat_sub_gv__arrow;
+      [ eassumption | eassumption | eassumption | clear - H2 Heq; fsetdec ].
+  - eapply ad_pat_sub_gv__forall_l_tagged with (Ψ' := Ψ') (ψ := ψ);
+      [ assumption | clear - H0 Heq; fsetdec | assumption | assumption
+      | assumption | ].
+    apply IHad_pat_sub_gv. clear - Heq; fsetdec.
+  - eapply ad_pat_sub_gv__forall_l_untagged with (Ψ' := Ψ') (ψ := ψ);
+      [ assumption | clear - H0 Heq; fsetdec | assumption | assumption
+      | assumption | ].
+    apply IHad_pat_sub_gv. clear - Heq; fsetdec.
+  - apply ad_pat_sub_gv__ghost;
+      [ clear - H Heq; fsetdec | assumption | assumption ].
+  - apply ad_pat_sub_gv__ghostg; [ clear - H Heq; fsetdec | assumption ].
+  - apply ad_pat_sub_gv__univ_ghost_l; [ assumption | apply IHad_pat_sub_gv; exact Heq ].
+  - apply ad_pat_sub_gv__univ_ghost_lg; [ assumption | apply IHad_pat_sub_gv; exact Heq ].
+  - eapply ad_pat_sub_gv__flex_mono; [ eassumption | apply IHad_pat_sub_gv; exact Heq ].
+Qed.
+
 Theorem a_subtag_sound_bundle :
   (forall NM M P0 Ψ Θ0 R P' Θ1,
      Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] R ⩽˙ P' ⊣ Θ1 ->
@@ -1940,7 +1947,7 @@ Proof.
                        apply pskl_ghost_free_open_rec; exact HgfB)))
       as [Hle [Hwf1 [Qt [HeQt [[nsub Hsub] Hfill]]]]].
     assert (HuqT : uniq (Ξ ++ (α ~ abind_tvar) ++ Θ1))
-      by (apply a_wf_aenv_uniq_local; exact Hwf1).
+      by (apply a_wf_aenv_uniq; exact Hwf1).
     assert (HαΘ1 : α `notin` dom Θ1)
       by (clear - HuqT; simpl_env in HuqT; destruct_uniq;
           unfold disjoint in *; simpl_env in *; fsetdec).
@@ -2417,7 +2424,7 @@ Proof.
       by (eapply a_wf_aenv_strip_prefix; eauto).
     inversion Hwfcons as [ | | βz τz Θz HβΘ0 Hwfτ Hm Hwf0 | | | ]; subst.
     assert (HβΞΘ0 : β `notin` dom (Ξ ++ Θ0)).
-    { pose proof (a_wf_aenv_uniq_local Hwf) as Huq.
+    { pose proof (a_wf_aenv_uniq Hwf) as Huq.
       clear - Huq. simpl_env in Huq. destruct_uniq.
       unfold disjoint in *. simpl_env in *. fsetdec. }
     assert (HwfΞΘ0 : a_wf_aenv (Ξ ++ Θ0))

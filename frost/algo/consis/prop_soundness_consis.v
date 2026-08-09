@@ -4630,6 +4630,7 @@ Proof.
     econstructor; eauto; fsetdec.
 Qed.
 
+
 Lemma a_consistag_sound_aux : forall Δ1 Δ2 P0 Ψ Θ0 R P' Θ1,
   Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] R ∼˙ P' ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
@@ -5567,7 +5568,7 @@ Proof.
   assert (HwfS : Θ0 ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl (pskl_to_uskl P)))
     by (rewrite uskl_to_pskl_pskl_to_uskl; exact HwfP).
   destruct (a_consistag_sound_aux
-              (a_consis_decorate Hc (a_wf_aenv_uniq_local Hwf)) Hwf HlcS
+              (a_consis_decorate Hc (a_wf_aenv_uniq Hwf)) Hwf HlcS
               HwfP0 HwfS Hrig Hnfd Hfaf)
     as [Hle [Hwf1 [Hnfd1 [Hfaf1 [Hex Hrp]]]]].
   rewrite uskl_to_pskl_pskl_to_uskl in Hrp.

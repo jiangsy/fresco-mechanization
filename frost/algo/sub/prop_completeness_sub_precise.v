@@ -32,6 +32,7 @@ Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.consis.prop_soundness_consis.
+Require Import src.frost.algo.sub.prop_soundness_sub.  (* ad_pat_sub_gv_psi_cong *)
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
@@ -1785,44 +1786,6 @@ Proof.
 Qed.
 
 (** Tag-context congruence for the leaf-valid mirror. *)
-Lemma ad_pat_sub_gv_psi_cong : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_gv n NM M Ψ Θ R Q ->
-  forall Ψc, Ψ [=] Ψc ->
-  ad_pat_sub_gv n NM M Ψc Θ R Q.
-Proof.
-  intros n NM M Ψ Θ R Q H; induction H; intros Ψc Heq.
-  - apply ad_pat_sub_gv__infer;
-      [ clear - H Heq; fsetdec | assumption | assumption | assumption ].
-  - apply ad_pat_sub_gv__check;
-      [ assumption | assumption | | assumption ].
-    eapply ad_pat_consis_psi_cong; [ eassumption | exact Heq ].
-  - eapply ad_pat_sub_gv__forall_r with (L := L).
-    intros α Hα. apply (H0 α Hα _ Heq).
-  - apply ad_pat_sub_gv__univ_ghost_r; try assumption.
-    clear - H Heq; fsetdec.
-  - eapply ad_pat_sub_gv__arrow;
-      [ eassumption | eassumption | eassumption
-      | clear - H2 Heq; fsetdec ].
-  - eapply ad_pat_sub_gv__forall_l_tagged with (Ψ' := Ψ') (ψ := ψ);
-      [ assumption | clear - H0 Heq; fsetdec | assumption | assumption
-      | assumption | ].
-    apply IHad_pat_sub_gv. clear - Heq; fsetdec.
-  - eapply ad_pat_sub_gv__forall_l_untagged with (Ψ' := Ψ') (ψ := ψ);
-      [ assumption | clear - H0 Heq; fsetdec | assumption | assumption
-      | assumption | ].
-    apply IHad_pat_sub_gv. clear - Heq; fsetdec.
-  - apply ad_pat_sub_gv__ghost;
-      [ clear - H Heq; fsetdec | assumption | assumption ].
-  - apply ad_pat_sub_gv__ghostg;
-      [ clear - H Heq; fsetdec | assumption ].
-  - apply ad_pat_sub_gv__univ_ghost_l; [ assumption | ].
-    apply IHad_pat_sub_gv; exact Heq.
-  - apply ad_pat_sub_gv__univ_ghost_lg; [ assumption | ].
-    apply IHad_pat_sub_gv; exact Heq.
-  - eapply ad_pat_sub_gv__flex_mono; [ eassumption | ].
-    apply IHad_pat_sub_gv; exact Heq.
-Qed.
-
 (** Uniform refl-transport, leaf-valid ([ftag_sub] via [_forget]). *)
 Lemma ad_pat_sub_gv_refl_transport : forall n NM M Ψfull Θ' R Q,
   ad_pat_sub_gv n NM M Ψfull Θ' R Q ->

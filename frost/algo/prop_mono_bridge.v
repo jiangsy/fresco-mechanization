@@ -55,9 +55,6 @@ Proof.
     try discriminate; try (inversion Heqb; subst; assumption); auto.
 Qed.
 
-Lemma a_wf_aenv_uniq_local : forall Θ, a_wf_aenv Θ -> uniq Θ.
-Proof. intros Θ H; induction H; solve_uniq. Qed.
-
 (** A definition is well-formed in its own (tail) context, hence in the whole. *)
 Lemma a_wf_aenv_binds_def_wf_local : forall Θ α1 τ,
   a_wf_aenv Θ ->
@@ -473,7 +470,7 @@ Proof.
         [ eapply a_wf_aenv_binds_def_wf_local; eauto | exact Hβ ].
   - (* flex_l : the same definition was already unfolded *)
     inversion HeqS; subst.
-    assert (Huniq : uniq Θ) by (apply a_wf_aenv_uniq_local; auto).
+    assert (Huniq : uniq Θ) by (apply a_wf_aenv_uniq; auto).
     assert (Heqτ : abind_flex_mono_def τ = abind_flex_mono_def τ0)
       by (eapply binds_unique; eauto).
     inversion Heqτ; subst.

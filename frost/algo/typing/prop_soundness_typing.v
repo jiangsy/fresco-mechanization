@@ -682,9 +682,6 @@ Lemma mod_comp_ty_fn_inv : forall B1 B2 m,
   mod_comp_ty (btyp_arrow B1 B2) (mode_fn m) -> mod_comp_ty B2 m.
 Proof. intros * H; inversion H; subst; assumption. Qed.
 
-Lemma mod_comp_ty_tc_inv : forall B, mod_comp_ty B mode_tc -> is_ityp B.
-Proof. intros * H; inversion H; subst; assumption. Qed.
-
 (** The TY-sorted all-in-one subtyping run's target is mode-compatible —
     the paper's (commented-out) "refinement preserves correspondence" for
     TYPES.  [Infer] and [Check] are the two leaves; [Check]'s local
@@ -1236,13 +1233,6 @@ Proof.
 Qed.
 
 (* --- §12b  scoping bounds the suffix-erasure freshness reads off ------ *)
-
-Lemma a_wf_ptyp_ftv_dom : forall Θ A,
-  a_wf_ptyp Θ A -> ftvar_in_ptyp A [<=] dom Θ.
-Proof.
-  intros Θ A H α Hα. apply a_binds_tvar_in_dom.
-  eapply a_wf_ptyp_ftv_tvarish; eassumption.
-Qed.
 
 (** A well-formed TERM mentions only type variables of its context — the
     "the term is the source program" half of [lemma:suffix-erasure]'s

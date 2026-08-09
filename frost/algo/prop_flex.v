@@ -954,6 +954,39 @@ Proof.
       | intros τ0 Hc; inversion Hc ].
 Qed.
 
+
+(** ** [wf] / [scope] bound the free variables by the domain.
+
+    ⚙ GATHERED here 2026-08-09.  The four facts below were spread over
+    [prop_metasubst.v], [algo/typing/prop_soundness_typing.v],
+    [prop_suffix_erase.v] and [algo/sub/prop_completeness_sub_gen.v] — pairwise
+    invisible to each other, so each was proved twice.  They are one family and
+    [a_wf_ptyp_ftv_tvarish] just above is the first member. *)
+
+Lemma a_wf_ptyp_ftv_dom : forall Θ A,
+  a_wf_ptyp Θ A -> ftvar_in_ptyp A [<=] dom Θ.
+Proof.
+  intros Θ A H α Hα.
+  apply (a_wf_ptyp_ftv_tvarish H) in Hα.
+  destruct Hα as [Hb | [Hb | [t Hb]]]; apply binds_In in Hb; exact Hb.
+Qed.
+
+Lemma a_binds_tvar_in_dom : forall β Θ, a_binds_tvar β Θ -> β `in` dom Θ.
+Proof. intros β Θ [Hb | [Hb | [τ Hb]]]; apply binds_In in Hb; exact Hb. Qed.
+
+Lemma a_scope_pskl_ftv_dom : forall Θ P,
+  a_scope_pskl Θ P -> ftvar_in_pskl P [<=] dom Θ.
+Proof.
+  intros Θ P H; induction H; simpl; try fsetdec.
+  - apply a_binds_tvar_in_dom in H. fsetdec.
+  - destruct (atom_fresh (L `union` dom Θ `union` ftvar_in_pskl P))
+      as [α Hα].
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P (pskl_var_f α)) as Hlo.
+    specialize (H0 α ltac:(clear - Hα; solve_notin_auto)). simpl in H0.
+    clear - H0 Hlo Hα. fsetdec.
+Qed.
+
+
 (** Embedding composition and substitution commutation for the fold step. *)
 Lemma pskl_to_uskl_ptyp : forall A,
   pskl_to_uskl (ptyp_to_pskl A) = ptyp_to_uskl_syn A.

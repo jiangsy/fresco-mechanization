@@ -147,3 +147,12 @@ Proof.
   - destruct Hg as [Hg1 Hg2]; split; eauto.
   - eauto.
 Qed.
+
+(** * Mode/type compatibility.
+
+    ⚙ LIFTED here 2026-08-09: it was proved identically in
+    [algo/typing/prop_soundness_typing.v] and [decl/prop_syntax_directed.v],
+    which do not see each other.  [mod_comp_ty] is declared in
+    [frost/def_extra.v], so its properties belong in this file. *)
+Lemma mod_comp_ty_tc_inv : forall B, mod_comp_ty B mode_tc -> is_ityp B.
+Proof. intros B H. inversion H; subst; assumption. Qed.

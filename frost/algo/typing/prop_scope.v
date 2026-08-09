@@ -1421,7 +1421,7 @@ Proof.
                         [ apply (a_wf_pskl_reassoc HwfP α) | clear; solve_notin_auto ]))
       as [Hle [Hwf1 _]].
     assert (HuqT : uniq (Ξ ++ (α ~ abind_tvar) ++ Θ1))
-      by (apply a_wf_aenv_uniq_local; exact Hwf1).
+      by (apply a_wf_aenv_uniq; exact Hwf1).
     assert (Hwf1' : a_wf_aenv Θ1)
       by (eapply a_wf_aenv_strip_prefix_suffix_local; exact Hwf1).
     assert (Hle0 : Θ0 ⊴ Θ1)

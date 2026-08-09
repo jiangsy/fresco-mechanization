@@ -871,7 +871,7 @@ Proof.
        middle premise is reused verbatim) *)
     destruct (a_inc_equiv_var_typ_inv Hbc)
       as [Xic [Ac' [Tc [Heqt [Heqvc [Hsc Hrec]]]]]].
-    pose proof (a_wf_aenv_uniq_local Hwf) as Hu.
+    pose proof (a_wf_aenv_uniq Hwf) as Hu.
     destruct (aenv_mid_split _ _ _ _ _ _ _ Hu Heqt) as [HeqΞ [Heqb HeqΘ]].
     injection Heqb as HeqA. subst.
     apply a_wf_aenv_strip_prefix_local in Hwf.
@@ -881,7 +881,7 @@ Proof.
   - (* var_skl x *)
     destruct (a_inc_equiv_var_skl_inv Hbc)
       as [Xic [Pc' [Tc [Heqt [Heqvc [Hsc Hrec]]]]]].
-    pose proof (a_wf_aenv_uniq_local Hwf) as Hu.
+    pose proof (a_wf_aenv_uniq Hwf) as Hu.
     destruct (aenv_mid_split _ _ _ _ _ _ _ Hu Heqt) as [HeqΞ [Heqb HeqΘ]].
     injection Heqb as HeqP. subst.
     apply a_wf_aenv_strip_prefix_local in Hwf.
@@ -890,7 +890,7 @@ Proof.
       [ apply IHHab; assumption | assumption | assumption ].
   - (* tvar α *)
     destruct (a_inc_equiv_tvar_inv Hbc) as [Xic [Tc [Heqt [Hsc Hrec]]]].
-    pose proof (a_wf_aenv_uniq_local Hwf) as Hu.
+    pose proof (a_wf_aenv_uniq Hwf) as Hu.
     destruct (aenv_mid_split _ _ _ _ _ _ _ Hu Heqt) as [HeqΞ [Heqb HeqΘ]].
     subst.
     apply a_wf_aenv_strip_prefix_local in Hwf.
@@ -942,7 +942,7 @@ Proof.
       (apply a_wf_aenv_strip_prefix_local in Hwf1;
        inversion Hwf1; subst; assumption).
     assert (Hdisj : forall α0, α0 `in` dom Ξ -> α0 `notin` dom Θ').
-    { intros α0 Hα0. pose proof (a_wf_aenv_uniq_local Hwf1) as Hu1.
+    { intros α0 Hα0. pose proof (a_wf_aenv_uniq Hwf1) as Hu1.
       clear - Hu1 Hα0. solve_uniq. }
     edestruct a_inc_equiv_inc_peel_suffix
       as [κ1b [κ2b [Hie2 [Hib1 [Hib2 [[p1 [Hp1 Hdp1]] [p2 [Hp2 Hdp2]]]]]]]];
@@ -951,7 +951,7 @@ Proof.
       as [Ξe [Ae' [Te [Heqe [Heqve [Hse Hie3]]]]]].
     destruct (a_inc_var_inv Hib1) as [Ξ1 [A1' [T1 [Heq1 [Heqv1 [Hs1 Hib1']]]]]].
     destruct (a_inc_var_inv Hib2) as [Ξ2 [A2' [T2 [Heq2 [Heqv2 [Hs2 Hib2']]]]]].
-    pose proof (a_wf_aenv_uniq_local HwfT) as HuT.
+    pose proof (a_wf_aenv_uniq HwfT) as HuT.
     rewrite Heqe in HuT.
     assert (HeqE1 : Ξe ++ (x ~ abind_var_typ Ae') ++ Te
                   = Ξ1 ++ (x ~ abind_var_typ A1') ++ T1)
@@ -991,7 +991,7 @@ Proof.
       (apply a_wf_aenv_strip_prefix_local in Hwf1;
        inversion Hwf1; subst; assumption).
     assert (Hdisj : forall α0, α0 `in` dom Ξ -> α0 `notin` dom Θ').
-    { intros α0 Hα0. pose proof (a_wf_aenv_uniq_local Hwf1) as Hu1.
+    { intros α0 Hα0. pose proof (a_wf_aenv_uniq Hwf1) as Hu1.
       clear - Hu1 Hα0. solve_uniq. }
     edestruct a_inc_equiv_inc_peel_suffix
       as [κ1b [κ2b [Hie2 [Hib1 [Hib2 [[p1 [Hp1 Hdp1]] [p2 [Hp2 Hdp2]]]]]]]];
@@ -1000,7 +1000,7 @@ Proof.
       as [Ξe [Pe' [Te [Heqe [Heqve [Hse Hie3]]]]]].
     destruct (a_inc_var_skl_inv Hib1) as [Ξ1 [P1' [T1 [Heq1 [Heqv1 [Hs1 Hib1']]]]]].
     destruct (a_inc_var_skl_inv Hib2) as [Ξ2 [P2' [T2 [Heq2 [Heqv2 [Hs2 Hib2']]]]]].
-    pose proof (a_wf_aenv_uniq_local HwfT) as HuT.
+    pose proof (a_wf_aenv_uniq HwfT) as HuT.
     rewrite Heqe in HuT.
     assert (HeqE1 : Ξe ++ (x ~ abind_var_skl Pe') ++ Te
                   = Ξ1 ++ (x ~ abind_var_skl P1') ++ T1)
@@ -1042,12 +1042,12 @@ Proof.
       as [κ1b [κ2b [Hie2 [Hib1 [Hib2 [[p1 [Hp1 Hdp1]] [p2 [Hp2 Hdp2]]]]]]]];
       [ exact H | exact Hie | exact Hi1 | exact Hi2 | ].
     assert (Hdisj : forall α0, α0 `in` dom Ξ -> α0 `notin` dom Θ').
-    { intros α0 Hα0. pose proof (a_wf_aenv_uniq_local Hwf1) as Hu1.
+    { intros α0 Hα0. pose proof (a_wf_aenv_uniq Hwf1) as Hu1.
       clear - Hu1 Hα0. solve_uniq. }
     destruct (a_inc_equiv_tvar_inv Hie2) as [Ξe [Te [Heqe [Hse Hie3]]]].
     destruct (a_inc_tvar_inv Hib1) as [Ξ1 [T1 [Heq1 [Hs1 Hib1']]]].
     destruct (a_inc_tvar_inv Hib2) as [Ξ2 [T2 [Heq2 [Hs2 Hib2']]]].
-    pose proof (a_wf_aenv_uniq_local HwfT) as HuT.
+    pose proof (a_wf_aenv_uniq HwfT) as HuT.
     rewrite Heqe in HuT.
     assert (HeqE1 : Ξe ++ (α ~ abind_tvar) ++ Te = Ξ1 ++ (α ~ abind_tvar) ++ T1)
       by (rewrite <- Heqe; exact Heq1).
@@ -1135,14 +1135,6 @@ Proof.
 Qed.
 
 (** A wf type's free variables live in the context's domain. *)
-Lemma a_wf_ptyp_ftv_dom : forall Θ A,
-  a_wf_ptyp Θ A -> ftvar_in_ptyp A [<=] dom Θ.
-Proof.
-  intros Θ A H α Hα.
-  apply (a_wf_ptyp_ftv_tvarish H) in Hα.
-  destruct Hα as [Hb | [Hb | [t Hb]]]; apply binds_In in Hb; exact Hb.
-Qed.
-
 (** [aenv_msubst] on a flex / flex-def head (reflexivity, exposing the cons so
     that [msubst_lookup_cons_eq]/[_neq] can fire). *)
 Lemma aenv_msubst_flex_head : forall α Θ,

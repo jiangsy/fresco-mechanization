@@ -1593,7 +1593,7 @@ Proof.
         pose proof (dom_subset_ftvar_in_aenv (Ξc1 ++ Θ0)) as Hds.
         exfalso; clear - Hf Hds Hx2; fsetdec. }
       apply uniq_app_4;
-        [ exact Hus1 | eapply a_wf_aenv_uniq_local; exact HwfΞ1 | exact Hdd ]. }
+        [ exact Hus1 | eapply a_wf_aenv_uniq; exact HwfΞ1 | exact Hdd ]. }
     assert (HF1Θ : Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κs1)
       by (eapply forall_wf_mono_weaken; [ exact Hmon | exact HFs1 ]).
     assert (Himg1F : forall p, In p κc1 ->
@@ -1946,7 +1946,7 @@ Proof.
     -- (* a_wf_aenv *)
        apply a_wf_aenv_flex_prefix;
          [ apply all_flex_mono_app; assumption
-         | pose proof (a_wf_aenv_uniq_local HwfΞ2) as Huq;
+         | pose proof (a_wf_aenv_uniq HwfΞ2) as Huq;
            clear - Huq; solve_uniq
          | exact HwfΘ0 ].
     -- (* α ∉ dom (Ξc1++Ξc2) *)

@@ -104,24 +104,10 @@ Fixpoint ftvar_in_aenv (Θ : aenv) : atoms :=
   | (x, bd) :: Θ' => add x (ftvar_in_abind bd `union` ftvar_in_aenv Θ')
   end.
 
-Definition rename_abind (γ β : atom) (bd : abind) : abind :=
-  match bd with
-  | abind_tvar            => abind_tvar
-  | abind_var_typ A       => abind_var_typ (subst_ptyp_in_ptyp (ptyp_var_f γ) β A)
-  | abind_var_skl P       => abind_var_skl (subst_pskl_in_pskl (pskl_var_f γ) β P)
-  | abind_flex_mono       => abind_flex_mono
-  | abind_flex_mono_def A => abind_flex_mono_def (subst_ptyp_in_ptyp (ptyp_var_f γ) β A)
-  end.
 
-(** [rename_aenv γ β Θ] — rename β to γ throughout Θ: the KEY and the
-    PAYLOAD.  β may occur anywhere (it is the name being renamed away);
-    it is the TARGET γ that callers must keep fresh. *)
-Fixpoint rename_aenv (γ β : atom) (Θ : aenv) : aenv :=
-  match Θ with
-  | nil           => nil
-  | (x, bd) :: Θ' => ((if x == β then γ else x), rename_abind γ β bd)
-                       :: rename_aenv γ β Θ'
-  end.
+(* ⚙ [rename_abind] / [rename_aenv] MOVED to algo/prop_swap.v 2026-08-09.
+   They are renaming OPERATORS, not rules, and this file holds rules; their
+   bridge to the primitive ([swap_aenv_as_rename]) already lived there. *)
 
 (** Suffixes  Ξ ::= · | Ξ,α̂ | Ξ,α̂:=τ  (paper alg-syntax). *)
 Inductive a_suffix_binding : abind -> Prop :=

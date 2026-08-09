@@ -2112,7 +2112,7 @@ Proof.
           assert (Hx2 : x `in` dom Θ0) by (clear - Hx; fsetdec).
           pose proof (Hfr1c x Hx1) as Hf. exfalso; clear - Hf Hdf0 Hx2; fsetdec. }
         apply uniq_app_4;
-          [ exact Hu1 | eapply a_wf_aenv_uniq_local; exact HwfΘ0 | exact Hdd ]. }
+          [ exact Hu1 | eapply a_wf_aenv_uniq; exact HwfΘ0 | exact Hdd ]. }
       assert (HF1Θ : Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κ1)
         by (eapply forall_wf_mono_weaken; [ exact Hmon | exact HF1 ]).
       assert (Hκ1 : (κ1 ++ κ) ∷ (Ξ1 ++ Θ0) ⊑ Θ)

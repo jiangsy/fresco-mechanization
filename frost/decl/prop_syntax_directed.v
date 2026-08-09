@@ -41,9 +41,6 @@ Lemma is_ityp_arrow_l : forall B1 B2, is_ityp (btyp_arrow B1 B2) -> is_ityp B1.
 Proof. intros B1 B2 H. inversion H; assumption. Qed.
 Lemma is_ityp_arrow_r : forall B1 B2, is_ityp (btyp_arrow B1 B2) -> is_ityp B2.
 Proof. intros B1 B2 H. inversion H; assumption. Qed.
-Lemma mod_comp_ty_tc_inv : forall B, mod_comp_ty B mode_tc -> is_ityp B.
-Proof. intros B H. inversion H; subst; assumption. Qed.
-
 (* ===================================================================== *)
 (*  Soundness:  d_sd_typing ⊆ d_typing                                      *)
 (* ===================================================================== *)

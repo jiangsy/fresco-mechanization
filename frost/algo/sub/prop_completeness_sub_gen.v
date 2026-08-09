@@ -3400,14 +3400,6 @@ Qed.
 (*  (E)  A well-formed context mentions only its own domain               *)
 (* ===================================================================== *)
 
-Lemma a_scope_pskl_ftv_dom : forall Θ P,
-  a_scope_pskl Θ P -> ftvar_in_pskl P [<=] dom Θ.
-Proof.
-  intros Θ P H α Hα.
-  assert (Hb : a_binds_tvar α Θ) by (eapply a_scope_pskl_ftv_binds; eassumption).
-  destruct Hb as [Hb | [Hb | [τ Hb]]]; eapply binds_In; exact Hb.
-Qed.
-
 Lemma a_wf_aenv_ftvar_dom : forall Θ,
   a_wf_aenv Θ -> ftvar_in_aenv Θ [<=] dom Θ.
 Proof.

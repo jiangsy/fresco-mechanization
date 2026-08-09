@@ -595,7 +595,7 @@ Proof.
                         [ apply (a_wf_pskl_reassoc HwfP α) | clear; solve_notin_auto ]))
       as [Hle [Hwf1 HwfOut]].
     assert (HuqT : uniq (Ξ ++ (α ~ abind_tvar) ++ Θ1))
-      by (apply a_wf_aenv_uniq_local; exact Hwf1).
+      by (apply a_wf_aenv_uniq; exact Hwf1).
     assert (Hwf1' : a_wf_aenv Θ1)
       by (eapply a_wf_aenv_strip_prefix_suffix_local; exact Hwf1).
     assert (Hle0 : Θ0 ⊴ Θ1)
@@ -739,7 +739,7 @@ Proof.
       by (eapply a_wf_aenv_strip_prefix; eauto).
     inversion Hwfcons as [ | | βz τz Θz HβΘ0 Hwfτ Hm Hwf0 | | | ]; subst.
     assert (HβΞΘ0 : β `notin` dom (Ξ ++ Θ0)).
-    { pose proof (a_wf_aenv_uniq_local Hwf) as Huq.
+    { pose proof (a_wf_aenv_uniq Hwf) as Huq.
       clear - Huq. simpl_env in Huq. destruct_uniq.
       unfold disjoint in *. simpl_env in *. fsetdec. }
     assert (HwfΞΘ0 : a_wf_aenv (Ξ ++ Θ0))

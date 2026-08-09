@@ -2074,7 +2074,7 @@ Proof.
            FLEXIBLE P0 forces [flex_apart] into [fa_clean], i.e. the guess is
            Δρ-clean, and the ρ-generalized extraction only needs that. *)
         assert (Hnrig : ~ binds β0 abind_tvar Θ0).
-        { intro Hb. pose proof (a_wf_aenv_uniq_local HwfΘ0) as Huq.
+        { intro Hb. pose proof (a_wf_aenv_uniq HwfΘ0) as Huq.
           destruct Hflx as [Hb2 | [τx Hb2]];
             [ assert (Hc : abind_tvar = abind_flex_mono)
                 by (eapply binds_unique; [ exact Hb | exact Hb2 | exact Huq ])
@@ -2572,7 +2572,7 @@ Proof.
                 [ exact HSolve1 | exact Hx ]).
         assert (HwfΞs1 : a_wf_aenv (Ξs1 ++ Ξc1 ++ Θ0)).
         { apply a_wf_aenv_flex_prefix; [ exact Hfms1 | | exact HwfΞ1 ].
-          pose proof (a_wf_aenv_uniq_local HwfΞ1) as Huq1.
+          pose proof (a_wf_aenv_uniq HwfΞ1) as Huq1.
           assert (Hdd : dom Ξs1 ∩ dom (Ξc1 ++ Θ0) [<=] empty).
           { intros x Hx.
             assert (Hx1 : x `in` dom Ξs1) by (clear - Hx; fsetdec).
@@ -2925,7 +2925,7 @@ Proof.
         -- (* a_wf_aenv ((Ξc1 ++ Ξc2) ++ Θ0) *)
            apply a_wf_aenv_flex_prefix;
              [ apply all_flex_mono_app; assumption
-             | pose proof (a_wf_aenv_uniq_local HwfΞ2) as Huq;
+             | pose proof (a_wf_aenv_uniq HwfΞ2) as Huq;
                clear - Huq; solve_uniq
              | exact HwfΘ0 ].
         -- (* α ∉ dom (Ξc1++Ξc2) *)

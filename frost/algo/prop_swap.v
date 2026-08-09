@@ -91,6 +91,38 @@ Proof.
   reflexivity.
 Qed.
 
+(** * The DIRECTED rename — the non-primitive sibling of [swap_aenv].
+
+    ⚙ MOVED here from algo/def_extra.v 2026-08-09: that file holds RULES, and
+    these are renaming operators; the bridge between them
+    ([swap_aenv_as_rename], below) was already here.
+
+    ⚠️ WHICH TO REACH FOR: [swap_aenv γ β Θ] — the transposition — is THE
+    renaming primitive by standing directive, because it is its own inverse and
+    so needs no freshness side condition.  [rename_aenv γ β Θ] is DIRECTED (β
+    is renamed away, and the caller must keep the TARGET γ fresh); it survives
+    only where a proof genuinely needs the one-way form.  Prefer [swap_aenv]
+    plus [swap_aenv_as_rename] in new code. *)
+
+Definition rename_abind (γ β : atom) (bd : abind) : abind :=
+  match bd with
+  | abind_tvar            => abind_tvar
+  | abind_var_typ A       => abind_var_typ (subst_ptyp_in_ptyp (ptyp_var_f γ) β A)
+  | abind_var_skl P       => abind_var_skl (subst_pskl_in_pskl (pskl_var_f γ) β P)
+  | abind_flex_mono       => abind_flex_mono
+  | abind_flex_mono_def A => abind_flex_mono_def (subst_ptyp_in_ptyp (ptyp_var_f γ) β A)
+  end.
+
+(** [rename_aenv γ β Θ] — rename β to γ throughout Θ: the KEY and the
+    PAYLOAD.  β may occur anywhere (it is the name being renamed away);
+    it is the TARGET γ that callers must keep fresh. *)
+Fixpoint rename_aenv (γ β : atom) (Θ : aenv) : aenv :=
+  match Θ with
+  | nil           => nil
+  | (x, bd) :: Θ' => ((if x == β then γ else x), rename_abind γ β bd)
+                       :: rename_aenv γ β Θ'
+  end.
+
 (** Local two-way union splitters (small unions only — the ⚙ rule about
     [fsetdec] and big unions does not apply at width 2). *)
 Local Lemma notin_union_split : forall (x : atom) (s t : atoms),
@@ -628,7 +660,7 @@ Proof.
     intros ->. clear - Hb; fsetdec.
 Qed.
 
-(** The CONTEXT bridge: [swap_aenv] IS [rename_aenv] (algo/def_extra.v) when
+(** The CONTEXT bridge: [swap_aenv] IS [rename_aenv] (just above) when
     the TARGET is fresh for the context — the KEY and the PAYLOAD alike, since
     [ftvar_in_aenv] counts both.  With it a substitution-shaped CONTEXT rename
     is a corollary of equivariance with its statement UNCHANGED, so consumers
