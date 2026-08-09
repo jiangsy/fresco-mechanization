@@ -42,6 +42,36 @@ and prove three facts the paper's proof of thm:complete-skeleton-inference
    (`forall α ∈ ftv(annotations of e), Θ0 ∋ α rigid`; `msubst_ptyp_rigid_id`).
    ⚠️ The tempting `dom θ ∩ dom Θ = ∅` is FALSE for identity increases.
 
+   ⭐ **THE PAPER ASSERTS THIS IN PROSE, MID-PROOF, AND NEVER AS A PREMISE**
+   (located 2026-08-10).  The type-inference completeness proof's
+   `sdty{Anno}` case opens with, verbatim (proofs.tex:679):
+
+   > *Since annotations $A$ contain no flexible variables,*
+   > $(\inc[\theta]{\Theta_0}{\Theta};A)$ *is a solution to the type
+   > inference problem* $(\Theta_0;\TC;A;M)$.
+
+   That sentence is the whole of the justification, and it is doing real
+   work — it is what licenses re-entering the IH at the TC problem with `A`
+   ITSELF as both the input skeleton and the solution's type.  ⚠️ It is NOT
+   implied by the problem definition (algorithmic.tex:392), which asks only
+   that "$P$ and $M$ are well-formed in $\Theta_0$": well-formedness gives
+   SCOPE, not flex-freeness, and the paper defines term well-formedness
+   nowhere — there is no `Θ ⊢ M` judgement in any figure and no prose
+   definition.  So the mech premise is the CONJUNCTION of the definition's
+   clause (in scope) and this in-proof sentence (not flexible), promoted to
+   the statement where it belongs.
+
+   ⚠️ The skeleton-inference twin does not even assert it.  Its `P-Anno`
+   case (proofs.tex:1761-1773) ends "Our goal follows from
+   $\inc[\theta]{\Theta_0}{\Theta}$ and $\Theta\vdash\precise{\theta A}{A}$"
+   — the conclusion `θA ⊑ A` with no argument at all.  ⭐ Compare the `P-Var`
+   case immediately above (:1744-1760), which discharges the SAME shape of
+   obligation properly: "By $\inc[\theta]{\Theta_0}{\Theta}$ and
+   $\Theta\ni x:P$, we have $\Theta_0\ni x:P'$ and $\theta P' = P$
+   syntactically".  For a context lookup the paper derives the
+   substitution's effect; for an annotation it writes both sides as `A` and
+   moves on.
+
    ⭐ **`θA = A` IS NOT THE WHOLE REASON, and on its own it would NOT justify
    rigidity** (sharpened 2026-08-09, after the obvious weakening was
    questioned).  An UNRESOLVED flexible satisfies `θA = A` perfectly well:
