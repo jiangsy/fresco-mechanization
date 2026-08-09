@@ -1334,17 +1334,6 @@ Proof.
 Qed.
 
 (** Looking up past a block the atom avoids. *)
-Lemma msubst_lookup_app_notin : forall (ζ κ : metasubst) α,
-  α `notin` dom ζ ->
-  msubst_lookup (ζ ++ κ) α = msubst_lookup κ α.
-Proof.
-  intros ζ; induction ζ as [ | [β τ] ζ' IH ]; intros κ α Hα;
-    [ reflexivity | ].
-  simpl in *.
-  destruct (α == β) as [-> | Hne]; [ exfalso; clear - Hα; fsetdec | ].
-  apply IH. clear - Hα; fsetdec.
-Qed.
-
 (** ⭐ The GHOST-FREE shortcut: a ghost-free subtree guesses to itself, and
     a refinement between two ghost-free paintings IS the equivalence. *)
 Lemma a_guess_mono_complete_ghost_free : forall Θ Δ κ P (Bt : btyp) Θg blk A',
@@ -3480,20 +3469,6 @@ Qed.
     which variable ALIAS ([ptypvar], [usklvar], …) the occurrence carries.
     ⚙ [destruct (β == α)] does NOT reduce the [if] when the two sides were
     elaborated at different aliases. *)
-Lemma msubst_lookup_cons_eq : forall (α : atom) τ κ,
-  msubst_lookup ((α, τ) :: κ) α = τ.
-Proof.
-  intros α τ κ. cbn.
-  destruct (α == α) as [_ | Hc]; [ reflexivity | exfalso; apply Hc; reflexivity ].
-Qed.
-
-Lemma msubst_lookup_cons_neq : forall (α β : atom) τ κ,
-  α <> β -> msubst_lookup ((β, τ) :: κ) α = msubst_lookup κ α.
-Proof.
-  intros α β τ κ Hne. cbn.
-  destruct (α == β) as [Hc | _]; [ exfalso; apply Hne; exact Hc | reflexivity ].
-Qed.
-
 (* ===================================================================== *)
 (*  STEP A.2 — a MONOTYPE painting that refines to an arrow IS an arrow,   *)
 (*  up to [≡ᵗ].                                                           *)

@@ -583,14 +583,6 @@ Print Assumptions a_sub_complete_ghostg.
 (*  which suffices there only because wf's ∀ rule puts its binder in Δ.    *)
 (* ===================================================================== *)
 
-Lemma binds_insert_mid : forall (x : atom) (b : abind) Θ1 e Θ2,
-  binds x b (Θ1 ++ Θ2) -> binds x b (Θ1 ++ e ++ Θ2).
-Proof.
-  intros x b Θ1 e Θ2 H; unfold binds in *;
-    apply in_or_app; destruct (in_app_or _ _ _ H) as [Hin | Hin];
-    [ left; exact Hin | right; apply in_or_app; right; exact Hin ].
-Qed.
-
 Lemma a_wf_pskl_reassoc_mid : forall Θ Δ P,
   Θ ⨟ Δ ⊢ₚₛᵃ P ->
   forall Θ1 Θ2 α, Θ = Θ1 ++ Θ2 ->
@@ -1887,20 +1879,6 @@ Proof.
       eexists ((x, _) :: κa), κb.
       split; [ reflexivity | split; [ | exact Hincb ] ].
       simpl. clear - Hdom; fsetdec.
-Qed.
-
-Lemma msubst_lookup_app_notin : forall κa κb β,
-  β `notin` dom κa ->
-  msubst_lookup (κa ++ κb) β = msubst_lookup κb β.
-Proof.
-  induction κa as [ | [x τ] κa IH ]; intros κb β Hβ; simpl.
-  - reflexivity.
-  - simpl in Hβ.
-    lazymatch goal with
-    | |- context [ if ?c then _ else _ ] => destruct c as [-> | Hne]
-    end.
-    + exfalso. clear - Hβ. fsetdec.
-    + apply IH. clear - Hβ. fsetdec.
 Qed.
 
 (** Composing an identity with an extended substitution ignores the
@@ -4808,13 +4786,6 @@ Proof.
   induction A; simpl; try reflexivity.
   - rewrite IHA1, IHA2. reflexivity.
   - rewrite IHA. reflexivity.
-Qed.
-
-Lemma ftvar_in_bskl_ptyp_to_bskl_syn : forall A,
-  ftvar_in_bskl (ptyp_to_bskl_syn A) [=] ftvar_in_ptyp A.
-Proof.
-  intros A. unfold ptyp_to_bskl_syn.
-  rewrite ftvar_in_bskl_syn. apply ftvar_ptyp_to_pskl.
 Qed.
 
 (** THE MIRROR.  [join_pskl_downarrow_mono_scoped] scopes the ⇓ of the
