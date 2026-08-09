@@ -325,5 +325,3 @@ Proof. reflexivity. Qed.
 
 End TmVarWitness.
 
-Print Assumptions complete_subtyping_needs_flex_skip_tm_var.
-Print Assumptions a_sub_flex_tm_var_head_is_skip_tm_var.

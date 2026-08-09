@@ -739,10 +739,6 @@ Proof.
       simpl in Hlen. lia.
 Qed.
 
-Print Assumptions sub_flex_rigid_head_absurd.
-Print Assumptions slack_arrow_rigid_absurd.
-Print Assumptions sub_flex_complete_holds.
-
 (* ===================================================================== *)
 (*  §8  THE CHECK ROW's ONE OBLIGATION — [guarded_pskl P0]                 *)
 (*                                                                        *)
@@ -1285,7 +1281,6 @@ Qed.
 (*  and are indexed in README.v.                                           *)
 (* ===================================================================== *)
 
-
 (* ===================================================================== *)
 (*  §12  THE ASSEMBLY — [a_sub_complete_bundle], UNCONDITIONAL            *)
 (*                                                                        *)
@@ -1395,12 +1390,3 @@ Proof.
            (ad_refine_syn_f_of_plain Hrs) HwfQ Hgf).
 Qed.
 
-Print Assumptions sub_complete_assemble.
-Print Assumptions sub_complete_arrow_holds.
-Print Assumptions sub_flex_complete_holds.
-Print Assumptions check_row_guarded_p0.
-Print Assumptions sub_flex_rigid_head_absurd.
-Print Assumptions sub_gv_all_inh_forall_r_family.
-Print Assumptions sub_complete_all_inh_counterpart.
-Print Assumptions a_sub_complete_bundle_holds.
-Print Assumptions a_sub_complete.

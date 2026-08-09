@@ -120,8 +120,6 @@ Proof.
     apply IHad_refine_syn; exact Hgf.
 Qed.
 
-Print Assumptions ad_refine_syn_ghost_free_equiv.
-
 (* ===================================================================== *)
 (*  §3  WHAT P7b's Sub-Check WILL CITE                                    *)
 (*                                                                        *)
@@ -146,8 +144,6 @@ Proof.
                 (pskl_to_bskl_inh_ghost_free P0 Hgf)) as Heq.
   rewrite bskl_to_pskl_pskl_to_bskl_inh in Heq. exact Heq.
 Qed.
-
-Print Assumptions a_consis_concrete_output_equiv.
 
 (* ===================================================================== *)
 (*  §4  MOVING AN ≡ˢ AROUND — the transports P7b's own cases will need     *)
@@ -222,8 +218,6 @@ Proof.
   - (* tophole *) apply a_pskl_tyequiv__tophole; assumption.
 Qed.
 
-Print Assumptions a_pskl_tyequiv_subst_flex_def.
-
 (* ===================================================================== *)
 (*  §5  WHAT P7b's Sub-ForallR WILL CITE — and it is the SAME corollary   *)
 (*                                                                        *)
@@ -259,8 +253,6 @@ Proof.
                 (pskl_to_bskl_inh_ghost_free P0 Hgf)) as Heq.
   rewrite bskl_to_pskl_pskl_to_bskl_inh in Heq. exact Heq.
 Qed.
-
-Print Assumptions a_sub_concrete_output_equiv.
 
 (** NOTE FOR THE PAPER (docs/PAPER-GAPS.md).  Read together, §3 and §5 say
     that BOTH cases the [:3243] TODO was meant to simplify get their step from

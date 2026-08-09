@@ -734,8 +734,6 @@ Proof.
   - apply a_uskl_tyequiv__topholeg; assumption.
 Qed.
 
-Print Assumptions a_uskl_tyequiv_weaken_cons.
-
 (* ===================================================================== *)
 (*  Sub-ForallL row enablers: ∀-head inversions and the substitution      *)
 (*  congruence.  ≡ᵘ is shape-rigid at quantifier heads (the [__mono] row  *)

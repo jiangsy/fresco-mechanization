@@ -281,6 +281,3 @@ Proof.
   - (* ∀ : the guess is a [ptyp_all], never a monotype *) inversion Hm.
 Qed.
 
-Print Assumptions a_sub_sk_no_spine_all.
-Print Assumptions a_pat_spine_all_out_freeze.
-Print Assumptions a_guess_mono_all_free.

@@ -184,8 +184,6 @@ Proof.
     [ apply (@cex_derivation β ε) | apply (@Θcex_wf β) | apply Rcex_tskl ].
 Qed.
 
-Print Assumptions p6ss_sub_target_ftv_is_false.
-
 (** NON-VACUITY: the witness derivation really is a derivation, and its
     subject really is a decorated skeleton. *)
 Theorem p6ss_sub_target_ftv_cex_nonvacuous :

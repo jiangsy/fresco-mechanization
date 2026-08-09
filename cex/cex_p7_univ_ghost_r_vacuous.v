@@ -99,8 +99,6 @@ Proof.
     [ exact (Hnh Hc) | exact (Hnt P' Hc) ].
 Qed.
 
-Print Assumptions p7_univ_ghost_r_third_premise_impossible.
-
 (* ===================================================================== *)
 (*  §2  NON-VACUITY — the paper's TWO conditions are satisfiable there     *)
 (*                                                                        *)
@@ -155,10 +153,6 @@ Proof.
     [ cbn; apply guarded_uskl__unit | exact H ].
 Qed.
 
-Print Assumptions cex_join.
-Print Assumptions cex_p0_fill.
-Print Assumptions cex_third_fails.
-
 (** (e) REPAIR CHECK (2026-07-30): under the repaired motive the LEAF-VALID
     join IS derivable here — the leaf's refinement is [unit ⊳ unit] at the
     STRIPPED counterpart — so this configuration is now inside the theorem's
@@ -176,4 +170,3 @@ Proof.
   - cbn. apply ad_refine_pskl__unit.
 Qed.
 
-Print Assumptions cex_join_gv.

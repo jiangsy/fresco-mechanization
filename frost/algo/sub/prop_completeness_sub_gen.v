@@ -109,7 +109,6 @@ Proof.
   rewrite ftvar_in_pskl_uskl_to_pskl in Hd. exact Hd.
 Qed.
 
-
 (* ===================================================================== *)
 (*  P7b — the generalised thm:complete-subtyping (subtyping-proofs:3054)   *)
 (* ===================================================================== *)
@@ -433,8 +432,6 @@ Proof.
   eapply ad_refine_syn_f_forget; exact Hrs.
 Qed.
 
-Print Assumptions a_sub_complete_ghost.
-
 (* ===================================================================== *)
 (*  P7b, THE ◈-SUBJECT CASE (paper's Sub-GhostG)                          *)
 (*                                                                        *)
@@ -492,8 +489,6 @@ Proof.
   rewrite HQ.
   eapply ad_refine_syn_f_forget; exact Hrs.
 Qed.
-
-Print Assumptions a_sub_complete_ghostg.
 
 (* ===================================================================== *)
 (*  WHAT THE REMAINING IH-FREE ROWS NEED.  RETRACTION FIRST.              *)
@@ -554,8 +549,6 @@ Print Assumptions a_sub_complete_ghostg.
 (*                                                                        *)
 (*  See DESIGN-completeness-subtyping.md §9.1.1.                           *)
 (* ===================================================================== *)
-
-
 
 (* ===================================================================== *)
 (*  THE CORRECTED PATH'S FIRST UNIT — moving a Δ-binder into Θ             *)
@@ -663,8 +656,6 @@ Proof.
   apply (ad_refine_pskl_f_reassoc_mid H nil Θ α); simpl_env; reflexivity.
 Qed.
 
-Print Assumptions ad_refine_pskl_f_reassoc.
-
 (* ===================================================================== *)
 (*  THE GHOST-ROW FACT — what the threaded induction needs at [__hole]     *)
 (*                                                                        *)
@@ -705,8 +696,6 @@ Proof.
   - (* __flex_r : a bare variable *) exact I.
 Qed.
 
-Print Assumptions ad_pat_consis_ghost_subject_no_forall.
-
 (* ===================================================================== *)
 (*  F-GROWTH — the other half of what the strip needs                     *)
 (*                                                                        *)
@@ -724,14 +713,19 @@ Print Assumptions ad_pat_consis_ghost_subject_no_forall.
 (*  is what [cex/cex_p7_sskl_precise.v] exploits.                          *)
 (* ===================================================================== *)
 
-Lemma a_wf_pskl_ftv_dom : forall Θ P,
+(** The Δ = ∅ pointwise instance of [a_wf_pskl_ftv_dom]
+    (algo/consis/prop_soundness_consis.v).
+
+    ⚙ 2026-08-09: this used to be a SECOND lemma called [a_wf_pskl_ftv_dom],
+    colliding with the general one — which this very file also uses, above at
+    the [a_solve_sub_wf] block, so the name resolved two different ways inside
+    one file.  It is now a one-line corollary under its own name. *)
+Lemma a_wf_pskl_ftv_dom_pointwise : forall Θ P,
   Θ ⨟ empty ⊢ₚₛᵃ P ->
   forall α, α `in` ftvar_in_pskl P -> α `in` dom Θ.
 Proof.
   intros Θ P Hwf α Hα.
-  destruct (@a_wf_pskl_ftv_tvarish _ _ _ Hwf α Hα) as [HΔ | Htv];
-    [ clear - HΔ; fsetdec | ].
-  destruct Htv as [Hb | [Hb | [τ Hb]]]; eapply binds_In; exact Hb.
+  pose proof (a_wf_pskl_ftv_dom Hwf) as Hs. clear - Hs Hα. fsetdec.
 Qed.
 
 Lemma ad_refine_pskl_f_fgrow : forall F Θ Δ P Q,
@@ -749,7 +743,7 @@ Proof.
     apply ad_refine_pskl_f__hole; [ | exact H0 ].
     apply inter_empty_pointwise; intros β Hβ.
     destruct (AtomSetProperties.In_dec β (ftvar_in_pskl Q)) as [Hin | Hni].
-    + assert (Hdom : β `in` dom Θ) by (eapply a_wf_pskl_ftv_dom; eassumption).
+    + assert (Hdom : β `in` dom Θ) by (eapply a_wf_pskl_ftv_dom_pointwise; eassumption).
       assert (Hne : β <> α0) by (intros ->; clear - Hdom Hα0; fsetdec).
       clear - H Hin Hne Hβ; fsetdec.
     + clear - Hni Hβ; fsetdec.
@@ -763,8 +757,6 @@ Proof.
   - (* flex_l *) eapply ad_refine_pskl_f__flex_l; [ exact H | auto ].
   - (* flex_r *) eapply ad_refine_pskl_f__flex_r; [ exact H | auto ].
 Qed.
-
-Print Assumptions ad_refine_pskl_f_fgrow.
 
 (** …and the plain Θ-weakening the same rows need, which falls out of the
     reassoc above once the [remove] is absorbed by Δ-monotonicity. *)
@@ -852,8 +844,6 @@ Proof.
   - (* __flex_l : the output is the subject variable *) reflexivity.
   - (* __ghost_r : the output IS the subject *) reflexivity.
 Qed.
-
-Print Assumptions a_consis_hole_p0_output.
 
 (* ===================================================================== *)
 (*  Sub-Infer / Sub-UnivGhostR, ASSEMBLED — and the ONE piece still open   *)
@@ -1056,9 +1046,6 @@ Proof.
   eapply prop_normal.a_inc_equiv_lookup; eassumption.
 Qed.
 
-Print Assumptions a_inc_equiv_precise_msubst.
-Print Assumptions a_inc_equiv_precise_msubst_flip.
-
 (* ===================================================================== *)
 (*  Sub-Infer AND Sub-UnivGhostR — THE PAPER'S OWN ROUTE (:3134)           *)
 (*                                                                        *)
@@ -1089,8 +1076,6 @@ Proof.
   - (* __flex_r : the target is a defined flexible *)
     cbn. apply a_wf_pskl__var. right; right; eauto.
 Qed.
-
-Print Assumptions ad_refine_syn_hole_l_target_wf.
 
 (** THE SHARED CORE.  At [P0 = □] the motive's three solution premises ARE
     thm:complete-consistency's, so its precision applies — and
@@ -1146,8 +1131,6 @@ Proof.
   apply ad_refine_syn_hole_l_target_wf.
   eapply ad_refine_syn_f_forget; exact Hrs.
 Qed.
-
-Print Assumptions a_sub_complete_hole_p0_precision.
 
 (** The one-line commutation the undecoration needs: erasing a
     metasubstituted subject is metasubstituting its erasure.  The only
@@ -1213,8 +1196,6 @@ Proof.
   exact (a_sub_complete_hole_p0_precision Hwf0 Hwfth HwfP Hinc Hc Hrs Hrp1).
 Qed.
 
-Print Assumptions a_sub_complete_infer.
-
 (* ===================================================================== *)
 (*  Sub-UnivGhostR — the row that FORCED the leaf-valid motive             *)
 (*                                                                        *)
@@ -1248,8 +1229,6 @@ Proof.
     destruct (IHad_refine_pskl_f Qx HQ) as [Hc | [P' Hc]];
       destruct τ; cbn in Hc; discriminate Hc.
 Qed.
-
-Print Assumptions ad_refine_pskl_f_tophole_r_shape.
 
 (** A GUARDED unresolved skeleton erases to a guarded plain one, and in
     particular to no ghost. *)
@@ -1358,8 +1337,6 @@ Proof.
   apply ad_refine_syn__tophole_keep;
     [ apply guarded_bskl_inh_repaint; exact HgQ | exact Hcore ].
 Qed.
-
-Print Assumptions a_sub_complete_univ_ghost_r.
 
 (* ===================================================================== *)
 (*  Sub-Check — THE SAME SHAPE ONE LEVEL UP                               *)
@@ -1481,8 +1458,6 @@ Proof.
     | rewrite bskl_to_pskl_pskl_to_bskl_inh; exact HwfB
     | exact Hstab ].
 Qed.
-
-Print Assumptions a_sub_complete_check.
 
 (* ===================================================================== *)
 (*  Sub-Arrow (paper :3295-3419) — thm:complete-consistency on the        *)
@@ -1783,8 +1758,6 @@ Proof.
     exact Hprec2.
 Qed.
 
-Print Assumptions a_sub_complete_arrow.
-
 (* ===================================================================== *)
 (*  Sub-ForallR (paper :3196-3258) — THE ENABLERS                          *)
 (*                                                                        *)
@@ -1901,10 +1874,6 @@ Proof.
       intros y Hy. apply Hdisj. simpl. clear - Hy; fsetdec.
 Qed.
 
-Print Assumptions a_sub_ty_tc_output.
-Print Assumptions is_id_inc_dom_mono.
-Print Assumptions a_inc_suffix_prefix_inv.
-
 (* ===================================================================== *)
 (*  Fill inversion at a ∀-inh counterpart — pinning [P0 = ∀.P0']           *)
 (*                                                                        *)
@@ -1991,9 +1960,6 @@ Proof.
   eexists; split; reflexivity.
 Qed.
 
-Print Assumptions ad_refine_syn_f_all_inh_r_shape.
-Print Assumptions msubst_pskl_all_syn_inv.
-
 (* ===================================================================== *)
 (*  Δ→Θ reassociation for the SYN fill — the mirror of                    *)
 (*  [ad_refine_pskl_f_reassoc_mid] above, needed to hand the ∀-inh fill's  *)
@@ -2050,8 +2016,6 @@ Proof.
   apply (ad_refine_syn_f_reassoc_mid H nil Θ α); simpl_env; reflexivity.
 Qed.
 
-Print Assumptions ad_refine_syn_f_reassoc.
-
 (* ===================================================================== *)
 (*  F-GROWTH for the SYN fill (mirror of [ad_refine_pskl_f_fgrow])         *)
 (* ===================================================================== *)
@@ -2069,7 +2033,7 @@ Proof.
   - apply ad_refine_syn_f__hole; [ | exact H0 ].
     apply inter_empty_pointwise; intros β Hβ.
     destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P)) as [Hin | Hni].
-    + assert (Hdom : β `in` dom Θ) by (eapply a_wf_pskl_ftv_dom; eassumption).
+    + assert (Hdom : β `in` dom Θ) by (eapply a_wf_pskl_ftv_dom_pointwise; eassumption).
       assert (Hne : β <> α0) by (intros ->; clear - Hdom Hα0; fsetdec).
       clear - H Hin Hne Hβ; fsetdec.
     + clear - Hni Hβ; fsetdec.
@@ -2348,8 +2312,6 @@ Proof.
     eapply ad_refine_syn_f_delta_mono; [ exact Hp1 | clear; fsetdec ]. }
 Qed.
 
-Print Assumptions a_sub_complete_forall_r.
-
 (* ===================================================================== *)
 (*  Sub-ForallL leaf plumbing (P7b's last row)                            *)
 (* ===================================================================== *)
@@ -2512,7 +2474,7 @@ Proof.
   (* the subject's variables are Θ0-scoped *)
   assert (Hftvb : ftvar_in_uskl Rb [<=] dom Θ0).
   { intros β Hβ.
-    pose proof (a_wf_pskl_ftv_dom HwfP) as Hsc.
+    pose proof (a_wf_pskl_ftv_dom_pointwise HwfP) as Hsc.
     assert (Hβp : β `in` ftvar_in_pskl ⌊ uskl_all_etag ε Rb ⌋ˢ).
     { change (ftvar_in_pskl ⌊ uskl_all_etag ε Rb ⌋ˢ)
         with (ftvar_in_pskl ⌊ Rb ⌋ˢ).
@@ -2704,7 +2666,7 @@ Proof.
     { apply msubst_pskl_agree. intros β Hβ.
       apply msubst_lookup_app_notin.
       assert (HβΘ0 : β `in` dom Θ0)
-        by (apply (a_wf_pskl_ftv_dom HwfP0); exact Hβ).
+        by (apply (a_wf_pskl_ftv_dom_pointwise HwfP0); exact Hβ).
       intro Hc.
       apply (HdomΞ β); [ clear - Hc Hdomκa; fsetdec | exact HβΘ0 ]. }
     rewrite HP0c. exact Hrs. }
@@ -2774,8 +2736,6 @@ Proof.
   { exact Hprec'. }
 Qed.
 
-Print Assumptions a_sub_complete_forall_l_tagged.
-
 (* ===================================================================== *)
 (*  P7b, the ForallL case — UNTAGGED-subject variant (∀·): the same       *)
 (*  assembly at [uskl_all_syn] subjects.                                  *)
@@ -2823,7 +2783,7 @@ Proof.
   (* the subject's variables are Θ0-scoped *)
   assert (Hftvb : ftvar_in_uskl Rb [<=] dom Θ0).
   { intros β Hβ.
-    pose proof (a_wf_pskl_ftv_dom HwfP) as Hsc.
+    pose proof (a_wf_pskl_ftv_dom_pointwise HwfP) as Hsc.
     assert (Hβp : β `in` ftvar_in_pskl ⌊ uskl_all_syn Rb ⌋ˢ).
     { change (ftvar_in_pskl ⌊ uskl_all_syn Rb ⌋ˢ)
         with (ftvar_in_pskl ⌊ Rb ⌋ˢ).
@@ -3015,7 +2975,7 @@ Proof.
     { apply msubst_pskl_agree. intros β Hβ.
       apply msubst_lookup_app_notin.
       assert (HβΘ0 : β `in` dom Θ0)
-        by (apply (a_wf_pskl_ftv_dom HwfP0); exact Hβ).
+        by (apply (a_wf_pskl_ftv_dom_pointwise HwfP0); exact Hβ).
       intro Hc.
       apply (HdomΞ β); [ clear - Hc Hdomκa; fsetdec | exact HβΘ0 ]. }
     rewrite HP0c. exact Hrs. }
@@ -3084,9 +3044,6 @@ Proof.
     exact Hie2. }
   { exact Hprec'. }
 Qed.
-
-Print Assumptions a_sub_complete_forall_l_untagged.
-
 
 (* ===================================================================== *)
 (*  P7a — THE FLEXIBLE WALK.  Infrastructure, and the rows that stay      *)
@@ -3665,7 +3622,6 @@ Proof.
         | eapply a_inc_flex_in_keys; [ exact Hζ | right; eexists; exact hbt ] ] ]. }
 Qed.
 
-
 (* ===================================================================== *)
 (*  (H)  Two enablers the CROSS-HALF rows need                            *)
 (* ===================================================================== *)
@@ -3717,7 +3673,6 @@ Proof.
   - (* hole *) apply a_pskl_tyequiv__refl; constructor.
   - (* tophole *) apply a_pskl_tyequiv__tophole; auto.
 Qed.
-
 
 (** The [ptyp] twin of [msubst_pskl_tyequiv_pointwise].  (Named
     [_two_msubst], not [_pointwise]: prop_sub_msubst_equiv.v's
@@ -4209,7 +4164,6 @@ Proof.
   }
 Qed.
 
-
 (* ===================================================================== *)
 (*  (J)  Flex-Solve's CRUX — the join's ARROW GENERATION at a monotype     *)
 (*       subject (the paper's step ⓒ→ⓓ, subtyping-proofs.tex:2920)        *)
@@ -4275,7 +4229,6 @@ Proof.
     split; [ exact Hm1 | ]. split; [ exact Hm2 | ].
     split; [ exact Hwf1 | ]. split; [ exact Hwf2 | ]. exact Hjoin.
 Qed.
-
 
 (* ===================================================================== *)
 (*  (K)  P7a ROW — Flex-Solve (the paper's FIRST interesting case, :2880)  *)
@@ -4749,7 +4702,6 @@ Proof.
     | unfold msubst_compose; rewrite List.map_length; exact Hlenw
     | exact Hie ].
 Qed.
-
 
 (* ===================================================================== *)
 (*  (L0)  THE ⇓-CONFINEMENT — a MONOTYPE subject scopes the counterpart    *)
@@ -5404,8 +5356,6 @@ Proof.
     exact (IHad_pat_sub_gv Hwf τ eq_refl Hmτ Hwfτ).
 Qed.
 
-Print Assumptions sub_gv_downarrow_mono.
-
 (** THE JOIN's version.  Every row of [ad_pat_sub_gv] that a MONOTYPE-painting
     subject admits either ties [Q] to the subject through a consistency leaf
     (Infer / Check / UnivGhostR / Arrow's domain), recurses (Arrow's codomain,
@@ -5488,8 +5438,6 @@ Proof.
     exact (IHad_pat_sub_gv Hwf τ D eq_refl Hmτ HAD).
 Qed.
 
-Print Assumptions sub_gv_bskl_downarrow_mono_scoped.
-
 (* ===================================================================== *)
 (*  (L)  Flex-SkipRigid's FIRST HALF — moving the solution-side data to    *)
 (*       the TRUNCATED context                                            *)
@@ -5571,7 +5519,7 @@ Proof.
     assert (HftQ : forall γ, γ `in` ftvar_in_pskl Q -> γ `in` dom Θ').
     { intros γ Hγ.
       destruct (HscQ γ Hγ) as [h | h]; [ exfalso | exact h ].
-      assert (hd : γ `in` dom Θ) by (eapply a_wf_pskl_ftv_dom; eassumption).
+      assert (hd : γ `in` dom Θ) by (eapply a_wf_pskl_ftv_dom_pointwise; eassumption).
       exact (Hdisj γ h hd). }
     eapply a_wf_pskl_strengthen;
       [ exact H | exact Hu | intros x Hx; exfalso; clear - Hx; fsetdec
@@ -5827,7 +5775,7 @@ Proof.
       assert (hb : γ `in` ftvar_in_bskl (pskl_to_bskl_syn P))
         by (rewrite ftvar_in_bskl_syn; exact Hγ).
       destruct (HscP γ hb) as [h | h]; [ exfalso | exact h ].
-      assert (hd : γ `in` dom Θ) by (eapply a_wf_pskl_ftv_dom; eassumption).
+      assert (hd : γ `in` dom Θ) by (eapply a_wf_pskl_ftv_dom_pointwise; eassumption).
       exact (Hdisj γ h hd). }
     apply ad_refine_syn_f__hole; [ exact H | ].
     eapply a_wf_pskl_strengthen;
@@ -6599,8 +6547,6 @@ Proof.
       | exact HprecΘ ]. }
 Qed.
 
-Print Assumptions a_sub_flex_complete_skip_rigid.
-
 (* ===================================================================== *)
 (*  §(N) Flex-SkipTmVar — the TERM-VARIABLE head, type binding            *)
 (*                                                                        *)
@@ -7033,8 +6979,6 @@ Proof.
       | exact HprecΘ ]. }
 Qed.
 
-Print Assumptions a_sub_flex_complete_skip_tm_var.
-
 (* ===================================================================== *)
 (*  §(O) Flex-SkipTmVar (skl) — the TERM-VARIABLE head, skeleton binding  *)
 (*                                                                        *)
@@ -7452,9 +7396,6 @@ Proof.
       | rewrite bskl_to_pskl_pskl_to_bskl_inh; exact HwfQ
       | exact HprecΘ ]. }
 Qed.
-
-
-Print Assumptions a_sub_flex_complete_skip_tm_skl.
 
 (* ===================================================================== *)
 (*  P7a IS COMPLETE — all SEVEN rows are [Qed]                            *)

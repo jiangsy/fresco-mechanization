@@ -124,10 +124,6 @@ Lemma cexL_third_fails :
   False.
 Proof. cbn. intros H. inversion H. Qed.
 
-Print Assumptions cexL_join.
-Print Assumptions cexL_p0_fill.
-Print Assumptions cexL_third_fails.
-
 (* ===================================================================== *)
 (*  §2  Sub-ForallR — checking against a ∀:  unit ⩽ ∀a.unit  is excluded   *)
 (*                                                                        *)
@@ -182,10 +178,6 @@ Lemma cexR_third_fails :
   False.
 Proof. cbn. intros H. inversion H. Qed.
 
-Print Assumptions cexR_join.
-Print Assumptions cexR_p0_fill.
-Print Assumptions cexR_third_fails.
-
 (* ===================================================================== *)
 (*  §3  REPAIR CHECK — the LEAF-VALID join covers both configurations      *)
 (*                                                                        *)
@@ -232,5 +224,3 @@ Proof.
   - cbn. apply ad_refine_pskl__unit.
 Qed.
 
-Print Assumptions cexL_join_gv.
-Print Assumptions cexR_join_gv.

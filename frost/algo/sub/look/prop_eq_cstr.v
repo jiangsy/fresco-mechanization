@@ -242,7 +242,6 @@ Qed.
    [dom Ξm ∩ dom Ξ = ∅] premise; see also [a_solve_eq_weaken_flex_block], which
    is the packaged form the arrow rows actually call. *)
 
-
 (* msubst_pskl is a function of the lookup: agreeing lookups agree on outputs. *)
 Lemma msubst_pskl_lookup_congr : forall κ σ P,
   (forall α, msubst_lookup κ α = msubst_lookup σ α) ->
@@ -393,13 +392,6 @@ Proof.
           | intros α0 Hf0; eapply a_flex_tvar_app_mono; [ exact Hft | exact Hf0 ]
           | intros P1 Hf1; eapply a_flex_app_anti; [ exact Hfl | exact Hf1 ] ] ].
 Qed.
-
-
-
-
-
-
-
 
 (* The OUTPUT premise is inherited from the mutual lemma (a leaked SS-ForallR
    witness cannot be moved, so the inserted block must avoid it by
@@ -4782,8 +4774,6 @@ Proof.
       apply a_lookeq__univ_ghost; exact HLK.
 Qed.
 
-Print Assumptions a_lookeq_solve_complete_gen.
-
 (* ===================================================================== *)
 (*  P6-Cs — the PAPER'S statement, as the ρ = IDENTITY corollary.          *)
 (*                                                                        *)
@@ -4918,4 +4908,3 @@ Proof.
   repeat split; assumption.
 Qed.
 
-Print Assumptions a_lookeq_solve_complete.

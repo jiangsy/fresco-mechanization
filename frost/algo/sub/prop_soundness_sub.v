@@ -2700,6 +2700,3 @@ Proof.
 Qed.
 
 (* The flagship check: no admits, no axioms. *)
-Print Assumptions a_subtag_sound_bundle.
-Print Assumptions ad_refine_pskl_refine_inh_target.
-Print Assumptions ad_pat_sub_gv_rename_tvar.

@@ -96,7 +96,6 @@ Set Implicit Arguments.
 (*  in comments below no longer resolve to anything.  They are HISTORY.     *)
 (* ===================================================================== *)
 
-
 (** A GUARDED payload skeleton is never precise to a dotted universal ghost:
     its κ-image is unit / a mono paint / an arrow, and the ∀◈ target has no
     matching rule (the mono-paint chain is [ad_ppre_mono_paint_topholeg_absurd]).
@@ -2974,4 +2973,3 @@ Proof.
               | exact HwfPi | exact Hpre ].
 Qed.
 
-Print Assumptions a_solve_sub_complete_var.

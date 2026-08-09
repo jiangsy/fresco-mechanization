@@ -183,5 +183,3 @@ Proof.
   destruct Hb as [Hb | [Hb | [τ Hb]]]; inversion Hb.
 Qed.
 
-Print Assumptions p7_sskl_precise_is_false.
-Print Assumptions cex_excluded_by_subject_refinement.

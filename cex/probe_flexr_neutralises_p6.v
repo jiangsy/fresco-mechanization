@@ -157,6 +157,3 @@ Proof.
   apply binds_app_3; exact Hb.
 Qed.
 
-Print Assumptions flexctp_solve_returns_the_pattern.
-Print Assumptions flexctp_precision_now_holds.
-Print Assumptions p6sv_forall_returns_the_pattern.

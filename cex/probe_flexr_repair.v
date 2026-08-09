@@ -311,5 +311,3 @@ Qed.
 
 End Repair.
 
-Print Assumptions new_extract.
-Print Assumptions new_run_exists.

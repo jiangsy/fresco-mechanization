@@ -167,4 +167,3 @@ Proof. exists Θw'; split; [ apply cex_derivation | apply Θw_wf ]. Qed.
 
 End CexP7ConcreteRhs.
 
-Print Assumptions p7_concrete_rhs_is_false.

@@ -345,6 +345,20 @@ Qed.
 (*  the induction; [*_forget] recovers the real judgments at the end.     *)
 (* ===================================================================== *)
 
+(** ⚠️ THIS [F] IS NOT THE ONE THAT WAS DELETED.  Two unrelated things have
+    been called [F] in this development:
+
+    - the WALK's used-name index, threaded through [a_assign] / [a_unify] /
+      [a_consis].  DELETED 2026-08-03 (`fb23225`): it was re-expressed as the
+      paper's Barendregt output premise on the rules, as a parameter [N] on the
+      completeness motives, and as an output-relative coverage hypothesis on
+      soundness.  Those judgements carry no [F] today.
+    - the FILL-HYGIENE set here (and in [ad_refine_pskl_f] / [ad_precise_f]):
+      the variables forbidden in ghost fills, [F := Δ1 ∪ Δ2], erased by
+      [*_f_forget].  **This one STAYS** — 313 uses across 11 files, and the
+      F-GROWTH block in algo/sub/prop_completeness_sub_gen.v is about it.
+
+    ⛔ So never blanket-strip [forall F] on the strength of "F was removed". *)
 Inductive ad_refine_syn_f (F : atoms) : aenv -> atoms -> bskl -> bskl -> Prop :=
 | ad_refine_syn_f__unit : forall Θ Δ,
     ad_refine_syn_f F Θ Δ bskl_unit bskl_unit

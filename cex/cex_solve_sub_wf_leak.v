@@ -149,4 +149,3 @@ Proof.
     [ apply cex_wf_subject | apply cex_wf_target | clear; fsetdec ].
 Qed.
 
-Print Assumptions solve_sub_preserves_wf_is_false.

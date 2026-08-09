@@ -51,8 +51,6 @@ Set Implicit Arguments.
    adds the ForallSyn-specific kit and the main induction over the whole
    consistency judgment. *)
 
-
-
 (** [MECH-ONLY kit] Moving a Δ-entry of skeleton well-formedness into the
     aenv as a rigid tvar (mid-insertion general; the ∀◇-body stays at
     empty Δ and only needs binds-weakening).  No paper counterpart: the
@@ -116,7 +114,6 @@ Qed.
 (* The paper-form statement is now the COROLLARY of the generalized
    theorem below (Θtv := [], Δr := ∅, R := ∅); the paper mapping is
    documented on the corollary [a_solve_eq_complete_var]. *)
-
 
 (* ===================================================================== *)
 (*  THE GENERALIZED STATEMENT (repair architecture, DESIGN §6(m), bag     *)
@@ -196,7 +193,6 @@ Qed.
    ForallSyn binder join Θr, so the tophole_fill body is the IH's
    refinement premise VERBATIM and no transport (hence no pskl_no_hole
    premise) is needed. *)
-
 
 (* ===================================================================== *)
 (*  ForallSyn kit (4): rename a tvar α2↦β2 in the AENV of a precision       *)
@@ -3572,8 +3568,6 @@ Proof.
       | intros β α τ Hβ Hb; exfalso; clear - Hβ; fsetdec ]
     | clear; fsetdec ].
 Qed.
-
-Print Assumptions a_solve_eq_complete_var.
 
 (* ⭐ THE Θw-CARRYING INTERFACE (2026-08-04).  [a_solve_eq_complete_var] above
    is the PAPER statement and fixes [Θw := Θ]; P6-Cs cannot use it, because its

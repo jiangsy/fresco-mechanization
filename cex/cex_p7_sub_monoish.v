@@ -144,8 +144,6 @@ Proof.
                    (Rw_tskl ε) (Qw_monoish β))).
 Qed.
 
-Print Assumptions p7_sub_monoish_counterpart_is_false.
-
 (** ⚠️ READ THIS BEFORE CONCLUDING ANYTHING FROM THE ABOVE.  Only the
     MONO-PAINT half of the statement is false.  The OTHER conjunct — [Ψ = ∅],
     i.e. "against a mono-ish counterpart NO TAG IS SOLVED" — is TRUE, and it

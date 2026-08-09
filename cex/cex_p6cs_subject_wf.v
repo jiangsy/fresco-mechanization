@@ -275,5 +275,3 @@ Proof.
   exact Hrest.
 Qed.
 
-Print Assumptions p6cs_without_subject_wf_is_false.
-Print Assumptions p6cs_fires_when_the_subject_is_wf.

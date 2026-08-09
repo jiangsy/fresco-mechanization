@@ -1237,8 +1237,6 @@ Proof.
     exact Hpre.
 Qed.
 
-Print Assumptions a_extract_complete_gen.
-
 (* ===================================================================== *)
 (*  §11  THE Δ-HYGIENE PREMISES ABSORB AT Δ = ∅                            *)
 (*                                                                        *)
@@ -1306,8 +1304,6 @@ Proof.
     | clear; fsetdec | clear; fsetdec                (* Ψsub := Ψa *)
     | exact Hsubty | exact HwfSubj | exact Hrefine ].
 Qed.
-
-Print Assumptions a_extract_complete.
 
 (* ===================================================================== *)
 (*  Sub-ForallL item 4 — [a_sub__forall_l]'s extract family from the ONE   *)

@@ -107,7 +107,6 @@ Require Import src.frost.algo.sub.look.prop_sub_var.
 (*  [sub_shield_empty].  Coq text at commit `4351531`.                     *)
 (* ===================================================================== *)
 
-
 (* ===================================================================== *)
 (*  Δ-SHRINKING for partial precision                                     *)
 (* ===================================================================== *)
@@ -218,7 +217,6 @@ Qed.
    [β ∉ ftv ψa] plus the PRECISION conclusion (:1897-1900).  So
    [a_solve_sub_complete_var] now returns it directly, and this file's α-stack
    row simply reads it off — closer to the paper than the mech was before. *)
-
 
 (* ===================================================================== *)
 (*  ψa SURVIVES INTO THE SUBJECT — the ForallL rows' tag bookkeeping       *)
@@ -3278,8 +3276,6 @@ Qed.
 (*  docs/DESIGN-completeness-subtyping.md §8 (h).                          *)
 (* ===================================================================== *)
 
-Print Assumptions a_looksub_solve_complete_gen.
-
 (* ===================================================================== *)
 (*  P6-Ss — the PAPER'S statement, as the ρ = IDENTITY corollary.          *)
 (*                                                                        *)
@@ -3411,4 +3407,3 @@ Proof.
   repeat split; assumption.
 Qed.
 
-Print Assumptions a_looksub_solve_complete.
