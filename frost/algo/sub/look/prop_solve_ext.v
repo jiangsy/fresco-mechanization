@@ -178,14 +178,9 @@ Qed.
 (*  implementation's global counter enforces.)                             *)
 (* ===================================================================== *)
 
-(* ⚙ [swap_ptyp_as_subst] was re-proved here; deleted 2026-08-09 (cleanup
-   audit §8.1) — identical to prop_swap.v's, which this file imports. *)
-
-(** The [pskl] twin of [close_ptyp_subst_var] (prop_flex.v).  It used to live
-    in prop_solve_sub.v, alongside the double-RENAME witness-move the repair
-    retired (§4a); the move is a SWAP now, but the CLOSE-after-rename step
-    survives — it is what keeps a ∀ row's output untouched when its recorded
-    binder has to be re-picked. *)
+(** The [pskl] twin of [close_ptyp_subst_var] (prop_flex.v).  The
+    CLOSE-after-rename step is what keeps a ∀ row's output untouched when its
+    recorded binder has to be re-picked. *)
 Lemma close_pskl_subst_var : forall P α β,
   β `notin` ftvar_in_pskl P ->
   close_pskl_wrt_pskl β (subst_pskl_in_pskl (pskl_var_f β) α P)

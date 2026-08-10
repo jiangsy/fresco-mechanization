@@ -89,9 +89,6 @@ Proof.
       [ intros x b Hb; apply binds_weaken; exact Hb | eassumption ].
 Qed.
 
-(* ⚙ [a_wf_pskl_delta_to_tvar] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
-   one in prop_completeness_consis.v, which this file imports. *)
-
 (** a_inc images are Θ-scoped (the prose wf side-condition, pointwise). *)
 Lemma a_inc_image_ftv_dom : forall Θ0 κ Θ,
   κ ∷ Θ0 ⊑ Θ ->

@@ -319,12 +319,6 @@ Proof.
   - destruct IHa_uskl_tyequiv. split; apply lc_uskl_topholeg; assumption.
 Qed.
 
-(* ⚙ [mono_ptyp_to_uskl_syn_guarded] ("a monotype's painting is guarded") used
-   to be re-proved here under the name [guarded_ptyp_to_uskl_syn].  Deleted
-   2026-08-09 (cleanup audit §5.5): it is verbatim the lemma prop_pat_sub.v
-   already proves, and this file imports that one (:42).  The old name also
-   read as a fact ABOUT a [guarded_ptyp] predicate, which never existed. *)
-
 (** Guardedness transports along ≡ᵘ (only the head matters, and a guarded
     head is congruent or a mono painting on both sides). *)
 Lemma a_uskl_tyequiv_guarded : forall Θ R R',

@@ -229,13 +229,9 @@ Proof.
          [ right; clear - n; fsetdec | left; clear - Hl Hup Hne; fsetdec ].
 Qed.
 
-(* A CONSISTENCY collection only ever deposits eq constraints.  MOVED here
-   from sub/look/prop_eq_cstr.v (2026-08-01): it is a basic property of the
-   judgment, and the source-substitution lemma of prop_decorate_sub.v needs it
-   for its arrow rows — that file is UPSTREAM of P6-Cs.
-   EXISTS-FRESH SIMPLIFICATION (cluster 3): the three ∀ rows used to hand back
-   a cofinite family, and each needed a representative picked off [L]; now the
-   IH is the premise's own, and the rows are plain [assumption]. *)
+(* A CONSISTENCY collection only ever deposits eq constraints.  ⚙ The three ∀
+   rows are plain [assumption]: the rules are EXISTS-FRESH, so the IH is the
+   premise's own and no representative has to be picked off [L]. *)
 Lemma a_lookeq_cstr_eq : forall Θ α P P' Ξ 𝒞,
   Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 ->
   Forall (fun c => exists Q, c = a_cstr_eq Q) 𝒞.
@@ -1020,10 +1016,6 @@ Qed.
 (** One-step context facts the binder rows need in the shape [fsetdec] can
     use (reducing [ftvar_in_aenv] under a [cons] with [cbn] would unfold the
     atom-set operations themselves). *)
-(* [ftvar_in_aenv_cons_tvar] moved UP to prop_flex.v (2026-08-06): it is the
-   one-step domain fact the [a_guess_mono] renaming needs, and re-deriving it
-   there by [simpl; fsetdec] IN THE AMBIENT CONTEXT cost 160 s of the tree's
-   build (profiled).  Still re-exported through this file's import chain. *)
 
 (** ⚙ The freshness kit the binder rows run on.  Their side conditions are
     five-way unions over a context, two skeletons, a generated block and a

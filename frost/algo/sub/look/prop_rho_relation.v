@@ -723,9 +723,6 @@ Qed.
 (* ===================================================================== *)
 
 (** Syn-paintings are synthesized skeletons. *)
-(* ⚙ [is_sskl_pskl_to_bskl_syn] MOVED 2026-08-09 to frost/prop_basic.v
-   (cleanup audit §8.1): it was proved here AND in prop_soundness_sub.v, and
-   neither file imports the other, so the shared home is prop_basic.v. *)
 
 (** Refining the hole yields a synthesized skeleton (paper: "by inversion
     on the refinement premise, Q is a synthesised skeleton"). *)
@@ -1872,9 +1869,6 @@ Proof.
   apply IH. auto.
 Qed.
 
-(* ⚙ [a_inc_dom_flex] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant
-   of prop_compose.v:133's, now imported explicitly above. *)
-
 Lemma msubst_pskl_tvar_id : forall Θ0 κ Θ α,
   a_wf_aenv Θ0 ->
   κ ∷ Θ0 ⊑ Θ ->
@@ -2138,9 +2132,6 @@ Lemma ptyp_to_bskl_syn_hole_absurd : forall τ,
 Proof. intros τ H; destruct τ; simpl in H; discriminate. Qed.
 
 (* ---- κ-image monotypes ---- *)
-
-(* ⚙ [a_inc_lookup_mono] deleted 2026-08-09 (cleanup audit §8.1): an
-   alpha-variant of prop_compose.v:242's. *)
 
 (** Its companion: a FLEXIBLE's image is SCOPED BY THE TARGET.  ([a_inc]'s
     two flex rows carry [a_wf_ptyp Θ' τ] as a premise; the flexibility is what

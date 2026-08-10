@@ -69,9 +69,7 @@ Require Import src.frost.algo.consis.prop_consis_rename.
 Set Implicit Arguments.
 
 (* ##################################################################### *)
-(*  PART A — THE μ-MEASURE (formerly algo/prop_consis_exist.v, merged     *)
-(*  2026-07-18; that file and the deprecated OPT-bundle file               *)
-(*  prop_completeness_consis.v (PART B) were folded into this one).                     *)
+(*  PART A — THE μ-MEASURE                                                *)
 (* ##################################################################### *)
 
 (** EXISTENCE for [thm:complete-consistency] — the well-founded-measure half.
@@ -445,27 +443,16 @@ Proof.
 Qed.
 
 (* ##################################################################### *)
-(*  PART B — HELPER LEMMAS (formerly algo/prop_consis_complete.v).         *)
+(*  PART B — HELPER LEMMAS                                                 *)
 (* ##################################################################### *)
 
-(** HELPER LEMMAS for the consistency completeness development.
-
-    HISTORY.  This file originally hosted the standalone 28-case mutual
-    OPTIMALITY bundle ([a_assign_unify_consis_optimal], Admitted) together
-    with the problem/solution/optimality definitions it was stated against.
-    That development is SUPERSEDED: completeness AND optimality are proved
-    together by the μ-measure bundle in algo/prop_consis_complete.v
-    ([complete_mu], [a_consis_complete] — all Qed, axiom-free), whose
-    fused statement is the paper's (full-algo-spec.tex:1476-1519).  The
-    Admitted bundle, its corollaries, the problem/solution definitions, and
-    the OPT-only helpers ([skip_tm_var_case], [consis_tophole_solution_inv],
-    [consis_refine_mono_tyequiv_gen], the [*_optimal_post] motives) were
-    removed 2026-07-18; see git history.  The machine-checked falsity of
-    optimality under SYNTACTIC binder middles (and its resolution by the
-    GundryMM10 §3.1 semantic entries adopted in def_meta.v) is recorded in
-    docs/PAPER-GAPS.md and sections/appendices/optimality-cex.tex.
-
-    What remains are the Qed helpers the μ-bundle imports. *)
+(** HELPER LEMMAS the μ-bundle of PART A imports.  ⭐ Completeness AND
+    optimality are proved TOGETHER there ([complete_mu], [a_consis_complete]),
+    which is the paper's fused statement (full-algo-spec.tex:1476-1519) —
+    there is no separate optimality bundle.  ⚠️ Optimality is FALSE under
+    SYNTACTIC binder middles; the mechanization adopts GundryMM10 §3.1's
+    semantic entries in def_meta.v (docs/PAPER-GAPS.md,
+    sections/appendices/optimality-cex.tex). *)
 
 (* ---- downarrow SCOPING + the join-grounding crux (GMM Lemma 2.6, step 2) ---- *)
 (*  ⇓ᵗ[Θ] of a type stays inside any def-closed set containing its ftv; and    *)

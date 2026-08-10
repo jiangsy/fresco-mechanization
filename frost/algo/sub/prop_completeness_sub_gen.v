@@ -714,12 +714,8 @@ Qed.
 (* ===================================================================== *)
 
 (** The Δ = ∅ pointwise instance of [a_wf_pskl_ftv_dom]
-    (algo/consis/prop_soundness_consis.v).
-
-    ⚙ 2026-08-09: this used to be a SECOND lemma called [a_wf_pskl_ftv_dom],
-    colliding with the general one — which this very file also uses, above at
-    the [a_solve_sub_wf] block, so the name resolved two different ways inside
-    one file.  It is now a one-line corollary under its own name. *)
+    (algo/consis/prop_soundness_consis.v).  ⚠️ It needs its OWN name: this file
+    also uses the general one, above at the [a_solve_sub_wf] block. *)
 Lemma a_wf_pskl_ftv_dom_pointwise : forall Θ P,
   Θ ⨟ empty ⊢ₚₛᵃ P ->
   forall α, α `in` ftvar_in_pskl P -> α `in` dom Θ.
@@ -1136,8 +1132,6 @@ Qed.
     metasubstituted subject is metasubstituting its erasure.  The only
     interesting node is a variable, where both sides are the image's
     [ptyp_to_pskl]. *)
-(* ⚙ [uskl_to_pskl_msubst_uskl_syn] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
-   one in sub/look/prop_eq_cstr.v, which this file imports. *)
 
 (** At [M = TI] every admissible row of [ad_pat_sub_g] carries a TAG-FREE
     consistency between the same two skeletons: [__infer] has it on the rule,

@@ -955,13 +955,9 @@ Proof.
 Qed.
 
 
-(** ** [wf] / [scope] bound the free variables by the domain.
-
-    ⚙ GATHERED here 2026-08-09.  The four facts below were spread over
-    [prop_metasubst.v], [algo/typing/prop_soundness_typing.v],
-    [prop_suffix_erase.v] and [algo/sub/prop_completeness_sub_gen.v] — pairwise
-    invisible to each other, so each was proved twice.  They are one family and
-    [a_wf_ptyp_ftv_tvarish] just above is the first member. *)
+(** ** [wf] / [scope] bound the free variables by the domain.  ⚠️ These four
+    and [a_wf_ptyp_ftv_tvarish] just above are ONE family and this is their
+    only home — do not re-prove an instance in a downstream file. *)
 
 Lemma a_wf_ptyp_ftv_dom : forall Θ A,
   a_wf_ptyp Θ A -> ftvar_in_ptyp A [<=] dom Θ.

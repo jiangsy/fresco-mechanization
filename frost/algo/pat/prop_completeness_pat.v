@@ -161,14 +161,13 @@ Qed.
 Corollary a_pat_output_wf : forall m Θ0 P0 e P Θ1,
   Θ0 ⊢ₛᵃ[ m ; P0 ] e ⦂ P ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
-  (forall x Ps, binds x (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   a_sk_mode_compat m P0 ->
   a_wf_exp Θ0 e ->
   Θ1 ⨟ empty ⊢ₚₛᵃ P.
 Proof.
-  intros * Hrun Hwf Hskl HwfP0 Hmod Hexp.
-  destruct (a_pat_sound Hrun Hwf Hskl HwfP0 Hmod Hexp)
+  intros * Hrun Hwf HwfP0 Hmod Hexp.
+  destruct (a_pat_sound Hrun Hwf HwfP0 Hmod Hexp)
     as [Hle [Hwf1 [Qt [HeQt [Hpat _]]]]].
   rewrite <- HeQt. eapply ad_pat_target_wf; [ exact Hpat | exact Hwf1 ].
 Qed.
@@ -771,12 +770,13 @@ Lemma a_pat_complete_var : forall M Θ0 P0 x κ Θ Q,
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   a_sk_mode_compat M P0 ->
   κ ∷ Θ0 ⊑ Θ ->
-  (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
   Θ ⊢ₛᵃᵈ[ M ] (exp_var_f x) ⦂ Q ->
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
   pat_complete_concl M Θ0 P0 (exp_var_f x) κ Θ Q.
 Proof.
-  intros M Θ0 P0 x κ Θ Q Hwf0 HwfΘ HwfP0 Hmod Hinc Hskl Hd Href.
+  intros M Θ0 P0 x κ Θ Q Hwf0 HwfΘ HwfP0 Hmod Hinc Hd Href.
+  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps Hwf0 Hb)
+    as Hskl.
   inversion Hd; subst.
   match goal with
   | H : ad_pat_sub_v _ _ _ _ _ _ |- _ => destruct H as [njoin Hjoin]
@@ -1157,8 +1157,6 @@ Lemma a_pat_complete_abs_check : forall Θ0 e κ Θ Q,
   a_wf_aenv Θ0 -> a_wf_aenv Θ ->
   κ ∷ Θ0 ⊑ Θ ->
   (forall α, α `in` ftvar_in_exp (exp_abs e) -> binds α abind_tvar Θ0) ->
-  (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
-  (forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps) ->
   lc_exp (exp_abs e) ->
   (forall x M' Θ0' P0' κ' Θ' Q',
      a_wf_aenv Θ0' -> a_wf_aenv Θ' ->
@@ -1167,8 +1165,6 @@ Lemma a_pat_complete_abs_check : forall Θ0 e κ Θ Q,
      κ' ∷ Θ0' ⊑ Θ' ->
      (forall α, α `in` ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) ->
         binds α abind_tvar Θ0') ->
-     (forall y Ps, binds y (abind_var_skl Ps) Θ0' -> Θ0' ⨟ empty ⊢ₚₛᵃ Ps) ->
-     (forall y Ps, binds y (abind_var_skl Ps) Θ' -> Θ' ⨟ empty ⊢ₚₛᵃ Ps) ->
      lc_exp (open_exp_wrt_exp e (exp_var_f x)) ->
      Θ' ⊢ₛᵃᵈ[ M' ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q' ->
      Θ' ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ' P0')) ⊳ Q' ->
@@ -1176,7 +1172,11 @@ Lemma a_pat_complete_abs_check : forall Θ0 e κ Θ Q,
   Θ ⊢ₛᵃᵈ[ mode_tc ] (exp_abs e) ⦂ Q ->
   pat_complete_concl mode_tc Θ0 pskl_hole (exp_abs e) κ Θ Q.
 Proof.
-  intros Θ0 e κ Θ Q Hwf0 HwfΘ Hinc Hrig Hskl HsklT Hlc IH Hd.
+  intros Θ0 e κ Θ Q Hwf0 HwfΘ Hinc Hrig Hlc IH Hd.
+  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps Hwf0 Hb)
+    as Hskl.
+  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps HwfΘ Hb)
+    as HsklT.
   inversion Hd; subst; [ exfalso; auto | ].
   match goal with
   | H : forall x, x `notin` ?L0 -> _ ⊢ₛᵃᵈ[ _ ] _ ⦂ _ |- _ =>
@@ -1209,20 +1209,6 @@ Proof.
     pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hup.
     simpl in Hup.
     apply binds_cons_3. apply Hrig. clear - Hα Hup; fsetdec. }
-  assert (Hsklx : forall y Ps, binds y (abind_var_skl Ps) ((x ~ bx) ++ Θ0) ->
-             ((x ~ bx) ++ Θ0) ⨟ empty ⊢ₚₛᵃ Ps).
-  { intros y Ps Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heq] | Hb'].
-    - inversion Heq; subst. apply a_wf_pskl__hole.
-    - eapply a_wf_pskl_mono; [ eapply Hskl; exact Hb' | ].
-      intros α c _ Hc. apply binds_cons_3. exact Hc. }
-  assert (HsklTx : forall y Ps, binds y (abind_var_skl Ps) ((x ~ bx) ++ Θ) ->
-             ((x ~ bx) ++ Θ) ⨟ empty ⊢ₚₛᵃ Ps).
-  { intros y Ps Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heq] | Hb'].
-    - inversion Heq; subst. apply a_wf_pskl__hole.
-    - eapply a_wf_pskl_mono; [ eapply HsklT; exact Hb' | ].
-      intros α c _ Hc. apply binds_cons_3. exact Hc. }
   (* the body target is wf at the extended contexts (K1) *)
   assert (HwfP : ((x ~ bx) ++ Θ) ⨟ empty ⊢ₚₛᵃ P).
   { pose proof (ad_pat_target_wf (Hbody x ltac:(clear - Hx; solve_notin_auto)) HwfΘx)
@@ -1234,7 +1220,7 @@ Proof.
               Hwf0x HwfΘx
               ltac:(apply a_wf_pskl__hole)
               ltac:(apply a_sk_mode_compat__tc)
-              Hincx Hrigx Hsklx HsklTx Hlcbody
+              Hincx Hrigx Hlcbody
               (Hbody x ltac:(clear - Hx; solve_notin_auto))
               ltac:(apply ad_refine_syn__hole; exact HwfP))
     as [Q' [Θ1' [Hrun Hopt]]].
@@ -1242,7 +1228,7 @@ Proof.
   assert (Hexpx : a_wf_exp ((x ~ bx) ++ Θ0) (open_exp_wrt_exp e (exp_var_f x))).
   { apply a_wf_exp_of_tvarish; [ exact Hlcbody | ].
     intros α Hα. left. apply Hrigx. exact Hα. }
-  destruct (a_pat_sound Hrun Hwf0x Hsklx
+  destruct (a_pat_sound Hrun Hwf0x
               ltac:(apply a_wf_pskl__hole)
               ltac:(apply a_sk_mode_compat__tc)
               Hexpx)
@@ -1267,7 +1253,7 @@ Proof.
     by (eapply a_wf_aenv_notin_ftv_tm_below; exact Hwf1').
   assert (HwfQ' : (Ξ ++ (x ~ bx) ++ Θ2) ⨟ empty ⊢ₚₛᵃ Q')
     by (eapply a_pat_output_wf;
-        [ exact Hrun | exact Hwf0x | exact Hsklx
+        [ exact Hrun | exact Hwf0x
         | apply a_wf_pskl__hole | apply a_sk_mode_compat__tc | exact Hexpx ]).
   assert (HxQ' : x `notin` ftvar_in_pskl Q')
     by (eapply a_wf_pskl_notin_ftv_tm;
@@ -1354,8 +1340,6 @@ Lemma a_pat_complete_abs_anno_check : forall Θ0 A e κ Θ Q,
   a_wf_aenv Θ0 -> a_wf_aenv Θ ->
   κ ∷ Θ0 ⊑ Θ ->
   (forall α, α `in` ftvar_in_exp (exp_abs_anno A e) -> binds α abind_tvar Θ0) ->
-  (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
-  (forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps) ->
   lc_exp (exp_abs_anno A e) ->
   (forall x M' Θ0' P0' κ' Θ' Q',
      a_wf_aenv Θ0' -> a_wf_aenv Θ' ->
@@ -1364,8 +1348,6 @@ Lemma a_pat_complete_abs_anno_check : forall Θ0 A e κ Θ Q,
      κ' ∷ Θ0' ⊑ Θ' ->
      (forall α, α `in` ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) ->
         binds α abind_tvar Θ0') ->
-     (forall y Ps, binds y (abind_var_skl Ps) Θ0' -> Θ0' ⨟ empty ⊢ₚₛᵃ Ps) ->
-     (forall y Ps, binds y (abind_var_skl Ps) Θ' -> Θ' ⨟ empty ⊢ₚₛᵃ Ps) ->
      lc_exp (open_exp_wrt_exp e (exp_var_f x)) ->
      Θ' ⊢ₛᵃᵈ[ M' ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q' ->
      Θ' ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ' P0')) ⊳ Q' ->
@@ -1373,7 +1355,11 @@ Lemma a_pat_complete_abs_anno_check : forall Θ0 A e κ Θ Q,
   Θ ⊢ₛᵃᵈ[ mode_tc ] (exp_abs_anno A e) ⦂ Q ->
   pat_complete_concl mode_tc Θ0 pskl_hole (exp_abs_anno A e) κ Θ Q.
 Proof.
-  intros Θ0 A e κ Θ Q Hwf0 HwfΘ Hinc Hrig Hskl HsklT Hlc IH Hd.
+  intros Θ0 A e κ Θ Q Hwf0 HwfΘ Hinc Hrig Hlc IH Hd.
+  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps Hwf0 Hb)
+    as Hskl.
+  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps HwfΘ Hb)
+    as HsklT.
   inversion Hd; subst; [ exfalso; auto | ].
   match goal with
   | H : forall x, x `notin` ?L0 -> _ ⊢ₛᵃᵈ[ _ ] _ ⦂ _ |- _ =>
@@ -1419,20 +1405,6 @@ Proof.
     pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hup.
     simpl in Hup.
     apply binds_cons_3. apply Hrig. clear - Hα Hup; fsetdec. }
-  assert (Hsklx : forall y Ps, binds y (abind_var_skl Ps) ((x ~ bx) ++ Θ0) ->
-             ((x ~ bx) ++ Θ0) ⨟ empty ⊢ₚₛᵃ Ps).
-  { intros y Ps Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heq] | Hb'];
-      [ discriminate Heq | ].
-    eapply a_wf_pskl_mono; [ eapply Hskl; exact Hb' | ].
-    intros α c _ Hc. apply binds_cons_3. exact Hc. }
-  assert (HsklTx : forall y Ps, binds y (abind_var_skl Ps) ((x ~ bx) ++ Θ) ->
-             ((x ~ bx) ++ Θ) ⨟ empty ⊢ₚₛᵃ Ps).
-  { intros y Ps Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heq] | Hb'];
-      [ discriminate Heq | ].
-    eapply a_wf_pskl_mono; [ eapply HsklT; exact Hb' | ].
-    intros α c _ Hc. apply binds_cons_3. exact Hc. }
   assert (HwfP : ((x ~ bx) ++ Θ) ⨟ empty ⊢ₚₛᵃ P).
   { pose proof (ad_pat_target_wf (Hbody x ltac:(clear - Hx; solve_notin_auto)) HwfΘx)
       as Hw.
@@ -1443,7 +1415,7 @@ Proof.
               Hwf0x HwfΘx
               ltac:(apply a_wf_pskl__hole)
               ltac:(apply a_sk_mode_compat__tc)
-              Hincx Hrigx Hsklx HsklTx Hlcbody
+              Hincx Hrigx Hlcbody
               (Hbody x ltac:(clear - Hx; solve_notin_auto))
               ltac:(apply ad_refine_syn__hole; exact HwfP))
     as [Q' [Θ1' [Hrun Hopt]]].
@@ -1451,7 +1423,7 @@ Proof.
   assert (Hexpx : a_wf_exp ((x ~ bx) ++ Θ0) (open_exp_wrt_exp e (exp_var_f x))).
   { apply a_wf_exp_of_tvarish; [ exact Hlcbody | ].
     intros α Hα. left. apply Hrigx. exact Hα. }
-  destruct (a_pat_sound Hrun Hwf0x Hsklx
+  destruct (a_pat_sound Hrun Hwf0x
               ltac:(apply a_wf_pskl__hole)
               ltac:(apply a_sk_mode_compat__tc)
               Hexpx)
@@ -1474,7 +1446,7 @@ Proof.
     by (eapply a_wf_aenv_notin_ftv_tm_below; exact Hwf1').
   assert (HwfQ' : (Ξ ++ (x ~ bx) ++ Θ2) ⨟ empty ⊢ₚₛᵃ Q')
     by (eapply a_pat_output_wf;
-        [ exact Hrun | exact Hwf0x | exact Hsklx
+        [ exact Hrun | exact Hwf0x
         | apply a_wf_pskl__hole | apply a_sk_mode_compat__tc | exact Hexpx ]).
   assert (HxQ' : x `notin` ftvar_in_pskl Q')
     by (eapply a_wf_pskl_notin_ftv_tm;
@@ -1568,85 +1540,29 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  Context precision is REFLEXIVE on a paper-wf context.  [a_wf_aenv]    *)
-(*  deliberately under-approximates the paper's [Θ ⊢ ctx] at skeleton     *)
-(*  term entries (scope only), so the payload-wf DISCIPLINE is a          *)
-(*  hypothesis — the WF-SIDE-CONDITIONS pattern, exactly as theorem 1     *)
-(*  carries it.                                                           *)
+(*  Context precision is REFLEXIVE on a well-formed context.  Every entry  *)
+(*  copies itself; the two term rows read their payload's wf off the       *)
+(*  [a_wf_aenv] rule that stored it.                                       *)
 (* ===================================================================== *)
 
 Lemma ad_ctx_precise_refl : forall Θ,
   a_wf_aenv Θ ->
-  (forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps) ->
   Θ ⪯ᶜᵗˣ Θ.
 Proof.
-  intros Θ Hwf; induction Hwf; intros Hd.
+  intros Θ Hwf; induction Hwf.
   - apply ad_ctx_precise__nil.
-  - apply ad_ctx_precise__copy; [ intros h; exact h | ].
-    apply IHHwf. intros y Ps Hb.
-    eapply a_wf_pskl_strengthen with (Θ := (α ~ abind_flex_mono) ++ Θ);
-      [ eapply Hd; apply binds_cons_3; exact Hb
-      | constructor; [ apply a_wf_aenv_uniq; exact Hwf | exact H ]
-      | intros z Hz; clear - Hz; fsetdec
-      | intros z b Hb'; apply binds_cons_3; exact Hb'
-      | intros β Hβ; right;
-        assert (Hsub : ftvar_in_pskl Ps [<=] dom Θ) by (eapply a_wf_aenv_binds_var_skl_ftv; eassumption);
-        clear - Hβ Hsub; fsetdec ].
-  - apply ad_ctx_precise__copy; [ intros h; exact h | ].
-    apply IHHwf. intros y Ps Hb.
-    eapply a_wf_pskl_strengthen with (Θ := (α ~ abind_flex_mono_def τ) ++ Θ);
-      [ eapply Hd; apply binds_cons_3; exact Hb
-      | constructor; [ apply a_wf_aenv_uniq; exact Hwf | exact H ]
-      | intros z Hz; clear - Hz; fsetdec
-      | intros z b Hb'; apply binds_cons_3; exact Hb'
-      | intros β Hβ; right;
-        assert (Hsub : ftvar_in_pskl Ps [<=] dom Θ) by (eapply a_wf_aenv_binds_var_skl_ftv; eassumption);
-        clear - Hβ Hsub; fsetdec ].
-  - (* skeleton term entry: the discipline supplies the tail wf *)
-    eapply ad_ctx_precise__tm with (P' := P) (P := P);
-      [ simpl; reflexivity | simpl; reflexivity | | ].
-    + apply ad_precise_refl.
-      eapply a_wf_pskl_strengthen with (Θ := (x ~ abind_var_skl P) ++ Θ);
-        [ eapply Hd; unfold binds; simpl; left; reflexivity
-        | constructor; [ apply a_wf_aenv_uniq; exact Hwf | exact H ]
-        | intros z Hz; clear - Hz; fsetdec
-        | intros z b Hb'; apply binds_cons_3; exact Hb'
-        | intros β Hβ; right;
-          pose proof (a_scope_pskl_ftv_dom' (a_scope_pskl_of_wf H0)) as Hsub;
-          clear - Hβ Hsub; fsetdec ].
-    + apply IHHwf. intros y Ps Hb.
-      eapply a_wf_pskl_strengthen with (Θ := (x ~ abind_var_skl P) ++ Θ);
-        [ eapply Hd; apply binds_cons_3; exact Hb
-        | constructor; [ apply a_wf_aenv_uniq; exact Hwf | exact H ]
-        | intros z Hz; clear - Hz; fsetdec
-        | intros z b Hb'; apply binds_cons_3; exact Hb'
-        | intros β Hβ; right;
-          assert (Hsub : ftvar_in_pskl Ps [<=] dom Θ) by (eapply a_wf_aenv_binds_var_skl_ftv; eassumption);
-          clear - Hβ Hsub; fsetdec ].
-  - (* type term entry: its wf is ON the wf-aenv rule *)
-    eapply ad_ctx_precise__tm
+  - apply ad_ctx_precise__copy; [ intros h; exact h | exact IHHwf ].
+  - apply ad_ctx_precise__copy; [ intros h; exact h | exact IHHwf ].
+  - eapply ad_ctx_precise__tm with (P' := P) (P := P);
+      [ simpl; reflexivity | simpl; reflexivity
+      | apply ad_precise_refl; exact H0
+      | exact IHHwf ].
+  - eapply ad_ctx_precise__tm
       with (P' := ptyp_to_pskl A) (P := ptyp_to_pskl A);
-      [ simpl; reflexivity | simpl; reflexivity | | ].
-    + apply ad_precise_refl. apply a_wf_ptyp_to_wf_pskl. exact H0.
-    + apply IHHwf. intros y Ps Hb.
-      eapply a_wf_pskl_strengthen with (Θ := (x ~ abind_var_typ A) ++ Θ);
-        [ eapply Hd; apply binds_cons_3; exact Hb
-        | constructor; [ apply a_wf_aenv_uniq; exact Hwf | exact H ]
-        | intros z Hz; clear - Hz; fsetdec
-        | intros z b Hb'; apply binds_cons_3; exact Hb'
-        | intros β Hβ; right;
-          assert (Hsub : ftvar_in_pskl Ps [<=] dom Θ) by (eapply a_wf_aenv_binds_var_skl_ftv; eassumption);
-          clear - Hβ Hsub; fsetdec ].
-  - apply ad_ctx_precise__copy; [ intros h; exact h | ].
-    apply IHHwf. intros y Ps Hb.
-    eapply a_wf_pskl_strengthen with (Θ := (α ~ abind_tvar) ++ Θ);
-      [ eapply Hd; apply binds_cons_3; exact Hb
-      | constructor; [ apply a_wf_aenv_uniq; exact Hwf | exact H ]
-      | intros z Hz; clear - Hz; fsetdec
-      | intros z b Hb'; apply binds_cons_3; exact Hb'
-      | intros β Hβ; right;
-        assert (Hsub : ftvar_in_pskl Ps [<=] dom Θ) by (eapply a_wf_aenv_binds_var_skl_ftv; eassumption);
-        clear - Hβ Hsub; fsetdec ].
+      [ simpl; reflexivity | simpl; reflexivity
+      | apply ad_precise_refl; apply a_wf_ptyp_to_wf_pskl; exact H0
+      | exact IHHwf ].
+  - apply ad_ctx_precise__copy; [ intros h; exact h | exact IHHwf ].
 Qed.
 
 (* ===================================================================== *)
@@ -1660,8 +1576,6 @@ Lemma a_pat_complete_abs : forall M Θ0 P0 e κ Θ Q,
   M <> mode_tc ->
   κ ∷ Θ0 ⊑ Θ ->
   (forall α, α `in` ftvar_in_exp (exp_abs e) -> binds α abind_tvar Θ0) ->
-  (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
-  (forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps) ->
   lc_exp (exp_abs e) ->
   (forall x M' Θ0' P0' κ' Θ' Q',
      a_wf_aenv Θ0' -> a_wf_aenv Θ' ->
@@ -1670,8 +1584,6 @@ Lemma a_pat_complete_abs : forall M Θ0 P0 e κ Θ Q,
      κ' ∷ Θ0' ⊑ Θ' ->
      (forall α, α `in` ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) ->
         binds α abind_tvar Θ0') ->
-     (forall y Ps, binds y (abind_var_skl Ps) Θ0' -> Θ0' ⨟ empty ⊢ₚₛᵃ Ps) ->
-     (forall y Ps, binds y (abind_var_skl Ps) Θ' -> Θ' ⨟ empty ⊢ₚₛᵃ Ps) ->
      lc_exp (open_exp_wrt_exp e (exp_var_f x)) ->
      Θ' ⊢ₛᵃᵈ[ M' ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q' ->
      Θ' ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ' P0')) ⊳ Q' ->
@@ -1680,8 +1592,12 @@ Lemma a_pat_complete_abs : forall M Θ0 P0 e κ Θ Q,
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
   pat_complete_concl M Θ0 P0 (exp_abs e) κ Θ Q.
 Proof.
-  intros M Θ0 P0 e κ Θ Q Hwf0 HwfΘ HwfP0 Hmod HMne Hinc Hrig Hskl HsklT
+  intros M Θ0 P0 e κ Θ Q Hwf0 HwfΘ HwfP0 Hmod HMne Hinc Hrig
          Hlc IH Hd Href.
+  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps Hwf0 Hb)
+    as Hskl.
+  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps HwfΘ Hb)
+    as HsklT.
   inversion Hd; subst; [ | exfalso; auto ].
   match goal with
   | H : forall x, x `notin` ?L0 -> _ ⊢ₛᵃᵈ[ _ ] _ ⦂ _ |- _ =>
@@ -1769,31 +1685,13 @@ Proof.
     pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hup.
     simpl in Hup.
     apply binds_cons_3. apply Hrig. clear - Hα Hup; fsetdec. }
-  assert (Hsklx : forall y Ps, binds y (abind_var_skl Ps) ((x ~ bq) ++ Θ0) ->
-             ((x ~ bq) ++ Θ0) ⨟ empty ⊢ₚₛᵃ Ps).
-  { intros y Ps Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heq] | Hb'].
-    - inversion Heq; subst.
-      eapply a_wf_pskl_mono; [ exact HwfP1 | ].
-      intros α c _ Hc. apply binds_cons_3. exact Hc.
-    - eapply a_wf_pskl_mono; [ eapply Hskl; exact Hb' | ].
-      intros α c _ Hc. apply binds_cons_3. exact Hc. }
-  assert (HsklTx : forall y Ps, binds y (abind_var_skl Ps) ((x ~ bs) ++ Θ) ->
-             ((x ~ bs) ++ Θ) ⨟ empty ⊢ₚₛᵃ Ps).
-  { intros y Ps Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heq] | Hb'].
-    - inversion Heq; subst.
-      eapply a_wf_pskl_mono; [ exact HwfP1κ | ].
-      intros α c _ Hc. apply binds_cons_3. exact Hc.
-    - eapply a_wf_pskl_mono; [ eapply HsklT; exact Hb' | ].
-      intros α c _ Hc. apply binds_cons_3. exact Hc. }
   (* ---- 4. move the body derivation to the precise context (§5) ---- *)
   assert (Hctx : ((x ~ bs) ++ Θ) ⪯ᶜᵗˣ ((x ~ abind_var_skl P) ++ Θ)).
   { eapply ad_ctx_precise__tm
       with (P' := msubst_pskl κ P1) (P := P);
       [ simpl; reflexivity | simpl; reflexivity
       | exact Hprec13
-      | apply ad_ctx_precise_refl; [ exact HwfΘ | exact HsklT ] ]. }
+      | apply ad_ctx_precise_refl; exact HwfΘ ]. }
   pose proof (ad_ctx_precise_pat (Hbody x ltac:(clear - Hx; solve_notin_auto))
                 Hctx HwfΘxP HwfΘx) as Hbodyx.
   (* ---- 5. the IH, once ---- *)
@@ -1802,7 +1700,7 @@ Proof.
               ltac:(eapply a_wf_pskl_mono;
                     [ exact HwfQ1
                     | intros α c _ Hc; apply binds_cons_3; exact Hc ])
-              HmodQ1 Hincx Hrigx Hsklx HsklTx Hlcbody Hbodyx
+              HmodQ1 Hincx Hrigx Hlcbody Hbodyx
               ltac:(eapply ad_refine_syn_mono;
                     [ exact Href14
                     | intros α c Hty Hc; apply binds_cons_3; exact Hc ]))
@@ -1815,7 +1713,7 @@ Proof.
     by (eapply a_wf_pskl_mono;
         [ exact HwfQ1
         | intros α c _ Hc; apply binds_cons_3; exact Hc ]).
-  destruct (a_pat_sound Hrun Hwf0x Hsklx HwfQ1x HmodQ1 Hexpx)
+  destruct (a_pat_sound Hrun Hwf0x HwfQ1x HmodQ1 Hexpx)
     as [Hle [Hwf1' _]].
   destruct Hle as [[κid [Hidκ Hincid]] _].
   destruct (a_inc_var_skl_inv Hincid) as [Ξ [P'' [Θ2 [-> [_ [Hsuf Hincid']]]]]].
@@ -1835,7 +1733,7 @@ Proof.
     by (eapply a_wf_aenv_notin_ftv_tm_below; exact Hwf1').
   assert (HwfQ' : (Ξ ++ (x ~ bq) ++ Θ2) ⨟ empty ⊢ₚₛᵃ Q')
     by (eapply a_pat_output_wf;
-        [ exact Hrun | exact Hwf0x | exact Hsklx
+        [ exact Hrun | exact Hwf0x
         | exact HwfQ1x | exact HmodQ1 | exact Hexpx ]).
   assert (HxQ' : x `notin` ftvar_in_pskl Q')
     by (eapply a_wf_pskl_notin_ftv_tm;
@@ -2008,8 +1906,6 @@ Lemma a_pat_complete_abs_anno : forall M Θ0 P0 A e κ Θ Q,
   M <> mode_tc ->
   κ ∷ Θ0 ⊑ Θ ->
   (forall α, α `in` ftvar_in_exp (exp_abs_anno A e) -> binds α abind_tvar Θ0) ->
-  (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
-  (forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps) ->
   lc_exp (exp_abs_anno A e) ->
   (forall x M' Θ0' P0' κ' Θ' Q',
      a_wf_aenv Θ0' -> a_wf_aenv Θ' ->
@@ -2018,8 +1914,6 @@ Lemma a_pat_complete_abs_anno : forall M Θ0 P0 A e κ Θ Q,
      κ' ∷ Θ0' ⊑ Θ' ->
      (forall α, α `in` ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) ->
         binds α abind_tvar Θ0') ->
-     (forall y Ps, binds y (abind_var_skl Ps) Θ0' -> Θ0' ⨟ empty ⊢ₚₛᵃ Ps) ->
-     (forall y Ps, binds y (abind_var_skl Ps) Θ' -> Θ' ⨟ empty ⊢ₚₛᵃ Ps) ->
      lc_exp (open_exp_wrt_exp e (exp_var_f x)) ->
      Θ' ⊢ₛᵃᵈ[ M' ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q' ->
      Θ' ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ' P0')) ⊳ Q' ->
@@ -2028,8 +1922,12 @@ Lemma a_pat_complete_abs_anno : forall M Θ0 P0 A e κ Θ Q,
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
   pat_complete_concl M Θ0 P0 (exp_abs_anno A e) κ Θ Q.
 Proof.
-  intros M Θ0 P0 A e κ Θ Q Hwf0 HwfΘ HwfP0 Hmod HMne Hinc Hrig Hskl HsklT
+  intros M Θ0 P0 A e κ Θ Q Hwf0 HwfΘ HwfP0 Hmod HMne Hinc Hrig
          Hlc IH Hd Href.
+  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps Hwf0 Hb)
+    as Hskl.
+  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps HwfΘ Hb)
+    as HsklT.
   inversion Hd; subst; [ | exfalso; auto ].
   match goal with
   | H : forall x, x `notin` ?L0 -> _ ⊢ₛᵃᵈ[ _ ] _ ⦂ _ |- _ =>
@@ -2184,28 +2082,6 @@ Proof.
     simpl in Hup.
     apply binds_cons_3. eapply a_inc_binds_tvar;
       [ exact Hincc | apply Hrig; clear - Hα Hup; fsetdec ]. }
-  assert (Hsklmid : forall y Ps, binds y (abind_var_skl Ps) Θmid ->
-             Θmid ⨟ empty ⊢ₚₛᵃ Ps).
-  { intros y Ps Hb.
-    assert (Hb0 : binds y (abind_var_skl Ps) Θ0)
-      by (eapply a_consis_tm_ge; [ exact HcRun | exact I | exact Hb ]).
-    pose proof (a_wf_pskl_msubst_inc Hincc Hwf0 (Hskl _ _ Hb0)
-                  ltac:(intros α Hα; clear - Hα; solve_notin_auto)) as Hw.
-    rewrite (msubst_pskl_id Ps Hidc) in Hw. exact Hw. }
-  assert (Hsklx : forall y Ps, binds y (abind_var_skl Ps) ((x ~ bA) ++ Θmid) ->
-             ((x ~ bA) ++ Θmid) ⨟ empty ⊢ₚₛᵃ Ps).
-  { intros y Ps Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heq] | Hb'];
-      [ discriminate Heq | ].
-    eapply a_wf_pskl_mono; [ eapply Hsklmid; exact Hb' | ].
-    intros α c _ Hc. apply binds_cons_3. exact Hc. }
-  assert (HsklTx : forall y Ps, binds y (abind_var_skl Ps) ((x ~ bA) ++ Θ) ->
-             ((x ~ bA) ++ Θ) ⨟ empty ⊢ₚₛᵃ Ps).
-  { intros y Ps Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heq] | Hb'];
-      [ discriminate Heq | ].
-    eapply a_wf_pskl_mono; [ eapply HsklT; exact Hb' | ].
-    intros α c _ Hc. apply binds_cons_3. exact Hc. }
   assert (HwfQ1mid : Θmid ⨟ empty ⊢ₚₛᵃ Q1).
   { pose proof (a_wf_pskl_msubst_inc Hincc Hwf0 HwfQ1
                   ltac:(intros α Hα; clear - Hα; solve_notin_auto)) as Hw.
@@ -2215,7 +2091,7 @@ Proof.
               ltac:(eapply a_wf_pskl_mono;
                     [ exact HwfQ1mid
                     | intros α c _ Hc; apply binds_cons_3; exact Hc ])
-              HmodQ1 Hincx Hrigx Hsklx HsklTx Hlcbody
+              HmodQ1 Hincx Hrigx Hlcbody
               (Hbody x ltac:(clear - Hx; solve_notin_auto))
               ltac:(eapply ad_refine_syn_mono;
                     [ exact Href14σ
@@ -2229,7 +2105,7 @@ Proof.
     by (eapply a_wf_pskl_mono;
         [ exact HwfQ1mid
         | intros α c _ Hc; apply binds_cons_3; exact Hc ]).
-  destruct (a_pat_sound HrunB Hwf0x Hsklx HwfQ1midx HmodQ1 Hexpx)
+  destruct (a_pat_sound HrunB Hwf0x HwfQ1midx HmodQ1 Hexpx)
     as [HleB [HwfB' _]].
   destruct HleB as [[κb [Hidb Hincb]] _].
   destruct (a_inc_var_inv Hincb) as [Ξ [A'' [Θ3 [-> [_ [Hsuf Hincb']]]]]].
@@ -2249,7 +2125,7 @@ Proof.
     by (eapply a_wf_aenv_notin_ftv_tm_below; exact HwfB').
   assert (HwfQ' : (Ξ ++ (x ~ bA) ++ Θ3) ⨟ empty ⊢ₚₛᵃ Q')
     by (eapply a_pat_output_wf;
-        [ exact HrunB | exact Hwf0x | exact Hsklx
+        [ exact HrunB | exact Hwf0x
         | exact HwfQ1midx | exact HmodQ1 | exact Hexpx ]).
   assert (HxQ' : x `notin` ftvar_in_pskl Q')
     by (eapply a_wf_pskl_notin_ftv_tm;
@@ -2491,8 +2367,6 @@ Lemma a_pat_complete_app : forall M Θ0 P0 e1 e2 κ Θ Q,
   a_sk_mode_compat M P0 ->
   κ ∷ Θ0 ⊑ Θ ->
   (forall α, α `in` ftvar_in_exp (exp_app e1 e2) -> binds α abind_tvar Θ0) ->
-  (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
-  (forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps) ->
   lc_exp (exp_app e1 e2) ->
   (forall M' Θ0' P0' κ' Θ' Q',
      a_wf_aenv Θ0' -> a_wf_aenv Θ' ->
@@ -2500,8 +2374,6 @@ Lemma a_pat_complete_app : forall M Θ0 P0 e1 e2 κ Θ Q,
      a_sk_mode_compat M' P0' ->
      κ' ∷ Θ0' ⊑ Θ' ->
      (forall α, α `in` ftvar_in_exp e2 -> binds α abind_tvar Θ0') ->
-     (forall y Ps, binds y (abind_var_skl Ps) Θ0' -> Θ0' ⨟ empty ⊢ₚₛᵃ Ps) ->
-     (forall y Ps, binds y (abind_var_skl Ps) Θ' -> Θ' ⨟ empty ⊢ₚₛᵃ Ps) ->
      lc_exp e2 ->
      Θ' ⊢ₛᵃᵈ[ M' ] e2 ⦂ Q' ->
      Θ' ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ' P0')) ⊳ Q' ->
@@ -2512,8 +2384,6 @@ Lemma a_pat_complete_app : forall M Θ0 P0 e1 e2 κ Θ Q,
      a_sk_mode_compat M' P0' ->
      κ' ∷ Θ0' ⊑ Θ' ->
      (forall α, α `in` ftvar_in_exp e1 -> binds α abind_tvar Θ0') ->
-     (forall y Ps, binds y (abind_var_skl Ps) Θ0' -> Θ0' ⨟ empty ⊢ₚₛᵃ Ps) ->
-     (forall y Ps, binds y (abind_var_skl Ps) Θ' -> Θ' ⨟ empty ⊢ₚₛᵃ Ps) ->
      lc_exp e1 ->
      Θ' ⊢ₛᵃᵈ[ M' ] e1 ⦂ Q' ->
      Θ' ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ' P0')) ⊳ Q' ->
@@ -2522,8 +2392,12 @@ Lemma a_pat_complete_app : forall M Θ0 P0 e1 e2 κ Θ Q,
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
   pat_complete_concl M Θ0 P0 (exp_app e1 e2) κ Θ Q.
 Proof.
-  intros M Θ0 P0 e1 e2 κ Θ Q Hwf0 HwfΘ HwfP0 Hmod Hinc Hrig Hskl HsklT
+  intros M Θ0 P0 e1 e2 κ Θ Q Hwf0 HwfΘ HwfP0 Hmod Hinc Hrig
          Hlc IH2 IH1 Hd Href.
+  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps Hwf0 Hb)
+    as Hskl.
+  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps HwfΘ Hb)
+    as HsklT.
   inversion Hd; subst.
   match goal with
   | H : Θ ⊢ₛᵃᵈ[ mode_tc ] e2 ⦂ pskl_to_bskl_syn ?PP |- _ =>
@@ -2563,7 +2437,7 @@ Proof.
               Hwf0 HwfΘ
               ltac:(apply a_wf_pskl__hole)
               ltac:(apply a_sk_mode_compat__tc)
-              Hinc Hrig2 Hskl HsklT Hlc2 Hd2
+              Hinc Hrig2 Hlc2 Hd2
               ltac:(cbn [msubst_pskl pskl_to_bskl_inh];
                     apply ad_refine_syn__hole; exact HwfPn))
     as [P1 [Θ1 [Hrun2 Hopt2]]].
@@ -2571,7 +2445,7 @@ Proof.
   assert (Hexp2 : a_wf_exp Θ0 e2).
   { apply a_wf_exp_of_tvarish; [ exact Hlc2 | ].
     intros α Hα. left. apply Hrig2. exact Hα. }
-  destruct (a_pat_sound Hrun2 Hwf0 Hskl
+  destruct (a_pat_sound Hrun2 Hwf0
               ltac:(apply a_wf_pskl__hole)
               ltac:(apply a_sk_mode_compat__tc)
               Hexp2)
@@ -2607,20 +2481,12 @@ Proof.
   (* ---- 3. the function's run (e1 at FN M, P1 → P0) ---- *)
   assert (HwfP1 : Θ1 ⨟ empty ⊢ₚₛᵃ P1)
     by (eapply a_pat_output_wf;
-        [ exact Hrun2 | exact Hwf0 | exact Hskl
+        [ exact Hrun2 | exact Hwf0
         | apply a_wf_pskl__hole | apply a_sk_mode_compat__tc | exact Hexp2 ]).
   assert (HwfP0mid : Θ1 ⨟ empty ⊢ₚₛᵃ P0).
   { pose proof (a_wf_pskl_msubst_inc Hinca Hwf0 HwfP0
                   ltac:(intros α Hα; clear - Hα; solve_notin_auto)) as Hw.
     rewrite (msubst_pskl_id P0 Hida) in Hw. exact Hw. }
-  assert (Hskl1 : forall y Ps, binds y (abind_var_skl Ps) Θ1 ->
-             Θ1 ⨟ empty ⊢ₚₛᵃ Ps).
-  { intros y Ps Hb.
-    assert (Hb0 : binds y (abind_var_skl Ps) Θ0)
-      by (eapply a_pat_tm_ge; [ exact Hrun2 | exact I | exact Hb ]).
-    pose proof (a_wf_pskl_msubst_inc Hinca Hwf0 (Hskl _ _ Hb0)
-                  ltac:(intros α Hα; clear - Hα; solve_notin_auto)) as Hw.
-    rewrite (msubst_pskl_id Ps Hida) in Hw. exact Hw. }
   assert (Hrig1mid : forall α, α `in` ftvar_in_exp e1 ->
              binds α abind_tvar Θ1)
     by (intros α Hα; eapply a_inc_binds_tvar;
@@ -2629,7 +2495,7 @@ Proof.
               Hwf1 HwfΘ
               ltac:(apply a_wf_pskl__arrow; [ exact HwfP1 | exact HwfP0mid ])
               ltac:(apply a_sk_mode_compat__fn; exact Hmod)
-              Hζ1 Hrig1mid Hskl1 HsklT Hlc1 Hd1
+              Hζ1 Hrig1mid Hlc1 Hd1
               ltac:(cbn [msubst_pskl pskl_to_bskl_inh];
                     apply ad_refine_syn__arrow; [ exact Hh | exact Hi ]))
     as [P2 [Θ2 [Hrun1 Hopt1]]].
@@ -2637,7 +2503,7 @@ Proof.
   assert (Hexp1 : a_wf_exp Θ1 e1).
   { apply a_wf_exp_of_tvarish; [ exact Hlc1 | ].
     intros α Hα. left. apply Hrig1mid. exact Hα. }
-  destruct (a_pat_sound Hrun1 Hwf1 Hskl1
+  destruct (a_pat_sound Hrun1 Hwf1
               ltac:(apply a_wf_pskl__arrow; [ exact HwfP1 | exact HwfP0mid ])
               ltac:(apply a_sk_mode_compat__fn; exact Hmod)
               Hexp1)
@@ -2697,15 +2563,13 @@ Lemma a_pat_complete_gen : forall n e M Θ0 P0 κ Θ Q,
   a_sk_mode_compat M P0 ->
   κ ∷ Θ0 ⊑ Θ ->
   (forall α, α `in` ftvar_in_exp e -> binds α abind_tvar Θ0) ->
-  (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
-  (forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps) ->
   lc_exp e ->
   Θ ⊢ₛᵃᵈ[ M ] e ⦂ Q ->
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
   pat_complete_concl M Θ0 P0 e κ Θ Q.
 Proof.
   induction n as [ | n IHn ];
-    intros e M Θ0 P0 κ Θ Q Hsz Hwf0 HwfΘ HwfP0 Hmod Hinc Hrig Hskl HsklT
+    intros e M Θ0 P0 κ Θ Q Hsz Hwf0 HwfΘ HwfP0 Hmod Hinc Hrig
            Hlc Hd Href;
     [ exfalso; clear - Hsz; lia | ].
   destruct e as [ | m | x | e0 | A e0 | e1 e2 | e0 A | e0 ]; simpl in Hsz.
@@ -2779,8 +2643,7 @@ Qed.
 
     Hypotheses beyond the paper's statement (all WF-SIDE-CONDITIONS.md
     externals): well-formedness of the two contexts and the input
-    skeleton, the payload-wf DISCIPLINE of both contexts' skeleton term
-    entries, mode compatibility, [lc], and the term side condition — an
+    skeleton, mode compatibility, [lc], and the term side condition — an
     annotation is SOURCE syntax, so its type variables are RIGID. *)
 Theorem a_pat_complete : forall e M Θ0 P0 κ Θ Q,
   a_wf_aenv Θ0 -> a_wf_aenv Θ ->
@@ -2788,11 +2651,6 @@ Theorem a_pat_complete : forall e M Θ0 P0 κ Θ Q,
   a_sk_mode_compat M P0 ->
   κ ∷ Θ0 ⊑ Θ ->
   (forall α, α `in` ftvar_in_exp e -> binds α abind_tvar Θ0) ->
-  (* ⭐ the two [binds y (abind_var_skl Ps) … -> … ⊢ₚₛᵃ Ps] hypotheses this
-     used to carry are GONE: since 2026-08-09 [a_wf_aenv__var] stores the
-     disciplined entry wf, so they follow from the two [a_wf_aenv] premises
-     above by [a_wf_aenv_binds_var_skl_wf].  They were external wf side
-     conditions (docs/WF-SIDE-CONDITIONS.md); they are theorems now. *)
   lc_exp e ->
   Θ ⊢ₛᵃᵈ[ M ] e ⦂ Q ->
   Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
@@ -2805,7 +2663,6 @@ Theorem a_pat_complete : forall e M Θ0 P0 κ Θ Q,
          Θ ⨟ empty ⊢ₚᵣᵃᵈ (msubst_pskl ζ P1) ⊑ (bskl_to_pskl Q)).
 Proof.
   intros e M Θ0 P0 κ Θ Q Hwf0 HwfΘ HwfP0 Hmod Hinc Hrig Hlc Had Href.
-  eapply a_pat_complete_gen with (n := S (size_exp e)); try eassumption;
-    try solve [ intros y Ps Hb; eapply a_wf_aenv_binds_var_skl_wf; eassumption ].
+  eapply a_pat_complete_gen with (n := S (size_exp e)); try eassumption.
   clear; lia.
 Qed.

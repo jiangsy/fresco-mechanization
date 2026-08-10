@@ -1797,15 +1797,13 @@ Qed.
 
 
 (* ===================================================================== *)
-(*  ⭐ THE κ-EXTENSION PACKAGE (moved here 2026-08-04).                     *)
+(*  ⭐ THE κ-EXTENSION PACKAGE.                                            *)
 (*                                                                        *)
-(*  These lived in sub/look/prop_eq_cstr.v and prop_look_complete_       *)
-(*  extract.v, where the ONLY consumer used to be the final guess's block. *)
-(*  The SolE-FlexR repair makes the SOLVE emit a flexible block too, so    *)
-(*  every P6 statement from sub/look/prop_rho_relation.v onwards has to extend its *)
-(*  metasubstitution over one — and that file sits ABOVE both of the old   *)
-(*  homes.  Nothing here is specific to the collection or extract layer:   *)
-(*  it is list algebra plus "msubst only reads free variables".           *)
+(*  Every P6 statement from sub/look/prop_rho_relation.v onwards has to    *)
+(*  extend its metasubstitution over a generated flexible block — both the *)
+(*  SOLVE and the final guess emit one.  Nothing here is specific to the   *)
+(*  collection or extract layer: it is list algebra plus the fact that     *)
+(*  msubst only reads free variables.                                      *)
 (* ===================================================================== *)
 
 Definition keys {A : Type} (l : list (atom * A)) : list atom := List.map fst l.

@@ -450,9 +450,6 @@ Qed.
 (*  [ad_pat_sub_g] (def_decl_algo_sub_hyg.v; DESIGN §5.4).                 *)
 (* ===================================================================== *)
 
-(** ⚙ [ad_pat_sub_g_of] moved to decorated_algo/def_decl_algo_sub_hyg.v
-    (2026-08-06) — see the note there. *)
-
 (** Re-tag under set equality. *)
 Lemma ad_pat_sub_g_psi_cong : forall n NM M Ψ Θ R Q,
   ad_pat_sub_g n NM M Ψ Θ R Q ->

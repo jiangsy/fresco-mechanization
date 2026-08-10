@@ -1,10 +1,9 @@
 (** Frost — basic syntactic lemmas about the SHAPE PREDICATES.
 
-    ⚙ Split 2026-08-09 (cleanup audit §5.4): everything about the paint/erase
-    CONVERSIONS — retractions, [open] commutation, [lc] transport — moved to
-    [prop_coercions.v], which this file re-exports so the ~99 consumers that
-    already import it need no change.  What is left here is the predicate
-    layer: ghost-freeness. *)
+    ⚙ Everything about the paint/erase CONVERSIONS — retractions, [open]
+    commutation, [lc] transport — lives in [prop_coercions.v], which this file
+    re-exports, so a consumer importing this one sees both.  What is here is
+    the predicate layer: ghost-freeness. *)
 
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.

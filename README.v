@@ -178,10 +178,8 @@ Check a_sub_sound :
 Print Assumptions a_sub_sound.
 
 (* ⭐⭐⭐ Theorem [Completeness and optimality of subtyping]
-   thm:complete-subtyping (algorithmic.tex:1446) — UNCONDITIONAL since
-   2026-08-05.  It used to take [forall n, main_forall n] as a hypothesis,
-   whose one unsupplied premise was the mech-invented [sub_shield]; under the
-   authors' repaired [SolE-FlexR] that gate is discharged outright.
+   thm:complete-subtyping (algorithmic.tex:1446) — UNCONDITIONAL: no residual
+   hypothesis.
    Premises beyond the paper's are the EXTERNAL wf side conditions
    (docs/WF-SIDE-CONDITIONS.md): wf of the counterpart, and the subject's
    ghost-freeness at the TY sort. *)
@@ -225,14 +223,12 @@ Print Assumptions a_extract_complete.
    An [a_pat] run is an information increase whose output context carries the
    DECLARATIVE skeleton inference at a colouring of the output, refining the
    inherited painting of the input skeleton.
-   External side conditions: wf of the term ([a_wf_exp] — the problem
-   definition's "M is well-formed in Θ₀") and the paper's implicit [Θ ⊢ ctx]
-   at skeleton term entries. *)
+   External side condition: wf of the term ([a_wf_exp] — the problem
+   definition's "M is well-formed in Θ₀"). *)
 Check a_pat_sound :
   forall m Θ0 P0 e P Θ1,
   Θ0 ⊢ₛᵃ[ m ; P0 ] e ⦂ P ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
-  (forall x Ps, binds x (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   a_sk_mode_compat m P0 ->
   a_wf_exp Θ0 e ->
@@ -255,7 +251,6 @@ Check a_typing_sound :
   forall m Θ0 P0 e A Θ1,
   Θ0 ⊢ᵃ[ m ; P0 ] e ⦂ A ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
-  (forall x Ps, binds x (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   a_ty_mode_compat m P0 ->
   a_wf_exp Θ0 e ->
@@ -273,12 +268,8 @@ Print Assumptions a_typing_sound.
      ∀κ₁ identity out of Θ₀. ∃ζ.  ζ ∷ Θ₁ ⊑ Θ  ∧  ζ ∘ κ₁ ≡ κ  ∧  ζP₁ ⊑ ⌊Q⌋
    ⚙ TERM-SIZE induction only: the mech FUSED the paper's P-Sub into the three
    base rows, so every recursive premise is at a strict subterm.
-   ⭐ Both completeness theorems used to carry
-   [binds y (abind_var_skl Ps) … -> … ⊢ₚₛᵃ Ps] for BOTH contexts, as external
-   wf side conditions.  Retired 2026-08-09: [a_wf_aenv__var] stores the
-   disciplined entry wf, so they follow from the [a_wf_aenv] premises
-   ([a_wf_aenv_binds_var_skl_wf]).  What is left BEYOND the paper's own
-   premises is registered in docs/WF-SIDE-CONDITIONS.md. *)
+   What the four theorems carry BEYOND the paper's own premises is
+   registered in docs/WF-SIDE-CONDITIONS.md. *)
 Check a_pat_complete :
   forall e M Θ0 P0 κ Θ Q,
     a_wf_aenv Θ0 -> a_wf_aenv Θ ->

@@ -76,12 +76,6 @@ Set Implicit Arguments.
 (*  maintained internally by the P6 lemma cluster only.                    *)
 (* ===================================================================== *)
 
-(** Adding a RIGID entry creates no flexible variable — the side condition the
-    [fa_flexfree] row makes every context weakening carry.  ⚙️ The lemma itself
-    now sits at the top of the file ([a_flex_tvar_strip_tvar], §"solve context
-    change"), where [a_solve_eq_strengthen_tvar] needs it; this duplicate was
-    removed 2026-08-04. *)
-
 (* ===================================================================== *)
 (*  Raw-flexible-freedom of a payload                                     *)
 (* ===================================================================== *)
@@ -1107,9 +1101,6 @@ Lemma is_tskl_all_etag_inv : forall ε ψ,
     is_tskl (open_uskl_wrt_uskl ψ (uskl_var_f α)).
 Proof. intros ε ψ H; inversion H; subst. eexists; eassumption. Qed.
 
-(* ⚙ [uskl_ghost_free_all_etag_inv] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
-   one in prop_completeness_sub_precise.v, which this file imports. *)
-
 (** [flex_apart] aenv weakening (binds-monotone).  ⚠️ Since [fa_flexfree]
     (DESIGN §10) reads the context NEGATIVELY, the map must also create no new
     flexibles — true of every RIGID extension, which is what all the callers do.
@@ -1171,26 +1162,14 @@ Qed.
 
 (* ===================================================================== *)
 (* ===================================================================== *)
-(*  ⭕⭕ [fa_step] / [fa_walk] / [flex_apart_walk] DELETED (2026-08-05)      *)
-(*                                                                        *)
-(*  They indexed P6-Cv's [flex_apart] premise ALONG THE SUBTYPING DESCENT  *)
-(*  so P6-Sv could hand it over at every reachable state, and P6-Ss        *)
-(*  carried the closure as [sub_shield]'s guarded conjunct.  Under the     *)
-(*  authors' repaired [SolE-FlexR], P6-Cv does not consume [flex_apart] at *)
-(*  all, so P6-Sv's every use was a relay into a premise that no longer    *)
-(*  exists, and the guarded conjunct went with it.                         *)
-(*                                                                        *)
-(*  The design fact this block recorded is worth keeping: [fa_step] had    *)
-(*  NO guess-fixed arrow descent.  Two such rows once existed and made the *)
-(*  walk UNSATISFIABLE when composed with [fastep_all_r] (a raw            *)
-(*  Θ0-flexible facing the opened body at [β ∈ Δρ]) — machine-checked at a *)
-(*  reachable P7b node in cex/cex_p7_shield_realizable.v.  That absence is *)
-(*  precisely why the guarded conjunct had to be ASSUMED rather than       *)
-(*  derived, and why the surviving [flex_apart_deep] — whose [p0_step] DOES  *)
-(*  have the arrow rows — is derivable instead                             *)
-(*  ([flex_apart_deep_sub_shield], sub/look/prop_sub_cstr.v).           *)
-(*                                                                        *)
-(*  Coq text at commit `dbb4b2c`.                                          *)
+(*  ⚠️ WHY THE HEREDITARY [flex_apart_deep] AND NOT A WALK ALONG THE       *)
+(*  SUBTYPING DESCENT.  A walk indexing [flex_apart] along the descent has *)
+(*  no guess-fixed ARROW rows, and adding them makes it UNSATISFIABLE when *)
+(*  composed with a [∀]-right descent (a raw Θ0-flexible facing the opened *)
+(*  body at [β ∈ Δρ]).  That is why such a premise had to be ASSUMED       *)
+(*  rather than derived, whereas [flex_apart_deep] — whose [p0_step] DOES  *)
+(*  have the arrow rows — is derivable                                     *)
+(*  ([flex_apart_deep_sub_shield], sub/look/prop_sub_cstr.v).              *)
 (* ===================================================================== *)
 
 (* ===================================================================== *)
@@ -1452,15 +1431,11 @@ Proof.
 Qed.
 
 (* ⚙ [pskl_no_hole] (hole-free skeletons — for them partial precision is fully
-   Δ-MONOTONE, since the □-rule, the only Δ-antitone one, never fires) was
-   REDEFINED here, verbatim.  Deleted 2026-08-09 (cleanup audit §8.1):
-   prop_completeness_consis.v:1047 defines it and this file imports that.
-
-   ⚠️ Only the DEFINITION and the one duplicated satellite
-   ([ptyp_to_pskl_no_hole]) went.  The rest of the family below — _open,
-   _open_rec, their _inv converses, _close, and the msubst_* transports — has
-   no counterpart there and stays.  The two Fixpoint bodies were identical, so
-   every [simpl]/[induction] proof below is unaffected. *)
+   Δ-MONOTONE, since the □-rule, the only Δ-antitone one, never fires) is
+   DEFINED in prop_completeness_consis.v, which this file imports; so is
+   [ptyp_to_pskl_no_hole].  The rest of the family — _open, _open_rec, their
+   _inv converses, _close, and the msubst_* transports — is below, and has no
+   counterpart there. *)
 
 Lemma pskl_no_hole_open_rec : forall P P' k,
   pskl_no_hole P -> pskl_no_hole P' ->
@@ -2087,9 +2062,6 @@ Proof.
   eapply a_wf_ptyp_ftv_dom; exact Hw.
 Qed.
 
-(* MOVED UP from sub/look/prop_extract.v §8 (2026-08-04): the P6 tower
-   now prefixes a block of wf monotype images at EVERY ∀ row, not only in
-   P6-L. *)
 Lemma msubst_lc_app_wf : forall Θ κa κb,
   Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κa ->
   msubst_lc κb ->

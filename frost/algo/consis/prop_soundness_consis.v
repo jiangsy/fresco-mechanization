@@ -2026,10 +2026,10 @@ Lemma a_wf_aenv_var_typ_inv : forall x A Θ,
   x `notin` dom Θ /\ a_wf_ptyp Θ A /\ a_wf_aenv Θ.
 Proof. intros * H; inversion H; subst; auto. Qed.
 
-(* ⭐ The middle conjunct is the DISCIPLINED [a_wf_pskl], not [a_scope_pskl]:
-   [a_wf_aenv__var] stores that since 2026-08-09.  A caller that only wants
-   scoping composes with [a_scope_pskl_of_wf] (or lets [eauto] do it — the
-   conversion is an exported hint). *)
+(* ⭐ The middle conjunct is the DISCIPLINED [a_wf_pskl], not [a_scope_pskl]
+   — that is what [a_wf_aenv__var] stores.  A caller that only wants scoping
+   composes with [a_scope_pskl_of_wf] (or lets [eauto] do it — the conversion
+   is an exported hint). *)
 Lemma a_wf_aenv_var_skl_inv : forall x P Θ,
   a_wf_aenv ((x ~ abind_var_skl P) ++ Θ) ->
   x `notin` dom Θ /\ Θ ⨟ empty ⊢ₚₛᵃ P /\ a_wf_aenv Θ.

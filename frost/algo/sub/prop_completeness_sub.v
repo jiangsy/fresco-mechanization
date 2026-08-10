@@ -796,11 +796,6 @@ Qed.
 (*  §8b  A2 — THE JOIN PERMUTATION (the paper's WLOG, mechanized)         *)
 (* ===================================================================== *)
 
-(** ⚙ [ad_pat_sub_gv_fuel_weaken] moved to
-    decorated_algo/def_decl_algo_sub_hyg.v (2026-08-06) — the SOUNDNESS side
-    now has to build [_gv] derivations too (hand-off §6.1/§6.2), and
-    prop_soundness_sub.v sits BEFORE this file in the dependency order. *)
-
 (** ⭐ THE JOIN PERMUTATION.  From ANY TY/TC join onto a [bskl_all_inh]
     target — however many ForallL steps sit on top of it — recover the
     cofinite ForallR family that [a_sub_complete_forall_r] consumes, with
@@ -963,14 +958,11 @@ Definition sub_flex_complete (n : nat) (Θ0 : aenv) : Prop :=
     its neighbours [sub_complete] / [sub_complete_arrow] / [sub_complete_ctx_lt]
     are STATEMENTS.
 
-    ⚙ NAMING (2026-08-05).  This family used to be [main_*] — [main_all],
-    [main_arrow], [main_below], [main_join] — where "main" named nothing.  It
-    meant completeness of [a_sub], as opposed to the auxiliary judgment
-    [a_sub_flex] it is mutual with (def_extra.v's two boxes).  The motive was
-    already called [sub_complete_concl], so the family now says the same
-    thing, and each name says what RESTRICTS it: [_arrow] to arrow subjects,
-    [_ctx_lt] to contexts shorter than [k], [sub_flex_complete] to the
-    auxiliary judgment.
+    ⚙ NAMING.  The family is completeness of [a_sub], as opposed to the
+    auxiliary judgment [a_sub_flex] it is mutual with (def_extra.v's two
+    boxes); the motive is [sub_complete_concl] and each name says what
+    RESTRICTS it — [_arrow] to arrow subjects, [_ctx_lt] to contexts shorter
+    than [k], [sub_flex_complete] to the auxiliary judgment.
 
     ⭐ [PIH] is the induction's subject-shape parameter: which subjects this
     invocation is proved for.  Its three conditions read
@@ -1232,53 +1224,27 @@ Qed.
 
 (* ===================================================================== *)
 (* ===================================================================== *)
-(*  §10  WHAT THE ASSEMBLY OWES — ⭐⭐⭐ NOTHING (2026-08-05)                *)
+(*  §10  WHAT THE ASSEMBLY OWES — ⭐⭐⭐ NOTHING                             *)
 (*                                                                        *)
 (*  The three layers of DESIGN §12.1 are in the tree and all [Qed]:        *)
 (*                                                                        *)
-(*    (a) [sub_complete_arrow_holds] — the main half at an ARROW subject, from the *)
-(*        FUEL IH alone.  This is what breaks §12's non-decreasing cycle.  *)
-(*    (b) [sub_flex_complete_holds]        — the flex half, structural on [Θ0] with [Ξ]  *)
-(*        generalized and the total context length bounded.                *)
-(*    (c) [sub_complete_assemble]        — the main half's twelve-row join dispatch.   *)
+(*    (a) [sub_complete_arrow_holds] — the main half at an ARROW subject,  *)
+(*        from the FUEL IH alone.  This breaks §12's non-decreasing cycle. *)
+(*    (b) [sub_flex_complete_holds] — the flex half, structural on [Θ0]    *)
+(*        with [Ξ] generalized and the total context length bounded.       *)
+(*    (c) [sub_complete_assemble]  — the main half's twelve-row join       *)
+(*        dispatch.                                                        *)
 (*                                                                        *)
-(*  ⭐⭐⭐ AND THE RESIDUAL IS DISCHARGED.  [main_forall] — the two ForallL   *)
-(*  rows — was the assembly's ONE hypothesis for a year of this campaign.  *)
-(*  Its single unsupplied premise was TASK 0's [sub_shield]                *)
-(*  (RESIDUAL A1), for which no general supply route existed once [P0]     *)
-(*  carried a ∀ below its head.  Under the authors' repaired [SolE-FlexR]  *)
-(*  that gate is GONE, for a reason that has nothing to do with supplying  *)
-(*  it: P6-Cv stopped consuming [flex_apart], so P6-Sv stopped needing     *)
-(*  [flex_apart_walk], so [sub_shield] lost its guess-descending conjunct  *)
-(*  — and what remains is Δρ-CONSTANT, hence at the Δρ = ∅ these rows      *)
-(*  instantiate it at, unconditionally TRUE ([sub_shield_empty],           *)
-(*  sub/look/prop_sub_cstr.v).  P6-L discharges it internally and no  *)
-(*  longer takes it; §9's two ForallL branches now apply their row lemmas  *)
-(*  DIRECTLY, on exactly the join rule's own premises.                     *)
-(*                                                                        *)
-(*  ⭕ The other former components, for the record:                         *)
-(*    · RESIDUAL A2 (the WLOG [guarded P0 ∨ P0 = □]) — CLOSED 2026-08-03,  *)
-(*      §8b: [p0_wlog_trichotomy] leaves exactly one escaping shape (a     *)
-(*      ∀-headed [P0] at NM = TY, M = TC) and [sub_complete_all_inh_counterpart]   *)
-(*      sends it through ForallR.  That is the mechanical content of the   *)
-(*      paper's one-sentence WLOG, subtyping-proofs.tex:3385.              *)
-(*    · The TY-only ghost-freeness of the join's subject — CLOSED, it sits *)
-(*      ON THE MOTIVE ([sub_complete_concl]'s last premise) and            *)
-(*      [a_sub_complete] carries it as a paper-facing EXTERNAL side    *)
-(*      condition (docs/WF-SIDE-CONDITIONS.md).                            *)
-(*    · RESIDUAL B (the TERM-VARIABLE gap of §6) — CLOSED 2026-08-03:      *)
-(*      both the rules and P7a's two completeness rows are in the tree.    *)
-(*                                                                        *)
-(*  ⚠️ HISTORY, so the retraction is not lost.  This block used to record   *)
-(*  that [main_forall] is FALSE (cex/probe_double_occ_run.v,               *)
-(*  [probe_main_forall_false]) and that the two flagships were therefore   *)
-(*  VACUOUS.  That refutation is RETRACTED: it ran through the double-     *)
-(*  occurrence configuration, where the OLD [SolE-FlexR] discarded the     *)
-(*  accumulated pattern so no [a_sub] run existed.  The repaired row       *)
-(*  returns [guess^TY(P)], the run exists (cex/probe_flexr_repair.v), and  *)
-(*  the shield at that very configuration now HOLDS                        *)
-(*  ([p7_sub_shield_double_occ_holds]).  Both flagships are UNCONDITIONAL  *)
-(*  and are indexed in README.v.                                           *)
+(*  The two ForallL rows are proved outright: [sub_shield] is Δρ-CONSTANT  *)
+(*  and, at the Δρ = ∅ they instantiate it at, unconditionally TRUE        *)
+(*  ([sub_shield_empty], sub/look/prop_sub_cstr.v), so §9's two ForallL    *)
+(*  branches apply their row lemmas on exactly the join rule's premises.   *)
+(*  The WLOG [guarded P0 ∨ P0 = □] is discharged in §8b                    *)
+(*  ([p0_wlog_trichotomy] + [sub_complete_all_inh_counterpart], the        *)
+(*  mechanical content of subtyping-proofs.tex:3385), and the TY-only      *)
+(*  ghost-freeness of the join's subject sits ON THE MOTIVE                *)
+(*  ([sub_complete_concl]'s last premise) as a paper-facing EXTERNAL side  *)
+(*  condition (docs/WF-SIDE-CONDITIONS.md).                                *)
 (* ===================================================================== *)
 
 (* ===================================================================== *)
@@ -1298,13 +1264,9 @@ Qed.
 (*  [sub_flex_complete n Θ0], which is [sub_flex_complete_holds] at [Ξ = nil].                   *)
 (* ===================================================================== *)
 
-(** ⭐⭐⭐ UNCONDITIONAL (2026-08-05).  This used to take
-    [forall n, main_forall n] — the two ForallL rows, whose one unsupplied
-    premise was TASK 0's [sub_shield].  That gate is gone: under the authors'
-    repaired [SolE-FlexR] the shield lost its guess-descending conjunct and,
-    at the Δρ = ∅ these rows instantiate it at, is unconditionally true
-    ([sub_shield_empty]).  So §9's two ForallL branches apply their row
-    lemmas DIRECTLY and the hypothesis has no consumer left. *)
+(** ⭐⭐⭐ UNCONDITIONAL — no residual hypothesis.  The two ForallL rows go
+    through because [sub_shield] is unconditionally true at the Δρ = ∅ they
+    instantiate it at ([sub_shield_empty]). *)
 Theorem a_sub_complete_bundle_holds : a_sub_complete_bundle.
 Proof.
   intros n.

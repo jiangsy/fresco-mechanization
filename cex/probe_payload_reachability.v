@@ -248,10 +248,8 @@ Qed.
 (*  §2  A MONOTYPE GUESS EXISTS ONLY FOR A ∀-FREE SKELETON                *)
 (* ===================================================================== *)
 
-(** ∀-freeness of a skeleton.  Inlined here (2026-08-06) — it used to come
-    from [prop_sub_shield_supply.v], which the shield-layer deprecation
-    deleted (`2a1c380`), leaving this probe's [Require] dangling.  This file
-    is its only remaining consumer, and the notion is one line. *)
+(** ∀-freeness of a skeleton.  Inlined: this file is its only consumer and
+    the notion is one line. *)
 Fixpoint pskl_all_free (P : pskl) : Prop :=
   match P with
   | pskl_unit => True

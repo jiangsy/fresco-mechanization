@@ -105,10 +105,6 @@ Fixpoint ftvar_in_aenv (Θ : aenv) : atoms :=
   end.
 
 
-(* ⚙ [rename_abind] / [rename_aenv] MOVED to algo/prop_swap.v 2026-08-09.
-   They are renaming OPERATORS, not rules, and this file holds rules; their
-   bridge to the primitive ([swap_aenv_as_rename]) already lived there. *)
-
 (** Suffixes  Ξ ::= · | Ξ,α̂ | Ξ,α̂:=τ  (paper alg-syntax). *)
 Inductive a_suffix_binding : abind -> Prop :=
 | a_suffix_binding__flex_mono :
@@ -615,7 +611,7 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
        rule at all, and that configuration is reachable (subject [∀α.α]
        against a ∀-target: LS-Var emits [sub_TC(∀β.B)] and the pattern is
        still [◇]).  docs/PAPER-GAPS.md.  The binder is therefore named [P],
-       not [A], per the mech's own convention (renamed 2026-08-06). *)
+       not [A], per the mech's own convention. *)
     pskl_ghost_free (pskl_all_syn B) ->
     (* exists-fresh, INPUT-only freshness, NO close: the result passes
        through unchanged, so β may legitimately ESCAPE into [P'] — the
@@ -871,11 +867,9 @@ where "Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q" := (a_extract Θ0 NM α m P
    merely transposed (a derivation is finitely supported, so a fresh γ always
    exists and equivariance moves the run to it while fixing every input).
 
-   HISTORY: this replaced a used-name set [F] threaded as a fourth index
-   through all three judgments, whose only reader was Assign-SolveM's
-   side condition.  [F] made every side condition input-only, but it is a
-   mech-only device the paper does not have, and the two cannot coexist —
-   the §13b argument needs [β ∉ F], which is false at a premise running at
+   ⚠️ Do NOT reintroduce a used-name set [F] as a fourth index: it is a
+   mech-only device the paper does not have, and it cannot coexist with the
+   §13b argument, which needs [β ∉ F] — false at a premise running at
    [add β F].  DESIGN.md §4.3. *)
 Inductive a_assign : aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
 | a_assign__univ_ghost_id : forall Θ0 α,                (* Assign-UnivGhost-Id *)
@@ -960,8 +954,7 @@ Inductive a_assign : aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
     Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
     ((β ~ abind_tvar) ++ Θ0) ⊲[ Ξ ] α ≔ P ⊣ ((β ~ abind_tvar) ++ Θ1)
 | a_assign__skip_tm_var : forall Θ0 Θ1 Ξ α x A P,       (* Assign-SkipTmVar *)
-    (* NAMING: the entry's payload is a [ptyp], so [A] — it was [Q]
-       (renamed 2026-08-06). *)
+    (* NAMING: the entry's payload is a [ptyp], so [A]. *)
     x `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
     Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
     ((x ~ abind_var_typ A) ++ Θ0) ⊲[ Ξ ] α ≔ P
@@ -1073,11 +1066,6 @@ with a_consis : atoms -> atoms -> aenv -> pskl -> pskl -> pskl -> aenv -> Prop :
    may mention the witness), the inputs' [ftvar_in_pskl], and the two
    bound-variable sets; the OUTPUTS [Q] and [Θ1] are not named, and must
    not be (the algorithm has not computed them when it picks α).
-
-   HISTORY: while the judgments carried a used-name index [F] this avoid-set
-   deliberately EXCLUDED it — adding [F] refuted the [F]-swap compatibility
-   lemma, since [F] may contain a name that is fresh here and hence misses
-   the output.  [F] is gone (DESIGN.md §4.3) and the question with it.
    Soundness' invariant conjunct, the one place that looked like it
    needed [α ∉ Δ], is discharged instead from [α ∉ dom Θ1], which the
    premise's own output well-formedness supplies.  [Θ1] needs
@@ -1227,9 +1215,9 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
     a_sub a_sub_mode_sk mode_tc pskl_hole Θ0 P (pskl_tophole P) Θ0
 | a_sub__flex_mono : forall NM M P0 Θ0 Θ1 α Q,                (* FlexMono *)
     (* NAMING: the OUTPUT is the paper's [Q] — a skeleton, not a type
-       (full-algo-spec.tex:820-824).  The whole [a_sub_flex] family below
-       carried [A] here; renamed 2026-08-06 to the mech's own convention
-       (A/B/C = ptyp/btyp/utyp, P/Q/R = pskl/bskl/uskl). *)
+       (full-algo-spec.tex:820-824), so [Q] and not [A] here and in the
+       whole [a_sub_flex] family below (A/B/C = ptyp/btyp/utyp,
+       P/Q/R = pskl/bskl/uskl). *)
     a_sub_flex NM M P0 Θ0 nil α Q Θ1 ->
     a_sub NM (mode_fn M) P0 Θ0 (pskl_var_f α) Q Θ1
 | a_sub__arrow : forall NM M Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2,    (* Arrow *)

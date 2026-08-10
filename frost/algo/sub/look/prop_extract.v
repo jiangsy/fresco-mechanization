@@ -274,8 +274,6 @@ Qed.
 (** [a_tags_sort a_sub_mode_ty] gives ghost-freeness of the DECORATED ψa;
     the witness induction runs against the erasure.  The ε-tagged ∀ erases
     to a plain [pskl_all_syn], which is exactly [pgf_all]. *)
-(* ⚙ [uskl_ghost_free_to_pskl] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
-   one in prop_pat_sub.v, which this file imports. *)
 
 (** The converse of [a_wf_ptyp_to_wf_pskl] on a MONOTYPE: a monotype has no
     binder, so its painting's well-formedness is its own — and the Δ slot is
@@ -509,11 +507,6 @@ Qed.
 (* ===================================================================== *)
 (*  §7  FOUR SMALL TOOLS THE WITNESS INDUCTION ASSEMBLES WITH             *)
 (* ===================================================================== *)
-
-(* ⭐ MOVED UPSTREAM (2026-08-04) to frost/algo/prop_metasubst.v:
-   [msubst_pskl_lookup_congr_ftv], [msubst_lookup_mid_skip],
-   [msubst_pskl_mid_skip].  Same reason as the [keys] kit — the κ-extension
-   is now built from sub/look/prop_rho_relation.v onwards, above this file. *)
 
 (** Precision is monotone in Δ (the [_f]-kit transport, at [F = ∅]). *)
 Lemma ad_precise_delta_mono : forall Θ Δ0 Δ P X,
@@ -1312,8 +1305,4 @@ Qed.
 (*  so the family is the renamed look ([a_looksub_rename_var]) + the SAME  *)
 (*  solve + the SAME guess.                                               *)
 (*                                                                        *)
-(*  MOVED to prop_looksub.v §11 (campaign cluster 5, 2026-08-02):          *)
-(*  [prop_decorate_key.v] needs it once [a_sub__forall_l] is exists-fresh, *)
-(*  and that file is a SIBLING of this one, not a consumer.  See           *)
-(*  [a_extract_family_of_instance] there.                                  *)
 (* ===================================================================== *)

@@ -2,9 +2,7 @@
 
     One leaf module over the generated syntax: the tag collector, the
     monotype / tagged / colour-discipline / guardedness / ghost-freeness
-    shape predicates, and the mode-compatibility relations.  (Formerly split
-    across [def_extra.v] and [def_extra.v]; the split bought nothing — every
-    consumer imported all three.) *)
+    shape predicates, and the mode-compatibility relations. *)
 
 Require Import Metalib.Metatheory.
 
@@ -159,13 +157,12 @@ Inductive is_iskl : bskl -> Prop :=
 
 (** Guarded: no top-level forall (any flavour) or hole/tophole.
 
-    ⚙ There is deliberately NO [guarded_ptyp] (deleted 2026-08-09, cleanup
-    audit §5.5): it had zero uses.  Guardedness is a premise of the SUBTYPING
-    and CONSISTENCY rules, which range over the coloured / skeleton sorts, so
-    the plain source sort never needs it — a [ptyp] reaches those rules only
-    through a painting, and the painting's guardedness is what gets asserted
-    ([ptyp_to_uskl_syn_guarded], algo/prop_sub_msubst_equiv.v).  Do not add it
-    back without a consumer. *)
+    ⚙ There is deliberately NO [guarded_ptyp].  Guardedness is a premise of
+    the SUBTYPING and CONSISTENCY rules, which range over the coloured /
+    skeleton sorts, so the plain source sort never needs it — a [ptyp] reaches
+    those rules only through a painting, and the painting's guardedness is what
+    gets asserted ([ptyp_to_uskl_syn_guarded], algo/prop_sub_msubst_equiv.v).
+    Do not add it back without a consumer. *)
 Inductive guarded_pskl : pskl -> Prop :=
 | guarded_pskl__unit  : guarded_pskl pskl_unit
 | guarded_pskl__var   : forall α, guarded_pskl (pskl_var_f α)

@@ -497,45 +497,24 @@ carries ONLY TASK 0's `sub_shield` component.
 is now discharged inside the dispatch (`p0_wlog_trichotomy` +
 `sub_complete_all_inh_counterpart`, §8b) — it is a case split, not a side condition.
 
-## Skeleton term entries — the payload-wf DISCIPLINE is needed for the TARGET context too, on every completeness row (registered 2026-08-08)
+## Skeleton term entries — the payload-wf DISCIPLINE. **RETIRED 2026-08-10**
 
-✅ **RETIRED FROM THE TWO FLAGSHIP COMPLETENESS STATEMENTS, 2026-08-09.**
-`a_pat_complete` and `a_typing_complete` no longer carry either copy: with
-`a_wf_aenv__var` storing the disciplined entry wf, both follow from the
-`a_wf_aenv` premises the theorems already have, by
-`a_wf_aenv_binds_var_skl_wf` (algo/prop_inc_strengthen.v — the entry's stored
-wf, weakened past the entry).  They were EXTERNAL side conditions; they are
-theorems.  ⚙ The `_gen` lemmas and the step rows still THREAD them — the
-paragraph below still explains why the target copy is not optional there —
-but that is now internal bookkeeping, invisible in the paper-facing statement.
-The soundness theorems' question-context copy is likewise derivable; it has
-not been swept yet.
-
-The original entry, for the reasoning: `a_wf_aenv__var` stored only
-`a_scope_pskl` for an `x : P` entry, while the subtyping/consistency theorems
-demand the disciplined `Θ ⨟ ∅ ⊢ₚₛᵃ P` (see *Skeleton wf in the algo layer*
-above).  Both soundness theorems therefore carry
+`a_wf_aenv__var` stores the disciplined `Θ ⨟ ∅ ⊢ₚₛᵃ P` for an `x : P` entry,
+so
 
 ```coq
-forall y Ps, binds y (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps
+forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps
 ```
 
-for the QUESTION context.  ⭐ The two COMPLETENESS theorems
-(`a_pat_complete`, `a_typing_complete`) carry it for the SOLUTION context
-`Θ` as well, and every step lemma with an induction hypothesis carries it
-INSIDE that hypothesis, for the solution context `Θ'` the hypothesis
-quantifies over.
+is a THEOREM of `a_wf_aenv Θ` — `a_wf_aenv_binds_var_skl_wf`
+(algo/prop_inc_strengthen.v: the entry's stored wf, weakened past the entry).
+It is no longer stated anywhere: not on `a_pat_sound` / `a_typing_sound` /
+`a_pat_complete` / `a_typing_complete`, not on their `_gen` lemmas, not on
+the step rows, and not inside the rows' induction hypotheses.  A row that
+needs it derives it from the `a_wf_aenv` premise it already has.
 
-Why the target one is not optional: the binder rows push the term entry into
-BOTH contexts (`x : A'` into the question context, `x : A` into the
-solution's) before invoking the IH, so the IH is used at a *changed* target.
-And the glue supplies each row's IH at a UNIVERSALLY QUANTIFIED `Θ'`, so a
-row whose IH premise omits the condition is unusable: nothing in scope can
-discharge it.  This is what forced the 2026-08-08 addition of the premise to
-`a_typing_complete_anno` and `a_typing_complete_freeze` — the only two rows
-that had been provable without it, because they happen to use their IH at an
-unchanged target.
-
-⚙ Transport across a run is by `a_wf_pskl_isub` composed with the run's own
-`⊴` and its `_tm_ge` stability lemma (`a_split_tm_ge`, `a_consis_tm_ge`, …):
-the entry itself is untouched, only the context around it grows.
+⚙ Why it was ever needed for the SOLUTION context too, and not just the
+question's: the binder rows push a term entry into BOTH contexts before
+invoking the IH, so the IH is used at a *changed* target, and the glue
+supplies each row's IH at a universally quantified `Θ'` — nothing in scope
+could have discharged an omitted condition there.

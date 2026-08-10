@@ -80,22 +80,6 @@ Set Implicit Arguments.
     now a base rule of [flex_apart] too ([fa_flexfree]), so it must be in
     scope before P6-Cv.  See DESIGN §10. *)
 
-(* ===================================================================== *)
-(*  ⭕⭕ [flex_shield] AND ITS KIT MOVED OUT (2026-08-05)                    *)
-(*      → DELETED.  (It went to frost/algo/cex/def_flex_shield.v, then    *)
-(*      the cex/ tree moved to mechanization/cex/ and the shield tower was  *)
-(*      dropped outright when subtyping completeness became unconditional.) *)
-(*                                                                        *)
-(*  It was P6-Sv's repair premise, invented against the (since RETRACTED)  *)
-(*  cex_p6sv_forall_flex.v.  It has had NO consumer in this file since     *)
-(*  2026-08-03 (every use was a relay), and under the authors' repaired    *)
-(*  [SolE-FlexR] that counterexample is retracted outright.  What still    *)
-(*  refers to it is exactly the cex/ files that record the history —       *)
-(*  ⚠️ 2026-08-09: those cex/ files are gone too, so the names            *)
-(*  [flex_shield_excludes_cex] / [fsh_rho_var] / [flex_shield_*] mentioned  *)
-(*  in comments below no longer resolve to anything.  They are HISTORY.     *)
-(* ===================================================================== *)
-
 (** A GUARDED payload skeleton is never precise to a dotted universal ghost:
     its κ-image is unit / a mono paint / an arrow, and the ∀◈ target has no
     matching rule (the mono-paint chain is [ad_ppre_mono_paint_topholeg_absurd]).
@@ -813,8 +797,6 @@ Qed.
 (* [uskl_rho_ftv_subject_bound] MOVED to sub/look/prop_rho_relation.v — P6-Cs needs
    it under the ρ-generalization, and this file is downstream of P6-Cs. *)
 
-(* ⚙ [a_wf_pskl_shielded_dom] was re-proved here; deleted 2026-08-09 (cleanup audit §8.1) — identical to the one in prop_rho_relation.v, which this file imports. *)
-
 (** The converse of [a_wf_pskl_delta_to_tvar_mid], for PRECISION: a rigid
     binder that ALREADY sits in Δ may be dropped from the aenv.  Sub-ForallL
     needs exactly this — the recursive call runs at [Θ,β] because
@@ -1193,9 +1175,6 @@ Qed.
 Lemma in_dom_app_r : forall (x : atom) (E F : aenv),
   x `in` dom F -> x `in` dom (E ++ F).
 Proof. intros x E F H; rewrite dom_app; clear - H; fsetdec. Qed.
-
-(* ⚙ [pskl_shielded_ftv_ptyp_to_pskl] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
-   one in prop_rho_relation.v, which this file imports. *)
 
 Lemma solve_binder_apart_dom : forall (b β0 : atom) (Θ : aenv) S,
   b `notin` S ->

@@ -152,17 +152,13 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   `README.v`.  Its last piece, AbsAnno's refinement-target transport, is
   `a_consis_chk_annot_refine` (§4) — the paper's inline "preservation of
   refinement under type equivalence", which exists nowhere as a lemma
-  (docs/PAPER-GAPS.md).  ⚠️ The statement carries TWO hypotheses beyond the
-  paper's list:
-  `a_wf_exp Θ0 e` (the problem definition's "M wf in Θ0") and the paper's
-  implicit `Θ ⊢ ctx` at skeleton term entries
-  (`∀ x P, binds x (abind_var_skl P) Θ0 → Θ0 ⨟ ∅ ⊢ₚₛᵃ P`), because
-  `a_wf_aenv__var` stores only `a_scope_pskl` while `a_sub_sound` demands
-  the disciplined `⊢ₚₛᵃ`.  WF-SIDE-CONDITIONS pattern
+  (docs/PAPER-GAPS.md).  ⚠️ The statement carries ONE hypothesis beyond the
+  paper's list: `a_wf_exp Θ0 e` (the problem definition's "M wf in Θ0").
+  WF-SIDE-CONDITIONS pattern
 - ✅ **Theorem: Soundness of type inference — CLOSED 2026-08-06**,
   `a_typing_sound` (`algo/prop_soundness_typing.v` §13), Qed and *Closed under
   the global context*; all eleven `a_typing` rows proved; `Check`ed and audited
-  in `README.v`.  Carries theorem 1's two extra hypotheses, plus ONE extra
+  in `README.v`.  Carries theorem 1's extra hypothesis, plus ONE extra
   conclusion conjunct (`a_wf_ptyp Θ1 A`, the output type scoped in the output
   context, which `AT-App` consumes).  ⚠️ FOUR rule-level side conditions the
   paper leaves to prose are now stated on `fig:alg-type-inference`
@@ -232,7 +228,40 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-09 (latest) — ⭐ **`a_wf_aenv__var` NOW STORES THE DISCIPLINED SKELETON WF** (`a_scope_pskl` has no rule site left)
+## 2026-08-10 (latest) — ⭐ **THE ENTRY-WF SIDE CONDITION IS GONE FROM THE WHOLE TREE**, and the changelog comments with it
+
+`forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps` is no longer
+stated ANYWHERE.  On 2026-08-09 it was dropped from the two flagship
+completeness statements only, and the `_gen` lemmas and step rows kept
+threading it; now every site derives it where it is used, from the
+`a_wf_aenv` premise it already has, by `a_wf_aenv_binds_var_skl_wf`.
+
+Swept: `a_pat_sound`, `a_typing_sound` (the question-context copy the earlier
+pass left behind), `typing_scope_concl` and both discharge corollaries
+(`a_typing_scope_tvar_nil` / `_tm_nil`), `a_pat_output_wf`,
+`ad_ctx_precise_refl`, `a_pat_complete_gen` / `a_typing_complete_gen` and all
+sixteen step rows — 72 premise lines in five files, plus the ~25 `assert
+(Hskl…)` blocks and inline `ltac:` arguments that existed only to feed them.
+The two soundness theorems keep `Hskl` as a one-line `pose proof` after
+`intros`, because their per-row uses are unchanged.
+
+⚙ `ad_ctx_precise_refl` got shorter, not longer: with the entry's wf ON the
+constructor its two term rows read it off `H0` and the other four are
+`exact IHHwf`.  ⚠️ `prop_scope.v` reaches
+`a_wf_aenv_binds_var_skl_wf` QUALIFIED — it deliberately does not
+`Require Import prop_inc_strengthen` (it already dodges two shadowed names
+that way).
+
+**Comment sweep, same pass.**  Deleted the comments that only record what the
+development used to look like: 32 move/dedupe/rename tombstones ("[X] deleted
+<date> (cleanup audit …): an alpha-variant of the one in Y"), and the
+historical paragraphs of ~20 mixed blocks (`§10 WHAT THE ASSEMBLY OWES`'s
+residual ledger, `prop_completeness_consis.v`'s `HISTORY.` paragraph, the
+`flex_shield`-moved-out banner, the four `(formerly …)` file-merge banners).
+Kept: `RESTART NOTE`s (CLAUDE.md mandates them), `⚠️ DO NOT MERGE` notes, perf
+findings, and every cex/ header — those record findings, not history.
+
+## 2026-08-09 — ⭐ **`a_wf_aenv__var` NOW STORES THE DISCIPLINED SKELETON WF** (`a_scope_pskl` has no rule site left)
 
 `make coq` exit 0; 20/20 `Print Assumptions` closed, zero
 Axioms/Parameters/Variables/Admitted.  Registry entry updated:

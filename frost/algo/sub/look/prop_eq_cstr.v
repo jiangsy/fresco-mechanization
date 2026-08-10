@@ -71,8 +71,6 @@ Set Implicit Arguments.
 
 (* Reusable: retag the tag index of a partial-precision derivation.
    (mirror of [ad_partial_precise_delta_cong]; migrate to prop_precise.v). *)
-(* ⚙ [ad_partial_precise_psi_cong] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
-   one in prop_pat_sub.v, which this file imports. *)
 
 (* ===================================================================== *)
 (*  msubst on DECORATED skeletons (uskl) — the κ of the paper's [κ R].     *)
@@ -160,9 +158,6 @@ Proof.
   pose proof (ftag_in_uskl_ptyp_to_uskl_syn (msubst_lookup κ α)) as Hgf.
   fsetdec.
 Qed.
-(* MOVED to prop_looksub.v §2 (2026-08-01): it is a basic property of the
-   judgment, and the SOURCE-substitution lemma in prop_decorate_sub.v — which
-   this file depends on — needs it for its arrow rows. *)
 
 (* Compose two constraint solves over an appended EQ-only list.  ⭐ It THREADS
    now (the SolE-FlexR repair): the second half runs at the first half's block,
@@ -206,13 +201,6 @@ Qed.
 (*  must reconcile the LE-Arrow order (Ξc1++Ξc2) with the solve/inc        *)
 (*  natural orders (Ξc1++Θ0 for the left, Ξc2++Ξc1++Θ0 for the right).     *)
 (* ===================================================================== *)
-
-(* ⭐ MOVED UPSTREAM (2026-08-04) to frost/algo/prop_metasubst.v:
-   [keys], [keys_app], [keys_eq_dom], [all_flex_mono], [all_flex_mono_app].
-   The SolE-FlexR repair made the solve emit its own flexible block, so the
-   κ-EXTENSION package these describe is now needed from sub/look/prop_rho_relation.v
-   onwards — i.e. ABOVE this file.  Nothing about them was specific to the
-   collection layer: they are list/metasubst algebra. *)
 
 Lemma a_lookeq_all_flex_mono : forall Θ α P P0 Ξ 𝒞,
   Θ ⊢ P ∼[ α ] P0 ⤳ Ξ ⨾ 𝒞 -> all_flex_mono Ξ.
@@ -367,11 +355,6 @@ Qed.
    SWAPS, where the domains are equal. *)
 (* Both flex conditions ride under an appended prefix — the shape the eq row's
    THREADED tail needs (it runs at [Ξ1 ++ Θ], not at [Θ]). *)
-(* ⚙ [a_flex_tvar_app_mono] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
-   one in prop_rho_relation.v, which this file imports. *)
-
-(* ⚙ [a_flex_app_anti] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
-   one in prop_rho_relation.v, which this file imports. *)
 
 Lemma a_solve_cstr_ctx_change : forall Θ 𝒞 P Ξ P',
   Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' ->
@@ -849,8 +832,6 @@ Proof.
           [ exact HwfΘ | exact Href | reflexivity | eassumption ] ].
 Qed.
 
-(* ⚙ [guarded_pskl_to_bskl_inh] was re-proved here; deleted 2026-08-09 (cleanup audit §8.1) — identical to the one in prop_refine.v, which this file imports. *)
-
 (* ---- plain (non-hygienic) mirrors of the [_f] refinement inversions ---- *)
 
 Lemma ad_refine_syn_guarded_r : forall Θ Δr Q Q',
@@ -1142,8 +1123,6 @@ Qed.
    (rule [ad_refine_syn__all]) enters Δ; the IH wants both in Θ.  Mirrors
    [a_wf_pskl_delta_to_tvar_mid] (mid-insertion, so the [tophole_fill] rule's
    own Θ-binder can be absorbed into Θ1). *)
-(* ⚙ [ad_refine_syn_delta_to_tvar_mid] deleted 2026-08-09 (cleanup audit §8.1): an alpha-variant of the
-   one in prop_rho_relation.v, which this file imports. *)
 
 (* (vi) [msubst_uskl_syn] commutes with opening (mirror of [msubst_pskl_open]):
    every image is a MONOTYPE painting, hence locally closed. *)
@@ -1403,13 +1382,6 @@ Proof.
   rewrite msubst_lookup_notin in Hlow by exact Hd.
   simpl in Hlow. clear - Hlow; fsetdec.
 Qed.
-
-(* The simultaneous rigid rename [a_look*_rename_tvar] and its helpers MOVED
-   to prop_looksub.v (2026-07-31): the exists-fresh ForallR consumers in
-   prop_decorate_sub need the rename, and this file already imports
-   prop_decorate_sub.  (Its size induction was then retired in favour of
-   [a_looksub_lookeq_swap], 2026-08-06; the two ftv/neq helpers it needed
-   went with it.) *)
 
 (* (ix) a GUARDED-HEADED subject forces a guarded counterpart.  Well-formedness
    of P makes every ∀◇-body guarded, so this refutes the C-UnivGhost2 rows in

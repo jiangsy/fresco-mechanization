@@ -47,6 +47,7 @@ Require Import src.frost.decorated_algo.def_decl_algo_typing.
 Require Import src.frost.decorated_algo.def_decorated.
 Require Import src.frost.decorated_algo.prop_ctx_mono.
 Require Import src.frost.algo.prop_inc.
+Require Import src.frost.algo.prop_inc_strengthen.
 Require Import src.frost.algo.prop_compose.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_stability.
@@ -1018,8 +1019,8 @@ Proof.
     end.
 Qed.
 
-(** ≡ᵗ embeds into ≡ˢ on paintings (moved here from the completeness layer
-    2026-08-08 — the codomain-generalized split refinement below needs it). *)
+(** ≡ᵗ embeds into ≡ˢ on paintings — the codomain-generalized split
+    refinement below needs it. *)
 Lemma a_tyequiv_embed_pskl : forall Θ A B,
   Θ ⊢ A ≡ᵗ B ->
   Θ ⊢ (ptyp_to_pskl A) ≡ˢ (ptyp_to_pskl B).
@@ -1658,7 +1659,6 @@ Proof. induction A; simpl; fsetdec. Qed.
 Theorem a_typing_sound : forall m Θ0 P0 e A Θ1,
   Θ0 ⊢ᵃ[ m ; P0 ] e ⦂ A ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
-  (forall x Ps, binds x (abind_var_skl Ps) Θ0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Ps) ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   a_ty_mode_compat m P0 ->
   a_wf_exp Θ0 e ->
@@ -1667,7 +1667,9 @@ Theorem a_typing_sound : forall m Θ0 P0 e A Θ1,
     (Θ1 ⊢ᵃᵈ[ m ] e ⦂ Bt) /\
     (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt)).
 Proof.
-  intros m Θ0 P0 e A Θ1 H; induction H; intros Hwf Hskl HwfP0 Hmod Hexp.
+  intros m Θ0 P0 e A Θ1 H; induction H; intros Hwf HwfP0 Hmod Hexp;
+    pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps Hwf Hb)
+      as Hskl.
   - (* AT-Unit *)
     destruct (a_sub_sound_v H Hwf HwfP0
                 ltac:(apply a_wf_pskl__unit)
@@ -1701,7 +1703,7 @@ Proof.
       | rewrite HeB, ptyp_to_uskl_syn_via_pskl; exact Hjoin ].
   - (* AT-Anno : TWO sequential premises — [a_pat]'s Anno does not recurse *)
     destruct (a_wf_exp_anno_inv Hexp) as [HwfA Hexp0].
-    destruct (IHa_typing Hwf Hskl
+    destruct (IHa_typing Hwf
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA)
                 (a_ty_mode_compat__tc A) Hexp0)
       as [Hle1 [Hwf1 [_ [Bt [HeBt [Hd1 Href1]]]]]].
@@ -1710,10 +1712,6 @@ Proof.
       apply mod_comp_ty_tc_inv.
       eapply ad_sd_typing_mod_comp_ty; eassumption. }
     subst Bt.
-    assert (Hskl1 : forall y Ps, binds y (abind_var_skl Ps) Θ1 ->
-                      Θ1 ⨟ empty ⊢ₚₛᵃ Ps).
-    { intros y Ps Hb. eapply a_wf_pskl_isub; [ | exact Hle1 ].
-      apply (Hskl y). apply (a_typing_tm_ge H); [ exact I | exact Hb ]. }
     assert (HwfA1 : a_wf_ptyp Θ1 A) by (eapply a_wf_ptyp_isub; eassumption).
     destruct (a_sub_sound_v H0 Hwf1
                 ltac:(eapply a_wf_pskl_isub; [ exact HwfP0 | exact Hle1 ])
@@ -1732,7 +1730,7 @@ Proof.
           [ exact Hd1 | exact Hle2 | eapply a_sub_tm_le; exact H0 ]
       | rewrite HeB, ptyp_to_uskl_syn_via_pskl; exact Hjoin ].
   - (* AT-Freeze *)
-    destruct (IHa_typing Hwf Hskl ltac:(apply a_wf_pskl__hole)
+    destruct (IHa_typing Hwf ltac:(apply a_wf_pskl__hole)
                 a_ty_mode_compat__ti (a_wf_exp_freeze_inv Hexp))
       as [Hle1 [Hwf1 [HwfB1 [Bt [HeBt [Hd1 Href1]]]]]].
     destruct (ad_refine_syn_syn_l Href1 pskl_hole eq_refl) as [P' HQt].
@@ -1793,22 +1791,7 @@ Proof.
     assert (Hwfx : a_wf_aenv ((x ~ abind_var_typ A) ++ αs ++ Θ0)).
     { apply a_wf_aenv__var_typ;
         [ rewrite dom_app; clear - Hx; fsetdec | exact HwfAg | exact Hwfαs ]. }
-    assert (Hsklx : forall y Ps,
-              binds y (abind_var_skl Ps) ((x ~ abind_var_typ A) ++ αs ++ Θ0) ->
-              ((x ~ abind_var_typ A) ++ αs ++ Θ0) ⨟ empty ⊢ₚₛᵃ Ps).
-    { intros y Ps Hb.
-      assert (Hb0 : binds y (abind_var_skl Ps) Θ0).
-      { destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heqb] | Hb'];
-          [ discriminate | ].
-        apply binds_app_1 in Hb' as [Hb'' | Hb'']; [ | exact Hb'' ].
-        exfalso.
-        assert (Hc : abind_var_skl Ps = abind_flex_mono)
-          by (eapply a_decls_binds_flex; eassumption).
-        discriminate. }
-      eapply a_wf_pskl_weaken;
-        [ intros z c Hbz; apply binds_app_3; apply binds_app_3; exact Hbz
-        | exact (Hskl _ _ Hb0) ]. }
-    destruct (IHa_typing Hwfx Hsklx
+    destruct (IHa_typing Hwfx
                 ltac:(eapply a_wf_pskl_weaken;
                       [ intros z c Hbz; apply binds_app_3; apply binds_app_3;
                         exact Hbz
@@ -1920,17 +1903,7 @@ Proof.
     assert (Hwfx : a_wf_aenv ((x ~ abind_var_typ A) ++ Θ2))
       by (apply a_wf_aenv__var_typ;
           [ clear - Hx; fsetdec | exact HwfAc | exact Hwfc ]).
-    assert (Hsklc : forall y Ps, binds y (abind_var_skl Ps) Θ2 ->
-                      Θ2 ⨟ empty ⊢ₚₛᵃ Ps).
-    { intros y Ps Hb. eapply a_wf_pskl_isub; [ | exact Hlec ].
-      apply (Hskl y). apply (a_consis_chk_tm_ge H1); [ exact I | exact Hb ]. }
-    assert (Hsklx : forall y Ps,
-              binds y (abind_var_skl Ps) ((x ~ abind_var_typ A) ++ Θ2) ->
-              ((x ~ abind_var_typ A) ++ Θ2) ⨟ empty ⊢ₚₛᵃ Ps).
-    { intros y Ps Hb.
-      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heqb] | Hb'];
-        [ discriminate | apply a_wf_pskl_weaken_cons; exact (Hsklc _ _ Hb') ]. }
-    destruct (IHa_typing Hwfx Hsklx
+    destruct (IHa_typing Hwfx
                 (a_wf_pskl_weaken_cons x (abind_var_typ A)
                    ltac:(eapply a_wf_pskl_isub; [ exact HwfQ | exact Hlec ]))
                 Hmod'
@@ -2044,11 +2017,6 @@ Proof.
                     ltac:(clear - Hβ0; solve_notin_auto)) in Hr.
       exact Hr. }
     destruct (IHa_typing Hwfα
-                ltac:(intros y Ps Hb;
-                      destruct (binds_cons_1 _ _ _ _ _ _ Hb)
-                        as [[_ He] | Hb'];
-                      [ discriminate
-                      | apply a_wf_pskl_weaken_cons; exact (Hskl _ _ Hb') ])
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA0α)
                 (a_ty_mode_compat__tc _)
                 (a_wf_exp_weaken_cons α abind_tvar Hexp))
@@ -2212,10 +2180,6 @@ Proof.
       by (apply a_wf_ptyp_of_wf_pskl_empty; exact HwfPA).
     assert (HwfBs : a_wf_ptyp Θ1 B)
       by (apply a_wf_ptyp_of_wf_pskl_empty; exact HwfPB).
-    assert (Hskl1 : forall y Ps, binds y (abind_var_skl Ps) Θ1 ->
-                      Θ1 ⨟ empty ⊢ₚₛᵃ Ps).
-    { intros y Ps Hb. eapply a_wf_pskl_isub; [ | exact Hles ].
-      apply (Hskl y). apply (a_split_tm_ge H); [ exact I | exact Hb ]. }
     assert (Hx : x `notin` dom Θ1 `union` dom Ξ `union` dom Θ2
                    `union` fvar_in_exp e)
       by (clear - H3; rewrite !dom_app in H3; fsetdec).
@@ -2225,10 +2189,6 @@ Proof.
     assert (Hexpx : a_wf_exp Θ1 (open_exp_wrt_exp e (exp_var_f x)))
       by (apply (a_wf_exp_isub (a_wf_exp_abs_pick x Hexp) Hles)).
     destruct (IHa_typing Hwfx
-                ltac:(intros y Ps Hb;
-                      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ He] | Hb'];
-                      [ discriminate
-                      | apply a_wf_pskl_weaken_cons; exact (Hskl1 _ _ Hb') ])
                 (a_wf_pskl_weaken_cons x (abind_var_typ A) HwfPB)
                 (a_ty_mode_compat__tc B)
                 (a_wf_exp_weaken_cons x (abind_var_typ A) Hexpx))
@@ -2330,11 +2290,6 @@ Proof.
                     ltac:(clear - Hβ0; solve_notin_auto)) in Hr.
       exact Hr. }
     destruct (IHa_typing Hwfα
-                ltac:(intros y Ps Hb;
-                      destruct (binds_cons_1 _ _ _ _ _ _ Hb)
-                        as [[_ He] | Hb'];
-                      [ discriminate
-                      | apply a_wf_pskl_weaken_cons; exact (Hskl _ _ Hb') ])
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA0α)
                 (a_ty_mode_compat__tc _)
                 (a_wf_exp_weaken_cons α abind_tvar Hexp))
@@ -2510,13 +2465,6 @@ Proof.
           [ exact H0 | exact Hwfs | exact HwfAan1 | exact HwfAs ]).
     assert (Hle02 : Θ0 ⊴ Θ2)
       by (eapply a_isub_trans; [ exact Hles | exact Hlec ]).
-    assert (Hskl2 : forall y Ps, binds y (abind_var_skl Ps) Θ2 ->
-                      Θ2 ⨟ empty ⊢ₚₛᵃ Ps).
-    { intros y Ps Hb.
-      eapply a_wf_pskl_isub; [ | exact Hle02 ].
-      apply (Hskl y).
-      apply (a_split_tm_ge H); [ exact I | ].
-      apply (a_consis_chk_tm_ge H0); [ exact I | exact Hb ]. }
     assert (HwfAan2 : a_wf_ptyp Θ2 A)
       by (eapply a_wf_ptyp_isub; [ exact HwfAan1 | exact Hlec ]).
     assert (Hx : x `notin` dom Θ2 `union` dom Ξ `union` dom Θ3
@@ -2528,10 +2476,6 @@ Proof.
     assert (Hexpx : a_wf_exp Θ2 (open_exp_wrt_exp e (exp_var_f x)))
       by (apply (a_wf_exp_isub (a_wf_exp_abs_anno_pick x Hexp) Hle02)).
     destruct (IHa_typing Hwfx
-                ltac:(intros y Ps Hb;
-                      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ He] | Hb'];
-                      [ discriminate
-                      | apply a_wf_pskl_weaken_cons; exact (Hskl2 _ _ Hb') ])
                 (a_wf_pskl_weaken_cons x (abind_var_typ A)
                    ltac:(eapply a_wf_pskl_isub; [ exact HwfPB | exact Hlec ]))
                 (a_ty_mode_compat__tc B)
@@ -2615,7 +2559,7 @@ Proof.
        for sd-App's premise 2, and the appendix's FOURTH ≡ᵗ premise from
        [ad_refine_syn_inh_tyequiv] (§2) *)
     destruct (a_wf_exp_app_inv Hexp) as [Hexp1 Hexp2].
-    destruct (a_pat_sound H Hwf Hskl ltac:(apply a_wf_pskl__hole)
+    destruct (a_pat_sound H Hwf ltac:(apply a_wf_pskl__hole)
                 a_sk_mode_compat__tc Hexp2)
       as [Hle1 [Hwf1 [Qt1 [HeQt1 [Hpat1 Href1]]]]].
     destruct (ad_refine_syn_syn_l Href1 pskl_hole eq_refl) as [P' HQt1].
@@ -2623,11 +2567,7 @@ Proof.
     assert (HwfPin : Θ1 ⨟ empty ⊢ₚₛᵃ P')
       by (pose proof (ad_refine_syn_hole_l_target_wf Href1) as Hw;
           rewrite bskl_to_pskl_pskl_to_bskl_syn in Hw; exact Hw).
-    assert (Hskl1 : forall y Ps, binds y (abind_var_skl Ps) Θ1 ->
-                      Θ1 ⨟ empty ⊢ₚₛᵃ Ps).
-    { intros y Ps Hb. eapply a_wf_pskl_isub; [ | exact Hle1 ].
-      apply (Hskl y). apply (a_pat_tm_ge H); [ exact I | exact Hb ]. }
-    destruct (IHa_typing1 Hwf1 Hskl1
+    destruct (IHa_typing1 Hwf1
                 ltac:(apply a_wf_pskl__arrow;
                       [ exact HwfPin
                       | eapply a_wf_pskl_isub; [ exact HwfP0 | exact Hle1 ] ])
@@ -2638,11 +2578,7 @@ Proof.
     subst Bf. simpl in Hreff.
     destruct (ad_refine_syn_arrow_inv Hreff) as [HrefA HrefB].
     destruct (a_wf_ptyp_arrow_inv HwfAB) as [HwfAdom HwfBcod].
-    assert (Hskl2 : forall y Ps, binds y (abind_var_skl Ps) Θ2 ->
-                      Θ2 ⨟ empty ⊢ₚₛᵃ Ps).
-    { intros y Ps Hb. eapply a_wf_pskl_isub; [ | exact Hle2 ].
-      apply (Hskl1 y). apply (a_typing_tm_ge H0); [ exact I | exact Hb ]. }
-    destruct (IHa_typing2 Hwf2 Hskl2
+    destruct (IHa_typing2 Hwf2
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfAdom)
                 (a_ty_mode_compat__tc A)
                 ltac:(eapply a_wf_exp_isub;

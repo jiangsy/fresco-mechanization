@@ -60,8 +60,6 @@ Combined Scheme a_subtag_subtag_flex_mutind
 (* ===================================================================== *)
 
 (** The syn painting of an lc skeleton is synthesised. *)
-(* ⚙ [is_sskl_pskl_to_bskl_syn] MOVED 2026-08-09 to frost/prop_basic.v
-   (cleanup audit §8.1) — see the note there. *)
 
 (** Erasure preserves local closure. *)
 Lemma lc_uskl_to_pskl : forall R,

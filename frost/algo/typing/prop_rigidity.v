@@ -1208,9 +1208,3 @@ Lemma pskl_to_bskl_inh_ptyp : forall A,
   pskl_to_bskl_inh (ptyp_to_pskl A) = btyp_to_bskl (ptyp_to_btyp_inh A).
 Proof. induction A; simpl; f_equal; auto. Qed.
 
-(* ⚙ THE FN-MODE OUTPUT SHAPE ([fn_arrow_shape_pskl] / [fn_arrow_shape],
-   [a_sub_ty_fn_arrow_shape], [a_typing_fn_arrow_shape]) MOVED OUT 2026-08-09
-   to algo/typing/prop_shape.v (cleanup audit §6).  It is a structural fact about
-   arrow spines, not about rigidity or the TC-core, so it did not belong at the
-   tail of this file.  typing/prop_typing.v — its only consumer — imports
-   the new file directly. *)

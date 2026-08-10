@@ -19,14 +19,7 @@
     and lands on the target [β], which is [bskl_monoish] by [bmi_var].  The
     subject is not a mono paint (a mono paint is unit / var / arrow, never a
     [uskl_all_etag]), so the conclusion fails outright.
-
-    ⚙ HISTORY (2026-08-05).  This file was written to record that P7's planned
-    route for SUPPLYING the mech-invented [sub_shield] premise does not work as
-    sketched.  That whole layer is now gone — the authors' repaired
-    [SolE-FlexR] retired [sub_shield], [flex_apart_walk] and [flex_shield]
-    together, and subtyping completeness is unconditional.  The finding above
-    outlived the layer it was written for, so the file is kept and its
-    motivation rewritten; the shield artefacts are at commit `11349c5`. *)
+ *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.

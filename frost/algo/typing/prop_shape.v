@@ -8,11 +8,9 @@
     recursion closes: peeling one [FN] off the mode peels one arrow off the
     output.
 
-    ⚙ SPLIT OUT of [prop_rigidity.v] 2026-08-09 (cleanup audit §6).  It lived
-    at the tail of that file (then called `algo/prop_ty_core.v`) but has
-    nothing to do with its subject — neither [a_rigid_only] preservation nor
-    the TC-core discipline.  This is a pure structural shape fact, and like
-    every other file in this directory its only consumer is [prop_typing.v].
+    ⚙ A pure structural shape fact — nothing to do with [a_rigid_only]
+    preservation or the TC-core discipline; like every other file in this
+    directory its only consumer is [prop_typing.v].
 
     ⚠️ [fn_arrow_shape_pskl] and [fn_arrow_shape] are the SAME relation modulo
     [ptyp_to_pskl] — the [ptyp] one is the [pskl] one restricted to paintings,

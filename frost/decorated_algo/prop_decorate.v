@@ -66,12 +66,10 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  MOVED 2026-08-02 (freshness campaign, cluster 4)                      *)
-(* ===================================================================== *)
 
 (* [a_consis_decorate_gen] / [a_consis_decorate] (Lemma [Decorating
-   algorithmic consistency], consistency-proofs.tex) USED to live here.
-   They moved to prop_consis_rename.v §10.
+   algorithmic consistency], consistency-proofs.tex) live in
+   prop_consis_rename.v §10, not here.
 
    Why: cluster 4 made [a_consis]'s three ∀ rows EXISTS-FRESH, while the
    decorated [a_consistag] rows are (rightly) still cofinite — so a ∀ row of

@@ -11,12 +11,10 @@
     | 3 | transport of local closure and of the shape predicates |
     | 4 | transport of free variables |
 
-    ⚙ CREATED 2026-08-09 (cleanup audit §5.4).  These facts were spread over
-    eleven files, and the same fact was therefore proved two, three and (for
-    [ftvar_ptyp_to_pskl]) four times over — sometimes under one name, so which
-    copy an unqualified [apply] resolved to depended on import order.  That is
-    a correctness hazard, not untidiness: the tree already contained a lemma
-    written for no other reason than to escape such a collision.
+    ⚠️ THIS IS THE ONLY HOME FOR THEM — do not re-prove one downstream.  Two
+    copies of a conversion fact under one name is a correctness hazard, not
+    untidiness: which copy an unqualified [apply] resolves to then depends on
+    import order.
 
     ⚙ Only the STRONGEST form of each fact is kept, and the weaker ones are
     left to follow at the use site — a Leibniz [=] gives both [ [=] ] and
@@ -421,8 +419,8 @@ Unset Implicit Arguments.
     free-variable set EXACTLY.  Each fact is stated once, in the strongest
     relation it holds in — Leibniz [=] where the two sets are the same term,
     setoid [ [=] ] where the [pskl] side reassociates a union.  A [ [<=] ]
-    consumer rewrites with these rather than re-proving the weakening: the
-    tree used to carry four separate names for [ftvar_ptyp_to_pskl] alone. *)
+    consumer rewrites with these rather than re-proving the weakening — one
+    fact must not acquire a second name here. *)
 
 Lemma ftvar_ptyp_to_btyp_syn : forall A,
     ftvar_in_btyp (ptyp_to_btyp_syn A) = ftvar_in_ptyp A.

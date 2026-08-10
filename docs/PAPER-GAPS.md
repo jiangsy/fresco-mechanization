@@ -112,15 +112,11 @@ and prove three facts the paper's proof of thm:complete-skeleton-inference
    derivation; the two ∀-colourings go through `forall_syn` /
    `forall_inh_untagged`).
 3. **Reflexivity of context precision** (:1915) is NOT free at the mech's
-   `Θ ⊢ ctx`: `a_wf_aenv` used to store only SCOPE for skeleton term entries,
-   and an unguarded scope-only payload refutes refinement reflexivity.
-   (⚙ 2026-08-09: `a_wf_aenv__var` now stores the DISCIPLINED
-   `Θ ⨟ ∅ ⊢ₚₛᵃ P`, so the gap this describes is closed at the source — the
-   hypothesis below is still what the lemma carries, but it is now derivable
-   from `a_wf_aenv` rather than external.)  The paper's convention (every context wf in its own
-   figure's sense, payload-wf included) is restored as a hypothesis — the
-   payload-wf DISCIPLINE of both contexts' skeleton entries
-   (`ad_ctx_precise_refl`) — the WF-SIDE-CONDITIONS.md pattern.
+   `Θ ⊢ ctx`: `a_wf_aenv__var` stores the DISCIPLINED `Θ ⨟ ∅ ⊢ₚₛᵃ P` for a
+   skeleton term entry, which is what the paper's convention (every context
+   wf in its own figure's sense, payload-wf included) asks for, and what
+   refinement reflexivity needs — a scope-only payload refutes it
+   (`ad_ctx_precise_refl`).
 
 Also worth the authors' eyes: the paper's step "the solution θ' extends to
 the binder-extended contexts" (⟨27⟩, :1927) is justified in the mech by
