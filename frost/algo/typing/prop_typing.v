@@ -4423,3 +4423,84 @@ Proof.
     try eassumption;
     clear; lia.
 Qed.
+
+(* ===================================================================== *)
+(*  §14  THE CLOSED-PROGRAM COROLLARIES.                                  *)
+(*                                                                        *)
+(*  At the EMPTY context the two user-facing modes are the only ones the  *)
+(*  input can be in: INFERENCE, whose input is the ghost [□], and         *)
+(*  CHECKING, whose input is a closed type [⌈A0⌉].  That single           *)
+(*  disjunction replaces three premises of the general statements —       *)
+(*  [a_wf_aenv ·] is a constructor, [· ⨟ ∅ ⊢ₚₛᵃ P0] is [a_wf_pskl__hole]  *)
+(*  resp. the annotation's own wf, and [a_ty_mode_compat] is read off the *)
+(*  shape.  Completeness loses two more: [κ ∷ · ⊑ ·] holds at [κ = ·]     *)
+(*  ([a_inc__empty]), and the run's factoring witness is instantiated at  *)
+(*  the identity increase soundness hands back, so the conclusion is the  *)
+(*  readable "the answer, closed off by ζ, IS the declarative type".      *)
+(* ===================================================================== *)
+
+(** ⭐ Soundness at a CLOSED program (thm:sound-type-inference). *)
+Corollary a_typing_sound_closed : forall m P0 e A Θ1,
+  (m = mode_ti /\ P0 = pskl_hole) \/
+  (exists A0, m = mode_tc /\ P0 = ptyp_to_pskl A0 /\ a_wf_ptyp nil A0) ->
+  nil ⊢ᵃ[ m ; P0 ] e ⦂ A ⊣ Θ1 ->
+  lc_exp e ->
+  ftvar_in_exp e [<=] empty ->
+  nil ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
+  exists Bt, btyp_to_ptyp Bt = A /\
+    (Θ1 ⊢ᵃᵈ[ m ] e ⦂ Bt) /\
+    (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt)).
+Proof.
+  intros m P0 e A Θ1 Hin Hrun Hlc Hftv.
+  assert (Hexp : a_wf_exp nil e).
+  { apply a_wf_exp_of_tvarish;
+      [ exact Hlc | intros α Hα; exfalso; clear - Hα Hftv; fsetdec ]. }
+  destruct Hin as [[-> ->] | [A0 [-> [-> HwfA0]]]].
+  - exact (a_typing_sound Hrun a_wf_aenv__nil (a_wf_pskl__hole _ _)
+             a_ty_mode_compat__ti Hexp).
+  - exact (a_typing_sound Hrun a_wf_aenv__nil
+             (a_wf_ptyp_to_wf_pskl empty HwfA0)
+             (a_ty_mode_compat__tc A0) Hexp).
+Qed.
+
+(** ⭐ Completeness + optimality at a CLOSED program
+    (thm:complete-type-inference).  Whenever the DECLARATIVE system types
+    the closed term [e] at [B] in the empty context, the algorithm succeeds,
+    and its answer [A1] — closed off by a witness ζ out of the run's output
+    context — is Θ-EQUIVALENT to [B].  So the run is not merely SOME
+    derivation: it is the most general one. *)
+Corollary a_typing_complete_closed : forall m P0 e (B : btyp),
+  (m = mode_ti /\ P0 = pskl_hole) \/
+  (exists A0, m = mode_tc /\ P0 = ptyp_to_pskl A0 /\ a_wf_ptyp nil A0) ->
+  lc_exp e ->
+  ftvar_in_exp e [<=] empty ->
+  nil ⊢ᵃᵈ[ m ] e ⦂ B ->
+  nil ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl B) ->
+  exists A1 Θ1,
+    nil ⊢ᵃ[ m ; P0 ] e ⦂ A1 ⊣ Θ1 /\
+    exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
+Proof.
+  intros m P0 e B Hin Hlc Hftv Hd Href.
+  assert (Hexp : a_wf_exp nil e).
+  { apply a_wf_exp_of_tvarish;
+      [ exact Hlc | intros α Hα; exfalso; clear - Hα Hftv; fsetdec ]. }
+  assert (Hrig : forall α, α `in` ftvar_in_exp e -> binds α abind_tvar nil)
+    by (intros α Hα; exfalso; clear - Hα Hftv; fsetdec).
+  assert (Hinc : nil ∷ nil ⊑ nil)
+    by (apply a_inc__empty; apply a_suffix__nil).
+  assert (Hpack : nil ⨟ empty ⊢ₚₛᵃ P0 /\ a_ty_mode_compat m P0).
+  { destruct Hin as [[-> ->] | [A0 [-> [-> HwfA0]]]];
+      [ split; [ apply a_wf_pskl__hole | apply a_ty_mode_compat__ti ]
+      | split; [ apply a_wf_ptyp_to_wf_pskl; exact HwfA0
+               | apply a_ty_mode_compat__tc ] ]. }
+  destruct Hpack as [HwfP0 Hmod].
+  rewrite <- (msubst_pskl_nil P0) in Href.
+  destruct (a_typing_complete a_wf_aenv__nil a_wf_aenv__nil HwfP0 Hmod
+              Hinc Hrig Hlc Hd Href) as [A1 [Θ1 [Hrun Hopt]]].
+  exists A1, Θ1. split; [ exact Hrun | ].
+  (* the run's OWN identity increase is what the optimality is applied at *)
+  destruct (a_typing_sound Hrun a_wf_aenv__nil HwfP0 Hmod Hexp)
+    as [[[κ1 [Hid1 Hinc1]] _] _].
+  destruct (Hopt κ1 Hid1 Hinc1) as [ζ [Hζ [_ Heq]]].
+  exists ζ. split; [ exact Hζ | exact Heq ].
+Qed.

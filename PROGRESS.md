@@ -165,7 +165,9 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   (docs/PAPER-GAPS.md): the two Barendregt conditions the four suffix-DISCARDING
   check rows need for `lemma:suffix-erasure`, the `uniq` filter `AT-Abs` needs
   on `guess^TY`'s block, and the correction of `AT-AbsAnnoCheck`'s result
-  domain.  History of the build-up:
+  domain.  ⭐ Reader-facing form: `a_typing_sound_closed`
+  (algo/typing/prop_typing.v §14) — the empty context, at the two user-facing
+  modes.  History of the build-up:
 - 🟡 (history) **Theorem: Soundness of type inference — STARTED 2026-08-06**
   (`algo/prop_soundness_typing.v`, NEW; all Qed and axiom-free).  ⭐ The
   `Freeze` ingredient is DONE and was DERIVED from theorem 1's transport, not
@@ -205,6 +207,9 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   `(size_exp e, size_btyp B)`: ten rows recurse at a strictly smaller
   SUBJECT, and only the two ∀-peeling AbsCheck rows recurse at the same
   subject, dropping one `∀` off the declarative result.
+  ⭐ Reader-facing form: `a_typing_complete_closed` (algo/typing/prop_typing.v
+  §14) — the empty context, at the two user-facing modes, with no
+  metasubstitution quantified and the optimality already instantiated.
   ⭐ Its two unrecorded prerequisites, both closed here: `a_split_complete_tc`
   — completeness of SPLITTING at check mode, i.e. the paper's AbsCheck
   **subcase 2**, where the split's flexible row has to be BUILT out of a full
@@ -228,7 +233,37 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-10 (latest) — ⭐ **THE ENTRY-WF SIDE CONDITION IS GONE FROM THE WHOLE TREE**, and the changelog comments with it
+## 2026-08-10 — ⭐ **THE TWO TYPING THEOREMS GET A CLOSED-PROGRAM COROLLARY**
+
+`a_typing_sound_closed` / `a_typing_complete_closed`
+(algo/typing/prop_typing.v §14), both Qed and axiom-free, both `Check`ed in
+README.v (now 22 entries).  They specialize the flagships to the empty
+context, where the input can only be in one of the two user-facing modes:
+
+```coq
+(m = mode_ti /\ P0 = pskl_hole) \/
+(exists A0, m = mode_tc /\ P0 = ptyp_to_pskl A0 /\ a_wf_ptyp nil A0)
+```
+
+⭐ That single disjunction retires THREE premises — `a_wf_aenv nil` is a
+constructor, `nil ⨟ ∅ ⊢ₚₛᵃ P0` is `a_wf_pskl__hole` resp. the annotation's own
+wf, and `a_ty_mode_compat` is read off the shape — and the rigid-variable side
+condition becomes the honest `ftvar_in_exp e [<=] empty`.
+
+Completeness sheds two more.  `κ ∷ nil ⊑ nil` holds at `κ = nil`
+(`a_inc__empty` + `a_suffix__nil`), so **no metasubstitution is quantified at
+all** and the refinement premise reads at `P0` itself (new one-liner
+`msubst_pskl_nil`, beside `msubst_ptyp_nil`).  And the optimality is applied
+at the identity increase SOUNDNESS hands back, so the conclusion collapses to
+
+```coq
+exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ msubst_ptyp ζ A1 ≡ᵗ B
+```
+
+— the run's answer, closed off by ζ, IS the declarative type: it is the most
+general derivation, not merely some derivation.
+
+## 2026-08-10 — ⭐ **THE ENTRY-WF SIDE CONDITION IS GONE FROM THE WHOLE TREE**, and the changelog comments with it
 
 `forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps` is no longer
 stated ANYWHERE.  On 2026-08-09 it was dropped from the two flagship
@@ -263,7 +298,7 @@ findings, and every cex/ header — those record findings, not history.
 
 ## 2026-08-09 — ⭐ **`a_wf_aenv__var` NOW STORES THE DISCIPLINED SKELETON WF** (`a_scope_pskl` has no rule site left)
 
-`make coq` exit 0; 20/20 `Print Assumptions` closed, zero
+`make coq` exit 0; all `Print Assumptions` closed, zero
 Axioms/Parameters/Variables/Admitted.  Registry entry updated:
 [`docs/WF-SIDE-CONDITIONS.md`](docs/WF-SIDE-CONDITIONS.md) — the section that
 had this as a QUEUED CLEANUP now records it as done, with what the note got

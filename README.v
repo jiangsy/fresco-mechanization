@@ -260,6 +260,26 @@ Check a_typing_sound :
     (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt)).
 Print Assumptions a_typing_sound.
 
+(* ⭐ …AT A CLOSED PROGRAM, which is the form a reader wants.  At the EMPTY
+   context the only two modes the input can be in are the user-facing ones —
+   INFERENCE, whose input is the ghost [□], and CHECKING, whose input is a
+   closed type [⌈A0⌉] — and that one disjunction replaces three premises of
+   the theorem above: [a_wf_aenv ·] is a constructor, [· ⨟ ∅ ⊢ₚₛᵃ P0] is
+   [a_wf_pskl__hole] resp. the annotation's own wf, and [a_ty_mode_compat] is
+   read off the shape.  What is left is exactly "the term is CLOSED". *)
+Check a_typing_sound_closed :
+  forall m P0 e A Θ1,
+  (m = mode_ti /\ P0 = pskl_hole) \/
+  (exists A0, m = mode_tc /\ P0 = ptyp_to_pskl A0 /\ a_wf_ptyp nil A0) ->
+  nil ⊢ᵃ[ m ; P0 ] e ⦂ A ⊣ Θ1 ->
+  lc_exp e ->
+  ftvar_in_exp e [<=] empty ->
+  nil ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
+  exists Bt, btyp_to_ptyp Bt = A /\
+    (Θ1 ⊢ᵃᵈ[ m ] e ⦂ Bt) /\
+    (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt)).
+Print Assumptions a_typing_sound_closed.
+
 (* ⭐⭐⭐ Theorem [Completeness + optimality of skeleton inference]
    thm:complete-skeleton-inference.  Whenever the DECLARATIVE system infers Q
    at a solution κ of the question (Θ₀; M; P₀), the ALGORITHM succeeds and its
@@ -313,6 +333,25 @@ Check a_typing_complete :
            a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ /\
            Θ ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B)).
 Print Assumptions a_typing_complete.
+
+(* ⭐ …AT A CLOSED PROGRAM.  Same three premises go as in the soundness
+   corollary, plus two more: [κ ∷ · ⊑ ·] holds at [κ = ·] ([a_inc__empty]), so
+   no metasubstitution is quantified at all, and the optimality is applied at
+   the identity increase SOUNDNESS hands back — leaving the readable form,
+   "the answer, closed off by a witness ζ, IS the declarative type".  So the
+   run is not merely SOME derivation of [e]: it is the most general one. *)
+Check a_typing_complete_closed :
+  forall m P0 e (B : btyp),
+  (m = mode_ti /\ P0 = pskl_hole) \/
+  (exists A0, m = mode_tc /\ P0 = ptyp_to_pskl A0 /\ a_wf_ptyp nil A0) ->
+  lc_exp e ->
+  ftvar_in_exp e [<=] empty ->
+  nil ⊢ᵃᵈ[ m ] e ⦂ B ->
+  nil ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl B) ->
+  exists A1 Θ1,
+    nil ⊢ᵃ[ m ; P0 ] e ⦂ A1 ⊣ Θ1 /\
+    exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
+Print Assumptions a_typing_complete_closed.
 
 (* --- the two section-D lemmas the paper states in its own right -------- *)
 

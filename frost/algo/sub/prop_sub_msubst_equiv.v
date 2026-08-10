@@ -361,6 +361,9 @@ Qed.
 Lemma msubst_ptyp_nil : forall A, msubst_ptyp nil A = A.
 Proof. induction A; cbn; f_equal; auto. Qed.
 
+Lemma msubst_pskl_nil : forall P, msubst_pskl nil P = P.
+Proof. induction P; cbn; f_equal; auto. Qed.
+
 (** Pointwise congruence: a metasubstitution each of whose lookups is
     ≡ᵗ-related to the variable itself relates every type to its image. *)
 Lemma msubst_ptyp_tyequiv_pointwise : forall Θ κ A,
