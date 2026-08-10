@@ -86,7 +86,8 @@ Require Import src.frost.algo.typing.prop_soundness_typing.
 Require Import src.frost.algo.prop_precise.      (* the ⊢ₚᵣᵃᵈ _ ⊑ _ notation *)
 Require Import src.frost.algo.prop_precise_sub.
 Require Import src.frost.algo.pat.prop_completeness_pat.
-Require Import src.frost.algo.typing.prop_typing.
+Require Import src.frost.algo.typing.prop_completeness_typing.
+Require Import src.frost.algo.typing.prop_closed.
 
 
 (* ##################################################################### *)
@@ -266,7 +267,7 @@ Print Assumptions a_typing_sound.
    [a_wf_pskl__hole] resp. the annotation's own wf, and [a_ty_mode_compat] is
    read off the mode.  ⚠️ [a_wf_exp · e] stays: it is the INPUT condition on
    the problem (the paper's "M is well-formed in Θ₀"), and the algorithmic
-   run does not imply it — see §14's note in typing/prop_typing.v. *)
+   run does not imply it — see the header note in typing/prop_closed.v. *)
 Check a_typing_sound_infer :
   forall e A Θ1,
   a_wf_exp nil e ->
@@ -363,16 +364,17 @@ Check a_typing_complete_infer :
     exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
 Print Assumptions a_typing_complete_infer.
 
-(* At CHECKING the refinement premise STAYS: it is the statement that the
-   declarative result [B] FILLS the annotation [A0], which is the whole
-   content of "[e] checks against [A0]". *)
+(* At CHECKING the checked type is the DECLARATIVE RESULT itself: at [TC] the
+   colouring is forced, so the general statement's refinement premise at an
+   arbitrary annotation [A0] is reflexivity at [⌊B⌋] and [A0] goes with it.
+   Nothing is lost at the empty context — refinement of a ghost-free painting
+   takes only the structural rows there (the flexible rows need a definition
+   in the context, and [·] has none), so [inh{A0} ⊳ ⌊B⌋] forces [A0 = ⌊B⌋]. *)
 Check a_typing_complete_check :
-  forall e A0 (B : btyp),
-  a_wf_ptyp nil A0 ->
+  forall e (B : btyp),
   nil ⊢ᵃᵈ[ mode_tc ] e ⦂ B ->
-  nil ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (ptyp_to_pskl A0)) ⊳ (btyp_to_bskl B) ->
   exists A1 Θ1,
-    nil ⊢ᵃ[ mode_tc ; (ptyp_to_pskl A0) ] e ⦂ A1 ⊣ Θ1 /\
+    nil ⊢ᵃ[ mode_tc ; (ptyp_to_pskl (btyp_to_ptyp B)) ] e ⦂ A1 ⊣ Θ1 /\
     exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
 Print Assumptions a_typing_complete_check.
 

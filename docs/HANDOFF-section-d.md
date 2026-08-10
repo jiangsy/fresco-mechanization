@@ -7,7 +7,7 @@
 > | `thm:sound-skeleton-inference` | `a_pat_sound` | `algo/prop_soundness_pat.v` |
 > | `thm:sound-type-inference` | `a_typing_sound` | `algo/prop_soundness_typing.v` |
 > | `thm:complete-skeleton-inference` | `a_pat_complete` | `algo/prop_completeness_pat.v` |
-> | `thm:complete-type-inference` | `a_typing_complete` | `algo/typing/prop_typing.v` |
+> | `thm:complete-type-inference` | `a_typing_complete` | `algo/typing/prop_completeness_typing.v` |
 >
 > All four are Qed, axiom-free, `Check`ed and audited in `README.v` (the
 > tree's `Print Assumptions` count is 39/39 *Closed under the global

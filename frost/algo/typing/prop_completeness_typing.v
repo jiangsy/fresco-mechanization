@@ -1,6 +1,8 @@
 (** COMPLETENESS OF TYPE INFERENCE (section D, thm:complete-type-inference)
-    — the landing file for theorem 4 and its kit.  ✅ CLOSED: [a_typing_complete]
-    (:4615) is Qed and axiom-free, [Check]ed in README.v.
+    — the landing file for theorem 4 and its kit.  ✅ CLOSED:
+    [a_typing_complete] is Qed and axiom-free, [Check]ed in README.v.  Its
+    CLOSED-PROGRAM corollaries, which are what README.v shows a reader, live
+    next door in [prop_closed.v].
 
     ⚙ NO TERM-BINDER RENAMING KIT IS NEEDED HERE, and that is the point of the
     EXISTS-FRESH conversion (2026-08-08, `7061d31`).  While [a_typing]'s six
@@ -34,10 +36,10 @@
     THE NINE ROWS, all closed: Unit/Var (direct), Anno (consumes
     prop_rigidity's [a_typing_tc_rigid_output]), Freeze, Abs / AbsAnno, the four
     check rows [abs{,_anno}_check_{step,base}] — whose [_base] halves needed
-    the MISSING prerequisite [a_split_complete_tc] (:3580), completeness of
-    splitting at check mode, i.e. the paper's AbsCheck subcase 2 — and App
-    (invokes THEOREM 3).  Glue: lexicographic [(size_exp, size_btyp)] in
-    [a_typing_complete_gen] (:4495).  The suffix-discarding rows' scoping
+    the MISSING prerequisite [a_split_complete_tc], completeness of splitting
+    at check mode, i.e. the paper's AbsCheck subcase 2 — and App (invokes
+    THEOREM 3).  Glue: lexicographic [(size_exp, size_btyp)] in
+    [a_typing_complete_gen].  The suffix-discarding rows' scoping
     premise is discharged from algo/typing/prop_scope.v. *)
 
 Require Import Coq.Lists.List.
@@ -4422,133 +4424,4 @@ Proof.
     with (n := S (size_exp e)) (m := S (size_btyp B));
     try eassumption;
     clear; lia.
-Qed.
-
-(* ===================================================================== *)
-(*  §14  THE CLOSED-PROGRAM COROLLARIES.                                  *)
-(*                                                                        *)
-(*  At the EMPTY context the input can only be in one of the two          *)
-(*  user-facing modes — INFERENCE, whose input is the ghost [□], and      *)
-(*  CHECKING, whose input is a closed type [⌈A0⌉] — so each flagship      *)
-(*  splits into two, and three premises go with the split: [a_wf_aenv ·]  *)
-(*  is a constructor, [· ⨟ ∅ ⊢ₚₛᵃ P0] is [a_wf_pskl__hole] resp. the      *)
-(*  annotation's own wf, and [a_ty_mode_compat] is read off the shape.    *)
-(*                                                                        *)
-(*  ⭐ COMPLETENESS needs NO condition on the term at all.  Since          *)
-(*  [ad_sd_typing__anno] carries [a_wf_ptyp Θ A] (like its four           *)
-(*  type-carrying siblings), a declarative derivation EXHIBITS its own    *)
-(*  subject as well formed — [ad_sd_typing_wf_exp] — so at the empty      *)
-(*  context "[e] is closed" is a theorem, not a hypothesis.               *)
-(*                                                                        *)
-(*  ⚠️ SOUNDNESS still asks for it, as [a_wf_exp · e].  It is an INPUT     *)
-(*  condition on the problem (the paper's "M is well-formed in Θ₀") and   *)
-(*  the algorithmic run does NOT imply it: [a_typing__abs] runs the body  *)
-(*  under the flexibles [guess^TY] just invented, and nothing stops a     *)
-(*  nested annotation from mentioning one, so a run can accept a term     *)
-(*  whose type variables are not those of its INPUT context.              *)
-(* ===================================================================== *)
-
-(** ⭐ Soundness at a closed program, INFERENCE mode (input the ghost [□]).
-    (thm:sound-type-inference) *)
-Corollary a_typing_sound_infer : forall e A Θ1,
-  a_wf_exp nil e ->
-  nil ⊢ᵃ[ mode_ti ; pskl_hole ] e ⦂ A ⊣ Θ1 ->
-  nil ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
-  exists Bt, btyp_to_ptyp Bt = A /\
-    (Θ1 ⊢ᵃᵈ[ mode_ti ] e ⦂ Bt) /\
-    (Θ1 ⨟ empty ⊢ᵣᵃᵈ bskl_hole ⊳ (btyp_to_bskl Bt)).
-Proof.
-  intros e A Θ1 Hexp Hrun.
-  exact (a_typing_sound Hrun a_wf_aenv__nil (a_wf_pskl__hole _ _)
-           a_ty_mode_compat__ti Hexp).
-Qed.
-
-(** ⭐ Soundness at a closed program, CHECKING mode (input a closed type). *)
-Corollary a_typing_sound_check : forall e A0 A Θ1,
-  a_wf_exp nil e ->
-  a_wf_ptyp nil A0 ->
-  nil ⊢ᵃ[ mode_tc ; (ptyp_to_pskl A0) ] e ⦂ A ⊣ Θ1 ->
-  nil ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
-  exists Bt, btyp_to_ptyp Bt = A /\
-    (Θ1 ⊢ᵃᵈ[ mode_tc ] e ⦂ Bt) /\
-    (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (ptyp_to_pskl A0)) ⊳ (btyp_to_bskl Bt)).
-Proof.
-  intros e A0 A Θ1 Hexp HwfA0 Hrun.
-  exact (a_typing_sound Hrun a_wf_aenv__nil (a_wf_ptyp_to_wf_pskl empty HwfA0)
-           (a_ty_mode_compat__tc A0) Hexp).
-Qed.
-
-(** The shared completeness engine.  ⭐ [κ ∷ · ⊑ ·] holds at [κ = ·]
-    ([a_inc__empty]), so no metasubstitution is quantified; the term's
-    closedness is read off the derivation ([ad_sd_typing_wf_exp]); and the
-    optimality is applied at the identity increase SOUNDNESS hands back, so
-    what comes out is the readable "the answer, closed off by ζ, IS the
-    declarative type". *)
-Lemma a_typing_complete_nil : forall m P0 e (B : btyp),
-  nil ⨟ empty ⊢ₚₛᵃ P0 ->
-  a_ty_mode_compat m P0 ->
-  nil ⊢ᵃᵈ[ m ] e ⦂ B ->
-  nil ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl B) ->
-  exists A1 Θ1,
-    nil ⊢ᵃ[ m ; P0 ] e ⦂ A1 ⊣ Θ1 /\
-    exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
-Proof.
-  intros m P0 e B HwfP0 Hmod Hd Href.
-  pose proof (ad_sd_typing_wf_exp Hd) as Hexp.
-  pose proof (a_wf_exp_lc Hexp) as Hlc.
-  pose proof (a_wf_exp_ftv_dom Hexp) as Hftv. simpl in Hftv.
-  assert (Hrig : forall α, α `in` ftvar_in_exp e -> binds α abind_tvar nil)
-    by (intros α Hα; exfalso; clear - Hα Hftv; fsetdec).
-  assert (Hinc : nil ∷ nil ⊑ nil)
-    by (apply a_inc__empty; apply a_suffix__nil).
-  rewrite <- (msubst_pskl_nil P0) in Href.
-  destruct (a_typing_complete a_wf_aenv__nil a_wf_aenv__nil HwfP0 Hmod
-              Hinc Hrig Hlc Hd Href) as [A1 [Θ1 [Hrun Hopt]]].
-  exists A1, Θ1. split; [ exact Hrun | ].
-  destruct (a_typing_sound Hrun a_wf_aenv__nil HwfP0 Hmod Hexp)
-    as [[[κ1 [Hid1 Hinc1]] _] _].
-  destruct (Hopt κ1 Hid1 Hinc1) as [ζ [Hζ [_ Heq]]].
-  exists ζ. split; [ exact Hζ | exact Heq ].
-Qed.
-
-(** ⭐ Completeness + optimality at a closed program, INFERENCE mode
-    (thm:complete-type-inference).  ⭐ The general statement's refinement
-    premise is GONE here too: at [P0 = □] it says only that the declarative
-    result is a SYNTHESISED painting of a well-formed type, and both halves
-    are read off the derivation itself ([ad_sd_typing_mod_comp_ty] +
-    [ad_sd_typing_target_wf]).  So the derivation is the ONLY premise. *)
-Corollary a_typing_complete_infer : forall e (B : btyp),
-  nil ⊢ᵃᵈ[ mode_ti ] e ⦂ B ->
-  exists A1 Θ1,
-    nil ⊢ᵃ[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 /\
-    exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
-Proof.
-  intros e B Hd.
-  eapply a_typing_complete_nil;
-    [ apply a_wf_pskl__hole | apply a_ty_mode_compat__ti | exact Hd | ].
-  (* the ghost refines into ANY well-formed synthesised painting *)
-  assert (HB : B = ptyp_to_btyp_syn (btyp_to_ptyp B)).
-  { apply btyp_syn_colouring_inv. apply mod_comp_ty_ti_inv.
-    eapply ad_sd_typing_mod_comp_ty; [ exact Hd | apply a_wf_aenv__nil ]. }
-  rewrite HB, btyp_to_bskl_ptyp_to_btyp_syn. cbn [pskl_to_bskl_inh].
-  apply ad_refine_syn__hole. apply a_wf_ptyp_to_wf_pskl.
-  eapply ad_sd_typing_target_wf; [ exact Hd | apply a_wf_aenv__nil ].
-Qed.
-
-(** ⭐ Completeness + optimality at a closed program, CHECKING mode.  Here
-    the refinement premise STAYS: it is the statement that the declarative
-    result [B] fills the annotation [A0], which is the whole content of
-    "[e] checks against [A0]". *)
-Corollary a_typing_complete_check : forall e A0 (B : btyp),
-  a_wf_ptyp nil A0 ->
-  nil ⊢ᵃᵈ[ mode_tc ] e ⦂ B ->
-  nil ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (ptyp_to_pskl A0)) ⊳ (btyp_to_bskl B) ->
-  exists A1 Θ1,
-    nil ⊢ᵃ[ mode_tc ; (ptyp_to_pskl A0) ] e ⦂ A1 ⊣ Θ1 /\
-    exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
-Proof.
-  intros e A0 B HwfA0 Hd Href.
-  eapply a_typing_complete_nil;
-    [ apply a_wf_ptyp_to_wf_pskl; exact HwfA0 | apply a_ty_mode_compat__tc
-    | exact Hd | exact Href ].
 Qed.

@@ -1,6 +1,6 @@
 (** RIGIDITY PRESERVATION — what an algorithmic run does NOT disturb.  Two
     families of pure structural facts about the ALGORITHM that theorem 4
-    (thm:complete-type-inference, [prop_typing.v]) consumes.  This is the TY
+    (thm:complete-type-inference, [prop_completeness_typing.v]) consumes.  This is the TY
     sort discipline paying out:
 
     (1) [a_rigid_only] PRESERVATION: an atom that is rigid and nowhere

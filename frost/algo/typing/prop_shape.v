@@ -10,7 +10,7 @@
 
     ⚙ A pure structural shape fact — nothing to do with [a_rigid_only]
     preservation or the TC-core discipline; like every other file in this
-    directory its only consumer is [prop_typing.v].
+    directory its only consumer is [prop_completeness_typing.v].
 
     ⚠️ [fn_arrow_shape_pskl] and [fn_arrow_shape] are the SAME relation modulo
     [ptyp_to_pskl] — the [ptyp] one is the [pskl] one restricted to paintings,

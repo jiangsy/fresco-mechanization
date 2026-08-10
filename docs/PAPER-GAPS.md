@@ -58,7 +58,7 @@ Lemma ad_sd_typing_wf_exp : forall M Θ e B, Θ ⊢ᵃᵈ[ M ] e ⦂ B -> a_wf_e
 
 i.e. a derivation EXHIBITS its own subject as a well-formed term, which is
 what the paper's ambient "all inputs are well formed" is supposed to mean.
-The visible payoff: `a_typing_complete_infer` (algo/typing/prop_typing.v §14)
+The visible payoff: `a_typing_complete_infer` (algo/typing/prop_closed.v)
 — completeness of INFERENCE at a closed program — now has the declarative
 derivation as its **only** premise.
 
@@ -3116,7 +3116,7 @@ stand.  The `_step` rows keep their result binder (`∀A` with the premise at
 
 Found while proving `thm:complete-type-inference` (proofs.tex:820-950).  The
 theorem is now mechanized in full (`a_typing_complete`,
-`algo/typing/prop_typing.v`, Qed and axiom-free), and the statement
+`algo/typing/prop_completeness_typing.v`, Qed and axiom-free), and the statement
 stands unchanged; what follows are findings on its PROOF.
 
 The case in question is `sd-AbsCheck`, whose paper proof opens

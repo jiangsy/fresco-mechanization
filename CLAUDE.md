@@ -237,10 +237,13 @@ mechanization/
 │       │                 it was the tree's main source of duplicate names)
 │       ├── pat/          (skeleton inference: prop_soundness_pat.v,
 │       │                  prop_completeness_pat.v)
-│       └── typing/       (type inference — theorem 4 and the three files that
-│                          serve it and nothing else:
+│       └── typing/       (type inference — the two theorems, their
+│                          reader-facing corollaries, and the three files
+│                          that serve them and nothing else:
 │                          prop_soundness_typing.v
-│                          prop_typing.v   the completeness theorem
+│                          prop_completeness_typing.v  theorem 4
+│                          prop_closed.v   the CLOSED-PROGRAM corollaries of
+│                                          both — what README.v shows
 │                          prop_rigidity.v rigid data survives a run
 │                          prop_scope.v    a run's result never mentions the
 │                                          suffix it dropped
@@ -292,10 +295,6 @@ their topic names.
   strength (`=` vs `[=]` vs `[<=]`, general vs variable-instance), keep the
   STRONG one and let the weak uses `rewrite` with it; do not keep both.
   Duplicate count: 82 → 39 as of 2026-08-09.
-
-(History: the old `decl/{subtyping,typing}/` subdirs and the
-`prop_subtyping.v` / `prop_typing.v` umbrellas were flattened; their contents
-now live directly under `decl/` in the files above.)
 
 ## Encoding conventions
 

@@ -166,8 +166,8 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   check rows need for `lemma:suffix-erasure`, the `uniq` filter `AT-Abs` needs
   on `guess^TY`'s block, and the correction of `AT-AbsAnnoCheck`'s result
   domain.  ⭐ Reader-facing form: `a_typing_sound_infer` / `a_typing_sound_check`
-  (algo/typing/prop_typing.v §14) — the empty context, one per user-facing
-  mode.  History of the build-up:
+  (algo/typing/prop_closed.v) — the empty context, one per user-facing mode.
+  History of the build-up:
 - 🟡 (history) **Theorem: Soundness of type inference — STARTED 2026-08-06**
   (`algo/prop_soundness_typing.v`, NEW; all Qed and axiom-free).  ⭐ The
   `Freeze` ingredient is DONE and was DERIVED from theorem 1's transport, not
@@ -208,9 +208,9 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   SUBJECT, and only the two ∀-peeling AbsCheck rows recurse at the same
   subject, dropping one `∀` off the declarative result.
   ⭐ Reader-facing form: `a_typing_complete_infer` / `a_typing_complete_check`
-  (algo/typing/prop_typing.v §14) — the empty context, one per user-facing
-  mode, with no metasubstitution quantified and the optimality already
-  instantiated.
+  (algo/typing/prop_closed.v) — the empty context, one per user-facing mode,
+  with no metasubstitution quantified and the optimality already
+  instantiated; each has the declarative derivation as its ONLY premise.
   ⭐ Its two unrecorded prerequisites, both closed here: `a_split_complete_tc`
   — completeness of SPLITTING at check mode, i.e. the paper's AbsCheck
   **subcase 2**, where the split's flexible row has to be BUILT out of a full
@@ -237,7 +237,8 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 ## 2026-08-10 — ⭐ **CLOSED-PROGRAM COROLLARIES OF THE TWO TYPING THEOREMS**
 
 `a_typing_sound_infer` / `_check` and `a_typing_complete_infer` / `_check`
-(algo/typing/prop_typing.v §14), all Qed and axiom-free, all `Check`ed in
+(algo/typing/prop_closed.v, split out of the completeness file in the same
+pass), all Qed and axiom-free, all `Check`ed in
 README.v (now 24 entries).  At the empty context the input can only be in one
 of the two user-facing modes — INFERENCE at the ghost `□`, CHECKING at a
 closed type `⌈A0⌉` — so each flagship splits in two, and three premises go
@@ -259,13 +260,21 @@ exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ msubst_ptyp ζ A1 ≡ᵗ B
 — the run's answer, closed off by ζ, IS the declarative type: it is the most
 general derivation, not merely some derivation.
 
-⭐ At INFERENCE the refinement premise goes too: at `□` it says only that the
-declarative result is a SYNTHESISED painting of a well-formed type, and both
-halves are read off the derivation (`ad_sd_typing_mod_comp_ty` +
-`mod_comp_ty_ti_inv` + `ad_sd_typing_target_wf`).  That needed the SYN mirror
-of `btyp_inh_painting_inv` — new `btyp_syn_colouring_inv`, and with it
-`ptyp_to_btyp_syn_open_var` in prop_coercions.v, which was missing while its
-`_inh` twin was not.
+⭐ **Both completeness corollaries end up with the declarative derivation as
+their ONLY premise.**  At INFERENCE the refinement premise goes because at `□`
+it says only that the declarative result is a SYNTHESISED painting of a
+well-formed type, and both halves are read off the derivation
+(`ad_sd_typing_mod_comp_ty` + `mod_comp_ty_ti_inv` + `ad_sd_typing_target_wf`);
+that needed the SYN mirror of `btyp_inh_painting_inv` — new
+`btyp_syn_colouring_inv`, and with it `ptyp_to_btyp_syn_open_var` in
+prop_coercions.v, which was missing while its `_inh` twin was not.  At CHECKING
+the checked type is the DECLARATIVE RESULT itself, `⌈⌊B⌋⌉`: at `TC` the
+colouring is forced (`mod_comp_ty_tc_inv` + `btyp_inh_painting_inv`), so the
+refinement at an arbitrary annotation `A0` is REFLEXIVITY at `⌊B⌋` and `A0`
+goes with it.  ⚙ Nothing is lost at the empty context — refinement of a
+ghost-free painting takes only the structural rows there (the two flexible
+rows need a definition in the context, and `·` has none), so `inh{A0} ⊳ ⌊B⌋`
+forces `A0 = ⌊B⌋` anyway.
 
 ⭐⭐ **AND COMPLETENESS NEEDS NO CONDITION ON THE TERM AT ALL** — so
 `a_typing_complete_infer` has the declarative derivation as its ONLY premise.
@@ -440,7 +449,8 @@ Three defects, all reported by the user:
 3. **`blk : aenv` violated the greek-context convention** — and it turned out
    to be a stray ALIAS: the rest of the tree already calls that object `Ξg`
    (`a_guess_mono Θg Pi0 Ξg A`, `algo/sub/look/prop_eq_cstr.v:2212`).  Renamed
-   throughout `algo/typing/prop_typing.v` (92 sites, plus `Hwfblk`/`Hftvblk`);
+   throughout `algo/typing/prop_completeness_typing.v` (92 sites, plus
+   `Hwfblk`/`Hftvblk`);
    `Ξg` and not plain `Ξ` because `a_typing_complete_abs` needs BOTH the guess
    block and the output suffix at once, and because `a_decls`'s own
    constructor binds a `Ξ` that `induction` reintroduces.  ⚙ `Hblk` elsewhere
