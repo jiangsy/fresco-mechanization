@@ -234,6 +234,35 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
+## ⭕ OPEN — state the closed-program corollaries against the DECLARATIVE system
+
+**TODO, hand-off written**:
+[`docs/HANDOFF-closed-corollaries-declarative.md`](docs/HANDOFF-closed-corollaries-declarative.md).
+The four corollaries in `algo/typing/prop_closed.v` state their declarative
+side as `ad_sd_typing` (`Θ ⊢ᵃᵈ[ M ] e ⦂ B`); they should read `d_sd_typing`
+(or `d_typing`) over a declarative context, in BOTH directions.
+
+Scouted 2026-08-10, three findings the hand-off carries in full:
+
+1. **The paper never connects the two systems** — `app:decl-in-algo-context`
+   says only "it is easy to extend them to algorithmic contexts", with no
+   conservativity lemma.  So `⊢ᵃᵈ` IS the paper's own statement, and the
+   bridge would be a prose-completion.
+2. ⚠️ **The completeness direction is refuted as stated**:
+   `cex/cex_ad_pat_join_not_leaf_valid.v` shows the LEAF-VALID datum that
+   `ad_sd_typing`'s base rows carry (via `ad_pat_sub_v`) is not recoverable
+   from the plain `d_sub` those of `d_sd_typing` carry.  ⭕ Open: whether the
+   capture configuration is reachable for `ad_sd_typing` (as opposed to
+   `ad_pat`) at a closed program — that decides which route works.
+3. **Soundness has an independent obstacle**: its conclusion lives at the
+   run's output context, which keeps flexibles, so the declarative form must
+   quantify over a closing `ζ ∷ Θ1 ⊑ nil`.  That direction is `ad → d` at a
+   flex-free context and is NOT blocked; it can land first.
+
+⚠️ Putting the leaf datum on `d_sd_typing` forces the same on `d_typing`
+(standalone `Sub`) and re-opens all of Phase 2 plus the paper's §declarative
+figure — do not take that route without asking.
+
 ## 2026-08-10 — ⭐ **CLOSED-PROGRAM COROLLARIES OF THE TWO TYPING THEOREMS**
 
 `a_typing_sound_infer` / `_check` and `a_typing_complete_infer` / `_check`

@@ -7,7 +7,17 @@
     CHECKING, whose input is a closed type — so each flagship splits in two,
     and the premises that are bookkeeping at a general context disappear.
     What is left is stated in [README.v] and nothing else in the development
-    consumes it. *)
+    consumes it.
+
+    ⭕ TODO — the declarative side should read [d_sd_typing] / [d_typing] over
+    a DECLARATIVE context, not [ad_sd_typing] over [nil : aenv].  The paper
+    never connects the two systems (app:decl-in-algo-context only says "it is
+    easy to extend them to algorithmic contexts"), and the COMPLETENESS
+    direction is blocked as stated: [ad_sd_typing]'s base rows carry the
+    LEAF-VALID join and [d_sd_typing]'s carry the plain [d_sub], from which
+    the leaf datum is not recoverable
+    (cex/cex_ad_pat_join_not_leaf_valid.v).  Four routes are scouted in
+    docs/HANDOFF-closed-corollaries-declarative.md. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
