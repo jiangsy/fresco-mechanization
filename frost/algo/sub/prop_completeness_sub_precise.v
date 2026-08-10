@@ -3,11 +3,10 @@
     Paper: [thm:complete-subtyping] (algorithmic.tex:1446); proofs
     subtyping-proofs.tex:1526-3536.  Plan: docs/DESIGN-completeness-subtyping.md.
 
-    This file builds bottom-up.  P5a (this commit): the fuel-indexed
-    measure [ad_pat_sub_n] (def in def_decl_algo_sub.v) and its bridges to
-    the plain [ad_pat_sub] — [of_n] / [to_n] / [n_mono] — plus the
-    fuel-preserving tvar-rename [ad_pat_sub_n_rename_tvar] that [to_n]'s
-    binder cases need for the ∀α∃n → ∃n∀α swap. *)
+    This file builds bottom-up, starting at P5b.  ⚙ It used to open with a
+    P5a block — the non-hygienic fuel measure [ad_pat_sub_n] and its five
+    bridges — which was deleted 2026-08-11 with the judgment it served; see
+    the RESTART NOTE below and in decorated_algo/def_decl_algo_sub.v. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -43,233 +42,14 @@ Require Import src.frost.algo.consis.prop_consis_precise.
 
 Set Implicit Arguments.
 
-(* ===================================================================== *)
-(*  P5a — the fuel measure and its bridges to plain [ad_pat_sub].          *)
-(* ===================================================================== *)
-
-(** Erase the fuel: a fuel-indexed derivation IS a plain one. *)
-Lemma ad_pat_sub_of_n : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_n n NM M Ψ Θ R Q ->
-  Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q.
-Proof.
-  intros n NM M Ψ Θ R Q H. induction H.
-  - eapply ad_pat_sub__infer; eauto.
-  - eapply ad_pat_sub__check; eauto.
-  - eapply ad_pat_sub__forall_r; eauto.
-  - eapply ad_pat_sub__univ_ghost_r; eauto.
-  - eapply ad_pat_sub__arrow; eauto.
-  - eapply ad_pat_sub__forall_l_tagged; eauto.
-  - eapply ad_pat_sub__forall_l_untagged; eauto.
-  - eapply ad_pat_sub__ghost; eauto.
-  - eapply ad_pat_sub__ghostg; eauto.
-  - eapply ad_pat_sub__univ_ghost_l; eauto.
-  - eapply ad_pat_sub__univ_ghost_lg; eauto.
-  - eapply ad_pat_sub__flex_mono; eauto.
-Qed.
-
-(** One extra unit of fuel is harmless.  Each rule concludes at [S n] from
-    a recursive premise at [n]; bumping the conclusion to [S (S n)] just
-    applies the same constructor with its premise supplied by the IH (now
-    at [S n]). *)
-Lemma ad_pat_sub_n_succ : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_n n NM M Ψ Θ R Q ->
-  ad_pat_sub_n (S n) NM M Ψ Θ R Q.
-Proof.
-  intros n NM M Ψ Θ R Q H. induction H.
-  - eapply ad_pat_sub_n__infer; eauto.
-  - eapply ad_pat_sub_n__check; eauto.
-  - eapply ad_pat_sub_n__forall_r with (L := L); eauto.
-  - eapply ad_pat_sub_n__univ_ghost_r; eauto.
-  - eapply ad_pat_sub_n__arrow; eauto.
-  - eapply ad_pat_sub_n__forall_l_tagged; eauto.
-  - eapply ad_pat_sub_n__forall_l_untagged; eauto.
-  - eapply ad_pat_sub_n__ghost; eauto.
-  - eapply ad_pat_sub_n__ghostg; eauto.
-  - eapply ad_pat_sub_n__univ_ghost_l; eauto.
-  - eapply ad_pat_sub_n__univ_ghost_lg; eauto.
-  - eapply ad_pat_sub_n__flex_mono; eauto.
-Qed.
-
-(** Fuel weakening: more fuel than needed is harmless. *)
-Lemma ad_pat_sub_n_mono : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_n n NM M Ψ Θ R Q ->
-  forall m, n <= m ->
-  ad_pat_sub_n m NM M Ψ Θ R Q.
-Proof.
-  intros n NM M Ψ Θ R Q H m Hle.
-  induction Hle; [ assumption | ].
-  apply ad_pat_sub_n_succ; assumption.
-Qed.
-
-(** Renaming the opened rigid binder in [ad_pat_sub_n] — the fuel-preserving
-    mirror of [ad_pat_sub_rename_tvar] (prop_pat_sub.v).  The fuel [n] rides
-    along inertly; [to_n]'s binder cases use it to turn the cofinite family
-    [∀α∉L, ∃n, …] into [∃n, ∀α∉L, …]. *)
-Lemma ad_pat_sub_n_rename_tvar : forall n NM M Ψ Θ1 α Θ0 R Q β',
-  ad_pat_sub_n n NM M Ψ (Θ1 ++ (α ~ abind_tvar) ++ Θ0) R Q ->
-  α `notin` dom (Θ1 ++ Θ0) ->
-  (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
-     α `notin` ftvar_in_ptyp τ) ->
-  ad_pat_sub_n n NM M Ψ (Θ1 ++ (β' ~ abind_tvar) ++ Θ0)
-      (subst_uskl_in_uskl (uskl_var_f β') α R)
-      (subst_bskl_in_bskl (bskl_var_f β') α Q).
-Proof.
-  intros * H.
-  remember (Θ1 ++ (α ~ abind_tvar) ++ Θ0) as Θfull eqn:HeqΘ.
-  revert Θ1 HeqΘ.
-  induction H; intros Θ1 ->; intros Hdom Hdefs; simpl.
-  - apply ad_pat_sub_n__infer; auto.
-    + apply ad_pat_consis_rename_tvar; auto.
-    + change (bskl_var_f β') with (ptyp_to_bskl_syn (ptyp_var_f β')).
-      apply is_sskl_subst_mono; auto using mono_ptyp.
-  - rewrite subst_var_bskl_inh.
-    apply ad_pat_sub_n__check.
-    + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
-      apply guarded_uskl_subst_mono; auto using mono_ptyp.
-    + apply guarded_pskl_subst; auto using guarded_pskl__var, lc_pskl_var_f.
-    + rewrite <- subst_var_bskl_inh.
-      apply ad_pat_consis_rename_tvar; auto.
-  - apply ad_pat_sub_n__forall_r with (L := L `union` singleton α).
-    intros α0 Hα0.
-    assert (Hαx : α <> α0) by fsetdec.
-    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
-      auto using lc_bskl_var_f.
-    assert (HXL : α0 `notin` L) by fsetdec.
-    apply (H0 α0 HXL ((α0 ~ abind_tvar) ++ Θ1));
-      [ simpl_env; reflexivity
-      | simpl; repeat rewrite dom_app in *; fsetdec
-      | intros β τ Hb;
-        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
-        [ discriminate | eauto ] ].
-  - apply ad_pat_sub_n__univ_ghost_r; auto.
-    + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
-      apply guarded_uskl_subst_mono; auto using mono_ptyp.
-    + change (bskl_var_f β') with (ptyp_to_bskl_syn (ptyp_var_f β')).
-      apply guarded_bskl_subst_mono; auto using mono_ptyp.
-    + change (bskl_var_f β') with (ptyp_to_bskl_syn (ptyp_var_f β')).
-      apply is_sskl_subst_mono; auto using mono_ptyp.
-    + apply ad_pat_consis_rename_tvar; auto.
-  - specialize (IHad_pat_sub_n Θ1 ltac:(reflexivity) Hdom Hdefs).
-    eapply ad_pat_sub_n__arrow.
-    + eapply ad_pat_consis_rename_tvar; eauto.
-    + exact IHad_pat_sub_n.
-    + eassumption.
-  - specialize (IHad_pat_sub_n Θ1 ltac:(reflexivity) Hdom Hdefs).
-    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub_n;
-      [ | apply lc_uskl_var_f ].
-    eapply ad_pat_sub_n__forall_l_tagged.
-    5: exact IHad_pat_sub_n.
-    + assumption.
-    + eassumption.
-    + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
-      apply a_tags_sort_subst_mono;
-        [ assumption | apply mono_ptyp__var ].
-    + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
-      rewrite uskl_to_pskl_subst_mono. simpl.
-      apply a_wf_pskl_rename_tvar;
-        first [ assumption | clear; fsetdec ].
-  - specialize (IHad_pat_sub_n Θ1 ltac:(reflexivity) Hdom Hdefs).
-    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub_n;
-      [ | apply lc_uskl_var_f ].
-    eapply ad_pat_sub_n__forall_l_untagged.
-    5: exact IHad_pat_sub_n.
-    + assumption.
-    + eassumption.
-    + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
-      apply a_tags_sort_subst_mono;
-        [ assumption | apply mono_ptyp__var ].
-    + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
-      rewrite uskl_to_pskl_subst_mono. simpl.
-      apply a_wf_pskl_rename_tvar;
-        first [ assumption | clear; fsetdec ].
-  - rewrite subst_var_bskl_inh.
-    apply ad_pat_sub_n__ghost; auto.
-    + apply a_wf_pskl_rename_tvar; [ assumption | clear; fsetdec ].
-    + rewrite <- subst_var_bskl_inh.
-      change (bskl_var_f β') with (ptyp_to_bskl_syn (ptyp_var_f β')).
-      apply mod_comp_sk_subst_mono; auto using mono_ptyp.
-  - apply ad_pat_sub_n__ghostg; auto.
-  - apply ad_pat_sub_n__univ_ghost_l; auto.
-  - apply ad_pat_sub_n__univ_ghost_lg; auto.
-  - destruct_if as [-> | Hne].
-    + exfalso.
-      match goal with
-      | Hb : binds _ (abind_flex_mono_def _) _ |- _ =>
-          unfold binds in Hb; apply in_app_or in Hb;
-          destruct Hb as [Hb | Hb];
-          [ apply binds_In in Hb; simpl_env in *; fsetdec | ];
-          apply in_app_or in Hb; destruct Hb as [Hb | Hb];
-          [ destruct Hb as [Heq | Habs]; [ inversion Heq | inversion Habs ]
-          | apply binds_In in Hb; simpl_env in *; fsetdec ]
-      end.
-    + match goal with
-      | Hb0 : binds ?a (abind_flex_mono_def _) (_ ++ _ ++ _) |- _ =>
-          assert (Hb' : binds a (abind_flex_mono_def τ) (Θ1 ++ Θ0))
-            by (eapply binds_strip_mid;
-                [ exact Hb0 | intro He; inversion He ])
-      end.
-      eapply ad_pat_sub_n__flex_mono.
-      { unfold binds in Hb' |- *. apply in_app_or in Hb'.
-        apply in_or_app.
-        destruct Hb' as [Hb' | Hb'];
-          [ left; exact Hb' | right; simpl; right; exact Hb' ]. }
-      specialize (IHad_pat_sub_n Θ1 ltac:(reflexivity) Hdom Hdefs).
-      rewrite subst_uskl_in_uskl_fresh_eq in IHad_pat_sub_n;
-        [ exact IHad_pat_sub_n | ].
-      rewrite ftvar_in_uskl_ptyp_syn. eauto.
-Qed.
-
-(** Every plain derivation has some fuel.  Binder cases pick a fresh
-    witness, read off its fuel, and transport that same fuel to every
-    other opening via [ad_pat_sub_n_rename_tvar]. *)
-Lemma ad_pat_sub_to_n : forall NM M Ψ Θ R Q,
-  a_wf_aenv Θ ->
-  Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q ->
-  exists n, ad_pat_sub_n n NM M Ψ Θ R Q.
-Proof.
-  intros NM M Ψ Θ R Q Hwf H. revert Hwf. induction H; intros Hwf.
-  - exists 1. eapply ad_pat_sub_n__infer; eauto.
-  - exists 1. eapply ad_pat_sub_n__check; eauto.
-  - (* forall_r — pick a fresh witness, read off its fuel, transport by rename *)
-    pick fresh α0 for
-      (L `union` dom Θ `union` ftvar_in_uskl T `union` ftvar_in_bskl B).
-    assert (Hwf0 : a_wf_aenv ((α0 ~ abind_tvar) ++ Θ))
-      by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
-    destruct (H0 α0 ltac:(solve_notin_auto) Hwf0) as [n0 Hn0].
-    exists (S n0).
-    eapply ad_pat_sub_n__forall_r with
-      (L := L `union` dom Θ `union` ftvar_in_uskl T
-            `union` ftvar_in_bskl B `union` singleton α0).
-    intros α Hα.
-    rewrite (subst_bskl_in_bskl_intro α0);
-      [ | clear - Fr; fsetdec ].
-    rewrite <- (subst_uskl_in_uskl_fresh_eq T (uskl_var_f α) α0);
-      [ | clear - Fr; fsetdec ].
-    replace ((α ~ abind_tvar) ++ Θ)
-       with (nil ++ (α ~ abind_tvar) ++ Θ) by (simpl_env; reflexivity).
-    apply ad_pat_sub_n_rename_tvar.
-    + simpl_env. exact Hn0.
-    + simpl_env. clear - Fr; fsetdec.
-    + intros β τ Hb. simpl_env in Hb.
-      assert (Hsc : ftvar_in_ptyp τ [<=] dom Θ)
-        by (eapply a_wf_aenv_def_ftv_dom; [ exact Hwf | exact Hb ]).
-      clear - Fr Hsc; fsetdec.
-  - exists 1. eapply ad_pat_sub_n__univ_ghost_r; eauto.
-  - destruct (IHad_pat_sub Hwf) as [n Hn].
-    exists (S n). eapply ad_pat_sub_n__arrow; eauto.
-  - destruct (IHad_pat_sub Hwf) as [n Hn].
-    exists (S n). eapply ad_pat_sub_n__forall_l_tagged; eauto.
-  - destruct (IHad_pat_sub Hwf) as [n Hn].
-    exists (S n). eapply ad_pat_sub_n__forall_l_untagged; eauto.
-  - exists 1. eapply ad_pat_sub_n__ghost; eauto.
-  - exists 1. eapply ad_pat_sub_n__ghostg; eauto.
-  - destruct (IHad_pat_sub Hwf) as [n Hn].
-    exists (S n). eapply ad_pat_sub_n__univ_ghost_l; eauto.
-  - destruct (IHad_pat_sub Hwf) as [n Hn].
-    exists (S n). eapply ad_pat_sub_n__univ_ghost_lg; eauto.
-  - destruct (IHad_pat_sub Hwf) as [n Hn].
-    exists (S n). eapply ad_pat_sub_n__flex_mono; eauto.
-Qed.
+(* ⚙ RESTART NOTE (2026-08-10) — P5a's fuel-measure block ([ad_pat_sub_of_n],
+   [ad_pat_sub_n_succ], [ad_pat_sub_n_mono], [ad_pat_sub_n_rename_tvar],
+   [ad_pat_sub_to_n]) was DELETED with the [ad_pat_sub_n] judgment it served
+   (decorated_algo/def_decl_algo_sub.v — see the note there).  Nothing outside
+   the block ever used it: the completeness track settled on the tag-hygienic
+   fuel [ad_pat_sub_g], whose own bridges are [ad_pat_sub_g_of] /
+   [ad_pat_sub_gv_forget] / [ad_pat_sub_gv_fuel_weaken]
+   (def_decl_algo_sub_hyg.v). *)
 
 (* ===================================================================== *)
 (*  P5b — partial-precision-complete + precision-substitution.            *)

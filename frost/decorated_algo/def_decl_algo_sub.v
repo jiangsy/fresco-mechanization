@@ -124,90 +124,19 @@ Inductive ad_pat_sub :
 where "Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q" :=
   (ad_pat_sub NM M Ψ Θ R Q) : type_scope.
 
-(* ===================================================================== *)
-(*  Fuel-indexed mirror of [ad_pat_sub]  (completeness measure).           *)
-(*                                                                         *)
-(*  The completeness induction is on the HEIGHT of the declarative         *)
-(*  subtyping derivation (subtyping-proofs.tex:3082-3085), and its ForallL *)
-(*  case applies the IH to a derivation PRODUCED BY precision-substitution *)
-(*  — not a structural sub-derivation — so plain induction on [ad_pat_sub] *)
-(*  gives no IH there.  [ad_pat_sub] is in [Prop], so we cannot extract a  *)
-(*  structural [nat] size; instead we mirror it with an explicit fuel [n]. *)
-(*                                                                         *)
-(*  This is a SEPARATE inductive (not a re-indexing of [ad_pat_sub]) so it *)
-(*  does not cascade into the finished, Qed soundness proofs.  Bridges     *)
-(*  [ad_pat_sub_of_n] / [ad_pat_sub_to_n] / [ad_pat_sub_n_mono] live in    *)
-(*  [prop_sub_complete.v].  Each rule has AT MOST ONE recursive            *)
-(*  [ad_pat_sub] premise (the [a_consis]/[a_tags_sort]/refinement premises *)
-(*  are other judgments), so a single fuel = the derivation height.  Rules *)
-(*  conclude at [S n] with their recursive premise at [n]; leaves take any *)
-(*  [n].  See docs/DESIGN-completeness-subtyping.md §2.                     *)
-(* ===================================================================== *)
-
-Inductive ad_pat_sub_n :
-  nat -> a_sub_mode -> mode -> atoms -> aenv -> uskl -> bskl -> Prop :=
-| ad_pat_sub_n__infer : forall n NM Ψ Θ R Q,                  (* Infer *)
-    Ψ [=] empty ->
-    empty ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
-    is_sskl Q ->
-    ad_pat_sub_n (S n) NM mode_ti Ψ Θ R Q
-| ad_pat_sub_n__check : forall n Ψ Θ T B,                     (* Check (TY) *)
-    guarded_uskl T ->
-    guarded_pskl B ->
-    Ψ ⨟ Θ ⊢ᵃᵈ T ∼ (pskl_to_bskl_inh B) ->
-    ad_pat_sub_n (S n) a_sub_mode_ty mode_tc Ψ Θ T (pskl_to_bskl_inh B)
-| ad_pat_sub_n__forall_r : forall n L Ψ Θ T B,               (* ForallR (TY) *)
-    (forall α, α `notin` L ->
-       ad_pat_sub_n n a_sub_mode_ty mode_tc Ψ ((α ~ abind_tvar) ++ Θ)
-         T (open_bskl_wrt_bskl B (bskl_var_f α))) ->
-    ad_pat_sub_n (S n) a_sub_mode_ty mode_tc Ψ Θ T (bskl_all_inh B)
-| ad_pat_sub_n__univ_ghost_r : forall n Ψ Θ R Q,             (* UnivGhostR (SK) *)
-    Ψ [=] empty ->
-    guarded_uskl R ->
-    guarded_bskl Q ->
-    is_sskl Q ->
-    empty ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
-    ad_pat_sub_n (S n) a_sub_mode_sk mode_tc Ψ Θ R (bskl_tophole Q)
-| ad_pat_sub_n__arrow : forall n NM Ψ Ψ1 Ψ2 Θ M R1 R2 Q1 Q2, (* Arrow *)
-    Ψ1 ⨟ Θ ⊢ᵃᵈ R1 ∼ Q1 ->
-    ad_pat_sub_n n NM M Ψ2 Θ R2 Q2 ->
-    Ψ [=] Ψ1 `union` Ψ2 ->
-    ad_pat_sub_n (S n) NM (mode_fn M) Ψ Θ (uskl_arrow R1 R2) (bskl_arrow Q1 Q2)
-| ad_pat_sub_n__forall_l_tagged : forall n NM Ψ Ψ' Θ M ε R ψ Q, (* ForallL, β1=ε *)
-    M <> mode_ti ->
-    Ψ' ∩ Ψ [=] empty ->
-    a_tags_sort NM Ψ' ψ ->
-    Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ ->
-    ad_pat_sub_n n NM M (Ψ `union` Ψ') Θ (open_uskl_wrt_uskl R ψ) Q ->
-    ad_pat_sub_n (S n) NM M Ψ Θ (uskl_all_etag ε R) Q
-| ad_pat_sub_n__forall_l_untagged : forall n NM Ψ Ψ' Θ M R ψ Q, (* ForallL, β1=· *)
-    M <> mode_ti ->
-    Ψ' ∩ Ψ [=] empty ->
-    a_tags_sort NM Ψ' ψ ->
-    Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ ->
-    ad_pat_sub_n n NM M (Ψ `union` Ψ') Θ (open_uskl_wrt_uskl R ψ) Q ->
-    ad_pat_sub_n (S n) NM M Ψ Θ (uskl_all_syn R) Q
-| ad_pat_sub_n__ghost : forall n Ψ Θ M P,                     (* Ghost (SK) *)
-    Ψ [=] empty ->
-    Θ ⨟ empty ⊢ₚₛᵃ P ->
-    mod_comp_sk (pskl_to_bskl_inh P) M ->
-    ad_pat_sub_n (S n) a_sub_mode_sk M Ψ Θ uskl_hole (pskl_to_bskl_inh P)
-| ad_pat_sub_n__ghostg : forall n Ψ Θ M,                      (* GhostG (SK) *)
-    Ψ [=] empty ->
-    mod_comp_sk bskl_hole M ->
-    ad_pat_sub_n (S n) a_sub_mode_sk M Ψ Θ uskl_holeg bskl_hole
-| ad_pat_sub_n__univ_ghost_l : forall n Ψ Θ M R Q,           (* UnivGhostL (SK) *)
-    M <> mode_ti ->
-    ad_pat_sub_n n a_sub_mode_sk M Ψ Θ R Q ->
-    ad_pat_sub_n (S n) a_sub_mode_sk M Ψ Θ (uskl_tophole R) Q
-| ad_pat_sub_n__univ_ghost_lg : forall n Ψ Θ M R Q,          (* UnivGhostLG (SK) *)
-    M <> mode_ti ->
-    ad_pat_sub_n n a_sub_mode_sk M Ψ Θ R Q ->
-    ad_pat_sub_n (S n) a_sub_mode_sk M Ψ Θ (uskl_topholeg R) Q
-| ad_pat_sub_n__flex_mono : forall n NM Ψ Θ M α τ Q,          (* FlexMono *)
-    binds α (abind_flex_mono_def τ) Θ ->
-    ad_pat_sub_n n NM (mode_fn M) Ψ Θ (ptyp_to_uskl_syn τ) Q ->
-    ad_pat_sub_n (S n) NM (mode_fn M) Ψ Θ (uskl_var_f α) Q.
+(* ⚙ RESTART NOTE (2026-08-11) — [ad_pat_sub_n], the NON-hygienic fuel mirror,
+   and its five bridge lemmas ([ad_pat_sub_of_n] / [_n_succ] / [_n_mono] /
+   [_n_rename_tvar] / [ad_pat_sub_to_n], ~230 lines in
+   algo/sub/prop_completeness_sub_precise.v §P5a) were DELETED: NOTHING in the
+   tree consumed any of them.  §1 of the completeness skeleton named [_n] as
+   the measure, but the development settled on the TAG-HYGIENIC fuel
+   [ad_pat_sub_g] (algo/sub/prop_completeness_sub_gen.v §1) and never came
+   back, so [_n] was scaffolding that outlived its plan.
+   To re-derive: copy [ad_pat_sub_g] (def_decl_algo_sub_hyg.v) with the
+   ORIGINAL fuel discipline — every rule increments, leaves conclude at
+   [S n] — and drop its two [ftag_in_uskl] premises.  ⚠️ But check first
+   whether [_g] serves: the completeness track's measure is [_g]'s fuel, and
+   a second mirror has to be bridged to [ad_pat_sub] all over again. *)
 
 (* ===================================================================== *)
 (*  Partial precision  [Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ]                              *)

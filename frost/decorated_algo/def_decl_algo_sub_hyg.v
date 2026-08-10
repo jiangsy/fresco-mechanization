@@ -1,19 +1,27 @@
 (** TAG-HYGIENIC FUEL MIRROR of [ad_pat_sub] (completeness-only).
 
-    [ad_pat_sub_g] refines [ad_pat_sub_n] (def_decl_algo_sub.v) in two ways,
-    both forced by precision-substitution
-    (docs/DESIGN-completeness-subtyping.md §5.4):
+    [ad_pat_sub_g] refines [ad_pat_sub] in two ways, both forced by
+    precision-substitution (docs/DESIGN-completeness-subtyping.md §5.4):
 
     1. TAG HYGIENE.  The paper's ForallL side condition [fresh Ψ'] means the
-       instantiation's tags are GLOBALLY fresh; the [_n] mirror renders it
-       only as freshness from the tag context, which does not survive the
-       Arrow split (a tag can leave the context on one branch while the
-       subject still carries it on the other), and precision-substitution
-       is FALSE over such derivations.  Both ForallL rules therefore also
-       require the instantiation's tags fresh from the SUBJECT's syntactic
-       tags ([ftag_in_uskl], def_extra.v).
+       instantiation's tags are GLOBALLY fresh; [ad_pat_sub] — like its
+       declarative originals [d_sub] / [d_pat_sub] — renders it only as
+       freshness from the tag context, which does not survive the Arrow split
+       (a tag can leave the context on one branch while the subject still
+       carries it on the other), and precision-substitution is FALSE over such
+       derivations.  Both ForallL rules therefore also require the
+       instantiation's tags fresh from the SUBJECT's syntactic tags
+       ([ftag_in_uskl], def_extra.v).
+       ⚠️ MOVING THIS PREMISE ONTO [d_sub] — so that all four judgments read
+       [fresh Ψ'] the same way — is NOT bookkeeping, and was tried and backed
+       out on 2026-08-11: it relocates the obligation into Phase 2's
+       [d_consis_sub_trans_mid] (CST, decl/prop_general_subsumption.v), whose
+       ForallL case transports a derivation along [utyp_tag_refines], where
+       the subject GAINS tags — so the hygiene has to be re-established for a
+       strictly bigger tag set, which needs the ε-tag freshening the
+       development does not have.  Details in docs/PAPER-GAPS.md.
 
-    2. FUEL DISCIPLINE.  Precision-substitution must be fuel-PRESERVING
+    2.     FUEL DISCIPLINE.  Precision-substitution must be fuel-PRESERVING
        (the completeness ForallL case applies its induction hypothesis to
        the substituted premise, subtyping-proofs.tex:3416-3429), but the
        ghostier subject may carry extra [∀◇]-wrappers (UnivGhostL steps)
@@ -25,9 +33,11 @@
        non-incrementing rules recurse on structural sub-derivations, so
        the main induction uses lex(fuel, derivation)).
 
-    Bridges ([_g] erasure to the plain judgment; the renaming-based
-    freshening [_n → _g]) live in prop_sub_complete.v / are deferred —
-    see the DESIGN doc. *)
+    The erasure [_g → ad_pat_sub] is [ad_pat_sub_g_of] below.  ⚠️ The
+    renaming-based freshening in the other direction ([ad_pat_sub] → [_g], and
+    equally [d_sub] → [_g], which is what a COMPLETENESS corollary over the
+    declarative system would need) is still owed — see §1's note and
+    docs/HANDOFF-closed-corollaries-declarative.md. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.

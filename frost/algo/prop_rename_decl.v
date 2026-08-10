@@ -15,7 +15,7 @@
 
     Proof plan (hand-off): the [remember]/revert-Θ1 template of
     [ad_pat_consis_rename_tvar] (prop_soundness_consis.v) and
-    [ad_pat_sub_n_rename_tvar] (prop_completeness_sub_precise.v); the
+    [ad_pat_sub_rename_tvar] (prop_pat_sub.v); the
     embedded type-level premises go through the EXISTING leaf renames —
     which keep the prefix unsubstituted — and cross the gap to the painted
     prefix by the TM-BLIND monotonicity suite of prop_ctx_mono.v, since the

@@ -17,13 +17,13 @@
 
     THREE DECISIONS, and two of them CORRECT DESIGN §1 as written.
 
-    (1) THE FUEL JUDGMENT IS [ad_pat_sub_g], NOT [ad_pat_sub_n].  §1's skeleton
-        named [ad_pat_sub_n]; the development settled on the TAG-HYGIENIC fuel
-        mirror instead (def_decl_algo_sub_hyg.v), because precision-substitution
+    (1) THE FUEL JUDGMENT IS [ad_pat_sub_g].  §1's skeleton named a plain fuel
+        mirror [ad_pat_sub_n]; the development settled on the TAG-HYGIENIC one
+        instead (def_decl_algo_sub_hyg.v), because precision-substitution
         — which the ForallL case applies to its premise to get the derivation it
         hands the IH — is FALSE over [_n] (the paper's "fresh Ψ'" means GLOBALLY
-        fresh, and [_n] renders it only as freshness from the tag context, which
-        does not survive the Arrow split).  P5's [ad_pat_sub_precise_upre] and
+        fresh, and a plain mirror of [ad_pat_sub] renders it only as freshness
+        from the tag context, which does not survive the Arrow split).  P5's [ad_pat_sub_precise_upre] and
         ALL FIVE P6 lemmas are stated over [_g], so P7 must be too.
 
     (2) THE CONCLUSION KEEPS [a_consis_complete]'s FACTORED SHAPE — the
