@@ -9,15 +9,19 @@
     What is left is stated in [README.v] and nothing else in the development
     consumes it.
 
-    ⭕ TODO — the declarative side should read [d_sd_typing] / [d_typing] over
-    a DECLARATIVE context, not [ad_sd_typing] over [nil : aenv].  The paper
-    never connects the two systems (app:decl-in-algo-context only says "it is
-    easy to extend them to algorithmic contexts"), and the COMPLETENESS
-    direction is blocked as stated: [ad_sd_typing]'s base rows carry the
-    LEAF-VALID join and [d_sd_typing]'s carry the plain [d_sub], from which
-    the leaf datum is not recoverable
-    (cex/cex_ad_pat_join_not_leaf_valid.v).  Four routes are scouted in
-    docs/HANDOFF-closed-corollaries-declarative.md. *)
+    ⭐ SOUNDNESS reads the paper's own §declarative system on the declarative
+    side ([d_sd_typing] and [d_typing] over a DECLARATIVE context), through
+    the conservativity bridge [prop_conserv.v] — the prose-completion of
+    app:decl-in-algo-context's "it is easy to extend them to algorithmic
+    contexts Θ", which the paper asserts and never states.
+
+    ⭕ COMPLETENESS still reads [ad_sd_typing] over [nil : aenv]: it needs the
+    OTHER direction of the bridge, which is blocked twice over — the base
+    rows' LEAF-VALID join is not recoverable from the plain [d_sub] at a
+    ghosty subject (cex/cex_ad_pat_join_not_leaf_valid.v), and the mirrors'
+    ForallL rows demand a tag hygiene the declarative rules state only
+    against the tag context.  Both are analysed at prop_conserv.v §12; the
+    routes are in docs/HANDOFF-closed-corollaries-declarative.md. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -68,6 +72,8 @@ Require Import src.frost.algo.typing.prop_rigidity.
 Require Import src.frost.algo.typing.prop_shape.
 Require Import src.frost.algo.typing.prop_scope.
 Require Import src.frost.algo.typing.prop_completeness_typing.
+Require Import src.frost.algo.typing.prop_conserv.
+Require Import src.frost.decl.prop_syntax_directed.
 
 Set Implicit Arguments.
 
@@ -95,34 +101,92 @@ Set Implicit Arguments.
 (*  whose type variables are not those of its INPUT context.              *)
 (* ===================================================================== *)
 
+(** The shared soundness engine at the empty context: peel [a_typing_sound]'s
+    existential, read the answer's colouring off the mode, and CLOSE the run's
+    output context.  What comes back is the run's answer [A] with its residual
+    flexibles instantiated by a metasubstitution [ζ] into [·], and the paper's
+    PURELY DECLARATIVE typing of [e] at that closed answer. *)
+Lemma a_typing_sound_nil : forall m P0 e A Θ1,
+  a_wf_exp nil e ->
+  nil ⨟ empty ⊢ₚₛᵃ P0 ->
+  a_ty_mode_compat m P0 ->
+  nil ⊢ᵃ[ m ; P0 ] e ⦂ A ⊣ Θ1 ->
+  nil ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
+  exists Bt, btyp_to_ptyp Bt = A /\ mod_comp_ty Bt m /\
+    (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt)) /\
+    exists ζ, ζ ∷ Θ1 ⊑ nil /\ msubst_mono ζ /\
+      (nil ⊢ˢ[ m ] e ⦂ (msubst_btyp ζ Bt)) /\
+      (nil ⊢[ m ] e ⦂ (msubst_btyp ζ Bt)).
+Proof.
+  intros m P0 e A Θ1 Hexp HwfP0 Hmod Hrun.
+  destruct (a_typing_sound Hrun a_wf_aenv__nil HwfP0 Hmod Hexp)
+    as [Hisub [Hwf1 [HwfA [Bt [HBt [Hd Href]]]]]].
+  split; [ exact Hisub | ]. split; [ exact Hwf1 | ]. split; [ exact HwfA | ].
+  exists Bt. split; [ exact HBt | ].
+  split; [ exact (ad_sd_typing_mod_comp_ty Hd Hwf1) | ]. split; [ exact Href | ].
+  (* the run started at [·], so its output context is a pure SUFFIX *)
+  assert (Hsuf : a_suffix Θ1)
+    by (destruct Hisub as [[κ [_ Hinc]] _]; exact (a_inc_nil_suffix κ Θ1 Hinc)).
+  assert (Hftv : ftvar_in_exp e [<=] empty)
+    by (pose proof (a_wf_exp_ftv_dom Hexp) as Hx; simpl in Hx; exact Hx).
+  destruct (ad_sd_typing_close_suffix Θ1 Hsuf Hwf1 m e Bt Hd Hftv)
+    as [ζ [Hinc [Hmo [_ Hdnil]]]].
+  exists ζ. split; [ exact Hinc | ]. split; [ exact Hmo | ].
+  assert (Hsd : nil ⊢ˢ[ m ] e ⦂ (msubst_btyp ζ Bt))
+    by exact (ad_sd_typing_to_d m nil e (msubst_btyp ζ Bt) Hdnil nil eq_refl).
+  split; [ exact Hsd | apply d_sd_typing_sound; exact Hsd ].
+Qed.
+
 (** ⭐ Soundness at a closed program, INFERENCE mode (input the ghost [□]).
-    (thm:sound-type-inference) *)
+    (thm:sound-type-inference)  The answer's colouring is forced at [TI], so
+    the general statement's existential [Bt] is [syn{A}] and disappears. *)
 Corollary a_typing_sound_infer : forall e A Θ1,
   a_wf_exp nil e ->
   nil ⊢ᵃ[ mode_ti ; pskl_hole ] e ⦂ A ⊣ Θ1 ->
   nil ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
-  exists Bt, btyp_to_ptyp Bt = A /\
-    (Θ1 ⊢ᵃᵈ[ mode_ti ] e ⦂ Bt) /\
-    (Θ1 ⨟ empty ⊢ᵣᵃᵈ bskl_hole ⊳ (btyp_to_bskl Bt)).
+  (Θ1 ⨟ empty ⊢ᵣᵃᵈ bskl_hole ⊳ (btyp_to_bskl (ptyp_to_btyp_syn A))) /\
+  exists ζ, ζ ∷ Θ1 ⊑ nil /\
+    (nil ⊢ˢ[ mode_ti ] e ⦂ (ptyp_to_btyp_syn (msubst_ptyp ζ A))) /\
+    (nil ⊢[ mode_ti ] e ⦂ (ptyp_to_btyp_syn (msubst_ptyp ζ A))).
 Proof.
   intros e A Θ1 Hexp Hrun.
-  exact (a_typing_sound Hrun a_wf_aenv__nil (a_wf_pskl__hole _ _)
-           a_ty_mode_compat__ti Hexp).
+  destruct (a_typing_sound_nil Hexp (a_wf_pskl__hole _ _)
+              a_ty_mode_compat__ti Hrun)
+    as [Hisub [Hwf1 [HwfA [Bt [HBt [Hmc [Href [ζ [Hinc [Hmo [Hsd Hty]]]]]]]]]]].
+  (* at [TI] the answer is a SYNTHESISED painting, so [Bt = syn{A}] *)
+  assert (HBteq : Bt = ptyp_to_btyp_syn A)
+    by (rewrite <- HBt; apply btyp_syn_colouring_inv;
+        apply mod_comp_ty_ti_inv; exact Hmc).
+  subst Bt. rewrite msubst_btyp_ptyp_to_btyp_syn in Hsd, Hty.
+  split; [ exact Hisub | ]. split; [ exact Hwf1 | ]. split; [ exact HwfA | ].
+  split; [ exact Href | ]. exists ζ. split; [ exact Hinc | ].
+  split; [ exact Hsd | exact Hty ].
 Qed.
 
-(** ⭐ Soundness at a closed program, CHECKING mode (input a closed type). *)
+(** ⭐ Soundness at a closed program, CHECKING mode (input a closed type).
+    At [TC] the colouring is forced the other way, so [Bt = inh{A}]. *)
 Corollary a_typing_sound_check : forall e A0 A Θ1,
   a_wf_exp nil e ->
   a_wf_ptyp nil A0 ->
   nil ⊢ᵃ[ mode_tc ; (ptyp_to_pskl A0) ] e ⦂ A ⊣ Θ1 ->
   nil ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
-  exists Bt, btyp_to_ptyp Bt = A /\
-    (Θ1 ⊢ᵃᵈ[ mode_tc ] e ⦂ Bt) /\
-    (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (ptyp_to_pskl A0)) ⊳ (btyp_to_bskl Bt)).
+  (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (ptyp_to_pskl A0))
+     ⊳ (btyp_to_bskl (ptyp_to_btyp_inh A))) /\
+  exists ζ, ζ ∷ Θ1 ⊑ nil /\
+    (nil ⊢ˢ[ mode_tc ] e ⦂ (ptyp_to_btyp_inh (msubst_ptyp ζ A))) /\
+    (nil ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh (msubst_ptyp ζ A))).
 Proof.
   intros e A0 A Θ1 Hexp HwfA0 Hrun.
-  exact (a_typing_sound Hrun a_wf_aenv__nil (a_wf_ptyp_to_wf_pskl empty HwfA0)
-           (a_ty_mode_compat__tc A0) Hexp).
+  destruct (a_typing_sound_nil Hexp (a_wf_ptyp_to_wf_pskl empty HwfA0)
+              (a_ty_mode_compat__tc A0) Hrun)
+    as [Hisub [Hwf1 [HwfA [Bt [HBt [Hmc [Href [ζ [Hinc [Hmo [Hsd Hty]]]]]]]]]]].
+  assert (HBteq : Bt = ptyp_to_btyp_inh A)
+    by (rewrite <- HBt; apply btyp_inh_painting_inv;
+        apply mod_comp_ty_tc_inv; exact Hmc).
+  subst Bt. rewrite (msubst_btyp_ptyp_to_btyp_inh ζ A Hmo) in Hsd, Hty.
+  split; [ exact Hisub | ]. split; [ exact Hwf1 | ]. split; [ exact HwfA | ].
+  split; [ exact Href | ]. exists ζ. split; [ exact Hinc | ].
+  split; [ exact Hsd | exact Hty ].
 Qed.
 
 (** The shared completeness engine.  ⭐ [κ ∷ · ⊑ ·] holds at [κ = ·]

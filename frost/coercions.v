@@ -198,6 +198,45 @@ Fixpoint uskl_to_bskl (R : uskl) : bskl :=
 
 Coercion uskl_to_bskl : uskl >-> bskl.
 
+(** ===== utyp <-> uskl (the SORT INCLUSION and its retraction) =====
+
+    A [utyp] IS a [uskl] with no ghosts: the grammars agree constructor for
+    constructor and [uskl] only adds the four ghost forms.  The declarative
+    system keeps the two sorts in SEPARATE judgments ([d_consis] / [d_sub] over
+    [utyp], [d_pat_consis] / [d_pat_sub] over [uskl]) while the paper's
+    decl-in-algo layer fuses them into ONE relation indexed by the sort
+    ([ad_pat_consis], [ad_pat_sub]'s [N]), so relating the two systems needs
+    this inclusion.  ⚠️ NOT the same map as [utyp_to_btyp], which collapses the
+    ε tag: tags are what [d_tags] counts, so they must survive.
+
+    [uskl_to_utyp] is the retraction, defined on all of [uskl] by sending every
+    ghost to [1] — an arbitrary choice, meaningful only on the ghost-free part
+    ([uskl_ghost_free_utyp_to_uskl], decorated_algo/prop_conserv.v). *)
+
+Fixpoint utyp_to_uskl (C : utyp) : uskl :=
+  match C with
+  | utyp_unit => uskl_unit
+  | utyp_var_b n => uskl_var_b n
+  | utyp_var_f α => uskl_var_f α
+  | utyp_arrow C1 C2 => uskl_arrow (utyp_to_uskl C1) (utyp_to_uskl C2)
+  | utyp_all_syn C0 => uskl_all_syn (utyp_to_uskl C0)
+  | utyp_all_etag ε C0 => uskl_all_etag ε (utyp_to_uskl C0)
+  end.
+
+Fixpoint uskl_to_utyp (R : uskl) : utyp :=
+  match R with
+  | uskl_unit => utyp_unit
+  | uskl_var_b n => utyp_var_b n
+  | uskl_var_f α => utyp_var_f α
+  | uskl_arrow R1 R2 => utyp_arrow (uskl_to_utyp R1) (uskl_to_utyp R2)
+  | uskl_all_syn R0 => utyp_all_syn (uskl_to_utyp R0)
+  | uskl_all_etag ε R0 => utyp_all_etag ε (uskl_to_utyp R0)
+  | uskl_hole => utyp_unit
+  | uskl_tophole _ => utyp_unit
+  | uskl_holeg => utyp_unit
+  | uskl_topholeg _ => utyp_unit
+  end.
+
 (* RESTART NOTE (deleted 2026-08-09, cleanup audit §5.2) — [pskl_to_tskl],
    the DOTTED witness conversion, plus its [_open_rec] / [_open] lemmas.  It
    sent a pskl's ghost holes to DOTTED ghosts ([holeg] / [topholeg], which are

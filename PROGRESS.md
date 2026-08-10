@@ -166,7 +166,11 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   check rows need for `lemma:suffix-erasure`, the `uniq` filter `AT-Abs` needs
   on `guess^TY`'s block, and the correction of `AT-AbsAnnoCheck`'s result
   domain.  ⭐ Reader-facing form: `a_typing_sound_infer` / `a_typing_sound_check`
-  (algo/typing/prop_closed.v) — the empty context, one per user-facing mode.
+  (algo/typing/prop_closed.v) — the empty context, one per user-facing mode,
+  and since 2026-08-10 stated against the paper's own §declarative system
+  (`· ⊢ˢ[M] e ⦂ B` and `· ⊢[M] e ⦂ B`) through the conservativity bridge
+  `algo/typing/prop_conserv.v`, with the run's output context closed off by a
+  metasubstitution the proof BUILDS.
   History of the build-up:
 - 🟡 (history) **Theorem: Soundness of type inference — STARTED 2026-08-06**
   (`algo/prop_soundness_typing.v`, NEW; all Qed and axiom-free).  ⭐ The
@@ -234,30 +238,71 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## ⭕ OPEN — state the closed-program corollaries against the DECLARATIVE system
+## 2026-08-10 — ⭐ **THE CONSERVATIVITY BRIDGE: SOUNDNESS AT A CLOSED PROGRAM NOW READS THE PAPER'S §declarative SYSTEM**
 
-**TODO, hand-off written**:
-[`docs/HANDOFF-closed-corollaries-declarative.md`](docs/HANDOFF-closed-corollaries-declarative.md).
-The four corollaries in `algo/typing/prop_closed.v` state their declarative
-side as `ad_sd_typing` (`Θ ⊢ᵃᵈ[ M ] e ⦂ B`); they should read `d_sd_typing`
-(or `d_typing`) over a declarative context, in BOTH directions.
+Hand-off: [`docs/HANDOFF-closed-corollaries-declarative.md`](docs/HANDOFF-closed-corollaries-declarative.md).
 
-Scouted 2026-08-10, three findings the hand-off carries in full:
+`a_typing_sound_infer` / `a_typing_sound_check` (`algo/typing/prop_closed.v`,
+`README.v`) now state their declarative side as `· ⊢ˢ[M] e ⦂ B` **and**
+`· ⊢[M] e ⦂ B` — the paper's own §declarative judgments over a declarative
+context — instead of `ad_sd_typing` over `nil : aenv`.  `make coq` exit 0,
+admit-free, axiom-free, 24/24 `Print Assumptions` closed.
 
-1. **The paper never connects the two systems** — `app:decl-in-algo-context`
-   says only "it is easy to extend them to algorithmic contexts", with no
-   conservativity lemma.  So `⊢ᵃᵈ` IS the paper's own statement, and the
-   bridge would be a prose-completion.
-2. ⚠️ **The completeness direction is refuted as stated**:
-   `cex/cex_ad_pat_join_not_leaf_valid.v` shows the LEAF-VALID datum that
-   `ad_sd_typing`'s base rows carry (via `ad_pat_sub_v`) is not recoverable
-   from the plain `d_sub` those of `d_sd_typing` carry.  ⭕ Open: whether the
-   capture configuration is reachable for `ad_sd_typing` (as opposed to
-   `ad_pat`) at a closed program — that decides which route works.
-3. **Soundness has an independent obstacle**: its conclusion lives at the
-   run's output context, which keeps flexibles, so the declarative form must
-   quantify over a closing `ζ ∷ Θ1 ⊑ nil`.  That direction is `ad → d` at a
-   flex-free context and is NOT blocked; it can land first.
+**New: `frost/algo/typing/prop_conserv.v`** (~1300 lines) — the bridge the
+paper asserts and never states (`app:decl-in-algo-context`: *"it is easy to
+extend them to algorithmic contexts Θ"*).  A declarative context IS a
+flexible-free algorithmic one (`denv_to_aenv`), each `ad_` judgment is its
+`d_` version plus the flexible-lookup rows, and those are vacuous in the
+image — so `ad_ → d_` is a plain induction per judgment (consistency at both
+sorts, refinement, subtyping at both sorts, skeleton inference, typing).
+Registered in [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md).  Three things the
+paper leaves implicit had to be made explicit:
+
+1. the appendix's four `Θ ⊢ A ≡ B` premises **collapse to `=`** at a
+   flexible-free Θ (`a_tyequiv_denv_eq`) — which is why the §declarative
+   figure may silently reuse an annotation;
+2. the colour-discipline premises `d_sub` states and the fused `typsub^N_M`
+   figure omits (`is_styp` on Infer, guardedness + `is_ityp` on Check,
+   `is_ityp` on ForallR) are **recovered**, not assumed, at `N = TY`;
+3. Δ and Γ **swap roles between the sorts** — the skeleton judgments put a
+   bound rigid into Δ, the type ones into Γ (`d_wf_utyp_of_d_wf_uskl`).
+
+⭐ **The step the paper does not mention** is §11: soundness delivers its
+derivation at the run's OUTPUT context Θ₁, which still holds flexibles
+(`fun x -> x` at `·` gives `Θ₁ = α̂`, answer `α̂ → α̂`).  Since the run starts
+at `·`, Θ₁ is a pure suffix, so peeling it with `ad_sd_typing_subst_mid` and
+accumulating `solves_flex_of_wf_head`'s solutions **builds** a closing
+`ζ ∷ Θ₁ ⊑ ·` together with the derivation at `·` — building it rather than
+quantifying over one is what keeps the corollary non-vacuous.  The
+corollaries also lost their existential `Bt`: the mode forces the answer's
+colouring (`syn{A}` at TI, `inh{A}` at TC).
+
+⚙ Two conversions added: `utyp_to_uskl` (the sort inclusion) and its
+retraction `uskl_to_utyp`, in `frost/coercions.v` with their facts in
+`frost/prop_coercions.v`.  The `msubst_btyp` facts §11 needs live in
+prop_conserv.v — `msubst_btyp` was defined in `algo/def_meta.v` and used by
+no proof anywhere, so that is its only home.
+
+### ⭕ STILL OPEN — the COMPLETENESS direction, now blocked TWICE
+
+- **(A) the leaf-valid datum.**  ⭐ The previous session's R0 question is
+  SETTLED on its positive side: `d_pat_consis_subject_refine_ghost_free`
+  (§12) proves that **at a ghost-free subject the datum is derivable from
+  consistency alone**.  So `ad_sd_typing`'s own base rows — which join
+  `syn{A}` for a *type* `A` — are never the obstruction; what is left is
+  exactly `ad_pat`'s P-Var at a skeleton entry whose `P` has a ghost under a
+  ∀, which `ad_pat__abs` may introduce and which typing reaches through App.
+  ⚠️ A reachable configuration is still not a refutation: the App rule
+  existentially quantifies its skeleton, so refuting the bridge means closing
+  over every choice of it.
+- **(B) tag hygiene — NEW, and not confined to the skeleton sort.**
+  `ad_pat_sub_gv`'s ForallL rows demand the instantiation's tags fresh from
+  the SUBJECT's syntactic tags (the mech's rendering of the paper's prose
+  `fresh Ψ'` as GLOBAL freshness, which `lemma:precision-substitution`
+  needs); `d_sub` / `d_pat_sub` demand freshness from the TAG CONTEXT only,
+  and the two come apart at Arrow, where the context splits but the subject
+  does not.  Bridging them needs the ε-tag freshening the development
+  deferred.  This blocks the TYPE sort too, so (A) alone does not fix it.
 
 ⚠️ Putting the leaf datum on `d_sd_typing` forces the same on `d_typing`
 (standalone `Sub`) and re-opens all of Phase 2 plus the paper's §declarative

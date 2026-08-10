@@ -28,6 +28,83 @@ recently P6-Sv at the end of this file)}.
 > Several judgments looked broken until that condition was restored.  **Check
 > that file before concluding a lemma is unprovable.**
 
+## PROSE-COMPLETION (2026-08-10) — `app:decl-in-algo-context`'s "it is easy to extend them" is a CONSERVATIVITY lemma, and it holds in one direction only
+
+`app:decl-in-algo-context` (full-algo-spec.tex:97-115) introduces the whole
+decl-in-algo layer with
+
+> *"Although all the declarative judgements in §declarative are defined on
+> declarative contexts Γ, **it is easy to extend them to algorithmic contexts
+> Θ**. For most rules we simply replace declarative contexts Γ with algorithmic
+> contexts Θ… other rules simply switch from Γ to Θ."*
+
+and then states **no conservativity lemma in either direction**.  Everything
+in §D — including the four theorems — is therefore stated over `⊢ᵃᵈ`, and a
+reader who has only met the §declarative figure never learns how to get back.
+
+**The mechanization supplies the translation** (algo/typing/prop_conserv.v).
+A declarative context IS an algorithmic one with no flexible variables
+(`denv_to_aenv`), each `ad_` judgement is its `d_` version plus the
+flexible-lookup rows, and those rows are vacuous in the image — so the
+`ad_ → d_` direction is a plain induction, judgement by judgement:
+consistency (both sorts), refinement, subtyping (both sorts), skeleton
+inference and syntax-directed typing.  Three things the paper leaves implicit
+have to be made explicit on the way, and each is a small finding of its own:
+
+1. **The four explicit type-equivalence premises collapse to equality.**  The
+   appendix adds `Θ ⊢ A ≡ B` to Freeze / AbsAnnoCheck / AbsAnno (and, per the
+   2026-08-07 entry below, to App) *"because of the existence of flexible
+   variables"*.  At a flexible-free Θ the equational theory has no definition
+   to unfold, so `Θ ⊢ A ≡ B` implies `A = B` — which is exactly why the
+   §declarative figure may silently reuse an annotation.
+2. **The colour-discipline premises the two systems state differently must be
+   RECOVERED, not assumed.**  `d_sub`'s Infer states `is_styp B`, its Check
+   states guardedness of both sides plus `is_ityp B`, its ForallR states
+   `is_ityp (∀ⁱ B)`; the fused `typsub^N_M` figure states none of them,
+   because at `N = TY` they follow from the sort.  The mech proves that: the
+   target is a `btyp`'s skeleton there, and a skeleton predicate on it
+   transports back (`is_styp_of_btyp_to_bskl`, `is_ityp_of_btyp_to_bskl`,
+   `ad_pat_sub_ty_tc_target_ityp`).
+3. **The ∀-scope context Δ and the tvar context Γ swap roles between the
+   sorts.**  Skeleton well-formedness and refinement put a bound rigid into Δ;
+   type well-formedness puts it into Γ.  Translating a ForallL instantiation
+   between the sorts therefore has to move the Δ-vars into Γ
+   (`d_wf_utyp_of_d_wf_uskl`).
+
+⛔ **The `d_ → ad_` direction does NOT hold as stated**, and the reason is not
+bookkeeping.  Two independent obstructions, both recorded at
+algo/typing/prop_conserv.v §12:
+
+- **(A) the leaf-valid datum.**  `ad_pat` / `ad_sd_typing` embed the augmented
+  join (`ad_pat_sub_v`), whose consistency leaves additionally carry the
+  subject's refinement `Θ ⨟ ∅ ⊢ᵣₚ ⌊R⌋ ⊳ ⌊Q⌋`; `d_pat` / `d_sd_typing` embed
+  the plain join.  The capture configuration (subject `∀X.◇`, counterpart
+  `∀ˢX.X`) has a plain join and provably no leaf-valid one — see the ⛔ GAP
+  entry of 2026-08-06 below and cex/cex_ad_pat_join_not_leaf_valid.v.
+  ⭐ **What is new here**: at a GHOST-FREE subject the datum IS derivable from
+  consistency alone (`d_pat_consis_subject_refine_ghost_free`, machine-checked).
+  Since the three base rules of syntax-directed typing join `syn{A}` for a
+  *type* `A`, TYPING's own base rules are never the obstruction; what is left
+  is exactly **skeleton inference's P-Var at an entry `x : P` whose `P` has a
+  ghost under a ∀** — which P-Abs may introduce with any well-formed `P`, and
+  which typing reaches through App's skeleton-inference premise.
+- **(B) tag hygiene.**  The mech's ForallL additionally requires the
+  instantiation's tags fresh from the SUBJECT's syntactic tags — its rendering
+  of the paper's prose `fresh Ψ'` as GLOBAL freshness, which
+  `lemma:precision-substitution` needs (see the 2026-07-24 PROSE-COMPLETION
+  entry below).  `d_sub` / `d_pat_sub` render the same prose as freshness from
+  the TAG CONTEXT only, and the two come apart at the Arrow rule, where the
+  tag context is split but the subject is not.  ⚠️ This one bites at the TYPE
+  sort as well, so it is not repaired by (A).
+
+**Consequence for the paper.**  `thm:sound-type-inference` can be stated
+against the §declarative system at a closed program and the mechanization now
+does so (`a_typing_sound_infer` / `_check`, README.v) — modulo one further
+step the paper does not mention, that the run's OUTPUT context still holds
+flexibles and must be closed off by a metasubstitution `ζ ∷ Θ₁ ⊑ ·` before
+the answer is a declarative type at all.  `thm:complete-type-inference`
+cannot, for (A) and (B).
+
 ## PROSE-COMPLETION (2026-08-10) — `sd-Anno` must require its annotation well formed, like its four siblings
 
 `fig:declarative-in-algo-context`'s **sd-Anno** is the one rule that puts a

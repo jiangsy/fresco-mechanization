@@ -262,20 +262,31 @@ Check a_typing_sound :
 Print Assumptions a_typing_sound.
 
 (* ⭐ …AT A CLOSED PROGRAM, which is the form a reader wants — one statement
-   per user-facing mode.  At the EMPTY context three premises of the theorem
-   above go: [a_wf_aenv ·] is a constructor, [· ⨟ ∅ ⊢ₚₛᵃ P0] is
-   [a_wf_pskl__hole] resp. the annotation's own wf, and [a_ty_mode_compat] is
-   read off the mode.  ⚠️ [a_wf_exp · e] stays: it is the INPUT condition on
-   the problem (the paper's "M is well-formed in Θ₀"), and the algorithmic
-   run does not imply it — see the header note in typing/prop_closed.v. *)
+   per user-facing mode, and the DECLARATIVE side is now the paper's own
+   §declarative system [⊢ˢ] / [⊢] over a declarative context, not [⊢ᵃᵈ] over
+   [nil : aenv].  At the EMPTY context three premises of the theorem above go:
+   [a_wf_aenv ·] is a constructor, [· ⨟ ∅ ⊢ₚₛᵃ P0] is [a_wf_pskl__hole] resp.
+   the annotation's own wf, and [a_ty_mode_compat] is read off the mode; and
+   the answer's colouring is forced by the mode, so the existential [Bt]
+   collapses to [syn{A}] resp. [inh{A}].
+   ⚠️ [a_wf_exp · e] stays: it is the INPUT condition on the problem (the
+   paper's "M is well-formed in Θ₀"), and the algorithmic run does not imply
+   it — see the header note in typing/prop_closed.v.
+   ⭐ [ζ] CLOSES the run's output context, which normally still holds
+   flexibles ([fun x -> x] returns [α̂ → α̂] with [Θ1 = α̂]); it is built, not
+   assumed, so the statement is not vacuous (typing/prop_conserv.v §11).
+   The [⊢ᵃᵈ] → [⊢ˢ] translation is the prose-completion of the paper's
+   [app:decl-in-algo-context] "it is easy to extend them to algorithmic
+   contexts Θ" — typing/prop_conserv.v, docs/PAPER-GAPS.md. *)
 Check a_typing_sound_infer :
   forall e A Θ1,
   a_wf_exp nil e ->
   nil ⊢ᵃ[ mode_ti ; pskl_hole ] e ⦂ A ⊣ Θ1 ->
   nil ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
-  exists Bt, btyp_to_ptyp Bt = A /\
-    (Θ1 ⊢ᵃᵈ[ mode_ti ] e ⦂ Bt) /\
-    (Θ1 ⨟ empty ⊢ᵣᵃᵈ bskl_hole ⊳ (btyp_to_bskl Bt)).
+  (Θ1 ⨟ empty ⊢ᵣᵃᵈ bskl_hole ⊳ (btyp_to_bskl (ptyp_to_btyp_syn A))) /\
+  exists ζ, ζ ∷ Θ1 ⊑ nil /\
+    (nil ⊢ˢ[ mode_ti ] e ⦂ (ptyp_to_btyp_syn (msubst_ptyp ζ A))) /\
+    (nil ⊢[ mode_ti ] e ⦂ (ptyp_to_btyp_syn (msubst_ptyp ζ A))).
 Print Assumptions a_typing_sound_infer.
 
 Check a_typing_sound_check :
@@ -284,9 +295,11 @@ Check a_typing_sound_check :
   a_wf_ptyp nil A0 ->
   nil ⊢ᵃ[ mode_tc ; (ptyp_to_pskl A0) ] e ⦂ A ⊣ Θ1 ->
   nil ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
-  exists Bt, btyp_to_ptyp Bt = A /\
-    (Θ1 ⊢ᵃᵈ[ mode_tc ] e ⦂ Bt) /\
-    (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (ptyp_to_pskl A0)) ⊳ (btyp_to_bskl Bt)).
+  (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (ptyp_to_pskl A0))
+     ⊳ (btyp_to_bskl (ptyp_to_btyp_inh A))) /\
+  exists ζ, ζ ∷ Θ1 ⊑ nil /\
+    (nil ⊢ˢ[ mode_tc ] e ⦂ (ptyp_to_btyp_inh (msubst_ptyp ζ A))) /\
+    (nil ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh (msubst_ptyp ζ A))).
 Print Assumptions a_typing_sound_check.
 
 (* ⭐⭐⭐ Theorem [Completeness + optimality of skeleton inference]
