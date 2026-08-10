@@ -92,7 +92,7 @@ e B` needs a closed `e`, `B` with the `ad` side FALSE — i.e. ruling out every
 existentially quantifies its skeleton `P`, so a refutation has to close over
 all choices of `P`.  That is the remaining piece of work on (A).
 
-### (B) Tag hygiene — ⚠️ NEW, and it bites at the TYPE sort too
+### (B) Tag hygiene — ⚠️ NEW, it bites at the TYPE sort too, and it is the DEEPER of the two
 
 `ad_pat_sub_gv`'s two ForallL rows carry, beyond the paper's `Ψ' ∩ Ψ = ∅`,
 
@@ -103,19 +103,64 @@ all choices of `P`.  That is the remaining piece of work on (A).
 — the instantiation's tags fresh from the SUBJECT's syntactic tags.  That is
 the mech's rendering of the paper's prose `fresh Ψ'` as GLOBAL freshness, and
 it is load-bearing: `lemma:precision-substitution` is FALSE without it
-(`docs/DESIGN-completeness-subtyping.md` §5.2, and the 2026-07-24
-PROSE-COMPLETION entry in `docs/PAPER-GAPS.md`).
-
-`d_sub` / `d_pat_sub` render the same prose as freshness from the TAG CONTEXT
-only.  Along a ForallL CHAIN the two agree (the tag context accumulates
-`Ψ ∪ Ψ'`), but they come apart at **Arrow**, where the tag context splits into
-`Ψ₁ ∪ Ψ₂` and the recursive call keeps only `Ψ₂` while the subject keeps all
-of its tags.  Bridging them needs an ε-tag FRESHENING lemma over `d_sub` /
-`d_pat_sub` — the `_n → _g` renaming the development explicitly deferred.
+(`docs/DESIGN-completeness-subtyping.md` §5.2).  `d_sub` / `d_pat_sub` render
+the same prose as freshness from the TAG CONTEXT only; the two agree along a
+ForallL chain but come apart at **Arrow**, where the tag context splits into
+`Ψ₁ ∪ Ψ₂` and the subject keeps all its tags.
 
 ⚠️ Unlike (A) this is not confined to the skeleton sort: `ad_sd_typing`'s base
 rows go through `ad_pat_sub_gv` at `N = TY`, whose ForallL rows carry the same
 condition.  So (B) blocks completeness even if (A) is resolved.
+
+**ATTEMPTED 2026-08-11 — putting the strong reading on `d_sub` / `d_pat_sub` /
+`ad_pat_sub` so all four judgments read `fresh Ψ'` the same way.  BACKED OUT.**
+It is mechanical at ~35 of ~38 sites (transports either keep the subject, take
+`Ψ' := ∅`, or substitute a type variable, which cannot change a tag — the two
+`ftag_in_*_subst_var` / `_subst_unit` facts are all they need).  It fails at
+exactly one place, and that place is a Phase-2 flagship dependency:
+
+> **`d_consis_sub_trans_mid`** (CST, paper B.3, `decl/prop_general_subsumption.v`,
+> feeding general subsumption).  Its ForallL case transports a derivation along
+> `utyp_tag_refines C' Cmid`, where the subject **GAINS** tags.  Rebuilding
+> ForallL for `C'` needs `Ψ' ∩ tags(C') = ∅`; the derivation supplies only
+> `Ψ' ∩ tags(Cmid) = ∅`, and nothing in scope bounds the added tags —
+> `utyp_tag_refines` puts no freshness on them and `d_consis`'s ForallSynTagged
+> row does not collect them (correctly: a tag is consumed only against an
+> INHERITED ∀).  Machine-checked residual goal, for the record:
+>
+> ```coq
+> Ψ' ∩ ftag_in_utyp (utyp_all_etag ε T0) [=] empty      (* goal *)
+> H1 : Ψ' ∩ ftag_in_utyp (utyp_all_etag ε C) [=] empty  (* have *)
+> Href : utyp_tag_refines T0 C
+> ```
+
+⭐ **So the SAME missing lemma is owed either way**, and it is the real
+prerequisite:
+
+> **ε-TAG FRESHENING** — a `d_sub` / `d_pat_sub` derivation can be re-tagged so
+> that every ForallL instantiation's tags avoid any given finite set.
+
+With it, CST re-tags the transported derivation (so the rule change lands) AND
+the bridge can freshen on the way (so the rule change is not even needed) —
+the two readings become interderivable, which is what the paper's prose means.
+Without it, neither.  Cost: ε-substitution over `utyp` / `uskl` (ε is a plain
+atom, so lngen generates nothing for it), then renaming closure for `d_tags`,
+`is_ttyp`, `d_consis`, `d_sub` and the `_skl` twins, then an iteration over the
+finite tag set — comparable to `algo/consis/prop_consis_rename.v`.  ⚠️ The
+set-level renaming (`Ψ` is an `atoms`, and the rules relate tag contexts by
+`[=]` / `∩` / `∪` / `add`) is where the work actually is.
+
+⚙ **What the attempt DID land**: the non-hygienic fuel mirror `ad_pat_sub_n`
+and its five bridge lemmas (`ad_pat_sub_of_n` / `_n_succ` / `_n_mono` /
+`_n_rename_tvar` / `ad_pat_sub_to_n`, ~230 lines in
+`algo/sub/prop_completeness_sub_precise.v` §P5a, plus the 64-line inductive)
+had **no consumer anywhere** — §1 of the completeness skeleton named it as the
+measure, the development settled on the hygienic `ad_pat_sub_g`, and nothing
+ever came back for it.  Deleted; RESTART NOTEs left at both sites.  So the
+answer to "does unifying the reading let us drop an intermediate device" is:
+the device was already droppable, and it is now dropped — but unifying the
+reading buys no FURTHER simplification, because `ad_pat_sub_g` is needed for
+its FUEL, not for its hygiene.
 
 ## ROUTES, RE-SCORED
 
@@ -136,8 +181,10 @@ condition.  So (B) blocks completeness even if (A) is resolved.
 - **R4 (strengthen the paper's declarative system)** — unchanged: it forces
   the standalone `Sub` rule too and re-opens Phase 2 plus the paper's
   §declarative figure.  Author-facing decision; ASK first.
-- **NEW prerequisite for R1/R2**: the ε-tag freshening lemma for `d_sub` /
-  `d_pat_sub`.  Whatever route is taken, (B) has to be paid for.
+- **NEW prerequisite for R1/R2/R3 alike — DO THIS FIRST**: the ε-tag
+  freshening lemma for `d_sub` / `d_pat_sub` (see (B)).  Every route pays for
+  it, and once it exists the choice between "change the rules" and "freshen in
+  the bridge" is a matter of taste rather than of provability.
 
 ## ACCEPTANCE — where it stands
 

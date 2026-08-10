@@ -26,7 +26,6 @@ Require Import src.frost.algo.prop_swap.
 Require Import src.frost.decorated_algo.def_decl_algo.
 Require Import src.frost.decorated_algo.def_decorated.
 Require Import src.frost.decorated_algo.def_decl_algo_sub.
-Require Import src.frost.decorated_algo.def_decl_algo_sub_hyg.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_stability.
@@ -49,7 +48,7 @@ Set Implicit Arguments.
    the block ever used it: the completeness track settled on the tag-hygienic
    fuel [ad_pat_sub_g], whose own bridges are [ad_pat_sub_g_of] /
    [ad_pat_sub_gv_forget] / [ad_pat_sub_gv_fuel_weaken]
-   (def_decl_algo_sub_hyg.v). *)
+   (def_decl_algo_sub.v). *)
 
 (* ===================================================================== *)
 (*  P5b — partial-precision-complete + precision-substitution.            *)
@@ -227,7 +226,7 @@ Qed.
 
 (* ===================================================================== *)
 (*  P5b-ii step (3) — infrastructure over the TAG-HYGIENIC fuel mirror     *)
-(*  [ad_pat_sub_g] (def_decl_algo_sub_hyg.v; DESIGN §5.4).                 *)
+(*  [ad_pat_sub_g] (def_decl_algo_sub.v; DESIGN §5.4).                 *)
 (* ===================================================================== *)
 
 (** Re-tag under set equality. *)

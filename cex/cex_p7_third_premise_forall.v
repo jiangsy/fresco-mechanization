@@ -2,7 +2,7 @@
     every solution whose subject and counterpart disagree at the head.
     RESOLVED 2026-07-30 (same day): the motive was repaired — the premise was
     removed from the root and moved to the join's CONSISTENCY LEAVES
-    ([ad_pat_sub_gv], def_decl_algo_sub_hyg.v), under which both
+    ([ad_pat_sub_gv], def_decl_algo_sub.v), under which both
     configurations below are covered (their leaves are [unit ⊳ unit]).  This
     file keeps the machine-checked record of why the root-level formulation
     was wrong; the text below describes the PRE-repair state.
@@ -55,7 +55,6 @@ Require Import src.frost.algo.def_meta.
 Require Import src.frost.decorated_algo.def_decl_algo.
 Require Import src.frost.decorated_algo.def_decorated.
 Require Import src.frost.decorated_algo.def_decl_algo_sub.
-Require Import src.frost.decorated_algo.def_decl_algo_sub_hyg.
 Require Import src.frost.algo.consis.prop_soundness_consis.
 
 Set Implicit Arguments.

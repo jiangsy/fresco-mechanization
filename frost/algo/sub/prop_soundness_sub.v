@@ -32,7 +32,6 @@ Require Import src.frost.algo.def_meta.
 Require Import src.frost.decorated_algo.def_decorated.
 Require Import src.frost.decorated_algo.def_decl_algo.
 Require Import src.frost.decorated_algo.def_decl_algo_sub.
-Require Import src.frost.decorated_algo.def_decl_algo_sub_hyg.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_stability.
@@ -1807,7 +1806,7 @@ Definition subtag_flex_sound_concl
 
 (** ⚙ KEPT here (2026-08-09): [prop_completeness_sub_precise.v] proved this
     identically, but the two are invisible to each other and NO shared ancestor
-    sees both prerequisites — [ad_pat_sub_gv] (decorated_algo/def_decl_algo_sub_hyg.v)
+    sees both prerequisites — [ad_pat_sub_gv] (decorated_algo/def_decl_algo_sub.v)
     and [ad_pat_consis_psi_cong] (algo/consis/prop_soundness_consis.v).  So the
     dedupe is by IMPORT, not by lifting: this file is the earliest point that
     sees both, and sub_precise now imports it. *)

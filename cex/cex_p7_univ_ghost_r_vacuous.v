@@ -2,7 +2,7 @@
     Sub-UnivGhostR row VACUOUS.  RESOLVED 2026-07-30: the motive was repaired
     the same day — the third premise was REMOVED from the root and moved to
     the CONSISTENCY LEAVES of the join ([ad_pat_sub_gv],
-    def_decl_algo_sub_hyg.v), and [a_sub_complete_univ_ghost_r] is now a REAL
+    def_decl_algo_sub.v), and [a_sub_complete_univ_ghost_r] is now a REAL
     proof (algorithmic UnivGhostR + the shared [□]-P0 precision core + a
     [∀◇]-wrap).  This file keeps the machine-checked record of WHY the
     root-level formulation was wrong; the ForallL/ForallR halves of the same
@@ -68,7 +68,6 @@ Require Import src.frost.algo.def_meta.
 Require Import src.frost.decorated_algo.def_decl_algo.
 Require Import src.frost.decorated_algo.def_decorated.
 Require Import src.frost.decorated_algo.def_decl_algo_sub.
-Require Import src.frost.decorated_algo.def_decl_algo_sub_hyg.
 Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.sub.prop_completeness_sub_gen.
 Require Import src.frost.algo.sub.look.prop_eq_cstr.

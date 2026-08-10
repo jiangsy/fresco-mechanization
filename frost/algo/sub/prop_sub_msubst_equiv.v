@@ -46,7 +46,7 @@ Require Import src.frost.algo.consis.prop_soundness_consis.   (* uskl_to_pskl_op
 Require Import src.frost.algo.sub.look.prop_eq_cstr. (* msubst_uskl_syn_open *)
 Require Import src.frost.algo.consis.prop_consis_precise.  (* ftag_in_uskl_{open_var,ptyp_syn} *)
 Require Import src.frost.algo.consis.prop_completeness_consis. (* skl_tyequiv_consis_transport *)
-Require Import src.frost.decorated_algo.def_decl_algo_sub_hyg. (* ad_pat_sub_g / _gv *)
+Require Import src.frost.decorated_algo.def_decl_algo_sub. (* ad_pat_sub_g / _gv *)
 Require Import src.frost.algo.sub.prop_completeness_sub_precise.     (* fold_flex, mono_paint_guarded *)
 
 Set Implicit Arguments.

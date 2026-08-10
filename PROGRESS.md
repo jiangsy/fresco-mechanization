@@ -238,6 +238,46 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-08-11 — ⚙ **`ad_pat_sub_n` RETIRED (dead ~290 lines)**; and why the two readings of `fresh Ψ'` cannot be unified yet
+
+Asked to make `d_sub` and `d_pat_sub` take the same (GLOBAL) reading of the
+paper's ForallL side condition `fresh Ψ'` as the `_g` / `_gv` mirrors, so that
+the completeness direction's obstruction (B) goes away.  **Attempted and backed
+out**; `make coq` exit 0, 24/24 closed, tree unchanged apart from the deletion
+below.  Full write-up: [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md) (⛔ GAP
+2026-08-11) and the hand-off.
+
+**What the change costs.**  Adding `Ψ' ∩ ftag(subject) [=] ∅` to `d_sub` /
+`d_pat_sub` / `ad_pat_sub` is mechanical at ~35 of ~38 sites — every transport
+either keeps the subject, takes `Ψ' := ∅`, or substitutes a TYPE variable,
+which cannot change a tag.  It fails at exactly one place, and it is a Phase-2
+flagship dependency: `d_consis_sub_trans_mid` (CST, paper B.3), whose ForallL
+case transports a derivation along `utyp_tag_refines`, where **the subject
+GAINS tags**.  Nothing bounds the added ones — `utyp_tag_refines` puts no
+freshness on them, and `d_consis`'s ForallSynTagged row correctly does not
+collect them.
+
+⭐ **The real prerequisite is the same either way**: ε-TAG FRESHENING — a
+`d_sub` / `d_pat_sub` derivation can be re-tagged so every ForallL
+instantiation's tags avoid a given finite set.  With it, CST re-tags (so the
+rule change lands) and the completeness bridge can freshen on the way (so the
+rule change is not even needed): the two readings become interderivable, which
+is what the paper's prose means.  ε is a plain atom, so lngen generates no
+substitution for it; the work is that plus renaming closure for `d_tags`,
+`is_ttyp`, `d_consis`, `d_sub` and the `_skl` twins, and the set-level
+`atoms` renaming the tag contexts need.
+
+⚙ **LANDED, and independent of all the above**: `ad_pat_sub_n` — the
+non-hygienic fuel mirror — and its five bridge lemmas (`ad_pat_sub_of_n`,
+`_n_succ`, `_n_mono`, `_n_rename_tvar`, `ad_pat_sub_to_n`; the §P5a block of
+`algo/sub/prop_completeness_sub_precise.v` plus the 64-line inductive) had
+**no consumer anywhere in the tree**.  §1 of the completeness skeleton named
+`_n` as the measure, the development settled on the tag-hygienic
+`ad_pat_sub_g`, and nothing came back for it.  Deleted, with RESTART NOTEs at
+both sites.  ⚠️ Note what this does NOT show: unifying the reading would buy
+no FURTHER collapse, because `ad_pat_sub_g` earns its keep by its FUEL
+discipline, not by its hygiene premises.
+
 ## 2026-08-10 — ⭐ **THE CONSERVATIVITY BRIDGE: SOUNDNESS AT A CLOSED PROGRAM NOW READS THE PAPER'S §declarative SYSTEM**
 
 Hand-off: [`docs/HANDOFF-closed-corollaries-declarative.md`](docs/HANDOFF-closed-corollaries-declarative.md).

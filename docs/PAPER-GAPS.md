@@ -28,6 +28,65 @@ recently P6-Sv at the end of this file)}.
 > Several judgments looked broken until that condition was restored.  **Check
 > that file before concluding a lemma is unprovable.**
 
+## ⛔ GAP (2026-08-11) — `fresh Ψ'` is read TWO ways in the tree, and making the two agree needs ε-tag freshening, which does not exist
+
+`ForallL`'s side condition is the single word *fresh* on `Ψ'`:
+
+```
+    M ≠ TI      Ψ' fresh      tags{Ψ'}{φ}      Γ ⊢ φ      φ tagged
+    [Ψ,Ψ'] Γ ⊢[M] C[φ/α] ⩽ B
+    ───────────────────────────────────────────────────────────── ForallL
+                   [Ψ] Γ ⊢[M] ∀^ε α. C ⩽ B
+```
+
+The mechanization renders it **two different ways**, and the difference is
+load-bearing:
+
+| judgment | rendering |
+|---|---|
+| `d_sub`, `d_pat_sub`, `ad_pat_sub` | `Ψ' ∩ Ψ = ∅` — fresh for the TAG CONTEXT |
+| `ad_pat_sub_g`, `ad_pat_sub_gv` (the fuel mirrors) | that **plus** `Ψ' ∩ tags(subject) = ∅` — GLOBAL freshness |
+
+The strong reading is not optional: `lemma:precision-substitution` is FALSE
+over derivations that have only the weak one, because **Arrow splits the tag
+context but not the subject** (`[Ψ₁,Ψ₂]` goes to the two premises while the
+subject keeps all its tags), so a tag can leave the context on one branch and
+still sit in the subject on the other.  The weak reading is what the two
+DECLARATIVE judgments have, so a completeness statement over `d_sub` /
+`d_pat_sub` cannot reach the mirrors the theorems consume.
+
+**Making the readings uniform is not bookkeeping** (tried and backed out,
+2026-08-11).  Putting `Ψ' ∩ tags(subject) = ∅` on `d_sub` / `d_pat_sub` /
+`ad_pat_sub` goes through mechanically at ~35 of ~38 sites — every transport
+either keeps the subject, instantiates `Ψ' := ∅`, or substitutes a type
+variable (which cannot change a tag).  It fails at exactly one place, and that
+place is a Phase-2 flagship dependency:
+
+> `d_consis_sub_trans_mid` — CST, paper B.3, `decl/prop_general_subsumption.v`.
+> Its `ForallL` case transports a derivation along `utyp_tag_refines C' Cmid`,
+> where the subject **GAINS** tags (`utr_etag_syn` turns a `∀ˢ` into a `∀^ε`).
+> Rebuilding `ForallL` for `C'` needs `Ψ' ∩ tags(C') = ∅`, and all the
+> derivation supplies is `Ψ' ∩ tags(Cmid) = ∅`.  Nothing in scope bounds the
+> ADDED tags: `utyp_tag_refines` puts no freshness on them, and consistency
+> does not collect them either (`ForallSynTagged` leaves `Ψ` unchanged — the
+> paper is right not to collect there: a tag is consumed only when the
+> ε-quantifier meets an INHERITED `∀`).
+
+So the obligation is real, and it is the SAME missing lemma either way:
+**a `d_sub` / `d_pat_sub` derivation can be re-tagged so that every ForallL
+instantiation's tags avoid any given finite set.**  With it, CST re-tags the
+transported derivation and the two readings become interderivable; without it,
+neither the rule change nor a declarative completeness corollary can land.
+It needs ε-substitution over `utyp` / `uskl` (ε is a plain atom, so lngen
+generates nothing) plus renaming closure for `d_tags`, `is_ttyp`, `d_consis`
+and `d_sub` — comparable in size to `algo/consis/prop_consis_rename.v`.
+
+⚙ ONE THING THE ATTEMPT DID SETTLE, and it landed: the non-hygienic fuel
+mirror `ad_pat_sub_n` and its five bridge lemmas (~230 lines) had **no
+consumer anywhere** — §1 of the completeness skeleton named it as the measure
+but the development settled on the hygienic `ad_pat_sub_g` and never came
+back.  Deleted.
+
 ## PROSE-COMPLETION (2026-08-10) — `app:decl-in-algo-context`'s "it is easy to extend them" is a CONSERVATIVITY lemma, and it holds in one direction only
 
 `app:decl-in-algo-context` (full-algo-spec.tex:97-115) introduces the whole
