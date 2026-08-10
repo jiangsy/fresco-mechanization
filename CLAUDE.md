@@ -157,6 +157,12 @@ mechanization/
 │   ├── coercions.v       (paint/erase conversions — DEFINITIONS ONLY:
 │   │                      ptyp_to_btyp_syn, ptyp_to_utyp_syn,
 │   │                      btyp_to_utyp_syn, btyp_to_ptyp, … + the 4 Coercions)
+│   ├── prop_etag.v       (ε-TAG EQUIVARIANCE, syntactic layer: the
+│   │                      transposition on atoms / atom SETS / utyp / uskl.
+│   │                      The paper's ForallL `fresh Ψ'` is a statement about
+│   │                      NAMES, and a swap is an automorphism with no side
+│   │                      condition where a one-way rename would need the
+│   │                      whole derivation's tags)
 │   ├── prop_coercions.v  (everything ABOUT those conversions, and the only
 │   │                      place any of it goes: §1 retractions, §2 open /
 │   │                      open_rec commutation, §3 lc + shape-predicate
@@ -177,6 +183,12 @@ mechanization/
 │   │   ├── prop_weakening.v           (weakening / narrowing, split-syntax)
 │   │   ├── prop_renaming.v            (tvar-renaming closure for all judgments)
 │   │   ├── prop_skeleton.v            (skeleton refinement preserves wf, D4)
+│   │   ├── prop_etag_swap.v           (ε-tag equivariance of d_tags /
+│   │   │                              d_consis / d_sub and their skeleton
+│   │   │                              twins, + the ForallL freshening.
+│   │   │                              ⚠️ read its header: the primitive is
+│   │   │                              proved, the induction that would apply
+│   │   │                              it derivation-wide is not)
 │   │   ├── prop_syntax_directed.v     (d_sd_typing ⇄ d_typing)
 │   │   ├── prop_annotation.v / prop_shallow.v
 │   │   ├── prop_general_subsumption.v (D1 + D12; CST; FN^n spine machinery —

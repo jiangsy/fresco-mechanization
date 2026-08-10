@@ -29,15 +29,31 @@ Definition decr_mode (m : mode) : mode :=
 (*  Syntactic quantifier tags                                            *)
 (* ===================================================================== *)
 
-(** The ε tags occurring in a [uskl] (its [∀^ε α.ψ] binders).  Tags are plain
-    atoms (not a locally-nameless sort), so lngen generates no collector; this
-    is the hand-written one.
+(** The ε tags occurring in a [utyp] / [uskl] (their [∀^ε α.φ] binders).  Tags
+    are plain atoms (not a locally-nameless sort), so lngen generates no
+    collector; these are the hand-written ones.
 
-    Used by the completeness track: the paper's ForallL side condition
-    [fresh Ψ'] means the instantiation's tags are GLOBALLY fresh — in
-    particular fresh from the tags already in the subject — and mechanizing
-    that prose-freshness requires a subject's tags syntactically
-    (precision-substitution, docs/DESIGN-completeness-subtyping.md §5.2). *)
+    ⭐ THE PAPER'S ForallL SIDE CONDITION [fresh Ψ'] MEANS GLOBAL FRESHNESS —
+    in particular freshness from the tags already in the SUBJECT — and every
+    subtyping judgment in the tree renders it that way, as a second premise
+    [Ψ' ∩ ftag(subject) [=] ∅] beside [Ψ' ∩ Ψ [=] ∅] ([d_sub], [d_pat_sub],
+    [ad_pat_sub] and the [_g]/[_gv] mirrors).  The two are NOT
+    interchangeable: freshness from the tag context alone does not survive the
+    Arrow rule (the context splits, the subject does not), and
+    precision-substitution is FALSE over derivations that only have it
+    (docs/DESIGN-completeness-subtyping.md §5.2).  What makes the strong
+    reading legitimate is that a derivation's instantiation tags can always be
+    MOVED — frost/prop_etag.v, decl/prop_etag_swap.v. *)
+
+Fixpoint ftag_in_utyp (C : utyp) : atoms :=
+  match C with
+  | utyp_unit => {}
+  | utyp_var_b _ => {}
+  | utyp_var_f _ => {}
+  | utyp_arrow C1 C2 => ftag_in_utyp C1 `union` ftag_in_utyp C2
+  | utyp_all_syn C0 => ftag_in_utyp C0
+  | utyp_all_etag ε C0 => add ε (ftag_in_utyp C0)
+  end.
 
 Fixpoint ftag_in_uskl (R : uskl) : atoms :=
   match R with

@@ -238,45 +238,55 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-11 — ⚙ **`ad_pat_sub_n` RETIRED (dead ~290 lines)**; and why the two readings of `fresh Ψ'` cannot be unified yet
+## 2026-08-11 — ⭐ **ε-TAG EQUIVARIANCE PROVED**; `ad_pat_sub_n` retired; `def_decl_algo_sub_hyg.v` merged away
 
 Asked to make `d_sub` and `d_pat_sub` take the same (GLOBAL) reading of the
-paper's ForallL side condition `fresh Ψ'` as the `_g` / `_gv` mirrors, so that
-the completeness direction's obstruction (B) goes away.  **Attempted and backed
-out**; `make coq` exit 0, 24/24 closed, tree unchanged apart from the deletion
-below.  Full write-up: [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md) (⛔ GAP
-2026-08-11) and the hand-off.
+paper's ForallL side condition `fresh Ψ'` as the `_g` / `_gv` mirrors.  `make
+coq` exit 0, 24/24 closed.  Full write-up: [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md)
+(⛔ GAP 2026-08-11) and the hand-off.
 
-**What the change costs.**  Adding `Ψ' ∩ ftag(subject) [=] ∅` to `d_sub` /
-`d_pat_sub` / `ad_pat_sub` is mechanical at ~35 of ~38 sites — every transport
-either keeps the subject, takes `Ψ' := ∅`, or substitutes a TYPE variable,
-which cannot change a tag.  It fails at exactly one place, and it is a Phase-2
-flagship dependency: `d_consis_sub_trans_mid` (CST, paper B.3), whose ForallL
-case transports a derivation along `utyp_tag_refines`, where **the subject
-GAINS tags**.  Nothing bounds the added ones — `utyp_tag_refines` puts no
-freshness on them, and `d_consis`'s ForallSynTagged row correctly does not
-collect them.
+⭐ **NEW: `frost/prop_etag.v` + `frost/decl/prop_etag_swap.v`** (~600 lines) —
+the primitive that reconciles the two readings.  `fresh` is a statement about
+NAMES, so the right primitive is ε-tag EQUIVARIANCE: a TRANSPOSITION of two
+tags is an automorphism of `d_tags`, `d_tags_skl`, `d_wf_utyp`, `d_wf_uskl`,
+`d_consis`, `d_pat_consis`, `d_sub` and `d_pat_sub`, with **no freshness side
+condition** — a one-way rename would need ε₂ fresh for the whole derivation,
+and "the tags of a derivation" is not collectable from a `Prop`.  (Same reason
+`algo/prop_swap.v` takes equivariance as the renaming primitive for type
+variables.)  On top: `d_sub_freshen_forall_l` moves ONE ForallL node's
+instantiation out of any finite set, one transposition per offending tag,
+measured by `cardinal (Ψ' ∩ S)`.  ⚙ Tag contexts are `atoms`, which has no
+image operator, so the set action is characterised by a single
+`swap_atoms_spec` and every other fact is a pointwise consequence.
 
-⭐ **The real prerequisite is the same either way**: ε-TAG FRESHENING — a
-`d_sub` / `d_pat_sub` derivation can be re-tagged so every ForallL
-instantiation's tags avoid a given finite set.  With it, CST re-tags (so the
-rule change lands) and the completeness bridge can freshen on the way (so the
-rule change is not even needed): the two readings become interderivable, which
-is what the paper's prose means.  ε is a plain atom, so lngen generates no
-substitution for it; the work is that plus renaming closure for `d_tags`,
-`is_ttyp`, `d_consis`, `d_sub` and the `_skl` twins, and the set-level
-`atoms` renaming the tag contexts need.
+⚠️ **The rule change itself was BACKED OUT.**  Adding `Ψ' ∩ ftag(subject) = ∅`
+to `d_sub` / `d_pat_sub` / `ad_pat_sub` is mechanical at ~35 of ~38 sites and
+fails at exactly one: `d_consis_sub_trans_mid` (CST, paper B.3), whose ForallL
+case transports along `utyp_tag_refines`, where the subject GAINS tags.  ⚠️ It
+cannot be repaired locally with the primitive: structural induction ties the IH
+to the ORIGINAL instantiation, and freshening yields a derivation of a
+different statement — while the swap cannot be applied to the IH's output
+either, because there the instantiation's tags and the refined subject's tags
+sit in the same term `T0[ph]`.
 
-⚙ **LANDED, and independent of all the above**: `ad_pat_sub_n` — the
-non-hygienic fuel mirror — and its five bridge lemmas (`ad_pat_sub_of_n`,
-`_n_succ`, `_n_mono`, `_n_rename_tvar`, `ad_pat_sub_to_n`; the §P5a block of
-`algo/sub/prop_completeness_sub_precise.v` plus the 64-line inductive) had
-**no consumer anywhere in the tree**.  §1 of the completeness skeleton named
-`_n` as the measure, the development settled on the tag-hygienic
-`ad_pat_sub_g`, and nothing came back for it.  Deleted, with RESTART NOTEs at
-both sites.  ⚠️ Note what this does NOT show: unifying the reading would buy
-no FURTHER collapse, because `ad_pat_sub_g` earns its keep by its FUEL
-discipline, not by its hygiene premises.
+⭐ **The next step is worked out** (≈150 lines + the CST edit): a tags-BOUND
+twin `d_sub_tagsin U` (`Ψ' [<=] U` on the ForallL rules), whose
+`d_sub_to_tagsin` is a plain collection induction; its equivariance; a
+wholesale freshening valid when the CONCLUSION is tag-free; then CST restated
+with `d_sub_tagsin U` + `ftag C' ∩ U [=] ∅`, and its two call sites discharging
+that premise by the wholesale freshening.  Five steps, spelt out in the
+hand-off.
+
+⚙ **Also landed, and independent**: `ad_pat_sub_n` — the non-hygienic fuel
+mirror — and its five bridge lemmas (`ad_pat_sub_of_n`, `_n_succ`, `_n_mono`,
+`_n_rename_tvar`, `ad_pat_sub_to_n`; §P5a of
+`algo/sub/prop_completeness_sub_precise.v` plus the 64-line inductive) had **no
+consumer anywhere in the tree** — §1 of the completeness skeleton named `_n` as
+the measure, the development settled on the tag-hygienic `ad_pat_sub_g`, and
+nothing came back for it.  Deleted (~290 lines), RESTART NOTEs at both sites.
+And `def_decl_algo_sub_hyg.v` was MERGED into `def_decl_algo_sub.v`: one topic
+(the paper's subtyping box and the mirrors that measure it), and per CLAUDE.md's
+DO-NOT-MERGE check the smaller file's only extra dependency was `Lia`.
 
 ## 2026-08-10 — ⭐ **THE CONSERVATIVITY BRIDGE: SOUNDNESS AT A CLOSED PROGRAM NOW READS THE PAPER'S §declarative SYSTEM**
 
