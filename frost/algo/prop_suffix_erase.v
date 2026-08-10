@@ -1617,13 +1617,14 @@ Proof.
     exact Hx.
   - (* anno *)
     eapply ad_sd_typing__anno.
+    + eapply a_wf_ptyp_subst_mid; [ exact H | reflexivity | exact Hs ].
     + pose proof (IHad_sd_typing τs α0 b0 Θa Θ0 eq_refl Hs Hu) as IHx.
       rewrite <- ptyp_to_btyp_inh_subst_mono in IHx; [ | assumption ].
       exact IHx.
-    + pose proof (@ad_pat_sub_v_subst_mid _ _ _ _ _ _ H0 τs α0 b0 Θa Θ0
+    + pose proof (@ad_pat_sub_v_subst_mid _ _ _ _ _ _ H1 τs α0 b0 Θa Θ0
                     eq_refl Hs Hu) as Hx.
       rewrite subst_btyp_to_bskl_eq, <- ptyp_to_uskl_syn_subst in Hx.
-    exact Hx.
+      exact Hx.
   - (* freeze *)
     rewrite <- ptyp_to_btyp_inh_subst_mono; [ | assumption ].
     eapply ad_sd_typing__freeze.

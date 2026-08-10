@@ -554,10 +554,11 @@ Proof.
         rewrite subst_ptyp_in_ptyp_fresh_eq in Hs; [ exact Hs | exact Hfr ].
   - (* anno *)
     apply ad_sd_typing__anno.
+    + apply a_wf_ptyp_rename_paint; [ exact H | exact Hdefs ].
     + pose proof (IHad_sd_typing Θ1 eq_refl Hdom Hβ' Hdefs) as IHx.
       rewrite subst_var_ptyp_to_btyp_inh in IHx. exact IHx.
     + pose proof (@ad_pat_sub_v_rename_paint _ _ _ Θ1 α Θ0 _ _ β'
-                    H0 Hdom Hdefs) as Hs.
+                    H1 Hdom Hdefs) as Hs.
       rewrite subst_var_btyp_to_bskl, subst_var_ptyp_to_uskl_syn in Hs.
       exact Hs.
   - (* freeze *)

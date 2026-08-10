@@ -165,9 +165,9 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   (docs/PAPER-GAPS.md): the two Barendregt conditions the four suffix-DISCARDING
   check rows need for `lemma:suffix-erasure`, the `uniq` filter `AT-Abs` needs
   on `guess^TY`'s block, and the correction of `AT-AbsAnnoCheck`'s result
-  domain.  ⭐ Reader-facing form: `a_typing_sound_closed`
-  (algo/typing/prop_typing.v §14) — the empty context, at the two user-facing
-  modes.  History of the build-up:
+  domain.  ⭐ Reader-facing form: `a_typing_sound_infer` / `a_typing_sound_check`
+  (algo/typing/prop_typing.v §14) — the empty context, one per user-facing
+  mode.  History of the build-up:
 - 🟡 (history) **Theorem: Soundness of type inference — STARTED 2026-08-06**
   (`algo/prop_soundness_typing.v`, NEW; all Qed and axiom-free).  ⭐ The
   `Freeze` ingredient is DONE and was DERIVED from theorem 1's transport, not
@@ -207,9 +207,10 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   `(size_exp e, size_btyp B)`: ten rows recurse at a strictly smaller
   SUBJECT, and only the two ∀-peeling AbsCheck rows recurse at the same
   subject, dropping one `∀` off the declarative result.
-  ⭐ Reader-facing form: `a_typing_complete_closed` (algo/typing/prop_typing.v
-  §14) — the empty context, at the two user-facing modes, with no
-  metasubstitution quantified and the optimality already instantiated.
+  ⭐ Reader-facing form: `a_typing_complete_infer` / `a_typing_complete_check`
+  (algo/typing/prop_typing.v §14) — the empty context, one per user-facing
+  mode, with no metasubstitution quantified and the optimality already
+  instantiated.
   ⭐ Its two unrecorded prerequisites, both closed here: `a_split_complete_tc`
   — completeness of SPLITTING at check mode, i.e. the paper's AbsCheck
   **subcase 2**, where the split's flexible row has to be BUILT out of a full
@@ -233,28 +234,23 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-10 — ⭐ **THE TWO TYPING THEOREMS GET A CLOSED-PROGRAM COROLLARY**
+## 2026-08-10 — ⭐ **CLOSED-PROGRAM COROLLARIES OF THE TWO TYPING THEOREMS**
 
-`a_typing_sound_closed` / `a_typing_complete_closed`
-(algo/typing/prop_typing.v §14), both Qed and axiom-free, both `Check`ed in
-README.v (now 22 entries).  They specialize the flagships to the empty
-context, where the input can only be in one of the two user-facing modes:
+`a_typing_sound_infer` / `_check` and `a_typing_complete_infer` / `_check`
+(algo/typing/prop_typing.v §14), all Qed and axiom-free, all `Check`ed in
+README.v (now 24 entries).  At the empty context the input can only be in one
+of the two user-facing modes — INFERENCE at the ghost `□`, CHECKING at a
+closed type `⌈A0⌉` — so each flagship splits in two, and three premises go
+with the split: `a_wf_aenv nil` is a constructor, `nil ⨟ ∅ ⊢ₚₛᵃ P0` is
+`a_wf_pskl__hole` resp. the annotation's own wf, and `a_ty_mode_compat` is
+read off the mode.
 
-```coq
-(m = mode_ti /\ P0 = pskl_hole) \/
-(exists A0, m = mode_tc /\ P0 = ptyp_to_pskl A0 /\ a_wf_ptyp nil A0)
-```
-
-⭐ That single disjunction retires THREE premises — `a_wf_aenv nil` is a
-constructor, `nil ⨟ ∅ ⊢ₚₛᵃ P0` is `a_wf_pskl__hole` resp. the annotation's own
-wf, and `a_ty_mode_compat` is read off the shape — and the rigid-variable side
-condition becomes the honest `ftvar_in_exp e [<=] empty`.
-
-Completeness sheds two more.  `κ ∷ nil ⊑ nil` holds at `κ = nil`
-(`a_inc__empty` + `a_suffix__nil`), so **no metasubstitution is quantified at
-all** and the refinement premise reads at `P0` itself (new one-liner
-`msubst_pskl_nil`, beside `msubst_ptyp_nil`).  And the optimality is applied
-at the identity increase SOUNDNESS hands back, so the conclusion collapses to
+Completeness sheds two more (shared engine `a_typing_complete_nil`).
+`κ ∷ nil ⊑ nil` holds at `κ = nil` (`a_inc__empty` + `a_suffix__nil`), so **no
+metasubstitution is quantified at all** and the refinement premise reads at
+`P0` itself (new one-liner `msubst_pskl_nil`, beside `msubst_ptyp_nil`).  And
+the optimality is applied at the identity increase SOUNDNESS hands back, so
+the conclusion collapses to
 
 ```coq
 exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ msubst_ptyp ζ A1 ≡ᵗ B
@@ -262,6 +258,42 @@ exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ msubst_ptyp ζ A1 ≡ᵗ B
 
 — the run's answer, closed off by ζ, IS the declarative type: it is the most
 general derivation, not merely some derivation.
+
+⭐ At INFERENCE the refinement premise goes too: at `□` it says only that the
+declarative result is a SYNTHESISED painting of a well-formed type, and both
+halves are read off the derivation (`ad_sd_typing_mod_comp_ty` +
+`mod_comp_ty_ti_inv` + `ad_sd_typing_target_wf`).  That needed the SYN mirror
+of `btyp_inh_painting_inv` — new `btyp_syn_colouring_inv`, and with it
+`ptyp_to_btyp_syn_open_var` in prop_coercions.v, which was missing while its
+`_inh` twin was not.
+
+⭐⭐ **AND COMPLETENESS NEEDS NO CONDITION ON THE TERM AT ALL** — so
+`a_typing_complete_infer` has the declarative derivation as its ONLY premise.
+`ad_sd_typing__anno` was the one rule that put a type into the term WITHOUT
+an `a_wf_ptyp Θ A` premise (its four type-carrying siblings all have one),
+and its join constrains only the TARGET (`ad_pat_sub_target_wf`), so a
+derivation said nothing about the scope of the types its subject mentions.
+**The premise is now ON the rule** (decorated_algo/def_decl_algo_typing.v,
+registered in docs/PAPER-GAPS.md), which is free on the soundness side —
+`a_typing_sound` already carries `a_wf_exp Θ0 e`, which stores exactly this
+at every annotation — and buys the new
+
+```coq
+ad_sd_typing_wf_exp : Θ ⊢ᵃᵈ[ M ] e ⦂ B -> a_wf_exp Θ e
+```
+
+(with `a_wf_exp_strip_prefix` / `_strip_tm` / `a_wf_exp_lc` beside it).  Rule
+change cost: FIVE construction sites and no induction rewrites —
+`prop_ctx_mono` (`a_wf_ptyp_mono`), `prop_rename_decl`
+(`a_wf_ptyp_rename_paint`), `prop_suffix_erase` (`a_wf_ptyp_subst_mid`) and
+two in `prop_soundness_typing` (`a_wf_ptyp_isub` / `_mono`).  ⚠️ Each of those
+also had to renumber the join hypothesis `H0 → H1`.
+
+⚠️ **SOUNDNESS still asks for `a_wf_exp nil e`**, and adding the same premise
+to `AT-Anno` would not change that: `a_typing__abs` runs the body under the
+flexibles `guess^TY` just invented, and nothing stops a nested annotation
+from mentioning one — a run can accept a term whose type variables are not
+those of its INPUT context.  It is the paper's own "M is well-formed in Θ₀".
 
 ## 2026-08-10 — ⭐ **THE ENTRY-WF SIDE CONDITION IS GONE FROM THE WHOLE TREE**, and the changelog comments with it
 

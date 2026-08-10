@@ -430,7 +430,9 @@ Proof.
     pose proof (aenv_tbinds_le_of_binds_le Hle) as Htle.
   - apply ad_sd_typing__unit. eapply ad_pat_sub_v_mono; eauto.
   - eapply ad_sd_typing__var; [ eauto | eapply ad_pat_sub_v_mono; eauto ].
-  - eapply ad_sd_typing__anno; [ auto | eapply ad_pat_sub_v_mono; eauto ].
+  - eapply ad_sd_typing__anno;
+      [ eapply a_wf_ptyp_mono; eauto | auto
+      | eapply ad_pat_sub_v_mono; eauto ].
   - eapply ad_sd_typing__freeze; [ auto | eapply a_tyequiv_ctx_mono; eauto ].
   - apply ad_sd_typing__abs_check_step with (L := L); [ assumption | ].
     intros α Hα. apply H1; [ exact Hα | apply aenv_binds_le_cons; exact Hle ].

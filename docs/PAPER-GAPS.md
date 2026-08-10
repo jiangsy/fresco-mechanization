@@ -28,6 +28,47 @@ recently P6-Sv at the end of this file)}.
 > Several judgments looked broken until that condition was restored.  **Check
 > that file before concluding a lemma is unprovable.**
 
+## PROSE-COMPLETION (2026-08-10) — `sd-Anno` must require its annotation well formed, like its four siblings
+
+`fig:declarative-in-algo-context`'s **sd-Anno** is the one rule that puts a
+type into the term without asking the type to be well formed in the context:
+
+```
+    Θ ⊢ᵃᵈ[TC] e ⦂ inh{A}      typsub^TY[∅] Θ ⊢ syn{A} ⩽ ⌊B⌋
+    ─────────────────────────────────────────────────────── sd-Anno
+                     Θ ⊢ᵃᵈ[m] (e : A) ⦂ B
+```
+
+Its four type-carrying siblings — sd-AbsCheck (→), sd-AbsAnnoCheck (→),
+sd-Abs, sd-AbsAnno — all state `Θ ⊢ A`.  The join in the second premise does
+not cover for it: the only wf a join yields is about its **target**
+(`ad_pat_sub_target_wf` gives `a_scope_pskl Θ (bskl_to_pskl Qt)`), and
+subject well-formedness is one of the paper's EXTERNAL side conditions
+(docs/WF-SIDE-CONDITIONS.md).  So as printed, a derivation says nothing about
+the scope of the types its subject mentions.
+
+**The mechanization adds `a_wf_ptyp Θ A` to the rule** (2026-08-10,
+decorated_algo/def_decl_algo_typing.v).  It is free on the soundness side —
+`a_typing_sound` already carries `a_wf_exp Θ0 e`, which stores exactly this
+for every annotation — and it buys
+
+```coq
+Lemma ad_sd_typing_wf_exp : forall M Θ e B, Θ ⊢ᵃᵈ[ M ] e ⦂ B -> a_wf_exp Θ e.
+```
+
+i.e. a derivation EXHIBITS its own subject as a well-formed term, which is
+what the paper's ambient "all inputs are well formed" is supposed to mean.
+The visible payoff: `a_typing_complete_infer` (algo/typing/prop_typing.v §14)
+— completeness of INFERENCE at a closed program — now has the declarative
+derivation as its **only** premise.
+
+⚠️ The corresponding fact does NOT hold for the ALGORITHMIC judgement, and
+adding the same premise to `AT-Anno` would not make it hold: `AT-Abs` runs
+the body under the flexibles `guess^TY` has just invented, and nothing stops
+a nested annotation from mentioning one — so a run can accept a term whose
+type variables are not those of its INPUT context.  `a_wf_exp Θ0 e` therefore
+stays an input condition of `thm:sound-type-inference`, as in the paper.
+
 ## PROSE-COMPLETIONS (2026-08-07) — three facts thm:complete-skeleton-inference uses and never states
 
 The mechanized `a_pat_complete` (algo/prop_completeness_pat.v) had to state

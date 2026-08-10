@@ -153,6 +153,11 @@ Lemma ptyp_to_btyp_inh_open_var : forall A α,
     open_btyp_wrt_btyp (ptyp_to_btyp_inh A) (btyp_var_f α).
 Proof. intros A α. exact (ptyp_to_btyp_inh_open A (ptyp_var_f α)). Qed.
 
+Lemma ptyp_to_btyp_syn_open_var : forall A α,
+    ptyp_to_btyp_syn (open_ptyp_wrt_ptyp A (ptyp_var_f α)) =
+    open_btyp_wrt_btyp (ptyp_to_btyp_syn A) (btyp_var_f α).
+Proof. intros A α. exact (ptyp_to_btyp_syn_open A (ptyp_var_f α)). Qed.
+
 (** ** btyp -> ptyp *)
 
 Lemma btyp_to_ptyp_open_rec : forall B1 B2 k,

@@ -168,6 +168,16 @@ Inductive ad_sd_typing : mode -> aenv -> exp -> btyp -> Prop :=
       (ptyp_to_uskl_syn A) (btyp_to_bskl B) ->
     Θ ⊢ᵃᵈ[ m ] (exp_var_f x) ⦂ B
 | ad_sd_typing__anno : forall Θ m e A B,                        (* sd-Anno *)
+    (* ⭐ [paper-gap] THE ANNOTATION IS WELL-FORMED IN Θ.  Its four
+       type-carrying siblings ([__abs_check_base], [__abs_anno_check_base],
+       [__abs], [__abs_anno]) all state this; sd-Anno was the one rule that
+       did not, and without it a derivation says NOTHING about the scope of
+       the types the term mentions — [ad_pat_sub_target_wf] constrains only
+       the join's TARGET.  With it, [ad_sd_typing_wf_exp] holds: a derivation
+       exhibits its own subject as a well-formed term, which is what the
+       paper's ambient "all inputs are well-formed" means.
+       docs/PAPER-GAPS.md. *)
+    a_wf_ptyp Θ A ->
     Θ ⊢ᵃᵈ[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) ->
     ad_pat_sub_v a_sub_mode_ty m empty Θ
       (ptyp_to_uskl_syn A) (btyp_to_bskl B) ->

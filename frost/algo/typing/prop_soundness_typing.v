@@ -316,7 +316,8 @@ Proof.
       [ apply Htm; [ exact I | exact H ] | eapply ad_pat_sub_v_isub; eauto ].
   - (* anno *)
     eapply ad_sd_typing__anno;
-      [ apply IHad_sd_typing; assumption | eapply ad_pat_sub_v_isub; eauto ].
+      [ eapply a_wf_ptyp_isub; eassumption
+      | apply IHad_sd_typing; assumption | eapply ad_pat_sub_v_isub; eauto ].
   - (* freeze *)
     eapply ad_sd_typing__freeze;
       [ apply IHad_sd_typing; assumption | eapply a_tyequiv_isub_le; eauto ].
@@ -418,7 +419,10 @@ Proof.
       apply binds_app_3; unfold binds; simpl; right; exact Hb.
   - (* anno *)
     eapply ad_sd_typing__anno;
-      [ apply IHad_sd_typing; auto
+      [ eapply a_wf_ptyp_mono;
+          [ eassumption | apply aenv_tbinds_le_rename_tm;
+                          apply abind_is_tm_not_ty; exact Htm ]
+      | apply IHad_sd_typing; auto
       | eapply ad_pat_sub_v_mono;
           [ eassumption | apply aenv_tbinds_le_rename_tm;
                           apply abind_is_tm_not_ty; exact Htm ] ].
@@ -567,6 +571,24 @@ Qed.
 Corollary btyp_check_colouring : forall B A,
   is_ityp B -> btyp_to_ptyp B = A -> B = ptyp_to_btyp_inh A.
 Proof. intros B A Hi Heq. subst A. apply btyp_inh_painting_inv; exact Hi. Qed.
+
+(** The SYN mirror of [btyp_inh_painting_inv]: at [TI] the colouring is
+    forced the other way. *)
+Lemma btyp_syn_colouring_inv : forall B,
+  is_styp B -> B = ptyp_to_btyp_syn (btyp_to_ptyp B).
+Proof.
+  intros B H; induction H; simpl; try reflexivity.
+  - f_equal; assumption.
+  - f_equal.
+    destruct (atom_fresh (L `union` ftvar_in_btyp B
+                            `union` ftvar_in_btyp
+                                      (ptyp_to_btyp_syn (btyp_to_ptyp B))))
+      as [α Hα].
+    apply (open_btyp_wrt_btyp_inj _ _ α);
+      [ clear - Hα; fsetdec | clear - Hα; fsetdec | ].
+    rewrite <- ptyp_to_btyp_syn_open_var, <- btyp_to_ptyp_open_var.
+    apply H0. clear - Hα; fsetdec.
+Qed.
 
 (* ===================================================================== *)
 (*  §8  [ad_sd_typing] respects the colour/mode discipline [skmod{TY}]     *)
@@ -1603,6 +1625,123 @@ Proof.
   eapply a_wf_ptyp_strip_mid; [ simpl_env; exact H | exact Hfv ].
 Qed.
 
+(* ===================================================================== *)
+(*  §12h  A DERIVATION EXHIBITS ITS OWN SUBJECT AS A WELL-FORMED TERM.     *)
+(*                                                                        *)
+(*  ⭐ This is what [ad_sd_typing__anno]'s [a_wf_ptyp] premise buys.       *)
+(*  Without it the annotation's type variables are unconstrained — the     *)
+(*  join constrains only its TARGET ([ad_pat_sub_target_wf]) — and the     *)
+(*  statement is false.  With it, a consumer at the empty context need     *)
+(*  not assume [lc_exp e] and [ftvar_in_exp e ⊆ ∅]: they are theorems.     *)
+(* ===================================================================== *)
+
+(** [a_wf_exp] reads the context only through [a_wf_ptyp] on annotations,
+    so a prefix the term's type variables dodge can be stripped. *)
+Lemma a_wf_exp_strip_prefix : forall Θall e,
+  a_wf_exp Θall e ->
+  forall Ξ Θ, Θall = Ξ ++ Θ ->
+  (forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_exp e) ->
+  a_wf_exp Θ e.
+Proof.
+  intros Θall e H; induction H; intros Ξ Θ' Heq Hfv; subst; simpl in Hfv.
+  - apply a_wf_exp__unit.
+  - apply a_wf_exp__var.
+  - apply a_wf_exp__anno.
+    + eapply a_wf_ptyp_strip_prefix;
+        [ exact H
+        | intros γ Hγ; pose proof (Hfv γ Hγ) as Hn; clear - Hn; fsetdec ].
+    + eapply IHa_wf_exp;
+        [ reflexivity
+        | intros γ Hγ; pose proof (Hfv γ Hγ) as Hn; clear - Hn; fsetdec ].
+  - apply a_wf_exp__freeze.
+    eapply IHa_wf_exp; [ reflexivity | exact Hfv ].
+  - apply a_wf_exp__abs with (L := L). intros x Hx.
+    eapply H0; [ exact Hx | reflexivity | ].
+    intros γ Hγ. pose proof (Hfv γ Hγ) as Hn.
+    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hup.
+    simpl in Hup. clear - Hn Hup; fsetdec.
+  - apply a_wf_exp__abs_anno with (L := L).
+    + eapply a_wf_ptyp_strip_prefix;
+        [ exact H
+        | intros γ Hγ; pose proof (Hfv γ Hγ) as Hn; clear - Hn; fsetdec ].
+    + intros x Hx.
+      eapply H1; [ exact Hx | reflexivity | ].
+      intros γ Hγ. pose proof (Hfv γ Hγ) as Hn.
+      pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hup.
+      simpl in Hup. clear - Hn Hup; fsetdec.
+  - apply a_wf_exp__app;
+      [ eapply IHa_wf_exp1 | eapply IHa_wf_exp2 ];
+      solve [ reflexivity
+            | intros γ Hγ; pose proof (Hfv γ Hγ) as Hn; clear - Hn; fsetdec ].
+Qed.
+
+(** A term entry contributes no type variable, so it strips for free. *)
+Corollary a_wf_exp_strip_tm : forall x (b : abind) Θ e,
+  a_wf_exp ((x ~ b) ++ Θ) e -> ~ abind_is_ty b -> a_wf_exp Θ e.
+Proof.
+  intros x b Θ e H Hb.
+  eapply a_wf_exp_mono;
+    [ exact H | apply (@aenv_tbinds_le_strip_tm nil x b Θ); exact Hb ].
+Qed.
+
+Lemma ad_sd_typing_wf_exp : forall M Θ e B,
+  Θ ⊢ᵃᵈ[ M ] e ⦂ B -> a_wf_exp Θ e.
+Proof.
+  intros M Θ e B H; induction H.
+  - apply a_wf_exp__unit.
+  - apply a_wf_exp__var.
+  - apply a_wf_exp__anno; assumption.
+  - apply a_wf_exp__freeze; assumption.
+  - (* abs_check_step : the peeled RIGID is dodged by a fresh choice *)
+    destruct (atom_fresh (L `union` ftvar_in_exp (exp_abs e))) as [α Hα].
+    eapply a_wf_exp_strip_prefix;
+      [ apply (H1 α ltac:(clear - Hα; fsetdec)) | reflexivity | ].
+    intros γ Hγ. simpl in Hγ.
+    assert (γ = α) by (clear - Hγ; fsetdec). subst γ.
+    clear - Hα; fsetdec.
+  - (* abs_check_base *)
+    apply a_wf_exp__abs with (L := L). intros x Hx.
+    eapply a_wf_exp_strip_tm;
+      [ apply (H2 x Hx) | intros []; discriminate ].
+  - (* abs_anno_check_step *)
+    destruct (atom_fresh (L `union` ftvar_in_exp (exp_abs_anno A e)))
+      as [α Hα].
+    eapply a_wf_exp_strip_prefix;
+      [ apply (H1 α ltac:(clear - Hα; fsetdec)) | reflexivity | ].
+    intros γ Hγ. simpl in Hγ.
+    assert (γ = α) by (clear - Hγ; fsetdec). subst γ.
+    clear - Hα; fsetdec.
+  - (* abs_anno_check_base *)
+    apply a_wf_exp__abs_anno with (L := L); [ assumption | ]. intros x Hx.
+    eapply a_wf_exp_strip_tm;
+      [ apply (H3 x Hx) | intros []; discriminate ].
+  - (* abs *)
+    apply a_wf_exp__abs with (L := L). intros x Hx.
+    eapply a_wf_exp_strip_tm;
+      [ apply (H3 x Hx) | intros []; discriminate ].
+  - (* abs_anno *)
+    apply a_wf_exp__abs_anno with (L := L); [ assumption | ]. intros x Hx.
+    eapply a_wf_exp_strip_tm;
+      [ apply (H5 x Hx) | intros []; discriminate ].
+  - (* app *) apply a_wf_exp__app; assumption.
+Qed.
+
+(** …and a well-formed term is locally closed. *)
+Lemma a_wf_exp_lc : forall Θ e, a_wf_exp Θ e -> lc_exp e.
+Proof.
+  intros Θ e H; induction H.
+  - apply lc_exp_unit.
+  - apply lc_exp_var_f.
+  - apply lc_exp_anno; [ assumption | eapply a_wf_ptyp_lc; eassumption ].
+  - apply lc_exp_freeze; assumption.
+  - destruct (atom_fresh L) as [x Hx].
+    apply (lc_exp_abs_exists x). apply H0. exact Hx.
+  - destruct (atom_fresh L) as [x Hx].
+    apply (lc_exp_abs_anno_exists x);
+      [ eapply a_wf_ptyp_lc; eassumption | apply H1; exact Hx ].
+  - apply lc_exp_app; assumption.
+Qed.
+
 (* --- §12i  odds and ends --------------------------------------------- *)
 
 Lemma a_wf_ptyp_arrow_inv : forall Θ A1 A2,
@@ -1726,7 +1865,8 @@ Proof.
         [ eapply ad_pat_sub_target_wf; exact (ad_pat_sub_of_v Hjoin) | exact HeQt ]. }
     exists Bo. split; [ exact HeA | ]. split; [ | rewrite HeB; exact Href ].
     eapply ad_sd_typing__anno;
-      [ eapply ad_sd_typing_isub_tm;
+      [ eapply a_wf_ptyp_isub; [ exact HwfA1 | exact Hle2 ]
+      | eapply ad_sd_typing_isub_tm;
           [ exact Hd1 | exact Hle2 | eapply a_sub_tm_le; exact H0 ]
       | rewrite HeB, ptyp_to_uskl_syn_via_pskl; exact Hjoin ].
   - (* AT-Freeze *)
