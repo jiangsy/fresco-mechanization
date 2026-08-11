@@ -257,7 +257,7 @@ Qed.
     propagates across the refinement. *)
 Lemma ad_refine_syn_syn_delta_free : forall Θ Δ Qb Q,
   {{ Θ ⨟ Δ ⊢ᵣ Qb ⊳ Q }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall F, Qb = pskl_to_bskl_syn F ->
   (forall α, α `in` Δ -> α `notin` dom Θ) ->
   Δ ∩ ftvar_in_bskl Qb [=] empty ->
@@ -347,7 +347,7 @@ Qed.
 
 Lemma ad_refine_syn_syn_l_wf : forall Θ Δ P Q,
   {{ Θ ⨟ Δ ⊢ᵣ (pskl_to_bskl_syn P) ⊳ Q }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   (forall α, α `in` Δ -> α `notin` dom Θ) ->
   {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
   {{ Θ ⨟ Δ ⊢ₚₛ (bskl_to_pskl Q) }}a ->
@@ -386,7 +386,7 @@ Qed.
     refines to, a ghost refines to as well (given the result is well-formed). *)
 Lemma ad_refine_syn_hole_l : forall Θ Δ P Qr,
   {{ Θ ⨟ Δ ⊢ᵣ (pskl_to_bskl_syn P) ⊳ Qr }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   (forall α, α `in` Δ -> α `notin` dom Θ) ->
   {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
   {{ Θ ⨟ Δ ⊢ₚₛ (bskl_to_pskl Qr) }}a ->
@@ -399,7 +399,7 @@ Qed.
 
 Lemma ad_refine_syn_trans : forall Θ Δ Qm Qr,
   {{ Θ ⨟ Δ ⊢ᵣ Qm ⊳ Qr }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   (forall α, α `in` Δ -> α `notin` dom Θ) ->
   {{ Θ ⨟ Δ ⊢ₚₛ (bskl_to_pskl Qr) }}a ->
   forall Ql,
@@ -562,7 +562,7 @@ Qed.
 Corollary ad_precise_preserves_refine : forall Θ Δ P P' Q,
   {{ Θ ⨟ Δ ⊢ₚᵣ P ⊑ P' }}ad ->
   {{ Θ ⨟ Δ ⊢ᵣ (pskl_to_bskl_inh P') ⊳ Q }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   (forall α, α `in` Δ -> α `notin` dom Θ) ->
   {{ Θ ⨟ Δ ⊢ₚₛ (bskl_to_pskl Q) }}a ->
   {{ Θ ⨟ Δ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ Q }}ad.
@@ -594,7 +594,7 @@ Lemma ad_refine_pskl_ftv_delta_free : forall Θ Δa P Q,
   {{ Θ ⨟ Δa ⊢ᵣₚ P ⊳ Q }}ad ->
   forall Θx,
   (forall x b, binds x b Θ -> binds x b Θx) ->
-  a_wf_aenv Θx ->
+  {{ ⊢ Θx }}a ->
   forall Δ, (forall α, α `in` Δ -> α `notin` dom Θx) ->
   Δ ∩ ftvar_in_pskl P [=] empty ->
   Δ ∩ ftvar_in_pskl Q [=] empty.
@@ -696,7 +696,7 @@ Lemma ad_refine_pskl_hole_l_gen : forall Θ Δa Pm Pr,
   {{ Θ ⨟ Δa ⊢ᵣₚ Pm ⊳ Pr }}ad ->
   forall Θx Δx,
   (forall x b, binds x b Θ -> binds x b Θx) ->
-  a_wf_aenv Θx ->
+  {{ ⊢ Θx }}a ->
   (forall α, α `in` Δx -> α `notin` dom Θx) ->
   {{ Θx ⨟ empty ⊢ₚₛ Pm }}a ->
   {{ Θx ⨟ Δx ⊢ₚₛ Pr }}a ->
@@ -743,7 +743,7 @@ Lemma ad_refine_pskl_trans_gen : forall Θ Δ Pm Pr,
   forall Θx Δx,
   (forall x b, binds x b Θ -> binds x b Θx) ->
   (forall α, α `in` Δ -> α `in` Δx \/ binds α abind_tvar Θx) ->
-  a_wf_aenv Θx ->
+  {{ ⊢ Θx }}a ->
   (forall α, α `in` Δx -> α `notin` dom Θx) ->
   {{ Θx ⨟ Δx ⊢ₚₛ Pr }}a ->
   forall Pl,
@@ -964,7 +964,7 @@ Qed.
 (** The plain (un-reassociated) instance. *)
 Corollary ad_refine_pskl_trans : forall Θ Δ Pm Pr,
   {{ Θ ⨟ Δ ⊢ᵣₚ Pm ⊳ Pr }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   (forall α, α `in` Δ -> α `notin` dom Θ) ->
   {{ Θ ⨟ Δ ⊢ₚₛ Pr }}a ->
   forall Pl,
@@ -986,7 +986,7 @@ Qed.
 
 Lemma ad_refine_pskl_of_inh_paintings : forall Θ Δ Qs Qt,
   {{ Θ ⨟ Δ ⊢ᵣ Qs ⊳ Qt }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall P' P,
   Qs = pskl_to_bskl_inh P' ->
   Qt = pskl_to_bskl_inh P ->
@@ -1066,7 +1066,7 @@ Qed.
 Corollary ad_precise_preserves_refine_pskl : forall Θ Δ P P' Qt,
   {{ Θ ⨟ Δ ⊢ₚᵣ P ⊑ P' }}ad ->
   {{ Θ ⨟ Δ ⊢ᵣₚ P' ⊳ Qt }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   (forall α, α `in` Δ -> α `notin` dom Θ) ->
   {{ Θ ⨟ Δ ⊢ₚₛ Qt }}a ->
   {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Qt }}ad.

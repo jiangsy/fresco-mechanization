@@ -55,7 +55,7 @@ Definition Rw : uskl := uskl_all_etag ε (uskl_var_b 0).
 (** Counterpart: the context's rigid — and a variable IS mono-ish. *)
 Definition Qw : bskl := bskl_var_f β.
 
-Lemma Θw_wf : a_wf_aenv Θw.
+Lemma Θw_wf : {{ ⊢ Θw }}a.
 Proof. apply a_wf_aenv__tvar; [ simpl; auto | apply a_wf_aenv__nil ]. Qed.
 
 Lemma Rw_tskl : is_tskl Rw.
@@ -121,7 +121,7 @@ End CexP7SubMonoish.
 Theorem p7_sub_monoish_counterpart_is_false :
   ~ (forall n NM M Ψ Θ ψ Q,
        ad_pat_sub_g n NM M Ψ Θ ψ Q ->
-       a_wf_aenv Θ ->
+       {{ ⊢ Θ }}a ->
        is_tskl ψ ->
        bskl_monoish Q ->
        Ψ [=] empty /\ exists τ, mono_ptyp τ /\ ψ = ptyp_to_uskl_syn τ).

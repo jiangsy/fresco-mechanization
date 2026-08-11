@@ -45,7 +45,7 @@ Qed.
 
 (** A definition is a monotype (it is stored that way). *)
 Lemma a_wf_aenv_binds_def_mono : forall Θ α1 τ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   binds α1 (abind_flex_mono_def τ) Θ ->
   mono_ptyp τ.
 Proof.
@@ -57,7 +57,7 @@ Qed.
 
 (** A definition is well-formed in its own (tail) context, hence in the whole. *)
 Lemma a_wf_aenv_binds_def_wf_local : forall Θ α1 τ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   binds α1 (abind_flex_mono_def τ) Θ ->
   a_wf_ptyp Θ τ.
 Proof.
@@ -116,7 +116,7 @@ Qed.
     others. *)
 Lemma consis_mono_join : forall Ψ Θ R Qt,
   {{ Ψ ⨟ Θ ⊢ˢ R ∼ Qt }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall A, R = ptyp_to_uskl_syn A -> mono_ptyp A ->
   exists C, mono_ptyp C /\ Qt = ptyp_to_bskl_syn C /\ {{ Θ ⊢ A ≡ᵗ C }}a.
 Proof.
@@ -187,7 +187,7 @@ Qed.
     flex_l. *)
 Lemma refine_mono_join : forall Θ Δ Qb Qt,
   {{ Θ ⨟ Δ ⊢ᵣ Qb ⊳ Qt }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall A, Qb = ptyp_to_bskl_syn A -> mono_ptyp A ->
   exists C, mono_ptyp C /\ Qt = ptyp_to_bskl_syn C /\ {{ Θ ⊢ A ≡ᵗ C }}a.
 Proof.
@@ -249,7 +249,7 @@ Qed.
 
 (** THE BRIDGE.  Both sides meet at the join, so they meet each other. *)
 Theorem consis_refine_mono_tyequiv : forall Θ A A' Qt,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   mono_ptyp A ->
   mono_ptyp A' ->
   {{ empty ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A) ∼ Qt }}ad ->
@@ -294,7 +294,7 @@ Qed.
     RIGHT ([flex_r]), and vice versa. *)
 Lemma consis_mono_sym : forall Ψ Θ R Qt,
   {{ Ψ ⨟ Θ ⊢ˢ R ∼ Qt }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall A A', R = ptyp_to_uskl_syn A -> Qt = ptyp_to_bskl_syn A' ->
   mono_ptyp A -> mono_ptyp A' ->
   {{ empty ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A') ∼ (ptyp_to_bskl_syn A) }}ad.
@@ -354,7 +354,7 @@ Qed.
     tag context.  (Tags only ever enter through a tagged quantifier.) *)
 Lemma consis_mono_psi_empty : forall Ψ Θ R Qt,
   {{ Ψ ⨟ Θ ⊢ˢ R ∼ Qt }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall A, R = ptyp_to_uskl_syn A -> mono_ptyp A ->
   Ψ [=] empty.
 Proof.
@@ -402,7 +402,7 @@ Qed.
     Needed because [trans] passes through an arbitrary middle type. *)
 Lemma a_tyequiv_mono_vis : forall Θ A A',
   {{ Θ ⊢ A ≡ᵗ A' }}a ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   ((mono_ptyp A /\ (forall α0, α0 `in` ftvar_in_ptyp A -> a_binds_tvar α0 Θ)) ->
    (mono_ptyp A' /\ (forall α0, α0 `in` ftvar_in_ptyp A' -> a_binds_tvar α0 Θ))) /\
   ((mono_ptyp A' /\ (forall α0, α0 `in` ftvar_in_ptyp A' -> a_binds_tvar α0 Θ)) ->
@@ -452,7 +452,7 @@ Qed.
     absorbed by a lookup rule on the other side. *)
 Lemma consis_unfold_def_subject : forall Ψ Θ R Qt,
   {{ Ψ ⨟ Θ ⊢ˢ R ∼ Qt }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall α1 τ, R = uskl_var_f α1 ->
   binds α1 (abind_flex_mono_def τ) Θ ->
   {{ Ψ ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn τ) ∼ Qt }}ad.
@@ -507,7 +507,7 @@ Qed.
     [trans] just composes). *)
 Lemma tyequiv_mono_consis_transport : forall Θ A A',
   {{ Θ ⊢ A ≡ᵗ A' }}a ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   mono_ptyp A ->
   (forall α, α `in` ftvar_in_ptyp A -> a_binds_tvar α Θ) ->
   (forall Ψ Qt, {{ Ψ ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A') ∼ Qt }}ad ->
@@ -561,7 +561,7 @@ Qed.
     two syn paintings: transport [B]'s reflexivity derivation. *)
 Theorem tyequiv_mono_consis : forall Θ A A',
   {{ Θ ⊢ A ≡ᵗ A' }}a ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   mono_ptyp A ->
   (forall α, α `in` ftvar_in_ptyp A -> a_binds_tvar α Θ) ->
   {{ empty ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A') }}ad.
@@ -578,7 +578,7 @@ Qed.
     paper's account: the forward bridge extracts [A ≡ᵗ B] from the first
     derivation, and the transport re-subjects the second. *)
 Corollary consis_mono_trans : forall Θ A A' A0,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   mono_ptyp A -> mono_ptyp A' ->
   (forall α, α `in` ftvar_in_ptyp A -> a_binds_tvar α Θ) ->
   {{ empty ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A') }}ad ->

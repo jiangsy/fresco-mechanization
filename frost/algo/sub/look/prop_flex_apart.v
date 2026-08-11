@@ -355,7 +355,7 @@ Qed.
 
 (* Mono paints never refine into a ∀-painted RHS. *)
 Lemma ad_refine_mono_paint_allinh_rhs_absurd : forall Θ Δr Q' Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
   forall Q0, Q = bskl_all_inh Q0 ->
   forall τb, Q' = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
@@ -375,7 +375,7 @@ Proof.
 Qed.
 
 Lemma ad_refine_mono_paint_allsyn_rhs_absurd : forall Θ Δr Q' Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
   forall Q0, Q = bskl_all_syn Q0 ->
   forall τb, Q' = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
@@ -409,7 +409,7 @@ Lemma bskl_monoish_paint : forall τ,
 Proof. intros τ Hm; induction Hm; simpl; constructor; auto. Qed.
 
 Lemma ad_refine_mono_paint_rhs_monoish : forall Θ Δr Q' Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
   forall τb, Q' = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
   bskl_monoish Q.
@@ -445,7 +445,7 @@ Qed.
    itself a mono paint and the derivation solves no tags. *)
 Lemma ad_pat_consis_monoish_counterpart : forall Ψs Θ ψa Q,
   {{ Ψs ⨟ Θ ⊢ˢ ψa ∼ Q }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   is_tskl ψa ->
   bskl_monoish Q ->
   Ψs [=] empty /\
@@ -498,7 +498,7 @@ Qed.
 (* LHS flex_l-spine chases at concrete counterpart shapes, with the
    component/continuation obligations passed as functionals. *)
 Lemma ppre_paint_arrow_chase : forall Θ Δr Q' Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
   forall Q1 Q2 (ψ1 ψ2 : uskl),
   Q = bskl_arrow Q1 Q2 ->
@@ -544,7 +544,7 @@ Proof.
 Qed.
 
 Lemma ppre_paint_flexvar_chase : forall Θ Δr Q' Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
   forall α1 τα1 (ψa : uskl),
   Q = bskl_var_f α1 ->
@@ -599,7 +599,7 @@ Qed.
    consistency subject is partially precise against that subject. *)
 Lemma mono_paint_paint_refine_consis_ppre : forall Ψs Θ R Q,
   {{ Ψs ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall τa, R = ptyp_to_uskl_syn τa -> mono_ptyp τa ->
   forall Δr τb, Δr [=] empty -> mono_ptyp τb ->
   {{ Θ ⨟ Δr ⊢ᵣ (ptyp_to_bskl_syn τb) ⊳ Q }}ad ->
@@ -712,7 +712,7 @@ Qed.
     (Ψ' [=] ∅ ⇒ Ψa [=] ∅) and, by the ε-membership contradiction, kills
     the [Pi = var] rows of the tagged-∀ cases. *)
 Lemma ad_ppre_mono_subject_target_tags_empty : forall Θ Δ Ψ P ψ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
   forall τ, P = ptyp_to_pskl τ -> mono_ptyp τ ->
   forall Ψt, d_tags_skl Ψt ψ -> Ψt [=] empty.
@@ -1489,7 +1489,7 @@ Qed.
 (** Refinement's target free variables are source variables or Θ-scoped
     (fills are wf at empty Δ; definitions are Θ-scoped). *)
 Lemma ad_refine_syn_ftv_rhs_bound : forall Θ Δr Qh Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δr ⊢ᵣ Qh ⊳ Q }}ad ->
   ftvar_in_bskl Q [<=] ftvar_in_bskl Qh `union` dom Θ.
 Proof.
@@ -1519,7 +1519,7 @@ Proof.
     pick fresh α for
       (L `union` ftvar_in_bskl P `union` ftvar_in_bskl Q
          `union` dom Θ).
-    assert (HwfΘ' : a_wf_aenv ((α ~ abind_tvar) ++ Θ))
+    assert (HwfΘ' : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
       by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact HwfΘ ]).
     pose proof (H0 α ltac:(clear - Fr; solve_notin_auto) HwfΘ') as Hα.
     pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_lower P (bskl_var_f α))
@@ -1702,11 +1702,11 @@ Lemma consis_subject_ftv_split_bound : forall Ψ Θ R Q Θtv Θr,
   {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
   Θ = Θtv ++ Θr ->
   (forall x b, binds x b Θtv -> b = abind_tvar) ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   ftvar_in_uskl R [<=] ftvar_in_bskl Q `union` dom Θr.
 Proof.
   intros Ψ Θ R Q Θtv Θr H HeqΘ Htvs Hwf.
-  assert (HwfΘr : a_wf_aenv Θr)
+  assert (HwfΘr : {{ ⊢ Θr }}a)
     by (apply a_wf_aenv_app_r with (Θp := Θtv);
         rewrite <- HeqΘ; exact Hwf).
   intros x Hx.
@@ -1746,7 +1746,7 @@ Qed.
     variable; the var rule is Δ-positive). *)
 Lemma p6cv_close_leaf_mono :
   forall NM Θ0 Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa ψsub ψa Pi P0,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   a_tags_sort NM Ψ' ψa ->
   Ψi `union` Ψa [<=] Ψ' ->
   rho_fresh Δρ Θ κ ->
@@ -1969,7 +1969,7 @@ Qed.
     [ad_refine_syn_ftv_rhs_bound] is over-generous by exactly the hole rule
     — whose fill is only [Θ]-scoped — and a mono paint has no hole. *)
 Lemma ad_refine_mono_paint_ftv_bound : forall Θ Δr Q' Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
   forall τb S, Q' = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
   ftvar_in_ptyp τb [<=] S ->

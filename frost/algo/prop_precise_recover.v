@@ -94,7 +94,7 @@ Set Implicit Arguments.
 (* ===================================================================== *)
 
 Lemma tyequiv_mono_refine_syn : forall Θ Δ A A',
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   mono_ptyp A -> mono_ptyp A' ->
   {{ Θ ⊢ A ≡ᵗ A' }}a ->
   (forall α, α `in` ftvar_in_ptyp A -> a_binds_tvar α Θ) ->
@@ -119,7 +119,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma consis_precise_core : forall Θ Δ ζ α Qb A,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   mono_ptyp (msubst_lookup ζ α) ->
   (forall α0, α0 `in` ftvar_in_ptyp (msubst_lookup ζ α) -> a_binds_tvar α0 Θ) ->
   mono_ptyp A ->
@@ -235,11 +235,11 @@ Qed.
 (** Shared tail: given [κα̂ ≡ᵗ C], [Qb = syn C], and the factoring, close the
     precision goal. *)
 Lemma consis_precise_close : forall Θ0 Θ1 Θ Δ κ κ1 ζ α Qb A,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   a_flex_tvar Θ0 α ->
   a_binds_tvar α Θ1 ->
   ζ ∷ Θ1 ⊑ Θ ->
-  a_wf_aenv Θ1 ->
+  {{ ⊢ Θ1 }}a ->
   a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ ->
   α `in` dom κ1 ->
   msubst_lookup κ1 α = ptyp_var_f α ->
@@ -266,12 +266,12 @@ Qed.
 (** Rules Flex / FlexL: the SUBJECT painting is [α̂], so the competing
     consistency judgment's subject is [κα̂]; its join is the monotype [C]. *)
 Lemma consis_precise_via_join : forall Θ0 Θ1 Θ Δ κ κ1 ζ α Qb,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   a_flex_tvar Θ0 α ->
   κ ∷ Θ0 ⊑ Θ ->
   a_binds_tvar α Θ1 ->
   ζ ∷ Θ1 ⊑ Θ ->
-  a_wf_aenv Θ1 ->
+  {{ ⊢ Θ1 }}a ->
   a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ ->
   α `in` dom κ1 ->
   msubst_lookup κ1 α = ptyp_var_f α ->
@@ -293,12 +293,12 @@ Qed.
 (** Rule FlexR: the INPUT painting is [α̂], so the competing Δ₁-refinement's
     source is [inh(κα̂)]; refine_mono_join reads off the monotype [C]. *)
 Lemma consis_precise_via_refine : forall Θ0 Θ1 Θ Δ Δ1 κ κ1 ζ α Qb,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   a_flex_tvar Θ0 α ->
   κ ∷ Θ0 ⊑ Θ ->
   a_binds_tvar α Θ1 ->
   ζ ∷ Θ1 ⊑ Θ ->
-  a_wf_aenv Θ1 ->
+  {{ ⊢ Θ1 }}a ->
   a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ ->
   α `in` dom κ1 ->
   msubst_lookup κ1 α = ptyp_var_f α ->

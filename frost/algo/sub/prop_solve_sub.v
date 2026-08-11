@@ -839,7 +839,7 @@ Qed.
 (*  ⭐ THE Ξ KIT AT THE CONSTRAINT-LIST LEVEL (2026-08-04).                *)
 (*  [a_solve_cstr] folds the eq-solve over a list and CONCATENATES the     *)
 (*  blocks, so both invariants of §4(c) lift by a two-line induction.      *)
-(*  P6-Cs needs them to rebuild [a_wf_aenv (Ξs ++ Ξc ++ Θ0)] and to feed   *)
+(*  P6-Cs needs them to rebuild [{{ ⊢ (Ξs ++ Ξc ++ Θ0) }}a] and to feed   *)
 (*  [a_inc_flex_prefix_build] a second time.                              *)
 (* ===================================================================== *)
 

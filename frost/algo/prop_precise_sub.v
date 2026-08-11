@@ -164,8 +164,8 @@ Theorem ad_ctx_precise_pat : forall M Θ e Q,
   {{ Θ ⊢ˢ[ M ] e ⦂ Q }}ad ->
   forall Θ',
   {{ Θ' ⪯ᶜᵗˣ Θ }}ad ->
-  a_wf_aenv Θ ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ }}a ->
+  {{ ⊢ Θ' }}a ->
   {{ Θ' ⊢ˢ[ M ] e ⦂ Q }}ad.
 Proof.
   intros M Θ e Q H; induction H; intros Θ' Hctx HwfΘ HwfΘ';

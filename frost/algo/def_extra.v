@@ -212,37 +212,41 @@ Inductive a_wf_pskl : aenv -> atoms -> pskl -> Prop :=
     {{ Θ ⨟ Δ ⊢ₚₛ (pskl_tophole P) }}a
 where "{{ Θ ⨟ Δ ⊢ₚₛ P }}a" := (a_wf_pskl Θ Δ P) : frost_a_scope.
 
+Reserved Notation "{{ ⊢ Θ }}a"
+  (at level 0, format "'{{'  ⊢  Θ  '}}a'").
+
 (** Context well-formedness [Θ ⊢ ctx] (full-algo-spec.tex:224): each
     definition's body is a well-formed monotype in its tail, each term
     variable's skeleton is well-formed in its tail; atom freshness is the
     paper's ambient Barendregt convention, made explicit. *)
 Inductive a_wf_aenv : aenv -> Prop :=
 | a_wf_aenv__nil :
-    a_wf_aenv nil
+    {{ ⊢ nil }}a
 | a_wf_aenv__flex : forall α Θ,
     α `notin` dom Θ ->
-    a_wf_aenv Θ ->
-    a_wf_aenv ((α ~ abind_flex_mono) ++ Θ)
+    {{ ⊢ Θ }}a ->
+    {{ ⊢ ((α ~ abind_flex_mono) ++ Θ) }}a
 | a_wf_aenv__flex_def : forall α τ Θ,
     α `notin` dom Θ ->
     a_wf_ptyp Θ τ ->
     mono_ptyp τ ->
-    a_wf_aenv Θ ->
-    a_wf_aenv ((α ~ abind_flex_mono_def τ) ++ Θ)
+    {{ ⊢ Θ }}a ->
+    {{ ⊢ ((α ~ abind_flex_mono_def τ) ++ Θ) }}a
 | a_wf_aenv__var : forall x P Θ,
     x `notin` dom Θ ->
     {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
-    a_wf_aenv Θ ->
-    a_wf_aenv ((x ~ abind_var_skl P) ++ Θ)
+    {{ ⊢ Θ }}a ->
+    {{ ⊢ ((x ~ abind_var_skl P) ++ Θ) }}a
 | a_wf_aenv__var_typ : forall x A Θ,
     x `notin` dom Θ ->
     a_wf_ptyp Θ A ->
-    a_wf_aenv Θ ->
-    a_wf_aenv ((x ~ abind_var_typ A) ++ Θ)
+    {{ ⊢ Θ }}a ->
+    {{ ⊢ ((x ~ abind_var_typ A) ++ Θ) }}a
 | a_wf_aenv__tvar : forall α Θ,
     α `notin` dom Θ ->
-    a_wf_aenv Θ ->
-    a_wf_aenv ((α ~ abind_tvar) ++ Θ).
+    {{ ⊢ Θ }}a ->
+    {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a
+where "{{ ⊢ Θ }}a" := (a_wf_aenv Θ) : frost_a_scope.
 
 (* ===================================================================== *)
 (*  Mode/input-skeleton compatibility  skmod[TY] / skmod[SK]              *)

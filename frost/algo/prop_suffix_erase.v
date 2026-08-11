@@ -897,7 +897,7 @@ Qed.
     scoped in the tail.  This is what turns the uniform substitution back
     into the identity on the surviving context. *)
 Lemma a_wf_aenv_ftv_dom : forall Θ,
-  a_wf_aenv Θ -> ftvar_in_aenv Θ [<=] dom Θ.
+  {{ ⊢ Θ }}a -> ftvar_in_aenv Θ [<=] dom Θ.
 Proof.
   intros Θ H; induction H; simpl; try (clear - IHa_wf_aenv; fsetdec).
   - fsetdec.
@@ -931,7 +931,7 @@ Qed.
     not. *)
 Lemma solves_flex_of_wf_head : forall α b Θ,
   a_suffix_binding b ->
-  a_wf_aenv ((α ~ b) ++ Θ) ->
+  {{ ⊢ ((α ~ b) ++ Θ) }}a ->
   exists τ, solves_flex τ α b Θ.
 Proof.
   intros α b Θ Hb Hwf; inversion Hb; subst.
@@ -949,7 +949,7 @@ Qed.
     (prop_pat_sub.v), one judgement over. *)
 Lemma ad_refine_syn_strip_suffix : forall Ξ Θ Δ Qs Qt,
   a_suffix Ξ ->
-  a_wf_aenv (Ξ ++ Θ) ->
+  {{ ⊢ (Ξ ++ Θ) }}a ->
   (forall α, α `in` dom Ξ ->
      α `notin` (ftvar_in_bskl Qs `union` ftvar_in_bskl Qt `union` Δ)) ->
   {{ (Ξ ++ Θ) ⨟ Δ ⊢ᵣ Qs ⊳ Qt }}ad ->
@@ -961,7 +961,7 @@ Proof.
     by (apply Hfv; simpl; fsetdec).
   simpl_env in Hwf.
   destruct (solves_flex_of_wf_head Hbind Hwf) as [τs Hs].
-  assert (Hwf' : a_wf_aenv (Ξ' ++ Θ))
+  assert (Hwf' : {{ ⊢ (Ξ' ++ Θ) }}a)
     by (inversion Hwf; subst; assumption).
   pose proof (@ad_refine_syn_subst_mid _ _ _ _ H τs β b nil (Ξ' ++ Θ)
                 ltac:(simpl_env; reflexivity) Hs
@@ -982,7 +982,7 @@ Qed.
 (** THE DRIVER for type equivalence. *)
 Lemma a_tyequiv_strip_suffix : forall Ξ Θ A A',
   a_suffix Ξ ->
-  a_wf_aenv (Ξ ++ Θ) ->
+  {{ ⊢ (Ξ ++ Θ) }}a ->
   (forall α, α `in` dom Ξ ->
      α `notin` (ftvar_in_ptyp A `union` ftvar_in_ptyp A')) ->
   {{ (Ξ ++ Θ) ⊢ A ≡ᵗ A' }}a ->
@@ -994,7 +994,7 @@ Proof.
     by (apply Hfv; simpl; fsetdec).
   simpl_env in Hwf.
   destruct (solves_flex_of_wf_head Hbind Hwf) as [τs Hs].
-  assert (Hwf' : a_wf_aenv (Ξ' ++ Θ))
+  assert (Hwf' : {{ ⊢ (Ξ' ++ Θ) }}a)
     by (inversion Hwf; subst; assumption).
   pose proof (@a_tyequiv_subst_mid _ _ _ H τs β b nil (Ξ' ++ Θ)
                 ltac:(simpl_env; reflexivity) Hs
@@ -1775,7 +1775,7 @@ Qed.
     algorithm). *)
 Lemma ad_pat_strip_suffix : forall Ξ Θ M e Q,
   a_suffix Ξ ->
-  a_wf_aenv (Ξ ++ Θ) ->
+  {{ ⊢ (Ξ ++ Θ) }}a ->
   (forall α, α `in` dom Ξ ->
      α `notin` (ftvar_in_bskl Q `union` ftvar_in_exp e)) ->
   {{ (Ξ ++ Θ) ⊢ˢ[ M ] e ⦂ Q }}ad ->
@@ -1787,7 +1787,7 @@ Proof.
     by (apply Hfv; simpl; fsetdec).
   simpl_env in Hwf.
   destruct (solves_flex_of_wf_head Hbind Hwf) as [τs Hs].
-  assert (Hwf' : a_wf_aenv (Ξ' ++ Θ)) by (inversion Hwf; subst; assumption).
+  assert (Hwf' : {{ ⊢ (Ξ' ++ Θ) }}a) by (inversion Hwf; subst; assumption).
   pose proof (@ad_pat_subst_mid _ _ _ _ H τs β b nil (Ξ' ++ Θ)
                 ltac:(simpl_env; reflexivity) Hs
                 ltac:(simpl_env; apply a_wf_aenv_uniq; exact Hwf)) as Hx.
@@ -1805,7 +1805,7 @@ Qed.
 
 Lemma ad_sd_typing_strip_suffix : forall Ξ Θ M e B,
   a_suffix Ξ ->
-  a_wf_aenv (Ξ ++ Θ) ->
+  {{ ⊢ (Ξ ++ Θ) }}a ->
   (forall α, α `in` dom Ξ ->
      α `notin` (ftvar_in_btyp B `union` ftvar_in_exp e)) ->
   {{ (Ξ ++ Θ) ⊢ˢᵈ[ M ] e ⦂ B }}ad ->
@@ -1817,7 +1817,7 @@ Proof.
     by (apply Hfv; simpl; fsetdec).
   simpl_env in Hwf.
   destruct (solves_flex_of_wf_head Hbind Hwf) as [τs Hs].
-  assert (Hwf' : a_wf_aenv (Ξ' ++ Θ)) by (inversion Hwf; subst; assumption).
+  assert (Hwf' : {{ ⊢ (Ξ' ++ Θ) }}a) by (inversion Hwf; subst; assumption).
   pose proof (@ad_sd_typing_subst_mid _ _ _ _ H τs β b nil (Ξ' ++ Θ)
                 ltac:(simpl_env; reflexivity) Hs
                 ltac:(simpl_env; apply a_wf_aenv_uniq; exact Hwf)) as Hx.

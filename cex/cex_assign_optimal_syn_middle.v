@@ -178,7 +178,7 @@ Qed.
 (*  2. The competing solution is genuine: wf target + join.             *)
 (* ------------------------------------------------------------------ *)
 
-Lemma cex_wfTh : a_wf_aenv Th.
+Lemma cex_wfTh : {{ ⊢ Th }}a.
 Proof.
   unfold Th.
   apply a_wf_aenv__var_typ; simpl.
@@ -360,7 +360,7 @@ Qed.
 Theorem cex_syn_middle_optimality_false :
   {{ Th0 ⊲[ nil ] alpha ≔ Pc ⊣ Th1 }}a /\
   a_inc_syn (nil ++ Th0) th Th /\
-  a_wf_aenv Th /\
+  {{ ⊢ Th }}a /\
   ({{ empty ⨟ Th ⊢ˢ (pskl_to_uskl (msubst_pskl th Pc))
               ∼ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup th alpha))) }}ad) /\
   (forall ζ, ~ a_inc_syn Th1 ζ Th).

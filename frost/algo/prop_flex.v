@@ -210,7 +210,7 @@ Qed.
 
 (** Well-formed contexts have locally closed binding payloads — the bridge
     that feeds [lc_aenv]-hypothesised reflexivity ([a_isub_refl] below). *)
-Lemma a_wf_aenv_lc_aenv : forall Θ, a_wf_aenv Θ -> lc_aenv Θ.
+Lemma a_wf_aenv_lc_aenv : forall Θ, {{ ⊢ Θ }}a -> lc_aenv Θ.
 Proof.
   intros Θ H; induction H; constructor; simpl; auto.
   - eapply a_scope_pskl_lc; eapply a_scope_pskl_of_wf; eauto.
@@ -221,7 +221,7 @@ Qed.
 
 (** The unconditional [a_isub_refl] of the syntactic-middle era, restored
     for well-formed contexts. *)
-Lemma a_isub_refl : forall Θ, a_wf_aenv Θ -> Θ ⊴ Θ.
+Lemma a_isub_refl : forall Θ, {{ ⊢ Θ }}a -> Θ ⊴ Θ.
 Proof.
   intros Θ Hwf. apply a_isub_refl_lc; auto.
 Qed.
@@ -841,8 +841,8 @@ Qed.
     context well-formedness (declarations carry no scoping content). *)
 Lemma a_wf_aenv_strip_mid : forall Ξ (c : atom) (b : abind) Θ,
   a_decls Ξ ->
-  a_wf_aenv (Ξ ++ (c ~ b) ++ Θ) ->
-  a_wf_aenv (Ξ ++ Θ).
+  {{ ⊢ (Ξ ++ (c ~ b) ++ Θ) }}a ->
+  {{ ⊢ (Ξ ++ Θ) }}a.
 Proof.
   intros Ξ; induction Ξ as [ | [α1 bγ] Ξ' IH ]; intros * Hdecl Hwf.
   - simpl in Hwf. inversion Hwf; subst; auto.
@@ -860,8 +860,8 @@ Qed.
     prefix preserves context well-formedness. *)
 Lemma a_wf_aenv_move_decl : forall Ξ β Θ,
   a_decls Ξ ->
-  a_wf_aenv (Ξ ++ (β ~ abind_flex_mono) ++ Θ) ->
-  a_wf_aenv ((β ~ abind_flex_mono) ++ Ξ ++ Θ).
+  {{ ⊢ (Ξ ++ (β ~ abind_flex_mono) ++ Θ) }}a ->
+  {{ ⊢ ((β ~ abind_flex_mono) ++ Ξ ++ Θ) }}a.
 Proof.
   intros * Hdecl Hwf.
   apply a_wf_aenv__flex.
@@ -869,12 +869,12 @@ Proof.
     revert Hwf; clear - Hdecl; induction Hdecl; intros Hwf; simpl_env in *.
     + inversion Hwf; subst. auto.
     + inversion Hwf; subst.
-      match goal with H : a_wf_aenv _ |- _ => specialize (IHHdecl H) end.
+      match goal with H : {{ ⊢ _ }}a |- _ => specialize (IHHdecl H) end.
       repeat rewrite dom_app in *; simpl in *.
       match goal with
       | Hα1 : ?g `notin` _ |- _ `notin` _ =>
           clear Hdecl; repeat match goal with
-                              | Hw : a_wf_aenv _ |- _ => clear Hw
+                              | Hw : {{ ⊢ _ }}a |- _ => clear Hw
                               end; fsetdec
       end.
   - eapply a_wf_aenv_strip_mid; eauto.
@@ -1079,7 +1079,7 @@ Qed.
     declaration-only prefix. *)
 Lemma a_wf_aenv_mid_def_inv : forall Ξ β τ Θ,
   a_decls Ξ ->
-  a_wf_aenv (Ξ ++ (β ~ abind_flex_mono_def τ) ++ Θ) ->
+  {{ ⊢ (Ξ ++ (β ~ abind_flex_mono_def τ) ++ Θ) }}a ->
   a_wf_ptyp Θ τ /\ mono_ptyp τ.
 Proof.
   intros * Hdecl; revert β τ Θ; induction Hdecl; intros * Hwf;
@@ -1087,7 +1087,7 @@ Proof.
   - inversion Hwf; subst. auto.
   - inversion Hwf; subst.
     match goal with
-    | Hw : a_wf_aenv _ |- _ => eapply IHHdecl; exact Hw
+    | Hw : {{ ⊢ _ }}a |- _ => eapply IHHdecl; exact Hw
     end.
 Qed.
 
@@ -1169,7 +1169,7 @@ Qed.
 (** A defined flexible variable's definition is well-formed in the whole
     well-formed context.  (Payload companion of [a_wf_aenv_binds_def_mono].) *)
 Lemma a_wf_aenv_binds_def_wf : forall Θ β τ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   binds β (abind_flex_mono_def τ) Θ ->
   a_wf_ptyp Θ τ.
 Proof.
@@ -1194,7 +1194,7 @@ Qed.
     direction is [a_wf_pskl_mono_subst_back] in [prop_consis_sound].) *)
 Lemma a_wf_pskl_mono_subst : forall Θ β τ Δ P,
   {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   binds β (abind_flex_mono_def τ) Θ ->
   mono_ptyp τ ->
   {{ Θ ⨟ Δ ⊢ₚₛ (subst_pskl_in_pskl (ptyp_to_pskl τ) β P) }}a.
@@ -1231,7 +1231,7 @@ Qed.
 (* --- relocated from prop_soundness_consis.v (pure base lemma needed by the
    metasubst layer prop_metasubst.v, which must not import consistency) --- *)
 Lemma a_wf_aenv_uniq : forall Θ,
-  a_wf_aenv Θ -> uniq Θ.
+  {{ ⊢ Θ }}a -> uniq Θ.
 Proof.
   intros Θ H; induction H; solve_uniq.
 Qed.

@@ -83,7 +83,7 @@ Set Implicit Arguments.
 (*  At the EMPTY context the input can only be in one of the two          *)
 (*  user-facing modes — INFERENCE, whose input is the ghost [□], and      *)
 (*  CHECKING, whose input is a closed type [⌈A0⌉] — so each flagship      *)
-(*  splits into two, and three premises go with the split: [a_wf_aenv ·]  *)
+(*  splits into two, and three premises go with the split: [{{ ⊢ · }}a]  *)
 (*  is a constructor, [{{ · ⨟ ∅ ⊢ₚₛ P0 }}a] is [a_wf_pskl__hole] resp. the *)
 (*  annotation's own wf, and [a_ty_mode_compat] is read off the shape.    *)
 (*                                                                        *)
@@ -93,7 +93,7 @@ Set Implicit Arguments.
 (*  subject as well formed — [ad_sd_typing_wf_exp] — so at the empty      *)
 (*  context "[e] is closed" is a theorem, not a hypothesis.               *)
 (*                                                                        *)
-(*  ⚠️ SOUNDNESS still asks for it, as [a_wf_exp · e].  It is an INPUT     *)
+(*  ⚠️ SOUNDNESS still asks for it, as [{{ · ⊢ᵉ e }}a].  It is an INPUT     *)
 (*  condition on the problem (the paper's "M is well-formed in Θ₀") and   *)
 (*  the algorithmic run does NOT imply it: [a_typing__abs] runs the body  *)
 (*  under the flexibles [guess^TY] just invented, and nothing stops a     *)
@@ -107,11 +107,11 @@ Set Implicit Arguments.
     flexibles instantiated by a metasubstitution [ζ] into [·], and the paper's
     PURELY DECLARATIVE typing of [e] at that closed answer. *)
 Lemma a_typing_sound_nil : forall m P0 e A Θ1,
-  a_wf_exp nil e ->
+  {{ nil ⊢ᵉ e }}a ->
   {{ nil ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat m P0 ->
   {{ nil ⊢[ m ; P0 ] e ⦂ A ⊣ Θ1 }}a ->
-  nil ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
+  nil ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\ a_wf_ptyp Θ1 A /\
   exists Bt, btyp_to_ptyp Bt = A /\ mod_comp_ty Bt m /\
     ({{ Θ1 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt) }}ad) /\
     exists ζ, ζ ∷ Θ1 ⊑ nil /\ msubst_mono ζ /\
@@ -141,9 +141,9 @@ Qed.
     (thm:sound-type-inference)  The answer's colouring is forced at [TI], so
     the general statement's existential [Bt] is [syn{A}] and disappears. *)
 Corollary a_typing_sound_infer : forall e A Θ1,
-  a_wf_exp nil e ->
+  {{ nil ⊢ᵉ e }}a ->
   {{ nil ⊢[ mode_ti ; pskl_hole ] e ⦂ A ⊣ Θ1 }}a ->
-  nil ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
+  nil ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\ a_wf_ptyp Θ1 A /\
   ({{ Θ1 ⨟ empty ⊢ᵣ bskl_hole ⊳ (btyp_to_bskl (ptyp_to_btyp_syn A)) }}ad) /\
   exists ζ, ζ ∷ Θ1 ⊑ nil /\
     ({{ nil ⊢ˢᵈ[ mode_ti ] e ⦂ (ptyp_to_btyp_syn (msubst_ptyp ζ A)) }}d) /\
@@ -166,10 +166,10 @@ Qed.
 (** ⭐ Soundness at a closed program, CHECKING mode (input a closed type).
     At [TC] the colouring is forced the other way, so [Bt = inh{A}]. *)
 Corollary a_typing_sound_check : forall e A0 A Θ1,
-  a_wf_exp nil e ->
+  {{ nil ⊢ᵉ e }}a ->
   a_wf_ptyp nil A0 ->
   {{ nil ⊢[ mode_tc ; (ptyp_to_pskl A0) ] e ⦂ A ⊣ Θ1 }}a ->
-  nil ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
+  nil ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\ a_wf_ptyp Θ1 A /\
   ({{ Θ1 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (ptyp_to_pskl A0))
      ⊳ (btyp_to_bskl (ptyp_to_btyp_inh A)) }}ad) /\
   exists ζ, ζ ∷ Θ1 ⊑ nil /\
@@ -294,7 +294,7 @@ Qed.
 (*  2074 and :1595).  Before that the bridge carried a hypothesis that was *)
 (*  provably FALSE, so it said nothing.  docs/ghost-capture.tex.           *)
 (*                                                                        *)
-(*  ⚠️ [a_wf_exp nil e] is a real premise here, not bookkeeping, and it is  *)
+(*  ⚠️ [{{ nil ⊢ᵉ e }}a] is a real premise here, not bookkeeping, and it is  *)
 (*  the SAME one the soundness corollaries take.  On the [ad] side it was  *)
 (*  free ([ad_sd_typing_wf_exp]); on the declarative side it is not,       *)
 (*  because [d_sd_typing__anno] states no well-formedness for its          *)
@@ -304,7 +304,7 @@ Qed.
 (** ⭐ Completeness + optimality at a closed program, INFERENCE mode, stated
     over the paper's syntax-directed declarative judgement. *)
 Corollary a_typing_complete_sd_infer : forall e (B : btyp),
-  a_wf_exp nil e ->
+  {{ nil ⊢ᵉ e }}a ->
   {{ nil ⊢ˢᵈ[ mode_ti ] e ⦂ B }}d ->
   exists A1 Θ1,
     {{ nil ⊢[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 }}a /\
@@ -316,7 +316,7 @@ Proof.
 Qed.
 
 Corollary a_typing_complete_sd_check : forall e (B : btyp),
-  a_wf_exp nil e ->
+  {{ nil ⊢ᵉ e }}a ->
   {{ nil ⊢ˢᵈ[ mode_tc ] e ⦂ B }}d ->
   exists A1 Θ1,
     {{ nil ⊢[ mode_tc ; (ptyp_to_pskl (btyp_to_ptyp B)) ] e ⦂ A1 ⊣ Θ1 }}a /\
@@ -330,7 +330,7 @@ Qed.
 (** …and over the ORIGINAL declarative judgement [⊢], through
     [d_sd_typing_complete] (the syntax-directed system is complete for it). *)
 Corollary a_typing_complete_decl_infer : forall e (B : btyp),
-  a_wf_exp nil e ->
+  {{ nil ⊢ᵉ e }}a ->
   {{ nil ⊢[ mode_ti ] e ⦂ B }}d ->
   exists A1 Θ1,
     {{ nil ⊢[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 }}a /\
@@ -342,7 +342,7 @@ Proof.
 Qed.
 
 Corollary a_typing_complete_decl_check : forall e (B : btyp),
-  a_wf_exp nil e ->
+  {{ nil ⊢ᵉ e }}a ->
   {{ nil ⊢[ mode_tc ] e ⦂ B }}d ->
   exists A1 Θ1,
     {{ nil ⊢[ mode_tc ; (ptyp_to_pskl (btyp_to_ptyp B)) ] e ⦂ A1 ⊣ Θ1 }}a /\

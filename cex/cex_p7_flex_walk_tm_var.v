@@ -173,7 +173,7 @@ Definition Qw  : bskl := bskl_arrow bskl_unit bskl_unit.
 (* --------------------------------------------------------------------- *)
 
 Lemma tm_var_problem_is_a_problem :
-  a_wf_aenv Θ0w /\
+  {{ ⊢ Θ0w }}a /\
   {{ Θ0w ⨟ empty ⊢ₚₛ P0w }}a /\
   {{ Θ0w ⨟ empty ⊢ₚₛ Pw }}a /\
   a_sk_mode_compat (mode_fn mode_ti) P0w.
@@ -197,7 +197,7 @@ Qed.
     shift every bullet after it, so the solution's seven components are
     separate lemmas and the bundle below just pairs them up. *)
 
-Lemma tm_var_wf_target : a_wf_aenv Θw.
+Lemma tm_var_wf_target : {{ ⊢ Θw }}a.
 Proof.
   unfold Θw. apply a_wf_aenv__var_typ;
     [ simpl; clear; fsetdec | apply a_wf_ptyp__unit | apply a_wf_aenv__nil ].
@@ -284,11 +284,11 @@ Qed.
     is exactly the negation of [thm:complete-subtyping]. *)
 Theorem complete_subtyping_needs_flex_skip_tm_var :
   (* problem *)
-  (a_wf_aenv Θ0w /\ {{ Θ0w ⨟ empty ⊢ₚₛ P0w }}a /\ {{ Θ0w ⨟ empty ⊢ₚₛ Pw }}a /\
+  ({{ ⊢ Θ0w }}a /\ {{ Θ0w ⨟ empty ⊢ₚₛ P0w }}a /\ {{ Θ0w ⨟ empty ⊢ₚₛ Pw }}a /\
    a_sk_mode_compat (mode_fn mode_ti) P0w)
   /\
   (* solution *)
-  (a_wf_aenv Θw /\ ⌊ Rw ⌋ˢ = Pw /\ κw ∷ Θ0w ⊑ Θw /\
+  ({{ ⊢ Θw }}a /\ ⌊ Rw ⌋ˢ = Pw /\ κw ∷ Θ0w ⊑ Θw /\
    {{ Θw ⊢ R'w ≡ᵘ (msubst_uskl_syn κw Rw) }}a /\
    ad_pat_sub_gv 1 a_sub_mode_sk (mode_fn mode_ti) empty Θw R'w Qw /\
    ad_refine_syn_f empty Θw empty

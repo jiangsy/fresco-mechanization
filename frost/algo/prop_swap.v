@@ -2350,7 +2350,7 @@ Proof. induction Θ as [| [x bd] Θ']; simpl; fsetdec. Qed.
 Lemma a_inc_kswap : forall a b (ζ : metasubst) (Θ1 Θ : aenv),
   ζ ∷ Θ1 ⊑ Θ ->
   a <> b ->
-  a_wf_aenv Θ1 ->
+  {{ ⊢ Θ1 }}a ->
   b `notin` ftvar_in_aenv Θ1 ->
   (forall bd, binds a bd Θ1 ->
      bd = abind_flex_mono \/ exists τ, bd = abind_flex_mono_def τ) ->

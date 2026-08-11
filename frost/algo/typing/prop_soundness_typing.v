@@ -99,7 +99,7 @@ Qed.
     nothing in Θ, so the ∀ row goes straight through.) *)
 Lemma ad_refine_syn_inh_tyequiv : forall Θ Δ Qs Qt,
   {{ Θ ⨟ Δ ⊢ᵣ Qs ⊳ Qt }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall A B,
   Qs = pskl_to_bskl_inh (ptyp_to_pskl A) ->
   Qt = btyp_to_bskl B ->
@@ -181,7 +181,7 @@ Qed.
     and §2 reads the resulting ghost-free refinement as an equivalence. *)
 Lemma a_consis_chk_tyequiv : forall Θ0 A B Θ1,
   a_consis_chk Θ0 (ptyp_to_pskl B) (ptyp_to_pskl A) Θ1 ->
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   a_wf_ptyp Θ0 A ->
   a_wf_ptyp Θ0 B ->
   {{ Θ1 ⊢ B ≡ᵗ A }}a.
@@ -749,7 +749,7 @@ Qed.
     closure is only available from the context — hence the [a_wf_aenv]
     hypothesis, exactly as [d_typing_skmod] carries [d_wf_denv]. *)
 Lemma a_tyequiv_lc : forall Θ A A',
-  {{ Θ ⊢ A ≡ᵗ A' }}a -> a_wf_aenv Θ -> lc_ptyp A /\ lc_ptyp A'.
+  {{ Θ ⊢ A ≡ᵗ A' }}a -> {{ ⊢ Θ }}a -> lc_ptyp A /\ lc_ptyp A'.
 Proof.
   intros Θ A A' H; induction H; intros Hwf.
   - (* refl *) split; assumption.
@@ -770,7 +770,7 @@ Proof.
 Qed.
 
 Corollary a_tyequiv_lc_r : forall Θ A A',
-  {{ Θ ⊢ A ≡ᵗ A' }}a -> a_wf_aenv Θ -> lc_ptyp A'.
+  {{ Θ ⊢ A ≡ᵗ A' }}a -> {{ ⊢ Θ }}a -> lc_ptyp A'.
 Proof. intros * H Hwf. apply (proj2 (a_tyequiv_lc H Hwf)). Qed.
 
 (* --- §8e  the theorem of this section --------------------------------- *)
@@ -782,7 +782,7 @@ Proof. intros * H Hwf. apply (proj2 (a_tyequiv_lc H Hwf)). Qed.
     their local closure off the appendix's [≡ᵗ] premise (§8d), and [App]
     inverts its function premise's. *)
 Lemma ad_sd_typing_mod_comp_ty : forall M Θ e B,
-  {{ Θ ⊢ˢᵈ[ M ] e ⦂ B }}ad -> a_wf_aenv Θ -> mod_comp_ty B M.
+  {{ Θ ⊢ˢᵈ[ M ] e ⦂ B }}ad -> {{ ⊢ Θ }}a -> mod_comp_ty B M.
 Proof.
   intros M Θ e B H; induction H; intros Hwf.
   - (* unit *) eapply ad_pat_sub_mod_comp_ty;
@@ -920,7 +920,7 @@ Proof. intros. eapply a_guess_mono_refine_size; eauto. Qed.
     the direction change. *)
 Lemma ad_pat_consis_mono_to_refine : forall Ψ Θ R Qt,
   {{ Ψ ⨟ Θ ⊢ˢ R ∼ Qt }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall A Δ, R = ptyp_to_uskl_syn A -> mono_ptyp A ->
   {{ Θ ⨟ Δ ⊢ᵣ (ptyp_to_bskl_syn A) ⊳ Qt }}ad.
 Proof.
@@ -973,7 +973,7 @@ Qed.
     carries its own.  WF-SIDE-CONDITIONS pattern, rule-premise variant. *)
 Lemma a_split_refines : forall Θ0 P0 P Q Θ1,
   {{ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}a ->
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   {{ Θ1 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P0)
                 ⊳ (pskl_to_bskl_inh (pskl_arrow P Q)) }}ad.
@@ -996,8 +996,8 @@ Proof.
         assert (Hfrα1 : α1 `notin` add β (dom Θ0))
           by (clear - Hf2 Hds; fsetdec)
     end.
-    assert (HwfX : a_wf_aenv ((α1 ~ abind_flex_mono)
-                               ++ (β ~ abind_flex_mono) ++ Θ0)).
+    assert (HwfX : {{ ⊢ ((α1 ~ abind_flex_mono)
+                               ++ (β ~ abind_flex_mono) ++ Θ0) }}a).
     { apply a_wf_aenv__flex;
         [ simpl_env; repeat rewrite dom_app; simpl;
           clear - Hfrα1; fsetdec | ].
@@ -1068,10 +1068,10 @@ Qed.
     subject transports along it. *)
 Lemma a_split_refines_gen : forall Θ0 A0 P Q Θ1 Θ' Qb,
   {{ Θ0 ⊲ (ptyp_to_pskl A0) ▹ P ⇢ Q ⊣ Θ1 }}a ->
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ (ptyp_to_pskl A0) }}a ->
   Θ1 ⊴ Θ' ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   {{ Θ' ⨟ empty ⊢ᵣ (pskl_to_bskl_inh Q) ⊳ Qb }}ad ->
   {{ Θ' ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (ptyp_to_pskl A0))
     ⊳ (bskl_arrow (pskl_to_bskl_inh P) Qb) }}ad.
@@ -1109,8 +1109,8 @@ Proof.
         assert (Hfrα1 : α10 `notin` add β0 (dom Θ0))
           by (clear - Hfα1 Hds; fsetdec)
     end.
-    assert (HwfX : a_wf_aenv ((α1 ~ abind_flex_mono)
-                               ++ (β ~ abind_flex_mono) ++ Θ0)).
+    assert (HwfX : {{ ⊢ ((α1 ~ abind_flex_mono)
+                               ++ (β ~ abind_flex_mono) ++ Θ0) }}a).
     { apply a_wf_aenv__flex;
         [ simpl_env; repeat rewrite dom_app; simpl;
           clear - Hfrα1; fsetdec | ].
@@ -1261,7 +1261,7 @@ Qed.
     "the term is the source program" half of [lemma:suffix-erasure]'s
     freshness (the suffix is invented by the algorithm). *)
 Lemma a_wf_exp_ftv_dom : forall Θ e,
-  a_wf_exp Θ e -> ftvar_in_exp e [<=] dom Θ.
+  {{ Θ ⊢ᵉ e }}a -> ftvar_in_exp e [<=] dom Θ.
 Proof.
   intros Θ e H; induction H; simpl;
     try solve [ clear; fsetdec | assumption ].
@@ -1370,9 +1370,9 @@ Qed.
 
 Lemma a_split_wf : forall Θ0 P0 P Q Θ1,
   {{ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}a ->
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
-  Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
+  Θ0 ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\
   {{ Θ1 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ1 ⨟ empty ⊢ₚₛ Q }}a.
 Proof.
   intros Θ0 P0 P Q Θ1 Hs Hwf HwfP0; inversion Hs; subst.
@@ -1392,8 +1392,8 @@ Proof.
         assert (Hfrα1 : α1 `notin` add β (dom Θ0))
           by (clear - Hf2 Hds; fsetdec)
     end.
-    assert (HwfX : a_wf_aenv ((α1 ~ abind_flex_mono)
-                               ++ (β ~ abind_flex_mono) ++ Θ0)).
+    assert (HwfX : {{ ⊢ ((α1 ~ abind_flex_mono)
+                               ++ (β ~ abind_flex_mono) ++ Θ0) }}a).
     { apply a_wf_aenv__flex;
         [ simpl_env; repeat rewrite dom_app; simpl;
           clear - Hfrα1; fsetdec | ].
@@ -1499,7 +1499,7 @@ Proof. intros. eapply a_guess_mono_wf_size; eauto. Qed.
     block is declaration-only, so nothing else is needed to put it in
     front of a well-formed context. *)
 Lemma a_wf_aenv_decls_app : forall Ξ Θ,
-  a_decls Ξ -> uniq (Ξ ++ Θ) -> a_wf_aenv Θ -> a_wf_aenv (Ξ ++ Θ).
+  a_decls Ξ -> uniq (Ξ ++ Θ) -> {{ ⊢ Θ }}a -> {{ ⊢ (Ξ ++ Θ) }}a.
 Proof.
   intros Ξ Θ Hd; induction Hd as [ | α1 Ξ' Hd IH ];
     intros Huq Hwf; simpl_env in *; [ exact Hwf | ].
@@ -1637,10 +1637,10 @@ Qed.
 (** [a_wf_exp] reads the context only through [a_wf_ptyp] on annotations,
     so a prefix the term's type variables dodge can be stripped. *)
 Lemma a_wf_exp_strip_prefix : forall Θall e,
-  a_wf_exp Θall e ->
+  {{ Θall ⊢ᵉ e }}a ->
   forall Ξ Θ, Θall = Ξ ++ Θ ->
   (forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_exp e) ->
-  a_wf_exp Θ e.
+  {{ Θ ⊢ᵉ e }}a.
 Proof.
   intros Θall e H; induction H; intros Ξ Θ' Heq Hfv; subst; simpl in Hfv.
   - apply a_wf_exp__unit.
@@ -1676,7 +1676,7 @@ Qed.
 
 (** A term entry contributes no type variable, so it strips for free. *)
 Corollary a_wf_exp_strip_tm : forall x (b : abind) Θ e,
-  a_wf_exp ((x ~ b) ++ Θ) e -> ~ abind_is_ty b -> a_wf_exp Θ e.
+  {{ ((x ~ b) ++ Θ) ⊢ᵉ e }}a -> ~ abind_is_ty b -> {{ Θ ⊢ᵉ e }}a.
 Proof.
   intros x b Θ e H Hb.
   eapply a_wf_exp_mono;
@@ -1684,7 +1684,7 @@ Proof.
 Qed.
 
 Lemma ad_sd_typing_wf_exp : forall M Θ e B,
-  {{ Θ ⊢ˢᵈ[ M ] e ⦂ B }}ad -> a_wf_exp Θ e.
+  {{ Θ ⊢ˢᵈ[ M ] e ⦂ B }}ad -> {{ Θ ⊢ᵉ e }}a.
 Proof.
   intros M Θ e B H; induction H.
   - apply a_wf_exp__unit.
@@ -1726,7 +1726,7 @@ Proof.
 Qed.
 
 (** …and a well-formed term is locally closed. *)
-Lemma a_wf_exp_lc : forall Θ e, a_wf_exp Θ e -> lc_exp e.
+Lemma a_wf_exp_lc : forall Θ e, {{ Θ ⊢ᵉ e }}a -> lc_exp e.
 Proof.
   intros Θ e H; induction H.
   - apply lc_exp_unit.
@@ -1796,11 +1796,11 @@ Proof. induction A; simpl; fsetdec. Qed.
     threaded. *)
 Theorem a_typing_sound : forall m Θ0 P0 e A Θ1,
   {{ Θ0 ⊢[ m ; P0 ] e ⦂ A ⊣ Θ1 }}a ->
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat m P0 ->
-  a_wf_exp Θ0 e ->
-  Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
+  {{ Θ0 ⊢ᵉ e }}a ->
+  Θ0 ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\ a_wf_ptyp Θ1 A /\
   exists Bt, btyp_to_ptyp Bt = A /\
     ({{ Θ1 ⊢ˢᵈ[ m ] e ⦂ Bt }}ad) /\
     ({{ Θ1 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt) }}ad).
@@ -1910,7 +1910,7 @@ Proof.
           subst m. repeat split; assumption. }
     destruct Hpre as [HwfPP [HwfQ Hmod']].
     assert (Hdecls : a_decls αs) by (eapply a_guess_mono_decls; eassumption).
-    assert (Hwfαs : a_wf_aenv (αs ++ Θ0))
+    assert (Hwfαs : {{ ⊢ (αs ++ Θ0) }}a)
       by (apply a_wf_aenv_decls_app; assumption).
     assert (HΞtv : forall α1, binds α1 abind_flex_mono αs ->
                      a_binds_tvar α1 (αs ++ Θ0)).
@@ -1927,7 +1927,7 @@ Proof.
     assert (Hx : x `notin` dom Θ0 `union` dom αs `union` dom Ξ
                    `union` dom Θ2 `union` fvar_in_exp e)
       by (clear - H4; rewrite !dom_app in H4; fsetdec).
-    assert (Hwfx : a_wf_aenv ((x ~ abind_var_typ A) ++ αs ++ Θ0)).
+    assert (Hwfx : {{ ⊢ ((x ~ abind_var_typ A) ++ αs ++ Θ0) }}a).
     { apply a_wf_aenv__var_typ;
         [ rewrite dom_app; clear - Hx; fsetdec | exact HwfAg | exact Hwfαs ]. }
     destruct (IHa_typing Hwfx
@@ -1951,7 +1951,7 @@ Proof.
       by (eapply a_isub_peel_var_typ_mid; eassumption).
     assert (Hisub : Θ0 ⊴ (Ξ ++ Θ2))
       by (eapply a_isub_strengthen_decls_src; eassumption).
-    assert (Hwf2 : a_wf_aenv (Ξ ++ Θ2))
+    assert (Hwf2 : {{ ⊢ (Ξ ++ Θ2) }}a)
       by (eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []).
     assert (HwfA2 : a_wf_ptyp (Ξ ++ Θ2) A)
       by (eapply a_wf_ptyp_isub; [ exact HwfAg | exact Hisubαs ]).
@@ -2039,7 +2039,7 @@ Proof.
     assert (Hx : x `notin` dom Θ2 `union` dom Ξ `union` dom Θ3
                    `union` fvar_in_exp e)
       by (clear - H3; rewrite !dom_app in H3; fsetdec).
-    assert (Hwfx : a_wf_aenv ((x ~ abind_var_typ A) ++ Θ2))
+    assert (Hwfx : {{ ⊢ ((x ~ abind_var_typ A) ++ Θ2) }}a)
       by (apply a_wf_aenv__var_typ;
           [ clear - Hx; fsetdec | exact HwfAc | exact Hwfc ]).
     destruct (IHa_typing Hwfx
@@ -2058,7 +2058,7 @@ Proof.
     assert (Hisub : Θ2 ⊴ (Ξ ++ Θ3))
       by (eapply a_isub_peel_var_typ_mid; eassumption).
     assert (Hisub0 : Θ0 ⊴ (Ξ ++ Θ3)) by (eapply a_isub_trans; eassumption).
-    assert (Hwf3 : a_wf_aenv (Ξ ++ Θ3))
+    assert (Hwf3 : {{ ⊢ (Ξ ++ Θ3) }}a)
       by (eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []).
     assert (HwfA3 : a_wf_ptyp (Ξ ++ Θ3) A)
       by (eapply a_wf_ptyp_isub; [ exact HwfA | exact Hisub0 ]).
@@ -2138,7 +2138,7 @@ Proof.
                    `union` ftvar_in_ptyp A0 `union` ftvar_in_ptyp A
                    `union` ftvar_in_exp (exp_abs e))
       by (clear - H2; rewrite !dom_app in H2; fsetdec).
-    assert (Hwfα : a_wf_aenv ((α ~ abind_tvar) ++ Θ0))
+    assert (Hwfα : {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a)
       by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]).
     assert (HwfA0α : a_wf_ptyp ((α ~ abind_tvar) ++ Θ0)
                        (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))).
@@ -2171,7 +2171,7 @@ Proof.
     assert (Hisub : Θ0 ⊴ Θ1)
       by (eapply a_isub_strip_tvar_mid;
           [ exact Huniq0 | exact H0 | clear - Hα; fsetdec | exact Hle ]).
-    assert (Hwf1 : a_wf_aenv Θ1)
+    assert (Hwf1 : {{ ⊢ Θ1 }}a)
       by (eapply a_wf_aenv_strip_prefix_suffix_local; exact Hwfo).
     assert (HwfAα1 : a_wf_ptyp ((α ~ abind_tvar) ++ Θ1)
                        (open_ptyp_wrt_ptyp A (ptyp_var_f α))).
@@ -2322,10 +2322,10 @@ Proof.
     assert (Hx : x `notin` dom Θ1 `union` dom Ξ `union` dom Θ2
                    `union` fvar_in_exp e)
       by (clear - H3; rewrite !dom_app in H3; fsetdec).
-    assert (Hwfx : a_wf_aenv ((x ~ abind_var_typ A) ++ Θ1))
+    assert (Hwfx : {{ ⊢ ((x ~ abind_var_typ A) ++ Θ1) }}a)
       by (apply a_wf_aenv__var_typ;
           [ clear - Hx; fsetdec | exact HwfAs | exact Hwfs ]).
-    assert (Hexpx : a_wf_exp Θ1 (open_exp_wrt_exp e (exp_var_f x)))
+    assert (Hexpx : {{ Θ1 ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a)
       by (apply (a_wf_exp_isub (a_wf_exp_abs_pick x Hexp) Hles)).
     destruct (IHa_typing Hwfx
                 (a_wf_pskl_weaken_cons x (abind_var_typ A) HwfPB)
@@ -2342,7 +2342,7 @@ Proof.
       by (eapply a_isub_strip_var_typ_mid;
           [ exact Huniq2 | exact H1 | exact Hle ]).
     assert (Hisub : Θ0 ⊴ Θ2) by (eapply a_isub_trans; eassumption).
-    assert (Hwf2 : a_wf_aenv Θ2).
+    assert (Hwf2 : {{ ⊢ Θ2 }}a).
     { eapply a_wf_aenv_strip_prefix.
       eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []. }
     assert (HΞΘ1 : forall γ, γ `in` dom Ξ -> γ `notin` dom Θ1)
@@ -2411,7 +2411,7 @@ Proof.
                    `union` ftvar_in_ptyp A0 `union` ftvar_in_ptyp A
                    `union` ftvar_in_exp (exp_abs_anno Aan e))
       by (clear - H2; rewrite !dom_app in H2; fsetdec).
-    assert (Hwfα : a_wf_aenv ((α ~ abind_tvar) ++ Θ0))
+    assert (Hwfα : {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a)
       by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]).
     assert (HwfA0α : a_wf_ptyp ((α ~ abind_tvar) ++ Θ0)
                        (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))).
@@ -2444,7 +2444,7 @@ Proof.
     assert (Hisub : Θ0 ⊴ Θ1)
       by (eapply a_isub_strip_tvar_mid;
           [ exact Huniq0 | exact H0 | clear - Hα; fsetdec | exact Hle ]).
-    assert (Hwf1 : a_wf_aenv Θ1)
+    assert (Hwf1 : {{ ⊢ Θ1 }}a)
       by (eapply a_wf_aenv_strip_prefix_suffix_local; exact Hwfo).
     assert (HwfAα1 : a_wf_ptyp ((α ~ abind_tvar) ++ Θ1)
                        (open_ptyp_wrt_ptyp A (ptyp_var_f α))).
@@ -2609,10 +2609,10 @@ Proof.
     assert (Hx : x `notin` dom Θ2 `union` dom Ξ `union` dom Θ3
                    `union` fvar_in_exp e)
       by (clear - H4; rewrite !dom_app in H4; fsetdec).
-    assert (Hwfx : a_wf_aenv ((x ~ abind_var_typ A) ++ Θ2))
+    assert (Hwfx : {{ ⊢ ((x ~ abind_var_typ A) ++ Θ2) }}a)
       by (apply a_wf_aenv__var_typ;
           [ clear - Hx; fsetdec | exact HwfAan2 | exact Hwfc ]).
-    assert (Hexpx : a_wf_exp Θ2 (open_exp_wrt_exp e (exp_var_f x)))
+    assert (Hexpx : {{ Θ2 ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a)
       by (apply (a_wf_exp_isub (a_wf_exp_abs_anno_pick x Hexp) Hle02)).
     destruct (IHa_typing Hwfx
                 (a_wf_pskl_weaken_cons x (abind_var_typ A)
@@ -2631,7 +2631,7 @@ Proof.
           [ exact Huniq3 | exact H2 | exact Hle ]).
     assert (Hisub : Θ0 ⊴ Θ3)
       by (eapply a_isub_trans; [ exact Hle02 | exact Hisub2 ]).
-    assert (Hwf3 : a_wf_aenv Θ3).
+    assert (Hwf3 : {{ ⊢ Θ3 }}a).
     { eapply a_wf_aenv_strip_prefix.
       eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []. }
     assert (HΞΘ2 : forall γ, γ `in` dom Ξ -> γ `notin` dom Θ2)

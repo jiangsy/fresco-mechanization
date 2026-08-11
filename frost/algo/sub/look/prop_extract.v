@@ -206,7 +206,7 @@ Qed.
 
 Lemma ad_refine_syn_all_l_not_mono : forall Θ Δ Y τ,
   {{ Θ ⨟ Δ ⊢ᵣ (bskl_all_inh Y) ⊳ (ptyp_to_bskl_syn τ) }}ad ->
-  a_wf_aenv Θ -> mono_ptyp τ -> False.
+  {{ ⊢ Θ }}a -> mono_ptyp τ -> False.
 Proof.
   intros Θ Δ Y τ H. remember (bskl_all_inh Y) as Src eqn:HeqS.
   remember (ptyp_to_bskl_syn τ) as Tgt eqn:HeqT.
@@ -295,7 +295,7 @@ Qed.
     name outside the domain is fresh for all of them — the side condition
     [ad_refine_syn_f_rename] asks for, discharged by freshness alone. *)
 Lemma a_wf_aenv_def_ftv_fresh : forall Θ β,
-  a_wf_aenv Θ -> β `notin` dom Θ ->
+  {{ ⊢ Θ }}a -> β `notin` dom Θ ->
   forall α τ, binds α (abind_flex_mono_def τ) Θ -> β `notin` ftvar_in_ptyp τ.
 Proof.
   intros Θ β Hwf Hβ α τ Hb.
@@ -316,7 +316,7 @@ Qed.
    DIFFERENT lemma of that name, and this one delivers Δ as [add α0 (remove β Δ)]; prop_soundness_pat.v's takes [Δ0 [=] add α Δ]. *)
 Lemma ad_refine_syn_rename_delta_remove : forall Θ Δ Q Q' β α0,
   {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   β `notin` dom Θ ->
   {{ Θ ⨟ (add α0 (remove β Δ)) ⊢ᵣ
     (subst_bskl_in_bskl (bskl_var_f α0) β Q) ⊳
@@ -337,7 +337,7 @@ Qed.
 (** …and its precision reading, which is what the ∀ case applies. *)
 Lemma ad_precise_rename_delta : forall Θ Δ P X β α0,
   {{ Θ ⨟ Δ ⊢ₚᵣ P ⊑ X }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   β `notin` dom Θ ->
   {{ Θ ⨟ (add α0 (remove β Δ)) ⊢ₚᵣ
     (subst_pskl_in_pskl (pskl_var_f α0) β P) ⊑
@@ -374,7 +374,7 @@ Lemma ad_precise_arrow_l_inv : forall Θ Δ Src Tgt,
   forall S1 S2 X,
   Src = bskl_arrow (pskl_to_bskl_inh S1) (pskl_to_bskl_inh S2) ->
   Tgt = pskl_to_bskl_inh X ->
-  a_wf_aenv Θ -> pskl_ghost_free X -> lc_pskl X ->
+  {{ ⊢ Θ }}a -> pskl_ghost_free X -> lc_pskl X ->
   exists X1 X2,
     pskl_ghost_free X1 /\ pskl_ghost_free X2 /\ lc_pskl X1 /\ lc_pskl X2 /\
     {{ Θ ⨟ Δ ⊢ₚᵣ S1 ⊑ X1 }}ad /\ {{ Θ ⨟ Δ ⊢ₚᵣ S2 ⊑ X2 }}ad /\
@@ -423,7 +423,7 @@ Lemma ad_precise_tophole_l_inv : forall Θ Δ Src Tgt,
   forall S0 X,
   Src = bskl_tophole (pskl_to_bskl_inh S0) ->
   Tgt = pskl_to_bskl_inh X ->
-  a_wf_aenv Θ -> pskl_ghost_free X -> lc_pskl X ->
+  {{ ⊢ Θ }}a -> pskl_ghost_free X -> lc_pskl X ->
   exists X',
     pskl_ghost_free X' /\ lc_pskl X' /\
     {{ Θ ⨟ Δ ⊢ₚᵣ S0 ⊑ X' }}ad /\
@@ -479,7 +479,7 @@ Lemma ad_precise_all_l_inv : forall Θ Δ Src Tgt,
   forall S0 X,
   Src = bskl_all_inh (pskl_to_bskl_inh S0) ->
   Tgt = pskl_to_bskl_inh X ->
-  a_wf_aenv Θ -> pskl_ghost_free X -> lc_pskl X ->
+  {{ ⊢ Θ }}a -> pskl_ghost_free X -> lc_pskl X ->
   exists X0 L,
     X = pskl_all_syn X0 /\
     (forall β, β `notin` L ->
@@ -623,7 +623,7 @@ Qed.
 Lemma ad_precise_all_of_one : forall Θ Δ S0 X0 β,
   {{ Θ ⨟ (add β Δ) ⊢ₚᵣ (open_pskl_wrt_pskl S0 (pskl_var_f β))
                   ⊑ (open_pskl_wrt_pskl X0 (pskl_var_f β)) }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   β `notin` dom Θ -> β `notin` Δ ->
   β `notin` ftvar_in_pskl S0 -> β `notin` ftvar_in_pskl X0 ->
   {{ Θ ⨟ Δ ⊢ₚᵣ (pskl_all_syn S0) ⊑ (pskl_all_syn X0) }}ad.
@@ -672,7 +672,7 @@ Qed.
 
 Lemma a_guess_ty_witness : forall n Θ0 Θ κs Δ Δ0 Ps X,
   size_pskl Ps <= n ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ0 ⨟ Δ0 ⊢ₚₛ Ps }}a ->
   msubst_lc κs ->
   (forall α, ftvar_in_ptyp (msubst_lookup κs α) [<=] add α (dom Θ)) ->
@@ -998,7 +998,7 @@ Qed.
     [a_looksub_solve_complete_gen] / [a_looksub_solve_complete]). *)
 Theorem a_extract_complete_gen :
   forall n NM M Θ0 Θ κ Δ Ψa Ψsub ψa Q P P0 R' α,
-  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->   (* skmod[SK]{P0}{M} *)
   (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->   (* skmod[TY]{P0}{M} *)
@@ -1030,7 +1030,7 @@ Theorem a_extract_complete_gen :
   exists Ξ Pa κa,
     ({{ Θ0 ⊢ P ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ Pa }}a) /\      (* look succeeds *)
     {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\                 (* Θ0,Ξ ⊢ Pa *)
-    a_wf_aenv (Ξ ++ Θ0) /\
+    {{ ⊢ (Ξ ++ Θ0) }}a /\
     a_decls Ξ /\                                 (* Ξ is a flex-decl block *)
     keys κa = keys Ξ /\
     (κa ++ κ) ∷ (Ξ ++ Θ0) ⊑ Θ /\                 (* inc[θa]{Θ0,Ξ}{Θ} *)
@@ -1090,7 +1090,7 @@ Proof.
             x `notin` ftvar_in_aenv (Ξc ++ Θ0))
     by (intros x Hx; eapply a_solve_cstr_generated_fresh;
           [ exact Hsolve | exact Hx ]).
-  assert (HwfΞs : a_wf_aenv (Ξs ++ Ξc ++ Θ0)).
+  assert (HwfΞs : {{ ⊢ (Ξs ++ Ξc ++ Θ0) }}a).
   { apply a_wf_aenv_flex_prefix; [ exact Hfms | | exact HwfΞc ].
     assert (Hdd : dom Ξs ∩ dom (Ξc ++ Θ0) [<=] empty).
     { intros x Hx.
@@ -1252,7 +1252,7 @@ Qed.
     derivation. *)
 Corollary a_extract_complete :
   forall n NM M Θ0 Θ κ Ψa ψa Q P P0 R' α,
-  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->
   (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
@@ -1275,7 +1275,7 @@ Corollary a_extract_complete :
   exists Ξ Pa κa,
     ({{ Θ0 ⊢ P ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ Pa }}a) /\
     {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\
-    a_wf_aenv (Ξ ++ Θ0) /\
+    {{ ⊢ (Ξ ++ Θ0) }}a /\
     a_decls Ξ /\
     keys κa = keys Ξ /\
     (κa ++ κ) ∷ (Ξ ++ Θ0) ⊑ Θ /\

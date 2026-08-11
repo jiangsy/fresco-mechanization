@@ -208,7 +208,7 @@ Lemma a_inc_equiv_msubst_uskl : forall Θ0 κ σ Θ R,
   a_inc_equiv Θ0 κ σ Θ ->
   κ ∷ Θ0 ⊑ Θ ->
   σ ∷ Θ0 ⊑ Θ ->
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   {{ Θ ⊢ (msubst_uskl_syn κ R) ≡ᵘ (msubst_uskl_syn σ R) }}a.
 Proof.
   intros Θ0 κ σ Θ R Hlc; revert Θ0 κ σ Θ.
@@ -400,7 +400,7 @@ Proof.
 Qed.
 
 Lemma a_tyequiv_downarrow_refl : forall Θ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall A, lc_ptyp A ->
   {{ Θ ⊢ A ≡ᵗ ⇓ᵗ[Θ] A }}a.
 Proof.
@@ -472,7 +472,7 @@ Qed.
 (** Obligation (2): ≡ᵗ between arrows decomposes — both normal forms are
     the same arrow, and each side is equivalent to its own normal form. *)
 Lemma a_tyequiv_arrow_inv : forall Θ A1 A2 B1 B2,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   lc_ptyp A1 -> lc_ptyp A2 -> lc_ptyp B1 -> lc_ptyp B2 ->
   {{ Θ ⊢ (ptyp_arrow A1 A2) ≡ᵗ (ptyp_arrow B1 B2) }}a ->
   ({{ Θ ⊢ A1 ≡ᵗ B1 }}a) /\ ({{ Θ ⊢ A2 ≡ᵗ B2 }}a).
@@ -652,7 +652,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_uskl_tyequiv_arrow_arrow_inv : forall Θ A B A' B',
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⊢ (uskl_arrow A B) ≡ᵘ (uskl_arrow A' B') }}a ->
   ({{ Θ ⊢ A ≡ᵘ A' }}a) /\ ({{ Θ ⊢ B ≡ᵘ B' }}a).
 Proof.
@@ -897,7 +897,7 @@ Lemma ad_pat_consis_mono_row_subject : forall Θ τ1 τ2 Ψ Q,
   mono_ptyp τ1 -> mono_ptyp τ2 ->
   a_wf_ptyp Θ τ1 -> a_wf_ptyp Θ τ2 ->
   {{ Θ ⊢ τ1 ≡ᵗ τ2 }}a ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Ψ ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn τ2) ∼ Q }}ad ->
   {{ Ψ ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn τ1) ∼ Q }}ad.
 Proof.
@@ -916,7 +916,7 @@ Qed.
 
 Lemma ad_pat_consis_tyequiv_subject : forall Ψ Θ R Q,
   {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall T, {{ Θ ⊢ T ≡ᵘ R }}a ->
   {{ Ψ ⨟ Θ ⊢ˢ T ∼ Q }}ad.
 Proof.
@@ -1131,7 +1131,7 @@ Qed.
     painting transports below. *)
 Lemma a_tyequiv_mono_iff : forall Θ A B,
   {{ Θ ⊢ A ≡ᵗ B }}a ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   (mono_ptyp A <-> mono_ptyp B).
 Proof.
   intros Θ A B H; induction H; intros Hwf.
@@ -1154,7 +1154,7 @@ Qed.
 
 Lemma a_tyequiv_preserves_mono : forall Θ A B,
   {{ Θ ⊢ A ≡ᵗ B }}a ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   mono_ptyp A ->
   mono_ptyp B.
 Proof.
@@ -1164,7 +1164,7 @@ Qed.
 (** A defined flexible variable is ≡ᵘ its definition's painting. *)
 Lemma flex_def_paint_tyequiv : forall Θ α τ,
   binds α (abind_flex_mono_def τ) Θ ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⊢ (ptyp_to_uskl_syn τ) ≡ᵘ (uskl_var_f α) }}a.
 Proof.
   intros Θ α τ Hb Hwf.
@@ -1186,7 +1186,7 @@ Lemma ad_pat_sub_g_unfold_flex : forall n NM M Ψ Θ Rα Q,
   forall α τ,
   Rα = uskl_var_f α ->
   binds α (abind_flex_mono_def τ) Θ ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   ad_pat_sub_g n NM M Ψ Θ (ptyp_to_uskl_syn τ) Q.
 Proof.
   intros n NM M Ψ Θ Rα Q HD; induction HD; intros α0 τ0 HeqS Hb Hwf;
@@ -1245,7 +1245,7 @@ Qed.
 (** Consistency at a painting subject transports along ≡ᵗ (any types). *)
 Lemma ad_pat_consis_paint_skl_transport : forall Θ A B,
   {{ Θ ⊢ A ≡ᵗ B }}a ->
-  forall Θ', a_wf_aenv Θ' ->
+  forall Θ', {{ ⊢ Θ' }}a ->
   (forall x b, binds x b Θ -> binds x b Θ') ->
   forall Ψ Q,
   {{ Ψ ⨟ Θ' ⊢ˢ (ptyp_to_uskl_syn A) ∼ Q }}ad ->
@@ -1261,10 +1261,10 @@ Qed.
 
 Lemma ad_pat_sub_g_paint_tyequiv_subject : forall Θ A B,
   {{ Θ ⊢ A ≡ᵗ B }}a ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall Θ',
   mono_ptyp A ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   (forall x b, binds x b Θ -> binds x b Θ') ->
   (forall n NM M Ψ Q,
      ad_pat_sub_g n NM M Ψ Θ' (ptyp_to_uskl_syn A) Q ->
@@ -1444,7 +1444,7 @@ Qed.
 
 Lemma ad_pat_sub_g_tyequiv_subject : forall n NM M Ψ Θ R Q,
   ad_pat_sub_g n NM M Ψ Θ R Q ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall T', {{ Θ ⊢ T' ≡ᵘ R }}a ->
   ad_pat_sub_g n NM M Ψ Θ T' Q.
 Proof.

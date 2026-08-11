@@ -24,7 +24,7 @@
     metasubstitution [aenv_msubst Θ], definable as a plain structural [Fixpoint].
     Writing [⇓[Θ]A := msubst_ptyp (aenv_msubst Θ) A], the crux is
 
-        L1   a_wf_aenv Θ -> {{ Θ ⊢ A ≡ᵗ B }}a -> ⇓[Θ]A = ⇓[Θ]B
+        L1   {{ ⊢ Θ }}a -> {{ Θ ⊢ A ≡ᵗ B }}a -> ⇓[Θ]A = ⇓[Θ]B
 
     which makes [size (⇓[Θ] (κ α))] invariant under (M1) and (M2) — proved below
     as [a_tyequiv_downarrow], with the two moves themselves as
@@ -186,7 +186,7 @@ Proof.
 Qed.
 
 Lemma aenv_msubst_lc : forall Θ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   msubst_lc (aenv_msubst Θ).
 Proof.
   intros Θ Hwf; induction Hwf; intros α0; simpl.
@@ -206,7 +206,7 @@ Qed.
 (* --------------------------------------------------------------------- *)
 
 Lemma aenv_msubst_lookup_def : forall Θ α τ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   binds α (abind_flex_mono_def τ) Θ ->
   msubst_lookup (aenv_msubst Θ) α = ⇓ᵗ[Θ] τ.
 Proof.
@@ -262,7 +262,7 @@ Qed.
     of its rules is either a congruence, an equivalence closure step, or the
     definition lookup — and the lookup is exactly [aenv_msubst_lookup_def]. *)
 Lemma a_tyequiv_downarrow : forall Θ A A',
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⊢ A ≡ᵗ A' }}a ->
   ⇓ᵗ[Θ] A = ⇓ᵗ[Θ] A'.
 Proof.
@@ -286,7 +286,7 @@ Qed.
 
 (** The SIZE COROLLARY the measure consumes. *)
 Corollary a_tyequiv_downarrow_size : forall Θ A A',
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⊢ A ≡ᵗ A' }}a ->
   size_ptyp (⇓ᵗ[Θ] A) = size_ptyp (⇓ᵗ[Θ] A').
 Proof.
@@ -411,7 +411,7 @@ Qed.
     context [Θ₀,α1̂:=τ]; [κ₀] is the one the back-edge's premise runs at.  The
     hypothesis is exactly [a_inc__flex_def]'s premise. *)
 Lemma downarrow_subst_ptyp : forall Θ κ0 α1 τ τ' A,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ) }}a ->
   ⇓ᵗ[Θ] (msubst_ptyp κ0 (subst_ptyp_in_ptyp τ α1 A))
   = ⇓ᵗ[Θ] (msubst_ptyp ((α1, τ') :: κ0) A).
@@ -427,7 +427,7 @@ Qed.
 (** (M2), the skeleton version — this is the shape [a_unify__flex_assign] and
     [a_assign__assign] actually use. *)
 Lemma downarrow_subst_pskl : forall Θ κ0 α1 τ τ' P,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ) }}a ->
   ⇓ˢ[Θ] (msubst_pskl κ0 (subst_pskl_in_pskl (ptyp_to_pskl τ) α1 P))
   = ⇓ˢ[Θ] (msubst_pskl ((α1, τ') :: κ0) P).
@@ -450,7 +450,7 @@ Proof.
 Qed.
 
 Corollary a_inc_downarrow_subst_ptyp : forall Θ0 Θ κ0 α1 τ τ' A,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   (α1, τ') :: κ0 ∷ ((α1 ~ abind_flex_mono_def τ) ++ Θ0) ⊑ Θ ->
   ⇓ᵗ[Θ] (msubst_ptyp κ0 (subst_ptyp_in_ptyp τ α1 A))
   = ⇓ᵗ[Θ] (msubst_ptyp ((α1, τ') :: κ0) A).
@@ -460,7 +460,7 @@ Proof.
 Qed.
 
 Corollary a_inc_downarrow_subst_pskl : forall Θ0 Θ κ0 α1 τ τ' P,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   (α1, τ') :: κ0 ∷ ((α1 ~ abind_flex_mono_def τ) ++ Θ0) ⊑ Θ ->
   ⇓ˢ[Θ] (msubst_pskl κ0 (subst_pskl_in_pskl (ptyp_to_pskl τ) α1 P))
   = ⇓ˢ[Θ] (msubst_pskl ((α1, τ') :: κ0) P).
@@ -471,7 +471,7 @@ Qed.
 
 (** The size corollaries (M2) hands to the measure. *)
 Corollary downarrow_subst_ptyp_size : forall Θ κ0 α1 τ τ' A,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ) }}a ->
   size_ptyp (⇓ᵗ[Θ] (msubst_ptyp κ0 (subst_ptyp_in_ptyp τ α1 A)))
   = size_ptyp (⇓ᵗ[Θ] (msubst_ptyp ((α1, τ') :: κ0) A)).
@@ -480,7 +480,7 @@ Proof.
 Qed.
 
 Corollary downarrow_subst_pskl_size : forall Θ κ0 α1 τ τ' P,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ) }}a ->
   size_pskl (⇓ˢ[Θ] (msubst_pskl κ0 (subst_pskl_in_pskl (ptyp_to_pskl τ) α1 P)))
   = size_pskl (⇓ˢ[Θ] (msubst_pskl ((α1, τ') :: κ0) P)).
@@ -505,7 +505,7 @@ Qed.
     [≡ᵗ]-equivalent images. *)
 Lemma a_inc_equiv_lookup : forall Θ0 κ1 κ2 Θ,
   a_inc_equiv Θ0 κ1 κ2 Θ ->
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   forall α', a_binds_tvar α' Θ0 ->
   {{ Θ ⊢ (msubst_lookup κ1 α') ≡ᵗ (msubst_lookup κ2 α') }}a.
 Proof.
@@ -513,7 +513,7 @@ Proof.
   - (* empty *)
     destruct Hbt as [Hb | [Hb | [τ Hb]]]; inversion Hb.
   - (* flex α *)
-    assert (Hwf' : a_wf_aenv Θ) by (inversion Hwf; auto).
+    assert (Hwf' : {{ ⊢ Θ }}a) by (inversion Hwf; auto).
     simpl. destruct (α' == α) as [-> | Hne];
       [ assumption | ].
     apply IHHie; [ exact Hwf' | ].
@@ -522,7 +522,7 @@ Proof.
       try (exfalso; apply Hne; exact Heq);
       [ left | right; left | right; right; exists τ ]; exact Hb'.
   - (* flex_def α := τ *)
-    assert (Hwf' : a_wf_aenv Θ) by (inversion Hwf; auto).
+    assert (Hwf' : {{ ⊢ Θ }}a) by (inversion Hwf; auto).
     simpl. destruct (α' == α) as [-> | Hne];
       [ assumption | ].
     apply IHHie; [ exact Hwf' | ].
@@ -531,7 +531,7 @@ Proof.
       try (exfalso; apply Hne; exact Heq);
       [ left | right; left | right; right; exists τ0 ]; exact Hb'.
   - (* term variable, type binding : κ unchanged, target grows *)
-    assert (Hwf' : a_wf_aenv Θ) by (inversion Hwf; auto).
+    assert (Hwf' : {{ ⊢ Θ }}a) by (inversion Hwf; auto).
     assert (Hbt' : a_binds_tvar α' Θ).
     { destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
         destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
@@ -542,7 +542,7 @@ Proof.
         apply in_or_app; right; simpl; right; exact Hby
       | apply IHHie; assumption ].
   - (* term variable, skeleton binding *)
-    assert (Hwf' : a_wf_aenv Θ) by (inversion Hwf; auto).
+    assert (Hwf' : {{ ⊢ Θ }}a) by (inversion Hwf; auto).
     assert (Hbt' : a_binds_tvar α' Θ).
     { destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
         destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
@@ -553,7 +553,7 @@ Proof.
         apply in_or_app; right; simpl; right; exact Hby
       | apply IHHie; assumption ].
   - (* rigid α : κ does not touch it, so both lookups are α itself *)
-    assert (Hnd : α `notin` dom Θ /\ a_wf_aenv Θ) by (inversion Hwf; auto).
+    assert (Hnd : α `notin` dom Θ /\ {{ ⊢ Θ }}a) by (inversion Hwf; auto).
     destruct Hnd as [Hnd Hwf'].
     destruct (a_inc_equiv_dom Hie) as [Hd1 Hd2].
     destruct (α' == α) as [-> | Hne].
@@ -574,8 +574,8 @@ Qed.
 (** (M1), the type version. *)
 Lemma a_inc_equiv_downarrow_ptyp : forall Θ0 κ1 κ2 Θ A,
   a_inc_equiv Θ0 κ1 κ2 Θ ->
-  a_wf_aenv Θ0 ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ0 }}a ->
+  {{ ⊢ Θ }}a ->
   a_wf_ptyp Θ0 A ->
   ⇓ᵗ[Θ] (msubst_ptyp κ1 A) = ⇓ᵗ[Θ] (msubst_ptyp κ2 A).
 Proof.
@@ -589,8 +589,8 @@ Qed.
 (** (M1), the skeleton version — this is what Arrow's second premise needs. *)
 Lemma a_inc_equiv_downarrow_pskl : forall Θ0 κ1 κ2 Θ P,
   a_inc_equiv Θ0 κ1 κ2 Θ ->
-  a_wf_aenv Θ0 ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ0 }}a ->
+  {{ ⊢ Θ }}a ->
   a_scope_pskl Θ0 P ->
   ⇓ˢ[Θ] (msubst_pskl κ1 P) = ⇓ˢ[Θ] (msubst_pskl κ2 P).
 Proof.
@@ -604,8 +604,8 @@ Qed.
 (** The size corollaries (M1) hands to the measure. *)
 Corollary a_inc_equiv_downarrow_ptyp_size : forall Θ0 κ1 κ2 Θ A,
   a_inc_equiv Θ0 κ1 κ2 Θ ->
-  a_wf_aenv Θ0 ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ0 }}a ->
+  {{ ⊢ Θ }}a ->
   a_wf_ptyp Θ0 A ->
   size_ptyp (⇓ᵗ[Θ] (msubst_ptyp κ1 A)) = size_ptyp (⇓ᵗ[Θ] (msubst_ptyp κ2 A)).
 Proof.
@@ -614,8 +614,8 @@ Qed.
 
 Corollary a_inc_equiv_downarrow_pskl_size : forall Θ0 κ1 κ2 Θ P,
   a_inc_equiv Θ0 κ1 κ2 Θ ->
-  a_wf_aenv Θ0 ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ0 }}a ->
+  {{ ⊢ Θ }}a ->
   a_scope_pskl Θ0 P ->
   size_pskl (⇓ˢ[Θ] (msubst_pskl κ1 P)) = size_pskl (⇓ˢ[Θ] (msubst_pskl κ2 P)).
 Proof.

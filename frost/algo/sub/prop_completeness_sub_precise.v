@@ -59,7 +59,7 @@ Set Implicit Arguments.
     the invariant that makes the [tophole_fill] case of partial-precision-
     complete vacuous. *)
 Lemma ad_partial_precise_tags_sub : forall Θ Δ Ψ P ψ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
   forall Ψt, d_tags_skl Ψt ψ -> Ψ [<=] Ψt.
 Proof.
@@ -80,7 +80,7 @@ Proof.
        here the sub-derivation extends Θ with the rigid α *)
     apply d_tags_skl_all_etag_inv in Hdt as [L0 [Ψt0 [Hd0 [Hεt Heqt]]]].
     pick fresh α for (L `union` L0 `union` dom Θ).
-    assert (Hwf' : a_wf_aenv ((α ~ abind_tvar) ++ Θ))
+    assert (Hwf' : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
       by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
     specialize (H0 α ltac:(solve_notin_auto) Hwf' _ (Hd0 α ltac:(solve_notin_auto))).
     fsetdec.
@@ -99,7 +99,7 @@ Qed.
     wf of [ψ] and the tag-sort premise, partial precision at the FULL tag set
     [Ψ] upgrades to plain (coloured) precision against [⌊ψ⌋].  See §5.1. *)
 Lemma ad_partial_precise_complete : forall NM Θ Δ Ψ P ψ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   a_tags_sort NM Ψ ψ ->
   {{ Θ ⨟ Δ ⊢ₚₛ ⌊ ψ ⌋ˢ }}a ->
   {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
@@ -157,7 +157,7 @@ Proof.
     exfalso.
     apply a_tags_sort_all_etag_inv in Htags as [Lt [Ψt [Hta [Hεt Hun]]]].
     pick fresh α for (L `union` Lt `union` dom Θ).
-    assert (Hwf' : a_wf_aenv ((α ~ abind_tvar) ++ Θ))
+    assert (Hwf' : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
       by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
     assert (Hsub : Ψ [<=] Ψt) by
       (eapply (ad_partial_precise_tags_sub Hwf' (H α ltac:(solve_notin_auto)));
@@ -342,7 +342,7 @@ Lemma ad_pat_sub_g_fold_flex : forall n NM M Ψ Θ Rτ Q,
   forall α τ,
   Rτ = ptyp_to_uskl_syn τ ->
   binds α (abind_flex_mono_def τ) Θ ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   ad_pat_sub_g n NM M Ψ Θ (uskl_var_f α) Q.
 Proof.
   intros n NM M Ψ Θ Rτ Q HD; induction HD; intros α0 τ0 HeqS Hb Hwf.
@@ -412,7 +412,7 @@ Qed.
 Lemma ad_pat_sub_g_concrete_target : forall n NM M Ψ Θ R' Q,
   ad_pat_sub_g n NM M Ψ Θ R' Q ->
   NM = a_sub_mode_sk ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   pskl_no_forall (uskl_to_pskl R') ->
   Ψ [=] empty /\ pskl_to_bskl_inh (bskl_to_pskl Q) = Q /\ mod_comp_sk Q M.
 Proof.
@@ -488,7 +488,7 @@ Qed.
 Lemma ad_pat_sub_g_hole_intro : forall n n' NM M Ψfull Θ' R Q,
   ad_pat_sub_g n NM M Ψfull Θ' R Q ->
   NM = a_sub_mode_sk ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   pskl_no_forall (uskl_to_pskl R) ->
   {{ Θ' ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
   forall Ψn, Ψn [<=] Ψfull ->
@@ -526,7 +526,7 @@ Qed.
     congruence roots—supplies). *)
 Lemma uskl_precise_guarded : forall Θb Ψrep R' R,
   uskl_precise Θb Ψrep R' R ->
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   guarded_uskl R ->
   uskl_ghost_free R' ->
   guarded_uskl R'.
@@ -567,11 +567,11 @@ Qed.
 Lemma ad_pat_sub_g_ughost_r_transport : forall Θb Ψrep R' R,
   uskl_precise Θb Ψrep R' R ->
   forall Ψsup n Θ' Ψn Q,
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   Ψrep [<=] Ψsup ->
   Ψsup ∩ ftag_in_uskl R' [=] empty ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   guarded_uskl R ->
   {{ empty ⨟ Θ' ⊢ˢ R ∼ Q }}ad ->
   guarded_bskl Q ->
@@ -651,9 +651,9 @@ Lemma ad_pat_sub_g_ghost_transport : forall Θb Ψrep R' R,
   uskl_precise Θb Ψrep R' R ->
   forall n M Θ' Ψn P,
   R = uskl_hole ->
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   {{ Θ' ⨟ empty ⊢ₚₛ P }}a ->
   mod_comp_sk (pskl_to_bskl_inh P) M ->
   Ψn [=] empty ->
@@ -685,9 +685,9 @@ Lemma ad_pat_sub_g_ghostg_transport : forall Θb Ψrep R' R,
   uskl_precise Θb Ψrep R' R ->
   forall n M Θ' Ψn,
   R = uskl_holeg ->
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   mod_comp_sk bskl_hole M ->
   Ψn [=] empty ->
   ad_pat_sub_g n a_sub_mode_sk M Ψn Θ' R' bskl_hole.
@@ -722,19 +722,19 @@ Lemma ad_pat_sub_g_arrow_transport : forall Θb Ψr Rg' Rgarr,
   uskl_precise Θb Ψr Rg' Rgarr ->
   forall n NM Mg Θ' Ψfull Ψc1 Ψc2 Rg1 Rg2 Qg1 Qg2 Ψsup Ψn Ψna,
   Rgarr = uskl_arrow Rg1 Rg2 ->
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   Ψr [<=] Ψsup ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   {{ Ψc1 ⨟ Θ' ⊢ˢ Rg1 ∼ Qg1 }}ad ->
   ad_pat_sub_g n NM Mg Ψc2 Θ' Rg2 Qg2 ->
   Ψfull [=] Ψc1 `union` Ψc2 ->
   (forall Θb0 Ψr0 Rg2' Ψsup0 Ψn0 Ψna0,
      uskl_precise Θb0 Ψr0 Rg2' Rg2 ->
-     a_wf_aenv Θb0 ->
+     {{ ⊢ Θb0 }}a ->
      Ψr0 [<=] Ψsup0 ->
      (forall x b, binds x b Θb0 -> binds x b Θ') ->
-     a_wf_aenv Θ' ->
+     {{ ⊢ Θ' }}a ->
      Ψc2 [=] Ψn0 `union` Ψna0 ->
      Ψna0 [<=] Ψsup0 ->
      Ψsup0 ∩ Ψn0 [=] empty ->
@@ -839,10 +839,10 @@ Lemma ad_pat_sub_g_forall_l_tagged_transport : forall Θb Ψr Rg' Rgall,
   uskl_precise Θb Ψr Rg' Rgall ->
   forall n NM Mg Θ' Ψfull Ψi' εg Rg0 ψg Qg Ψsup Ψn Ψna,
   Rgall = uskl_all_etag εg Rg0 ->
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   Ψr [<=] Ψsup ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   Mg <> mode_ti ->
   Ψi' ∩ Ψfull [=] empty ->
   Ψi' ∩ (ftag_in_uskl (uskl_all_etag εg Rg0)) [=] empty ->
@@ -851,10 +851,10 @@ Lemma ad_pat_sub_g_forall_l_tagged_transport : forall Θb Ψr Rg' Rgall,
   ad_pat_sub_g n NM Mg (Ψfull `union` Ψi') Θ' (open_uskl_wrt_uskl Rg0 ψg) Qg ->
   (forall Θb0 Ψr0 Rg'' Ψsup0 Ψn0 Ψna0,
      uskl_precise Θb0 Ψr0 Rg'' (open_uskl_wrt_uskl Rg0 ψg) ->
-     a_wf_aenv Θb0 ->
+     {{ ⊢ Θb0 }}a ->
      Ψr0 [<=] Ψsup0 ->
      (forall x b, binds x b Θb0 -> binds x b Θ') ->
-     a_wf_aenv Θ' ->
+     {{ ⊢ Θ' }}a ->
      (Ψfull `union` Ψi') [=] Ψn0 `union` Ψna0 ->
      Ψna0 [<=] Ψsup0 ->
      Ψsup0 ∩ Ψn0 [=] empty ->
@@ -1014,10 +1014,10 @@ Lemma ad_pat_sub_g_forall_l_untagged_transport : forall Θb Ψr Rg' Rgall,
   uskl_precise Θb Ψr Rg' Rgall ->
   forall n NM Mg Θ' Ψfull Ψi' Rg0 ψg Qg Ψsup Ψn Ψna,
   Rgall = uskl_all_syn Rg0 ->
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   Ψr [<=] Ψsup ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   Mg <> mode_ti ->
   Ψi' ∩ Ψfull [=] empty ->
   Ψi' ∩ (ftag_in_uskl (uskl_all_syn Rg0)) [=] empty ->
@@ -1026,10 +1026,10 @@ Lemma ad_pat_sub_g_forall_l_untagged_transport : forall Θb Ψr Rg' Rgall,
   ad_pat_sub_g n NM Mg (Ψfull `union` Ψi') Θ' (open_uskl_wrt_uskl Rg0 ψg) Qg ->
   (forall Θb0 Ψr0 Rg'' Ψsup0 Ψn0 Ψna0,
      uskl_precise Θb0 Ψr0 Rg'' (open_uskl_wrt_uskl Rg0 ψg) ->
-     a_wf_aenv Θb0 ->
+     {{ ⊢ Θb0 }}a ->
      Ψr0 [<=] Ψsup0 ->
      (forall x b, binds x b Θb0 -> binds x b Θ') ->
-     a_wf_aenv Θ' ->
+     {{ ⊢ Θ' }}a ->
      (Ψfull `union` Ψi') [=] Ψn0 `union` Ψna0 ->
      Ψna0 [<=] Ψsup0 ->
      Ψsup0 ∩ Ψn0 [=] empty ->
@@ -1139,18 +1139,18 @@ Lemma ad_pat_sub_g_ughost_l_transport : forall Θb Ψr Rg' Rgt,
   uskl_precise Θb Ψr Rg' Rgt ->
   forall n Mg Θ' Ψfull Rg0 Qg Ψsup Ψn Ψna,
   Rgt = uskl_tophole Rg0 ->
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   Ψr [<=] Ψsup ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   Mg <> mode_ti ->
   ad_pat_sub_g n a_sub_mode_sk Mg Ψfull Θ' Rg0 Qg ->
   (forall Θb0 Ψr0 Rg'' Ψsup0 Ψn0 Ψna0,
      uskl_precise Θb0 Ψr0 Rg'' Rg0 ->
-     a_wf_aenv Θb0 ->
+     {{ ⊢ Θb0 }}a ->
      Ψr0 [<=] Ψsup0 ->
      (forall x b, binds x b Θb0 -> binds x b Θ') ->
-     a_wf_aenv Θ' ->
+     {{ ⊢ Θ' }}a ->
      Ψfull [=] Ψn0 `union` Ψna0 ->
      Ψna0 [<=] Ψsup0 ->
      Ψsup0 ∩ Ψn0 [=] empty ->
@@ -1210,18 +1210,18 @@ Lemma ad_pat_sub_g_ughost_lg_transport : forall Θb Ψr Rg' Rgt,
   uskl_precise Θb Ψr Rg' Rgt ->
   forall n Mg Θ' Ψfull Rg0 Qg Ψsup Ψn Ψna,
   Rgt = uskl_topholeg Rg0 ->
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   Ψr [<=] Ψsup ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   Mg <> mode_ti ->
   ad_pat_sub_g n a_sub_mode_sk Mg Ψfull Θ' Rg0 Qg ->
   (forall Θb0 Ψr0 Rg'' Ψsup0 Ψn0 Ψna0,
      uskl_precise Θb0 Ψr0 Rg'' Rg0 ->
-     a_wf_aenv Θb0 ->
+     {{ ⊢ Θb0 }}a ->
      Ψr0 [<=] Ψsup0 ->
      (forall x b, binds x b Θb0 -> binds x b Θ') ->
-     a_wf_aenv Θ' ->
+     {{ ⊢ Θ' }}a ->
      Ψfull [=] Ψn0 `union` Ψna0 ->
      Ψna0 [<=] Ψsup0 ->
      Ψsup0 ∩ Ψn0 [=] empty ->
@@ -1288,18 +1288,18 @@ Lemma ad_pat_sub_g_flex_mono_transport : forall Θb Ψr Rg' Rgv,
   uskl_precise Θb Ψr Rg' Rgv ->
   forall n NM Mg Θ' Ψfull αg τg Qg Ψsup Ψn Ψna,
   Rgv = uskl_var_f αg ->
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   Ψr [<=] Ψsup ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   binds αg (abind_flex_mono_def τg) Θ' ->
   ad_pat_sub_g n NM (mode_fn Mg) Ψfull Θ' (ptyp_to_uskl_syn τg) Qg ->
   (forall Θb0 Ψr0 Rg'' Ψsup0 Ψn0 Ψna0,
      uskl_precise Θb0 Ψr0 Rg'' (ptyp_to_uskl_syn τg) ->
-     a_wf_aenv Θb0 ->
+     {{ ⊢ Θb0 }}a ->
      Ψr0 [<=] Ψsup0 ->
      (forall x b, binds x b Θb0 -> binds x b Θ') ->
-     a_wf_aenv Θ' ->
+     {{ ⊢ Θ' }}a ->
      Ψfull [=] Ψn0 `union` Ψna0 ->
      Ψna0 [<=] Ψsup0 ->
      Ψsup0 ∩ Ψn0 [=] empty ->
@@ -1379,10 +1379,10 @@ Lemma ad_pat_sub_precise_upre : forall n NM M Ψfull Θ' Rg Q,
   ad_pat_sub_g n NM M Ψfull Θ' Rg Q ->
   forall Θb Ψr Rg' Ψsup Ψn Ψna,
   uskl_precise Θb Ψr Rg' Rg ->
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   Ψr [<=] Ψsup ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   Ψfull [=] Ψn `union` Ψna ->
   Ψna [<=] Ψsup ->
   Ψsup ∩ Ψn [=] empty ->
@@ -1519,7 +1519,7 @@ Qed.
     refinement (the ⊳-mirror of [consis_unfold_def_subject]). *)
 Lemma ad_refine_pskl_unfold_def_subject : forall Θ Δ α Qt,
   {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_var_f α) ⊳ Qt }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall τ, binds α (abind_flex_mono_def τ) Θ ->
   {{ Θ ⨟ Δ ⊢ᵣₚ (ptyp_to_pskl τ) ⊳ Qt }}ad.
 Proof.
@@ -1603,7 +1603,7 @@ Lemma ad_pat_sub_gv_fold_flex : forall n NM M Ψ Θ Rτ Q,
   forall α τ,
   Rτ = ptyp_to_uskl_syn τ ->
   binds α (abind_flex_mono_def τ) Θ ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   ad_pat_sub_gv n NM M Ψ Θ (uskl_var_f α) Q.
 Proof.
   intros n NM M Ψ Θ Rτ Q HD; induction HD; intros α0 τ0 HeqS Hb Hwf.
@@ -1678,7 +1678,7 @@ Qed.
 Lemma ad_pat_sub_gv_hole_intro : forall n n' NM M Ψfull Θ' R Q,
   ad_pat_sub_gv n NM M Ψfull Θ' R Q ->
   NM = a_sub_mode_sk ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   pskl_no_forall (uskl_to_pskl R) ->
   {{ Θ' ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
   forall Ψn, Ψn [<=] Ψfull ->
@@ -1704,11 +1704,11 @@ Qed.
 Lemma ad_pat_sub_gv_ughost_r_transport : forall Θb Ψrep R' R,
   uskl_precise Θb Ψrep R' R ->
   forall Ψsup n Θ' Ψn Q,
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   Ψrep [<=] Ψsup ->
   Ψsup ∩ ftag_in_uskl R' [=] empty ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   guarded_uskl R ->
   {{ empty ⨟ Θ' ⊢ˢ R ∼ Q }}ad ->
   {{ Θ' ⨟ empty ⊢ᵣₚ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) }}ad ->
@@ -1801,9 +1801,9 @@ Lemma ad_pat_sub_gv_ghost_transport : forall Θb Ψrep R' R,
   uskl_precise Θb Ψrep R' R ->
   forall n M Θ' Ψn P,
   R = uskl_hole ->
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   {{ Θ' ⨟ empty ⊢ₚₛ P }}a ->
   mod_comp_sk (pskl_to_bskl_inh P) M ->
   Ψn [=] empty ->
@@ -1835,9 +1835,9 @@ Lemma ad_pat_sub_gv_ghostg_transport : forall Θb Ψrep R' R,
   uskl_precise Θb Ψrep R' R ->
   forall n M Θ' Ψn,
   R = uskl_holeg ->
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   mod_comp_sk bskl_hole M ->
   Ψn [=] empty ->
   ad_pat_sub_gv n a_sub_mode_sk M Ψn Θ' R' bskl_hole.
@@ -1871,20 +1871,20 @@ Lemma ad_pat_sub_gv_arrow_transport : forall Θb Ψr Rg' Rgarr,
   uskl_precise Θb Ψr Rg' Rgarr ->
   forall n NM Mg Θ' Ψfull Ψc1 Ψc2 Rg1 Rg2 Qg1 Qg2 Ψsup Ψn Ψna,
   Rgarr = uskl_arrow Rg1 Rg2 ->
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   Ψr [<=] Ψsup ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   {{ Ψc1 ⨟ Θ' ⊢ˢ Rg1 ∼ Qg1 }}ad ->
   {{ Θ' ⨟ empty ⊢ᵣₚ ⌊ Rg1 ⌋ˢ ⊳ (bskl_to_pskl Qg1) }}ad ->
   ad_pat_sub_gv n NM Mg Ψc2 Θ' Rg2 Qg2 ->
   Ψfull [=] Ψc1 `union` Ψc2 ->
   (forall Θb0 Ψr0 Rg2' Ψsup0 Ψn0 Ψna0,
      uskl_precise Θb0 Ψr0 Rg2' Rg2 ->
-     a_wf_aenv Θb0 ->
+     {{ ⊢ Θb0 }}a ->
      Ψr0 [<=] Ψsup0 ->
      (forall x b, binds x b Θb0 -> binds x b Θ') ->
-     a_wf_aenv Θ' ->
+     {{ ⊢ Θ' }}a ->
      Ψc2 [=] Ψn0 `union` Ψna0 ->
      Ψna0 [<=] Ψsup0 ->
      Ψsup0 ∩ Ψn0 [=] empty ->
@@ -1984,10 +1984,10 @@ Lemma ad_pat_sub_gv_forall_l_tagged_transport : forall Θb Ψr Rg' Rgall,
   uskl_precise Θb Ψr Rg' Rgall ->
   forall n NM Mg Θ' Ψfull Ψi' εg Rg0 ψg Qg Ψsup Ψn Ψna,
   Rgall = uskl_all_etag εg Rg0 ->
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   Ψr [<=] Ψsup ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   Mg <> mode_ti ->
   Ψi' ∩ Ψfull [=] empty ->
   Ψi' ∩ (ftag_in_uskl (uskl_all_etag εg Rg0)) [=] empty ->
@@ -1996,10 +1996,10 @@ Lemma ad_pat_sub_gv_forall_l_tagged_transport : forall Θb Ψr Rg' Rgall,
   ad_pat_sub_gv n NM Mg (Ψfull `union` Ψi') Θ' (open_uskl_wrt_uskl Rg0 ψg) Qg ->
   (forall Θb0 Ψr0 Rg'' Ψsup0 Ψn0 Ψna0,
      uskl_precise Θb0 Ψr0 Rg'' (open_uskl_wrt_uskl Rg0 ψg) ->
-     a_wf_aenv Θb0 ->
+     {{ ⊢ Θb0 }}a ->
      Ψr0 [<=] Ψsup0 ->
      (forall x b, binds x b Θb0 -> binds x b Θ') ->
-     a_wf_aenv Θ' ->
+     {{ ⊢ Θ' }}a ->
      (Ψfull `union` Ψi') [=] Ψn0 `union` Ψna0 ->
      Ψna0 [<=] Ψsup0 ->
      Ψsup0 ∩ Ψn0 [=] empty ->
@@ -2159,10 +2159,10 @@ Lemma ad_pat_sub_gv_forall_l_untagged_transport : forall Θb Ψr Rg' Rgall,
   uskl_precise Θb Ψr Rg' Rgall ->
   forall n NM Mg Θ' Ψfull Ψi' Rg0 ψg Qg Ψsup Ψn Ψna,
   Rgall = uskl_all_syn Rg0 ->
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   Ψr [<=] Ψsup ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   Mg <> mode_ti ->
   Ψi' ∩ Ψfull [=] empty ->
   Ψi' ∩ (ftag_in_uskl (uskl_all_syn Rg0)) [=] empty ->
@@ -2171,10 +2171,10 @@ Lemma ad_pat_sub_gv_forall_l_untagged_transport : forall Θb Ψr Rg' Rgall,
   ad_pat_sub_gv n NM Mg (Ψfull `union` Ψi') Θ' (open_uskl_wrt_uskl Rg0 ψg) Qg ->
   (forall Θb0 Ψr0 Rg'' Ψsup0 Ψn0 Ψna0,
      uskl_precise Θb0 Ψr0 Rg'' (open_uskl_wrt_uskl Rg0 ψg) ->
-     a_wf_aenv Θb0 ->
+     {{ ⊢ Θb0 }}a ->
      Ψr0 [<=] Ψsup0 ->
      (forall x b, binds x b Θb0 -> binds x b Θ') ->
-     a_wf_aenv Θ' ->
+     {{ ⊢ Θ' }}a ->
      (Ψfull `union` Ψi') [=] Ψn0 `union` Ψna0 ->
      Ψna0 [<=] Ψsup0 ->
      Ψsup0 ∩ Ψn0 [=] empty ->
@@ -2284,18 +2284,18 @@ Lemma ad_pat_sub_gv_ughost_l_transport : forall Θb Ψr Rg' Rgt,
   uskl_precise Θb Ψr Rg' Rgt ->
   forall n Mg Θ' Ψfull Rg0 Qg Ψsup Ψn Ψna,
   Rgt = uskl_tophole Rg0 ->
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   Ψr [<=] Ψsup ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   Mg <> mode_ti ->
   ad_pat_sub_gv n a_sub_mode_sk Mg Ψfull Θ' Rg0 Qg ->
   (forall Θb0 Ψr0 Rg'' Ψsup0 Ψn0 Ψna0,
      uskl_precise Θb0 Ψr0 Rg'' Rg0 ->
-     a_wf_aenv Θb0 ->
+     {{ ⊢ Θb0 }}a ->
      Ψr0 [<=] Ψsup0 ->
      (forall x b, binds x b Θb0 -> binds x b Θ') ->
-     a_wf_aenv Θ' ->
+     {{ ⊢ Θ' }}a ->
      Ψfull [=] Ψn0 `union` Ψna0 ->
      Ψna0 [<=] Ψsup0 ->
      Ψsup0 ∩ Ψn0 [=] empty ->
@@ -2355,18 +2355,18 @@ Lemma ad_pat_sub_gv_ughost_lg_transport : forall Θb Ψr Rg' Rgt,
   uskl_precise Θb Ψr Rg' Rgt ->
   forall n Mg Θ' Ψfull Rg0 Qg Ψsup Ψn Ψna,
   Rgt = uskl_topholeg Rg0 ->
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   Ψr [<=] Ψsup ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   Mg <> mode_ti ->
   ad_pat_sub_gv n a_sub_mode_sk Mg Ψfull Θ' Rg0 Qg ->
   (forall Θb0 Ψr0 Rg'' Ψsup0 Ψn0 Ψna0,
      uskl_precise Θb0 Ψr0 Rg'' Rg0 ->
-     a_wf_aenv Θb0 ->
+     {{ ⊢ Θb0 }}a ->
      Ψr0 [<=] Ψsup0 ->
      (forall x b, binds x b Θb0 -> binds x b Θ') ->
-     a_wf_aenv Θ' ->
+     {{ ⊢ Θ' }}a ->
      Ψfull [=] Ψn0 `union` Ψna0 ->
      Ψna0 [<=] Ψsup0 ->
      Ψsup0 ∩ Ψn0 [=] empty ->
@@ -2433,18 +2433,18 @@ Lemma ad_pat_sub_gv_flex_mono_transport : forall Θb Ψr Rg' Rgv,
   uskl_precise Θb Ψr Rg' Rgv ->
   forall n NM Mg Θ' Ψfull αg τg Qg Ψsup Ψn Ψna,
   Rgv = uskl_var_f αg ->
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   Ψr [<=] Ψsup ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   binds αg (abind_flex_mono_def τg) Θ' ->
   ad_pat_sub_gv n NM (mode_fn Mg) Ψfull Θ' (ptyp_to_uskl_syn τg) Qg ->
   (forall Θb0 Ψr0 Rg'' Ψsup0 Ψn0 Ψna0,
      uskl_precise Θb0 Ψr0 Rg'' (ptyp_to_uskl_syn τg) ->
-     a_wf_aenv Θb0 ->
+     {{ ⊢ Θb0 }}a ->
      Ψr0 [<=] Ψsup0 ->
      (forall x b, binds x b Θb0 -> binds x b Θ') ->
-     a_wf_aenv Θ' ->
+     {{ ⊢ Θ' }}a ->
      Ψfull [=] Ψn0 `union` Ψna0 ->
      Ψna0 [<=] Ψsup0 ->
      Ψsup0 ∩ Ψn0 [=] empty ->
@@ -2523,10 +2523,10 @@ Lemma ad_pat_sub_precise_upre_gv : forall n NM M Ψfull Θ' Rg Q,
   ad_pat_sub_gv n NM M Ψfull Θ' Rg Q ->
   forall Θb Ψr Rg' Ψsup Ψn Ψna,
   uskl_precise Θb Ψr Rg' Rg ->
-  a_wf_aenv Θb ->
+  {{ ⊢ Θb }}a ->
   Ψr [<=] Ψsup ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   Ψfull [=] Ψn `union` Ψna ->
   Ψna [<=] Ψsup ->
   Ψsup ∩ Ψn [=] empty ->
@@ -2670,7 +2670,7 @@ Qed.
     confines the ghost's counterpart. *)
 Lemma uskl_precise_of_ad_precise : forall Θ Δ Qs Qt,
   {{ Θ ⨟ Δ ⊢ᵣ Qs ⊳ Qt }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall P' P,
   Qs = pskl_to_bskl_inh P' ->
   Qt = pskl_to_bskl_inh P ->
@@ -2759,7 +2759,7 @@ Qed.
 Lemma ad_precise_extends_pat_sub_gv : forall n NM M Ψ Θ Δ P' P Q,
   {{ Θ ⨟ Δ ⊢ₚᵣ P' ⊑ P }}ad ->
   ad_pat_sub_gv n NM M Ψ Θ (pskl_to_uskl P) Q ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
   (NM = a_sub_mode_ty -> uskl_ghost_free (pskl_to_uskl P')) ->
   ad_pat_sub_gv n NM M Ψ Θ (pskl_to_uskl P') Q.
@@ -2786,7 +2786,7 @@ Qed.
 Lemma ad_precise_extends_pat_sub_v : forall NM M Ψ Θ Δ P' P Q,
   {{ Θ ⨟ Δ ⊢ₚᵣ P' ⊑ P }}ad ->
   ad_pat_sub_v NM M Ψ Θ (pskl_to_uskl P) Q ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
   (NM = a_sub_mode_ty -> uskl_ghost_free (pskl_to_uskl P')) ->
   ad_pat_sub_v NM M Ψ Θ (pskl_to_uskl P') Q.

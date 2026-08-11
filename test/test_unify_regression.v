@@ -79,8 +79,7 @@ Corollary a_unify_succeeds_sound : forall (a b : atom),
   a <> b ->
   ((a ~ abind_flex_mono_def Tarr) ++ (b ~ abind_flex_mono) ++ nil)
     ⊴ ((a ~ abind_flex_mono_def Tarr) ++ (b ~ abind_flex_mono_def Tarr) ++ nil)
-  /\ a_wf_aenv
-       ((a ~ abind_flex_mono_def Tarr) ++ (b ~ abind_flex_mono_def Tarr) ++ nil)
+  /\ {{ ⊢ ((a ~ abind_flex_mono_def Tarr) ++ (b ~ abind_flex_mono_def Tarr) ++ nil) }}a
   /\ ({{ ((a ~ abind_flex_mono_def Tarr) ++ (b ~ abind_flex_mono_def Tarr) ++ nil)
         ⊢ (ptyp_var_f a) ≡ᵗ (ptyp_var_f b) }}a).
 Proof.

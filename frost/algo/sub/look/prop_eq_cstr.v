@@ -327,7 +327,7 @@ Qed.
 
 (* Build [a_wf_aenv] of an all-flex_mono prefix over a wf tail. *)
 Lemma a_wf_aenv_flex_prefix : forall Ξ Θ0,
-  all_flex_mono Ξ -> uniq (Ξ ++ Θ0) -> a_wf_aenv Θ0 -> a_wf_aenv (Ξ ++ Θ0).
+  all_flex_mono Ξ -> uniq (Ξ ++ Θ0) -> {{ ⊢ Θ0 }}a -> {{ ⊢ (Ξ ++ Θ0) }}a.
 Proof.
   induction Ξ as [ | [x b] Ξ' IH ]; intros Θ0 Hfm Huq Hwf0.
   - simpl. exact Hwf0.
@@ -446,7 +446,7 @@ Qed.
 (* A rigid variable cannot refine into an arrow (only [flex_l] could fire,
    and its [α] is a defined flexible, clashing with rigidity). *)
 Lemma ad_refine_syn_rigid_var_arrow_absurd : forall Θ Δ α Q1 Q2,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   binds α abind_tvar Θ ->
   {{ Θ ⨟ Δ ⊢ᵣ (bskl_var_f α) ⊳ (bskl_arrow Q1 Q2) }}ad ->
   False.
@@ -467,7 +467,7 @@ Proof. intros; simpl; destruct (eq_var α α); [ reflexivity | contradiction ]. 
    variable leaf is [a_binds_tvar] (from [__var] / [__flex_l]). *)
 Lemma ad_pat_consis_mono_paint_subj_wf : forall Ψs Θ ψ Q,
   {{ Ψs ⨟ Θ ⊢ˢ ψ ∼ Q }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall τm, mono_ptyp τm -> ψ = ptyp_to_uskl_syn τm -> a_wf_ptyp Θ τm.
 Proof.
   intros Ψs Θ ψ Q H HwfΘ; induction H; intros τm Hmono Heq;
@@ -488,7 +488,7 @@ Qed.
 (* closes an α-leaf: the whole subject IS ψa, faced with mono-ish Q. *)
 Ltac psia_leaf Hrec :=
   match goal with
-  | HwfΘ : a_wf_aenv ?Θ, Htsk : is_tskl ?ψa, Hmi : bskl_monoish ?Q |- _ =>
+  | HwfΘ : {{ ⊢ ?Θ }}a, Htsk : is_tskl ?ψa, Hmi : bskl_monoish ?Q |- _ =>
       let τψ := fresh "τψ" in let Hmn := fresh "Hmn" in let Heqψ := fresh "Heqψ" in
       destruct (ad_pat_consis_monoish_counterpart Hrec HwfΘ Htsk Hmi)
         as (_ & τψ & Hmn & Heqψ);
@@ -508,7 +508,7 @@ Ltac psia_leaf Hrec :=
    counterparts are excluded by [bskl_monoish Q]. *)
 Lemma ad_pat_consis_subst_psia_mono : forall Ψs Θ Rsubj Q,
   {{ Ψs ⨟ Θ ⊢ˢ Rsubj ∼ Q }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   bskl_monoish Q ->
   forall R' ψa αs,
     Rsubj = subst_uskl_in_uskl ψa αs R' ->
@@ -625,7 +625,7 @@ Qed.
     equality, and the ρ-free [psia_leaf] argument applies verbatim. *)
 Lemma psia_rho_leaf_step : forall Ψs Θ Rsubj Q NM Δρ Ψρ ψa αs R',
   {{ Ψs ⨟ Θ ⊢ˢ Rsubj ∼ Q }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   bskl_monoish Q ->
   uskl_rho NM Θ Δρ Ψρ Rsubj (subst_uskl_in_uskl ψa αs R') ->
   R' = uskl_var_f αs ->
@@ -670,7 +670,7 @@ Qed.
 
 Lemma ad_pat_consis_rho_subst_psia_mono : forall Ψs Θ Rsubj Q,
   {{ Ψs ⨟ Θ ⊢ˢ Rsubj ∼ Q }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   bskl_monoish Q ->
   forall NM Δρ Ψρ R' ψa αs,
     uskl_rho NM Θ Δρ Ψρ Rsubj (subst_uskl_in_uskl ψa αs R') ->
@@ -794,7 +794,7 @@ Qed.
    [destruct τ] / [a_def_chain] bookkeeping is needed, because each flex_r step
    simply re-invokes the IH on the sub-derivation with the unfolded target. *)
 Lemma ad_pat_consis_arrow_refine_unify : forall Ψs Θ R Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Ψs ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
   forall Ra Rb, R = uskl_arrow Ra Rb ->
   forall Δr Ql, {{ Θ ⨟ Δr ⊢ᵣ Ql ⊳ Q }}ad ->
@@ -826,7 +826,7 @@ Qed.
 (* ---- plain (non-hygienic) mirrors of the [_f] refinement inversions ---- *)
 
 Lemma ad_refine_syn_guarded_r : forall Θ Δr Q Q',
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δr ⊢ᵣ Q ⊳ Q' }}ad ->
   guarded_bskl Q ->
   guarded_bskl Q'.
@@ -837,7 +837,7 @@ Proof.
 Qed.
 
 Lemma ad_refine_syn_tophole_keep_inv : forall Θ Δr Q' Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   guarded_bskl Q' ->
   {{ Θ ⨟ Δr ⊢ᵣ (bskl_tophole Q') ⊳ (bskl_tophole Q) }}ad ->
   {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad.
@@ -852,7 +852,7 @@ Qed.
    sources are shape-excluded, and a defined-flex source unfolds to a MONOTYPE
    painting, which is guarded.  Kills every P0 but [∀◇P0'] in the ∀◈/∀◇ cases. *)
 Lemma ad_refine_syn_tophole_rhs_src : forall Θ Δr Q' Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
   forall Q0, Q = bskl_tophole Q0 ->
   (exists L0, Q' = bskl_tophole L0) \/ Q' = bskl_hole.
@@ -871,7 +871,7 @@ Proof.
 Qed.
 
 Lemma ad_refine_syn_tophole_guarded_inv : forall Θ Δr Q Q',
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δr ⊢ᵣ (bskl_tophole Q) ⊳ Q' }}ad ->
   guarded_bskl Q' ->
   {{ Θ ⨟ Δr ⊢ᵣ Q ⊳ Q' }}ad.
@@ -883,7 +883,7 @@ Proof.
 Qed.
 
 Lemma ad_refine_syn_all_inh_guarded_absurd : forall Θ Δr Q Q',
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δr ⊢ᵣ (bskl_all_inh Q) ⊳ Q' }}ad ->
   guarded_bskl Q' ->
   False.
@@ -898,7 +898,7 @@ Qed.
    and a defined-flex target unfolds (on both sides) to a guarded monotype
    painting.  The paper's "by well-formedness of P ... Q is guarded" step. *)
 Lemma ad_pat_consis_tophole_guarded_unify : forall Ψs Θ R Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Ψs ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
   forall R0, R = uskl_tophole R0 ->
   forall Δr Ql, {{ Θ ⨟ Δr ⊢ᵣ Ql ⊳ Q }}ad ->
@@ -928,7 +928,7 @@ Qed.
 (* [∀◈]-subject consistency (rule C-UnivGhostG) up to the target's defined-flex
    chain — the [ad_pat_consis_arrow_refine_unify] pattern for [uskl_topholeg]. *)
 Lemma ad_pat_consis_topholeg_refine_unify : forall Ψs Θ R Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Ψs ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
   forall R0, R = uskl_topholeg R0 ->
   forall Δr Ql, {{ Θ ⨟ Δr ⊢ᵣ Ql ⊳ Q }}ad ->
@@ -1167,7 +1167,7 @@ Qed.
    [bskl_all_inh] (inherited ∀ — LE-ForallInh) vs [bskl_all_syn] (synthesised
    ∀, which the refinement can only produce by FILLING a ∀◇ — LE-ForallSyn). *)
 Lemma ad_pat_consis_all_syn_refine_unify : forall Ψs Θ R Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Ψs ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
   forall R0, R = uskl_all_syn R0 ->
   forall Δr Ql, {{ Θ ⨟ Δr ⊢ᵣ Ql ⊳ Q }}ad ->
@@ -1197,7 +1197,7 @@ Qed.
 (* the ε-tagged mirror: [uskl_all_etag] subjects (C-ForallInh's tagged row
    splits the index as [Ψ = Ψ0, ε]; the ForallSyn row keeps it). *)
 Lemma ad_pat_consis_all_etag_refine_unify : forall Ψs Θ R Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Ψs ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
   forall εr R0, R = uskl_all_etag εr R0 ->
   forall Δr Ql, {{ Θ ⨟ Δr ⊢ᵣ Ql ⊳ Q }}ad ->
@@ -1253,7 +1253,7 @@ Proof.
   - specialize (IH _ _ Hb'). destruct b; simpl; clear - IH; fsetdec.
 Qed.
 
-Lemma def_ftv_dom : forall Θ, a_wf_aenv Θ -> def_ftv Θ [<=] dom Θ.
+Lemma def_ftv_dom : forall Θ, {{ ⊢ Θ }}a -> def_ftv Θ [<=] dom Θ.
 Proof.
   intros Θ H; induction H; simpl; try (clear - IHa_wf_aenv; fsetdec).
   - clear; fsetdec.
@@ -1274,7 +1274,7 @@ Qed.
    an arbitrary target, needs a PLAIN hole — [is_tskl] has only ◈). *)
 Lemma ad_pat_consis_target_ftv : forall Ψ Θ ψ Q,
   {{ Ψ ⨟ Θ ⊢ˢ ψ ∼ Q }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   is_tskl ψ ->
   ftvar_in_bskl Q [<=] ftvar_in_uskl ψ `union` def_ftv Θ.
 Proof.
@@ -1328,7 +1328,7 @@ Qed.
    in the target or a definition variable of the context. *)
 Lemma ad_refine_syn_src_ftv : forall Θ Δ Q' Q0,
   {{ Θ ⨟ Δ ⊢ᵣ Q' ⊳ Q0 }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   ftvar_in_bskl Q' [<=] ftvar_in_bskl Q0 `union` def_ftv Θ.
 Proof.
   intros Θ Δ Q' Q0 H; induction H; intros HwfΘ; simpl in *;
@@ -1388,7 +1388,7 @@ Definition bskl_guarded_head (Q : bskl) : Prop :=
 
 Lemma ad_pat_consis_guarded_head_target : forall Ψ Θ R Q,
   {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   uskl_guarded_head R ->
   bskl_guarded_head Q.
 Proof.
@@ -1526,7 +1526,7 @@ Qed.
    2. An avoid-set PARAMETER [L] with [ftvar_in_aenv Θ0 [<=] L], and the
       output freshness [dom Ξs ∩ L = ∅].  [L] must be an input: at a binder
       row the witness is fixed before the block is picked.
-   3. ⭐ THE Θw PACK — [a_wf_aenv Θw], the two binds conditions, and the
+   3. ⭐ THE Θw PACK — [{{ ⊢ Θw }}a], the two binds conditions, and the
       κ-image bound.  This was NOT in the first design and it is forced: the
       ∀ rows call the IH at [(β ~ tvar) ++ Θ] and then STRIP β out of the
       [a_inc] conclusion ([a_inc_strip_tvar_mid]), whose premise is
@@ -1579,14 +1579,14 @@ Qed.
 Theorem a_lookeq_solve_complete_gen :
   forall n NM Θ0 Θ Θw κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α Θs Δρ Ψρ Rsub,
   size_uskl R' + size_pskl P0 <= n ->       (* measure: R' recursion + P0 ∀◇-stripping *)
-  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
   (* ⭐ THE Θw PACK (2026-08-04), identical to P6-Cv's and needed for the same
      reason ONE LEVEL UP: the ∀ rows call the IH at [(β ~ tvar) ++ Θ] and then
      STRIP β out of the [a_inc] conclusion ([a_inc_strip_tvar_mid]), which
      needs the SOLVE block's payloads wf in a context that does not have β.
      The κc side already had this, spelled as [ftv ⊆ ftv ψa]; the κs side gets
      it from a FIXED [Θw].  Vacuous at the top-level call ([Θw := Θ]). *)
-  a_wf_aenv Θw ->
+  {{ ⊢ Θw }}a ->
   (forall x b, binds x b Θw -> binds x b Θ) ->
   (forall x b, binds x b Θ -> binds x b Θw \/ b = abind_tvar) ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a -> {{ Θ0 ⨟ empty ⊢ₚₛ Pi }}a ->
@@ -1700,14 +1700,14 @@ Theorem a_lookeq_solve_complete_gen :
     {{ (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a /\            (* solve 𝒞 Pi Ξs Pa *)
     (* [all_flex_mono] is re-derivable ([a_solve_cstr_decls]) but [uniq Ξs] is
        NOT (hand-off §4c), and the ARROW row needs both to rebuild
-       [a_wf_aenv (Ξs ++ Ξc ++ Θ0)] for its right branch. *)
+       [{{ ⊢ (Ξs ++ Ξc ++ Θ0) }}a] for its right branch. *)
     all_flex_mono Ξs /\
     uniq Ξs /\
     keys κs = keys Ξs /\
     (forall α0, α0 `in` dom Ξs -> α0 `notin` L) /\
     Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs /\
     {{ (Ξs ++ Ξc ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\         (* Θ0,Ξc,Ξs ⊢ Pa *)
-    a_wf_aenv (Ξc ++ Θ0) /\                      (* Ξc collected ⇒ context wf *)
+    {{ ⊢ (Ξc ++ Θ0) }}a /\                      (* Ξc collected ⇒ context wf *)
     α `notin` dom Ξc /\                          (* α not among collected flexibles *)
     keys κc = keys Ξc /\  (* ρc's keys align with Ξc *)
     (* every image ρc assigns is built from ψa (the only source of witnesses
@@ -2411,7 +2411,7 @@ Proof.
              | apply a_wf_pskl_weaken with (Θ := Θ0);
                  [ intros x b Hb; apply binds_app_3; exact Hb | exact HwfPi ]
              | apply a_wf_pskl__var; right; right; left; exact Hbγ ].
-        -- (* a_wf_aenv (Ξc ++ Θ0) *)
+        -- (* {{ ⊢ (Ξc ++ Θ0) }}a *)
            simpl_env. apply a_wf_aenv__flex; [ exact Hγdom0 | exact HwfΘ0 ].
         -- (* α ∉ dom Ξc *) simpl; clear - Fr; fsetdec.
         (* keys ρc = keys Ξc : auto-closed by [repeat split] (eq_refl) *)
@@ -2525,7 +2525,7 @@ Proof.
                   x `notin` ftvar_in_aenv (Ξc1 ++ Θ0))
           by (intros x Hx; eapply a_solve_cstr_generated_fresh;
                 [ exact HSolve1 | exact Hx ]).
-        assert (HwfΞs1 : a_wf_aenv (Ξs1 ++ Ξc1 ++ Θ0)).
+        assert (HwfΞs1 : {{ ⊢ (Ξs1 ++ Ξc1 ++ Θ0) }}a).
         { apply a_wf_aenv_flex_prefix; [ exact Hfms1 | | exact HwfΞ1 ].
           pose proof (a_wf_aenv_uniq HwfΞ1) as Huq1.
           assert (Hdd : dom Ξs1 ∩ dom (Ξc1 ++ Θ0) [<=] empty).
@@ -2877,7 +2877,7 @@ Proof.
            rewrite (aenv_app_assoc Ξs2 Ξs1 ((Ξc1 ++ Ξc2) ++ Θ0)).
            rewrite (aenv_app_assoc Ξc1 Ξc2 Θ0).
            apply binds_app_perm5; exact Hb.
-        -- (* a_wf_aenv ((Ξc1 ++ Ξc2) ++ Θ0) *)
+        -- (* {{ ⊢ ((Ξc1 ++ Ξc2) ++ Θ0) }}a *)
            apply a_wf_aenv_flex_prefix;
              [ apply all_flex_mono_app; assumption
              | pose proof (a_wf_aenv_uniq HwfΞ2) as Huq;
@@ -3085,9 +3085,9 @@ Proof.
         assert (HβΘ0 : β `notin` dom Θ0) by auto.
         assert (Hβα : β <> α) by auto.
         assert (Hβκ : β `notin` dom κ) by auto.
-        assert (Hwfβ : a_wf_aenv ((β ~ abind_tvar) ++ Θ))
+        assert (Hwfβ : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
           by (apply a_wf_aenv__tvar; assumption).
-        assert (Hwfβ0 : a_wf_aenv ((β ~ abind_tvar) ++ Θ0))
+        assert (Hwfβ0 : {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a)
           by (apply a_wf_aenv__tvar; assumption).
         assert (Hweak : forall (x : atom) (b : abind),
                   binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
@@ -3393,9 +3393,9 @@ Proof.
            assert (HβΘ0 : β `notin` dom Θ0) by auto.
            assert (Hβα : β <> α) by auto.
            assert (Hβκ : β `notin` dom κ) by auto.
-           assert (Hwfβ : a_wf_aenv ((β ~ abind_tvar) ++ Θ))
+           assert (Hwfβ : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
              by (apply a_wf_aenv__tvar; assumption).
-           assert (Hwfβ0 : a_wf_aenv ((β ~ abind_tvar) ++ Θ0))
+           assert (Hwfβ0 : {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a)
              by (apply a_wf_aenv__tvar; assumption).
            assert (Hweak : forall (x : atom) (b : abind),
                      binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
@@ -3651,9 +3651,9 @@ Proof.
         assert (HβΘ0 : β `notin` dom Θ0) by auto.
         assert (Hβα : β <> α) by auto.
         assert (Hβκ : β `notin` dom κ) by auto.
-        assert (Hwfβ : a_wf_aenv ((β ~ abind_tvar) ++ Θ))
+        assert (Hwfβ : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
           by (apply a_wf_aenv__tvar; assumption).
-        assert (Hwfβ0 : a_wf_aenv ((β ~ abind_tvar) ++ Θ0))
+        assert (Hwfβ0 : {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a)
           by (apply a_wf_aenv__tvar; assumption).
         assert (Hweak : forall (x : atom) (b : abind),
                   binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
@@ -3998,9 +3998,9 @@ Proof.
            assert (HβΘ0 : β `notin` dom Θ0) by auto.
            assert (Hβα : β <> α) by auto.
            assert (Hβκ : β `notin` dom κ) by auto.
-           assert (Hwfβ : a_wf_aenv ((β ~ abind_tvar) ++ Θ))
+           assert (Hwfβ : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
              by (apply a_wf_aenv__tvar; assumption).
-           assert (Hwfβ0 : a_wf_aenv ((β ~ abind_tvar) ++ Θ0))
+           assert (Hwfβ0 : {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a)
              by (apply a_wf_aenv__tvar; assumption).
            assert (Hweak : forall (x : atom) (b : abind),
                      binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
@@ -4345,9 +4345,9 @@ Proof.
            assert (Hβκ : β `notin` dom κ) by auto.
            assert (Hβψa : β `notin` ftvar_in_uskl ψa) by auto.
            assert (Hβdef : β `notin` def_ftv Θ) by auto.
-           assert (Hwfβ : a_wf_aenv ((β ~ abind_tvar) ++ Θ))
+           assert (Hwfβ : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
              by (apply a_wf_aenv__tvar; assumption).
-           assert (Hwfβ0 : a_wf_aenv ((β ~ abind_tvar) ++ Θ0))
+           assert (Hwfβ0 : {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a)
              by (apply a_wf_aenv__tvar; assumption).
            assert (Hweak : forall (x : atom) (b : abind),
                      binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
@@ -4759,7 +4759,7 @@ Qed.
 
 Theorem a_lookeq_solve_complete :
   forall NM Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α,
-  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a -> {{ Θ0 ⨟ empty ⊢ₚₛ Pi }}a ->
   κ ∷ Θ0 ⊑ Θ ->
   (* α is the binder [a_sub__forall_l] opens (def_extra.v) — COFINITELY, and
@@ -4814,7 +4814,7 @@ Theorem a_lookeq_solve_complete :
     (forall α0, α0 `in` dom Ξs -> α0 `notin` L) /\
     Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κs /\
     {{ (Ξs ++ Ξc ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\
-    a_wf_aenv (Ξc ++ Θ0) /\
+    {{ ⊢ (Ξc ++ Θ0) }}a /\
     α `notin` dom Ξc /\
     keys κc = keys Ξc /\
     Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\

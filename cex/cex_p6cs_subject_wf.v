@@ -126,7 +126,7 @@ Qed.
 Theorem p6cs_without_subject_wf_is_false :
   ~ (forall n NM Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R α,
        size_uskl R + size_pskl P0 <= n ->
-       a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+       {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
        {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a -> {{ Θ0 ⨟ empty ⊢ₚₛ Pi }}a ->
        κ ∷ Θ0 ⊑ Θ ->
        α `notin` dom Θ -> α `notin` dom Θ0 ->
@@ -158,8 +158,8 @@ Proof.
               cex_ψa cex_Q (cex_P α) cex_P0 cex_P0 (cex_S α) α)
     as (𝒞 & Ξc & Ξs & Pa & ρc & HLK & HSolve & Hprec).
   - (* measure *) cbn; lia.
-  - (* a_wf_aenv Θ *) apply a_wf_aenv__nil.
-  - (* a_wf_aenv Θ0 *) apply a_wf_aenv__nil.
+  - (* {{ ⊢ Θ }}a *) apply a_wf_aenv__nil.
+  - (* {{ ⊢ Θ0 }}a *) apply a_wf_aenv__nil.
   - (* Θ0 ⊢ P0 *)
     apply a_wf_pskl__tophole;
       [ apply guarded_pskl__unit | apply a_wf_pskl__unit ].

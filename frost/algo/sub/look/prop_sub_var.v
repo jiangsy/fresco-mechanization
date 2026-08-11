@@ -87,7 +87,7 @@ Set Implicit Arguments.
     This is what rules out [P-UnivGhostRemove] wherever well-formedness has
     already made the body guarded. *)
 Lemma ad_ppre_guarded_topholeg_absurd : forall Θ0 Θ κ Δ Ψ P ψ0,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   κ ∷ Θ0 ⊑ Θ ->
   guarded_pskl P ->
   {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ P) ⊑ᵖ[ Ψ ] (uskl_topholeg ψ0) }}ad ->
@@ -157,7 +157,7 @@ Qed.
     whose erasure is not guarded — and the target-side flexible unfolding is
     rebuilt after recursing through the (monotype) definition. *)
 Lemma ad_ppre_tophole_strip : forall Θ Δ Ψ B ψ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δ ⊢ˢ (pskl_tophole B) ⊑ᵖ[ Ψ ] ψ }}ad ->
   guarded_pskl ⌊ ψ ⌋ˢ ->
   {{ Θ ⨟ Δ ⊢ˢ B ⊑ᵖ[ Ψ ] ψ }}ad.
@@ -186,7 +186,7 @@ Qed.
     TARGET.  Only the two subject shapes a □-input solve can produce are
     needed ([a_solve_sub_hole_output]). *)
 Lemma ad_ppre_lift_topholeg : forall Θ Δ Ψ P ψ0,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ0 }}ad ->
   Δ ∩ ftvar_in_uskl ψ0 [=] empty ->
   guarded_pskl ⌊ ψ0 ⌋ˢ ->
@@ -726,7 +726,7 @@ Qed.
     inversions, and the [fsh_rho_var] branch of [flex_shield_flex_leaf]. *)
 Lemma a_solve_sub_complete_rho_var :
   forall NM m Θ0 Θ Θw κ Δ Δρ Ψ' Ψi Ψa α Pi P0,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   a_tags_sort NM Ψ' (uskl_var_f α) ->
   Ψi `union` Ψa [<=] Ψ' ->
   rho_fresh Δρ Θ κ ->
@@ -879,7 +879,7 @@ Qed.
     is the only live one, and there the κ-image is a MONOTYPE, whose target
     must therefore be tag-free — while a tagged ∀ carries ε. *)
 Lemma ad_ppre_guarded_all_etag_absurd : forall Θ0 Θ κ Δ Ψ Ψd P ε ψ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   κ ∷ Θ0 ⊑ Θ ->
   guarded_pskl P ->
   d_tags_skl Ψd (uskl_all_etag ε ψ) ->
@@ -913,7 +913,7 @@ Qed.
     already the merged [Ξ2 ++ Ξ1] / [κ2 ++ κ1].  Both outputs are well-formed
     at the MERGED block, which is what [a_wf_pskl__arrow] then lifts. *)
 Lemma arrow_grid : forall NM M Θ0 Θ Θw κ Δ Δρ Ψt Ψi Ψa ψ1 ψ2 Pi P01 P02,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   κ ∷ Θ0 ⊑ Θ ->
   a_tags_sort NM Ψt (uskl_arrow ψ1 ψ2) ->
   Ψi `union` Ψa [=] Ψt ->
@@ -1475,7 +1475,7 @@ Qed.
    avoid-set is introduced as [Lav] after [induction]. *)
 Theorem a_solve_sub_complete_var :
   forall n NM M Θ0 Θs Θ Θw κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0,
-  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
   (* ⭐ THE Θw PACK (2026-08-04, the SolE-FlexR repair) — identical to P6-Cv's
      and P6-Cs's, and needed for the same reason: the SOLVE now emits a block,
      the ∀ rows run the IH at [Θ,β] and then STRIP β from the increase, and
@@ -1483,7 +1483,7 @@ Theorem a_solve_sub_complete_var :
      that PREDATES the binder.  [Θw] is FIXED as the construction goes under
      binders; only the two [binds] conditions and the κ-image bound move.
      Vacuous at the top-level call ([Θw := Θ]). *)
-  a_wf_aenv Θw ->
+  {{ ⊢ Θw }}a ->
   (forall x b, binds x b Θw -> binds x b Θ) ->
   (forall x b, binds x b Θ -> binds x b Θw \/ b = abind_tvar) ->
   (forall α, a_flex_tvar Θ0 α ->
@@ -1807,9 +1807,9 @@ Proof.
       assert (HβΘ0 : β `notin` dom Θ0) by (clear - Fr; solve_notin).
       assert (Hβκ : β `notin` dom κ) by (clear - Fr; solve_notin).
       assert (Hβψa : β `notin` ftvar_in_uskl ψa) by (clear - Fr; solve_notin).
-      assert (Hwfβ : a_wf_aenv ((β ~ abind_tvar) ++ Θ))
+      assert (Hwfβ : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
         by (apply a_wf_aenv__tvar; assumption).
-      assert (Hwfβ0 : a_wf_aenv ((β ~ abind_tvar) ++ Θ0))
+      assert (Hwfβ0 : {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a)
         by (apply a_wf_aenv__tvar; assumption).
       assert (Hweak : forall (x : atom) (b : abind),
                 binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
@@ -2083,7 +2083,7 @@ Proof.
               [ exact Hs1 | exact Hx ]).
       pose proof (dom_subset_ftvar_in_aenv Θ0) as Hdf0.
       assert (Hd1 : dom κ1 [=] dom Ξ1) by (apply keys_eq_dom; exact Hk1).
-      assert (HwfΞ1 : a_wf_aenv (Ξ1 ++ Θ0)).
+      assert (HwfΞ1 : {{ ⊢ (Ξ1 ++ Θ0) }}a).
       { apply a_wf_aenv_flex_prefix; [ exact Hfm1 | | exact HwfΘ0 ].
         assert (Hdd : dom Ξ1 ∩ dom Θ0 [<=] empty).
         { intros x Hx.
@@ -2371,9 +2371,9 @@ Proof.
           cbn [ftag_in_uskl] in Hgfresh.
           clear - Hb Hgfresh; fsetdec. }
         (* --- the recursive call's premises at Θ0,β / Θ,β --- *)
-        assert (Hwfβ : a_wf_aenv ((β ~ abind_tvar) ++ Θ))
+        assert (Hwfβ : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
           by (apply a_wf_aenv__tvar; assumption).
-        assert (Hwfβ0 : a_wf_aenv ((β ~ abind_tvar) ++ Θ0))
+        assert (Hwfβ0 : {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a)
           by (apply a_wf_aenv__tvar; assumption).
         assert (Hweak0 : forall (x : atom) (b : abind),
                   binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
@@ -2681,7 +2681,7 @@ Proof.
           pick fresh α2 for (Lf `union` Lt `union` dom Θ).
           (* the wf must be BUILT FIRST: as an [eapply] side goal its context
              is still an evar and the freshness cannot be shown *)
-          assert (Hwf2 : a_wf_aenv ((α2 ~ abind_tvar) ++ Θ))
+          assert (Hwf2 : {{ ⊢ ((α2 ~ abind_tvar) ++ Θ) }}a)
             by (apply a_wf_aenv__tvar; [ clear - Fr; solve_notin | exact HwfΘ ]).
           assert (HΨisub : Ψi [<=] Ψt0)
             by (eapply ad_partial_precise_tags_sub;

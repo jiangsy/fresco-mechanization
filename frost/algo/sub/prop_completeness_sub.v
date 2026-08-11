@@ -248,7 +248,7 @@ Qed.
     congruence ([a_tyequiv_downarrow]) and [⇓unit] is not an arrow.  The
     surviving variable is exactly the [__flex_mono] escape into P7a. *)
 Lemma a_uskl_tyequiv_arrow_l_inv : forall Θ R1 R2 X,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⊢ (uskl_arrow R1 R2) ≡ᵘ X }}a ->
   (exists X1 X2, X = uskl_arrow X1 X2) \/ (exists β, X = uskl_var_f β).
 Proof.
@@ -441,7 +441,7 @@ Qed.
 
 (** THE REFUTATION.  A rigid [α] is never ≡ᵗ an arrow. *)
 Lemma tyequiv_arrow_rigid_absurd : forall Θ α τ1 τ2,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   binds α abind_tvar Θ ->
   {{ Θ ⊢ (ptyp_arrow τ1 τ2) ≡ᵗ (ptyp_var_f α) }}a ->
   False.
@@ -455,7 +455,7 @@ Qed.
 (** …and hence a rigid subject cannot meet the join's ARROW row.  This is
     the sub-case of §1's arrow escape that does NOT go into P7a. *)
 Lemma slack_arrow_rigid_absurd : forall Θ0 κ Θ α R1' R2',
-  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
   κ ∷ Θ0 ⊑ Θ ->
   binds α abind_tvar Θ0 ->
   {{ Θ ⊢ (uskl_arrow R1' R2') ≡ᵘ (msubst_uskl_syn κ (uskl_var_f α)) }}a ->
@@ -505,8 +505,8 @@ Lemma sub_flex_rigid_head_absurd :
   forall n NM M Θ0 Ξ α β P0 R' Ψ Θ κ Q,
   a_decls Ξ ->
   dom Ξ [<=] ftvar_in_pskl P0 ->
-  a_wf_aenv (Ξ ++ (β ~ abind_tvar) ++ Θ0) ->
-  a_wf_aenv Θ ->
+  {{ ⊢ (Ξ ++ (β ~ abind_tvar) ++ Θ0) }}a ->
+  {{ ⊢ Θ }}a ->
   {{ (Ξ ++ (β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a ->
   a_flex_tvar Θ0 α ->
   β `in` ftvar_in_pskl P0 ->                       (* the STUCK configuration *)
@@ -522,9 +522,9 @@ Proof.
   assert (Huq : uniq (Ξ ++ (β ~ abind_tvar) ++ Θ0))
     by (apply a_wf_aenv_uniq; exact Hwf).
   assert (HuqΘ : uniq Θ) by (apply a_wf_aenv_uniq; exact Hwfth).
-  assert (Hwf' : a_wf_aenv (Ξ ++ Θ0))
+  assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
     by (eapply a_wf_aenv_strip_mid; [ exact HdeclsΞ | exact Hwf ]).
-  assert (HwfΘ0 : a_wf_aenv Θ0) by (eapply a_wf_aenv_app_r; exact Hwf').
+  assert (HwfΘ0 : {{ ⊢ Θ0 }}a) by (eapply a_wf_aenv_app_r; exact Hwf').
   assert (Hαb0 : a_binds_tvar α Θ0)
     by (destruct Hfα as [h | [τ0 h]];
         [ right; left; exact h | right; right; exists τ0; exact h ]).
@@ -540,7 +540,7 @@ Proof.
               Hinc)
     as [κa [κb [Heqκ [Hdκa Hincxb]]]].
   destruct (a_inc_tvar_inv Hincxb) as [Ξv [Θ' [HeqΘ [HsufΞv Hincb]]]].
-  assert (HwfΘ' : a_wf_aenv Θ').
+  assert (HwfΘ' : {{ ⊢ Θ' }}a).
   { rewrite HeqΘ in Hwfth.
     eapply a_wf_aenv_app_r with (Θp := Ξv ++ (β ~ abind_tvar)).
     simpl_env. simpl_env in Hwfth. exact Hwfth. }
@@ -1311,7 +1311,7 @@ Qed.
     EXTERNAL wf side conditions registered in docs/WF-SIDE-CONDITIONS.md. *)
 Theorem a_sub_complete :
   forall n NM M Θ0 P0 P R' Θ κ Q,
-    a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+    {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
     {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
     {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
     (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->

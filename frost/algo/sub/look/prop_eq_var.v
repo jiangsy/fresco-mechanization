@@ -362,7 +362,7 @@ Qed.
 (*  split has no order, so ForallSyn can use Θr_ih := (α~tvar)++Θr and    *)
 (*  take the tophole_fill body as the IH's refinement premise VERBATIM.   *)
 (*  Θr's defs are no longer "a suffix of Θ", so their self-containedness  *)
-(*  is carried as an explicit a_wf_aenv Θr premise.                       *)
+(*  is carried as an explicit {{ ⊢ Θr }}a premise.                       *)
 (* ===================================================================== *)
 
 Definition aenv_split (Θf Θtv Θr : aenv) : Prop :=
@@ -480,7 +480,7 @@ Lemma consis_subject_ftv_bag_bound : forall Ψ Θf R Q Θtv Θr,
   {{ Ψ ⨟ Θf ⊢ˢ R ∼ Q }}ad ->
   aenv_split Θf Θtv Θr ->
   (forall x b, binds x b Θtv -> b = abind_tvar) ->
-  a_wf_aenv Θr ->
+  {{ ⊢ Θr }}a ->
   ftvar_in_uskl R [<=] ftvar_in_bskl Q `union` dom Θr.
 Proof.
   intros Ψ Θf R Q Θtv Θr H Hsp Htvs HwfΘr.
@@ -564,14 +564,14 @@ Theorem a_solve_eq_complete_var_gen :
      binder can join Θr (refinement-visible) instead of Θtv *)
   aenv_split Θ Θtv Θr ->
   aenv_split Θ0 Θtv Θ0r ->
-  a_wf_aenv Θr ->
+  {{ ⊢ Θr }}a ->
   (forall x b, binds x b Θtv -> b = abind_tvar) ->
   Δr [=] dom Θtv ->
   Δρ ∩ dom Θtv [=] empty ->
-  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
   (* ⭐ the FIXED wf context of the κ-extension: [Θ] is [Θw] under a stack of
      rigid binders (identical at the top-level call) *)
-  a_wf_aenv Θw ->
+  {{ ⊢ Θw }}a ->
   (forall x b, binds x b Θw -> binds x b Θ) ->
   (* the converse for NON-rigid entries: [Θ] adds only rigid binders *)
   (forall x b, binds x b Θ -> binds x b Θw \/ b = abind_tvar) ->
@@ -2092,7 +2092,7 @@ Proof.
           * (* fill — ROW C *)
             assert (HΨiS : Ψi [<=] Ψ0').
             { pick fresh αp for (Lf `union` Lt `union` dom Θ).
-              assert (HwfΘx : a_wf_aenv ((αp ~ abind_tvar) ++ Θ))
+              assert (HwfΘx : {{ ⊢ ((αp ~ abind_tvar) ++ Θ) }}a)
                 by (apply a_wf_aenv__tvar;
                     [ clear - Fr; solve_notin | exact HwfΘ ]).
               eapply ad_partial_precise_tags_sub;
@@ -2875,7 +2875,7 @@ Proof.
           * (* fill *)
             assert (HΨiS : Ψi [<=] Ψ0').
             { pick fresh αp for (Lf `union` Lt `union` dom Θ).
-              assert (HwfΘx : a_wf_aenv ((αp ~ abind_tvar) ++ Θ))
+              assert (HwfΘx : {{ ⊢ ((αp ~ abind_tvar) ++ Θ) }}a)
                 by (apply a_wf_aenv__tvar;
                     [ clear - Fr; solve_notin | exact HwfΘ ]).
               eapply ad_partial_precise_tags_sub;
@@ -3499,7 +3499,7 @@ Qed.
 (* ===================================================================== *)
 Theorem a_solve_eq_complete_var :
   forall NM Θ0 Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0,
-  a_wf_aenv Θ -> a_wf_aenv Θ0 ->      (* paper: prose "all inputs wf" *)
+  {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->      (* paper: prose "all inputs wf" *)
   {{ Θ0 ⨟ empty ⊢ₚₛ Pi }}a -> {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->   (* Θ0 ⊢ Pi, Θ0 ⊢ P0 *)
   κ ∷ Θ0 ⊑ Θ ->                       (* κ : Θ0 ⊑ Θ *)
   uskl_rho NM Θ Δρ Ψρ ψsub ψa ->      (* ρ: ψsub = ρ(ψa), Ψρ = its Ψ *)
@@ -3574,8 +3574,8 @@ Qed.
    one line: [_gen] at [Θtv := nil]. *)
 Theorem a_solve_eq_complete_var_at :
   forall NM Θ0 Θ Θw κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0,
-  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
-  a_wf_aenv Θw ->
+  {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
+  {{ ⊢ Θw }}a ->
   (forall x b, binds x b Θw -> binds x b Θ) ->
   (forall x b, binds x b Θ -> binds x b Θw \/ b = abind_tvar) ->
   {{ Θ0 ⨟ empty ⊢ₚₛ Pi }}a -> {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->

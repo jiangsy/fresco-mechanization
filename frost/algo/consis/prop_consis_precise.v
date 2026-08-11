@@ -314,7 +314,7 @@ Qed.
     carry it, so these are genuine wf-variants, not duplicates. *)
 Lemma consis_subj_transport_arrow_wf : forall Ψ Θ' R1 R2 R1' R2' Q,
   {{ Ψ ⨟ Θ' ⊢ˢ (uskl_arrow R1 R2) ∼ Q }}ad ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   {{ Θ' ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
   (forall Ψ1 Q1, {{ Ψ1 ⨟ Θ' ⊢ˢ R1 ∼ Q1 }}ad -> {{ Θ' ⨟ empty ⊢ₚₛ (bskl_to_pskl Q1) }}a ->
      {{ Ψ1 ⨟ Θ' ⊢ˢ R1' ∼ Q1 }}ad) ->
@@ -362,7 +362,7 @@ Qed.
 
 Lemma consis_forall_subject_transport_wf : forall Ψ Θ' R0 R0' Q L0,
   {{ Ψ ⨟ Θ' ⊢ˢ (uskl_all_syn R0) ∼ Q }}ad ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   {{ Θ' ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
   (forall α, α `notin` L0 -> forall Ψ' Q',
      {{ Ψ' ⨟ ((α ~ abind_tvar) ++ Θ') ⊢ˢ
@@ -402,11 +402,11 @@ Qed.
 
 Lemma consis_tophole_subject_transport_wf : forall Ψ Θ' R Q,
   {{ Ψ ⨟ Θ' ⊢ˢ R ∼ Q }}ad ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   {{ Θ' ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
   forall R0 R0', R = uskl_tophole R0 ->
   (forall Θ'' Ψ' Q',
-     a_wf_aenv Θ'' ->
+     {{ ⊢ Θ'' }}a ->
      (forall x b, binds x b Θ' -> binds x b Θ'') ->
      {{ Ψ' ⨟ Θ'' ⊢ˢ R0 ∼ Q' }}ad ->
      {{ Θ'' ⨟ empty ⊢ₚₛ (bskl_to_pskl Q') }}a ->
@@ -425,7 +425,7 @@ Proof.
     simpl in Hwfq. destruct (a_wf_pskl_all_inv Hwfq) as [Lw Hbody].
     apply ad_pat_consis__tophole_inh with (L := L `union` dom Θ `union` Lw).
     intros α Hα.
-    assert (HwfX : a_wf_aenv ((α ~ abind_tvar) ++ Θ))
+    assert (HwfX : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
       by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact HwfΘ ]).
     eapply (H0 α ltac:(clear - Hα; solve_notin_auto) HwfX).
     + apply wf_open_of_all. apply Hbody. clear - Hα; fsetdec.
@@ -475,7 +475,7 @@ Qed.
     a general fact — a [∀◇] body cannot reference a Δ-var). *)
 Lemma consis_concrete_target_inh : forall Ψ Θ R Q,
   {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall P, R = pskl_to_uskl P ->
   pskl_no_forall P ->
   Ψ [=] empty /\ pskl_to_bskl_inh (bskl_to_pskl Q) = Q.
@@ -518,7 +518,7 @@ Proof.
       simpl in HR; try discriminate HR. inversion HR; subst.
     simpl in Hnf.
     pick fresh α for (L `union` dom Θ `union` ftvar_in_bskl Q).
-    assert (HwfX : a_wf_aenv ((α ~ abind_tvar) ++ Θ))
+    assert (HwfX : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
       by (apply a_wf_aenv__tvar; [ fsetdec | exact Hwfa ]).
     destruct (H0 α ltac:(solve_notin_auto) HwfX (pskl_tophole Pt) eq_refl Hnf)
       as [HΨα HeqX].
@@ -571,7 +571,7 @@ Lemma ad_pat_consis_subject_refine : forall Θ Δ Qsrc Qtgt,
   forall Θ',
   (forall x b, binds x b Θ -> binds x b Θ') ->
   (forall α0, α0 `in` Δ -> a_binds_tvar α0 Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   forall Ψ Q,
     {{ Ψ ⨟ Θ' ⊢ˢ (pskl_to_uskl Ptgt) ∼ Q }}ad ->
     {{ Θ' ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
@@ -692,7 +692,7 @@ Qed.
 Lemma ad_pat_consis_subject_precise : forall Ψt Θ Δ ψa Pa Q,
   {{ Ψt ⨟ Θ ⊢ˢ ψa ∼ Q }}ad ->
   {{ Θ ⨟ Δ ⊢ₚᵣ Pa ⊑ (uskl_to_pskl ψa) }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   (forall α, α `in` Δ -> a_binds_tvar α Θ) ->
   {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
   {{ empty ⨟ Θ ⊢ˢ (pskl_to_uskl Pa) ∼ Q }}ad.
@@ -803,7 +803,7 @@ Lemma ad_pat_consis_precise_var_case : forall NM Ψ' Θb Δ ψa Pa,
   {{ Ψfull ⨟ Θ' ⊢ˢ ψa ∼ Qc }}ad ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
   (forall α, α `in` Δ -> a_binds_tvar α Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   Ψfull [=] Ψ `union` Ψa ->
   Ψ' ∩ Ψ [=] empty ->
   {{ Θ' ⨟ empty ⊢ₚₛ (bskl_to_pskl Qc) }}a ->
@@ -850,7 +850,7 @@ Lemma ad_pat_consis_precise_subst : forall Θb Δ α ψa Pa Ψ' NM,
   Rsub = subst_uskl_in_uskl ψa α R ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
   (forall α0, α0 `in` Δ -> a_binds_tvar α0 Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   α `notin` dom Θ' ->
   Ψfull [=] Ψ `union` Ψa ->
   Ψa [<=] Ψ' ->
@@ -1350,7 +1350,7 @@ Lemma uskl_precise_subst : forall Θ Ψrep R' R,
   uskl_precise Θ Ψrep R' R ->
   forall α' ψs,
   lc_uskl ψs ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   α' `notin` dom Θ ->
   uskl_precise Θ Ψrep
     (subst_uskl_in_uskl ψs α' R') (subst_uskl_in_uskl ψs α' R).
@@ -1436,7 +1436,7 @@ Qed.
     inh-painting, never [all_syn]-headed). *)
 Lemma uskl_precise_of_precise : forall Θ Δ Qsrc Qtgt,
   ad_refine_syn Θ Δ Qsrc Qtgt ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall Pa ψt Ψt,
   Qsrc = pskl_to_bskl_inh Pa ->
   Qtgt = pskl_to_bskl_inh (uskl_to_pskl ψt) ->
@@ -1572,7 +1572,7 @@ Definition consis_split_transport (Θb : aenv) (Ψsup : atoms) (A B : uskl) :=
   forall Θ' Ψfull Ψn Ψna Q,
     {{ Ψfull ⨟ Θ' ⊢ˢ A ∼ Q }}ad ->
     (forall x b, binds x b Θb -> binds x b Θ') ->
-    a_wf_aenv Θ' ->
+    {{ ⊢ Θ' }}a ->
     Ψfull [=] Ψn `union` Ψna ->
     Ψna [<=] Ψsup ->
     Ψsup ∩ Ψn [=] empty ->
@@ -2235,7 +2235,7 @@ Qed.
     a binder the target immediately re-binds. *)
 Lemma ad_refine_pskl_ftv_policed : forall Θ Δ P Q,
   {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall S,
   (forall α, α `in` S -> α `notin` dom Θ) ->
   S ∩ ftvar_in_pskl P [=] empty ->
@@ -2269,7 +2269,7 @@ Proof.
     apply IHHref; auto.
   - (* tophole_fill : the fresh binder is re-bound by the target ∀ *)
     pick fresh α for (L `union` S `union` dom Θ `union` ftvar_in_pskl Q).
-    assert (Hwf' : a_wf_aenv ((α ~ abind_tvar) ++ Θ))
+    assert (Hwf' : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
       by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
     assert (Hfr' : forall β, β `in` S ->
                    β `notin` dom ((α ~ abind_tvar) ++ Θ)).
@@ -2299,7 +2299,7 @@ Qed.
     wf (externally, per the doctrine above) at the ambient Δ. *)
 Lemma ad_refine_pskl_hole_l : forall Θ Δ Qm Qr,
   {{ Θ ⨟ Δ ⊢ᵣₚ Qm ⊳ Qr }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   (forall α, α `in` Δ -> α `notin` dom Θ) ->
   {{ Θ ⨟ empty ⊢ₚₛ Qm }}a ->
   {{ Θ ⨟ Δ ⊢ₚₛ Qr }}a ->
@@ -2329,7 +2329,7 @@ Lemma uskl_precise_mono_refine : forall Θb Ψr R' R,
   R = ptyp_to_uskl_syn τ' ->
   mono_ptyp τ' ->
   (forall x (b : abind), binds x b Θb -> binds x b Θ) ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ empty ⊢ₚₛ (ptyp_to_pskl τ') }}a ->
   {{ Θ ⨟ Δ ⊢ᵣₚ ⌊ R' ⌋ˢ ⊳ (ptyp_to_pskl τ') }}ad.
 Proof.
@@ -2441,7 +2441,7 @@ Local Ltac erase_refine_flexl Hmon IHHp Heq :=
     ∀-variables, fresh for Θ. *)
 Lemma uskl_precise_erase_refine : forall Θ Δ Qm Qr,
   {{ Θ ⨟ Δ ⊢ᵣₚ Qm ⊳ Qr }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   (forall α, α `in` Δ -> α `notin` dom Θ) ->
   {{ Θ ⨟ Δ ⊢ₚₛ Qr }}a ->
   forall Θb Ψr R' R,

@@ -579,7 +579,7 @@ Proof. induction 1; simpl; constructor; auto. Qed.
     not there.  Def-variable lookups use [a_wf_aenv_binds_def_mono]. *)
 Lemma ad_pat_consis_mono_no_all_syn : forall Ψ Θ R Q,
   {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   mono_bskl Q ->
   no_all_syn_uskl R.
 Proof.
@@ -627,7 +627,7 @@ Qed.
     α̂ — quantifier-free by the previous lemma. *)
 Lemma a_consistag_flexvar_subject_no_all_syn : forall Δ1 Δ2 α Ψ Θ0 R P Θ1,
   {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f α) | Ψ ] R ∼ P ⊣ Θ1 }}t ->
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ (uskl_to_pskl R) }}a ->
   no_all_syn_uskl R.
 Proof.
@@ -682,7 +682,7 @@ Lemma a_consistag_decoration_var : forall ψ P0 Ψa,
        case gets its mid-context invariants from [a_consistag_sound_aux] and
        weakens the right run's wf across [Θ0 ⊴ Θm] ([a_wf_pskl_isub],
        [a_isub_binds_tvar]); the ∀-cases extend Δ/Θ by a fresh rigid. *)
-    a_wf_aenv Θ0 ->
+    {{ ⊢ Θ0 }}a ->
     lc_uskl (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ))) ->
     {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
     {{ Θ0 ⨟ empty ⊢ₚₛ (uskl_to_pskl (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ)))) }}a ->
@@ -1295,7 +1295,7 @@ Lemma a_subtag_decoration_var : forall NM M P0 Ψ Θ0 R P Θ1,
     {{ ψ ≼[ M ] P0 ⤳ Ψa }}t ->
     rho_lc ρ ->
     lc_uskl ψ ->
-    a_wf_aenv Θ0 ->
+    {{ ⊢ Θ0 }}a ->
     lc_uskl R ->
     {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
     {{ Θ0 ⨟ empty ⊢ₚₛ ⌊ R ⌋ˢ }}a ->
@@ -1561,7 +1561,7 @@ Proof.
         destruct (atom_fresh L) as [α0 Hα0].
         assert (Hdecls : a_decls Ξ)
           by (eapply a_extract_decls; eauto).
-        assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0)).
+        assert (HwfΞΘ : {{ ⊢ (Ξ ++ Θ0) }}a).
         { apply a_wf_aenv_prepend_decls; auto.
           - match goal with Hu : uniq (Ξ ++ Θ0) |- _ =>
               clear - Hu; solve_uniq end.
@@ -1962,7 +1962,7 @@ Lemma a_consistag_decoration_size : forall n Θ α P P0 Ξc 𝒞,
     lc_uskl R' ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | Ψ ]
       (subst_uskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α R') ∼ P' ⊣ Θ1 }}t ->
-    a_wf_aenv Θ0 ->
+    {{ ⊢ Θ0 }}a ->
     {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
     {{ Θ0 ⨟ empty
       ⊢ₚₛ ⌊ subst_uskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α R' ⌋ˢ }}a ->
@@ -2691,7 +2691,7 @@ Lemma a_consistag_decoration : forall Θ α P P0 Ξc 𝒞,
     lc_uskl R' ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | Ψ ]
       (subst_uskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α R') ∼ P' ⊣ Θ1 }}t ->
-    a_wf_aenv Θ0 ->
+    {{ ⊢ Θ0 }}a ->
     {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
     {{ Θ0 ⨟ empty
       ⊢ₚₛ ⌊ subst_uskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α R' ⌋ˢ }}a ->

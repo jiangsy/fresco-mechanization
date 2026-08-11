@@ -79,7 +79,7 @@ Definition P0w : pskl := pskl_arrow pskl_unit pskl_unit.
 (** The SUBJECT and the OUTPUT: the flexible survives into the RHS. *)
 Definition Pw : pskl := pskl_arrow (pskl_var_f α) pskl_unit.
 
-Lemma Θw_wf : a_wf_aenv Θw.
+Lemma Θw_wf : {{ ⊢ Θw }}a.
 Proof.
   apply a_wf_aenv__flex; [ simpl; clear; fsetdec | apply a_wf_aenv__nil ].
 Qed.
@@ -143,7 +143,7 @@ Qed.
 Definition p7_concrete_rhs_property : Prop :=
   forall NM M P0 Θ0 P Q Θ1 A,
     a_sub NM M P0 Θ0 P Q Θ1 ->
-    a_wf_aenv Θ0 ->
+    {{ ⊢ Θ0 }}a ->
     a_ty_mode_compat M P0 ->
     P0 = ptyp_to_pskl A ->             (* "P_0 is a concrete type" *)
     Q = P0.
@@ -162,7 +162,7 @@ Qed.
     really are the wf ones the algorithm would produce). *)
 Theorem cex_nonvacuous :
   exists Θ1, a_sub a_sub_mode_ty (mode_fn mode_tc) P0w Θw Pw Pw Θ1 /\
-             a_wf_aenv Θw.
+             {{ ⊢ Θw }}a.
 Proof. exists Θw'; split; [ apply cex_derivation | apply Θw_wf ]. Qed.
 
 End CexP7ConcreteRhs.

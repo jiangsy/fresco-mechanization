@@ -147,8 +147,8 @@ Lemma a_wf_aenv_prepend_flex_block : forall Ξ Θ,
   all_flex_mono Ξ ->
   uniq Ξ ->
   (forall α, α `in` dom Ξ -> α `notin` dom Θ) ->
-  a_wf_aenv Θ ->
-  a_wf_aenv (Ξ ++ Θ).
+  {{ ⊢ Θ }}a ->
+  {{ ⊢ (Ξ ++ Θ) }}a.
 Proof.
   intros Ξ; induction Ξ as [ | [α b] Ξ' IH ]; intros Θ Hfm Hu Hfr Hwf;
     [ exact Hwf | ].
@@ -1055,8 +1055,8 @@ Qed.
 
 Lemma a_solve_eq_cv_mono : forall n Θ0 Θ Θw κ Δ Ψi τ Pi P0,
   size_pskl Pi + size_pskl P0 <= n ->
-  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
-  a_wf_aenv Θw ->
+  {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
+  {{ ⊢ Θw }}a ->
   (forall x b, binds x b Θw -> binds x b Θ) ->
   (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
      binds α (abind_flex_mono_def τ0) Θw) ->
@@ -1207,7 +1207,7 @@ Proof.
       { intros α0 Hα0. specialize (Hfr1 α0 Hα0).
         pose proof (dom_subset_ftvar_in_aenv Θ0) as Hd.
         clear - Hfr1 Hd HL; fsetdec. }
-      assert (Hwfblk : a_wf_aenv (Ξ1 ++ Θ0))
+      assert (Hwfblk : {{ ⊢ (Ξ1 ++ Θ0) }}a)
         by (apply a_wf_aenv_prepend_flex_block; assumption).
       assert (Hκ1 : (κa ++ κ) ∷ (Ξ1 ++ Θ0) ⊑ Θ)
         by (apply a_inc_flex_prefix_build;
@@ -1428,8 +1428,8 @@ Qed.
    in prose. *)
 Lemma a_solve_eq_cv_var : forall n Θ0 Θ Θw κ Δ Ψi α Pi P0,
   size_pskl Pi + size_pskl P0 <= n ->
-  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
-  a_wf_aenv Θw ->
+  {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
+  {{ ⊢ Θw }}a ->
   (forall x b, binds x b Θw -> binds x b Θ) ->
   (forall α0 τ0, binds α0 (abind_flex_mono_def τ0) Θ ->
      binds α0 (abind_flex_mono_def τ0) Θw) ->
@@ -1462,7 +1462,7 @@ Lemma d_tags_skl_holeg_inv : forall Ψ,
 Proof. intros Ψ H; inversion H; subst; auto. Qed.
 
 Lemma ad_ppre_mono_paint_holeg_absurd : forall Θ Δ Ψ P ψ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
   ψ = uskl_holeg ->
   forall τb, P = ptyp_to_pskl τb -> mono_ptyp τb ->
@@ -1483,7 +1483,7 @@ Proof.
 Qed.
 
 Lemma ad_refine_mono_paint_hole_rhs_absurd : forall Θ Δr Q' Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
   Q = bskl_hole ->
   forall τb, Q' = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
@@ -1507,7 +1507,7 @@ Qed.
 (* No size induction: both sides are forced to [□]; every other shape is
    premise-absurd (a ∀◇'s guarded body dies one level down). *)
 Lemma a_solve_eq_cv_ghostg : forall Θ0 Θ κ Δ Ψi Pi P0,
-  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ Pi }}a -> {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   κ ∷ Θ0 ⊑ Θ ->
   {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] uskl_holeg }}ad ->
@@ -1646,7 +1646,7 @@ Proof.
 Qed.
 
 Lemma ad_ppre_mono_paint_topholeg_absurd : forall Θ Δ Ψ P ψ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
   forall ψ0, ψ = uskl_topholeg ψ0 ->
   forall τb, P = ptyp_to_pskl τb -> mono_ptyp τb ->
@@ -1666,7 +1666,7 @@ Proof.
 Qed.
 
 Lemma ad_refine_mono_paint_tophole_rhs_absurd : forall Θ Δr Q' Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
   forall Q0, Q = bskl_tophole Q0 ->
   forall τb, Q' = ptyp_to_bskl_syn τb -> mono_ptyp τb ->

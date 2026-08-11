@@ -1238,7 +1238,7 @@ Qed.
     mentioned by any other entry, since definitions scope to tails). *)
 Lemma ad_pat_sub_strip_suffix : forall Ξ NM M Ψ Θ R Q,
   a_suffix Ξ ->
-  a_wf_aenv (Ξ ++ Θ) ->
+  {{ ⊢ (Ξ ++ Θ) }}a ->
   (forall α1, α1 `in` dom Ξ ->
      α1 `notin` (ftvar_in_uskl R `union` ftvar_in_bskl Q)) ->
   {{ Ψ ⨟ (Ξ ++ Θ) ⊢ˢ[ NM | M ] R ⩽ Q }}ad ->
@@ -1496,8 +1496,8 @@ Proof. induction 1; simpl; intuition. Qed.
 
 (** Well-formedness survives dropping an [a_suffix]-and-rigid prefix. *)
 Lemma a_wf_aenv_strip_prefix_suffix_local : forall Ξ α Θ,
-  a_wf_aenv (Ξ ++ (α ~ abind_tvar) ++ Θ) ->
-  a_wf_aenv Θ.
+  {{ ⊢ (Ξ ++ (α ~ abind_tvar) ++ Θ) }}a ->
+  {{ ⊢ Θ }}a.
 Proof.
   induction Ξ as [ | [α1 b] Ξ' IH ]; intros α Θ Hwf; simpl_env in *.
   - inversion Hwf; subst; assumption.
@@ -1513,7 +1513,7 @@ Lemma ad_refine_syn_f_ghost_free_strip_rename : forall F Θfull Δ Q Q',
   forall Ξ α Θ1 β,
   Θfull = Ξ ++ (α ~ abind_tvar) ++ Θ1 ->
   bskl_ghost_free Q ->
-  a_wf_aenv Θfull ->
+  {{ ⊢ Θfull }}a ->
   uniq Θfull ->
   (forall α, α `in` (ftvar_in_bskl Q `union` ftvar_in_bskl Q') ->
      α `notin` dom Ξ) ->
@@ -1604,7 +1604,7 @@ Proof.
           destruct Hbb as [Heqp | Hbb];
             [ inversion Heqp; subst; exact (Hne eq_refl) | ]
       end.
-      assert (HwfΘt : a_wf_aenv Θt)
+      assert (HwfΘt : {{ ⊢ Θt }}a)
         by (eapply a_wf_aenv_strip_prefix_suffix_local; simpl_env in *; eauto).
       assert (Hτsc : ftvar_in_ptyp τ [<=] dom Θt)
         by (eapply a_wf_aenv_def_ftv_dom; eauto).
@@ -1656,7 +1656,7 @@ Proof.
           destruct Hbb as [Heqp | Hbb];
             [ inversion Heqp; subst; exact (Hne eq_refl) | ]
       end.
-      assert (HwfΘt : a_wf_aenv Θt)
+      assert (HwfΘt : {{ ⊢ Θt }}a)
         by (eapply a_wf_aenv_strip_prefix_suffix_local; simpl_env in *; eauto).
       assert (Hτsc : ftvar_in_ptyp τ [<=] dom Θt)
         by (eapply a_wf_aenv_def_ftv_dom; eauto).

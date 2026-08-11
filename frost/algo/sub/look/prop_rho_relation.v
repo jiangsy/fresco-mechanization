@@ -368,7 +368,7 @@ Qed.
 Lemma ad_ppre_var_target_absent : forall Θ Δ Ψ P ψ,
   {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
   forall α', ψ = uskl_var_f α' ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   α' `in` Δ ->
   binds α' abind_tvar Θ ->
   (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
@@ -403,7 +403,7 @@ Qed.
 Lemma ad_ppre_delta_var_inv : forall Θ Δ Ψ P ψ,
   {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
   forall α', ψ = uskl_var_f α' ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   α' `in` Δ ->
   binds α' abind_tvar Θ ->
   (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
@@ -742,7 +742,7 @@ Qed.
     tag-consuming rule targets [all_inh]). *)
 Lemma ad_pat_consis_sskl_tags : forall Ψ Θ R Q,
   {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   is_sskl Q ->
   Ψ [=] empty.
 Proof.
@@ -930,7 +930,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma p6_leaf_var : forall NM Θ κ Pi Δ α' Ψ' Ψi Ψna,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   a_tags_sort NM Ψ' (uskl_var_f α') ->
   Ψi [<=] Ψ' ->
   Ψna [<=] Ψ' ->
@@ -1757,7 +1757,7 @@ Qed.
     all 15 cases of the main induction. *)
 Lemma p6cv_close_leaf :
   forall NM Θ0 Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa ψsub ψa Pi P0,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   a_tags_sort NM Ψ' ψa ->
   Ψi `union` Ψa [<=] Ψ' ->
   rho_fresh Δρ Θ κ ->
@@ -1827,7 +1827,7 @@ Qed.
     [tophole_remove].  Discharges the [Pi = □] and ∀◇-[P0] subcases of the
     Unit consistency case (conclusion: [msubst κ P0 ⊑ᵖ[∅] unit]). *)
 Lemma ad_refine_inh_unit_ppre : forall Θ Δr Qlhs Qrhs,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δr ⊢ᵣ Qlhs ⊳ Qrhs }}ad ->
   Qrhs = bskl_unit ->
   forall P' Δ, Qlhs = pskl_to_bskl_inh P' ->
@@ -1869,7 +1869,7 @@ Proof.
 Qed.
 
 Lemma msubst_pskl_tvar_id : forall Θ0 κ Θ α,
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   κ ∷ Θ0 ⊑ Θ ->
   binds α abind_tvar Θ0 ->
   msubst_pskl κ (pskl_var_f α) = pskl_var_f α.
@@ -1886,7 +1886,7 @@ Qed.
     but its [α] would be a defined flexible, clashing with rigidity).  Used
     to discharge the P0 = rigid-variable subcase of the Unit case. *)
 Lemma ad_refine_syn_rigid_var_unit_absurd : forall Θ Δ α,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   binds α abind_tvar Θ ->
   {{ Θ ⨟ Δ ⊢ᵣ (bskl_var_f α) ⊳ bskl_unit }}ad ->
   False.
@@ -1915,7 +1915,7 @@ Qed.
    stripping (Pi and P0 sides) recurses. *)
 Lemma a_solve_eq_cv_unit : forall n Θ0 Θ κ Δ Ψi Pi P0,
   size_pskl Pi + size_pskl P0 <= n ->
-  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ Pi }}a -> {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   κ ∷ Θ0 ⊑ Θ ->
   {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] uskl_unit }}ad ->
@@ -2217,7 +2217,7 @@ Inductive a_def_chain (Θ : aenv) : ptyp -> ptyp -> Prop :=
 
 Lemma a_def_chain_mono : forall Θ τ τe,
   a_def_chain Θ τ τe ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   mono_ptyp τ ->
   mono_ptyp τe.
 Proof.
@@ -2273,7 +2273,7 @@ Qed.
 (* ---- precision into a mono paint carries no tags ---- *)
 
 Lemma ad_ppre_mono_tags_empty : forall Θ Δ P ψ Ψ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
   forall τ, ψ = ptyp_to_uskl_syn τ -> mono_ptyp τ ->
   Ψ [=] empty.
@@ -2311,7 +2311,7 @@ Qed.
 (* ---- defined-flex TARGET unfolding: precision ---- *)
 
 Lemma ad_ppre_flexdef_target_unfold : forall Θ Δ Ψ P ψ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   delta_def_fresh Δ Θ ->
   {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
   forall α τd, ψ = uskl_var_f α ->
@@ -2346,7 +2346,7 @@ Qed.
 (* ---- defined-flex TARGET unfolding: refinement ---- *)
 
 Lemma ad_refine_flexdef_target_unfold : forall Θ Δr Q' Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
   forall α τd, Q = bskl_var_f α ->
   binds α (abind_flex_mono_def τd) Θ ->
@@ -2381,7 +2381,7 @@ Qed.
 
 Lemma ad_ppre_chain_unfold : forall Θ τ τe,
   a_def_chain Θ τ τe ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall Δ Ψ P,
   delta_def_fresh Δ Θ ->
   {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] (ptyp_to_uskl_syn τ) }}ad ->
@@ -2405,7 +2405,7 @@ Qed.
 
 Lemma ad_refine_chain_unfold : forall Θ τ τe,
   a_def_chain Θ τ τe ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall Δr Q,
   {{ Θ ⨟ Δr ⊢ᵣ Q ⊳ (ptyp_to_bskl_syn τ) }}ad ->
   {{ Θ ⨟ Δr ⊢ᵣ Q ⊳ (ptyp_to_bskl_syn τe) }}ad.
@@ -2423,7 +2423,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma ad_ppre_unit_subject_chain_inv : forall Θ Δ Ψ P ψ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
   P = pskl_unit ->
   forall τ, ψ = ptyp_to_uskl_syn τ -> mono_ptyp τ ->
@@ -2442,7 +2442,7 @@ Proof.
 Qed.
 
 Lemma ad_ppre_arrow_subject_chain_inv : forall Θ Δ Ψ P ψ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
   forall P1 P2, P = pskl_arrow P1 P2 ->
   forall τ, ψ = ptyp_to_uskl_syn τ -> mono_ptyp τ ->
@@ -2477,7 +2477,7 @@ Proof.
 Qed.
 
 Lemma ad_ppre_tophole_subject_chain_inv : forall Θ Δ Ψ P ψ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
   forall P0, P = pskl_tophole P0 ->
   forall τ, ψ = ptyp_to_uskl_syn τ -> mono_ptyp τ ->
@@ -2503,7 +2503,7 @@ Proof.
 Qed.
 
 Lemma ad_ppre_allsyn_subject_mono_absurd : forall Θ Δ Ψ P ψ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
   forall P0, P = pskl_all_syn P0 ->
   forall τ, ψ = ptyp_to_uskl_syn τ -> mono_ptyp τ ->
@@ -2521,7 +2521,7 @@ Proof.
 Qed.
 
 Lemma ad_refine_tophole_lhs_chain_inv : forall Θ Δr Q' Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
   forall Qb, Q' = bskl_tophole Qb ->
   forall τ, Q = ptyp_to_bskl_syn τ -> mono_ptyp τ ->
@@ -2548,7 +2548,7 @@ Proof.
 Qed.
 
 Lemma ad_refine_allinh_lhs_mono_absurd : forall Θ Δr Q' Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
   forall Qb, Q' = bskl_all_inh Qb ->
   forall τ, Q = ptyp_to_bskl_syn τ -> mono_ptyp τ ->
@@ -2575,7 +2575,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma ad_refine_mono_paint_lhs_ppre : forall Θ Δr Q' Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   Δr [=] empty ->
   {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
   forall τb τ, Q' = ptyp_to_bskl_syn τb -> Q = ptyp_to_bskl_syn τ ->
@@ -2633,7 +2633,7 @@ Proof.
 Qed.
 
 Lemma ad_refine_inh_hole_ppre : forall Θ Δr Q' Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   Δr [=] empty ->
   {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
   forall P' τ, Q' = pskl_to_bskl_inh P' -> Q = ptyp_to_bskl_syn τ ->
@@ -2757,7 +2757,7 @@ Qed.
 (* ---- a rigid variable never refines into a non-variable target ---- *)
 
 Lemma ad_refine_syn_rigid_var_nonvar_absurd : forall Θ Δr α Q,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   binds α abind_tvar Θ ->
   {{ Θ ⨟ Δr ⊢ᵣ (bskl_var_f α) ⊳ Q }}ad ->
   (forall β, Q <> bskl_var_f β) ->
@@ -2831,7 +2831,7 @@ Qed.
 (** wf transports along a definition chain — each step unfolds a defined
     flexible, whose payload the context's own well-formedness bounds. *)
 Lemma a_def_chain_wf : forall Θ τ τe,
-  a_def_chain Θ τ τe -> a_wf_aenv Θ -> a_wf_ptyp Θ τ -> a_wf_ptyp Θ τe.
+  a_def_chain Θ τ τe -> {{ ⊢ Θ }}a -> a_wf_ptyp Θ τ -> a_wf_ptyp Θ τe.
 Proof.
   intros Θ τ τe Hc; induction Hc; intros Hwf Hp; auto.
   apply IHHc; [ exact Hwf | ].
@@ -2844,7 +2844,7 @@ Qed.
     from [τ] to a compound, and here there is none. *)
 Lemma a_def_chain_rigid_var_inv : forall Θ α τe,
   a_def_chain Θ (ptyp_var_f α) τe ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   binds α abind_tvar Θ ->
   τe = ptyp_var_f α.
 Proof.
@@ -2892,7 +2892,7 @@ Qed.
 (** …hence a MONOTYPE well-formed in [Θ] and scoped inside [dom Θw] is
     well-formed in [Θw]. *)
 Lemma a_wf_ptyp_mono_strengthen_dom : forall Θ Θw τ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   (forall x b, binds x b Θw -> binds x b Θ) ->
   mono_ptyp τ ->
   a_wf_ptyp Θ τ ->
@@ -2911,7 +2911,7 @@ Qed.
 
 Lemma a_def_chain_wf_at : forall Θ Θw τ τe,
   a_def_chain Θ τ τe ->
-  a_wf_aenv Θw ->
+  {{ ⊢ Θw }}a ->
   (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
      binds α (abind_flex_mono_def τ0) Θw) ->
   a_wf_ptyp Θw τ ->
@@ -2925,7 +2925,7 @@ Qed.
 (** …the same chain at [Θw := Θ]: [a_wf_ptyp Θ] is preserved outright. *)
 Lemma a_def_chain_wf_self : forall Θ τ τe,
   a_def_chain Θ τ τe ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   a_wf_ptyp Θ τ ->
   a_wf_ptyp Θ τe.
 Proof.
@@ -2940,7 +2940,7 @@ Qed.
     restored outright after one step and merely carried by reflexivity. *)
 Lemma a_def_chain_ftv_at : forall Θ Θw Δ τ τe,
   a_def_chain Θ τ τe ->
-  a_wf_aenv Θw ->
+  {{ ⊢ Θw }}a ->
   (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
      binds α (abind_flex_mono_def τ0) Θw) ->
   ftvar_in_ptyp τ [<=] dom Θw `union` Δ ->
@@ -2966,7 +2966,7 @@ Qed.
     well-formed only in [Θ]: the flexibles [guess^TY] invents sit exactly at
     the holes, and nowhere else does the construction read a payload. *)
 Lemma ppre_hole_payload_wf : forall Θ Θw Δ Ψ τ,
-  a_wf_aenv Θ -> a_wf_aenv Θw ->
+  {{ ⊢ Θ }}a -> {{ ⊢ Θw }}a ->
   (forall x b, binds x b Θw -> binds x b Θ) ->
   (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
      binds α (abind_flex_mono_def τ0) Θw) ->
@@ -3007,8 +3007,8 @@ Qed.
    at [Θw]. *)
 Lemma a_def_chain_wf_or_rigid : forall Θ Θw τ τe,
   a_def_chain Θ τ τe ->
-  a_wf_aenv Θ ->
-  a_wf_aenv Θw ->
+  {{ ⊢ Θ }}a ->
+  {{ ⊢ Θw }}a ->
   (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
      binds α (abind_flex_mono_def τ0) Θw) ->
   (a_wf_ptyp Θw τ \/ (exists α0, τ = ptyp_var_f α0 /\ binds α0 abind_tvar Θ)) ->
@@ -3024,8 +3024,8 @@ Qed.
 
 Lemma a_guess_ty_witness_mono_gen : forall n Θ0 Θ Θw κ Δ Ψi τ Pi,
   size_pskl Pi <= n ->
-  a_wf_aenv Θ ->
-  a_wf_aenv Θw ->
+  {{ ⊢ Θ }}a ->
+  {{ ⊢ Θw }}a ->
   (* [Θ] EXTENDS [Θw] and adds no definitions — at every call site [Θ] is
      [Θw] itself or [Θw] under a stack of rigid binders. *)
   (forall x b, binds x b Θw -> binds x b Θ) ->
@@ -3229,8 +3229,8 @@ Qed.
     a ρ-DIRTY guess is [Θw]-scoped only up to [Δρ ⊆ Δ]. *)
 Lemma a_guess_ty_witness_mono : forall n Θ0 Θ Θw κ Δ Ψi τ Pi,
   size_pskl Pi <= n ->
-  a_wf_aenv Θ ->
-  a_wf_aenv Θw ->
+  {{ ⊢ Θ }}a ->
+  {{ ⊢ Θw }}a ->
   (forall x b, binds x b Θw -> binds x b Θ) ->
   (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
      binds α (abind_flex_mono_def τ0) Θw) ->

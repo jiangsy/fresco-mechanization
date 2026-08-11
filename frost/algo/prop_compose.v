@@ -122,7 +122,7 @@ Proof.
 Qed.
 
 Lemma a_wf_aenv_strip_prefix_local : forall Ξ Θ,
-  a_wf_aenv (Ξ ++ Θ) -> a_wf_aenv Θ.
+  {{ ⊢ (Ξ ++ Θ) }}a -> {{ ⊢ Θ }}a.
 Proof.
   induction Ξ as [ | [a b] Ξ' IH ]; intros Θ Hwf; simpl in *; auto.
   inversion Hwf; subst; eauto.
@@ -152,7 +152,7 @@ Qed.
 
 Lemma a_inc_flex_dom : forall Θ κ Θ',
   κ ∷ Θ ⊑ Θ' ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall α', a_flex_tvar Θ α' -> α' `in` dom κ.
 Proof.
   intros Θ κ Θ' H; induction H; intros Hwf α' Hfx; simpl.
@@ -192,7 +192,7 @@ Qed.
 (** A RIGID variable of the source stays rigid, hence misses ζ's domain. *)
 Lemma a_inc_tvar_notin_dom : forall Θ1 ζ Θ α,
   ζ ∷ Θ1 ⊑ Θ ->
-  a_wf_aenv Θ1 ->
+  {{ ⊢ Θ1 }}a ->
   binds α abind_tvar Θ1 ->
   α `notin` dom ζ.
 Proof.
@@ -207,8 +207,8 @@ Qed.
 Lemma a_inc_compose_vis : forall Θ0 κ Θ1 ζ Θ,
   κ ∷ Θ0 ⊑ Θ1 ->
   ζ ∷ Θ1 ⊑ Θ ->
-  a_wf_aenv Θ0 ->
-  a_wf_aenv Θ1 ->
+  {{ ⊢ Θ0 }}a ->
+  {{ ⊢ Θ1 }}a ->
   forall α, a_binds_tvar α Θ0 ->
   α `in` dom κ \/ α `notin` dom ζ.
 Proof.
@@ -250,7 +250,7 @@ Qed.
 
 Lemma a_inc_lookup_wf : forall Θ1 ζ Θ α',
   ζ ∷ Θ1 ⊑ Θ ->
-  a_wf_aenv Θ1 ->
+  {{ ⊢ Θ1 }}a ->
   a_binds_tvar α' Θ1 ->
   a_wf_ptyp Θ (msubst_lookup ζ α').
 Proof.
@@ -356,7 +356,7 @@ Qed.
 
 Lemma a_wf_ptyp_msubst : forall Θ1 A,
   a_wf_ptyp Θ1 A ->
-  a_wf_aenv Θ1 ->
+  {{ ⊢ Θ1 }}a ->
   forall ζ Θ, ζ ∷ Θ1 ⊑ Θ ->
   a_wf_ptyp Θ (msubst_ptyp ζ A).
 Proof.
@@ -396,7 +396,7 @@ Qed.
    adding a [Require Import] to prop_rho_relation.v silently flipped four call sites and
    broke the build.  This one is the POINTWISE form; hence the suffix. *)
 Lemma a_wf_aenv_def_ftv_dom_in : forall Θ β τ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   binds β (abind_flex_mono_def τ) Θ ->
   forall α', α' `in` ftvar_in_ptyp τ -> α' `in` dom Θ.
 Proof.
@@ -436,12 +436,12 @@ Qed.
 
 (** Consequently an entry ABOVE a definition never occurs free in it. *)
 Lemma a_wf_aenv_head_notin_def_ftv : forall α0 b Θ' β τ,
-  a_wf_aenv ((α0 ~ b) ++ Θ') ->
+  {{ ⊢ ((α0 ~ b) ++ Θ') }}a ->
   binds β (abind_flex_mono_def τ) Θ' ->
   α0 `notin` ftvar_in_ptyp τ.
 Proof.
   intros α0 b Θ' β τ Hwf Hb Hα.
-  assert (Hnd : α0 `notin` dom Θ' /\ a_wf_aenv Θ')
+  assert (Hnd : α0 `notin` dom Θ' /\ {{ ⊢ Θ' }}a)
     by (inversion Hwf; subst; auto).
   destruct Hnd as [Hnd Hwf'].
   apply Hnd. eapply a_wf_aenv_def_ftv_dom_in; eauto.
@@ -479,7 +479,7 @@ Qed.
 
 (** A definition's own variable is not free in it. *)
 Lemma a_wf_aenv_def_head_fresh : forall α τ Θ,
-  a_wf_aenv ((α ~ abind_flex_mono_def τ) ++ Θ) ->
+  {{ ⊢ ((α ~ abind_flex_mono_def τ) ++ Θ) }}a ->
   α `notin` ftvar_in_ptyp τ.
 Proof.
   intros α τ Θ Hwf Hα.
@@ -494,7 +494,7 @@ Qed.
     strictly below" buys. *)
 Lemma a_inc_lookup_def : forall Θ1 ζ Θ,
   ζ ∷ Θ1 ⊑ Θ ->
-  a_wf_aenv Θ1 ->
+  {{ ⊢ Θ1 }}a ->
   forall α τ, binds α (abind_flex_mono_def τ) Θ1 ->
   {{ Θ ⊢ (msubst_lookup ζ α) ≡ᵗ (msubst_ptyp ζ τ) }}a.
 Proof.
@@ -512,7 +512,7 @@ Proof.
       clear - Hb' Hnd. fsetdec. }
     apply IHHinc; [ inversion Hwf; auto | exact Hb' ].
   - (* flex_def head *)
-    assert (Hwf' : a_wf_aenv Θ) by (inversion Hwf; auto).
+    assert (Hwf' : {{ ⊢ Θ }}a) by (inversion Hwf; auto).
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heqb] | Hb'].
     + (* the head IS the definition : this is exactly the rule's premise *)
       inversion Heqb; subst.
@@ -552,7 +552,7 @@ Qed.
 
 Lemma a_tyequiv_msubst : forall Θ1 A A',
   {{ Θ1 ⊢ A ≡ᵗ A' }}a ->
-  a_wf_aenv Θ1 ->
+  {{ ⊢ Θ1 }}a ->
   forall ζ Θ, ζ ∷ Θ1 ⊑ Θ ->
   {{ Θ ⊢ (msubst_ptyp ζ A) ≡ᵗ (msubst_ptyp ζ A') }}a.
 Proof.
@@ -673,7 +673,7 @@ Qed.
 (** [a_tyequiv_msubst], on skeletons. *)
 Lemma a_pskl_tyequiv_msubst : forall Θ1 P P',
   {{ Θ1 ⊢ P ≡ˢ P' }}a ->
-  a_wf_aenv Θ1 ->
+  {{ ⊢ Θ1 }}a ->
   forall ζ Θ, ζ ∷ Θ1 ⊑ Θ ->
   {{ Θ ⊢ (msubst_pskl ζ P) ≡ˢ (msubst_pskl ζ P') }}a.
 Proof.
@@ -785,8 +785,8 @@ Qed.
 
 Lemma a_inc_compose : forall Θ0 κ Θ1,
   κ ∷ Θ0 ⊑ Θ1 ->
-  a_wf_aenv Θ0 ->
-  a_wf_aenv Θ1 ->
+  {{ ⊢ Θ0 }}a ->
+  {{ ⊢ Θ1 }}a ->
   forall ζ Θ, ζ ∷ Θ1 ⊑ Θ ->
   msubst_compose ζ κ ∷ Θ0 ⊑ Θ.
 Proof.
@@ -826,9 +826,9 @@ Proof.
     { intros α0 Hα0. rewrite Hd in Hα0. clear - Hu1 Hα0. solve_uniq. }
     assert (Hceq : msubst_compose (ζ1 ++ ζ2) κ = msubst_compose ζ2 κ)
       by (eapply msubst_compose_peel; eauto).
-    assert (Hwf1c : a_wf_aenv ((x ~ abind_var_typ A') ++ Θ'))
+    assert (Hwf1c : {{ ⊢ ((x ~ abind_var_typ A') ++ Θ') }}a)
       by (eapply a_wf_aenv_strip_prefix_local; exact Hwf1).
-    assert (Hwf1t : a_wf_aenv Θ') by (inversion Hwf1c; subst; auto).
+    assert (Hwf1t : {{ ⊢ Θ' }}a) by (inversion Hwf1c; subst; auto).
     destruct (a_inc_var_inv Hinc2')
       as [Ξ2 [A2 [Θt2 [-> [Heq2 [Hs2 Hinc2'']]]]]].
     rewrite Hceq.
@@ -855,9 +855,9 @@ Proof.
     { intros α0 Hα0. rewrite Hd in Hα0. clear - Hu1 Hα0. solve_uniq. }
     assert (Hceq : msubst_compose (ζ1 ++ ζ2) κ = msubst_compose ζ2 κ)
       by (eapply msubst_compose_peel; eauto).
-    assert (Hwf1c : a_wf_aenv ((x ~ abind_var_skl P') ++ Θ'))
+    assert (Hwf1c : {{ ⊢ ((x ~ abind_var_skl P') ++ Θ') }}a)
       by (eapply a_wf_aenv_strip_prefix_local; exact Hwf1).
-    assert (Hwf1t : a_wf_aenv Θ') by (inversion Hwf1c; subst; auto).
+    assert (Hwf1t : {{ ⊢ Θ' }}a) by (inversion Hwf1c; subst; auto).
     destruct (a_inc_var_skl_inv Hinc2')
       as [Ξ2 [P2 [Θt2 [-> [Heq2 [Hs2 Hinc2'']]]]]].
     rewrite Hceq.
@@ -884,9 +884,9 @@ Proof.
     { intros α0 Hα0. rewrite Hd in Hα0. clear - Hu1 Hα0. solve_uniq. }
     assert (Hceq : msubst_compose (ζ1 ++ ζ2) κ = msubst_compose ζ2 κ)
       by (eapply msubst_compose_peel; eauto).
-    assert (Hwf1c : a_wf_aenv ((α ~ abind_tvar) ++ Θ'))
+    assert (Hwf1c : {{ ⊢ ((α ~ abind_tvar) ++ Θ') }}a)
       by (eapply a_wf_aenv_strip_prefix_local; exact Hwf1).
-    assert (Hwf1t : a_wf_aenv Θ') by (inversion Hwf1c; subst; auto).
+    assert (Hwf1t : {{ ⊢ Θ' }}a) by (inversion Hwf1c; subst; auto).
     destruct (a_inc_tvar_inv Hinc2') as [Ξ2 [Θt2 [-> [Hs2 Hinc2'']]]].
     rewrite Hceq.
     apply a_inc__tvar; [ | exact Hs2 ].

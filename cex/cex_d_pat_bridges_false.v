@@ -82,7 +82,7 @@ Proof.
   intros α Hα. simpl. apply d_wf_pskl__hole.
 Qed.
 
-Lemma cap_wf_exp : forall x, a_wf_exp (denv_to_aenv (capΓ x)) (exp_var_f x).
+Lemma cap_wf_exp : forall x, {{ (denv_to_aenv (capΓ x)) ⊢ᵉ (exp_var_f x) }}a.
 Proof. intros x. apply a_wf_exp__var. Qed.
 
 (* ===================================================================== *)

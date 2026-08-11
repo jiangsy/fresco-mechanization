@@ -418,7 +418,7 @@ Qed.
 
 Lemma a_looksub_solve_complete_leaf :
   forall n NM M Θ0 Θs Θ Θw κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' Rsub α,
-  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
   (* ⭐ THE Θw PACK (2026-08-05, the SolE-FlexR repair) — the same one P6-Cs
      and P6-Sv carry, and needed here because BOTH are called: the SOLVE now
      emits a block whose payloads must be well-formed in a context that
@@ -426,7 +426,7 @@ Lemma a_looksub_solve_complete_leaf :
      [binds] conditions and the κ-image bound move.  [ψa] is FIXED across this
      induction too (only R' and P0 move), so its scope premise IS invariant
      here — unlike in P6-Sv, whose ForallL row moves the guess. *)
-  a_wf_aenv Θw ->
+  {{ ⊢ Θw }}a ->
   (forall x b, binds x b Θw -> binds x b Θ) ->
   (forall x b, binds x b Θ -> binds x b Θw \/ b = abind_tvar) ->
   (forall α0, a_flex_tvar Θ0 α0 ->
@@ -484,7 +484,7 @@ Lemma a_looksub_solve_complete_leaf :
     (forall α0, α0 `in` dom Ξs -> α0 `notin` L) /\
     Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs /\
     {{ (Ξs ++ Ξc ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\
-    a_wf_aenv (Ξc ++ Θ0) /\
+    {{ ⊢ (Ξc ++ Θ0) }}a /\
     α `notin` dom Ξc /\
     keys κc = keys Ξc /\
     Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
@@ -681,7 +681,7 @@ Qed.
         and it is what Sub-ForallR needs. *)
 Theorem a_looksub_solve_complete_gen :
   forall n NM M Θ0 Θs Θ Θw κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' Rsub α,
-  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
   (* ⭐ THE Θw PACK (2026-08-05, the SolE-FlexR repair) — the same one P6-Cs
      and P6-Sv carry, and needed here because BOTH are called: the SOLVE now
      emits a block whose payloads must be well-formed in a context that
@@ -689,7 +689,7 @@ Theorem a_looksub_solve_complete_gen :
      [binds] conditions and the κ-image bound move.  [ψa] is FIXED across this
      induction too (only R' and P0 move), so its scope premise IS invariant
      here — unlike in P6-Sv, whose ForallL row moves the guess. *)
-  a_wf_aenv Θw ->
+  {{ ⊢ Θw }}a ->
   (forall x b, binds x b Θw -> binds x b Θ) ->
   (forall x b, binds x b Θ -> binds x b Θw \/ b = abind_tvar) ->
   (forall α0, a_flex_tvar Θ0 α0 ->
@@ -753,7 +753,7 @@ Theorem a_looksub_solve_complete_gen :
     (forall α0, α0 `in` dom Ξs -> α0 `notin` L) /\
     Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs /\
     {{ (Ξs ++ Ξc ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\
-    a_wf_aenv (Ξc ++ Θ0) /\
+    {{ ⊢ (Ξc ++ Θ0) }}a /\
     α `notin` dom Ξc /\
     keys κc = keys Ξc /\
     Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
@@ -1103,9 +1103,9 @@ Proof.
       assert (Hβψa : β `notin` ftvar_in_uskl ψa) by (clear - Fr; solve_notin).
       assert (Hβα : β <> α) by (clear - Fr; solve_notin).
       assert (HβΔρ : β `notin` Δρ) by (clear - Fr; solve_notin).
-      assert (Hwfβ : a_wf_aenv ((β ~ abind_tvar) ++ Θ))
+      assert (Hwfβ : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
         by (apply a_wf_aenv__tvar; assumption).
-      assert (Hwfβ0 : a_wf_aenv ((β ~ abind_tvar) ++ Θ0))
+      assert (Hwfβ0 : {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a)
         by (apply a_wf_aenv__tvar; assumption).
       assert (Hweak0 : forall (x : atom) (b : abind),
                 binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
@@ -1580,7 +1580,7 @@ Proof.
               x `notin` ftvar_in_aenv (Ξc1 ++ Θ0))
       by (intros x Hx; eapply a_solve_cstr_generated_fresh;
             [ exact HSolve1 | exact Hx ]).
-    assert (HwfΞs1 : a_wf_aenv (Ξs1 ++ Ξc1 ++ Θ0)).
+    assert (HwfΞs1 : {{ ⊢ (Ξs1 ++ Ξc1 ++ Θ0) }}a).
     { apply a_wf_aenv_flex_prefix; [ exact Hfms1 | | exact HwfΞ1 ].
       assert (Hdd : dom Ξs1 ∩ dom (Ξc1 ++ Θ0) [<=] empty).
       { intros x Hx.
@@ -1761,7 +1761,7 @@ Proof.
          α0 `notin` add α (union Lav (union (dom Ξs1) (dom Ξc1)))) /\
       Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs /\
       {{ (Ξs ++ Ξc ++ (Ξs1 ++ Ξc1 ++ Θ0)) ⨟ empty ⊢ₚₛ Pa }}a /\
-      a_wf_aenv (Ξc ++ (Ξs1 ++ Ξc1 ++ Θ0)) /\
+      {{ ⊢ (Ξc ++ (Ξs1 ++ Ξc1 ++ Θ0)) }}a /\
       α `notin` dom Ξc /\
       keys κc = keys Ξc /\
       Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
@@ -2171,9 +2171,9 @@ Proof.
     assert (Hweak : forall (x : atom) (b : abind),
               binds x b Θ -> binds x b ((β ~ abind_tvar) ++ Θ))
       by (intros x b Hb; apply binds_app_3; exact Hb).
-    assert (Hwfβ : a_wf_aenv ((β ~ abind_tvar) ++ Θ))
+    assert (Hwfβ : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
       by (apply a_wf_aenv__tvar; assumption).
-    assert (Hwfβ0 : a_wf_aenv ((β ~ abind_tvar) ++ Θ0))
+    assert (Hwfβ0 : {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a)
       by (apply a_wf_aenv__tvar; assumption).
     assert (HαΘβ : α `notin` dom ((β ~ abind_tvar) ++ Θ))
       by (simpl; clear - HαΘ Hβα; fsetdec).
@@ -2360,7 +2360,7 @@ Proof.
       (forall α0, α0 `in` dom Ξs -> α0 `notin` add β Lav) /\
       Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs /\
       {{ (Ξs ++ Ξc ++ ((β ~ abind_tvar) ++ Θ0)) ⨟ empty ⊢ₚₛ Pa }}a /\
-      a_wf_aenv (Ξc ++ ((β ~ abind_tvar) ++ Θ0)) /\
+      {{ ⊢ (Ξc ++ ((β ~ abind_tvar) ++ Θ0)) }}a /\
       α `notin` dom Ξc /\
       keys κc = keys Ξc /\
       Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
@@ -2623,9 +2623,9 @@ Proof.
     assert (Hweak : forall (x : atom) (b : abind),
               binds x b Θ -> binds x b ((β ~ abind_tvar) ++ Θ))
       by (intros x b Hb; apply binds_app_3; exact Hb).
-    assert (Hwfβ : a_wf_aenv ((β ~ abind_tvar) ++ Θ))
+    assert (Hwfβ : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
       by (apply a_wf_aenv__tvar; assumption).
-    assert (Hwfβ0 : a_wf_aenv ((β ~ abind_tvar) ++ Θ0))
+    assert (Hwfβ0 : {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a)
       by (apply a_wf_aenv__tvar; assumption).
     assert (HαΘβ : α `notin` dom ((β ~ abind_tvar) ++ Θ))
       by (simpl; clear - HαΘ Hβα; fsetdec).
@@ -2811,7 +2811,7 @@ Proof.
       (forall α0, α0 `in` dom Ξs -> α0 `notin` add β Lav) /\
       Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs /\
       {{ (Ξs ++ Ξc ++ ((β ~ abind_tvar) ++ Θ0)) ⨟ empty ⊢ₚₛ Pa }}a /\
-      a_wf_aenv (Ξc ++ ((β ~ abind_tvar) ++ Θ0)) /\
+      {{ ⊢ (Ξc ++ ((β ~ abind_tvar) ++ Θ0)) }}a /\
       α `notin` dom Ξc /\
       keys κc = keys Ξc /\
       Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
@@ -3067,7 +3067,7 @@ Proof.
       (forall α0, α0 `in` dom Ξs -> α0 `notin` Lav) /\
       Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs /\
       {{ (Ξs ++ Ξc ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\
-      a_wf_aenv (Ξc ++ Θ0) /\
+      {{ ⊢ (Ξc ++ Θ0) }}a /\
       α `notin` dom Ξc /\
       keys κc = keys Ξc /\
       Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
@@ -3164,7 +3164,7 @@ Proof.
       (forall α0, α0 `in` dom Ξs -> α0 `notin` Lav) /\
       Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs /\
       {{ (Ξs ++ Ξc ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\
-      a_wf_aenv (Ξc ++ Θ0) /\
+      {{ ⊢ (Ξc ++ Θ0) }}a /\
       α `notin` dom Ξc /\
       keys κc = keys Ξc /\
       Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
@@ -3289,7 +3289,7 @@ Qed.
 
 Theorem a_looksub_solve_complete :
   forall n NM M Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α,
-  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a -> {{ Θ0 ⨟ empty ⊢ₚₛ Pi }}a ->
   (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->   (* skmod[SK]{P0}{M} *)
   (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->   (* skmod[TY]{P0}{M} *)
@@ -3335,7 +3335,7 @@ Theorem a_looksub_solve_complete :
     (forall α0, α0 `in` dom Ξs -> α0 `notin` L) /\
     Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κs /\
     {{ (Ξs ++ Ξc ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\
-    a_wf_aenv (Ξc ++ Θ0) /\
+    {{ ⊢ (Ξc ++ Θ0) }}a /\
     α `notin` dom Ξc /\
     keys κc = keys Ξc /\
     Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\

@@ -386,7 +386,7 @@ Qed.
 (** In a wf context, a term binding's payload draws its variables from the
     context's domain.  (Applied at a TAIL context to separate a fresh head.) *)
 Lemma a_wf_aenv_binds_var_typ_ftv : forall Θ x A,
-  a_wf_aenv Θ -> binds x (abind_var_typ A) Θ ->
+  {{ ⊢ Θ }}a -> binds x (abind_var_typ A) Θ ->
   ftvar_in_ptyp A [<=] dom Θ.
 Proof.
   intros Θ x A Hwf; induction Hwf; intros Hb; try solve [ inversion Hb ];
@@ -407,7 +407,7 @@ Qed.
     strengthened they were EXTERNAL side conditions (docs/WF-SIDE-CONDITIONS.md),
     and now they are theorems. *)
 Lemma a_wf_aenv_binds_var_skl_wf : forall Θ x P,
-  a_wf_aenv Θ -> binds x (abind_var_skl P) Θ ->
+  {{ ⊢ Θ }}a -> binds x (abind_var_skl P) Θ ->
   {{ Θ ⨟ empty ⊢ₚₛ P }}a.
 Proof.
   intros Θ x P Hwf; induction Hwf; intros Hb; try solve [ inversion Hb ];
@@ -423,7 +423,7 @@ Proof.
 Qed.
 
 Lemma a_wf_aenv_binds_var_skl_ftv : forall Θ x P,
-  a_wf_aenv Θ -> binds x (abind_var_skl P) Θ ->
+  {{ ⊢ Θ }}a -> binds x (abind_var_skl P) Θ ->
   ftvar_in_pskl P [<=] dom Θ.
 Proof.
   intros Θ x P Hwf; induction Hwf; intros Hb; try solve [ inversion Hb ];

@@ -128,7 +128,7 @@ Qed.
 
 Corollary a_consis_concrete_output_equiv : forall Θ0 P0 P P' Θ1,
   {{ Θ0 ⊢[ P0 ] P ∼ P' ⊣ Θ1 }}a ->
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
   pskl_ghost_free P0 ->                (* the paper's "P_0 is a concrete type" *)
@@ -234,7 +234,7 @@ Qed.
 
 Corollary a_sub_concrete_output_equiv : forall NM M P0 Θ0 P P' Θ1,
   a_sub NM M P0 Θ0 P P' Θ1 ->
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
   (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->

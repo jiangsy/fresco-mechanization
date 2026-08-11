@@ -1352,7 +1352,7 @@ Proof. intros κ Θ H. inversion H; subst. assumption. Qed.
 (** ⭐ THE CLOSING.  Every entry of a well-formed suffix is solvable into its
     own tail, so peeling it top-down instantiates the whole context at once. *)
 Lemma ad_sd_typing_close_suffix : forall Ξ,
-  a_suffix Ξ -> a_wf_aenv Ξ ->
+  a_suffix Ξ -> {{ ⊢ Ξ }}a ->
   forall M e B, ad_sd_typing M Ξ e B ->
   ftvar_in_exp e [<=] empty ->
   exists ζ, ζ ∷ Ξ ⊑ nil /\ msubst_mono ζ /\ msubst_closes ζ Ξ
@@ -1367,7 +1367,7 @@ Proof.
   - inversion Hsuf as [ | ? ? ? Hsuf' Hbind ]; subst.
     simpl_env in Hwf.
     destruct (solves_flex_of_wf_head Hbind Hwf) as [τs Hs].
-    assert (Hwf' : a_wf_aenv Ξ') by (inversion Hwf; subst; assumption).
+    assert (Hwf' : {{ ⊢ Ξ' }}a) by (inversion Hwf; subst; assumption).
     assert (Hβd : β `notin` dom Ξ') by (inversion Hwf; subst; assumption).
     pose proof (@ad_sd_typing_subst_mid _ _ _ _ Hd τs β b nil Ξ'
                   ltac:(simpl_env; reflexivity) Hs
@@ -1906,7 +1906,7 @@ Ltac base_row lctac :=
 Lemma d_sd_typing_to_ad : forall M Γ e B,
   d_sd_typing M Γ e B ->
   d_wf_denv Γ ->
-  a_wf_exp (denv_to_aenv Γ) e ->
+  {{ (denv_to_aenv Γ) ⊢ᵉ e }}a ->
   ad_sd_typing M (denv_to_aenv Γ) e B.
 Proof.
   intros M Γ e B H; induction H; intros Hwf Hwfe.

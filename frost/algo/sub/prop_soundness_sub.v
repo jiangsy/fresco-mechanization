@@ -94,8 +94,8 @@ Lemma a_wf_aenv_prepend_decls : forall Ξ Θ,
   a_decls Ξ ->
   uniq Ξ ->
   (forall α1, α1 `in` dom Ξ -> α1 `notin` dom Θ) ->
-  a_wf_aenv Θ ->
-  a_wf_aenv (Ξ ++ Θ).
+  {{ ⊢ Θ }}a ->
+  {{ ⊢ (Ξ ++ Θ) }}a.
 Proof.
   induction Ξ as [ | [α1 b] Ξ' IH ]; intros Θ Hdecl Huq Hfr Hwf;
     [ exact Hwf | ].
@@ -269,7 +269,7 @@ Lemma ad_pat_consis_refine_inh_gen : forall Θ Δ Qsrc Qt,
   forall Θ',
   (forall x b, binds x b Θ -> binds x b Θ') ->
   (forall α, α `in` Δ -> a_binds_tvar α Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   {{ Θ' ⨟ empty ⊢ₚₛ Psrc }}a ->
   forall Ψ R, {{ Ψ ⨟ Θ' ⊢ˢ R ∼ Qt }}ad -> {{ Ψ ⨟ Θ' ⊢ˢ R ∼ (pskl_to_bskl_inh Psrc) }}ad.
 Proof.
@@ -352,7 +352,7 @@ Qed.
 
 Lemma ad_pat_consis_refine_inh_target : forall Ψ Θ R Qt,
   {{ Ψ ⨟ Θ ⊢ˢ R ∼ Qt }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall P,
   {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
   pskl_ghost_free P ->
@@ -380,7 +380,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma ad_refine_pskl_unfold_def_target : forall Θ Δ X α τ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   binds α (abind_flex_mono_def τ) Θ ->
   {{ Θ ⨟ Δ ⊢ᵣₚ X ⊳ (pskl_var_f α) }}ad ->
   {{ Θ ⨟ Δ ⊢ᵣₚ X ⊳ (ptyp_to_pskl τ) }}ad.
@@ -438,7 +438,7 @@ Lemma ad_refine_syn_f_inh_wf_transfer : forall F Θ Δ Qsrc Qt,
   pskl_ghost_free Psrc ->
   forall Θ',
   (forall x b, binds x b Θ -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   forall Δ', {{ Θ' ⨟ Δ' ⊢ₚₛ (bskl_to_pskl Qt) }}a -> {{ Θ' ⨟ Δ' ⊢ₚₛ Psrc }}a.
 Proof.
   intros F Θ Δ Qsrc Qt Hfill.
@@ -544,7 +544,7 @@ Qed.
     quantified over BOTH a Θ-extension and a Δ. *)
 Lemma refine_transport_all : forall Θ' Δ' X Qa Pa L,
   {{ Θ' ⨟ Δ' ⊢ᵣₚ X ⊳ (pskl_all_syn Qa) }}ad ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   dom Θ' [<=] L ->
   ({{ Θ' ⨟ empty ⊢ₚₛ (pskl_all_syn Qa) }}a -> {{ Θ' ⨟ empty ⊢ₚₛ (pskl_all_syn Pa) }}a) ->
   (* ⚙ [α `notin` L] comes AFTER the other binders on purpose: it keeps this
@@ -552,7 +552,7 @@ Lemma refine_transport_all : forall Θ' Δ' X Qa Pa L,
      picks the RULE's cofinite family out of the context below. *)
   (forall α Θ0 Δ0 X', α `notin` L ->
      (forall x b, binds x b Θ' -> binds x b Θ0) ->
-     a_wf_aenv Θ0 ->
+     {{ ⊢ Θ0 }}a ->
      {{ Θ0 ⨟ Δ0 ⊢ᵣₚ X' ⊳ (open_pskl_wrt_pskl Qa (pskl_var_f α)) }}ad ->
      {{ Θ0 ⨟ Δ0 ⊢ᵣₚ X' ⊳ (open_pskl_wrt_pskl Pa (pskl_var_f α)) }}ad) ->
   {{ Θ' ⨟ Δ' ⊢ᵣₚ X ⊳ (pskl_all_syn Pa) }}ad.
@@ -607,7 +607,7 @@ Lemma ad_refine_pskl_refine_inh_gen : forall F Θ Δ Qsrc Qt,
   pskl_ghost_free Psrc ->
   forall Θ',
   (forall x b, binds x b Θ -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   forall Δ' X, {{ Θ' ⨟ Δ' ⊢ᵣₚ X ⊳ (bskl_to_pskl Qt) }}ad ->
                {{ Θ' ⨟ Δ' ⊢ᵣₚ X ⊳ Psrc }}ad.
 Proof.
@@ -705,7 +705,7 @@ Qed.
     [ad_pat_consis_refine_inh_target] (prop_soundness_sub.v:366) exactly, but
     with TWO FEWER hypotheses (see §B). *)
 Lemma ad_refine_pskl_refine_inh_target : forall Θ Qt,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall P, pskl_ghost_free P ->
   ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh P) Qt ->
   forall Δ X, {{ Θ ⨟ Δ ⊢ᵣₚ X ⊳ (bskl_to_pskl Qt) }}ad ->
@@ -1661,7 +1661,7 @@ Qed.
     head-first (mirrors prop_pat_sub.v:1158). *)
 Lemma ad_pat_sub_gv_strip_suffix : forall Ξ n NM M Ψ Θ R Q,
   a_suffix Ξ ->
-  a_wf_aenv (Ξ ++ Θ) ->
+  {{ ⊢ (Ξ ++ Θ) }}a ->
   (forall α1, α1 `in` dom Ξ ->
      α1 `notin` (ftvar_in_uskl R `union` ftvar_in_bskl Q)) ->
   ad_pat_sub_gv n NM M Ψ (Ξ ++ Θ) R Q ->
@@ -1773,13 +1773,13 @@ Qed.
 Definition subtag_sound_concl
     (NM : a_sub_mode) (M : mode) (P0 : pskl) (Ψ : atoms)
     (Θ0 : aenv) (R : uskl) (Q : pskl) (Θ1 : aenv) : Prop :=
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   lc_uskl R ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ ⌊ R ⌋ˢ }}a ->
   (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) M) ->
   (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
-  Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
+  Θ0 ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\
   (exists Qt, bskl_to_pskl Qt = Q /\
      (* ⭐ LEAF-VALID (hand-off §6.2): the completeness direction can only
         consume [ad_pat_sub_gv], and the capture configuration shows the leaf
@@ -1793,13 +1793,13 @@ Definition subtag_sound_concl
 Definition subtag_flex_sound_concl
     (NM : a_sub_mode) (M : mode) (P0 : pskl)
     (Θ0 Ξ : aenv) (α : atom) (A : pskl) (Θ1 : aenv) : Prop :=
-  a_wf_aenv (Ξ ++ Θ0) ->
+  {{ ⊢ (Ξ ++ Θ0) }}a ->
   a_decls Ξ ->
   {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a ->
   a_binds_tvar α (Ξ ++ Θ0) ->
   (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) (mode_fn M)) ->
   (NM = a_sub_mode_ty -> a_ty_mode_compat (mode_fn M) P0) ->
-  (Ξ ++ Θ0) ⊴ Θ1 /\ a_wf_aenv Θ1 /\
+  (Ξ ++ Θ0) ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\
   (exists Qt, bskl_to_pskl Qt = A /\
      (exists n, ad_pat_sub_gv n NM (mode_fn M) empty Θ1 (uskl_var_f α) Qt) /\
      ad_refine_syn_f empty Θ1 empty (pskl_to_bskl_inh P0) Qt).
@@ -1952,7 +1952,7 @@ Proof.
     assert (HαΞ : α `notin` dom Ξ)
       by (clear - HuqT; simpl_env in HuqT; destruct_uniq;
           unfold disjoint in *; simpl_env in *; fsetdec).
-    assert (Hwf1' : a_wf_aenv Θ1)
+    assert (Hwf1' : {{ ⊢ Θ1 }}a)
       by (eapply a_wf_aenv_strip_prefix_suffix_local; exact Hwf1).
     (* scoping chains for the suffix-strip freshness *)
     assert (HS : ftvar_in_uskl R [<=] dom Θ0).
@@ -2170,7 +2170,7 @@ Proof.
       by (clear - Hint0; fsetdec).
     assert (Hprem := Hfam Ψg ψg ltac:(clear - Hint0; solve_notin_auto) Hsort Herase).
     assert (IH := IHfam Ψg ψg ltac:(clear - Hint0; solve_notin_auto) Hsort Herase).
-    assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0)).
+    assert (HwfΞΘ : {{ ⊢ (Ξ ++ Θ0) }}a).
     { apply a_wf_aenv_prepend_decls; auto.
       - clear - Huq. solve_uniq.
       - intros γ Hγ. clear - Huq Hγ. destruct_uniq.
@@ -2227,7 +2227,7 @@ Proof.
       by (clear - Hint0; fsetdec).
     assert (Hprem := Hfam Ψg ψg ltac:(clear - Hint0; solve_notin_auto) Hsort Herase).
     assert (IH := IHfam Ψg ψg ltac:(clear - Hint0; solve_notin_auto) Hsort Herase).
-    assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0)).
+    assert (HwfΞΘ : {{ ⊢ (Ξ ++ Θ0) }}a).
     { apply a_wf_aenv_prepend_decls; auto.
       - clear - Huq. solve_uniq.
       - intros γ Hγ. clear - Huq Hγ. destruct_uniq.
@@ -2341,26 +2341,26 @@ Proof.
     set (Θ' := Ξ ++ (α0 ~ abind_flex_mono_def τab) ++ Θmid).
     assert (Huq : uniq (Ξ ++ (α0 ~ abind_flex_mono) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact Hwf).
-    assert (Hwf0 : a_wf_aenv Θ0).
+    assert (Hwf0 : {{ ⊢ Θ0 }}a).
     { eapply a_wf_aenv_app_r with (Θp := Ξ ++ (α0 ~ abind_flex_mono)).
       simpl_env. exact Hwf. }
     assert (Hbα : binds α abind_flex_mono Θmid)
       by (unfold Θmid; unfold binds; simpl; right; left; reflexivity).
     assert (Hbβ : binds β abind_flex_mono Θmid)
       by (unfold Θmid; unfold binds; simpl; left; reflexivity).
-    assert (Hwfmid : a_wf_aenv Θmid).
+    assert (Hwfmid : {{ ⊢ Θmid }}a).
     { unfold Θmid. apply a_wf_aenv__flex.
       { simpl. clear - Hβf Hne. simpl_env in *. fsetdec. }
       apply a_wf_aenv__flex;
         [ clear - Hαf; simpl_env in *; fsetdec | exact Hwf0 ]. }
-    assert (Hwfdef : a_wf_aenv ((α0 ~ abind_flex_mono_def τab) ++ Θmid)).
+    assert (Hwfdef : {{ ⊢ ((α0 ~ abind_flex_mono_def τab) ++ Θmid) }}a).
     { apply a_wf_aenv__flex_def.
       - unfold Θmid. simpl. clear - Hαf Hβf Huq. simpl_env in *. solve_uniq.
       - apply a_wf_ptyp__arrow; apply a_wf_ptyp__var;
           [ right; left; exact Hbα | right; left; exact Hbβ ].
       - repeat constructor.
       - exact Hwfmid. }
-    assert (HwfΘ' : a_wf_aenv Θ').
+    assert (HwfΘ' : {{ ⊢ Θ' }}a).
     { unfold Θ'. apply a_wf_aenv_prepend_decls; auto.
       - clear - Huq. solve_uniq.
       - intros γ Hγ. unfold Θmid. simpl_env.
@@ -2418,14 +2418,14 @@ Proof.
        (the fill via [ad_refine_syn_f_fold_def_source], the subtyping
        via [flex_mono] when the subject IS the assigned variable). *)
     intros NM M P0 Θ0 Θ1 Ξ α β τ P Hβ1 Hprem IH Hwf Hdecl HwfP0 Hαb Hmod Hgf.
-    assert (Hwfcons : a_wf_aenv ((β ~ abind_flex_mono_def τ) ++ Θ0))
+    assert (Hwfcons : {{ ⊢ ((β ~ abind_flex_mono_def τ) ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_prefix; eauto).
     inversion Hwfcons as [ | | βz τz Θz HβΘ0 Hwfτ Hm Hwf0 | | | ]; subst.
     assert (HβΞΘ0 : β `notin` dom (Ξ ++ Θ0)).
     { pose proof (a_wf_aenv_uniq Hwf) as Huq.
       clear - Huq. simpl_env in Huq. destruct_uniq.
       unfold disjoint in *. simpl_env in *. fsetdec. }
-    assert (HwfΞΘ0 : a_wf_aenv (Ξ ++ Θ0))
+    assert (HwfΞΘ0 : {{ ⊢ (Ξ ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_mid; eauto).
     assert (Hwfpaint : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ ptyp_to_pskl τ }}a).
     { apply a_scope_pskl_of_ptyp_vis;
@@ -2525,7 +2525,7 @@ Proof.
 
   - (* Flex-Skip : strip the mid entry, IH, re-cons + lift the outputs. *)
     intros NM M P0 Θ0 Θ1 Ξ α β P Hne Hni Hβ1 Hprem IH Hwf Hdecl HwfP0 Hαb Hmod Hgf.
-    assert (Hwf' : a_wf_aenv (Ξ ++ Θ0))
+    assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_mid; eauto).
     assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
       by (eapply a_wf_pskl_strip_mid; eauto).
@@ -2559,7 +2559,7 @@ Proof.
 
   - (* Flex-SkipRigid : as Flex-Skip with a rigid head. *)
     intros NM M P0 Θ0 Θ1 Ξ α β P Hne Hni Hβ1 Hprem IH Hwf Hdecl HwfP0 Hαb Hmod Hgf.
-    assert (Hwf' : a_wf_aenv (Ξ ++ Θ0))
+    assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_mid; eauto).
     assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
       by (eapply a_wf_pskl_strip_mid; eauto).
@@ -2607,9 +2607,9 @@ Proof.
         [ clear - Hemp; fsetdec | ].
       destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
         pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hc; discriminate Hc. }
-    assert (Hwf' : a_wf_aenv (Ξ ++ Θ0))
+    assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (HwfT : a_wf_aenv ((x ~ abind_var_typ Q) ++ Θ0))
+    assert (HwfT : {{ ⊢ ((x ~ abind_var_typ Q) ++ Θ0) }}a)
       by (eapply a_wf_aenv_app_r; exact Hwf).
     apply a_wf_aenv_var_typ_inv in HwfT.
     destruct HwfT as [_ [HwfQ0 _]].
@@ -2658,9 +2658,9 @@ Proof.
         [ clear - Hemp; fsetdec | ].
       destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
         pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hc; discriminate Hc. }
-    assert (Hwf' : a_wf_aenv (Ξ ++ Θ0))
+    assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (HwfT : a_wf_aenv ((x ~ abind_var_skl Q) ++ Θ0))
+    assert (HwfT : {{ ⊢ ((x ~ abind_var_skl Q) ++ Θ0) }}a)
       by (eapply a_wf_aenv_app_r; exact Hwf).
     apply a_wf_aenv_var_skl_inv in HwfT.
     destruct HwfT as [_ [HscQ0 _]].

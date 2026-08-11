@@ -127,7 +127,7 @@ Qed.
 (** The optimality tail every base row shares: a PRECISION between two
     type paintings IS the type equivalence the conclusion carries. *)
 Lemma typ_opt_tail : forall Θ ζ A1 (B : btyp),
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   {{ Θ ⨟ empty ⊢ₚᵣ
     (bskl_to_pskl (msubst_bskl ζ (pskl_to_bskl_syn (ptyp_to_pskl A1))))
     ⊑ (bskl_to_pskl (btyp_to_bskl B)) }}ad ->
@@ -150,7 +150,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_typing_complete_unit : forall M Θ0 P0 κ Θ B,
-  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat M P0 ->
   κ ∷ Θ0 ⊑ Θ ->
@@ -194,7 +194,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_typing_complete_var : forall M Θ0 P0 x κ Θ B,
-  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat M P0 ->
   κ ∷ Θ0 ⊑ Θ ->
@@ -255,14 +255,14 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_typing_complete_anno : forall M Θ0 P0 e A κ Θ B,
-  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat M P0 ->
   κ ∷ Θ0 ⊑ Θ ->
   (forall α, α `in` ftvar_in_exp (exp_anno e A) -> binds α abind_tvar Θ0) ->
   lc_exp (exp_anno e A) ->
   (forall M' Θ0' P0' κ' Θ' B',
-     a_wf_aenv Θ0' -> a_wf_aenv Θ' ->
+     {{ ⊢ Θ0' }}a -> {{ ⊢ Θ' }}a ->
      {{ Θ0' ⨟ empty ⊢ₚₛ P0' }}a ->
      a_ty_mode_compat M' P0' ->
      κ' ∷ Θ0' ⊑ Θ' ->
@@ -330,7 +330,7 @@ Proof.
       discriminate Hc. }
   subst A1'.
   (* the run's own identity increase + the mid context's wf *)
-  assert (Hexpe : a_wf_exp Θ0 e)
+  assert (Hexpe : {{ Θ0 ⊢ᵉ e }}a)
     by (apply a_wf_exp_of_tvarish;
         [ exact Hlce | intros α Hα; left; apply Hrige; exact Hα ]).
   destruct (a_typing_sound HrunB Hwf0 HwfpA0
@@ -448,7 +448,7 @@ Lemma a_tyequiv_wf_iff : forall Θ A B,
   {{ Θ ⊢ A ≡ᵗ B }}a ->
   forall Θ',
   (forall x (b : abind), binds x b Θ -> binds x b Θ') ->
-  a_wf_aenv Θ' ->
+  {{ ⊢ Θ' }}a ->
   (a_wf_ptyp Θ' A -> a_wf_ptyp Θ' B) /\
   (a_wf_ptyp Θ' B -> a_wf_ptyp Θ' A).
 Proof.
@@ -478,7 +478,7 @@ Proof.
                a_wf_ptyp _ (open_ptyp_wrt_ptyp _ _) |- _ =>
         apply a_wf_ptyp__all with (L := L `union` L1 `union` dom Θ');
         intros α Hα;
-        (assert (Hwfx : a_wf_aenv ((α ~ abind_tvar) ++ Θ'))
+        (assert (Hwfx : {{ ⊢ ((α ~ abind_tvar) ++ Θ') }}a)
           by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf' ]));
         (assert (Hinclx : forall x (b : abind),
                    binds x b Θ -> binds x b ((α ~ abind_tvar) ++ Θ'))
@@ -518,7 +518,7 @@ Qed.
     premises transport it, the binder rows strip their term entry). *)
 Lemma ad_sd_typing_target_wf : forall M Θ e (B : btyp),
   {{ Θ ⊢ˢᵈ[ M ] e ⦂ B }}ad ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   a_wf_ptyp Θ (btyp_to_ptyp B).
 Proof.
   intros M Θ e B H; induction H; intros Hwf;
@@ -606,14 +606,14 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_typing_complete_freeze : forall Θ0 P0 e κ Θ B,
-  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat mode_tc P0 ->
   κ ∷ Θ0 ⊑ Θ ->
   (forall α, α `in` ftvar_in_exp (exp_freeze e) -> binds α abind_tvar Θ0) ->
   lc_exp (exp_freeze e) ->
   (forall M' Θ0' P0' κ' Θ' B',
-     a_wf_aenv Θ0' -> a_wf_aenv Θ' ->
+     {{ ⊢ Θ0' }}a -> {{ ⊢ Θ' }}a ->
      {{ Θ0' ⨟ empty ⊢ₚₛ P0' }}a ->
      a_ty_mode_compat M' P0' ->
      κ' ∷ Θ0' ⊑ Θ' ->
@@ -659,7 +659,7 @@ Proof.
                     apply ad_refine_syn__hole;
                     apply a_wf_ptyp_to_wf_pskl; exact HwfB0))
     as [B' [Θmid [HrunB HoptB]]].
-  assert (Hexpe : a_wf_exp Θ0 e)
+  assert (Hexpe : {{ Θ0 ⊢ᵉ e }}a)
     by (apply a_wf_exp_of_tvarish;
         [ exact Hlce | intros α Hα; left; apply Hrig; exact Hα ]).
   destruct (a_typing_sound HrunB Hwf0 (a_wf_pskl__hole _ _)
@@ -821,7 +821,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_typing_complete_app : forall M Θ0 P0 e1 e2 κ Θ B,
-  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat M P0 ->
   κ ∷ Θ0 ⊑ Θ ->
@@ -829,7 +829,7 @@ Lemma a_typing_complete_app : forall M Θ0 P0 e1 e2 κ Θ B,
   lc_exp (exp_app e1 e2) ->
   (* the e1 IH *)
   (forall M' Θ0' P0' κ' Θ' B',
-     a_wf_aenv Θ0' -> a_wf_aenv Θ' ->
+     {{ ⊢ Θ0' }}a -> {{ ⊢ Θ' }}a ->
      {{ Θ0' ⨟ empty ⊢ₚₛ P0' }}a ->
      a_ty_mode_compat M' P0' ->
      κ' ∷ Θ0' ⊑ Θ' ->
@@ -841,7 +841,7 @@ Lemma a_typing_complete_app : forall M Θ0 P0 e1 e2 κ Θ B,
      typ_complete_concl M' Θ0' P0' e1 κ' Θ' B') ->
   (* the e2 IH *)
   (forall M' Θ0' P0' κ' Θ' B',
-     a_wf_aenv Θ0' -> a_wf_aenv Θ' ->
+     {{ ⊢ Θ0' }}a -> {{ ⊢ Θ' }}a ->
      {{ Θ0' ⨟ empty ⊢ₚₛ P0' }}a ->
      a_ty_mode_compat M' P0' ->
      κ' ∷ Θ0' ⊑ Θ' ->
@@ -885,7 +885,7 @@ Proof.
     by (intros α Hα; apply Hrig; clear - Hα; fsetdec).
   assert (Hlc1 : lc_exp e1) by (inversion Hlc; assumption).
   assert (Hlc2 : lc_exp e2) by (inversion Hlc; assumption).
-  assert (Hexp2 : a_wf_exp Θ0 e2)
+  assert (Hexp2 : {{ Θ0 ⊢ᵉ e2 }}a)
     by (apply a_wf_exp_of_tvarish;
         [ exact Hlc2 | intros α Hα; left; apply Hrig2; exact Hα ]).
   (* the fn premise's target is wf — components pulled by inversion *)
@@ -979,7 +979,7 @@ Proof.
       rename AA into Af; rename BB into Bf
   end.
   (* soundness of the function run *)
-  assert (Hexp1 : a_wf_exp Θ1' e1)
+  assert (Hexp1 : {{ Θ1' ⊢ᵉ e1 }}a)
     by (apply a_wf_exp_of_tvarish;
         [ exact Hlc1 | intros α Hα; left; apply Hrig1m; exact Hα ]).
   destruct (a_typing_sound Hrun2 Hwf1
@@ -1014,7 +1014,7 @@ Proof.
         [ exact Hinc2b
         | eapply a_inc_binds_tvar;
             [ exact Hinc1b | apply Hrig2; exact Hα ] ]).
-  assert (Hexp2m : a_wf_exp Θ2' e2)
+  assert (Hexp2m : {{ Θ2' ⊢ᵉ e2 }}a)
     by (apply a_wf_exp_of_tvarish;
         [ exact Hlc2 | intros α Hα; left; apply Hrig2m; exact Hα ]).
   assert (HeqChain : {{ Θ ⊢ (msubst_ptyp ζ2 Af) ≡ᵗ A2 }}a)
@@ -1300,7 +1300,7 @@ Qed.
 Lemma a_guess_mono_complete_ghost_free : forall Θ Δ κ P (Bt : btyp) Θg Ξg A',
   pskl_ghost_free P ->
   ad_refine_syn Θ Δ (pskl_to_bskl_inh (msubst_pskl κ P)) (btyp_to_bskl Bt) ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   a_guess_mono Θg P Ξg A' ->
   Ξg = nil /\ {{ Θ ⊢ (msubst_ptyp κ A') ≡ᵗ (btyp_to_ptyp Bt) }}a.
 Proof.
@@ -1344,7 +1344,7 @@ Qed.
 Lemma guess_complete_var_image : forall Θ Δ κ β (Bt : btyp) Θg Ξg A',
   ad_refine_syn Θ Δ (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f β)))
     (btyp_to_bskl Bt) ->
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   a_guess_mono Θg (pskl_var_f β) Ξg A' ->
   Ξg = nil /\ {{ Θ ⊢ (msubst_ptyp κ A') ≡ᵗ (btyp_to_ptyp Bt) }}a.
 Proof.
@@ -1462,7 +1462,7 @@ Proof. induction τ; simpl; f_equal; auto. Qed.
 Lemma a_guess_mono_complete : forall Θ Δ Qs Qt,
   ad_refine_syn Θ Δ Qs Qt ->
   forall P0 (Bt : btyp) Θg Ξg A' κ Θ1,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   Qs = pskl_to_bskl_inh (msubst_pskl κ P0) ->
   Qt = btyp_to_bskl Bt ->
   is_ityp Bt ->
@@ -1886,8 +1886,8 @@ Lemma a_wf_aenv_decls_app_disjoint : forall (Ξg : aenv) Θ0,
   a_decls Ξg ->
   uniq Ξg ->
   (forall α, α `in` dom Ξg -> α `notin` dom Θ0) ->
-  a_wf_aenv Θ0 ->
-  a_wf_aenv (Ξg ++ Θ0).
+  {{ ⊢ Θ0 }}a ->
+  {{ ⊢ (Ξg ++ Θ0) }}a.
 Proof.
   intros Ξg Θ0 Hd; induction Hd; intros Huq Hfr Hwf;
     [ exact Hwf | ].
@@ -1913,7 +1913,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_typing_complete_abs : forall M Θ0 P0 e κ Θ B,
-  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat M P0 ->
   M <> mode_tc ->
@@ -1921,7 +1921,7 @@ Lemma a_typing_complete_abs : forall M Θ0 P0 e κ Θ B,
   (forall α, α `in` ftvar_in_exp (exp_abs e) -> binds α abind_tvar Θ0) ->
   lc_exp (exp_abs e) ->
   (forall x M' Θ0' P0' κ' Θ' B',
-     a_wf_aenv Θ0' -> a_wf_aenv Θ' ->
+     {{ ⊢ Θ0' }}a -> {{ ⊢ Θ' }}a ->
      {{ Θ0' ⨟ empty ⊢ₚₛ P0' }}a ->
      a_ty_mode_compat M' P0' ->
      κ' ∷ Θ0' ⊑ Θ' ->
@@ -2045,7 +2045,7 @@ Proof.
                           `union` ftvar_in_ptyp A `union` ftvar_in_ptyp A'
                           `union` ftvar_in_pskl P `union` ftvar_in_pskl Q))
     as [x Hx].
-  assert (HwfΞg : a_wf_aenv (Ξg ++ Θ0)).
+  assert (HwfΞg : {{ ⊢ (Ξg ++ Θ0) }}a).
   { apply a_wf_aenv_decls_app_disjoint; [ exact Hdecls | exact Huqb | | exact Hwf0 ].
     intros α Hα. pose proof (Havb α Hα) as Hn. clear - Hn; fsetdec. }
   assert (HwfA' : a_wf_ptyp (Ξg ++ Θ0) A').
@@ -2063,10 +2063,10 @@ Proof.
         [ left; apply binds_app_3; exact Hr
         | right; left; apply binds_app_3; exact Hm
         | right; right; exists τ; apply binds_app_3; exact Hdf ]. }
-  assert (Hwf0x : a_wf_aenv ((x ~ abind_var_typ A') ++ Ξg ++ Θ0))
+  assert (Hwf0x : {{ ⊢ ((x ~ abind_var_typ A') ++ Ξg ++ Θ0) }}a)
     by (apply a_wf_aenv__var_typ;
         [ rewrite dom_app; clear - Hx; fsetdec | exact HwfA' | exact HwfΞg ]).
-  assert (HwfΘx : a_wf_aenv ((x ~ abind_var_typ A) ++ Θ))
+  assert (HwfΘx : {{ ⊢ ((x ~ abind_var_typ A) ++ Θ) }}a)
     by (apply a_wf_aenv__var_typ;
         [ clear - Hx; fsetdec | exact HwfA | exact HwfΘ ]).
   assert (Hincx : κg ∷ ((x ~ abind_var_typ A') ++ Ξg ++ Θ0)
@@ -2100,8 +2100,7 @@ Proof.
                     | intros α c Hty Hc; apply binds_cons_3; exact Hc ]))
     as [B' [Θout [HrunB HoptB]]].
   (* ---- 6. the body run's identity increase shapes the output ---- *)
-  assert (Hexpx : a_wf_exp ((x ~ abind_var_typ A') ++ Ξg ++ Θ0)
-                    (open_exp_wrt_exp e (exp_var_f x))).
+  assert (Hexpx : {{ ((x ~ abind_var_typ A') ++ Ξg ++ Θ0) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a).
   { apply a_wf_exp_of_tvarish; [ exact Hlcbody | ].
     intros α Hα. left. apply Hrigx. exact Hα. }
   destruct (a_typing_sound HrunB Hwf0x HwfQx HmodQ Hexpx)
@@ -2211,7 +2210,7 @@ Proof.
     exact Heqv0. }
   (* the arrow equivalence : ⑰ pushed to ζb on the domain, the body's on
      the codomain (term entry stripped) *)
-  assert (Hwffin : a_wf_aenv (Ξ ++ Θ2))
+  assert (Hwffin : {{ ⊢ (Ξ ++ Θ2) }}a)
     by (exact (@a_wf_aenv_strip_tm_mid Ξ x (abind_var_typ A') Θ2
                  (fun h : abind_is_ty (abind_var_typ A') => h) HwfOut)).
   assert (HwfA'x : a_wf_ptyp ((x ~ abind_var_typ A') ++ Ξg ++ Θ0) A')
@@ -2254,7 +2253,7 @@ Qed.
 (* --- the AbsAnno row -------------------------------------------------- *)
 
 Lemma a_typing_complete_abs_anno : forall M Θ0 P0 A e κ Θ B,
-  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat M P0 ->
   M <> mode_tc ->
@@ -2262,7 +2261,7 @@ Lemma a_typing_complete_abs_anno : forall M Θ0 P0 A e κ Θ B,
   (forall α, α `in` ftvar_in_exp (exp_abs_anno A e) -> binds α abind_tvar Θ0) ->
   lc_exp (exp_abs_anno A e) ->
   (forall x M' Θ0' P0' κ' Θ' B',
-     a_wf_aenv Θ0' -> a_wf_aenv Θ' ->
+     {{ ⊢ Θ0' }}a -> {{ ⊢ Θ' }}a ->
      {{ Θ0' ⨟ empty ⊢ₚₛ P0' }}a ->
      a_ty_mode_compat M' P0' ->
      κ' ∷ Θ0' ⊑ Θ' ->
@@ -2402,10 +2401,10 @@ Proof.
   assert (HwfAmid : a_wf_ptyp Θmid A)
     by (apply a_wf_ptyp_of_lc_tvarish;
         [ exact HlcA | intros α Hα; left; apply HrigMid; exact Hα ]).
-  assert (Hwf0x : a_wf_aenv ((x ~ abind_var_typ A) ++ Θmid))
+  assert (Hwf0x : {{ ⊢ ((x ~ abind_var_typ A) ++ Θmid) }}a)
     by (apply a_wf_aenv__var_typ;
         [ clear - Hx; fsetdec | exact HwfAmid | exact Hwfmid ]).
-  assert (HwfΘx : a_wf_aenv ((x ~ abind_var_typ A) ++ Θ))
+  assert (HwfΘx : {{ ⊢ ((x ~ abind_var_typ A) ++ Θ) }}a)
     by (apply a_wf_aenv__var_typ;
         [ clear - Hx; fsetdec | exact HwfA | exact HwfΘ ]).
   assert (HmsAζc : msubst_ptyp ζc A = A)
@@ -2471,8 +2470,7 @@ Proof.
                     | intros α c Hty Hc; apply binds_cons_3; exact Hc ]))
     as [B' [Θout [HrunB HoptB]]].
   (* ---- 5. the body run's identity increase shapes the output ---- *)
-  assert (Hexpx : a_wf_exp ((x ~ abind_var_typ A) ++ Θmid)
-                    (open_exp_wrt_exp e (exp_var_f x))).
+  assert (Hexpx : {{ ((x ~ abind_var_typ A) ++ Θmid) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a).
   { apply a_wf_exp_of_tvarish; [ exact (Hlce x) | ].
     intros α Hα. left. apply Hrigx. exact Hα. }
   assert (HwfQx : {{ ((x ~ abind_var_typ A) ++ Θmid) ⨟ empty ⊢ₚₛ Q }}a)
@@ -2540,7 +2538,7 @@ Proof.
              HwfOut HwfΘx Hζb). }
   assert (Heqvbs : a_inc_equiv Θmid ζc (msubst_compose ζb κb) Θ)
     by (eapply a_inc_equiv_strip_var_typ_head; [ exact Heqvb | exact I ]).
-  assert (Hwffin : a_wf_aenv (Ξ ++ Θ3))
+  assert (Hwffin : {{ ⊢ (Ξ ++ Θ3) }}a)
     by (exact (@a_wf_aenv_strip_tm_mid Ξ x (abind_var_typ A) Θ3
                  (fun h : abind_is_ty (abind_var_typ A) => h) HwfOut)).
   assert (Hlcfin : lc_aenv Θ3)
@@ -2744,7 +2742,7 @@ Qed.
 (* --- the AbsCheck ∀ row ------------------------------------------------ *)
 
 Lemma a_typing_complete_abs_check_step : forall Θ0 P0 e κ Θ B,
-  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat mode_tc P0 ->
   κ ∷ Θ0 ⊑ Θ ->
@@ -2758,7 +2756,7 @@ Lemma a_typing_complete_abs_check_step : forall Θ0 P0 e κ Θ B,
         well-founded measure can hand out an IH at an arbitrary [B']
         beside an unchanged subject. *)
      size_btyp B' < size_btyp (btyp_all_inh B) ->
-     a_wf_aenv Θ0' -> a_wf_aenv Θ' ->
+     {{ ⊢ Θ0' }}a -> {{ ⊢ Θ' }}a ->
      {{ Θ0' ⨟ empty ⊢ₚₛ P0' }}a ->
      a_ty_mode_compat M' P0' ->
      κ' ∷ Θ0' ⊑ Θ' ->
@@ -2849,9 +2847,9 @@ Proof.
                 `union` dom Θ0 `union` dom Θ `union` ftvar_in_aenv Θ
                 `union` dom κ `union` ftvar_in_ptyp A0
                 `union` ftvar_in_btyp B `union` ftvar_in_exp e)) as [α Hα].
-    assert (Hwf0x : a_wf_aenv ((α ~ abind_tvar) ++ Θ0))
+    assert (Hwf0x : {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a)
       by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf0 ]).
-    assert (HwfΘx : a_wf_aenv ((α ~ abind_tvar) ++ Θ))
+    assert (HwfΘx : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
       by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact HwfΘ ]).
     assert (HwfP0x : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
                        (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))) }}a).
@@ -2890,7 +2888,7 @@ Proof.
                 (Hbody α ltac:(clear - Hα; solve_notin_auto)) Hrefx)
       as [A1 [Θrun [HrunB HoptB]]].
     (* ---- 5. the run's identity increase shapes the output ---- *)
-    assert (Hexpx : a_wf_exp ((α ~ abind_tvar) ++ Θ0) (exp_abs e)).
+    assert (Hexpx : {{ ((α ~ abind_tvar) ++ Θ0) ⊢ᵉ (exp_abs e) }}a).
     { apply a_wf_exp_of_tvarish; [ exact Hlc | ].
       intros β Hβ. left. apply Hrigx. exact Hβ. }
     destruct (a_typing_sound HrunB Hwf0x HwfP0x
@@ -3010,7 +3008,7 @@ Qed.
 (* --- the AbsAnnoCheck ∀ row ------------------------------------------- *)
 
 Lemma a_typing_complete_abs_anno_check_step : forall Θ0 P0 A e κ Θ B,
-  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat mode_tc P0 ->
   κ ∷ Θ0 ⊑ Θ ->
@@ -3024,7 +3022,7 @@ Lemma a_typing_complete_abs_anno_check_step : forall Θ0 P0 A e κ Θ B,
         well-founded measure can hand out an IH at an arbitrary [B']
         beside an unchanged subject. *)
      size_btyp B' < size_btyp (btyp_all_inh B) ->
-     a_wf_aenv Θ0' -> a_wf_aenv Θ' ->
+     {{ ⊢ Θ0' }}a -> {{ ⊢ Θ' }}a ->
      {{ Θ0' ⨟ empty ⊢ₚₛ P0' }}a ->
      a_ty_mode_compat M' P0' ->
      κ' ∷ Θ0' ⊑ Θ' ->
@@ -3108,9 +3106,9 @@ Proof.
                 `union` dom κ `union` ftvar_in_ptyp A0
                 `union` ftvar_in_btyp B
                 `union` ftvar_in_ptyp A `union` ftvar_in_exp e)) as [α Hα].
-    assert (Hwf0x : a_wf_aenv ((α ~ abind_tvar) ++ Θ0))
+    assert (Hwf0x : {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a)
       by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf0 ]).
-    assert (HwfΘx : a_wf_aenv ((α ~ abind_tvar) ++ Θ))
+    assert (HwfΘx : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
       by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact HwfΘ ]).
     assert (HwfP0x : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
                        (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))) }}a).
@@ -3146,7 +3144,7 @@ Proof.
                 Hlc
                 (Hbody α ltac:(clear - Hα; solve_notin_auto)) Hrefx)
       as [A1 [Θrun [HrunB HoptB]]].
-    assert (Hexpx : a_wf_exp ((α ~ abind_tvar) ++ Θ0) (exp_abs_anno A e)).
+    assert (Hexpx : {{ ((α ~ abind_tvar) ++ Θ0) ⊢ᵉ (exp_abs_anno A e) }}a).
     { apply a_wf_exp_of_tvarish; [ exact Hlc | ].
       intros β Hβ. left. apply Hrigx. exact Hβ. }
     destruct (a_typing_sound HrunB Hwf0x HwfP0x
@@ -3275,7 +3273,7 @@ Lemma msubst_compose_inc_id_r : forall Θ0 κ Θ κ1 Θ',
   κ ∷ Θ0 ⊑ Θ ->
   κ1 ∷ Θ0 ⊑ Θ' ->
   is_id_msubst κ1 ->
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   msubst_compose κ κ1 = κ.
 Proof.
   intros Θ0 κ Θ κ1 Θ' Hinc; revert κ1 Θ'.
@@ -3352,7 +3350,7 @@ Qed.
 Lemma mono_refine_arrow_inv : forall Θ Δ Qs Qt,
   {{ Θ ⨟ Δ ⊢ᵣ Qs ⊳ Qt }}ad ->
   forall τ0 R1 R2,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   a_wf_ptyp Θ τ0 ->
   mono_ptyp τ0 ->
   Qs = ptyp_to_bskl_syn τ0 ->
@@ -3428,14 +3426,14 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_split_complete_tc : forall Θ0 A0 κ Θ A (B1 : btyp),
-  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ (ptyp_to_pskl A0) }}a ->
   κ ∷ Θ0 ⊑ Θ ->
   {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ (ptyp_to_pskl A0)))
     ⊳ (btyp_to_bskl (btyp_arrow (ptyp_to_btyp_inh A) B1)) }}ad ->
   exists Ad Bc Θ1 κs ζ,
     ({{ Θ0 ⊲ (ptyp_to_pskl A0) ▹ (ptyp_to_pskl Ad) ⇢ (ptyp_to_pskl Bc) ⊣ Θ1 }}a) /\
-    a_wf_aenv Θ1 /\
+    {{ ⊢ Θ1 }}a /\
     a_wf_ptyp Θ1 Ad /\ a_wf_ptyp Θ1 Bc /\
     is_id_msubst κs /\ κs ∷ Θ0 ⊑ Θ1 /\
     ζ ∷ Θ1 ⊑ Θ /\
@@ -3505,8 +3503,8 @@ Proof.
       pose proof (dom_subset_ftvar_in_aenv Θ0) as Hds.
       assert (Hfrβ1 : β1 `notin` dom Θ0) by (clear - Hβ1; fsetdec).
       assert (Hfrα1 : α1 `notin` dom Θ0) by (clear - Hα1; fsetdec).
-      assert (Hwf0' : a_wf_aenv ((α1 ~ abind_flex_mono)
-                                  ++ (β1 ~ abind_flex_mono) ++ Θ0)).
+      assert (Hwf0' : {{ ⊢ ((α1 ~ abind_flex_mono)
+                                  ++ (β1 ~ abind_flex_mono) ++ Θ0) }}a).
       { apply a_wf_aenv__flex;
           [ simpl_env; repeat rewrite dom_app; simpl;
             clear - Hfrα1 Hne; fsetdec | ].
@@ -3698,14 +3696,14 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_typing_complete_abs_check_base : forall Θ0 P0 e κ Θ Ba (B1 : btyp),
-  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat mode_tc P0 ->
   κ ∷ Θ0 ⊑ Θ ->
   (forall α, α `in` ftvar_in_exp (exp_abs e) -> binds α abind_tvar Θ0) ->
   lc_exp (exp_abs e) ->
   (forall x M' Θ0' P0' κ' Θ' B',
-     a_wf_aenv Θ0' -> a_wf_aenv Θ' ->
+     {{ ⊢ Θ0' }}a -> {{ ⊢ Θ' }}a ->
      {{ Θ0' ⨟ empty ⊢ₚₛ P0' }}a ->
      a_ty_mode_compat M' P0' ->
      κ' ∷ Θ0' ⊑ Θ' ->
@@ -3739,7 +3737,7 @@ Proof.
   simpl in Hrig.
   assert (Hlce : forall x, lc_exp (open_exp_wrt_exp e (exp_var_f x)))
     by (intros x; inversion Hlc; auto).
-  assert (Hexp0 : a_wf_exp Θ0 (exp_abs e))
+  assert (Hexp0 : {{ Θ0 ⊢ᵉ (exp_abs e) }}a)
     by (apply a_wf_exp_of_tvarish;
         [ exact Hlc | intros α Hα; left; apply Hrig; exact Hα ]).
   (* ---- 1. THE SPLIT (step A) ---- *)
@@ -3755,10 +3753,10 @@ Proof.
                           `union` fvar_in_exp e `union` ftvar_in_exp e
                           `union` ftvar_in_ptyp A `union` ftvar_in_ptyp Ad
                           `union` ftvar_in_ptyp Bc)) as [x Hx].
-  assert (Hwf0x : a_wf_aenv ((x ~ abind_var_typ Ad) ++ Θ1))
+  assert (Hwf0x : {{ ⊢ ((x ~ abind_var_typ Ad) ++ Θ1) }}a)
     by (apply a_wf_aenv__var_typ;
         [ clear - Hx; fsetdec | exact HwfAd | exact Hwf1 ]).
-  assert (HwfΘx : a_wf_aenv ((x ~ abind_var_typ A) ++ Θ))
+  assert (HwfΘx : {{ ⊢ ((x ~ abind_var_typ A) ++ Θ) }}a)
     by (apply a_wf_aenv__var_typ;
         [ clear - Hx; fsetdec | exact HwfA | exact HwfΘ ]).
   assert (Hincx : ζ ∷ ((x ~ abind_var_typ Ad) ++ Θ1)
@@ -3789,8 +3787,7 @@ Proof.
                     | intros α c Hty Hc; apply binds_cons_3; exact Hc ]))
     as [B1' [Θout [HrunB HoptB]]].
   (* ---- 4. the body run's identity increase shapes the output ---- *)
-  assert (Hexpx : a_wf_exp ((x ~ abind_var_typ Ad) ++ Θ1)
-                    (open_exp_wrt_exp e (exp_var_f x))).
+  assert (Hexpx : {{ ((x ~ abind_var_typ Ad) ++ Θ1) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a).
   { apply a_wf_exp_of_tvarish; [ exact Hlcbody | ].
     intros α Hα. left. apply Hrigx. exact Hα. }
   destruct (a_typing_sound HrunB Hwf0x HwfBcx
@@ -3823,7 +3820,7 @@ Proof.
         unfold disjoint in *; simpl_env in *; fsetdec).
   assert (Hdom12 : dom Θ1 [<=] dom Θ2)
     by (eapply a_inc_id_dom_sub_scope; [ exact Hincb' | exact Hidb ]).
-  assert (Hwf2 : a_wf_aenv Θ2)
+  assert (Hwf2 : {{ ⊢ Θ2 }}a)
     by (eapply a_wf_aenv_app_r with (Θp := Ξ ++ (x ~ abind_var_typ Ad));
         simpl_env; exact HwfOut).
   (* ---- 6. the run ---- *)
@@ -3931,7 +3928,7 @@ Qed.
     [{{ Θ ⊢ A ≡ᵗ A' }}a] premise on sd-AbsAnnoCheck is for. *)
 Lemma a_typing_complete_abs_anno_check_base :
   forall Θ0 P0 Aan e κ Θ Ba (B1 : btyp),
-  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat mode_tc P0 ->
   κ ∷ Θ0 ⊑ Θ ->
@@ -3939,7 +3936,7 @@ Lemma a_typing_complete_abs_anno_check_base :
      binds α abind_tvar Θ0) ->
   lc_exp (exp_abs_anno Aan e) ->
   (forall x M' Θ0' P0' κ' Θ' B',
-     a_wf_aenv Θ0' -> a_wf_aenv Θ' ->
+     {{ ⊢ Θ0' }}a -> {{ ⊢ Θ' }}a ->
      {{ Θ0' ⨟ empty ⊢ₚₛ P0' }}a ->
      a_ty_mode_compat M' P0' ->
      κ' ∷ Θ0' ⊑ Θ' ->
@@ -4055,10 +4052,10 @@ Proof.
   assert (HwfAan2 : a_wf_ptyp Θ2 Aan)
     by (apply a_wf_ptyp_of_lc_tvarish;
         [ exact HlcA | intros α Hα; left; apply HrigA2; exact Hα ]).
-  assert (Hwf0x : a_wf_aenv ((x ~ abind_var_typ Aan) ++ Θ2))
+  assert (Hwf0x : {{ ⊢ ((x ~ abind_var_typ Aan) ++ Θ2) }}a)
     by (apply a_wf_aenv__var_typ;
         [ clear - Hx; fsetdec | exact HwfAan2 | exact Hwf2 ]).
-  assert (HwfΘx : a_wf_aenv ((x ~ abind_var_typ Aan) ++ Θ))
+  assert (HwfΘx : {{ ⊢ ((x ~ abind_var_typ Aan) ++ Θ) }}a)
     by (apply a_wf_aenv__var_typ;
         [ clear - Hx; fsetdec | exact HwfAanΘ | exact HwfΘ ]).
   assert (HmsAζc : msubst_ptyp ζc Aan = Aan)
@@ -4126,8 +4123,7 @@ Proof.
                     | intros α c Hty Hc; apply binds_cons_3; exact Hc ]))
     as [B1' [Θout [HrunB HoptB]]].
   (* ---- 5. the body run's identity increase shapes the output ---- *)
-  assert (Hexpx : a_wf_exp ((x ~ abind_var_typ Aan) ++ Θ2)
-                    (open_exp_wrt_exp e (exp_var_f x))).
+  assert (Hexpx : {{ ((x ~ abind_var_typ Aan) ++ Θ2) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a).
   { apply a_wf_exp_of_tvarish; [ exact (Hlce x) | ].
     intros α Hα. left. apply Hrigx. exact Hα. }
   destruct (a_typing_sound HrunB Hwf0x HwfBcx
@@ -4159,7 +4155,7 @@ Proof.
         unfold disjoint in *; simpl_env in *; fsetdec).
   assert (Hdom23 : dom Θ2 [<=] dom Θ3)
     by (eapply a_inc_id_dom_sub_scope; [ exact Hincb' | exact Hidb ]).
-  assert (Hwf3 : a_wf_aenv Θ3)
+  assert (Hwf3 : {{ ⊢ Θ3 }}a)
     by (eapply a_wf_aenv_app_r with (Θp := Ξ ++ (x ~ abind_var_typ Aan));
         simpl_env; exact HwfOut).
   (* ---- 7. the run ---- *)
@@ -4286,7 +4282,7 @@ Qed.
 
 Lemma a_typing_complete_gen : forall n m e M Θ0 P0 κ Θ B,
   size_exp e < n -> size_btyp B < m ->
-  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat M P0 ->
   κ ∷ Θ0 ⊑ Θ ->
@@ -4402,7 +4398,7 @@ Qed.
     the term side condition — an annotation is SOURCE syntax, so its type
     variables are RIGID. *)
 Theorem a_typing_complete : forall e M Θ0 P0 κ Θ B,
-  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat M P0 ->
   κ ∷ Θ0 ⊑ Θ ->

@@ -74,7 +74,7 @@ Qed.
     increment [κ] with it on the right is the identity: [κ ∘ κ1 = κ] as
     lists.  Both increments track [Θ0]'s flexibles in the same order. *)
 Lemma msubst_compose_is_id_r : forall Θ0 κ1 Θ1 κ Θ,
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   is_id_msubst κ1 ->
   κ1 ∷ Θ0 ⊑ Θ1 ->
   κ ∷ Θ0 ⊑ Θ ->
@@ -149,7 +149,7 @@ Qed.
     unchanged ([Θ1 = Θ0]) the competing solution's own substitution [κ]
     serves as the factoring [ζ]. *)
 Lemma opt_axiom_factor : forall Θ0 κ1 κ Θ,
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   is_id_msubst κ1 ->
   κ1 ∷ Θ0 ⊑ Θ0 ->
   κ ∷ Θ0 ⊑ Θ ->
@@ -166,7 +166,7 @@ Qed.
     why the congruence below can stay first-order.) *)
 Lemma a_inc_equiv_msubst_mono : forall Θmid κ1 κ2 Θ τ,
   a_inc_equiv Θmid κ1 κ2 Θ ->
-  a_wf_aenv Θmid ->
+  {{ ⊢ Θmid }}a ->
   a_wf_ptyp Θmid τ ->
   mono_ptyp τ ->
   {{ Θ ⊢ (msubst_ptyp κ1 τ) ≡ᵗ (msubst_ptyp κ2 τ) }}a.
@@ -281,7 +281,7 @@ Qed.
 Lemma a_inc_equiv_msubst_ptyp : forall A Θ0 κ1 κ2 Θ,
   a_wf_ptyp Θ0 A ->
   a_inc_equiv Θ0 κ1 κ2 Θ ->
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   msubst_lc κ1 -> msubst_lc κ2 ->
   {{ Θ ⊢ (msubst_ptyp κ1 A) ≡ᵗ (msubst_ptyp κ2 A) }}a.
 Proof.
@@ -307,7 +307,7 @@ Qed.
 Lemma a_inc_equiv_msubst_pskl : forall P Θ0 κ1 κ2 Θ,
   a_scope_pskl Θ0 P ->
   a_inc_equiv Θ0 κ1 κ2 Θ ->
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   msubst_lc κ1 -> msubst_lc κ2 ->
   {{ Θ ⊢ (msubst_pskl κ1 P) ≡ˢ (msubst_pskl κ2 P) }}a.
 Proof.
@@ -336,7 +336,7 @@ Qed.
     [msubst] on a well-formed type/skeleton (every free variable is either
     a source flexible in [dom κ1] or a rigid untouched by [ζ]). *)
 Lemma msubst_compose_id_ptyp : forall Θ0 κ1 Θ1 ζ Θ2 A,
-  a_wf_aenv Θ0 -> a_wf_aenv Θ1 ->
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θ1 }}a ->
   is_id_msubst κ1 ->
   κ1 ∷ Θ0 ⊑ Θ1 ->
   ζ ∷ Θ1 ⊑ Θ2 ->
@@ -361,7 +361,7 @@ Proof.
 Qed.
 
 Lemma msubst_compose_id_pskl : forall Θ0 κ1 Θ1 ζ Θ2 P,
-  a_wf_aenv Θ0 -> a_wf_aenv Θ1 ->
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θ1 }}a ->
   is_id_msubst κ1 ->
   κ1 ∷ Θ0 ⊑ Θ1 ->
   ζ ∷ Θ1 ⊑ Θ2 ->
@@ -557,7 +557,7 @@ Qed.
 
 (* Every image of the downarrow metasubst is a monotype. *)
 Lemma aenv_msubst_image_mono : forall Θ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall α0, mono_ptyp (msubst_lookup (aenv_msubst Θ) α0).
 Proof.
   intros Θ Hwf; induction Hwf; intros α0; simpl.
@@ -589,7 +589,7 @@ Ltac wk := eapply a_wf_ptyp_weaken;
 
 (* Every downarrow image (of a type var of Θ) is wf in Θ. *)
 Lemma aenv_msubst_image_wf : forall Θ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall β, a_binds_tvar β Θ ->
   a_wf_ptyp Θ (msubst_lookup (aenv_msubst Θ) β).
 Proof.
@@ -632,7 +632,7 @@ Qed.
 
 (* TOP-LEVEL downarrow preservation on a monotype. *)
 Lemma mono_downarrow : forall Θ τ,
-  a_wf_aenv Θ -> a_wf_ptyp Θ τ -> mono_ptyp τ ->
+  {{ ⊢ Θ }}a -> a_wf_ptyp Θ τ -> mono_ptyp τ ->
   mono_ptyp (⇓ᵗ[ Θ ] τ).
 Proof.
   intros Θ τ Hwf Hwp Hm.
@@ -641,7 +641,7 @@ Proof.
 Qed.
 
 Lemma a_wf_ptyp_downarrow_mono : forall Θ τ,
-  a_wf_aenv Θ -> a_wf_ptyp Θ τ -> mono_ptyp τ ->
+  {{ ⊢ Θ }}a -> a_wf_ptyp Θ τ -> mono_ptyp τ ->
   a_wf_ptyp Θ (⇓ᵗ[ Θ ] τ).
 Proof.
   intros Θ τ Hwf Hwp Hm.
@@ -666,7 +666,7 @@ Qed.
 
 (* Every downarrow image of a var in a def-closed set D stays in D. *)
 Lemma aenv_msubst_image_ftv_closed : forall Θ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall D,
   (forall α τ, binds α (abind_flex_mono_def τ) Θ -> α `in` D -> ftvar_in_ptyp τ [<=] D) ->
   forall α', α' `in` D ->
@@ -708,7 +708,7 @@ Proof.
 Qed.
 
 Lemma downarrow_ftv_closed : forall Θ A D,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   ftvar_in_ptyp A [<=] D ->
   (forall α τ, binds α (abind_flex_mono_def τ) Θ -> α `in` D -> ftvar_in_ptyp τ [<=] D) ->
   ftvar_in_ptyp (⇓ᵗ[ Θ ] A) [<=] D.
@@ -847,7 +847,7 @@ Qed.
 Lemma a_inc_equiv_trans : forall Θ0 κa κb Θ,
   a_inc_equiv Θ0 κa κb Θ ->
   forall κc,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   a_inc_equiv Θ0 κb κc Θ ->
   a_inc_equiv Θ0 κa κc Θ.
 Proof.
@@ -911,9 +911,9 @@ Qed.
     decompositions at the unique term-variable via [aenv_mid_split]. *)
 Lemma a_inc_equiv_compose : forall Θ0 κ Θmid,
   κ ∷ Θ0 ⊑ Θmid ->
-  a_wf_aenv Θ0 -> a_wf_aenv Θmid ->
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θmid }}a ->
   forall κ1 κ2 Θ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   a_inc_equiv Θmid κ1 κ2 Θ ->
   κ1 ∷ Θmid ⊑ Θ -> κ2 ∷ Θmid ⊑ Θ ->
   a_inc_equiv Θ0 (msubst_compose κ1 κ) (msubst_compose κ2 κ) Θ.
@@ -943,7 +943,7 @@ Proof.
           | eapply a_wf_ptyp_ftv_tvarish; eauto ].
   - (* var_typ x *)
     inversion Hwf0 as [ | | | | xh Ah Θh Hnd Hwp Hwa | ]; subst.
-    assert (Hwf1t : a_wf_aenv Θ') by
+    assert (Hwf1t : {{ ⊢ Θ' }}a) by
       (apply a_wf_aenv_strip_prefix_local in Hwf1;
        inversion Hwf1; subst; assumption).
     assert (Hdisj : forall α0, α0 `in` dom Ξ -> α0 `notin` dom Θ').
@@ -975,7 +975,7 @@ Proof.
       by (rewrite Hp2; eapply msubst_compose_peel;
           [ exact Hκ | intros α0 Hα0; apply Hdisj; rewrite <- Hdp2; exact Hα0 ]).
     rewrite Hc1, Hc2, Heqe.
-    assert (HwfTe : a_wf_aenv Te).
+    assert (HwfTe : {{ ⊢ Te }}a).
     { rewrite Heqe in HwfT. apply a_wf_aenv_strip_prefix_local in HwfT.
       inversion HwfT; subst; assumption. }
     apply a_inc_equiv__var; [ | | exact Hse ].
@@ -992,7 +992,7 @@ Proof.
     eapply a_tyequiv_msubst; [ exact H | exact Hwf1t | exact Hib1' ].
   - (* var_skl x *)
     inversion Hwf0 as [ | | | xh Ph Θh Hnd Hwp Hwa | | ]; subst.
-    assert (Hwf1t : a_wf_aenv Θ') by
+    assert (Hwf1t : {{ ⊢ Θ' }}a) by
       (apply a_wf_aenv_strip_prefix_local in Hwf1;
        inversion Hwf1; subst; assumption).
     assert (Hdisj : forall α0, α0 `in` dom Ξ -> α0 `notin` dom Θ').
@@ -1024,7 +1024,7 @@ Proof.
       by (rewrite Hp2; eapply msubst_compose_peel;
           [ exact Hκ | intros α0 Hα0; apply Hdisj; rewrite <- Hdp2; exact Hα0 ]).
     rewrite Hc1, Hc2, Heqe.
-    assert (HwfTe : a_wf_aenv Te).
+    assert (HwfTe : {{ ⊢ Te }}a).
     { rewrite Heqe in HwfT. apply a_wf_aenv_strip_prefix_local in HwfT.
       inversion HwfT; subst; assumption. }
     apply a_inc_equiv__var_skl; [ | | exact Hse ].
@@ -1040,7 +1040,7 @@ Proof.
     eapply a_pskl_tyequiv_msubst; [ exact H | exact Hwf1t | exact Hib1' ].
   - (* tvar α *)
     inversion Hwf0 as [ | | | | | αh Θh Hnd Hwa ]; subst.
-    assert (Hwf1t : a_wf_aenv Θ') by
+    assert (Hwf1t : {{ ⊢ Θ' }}a) by
       (apply a_wf_aenv_strip_prefix_local in Hwf1;
        inversion Hwf1; subst; assumption).
     edestruct a_inc_equiv_inc_peel_suffix
@@ -1068,7 +1068,7 @@ Proof.
           [ exact Hκ | intros α0 Hα0; apply Hdisj; rewrite <- Hdp2; exact Hα0 ]).
     rewrite Hc1, Hc2, Heqe.
     apply a_inc_equiv__tvar; [ | exact Hse ].
-    assert (HwfTe : a_wf_aenv Te).
+    assert (HwfTe : {{ ⊢ Te }}a).
     { rewrite Heqe in HwfT. apply a_wf_aenv_strip_prefix_local in HwfT.
       inversion HwfT; subst; assumption. }
     apply IHHκ; auto.
@@ -1100,7 +1100,7 @@ Qed.
     a UnivGhost split) compose into the whole node's factoring.  [κ1a]/[κ1b] are
     the two sub-nodes' identity solution-witnesses. *)
 Lemma a_inc_equiv_glue : forall Θ0 Θmid Θfin Θ κ κ1a κ1b ζ1 ζ2,
-  a_wf_aenv Θ0 -> a_wf_aenv Θmid -> a_wf_aenv Θfin -> a_wf_aenv Θ ->
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θmid }}a -> {{ ⊢ Θfin }}a -> {{ ⊢ Θ }}a ->
   is_id_msubst κ1a -> is_id_msubst κ1b ->
   (forall α, α `in` dom κ1a -> α `in` dom κ1b) ->
   κ1a ∷ Θ0 ⊑ Θmid ->
@@ -1165,7 +1165,7 @@ Qed.
 
 (** Every wf MONOtype is [≡ᵗ]-equivalent to its own normal form. *)
 Lemma a_tyequiv_to_downarrow_mono : forall Θ,
-  a_wf_aenv Θ ->
+  {{ ⊢ Θ }}a ->
   forall τ, a_wf_ptyp Θ τ -> mono_ptyp τ -> {{ Θ ⊢ τ ≡ᵗ ⇓ᵗ[Θ] τ }}a.
 Proof.
   intros Θ Hwf; induction Hwf as
@@ -1243,7 +1243,7 @@ Qed.
    ≡ᵗ its downarrow.  Needed for a_inc_self_downarrow's var/flex_def middle
    re-proof, where the middle type may be a polytype. *)
 Lemma a_tyequiv_to_downarrow : forall Θ A,
-  a_wf_ptyp Θ A -> a_wf_aenv Θ -> {{ Θ ⊢ A ≡ᵗ (⇓ᵗ[ Θ ] A) }}a.
+  a_wf_ptyp Θ A -> {{ ⊢ Θ }}a -> {{ Θ ⊢ A ≡ᵗ (⇓ᵗ[ Θ ] A) }}a.
 Proof.
   intros Θ A Hwp; induction Hwp; intros Hwf.
   - simpl. apply a_tyequiv__refl. constructor.
@@ -1252,7 +1252,7 @@ Proof.
   - simpl. apply a_tyequiv__arrow; [ apply IHHwp1 | apply IHHwp2 ]; exact Hwf.
   - simpl. apply a_tyequiv__all with (L := L `union` dom Θ). intros α Hα.
     assert (HxΘ : α `notin` dom Θ) by (clear - Hα; fsetdec).
-    assert (Hwfx : a_wf_aenv ((α ~ abind_tvar) ++ Θ))
+    assert (Hwfx : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
       by (apply a_wf_aenv__tvar; [ exact HxΘ | exact Hwf ]).
     specialize (H0 α ltac:(clear - Hα; solve_notin_auto) Hwfx).
     assert (Hcomm : ⇓ᵗ[ (α ~ abind_tvar) ++ Θ ] (open_ptyp_wrt_ptyp A (ptyp_var_f α))
@@ -1269,7 +1269,7 @@ Qed.
 (* The middle-≡ adjustment for a_inc_self_downarrow: msubst κ A ≡ its ⇓-composed
    form, when msubst κ A is wf in the (suffix) sub-target Θt of Θ. *)
 Lemma msubst_downarrow_tyequiv : forall Θ Θpre Θt A,
-  Θ = Θpre ++ Θt -> uniq Θ -> a_wf_aenv Θt ->
+  Θ = Θpre ++ Θt -> uniq Θ -> {{ ⊢ Θt }}a ->
   a_wf_ptyp Θt A ->
   {{ Θt ⊢ A ≡ᵗ (⇓ᵗ[ Θ ] A) }}a.
 Proof.
@@ -1279,7 +1279,7 @@ Proof.
 Qed.
 
 Lemma a_wf_aenv_app_r : forall Θp Θs,
-  a_wf_aenv (Θp ++ Θs) -> a_wf_aenv Θs.
+  {{ ⊢ (Θp ++ Θs) }}a -> {{ ⊢ Θs }}a.
 Proof.
   induction Θp as [ | [a b] Θp' IH ]; intros Θs Hwf; simpl in Hwf.
   - exact Hwf.
@@ -1287,7 +1287,7 @@ Proof.
 Qed.
 
 Lemma msubst_compose_downarrow_tyequiv : forall Θ Θpre Θt κ A,
-  Θ = Θpre ++ Θt -> uniq Θ -> a_wf_aenv Θ -> a_wf_aenv Θt ->
+  Θ = Θpre ++ Θt -> uniq Θ -> {{ ⊢ Θ }}a -> {{ ⊢ Θt }}a ->
   msubst_lc κ ->
   (forall α, α `in` dom κ -> a_wf_ptyp Θt (msubst_lookup κ α)) ->
   lc_ptyp A ->
@@ -1329,7 +1329,7 @@ Qed.
 
 (* pskl mirror of msubst_compose_downarrow_tyequiv (var_skl middle adjustment). *)
 Lemma msubst_pskl_compose_downarrow_tyequiv : forall Θ Θpre Θt κ P,
-  Θ = Θpre ++ Θt -> uniq Θ -> a_wf_aenv Θ -> a_wf_aenv Θt ->
+  Θ = Θpre ++ Θt -> uniq Θ -> {{ ⊢ Θ }}a -> {{ ⊢ Θt }}a ->
   msubst_lc κ ->
   (forall α, α `in` dom κ -> a_wf_ptyp Θt (msubst_lookup κ α)) ->
   lc_pskl P ->
@@ -1382,7 +1382,7 @@ Qed.
 Lemma a_inc_self_downarrow_bundle : forall Θ0 κ Θt,
   κ ∷ Θ0 ⊑ Θt ->
   forall Θpre,
-  a_wf_aenv (Θpre ++ Θt) -> uniq (Θpre ++ Θt) -> a_wf_aenv Θ0 ->
+  {{ ⊢ (Θpre ++ Θt) }}a -> uniq (Θpre ++ Θt) -> {{ ⊢ Θ0 }}a ->
   msubst_compose (aenv_msubst (Θpre ++ Θt)) κ ∷ Θ0 ⊑ Θt
   /\ a_inc_equiv Θ0 κ (msubst_compose (aenv_msubst (Θpre ++ Θt)) κ) Θt.
 Proof.
@@ -1392,7 +1392,7 @@ Proof.
   - (* flex α τ : target Θ' unchanged, Θpre unchanged *)
     simpl.
     inversion Hwf0 as [ | α0 Θ0x Hnd0 Hwf0' | | | | ]; subst.
-    assert (HwfΘ' : a_wf_aenv Θ') by (eapply a_wf_aenv_app_r; exact HwfW).
+    assert (HwfΘ' : {{ ⊢ Θ' }}a) by (eapply a_wf_aenv_app_r; exact HwfW).
     assert (Hdd : ⇓ᵗ[ Θpre ++ Θ' ] τ = ⇓ᵗ[ Θ' ] τ)
       by (apply downarrow_app_agree_ptyp; [ exact Huq | apply a_wf_ptyp_ftv_dom; exact H ]).
     destruct (IHHinc Θpre HwfW Huq Hwf0') as [IHa IHe].
@@ -1407,7 +1407,7 @@ Proof.
   - (* flex_def α ≔ τ : image τ', premise τ'≡msubst κ τ *)
     simpl.
     inversion Hwf0 as [ | | α0 τ0 Θ0x Hnd0 Hwpτ0 Hmτ0 Hwf0' | | | ]; subst.
-    assert (HwfΘ' : a_wf_aenv Θ') by (eapply a_wf_aenv_app_r; exact HwfW).
+    assert (HwfΘ' : {{ ⊢ Θ' }}a) by (eapply a_wf_aenv_app_r; exact HwfW).
     assert (Hdd : ⇓ᵗ[ Θpre ++ Θ' ] τ' = ⇓ᵗ[ Θ' ] τ')
       by (apply downarrow_app_agree_ptyp; [ exact Huq | apply a_wf_ptyp_ftv_dom; exact H ]).
     assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hinc).
@@ -1435,11 +1435,11 @@ Proof.
       * exact H1.
   - (* var A : κ unchanged, target Ξ++(x~var A')++Θ' *)
     inversion Hwf0 as [ | | | | x0 A0 Θ0x Hnd0 HwpA Hwf0' | ]; subst.
-    assert (HwfΘ' : a_wf_aenv Θ').
+    assert (HwfΘ' : {{ ⊢ Θ' }}a).
     { eapply a_wf_aenv_app_r with (Θp := Θpre ++ Ξ ++ (x ~ abind_var_typ A')).
       simpl_env. simpl_env in HwfW. exact HwfW. }
     assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hinc).
-    assert (HW' : a_wf_aenv ((Θpre ++ Ξ ++ x ~ abind_var_typ A') ++ Θ'))
+    assert (HW' : {{ ⊢ ((Θpre ++ Ξ ++ x ~ abind_var_typ A') ++ Θ') }}a)
       by (simpl_env; simpl_env in HwfW; exact HwfW).
     assert (HU' : uniq ((Θpre ++ Ξ ++ x ~ abind_var_typ A') ++ Θ'))
       by (simpl_env; simpl_env in Huq; exact Huq).
@@ -1465,11 +1465,11 @@ Proof.
       exact IHe.
   - (* var_skl P : κ unchanged, target Ξ++(x~var_skl P')++Θ' *)
     inversion Hwf0 as [ | | | x0 P0 Θ0x Hnd0 HwpP Hwf0' | | ]; subst.
-    assert (HwfΘ' : a_wf_aenv Θ').
+    assert (HwfΘ' : {{ ⊢ Θ' }}a).
     { eapply a_wf_aenv_app_r with (Θp := Θpre ++ Ξ ++ (x ~ abind_var_skl P')).
       simpl_env. simpl_env in HwfW. exact HwfW. }
     assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hinc).
-    assert (HW' : a_wf_aenv ((Θpre ++ Ξ ++ x ~ abind_var_skl P') ++ Θ'))
+    assert (HW' : {{ ⊢ ((Θpre ++ Ξ ++ x ~ abind_var_skl P') ++ Θ') }}a)
       by (simpl_env; simpl_env in HwfW; exact HwfW).
     assert (HU' : uniq ((Θpre ++ Ξ ++ x ~ abind_var_skl P') ++ Θ'))
       by (simpl_env; simpl_env in Huq; exact Huq).
@@ -1495,7 +1495,7 @@ Proof.
       exact IHe.
   - (* tvar α : target Ξ++(α~tvar)++Θ' *)
     inversion Hwf0 as [ | | | | | α0 Θ0x Hnd0 Hwf0' ]; subst.
-    assert (HW' : a_wf_aenv ((Θpre ++ Ξ ++ α ~ abind_tvar) ++ Θ'))
+    assert (HW' : {{ ⊢ ((Θpre ++ Ξ ++ α ~ abind_tvar) ++ Θ') }}a)
       by (simpl_env; simpl_env in HwfW; exact HwfW).
     assert (HU' : uniq ((Θpre ++ Ξ ++ α ~ abind_tvar) ++ Θ'))
       by (simpl_env; simpl_env in Huq; exact Huq).
@@ -1514,7 +1514,7 @@ Qed.
 Lemma a_inc_self_downarrow : forall Θ0 κ Θt,
   κ ∷ Θ0 ⊑ Θt ->
   forall Θpre,
-  a_wf_aenv (Θpre ++ Θt) -> uniq (Θpre ++ Θt) -> a_wf_aenv Θ0 ->
+  {{ ⊢ (Θpre ++ Θt) }}a -> uniq (Θpre ++ Θt) -> {{ ⊢ Θ0 }}a ->
   msubst_compose (aenv_msubst (Θpre ++ Θt)) κ ∷ Θ0 ⊑ Θt.
 Proof.
   intros Θ0 κ Θt Hinc Θpre HwfW Huq Hwf0.
@@ -1526,7 +1526,7 @@ Qed.
 Lemma a_inc_equiv_self_downarrow : forall Θ0 κ Θt,
   κ ∷ Θ0 ⊑ Θt ->
   forall Θpre,
-  a_wf_aenv (Θpre ++ Θt) -> uniq (Θpre ++ Θt) -> a_wf_aenv Θ0 ->
+  {{ ⊢ (Θpre ++ Θt) }}a -> uniq (Θpre ++ Θt) -> {{ ⊢ Θ0 }}a ->
   a_inc_equiv Θ0 κ (msubst_compose (aenv_msubst (Θpre ++ Θt)) κ) Θt.
 Proof.
   intros Θ0 κ Θt Hinc Θpre HwfW Huq Hwf0.
@@ -1631,7 +1631,7 @@ Qed.
     prefix [Ξ] off both sides of a MONOtype equivalence whose endpoints are wf
     in the tail [Θt]. *)
 Lemma a_tyequiv_strengthen_mono_mid : forall Ξ c b Θt A A',
-  a_wf_aenv (Ξ ++ (c ~ b) ++ Θt) ->
+  {{ ⊢ (Ξ ++ (c ~ b) ++ Θt) }}a ->
   a_wf_ptyp Θt A -> mono_ptyp A ->
   a_wf_ptyp Θt A' -> mono_ptyp A' ->
   {{ (Ξ ++ (c ~ b) ++ Θt) ⊢ A ≡ᵗ A' }}a ->
@@ -1639,7 +1639,7 @@ Lemma a_tyequiv_strengthen_mono_mid : forall Ξ c b Θt A A',
 Proof.
   intros Ξ c b Θt A A' Hwf HwfA HmA HwfB HmB Heq.
   rewrite <- app_assoc in Hwf, Heq.
-  assert (Hwft : a_wf_aenv Θt) by (apply a_wf_aenv_strip_prefix_local in Hwf; exact Hwf).
+  assert (Hwft : {{ ⊢ Θt }}a) by (apply a_wf_aenv_strip_prefix_local in Hwf; exact Hwf).
   assert (Huniq : uniq ((Ξ ++ (c ~ b)) ++ Θt)) by (apply a_wf_aenv_uniq; exact Hwf).
   pose proof (a_tyequiv_downarrow Hwf Heq) as Hd.
   assert (HdA : ⇓ᵗ[ (Ξ ++ (c ~ b)) ++ Θt ] A = ⇓ᵗ[ Θt ] A)
@@ -1693,7 +1693,7 @@ Lemma a_inc_downarrow_prefix : forall Ξ κa T Θ0 κb σb Θ Θ',
   uniq (Ξ ++ T) ->
   dom κa [=] dom Ξ ->
   σb ∷ Θ0 ⊑ Θ' ->
-  a_wf_aenv Θ -> uniq Θ ->
+  {{ ⊢ Θ }}a -> uniq Θ ->
   (forall x c, binds x c Θ' -> binds x c Θ) ->
   (forall α, α `in` dom κa ->
      ftvar_in_ptyp (⇓ᵗ[ Θ ] (msubst_lookup κa α)) [<=] dom Θ') ->

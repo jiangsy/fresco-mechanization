@@ -18,7 +18,7 @@
     directly from the consistency premise, without going through completeness.
 
         {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad  →  is_sskl Q  →  {{ Θ ⨟ Δ ⊢ₚₛ ⌊Q⌋ }}a
-          →  a_wf_aenv Θ  →  {{ Θ ⨟ Δ ⊢ₚᵣ ⌊R⌋ˢ ⊑ ⌊Q⌋ }}ad
+          →  {{ ⊢ Θ }}a  →  {{ Θ ⨟ Δ ⊢ₚᵣ ⌊R⌋ˢ ⊑ ⌊Q⌋ }}ad
 
     THE WITNESS.  Take [R = ∀◇.] (a ∀ whose body is the GHOST) and [Q = ∀α. α].
     Consistency relates them: its ∀ rule opens BOTH sides at a fresh α and puts
@@ -150,7 +150,7 @@ Qed.
 Definition p7_sskl_precise_property : Prop :=
   forall Ψ Θ R Q,
     {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
-    a_wf_aenv Θ ->
+    {{ ⊢ Θ }}a ->
     is_sskl Q ->
     forall Δ, {{ Θ ⨟ Δ ⊢ₚₛ (bskl_to_pskl Q) }}a ->
     {{ Θ ⨟ Δ ⊢ₚᵣ (uskl_to_pskl R) ⊑ (bskl_to_pskl Q) }}ad.

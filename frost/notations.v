@@ -42,9 +42,11 @@
     and every judgement is self-delimiting, so it reads unambiguously in a
     long premise chain and needs no level juggling against `->` / `/\`.
 
-    - SUPERSCRIPT = WHICH COPY of the judgement.  Absence is the type sort:
+    - SUPERSCRIPT = WHICH COPY of the judgement — in practice, the SORT the
+      judgement is about.  Absence is the type sort:
         `⊢`      types              (ptyp / btyp / utyp — A, B, C)
         `⊢ˢ`     skeletons          (pskl / bskl / uskl — P, Q, R)
+        `⊢ᵉ`     expressions        (`a_wf_exp`: `{{ Θ ⊢ᵉ e }}a`)
         `⊢ˢᵈ`    syntax-directed     (`d_sd_typing`, `ad_sd_typing`)
       So `{{ Γ ⊢ˢ[ M ] e ⦂ P }}d` is skeleton inference and
       `{{ Γ ⊢[ M ] e ⦂ A }}d` is typing; `{{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d` is skeleton
@@ -62,7 +64,15 @@
       `⊢ₚₛ`/`⊢ᵤₛ` for their skeleton counterparts.
       ⚙ `⊢ₛ` (a_solve_sub) and `⊢ˢ` (the skeleton sort) are different axes and
       only ever meet inside `}}a`, where the solve pair's `≼[ m ] … ⤳ … ⨾ …`
-      shape tells them apart at a glance.
+      shape tells them apart at a glance.  The same goes for `⊢ₑ`
+      (a_solve_eq, a RELATION) beside `⊢ᵉ` (a_wf_exp, a SORT) — `a_wf_exp`
+      would otherwise want the subscript `ₑ` that the solve layer holds, and
+      freeing it means renaming the solve pair, a separate pass.
+    - ⚙ A judgement about a CONTEXT ALONE puts the turnstile first, as usual:
+      `{{ ⊢ Θ }}a` is `a_wf_aenv` (the paper's `Θ ⊢ ctx`).  It is the one
+      notation here whose token comes before its slot, and camlp5 factors it
+      against the constr-headed rules and metalib's `{{ x }}` without
+      complaint — verified, not assumed.
     - `[ … ]` carries the indices (mode M, sort N, input skeleton P0, tag
       scope Ψ); `⊣ Θ'` the output context; the tag context comes FIRST
       (`Ψ ⨟ Γ ⊢ …`) and the ∀-scope Δ AFTER (`Γ ⨟ Δ ⊢ …`).

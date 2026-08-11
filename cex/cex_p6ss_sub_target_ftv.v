@@ -102,7 +102,7 @@ Definition Rcex : uskl := uskl_all_etag ε (uskl_var_b 0).
 (** Target: the context's rigid, which the subject does not mention. *)
 Definition Qcex : bskl := bskl_var_f β.
 
-Lemma Θcex_wf : a_wf_aenv Θcex.
+Lemma Θcex_wf : {{ ⊢ Θcex }}a.
 Proof. apply a_wf_aenv__tvar; [ simpl; auto | apply a_wf_aenv__nil ]. Qed.
 
 Lemma Rcex_tskl : is_tskl Rcex.
@@ -171,7 +171,7 @@ End CexSubTargetFtv.
 Theorem p6ss_sub_target_ftv_is_false :
   ~ (forall n NM M Ψ Θ R Q,
        ad_pat_sub_g n NM M Ψ Θ R Q ->
-       a_wf_aenv Θ ->
+       {{ ⊢ Θ }}a ->
        is_tskl R ->
        ftvar_in_bskl Q [<=] ftvar_in_uskl R `union` def_ftv Θ).
 Proof.
@@ -189,7 +189,7 @@ Theorem p6ss_sub_target_ftv_cex_nonvacuous :
   exists β ε, ad_pat_sub_g 1 a_sub_mode_ty mode_tc empty (Θcex β)
                 (Rcex ε) (Qcex β)
               /\ is_tskl (Rcex ε)
-              /\ a_wf_aenv (Θcex β).
+              /\ {{ ⊢ (Θcex β) }}a.
 Proof.
   pick fresh β. pick fresh ε.
   exists β, ε; repeat split;

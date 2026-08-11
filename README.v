@@ -48,13 +48,16 @@
       [{{ … }}a]  algorithmic ([a_*], with [⊣ Θ'])
       [{{ … }}t]  ε-tagged decorated ([a_consistag] / [a_subtag])
     That frees the turnstile for the judgement's own two axes:
-      SUPERSCRIPT = WHICH COPY.  bare = types, [⊢ˢ] = skeletons, [⊢ˢᵈ] =
+      SUPERSCRIPT = WHICH COPY (in practice, the SORT).  bare = types,
+        [⊢ˢ] = skeletons, [⊢ᵉ] = expressions ([a_wf_exp]), [⊢ˢᵈ] =
         syntax-directed — so [{{ Γ ⊢ˢ[M] e ⦂ P }}d] is skeleton inference and
         [{{ Γ ⊢[M] e ⦂ A }}d] is typing.  Where one relation covers both sorts
         the sort is the bracket index instead ([⊢[ N | m | P0 ]]).
       SUBSCRIPT = WHICH RELATION, when a system has several at one sort:
         [⊢ᵣ]/[⊢ᵣₚ] refinement, [⊢ₚᵣ] precision, [⊢ₛ]/[⊢ₑ] the solve layer,
         and [⊢ₚ]/[⊢ᵦ]/[⊢ᵤ]/[⊢ₚₛ]/[⊢ᵤₛ] for well-formedness.
+    A judgement about a CONTEXT ALONE puts the turnstile first: [{{ ⊢ Θ }}a]
+    is [a_wf_aenv] (the paper's [Θ ⊢ ctx]).
     One relation's copies across systems now differ by the DELIMITER alone:
     [{{ Γ ⨟ Δ ⊢ᵣ Q ⊳ P }}d] vs [{{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad].
       [ … ] carries the indices, [⊣ Θ'] the output context.  ⚠️ [⦂] is used at
@@ -143,7 +146,7 @@ Print Assumptions d_typing_general_subsumption.
 Check a_consis_sound :
   forall Θ0 P0 P P' Θ1,
   {{ Θ0 ⊢[ P0 ] P ∼ P' ⊣ Θ1 }}a ->
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
   Θ0 ⊴ Θ1 /\
@@ -172,12 +175,12 @@ Print Assumptions a_consis_complete.
 Check a_sub_sound :
   forall NM M P0 Θ0 P P' Θ1,
   {{ Θ0 ⊢[ NM | M | P0 ] P ⩽ P' ⊣ Θ1 }}a ->
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
   (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->
   (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
-  Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
+  Θ0 ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\
   exists Qt,
     bskl_to_pskl Qt = P' /\
     ({{ empty ⨟ Θ1 ⊢ˢ[ NM | M ] (pskl_to_uskl P) ⩽ Qt }}ad) /\
@@ -235,11 +238,11 @@ Print Assumptions a_extract_complete.
 Check a_pat_sound :
   forall m Θ0 P0 e P Θ1,
   {{ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ P ⊣ Θ1 }}a ->
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_sk_mode_compat m P0 ->
-  a_wf_exp Θ0 e ->
-  Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
+  {{ Θ0 ⊢ᵉ e }}a ->
+  Θ0 ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\
   exists Qt, bskl_to_pskl Qt = P /\
     ({{ Θ1 ⊢ˢ[ m ] e ⦂ Qt }}ad) /\
     ({{ Θ1 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ Qt }}ad).
@@ -257,11 +260,11 @@ Print Assumptions a_pat_sound.
 Check a_typing_sound :
   forall m Θ0 P0 e A Θ1,
   {{ Θ0 ⊢[ m ; P0 ] e ⦂ A ⊣ Θ1 }}a ->
-  a_wf_aenv Θ0 ->
+  {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat m P0 ->
-  a_wf_exp Θ0 e ->
-  Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
+  {{ Θ0 ⊢ᵉ e }}a ->
+  Θ0 ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\ a_wf_ptyp Θ1 A /\
   exists Bt, btyp_to_ptyp Bt = A /\
     ({{ Θ1 ⊢ˢᵈ[ m ] e ⦂ Bt }}ad) /\
     ({{ Θ1 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt) }}ad).
@@ -271,11 +274,11 @@ Print Assumptions a_typing_sound.
    per user-facing mode, and the DECLARATIVE side is now the paper's own
    §declarative system [{{ … }}d] over a declarative context, not [{{ … }}ad] over
    [nil : aenv].  At the EMPTY context three premises of the theorem above go:
-   [a_wf_aenv ·] is a constructor, [{{ · ⨟ ∅ ⊢ₚₛ P0 }}a] is [a_wf_pskl__hole] resp.
+   [{{ ⊢ · }}a] is a constructor, [{{ · ⨟ ∅ ⊢ₚₛ P0 }}a] is [a_wf_pskl__hole] resp.
    the annotation's own wf, and [a_ty_mode_compat] is read off the mode; and
    the answer's colouring is forced by the mode, so the existential [Bt]
    collapses to [syn{A}] resp. [inh{A}].
-   ⚠️ [a_wf_exp · e] stays: it is the INPUT condition on the problem (the
+   ⚠️ [{{ · ⊢ᵉ e }}a] stays: it is the INPUT condition on the problem (the
    paper's "M is well-formed in Θ₀"), and the algorithmic run does not imply
    it — see the header note in typing/prop_closed.v.
    ⭐ [ζ] CLOSES the run's output context, which normally still holds
@@ -286,9 +289,9 @@ Print Assumptions a_typing_sound.
    contexts Θ" — decorated_algo/prop_conserv.v, docs/PAPER-GAPS.md. *)
 Check a_typing_sound_infer :
   forall e A Θ1,
-  a_wf_exp nil e ->
+  {{ nil ⊢ᵉ e }}a ->
   {{ nil ⊢[ mode_ti ; pskl_hole ] e ⦂ A ⊣ Θ1 }}a ->
-  nil ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
+  nil ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\ a_wf_ptyp Θ1 A /\
   ({{ Θ1 ⨟ empty ⊢ᵣ bskl_hole ⊳ (btyp_to_bskl (ptyp_to_btyp_syn A)) }}ad) /\
   exists ζ, ζ ∷ Θ1 ⊑ nil /\
     ({{ nil ⊢ˢᵈ[ mode_ti ] e ⦂ (ptyp_to_btyp_syn (msubst_ptyp ζ A)) }}d) /\
@@ -297,10 +300,10 @@ Print Assumptions a_typing_sound_infer.
 
 Check a_typing_sound_check :
   forall e A0 A Θ1,
-  a_wf_exp nil e ->
+  {{ nil ⊢ᵉ e }}a ->
   a_wf_ptyp nil A0 ->
   {{ nil ⊢[ mode_tc ; (ptyp_to_pskl A0) ] e ⦂ A ⊣ Θ1 }}a ->
-  nil ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
+  nil ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\ a_wf_ptyp Θ1 A /\
   ({{ Θ1 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (ptyp_to_pskl A0))
      ⊳ (btyp_to_bskl (ptyp_to_btyp_inh A)) }}ad) /\
   exists ζ, ζ ∷ Θ1 ⊑ nil /\
@@ -320,7 +323,7 @@ Print Assumptions a_typing_sound_check.
    registered in docs/WF-SIDE-CONDITIONS.md. *)
 Check a_pat_complete :
   forall e M Θ0 P0 κ Θ Q,
-    a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+    {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
     {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
     a_sk_mode_compat M P0 ->
     κ ∷ Θ0 ⊑ Θ ->
@@ -345,7 +348,7 @@ Print Assumptions a_pat_complete.
    recurse at the SAME subject, and they drop one ∀ off the declarative result. *)
 Check a_typing_complete :
   forall e M Θ0 P0 κ Θ B,
-    a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+    {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
     {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
     a_ty_mode_compat M P0 ->
     κ ∷ Θ0 ⊑ Θ ->
@@ -411,13 +414,13 @@ Print Assumptions a_typing_complete_check.
    the bridge carried one that was provably FALSE, hence vacuous —
    docs/ghost-capture.tex, cex/cex_d_pat_bridges_false.v.
 
-   ⚠️ [a_wf_exp nil e] is a real premise here and NOT bookkeeping: it is the
+   ⚠️ [{{ nil ⊢ᵉ e }}a] is a real premise here and NOT bookkeeping: it is the
    same one the soundness corollaries take, and on the declarative side it is
    not derivable, because [d_sd_typing__anno] states no well-formedness for
    its annotation (the sd-Anno gap, docs/PAPER-GAPS.md). *)
 Check a_typing_complete_sd_infer :
   forall e (B : btyp),
-  a_wf_exp nil e ->
+  {{ nil ⊢ᵉ e }}a ->
   {{ nil ⊢ˢᵈ[ mode_ti ] e ⦂ B }}d ->
   exists A1 Θ1,
     {{ nil ⊢[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 }}a /\
@@ -426,7 +429,7 @@ Print Assumptions a_typing_complete_sd_infer.
 
 Check a_typing_complete_sd_check :
   forall e (B : btyp),
-  a_wf_exp nil e ->
+  {{ nil ⊢ᵉ e }}a ->
   {{ nil ⊢ˢᵈ[ mode_tc ] e ⦂ B }}d ->
   exists A1 Θ1,
     {{ nil ⊢[ mode_tc ; (ptyp_to_pskl (btyp_to_ptyp B)) ] e ⦂ A1 ⊣ Θ1 }}a /\
@@ -437,7 +440,7 @@ Print Assumptions a_typing_complete_sd_check.
    system's completeness for it ([d_sd_typing_complete]). *)
 Check a_typing_complete_decl_infer :
   forall e (B : btyp),
-  a_wf_exp nil e ->
+  {{ nil ⊢ᵉ e }}a ->
   {{ nil ⊢[ mode_ti ] e ⦂ B }}d ->
   exists A1 Θ1,
     {{ nil ⊢[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 }}a /\
@@ -446,7 +449,7 @@ Print Assumptions a_typing_complete_decl_infer.
 
 Check a_typing_complete_decl_check :
   forall e (B : btyp),
-  a_wf_exp nil e ->
+  {{ nil ⊢ᵉ e }}a ->
   {{ nil ⊢[ mode_tc ] e ⦂ B }}d ->
   exists A1 Θ1,
     {{ nil ⊢[ mode_tc ; (ptyp_to_pskl (btyp_to_ptyp B)) ] e ⦂ A1 ⊣ Θ1 }}a /\
@@ -464,5 +467,5 @@ Print Assumptions ad_precise_extends_pat_sub_v.
 Check ad_ctx_precise_pat :
   forall M Θ e Q,
   {{ Θ ⊢ˢ[ M ] e ⦂ Q }}ad ->
-  forall Θ', {{ Θ' ⪯ᶜᵗˣ Θ }}ad -> a_wf_aenv Θ -> a_wf_aenv Θ' -> {{ Θ' ⊢ˢ[ M ] e ⦂ Q }}ad.
+  forall Θ', {{ Θ' ⪯ᶜᵗˣ Θ }}ad -> {{ ⊢ Θ }}a -> {{ ⊢ Θ' }}a -> {{ Θ' ⊢ˢ[ M ] e ⦂ Q }}ad.
 Print Assumptions ad_ctx_precise_pat.
