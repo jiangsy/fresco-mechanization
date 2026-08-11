@@ -62,6 +62,8 @@ Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_general_subsumption.  (* mono_ptyp_inh_eq_syn *)
+Require Import src.frost.decl.prop_wellformed.           (* d_wf_utyp_lc *)
+Require Import src.frost.decl.prop_syntax_directed.       (* ftvar_btyp_to_bskl *)
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.decorated_algo.def_decorated.
@@ -1469,3 +1471,237 @@ Proof.
   - (* FlexMono: vacuous over a declarative context *)
     exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
 Qed.
+
+(* ===================================================================== *)
+(*  §14  THE OTHER DIRECTION AT THE TYPE SORT:  [d_sub] -> [ad_pat_sub].  *)
+(*                                                                        *)
+(*  ⚙ §8 goes [ad] -> [d] by RETRACTING [uskl_to_utyp], which needs the   *)
+(*  subject ghost-free at every step.  This direction uses the INCLUSION  *)
+(*  [utyp_to_uskl] instead, so nothing has to be recovered: a [utyp] has  *)
+(*  no ghost slot to begin with, and every side condition the algorithmic *)
+(*  rule adds over the declarative one is discharged by transporting the  *)
+(*  declarative premise along the inclusion.                              *)
+(* ===================================================================== *)
+
+(** ⚠️ [lc_utyp] is not decoration: [uskl_ghost_free] has no [uskl_var_b] row,
+    so it fails outright on an open body — the inclusion of a [utyp] is
+    ghost-free exactly when the [utyp] is locally closed. *)
+Lemma uskl_ghost_free_incl : forall C,
+  lc_utyp C -> uskl_ghost_free (utyp_to_uskl C).
+Proof.
+  intros C H; induction H; simpl; try solve [ constructor ].
+  - apply uskl_ghost_free__arrow; assumption.
+  - apply uskl_ghost_free__all_syn with (L := empty). intros α _.
+    rewrite <- utyp_to_uskl_open_var. auto.
+  - apply uskl_ghost_free__all_etag with (L := empty). intros α _.
+    rewrite <- utyp_to_uskl_open_var. auto.
+Qed.
+
+Lemma is_sskl_of_is_styp : forall B, is_styp B -> is_sskl (btyp_to_bskl B).
+Proof.
+  intros B H; induction H; simpl; try solve [ constructor; auto ].
+  apply is_sskl__all with (L := L). intros α Hα.
+  change (bskl_var_f α) with (btyp_to_bskl (btyp_var_f α)).
+  rewrite <- btyp_to_bskl_open. auto.
+Qed.
+
+Lemma guarded_uskl_incl : forall C,
+  guarded_utyp C -> guarded_uskl (utyp_to_uskl C).
+Proof.
+  intros C H; inversion H; subst; simpl;
+    [ apply guarded_uskl__unit | apply guarded_uskl__var
+    | apply guarded_uskl__arrow; apply lc_utyp_to_uskl; assumption ].
+Qed.
+
+Lemma d_tags_skl_incl : forall Ψ C,
+  d_tags Ψ C -> d_tags_skl Ψ (utyp_to_uskl C).
+Proof.
+  intros Ψ C H; induction H; simpl.
+  - apply d_tags_skl__unit; assumption.
+  - apply d_tags_skl__var; assumption.
+  - apply d_tags_skl__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2); assumption.
+  - apply d_tags_skl__all_etag with (L := L) (Ψ0 := Ψ0);
+      [ | assumption | assumption ].
+    intros α Hα. rewrite <- utyp_to_uskl_open_var. auto.
+Qed.
+
+(** ⚠️ The two well-scopedness judgements do NOT track a ∀-bound variable in
+    the same place: [d_wf_utyp]'s ∀ rows push it into Γ, [d_wf_uskl]'s into Δ.
+    So the transport threads a VISIBILITY condition — every tvar of the source
+    context is visible on the target side, in Δ or in Γ' — exactly as
+    [d_pat_consis_subject_refine_ghost_free] threads [delta_agree]. *)
+Lemma d_wf_uskl_incl_gen : forall Γ C,
+  d_wf_utyp Γ C ->
+  forall Γ' Δ,
+    (forall α, binds α dbind_tvar Γ ->
+       List.In α Δ \/ binds α dbind_tvar Γ') ->
+    d_wf_uskl Γ' Δ (utyp_to_uskl C).
+Proof.
+  intros Γ C H; induction H; intros Γ' Δ0 Hvis; simpl.
+  - apply d_wf_uskl__unit.
+  - apply d_wf_uskl__var. apply Hvis; assumption.
+  - apply d_wf_uskl__arrow;
+      [ apply IHd_wf_utyp1 | apply IHd_wf_utyp2 ]; exact Hvis.
+  - apply d_wf_uskl__all_syn with (L := L). intros α Hα.
+    rewrite <- utyp_to_uskl_open_var. apply (H0 α Hα).
+    intros β Hb. destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [ [ Heq _ ] | Hb' ];
+      [ subst; left; simpl; left; reflexivity | ].
+    destruct (Hvis β Hb') as [ HΔ | HΓ ];
+      [ left; simpl; right; exact HΔ | right; exact HΓ ].
+  - apply d_wf_uskl__all_etag with (L := L) (ε := ε). intros α Hα.
+    rewrite <- utyp_to_uskl_open_var. apply (H0 α Hα).
+    intros β Hb. destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [ [ Heq _ ] | Hb' ];
+      [ subst; left; simpl; left; reflexivity | ].
+    destruct (Hvis β Hb') as [ HΔ | HΓ ];
+      [ left; simpl; right; exact HΔ | right; exact HΓ ].
+Qed.
+
+Lemma d_wf_uskl_incl : forall Γ C,
+  d_wf_utyp Γ C -> d_wf_uskl Γ nil (utyp_to_uskl C).
+Proof.
+  intros Γ C H. apply (d_wf_uskl_incl_gen Γ C H Γ nil).
+  intros α Hb. right; exact Hb.
+Qed.
+
+Lemma lc_pskl_of_lc_btyp : forall B,
+  lc_btyp B -> lc_pskl (bskl_to_pskl (btyp_to_bskl B)).
+Proof.
+  intros B H; induction H; simpl;
+    try solve [ constructor; assumption ].
+  - apply lc_pskl_all_syn. intro α.
+    rewrite <- bskl_to_pskl_open.
+    change (bskl_var_f α) with (btyp_to_bskl (btyp_var_f α)).
+    rewrite <- btyp_to_bskl_open. auto.
+  - apply lc_pskl_all_syn. intro α.
+    rewrite <- bskl_to_pskl_open.
+    change (bskl_var_f α) with (btyp_to_bskl (btyp_var_f α)).
+    rewrite <- btyp_to_bskl_open. auto.
+Qed.
+
+(** An INHERITED [btyp] paints as an inherited [pskl]: every ∀ it has is
+    [btyp_all_inh], and [pskl_to_bskl_inh] paints every ∀ that way. *)
+Lemma inh_paint_bskl : forall B,
+  is_ityp B ->
+  btyp_to_bskl B = pskl_to_bskl_inh (bskl_to_pskl (btyp_to_bskl B)).
+Proof.
+  intros B H; induction H; simpl; try reflexivity.
+  - f_equal; assumption.
+  - (* ⚙ the ∀ row's binder is the RULE's [A], not the statement's [B] *)
+    f_equal.
+    pick fresh α for (L `union` ftvar_in_btyp A
+                      `union` ftvar_in_bskl
+                                (pskl_to_bskl_inh
+                                   (bskl_to_pskl (btyp_to_bskl A)))).
+    apply open_bskl_wrt_bskl_inj with (α1 := α);
+      [ rewrite ftvar_btyp_to_bskl; clear - Fr; fsetdec
+      | clear - Fr; fsetdec | ].
+    (* push the opening through the two paintings on the RIGHT, then the
+       goal IS the cofinite hypothesis *)
+    rewrite <- pskl_to_bskl_inh_open, <- bskl_to_pskl_open.
+    change (bskl_var_f α) with (btyp_to_bskl (btyp_var_f α)).
+    rewrite <- btyp_to_bskl_open.
+    exact (H0 α ltac:(clear - Fr; fsetdec)).
+Qed.
+
+(** [Check]'s target on the [ad] side is spelt [inh{B'}] for a [pskl] [B'];
+    an INHERITED, GUARDED [btyp] is exactly such a painting. *)
+Lemma guarded_ityp_inh_paint : forall B,
+  is_ityp B -> guarded_btyp B ->
+  btyp_to_bskl B = pskl_to_bskl_inh (bskl_to_pskl (btyp_to_bskl B))
+  /\ guarded_pskl (bskl_to_pskl (btyp_to_bskl B)).
+Proof.
+  intros B Hi Hg. split; [ apply inh_paint_bskl; exact Hi | ].
+  inversion Hg; subst; simpl;
+    [ apply guarded_pskl__unit | apply guarded_pskl__var
+    | apply guarded_pskl__arrow; apply lc_pskl_of_lc_btyp; assumption ].
+Qed.
+
+(** ⭐ THE TY-SORT BRIDGE, [d] -> [ad].  Every premise the algorithmic rule
+    adds is the declarative one pushed along [utyp_to_uskl]: the hygiene by
+    [ftag_utyp_to_uskl] (the inclusion keeps every tag), the ForallL
+    instantiation's sort data by [is_tskl_utyp_to_uskl] / [d_tags_skl_incl] /
+    [uskl_ghost_free_incl] — the last of which is what [a_tags_sort__ty]
+    demands and what makes this sort easy. *)
+Lemma d_sub_to_ad : forall M Ψ Γ C B,
+  d_sub M Ψ Γ C B ->
+  ad_pat_sub a_sub_mode_ty M Ψ (denv_to_aenv Γ)
+    (utyp_to_uskl C) (btyp_to_bskl B).
+Proof.
+  intros M Ψ Γ C B H; induction H; simpl.
+  - (* infer *) apply ad_pat_sub__infer;
+      [ assumption | apply d_consis_to_ad; assumption
+      | apply is_sskl_of_is_styp; assumption ].
+  - (* check *)
+    destruct (guarded_ityp_inh_paint B ltac:(assumption) ltac:(assumption))
+      as [ Heq Hgp ].
+    rewrite Heq. apply ad_pat_sub__check;
+      [ apply guarded_uskl_incl; assumption | exact Hgp | ].
+    rewrite <- Heq. apply d_consis_to_ad; assumption.
+  - (* forall_r *)
+    apply ad_pat_sub__forall_r with (L := L). intros α Hα.
+    change (bskl_var_f α) with (btyp_to_bskl (btyp_var_f α)).
+    rewrite <- btyp_to_bskl_open. exact (H1 α Hα).
+  - (* arg *)
+    apply ad_pat_sub__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
+      [ apply d_consis_to_ad; assumption | assumption | assumption ].
+  - (* forall_l, tagged *)
+    apply ad_pat_sub__forall_l_tagged with
+      (Ψ' := Ψ') (ψ := utyp_to_uskl ph);
+      [ assumption | assumption
+      | (* the hygiene crosses the sorts: the inclusion keeps every tag *)
+        rewrite (ftag_utyp_to_uskl (utyp_all_etag ε C)); assumption
+      | apply a_tags_sort__ty;
+          [ apply is_tskl_utyp_to_uskl; assumption
+          | apply d_tags_skl_incl; assumption
+          | apply uskl_ghost_free_incl; eapply d_wf_utyp_lc; eassumption ]
+      | exact (a_wf_pskl_of_d_wf_uskl Γ nil (utyp_to_uskl ph)
+                 (d_wf_uskl_incl Γ ph ltac:(assumption)) empty
+                 delta_agree_nil)
+      | rewrite <- utyp_to_uskl_open; assumption ].
+  - (* forall_l, untagged *)
+    apply ad_pat_sub__forall_l_untagged with
+      (Ψ' := Ψ') (ψ := utyp_to_uskl ph);
+      [ assumption | assumption
+      | rewrite (ftag_utyp_to_uskl (utyp_all_syn C)); assumption
+      | apply a_tags_sort__ty;
+          [ apply is_tskl_utyp_to_uskl; assumption
+          | apply d_tags_skl_incl; assumption
+          | apply uskl_ghost_free_incl; eapply d_wf_utyp_lc; eassumption ]
+      | exact (a_wf_pskl_of_d_wf_uskl Γ nil (utyp_to_uskl ph)
+                 (d_wf_uskl_incl Γ ph ltac:(assumption)) empty
+                 delta_agree_nil)
+      | rewrite <- utyp_to_uskl_open; assumption ].
+Qed.
+
+(* ===================================================================== *)
+(*  §15  THE TYPING BRIDGE, [d_sd_typing] -> [ad_sd_typing] — WHAT IS     *)
+(*  LEFT, now that both TY-sort directions are closed.                     *)
+(*                                                                        *)
+(*  ⚙ RESTART NOTE (2026-08-11).  The assembly was drafted and parked:     *)
+(*  every rule but App reduces to §13-§14 plus reflexivity of              *)
+(*  [a_tyequiv] (the appendix's four equivalence premises are trivial over *)
+(*  a flexible-free Θ, §1), and the binder rows only need [a_wf_exp_mono]  *)
+(*  to push the term-level hypothesis under a term entry.  Three things    *)
+(*  it still needs, none of them obstruction (A):                          *)
+(*                                                                        *)
+(*  1. [a_wf_ptyp Θ A] on [sd-Anno].  ⚠️ [d_sd_typing__anno] states NO      *)
+(*     well-formedness — its four type-carrying siblings do — so it        *)
+(*     cannot be recovered from the derivation.  Carry it as the paper's   *)
+(*     ambient "all inputs are well-formed", in the shape the [ad] side    *)
+(*     EXHIBITS: [a_wf_exp (denv_to_aenv Γ) e], whose [__anno] row is      *)
+(*     exactly [a_wf_ptyp Θ A] ([ad_sd_typing_wf_exp] is the mirror).      *)
+(*     docs/WF-SIDE-CONDITIONS.md.                                         *)
+(*                                                                        *)
+(*  2. [lc_ptyp A] at [sd-Freeze], for [a_tyequiv__refl].  It has to come  *)
+(*     from the PREMISE's target ([Γ ⊢ˢ[TI] e ⦂ syn{A}]), and the tree has *)
+(*     no [d_sd_typing] target-lc lemma; the [ad] side's                   *)
+(*     [ad_sd_typing_target_wf] needs [a_wf_aenv Θ], so the bridge will    *)
+(*     take a context-wf hypothesis too.                                   *)
+(*                                                                        *)
+(*  3. ⚠️ App — and this one IS obstruction (A).  Its premise is SKELETON   *)
+(*     inference, where the join runs at [N = SK]: [a_tags_sort__sk]       *)
+(*     permits a GHOSTY instantiation and [ad_pat]'s P-Var reads a         *)
+(*     possibly-ghosty [P] out of the context, so §13's argument does not  *)
+(*     transfer.  Everything else in the bridge is bookkeeping; this is    *)
+(*     the mathematics.                                                    *)
+(* ===================================================================== *)
