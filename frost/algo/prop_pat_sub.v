@@ -744,7 +744,7 @@ Qed.
     instantiation is itself ghost-free — which at the TYPE sort is forced by
     the rule ([a_tags_sort__ty], def_decorated.v).  That is what makes every
     leaf of a TY-sort join ghost-free once its ROOT subject is, and hence what
-    makes the leaf datum free there (algo/typing/prop_conserv.v §13).
+    makes the leaf datum free there (decorated_algo/prop_conserv.v §13).
 
     ⚙ The subject is the WHOLE ∀ and not its body: [uskl_ghost_free] has no
     [uskl_var_b] row, so it cannot hold of an open body at all. *)

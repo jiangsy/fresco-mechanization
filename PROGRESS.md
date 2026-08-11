@@ -169,7 +169,7 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   (algo/typing/prop_closed.v) — the empty context, one per user-facing mode,
   and since 2026-08-10 stated against the paper's own §declarative system
   (`· ⊢ˢ[M] e ⦂ B` and `· ⊢[M] e ⦂ B`) through the conservativity bridge
-  `algo/typing/prop_conserv.v`, with the run's output context closed off by a
+  `decorated_algo/prop_conserv.v`, with the run's output context closed off by a
   metasubstitution the proof BUILDS.
   History of the build-up:
 - 🟡 (history) **Theorem: Soundness of type inference — STARTED 2026-08-06**
@@ -237,6 +237,24 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 - Restored chain: `prop_weakening` (d_pat base cases repaired for embedded subtyping), `prop_renaming` + `prop_general_subsumption` (compiled unchanged), `prop_skeleton` (lean extraction: the 18-block dependency closure the equivalence needs; the pre-restart skeleton-safety machinery — incl. the now-false `pskl_to_tskl_is_tskl`, a casualty of the `is_tskl` sync fix A1 — stays in `prop_skeleton.v.legacy` for the later paper-faithful redo), `prop_syntax_directed` (base cases of `d_pat_subst_unit` repaired; obsolete `is_base_term` helper dropped)
 
 # Part 2: Progress log (most recent first)
+
+## 2026-08-11 (later still) — ⚙ **`prop_conserv.v` MOVED to `decorated_algo/`**, where a `d_` ⇄ `ad_` bridge belongs
+
+The conservativity bridge was filed under `algo/typing/` when it was written,
+on the theory that needing `btyp_to_bskl_open` (algo/pat/) and `guarded_pskl_lc`
+(algo/sub/) would invert the layering.  ⚠️ It does not, and the file is not part
+of the algorithm: it relates the DECLARATIVE system to the decl-in-algo one, so
+it belongs to neither, and `decorated_algo/` is by CLAUDE.md's own description
+"the layer BETWEEN the algorithmic and declarative systems … the bridge the
+soundness and completeness proofs both go through".
+
+⭐ Why there is no inversion: the DEFINITION layers point one way
+(`algo/def_*` → `decorated_algo/def_*`, never back), while the PROOF layers
+already interleave — `decorated_algo/prop_decorate_key.v` reaches into
+`algo/prop_soundness_consis.v`, `algo/prop_pat_sub.v`, `algo/prop_refine.v` and
+`algo/prop_stability.v`.  One consumer (`algo/typing/prop_closed.v`) and a dozen
+prose references repointed; `frost/coercions.v` already CALLED it
+`decorated_algo/prop_conserv.v`, which is the tell that it was mis-filed.
 
 ## 2026-08-11 (later) — ⭐⭐⭐ **THE UNIFORM READING OF `fresh Ψ'` LANDS: all four subtyping judgements carry GLOBAL tag hygiene, and CST pays for it**
 
@@ -423,7 +441,7 @@ Hand-off: [`docs/HANDOFF-closed-corollaries-declarative.md`](docs/HANDOFF-closed
 context — instead of `ad_sd_typing` over `nil : aenv`.  `make coq` exit 0,
 admit-free, axiom-free, 24/24 `Print Assumptions` closed.
 
-**New: `frost/algo/typing/prop_conserv.v`** (~1300 lines) — the bridge the
+**New: `frost/decorated_algo/prop_conserv.v`** (~1300 lines) — the bridge the
 paper asserts and never states (`app:decl-in-algo-context`: *"it is easy to
 extend them to algorithmic contexts Θ"*).  A declarative context IS a
 flexible-free algorithmic one (`denv_to_aenv`), each `ad_` judgment is its

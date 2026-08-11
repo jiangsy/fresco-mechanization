@@ -36,12 +36,18 @@
     - the ∀-scope context Δ is an [atoms] on the [ad] side and a [list atom] on
       the [d] side; they are related by membership rather than converted (§0b).
 
-    ⚙ WHY IT LIVES HERE and not under [decorated_algo/].  It needs
-    [btyp_to_bskl_open] (algo/pat/prop_soundness_pat.v) and [guarded_pskl_lc]
-    (algo/sub/prop_solve_sub.v), and the algorithmic layer already imports
-    [decorated_algo/], so putting it there would invert the layering.  It
-    serves [prop_closed.v] and nothing else, which is exactly what this
-    directory holds.
+    ⚙ WHY IT LIVES HERE.  It relates the DECLARATIVE system to the
+    decl-in-algo one, so it belongs to neither — and [decorated_algo/] is
+    precisely the layer between them ("it is not part of the algorithm, it is
+    the bridge the soundness and completeness proofs both go through",
+    CLAUDE.md).  ⚠️ It was filed under [algo/typing/] when it was written, on
+    the theory that needing [btyp_to_bskl_open] (algo/pat/prop_soundness_pat.v)
+    and [guarded_pskl_lc] (algo/sub/prop_solve_sub.v) would invert the
+    layering.  It does not: the DEFINITION layers point one way
+    ([algo/def_*] -> [decorated_algo/def_*], never back), while the PROOF
+    layers already interleave — [decorated_algo/prop_decorate_key.v] reaches
+    into [algo/prop_soundness_consis.v], [algo/prop_pat_sub.v],
+    [algo/prop_refine.v] and [algo/prop_stability.v].  Moved 2026-08-11.
 
     ⚙ NO [Set Implicit Arguments] HERE, deliberately.  Every translation
     threads its context as an EQUATION ([Θ = denv_to_aenv Γ]) so that the

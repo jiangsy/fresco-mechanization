@@ -274,10 +274,10 @@ Print Assumptions a_typing_sound.
    it — see the header note in typing/prop_closed.v.
    ⭐ [ζ] CLOSES the run's output context, which normally still holds
    flexibles ([fun x -> x] returns [α̂ → α̂] with [Θ1 = α̂]); it is built, not
-   assumed, so the statement is not vacuous (typing/prop_conserv.v §11).
+   assumed, so the statement is not vacuous (decorated_algo/prop_conserv.v §11).
    The [⊢ᵃᵈ] → [⊢ˢ] translation is the prose-completion of the paper's
    [app:decl-in-algo-context] "it is easy to extend them to algorithmic
-   contexts Θ" — typing/prop_conserv.v, docs/PAPER-GAPS.md. *)
+   contexts Θ" — decorated_algo/prop_conserv.v, docs/PAPER-GAPS.md. *)
 Check a_typing_sound_infer :
   forall e A Θ1,
   a_wf_exp nil e ->

@@ -113,7 +113,7 @@ mechanization.)  Corrected 2026-08-09.
 | [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md) | Canonical registry of everything the paper's authors should see (gaps, prose-completions, refuted statements) |
 | [`docs/refutations.tex`](docs/refutations.tex) | **Author-facing note, in the paper's own notation**: the two machine-checked refutations (Lemma E.17 Look completeness; Theorem 4.6 Completeness of subtyping), the shared configuration, the diagnosis (`SolE-FlexR` discards the accumulated pattern) and the suggested repair. Build: `make -f Makefile.refutations` from `docs/`, or `TEXINPUTS=../../paper: pdflatex refutations.tex` |
 | [`docs/WF-SIDE-CONDITIONS.md`](docs/WF-SIDE-CONDITIONS.md) | **Read before mechanizing any refinement / consistency / subtyping / skeleton-inference lemma.** The paper states well-formedness (and sometimes a further judgment) as an EXTERNAL requirement in prose, and its rules then omit the side conditions it would supply. Several judgments look FALSE until that condition is restored. |
-| [`docs/HANDOFF-closed-corollaries-declarative.md`](docs/HANDOFF-closed-corollaries-declarative.md) | **ACTIVE hand-off**: state the closed-program corollaries against `d_sd_typing` / `d_typing` instead of `ad_sd_typing`. ⭐ SOUNDNESS LANDED 2026-08-10 via the conservativity bridge `algo/typing/prop_conserv.v`. ⭐ 2026-08-11 the TAG-HYGIENE blocker is CLOSED — all four subtyping judgements now read the paper's `fresh Ψ'` the same, GLOBAL way. ⛔ COMPLETENESS still open, blocked by ONE thing: the leaf-valid datum at a ghosty subject (`cex/cex_ad_pat_join_not_leaf_valid.v`) |
+| [`docs/HANDOFF-closed-corollaries-declarative.md`](docs/HANDOFF-closed-corollaries-declarative.md) | **ACTIVE hand-off**: state the closed-program corollaries against `d_sd_typing` / `d_typing` instead of `ad_sd_typing`. ⭐ SOUNDNESS LANDED 2026-08-10 via the conservativity bridge `decorated_algo/prop_conserv.v`. ⭐ 2026-08-11 the TAG-HYGIENE blocker is CLOSED — all four subtyping judgements now read the paper's `fresh Ψ'` the same, GLOBAL way. ⛔ COMPLETENESS still open, blocked by ONE thing: the leaf-valid datum at a ghosty subject (`cex/cex_ad_pat_join_not_leaf_valid.v`) |
 | [`docs/HANDOFF-close-subtyping-completeness.md`](docs/HANDOFF-close-subtyping-completeness.md) | **ACTIVE hand-off**: close subtyping completeness — decide reachability (TASK A), state+prove the payload invariant (B), make the shield supply total or kill it (C), land it on the motive and discharge `main_forall` (D) |
 | [`docs/HANDOFF-p7c-finish.md`](docs/HANDOFF-p7c-finish.md) | **ACTIVE hand-off**: TASKS 1, 2a and 3 are DONE (2026-08-03); what is left is TASK 2b — TASK 0's `sub_shield` for a `P0` with a ∀ below its head, the bundle's one hypothesis |
 | [`docs/HANDOFF-section-d.md`](docs/HANDOFF-section-d.md) | **CLOSED 2026-08-08 — HISTORY**: section D (`proofs.tex`) — soundness/completeness of skeleton and type inference.  All four theorems are Qed and axiom-free; the file keeps the exact Coq statement, the design decision and the obstacle found for each of the six lemmas and four theorems, pass by pass.  ⚠️ Three lemmas the paper calls "straightforward induction" are not |
@@ -214,8 +214,16 @@ mechanization/
 │   │   │                         and — def_decl_algo_typing.v — skeleton
 │   │   │                         inference `ad_pat` + syntax-directed typing
 │   │   │                         `ad_sd_typing`, which section D is stated over)
-│   │   └── prop_decorate*.v     (decoration of consistency/subtyping;
-│   │                             prop_decorate_key.v holds a_sub_sound)
+│   │   ├── prop_decorate*.v     (decoration of consistency/subtyping;
+│   │   │                         prop_decorate_key.v holds a_sub_sound)
+│   │   └── prop_conserv.v       (⭐ CONSERVATIVITY: at a FLEXIBLE-FREE Θ the
+│   │                             decl-in-algo layer IS the plain declarative
+│   │                             system over Γ — the paper's unstated "it is
+│   │                             easy to extend them"; + the closing of the
+│   │                             run's output context.  ⚠️ Filed under
+│   │                             algo/typing/ when written and MOVED here
+│   │                             2026-08-11: it relates `d_` to `ad_`, so it
+│   │                             is part of neither system)
 │   └── algo/             (algorithmic system — all admit-free.  Grouped BY
 │       │                  JUDGEMENT 2026-08-09; the shared machinery stays
 │       │                  FLAT because there is no soundness-only file —
@@ -260,18 +268,12 @@ mechanization/
 │       ├── pat/          (skeleton inference: prop_soundness_pat.v,
 │       │                  prop_completeness_pat.v)
 │       └── typing/       (type inference — the two theorems, their
-│                          reader-facing corollaries, and the three files
+│                          reader-facing corollaries, and the files
 │                          that serve them and nothing else:
 │                          prop_soundness_typing.v
 │                          prop_completeness_typing.v  theorem 4
 │                          prop_closed.v   the CLOSED-PROGRAM corollaries of
 │                                          both — what README.v shows
-│                          prop_conserv.v  the decl-in-algo layer over a
-│                                          FLEXIBLE-FREE Θ is the plain
-│                                          declarative system over Γ (the
-│                                          paper's unstated "it is easy to
-│                                          extend them"); + the closing of
-│                                          the run's output context
 │                          prop_rigidity.v rigid data survives a run
 │                          prop_scope.v    a run's result never mentions the
 │                                          suffix it dropped

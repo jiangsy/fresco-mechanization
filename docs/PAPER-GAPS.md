@@ -144,7 +144,7 @@ and then states **no conservativity lemma in either direction**.  Everything
 in §D — including the four theorems — is therefore stated over `⊢ᵃᵈ`, and a
 reader who has only met the §declarative figure never learns how to get back.
 
-**The mechanization supplies the translation** (algo/typing/prop_conserv.v).
+**The mechanization supplies the translation** (decorated_algo/prop_conserv.v).
 A declarative context IS an algorithmic one with no flexible variables
 (`denv_to_aenv`), each `ad_` judgement is its `d_` version plus the
 flexible-lookup rows, and those rows are vacuous in the image — so the
@@ -175,7 +175,7 @@ have to be made explicit on the way, and each is a small finding of its own:
 
 ⛔ **The `d_ → ad_` direction does NOT hold as stated**, and the reason is not
 bookkeeping.  Two independent obstructions, both recorded at
-algo/typing/prop_conserv.v §12:
+decorated_algo/prop_conserv.v §12:
 
 - **(A) the leaf-valid datum.**  `ad_pat` / `ad_sd_typing` embed the augmented
   join (`ad_pat_sub_v`), whose consistency leaves additionally carry the

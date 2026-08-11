@@ -71,7 +71,7 @@ Require Import src.frost.algo.typing.prop_rigidity.
 Require Import src.frost.algo.typing.prop_shape.
 Require Import src.frost.algo.typing.prop_scope.
 Require Import src.frost.algo.typing.prop_completeness_typing.
-Require Import src.frost.algo.typing.prop_conserv.
+Require Import src.frost.decorated_algo.prop_conserv.
 Require Import src.frost.decl.prop_syntax_directed.
 
 Set Implicit Arguments.

@@ -24,7 +24,7 @@ judgements no longer differ in hygiene.
 
 ## WHAT LANDED
 
-**`frost/algo/typing/prop_conserv.v`** (new, ~1300 lines) — the conservativity
+**`frost/decorated_algo/prop_conserv.v`** (new, ~1300 lines) — the conservativity
 bridge the paper asserts and never states (`app:decl-in-algo-context`: *"it is
 easy to extend them to algorithmic contexts Θ"*).  Registered in
 `docs/PAPER-GAPS.md`.
