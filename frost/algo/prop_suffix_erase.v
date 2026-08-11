@@ -66,6 +66,7 @@ Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_refine.
+Require Import src.frost.prop_etag.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.sub.prop_soundness_sub.
 Require Import src.frost.algo.pat.prop_soundness_pat.
@@ -1085,6 +1086,11 @@ Proof.
       [ | apply mono_ptyp_to_uskl_syn_lc; assumption ].
     eapply ad_pat_sub__forall_l_tagged;
       [ assumption | eassumption
+      | (* tag hygiene: a MONOTYPE's painting is tag-free *)
+        assert (Hsu : ftag_in_uskl (subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0 R)
+                      [=] ftag_in_uskl R)
+          by (apply ftag_in_uskl_subst_tagfree; apply ftag_ptyp_to_uskl_syn);
+        simpl in H1 |- *; rewrite Hsu; exact H1
       | apply a_tags_sort_subst_mono; eassumption
       | rewrite uskl_to_pskl_subst_mono;
         eapply a_wf_pskl_subst_mid;
@@ -1099,6 +1105,11 @@ Proof.
       [ | apply mono_ptyp_to_uskl_syn_lc; assumption ].
     eapply ad_pat_sub__forall_l_untagged;
       [ assumption | eassumption
+      | (* tag hygiene: a MONOTYPE's painting is tag-free *)
+        assert (Hsu : ftag_in_uskl (subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0 R)
+                      [=] ftag_in_uskl R)
+          by (apply ftag_in_uskl_subst_tagfree; apply ftag_ptyp_to_uskl_syn);
+        simpl in H1 |- *; rewrite Hsu; exact H1
       | apply a_tags_sort_subst_mono; eassumption
       | rewrite uskl_to_pskl_subst_mono;
         eapply a_wf_pskl_subst_mid;

@@ -17,6 +17,7 @@ Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.def_extra.
 Require Import src.frost.prop_basic.
+Require Import src.frost.prop_etag.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_skeleton.
@@ -268,6 +269,19 @@ Lemma uskl_to_pskl_subst_unit : forall R' β,
 Proof.
   induction R'; intros; simpl; try (f_equal; auto; fail).
   repeat destruct_if; try reflexivity; try contradiction.
+Qed.
+
+(** ⭐ A PAINTING invents no ε tag — [ptyp] has no tag slot at all.  ⚙ One
+    fact, one name, one file: the tree carried it TWICE, as
+    [ftag_in_uskl_ptyp_syn] (algo/consis/prop_consis_precise.v) and
+    [ftag_in_uskl_ptyp_to_uskl_syn] (algo/sub/look/prop_eq_cstr.v), and the
+    latter file could see both.  It sits HERE because [ptyp_to_uskl_syn] is
+    defined in decorated_algo/def_decl_algo.v — too late for
+    frost/prop_coercions.v — and this file is upstream of every consumer. *)
+Lemma ftag_ptyp_to_uskl_syn : forall A,
+  ftag_in_uskl (ptyp_to_uskl_syn A) [=] empty.
+Proof.
+  intro A. unfold ptyp_to_uskl_syn. apply ftag_bskl_to_uskl.
 Qed.
 
 (** Free variables of monotype paintings. *)
@@ -786,6 +800,10 @@ Proof.
     eapply ad_pat_sub__forall_l_tagged;
       [ assumption
       | eassumption
+      | (* tag hygiene: substituting a TAG-FREE term cannot change a tag *)
+        change (uskl_all_etag ε (subst_uskl_in_uskl uskl_unit β R))
+          with (subst_uskl_in_uskl uskl_unit β (uskl_all_etag ε R));
+        rewrite ftag_in_uskl_subst_tagfree by reflexivity; assumption
       | apply a_tags_sort_subst_unit; eassumption
       | rewrite uskl_to_pskl_subst_unit;
         eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono);
@@ -798,6 +816,9 @@ Proof.
     eapply ad_pat_sub__forall_l_untagged;
       [ assumption
       | eassumption
+      | change (uskl_all_syn (subst_uskl_in_uskl uskl_unit β R))
+          with (subst_uskl_in_uskl uskl_unit β (uskl_all_syn R));
+        rewrite ftag_in_uskl_subst_tagfree by reflexivity; assumption
       | apply a_tags_sort_subst_unit; eassumption
       | rewrite uskl_to_pskl_subst_unit;
         eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono);
@@ -1080,6 +1101,11 @@ Proof.
     eapply ad_pat_sub__forall_l_tagged;
       [ assumption
       | eassumption
+      | (* tag hygiene: a MONOTYPE's painting is tag-free *)
+        change (uskl_all_etag ε (subst_uskl_in_uskl (ptyp_to_uskl_syn τ0) β R))
+          with (subst_uskl_in_uskl (ptyp_to_uskl_syn τ0) β (uskl_all_etag ε R));
+        rewrite ftag_in_uskl_subst_tagfree
+          by (apply ftag_ptyp_to_uskl_syn); assumption
       | apply a_tags_sort_subst_mono; eassumption
       | rewrite uskl_to_pskl_subst_mono;
         eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ0);
@@ -1096,6 +1122,10 @@ Proof.
     eapply ad_pat_sub__forall_l_untagged;
       [ assumption
       | eassumption
+      | change (uskl_all_syn (subst_uskl_in_uskl (ptyp_to_uskl_syn τ0) β R))
+          with (subst_uskl_in_uskl (ptyp_to_uskl_syn τ0) β (uskl_all_syn R));
+        rewrite ftag_in_uskl_subst_tagfree
+          by (apply ftag_ptyp_to_uskl_syn); assumption
       | apply a_tags_sort_subst_mono; eassumption
       | rewrite uskl_to_pskl_subst_mono;
         eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ0);
@@ -1258,9 +1288,14 @@ Proof.
     rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub;
       [ | apply lc_uskl_var_f ].
     eapply ad_pat_sub__forall_l_tagged.
-    5: exact IHad_pat_sub.
+    6: exact IHad_pat_sub.
     + assumption.
     + eassumption.
+    + (* tag hygiene: a TYPE-variable renaming cannot change a tag *)
+      assert (Hsu : ftag_in_uskl (subst_uskl_in_uskl (uskl_var_f β') α R)
+                    [=] ftag_in_uskl R)
+        by (apply ftag_in_uskl_subst_tagfree; reflexivity).
+      simpl in H1 |- *. rewrite Hsu. exact H1.
     + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
       apply a_tags_sort_subst_mono;
         [ assumption | apply mono_ptyp__var ].
@@ -1272,9 +1307,14 @@ Proof.
     rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub;
       [ | apply lc_uskl_var_f ].
     eapply ad_pat_sub__forall_l_untagged.
-    5: exact IHad_pat_sub.
+    6: exact IHad_pat_sub.
     + assumption.
     + eassumption.
+    + (* tag hygiene: a TYPE-variable renaming cannot change a tag *)
+      assert (Hsu : ftag_in_uskl (subst_uskl_in_uskl (uskl_var_f β') α R)
+                    [=] ftag_in_uskl R)
+        by (apply ftag_in_uskl_subst_tagfree; reflexivity).
+      simpl in H1 |- *. rewrite Hsu. exact H1.
     + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
       apply a_tags_sort_subst_mono;
         [ assumption | apply mono_ptyp__var ].

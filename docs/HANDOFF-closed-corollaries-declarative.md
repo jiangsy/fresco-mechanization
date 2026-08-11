@@ -2,7 +2,7 @@ Handover — Frost mechanization: state the CLOSED-PROGRAM COROLLARIES against
 the PURELY DECLARATIVE system (`d_sd_typing` / `d_typing`), in BOTH
 directions.
 
-## STATE (2026-08-10, second pass)
+## STATE (2026-08-11, third pass)
 
 ⭐ **SOUNDNESS IS DONE.**  `a_typing_sound_infer` / `a_typing_sound_check`
 (`frost/algo/typing/prop_closed.v`) now read the paper's own §declarative
@@ -10,9 +10,17 @@ system on the declarative side — `· ⊢ˢ[M] e ⦂ B` AND `· ⊢[M] e ⦂ B`
 declarative context.  `make coq` exit 0, admit-free, axiom-free, README.v
 24/24 `Print Assumptions` closed.
 
-⛔ **COMPLETENESS IS NOT DONE**, and the two things blocking it are recorded
-below and in `frost/algo/typing/prop_conserv.v` §12.  ⚠️ One of them (B) was
-NOT known when the first pass wrote this hand-off.
+⛔ **COMPLETENESS IS NOT DONE**, but it is now blocked by ONE thing, not two.
+
+- **(B) tag hygiene — ✅ RESOLVED 2026-08-11.**  All four subtyping judgements
+  (`d_sub`, `d_pat_sub`, `ad_pat_sub` and the fuel mirrors) read the paper's
+  `fresh Ψ'` the same, GLOBAL way.  §(B) below records the repair, and its
+  shape — collect the tags, then move them wholesale — is worth reusing.
+- **(A) the leaf-valid datum — still open**, and independent of (B).
+
+⚠️ What is left of (B)'s neighbourhood is now purely a FUEL question: the
+`ad_pat_sub → ad_pat_sub_g` direction still has to be built, but the two
+judgements no longer differ in hygiene.
 
 ## WHAT LANDED
 
@@ -92,7 +100,7 @@ e B` needs a closed `e`, `B` with the `ad` side FALSE — i.e. ruling out every
 existentially quantifies its skeleton `P`, so a refutation has to close over
 all choices of `P`.  That is the remaining piece of work on (A).
 
-### (B) Tag hygiene — ⚠️ NEW, it bites at the TYPE sort too, and it is the DEEPER of the two
+### (B) Tag hygiene — ✅ **RESOLVED 2026-08-11.  All four subtyping judgements now read `fresh Ψ'` the same (GLOBAL) way**
 
 `ad_pat_sub_gv`'s two ForallL rows carry, beyond the paper's `Ψ' ∩ Ψ = ∅`,
 
@@ -103,120 +111,113 @@ all choices of `P`.  That is the remaining piece of work on (A).
 — the instantiation's tags fresh from the SUBJECT's syntactic tags.  That is
 the mech's rendering of the paper's prose `fresh Ψ'` as GLOBAL freshness, and
 it is load-bearing: `lemma:precision-substitution` is FALSE without it
-(`docs/DESIGN-completeness-subtyping.md` §5.2).  `d_sub` / `d_pat_sub` render
-the same prose as freshness from the TAG CONTEXT only; the two agree along a
-ForallL chain but come apart at **Arrow**, where the tag context splits into
-`Ψ₁ ∪ Ψ₂` and the subject keeps all its tags.
+(`docs/DESIGN-completeness-subtyping.md` §5.2).  `d_sub` / `d_pat_sub` /
+`ad_pat_sub` used to render the same prose as freshness from the TAG CONTEXT
+only; the two agree along a ForallL chain but come apart at **Arrow**, where
+the tag context splits into `Ψ₁ ∪ Ψ₂` and the subject keeps all its tags.
 
-⚠️ Unlike (A) this is not confined to the skeleton sort: `ad_sd_typing`'s base
-rows go through `ad_pat_sub_gv` at `N = TY`, whose ForallL rows carry the same
-condition.  So (B) blocks completeness even if (A) is resolved.
+**The premise is now ON all six ForallL rows** (`d_sub` ×2, `d_pat_sub` ×2,
+`ad_pat_sub` ×2), so this obstruction is gone at BOTH sorts.  It cost:
 
-**ATTEMPTED 2026-08-11 — putting the strong reading on `d_sub` / `d_pat_sub` /
-`ad_pat_sub` so all four judgments read `fresh Ψ'` the same way.  BACKED OUT,
-but the missing lemma it needs is now PROVED in part.**  The rule change is
-mechanical at ~35 of ~38 sites (transports either keep the subject, take
-`Ψ' := ∅`, or substitute a type variable, which cannot change a tag).  It fails
-at exactly one place, a Phase-2 flagship dependency:
+- **~35 of ~38 build sites: mechanical.**  Every transport either keeps the
+  subject, takes `Ψ' := ∅`, or substitutes a type variable — and a substitution
+  by a TAG-FREE term cannot change a tag.  Stated once, in its strongest form,
+  as `ftag_in_utyp_subst_tagfree` / `ftag_in_uskl_subst_tagfree`
+  (`frost/prop_etag.v` §0).
+- **One place that was not: `d_consis_sub_trans_mid`** (CST, paper B.3,
+  `decl/prop_general_subsumption.v`), whose ForallL case transports along
+  `utyp_tag_refines`, where the subject **GAINS** tags.  Repaired by the
+  tags-bound twin below.
+- **One more that was not, and is smaller: `d_sub_prefix_spine_perm`**
+  (`decl/prop_stability.v`), which PERMUTES a spine.  Repaired by two lines of
+  syntax — ε tags are order-blind on a spine and blind to a ∀-prefix
+  (`ftag_spine_utyp_perm`, `ftag_utyp_all_syn_n`) — plus exposing the hygiene
+  premise from `d_sub_fn_all_syn_inv` / `_fnn_`, which are inversion lemmas and
+  should have reported it anyway.
 
-> **`d_consis_sub_trans_mid`** (CST, paper B.3, `decl/prop_general_subsumption.v`,
-> feeding general subsumption).  Its ForallL case transports a derivation along
-> `utyp_tag_refines C' Cmid`, where the subject **GAINS** tags.  Machine-checked
-> residual goal:
->
-> ```coq
-> Ψ' ∩ ftag_in_utyp (utyp_all_etag ε T0) [=] empty      (* goal *)
-> H1 : Ψ' ∩ ftag_in_utyp (utyp_all_etag ε C) [=] empty  (* have *)
-> Href : utyp_tag_refines T0 C
-> ```
+### ⭐ HOW CST WAS REPAIRED — the general shape, worth reusing
 
-### ⭐ ε-TAG FRESHENING — the primitive is PROVED
+`frost/prop_etag.v` + `frost/decl/prop_etag_swap.v` (~1000 lines, green):
 
-`frost/prop_etag.v` + `frost/decl/prop_etag_swap.v` (new, ~600 lines, green):
+1. **§1–§2 EQUIVARIANCE, with no freshness side condition**, for `d_tags`,
+   `d_tags_skl`, `d_wf_utyp`, `d_wf_uskl`, `d_consis`, `d_pat_consis`, `d_sub`
+   and `d_pat_sub`.  ⭐ The primitive is a TRANSPOSITION, not a one-way rename:
+   a rename needs ε₂ fresh for the WHOLE derivation, and "the tags of a
+   derivation" is not collectable from a `Prop`; a swap is a bijection, so it
+   is an automorphism outright.  (Same reason `algo/prop_swap.v` takes
+   equivariance as the renaming primitive for type variables.)
+2. **§3 `d_sub_freshen_forall_l`** — ONE ForallL node's instantiation moves out
+   of any finite set, one transposition per offending tag.  ⚠️ **This is not
+   enough**, and the reason is the lesson: rewriting a WHOLE derivation node by
+   node needs the freshened premise fed back to an induction hypothesis, and a
+   structural induction cannot — at a ForallL node the IH is tied to the
+   ORIGINAL instantiation `ph`, while freshening yields a derivation of a
+   DIFFERENT statement.  Nor can the swap be applied to the IH's OUTPUT: there
+   the instantiation's tags and the refined subject's tags sit in the SAME term
+   `T0[ph]`.
+3. **§4 the tags-BOUND twin `d_sub_tagsin U`** — `d_sub` with `Ψ' [<=] U` on
+   the two ForallL rows.  `d_sub_to_tagsin` COLLECTS the bound by a plain
+   induction, with no freshening anywhere; `d_sub_tagsin_of` forgets it.
+   ⚙ Its ForallR is EXISTS-FRESH where `d_sub`'s is cofinite: the collection
+   must produce ONE `U` for the whole rule, and a cofinite premise would demand
+   a bound uniform in infinitely many `α`.  The forgetful direction pays for
+   that with the tree's existing `d_sub_rename_tvar`.
+4. **§5 WHOLESALE freshening `d_sub_freshen`** — with every tag inside one `U`,
+   a single chain of transpositions moves `U` off any finite set, provided that
+   set avoids what the CONCLUSION mentions.  One swap now rewrites the whole
+   derivation, so there is no changed statement to feed back.
+5. **CST restated** (`decl/prop_general_subsumption.v`): the induction runs on
+   `d_sub_tagsin U` against a tag-BOUNDED refinement `utyp_tag_refines_in V`
+   (the added tags confined to `V`), with one global `U ∩ V [=] ∅`.  Its
+   ForallL case then closes from the node's own hygiene plus `Ψ' ⊆ U`.
+   ⚙ The bound must be an indexed RELATION, not the set inclusion
+   `ftag C' ⊆ ftag Cmid ∪ V` it implies: the inclusion does not survive
+   descending into a ∀'s body, because `ftag (∀^ε T0)` has already absorbed ε.
+6. **The two call sites** — `decl/prop_stability.v` and `d_sub_trans_spine`'s
+   infer case — discharge `U ∩ ftag C' = ∅` by (4), legitimate exactly there
+   because the transported derivation runs at the EMPTY tag context with a
+   PAINTED (hence tag-free) subject.
 
-- the transposition on atoms, on atom SETS (tag contexts are `atoms`, which has
-  no image operator — the action is characterised by one `swap_atoms_spec` and
-  everything else is a pointwise consequence), and on `utyp` / `uskl`;
-- ⭐ **EQUIVARIANCE, with no freshness side condition**, for `d_tags`,
-  `d_tags_skl`, `d_wf_utyp`, `d_wf_uskl`, `d_consis`, `d_pat_consis`, `d_sub`
-  and `d_pat_sub`.  A transposition is a bijection, so it is an automorphism
-  outright; a one-way rename would need ε₂ fresh for the WHOLE derivation, and
-  "the tags of a derivation" is not collectable from a `Prop`.  (Same reason
-  `algo/prop_swap.v` takes equivariance as the renaming primitive for type
-  variables.)
-- `d_sub_freshen_forall_l` — ONE ForallL node's instantiation moves out of any
-  finite set, one transposition per offending tag, measured by
-  `cardinal (Ψ' ∩ S)`.
-
-### ⚠️ …and the induction that would apply it is NOT
-
-Rewriting a WHOLE derivation into the strong reading needs the freshened
-premise fed back to an induction hypothesis, and structural induction cannot:
-at a ForallL node the IH is tied to the ORIGINAL instantiation `ph`, while
-freshening yields a derivation of a DIFFERENT statement (`C[ph''] ⩽ B`, not
-`C[ph] ⩽ B`).  ⚠️ Nor can the swap be applied to the IH's OUTPUT instead: there
-the instantiation's tags and the refined subject's tags sit in the SAME term
-`T0[ph]`, so a transposition moves both — which is exactly why CST's ForallL
-cannot be repaired locally.
-
-⭐ **THE NEXT STEP, worked out but not built** (≈150 lines + the CST edit):
-
-1. a tags-BOUND twin `d_sub_tagsin U` — `d_sub` with `Ψ' [<=] U` on the two
-   ForallL rules — with `d_sub_tagsin_of` (forget) and `d_sub_to_tagsin`
-   (`exists U, …`), the latter a plain collection induction, NO freshening;
-2. its equivariance (mirrors `d_sub_swap_etag`);
-3. `d_sub_tagsin` freshening: when the CONCLUSION is tag-free, any inner tag
-   can be transposed away without touching it, so `U` can be moved off any
-   finite set wholesale;
-4. restate `d_consis_sub_trans_mid` with `d_sub_tagsin U` and
-   `ftag_in_utyp C' ∩ U [=] empty`.  Its ForallL case then closes from
-   `Ψ' [<=] U`, `U ∩ ftag C' = ∅` and the node's own hygiene, under the
-   invariant `ftag(C'_node) [<=] ftag(C_node) ∪ ftag(C'_root)`;
-5. the two call sites (`decl/prop_stability.v:88`, the spine case at
-   `prop_general_subsumption.v:1208`) discharge `ftag C' ∩ U = ∅` by (3) —
-   legitimate exactly there, because the transported derivation's conclusion
-   `∅ ⨟ Γ ⊢[M] ⌈B'⌉ˢ ⩽ B` is TAG-FREE.
-
-Then the rule change lands, and with it the two readings become
-interderivable — which is what the paper's prose means all along.
-
-⚙ **What the attempt landed on the way**: the non-hygienic fuel mirror
-`ad_pat_sub_n` and its five bridge lemmas (~290 lines) had **no consumer
-anywhere**; deleted.  And `def_decl_algo_sub_hyg.v` was merged into
-`def_decl_algo_sub.v` (one topic, and the smaller file's only extra dependency
-was `Lia`).
+**What the paper's own statements lost: nothing.**  `d_consis_sub_trans` (the
+paper's CST) gains `Δb [=] empty`, which is the paper's own statement at `·`;
+the general-context form was a mech-internal inductive generalisation and
+survives as `d_consis_sub_trans_mid_tagsin`.  `d_sd_typing` / `d_typing` are
+untouched.
 
 ## ROUTES, RE-SCORED
 
+⚠️ Every score below is now about (A) ALONE — the prerequisite all four routes
+shared, (B), is closed.
+
 - **R1 (restricted bridge)** — needs (A)'s reachability question closed in the
-  *negative sense* described above AND all of (B).  The (A) half now has its
-  positive lemma; the missing invariant would have to say that the ghosty
-  skeleton entries `d_pat__abs` may introduce never reach a capture at a
-  closed program, over ALL choices of the App rule's existential `P`.
+  *negative sense* described above.  The (A) half now has its positive lemma;
+  the missing invariant would have to say that the ghosty skeleton entries
+  `d_pat__abs` may introduce never reach a capture at a closed program, over
+  ALL choices of the App rule's existential `P`.
 - **R2 (leaf-validity as a side condition)** — still the cheapest way to keep
   the paper's system untouched, but the side condition is a property of the
-  DERIVATION, not of the conclusion, so it does not state well; and it does
-  nothing about (B).
-- **R3 (a leaf-valid declarative twin)** — would absorb (A) and (B) together
-  (define the twin with both the leaf data and the hygiene), at the cost of a
-  judgement whose relation to `d_sd_typing` is then the open question.  ⭐ This
-  is now the most promising route, because it is the only one that addresses
-  (B) without a freshening lemma.
+  DERIVATION, not of the conclusion, so it does not state well.
+- **R3 (a leaf-valid declarative twin)** — a twin carrying the leaf data.  ⚠️ It
+  was scored the most promising route only because it also dodged (B); with (B)
+  closed that advantage is gone, and it still buys a judgement whose relation to
+  `d_sd_typing` becomes the open question.  Re-score it against R1/R2 before
+  building anything.
 - **R4 (strengthen the paper's declarative system)** — unchanged: it forces
   the standalone `Sub` rule too and re-opens Phase 2 plus the paper's
   §declarative figure.  Author-facing decision; ASK first.
-- **NEW prerequisite for R1/R2/R3 alike — HALF DONE**: the ε-tag freshening
-  for `d_sub` / `d_pat_sub` (see (B)).  The EQUIVARIANCE primitive is proved;
-  what is left is the tags-bound twin that lets an induction apply it, spelt
-  out in (B)'s five steps.  Every route pays for it, and once it exists the
-  choice between "change the rules" and "freshen in the bridge" is a matter of
-  taste rather than of provability.
+- **✅ THE SHARED PREREQUISITE IS DONE**: the ε-tag freshening for `d_sub` /
+  `d_pat_sub`.  Both halves — the equivariance primitive AND the induction that
+  applies it (the tags-bound twin + wholesale freshening) — are proved, and the
+  rule change they were for has landed.  The choice between "change the rules"
+  and "freshen in the bridge" is now a matter of taste, not of provability; the
+  tree took the first.
 
 ## ACCEPTANCE — where it stands
 
 - ✅ `a_typing_sound_infer` / `a_typing_sound_check` read `⊢ˢ` and `⊢` on the
   declarative side
 - ⛔ `a_typing_complete_infer` / `a_typing_complete_check` still read `⊢ᵃᵈ`
+- ✅ all four subtyping judgements carry the GLOBAL reading of `fresh Ψ'`
 - ✅ `make coq` exit 0, every `Print Assumptions` "Closed under the global
   context", zero Axioms/Parameters/Variables/Admitted
 - ✅ README.v's `Check`s updated for the two soundness corollaries

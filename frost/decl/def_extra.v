@@ -329,7 +329,14 @@ Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :
     Ψ ⨟ Γ ⊢[ mode_fn m ] (utyp_arrow C1 C2) ⩽ (btyp_arrow B1 B2)
 | d_sub__forall_l_tagged : forall Ψ Ψ' Γ m ε C ph B,
     m <> mode_ti ->
-    Ψ' ∩ Ψ [=] empty ->      (* Ψ' fresh w.r.t. the outer tags *)
+    Ψ' ∩ Ψ [=] empty ->      (* Ψ' fresh w.r.t. the outer tags … *)
+    Ψ' ∩ (ftag_in_utyp (utyp_all_etag ε C)) [=] empty ->
+                             (* … and w.r.t. the SUBJECT's own tags.  The
+                                paper's [Ψ' fresh] is GLOBAL: the line above
+                                alone dies at Arrow, which splits the tag
+                                context but not the subject, and
+                                [lemma:precision-substitution] is FALSE over
+                                such derivations.  docs/PAPER-GAPS.md *)
     d_tags Ψ' ph ->                  (* tags{Ψ'}{φ} : Ψ' is exactly φ's tags *)
     Γ ⊢ᵤ ph ->                       (* Γ ⊢ φ : well-scopedness half (WT: no Ψ') *)
     is_ttyp ph ->
@@ -338,6 +345,7 @@ Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :
 | d_sub__forall_l_untagged : forall Ψ Ψ' Γ m C ph B,
     m <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
+    Ψ' ∩ (ftag_in_utyp (utyp_all_syn C)) [=] empty ->  (* GLOBAL, as above *)
     d_tags Ψ' ph ->
     Γ ⊢ᵤ ph ->
     is_ttyp ph ->
@@ -512,6 +520,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
        well-scopedness is [Γ ⨟ nil ⊢ᵤₛ ψ] (R1: scope, not tags). *)
     m <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
+    Ψ' ∩ (ftag_in_uskl (uskl_all_etag ε R)) [=] empty ->  (* GLOBAL freshness *)
     d_tags_skl Ψ' psi ->             (* tags{Ψ'}{ψ} : skeleton-tag relation *)
     Γ ⨟ nil ⊢ᵤₛ psi ->
     is_tskl psi ->
@@ -520,6 +529,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
 | d_pat_sub__forall_l_untagged : forall Ψ Ψ' Γ m R psi Q,
     m <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
+    Ψ' ∩ (ftag_in_uskl (uskl_all_syn R)) [=] empty ->     (* GLOBAL freshness *)
     d_tags_skl Ψ' psi ->
     Γ ⨟ nil ⊢ᵤₛ psi ->
     is_tskl psi ->

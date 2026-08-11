@@ -27,6 +27,7 @@ Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.prop_basic.
 Require Import src.frost.def_extra.
+Require Import src.frost.prop_etag.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_basic.
@@ -339,6 +340,10 @@ Proof.
     eapply d_sub__forall_l_tagged with
       (Ψ' := Ψ') (ph := subst_utyp_in_utyp utyp_unit α0 ph);
       [ assumption | assumption
+      | (* tag hygiene: substituting a TAG-FREE term cannot change a tag *)
+        change (utyp_all_etag ε (subst_utyp_in_utyp utyp_unit α0 C))
+          with (subst_utyp_in_utyp utyp_unit α0 (utyp_all_etag ε C));
+        rewrite ftag_in_utyp_subst_tagfree by reflexivity; assumption
       | apply d_tags_subst_unit; assumption
       | eapply d_wf_utyp_subst_unit; [ eassumption | reflexivity ]
       | apply is_ttyp_subst_unit; assumption
@@ -349,6 +354,10 @@ Proof.
     eapply d_sub__forall_l_untagged with
       (Ψ' := Ψ') (ph := subst_utyp_in_utyp utyp_unit α0 ph);
       [ assumption | assumption
+      | (* tag hygiene: substituting a TAG-FREE term cannot change a tag *)
+        change (utyp_all_syn (subst_utyp_in_utyp utyp_unit α0 C))
+          with (subst_utyp_in_utyp utyp_unit α0 (utyp_all_syn C));
+        rewrite ftag_in_utyp_subst_tagfree by reflexivity; assumption
       | apply d_tags_subst_unit; assumption
       | eapply d_wf_utyp_subst_unit; [ eassumption | reflexivity ]
       | apply is_ttyp_subst_unit; assumption
@@ -665,10 +674,10 @@ Proof.
     apply H1; [ assumption | apply same_tvar_cons; assumption ].
   - eapply d_sub__arg; [ eapply d_consis_same_tvar; eassumption | apply IHd_sub; eassumption | eassumption ].
   - eapply d_sub__forall_l_tagged;
-      [ eassumption | eassumption | eassumption
+      [ eassumption | eassumption | eassumption | eassumption
       | eapply d_wf_utyp_same_tvar; eassumption | assumption | apply IHd_sub; assumption ].
   - eapply d_sub__forall_l_untagged;
-      [ eassumption | eassumption | eassumption
+      [ eassumption | eassumption | eassumption | eassumption
       | eapply d_wf_utyp_same_tvar; eassumption | assumption | apply IHd_sub; assumption ].
 Qed.
 
@@ -681,10 +690,10 @@ Proof.
       [ assumption | assumption | assumption | assumption | eapply d_pat_consis_same_tvar; eassumption ].
   - eapply d_pat_sub__arg; [ eapply d_pat_consis_same_tvar; eassumption | apply IHd_pat_sub; eassumption | eassumption ].
   - eapply d_pat_sub__forall_l_tagged;
-      [ eassumption | eassumption | eassumption
+      [ eassumption | eassumption | eassumption | eassumption
       | eapply d_wf_uskl_same_tvar; eassumption | assumption | apply IHd_pat_sub; assumption ].
   - eapply d_pat_sub__forall_l_untagged;
-      [ eassumption | eassumption | eassumption
+      [ eassumption | eassumption | eassumption | eassumption
       | eapply d_wf_uskl_same_tvar; eassumption | assumption | apply IHd_pat_sub; assumption ].
   - apply d_pat_sub__ghost; [ assumption | eapply d_wf_pskl_same_tvar; eassumption | assumption ].
   - apply d_pat_sub__univ_ghost_l; [ assumption | apply IHd_pat_sub; assumption ].

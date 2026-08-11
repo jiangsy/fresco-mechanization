@@ -12,6 +12,7 @@ Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.def_extra.
+Require Import src.frost.prop_etag.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_basic.
@@ -206,6 +207,10 @@ Proof.
     eapply d_sub__forall_l_tagged with (Ψ' := Ψ').
     + assumption.
     + assumption.
+    + (* tag hygiene: a TYPE-variable renaming cannot change a tag *)
+      change (utyp_all_etag ε (subst_utyp_in_utyp (utyp_var_f β) α0 C))
+        with (subst_utyp_in_utyp (utyp_var_f β) α0 (utyp_all_etag ε C));
+      rewrite ftag_in_utyp_subst_tagfree by reflexivity; assumption.
     + apply d_tags_subst_tvar. eassumption.
     + eapply d_wf_utyp_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
     + apply is_ttyp_rename_tvar. assumption.
@@ -215,6 +220,9 @@ Proof.
     eapply d_sub__forall_l_untagged with (Ψ' := Ψ').
     + assumption.
     + assumption.
+    + change (utyp_all_syn (subst_utyp_in_utyp (utyp_var_f β) α0 C))
+        with (subst_utyp_in_utyp (utyp_var_f β) α0 (utyp_all_syn C));
+      rewrite ftag_in_utyp_subst_tagfree by reflexivity; assumption.
     + apply d_tags_subst_tvar. eassumption.
     + eapply d_wf_utyp_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
     + apply is_ttyp_rename_tvar. assumption.

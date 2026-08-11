@@ -28,7 +28,7 @@ recently P6-Sv at the end of this file)}.
 > Several judgments looked broken until that condition was restored.  **Check
 > that file before concluding a lemma is unprovable.**
 
-## ⛔ GAP (2026-08-11) — `fresh Ψ'` is read TWO ways in the tree; the equivariance that reconciles them is proved, the induction that applies it is not
+## ✅ RESOLVED (2026-08-11) — `fresh Ψ'` must mean GLOBAL freshness, and all four subtyping judgements now read it that way
 
 `ForallL`'s side condition is the single word *fresh* on `Ψ'`:
 
@@ -39,66 +39,96 @@ recently P6-Sv at the end of this file)}.
                    [Ψ] Γ ⊢[M] ∀^ε α. C ⩽ B
 ```
 
-The mechanization renders it **two different ways**, and the difference is
-load-bearing:
-
-| judgment | rendering |
-|---|---|
-| `d_sub`, `d_pat_sub`, `ad_pat_sub` | `Ψ' ∩ Ψ = ∅` — fresh for the TAG CONTEXT |
-| `ad_pat_sub_g`, `ad_pat_sub_gv` (the fuel mirrors) | that **plus** `Ψ' ∩ tags(subject) = ∅` — GLOBAL freshness |
-
-The strong reading is not optional: `lemma:precision-substitution` is FALSE
-over derivations that have only the weak one, because **Arrow splits the tag
-context but not the subject** (`[Ψ₁,Ψ₂]` goes to the two premises while the
+**The word has to mean GLOBAL freshness** — fresh for the SUBJECT's own tags,
+not only for the tag context `Ψ`.  `lemma:precision-substitution` is FALSE over
+derivations that have only the context-local reading, because **Arrow splits the
+tag context but not the subject** (`[Ψ₁,Ψ₂]` goes to the two premises while the
 subject keeps all its tags), so a tag can leave the context on one branch and
-still sit in the subject on the other.  The weak reading is what the two
-DECLARATIVE judgments have, so a completeness statement over `d_sub` /
-`d_pat_sub` cannot reach the mirrors the theorems consume.
+still sit in the subject on the other.  (The same conclusion was reached from the
+`lemma:precision-substitution` side on 2026-07-24; see the entry near the bottom
+of this file.)
 
-**What is now proved** (frost/prop_etag.v, frost/decl/prop_etag_swap.v): the
-paper's `fresh` is a statement about NAMES, so the primitive that reconciles
-the two readings is ε-tag EQUIVARIANCE — a transposition of two tags is an
-automorphism of `d_tags`, `d_tags_skl`, `d_wf_utyp`, `d_wf_uskl`, `d_consis`,
-`d_pat_consis`, `d_sub` and `d_pat_sub`, with **no freshness side condition**
-(a one-way rename would need ε₂ fresh for the whole derivation, and "the tags
-of a derivation" is not collectable from a `Prop`).  On top of it,
-`d_sub_freshen_forall_l` moves ONE ForallL node's instantiation out of any
-finite set, one transposition per offending tag.
+Until 2026-08-11 the mechanization rendered the word **two different ways** — the
+weak one on `d_sub` / `d_pat_sub` / `ad_pat_sub`, the strong one only on the fuel
+mirrors `ad_pat_sub_g` / `_gv` — so a completeness statement over the declarative
+judgements could not reach the mirrors the theorems consume.  **All four now
+carry the strong reading**, as one extra premise per `ForallL` row:
 
-⚠️ **What that does NOT yet give, and it is not more of the same.**  Rewriting
-a whole derivation into the strong reading needs the freshened premise fed
-back to an induction hypothesis, and a STRUCTURAL induction cannot do it: at a
-ForallL node the IH is tied to the ORIGINAL instantiation `φ`, while freshening
-yields a derivation of a DIFFERENT statement (`C[φ''] ⩽ B`, not `C[φ] ⩽ B`).
-The same wall is what stops the rule change itself, at exactly one place:
+```coq
+    Ψ' ∩ ftag_in_utyp (utyp_all_etag ε C) [=] empty      (* d_sub *)
+    Ψ' ∩ ftag_in_uskl (uskl_all_etag ε R) [=] empty      (* d_pat_sub, ad_pat_sub *)
+```
 
-> `d_consis_sub_trans_mid` — CST, paper B.3, `decl/prop_general_subsumption.v`.
-> Its `ForallL` case transports a derivation along `utyp_tag_refines C' Cmid`,
-> where the subject **GAINS** tags (`utr_etag_syn` turns a `∀ˢ` into a `∀^ε`).
-> Rebuilding `ForallL` for `C'` needs `Ψ' ∩ tags(C') = ∅` and the derivation
-> supplies only `Ψ' ∩ tags(Cmid) = ∅`; nothing bounds the ADDED tags
-> (`utyp_tag_refines` puts no freshness on them, and consistency's
-> `ForallSynTagged` correctly does not collect them — a tag is consumed only
-> against an INHERITED `∀`).  ⚠️ And the swap cannot be applied to the IH's
-> OUTPUT instead: there the instantiation's tags and the refined subject's tags
-> sit in the SAME term `T0[φ]`, so a transposition moves both.
+**Cost: one lemma, and it is not bookkeeping.**  Roughly 35 of the ~38 build
+sites are mechanical: every transport either keeps the subject, takes `Ψ' := ∅`,
+or substitutes a type variable — and a substitution by a TAG-FREE term cannot
+change a tag (`ftag_in_utyp_subst_tagfree` / `ftag_in_uskl_subst_tagfree`,
+`frost/prop_etag.v` §0).  Two places are genuine obstructions, and one of them
+is deep:
 
-⭐ **The remaining piece, worked out but not built**: a tags-BOUND twin
-`d_sub_tagsin U` ("every ForallL's `Ψ' ⊆ U`"), whose `d_sub_to_tagsin` is a
-plain collection induction — no freshening — plus its equivariance.  Then CST
-takes `d_sub_tagsin U` together with `tags(C') ∩ U = ∅`, and its ForallL case
-closes from `Ψ' ⊆ U` plus the node's own hygiene, under the invariant
-`tags(C'_node) ⊆ tags(C_node) ∪ tags(C'_root)`; and the two call sites
-discharge `tags(C') ∩ U = ∅` by freshening the transported derivation
-wholesale — legitimate exactly there, because its conclusion
-(`∅ ⨟ Γ ⊢[M] ⌈B'⌉ˢ ⩽ B`) is TAG-FREE, so a transposition of two inner tags
-leaves it fixed.  The equivariance above is what that step consumes.
+> **`d_consis_sub_trans_mid`** — CST, paper B.3, `decl/prop_general_subsumption.v`,
+> feeding general subsumption.  Its `ForallL` case transports a derivation along
+> `utyp_tag_refines C' Cmid`, where the subject **GAINS** tags (`utr_etag_syn`
+> turns a `∀ˢ` into a `∀^ε`).  Rebuilding `ForallL` at `C'` owes
+> `Ψ' ∩ tags(C') = ∅` and the derivation supplies only `Ψ' ∩ tags(Cmid) = ∅`;
+> nothing local bounds the ADDED tags.  ⚠️ Neither can a swap repair it in place:
+> a structural induction ties the IH to the ORIGINAL instantiation `φ`, and
+> applying the swap to the IH's OUTPUT instead moves the subject too, because
+> there the instantiation's tags and the refined subject's tags sit in the SAME
+> term `T0[φ]`.
 
-⚙ ONE THING THE ATTEMPT SETTLED ALONG THE WAY, and it landed: the non-hygienic
+> **`d_sub_prefix_spine_perm`** — `decl/prop_stability.v`, the second and much
+> smaller one.  It PERMUTES an argument spine, so the hygiene has to be
+> re-established for a reordered subject.  Two lines of syntax settle it — ε
+> tags are order-blind on a spine and blind to a ∀-prefix
+> (`ftag_spine_utyp_perm`, `ftag_utyp_all_syn_n`) — once
+> `d_sub_fn_all_syn_inv` / `_fnn_`, which are INVERSION lemmas, report the
+> hygiene premise they were dropping.
+
+**The repair for CST, and it is a general technique.**  Stop freshening node by node.
+
+1. `frost/prop_etag.v` + `frost/decl/prop_etag_swap.v` §1–§2 — ε-tag
+   EQUIVARIANCE.  `fresh` is a statement about NAMES, so the primitive is a
+   TRANSPOSITION of two tags, which is an automorphism of `d_tags`,
+   `d_tags_skl`, `d_wf_utyp`, `d_wf_uskl`, `d_consis`, `d_pat_consis`, `d_sub`
+   and `d_pat_sub` with **no freshness side condition**.  (A one-way rename
+   would need ε₂ fresh for the whole derivation, and "the tags of a derivation"
+   is not collectable from a `Prop`.)
+2. `decl/prop_etag_swap.v` §4 — a tags-BOUND twin `d_sub_tagsin U`: `d_sub`
+   with `Ψ' [<=] U` on the two `ForallL` rows.  `d_sub_to_tagsin` COLLECTS the
+   bound by a plain induction (no freshening anywhere); `d_sub_tagsin_of`
+   forgets it.  ⚙ Its `ForallR` is EXISTS-FRESH where `d_sub`'s is cofinite —
+   the collection must produce ONE `U` for the whole rule, and a cofinite
+   premise would demand a bound uniform in infinitely many `α`.
+3. `decl/prop_etag_swap.v` §5 — `d_sub_freshen`: with all the derivation's tags
+   inside one `U`, a single chain of transpositions moves `U` off any finite
+   set, provided that set avoids what the CONCLUSION mentions (its tag context
+   and its subject's tags) — then no swap touches the conclusion.
+4. `decl/prop_general_subsumption.v` — CST runs on `d_sub_tagsin U` against a
+   tag-BOUNDED refinement `utyp_tag_refines_in V` (the added tags confined to
+   `V`), with one global `U ∩ V = ∅`.  Its `ForallL` case then closes from the
+   node's own hygiene plus `Ψ' ⊆ U`.  ⚙ The bound must be carried by an indexed
+   RELATION, not by the set inclusion `tags(C') ⊆ tags(Cmid) ∪ V` it implies:
+   the inclusion does not survive descending into a ∀'s body, since
+   `tags(∀^ε T0)` has already absorbed ε.
+5. Both call sites (`decl/prop_stability.v`, the spine case of
+   `d_sub_trans_spine`) discharge `U ∩ tags(C') = ∅` by (3) — legitimate exactly
+   there, because the transported derivation runs at the EMPTY tag context and
+   its subject is a PAINTING `⌈B⌉ˢ`, hence tag-free.
+
+**What the paper's own statements lost: nothing.**  `d_consis_sub_trans` (the
+paper's CST, `appendices/full-decl-proofs.tex:93`) gains `Δb [=] empty` —
+which is verbatim the paper's own statement, which is at `·`; the general-context form was a mech-internal
+inductive generalisation and survives as `d_consis_sub_trans_mid_tagsin`.
+`d_sd_typing` / `d_typing` are untouched, and every `README.v` claim still
+reports "Closed under the global context".
+
+⚙ ONE THING SETTLED ALONG THE WAY (2026-08-11, independent): the non-hygienic
 fuel mirror `ad_pat_sub_n` and its five bridge lemmas (~290 lines) had **no
 consumer anywhere** — §1 of the completeness skeleton named it as the measure
-but the development settled on the hygienic `ad_pat_sub_g` and never came
-back.  Deleted.
+but the development settled on the hygienic `ad_pat_sub_g` and never came back.
+Deleted.  ⚙ And `ad_pat_sub_g` now differs from `ad_pat_sub` by its FUEL
+discipline alone; the hygiene is shared.
 
 ## PROSE-COMPLETION (2026-08-10) — `app:decl-in-algo-context`'s "it is easy to extend them" is a CONSERVATIVITY lemma, and it holds in one direction only
 
@@ -160,14 +190,12 @@ algo/typing/prop_conserv.v §12:
   is exactly **skeleton inference's P-Var at an entry `x : P` whose `P` has a
   ghost under a ∀** — which P-Abs may introduce with any well-formed `P`, and
   which typing reaches through App's skeleton-inference premise.
-- **(B) tag hygiene.**  The mech's ForallL additionally requires the
-  instantiation's tags fresh from the SUBJECT's syntactic tags — its rendering
-  of the paper's prose `fresh Ψ'` as GLOBAL freshness, which
-  `lemma:precision-substitution` needs (see the 2026-07-24 PROSE-COMPLETION
-  entry below).  `d_sub` / `d_pat_sub` render the same prose as freshness from
-  the TAG CONTEXT only, and the two come apart at the Arrow rule, where the
-  tag context is split but the subject is not.  ⚠️ This one bites at the TYPE
-  sort as well, so it is not repaired by (A).
+- **(B) tag hygiene — ✅ RESOLVED 2026-08-11**, see the entry at the top of
+  this file.  The mech used to render the paper's prose `fresh Ψ'` two ways —
+  GLOBAL on the fuel mirrors, tag-context-local on `d_sub` / `d_pat_sub` /
+  `ad_pat_sub` — and the two come apart at Arrow, where the tag context is
+  split but the subject is not.  All four now read it GLOBALLY, so this one is
+  no longer an obstruction at either sort.
 
 **Consequence for the paper.**  `thm:sound-type-inference` can be stated
 against the §declarative system at a closed program and the mechanization now
@@ -175,7 +203,7 @@ does so (`a_typing_sound_infer` / `_check`, README.v) — modulo one further
 step the paper does not mention, that the run's OUTPUT context still holds
 flexibles and must be closed off by a metasubstitution `ζ ∷ Θ₁ ⊑ ·` before
 the answer is a declarative type at all.  `thm:complete-type-inference`
-cannot, for (A) and (B).
+cannot, for (A).
 
 ## PROSE-COMPLETION (2026-08-10) — `sd-Anno` must require its annotation well formed, like its four siblings
 

@@ -67,7 +67,9 @@ Require Import src.frost.algo.sub.look.prop_solve_ext.
 Require Import src.frost.algo.sub.look.prop_flex_apart.
 Require Import src.frost.algo.sub.look.prop_eq_var.
 Require Import src.frost.algo.sub.look.prop_eq_cstr.  (* the ∀-binder kit,
-    [mono_ptyp_to_uskl_syn_tskl], [ftag_in_uskl_ptyp_to_uskl_syn], … *)
+    [mono_ptyp_to_uskl_syn_tskl], [ftag_in_uskl_msubst_uskl_syn], …
+    (⚙ [ftag_ptyp_to_uskl_syn] moved to algo/prop_pat_sub.v 2026-08-11 — it
+    was in this file AND in prop_consis_precise.v, under two names) *)
 
 Set Implicit Arguments.
 

@@ -554,3 +554,27 @@ Proof. induction C; simpl; try reflexivity; try (rewrite IHC1, IHC2); auto. Qed.
 Lemma ftvar_uskl_to_utyp : forall R,
   ftvar_in_utyp (uskl_to_utyp R) [<=] ftvar_in_uskl R.
 Proof. induction R; simpl; fsetdec. Qed.
+
+(* ===================================================================== *)
+(*  §5  ε TAGS ACROSS THE CONVERSIONS                                     *)
+(*                                                                        *)
+(*  A PAINTING invents no tag: [ptyp] / [btyp] have no ε slot at all, so   *)
+(*  everything painted out of them is tag-free.  ⚙ Proved here and only   *)
+(*  here.  ⚙ [ptyp_to_uskl_syn] is NOT one of these — it is defined only   *)
+(*  in decorated_algo/def_decl_algo.v, so its tag-freeness lives with the  *)
+(*  rest of its shape facts in algo/prop_pat_sub.v.                        *)
+(* ===================================================================== *)
+
+Lemma ftag_btyp_to_utyp_syn : forall B,
+  ftag_in_utyp (btyp_to_utyp_syn B) [=] empty.
+Proof. induction B; simpl; fsetdec. Qed.
+
+Lemma ftag_bskl_to_uskl : forall Q,
+  ftag_in_uskl (bskl_to_uskl Q) [=] empty.
+Proof. induction Q; simpl; fsetdec. Qed.
+
+(** The SORT INCLUSION, by contrast, keeps every tag — which is how the
+    conservativity bridge carries [ForallL]'s hygiene across the sorts. *)
+Lemma ftag_utyp_to_uskl : forall C,
+  ftag_in_uskl (utyp_to_uskl C) [=] ftag_in_utyp C.
+Proof. induction C; simpl; fsetdec. Qed.

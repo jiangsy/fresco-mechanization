@@ -4,10 +4,14 @@
     instantiation's tags Ψ', and it means GLOBAL freshness — in particular
     freshness from the tags already in the SUBJECT, which is what
     [lemma:precision-substitution] needs (docs/DESIGN-completeness-subtyping.md
-    §5.2).  The tree's judgments do not all render it that way, and reconciling
-    them rests on being able to MOVE a derivation's instantiation tags: this
-    file is the syntactic half of that primitive, decl/prop_etag_swap.v the
-    judgmental half (and its header says what is still owed).
+    §5.2).  Every subtyping judgment in the tree renders it that way as of
+    2026-08-11, and making that affordable rests on being able to MOVE a
+    derivation's instantiation tags: this file is the syntactic half of that
+    primitive, decl/prop_etag_swap.v the judgmental half.
+
+    §0 is the other half of "affordable", and the cheaper one: the hygiene
+    premise has to survive every structural lemma, and all but one of them
+    substitute a TYPE variable — which cannot touch a tag.
 
     ⭐ THE PRIMITIVE IS A TRANSPOSITION.  A one-way rename [ε1 ↦ ε2] is sound
     only when ε2 is fresh for the WHOLE derivation, and "the tags of a
@@ -26,6 +30,39 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.def_extra.
+
+(* ===================================================================== *)
+(*  §0  ε TAGS ARE BLIND TO TYPE-VARIABLE SUBSTITUTION                    *)
+(*                                                                        *)
+(*  ⭐ The reason the GLOBAL reading of [fresh Ψ'] costs the tree almost   *)
+(*  nothing: a rule premise [Ψ' ∩ ftag(subject) = ∅] has to survive every  *)
+(*  structural lemma, and all but one of them substitute a TYPE variable — *)
+(*  which cannot touch a tag, whatever it substitutes, as long as the      *)
+(*  replacement carries no tags of its own.  Stated once, in its strongest *)
+(*  form; the [_var] / [_unit] / [_mono] instances downstream read off it. *)
+(* ===================================================================== *)
+
+Lemma ftag_in_utyp_subst_tagfree : forall C C' α,
+  ftag_in_utyp C' [=] empty ->
+  ftag_in_utyp (subst_utyp_in_utyp C' α C) [=] ftag_in_utyp C.
+Proof.
+  induction C; intros C' α0 Hf; simpl;
+    try solve [ reflexivity
+              | destruct_if; [ exact Hf | reflexivity ]
+              | rewrite IHC by exact Hf; reflexivity
+              | rewrite IHC1, IHC2 by exact Hf; reflexivity ].
+Qed.
+
+Lemma ftag_in_uskl_subst_tagfree : forall R R' α,
+  ftag_in_uskl R' [=] empty ->
+  ftag_in_uskl (subst_uskl_in_uskl R' α R) [=] ftag_in_uskl R.
+Proof.
+  induction R; intros R' α0 Hf; simpl;
+    try solve [ reflexivity
+              | destruct_if; [ exact Hf | reflexivity ]
+              | rewrite IHR by exact Hf; reflexivity
+              | rewrite IHR1, IHR2 by exact Hf; reflexivity ].
+Qed.
 
 (* ===================================================================== *)
 (*  §1  THE TRANSPOSITION, on atoms and on atom SETS                      *)
@@ -381,6 +418,13 @@ Lemma swap_atoms_add_of : forall ε1 ε2 ε Ψ Ψ0 Ψs,
 Proof.
   intros ε1 ε2 ε Ψ Ψ0 Ψs H Heq.
   rewrite Heq, (swap_atoms_cong ε1 ε2 _ _ H). apply swap_atoms_add.
+Qed.
+
+Lemma swap_atoms_subset_of : forall ε1 ε2 S T,
+  S [<=] T -> (swap_atoms ε1 ε2 S) [<=] (swap_atoms ε1 ε2 T).
+Proof.
+  intros ε1 ε2 S T H α Hα.
+  apply swap_atoms_spec. apply H. apply swap_atoms_spec. exact Hα.
 Qed.
 
 Lemma swap_atoms_disjoint_of : forall ε1 ε2 S T,

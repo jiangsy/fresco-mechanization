@@ -86,7 +86,8 @@ Proof.
     destruct (@d_typing_var_ti_consis Γ x A (ptyp_to_btyp_syn A0) Hwf Hb Htyp)
       as [Hstyp1 [Δt Hcons1]].
     edestruct (@d_consis_sub_trans (mode_fn m) empty Γ (ptyp_to_utyp_syn A0) B
-                 H (ptyp_to_btyp_syn A0) (ptyp_to_utyp_syn A) Δt) as [Δ [_ Hgoal]].
+                 H ltac:(clear; fsetdec)
+                 (ptyp_to_btyp_syn A0) (ptyp_to_utyp_syn A) Δt) as [Δ [_ Hgoal]].
     + rewrite <- ptyp_to_utyp_syn_btyp_to_ptyp, btyp_to_ptyp_ptyp_to_btyp_syn; reflexivity.
     + exact Hstyp1.
     + exact Hcons1.
@@ -391,14 +392,16 @@ Proof. destruct n; intros m H; [ lia | exists (mode_fn_n n m); reflexivity ]. Qe
 Lemma d_sub_fn_all_syn_inv : forall Δ Γ m C B,
     Δ ⨟ Γ ⊢[ mode_fn m ] (utyp_all_syn C) ⩽ B ->
     exists Ψ' C',
-      Ψ' ∩ Δ [=] empty /\ d_tags Ψ' C' /\ Γ ⊢ᵤ C' /\ is_ttyp C' /\
+      Ψ' ∩ Δ [=] empty /\
+      Ψ' ∩ (ftag_in_utyp (utyp_all_syn C)) [=] empty /\
+      d_tags Ψ' C' /\ Γ ⊢ᵤ C' /\ is_ttyp C' /\
       (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn m ] (open_utyp_wrt_utyp C C') ⩽ B.
 Proof.
   intros Δ Γ m C B Hsub.
-  inversion Hsub as [ | | | | | Ψ0 Ψ' Γ0 m0 C0 C' B0 Hm Hfresh Htags Hwfph Httyp Hpre ];
+  inversion Hsub as [ | | | | | Ψ0 Ψ' Γ0 m0 C0 C' B0 Hm Hfresh Hhyg Htags Hwfph Httyp Hpre ];
     subst.
   exists Ψ', C'.
-  split; [ exact Hfresh | ]. split; [ exact Htags | ].
+  split; [ exact Hfresh | ]. split; [ exact Hhyg | ]. split; [ exact Htags | ].
   split; [ exact Hwfph | ]. split; [ exact Httyp | exact Hpre ].
 Qed.
 
@@ -407,14 +410,16 @@ Lemma d_sub_fnn_all_syn_inv : forall n m Δ Γ C B,
     1 <= n ->
     Δ ⨟ Γ ⊢[ mode_fn_n n m ] (utyp_all_syn C) ⩽ B ->
     exists Ψ' C',
-      Ψ' ∩ Δ [=] empty /\ d_tags Ψ' C' /\ Γ ⊢ᵤ C' /\ is_ttyp C' /\
+      Ψ' ∩ Δ [=] empty /\
+      Ψ' ∩ (ftag_in_utyp (utyp_all_syn C)) [=] empty /\
+      d_tags Ψ' C' /\ Γ ⊢ᵤ C' /\ is_ttyp C' /\
       (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn_n n m ] (open_utyp_wrt_utyp C C') ⩽ B.
 Proof.
   intros n m Δ Γ C B Hpos Hsub.
   destruct (mode_fn_n_ge1_fn m Hpos) as [m' Hm']. rewrite Hm' in Hsub.
-  apply d_sub_fn_all_syn_inv in Hsub as [Ψ' [C' [Hf [Ht [Hw [Hi Hp]]]]]].
+  apply d_sub_fn_all_syn_inv in Hsub as [Ψ' [C' [Hf [Hh [Ht [Hw [Hi Hp]]]]]]].
   exists Ψ', C'. rewrite Hm'.
-  split; [ exact Hf | ]. split; [ exact Ht | ].
+  split; [ exact Hf | ]. split; [ exact Hh | ]. split; [ exact Ht | ].
   split; [ exact Hw | ]. split; [ exact Hi | exact Hp ].
 Qed.
 
@@ -426,6 +431,25 @@ Proof.
   induction sp as [ | p sp IH ]; [ reflexivity | ].
   cbn [List.map]. rewrite spine_btyp_cons, spine_btyp_cons. cbn [fst snd].
   rewrite IH. reflexivity.
+Qed.
+
+(** ⭐ ε TAGS ARE ORDER-BLIND ON A SPINE, and blind to a ∀-prefix — what the
+    permutation engine owes [ForallL]'s hygiene premise now that it reads
+    `fresh Ψ'` globally. *)
+Lemma ftag_utyp_all_syn_n : forall j C,
+    ftag_in_utyp (utyp_all_syn_n j C) [=] ftag_in_utyp C.
+Proof. induction j; intros C; simpl; [ reflexivity | apply IHj ]. Qed.
+
+Lemma ftag_spine_utyp_perm : forall Ct sp sp',
+    Permutation sp sp' ->
+    ftag_in_utyp (spine_utyp Ct sp) [=] ftag_in_utyp (spine_utyp Ct sp').
+Proof.
+  intros Ct sp sp' H. induction H.
+  - reflexivity.
+  - rewrite !spine_utyp_cons. cbn [ftag_in_utyp]. rewrite IHPermutation.
+    reflexivity.
+  - rewrite !spine_utyp_cons. cbn [ftag_in_utyp]. fsetdec.
+  - rewrite IHPermutation1. exact IHPermutation2.
 Qed.
 
 (** ENGINE WITH [∀]-PREFIX: strip the [j] outer [∀]s (reusing the
@@ -445,7 +469,7 @@ Proof.
   - assert (Hle : length sp = length sp') by (apply Permutation_length; assumption).
     assert (Hpos' : 1 <= length sp') by (rewrite <- Hle; exact Hpos).
     simpl in Hsub.
-    apply d_sub_fnn_all_syn_inv in Hsub as [Ψ' [ph [Hf [Ht [Hw [Hi Hp]]]]]];
+    apply d_sub_fnn_all_syn_inv in Hsub as [Ψ' [ph [Hf [Hh [Ht [Hw [Hi Hp]]]]]]];
       [ | exact Hpos ].
     unfold open_utyp_wrt_utyp in Hp.
     rewrite open_utyp_all_syn_n_rec in Hp. simpl in Hp.
@@ -466,6 +490,11 @@ Proof.
     simpl. apply d_sub__forall_l_untagged with (Ψ' := Ψ') (ph := ph).
     + destruct (mode_fn_n_ge1_fn m Hpos') as [m'' Hm'']. rewrite Hm''. discriminate.
     + exact Hf.
+    + (* ⭐ tag hygiene under the PERMUTATION: a spine's tags do not depend on
+         the order of its arguments, and the ∀-prefix adds none. *)
+      cbn [ftag_in_utyp] in Hh |- *.
+      rewrite !ftag_utyp_all_syn_n in Hh |- *.
+      rewrite <- (ftag_spine_utyp_perm Ct Hperm). exact Hh.
     + exact Ht.
     + exact Hw.
     + exact Hi.

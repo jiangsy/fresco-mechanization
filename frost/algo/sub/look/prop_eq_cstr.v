@@ -86,14 +86,6 @@ Proof.
   apply uskl_to_pskl_ptyp.
 Qed.
 
-(* msubst preserves the syntactic ε-tags (var images are tag-free paints). *)
-Lemma ftag_in_uskl_ptyp_to_uskl_syn : forall A,
-  ftag_in_uskl (ptyp_to_uskl_syn A) [=] empty.
-Proof.
-  intro A. unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn.
-  induction A; simpl; fsetdec.
-Qed.
-
 Lemma ptyp_to_uskl_syn_var : forall α, ptyp_to_uskl_syn (ptyp_var_f α) = uskl_var_f α.
 Proof. reflexivity. Qed.
 
@@ -154,7 +146,7 @@ Proof.
   intros κ R'; induction R' as [ | n | α | R1 IHR'1 R2 IHR'2 | R0 IHR'0
                              | ε R0 IHR'0 | | R0 IHR'0 | | R0 IHR'0 ];
     simpl; try fsetdec.
-  pose proof (ftag_in_uskl_ptyp_to_uskl_syn (msubst_lookup κ α)) as Hgf.
+  pose proof (ftag_ptyp_to_uskl_syn (msubst_lookup κ α)) as Hgf.
   fsetdec.
 Qed.
 
@@ -2143,7 +2135,7 @@ Proof.
         (* ψa mono ⇒ Ψ' = ∅ ⇒ Ψi = Ψa = ∅ *)
         assert (HΨ'e : Ψ' [=] empty).
         { pose proof (d_tags_skl_ftag (a_tags_sort_d_tags Htags)) as HΨ't.
-          rewrite Heqψ in HΨ't. rewrite ftag_in_uskl_ptyp_syn in HΨ't.
+          rewrite Heqψ in HΨ't. rewrite ftag_ptyp_to_uskl_syn in HΨ't.
           exact HΨ't. }
         assert (HΨie : Ψi [=] empty) by (clear - Hsub HΨ'e; fsetdec).
         assert (HΨae : Ψa [=] empty) by (clear - Hsub HΨ'e; fsetdec).

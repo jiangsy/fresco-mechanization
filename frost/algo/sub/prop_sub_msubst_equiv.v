@@ -855,7 +855,7 @@ Lemma a_uskl_tyequiv_ftag : forall Θ R R',
 Proof.
   intros Θ R R' H; induction H; simpl; try (clear - IHa_uskl_tyequiv; fsetdec).
   - (* __mono *)
-    rewrite (ftag_in_uskl_ptyp_syn τ1). rewrite (ftag_in_uskl_ptyp_syn τ2).
+    rewrite (ftag_ptyp_to_uskl_syn τ1). rewrite (ftag_ptyp_to_uskl_syn τ2).
     clear; fsetdec.
   - (* __unit *) clear; fsetdec.
   - (* __var *) clear; fsetdec.

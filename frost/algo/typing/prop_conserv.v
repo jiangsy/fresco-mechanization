@@ -702,17 +702,21 @@ Proof.
   - (* Arrow *) apply d_pat_sub__arg with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
       [ exact (ad_pat_consis_to_d Ψ1 (denv_to_aenv Γ0) R1 Q1 H Γ0 eq_refl)
       | exact (IHad_pat_sub eq_refl Γ0 eq_refl) | assumption ].
-  - (* ForallL, tagged *) inversion H1; subst.
+  - (* ForallL, tagged *) inversion H2; subst.
     apply d_pat_sub__forall_l_tagged with (Ψ' := Ψ') (psi := ψ);
-      [ assumption | assumption | assumption
+      [ assumption | assumption
+      | (* the two judgements now read `fresh Ψ'` the SAME way, so the
+           hygiene premise travels verbatim *) assumption | assumption
       | exact (d_wf_uskl_of_a_wf_pskl (denv_to_aenv Γ0) empty (uskl_to_pskl ψ)
-                 H2 ψ eq_refl Γ0 nil eq_refl delta_agree_nil)
+                 H3 ψ eq_refl Γ0 nil eq_refl delta_agree_nil)
       | assumption | exact (IHad_pat_sub eq_refl Γ0 eq_refl) ].
-  - (* ForallL, untagged *) inversion H1; subst.
+  - (* ForallL, untagged *) inversion H2; subst.
     apply d_pat_sub__forall_l_untagged with (Ψ' := Ψ') (psi := ψ);
-      [ assumption | assumption | assumption
+      [ assumption | assumption
+      | (* the two judgements now read `fresh Ψ'` the SAME way, so the
+           hygiene premise travels verbatim *) assumption | assumption
       | exact (d_wf_uskl_of_a_wf_pskl (denv_to_aenv Γ0) empty (uskl_to_pskl ψ)
-                 H2 ψ eq_refl Γ0 nil eq_refl delta_agree_nil)
+                 H3 ψ eq_refl Γ0 nil eq_refl delta_agree_nil)
       | assumption | exact (IHad_pat_sub eq_refl Γ0 eq_refl) ].
   - (* Ghost *) apply d_pat_sub__ghost;
       [ assumption
@@ -739,14 +743,14 @@ Proof.
   - apply ad_pat_sub__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
       [ apply d_pat_consis_to_ad; assumption | assumption | assumption ].
   - apply ad_pat_sub__forall_l_tagged with (Ψ' := Ψ') (ψ := psi);
-      [ assumption | assumption
+      [ assumption | assumption | assumption
       | apply a_tags_sort__sk; assumption
-      | exact (a_wf_pskl_of_d_wf_uskl Γ nil psi H2 empty delta_agree_nil)
+      | exact (a_wf_pskl_of_d_wf_uskl Γ nil psi H3 empty delta_agree_nil)
       | assumption ].
   - apply ad_pat_sub__forall_l_untagged with (Ψ' := Ψ') (ψ := psi);
-      [ assumption | assumption
+      [ assumption | assumption | assumption
       | apply a_tags_sort__sk; assumption
-      | exact (a_wf_pskl_of_d_wf_uskl Γ nil psi H2 empty delta_agree_nil)
+      | exact (a_wf_pskl_of_d_wf_uskl Γ nil psi H3 empty delta_agree_nil)
       | assumption ].
   - apply ad_pat_sub__ghost;
       [ assumption
@@ -912,36 +916,44 @@ Proof.
       | assumption ].
   - (* ForallL, tagged *)
     destruct C0; simpl in HR; try discriminate HR.
-    inversion HR; subst. inversion H1; subst.
+    inversion HR; subst. inversion H2; subst.
     apply d_sub__forall_l_tagged with (Ψ' := Ψ') (ph := uskl_to_utyp ψ);
       [ assumption | assumption
+      | (* the hygiene premise crosses the SORTS: the inclusion
+           [utyp_to_uskl] keeps every tag.  ⚙ No explicit argument — the ∀'s
+           own tag was substituted away by [inversion HR; subst]. *)
+        rewrite <- ftag_utyp_to_uskl; simpl in H1 |- *; exact H1
       | apply d_tags_uskl_to_utyp; assumption
       | exact (d_wf_utyp_of_d_wf_uskl Γ0 nil ψ
                  (d_wf_uskl_of_a_wf_pskl (denv_to_aenv Γ0) empty
-                    (uskl_to_pskl ψ) H2 ψ eq_refl Γ0 nil eq_refl
-                    delta_agree_nil) H6)
+                    (uskl_to_pskl ψ) H3 ψ eq_refl Γ0 nil eq_refl
+                    delta_agree_nil) H7)
       | apply is_ttyp_uskl_to_utyp; assumption
       | exact (IHad_pat_sub eq_refl Γ0 eq_refl
                  (open_utyp_wrt_utyp C0 (uskl_to_utyp ψ)) B0
                  ltac:(rewrite utyp_to_uskl_open;
-                       rewrite (uskl_ghost_free_utyp_to_uskl ψ H6);
+                       rewrite (uskl_ghost_free_utyp_to_uskl ψ H7);
                        reflexivity)
                  eq_refl) ].
   - (* ForallL, untagged *)
     destruct C0; simpl in HR; try discriminate HR.
-    inversion HR; subst. inversion H1; subst.
+    inversion HR; subst. inversion H2; subst.
     apply d_sub__forall_l_untagged with (Ψ' := Ψ') (ph := uskl_to_utyp ψ);
       [ assumption | assumption
+      | (* the hygiene premise crosses the SORTS: the inclusion
+           [utyp_to_uskl] keeps every tag.  ⚙ No explicit argument — the ∀'s
+           own tag was substituted away by [inversion HR; subst]. *)
+        rewrite <- ftag_utyp_to_uskl; simpl in H1 |- *; exact H1
       | apply d_tags_uskl_to_utyp; assumption
       | exact (d_wf_utyp_of_d_wf_uskl Γ0 nil ψ
                  (d_wf_uskl_of_a_wf_pskl (denv_to_aenv Γ0) empty
-                    (uskl_to_pskl ψ) H2 ψ eq_refl Γ0 nil eq_refl
-                    delta_agree_nil) H6)
+                    (uskl_to_pskl ψ) H3 ψ eq_refl Γ0 nil eq_refl
+                    delta_agree_nil) H7)
       | apply is_ttyp_uskl_to_utyp; assumption
       | exact (IHad_pat_sub eq_refl Γ0 eq_refl
                  (open_utyp_wrt_utyp C0 (uskl_to_utyp ψ)) B0
                  ltac:(rewrite utyp_to_uskl_open;
-                       rewrite (uskl_ghost_free_utyp_to_uskl ψ H6);
+                       rewrite (uskl_ghost_free_utyp_to_uskl ψ H7);
                        reflexivity)
                  eq_refl) ].
   - (* FlexMono *) exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
@@ -1242,8 +1254,9 @@ Qed.
 (*  stops.                                                                *)
 (*                                                                        *)
 (*  ⚠️ [paper-gap] The [d_] → [ad_] direction — what a completeness        *)
-(*  corollary stated over [d_sd_typing] would need — is NOT closed, and   *)
-(*  the two obstructions are of different kinds:                          *)
+(*  corollary stated over [d_sd_typing] would need — is NOT closed.  Two  *)
+(*  obstructions were recorded here; ⭐ (B) IS NOW GONE (2026-08-11), so   *)
+(*  what remains is (A) alone:                                            *)
 (*                                                                        *)
 (*  (A) THE LEAF-VALID DATUM.  [ad_pat] / [ad_sd_typing] embed            *)
 (*      [ad_pat_sub_v], whose consistency leaves additionally carry the   *)
@@ -1262,17 +1275,22 @@ Qed.
 (*      may introduce with any well-formed [P] and which [d_sd_typing]    *)
 (*      reaches through its App rule's [d_pat] premise.                   *)
 (*                                                                        *)
-(*  (B) TAG HYGIENE.  [ad_pat_sub_gv]'s two ForallL rows additionally     *)
-(*      require the instantiation's tags fresh from the SUBJECT's         *)
-(*      syntactic tags ([Ψ' ∩ ftag_in_uskl R [=] ∅], def_decl_algo_sub_   *)
-(*      hyg.v §1) — the mech's rendering of the paper's prose "fresh Ψ'"  *)
-(*      as GLOBAL freshness, which precision-substitution needs.          *)
-(*      [d_sub] / [d_pat_sub] render the same prose as freshness from the *)
-(*      TAG CONTEXT only ([Ψ' ∩ Ψ [=] ∅]), and the two differ across the  *)
-(*      Arrow split, where the tag context is divided but the subject is  *)
-(*      not.  Bridging them needs the ε-tag freshening the development    *)
-(*      deferred (docs/DESIGN-completeness-subtyping.md §5.2).  This one  *)
-(*      bites at the TYPE sort too, so it is not repaired by (A).         *)
+(*  (B) TAG HYGIENE — ✅ RESOLVED 2026-08-11, and it used to be the       *)
+(*      DEEPER of the two.  The paper's prose "fresh Ψ'" means GLOBAL     *)
+(*      freshness (fresh from the SUBJECT's syntactic tags, not only from *)
+(*      the tag context — the two come apart at the Arrow split, and      *)
+(*      precision-substitution is FALSE over the weak reading).  Only the *)
+(*      fuel mirrors used to say so; now [d_sub], [d_pat_sub] and         *)
+(*      [ad_pat_sub] carry the same premise, so both sorts line up and    *)
+(*      the [ad_pat_sub_sk_to_d] / [ad_pat_sub_ty_to_d] rows above        *)
+(*      transport it verbatim (across the sorts via [ftag_utyp_to_uskl]). *)
+(*      What paid for it: decl/prop_etag_swap.v §4-§5 — collect a         *)
+(*      derivation's instantiation tags into ONE bound, then move them    *)
+(*      wholesale by transposition — which is what CST                    *)
+(*      ([d_consis_sub_trans_mid]) needs, its ForallL case transporting   *)
+(*      along [utyp_tag_refines] where the subject GAINS tags.            *)
+(*      ⚠️ WHAT IS STILL OWED in this neighbourhood is a FUEL question,    *)
+(*      not a hygiene one: [ad_pat_sub] → [ad_pat_sub_g].                 *)
 (* ===================================================================== *)
 
 Lemma binds_tvars_denv_inv : forall α Δ,

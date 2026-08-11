@@ -17,6 +17,7 @@ Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.def_extra.
 Require Import src.frost.prop_basic.
+Require Import src.frost.prop_etag.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_basic.
@@ -315,13 +316,22 @@ Proof.
       [ eapply d_pat_consis_subst_unit; eauto | eapply IHd_pat_sub; eauto | (eassumption || fsetdec) ].
   - simpl. eapply d_pat_sub__forall_l_tagged with
       (psi := subst_uskl_in_uskl uskl_unit α0 psi);
-      [ assumption | eassumption | apply d_tags_skl_subst_unit; assumption
+      [ assumption | eassumption
+      | (* tag hygiene: substituting a TAG-FREE term cannot change a tag *)
+        change (uskl_all_etag ε (subst_uskl_in_uskl uskl_unit α0 R))
+          with (subst_uskl_in_uskl uskl_unit α0 (uskl_all_etag ε R));
+        rewrite ftag_in_uskl_subst_tagfree by reflexivity; assumption
+      | apply d_tags_skl_subst_unit; assumption
       | eapply d_wf_uskl_subst_unit; eauto | apply is_tskl_subst_unit; assumption | ].
     rewrite <- subst_uskl_in_uskl_open_uskl_wrt_uskl; try (apply lc_uskl_unit).
     eapply IHd_pat_sub; eauto.
   - simpl. eapply d_pat_sub__forall_l_untagged with
       (psi := subst_uskl_in_uskl uskl_unit α0 psi);
-      [ assumption | eassumption | apply d_tags_skl_subst_unit; assumption
+      [ assumption | eassumption
+      | change (uskl_all_syn (subst_uskl_in_uskl uskl_unit α0 R))
+          with (subst_uskl_in_uskl uskl_unit α0 (uskl_all_syn R));
+        rewrite ftag_in_uskl_subst_tagfree by reflexivity; assumption
+      | apply d_tags_skl_subst_unit; assumption
       | eapply d_wf_uskl_subst_unit; eauto | apply is_tskl_subst_unit; assumption | ].
     rewrite <- subst_uskl_in_uskl_open_uskl_wrt_uskl; try (apply lc_uskl_unit).
     eapply IHd_pat_sub; eauto.

@@ -238,6 +238,104 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-08-11 (later) — ⭐⭐⭐ **THE UNIFORM READING OF `fresh Ψ'` LANDS: all four subtyping judgements carry GLOBAL tag hygiene, and CST pays for it**
+
+Continuation of the entry below.  `make coq` exit 0, admit-free, axiom-free,
+README.v 24/24 `Print Assumptions` closed.  Full write-up:
+[`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md) (✅ RESOLVED 2026-08-11) and
+[`docs/HANDOFF-closed-corollaries-declarative.md`](docs/HANDOFF-closed-corollaries-declarative.md)
+§(B).
+
+### 1. The rule change
+
+`d_sub`, `d_pat_sub` and `ad_pat_sub` now carry, on both `ForallL` rows, the
+premise the fuel mirrors `ad_pat_sub_g` / `_gv` already had:
+
+```coq
+Ψ' ∩ (ftag_in_utyp (utyp_all_etag ε C)) [=] empty     (* d_sub *)
+Ψ' ∩ (ftag_in_uskl (uskl_all_etag ε R)) [=] empty     (* d_pat_sub, ad_pat_sub *)
+```
+
+That is the paper's single word *fresh* read GLOBALLY, which is what
+`lemma:precision-substitution` needs: the context-local reading does not
+survive the **Arrow** split, where the tag context divides but the subject does
+not.  Obstruction (B) of the completeness bridge — which bit at the TYPE sort
+too, so (A) could not have fixed it — is gone.
+
+### 2. What it cost: ~35 mechanical sites, and two that were not
+
+⭐ **The mechanical ones need ONE fact**, and it is worth having stated in its
+strongest form: `ftag_in_utyp_subst_tagfree` / `ftag_in_uskl_subst_tagfree`
+(`frost/prop_etag.v` §0) — substituting a TAG-FREE term cannot change a tag.
+Every transport either keeps the subject, takes `Ψ' := ∅`, or substitutes a
+type variable / `1` / a monotype painting, so it reads off that lemma.
+
+⚠️ **`d_consis_sub_trans_mid`** (CST, paper B.3) was the real one: its ForallL
+case transports along `utyp_tag_refines`, where the subject **GAINS** tags, so
+the hygiene has to be re-established for a strictly bigger tag set.  §3 below.
+
+⚠️ **`d_sub_prefix_spine_perm`** (`decl/prop_stability.v`) was the second, and
+it is small: it PERMUTES an argument spine.  ε tags are order-blind on a spine
+and blind to a ∀-prefix (`ftag_spine_utyp_perm`, `ftag_utyp_all_syn_n`), and
+`d_sub_fn_all_syn_inv` / `_fnn_` — inversion lemmas — now report the hygiene
+premise they were dropping.
+
+### 3. ⭐ The CST repair: COLLECT, then move WHOLESALE
+
+`frost/decl/prop_etag_swap.v` §4–§5 (new, ~250 lines on top of the 2026-08-11
+equivariance kit).  The lesson is the shape:
+
+- §3's per-node freshening CANNOT be iterated through an induction.  At a
+  ForallL node the IH is tied to the ORIGINAL instantiation `ph`, while
+  freshening yields a derivation of a DIFFERENT statement; and the swap cannot
+  be applied to the IH's OUTPUT either, because there the instantiation's tags
+  and the refined subject's tags sit in the SAME term `T0[ph]`.
+- ⭐ So **stop freshening node by node.**  `d_sub_tagsin U` is `d_sub` with
+  `Ψ' [<=] U` on the two ForallL rows.  `d_sub_to_tagsin` COLLECTS the bound by
+  a plain induction — no freshening anywhere — and `d_sub_freshen` then moves
+  `U` off any finite set with ONE chain of transpositions, valid whenever the
+  CONCLUSION is tag-free (then no swap touches it).  One swap rewrites the
+  whole derivation, so there is no changed statement to feed back.
+- ⚙ The twin's `ForallR` is EXISTS-FRESH where `d_sub`'s is cofinite.  The
+  collection must produce ONE `U` for the whole rule, and a cofinite premise
+  would demand a bound uniform in infinitely many `α`; naming the atom makes
+  the collection a one-liner and the forgetful direction pays for it with the
+  tree's existing `d_sub_rename_tvar`.
+
+`d_consis_sub_trans_mid_tagsin` (`decl/prop_general_subsumption.v`) is CST over
+that twin, against a tag-BOUNDED refinement `utyp_tag_refines_in V` (the added
+tags confined to `V`), with one global `U ∩ V [=] ∅` discharging every node's
+hygiene at once.  ⚙ **The bound has to be an indexed RELATION**, not the set
+inclusion `ftag C' ⊆ ftag Cmid ∪ V` it implies: the inclusion does not survive
+descending into a ∀'s body, since `ftag (∀^ε T0)` has already absorbed ε — and
+the body is exactly where the ForallL case goes.
+
+Both call sites (`decl/prop_stability.v`, `d_sub_trans_spine`'s infer case)
+discharge the new premise by the wholesale freshening: legitimate exactly
+there, because the transported derivation runs at the EMPTY tag context with a
+PAINTED (hence tag-free) subject.
+
+⚠️ **No paper statement was weakened.**  `d_consis_sub_trans` gains
+`Δb [=] empty` — which is the paper's own statement, at `·`; the
+general-context form was a mech-internal inductive generalisation and survives
+as `d_consis_sub_trans_mid_tagsin`.  `d_sd_typing` / `d_typing` are untouched.
+
+### 4. ⚙ Duplicates removed on the way (the change needed the facts UPSTREAM)
+
+- `ftag_in_uskl (ptyp_to_uskl_syn A) [=] empty` existed **twice**, as
+  `ftag_in_uskl_ptyp_syn` (`algo/consis/prop_consis_precise.v`) and
+  `ftag_in_uskl_ptyp_to_uskl_syn` (`algo/sub/look/prop_eq_cstr.v`) — and
+  prop_eq_cstr.v could see BOTH, which is exactly the resolution hazard
+  CLAUDE.md warns about.  One copy now, `ftag_ptyp_to_uskl_syn`, in
+  `algo/prop_pat_sub.v` (the earliest file that has `ptyp_to_uskl_syn` and is
+  upstream of every consumer), renamed to the conversion-fact convention.
+- `frost/prop_coercions.v` gains §5: `ftag_btyp_to_utyp_syn` and
+  `ftag_bskl_to_uskl` (a painting invents no tag), plus `ftag_utyp_to_uskl` —
+  ⭐ the SORT inclusion, by contrast, KEEPS every tag, which is how the
+  conservativity bridge carries the hygiene across the sorts.
+  `ftag_in_bskl_to_uskl` was deleted from `prop_consis_precise.v` as its
+  duplicate.
+
 ## 2026-08-11 — ⭐ **ε-TAG EQUIVARIANCE PROVED**; `ad_pat_sub_n` retired; `def_decl_algo_sub_hyg.v` merged away
 
 Asked to make `d_sub` and `d_pat_sub` take the same (GLOBAL) reading of the

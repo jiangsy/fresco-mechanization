@@ -299,7 +299,7 @@ Proof.
   - (* univ_ghost_l *) clear - IHad_pat_sub_g; fsetdec.
   - (* univ_ghost_lg *) clear - IHad_pat_sub_g; fsetdec.
   - (* flex_mono *)
-    pose proof (ftag_in_uskl_ptyp_syn τ) as Hpt.
+    pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt.
     clear - Hpt IHad_pat_sub_g; fsetdec.
 Qed.
 
@@ -643,7 +643,7 @@ Proof.
       [ | reflexivity | apply Hmon; exact H | exact Hwf ].
     eapply IHHup with (Ψsup := Ψsup);
       [ exact Hwfb | exact HΨsup
-      | pose proof (ftag_in_uskl_ptyp_syn τ) as Hpt; clear - Hpt; fsetdec
+      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
       | exact Hmon | exact Hwf | exact Hgd | exact Hc3 | exact HgQ
       | exact HsQ | exact Hwfq | exact HΨe ].
   - (* flex_r: the subject is a defined flexible variable — unfold it *)
@@ -829,7 +829,7 @@ Proof.
       [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
       | exact Hcl | exact HDr | exact HΨsplit | exact Hrec
       | exact HΨf | exact HΨa | exact Hdisj
-      | pose proof (ftag_in_uskl_ptyp_syn τ) as Hpt; clear - Hpt; fsetdec
+      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
       | exact Hwfq
       | intro He;
         apply mono_ptyp_to_uskl_syn_ghost_free;
@@ -1021,7 +1021,7 @@ Proof.
       [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
       | exact HMti | exact Hictx | exact Hihyg | exact Htags | exact Hwfψ
       | exact HDp | exact Hrec | exact HΨf | exact HΨa | exact Hdisj
-      | pose proof (ftag_in_uskl_ptyp_syn τ) as Hpt; clear - Hpt; fsetdec
+      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
       | exact Hwfq
       | intro He;
         apply mono_ptyp_to_uskl_syn_ghost_free;
@@ -1146,7 +1146,7 @@ Proof.
       [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
       | exact HMti | exact Hictx | exact Hihyg | exact Htags | exact Hwfψ
       | exact HDp | exact Hrec | exact HΨf | exact HΨa | exact Hdisj
-      | pose proof (ftag_in_uskl_ptyp_syn τ) as Hpt; clear - Hpt; fsetdec
+      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
       | exact Hwfq
       | intro He;
         apply mono_ptyp_to_uskl_syn_ghost_free;
@@ -1220,7 +1220,7 @@ Proof.
       [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
       | exact HMti | exact HDp | exact Hrec | exact HΨf | exact HΨa
       | exact Hdisj
-      | pose proof (ftag_in_uskl_ptyp_syn τ) as Hpt; clear - Hpt; fsetdec
+      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
       | exact Hwfq ].
 Qed.
 
@@ -1298,7 +1298,7 @@ Proof.
       [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
       | exact HMti | exact HDp | exact Hrec | exact HΨf | exact HΨa
       | exact Hdisj
-      | pose proof (ftag_in_uskl_ptyp_syn τ) as Hpt; clear - Hpt; fsetdec
+      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
       | exact Hwfq ].
 Qed.
 
@@ -1369,7 +1369,7 @@ Proof.
       [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
       | exact Hbnd | exact HDp | exact Hrec | exact HΨf | exact HΨa
       | exact Hdisj
-      | pose proof (ftag_in_uskl_ptyp_syn τ) as Hpt; clear - Hpt; fsetdec
+      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
       | exact Hwfq
       | intro He;
         apply mono_ptyp_to_uskl_syn_ghost_free;
@@ -1788,7 +1788,7 @@ Proof.
       [ | reflexivity | apply Hmon; exact H | exact Hwf ].
     eapply IHHup with (Ψsup := Ψsup);
       [ exact Hwfb | exact HΨsup
-      | pose proof (ftag_in_uskl_ptyp_syn τ) as Hpt; clear - Hpt; fsetdec
+      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
       | exact Hmon | exact Hwf | exact Hgd | exact Hc3 | exact Hlf
       | exact HgQ | exact HsQ | exact Hwfq | exact HΨe ].
   - (* flex_r: the subject is a defined flexible variable — unfold it *)
@@ -1989,7 +1989,7 @@ Proof.
       [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
       | exact Hcl | exact Hlf1 | exact HDr | exact HΨsplit | exact Hrec
       | exact HΨf | exact HΨa | exact Hdisj
-      | pose proof (ftag_in_uskl_ptyp_syn τ) as Hpt; clear - Hpt; fsetdec
+      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
       | exact Hwfq
       | intro He;
         apply mono_ptyp_to_uskl_syn_ghost_free;
@@ -2166,7 +2166,7 @@ Proof.
       [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
       | exact HMti | exact Hictx | exact Hihyg | exact Htags | exact Hwfψ
       | exact HDp | exact Hrec | exact HΨf | exact HΨa | exact Hdisj
-      | pose proof (ftag_in_uskl_ptyp_syn τ) as Hpt; clear - Hpt; fsetdec
+      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
       | exact Hwfq
       | intro He;
         apply mono_ptyp_to_uskl_syn_ghost_free;
@@ -2291,7 +2291,7 @@ Proof.
       [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
       | exact HMti | exact Hictx | exact Hihyg | exact Htags | exact Hwfψ
       | exact HDp | exact Hrec | exact HΨf | exact HΨa | exact Hdisj
-      | pose proof (ftag_in_uskl_ptyp_syn τ) as Hpt; clear - Hpt; fsetdec
+      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
       | exact Hwfq
       | intro He;
         apply mono_ptyp_to_uskl_syn_ghost_free;
@@ -2365,7 +2365,7 @@ Proof.
       [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
       | exact HMti | exact HDp | exact Hrec | exact HΨf | exact HΨa
       | exact Hdisj
-      | pose proof (ftag_in_uskl_ptyp_syn τ) as Hpt; clear - Hpt; fsetdec
+      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
       | exact Hwfq ].
 Qed.
 
@@ -2443,7 +2443,7 @@ Proof.
       [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
       | exact HMti | exact HDp | exact Hrec | exact HΨf | exact HΨa
       | exact Hdisj
-      | pose proof (ftag_in_uskl_ptyp_syn τ) as Hpt; clear - Hpt; fsetdec
+      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
       | exact Hwfq ].
 Qed.
 
@@ -2514,7 +2514,7 @@ Proof.
       [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
       | exact Hbnd | exact HDp | exact Hrec | exact HΨf | exact HΨa
       | exact Hdisj
-      | pose proof (ftag_in_uskl_ptyp_syn τ) as Hpt; clear - Hpt; fsetdec
+      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
       | exact Hwfq
       | intro He;
         apply mono_ptyp_to_uskl_syn_ghost_free;

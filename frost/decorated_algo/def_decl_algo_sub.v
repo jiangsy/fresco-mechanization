@@ -89,6 +89,7 @@ Inductive ad_pat_sub :
 | ad_pat_sub__forall_l_tagged : forall NM Ψ Ψ' Θ M ε R ψ Q,   (* ForallL, β1=ε *)
     M <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
+    Ψ' ∩ (ftag_in_uskl (uskl_all_etag ε R)) [=] empty ->  (* GLOBAL freshness *)
     a_tags_sort NM Ψ' ψ ->
     Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ ->
     (Ψ `union` Ψ') ⨟ Θ ⊢ᵃᵈ[ NM | M ] (open_uskl_wrt_uskl R ψ) ⩽ Q ->
@@ -96,6 +97,7 @@ Inductive ad_pat_sub :
 | ad_pat_sub__forall_l_untagged : forall NM Ψ Ψ' Θ M R ψ Q,   (* ForallL, β1=· *)
     M <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
+    Ψ' ∩ (ftag_in_uskl (uskl_all_syn R)) [=] empty ->     (* GLOBAL freshness *)
     a_tags_sort NM Ψ' ψ ->
     Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ ->
     (Ψ `union` Ψ') ⨟ Θ ⊢ᵃᵈ[ NM | M ] (open_uskl_wrt_uskl R ψ) ⩽ Q ->
@@ -133,11 +135,13 @@ where "Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q" :=
    the measure, but the development settled on the TAG-HYGIENIC fuel
    [ad_pat_sub_g] (algo/sub/prop_completeness_sub_gen.v §1) and never came
    back, so [_n] was scaffolding that outlived its plan.
-   To re-derive: copy [ad_pat_sub_g] (def_decl_algo_sub.v) with the
-   ORIGINAL fuel discipline — every rule increments, leaves conclude at
-   [S n] — and drop its two [ftag_in_uskl] premises.  ⚠️ But check first
-   whether [_g] serves: the completeness track's measure is [_g]'s fuel, and
-   a second mirror has to be bridged to [ad_pat_sub] all over again. *)
+   To re-derive: copy [ad_pat_sub_g] (below) with the ORIGINAL fuel discipline
+   — every rule increments, leaves conclude at [S n].  ⚙ 2026-08-11: there is
+   nothing else to drop — [ad_pat_sub] now carries the [ftag_in_uskl] hygiene
+   itself, so "[_n] = non-hygienic mirror" no longer names a difference.
+   ⚠️ And check first whether [_g] serves: the completeness track's measure is
+   [_g]'s fuel, and a second mirror has to be bridged to [ad_pat_sub] all over
+   again. *)
 
 (* ===================================================================== *)
 (*  TAG-HYGIENIC FUEL MIRRORS of [ad_pat_sub]  (completeness-only)        *)
@@ -151,28 +155,26 @@ where "Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q" :=
 
     TAG-HYGIENIC FUEL MIRROR of [ad_pat_sub].
 
-    [ad_pat_sub_g] refines [ad_pat_sub] in two ways, both forced by
-    precision-substitution (docs/DESIGN-completeness-subtyping.md §5.4):
+    [ad_pat_sub_g] refines [ad_pat_sub] in ONE way — the FUEL discipline.  It
+    used to refine it in two; the other one, TAG HYGIENE, is now shared.
 
-    1. TAG HYGIENE.  The paper's ForallL side condition [fresh Ψ'] means the
-       instantiation's tags are GLOBALLY fresh; [ad_pat_sub] — like its
-       declarative originals [d_sub] / [d_pat_sub] — renders it only as
-       freshness from the tag context, which does not survive the Arrow split
-       (a tag can leave the context on one branch while the subject still
-       carries it on the other), and precision-substitution is FALSE over such
-       derivations.  Both ForallL rules therefore also require the
-       instantiation's tags fresh from the SUBJECT's syntactic tags
-       ([ftag_in_uskl], def_extra.v).
-       ⚠️ MOVING THIS PREMISE ONTO [d_sub] — so that all four judgments read
-       [fresh Ψ'] the same way — is NOT bookkeeping, and was tried and backed
-       out on 2026-08-11: it relocates the obligation into Phase 2's
-       [d_consis_sub_trans_mid] (CST, decl/prop_general_subsumption.v), whose
-       ForallL case transports a derivation along [utyp_tag_refines], where
-       the subject GAINS tags — so the hygiene has to be re-established for a
-       strictly bigger tag set, which needs the ε-tag freshening the
-       development does not have.  Details in docs/PAPER-GAPS.md.
+    ⭐ 2026-08-11: THE HYGIENE IS NO LONGER A DIFFERENCE.  The paper's ForallL
+    side condition [fresh Ψ'] means the instantiation's tags are GLOBALLY
+    fresh — fresh from the SUBJECT's own tags too, not just from the tag
+    context — because the context-local reading does not survive the Arrow
+    split (a tag can leave the context on one branch while the subject still
+    carries it on the other), and precision-substitution is FALSE over such
+    derivations (docs/DESIGN-completeness-subtyping.md §5.2/§5.4).  That
+    premise now sits on [d_sub], [d_pat_sub] AND [ad_pat_sub] as well, so all
+    four judgments read the word the same way and a completeness statement over
+    the DECLARATIVE system can reach these mirrors.  The one place it cost real
+    work was Phase 2's [d_consis_sub_trans_mid] (CST,
+    decl/prop_general_subsumption.v), whose ForallL case transports along
+    [utyp_tag_refines], where the subject GAINS tags; the repair is the
+    tags-bound twin [d_sub_tagsin] + wholesale freshening in
+    decl/prop_etag_swap.v §4-§5.  Details in docs/PAPER-GAPS.md.
 
-    2.     FUEL DISCIPLINE.  Precision-substitution must be fuel-PRESERVING
+    1.     FUEL DISCIPLINE.  Precision-substitution must be fuel-PRESERVING
        (the completeness ForallL case applies its induction hypothesis to
        the substituted premise, subtyping-proofs.tex:3416-3429), but the
        ghostier subject may carry extra [∀◇]-wrappers (UnivGhostL steps)
@@ -184,10 +186,10 @@ where "Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q" :=
        non-incrementing rules recurse on structural sub-derivations, so
        the main induction uses lex(fuel, derivation)).
 
-    The erasure [_g → ad_pat_sub] is [ad_pat_sub_g_of] below.  ⚠️ The
-    renaming-based freshening in the other direction ([ad_pat_sub] → [_g], and
-    equally [d_sub] → [_g], which is what a COMPLETENESS corollary over the
-    declarative system would need) is still owed — see §1's note and
+    The erasure [_g → ad_pat_sub] is [ad_pat_sub_g_of] below.  ⚠️ The other
+    direction ([ad_pat_sub] → [_g], which is what a COMPLETENESS corollary over
+    the declarative system would need) is still owed — but it is now purely a
+    FUEL question: the hygiene is already there.  See
     docs/HANDOFF-closed-corollaries-declarative.md. *)
 
 Inductive ad_pat_sub_g :

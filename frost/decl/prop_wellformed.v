@@ -195,12 +195,14 @@ Proof.
   - eapply d_sub__arg; [ eassumption | eassumption | fsetdec ].
   - (* forall_l_tagged: outer context pass-through, premise via IH *)
     eapply d_sub__forall_l_tagged with (Ψ' := Ψ');
-      [ assumption | fsetdec | eassumption | assumption | assumption | ].
+      [ assumption | fsetdec | assumption | eassumption | assumption
+      | assumption | ].
     match goal with
     | IH : forall _, _ [=] _ -> _ |- _ => eapply IH; fsetdec
     end.
   - eapply d_sub__forall_l_untagged with (Ψ' := Ψ');
-      [ assumption | fsetdec | eassumption | assumption | assumption | ].
+      [ assumption | fsetdec | assumption | eassumption | assumption
+      | assumption | ].
     match goal with
     | IH : forall _, _ [=] _ -> _ |- _ => eapply IH; fsetdec
     end.

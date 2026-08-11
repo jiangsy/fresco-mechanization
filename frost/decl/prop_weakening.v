@@ -81,11 +81,13 @@ Proof.
     + assumption.
     + eassumption.
     + eassumption.
+    + eassumption.
     + apply d_wf_utyp_weakening; eassumption.
     + assumption.
     + match goal with IH : forall _ _, _ -> d_sub _ _ _ _ _ |- _ => apply (IH Γ1 Γ3 eq_refl) end.
   - eapply d_sub__forall_l_untagged.
     + assumption.
+    + eassumption.
     + eassumption.
     + eassumption.
     + apply d_wf_utyp_weakening; eassumption.
@@ -178,11 +180,13 @@ Proof.
     + assumption.
     + eassumption.
     + eassumption.
+    + eassumption.
     + apply d_wf_uskl_weakening; eassumption.
     + assumption.
     + eapply IHd_pat_sub; reflexivity.
   - eapply d_pat_sub__forall_l_untagged.
     + assumption.
+    + eassumption.
     + eassumption.
     + eassumption.
     + apply d_wf_uskl_weakening; eassumption.

@@ -325,10 +325,10 @@ Proof.
   - eapply ad_pat_sub__arrow;
       [ eapply ad_pat_consis_mono; eauto | auto | eassumption ].
   - eapply ad_pat_sub__forall_l_tagged;
-      [ assumption | eassumption | eassumption
+      [ assumption | eassumption | eassumption | eassumption
       | eapply a_wf_pskl_mono; eauto | auto ].
   - eapply ad_pat_sub__forall_l_untagged;
-      [ assumption | eassumption | eassumption
+      [ assumption | eassumption | eassumption | eassumption
       | eapply a_wf_pskl_mono; eauto | auto ].
   - apply ad_pat_sub__ghost;
       [ assumption | eapply a_wf_pskl_mono; eauto | assumption ].

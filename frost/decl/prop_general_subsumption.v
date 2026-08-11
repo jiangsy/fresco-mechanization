@@ -26,6 +26,7 @@ Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.decl.prop_weakening.
 Require Import src.frost.decl.prop_renaming.
+Require Import src.frost.decl.prop_etag_swap.
 
 Set Implicit Arguments.
 
@@ -974,6 +975,119 @@ Proof.
       apply (H0 α Hα). apply utyp_tag_refines_open. assumption.
 Qed.
 
+(* ======================================================================== *)
+(*  TAG-BOUNDED REFINEMENT — the invariant CST's ForallL case runs on.       *)
+(* ======================================================================== *)
+
+(** [utyp_tag_refines_in V C' C] is [utyp_tag_refines C' C] with the tags the
+    refinement ADDS confined to [V].
+
+    ⭐ WHY AN INDEXED RELATION, and not the set inclusion
+    [ftag C' ⊆ ftag C ∪ V] that it implies.  CST rebuilds [ForallL] at the
+    REFINED subject, so it owes [Ψ' ∩ ftag(C'_node) = ∅] while the derivation
+    supplies only [Ψ' ∩ ftag(C_node) = ∅] — the gap is exactly the added tags,
+    and [Ψ' ⊆ U] with [U ∩ V = ∅] closes it.  The inclusion alone does NOT
+    survive the step, because [ForallL] then descends into the ∀'s BODY and
+    [ftag (∀^ε T0)] has already absorbed ε: from
+    [ftag (∀^ε T0) ⊆ ftag (∀^ε C0) ∪ V] one cannot recover
+    [ftag T0 ⊆ ftag C0 ∪ V].  The relation carries the bound structurally, so
+    it descends. *)
+Inductive utyp_tag_refines_in : atoms -> utyp -> utyp -> Prop :=
+| utri_unit  : forall V, utyp_tag_refines_in V utyp_unit utyp_unit
+| utri_var_b : forall V n, utyp_tag_refines_in V (utyp_var_b n) (utyp_var_b n)
+| utri_var_f : forall V α, utyp_tag_refines_in V (utyp_var_f α) (utyp_var_f α)
+| utri_arrow : forall V T1 T2 C1 C2,
+    utyp_tag_refines_in V T1 C1 -> utyp_tag_refines_in V T2 C2 ->
+    utyp_tag_refines_in V (utyp_arrow T1 T2) (utyp_arrow C1 C2)
+| utri_etag_etag : forall V ε T0 C0,
+    utyp_tag_refines_in V T0 C0 ->
+    utyp_tag_refines_in V (utyp_all_etag ε T0) (utyp_all_etag ε C0)
+| utri_etag_syn : forall V ε T0 C0,
+    (* the ONE place a tag is ADDED, and the only premise [V] constrains *)
+    ε `in` V ->
+    utyp_tag_refines_in V T0 C0 ->
+    utyp_tag_refines_in V (utyp_all_etag ε T0) (utyp_all_syn C0)
+| utri_syn_syn : forall V T0 C0,
+    utyp_tag_refines_in V T0 C0 ->
+    utyp_tag_refines_in V (utyp_all_syn T0) (utyp_all_syn C0).
+
+#[local] Hint Constructors utyp_tag_refines_in : core.
+
+Lemma utyp_tag_refines_in_of : forall V C' C,
+    utyp_tag_refines_in V C' C -> utyp_tag_refines C' C.
+Proof. induction 1; auto. Qed.
+
+Lemma utyp_tag_refines_in_mono : forall V C' C,
+    utyp_tag_refines_in V C' C ->
+    forall V', V [<=] V' -> utyp_tag_refines_in V' C' C.
+Proof.
+  induction 1; intros V' Hle.
+  - apply utri_unit.
+  - apply utri_var_b.
+  - apply utri_var_f.
+  - apply utri_arrow;
+      [ apply IHutyp_tag_refines_in1 | apply IHutyp_tag_refines_in2 ];
+      exact Hle.
+  - apply utri_etag_etag. apply IHutyp_tag_refines_in; exact Hle.
+  - apply utri_etag_syn;
+      [ clear - H Hle; fsetdec | apply IHutyp_tag_refines_in; exact Hle ].
+  - apply utri_syn_syn. apply IHutyp_tag_refines_in; exact Hle.
+Qed.
+
+(** The canonical bound: a refinement's added tags are, trivially, tags of the
+    refined term.  So the indexed relation costs a caller nothing. *)
+Lemma utyp_tag_refines_to_in : forall C' C,
+    utyp_tag_refines C' C -> utyp_tag_refines_in (ftag_in_utyp C') C' C.
+Proof.
+  induction 1; simpl.
+  - apply utri_unit.
+  - apply utri_var_b.
+  - apply utri_var_f.
+  - apply utri_arrow;
+      [ apply (utyp_tag_refines_in_mono IHutyp_tag_refines1)
+      | apply (utyp_tag_refines_in_mono IHutyp_tag_refines2) ];
+      clear; fsetdec.
+  - apply utri_etag_etag.
+    apply (utyp_tag_refines_in_mono IHutyp_tag_refines); clear; fsetdec.
+  - apply utri_etag_syn; [ clear; fsetdec | ].
+    apply (utyp_tag_refines_in_mono IHutyp_tag_refines); clear; fsetdec.
+  - apply utri_syn_syn.
+    apply (utyp_tag_refines_in_mono IHutyp_tag_refines); clear; fsetdec.
+Qed.
+
+Lemma utyp_tag_refines_in_ftag : forall V C' C,
+    utyp_tag_refines_in V C' C ->
+    ftag_in_utyp C' [<=] (ftag_in_utyp C) `union` V.
+Proof. induction 1; simpl; fsetdec. Qed.
+
+(** A tag refinement does not touch TYPE variables — what CST's [forall_r]
+    case needs to reuse the rule's own freshness side condition. *)
+Lemma utyp_tag_refines_ftvar : forall C' C,
+    utyp_tag_refines C' C -> ftvar_in_utyp C' [=] ftvar_in_utyp C.
+Proof. induction 1; simpl; fsetdec. Qed.
+
+Lemma utyp_tag_refines_in_refl : forall V C, utyp_tag_refines_in V C C.
+Proof. intros V C. induction C; constructor; assumption. Qed.
+
+Lemma utyp_tag_refines_in_open_rec_gen : forall V C' C,
+    utyp_tag_refines_in V C' C ->
+    forall k C0',
+      utyp_tag_refines_in V (open_utyp_wrt_utyp_rec k C0' C')
+                            (open_utyp_wrt_utyp_rec k C0' C).
+Proof.
+  induction 1; intros k C0'; simpl; try solve [ constructor; auto ].
+  destruct (lt_eq_lt_dec n k) as [[?|?]|?];
+    solve [ apply utri_var_b | apply utyp_tag_refines_in_refl ].
+Qed.
+
+Lemma utyp_tag_refines_in_open_gen : forall V C' C C0,
+    utyp_tag_refines_in V C' C ->
+    utyp_tag_refines_in V (open_utyp_wrt_utyp C' C0) (open_utyp_wrt_utyp C C0).
+Proof.
+  intros V C' C C0 H. unfold open_utyp_wrt_utyp.
+  apply utyp_tag_refines_in_open_rec_gen; exact H.
+Qed.
+
 (** Reformulated CST over a GENERAL middle [Cmid] (paper-faithful: the syn
     middle is not closed under tagged instantiation).  infer/check/arg close
     via the proven bridges; forall_l is the concrete attempt with the
@@ -982,17 +1096,29 @@ Qed.
 
     [_mid] is the erase-form (middle carried as [T ∼ utyp_to_btyp Cmid]),
     which survives [forall_l] instantiation; [d_consis_sub_trans] is the
-    paint-form corollary used downstream. *)
+    paint-form corollary used downstream.
 
-Lemma d_consis_sub_trans_mid : forall M Ψ2 Γ Cmid B,
-    Ψ2 ⨟ Γ ⊢[ M ] Cmid ⩽ B ->
-    forall Ψ1 C',
+    ⭐ WHY THE TAGS-BOUND TWIN.  Since [ForallL] reads the paper's `fresh Ψ'`
+    GLOBALLY — the instantiation's tags fresh from the SUBJECT too, not just
+    from the tag context — rebuilding it at the REFINED source [C'] owes
+    [Ψ' ∩ ftag C' = ∅], and the transported derivation supplies only
+    [Ψ' ∩ ftag Cmid = ∅].  The gap is exactly the tags [utyp_tag_refines]
+    ADDED ([utr_etag_syn] turns a [∀ˢ] into a [∀^ε]), and nothing local bounds
+    them.  So the induction runs on [d_sub_tagsin U] instead: every [Ψ']
+    inside the derivation is confined to one [U], the added tags are confined
+    to one [V], and one global [U ∩ V = ∅] discharges every node at once.  The
+    call sites establish it by moving [U] wholesale ([d_sub_freshen]). *)
+
+Lemma d_consis_sub_trans_mid_tagsin : forall U M Ψ2 Γ Cmid B,
+    d_sub_tagsin U M Ψ2 Γ Cmid B ->
+    forall Ψ1 C' V,
       Ψ1 ⨟ Γ ⊢ C' ∼ (utyp_to_btyp Cmid) ->
-      utyp_tag_refines C' Cmid ->
+      utyp_tag_refines_in V C' Cmid ->
+      U ∩ V [=] empty ->
       exists Δ, Ψ2 [<=] Δ /\ Δ ⨟ Γ ⊢[ M ] C' ⩽ B.
 Proof.
-  intros M Ψ2 Γ Cmid B Hsub.
-  induction Hsub; intros Ψ0 C' Hcons Href.
+  intros U M Ψ2 Γ Cmid B Hsub.
+  induction Hsub; intros Ψ0 C' V Hcons Href Hdisj.
   - (* infer (ti): Ψ2 [=] ∅. *)
     exists empty. split; [ fsetdec | ].
     apply d_sub__infer.
@@ -1008,62 +1134,78 @@ Proof.
     assert (HgT : guarded_utyp C') by (eapply d_consis_guarded_lhs; [ exact H | exact Hcons ]).
     exists (compose_tags C' B). split.
     + pose proof (d_consis_ctx_subset_compose H1) as Hc1.
-      pose proof (utyp_tag_refines_compose_mono Href B) as Hc2. fsetdec.
+      pose proof (utyp_tag_refines_compose_mono
+                    (utyp_tag_refines_in_of Href) B) as Hc2. fsetdec.
     + apply d_sub__check;
-        [ exact HgT | exact H0 | apply (refines_consis_swap H1 Href) | exact H2 ].
-  - (* forall_r (tc): IH carries the bound; refinement unchanged. *)
-    pick fresh α0 for (L `union` dom Γ `union` ftvar_in_utyp C'
-                       `union` ftvar_in_btyp B).
-    destruct (H1 α0 ltac:(solve_notin_auto) Ψ0 C'
-                ltac:(apply d_consis_weakening_head; exact Hcons) Href) as [Ψ' [Hbnd HΨ']].
+        [ exact HgT | exact H0
+        | apply (refines_consis_swap H1 (utyp_tag_refines_in_of Href))
+        | exact H2 ].
+  - (* forall_r (tc): the twin NAMES its binder, so the IH fires directly and
+       [d_sub]'s cofinite family is regenerated by [d_sub_rename_tvar].  The
+       rule's freshness is stated for [C]; it transfers to [C'] because a tag
+       refinement does not move a TYPE variable. *)
+    assert (Hftv : ftvar_in_utyp C' [=] ftvar_in_utyp C)
+      by (apply utyp_tag_refines_ftvar; apply (utyp_tag_refines_in_of Href)).
+    destruct (IHHsub Ψ0 C' V
+                ltac:(apply d_consis_weakening_head; exact Hcons) Href Hdisj)
+      as [Ψ' [Hbnd HΨ']].
     exists Ψ'. split; [ exact Hbnd | ].
     apply d_sub__forall_r with
-      (L := L `union` dom Γ `union` ftvar_in_utyp C' `union` ftvar_in_btyp B
-            `union` singleton α0);
+      (L := dom Γ `union` ftvar_in_utyp C' `union` ftvar_in_btyp B
+            `union` singleton α);
       [ assumption | ].
-    intros α Hα.
-    rewrite (subst_btyp_in_btyp_intro α0) by fsetdec.
-    rewrite <- (subst_utyp_in_utyp_fresh_eq C' (utyp_var_f α) α0) by fsetdec.
-    apply (@d_sub_rename_tvar _ _ _ _ _ HΨ' nil Γ α0 α); [ reflexivity | simpl; fsetdec ].
+    intros α2 Hα2.
+    rewrite (subst_btyp_in_btyp_intro α) by (clear - H0; fsetdec).
+    rewrite <- (subst_utyp_in_utyp_fresh_eq C' (utyp_var_f α2) α)
+      by (clear - H0 Hftv; fsetdec).
+    apply (@d_sub_rename_tvar _ _ _ _ _ HΨ' nil Γ α α2);
+      [ reflexivity | simpl; clear - H0 Hα2; fsetdec ].
   - (* arg (fn m): domain by source-swap, result by IH; bound by chain + IH. *)
     simpl in Hcons. dependent destruction Hcons.
     dependent destruction Href.
-    destruct (IHHsub _ _ ltac:(eassumption) ltac:(eassumption)) as [Δc2 [Hbnd2 Hres]].
-    match goal with Hr : utyp_tag_refines ?t C1 |- _ =>
+    destruct (IHHsub _ _ V ltac:(eassumption) ltac:(eassumption) Hdisj)
+      as [Δc2 [Hbnd2 Hres]].
+    match goal with Hr : utyp_tag_refines_in _ ?t C1 |- _ =>
       exists (compose_tags t B1 `union` Δc2) end. split.
     + pose proof (d_consis_ctx_subset_compose H) as Hc1.
-      match goal with Hr : utyp_tag_refines _ C1 |- _ =>
-        pose proof (utyp_tag_refines_compose_mono Hr B1) as Hc2 end.
+      match goal with Hr : utyp_tag_refines_in _ _ C1 |- _ =>
+        pose proof (utyp_tag_refines_compose_mono
+                      (utyp_tag_refines_in_of Hr) B1) as Hc2 end.
       fsetdec.
     + eapply d_sub__arg;
-        [ match goal with Hr : utyp_tag_refines _ C1 |- _ =>
-            apply (refines_consis_swap H Hr) end
+        [ match goal with Hr : utyp_tag_refines_in _ _ C1 |- _ =>
+            apply (refines_consis_swap H (utyp_tag_refines_in_of Hr)) end
         | exact Hres | reflexivity ].
   - (* forall_l_tagged: subtyping source is utyp_all_etag ε C; Href forces
-       C' = utyp_all_etag ε C0 (utr_etag_etag); reconstruct via forall_l_tagged. *)
+       C' = utyp_all_etag ε T0 (utri_etag_etag); reconstruct via forall_l_tagged. *)
     dependent destruction Href.
     simpl in Hcons. dependent destruction Hcons.
     pick fresh α for (L `union` dom Γ `union` ftvar_in_utyp T0
                       `union` ftvar_in_utyp C `union` ftvar_in_btyp B
                       `union` Ψ `union` Ψ').
-    pose proof (@d_consis_subst_tvar _ _ _ _ (H4 α ltac:(solve_notin_auto)) nil Γ α ph
-                  eq_refl ltac:(simpl; exact H2) H3) as Hinst.
+    pose proof (@d_consis_subst_tvar _ _ _ _ (H6 α ltac:(solve_notin_auto)) nil Γ α ph
+                  eq_refl ltac:(simpl; exact H4) H5) as Hinst.
     rewrite <- (subst_utyp_in_utyp_intro α T0 ph) in Hinst by fsetdec.
     rewrite <- (subst_btyp_in_btyp_intro α (utyp_to_btyp C) (utyp_to_btyp ph)) in Hinst
       by (rewrite ftvar_utyp_to_btyp; fsetdec).
     rewrite <- utyp_to_btyp_open in Hinst.
     simpl in Hinst.
-    destruct (IHHsub _ _ Hinst
-                (@utyp_tag_refines_open_gen _ _ ph ltac:(eassumption)))
+    pose proof (utyp_tag_refines_in_ftag Href) as Hft.
+    destruct (IHHsub _ _ V Hinst
+                (utyp_tag_refines_in_open_gen ph Href) Hdisj)
       as [Δ_IH [Hbnd HΔ_IH]].
     exists (Δ_IH ∖ Ψ'). split.
     + clear - Hbnd H0; fsetdec.
     + eapply d_sub__forall_l_tagged with (Ψ' := Ψ').
       * exact H.
       * clear - Hbnd H0; fsetdec.
-      * exact H1.
-      * exact H2.
+      * (* ⭐ THE STEP THE TWIN EXISTS FOR: the node's own hygiene keeps Ψ'
+           off the MIDDLE's tags, and Ψ' ⊆ U with U ∩ V = ∅ keeps it off the
+           tags the refinement ADDED. *)
+        simpl in H1 |- *. clear - H1 H2 Hdisj Hft; fsetdec.
       * exact H3.
+      * exact H4.
+      * exact H5.
       * eapply d_sub_equiv; [ | exact HΔ_IH ]. clear - Hbnd H0; fsetdec.
   - (* forall_l_untagged: with Ψ2 ⊆ Δ in the IH, the residual Ψ' ⊆ Δ_IH FOLLOWS
        from (Δ ∪ Ψ') ⊆ Δ_IH; refinement threaded by [open_gen]. *)
@@ -1074,49 +1216,82 @@ Proof.
       pick fresh α for (L `union` dom Γ `union` ftvar_in_utyp C0
                         `union` ftvar_in_utyp C `union` ftvar_in_btyp B
                         `union` Ψ0 `union` Ψ `union` Ψ').
-      pose proof (@d_consis_subst_tvar _ _ _ _ (H4 α ltac:(solve_notin_auto)) nil Γ α ph
-                    eq_refl ltac:(simpl; exact H2) H3) as Hinst.
+      pose proof (@d_consis_subst_tvar _ _ _ _ (H6 α ltac:(solve_notin_auto)) nil Γ α ph
+                    eq_refl ltac:(simpl; exact H4) H5) as Hinst.
       rewrite <- (subst_utyp_in_utyp_intro α C0 ph) in Hinst by fsetdec.
       rewrite <- (subst_btyp_in_btyp_intro α (utyp_to_btyp C) (utyp_to_btyp ph)) in Hinst
         by (rewrite ftvar_utyp_to_btyp; fsetdec).
       rewrite <- utyp_to_btyp_open in Hinst.
       simpl in Hinst.
-      destruct (IHHsub _ _ Hinst
-                  (@utyp_tag_refines_open_gen _ _ ph ltac:(eassumption)))
+      pose proof (utyp_tag_refines_in_ftag Href) as Hft.
+      destruct (IHHsub _ _ V Hinst
+                  (utyp_tag_refines_in_open_gen ph Href) Hdisj)
         as [Δ_IH [Hbnd HΔ_IH]].
       exists (Δ_IH ∖ Ψ'). split.
       * clear - Hbnd H0; fsetdec.
       * eapply d_sub__forall_l_tagged with (Ψ' := Ψ').
         -- exact H.
         -- clear - Hbnd H0; fsetdec.
-        -- exact H1.
-        -- exact H2.
+        -- (* here refinement ADDED ε itself ([utri_etag_syn]'s [H7 : ε ∈ V]),
+              so even the head tag is bounded away from Ψ' by [U ∩ V = ∅]. *)
+           simpl in H1 |- *. clear - H1 H2 Hdisj Hft H7; fsetdec.
         -- exact H3.
+        -- exact H4.
+        -- exact H5.
         -- eapply d_sub_equiv; [ | exact HΔ_IH ]. clear - Hbnd H0; fsetdec.
     + (* C' = utyp_all_syn C0 *)
       dependent destruction Href.
       pick fresh α for (L `union` dom Γ `union` ftvar_in_utyp C0
                         `union` ftvar_in_utyp C `union` ftvar_in_btyp B
                         `union` Ψ0 `union` Ψ `union` Ψ').
-      pose proof (@d_consis_subst_tvar _ _ _ _ (H4 α ltac:(solve_notin_auto)) nil Γ α ph
-                    eq_refl ltac:(simpl; exact H2) H3) as Hinst.
+      pose proof (@d_consis_subst_tvar _ _ _ _ (H6 α ltac:(solve_notin_auto)) nil Γ α ph
+                    eq_refl ltac:(simpl; exact H4) H5) as Hinst.
       rewrite <- (subst_utyp_in_utyp_intro α C0 ph) in Hinst by fsetdec.
       rewrite <- (subst_btyp_in_btyp_intro α (utyp_to_btyp C) (utyp_to_btyp ph)) in Hinst
         by (rewrite ftvar_utyp_to_btyp; fsetdec).
       rewrite <- utyp_to_btyp_open in Hinst.
       simpl in Hinst.
-      destruct (IHHsub _ _ Hinst
-                  (@utyp_tag_refines_open_gen _ _ ph ltac:(eassumption)))
+      pose proof (utyp_tag_refines_in_ftag Href) as Hft.
+      destruct (IHHsub _ _ V Hinst
+                  (utyp_tag_refines_in_open_gen ph Href) Hdisj)
         as [Δ_IH [Hbnd HΔ_IH]].
       exists (Δ_IH ∖ Ψ'). split.
       * clear - Hbnd H0; fsetdec.
       * eapply d_sub__forall_l_untagged with (Ψ' := Ψ').
         -- exact H.
         -- clear - Hbnd H0; fsetdec.
-        -- exact H1.
-        -- exact H2.
+        -- simpl in H1 |- *. clear - H1 H2 Hdisj Hft; fsetdec.
         -- exact H3.
+        -- exact H4.
+        -- exact H5.
         -- eapply d_sub_equiv; [ | exact HΔ_IH ]. clear - Hbnd H0; fsetdec.
+Qed.
+
+(** ⭐ CST as its consumers state it.  Two conditions are new, and both hold
+    wherever the tree invokes it: the middle is TAG-FREE (it is always a
+    PAINTING [⌈B⌉ˢ]) and the tag context is empty (CST is invoked at the root
+    of a spine).  Together they license moving the WHOLE transported
+    derivation's instantiation tags off [C']'s tags ([d_sub_freshen],
+    decl/prop_etag_swap.v §5) — a transposition of two inner tags leaves a
+    tag-free conclusion fixed — which is exactly the [U ∩ V = ∅] the
+    tags-bound form asks for. *)
+Lemma d_consis_sub_trans_mid : forall M Ψ2 Γ Cmid B,
+    Ψ2 ⨟ Γ ⊢[ M ] Cmid ⩽ B ->
+    Ψ2 [=] empty ->
+    ftag_in_utyp Cmid [=] empty ->
+    forall Ψ1 C',
+      Ψ1 ⨟ Γ ⊢ C' ∼ (utyp_to_btyp Cmid) ->
+      utyp_tag_refines C' Cmid ->
+      exists Δ, Ψ2 [<=] Δ /\ Δ ⨟ Γ ⊢[ M ] C' ⩽ B.
+Proof.
+  intros M Ψ2 Γ Cmid B Hsub HΨ HC Ψ1 C' Hcons Href.
+  destruct (d_sub_freshen M Ψ2 Γ Cmid B (ftag_in_utyp C') Hsub
+              ltac:(rewrite HΨ; clear; fsetdec)
+              ltac:(rewrite HC; clear; fsetdec))
+    as [ U [ Hfresh Htagsin ] ].
+  eapply d_consis_sub_trans_mid_tagsin;
+    [ exact Htagsin | exact Hcons | apply (utyp_tag_refines_to_in Href)
+    | clear - Hfresh; fsetdec ].
 Qed.
 
 (** Consistency-Subtyping Transitivity (paper, syntax-directed.tex:152):
@@ -1129,9 +1304,14 @@ Qed.
     subtyping context [Δb] is GENERAL (not [·]) — that is the inductive
     generalisation that lets the [forall_l] IH fire on its non-empty
     premise — and the conclusion context contains it ([Δb ⊆ Δ]).  The
-    paper's [·]-statement is the [Δb = ∅] corollary. *)
+    paper's [·]-statement is the [Δb = ∅] corollary.
+
+    ⚙ [Δb [=] empty] is what [_mid]'s wholesale freshening needs of the
+    conclusion; the paper's own statement is at [·], and so is the sole call
+    site (decl/prop_stability.v). *)
 Lemma d_consis_sub_trans : forall M Δb Γ C B,
     Δb ⨟ Γ ⊢[ M ] C ⩽ B ->
+    Δb [=] empty ->
     forall B_A C' Δt,
       C = btyp_to_utyp_syn B_A ->
       is_styp B_A ->
@@ -1141,10 +1321,12 @@ Proof.
   (* The [forall_l] case is the tag-encoding wall; it is dissolved by the
      erase-form generalisation [d_consis_sub_trans_mid], which threads tagged
      witnesses via [utyp_tag_refines].  Set [Cmid := btyp_to_utyp_syn B_A]:
-     its erasure is [B_A] ([utyp_to_btyp_btyp_to_utyp_syn], [is_styp]) and the
+     its erasure is [B_A] ([utyp_to_btyp_btyp_to_utyp_syn], [is_styp]), it is
+     tag-free ([ftag_btyp_to_utyp_syn] — a painting invents no ε), and the
      source [C'] refines it ([consis_refines_paint]). *)
-  intros M Δb Γ C B Hsub B_A C' Δt Heq Hsyn Hcons. subst C.
-  eapply d_consis_sub_trans_mid; [ exact Hsub | | ].
+  intros M Δb Γ C B Hsub HΔ B_A C' Δt Heq Hsyn Hcons. subst C.
+  eapply d_consis_sub_trans_mid;
+    [ exact Hsub | exact HΔ | apply ftag_btyp_to_utyp_syn | | ].
   - rewrite utyp_to_btyp_btyp_to_utyp_syn by assumption. exact Hcons.
   - eapply consis_refines_paint; exact Hcons.
 Qed.
@@ -1206,6 +1388,11 @@ Proof.
     inversion Hfn; subst.
     dependent destruction Hspine.
     edestruct (d_consis_sub_trans_mid Htail) as [Ψ' [_ HΨ']].
+    + (* the tail runs at the EMPTY tag context … *)
+      clear; fsetdec.
+    + (* … and its subject is a PAINTING, hence tag-free — the two conditions
+         the wholesale freshening inside [_mid] needs. *)
+      apply ftag_btyp_to_utyp_syn.
     + rewrite utyp_to_btyp_btyp_to_utyp_syn by eassumption.
       eassumption.
     + eapply consis_refines_paint; eassumption.
@@ -1234,6 +1421,7 @@ Proof.
       * eassumption.
       * eassumption.
       * eassumption.
+      * eassumption.
       * eapply d_sub_equiv; [ | exact Hr ]. fsetdec.
   - (* d_sub__forall_l_untagged: as above. *)
     edestruct IHHsub as [Δr [Hb Hr]];
@@ -1244,6 +1432,7 @@ Proof.
       * destruct m as [ | | m']; simpl;
           [ exfalso; apply H; reflexivity | discriminate | discriminate ].
       * fsetdec.
+      * eassumption.
       * eassumption.
       * eassumption.
       * eassumption.
@@ -1308,6 +1497,7 @@ Proof.
           apply d_sub__forall_l_untagged with (Ψ' := (@empty : atoms)) (ph := utyp_var_f α);
           [ intro Hco; discriminate
           | fsetdec
+          | clear; fsetdec
           | apply d_tags__var; reflexivity
           | apply d_wf_utyp__var; simpl; auto
           | apply is_ttyp__var
@@ -1614,11 +1804,11 @@ Proof.
       pose proof (d_consis_ctx_subset_etags Hc) as Hetag end.
     fsetdec.
   - (* forall_l_tagged: Ψ' = utyp_etags ph (d_tags_etags), disjoint from Δ (H0). *)
-    pose proof (d_tags_etags H1) as Hph.
+    pose proof (d_tags_etags H2) as Hph.
     pose proof (utyp_etags_open_le C ph) as Hopen.
     fsetdec.
   - (* forall_l_untagged *)
-    pose proof (d_tags_etags H1) as Hph.
+    pose proof (d_tags_etags H2) as Hph.
     pose proof (utyp_etags_open_le C ph) as Hopen.
     fsetdec.
 Qed.

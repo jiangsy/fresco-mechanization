@@ -113,7 +113,7 @@ mechanization.)  Corrected 2026-08-09.
 | [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md) | Canonical registry of everything the paper's authors should see (gaps, prose-completions, refuted statements) |
 | [`docs/refutations.tex`](docs/refutations.tex) | **Author-facing note, in the paper's own notation**: the two machine-checked refutations (Lemma E.17 Look completeness; Theorem 4.6 Completeness of subtyping), the shared configuration, the diagnosis (`SolE-FlexR` discards the accumulated pattern) and the suggested repair. Build: `make -f Makefile.refutations` from `docs/`, or `TEXINPUTS=../../paper: pdflatex refutations.tex` |
 | [`docs/WF-SIDE-CONDITIONS.md`](docs/WF-SIDE-CONDITIONS.md) | **Read before mechanizing any refinement / consistency / subtyping / skeleton-inference lemma.** The paper states well-formedness (and sometimes a further judgment) as an EXTERNAL requirement in prose, and its rules then omit the side conditions it would supply. Several judgments look FALSE until that condition is restored. |
-| [`docs/HANDOFF-closed-corollaries-declarative.md`](docs/HANDOFF-closed-corollaries-declarative.md) | **ACTIVE hand-off**: state the closed-program corollaries against `d_sd_typing` / `d_typing` instead of `ad_sd_typing`. ⭐ SOUNDNESS LANDED 2026-08-10 via the conservativity bridge `algo/typing/prop_conserv.v`. ⛔ COMPLETENESS still open, blocked twice: the leaf-valid datum at a ghosty subject (`cex/cex_ad_pat_join_not_leaf_valid.v`) and — NEW — the `_gv` mirrors' TAG HYGIENE, which bites at the TYPE sort too |
+| [`docs/HANDOFF-closed-corollaries-declarative.md`](docs/HANDOFF-closed-corollaries-declarative.md) | **ACTIVE hand-off**: state the closed-program corollaries against `d_sd_typing` / `d_typing` instead of `ad_sd_typing`. ⭐ SOUNDNESS LANDED 2026-08-10 via the conservativity bridge `algo/typing/prop_conserv.v`. ⭐ 2026-08-11 the TAG-HYGIENE blocker is CLOSED — all four subtyping judgements now read the paper's `fresh Ψ'` the same, GLOBAL way. ⛔ COMPLETENESS still open, blocked by ONE thing: the leaf-valid datum at a ghosty subject (`cex/cex_ad_pat_join_not_leaf_valid.v`) |
 | [`docs/HANDOFF-close-subtyping-completeness.md`](docs/HANDOFF-close-subtyping-completeness.md) | **ACTIVE hand-off**: close subtyping completeness — decide reachability (TASK A), state+prove the payload invariant (B), make the shield supply total or kill it (C), land it on the motive and discharge `main_forall` (D) |
 | [`docs/HANDOFF-p7c-finish.md`](docs/HANDOFF-p7c-finish.md) | **ACTIVE hand-off**: TASKS 1, 2a and 3 are DONE (2026-08-03); what is left is TASK 2b — TASK 0's `sub_shield` for a `P0` with a ∀ below its head, the bundle's one hypothesis |
 | [`docs/HANDOFF-section-d.md`](docs/HANDOFF-section-d.md) | **CLOSED 2026-08-08 — HISTORY**: section D (`proofs.tex`) — soundness/completeness of skeleton and type inference.  All four theorems are Qed and axiom-free; the file keeps the exact Coq statement, the design decision and the obstacle found for each of the six lemmas and four theorems, pass by pass.  ⚠️ Three lemmas the paper calls "straightforward induction" are not |
@@ -185,10 +185,13 @@ mechanization/
 │   │   ├── prop_skeleton.v            (skeleton refinement preserves wf, D4)
 │   │   ├── prop_etag_swap.v           (ε-tag equivariance of d_tags /
 │   │   │                              d_consis / d_sub and their skeleton
-│   │   │                              twins, + the ForallL freshening.
-│   │   │                              ⚠️ read its header: the primitive is
-│   │   │                              proved, the induction that would apply
-│   │   │                              it derivation-wide is not)
+│   │   │                              twins; the per-node ForallL freshening;
+│   │   │                              and §4-§5 the tags-BOUND twin
+│   │   │                              d_sub_tagsin + the WHOLESALE freshening
+│   │   │                              that CST consumes.  ⚠️ read its header:
+│   │   │                              the per-node freshening cannot be
+│   │   │                              iterated through an induction — that is
+│   │   │                              why §4 collects first)
 │   │   ├── prop_syntax_directed.v     (d_sd_typing ⇄ d_typing)
 │   │   ├── prop_annotation.v / prop_shallow.v
 │   │   ├── prop_general_subsumption.v (D1 + D12; CST; FN^n spine machinery —

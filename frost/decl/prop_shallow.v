@@ -114,6 +114,7 @@ Proof.
       apply d_sub__forall_l_untagged with (Ψ' := (@empty : atoms)) (ph := utyp_var_f α).
       * intro Hco; discriminate.
       * fsetdec.
+      * clear; fsetdec.
       * apply d_tags__var; reflexivity.
       * apply d_wf_utyp__var; simpl; auto.
       * apply is_ttyp__var.
@@ -160,6 +161,7 @@ Proof.
       with (Ψ' := (@empty : atoms)) (ph := ptyp_to_utyp_syn I).
     + intro Hco; discriminate.
     + fsetdec.
+    + clear; fsetdec.
     + apply mono_paint_d_tags. assumption.
     + apply ptyp_wf_utyp_wf. assumption.
     + apply mono_paint_is_ttyp. assumption.

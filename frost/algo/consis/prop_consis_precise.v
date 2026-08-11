@@ -732,16 +732,9 @@ Proof.
   intros; unfold open_uskl_wrt_uskl; apply ftag_in_uskl_open_rec_var.
 Qed.
 
-(** Paintings of bidirectional skeletons / plain skeletons / types are
-    tag-free ([bskl]/[pskl]/[ptyp] have no [all_etag]). *)
-Lemma ftag_in_bskl_to_uskl : forall Q,
-  ftag_in_uskl (bskl_to_uskl Q) [=] empty.
-Proof. induction Q; simpl; fsetdec. Qed.
-
-Lemma ftag_in_uskl_ptyp_syn : forall A,
-  ftag_in_uskl (ptyp_to_uskl_syn A) [=] empty.
-Proof. intros; unfold ptyp_to_uskl_syn; apply ftag_in_bskl_to_uskl. Qed.
-
+(** Paintings of plain skeletons are tag-free ([pskl] has no [all_etag]).
+    ⚙ The [bskl] and [ptyp] siblings live in frost/prop_coercions.v §5 and
+    algo/prop_pat_sub.v — this file had two of them, one of them twice. *)
 Lemma ftag_in_pskl_to_uskl : forall P,
   ftag_in_uskl (pskl_to_uskl P) [=] empty.
 Proof. induction P; simpl; fsetdec. Qed.
@@ -797,7 +790,7 @@ Proof.
     pose proof (H0 α ltac:(solve_notin_auto)) as Hα; simpl in Hα; fsetdec.
   - (* flex_l: the unfolded def is a painted monotype — tag-free *)
     match goal with H0 : _ [<=] ftag_in_uskl (ptyp_to_uskl_syn ?t) |- _ =>
-      pose proof (ftag_in_uskl_ptyp_syn t) end; fsetdec.
+      pose proof (ftag_ptyp_to_uskl_syn t) end; fsetdec.
 Qed.
 
 (* ===================================================================== *)
@@ -1190,7 +1183,7 @@ Proof.
         [ symmetry; apply subst_uskl_in_uskl_fresh_eq; exact Hfr
         | exact Hmon | exact Hrig | exact Hwf | exact Hαd
         | exact HΨfull | exact HΨa | exact Hdisj
-        | pose proof (ftag_in_uskl_ptyp_syn τ) as Hpt; clear - Hpt; fsetdec
+        | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
         | exact Hwfq ].
   - (* flex_r *)
     eapply ad_pat_consis__flex_r; [ exact H | ].
@@ -1329,7 +1322,7 @@ Proof.
     pose proof (ftag_in_uskl_open_var R α).
     fsetdec.
   - (* flex_r *)
-    pose proof (ftag_in_uskl_ptyp_syn τ). fsetdec.
+    pose proof (ftag_ptyp_to_uskl_syn τ). fsetdec.
 Qed.
 
 (** ∀-free erasure ⇒ no tags (all_etag erases to a quantifier). *)
@@ -2020,7 +2013,7 @@ Proof.
     eapply ad_pat_consis__flex_l; [ apply Hmon; exact H | ].
     assert (Hftag' : Ψsup ∩
                        (ftag_in_uskl (ptyp_to_uskl_syn τ)) [=] empty)
-      by (pose proof (ftag_in_uskl_ptyp_syn τ) as Hpt; clear - Hpt; fsetdec).
+      by (pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec).
     exact (IHHup Ψsup HΨsup Hftag' Θ' Ψfull Ψn Ψna Q
              Hc Hmon Hwf HΨf HΨa Hdisj Hwfq).
   - (* flex_r *)
@@ -2071,7 +2064,7 @@ Proof.
     pose proof (H0 α ltac:(solve_notin_auto)) as Hα.
     pose proof (ftag_in_uskl_open_var R α); fsetdec.
   - (* flex_r *)
-    pose proof (ftag_in_uskl_ptyp_syn τ); fsetdec.
+    pose proof (ftag_ptyp_to_uskl_syn τ); fsetdec.
 Qed.
 
 (** The ghostier side of ⊑ᵤ is locally closed. *)
