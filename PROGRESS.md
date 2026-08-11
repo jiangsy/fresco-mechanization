@@ -335,6 +335,33 @@ as `d_consis_sub_trans_mid_tagsin`.  `d_sd_typing` / `d_typing` are untouched.
   conservativity bridge carries the hygiene across the sorts.
   `ftag_in_bskl_to_uskl` was deleted from `prop_consis_precise.v` as its
   duplicate.
+- ⭐⭐ **THE ATOM TRANSPOSITION EXISTED TWICE**, in `frost/prop_etag.v` (ε tags)
+  and `frost/algo/prop_swap.v` (type variables) — under the **same six names**
+  (`swap_atom`, `swap_atoms`, `swap_atom_invol`, `swap_atoms_empty`,
+  `swap_atoms_in`, `swap_atoms_notin`), and `algo/prop_pat_sub.v` imports BOTH
+  files.  ⚠️ That is the resolution hazard CLAUDE.md warns about, and the two
+  `swap_atoms_notin`s were **different facts** (set-fixed vs pointwise).  A
+  transposition of two ATOMS knows nothing about ε tags, so the layer now lives
+  once, upstream, in `prop_etag.v` §1; `prop_swap.v` imports it and keeps only
+  what the TYPE-variable side adds.  `swap_atom_fresh` was renamed to
+  `prop_swap.v`'s `swap_atom_other` (one fact, one name) and `prop_swap.v`'s
+  own `swap_atoms_notin` was dead.
+
+### 5. ⚙ Dead code the repair left behind, swept
+
+Once §3 landed, the per-node freshening it replaces and everything reachable
+only from it went dead.  Deleted, with RESTART NOTEs at both files:
+`d_sub_freshen_forall_l` (+ `_aux`, + `swap_atoms_disjoint_keep`, which only
+measured it); `d_sub_tagsin_of`, the twin's forgetful direction (CST goes the
+other way — it was the round-trip certificate); `d_sub_swap_etag` and
+`d_pat_sub_swap_etag` (§3's `d_sub_tagsin_swap_etag` is the same proof with the
+`Ψ' ⊆ U` row carried); and with them the whole **`uskl` half** of the ε-swap
+kit — `swap_etag_in_uskl` and its nine transport lemmas, plus
+`d_tags_skl_swap_etag` / `d_wf_uskl_swap_etag` / `d_pat_consis_swap_etag`.
+⚠️ The skeleton half was consumer-less SYMMETRY: the CST repair the file exists
+for runs at the TYPE sort.  Re-deriving it is the `utyp` half with
+`utyp`/`C` → `uskl`/`R` plus the four ghost constructors.  Also deleted:
+`ftag_in_pskl_to_uskl` (`prop_consis_precise.v`), which never had a consumer.
 
 ## 2026-08-11 — ⭐ **ε-TAG EQUIVARIANCE PROVED**; `ad_pat_sub_n` retired; `def_decl_algo_sub_hyg.v` merged away
 

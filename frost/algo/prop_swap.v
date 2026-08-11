@@ -39,6 +39,10 @@ Require Import src.frost.def_extra.
 Require Import src.frost.coercions.
 Require Import src.frost.prop_coercions.
 Require Import src.frost.ltac_utils.        (* destruct_if — §6's term-binder rows *)
+Require Import src.frost.prop_etag.         (* ⭐ §1's ATOM layer: the
+    transposition on atoms and on atom SETS is sort-agnostic, so it is defined
+    ONCE, upstream.  It used to be defined here TOO, under the same six names,
+    and algo/prop_pat_sub.v imports both files — see prop_etag.v's header. *)
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 
@@ -143,15 +147,11 @@ Qed.
 Unset Implicit Arguments.
 
 (* ===================================================================== *)
-(*  §1  The atom transposition                                            *)
+(*  §1  The atom transposition — the DEFINITION and its spec are upstream  *)
+(*  in frost/prop_etag.v §1 ([swap_atom], [swap_atom_invol],               *)
+(*  [swap_atom_other], [swap_atoms], [swap_atoms_spec], …).  What is here  *)
+(*  is only what the TYPE-variable side adds.                              *)
 (* ===================================================================== *)
-
-Definition swap_atom (a b x : atom) : atom :=
-  if x == a then b else if x == b then a else x.
-
-(** [simpl] must never unfold [swap_atom] into its if-form: destructs and
-    rewrites match [swap_atom _ _ _] syntactically. *)
-Global Arguments swap_atom : simpl never.
 
 Lemma swap_atom_l : forall a b, swap_atom a b a = b.
 Proof.
@@ -164,23 +164,6 @@ Proof.
   intros. unfold swap_atom.
   destruct (b == a); [congruence |].
   destruct (b == b); [reflexivity | exfalso; apply n0; reflexivity].
-Qed.
-
-Lemma swap_atom_other : forall a b x, x <> a -> x <> b -> swap_atom a b x = x.
-Proof.
-  intros. unfold swap_atom.
-  destruct (x == a); [contradiction |].
-  destruct (x == b); [contradiction | reflexivity].
-Qed.
-
-Lemma swap_atom_invol : forall a b x, swap_atom a b (swap_atom a b x) = x.
-Proof.
-  intros. unfold swap_atom.
-  repeat match goal with
-         | |- context [?u == ?v] =>
-             is_var u; is_var v; destruct (u == v); subst
-         end;
-    congruence.
 Qed.
 
 Lemma swap_atom_inj : forall a b x y,
@@ -602,48 +585,12 @@ Qed.
 (* ===================================================================== *)
 (*  §6  Swap over atom SETS (the F / Δ1 / Δ2 indexes)                      *)
 (*                                                                        *)
-(*  [atoms] is opaque, so [swap_atoms] cannot be a Leibniz homomorphism;   *)
-(*  its interface is the MEMBERSHIP SPEC [swap_atoms_iff], and judgments   *)
-(*  indexed by sets take the swapped set EXTENSIONALLY ([S' [=] swap_atoms  *)
-(*  a b S]) in their equivariance lemmas.                                  *)
+(*  [swap_atoms] and its membership SPEC [swap_atoms_spec] are upstream in *)
+(*  frost/prop_etag.v §1; what is here is the EXTENSIONAL packaging this   *)
+(*  side needs.  [atoms] is opaque, so [swap_atoms] cannot be a Leibniz    *)
+(*  homomorphism: judgments indexed by sets take the swapped set           *)
+(*  extensionally ([S' [=] swap_atoms a b S]) in their equivariance lemmas.*)
 (* ===================================================================== *)
-
-Definition swap_atoms (a b : atom) (S : atoms) : atoms :=
-  (S ∖ singleton a ∖ singleton b)
-    `union` (if mem a S then singleton b else empty)
-    `union` (if mem b S then singleton a else empty).
-
-Lemma swap_atoms_iff : forall a b S x,
-  x `in` swap_atoms a b S <-> swap_atom a b x `in` S.
-Proof.
-  intros. unfold swap_atoms, swap_atom.
-  destruct (mem a S) eqn:Ea; destruct (mem b S) eqn:Eb;
-    [ apply mem_iff in Ea; apply mem_iff in Eb
-    | apply mem_iff in Ea; apply not_mem_iff in Eb
-    | apply not_mem_iff in Ea; apply mem_iff in Eb
-    | apply not_mem_iff in Ea; apply not_mem_iff in Eb ];
-    destruct (x == a); destruct (x == b); subst; split; intros; fsetdec.
-Qed.
-
-Lemma swap_atoms_in : forall a b (S : atoms) x,
-  x `in` S -> swap_atom a b x `in` swap_atoms a b S.
-Proof.
-  intros. apply swap_atoms_iff. rewrite swap_atom_invol. exact H.
-Qed.
-
-Lemma swap_atoms_notin : forall a b (S : atoms) x,
-  x `notin` S -> swap_atom a b x `notin` swap_atoms a b S.
-Proof.
-  intros * Hn Hin.
-  pose proof (proj1 (swap_atoms_iff a b S (swap_atom a b x)) Hin) as h.
-  rewrite swap_atom_invol in h. contradiction.
-Qed.
-
-Lemma swap_atoms_empty : forall a b, swap_atoms a b empty [=] empty.
-Proof.
-  intros a b y. split; intros Hy; [| fsetdec].
-  apply swap_atoms_iff in Hy. fsetdec.
-Qed.
 
 Lemma empty_eq_swap_atoms_empty : forall a b,
   empty [=] swap_atoms a b empty.
@@ -656,18 +603,18 @@ Lemma eq_swap_atoms_add : forall a b x (S S' : atoms),
   add (swap_atom a b x) S' [=] swap_atoms a b (add x S).
 Proof.
   intros * HS y. split; intros Hy.
-  - apply swap_atoms_iff.
+  - apply swap_atoms_spec.
     assert (y = swap_atom a b x \/ y `in` S') as [h | h] by fsetdec.
     + subst. rewrite swap_atom_invol. fsetdec.
     + assert (y `in` swap_atoms a b S) by fsetdec.
-      apply swap_atoms_iff in H. fsetdec.
-  - apply swap_atoms_iff in Hy.
+      apply swap_atoms_spec in H. fsetdec.
+  - apply swap_atoms_spec in Hy.
     assert (swap_atom a b y = x \/ swap_atom a b y `in` S) as [h | h]
       by fsetdec.
     + assert (y = swap_atom a b x)
         by (rewrite <- h, swap_atom_invol; reflexivity).
       fsetdec.
-    + assert (y `in` swap_atoms a b S) by (apply swap_atoms_iff; exact h).
+    + assert (y `in` swap_atoms a b S) by (apply swap_atoms_spec; exact h).
       fsetdec.
 Qed.
 
@@ -679,7 +626,7 @@ Lemma swap_notin_eq : forall a b x (S S' : atoms),
 Proof.
   intros * HS Hn Hin.
   assert (h0 : swap_atom a b x `in` swap_atoms a b S) by fsetdec.
-  pose proof (proj1 (swap_atoms_iff a b S (swap_atom a b x)) h0) as h.
+  pose proof (proj1 (swap_atoms_spec a b S (swap_atom a b x)) h0) as h.
   rewrite swap_atom_invol in h. contradiction.
 Qed.
 
@@ -905,7 +852,7 @@ Proof.
   - apply a_wf_ptyp__all with (L := swap_atoms a b L).
     intros α0 Hα0.
     assert (hin : swap_atom a b α0 `notin` L)
-      by (intro hc; apply Hα0; apply swap_atoms_iff; exact hc).
+      by (intro hc; apply Hα0; apply swap_atoms_spec; exact hc).
     specialize (H0 _ hin).
     rewrite swap_ptyp_open in H0. simpl in H0.
     rewrite swap_atom_invol in H0. exact H0.
@@ -926,7 +873,7 @@ Proof.
   - apply a_wf_pskl__all with (L := swap_atoms a b L).
     intros α0 Hα0.
     assert (hin : swap_atom a b α0 `notin` L)
-      by (intro hc; apply Hα0; apply swap_atoms_iff; exact hc).
+      by (intro hc; apply Hα0; apply swap_atoms_spec; exact hc).
     pose proof (eq_swap_atoms_add a b (swap_atom a b α0) _ _ HΔ) as Hadd.
     rewrite swap_atom_invol in Hadd.
     specialize (H0 _ hin _ Hadd).
@@ -1203,7 +1150,7 @@ Proof.
   assert (h1 : y `in` Δ') by fsetdec.
   assert (h2 : y `in` ftvar_in_pskl (swap_pskl a b P)) by fsetdec.
   assert (h1' : y `in` swap_atoms a b Δ) by fsetdec.
-  pose proof (proj1 (swap_atoms_iff a b Δ y) h1') as h1''.
+  pose proof (proj1 (swap_atoms_spec a b Δ y) h1') as h1''.
   pose proof (swap_pskl_ftv_in_rev a b P y h2) as h2'.
   assert (swap_atom a b y `in` (Δ ∩ ftvar_in_pskl P)) by (apply inter_3; auto).
   fsetdec.
@@ -1628,11 +1575,11 @@ Lemma eq_swap_atoms_fresh : forall a b (S : atoms),
   a `notin` S -> b `notin` S -> S [=] swap_atoms a b S.
 Proof.
   intros * Ha Hb y. split; intros Hy.
-  - apply swap_atoms_iff.
+  - apply swap_atoms_spec.
     destruct (y == a); [ subst; contradiction | ].
     destruct (y == b); [ subst; contradiction | ].
     rewrite swap_atom_other; auto.
-  - apply swap_atoms_iff in Hy.
+  - apply swap_atoms_spec in Hy.
     destruct (y == a); [ subst; rewrite swap_atom_l in Hy; contradiction | ].
     destruct (y == b); [ subst; rewrite swap_atom_r in Hy; contradiction | ].
     rewrite swap_atom_other in Hy; auto.
@@ -2099,7 +2046,7 @@ Proof.
   - apply a_tyequiv__all with (L := swap_atoms a b L).
     intros α0 Hα0.
     assert (hin : swap_atom a b α0 `notin` L)
-      by (intro hc; apply Hα0; apply swap_atoms_iff; exact hc).
+      by (intro hc; apply Hα0; apply swap_atoms_spec; exact hc).
     specialize (H0 _ hin).
     rewrite !swap_ptyp_open in H0. simpl in H0.
     rewrite swap_atom_invol in H0. exact H0.
@@ -2120,7 +2067,7 @@ Proof.
   - apply a_pskl_tyequiv__all with (L := swap_atoms a b L).
     intros α0 Hα0.
     assert (hin : swap_atom a b α0 `notin` L)
-      by (intro hc; apply Hα0; apply swap_atoms_iff; exact hc).
+      by (intro hc; apply Hα0; apply swap_atoms_spec; exact hc).
     specialize (H0 _ hin).
     rewrite !swap_pskl_open_var in H0.
     rewrite swap_atom_invol in H0. exact H0.

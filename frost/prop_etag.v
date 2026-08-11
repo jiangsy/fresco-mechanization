@@ -20,10 +20,32 @@
     algo/prop_swap.v takes equivariance as the renaming primitive for TYPE
     variables.
 
+    ⭐ §1 IS SORT-AGNOSTIC AND SHARED.  A transposition of two ATOMS knows
+    nothing about ε tags, so [swap_atom] / [swap_atoms] and their spec live
+    here ONCE and algo/prop_swap.v — the TYPE-variable equivariance kit —
+    imports them.  ⚠️ They used to be defined in both files, under the same
+    six names ([swap_atom], [swap_atoms], [swap_atom_invol],
+    [swap_atoms_empty], [swap_atoms_in], [swap_atoms_notin]), and
+    algo/prop_pat_sub.v imports BOTH — so [apply swap_atoms_notin] there
+    resolved by import order, and the two [swap_atoms_notin]s were DIFFERENT
+    facts.  Merged 2026-08-11.
+
     ⚙ ε tags are plain atoms occupying a slot in [utyp_all_etag] /
     [uskl_all_etag], not a locally-nameless sort, so lngen generates nothing
     for them: the swap, its action on atom SETS (tag contexts are [atoms]) and
-    every transport lemma below are hand-written. *)
+    every transport lemma below are hand-written.
+
+    ⚙ RESTART NOTE (2026-08-11) — §2's [uskl] HALF WAS DELETED
+    ([swap_etag_in_uskl] and its nine transport lemmas: [_open_rec] / [_open] /
+    [_open_var], [ftvar_], [lc_], [ftag_], [_fresh_eq], [is_tskl_swap_etag],
+    [guarded_uskl_swap_etag]).  Its only consumer was
+    [d_pat_sub_swap_etag] (decl/prop_etag_swap.v), which was itself
+    consumer-less symmetry: the CST repair the whole file exists for runs at
+    the TYPE sort.  To re-derive, copy the [utyp] half below and replace
+    [utyp]/[C] by [uskl]/[R], adding the four ghost constructors — each proof
+    is the same three lines.  ⚠️ Check first whether the skeleton sort really
+    needs the SWAP, or only [ftag_in_uskl_subst_tagfree] (§0), which is what
+    the rule change actually consumed. *)
 
 Require Import Metalib.Metatheory.
 
@@ -71,6 +93,10 @@ Qed.
 Definition swap_atom (ε1 ε2 α : atom) : atom :=
   if α == ε1 then ε2 else if α == ε2 then ε1 else α.
 
+(** ⚙ [simpl] must never unfold [swap_atom] into its if-form: [algo/prop_swap.v]
+    destructs and rewrites on [swap_atom _ _ _] syntactically. *)
+Global Arguments swap_atom : simpl never.
+
 (** The action on a tag CONTEXT.  Written as a union rather than an image
     ([atoms] has no map), and used only through [swap_atoms_spec] below —
     every fact about it is a pointwise consequence of that one. *)
@@ -92,7 +118,7 @@ Proof.
       destruct (α == ε2) as [ Hc | _ ]; [ contradiction | reflexivity ].
 Qed.
 
-Lemma swap_atom_fresh : forall ε1 ε2 α,
+Lemma swap_atom_other : forall ε1 ε2 α,
   α <> ε1 -> α <> ε2 -> swap_atom ε1 ε2 α = α.
 Proof.
   intros ε1 ε2 α H1 H2. unfold swap_atom.
@@ -191,7 +217,7 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §2  THE ACTION ON TYPES AND SKELETONS                                 *)
+(*  §2  THE ACTION ON TYPES                                               *)
 (* ===================================================================== *)
 
 Fixpoint swap_etag_in_utyp (ε1 ε2 : atom) (C : utyp) : utyp :=
@@ -204,22 +230,6 @@ Fixpoint swap_etag_in_utyp (ε1 ε2 : atom) (C : utyp) : utyp :=
   | utyp_all_syn C0 => utyp_all_syn (swap_etag_in_utyp ε1 ε2 C0)
   | utyp_all_etag ε C0 =>
       utyp_all_etag (swap_atom ε1 ε2 ε) (swap_etag_in_utyp ε1 ε2 C0)
-  end.
-
-Fixpoint swap_etag_in_uskl (ε1 ε2 : atom) (R : uskl) : uskl :=
-  match R with
-  | uskl_unit => uskl_unit
-  | uskl_var_b n => uskl_var_b n
-  | uskl_var_f α => uskl_var_f α
-  | uskl_arrow R1 R2 =>
-      uskl_arrow (swap_etag_in_uskl ε1 ε2 R1) (swap_etag_in_uskl ε1 ε2 R2)
-  | uskl_all_syn R0 => uskl_all_syn (swap_etag_in_uskl ε1 ε2 R0)
-  | uskl_all_etag ε R0 =>
-      uskl_all_etag (swap_atom ε1 ε2 ε) (swap_etag_in_uskl ε1 ε2 R0)
-  | uskl_hole => uskl_hole
-  | uskl_tophole R0 => uskl_tophole (swap_etag_in_uskl ε1 ε2 R0)
-  | uskl_holeg => uskl_holeg
-  | uskl_topholeg R0 => uskl_topholeg (swap_etag_in_uskl ε1 ε2 R0)
   end.
 
 (** ** Commutation with opening, and with type-variable substitution.
@@ -251,41 +261,11 @@ Proof.
   intros. unfold open_utyp_wrt_utyp. apply swap_etag_in_utyp_open_rec.
 Qed.
 
-Lemma swap_etag_in_uskl_open_rec : forall ε1 ε2 R1 R2 k,
-  swap_etag_in_uskl ε1 ε2 (open_uskl_wrt_uskl_rec k R2 R1)
-  = open_uskl_wrt_uskl_rec k (swap_etag_in_uskl ε1 ε2 R2)
-      (swap_etag_in_uskl ε1 ε2 R1).
-Proof.
-  intros ε1 ε2 R1. induction R1; intros R2 k; simpl; try reflexivity;
-    try (rewrite IHR1; reflexivity);
-    try (rewrite IHR1_1, IHR1_2; reflexivity).
-  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
-Qed.
-
-Lemma swap_etag_in_uskl_open : forall ε1 ε2 R1 R2,
-  swap_etag_in_uskl ε1 ε2 (open_uskl_wrt_uskl R1 R2)
-  = open_uskl_wrt_uskl (swap_etag_in_uskl ε1 ε2 R1)
-      (swap_etag_in_uskl ε1 ε2 R2).
-Proof.
-  intros. unfold open_uskl_wrt_uskl. apply swap_etag_in_uskl_open_rec.
-Qed.
-
-Lemma swap_etag_in_uskl_open_var : forall ε1 ε2 R α,
-  swap_etag_in_uskl ε1 ε2 (open_uskl_wrt_uskl R (uskl_var_f α))
-  = open_uskl_wrt_uskl (swap_etag_in_uskl ε1 ε2 R) (uskl_var_f α).
-Proof.
-  intros. unfold open_uskl_wrt_uskl. apply swap_etag_in_uskl_open_rec.
-Qed.
-
 (** ** Free TYPE variables and local closure are blind to the swap. *)
 
 Lemma ftvar_swap_etag_in_utyp : forall ε1 ε2 C,
   ftvar_in_utyp (swap_etag_in_utyp ε1 ε2 C) = ftvar_in_utyp C.
 Proof. induction C; simpl; congruence. Qed.
-
-Lemma ftvar_swap_etag_in_uskl : forall ε1 ε2 R,
-  ftvar_in_uskl (swap_etag_in_uskl ε1 ε2 R) = ftvar_in_uskl R.
-Proof. induction R; simpl; congruence. Qed.
 
 Lemma lc_swap_etag_in_utyp : forall ε1 ε2 C,
   lc_utyp C -> lc_utyp (swap_etag_in_utyp ε1 ε2 C).
@@ -295,16 +275,6 @@ Proof.
     rewrite <- swap_etag_in_utyp_open_var. auto.
   - apply lc_utyp_all_etag. intros α.
     rewrite <- swap_etag_in_utyp_open_var. auto.
-Qed.
-
-Lemma lc_swap_etag_in_uskl : forall ε1 ε2 R,
-  lc_uskl R -> lc_uskl (swap_etag_in_uskl ε1 ε2 R).
-Proof.
-  intros ε1 ε2 R H; induction H; simpl; try solve [ constructor; auto ].
-  - apply lc_uskl_all_syn. intros α.
-    rewrite <- swap_etag_in_uskl_open_var. auto.
-  - apply lc_uskl_all_etag. intros α.
-    rewrite <- swap_etag_in_uskl_open_var. auto.
 Qed.
 
 (** ** The ε-tag collectors transport EXACTLY — this is the fact the whole
@@ -321,16 +291,6 @@ Proof.
   - rewrite IHC, swap_atoms_add. reflexivity.
 Qed.
 
-Lemma ftag_swap_etag_in_uskl : forall ε1 ε2 R,
-  ftag_in_uskl (swap_etag_in_uskl ε1 ε2 R)
-  [=] swap_atoms ε1 ε2 (ftag_in_uskl R).
-Proof.
-  intros ε1 ε2 R. induction R; simpl;
-    try solve [ rewrite swap_atoms_empty; reflexivity | exact IHR ].
-  - rewrite IHR1, IHR2, swap_atoms_union. reflexivity.
-  - rewrite IHR, swap_atoms_add. reflexivity.
-Qed.
-
 (** A term with no tag to move is fixed by the swap. *)
 Lemma swap_etag_in_utyp_fresh_eq : forall ε1 ε2 C,
   ε1 `notin` ftag_in_utyp C -> ε2 `notin` ftag_in_utyp C ->
@@ -340,18 +300,7 @@ Proof.
   - rewrite IHC1, IHC2; try reflexivity; clear - H1 H2; fsetdec.
   - rewrite IHC; try reflexivity; assumption.
   - rewrite IHC; try solve [ clear - H1 H2; fsetdec ].
-    rewrite swap_atom_fresh; [ reflexivity | | ]; clear - H1 H2; fsetdec.
-Qed.
-
-Lemma swap_etag_in_uskl_fresh_eq : forall ε1 ε2 R,
-  ε1 `notin` ftag_in_uskl R -> ε2 `notin` ftag_in_uskl R ->
-  swap_etag_in_uskl ε1 ε2 R = R.
-Proof.
-  intros ε1 ε2 R. induction R; simpl; intros H1 H2; try reflexivity;
-    try solve [ rewrite IHR; try reflexivity; assumption ].
-  - rewrite IHR1, IHR2; try reflexivity; clear - H1 H2; fsetdec.
-  - rewrite IHR; try solve [ clear - H1 H2; fsetdec ].
-    rewrite swap_atom_fresh; [ reflexivity | | ]; clear - H1 H2; fsetdec.
+    rewrite swap_atom_other; [ reflexivity | | ]; clear - H1 H2; fsetdec.
 Qed.
 
 (** ** The tagged-sort predicates transport. *)
@@ -364,28 +313,12 @@ Proof.
   rewrite <- swap_etag_in_utyp_open_var. auto.
 Qed.
 
-Lemma is_tskl_swap_etag : forall ε1 ε2 R,
-  is_tskl R -> is_tskl (swap_etag_in_uskl ε1 ε2 R).
-Proof.
-  intros ε1 ε2 R H; induction H; simpl; try solve [ constructor; auto ].
-  apply is_tskl__all_etag with (L := L). intros α Hα.
-  rewrite <- swap_etag_in_uskl_open_var. auto.
-Qed.
-
 Lemma guarded_utyp_swap_etag : forall ε1 ε2 C,
   guarded_utyp C -> guarded_utyp (swap_etag_in_utyp ε1 ε2 C).
 Proof.
   intros ε1 ε2 C H; inversion H; subst; simpl;
     [ apply guarded_utyp__unit | apply guarded_utyp__var
     | apply guarded_utyp__arrow; apply lc_swap_etag_in_utyp; assumption ].
-Qed.
-
-Lemma guarded_uskl_swap_etag : forall ε1 ε2 R,
-  guarded_uskl R -> guarded_uskl (swap_etag_in_uskl ε1 ε2 R).
-Proof.
-  intros ε1 ε2 R H; inversion H; subst; simpl;
-    [ apply guarded_uskl__unit | apply guarded_uskl__var
-    | apply guarded_uskl__arrow; apply lc_swap_etag_in_uskl; assumption ].
 Qed.
 
 (* ===================================================================== *)
@@ -441,15 +374,6 @@ Qed.
     [S ∩ T] to an atom outside both, the intersection strictly shrinks — which
     is the measure the iteration in decl/prop_etag_swap.v decreases. *)
 
-Lemma swap_atoms_disjoint_keep : forall ε1 ε2 S T,
-  S ∩ T [=] empty -> ε1 `notin` T -> ε2 `notin` T ->
-  (swap_atoms ε1 ε2 S) ∩ T [=] empty.
-Proof.
-  intros ε1 ε2 S T H H1 H2.
-  rewrite <- (swap_atoms_notin ε1 ε2 T H1 H2).
-  apply swap_atoms_disjoint_of; exact H.
-Qed.
-
 Lemma swap_atoms_shrink : forall ε1 ε2 S T,
   ε1 `in` S -> ε1 `in` T -> ε2 `notin` S -> ε2 `notin` T ->
   cardinal ((swap_atoms ε1 ε2 S) ∩ T) < cardinal (S ∩ T).
@@ -465,7 +389,7 @@ Proof.
     assert (Hne1 : α <> ε1) by (intros ->; contradiction).
     assert (Hne2 : α <> ε2) by (intros ->; contradiction).
     rewrite swap_atoms_spec in Hs.
-    rewrite (swap_atom_fresh ε1 ε2 α Hne1 Hne2) in Hs. exact Hs.
+    rewrite (swap_atom_other ε1 ε2 α Hne1 Hne2) in Hs. exact Hs.
   - apply AtomSetFacts.inter_iff. split; assumption.
   - intros Hc. apply AtomSetFacts.inter_iff in Hc as [ Hc _ ]. contradiction.
 Qed.

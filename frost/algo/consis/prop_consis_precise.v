@@ -732,12 +732,10 @@ Proof.
   intros; unfold open_uskl_wrt_uskl; apply ftag_in_uskl_open_rec_var.
 Qed.
 
-(** Paintings of plain skeletons are tag-free ([pskl] has no [all_etag]).
-    ⚙ The [bskl] and [ptyp] siblings live in frost/prop_coercions.v §5 and
-    algo/prop_pat_sub.v — this file had two of them, one of them twice. *)
-Lemma ftag_in_pskl_to_uskl : forall P,
-  ftag_in_uskl (pskl_to_uskl P) [=] empty.
-Proof. induction P; simpl; fsetdec. Qed.
+(* ⚙ RESTART NOTE (2026-08-11): [ftag_in_pskl_to_uskl] ("a [pskl] painting is
+   tag-free", [induction P; simpl; fsetdec]) lived here and had NO consumer;
+   deleted along with [ftag_in_bskl_to_uskl], which duplicated
+   frost/prop_coercions.v §5's [ftag_bskl_to_uskl]. *)
 
 (** A decorated skeleton's tag reading is exactly its syntactic tags. *)
 Lemma d_tags_skl_ftag : forall Ψ ψ,

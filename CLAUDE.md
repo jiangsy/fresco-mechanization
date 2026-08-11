@@ -157,12 +157,17 @@ mechanization/
 │   ├── coercions.v       (paint/erase conversions — DEFINITIONS ONLY:
 │   │                      ptyp_to_btyp_syn, ptyp_to_utyp_syn,
 │   │                      btyp_to_utyp_syn, btyp_to_ptyp, … + the 4 Coercions)
-│   ├── prop_etag.v       (ε-TAG EQUIVARIANCE, syntactic layer: the
-│   │                      transposition on atoms / atom SETS / utyp / uskl.
+│   ├── prop_etag.v       (ε-TAG EQUIVARIANCE, syntactic layer: §0 tags are
+│   │                      blind to tvar substitution, §1 the transposition on
+│   │                      atoms and atom SETS, §2 its action on `utyp`.
 │   │                      The paper's ForallL `fresh Ψ'` is a statement about
 │   │                      NAMES, and a swap is an automorphism with no side
 │   │                      condition where a one-way rename would need the
-│   │                      whole derivation's tags)
+│   │                      whole derivation's tags.  ⭐ §1 is SORT-AGNOSTIC and
+│   │                      shared: `algo/prop_swap.v` imports it rather than
+│   │                      redefining `swap_atom` / `swap_atoms`, which is what
+│   │                      it used to do — six colliding names, and
+│   │                      `algo/prop_pat_sub.v` imports both files)
 │   ├── prop_coercions.v  (everything ABOUT those conversions, and the only
 │   │                      place any of it goes: §1 retractions, §2 open /
 │   │                      open_rec commutation, §3 lc + shape-predicate
@@ -222,8 +227,9 @@ mechanization/
 │       ├── prop_inc*.v / prop_metasubst.v / prop_compose.v   (θ-algebra)
 │       ├── prop_flex.v / prop_normal.v / prop_mono_bridge.v  (flex + monotypes)
 │       ├── prop_precise*.v      (precision)
-│       ├── prop_swap.v          (EQUIVARIANCE — the one renaming primitive.
-│       │                         §1-§5 type variables, §6 TERM binders)
+│       ├── prop_swap.v          (EQUIVARIANCE — the one renaming primitive
+│       │                         for TYPE variables.  ⚙ its §1 atom layer is
+│       │                         `frost/prop_etag.v` §1, imported not copied)
 │       ├── prop_pat_sub.v / prop_refine.v / prop_stability.v
 │       ├── prop_suffix_erase.v / prop_rename_decl.v
 │       ├── prop_wf_preservation.v  (a run's OUTPUT context is well-formed)
