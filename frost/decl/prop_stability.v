@@ -35,8 +35,8 @@ Set Implicit Arguments.
 Lemma d_typing_var_ti_consis : forall Γ x A B1,
     d_wf_denv Γ ->
     binds x (dbind_typ A) Γ ->
-    Γ ⊢[ mode_ti ] (exp_var_f x) ⦂ B1 ->
-    is_styp B1 /\ exists Δt, Δt ⨟ Γ ⊢ ptyp_to_utyp_syn A ∼ B1.
+    {{ Γ ⊢[ mode_ti ] (exp_var_f x) ⦂ B1 }}d ->
+    is_styp B1 /\ exists Δt, {{ Δt ⨟ Γ ⊢ ptyp_to_utyp_syn A ∼ B1 }}d.
 Proof.
   intros Γ x A B1 Hwf Hb Htyp.
   assert (Huniq : uniq Γ) by (apply d_wf_denv_uniq; exact Hwf).
@@ -52,7 +52,7 @@ Proof.
     + apply is_styp_ptyp_to_btyp_syn; eapply d_wf_ptyp_lc; eauto.
     + exists empty. apply d_consis_syn_refl; exact Hwfa.
   - (* __sub at mode_ti: only d_sub__infer; compose the inner consistency. *)
-    match goal with H : empty ⨟ _ ⊢[ mode_ti ] _ ⩽ B |- _ =>
+    match goal with H : {{ empty ⨟ _ ⊢[ mode_ti ] _ ⩽ B }}d |- _ =>
       rename H into Hsub end.
     inversion Hsub as [ Ψ0 Γ0 C0 B0 Hcons0 Hstyp0 HΨ0 | | | | | ]; subst;
       try congruence.
@@ -75,13 +75,13 @@ Qed.
 Lemma d_typing_var_fn_factor : forall Γ x A B m,
     d_wf_denv Γ ->
     binds x (dbind_typ A) Γ ->
-    Γ ⊢[ mode_fn m ] (exp_var_f x) ⦂ B ->
-    exists Δ, Δ ⨟ Γ ⊢[ mode_fn m ] ptyp_to_utyp_syn A ⩽ B.
+    {{ Γ ⊢[ mode_fn m ] (exp_var_f x) ⦂ B }}d ->
+    exists Δ, {{ Δ ⨟ Γ ⊢[ mode_fn m ] ptyp_to_utyp_syn A ⩽ B }}d.
 Proof.
   intros Γ x A B m Hwf Hb Htyp.
   remember (exp_var_f x) as e. remember (mode_fn m) as mf.
   induction Htyp; subst; try discriminate; try congruence.
-  - (* __sub: inner [Γ ⊢[ti] x ⦂ B1] (= Htyp), outer
+  - (* __sub: inner [{{ Γ ⊢[ti] x ⦂ B1 }}d] (= Htyp), outer
        [empty ⊢[fn m] paint B1 ⩽ B2] (= H0). *)
     destruct (@d_typing_var_ti_consis Γ x A (ptyp_to_btyp_syn A0) Hwf Hb Htyp)
       as [Hstyp1 [Δt Hcons1]].
@@ -140,16 +140,16 @@ Proof. intros. unfold curry_btyp. rewrite fold_right_app. reflexivity. Qed.
     inherited painting.  ([A = btyp_to_ptyp Barg] is folded in.) *)
 Definition arg_ok (Γ : list (atom * dbind)) (Barg : btyp) (e : exp) : Prop :=
   exists P,
-    (Γ ⊢ₛ[ mode_tc ] e ⦂ (pskl_to_bskl_syn P)) /\
-    (Γ ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl Barg)) /\
-    (Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh (btyp_to_ptyp Barg))).
+    ({{ Γ ⊢ˢ[ mode_tc ] e ⦂ (pskl_to_bskl_syn P) }}d) /\
+    ({{ Γ ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl Barg) }}d) /\
+    ({{ Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh (btyp_to_ptyp Barg)) }}d).
 
 (** A single application step from a head arrow type plus argument
     evidence (the [d_typing__app] introduction, repackaged). *)
 Lemma d_typing_app_step : forall Γ m e1 e2 Barg B,
-    Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow Barg B) ->
+    {{ Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow Barg B) }}d ->
     arg_ok Γ Barg e2 ->
-    Γ ⊢[ m ] (exp_app e1 e2) ⦂ B.
+    {{ Γ ⊢[ m ] (exp_app e1 e2) ⦂ B }}d.
 Proof.
   intros Γ m e1 e2 Barg B Hhead [P [Hpat [Href Hchk]]].
   eapply d_typing__app with (P := P) (B1 := Barg);
@@ -182,10 +182,10 @@ Proof. induction k; intros m; simpl; [ reflexivity | rewrite IHk; reflexivity ].
     [d_wf_denv Γ] premise. *)
 Lemma d_typing_app_spine_inv : forall args Γ f m B',
     d_wf_denv Γ ->
-    Γ ⊢[ m ] curry_exp f args ⦂ B' ->
+    {{ Γ ⊢[ m ] curry_exp f args ⦂ B' }}d ->
     exists Bargs,
       length Bargs = length args /\
-      (Γ ⊢[ mode_fn_n (length args) m ] f ⦂ curry_btyp Bargs B') /\
+      ({{ Γ ⊢[ mode_fn_n (length args) m ] f ⦂ curry_btyp Bargs B' }}d) /\
       Forall2 (arg_ok Γ) Bargs (List.map snd args).
 Proof.
   intro args. induction args as [ | a init IHinit ] using rev_ind;
@@ -232,9 +232,9 @@ Qed.
 (** Head-generic spine REASSEMBLY (the converse). *)
 Lemma d_typing_app_spine_build : forall args Γ f m B' Bargs,
     length Bargs = length args ->
-    Γ ⊢[ mode_fn_n (length args) m ] f ⦂ curry_btyp Bargs B' ->
+    {{ Γ ⊢[ mode_fn_n (length args) m ] f ⦂ curry_btyp Bargs B' }}d ->
     Forall2 (arg_ok Γ) Bargs (List.map snd args) ->
-    Γ ⊢[ m ] curry_exp f args ⦂ B'.
+    {{ Γ ⊢[ m ] curry_exp f args ⦂ B' }}d.
 Proof.
   intro args. induction args as [ | a init IHinit ] using rev_ind;
     intros Γ f m B' Bargs Hlen Hhead Hall.
@@ -276,8 +276,8 @@ Definition spine_btyp (Rb : btyp) (sp : list (utyp * btyp)) : btyp :=
 Lemma d_sub_arrow_spine_perm : forall sp sp',
     Permutation sp sp' ->
     forall Δ Γ Ct Bb m,
-      Δ ⨟ Γ ⊢[ mode_fn_n (length sp) m ] spine_utyp Ct sp ⩽ spine_btyp Bb sp ->
-      Δ ⨟ Γ ⊢[ mode_fn_n (length sp') m ] spine_utyp Ct sp' ⩽ spine_btyp Bb sp'.
+      {{ Δ ⨟ Γ ⊢[ mode_fn_n (length sp) m ] spine_utyp Ct sp ⩽ spine_btyp Bb sp }}d ->
+      {{ Δ ⨟ Γ ⊢[ mode_fn_n (length sp') m ] spine_utyp Ct sp' ⩽ spine_btyp Bb sp' }}d.
 Proof.
   intros sp sp' Hperm. induction Hperm; intros Δ Γ Ct Bb m Hsub.
   - (* nil *) exact Hsub.
@@ -390,12 +390,12 @@ Proof. destruct n; intros m H; [ lia | exists (mode_fn_n n m); reflexivity ]. Qe
 (** At a function mode, a [utyp_all_syn] LHS can only be subtyped via the
     untagged [∀]-left rule. *)
 Lemma d_sub_fn_all_syn_inv : forall Δ Γ m C B,
-    Δ ⨟ Γ ⊢[ mode_fn m ] (utyp_all_syn C) ⩽ B ->
+    {{ Δ ⨟ Γ ⊢[ mode_fn m ] (utyp_all_syn C) ⩽ B }}d ->
     exists Ψ' C',
       Ψ' ∩ Δ [=] empty /\
       Ψ' ∩ (ftag_in_utyp (utyp_all_syn C)) [=] empty /\
-      d_tags Ψ' C' /\ Γ ⊢ᵤ C' /\ is_ttyp C' /\
-      (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn m ] (open_utyp_wrt_utyp C C') ⩽ B.
+      d_tags Ψ' C' /\ {{ Γ ⊢ᵤ C' }}d /\ is_ttyp C' /\
+      {{ (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn m ] (open_utyp_wrt_utyp C C') ⩽ B }}d.
 Proof.
   intros Δ Γ m C B Hsub.
   inversion Hsub as [ | | | | | Ψ0 Ψ' Γ0 m0 C0 C' B0 Hm Hfresh Hhyg Htags Hwfph Httyp Hpre ];
@@ -408,12 +408,12 @@ Qed.
 (** Same, at the [k]-fold function mode. *)
 Lemma d_sub_fnn_all_syn_inv : forall n m Δ Γ C B,
     1 <= n ->
-    Δ ⨟ Γ ⊢[ mode_fn_n n m ] (utyp_all_syn C) ⩽ B ->
+    {{ Δ ⨟ Γ ⊢[ mode_fn_n n m ] (utyp_all_syn C) ⩽ B }}d ->
     exists Ψ' C',
       Ψ' ∩ Δ [=] empty /\
       Ψ' ∩ (ftag_in_utyp (utyp_all_syn C)) [=] empty /\
-      d_tags Ψ' C' /\ Γ ⊢ᵤ C' /\ is_ttyp C' /\
-      (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn_n n m ] (open_utyp_wrt_utyp C C') ⩽ B.
+      d_tags Ψ' C' /\ {{ Γ ⊢ᵤ C' }}d /\ is_ttyp C' /\
+      {{ (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn_n n m ] (open_utyp_wrt_utyp C C') ⩽ B }}d.
 Proof.
   intros n m Δ Γ C B Hpos Hsub.
   destruct (mode_fn_n_ge1_fn m Hpos) as [m' Hm']. rewrite Hm' in Hsub.
@@ -461,8 +461,8 @@ Lemma d_sub_prefix_spine_perm : forall j sp sp',
     Permutation sp sp' ->
     1 <= length sp ->
     forall Δ Γ Ct Bb m,
-      Δ ⨟ Γ ⊢[ mode_fn_n (length sp) m ] (utyp_all_syn_n j (spine_utyp Ct sp)) ⩽ spine_btyp Bb sp ->
-      Δ ⨟ Γ ⊢[ mode_fn_n (length sp') m ] (utyp_all_syn_n j (spine_utyp Ct sp')) ⩽ spine_btyp Bb sp'.
+      {{ Δ ⨟ Γ ⊢[ mode_fn_n (length sp) m ] (utyp_all_syn_n j (spine_utyp Ct sp)) ⩽ spine_btyp Bb sp }}d ->
+      {{ Δ ⨟ Γ ⊢[ mode_fn_n (length sp') m ] (utyp_all_syn_n j (spine_utyp Ct sp')) ⩽ spine_btyp Bb sp' }}d.
 Proof.
   induction j as [ | j IHj ]; intros sp sp' Hperm Hpos Δ Γ Ct Bb m Hsub.
   - simpl in Hsub |- *. eapply d_sub_arrow_spine_perm; eassumption.
@@ -591,10 +591,10 @@ Lemma d_typing_var_head_perm : forall Γ m n x y args args' Bargs A' B',
     Permutation args args' ->
     binds x (dbind_typ (ptyp_forall_prefix n (curry_ptyp args A'))) Γ ->
     binds y (dbind_typ (ptyp_forall_prefix n (curry_ptyp args' A'))) Γ ->
-    Γ ⊢[ mode_fn_n (length args) m ] (exp_var_f x) ⦂ curry_btyp Bargs B' ->
+    {{ Γ ⊢[ mode_fn_n (length args) m ] (exp_var_f x) ⦂ curry_btyp Bargs B' }}d ->
     Forall2 (arg_ok Γ) Bargs (List.map snd args) ->
     exists Bargs',
-      (Γ ⊢[ mode_fn_n (length args') m ] (exp_var_f y) ⦂ curry_btyp Bargs' B') /\
+      ({{ Γ ⊢[ mode_fn_n (length args') m ] (exp_var_f y) ⦂ curry_btyp Bargs' B' }}d) /\
       Forall2 (arg_ok Γ) Bargs' (List.map snd args').
 Proof.
   intros Γ m n x y args args' Bargs A' B' Hwf Hperm Hbx Hby Hheadx Hallx.
@@ -677,7 +677,7 @@ Qed.
 
     STATEMENT FIX (vs. the original stub): the [d_wf_denv Γ] premise is
     REQUIRED, not cosmetic — without it the lemma is unprovable.  The proof
-    must invert [Γ ⊢[mode_ti] (exp_var_f x) ⦂ B1], which by [d_typing__var]
+    must invert [{{ Γ ⊢[mode_ti] (exp_var_f x) ⦂ B1 }}d], which by [d_typing__var]
     only yields [B1 = ptyp_to_btyp_syn A₀] for *some* [binds x (dbind_typ A₀)];
     [uniq Γ] (from [d_wf_denv]) is what identifies [A₀] with the lemma's
     binding, and the consistency-transitivity steps need the binding's
@@ -701,8 +701,8 @@ Lemma d_typing_order_irrel : forall Γ m n x y args args' A B',
     Permutation args args' ->
     binds x (dbind_typ (ptyp_forall_prefix n (curry_ptyp args A))) Γ ->
     binds y (dbind_typ (ptyp_forall_prefix n (curry_ptyp args' A))) Γ ->
-    Γ ⊢[ m ] curry_exp (exp_var_f x) args ⦂ B' ->
-    Γ ⊢[ m ] curry_exp (exp_var_f y) args' ⦂ B'.
+    {{ Γ ⊢[ m ] curry_exp (exp_var_f x) args ⦂ B' }}d ->
+    {{ Γ ⊢[ m ] curry_exp (exp_var_f y) args' ⦂ B' }}d.
 Proof.
   intros Γ m n x y args args' A B' Hwf Hperm Hbx Hby Htyp.
   (* Factor [x]'s curried application into head typing + per-arg evidence. *)
@@ -740,8 +740,8 @@ Example order_irrel_x_y :
     binds y (dbind_typ
       (ptyp_all (ptyp_arrow (ptyp_arrow (ptyp_var_b 0) (ptyp_var_b 0))
         (ptyp_arrow (ptyp_var_b 0) Rint)))) Γ ->
-    Γ ⊢[ m ] (exp_app (exp_app (exp_var_f x) one) zid) ⦂ R' ->
-    Γ ⊢[ m ] (exp_app (exp_app (exp_var_f y) zid) one) ⦂ R'.
+    {{ Γ ⊢[ m ] (exp_app (exp_app (exp_var_f x) one) zid) ⦂ R' }}d ->
+    {{ Γ ⊢[ m ] (exp_app (exp_app (exp_var_f y) zid) one) ⦂ R' }}d.
 Proof.
   intros Γ m x y one zid Rint R' Hwf Hbx Hby Htyp.
   apply (@d_typing_order_irrel Γ m 1 x y

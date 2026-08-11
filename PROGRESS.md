@@ -238,6 +238,68 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-08-11 (latest) — ⚙ **NOTATION SCOPES: the SYSTEM moves off the turnstile and onto a `{{ … }}d` / `{{ … }}ad` / `{{ … }}a` / `{{ … }}t` DELIMITER**
+
+**`make coq` exit 0; README.v 28/28 `Print Assumptions` closed; no `Admitted`, no `Axiom`.**
+
+Every judgement of every system is now written inside a system-tagged brace
+pair, and each pair is the delimiter of its own notation scope
+(`frost_d_scope` / `frost_ad_scope` / `frost_a_scope` / `frost_t_scope`,
+delimited `%d` / `%ad` / `%a` / `%t`).  47 notations were re-declared and
+**4 043 use sites** rewritten across 88 files; the tree is unchanged
+semantically — no rule, statement or proof was touched.
+
+**Why.** Two earlier passes tried to carry the system ON the turnstile and both
+failed the same way: the system mark competed with the marks the judgement
+itself needs.  First it was a subscript (`⊢ₐ`), which reads as a sort, and `ᵃ`
+meant `a_` in `a_wf_pskl` but `ad_` in `ad_pat_consis`.  Then (2026-08-09) it
+was a superscript, which produced three-glyph stacks — `⊢ᵣₚᵃᵈ`, `⊢ₚᵣᵃᵈ`,
+`⊢ₛᵃᵈ[` — and forced `ad_sd_typing` to DROP its `ˢ` (leaving a plain `⊢ᵃᵈ[ M ]`)
+purely to avoid a third mark.  With the system on the delimiter the turnstile is
+free, so one relation's copies across systems differ by the delimiter ALONE:
+
+| before | after |
+|---|---|
+| `Γ ⨟ Δ ⊢ᵣ Q ⊳ P` / `Θ ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ P` | `{{ Γ ⨟ Δ ⊢ᵣ Q ⊳ P }}d` / `{{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad` |
+| `Γ ⊢ˢ[ M ] e ⦂ A` / `Θ ⊢ᵃᵈ[ M ] e ⦂ B` | `{{ Γ ⊢ˢᵈ[ M ] e ⦂ A }}d` / `{{ Θ ⊢ˢᵈ[ M ] e ⦂ B }}ad` |
+| `Γ ⨟ Δ ⊢ₚₛ P` / `Θ ⨟ Δ ⊢ₚₛᵃ P` | `{{ Γ ⨟ Δ ⊢ₚₛ P }}d` / `{{ Θ ⨟ Δ ⊢ₚₛ P }}a` |
+| `Γ ⊢ₛ[ M ] e ⦂ P` (skeleton) | `{{ Γ ⊢ˢ[ M ] e ⦂ P }}d` |
+| `Θ ⊢ᵗ[ Δ1 \| Δ2 \| P0 \| Ψ ] R ∼˙ Q ⊣ Θ'` | `{{ Θ ⊢[ Δ1 \| Δ2 \| P0 \| Ψ ] R ∼ Q ⊣ Θ' }}t` |
+
+The two axes left on the turnstile: **SUPERSCRIPT = which copy** (bare types,
+`⊢ˢ` skeletons, `⊢ˢᵈ` syntax-directed — `ˢ` and `ˢᵈ` are siblings, not a mark
+and its refinement) and **SUBSCRIPT = which relation** (`⊢ᵣ`/`⊢ᵣₚ`, `⊢ₚᵣ`,
+`⊢ₛ`/`⊢ₑ`, and `⊢ₚ`/`⊢ᵦ`/`⊢ᵤ`/`⊢ₚₛ`/`⊢ᵤₛ` for well-formedness).  The ε-tagged
+system drops its dots — `∼˙`/`⩽˙` existed only to stay apart from the
+algorithmic `∼`/`⩽`, and `}}t` does that job now.
+
+**NOT wrapped**, deliberately: `κ ∷ Θ ⊑ Θ'` (`a_inc`), `Θ ⊴ Θ'` (`a_isub`) and
+the conversion / substitution functions.  The delimiter answers "which system?",
+and those are meta-level relations with no cross-system twin, so the question
+has no answer for them.
+
+Two traps worth recording:
+
+- ⚠️⚠️ **The first slot of a `{{ … }}X` notation must carry NO level
+  annotation.**  Metalib already owns `{{ x }}` for the atom-set singleton
+  (`Metatheory.v:41`), so every `{{`-prefixed rule shares its prefix; camlp5 can
+  only factor rules whose shared prefix uses the same entry, and metalib's is
+  plain `constr`.  Annotating it fills the build with
+  `notation-incompatible-prefix` warnings and one of the two rules silently
+  stops working.  (This is also why McTT-style CUSTOM ENTRIES are unusable
+  here: three entries sharing the `{{` opener is a hard parse error, not a
+  warning.)
+- ⚠️ **`Open Scope` is NOT transitive through `Require Import`**, and a closed
+  scope makes Coq report the notation as simply not existing.  So every file
+  that DECLARES judgement notations in a scope also opens it; a consumer then
+  gets both halves through the same import that made the notation visible.
+
+Also fixed on the way through: the six `comment-terminator-in-string` warnings
+(a quoted phrase straddling a banner comment's `*)` — the ASCII quotes became
+typographic ones, prose unchanged), and the dead `Δ ⨟ Γ ⊢ᵤ C` reservation in
+`decl/def_extra.v`.  ⚙ Docs written before this date quote the old glyphs; the
+legend in `frost/notations.v` keeps them as history.
+
 ## 2026-08-11 (night) — ⭐⭐⭐ **THE GHOST-CAPTURE REPAIR: two presuppositions the paper states in prose go ON the declarative rules, and TYPE-INFERENCE COMPLETENESS CLOSES OVER `⊢ˢ` / `⊢`**
 
 **`make coq` exit 0; README.v 28/28 `Print Assumptions` closed; no `Admitted`, no `Axiom`.**

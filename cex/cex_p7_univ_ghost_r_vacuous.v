@@ -21,13 +21,13 @@
         (P0-fill)  Θ ⊢ inh(κP0) ⤳syn bid Q
 
     DESIGN-completeness-subtyping.md §1 added a THIRD — the SUBJECT's own
-    refinement [⊢ᵣₚᵃᵈ κ⌊R⌋ˢ ⊳ ⌊Q⌋] — as "lesson 1", on the grounds that it is
+    refinement [{{ … ⊢ᵣₚ κ⌊R⌋ˢ ⊳ ⌊Q⌋ }}ad] — as "lesson 1", on the grounds that it is
     what soundness produces for every algorithmic output, so that the
     sound/complete pair still characterises the algorithm exactly.
 
     THAT GROUND HOLDS FOR CONSISTENCY AND FAILS FOR SUBTYPING.
     [a_consis_sound] (prop_consis_sound.v:5582) really does export
-    [Θ1 ⨟ ∅ ⊢ᵣₚᵃᵈ P ⊳ P'].  [a_sub_sound] (prop_decorate_key.v:3326)
+    [{{ Θ1 ⨟ ∅ ⊢ᵣₚ P ⊳ P' }}ad].  [a_sub_sound] (prop_decorate_key.v:3326)
     exports NO such conjunct — and it could not, because algorithmic
     [UnivGhostR] ([a_sub__univ_ghost_r]) outputs [∀◇.P] from the input [P],
     and refinement has no rule putting a [∀◇] on the RIGHT of a non-ghost

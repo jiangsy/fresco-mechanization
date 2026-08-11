@@ -13,7 +13,7 @@
     [thm:complete-consistency]'s OPTIMALITY half concludes, for a consistency
     node, a PRECISION statement
 
-        Θ ⨟ (Δ₁ ∪ Δ₂) ⊢ₚᵣᵃᵈ (msubst_bskl ζ Qt) ⊑ (bskl_to_pskl Qb)
+        {{ Θ ⨟ (Δ₁ ∪ Δ₂) ⊢ₚᵣ (msubst_bskl ζ Qt) ⊑ (bskl_to_pskl Qb) }}ad
 
     (see [consis_optimal_post], algo/prop_consis_complete.v:189).  For the
     three flexible rules the algorithmic OUTPUT painting is [Qt = α̂] (a
@@ -32,16 +32,16 @@
     so both the algorithm's ζ-solved output [ζα̂] and the competing solution's
     join [Qb] are monotype paintings, and PRECISION between monotype INHERITED
     paintings collapses (via [ptyp_to_bskl_inh_syn_eq]) to the plain
-    refinement [⊢ᵣᵃᵈ syn(ζα̂) ⊳ syn(Qb)].  The whole thing reduces to a TYPE
-    EQUIVALENCE [Θ ⊢ ζα̂ ≡ᵗ Qb], recovered as follows:
+    refinement [{{ … ⊢ᵣ syn(ζα̂) ⊳ syn(Qb) }}ad].  The whole thing reduces to a TYPE
+    EQUIVALENCE [{{ Θ ⊢ ζα̂ ≡ᵗ Qb }}a], recovered as follows:
 
       * the COMPETING solution's join / Δ-refinement, run through the mono
         bridge ([consis_mono_join] / [refine_mono_join], algo/prop_mono_bridge.v),
-        gives [Θ ⊢ κα̂ ≡ᵗ C] with [Qb = syn C];
+        gives [{{ Θ ⊢ κα̂ ≡ᵗ C }}a] with [Qb = syn C];
       * the factoring [a_inc_equiv Θ₀ κ (ζ∘κ₁) Θ] handed over by the §2/§3 IH,
         together with the algorithm's [κ₁ = identity] (a_isub), gives
-        [Θ ⊢ κα̂ ≡ᵗ ζα̂];
-      * transitivity closes [Θ ⊢ ζα̂ ≡ᵗ C], and the mono→precision core
+        [{{ Θ ⊢ κα̂ ≡ᵗ ζα̂ }}a];
+      * transitivity closes [{{ Θ ⊢ ζα̂ ≡ᵗ C }}a], and the mono→precision core
         ([tyequiv_mono_precise]) turns it back into the precision goal.
 
     The reusable core [tyequiv_mono_precise] is the exact converse of the
@@ -96,12 +96,12 @@ Set Implicit Arguments.
 Lemma tyequiv_mono_refine_syn : forall Θ Δ A A',
   a_wf_aenv Θ ->
   mono_ptyp A -> mono_ptyp A' ->
-  Θ ⊢ A ≡ᵗ A' ->
+  {{ Θ ⊢ A ≡ᵗ A' }}a ->
   (forall α, α `in` ftvar_in_ptyp A -> a_binds_tvar α Θ) ->
-  Θ ⨟ Δ ⊢ᵣᵃᵈ (ptyp_to_bskl_syn A) ⊳ (ptyp_to_bskl_syn A').
+  {{ Θ ⨟ Δ ⊢ᵣ (ptyp_to_bskl_syn A) ⊳ (ptyp_to_bskl_syn A') }}ad.
 Proof.
   intros Θ Δ A A' Hwf HmA HmB Heq Hvis.
-  assert (Hc : empty ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A'))
+  assert (Hc : {{ empty ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A') }}ad)
     by (apply tyequiv_mono_consis; auto).
   eapply (ad_refine_syn_f_forget (F := empty)).
   replace (ptyp_to_bskl_syn A)
@@ -124,8 +124,8 @@ Lemma consis_precise_core : forall Θ Δ ζ α Qb A,
   (forall α0, α0 `in` ftvar_in_ptyp (msubst_lookup ζ α) -> a_binds_tvar α0 Θ) ->
   mono_ptyp A ->
   Qb = ptyp_to_bskl_syn A ->
-  Θ ⊢ (msubst_lookup ζ α) ≡ᵗ A ->
-  Θ ⨟ Δ ⊢ₚᵣᵃᵈ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb).
+  {{ Θ ⊢ (msubst_lookup ζ α) ≡ᵗ A }}a ->
+  {{ Θ ⨟ Δ ⊢ₚᵣ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb) }}ad.
 Proof.
   intros Θ Δ ζ α Qb A Hwf HmA Hvis HmC HQb Heq.
   unfold ad_precise.
@@ -153,7 +153,7 @@ Qed.
 Lemma a_inc_equiv_lookup : forall Θ0 κ1 κ2 Θ,
   a_inc_equiv Θ0 κ1 κ2 Θ ->
   forall α, a_flex_tvar Θ0 α ->
-  Θ ⊢ (msubst_lookup κ1 α) ≡ᵗ (msubst_lookup κ2 α).
+  {{ Θ ⊢ (msubst_lookup κ1 α) ≡ᵗ (msubst_lookup κ2 α) }}a.
 Proof.
   intros Θ0 κ1 κ2 Θ H; induction H; intros α0 Hflex.
   - (* empty : no flexible variable in the empty context *)
@@ -212,7 +212,7 @@ Lemma a_inc_equiv_compose_id_at : forall Θ0 κ κ1 ζ Θ α,
   a_flex_tvar Θ0 α ->
   α `in` dom κ1 ->
   msubst_lookup κ1 α = ptyp_var_f α ->
-  Θ ⊢ (msubst_lookup κ α) ≡ᵗ (msubst_lookup ζ α).
+  {{ Θ ⊢ (msubst_lookup κ α) ≡ᵗ (msubst_lookup ζ α) }}a.
 Proof.
   intros Θ0 κ κ1 ζ Θ α Hie Hflex Hdom Hid.
   pose proof (a_inc_equiv_lookup Hie Hflex) as He.
@@ -245,12 +245,12 @@ Lemma consis_precise_close : forall Θ0 Θ1 Θ Δ κ κ1 ζ α Qb A,
   msubst_lookup κ1 α = ptyp_var_f α ->
   mono_ptyp A ->
   Qb = ptyp_to_bskl_syn A ->
-  Θ ⊢ (msubst_lookup κ α) ≡ᵗ A ->
-  Θ ⨟ Δ ⊢ₚᵣᵃᵈ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb).
+  {{ Θ ⊢ (msubst_lookup κ α) ≡ᵗ A }}a ->
+  {{ Θ ⨟ Δ ⊢ₚᵣ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb) }}ad.
 Proof.
   intros Θ0 Θ1 Θ Δ κ κ1 ζ α Qb A
          Hwf Hflex HbΘ1 HζΘ Hwf1 Hie Hdom Hid HmC HQb HeqκαC.
-  assert (Hζκ : Θ ⊢ (msubst_lookup κ α) ≡ᵗ (msubst_lookup ζ α))
+  assert (Hζκ : {{ Θ ⊢ (msubst_lookup κ α) ≡ᵗ (msubst_lookup ζ α) }}a)
     by (eapply a_inc_equiv_compose_id_at; eauto).
   assert (HmζA : mono_ptyp (msubst_lookup ζ α))
     by (eapply a_inc_lookup_mono; exact HζΘ).
@@ -275,8 +275,8 @@ Lemma consis_precise_via_join : forall Θ0 Θ1 Θ Δ κ κ1 ζ α Qb,
   a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ ->
   α `in` dom κ1 ->
   msubst_lookup κ1 α = ptyp_var_f α ->
-  empty ⨟ Θ ⊢ᵃᵈ (pskl_to_uskl (msubst_pskl κ (pskl_var_f α))) ∼ Qb ->
-  Θ ⨟ Δ ⊢ₚᵣᵃᵈ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb).
+  {{ empty ⨟ Θ ⊢ˢ (pskl_to_uskl (msubst_pskl κ (pskl_var_f α))) ∼ Qb }}ad ->
+  {{ Θ ⨟ Δ ⊢ₚᵣ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb) }}ad.
 Proof.
   intros Θ0 Θ1 Θ Δ κ κ1 ζ α Qb
          Hwf Hflex HκΘ HbΘ1 HζΘ Hwf1 Hie Hdom Hid Hjoin.
@@ -303,7 +303,7 @@ Lemma consis_precise_via_refine : forall Θ0 Θ1 Θ Δ Δ1 κ κ1 ζ α Qb,
   α `in` dom κ1 ->
   msubst_lookup κ1 α = ptyp_var_f α ->
   ad_refine_syn_f Δ1 Θ Δ1 (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f α))) Qb ->
-  Θ ⨟ Δ ⊢ₚᵣᵃᵈ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb).
+  {{ Θ ⨟ Δ ⊢ₚᵣ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb) }}ad.
 Proof.
   intros Θ0 Θ1 Θ Δ Δ1 κ κ1 ζ α Qb
          Hwf Hflex HκΘ HbΘ1 HζΘ Hwf1 Hie Hdom Hid Hrs.

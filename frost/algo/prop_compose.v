@@ -496,7 +496,7 @@ Lemma a_inc_lookup_def : forall Θ1 ζ Θ,
   ζ ∷ Θ1 ⊑ Θ ->
   a_wf_aenv Θ1 ->
   forall α τ, binds α (abind_flex_mono_def τ) Θ1 ->
-  Θ ⊢ (msubst_lookup ζ α) ≡ᵗ (msubst_ptyp ζ τ).
+  {{ Θ ⊢ (msubst_lookup ζ α) ≡ᵗ (msubst_ptyp ζ τ) }}a.
 Proof.
   intros Θ1 ζ Θ Hinc; induction Hinc; intros Hwf α0 τ0 Hb; simpl.
   - inversion Hb.
@@ -551,10 +551,10 @@ Proof.
 Qed.
 
 Lemma a_tyequiv_msubst : forall Θ1 A A',
-  Θ1 ⊢ A ≡ᵗ A' ->
+  {{ Θ1 ⊢ A ≡ᵗ A' }}a ->
   a_wf_aenv Θ1 ->
   forall ζ Θ, ζ ∷ Θ1 ⊑ Θ ->
-  Θ ⊢ (msubst_ptyp ζ A) ≡ᵗ (msubst_ptyp ζ A').
+  {{ Θ ⊢ (msubst_ptyp ζ A) ≡ᵗ (msubst_ptyp ζ A') }}a.
 Proof.
   intros Θ1 A A' Heq; induction Heq; intros Hwf ζ Θt Hinc; simpl.
   - apply a_tyequiv__refl. eapply msubst_ptyp_lc; eauto.
@@ -672,10 +672,10 @@ Qed.
 
 (** [a_tyequiv_msubst], on skeletons. *)
 Lemma a_pskl_tyequiv_msubst : forall Θ1 P P',
-  Θ1 ⊢ P ≡ˢ P' ->
+  {{ Θ1 ⊢ P ≡ˢ P' }}a ->
   a_wf_aenv Θ1 ->
   forall ζ Θ, ζ ∷ Θ1 ⊑ Θ ->
-  Θ ⊢ (msubst_pskl ζ P) ≡ˢ (msubst_pskl ζ P').
+  {{ Θ ⊢ (msubst_pskl ζ P) ≡ˢ (msubst_pskl ζ P') }}a.
 Proof.
   intros Θ1 P P' Heq; induction Heq; intros Hwf ζ Θt Hinc; simpl.
   - apply a_pskl_tyequiv__refl. eapply msubst_pskl_lc; eauto.

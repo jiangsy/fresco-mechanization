@@ -8,11 +8,11 @@
     SolS-ForallR):
 
       Θ ⊢ₛ P ≼[M] P0 ⤳ P'  ->  all_tvar Ξ ->
-      (Ξ ++ Θ) ⨟ Δ ⊢ₚₛᵃ P -> (Ξ ++ Θ) ⨟ Δ ⊢ₚₛᵃ P0 ->
+      {{ (Ξ ++ Θ) ⨟ Δ ⊢ₚₛ P }}a -> {{ (Ξ ++ Θ) ⨟ Δ ⊢ₚₛ P0 }}a ->
       Δ ∩ ftv P0 [=] ∅ ->
-      (Ξ ++ Θ) ⨟ Δ ⊢ₚₛᵃ P'
+      {{ (Ξ ++ Θ) ⨟ Δ ⊢ₚₛ P'
 
-    Under the COFINITE encoding of SS-ForallR that was true: the rule's
+    Under the COFINITE encoding of SS-ForallR that was true }}a: the rule's
     single output P' had to serve every fresh binder, hence was binder-free,
     and [a_wf_pskl_strip_tvar] could remove the binder the proof had put into
     the context.  The freshness campaign (DESIGN.md §4.3) made the rule
@@ -37,7 +37,7 @@
     WHAT THIS DOES *NOT* SAY.  Neither the paper nor the rule is wrong.
     DESIGN §4.3 already records that ill-scoped solve outputs are filtered
     DOWNSTREAM by the wf side conditions that consume them
-    ([a_sub__forall_l]'s [(Ξ ++ Θ0) ⨟ ∅ ⊢ₚₛᵃ P1]); what is refuted is the
+    ([a_sub__forall_l]'s [{{ (Ξ ++ Θ0) ⨟ ∅ ⊢ₚₛ P1 }}a]); what is refuted is the
     idea that the filter can be DERIVED from the solve.  The paper never
     tries: its P6-Sv states [Θ_0 ⊢ P_a] among its own conclusions and proves
     it inside the induction, carrying it as [Θ_0,β ⊢ P_a] through the
@@ -77,8 +77,8 @@ Fixpoint all_tvar (Ξ : aenv) : Prop :=
    choice is still a choice. *)
 Lemma cex_leak_run : forall Θ b,
   b `notin` ftvar_in_aenv Θ ->
-  Θ ⊢ₛ pskl_hole ≼[ mode_tc ] (pskl_all_syn (pskl_var_b 0))
-     ⤳ nil ⨾ (pskl_tophole (pskl_var_f b)).
+  {{ Θ ⊢ₛ pskl_hole ≼[ mode_tc ] (pskl_all_syn (pskl_var_b 0))
+     ⤳ nil ⨾ (pskl_tophole (pskl_var_f b)) }}a.
 Proof.
   intros Θ b Hb.
   apply a_solve_sub__forall_r with (β := b);
@@ -93,11 +93,11 @@ Qed.
 (*  holds vacuously.                                                      *)
 (* ===================================================================== *)
 
-Lemma cex_wf_subject : forall Θ, Θ ⨟ empty ⊢ₚₛᵃ pskl_hole.
+Lemma cex_wf_subject : forall Θ, {{ Θ ⨟ empty ⊢ₚₛ pskl_hole }}a.
 Proof. intros Θ. apply a_wf_pskl__hole. Qed.
 
 Lemma cex_wf_target : forall Θ,
-  Θ ⨟ empty ⊢ₚₛᵃ (pskl_all_syn (pskl_var_b 0)).
+  {{ Θ ⨟ empty ⊢ₚₛ (pskl_all_syn (pskl_var_b 0)) }}a.
 Proof.
   intros Θ. apply a_wf_pskl__all with (L := empty). intros α Hα.
   unfold open_pskl_wrt_pskl; cbn.
@@ -110,7 +110,7 @@ Qed.
 
 Lemma cex_output_not_wf : forall Θ b,
   b `notin` dom Θ ->
-  ~ (Θ ⨟ empty ⊢ₚₛᵃ (pskl_tophole (pskl_var_f b))).
+  ~ ({{ Θ ⨟ empty ⊢ₚₛ (pskl_tophole (pskl_var_f b)) }}a).
 Proof.
   intros Θ b Hb Hwf.
   inversion Hwf as [ | | | | | ? ? ? Hg Hbody ]; subst.
@@ -126,12 +126,12 @@ Qed.
     (prop_look_complete_sub_cstr.v's α-stack row). *)
 Theorem solve_sub_preserves_wf_is_false :
   ~ (forall Θ M P P0 Ξ0 P',
-       Θ ⊢ₛ P ≼[ M ] P0 ⤳ Ξ0 ⨾ P' ->
+       {{ Θ ⊢ₛ P ≼[ M ] P0 ⤳ Ξ0 ⨾ P' }}a ->
        forall Ξ Δ, all_tvar Ξ ->
-       (Ξ ++ Θ) ⨟ Δ ⊢ₚₛᵃ P ->
-       (Ξ ++ Θ) ⨟ Δ ⊢ₚₛᵃ P0 ->
+       {{ (Ξ ++ Θ) ⨟ Δ ⊢ₚₛ P }}a ->
+       {{ (Ξ ++ Θ) ⨟ Δ ⊢ₚₛ P0 }}a ->
        Δ ∩ ftvar_in_pskl P0 [=] empty ->
-       (Ξ ++ Θ) ⨟ Δ ⊢ₚₛᵃ P').
+       {{ (Ξ ++ Θ) ⨟ Δ ⊢ₚₛ P' }}a).
 Proof.
   intros Hclaim.
   (* one rigid entry in Θ, and a DIFFERENT atom for the escaping binder *)

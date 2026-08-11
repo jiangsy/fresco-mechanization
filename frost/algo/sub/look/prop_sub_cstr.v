@@ -122,11 +122,11 @@ Require Import src.frost.algo.sub.look.prop_sub_var.
     and so only gets easier.  (Unrestricted Δ-shrinking is of course fine
     for the □ row and false for the var row — hence the freshness.) *)
 Lemma ad_partial_precise_delta_shrink_fresh : forall Θ Δf Ψ P ψ,
-  Θ ⨟ Δf ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ ->
+  {{ Θ ⨟ Δf ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
   forall Δ Δ', Δf [=] Δ `union` Δ' ->
   Δ' ∩ ftvar_in_uskl ψ [=] empty ->
   delta_def_fresh Δ' Θ ->
-  Θ ⨟ Δ ⊢ᵃᵈ P ⊑ᵖ[ Ψ ] ψ.
+  {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad.
 Proof.
   intros Θ Δf Ψ P ψ H; induction H; intros Δ0 Δ' Heq HΔ' Hdf.
   - apply ad_ppre__unit; assumption.
@@ -288,7 +288,7 @@ Qed.
     flexibles only through LS-Check and LS-Arrow's left premise, both of
     which are [a_lookeq]. *)
 Lemma a_looksub_all_flex_mono : forall Θ α m P P0 Ξ 𝒞,
-  Θ ⊢ P ≼[ α , m ] P0 ⤳ Ξ ⨾ 𝒞 -> all_flex_mono Ξ.
+  {{ Θ ⊢ P ≼[ α , m ] P0 ⤳ Ξ ⨾ 𝒞 }}a -> all_flex_mono Ξ.
 Proof.
   intros Θ α m P P0 Ξ 𝒞 H; unfold all_flex_mono; induction H.
   - constructor.                                       (* LS-Var *)
@@ -372,7 +372,7 @@ Qed.
     introduced. *)
 Lemma alpha_stack_looksub : forall α P,
   alpha_stack α P ->
-  forall Θ m P0, Θ ⊢ P ≼[ α , m ] P0 ⤳ nil ⨾ (a_cstr_sub m P0 :: nil).
+  forall Θ m P0, {{ Θ ⊢ P ≼[ α , m ] P0 ⤳ nil ⨾ (a_cstr_sub m P0 :: nil) }}a.
 Proof.
   intros α P H; induction H; intros Θ m P0.
   - apply a_looksub__var.
@@ -433,7 +433,7 @@ Lemma a_looksub_solve_complete_leaf :
      ftvar_in_ptyp (msubst_lookup κ α0) [<=] dom Θw) ->
   ftvar_in_uskl ψa [<=] dom Θw ->
   Δρ ∩ dom Θw [=] empty ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a -> {{ Θ0 ⨟ empty ⊢ₚₛ Pi }}a ->
   (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->   (* skmod[SK]{P0}{M} *)
   (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->   (* skmod[TY]{P0}{M} *)
   κ ∷ Θ0 ⊑ Θ ->
@@ -446,7 +446,7 @@ Lemma a_looksub_solve_complete_leaf :
   Ψi `union` Ψa [=] Ψ' ->                   (* the paper's Ψi,Ψa = Ψ' *)
   delta_def_fresh Δ Θ ->
   flex_apart_deep Θ0 Δρ P0 ψa ->              (* ⇐ THE REPAIR (see the header) *)
-  Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
+  {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad ->
   Ψsub [<=] ftag_in_uskl R' `union` Ψρ `union` Ψa ->
   Ψa [<=] Ψsub ->
   (* subject = the ρ-IMAGE of the paper's (κR')[ψa/α] (ρ = id ⇒ the paper's).
@@ -458,8 +458,8 @@ Lemma a_looksub_solve_complete_leaf :
      (sub/look/prop_sub_var.v:1674) and NOT P6-Cs's same-named one
      (whose [Θs] fixes the ρ-IMAGES' scope for the ftv-𝒞 bound — Phase B). *)
   ad_pat_sub_g n NM M Ψsub Θs Rsub Q ->
-  Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl Rsub) ->
-  Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+  {{ Θ ⨟ empty ⊢ₚₛ (uskl_to_pskl Rsub) }}a ->
+  {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
   (* --- the ρ pack (all vacuous at ρ = identity) --- *)
   uskl_rho NM Θ Δρ Ψρ Rsub
     (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) ->
@@ -474,16 +474,16 @@ Lemma a_looksub_solve_complete_leaf :
      a binder row the witness must be fixed BEFORE that block is picked. *)
   forall L, ftvar_in_aenv Θ0 [<=] L ->
   exists 𝒞 Ξc Ξs Pa κc κs,
-    (Θ0 ⊢ P ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞) /\        (* looksub α P P0 𝒞 Ξc *)
+    ({{ Θ0 ⊢ P ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞 }}a) /\        (* looksub α P P0 𝒞 Ξc *)
     (* ⭐ the SOLVE's own block [Ξs] and its aligned extension [κs], stacked
        the way [a_extract__solve] (def_extra.v:764) consumes them *)
-    (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa /\          (* solve 𝒞 Pi Ξs Pa *)
+    {{ (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a /\          (* solve 𝒞 Pi Ξs Pa *)
     all_flex_mono Ξs /\
     uniq Ξs /\
     keys κs = keys Ξs /\
     (forall α0, α0 `in` dom Ξs -> α0 `notin` L) /\
     Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs /\
-    (Ξs ++ Ξc ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa /\
+    {{ (Ξs ++ Ξc ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\
     a_wf_aenv (Ξc ++ Θ0) /\
     α `notin` dom Ξc /\
     keys κc = keys Ξc /\
@@ -499,7 +499,7 @@ Lemma a_looksub_solve_complete_leaf :
     a_inc_equiv Θ0 κ κ Θ /\
     (forall α0, α0 `in` dom κc ->
        α0 `notin` add α (dom Θ0 `union` dom Θ `union` ftvar_in_uskl ψa)) /\
-    Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+    {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa }}ad /\
     (* PHASE B.  The collected constraints are ψa-RELATIVE — so a Sub-ForallR
        above can strip its fresh binder β from them (β is fresh for ψa, Ξc and
        κ, and is a rigid, hence not in [def_ftv Θ]).  UNLESS the lookup
@@ -597,8 +597,8 @@ Proof.
        this row, so the solve's block IS the conclusion's. *)
     assert (Hsv : solve_sub_ext Θ0 Θw M Pi P0 L
                     (fun κ' Pa =>
-                       Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κ' ++ κ) Pa)
-                         ⊑ᵖ[ Ψi `union` Ψa ] ψa)).
+                       {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl (κ' ++ κ) Pa)
+                         ⊑ᵖ[ Ψi `union` Ψa ] ψa }}ad)).
     { eapply a_solve_sub_complete_var
         with (Δρ := Δρ) (Ψρ := Ψρ) (ψsub := Rsub) (Ψsub := Ψsub)
              (Θs := Θs);
@@ -696,7 +696,7 @@ Theorem a_looksub_solve_complete_gen :
      ftvar_in_ptyp (msubst_lookup κ α0) [<=] dom Θw) ->
   ftvar_in_uskl ψa [<=] dom Θw ->
   Δρ ∩ dom Θw [=] empty ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a -> {{ Θ0 ⨟ empty ⊢ₚₛ Pi }}a ->
   (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->   (* skmod[SK]{P0}{M} *)
   (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->   (* skmod[TY]{P0}{M} *)
   κ ∷ Θ0 ⊑ Θ ->
@@ -709,14 +709,14 @@ Theorem a_looksub_solve_complete_gen :
   Ψi `union` Ψa [=] Ψ' ->                   (* the paper's Ψi,Ψa = Ψ' *)
   delta_def_fresh Δ Θ ->
   flex_apart_deep Θ0 Δρ P0 ψa ->              (* ⇐ THE REPAIR (see the header) *)
-  Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
+  {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad ->
   Ψsub [<=] ftag_in_uskl R' `union` Ψρ `union` Ψa ->
   Ψa [<=] Ψsub ->
   (* subject = the ρ-IMAGE of the paper's (κR')[ψa/α] (ρ = id ⇒ the paper's),
      in the DERIVATION's context Θs (see the header) *)
   ad_pat_sub_g n NM M Ψsub Θs Rsub Q ->
-  Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl Rsub) ->
-  Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+  {{ Θ ⨟ empty ⊢ₚₛ (uskl_to_pskl Rsub) }}a ->
+  {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
   (* --- the ρ pack (all VACUOUS at ρ = identity) --- *)
   uskl_rho NM Θ Δρ Ψρ Rsub
     (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) ->
@@ -743,16 +743,16 @@ Theorem a_looksub_solve_complete_gen :
      a binder row the witness must be fixed BEFORE that block is picked. *)
   forall L, ftvar_in_aenv Θ0 [<=] L ->
   exists 𝒞 Ξc Ξs Pa κc κs,
-    (Θ0 ⊢ P ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞) /\        (* looksub α P P0 𝒞 Ξc *)
+    ({{ Θ0 ⊢ P ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞 }}a) /\        (* looksub α P P0 𝒞 Ξc *)
     (* ⭐ the SOLVE's own block [Ξs] and its aligned extension [κs], stacked
        the way [a_extract__solve] (def_extra.v:764) consumes them *)
-    (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa /\          (* solve 𝒞 Pi Ξs Pa *)
+    {{ (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a /\          (* solve 𝒞 Pi Ξs Pa *)
     all_flex_mono Ξs /\
     uniq Ξs /\
     keys κs = keys Ξs /\
     (forall α0, α0 `in` dom Ξs -> α0 `notin` L) /\
     Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs /\
-    (Ξs ++ Ξc ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa /\
+    {{ (Ξs ++ Ξc ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\
     a_wf_aenv (Ξc ++ Θ0) /\
     α `notin` dom Ξc /\
     keys κc = keys Ξc /\
@@ -772,7 +772,7 @@ Theorem a_looksub_solve_complete_gen :
     a_inc_equiv Θ0 κ κ Θ /\
     (forall α0, α0 `in` dom κc ->
        α0 `notin` add α (dom Θ0 `union` dom Θ `union` ftvar_in_uskl ψa)) /\
-    Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+    {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa }}ad /\
     (* PHASE B.  The collected constraints are ψa-RELATIVE — so a Sub-ForallR
        above can strip its fresh binder β from them (β is fresh for ψa, Ξc and
        κ, and is a rigid, hence not in [def_ftv Θ]).  UNLESS the lookup
@@ -858,11 +858,11 @@ Proof.
   all: match goal with
        | Hx : forall x b, binds x b ?S -> binds x b _ |- _ =>
          repeat match goal with
-         | H : _ ⨟ S ⊢ᵃᵈ _ ∼ _ |- _ =>
+         | H : {{ _ ⨟ S ⊢ˢ _ ∼ _ }}ad |- _ =>
              let H' := fresh "Hw" in
              pose proof (ad_pat_consis_weaken H _ Hx) as H';
              clear H; rename H' into H
-         | H : S ⨟ _ ⊢ₚₛᵃ _ |- _ =>
+         | H : {{ S ⨟ _ ⊢ₚₛ _ }}a |- _ =>
              let H' := fresh "Hw" in
              pose proof (a_wf_pskl_weaken Hx H) as H';
              clear H; rename H' into H
@@ -1081,10 +1081,10 @@ Proof.
     + (* P0 = ∀.P0' : the real row *)
       cbn [msubst_pskl pskl_to_bskl_inh] in Hrefine.
       inversion Hrefine; subst.
-      match goal with Hr : forall α, α `notin` ?Lr -> _ ⨟ _ ⊢ᵣᵃᵈ _ ⊳ _ |- _ =>
+      match goal with Hr : forall α, α `notin` ?Lr -> {{ _ ⨟ _ ⊢ᵣ _ ⊳ _ }}ad |- _ =>
         rename Hr into Hrbody; remember Lr as Lr0 eqn:HeqLr; clear HeqLr end.
       inversion HwfP0; subst.
-      match goal with Hw : forall α, α `notin` ?Lw -> _ ⨟ _ ⊢ₚₛᵃ _ |- _ =>
+      match goal with Hw : forall α, α `notin` ?Lw -> {{ _ ⨟ _ ⊢ₚₛ _ }}a |- _ =>
         rename Hw into Hw0body; remember Lw as Lw0 eqn:HeqLw; clear HeqLw end.
       (* ONE fresh rigid β.  Unlike Sub-ForallL it does NOT join Δρ: β is a
          genuine context rigid, not a ρ-replaced variable. *)
@@ -1114,13 +1114,13 @@ Proof.
                 binds x b Θ -> binds x b ((β ~ abind_tvar) ++ Θ))
         by (intros x b Hb; apply binds_app_3; exact Hb).
       (* --- the target descends; the subject R' does not --- *)
-      assert (HwfP0β : ((β ~ abind_tvar) ++ Θ0) ⨟ empty
-                ⊢ₚₛᵃ (open_pskl_wrt_pskl (ptyp_to_pskl A0) (pskl_var_f β))).
+      assert (HwfP0β : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty
+                ⊢ₚₛ (open_pskl_wrt_pskl (ptyp_to_pskl A0) (pskl_var_f β)) }}a).
       { eapply a_wf_pskl_delta_to_tvar_mid
           with (α1 := β) (Θ1 := nil) (Θ2 := Θ0) (Δ' := empty);
           [ apply (Hw0body β ltac:(clear - Fr; solve_notin))
           | reflexivity | clear; fsetdec ]. }
-      assert (HwfPiβ : ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pi)
+      assert (HwfPiβ : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ Pi }}a)
         by (eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfPi ]).
       assert (Hκβ : κ ∷ ((β ~ abind_tvar) ++ Θ0) ⊑ ((β ~ abind_tvar) ++ Θ))
         by (apply a_inc_cons_tvar; exact Hκ).
@@ -1130,14 +1130,14 @@ Proof.
           [ discriminate Habs | exact Hb' ]. }
       assert (Hrfrβ : rho_fresh Δρ ((β ~ abind_tvar) ++ Θ) κ)
         by (apply rho_fresh_weaken_tvar; exact Hrfr).
-      assert (Hpreβ : ((β ~ abind_tvar) ++ Θ) ⨟ Δ
-                ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa)
+      assert (Hpreβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ Δ
+                ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad)
         by (eapply ad_partial_precise_weaken; [ exact Hpre | exact Hweak ]).
-      assert (Hrefβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣᵃᵈ
+      assert (Hrefβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣ
                 (pskl_to_bskl_inh
                    (msubst_pskl κ (open_pskl_wrt_pskl (ptyp_to_pskl A0)
                                      (pskl_var_f β))))
-                ⊳ (open_bskl_wrt_bskl B (bskl_var_f β))).
+                ⊳ (open_bskl_wrt_bskl B (bskl_var_f β)) }}ad).
       { rewrite (@msubst_pskl_open Θ0 κ Θ (ptyp_to_pskl A0) β Hκ Hβκ).
         rewrite pskl_to_bskl_inh_open.
         eapply ad_refine_syn_delta_to_tvar_mid
@@ -1167,7 +1167,7 @@ Proof.
                 [<=] add α (dom ((β ~ abind_tvar) ++ Θ0)
                               `union` dom ((β ~ abind_tvar) ++ Θ)))
         by (simpl; clear - HscopeR; fsetdec).
-      assert (HwfSubjβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ₚₛᵃ ⌊ T ⌋ˢ)
+      assert (HwfSubjβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ₚₛ ⌊ T ⌋ˢ }}a)
         by (eapply a_wf_pskl_weaken; [ exact Hweak | exact HwfSubj ]).
       assert (Hextβ : forall (x : atom) (b : abind),
                 binds x b ((β ~ abind_tvar) ++ Θsm) ->
@@ -1338,9 +1338,9 @@ Proof.
              (sub/look/prop_sub_var.v:2036). ---- *)
         cbn [ftvar_in_cstrs] in *.
         (* the IH's solve is a ONE-constraint run, so it inverts to SS *)
-        assert (Hss : ((β ~ abind_tvar) ++ Θ0) ⊢ₛ Pi
+        assert (Hss : {{ ((β ~ abind_tvar) ++ Θ0) ⊢ₛ Pi
                   ≼[ mode_tc ] (open_pskl_wrt_pskl (ptyp_to_pskl A0)
-                                  (pskl_var_f β)) ⤳ Ξs ⨾ Pa).
+                                  (pskl_var_f β)) ⤳ Ξs ⨾ Pa }}a).
         { cbn in HSolve. inversion HSolve; subst. assumption. }
         (* β ∉ ftv Pa comes from PRECISION, not from the solve's ftv bound:
            the target here legitimately mentions β (that is the whole point of
@@ -1626,7 +1626,7 @@ Proof.
     assert (HscopeRb : ftvar_in_uskl Rb
               [<=] add α (dom (Ξs1 ++ Ξc1 ++ Θ0) `union` dom Θ))
       by (repeat rewrite dom_app; clear - HscopeR; cbn in HscopeR; fsetdec).
-    assert (HwfP02R : (Ξs1 ++ Ξc1 ++ Θ0) ⨟ empty ⊢ₚₛᵃ P02)
+    assert (HwfP02R : {{ (Ξs1 ++ Ξc1 ++ Θ0) ⨟ empty ⊢ₚₛ P02 }}a)
       by (eapply a_wf_pskl_weaken;
             [ intros x b Hb; apply binds_app_3; apply binds_app_3; exact Hb
             | exact HwfP02 ]).
@@ -1655,8 +1655,8 @@ Proof.
       pose proof (a_wf_pskl_ftv_dom HwfP02) as Hfd.
       clear - Hf Hfd HLav Hdf0; fsetdec. }
     rewrite <- Htr_c in Hrhob.
-    assert (Href2' : Θ ⨟ empty ⊢ᵣᵃᵈ
-              (pskl_to_bskl_inh (msubst_pskl (κs1 ++ κc1 ++ κ) P02)) ⊳ Q2)
+    assert (Href2' : {{ Θ ⨟ empty ⊢ᵣ
+              (pskl_to_bskl_inh (msubst_pskl (κs1 ++ κc1 ++ κ) P02)) ⊳ Q2 }}ad)
       by (rewrite Htr_r; exact Href2).
     (* the shield descends with [sss_arrow_r] and then crosses BOTH blocks *)
     assert (HfrΞ1 : (ftvar_in_pskl P02) ∩ (dom Ξc1) [=] empty).
@@ -1752,15 +1752,15 @@ Proof.
     (* --- RIGHT branch: the IH, dispatching through the leaf lemma exactly
        as every other recursive row does (Rb may itself be [var α]) --- *)
     assert (REC : exists 𝒞 Ξc Ξs Pa κc κs,
-      ((Ξs1 ++ Ξc1 ++ Θ0) ⊢ ⌊ Rb ⌋ˢ ≼[ α , M ] P02 ⤳ Ξc ⨾ 𝒞) /\
-      (Ξc ++ (Ξs1 ++ Ξc1 ++ Θ0)) ⊩ 𝒞 ⨾ Pa1 ⤳ Ξs ⨾ Pa /\
+      ({{ (Ξs1 ++ Ξc1 ++ Θ0) ⊢ ⌊ Rb ⌋ˢ ≼[ α , M ] P02 ⤳ Ξc ⨾ 𝒞 }}a) /\
+      {{ (Ξc ++ (Ξs1 ++ Ξc1 ++ Θ0)) ⊩ 𝒞 ⨾ Pa1 ⤳ Ξs ⨾ Pa }}a /\
       all_flex_mono Ξs /\
       uniq Ξs /\
       keys κs = keys Ξs /\
       (forall α0, α0 `in` dom Ξs ->
          α0 `notin` add α (union Lav (union (dom Ξs1) (dom Ξc1)))) /\
       Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs /\
-      (Ξs ++ Ξc ++ (Ξs1 ++ Ξc1 ++ Θ0)) ⨟ empty ⊢ₚₛᵃ Pa /\
+      {{ (Ξs ++ Ξc ++ (Ξs1 ++ Ξc1 ++ Θ0)) ⨟ empty ⊢ₚₛ Pa }}a /\
       a_wf_aenv (Ξc ++ (Ξs1 ++ Ξc1 ++ Θ0)) /\
       α `notin` dom Ξc /\
       keys κc = keys Ξc /\
@@ -1771,8 +1771,8 @@ Proof.
       (forall α0, α0 `in` dom κc ->
          α0 `notin` add α (dom (Ξs1 ++ Ξc1 ++ Θ0) `union` dom Θ
                              `union` ftvar_in_uskl ψa)) /\
-      Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κs ++ κc ++ (κs1 ++ κc1 ++ κ)) Pa)
-        ⊑ᵖ[ (Ψi `union` (Ψ1 ∩ Ψ')) `union` (Ψ2 ∩ Ψ') ] ψa /\
+      {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl (κs ++ κc ++ (κs1 ++ κc1 ++ κ)) Pa)
+        ⊑ᵖ[ (Ψi `union` (Ψ1 ∩ Ψ')) `union` (Ψ2 ∩ Ψ') ] ψa }}ad /\
       (M = mode_tc ->
          ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom (κs1 ++ κc1 ++ κ) `union` def_ftv Θ
@@ -2029,7 +2029,7 @@ Proof.
 
        i.e. [msubst_uskl_syn κ ψ = ψ] — and NOTHING in the premises gives
        it.  ψ is the ForallL rule's guess, constrained only by
-       [Θ ⨟ empty ⊢ₚₛᵃ ⌊ψ⌋ˢ], so [ftv ψ ⊆ dom Θ]; and [a_inc]'s flexible
+       [{{ Θ ⨟ empty ⊢ₚₛ ⌊ψ⌋ˢ }}a], so [ftv ψ ⊆ dom Θ]; and [a_inc]'s flexible
        rows ([a_inc__flex], [a_inc__flex_def]) leave the TARGET arbitrary,
        so a Θ-scoped ψ may perfectly well mention a [dom κ] variable.  Nor
        can a pre-image be manufactured: κ's images are MONOTYPES
@@ -2131,7 +2131,7 @@ Proof.
     assert (HΨgfresh : Ψ'0 ∩ Ψ' [=] empty) by (clear - H1 HΨ'sub; fsetdec).
     (* --- the fresh RIGID β, and ρ_b = ρ ∘ [ψ/β] --- *)
     (* the guess's wf comes at the DERIVATION's context; weaken it here *)
-    assert (Hwfψ : Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ)
+    assert (Hwfψ : {{ Θ ⨟ empty ⊢ₚₛ ⌊ ψ ⌋ˢ }}a)
       by (eapply a_wf_pskl_weaken; [ exact Hext | exact H3 ]).
     assert (Hlcψ : lc_uskl ψ)
       by (apply lc_uskl_of_pskl; eapply a_wf_pskl_lc; exact Hwfψ).
@@ -2197,9 +2197,9 @@ Proof.
               ∩ Ψ' [=] empty).
     { rewrite ftag_in_uskl_open_var.
       cbn [ftag_in_uskl] in Hdisj. clear - Hdisj; fsetdec. }
-    assert (HwfP0β : ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0)
+    assert (HwfP0β : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
       by (eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfP0 ]).
-    assert (HwfPiβ : ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pi)
+    assert (HwfPiβ : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ Pi }}a)
       by (eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfPi ]).
     assert (HΨs1β : (Ψ `union` Ψ'0)
               [<=] union (ftag_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β)))
@@ -2240,13 +2240,13 @@ Proof.
           eapply flex_apart_deep_delta_grow;
             [ exact Hapart | clear; fsetdec
             | clear - Hβψa; fsetdec ]).
-    assert (Hpreβ : ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
-              ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa).
+    assert (Hpreβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
+              ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad).
     { (* the Δ-congruence's set argument is PINNED by a named [assert] —
          inline, its Δ is an evar when the [=] side goal runs and [fsetdec]
          does not terminate *)
-      assert (Hp0 : ((β ~ abind_tvar) ++ Θ) ⨟ (Δ `union` singleton β)
-                ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa).
+      assert (Hp0 : {{ ((β ~ abind_tvar) ++ Θ) ⨟ (Δ `union` singleton β)
+                ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad).
       { eapply ad_partial_precise_delta_weaken_fresh;
           [ eapply ad_partial_precise_weaken; [ exact Hpre | exact Hweak ]
           | clear - Hβψa; fsetdec
@@ -2259,8 +2259,8 @@ Proof.
                           (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd;
             clear - Hd HβΘ; fsetdec ]. }
       eapply ad_partial_precise_delta_cong; [ exact Hp0 | clear; fsetdec ]. }
-    assert (Hrefβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣᵃᵈ
-              (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q)
+    assert (Hrefβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣ
+              (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad)
       by (eapply ad_refine_syn_weaken; [ exact Hrefine | exact Hweak ]).
     assert (Hrhoβ : uskl_rho NM ((β ~ abind_tvar) ++ Θ) (add β Δρ) Ψρ'
               (open_uskl_wrt_uskl R ψ)
@@ -2316,11 +2316,11 @@ Proof.
               binds x b Θsm -> binds x b ((β ~ abind_tvar) ++ Θ))
       by (intros x b Hb; apply binds_app_3; apply Hext; exact Hb).
     (* the subject's wf opens with the GUESS (the ∀ is on the subject side) *)
-    assert (HwfSubjβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty
-              ⊢ₚₛᵃ ⌊ open_uskl_wrt_uskl R ψ ⌋ˢ).
+    assert (HwfSubjβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ empty
+              ⊢ₚₛ ⌊ open_uskl_wrt_uskl R ψ ⌋ˢ }}a).
     { assert (Hexs : exists Lb, forall α0, α0 `notin` Lb ->
-                Θ ⨟ (add α0 empty)
-                  ⊢ₚₛᵃ (open_pskl_wrt_pskl ⌊ R ⌋ˢ (pskl_var_f α0))).
+                {{ Θ ⨟ (add α0 empty)
+                  ⊢ₚₛ (open_pskl_wrt_pskl ⌊ R ⌋ˢ (pskl_var_f α0)) }}a).
       { cbn [uskl_to_pskl] in HwfSubj; inversion HwfSubj; subst;
         eexists; eassumption. }
       destruct Hexs as (Lb & Hbody).
@@ -2351,15 +2351,15 @@ Proof.
     assert (HLavβ : ftvar_in_aenv ((β ~ abind_tvar) ++ Θ0) [<=] add β Lav)
       by (rewrite ftvar_in_aenv_cons_tvar; clear - HLav; fsetdec).
     assert (REC : exists 𝒞 Ξc Ξs Pa κc κs,
-      (((β ~ abind_tvar) ++ Θ0) ⊢
-         ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞) /\
-      (Ξc ++ ((β ~ abind_tvar) ++ Θ0)) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa /\
+      ({{ ((β ~ abind_tvar) ++ Θ0) ⊢
+         ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞 }}a) /\
+      {{ (Ξc ++ ((β ~ abind_tvar) ++ Θ0)) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a /\
       all_flex_mono Ξs /\
       uniq Ξs /\
       keys κs = keys Ξs /\
       (forall α0, α0 `in` dom Ξs -> α0 `notin` add β Lav) /\
       Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs /\
-      (Ξs ++ Ξc ++ ((β ~ abind_tvar) ++ Θ0)) ⨟ empty ⊢ₚₛᵃ Pa /\
+      {{ (Ξs ++ Ξc ++ ((β ~ abind_tvar) ++ Θ0)) ⨟ empty ⊢ₚₛ Pa }}a /\
       a_wf_aenv (Ξc ++ ((β ~ abind_tvar) ++ Θ0)) /\
       α `notin` dom Ξc /\
       keys κc = keys Ξc /\
@@ -2372,8 +2372,8 @@ Proof.
          α0 `notin` add α (dom ((β ~ abind_tvar) ++ Θ0)
                              `union` dom ((β ~ abind_tvar) ++ Θ)
                              `union` ftvar_in_uskl ψa)) /\
-      ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
-        ⊢ᵃᵈ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+      {{ ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
+        ⊢ˢ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa }}ad /\
       (M = mode_tc ->
          ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom κ
@@ -2583,7 +2583,7 @@ Proof.
     assert (HΨgfresh : Ψ'0 ∩ Ψ' [=] empty) by (clear - H1 HΨ'sub; fsetdec).
     (* --- the fresh RIGID β, and ρ_b = ρ ∘ [ψ/β] --- *)
     (* the guess's wf comes at the DERIVATION's context; weaken it here *)
-    assert (Hwfψ : Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ)
+    assert (Hwfψ : {{ Θ ⨟ empty ⊢ₚₛ ⌊ ψ ⌋ˢ }}a)
       by (eapply a_wf_pskl_weaken; [ exact Hext | exact H3 ]).
     assert (Hlcψ : lc_uskl ψ)
       by (apply lc_uskl_of_pskl; eapply a_wf_pskl_lc; exact Hwfψ).
@@ -2649,9 +2649,9 @@ Proof.
               ∩ Ψ' [=] empty).
     { rewrite ftag_in_uskl_open_var.
       cbn [ftag_in_uskl] in Hdisj. clear - Hdisj; fsetdec. }
-    assert (HwfP0β : ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0)
+    assert (HwfP0β : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
       by (eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfP0 ]).
-    assert (HwfPiβ : ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pi)
+    assert (HwfPiβ : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ Pi }}a)
       by (eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfPi ]).
     assert (HΨs1β : (Ψ `union` Ψ'0)
               [<=] union (ftag_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β)))
@@ -2691,13 +2691,13 @@ Proof.
           eapply flex_apart_deep_delta_grow;
             [ exact Hapart | clear; fsetdec
             | clear - Hβψa; fsetdec ]).
-    assert (Hpreβ : ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
-              ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa).
+    assert (Hpreβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
+              ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad).
     { (* the Δ-congruence's set argument is PINNED by a named [assert] —
          inline, its Δ is an evar when the [=] side goal runs and [fsetdec]
          does not terminate *)
-      assert (Hp0 : ((β ~ abind_tvar) ++ Θ) ⨟ (Δ `union` singleton β)
-                ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa).
+      assert (Hp0 : {{ ((β ~ abind_tvar) ++ Θ) ⨟ (Δ `union` singleton β)
+                ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad).
       { eapply ad_partial_precise_delta_weaken_fresh;
           [ eapply ad_partial_precise_weaken; [ exact Hpre | exact Hweak ]
           | clear - Hβψa; fsetdec
@@ -2710,8 +2710,8 @@ Proof.
                           (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd;
             clear - Hd HβΘ; fsetdec ]. }
       eapply ad_partial_precise_delta_cong; [ exact Hp0 | clear; fsetdec ]. }
-    assert (Hrefβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣᵃᵈ
-              (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q)
+    assert (Hrefβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣ
+              (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad)
       by (eapply ad_refine_syn_weaken; [ exact Hrefine | exact Hweak ]).
     assert (Hrhoβ : uskl_rho NM ((β ~ abind_tvar) ++ Θ) (add β Δρ) Ψρ'
               (open_uskl_wrt_uskl R ψ)
@@ -2767,11 +2767,11 @@ Proof.
               binds x b Θsm -> binds x b ((β ~ abind_tvar) ++ Θ))
       by (intros x b Hb; apply binds_app_3; apply Hext; exact Hb).
     (* the subject's wf opens with the GUESS (the ∀ is on the subject side) *)
-    assert (HwfSubjβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty
-              ⊢ₚₛᵃ ⌊ open_uskl_wrt_uskl R ψ ⌋ˢ).
+    assert (HwfSubjβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ empty
+              ⊢ₚₛ ⌊ open_uskl_wrt_uskl R ψ ⌋ˢ }}a).
     { assert (Hexs : exists Lb, forall α0, α0 `notin` Lb ->
-                Θ ⨟ (add α0 empty)
-                  ⊢ₚₛᵃ (open_pskl_wrt_pskl ⌊ R ⌋ˢ (pskl_var_f α0))).
+                {{ Θ ⨟ (add α0 empty)
+                  ⊢ₚₛ (open_pskl_wrt_pskl ⌊ R ⌋ˢ (pskl_var_f α0)) }}a).
       { cbn [uskl_to_pskl] in HwfSubj; inversion HwfSubj; subst;
         eexists; eassumption. }
       destruct Hexs as (Lb & Hbody).
@@ -2802,15 +2802,15 @@ Proof.
     assert (HLavβ : ftvar_in_aenv ((β ~ abind_tvar) ++ Θ0) [<=] add β Lav)
       by (rewrite ftvar_in_aenv_cons_tvar; clear - HLav; fsetdec).
     assert (REC : exists 𝒞 Ξc Ξs Pa κc κs,
-      (((β ~ abind_tvar) ++ Θ0) ⊢
-         ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞) /\
-      (Ξc ++ ((β ~ abind_tvar) ++ Θ0)) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa /\
+      ({{ ((β ~ abind_tvar) ++ Θ0) ⊢
+         ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞 }}a) /\
+      {{ (Ξc ++ ((β ~ abind_tvar) ++ Θ0)) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a /\
       all_flex_mono Ξs /\
       uniq Ξs /\
       keys κs = keys Ξs /\
       (forall α0, α0 `in` dom Ξs -> α0 `notin` add β Lav) /\
       Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs /\
-      (Ξs ++ Ξc ++ ((β ~ abind_tvar) ++ Θ0)) ⨟ empty ⊢ₚₛᵃ Pa /\
+      {{ (Ξs ++ Ξc ++ ((β ~ abind_tvar) ++ Θ0)) ⨟ empty ⊢ₚₛ Pa }}a /\
       a_wf_aenv (Ξc ++ ((β ~ abind_tvar) ++ Θ0)) /\
       α `notin` dom Ξc /\
       keys κc = keys Ξc /\
@@ -2823,8 +2823,8 @@ Proof.
          α0 `notin` add α (dom ((β ~ abind_tvar) ++ Θ0)
                              `union` dom ((β ~ abind_tvar) ++ Θ)
                              `union` ftvar_in_uskl ψa)) /\
-      ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
-        ⊢ᵃᵈ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+      {{ ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
+        ⊢ˢ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa }}ad /\
       (M = mode_tc ->
          ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom κ
@@ -3059,14 +3059,14 @@ Proof.
        P0 stands still *)
     assert (Hapart0 : flex_apart_deep Θ0 Δρ P0 ψa) by exact Hapart.
     assert (REC : exists 𝒞 Ξc Ξs Pa κc κs,
-      (Θ0 ⊢ ⌊ R0 ⌋ˢ ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞) /\
-      (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa /\
+      ({{ Θ0 ⊢ ⌊ R0 ⌋ˢ ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞 }}a) /\
+      {{ (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a /\
       all_flex_mono Ξs /\
       uniq Ξs /\
       keys κs = keys Ξs /\
       (forall α0, α0 `in` dom Ξs -> α0 `notin` Lav) /\
       Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs /\
-      (Ξs ++ Ξc ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa /\
+      {{ (Ξs ++ Ξc ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\
       a_wf_aenv (Ξc ++ Θ0) /\
       α `notin` dom Ξc /\
       keys κc = keys Ξc /\
@@ -3076,7 +3076,7 @@ Proof.
       a_inc_equiv Θ0 κ κ Θ /\
       (forall α0, α0 `in` dom κc ->
        α0 `notin` add α (dom Θ0 `union` dom Θ `union` ftvar_in_uskl ψa)) /\
-      Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+      {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa }}ad /\
       (M = mode_tc ->
          ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom κ `union` def_ftv Θ
@@ -3084,7 +3084,7 @@ Proof.
              /\ 𝒞 = a_cstr_sub M P0 :: nil))).
     { assert (HlcR0 : lc_uskl R0) by (inversion HlcR; assumption).
       (* the wf premise is on the IMAGE now, so it strips directly *)
-      assert (HwfSubj0 : Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl R))
+      assert (HwfSubj0 : {{ Θ ⨟ empty ⊢ₚₛ (uskl_to_pskl R) }}a)
         by (cbn [uskl_to_pskl] in HwfSubj;
             eapply a_wf_pskl_tophole_inv; exact HwfSubj).
       destruct (AtomSetProperties.In_dec α (ftvar_in_pskl ⌊ R0 ⌋ˢ))
@@ -3156,14 +3156,14 @@ Proof.
        P0 stands still *)
     assert (Hapart0 : flex_apart_deep Θ0 Δρ P0 ψa) by exact Hapart.
     assert (REC : exists 𝒞 Ξc Ξs Pa κc κs,
-      (Θ0 ⊢ ⌊ R0 ⌋ˢ ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞) /\
-      (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa /\
+      ({{ Θ0 ⊢ ⌊ R0 ⌋ˢ ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞 }}a) /\
+      {{ (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a /\
       all_flex_mono Ξs /\
       uniq Ξs /\
       keys κs = keys Ξs /\
       (forall α0, α0 `in` dom Ξs -> α0 `notin` Lav) /\
       Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs /\
-      (Ξs ++ Ξc ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa /\
+      {{ (Ξs ++ Ξc ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\
       a_wf_aenv (Ξc ++ Θ0) /\
       α `notin` dom Ξc /\
       keys κc = keys Ξc /\
@@ -3173,7 +3173,7 @@ Proof.
       a_inc_equiv Θ0 κ κ Θ /\
       (forall α0, α0 `in` dom κc ->
        α0 `notin` add α (dom Θ0 `union` dom Θ `union` ftvar_in_uskl ψa)) /\
-      Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+      {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa }}ad /\
       (M = mode_tc ->
          ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom κ `union` def_ftv Θ
@@ -3181,7 +3181,7 @@ Proof.
              /\ 𝒞 = a_cstr_sub M P0 :: nil))).
     { assert (HlcR0 : lc_uskl R0) by (inversion HlcR; assumption).
       (* the wf premise is on the IMAGE now, so it strips directly *)
-      assert (HwfSubj0 : Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl R))
+      assert (HwfSubj0 : {{ Θ ⨟ empty ⊢ₚₛ (uskl_to_pskl R) }}a)
         by (cbn [uskl_to_pskl] in HwfSubj;
             eapply a_wf_pskl_tophole_inv; exact HwfSubj).
       destruct (AtomSetProperties.In_dec α (ftvar_in_pskl ⌊ R0 ⌋ˢ))
@@ -3290,7 +3290,7 @@ Qed.
 Theorem a_looksub_solve_complete :
   forall n NM M Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α,
   a_wf_aenv Θ -> a_wf_aenv Θ0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a -> {{ Θ0 ⨟ empty ⊢ₚₛ Pi }}a ->
   (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->   (* skmod[SK]{P0}{M} *)
   (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->   (* skmod[TY]{P0}{M} *)
   κ ∷ Θ0 ⊑ Θ ->
@@ -3312,29 +3312,29 @@ Theorem a_looksub_solve_complete :
   (* ⭕ (2026-08-05) the repair premise [flex_apart_deep Θ0 ∅ P0 ψa] is GONE:
      at Δρ = ∅ it is [fa_clean] at every reachable state, so the corollary
      discharges it internally ([flex_apart_deep_clean]). *)
-  Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
+  {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad ->
   Ψsub [<=] ftag_in_uskl R' `union` Ψa ->
   Ψa [<=] Ψsub ->
   (* subject = (κR')[ψa/α], EXACTLY the paper's form *)
   ad_pat_sub_g n NM M Ψsub Θ
     (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) Q ->
-  Θ ⨟ empty ⊢ₚₛᵃ
-    (uskl_to_pskl (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R'))) ->
-  Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+  {{ Θ ⨟ empty ⊢ₚₛ
+    (uskl_to_pskl (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R'))) }}a ->
+  {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
   (* ⭐ THE AVOID-SET PARAMETER: the SOLVE generates its own block now, and at
      a binder row the witness must be fixed BEFORE that block is picked. *)
   forall L, ftvar_in_aenv Θ0 [<=] L ->
   exists 𝒞 Ξc Ξs Pa κc κs,
-    (Θ0 ⊢ P ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞) /\        (* looksub α P P0 𝒞 Ξc *)
+    ({{ Θ0 ⊢ P ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞 }}a) /\        (* looksub α P P0 𝒞 Ξc *)
     (* ⭐ the SOLVE's own block [Ξs] and its aligned extension [κs], stacked
        the way [a_extract__solve] (def_extra.v:764) consumes them *)
-    (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa /\          (* solve 𝒞 Pi Ξs Pa *)
+    {{ (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a /\          (* solve 𝒞 Pi Ξs Pa *)
     all_flex_mono Ξs /\
     uniq Ξs /\
     keys κs = keys Ξs /\
     (forall α0, α0 `in` dom Ξs -> α0 `notin` L) /\
     Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κs /\
-    (Ξs ++ Ξc ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa /\
+    {{ (Ξs ++ Ξc ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\
     a_wf_aenv (Ξc ++ Θ0) /\
     α `notin` dom Ξc /\
     keys κc = keys Ξc /\
@@ -3343,7 +3343,7 @@ Theorem a_looksub_solve_complete :
     a_inc_equiv Θ0 κ κ Θ /\
     (forall α0, α0 `in` dom κc ->
        α0 `notin` add α (dom Θ0 `union` dom Θ `union` ftvar_in_uskl ψa)) /\
-    Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+    {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa }}ad /\
     (* PHASE B.  The collected constraints are ψa-RELATIVE — so a Sub-ForallR
        above can strip its fresh binder β from them (β is fresh for ψa, Ξc and
        κ, and is a rigid, hence not in [def_ftv Θ]).  UNLESS the lookup

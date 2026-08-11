@@ -103,7 +103,7 @@ Definition a_sub_ty_fn_arrow_shape := proj1 a_sub_sub_flex_fn_arrow_shape.
 
 (** …hence every fn-mode [a_typing] output is a SYNTACTIC arrow chain. *)
 Lemma a_typing_fn_arrow_shape : forall M Θ0 P0 e C Θ1,
-  Θ0 ⊢ᵃ[ M ; P0 ] e ⦂ C ⊣ Θ1 ->
+  {{ Θ0 ⊢[ M ; P0 ] e ⦂ C ⊣ Θ1 }}a ->
   fn_arrow_shape M C.
 Proof.
   intros M Θ0 P0 e C Θ1 H; induction H;

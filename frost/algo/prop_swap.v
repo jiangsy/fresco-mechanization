@@ -57,7 +57,7 @@ Set Implicit Arguments.
 (*  bridge.  ⚙ These live HERE, beside [a_wf_ptyp_ftv_binds] /             *)
 (*  [a_scope_pskl_ftv_binds] below, because this is the EARLIEST algo      *)
 (*  proof file and [a_wf_aenv__var] stores the                             *)
-(*  DISCIPLINED [Θ ⨟ ∅ ⊢ₚₛᵃ P] — so every file that inverts a context's    *)
+(*  DISCIPLINED [{{ Θ ⨟ ∅ ⊢ₚₛ P }}a] — so every file that inverts a context's *)
 (*  term entry needs them, this one included.  ⚠️ prop_flex.v would be the *)
 (*  topical home but it IMPORTS this file, so that direction is a cycle.   *)
 (* ===================================================================== *)
@@ -67,7 +67,7 @@ Set Implicit Arguments.
     both).  This is the scoping content of [a_wf_pskl], and the shape every
     freshness side condition is discharged through. *)
 Lemma a_wf_pskl_ftv_tvarish : forall Θ Δ P,
-  Θ ⨟ Δ ⊢ₚₛᵃ P ->
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
   forall α, α `in` ftvar_in_pskl P -> α `in` Δ \/ a_binds_tvar α Θ.
 Proof.
   intros Θ Δ P H; induction H; intros β Hβ; simpl in Hβ.
@@ -129,7 +129,7 @@ Qed.
     the context unchanged.  This is what [a_wf_aenv__var]'s consumers want —
     every site that used to read the entry's [a_scope_pskl] off the context. *)
 Lemma a_scope_pskl_of_wf : forall Θ P,
-  Θ ⨟ empty ⊢ₚₛᵃ P ->
+  {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
   a_scope_pskl Θ P.
 Proof.
   intros Θ P H.
@@ -1158,13 +1158,13 @@ Qed.
 
 Lemma a_assign_unify_consis_swap : forall a b,
   (forall Θ0 Ξ α P Θ1,
-     Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
-     (swap_aenv a b Θ0) ⊲[ swap_aenv a b Ξ ]
-       (swap_atom a b α) ≔ (swap_pskl a b P) ⊣ (swap_aenv a b Θ1)) /\
+     {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a ->
+     {{ (swap_aenv a b Θ0) ⊲[ swap_aenv a b Ξ ]
+       (swap_atom a b α) ≔ (swap_pskl a b P) ⊣ (swap_aenv a b Θ1) }}a) /\
   (forall Θ0 α β Θ1,
-     Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
-     (swap_aenv a b Θ0) ⊲
-       (swap_atom a b α) ≈ᵘ (swap_atom a b β) ⊣ (swap_aenv a b Θ1)) /\
+     {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a ->
+     {{ (swap_aenv a b Θ0) ⊲
+       (swap_atom a b α) ≈ᵘ (swap_atom a b β) ⊣ (swap_aenv a b Θ1) }}a) /\
   (forall Δ1 Δ2 Θ0 P0 P Q Θ1,
      a_consis Δ1 Δ2 Θ0 P0 P Q Θ1 ->
      forall Δ1' Δ2',
@@ -1176,11 +1176,11 @@ Proof.
   intros a b.
   apply (a_assign_unify_consis_mutind
            (fun Θ0 Ξ α P Θ1 _ =>
-              (swap_aenv a b Θ0) ⊲[ swap_aenv a b Ξ ]
-                (swap_atom a b α) ≔ (swap_pskl a b P) ⊣ (swap_aenv a b Θ1))
+              {{ (swap_aenv a b Θ0) ⊲[ swap_aenv a b Ξ ]
+                (swap_atom a b α) ≔ (swap_pskl a b P) ⊣ (swap_aenv a b Θ1) }}a)
            (fun Θ0 α β Θ1 _ =>
-              (swap_aenv a b Θ0) ⊲
-                (swap_atom a b α) ≈ᵘ (swap_atom a b β) ⊣ (swap_aenv a b Θ1))
+              {{ (swap_aenv a b Θ0) ⊲
+                (swap_atom a b α) ≈ᵘ (swap_atom a b β) ⊣ (swap_aenv a b Θ1) }}a)
            (fun Δ1 Δ2 Θ0 P0 P Q Θ1 _ =>
               forall Δ1' Δ2',
                 Δ1' [=] swap_atoms a b Δ1 ->
@@ -1360,9 +1360,9 @@ Qed.
 
 
 Lemma a_consis_empty_swap : forall a b Θ0 P0 P Q Θ1,
-  Θ0 ⊢ᵃ[ P0 ] P ∼ Q ⊣ Θ1 ->
-  (swap_aenv a b Θ0) ⊢ᵃ[ swap_pskl a b P0 ]
-    (swap_pskl a b P) ∼ (swap_pskl a b Q) ⊣ (swap_aenv a b Θ1).
+  {{ Θ0 ⊢[ P0 ] P ∼ Q ⊣ Θ1 }}a ->
+  {{ (swap_aenv a b Θ0) ⊢[ swap_pskl a b P0 ]
+    (swap_pskl a b P) ∼ (swap_pskl a b Q) ⊣ (swap_aenv a b Θ1) }}a.
 Proof.
   intros * H.
   apply (proj2 (proj2 (a_assign_unify_consis_swap a b)) _ _ _ _ _ _ _ H);
@@ -1590,13 +1590,13 @@ Qed.
     assign/unify walk.  Every INPUT (context, pending suffix, subjects,
     skeletons, set indexes) is fixed pointwise; only the OUTPUTS move. *)
 Lemma a_assign_swap_junk : forall β0 β1 Θ0 Ξ α P Θ1,
-  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
+  {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a ->
   β0 <> α -> β1 <> α ->
   β0 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
      `union` ftvar_in_pskl P ->
   β1 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
      `union` ftvar_in_pskl P ->
-  Θ0 ⊲[ Ξ ] α ≔ P ⊣ (swap_aenv β0 β1 Θ1).
+  {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ (swap_aenv β0 β1 Θ1) }}a.
 Proof.
   intros * Hd Hne0 Hne1 H0 H1.
   apply notin_union_split in H0; destruct H0 as [h0 H0].
@@ -1611,10 +1611,10 @@ Proof.
 Qed.
 
 Lemma a_unify_swap_junk : forall β0 β1 Θ0 α β Θ1,
-  Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
+  {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a ->
   β0 <> α -> β1 <> α -> β0 <> β -> β1 <> β ->
   β0 `notin` ftvar_in_aenv Θ0 -> β1 `notin` ftvar_in_aenv Θ0 ->
-  Θ0 ⊲ α ≈ᵘ β ⊣ (swap_aenv β0 β1 Θ1).
+  {{ Θ0 ⊲ α ≈ᵘ β ⊣ (swap_aenv β0 β1 Θ1) }}a.
 Proof.
   intros * Hd Hnα0 Hnα1 Hnβ0 Hnβ1 H0 H1.
   pose proof (proj1 (proj2 (a_assign_unify_consis_swap β0 β1))
@@ -1625,15 +1625,15 @@ Proof.
 Qed.
 
 Lemma a_consis_swap_junk : forall β0 β1 Δ1 Δ2 Θ0 P0 P Q Θ1,
-  Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
+  {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}a ->
   β0 `notin` Δ1 `union` Δ2 ->
   β1 `notin` Δ1 `union` Δ2 ->
   β0 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
      `union` ftvar_in_pskl P ->
   β1 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
      `union` ftvar_in_pskl P ->
-  Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ (swap_pskl β0 β1 Q)
-    ⊣ (swap_aenv β0 β1 Θ1).
+  {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ (swap_pskl β0 β1 Q)
+    ⊣ (swap_aenv β0 β1 Θ1) }}a.
 Proof.
   intros * Hd HS0 HS1 H0 H1.
   apply notin_union_split in H0; destruct H0 as [h0 H0].
@@ -1775,13 +1775,13 @@ Qed.
 (* ---------------------------------------------------------- a_assign --- *)
 
 Lemma a_assign_skip_no_loss : forall Θ0 Θ1 Ξ α β P,
-  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
+  {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a ->
   α <> β ->
   β `notin` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
      `union` ftvar_in_pskl P ->
   exists γ, γ `notin` dom Θ1 /\
-    ((β ~ abind_flex_mono) ++ Θ0) ⊲[ Ξ ] α ≔ P
-      ⊣ ((β ~ abind_flex_mono) ++ swap_aenv β γ Θ1).
+    {{ ((β ~ abind_flex_mono) ++ Θ0) ⊲[ Ξ ] α ≔ P
+      ⊣ ((β ~ abind_flex_mono) ++ swap_aenv β γ Θ1) }}a.
 Proof.
   intros * Hd Hne Hfr.
   pick fresh γ for (dom Θ1 `union` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
@@ -1797,13 +1797,13 @@ Proof.
 Qed.
 
 Lemma a_assign_skip_rigid_no_loss : forall Θ0 Θ1 Ξ α β P,
-  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
+  {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a ->
   α <> β ->
   β `notin` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
      `union` ftvar_in_pskl P ->
   exists γ, γ `notin` dom Θ1 /\
-    ((β ~ abind_tvar) ++ Θ0) ⊲[ Ξ ] α ≔ P
-      ⊣ ((β ~ abind_tvar) ++ swap_aenv β γ Θ1).
+    {{ ((β ~ abind_tvar) ++ Θ0) ⊲[ Ξ ] α ≔ P
+      ⊣ ((β ~ abind_tvar) ++ swap_aenv β γ Θ1) }}a.
 Proof.
   intros * Hd Hne Hfr.
   pick fresh γ for (dom Θ1 `union` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
@@ -1818,13 +1818,13 @@ Proof.
 Qed.
 
 Lemma a_assign_skip_tm_var_no_loss : forall Θ0 Θ1 Ξ α x Q P,
-  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
+  {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a ->
   α <> x ->
   x `notin` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
      `union` ftvar_in_pskl P ->
   exists γ, γ `notin` dom Θ1 /\
-    ((x ~ abind_var_typ Q) ++ Θ0) ⊲[ Ξ ] α ≔ P
-      ⊣ ((x ~ abind_var_typ Q) ++ swap_aenv x γ Θ1).
+    {{ ((x ~ abind_var_typ Q) ++ Θ0) ⊲[ Ξ ] α ≔ P
+      ⊣ ((x ~ abind_var_typ Q) ++ swap_aenv x γ Θ1) }}a.
 Proof.
   intros * Hd Hne Hfr.
   pick fresh γ for (dom Θ1 `union` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
@@ -1838,13 +1838,13 @@ Proof.
 Qed.
 
 Lemma a_assign_skip_tm_skl_no_loss : forall Θ0 Θ1 Ξ α x Q P,
-  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
+  {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a ->
   α <> x ->
   x `notin` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
      `union` ftvar_in_pskl P ->
   exists γ, γ `notin` dom Θ1 /\
-    ((x ~ abind_var_skl Q) ++ Θ0) ⊲[ Ξ ] α ≔ P
-      ⊣ ((x ~ abind_var_skl Q) ++ swap_aenv x γ Θ1).
+    {{ ((x ~ abind_var_skl Q) ++ Θ0) ⊲[ Ξ ] α ≔ P
+      ⊣ ((x ~ abind_var_skl Q) ++ swap_aenv x γ Θ1) }}a.
 Proof.
   intros * Hd Hne Hfr.
   pick fresh γ for (dom Θ1 `union` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
@@ -1862,15 +1862,15 @@ Qed.
     because every [β] of [P] is replaced and the replacement [τ] is β-free.
     [α = β] is allowed, exactly as in the rule. *)
 Lemma a_assign_assign_no_loss : forall Θ0 Θ1 Ξ α β τ P Q,
-  (Ξ ++ Θ0) ⊢ᵃ[ empty | empty
+  {{ (Ξ ++ Θ0) ⊢[ empty | empty
        | (subst_pskl_in_pskl (ptyp_to_pskl τ) β P) ]
-    (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)) ∼ Q ⊣ Θ1 ->
+    (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)) ∼ Q ⊣ Θ1 }}a ->
   a_flex_tvar ((β ~ abind_flex_mono_def τ) ++ Θ0) α ->
   β `notin` ftvar_in_aenv (Ξ ++ Θ0)
      `union` ftvar_in_pskl (ptyp_to_pskl τ) ->
   exists γ, γ `notin` dom Θ1 /\
-    ((β ~ abind_flex_mono_def τ) ++ Θ0) ⊲[ Ξ ] α ≔ P
-      ⊣ ((β ~ abind_flex_mono_def τ) ++ swap_aenv β γ Θ1).
+    {{ ((β ~ abind_flex_mono_def τ) ++ Θ0) ⊲[ Ξ ] α ≔ P
+      ⊣ ((β ~ abind_flex_mono_def τ) ++ swap_aenv β γ Θ1) }}a.
 Proof.
   intros * Hd Hfl Hfr.
   assert (Hsub0 : β `notin` ftvar_in_pskl
@@ -1903,12 +1903,12 @@ Qed.
 (* ----------------------------------------------------------- a_unify --- *)
 
 Lemma a_unify_flex_skip_no_loss : forall Θ0 Θ1 α1 α β,
-  Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
+  {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a ->
   α1 <> α -> α1 <> β ->
   α1 `notin` ftvar_in_aenv Θ0 ->
   exists γ, γ `notin` dom Θ1 /\
-    ((α1 ~ abind_flex_mono) ++ Θ0) ⊲ α ≈ᵘ β
-      ⊣ ((α1 ~ abind_flex_mono) ++ swap_aenv α1 γ Θ1).
+    {{ ((α1 ~ abind_flex_mono) ++ Θ0) ⊲ α ≈ᵘ β
+      ⊣ ((α1 ~ abind_flex_mono) ++ swap_aenv α1 γ Θ1) }}a.
 Proof.
   intros * Hd Hnα Hnβ Hfr.
   pick fresh γ for (dom Θ1 `union` ftvar_in_aenv Θ0
@@ -1924,14 +1924,14 @@ Proof.
 Qed.
 
 Lemma a_unify_skip_other_no_loss : forall Θ0 Θ1 c b α β,
-  Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
+  {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a ->
   (b = abind_tvar \/
    (exists Q, b = abind_var_typ Q) \/
    (exists Q, b = abind_var_skl Q)) ->
   c <> α -> c <> β ->
   c `notin` ftvar_in_aenv Θ0 ->
   exists γ, γ `notin` dom Θ1 /\
-    ((c ~ b) ++ Θ0) ⊲ α ≈ᵘ β ⊣ ((c ~ b) ++ swap_aenv c γ Θ1).
+    {{ ((c ~ b) ++ Θ0) ⊲ α ≈ᵘ β ⊣ ((c ~ b) ++ swap_aenv c γ Θ1) }}a.
 Proof.
   intros * Hd Hb Hnα Hnβ Hfr.
   pick fresh γ for (dom Θ1 `union` ftvar_in_aenv Θ0
@@ -1951,16 +1951,16 @@ Qed.
     definition [τ] cannot mention its own [α1] (scope discipline) — the same
     extra hypothesis §13b's [a_sub_flex_assign_no_loss] carries. *)
 Lemma a_unify_flex_assign_no_loss : forall Θ0 Θ1 α1 τ α β Q,
-  Θ0 ⊢ᵃ[ empty | empty
+  {{ Θ0 ⊢[ empty | empty
        | (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f β))) ]
-    (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f α))) ∼ Q ⊣ Θ1 ->
+    (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f α))) ∼ Q ⊣ Θ1 }}a ->
   a_flex_tvar ((α1 ~ abind_flex_mono_def τ) ++ Θ0) α ->
   a_flex_tvar ((α1 ~ abind_flex_mono_def τ) ++ Θ0) β ->
   α1 <> α -> α1 <> β ->
   α1 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_ptyp τ ->
   exists γ, γ `notin` dom Θ1 /\
-    ((α1 ~ abind_flex_mono_def τ) ++ Θ0) ⊲ α ≈ᵘ β
-      ⊣ ((α1 ~ abind_flex_mono_def τ) ++ swap_aenv α1 γ Θ1).
+    {{ ((α1 ~ abind_flex_mono_def τ) ++ Θ0) ⊲ α ≈ᵘ β
+      ⊣ ((α1 ~ abind_flex_mono_def τ) ++ swap_aenv α1 γ Θ1) }}a.
 Proof.
   intros * Hd Hflα Hflβ Hnα Hnβ Hfr.
   assert (Hs : forall x, α1 <> x ->
@@ -2033,8 +2033,8 @@ Proof.
 Qed.
 
 Lemma a_tyequiv_swap : forall a b Θ A B,
-  Θ ⊢ A ≡ᵗ B ->
-  (swap_aenv a b Θ) ⊢ (swap_ptyp a b A) ≡ᵗ (swap_ptyp a b B).
+  {{ Θ ⊢ A ≡ᵗ B }}a ->
+  {{ (swap_aenv a b Θ) ⊢ (swap_ptyp a b A) ≡ᵗ (swap_ptyp a b B) }}a.
 Proof.
   intros * H; induction H; simpl.
   - apply a_tyequiv__refl. auto using lc_ptyp_swap.
@@ -2053,8 +2053,8 @@ Proof.
 Qed.
 
 Lemma a_pskl_tyequiv_swap : forall a b Θ P Q,
-  Θ ⊢ P ≡ˢ Q ->
-  (swap_aenv a b Θ) ⊢ (swap_pskl a b P) ≡ˢ (swap_pskl a b Q).
+  {{ Θ ⊢ P ≡ˢ Q }}a ->
+  {{ (swap_aenv a b Θ) ⊢ (swap_pskl a b P) ≡ˢ (swap_pskl a b Q) }}a.
 Proof.
   intros * H; induction H; simpl.
   - apply a_pskl_tyequiv__refl. auto using lc_pskl_swap.
@@ -2443,7 +2443,7 @@ Proof.
       * destruct (AtomSetProperties.In_dec a (ftvar_in_pskl P)) as [hin | hout];
           [right | left; exact hout].
         match goal with
-        | h : _ ⨟ empty ⊢ₚₛᵃ P |- _ =>
+        | h : {{ _ ⨟ empty ⊢ₚₛ P }}a |- _ =>
             pose proof (a_scope_pskl_ftv_binds _ _ _ (a_scope_pskl_of_wf h) hin)
               as hbt
         end.
@@ -2639,9 +2639,9 @@ Qed.
 (** Splitting is equivariant — three rows, the flexible one reusing the
     consistency walk's own equivariance. *)
 Lemma a_split_swap : forall a b Θ0 P0 P Q Θ1,
-  Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 ->
-  (swap_aenv a b Θ0) ⊲ (swap_pskl a b P0) ▹ (swap_pskl a b P)
-    ⇢ (swap_pskl a b Q) ⊣ (swap_aenv a b Θ1).
+  {{ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}a ->
+  {{ (swap_aenv a b Θ0) ⊲ (swap_pskl a b P0) ▹ (swap_pskl a b P)
+    ⇢ (swap_pskl a b Q) ⊣ (swap_aenv a b Θ1) }}a.
 Proof.
   intros a b Θ0 P0 P Q Θ1 H; induction H; simpl.
   - apply a_split__arrow.
@@ -2663,7 +2663,7 @@ Qed.
 
 (** …hence splitting's term renaming, by the bridge. *)
 Lemma a_split_rename_tm : forall Θ0 P0 P Q Ξ Θ1 x y (b : abind),
-  ((x ~ b) ++ Θ0) ⊲ P0 ▹ P ⇢ Q ⊣ (Ξ ++ (x ~ b) ++ Θ1) ->
+  {{ ((x ~ b) ++ Θ0) ⊲ P0 ▹ P ⇢ Q ⊣ (Ξ ++ (x ~ b) ++ Θ1) }}a ->
   x `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
              `union` dom Θ1 `union` ftvar_in_aenv Θ1
              `union` dom Ξ `union` ftvar_in_aenv Ξ
@@ -2674,7 +2674,7 @@ Lemma a_split_rename_tm : forall Θ0 P0 P Q Ξ Θ1 x y (b : abind),
              `union` dom Ξ `union` ftvar_in_aenv Ξ
              `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
              `union` ftvar_in_pskl Q) ->
-  ((y ~ b) ++ Θ0) ⊲ P0 ▹ P ⇢ Q ⊣ (Ξ ++ (y ~ b) ++ Θ1).
+  {{ ((y ~ b) ++ Θ0) ⊲ P0 ▹ P ⇢ Q ⊣ (Ξ ++ (y ~ b) ++ Θ1) }}a.
 Proof.
   intros Θ0 P0 P Q Ξ Θ1 x y b Hrun Hx Hy.
   pose proof (a_split_swap x y Hrun) as Hsw.
@@ -2729,7 +2729,7 @@ Proof. reflexivity. Qed.
     for free (they rename TO a fresh atom), and it still shrinks with the
     term, which is all the [AP-App] row needs. *)
 Lemma a_pat_rename_tm : forall a b m Θ0 P0 e P Θ1,
-  Θ0 ⊢ₛᵃ[ m ; P0 ] e ⦂ P ⊣ Θ1 ->
+  {{ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ P ⊣ Θ1 }}a ->
   a `notin` ftvar_in_exp e -> b `notin` ftvar_in_exp e ->
   b `notin` fvar_in_exp e ->
   a_pat m (swap_aenv a b Θ0) (swap_pskl a b P0)

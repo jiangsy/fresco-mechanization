@@ -169,7 +169,7 @@ Lemma a_inc_equiv_msubst_mono : forall Θmid κ1 κ2 Θ τ,
   a_wf_aenv Θmid ->
   a_wf_ptyp Θmid τ ->
   mono_ptyp τ ->
-  Θ ⊢ (msubst_ptyp κ1 τ) ≡ᵗ (msubst_ptyp κ2 τ).
+  {{ Θ ⊢ (msubst_ptyp κ1 τ) ≡ᵗ (msubst_ptyp κ2 τ) }}a.
 Proof.
   intros Θmid κ1 κ2 Θ τ Hie Hwf Hwt Hm; revert Hwt; induction Hm; intros Hwt.
   - (* unit *) simpl. apply a_tyequiv__refl. constructor.
@@ -180,9 +180,9 @@ Proof.
 Qed.
 
 Lemma a_tyequiv_strengthen_tvar_cons : forall Θ0 A A',
-  Θ0 ⊢ A ≡ᵗ A' ->
+  {{ Θ0 ⊢ A ≡ᵗ A' }}a ->
   forall α Θ, Θ0 = (α ~ abind_tvar) ++ Θ ->
-  Θ ⊢ A ≡ᵗ A'.
+  {{ Θ ⊢ A ≡ᵗ A' }}a.
 Proof.
   intros Θ0 A A' Heq; induction Heq; intros α0 Θ0' HΘ; subst.
   - apply a_tyequiv__refl; assumption.
@@ -196,9 +196,9 @@ Proof.
 Qed.
 
 Lemma a_pskl_tyequiv_strengthen_tvar_cons : forall Θ0 P P',
-  Θ0 ⊢ P ≡ˢ P' ->
+  {{ Θ0 ⊢ P ≡ˢ P' }}a ->
   forall α Θ, Θ0 = (α ~ abind_tvar) ++ Θ ->
-  Θ ⊢ P ≡ˢ P'.
+  {{ Θ ⊢ P ≡ˢ P' }}a.
 Proof.
   intros Θ0 P P' Heq; induction Heq; intros α0 Θ0' HΘ; subst.
   - apply a_pskl_tyequiv__refl; assumption.
@@ -283,7 +283,7 @@ Lemma a_inc_equiv_msubst_ptyp : forall A Θ0 κ1 κ2 Θ,
   a_inc_equiv Θ0 κ1 κ2 Θ ->
   a_wf_aenv Θ0 ->
   msubst_lc κ1 -> msubst_lc κ2 ->
-  Θ ⊢ (msubst_ptyp κ1 A) ≡ᵗ (msubst_ptyp κ2 A).
+  {{ Θ ⊢ (msubst_ptyp κ1 A) ≡ᵗ (msubst_ptyp κ2 A) }}a.
 Proof.
   intros A Θ0 κ1 κ2 Θ Hwf; revert κ1 κ2 Θ.
   induction Hwf as [ Θ0 | Θ0 α Hbt | Θ0 A1 A2 Hwf1 IH1 Hwf2 IH2 | L Θ0 A0 Hwf0 IH0 ];
@@ -309,7 +309,7 @@ Lemma a_inc_equiv_msubst_pskl : forall P Θ0 κ1 κ2 Θ,
   a_inc_equiv Θ0 κ1 κ2 Θ ->
   a_wf_aenv Θ0 ->
   msubst_lc κ1 -> msubst_lc κ2 ->
-  Θ ⊢ (msubst_pskl κ1 P) ≡ˢ (msubst_pskl κ2 P).
+  {{ Θ ⊢ (msubst_pskl κ1 P) ≡ˢ (msubst_pskl κ2 P) }}a.
 Proof.
   intros P Θ0 κ1 κ2 Θ Hwf; revert κ1 κ2 Θ.
   induction Hwf as [ Θ0 | Θ0 α Hbt | Θ0 P1 P2 Hwf1 IH1 Hwf2 IH2
@@ -464,7 +464,7 @@ Lemma a_inc_equiv_mid_insert_flex :
   uniq (Ξ ++ Θ0) ->
   dom κ1 [=] dom Ξ ->
   dom σ1 [=] dom Ξ ->
-  Θ ⊢ τ1 ≡ᵗ τ2 ->
+  {{ Θ ⊢ τ1 ≡ᵗ τ2 }}a ->
   a_inc_equiv (Ξ ++ Θ0) (κ1 ++ κ2) (σ1 ++ σ2) Θ ->
   a_inc_equiv (Ξ ++ (β ~ abind_flex_mono) ++ Θ0)
               (κ1 ++ (β, τ1) :: κ2) (σ1 ++ (β, τ2) :: σ2) Θ.
@@ -774,14 +774,14 @@ Proof. intros * H; inversion H; subst; eauto 8. Qed.
 Lemma a_inc_equiv_var_typ_inv : forall x A Θ0 κ1 κ2 Θ,
   a_inc_equiv ((x ~ abind_var_typ A) ++ Θ0) κ1 κ2 Θ ->
   exists Ξ A' Θ', Θ = Ξ ++ (x ~ abind_var_typ A') ++ Θ'
-             /\ (Θ' ⊢ A' ≡ᵗ (msubst_ptyp κ1 A))
+             /\ ({{ Θ' ⊢ A' ≡ᵗ (msubst_ptyp κ1 A) }}a)
              /\ a_suffix Ξ /\ a_inc_equiv Θ0 κ1 κ2 Θ'.
 Proof. intros * H; inversion H; subst; eauto 10. Qed.
 
 Lemma a_inc_equiv_var_skl_inv : forall x P Θ0 κ1 κ2 Θ,
   a_inc_equiv ((x ~ abind_var_skl P) ++ Θ0) κ1 κ2 Θ ->
   exists Ξ P' Θ', Θ = Ξ ++ (x ~ abind_var_skl P') ++ Θ'
-             /\ (Θ' ⊢ P' ≡ˢ (msubst_pskl κ1 P))
+             /\ ({{ Θ' ⊢ P' ≡ˢ (msubst_pskl κ1 P) }}a)
              /\ a_suffix Ξ /\ a_inc_equiv Θ0 κ1 κ2 Θ'.
 Proof. intros * H; inversion H; subst; eauto 10. Qed.
 
@@ -855,16 +855,16 @@ Proof.
   - (* empty *)
     inversion Hbc; subst. apply a_inc_equiv__empty; auto.
   - (* flex α *)
-    match goal with He : _ ⊢ _ ≡ᵗ _ |- _ => rename He into Hab_eq end.
+    match goal with He : {{ _ ⊢ _ ≡ᵗ _ }}a |- _ => rename He into Hab_eq end.
     inversion Hbc as [ | Rb tb tc Tb ac t2b t3 Hbc' Heqc | | | | ]; subst.
     apply a_inc_equiv__flex.
     + apply IHHab; auto.
     + eapply a_tyequiv__trans; [ exact Hab_eq | exact Heqc ].
   - (* flex_def α := τ *)
-    match goal with Hd : _ ⊢ _ ≡ᵗ (msubst_ptyp _ _) |- _ => rename Hd into Hab_def end.
-    match goal with He : _ ⊢ _ ≡ᵗ _ |- _ =>
+    match goal with Hd : {{ _ ⊢ _ ≡ᵗ (msubst_ptyp _ _) }}a |- _ => rename Hd into Hab_def end.
+    match goal with He : {{ _ ⊢ _ ≡ᵗ _ }}a |- _ =>
       lazymatch type of He with
-      | _ ⊢ _ ≡ᵗ (msubst_ptyp _ _) => fail
+      | {{ _ ⊢ _ ≡ᵗ (msubst_ptyp _ _) }}a => fail
       | _ => rename He into Hab_eq
       end end.
     inversion Hbc as [ | | Rb tb tc Tb ac td t2b t3 Hbc' Heqc Hdefc | | | ]; subst.
@@ -1153,8 +1153,8 @@ Proof. reflexivity. Qed.
 
 (** Given the var-leaf equivalence, every wf MONOtype is [≡ᵗ] its normal form. *)
 Lemma mono_downarrow_from_var : forall Θ,
-  (forall α, a_binds_tvar α Θ -> Θ ⊢ (ptyp_var_f α) ≡ᵗ ⇓ᵗ[Θ] (ptyp_var_f α)) ->
-  forall τ, a_wf_ptyp Θ τ -> mono_ptyp τ -> Θ ⊢ τ ≡ᵗ ⇓ᵗ[Θ] τ.
+  (forall α, a_binds_tvar α Θ -> {{ Θ ⊢ (ptyp_var_f α) ≡ᵗ ⇓ᵗ[Θ] (ptyp_var_f α) }}a) ->
+  forall τ, a_wf_ptyp Θ τ -> mono_ptyp τ -> {{ Θ ⊢ τ ≡ᵗ ⇓ᵗ[Θ] τ }}a.
 Proof.
   intros Θ Hvar τ Hwfτ Hmono; revert Hwfτ; induction Hmono; intros Hwfτ.
   - simpl. apply a_tyequiv__refl. constructor.
@@ -1166,7 +1166,7 @@ Qed.
 (** Every wf MONOtype is [≡ᵗ]-equivalent to its own normal form. *)
 Lemma a_tyequiv_to_downarrow_mono : forall Θ,
   a_wf_aenv Θ ->
-  forall τ, a_wf_ptyp Θ τ -> mono_ptyp τ -> Θ ⊢ τ ≡ᵗ ⇓ᵗ[Θ] τ.
+  forall τ, a_wf_ptyp Θ τ -> mono_ptyp τ -> {{ Θ ⊢ τ ≡ᵗ ⇓ᵗ[Θ] τ }}a.
 Proof.
   intros Θ Hwf; induction Hwf as
     [ | α Θ' Hnd Hwf IH
@@ -1243,7 +1243,7 @@ Qed.
    ≡ᵗ its downarrow.  Needed for a_inc_self_downarrow's var/flex_def middle
    re-proof, where the middle type may be a polytype. *)
 Lemma a_tyequiv_to_downarrow : forall Θ A,
-  a_wf_ptyp Θ A -> a_wf_aenv Θ -> Θ ⊢ A ≡ᵗ (⇓ᵗ[ Θ ] A).
+  a_wf_ptyp Θ A -> a_wf_aenv Θ -> {{ Θ ⊢ A ≡ᵗ (⇓ᵗ[ Θ ] A) }}a.
 Proof.
   intros Θ A Hwp; induction Hwp; intros Hwf.
   - simpl. apply a_tyequiv__refl. constructor.
@@ -1271,7 +1271,7 @@ Qed.
 Lemma msubst_downarrow_tyequiv : forall Θ Θpre Θt A,
   Θ = Θpre ++ Θt -> uniq Θ -> a_wf_aenv Θt ->
   a_wf_ptyp Θt A ->
-  Θt ⊢ A ≡ᵗ (⇓ᵗ[ Θ ] A).
+  {{ Θt ⊢ A ≡ᵗ (⇓ᵗ[ Θ ] A) }}a.
 Proof.
   intros Θ Θpre Θt A HeqΘ Huq Hwfaenv HwfB. subst Θ.
   rewrite (downarrow_app_agree_ptyp Θpre Θt A Huq (a_wf_ptyp_ftv_dom HwfB)).
@@ -1291,7 +1291,7 @@ Lemma msubst_compose_downarrow_tyequiv : forall Θ Θpre Θt κ A,
   msubst_lc κ ->
   (forall α, α `in` dom κ -> a_wf_ptyp Θt (msubst_lookup κ α)) ->
   lc_ptyp A ->
-  Θt ⊢ (msubst_ptyp (msubst_compose (aenv_msubst Θ) κ) A) ≡ᵗ (msubst_ptyp κ A).
+  {{ Θt ⊢ (msubst_ptyp (msubst_compose (aenv_msubst Θ) κ) A) ≡ᵗ (msubst_ptyp κ A) }}a.
 Proof.
   intros Θ Θpre Θt κ A HeqΘ Huq HwfΘ Hwft Hlcκ Himg Hlc;
     revert Θpre Θt HeqΘ Huq Hwft Himg.
@@ -1333,7 +1333,7 @@ Lemma msubst_pskl_compose_downarrow_tyequiv : forall Θ Θpre Θt κ P,
   msubst_lc κ ->
   (forall α, α `in` dom κ -> a_wf_ptyp Θt (msubst_lookup κ α)) ->
   lc_pskl P ->
-  Θt ⊢ (msubst_pskl (msubst_compose (aenv_msubst Θ) κ) P) ≡ˢ (msubst_pskl κ P).
+  {{ Θt ⊢ (msubst_pskl (msubst_compose (aenv_msubst Θ) κ) P) ≡ˢ (msubst_pskl κ P) }}a.
 Proof.
   intros Θ Θpre Θt κ P HeqΘ Huq HwfΘ Hwft Hlcκ Himg Hlc;
     revert Θpre Θt HeqΘ Huq Hwft Himg.
@@ -1604,7 +1604,7 @@ Proof.
 Qed.
 
 Lemma a_assign_subject_flex_local : forall Θ0 Ξ α P Θ1,
-  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
+  {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a ->
   a_flex_tvar Θ0 α.
 Proof.
   intros Θ0 Ξ α P Θ1 H; induction H.
@@ -1634,8 +1634,8 @@ Lemma a_tyequiv_strengthen_mono_mid : forall Ξ c b Θt A A',
   a_wf_aenv (Ξ ++ (c ~ b) ++ Θt) ->
   a_wf_ptyp Θt A -> mono_ptyp A ->
   a_wf_ptyp Θt A' -> mono_ptyp A' ->
-  (Ξ ++ (c ~ b) ++ Θt) ⊢ A ≡ᵗ A' ->
-  Θt ⊢ A ≡ᵗ A'.
+  {{ (Ξ ++ (c ~ b) ++ Θt) ⊢ A ≡ᵗ A' }}a ->
+  {{ Θt ⊢ A ≡ᵗ A' }}a.
 Proof.
   intros Ξ c b Θt A A' Hwf HwfA HmA HwfB HmB Heq.
   rewrite <- app_assoc in Hwf, Heq.
@@ -1754,7 +1754,7 @@ Lemma a_inc_equiv_mid_insert_var :
   uniq (Ξ ++ Θ0) ->
   dom κ1 [=] dom Ξ ->
   dom σ1 [=] dom Ξ ->
-  Θ' ⊢ A' ≡ᵗ (msubst_ptyp κ2 A) ->
+  {{ Θ' ⊢ A' ≡ᵗ (msubst_ptyp κ2 A) }}a ->
   a_suffix Ξv ->
   a_inc_equiv (Ξ ++ Θ0) (κ1 ++ κ2) (σ1 ++ σ2) Θ' ->
   a_inc_equiv (Ξ ++ (x ~ abind_var_typ A) ++ Θ0)

@@ -12,7 +12,7 @@ Require Export src.frost.decl.def_extra.
 
 (** ** Well-formedness judgments.
 
-    [d_wf_utyp] ([Γ ⊢ᵤ C]) and [d_wf_uskl] ([Γ ⨟ Δ ⊢ᵤₛ R]) are already
+    [d_wf_utyp] ([{{ Γ ⊢ᵤ C }}d]) and [d_wf_uskl] ([{{ Γ ⨟ Δ ⊢ᵤₛ R }}d]) are already
     notated inline via [where] clauses in [decl/def_extra.v]; the earlier
     duplicate declarations here ([⊢ᵤₜ], and a positional copy of [⊢ᵤₛ]) were
     removed to avoid two glyphs for one relation. *)
@@ -24,12 +24,14 @@ Require Export src.frost.decl.def_extra.
 
 
 
-(** ** Skeleton refinement. [⊢ᵣ … ⊳ …] = the (single, coloured)
-    refinement relation, filling ghosts with synthesised skeletons.
-    Subscripted [⊢] disambiguates from [d_shallow_sub]'s bare
-    [Γ ⊢ A ≤ B].  (The former uncoloured [▸] relation was dropped to
-    match the paper's single coloured refinement relation.) *)
+(** ** Skeleton refinement. [{{ Γ ⨟ Δ ⊢ᵣ Q ⊳ P }}d] = the (single, coloured)
+    refinement relation, filling ghosts with synthesised skeletons; its
+    pskl-subject twin is [{{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}d].  The [ᵣ] subscript
+    disambiguates from [d_shallow_sub]'s bare [{{ Γ ⊢ A ≤ B }}d].  (The former
+    uncoloured [▸] relation was dropped to match the paper's single coloured
+    refinement relation, and the earlier three-context form
+    [Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P] collapsed to one Δ.)
 
-(* Notation now declared inline in [decl/def_extra.v] via the [where]
-   clause: [Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P], the three-context refinement (Γ
-   existing tvars, Δs synthesised-∀ tvars, Δi inherited-∀ tvars). *)
+    ⚙ The [ad] layer's copies read the SAME inside the braces —
+    [{{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad] — because the system is now the delimiter; see
+    the legend in [frost/notations.v]. *)

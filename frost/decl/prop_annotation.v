@@ -4,7 +4,7 @@
     ([λᴬ.e ↦ λ.e] when [A] monotype), recursing through the whole term.  The
     headline is that this preserves typing at the SAME mode and type:
 
-      Γ ⊢[m] e ⦂ B  →  Γ ⊢[m] (erase_lam_mono e) ⦂ B.
+      {{ Γ ⊢[m] e ⦂ B }}d  →  {{ Γ ⊢[m] (erase_lam_mono e) ⦂ B }}d.
 
     i.e. monotype lambda arguments are never needed as annotations anywhere in
     a program — the monotype is guessed / inherited instead.
@@ -107,7 +107,7 @@ Qed.
     The annotation's role there is MODE, not polymorphism, so it is genuinely
     load-bearing even at a monotype. *)
 Lemma freeze_no_infer : forall Γ e B,
-    Γ ⊢[ mode_ti ] (exp_freeze e) ⦂ B -> False.
+    {{ Γ ⊢[ mode_ti ] (exp_freeze e) ⦂ B }}d -> False.
 Proof.
   (* With the unrestricted [Sub], the [ti] inversion has a [sub] case whose
      premise re-types the same [freeze] at [ti] — an induction, not a single

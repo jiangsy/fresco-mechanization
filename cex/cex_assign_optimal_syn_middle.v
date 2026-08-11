@@ -91,7 +91,7 @@ Inductive a_inc_syn : aenv -> metasubst -> aenv -> Prop :=
     a_inc_syn Θ κ Θ' ->
     a_wf_ptyp Θ' τ' ->
     mono_ptyp τ' ->
-    Θ' ⊢ τ' ≡ᵗ (msubst_ptyp κ τ) ->
+    {{ Θ' ⊢ τ' ≡ᵗ (msubst_ptyp κ τ) }}a ->
     a_inc_syn ((α ~ abind_flex_mono_def τ) ++ Θ) ((α, τ') :: κ) Θ'
 | a_inc_syn__var : forall Θ κ Θ' Ξ x A,
     a_inc_syn Θ κ Θ' ->
@@ -146,10 +146,10 @@ Definition Th : aenv :=
   (y ~ abind_var_typ ptyp_unit) ++ nil.
 
 (* ------------------------------------------------------------------ *)
-(*  1. The algorithm's run:  Θ₀ ⊲[·] α̂ ≔ P ⊣ Θ₁  (unchanged rules).  *)
+(*  1. The algorithm's run:  {{ Θ₀ ⊲[·] α̂ ≔ P ⊣ Θ₁  (unchanged rules) }}a. *)
 (* ------------------------------------------------------------------ *)
 
-Lemma cex_run : Th0 ⊲[ nil ] alpha ≔ Pc ⊣ Th1.
+Lemma cex_run : {{ Th0 ⊲[ nil ] alpha ≔ Pc ⊣ Th1 }}a.
 Proof.
   unfold Th0, Th1.
   (* each re-attaching row now carries the Barendregt output premise *)
@@ -159,9 +159,9 @@ Proof.
     [ auto | unfold Pc; simpl; clear; fsetdec | ].
   simpl. apply a_assign__skip_tm_var;
     [ simpl; clear - Hd5 Hd8; fsetdec | ].
-  change (((alpha ~ abind_flex_mono) ++ nil)
+  change ({{ ((alpha ~ abind_flex_mono) ++ nil)
             ⊲[ (α ~ abind_flex_mono) ] alpha ≔ Pc
-            ⊣ ((alpha ~ abind_flex_mono_def tauP) ++ nil ++ (α ~ abind_flex_mono) ++ nil)).
+            ⊣ ((alpha ~ abind_flex_mono_def tauP) ++ nil ++ (α ~ abind_flex_mono) ++ nil) }}a).
   apply a_assign__solve_m.
   - unfold Pc; simpl. clear - Hd6. fsetdec.
   - unfold Pc, tauP.
@@ -198,8 +198,8 @@ Proof.
 Qed.
 
 Lemma cex_join :
-  empty ⨟ Th ⊢ᵃᵈ (pskl_to_uskl (msubst_pskl th Pc))
-              ∼ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup th alpha))).
+  {{ empty ⨟ Th ⊢ˢ (pskl_to_uskl (msubst_pskl th Pc))
+              ∼ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup th alpha))) }}ad.
 Proof.
   unfold Pc, th. simpl.
   destruct (α == α) as [_|]; [ | contradiction ].
@@ -358,11 +358,11 @@ Qed.
 (* ------------------------------------------------------------------ *)
 
 Theorem cex_syn_middle_optimality_false :
-  Th0 ⊲[ nil ] alpha ≔ Pc ⊣ Th1 /\
+  {{ Th0 ⊲[ nil ] alpha ≔ Pc ⊣ Th1 }}a /\
   a_inc_syn (nil ++ Th0) th Th /\
   a_wf_aenv Th /\
-  (empty ⨟ Th ⊢ᵃᵈ (pskl_to_uskl (msubst_pskl th Pc))
-              ∼ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup th alpha)))) /\
+  ({{ empty ⨟ Th ⊢ˢ (pskl_to_uskl (msubst_pskl th Pc))
+              ∼ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup th alpha))) }}ad) /\
   (forall ζ, ~ a_inc_syn Th1 ζ Th).
 Proof.
   repeat split.

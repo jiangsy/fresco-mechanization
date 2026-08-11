@@ -481,23 +481,37 @@ before changing any of them.
   a `where`-clause and its rules written in that notation; lemma statements
   use the notations too. Only relations with no paper counterpart may use
   application form.
-  - ⭐ **THE TURNSTILE LEGEND IS IN [`frost/notations.v`](frost/notations.v)** —
-    read it before adding or changing any judgment notation. Two axes, one
-    device each: **SUPERSCRIPT = system** (bare `⊢` declarative, `⊢ᵃᵈ`
-    declarative-over-Θ, `⊢ᵃ` algorithmic, `⊢ᵗ` ε-tagged, `⊢ˢ`
-    syntax-directed — **one mark, never two stacked**: `ad_sd_typing` is
-    plain `⊢ᵃᵈ`, not `⊢ˢᵃᵈ`, because the ad system has no other typing
-    judgment for `ˢ` to disambiguate from) and
-    **SUBSCRIPT = sort** (bare types, `⊢ₛ` skeletons,
-    spelled out as `⊢ₚ`/`⊢ᵦ`/`⊢ᵤ`/`⊢ₚₛ`/`⊢ᵤₛ` for well-formedness). The
-    sort is stated ONCE: as the subscript when the system has one relation
-    per sort, as the bracket index `N`/`NM` when one relation covers both.
-  - ⚠️ **The axes must never swap devices, and one marker must never mean two
-    systems.** Both happened and were fixed 2026-08-09: `a_consis`/`a_sub`/
-    `a_pat`/`a_typing` wrote the SYSTEM as a subscript (`⊢ₐ`), which reads as
-    a sort, and `ᵃ` meant `a_` in `a_wf_pskl` (`⊢ₚₛᵃ`) but `ad_` in
-    `ad_pat_consis` (`⊢ₛᵃ`) — so the two systems' turnstiles differed by
-    sub- vs superscript alone.
+  - ⭐ **THE JUDGMENT LEGEND IS IN [`frost/notations.v`](frost/notations.v)** —
+    read it before adding or changing any judgment notation. **The SYSTEM is
+    the DELIMITER**, and each delimiter is its own notation scope:
+    `{{ … }}d` declarative (`frost_d_scope`), `{{ … }}ad` declarative-over-Θ,
+    `{{ … }}a` algorithmic, `{{ … }}t` ε-tagged. That frees the turnstile,
+    so **SUPERSCRIPT = which copy** (bare types, `⊢ˢ` skeletons, `⊢ˢᵈ`
+    syntax-directed) and **SUBSCRIPT = which relation** (`⊢ᵣ`/`⊢ᵣₚ`
+    refinement, `⊢ₚᵣ` precision, `⊢ₛ`/`⊢ₑ` the solve layer, and
+    `⊢ₚ`/`⊢ᵦ`/`⊢ᵤ`/`⊢ₚₛ`/`⊢ᵤₛ` for well-formedness). One relation's copies
+    across systems now differ by the delimiter ALONE —
+    `{{ Γ ⨟ Δ ⊢ᵣ Q ⊳ P }}d` vs `{{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad`. The sort is still
+    stated ONCE: as the superscript when the system has one relation per
+    sort, as the bracket index `N`/`NM` when one relation covers both.
+  - ⚠️ **A notation-declaring file must `Open Scope` its own scopes.**
+    `Open Scope` is NOT transitive through `Require Import`, and a scope that
+    is closed makes Coq report the notation as simply not existing
+    ("Unknown interpretation"). Declaring and opening therefore travel
+    together — see the note in `frost/notations.v`.
+  - ⚠️ **The first slot of a `{{ … }}X` notation carries NO level
+    annotation.** Metalib's atom-set singleton is `{{ x }}` (Metatheory.v:41),
+    so every `{{`-prefixed rule shares its prefix; camlp5 can only factor them
+    when that slot sits at the same entry, and metalib's is plain `constr`.
+    Annotate it and the build fills with `notation-incompatible-prefix` and
+    one of the two rules silently stops working.
+  - ⚙ **Two earlier attempts to carry the system on the TURNSTILE both
+    failed the same way** — the system mark competed with the marks the
+    judgment itself needs. First (pre-2026-08-09) the system was a SUBSCRIPT
+    (`⊢ₐ`), which reads as a sort, and `ᵃ` meant `a_` in `a_wf_pskl` but `ad_`
+    in `ad_pat_consis`. Then it was a superscript, which produced three-glyph
+    stacks (`⊢ᵣₚᵃᵈ`, `⊢ₛᵃᵈ[`) and forced `ad_sd_typing` to DROP its `ˢ`
+    purely to avoid a third mark. Do not reintroduce either.
   - ⚠️ **A mode-generic judgment writes `⦂`, never `⇨`.** `⇨` claims the term
     SYNTHESISES its skeleton, which holds only at `M = TI`; at `TC` the
     skeleton is an input. So `d_pat`/`ad_pat`/`a_pat` read `⊢ₛ[ M ] e ⦂ P`,

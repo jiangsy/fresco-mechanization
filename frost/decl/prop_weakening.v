@@ -19,8 +19,8 @@ Set Implicit Arguments.
     [subtyping/prop_basics.v]). *)
 
 Lemma d_consis_weakening : forall Γ1 Γ2 Γ3 Δ C B,
-    Δ ⨟ (Γ1 ++ Γ3) ⊢ C ∼ B ->
-    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ C ∼ B.
+    {{ Δ ⨟ (Γ1 ++ Γ3) ⊢ C ∼ B }}d ->
+    {{ Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ C ∼ B }}d.
 Proof.
   intros Γ1 Γ2 Γ3 Δ C B H.
   remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.
@@ -51,8 +51,8 @@ Proof.
 Qed.
 
 Lemma d_consis_weakening_head : forall Γ Γ' Δ C B,
-    Δ ⨟ Γ ⊢ C ∼ B ->
-    Δ ⨟ (Γ' ++ Γ) ⊢ C ∼ B.
+    {{ Δ ⨟ Γ ⊢ C ∼ B }}d ->
+    {{ Δ ⨟ (Γ' ++ Γ) ⊢ C ∼ B }}d.
 Proof.
   intros Γ Γ' Δ C B H.
   rewrite_env (nil ++ Γ' ++ Γ).
@@ -60,8 +60,8 @@ Proof.
 Qed.
 
 Lemma d_sub_weakening : forall Γ1 Γ2 Γ3 m Δ C B,
-    Δ ⨟ (Γ1 ++ Γ3) ⊢[ m ] C ⩽ B ->
-    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] C ⩽ B.
+    {{ Δ ⨟ (Γ1 ++ Γ3) ⊢[ m ] C ⩽ B }}d ->
+    {{ Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] C ⩽ B }}d.
 Proof.
   intros Γ1 Γ2 Γ3 m Δ C B H.
   remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.
@@ -96,8 +96,8 @@ Proof.
 Qed.
 
 Lemma d_sub_weakening_head : forall Γ Γ' m Δ C B,
-    Δ ⨟ Γ ⊢[ m ] C ⩽ B ->
-    Δ ⨟ (Γ' ++ Γ) ⊢[ m ] C ⩽ B.
+    {{ Δ ⨟ Γ ⊢[ m ] C ⩽ B }}d ->
+    {{ Δ ⨟ (Γ' ++ Γ) ⊢[ m ] C ⩽ B }}d.
 Proof.
   intros Γ Γ' m Δ C B H.
   rewrite_env (nil ++ Γ' ++ Γ).
@@ -105,8 +105,8 @@ Proof.
 Qed.
 
 Lemma d_refine_syn_weakening : forall Γ1 Γ2 Γ3 Δ Q Q',
-    (Γ1 ++ Γ3) ⨟ Δ ⊢ᵣ Q ⊳ Q' ->
-    (Γ1 ++ Γ2 ++ Γ3) ⨟ Δ ⊢ᵣ Q ⊳ Q'.
+    {{ (Γ1 ++ Γ3) ⨟ Δ ⊢ᵣ Q ⊳ Q' }}d ->
+    {{ (Γ1 ++ Γ2 ++ Γ3) ⨟ Δ ⊢ᵣ Q ⊳ Q' }}d.
 Proof.
   intros Γ1 Γ2 Γ3 Δ Q Q' H.
   remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.
@@ -131,8 +131,8 @@ Qed.
     scoping depends on them.  Needed because the paper's presupposition on
     skeleton consistency (declarative.tex:2074) is stated at this sort. *)
 Lemma d_refine_pskl_weakening : forall Γ1 Γ2 Γ3 Δ P Q,
-    (Γ1 ++ Γ3) ⨟ Δ ⊢ᵣₚ P ⊳ Q ->
-    (Γ1 ++ Γ2 ++ Γ3) ⨟ Δ ⊢ᵣₚ P ⊳ Q.
+    {{ (Γ1 ++ Γ3) ⨟ Δ ⊢ᵣₚ P ⊳ Q }}d ->
+    {{ (Γ1 ++ Γ2 ++ Γ3) ⨟ Δ ⊢ᵣₚ P ⊳ Q }}d.
 Proof.
   intros Γ1 Γ2 Γ3 Δ P Q H.
   remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.
@@ -155,8 +155,8 @@ Qed.
 
 
 Lemma d_pat_consis_weakening : forall Γ1 Γ2 Γ3 Δ R Q,
-    Δ ⨟ (Γ1 ++ Γ3) ⊢ₛ R ∼ Q ->
-    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ₛ R ∼ Q.
+    {{ Δ ⨟ (Γ1 ++ Γ3) ⊢ˢ R ∼ Q }}d ->
+    {{ Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ˢ R ∼ Q }}d.
 Proof.
   intros Γ1 Γ2 Γ3 Δ R Q H.
   remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.
@@ -191,8 +191,8 @@ Proof.
 Qed.
 
 Lemma d_pat_sub_weakening : forall Γ1 Γ2 Γ3 m Δ R Q,
-    Δ ⨟ (Γ1 ++ Γ3) ⊢ₛ[ m ] R ⩽ Q ->
-    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ₛ[ m ] R ⩽ Q.
+    {{ Δ ⨟ (Γ1 ++ Γ3) ⊢ˢ[ m ] R ⩽ Q }}d ->
+    {{ Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ˢ[ m ] R ⩽ Q }}d.
 Proof.
   intros Γ1 Γ2 Γ3 m Δ R Q H.
   remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.
@@ -241,14 +241,14 @@ Ltac wk_cof :=
 (** Apply the direct IH for subterm [ex]. *)
 Ltac wk_dir ex :=
   match goal with
-  | IH : forall _ _ : list (atom * dbind), _ = _ -> _ ⊢ₛ[ _ ] ex ⦂ _ |- _ => apply IH; reflexivity
-  | IH : forall _ _ : list (atom * dbind), _ = _ -> _ ⊢[ _ ] ex ⦂ _ |- _ => apply IH; reflexivity
+  | IH : forall _ _ : list (atom * dbind), _ = _ -> {{ _ ⊢ˢ[ _ ] ex ⦂ _ }}d |- _ => apply IH; reflexivity
+  | IH : forall _ _ : list (atom * dbind), _ = _ -> {{ _ ⊢[ _ ] ex ⦂ _ }}d |- _ => apply IH; reflexivity
   end.
 
 (** [d_pat] is self-contained, so its weakening is a standalone induction. *)
 Lemma d_pat_weakening_mid : forall Γ2 m Γ e Q,
-    Γ ⊢ₛ[ m ] e ⦂ Q ->
-    forall Γ1 Γ3, Γ = Γ1 ++ Γ3 -> (Γ1 ++ Γ2 ++ Γ3) ⊢ₛ[ m ] e ⦂ Q.
+    {{ Γ ⊢ˢ[ m ] e ⦂ Q }}d ->
+    forall Γ1 Γ3, Γ = Γ1 ++ Γ3 -> {{ (Γ1 ++ Γ2 ++ Γ3) ⊢ˢ[ m ] e ⦂ Q }}d.
 Proof.
   intros Γ2 m Γ e Q H. induction H; intros Γ1 Γ3 Heq; subst.
   (* Paper P-Unit/P-Var/P-Anno now embed the skeleton-subtyping premise. *)
@@ -280,16 +280,16 @@ Proof.
 Qed.
 
 Lemma d_pat_weakening : forall Γ1 Γ2 Γ3 m e Q,
-    (Γ1 ++ Γ3) ⊢ₛ[ m ] e ⦂ Q ->
-    (Γ1 ++ Γ2 ++ Γ3) ⊢ₛ[ m ] e ⦂ Q.
+    {{ (Γ1 ++ Γ3) ⊢ˢ[ m ] e ⦂ Q }}d ->
+    {{ (Γ1 ++ Γ2 ++ Γ3) ⊢ˢ[ m ] e ⦂ Q }}d.
 Proof.
   intros Γ1 Γ2 Γ3 m e Q H. eapply d_pat_weakening_mid; [ exact H | reflexivity ].
 Qed.
 
 (** [d_typing] weakening — its [App] [⦂] premise is closed by [d_pat_weakening]. *)
 Lemma d_typing_weakening_mid : forall Γ2 m Γ e B,
-    Γ ⊢[ m ] e ⦂ B ->
-    forall Γ1 Γ3, Γ = Γ1 ++ Γ3 -> (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⦂ B.
+    {{ Γ ⊢[ m ] e ⦂ B }}d ->
+    forall Γ1 Γ3, Γ = Γ1 ++ Γ3 -> {{ (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⦂ B }}d.
 Proof.
   intros Γ2 m Γ e B H. induction H; intros Γ1 Γ3 Heq; subst Γ.
   - apply d_typing__unit.
@@ -313,8 +313,8 @@ Proof.
 Qed.
 
 Lemma d_typing_weakening : forall Γ1 Γ2 Γ3 m e B,
-    (Γ1 ++ Γ3) ⊢[ m ] e ⦂ B ->
-    (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⦂ B.
+    {{ (Γ1 ++ Γ3) ⊢[ m ] e ⦂ B }}d ->
+    {{ (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⦂ B }}d.
 Proof.
   intros Γ1 Γ2 Γ3 m e B H. eapply d_typing_weakening_mid; [ exact H | reflexivity ].
 Qed.
@@ -331,21 +331,21 @@ Inductive ctx_weaken : list (atom * dbind) -> list (atom * dbind) -> Prop :=
     ctx_weaken (Γ1 ++ Γ3) Γ'.
 
 Lemma d_typing_ctx_weaken : forall Γ Γ',
-    ctx_weaken Γ Γ' -> forall m e B, Γ ⊢[ m ] e ⦂ B -> Γ' ⊢[ m ] e ⦂ B.
+    ctx_weaken Γ Γ' -> forall m e B, {{ Γ ⊢[ m ] e ⦂ B }}d -> {{ Γ' ⊢[ m ] e ⦂ B }}d.
 Proof.
   induction 1; intros m e B Hty; [ assumption | ].
   apply IHctx_weaken. apply d_typing_weakening. exact Hty.
 Qed.
 
 Lemma d_pat_ctx_weaken : forall Γ Γ',
-    ctx_weaken Γ Γ' -> forall m e Q, Γ ⊢ₛ[ m ] e ⦂ Q -> Γ' ⊢ₛ[ m ] e ⦂ Q.
+    ctx_weaken Γ Γ' -> forall m e Q, {{ Γ ⊢ˢ[ m ] e ⦂ Q }}d -> {{ Γ' ⊢ˢ[ m ] e ⦂ Q }}d.
 Proof.
   induction 1; intros m e Q Hp; [ assumption | ].
   apply IHctx_weaken. apply d_pat_weakening. exact Hp.
 Qed.
 
 Lemma d_refine_syn_ctx_weaken : forall Γ Γ',
-    ctx_weaken Γ Γ' -> forall Δ Q Q', Γ ⨟ Δ ⊢ᵣ Q ⊳ Q' -> Γ' ⨟ Δ ⊢ᵣ Q ⊳ Q'.
+    ctx_weaken Γ Γ' -> forall Δ Q Q', {{ Γ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}d -> {{ Γ' ⨟ Δ ⊢ᵣ Q ⊳ Q' }}d.
 Proof.
   induction 1; intros Δ Q Q' Hr; [ assumption | ].
   apply IHctx_weaken. apply d_refine_syn_weakening. exact Hr.
@@ -405,8 +405,8 @@ Qed.
     subtyping premises of [__unit]/[__var]/[__anno] weaken by
     [d_sub_weakening]; everything else is the same cofinite replay. *)
 Lemma d_sd_typing_weakening_mid : forall Γ2 m Γ e B,
-    Γ ⊢ˢ[ m ] e ⦂ B ->
-    forall Γ1 Γ3, Γ = Γ1 ++ Γ3 -> (Γ1 ++ Γ2 ++ Γ3) ⊢ˢ[ m ] e ⦂ B.
+    {{ Γ ⊢ˢᵈ[ m ] e ⦂ B }}d ->
+    forall Γ1 Γ3, Γ = Γ1 ++ Γ3 -> {{ (Γ1 ++ Γ2 ++ Γ3) ⊢ˢᵈ[ m ] e ⦂ B }}d.
 Proof.
   intros Γ2 m Γ e B H. induction H; intros Γ1 Γ3 Heq; subst Γ.
   - apply d_sd_typing__unit. apply d_sub_weakening; assumption.
@@ -441,14 +441,14 @@ Proof.
 Qed.
 
 Lemma d_sd_typing_weakening : forall Γ1 Γ2 Γ3 m e B,
-    (Γ1 ++ Γ3) ⊢ˢ[ m ] e ⦂ B ->
-    (Γ1 ++ Γ2 ++ Γ3) ⊢ˢ[ m ] e ⦂ B.
+    {{ (Γ1 ++ Γ3) ⊢ˢᵈ[ m ] e ⦂ B }}d ->
+    {{ (Γ1 ++ Γ2 ++ Γ3) ⊢ˢᵈ[ m ] e ⦂ B }}d.
 Proof.
   intros. eapply d_sd_typing_weakening_mid; [ eassumption | reflexivity ].
 Qed.
 
 Lemma d_sd_typing_ctx_weaken : forall Γ Γ',
-    ctx_weaken Γ Γ' -> forall m e B, Γ ⊢ˢ[ m ] e ⦂ B -> Γ' ⊢ˢ[ m ] e ⦂ B.
+    ctx_weaken Γ Γ' -> forall m e B, {{ Γ ⊢ˢᵈ[ m ] e ⦂ B }}d -> {{ Γ' ⊢ˢᵈ[ m ] e ⦂ B }}d.
 Proof.
   induction 1; intros m e B Hty; [ assumption | ].
   apply IHctx_weaken. apply d_sd_typing_weakening. exact Hty.

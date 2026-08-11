@@ -532,7 +532,7 @@ Qed.
 (** A core atom of the input skeleton lives in the input context. *)
 Lemma core_ftv_dom : forall M P0 C Θ,
   pskl_ty_core M P0 C ->
-  Θ ⨟ empty ⊢ₚₛᵃ P0 ->
+  {{ Θ ⨟ empty ⊢ₚₛ P0 }}a ->
   ftvar_in_ptyp C [<=] dom Θ.
 Proof.
   intros M P0 C Θ Hcore Hwf.
@@ -883,10 +883,10 @@ Definition consis_region_concl (Θ0 : aenv) (P0 P : pskl) (Θ1 : aenv) : Prop :=
 
 Lemma a_assign_unify_consis_region :
   (forall Θ0 Ξ α P Θ1,
-     Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 -> assign_region_concl Θ0 Ξ α P Θ1) /\
-  (forall Θ0 α β Θ1, Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 -> True) /\
+     {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a -> assign_region_concl Θ0 Ξ α P Θ1) /\
+  (forall Θ0 α β Θ1, {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a -> True) /\
   (forall Δ1 Δ2 Θ0 P0 P P' Θ1,
-     Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
+     {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 }}a ->
      consis_region_concl Θ0 P0 P Θ1).
 Proof.
   apply (a_assign_unify_consis_mutind
@@ -1213,9 +1213,9 @@ Qed.
     parked at [α̂]'s own entry — which is what
     [a_assign_unify_consis_region] says. *)
 Lemma a_split_scope : forall Θ0 A0 A B Θ1 m (b : abind),
-  Θ0 ⊲ (ptyp_to_pskl A0) ▹ (ptyp_to_pskl A) ⇢ (ptyp_to_pskl B) ⊣ Θ1 ->
+  {{ Θ0 ⊲ (ptyp_to_pskl A0) ▹ (ptyp_to_pskl A) ⇢ (ptyp_to_pskl B) ⊣ Θ1 }}a ->
   a_wf_aenv Θ0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ (ptyp_to_pskl A0) ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ (ptyp_to_pskl A0) }}a ->
   binds m b Θ0 ->
   abind_marker b ->
   core_rigid_above m Θ0 A0 ->
@@ -1361,8 +1361,8 @@ Definition sub_scope_concl (NM : a_sub_mode) (M : mode) (P0 : pskl)
     (Θ0 : aenv) (P Q : pskl) (Θ1 : aenv) : Prop :=
   NM = a_sub_mode_ty ->
   a_wf_aenv Θ0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
   forall C, pskl_ty_core M P0 C ->
   exists C', pskl_ty_core M Q C' /\
     (forall m (b : abind),
@@ -1374,7 +1374,7 @@ Definition sub_flex_scope_concl (NM : a_sub_mode) (M : mode) (P0 : pskl)
   NM = a_sub_mode_ty ->
   a_wf_aenv (Ξ ++ Θ0) ->
   a_decls Ξ ->
-  (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0 ->
+  {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a ->
   a_binds_tvar α (Ξ ++ Θ0) ->
   forall C, pskl_ty_core (mode_fn M) P0 C ->
   exists C', pskl_ty_core (mode_fn M) Q C' /\
@@ -1492,9 +1492,9 @@ Proof.
     assert (Hmono : forall x (c : abind),
                binds x c Θ0 -> binds x c (Ξ ++ Θ0))
       by (intros x c Hb; unfold binds in *; apply in_or_app; auto).
-    assert (HwfP0' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0)
+    assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
       by (eapply a_wf_pskl_weaken; [ exact Hmono | exact HwfP0 ]).
-    assert (HwfSo : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ (open_pskl_wrt_pskl P P1)).
+    assert (HwfSo : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ (open_pskl_wrt_pskl P P1) }}a).
     { inversion HwfP as [ | | | Lb Θb Δb Pb Hbody | | ]; subst.
       apply a_wf_pskl_open with (L := Lb);
         [ intros α0 Hα0;
@@ -1626,7 +1626,7 @@ Proof.
           unfold disjoint in *; simpl_env in *; fsetdec).
     assert (HwfΞΘ0 : a_wf_aenv (Ξ ++ Θ0))
       by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (Hwfpaint : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ ptyp_to_pskl τ).
+    assert (Hwfpaint : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ ptyp_to_pskl τ }}a).
     { apply a_scope_pskl_of_ptyp_vis;
         [ apply mono_ptyp_lc; exact Hm | ].
       intros α1 Hα1. right.
@@ -1634,13 +1634,13 @@ Proof.
       destruct Ht as [Hb | [Hb | [τ1 Hb]]];
         [ left | right; left | right; right; exists τ1 ];
         unfold binds in *; apply in_or_app; auto. }
-    assert (HwfP0' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ
-              subst_pskl_in_pskl (ptyp_to_pskl τ) β P0).
+    assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ
+              subst_pskl_in_pskl (ptyp_to_pskl τ) β P0 }}a).
     { eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ);
         [ exact HwfP0 | reflexivity | exact HβΞΘ0 | clear; fsetdec
         | apply mono_ptyp_to_pskl_guarded; exact Hm | exact Hwfpaint ]. }
-    assert (Hwfvarsub : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ
-              subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)).
+    assert (Hwfvarsub : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ
+              subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α) }}a).
     { eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ);
         [ apply a_wf_pskl__var; right; exact Hbα
         | reflexivity | exact HβΞΘ0 | clear; fsetdec
@@ -1743,7 +1743,7 @@ Proof.
       by (apply a_wf_aenv_uniq; exact Hwf).
     assert (Hwf' : a_wf_aenv (Ξ ++ Θ0))
       by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (HwfP0' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0)
+    assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
       by (eapply a_wf_pskl_strip_mid; eauto).
     assert (Hbα' : a_binds_tvar α (Ξ ++ Θ0))
       by (eapply a_binds_tvar_strip_mid;
@@ -1779,7 +1779,7 @@ Proof.
            C Hcore.
     assert (Hwf' : a_wf_aenv (Ξ ++ Θ0))
       by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (HwfP0' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0)
+    assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
       by (eapply a_wf_pskl_strip_mid; eauto).
     assert (Hbα' : a_binds_tvar α (Ξ ++ Θ0))
       by (eapply a_binds_tvar_strip_mid;
@@ -1828,7 +1828,7 @@ Proof.
         discriminate Hcx. }
     assert (Hwf' : a_wf_aenv (Ξ ++ Θ0))
       by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (HwfP0' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0)
+    assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
       by (eapply a_wf_pskl_strip_mid; [ exact HwfP0 | exact Hxfr ]).
     assert (Hbα' : a_binds_tvar α (Ξ ++ Θ0))
       by (eapply a_binds_tvar_strip_mid;
@@ -1872,7 +1872,7 @@ Proof.
         discriminate Hcx. }
     assert (Hwf' : a_wf_aenv (Ξ ++ Θ0))
       by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (HwfP0' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0)
+    assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
       by (eapply a_wf_pskl_strip_mid; [ exact HwfP0 | exact Hxfr ]).
     assert (Hbα' : a_binds_tvar α (Ξ ++ Θ0))
       by (eapply a_binds_tvar_strip_mid;
@@ -1931,7 +1931,7 @@ Qed.
 Definition typing_scope_concl (M : mode) (Θ0 : aenv) (P0 : pskl)
     (e : exp) (A' : ptyp) (Θ1 : aenv) : Prop :=
   a_wf_aenv Θ0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat M P0 ->
   a_wf_exp Θ0 e ->
   forall C, pskl_ty_core M P0 C ->
@@ -1941,7 +1941,7 @@ Definition typing_scope_concl (M : mode) (Θ0 : aenv) (P0 : pskl)
        core_rigid_above m0 Θ0 C -> core_rigid_above m0 Θ1 C').
 
 Lemma a_typing_scope : forall M Θ0 P0 e A' Θ1,
-  Θ0 ⊢ᵃ[ M ; P0 ] e ⦂ A' ⊣ Θ1 ->
+  {{ Θ0 ⊢[ M ; P0 ] e ⦂ A' ⊣ Θ1 }}a ->
   typing_scope_concl M Θ0 P0 e A' Θ1.
 Proof.
   intros M Θ0 P0 e A' Θ1 H; unfold typing_scope_concl in *;
@@ -2012,7 +2012,7 @@ Proof.
   - (* AT-Abs : the core lives in the CODOMAIN, so the guessed domain and
        the [guess^TY] block are outside it entirely *)
     destruct (a_split_ty_shape H0 Hmod H) as [HeqΘ Hshape]; subst Θ1.
-    assert (Hpre : Θ0 ⨟ empty ⊢ₚₛᵃ P /\ Θ0 ⨟ empty ⊢ₚₛᵃ Q /\
+    assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q }}a /\
                    a_ty_mode_compat (decr_mode m) Q).
     { destruct Hshape as [[HP0 [HP HQ]] | HP0]; subst.
       - repeat split; try apply a_wf_pskl__hole.
@@ -2084,7 +2084,7 @@ Proof.
        guess block *)
     destruct (a_split_ty_shape H0 Hmod H) as [HeqΘ Hshape]; subst Θ1.
     destruct (a_wf_exp_abs_anno_inv Hexp) as [HwfA _].
-    assert (Hpre : Θ0 ⨟ empty ⊢ₚₛᵃ P /\ Θ0 ⨟ empty ⊢ₚₛᵃ Q /\
+    assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q }}a /\
                    a_ty_mode_compat (decr_mode m) Q).
     { destruct Hshape as [[HP0 [HP HQ]] | HP0]; subst.
       - repeat split; try apply a_wf_pskl__hole.
@@ -2348,7 +2348,7 @@ Proof.
     assert (Hexpx : a_wf_exp Θ2 (open_exp_wrt_exp e (exp_var_f x)))
       by (apply (a_wf_exp_isub (a_wf_exp_abs_anno_pick x Hexp)
                    (a_isub_trans Hles Hlec))).
-    assert (HwfPB2 : Θ2 ⨟ empty ⊢ₚₛᵃ (ptyp_to_pskl B))
+    assert (HwfPB2 : {{ Θ2 ⨟ empty ⊢ₚₛ (ptyp_to_pskl B) }}a)
       by (eapply a_wf_pskl_isub; [ exact HwfPB | exact Hlec ]).
     destruct (IHa_typing Hwfx
                 (a_wf_pskl_weaken_cons x (abind_var_typ A) HwfPB2)
@@ -2426,10 +2426,10 @@ Proof.
       as [Hle1 [Hwf1 [Qt1 [HeQt1 [Hpat1 Href1]]]]].
     destruct (ad_refine_syn_syn_l Href1 pskl_hole eq_refl) as [P' HQt1].
     subst Qt1. rewrite bskl_to_pskl_pskl_to_bskl_syn in HeQt1. subst P.
-    assert (HwfPin : Θ1 ⨟ empty ⊢ₚₛᵃ P')
+    assert (HwfPin : {{ Θ1 ⨟ empty ⊢ₚₛ P' }}a)
       by (pose proof (ad_refine_syn_hole_l_target_wf Href1) as Hw;
           rewrite bskl_to_pskl_pskl_to_bskl_syn in Hw; exact Hw).
-    assert (HwfArr : Θ1 ⨟ empty ⊢ₚₛᵃ (pskl_arrow P' Q))
+    assert (HwfArr : {{ Θ1 ⨟ empty ⊢ₚₛ (pskl_arrow P' Q) }}a)
       by (apply a_wf_pskl__arrow;
           [ exact HwfPin
           | eapply a_wf_pskl_isub; [ exact HwfP0 | exact Hle1 ] ]).
@@ -2486,10 +2486,10 @@ Qed.
     atom lying in the discarded suffix would have to be RIGID — which
     [suffix_no_rigid_mid] forbids.  That IS premise (2). *)
 Corollary a_typing_scope_tvar_nil : forall α Θ0 A0 e A1 Ξ Θ2,
-  ((α ~ abind_tvar) ++ Θ0) ⊢ᵃ[ mode_tc ; (ptyp_to_pskl A0) ] e ⦂ A1
-    ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ2) ->
+  {{ ((α ~ abind_tvar) ++ Θ0) ⊢[ mode_tc ; (ptyp_to_pskl A0) ] e ⦂ A1
+    ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ2) }}a ->
   a_wf_aenv ((α ~ abind_tvar) ++ Θ0) ->
-  ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ (ptyp_to_pskl A0) ->
+  {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (ptyp_to_pskl A0) }}a ->
   a_wf_exp ((α ~ abind_tvar) ++ Θ0) e ->
   a_wf_aenv (Ξ ++ (α ~ abind_tvar) ++ Θ2) ->
   a_suffix Ξ ->
@@ -2516,10 +2516,10 @@ Qed.
 
 (** The [_base] rows' instance: the marker is the TERM binder. *)
 Corollary a_typing_scope_tm_nil : forall x Apay Θ0 A0 e A1 Ξ Θ2,
-  ((x ~ abind_var_typ Apay) ++ Θ0) ⊢ᵃ[ mode_tc ; (ptyp_to_pskl A0) ] e ⦂ A1
-    ⊣ (Ξ ++ (x ~ abind_var_typ Apay) ++ Θ2) ->
+  {{ ((x ~ abind_var_typ Apay) ++ Θ0) ⊢[ mode_tc ; (ptyp_to_pskl A0) ] e ⦂ A1
+    ⊣ (Ξ ++ (x ~ abind_var_typ Apay) ++ Θ2) }}a ->
   a_wf_aenv ((x ~ abind_var_typ Apay) ++ Θ0) ->
-  ((x ~ abind_var_typ Apay) ++ Θ0) ⨟ empty ⊢ₚₛᵃ (ptyp_to_pskl A0) ->
+  {{ ((x ~ abind_var_typ Apay) ++ Θ0) ⨟ empty ⊢ₚₛ (ptyp_to_pskl A0) }}a ->
   a_wf_exp ((x ~ abind_var_typ Apay) ++ Θ0) e ->
   a_wf_aenv (Ξ ++ (x ~ abind_var_typ Apay) ++ Θ2) ->
   a_suffix Ξ ->

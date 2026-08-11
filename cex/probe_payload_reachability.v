@@ -236,7 +236,7 @@ Qed.
     build the FN payload [arrow(P, Q)] with [P] the argument's collection at
     [(TC, ◇)], so the cex's bare-∀ DOMAIN demands a frozen argument. *)
 Corollary app_payload_domain_all_needs_freeze : forall Θ0 e2 Q0 Θ1,
-  Θ0 ⊢ₛᵃ[ mode_tc ; pskl_hole ] e2 ⦂ (pskl_all_syn Q0) ⊣ Θ1 ->
+  {{ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] e2 ⦂ (pskl_all_syn Q0) ⊣ Θ1 }}a ->
   exp_freeze_inside e2.
 Proof.
   intros Θ0 e2 Q0 Θ1 H.

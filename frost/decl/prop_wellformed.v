@@ -55,8 +55,8 @@ Qed.
 
 
 Lemma d_wf_utyp_weakening : forall Γ1 Γ2 Γ3 C,
-    (Γ1 ++ Γ3) ⊢ᵤ C ->
-    (Γ1 ++ Γ2 ++ Γ3) ⊢ᵤ C.
+    {{ (Γ1 ++ Γ3) ⊢ᵤ C }}d ->
+    {{ (Γ1 ++ Γ2 ++ Γ3) ⊢ᵤ C }}d.
 Proof.
   intros Γ1 Γ2 Γ3 C H. dependent induction H.
   - constructor.
@@ -79,9 +79,9 @@ Qed.
     [d_refine_preserves_wf] to bridge a premise whose cleared context
     yields a [Ψ ⊆] the one the conclusion needs. *)
 Lemma d_wf_pskl_Psi_mono : forall Ψ Γ P,
-    Γ ⨟ Ψ ⊢ₚₛ P ->
+    {{ Γ ⨟ Ψ ⊢ₚₛ P }}d ->
     forall Ψ', (forall α, List.In α Ψ -> List.In α Ψ') ->
-    Γ ⨟ Ψ' ⊢ₚₛ P.
+    {{ Γ ⨟ Ψ' ⊢ₚₛ P }}d.
 Proof.
   intros Ψ Γ P H. induction H; intros Ψ' Hmono.
   - constructor.
@@ -94,8 +94,8 @@ Proof.
 Qed.
 
 Lemma d_wf_pskl_weakening : forall Γ1 Γ2 Γ3 Ψ P,
-    (Γ1 ++ Γ3) ⨟ Ψ ⊢ₚₛ P ->
-    (Γ1 ++ Γ2 ++ Γ3) ⨟ Ψ ⊢ₚₛ P.
+    {{ (Γ1 ++ Γ3) ⨟ Ψ ⊢ₚₛ P }}d ->
+    {{ (Γ1 ++ Γ2 ++ Γ3) ⨟ Ψ ⊢ₚₛ P }}d.
 Proof.
   intros Γ1 Γ2 Γ3 Ψ P H. dependent induction H.
   - constructor.
@@ -112,8 +112,8 @@ Proof.
 Qed.
 
 Lemma d_wf_uskl_weakening : forall Γ1 Γ2 Γ3 Ψ R,
-    (Γ1 ++ Γ3) ⨟ Ψ ⊢ᵤₛ R ->
-    (Γ1 ++ Γ2 ++ Γ3) ⨟ Ψ ⊢ᵤₛ R.
+    {{ (Γ1 ++ Γ3) ⨟ Ψ ⊢ᵤₛ R }}d ->
+    {{ (Γ1 ++ Γ2 ++ Γ3) ⨟ Ψ ⊢ᵤₛ R }}d.
 Proof.
   intros Γ1 Γ2 Γ3 Ψ R H. dependent induction H.
   - constructor.
@@ -168,7 +168,7 @@ Qed.
     composition lemmas go through. *)
 
 Lemma d_consis_equiv : forall Δ Δo Γ C B,
-    Δ [=] Δo -> Δ ⨟ Γ ⊢ C ∼ B -> Δo ⨟ Γ ⊢ C ∼ B.
+    Δ [=] Δo -> {{ Δ ⨟ Γ ⊢ C ∼ B }}d -> {{ Δo ⨟ Γ ⊢ C ∼ B }}d.
 Proof.
   intros Δ Δo Γ C B Heq H. revert Δo Heq. induction H; intros Δo Heq.
   - apply d_consis__unit. fsetdec.
@@ -184,7 +184,7 @@ Proof.
 Qed.
 
 Lemma d_sub_equiv : forall m Δ Δo Γ C B,
-    Δ [=] Δo -> Δ ⨟ Γ ⊢[ m ] C ⩽ B -> Δo ⨟ Γ ⊢[ m ] C ⩽ B.
+    Δ [=] Δo -> {{ Δ ⨟ Γ ⊢[ m ] C ⩽ B }}d -> {{ Δo ⨟ Γ ⊢[ m ] C ⩽ B }}d.
 Proof.
   intros m Δ Δo Γ C B Heq H. revert Δo Heq. induction H; intros Δo Heq.
   - apply d_sub__infer; [ assumption | assumption | fsetdec ].
@@ -222,7 +222,7 @@ Lemma d_wf_ptyp_cons : forall x d Γ A,
 Proof. intros. apply (d_wf_ptyp_weakening nil (x ~ d) Γ). simpl. auto. Qed.
 
 Lemma d_wf_pskl_cons : forall x d Ψ Γ P,
-    Γ ⨟ Ψ ⊢ₚₛ P -> ((x ~ d) ++ Γ) ⨟ Ψ ⊢ₚₛ P.
+    {{ Γ ⨟ Ψ ⊢ₚₛ P }}d -> {{ ((x ~ d) ++ Γ) ⨟ Ψ ⊢ₚₛ P }}d.
 Proof. intros. apply (d_wf_pskl_weakening nil (x ~ d) Γ). simpl. auto. Qed.
 
 (** Bindings recorded in a well-formed context are well-formed there (the
@@ -237,7 +237,7 @@ Proof.
 Qed.
 
 Lemma d_wf_denv_binds_skl : forall x P Γ,
-    d_wf_denv Γ -> binds x (dbind_skl P) Γ -> Γ ⨟ nil ⊢ₚₛ P.
+    d_wf_denv Γ -> binds x (dbind_skl P) Γ -> {{ Γ ⨟ nil ⊢ₚₛ P }}d.
 Proof.
   intros x P Γ Hwf. induction Hwf; intros Hb; try solve [ inversion Hb ];
     analyze_binds Hb;
@@ -365,7 +365,7 @@ Proof.
   - pick fresh α. apply (lc_utyp_all_etag_exists α). apply H0. auto.
 Qed.
 
-Lemma d_wf_pskl_lc : forall Γ Δ P, Γ ⨟ Δ ⊢ₚₛ P -> lc_pskl P.
+Lemma d_wf_pskl_lc : forall Γ Δ P, {{ Γ ⨟ Δ ⊢ₚₛ P }}d -> lc_pskl P.
 Proof.
   intros Γ Δ P H. induction H.
   - constructor.
@@ -579,7 +579,7 @@ Qed.
 (** * Consistency / subtyping preserve well-formedness (utyp ⇒ btyp). *)
 
 Lemma d_consis_wf : forall Δ Γ C B,
-    Δ ⨟ Γ ⊢ C ∼ B -> d_wf_utyp Γ C -> d_wf_btyp Γ B.
+    {{ Δ ⨟ Γ ⊢ C ∼ B }}d -> d_wf_utyp Γ C -> d_wf_btyp Γ B.
 Proof.
   intros Δ Γ C B H. induction H; intros Hwf.
   - apply d_wf_btyp__unit.
@@ -619,7 +619,7 @@ Proof.
 Qed.
 
 Lemma d_sub_wf : forall m Δ Γ C B,
-    Δ ⨟ Γ ⊢[ m ] C ⩽ B -> d_wf_utyp Γ C -> d_wf_btyp Γ B.
+    {{ Δ ⨟ Γ ⊢[ m ] C ⩽ B }}d -> d_wf_utyp Γ C -> d_wf_btyp Γ B.
 Proof.
   intros m Δ Γ C B H. induction H; intros Hwf.
   - (* infer *) eapply d_consis_wf; eassumption.
@@ -717,7 +717,7 @@ Qed.
 (** Subtyping preserves the colour/mode discipline [skmod{TY}]: its RHS colour
     matches its mode (the [sub]/[app] typing rules read their result colour off
     a subtyping / a function arrow, so this feeds [d_typing_skmod]). *)
-Lemma d_sub_skmod : forall m Ψ Γ C B, Ψ ⨟ Γ ⊢[ m ] C ⩽ B -> mod_comp_ty B m.
+Lemma d_sub_skmod : forall m Ψ Γ C B, {{ Ψ ⨟ Γ ⊢[ m ] C ⩽ B }}d -> mod_comp_ty B m.
 Proof.
   intros m Ψ Γ C B H. induction H.
   - apply mod_comp_ty__ti; assumption.
@@ -806,7 +806,7 @@ Qed.
     [utyp] painting of the same [A] (empty tag context). *)
 Lemma d_consis_syn_refl : forall Γ A,
     d_wf_ptyp Γ A ->
-    empty ⨟ Γ ⊢ ptyp_to_utyp_syn A ∼ ptyp_to_btyp_syn A.
+    {{ empty ⨟ Γ ⊢ ptyp_to_utyp_syn A ∼ ptyp_to_btyp_syn A }}d.
 Proof.
   intros Γ A Hwf. induction Hwf; simpl.
   - apply d_consis__unit; reflexivity.
@@ -831,7 +831,7 @@ Qed.
     [d_typing__sub]. *)
 Lemma d_consis_paint_syn_eq : forall B,
     is_styp B ->
-    forall Δ Γ A, Δ ⨟ Γ ⊢ ptyp_to_utyp_syn A ∼ B -> B = ptyp_to_btyp_syn A.
+    forall Δ Γ A, {{ Δ ⨟ Γ ⊢ ptyp_to_utyp_syn A ∼ B }}d -> B = ptyp_to_btyp_syn A.
 Proof.
   intros B Hstyp. induction Hstyp; intros Δ Γ A Hc.
   - (* unit *) destruct A; simpl in Hc; inversion Hc; subst; reflexivity.

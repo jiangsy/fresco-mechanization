@@ -15,7 +15,7 @@
     Companion to [cex_p7_univ_ghost_r_vacuous.v] (which see for where the
     premise came from).  That file shows the ROW Sub-UnivGhostR closes by
     contradiction.  This file shows the damage is not confined to a ghost
-    corner: the third premise [⊢ᵣₚᵃᵈ κ⌊R⌋ˢ ⊳ ⌊Q⌋] is a LOCKSTEP condition —
+    corner: the third premise [{{ … ⊢ᵣₚ κ⌊R⌋ˢ ⊳ ⌊Q⌋ }}ad] is a LOCKSTEP condition —
     [ad_refine_pskl] descends both sides together, so it can only hold when
     subject and counterpart agree in shape (modulo ghosts on the LEFT and
     flexibles) — while declarative subtyping exists precisely to relate
@@ -71,7 +71,7 @@ Definition cexL_P0 : pskl := pskl_unit.
 Definition cexL_Q : bskl := bskl_unit.
 
 (** The subtyping problem is well posed: subject wf, P0 wf and TC-compatible. *)
-Lemma cexL_subject_wf : nil ⨟ empty ⊢ₚₛᵃ ⌊ cexL_R ⌋ˢ.
+Lemma cexL_subject_wf : {{ nil ⨟ empty ⊢ₚₛ ⌊ cexL_R ⌋ˢ }}a.
 Proof.
   cbn. apply a_wf_pskl__all with (L := empty).
   intros α Hα. cbn. apply a_wf_pskl__var. left. clear; fsetdec.
@@ -134,7 +134,7 @@ Definition cexR_R : uskl := uskl_unit.
 Definition cexR_P0 : pskl := pskl_all_syn pskl_unit.
 Definition cexR_Q : bskl := bskl_all_inh bskl_unit.
 
-Lemma cexR_subject_wf : nil ⨟ empty ⊢ₚₛᵃ ⌊ cexR_R ⌋ˢ.
+Lemma cexR_subject_wf : {{ nil ⨟ empty ⊢ₚₛ ⌊ cexR_R ⌋ˢ }}a.
 Proof. cbn. apply a_wf_pskl__unit. Qed.
 
 Lemma cexR_p0_mode : a_ty_mode_compat mode_tc cexR_P0.

@@ -17,6 +17,10 @@ Require Import src.frost.decorated_algo.def_decl_algo.   (* [ptyp_to_uskl_syn] *
 
 Set Implicit Arguments.
 
+(* the judgement notations below live in this scope; `Open Scope` is not
+   transitive through `Require Import`, so the DECLARING file must open it *)
+Open Scope frost_a_scope.
+
 (* ===================================================================== *)
 (*  Metasubstitutions and their application                               *)
 (* ===================================================================== *)
@@ -126,36 +130,37 @@ Definition is_id_msubst (κ : metasubst) : Prop :=
 (*  because flexible-variable definitions are retrieved from Θ).           *)
 (* ===================================================================== *)
 
-Reserved Notation "Θ ⊢ A ≡ᵗ B"
-  (at level 75, A at level 74, B at level 74, no associativity).
+Reserved Notation "{{ Θ ⊢ A ≡ᵗ B }}a"
+  (at level 0, A at level 74, B at level 74,
+   format "'{{'  Θ  ⊢  A  ≡ᵗ  B  '}}a'").
 Inductive a_tyequiv : aenv -> ptyp -> ptyp -> Prop :=
 | a_tyequiv__refl : forall Θ A,
     lc_ptyp A ->
-    Θ ⊢ A ≡ᵗ A
+    {{ Θ ⊢ A ≡ᵗ A }}a
 | a_tyequiv__sym : forall Θ A B,
-    Θ ⊢ A ≡ᵗ B ->
-    Θ ⊢ B ≡ᵗ A
+    {{ Θ ⊢ A ≡ᵗ B }}a ->
+    {{ Θ ⊢ B ≡ᵗ A }}a
 | a_tyequiv__trans : forall Θ A B C,
-    Θ ⊢ A ≡ᵗ B ->
-    Θ ⊢ B ≡ᵗ C ->
-    Θ ⊢ A ≡ᵗ C
+    {{ Θ ⊢ A ≡ᵗ B }}a ->
+    {{ Θ ⊢ B ≡ᵗ C }}a ->
+    {{ Θ ⊢ A ≡ᵗ C }}a
 (* retrieve a flexible variable's definition *)
 | a_tyequiv__flex_def : forall Θ α τ,
     binds α (abind_flex_mono_def τ) Θ ->
-    Θ ⊢ (ptyp_var_f α) ≡ᵗ τ
+    {{ Θ ⊢ (ptyp_var_f α) ≡ᵗ τ }}a
 | a_tyequiv__arrow : forall Θ A1 A2 B1 B2,
-    Θ ⊢ A1 ≡ᵗ B1 ->
-    Θ ⊢ A2 ≡ᵗ B2 ->
-    Θ ⊢ (ptyp_arrow A1 A2) ≡ᵗ (ptyp_arrow B1 B2)
+    {{ Θ ⊢ A1 ≡ᵗ B1 }}a ->
+    {{ Θ ⊢ A2 ≡ᵗ B2 }}a ->
+    {{ Θ ⊢ (ptyp_arrow A1 A2) ≡ᵗ (ptyp_arrow B1 B2) }}a
 | a_tyequiv__all : forall L Θ A B,
     (forall α, α `notin` L ->
-       Θ ⊢ (open_ptyp_wrt_ptyp A (ptyp_var_f α)) ≡ᵗ
-           (open_ptyp_wrt_ptyp B (ptyp_var_f α))) ->
-    Θ ⊢ (ptyp_all A) ≡ᵗ (ptyp_all B)
-where "Θ ⊢ A ≡ᵗ B" := (a_tyequiv Θ A B) : type_scope.
+       {{ Θ ⊢ (open_ptyp_wrt_ptyp A (ptyp_var_f α)) ≡ᵗ
+           (open_ptyp_wrt_ptyp B (ptyp_var_f α)) }}a) ->
+    {{ Θ ⊢ (ptyp_all A) ≡ᵗ (ptyp_all B) }}a
+where "{{ Θ ⊢ A ≡ᵗ B }}a" := (a_tyequiv Θ A B) : frost_a_scope.
 
 (* ===================================================================== *)
-(*  Skeleton equivalence  [Θ ⊢ P ≡ˢ Q]  — the [a_tyequiv] equational      *)
+(*  Skeleton equivalence  [{{ Θ ⊢ P ≡ˢ Q }}a]  — the [a_tyequiv] equational *)
 (*  theory lifted to skeletons: definitions of flexible variables unfold,  *)
 (*  ghosts are inert (related only by congruence/reflexivity).             *)
 (*                                                                        *)
@@ -167,36 +172,37 @@ where "Θ ⊢ A ≡ᵗ B" := (a_tyequiv Θ A B) : type_scope.
 (*  (machine-checked: algo/cex/cex_assign_optimal_syn_middle.v).               *)
 (* ===================================================================== *)
 
-Reserved Notation "Θ ⊢ P ≡ˢ Q"
-  (at level 75, P at level 74, Q at level 74, no associativity).
+Reserved Notation "{{ Θ ⊢ P ≡ˢ Q }}a"
+  (at level 0, P at level 74, Q at level 74,
+   format "'{{'  Θ  ⊢  P  ≡ˢ  Q  '}}a'").
 Inductive a_pskl_tyequiv : aenv -> pskl -> pskl -> Prop :=
 | a_pskl_tyequiv__refl : forall Θ P,
     lc_pskl P ->
-    Θ ⊢ P ≡ˢ P
+    {{ Θ ⊢ P ≡ˢ P }}a
 | a_pskl_tyequiv__sym : forall Θ P Q,
-    Θ ⊢ P ≡ˢ Q ->
-    Θ ⊢ Q ≡ˢ P
+    {{ Θ ⊢ P ≡ˢ Q }}a ->
+    {{ Θ ⊢ Q ≡ˢ P }}a
 | a_pskl_tyequiv__trans : forall Θ P Q R,
-    Θ ⊢ P ≡ˢ Q ->
-    Θ ⊢ Q ≡ˢ R ->
-    Θ ⊢ P ≡ˢ R
+    {{ Θ ⊢ P ≡ˢ Q }}a ->
+    {{ Θ ⊢ Q ≡ˢ R }}a ->
+    {{ Θ ⊢ P ≡ˢ R }}a
 (* retrieve a flexible variable's definition *)
 | a_pskl_tyequiv__flex_def : forall Θ α τ,
     binds α (abind_flex_mono_def τ) Θ ->
-    Θ ⊢ (pskl_var_f α) ≡ˢ (ptyp_to_pskl τ)
+    {{ Θ ⊢ (pskl_var_f α) ≡ˢ (ptyp_to_pskl τ) }}a
 | a_pskl_tyequiv__arrow : forall Θ P1 P2 Q1 Q2,
-    Θ ⊢ P1 ≡ˢ Q1 ->
-    Θ ⊢ P2 ≡ˢ Q2 ->
-    Θ ⊢ (pskl_arrow P1 P2) ≡ˢ (pskl_arrow Q1 Q2)
+    {{ Θ ⊢ P1 ≡ˢ Q1 }}a ->
+    {{ Θ ⊢ P2 ≡ˢ Q2 }}a ->
+    {{ Θ ⊢ (pskl_arrow P1 P2) ≡ˢ (pskl_arrow Q1 Q2) }}a
 | a_pskl_tyequiv__all : forall L Θ P Q,
     (forall α, α `notin` L ->
-       Θ ⊢ (open_pskl_wrt_pskl P (pskl_var_f α)) ≡ˢ
-           (open_pskl_wrt_pskl Q (pskl_var_f α))) ->
-    Θ ⊢ (pskl_all_syn P) ≡ˢ (pskl_all_syn Q)
+       {{ Θ ⊢ (open_pskl_wrt_pskl P (pskl_var_f α)) ≡ˢ
+           (open_pskl_wrt_pskl Q (pskl_var_f α)) }}a) ->
+    {{ Θ ⊢ (pskl_all_syn P) ≡ˢ (pskl_all_syn Q) }}a
 | a_pskl_tyequiv__tophole : forall Θ P Q,
-    Θ ⊢ P ≡ˢ Q ->
-    Θ ⊢ (pskl_tophole P) ≡ˢ (pskl_tophole Q)
-where "Θ ⊢ P ≡ˢ Q" := (a_pskl_tyequiv Θ P Q) : type_scope.
+    {{ Θ ⊢ P ≡ˢ Q }}a ->
+    {{ Θ ⊢ (pskl_tophole P) ≡ˢ (pskl_tophole Q) }}a
+where "{{ Θ ⊢ P ≡ˢ Q }}a" := (a_pskl_tyequiv Θ P Q) : frost_a_scope.
 
 (* ===================================================================== *)
 (*  Information increase  [κ ∷ Θ ⊑ Θ']  (fig:information-increase)         *)
@@ -219,11 +225,11 @@ Inductive a_inc : aenv -> metasubst -> aenv -> Prop :=
        image is a well-formed monotype in the target *)
     a_wf_ptyp Θ' τ' ->
     mono_ptyp τ' ->
-    Θ' ⊢ τ' ≡ᵗ (msubst_ptyp κ τ) ->
+    {{ Θ' ⊢ τ' ≡ᵗ (msubst_ptyp κ τ) }}a ->
     ((α, τ') :: κ) ∷ ((α ~ abind_flex_mono_def τ) ++ Θ) ⊑ Θ'
 (* SEMANTIC ENTRIES for the two binder cases (GundryMM10 §3.1; 2026-07-15).
    The target's binding is preserved UP TO THE EQUATIONAL THEORY, not
-   syntactically: [Θ' ⊢ A' ≡ᵗ κA] instead of [A' = κA].  With syntactic
+   syntactically: [{{ Θ' ⊢ A' ≡ᵗ κA }}a] instead of [A' = κA].  With syntactic
    middles the optimality half of thm:complete-consistency is FALSE — the
    assignment walk moves a flexible below a term binder (forced by wf of the
    deposited definition), and a competing solution may then use scope that
@@ -231,13 +237,13 @@ Inductive a_inc : aenv -> metasubst -> aenv -> Prop :=
    algo/cex/cex_assign_optimal_syn_middle.v). *)
 | a_inc__var : forall Θ κ Θ' Ξ x A A',           (* κ ∷ Θ,x:A ⊑ Θ',x:A'≡κA,Ξ (type entry) *)
     κ ∷ Θ ⊑ Θ' ->
-    Θ' ⊢ A' ≡ᵗ (msubst_ptyp κ A) ->
+    {{ Θ' ⊢ A' ≡ᵗ (msubst_ptyp κ A) }}a ->
     a_suffix Ξ ->
     κ ∷ ((x ~ abind_var_typ A) ++ Θ) ⊑
       (Ξ ++ (x ~ abind_var_typ A') ++ Θ')
 | a_inc__var_skl : forall Θ κ Θ' Ξ x P P',       (* κ ∷ Θ,x:P ⊑ Θ',x:P'≡κP,Ξ (skeleton entry) *)
     κ ∷ Θ ⊑ Θ' ->
-    Θ' ⊢ P' ≡ˢ (msubst_pskl κ P) ->
+    {{ Θ' ⊢ P' ≡ˢ (msubst_pskl κ P) }}a ->
     a_suffix Ξ ->
     κ ∷ ((x ~ abind_var_skl P) ++ Θ) ⊑
       (Ξ ++ (x ~ abind_var_skl P') ++ Θ')
@@ -271,23 +277,23 @@ Inductive a_inc_equiv : aenv -> metasubst -> metasubst -> aenv -> Prop :=
     a_inc_equiv nil nil nil Ξ
 | a_inc_equiv__flex : forall Θ κ1 κ2 Θ' α τ1 τ2,
     a_inc_equiv Θ κ1 κ2 Θ' ->
-    Θ' ⊢ τ1 ≡ᵗ τ2 ->
+    {{ Θ' ⊢ τ1 ≡ᵗ τ2 }}a ->
     a_inc_equiv ((α ~ abind_flex_mono) ++ Θ) ((α, τ1) :: κ1) ((α, τ2) :: κ2) Θ'
 | a_inc_equiv__flex_def : forall Θ κ1 κ2 Θ' α τ τ1 τ2,
     a_inc_equiv Θ κ1 κ2 Θ' ->
-    Θ' ⊢ τ1 ≡ᵗ τ2 ->
-    Θ' ⊢ τ1 ≡ᵗ (msubst_ptyp κ1 τ) ->
+    {{ Θ' ⊢ τ1 ≡ᵗ τ2 }}a ->
+    {{ Θ' ⊢ τ1 ≡ᵗ (msubst_ptyp κ1 τ) }}a ->
     a_inc_equiv ((α ~ abind_flex_mono_def τ) ++ Θ) ((α, τ1) :: κ1) ((α, τ2) :: κ2) Θ'
 (* semantic entries, mirroring [a_inc__var]/[a_inc__var_skl] above *)
 | a_inc_equiv__var : forall Θ κ1 κ2 Θ' Ξ x A A',
     a_inc_equiv Θ κ1 κ2 Θ' ->
-    Θ' ⊢ A' ≡ᵗ (msubst_ptyp κ1 A) ->
+    {{ Θ' ⊢ A' ≡ᵗ (msubst_ptyp κ1 A) }}a ->
     a_suffix Ξ ->
     a_inc_equiv ((x ~ abind_var_typ A) ++ Θ) κ1 κ2
                 (Ξ ++ (x ~ abind_var_typ A') ++ Θ')
 | a_inc_equiv__var_skl : forall Θ κ1 κ2 Θ' Ξ x P P',
     a_inc_equiv Θ κ1 κ2 Θ' ->
-    Θ' ⊢ P' ≡ˢ (msubst_pskl κ1 P) ->
+    {{ Θ' ⊢ P' ≡ˢ (msubst_pskl κ1 P) }}a ->
     a_suffix Ξ ->
     a_inc_equiv ((x ~ abind_var_skl P) ++ Θ) κ1 κ2
                 (Ξ ++ (x ~ abind_var_skl P') ++ Θ')

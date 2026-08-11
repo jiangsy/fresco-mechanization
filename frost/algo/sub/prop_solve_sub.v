@@ -91,9 +91,9 @@ Proof. intros P H; inversion H; auto. Qed.
 
 (** Solving preserves local closure. *)
 Lemma a_solve_sub_eq_lc :
-  (forall Θ m P P0 Ξ P', Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' ->
+  (forall Θ m P P0 Ξ P', {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a ->
      lc_pskl P -> lc_pskl P0 -> lc_pskl P') /\
-  (forall Θ P P0 Ξ P', Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' ->
+  (forall Θ P P0 Ξ P', {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a ->
      lc_pskl P -> lc_pskl P0 -> lc_pskl P').
 Proof.
   apply a_solve_sub_eq_mutind; intros;
@@ -170,11 +170,11 @@ Proof.
 Qed.
 
 Lemma a_solve_sub_lc : forall Θ m P P0 Ξ P',
-  Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' -> lc_pskl P -> lc_pskl P0 -> lc_pskl P'.
+  {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a -> lc_pskl P -> lc_pskl P0 -> lc_pskl P'.
 Proof. intros; eapply (proj1 a_solve_sub_eq_lc); eauto. Qed.
 
 Lemma a_solve_eq_lc : forall Θ P P0 Ξ P',
-  Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' -> lc_pskl P -> lc_pskl P0 -> lc_pskl P'.
+  {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a -> lc_pskl P -> lc_pskl P0 -> lc_pskl P'.
 Proof. intros; eapply (proj2 a_solve_sub_eq_lc); eauto. Qed.
 
 (** Solving a GUARDED subject yields a guarded solution: a guarded LHS only
@@ -182,9 +182,9 @@ Proof. intros; eapply (proj2 a_solve_sub_eq_lc); eauto. Qed.
     introduced on the left).  Needed for the tophole cases of output
     well-formedness. *)
 Lemma a_solve_sub_eq_guarded :
-  (forall Θ m P P0 Ξ P', Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' ->
+  (forall Θ m P P0 Ξ P', {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a ->
      lc_pskl P -> lc_pskl P0 -> guarded_pskl P -> guarded_pskl P') /\
-  (forall Θ P P0 Ξ P', Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' ->
+  (forall Θ P P0 Ξ P', {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a ->
      lc_pskl P -> lc_pskl P0 -> guarded_pskl P -> guarded_pskl P').
 Proof.
   apply a_solve_sub_eq_mutind; intros;
@@ -211,7 +211,7 @@ Proof.
 Qed.
 
 Lemma a_solve_sub_guarded : forall Θ m P P0 Ξ P',
-  Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' ->
+  {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a ->
   lc_pskl P -> lc_pskl P0 -> guarded_pskl P -> guarded_pskl P'.
 Proof. intros; eapply (proj1 a_solve_sub_eq_guarded); eauto. Qed.
 
@@ -248,8 +248,8 @@ Proof. intros; eapply (proj1 a_solve_sub_eq_guarded); eauto. Qed.
 
 (** (K1) *)
 Lemma a_solve_sub_eq_decls :
-  (forall Θ m P P0 Ξ P', Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' -> a_decls Ξ) /\
-  (forall Θ P P0 Ξ P',   Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P'     -> a_decls Ξ).
+  (forall Θ m P P0 Ξ P', {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a -> a_decls Ξ) /\
+  (forall Θ P P0 Ξ P',   {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a     -> a_decls Ξ).
 Proof.
   apply a_solve_sub_eq_mutind; intros;
     try solve
@@ -260,11 +260,11 @@ Proof.
 Qed.
 
 Lemma a_solve_sub_decls : forall Θ m P P0 Ξ P',
-  Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' -> a_decls Ξ.
+  {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a -> a_decls Ξ.
 Proof. intros; eapply (proj1 a_solve_sub_eq_decls); eauto. Qed.
 
 Lemma a_solve_eq_decls : forall Θ P P0 Ξ P',
-  Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' -> a_decls Ξ.
+  {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a -> a_decls Ξ.
 Proof. intros; eapply (proj2 a_solve_sub_eq_decls); eauto. Qed.
 
 (** Set-form bridge: the pointwise avoid-statements of the guess kit and
@@ -283,9 +283,9 @@ Qed.
     per-case reasoning is then pure set algebra and never has to match on
     the shape of an induction hypothesis. *)
 Lemma a_solve_sub_eq_generated_fresh_set :
-  (forall Θ m P P0 Ξ P', Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' ->
+  (forall Θ m P P0 Ξ P', {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a ->
      dom Ξ ∩ ftvar_in_aenv Θ [=] empty) /\
-  (forall Θ P P0 Ξ P', Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' ->
+  (forall Θ P P0 Ξ P', {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a ->
      dom Ξ ∩ ftvar_in_aenv Θ [=] empty).
 Proof.
   apply a_solve_sub_eq_mutind; intros;
@@ -317,7 +317,7 @@ Proof.
 Qed.
 
 Lemma a_solve_sub_generated_fresh : forall Θ m P P0 Ξ P',
-  Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' ->
+  {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a ->
   forall α, α `in` dom Ξ -> α `notin` ftvar_in_aenv Θ.
 Proof.
   intros * H α Hin.
@@ -326,7 +326,7 @@ Proof.
 Qed.
 
 Lemma a_solve_eq_generated_fresh : forall Θ P P0 Ξ P',
-  Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' ->
+  {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a ->
   forall α, α `in` dom Ξ -> α `notin` ftvar_in_aenv Θ.
 Proof.
   intros * H α Hin.
@@ -338,7 +338,7 @@ Qed.
     name is apart from the DOMAIN, and — the capture-freeness of the four
     closing rows — apart from an enclosing witness. *)
 Corollary a_solve_sub_generated_notin_dom : forall Θ m P P0 Ξ P' α,
-  Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' -> α `in` dom Ξ -> α `notin` dom Θ.
+  {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a -> α `in` dom Ξ -> α `notin` dom Θ.
 Proof.
   intros * H Hin.
   pose proof (a_solve_sub_generated_fresh H Hin) as Hfr.
@@ -346,7 +346,7 @@ Proof.
 Qed.
 
 Corollary a_solve_eq_generated_notin_dom : forall Θ P P0 Ξ P' α,
-  Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' -> α `in` dom Ξ -> α `notin` dom Θ.
+  {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a -> α `in` dom Ξ -> α `notin` dom Θ.
 Proof.
   intros * H Hin.
   pose proof (a_solve_eq_generated_fresh H Hin) as Hfr.
@@ -354,7 +354,7 @@ Proof.
 Qed.
 
 Corollary a_solve_sub_generated_apart_binder : forall β Θ m P P0 Ξ P',
-  ((β ~ abind_tvar) ++ Θ) ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' -> β `notin` dom Ξ.
+  {{ ((β ~ abind_tvar) ++ Θ) ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a -> β `notin` dom Ξ.
 Proof.
   intros * H Hin.
   pose proof (a_solve_sub_generated_fresh H Hin) as Hfr.
@@ -362,7 +362,7 @@ Proof.
 Qed.
 
 Corollary a_solve_eq_generated_apart_binder : forall β Θ P P0 Ξ P',
-  ((β ~ abind_tvar) ++ Θ) ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' -> β `notin` dom Ξ.
+  {{ ((β ~ abind_tvar) ++ Θ) ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a -> β `notin` dom Ξ.
 Proof.
   intros * H Hin.
   pose proof (a_solve_eq_generated_fresh H Hin) as Hfr.
@@ -371,9 +371,9 @@ Qed.
 
 (** (K3) — the block mentions exactly its own domain. *)
 Lemma a_solve_sub_eq_generated_ftvar :
-  (forall Θ m P P0 Ξ P', Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' ->
+  (forall Θ m P P0 Ξ P', {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a ->
      ftvar_in_aenv Ξ [<=] dom Ξ) /\
-  (forall Θ P P0 Ξ P', Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' ->
+  (forall Θ P P0 Ξ P', {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a ->
      ftvar_in_aenv Ξ [<=] dom Ξ).
 Proof.
   apply a_solve_sub_eq_mutind; intros;
@@ -398,11 +398,11 @@ Qed.
     variable, collected flexibles, binders), where the two readings
     coincide. *)
 Lemma a_solve_sub_eq_ftv :
-  (forall Θ m P P0 Ξ P', Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' ->
+  (forall Θ m P P0 Ξ P', {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a ->
      forall α, α `in` ftvar_in_pskl P' ->
        α `in` (ftvar_in_pskl P `union` ftvar_in_pskl P0) \/
        α `notin` dom Θ) /\
-  (forall Θ P P0 Ξ P', Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' ->
+  (forall Θ P P0 Ξ P', {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a ->
      ftvar_in_pskl P' [<=]
        ftvar_in_pskl P `union` ftvar_in_pskl P0 `union` dom Ξ).
 Proof.
@@ -465,7 +465,7 @@ Proof.
        generated name goes to the RIGHT disjunct, because it dodges
        [ftvar_in_aenv Θ] and a fortiori [dom Θ]. *)
     match goal with
-    | Hs : _ ⊢ₑ _ ∼ _ ⤳ ?X ⨾ ?p' ,
+    | Hs : {{ _ ⊢ₑ _ ∼ _ ⤳ ?X ⨾ ?p' }}a ,
       He : ftvar_in_pskl ?p' [<=] _ ,
       Hm : ?a `in` ftvar_in_pskl ?p' |- _ =>
         destruct (AtomSetProperties.In_dec a (dom X)) as [Hd | Hd];
@@ -495,7 +495,7 @@ Proof.
        disjunct), and the codomain's right disjunct is at the THREADED
        context [Ξ1 ++ Θ], which only makes it stronger *)
     match goal with
-    | Hs : _ ⊢ₑ _ ∼ _ ⤳ ?X1 ⨾ ?e' ,
+    | Hs : {{ _ ⊢ₑ _ ∼ _ ⤳ ?X1 ⨾ ?e' }}a ,
       He : ftvar_in_pskl ?e' [<=] _ ,
       IH : forall α, α `in` ftvar_in_pskl ?p2' -> _ ,
       Hm : ?a `in` ftvar_in_pskl (pskl_arrow ?e' ?p2') |- _ =>
@@ -510,7 +510,7 @@ Proof.
     end.
   - (* SS-GhostLF : both branches at ◇, same treatment as SS-Arrow *)
     match goal with
-    | Hs : _ ⊢ₑ _ ∼ _ ⤳ ?X1 ⨾ ?e' ,
+    | Hs : {{ _ ⊢ₑ _ ∼ _ ⤳ ?X1 ⨾ ?e' }}a ,
       He : ftvar_in_pskl ?e' [<=] _ ,
       IH : forall α, α `in` ftvar_in_pskl ?p2' -> _ ,
       Hm : ?a `in` ftvar_in_pskl (pskl_tophole (pskl_arrow ?e' ?p2')) |- _ =>
@@ -533,13 +533,13 @@ Proof.
 Qed.
 
 Lemma a_solve_sub_ftv : forall Θ m P P0 Ξ P',
-  Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' ->
+  {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a ->
   forall α, α `in` ftvar_in_pskl P' ->
     α `in` (ftvar_in_pskl P `union` ftvar_in_pskl P0) \/ α `notin` dom Θ.
 Proof. intros; eapply (proj1 a_solve_sub_eq_ftv); eauto. Qed.
 
 Lemma a_solve_eq_ftv : forall Θ P P0 Ξ P',
-  Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' ->
+  {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a ->
   ftvar_in_pskl P' [<=]
     ftvar_in_pskl P `union` ftvar_in_pskl P0 `union` dom Ξ.
 Proof. intros; eapply (proj2 a_solve_sub_eq_ftv); eauto. Qed.
@@ -549,7 +549,7 @@ Proof. intros; eapply (proj2 a_solve_sub_eq_ftv); eauto. Qed.
     variable is an input variable, or it is a name this run generated and
     therefore misses [dom Θ] entirely. *)
 Corollary a_solve_eq_ftv_disj : forall Θ P P0 Ξ P',
-  Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' ->
+  {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a ->
   forall α, α `in` ftvar_in_pskl P' ->
     α `in` (ftvar_in_pskl P `union` ftvar_in_pskl P0) \/ α `notin` dom Θ.
 Proof.
@@ -618,9 +618,9 @@ Proof.
 Qed.
 
 Lemma a_solve_sub_eq_generated_occurs :
-  (forall Θ m P P0 Ξ P', Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' ->
+  (forall Θ m P P0 Ξ P', {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a ->
      dom Ξ [<=] ftvar_in_pskl P') /\
-  (forall Θ P P0 Ξ P', Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' ->
+  (forall Θ P P0 Ξ P', {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a ->
      dom Ξ [<=] ftvar_in_pskl P').
 Proof.
   apply a_solve_sub_eq_mutind; intros;
@@ -647,10 +647,10 @@ Proof.
   (* the four CLOSING rows: the close removes the WITNESS, and a generated
      name is never the witness *)
   all: match goal with
-       | Hs : ((?b ~ _) ++ _) ⊢ₛ _ ≼[ _ ] _ ⤳ ?X ⨾ ?p' |- dom ?X [<=] _ =>
+       | Hs : {{ ((?b ~ _) ++ _) ⊢ₛ _ ≼[ _ ] _ ⤳ ?X ⨾ ?p' }}a |- dom ?X [<=] _ =>
            pose proof (a_solve_sub_generated_apart_binder Hs) as Hb;
            pose proof (ftvar_in_pskl_close_pskl_wrt_pskl p' b) as Hcl
-       | Hs : ((?b ~ _) ++ _) ⊢ₑ _ ∼ _ ⤳ ?X ⨾ ?p' |- dom ?X [<=] _ =>
+       | Hs : {{ ((?b ~ _) ++ _) ⊢ₑ _ ∼ _ ⤳ ?X ⨾ ?p' }}a |- dom ?X [<=] _ =>
            pose proof (a_solve_eq_generated_apart_binder Hs) as Hb;
            pose proof (ftvar_in_pskl_close_pskl_wrt_pskl p' b) as Hcl
        end;
@@ -662,17 +662,17 @@ Proof.
 Qed.
 
 Lemma a_solve_sub_generated_occurs : forall Θ m P P0 Ξ P',
-  Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' -> dom Ξ [<=] ftvar_in_pskl P'.
+  {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a -> dom Ξ [<=] ftvar_in_pskl P'.
 Proof. intros; eapply (proj1 a_solve_sub_eq_generated_occurs); eauto. Qed.
 
 Lemma a_solve_eq_generated_occurs : forall Θ P P0 Ξ P',
-  Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' -> dom Ξ [<=] ftvar_in_pskl P'.
+  {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a -> dom Ξ [<=] ftvar_in_pskl P'.
 Proof. intros; eapply (proj2 a_solve_sub_eq_generated_occurs); eauto. Qed.
 
 (** The block is FIXED by any swap of two atoms it does not declare — (K3)
     says it mentions nothing else. *)
 Lemma a_solve_block_swap_id : forall Θ m P P0 Ξ P' α0 β0,
-  Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' ->
+  {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a ->
   α0 `notin` dom Ξ -> β0 `notin` dom Ξ -> swap_aenv α0 β0 Ξ = Ξ.
 Proof.
   intros * H Hα Hβ.
@@ -681,7 +681,7 @@ Proof.
 Qed.
 
 Lemma a_solve_eq_block_swap_id : forall Θ P P0 Ξ P' α0 β0,
-  Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' ->
+  {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a ->
   α0 `notin` dom Ξ -> β0 `notin` dom Ξ -> swap_aenv α0 β0 Ξ = Ξ.
 Proof.
   intros * H Hα Hβ.
@@ -720,15 +720,15 @@ Qed.
     and never mentions it in its conclusion.  The moved premise therefore
     runs at [(α0 ~ tvar) ++ swap_aenv b α0 Θ], and nobody has to care. *)
 Lemma a_solve_eq_move_binder : forall Θ b P Q Ξ P' α0,
-  ((b ~ abind_tvar) ++ Θ) ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f b))
-    ∼ (open_pskl_wrt_pskl Q (pskl_var_f b)) ⤳ Ξ ⨾ P' ->
+  {{ ((b ~ abind_tvar) ++ Θ) ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f b))
+    ∼ (open_pskl_wrt_pskl Q (pskl_var_f b)) ⤳ Ξ ⨾ P' }}a ->
   b `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
   α0 `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q
       `union` ftvar_in_pskl P' ->
-  ((α0 ~ abind_tvar) ++ swap_aenv b α0 Θ)
+  {{ ((α0 ~ abind_tvar) ++ swap_aenv b α0 Θ)
     ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f α0))
      ∼ (open_pskl_wrt_pskl Q (pskl_var_f α0))
-     ⤳ (swap_aenv b α0 Ξ) ⨾ (subst_pskl_in_pskl (pskl_var_f α0) b P').
+     ⤳ (swap_aenv b α0 Ξ) ⨾ (subst_pskl_in_pskl (pskl_var_f α0) b P') }}a.
 Proof.
   intros Θ b P Q Ξ P' α0 Hp Hb Hα0.
   pose proof ((proj2 (a_solve_sub_eq_swap b α0)) _ _ _ _ _ Hp) as Hr.
@@ -748,14 +748,14 @@ Qed.
 (** The SUB-side witness-moves: SS-ForallL opens the SUBJECT (the target
     rides along b-free), SS-ForallR opens the TARGET. *)
 Lemma a_solve_sub_move_binder_l : forall Θ b m P Q Ξ P' α0,
-  ((b ~ abind_tvar) ++ Θ) ⊢ₛ (open_pskl_wrt_pskl P (pskl_var_f b))
-    ≼[ m ] Q ⤳ Ξ ⨾ P' ->
+  {{ ((b ~ abind_tvar) ++ Θ) ⊢ₛ (open_pskl_wrt_pskl P (pskl_var_f b))
+    ≼[ m ] Q ⤳ Ξ ⨾ P' }}a ->
   b `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
   α0 `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q
       `union` ftvar_in_pskl P' ->
-  ((α0 ~ abind_tvar) ++ swap_aenv b α0 Θ)
+  {{ ((α0 ~ abind_tvar) ++ swap_aenv b α0 Θ)
     ⊢ₛ (open_pskl_wrt_pskl P (pskl_var_f α0)) ≼[ m ] Q
-     ⤳ (swap_aenv b α0 Ξ) ⨾ (subst_pskl_in_pskl (pskl_var_f α0) b P').
+     ⤳ (swap_aenv b α0 Ξ) ⨾ (subst_pskl_in_pskl (pskl_var_f α0) b P') }}a.
 Proof.
   intros Θ b m P Q Ξ P' α0 Hp Hb Hα0.
   pose proof ((proj1 (a_solve_sub_eq_swap b α0)) _ _ _ _ _ _ Hp) as Hr.
@@ -768,14 +768,14 @@ Proof.
 Qed.
 
 Lemma a_solve_sub_move_binder_r : forall Θ b A B Ξ P' α0,
-  ((b ~ abind_tvar) ++ Θ) ⊢ₛ A ≼[ mode_tc ]
-    (open_pskl_wrt_pskl B (pskl_var_f b)) ⤳ Ξ ⨾ P' ->
+  {{ ((b ~ abind_tvar) ++ Θ) ⊢ₛ A ≼[ mode_tc ]
+    (open_pskl_wrt_pskl B (pskl_var_f b)) ⤳ Ξ ⨾ P' }}a ->
   b `notin` ftvar_in_pskl A `union` ftvar_in_pskl B ->
   α0 `notin` ftvar_in_pskl A `union` ftvar_in_pskl B
       `union` ftvar_in_pskl P' ->
-  ((α0 ~ abind_tvar) ++ swap_aenv b α0 Θ)
+  {{ ((α0 ~ abind_tvar) ++ swap_aenv b α0 Θ)
     ⊢ₛ A ≼[ mode_tc ] (open_pskl_wrt_pskl B (pskl_var_f α0))
-     ⤳ (swap_aenv b α0 Ξ) ⨾ (subst_pskl_in_pskl (pskl_var_f α0) b P').
+     ⤳ (swap_aenv b α0 Ξ) ⨾ (subst_pskl_in_pskl (pskl_var_f α0) b P') }}a.
 Proof.
   intros Θ b A B Ξ P' α0 Hp Hb Hα0.
   pose proof ((proj1 (a_solve_sub_eq_swap b α0)) _ _ _ _ _ _ Hp) as Hr.
@@ -788,14 +788,14 @@ Proof.
 Qed.
 
 Lemma a_solve_eq_move_binder_tophole_l : forall Θ b P Q Ξ P' α0,
-  ((b ~ abind_tvar) ++ Θ) ⊢ₑ (pskl_tophole P)
-    ∼ (open_pskl_wrt_pskl Q (pskl_var_f b)) ⤳ Ξ ⨾ P' ->
+  {{ ((b ~ abind_tvar) ++ Θ) ⊢ₑ (pskl_tophole P)
+    ∼ (open_pskl_wrt_pskl Q (pskl_var_f b)) ⤳ Ξ ⨾ P' }}a ->
   b `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
   α0 `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q
       `union` ftvar_in_pskl P' ->
-  ((α0 ~ abind_tvar) ++ swap_aenv b α0 Θ)
+  {{ ((α0 ~ abind_tvar) ++ swap_aenv b α0 Θ)
     ⊢ₑ (pskl_tophole P) ∼ (open_pskl_wrt_pskl Q (pskl_var_f α0))
-     ⤳ (swap_aenv b α0 Ξ) ⨾ (subst_pskl_in_pskl (pskl_var_f α0) b P').
+     ⤳ (swap_aenv b α0 Ξ) ⨾ (subst_pskl_in_pskl (pskl_var_f α0) b P') }}a.
 Proof.
   intros Θ b P Q Ξ P' α0 Hp Hb Hα0.
   pose proof ((proj2 (a_solve_sub_eq_swap b α0)) _ _ _ _ _ Hp) as Hr.
@@ -812,14 +812,14 @@ Proof.
 Qed.
 
 Lemma a_solve_eq_move_binder_tophole_r : forall Θ b P Q Ξ P' α0,
-  ((b ~ abind_tvar) ++ Θ) ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f b))
-    ∼ (pskl_tophole Q) ⤳ Ξ ⨾ P' ->
+  {{ ((b ~ abind_tvar) ++ Θ) ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f b))
+    ∼ (pskl_tophole Q) ⤳ Ξ ⨾ P' }}a ->
   b `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
   α0 `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q
       `union` ftvar_in_pskl P' ->
-  ((α0 ~ abind_tvar) ++ swap_aenv b α0 Θ)
+  {{ ((α0 ~ abind_tvar) ++ swap_aenv b α0 Θ)
     ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f α0)) ∼ (pskl_tophole Q)
-     ⤳ (swap_aenv b α0 Ξ) ⨾ (subst_pskl_in_pskl (pskl_var_f α0) b P').
+     ⤳ (swap_aenv b α0 Ξ) ⨾ (subst_pskl_in_pskl (pskl_var_f α0) b P') }}a.
 Proof.
   intros Θ b P Q Ξ P' α0 Hp Hb Hα0.
   pose proof ((proj2 (a_solve_sub_eq_swap b α0)) _ _ _ _ _ Hp) as Hr.
@@ -845,7 +845,7 @@ Qed.
 
 (** (K1) at the list level: the block is undefined flexibles only. *)
 Lemma a_solve_cstr_decls : forall Θ 𝒞 P Ξ P',
-  Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' -> a_decls Ξ.
+  {{ Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' }}a -> a_decls Ξ.
 Proof.
   intros Θ 𝒞 P Ξ P' H; induction H.
   - constructor.
@@ -859,7 +859,7 @@ Qed.
     whole content, and it is why the rules thread rather than run both halves
     at [Θ]. *)
 Lemma a_solve_cstr_generated_fresh : forall Θ 𝒞 P Ξ P',
-  Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' ->
+  {{ Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' }}a ->
   forall α, α `in` dom Ξ -> α `notin` ftvar_in_aenv Θ.
 Proof.
   intros Θ 𝒞 P Ξ P' H; induction H; intros α Hin.

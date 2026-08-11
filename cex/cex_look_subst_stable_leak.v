@@ -6,10 +6,10 @@
     direction of the paper's lemma:constraint-collection-stable-substitution,
     algorithmic-proofs tex:504-520):
 
-      Θ ⊢ P ∼[α] P' ⤳ Ξ ⨾ 𝒞  ->  β <> α -> α ∉ ftv P0 -> lc P0 ->
-      Θ ⊢ (subst P0 β P) ∼[α] P' ⤳ Ξ ⨾ 𝒞          (* SAME Ξ, SAME 𝒞 *)
+      {{ Θ ⊢ P ∼[α] P' ⤳ Ξ ⨾ 𝒞 }}a  ->  β <> α -> α ∉ ftv P0 -> lc P0 ->
+      {{ Θ ⊢ (subst P0 β P) ∼[α] P' ⤳ Ξ ⨾ 𝒞          (* SAME Ξ, SAME 𝒞 *)
 
-    Under the COFINITE encoding that was true: the shared 𝒞 could not mention
+    Under the COFINITE encoding that was true }}a: the shared 𝒞 could not mention
     any binder, so the family could simply be rebuilt at binders avoiding
     [P0].  With LE-ForallInh exists-fresh, the derivation OWNS one binder
     [β0] and LEAKS it into 𝒞 — and a [P0] that happens to contain [β0] is
@@ -63,18 +63,18 @@ Definition cex_tgt : pskl :=
 
 Lemma cex_run : forall Θ α β β0,
   β0 <> α -> β0 <> β -> β0 `notin` ftvar_in_aenv Θ -> α <> β ->
-  Θ ⊢ (cex_src α β) ∼[ α ] cex_tgt
-    ⤳ nil ⨾ (a_cstr_eq (pskl_var_f β0) :: nil).
+  {{ Θ ⊢ (cex_src α β) ∼[ α ] cex_tgt
+    ⤳ nil ⨾ (a_cstr_eq (pskl_var_f β0) :: nil) }}a.
 Proof.
   intros Θ α β β0 Hβ0α Hβ0β Hβ0Θ Hαβ.
   apply a_lookeq__forall_inh with (β := β0);
     [ cbn; clear - Hβ0α Hβ0β Hβ0Θ; fsetdec | ].
   unfold open_pskl_wrt_pskl; cbn.
-  assert (Harr : ((β0 ~ abind_tvar) ++ Θ) ⊢
+  assert (Harr : {{ ((β0 ~ abind_tvar) ++ Θ) ⊢
                    (pskl_arrow (pskl_var_f α) (pskl_var_f β)) ∼[ α ]
                    (pskl_arrow (pskl_var_f β0) (pskl_var_f β0))
                  ⤳ (nil ++ nil)
-                 ⨾ ((a_cstr_eq (pskl_var_f β0) :: nil) ++ nil))
+                 ⨾ ((a_cstr_eq (pskl_var_f β0) :: nil) ++ nil) }}a)
     by (apply a_lookeq__arrow;
         [ apply a_lookeq__var
         | apply a_lookeq__absent; cbn; clear - Hαβ; fsetdec ]).
@@ -98,8 +98,8 @@ Qed.
 
 Lemma cex_subst_no_run : forall Θ α β0,
   β0 <> α ->
-  ~ (Θ ⊢ (cex_src α β0) ∼[ α ] cex_tgt
-       ⤳ nil ⨾ (a_cstr_eq (pskl_var_f β0) :: nil)).
+  ~ ({{ Θ ⊢ (cex_src α β0) ∼[ α ] cex_tgt
+       ⤳ nil ⨾ (a_cstr_eq (pskl_var_f β0) :: nil) }}a).
 Proof.
   intros Θ α β0 Hβ0α Hd.
   unfold cex_src, cex_tgt in Hd.
@@ -109,7 +109,7 @@ Proof.
                 | Habs : _ `notin` _ |- _ => clear - Habs; fsetdec end ].
   (* LE-ForallInh at some δ.  Its side condition forces δ ≠ β0 … *)
   match goal with
-  | Hδ : ?δ `notin` add _ _ , Hprem : _ ⊢ _ ∼[ _ ] _ ⤳ _ ⨾ _ |- _ =>
+  | Hδ : ?δ `notin` add _ _ , Hprem : {{ _ ⊢ _ ∼[ _ ] _ ⤳ _ ⨾ _ }}a |- _ =>
       assert (Hδβ0 : δ <> β0) by (cbn in Hδ; clear - Hδ; fsetdec);
       unfold open_pskl_wrt_pskl in Hprem; cbn in Hprem;
       inversion Hprem; subst
@@ -120,7 +120,7 @@ Proof.
   (* … and the ARROW row's left leg can only be LE-Var, which deposits the
      rule's OWN binder δ — so the collected list is [δ ≐], never [β0 ≐]. *)
   match goal with
-  | Hl : _ ⊢ (pskl_var_f ?a) ∼[ ?a ] _ ⤳ _ ⨾ _ |- _ =>
+  | Hl : {{ _ ⊢ (pskl_var_f ?a) ∼[ ?a ] _ ⤳ _ ⨾ _ }}a |- _ =>
       inversion Hl; subst
   end;
     try solve [ cbn in *; match goal with
@@ -133,9 +133,9 @@ Qed.
 (** THE REFUTATION. *)
 Theorem look_subst_stable_unconditional_is_false :
   ~ (forall Θ α P P' Ξ 𝒞,
-       Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 ->
+       {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
        forall β P0, β <> α -> α `notin` ftvar_in_pskl P0 -> lc_pskl P0 ->
-       Θ ⊢ (subst_pskl_in_pskl P0 β P) ∼[ α ] P' ⤳ Ξ ⨾ 𝒞).
+       {{ Θ ⊢ (subst_pskl_in_pskl P0 β P) ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a).
 Proof.
   intro Hclaim.
   (* three distinct atoms, all outside the (empty) context *)

@@ -55,9 +55,9 @@ Set Implicit Arguments.
 (* ===================================================================== *)
 
 Lemma refine_syn_hole_inv : forall Θ Δ S T,
-  Θ ⨟ Δ ⊢ᵣᵃᵈ S ⊳ T ->
+  {{ Θ ⨟ Δ ⊢ᵣ S ⊳ T }}ad ->
   S = bskl_hole ->
-  exists P1, T = pskl_to_bskl_syn P1 /\ Θ ⨟ empty ⊢ₚₛᵃ P1.
+  exists P1, T = pskl_to_bskl_syn P1 /\ {{ Θ ⨟ empty ⊢ₚₛ P1 }}a.
 Proof.
   intros Θ Δ S T H. induction H; intros HS; try discriminate HS.
   - (* __hole : the fill IS a synthesised painting *)
@@ -70,13 +70,13 @@ Proof.
 Qed.
 
 Lemma ad_precise_hole_inv : forall Θ Δ P,
-  Θ ⨟ Δ ⊢ₚᵣᵃᵈ pskl_hole ⊑ P ->
+  {{ Θ ⨟ Δ ⊢ₚᵣ pskl_hole ⊑ P }}ad ->
   exists P1, pskl_to_bskl_inh P = pskl_to_bskl_syn P1
-             /\ Θ ⨟ empty ⊢ₚₛᵃ P1.
+             /\ {{ Θ ⨟ empty ⊢ₚₛ P1 }}a.
 Proof. intros Θ Δ P H. exact (refine_syn_hole_inv H eq_refl). Qed.
 
 Lemma ad_precise_hole_all_absurd : forall Θ Δ P,
-  ~ (Θ ⨟ Δ ⊢ₚᵣᵃᵈ pskl_hole ⊑ (pskl_all_syn P)).
+  ~ ({{ Θ ⨟ Δ ⊢ₚᵣ pskl_hole ⊑ (pskl_all_syn P) }}ad).
 Proof.
   intros Θ Δ P H. destruct (ad_precise_hole_inv H) as [P1 [Heq _]].
   cbn in Heq. destruct P1; cbn in Heq; discriminate.
@@ -91,7 +91,7 @@ Section FlexSubjectAtCheck.
   Variable α : atom.
   Definition psTh : aenv := (α ~ abind_flex_mono_def ptyp_unit) ++ nil.
 
-  Lemma ps_precise : psTh ⨟ empty ⊢ₚᵣᵃᵈ (pskl_var_f α) ⊑ pskl_unit.
+  Lemma ps_precise : {{ psTh ⨟ empty ⊢ₚᵣ (pskl_var_f α) ⊑ pskl_unit }}ad.
   Proof.
     unfold ad_precise. cbn.
     apply ad_refine_syn__flex_l with (τ := ptyp_unit);
@@ -100,8 +100,8 @@ Section FlexSubjectAtCheck.
 
   (** the [P]-side derivation *)
   Lemma ps_hyp :
-    empty ⨟ psTh ⊢ᵃᵈ[ a_sub_mode_sk | mode_tc ]
-      (pskl_to_uskl pskl_unit) ⩽ (bskl_tophole bskl_unit).
+    {{ empty ⨟ psTh ⊢ˢ[ a_sub_mode_sk | mode_tc ]
+      (pskl_to_uskl pskl_unit) ⩽ (bskl_tophole bskl_unit) }}ad.
   Proof.
     cbn. apply ad_pat_sub__univ_ghost_r;
       [ reflexivity | apply guarded_uskl__unit | apply guarded_bskl__unit
@@ -112,8 +112,8 @@ Section FlexSubjectAtCheck.
       guarded subject, and the flexible is reached through the consistency
       premise's own FlexL. *)
   Lemma ps_concl :
-    empty ⨟ psTh ⊢ᵃᵈ[ a_sub_mode_sk | mode_tc ]
-      (pskl_to_uskl (pskl_var_f α)) ⩽ (bskl_tophole bskl_unit).
+    {{ empty ⨟ psTh ⊢ˢ[ a_sub_mode_sk | mode_tc ]
+      (pskl_to_uskl (pskl_var_f α)) ⩽ (bskl_tophole bskl_unit) }}ad.
   Proof.
     cbn. apply ad_pat_sub__univ_ghost_r;
       [ reflexivity | apply guarded_uskl__var | apply guarded_bskl__unit

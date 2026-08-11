@@ -46,7 +46,12 @@ Require Import src.frost.algo.pat.prop_soundness_pat.
 
 Set Implicit Arguments.
 
-Reserved Notation "Θ' ⪯ᶜᵗˣ Θ" (at level 75, no associativity).
+(* the judgement notations below live in this scope; `Open Scope` is not
+   transitive through `Require Import`, so the DECLARING file must open it *)
+Open Scope frost_ad_scope.
+
+Reserved Notation "{{ Θ' ⪯ᶜᵗˣ Θ }}ad" (at level 0, Θ at level 74,
+   format "'{{'  Θ'  ⪯ᶜᵗˣ  Θ  '}}ad'").
 
 (* ===================================================================== *)
 (*  §1  The definition (paper's ⪯ctx, three rules)                        *)
@@ -57,25 +62,25 @@ Reserved Notation "Θ' ⪯ᶜᵗˣ Θ" (at level 75, no associativity).
     through [abind_to_pskl] (a type binding reads as its skeleton). *)
 Inductive ad_ctx_precise : aenv -> aenv -> Prop :=
 | ad_ctx_precise__nil :
-    nil ⪯ᶜᵗˣ nil
+    {{ nil ⪯ᶜᵗˣ nil }}ad
 | ad_ctx_precise__copy : forall Θ' Θ x (b : abind),
     ~ abind_is_tm b ->
-    Θ' ⪯ᶜᵗˣ Θ ->
-    ((x ~ b) ++ Θ') ⪯ᶜᵗˣ ((x ~ b) ++ Θ)
+    {{ Θ' ⪯ᶜᵗˣ Θ }}ad ->
+    {{ ((x ~ b) ++ Θ') ⪯ᶜᵗˣ ((x ~ b) ++ Θ) }}ad
 | ad_ctx_precise__tm : forall Θ' Θ x (b' b : abind) (P' P : pskl),
     abind_to_pskl b' = Some P' ->
     abind_to_pskl b = Some P ->
-    Θ' ⨟ empty ⊢ₚᵣᵃᵈ P' ⊑ P ->
-    Θ' ⪯ᶜᵗˣ Θ ->
-    ((x ~ b') ++ Θ') ⪯ᶜᵗˣ ((x ~ b) ++ Θ)
-where "Θ' ⪯ᶜᵗˣ Θ" := (ad_ctx_precise Θ' Θ) : type_scope.
+    {{ Θ' ⨟ empty ⊢ₚᵣ P' ⊑ P }}ad ->
+    {{ Θ' ⪯ᶜᵗˣ Θ }}ad ->
+    {{ ((x ~ b') ++ Θ') ⪯ᶜᵗˣ ((x ~ b) ++ Θ) }}ad
+where "{{ Θ' ⪯ᶜᵗˣ Θ }}ad" := (ad_ctx_precise Θ' Θ) : frost_ad_scope.
 
 (* ===================================================================== *)
 (*  §2  Structure: domains agree, non-term entries agree                  *)
 (* ===================================================================== *)
 
 Lemma ad_ctx_precise_dom : forall Θ' Θ,
-  Θ' ⪯ᶜᵗˣ Θ -> dom Θ' [=] dom Θ.
+  {{ Θ' ⪯ᶜᵗˣ Θ }}ad -> dom Θ' [=] dom Θ.
 Proof.
   intros Θ' Θ H; induction H; simpl; fsetdec.
 Qed.
@@ -83,7 +88,7 @@ Qed.
 (** The type-level entries are the SAME — the [_mono] family's hypothesis,
     in both directions. *)
 Lemma ad_ctx_precise_tbinds_le : forall Θ' Θ,
-  Θ' ⪯ᶜᵗˣ Θ -> aenv_tbinds_le Θ Θ'.
+  {{ Θ' ⪯ᶜᵗˣ Θ }}ad -> aenv_tbinds_le Θ Θ'.
 Proof.
   intros Θ' Θ H; induction H; intros α b0 Hty Hb.
   - exact Hb.
@@ -96,7 +101,7 @@ Proof.
 Qed.
 
 Lemma ad_ctx_precise_tbinds_ge : forall Θ' Θ,
-  Θ' ⪯ᶜᵗˣ Θ -> aenv_tbinds_le Θ' Θ.
+  {{ Θ' ⪯ᶜᵗˣ Θ }}ad -> aenv_tbinds_le Θ' Θ.
 Proof.
   intros Θ' Θ H; induction H; intros α b0 Hty Hb.
   - exact Hb.
@@ -112,13 +117,13 @@ Qed.
     in [Θ'].  Needs [uniq Θ] — [binds] is positional only up to
     duplicates. *)
 Lemma ad_ctx_precise_binds_tm : forall Θ' Θ x (b : abind) (P : pskl),
-  Θ' ⪯ᶜᵗˣ Θ ->
+  {{ Θ' ⪯ᶜᵗˣ Θ }}ad ->
   uniq Θ ->
   binds x b Θ ->
   abind_to_pskl b = Some P ->
   exists (b' : abind) (P' : pskl),
     binds x b' Θ' /\ abind_to_pskl b' = Some P' /\
-    Θ' ⨟ empty ⊢ₚᵣᵃᵈ P' ⊑ P.
+    {{ Θ' ⨟ empty ⊢ₚᵣ P' ⊑ P }}ad.
 Proof.
   intros Θ' Θ x b P H; induction H; intros Huq Hb HP.
   - inversion Hb.
@@ -156,12 +161,12 @@ Qed.
 (* ===================================================================== *)
 
 Theorem ad_ctx_precise_pat : forall M Θ e Q,
-  Θ ⊢ₛᵃᵈ[ M ] e ⦂ Q ->
+  {{ Θ ⊢ˢ[ M ] e ⦂ Q }}ad ->
   forall Θ',
-  Θ' ⪯ᶜᵗˣ Θ ->
+  {{ Θ' ⪯ᶜᵗˣ Θ }}ad ->
   a_wf_aenv Θ ->
   a_wf_aenv Θ' ->
-  Θ' ⊢ₛᵃᵈ[ M ] e ⦂ Q.
+  {{ Θ' ⊢ˢ[ M ] e ⦂ Q }}ad.
 Proof.
   intros M Θ e Q H; induction H; intros Θ' Hctx HwfΘ HwfΘ';
     pose proof (ad_ctx_precise_tbinds_le Hctx) as Htle.
@@ -172,7 +177,7 @@ Proof.
     destruct (@ad_ctx_precise_binds_tm Θ' Θ x b P Hctx
                 ltac:(apply a_wf_aenv_uniq; exact HwfΘ) H H0)
       as [b' [P' [Hb' [HP' Hprec]]]].
-    assert (HwfQ' : Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q))
+    assert (HwfQ' : {{ Θ' ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a)
       by (eapply a_wf_pskl_mono; eauto).
     eapply ad_pat__var with (b := b');
       [ exact Hb' | exact HP' | exact HwfQ' | ].
@@ -191,7 +196,7 @@ Proof.
   - (* freeze *)
     apply ad_pat__freeze; auto.
   - (* abs — extend both contexts with the SAME entry (precision refl) *)
-    assert (HwfP' : Θ' ⨟ empty ⊢ₚₛᵃ P)
+    assert (HwfP' : {{ Θ' ⨟ empty ⊢ₚₛ P }}a)
       by (eapply a_wf_pskl_mono; eauto).
     apply ad_pat__abs with (L := L `union` dom Θ');
       [ assumption | exact HwfP' | assumption | ].

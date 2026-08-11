@@ -89,7 +89,7 @@ Qed.
     tophole rule re-checks its body at the empty Δ), so opening with a
     fresh variable adds nothing to the shielded set. *)
 Lemma a_wf_pskl_all_shielded_open : forall Θ Δ P α,
-  Θ ⨟ Δ ⊢ₚₛᵃ (pskl_all_syn P) ->
+  {{ Θ ⨟ Δ ⊢ₚₛ (pskl_all_syn P) }}a ->
   α `notin` dom Θ `union` ftvar_in_pskl P ->
   pskl_shielded_ftv (open_pskl_wrt_pskl P (pskl_var_f α)) [<=] dom Θ.
 Proof.
@@ -108,16 +108,16 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_consis_output_wf : forall Δ1 Δ2 Θ0 P0 P Q Θ1,
-  Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
+  {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}a ->
   a_wf_aenv Θ0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
   (forall α, α `in` (Δ1 `union` Δ2) -> binds α abind_tvar Θ0) ->
   no_flex_dep (Δ1 `union` Δ2) Θ0 ->
   flex_above_free (Δ1 `union` Δ2) Θ0 ->
   (Δ1 `union` Δ2) ∩ pskl_shielded_ftv P0 [=] empty ->
   (Δ1 `union` Δ2) ∩ pskl_shielded_ftv P [=] empty ->
-  (Θ1 ⨟ empty ⊢ₚₛᵃ Q)
+  ({{ Θ1 ⨟ empty ⊢ₚₛ Q }}a)
   /\ ((Δ1 `union` Δ2) ∩ pskl_shielded_ftv Q [=] empty)
   /\ (forall α, α `in` (Δ1 `union` Δ2) -> α `in` ftvar_in_pskl Q ->
         α `in` (ftvar_in_pskl P0 `union` ftvar_in_pskl P))
@@ -160,9 +160,9 @@ Proof.
                     binds α abind_tvar Θ1).
     { intros α Hα. destruct Hle1 as [[κ [Hid Hinc]] _].
       eapply a_inc_binds_tvar; [ exact Hinc | apply Hcov; exact Hα ]. }
-    assert (HwfP0b1 : Θ1 ⨟ empty ⊢ₚₛᵃ P0b)
+    assert (HwfP0b1 : {{ Θ1 ⨟ empty ⊢ₚₛ P0b }}a)
       by (eapply a_wf_pskl_isub; [ exact HwfP0b | exact Hle1 ]).
-    assert (HwfP21 : Θ1 ⨟ empty ⊢ₚₛᵃ P2)
+    assert (HwfP21 : {{ Θ1 ⨟ empty ⊢ₚₛ P2 }}a)
       by (eapply a_wf_pskl_isub; [ exact HwfP2 | exact Hle1 ]).
     destruct (IHHc2 Hwf1 HwfP0b1 HwfP21 Hcov1 Hnfd1 Hfaf1 Hsh0b Hsh2)
       as [HwfQ2 [HshQ2 [HprovQ2 HgQ2]]].
@@ -189,12 +189,12 @@ Proof.
       by (pose proof (dom_subset_ftvar_in_aenv Θ0); clear - H H0; fsetdec).
     assert (Hwfx : a_wf_aenv ((α ~ abind_tvar) ++ Θ0))
       by (apply a_wf_aenv__tvar; [ exact HαΘ0 | exact Hwf ]).
-    assert (HwfP0o : ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ
-                       (open_pskl_wrt_pskl P0 (pskl_var_f α)))
+    assert (HwfP0o : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
+                       (open_pskl_wrt_pskl P0 (pskl_var_f α)) }}a)
       by (apply a_wf_pskl_all_syn_open_tvar;
             [ exact HwfP0 | clear - HαΘ0 HαP0; fsetdec ]).
-    assert (HwfPo : ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ
-                      (open_pskl_wrt_pskl P (pskl_var_f α)))
+    assert (HwfPo : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
+                      (open_pskl_wrt_pskl P (pskl_var_f α)) }}a)
       by (apply a_wf_pskl_all_syn_open_tvar;
             [ exact HwfP | clear - HαΘ0 HαP; fsetdec ]).
     assert (Hcovx : forall α0, α0 `in` (add α Δ1 `union` add α Δ2) ->
@@ -231,7 +231,7 @@ Proof.
       as [HwfQ [HshQ [HprovQ _]]].
     assert (HαshQ : α `notin` pskl_shielded_ftv Q)
       by (clear - HshQ; fsetdec).
-    assert (Hwfstr : Θ1 ⨟ (add α empty) ⊢ₚₛᵃ Q).
+    assert (Hwfstr : {{ Θ1 ⨟ (add α empty) ⊢ₚₛ Q }}a).
     { apply (@a_wf_pskl_tvar_to_delta nil α Θ1 empty Q);
         [ exact HwfQ | exact HαshQ ]. }
     assert (Hα1 : α `notin` dom Θ1).
@@ -270,11 +270,11 @@ Proof.
       by (pose proof (dom_subset_ftvar_in_aenv Θ0); clear - H H0; fsetdec).
     assert (Hwfx : a_wf_aenv ((α ~ abind_tvar) ++ Θ0))
       by (apply a_wf_aenv__tvar; [ exact HαΘ0 | exact Hwf ]).
-    assert (HwfP0x : ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ (pskl_tophole P0)).
+    assert (HwfP0x : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (pskl_tophole P0) }}a).
     { eapply a_wf_pskl_delta_mono;
         [ apply (a_wf_pskl_reassoc HwfP0 α) | clear; fsetdec ]. }
-    assert (HwfPo : ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ
-                      (open_pskl_wrt_pskl P (pskl_var_f α)))
+    assert (HwfPo : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
+                      (open_pskl_wrt_pskl P (pskl_var_f α)) }}a)
       by (apply a_wf_pskl_all_syn_open_tvar;
             [ exact HwfP | clear - HαΘ0 HαP; fsetdec ]).
     assert (Hcovx : forall α0, α0 `in` (Δ1 `union` add α Δ2) ->
@@ -306,7 +306,7 @@ Proof.
       as [HwfQ [HshQ [HprovQ _]]].
     assert (HαshQ : α `notin` pskl_shielded_ftv Q)
       by (clear - HshQ; fsetdec).
-    assert (Hwfstr : Θ1 ⨟ (add α empty) ⊢ₚₛᵃ Q).
+    assert (Hwfstr : {{ Θ1 ⨟ (add α empty) ⊢ₚₛ Q }}a).
     { apply (@a_wf_pskl_tvar_to_delta nil α Θ1 empty Q);
         [ exact HwfQ | exact HαshQ ]. }
     assert (Hα1 : α `notin` dom Θ1).
@@ -368,11 +368,11 @@ Proof.
       by (pose proof (dom_subset_ftvar_in_aenv Θ0); clear - H H0; fsetdec).
     assert (Hwfx : a_wf_aenv ((α ~ abind_tvar) ++ Θ0))
       by (apply a_wf_aenv__tvar; [ exact HαΘ0 | exact Hwf ]).
-    assert (HwfP0o : ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ
-                       (open_pskl_wrt_pskl P0 (pskl_var_f α)))
+    assert (HwfP0o : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
+                       (open_pskl_wrt_pskl P0 (pskl_var_f α)) }}a)
       by (apply a_wf_pskl_all_syn_open_tvar;
             [ exact HwfP0 | clear - HαΘ0 HαP0; fsetdec ]).
-    assert (HwfPx : ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ (pskl_tophole P)).
+    assert (HwfPx : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (pskl_tophole P) }}a).
     { eapply a_wf_pskl_delta_mono;
         [ apply (a_wf_pskl_reassoc HwfP α) | clear; fsetdec ]. }
     assert (Hcovx : forall α0, α0 `in` (add α Δ1 `union` Δ2) ->
@@ -404,7 +404,7 @@ Proof.
       as [HwfQ [HshQ [HprovQ _]]].
     assert (HαshQ : α `notin` pskl_shielded_ftv Q)
       by (clear - HshQ; fsetdec).
-    assert (Hwfstr : Θ1 ⨟ (add α empty) ⊢ₚₛᵃ Q).
+    assert (Hwfstr : {{ Θ1 ⨟ (add α empty) ⊢ₚₛ Q }}a).
     { apply (@a_wf_pskl_tvar_to_delta nil α Θ1 empty Q);
         [ exact HwfQ | exact HαshQ ]. }
     assert (Hα1 : α `notin` dom Θ1).
@@ -512,11 +512,11 @@ Qed.
 (** The ∅|∅ instance of [a_consis_output_wf] — what [a_sub__arrow]'s domain
     premise and [a_sub__check]'s leaf need. *)
 Corollary a_consis_output_wf_nil : forall Θ0 P0 P Q Θ1,
-  Θ0 ⊢ᵃ[ P0 ] P ∼ Q ⊣ Θ1 ->
+  {{ Θ0 ⊢[ P0 ] P ∼ Q ⊣ Θ1 }}a ->
   a_wf_aenv Θ0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
-  Θ1 ⨟ empty ⊢ₚₛᵃ Q.
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
+  {{ Θ1 ⨟ empty ⊢ₚₛ Q }}a.
 Proof.
   intros * Hc Hwf HwfP0 HwfP.
   destruct (a_consis_output_wf Hc Hwf HwfP0 HwfP
@@ -531,10 +531,10 @@ Qed.
 
 (** The ∅|∅ ⊴/wf facts off the packaged soundness corollary. *)
 Corollary a_consis_isub_wf_nil : forall Θ0 P0 P Q Θ1,
-  Θ0 ⊢ᵃ[ P0 ] P ∼ Q ⊣ Θ1 ->
+  {{ Θ0 ⊢[ P0 ] P ∼ Q ⊣ Θ1 }}a ->
   a_wf_aenv Θ0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1.
 Proof.
   intros * Hc Hwf HwfP0 HwfP.
@@ -549,17 +549,17 @@ Qed.
 Definition sub_owf_concl (NM : a_sub_mode) (M : mode) (P0 : pskl)
     (Θ0 : aenv) (P P' : pskl) (Θ1 : aenv) : Prop :=
   a_wf_aenv Θ0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
-  Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\ Θ1 ⨟ empty ⊢ₚₛᵃ P'.
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
+  Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\ {{ Θ1 ⨟ empty ⊢ₚₛ P' }}a.
 
 Definition sub_flex_owf_concl (NM : a_sub_mode) (M : mode) (P0 : pskl)
     (Θ0 Ξ : aenv) (α : atom) (Q : pskl) (Θ1 : aenv) : Prop :=
   a_wf_aenv (Ξ ++ Θ0) ->
   a_decls Ξ ->
-  (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0 ->
+  {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a ->
   a_binds_tvar α (Ξ ++ Θ0) ->
-  (Ξ ++ Θ0) ⊴ Θ1 /\ a_wf_aenv Θ1 /\ Θ1 ⨟ empty ⊢ₚₛᵃ Q.
+  (Ξ ++ Θ0) ⊴ Θ1 /\ a_wf_aenv Θ1 /\ {{ Θ1 ⨟ empty ⊢ₚₛ Q }}a.
 
 Lemma a_sub_output_wf_bundle :
   (forall NM M P0 Θ0 P P' Θ1,
@@ -646,9 +646,9 @@ Proof.
     assert (Hmono : forall x (b : abind),
                binds x b Θ0 -> binds x b (Ξ ++ Θ0))
       by (intros x b Hb; unfold binds in *; apply in_or_app; auto).
-    assert (HwfP0' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0)
+    assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
       by (eapply a_wf_pskl_weaken; [ exact Hmono | exact HwfP0 ]).
-    assert (HwfSo : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ (open_pskl_wrt_pskl P P1)).
+    assert (HwfSo : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ (open_pskl_wrt_pskl P P1) }}a).
     { inversion HwfP as [ | | | Lb Θb Δb Pb Hbody | | ]; subst.
       apply a_wf_pskl_open with (L := Lb);
         [ intros α0 Hα0;
@@ -745,7 +745,7 @@ Proof.
       unfold disjoint in *. simpl_env in *. fsetdec. }
     assert (HwfΞΘ0 : a_wf_aenv (Ξ ++ Θ0))
       by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (Hwfpaint : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ ptyp_to_pskl τ).
+    assert (Hwfpaint : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ ptyp_to_pskl τ }}a).
     { apply a_scope_pskl_of_ptyp_vis;
         [ apply mono_ptyp_lc; exact Hm | ].
       intros α1 Hα1. right.
@@ -753,13 +753,13 @@ Proof.
       destruct Ht as [Hb | [Hb | [τ1 Hb]]];
         [ left | right; left | right; right; exists τ1 ];
         unfold binds in *; apply in_or_app; auto. }
-    assert (HwfP0' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ
-              subst_pskl_in_pskl (ptyp_to_pskl τ) β P0).
+    assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ
+              subst_pskl_in_pskl (ptyp_to_pskl τ) β P0 }}a).
     { eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ);
         [ exact HwfP0 | reflexivity | exact HβΞΘ0 | clear; fsetdec
         | apply mono_ptyp_to_pskl_guarded; exact Hm | exact Hwfpaint ]. }
-    assert (Hwfvarsub : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ
-              subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)).
+    assert (Hwfvarsub : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ
+              subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α) }}a).
     { eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ);
         [ apply a_wf_pskl__var; right; exact Hαb
         | reflexivity | exact HβΞΘ0 | clear; fsetdec
@@ -797,7 +797,7 @@ Proof.
     intros NM M P0 Θ0 Θ1 Ξ α β Q Hne Hni Hβ1 Hprem IH Hwf Hdecl HwfP0 Hαb.
     assert (Hwf' : a_wf_aenv (Ξ ++ Θ0))
       by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (HwfP0' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0)
+    assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
       by (eapply a_wf_pskl_strip_mid; eauto).
     destruct (IH Hwf' Hdecl HwfP0'
                 ltac:(eapply a_binds_tvar_strip_mid;
@@ -824,7 +824,7 @@ Proof.
     intros NM M P0 Θ0 Θ1 Ξ α β Q Hne Hni Hβ1 Hprem IH Hwf Hdecl HwfP0 Hαb.
     assert (Hwf' : a_wf_aenv (Ξ ++ Θ0))
       by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (HwfP0' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0)
+    assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
       by (eapply a_wf_pskl_strip_mid; eauto).
     destruct (IH Hwf' Hdecl HwfP0'
                 ltac:(eapply a_binds_tvar_strip_mid;
@@ -914,7 +914,7 @@ Proof.
       by (eapply a_wf_aenv_app_r; exact Hwf).
     apply a_wf_aenv_var_skl_inv in HwfT.
     destruct HwfT as [_ [HscQ0 _]].
-    assert (HscQ' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ Qpay)
+    assert (HscQ' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ Qpay }}a)
       by (eapply a_wf_pskl_weaken;
           [ intros y b0 Hb; apply binds_app_3; exact Hb | exact HscQ0 ]).
     destruct (IH Hwf' Hdecl
@@ -946,9 +946,9 @@ Qed.
 Corollary a_sub_output_wf : forall NM M P0 Θ0 P P' Θ1,
   a_sub NM M P0 Θ0 P P' Θ1 ->
   a_wf_aenv Θ0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
-  Θ1 ⨟ empty ⊢ₚₛᵃ P'.
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
+  {{ Θ1 ⨟ empty ⊢ₚₛ P' }}a.
 Proof.
   intros * Hrun Hwf HwfP0 HwfP.
   destruct ((proj1 a_sub_output_wf_bundle) _ _ _ _ _ _ _ Hrun Hwf HwfP0 HwfP)

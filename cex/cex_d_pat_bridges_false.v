@@ -4,7 +4,7 @@
     presupposition on skeleton consistency, declarative skeleton inference
     derives
 
-        x : ∀X.◇  ⊢ₛ[TI]  x  ⦂  ∀ˢX.X                        (cap_d_pat)
+        x : ∀X.◇  ⊢ˢ[TI]  x  ⦂  ∀ˢX.X                        (cap_d_pat)
 
     which [ad_pat] rejects outright ([cap_not_reachable],
     cex/cex_ad_pat_join_not_leaf_valid.v §3a).  From that this file proved
@@ -95,7 +95,7 @@ Proof. intros x. apply a_wf_exp__var. Qed.
     presupposition is now on the rule, where §2 of the sibling file refutes
     it.  The two systems no longer disagree here. *)
 Theorem cap_d_pat_excluded : forall x,
-  ~ ((capΓ x) ⊢ₛ[ mode_ti ] (exp_var_f x) ⦂ capQ).
+  ~ ({{ (capΓ x) ⊢ˢ[ mode_ti ] (exp_var_f x) ⦂ capQ }}d).
 Proof.
   intros x H.
   inversion H as [ Γ0 m0 Q0 Hwfq Hjoin
@@ -117,8 +117,8 @@ Qed.
     statement is [d_pat_to_ad] (decorated_algo/prop_conserv.v §15), which is
     now a theorem with no hypothesis at all. *)
 Theorem cap_bridge_holds : forall x,
-  (capΓ x) ⊢ₛ[ mode_ti ] (exp_var_f x) ⦂ capQ ->
-  ((x ~ abind_var_skl capP) ++ nil) ⊢ₛᵃᵈ[ mode_ti ] (exp_var_f x) ⦂ capQ.
+  {{ (capΓ x) ⊢ˢ[ mode_ti ] (exp_var_f x) ⦂ capQ }}d ->
+  {{ ((x ~ abind_var_skl capP) ++ nil) ⊢ˢ[ mode_ti ] (exp_var_f x) ⦂ capQ }}ad.
 Proof.
   intros x H. exact (d_pat_to_ad mode_ti (capΓ x) (exp_var_f x) capQ H).
 Qed.

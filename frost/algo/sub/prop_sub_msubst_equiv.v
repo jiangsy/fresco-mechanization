@@ -1,4 +1,4 @@
-(** TAGGED SUBJECT EQUIVALENCE [Θ ⊢ R ≡ᵘ R'] and its msubst generation.
+(** TAGGED SUBJECT EQUIVALENCE [{{ Θ ⊢ R ≡ᵘ R' }}a] and its msubst generation.
 
     P7b's Sub-Arrow (and later ForallR / P7a) re-enter the induction after a
     consistency/subtyping run has advanced the context Θ0 to Θ1: the paper
@@ -9,7 +9,7 @@
     paintings at the flexible leaves — never equal.
 
     The motive absorbs this by carrying the join at an arbitrary subject [T]
-    with [Θ ⊢ T ≡ᵘ msubst κ R] (see prop_completeness_sub.v): the IH then
+    with [{{ Θ ⊢ T ≡ᵘ msubst κ R }}a] (see prop_completeness_sub.v): the IH then
     takes the ORIGINAL join derivation unchanged, and only the consistency
     LEAVES ever transport — via the erasure of ≡ᵘ into ≡ˢ and the EXISTING
     pskl-level transports (skl_tyequiv_{consis,refine_syn_f,refine_pskl_f}_
@@ -51,44 +51,49 @@ Require Import src.frost.algo.sub.prop_completeness_sub_precise.     (* fold_fle
 
 Set Implicit Arguments.
 
-Reserved Notation "Θ ⊢ R1 ≡ᵘ R2"
-  (at level 75, R1 at level 74, R2 at level 74, no associativity).
+(* the judgement notations below live in this scope; `Open Scope` is not
+   transitive through `Require Import`, so the DECLARING file must open it *)
+Open Scope frost_a_scope.
+
+Reserved Notation "{{ Θ ⊢ R1 ≡ᵘ R2 }}a"
+  (at level 0, R1 at level 74, R2 at level 74,
+   format "'{{'  Θ  ⊢  R1  ≡ᵘ  R2  '}}a'").
 
 Inductive a_uskl_tyequiv (Θ : aenv) : uskl -> uskl -> Prop :=
 | a_uskl_tyequiv__mono : forall τ1 τ2,
     mono_ptyp τ1 -> mono_ptyp τ2 ->
     a_wf_ptyp Θ τ1 -> a_wf_ptyp Θ τ2 ->
-    Θ ⊢ τ1 ≡ᵗ τ2 ->
-    Θ ⊢ (ptyp_to_uskl_syn τ1) ≡ᵘ (ptyp_to_uskl_syn τ2)
+    {{ Θ ⊢ τ1 ≡ᵗ τ2 }}a ->
+    {{ Θ ⊢ (ptyp_to_uskl_syn τ1) ≡ᵘ (ptyp_to_uskl_syn τ2) }}a
 | a_uskl_tyequiv__unit :
-    Θ ⊢ uskl_unit ≡ᵘ uskl_unit
+    {{ Θ ⊢ uskl_unit ≡ᵘ uskl_unit }}a
 | a_uskl_tyequiv__var : forall α,
-    Θ ⊢ (uskl_var_f α) ≡ᵘ (uskl_var_f α)
+    {{ Θ ⊢ (uskl_var_f α) ≡ᵘ (uskl_var_f α) }}a
 | a_uskl_tyequiv__arrow : forall R1 R2 R1' R2',
-    Θ ⊢ R1 ≡ᵘ R1' ->
-    Θ ⊢ R2 ≡ᵘ R2' ->
-    Θ ⊢ (uskl_arrow R1 R2) ≡ᵘ (uskl_arrow R1' R2')
+    {{ Θ ⊢ R1 ≡ᵘ R1' }}a ->
+    {{ Θ ⊢ R2 ≡ᵘ R2' }}a ->
+    {{ Θ ⊢ (uskl_arrow R1 R2) ≡ᵘ (uskl_arrow R1' R2') }}a
 | a_uskl_tyequiv__all_syn : forall L R R',
     (forall α, α `notin` L ->
-       Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
-           (open_uskl_wrt_uskl R' (uskl_var_f α))) ->
-    Θ ⊢ (uskl_all_syn R) ≡ᵘ (uskl_all_syn R')
+       {{ Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
+           (open_uskl_wrt_uskl R' (uskl_var_f α)) }}a) ->
+    {{ Θ ⊢ (uskl_all_syn R) ≡ᵘ (uskl_all_syn R') }}a
 | a_uskl_tyequiv__all_etag : forall L ε R R',
     (forall α, α `notin` L ->
-       Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
-           (open_uskl_wrt_uskl R' (uskl_var_f α))) ->
-    Θ ⊢ (uskl_all_etag ε R) ≡ᵘ (uskl_all_etag ε R')
+       {{ Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
+           (open_uskl_wrt_uskl R' (uskl_var_f α)) }}a) ->
+    {{ Θ ⊢ (uskl_all_etag ε R) ≡ᵘ (uskl_all_etag ε R') }}a
 | a_uskl_tyequiv__hole :
-    Θ ⊢ uskl_hole ≡ᵘ uskl_hole
+    {{ Θ ⊢ uskl_hole ≡ᵘ uskl_hole }}a
 | a_uskl_tyequiv__holeg :
-    Θ ⊢ uskl_holeg ≡ᵘ uskl_holeg
+    {{ Θ ⊢ uskl_holeg ≡ᵘ uskl_holeg }}a
 | a_uskl_tyequiv__tophole : forall R R',
-    Θ ⊢ R ≡ᵘ R' ->
-    Θ ⊢ (uskl_tophole R) ≡ᵘ (uskl_tophole R')
+    {{ Θ ⊢ R ≡ᵘ R' }}a ->
+    {{ Θ ⊢ (uskl_tophole R) ≡ᵘ (uskl_tophole R') }}a
 | a_uskl_tyequiv__topholeg : forall R R',
-    Θ ⊢ R ≡ᵘ R' ->
-    Θ ⊢ (uskl_topholeg R) ≡ᵘ (uskl_topholeg R')
-where "Θ ⊢ R1 ≡ᵘ R2" := (a_uskl_tyequiv Θ R1 R2) : type_scope.
+    {{ Θ ⊢ R ≡ᵘ R' }}a ->
+    {{ Θ ⊢ (uskl_topholeg R) ≡ᵘ (uskl_topholeg R') }}a
+where "{{ Θ ⊢ R1 ≡ᵘ R2 }}a" := (a_uskl_tyequiv Θ R1 R2) : frost_a_scope.
 
 (* ===================================================================== *)
 (*  Reflexivity (from local closure) and symmetry                          *)
@@ -96,7 +101,7 @@ where "Θ ⊢ R1 ≡ᵘ R2" := (a_uskl_tyequiv Θ R1 R2) : type_scope.
 
 Lemma a_uskl_tyequiv_refl : forall Θ R,
   lc_uskl R ->
-  Θ ⊢ R ≡ᵘ R.
+  {{ Θ ⊢ R ≡ᵘ R }}a.
 Proof.
   intros Θ R Hlc; induction Hlc;
     try (apply a_uskl_tyequiv__all_syn with (L := empty); intros α _; auto);
@@ -105,8 +110,8 @@ Proof.
 Qed.
 
 Lemma a_uskl_tyequiv_sym : forall Θ R R',
-  Θ ⊢ R ≡ᵘ R' ->
-  Θ ⊢ R' ≡ᵘ R.
+  {{ Θ ⊢ R ≡ᵘ R' }}a ->
+  {{ Θ ⊢ R' ≡ᵘ R }}a.
 Proof.
   intros Θ R R' H; induction H;
     try (apply a_uskl_tyequiv__all_syn with (L := L); intros α Hα; auto);
@@ -133,7 +138,7 @@ Proof.
 Qed.
 
 Lemma a_uskl_tyequiv_ghost_free : forall Θ R R',
-  Θ ⊢ R ≡ᵘ R' ->
+  {{ Θ ⊢ R ≡ᵘ R' }}a ->
   uskl_ghost_free R -> uskl_ghost_free R'.
 Proof.
   intros Θ R R' H; induction H; intros Hg.
@@ -168,8 +173,8 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_uskl_tyequiv_erase : forall Θ R R',
-  Θ ⊢ R ≡ᵘ R' ->
-  Θ ⊢ ⌊ R ⌋ˢ ≡ˢ ⌊ R' ⌋ˢ.
+  {{ Θ ⊢ R ≡ᵘ R' }}a ->
+  {{ Θ ⊢ ⌊ R ⌋ˢ ≡ˢ ⌊ R' ⌋ˢ }}a.
 Proof.
   intros Θ R R' H; induction H; cbn.
   - (* mono paintings erase to the type's own skeleton *)
@@ -204,7 +209,7 @@ Lemma a_inc_equiv_msubst_uskl : forall Θ0 κ σ Θ R,
   κ ∷ Θ0 ⊑ Θ ->
   σ ∷ Θ0 ⊑ Θ ->
   a_wf_aenv Θ0 ->
-  Θ ⊢ (msubst_uskl_syn κ R) ≡ᵘ (msubst_uskl_syn σ R).
+  {{ Θ ⊢ (msubst_uskl_syn κ R) ≡ᵘ (msubst_uskl_syn σ R) }}a.
 Proof.
   intros Θ0 κ σ Θ R Hlc; revert Θ0 κ σ Θ.
   induction Hlc; intros Θ0 κ σ Θ Hftv Hie Hincκ Hincσ Hwf0; cbn.
@@ -281,7 +286,7 @@ Qed.
 
 (** A ghost is ≡ᵘ-inert: mono paintings are never ghosts. *)
 Lemma a_uskl_tyequiv_hole_l_inv : forall Θ R',
-  Θ ⊢ uskl_hole ≡ᵘ R' ->
+  {{ Θ ⊢ uskl_hole ≡ᵘ R' }}a ->
   R' = uskl_hole.
 Proof.
   intros Θ R' H; inversion H; subst; try reflexivity.
@@ -289,7 +294,7 @@ Proof.
 Qed.
 
 Lemma a_uskl_tyequiv_holeg_l_inv : forall Θ R',
-  Θ ⊢ uskl_holeg ≡ᵘ R' ->
+  {{ Θ ⊢ uskl_holeg ≡ᵘ R' }}a ->
   R' = uskl_holeg.
 Proof.
   intros Θ R' H; inversion H; subst; try reflexivity.
@@ -298,7 +303,7 @@ Qed.
 
 (** Both sides of ≡ᵘ are locally closed. *)
 Lemma a_uskl_tyequiv_lc : forall Θ R R',
-  Θ ⊢ R ≡ᵘ R' ->
+  {{ Θ ⊢ R ≡ᵘ R' }}a ->
   lc_uskl R /\ lc_uskl R'.
 Proof.
   intros Θ R R' H; induction H.
@@ -322,7 +327,7 @@ Qed.
 (** Guardedness transports along ≡ᵘ (only the head matters, and a guarded
     head is congruent or a mono painting on both sides). *)
 Lemma a_uskl_tyequiv_guarded : forall Θ R R',
-  Θ ⊢ R ≡ᵘ R' ->
+  {{ Θ ⊢ R ≡ᵘ R' }}a ->
   guarded_uskl R ->
   guarded_uskl R'.
 Proof.
@@ -333,7 +338,7 @@ Proof.
   - apply guarded_uskl__var.
   - (* arrow congruence: the components' lc comes from the relation *)
     match goal with
-    | H1 : _ ⊢ _ ≡ᵘ ?A, H2 : _ ⊢ _ ≡ᵘ ?B
+    | H1 : {{ _ ⊢ _ ≡ᵘ ?A }}a, H2 : {{ _ ⊢ _ ≡ᵘ ?B }}a
       |- guarded_uskl (uskl_arrow ?A ?B) =>
         apply guarded_uskl__arrow;
         [ exact (proj2 (a_uskl_tyequiv_lc H1))
@@ -369,8 +374,8 @@ Proof. induction P; cbn; f_equal; auto. Qed.
 Lemma msubst_ptyp_tyequiv_pointwise : forall Θ κ A,
   lc_ptyp A ->
   msubst_lc κ ->
-  (forall β, Θ ⊢ (ptyp_var_f β) ≡ᵗ (msubst_lookup κ β)) ->
-  Θ ⊢ A ≡ᵗ (msubst_ptyp κ A).
+  (forall β, {{ Θ ⊢ (ptyp_var_f β) ≡ᵗ (msubst_lookup κ β) }}a) ->
+  {{ Θ ⊢ A ≡ᵗ (msubst_ptyp κ A) }}a.
 Proof.
   intros Θ κ A Hlc; revert Θ κ; induction Hlc; intros Θ κ Hκlc Hpt; cbn.
   - apply a_tyequiv__refl; apply lc_ptyp_unit.
@@ -386,8 +391,8 @@ Qed.
 (** [a_tyequiv_weaken_cons] at a single cons entry (the [++]-form does not
     unify against a cons). *)
 Lemma a_tyequiv_weaken_cons1 : forall Θ (x : atom) (b : abind) A A',
-  Θ ⊢ A ≡ᵗ A' ->
-  ((x, b) :: Θ) ⊢ A ≡ᵗ A'.
+  {{ Θ ⊢ A ≡ᵗ A' }}a ->
+  {{ ((x, b) :: Θ) ⊢ A ≡ᵗ A' }}a.
 Proof.
   intros Θ x b A A' H.
   change ((x, b) :: Θ) with ((x ~ b) ++ Θ).
@@ -397,7 +402,7 @@ Qed.
 Lemma a_tyequiv_downarrow_refl : forall Θ,
   a_wf_aenv Θ ->
   forall A, lc_ptyp A ->
-  Θ ⊢ A ≡ᵗ ⇓ᵗ[Θ] A.
+  {{ Θ ⊢ A ≡ᵗ ⇓ᵗ[Θ] A }}a.
 Proof.
   (* [A0]: the [__var_typ] case's rule binder is [A] *)
   intros Θ Hwf; induction Hwf; intros A0 HlcA.
@@ -469,8 +474,8 @@ Qed.
 Lemma a_tyequiv_arrow_inv : forall Θ A1 A2 B1 B2,
   a_wf_aenv Θ ->
   lc_ptyp A1 -> lc_ptyp A2 -> lc_ptyp B1 -> lc_ptyp B2 ->
-  Θ ⊢ (ptyp_arrow A1 A2) ≡ᵗ (ptyp_arrow B1 B2) ->
-  (Θ ⊢ A1 ≡ᵗ B1) /\ (Θ ⊢ A2 ≡ᵗ B2).
+  {{ Θ ⊢ (ptyp_arrow A1 A2) ≡ᵗ (ptyp_arrow B1 B2) }}a ->
+  ({{ Θ ⊢ A1 ≡ᵗ B1 }}a) /\ ({{ Θ ⊢ A2 ≡ᵗ B2 }}a).
 Proof.
   intros Θ A1 A2 B1 B2 Hwf Hlc1 Hlc2 Hlc1' Hlc2' Heq.
   pose proof (a_tyequiv_downarrow Hwf Heq) as Hdn.
@@ -504,12 +509,12 @@ Proof.
 Qed.
 
 Lemma a_uskl_tyequiv_mono_r_inv : forall Θ X Y,
-  Θ ⊢ X ≡ᵘ Y ->
+  {{ Θ ⊢ X ≡ᵘ Y }}a ->
   forall τ, Y = ptyp_to_uskl_syn τ ->
   mono_ptyp τ ->
   a_wf_ptyp Θ τ ->
   exists τ', X = ptyp_to_uskl_syn τ' /\ mono_ptyp τ' /\
-             a_wf_ptyp Θ τ' /\ Θ ⊢ τ' ≡ᵗ τ.
+             a_wf_ptyp Θ τ' /\ {{ Θ ⊢ τ' ≡ᵗ τ }}a.
 Proof.
   intros Θ X Y H; induction H; intros τ0 HeqY Hm Hwf.
   - (* __mono *)
@@ -563,9 +568,9 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_uskl_tyequiv_trans : forall Θ X Y,
-  Θ ⊢ X ≡ᵘ Y ->
-  forall Z, Θ ⊢ Y ≡ᵘ Z ->
-  Θ ⊢ X ≡ᵘ Z.
+  {{ Θ ⊢ X ≡ᵘ Y }}a ->
+  forall Z, {{ Θ ⊢ Y ≡ᵘ Z }}a ->
+  {{ Θ ⊢ X ≡ᵘ Z }}a.
 Proof.
   intros Θ X Y H1; induction H1; intros Z HYZ.
   - (* __mono : both ends of the composite are paintings *)
@@ -583,13 +588,13 @@ Proof.
     + (* the middle is a mono painting — so is the whole left arrow *)
       lazymatch goal with
       | He : ptyp_to_uskl_syn ?t = uskl_arrow _ _ |- _ =>
-          assert (Hfull : Θ ⊢ (uskl_arrow R1 R2) ≡ᵘ (ptyp_to_uskl_syn t))
+          assert (Hfull : {{ Θ ⊢ (uskl_arrow R1 R2) ≡ᵘ (ptyp_to_uskl_syn t) }}a)
             by (rewrite He; apply a_uskl_tyequiv__arrow; assumption)
       end.
       lazymatch goal with
       | Hm1 : mono_ptyp ?t1, Hw1 : a_wf_ptyp _ ?t1,
-        Ht : Θ ⊢ ?t1 ≡ᵗ ?t2,
-        Hfull : Θ ⊢ (uskl_arrow R1 R2) ≡ᵘ (ptyp_to_uskl_syn ?t1) |- _ =>
+        Ht : {{ Θ ⊢ ?t1 ≡ᵗ ?t2 }}a,
+        Hfull : {{ Θ ⊢ (uskl_arrow R1 R2) ≡ᵘ (ptyp_to_uskl_syn ?t1) }}a |- _ =>
           destruct (a_uskl_tyequiv_mono_r_inv Hfull eq_refl Hm1 Hw1)
             as [τx [HX [Hmx [Hwfx Heqx]]]]
       end.
@@ -604,7 +609,7 @@ Proof.
           destruct Hm0; cbn in He; discriminate He
       end.
     + lazymatch goal with
-      | Hz : forall α : atom, α `notin` ?L2 -> Θ ⊢ _ ≡ᵘ _ |- _ =>
+      | Hz : forall α : atom, α `notin` ?L2 -> {{ Θ ⊢ _ ≡ᵘ _ }}a |- _ =>
           apply a_uskl_tyequiv__all_syn with (L := L `union` L2);
           intros α Hα;
           apply H0; [ clear - Hα; fsetdec | apply Hz; clear - Hα; fsetdec ]
@@ -616,7 +621,7 @@ Proof.
           destruct Hm0; cbn in He; discriminate He
       end.
     + lazymatch goal with
-      | Hz : forall α : atom, α `notin` ?L2 -> Θ ⊢ _ ≡ᵘ _ |- _ =>
+      | Hz : forall α : atom, α `notin` ?L2 -> {{ Θ ⊢ _ ≡ᵘ _ }}a |- _ =>
           apply a_uskl_tyequiv__all_etag with (L := L `union` L2);
           intros α Hα;
           apply H0; [ clear - Hα; fsetdec | apply Hz; clear - Hα; fsetdec ]
@@ -648,8 +653,8 @@ Qed.
 
 Lemma a_uskl_tyequiv_arrow_arrow_inv : forall Θ A B A' B',
   a_wf_aenv Θ ->
-  Θ ⊢ (uskl_arrow A B) ≡ᵘ (uskl_arrow A' B') ->
-  (Θ ⊢ A ≡ᵘ A') /\ (Θ ⊢ B ≡ᵘ B').
+  {{ Θ ⊢ (uskl_arrow A B) ≡ᵘ (uskl_arrow A' B') }}a ->
+  ({{ Θ ⊢ A ≡ᵘ A' }}a) /\ ({{ Θ ⊢ B ≡ᵘ B' }}a).
 Proof.
   intros Θ A B A' B' Hwf H; inversion H; subst.
   - (* __mono *)
@@ -708,8 +713,8 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_uskl_tyequiv_weaken_cons : forall Θ R R' (x : atom) (b : abind),
-  Θ ⊢ R ≡ᵘ R' ->
-  ((x ~ b) ++ Θ) ⊢ R ≡ᵘ R'.
+  {{ Θ ⊢ R ≡ᵘ R' }}a ->
+  {{ ((x ~ b) ++ Θ) ⊢ R ≡ᵘ R' }}a.
 Proof.
   intros Θ R R' x b H; induction H.
   - apply a_uskl_tyequiv__mono; try assumption;
@@ -741,10 +746,10 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_uskl_tyequiv_all_syn_inv : forall Θ R R',
-  Θ ⊢ (uskl_all_syn R) ≡ᵘ (uskl_all_syn R') ->
+  {{ Θ ⊢ (uskl_all_syn R) ≡ᵘ (uskl_all_syn R') }}a ->
   exists L, forall α, α `notin` L ->
-    Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
-        (open_uskl_wrt_uskl R' (uskl_var_f α)).
+    {{ Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
+        (open_uskl_wrt_uskl R' (uskl_var_f α)) }}a.
 Proof.
   intros Θ R R' H; inversion H; subst.
   - (* __mono : a monotype painting is never ∀-headed *)
@@ -756,10 +761,10 @@ Proof.
 Qed.
 
 Lemma a_uskl_tyequiv_all_etag_inv : forall Θ ε R R',
-  Θ ⊢ (uskl_all_etag ε R) ≡ᵘ (uskl_all_etag ε R') ->
+  {{ Θ ⊢ (uskl_all_etag ε R) ≡ᵘ (uskl_all_etag ε R') }}a ->
   exists L, forall α, α `notin` L ->
-    Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
-        (open_uskl_wrt_uskl R' (uskl_var_f α)).
+    {{ Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
+        (open_uskl_wrt_uskl R' (uskl_var_f α)) }}a.
 Proof.
   intros Θ ε R R' H; inversion H; subst.
   - lazymatch goal with
@@ -787,11 +792,11 @@ Qed.
     a Θ-fresh variable: the [__mono] leaves are Θ-scoped, hence untouched;
     every other row is a congruence. *)
 Lemma a_uskl_tyequiv_subst : forall Θ X Y,
-  Θ ⊢ X ≡ᵘ Y ->
+  {{ Θ ⊢ X ≡ᵘ Y }}a ->
   forall β ψ,
   lc_uskl ψ ->
   β `notin` dom Θ ->
-  Θ ⊢ (subst_uskl_in_uskl ψ β X) ≡ᵘ (subst_uskl_in_uskl ψ β Y).
+  {{ Θ ⊢ (subst_uskl_in_uskl ψ β X) ≡ᵘ (subst_uskl_in_uskl ψ β Y) }}a.
 Proof.
   intros Θ X Y H; induction H; intros β ψ Hlcψ HβΘ.
   - (* __mono : both paintings are β-free *)
@@ -831,10 +836,10 @@ Qed.
     closed) argument. *)
 Lemma a_uskl_tyequiv_open : forall Θ R R' ψ L,
   (forall α, α `notin` L ->
-     Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
-         (open_uskl_wrt_uskl R' (uskl_var_f α))) ->
+     {{ Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
+         (open_uskl_wrt_uskl R' (uskl_var_f α)) }}a) ->
   lc_uskl ψ ->
-  Θ ⊢ (open_uskl_wrt_uskl R ψ) ≡ᵘ (open_uskl_wrt_uskl R' ψ).
+  {{ Θ ⊢ (open_uskl_wrt_uskl R ψ) ≡ᵘ (open_uskl_wrt_uskl R' ψ) }}a.
 Proof.
   intros Θ R R' ψ L Hfam Hlcψ.
   destruct (atom_fresh
@@ -850,7 +855,7 @@ Qed.
     and the [__mono] row's paintings are tag-free on both sides.  (Lets
     the ≡ᵘ-subject transports carry `ftag`-conditioned premises across.) *)
 Lemma a_uskl_tyequiv_ftag : forall Θ R R',
-  Θ ⊢ R ≡ᵘ R' ->
+  {{ Θ ⊢ R ≡ᵘ R' }}a ->
   ftag_in_uskl R [=] ftag_in_uskl R'.
 Proof.
   intros Θ R R' H; induction H; simpl; try (clear - IHa_uskl_tyequiv; fsetdec).
@@ -891,13 +896,13 @@ Qed.
 Lemma ad_pat_consis_mono_row_subject : forall Θ τ1 τ2 Ψ Q,
   mono_ptyp τ1 -> mono_ptyp τ2 ->
   a_wf_ptyp Θ τ1 -> a_wf_ptyp Θ τ2 ->
-  Θ ⊢ τ1 ≡ᵗ τ2 ->
+  {{ Θ ⊢ τ1 ≡ᵗ τ2 }}a ->
   a_wf_aenv Θ ->
-  Ψ ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn τ2) ∼ Q ->
-  Ψ ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn τ1) ∼ Q.
+  {{ Ψ ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn τ2) ∼ Q }}ad ->
+  {{ Ψ ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn τ1) ∼ Q }}ad.
 Proof.
   intros Θ τ1 τ2 Ψ Q Hm1 Hm2 Hw1 Hw2 Ht Hwf Hc.
-  assert (Heq : Θ ⊢ (ptyp_to_uskl_syn τ2) ≡ᵘ (ptyp_to_uskl_syn τ1))
+  assert (Heq : {{ Θ ⊢ (ptyp_to_uskl_syn τ2) ≡ᵘ (ptyp_to_uskl_syn τ1) }}a)
     by (apply a_uskl_tyequiv_sym;
         apply a_uskl_tyequiv__mono; assumption).
   pose proof (a_uskl_tyequiv_erase Heq) as He.
@@ -910,10 +915,10 @@ Proof.
 Qed.
 
 Lemma ad_pat_consis_tyequiv_subject : forall Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
   a_wf_aenv Θ ->
-  forall T, Θ ⊢ T ≡ᵘ R ->
-  Ψ ⨟ Θ ⊢ᵃᵈ T ∼ Q.
+  forall T, {{ Θ ⊢ T ≡ᵘ R }}a ->
+  {{ Ψ ⨟ Θ ⊢ˢ T ∼ Q }}ad.
 Proof.
   intros Ψ Θ R Q Hc; induction Hc; intros Hwf T Htyeq.
   - (* __unit *)
@@ -924,7 +929,7 @@ Proof.
           destruct Hm2; cbn in He2; try discriminate He2
       end.
       match goal with
-      | Ht : Θ ⊢ _ ≡ᵗ ?t2 |- _ =>
+      | Ht : {{ Θ ⊢ _ ≡ᵗ ?t2 }}a |- _ =>
           eapply ad_pat_consis_mono_row_subject with (τ2 := t2)
       end;
       [ assumption | apply mono_ptyp__unit | assumption | assumption
@@ -943,7 +948,7 @@ Proof.
       | He2 : uskl_var_f _ = uskl_var_f α |- _ => injection He2 as ->
       end.
       match goal with
-      | Ht : Θ ⊢ _ ≡ᵗ ?t2 |- _ =>
+      | Ht : {{ Θ ⊢ _ ≡ᵗ ?t2 }}a |- _ =>
           eapply ad_pat_consis_mono_row_subject with (τ2 := t2)
       end;
       [ assumption | apply mono_ptyp__var | assumption | assumption
@@ -964,7 +969,7 @@ Proof.
           injection He2 as <- <-
       end.
       match goal with
-      | Ht : Θ ⊢ _ ≡ᵗ ?t2 |- _ =>
+      | Ht : {{ Θ ⊢ _ ≡ᵗ ?t2 }}a |- _ =>
           eapply ad_pat_consis_mono_row_subject with (τ2 := t2)
       end;
       [ assumption | apply mono_ptyp__arrow; assumption
@@ -982,7 +987,7 @@ Proof.
             destruct Hm2; cbn in He2; discriminate He2
         end | ].
     lazymatch goal with
-    | Hfam : forall α, α `notin` ?LL -> _ ⊢ _ ≡ᵘ _ |- _ =>
+    | Hfam : forall α, α `notin` ?LL -> {{ _ ⊢ _ ≡ᵘ _ }}a |- _ =>
         eapply ad_pat_consis__forall_inh_tagged
           with (L := L `union` LL `union` dom Θ) (Ψ0 := Ψ0);
         [ intros α Hα | exact H1 ];
@@ -998,7 +1003,7 @@ Proof.
             destruct Hm2; cbn in He2; discriminate He2
         end | ].
     lazymatch goal with
-    | Hfam : forall α, α `notin` ?LL -> _ ⊢ _ ≡ᵘ _ |- _ =>
+    | Hfam : forall α, α `notin` ?LL -> {{ _ ⊢ _ ≡ᵘ _ }}a |- _ =>
         eapply ad_pat_consis__forall_inh_untagged
           with (L := L `union` LL `union` dom Θ);
         intros α Hα;
@@ -1014,7 +1019,7 @@ Proof.
             destruct Hm2; cbn in He2; discriminate He2
         end | ].
     lazymatch goal with
-    | Hfam : forall α, α `notin` ?LL -> _ ⊢ _ ≡ᵘ _ |- _ =>
+    | Hfam : forall α, α `notin` ?LL -> {{ _ ⊢ _ ≡ᵘ _ }}a |- _ =>
         eapply ad_pat_consis__forall_syn_tagged
           with (L := L `union` LL `union` dom Θ);
         intros α Hα;
@@ -1030,7 +1035,7 @@ Proof.
             destruct Hm2; cbn in He2; discriminate He2
         end | ].
     lazymatch goal with
-    | Hfam : forall α, α `notin` ?LL -> _ ⊢ _ ≡ᵘ _ |- _ =>
+    | Hfam : forall α, α `notin` ?LL -> {{ _ ⊢ _ ≡ᵘ _ }}a |- _ =>
         eapply ad_pat_consis__forall_syn
           with (L := L `union` LL `union` dom Θ);
         intros α Hα;
@@ -1076,7 +1081,7 @@ Proof.
             destruct Hm2; cbn in He2; discriminate He2
         end | ].
     lazymatch goal with
-    | Ht0 : Θ ⊢ ?T0 ≡ᵘ R |- _ =>
+    | Ht0 : {{ Θ ⊢ ?T0 ≡ᵘ R }}a |- _ =>
         eapply ad_pat_consis__tophole_inh with (L := L `union` dom Θ);
         intros α Hα;
         eapply (H0 α ltac:(clear - Hα; solve_notin_auto));
@@ -1103,7 +1108,7 @@ Proof.
       | He2 : uskl_var_f _ = uskl_var_f α |- _ => injection He2 as ->
       end.
       match goal with
-      | Ht : Θ ⊢ _ ≡ᵗ ?t2 |- _ =>
+      | Ht : {{ Θ ⊢ _ ≡ᵗ ?t2 }}a |- _ =>
           eapply ad_pat_consis_mono_row_subject with (τ2 := t2)
       end;
       [ assumption | apply mono_ptyp__var | assumption | assumption
@@ -1125,7 +1130,7 @@ Qed.
     monotype-hood — the fact that makes the ≡ᵗ [__all] row vacuous in the
     painting transports below. *)
 Lemma a_tyequiv_mono_iff : forall Θ A B,
-  Θ ⊢ A ≡ᵗ B ->
+  {{ Θ ⊢ A ≡ᵗ B }}a ->
   a_wf_aenv Θ ->
   (mono_ptyp A <-> mono_ptyp B).
 Proof.
@@ -1148,7 +1153,7 @@ Proof.
 Qed.
 
 Lemma a_tyequiv_preserves_mono : forall Θ A B,
-  Θ ⊢ A ≡ᵗ B ->
+  {{ Θ ⊢ A ≡ᵗ B }}a ->
   a_wf_aenv Θ ->
   mono_ptyp A ->
   mono_ptyp B.
@@ -1160,7 +1165,7 @@ Qed.
 Lemma flex_def_paint_tyequiv : forall Θ α τ,
   binds α (abind_flex_mono_def τ) Θ ->
   a_wf_aenv Θ ->
-  Θ ⊢ (ptyp_to_uskl_syn τ) ≡ᵘ (uskl_var_f α).
+  {{ Θ ⊢ (ptyp_to_uskl_syn τ) ≡ᵘ (uskl_var_f α) }}a.
 Proof.
   intros Θ α τ Hb Hwf.
   change (uskl_var_f α) with (ptyp_to_uskl_syn (ptyp_var_f α)).
@@ -1239,12 +1244,12 @@ Qed.
 
 (** Consistency at a painting subject transports along ≡ᵗ (any types). *)
 Lemma ad_pat_consis_paint_skl_transport : forall Θ A B,
-  Θ ⊢ A ≡ᵗ B ->
+  {{ Θ ⊢ A ≡ᵗ B }}a ->
   forall Θ', a_wf_aenv Θ' ->
   (forall x b, binds x b Θ -> binds x b Θ') ->
   forall Ψ Q,
-  Ψ ⨟ Θ' ⊢ᵃᵈ (ptyp_to_uskl_syn A) ∼ Q ->
-  Ψ ⨟ Θ' ⊢ᵃᵈ (ptyp_to_uskl_syn B) ∼ Q.
+  {{ Ψ ⨟ Θ' ⊢ˢ (ptyp_to_uskl_syn A) ∼ Q }}ad ->
+  {{ Ψ ⨟ Θ' ⊢ˢ (ptyp_to_uskl_syn B) ∼ Q }}ad.
 Proof.
   intros Θ A B Heq Θ' Hwf' Hmon Ψ Q Hc.
   pose proof (a_tyequiv_pskl Heq) as Hs.
@@ -1255,7 +1260,7 @@ Proof.
 Qed.
 
 Lemma ad_pat_sub_g_paint_tyequiv_subject : forall Θ A B,
-  Θ ⊢ A ≡ᵗ B ->
+  {{ Θ ⊢ A ≡ᵗ B }}a ->
   a_wf_aenv Θ ->
   forall Θ',
   mono_ptyp A ->
@@ -1440,7 +1445,7 @@ Qed.
 Lemma ad_pat_sub_g_tyequiv_subject : forall n NM M Ψ Θ R Q,
   ad_pat_sub_g n NM M Ψ Θ R Q ->
   a_wf_aenv Θ ->
-  forall T', Θ ⊢ T' ≡ᵘ R ->
+  forall T', {{ Θ ⊢ T' ≡ᵘ R }}a ->
   ad_pat_sub_g n NM M Ψ Θ T' Q.
 Proof.
   intros n NM M Ψ Θ R Q HD; induction HD; intros Hwf T' Htyeq.
@@ -1480,7 +1485,7 @@ Proof.
           by (rewrite He2; eapply ad_pat_sub_g__arrow; eassumption)
       end.
       lazymatch goal with
-      | Hm1 : mono_ptyp ?t1, Ht : Θ ⊢ ?t1 ≡ᵗ ?t2 |- _ =>
+      | Hm1 : mono_ptyp ?t1, Ht : {{ Θ ⊢ ?t1 ≡ᵗ ?t2 }}a |- _ =>
         destruct (@ad_pat_sub_g_paint_tyequiv_subject
                     Θ t1 t2 Ht Hwf Θ Hm1 Hwf (fun x b Hb => Hb))
           as [_ d2]
@@ -1502,7 +1507,7 @@ Proof.
     assert (Hlcψ : lc_uskl ψ)
       by (apply is_tskl_lc; inversion H2; subst; assumption).
     lazymatch goal with
-    | Hfam : forall α, α `notin` ?LL -> _ ⊢ _ ≡ᵘ _ |- _ =>
+    | Hfam : forall α, α `notin` ?LL -> {{ _ ⊢ _ ≡ᵘ _ }}a |- _ =>
       eapply ad_pat_sub_g__forall_l_tagged with (Ψ' := Ψ') (ψ := ψ);
         [ exact H | exact H0
         | clear - H1 Hft; fsetdec
@@ -1522,7 +1527,7 @@ Proof.
     assert (Hlcψ : lc_uskl ψ)
       by (apply is_tskl_lc; inversion H2; subst; assumption).
     lazymatch goal with
-    | Hfam : forall α, α `notin` ?LL -> _ ⊢ _ ≡ᵘ _ |- _ =>
+    | Hfam : forall α, α `notin` ?LL -> {{ _ ⊢ _ ≡ᵘ _ }}a |- _ =>
       eapply ad_pat_sub_g__forall_l_untagged with (Ψ' := Ψ') (ψ := ψ);
         [ exact H | exact H0
         | clear - H1 Hft; fsetdec
@@ -1578,7 +1583,7 @@ Proof.
         by (change (ptyp_to_uskl_syn (ptyp_var_f α)) with (uskl_var_f α);
             eapply ad_pat_sub_g__flex_mono; [ exact H | exact HD ]).
       lazymatch goal with
-      | Hm1 : mono_ptyp ?t1, Ht : Θ ⊢ ?t1 ≡ᵗ ptyp_var_f α |- _ =>
+      | Hm1 : mono_ptyp ?t1, Ht : {{ Θ ⊢ ?t1 ≡ᵗ ptyp_var_f α }}a |- _ =>
         destruct (@ad_pat_sub_g_paint_tyequiv_subject
                     Θ t1 (ptyp_var_f α) Ht Hwf Θ Hm1 Hwf (fun x b Hb => Hb))
           as [_ d2]

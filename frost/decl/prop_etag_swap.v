@@ -171,14 +171,14 @@ Qed.
 Inductive d_sub_tagsin :
   atoms -> mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :=
 | d_sub_tagsin__infer : forall U Ψ Γ C B,
-    empty ⨟ Γ ⊢ C ∼ B ->
+    {{ empty ⨟ Γ ⊢ C ∼ B }}d ->
     is_styp B ->
     Ψ [=] empty ->
     d_sub_tagsin U mode_ti Ψ Γ C B
 | d_sub_tagsin__check : forall U Ψ Γ C B,
     guarded_utyp C ->
     guarded_btyp B ->
-    Ψ ⨟ Γ ⊢ C ∼ B ->
+    {{ Ψ ⨟ Γ ⊢ C ∼ B }}d ->
     is_ityp B ->
     d_sub_tagsin U mode_tc Ψ Γ C B
 | d_sub_tagsin__forall_r : forall U α Ψ Γ C B,
@@ -188,7 +188,7 @@ Inductive d_sub_tagsin :
       (open_btyp_wrt_btyp B (btyp_var_f α)) ->
     d_sub_tagsin U mode_tc Ψ Γ C (btyp_all_inh B)
 | d_sub_tagsin__arg : forall U Ψ Ψ1 Ψ2 Γ m C1 C2 B1 B2,
-    Ψ1 ⨟ Γ ⊢ C1 ∼ B1 ->
+    {{ Ψ1 ⨟ Γ ⊢ C1 ∼ B1 }}d ->
     d_sub_tagsin U m Ψ2 Γ C2 B2 ->
     Ψ [=] Ψ1 `union` Ψ2 ->
     d_sub_tagsin U (mode_fn m) Ψ Γ (utyp_arrow C1 C2) (btyp_arrow B1 B2)
@@ -198,7 +198,7 @@ Inductive d_sub_tagsin :
     Ψ' ∩ (ftag_in_utyp (utyp_all_etag ε C)) [=] empty ->
     Ψ' [<=] U ->                     (* ⭐ the ONE premise [d_sub] does not have *)
     d_tags Ψ' ph ->
-    Γ ⊢ᵤ ph ->
+    {{ Γ ⊢ᵤ ph }}d ->
     is_ttyp ph ->
     d_sub_tagsin U m (Ψ `union` Ψ') Γ (open_utyp_wrt_utyp C ph) B ->
     d_sub_tagsin U m Ψ Γ (utyp_all_etag ε C) B
@@ -208,7 +208,7 @@ Inductive d_sub_tagsin :
     Ψ' ∩ (ftag_in_utyp (utyp_all_syn C)) [=] empty ->
     Ψ' [<=] U ->
     d_tags Ψ' ph ->
-    Γ ⊢ᵤ ph ->
+    {{ Γ ⊢ᵤ ph }}d ->
     is_ttyp ph ->
     d_sub_tagsin U m (Ψ `union` Ψ') Γ (open_utyp_wrt_utyp C ph) B ->
     d_sub_tagsin U m Ψ Γ (utyp_all_syn C) B.
@@ -236,7 +236,7 @@ Qed.
     bound with this node's own [Ψ'] — with NO freshening anywhere; that is the
     whole point of separating collection from moving. *)
 Lemma d_sub_to_tagsin : forall m Ψ Γ C B,
-  Ψ ⨟ Γ ⊢[ m ] C ⩽ B -> exists U, d_sub_tagsin U m Ψ Γ C B.
+  {{ Ψ ⨟ Γ ⊢[ m ] C ⩽ B }}d -> exists U, d_sub_tagsin U m Ψ Γ C B.
 Proof.
   intros m Ψ Γ C B H; induction H.
   - exists empty. apply d_sub_tagsin__infer; assumption.
@@ -372,7 +372,7 @@ Qed.
     rewrites the WHOLE derivation here — which is exactly why this can be
     iterated where a per-node freshening cannot (see the header). *)
 Lemma d_sub_freshen : forall m Ψ Γ C B S,
-  Ψ ⨟ Γ ⊢[ m ] C ⩽ B ->
+  {{ Ψ ⨟ Γ ⊢[ m ] C ⩽ B }}d ->
   S ∩ Ψ [=] empty ->
   S ∩ (ftag_in_utyp C) [=] empty ->
   exists U, U ∩ S [=] empty /\ d_sub_tagsin U m Ψ Γ C B.

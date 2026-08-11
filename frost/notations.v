@@ -9,48 +9,60 @@
     - Greek letters in the paper map to the same letters here (Γ, Δ, Ψ, ε, φ, ψ).
     - Mode subscripts are written as `⊢[ M ]`; subtyping writes the tag context first as `Δ ⨟ Γ ⊢[ M ]`.
 
-    ** THE TURNSTILE LEGEND — two axes, two devices.
+    ** THE JUDGEMENT LEGEND — the system is the DELIMITER, not the turnstile.
 
-    This is the whole scheme; it is what makes "the same relation, three
-    systems" readable at a glance.  ⚠️ Each axis owns ONE device, and they
-    must never swap: a subscript `ₐ` for the algorithmic system (what
-    `a_consis` / `a_sub` / `a_pat` / `a_typing` used until 2026-08-09) reads
-    as a SORT, and an `ᵃ` that means `a_` in one file and `ad_` in another
-    (what `a_wf_pskl` and `ad_pat_consis` did) is worse than no marker.
+    Every judgement of every system is written inside a system-tagged brace
+    pair, and each pair is the delimiter of its own notation scope:
 
-    - SUPERSCRIPT = the SYSTEM.  Absence is the declarative base case:
-        `⊢`     declarative        (`d_*`,  over Γ)
-        `⊢ᵃᵈ`   declarative over algorithmic contexts (`ad_*`, over Θ)
-        `⊢ᵃ`    algorithmic        (`a_*`,  over Θ, with `⊣ Θ'`)
-        `⊢ᵗ`    ε-tagged decorated (`a_subtag` / `a_consistag`, dotted `⩽˙`/`∼˙`)
-        `⊢ˢ`    syntax-directed    (`d_sd_typing`)
-      ⚠️ The superscript holds the system and NOTHING ELSE — never two marks
-      at once.  `ad_sd_typing` used to read `⊢ˢᵃᵈ`, stacking the variant mark
-      `ˢ` on the system mark `ᵃᵈ`, which invites reading `ˢᵃᵈ` as one opaque
-      system name.  It is plain `Θ ⊢ᵃᵈ[ M ] e ⦂ B` now: the ad system has NO
-      other typing judgement (there is no `ad_typing`), so `ˢ` had nothing to
-      disambiguate from — the same reason `ad_pat_consis` carries no `ₛ`.
-      `⊢ˢ` survives only in the declarative system, where `d_typing` and
-      `d_sd_typing` genuinely coexist.  Dropping it also makes the three
-      copies of typing differ by the system mark ALONE: `⊢[ M ] e ⦂ A`,
-      `⊢ᵃᵈ[ M ] e ⦂ B`, `⊢ᵃ[ m ; P0 ] e ⦂ B ⊣ Θ'`.
-    - SUBSCRIPT = WHICH JUDGEMENT — the sort first of all, and it is the SAME
-      in every system, so the superscript is the only thing that changes
-      between one relation's copies.  Absence is the type sort:
-        `⊢`     types      (ptyp / btyp / utyp — A, B, C)
-        `⊢ₛ`    skeletons  (pskl / bskl / uskl — P, Q, R)
-      The sort subscript appears exactly where a system has one relation PER
-      sort, so that it is what tells the siblings apart: `Γ ⊢ₛ[ M ] e ⦂ P`
-      (skeleton inference) vs `Γ ⊢[ M ] e ⦂ A` (typing); `⊢ₛ R ∼ Q` vs
-      `⊢ C ∼ B`.  Where ONE relation covers both sorts, the sort is a bracket
-      INDEX instead and the subscript is omitted, so it is never stated twice:
-      `Θ ⊢ᵃ[ N | m | P0 ] P ⩽ Q ⊣ Θ'`, `Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q`.
-      For well-formedness the sort is spelled out — `⊢ₚ`/`⊢ᵦ`/`⊢ᵤ` (ptyp /
-      btyp / utyp), `⊢ₚₛ`/`⊢ᵤₛ` for their skeleton counterparts — and where a
-      system has several same-sort relations the subscript names the relation:
-      `⊢ᵣ` refinement, `⊢ᵣₚ` its pskl-subject variant, `⊢ₚᵣ` precision.
-      All of them keep their spelling across systems (`⊢ᵣ` / `⊢ᵣᵃᵈ`,
-      `⊢ₚₛ` / `⊢ₚₛᵃ`, `⊢ₚᵣᵃᵈ`).
+        {{ Γ ⨟ Δ ⊢ᵣ Q ⊳ P }}d      declarative           (`d_*`,  over Γ)
+        {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad     declarative over algorithmic contexts
+                                                          (`ad_*`, over Θ)
+        {{ Θ ⊢[ m ; P0 ] e ⦂ B ⊣ Θ' }}a    algorithmic    (`a_*`, with `⊣ Θ'`)
+        {{ Θ ⊢[ Δ1 | Δ2 | P0 | Ψ ] R ∼ Q ⊣ Θ' }}t   ε-tagged decorated
+                                                          (`a_consistag` / `a_subtag`)
+
+    The four scopes are `frost_d_scope` / `frost_ad_scope` / `frost_a_scope` /
+    `frost_t_scope`, delimited `%d` / `%ad` / `%a` / `%t`; every file that
+    declares a judgement notation in one of them also `Open Scope`s it, so the
+    scope is open exactly where the notation is visible.
+
+    ⭐ WHY THE DELIMITER AND NOT A SUPERSCRIPT.  The tree spent two passes
+    trying to carry the system on the turnstile (`⊢ₐ`, then `⊢ᵃ`/`⊢ᵃᵈ`), and
+    both failed the same way: the mark competed with the marks the judgement
+    itself needs.  `⊢ᵣᵃᵈ` / `⊢ᵣₚᵃᵈ` / `⊢ₚᵣᵃᵈ` / `⊢ₛᵃᵈ[` stack three glyphs
+    where two carry meaning, and `ad_sd_typing` had to DROP its `ˢ` (leaving a
+    plain `⊢ᵃᵈ[ M ]`) purely to avoid a three-deep superscript.  Moving the
+    system out to the delimiter frees the turnstile completely, so one
+    relation's copies across systems now differ by the delimiter ALONE:
+
+        {{ Γ ⨟ Δ ⊢ᵣ Q ⊳ P }}d   ~   {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad
+        {{ Γ ⊢ˢᵈ[ M ] e ⦂ A }}d  ~   {{ Θ ⊢ˢᵈ[ M ] e ⦂ B }}ad
+        {{ Γ ⨟ Δ ⊢ₚₛ P }}d      ~   {{ Θ ⨟ Δ ⊢ₚₛ P }}a
+
+    and every judgement is self-delimiting, so it reads unambiguously in a
+    long premise chain and needs no level juggling against `->` / `/\`.
+
+    - SUPERSCRIPT = WHICH COPY of the judgement.  Absence is the type sort:
+        `⊢`      types              (ptyp / btyp / utyp — A, B, C)
+        `⊢ˢ`     skeletons          (pskl / bskl / uskl — P, Q, R)
+        `⊢ˢᵈ`    syntax-directed     (`d_sd_typing`, `ad_sd_typing`)
+      So `{{ Γ ⊢ˢ[ M ] e ⦂ P }}d` is skeleton inference and
+      `{{ Γ ⊢[ M ] e ⦂ A }}d` is typing; `{{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d` is skeleton
+      consistency and `{{ Ψ ⨟ Γ ⊢ C ∼ B }}d` is type consistency.
+      ⚠️ `ˢ` and `ˢᵈ` are SIBLINGS, not a mark and its refinement: `ˢ` says the
+      subject sort is skeletons, `ˢᵈ` says the RULES are the syntax-directed
+      ones.  They never combine (there is no skeleton-sorted `d_sd_pat`).
+      Where ONE relation covers both sorts the sort is a bracket INDEX
+      instead, so it is never stated twice: `{{ Θ ⊢[ N | m | P0 ] P ⩽ Q ⊣ Θ' }}a`,
+      `{{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad`.
+    - SUBSCRIPT = WHICH RELATION, when a system has several at one sort:
+      `⊢ᵣ` refinement, `⊢ᵣₚ` its pskl-subject variant, `⊢ₚᵣ` precision,
+      `⊢ₛ` / `⊢ₑ` the two solve-layer judgements.  Well-formedness spells its
+      sort out the same way: `⊢ₚ`/`⊢ᵦ`/`⊢ᵤ` (ptyp / btyp / utyp) and
+      `⊢ₚₛ`/`⊢ᵤₛ` for their skeleton counterparts.
+      ⚙ `⊢ₛ` (a_solve_sub) and `⊢ˢ` (the skeleton sort) are different axes and
+      only ever meet inside `}}a`, where the solve pair's `≼[ m ] … ⤳ … ⨾ …`
+      shape tells them apart at a glance.
     - `[ … ]` carries the indices (mode M, sort N, input skeleton P0, tag
       scope Ψ); `⊣ Θ'` the output context; the tag context comes FIRST
       (`Ψ ⨟ Γ ⊢ …`) and the ∀-scope Δ AFTER (`Γ ⨟ Δ ⊢ …`).
@@ -61,16 +73,18 @@
       that only holds at `M = TI` — at TC the skeleton is an input.  The
       paper writes its own mode-generic typing with a plain colon for the
       same reason (`\typp`, macro.tex:1087).
+    - ⚙ The ε-tagged system no longer needs its dots: `a_consistag` /
+      `a_subtag` wrote `∼˙` / `⩽˙` only to stay apart from the algorithmic
+      `∼` / `⩽`, and `}}t` now does that job, so they are plain again — the
+      one thing that still separates them from `}}a` INSIDE the braces is the
+      fourth bracket index, the tag scope `Ψ`.
 
-    ⚙ Judgements that exist ONLY inside the algorithm (`a_looksub`,
-    `a_solve_sub` / `a_solve_consis`, `a_solve_cstr`, `a_extract`, `a_assign`,
-    `a_unify`, `a_split`, `a_tyequiv`) carry no system marker: the marker's
-    job is to separate one relation's copies across systems, and these have
-    no counterpart to be confused with — their own symbols (`≼ … ⤳`, `≔`,
-    `≈ᵘ`, `▹`, `≡ᵗ`) already identify them.  ⚠️ The one residue is
-    `a_solve_sub`'s `⊢ₛ` / `a_solve_consis`'s `⊢ₑ`, where the subscript marks
-    the SOLVE layer rather than a sort; renaming those needs a look-vs-solve
-    marker, which is a separate pass (see docs/PROPOSAL-notation-pass.md §6).
+    ⚙ WHAT IS NOT WRAPPED.  The delimiter separates SYSTEMS, so a relation
+    with no cross-system twin keeps its bare form: the information-increase
+    relation `κ ∷ Θ ⊑ Θ'` (`a_inc`) and its ordering `Θ ⊴ Θ'` (`a_isub`), and
+    the conversion / substitution functions (`⌊ R ⌋ˢ`, `⇓ᵗ[ Θ ] A`,
+    `{ A' ᵗ/ₜ α } A`).  These are meta-level, not judgements of a system, and
+    wrapping them would say "which system?" about something that has no answer.
 *)
 
 Require Export Metalib.Metatheory.
@@ -78,6 +92,36 @@ Require Export Metalib.Metatheory.
 Require Export src.frost.def_ott.
 Require Export src.frost.prop_ln.
 Require Export src.frost.def_extra.
+
+(** ** The four judgement scopes.
+
+    Declared here (so every judgement notation, wherever it is defined, can
+    name its scope) and OPENED here as well.  Coq replays a file's `Open
+    Scope` when that file is `Import`ed, and a judgement notation is only
+    visible through an import chain that reaches its defining file — which in
+    turn reaches this one — so the "declare the notation in scope X" and
+    "scope X is open" halves always travel together.  ⚠️ Each defining file
+    (`decl/def_extra.v`, `algo/def_extra.v`, …) repeats the `Open Scope` for
+    its own scopes: `Open Scope` is NOT transitive through `Require Import`,
+    so a file that reaches a notation via a two-step chain would otherwise see
+    the notation with its scope closed, and Coq reports that as the notation
+    simply not existing. *)
+
+Declare Scope frost_d_scope.
+Delimit Scope frost_d_scope with d.
+Open Scope frost_d_scope.
+
+Declare Scope frost_ad_scope.
+Delimit Scope frost_ad_scope with ad.
+Open Scope frost_ad_scope.
+
+Declare Scope frost_a_scope.
+Delimit Scope frost_a_scope with a.
+Open Scope frost_a_scope.
+
+Declare Scope frost_t_scope.
+Delimit Scope frost_t_scope with t.
+Open Scope frost_t_scope.
 
 (** ** Atom sets.
 

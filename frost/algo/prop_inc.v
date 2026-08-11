@@ -261,7 +261,7 @@ Lemma a_inc_var_inv : forall x A Θ κ Θ',
   κ ∷ ((x ~ abind_var_typ A) ++ Θ) ⊑ Θ' ->
   exists Ξ A' Θ2,
     Θ' = Ξ ++ (x ~ abind_var_typ A') ++ Θ2 /\
-    (Θ2 ⊢ A' ≡ᵗ (msubst_ptyp κ A)) /\
+    ({{ Θ2 ⊢ A' ≡ᵗ (msubst_ptyp κ A) }}a) /\
     a_suffix Ξ /\ κ ∷ Θ ⊑ Θ2.
 Proof. intros * H; inversion H; subst; eauto 8. Qed.
 
@@ -269,7 +269,7 @@ Lemma a_inc_var_skl_inv : forall x P Θ κ Θ',
   κ ∷ ((x ~ abind_var_skl P) ++ Θ) ⊑ Θ' ->
   exists Ξ P' Θ2,
     Θ' = Ξ ++ (x ~ abind_var_skl P') ++ Θ2 /\
-    (Θ2 ⊢ P' ≡ˢ (msubst_pskl κ P)) /\
+    ({{ Θ2 ⊢ P' ≡ˢ (msubst_pskl κ P) }}a) /\
     a_suffix Ξ /\ κ ∷ Θ ⊑ Θ2.
 Proof. intros * H; inversion H; subst; eauto 8. Qed.
 
@@ -305,8 +305,8 @@ Qed.
     is monotone in the context. *)
 Lemma a_tyequiv_weaken : forall Θ Θ' A A',
   (forall x b, binds x b Θ -> binds x b Θ') ->
-  Θ ⊢ A ≡ᵗ A' ->
-  Θ' ⊢ A ≡ᵗ A'.
+  {{ Θ ⊢ A ≡ᵗ A' }}a ->
+  {{ Θ' ⊢ A ≡ᵗ A' }}a.
 Proof.
   intros * Hmon Heq; induction Heq; eauto using a_tyequiv.
 Qed.
@@ -403,7 +403,7 @@ Lemma a_inc_binds_flex_def : forall Θ κ Θ' α τ0,
   κ ∷ Θ ⊑ Θ' ->
   is_id_msubst κ ->
   binds α (abind_flex_mono_def τ0) Θ ->
-  a_binds_tvar α Θ' /\ Θ' ⊢ (ptyp_var_f α) ≡ᵗ τ0.
+  a_binds_tvar α Θ' /\ {{ Θ' ⊢ (ptyp_var_f α) ≡ᵗ τ0 }}a.
 Proof.
   intros * Hinc; induction Hinc; intros Hid Hb.
   - inversion Hb.
@@ -456,8 +456,8 @@ Qed.
 Lemma a_tyequiv_isub : forall Θ κ Θ' A A',
   κ ∷ Θ ⊑ Θ' ->
   is_id_msubst κ ->
-  Θ ⊢ A ≡ᵗ A' ->
-  Θ' ⊢ A ≡ᵗ A'.
+  {{ Θ ⊢ A ≡ᵗ A' }}a ->
+  {{ Θ' ⊢ A ≡ᵗ A' }}a.
 Proof.
   intros * Hinc Hid Heq; induction Heq.
   - apply a_tyequiv__refl; auto.
@@ -479,8 +479,8 @@ Qed.
 
 (** Type equivalence embeds into skeleton equivalence. *)
 Lemma a_tyequiv_pskl : forall Θ A A',
-  Θ ⊢ A ≡ᵗ A' ->
-  Θ ⊢ (ptyp_to_pskl A) ≡ˢ (ptyp_to_pskl A').
+  {{ Θ ⊢ A ≡ᵗ A' }}a ->
+  {{ Θ ⊢ (ptyp_to_pskl A) ≡ˢ (ptyp_to_pskl A') }}a.
 Proof.
   intros * Heq; induction Heq; simpl.
   - apply a_pskl_tyequiv__refl. apply lc_ptyp_to_pskl; auto.
@@ -496,8 +496,8 @@ Qed.
 Lemma a_pskl_tyequiv_isub : forall Θ κ Θ' P P',
   κ ∷ Θ ⊑ Θ' ->
   is_id_msubst κ ->
-  Θ ⊢ P ≡ˢ P' ->
-  Θ' ⊢ P ≡ˢ P'.
+  {{ Θ ⊢ P ≡ˢ P' }}a ->
+  {{ Θ' ⊢ P ≡ˢ P' }}a.
 Proof.
   intros * Hinc Hid Heq; induction Heq.
   - apply a_pskl_tyequiv__refl; auto.
@@ -549,7 +549,7 @@ Proof.
     destruct (IH Hid1 _ _ Hinc2 Hid2) as [κ' [Hid' Hinc']].
     assert (Htv2 : a_binds_tvar α Θ2).
     { inversion Hwf; subst. eauto using a_inc_binds_tvarish. }
-    assert (Heqv : Θ2 ⊢ (ptyp_var_f α) ≡ᵗ (msubst_ptyp κ' τ)).
+    assert (Heqv : {{ Θ2 ⊢ (ptyp_var_f α) ≡ᵗ (msubst_ptyp κ' τ) }}a).
     { rewrite msubst_ptyp_id; [ | exact Hid' ].
       rewrite msubst_ptyp_id in Hteq; [ | exact Hid1 ].
       exact (a_tyequiv_isub Hinc2 Hid2 Hteq). }

@@ -17,7 +17,7 @@
     whose MIDDLE link is "a decorated subject's counterpart only mentions the
     subject's own variables and the context's DEFINITIONS":
 
-        Ψ ⨟ Θ ⊢ᵃᵈ ψ ∼ Q  →  is_tskl ψ  →  ftv Q ⊆ ftv ψ ∪ def_ftv Θ.
+        {{ Ψ ⨟ Θ ⊢ˢ ψ ∼ Q }}ad  →  is_tskl ψ  →  ftv Q ⊆ ftv ψ ∪ def_ftv Θ.
 
     The sub-side needs the same statement over [ad_pat_sub_g].  It was known
     to fail for [ad_pat_sub_g__ghost] (subject ◇, target an ARBITRARY
@@ -30,7 +30,7 @@
 
     IT DOES NOT EXCLUDE [__forall_l_tagged], and THAT row breaks the bound on
     its own: the subject [∀^ε α. α] IS [is_tskl], ForallL instantiates it
-    with a guess ψ constrained only by [Θ ⨟ empty ⊢ₚₛᵃ ⌊ψ⌋ˢ] — i.e. by
+    with a guess ψ constrained only by [{{ Θ ⨟ empty ⊢ₚₛ ⌊ψ⌋ˢ }}a] — i.e. by
     [dom Θ], not [def_ftv Θ] — and the leaf then reads the target straight
     off that guess.  Below: Θ = β, subject [∀^ε α. α], target [β].
 
@@ -122,7 +122,7 @@ Proof.
     | apply uskl_ghost_free__var ].
 Qed.
 
-Lemma guess_wf : Θcex ⨟ empty ⊢ₚₛᵃ ⌊ uskl_var_f β ⌋ˢ.
+Lemma guess_wf : {{ Θcex ⨟ empty ⊢ₚₛ ⌊ uskl_var_f β ⌋ˢ }}a.
 Proof.
   cbn. apply a_wf_pskl__var. right. left. simpl; auto.
 Qed.

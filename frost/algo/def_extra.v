@@ -23,26 +23,31 @@ Require Import src.frost.decl.notations.
 
 Set Implicit Arguments.
 
-Reserved Notation "Θ ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ'"
-  (at level 70, Δ1 at level 0, Δ2 at level 0, P0 at level 0, P at level 0,
-   Q at level 0, Θ' at level 0, no associativity).
-Reserved Notation "Θ ⊲ A ≈ᵘ B ⊣ Θ'"
-  (at level 70, A at level 0, B at level 0, Θ' at level 0, no associativity).
-Reserved Notation "Θ ⊲[ Ξ ] α ≔ P ⊣ Θ'"
-  (at level 70, Ξ at level 0, α at level 0, P at level 0,
-   Θ' at level 0, no associativity).
-Reserved Notation "Θ ⊲ P0 ▹ P ⇢ Q ⊣ Θ'"
-  (at level 70, P0 at level 0, P at level 0, Q at level 0, Θ' at level 0,
-   no associativity).
-Reserved Notation "Θ ⊢ᵃ[ N | m | P0 ] P ⩽ Q ⊣ Θ'"
-  (at level 70, N at level 0, m at level 0, P0 at level 0, P at level 0,
-   Q at level 0, Θ' at level 0, no associativity).
-Reserved Notation "Θ ⊢ₛᵃ[ m ; P0 ] e ⦂ Q ⊣ Θ'"
-  (at level 70, m at level 0, P0 at level 0, e at level 0, Q at level 0,
-   Θ' at level 0, no associativity).
-Reserved Notation "Θ ⊢ᵃ[ m ; P0 ] e ⦂ B ⊣ Θ'"
-  (at level 70, m at level 0, P0 at level 0, e at level 0, B at level 0,
-   Θ' at level 0, no associativity).
+(* the judgement notations below live in this scope; `Open Scope` is not
+   transitive through `Require Import`, so the DECLARING file must open it *)
+Open Scope frost_a_scope.
+
+Reserved Notation "{{ Θ ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ' }}a"
+  (at level 0, Δ1 at level 0, Δ2 at level 0, P0 at level 0, P at level 74, Q at level 74, Θ' at level 74,
+   format "'{{'  Θ  ⊢[  Δ1  |  Δ2  |  P0  ]  P  ∼  Q  ⊣  Θ'  '}}a'").
+Reserved Notation "{{ Θ ⊲ A ≈ᵘ B ⊣ Θ' }}a"
+  (at level 0, A at level 74, B at level 74, Θ' at level 74,
+   format "'{{'  Θ  ⊲  A  ≈ᵘ  B  ⊣  Θ'  '}}a'").
+Reserved Notation "{{ Θ ⊲[ Ξ ] α ≔ P ⊣ Θ' }}a"
+  (at level 0, Ξ at level 0, α at level 74, P at level 74, Θ' at level 74,
+   format "'{{'  Θ  ⊲[  Ξ  ]  α  ≔  P  ⊣  Θ'  '}}a'").
+Reserved Notation "{{ Θ ⊲ P0 ▹ P ⇢ Q ⊣ Θ' }}a"
+  (at level 0, P0 at level 74, P at level 74, Q at level 74, Θ' at level 74,
+   format "'{{'  Θ  ⊲  P0  ▹  P  ⇢  Q  ⊣  Θ'  '}}a'").
+Reserved Notation "{{ Θ ⊢[ N | m | P0 ] P ⩽ Q ⊣ Θ' }}a"
+  (at level 0, N at level 0, m at level 0, P0 at level 0, P at level 74, Q at level 74, Θ' at level 74,
+   format "'{{'  Θ  ⊢[  N  |  m  |  P0  ]  P  ⩽  Q  ⊣  Θ'  '}}a'").
+Reserved Notation "{{ Θ ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ' }}a"
+  (at level 0, m at level 0, P0 at level 0, e at level 74, Q at level 74, Θ' at level 74,
+   format "'{{'  Θ  ⊢ˢ[  m  ;  P0  ]  e  ⦂  Q  ⊣  Θ'  '}}a'").
+Reserved Notation "{{ Θ ⊢[ m ; P0 ] e ⦂ B ⊣ Θ' }}a"
+  (at level 0, m at level 0, P0 at level 0, e at level 74, B at level 74, Θ' at level 74,
+   format "'{{'  Θ  ⊢[  m  ;  P0  ]  e  ⦂  B  ⊣  Θ'  '}}a'").
 
 (* ===================================================================== *)
 (*  Contexts (paper entries  e ::= α | x:P | α̂ | α̂ := τ)                *)
@@ -177,34 +182,35 @@ Inductive a_scope_pskl : aenv -> pskl -> Prop :=
     a_scope_pskl Θ P ->
     a_scope_pskl Θ (pskl_tophole P).
 
-Reserved Notation "Θ ⨟ Δ ⊢ₚₛᵃ P"
-  (at level 75, Δ at level 74, P at level 75, no associativity).
+Reserved Notation "{{ Θ ⨟ Δ ⊢ₚₛ P }}a"
+  (at level 0, Δ at level 74, P at level 74,
+   format "'{{'  Θ  ⨟  Δ  ⊢ₚₛ  P  '}}a'").
 
 (* ===================================================================== *)
-(*  Skeleton well-formedness over Θ  (decl [Γ ⨟ Δ ⊢ₚₛ P])                *)
+(*  Skeleton well-formedness over Θ  (decl [{{ Γ ⨟ Δ ⊢ₚₛ P }}d])         *)
 (* ===================================================================== *)
 
 Inductive a_wf_pskl : aenv -> atoms -> pskl -> Prop :=
 | a_wf_pskl__unit : forall Θ Δ,
-    Θ ⨟ Δ ⊢ₚₛᵃ pskl_unit
+    {{ Θ ⨟ Δ ⊢ₚₛ pskl_unit }}a
 | a_wf_pskl__var : forall Θ Δ α,
     α `in` Δ \/ a_binds_tvar α Θ ->
-    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_var_f α)
+    {{ Θ ⨟ Δ ⊢ₚₛ (pskl_var_f α) }}a
 | a_wf_pskl__arrow : forall Θ Δ P1 P2,
-    Θ ⨟ Δ ⊢ₚₛᵃ P1 ->
-    Θ ⨟ Δ ⊢ₚₛᵃ P2 ->
-    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_arrow P1 P2)
+    {{ Θ ⨟ Δ ⊢ₚₛ P1 }}a ->
+    {{ Θ ⨟ Δ ⊢ₚₛ P2 }}a ->
+    {{ Θ ⨟ Δ ⊢ₚₛ (pskl_arrow P1 P2) }}a
 | a_wf_pskl__all : forall L Θ Δ P,
     (forall α, α `notin` L ->
-       Θ ⨟ (add α Δ) ⊢ₚₛᵃ (open_pskl_wrt_pskl P (pskl_var_f α))) ->
-    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_all_syn P)
+       {{ Θ ⨟ (add α Δ) ⊢ₚₛ (open_pskl_wrt_pskl P (pskl_var_f α)) }}a) ->
+    {{ Θ ⨟ Δ ⊢ₚₛ (pskl_all_syn P) }}a
 | a_wf_pskl__hole : forall Θ Δ,
-    Θ ⨟ Δ ⊢ₚₛᵃ pskl_hole
+    {{ Θ ⨟ Δ ⊢ₚₛ pskl_hole }}a
 | a_wf_pskl__tophole : forall Θ Δ P,
     guarded_pskl P ->
-    Θ ⨟ empty ⊢ₚₛᵃ P ->
-    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_tophole P)
-where "Θ ⨟ Δ ⊢ₚₛᵃ P" := (a_wf_pskl Θ Δ P) : type_scope.
+    {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
+    {{ Θ ⨟ Δ ⊢ₚₛ (pskl_tophole P) }}a
+where "{{ Θ ⨟ Δ ⊢ₚₛ P }}a" := (a_wf_pskl Θ Δ P) : frost_a_scope.
 
 (** Context well-formedness [Θ ⊢ ctx] (full-algo-spec.tex:224): each
     definition's body is a well-formed monotype in its tail, each term
@@ -225,7 +231,7 @@ Inductive a_wf_aenv : aenv -> Prop :=
     a_wf_aenv ((α ~ abind_flex_mono_def τ) ++ Θ)
 | a_wf_aenv__var : forall x P Θ,
     x `notin` dom Θ ->
-    Θ ⨟ empty ⊢ₚₛᵃ P ->
+    {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
     a_wf_aenv Θ ->
     a_wf_aenv ((x ~ abind_var_skl P) ++ Θ)
 | a_wf_aenv__var_typ : forall x A Θ,
@@ -374,12 +380,12 @@ Inductive a_cstr : Set :=
 | a_cstr_eq : pskl -> a_cstr.
 Definition a_cstrs : Set := list a_cstr.
 
-Reserved Notation "Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C"
-  (at level 75, P at level 74, α at level 0, m at level 0, P' at level 74,
-   Ξ at level 0, C at level 74, no associativity).
-Reserved Notation "Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C"
-  (at level 75, P at level 74, α at level 0, P' at level 74, Ξ at level 0,
-   C at level 74, no associativity).
+Reserved Notation "{{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a"
+  (at level 0, P at level 74, α at level 0, m at level 0, P' at level 74, Ξ at level 74, C at level 74,
+   format "'{{'  Θ  ⊢  P  ≼[  α  ,  m  ]  P'  ⤳  Ξ  ⨾  C  '}}a'").
+Reserved Notation "{{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}a"
+  (at level 0, P at level 74, α at level 0, P' at level 74, Ξ at level 74, C at level 74,
+   format "'{{'  Θ  ⊢  P  ∼[  α  ]  P'  ⤳  Ξ  ⨾  C  '}}a'").
 
 (* EXISTS-FRESH with an AVOID-INPUT context (DESIGN.md §4.3, cluster 3 of
    the freshness campaign).
@@ -408,12 +414,12 @@ Reserved Notation "Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C"
    rule's input skeletons. *)
 Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
 | a_looksub__var : forall Θ α m P,               (* LS-Var *)
-    Θ ⊢ (pskl_var_f α) ≼[ α , m ] P ⤳ nil ⨾ (a_cstr_sub m P :: nil)
+    {{ Θ ⊢ (pskl_var_f α) ≼[ α , m ] P ⤳ nil ⨾ (a_cstr_sub m P :: nil) }}a
 | a_looksub__absent : forall Θ α m P P',         (* LS-Absent *)
     α `notin` ftvar_in_pskl P ->
-    Θ ⊢ P ≼[ α , m ] P' ⤳ nil ⨾ nil
+    {{ Θ ⊢ P ≼[ α , m ] P' ⤳ nil ⨾ nil }}a
 | a_looksub__vacuous : forall Θ α m P,           (* LS-Vacuous: RHS is □ *)
-    Θ ⊢ P ≼[ α , m ] pskl_hole ⤳ nil ⨾ nil
+    {{ Θ ⊢ P ≼[ α , m ] pskl_hole ⤳ nil ⨾ nil }}a
 | a_looksub__check : forall Θ α A B Ξ C,         (* LS-Check *)
     (* SORT: [A] and [B] are TYPES in the paper (full-algo-spec.tex:1042-1049),
        matching the [a_sub__check] row this collection rule covers.  ⚠️ Only
@@ -423,8 +429,8 @@ Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs ->
     A <> pskl_var_f α ->
     guarded_pskl A ->
     guarded_pskl B ->
-    Θ ⊢ A ∼[ α ] B ⤳ Ξ ⨾ C ->
-    Θ ⊢ A ≼[ α , mode_tc ] B ⤳ Ξ ⨾ C
+    {{ Θ ⊢ A ∼[ α ] B ⤳ Ξ ⨾ C }}a ->
+    {{ Θ ⊢ A ≼[ α , mode_tc ] B ⤳ Ξ ⨾ C }}a
 | a_looksub__forall_r : forall Θ α A B Ξ C β,    (* LS-ForallR — LEAKS *)
     (* SORT — TARGET ONLY, here and at [a_looksub__check].  The paper sorts
        the collection's SUBJECT as a type too ([A], full-algo-spec.tex:1042-1056),
@@ -444,77 +450,77 @@ Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs ->
     pskl_ghost_free (pskl_all_syn B) ->
     β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl A
                        `union` ftvar_in_pskl B) ->
-    ((β ~ abind_tvar) ++ Θ) ⊢ A ≼[ α , mode_tc ]
-      (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ C ->
-    Θ ⊢ A ≼[ α , mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ C
+    {{ ((β ~ abind_tvar) ++ Θ) ⊢ A ≼[ α , mode_tc ]
+      (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ C }}a ->
+    {{ Θ ⊢ A ≼[ α , mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ C }}a
 | a_looksub__arrow : forall Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2, (* LS-Arrow *)
-    Θ ⊢ P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 ->
-    Θ ⊢ P2 ≼[ α , m ] P2' ⤳ Ξ2 ⨾ C2 ->
-    Θ ⊢ (pskl_arrow P1 P2) ≼[ α , (mode_fn m) ] (pskl_arrow P1' P2')
-        ⤳ (Ξ1 ++ Ξ2) ⨾ (C1 ++ C2)
+    {{ Θ ⊢ P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 }}a ->
+    {{ Θ ⊢ P2 ≼[ α , m ] P2' ⤳ Ξ2 ⨾ C2 }}a ->
+    {{ Θ ⊢ (pskl_arrow P1 P2) ≼[ α , (mode_fn m) ] (pskl_arrow P1' P2')
+        ⤳ (Ξ1 ++ Ξ2) ⨾ (C1 ++ C2) }}a
 | a_looksub__forall_l : forall Θ α m P P' Ξ C β, (* LS-ForallL — LEAKS *)
     β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
                        `union` ftvar_in_pskl P') ->
-    ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β))
-      ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
-    Θ ⊢ (pskl_all_syn P) ≼[ α , m ] P' ⤳ Ξ ⨾ C
+    {{ ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β))
+      ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
+    {{ Θ ⊢ (pskl_all_syn P) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a
 | a_looksub__univ_ghost_l : forall Θ α m P P' Ξ C, (* LS-UnivGhostL *)
-    Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
-    Θ ⊢ (pskl_tophole P) ≼[ α , m ] P' ⤳ Ξ ⨾ C
+    {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
+    {{ Θ ⊢ (pskl_tophole P) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a
 
 with a_lookeq : aenv -> atom -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
 | a_lookeq__var : forall Θ α P,                  (* LE-Var *)
-    Θ ⊢ (pskl_var_f α) ∼[ α ] P ⤳ nil ⨾ (a_cstr_eq P :: nil)
+    {{ Θ ⊢ (pskl_var_f α) ∼[ α ] P ⤳ nil ⨾ (a_cstr_eq P :: nil) }}a
 | a_lookeq__absent : forall Θ α P P',            (* LE-Absent *)
     α `notin` ftvar_in_pskl P ->
-    Θ ⊢ P ∼[ α ] P' ⤳ nil ⨾ nil
+    {{ Θ ⊢ P ∼[ α ] P' ⤳ nil ⨾ nil }}a
 | a_lookeq__vacuous : forall Θ α P,              (* LE-Vacuous: RHS is □ *)
-    Θ ⊢ P ∼[ α ] pskl_hole ⤳ nil ⨾ nil
+    {{ Θ ⊢ P ∼[ α ] pskl_hole ⤳ nil ⨾ nil }}a
 | a_lookeq__flex_r : forall Θ α P β α1,          (* LE-FlexR (β̂ a flex var) *)
     (* the paper's [fresh γ̂] (algorithmic.tex:1204).  [ftvar_in_aenv], not
        [dom]: a payload ([α̂ ≔ τ]) may mention the name, and it must not. *)
     α1 `notin` add α (add β (ftvar_in_aenv Θ `union` ftvar_in_pskl P)) ->
     P <> pskl_var_f α ->
     α `in` ftvar_in_pskl P ->
-    Θ ⊢ P ∼[ α ] (pskl_var_f β) ⤳ ((α1 ~ abind_flex_mono) ++ nil)
-        ⨾ (a_cstr_eq (pskl_var_f α1) :: nil)
+    {{ Θ ⊢ P ∼[ α ] (pskl_var_f β) ⤳ ((α1 ~ abind_flex_mono) ++ nil)
+        ⨾ (a_cstr_eq (pskl_var_f α1) :: nil) }}a
 | a_lookeq__arrow : forall Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2,    (* LE-Arrow *)
-    Θ ⊢ P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 ->
-    Θ ⊢ P2 ∼[ α ] P2' ⤳ Ξ2 ⨾ C2 ->
-    Θ ⊢ (pskl_arrow P1 P2) ∼[ α ] (pskl_arrow P1' P2')
-        ⤳ (Ξ1 ++ Ξ2) ⨾ (C1 ++ C2)
+    {{ Θ ⊢ P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 }}a ->
+    {{ Θ ⊢ P2 ∼[ α ] P2' ⤳ Ξ2 ⨾ C2 }}a ->
+    {{ Θ ⊢ (pskl_arrow P1 P2) ∼[ α ] (pskl_arrow P1' P2')
+        ⤳ (Ξ1 ++ Ξ2) ⨾ (C1 ++ C2) }}a
 | a_lookeq__forall_inh : forall Θ α P P' Ξ C β,  (* LE-ForallInh — LEAKS *)
     β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
                        `union` ftvar_in_pskl P') ->
-    ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ]
-      (open_pskl_wrt_pskl P' (pskl_var_f β)) ⤳ Ξ ⨾ C ->
-    Θ ⊢ (pskl_all_syn P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C
+    {{ ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ]
+      (open_pskl_wrt_pskl P' (pskl_var_f β)) ⤳ Ξ ⨾ C }}a ->
+    {{ Θ ⊢ (pskl_all_syn P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C }}a
 | a_lookeq__forall_syn : forall Θ α P P' Ξ C β,  (* LE-ForallSyn — LEAKS *)
     β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
                        `union` ftvar_in_pskl P') ->
-    ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ]
-      (pskl_tophole P') ⤳ Ξ ⨾ C ->
-    Θ ⊢ (pskl_all_syn P) ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C
+    {{ ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ]
+      (pskl_tophole P') ⤳ Ξ ⨾ C }}a ->
+    {{ Θ ⊢ (pskl_all_syn P) ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C }}a
 | a_lookeq__univ_ghost : forall Θ α P P' Ξ C,    (* LE-UnivGhost *)
-    Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C ->
-    Θ ⊢ (pskl_tophole P) ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C
+    {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}a ->
+    {{ Θ ⊢ (pskl_tophole P) ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C }}a
 | a_lookeq__univ_ghost1 : forall Θ α P P' Ξ C β, (* LE-UnivGhost1 — LEAKS *)
     β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
                        `union` ftvar_in_pskl P') ->
-    ((β ~ abind_tvar) ++ Θ) ⊢ (pskl_tophole P) ∼[ α ]
-      (open_pskl_wrt_pskl P' (pskl_var_f β)) ⤳ Ξ ⨾ C ->
-    Θ ⊢ (pskl_tophole P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C
+    {{ ((β ~ abind_tvar) ++ Θ) ⊢ (pskl_tophole P) ∼[ α ]
+      (open_pskl_wrt_pskl P' (pskl_var_f β)) ⤳ Ξ ⨾ C }}a ->
+    {{ Θ ⊢ (pskl_tophole P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C }}a
 | a_lookeq__univ_ghost2 : forall Θ α P P' Ξ C,   (* LE-UnivGhost2 *)
     guarded_pskl P' ->
-    Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C ->
-    Θ ⊢ (pskl_tophole P) ∼[ α ] P' ⤳ Ξ ⨾ C
+    {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}a ->
+    {{ Θ ⊢ (pskl_tophole P) ∼[ α ] P' ⤳ Ξ ⨾ C }}a
 | a_lookeq__univ_ghost_r : forall Θ α P P' Ξ C,  (* LE-UnivGhostR *)
     P <> pskl_var_f α ->
     guarded_pskl P ->
-    Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C ->
-    Θ ⊢ P ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C
-where "Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C" := (a_looksub Θ α m P P' Ξ C) : type_scope
-  and "Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C" := (a_lookeq Θ α P P' Ξ C) : type_scope.
+    {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}a ->
+    {{ Θ ⊢ P ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C }}a
+where "{{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a" := (a_looksub Θ α m P P' Ξ C) : frost_a_scope
+  and "{{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}a" := (a_lookeq Θ α P P' Ξ C) : frost_a_scope.
 
 (* ===================================================================== *)
 (*  Constraint solving (paper fig:constraint-solving)                     *)
@@ -558,16 +564,16 @@ where "Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C" := (a_looksub Θ α m P P' Ξ C) 
 (*  derivations and simply pick their witness from the larger avoid-set.   *)
 (* ===================================================================== *)
 
-Reserved Notation "Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P'"
-  (at level 75, P at level 74, m at level 0, Q at level 74, Ξ at level 0,
-   P' at level 74, no associativity).
-Reserved Notation "Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P'"
-  (at level 75, P at level 74, Q at level 74, Ξ at level 0, P' at level 74,
-   no associativity).
+Reserved Notation "{{ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}a"
+  (at level 0, P at level 74, m at level 0, Q at level 74, Ξ at level 74, P' at level 74,
+   format "'{{'  Θ  ⊢ₛ  P  ≼[  m  ]  Q  ⤳  Ξ  ⨾  P'  '}}a'").
+Reserved Notation "{{ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}a"
+  (at level 0, P at level 74, Q at level 74, Ξ at level 74, P' at level 74,
+   format "'{{'  Θ  ⊢ₑ  P  ∼  Q  ⤳  Ξ  ⨾  P'  '}}a'").
 
 Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
 | a_solve_sub__var : forall Θ m α Q,             (* SS-Var + SS-Flex *)
-    Θ ⊢ₛ (pskl_var_f α) ≼[ m ] Q ⤳ nil ⨾ (pskl_var_f α)
+    {{ Θ ⊢ₛ (pskl_var_f α) ≼[ m ] Q ⤳ nil ⨾ (pskl_var_f α) }}a
 | a_solve_sub__forall_l : forall Θ m P Q Ξ P' β,   (* SS-ForallL *)
     (* exists-fresh, INPUT-only freshness + explicit CLOSE (DESIGN.md §4.3):
        the side condition names only the inputs; the result is re-bound by
@@ -582,15 +588,15 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
        ⭐ [ftvar_in_aenv], NOT [dom] (2026-08-04, and see the box above the
        judgment): a flexible's PAYLOAD may mention the witness. *)
     β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
-    ((β ~ abind_tvar) ++ Θ) ⊢ₛ (open_pskl_wrt_pskl P (pskl_var_f β))
-      ≼[ m ] Q ⤳ Ξ ⨾ P' ->
-    Θ ⊢ₛ (pskl_all_syn P) ≼[ m ] Q
-         ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P'))
+    {{ ((β ~ abind_tvar) ++ Θ) ⊢ₛ (open_pskl_wrt_pskl P (pskl_var_f β))
+      ≼[ m ] Q ⤳ Ξ ⨾ P' }}a ->
+    {{ Θ ⊢ₛ (pskl_all_syn P) ≼[ m ] Q
+         ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P')) }}a
 | a_solve_sub__univ_ghost_l : forall Θ m P Q Ξ P', (* SS-UnivGhostL *)
-    Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' ->
-    Θ ⊢ₛ (pskl_tophole P) ≼[ m ] Q ⤳ Ξ ⨾ (pskl_tophole P')
+    {{ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}a ->
+    {{ Θ ⊢ₛ (pskl_tophole P) ≼[ m ] Q ⤳ Ξ ⨾ (pskl_tophole P') }}a
 | a_solve_sub__vacuous : forall Θ m P,           (* SS-Vacuous: RHS is □ *)
-    Θ ⊢ₛ P ≼[ m ] pskl_hole ⤳ nil ⨾ P
+    {{ Θ ⊢ₛ P ≼[ m ] pskl_hole ⤳ nil ⨾ P }}a
 | a_solve_sub__check : forall Θ P Q Ξ P',        (* SS-Check *)
     (* SORT: the paper writes [solvesub{P}{TC}{B}{P'}] — the LHS is the
        accumulated PATTERN (a skeleton) but the RHS is a TYPE
@@ -600,8 +606,8 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
     pskl_ghost_free Q ->
     guarded_pskl P ->
     guarded_pskl Q ->
-    Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' ->
-    Θ ⊢ₛ P ≼[ mode_tc ] Q ⤳ Ξ ⨾ P'
+    {{ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}a ->
+    {{ Θ ⊢ₛ P ≼[ mode_tc ] Q ⤳ Ξ ⨾ P' }}a
 | a_solve_sub__forall_r : forall Θ P B Ξ P' β,   (* SS-ForallR *)
     (* SORT — TARGET ONLY.  The paper writes [solvesub{A}{TC}{\forall\beta.B}]
        (full-algo-spec.tex:1269-1273), i.e. it sorts BOTH sides as types; the
@@ -620,15 +626,15 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
        type.ml:517-520), and the paper's rule (full-algo-spec.tex:1271)
        runs its premise at [B] with β still free.  The leak is BY DESIGN;
        ill-scoped results are filtered downstream by wf side conditions
-       ([a_sub__forall_l]'s [(Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P1]), not by narrowing
+       ([a_sub__forall_l]'s [{{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P1 }}a]), not by narrowing
        this rule.  A cofinite rendering would demand ONE β-free [P'] for
        the whole family, degenerating the rule to "fires only when the
        binder is vacuous".  Consequence: [a_solve_sub_ftv] is DISJUNCTIVE
        (an output variable is an input variable or avoids [dom Θ]). *)
     β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl B ->
-    ((β ~ abind_tvar) ++ Θ) ⊢ₛ P ≼[ mode_tc ]
-      (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ P' ->
-    Θ ⊢ₛ P ≼[ mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ P'
+    {{ ((β ~ abind_tvar) ++ Θ) ⊢ₛ P ≼[ mode_tc ]
+      (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ P' }}a ->
+    {{ Θ ⊢ₛ P ≼[ mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ P' }}a
 (* ⚠️ THE SIBLING PREMISE THREADS, [Ξ2 ++ Ξ1].  Both halves may now GENERATE
    names, and a guess avoids only what its own context mentions — run both at
    [Θ] and the two blocks can pick THE SAME atom, making [Ξ1 ++ Ξ2] non-[uniq]
@@ -639,26 +645,26 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
    anyway (one global counter, never reused).  Same shape as
    [a_solve_cstr__eq], where the threading is forced by the pattern fold. *)
 | a_solve_sub__arrow : forall Θ m P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2',  (* SS-Arrow *)
-    Θ ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' ->
-    (Ξ1 ++ Θ) ⊢ₛ P2 ≼[ m ] Q2 ⤳ Ξ2 ⨾ P2' ->
-    Θ ⊢ₛ (pskl_arrow P1 P2) ≼[ (mode_fn m) ] (pskl_arrow Q1 Q2)
-         ⤳ (Ξ2 ++ Ξ1) ⨾ (pskl_arrow P1' P2')
+    {{ Θ ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' }}a ->
+    {{ (Ξ1 ++ Θ) ⊢ₛ P2 ≼[ m ] Q2 ⤳ Ξ2 ⨾ P2' }}a ->
+    {{ Θ ⊢ₛ (pskl_arrow P1 P2) ≼[ (mode_fn m) ] (pskl_arrow Q1 Q2)
+         ⤳ (Ξ2 ++ Ξ1) ⨾ (pskl_arrow P1' P2') }}a
 | a_solve_sub__ghost_l_fn : forall Θ m Q1 Q2 Ξ1 Ξ2 P1' P2',   (* SS-GhostLF *)
-    Θ ⊢ₑ pskl_hole ∼ Q1 ⤳ Ξ1 ⨾ P1' ->
-    (Ξ1 ++ Θ) ⊢ₛ pskl_hole ≼[ m ] Q2 ⤳ Ξ2 ⨾ P2' ->
-    Θ ⊢ₛ pskl_hole ≼[ (mode_fn m) ] (pskl_arrow Q1 Q2)
-         ⤳ (Ξ2 ++ Ξ1) ⨾ (pskl_tophole (pskl_arrow P1' P2'))
+    {{ Θ ⊢ₑ pskl_hole ∼ Q1 ⤳ Ξ1 ⨾ P1' }}a ->
+    {{ (Ξ1 ++ Θ) ⊢ₛ pskl_hole ≼[ m ] Q2 ⤳ Ξ2 ⨾ P2' }}a ->
+    {{ Θ ⊢ₛ pskl_hole ≼[ (mode_fn m) ] (pskl_arrow Q1 Q2)
+         ⤳ (Ξ2 ++ Ξ1) ⨾ (pskl_tophole (pskl_arrow P1' P2')) }}a
 | a_solve_sub__ghost_l : forall Θ B,             (* SS-GhostL *)
     (* SORT: [guarded{B}] with [B] a TYPE (full-algo-spec.tex:1283-1288). *)
     pskl_ghost_free B ->
     guarded_pskl B ->
-    Θ ⊢ₛ pskl_hole ≼[ mode_tc ] B ⤳ nil ⨾ (pskl_tophole B)
+    {{ Θ ⊢ₛ pskl_hole ≼[ mode_tc ] B ⤳ nil ⨾ (pskl_tophole B) }}a
 
 with a_solve_eq : aenv -> pskl -> pskl -> aenv -> pskl -> Prop :=
 | a_solve_eq__unit : forall Θ,                   (* SE-Unit *)
-    Θ ⊢ₑ pskl_unit ∼ pskl_unit ⤳ nil ⨾ pskl_unit
+    {{ Θ ⊢ₑ pskl_unit ∼ pskl_unit ⤳ nil ⨾ pskl_unit }}a
 | a_solve_eq__var : forall Θ α Q,                (* SE-Var + SE-FlexL *)
-    Θ ⊢ₑ (pskl_var_f α) ∼ Q ⤳ nil ⨾ (pskl_var_f α)
+    {{ Θ ⊢ₑ (pskl_var_f α) ∼ Q ⤳ nil ⨾ (pskl_var_f α) }}a
 | a_solve_eq__flex_r : forall Θ α P Ξ A,         (* SE-FlexR *)
     (* the paper's FlexR (full-algo-spec.tex:1374) is context-free and fires
        on ANY hatted variable — defined or not; [α̂ ∈ Θ] here is only the
@@ -711,52 +717,52 @@ with a_solve_eq : aenv -> pskl -> pskl -> aenv -> pskl -> Prop :=
     a_non_flex Θ P ->
     nonghost_pskl P ->
     a_guess_mono Θ P Ξ A ->
-    Θ ⊢ₑ P ∼ (pskl_var_f α) ⤳ Ξ ⨾ (ptyp_to_pskl A)
+    {{ Θ ⊢ₑ P ∼ (pskl_var_f α) ⤳ Ξ ⨾ (ptyp_to_pskl A) }}a
 | a_solve_eq__hole_l : forall Θ Q,               (* SE-GhostL *)
-    Θ ⊢ₑ pskl_hole ∼ Q ⤳ nil ⨾ Q
+    {{ Θ ⊢ₑ pskl_hole ∼ Q ⤳ nil ⨾ Q }}a
 | a_solve_eq__hole_r : forall Θ P,               (* SE-VacuousR *)
-    Θ ⊢ₑ P ∼ pskl_hole ⤳ nil ⨾ P
+    {{ Θ ⊢ₑ P ∼ pskl_hole ⤳ nil ⨾ P }}a
 | a_solve_eq__arrow : forall Θ P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2',    (* SE-Arrow *)
     (* threads — see [a_solve_sub__arrow] *)
-    Θ ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' ->
-    (Ξ1 ++ Θ) ⊢ₑ P2 ∼ Q2 ⤳ Ξ2 ⨾ P2' ->
-    Θ ⊢ₑ (pskl_arrow P1 P2) ∼ (pskl_arrow Q1 Q2)
-         ⤳ (Ξ2 ++ Ξ1) ⨾ (pskl_arrow P1' P2')
+    {{ Θ ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' }}a ->
+    {{ (Ξ1 ++ Θ) ⊢ₑ P2 ∼ Q2 ⤳ Ξ2 ⨾ P2' }}a ->
+    {{ Θ ⊢ₑ (pskl_arrow P1 P2) ∼ (pskl_arrow Q1 Q2)
+         ⤳ (Ξ2 ++ Ξ1) ⨾ (pskl_arrow P1' P2') }}a
 | a_solve_eq__forall : forall Θ P Q Ξ P' β,      (* SE-Forall *)
     β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
-    ((β ~ abind_tvar) ++ Θ) ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f β))
-         ∼ (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ Ξ ⨾ P' ->
-    Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_all_syn Q)
-         ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P'))
+    {{ ((β ~ abind_tvar) ++ Θ) ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f β))
+         ∼ (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ Ξ ⨾ P' }}a ->
+    {{ Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_all_syn Q)
+         ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P')) }}a
 | a_solve_eq__tophole_both : forall Θ P Q Ξ P',  (* SE-UnivGhost *)
-    Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' ->
-    Θ ⊢ₑ (pskl_tophole P) ∼ (pskl_tophole Q) ⤳ Ξ ⨾ (pskl_tophole P')
+    {{ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}a ->
+    {{ Θ ⊢ₑ (pskl_tophole P) ∼ (pskl_tophole Q) ⤳ Ξ ⨾ (pskl_tophole P') }}a
 | a_solve_eq__tophole_l_all : forall Θ P Q Ξ P' β, (* SE-GhostForall *)
     β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
-    ((β ~ abind_tvar) ++ Θ) ⊢ₑ (pskl_tophole P)
-      ∼ (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ Ξ ⨾ P' ->
-    Θ ⊢ₑ (pskl_tophole P) ∼ (pskl_all_syn Q)
-         ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P'))
+    {{ ((β ~ abind_tvar) ++ Θ) ⊢ₑ (pskl_tophole P)
+      ∼ (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ Ξ ⨾ P' }}a ->
+    {{ Θ ⊢ₑ (pskl_tophole P) ∼ (pskl_all_syn Q)
+         ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P')) }}a
 | a_solve_eq__tophole_l_guarded : forall Θ P Q Ξ P',         (* SE-GhostGuarded *)
     guarded_pskl Q ->
-    Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' ->
-    Θ ⊢ₑ (pskl_tophole P) ∼ Q ⤳ Ξ ⨾ P'
+    {{ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}a ->
+    {{ Θ ⊢ₑ (pskl_tophole P) ∼ Q ⤳ Ξ ⨾ P' }}a
 | a_solve_eq__all_l_tophole : forall Θ P Q Ξ P' β, (* SE-ForallGhost *)
     β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
-    ((β ~ abind_tvar) ++ Θ) ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f β))
-      ∼ (pskl_tophole Q) ⤳ Ξ ⨾ P' ->
-    Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_tophole Q)
-         ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P'))
+    {{ ((β ~ abind_tvar) ++ Θ) ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f β))
+      ∼ (pskl_tophole Q) ⤳ Ξ ⨾ P' }}a ->
+    {{ Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_tophole Q)
+         ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P')) }}a
 | a_solve_eq__tophole_r_guarded : forall Θ P Q Ξ P',         (* SE-GuardedGhost *)
     guarded_pskl P ->
-    Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' ->
-    Θ ⊢ₑ P ∼ (pskl_tophole Q) ⤳ Ξ ⨾ P'
-where "Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P'" := (a_solve_sub Θ m P Q Ξ P') : type_scope
-  and "Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P'" := (a_solve_eq Θ P Q Ξ P') : type_scope.
+    {{ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}a ->
+    {{ Θ ⊢ₑ P ∼ (pskl_tophole Q) ⤳ Ξ ⨾ P' }}a
+where "{{ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}a" := (a_solve_sub Θ m P Q Ξ P') : frost_a_scope
+  and "{{ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}a" := (a_solve_eq Θ P Q Ξ P') : frost_a_scope.
 
-Reserved Notation "Θ ⊩ C ⨾ P ⤳ Ξ ⨾ Q"
-  (at level 75, C at level 74, P at level 74, Ξ at level 0, Q at level 74,
-   no associativity).
+Reserved Notation "{{ Θ ⊩ C ⨾ P ⤳ Ξ ⨾ Q }}a"
+  (at level 0, C at level 74, P at level 74, Ξ at level 74, Q at level 74,
+   format "'{{'  Θ  ⊩  C  ⨾  P  ⤳  Ξ  ⨾  Q  '}}a'").
 (* Constraint-list solving  [solve C P Q] (fig:constraint-solving, top box). *)
 (* ⚠️ THE TAIL RUNS AT [Ξ1 ++ Θ].  The eq-row's fresh block is in scope for
    every later constraint — its yield [P''] is THE PATTERN the tail solves
@@ -766,19 +772,19 @@ Reserved Notation "Θ ⊩ C ⨾ P ⤳ Ξ ⨾ Q"
    argument [a_extract] already makes for running the solve at [Ξ ++ Θ0]. *)
 Inductive a_solve_cstr : aenv -> a_cstrs -> pskl -> aenv -> pskl -> Prop :=
 | a_solve_cstr__empty : forall Θ P,
-    Θ ⊩ nil ⨾ P ⤳ nil ⨾ P
+    {{ Θ ⊩ nil ⨾ P ⤳ nil ⨾ P }}a
 | a_solve_cstr__sub : forall Θ m Q P Ξ P',
-    Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' ->
-    Θ ⊩ (a_cstr_sub m Q :: nil) ⨾ P ⤳ Ξ ⨾ P'
+    {{ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}a ->
+    {{ Θ ⊩ (a_cstr_sub m Q :: nil) ⨾ P ⤳ Ξ ⨾ P' }}a
 | a_solve_cstr__eq : forall Θ Q C P Ξ1 Ξ2 P' P'',
-    Θ ⊢ₑ P ∼ Q ⤳ Ξ1 ⨾ P'' ->
-    (Ξ1 ++ Θ) ⊩ C ⨾ P'' ⤳ Ξ2 ⨾ P' ->
-    Θ ⊩ (a_cstr_eq Q :: C) ⨾ P ⤳ (Ξ2 ++ Ξ1) ⨾ P'
-where "Θ ⊩ C ⨾ P ⤳ Ξ ⨾ Q" := (a_solve_cstr Θ C P Ξ Q) : type_scope.
+    {{ Θ ⊢ₑ P ∼ Q ⤳ Ξ1 ⨾ P'' }}a ->
+    {{ (Ξ1 ++ Θ) ⊩ C ⨾ P'' ⤳ Ξ2 ⨾ P' }}a ->
+    {{ Θ ⊩ (a_cstr_eq Q :: C) ⨾ P ⤳ (Ξ2 ++ Ξ1) ⨾ P' }}a
+where "{{ Θ ⊩ C ⨾ P ⤳ Ξ ⨾ Q }}a" := (a_solve_cstr Θ C P Ξ Q) : frost_a_scope.
 
-Reserved Notation "Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q"
-  (at level 75, P at level 74, NM at level 0, α at level 0, m at level 0,
-   P' at level 74, Ξ at level 0, Q at level 74, no associativity).
+Reserved Notation "{{ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q }}a"
+  (at level 0, P at level 74, NM at level 0, α at level 0, m at level 0, P' at level 74, Ξ at level 74, Q at level 74,
+   format "'{{'  Θ0  ⊢  P  ⊳[  NM  ,  α  ,  m  ]  P'  ⤳  Ξ  ↪  Q  '}}a'").
 (* The look judgment [look[N][M]{α}{P}{P'}{Q}[Ξ]] (fig:poly-info-extraction,
    top box): collect constraints, solve them against the empty input [□],
    then apply [guess[N]]. *)
@@ -811,14 +817,14 @@ Reserved Notation "Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q"
    because [app] is not commutative on the nose. *)
 Inductive a_extract : aenv -> a_sub_mode -> atom -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
 | a_extract__solve : forall Θ0 NM α m P P' Ξ Ξs Ξ' C Q Q',
-    Θ0 ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
-    (Ξ ++ Θ0) ⊩ C ⨾ pskl_hole ⤳ Ξs ⨾ Q ->
+    {{ Θ0 ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
+    {{ (Ξ ++ Θ0) ⊩ C ⨾ pskl_hole ⤳ Ξs ⨾ Q }}a ->
     (* the guess runs AFTER the collection AND the solving, so its
        avoid-input is the whole [Ξs ++ Ξ ++ Θ0] — this is what makes the
        three halves of the output block [Ξ ++ Ξs ++ Ξ'] disjoint *)
     a_guess (Ξs ++ Ξ ++ Θ0) NM Q Ξ' Q' ->
-    Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ (Ξ ++ Ξs ++ Ξ') ↪ Q'
-where "Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q" := (a_extract Θ0 NM α m P P' Ξ Q) : type_scope.
+    {{ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ (Ξ ++ Ξs ++ Ξ') ↪ Q' }}a
+where "{{ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q }}a" := (a_extract Θ0 NM α m P P' Ξ Q) : frost_a_scope.
 
 (* ===================================================================== *)
 (*  Algorithmic consistency  [Θ0 ⊢[Δ1|Δ2][P0] P ~ Q ⊣ Θ1]                 *)
@@ -873,8 +879,8 @@ where "Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q" := (a_extract Θ0 NM α m P
    [add β F].  DESIGN.md §4.3. *)
 Inductive a_assign : aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
 | a_assign__univ_ghost_id : forall Θ0 α,                (* Assign-UnivGhost-Id *)
-    ((α ~ abind_flex_mono) ++ Θ0) ⊲[ nil ] α ≔ (pskl_tophole (pskl_var_f α))
-      ⊣ ((α ~ abind_flex_mono) ++ Θ0)
+    {{ ((α ~ abind_flex_mono) ++ Θ0) ⊲[ nil ] α ≔ (pskl_tophole (pskl_var_f α))
+      ⊣ ((α ~ abind_flex_mono) ++ Θ0) }}a
 | a_assign__solve_m : forall Θ0 Ξ α P βs τ,             (* Assign-SolveM *)
     α `notin` ftvar_in_pskl P ->
     a_guess_mono Θ0 P βs τ ->
@@ -887,8 +893,8 @@ Inductive a_assign : aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
     uniq βs ->
     (forall α1, α1 `in` dom βs ->
        α1 `notin` add α (dom (Ξ ++ Θ0))) ->
-    ((α ~ abind_flex_mono) ++ Θ0) ⊲[ Ξ ] α ≔ P
-      ⊣ ((α ~ abind_flex_mono_def τ) ++ βs ++ Ξ ++ Θ0)
+    {{ ((α ~ abind_flex_mono) ++ Θ0) ⊲[ Ξ ] α ≔ P
+      ⊣ ((α ~ abind_flex_mono_def τ) ++ βs ++ Ξ ++ Θ0) }}a
 | a_assign__assign : forall Θ0 Θ1 Ξ α β τ P Q,          (* Assign-Assign *)
     (* The premise is CONSISTENCY over the MERGED context [Θ₀,Ξ = Ξ ++ Θ0],
        with subject [α̂[τ/β̂]] and input [P[τ/β̂]], output dropped.  [Δ₁∣Δ₂] are
@@ -925,11 +931,11 @@ Inductive a_assign : aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
        [α̂] IS the head binding, so it is not in [Θ0] at all). *)
     a_flex_tvar ((β ~ abind_flex_mono_def τ) ++ Θ0) α ->
     β `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
-    (Ξ ++ Θ0) ⊢ᵃ[ empty | empty
+    {{ (Ξ ++ Θ0) ⊢[ empty | empty
          | (subst_pskl_in_pskl (ptyp_to_pskl τ) β P) ]
-      (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)) ∼ Q ⊣ Θ1 ->
-    ((β ~ abind_flex_mono_def τ) ++ Θ0) ⊲[ Ξ ] α ≔ P
-      ⊣ ((β ~ abind_flex_mono_def τ) ++ Θ1)
+      (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)) ∼ Q ⊣ Θ1 }}a ->
+    {{ ((β ~ abind_flex_mono_def τ) ++ Θ0) ⊲[ Ξ ] α ≔ P
+      ⊣ ((β ~ abind_flex_mono_def τ) ++ Θ1) }}a
 | a_assign__depend : forall Θ0 Θ1 Ξ α β P,              (* Assign-Depend *)
     (* [Ξ] grows at its TAIL (the paper's [Θ₀ | β̂,Ξ]; the implementation's
        [assign alpha p (xi @ [hd]) theta]).  Consing at the head instead would
@@ -939,31 +945,31 @@ Inductive a_assign : aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
        whose premise context is literally [Ξ ++ Θ0]. *)
     α <> β ->
     β `in` ftvar_in_pskl P ->
-    Θ0 ⊲[ Ξ ++ (β ~ abind_flex_mono) ] α ≔ P ⊣ Θ1 ->
-    ((β ~ abind_flex_mono) ++ Θ0) ⊲[ Ξ ] α ≔ P ⊣ Θ1
+    {{ Θ0 ⊲[ Ξ ++ (β ~ abind_flex_mono) ] α ≔ P ⊣ Θ1 }}a ->
+    {{ ((β ~ abind_flex_mono) ++ Θ0) ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a
 | a_assign__skip : forall Θ0 Θ1 Ξ α β P,                (* Assign-Skip *)
     α <> β ->
     β `notin` ftvar_in_pskl P ->
     β `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
-    Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
-    ((β ~ abind_flex_mono) ++ Θ0) ⊲[ Ξ ] α ≔ P
-      ⊣ ((β ~ abind_flex_mono) ++ Θ1)
+    {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a ->
+    {{ ((β ~ abind_flex_mono) ++ Θ0) ⊲[ Ξ ] α ≔ P
+      ⊣ ((β ~ abind_flex_mono) ++ Θ1) }}a
 | a_assign__skip_rigid : forall Θ0 Θ1 Ξ α β P,          (* Assign-SkipRigid *)
     β `notin` ftvar_in_pskl P ->
     β `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
-    Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
-    ((β ~ abind_tvar) ++ Θ0) ⊲[ Ξ ] α ≔ P ⊣ ((β ~ abind_tvar) ++ Θ1)
+    {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a ->
+    {{ ((β ~ abind_tvar) ++ Θ0) ⊲[ Ξ ] α ≔ P ⊣ ((β ~ abind_tvar) ++ Θ1) }}a
 | a_assign__skip_tm_var : forall Θ0 Θ1 Ξ α x A P,       (* Assign-SkipTmVar *)
     (* NAMING: the entry's payload is a [ptyp], so [A]. *)
     x `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
-    Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
-    ((x ~ abind_var_typ A) ++ Θ0) ⊲[ Ξ ] α ≔ P
-      ⊣ ((x ~ abind_var_typ A) ++ Θ1)
+    {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a ->
+    {{ ((x ~ abind_var_typ A) ++ Θ0) ⊲[ Ξ ] α ≔ P
+      ⊣ ((x ~ abind_var_typ A) ++ Θ1) }}a
 | a_assign__skip_tm_skl : forall Θ0 Θ1 Ξ α x Q P,       (* Assign-SkipTmVar (skl) *)
     x `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
-    Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
-    ((x ~ abind_var_skl Q) ++ Θ0) ⊲[ Ξ ] α ≔ P
-      ⊣ ((x ~ abind_var_skl Q) ++ Θ1)
+    {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a ->
+    {{ ((x ~ abind_var_skl Q) ++ Θ0) ⊲[ Ξ ] α ≔ P
+      ⊣ ((x ~ abind_var_skl Q) ++ Θ1) }}a
 
 with a_unify : aenv -> atom -> atom -> aenv -> Prop :=
 (* NB the SUBJECTS are atoms.  The paper's [unifyvar{α̂}{β̂}] has HATTED
@@ -981,18 +987,18 @@ with a_unify : aenv -> atom -> atom -> aenv -> Prop :=
        consistency [τ ∼ τ]), so no derivation is lost either way — but the
        rule would not be the paper's. *)
     a_flex_tvar Θ0 α ->
-    Θ0 ⊲ α ≈ᵘ α ⊣ Θ0
+    {{ Θ0 ⊲ α ≈ᵘ α ⊣ Θ0 }}a
 | a_unify__flex_l : forall Θ0 α β,                       (* Flex-Flex-L *)
     α <> β ->
     (* hatted payload (paper metavariable convention, cf. PAPER-GAPS) *)
     a_flex_tvar Θ0 β ->
-    ((α ~ abind_flex_mono) ++ Θ0) ⊲ α ≈ᵘ β
-      ⊣ ((α ~ abind_flex_mono_def (ptyp_var_f β)) ++ Θ0)
+    {{ ((α ~ abind_flex_mono) ++ Θ0) ⊲ α ≈ᵘ β
+      ⊣ ((α ~ abind_flex_mono_def (ptyp_var_f β)) ++ Θ0) }}a
 | a_unify__flex_r : forall Θ0 α β,                       (* Flex-Flex-R *)
     α <> β ->
     a_flex_tvar Θ0 α ->
-    ((β ~ abind_flex_mono) ++ Θ0) ⊲ α ≈ᵘ β
-      ⊣ ((β ~ abind_flex_mono_def (ptyp_var_f α)) ++ Θ0)
+    {{ ((β ~ abind_flex_mono) ++ Θ0) ⊲ α ≈ᵘ β
+      ⊣ ((β ~ abind_flex_mono_def (ptyp_var_f α)) ++ Θ0) }}a
 | a_unify__flex_assign : forall Θ0 Θ1 α1 τ α β Q,         (* Flex-Flex-Assign *)
     (* [paper-gap] The premise's [∼] is CONSISTENCY, not [unifyvar].  The paper
        (full-algo-spec.tex:1440-1442) writes "we write Θ₀ ⊢ P ∼ P₀ ⊣ Θ₁ for
@@ -1019,39 +1025,39 @@ with a_unify : aenv -> atom -> atom -> aenv -> Prop :=
     a_flex_tvar ((α1 ~ abind_flex_mono_def τ) ++ Θ0) α ->
     a_flex_tvar ((α1 ~ abind_flex_mono_def τ) ++ Θ0) β ->
     α1 `notin` dom Θ1 ->                    (* prose-completion (Barendregt) *)
-    Θ0 ⊢ᵃ[ empty | empty
+    {{ Θ0 ⊢[ empty | empty
          | (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f β))) ]
-      (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f α))) ∼ Q ⊣ Θ1 ->
-    ((α1 ~ abind_flex_mono_def τ) ++ Θ0) ⊲ α ≈ᵘ β
-      ⊣ ((α1 ~ abind_flex_mono_def τ) ++ Θ1)
+      (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f α))) ∼ Q ⊣ Θ1 }}a ->
+    {{ ((α1 ~ abind_flex_mono_def τ) ++ Θ0) ⊲ α ≈ᵘ β
+      ⊣ ((α1 ~ abind_flex_mono_def τ) ++ Θ1) }}a
 | a_unify__flex_skip : forall Θ0 Θ1 α1 α β,               (* Flex-Flex-Skip *)
     α1 <> α ->
     α1 <> β ->
     α1 `notin` dom Θ1 ->                    (* prose-completion (Barendregt) *)
-    Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
-    ((α1 ~ abind_flex_mono) ++ Θ0) ⊲ α ≈ᵘ β ⊣ ((α1 ~ abind_flex_mono) ++ Θ1)
+    {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a ->
+    {{ ((α1 ~ abind_flex_mono) ++ Θ0) ⊲ α ≈ᵘ β ⊣ ((α1 ~ abind_flex_mono) ++ Θ1) }}a
 | a_unify__skip_other : forall Θ0 Θ1 c b α β,            (* Flex-Flex-Skip' *)
     (b = abind_tvar \/
      (exists A, b = abind_var_typ A) \/
      (exists Q, b = abind_var_skl Q)) ->
     c `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
-    Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
-    ((c ~ b) ++ Θ0) ⊲ α ≈ᵘ β ⊣ ((c ~ b) ++ Θ1)
+    {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a ->
+    {{ ((c ~ b) ++ Θ0) ⊲ α ≈ᵘ β ⊣ ((c ~ b) ++ Θ1) }}a
 
 with a_consis : atoms -> atoms -> aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
 | a_consis__ghost : forall Δ1 Δ2 Θ0 P0,                     (* Ghost *)
     Δ2 ∩ ftvar_in_pskl P0 [=] empty ->
-    Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] pskl_hole ∼ P0 ⊣ Θ0
+    {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] pskl_hole ∼ P0 ⊣ Θ0 }}a
 | a_consis__unit : forall Δ1 Δ2 Θ0,                         (* Unit *)
-    Θ0 ⊢ᵃ[ Δ1 | Δ2 | pskl_unit ] pskl_unit ∼ pskl_unit ⊣ Θ0
+    {{ Θ0 ⊢[ Δ1 | Δ2 | pskl_unit ] pskl_unit ∼ pskl_unit ⊣ Θ0 }}a
 | a_consis__rigid : forall Δ1 Δ2 Θ0 α,                      (* Rigid *)
     binds α abind_tvar Θ0 ->
-    Θ0 ⊢ᵃ[ Δ1 | Δ2 | (pskl_var_f α) ] (pskl_var_f α) ∼ (pskl_var_f α) ⊣ Θ0
+    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f α) ] (pskl_var_f α) ∼ (pskl_var_f α) ⊣ Θ0 }}a
 | a_consis__arrow : forall Δ1 Δ2 Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2, (* Arrow *)
-    Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0a ] P1 ∼ Q1 ⊣ Θ1 ->
-    Θ1 ⊢ᵃ[ Δ1 | Δ2 | P0b ] P2 ∼ Q2 ⊣ Θ2 ->
-    Θ0 ⊢ᵃ[ Δ1 | Δ2 | (pskl_arrow P0a P0b) ]
-      (pskl_arrow P1 P2) ∼ (pskl_arrow Q1 Q2) ⊣ Θ2
+    {{ Θ0 ⊢[ Δ1 | Δ2 | P0a ] P1 ∼ Q1 ⊣ Θ1 }}a ->
+    {{ Θ1 ⊢[ Δ1 | Δ2 | P0b ] P2 ∼ Q2 ⊣ Θ2 }}a ->
+    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_arrow P0a P0b) ]
+      (pskl_arrow P1 P2) ∼ (pskl_arrow Q1 Q2) ⊣ Θ2 }}a
 (* EXISTS-FRESH, INPUT-only side condition, explicit CLOSE (DESIGN.md §4.3,
    the freshness campaign's cluster 4).  ⚠️ NOT a repair: unlike the look /
    solve / guess clusters, these three rows CLOSE — the skeleton output is
@@ -1076,65 +1082,65 @@ with a_consis : atoms -> atoms -> aenv -> pskl -> pskl -> pskl -> aenv -> Prop :
 | a_consis__forall_inh : forall Δ1 Δ2 Θ0 Θ1 P0 P Q α,       (* ForallInh: α to BOTH *)
     α `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
       `union` ftvar_in_pskl P `union` Δ1 `union` Δ2 ->
-    ((α ~ abind_tvar) ++ Θ0)
-      ⊢ᵃ[ (add α Δ1) | (add α Δ2)
+    {{ ((α ~ abind_tvar) ++ Θ0)
+      ⊢[ (add α Δ1) | (add α Δ2)
         | (open_pskl_wrt_pskl P0 (pskl_var_f α)) ]
       (open_pskl_wrt_pskl P (pskl_var_f α)) ∼ Q
-      ⊣ ((α ~ abind_tvar) ++ Θ1) ->
-    Θ0 ⊢ᵃ[ Δ1 | Δ2 | (pskl_all_syn P0) ]
-      (pskl_all_syn P) ∼ (pskl_all_syn (close_pskl_wrt_pskl α Q)) ⊣ Θ1
+      ⊣ ((α ~ abind_tvar) ++ Θ1) }}a ->
+    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_all_syn P0) ]
+      (pskl_all_syn P) ∼ (pskl_all_syn (close_pskl_wrt_pskl α Q)) ⊣ Θ1 }}a
 | a_consis__forall_syn : forall Δ1 Δ2 Θ0 Θ1 P0 P Q α,       (* ForallSyn: α to Δ2 *)
     α `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
       `union` ftvar_in_pskl P `union` Δ1 `union` Δ2 ->
-    ((α ~ abind_tvar) ++ Θ0)
-      ⊢ᵃ[ Δ1 | (add α Δ2) | (pskl_tophole P0) ]
+    {{ ((α ~ abind_tvar) ++ Θ0)
+      ⊢[ Δ1 | (add α Δ2) | (pskl_tophole P0) ]
       (open_pskl_wrt_pskl P (pskl_var_f α)) ∼ Q
-      ⊣ ((α ~ abind_tvar) ++ Θ1) ->
-    Θ0 ⊢ᵃ[ Δ1 | Δ2 | (pskl_tophole P0) ]
-      (pskl_all_syn P) ∼ (pskl_all_syn (close_pskl_wrt_pskl α Q)) ⊣ Θ1
+      ⊣ ((α ~ abind_tvar) ++ Θ1) }}a ->
+    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) ]
+      (pskl_all_syn P) ∼ (pskl_all_syn (close_pskl_wrt_pskl α Q)) ⊣ Θ1 }}a
 | a_consis__univ_ghost : forall Δ1 Δ2 Θ0 Θ1 P0 P Q,         (* UnivGhost *)
-    Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
-    Θ0 ⊢ᵃ[ Δ1 | Δ2 | (pskl_tophole P0) ]
-      (pskl_tophole P) ∼ (pskl_tophole Q) ⊣ Θ1
+    {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}a ->
+    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) ]
+      (pskl_tophole P) ∼ (pskl_tophole Q) ⊣ Θ1 }}a
 | a_consis__univ_ghost1 : forall Δ1 Δ2 Θ0 Θ1 P0 P Q α,      (* UnivGhost1: α to Δ1 *)
     (* exists-fresh + close, as ForallInh/ForallSyn above *)
     α `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
       `union` ftvar_in_pskl P `union` Δ1 `union` Δ2 ->
-    ((α ~ abind_tvar) ++ Θ0)
-      ⊢ᵃ[ (add α Δ1) | Δ2
+    {{ ((α ~ abind_tvar) ++ Θ0)
+      ⊢[ (add α Δ1) | Δ2
         | (open_pskl_wrt_pskl P0 (pskl_var_f α)) ]
       (pskl_tophole P) ∼ Q
-      ⊣ ((α ~ abind_tvar) ++ Θ1) ->
-    Θ0 ⊢ᵃ[ Δ1 | Δ2 | (pskl_all_syn P0) ]
-      (pskl_tophole P) ∼ (pskl_all_syn (close_pskl_wrt_pskl α Q)) ⊣ Θ1
+      ⊣ ((α ~ abind_tvar) ++ Θ1) }}a ->
+    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_all_syn P0) ]
+      (pskl_tophole P) ∼ (pskl_all_syn (close_pskl_wrt_pskl α Q)) ⊣ Θ1 }}a
 | a_consis__univ_ghost2 : forall Δ1 Δ2 Θ0 Θ1 P0 P Q,        (* UnivGhost2 *)
     guarded_pskl P0 ->
     a_non_flex Θ0 P0 ->
-    Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
-    Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] (pskl_tophole P) ∼ Q ⊣ Θ1
+    {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}a ->
+    {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] (pskl_tophole P) ∼ Q ⊣ Θ1 }}a
 | a_consis__flex : forall Δ1 Δ2 Θ0 Θ1 α β,                  (* Flex *)
-    Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
-    Θ0 ⊢ᵃ[ Δ1 | Δ2 | (pskl_var_f β) ] (pskl_var_f α) ∼ (pskl_var_f α) ⊣ Θ1
+    {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a ->
+    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f β) ] (pskl_var_f α) ∼ (pskl_var_f α) ⊣ Θ1 }}a
 | a_consis__flex_l : forall Δ1 Δ2 Θ0 Θ1 α P0,               (* FlexL *)
     a_non_flex Θ0 P0 ->
-    Θ0 ⊲[ nil ] α ≔ P0 ⊣ Θ1 ->
-    Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] (pskl_var_f α) ∼ (pskl_var_f α) ⊣ Θ1
+    {{ Θ0 ⊲[ nil ] α ≔ P0 ⊣ Θ1 }}a ->
+    {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] (pskl_var_f α) ∼ (pskl_var_f α) ⊣ Θ1 }}a
 | a_consis__flex_r : forall Δ1 Δ2 Θ0 Θ1 α P,                (* FlexR *)
     a_non_flex Θ0 P ->
-    Θ0 ⊲[ nil ] α ≔ P ⊣ Θ1 ->
-    Θ0 ⊢ᵃ[ Δ1 | Δ2 | (pskl_var_f α) ] P ∼ (pskl_var_f α) ⊣ Θ1
+    {{ Θ0 ⊲[ nil ] α ≔ P ⊣ Θ1 }}a ->
+    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f α) ] P ∼ (pskl_var_f α) ⊣ Θ1 }}a
 | a_consis__ghost_r : forall Δ1 Δ2 Θ0 P,                    (* GhostR *)
     Δ1 ∩ ftvar_in_pskl P [=] empty ->
-    Θ0 ⊢ᵃ[ Δ1 | Δ2 | pskl_hole ] P ∼ P ⊣ Θ0
+    {{ Θ0 ⊢[ Δ1 | Δ2 | pskl_hole ] P ∼ P ⊣ Θ0 }}a
 | a_consis__univ_ghost_r : forall Δ1 Δ2 Θ0 Θ1 P0 P Q,       (* UnivGhostR *)
     guarded_pskl P ->
     a_non_flex Θ0 P ->
-    Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
-    Θ0 ⊢ᵃ[ Δ1 | Δ2 | (pskl_tophole P0) ] P ∼ Q ⊣ Θ1
-where "Θ ⊲[ Ξ ] α ≔ P ⊣ Θ'" := (a_assign Θ Ξ α P Θ') : type_scope
-and "Θ ⊲ α ≈ᵘ β ⊣ Θ'" := (a_unify Θ α β Θ') : type_scope
-and "Θ ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ'" :=
-  (a_consis Δ1 Δ2 Θ P0 P Q Θ') : type_scope.
+    {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}a ->
+    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) ] P ∼ Q ⊣ Θ1 }}a
+where "{{ Θ ⊲[ Ξ ] α ≔ P ⊣ Θ' }}a" := (a_assign Θ Ξ α P Θ') : frost_a_scope
+and "{{ Θ ⊲ α ≈ᵘ β ⊣ Θ' }}a" := (a_unify Θ α β Θ') : frost_a_scope
+and "{{ Θ ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ' }}a" :=
+  (a_consis Δ1 Δ2 Θ P0 P Q Θ') : frost_a_scope.
 
 (* Mutual induction scheme for the algorithmic judgments.  Kept next to the
    inductives (it needs only them) so the metasubst-layer flex-preservation
@@ -1147,15 +1153,16 @@ Combined Scheme a_assign_unify_consis_mutind
   from a_assign_mind, a_unify_mind, a_consis_mind.
 
 (* Both-Δ-empty form (the paper "omit[s] them when both are empty"). *)
-Notation "Θ ⊢ᵃ[ P0 ] P ∼ Q ⊣ Θ'" := (a_consis empty empty Θ P0 P Q Θ')
-  (at level 70, P0 at level 0, P at level 0, Q at level 0, Θ' at level 0).
+Notation "{{ Θ ⊢[ P0 ] P ∼ Q ⊣ Θ' }}a" := (a_consis empty empty Θ P0 P Q Θ')
+  (at level 0, P0 at level 0, P at level 74, Q at level 74, Θ' at level 74,
+   format "'{{'  Θ  ⊢[  P0  ]  P  ∼  Q  ⊣  Θ'  '}}a'") : frost_a_scope.
 
 (* [aconsis{Θ0}{P}{P0}{Θ1}]: output-suppressed abbreviation (paper). *)
 Definition a_consis_chk (Θ0 : aenv) (P P0 : pskl) (Θ1 : aenv) : Prop :=
-  exists Q, Θ0 ⊢ᵃ[ P0 ] P ∼ Q ⊣ Θ1.
+  exists Q, {{ Θ0 ⊢[ P0 ] P ∼ Q ⊣ Θ1 }}a.
 
 (* ===================================================================== *)
-(*  Algorithmic subtyping  [Θ0 ⊢ᵃ[ N | M | P0 ] P ⩽ Q ⊣ Θ1]               *)
+(*  Algorithmic subtyping  [{{ Θ0 ⊢[ N | M | P0 ] P ⩽ Q ⊣ Θ1 }}a]         *)
 (*  (fig:alg-subtyping) MUTUAL with the flexible-variable auxiliary        *)
 (*  judgment (second box), here [a_sub_flex]: [FlexMono] hands a bare      *)
 (*  flex LHS [α̂] to it; its [Flex-Solve] re-enters [a_sub].                *)
@@ -1221,7 +1228,7 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
     a_sub_flex NM M P0 Θ0 nil α Q Θ1 ->
     a_sub NM (mode_fn M) P0 Θ0 (pskl_var_f α) Q Θ1
 | a_sub__arrow : forall NM M Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2,    (* Arrow *)
-    Θ0 ⊢ᵃ[ P0a ] P1 ∼ Q1 ⊣ Θ1 ->
+    {{ Θ0 ⊢[ P0a ] P1 ∼ Q1 ⊣ Θ1 }}a ->
     a_sub NM M P0b Θ1 P2 Q2 Θ2 ->
     a_sub NM (mode_fn M) (pskl_arrow P0a P0b) Θ0 (pskl_arrow P1 P2)
       (pskl_arrow Q1 Q2) Θ2
@@ -1239,7 +1246,7 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
        Consumers that want a family apply that lemma. *)
     α `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P
       `union` ftvar_in_pskl P0 ->
-    Θ0 ⊢ (open_pskl_wrt_pskl P (pskl_var_f α)) ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ P1 ->
+    {{ Θ0 ⊢ (open_pskl_wrt_pskl P (pskl_var_f α)) ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ P1 }}a ->
     (* prose-completion (PAPER-GAPS): the paper's "fresh" Ξ — [a_lookeq]'s
        LE-FlexR and [a_guess_mono]'s hole rule pick arbitrary names, so
        re-attaching Ξ needs the freshness stated. *)
@@ -1248,7 +1255,7 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
        weak judgment in the paper; [a_scope_pskl]'s scoping-only reading is the
        mech/impl liberalism, WF-SIDE-CONDITIONS.md) — the instantiation must
        not smuggle a binder into a ∀◇-body (∀α.∀◇.(α→α) is wf nowhere). *)
-    (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P1 ->
+    {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P1 }}a ->
     a_sub NM M P0 (Ξ ++ Θ0) (open_pskl_wrt_pskl P P1) Q Θ1 ->
     a_sub NM M P0 Θ0 (pskl_all_syn P) Q Θ1
 | a_sub__ghost : forall M Θ0 P0,                              (* Ghost *)
@@ -1337,9 +1344,9 @@ with a_sub_flex : a_sub_mode -> mode -> pskl -> aenv -> aenv -> atom -> pskl -> 
 (* Skeleton splitting  [Θ0 ⊲ split P0 = P→Q ⊣ Θ1] (fig:alg-type-inference). *)
 Inductive a_split : aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
 | a_split__arrow : forall Θ0 P Q,
-    Θ0 ⊲ (pskl_arrow P Q) ▹ P ⇢ Q ⊣ Θ0
+    {{ Θ0 ⊲ (pskl_arrow P Q) ▹ P ⇢ Q ⊣ Θ0 }}a
 | a_split__hole : forall Θ0,
-    Θ0 ⊲ pskl_hole ▹ pskl_hole ⇢ pskl_hole ⊣ Θ0
+    {{ Θ0 ⊲ pskl_hole ▹ pskl_hole ⇢ pskl_hole ⊣ Θ0 }}a
 | a_split__flex : forall Θ0 Θ1 α β α1 Q,                 (* split[α̂] = β̂→α1̂ *)
     (* The two invented flexibles are FRESH.  The paper says so in prose
        ("fresh"); the mech makes it a rule premise, INPUT-only and against
@@ -1357,15 +1364,15 @@ Inductive a_split : aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
        ARROW.  (Encoding it as [a_unify] is what forced [a_unify] to take
        general monotypes rather than the paper's hatted variables.)
        Consistency's FlexL then assigns [α̂ ≔ β̂ → α1̂]. *)
-    ((α1 ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θ0)
-      ⊢ᵃ[ empty | empty | (pskl_arrow (pskl_var_f β) (pskl_var_f α1)) ]
-        (pskl_var_f α) ∼ Q ⊣ Θ1 ->
-    Θ0 ⊲ (pskl_var_f α) ▹ (pskl_var_f β) ⇢ (pskl_var_f α1) ⊣ Θ1
-where "Θ ⊲ P0 ▹ P ⇢ Q ⊣ Θ'" := (a_split Θ P0 P Q Θ') : type_scope
-  and "Θ ⊢ᵃ[ N | m | P0 ] P ⩽ Q ⊣ Θ'" := (a_sub N m P0 Θ P Q Θ').
+    {{ ((α1 ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θ0)
+      ⊢[ empty | empty | (pskl_arrow (pskl_var_f β) (pskl_var_f α1)) ]
+        (pskl_var_f α) ∼ Q ⊣ Θ1 }}a ->
+    {{ Θ0 ⊲ (pskl_var_f α) ▹ (pskl_var_f β) ⇢ (pskl_var_f α1) ⊣ Θ1 }}a
+where "{{ Θ ⊲ P0 ▹ P ⇢ Q ⊣ Θ' }}a" := (a_split Θ P0 P Q Θ') : frost_a_scope
+  and "{{ Θ ⊢[ N | m | P0 ] P ⩽ Q ⊣ Θ' }}a" := (a_sub N m P0 Θ P Q Θ') : frost_a_scope.
 
 (* ===================================================================== *)
-(*  Algorithmic skeleton inference  [Θ ⊢ₛᵃ[ M ; P0 ] e ⦂ Q ⊣ Θ']           *)
+(*  Algorithmic skeleton inference  [{{ Θ ⊢ˢ[ M ; P0 ] e ⦂ Q ⊣ Θ' }}a]     *)
 (*  (fig:alg-skeleton-inference)                                          *)
 (* ===================================================================== *)
 (* ⚠️ THE FOUR BINDER ROWS BELOW ARE STILL COFINITE, and that is the tree's one
@@ -1383,84 +1390,84 @@ where "Θ ⊲ P0 ▹ P ⇢ Q ⊣ Θ'" := (a_split Θ P0 P Q Θ') : type_scope
    at all. *)
 Inductive a_pat : mode -> aenv -> pskl -> exp -> pskl -> aenv -> Prop :=
 | a_pat__unit : forall m Θ0 Θ1 P0 P,                        (* AP-Unit *)
-    Θ0 ⊢ᵃ[ a_sub_mode_sk | m | P0 ] pskl_unit ⩽ P ⊣ Θ1 ->
-    Θ0 ⊢ₛᵃ[ m ; P0 ] exp_unit ⦂ P ⊣ Θ1
+    {{ Θ0 ⊢[ a_sub_mode_sk | m | P0 ] pskl_unit ⩽ P ⊣ Θ1 }}a ->
+    {{ Θ0 ⊢ˢ[ m ; P0 ] exp_unit ⦂ P ⊣ Θ1 }}a
 | a_pat__var : forall m Θ0 Θ1 P0 x A Q,         (* AP-Var (type-bound x) *)
     binds x (abind_var_typ A) Θ0 ->
-    Θ0 ⊢ᵃ[ a_sub_mode_sk | m | P0 ] (ptyp_to_pskl A) ⩽ Q ⊣ Θ1 ->
-    Θ0 ⊢ₛᵃ[ m ; P0 ] (exp_var_f x) ⦂ Q ⊣ Θ1
+    {{ Θ0 ⊢[ a_sub_mode_sk | m | P0 ] (ptyp_to_pskl A) ⩽ Q ⊣ Θ1 }}a ->
+    {{ Θ0 ⊢ˢ[ m ; P0 ] (exp_var_f x) ⦂ Q ⊣ Θ1 }}a
 | a_pat__var_skl : forall m Θ0 Θ1 P0 x P Q,     (* AP-Var (skeleton-bound x) *)
     binds x (abind_var_skl P) Θ0 ->
-    Θ0 ⊢ᵃ[ a_sub_mode_sk | m | P0 ] P ⩽ Q ⊣ Θ1 ->
-    Θ0 ⊢ₛᵃ[ m ; P0 ] (exp_var_f x) ⦂ Q ⊣ Θ1
+    {{ Θ0 ⊢[ a_sub_mode_sk | m | P0 ] P ⩽ Q ⊣ Θ1 }}a ->
+    {{ Θ0 ⊢ˢ[ m ; P0 ] (exp_var_f x) ⦂ Q ⊣ Θ1 }}a
 | a_pat__anno : forall m Θ0 Θ1 P0 e A Q,                    (* AP-Anno *)
-    Θ0 ⊢ᵃ[ a_sub_mode_sk | m | P0 ] (ptyp_to_pskl A) ⩽ Q ⊣ Θ1 ->
-    Θ0 ⊢ₛᵃ[ m ; P0 ] (exp_anno e A) ⦂ Q ⊣ Θ1
+    {{ Θ0 ⊢[ a_sub_mode_sk | m | P0 ] (ptyp_to_pskl A) ⩽ Q ⊣ Θ1 }}a ->
+    {{ Θ0 ⊢ˢ[ m ; P0 ] (exp_anno e A) ⦂ Q ⊣ Θ1 }}a
 | a_pat__freeze : forall Θ0 e Q Θ1,                         (* AP-Freeze *)
-    Θ0 ⊢ₛᵃ[ mode_ti ; pskl_hole ] e ⦂ Q ⊣ Θ1 ->
-    Θ0 ⊢ₛᵃ[ mode_tc ; pskl_hole ] (exp_freeze e) ⦂ Q ⊣ Θ1
+    {{ Θ0 ⊢ˢ[ mode_ti ; pskl_hole ] e ⦂ Q ⊣ Θ1 }}a ->
+    {{ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] (exp_freeze e) ⦂ Q ⊣ Θ1 }}a
 | a_pat__abs : forall L m Θ0 Θ1 Θ2 P0 P Q0 e Q Ξ,           (* AP-Abs *)
     m <> mode_tc ->
-    Θ0 ⊲ P0 ▹ P ⇢ Q0 ⊣ Θ1 ->
+    {{ Θ0 ⊲ P0 ▹ P ⇢ Q0 ⊣ Θ1 }}a ->
     a_suffix Ξ ->
     (forall x, x `notin` L ->
-       ((x ~ abind_var_skl P) ++ Θ1) ⊢ₛᵃ[ (decr_mode m) ; Q0 ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q ⊣ (Ξ ++ (x ~ abind_var_skl P) ++ Θ2)) ->
-    Θ0 ⊢ₛᵃ[ m ; P0 ] (exp_abs e) ⦂ (pskl_arrow P Q) ⊣ (Ξ ++ Θ2)
+       {{ ((x ~ abind_var_skl P) ++ Θ1) ⊢ˢ[ (decr_mode m) ; Q0 ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q ⊣ (Ξ ++ (x ~ abind_var_skl P) ++ Θ2) }}a) ->
+    {{ Θ0 ⊢ˢ[ m ; P0 ] (exp_abs e) ⦂ (pskl_arrow P Q) ⊣ (Ξ ++ Θ2) }}a
 | a_pat__abs_anno : forall L m Θ0 Θ1 Θ2 Θ3 P0 P Q0 A e Q Ξ,  (* AP-AbsAnno *)
     m <> mode_tc ->
-    Θ0 ⊲ P0 ▹ P ⇢ Q0 ⊣ Θ1 ->
+    {{ Θ0 ⊲ P0 ▹ P ⇢ Q0 ⊣ Θ1 }}a ->
     a_consis_chk Θ1 (ptyp_to_pskl A) P Θ2 ->
     a_suffix Ξ ->
     (forall x, x `notin` L ->
-       ((x ~ abind_var_typ A) ++ Θ2) ⊢ₛᵃ[ (decr_mode m) ; Q0 ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ3)) ->
-    Θ0 ⊢ₛᵃ[ m ; P0 ] (exp_abs_anno A e) ⦂ (pskl_arrow (ptyp_to_pskl A) Q) ⊣ (Ξ ++ Θ3)
+       {{ ((x ~ abind_var_typ A) ++ Θ2) ⊢ˢ[ (decr_mode m) ; Q0 ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ3) }}a) ->
+    {{ Θ0 ⊢ˢ[ m ; P0 ] (exp_abs_anno A e) ⦂ (pskl_arrow (ptyp_to_pskl A) Q) ⊣ (Ξ ++ Θ3) }}a
 | a_pat__abs_check : forall L Θ0 Θ1 e Q Ξ,                  (* AP-AbsCheck *)
     a_suffix Ξ ->
     (forall x, x `notin` L ->
-       ((x ~ abind_var_skl pskl_hole) ++ Θ0) ⊢ₛᵃ[ mode_tc ; pskl_hole ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q ⊣ (Ξ ++ (x ~ abind_var_skl pskl_hole) ++ Θ1)) ->
-    Θ0 ⊢ₛᵃ[ mode_tc ; pskl_hole ] (exp_abs e)
-      ⦂ (pskl_tophole (pskl_arrow pskl_hole Q)) ⊣ (Ξ ++ Θ1)
+       {{ ((x ~ abind_var_skl pskl_hole) ++ Θ0) ⊢ˢ[ mode_tc ; pskl_hole ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q ⊣ (Ξ ++ (x ~ abind_var_skl pskl_hole) ++ Θ1) }}a) ->
+    {{ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] (exp_abs e)
+      ⦂ (pskl_tophole (pskl_arrow pskl_hole Q)) ⊣ (Ξ ++ Θ1) }}a
 | a_pat__abs_anno_check : forall L Θ0 Θ1 A e Q Ξ,           (* AP-AbsAnnoCheck *)
     a_suffix Ξ ->
     (forall x, x `notin` L ->
-       ((x ~ abind_var_typ A) ++ Θ0) ⊢ₛᵃ[ mode_tc ; pskl_hole ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ1)) ->
-    Θ0 ⊢ₛᵃ[ mode_tc ; pskl_hole ] (exp_abs_anno A e)
-      ⦂ (pskl_tophole (pskl_arrow (ptyp_to_pskl A) Q)) ⊣ (Ξ ++ Θ1)
+       {{ ((x ~ abind_var_typ A) ++ Θ0) ⊢ˢ[ mode_tc ; pskl_hole ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ1) }}a) ->
+    {{ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] (exp_abs_anno A e)
+      ⦂ (pskl_tophole (pskl_arrow (ptyp_to_pskl A) Q)) ⊣ (Ξ ++ Θ1) }}a
 | a_pat__app : forall m Θ0 Θ1 Θ2 P0 Q0 P Q e1 e2,           (* AP-App *)
-    Θ0 ⊢ₛᵃ[ mode_tc ; pskl_hole ] e2 ⦂ P0 ⊣ Θ1 ->
-    Θ1 ⊢ₛᵃ[ (mode_fn m) ; (pskl_arrow P0 Q0) ] e1 ⦂ (pskl_arrow P Q) ⊣ Θ2 ->
-    Θ0 ⊢ₛᵃ[ m ; Q0 ] (exp_app e1 e2) ⦂ Q ⊣ Θ2
-where "Θ ⊢ₛᵃ[ m ; P0 ] e ⦂ Q ⊣ Θ'" := (a_pat m Θ P0 e Q Θ').
+    {{ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] e2 ⦂ P0 ⊣ Θ1 }}a ->
+    {{ Θ1 ⊢ˢ[ (mode_fn m) ; (pskl_arrow P0 Q0) ] e1 ⦂ (pskl_arrow P Q) ⊣ Θ2 }}a ->
+    {{ Θ0 ⊢ˢ[ m ; Q0 ] (exp_app e1 e2) ⦂ Q ⊣ Θ2 }}a
+where "{{ Θ ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ' }}a" := (a_pat m Θ P0 e Q Θ') : frost_a_scope.
 
 (* ===================================================================== *)
-(*  Algorithmic type inference  [Θ ⊢ᵃ[ M ; P0 ] e ⦂ A ⊣ Θ']               *)
+(*  Algorithmic type inference  [{{ Θ ⊢[ M ; P0 ] e ⦂ A ⊣ Θ' }}a]         *)
 (*  (fig:alg-type-inference)                                              *)
 (* ===================================================================== *)
 Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
 | a_typing__unit : forall m Θ0 P0 A Θ1,                     (* AT-Unit *)
-    Θ0 ⊢ᵃ[ a_sub_mode_ty | m | P0 ] pskl_unit ⩽ (ptyp_to_pskl A) ⊣ Θ1 ->
-    Θ0 ⊢ᵃ[ m ; P0 ] exp_unit ⦂ A ⊣ Θ1
+    {{ Θ0 ⊢[ a_sub_mode_ty | m | P0 ] pskl_unit ⩽ (ptyp_to_pskl A) ⊣ Θ1 }}a ->
+    {{ Θ0 ⊢[ m ; P0 ] exp_unit ⦂ A ⊣ Θ1 }}a
 | a_typing__var : forall m Θ0 P0 x A B Θ1,                  (* AT-Var *)
     binds x (abind_var_typ A) Θ0 ->
-    Θ0 ⊢ᵃ[ a_sub_mode_ty | m | P0 ] (ptyp_to_pskl A) ⩽ (ptyp_to_pskl B) ⊣ Θ1 ->
-    Θ0 ⊢ᵃ[ m ; P0 ] (exp_var_f x) ⦂ B ⊣ Θ1
+    {{ Θ0 ⊢[ a_sub_mode_ty | m | P0 ] (ptyp_to_pskl A) ⩽ (ptyp_to_pskl B) ⊣ Θ1 }}a ->
+    {{ Θ0 ⊢[ m ; P0 ] (exp_var_f x) ⦂ B ⊣ Θ1 }}a
 | a_typing__anno : forall m Θ0 P0 e A B Θ1 Θ2,              (* AT-Anno *)
-    Θ0 ⊢ᵃ[ mode_tc ; (ptyp_to_pskl A) ] e ⦂ A ⊣ Θ1 ->
-    Θ1 ⊢ᵃ[ a_sub_mode_ty | m | P0 ] (ptyp_to_pskl A) ⩽ (ptyp_to_pskl B) ⊣ Θ2 ->
-    Θ0 ⊢ᵃ[ m ; P0 ] (exp_anno e A) ⦂ B ⊣ Θ2
+    {{ Θ0 ⊢[ mode_tc ; (ptyp_to_pskl A) ] e ⦂ A ⊣ Θ1 }}a ->
+    {{ Θ1 ⊢[ a_sub_mode_ty | m | P0 ] (ptyp_to_pskl A) ⩽ (ptyp_to_pskl B) ⊣ Θ2 }}a ->
+    {{ Θ0 ⊢[ m ; P0 ] (exp_anno e A) ⦂ B ⊣ Θ2 }}a
 | a_typing__freeze : forall Θ0 e A B Θ1 Θ2,                 (* AT-Freeze *)
     (* the TC input skeleton IS the checked type [A]; the inferred [B] is
        UNIFIED with it (consistency), no subtyping *)
-    Θ0 ⊢ᵃ[ mode_ti ; pskl_hole ] e ⦂ B ⊣ Θ1 ->
+    {{ Θ0 ⊢[ mode_ti ; pskl_hole ] e ⦂ B ⊣ Θ1 }}a ->
     a_consis_chk Θ1 (ptyp_to_pskl B) (ptyp_to_pskl A) Θ2 ->
-    Θ0 ⊢ᵃ[ mode_tc ; (ptyp_to_pskl A) ] (exp_freeze e) ⦂ A ⊣ Θ2
+    {{ Θ0 ⊢[ mode_tc ; (ptyp_to_pskl A) ] (exp_freeze e) ⦂ A ⊣ Θ2 }}a
 | a_typing__abs : forall x m Θ0 Θ1 Θ2 P0 P Q αs A e B Ξ,    (* AT-Abs *)
     m <> mode_tc ->
-    Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 ->
+    {{ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}a ->
     a_guess_mono Θ1 P αs A ->
     (* [paper-gap] The consumer-side filter for [guess^TY]'s block, verbatim
        the premise [a_sub__forall_l] already carries for the same reason:
@@ -1474,18 +1481,18 @@ Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
     a_suffix Ξ ->
     (* EXISTS-FRESH binder, uniformly with the check rows below. *)
     x `notin` dom (Ξ ++ αs ++ Θ1) `union` dom Θ2 `union` fvar_in_exp e ->
-    ((x ~ abind_var_typ A) ++ αs ++ Θ1) ⊢ᵃ[ (decr_mode m) ; Q ]
-      (open_exp_wrt_exp e (exp_var_f x)) ⦂ B ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ2) ->
-    Θ0 ⊢ᵃ[ m ; P0 ] (exp_abs e) ⦂ (ptyp_arrow A B) ⊣ (Ξ ++ Θ2)
+    {{ ((x ~ abind_var_typ A) ++ αs ++ Θ1) ⊢[ (decr_mode m) ; Q ]
+      (open_exp_wrt_exp e (exp_var_f x)) ⦂ B ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ2) }}a ->
+    {{ Θ0 ⊢[ m ; P0 ] (exp_abs e) ⦂ (ptyp_arrow A B) ⊣ (Ξ ++ Θ2) }}a
 | a_typing__abs_anno : forall x m Θ0 Θ1 Θ2 Θ3 P0 P Q A e B Ξ,   (* AT-AbsAnno *)
     m <> mode_tc ->
-    Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 ->
+    {{ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}a ->
     a_consis_chk Θ1 (ptyp_to_pskl A) P Θ2 ->
     a_suffix Ξ ->
     x `notin` dom (Ξ ++ Θ2) `union` dom Θ3 `union` fvar_in_exp e ->
-    ((x ~ abind_var_typ A) ++ Θ2) ⊢ᵃ[ (decr_mode m) ; Q ]
-      (open_exp_wrt_exp e (exp_var_f x)) ⦂ B ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ3) ->
-    Θ0 ⊢ᵃ[ m ; P0 ] (exp_abs_anno A e) ⦂ (ptyp_arrow A B) ⊣ (Ξ ++ Θ3)
+    {{ ((x ~ abind_var_typ A) ++ Θ2) ⊢[ (decr_mode m) ; Q ]
+      (open_exp_wrt_exp e (exp_var_f x)) ⦂ B ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ3) }}a ->
+    {{ Θ0 ⊢[ m ; P0 ] (exp_abs_anno A e) ⦂ (ptyp_arrow A B) ⊣ (Ξ ++ Θ3) }}a
 (* AT-AbsCheck / AT-AbsAnnoCheck (input [∀ᾱ.A₀]): the ᾱ-prefix is folded one
    [∀] at a time — [_step] peels one rigid quantifier from the input type and
    the result, [_base] splits the (non-∀) input type into [A→B] and checks
@@ -1538,20 +1545,20 @@ Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
     α `notin` dom (Ξ ++ Θ0) `union` dom Θ1 `union`
       ftvar_in_ptyp A0 `union` ftvar_in_ptyp A `union`
       ftvar_in_exp (exp_abs e) ->
-    ((α ~ abind_tvar) ++ Θ0)
-      ⊢ᵃ[ mode_tc ; (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))) ]
+    {{ ((α ~ abind_tvar) ++ Θ0)
+      ⊢[ mode_tc ; (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))) ]
       (exp_abs e) ⦂ (open_ptyp_wrt_ptyp A (ptyp_var_f α))
-      ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ1) ->
-    Θ0 ⊢ᵃ[ mode_tc ; (ptyp_to_pskl (ptyp_all A0)) ] (exp_abs e) ⦂ (ptyp_all A) ⊣ Θ1
+      ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ1) }}a ->
+    {{ Θ0 ⊢[ mode_tc ; (ptyp_to_pskl (ptyp_all A0)) ] (exp_abs e) ⦂ (ptyp_all A) ⊣ Θ1 }}a
 | a_typing__abs_check_base : forall x Θ0 Θ1 Θ2 A0 A B B1 e Ξ,
-    Θ0 ⊲ (ptyp_to_pskl A0) ▹ (ptyp_to_pskl A) ⇢ (ptyp_to_pskl B) ⊣ Θ1 ->
+    {{ Θ0 ⊲ (ptyp_to_pskl A0) ▹ (ptyp_to_pskl A) ⇢ (ptyp_to_pskl B) ⊣ Θ1 }}a ->
     a_suffix Ξ ->
     uniq (Ξ ++ Θ1) ->                                   (* Barendregt (1) *)
     (forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_ptyp B1) ->  (* (2) *)
     x `notin` dom (Ξ ++ Θ1) `union` dom Θ2 `union` fvar_in_exp e ->
-    ((x ~ abind_var_typ A) ++ Θ1) ⊢ᵃ[ mode_tc ; (ptyp_to_pskl B) ]
-      (open_exp_wrt_exp e (exp_var_f x)) ⦂ B1 ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ2) ->
-    Θ0 ⊢ᵃ[ mode_tc ; (ptyp_to_pskl A0) ] (exp_abs e) ⦂ (ptyp_arrow A B1) ⊣ Θ2
+    {{ ((x ~ abind_var_typ A) ++ Θ1) ⊢[ mode_tc ; (ptyp_to_pskl B) ]
+      (open_exp_wrt_exp e (exp_var_f x)) ⦂ B1 ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ2) }}a ->
+    {{ Θ0 ⊢[ mode_tc ; (ptyp_to_pskl A0) ] (exp_abs e) ⦂ (ptyp_arrow A B1) ⊣ Θ2 }}a
 | a_typing__abs_anno_check_step : forall α Θ0 Θ1 A0 Aan e A Ξ,
     a_suffix Ξ ->
     uniq (Ξ ++ Θ0) ->                                   (* Barendregt (1) *)
@@ -1559,21 +1566,21 @@ Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
     α `notin` dom (Ξ ++ Θ0) `union` dom Θ1 `union`
       ftvar_in_ptyp A0 `union` ftvar_in_ptyp A `union`
       ftvar_in_exp (exp_abs_anno Aan e) ->
-    ((α ~ abind_tvar) ++ Θ0)
-      ⊢ᵃ[ mode_tc ; (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))) ]
+    {{ ((α ~ abind_tvar) ++ Θ0)
+      ⊢[ mode_tc ; (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))) ]
       (exp_abs_anno Aan e) ⦂ (open_ptyp_wrt_ptyp A (ptyp_var_f α))
-      ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ1) ->
-    Θ0 ⊢ᵃ[ mode_tc ; (ptyp_to_pskl (ptyp_all A0)) ] (exp_abs_anno Aan e)
-      ⦂ (ptyp_all A) ⊣ Θ1
+      ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ1) }}a ->
+    {{ Θ0 ⊢[ mode_tc ; (ptyp_to_pskl (ptyp_all A0)) ] (exp_abs_anno Aan e)
+      ⦂ (ptyp_all A) ⊣ Θ1 }}a
 | a_typing__abs_anno_check_base : forall x Θ0 Θ1 Θ2 Θ3 A0 A' A B B1 e Ξ,
-    Θ0 ⊲ (ptyp_to_pskl A0) ▹ (ptyp_to_pskl A') ⇢ (ptyp_to_pskl B) ⊣ Θ1 ->
+    {{ Θ0 ⊲ (ptyp_to_pskl A0) ▹ (ptyp_to_pskl A') ⇢ (ptyp_to_pskl B) ⊣ Θ1 }}a ->
     a_consis_chk Θ1 (ptyp_to_pskl A') (ptyp_to_pskl A) Θ2 ->
     a_suffix Ξ ->
     uniq (Ξ ++ Θ2) ->                                   (* Barendregt (1) *)
     (forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_ptyp B1) ->  (* (2) *)
     x `notin` dom (Ξ ++ Θ2) `union` dom Θ3 `union` fvar_in_exp e ->
-    ((x ~ abind_var_typ A) ++ Θ2) ⊢ᵃ[ mode_tc ; (ptyp_to_pskl B) ]
-      (open_exp_wrt_exp e (exp_var_f x)) ⦂ B1 ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ3) ->
+    {{ ((x ~ abind_var_typ A) ++ Θ2) ⊢[ mode_tc ; (ptyp_to_pskl B) ]
+      (open_exp_wrt_exp e (exp_var_f x)) ⦂ B1 ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ3) }}a ->
     (* ⭐ [paper-gap] THE RESULT'S DOMAIN IS THE SPLIT'S [A'], NOT THE WRITTEN
        ANNOTATION [A].  The paper's (commented-out) AT-AbsAnnoCheck writes
        [A → B] (algorithmic.tex:296-303) while orienting its consistency
@@ -1585,11 +1592,11 @@ Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
        AT-AbsCheck already returns (its domain is the split's), and it is
        exactly what the appendix's [≡ᵗ] premise on sd-AbsAnnoCheck is FOR:
        "the conclusion's domain is any Θ-equivalent A'".  docs/PAPER-GAPS.md *)
-    Θ0 ⊢ᵃ[ mode_tc ; (ptyp_to_pskl A0) ] (exp_abs_anno A e)
-      ⦂ (ptyp_arrow A' B1) ⊣ Θ3
+    {{ Θ0 ⊢[ mode_tc ; (ptyp_to_pskl A0) ] (exp_abs_anno A e)
+      ⦂ (ptyp_arrow A' B1) ⊣ Θ3 }}a
 | a_typing__app : forall m Θ0 Θ1 Θ2 Θ3 P Q A A' B e1 e2,    (* AT-App *)
-    Θ0 ⊢ₛᵃ[ mode_tc ; pskl_hole ] e2 ⦂ P ⊣ Θ1 ->
-    Θ1 ⊢ᵃ[ (mode_fn m) ; (pskl_arrow P Q) ] e1 ⦂ (ptyp_arrow A B) ⊣ Θ2 ->
-    Θ2 ⊢ᵃ[ mode_tc ; (ptyp_to_pskl A) ] e2 ⦂ A' ⊣ Θ3 ->
-    Θ0 ⊢ᵃ[ m ; Q ] (exp_app e1 e2) ⦂ B ⊣ Θ3
-where "Θ ⊢ᵃ[ m ; P0 ] e ⦂ B ⊣ Θ'" := (a_typing m Θ P0 e B Θ').
+    {{ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] e2 ⦂ P ⊣ Θ1 }}a ->
+    {{ Θ1 ⊢[ (mode_fn m) ; (pskl_arrow P Q) ] e1 ⦂ (ptyp_arrow A B) ⊣ Θ2 }}a ->
+    {{ Θ2 ⊢[ mode_tc ; (ptyp_to_pskl A) ] e2 ⦂ A' ⊣ Θ3 }}a ->
+    {{ Θ0 ⊢[ m ; Q ] (exp_app e1 e2) ⦂ B ⊣ Θ3 }}a
+where "{{ Θ ⊢[ m ; P0 ] e ⦂ B ⊣ Θ' }}a" := (a_typing m Θ P0 e B Θ') : frost_a_scope.

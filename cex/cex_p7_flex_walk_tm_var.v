@@ -174,8 +174,8 @@ Definition Qw  : bskl := bskl_arrow bskl_unit bskl_unit.
 
 Lemma tm_var_problem_is_a_problem :
   a_wf_aenv Θ0w /\
-  Θ0w ⨟ empty ⊢ₚₛᵃ P0w /\
-  Θ0w ⨟ empty ⊢ₚₛᵃ Pw /\
+  {{ Θ0w ⨟ empty ⊢ₚₛ P0w }}a /\
+  {{ Θ0w ⨟ empty ⊢ₚₛ Pw }}a /\
   a_sk_mode_compat (mode_fn mode_ti) P0w.
 Proof.
   unfold Θ0w, P0w, Pw. repeat split.
@@ -220,7 +220,7 @@ Proof.
     | apply a_suffix__nil ].
 Qed.
 
-Lemma tm_var_slack : Θw ⊢ R'w ≡ᵘ (msubst_uskl_syn κw Rw).
+Lemma tm_var_slack : {{ Θw ⊢ R'w ≡ᵘ (msubst_uskl_syn κw Rw) }}a.
 Proof.
   unfold R'w, Rw, κw. simpl.
   destruct (α == α) as [_ | Hne]; [ | exfalso; apply Hne; reflexivity ].
@@ -242,7 +242,7 @@ Proof.
     | clear; fsetdec ].
 Qed.
 
-Lemma tm_var_wf_counterpart : Θw ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qw).
+Lemma tm_var_wf_counterpart : {{ Θw ⨟ empty ⊢ₚₛ (bskl_to_pskl Qw) }}a.
 Proof. unfold Qw. simpl. apply a_wf_pskl__arrow; apply a_wf_pskl__unit. Qed.
 
 Lemma tm_var_fill :
@@ -284,16 +284,16 @@ Qed.
     is exactly the negation of [thm:complete-subtyping]. *)
 Theorem complete_subtyping_needs_flex_skip_tm_var :
   (* problem *)
-  (a_wf_aenv Θ0w /\ Θ0w ⨟ empty ⊢ₚₛᵃ P0w /\ Θ0w ⨟ empty ⊢ₚₛᵃ Pw /\
+  (a_wf_aenv Θ0w /\ {{ Θ0w ⨟ empty ⊢ₚₛ P0w }}a /\ {{ Θ0w ⨟ empty ⊢ₚₛ Pw }}a /\
    a_sk_mode_compat (mode_fn mode_ti) P0w)
   /\
   (* solution *)
   (a_wf_aenv Θw /\ ⌊ Rw ⌋ˢ = Pw /\ κw ∷ Θ0w ⊑ Θw /\
-   Θw ⊢ R'w ≡ᵘ (msubst_uskl_syn κw Rw) /\
+   {{ Θw ⊢ R'w ≡ᵘ (msubst_uskl_syn κw Rw) }}a /\
    ad_pat_sub_gv 1 a_sub_mode_sk (mode_fn mode_ti) empty Θw R'w Qw /\
    ad_refine_syn_f empty Θw empty
      (pskl_to_bskl_inh (msubst_pskl κw P0w)) Qw /\
-   Θw ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qw))
+   {{ Θw ⨟ empty ⊢ₚₛ (bskl_to_pskl Qw) }}a)
   /\
   (* …and every run of it uses the rule the paper's figure omits *)
   (forall P1 Θ1, a_sub a_sub_mode_sk (mode_fn mode_ti) P0w Θ0w Pw P1 Θ1 ->

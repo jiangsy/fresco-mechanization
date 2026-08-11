@@ -30,7 +30,7 @@
     relation the two rows that break syntactic equality live in.
 
     THE PROOF IS ON THE REFINEMENT, NOT ON CONSISTENCY.  [a_consis_sound]
-    already exports [Θ1 ⨟ ∅ ⊢ᵣᵃᵈ inh{P0} ⊳ Qt] with [⌊Qt⌋ = P'] — the output
+    already exports [{{ Θ1 ⨟ ∅ ⊢ᵣ inh{P0} ⊳ Qt }}ad] with [⌊Qt⌋ = P'] — the output
     REFINES FROM the input skeleton — so all that is left is: refinement out of
     a GHOST-FREE source only ever unfolds definitions.  That is one induction
     with no context threading at all, because refinement keeps its context
@@ -85,9 +85,9 @@ Qed.
 (* ===================================================================== *)
 
 Lemma ad_refine_syn_ghost_free_equiv : forall Θ Δ Q' Q,
-  Θ ⨟ Δ ⊢ᵣᵃᵈ Q' ⊳ Q ->
+  {{ Θ ⨟ Δ ⊢ᵣ Q' ⊳ Q }}ad ->
   bskl_ghost_free Q' ->
-  Θ ⊢ (bskl_to_pskl Q') ≡ˢ (bskl_to_pskl Q).
+  {{ Θ ⊢ (bskl_to_pskl Q') ≡ˢ (bskl_to_pskl Q) }}a.
 Proof.
   intros Θ Δ Q' Q H; induction H; intros Hgf; cbn in Hgf |- *.
   - (* unit *) apply a_pskl_tyequiv__refl; apply lc_pskl_unit.
@@ -127,12 +127,12 @@ Qed.
 (* ===================================================================== *)
 
 Corollary a_consis_concrete_output_equiv : forall Θ0 P0 P P' Θ1,
-  Θ0 ⊢ᵃ[ P0 ] P ∼ P' ⊣ Θ1 ->
+  {{ Θ0 ⊢[ P0 ] P ∼ P' ⊣ Θ1 }}a ->
   a_wf_aenv Θ0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
   pskl_ghost_free P0 ->                (* the paper's "P_0 is a concrete type" *)
-  Θ1 ⊢ P0 ≡ˢ P'.
+  {{ Θ1 ⊢ P0 ≡ˢ P' }}a.
 Proof.
   intros Θ0 P0 P P' Θ1 Hc Hwf HwfP0 HwfP Hgf.
   destruct (a_consis_sound Hc Hwf HwfP0 HwfP)
@@ -157,9 +157,9 @@ Qed.
     only what the proof uses; [a_consis_sound] / [a_sub_sound] both export
     the [⊴] it needs. *)
 Lemma a_pskl_tyequiv_isub_mono : forall Θ P Q,
-  Θ ⊢ P ≡ˢ Q ->
+  {{ Θ ⊢ P ≡ˢ Q }}a ->
   forall Θ', Θ ⊴ Θ' ->
-  Θ' ⊢ P ≡ˢ Q.
+  {{ Θ' ⊢ P ≡ˢ Q }}a.
 Proof.
   intros Θ P Q H; induction H; intros Θ' Hle.
   - apply a_pskl_tyequiv__refl; assumption.
@@ -175,10 +175,10 @@ Qed.
 (** …and the plain context extension, for anything that re-attaches a head
     entry (every walk row of [a_sub_flex] does). *)
 Lemma a_pskl_tyequiv_weaken : forall Θ P Q,
-  Θ ⊢ P ≡ˢ Q ->
+  {{ Θ ⊢ P ≡ˢ Q }}a ->
   forall Θ', (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
                           binds α (abind_flex_mono_def τ) Θ') ->
-  Θ' ⊢ P ≡ˢ Q.
+  {{ Θ' ⊢ P ≡ˢ Q }}a.
 Proof.
   intros Θ P Q H; induction H; intros Θ' Hdef.
   - apply a_pskl_tyequiv__refl; assumption.
@@ -198,7 +198,7 @@ Lemma a_pskl_tyequiv_subst_flex_def : forall Θ β τ P,
   binds β (abind_flex_mono_def τ) Θ ->
   mono_ptyp τ ->            (* what [a_wf_aenv_binds_def_mono] gives at any call site *)
   lc_pskl P ->
-  Θ ⊢ P ≡ˢ (subst_pskl_in_pskl (ptyp_to_pskl τ) β P).
+  {{ Θ ⊢ P ≡ˢ (subst_pskl_in_pskl (ptyp_to_pskl τ) β P) }}a.
 Proof.
   intros Θ β τ P Hb Hm Hlc; induction Hlc; cbn.
   - (* unit *) apply a_pskl_tyequiv__refl; apply lc_pskl_unit.
@@ -235,12 +235,12 @@ Qed.
 Corollary a_sub_concrete_output_equiv : forall NM M P0 Θ0 P P' Θ1,
   a_sub NM M P0 Θ0 P P' Θ1 ->
   a_wf_aenv Θ0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
   (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->
   (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
   pskl_ghost_free P0 ->                (* the paper's "P_0 is a concrete type" *)
-  Θ1 ⊢ P0 ≡ˢ P'.
+  {{ Θ1 ⊢ P0 ≡ˢ P' }}a.
 Proof.
   intros NM M P0 Θ0 P P' Θ1 Hrun Hwf HwfP0 HwfP HmodSK HmodTY Hgf.
   destruct (a_sub_sound Hrun Hwf HwfP0 HwfP HmodSK HmodTY)

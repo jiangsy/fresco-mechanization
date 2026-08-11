@@ -39,9 +39,9 @@ Definition Tarr : ptyp := ptyp_arrow ptyp_unit ptyp_unit.
 
 Theorem a_unify_succeeds_on_arrow_definition : forall (a b : atom),
   a <> b ->
-  ((a ~ abind_flex_mono_def Tarr) ++ (b ~ abind_flex_mono) ++ nil)
+  {{ ((a ~ abind_flex_mono_def Tarr) ++ (b ~ abind_flex_mono) ++ nil)
     ⊲ a ≈ᵘ b
-    ⊣ ((a ~ abind_flex_mono_def Tarr) ++ (b ~ abind_flex_mono_def Tarr) ++ nil).
+    ⊣ ((a ~ abind_flex_mono_def Tarr) ++ (b ~ abind_flex_mono_def Tarr) ++ nil) }}a.
 Proof.
   intros a b Hne.
   apply a_unify__flex_assign with (Q := pskl_var_f b).
@@ -81,8 +81,8 @@ Corollary a_unify_succeeds_sound : forall (a b : atom),
     ⊴ ((a ~ abind_flex_mono_def Tarr) ++ (b ~ abind_flex_mono_def Tarr) ++ nil)
   /\ a_wf_aenv
        ((a ~ abind_flex_mono_def Tarr) ++ (b ~ abind_flex_mono_def Tarr) ++ nil)
-  /\ (((a ~ abind_flex_mono_def Tarr) ++ (b ~ abind_flex_mono_def Tarr) ++ nil)
-        ⊢ (ptyp_var_f a) ≡ᵗ (ptyp_var_f b)).
+  /\ ({{ ((a ~ abind_flex_mono_def Tarr) ++ (b ~ abind_flex_mono_def Tarr) ++ nil)
+        ⊢ (ptyp_var_f a) ≡ᵗ (ptyp_var_f b) }}a).
 Proof.
   intros a b Hne.
   eapply a_unify_sound.
@@ -120,9 +120,9 @@ Qed.
 (* ===================================================================== *)
 
 Theorem a_assign_succeeds_on_own_definition : forall (a : atom),
-  ((a ~ abind_flex_mono_def Tarr) ++ nil)
+  {{ ((a ~ abind_flex_mono_def Tarr) ++ nil)
     ⊲[ nil ] a ≔ (pskl_arrow pskl_unit pskl_unit)
-  ⊣ ((a ~ abind_flex_mono_def Tarr) ++ nil).
+  ⊣ ((a ~ abind_flex_mono_def Tarr) ++ nil) }}a.
 Proof.
   intros a.
   apply (@a_assign__assign nil nil nil a a Tarr

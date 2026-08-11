@@ -1406,7 +1406,7 @@ Qed.
 (*                                                                        *)
 (*  (A) THE LEAF-VALID DATUM.  [ad_pat] / [ad_sd_typing] embed            *)
 (*      [ad_pat_sub_v], whose consistency leaves additionally carry the   *)
-(*      subject's refinement [Θ ⨟ ∅ ⊢ᵣₚᵃᵈ ⌊R⌋ˢ ⊳ ⌊Q⌋]; [d_pat] /          *)
+(*      subject's refinement [{{ Θ ⨟ ∅ ⊢ᵣₚ ⌊R⌋ˢ ⊳ ⌊Q⌋ }}ad]; [d_pat] /    *)
 (*      [d_sd_typing] embed the PLAIN join, from which the datum is not   *)
 (*      recoverable in general — the capture configuration (subject       *)
 (*      [∀X.◇], counterpart [∀ˢX.X]) has a plain join and provably no     *)
@@ -2009,7 +2009,7 @@ Proof.
       | apply a_tyequiv__refl; apply lc_ptyp_btyp_to_ptyp;
         (* [lc_btyp B1] from the FUNCTION premise's arrow target *)
         match goal with
-        | Hf : _ ⊢ˢ[ mode_fn _ ] _ ⦂ (btyp_arrow _ _) |- _ =>
+        | Hf : {{ _ ⊢ˢᵈ[ mode_fn _ ] _ ⦂ (btyp_arrow _ _) }}d |- _ =>
             let Ha := fresh "Ha" in
             assert (Ha : lc_btyp (btyp_arrow B1 B2))
               by (eapply d_sd_typing_target_lc; eassumption);

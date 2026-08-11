@@ -58,8 +58,8 @@ Set Implicit Arguments.
     is ghost-free, so the emitted block is empty. *)
 Lemma flexctp_solve_returns_the_pattern : forall (c beta : atom) (Θ0 : aenv),
   binds beta abind_flex_mono Θ0 ->
-  Θ0 ⊢ₑ (pskl_arrow (pskl_var_f c) pskl_unit) ∼ (pskl_var_f beta)
-       ⤳ nil ⨾ (pskl_arrow (pskl_var_f c) pskl_unit).
+  {{ Θ0 ⊢ₑ (pskl_arrow (pskl_var_f c) pskl_unit) ∼ (pskl_var_f beta)
+       ⤳ nil ⨾ (pskl_arrow (pskl_var_f c) pskl_unit) }}a.
 Proof.
   intros c beta Θ0 Hb.
   replace (pskl_arrow (pskl_var_f c) pskl_unit)
@@ -81,8 +81,8 @@ Qed.
     [⟨⟩ ⊑ᵖ c] has no rule.) *)
 Lemma flexctp_precision_now_holds : forall (c : atom) (Θ : aenv) Δ,
   binds c abind_tvar Θ ->
-  Θ ⨟ Δ ⊢ᵃᵈ (pskl_arrow (pskl_var_f c) pskl_unit)
-        ⊑ᵖ[ empty ] (uskl_arrow (uskl_var_f c) uskl_unit).
+  {{ Θ ⨟ Δ ⊢ˢ (pskl_arrow (pskl_var_f c) pskl_unit)
+        ⊑ᵖ[ empty ] (uskl_arrow (uskl_var_f c) uskl_unit) }}ad.
 Proof.
   intros c Θ Δ Hb.
   (* ⚠️ PIN the two tag sets.  [eapply] would leave them EVARS, and the
@@ -104,9 +104,9 @@ Qed.
     nothing. *)
 Lemma p6sv_body_returns_the_pattern : forall (f b : atom) (Θ0 : aenv),
   binds f abind_flex_mono Θ0 ->
-  Θ0 ⊢ₛ (pskl_arrow (pskl_var_f b) (pskl_var_f b)) ≼[ mode_tc ]
+  {{ Θ0 ⊢ₛ (pskl_arrow (pskl_var_f b) (pskl_var_f b)) ≼[ mode_tc ]
         (pskl_var_f f)
-       ⤳ nil ⨾ (pskl_arrow (pskl_var_f b) (pskl_var_f b)).
+       ⤳ nil ⨾ (pskl_arrow (pskl_var_f b) (pskl_var_f b)) }}a.
 Proof.
   intros f b Θ0 Hb.
   apply a_solve_sub__check;
@@ -143,11 +143,11 @@ Qed.
 Lemma p6sv_forall_returns_the_pattern : forall (f b : atom) (Θ0 : aenv),
   binds f abind_flex_mono Θ0 ->
   b `notin` ftvar_in_aenv Θ0 `union` singleton f ->
-  Θ0 ⊢ₛ (pskl_all_syn (pskl_arrow (pskl_var_b 0) (pskl_var_b 0)))
+  {{ Θ0 ⊢ₛ (pskl_all_syn (pskl_arrow (pskl_var_b 0) (pskl_var_b 0)))
         ≼[ mode_tc ] (pskl_var_f f)
        ⤳ nil ⨾ (pskl_all_syn
                   (close_pskl_wrt_pskl b
-                     (pskl_arrow (pskl_var_f b) (pskl_var_f b)))).
+                     (pskl_arrow (pskl_var_f b) (pskl_var_f b)))) }}a.
 Proof.
   intros f b Θ0 Hb Hfr.
   apply a_solve_sub__forall_l with (β := b);

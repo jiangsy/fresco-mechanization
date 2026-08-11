@@ -10,7 +10,7 @@
 
     ⭐ THIS FILE STARTS WITH THE [Freeze] INGREDIENT, because it is the one
     piece thm:sound-skeleton-inference already paid for.  The appendix's
-    [sd-Freeze] carries an explicit [Θ ⊢ B ≡ᵗ A] premise, and the paper
+    [sd-Freeze] carries an explicit [{{ Θ ⊢ B ≡ᵗ A }}a] premise, and the paper
     discharges it with one clause — "which further gives [Θ2 ⊢ B ≡ A]" —
     off thm:sound-consistency.  In the mechanization consistency soundness
     hands back a REFINEMENT into the run's own output colouring, so the
@@ -98,12 +98,12 @@ Qed.
     the generating set of [≡ᵗ].  (Δ plays no part: [a_tyequiv__all] binds
     nothing in Θ, so the ∀ row goes straight through.) *)
 Lemma ad_refine_syn_inh_tyequiv : forall Θ Δ Qs Qt,
-  Θ ⨟ Δ ⊢ᵣᵃᵈ Qs ⊳ Qt ->
+  {{ Θ ⨟ Δ ⊢ᵣ Qs ⊳ Qt }}ad ->
   a_wf_aenv Θ ->
   forall A B,
   Qs = pskl_to_bskl_inh (ptyp_to_pskl A) ->
   Qt = btyp_to_bskl B ->
-  Θ ⊢ A ≡ᵗ (btyp_to_ptyp B).
+  {{ Θ ⊢ A ≡ᵗ (btyp_to_ptyp B) }}a.
 Proof.
   intros Θ Δ Qs Qt H; induction H; intros Hwf A B HeqS HeqT.
   - (* unit *)
@@ -161,7 +161,7 @@ Proof.
     assert (Hα2 : α2 = α) by (inversion HeqT; reflexivity). subst α2.
     assert (Hmono : mono_ptyp τ)
       by (eapply a_wf_aenv_binds_def_mono; eassumption).
-    assert (IH2 : Θ ⊢ A ≡ᵗ (btyp_to_ptyp (ptyp_to_btyp_inh τ))).
+    assert (IH2 : {{ Θ ⊢ A ≡ᵗ (btyp_to_ptyp (ptyp_to_btyp_inh τ)) }}a).
     { apply (IHad_refine_syn Hwf A (ptyp_to_btyp_inh τ)); [ exact HeqS | ].
       rewrite btyp_to_bskl_ptyp_to_btyp_inh.
       symmetry; apply (ptyp_to_bskl_inh_syn_eq Hmono). }
@@ -184,7 +184,7 @@ Lemma a_consis_chk_tyequiv : forall Θ0 A B Θ1,
   a_wf_aenv Θ0 ->
   a_wf_ptyp Θ0 A ->
   a_wf_ptyp Θ0 B ->
-  Θ1 ⊢ B ≡ᵗ A.
+  {{ Θ1 ⊢ B ≡ᵗ A }}a.
 Proof.
   intros Θ0 A B Θ1 Hchk Hwf HwfA HwfB.
   destruct (a_consis_chk_annot_refine Hchk Hwf HwfB
@@ -212,7 +212,7 @@ Qed.
     [AT-Anno], [AT-Freeze] and [AT-App].  The [AT-Abs] row additionally
     crosses the [guess^TY] block [αs], which is flexible-only. *)
 Lemma a_typing_tm_ge : forall m Θ0 P0 e A Θ1,
-  Θ0 ⊢ᵃ[ m ; P0 ] e ⦂ A ⊣ Θ1 -> aenv_tm_le Θ1 Θ0.
+  {{ Θ0 ⊢[ m ; P0 ] e ⦂ A ⊣ Θ1 }}a -> aenv_tm_le Θ1 Θ0.
 Proof.
   intros m Θ0 P0 e A Θ1 H; induction H.
   - (* unit *) eapply a_sub_tm_ge; eassumption.
@@ -292,7 +292,7 @@ Qed.
 (** [≡ᵗ] transports along [⊴] — the [a_inc]-shaped [a_tyequiv_isub]
     (prop_inc.v) at the identity witness. *)
 Lemma a_tyequiv_isub_le : forall Θ Θ' A A',
-  Θ ⊴ Θ' -> Θ ⊢ A ≡ᵗ A' -> Θ' ⊢ A ≡ᵗ A'.
+  Θ ⊴ Θ' -> {{ Θ ⊢ A ≡ᵗ A' }}a -> {{ Θ' ⊢ A ≡ᵗ A' }}a.
 Proof.
   intros Θ Θ' A A' [[κ [Hid Hinc]] _] Heq.
   eapply a_tyequiv_isub; eassumption.
@@ -304,9 +304,9 @@ Qed.
     transports; the [∀]-peeling rows push a RIGID entry, so they use
     [a_isub_cons_tvar]. *)
 Lemma ad_sd_typing_isub_tm : forall M Θ e B,
-  Θ ⊢ᵃᵈ[ M ] e ⦂ B ->
+  {{ Θ ⊢ˢᵈ[ M ] e ⦂ B }}ad ->
   forall Θ', Θ ⊴ Θ' -> aenv_tm_le Θ Θ' ->
-  Θ' ⊢ᵃᵈ[ M ] e ⦂ B.
+  {{ Θ' ⊢ˢᵈ[ M ] e ⦂ B }}ad.
 Proof.
   intros M Θ e B H; induction H; intros Θ' Hle Htm.
   - (* unit *) apply ad_sd_typing__unit. eapply ad_pat_sub_v_isub; eauto.
@@ -378,12 +378,12 @@ Qed.
     The App row substitutes into its SKELETON-inference premise too, which
     is exactly what [ad_pat_subst_tm] is for. *)
 Lemma ad_sd_typing_subst_tm : forall M Θ' e B,
-  Θ' ⊢ᵃᵈ[ M ] e ⦂ B ->
+  {{ Θ' ⊢ˢᵈ[ M ] e ⦂ B }}ad ->
   forall Θa x (b : abind) Θ0 y,
   Θ' = Θa ++ (x ~ b) ++ Θ0 ->
   abind_is_tm b ->
   x `notin` dom Θa `union` dom Θ0 ->
-  (Θa ++ (y ~ b) ++ Θ0) ⊢ᵃᵈ[ M ] (subst_exp_in_exp (exp_var_f y) x e) ⦂ B.
+  {{ (Θa ++ (y ~ b) ++ Θ0) ⊢ˢᵈ[ M ] (subst_exp_in_exp (exp_var_f y) x e) ⦂ B }}ad.
 Proof.
   intros M Θ' e B H; induction H;
     intros Θa x0 b0 Θb y Heq Htm Hx0; subst; simpl.
@@ -522,10 +522,10 @@ Qed.
 
 (** The exists-fresh → cofinite bridge the six term-binder rows need. *)
 Corollary ad_sd_typing_rename_tm : forall M x (b : abind) Θ0 e B y,
-  ((x ~ b) ++ Θ0) ⊢ᵃᵈ[ M ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ B ->
+  {{ ((x ~ b) ++ Θ0) ⊢ˢᵈ[ M ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ B }}ad ->
   abind_is_tm b ->
   x `notin` dom Θ0 `union` fvar_in_exp e ->
-  ((y ~ b) ++ Θ0) ⊢ᵃᵈ[ M ] (open_exp_wrt_exp e (exp_var_f y)) ⦂ B.
+  {{ ((y ~ b) ++ Θ0) ⊢ˢᵈ[ M ] (open_exp_wrt_exp e (exp_var_f y)) ⦂ B }}ad.
 Proof.
   intros * Hd Htm Hx.
   rewrite (subst_exp_in_exp_intro x); [ | clear - Hx; fsetdec ].
@@ -607,7 +607,7 @@ Qed.
     that is not immediate is [__hole], whose fill carries the skeleton
     well-formedness that supplies it. *)
 Lemma ad_pat_consis_lc_r : forall Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q -> lc_bskl Q.
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad -> lc_bskl Q.
 Proof.
   intros Ψ Θ R Q H; induction H.
   - (* unit *) apply lc_bskl_unit.
@@ -710,7 +710,7 @@ Proof. intros * H; inversion H; subst; assumption. Qed.
     TYPES.  [Infer] and [Check] are the two leaves; [Check]'s local
     closure comes off its own consistency premise (§8a). *)
 Lemma ad_pat_sub_mod_comp_ty : forall M Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ᵃᵈ[ a_sub_mode_ty | M ] R ⩽ Q ->
+  {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_ty | M ] R ⩽ Q }}ad ->
   forall Bt, Q = btyp_to_bskl Bt -> mod_comp_ty Bt M.
 Proof.
   (* [Bt] for the colouring the target erases from — [B] is [Check]'s and
@@ -749,7 +749,7 @@ Qed.
     closure is only available from the context — hence the [a_wf_aenv]
     hypothesis, exactly as [d_typing_skmod] carries [d_wf_denv]. *)
 Lemma a_tyequiv_lc : forall Θ A A',
-  Θ ⊢ A ≡ᵗ A' -> a_wf_aenv Θ -> lc_ptyp A /\ lc_ptyp A'.
+  {{ Θ ⊢ A ≡ᵗ A' }}a -> a_wf_aenv Θ -> lc_ptyp A /\ lc_ptyp A'.
 Proof.
   intros Θ A A' H; induction H; intros Hwf.
   - (* refl *) split; assumption.
@@ -770,7 +770,7 @@ Proof.
 Qed.
 
 Corollary a_tyequiv_lc_r : forall Θ A A',
-  Θ ⊢ A ≡ᵗ A' -> a_wf_aenv Θ -> lc_ptyp A'.
+  {{ Θ ⊢ A ≡ᵗ A' }}a -> a_wf_aenv Θ -> lc_ptyp A'.
 Proof. intros * H Hwf. apply (proj2 (a_tyequiv_lc H Hwf)). Qed.
 
 (* --- §8e  the theorem of this section --------------------------------- *)
@@ -782,7 +782,7 @@ Proof. intros * H Hwf. apply (proj2 (a_tyequiv_lc H Hwf)). Qed.
     their local closure off the appendix's [≡ᵗ] premise (§8d), and [App]
     inverts its function premise's. *)
 Lemma ad_sd_typing_mod_comp_ty : forall M Θ e B,
-  Θ ⊢ᵃᵈ[ M ] e ⦂ B -> a_wf_aenv Θ -> mod_comp_ty B M.
+  {{ Θ ⊢ˢᵈ[ M ] e ⦂ B }}ad -> a_wf_aenv Θ -> mod_comp_ty B M.
 Proof.
   intros M Θ e B H; induction H; intros Hwf.
   - (* unit *) eapply ad_pat_sub_mod_comp_ty;
@@ -842,7 +842,7 @@ Lemma a_guess_mono_refine_size : forall n Θ P Ξ A,
   forall Θ1 Δ,
   (forall α, α `in` ftvar_in_pskl P -> α `in` Δ \/ a_binds_tvar α Θ1) ->
   (forall α1, binds α1 abind_flex_mono Ξ -> a_binds_tvar α1 Θ1) ->
-  Θ1 ⨟ Δ ⊢ᵣᵃᵈ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)).
+  {{ Θ1 ⨟ Δ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)) }}ad.
 Proof.
   induction n as [| n IHn]; intros Θ P Ξ A Hsz H;
     [ destruct H; cbn in Hsz; lia | ].
@@ -898,7 +898,7 @@ Corollary a_guess_mono_refine : forall Θ P Ξ A Θ1 Δ,
   a_guess_mono Θ P Ξ A ->
   (forall α, α `in` ftvar_in_pskl P -> α `in` Δ \/ a_binds_tvar α Θ1) ->
   (forall α1, binds α1 abind_flex_mono Ξ -> a_binds_tvar α1 Θ1) ->
-  Θ1 ⨟ Δ ⊢ᵣᵃᵈ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)).
+  {{ Θ1 ⨟ Δ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)) }}ad.
 Proof. intros. eapply a_guess_mono_refine_size; eauto. Qed.
 
 (* ===================================================================== *)
@@ -919,10 +919,10 @@ Proof. intros. eapply a_guess_mono_refine_size; eauto. Qed.
     instead needs neither — `consis_mono_sym` (prop_mono_bridge.v) supplies
     the direction change. *)
 Lemma ad_pat_consis_mono_to_refine : forall Ψ Θ R Qt,
-  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Qt ->
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Qt }}ad ->
   a_wf_aenv Θ ->
   forall A Δ, R = ptyp_to_uskl_syn A -> mono_ptyp A ->
-  Θ ⨟ Δ ⊢ᵣᵃᵈ (ptyp_to_bskl_syn A) ⊳ Qt.
+  {{ Θ ⨟ Δ ⊢ᵣ (ptyp_to_bskl_syn A) ⊳ Qt }}ad.
 Proof.
   intros Ψ Θ R Qt Hc Hwf; induction Hc; intros A0 Δ HeqS HmA0;
     unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn in *.
@@ -972,11 +972,11 @@ Qed.
     (`a_split__flex`, algo/def_extra.v), the way `a_guess_mono__hole`
     carries its own.  WF-SIDE-CONDITIONS pattern, rule-premise variant. *)
 Lemma a_split_refines : forall Θ0 P0 P Q Θ1,
-  Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 ->
+  {{ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}a ->
   a_wf_aenv Θ0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
-  Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0)
-                ⊳ (pskl_to_bskl_inh (pskl_arrow P Q)).
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
+  {{ Θ1 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P0)
+                ⊳ (pskl_to_bskl_inh (pskl_arrow P Q)) }}ad.
 Proof.
   intros Θ0 P0 P Q Θ1 Hs Hwf HwfP; inversion Hs; subst.
   - (* arrow : reflexivity at the inherited painting *)
@@ -1002,9 +1002,9 @@ Proof.
         [ simpl_env; repeat rewrite dom_app; simpl;
           clear - Hfrα1; fsetdec | ].
       apply a_wf_aenv__flex; [ clear - Hfrβ; fsetdec | exact Hwf ]. }
-    assert (HwfArr : ((α1 ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θ0)
-                       ⨟ empty ⊢ₚₛᵃ (pskl_arrow (pskl_var_f β)
-                                                (pskl_var_f α1))).
+    assert (HwfArr : {{ ((α1 ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θ0)
+                       ⨟ empty ⊢ₚₛ (pskl_arrow (pskl_var_f β)
+                                                (pskl_var_f α1)) }}a).
     { apply a_wf_pskl__arrow; apply a_wf_pskl__var; right; right; left;
         [ unfold binds; simpl; right; left; reflexivity
         | unfold binds; simpl; left; reflexivity ]. }
@@ -1014,7 +1014,7 @@ Proof.
     | Hc : a_consis _ _ _ _ _ _ _ |- _ => inversion Hc; subst
     end.
     match goal with
-    | Ha : _ ⊲[ nil ] _ ≔ _ ⊣ _ |- _ =>
+    | Ha : {{ _ ⊲[ nil ] _ ≔ _ ⊣ _ }}a |- _ =>
         pose proof (a_assign_sound Ha a_decls__nil
                       ltac:(simpl_env; exact HwfX)
                       ltac:(simpl_env; exact HwfArr)) as [Hle Hcons];
@@ -1027,7 +1027,7 @@ Proof.
     inversion Hcons; subst.
     match goal with
     | Hb : binds _ (abind_flex_mono_def ?τ0) Θ1,
-      Hc2 : _ ⨟ Θ1 ⊢ᵃᵈ _ ∼ (ptyp_to_bskl_syn ?τ0) |- _ =>
+      Hc2 : {{ _ ⨟ Θ1 ⊢ˢ _ ∼ (ptyp_to_bskl_syn ?τ0) }}ad |- _ =>
         assert (Hmτ : mono_ptyp τ0)
           by (eapply a_wf_aenv_binds_def_mono; eassumption);
         eapply ad_refine_syn__flex_l; [ exact Hb | ];
@@ -1043,8 +1043,8 @@ Qed.
 (** ≡ᵗ embeds into ≡ˢ on paintings — the codomain-generalized split
     refinement below needs it. *)
 Lemma a_tyequiv_embed_pskl : forall Θ A B,
-  Θ ⊢ A ≡ᵗ B ->
-  Θ ⊢ (ptyp_to_pskl A) ≡ˢ (ptyp_to_pskl B).
+  {{ Θ ⊢ A ≡ᵗ B }}a ->
+  {{ Θ ⊢ (ptyp_to_pskl A) ≡ˢ (ptyp_to_pskl B) }}a.
 Proof.
   intros Θ A B H; induction H.
   - apply a_pskl_tyequiv__refl. apply lc_ptyp_to_pskl. exact H.
@@ -1067,14 +1067,14 @@ Qed.
     so the mono bridge turns its consistency into an equivalence and the
     subject transports along it. *)
 Lemma a_split_refines_gen : forall Θ0 A0 P Q Θ1 Θ' Qb,
-  Θ0 ⊲ (ptyp_to_pskl A0) ▹ P ⇢ Q ⊣ Θ1 ->
+  {{ Θ0 ⊲ (ptyp_to_pskl A0) ▹ P ⇢ Q ⊣ Θ1 }}a ->
   a_wf_aenv Θ0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ (ptyp_to_pskl A0) ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ (ptyp_to_pskl A0) }}a ->
   Θ1 ⊴ Θ' ->
   a_wf_aenv Θ' ->
-  Θ' ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh Q) ⊳ Qb ->
-  Θ' ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (ptyp_to_pskl A0))
-    ⊳ (bskl_arrow (pskl_to_bskl_inh P) Qb).
+  {{ Θ' ⨟ empty ⊢ᵣ (pskl_to_bskl_inh Q) ⊳ Qb }}ad ->
+  {{ Θ' ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (ptyp_to_pskl A0))
+    ⊳ (bskl_arrow (pskl_to_bskl_inh P) Qb) }}ad.
 Proof.
   intros Θ0 A0 P Q Θ1 Θ' Qb Hs Hwf HwfP Hle Hwf' HQb.
   inversion Hs; subst.
@@ -1115,9 +1115,9 @@ Proof.
         [ simpl_env; repeat rewrite dom_app; simpl;
           clear - Hfrα1; fsetdec | ].
       apply a_wf_aenv__flex; [ clear - Hfrβ; fsetdec | exact Hwf ]. }
-    assert (HwfArr : ((α1 ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θ0)
-                       ⨟ empty ⊢ₚₛᵃ (pskl_arrow (pskl_var_f β)
-                                                (pskl_var_f α1))).
+    assert (HwfArr : {{ ((α1 ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θ0)
+                       ⨟ empty ⊢ₚₛ (pskl_arrow (pskl_var_f β)
+                                                (pskl_var_f α1)) }}a).
     { apply a_wf_pskl__arrow; apply a_wf_pskl__var; right; right; left;
         [ unfold binds; simpl; right; left; reflexivity
         | unfold binds; simpl; left; reflexivity ]. }
@@ -1125,7 +1125,7 @@ Proof.
     | Hc : a_consis _ _ _ _ _ _ _ |- _ => inversion Hc; subst
     end.
     match goal with
-    | Ha : _ ⊲[ nil ] _ ≔ _ ⊣ _ |- _ =>
+    | Ha : {{ _ ⊲[ nil ] _ ≔ _ ⊣ _ }}a |- _ =>
         pose proof (a_assign_sound Ha a_decls__nil
                       ltac:(simpl_env; exact HwfX)
                       ltac:(simpl_env; exact HwfArr)) as [Hle1 Hcons];
@@ -1136,7 +1136,7 @@ Proof.
     inversion Hcons; subst.
     match goal with
     | Hb : binds _ (abind_flex_mono_def ?τx) Θ1,
-      Hc2 : _ ⨟ Θ1 ⊢ᵃᵈ _ ∼ (ptyp_to_bskl_syn ?τx) |- _ =>
+      Hc2 : {{ _ ⨟ Θ1 ⊢ˢ _ ∼ (ptyp_to_bskl_syn ?τx) }}ad |- _ =>
         rename Hb into Hbdef; rename Hc2 into Hcns
     end.
     match type of Hbdef with
@@ -1146,23 +1146,23 @@ Proof.
       by (eapply a_wf_aenv_binds_def_mono; eassumption).
     assert (Hmarr : mono_ptyp (ptyp_arrow (ptyp_var_f β) (ptyp_var_f α1)))
       by (repeat constructor).
-    assert (Hsym : empty ⨟ Θ1 ⊢ᵃᵈ (ptyp_to_uskl_syn τ0)
+    assert (Hsym : {{ empty ⨟ Θ1 ⊢ˢ (ptyp_to_uskl_syn τ0)
              ∼ (ptyp_to_bskl_syn (ptyp_arrow (ptyp_var_f β)
-                                             (ptyp_var_f α1)))).
+                                             (ptyp_var_f α1))) }}ad).
     { eapply consis_mono_sym with
         (A := ptyp_arrow (ptyp_var_f β) (ptyp_var_f α1)) (A' := τ0);
         [ exact Hcns | exact Hwf1 | reflexivity | reflexivity
         | exact Hmarr | exact Hmτ ]. }
-    assert (Hmid : Θ1 ⨟ empty ⊢ᵣᵃᵈ (ptyp_to_bskl_syn τ0)
+    assert (Hmid : {{ Θ1 ⨟ empty ⊢ᵣ (ptyp_to_bskl_syn τ0)
              ⊳ (ptyp_to_bskl_syn (ptyp_arrow (ptyp_var_f β)
-                                             (ptyp_var_f α1)))).
+                                             (ptyp_var_f α1))) }}ad).
     { eapply ad_pat_consis_mono_to_refine with (A := τ0);
         [ exact Hsym | exact Hwf1 | reflexivity | exact Hmτ ]. }
-    assert (Hmid' : Θ1 ⨟ empty ⊢ᵣᵃᵈ
+    assert (Hmid' : {{ Θ1 ⨟ empty ⊢ᵣ
               (pskl_to_bskl_inh (ptyp_to_pskl τ0))
               ⊳ (btyp_to_bskl
                    (ptyp_to_btyp_inh
-                      (ptyp_arrow (ptyp_var_f β) (ptyp_var_f α1))))).
+                      (ptyp_arrow (ptyp_var_f β) (ptyp_var_f α1)))) }}ad).
     { rewrite btyp_to_bskl_ptyp_to_btyp_inh.
       unfold ptyp_to_bskl_syn in Hmid.
       rewrite (mono_bskl_syn_inh (ptyp_to_pskl τ0)) in Hmid;
@@ -1172,18 +1172,18 @@ Proof.
         in Hmid;
         [ | apply mono_ptyp_to_bskl_syn; exact Hmarr ].
       exact Hmid. }
-    assert (Heqv : Θ1 ⊢ τ0 ≡ᵗ
+    assert (Heqv : {{ Θ1 ⊢ τ0 ≡ᵗ
               (btyp_to_ptyp (ptyp_to_btyp_inh
-                 (ptyp_arrow (ptyp_var_f β) (ptyp_var_f α1))))).
+                 (ptyp_arrow (ptyp_var_f β) (ptyp_var_f α1)))) }}a).
     { eapply ad_refine_syn_inh_tyequiv with (A := τ0);
         [ exact Hmid' | exact Hwf1 | reflexivity | reflexivity ]. }
     rewrite btyp_to_ptyp_ptyp_to_btyp_inh in Heqv.
     pose proof (a_tyequiv_isub_le Hle Heqv) as Heqv'.
     pose proof (a_tyequiv_embed_pskl Heqv') as Hskleq.
-    assert (Harr : Θ' ⨟ empty ⊢ᵣᵃᵈ
+    assert (Harr : {{ Θ' ⨟ empty ⊢ᵣ
               (pskl_to_bskl_inh
                  (ptyp_to_pskl (ptyp_arrow (ptyp_var_f β) (ptyp_var_f α1))))
-              ⊳ (bskl_arrow (pskl_to_bskl_inh (pskl_var_f β)) Qb)).
+              ⊳ (bskl_arrow (pskl_to_bskl_inh (pskl_var_f β)) Qb) }}ad).
     { simpl.
       apply ad_refine_syn__arrow; [ | exact HQb ].
       apply ad_refine_syn__var. right.
@@ -1215,7 +1215,7 @@ Qed.
     binder in [Δ] and [a_wf_ptyp] in [Θ] — so the statement quantifies the
     target context and asks the caller to relate the two. *)
 Lemma a_wf_ptyp_of_wf_pskl : forall Θ Δ P,
-  Θ ⨟ Δ ⊢ₚₛᵃ P ->
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
   forall A Θ', P = ptyp_to_pskl A ->
   (forall α, α `in` Δ -> a_binds_tvar α Θ') ->
   (forall α, a_binds_tvar α Θ -> a_binds_tvar α Θ') ->
@@ -1247,7 +1247,7 @@ Proof.
 Qed.
 
 Corollary a_wf_ptyp_of_wf_pskl_empty : forall Θ A,
-  Θ ⨟ empty ⊢ₚₛᵃ (ptyp_to_pskl A) -> a_wf_ptyp Θ A.
+  {{ Θ ⨟ empty ⊢ₚₛ (ptyp_to_pskl A) }}a -> a_wf_ptyp Θ A.
 Proof.
   intros Θ A H. eapply a_wf_ptyp_of_wf_pskl;
     [ exact H | reflexivity
@@ -1348,7 +1348,7 @@ Qed.
     [ptyp_to_pskl A]; that is the whole asymmetry between rows 5/6 and
     rows 8/10. *)
 Lemma a_split_ty_shape : forall m Θ0 P0 P Q0 Θ1,
-  Θ0 ⊲ P0 ▹ P ⇢ Q0 ⊣ Θ1 ->
+  {{ Θ0 ⊲ P0 ▹ P ⇢ Q0 ⊣ Θ1 }}a ->
   a_ty_mode_compat m P0 ->
   m <> mode_tc ->
   Θ1 = Θ0 /\
@@ -1369,11 +1369,11 @@ Qed.
 (* --- §12e  the split is sound: increase, wf, and both components ------ *)
 
 Lemma a_split_wf : forall Θ0 P0 P Q Θ1,
-  Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 ->
+  {{ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}a ->
   a_wf_aenv Θ0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
-  Θ1 ⨟ empty ⊢ₚₛᵃ P /\ Θ1 ⨟ empty ⊢ₚₛᵃ Q.
+  {{ Θ1 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ1 ⨟ empty ⊢ₚₛ Q }}a.
 Proof.
   intros Θ0 P0 P Q Θ1 Hs Hwf HwfP0; inversion Hs; subst.
   - (* arrow *)
@@ -1398,9 +1398,9 @@ Proof.
         [ simpl_env; repeat rewrite dom_app; simpl;
           clear - Hfrα1; fsetdec | ].
       apply a_wf_aenv__flex; [ clear - Hfrβ; fsetdec | exact Hwf ]. }
-    assert (HwfArr : ((α1 ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θ0)
-                       ⨟ empty ⊢ₚₛᵃ (pskl_arrow (pskl_var_f β)
-                                                (pskl_var_f α1))).
+    assert (HwfArr : {{ ((α1 ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θ0)
+                       ⨟ empty ⊢ₚₛ (pskl_arrow (pskl_var_f β)
+                                                (pskl_var_f α1)) }}a).
     { apply a_wf_pskl__arrow; apply a_wf_pskl__var; right; right; left;
         [ unfold binds; simpl; right; left; reflexivity
         | unfold binds; simpl; left; reflexivity ]. }
@@ -1408,7 +1408,7 @@ Proof.
     | Hc : a_consis _ _ _ _ _ _ _ |- _ => inversion Hc; subst
     end.
     match goal with
-    | Ha : _ ⊲[ nil ] _ ≔ _ ⊣ _ |- _ =>
+    | Ha : {{ _ ⊲[ nil ] _ ≔ _ ⊣ _ }}a |- _ =>
         pose proof (a_assign_sound Ha a_decls__nil
                       ltac:(simpl_env; exact HwfX)
                       ltac:(simpl_env; exact HwfArr)) as [HleX _];
@@ -1684,7 +1684,7 @@ Proof.
 Qed.
 
 Lemma ad_sd_typing_wf_exp : forall M Θ e B,
-  Θ ⊢ᵃᵈ[ M ] e ⦂ B -> a_wf_exp Θ e.
+  {{ Θ ⊢ˢᵈ[ M ] e ⦂ B }}ad -> a_wf_exp Θ e.
 Proof.
   intros M Θ e B H; induction H.
   - apply a_wf_exp__unit.
@@ -1795,15 +1795,15 @@ Proof. induction A; simpl; fsetdec. Qed.
     checked in.  It is the paper's ambient "all inputs are well-formed",
     threaded. *)
 Theorem a_typing_sound : forall m Θ0 P0 e A Θ1,
-  Θ0 ⊢ᵃ[ m ; P0 ] e ⦂ A ⊣ Θ1 ->
+  {{ Θ0 ⊢[ m ; P0 ] e ⦂ A ⊣ Θ1 }}a ->
   a_wf_aenv Θ0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat m P0 ->
   a_wf_exp Θ0 e ->
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
   exists Bt, btyp_to_ptyp Bt = A /\
-    (Θ1 ⊢ᵃᵈ[ m ] e ⦂ Bt) /\
-    (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt)).
+    ({{ Θ1 ⊢ˢᵈ[ m ] e ⦂ Bt }}ad) /\
+    ({{ Θ1 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt) }}ad).
 Proof.
   intros m Θ0 P0 e A Θ1 H; induction H; intros Hwf HwfP0 Hmod Hexp;
     pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps Hwf Hb)
@@ -1900,7 +1900,7 @@ Proof.
        ⊴-peel has to cross it — [a_guess_mono_decls] says it is
        flexible-only, and [a_isub_strengthen_decls_src] is that crossing. *)
     destruct (a_split_ty_shape H0 Hmod H) as [HeqΘ Hshape]; subst Θ1.
-    assert (Hpre : Θ0 ⨟ empty ⊢ₚₛᵃ P /\ Θ0 ⨟ empty ⊢ₚₛᵃ Q /\
+    assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q }}a /\
                    a_ty_mode_compat (decr_mode m) Q).
     { destruct Hshape as [[HP0 [HP HQ]] | HP0]; subst.
       - repeat split; try apply a_wf_pskl__hole.
@@ -1969,20 +1969,20 @@ Proof.
       - destruct (a_ty_mode_compat_arrow_inv Hmod H) as [m' [Hm Hm']];
           subst m. apply mod_comp_ty__fn. exact Hmq. }
     assert (Hbody : forall y,
-              ((y ~ abind_var_typ A) ++ (Ξ ++ Θ2)) ⊢ᵃᵈ[ decr_mode m ]
-                (open_exp_wrt_exp e (exp_var_f y)) ⦂ Bt).
+              {{ ((y ~ abind_var_typ A) ++ (Ξ ++ Θ2)) ⊢ˢᵈ[ decr_mode m ]
+                (open_exp_wrt_exp e (exp_var_f y)) ⦂ Bt }}ad).
     { intros y. apply ad_sd_typing_rename_tm with (x := x);
         [ apply ad_sd_typing_suffix_moving
             with (Ξ := Ξ) (Θ2 := (x ~ abind_var_typ A)); exact Hdb
         | exact I
         | clear - Hx; simpl_env; fsetdec ]. }
-    assert (Href2 : (Ξ ++ Θ2) ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0)
+    assert (Href2 : {{ (Ξ ++ Θ2) ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P0)
                       ⊳ (bskl_arrow (pskl_to_bskl_inh (ptyp_to_pskl A))
-                                    (btyp_to_bskl Bt))).
+                                    (btyp_to_bskl Bt)) }}ad).
     { destruct Hshape as [[HP0 [HP HQ]] | HP0]; subst; simpl.
       - (* ◇ : both halves are synthesised paintings, so [__hole] fires *)
         destruct (ad_refine_syn_syn_l Hrefb pskl_hole eq_refl) as [P' HQt].
-        assert (HwfP' : (Ξ ++ Θ2) ⨟ empty ⊢ₚₛᵃ P').
+        assert (HwfP' : {{ (Ξ ++ Θ2) ⨟ empty ⊢ₚₛ P' }}a).
         { pose proof (ad_refine_syn_hole_l_target_wf Hrefb) as Hw.
           rewrite HQt, bskl_to_pskl_pskl_to_bskl_syn in Hw.
           eapply a_wf_pskl_mono;
@@ -2023,7 +2023,7 @@ Proof.
   - (* AT-AbsAnno *)
     destruct (a_split_ty_shape H0 Hmod H) as [HeqΘ Hshape]; subst Θ1.
     destruct (a_wf_exp_abs_anno_inv Hexp) as [HwfA _].
-    assert (Hpre : Θ0 ⨟ empty ⊢ₚₛᵃ P /\ Θ0 ⨟ empty ⊢ₚₛᵃ Q /\
+    assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q }}a /\
                    a_ty_mode_compat (decr_mode m) Q).
     { destruct Hshape as [[HP0 [HP HQ]] | HP0]; subst.
       - repeat split; try apply a_wf_pskl__hole.
@@ -2066,8 +2066,8 @@ Proof.
     { eapply a_wf_ptyp_mono;
         [ exact HwfBout | apply aenv_tbinds_le_strip_tm; intros [] ]. }
     assert (Hbody : forall y,
-              ((y ~ abind_var_typ A) ++ (Ξ ++ Θ3)) ⊢ᵃᵈ[ decr_mode m ]
-                (open_exp_wrt_exp e (exp_var_f y)) ⦂ Bt).
+              {{ ((y ~ abind_var_typ A) ++ (Ξ ++ Θ3)) ⊢ˢᵈ[ decr_mode m ]
+                (open_exp_wrt_exp e (exp_var_f y)) ⦂ Bt }}ad).
     { intros y. apply ad_sd_typing_rename_tm with (x := x);
         [ apply ad_sd_typing_suffix_moving
             with (Ξ := Ξ) (Θ2 := (x ~ abind_var_typ A)); exact Hdb
@@ -2081,7 +2081,7 @@ Proof.
       subst P0 P Q.
       pose proof (a_ty_mode_compat_hole_inv Hmod) as Hm; subst m.
       destruct (ad_refine_syn_syn_l Hrefb pskl_hole eq_refl) as [P' HQt].
-      assert (HwfP' : (Ξ ++ Θ3) ⨟ empty ⊢ₚₛᵃ P').
+      assert (HwfP' : {{ (Ξ ++ Θ3) ⨟ empty ⊢ₚₛ P' }}a).
       { pose proof (ad_refine_syn_hole_l_target_wf Hrefb) as Hw.
         rewrite HQt, bskl_to_pskl_pskl_to_bskl_syn in Hw.
         eapply a_wf_pskl_mono;
@@ -2222,9 +2222,9 @@ Proof.
         [ clear - HΔ; fsetdec
         | apply a_binds_tvar_in_dom in Ht; clear - Hα Ht; fsetdec ]. }
     (* the declarative instance, suffix-stripped, then the family *)
-    assert (Hdα1 : ((α ~ abind_tvar) ++ Θ1) ⊢ᵃᵈ[ mode_tc ] (exp_abs e)
+    assert (Hdα1 : {{ ((α ~ abind_tvar) ++ Θ1) ⊢ˢᵈ[ mode_tc ] (exp_abs e)
                      ⦂ (ptyp_to_btyp_inh
-                          (open_ptyp_wrt_ptyp A (ptyp_var_f α)))).
+                          (open_ptyp_wrt_ptyp A (ptyp_var_f α))) }}ad).
     { eapply ad_sd_typing_strip_suffix;
         [ exact H | exact Hwfo | | exact Hdα ].
       intros γ Hγ.
@@ -2353,8 +2353,8 @@ Proof.
       eapply a_wf_ptyp_mono;
         [ exact HwfBout | apply aenv_tbinds_le_strip_tm; intros [] ]. }
     assert (Hbody : forall y,
-              ((y ~ abind_var_typ A) ++ Θ2) ⊢ᵃᵈ[ mode_tc ]
-                (open_exp_wrt_exp e (exp_var_f y)) ⦂ (ptyp_to_btyp_inh B1)).
+              {{ ((y ~ abind_var_typ A) ++ Θ2) ⊢ˢᵈ[ mode_tc ]
+                (open_exp_wrt_exp e (exp_var_f y)) ⦂ (ptyp_to_btyp_inh B1) }}ad).
     { intros y. apply ad_sd_typing_rename_tm with (x := x);
         [ eapply ad_sd_typing_strip_suffix;
             [ exact H0 | simpl_env; exact Hwfout | | simpl_env; exact Hdb ]
@@ -2365,8 +2365,8 @@ Proof.
       pose proof (H2 γ Hγ) as Hn. pose proof (HΞΘ1 γ Hγ) as Hd1.
       pose proof (a_wf_exp_ftv_dom Hexpx) as Hfv.
       clear - Hn Hd1 Hfv; fsetdec. }
-    assert (Hrefb2 : Θ2 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (ptyp_to_pskl B))
-                       ⊳ (btyp_to_bskl (ptyp_to_btyp_inh B1))).
+    assert (Hrefb2 : {{ Θ2 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (ptyp_to_pskl B))
+                       ⊳ (btyp_to_bskl (ptyp_to_btyp_inh B1)) }}ad).
     { pose proof (a_wf_ptyp_ftv_dom HwfBs) as HftvB.
       eapply ad_refine_syn_strip_suffix with (Ξ := Ξ);
         [ exact H0
@@ -2493,10 +2493,10 @@ Proof.
       destruct (a_wf_pskl_ftv_tvarish Hwps Hc) as [HΔ | Ht];
         [ clear - HΔ; fsetdec
         | apply a_binds_tvar_in_dom in Ht; clear - Hα Ht; fsetdec ]. }
-    assert (Hdα1 : ((α ~ abind_tvar) ++ Θ1) ⊢ᵃᵈ[ mode_tc ]
+    assert (Hdα1 : {{ ((α ~ abind_tvar) ++ Θ1) ⊢ˢᵈ[ mode_tc ]
                      (exp_abs_anno Aan e)
                      ⦂ (ptyp_to_btyp_inh
-                          (open_ptyp_wrt_ptyp A (ptyp_var_f α)))).
+                          (open_ptyp_wrt_ptyp A (ptyp_var_f α))) }}ad).
     { eapply ad_sd_typing_strip_suffix;
         [ exact H | exact Hwfo | | exact Hdα ].
       intros γ Hγ.
@@ -2599,7 +2599,7 @@ Proof.
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfAan1)
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfAs))
       as [Hlec [Hwfc _]].
-    assert (Hequiv : Θ2 ⊢ A' ≡ᵗ A)
+    assert (Hequiv : {{ Θ2 ⊢ A' ≡ᵗ A }}a)
       by (eapply a_consis_chk_tyequiv;
           [ exact H0 | exact Hwfs | exact HwfAan1 | exact HwfAs ]).
     assert (Hle02 : Θ0 ⊴ Θ2)
@@ -2646,8 +2646,8 @@ Proof.
     assert (HwfA3 : a_wf_ptyp Θ3 A')
       by (eapply a_wf_ptyp_isub; [ exact HwfAs | exact Hle13 ]).
     assert (Hbody : forall y,
-              ((y ~ abind_var_typ A) ++ Θ3) ⊢ᵃᵈ[ mode_tc ]
-                (open_exp_wrt_exp e (exp_var_f y)) ⦂ (ptyp_to_btyp_inh B1)).
+              {{ ((y ~ abind_var_typ A) ++ Θ3) ⊢ˢᵈ[ mode_tc ]
+                (open_exp_wrt_exp e (exp_var_f y)) ⦂ (ptyp_to_btyp_inh B1) }}ad).
     { intros y. apply ad_sd_typing_rename_tm with (x := x);
         [ eapply ad_sd_typing_strip_suffix;
             [ exact H1 | simpl_env; exact Hwfout | | simpl_env; exact Hdb ]
@@ -2658,8 +2658,8 @@ Proof.
       pose proof (H3 γ Hγ) as Hn. pose proof (HΞΘ2 γ Hγ) as Hd2.
       pose proof (a_wf_exp_ftv_dom Hexpx) as Hfv.
       clear - Hn Hd2 Hfv; fsetdec. }
-    assert (Hrefb2 : Θ3 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (ptyp_to_pskl B))
-                       ⊳ (btyp_to_bskl (ptyp_to_btyp_inh B1))).
+    assert (Hrefb2 : {{ Θ3 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (ptyp_to_pskl B))
+                       ⊳ (btyp_to_bskl (ptyp_to_btyp_inh B1)) }}ad).
     { assert (HftvB2 : forall γ, γ `in` ftvar_in_ptyp B -> γ `in` dom Θ2).
       { intros γ Hγ.
         apply a_binds_tvar_in_dom.
@@ -2703,7 +2703,7 @@ Proof.
       as [Hle1 [Hwf1 [Qt1 [HeQt1 [Hpat1 Href1]]]]].
     destruct (ad_refine_syn_syn_l Href1 pskl_hole eq_refl) as [P' HQt1].
     subst Qt1. rewrite bskl_to_pskl_pskl_to_bskl_syn in HeQt1. subst P.
-    assert (HwfPin : Θ1 ⨟ empty ⊢ₚₛᵃ P')
+    assert (HwfPin : {{ Θ1 ⨟ empty ⊢ₚₛ P' }}a)
       by (pose proof (ad_refine_syn_hole_l_target_wf Href1) as Hw;
           rewrite bskl_to_pskl_pskl_to_bskl_syn in Hw; exact Hw).
     destruct (IHa_typing1 Hwf1
@@ -2728,7 +2728,7 @@ Proof.
     { apply btyp_check_colouring; [ | exact HeBa ].
       apply mod_comp_ty_tc_inv. eapply ad_sd_typing_mod_comp_ty; eassumption. }
     subst Ba.
-    assert (Hequiv : Θ3 ⊢ (btyp_to_ptyp B1) ≡ᵗ A').
+    assert (Hequiv : {{ Θ3 ⊢ (btyp_to_ptyp B1) ≡ᵗ A' }}a).
     { rewrite HeB1.
       replace A' with (btyp_to_ptyp (ptyp_to_btyp_inh A'))
         by apply btyp_to_ptyp_ptyp_to_btyp_inh.

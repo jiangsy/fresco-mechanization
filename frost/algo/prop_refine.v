@@ -37,9 +37,9 @@ Qed.
 (** Δ-monotonicity: enlarging the ∀-scope set preserves well-formedness
     (occurrences only ever TEST membership positively). *)
 Lemma a_wf_pskl_delta_mono : forall Θ Δ0 P,
-  Θ ⨟ Δ0 ⊢ₚₛᵃ P ->
+  {{ Θ ⨟ Δ0 ⊢ₚₛ P }}a ->
   forall Δ, Δ0 [<=] Δ ->
-  Θ ⨟ Δ ⊢ₚₛᵃ P.
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a.
 Proof.
   intros Θ Δ0 P H; induction H; intros Δ' Hsub; eauto using a_wf_pskl.
   - apply a_wf_pskl__var.
@@ -68,10 +68,10 @@ Qed.
 (* ===================================================================== *)
 
 Lemma ad_refine_syn_weaken : forall Θ Δ Q Q',
-  Θ ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ Q' ->
+  {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
   forall Θ',
   (forall x b, binds x b Θ -> binds x b Θ') ->
-  Θ' ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ Q'.
+  {{ Θ' ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad.
 Proof.
   intros Θ Δ Q Q' H; induction H; intros Θ' Hmon.
   - apply ad_refine_syn__unit.
@@ -96,10 +96,10 @@ Proof.
 Qed.
 
 Lemma ad_refine_pskl_weaken : forall Θ Δ P P',
-  Θ ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ P' ->
+  {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad ->
   forall Θ',
   (forall x b, binds x b Θ -> binds x b Θ') ->
-  Θ' ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ P'.
+  {{ Θ' ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad.
 Proof.
   intros Θ Δ P P' H; induction H; intros Θ' Hmon.
   - apply ad_refine_pskl__unit.
@@ -130,9 +130,9 @@ Qed.
 (** Helper: refinement from an empty Δ holds at any Δ (occurrences only
     test Δ-membership positively). *)
 Lemma ad_refine_syn_delta_mono : forall Θ Δ0 Q Q',
-  Θ ⨟ Δ0 ⊢ᵣᵃᵈ Q ⊳ Q' ->
+  {{ Θ ⨟ Δ0 ⊢ᵣ Q ⊳ Q' }}ad ->
   forall Δ, Δ0 [<=] Δ ->
-  Θ ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ Q'.
+  {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad.
 Proof.
   intros Θ Δ0 Q Q' H; induction H; intros Δ' Hsub;
     eauto using ad_refine_syn.
@@ -143,9 +143,9 @@ Proof.
 Qed.
 
 Lemma ad_refine_pskl_delta_mono : forall Θ Δ0 P P',
-  Θ ⨟ Δ0 ⊢ᵣₚᵃᵈ P ⊳ P' ->
+  {{ Θ ⨟ Δ0 ⊢ᵣₚ P ⊳ P' }}ad ->
   forall Δ, Δ0 [<=] Δ ->
-  Θ ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ P'.
+  {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad.
 Proof.
   intros Θ Δ0 P P' H; induction H; intros Δ' Hsub;
     eauto using ad_refine_pskl.
@@ -156,8 +156,8 @@ Proof.
 Qed.
 
 Lemma ad_refine_syn_refl_inh : forall Θ Δ P,
-  Θ ⨟ Δ ⊢ₚₛᵃ P ->
-  Θ ⨟ Δ ⊢ᵣᵃᵈ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh P).
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
+  {{ Θ ⨟ Δ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh P) }}ad.
 Proof.
   intros Θ Δ P H; induction H; simpl.
   - apply ad_refine_syn__unit.
@@ -175,8 +175,8 @@ Proof.
 Qed.
 
 Lemma ad_refine_pskl_refl : forall Θ Δ P,
-  Θ ⨟ Δ ⊢ₚₛᵃ P ->
-  Θ ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ P.
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
+  {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ P }}ad.
 Proof.
   intros Θ Δ P H; induction H; simpl.
   - apply ad_refine_pskl__unit.

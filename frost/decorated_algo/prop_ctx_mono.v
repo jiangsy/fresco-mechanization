@@ -211,8 +211,8 @@ Proof.
 Qed.
 
 Lemma a_tyequiv_ctx_mono : forall Θ A B,
-  Θ ⊢ A ≡ᵗ B ->
-  forall Θ', aenv_tbinds_le Θ Θ' -> Θ' ⊢ A ≡ᵗ B.
+  {{ Θ ⊢ A ≡ᵗ B }}a ->
+  forall Θ', aenv_tbinds_le Θ Θ' -> {{ Θ' ⊢ A ≡ᵗ B }}a.
 Proof.
   intros Θ A B H; induction H; intros Θ' Hle.
   - apply a_tyequiv__refl; assumption.
@@ -229,8 +229,8 @@ Qed.
 (* ===================================================================== *)
 
 Lemma ad_pat_consis_mono : forall Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
-  forall Θ', aenv_tbinds_le Θ Θ' -> Ψ ⨟ Θ' ⊢ᵃᵈ R ∼ Q.
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
+  forall Θ', aenv_tbinds_le Θ Θ' -> {{ Ψ ⨟ Θ' ⊢ˢ R ∼ Q }}ad.
 Proof.
   intros Ψ Θ R Q H; induction H; intros Θ' Hle.
   - apply ad_pat_consis__unit; assumption.
@@ -259,8 +259,8 @@ Proof.
 Qed.
 
 Lemma ad_refine_syn_mono : forall Θ Δ Q P,
-  Θ ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ P ->
-  forall Θ', aenv_tbinds_le Θ Θ' -> Θ' ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ P.
+  {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad ->
+  forall Θ', aenv_tbinds_le Θ Θ' -> {{ Θ' ⨟ Δ ⊢ᵣ Q ⊳ P }}ad.
 Proof.
   intros Θ Δ Q P H; induction H; intros Θ' Hle.
   - apply ad_refine_syn__unit.
@@ -283,8 +283,8 @@ Proof.
 Qed.
 
 Lemma ad_refine_pskl_mono : forall Θ Δ P Q,
-  Θ ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ Q ->
-  forall Θ', aenv_tbinds_le Θ Θ' -> Θ' ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ Q.
+  {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad ->
+  forall Θ', aenv_tbinds_le Θ Θ' -> {{ Θ' ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad.
 Proof.
   intros Θ Δ P Q H; induction H; intros Θ' Hle.
   - apply ad_refine_pskl__unit.
@@ -309,8 +309,8 @@ Qed.
 (* ===================================================================== *)
 
 Lemma ad_pat_sub_mono : forall NM M Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q ->
-  forall Θ', aenv_tbinds_le Θ Θ' -> Ψ ⨟ Θ' ⊢ᵃᵈ[ NM | M ] R ⩽ Q.
+  {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad ->
+  forall Θ', aenv_tbinds_le Θ Θ' -> {{ Ψ ⨟ Θ' ⊢ˢ[ NM | M ] R ⩽ Q }}ad.
 Proof.
   intros NM M Ψ Θ R Q H; induction H; intros Θ' Hle.
   - apply ad_pat_sub__infer;
@@ -392,8 +392,8 @@ Qed.
     these two keep the full [aenv_binds_le]; the embedded type-level
     premises go through [aenv_tbinds_le_of_binds_le]. *)
 Lemma ad_pat_mono : forall M Θ e Q,
-  Θ ⊢ₛᵃᵈ[ M ] e ⦂ Q ->
-  forall Θ', aenv_binds_le Θ Θ' -> Θ' ⊢ₛᵃᵈ[ M ] e ⦂ Q.
+  {{ Θ ⊢ˢ[ M ] e ⦂ Q }}ad ->
+  forall Θ', aenv_binds_le Θ Θ' -> {{ Θ' ⊢ˢ[ M ] e ⦂ Q }}ad.
 Proof.
   intros M Θ e Q H; induction H; intros Θ' Hle;
     pose proof (aenv_tbinds_le_of_binds_le Hle) as Htle.
@@ -422,8 +422,8 @@ Proof.
 Qed.
 
 Lemma ad_sd_typing_mono : forall M Θ e B,
-  Θ ⊢ᵃᵈ[ M ] e ⦂ B ->
-  forall Θ', aenv_binds_le Θ Θ' -> Θ' ⊢ᵃᵈ[ M ] e ⦂ B.
+  {{ Θ ⊢ˢᵈ[ M ] e ⦂ B }}ad ->
+  forall Θ', aenv_binds_le Θ Θ' -> {{ Θ' ⊢ˢᵈ[ M ] e ⦂ B }}ad.
 Proof.
   intros M Θ e B H; induction H; intros Θ' Hle;
     pose proof (aenv_tbinds_le_of_binds_le Hle) as Htle.
@@ -470,8 +470,8 @@ Qed.
     their uses), which is a separate obligation a caller discharges where it
     needs [a_wf_aenv].  A dropped premise only strengthens the lemma. *)
 Corollary ad_sd_typing_suffix_moving : forall M Θ1 Θ2 Ξ e B,
-  (Ξ ++ Θ2 ++ Θ1) ⊢ᵃᵈ[ M ] e ⦂ B ->
-  (Θ2 ++ Ξ ++ Θ1) ⊢ᵃᵈ[ M ] e ⦂ B.
+  {{ (Ξ ++ Θ2 ++ Θ1) ⊢ˢᵈ[ M ] e ⦂ B }}ad ->
+  {{ (Θ2 ++ Ξ ++ Θ1) ⊢ˢᵈ[ M ] e ⦂ B }}ad.
 Proof.
   intros M Θ1 Θ2 Ξ e B H.
   eapply ad_sd_typing_mono; [ exact H | apply aenv_binds_le_perm3 ].
@@ -479,8 +479,8 @@ Qed.
 
 (** Same for skeleton inference — the App rule of typing needs it there. *)
 Corollary ad_pat_suffix_moving : forall M Θ1 Θ2 Ξ e Q,
-  (Ξ ++ Θ2 ++ Θ1) ⊢ₛᵃᵈ[ M ] e ⦂ Q ->
-  (Θ2 ++ Ξ ++ Θ1) ⊢ₛᵃᵈ[ M ] e ⦂ Q.
+  {{ (Ξ ++ Θ2 ++ Θ1) ⊢ˢ[ M ] e ⦂ Q }}ad ->
+  {{ (Θ2 ++ Ξ ++ Θ1) ⊢ˢ[ M ] e ⦂ Q }}ad.
 Proof.
   intros M Θ1 Θ2 Ξ e Q H.
   eapply ad_pat_mono; [ exact H | apply aenv_binds_le_perm3 ].
@@ -490,14 +490,14 @@ Qed.
     that only ADDS entries — the [Ξ ++ Θ] shape every algorithmic step
     produces. *)
 Corollary ad_sd_typing_weaken_suffix : forall M Θ Ξ e B,
-  Θ ⊢ᵃᵈ[ M ] e ⦂ B -> (Ξ ++ Θ) ⊢ᵃᵈ[ M ] e ⦂ B.
+  {{ Θ ⊢ˢᵈ[ M ] e ⦂ B }}ad -> {{ (Ξ ++ Θ) ⊢ˢᵈ[ M ] e ⦂ B }}ad.
 Proof.
   intros M Θ Ξ e B H.
   eapply ad_sd_typing_mono; [ exact H | apply aenv_binds_le_weaken_l ].
 Qed.
 
 Corollary ad_pat_weaken_suffix : forall M Θ Ξ e Q,
-  Θ ⊢ₛᵃᵈ[ M ] e ⦂ Q -> (Ξ ++ Θ) ⊢ₛᵃᵈ[ M ] e ⦂ Q.
+  {{ Θ ⊢ˢ[ M ] e ⦂ Q }}ad -> {{ (Ξ ++ Θ) ⊢ˢ[ M ] e ⦂ Q }}ad.
 Proof.
   intros M Θ Ξ e Q H.
   eapply ad_pat_mono; [ exact H | apply aenv_binds_le_weaken_l ].
@@ -513,32 +513,32 @@ Qed.
 (* ===================================================================== *)
 
 Corollary ad_refine_syn_strip_tm_typ : forall Ξ x A Θ Δ Q P,
-  (Ξ ++ (x ~ abind_var_typ A) ++ Θ) ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ P ->
-  (Ξ ++ Θ) ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ P.
+  {{ (Ξ ++ (x ~ abind_var_typ A) ++ Θ) ⨟ Δ ⊢ᵣ Q ⊳ P }}ad ->
+  {{ (Ξ ++ Θ) ⨟ Δ ⊢ᵣ Q ⊳ P }}ad.
 Proof.
   intros * H. eapply ad_refine_syn_mono;
     [ exact H | apply aenv_tbinds_le_strip_tm; intros [] ].
 Qed.
 
 Corollary ad_refine_syn_strip_tm_skl : forall Ξ x P0 Θ Δ Q P,
-  (Ξ ++ (x ~ abind_var_skl P0) ++ Θ) ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ P ->
-  (Ξ ++ Θ) ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ P.
+  {{ (Ξ ++ (x ~ abind_var_skl P0) ++ Θ) ⨟ Δ ⊢ᵣ Q ⊳ P }}ad ->
+  {{ (Ξ ++ Θ) ⨟ Δ ⊢ᵣ Q ⊳ P }}ad.
 Proof.
   intros * H. eapply ad_refine_syn_mono;
     [ exact H | apply aenv_tbinds_le_strip_tm; intros [] ].
 Qed.
 
 Corollary ad_refine_pskl_strip_tm_typ : forall Ξ x A Θ Δ P Q,
-  (Ξ ++ (x ~ abind_var_typ A) ++ Θ) ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ Q ->
-  (Ξ ++ Θ) ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ Q.
+  {{ (Ξ ++ (x ~ abind_var_typ A) ++ Θ) ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad ->
+  {{ (Ξ ++ Θ) ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad.
 Proof.
   intros * H. eapply ad_refine_pskl_mono;
     [ exact H | apply aenv_tbinds_le_strip_tm; intros [] ].
 Qed.
 
 Corollary ad_refine_pskl_strip_tm_skl : forall Ξ x P0 Θ Δ P Q,
-  (Ξ ++ (x ~ abind_var_skl P0) ++ Θ) ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ Q ->
-  (Ξ ++ Θ) ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ Q.
+  {{ (Ξ ++ (x ~ abind_var_skl P0) ++ Θ) ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad ->
+  {{ (Ξ ++ Θ) ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad.
 Proof.
   intros * H. eapply ad_refine_pskl_mono;
     [ exact H | apply aenv_tbinds_le_strip_tm; intros [] ].

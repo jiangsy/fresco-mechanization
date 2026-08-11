@@ -84,7 +84,7 @@ Set Implicit Arguments.
 (*  user-facing modes — INFERENCE, whose input is the ghost [□], and      *)
 (*  CHECKING, whose input is a closed type [⌈A0⌉] — so each flagship      *)
 (*  splits into two, and three premises go with the split: [a_wf_aenv ·]  *)
-(*  is a constructor, [· ⨟ ∅ ⊢ₚₛᵃ P0] is [a_wf_pskl__hole] resp. the      *)
+(*  is a constructor, [{{ · ⨟ ∅ ⊢ₚₛ P0 }}a] is [a_wf_pskl__hole] resp. the *)
 (*  annotation's own wf, and [a_ty_mode_compat] is read off the shape.    *)
 (*                                                                        *)
 (*  ⭐ COMPLETENESS needs NO condition on the term at all.  Since          *)
@@ -108,15 +108,15 @@ Set Implicit Arguments.
     PURELY DECLARATIVE typing of [e] at that closed answer. *)
 Lemma a_typing_sound_nil : forall m P0 e A Θ1,
   a_wf_exp nil e ->
-  nil ⨟ empty ⊢ₚₛᵃ P0 ->
+  {{ nil ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat m P0 ->
-  nil ⊢ᵃ[ m ; P0 ] e ⦂ A ⊣ Θ1 ->
+  {{ nil ⊢[ m ; P0 ] e ⦂ A ⊣ Θ1 }}a ->
   nil ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
   exists Bt, btyp_to_ptyp Bt = A /\ mod_comp_ty Bt m /\
-    (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt)) /\
+    ({{ Θ1 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl Bt) }}ad) /\
     exists ζ, ζ ∷ Θ1 ⊑ nil /\ msubst_mono ζ /\
-      (nil ⊢ˢ[ m ] e ⦂ (msubst_btyp ζ Bt)) /\
-      (nil ⊢[ m ] e ⦂ (msubst_btyp ζ Bt)).
+      ({{ nil ⊢ˢᵈ[ m ] e ⦂ (msubst_btyp ζ Bt) }}d) /\
+      ({{ nil ⊢[ m ] e ⦂ (msubst_btyp ζ Bt) }}d).
 Proof.
   intros m P0 e A Θ1 Hexp HwfP0 Hmod Hrun.
   destruct (a_typing_sound Hrun a_wf_aenv__nil HwfP0 Hmod Hexp)
@@ -132,7 +132,7 @@ Proof.
   destruct (ad_sd_typing_close_suffix Θ1 Hsuf Hwf1 m e Bt Hd Hftv)
     as [ζ [Hinc [Hmo [_ Hdnil]]]].
   exists ζ. split; [ exact Hinc | ]. split; [ exact Hmo | ].
-  assert (Hsd : nil ⊢ˢ[ m ] e ⦂ (msubst_btyp ζ Bt))
+  assert (Hsd : {{ nil ⊢ˢᵈ[ m ] e ⦂ (msubst_btyp ζ Bt) }}d)
     by exact (ad_sd_typing_to_d m nil e (msubst_btyp ζ Bt) Hdnil nil eq_refl).
   split; [ exact Hsd | apply d_sd_typing_sound; exact Hsd ].
 Qed.
@@ -142,12 +142,12 @@ Qed.
     the general statement's existential [Bt] is [syn{A}] and disappears. *)
 Corollary a_typing_sound_infer : forall e A Θ1,
   a_wf_exp nil e ->
-  nil ⊢ᵃ[ mode_ti ; pskl_hole ] e ⦂ A ⊣ Θ1 ->
+  {{ nil ⊢[ mode_ti ; pskl_hole ] e ⦂ A ⊣ Θ1 }}a ->
   nil ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
-  (Θ1 ⨟ empty ⊢ᵣᵃᵈ bskl_hole ⊳ (btyp_to_bskl (ptyp_to_btyp_syn A))) /\
+  ({{ Θ1 ⨟ empty ⊢ᵣ bskl_hole ⊳ (btyp_to_bskl (ptyp_to_btyp_syn A)) }}ad) /\
   exists ζ, ζ ∷ Θ1 ⊑ nil /\
-    (nil ⊢ˢ[ mode_ti ] e ⦂ (ptyp_to_btyp_syn (msubst_ptyp ζ A))) /\
-    (nil ⊢[ mode_ti ] e ⦂ (ptyp_to_btyp_syn (msubst_ptyp ζ A))).
+    ({{ nil ⊢ˢᵈ[ mode_ti ] e ⦂ (ptyp_to_btyp_syn (msubst_ptyp ζ A)) }}d) /\
+    ({{ nil ⊢[ mode_ti ] e ⦂ (ptyp_to_btyp_syn (msubst_ptyp ζ A)) }}d).
 Proof.
   intros e A Θ1 Hexp Hrun.
   destruct (a_typing_sound_nil Hexp (a_wf_pskl__hole _ _)
@@ -168,13 +168,13 @@ Qed.
 Corollary a_typing_sound_check : forall e A0 A Θ1,
   a_wf_exp nil e ->
   a_wf_ptyp nil A0 ->
-  nil ⊢ᵃ[ mode_tc ; (ptyp_to_pskl A0) ] e ⦂ A ⊣ Θ1 ->
+  {{ nil ⊢[ mode_tc ; (ptyp_to_pskl A0) ] e ⦂ A ⊣ Θ1 }}a ->
   nil ⊴ Θ1 /\ a_wf_aenv Θ1 /\ a_wf_ptyp Θ1 A /\
-  (Θ1 ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (ptyp_to_pskl A0))
-     ⊳ (btyp_to_bskl (ptyp_to_btyp_inh A))) /\
+  ({{ Θ1 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (ptyp_to_pskl A0))
+     ⊳ (btyp_to_bskl (ptyp_to_btyp_inh A)) }}ad) /\
   exists ζ, ζ ∷ Θ1 ⊑ nil /\
-    (nil ⊢ˢ[ mode_tc ] e ⦂ (ptyp_to_btyp_inh (msubst_ptyp ζ A))) /\
-    (nil ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh (msubst_ptyp ζ A))).
+    ({{ nil ⊢ˢᵈ[ mode_tc ] e ⦂ (ptyp_to_btyp_inh (msubst_ptyp ζ A)) }}d) /\
+    ({{ nil ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh (msubst_ptyp ζ A)) }}d).
 Proof.
   intros e A0 A Θ1 Hexp HwfA0 Hrun.
   destruct (a_typing_sound_nil Hexp (a_wf_ptyp_to_wf_pskl empty HwfA0)
@@ -196,13 +196,13 @@ Qed.
     what comes out is the readable "the answer, closed off by ζ, IS the
     declarative type". *)
 Lemma a_typing_complete_nil : forall m P0 e (B : btyp),
-  nil ⨟ empty ⊢ₚₛᵃ P0 ->
+  {{ nil ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat m P0 ->
-  nil ⊢ᵃᵈ[ m ] e ⦂ B ->
-  nil ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl B) ->
+  {{ nil ⊢ˢᵈ[ m ] e ⦂ B }}ad ->
+  {{ nil ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ (btyp_to_bskl B) }}ad ->
   exists A1 Θ1,
-    nil ⊢ᵃ[ m ; P0 ] e ⦂ A1 ⊣ Θ1 /\
-    exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
+    {{ nil ⊢[ m ; P0 ] e ⦂ A1 ⊣ Θ1 }}a /\
+    exists ζ, ζ ∷ Θ1 ⊑ nil /\ {{ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B) }}a.
 Proof.
   intros m P0 e B HwfP0 Hmod Hd Href.
   pose proof (ad_sd_typing_wf_exp Hd) as Hexp.
@@ -229,10 +229,10 @@ Qed.
     are read off the derivation itself ([ad_sd_typing_mod_comp_ty] +
     [ad_sd_typing_target_wf]).  So the derivation is the ONLY premise. *)
 Corollary a_typing_complete_infer : forall e (B : btyp),
-  nil ⊢ᵃᵈ[ mode_ti ] e ⦂ B ->
+  {{ nil ⊢ˢᵈ[ mode_ti ] e ⦂ B }}ad ->
   exists A1 Θ1,
-    nil ⊢ᵃ[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 /\
-    exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
+    {{ nil ⊢[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 }}a /\
+    exists ζ, ζ ∷ Θ1 ⊑ nil /\ {{ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B) }}a.
 Proof.
   intros e B Hd.
   eapply a_typing_complete_nil;
@@ -256,10 +256,10 @@ Qed.
     context, and [·] has none — so [inh{A0} ⊳ ⌊B⌋] forces [A0 = ⌊B⌋] anyway.
     Like the inference twin, the derivation is the ONLY premise. *)
 Corollary a_typing_complete_check : forall e (B : btyp),
-  nil ⊢ᵃᵈ[ mode_tc ] e ⦂ B ->
+  {{ nil ⊢ˢᵈ[ mode_tc ] e ⦂ B }}ad ->
   exists A1 Θ1,
-    nil ⊢ᵃ[ mode_tc ; (ptyp_to_pskl (btyp_to_ptyp B)) ] e ⦂ A1 ⊣ Θ1 /\
-    exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
+    {{ nil ⊢[ mode_tc ; (ptyp_to_pskl (btyp_to_ptyp B)) ] e ⦂ A1 ⊣ Θ1 }}a /\
+    exists ζ, ζ ∷ Θ1 ⊑ nil /\ {{ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B) }}a.
 Proof.
   intros e B Hd.
   assert (HwfB : a_wf_ptyp nil (btyp_to_ptyp B))
@@ -282,7 +282,7 @@ Qed.
 (*  ⭐ THE COMPLETENESS COROLLARIES OVER THE PAPER'S OWN DECLARATIVE       *)
 (*  SYSTEM.                                                               *)
 (*                                                                        *)
-(*  The two corollaries above read the decl-in-algo judgement [⊢ᵃᵈ], which *)
+(*  The two corollaries above read the decl-in-algo judgement [{{ … }}ad], which *)
 (*  a reader of the paper's §declarative figure has never met.  These read *)
 (*  [⊢ˢ] and [⊢], matching what the SOUNDNESS corollaries already deliver, *)
 (*  so soundness and completeness now meet on the same judgement.         *)
@@ -305,10 +305,10 @@ Qed.
     over the paper's syntax-directed declarative judgement. *)
 Corollary a_typing_complete_sd_infer : forall e (B : btyp),
   a_wf_exp nil e ->
-  nil ⊢ˢ[ mode_ti ] e ⦂ B ->
+  {{ nil ⊢ˢᵈ[ mode_ti ] e ⦂ B }}d ->
   exists A1 Θ1,
-    nil ⊢ᵃ[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 /\
-    exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
+    {{ nil ⊢[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 }}a /\
+    exists ζ, ζ ∷ Θ1 ⊑ nil /\ {{ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B) }}a.
 Proof.
   intros e B Hwfe Hd.
   apply a_typing_complete_infer.
@@ -317,10 +317,10 @@ Qed.
 
 Corollary a_typing_complete_sd_check : forall e (B : btyp),
   a_wf_exp nil e ->
-  nil ⊢ˢ[ mode_tc ] e ⦂ B ->
+  {{ nil ⊢ˢᵈ[ mode_tc ] e ⦂ B }}d ->
   exists A1 Θ1,
-    nil ⊢ᵃ[ mode_tc ; (ptyp_to_pskl (btyp_to_ptyp B)) ] e ⦂ A1 ⊣ Θ1 /\
-    exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
+    {{ nil ⊢[ mode_tc ; (ptyp_to_pskl (btyp_to_ptyp B)) ] e ⦂ A1 ⊣ Θ1 }}a /\
+    exists ζ, ζ ∷ Θ1 ⊑ nil /\ {{ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B) }}a.
 Proof.
   intros e B Hwfe Hd.
   apply a_typing_complete_check.
@@ -331,10 +331,10 @@ Qed.
     [d_sd_typing_complete] (the syntax-directed system is complete for it). *)
 Corollary a_typing_complete_decl_infer : forall e (B : btyp),
   a_wf_exp nil e ->
-  nil ⊢[ mode_ti ] e ⦂ B ->
+  {{ nil ⊢[ mode_ti ] e ⦂ B }}d ->
   exists A1 Θ1,
-    nil ⊢ᵃ[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 /\
-    exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
+    {{ nil ⊢[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 }}a /\
+    exists ζ, ζ ∷ Θ1 ⊑ nil /\ {{ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B) }}a.
 Proof.
   intros e B Hwfe Hd.
   apply a_typing_complete_sd_infer;
@@ -343,10 +343,10 @@ Qed.
 
 Corollary a_typing_complete_decl_check : forall e (B : btyp),
   a_wf_exp nil e ->
-  nil ⊢[ mode_tc ] e ⦂ B ->
+  {{ nil ⊢[ mode_tc ] e ⦂ B }}d ->
   exists A1 Θ1,
-    nil ⊢ᵃ[ mode_tc ; (ptyp_to_pskl (btyp_to_ptyp B)) ] e ⦂ A1 ⊣ Θ1 /\
-    exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
+    {{ nil ⊢[ mode_tc ; (ptyp_to_pskl (btyp_to_ptyp B)) ] e ⦂ A1 ⊣ Θ1 }}a /\
+    exists ζ, ζ ∷ Θ1 ⊑ nil /\ {{ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B) }}a.
 Proof.
   intros e B Hwfe Hd.
   apply a_typing_complete_sd_check;

@@ -60,8 +60,8 @@ Qed.
 (* ===================================================================== *)
 
 Lemma cex_subject_not_wf : forall α,
-  ~ (nil ⨟ empty ⊢ₚₛᵃ
-       (uskl_to_pskl (subst_uskl_in_uskl cex_ψa α (msubst_uskl_syn nil (cex_S α))))).
+  ~ ({{ nil ⨟ empty ⊢ₚₛ
+       (uskl_to_pskl (subst_uskl_in_uskl cex_ψa α (msubst_uskl_syn nil (cex_S α)))) }}a).
 Proof.
   intros α Hwf. rewrite cex_subject in Hwf.
   cbn [uskl_to_pskl cex_ψa] in Hwf.
@@ -75,7 +75,7 @@ Qed.
 
 (* the collected constraints can only be [α ≐ ⟨⟩] (LE-UnivGhost + LE-Var) *)
 Lemma cex_lookeq_forced : forall α Ξc 𝒞,
-  (nil ⊢ cex_P α ∼[ α ] cex_P0 ⤳ Ξc ⨾ 𝒞) ->
+  ({{ nil ⊢ cex_P α ∼[ α ] cex_P0 ⤳ Ξc ⨾ 𝒞 }}a) ->
   Ξc = nil /\ 𝒞 = a_cstr_eq pskl_unit :: nil.
 Proof.
   intros α Ξc 𝒞 H.
@@ -83,7 +83,7 @@ Proof.
     try solve [ simpl in *; exfalso; fsetdec
               | match goal with Hg : guarded_pskl _ |- _ => inversion Hg end ].
   - (* LE-UnivGhost : recurse on [α ∼[α] ⟨⟩] *)
-    match goal with Hsub : _ ⊢ _ ∼[ _ ] _ ⤳ _ ⨾ _ |- _ =>
+    match goal with Hsub : {{ _ ⊢ _ ∼[ _ ] _ ⤳ _ ⨾ _ }}a |- _ =>
       inversion Hsub; subst;
         try solve [ simpl in *; exfalso; fsetdec
                   | match goal with Hg : guarded_pskl _ |- _ => inversion Hg end ]
@@ -96,25 +96,25 @@ Qed.
    subject here is a GHOST, and [nonghost_pskl] bars SolE-FlexR from a ghost
    subject, so SolE-GhostGuarded is the only rule and it generates nothing. *)
 Lemma cex_solve_forced : forall Θ Ξ Pa,
-  Θ ⊩ (a_cstr_eq pskl_unit :: nil) ⨾ cex_P0 ⤳ Ξ ⨾ Pa ->
+  {{ Θ ⊩ (a_cstr_eq pskl_unit :: nil) ⨾ cex_P0 ⤳ Ξ ⨾ Pa }}a ->
   Pa = pskl_unit.
 Proof.
   intros Θ Ξ Pa H.
   inversion H; subst.
-  match goal with Heq : _ ⊢ₑ _ ∼ _ ⤳ _ ⨾ ?Pmid |- _ =>
+  match goal with Heq : {{ _ ⊢ₑ _ ∼ _ ⤳ _ ⨾ ?Pmid }}a |- _ =>
     inversion Heq; subst;
       try solve [ match goal with Hg : guarded_pskl _ |- _ => inversion Hg end ]
   end.
   - (* SE-GhostGuarded : the body solve is [⟨⟩ ∼ ⟨⟩ ⤳ ⟨⟩] *)
-    match goal with Heq2 : _ ⊢ₑ pskl_unit ∼ pskl_unit ⤳ _ ⨾ _ |- _ =>
+    match goal with Heq2 : {{ _ ⊢ₑ pskl_unit ∼ pskl_unit ⤳ _ ⨾ _ }}a |- _ =>
       inversion Heq2; subst end;
-      match goal with Hc : _ ⊩ nil ⨾ _ ⤳ _ ⨾ _ |- _ => inversion Hc; subst end;
+      match goal with Hc : {{ _ ⊩ nil ⨾ _ ⤳ _ ⨾ _ }}a |- _ => inversion Hc; subst end;
       reflexivity.
 Qed.
 
 (* and [⟨⟩] is not precise to [∀◈⟨⟩] under ANY tag index *)
 Lemma cex_precision_fails : forall Θ Δ Ψ,
-  ~ (Θ ⨟ Δ ⊢ᵃᵈ pskl_unit ⊑ᵖ[ Ψ ] cex_ψa).
+  ~ ({{ Θ ⨟ Δ ⊢ˢ pskl_unit ⊑ᵖ[ Ψ ] cex_ψa }}ad).
 Proof.
   intros Θ Δ Ψ H. unfold cex_ψa in H. inversion H.
 Qed.
@@ -127,7 +127,7 @@ Theorem p6cs_without_subject_wf_is_false :
   ~ (forall n NM Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R α,
        size_uskl R + size_pskl P0 <= n ->
        a_wf_aenv Θ -> a_wf_aenv Θ0 ->
-       Θ0 ⨟ empty ⊢ₚₛᵃ P0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
+       {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a -> {{ Θ0 ⨟ empty ⊢ₚₛ Pi }}a ->
        κ ∷ Θ0 ⊑ Θ ->
        α `notin` dom Θ -> α `notin` dom Θ0 ->
        ⌊ R ⌋ˢ = P ->
@@ -137,19 +137,19 @@ Theorem p6cs_without_subject_wf_is_false :
        (ftag_in_uskl R) ∩ Ψ' [=] empty ->
        Ψi `union` Ψa [<=] Ψ' ->
        delta_def_fresh Δ Θ ->
-       Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
+       {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad ->
        Ψsub [<=] ftag_in_uskl R `union` Ψa ->
        Ψa [<=] Ψsub ->
-       Ψsub ⨟ Θ ⊢ᵃᵈ (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R)) ∼ Q ->
+       {{ Ψsub ⨟ Θ ⊢ˢ (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R)) ∼ Q }}ad ->
        (* NB: the subject-wf premise
-            [Θ ⨟ empty ⊢ₚₛᵃ ⌊ (κR)[ψa/α] ⌋ˢ]
+            [{{ Θ ⨟ empty ⊢ₚₛ ⌊ (κR)[ψa/α] ⌋ˢ }}a]
           is exactly what is MISSING here *)
-       Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+       {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
        (* conclusion, weakened to its three essential conjuncts *)
        exists 𝒞 Ξc Ξs Pa (ρc : list (atom * ptyp)),
-         (Θ0 ⊢ P ∼[ α ] P0 ⤳ Ξc ⨾ 𝒞) /\
-         (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa /\
-         Θ ⨟ Δ ⊢ᵃᵈ (msubst_pskl (ρc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
+         ({{ Θ0 ⊢ P ∼[ α ] P0 ⤳ Ξc ⨾ 𝒞 }}a) /\
+         {{ (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a /\
+         {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl (ρc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa }}ad).
 Proof.
   intros Hthm.
   pick fresh α.
@@ -214,10 +214,10 @@ Check cex_subject_not_wf.
 
 Theorem p6cs_fires_when_the_subject_is_wf : forall α,
   exists 𝒞 Ξc Ξs Pa (ρc : list (atom * ptyp)),
-    (nil ⊢ cex_P α ∼[ α ] cex_P0 ⤳ Ξc ⨾ 𝒞) /\
-    (Ξc ++ nil) ⊩ 𝒞 ⨾ cex_P0 ⤳ Ξs ⨾ Pa /\
-    nil ⨟ empty ⊢ᵃᵈ (msubst_pskl ρc Pa)
-      ⊑ᵖ[ union empty empty ] uskl_unit.
+    ({{ nil ⊢ cex_P α ∼[ α ] cex_P0 ⤳ Ξc ⨾ 𝒞 }}a) /\
+    {{ (Ξc ++ nil) ⊩ 𝒞 ⨾ cex_P0 ⤳ Ξs ⨾ Pa }}a /\
+    {{ nil ⨟ empty ⊢ˢ (msubst_pskl ρc Pa)
+      ⊑ᵖ[ union empty empty ] uskl_unit }}ad.
 Proof.
   intros α.
   edestruct (@a_lookeq_solve_complete a_sub_mode_sk nil nil nil empty empty

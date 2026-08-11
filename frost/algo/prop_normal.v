@@ -24,7 +24,7 @@
     metasubstitution [aenv_msubst Θ], definable as a plain structural [Fixpoint].
     Writing [⇓[Θ]A := msubst_ptyp (aenv_msubst Θ) A], the crux is
 
-        L1   a_wf_aenv Θ -> Θ ⊢ A ≡ᵗ B -> ⇓[Θ]A = ⇓[Θ]B
+        L1   a_wf_aenv Θ -> {{ Θ ⊢ A ≡ᵗ B }}a -> ⇓[Θ]A = ⇓[Θ]B
 
     which makes [size (⇓[Θ] (κ α))] invariant under (M1) and (M2) — proved below
     as [a_tyequiv_downarrow], with the two moves themselves as
@@ -263,7 +263,7 @@ Qed.
     definition lookup — and the lookup is exactly [aenv_msubst_lookup_def]. *)
 Lemma a_tyequiv_downarrow : forall Θ A A',
   a_wf_aenv Θ ->
-  Θ ⊢ A ≡ᵗ A' ->
+  {{ Θ ⊢ A ≡ᵗ A' }}a ->
   ⇓ᵗ[Θ] A = ⇓ᵗ[Θ] A'.
 Proof.
   intros Θ A A' Hwf Heq; induction Heq.
@@ -287,7 +287,7 @@ Qed.
 (** The SIZE COROLLARY the measure consumes. *)
 Corollary a_tyequiv_downarrow_size : forall Θ A A',
   a_wf_aenv Θ ->
-  Θ ⊢ A ≡ᵗ A' ->
+  {{ Θ ⊢ A ≡ᵗ A' }}a ->
   size_ptyp (⇓ᵗ[Θ] A) = size_ptyp (⇓ᵗ[Θ] A').
 Proof.
   intros Θ A A' Hwf Heq. rewrite (a_tyequiv_downarrow Hwf Heq). reflexivity.
@@ -412,7 +412,7 @@ Qed.
     hypothesis is exactly [a_inc__flex_def]'s premise. *)
 Lemma downarrow_subst_ptyp : forall Θ κ0 α1 τ τ' A,
   a_wf_aenv Θ ->
-  Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ) ->
+  {{ Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ) }}a ->
   ⇓ᵗ[Θ] (msubst_ptyp κ0 (subst_ptyp_in_ptyp τ α1 A))
   = ⇓ᵗ[Θ] (msubst_ptyp ((α1, τ') :: κ0) A).
 Proof.
@@ -428,7 +428,7 @@ Qed.
     [a_assign__assign] actually use. *)
 Lemma downarrow_subst_pskl : forall Θ κ0 α1 τ τ' P,
   a_wf_aenv Θ ->
-  Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ) ->
+  {{ Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ) }}a ->
   ⇓ˢ[Θ] (msubst_pskl κ0 (subst_pskl_in_pskl (ptyp_to_pskl τ) α1 P))
   = ⇓ˢ[Θ] (msubst_pskl ((α1, τ') :: κ0) P).
 Proof.
@@ -444,7 +444,7 @@ Qed.
     information increase at a DEFINED head. *)
 Lemma a_inc_flex_def_tyequiv : forall Θ0 Θ κ0 α1 τ τ',
   (α1, τ') :: κ0 ∷ ((α1 ~ abind_flex_mono_def τ) ++ Θ0) ⊑ Θ ->
-  Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ).
+  {{ Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ) }}a.
 Proof.
   intros Θ0 Θ κ0 α1 τ τ' Hinc. inversion Hinc; subst. assumption.
 Qed.
@@ -472,7 +472,7 @@ Qed.
 (** The size corollaries (M2) hands to the measure. *)
 Corollary downarrow_subst_ptyp_size : forall Θ κ0 α1 τ τ' A,
   a_wf_aenv Θ ->
-  Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ) ->
+  {{ Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ) }}a ->
   size_ptyp (⇓ᵗ[Θ] (msubst_ptyp κ0 (subst_ptyp_in_ptyp τ α1 A)))
   = size_ptyp (⇓ᵗ[Θ] (msubst_ptyp ((α1, τ') :: κ0) A)).
 Proof.
@@ -481,7 +481,7 @@ Qed.
 
 Corollary downarrow_subst_pskl_size : forall Θ κ0 α1 τ τ' P,
   a_wf_aenv Θ ->
-  Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ) ->
+  {{ Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ) }}a ->
   size_pskl (⇓ˢ[Θ] (msubst_pskl κ0 (subst_pskl_in_pskl (ptyp_to_pskl τ) α1 P)))
   = size_pskl (⇓ˢ[Θ] (msubst_pskl ((α1, τ') :: κ0) P)).
 Proof.
@@ -507,7 +507,7 @@ Lemma a_inc_equiv_lookup : forall Θ0 κ1 κ2 Θ,
   a_inc_equiv Θ0 κ1 κ2 Θ ->
   a_wf_aenv Θ0 ->
   forall α', a_binds_tvar α' Θ0 ->
-  Θ ⊢ (msubst_lookup κ1 α') ≡ᵗ (msubst_lookup κ2 α').
+  {{ Θ ⊢ (msubst_lookup κ1 α') ≡ᵗ (msubst_lookup κ2 α') }}a.
 Proof.
   intros Θ0 κ1 κ2 Θ Hie; induction Hie; intros Hwf α' Hbt.
   - (* empty *)

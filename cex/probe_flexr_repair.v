@@ -119,9 +119,9 @@ Qed.
 (* ------------------------------------------------------------------ *)
 
 Lemma new_looksub : forall α,
-  Θ0r ⊢ (pskl_arrow (pskl_var_f α) (pskl_var_f α))
+  {{ Θ0r ⊢ (pskl_arrow (pskl_var_f α) (pskl_var_f α))
       ≼[ α , (mode_fn mode_tc) ] P0r
-      ⤳ nil ⨾ (a_cstr_eq Pallr :: a_cstr_sub mode_tc (pskl_var_f f) :: nil).
+      ⤳ nil ⨾ (a_cstr_eq Pallr :: a_cstr_sub mode_tc (pskl_var_f f) :: nil) }}a.
 Proof.
   intros α. unfold P0r, Pallr.
   exact (a_looksub__arrow (a_lookeq__var _ _ _) (a_looksub__var _ _ mode_tc _)).
@@ -137,8 +137,8 @@ Qed.
 
 Lemma new_solve : forall Θ,
   binds f abind_flex_mono Θ ->
-  Θ ⊩ (a_cstr_eq Pallr :: a_cstr_sub mode_tc (pskl_var_f f) :: nil)
-      ⨾ pskl_hole ⤳ nil ⨾ Pallr.
+  {{ Θ ⊩ (a_cstr_eq Pallr :: a_cstr_sub mode_tc (pskl_var_f f) :: nil)
+      ⨾ pskl_hole ⤳ nil ⨾ Pallr }}a.
 Proof.
   intros Θ Hb.
   change (@nil (atom * abind))
@@ -199,9 +199,9 @@ Qed.
 (* ------------------------------------------------------------------ *)
 
 Theorem new_extract : forall α,
-  Θ0r ⊢ (pskl_arrow (pskl_var_f α) (pskl_var_f α))
+  {{ Θ0r ⊢ (pskl_arrow (pskl_var_f α) (pskl_var_f α))
       ⊳[ a_sub_mode_ty , α , (mode_fn mode_tc) ] P0r
-      ⤳ nil ↪ Pallr.
+      ⤳ nil ↪ Pallr }}a.
 Proof.
   intros α.
   change (@nil (atom * abind))

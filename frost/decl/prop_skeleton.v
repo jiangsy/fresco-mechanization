@@ -45,10 +45,10 @@ Set Implicit Arguments.
     route the bound var into [Ψ].) *)
 (** Hence a well-formed type's skeleton is a well-formed [pskl] (any scope). *)
 Lemma d_wf_pskl_strengthen : forall Ψ Γ P,
-    Γ ⨟ Ψ ⊢ₚₛ P ->
+    {{ Γ ⨟ Ψ ⊢ₚₛ P }}d ->
     forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
     α `notin` ftvar_in_pskl P ->
-    (Γ1 ++ Γ2) ⨟ Ψ ⊢ₚₛ P.
+    {{ (Γ1 ++ Γ2) ⨟ Ψ ⊢ₚₛ P }}d.
 Proof.
   intros Ψ Γ P H. induction H; intros Γ1 α0 Γ2 Heq Hα; subst.
   - apply d_wf_pskl__unit.
@@ -75,10 +75,10 @@ Qed.
     conditioning on [α ∉ ftvar Q] suffices.  Forall cases grow [Γ]; recurse with
     [ftvar_in_bskl_open_bskl_wrt_bskl_upper]. *)
 Lemma d_refine_syn_strengthen : forall Γ Δi Q Q',
-    Γ ⨟ Δi ⊢ᵣ Q ⊳ Q' ->
+    {{ Γ ⨟ Δi ⊢ᵣ Q ⊳ Q' }}d ->
     forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
     α `notin` ftvar_in_bskl Q' ->
-    (Γ1 ++ Γ2) ⨟ Δi ⊢ᵣ Q ⊳ Q'.
+    {{ (Γ1 ++ Γ2) ⨟ Δi ⊢ᵣ Q ⊳ Q' }}d.
 Proof.
   intros Γ Δi Q Q' H. induction H; intros Γ1 α0 Γ2 Heq Hα; subst.
   - apply d_refine_syn__unit.
@@ -131,9 +131,9 @@ Proof.
 Qed.
 
 Lemma d_wf_pskl_subst_unit : forall Ψ Γ P,
-    Γ ⨟ Ψ ⊢ₚₛ P ->
+    {{ Γ ⨟ Ψ ⊢ₚₛ P }}d ->
     forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
-    (Γ1 ++ Γ2) ⨟ Ψ ⊢ₚₛ (subst_pskl_in_pskl pskl_unit α P).
+    {{ (Γ1 ++ Γ2) ⨟ Ψ ⊢ₚₛ (subst_pskl_in_pskl pskl_unit α P) }}d.
 Proof.
   intros Ψ Γ P H. induction H; intros Γ1 α0 Γ2 Heq; subst.
   - apply d_wf_pskl__unit.
@@ -152,9 +152,9 @@ Proof.
 Qed.
 
 Lemma d_wf_uskl_subst_unit : forall Ψ Γ R,
-    Γ ⨟ Ψ ⊢ᵤₛ R ->
+    {{ Γ ⨟ Ψ ⊢ᵤₛ R }}d ->
     forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
-    (Γ1 ++ Γ2) ⨟ Ψ ⊢ᵤₛ (subst_uskl_in_uskl uskl_unit α R).
+    {{ (Γ1 ++ Γ2) ⨟ Ψ ⊢ᵤₛ (subst_uskl_in_uskl uskl_unit α R) }}d.
 Proof.
   intros Ψ Γ R H. induction H; intros Γ1 α0 Γ2 Heq; subst.
   - apply d_wf_uskl__unit.
@@ -271,10 +271,10 @@ Proof. intros Q α. rewrite bskl_to_pskl_subst. reflexivity. Qed.
     downstream; this one is needed HERE, by [d_pat_sub_subst_unit] below, for
     the presupposition the consistency rows now carry. *)
 Lemma d_refine_pskl_subst_unit : forall Γ Δi P Q,
-    Γ ⨟ Δi ⊢ᵣₚ P ⊳ Q ->
+    {{ Γ ⨟ Δi ⊢ᵣₚ P ⊳ Q }}d ->
     forall Γ1 α0 Γ2, Γ = Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2 ->
-    (Γ1 ++ Γ2) ⨟ Δi ⊢ᵣₚ
-      (subst_pskl_in_pskl pskl_unit α0 P) ⊳ (subst_pskl_in_pskl pskl_unit α0 Q).
+    {{ (Γ1 ++ Γ2) ⨟ Δi ⊢ᵣₚ
+      (subst_pskl_in_pskl pskl_unit α0 P) ⊳ (subst_pskl_in_pskl pskl_unit α0 Q) }}d.
 Proof.
   intros Γ Δi P Q H. induction H; intros Γ1 α0 Γ2 Heq; subst; simpl.
   - apply d_refine_pskl__unit.
@@ -307,10 +307,10 @@ Proof.
 Qed.
 
 Lemma d_pat_consis_subst_unit : forall Δ Γ R Q,
-    Δ ⨟ Γ ⊢ₛ R ∼ Q ->
+    {{ Δ ⨟ Γ ⊢ˢ R ∼ Q }}d ->
     forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
-    Δ ⨟ (Γ1 ++ Γ2) ⊢ₛ
-      (subst_uskl_in_uskl uskl_unit α R) ∼ (subst_bskl_in_bskl bskl_unit α Q).
+    {{ Δ ⨟ (Γ1 ++ Γ2) ⊢ˢ
+      (subst_uskl_in_uskl uskl_unit α R) ∼ (subst_bskl_in_bskl bskl_unit α Q) }}d.
 Proof.
   intros Δ Γ R Q H. induction H; intros Γ1 α0 Γ2 Heq; subst.
   - apply d_pat_consis__unit; (assumption || fsetdec).
@@ -352,10 +352,10 @@ Proof.
 Qed.
 
 Lemma d_pat_sub_subst_unit : forall Δ Γ m R Q,
-    Δ ⨟ Γ ⊢ₛ[ m ] R ⩽ Q ->
+    {{ Δ ⨟ Γ ⊢ˢ[ m ] R ⩽ Q }}d ->
     forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
-    Δ ⨟ (Γ1 ++ Γ2) ⊢ₛ[ m ]
-      (subst_uskl_in_uskl uskl_unit α R) ⩽ (subst_bskl_in_bskl bskl_unit α Q).
+    {{ Δ ⨟ (Γ1 ++ Γ2) ⊢ˢ[ m ]
+      (subst_uskl_in_uskl uskl_unit α R) ⩽ (subst_bskl_in_bskl bskl_unit α Q) }}d.
 Proof.
   intros Δ Γ m R Q H. induction H; intros Γ1 α0 Γ2 Heq; subst.
   - apply d_pat_sub__infer;
@@ -456,9 +456,9 @@ Proof.
 Qed.
 
 Lemma d_pat_subst_var : forall m Γ e Q,
-    Γ ⊢ₛ[ m ] e ⦂ Q ->
+    {{ Γ ⊢ˢ[ m ] e ⦂ Q }}d ->
     forall x y d, uniq Γ -> binds x d Γ -> binds y d Γ ->
-    Γ ⊢ₛ[ m ] (subst_exp_in_exp (exp_var_f y) x e) ⦂ Q.
+    {{ Γ ⊢ˢ[ m ] (subst_exp_in_exp (exp_var_f y) x e) ⦂ Q }}d.
 Proof.
   intros m Γ e Q H. induction H; intros x0 y0 d0 Huniq Hbx Hby; simpl.
   - apply d_pat__unit; [ exact H | exact H0 ].
@@ -500,9 +500,9 @@ Qed.
 (** GENERAL variable substitution for typing: substituting [y] for [x] in ANY
     expression preserves [⦂] (same context, [x] and [y] same [typ]-binding). *)
 Lemma d_typing_subst_var : forall m Γ e B,
-    Γ ⊢[ m ] e ⦂ B ->
+    {{ Γ ⊢[ m ] e ⦂ B }}d ->
     forall x y A', uniq Γ -> binds x (dbind_typ A') Γ -> binds y (dbind_typ A') Γ ->
-    Γ ⊢[ m ] (subst_exp_in_exp (exp_var_f y) x e) ⦂ B.
+    {{ Γ ⊢[ m ] (subst_exp_in_exp (exp_var_f y) x e) ⦂ B }}d.
 Proof.
   intros m Γ e B H. induction H; intros x0 y0 A' Huniq Hbx Hby; simpl.
   - apply d_typing__unit.

@@ -199,15 +199,15 @@ Qed.
     unfolding untouched: a definition lives beside the slot, never above
     it, so it cannot mention [α]. *)
 Lemma a_tyequiv_rename_tvar : forall Θfull A B,
-  Θfull ⊢ A ≡ᵗ B ->
+  {{ Θfull ⊢ A ≡ᵗ B }}a ->
   forall Θ1 α Θ0 β',
   Θfull = Θ1 ++ (α ~ abind_tvar) ++ Θ0 ->
   α `notin` dom (Θ1 ++ Θ0) ->
   (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
      α `notin` ftvar_in_ptyp τ) ->
-  (Θ1 ++ (β' ~ abind_tvar) ++ Θ0) ⊢
+  {{ (Θ1 ++ (β' ~ abind_tvar) ++ Θ0) ⊢
     (subst_ptyp_in_ptyp (ptyp_var_f β') α A) ≡ᵗ
-    (subst_ptyp_in_ptyp (ptyp_var_f β') α B).
+    (subst_ptyp_in_ptyp (ptyp_var_f β') α B) }}a.
 Proof.
   intros Θfull A B H.
   induction H; intros Θ1 α0 Θ0 β' ->; intros Hdom Hdefs; simpl.
@@ -252,11 +252,11 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_wf_pskl_rename_paint : forall Θ1 α Θ0 P β',
-  (Θ1 ++ (α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ P ->
+  {{ (Θ1 ++ (α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ P }}a ->
   (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
      α `notin` ftvar_in_ptyp τ) ->
-  ((subst_aenv (ptyp_var_f β') α Θ1) ++ (β' ~ abind_tvar) ++ Θ0) ⨟ empty
-    ⊢ₚₛᵃ (subst_pskl_in_pskl (pskl_var_f β') α P).
+  {{ ((subst_aenv (ptyp_var_f β') α Θ1) ++ (β' ~ abind_tvar) ++ Θ0) ⨟ empty
+    ⊢ₚₛ (subst_pskl_in_pskl (pskl_var_f β') α P) }}a.
 Proof.
   intros * H Hdefs.
   eapply a_wf_pskl_mono;
@@ -278,13 +278,13 @@ Proof.
 Qed.
 
 Lemma a_tyequiv_rename_paint : forall Θ1 α Θ0 A B β',
-  (Θ1 ++ (α ~ abind_tvar) ++ Θ0) ⊢ A ≡ᵗ B ->
+  {{ (Θ1 ++ (α ~ abind_tvar) ++ Θ0) ⊢ A ≡ᵗ B }}a ->
   α `notin` dom (Θ1 ++ Θ0) ->
   (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
      α `notin` ftvar_in_ptyp τ) ->
-  ((subst_aenv (ptyp_var_f β') α Θ1) ++ (β' ~ abind_tvar) ++ Θ0) ⊢
+  {{ ((subst_aenv (ptyp_var_f β') α Θ1) ++ (β' ~ abind_tvar) ++ Θ0) ⊢
     (subst_ptyp_in_ptyp (ptyp_var_f β') α A) ≡ᵗ
-    (subst_ptyp_in_ptyp (ptyp_var_f β') α B).
+    (subst_ptyp_in_ptyp (ptyp_var_f β') α B) }}a.
 Proof.
   intros * H Hdom Hdefs.
   eapply a_tyequiv_ctx_mono;
@@ -293,13 +293,13 @@ Proof.
 Qed.
 
 Lemma ad_refine_syn_rename_paint : forall Θ1 α Θ0 Q P β',
-  (Θ1 ++ (α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ᵣᵃᵈ Q ⊳ P ->
+  {{ (Θ1 ++ (α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ᵣ Q ⊳ P }}ad ->
   α `notin` dom (Θ1 ++ Θ0) ->
   (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
      α `notin` ftvar_in_ptyp τ) ->
-  ((subst_aenv (ptyp_var_f β') α Θ1) ++ (β' ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ᵣᵃᵈ
+  {{ ((subst_aenv (ptyp_var_f β') α Θ1) ++ (β' ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ᵣ
     (subst_bskl_in_bskl (bskl_var_f β') α Q) ⊳
-    (subst_bskl_in_bskl (bskl_var_f β') α P).
+    (subst_bskl_in_bskl (bskl_var_f β') α P) }}ad.
 Proof.
   intros * H Hdom Hdefs.
   eapply ad_refine_syn_mono;
@@ -331,7 +331,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma ad_pat_rename_tvar : forall M Θfull e Q,
-  Θfull ⊢ₛᵃᵈ[ M ] e ⦂ Q ->
+  {{ Θfull ⊢ˢ[ M ] e ⦂ Q }}ad ->
   forall Θ1 α Θ0 β',
   Θfull = Θ1 ++ (α ~ abind_tvar) ++ Θ0 ->
   α `notin` dom (Θ1 ++ Θ0) ->
@@ -340,9 +340,9 @@ Lemma ad_pat_rename_tvar : forall M Θfull e Q,
      α `notin` ftvar_in_ptyp τ) ->
   (forall y A', binds y (abind_var_typ A') Θ0 -> α `notin` ftvar_in_ptyp A') ->
   (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> α `notin` ftvar_in_pskl Ps) ->
-  ((subst_aenv (ptyp_var_f β') α Θ1) ++ (β' ~ abind_tvar) ++ Θ0) ⊢ₛᵃᵈ[ M ]
+  {{ ((subst_aenv (ptyp_var_f β') α Θ1) ++ (β' ~ abind_tvar) ++ Θ0) ⊢ˢ[ M ]
     (subst_ptyp_in_exp (ptyp_var_f β') α e) ⦂
-    (subst_bskl_in_bskl (bskl_var_f β') α Q).
+    (subst_bskl_in_bskl (bskl_var_f β') α Q) }}ad.
 Proof.
   intros M Θfull e Q H Θ1 α Θ0 β' HeqΘ Hdom Hβ' Hdefs Hvt Hvs.
   revert Θ1 HeqΘ Hdom Hβ' Hdefs.
@@ -506,7 +506,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma ad_sd_typing_rename_tvar : forall M Θfull e B,
-  Θfull ⊢ᵃᵈ[ M ] e ⦂ B ->
+  {{ Θfull ⊢ˢᵈ[ M ] e ⦂ B }}ad ->
   forall Θ1 α Θ0 β',
   Θfull = Θ1 ++ (α ~ abind_tvar) ++ Θ0 ->
   α `notin` dom (Θ1 ++ Θ0) ->
@@ -515,9 +515,9 @@ Lemma ad_sd_typing_rename_tvar : forall M Θfull e B,
      α `notin` ftvar_in_ptyp τ) ->
   (forall y A', binds y (abind_var_typ A') Θ0 -> α `notin` ftvar_in_ptyp A') ->
   (forall y Ps, binds y (abind_var_skl Ps) Θ0 -> α `notin` ftvar_in_pskl Ps) ->
-  ((subst_aenv (ptyp_var_f β') α Θ1) ++ (β' ~ abind_tvar) ++ Θ0) ⊢ᵃᵈ[ M ]
+  {{ ((subst_aenv (ptyp_var_f β') α Θ1) ++ (β' ~ abind_tvar) ++ Θ0) ⊢ˢᵈ[ M ]
     (subst_ptyp_in_exp (ptyp_var_f β') α e) ⦂
-    (subst_btyp_in_btyp (btyp_var_f β') α B).
+    (subst_btyp_in_btyp (btyp_var_f β') α B) }}ad.
 Proof.
   intros M Θfull e B H Θ1 α Θ0 β' HeqΘ Hdom Hβ' Hdefs Hvt Hvs.
   revert Θ1 HeqΘ Hdom Hβ' Hdefs.

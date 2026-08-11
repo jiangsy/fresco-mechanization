@@ -59,9 +59,9 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_wf_pskl_isub : forall Θ Δ P,
-  Θ ⨟ Δ ⊢ₚₛᵃ P ->
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
   forall Θ', Θ ⊴ Θ' ->
-  Θ' ⨟ Δ ⊢ₚₛᵃ P.
+  {{ Θ' ⨟ Δ ⊢ₚₛ P }}a.
 Proof.
   intros Θ Δ P H; induction H; intros Θ' Hle;
     eauto using a_wf_pskl.
@@ -71,9 +71,9 @@ Proof.
 Qed.
 
 Lemma ad_pat_consis_isub : forall Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
   forall Θ', Θ ⊴ Θ' ->
-  Ψ ⨟ Θ' ⊢ᵃᵈ R ∼ Q.
+  {{ Ψ ⨟ Θ' ⊢ˢ R ∼ Q }}ad.
 Proof.
   intros Ψ Θ R Q H; induction H; intros Θ' Hle.
   - apply ad_pat_consis__unit; auto.
@@ -99,9 +99,9 @@ Proof.
 Qed.
 
 Lemma ad_refine_syn_isub : forall Θ Δ Q Q',
-  Θ ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ Q' ->
+  {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
   forall Θ', Θ ⊴ Θ' ->
-  Θ' ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ Q'.
+  {{ Θ' ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad.
 Proof.
   intros Θ Δ Q Q' H; induction H; intros Θ' Hle.
   - apply ad_refine_syn__unit.
@@ -119,9 +119,9 @@ Proof.
 Qed.
 
 Lemma ad_refine_pskl_isub : forall Θ Δ P P',
-  Θ ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ P' ->
+  {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad ->
   forall Θ', Θ ⊴ Θ' ->
-  Θ' ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ P'.
+  {{ Θ' ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad.
 Proof.
   intros Θ Δ P P' H; induction H; intros Θ' Hle.
   - apply ad_refine_pskl__unit.
@@ -252,8 +252,8 @@ Qed.
 
 (** The consistency cluster (3-way mutual). *)
 Lemma a_assign_unify_consis_tm_le :
-  (forall Θ0 Ξ α P Θ1, Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 -> aenv_tm_le Θ0 Θ1) /\
-  (forall Θ0 α β Θ1, Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 -> aenv_tm_le Θ0 Θ1) /\
+  (forall Θ0 Ξ α P Θ1, {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a -> aenv_tm_le Θ0 Θ1) /\
+  (forall Θ0 α β Θ1, {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a -> aenv_tm_le Θ0 Θ1) /\
   (forall Δ1 Δ2 Θ0 P0 P Q Θ1,
      a_consis Δ1 Δ2 Θ0 P0 P Q Θ1 -> aenv_tm_le Θ0 Θ1).
 Proof.
@@ -383,7 +383,7 @@ Lemma a_sub_tm_le : forall NM M P0 Θ0 P Q Θ1,
 Proof. intros; eapply (proj1 a_sub_sub_flex_tm_le); eauto. Qed.
 
 Lemma a_split_tm_le : forall Θ0 P0 P Q Θ1,
-  Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 -> aenv_tm_le Θ0 Θ1.
+  {{ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}a -> aenv_tm_le Θ0 Θ1.
 Proof.
   intros * H; inversion H; subst; try apply aenv_tm_le_refl.
   (* flex : a full consistency run over two fresh flexibles *)
@@ -414,7 +414,7 @@ Qed.
     the output; the invariant survives because a fresh [x] can be chosen
     away from any looked-up name. *)
 Lemma a_pat_tm_le : forall m Θ0 P0 e P Θ1,
-  Θ0 ⊢ₛᵃ[ m ; P0 ] e ⦂ P ⊣ Θ1 -> aenv_tm_le Θ0 Θ1.
+  {{ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ P ⊣ Θ1 }}a -> aenv_tm_le Θ0 Θ1.
 Proof.
   intros m Θ0 P0 e P Θ1 H; induction H.
   - (* unit *) eapply a_sub_tm_le; eassumption.
@@ -461,7 +461,7 @@ Qed.
 (** Type inference runs — same shapes; the Check rows additionally drop
     the peeled binder and the pending suffix from the OUTPUT. *)
 Lemma a_typing_tm_le : forall m Θ0 P0 e A Θ1,
-  Θ0 ⊢ᵃ[ m ; P0 ] e ⦂ A ⊣ Θ1 -> aenv_tm_le Θ0 Θ1.
+  {{ Θ0 ⊢[ m ; P0 ] e ⦂ A ⊣ Θ1 }}a -> aenv_tm_le Θ0 Θ1.
 Proof.
   intros m Θ0 P0 e A Θ1 H; induction H.
   - (* unit *) eapply a_sub_tm_le; eassumption.

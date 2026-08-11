@@ -267,7 +267,7 @@ Inductive mod_comp_ty : btyp -> mode -> Prop :=
     but the only difference (declarative.tex:1553) is that CHECK mode also
     requires a SYNTHESISED skeleton [is_sskl] (ghosts [□]/[⫯] count as
     synthesised), rather than an inherited one.  The inferred skeleton [Q] of
-    [Γ ⊢ₛ[M] e ⦂ Q] is always [mod_comp_sk Q M] (see [d_pat_mod_comp_sk]). *)
+    [{{ Γ ⊢ˢ[M] e ⦂ Q }}d] is always [mod_comp_sk Q M] (see [d_pat_mod_comp_sk]). *)
 Inductive mod_comp_sk : bskl -> mode -> Prop :=
 | mod_comp_sk__ti : forall Q, is_sskl Q -> mod_comp_sk Q mode_ti
 | mod_comp_sk__tc : forall Q, is_sskl Q -> mod_comp_sk Q mode_tc

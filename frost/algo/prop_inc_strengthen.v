@@ -118,13 +118,13 @@ Qed.
 
 Lemma a_assign_unify_consis_flex_preserve :
   (forall Θ0 Ξ α P Θ1,
-     Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
+     {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a ->
      forall α1, a_flex_tvar (Ξ ++ Θ0) α1 -> a_flex_tvar Θ1 α1) /\
   (forall Θ0 α β Θ1,
-     Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
+     {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a ->
      forall α1, a_flex_tvar Θ0 α1 -> a_flex_tvar Θ1 α1) /\
   (forall Δ1 Δ2 Θ0 P0 P P' Θ1,
-     Θ0 ⊢ᵃ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
+     {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 }}a ->
      forall α1, a_flex_tvar Θ0 α1 -> a_flex_tvar Θ1 α1).
 Proof.
   apply (a_assign_unify_consis_mutind
@@ -300,7 +300,7 @@ Qed.
 
 (** Packaged corollaries. *)
 Corollary a_unify_flex_preserve : forall Θ0 α β Θ1 α1,
-  Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
+  {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a ->
   a_flex_tvar Θ0 α1 -> a_flex_tvar Θ1 α1.
 Proof.
   intros * Hu Hα1.
@@ -308,7 +308,7 @@ Proof.
 Qed.
 
 Corollary a_assign_flex_preserve : forall Θ0 Ξ α P Θ1 α1,
-  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
+  {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a ->
   a_flex_tvar (Ξ ++ Θ0) α1 -> a_flex_tvar Θ1 α1.
 Proof.
   intros * Ha Hα1.
@@ -402,13 +402,13 @@ Qed.
     WHOLE context.  [a_wf_aenv__var] stores it in the entry's TAIL (2026-08-09);
     this weakens that to the full context, which is the form every consumer
     wants.  It is what retired the two
-    [binds y (abind_var_skl Ps) Θ -> Θ ⨟ ∅ ⊢ₚₛᵃ Ps] hypotheses from
+    [binds y (abind_var_skl Ps) Θ -> {{ Θ ⨟ ∅ ⊢ₚₛ Ps }}a] hypotheses from
     [a_pat_complete] / [a_typing_complete] — before the constructor was
     strengthened they were EXTERNAL side conditions (docs/WF-SIDE-CONDITIONS.md),
     and now they are theorems. *)
 Lemma a_wf_aenv_binds_var_skl_wf : forall Θ x P,
   a_wf_aenv Θ -> binds x (abind_var_skl P) Θ ->
-  Θ ⨟ empty ⊢ₚₛᵃ P.
+  {{ Θ ⨟ empty ⊢ₚₛ P }}a.
 Proof.
   intros Θ x P Hwf; induction Hwf; intros Hb; try solve [ inversion Hb ];
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq1 Heq2] | Hb'];

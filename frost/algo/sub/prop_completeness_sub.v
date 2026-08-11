@@ -9,7 +9,7 @@
     lemma reads its premises off one [ad_pat_sub_gv] constructor; the
     dispatcher inverts the join and delegates.  What the join does NOT fix is
     the UNRESOLVED subject [R] — the motive relates it only by the ≡ᵘ slack
-    [Θ ⊢ R' ≡ᵘ κR] — so every shape-fixing row owes a transfer from [R'] to
+    [{{ Θ ⊢ R' ≡ᵘ κR }}a] — so every shape-fixing row owes a transfer from [R'] to
     [R].  §1 below is that kit.  The transfer is total except at an ARROW,
     where [R] may instead be a bare flexible whose IMAGE is the arrow: that,
     and only that, is where P7a is entered.
@@ -67,7 +67,7 @@ Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.sub.prop_sub_msubst_equiv.
-Require Import src.frost.algo.prop_precise.       (* ad_precise, ⊢ₚᵣᵃᵈ *)
+Require Import src.frost.algo.prop_precise.       (* ad_precise, {{ _ ⊢ₚᵣ _ }}ad *)
 Require Import src.frost.decorated_algo.prop_decorate.      (* uskl_to_pskl_pskl_to_uskl *)
 Require Import src.frost.algo.prop_pat_sub.       (* mono_ptyp_to_uskl_syn_ghost_free *)
 Require Import src.frost.algo.sub.prop_completeness_sub_gen.
@@ -204,7 +204,7 @@ Qed.
 (* --------------------------------------------------------------------- *)
 
 Lemma a_uskl_tyequiv_all_etag_l_inv : forall Θ ε R X,
-  Θ ⊢ (uskl_all_etag ε R) ≡ᵘ X ->
+  {{ Θ ⊢ (uskl_all_etag ε R) ≡ᵘ X }}a ->
   exists X0, X = uskl_all_etag ε X0.
 Proof.
   intros Θ ε R X H; inversion H; subst;
@@ -212,7 +212,7 @@ Proof.
 Qed.
 
 Lemma a_uskl_tyequiv_all_syn_l_inv : forall Θ R X,
-  Θ ⊢ (uskl_all_syn R) ≡ᵘ X ->
+  {{ Θ ⊢ (uskl_all_syn R) ≡ᵘ X }}a ->
   exists X0, X = uskl_all_syn X0.
 Proof.
   intros Θ R X H; inversion H; subst.
@@ -225,8 +225,8 @@ Proof.
 Qed.
 
 Lemma a_uskl_tyequiv_tophole_l_inv : forall Θ R X,
-  Θ ⊢ (uskl_tophole R) ≡ᵘ X ->
-  exists X0, X = uskl_tophole X0 /\ Θ ⊢ R ≡ᵘ X0.
+  {{ Θ ⊢ (uskl_tophole R) ≡ᵘ X }}a ->
+  exists X0, X = uskl_tophole X0 /\ {{ Θ ⊢ R ≡ᵘ X0 }}a.
 Proof.
   intros Θ R X H; inversion H; subst;
     [ exfalso; eapply ptyp_to_uskl_syn_not_tophole; eassumption
@@ -234,8 +234,8 @@ Proof.
 Qed.
 
 Lemma a_uskl_tyequiv_topholeg_l_inv : forall Θ R X,
-  Θ ⊢ (uskl_topholeg R) ≡ᵘ X ->
-  exists X0, X = uskl_topholeg X0 /\ Θ ⊢ R ≡ᵘ X0.
+  {{ Θ ⊢ (uskl_topholeg R) ≡ᵘ X }}a ->
+  exists X0, X = uskl_topholeg X0 /\ {{ Θ ⊢ R ≡ᵘ X0 }}a.
 Proof.
   intros Θ R X H; inversion H; subst;
     [ exfalso; eapply ptyp_to_uskl_syn_not_topholeg; eassumption
@@ -249,7 +249,7 @@ Qed.
     surviving variable is exactly the [__flex_mono] escape into P7a. *)
 Lemma a_uskl_tyequiv_arrow_l_inv : forall Θ R1 R2 X,
   a_wf_aenv Θ ->
-  Θ ⊢ (uskl_arrow R1 R2) ≡ᵘ X ->
+  {{ Θ ⊢ (uskl_arrow R1 R2) ≡ᵘ X }}a ->
   (exists X1 X2, X = uskl_arrow X1 X2) \/ (exists β, X = uskl_var_f β).
 Proof.
   intros Θ R1 R2 X Hwf H; inversion H; subst;
@@ -257,7 +257,7 @@ Proof.
   (* __mono : τ1 is an arrow (its painting is), so ⇓τ2 is an arrow too *)
   match goal with
   | Hm1 : mono_ptyp ?t1, He1 : ptyp_to_uskl_syn ?t1 = uskl_arrow R1 R2,
-    Hm2 : mono_ptyp ?t2, Heq : _ ⊢ ?t1 ≡ᵗ ?t2 |- _ =>
+    Hm2 : mono_ptyp ?t2, Heq : {{ _ ⊢ ?t1 ≡ᵗ ?t2 }}a |- _ =>
       destruct Hm1; cbn in He1; try discriminate He1;
       pose proof (a_tyequiv_downarrow Hwf Heq) as Hdn;
       destruct Hm2; cbn in Hdn |- *;
@@ -443,7 +443,7 @@ Qed.
 Lemma tyequiv_arrow_rigid_absurd : forall Θ α τ1 τ2,
   a_wf_aenv Θ ->
   binds α abind_tvar Θ ->
-  Θ ⊢ (ptyp_arrow τ1 τ2) ≡ᵗ (ptyp_var_f α) ->
+  {{ Θ ⊢ (ptyp_arrow τ1 τ2) ≡ᵗ (ptyp_var_f α) }}a ->
   False.
 Proof.
   intros Θ α τ1 τ2 Hwf Hb Heq.
@@ -458,7 +458,7 @@ Lemma slack_arrow_rigid_absurd : forall Θ0 κ Θ α R1' R2',
   a_wf_aenv Θ0 -> a_wf_aenv Θ ->
   κ ∷ Θ0 ⊑ Θ ->
   binds α abind_tvar Θ0 ->
-  Θ ⊢ (uskl_arrow R1' R2') ≡ᵘ (msubst_uskl_syn κ (uskl_var_f α)) ->
+  {{ Θ ⊢ (uskl_arrow R1' R2') ≡ᵘ (msubst_uskl_syn κ (uskl_var_f α)) }}a ->
   False.
 Proof.
   intros Θ0 κ Θ α R1' R2' Hwf0 Hwf Hinc Hb Hslack.
@@ -507,11 +507,11 @@ Lemma sub_flex_rigid_head_absurd :
   dom Ξ [<=] ftvar_in_pskl P0 ->
   a_wf_aenv (Ξ ++ (β ~ abind_tvar) ++ Θ0) ->
   a_wf_aenv Θ ->
-  (Ξ ++ (β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0 ->
+  {{ (Ξ ++ (β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a ->
   a_flex_tvar Θ0 α ->
   β `in` ftvar_in_pskl P0 ->                       (* the STUCK configuration *)
   κ ∷ (Ξ ++ (β ~ abind_tvar) ++ Θ0) ⊑ Θ ->
-  Θ ⊢ R' ≡ᵘ (ptyp_to_uskl_syn (msubst_lookup κ α)) ->
+  {{ Θ ⊢ R' ≡ᵘ (ptyp_to_uskl_syn (msubst_lookup κ α)) }}a ->
   ad_pat_sub_gv n NM (mode_fn M) Ψ Θ R' Q ->
   ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh (msubst_pskl κ P0)) Q ->
   False.
@@ -630,7 +630,7 @@ Qed.
 (*  Each row is [a_sub_flex_complete_skip_rigid]'s ⇓-truncation apparatus   *)
 (*  with the tvar pieces swapped for the var ones ([a_inc_var_inv],         *)
 (*  [a_inc_var_mid_strip_id], [a_inc_equiv_mid_insert_var]) plus the        *)
-(*  SEMANTIC MIDDLE [Θ' ⊢ A' ≡ᵗ κ A] that a payload-free rigid entry does   *)
+(*  SEMANTIC MIDDLE [{{ Θ' ⊢ A' ≡ᵗ κ A }}a] that a payload-free rigid entry does *)
 (*  not have, cribbed from the consistency twin's [Assign-SkipTmVar]        *)
 (*  (prop_completeness_consis.v (PART B):5595-5690) and read back through the junk swap  *)
 (*  with [msubst_ptyp_kswap].  ⭐ Neither row carries the rigid row's        *)
@@ -769,7 +769,7 @@ Qed.
 
 Lemma check_row_guarded_p0 : forall Θ0 κ Θ P0 B,
   κ ∷ Θ0 ⊑ Θ ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat mode_tc P0 ->
   guarded_pskl B ->
   ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh (msubst_pskl κ P0))
@@ -1009,7 +1009,7 @@ Proof.
   - (* __check : the row lemma owes [guarded_pskl P0] and the wf of [B] *)
     intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
            Hgf.
-    assert (HwfB : Θa ⨟ empty ⊢ₚₛᵃ Ba)
+    assert (HwfB : {{ Θa ⨟ empty ⊢ₚₛ Ba }}a)
       by (rewrite bskl_to_pskl_pskl_to_bskl_inh in HwfQ; exact HwfQ).
     assert (HgP0 : guarded_pskl P0)
       by (eapply check_row_guarded_p0;
@@ -1146,7 +1146,7 @@ Proof.
     destruct (@msubst_uskl_syn_tophole_inv κ R X HX) as [R00 [HR HmX]].
     subst R. cbn in HeqR. subst P.
     rewrite <- HmX in Hslack0.
-    assert (HwfP' : Θ0 ⨟ empty ⊢ₚₛᵃ ⌊ R00 ⌋ˢ)
+    assert (HwfP' : {{ Θ0 ⨟ empty ⊢ₚₛ ⌊ R00 ⌋ˢ }}a)
       by (inversion HwfP; subst; assumption).
     (* the row is SK-only, so the motive's TY ghost-freeness is VACUOUS *)
     assert (Hgf0 : a_sub_mode_sk = a_sub_mode_ty -> uskl_ghost_free Rg)
@@ -1166,7 +1166,7 @@ Proof.
     destruct (@msubst_uskl_syn_topholeg_inv κ R X HX) as [R00 [HR HmX]].
     subst R. cbn in HeqR. subst P.
     rewrite <- HmX in Hslack0.
-    assert (HwfP' : Θ0 ⨟ empty ⊢ₚₛᵃ ⌊ R00 ⌋ˢ)
+    assert (HwfP' : {{ Θ0 ⨟ empty ⊢ₚₛ ⌊ R00 ⌋ˢ }}a)
       by (inversion HwfP; subst; assumption).
     (* SK-only, as above *)
     assert (Hgf0 : a_sub_mode_sk = a_sub_mode_ty -> uskl_ghost_free Rg)
@@ -1182,7 +1182,7 @@ Proof.
        and re-establish the ≡ᵘ slack; [R] is untouched *)
     intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
            Hgf.
-    assert (Hslack' : Θa ⊢ (ptyp_to_uskl_syn τd) ≡ᵘ (msubst_uskl_syn κ R)).
+    assert (Hslack' : {{ Θa ⊢ (ptyp_to_uskl_syn τd) ≡ᵘ (msubst_uskl_syn κ R) }}a).
     { eapply a_uskl_tyequiv_trans;
         [ apply flex_def_paint_tyequiv; [ exact Hbd | exact Hwfth ]
         | exact Hslack ]. }
@@ -1312,12 +1312,12 @@ Qed.
 Theorem a_sub_complete :
   forall n NM M Θ0 P0 P R' Θ κ Q,
     a_wf_aenv Θ0 -> a_wf_aenv Θ ->
-    Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
-    Θ0 ⨟ empty ⊢ₚₛᵃ P ->
+    {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
+    {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
     (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->
     (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
     κ ∷ Θ0 ⊑ Θ ->
-    Θ ⊢ R' ≡ᵘ (msubst_uskl_syn κ (pskl_to_uskl P)) ->
+    {{ Θ ⊢ R' ≡ᵘ (msubst_uskl_syn κ (pskl_to_uskl P)) }}a ->
     ad_pat_sub_gv n NM M empty Θ R' Q ->
     (* ⚙ the PLAIN refinement, not the internal [ad_refine_syn_f] variant.
        [F] is consistency soundness' ghost-fill hygiene set (prop_soundness_
@@ -1327,8 +1327,8 @@ Theorem a_sub_complete :
        [ad_refine_syn_f_forget]).  So [_f] in a HYPOTHESIS was scaffolding
        leaking into the statement — and, being the stronger of the two, it
        was also gratuitously weakening the theorem.  Dropped 2026-08-06. *)
-    Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
-    Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
+    {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
+    {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
     (* the subject's TY ghost-freeness — the motive's EXTERNAL side
        condition (WF-SIDE-CONDITIONS.md); at the paper's own reflexive
        instance [R' := κ⌈P⌉ᵘ] it is the ghost-freeness of the input [P] *)
@@ -1339,8 +1339,8 @@ Theorem a_sub_complete :
          exists ζ,
            ζ ∷ Θ1 ⊑ Θ /\
            a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ /\
-           Θ ⨟ empty ⊢ₚᵣᵃᵈ
-             (msubst_bskl ζ (pskl_to_bskl_syn P1)) ⊑ (bskl_to_pskl Q)).
+           {{ Θ ⨟ empty ⊢ₚᵣ
+             (msubst_bskl ζ (pskl_to_bskl_syn P1)) ⊑ (bskl_to_pskl Q) }}ad).
 Proof.
   intros n NM M Θ0 P0 P R' Θ κ Q
     Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty Hinc Hslack HDj Hrs HwfQ Hgf.

@@ -43,21 +43,25 @@ Require Import src.frost.algo.consis.prop_soundness_consis.
 
 Set Implicit Arguments.
 
+(* the judgement notations below live in this scope; `Open Scope` is not
+   transitive through `Require Import`, so the DECLARING file must open it *)
+Open Scope frost_ad_scope.
+
 (* ===================================================================== *)
 (*  Precision  [Θ ⨟ Δ ⊢ P ⊑ Q]  :=  [Θ ⨟ Δ ⊢ᵣ inh{P} ⊳ inh{Q}]            *)
 (* ===================================================================== *)
 
 Definition ad_precise (Θ : aenv) (Δ : atoms) (P Q : pskl) : Prop :=
-  Θ ⨟ Δ ⊢ᵣᵃᵈ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh Q).
+  {{ Θ ⨟ Δ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh Q) }}ad.
 
-Notation "Θ ⨟ Δ ⊢ₚᵣᵃᵈ P ⊑ Q" := (ad_precise Θ Δ P Q)
-  (at level 75, Δ at level 74, P at level 74, Q at level 74,
-   no associativity) : type_scope.
+Notation "{{ Θ ⨟ Δ ⊢ₚᵣ P ⊑ Q }}ad" := (ad_precise Θ Δ P Q)
+  (at level 0, Δ at level 74, P at level 74, Q at level 74,
+   format "'{{'  Θ  ⨟  Δ  ⊢ₚᵣ  P  ⊑  Q  '}}ad'") : frost_ad_scope.
 
 (** Precision is reflexive (it is refinement of a painting against itself). *)
 Lemma ad_precise_refl : forall Θ Δ P,
-  Θ ⨟ Δ ⊢ₚₛᵃ P ->
-  Θ ⨟ Δ ⊢ₚᵣᵃᵈ P ⊑ P.
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
+  {{ Θ ⨟ Δ ⊢ₚᵣ P ⊑ P }}ad.
 Proof. intros. apply ad_refine_syn_refl_inh; auto. Qed.
 
 (* ===================================================================== *)
@@ -108,7 +112,7 @@ Qed.
 Lemma a_scope_pskl_of_ptyp_vis : forall A Θ Δ,
   lc_ptyp A ->
   (forall α, α `in` ftvar_in_ptyp A -> α `in` Δ \/ a_binds_tvar α Θ) ->
-  Θ ⨟ Δ ⊢ₚₛᵃ (ptyp_to_pskl A).
+  {{ Θ ⨟ Δ ⊢ₚₛ (ptyp_to_pskl A) }}a.
 Proof.
   intros A Θ Δ Hlc; revert Δ; induction Hlc; intros Δ Hvis; simpl.
   - apply a_wf_pskl__unit.
@@ -136,7 +140,7 @@ Qed.
 (** The skeleton of a flexible variable's definition is well-formed. *)
 Lemma a_wf_ptyp_to_wf_pskl : forall Θ Δ A,
   a_wf_ptyp Θ A ->
-  Θ ⨟ Δ ⊢ₚₛᵃ (ptyp_to_pskl A).
+  {{ Θ ⨟ Δ ⊢ₚₛ (ptyp_to_pskl A) }}a.
 Proof.
   intros Θ Δ A H. apply a_scope_pskl_of_ptyp_vis.
   - eapply a_wf_ptyp_lc; eauto.
@@ -149,12 +153,12 @@ Qed.
 (*  NB no well-formedness here — and none is derivable: refinement does NOT *)
 (*  preserve well-formedness (cex_refine_not_transitive.v).  That is why    *)
 (*  well-formedness is carried by the STATEMENTS below rather than by the   *)
-(*  rules, exactly as the paper's GhostForall comment intends ("we already  *)
-(*  required well-formedness separately").                                  *)
+(*  rules, exactly as the paper's GhostForall comment intends (“we already  *)
+(*  required well-formedness separately”).                                  *)
 (* ===================================================================== *)
 
 Lemma ad_refine_syn_syn_l : forall Θ Δ Qb Q,
-  Θ ⨟ Δ ⊢ᵣᵃᵈ Qb ⊳ Q ->
+  {{ Θ ⨟ Δ ⊢ᵣ Qb ⊳ Q }}ad ->
   forall P, Qb = pskl_to_bskl_syn P ->
   exists P', Q = pskl_to_bskl_syn P'.
 Proof.
@@ -202,9 +206,9 @@ Qed.
 
 (** Δ-variables the skeleton does not mention may be dropped. *)
 Lemma a_wf_pskl_delta_shrink : forall Θ Δ P,
-  Θ ⨟ Δ ⊢ₚₛᵃ P ->
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
   forall Δ', (forall α, α `in` Δ -> α `in` ftvar_in_pskl P -> α `in` Δ') ->
-  Θ ⨟ Δ' ⊢ₚₛᵃ P.
+  {{ Θ ⨟ Δ' ⊢ₚₛ P }}a.
 Proof.
   intros Θ Δ P H; induction H; intros Δ' Hkeep.
   - apply a_wf_pskl__unit.
@@ -235,7 +239,7 @@ Qed.
     Δ is disjoint from Θ (the ∀-variables are refinement-local), it is
     Δ-free. *)
 Lemma a_wf_pskl_empty_delta_free : forall Θ Δ P,
-  Θ ⨟ empty ⊢ₚₛᵃ P ->
+  {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
   (forall α, α `in` Δ -> α `notin` dom Θ) ->
   Δ ∩ ftvar_in_pskl P [=] empty.
 Proof.
@@ -252,7 +256,7 @@ Qed.
     syn painting has no [bskl_all_inh]), so Δ never grows: Δ-freeness
     propagates across the refinement. *)
 Lemma ad_refine_syn_syn_delta_free : forall Θ Δ Qb Q,
-  Θ ⨟ Δ ⊢ᵣᵃᵈ Qb ⊳ Q ->
+  {{ Θ ⨟ Δ ⊢ᵣ Qb ⊳ Q }}ad ->
   a_wf_aenv Θ ->
   forall F, Qb = pskl_to_bskl_syn F ->
   (forall α, α `in` Δ -> α `notin` dom Θ) ->
@@ -335,19 +339,19 @@ Qed.
 (*  need the new fill to be a syn painting of a skeleton well-formed at the *)
 (*  EMPTY Δ.  Refinement does NOT give us that (it does not preserve        *)
 (*  well-formedness at all — cex_refine_not_transitive.v).  So we ASSUME    *)
-(*  well-formedness of the result — the paper's "we already required        *)
-(*  well-formedness separately" — and recover the empty-Δ form from the     *)
+(*  well-formedness of the result — the paper's “we already required        *)
+(*  well-formedness separately” — and recover the empty-Δ form from the     *)
 (*  Δ-discipline: Δ holds refinement-local ∀-variables, fresh for Θ, and    *)
 (*  a syn-headed refinement never grows Δ, so the result stays Δ-free.      *)
 (* ===================================================================== *)
 
 Lemma ad_refine_syn_syn_l_wf : forall Θ Δ P Q,
-  Θ ⨟ Δ ⊢ᵣᵃᵈ (pskl_to_bskl_syn P) ⊳ Q ->
+  {{ Θ ⨟ Δ ⊢ᵣ (pskl_to_bskl_syn P) ⊳ Q }}ad ->
   a_wf_aenv Θ ->
   (forall α, α `in` Δ -> α `notin` dom Θ) ->
-  Θ ⨟ empty ⊢ₚₛᵃ P ->
-  Θ ⨟ Δ ⊢ₚₛᵃ (bskl_to_pskl Q) ->
-  exists G, Q = pskl_to_bskl_syn G /\ Θ ⨟ empty ⊢ₚₛᵃ G.
+  {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
+  {{ Θ ⨟ Δ ⊢ₚₛ (bskl_to_pskl Q) }}a ->
+  exists G, Q = pskl_to_bskl_syn G /\ {{ Θ ⨟ empty ⊢ₚₛ G }}a.
 Proof.
   intros Θ Δ P Q Href Hwf Hdisj HwfF HwfB.
   destruct (ad_refine_syn_syn_l Href P eq_refl) as [G HeqG].
@@ -381,12 +385,12 @@ Qed.
 (** The left-hand administrative rules, packaged: whatever a syn painting
     refines to, a ghost refines to as well (given the result is well-formed). *)
 Lemma ad_refine_syn_hole_l : forall Θ Δ P Qr,
-  Θ ⨟ Δ ⊢ᵣᵃᵈ (pskl_to_bskl_syn P) ⊳ Qr ->
+  {{ Θ ⨟ Δ ⊢ᵣ (pskl_to_bskl_syn P) ⊳ Qr }}ad ->
   a_wf_aenv Θ ->
   (forall α, α `in` Δ -> α `notin` dom Θ) ->
-  Θ ⨟ empty ⊢ₚₛᵃ P ->
-  Θ ⨟ Δ ⊢ₚₛᵃ (bskl_to_pskl Qr) ->
-  Θ ⨟ Δ ⊢ᵣᵃᵈ bskl_hole ⊳ Qr.
+  {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
+  {{ Θ ⨟ Δ ⊢ₚₛ (bskl_to_pskl Qr) }}a ->
+  {{ Θ ⨟ Δ ⊢ᵣ bskl_hole ⊳ Qr }}ad.
 Proof.
   intros Θ Δ P Qr Href Hwf Hdisj HwfF HwfQr.
   destruct (ad_refine_syn_syn_l_wf Href Hwf Hdisj HwfF HwfQr) as [G [-> HwfG]].
@@ -394,13 +398,13 @@ Proof.
 Qed.
 
 Lemma ad_refine_syn_trans : forall Θ Δ Qm Qr,
-  Θ ⨟ Δ ⊢ᵣᵃᵈ Qm ⊳ Qr ->
+  {{ Θ ⨟ Δ ⊢ᵣ Qm ⊳ Qr }}ad ->
   a_wf_aenv Θ ->
   (forall α, α `in` Δ -> α `notin` dom Θ) ->
-  Θ ⨟ Δ ⊢ₚₛᵃ (bskl_to_pskl Qr) ->
+  {{ Θ ⨟ Δ ⊢ₚₛ (bskl_to_pskl Qr) }}a ->
   forall Ql,
-  Θ ⨟ Δ ⊢ᵣᵃᵈ Ql ⊳ Qm ->
-  Θ ⨟ Δ ⊢ᵣᵃᵈ Ql ⊳ Qr.
+  {{ Θ ⨟ Δ ⊢ᵣ Ql ⊳ Qm }}ad ->
+  {{ Θ ⨟ Δ ⊢ᵣ Ql ⊳ Qr }}ad.
 Proof.
   intros Θ Δ Qm Qr Hr.
   induction Hr; intros Hwf Hdisj HwfQr Ql Hp.
@@ -408,7 +412,7 @@ Proof.
   - (* var *) exact Hp.
   - (* arrow *)
     rename Q1 into Qa. rename Q2 into Qb. rename P1 into Pa. rename P2 into Pb.
-    assert (Hrr : Θ ⨟ Δ ⊢ᵣᵃᵈ (bskl_arrow Qa Qb) ⊳ (bskl_arrow Pa Pb))
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_arrow Qa Qb) ⊳ (bskl_arrow Pa Pb) }}ad)
       by (apply ad_refine_syn__arrow; assumption).
     remember (bskl_arrow Qa Qb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
@@ -450,7 +454,7 @@ Proof.
     + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
   - (* tophole_remove : Qm = ∀◇Q, Qr from Q ⊳ Qr *)
     rename Q into Qb. rename P into Pb.
-    assert (Hrr : Θ ⨟ Δ ⊢ᵣᵃᵈ (bskl_tophole Qb) ⊳ Pb)
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Qb) ⊳ Pb }}ad)
       by (apply ad_refine_syn__tophole_remove; assumption).
     remember (bskl_tophole Qb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
@@ -464,7 +468,7 @@ Proof.
     + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
   - (* tophole_fill : ∀◇Q ⊳ ∀^syn P *)
     rename Q into Qb. rename P into Pb.
-    assert (Hrr : Θ ⨟ Δ ⊢ᵣᵃᵈ (bskl_tophole Qb) ⊳ (bskl_all_syn Pb))
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Qb) ⊳ (bskl_all_syn Pb) }}ad)
       by (eapply ad_refine_syn__tophole_fill with (L := L); assumption).
     remember (bskl_tophole Qb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
@@ -496,7 +500,7 @@ Proof.
     + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
   - (* tophole_keep : ∀◇Q ⊳ ∀◇P *)
     rename Q into Qb. rename P into Pb.
-    assert (Hrr : Θ ⨟ Δ ⊢ᵣᵃᵈ (bskl_tophole Qb) ⊳ (bskl_tophole Pb))
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Qb) ⊳ (bskl_tophole Pb) }}ad)
       by (apply ad_refine_syn__tophole_keep; assumption).
     remember (bskl_tophole Qb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
@@ -512,7 +516,7 @@ Proof.
       eapply a_wf_pskl_delta_mono; [ exact Hwb | clear; fsetdec ].
     + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
   - (* flex_l : Qm = α̂ with α̂ := τ *)
-    assert (Hrr : Θ ⨟ Δ ⊢ᵣᵃᵈ (bskl_var_f α) ⊳ Q)
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_var_f α) ⊳ Q }}ad)
       by (eapply ad_refine_syn__flex_l; eassumption).
     remember (bskl_var_f α) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
@@ -556,12 +560,12 @@ Qed.
 (* ===================================================================== *)
 
 Corollary ad_precise_preserves_refine : forall Θ Δ P P' Q,
-  Θ ⨟ Δ ⊢ₚᵣᵃᵈ P ⊑ P' ->
-  Θ ⨟ Δ ⊢ᵣᵃᵈ (pskl_to_bskl_inh P') ⊳ Q ->
+  {{ Θ ⨟ Δ ⊢ₚᵣ P ⊑ P' }}ad ->
+  {{ Θ ⨟ Δ ⊢ᵣ (pskl_to_bskl_inh P') ⊳ Q }}ad ->
   a_wf_aenv Θ ->
   (forall α, α `in` Δ -> α `notin` dom Θ) ->
-  Θ ⨟ Δ ⊢ₚₛᵃ (bskl_to_pskl Q) ->
-  Θ ⨟ Δ ⊢ᵣᵃᵈ (pskl_to_bskl_inh P) ⊳ Q.
+  {{ Θ ⨟ Δ ⊢ₚₛ (bskl_to_pskl Q) }}a ->
+  {{ Θ ⨟ Δ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ Q }}ad.
 Proof.
   intros Θ Δ P P' Q Hprec Href Hwf Hdisj HwfA.
   eapply ad_refine_syn_trans;
@@ -587,7 +591,7 @@ Qed.
     tracks the source derivation at [Θ ⨟ Δa] while the working context is
     [Θx ⨟ Δx]. *)
 Lemma ad_refine_pskl_ftv_delta_free : forall Θ Δa P Q,
-  Θ ⨟ Δa ⊢ᵣₚᵃᵈ P ⊳ Q ->
+  {{ Θ ⨟ Δa ⊢ᵣₚ P ⊳ Q }}ad ->
   forall Θx,
   (forall x b, binds x b Θ -> binds x b Θx) ->
   a_wf_aenv Θx ->
@@ -689,14 +693,14 @@ Qed.
 (** The ghost-left package: whatever a ∅-wf skeleton refines to (over the
     source context), the ghost refines to at the working context. *)
 Lemma ad_refine_pskl_hole_l_gen : forall Θ Δa Pm Pr,
-  Θ ⨟ Δa ⊢ᵣₚᵃᵈ Pm ⊳ Pr ->
+  {{ Θ ⨟ Δa ⊢ᵣₚ Pm ⊳ Pr }}ad ->
   forall Θx Δx,
   (forall x b, binds x b Θ -> binds x b Θx) ->
   a_wf_aenv Θx ->
   (forall α, α `in` Δx -> α `notin` dom Θx) ->
-  Θx ⨟ empty ⊢ₚₛᵃ Pm ->
-  Θx ⨟ Δx ⊢ₚₛᵃ Pr ->
-  Θx ⨟ Δx ⊢ᵣₚᵃᵈ pskl_hole ⊳ Pr.
+  {{ Θx ⨟ empty ⊢ₚₛ Pm }}a ->
+  {{ Θx ⨟ Δx ⊢ₚₛ Pr }}a ->
+  {{ Θx ⨟ Δx ⊢ᵣₚ pskl_hole ⊳ Pr }}ad.
 Proof.
   intros Θ Δa Pm Pr Href Θx Δx Hmap Hwf Hdisj HwfM HwfR.
   apply ad_refine_pskl__hole.
@@ -719,32 +723,32 @@ Qed.
     hypothesis substitutes the CONTEXT variables away (§7.4's naming trap),
     so the composites below use these instead. *)
 Lemma a_wf_pskl_arrow_inv_x : forall Θ Δ P1 P2,
-  Θ ⨟ Δ ⊢ₚₛᵃ (pskl_arrow P1 P2) ->
-  (Θ ⨟ Δ ⊢ₚₛᵃ P1) /\ (Θ ⨟ Δ ⊢ₚₛᵃ P2).
+  {{ Θ ⨟ Δ ⊢ₚₛ (pskl_arrow P1 P2) }}a ->
+  ({{ Θ ⨟ Δ ⊢ₚₛ P1 }}a) /\ ({{ Θ ⨟ Δ ⊢ₚₛ P2 }}a).
 Proof. intros * H; inversion H; subst; auto. Qed.
 
 Lemma a_wf_pskl_all_inv_x : forall Θ Δ P,
-  Θ ⨟ Δ ⊢ₚₛᵃ (pskl_all_syn P) ->
+  {{ Θ ⨟ Δ ⊢ₚₛ (pskl_all_syn P) }}a ->
   exists L, forall α, α `notin` L ->
-    Θ ⨟ (add α Δ) ⊢ₚₛᵃ (open_pskl_wrt_pskl P (pskl_var_f α)).
+    {{ Θ ⨟ (add α Δ) ⊢ₚₛ (open_pskl_wrt_pskl P (pskl_var_f α)) }}a.
 Proof. intros * H; inversion H; subst; eauto. Qed.
 
 Lemma a_wf_pskl_tophole_inv_x : forall Θ Δ P,
-  Θ ⨟ Δ ⊢ₚₛᵃ (pskl_tophole P) ->
-  guarded_pskl P /\ (Θ ⨟ empty ⊢ₚₛᵃ P).
+  {{ Θ ⨟ Δ ⊢ₚₛ (pskl_tophole P) }}a ->
+  guarded_pskl P /\ ({{ Θ ⨟ empty ⊢ₚₛ P }}a).
 Proof. intros * H; inversion H; subst; auto. Qed.
 
 Lemma ad_refine_pskl_trans_gen : forall Θ Δ Pm Pr,
-  Θ ⨟ Δ ⊢ᵣₚᵃᵈ Pm ⊳ Pr ->
+  {{ Θ ⨟ Δ ⊢ᵣₚ Pm ⊳ Pr }}ad ->
   forall Θx Δx,
   (forall x b, binds x b Θ -> binds x b Θx) ->
   (forall α, α `in` Δ -> α `in` Δx \/ binds α abind_tvar Θx) ->
   a_wf_aenv Θx ->
   (forall α, α `in` Δx -> α `notin` dom Θx) ->
-  Θx ⨟ Δx ⊢ₚₛᵃ Pr ->
+  {{ Θx ⨟ Δx ⊢ₚₛ Pr }}a ->
   forall Pl,
-  Θx ⨟ Δx ⊢ᵣₚᵃᵈ Pl ⊳ Pm ->
-  Θx ⨟ Δx ⊢ᵣₚᵃᵈ Pl ⊳ Pr.
+  {{ Θx ⨟ Δx ⊢ᵣₚ Pl ⊳ Pm }}ad ->
+  {{ Θx ⨟ Δx ⊢ᵣₚ Pl ⊳ Pr }}ad.
 Proof.
   intros Θ Δ Pm Pr Hr.
   induction Hr; intros Θx Δx Hmap Hsplit Hwf Hdisj HwfQr Pl Hp.
@@ -959,13 +963,13 @@ Qed.
 
 (** The plain (un-reassociated) instance. *)
 Corollary ad_refine_pskl_trans : forall Θ Δ Pm Pr,
-  Θ ⨟ Δ ⊢ᵣₚᵃᵈ Pm ⊳ Pr ->
+  {{ Θ ⨟ Δ ⊢ᵣₚ Pm ⊳ Pr }}ad ->
   a_wf_aenv Θ ->
   (forall α, α `in` Δ -> α `notin` dom Θ) ->
-  Θ ⨟ Δ ⊢ₚₛᵃ Pr ->
+  {{ Θ ⨟ Δ ⊢ₚₛ Pr }}a ->
   forall Pl,
-  Θ ⨟ Δ ⊢ᵣₚᵃᵈ Pl ⊳ Pm ->
-  Θ ⨟ Δ ⊢ᵣₚᵃᵈ Pl ⊳ Pr.
+  {{ Θ ⨟ Δ ⊢ᵣₚ Pl ⊳ Pm }}ad ->
+  {{ Θ ⨟ Δ ⊢ᵣₚ Pl ⊳ Pr }}ad.
 Proof.
   intros Θ Δ Pm Pr Hr Hwf Hdisj HwfQr Pl Hp.
   eapply ad_refine_pskl_trans_gen;
@@ -981,12 +985,12 @@ Qed.
 (* ===================================================================== *)
 
 Lemma ad_refine_pskl_of_inh_paintings : forall Θ Δ Qs Qt,
-  Θ ⨟ Δ ⊢ᵣᵃᵈ Qs ⊳ Qt ->
+  {{ Θ ⨟ Δ ⊢ᵣ Qs ⊳ Qt }}ad ->
   a_wf_aenv Θ ->
   forall P' P,
   Qs = pskl_to_bskl_inh P' ->
   Qt = pskl_to_bskl_inh P ->
-  Θ ⨟ Δ ⊢ᵣₚᵃᵈ P' ⊳ P.
+  {{ Θ ⨟ Δ ⊢ᵣₚ P' ⊳ P }}ad.
 Proof.
   intros Θ Δ Qs Qt H; induction H; intros Hwf F' F HeqS HeqT.
   - (* unit *)
@@ -1060,12 +1064,12 @@ Qed.
 (** lemma:precision-preserves-refinement, UNCOLOURED — the composition the
     leaf-valid join's leaves transport along (§3, lemma:precision-sub). *)
 Corollary ad_precise_preserves_refine_pskl : forall Θ Δ P P' Qt,
-  Θ ⨟ Δ ⊢ₚᵣᵃᵈ P ⊑ P' ->
-  Θ ⨟ Δ ⊢ᵣₚᵃᵈ P' ⊳ Qt ->
+  {{ Θ ⨟ Δ ⊢ₚᵣ P ⊑ P' }}ad ->
+  {{ Θ ⨟ Δ ⊢ᵣₚ P' ⊳ Qt }}ad ->
   a_wf_aenv Θ ->
   (forall α, α `in` Δ -> α `notin` dom Θ) ->
-  Θ ⨟ Δ ⊢ₚₛᵃ Qt ->
-  Θ ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ Qt.
+  {{ Θ ⨟ Δ ⊢ₚₛ Qt }}a ->
+  {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Qt }}ad.
 Proof.
   intros Θ Δ P P' Qt Hprec Href Hwf Hdisj HwfQ.
   eapply ad_refine_pskl_trans;

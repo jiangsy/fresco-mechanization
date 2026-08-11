@@ -386,13 +386,13 @@ Proof.
 Qed.
 
 Lemma a_wf_pskl_subst_mid : forall Θ Δ P,
-  Θ ⨟ Δ ⊢ₚₛᵃ P ->
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
   forall τ α0 (b : abind) Θa Θ0,
   Θ = Θa ++ (α0 ~ b) ++ Θ0 ->
   solves_flex τ α0 b Θ0 ->
   α0 `notin` Δ ->
-  (subst_aenv τ α0 (Θa ++ Θ0)) ⨟ Δ
-    ⊢ₚₛᵃ (subst_pskl_in_pskl (ptyp_to_pskl τ) α0 P).
+  {{ (subst_aenv τ α0 (Θa ++ Θ0)) ⨟ Δ
+    ⊢ₚₛ (subst_pskl_in_pskl (ptyp_to_pskl τ) α0 P) }}a.
 Proof.
   intros Θ Δ P H; induction H; intros τ α0 b Θa Θ0 Heq Hs Hα0; subst; simpl.
   - apply a_wf_pskl__unit.
@@ -433,13 +433,13 @@ Qed.
     equivalence to bridge it.  When it is a different variable, the row
     re-applies at the substituted definition. *)
 Lemma a_tyequiv_subst_mid : forall Θ A A',
-  Θ ⊢ A ≡ᵗ A' ->
+  {{ Θ ⊢ A ≡ᵗ A' }}a ->
   forall τs α0 (b : abind) Θa Θ0,
   Θ = Θa ++ (α0 ~ b) ++ Θ0 ->
   solves_flex τs α0 b Θ0 ->
   uniq (Θa ++ (α0 ~ b) ++ Θ0) ->
-  (subst_aenv τs α0 (Θa ++ Θ0))
-    ⊢ (subst_ptyp_in_ptyp τs α0 A) ≡ᵗ (subst_ptyp_in_ptyp τs α0 A').
+  {{ (subst_aenv τs α0 (Θa ++ Θ0))
+    ⊢ (subst_ptyp_in_ptyp τs α0 A) ≡ᵗ (subst_ptyp_in_ptyp τs α0 A') }}a.
 Proof.
   (* [τs] / [α0]: the rules' own binders are [τ] and [α]. *)
   intros Θ A A' H; induction H; intros τs α0 b Θa Θ0 Heq Hs Hu; subst.
@@ -483,7 +483,7 @@ Qed.
 Lemma ad_refine_syn_mono_refl : forall Θ Δ τ,
   mono_ptyp τ ->
   a_wf_ptyp Θ τ ->
-  Θ ⨟ Δ ⊢ᵣᵃᵈ (ptyp_to_bskl_syn τ) ⊳ (ptyp_to_bskl_syn τ).
+  {{ Θ ⨟ Δ ⊢ᵣ (ptyp_to_bskl_syn τ) ⊳ (ptyp_to_bskl_syn τ) }}ad.
 Proof.
   intros Θ Δ τ Hm; revert Δ; induction Hm; intros Δ Hw; simpl.
   - apply ad_refine_syn__unit.
@@ -499,15 +499,15 @@ Ltac push_uniq Hu Hβ :=
     [ exact Hu | repeat rewrite dom_app; simpl; clear - Hβ; fsetdec ].
 
 Lemma ad_refine_syn_subst_mid : forall Θ Δ Qs Qt,
-  Θ ⨟ Δ ⊢ᵣᵃᵈ Qs ⊳ Qt ->
+  {{ Θ ⨟ Δ ⊢ᵣ Qs ⊳ Qt }}ad ->
   forall τs α0 (b : abind) Θa Θ0,
   Θ = Θa ++ (α0 ~ b) ++ Θ0 ->
   solves_flex τs α0 b Θ0 ->
   uniq (Θa ++ (α0 ~ b) ++ Θ0) ->
   α0 `notin` Δ ->
-  (subst_aenv τs α0 (Θa ++ Θ0)) ⨟ Δ
-    ⊢ᵣᵃᵈ (subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 Qs)
-      ⊳ (subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 Qt).
+  {{ (subst_aenv τs α0 (Θa ++ Θ0)) ⨟ Δ
+    ⊢ᵣ (subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 Qs)
+      ⊳ (subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 Qt) }}ad.
 Proof.
   intros Θ Δ Qs Qt H; induction H;
     intros τs α0 b Θa Θ0 Heq Hs Hu Hα0; subst; simpl.
@@ -612,15 +612,15 @@ Qed.
     fact SIMPLER (no painting rewrite), and its [__var] row closes by
     [ad_refine_pskl_refl] on the monotype's wf painting. *)
 Lemma ad_refine_pskl_subst_mid : forall Θ Δ P Q,
-  Θ ⨟ Δ ⊢ᵣₚᵃᵈ P ⊳ Q ->
+  {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad ->
   forall τs α0 (b : abind) Θa Θ0,
   Θ = Θa ++ (α0 ~ b) ++ Θ0 ->
   solves_flex τs α0 b Θ0 ->
   uniq (Θa ++ (α0 ~ b) ++ Θ0) ->
   α0 `notin` Δ ->
-  (subst_aenv τs α0 (Θa ++ Θ0)) ⨟ Δ
-    ⊢ᵣₚᵃᵈ (subst_pskl_in_pskl (ptyp_to_pskl τs) α0 P)
-      ⊳ (subst_pskl_in_pskl (ptyp_to_pskl τs) α0 Q).
+  {{ (subst_aenv τs α0 (Θa ++ Θ0)) ⨟ Δ
+    ⊢ᵣₚ (subst_pskl_in_pskl (ptyp_to_pskl τs) α0 P)
+      ⊳ (subst_pskl_in_pskl (ptyp_to_pskl τs) α0 Q) }}ad.
 Proof.
   intros Θ Δ P Q H; induction H;
     intros τs α0 b Θa Θ0 Heq Hs Hu Hα0; subst; simpl.
@@ -728,7 +728,7 @@ Lemma ad_pat_consis_mono_refl_vis : forall Ψ Θ τ,
   Ψ [=] empty ->
   mono_ptyp τ ->
   a_wf_ptyp Θ τ ->
-  Ψ ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn τ) ∼ (ptyp_to_bskl_syn τ).
+  {{ Ψ ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn τ) ∼ (ptyp_to_bskl_syn τ) }}ad.
 Proof.
   intros Ψ Θ τ HΨ Hm Hw.
   eapply consis_psi_cong_local;
@@ -738,14 +738,14 @@ Proof.
 Qed.
 
 Lemma ad_pat_consis_subst_mid : forall Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
   forall τs α0 (b : abind) Θa Θ0,
   Θ = Θa ++ (α0 ~ b) ++ Θ0 ->
   solves_flex τs α0 b Θ0 ->
   uniq (Θa ++ (α0 ~ b) ++ Θ0) ->
-  Ψ ⨟ (subst_aenv τs α0 (Θa ++ Θ0))
-    ⊢ᵃᵈ (subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0 R)
-      ∼ (subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 Q).
+  {{ Ψ ⨟ (subst_aenv τs α0 (Θa ++ Θ0))
+    ⊢ˢ (subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0 R)
+      ∼ (subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 Q) }}ad.
 Proof.
   intros Ψ Θ R Q H; induction H;
     intros τs α0 b Θa Θ0 Heq Hs Hu; subst; simpl.
@@ -952,8 +952,8 @@ Lemma ad_refine_syn_strip_suffix : forall Ξ Θ Δ Qs Qt,
   a_wf_aenv (Ξ ++ Θ) ->
   (forall α, α `in` dom Ξ ->
      α `notin` (ftvar_in_bskl Qs `union` ftvar_in_bskl Qt `union` Δ)) ->
-  (Ξ ++ Θ) ⨟ Δ ⊢ᵣᵃᵈ Qs ⊳ Qt ->
-  Θ ⨟ Δ ⊢ᵣᵃᵈ Qs ⊳ Qt.
+  {{ (Ξ ++ Θ) ⨟ Δ ⊢ᵣ Qs ⊳ Qt }}ad ->
+  {{ Θ ⨟ Δ ⊢ᵣ Qs ⊳ Qt }}ad.
 Proof.
   induction Ξ as [ | [β b] Ξ' IH ]; intros * Hsuf Hwf Hfv H; [ exact H | ].
   inversion Hsuf as [ | ? ? ? Hsuf' Hbind ]; subst.
@@ -985,8 +985,8 @@ Lemma a_tyequiv_strip_suffix : forall Ξ Θ A A',
   a_wf_aenv (Ξ ++ Θ) ->
   (forall α, α `in` dom Ξ ->
      α `notin` (ftvar_in_ptyp A `union` ftvar_in_ptyp A')) ->
-  (Ξ ++ Θ) ⊢ A ≡ᵗ A' ->
-  Θ ⊢ A ≡ᵗ A'.
+  {{ (Ξ ++ Θ) ⊢ A ≡ᵗ A' }}a ->
+  {{ Θ ⊢ A ≡ᵗ A' }}a.
 Proof.
   induction Ξ as [ | [β b] Ξ' IH ]; intros * Hsuf Hwf Hfv H; [ exact H | ].
   inversion Hsuf as [ | ? ? ? Hsuf' Hbind ]; subst.
@@ -1027,14 +1027,14 @@ Qed.
     closure lemmas ([is_sskl_subst_mono], [a_tags_sort_subst_mono], …) are
     reused from there rather than rebuilt. *)
 Lemma ad_pat_sub_subst_mid : forall NM M Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q ->
+  {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad ->
   forall τs α0 (b : abind) Θa Θ0,
   Θ = Θa ++ (α0 ~ b) ++ Θ0 ->
   solves_flex τs α0 b Θ0 ->
   uniq (Θa ++ (α0 ~ b) ++ Θ0) ->
-  Ψ ⨟ (subst_aenv τs α0 (Θa ++ Θ0))
-    ⊢ᵃᵈ[ NM | M ] (subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0 R)
-                ⩽ (subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 Q).
+  {{ Ψ ⨟ (subst_aenv τs α0 (Θa ++ Θ0))
+    ⊢ˢ[ NM | M ] (subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0 R)
+                ⩽ (subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 Q) }}ad.
 Proof.
   intros NM M Ψ Θ R Q H; induction H;
     intros τs α0 b Θa Θ0 Heq Hs Hu; subst; simpl;
@@ -1388,14 +1388,14 @@ Proof.
 Qed.
 
 Lemma ad_pat_subst_mid : forall M Θ e Q,
-  Θ ⊢ₛᵃᵈ[ M ] e ⦂ Q ->
+  {{ Θ ⊢ˢ[ M ] e ⦂ Q }}ad ->
   forall τs α0 (b0 : abind) Θa Θ0,
   Θ = Θa ++ (α0 ~ b0) ++ Θ0 ->
   solves_flex τs α0 b0 Θ0 ->
   uniq (Θa ++ (α0 ~ b0) ++ Θ0) ->
-  (subst_aenv τs α0 (Θa ++ Θ0))
-    ⊢ₛᵃᵈ[ M ] (subst_ptyp_in_exp τs α0 e)
-         ⦂ (subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 Q).
+  {{ (subst_aenv τs α0 (Θa ++ Θ0))
+    ⊢ˢ[ M ] (subst_ptyp_in_exp τs α0 e)
+         ⦂ (subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 Q) }}ad.
 Proof.
   intros M Θ e Q H; induction H;
     intros τs α0 b0 Θa Θ0 Heq Hs Hu; subst; simpl;
@@ -1594,14 +1594,14 @@ Proof.
 Qed.
 
 Lemma ad_sd_typing_subst_mid : forall M Θ e B,
-  Θ ⊢ᵃᵈ[ M ] e ⦂ B ->
+  {{ Θ ⊢ˢᵈ[ M ] e ⦂ B }}ad ->
   forall τs α0 (b0 : abind) Θa Θ0,
   Θ = Θa ++ (α0 ~ b0) ++ Θ0 ->
   solves_flex τs α0 b0 Θ0 ->
   uniq (Θa ++ (α0 ~ b0) ++ Θ0) ->
-  (subst_aenv τs α0 (Θa ++ Θ0))
-    ⊢ᵃᵈ[ M ] (subst_ptyp_in_exp τs α0 e)
-          ⦂ (subst_btyp_in_btyp (ptyp_to_btyp_syn τs) α0 B).
+  {{ (subst_aenv τs α0 (Θa ++ Θ0))
+    ⊢ˢᵈ[ M ] (subst_ptyp_in_exp τs α0 e)
+          ⦂ (subst_btyp_in_btyp (ptyp_to_btyp_syn τs) α0 B) }}ad.
 Proof.
   intros M Θ e B H; induction H;
     intros τs α0 b0 Θa Θ0 Heq Hs Hu; subst; simpl;
@@ -1778,8 +1778,8 @@ Lemma ad_pat_strip_suffix : forall Ξ Θ M e Q,
   a_wf_aenv (Ξ ++ Θ) ->
   (forall α, α `in` dom Ξ ->
      α `notin` (ftvar_in_bskl Q `union` ftvar_in_exp e)) ->
-  (Ξ ++ Θ) ⊢ₛᵃᵈ[ M ] e ⦂ Q ->
-  Θ ⊢ₛᵃᵈ[ M ] e ⦂ Q.
+  {{ (Ξ ++ Θ) ⊢ˢ[ M ] e ⦂ Q }}ad ->
+  {{ Θ ⊢ˢ[ M ] e ⦂ Q }}ad.
 Proof.
   induction Ξ as [ | [β b] Ξ' IH ]; intros * Hsuf Hwf Hfv H; [ exact H | ].
   inversion Hsuf as [ | ? ? ? Hsuf' Hbind ]; subst.
@@ -1808,8 +1808,8 @@ Lemma ad_sd_typing_strip_suffix : forall Ξ Θ M e B,
   a_wf_aenv (Ξ ++ Θ) ->
   (forall α, α `in` dom Ξ ->
      α `notin` (ftvar_in_btyp B `union` ftvar_in_exp e)) ->
-  (Ξ ++ Θ) ⊢ᵃᵈ[ M ] e ⦂ B ->
-  Θ ⊢ᵃᵈ[ M ] e ⦂ B.
+  {{ (Ξ ++ Θ) ⊢ˢᵈ[ M ] e ⦂ B }}ad ->
+  {{ Θ ⊢ˢᵈ[ M ] e ⦂ B }}ad.
 Proof.
   induction Ξ as [ | [β b] Ξ' IH ]; intros * Hsuf Hwf Hfv H; [ exact H | ].
   inversion Hsuf as [ | ? ? ? Hsuf' Hbind ]; subst.

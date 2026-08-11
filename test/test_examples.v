@@ -14,7 +14,7 @@
       in [Θlib].
 
     Each test constructs the full algorithmic derivation
-    [Θlib ⊢ᵃ[TI;□] e ⦂ B ⊣ Θ'] — with the CONCRETE result type and
+    [{{ Θlib ⊢[TI;□] e ⦂ B ⊣ Θ' }}a] — with the CONCRETE result type and
     output context, so the tests also pin down what the algorithm
     computes, not just acceptance.  Rejected examples (A8, C1a, E2a, …)
     are not testable this way (non-derivability needs a decidability
@@ -237,13 +237,13 @@ Ltac crush_uniq :=
 (* ===================================================================== *)
 
 (** Skeleton inference of a [σ_id]-typed variable in checking mode with
-    no input skeleton: [Θ ⊢ₛᵃ[TC;□] x ⦂ ∀◇(□→□) ⊣ Θ]
+    no input skeleton: [{{ Θ ⊢ˢ[TC;□] x ⦂ ∀◇(□→□) ⊣ Θ }}a]
     (ForallL instantiates [a := □], then UnivGhostR guards the result). *)
 Lemma pat_var_sigid : forall Θ x,
   uniq Θ ->
   binds x (abind_var_typ σ_id) Θ ->
-  Θ ⊢ₛᵃ[ mode_tc ; pskl_hole ] (exp_var_f x)
-    ⦂ (pskl_tophole (pskl_arrow pskl_hole pskl_hole)) ⊣ Θ.
+  {{ Θ ⊢ˢ[ mode_tc ; pskl_hole ] (exp_var_f x)
+    ⦂ (pskl_tophole (pskl_arrow pskl_hole pskl_hole)) ⊣ Θ }}a.
 Proof.
   intros Θ x Hu Hb.
   eapply a_pat__var; [ exact Hb | ].
@@ -346,11 +346,11 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_A1 :
-  Θlib ⊢ᵃ[ mode_ti ; pskl_hole ]
+  {{ Θlib ⊢[ mode_ti ; pskl_hole ]
     (exp_abs (exp_abs (exp_var_b 0)))
     ⦂ (ptyp_arrow (ptyp_var_f fa)
         (ptyp_arrow (ptyp_var_f fb) (ptyp_var_f fb)))
-    ⊣ ((fb ~ abind_flex_mono) ++ (fa ~ abind_flex_mono) ++ Θlib).
+    ⊣ ((fb ~ abind_flex_mono) ++ (fa ~ abind_flex_mono) ++ Θlib) }}a.
 Proof.
   destruct (atom_fresh (dom Θlib `union` singleton fa `union` singleton fb))
     as [x Hx].
@@ -387,9 +387,9 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_A5 :
-  Θlib ⊢ᵃ[ mode_ti ; pskl_hole ]
+  {{ Θlib ⊢[ mode_ti ; pskl_hole ]
     (exp_app (exp_var_f x_id) (exp_var_f x_auto))
-    ⦂ σ_auto ⊣ Θlib.
+    ⦂ σ_auto ⊣ Θlib }}a.
 Proof.
   eapply a_typing__app with (A := σ_auto)
     (P := pskl_tophole (ptyp_to_pskl σ_auto)) (Θ2 := Θlib).
@@ -456,9 +456,9 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_A10b :
-  Θlib ⊢ᵃ[ mode_ti ; pskl_hole ]
+  {{ Θlib ⊢[ mode_ti ; pskl_hole ]
     (exp_app (exp_var_f x_poly) (exp_abs (exp_var_b 0)))
-    ⦂ σ_prodIB ⊣ Θlib.
+    ⦂ σ_prodIB ⊣ Θlib }}a.
 Proof.
   eapply a_typing__app with (A := σ_id)
     (P := pskl_tophole (pskl_arrow pskl_hole pskl_hole)) (Θ2 := Θlib).
@@ -513,12 +513,12 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_A2 :
-  Θlib ⊢ᵃ[ mode_ti ; pskl_hole ]
+  {{ Θlib ⊢[ mode_ti ; pskl_hole ]
     (exp_app (exp_var_f x_choose) (exp_var_f x_id))
     ⦂ (ptyp_arrow (ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb))
                   (ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb)))
     ⊣ ((fa ~ abind_flex_mono_def (ptyp_var_f fb))
-       ++ (fb ~ abind_flex_mono) ++ Θlib).
+       ++ (fb ~ abind_flex_mono) ++ Θlib) }}a.
 Proof.
   eapply a_typing__app
     with (A := ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb))
@@ -612,11 +612,11 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_A4 :
-  Θlib ⊢ᵃ[ mode_ti ; pskl_hole ]
+  {{ Θlib ⊢[ mode_ti ; pskl_hole ]
     (exp_abs_anno σ_id (exp_app (exp_var_b 0) (exp_var_b 0)))
     ⦂ (ptyp_arrow σ_id (ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb)))
     ⊣ ((fa ~ abind_flex_mono_def (ptyp_var_f fb))
-       ++ (fb ~ abind_flex_mono) ++ Θlib).
+       ++ (fb ~ abind_flex_mono) ++ Θlib) }}a.
 Proof.
   destruct (atom_fresh (dom Θlib `union` singleton fa `union` singleton fb))
     as [x Hx].
@@ -726,9 +726,9 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_A10a :
-  Θlib ⊢ᵃ[ mode_ti ; pskl_hole ]
+  {{ Θlib ⊢[ mode_ti ; pskl_hole ]
     (exp_app (exp_var_f x_poly) (exp_var_f x_id))
-    ⦂ σ_prodIB ⊣ Θlib.
+    ⦂ σ_prodIB ⊣ Θlib }}a.
 Proof.
   eapply a_typing__app with (A := σ_id)
     (P := pskl_tophole (pskl_arrow pskl_hole pskl_hole)) (Θ2 := Θlib).
@@ -751,9 +751,9 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_C2 :
-  Θlib ⊢ᵃ[ mode_ti ; pskl_hole ]
+  {{ Θlib ⊢[ mode_ti ; pskl_hole ]
     (exp_app (exp_var_f x_r) (exp_abs (exp_abs (exp_var_b 0))))
-    ⦂ tInt ⊣ Θlib.
+    ⦂ tInt ⊣ Θlib }}a.
 Proof.
   eapply a_typing__app
     with (A := ptyp_all (ptyp_arrow b0 (ptyp_all (ptyp_arrow b0 b0))))
@@ -849,10 +849,10 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_E2b :
-  Θlib ⊢ᵃ[ mode_ti ; pskl_hole ]
+  {{ Θlib ⊢[ mode_ti ; pskl_hole ]
     (exp_anno (exp_abs (exp_app (exp_var_f x_poly) (exp_var_b 0)))
               (ptyp_arrow σ_id σ_prodIB))
-    ⦂ (ptyp_arrow σ_id σ_prodIB) ⊣ Θlib.
+    ⦂ (ptyp_arrow σ_id σ_prodIB) ⊣ Θlib }}a.
 Proof.
   eapply a_typing__anno with (Θ1 := Θlib).
   - (* λx. poly x ⦂[TC; skel(σ_id→σ_prodIB)]  σ_id→σ_prodIB *)

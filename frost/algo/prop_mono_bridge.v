@@ -1,7 +1,7 @@
 (** THE BRIDGE that the corrected [Flex-Flex-Assign] needs.
 
     With the rule's premise now CONSISTENCY, unification soundness must derive a
-    type EQUIVALENCE  [Θ ⊢ A ≡ᵗ B]  from what consistency soundness gives it:
+    type EQUIVALENCE  [{{ Θ ⊢ A ≡ᵗ B }}a]  from what consistency soundness gives it:
     a coloured JOIN [Qt] with
 
         syn{A} ∼ Qt      (declarative consistency of the SUBJECT with the join)
@@ -115,10 +115,10 @@ Qed.
     (it unfolds the JOIN instead), so it must not be destructed along with the
     others. *)
 Lemma consis_mono_join : forall Ψ Θ R Qt,
-  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Qt ->
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Qt }}ad ->
   a_wf_aenv Θ ->
   forall A, R = ptyp_to_uskl_syn A -> mono_ptyp A ->
-  exists C, mono_ptyp C /\ Qt = ptyp_to_bskl_syn C /\ Θ ⊢ A ≡ᵗ C.
+  exists C, mono_ptyp C /\ Qt = ptyp_to_bskl_syn C /\ {{ Θ ⊢ A ≡ᵗ C }}a.
 Proof.
   intros Ψ Θ R Qt Hc Hwf; induction Hc; intros A0 HeqS HmA0;
     unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn in *.
@@ -186,10 +186,10 @@ Qed.
     LEFT shape, so a monotype left-hand side admits only unit / var / arrow /
     flex_l. *)
 Lemma refine_mono_join : forall Θ Δ Qb Qt,
-  Θ ⨟ Δ ⊢ᵣᵃᵈ Qb ⊳ Qt ->
+  {{ Θ ⨟ Δ ⊢ᵣ Qb ⊳ Qt }}ad ->
   a_wf_aenv Θ ->
   forall A, Qb = ptyp_to_bskl_syn A -> mono_ptyp A ->
-  exists C, mono_ptyp C /\ Qt = ptyp_to_bskl_syn C /\ Θ ⊢ A ≡ᵗ C.
+  exists C, mono_ptyp C /\ Qt = ptyp_to_bskl_syn C /\ {{ Θ ⊢ A ≡ᵗ C }}a.
 Proof.
   intros Θ Δ Qb Qt Hr Hwf; induction Hr; intros B0 HeqB HmB0;
     unfold ptyp_to_bskl_syn in *.
@@ -252,9 +252,9 @@ Theorem consis_refine_mono_tyequiv : forall Θ A A' Qt,
   a_wf_aenv Θ ->
   mono_ptyp A ->
   mono_ptyp A' ->
-  empty ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn A) ∼ Qt ->
-  Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (ptyp_to_pskl A')) ⊳ Qt ->
-  Θ ⊢ A ≡ᵗ A'.
+  {{ empty ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A) ∼ Qt }}ad ->
+  {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (ptyp_to_pskl A')) ⊳ Qt }}ad ->
+  {{ Θ ⊢ A ≡ᵗ A' }}a.
 Proof.
   intros Θ A A' Qt Hwf HmA HmB Hc Hr.
   rewrite (ptyp_to_bskl_inh_syn_eq HmB) in Hr.
@@ -278,7 +278,7 @@ Qed.
 Lemma consis_mono_refl : forall A Θ,
   mono_ptyp A ->
   (forall α, α `in` ftvar_in_ptyp A -> a_binds_tvar α Θ) ->
-  empty ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A).
+  {{ empty ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A) }}ad.
 Proof.
   intros A Θ Hm; unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn.
   induction Hm; intros Hvis; simpl.
@@ -293,11 +293,11 @@ Qed.
     a definition unfolded on the LEFT ([flex_l]) becomes one unfolded on the
     RIGHT ([flex_r]), and vice versa. *)
 Lemma consis_mono_sym : forall Ψ Θ R Qt,
-  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Qt ->
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Qt }}ad ->
   a_wf_aenv Θ ->
   forall A A', R = ptyp_to_uskl_syn A -> Qt = ptyp_to_bskl_syn A' ->
   mono_ptyp A -> mono_ptyp A' ->
-  empty ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn A') ∼ (ptyp_to_bskl_syn A).
+  {{ empty ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A') ∼ (ptyp_to_bskl_syn A) }}ad.
 Proof.
   intros Ψ Θ R Qt Hc Hwf; induction Hc; intros A0 B0 HeqS HeqQ HmA0 HmB0;
     unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn in *.
@@ -342,9 +342,9 @@ Qed.
 
 (** [ad_pat_consis] is congruent in the tag context. *)
 Lemma consis_psi_cong_local : forall Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
   forall Ψ', Ψ [=] Ψ' ->
-  Ψ' ⨟ Θ ⊢ᵃᵈ R ∼ Q.
+  {{ Ψ' ⨟ Θ ⊢ˢ R ∼ Q }}ad.
 Proof.
   intros Ψ Θ R Q H; induction H; intros Ψ' Heq;
     econstructor; eauto; fsetdec.
@@ -353,7 +353,7 @@ Qed.
 (** A monotype carries no TAGS, so a monotype-subject derivation has an empty
     tag context.  (Tags only ever enter through a tagged quantifier.) *)
 Lemma consis_mono_psi_empty : forall Ψ Θ R Qt,
-  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Qt ->
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Qt }}ad ->
   a_wf_aenv Θ ->
   forall A, R = ptyp_to_uskl_syn A -> mono_ptyp A ->
   Ψ [=] empty.
@@ -401,7 +401,7 @@ Qed.
 (** [≡ᵗ] preserves monotype-ness and ftv-visibility (both directions).
     Needed because [trans] passes through an arbitrary middle type. *)
 Lemma a_tyequiv_mono_vis : forall Θ A A',
-  Θ ⊢ A ≡ᵗ A' ->
+  {{ Θ ⊢ A ≡ᵗ A' }}a ->
   a_wf_aenv Θ ->
   ((mono_ptyp A /\ (forall α0, α0 `in` ftvar_in_ptyp A -> a_binds_tvar α0 Θ)) ->
    (mono_ptyp A' /\ (forall α0, α0 `in` ftvar_in_ptyp A' -> a_binds_tvar α0 Θ))) /\
@@ -451,11 +451,11 @@ Qed.
     only [var] / [flex_l] / [flex_r] can have subject [α1̂], and each is
     absorbed by a lookup rule on the other side. *)
 Lemma consis_unfold_def_subject : forall Ψ Θ R Qt,
-  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Qt ->
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Qt }}ad ->
   a_wf_aenv Θ ->
   forall α1 τ, R = uskl_var_f α1 ->
   binds α1 (abind_flex_mono_def τ) Θ ->
-  Ψ ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn τ) ∼ Qt.
+  {{ Ψ ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn τ) ∼ Qt }}ad.
 Proof.
   intros * Hc Hwf; induction Hc; intros α10 τ0 HeqS Hb;
     try discriminate HeqS.
@@ -484,12 +484,12 @@ Qed.
     have an arrow subject, and the transport is generic in the two
     component transports. *)
 Lemma consis_arrow_subject_transport : forall Ψ Θ R Qt,
-  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Qt ->
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Qt }}ad ->
   forall R1 R2 R1' R2',
   R = uskl_arrow R1 R2 ->
-  (forall Ψ' Q', Ψ' ⨟ Θ ⊢ᵃᵈ R1 ∼ Q' -> Ψ' ⨟ Θ ⊢ᵃᵈ R1' ∼ Q') ->
-  (forall Ψ' Q', Ψ' ⨟ Θ ⊢ᵃᵈ R2 ∼ Q' -> Ψ' ⨟ Θ ⊢ᵃᵈ R2' ∼ Q') ->
-  Ψ ⨟ Θ ⊢ᵃᵈ (uskl_arrow R1' R2') ∼ Qt.
+  (forall Ψ' Q', {{ Ψ' ⨟ Θ ⊢ˢ R1 ∼ Q' }}ad -> {{ Ψ' ⨟ Θ ⊢ˢ R1' ∼ Q' }}ad) ->
+  (forall Ψ' Q', {{ Ψ' ⨟ Θ ⊢ˢ R2 ∼ Q' }}ad -> {{ Ψ' ⨟ Θ ⊢ˢ R2' ∼ Q' }}ad) ->
+  {{ Ψ ⨟ Θ ⊢ˢ (uskl_arrow R1' R2') ∼ Qt }}ad.
 Proof.
   intros * Hc; induction Hc; intros S1' S2' R1' R2' HeqS Htr1 Htr2;
     try discriminate HeqS.
@@ -506,14 +506,14 @@ Qed.
     two directions are proved simultaneously so that [sym] just swaps and
     [trans] just composes). *)
 Lemma tyequiv_mono_consis_transport : forall Θ A A',
-  Θ ⊢ A ≡ᵗ A' ->
+  {{ Θ ⊢ A ≡ᵗ A' }}a ->
   a_wf_aenv Θ ->
   mono_ptyp A ->
   (forall α, α `in` ftvar_in_ptyp A -> a_binds_tvar α Θ) ->
-  (forall Ψ Qt, Ψ ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn A') ∼ Qt ->
-     Ψ ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn A) ∼ Qt) /\
-  (forall Ψ Qt, Ψ ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn A) ∼ Qt ->
-     Ψ ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn A') ∼ Qt).
+  (forall Ψ Qt, {{ Ψ ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A') ∼ Qt }}ad ->
+     {{ Ψ ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A) ∼ Qt }}ad) /\
+  (forall Ψ Qt, {{ Ψ ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A) ∼ Qt }}ad ->
+     {{ Ψ ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A') ∼ Qt }}ad).
 Proof.
   intros Θ A A' Heq Hwf; induction Heq; intros Hm Hv.
   - (* refl *)
@@ -560,11 +560,11 @@ Qed.
 (** THE CONVERSE BRIDGE.  [A ≡ᵗ B] on monotypes yields consistency of the
     two syn paintings: transport [B]'s reflexivity derivation. *)
 Theorem tyequiv_mono_consis : forall Θ A A',
-  Θ ⊢ A ≡ᵗ A' ->
+  {{ Θ ⊢ A ≡ᵗ A' }}a ->
   a_wf_aenv Θ ->
   mono_ptyp A ->
   (forall α, α `in` ftvar_in_ptyp A -> a_binds_tvar α Θ) ->
-  empty ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A').
+  {{ empty ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A') }}ad.
 Proof.
   intros * Heq Hwf Hm Hv.
   destruct (a_tyequiv_mono_vis Heq Hwf) as [Hfwd _].
@@ -581,9 +581,9 @@ Corollary consis_mono_trans : forall Θ A A' A0,
   a_wf_aenv Θ ->
   mono_ptyp A -> mono_ptyp A' ->
   (forall α, α `in` ftvar_in_ptyp A -> a_binds_tvar α Θ) ->
-  empty ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A') ->
-  empty ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn A') ∼ (ptyp_to_bskl_syn A0) ->
-  empty ⨟ Θ ⊢ᵃᵈ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A0).
+  {{ empty ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A') }}ad ->
+  {{ empty ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A') ∼ (ptyp_to_bskl_syn A0) }}ad ->
+  {{ empty ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A0) }}ad.
 Proof.
   intros * Hwf HmA HmB HvA Hc1 Hc2.
   destruct (consis_mono_join Hc1 Hwf (A := A) eq_refl HmA)

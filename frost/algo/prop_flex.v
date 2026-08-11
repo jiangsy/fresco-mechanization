@@ -57,8 +57,8 @@ Proof.
 Qed.
 
 Lemma a_tyequiv_weaken_cons : forall Θ (e : list (atom * abind)) A A',
-  Θ ⊢ A ≡ᵗ A' ->
-  (e ++ Θ) ⊢ A ≡ᵗ A'.
+  {{ Θ ⊢ A ≡ᵗ A' }}a ->
+  {{ (e ++ Θ) ⊢ A ≡ᵗ A' }}a.
 Proof.
   intros. eapply a_tyequiv_weaken; [ | eauto ].
   intros x b Hb. unfold binds; apply in_or_app; auto.
@@ -69,7 +69,7 @@ Lemma a_tyequiv_subst_def : forall Θ α1 τ A,
   binds α1 (abind_flex_mono_def τ) Θ ->
   mono_ptyp A ->
   lc_ptyp τ ->
-  Θ ⊢ A ≡ᵗ (subst_ptyp_in_ptyp τ α1 A).
+  {{ Θ ⊢ A ≡ᵗ (subst_ptyp_in_ptyp τ α1 A) }}a.
 Proof.
   intros * Hb Hm Hlc; induction Hm; simpl.
   - apply a_tyequiv__refl; auto.
@@ -1005,8 +1005,8 @@ Qed.
 
 Lemma a_wf_pskl_weaken : forall Θ Θ' Δ P,
   (forall x b, binds x b Θ -> binds x b Θ') ->
-  Θ ⨟ Δ ⊢ₚₛᵃ P ->
-  Θ' ⨟ Δ ⊢ₚₛᵃ P.
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
+  {{ Θ' ⨟ Δ ⊢ₚₛ P }}a.
 Proof.
   intros * Hmon Hwf; revert Θ' Hmon; induction Hwf; intros Θ' Hmon;
     eauto using a_wf_pskl;
@@ -1017,10 +1017,10 @@ Proof.
 Qed.
 
 Lemma ad_pat_consis_weaken : forall Ψ Θ R Q,
-  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
   forall Θ',
   (forall x b, binds x b Θ -> binds x b Θ') ->
-  Ψ ⨟ Θ' ⊢ᵃᵈ R ∼ Q.
+  {{ Ψ ⨟ Θ' ⊢ˢ R ∼ Q }}ad.
 Proof.
   intros Ψ Θ R Q H; induction H; intros Θ' Hmon.
   - apply ad_pat_consis__unit; auto.
@@ -1068,8 +1068,8 @@ Proof.
 Qed.
 
 Lemma ad_pat_consis_weaken_cons : forall Ψ Θ (e : list (atom * abind)) R Q,
-  Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q ->
-  Ψ ⨟ (e ++ Θ) ⊢ᵃᵈ R ∼ Q.
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
+  {{ Ψ ⨟ (e ++ Θ) ⊢ˢ R ∼ Q }}ad.
 Proof.
   intros. eapply ad_pat_consis_weaken; eauto;
     try (intros x b Hb; unfold binds; apply in_or_app; auto).
@@ -1101,9 +1101,9 @@ Qed.
     Generalises [a_wf_pskl_strip_tvar] (which only drops [abind_tvar]);
     [a_assign__skip] drops a *flex* binding. *)
 Lemma a_wf_pskl_strip_mid : forall Θ1 c b Θ2 Δ P,
-  (Θ1 ++ (c ~ b) ++ Θ2) ⨟ Δ ⊢ₚₛᵃ P ->
+  {{ (Θ1 ++ (c ~ b) ++ Θ2) ⨟ Δ ⊢ₚₛ P }}a ->
   c `notin` ftvar_in_pskl P ->
-  (Θ1 ++ Θ2) ⨟ Δ ⊢ₚₛᵃ P.
+  {{ (Θ1 ++ Θ2) ⨟ Δ ⊢ₚₛ P }}a.
 Proof.
   intros * H.
   remember (Θ1 ++ (c ~ b) ++ Θ2) as Θfull eqn:HeqΘ.
@@ -1157,7 +1157,7 @@ Qed.
 Lemma a_wf_pskl_mono_ptyp : forall Θ Δ τ,
   mono_ptyp τ ->
   a_wf_ptyp Θ τ ->
-  Θ ⨟ Δ ⊢ₚₛᵃ (ptyp_to_pskl τ).
+  {{ Θ ⨟ Δ ⊢ₚₛ (ptyp_to_pskl τ) }}a.
 Proof.
   intros Θ Δ τ Hm; revert Δ; induction Hm; intros Δ Hwf; simpl;
     inversion Hwf; subst.
@@ -1193,11 +1193,11 @@ Qed.
     definition INTO a well-formed skeleton keeps it well-formed.  (The BACK
     direction is [a_wf_pskl_mono_subst_back] in [prop_consis_sound].) *)
 Lemma a_wf_pskl_mono_subst : forall Θ β τ Δ P,
-  Θ ⨟ Δ ⊢ₚₛᵃ P ->
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
   a_wf_aenv Θ ->
   binds β (abind_flex_mono_def τ) Θ ->
   mono_ptyp τ ->
-  Θ ⨟ Δ ⊢ₚₛᵃ (subst_pskl_in_pskl (ptyp_to_pskl τ) β P).
+  {{ Θ ⨟ Δ ⊢ₚₛ (subst_pskl_in_pskl (ptyp_to_pskl τ) β P) }}a.
 Proof.
   intros Θ β τ Δ P H; induction H; intros Hwfenv Hb Hm; simpl.
   - apply a_wf_pskl__unit.

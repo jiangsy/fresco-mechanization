@@ -63,13 +63,13 @@ Qed.
 
 (** [d_consis] is closed under tvar renaming (Δ is etag-only, untouched). *)
 Lemma d_consis_rename_tvar : forall Δ Γ C B,
-    Δ ⨟ Γ ⊢ C ∼ B ->
+    {{ Δ ⨟ Γ ⊢ C ∼ B }}d ->
     forall Γ1 Γ2 α0 β,
       Γ = Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2 ->
       β `notin` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) ->
-      Δ ⨟ (Γ1 ++ (β ~ dbind_tvar) ++ Γ2) ⊢
+      {{ Δ ⨟ (Γ1 ++ (β ~ dbind_tvar) ++ Γ2) ⊢
          (subst_utyp_in_utyp (utyp_var_f β) α0 C)
-         ∼ (subst_btyp_in_btyp (btyp_var_f β) α0 B).
+         ∼ (subst_btyp_in_btyp (btyp_var_f β) α0 B) }}d.
 Proof.
   intros Δ Γ C B H. induction H; intros Γ1 Γ2 α0 β Heq Hfr; subst; simpl.
   - apply d_consis__unit. assumption.
@@ -113,11 +113,11 @@ Qed.
 
 (** [d_wf_utyp] is closed under tvar renaming (pure well-scopedness). *)
 Lemma d_wf_utyp_rename_tvar : forall Γ C,
-    Γ ⊢ᵤ C ->
+    {{ Γ ⊢ᵤ C }}d ->
     forall Γ1 Γ2 α0 β,
       Γ = Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2 ->
       β `notin` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) ->
-      (Γ1 ++ (β ~ dbind_tvar) ++ Γ2) ⊢ᵤ (subst_utyp_in_utyp (utyp_var_f β) α0 C).
+      {{ (Γ1 ++ (β ~ dbind_tvar) ++ Γ2) ⊢ᵤ (subst_utyp_in_utyp (utyp_var_f β) α0 C) }}d.
 Proof.
   intros Γ C H. induction H; intros Γ1 Γ2 α0 β Heq Hfr; subst; simpl.
   - apply d_wf_utyp__unit.
@@ -169,13 +169,13 @@ Qed.
 (** [d_sub] is closed under tvar renaming ([Δ] is etag-only, untouched);
     closes the cofinite-uniform [forall_r] case of the transitivity lemmas. *)
 Lemma d_sub_rename_tvar : forall m Δ Γ C B,
-    Δ ⨟ Γ ⊢[ m ] C ⩽ B ->
+    {{ Δ ⨟ Γ ⊢[ m ] C ⩽ B }}d ->
     forall Γ1 Γ2 α0 β,
       Γ = Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2 ->
       β `notin` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) ->
-      Δ ⨟ (Γ1 ++ (β ~ dbind_tvar) ++ Γ2) ⊢[ m ]
+      {{ Δ ⨟ (Γ1 ++ (β ~ dbind_tvar) ++ Γ2) ⊢[ m ]
          (subst_utyp_in_utyp (utyp_var_f β) α0 C)
-         ⩽ (subst_btyp_in_btyp (btyp_var_f β) α0 B).
+         ⩽ (subst_btyp_in_btyp (btyp_var_f β) α0 B) }}d.
 Proof.
   intros m Δ Γ C B H. induction H; intros Γ1 Γ2 α0 β Heq Hfr; subst; simpl.
   - (* infer *)

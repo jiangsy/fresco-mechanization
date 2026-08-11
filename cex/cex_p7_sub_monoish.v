@@ -3,8 +3,8 @@
 
     On the CONSISTENCY side,
 
-        Ψs ⨟ Θ ⊢ᵃᵈ ψ ∼ Q  →  is_tskl ψ  →  bskl_monoish Q
-          →  Ψs = ∅  ∧  ψ is a mono PAINT      ([ad_pat_consis_monoish_counterpart])
+        {{ Ψs ⨟ Θ ⊢ˢ ψ ∼ Q }}ad  →  is_tskl ψ  →  bskl_monoish Q
+          →  Ψs }}ad = ∅  ∧  ψ is a mono PAINT      ([ad_pat_consis_monoish_counterpart])
 
     holds, and it is load-bearing — it is how P6-Cv reads the counterpart
     monotype off a mono-ish [Q].  The SUBTYPING join has no such lemma, and
@@ -77,7 +77,7 @@ Proof.
     | apply uskl_ghost_free__var ].
 Qed.
 
-Lemma guess_wf : Θw ⨟ empty ⊢ₚₛᵃ ⌊ uskl_var_f β ⌋ˢ.
+Lemma guess_wf : {{ Θw ⨟ empty ⊢ₚₛ ⌊ uskl_var_f β ⌋ˢ }}a.
 Proof. cbn. apply a_wf_pskl__var. right. left. simpl; auto. Qed.
 
 (** The derivation: ForallL (tagged) instantiates with β, and the premise is

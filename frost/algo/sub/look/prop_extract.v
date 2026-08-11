@@ -150,7 +150,7 @@ Qed.
 (*   · [ad_refine_syn__hole] — its target is a SYNTHESISED painting while  *)
 (*     precision supplies an INHERITED one, so §1 forces ∀-freeness, and   *)
 (*     ghost-freeness (from [a_tags_sort] at TY) then forces a monotype.   *)
-(*     Its fill premise is [Θ ⨟ empty ⊢ₚₛᵃ P] — CLOSED, which is also why  *)
+(*     Its fill premise is [{{ Θ ⨟ empty ⊢ₚₛ P }}a] — CLOSED, which is also why *)
 (*     a hole under a ∀ can never be filled with the bound variable and    *)
 (*     the images stay Θ-well-formed.                                     *)
 (*   · [ad_refine_syn__flex_r] — the target IS a defined flexible, so the  *)
@@ -161,8 +161,8 @@ Qed.
     a variable — [inversion] then produces clean equations we control.  Only
     two rules have a ◇ source: [__hole] and [__flex_r]. *)
 Lemma ad_refine_syn_hole_l_inv : forall Θ Δ Y,
-  Θ ⨟ Δ ⊢ᵣᵃᵈ bskl_hole ⊳ Y ->
-  (exists P, Θ ⨟ empty ⊢ₚₛᵃ P /\ Y = pskl_to_bskl_syn P)
+  {{ Θ ⨟ Δ ⊢ᵣ bskl_hole ⊳ Y }}ad ->
+  (exists P, {{ Θ ⨟ empty ⊢ₚₛ P }}a /\ Y = pskl_to_bskl_syn P)
   \/ (exists α τ, binds α (abind_flex_mono_def τ) Θ /\ Y = bskl_var_f α).
 Proof.
   intros Θ Δ Y H; inversion H; subst;
@@ -171,9 +171,9 @@ Proof.
 Qed.
 
 Lemma ad_precise_hole_inv_mono : forall Θ Δ X,
-  Θ ⨟ Δ ⊢ₚᵣᵃᵈ pskl_hole ⊑ X ->
+  {{ Θ ⨟ Δ ⊢ₚᵣ pskl_hole ⊑ X }}ad ->
   pskl_ghost_free X -> lc_pskl X ->
-  exists τ, ptyp_to_pskl τ = X /\ mono_ptyp τ /\ Θ ⨟ empty ⊢ₚₛᵃ X.
+  exists τ, ptyp_to_pskl τ = X /\ mono_ptyp τ /\ {{ Θ ⨟ empty ⊢ₚₛ X }}a.
 Proof.
   intros Θ Δ X Hp Hgf Hlc. unfold ad_precise in Hp. cbn in Hp.
   destruct (ad_refine_syn_hole_l_inv Hp) as [[P [Hwf Heq]] | [α [τ0 [Hb Heq]]]].
@@ -205,7 +205,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma ad_refine_syn_all_l_not_mono : forall Θ Δ Y τ,
-  Θ ⨟ Δ ⊢ᵣᵃᵈ (bskl_all_inh Y) ⊳ (ptyp_to_bskl_syn τ) ->
+  {{ Θ ⨟ Δ ⊢ᵣ (bskl_all_inh Y) ⊳ (ptyp_to_bskl_syn τ) }}ad ->
   a_wf_aenv Θ -> mono_ptyp τ -> False.
 Proof.
   intros Θ Δ Y τ H. remember (bskl_all_inh Y) as Src eqn:HeqS.
@@ -279,7 +279,7 @@ Qed.
     irrelevant because §3 always delivers the CLOSED reading. *)
 Lemma a_wf_ptyp_of_wf_pskl_mono : forall Θ τ,
   mono_ptyp τ ->
-  Θ ⨟ empty ⊢ₚₛᵃ (ptyp_to_pskl τ) ->
+  {{ Θ ⨟ empty ⊢ₚₛ (ptyp_to_pskl τ) }}a ->
   a_wf_ptyp Θ τ.
 Proof.
   intros Θ τ Hm; induction Hm; intros Hwf; cbn in Hwf.
@@ -315,12 +315,12 @@ Qed.
 (* ⚙ RENAMED from [ad_refine_syn_rename_delta] 2026-08-09 (cleanup audit §8.1c): it collided with a
    DIFFERENT lemma of that name, and this one delivers Δ as [add α0 (remove β Δ)]; prop_soundness_pat.v's takes [Δ0 [=] add α Δ]. *)
 Lemma ad_refine_syn_rename_delta_remove : forall Θ Δ Q Q' β α0,
-  Θ ⨟ Δ ⊢ᵣᵃᵈ Q ⊳ Q' ->
+  {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
   a_wf_aenv Θ ->
   β `notin` dom Θ ->
-  Θ ⨟ (add α0 (remove β Δ)) ⊢ᵣᵃᵈ
+  {{ Θ ⨟ (add α0 (remove β Δ)) ⊢ᵣ
     (subst_bskl_in_bskl (bskl_var_f α0) β Q) ⊳
-    (subst_bskl_in_bskl (bskl_var_f α0) β Q').
+    (subst_bskl_in_bskl (bskl_var_f α0) β Q') }}ad.
 Proof.
   intros Θ Δ Q Q' β α0 H HwfΘ Hβ.
   apply ad_refine_syn_f_forget with (F := singleton β).
@@ -336,12 +336,12 @@ Qed.
 
 (** …and its precision reading, which is what the ∀ case applies. *)
 Lemma ad_precise_rename_delta : forall Θ Δ P X β α0,
-  Θ ⨟ Δ ⊢ₚᵣᵃᵈ P ⊑ X ->
+  {{ Θ ⨟ Δ ⊢ₚᵣ P ⊑ X }}ad ->
   a_wf_aenv Θ ->
   β `notin` dom Θ ->
-  Θ ⨟ (add α0 (remove β Δ)) ⊢ₚᵣᵃᵈ
+  {{ Θ ⨟ (add α0 (remove β Δ)) ⊢ₚᵣ
     (subst_pskl_in_pskl (pskl_var_f α0) β P) ⊑
-    (subst_pskl_in_pskl (pskl_var_f α0) β X).
+    (subst_pskl_in_pskl (pskl_var_f α0) β X) }}ad.
 Proof.
   intros Θ Δ P X β α0 H HwfΘ Hβ. unfold ad_precise in *.
   rewrite <- ! subst_var_bskl_inh.
@@ -370,17 +370,17 @@ Qed.
 (* ===================================================================== *)
 
 Lemma ad_precise_arrow_l_inv : forall Θ Δ Src Tgt,
-  Θ ⨟ Δ ⊢ᵣᵃᵈ Src ⊳ Tgt ->
+  {{ Θ ⨟ Δ ⊢ᵣ Src ⊳ Tgt }}ad ->
   forall S1 S2 X,
   Src = bskl_arrow (pskl_to_bskl_inh S1) (pskl_to_bskl_inh S2) ->
   Tgt = pskl_to_bskl_inh X ->
   a_wf_aenv Θ -> pskl_ghost_free X -> lc_pskl X ->
   exists X1 X2,
     pskl_ghost_free X1 /\ pskl_ghost_free X2 /\ lc_pskl X1 /\ lc_pskl X2 /\
-    Θ ⨟ Δ ⊢ₚᵣᵃᵈ S1 ⊑ X1 /\ Θ ⨟ Δ ⊢ₚᵣᵃᵈ S2 ⊑ X2 /\
+    {{ Θ ⨟ Δ ⊢ₚᵣ S1 ⊑ X1 }}ad /\ {{ Θ ⨟ Δ ⊢ₚᵣ S2 ⊑ X2 }}ad /\
     (forall Y1 Y2,
-       Θ ⨟ Δ ⊢ₚᵣᵃᵈ Y1 ⊑ X1 -> Θ ⨟ Δ ⊢ₚᵣᵃᵈ Y2 ⊑ X2 ->
-       Θ ⨟ Δ ⊢ₚᵣᵃᵈ (pskl_arrow Y1 Y2) ⊑ X).
+       {{ Θ ⨟ Δ ⊢ₚᵣ Y1 ⊑ X1 }}ad -> {{ Θ ⨟ Δ ⊢ₚᵣ Y2 ⊑ X2 }}ad ->
+       {{ Θ ⨟ Δ ⊢ₚᵣ (pskl_arrow Y1 Y2) ⊑ X }}ad).
 Proof.
   intros Θ Δ Src Tgt H; induction H;
     intros S1 S2 X HeqS HeqT HwfΘ Hgf Hlc;
@@ -419,15 +419,15 @@ Proof.
 Qed.
 
 Lemma ad_precise_tophole_l_inv : forall Θ Δ Src Tgt,
-  Θ ⨟ Δ ⊢ᵣᵃᵈ Src ⊳ Tgt ->
+  {{ Θ ⨟ Δ ⊢ᵣ Src ⊳ Tgt }}ad ->
   forall S0 X,
   Src = bskl_tophole (pskl_to_bskl_inh S0) ->
   Tgt = pskl_to_bskl_inh X ->
   a_wf_aenv Θ -> pskl_ghost_free X -> lc_pskl X ->
   exists X',
     pskl_ghost_free X' /\ lc_pskl X' /\
-    Θ ⨟ Δ ⊢ₚᵣᵃᵈ S0 ⊑ X' /\
-    (forall Y, Θ ⨟ Δ ⊢ₚᵣᵃᵈ Y ⊑ X' -> Θ ⨟ Δ ⊢ₚᵣᵃᵈ Y ⊑ X).
+    {{ Θ ⨟ Δ ⊢ₚᵣ S0 ⊑ X' }}ad /\
+    (forall Y, {{ Θ ⨟ Δ ⊢ₚᵣ Y ⊑ X' }}ad -> {{ Θ ⨟ Δ ⊢ₚᵣ Y ⊑ X }}ad).
 Proof.
   intros Θ Δ Src Tgt H; induction H;
     intros S0 X HeqS HeqT HwfΘ Hgf Hlc;
@@ -475,7 +475,7 @@ Qed.
     counterpart is a ∀ too and the inversion is exact — no replay needed, the
     caller rebuilds with [ad_refine_syn__all]. *)
 Lemma ad_precise_all_l_inv : forall Θ Δ Src Tgt,
-  Θ ⨟ Δ ⊢ᵣᵃᵈ Src ⊳ Tgt ->
+  {{ Θ ⨟ Δ ⊢ᵣ Src ⊳ Tgt }}ad ->
   forall S0 X,
   Src = bskl_all_inh (pskl_to_bskl_inh S0) ->
   Tgt = pskl_to_bskl_inh X ->
@@ -483,8 +483,8 @@ Lemma ad_precise_all_l_inv : forall Θ Δ Src Tgt,
   exists X0 L,
     X = pskl_all_syn X0 /\
     (forall β, β `notin` L ->
-       Θ ⨟ (add β Δ) ⊢ₚᵣᵃᵈ (open_pskl_wrt_pskl S0 (pskl_var_f β))
-                       ⊑ (open_pskl_wrt_pskl X0 (pskl_var_f β))).
+       {{ Θ ⨟ (add β Δ) ⊢ₚᵣ (open_pskl_wrt_pskl S0 (pskl_var_f β))
+                       ⊑ (open_pskl_wrt_pskl X0 (pskl_var_f β)) }}ad).
 Proof.
   intros Θ Δ Src Tgt H; induction H;
     intros S0 X HeqS HeqT HwfΘ Hgf Hlc;
@@ -509,8 +509,8 @@ Qed.
 
 (** Precision is monotone in Δ (the [_f]-kit transport, at [F = ∅]). *)
 Lemma ad_precise_delta_mono : forall Θ Δ0 Δ P X,
-  Θ ⨟ Δ0 ⊢ₚᵣᵃᵈ P ⊑ X -> Δ0 [<=] Δ ->
-  Θ ⨟ Δ ⊢ₚᵣᵃᵈ P ⊑ X.
+  {{ Θ ⨟ Δ0 ⊢ₚᵣ P ⊑ X }}ad -> Δ0 [<=] Δ ->
+  {{ Θ ⨟ Δ ⊢ₚᵣ P ⊑ X }}ad.
 Proof.
   intros Θ Δ0 Δ P X H Hsub. unfold ad_precise in *.
   apply ad_refine_syn_f_forget with (F := empty).
@@ -605,9 +605,9 @@ Qed.
 (* ⚙ RENAMED from [a_wf_pskl_all_of_one] 2026-08-09 (cleanup audit §8.1c): it collided with a
    DIFFERENT lemma of that name, and this one carries the extra premise [β ∉ Δ]; prop_completeness_consis.v's is strictly stronger. *)
 Lemma a_wf_pskl_all_of_one_delta : forall Θ Δ P β,
-  Θ ⨟ (add β Δ) ⊢ₚₛᵃ (open_pskl_wrt_pskl P (pskl_var_f β)) ->
+  {{ Θ ⨟ (add β Δ) ⊢ₚₛ (open_pskl_wrt_pskl P (pskl_var_f β)) }}a ->
   β `notin` dom Θ -> β `notin` Δ -> β `notin` ftvar_in_pskl P ->
-  Θ ⨟ Δ ⊢ₚₛᵃ (pskl_all_syn P).
+  {{ Θ ⨟ Δ ⊢ₚₛ (pskl_all_syn P) }}a.
 Proof.
   intros Θ Δ P β Hwf HβΘ HβΔ HβP.
   apply a_wf_pskl__all
@@ -621,12 +621,12 @@ Proof.
 Qed.
 
 Lemma ad_precise_all_of_one : forall Θ Δ S0 X0 β,
-  Θ ⨟ (add β Δ) ⊢ₚᵣᵃᵈ (open_pskl_wrt_pskl S0 (pskl_var_f β))
-                  ⊑ (open_pskl_wrt_pskl X0 (pskl_var_f β)) ->
+  {{ Θ ⨟ (add β Δ) ⊢ₚᵣ (open_pskl_wrt_pskl S0 (pskl_var_f β))
+                  ⊑ (open_pskl_wrt_pskl X0 (pskl_var_f β)) }}ad ->
   a_wf_aenv Θ ->
   β `notin` dom Θ -> β `notin` Δ ->
   β `notin` ftvar_in_pskl S0 -> β `notin` ftvar_in_pskl X0 ->
-  Θ ⨟ Δ ⊢ₚᵣᵃᵈ (pskl_all_syn S0) ⊑ (pskl_all_syn X0).
+  {{ Θ ⨟ Δ ⊢ₚᵣ (pskl_all_syn S0) ⊑ (pskl_all_syn X0) }}ad.
 Proof.
   intros Θ Δ S0 X0 β Hpre HwfΘ HβΘ HβΔ HβS HβX.
   unfold ad_precise; cbn [pskl_to_bskl_inh].
@@ -666,18 +666,18 @@ Qed.
 (*                                                                        *)
 (*  κ''s images are Θ-well-formed no matter how deep the ∀-nesting goes,   *)
 (*  which is what makes the extension legal: [ad_refine_syn__hole]'s fill  *)
-(*  premise is [Θ ⨟ ∅ ⊢ₚₛᵃ P] — CLOSED — so a hole under a binder is never *)
+(*  premise is [{{ Θ ⨟ ∅ ⊢ₚₛ P }}a] — CLOSED — so a hole under a binder is never *)
 (*  filled with the bound variable (§3).                                   *)
 (* ===================================================================== *)
 
 Lemma a_guess_ty_witness : forall n Θ0 Θ κs Δ Δ0 Ps X,
   size_pskl Ps <= n ->
   a_wf_aenv Θ ->
-  Θ0 ⨟ Δ0 ⊢ₚₛᵃ Ps ->
+  {{ Θ0 ⨟ Δ0 ⊢ₚₛ Ps }}a ->
   msubst_lc κs ->
   (forall α, ftvar_in_ptyp (msubst_lookup κs α) [<=] add α (dom Θ)) ->
   pskl_ghost_free X -> lc_pskl X ->
-  Θ ⨟ Δ ⊢ₚᵣᵃᵈ (msubst_pskl κs Ps) ⊑ X ->
+  {{ Θ ⨟ Δ ⊢ₚᵣ (msubst_pskl κs Ps) ⊑ X }}ad ->
   forall L, exists Ξ' A κ',
     (* L-BOUNDED CONTEXT QUANTIFICATION (freshness campaign): the guess is
        valid at any context whose mentioned names stay inside [L] — the
@@ -691,8 +691,8 @@ Lemma a_guess_ty_witness : forall n Θ0 Θ κs Δ Δ0 Ps X,
     keys κ' = keys Ξ' /\
     (forall α, α `in` dom Ξ' -> α `notin` L) /\
     Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κ' /\
-    (Ξ' ++ Θ0) ⨟ Δ0 ⊢ₚₛᵃ (ptyp_to_pskl A) /\
-    Θ ⨟ Δ ⊢ₚᵣᵃᵈ (msubst_pskl (κ' ++ κs) (ptyp_to_pskl A)) ⊑ X.
+    {{ (Ξ' ++ Θ0) ⨟ Δ0 ⊢ₚₛ (ptyp_to_pskl A) }}a /\
+    {{ Θ ⨟ Δ ⊢ₚᵣ (msubst_pskl (κ' ++ κs) (ptyp_to_pskl A)) ⊑ X }}ad.
 Proof.
   intros n; induction n as [ | n IH ];
     intros Θ0 Θ κs Δ Δ0 Ps X Hsz HwfΘ HwfPs Hκlc Hκsc Hgf Hlc Hprec L.
@@ -727,12 +727,12 @@ Proof.
       cbn [app ptyp_to_pskl]. exact Hprec.
     + (* ----------------------------- arrow ------------------------------ *)
       cbn in Hsz.
-      assert (HwfPs1 : Θ0 ⨟ Δ0 ⊢ₚₛᵃ Ps1) by (inversion HwfPs; subst; assumption).
-      assert (HwfPs2 : Θ0 ⨟ Δ0 ⊢ₚₛᵃ Ps2) by (inversion HwfPs; subst; assumption).
-      assert (Hpre' : Θ ⨟ Δ ⊢ᵣᵃᵈ
+      assert (HwfPs1 : {{ Θ0 ⨟ Δ0 ⊢ₚₛ Ps1 }}a) by (inversion HwfPs; subst; assumption).
+      assert (HwfPs2 : {{ Θ0 ⨟ Δ0 ⊢ₚₛ Ps2 }}a) by (inversion HwfPs; subst; assumption).
+      assert (Hpre' : {{ Θ ⨟ Δ ⊢ᵣ
                 (bskl_arrow (pskl_to_bskl_inh (msubst_pskl κs Ps1))
                             (pskl_to_bskl_inh (msubst_pskl κs Ps2)))
-                ⊳ (pskl_to_bskl_inh X))
+                ⊳ (pskl_to_bskl_inh X) }}ad)
         by (unfold ad_precise in Hprec; cbn in Hprec; exact Hprec).
       destruct (@ad_precise_arrow_l_inv Θ Δ _ _ Hpre'
                   (msubst_pskl κs Ps1) (msubst_pskl κs Ps2) X
@@ -807,12 +807,12 @@ Proof.
     + (* ------------------------------- ∀ -------------------------------- *)
       cbn in Hsz.
       assert (HwfF : exists Lw, forall β, β `notin` Lw ->
-                Θ0 ⨟ (add β Δ0) ⊢ₚₛᵃ (open_pskl_wrt_pskl Ps0 (pskl_var_f β)))
+                {{ Θ0 ⨟ (add β Δ0) ⊢ₚₛ (open_pskl_wrt_pskl Ps0 (pskl_var_f β)) }}a)
         by (inversion HwfPs; subst; eexists; eassumption).
       destruct HwfF as [Lw HwfF].
-      assert (Hpre' : Θ ⨟ Δ ⊢ᵣᵃᵈ
+      assert (Hpre' : {{ Θ ⨟ Δ ⊢ᵣ
                 (bskl_all_inh (pskl_to_bskl_inh (msubst_pskl κs Ps0)))
-                ⊳ (pskl_to_bskl_inh X))
+                ⊳ (pskl_to_bskl_inh X) }}ad)
         by (unfold ad_precise in Hprec; cbn in Hprec; exact Hprec).
       destruct (@ad_precise_all_l_inv Θ Δ _ _ Hpre' (msubst_pskl κs Ps0) X
                   eq_refl eq_refl HwfΘ Hgf Hlc)
@@ -825,12 +825,12 @@ Proof.
       pick fresh β for (L `union` Lw `union` Lp `union` Δ `union` Δ0
                           `union` ftvar_in_pskl Ps0 `union` ftvar_in_pskl X0
                           `union` dom Θ `union` dom Θ0 `union` dom κs).
-      assert (HwfβPs : Θ0 ⨟ (add β Δ0) ⊢ₚₛᵃ
-                (open_pskl_wrt_pskl Ps0 (pskl_var_f β)))
+      assert (HwfβPs : {{ Θ0 ⨟ (add β Δ0) ⊢ₚₛ
+                (open_pskl_wrt_pskl Ps0 (pskl_var_f β)) }}a)
         by (apply HwfF; clear - Fr; fsetdec).
-      assert (HprβX : Θ ⨟ (add β Δ) ⊢ₚᵣᵃᵈ
+      assert (HprβX : {{ Θ ⨟ (add β Δ) ⊢ₚᵣ
                 (msubst_pskl κs (open_pskl_wrt_pskl Ps0 (pskl_var_f β)))
-                ⊑ (open_pskl_wrt_pskl X0 (pskl_var_f β))).
+                ⊑ (open_pskl_wrt_pskl X0 (pskl_var_f β)) }}ad).
       { rewrite (@msubst_pskl_open_lc_local κs Ps0 β Hκlc
                    ltac:(clear - Fr; solve_notin_auto)).
         apply HprF; clear - Fr; fsetdec. }
@@ -913,7 +913,7 @@ Proof.
                           clear - Hd HβΞ Fr; solve_notin_auto)).
       rewrite <- HopenPA. exact Hpr.
     + (* ------------------------------- ◇ -------------------------------- *)
-      assert (Hpre' : Θ ⨟ Δ ⊢ₚᵣᵃᵈ pskl_hole ⊑ X)
+      assert (Hpre' : {{ Θ ⨟ Δ ⊢ₚᵣ pskl_hole ⊑ X }}ad)
         by (unfold ad_precise in Hprec |- *; cbn in Hprec; exact Hprec).
       destruct (@ad_precise_hole_inv_mono Θ Δ X Hpre' Hgf Hlc)
         as (τ & Heqτ & Hmτ & HwfX).
@@ -943,11 +943,11 @@ Proof.
     + (* ------------------------------ ∀◇ -------------------------------- *)
       cbn in Hsz.
       assert (Hguard : guarded_pskl Ps0) by (inversion HwfPs; subst; assumption).
-      assert (HwfPs0 : Θ0 ⨟ empty ⊢ₚₛᵃ Ps0)
+      assert (HwfPs0 : {{ Θ0 ⨟ empty ⊢ₚₛ Ps0 }}a)
         by (inversion HwfPs; subst; assumption).
-      assert (Hpre' : Θ ⨟ Δ ⊢ᵣᵃᵈ
+      assert (Hpre' : {{ Θ ⨟ Δ ⊢ᵣ
                 (bskl_tophole (pskl_to_bskl_inh (msubst_pskl κs Ps0)))
-                ⊳ (pskl_to_bskl_inh X))
+                ⊳ (pskl_to_bskl_inh X) }}ad)
         by (unfold ad_precise in Hprec; cbn in Hprec; exact Hprec).
       destruct (@ad_precise_tophole_l_inv Θ Δ _ _ Hpre' (msubst_pskl κs Ps0) X
                   eq_refl eq_refl HwfΘ Hgf Hlc)
@@ -974,7 +974,7 @@ Qed.
 (*                                                                        *)
 (*   (a)-(f)  P6-Ss ([a_looksub_solve_complete]) at [Pi := □], [Ψi := ∅],  *)
 (*            so [Ψ' = Ψa]; its precision premise                          *)
-(*            [Θ ⨟ Δ ⊢ᵃᵈ κ□ ⊑ᵖ[∅] ψa] IS the precision hole rule.            *)
+(*            [{{ Θ ⨟ Δ ⊢ˢ κ□ ⊑ᵖ[∅] ψa }}ad] IS the precision hole rule.     *)
 (*   (g)      [ad_partial_precise_complete] (P5b-i) upgrades ⊑ᵖ[Ψa] to     *)
 (*            plain ⊑ against [⌊ψa⌋ˢ] — the paper's step at tex:2764.      *)
 (*   (h),(i)-(12)  the guess.  At SK it is the identity, so κ' = · and     *)
@@ -999,7 +999,7 @@ Qed.
 Theorem a_extract_complete_gen :
   forall n NM M Θ0 Θ κ Δ Ψa Ψsub ψa Q P P0 R' α,
   a_wf_aenv Θ -> a_wf_aenv Θ0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->   (* skmod[SK]{P0}{M} *)
   (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->   (* skmod[TY]{P0}{M} *)
   κ ∷ Θ0 ⊑ Θ ->
@@ -1014,7 +1014,7 @@ Theorem a_extract_complete_gen :
      repaired SolE-FlexR reads the SOLVE block's payloads off [ψa].
      [paper-external wf side condition — docs/WF-SIDE-CONDITIONS.md] *)
   ftvar_in_uskl ψa [<=] dom Θ ->
-  Θ ⨟ Δ ⊢ₚₛᵃ ⌊ ψa ⌋ˢ ->                     (* the paper's wf premise for ψa *)
+  {{ Θ ⨟ Δ ⊢ₚₛ ⌊ ψa ⌋ˢ }}a ->                     (* the paper's wf premise for ψa *)
   delta_def_fresh Δ Θ ->
   (* the join's AMBIENT tag context: the paper's [Ψ,Ψa] — P6-Ss's range
      parameter, surfaced (2026-07-31) for P7b's Sub-ForallL, whose row
@@ -1024,18 +1024,18 @@ Theorem a_extract_complete_gen :
   (* subject = (κR')[ψa/α], EXACTLY the paper's form *)
   ad_pat_sub_g n NM M Ψsub Θ
     (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) Q ->
-  Θ ⨟ empty ⊢ₚₛᵃ
-    (uskl_to_pskl (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R'))) ->
-  Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+  {{ Θ ⨟ empty ⊢ₚₛ
+    (uskl_to_pskl (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R'))) }}a ->
+  {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
   exists Ξ Pa κa,
-    (Θ0 ⊢ P ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ Pa) /\      (* look succeeds *)
-    (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa /\                 (* Θ0,Ξ ⊢ Pa *)
+    ({{ Θ0 ⊢ P ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ Pa }}a) /\      (* look succeeds *)
+    {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\                 (* Θ0,Ξ ⊢ Pa *)
     a_wf_aenv (Ξ ++ Θ0) /\
     a_decls Ξ /\                                 (* Ξ is a flex-decl block *)
     keys κa = keys Ξ /\
     (κa ++ κ) ∷ (Ξ ++ Θ0) ⊑ Θ /\                 (* inc[θa]{Θ0,Ξ}{Θ} *)
     a_inc_equiv Θ0 κ κ Θ /\                      (* inc[θ≡θa]{Θ0}{Θ} *)
-    Θ ⨟ Δ ⊢ₚᵣᵃᵈ (msubst_pskl (κa ++ κ) Pa) ⊑ ⌊ ψa ⌋ˢ.
+    {{ Θ ⨟ Δ ⊢ₚᵣ (msubst_pskl (κa ++ κ) Pa) ⊑ ⌊ ψa ⌋ˢ }}ad.
 Proof.
   intros n NM M Θ0 Θ κ Δ Ψa Ψsub ψa Q P P0 R' α.
   intros HwfΘ HwfΘ0 HwfP0 HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR
@@ -1068,7 +1068,7 @@ Proof.
         & HwfPa & HwfΞc & HαΞc & Hkeysc
         & HForc & Hincc & Heqv & Hκcfresh & Hprec & _).
   (* ---- (g) : P5b-i upgrades ⊑ᵖ[Ψa] to plain ⊑ ⌊ψa⌋ˢ ---- *)
-  assert (Hpre : Θ ⨟ Δ ⊢ₚᵣᵃᵈ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ ⌊ ψa ⌋ˢ).
+  assert (Hpre : {{ Θ ⨟ Δ ⊢ₚᵣ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ ⌊ ψa ⌋ˢ }}ad).
   { eapply ad_partial_precise_complete;
       [ exact HwfΘ | exact Htags | exact Hwfψ | ].
     eapply ad_partial_precise_psi_cong; [ exact Hprec | clear; fsetdec ]. }
@@ -1253,7 +1253,7 @@ Qed.
 Corollary a_extract_complete :
   forall n NM M Θ0 Θ κ Ψa ψa Q P P0 R' α,
   a_wf_aenv Θ -> a_wf_aenv Θ0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->
   (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
   κ ∷ Θ0 ⊑ Θ ->
@@ -1266,21 +1266,21 @@ Corollary a_extract_complete :
   (* ⭐ THE IDEAL GUESS IS Θ-SCOPED (2026-08-05, the SolE-FlexR repair).
      [paper-external wf side condition — docs/WF-SIDE-CONDITIONS.md] *)
   ftvar_in_uskl ψa [<=] dom Θ ->
-  Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψa ⌋ˢ ->
+  {{ Θ ⨟ empty ⊢ₚₛ ⌊ ψa ⌋ˢ }}a ->
   ad_pat_sub_g n NM M Ψa Θ
     (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) Q ->
-  Θ ⨟ empty ⊢ₚₛᵃ
-    (uskl_to_pskl (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R'))) ->
-  Θ ⨟ empty ⊢ᵣᵃᵈ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+  {{ Θ ⨟ empty ⊢ₚₛ
+    (uskl_to_pskl (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R'))) }}a ->
+  {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
   exists Ξ Pa κa,
-    (Θ0 ⊢ P ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ Pa) /\
-    (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa /\
+    ({{ Θ0 ⊢ P ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ Pa }}a) /\
+    {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\
     a_wf_aenv (Ξ ++ Θ0) /\
     a_decls Ξ /\
     keys κa = keys Ξ /\
     (κa ++ κ) ∷ (Ξ ++ Θ0) ⊑ Θ /\
     a_inc_equiv Θ0 κ κ Θ /\
-    Θ ⨟ empty ⊢ₚᵣᵃᵈ (msubst_pskl (κa ++ κ) Pa) ⊑ ⌊ ψa ⌋ˢ.
+    {{ Θ ⨟ empty ⊢ₚᵣ (msubst_pskl (κa ++ κ) Pa) ⊑ ⌊ ψa ⌋ˢ }}ad.
 Proof.
   intros n NM M Θ0 Θ κ Ψa ψa Q P P0 R' α.
   intros HwfΘ HwfΘ0 HwfP0 HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR

@@ -4,7 +4,7 @@
     Headline (Bruno's margin note, declarative.tex): the FN-depth-indexed
     reference relation is a lower bound on [⩽]'s expressive power, i.e.
 
-      Γ ⊢ A ≤ₘ⟨n⟩ B  →  ∅ ⨟ Γ ⊢[mode_fn^n mode_tc] syn{A} ⩽ inh{B}.
+      {{ Γ ⊢ A ≤ₘ⟨n⟩ B }}d  →  {{ ∅ ⨟ Γ ⊢[mode_fn^n mode_tc] syn{A} ⩽ inh{B} }}d.
 
     See [decl/def_extra.v] for the design of [d_shallow_sub_mono]. *)
 
@@ -44,7 +44,7 @@ Qed.
 
 (* Painting preserves well-scopedness. *)
 Lemma ptyp_wf_utyp_wf : forall Γ A,
-    Γ ⊢ₚ A -> Γ ⊢ᵤ (ptyp_to_utyp_syn A).
+    {{ Γ ⊢ₚ A }}d -> {{ Γ ⊢ᵤ (ptyp_to_utyp_syn A) }}d.
 Proof.
   intros Γ A Hwf. induction Hwf; simpl; eauto using d_wf_utyp.
   - eapply d_wf_utyp__all_syn with (L := L). intros α Hα.
@@ -53,7 +53,7 @@ Proof.
 Qed.
 
 Lemma inh_paint_is_ityp : forall Γ A,
-    Γ ⊢ₚ A -> is_ityp (ptyp_to_btyp_inh A).
+    {{ Γ ⊢ₚ A }}d -> is_ityp (ptyp_to_btyp_inh A).
 Proof.
   intros Γ A Hwf. induction Hwf; simpl; eauto using is_ityp.
   - eapply is_ityp__all with (L := L). intros α Hα.
@@ -65,7 +65,7 @@ Qed.
 
 (* Consistency is reflexive across the paint: [syn{A} ∼ inh{A}] for any [A]. *)
 Lemma d_consis_refl_paint : forall Γ A,
-    Γ ⊢ₚ A -> empty ⨟ Γ ⊢ (ptyp_to_utyp_syn A) ∼ (ptyp_to_btyp_inh A).
+    {{ Γ ⊢ₚ A }}d -> {{ empty ⨟ Γ ⊢ (ptyp_to_utyp_syn A) ∼ (ptyp_to_btyp_inh A) }}d.
 Proof.
   intros Γ A Hwf. induction Hwf; simpl.
   - apply d_consis__unit. fsetdec.
@@ -81,7 +81,7 @@ Qed.
    Guarded leaves close by [SubCheck] + consistency-refl; a top-level [∀]
    peels by [SubForallR] then [SubForallL] (instantiated by the bound var). *)
 Lemma d_sub_refl_paint : forall Γ A,
-    Γ ⊢ₚ A -> empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn A) ⩽ (ptyp_to_btyp_inh A).
+    {{ Γ ⊢ₚ A }}d -> {{ empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn A) ⩽ (ptyp_to_btyp_inh A) }}d.
 Proof.
   intros Γ A Hwf.
   induction Hwf as [ Γ | Γ α Hbnd | Γ A1 A2 Hwf1 IH1 Hwf2 IH2 | L Γ A0 Hwf0 IH0 ];
@@ -126,22 +126,22 @@ Qed.
 
 (* At [mode_tc] the RHS of [⩽] is always inherited (is_ityp). *)
 Lemma d_sub_tc_is_ityp : forall Ψ Γ C B,
-    Ψ ⨟ Γ ⊢[ mode_tc ] C ⩽ B -> is_ityp B.
+    {{ Ψ ⨟ Γ ⊢[ mode_tc ] C ⩽ B }}d -> is_ityp B.
 Proof.
   intros Ψ Γ C B H. dependent induction H; eauto.
 Qed.
 
 (** ** Completeness of [⩽] against the paper's shallow subtyping.
 
-      Γ ⊢ A ≤ B  →  ∅ ⨟ Γ ⊢[mode_tc] syn{A} ⩽ inh{B}.
+      {{ Γ ⊢ A ≤ B }}d  →  {{ ∅ ⨟ Γ ⊢[mode_tc] syn{A} ⩽ inh{B} }}d.
 
     Each reference rule maps to the matching [⩽] rule: [refl] ↦
     [d_sub_refl_paint]; [forall_r] ↦ [SubForallR] ([is_ityp] from the IH via
     [d_sub_tc_is_ityp]); [forall_l] ↦ [SubForallL] (the monotype paint is a
     tag-free [is_ttyp]). *)
 Theorem d_shallow_sub_complete : forall Γ A A',
-    Γ ⊢ A ≤ A' ->
-    empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn A) ⩽ (ptyp_to_btyp_inh A').
+    {{ Γ ⊢ A ≤ A' }}d ->
+    {{ empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn A) ⩽ (ptyp_to_btyp_inh A') }}d.
 Proof.
   intros Γ A A' Hsub. induction Hsub; simpl in *.
   - (* refl *)
@@ -202,10 +202,10 @@ Qed.
    inversion.  The mono domain is still FORCED: any [btyp] erasing to a
    monotype [A] is [inh A] ([mono_btyp_to_ptyp_inv]), whatever the mode. *)
 Lemma mono_lambda_anno_redundant_gen : forall m Γ ea B,
-    Γ ⊢[ m ] ea ⦂ B ->
+    {{ Γ ⊢[ m ] ea ⦂ B }}d ->
     forall A e, ea = exp_abs_anno A e ->
     mono_ptyp A ->
-    Γ ⊢[ m ] (exp_abs e) ⦂ B.
+    {{ Γ ⊢[ m ] (exp_abs e) ⦂ B }}d.
 Proof.
   intros m Γ ea B Hty. induction Hty; intros A0 e0 Heq Hmono;
     try discriminate Heq.
@@ -235,8 +235,8 @@ Qed.
    (= [mono_btyp_to_ptyp_inv]); stating it that way avoids the erasure equation. *)
 Theorem mono_lambda_anno_redundant : forall m Γ A e B2,
     mono_ptyp A ->
-    Γ ⊢[ m ] (exp_abs_anno A e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B2) ->
-    Γ ⊢[ m ] (exp_abs e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B2).
+    {{ Γ ⊢[ m ] (exp_abs_anno A e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B2) }}d ->
+    {{ Γ ⊢[ m ] (exp_abs e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B2) }}d.
 Proof.
   intros m Γ A e B2 Hmono Hty.
   eapply mono_lambda_anno_redundant_gen;
