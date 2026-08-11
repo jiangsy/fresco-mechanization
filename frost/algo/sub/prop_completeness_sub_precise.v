@@ -26,6 +26,7 @@ Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo_decl.def_subtyping.
+Require Import src.frost.algo_decl.prop_sub_mirrors.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_stability.

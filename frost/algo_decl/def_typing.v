@@ -39,7 +39,7 @@
     shows the leaf datum is NOT recoverable from a plain one and IS reachable
     here: cex/cex_ad_pat_join_not_leaf_valid.v.  This is the paper's own
     AUGMENTED consistency-solution notion propagating one layer up.
-    [ad_pat_sub_of_v] recovers the plain premise wherever only a declarative
+    [ad_pat_sub_of_v] (prop_sub_mirrors.v) recovers the plain premise wherever only a declarative
     subtyping derivation is wanted.
 
     ⚙ SORTS.  [ad_pat_sub] is the paper's ALL-IN-ONE subtyping box

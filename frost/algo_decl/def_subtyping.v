@@ -190,7 +190,7 @@ where "{{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad" :=
        non-incrementing rules recurse on structural sub-derivations, so
        the main induction uses lex(fuel, derivation)).
 
-    The erasure [_g → ad_pat_sub] is [ad_pat_sub_g_of] below.  ⚠️ The other
+    The erasure [_g → ad_pat_sub] is [ad_pat_sub_g_of] (prop_sub_mirrors.v).  ⚠️ The other
     direction ([ad_pat_sub] → [_g], which is what a COMPLETENESS corollary over
     the declarative system would need) is still owed — but it is now purely a
     FUEL question: the hygiene is already there.  See
@@ -287,7 +287,7 @@ Inductive ad_pat_sub_g :
 (*  not invoke consistency completeness, and their subject's refinement   *)
 (*  is derivable from the rule's own wf premise.                          *)
 (*                                                                        *)
-(*  [ad_pat_sub_gv_forget] recovers the plain mirror wherever leaf data   *)
+(*  [ad_pat_sub_gv_forget] (prop_sub_mirrors.v) recovers the plain mirror   *)
 (*  is not needed (in particular for every P5/P6 invocation).             *)
 (* ===================================================================== *)
 
@@ -365,85 +365,6 @@ Inductive ad_pat_sub_gv :
     ad_pat_sub_gv n NM (mode_fn M) Ψ Θ (ptyp_to_uskl_syn τ) Q ->
     ad_pat_sub_gv n NM (mode_fn M) Ψ Θ (uskl_var_f α) Q.
 
-(** Forgetting the leaf data recovers the plain hygienic mirror. *)
-Lemma ad_pat_sub_gv_forget : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_gv n NM M Ψ Θ R Q ->
-  ad_pat_sub_g n NM M Ψ Θ R Q.
-Proof.
-  intros * H; induction H; eauto using ad_pat_sub_g.
-Qed.
-
-(* ===================================================================== *)
-(*  The three ERASURES + fuel monotonicity.                               *)
-(*                                                                        *)
-(*  ⚙ [ad_pat_sub_g_of] and [ad_pat_sub_gv_fuel_weaken] are HERE, not with *)
-(*  the completeness files: the SOUNDNESS side has to CONCLUDE [_gv]       *)
-(*  ([ad_pat] / [ad_sd_typing] embed the leaf-valid join, so               *)
-(*  thm:complete-skeleton/type-inference can consume it), and              *)
-(*  algo/prop_soundness_sub.v sits BEFORE both of them in the dependency   *)
-(*  order.  Both are plain inductions over the mirrors and need nothing    *)
-(*  this file does not already import.                                     *)
-(* ===================================================================== *)
-
-(** Erase hygiene + fuel: a hygienic derivation is a plain one. *)
-Lemma ad_pat_sub_g_of : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_g n NM M Ψ Θ R Q ->
-  {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad.
-Proof.
-  intros n NM M Ψ Θ R Q H. induction H.
-  - eapply ad_pat_sub__infer; eauto.
-  - eapply ad_pat_sub__check; eauto.
-  - eapply ad_pat_sub__forall_r; eauto.
-  - eapply ad_pat_sub__univ_ghost_r; eauto.
-  - eapply ad_pat_sub__arrow; eauto.
-  - eapply ad_pat_sub__forall_l_tagged; eauto.
-  - eapply ad_pat_sub__forall_l_untagged; eauto.
-  - eapply ad_pat_sub__ghost; eauto.
-  - eapply ad_pat_sub__ghostg; eauto.
-  - eapply ad_pat_sub__univ_ghost_l; eauto.
-  - eapply ad_pat_sub__univ_ghost_lg; eauto.
-  - eapply ad_pat_sub__flex_mono; eauto.
-Qed.
-
-(** Fuel monotonicity for the leaf-valid hygienic join.  The fuel is the
-    declarative derivation's HEIGHT, so a derivation of height [n] is also
-    one of every larger height.  Needed because the permutation below
-    returns the family at whatever height the extraction yields, while
-    [a_sub_complete_forall_r] wants it at exactly [n] for a conclusion at
-    [S n]. *)
-Lemma ad_pat_sub_gv_fuel_weaken : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_gv n NM M Ψ Θ R Q ->
-  forall m, n <= m -> ad_pat_sub_gv m NM M Ψ Θ R Q.
-Proof.
-  intros n NM M Ψ Θ R Q H; induction H; intros m Hle;
-    try solve [ econstructor; eauto ].
-  - (* forall_r : the conclusion's fuel is [S n] *)
-    destruct m as [ | m' ]; [ lia | ].
-    apply ad_pat_sub_gv__forall_r with (L := L).
-    intros α Hα. apply H0; [ exact Hα | lia ].
-  - (* arrow *)
-    destruct m as [ | m' ]; [ lia | ].
-    eapply ad_pat_sub_gv__arrow;
-      [ exact H | exact H0 | apply IHad_pat_sub_gv; lia | assumption ].
-  - (* forall_l_tagged *)
-    destruct m as [ | m' ]; [ lia | ].
-    eapply ad_pat_sub_gv__forall_l_tagged;
-      [ eassumption | eassumption | eassumption | eassumption | eassumption
-      | apply IHad_pat_sub_gv; lia ].
-  - (* forall_l_untagged *)
-    destruct m as [ | m' ]; [ lia | ].
-    eapply ad_pat_sub_gv__forall_l_untagged;
-      [ eassumption | eassumption | eassumption | eassumption | eassumption
-      | apply IHad_pat_sub_gv; lia ].
-Qed.
-
-(** The composite erasure the [ad_pat] / [ad_sd_typing] consumers want:
-    a leaf-valid join IS a plain declarative subtyping derivation. *)
-Lemma ad_pat_sub_of_gv : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_gv n NM M Ψ Θ R Q ->
-  {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad.
-Proof. intros * H. exact (ad_pat_sub_g_of (ad_pat_sub_gv_forget H)). Qed.
-
 (** ⭐ THE LEAF-VALID JOIN WITH THE FUEL FORGOTTEN — what the
     declarative-in-algo judgements [ad_pat] / [ad_sd_typing] embed in their
     base rows (hand-off §6.2).  The fuel is an artefact of the completeness
@@ -456,12 +377,6 @@ Proof. intros * H. exact (ad_pat_sub_g_of (ad_pat_sub_gv_forget H)). Qed.
 Definition ad_pat_sub_v (NM : a_sub_mode) (M : mode) (Ψ : atoms)
     (Θ : aenv) (R : uskl) (Q : bskl) : Prop :=
   exists n, ad_pat_sub_gv n NM M Ψ Θ R Q.
-
-(** A leaf-valid join IS a plain declarative subtyping derivation. *)
-Lemma ad_pat_sub_of_v : forall NM M Ψ Θ R Q,
-  ad_pat_sub_v NM M Ψ Θ R Q ->
-  {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad.
-Proof. intros * [n H]. exact (ad_pat_sub_of_gv H). Qed.
 
 (* ===================================================================== *)
 (*  Partial precision  [{{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad]                       *)

@@ -64,6 +64,7 @@ Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo_decl.def_subtyping.
+Require Import src.frost.algo_decl.prop_sub_mirrors.
 Require Import src.frost.algo.prop_inc.           (* a_binds_tvar_weaken_mid *)
 Require Import src.frost.algo.prop_refine.        (* lc_pskl_to_bskl_inh, a_wf_pskl_delta_mono *)
 Require Import src.frost.algo.consis.prop_completeness_consis. (* ad_precise_f *)
