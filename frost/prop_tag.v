@@ -7,7 +7,7 @@
     §5.2).  Every subtyping judgment in the tree renders it that way as of
     2026-08-11, and making that affordable rests on being able to MOVE a
     derivation's instantiation tags: this file is the syntactic half of that
-    primitive, decl/prop_etag_swap.v the judgmental half.
+    primitive, decl/prop_tag_swap.v the judgmental half.
 
     §0 is the other half of "affordable", and the cheaper one: the hygiene
     premise has to survive every structural lemma, and all but one of them
@@ -30,16 +30,16 @@
     resolved by import order, and the two [swap_atoms_notin]s were DIFFERENT
     facts.  Merged 2026-08-11.
 
-    ⚙ ε tags are plain atoms occupying a slot in [utyp_all_etag] /
-    [uskl_all_etag], not a locally-nameless sort, so lngen generates nothing
+    ⚙ ε tags are plain atoms occupying a slot in [utyp_all_tag] /
+    [uskl_all_tag], not a locally-nameless sort, so lngen generates nothing
     for them: the swap, its action on atom SETS (tag contexts are [atoms]) and
     every transport lemma below are hand-written.
 
     ⚙ RESTART NOTE (2026-08-11) — §2's [uskl] HALF WAS DELETED
-    ([swap_etag_in_uskl] and its nine transport lemmas: [_open_rec] / [_open] /
-    [_open_var], [ftvar_], [lc_], [ftag_], [_fresh_eq], [is_tskl_swap_etag],
-    [guarded_uskl_swap_etag]).  Its only consumer was
-    [d_pat_sub_swap_etag] (decl/prop_etag_swap.v), which was itself
+    ([swap_tag_in_uskl] and its nine transport lemmas: [_open_rec] / [_open] /
+    [_open_var], [ftvar_], [lc_], [ftag_], [_fresh_eq], [is_tskl_swap_tag],
+    [guarded_uskl_swap_tag]).  Its only consumer was
+    [d_pat_sub_swap_tag] (decl/prop_tag_swap.v), which was itself
     consumer-less symmetry: the CST repair the whole file exists for runs at
     the TYPE sort.  To re-derive, copy the [utyp] half below and replace
     [utyp]/[C] by [uskl]/[R], adding the four ghost constructors — each proof
@@ -220,25 +220,25 @@ Qed.
 (*  §2  THE ACTION ON TYPES                                               *)
 (* ===================================================================== *)
 
-Fixpoint swap_etag_in_utyp (ε1 ε2 : atom) (C : utyp) : utyp :=
+Fixpoint swap_tag_in_utyp (ε1 ε2 : atom) (C : utyp) : utyp :=
   match C with
   | utyp_unit => utyp_unit
   | utyp_var_b n => utyp_var_b n
   | utyp_var_f α => utyp_var_f α
   | utyp_arrow C1 C2 =>
-      utyp_arrow (swap_etag_in_utyp ε1 ε2 C1) (swap_etag_in_utyp ε1 ε2 C2)
-  | utyp_all_syn C0 => utyp_all_syn (swap_etag_in_utyp ε1 ε2 C0)
-  | utyp_all_etag ε C0 =>
-      utyp_all_etag (swap_atom ε1 ε2 ε) (swap_etag_in_utyp ε1 ε2 C0)
+      utyp_arrow (swap_tag_in_utyp ε1 ε2 C1) (swap_tag_in_utyp ε1 ε2 C2)
+  | utyp_all_syn C0 => utyp_all_syn (swap_tag_in_utyp ε1 ε2 C0)
+  | utyp_all_tag ε C0 =>
+      utyp_all_tag (swap_atom ε1 ε2 ε) (swap_tag_in_utyp ε1 ε2 C0)
   end.
 
 (** ** Commutation with opening, and with type-variable substitution.
     A swap touches only the ε slots, which no type-level operation reads. *)
 
-Lemma swap_etag_in_utyp_open_rec : forall ε1 ε2 C1 C2 k,
-  swap_etag_in_utyp ε1 ε2 (open_utyp_wrt_utyp_rec k C2 C1)
-  = open_utyp_wrt_utyp_rec k (swap_etag_in_utyp ε1 ε2 C2)
-      (swap_etag_in_utyp ε1 ε2 C1).
+Lemma swap_tag_in_utyp_open_rec : forall ε1 ε2 C1 C2 k,
+  swap_tag_in_utyp ε1 ε2 (open_utyp_wrt_utyp_rec k C2 C1)
+  = open_utyp_wrt_utyp_rec k (swap_tag_in_utyp ε1 ε2 C2)
+      (swap_tag_in_utyp ε1 ε2 C1).
 Proof.
   intros ε1 ε2 C1. induction C1; intros C2 k; simpl; try reflexivity;
     try (rewrite IHC1; reflexivity);
@@ -246,42 +246,42 @@ Proof.
   destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
 Qed.
 
-Lemma swap_etag_in_utyp_open : forall ε1 ε2 C1 C2,
-  swap_etag_in_utyp ε1 ε2 (open_utyp_wrt_utyp C1 C2)
-  = open_utyp_wrt_utyp (swap_etag_in_utyp ε1 ε2 C1)
-      (swap_etag_in_utyp ε1 ε2 C2).
+Lemma swap_tag_in_utyp_open : forall ε1 ε2 C1 C2,
+  swap_tag_in_utyp ε1 ε2 (open_utyp_wrt_utyp C1 C2)
+  = open_utyp_wrt_utyp (swap_tag_in_utyp ε1 ε2 C1)
+      (swap_tag_in_utyp ε1 ε2 C2).
 Proof.
-  intros. unfold open_utyp_wrt_utyp. apply swap_etag_in_utyp_open_rec.
+  intros. unfold open_utyp_wrt_utyp. apply swap_tag_in_utyp_open_rec.
 Qed.
 
-Lemma swap_etag_in_utyp_open_var : forall ε1 ε2 C α,
-  swap_etag_in_utyp ε1 ε2 (open_utyp_wrt_utyp C (utyp_var_f α))
-  = open_utyp_wrt_utyp (swap_etag_in_utyp ε1 ε2 C) (utyp_var_f α).
+Lemma swap_tag_in_utyp_open_var : forall ε1 ε2 C α,
+  swap_tag_in_utyp ε1 ε2 (open_utyp_wrt_utyp C (utyp_var_f α))
+  = open_utyp_wrt_utyp (swap_tag_in_utyp ε1 ε2 C) (utyp_var_f α).
 Proof.
-  intros. unfold open_utyp_wrt_utyp. apply swap_etag_in_utyp_open_rec.
+  intros. unfold open_utyp_wrt_utyp. apply swap_tag_in_utyp_open_rec.
 Qed.
 
 (** ** Free TYPE variables and local closure are blind to the swap. *)
 
-Lemma ftvar_swap_etag_in_utyp : forall ε1 ε2 C,
-  ftvar_in_utyp (swap_etag_in_utyp ε1 ε2 C) = ftvar_in_utyp C.
+Lemma ftvar_swap_tag_in_utyp : forall ε1 ε2 C,
+  ftvar_in_utyp (swap_tag_in_utyp ε1 ε2 C) = ftvar_in_utyp C.
 Proof. induction C; simpl; congruence. Qed.
 
-Lemma lc_swap_etag_in_utyp : forall ε1 ε2 C,
-  lc_utyp C -> lc_utyp (swap_etag_in_utyp ε1 ε2 C).
+Lemma lc_swap_tag_in_utyp : forall ε1 ε2 C,
+  lc_utyp C -> lc_utyp (swap_tag_in_utyp ε1 ε2 C).
 Proof.
   intros ε1 ε2 C H; induction H; simpl; try solve [ constructor; auto ].
   - apply lc_utyp_all_syn. intros α.
-    rewrite <- swap_etag_in_utyp_open_var. auto.
-  - apply lc_utyp_all_etag. intros α.
-    rewrite <- swap_etag_in_utyp_open_var. auto.
+    rewrite <- swap_tag_in_utyp_open_var. auto.
+  - apply lc_utyp_all_tag. intros α.
+    rewrite <- swap_tag_in_utyp_open_var. auto.
 Qed.
 
 (** ** The ε-tag collectors transport EXACTLY — this is the fact the whole
     freshening rests on. *)
 
-Lemma ftag_swap_etag_in_utyp : forall ε1 ε2 C,
-  ftag_in_utyp (swap_etag_in_utyp ε1 ε2 C)
+Lemma ftag_swap_tag_in_utyp : forall ε1 ε2 C,
+  ftag_in_utyp (swap_tag_in_utyp ε1 ε2 C)
   [=] swap_atoms ε1 ε2 (ftag_in_utyp C).
 Proof.
   intros ε1 ε2 C. induction C; simpl;
@@ -292,9 +292,9 @@ Proof.
 Qed.
 
 (** A term with no tag to move is fixed by the swap. *)
-Lemma swap_etag_in_utyp_fresh_eq : forall ε1 ε2 C,
+Lemma swap_tag_in_utyp_fresh_eq : forall ε1 ε2 C,
   ε1 `notin` ftag_in_utyp C -> ε2 `notin` ftag_in_utyp C ->
-  swap_etag_in_utyp ε1 ε2 C = C.
+  swap_tag_in_utyp ε1 ε2 C = C.
 Proof.
   intros ε1 ε2 C. induction C; simpl; intros H1 H2; try reflexivity.
   - rewrite IHC1, IHC2; try reflexivity; clear - H1 H2; fsetdec.
@@ -305,20 +305,20 @@ Qed.
 
 (** ** The tagged-sort predicates transport. *)
 
-Lemma is_ttyp_swap_etag : forall ε1 ε2 C,
-  is_ttyp C -> is_ttyp (swap_etag_in_utyp ε1 ε2 C).
+Lemma is_ttyp_swap_tag : forall ε1 ε2 C,
+  is_ttyp C -> is_ttyp (swap_tag_in_utyp ε1 ε2 C).
 Proof.
   intros ε1 ε2 C H; induction H; simpl; try solve [ constructor; auto ].
-  apply is_ttyp__all_etag with (L := L). intros α Hα.
-  rewrite <- swap_etag_in_utyp_open_var. auto.
+  apply is_ttyp__all_tag with (L := L). intros α Hα.
+  rewrite <- swap_tag_in_utyp_open_var. auto.
 Qed.
 
-Lemma guarded_utyp_swap_etag : forall ε1 ε2 C,
-  guarded_utyp C -> guarded_utyp (swap_etag_in_utyp ε1 ε2 C).
+Lemma guarded_utyp_swap_tag : forall ε1 ε2 C,
+  guarded_utyp C -> guarded_utyp (swap_tag_in_utyp ε1 ε2 C).
 Proof.
   intros ε1 ε2 C H; inversion H; subst; simpl;
     [ apply guarded_utyp__unit | apply guarded_utyp__var
-    | apply guarded_utyp__arrow; apply lc_swap_etag_in_utyp; assumption ].
+    | apply guarded_utyp__arrow; apply lc_swap_tag_in_utyp; assumption ].
 Qed.
 
 (* ===================================================================== *)
@@ -372,7 +372,7 @@ Qed.
 (** ⭐ THE TWO FACTS A FRESHENING STEP NEEDS.  A swap that leaves a set [T]
     alone preserves disjointness from it; and if it moves one member of
     [S ∩ T] to an atom outside both, the intersection strictly shrinks — which
-    is the measure the iteration in decl/prop_etag_swap.v decreases. *)
+    is the measure the iteration in decl/prop_tag_swap.v decreases. *)
 
 Lemma swap_atoms_shrink : forall ε1 ε2 S T,
   ε1 `in` S -> ε1 `in` T -> ε2 `notin` S -> ε2 `notin` T ->

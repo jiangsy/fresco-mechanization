@@ -283,7 +283,7 @@ transitivity) un-provable: composing two derivations can legitimately reuse a
 tag, which a set absorbs but disjoint-`++` cannot. Both premises were
 **dropped** (paper-faithful set semantics). B.2 then closes with a **superset**
 conclusion `∃ Δc, incl (Δa ++ Δb) Δc ∧ …`: the superset is *not* slack but
-necessary — the **tagged→syn→inh** path (an etag-∀ syn-matched against the
+necessary — the **tagged→syn→inh** path (an tag-∀ syn-matched against the
 synthesised middle, then inh-matched against the target) mints a tag that is in
 the output but neither input. Conversely the middle MUST stay syn (an inh
 middle drops a recorded tag, breaking the superset) — and this is faithful,
@@ -293,7 +293,7 @@ consistency, hence synthesised. Proof uses an explicit witness *function*
 endpoints, invariant under the opening variable), which sidesteps the cofinite
 "different Δc per opening X" obstruction. The same superset shape now applies
 to B.4 (`d_sub_gen_trans{,_ti_lhs}`); `d_sub_gen_trans_btyp_nil` recovers the
-nil output for the etag-free `btyp_to_gutyp` LHS that the gen-typing `__sub`
+nil output for the tag-free `btyp_to_gutyp` LHS that the gen-typing `__sub`
 consumes.
 
 ### 4.3 Binder freshness: cofinite in `decl/`, EXISTS-FRESH in `algo/`
@@ -901,7 +901,7 @@ A `syn{∀^δ α.T}` is either **tagged-syn** (`δ = ε`, paper writes
 `syn{∀^ε α.T}`) or **untagged-syn** (`δ = ·`, paper writes `syn{∀α.T}`).
 The split mechanization maps these to two distinct constructors:
 
-- `δ = ε ↦ utyp_all_etag ε C` / `uskl_all_etag ε R`
+- `δ = ε ↦ utyp_all_tag ε C` / `uskl_all_tag ε R`
 - `δ = ·  ↦ utyp_all_syn C` / `uskl_all_syn R`
 
 The corresponding bidirectional outputs are `btyp_all_syn`,
@@ -925,7 +925,7 @@ than represented as `is_utyp` / `is_uskel` predicate cases.
 
 **History note.** Older docs discuss `typ_all_plain` and a unified
 `typ` encoding.  That history is obsolete after the split-syntax port;
-new code should use `utyp_all_syn` / `utyp_all_etag` and the skeleton
+new code should use `utyp_all_syn` / `utyp_all_tag` and the skeleton
 counterparts directly.
 
 **Rule ordering preference.** In `decl/def_extra.v` the tagged and
@@ -964,7 +964,7 @@ judgment whose outer LHS is written as `bid{T}` in
   its domain consistency premise and codomain subtyping premise are over
   `gutyp` components, while the result type remains `btyp`.
 - `ForallL` is native to the generalized relation over
-  `gutyp_all_etag`; the split syntax also carries the corresponding
+  `gutyp_all_tag`; the split syntax also carries the corresponding
   untagged `gutyp_all_syn` case, matching the ordinary δ-erasure split.
 
 The maps `utyp_to_gutyp` and `btyp_to_gutyp` are explicit injections,
@@ -1102,7 +1102,7 @@ into the colour discipline. A few patterns to watch for:
 | ∀-introduction in TI mode | `is_value e` (value restriction) | `d_typing__forall` |
 | arrow-position pattern coerces freely | `mode_fn m` (function-position mode) | `d_pat_sub__arg` |
 | skeleton input to a refinement rule | `is_inh_skel` / `is_syn_skel` matching colour expectation | `d_refine_*` family |
-| `d_consis` LHS shape "looks too permissive" | `d_wf_typ Γ T` to rule out `typ_all_etag` LHS | `d_consis_sub_trans` (D10 / paper B.3) |
+| `d_consis` LHS shape "looks too permissive" | `d_wf_typ Γ T` to rule out `typ_all_tag` LHS | `d_consis_sub_trans` (D10 / paper B.3) |
 
 A standalone helper lemma that drops one of these contextual
 predicates is almost always provably false on isolated derivations,

@@ -36,7 +36,6 @@ Require Import src.frost.algo_decl.def_decl_algo.
 Require Import src.frost.algo_decl.prop_ctx_mono.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_stability.
-Require Import src.frost.deco_algo.prop_decorate.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.consis.prop_soundness_consis.

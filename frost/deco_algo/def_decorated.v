@@ -49,20 +49,6 @@ Reserved Notation "{{ C ⊩ ψ ⤳ Ψ }}da"
    [decl/def_extra.v] — which is upstream of this file — now needs the
    erasure.  The notation [⌊R⌋ˢ] moved with it. *)
 
-(** Plain skeletons as (untagged) unresolved skeletons: the embedding used
-    by the flexible-variable rules, which are inherited unchanged from the
-    ordinary algorithmic consistency (their subjects are plain skeletons). *)
-Fixpoint pskl_to_uskl (P : pskl) : uskl :=
-  match P with
-  | pskl_unit => uskl_unit
-  | pskl_var_b n => uskl_var_b n
-  | pskl_var_f α => uskl_var_f α
-  | pskl_arrow P1 P2 => uskl_arrow (pskl_to_uskl P1) (pskl_to_uskl P2)
-  | pskl_all_syn P0 => uskl_all_syn (pskl_to_uskl P0)
-  | pskl_hole => uskl_hole
-  | pskl_tophole P0 => uskl_tophole (pskl_to_uskl P0)
-  end.
-
 (** Ghost-free unresolved skeletons: no ghosts of any kind.  Used for (i) the
     [N = TY] instantiation candidates (decorated TYPES φ, once combined with
     [is_tskl]) and (ii) the dotted-ghost-freeness side condition of the
@@ -73,10 +59,10 @@ Inductive uskl_ghost_free : uskl -> Prop :=
 | uskl_ghost_free__arrow : forall R1 R2,
     uskl_ghost_free R1 -> uskl_ghost_free R2 ->
     uskl_ghost_free (uskl_arrow R1 R2)
-| uskl_ghost_free__all_etag : forall L ε R,
+| uskl_ghost_free__all_tag : forall L ε R,
     (forall α, α `notin` L ->
        uskl_ghost_free (open_uskl_wrt_uskl R (uskl_var_f α))) ->
-    uskl_ghost_free (uskl_all_etag ε R)
+    uskl_ghost_free (uskl_all_tag ε R)
 | uskl_ghost_free__all_syn : forall L R,
     (forall α, α `notin` L ->
        uskl_ghost_free (open_uskl_wrt_uskl R (uskl_var_f α))) ->
@@ -154,7 +140,7 @@ Inductive a_consistag :
          ⊣ ((α ~ abind_tvar) ++ Θ1) }}da) ->
     Ψ [=] add ε Ψ0 ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_all_syn P0) | Ψ ]
-      (uskl_all_etag ε R) ∼ (pskl_all_syn Q) ⊣ Θ1 }}da
+      (uskl_all_tag ε R) ∼ (pskl_all_syn Q) ⊣ Θ1 }}da
 | a_consistag__forall_inh_untagged : forall L Δ1 Δ2 Ψ Θ0 Θ1 P0 R Q,
     (forall α, α `notin` L ->                                 (* ForallInh, β1=· *)
        {{ ((α ~ abind_tvar) ++ Θ0)
@@ -173,7 +159,7 @@ Inductive a_consistag :
          (open_pskl_wrt_pskl Q (pskl_var_f α))
          ⊣ ((α ~ abind_tvar) ++ Θ1) }}da) ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) | Ψ ]
-      (uskl_all_etag ε R) ∼ (pskl_all_syn Q) ⊣ Θ1 }}da
+      (uskl_all_tag ε R) ∼ (pskl_all_syn Q) ⊣ Θ1 }}da
 | a_consistag__forall_syn_untagged : forall L Δ1 Δ2 Ψ Θ0 Θ1 P0 R Q,
     (forall α, α `notin` L ->                                 (* ForallSyn, β1=· *)
        {{ ((α ~ abind_tvar) ++ Θ0)
@@ -303,7 +289,7 @@ Inductive a_subtag :
        ⌊ ψg ⌋ˢ = P1 ->                                        (* ⌊ψg⌋ = P1 *)
        {{ (Ξ ++ Θ0) ⊢[ NM | M | P0 | (Ψ `union` Ψg) ]
          (open_uskl_wrt_uskl R ψg) ⩽ Q ⊣ Θ1 }}da) ->
-    {{ Θ0 ⊢[ NM | M | P0 | Ψ ] (uskl_all_etag ε R) ⩽ Q ⊣ Θ1 }}da
+    {{ Θ0 ⊢[ NM | M | P0 | Ψ ] (uskl_all_tag ε R) ⩽ Q ⊣ Θ1 }}da
 | a_subtag__forall_l_untagged : forall L NM M P0 Ψ Θ0 Θ1 R Q Ξ P1,
     M <> mode_ti ->                                           (* ForallL, β1=· *)
     (guarded_pskl P0 \/ P0 = pskl_hole) ->
@@ -414,7 +400,7 @@ Inductive a_solvetag_sub : uskl -> mode -> pskl -> atoms -> Prop :=
 | a_solvetag_sub__forall_l : forall L ε ψ M Q Ψ,              (* SSub-ForallL *)
     (forall β, β `notin` L ->
        {{ (open_uskl_wrt_uskl ψ (uskl_var_f β)) ≼[ M ] Q ⤳ Ψ }}da) ->
-    {{ (uskl_all_etag ε ψ) ≼[ M ] Q ⤳ Ψ }}da
+    {{ (uskl_all_tag ε ψ) ≼[ M ] Q ⤳ Ψ }}da
 | a_solvetag_sub__univ_ghost_lg : forall ψ M Q Ψ,             (* SSub-UnivGhostLG *)
     {{ ψ ≼[ M ] Q ⤳ Ψ }}da ->
     {{ (uskl_topholeg ψ) ≼[ M ] Q ⤳ Ψ }}da
@@ -460,14 +446,14 @@ with a_solvetag_eq : uskl -> pskl -> atoms -> Prop :=
        {{ (open_uskl_wrt_uskl ψ (uskl_var_f β)) ∼
          (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ Ψ0 }}da) ->
     Ψ [=] add ε Ψ0 ->
-    {{ (uskl_all_etag ε ψ) ∼ (pskl_all_syn Q) ⤳ Ψ }}da
+    {{ (uskl_all_tag ε ψ) ∼ (pskl_all_syn Q) ⤳ Ψ }}da
 | a_solvetag_eq__univ_ghostg : forall ψ Q Ψ,                  (* SEq-UnivGhostG *)
     {{ ψ ∼ Q ⤳ Ψ }}da ->
     {{ (uskl_topholeg ψ) ∼ (pskl_tophole Q) ⤳ Ψ }}da
 | a_solvetag_eq__forall_syn : forall L ε ψ Q Ψ,               (* SEq-ForallSyn *)
     (forall β, β `notin` L ->
        {{ (open_uskl_wrt_uskl ψ (uskl_var_f β)) ∼ (pskl_tophole Q) ⤳ Ψ }}da) ->
-    {{ (uskl_all_etag ε ψ) ∼ (pskl_tophole Q) ⤳ Ψ }}da
+    {{ (uskl_all_tag ε ψ) ∼ (pskl_tophole Q) ⤳ Ψ }}da
 | a_solvetag_eq__univ_ghost_r : forall ψ Q Ψ,                 (* SEq-UnivGhostR *)
     guarded_pskl ⌊ ψ ⌋ˢ ->
     {{ ψ ∼ Q ⤳ Ψ }}da ->

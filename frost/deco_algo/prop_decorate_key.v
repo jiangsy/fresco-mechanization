@@ -29,7 +29,6 @@ Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.consis.prop_consis_rename.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_stability.
-Require Import src.frost.deco_algo.prop_decorate.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.sub.prop_solve_sub.
@@ -67,8 +66,8 @@ Proof.
   rewrite (subst_uskl_in_uskl_fresh_eq R); [ reflexivity | assumption ].
 Qed.
 
-Lemma pskl_to_uskl_not_etag : forall P ε ψ,
-  pskl_to_uskl P <> uskl_all_etag ε ψ.
+Lemma pskl_to_uskl_not_tag : forall P ε ψ,
+  pskl_to_uskl P <> uskl_all_tag ε ψ.
 Proof. destruct P; simpl; discriminate. Qed.
 
 Lemma pskl_to_uskl_not_holeg : forall P,
@@ -492,24 +491,24 @@ Proof.
     + (* R0 = var : the strip is never a tagged ∀ *)
       revert HeqT.
       destruct_if as [_ | Hc]; intro HeqT;
-      [ exfalso; eapply pskl_to_uskl_not_etag; symmetry; exact HeqT
+      [ exfalso; eapply pskl_to_uskl_not_tag; symmetry; exact HeqT
       | discriminate HeqT ].
-    + (* R0 = all_etag ε0 R0 *)
+    + (* R0 = all_tag ε0 R0 *)
       match goal with
-      | He : uskl_all_etag _ _ = uskl_all_etag ?e (subst_uskl_in_uskl _ _ ?Rb)
+      | He : uskl_all_tag _ _ = uskl_all_tag ?e (subst_uskl_in_uskl _ _ ?Rb)
         |- _ => idtac
       end.
       inversion HeqT; subst. clear HeqT.
       inversion HlcS0; subst.
       inversion HD; subst.
       * (* LS-Absent *)
-        assert (HαR : αv `notin` ftvar_in_uskl (uskl_all_etag ε0 R0)).
-        { rewrite <- (ftvar_in_pskl_uskl_to_pskl (uskl_all_etag ε0 R0)).
+        assert (HαR : αv `notin` ftvar_in_uskl (uskl_all_tag ε0 R0)).
+        { rewrite <- (ftvar_in_pskl_uskl_to_pskl (uskl_all_tag ε0 R0)).
           assumption. }
         assert (HαR' : αv `notin` ftvar_in_uskl R0)
           by (simpl in HαR; exact HαR).
         assert (Hnode : {{ Θ0 ⊢[ NM | M | P0 | Ψ ]
-                          (uskl_all_etag ε0
+                          (uskl_all_tag ε0
                              (subst_uskl_in_uskl
                                 (pskl_to_uskl (uskl_to_pskl ψa)) αv R0))
                           ⩽ Q ⊣ Θ1 }}da)
@@ -523,7 +522,7 @@ Proof.
           | fsetdec_empty ].
       * (* LS-Vacuous : P0 = ◇, erasure-determined *)
         assert (Hnode : {{ Θ0 ⊢[ NM | M | pskl_hole | Ψ ]
-                          (uskl_all_etag ε0
+                          (uskl_all_tag ε0
                              (subst_uskl_in_uskl
                                 (pskl_to_uskl (uskl_to_pskl ψa)) αv R0))
                           ⩽ Q ⊣ Θ1 }}da)
@@ -692,12 +691,12 @@ Proof.
         { apply lc_body_uskl_wrt_uskl; [ | exact Hlcg ].
           match goal with
           | |- body_uskl_wrt_uskl _ =>
-              eapply lc_body_uskl_all_etag_2
+              eapply lc_body_uskl_all_tag_2
                 with (ε1 := ε0);
-              change (uskl_all_etag ε0
+              change (uskl_all_tag ε0
                         (subst_uskl_in_uskl (uskl_var_f αt) αv R0))
                 with (subst_uskl_in_uskl (uskl_var_f αt) αv
-                        (uskl_all_etag ε0 R0));
+                        (uskl_all_tag ε0 R0));
               apply subst_uskl_in_uskl_lc_uskl;
                 [ exact HlcS0 | constructor ]
           end. }
@@ -1378,7 +1377,7 @@ Proof.
   - apply d_tags_skl__var; fsetdec.
   - eapply d_tags_skl__arrow;
       [ exact H | exact H0 | exact H1 | clear - H2 Heq; fsetdec ].
-  - eapply d_tags_skl__all_etag;
+  - eapply d_tags_skl__all_tag;
       [ exact H | exact H1 | clear - H2 Heq; fsetdec ].
   - apply d_tags_skl__holeg; fsetdec.
   - apply d_tags_skl__topholeg; apply IHd_tags_skl; exact Heq.
@@ -1399,7 +1398,7 @@ Proof.
         pose proof (IHd_tags_skl2 _ Hd2) as He2
     end.
     fsetdec.
-  - (* all_etag : match the IH by shape; pin the second body via [Ψ']=add ε _ *)
+  - (* all_tag : match the IH by shape; pin the second body via [Ψ']=add ε _ *)
     match goal with
     | HIH : forall α, α `notin` ?La -> forall Ψx, d_tags_skl Ψx _ -> _ [=] Ψx,
       Hbody : forall α, α `notin` ?Lb -> d_tags_skl ?Ψb _,
@@ -1432,7 +1431,7 @@ Proof.
   - auto with frost.
   - destruct_if; auto with frost.
   - auto with frost.
-  - apply uskl_ghost_free__all_etag with (L := L `union` singleton α);
+  - apply uskl_ghost_free__all_tag with (L := L `union` singleton α);
       intros α2 Hα2;
       rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
         [ apply H0; clear - Hα2; fsetdec
@@ -1602,7 +1601,7 @@ Lemma a_solvetag_sub_eq_sound :
 Proof.
   apply a_solvetag_sub_eq_mutind.
   - (* SSub-Var *) intros α M P Ψ He Ψtot Hdt; clear - He; fsetdec.
-  - (* SSub-ForallL : subject all_etag ε ψ *)
+  - (* SSub-ForallL : subject all_tag ε ψ *)
     intros L ε ψ M P Ψ Hprem IH Ψtot Hdt; inversion Hdt; subst.
     match goal with
     | Hb : forall α, α `notin` ?L1 -> d_tags_skl ?Ψ0 _,
@@ -1636,7 +1635,7 @@ Proof.
         pose proof (IH1 T1 Ha); pose proof (IH2 T2 Hbb)
     end.
     match goal with Heq : Ψtot [=] _ |- _ => clear - He Heq H H0; fsetdec end.
-  - (* SEq-ForallInh : subject all_etag ε ψ, Ψ = add ε Ψ0 *)
+  - (* SEq-ForallInh : subject all_tag ε ψ, Ψ = add ε Ψ0 *)
     intros L ε ψ P Ψ Ψ0 Hprem IH He Ψtot Hdt; inversion Hdt; subst.
     match goal with
     | Hb : forall α, α `notin` ?L1 -> d_tags_skl ?Ψt0 _,
@@ -1649,7 +1648,7 @@ Proof.
   - (* SEq-UnivGhostG : subject topholeg ψ *)
     intros ψ P Ψ Hprem IH Ψtot Hdt; inversion Hdt; subst.
     match goal with Hd : d_tags_skl ?T ψ |- _ => exact (IH T Hd) end.
-  - (* SEq-ForallSyn : subject all_etag ε ψ *)
+  - (* SEq-ForallSyn : subject all_tag ε ψ *)
     intros L ε ψ P Ψ Hprem IH Ψtot Hdt; inversion Hdt; subst.
     match goal with
     | Hb : forall α, α `notin` ?L1 -> d_tags_skl ?Ψt0 _,
@@ -1694,7 +1693,7 @@ Proof.
   - apply a_solvetag_eq__var; assumption.
   - eapply a_solvetag_eq__arrow;
       [ exact IHd_tags_skl1 | exact IHd_tags_skl2 | assumption ].
-  - (* all_etag ε R : target ∀⌊R⌋, Ψ = add ε Ψ0 *)
+  - (* all_tag ε R : target ∀⌊R⌋, Ψ = add ε Ψ0 *)
     eapply a_solvetag_eq__forall_inh with (L := L) (Ψ0 := Ψ0); [ | assumption ].
     intros β Hβ. rewrite <- uskl_to_pskl_open.
     match goal with
@@ -1745,7 +1744,7 @@ Inductive dec_ext : pskl -> uskl -> atoms -> Prop :=
     (forall α, α `notin` L ->
        dec_ext (open_pskl_wrt_pskl P0 (pskl_var_f α))
                (open_uskl_wrt_uskl ψ0 (uskl_var_f α)) Ψ) ->
-    dec_ext (pskl_all_syn P0) (uskl_all_etag ε ψ0) Ψ
+    dec_ext (pskl_all_syn P0) (uskl_all_tag ε ψ0) Ψ
 | dec_ext__skip_tophole : forall P0 ψ Ψ,     (* P's ∀◇ dropped later; ψ guarded *)
     guarded_pskl ⌊ ψ ⌋ˢ ->
     dec_ext P0 ψ Ψ ->
@@ -1759,7 +1758,7 @@ Inductive dec_ext : pskl -> uskl -> atoms -> Prop :=
        dec_ext (pskl_tophole P0)
                (open_uskl_wrt_uskl ψ0 (uskl_var_f α)) Ψ0) ->
     Ψ [=] add ε Ψ0 ->
-    dec_ext (pskl_tophole P0) (uskl_all_etag ε ψ0) Ψ
+    dec_ext (pskl_tophole P0) (uskl_all_tag ε ψ0) Ψ
 | dec_ext__flex_forget : forall P α Ψ,       (* P resolved to flex α̂ (untagged) *)
     Ψ [=] empty ->
     dec_ext P (uskl_var_f α) Ψ.
@@ -2001,7 +2000,7 @@ Proof.
       [ eapply IHn with (P' := Pa); [ lia | exact Hga | .. ]
       | eapply IHn with (P' := Pb); [ lia | exact Hgb | .. ]
       | fsetdec ]; assumption.
-  - (* forall P ↦ all A0 : the ghost-free [is_tskl] ∀-decoration is [all_etag].
+  - (* forall P ↦ all A0 : the ghost-free [is_tskl] ∀-decoration is [all_tag].
        EXISTS-FRESH source, COFINITE target: re-open the guess at each α. *)
     destruct ψa; simpl in Hera; try discriminate Hera;
       try (inversion Histk; fail).          (* kill the non-[is_tskl] all_syn survivor *)
@@ -2072,7 +2071,7 @@ Proof.
   - auto with frost.
   - destruct_if; auto with frost.
   - auto with frost.
-  - apply is_tskl__all_etag with (L := L `union` singleton α); intros α2 Hα2.
+  - apply is_tskl__all_tag with (L := L `union` singleton α); intros α2 Hα2.
     rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hα2; fsetdec | apply lc_uskl_var_f ].
     match goal with IH : forall α, α `notin` L -> _ |- _ =>
@@ -2088,7 +2087,7 @@ Proof.
   - auto with frost.
   - destruct_if; auto with frost.
   - eauto with frost.
-  - eapply d_tags_skl__all_etag with (L := L `union` singleton α) (Ψ0 := Ψ0);
+  - eapply d_tags_skl__all_tag with (L := L `union` singleton α) (Ψ0 := Ψ0);
       [ intros α2 Hα2 | assumption | assumption ].
     rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hα2; fsetdec | apply lc_uskl_var_f ].
@@ -2211,7 +2210,7 @@ Proof.
         [ eapply a_solvetag_eq__arrow; [ exact Hs1 | exact Hs2 | fsetdec ]
         | clear - H1 Heq Hsub1 Hsub2; fsetdec ]
     end.
-  - (* all : P=∀P0, ψ=all_etag ε ψ0, Ψtot=add ε Ψt0 *)
+  - (* all : P=∀P0, ψ=all_tag ε ψ0, Ψtot=add ε Ψt0 *)
     inversion Hdt; subst.
     match goal with
     | Hb : forall α, α `notin` ?L1 -> d_tags_skl ?Ψt0 _,
@@ -2243,7 +2242,7 @@ Proof.
     match goal with Hd0 : d_tags_skl Ψtot ?p0 |- _ =>
       destruct (IHdec_ext Ψtot Hd0) as [Ψi [Hs Hsub]] end.
     exists Ψi. split; [ apply a_solvetag_eq__univ_ghostg; exact Hs | exact Hsub ].
-  - (* absorb_all : P=∀◇P0, ψ=all_etag ε ψ0 ; SEq-ForallSyn (ε stays remaining) *)
+  - (* absorb_all : P=∀◇P0, ψ=all_tag ε ψ0 ; SEq-ForallSyn (ε stays remaining) *)
     inversion Hdt; subst.
     match goal with
     | Hb : forall α, α `notin` ?L1 -> d_tags_skl ?Ψt0 _,
@@ -2407,9 +2406,9 @@ Proof.
   - (* ψ's ∀ : ghost-freeness transports through the opening, and ONE
        instance re-grows the cofinite family *)
     match goal with
-    | |- uskl_ghost_free (uskl_all_etag _ ?psi0) =>
+    | |- uskl_ghost_free (uskl_all_tag _ ?psi0) =>
         pick fresh α0 for (L `union` ftvar_in_uskl psi0);
-        apply uskl_ghost_free__all_etag with (L := ftvar_in_uskl psi0);
+        apply uskl_ghost_free__all_tag with (L := ftvar_in_uskl psi0);
         intros α1 Hα1;
         rewrite (subst_uskl_in_uskl_intro α0 psi0 (uskl_var_f α1))
           by (clear - Fr; fsetdec);
@@ -2534,7 +2533,7 @@ Proof.
         | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
   - (* forall : P=∀P0, Q=∀Q0, P'=∀P0' *)
     inversion Hdec; subst.
-    + (* ψ = all_etag ε ψ0 ; dec_ext cofin = H2, d_tags cofin = H4 (tags Ψ0).
+    + (* ψ = all_tag ε ψ0 ; dec_ext cofin = H2, d_tags cofin = H4 (tags Ψ0).
          The rule's own binder b may occur in ψ0, so the SOLVE premise is
          renamed b ⤳ α0 (fresh for everything) and the two families are
          instantiated there. *)
@@ -2661,7 +2660,7 @@ Proof.
   - (* tophole_l_all : ∀◇P ∼ ∀Q ⤳ ∀P' (SE-GhostForall) ; the subject's ∀ is
        CREATED against the ghost — absorb_all backward, SEq-ForallInh forward *)
     inversion Hdec; subst.
-    + (* ψ = all_etag ε ψ0 — as SE-Forall: rename the solve premise b ⤳ α0
+    + (* ψ = all_tag ε ψ0 — as SE-Forall: rename the solve premise b ⤳ α0
          (the ∀◇ subject is b-free, so only the opened target moves) *)
       inversion Hdt; subst.
       destruct (atom_fresh (L `union` L0 `union` ftvar_in_uskl ψ0
@@ -2731,7 +2730,7 @@ Proof.
   - (* all_l_tophole : ∀P ∼ ∀◇Q ⤳ ∀P' (SE-ForallGhost) ; SEq-ForallSyn keeps
        the ∀◇ target whole, the skeleton ∀ matches the subject ∀ *)
     inversion Hdec; subst.
-    + (* ψ = all_etag ε ψ0 — as SE-Forall: rename the solve premise b ⤳ α0
+    + (* ψ = all_tag ε ψ0 — as SE-Forall: rename the solve premise b ⤳ α0
          (the ∀◇ target is b-free, so only the opened subject moves) *)
       inversion Hdt; subst.
       destruct (atom_fresh (L `union` L0 `union` ftvar_in_uskl ψ0
@@ -2862,7 +2861,7 @@ Proof.
        may occur in ψ0, so the SOLVE premise is renamed b ⤳ α0 (fresh) and
        the cofinite dec_ext / d_tags families are instantiated there. *)
     inversion Hdec; subst.
-    + (* all_etag ε ψ0 *)
+    + (* all_tag ε ψ0 *)
       inversion Hdt; subst.
       destruct (atom_fresh (L `union` L0 `union` ftvar_in_uskl ψ0
                   `union` ftvar_in_pskl P `union` ftvar_in_pskl P'

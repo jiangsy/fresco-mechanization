@@ -30,7 +30,7 @@
 
     ⛔ WHAT IS ACTUALLY LEFT for a full proof of lemma:precision-sub: the
     [Ψ [=] ∅] side condition of the Ghost row (automatic — a
-    [pskl_to_uskl P] subject is TAG-free, so no [uskl_all_etag] and hence no
+    [pskl_to_uskl P] subject is TAG-free, so no [uskl_all_tag] and hence no
     tag-introducing row can fire at the root) and a [mod_comp_sk] transport
     along the precision.  Neither is the flagged obstruction. *)
 

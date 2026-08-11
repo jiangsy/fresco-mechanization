@@ -30,7 +30,6 @@ Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
-Require Import src.frost.deco_algo.prop_decorate.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.consis.prop_consis_precise.
 Require Import src.frost.algo.sub.prop_looksub.
@@ -122,17 +121,17 @@ Qed.
 (*  and ∀◇-fill-rows fold their bodies at (add α Δ).  The paper's         *)
 (*  statement is the Θtv := [] / R := ∅ corollary.                        *)
 (* ===================================================================== *)
-(*  ForallSyn kit: flex_apart TARGET descent through an all_etag binder    *)
+(*  ForallSyn kit: flex_apart TARGET descent through an all_tag binder    *)
 (*  (the ∀◇-body is guarded, which excludes the all_syn source that would  *)
 (*  otherwise block the descent).  [MECH-ONLY: maintenance lemmas for the  *)
 (*  mech-only flex_apart premise — the paper has no counterpart because    *)
 (*  its proof never states the FlexR-freshening reachability invariant.]   *)
 (* ===================================================================== *)
 
-(** Guarded source: descend the all_etag target one binder. *)
-Lemma flex_apart_guarded_all_etag_descent : forall Θ0 Δρ P0 ε ψ,
+(** Guarded source: descend the all_tag target one binder. *)
+Lemma flex_apart_guarded_all_tag_descent : forall Θ0 Δρ P0 ε ψ,
   guarded_pskl P0 ->
-  flex_apart Θ0 Δρ P0 (uskl_all_etag ε ψ) ->
+  flex_apart Θ0 Δρ P0 (uskl_all_tag ε ψ) ->
   forall α, α `notin` Δρ ->
   flex_apart Θ0 Δρ P0 (open_uskl_wrt_uskl ψ (uskl_var_f α)).
 Proof.
@@ -159,10 +158,10 @@ Proof.
       simpl in *; clear - Hc Hup Hα; fsetdec end.
 Qed.
 
-(** ∀◇ source (guarded body): descend the all_etag target one binder. *)
-Lemma flex_apart_tophole_all_etag_descent : forall Θ0 Δρ P0' ε ψ,
+(** ∀◇ source (guarded body): descend the all_tag target one binder. *)
+Lemma flex_apart_tophole_all_tag_descent : forall Θ0 Δρ P0' ε ψ,
   guarded_pskl P0' ->
-  flex_apart Θ0 Δρ (pskl_tophole P0') (uskl_all_etag ε ψ) ->
+  flex_apart Θ0 Δρ (pskl_tophole P0') (uskl_all_tag ε ψ) ->
   forall α, α `notin` Δρ ->
   flex_apart Θ0 Δρ (pskl_tophole P0') (open_uskl_wrt_uskl ψ (uskl_var_f α)).
 Proof.
@@ -176,7 +175,7 @@ Proof.
       simpl in *; clear - Hc Hup Hα; fsetdec end.
   - (* fa_tophole: descend the guarded body *)
     apply fa_tophole.
-    eapply flex_apart_guarded_all_etag_descent;
+    eapply flex_apart_guarded_all_tag_descent;
       [ exact Hg | eassumption | exact Hα ].
   - (* fa_flexfree : the payload is untouched *)
     apply fa_flexfree; assumption.
@@ -1547,11 +1546,11 @@ Proof.
       (forall α, α `notin` Lr ->
          uskl_rho NM Θ Δρ Ψρ (open_uskl_wrt_uskl R (uskl_var_f α))
                              (open_uskl_wrt_uskl ψR (uskl_var_f α))) ->
-      a_tags_sort NM Ψ' (uskl_all_etag ε ψR) ->
-      {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_all_etag ε ψR) }}ad ->
-      p6cv_concl Θ0 Θ Θw Θr κ Δ Ψi Ψa (uskl_all_etag ε ψR) Pi P0 Lav).
+      a_tags_sort NM Ψ' (uskl_all_tag ε ψR) ->
+      {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_all_tag ε ψR) }}ad ->
+      p6cv_concl Θ0 Θ Θw Θr κ Δ Ψi Ψa (uskl_all_tag ε ψR) Pi P0 Lav).
     { intros ψR Lr Hrhof Htags0 Hpre0.
-      destruct (a_tags_sort_all_etag_inv Htags0)
+      destruct (a_tags_sort_all_tag_inv Htags0)
         as (Lt & Ψ0' & Htagsf & Hεnin & HΨ'eq).
       (* ε is premise-solved: it is a Ψ'-tag, hence never ρ-introduced *)
       assert (Hεa : ε `in` Ψa)
@@ -1983,7 +1982,7 @@ Proof.
           assert (HΨie : Ψi [=] empty)
             by (simpl in Hpre0; inversion Hpre0; assumption).
           assert (Hhd : Δ ∩
-                    (ftvar_in_uskl (uskl_all_etag ε ψR)) [=] empty)
+                    (ftvar_in_uskl (uskl_all_tag ε ψR)) [=] empty)
             by (simpl in Hpre0; inversion Hpre0; assumption).
           simpl in Hhd.
           pick fresh α for
@@ -2066,7 +2065,7 @@ Proof.
           destruct Hg as [HgPi' HwfPi'].
           assert (Hdisj :
             ({{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi') ⊑ᵖ[ Ψi ]
-               (uskl_all_etag ε ψR) }}ad) \/
+               (uskl_all_tag ε ψR) }}ad) \/
             (exists Lf, forall α, α `notin` Lf ->
                {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ˢ
                  pskl_tophole (msubst_pskl κ Pi') ⊑ᵖ[ Ψi ]
@@ -2233,13 +2232,13 @@ Proof.
               pskl_to_bskl_inh (msubst_pskl κ (pskl_arrow _ _)) ⊳ _ }}ad
             |- _ => simpl in Hin; inversion Hin
           end. }
-    destruct (uskl_rho_all_etag_l_inv Hrho)
+    destruct (uskl_rho_all_tag_l_inv Hrho)
       as [[Heqψa HΨρe] | [Hleaf | (Lr & ψR & Heqψa & Hrhof)]].
     + (* refl: recast as a congruence with refl bodies *)
       subst ψa.
       assert (Htskf : exists Li, forall α, α `notin` Li ->
                 is_tskl (open_uskl_wrt_uskl R (uskl_var_f α))).
-      { destruct (a_tags_sort_all_etag_inv Htags)
+      { destruct (a_tags_sort_all_tag_inv Htags)
           as (Lt0 & Ψt0 & Hf & _ & _).
         exists Lt0; intros α0 Hα0.
         destruct (Hf α0 Hα0); assumption. }
@@ -2277,11 +2276,11 @@ Proof.
       (forall α, α `notin` Lr ->
          uskl_rho NM Θ Δρ Ψρ (open_uskl_wrt_uskl R (uskl_var_f α))
                              (open_uskl_wrt_uskl ψR (uskl_var_f α))) ->
-      a_tags_sort NM Ψ' (uskl_all_etag ε ψR) ->
-      {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_all_etag ε ψR) }}ad ->
-      p6cv_concl Θ0 Θ Θw Θr κ Δ Ψi Ψa (uskl_all_etag ε ψR) Pi P0 Lav).
+      a_tags_sort NM Ψ' (uskl_all_tag ε ψR) ->
+      {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_all_tag ε ψR) }}ad ->
+      p6cv_concl Θ0 Θ Θw Θr κ Δ Ψi Ψa (uskl_all_tag ε ψR) Pi P0 Lav).
     { intros ψR Lr Hrhof Htags0 Hpre0.
-      destruct (a_tags_sort_all_etag_inv Htags0)
+      destruct (a_tags_sort_all_tag_inv Htags0)
         as (Lt & Ψ0' & Htagsf & Hεnin & HΨ'eq).
       assert (Hdomsub : dom Θr [<=] dom Θ)
         by (eapply aenv_split_dom_r; exact HspΘ).
@@ -2302,13 +2301,13 @@ Proof.
       assert (Hintb : Ψρ ∩ Ψ0' [=] empty)
         by (clear - Hinter HΨ'eq; fsetdec).
       (* target ftv bound: reconstruct the whole ρ and bound ftv ψR *)
-      assert (Hrhow : uskl_rho NM Θ Δρ Ψρ (uskl_all_etag ε R)
-                        (uskl_all_etag ε ψR))
-        by (eapply urho__all_etag with (L := Lr); exact Hrhof).
+      assert (Hrhow : uskl_rho NM Θ Δρ Ψρ (uskl_all_tag ε R)
+                        (uskl_all_tag ε ψR))
+        by (eapply urho__all_tag with (L := Lr); exact Hrhof).
       assert (HψaB : ftvar_in_bskl Q [<=] dom Θr ->
-                ftvar_in_uskl (uskl_all_etag ε ψR) [<=] dom Θr `union` Δρ).
+                ftvar_in_uskl (uskl_all_tag ε ψR) [<=] dom Θr `union` Δρ).
       { intros HQB.
-        assert (HftR : ftvar_in_uskl (uskl_all_etag ε R) [<=]
+        assert (HftR : ftvar_in_uskl (uskl_all_tag ε R) [<=]
                   ftvar_in_bskl (bskl_all_syn Q) `union` dom Θr)
           by (eapply consis_subject_ftv_bag_bound;
                 [ eapply ad_pat_consis__forall_syn_tagged; exact H
@@ -2608,7 +2607,7 @@ Proof.
             | clear - HXf HX'f; destruct_notin; fsetdec ]. }
         (* the Pi grid *)
         destruct Pi as [ | nb | β | Pi1 Pi2 | Pib | | Pi' ].
-        + (* unit: no precision into all_etag *)
+        + (* unit: no precision into all_tag *)
           simpl in Hpre0. inversion Hpre0.
         + (* var_b *) inversion HwfPi.
         + (* var β: mono-paint subject vs ε-tagged target — Ψ' = ∅ absurd *)
@@ -2753,7 +2752,7 @@ Proof.
           assert (HΨie : Ψi [=] empty)
             by (simpl in Hpre0; inversion Hpre0; assumption).
           assert (Hhd : Δ ∩
-                    (ftvar_in_uskl (uskl_all_etag ε ψR)) [=] empty)
+                    (ftvar_in_uskl (uskl_all_tag ε ψR)) [=] empty)
             by (simpl in Hpre0; inversion Hpre0; assumption).
           simpl in Hhd.
           eapply solve_ext_nil with (Pa := (pskl_tophole P0')); [ apply a_solve_eq__hole_l | ].
@@ -2853,7 +2852,7 @@ Proof.
             by (inversion HwfPi; subst; split; assumption).
           destruct HgPi'w as [HgPi' HwfPi'].
           assert (Hdisj :
-            ({{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi') ⊑ᵖ[ Ψi ] (uskl_all_etag ε ψR) }}ad) \/
+            ({{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi') ⊑ᵖ[ Ψi ] (uskl_all_tag ε ψR) }}ad) \/
             (exists Lf, forall α, α `notin` Lf ->
                {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ˢ
                  pskl_tophole (msubst_pskl κ Pi') ⊑ᵖ[ Ψi ]
@@ -3032,13 +3031,13 @@ Proof.
     (* the tophole_fill family leaves the rule's ε-witness unconstrained
        (any ε inhabits the same family); discharge it with the case's ε. *)
     Unshelve. all: match goal with |- εvar => exact ε | |- _ => idtac end.
-    destruct (uskl_rho_all_etag_l_inv Hrho)
+    destruct (uskl_rho_all_tag_l_inv Hrho)
       as [[Heqψa HΨρe] | [Hleaf | (Lr & ψR & Heqψa & Hrhof)]].
     + (* refl *)
       subst ψa.
       assert (Htskf : exists Li, forall α, α `notin` Li ->
                 is_tskl (open_uskl_wrt_uskl R (uskl_var_f α))).
-      { destruct (a_tags_sort_all_etag_inv Htags)
+      { destruct (a_tags_sort_all_tag_inv Htags)
           as (Lt0 & Ψt0 & Hf & _ & _).
         exists Lt0; intros α0 Hα0. destruct (Hf α0 Hα0); assumption. }
       destruct Htskf as (Li & Htskf).

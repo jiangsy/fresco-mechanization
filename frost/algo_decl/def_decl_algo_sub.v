@@ -29,7 +29,7 @@
       [Δ ∨ a_binds_tvar] visibility disjunction, the ∀-rule extends only Δ
       (the rigid binder is picked cofinitely), tophole_fill extends Θ.
       Targets ψ are decorated skeletons, so their quantifiers are always
-      tagged ([uskl_all_etag]; [is_tskl] has no [all_syn] constructor) and
+      tagged ([uskl_all_tag]; [is_tskl] has no [all_syn] constructor) and
       their ghosts dotted — the subject-hole rule is the only rule matching
       a dotted ghost. *)
 
@@ -93,11 +93,11 @@ Inductive ad_pat_sub :
 | ad_pat_sub__forall_l_tagged : forall NM Ψ Ψ' Θ M ε R ψ Q,   (* ForallL, β1=ε *)
     M <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
-    Ψ' ∩ (ftag_in_uskl (uskl_all_etag ε R)) [=] empty ->  (* GLOBAL freshness *)
+    Ψ' ∩ (ftag_in_uskl (uskl_all_tag ε R)) [=] empty ->  (* GLOBAL freshness *)
     a_tags_sort NM Ψ' ψ ->
     {{ Θ ⨟ empty ⊢ₚₛ ⌊ ψ ⌋ˢ }}a ->
     {{ (Ψ `union` Ψ') ⨟ Θ ⊢ˢ[ NM | M ] (open_uskl_wrt_uskl R ψ) ⩽ Q }}ad ->
-    {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] (uskl_all_etag ε R) ⩽ Q }}ad
+    {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] (uskl_all_tag ε R) ⩽ Q }}ad
 | ad_pat_sub__forall_l_untagged : forall NM Ψ Ψ' Θ M R ψ Q,   (* ForallL, β1=· *)
     M <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
@@ -176,7 +176,7 @@ where "{{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad" :=
     decl/prop_general_subsumption.v), whose ForallL case transports along
     [utyp_tag_refines], where the subject GAINS tags; the repair is the
     tags-bound twin [d_sub_tagsin] + wholesale freshening in
-    decl/prop_etag_swap.v §4-§5.  Details in docs/PAPER-GAPS.md.
+    decl/prop_tag_swap.v §4-§5.  Details in docs/PAPER-GAPS.md.
 
     1.     FUEL DISCIPLINE.  Precision-substitution must be fuel-PRESERVING
        (the completeness ForallL case applies its induction hypothesis to
@@ -228,11 +228,11 @@ Inductive ad_pat_sub_g :
 | ad_pat_sub_g__forall_l_tagged : forall n NM Ψ Ψ' Θ M ε R ψ Q, (* ForallL, β1=ε *)
     M <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
-    Ψ' ∩ (ftag_in_uskl (uskl_all_etag ε R)) [=] empty ->
+    Ψ' ∩ (ftag_in_uskl (uskl_all_tag ε R)) [=] empty ->
     a_tags_sort NM Ψ' ψ ->
     {{ Θ ⨟ empty ⊢ₚₛ ⌊ ψ ⌋ˢ }}a ->
     ad_pat_sub_g n NM M (Ψ `union` Ψ') Θ (open_uskl_wrt_uskl R ψ) Q ->
-    ad_pat_sub_g (S n) NM M Ψ Θ (uskl_all_etag ε R) Q
+    ad_pat_sub_g (S n) NM M Ψ Θ (uskl_all_tag ε R) Q
 | ad_pat_sub_g__forall_l_untagged : forall n NM Ψ Ψ' Θ M R ψ Q, (* ForallL, β1=· *)
     M <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
@@ -330,11 +330,11 @@ Inductive ad_pat_sub_gv :
 | ad_pat_sub_gv__forall_l_tagged : forall n NM Ψ Ψ' Θ M ε R ψ Q, (* ForallL, β1=ε *)
     M <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
-    Ψ' ∩ (ftag_in_uskl (uskl_all_etag ε R)) [=] empty ->
+    Ψ' ∩ (ftag_in_uskl (uskl_all_tag ε R)) [=] empty ->
     a_tags_sort NM Ψ' ψ ->
     {{ Θ ⨟ empty ⊢ₚₛ ⌊ ψ ⌋ˢ }}a ->
     ad_pat_sub_gv n NM M (Ψ `union` Ψ') Θ (open_uskl_wrt_uskl R ψ) Q ->
-    ad_pat_sub_gv (S n) NM M Ψ Θ (uskl_all_etag ε R) Q
+    ad_pat_sub_gv (S n) NM M Ψ Θ (uskl_all_tag ε R) Q
 | ad_pat_sub_gv__forall_l_untagged : forall n NM Ψ Ψ' Θ M R ψ Q, (* ForallL, β1=· *)
     M <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
@@ -491,7 +491,7 @@ Inductive ad_partial_precise :
        {{ Θ ⨟ (add α Δ) ⊢ˢ (open_pskl_wrt_pskl P (pskl_var_f α))
          ⊑ᵖ[ Ψ0 ] (open_uskl_wrt_uskl ψ (uskl_var_f α)) }}ad) ->
     Ψ [=] add ε Ψ0 ->
-    {{ Θ ⨟ Δ ⊢ˢ (pskl_all_syn P) ⊑ᵖ[ Ψ ] (uskl_all_etag ε ψ) }}ad
+    {{ Θ ⨟ Δ ⊢ˢ (pskl_all_syn P) ⊑ᵖ[ Ψ ] (uskl_all_tag ε ψ) }}ad
 | ad_ppre__hole : forall Θ Δ Ψ ψ,
     Ψ [=] empty ->
     Δ ∩ ftvar_in_uskl ψ [=] empty ->
@@ -504,7 +504,7 @@ Inductive ad_partial_precise :
        {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ˢ (pskl_tophole P)
          ⊑ᵖ[ Ψ ] (open_uskl_wrt_uskl ψ (uskl_var_f α)) }}ad) ->
     forall ε,
-    {{ Θ ⨟ Δ ⊢ˢ (pskl_tophole P) ⊑ᵖ[ Ψ ] (uskl_all_etag ε ψ) }}ad
+    {{ Θ ⨟ Δ ⊢ˢ (pskl_tophole P) ⊑ᵖ[ Ψ ] (uskl_all_tag ε ψ) }}ad
 | ad_ppre__tophole_keep : forall Θ Δ Ψ P ψ,
     {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
     {{ Θ ⨟ Δ ⊢ˢ (pskl_tophole P) ⊑ᵖ[ Ψ ] (uskl_topholeg ψ) }}ad

@@ -18,7 +18,7 @@
     legal at [a_sub_mode_ty] — is instantiated with the context's rigid [β]
     and lands on the target [β], which is [bskl_monoish] by [bmi_var].  The
     subject is not a mono paint (a mono paint is unit / var / arrow, never a
-    [uskl_all_etag]), so the conclusion fails outright.
+    [uskl_all_tag]), so the conclusion fails outright.
  *)
 
 Require Import Coq.Lists.List.
@@ -50,7 +50,7 @@ Variables β ε : atom.
 Definition Θw : aenv := (β ~ abind_tvar) ++ nil.
 
 (** Subject: the decorated identity quantifier [∀^ε α. α]. *)
-Definition Rw : uskl := uskl_all_etag ε (uskl_var_b 0).
+Definition Rw : uskl := uskl_all_tag ε (uskl_var_b 0).
 
 (** Counterpart: the context's rigid — and a variable IS mono-ish. *)
 Definition Qw : bskl := bskl_var_f β.
@@ -60,7 +60,7 @@ Proof. apply a_wf_aenv__tvar; [ simpl; auto | apply a_wf_aenv__nil ]. Qed.
 
 Lemma Rw_tskl : is_tskl Rw.
 Proof.
-  apply is_tskl__all_etag with (L := empty); intros α _; cbn.
+  apply is_tskl__all_tag with (L := empty); intros α _; cbn.
   apply is_tskl__var.
 Qed.
 
@@ -100,7 +100,7 @@ Proof.
     cbn. apply ad_pat_consis__var; [ clear; fsetdec | left; simpl; auto ].
 Qed.
 
-(** A [uskl_all_etag] is never a monotype's painting — mono paints are
+(** A [uskl_all_tag] is never a monotype's painting — mono paints are
     unit / var / arrow, by [mono_ptyp]'s three constructors. *)
 Lemma cex_not_a_mono_paint :
   ~ (exists τ, mono_ptyp τ /\ Rw = ptyp_to_uskl_syn τ).

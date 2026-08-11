@@ -35,7 +35,6 @@ Require Import src.frost.algo_decl.def_decl_algo_sub.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_stability.
-Require Import src.frost.deco_algo.prop_decorate.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_compose.
 Require Import src.frost.algo.prop_metasubst.
@@ -217,7 +216,7 @@ Proof.
   intros Ψ Θ' R Q0 P0 L Hc HwfB Htr.
   remember (bskl_all_inh Q0) as Qout eqn:HQ.
   induction Hc; try discriminate HQ.
-  - (* forall_inh_tagged : R = uskl_all_etag ε R *)
+  - (* forall_inh_tagged : R = uskl_all_tag ε R *)
     inversion HQ; subst.
     eapply ad_pat_consis__forall_inh_tagged with (Ψ0 := Ψ0)
       (L := L `union` L0); [ | assumption ].
@@ -2162,11 +2161,11 @@ Proof.
        anyway, so [_gv]'s extra ForallL hygiene premise costs nothing but
        naming the subject's tags in the set we avoid. *)
     destruct (a_tags_sort_decorate_exists (Hex α Hα) HlcP1
-                (L `union` Ψ `union` ftag_in_uskl (uskl_all_etag ε R)))
+                (L `union` Ψ `union` ftag_in_uskl (uskl_all_tag ε R)))
       as [Ψg [ψg [Hint0 [Hsort Herase]]]].
     assert (Hint : Ψg ∩ Ψ [=] empty)
       by (clear - Hint0; fsetdec).
-    assert (Hhyg : Ψg ∩ (ftag_in_uskl (uskl_all_etag ε R)) [=] empty)
+    assert (Hhyg : Ψg ∩ (ftag_in_uskl (uskl_all_tag ε R)) [=] empty)
       by (clear - Hint0; fsetdec).
     assert (Hprem := Hfam Ψg ψg ltac:(clear - Hint0; solve_notin_auto) Hsort Herase).
     assert (IH := IHfam Ψg ψg ltac:(clear - Hint0; solve_notin_auto) Hsort Herase).
@@ -2179,7 +2178,7 @@ Proof.
       by (apply is_tskl_lc; inversion Hsort; auto).
     assert (HlcSψ : lc_uskl (open_uskl_wrt_uskl R ψg)).
     { apply lc_body_uskl_wrt_uskl; [ | exact Hlcψ ].
-      eapply lc_body_uskl_all_etag_2. exact Hlc. }
+      eapply lc_body_uskl_all_tag_2. exact Hlc. }
     assert (Hmono : forall x (b : abind),
                binds x b Θ0 -> binds x b (Ξ ++ Θ0))
       by (intros x b Hb; unfold binds in *; apply in_or_app; auto).

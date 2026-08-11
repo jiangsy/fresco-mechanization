@@ -1,6 +1,6 @@
 (** Tvar-renaming closure lemmas: every declarative judgment ([is_*], [guarded_*],
     [d_consis], [d_wf_utyp], [d_sub]) is closed under a free type-variable
-    renaming [α -> β].  The tag context [Δ] is etag-only and untouched.  Built
+    renaming [α -> β].  The tag context [Δ] is tag-only and untouched.  Built
     bottom-up: shape predicates, then [d_consis] / [d_wf_utyp] / [d_sub].
     Used by [prop_general_subsumption] for the CST [forall_r] cofinite cases. *)
 
@@ -12,7 +12,7 @@ Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.def_extra.
-Require Import src.frost.prop_etag.
+Require Import src.frost.prop_tag.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_basic.
@@ -45,7 +45,7 @@ Proof.
   - constructor.
   - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
   - constructor; assumption.
-  - apply is_ttyp__all_etag with (L := L `union` singleton α1 `union` singleton β1).
+  - apply is_ttyp__all_tag with (L := L `union` singleton α1 `union` singleton β1).
     intros α Hα.
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
       by (solve [ fsetdec | apply lc_utyp_var_f ]).
@@ -61,7 +61,7 @@ Proof.
   - constructor; apply subst_utyp_in_utyp_lc_utyp; auto; apply lc_utyp_var_f.
 Qed.
 
-(** [d_consis] is closed under tvar renaming (Δ is etag-only, untouched). *)
+(** [d_consis] is closed under tvar renaming (Δ is tag-only, untouched). *)
 Lemma d_consis_rename_tvar : forall Δ Γ C B,
     {{ Δ ⨟ Γ ⊢ C ∼ B }}d ->
     forall Γ1 Γ2 α0 β,
@@ -133,7 +133,7 @@ Proof.
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (solve [ fsetdec | apply lc_utyp_var_f ]).
     rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ (β ~ dbind_tvar) ++ Γ2).
     eapply (H0 α2); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
-  - apply d_wf_utyp__all_etag with
+  - apply d_wf_utyp__all_tag with
       (L := L `union` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) `union` singleton α0 `union` singleton β).
     intros α2 Hα2.
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (solve [ fsetdec | apply lc_utyp_var_f ]).
@@ -166,7 +166,7 @@ Proof.
   - constructor; apply subst_btyp_in_btyp_lc_btyp; auto; apply lc_btyp_var_f.
 Qed.
 
-(** [d_sub] is closed under tvar renaming ([Δ] is etag-only, untouched);
+(** [d_sub] is closed under tvar renaming ([Δ] is tag-only, untouched);
     closes the cofinite-uniform [forall_r] case of the transitivity lemmas. *)
 Lemma d_sub_rename_tvar : forall m Δ Γ C B,
     {{ Δ ⨟ Γ ⊢[ m ] C ⩽ B }}d ->
@@ -208,8 +208,8 @@ Proof.
     + assumption.
     + assumption.
     + (* tag hygiene: a TYPE-variable renaming cannot change a tag *)
-      change (utyp_all_etag ε (subst_utyp_in_utyp (utyp_var_f β) α0 C))
-        with (subst_utyp_in_utyp (utyp_var_f β) α0 (utyp_all_etag ε C));
+      change (utyp_all_tag ε (subst_utyp_in_utyp (utyp_var_f β) α0 C))
+        with (subst_utyp_in_utyp (utyp_var_f β) α0 (utyp_all_tag ε C));
       rewrite ftag_in_utyp_subst_tagfree by reflexivity; assumption.
     + apply d_tags_subst_tvar. eassumption.
     + eapply d_wf_utyp_rename_tvar; [ eassumption | reflexivity | exact Hfr ].

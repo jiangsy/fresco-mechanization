@@ -130,10 +130,10 @@ Inductive d_wf_utyp : list (atom * dbind) -> utyp -> Prop :=
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⊢ᵤ (open_utyp_wrt_utyp C (utyp_var_f α)) }}d) ->
     {{ Γ ⊢ᵤ (utyp_all_syn C) }}d
-| d_wf_utyp__all_etag : forall L Γ ε C,
+| d_wf_utyp__all_tag : forall L Γ ε C,
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⊢ᵤ (open_utyp_wrt_utyp C (utyp_var_f α)) }}d) ->
-    {{ Γ ⊢ᵤ (utyp_all_etag ε C) }}d
+    {{ Γ ⊢ᵤ (utyp_all_tag ε C) }}d
 where "{{ Γ ⊢ᵤ C }}d" := (d_wf_utyp Γ C) : frost_d_scope.
 
 (* Skeleton well-formedness [{{ Γ ⨟ Δ ⊢ₚₛ P }}d] (declarative.tex:1300).  [Δ] is the
@@ -180,11 +180,11 @@ Inductive d_wf_uskl : list (atom * dbind) -> list atom -> uskl -> Prop :=
        {{ Γ ⨟ (α :: Δ) ⊢ᵤₛ
          (open_uskl_wrt_uskl R (uskl_var_f α)) }}d) ->
     {{ Γ ⨟ Δ ⊢ᵤₛ (uskl_all_syn R) }}d
-| d_wf_uskl__all_etag : forall L Γ Δ ε R,
+| d_wf_uskl__all_tag : forall L Γ Δ ε R,
     (forall α, α `notin` L ->
        {{ Γ ⨟ (α :: Δ) ⊢ᵤₛ
          (open_uskl_wrt_uskl R (uskl_var_f α)) }}d) ->
-    {{ Γ ⨟ Δ ⊢ᵤₛ (uskl_all_etag ε R) }}d
+    {{ Γ ⨟ Δ ⊢ᵤₛ (uskl_all_tag ε R) }}d
 | d_wf_uskl__hole : forall Γ Δ,
     {{ Γ ⨟ Δ ⊢ᵤₛ uskl_hole }}d
 | d_wf_uskl__tophole : forall Γ Δ R,
@@ -224,19 +224,19 @@ Inductive d_tags : atoms -> utyp -> Prop :=
     Ψ1 ∩ Ψ2 [=] empty ->         (* paper ⊎ : disjoint set union *)
     Ψ [=] Ψ1 `union` Ψ2 ->
     d_tags Ψ (utyp_arrow C1 C2)
-| d_tags__all_etag : forall L Ψ Ψ0 ε C,
+| d_tags__all_tag : forall L Ψ Ψ0 ε C,
     (forall α, α `notin` L ->
        d_tags Ψ0 (open_utyp_wrt_utyp C (utyp_var_f α))) ->
     ε `notin` Ψ0 ->
     Ψ [=] add ε Ψ0 ->
-    d_tags Ψ (utyp_all_etag ε C).
+    d_tags Ψ (utyp_all_tag ε C).
 
 (** Skeleton analog [tags{Ψ}{ψ}] (declarative.tex:1822).  Defined EXACTLY on
     the paper's decorated-skeleton grammar
     [ψ ::= 1 | α | ψ→ψ | ∀^ε α.ψ | HoleG | TopHoleG.ψ] (declarative.tex:1796):
     every quantifier is tagged; the only ghosts are the DOTTED ones.  A [HoleG]
     carries no tags; a dotted universal ghost [TopHoleG.ψ] carries exactly its
-    body's tags (no ε of its own — unlike [all_etag]).  Plain [hole]/[tophole]
+    body's tags (no ε of its own — unlike [all_tag]).  Plain [hole]/[tophole]
     and the untagged [all_syn] are NOT in ψ and have no case here. *)
 Inductive d_tags_skl : atoms -> uskl -> Prop :=
 | d_tags_skl__unit : forall Ψ, Ψ [=] empty -> d_tags_skl Ψ uskl_unit
@@ -247,12 +247,12 @@ Inductive d_tags_skl : atoms -> uskl -> Prop :=
     Ψ1 ∩ Ψ2 [=] empty ->         (* paper ⊎ : disjoint set union *)
     Ψ [=] Ψ1 `union` Ψ2 ->
     d_tags_skl Ψ (uskl_arrow R1 R2)
-| d_tags_skl__all_etag : forall L Ψ Ψ0 ε R,
+| d_tags_skl__all_tag : forall L Ψ Ψ0 ε R,
     (forall α, α `notin` L ->
        d_tags_skl Ψ0 (open_uskl_wrt_uskl R (uskl_var_f α))) ->
     ε `notin` Ψ0 ->
     Ψ [=] add ε Ψ0 ->
-    d_tags_skl Ψ (uskl_all_etag ε R)
+    d_tags_skl Ψ (uskl_all_tag ε R)
 | d_tags_skl__holeg : forall Ψ,
     Ψ [=] empty ->
     d_tags_skl Ψ uskl_holeg
@@ -297,7 +297,7 @@ Inductive d_consis : atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :=
          (open_utyp_wrt_utyp C (utyp_var_f α)) ∼
          (open_btyp_wrt_btyp B (btyp_var_f α)) }}d) ->
     Ψ [=] add ε Ψ0 ->
-    {{ Ψ ⨟ Γ ⊢ (utyp_all_etag ε C) ∼ (btyp_all_inh B) }}d
+    {{ Ψ ⨟ Γ ⊢ (utyp_all_tag ε C) ∼ (btyp_all_inh B) }}d
 | d_consis__forall_inh_untagged : forall L Ψ Γ C B,
     (forall α, α `notin` L ->
        {{ Ψ ⨟ ((α ~ dbind_tvar) ++ Γ) ⊢
@@ -309,7 +309,7 @@ Inductive d_consis : atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :=
        {{ Ψ ⨟ ((α ~ dbind_tvar) ++ Γ) ⊢
          (open_utyp_wrt_utyp C (utyp_var_f α)) ∼
          (open_btyp_wrt_btyp B (btyp_var_f α)) }}d) ->
-    {{ Ψ ⨟ Γ ⊢ (utyp_all_etag ε C) ∼ (btyp_all_syn B) }}d
+    {{ Ψ ⨟ Γ ⊢ (utyp_all_tag ε C) ∼ (btyp_all_syn B) }}d
 | d_consis__forall_syn : forall L Ψ Γ C B,
     (forall α, α `notin` L ->
        {{ Ψ ⨟ ((α ~ dbind_tvar) ++ Γ) ⊢
@@ -346,7 +346,7 @@ Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :
 | d_sub__forall_l_tagged : forall Ψ Ψ' Γ m ε C ph B,
     m <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->      (* Ψ' fresh w.r.t. the outer tags … *)
-    Ψ' ∩ (ftag_in_utyp (utyp_all_etag ε C)) [=] empty ->
+    Ψ' ∩ (ftag_in_utyp (utyp_all_tag ε C)) [=] empty ->
                              (* … and w.r.t. the SUBJECT's own tags.  The
                                 paper's [Ψ' fresh] is GLOBAL: the line above
                                 alone dies at Arrow, which splits the tag
@@ -357,7 +357,7 @@ Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :
     {{ Γ ⊢ᵤ ph }}d ->                       (* Γ ⊢ φ : well-scopedness half (WT: no Ψ') *)
     is_ttyp ph ->
     {{ (Ψ `union` Ψ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⩽ B }}d ->
-    {{ Ψ ⨟ Γ ⊢[ m ] (utyp_all_etag ε C) ⩽ B }}d
+    {{ Ψ ⨟ Γ ⊢[ m ] (utyp_all_tag ε C) ⩽ B }}d
 | d_sub__forall_l_untagged : forall Ψ Ψ' Γ m C ph B,
     m <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
@@ -508,7 +508,7 @@ Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
          (open_uskl_wrt_uskl R (uskl_var_f α)) ∼
          (open_bskl_wrt_bskl Q (bskl_var_f α)) }}d) ->
     Ψ [=] add ε Ψ0 ->
-    {{ Ψ ⨟ Γ ⊢ˢ (uskl_all_etag ε R) ∼ (bskl_all_inh Q) }}d
+    {{ Ψ ⨟ Γ ⊢ˢ (uskl_all_tag ε R) ∼ (bskl_all_inh Q) }}d
 | d_pat_consis__forall_inh_untagged : forall L Ψ Γ R Q,
     (forall α, α `notin` L ->
        {{ Ψ ⨟ ((α ~ dbind_tvar) ++ Γ) ⊢ˢ
@@ -520,7 +520,7 @@ Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
        {{ Ψ ⨟ ((α ~ dbind_tvar) ++ Γ) ⊢ˢ
          (open_uskl_wrt_uskl R (uskl_var_f α)) ∼
          (open_bskl_wrt_bskl Q (bskl_var_f α)) }}d) ->
-    {{ Ψ ⨟ Γ ⊢ˢ (uskl_all_etag ε R) ∼ (bskl_all_syn Q) }}d
+    {{ Ψ ⨟ Γ ⊢ˢ (uskl_all_tag ε R) ∼ (bskl_all_syn Q) }}d
 | d_pat_consis__forall_syn : forall L Ψ Γ R Q,
     (forall α, α `notin` L ->
        {{ Ψ ⨟ ((α ~ dbind_tvar) ++ Γ) ⊢ˢ
@@ -609,12 +609,12 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
        well-scopedness is [{{ Γ ⨟ nil ⊢ᵤₛ ψ }}d] (R1: scope, not tags). *)
     m <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
-    Ψ' ∩ (ftag_in_uskl (uskl_all_etag ε R)) [=] empty ->  (* GLOBAL freshness *)
+    Ψ' ∩ (ftag_in_uskl (uskl_all_tag ε R)) [=] empty ->  (* GLOBAL freshness *)
     d_tags_skl Ψ' psi ->             (* tags{Ψ'}{ψ} : skeleton-tag relation *)
     {{ Γ ⨟ nil ⊢ᵤₛ psi }}d ->
     is_tskl psi ->
     {{ (Ψ `union` Ψ') ⨟ Γ ⊢ˢ[ m ] (open_uskl_wrt_uskl R psi) ⩽ Q }}d ->
-    {{ Ψ ⨟ Γ ⊢ˢ[ m ] (uskl_all_etag ε R) ⩽ Q }}d
+    {{ Ψ ⨟ Γ ⊢ˢ[ m ] (uskl_all_tag ε R) ⩽ Q }}d
 | d_pat_sub__forall_l_untagged : forall Ψ Ψ' Γ m R psi Q,
     m <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->

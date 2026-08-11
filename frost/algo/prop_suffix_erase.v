@@ -66,7 +66,7 @@ Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_refine.
-Require Import src.frost.prop_etag.
+Require Import src.frost.prop_tag.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.sub.prop_soundness_sub.
 Require Import src.frost.algo.pat.prop_soundness_pat.

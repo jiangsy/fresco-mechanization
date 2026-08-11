@@ -68,7 +68,7 @@ Proof.
     intros α Hα.
     rewrite_env (((α ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     apply H0; auto.
-  - inst_cofinites_for d_wf_utyp__all_etag; auto.
+  - inst_cofinites_for d_wf_utyp__all_tag; auto.
     intros α Hα.
     rewrite_env (((α ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     apply H0; auto.
@@ -125,7 +125,7 @@ Proof.
   - constructor; auto.
   - inst_cofinites_for d_wf_uskl__all_syn.
     intros α Hα. apply H0; auto.
-  - inst_cofinites_for d_wf_uskl__all_etag.
+  - inst_cofinites_for d_wf_uskl__all_tag.
     intros α Hα. apply H0; auto.
   - constructor.
   - constructor; auto.
@@ -153,7 +153,7 @@ Proof.
   - auto with frost.
   - destruct_if; auto with frost.
   - eauto with frost.
-  - inst_cofinites_for d_tags__all_etag Ψ0 := Ψ0; [ | assumption | assumption ].
+  - inst_cofinites_for d_tags__all_tag Ψ0 := Ψ0; [ | assumption | assumption ].
     intros α2 Hα2.
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
       by (solve [ fsetdec | apply lc_utyp_var_f ]).
@@ -317,7 +317,7 @@ Proof.
     + apply singleton_1 in Hβ. subst.
       apply binds_app_2. apply binds_one_3; reflexivity.
     + apply binds_app_3. apply Hcov; assumption.
-  - inst_cofinites_for d_wf_utyp__all_etag. intros α Hα. apply H0.
+  - inst_cofinites_for d_wf_utyp__all_tag. intros α Hα. apply H0.
     intros β Hβ. apply ftvar_in_utyp_open_utyp_wrt_utyp_upper in Hβ. simpl in Hβ.
     apply union_1 in Hβ. destruct Hβ as [Hβ | Hβ].
     + apply singleton_1 in Hβ. subst.
@@ -362,7 +362,7 @@ Proof.
   - constructor.
   - constructor; assumption.
   - pick fresh α. apply (lc_utyp_all_syn_exists α). apply H0. auto.
-  - pick fresh α. apply (lc_utyp_all_etag_exists α). apply H0. auto.
+  - pick fresh α. apply (lc_utyp_all_tag_exists α). apply H0. auto.
 Qed.
 
 Lemma d_wf_pskl_lc : forall Γ Δ P, {{ Γ ⨟ Δ ⊢ₚₛ P }}d -> lc_pskl P.
@@ -585,13 +585,13 @@ Proof.
   - apply d_wf_btyp__unit.
   - apply d_wf_btyp__var. assumption.
   - inversion Hwf; subst. apply d_wf_btyp__arrow; auto.
-  - (* forall_inh_tagged: utyp_all_etag ε C ∼ btyp_all_inh B *)
+  - (* forall_inh_tagged: utyp_all_tag ε C ∼ btyp_all_inh B *)
     inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_inh.
     intros α Hα. apply H0; auto.
   - (* forall_inh_untagged: utyp_all_syn C ∼ btyp_all_inh B *)
     inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_inh.
     intros α Hα. apply H0; auto.
-  - (* forall_syn_tagged: utyp_all_etag ε C ∼ btyp_all_syn B *)
+  - (* forall_syn_tagged: utyp_all_tag ε C ∼ btyp_all_syn B *)
     inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_syn.
     intros α Hα. apply H0; auto.
   - (* forall_syn: utyp_all_syn C ∼ btyp_all_syn B *)
@@ -631,7 +631,7 @@ Proof.
     inversion Hwf; subst. apply d_wf_btyp__arrow.
     + eapply d_consis_wf; eassumption.
     + apply IHd_sub; assumption.
-  - (* forall_l_tagged: utyp_all_etag ε C ⩽ B; recurse on opened body *)
+  - (* forall_l_tagged: utyp_all_tag ε C ⩽ B; recurse on opened body *)
     inversion Hwf; subst. apply IHd_sub.
     pick fresh α for (L `union` dom Γ `union` ftvar_in_utyp C).
     rewrite (subst_utyp_in_utyp_intro α) by auto.
@@ -824,7 +824,7 @@ Qed.
     consistent ONLY with its own [btyp] synthesis.  Holds because the
     target is forced [is_styp] (synthesised) — that excludes the
     [d_consis__forall_inh_*] rules (whose RHS is inherited) and the tagged
-    rules (whose LHS is [utyp_all_etag], never produced by a painting), so
+    rules (whose LHS is [utyp_all_tag], never produced by a painting), so
     consistency collapses to structural congruence.  This is what makes a
     variable's [mode_ti] type EXACTLY its binding painting, hence the
     extracted [d_sub] lands at the empty tag context demanded by

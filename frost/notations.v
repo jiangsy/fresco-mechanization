@@ -174,7 +174,7 @@ Notation add_2 := AtomSetImpl.add_2.
 Notation remove_1 := AtomSetImpl.remove_1.
 Notation remove_3 := AtomSetImpl.remove_3.
 (* ⚙ [choose] / [cardinal] and the two cardinal facts below are what a
-   FINITE-SET INDUCTION needs — the ε-tag freshening (decl/prop_etag_swap.v)
+   FINITE-SET INDUCTION needs — the ε-tag freshening (decl/prop_tag_swap.v)
    moves one bad tag per step and measures progress by the cardinality of the
    bad set. *)
 Notation choose := AtomSetImpl.choose.

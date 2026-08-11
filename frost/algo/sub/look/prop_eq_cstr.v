@@ -50,7 +50,6 @@ Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
-Require Import src.frost.deco_algo.prop_decorate.
 Require Import src.frost.deco_algo.prop_decorate_sub.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.consis.prop_consis_precise.
@@ -1194,12 +1193,12 @@ Proof.
           [ exact HwfΘ | exact Href | reflexivity | eassumption ] ].
 Qed.
 
-(* the ε-tagged mirror: [uskl_all_etag] subjects (C-ForallInh's tagged row
+(* the ε-tagged mirror: [uskl_all_tag] subjects (C-ForallInh's tagged row
    splits the index as [Ψ = Ψ0, ε]; the ForallSyn row keeps it). *)
-Lemma ad_pat_consis_all_etag_refine_unify : forall Ψs Θ R Q,
+Lemma ad_pat_consis_all_tag_refine_unify : forall Ψs Θ R Q,
   {{ ⊢ Θ }}a ->
   {{ Ψs ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
-  forall εr R0, R = uskl_all_etag εr R0 ->
+  forall εr R0, R = uskl_all_tag εr R0 ->
   forall Δr Ql, {{ Θ ⨟ Δr ⊢ᵣ Ql ⊳ Q }}ad ->
   exists L Q0 Ψ0,
     (forall α, α `notin` L ->
@@ -3584,12 +3583,12 @@ Proof.
                               clear - Hb HβΘ; fsetdec ] ]
                     | exact HβPa ]
                 | clear - Fr; fsetdec ].
-  - (* R' = all_etag εr R0 : the ε-TAGGED mirror of the previous case
+  - (* R' = all_tag εr R0 : the ε-TAGGED mirror of the previous case
        (C-ForallInh's tagged row splits the index [Ψ = Ψ0, ε]). *)
     cbn [uskl_to_pskl] in HeraseR; subst P.
     (* ρ-INVERSION: a ∀^ε ideal forces a ∀^ε image with the SAME ε and Ψρ *)
     cbn [msubst_uskl_syn subst_uskl_in_uskl] in Hrho.
-    destruct (uskl_rho_all_etag_r_inv Hrho) as (Lρ & Rsub0 & HRs & Hrhobody).
+    destruct (uskl_rho_all_tag_r_inv Hrho) as (Lρ & Rsub0 & HRs & Hrhobody).
     subst Rsub.
     assert (Hlcψa : lc_uskl ψa) by (apply is_tskl_lc; inversion Htags; assumption).
     cbn [uskl_to_pskl] in HwfSub.
@@ -3598,7 +3597,7 @@ Proof.
       rename H into Hsbody; remember Ls as Ls0 eqn:HeqLs; clear HeqLs end.
     inversion HlcS; subst.
     match goal with H : forall α0, lc_uskl _ |- _ => rename H into Hlcbody end.
-    destruct (ad_pat_consis_all_etag_refine_unify HwfΘ Hconsis eq_refl Hrefine)
+    destruct (ad_pat_consis_all_tag_refine_unify HwfΘ Hconsis eq_refl Hrefine)
       as (Lcof & Q0 & Ψ0 & Hcof & [[HrefInh HΨeq] | [HrefSyn HΨeq]]).
     + (* C-ForallInh: Q = ∀ᴵ.Q0.  Refinement inversion gives P0 = ∀.P0' and the
          binder in Δ, which [ad_refine_syn_delta_to_tvar_mid] moves into Θ so

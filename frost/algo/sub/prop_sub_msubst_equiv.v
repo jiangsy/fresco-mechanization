@@ -78,11 +78,11 @@ Inductive a_uskl_tyequiv (Θ : aenv) : uskl -> uskl -> Prop :=
        {{ Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
            (open_uskl_wrt_uskl R' (uskl_var_f α)) }}a) ->
     {{ Θ ⊢ (uskl_all_syn R) ≡ᵘ (uskl_all_syn R') }}a
-| a_uskl_tyequiv__all_etag : forall L ε R R',
+| a_uskl_tyequiv__all_tag : forall L ε R R',
     (forall α, α `notin` L ->
        {{ Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
            (open_uskl_wrt_uskl R' (uskl_var_f α)) }}a) ->
-    {{ Θ ⊢ (uskl_all_etag ε R) ≡ᵘ (uskl_all_etag ε R') }}a
+    {{ Θ ⊢ (uskl_all_tag ε R) ≡ᵘ (uskl_all_tag ε R') }}a
 | a_uskl_tyequiv__hole :
     {{ Θ ⊢ uskl_hole ≡ᵘ uskl_hole }}a
 | a_uskl_tyequiv__holeg :
@@ -105,7 +105,7 @@ Lemma a_uskl_tyequiv_refl : forall Θ R,
 Proof.
   intros Θ R Hlc; induction Hlc;
     try (apply a_uskl_tyequiv__all_syn with (L := empty); intros α _; auto);
-    try (apply a_uskl_tyequiv__all_etag with (L := empty); intros α _; auto);
+    try (apply a_uskl_tyequiv__all_tag with (L := empty); intros α _; auto);
     eauto using a_uskl_tyequiv.
 Qed.
 
@@ -115,7 +115,7 @@ Lemma a_uskl_tyequiv_sym : forall Θ R R',
 Proof.
   intros Θ R R' H; induction H;
     try (apply a_uskl_tyequiv__all_syn with (L := L); intros α Hα; auto);
-    try (apply a_uskl_tyequiv__all_etag with (L := L); intros α Hα; auto);
+    try (apply a_uskl_tyequiv__all_tag with (L := L); intros α Hα; auto);
     eauto using a_uskl_tyequiv, a_tyequiv__sym.
 Qed.
 
@@ -159,7 +159,7 @@ Proof.
     inversion Hg; subst.
     match goal with
     | Hb : forall a : atom, a `notin` ?L0 -> uskl_ghost_free _ |- _ =>
-        apply uskl_ghost_free__all_etag with (L := L `union` L0); intros α Hα;
+        apply uskl_ghost_free__all_tag with (L := L `union` L0); intros α Hα;
         apply H0; [ clear - Hα; fsetdec | apply Hb; clear - Hα; fsetdec ]
     end.
   - inversion Hg.
@@ -251,8 +251,8 @@ Proof.
       assert (Hd : β `in` (singleton α `union` ftvar_in_uskl R)) by fsetdec.
       apply union_1 in Hd; destruct Hd as [Hd | Hd];
         [ exfalso; apply Hne; apply singleton_1 in Hd; auto | exact Hd ].
-  - (* all_etag *)
-    apply a_uskl_tyequiv__all_etag with (L := dom κ `union` dom σ).
+  - (* all_tag *)
+    apply a_uskl_tyequiv__all_tag with (L := dom κ `union` dom σ).
     intros α Hα.
     assert (Hoκ : msubst_uskl_syn κ (open_uskl_wrt_uskl R (uskl_var_f α))
                   = open_uskl_wrt_uskl (msubst_uskl_syn κ R) (uskl_var_f α))
@@ -316,8 +316,8 @@ Proof.
     split; [ eapply lc_uskl_all_syn_exists; exact Hl
            | eapply lc_uskl_all_syn_exists; exact Hr ].
   - pick fresh α. destruct (H0 α ltac:(clear - Fr; solve_notin_auto)) as [Hl Hr].
-    split; [ eapply lc_uskl_all_etag_exists; exact Hl
-           | eapply lc_uskl_all_etag_exists; exact Hr ].
+    split; [ eapply lc_uskl_all_tag_exists; exact Hl
+           | eapply lc_uskl_all_tag_exists; exact Hr ].
   - split; apply lc_uskl_hole.
   - split; apply lc_uskl_holeg.
   - destruct IHa_uskl_tyequiv. split; apply lc_uskl_tophole; assumption.
@@ -548,7 +548,7 @@ Proof.
   - (* __all_syn : painting of a MONO is never a ∀ *)
     destruct τ0; cbn in HeqY; try discriminate.
     inversion Hm.
-  - (* __all_etag *)
+  - (* __all_tag *)
     destruct τ0; cbn in HeqY; discriminate.
   - (* __hole *)
     destruct τ0; cbn in HeqY; discriminate.
@@ -614,15 +614,15 @@ Proof.
           intros α Hα;
           apply H0; [ clear - Hα; fsetdec | apply Hz; clear - Hα; fsetdec ]
       end.
-  - (* __all_etag *)
+  - (* __all_tag *)
     inversion HYZ; subst.
     + lazymatch goal with
-      | Hm0 : mono_ptyp ?t, He : ptyp_to_uskl_syn ?t = uskl_all_etag _ _ |- _ =>
+      | Hm0 : mono_ptyp ?t, He : ptyp_to_uskl_syn ?t = uskl_all_tag _ _ |- _ =>
           destruct Hm0; cbn in He; discriminate He
       end.
     + lazymatch goal with
       | Hz : forall α : atom, α `notin` ?L2 -> {{ Θ ⊢ _ ≡ᵘ _ }}a |- _ =>
-          apply a_uskl_tyequiv__all_etag with (L := L `union` L2);
+          apply a_uskl_tyequiv__all_tag with (L := L `union` L2);
           intros α Hα;
           apply H0; [ clear - Hα; fsetdec | apply Hz; clear - Hα; fsetdec ]
       end.
@@ -729,7 +729,7 @@ Proof.
   - apply a_uskl_tyequiv__var.
   - apply a_uskl_tyequiv__arrow; assumption.
   - apply a_uskl_tyequiv__all_syn with (L := L); auto.
-  - apply a_uskl_tyequiv__all_etag with (L := L); auto.
+  - apply a_uskl_tyequiv__all_tag with (L := L); auto.
   - apply a_uskl_tyequiv__hole.
   - apply a_uskl_tyequiv__holeg.
   - apply a_uskl_tyequiv__tophole; assumption.
@@ -760,15 +760,15 @@ Proof.
   - (* __all_syn *) eauto.
 Qed.
 
-Lemma a_uskl_tyequiv_all_etag_inv : forall Θ ε R R',
-  {{ Θ ⊢ (uskl_all_etag ε R) ≡ᵘ (uskl_all_etag ε R') }}a ->
+Lemma a_uskl_tyequiv_all_tag_inv : forall Θ ε R R',
+  {{ Θ ⊢ (uskl_all_tag ε R) ≡ᵘ (uskl_all_tag ε R') }}a ->
   exists L, forall α, α `notin` L ->
     {{ Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
         (open_uskl_wrt_uskl R' (uskl_var_f α)) }}a.
 Proof.
   intros Θ ε R R' H; inversion H; subst.
   - lazymatch goal with
-    | Hm1 : mono_ptyp ?t1, He1 : ptyp_to_uskl_syn ?t1 = uskl_all_etag ε R |- _ =>
+    | Hm1 : mono_ptyp ?t1, He1 : ptyp_to_uskl_syn ?t1 = uskl_all_tag ε R |- _ =>
         destruct Hm1; cbn in He1; discriminate He1
     end.
   - eauto.
@@ -819,8 +819,8 @@ Proof.
     rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψ β γ Hne Hlcψ).
     rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R' ψ β γ Hne Hlcψ).
     apply H0; [ clear - Hγ; fsetdec | exact Hlcψ | exact HβΘ ].
-  - (* __all_etag *)
-    cbn. apply a_uskl_tyequiv__all_etag with (L := L `union` singleton β).
+  - (* __all_tag *)
+    cbn. apply a_uskl_tyequiv__all_tag with (L := L `union` singleton β).
     intros γ Hγ.
     assert (Hne : β <> γ) by (clear - Hγ; fsetdec).
     rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψ β γ Hne Hlcψ).
@@ -872,7 +872,7 @@ Proof.
     pose proof (ftag_in_uskl_open_var R α) as Ho1.
     pose proof (ftag_in_uskl_open_var R' α) as Ho2.
     clear - Hb Ho1 Ho2; fsetdec.
-  - (* __all_etag *)
+  - (* __all_tag *)
     pick fresh α for L.
     pose proof (H0 α ltac:(clear - Fr; solve_notin_auto)) as Hb.
     pose proof (ftag_in_uskl_open_var R α) as Ho1.

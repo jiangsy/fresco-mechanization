@@ -47,7 +47,7 @@ files were `Admitted` scaffolding subsumed by the current algo development.
 | Algorithmic type inference (fig:alg-type-inference) | `a_typing` | 🟢 ∀ᾱ.A₀ AbsCheck (step/base), typed Freeze |
 | Erasure ⌊·⌋, decorated subtyping/consistency, tag solving (app:decorated-algosub) | `algo/def_decorated.v` (`uskl_to_pskl`, `a_subtag`, `a_consistag`, `a_solvetag(_sub/_eq)`) | 🟢 |
 | Metasubstitutions κ : Θ ⇒ Θ' (app:metasubstitutions) | `algo/def_meta.v` (`a_inc`, `a_inc_equiv`, `a_tyequiv`, `⊴`, and the application family `msubst_{ptyp,btyp,pskl,uskl_syn}`) | 🟢 |
-| Decl judgments in algo contexts (app:decl-in-algo-context) | `decorated_algo/def_decl_algo.v` (`ad_pat_consis`, `ad_refine_syn`, `ad_refine_pskl`, `ad_wf_pskl` + flex-lookup rules); `decorated_algo/def_decl_algo_sub.v` (`ad_pat_sub`, its fuel-indexed `ad_pat_sub_n`, `ad_partial_precise`); `decorated_algo/def_decl_algo_sub_hyg.v` (`ad_pat_sub_g` / `ad_pat_sub_gv`, the hygienic + leaf-valid mirrors); `decorated_algo/def_decl_algo_typing.v` (`ad_pat`, `ad_sd_typing`) | 🟢 COMPLETE 2026-08-06.  The typing layer that section D needs landed: `ad_pat` (skeleton inference) and `ad_sd_typing` (SYNTAX-DIRECTED typing — the appendix ports that one, not `d_typing`).  Per the appendix, NO new rule was needed (every type-level lookup happens inside the embedded subtyping/consistency/refinement premises, which already carry their flexible rows); what was added are the appendix's THREE explicit type-equivalence premises, on `sd-Freeze`, `sd-AbsAnnoCheck` and `sd-AbsAnno`.  `abind_to_pskl` (the `dbind_to_pskl` mirror) added to `algo/def_extra.v` |
+| Decl judgments in algo contexts (app:decl-in-algo-context) | `algo_decl/def_decl_algo.v` (`ad_pat_consis`, `ad_refine_syn`, `ad_refine_pskl`, `ad_wf_pskl` + flex-lookup rules); `algo_decl/def_decl_algo_sub.v` (`ad_pat_sub`, its fuel-indexed `ad_pat_sub_n`, `ad_partial_precise`); `algo_decl/def_decl_algo_sub_hyg.v` (`ad_pat_sub_g` / `ad_pat_sub_gv`, the hygienic + leaf-valid mirrors); `algo_decl/def_decl_algo_typing.v` (`ad_pat`, `ad_sd_typing`) | 🟢 COMPLETE 2026-08-06.  The typing layer that section D needs landed: `ad_pat` (skeleton inference) and `ad_sd_typing` (SYNTAX-DIRECTED typing — the appendix ports that one, not `d_typing`).  Per the appendix, NO new rule was needed (every type-level lookup happens inside the embedded subtyping/consistency/refinement premises, which already carry their flexible rows); what was added are the appendix's THREE explicit type-equivalence premises, on `sd-Freeze`, `sd-AbsAnnoCheck` and `sd-AbsAnno`.  `abind_to_pskl` (the `dbind_to_pskl` mirror) added to `algo/def_extra.v` |
 
 ## Theorems / lemmas (bottom-up order; ⬜ = to prove, per paper appendix)
 
@@ -74,13 +74,13 @@ files were `Admitted` scaffolding subsumed by the current algo development.
 - 🟡 Theorem: Completeness and optimality of subtyping (subtyping-proofs:3050, P7b/P7c) — **IN PROGRESS**.  Motive locked AND REPAIRED 2026-07-30 (`sub_complete_concl` / `sub_flex_complete_concl` / `a_sub_complete_bundle`, `frost/algo/prop_sub_complete_thm.v`): the join is the LEAF-VALID mirror `ad_pat_sub_gv` (def_decl_algo_sub_hyg.v) carrying the subject refinement at the consistency leaves, with NO root-level third premise — the first-cut root premise was REFUTED as a lockstep condition (machine-checked `cex/cex_p7_univ_ghost_r_vacuous.v` + `cex/cex_p7_third_premise_forall.v`: it lost Sub-UnivGhostR entirely and the head-disagreeing ForallL/ForallR solutions `∀a.a ⩽ unit`, `unit ⩽ ∀a.unit`).  FIVE of P7b's rows closed, Qed + axiom-free — Sub-Ghost, Sub-GhostG, **Sub-Infer**, **Sub-Check** and **Sub-UnivGhostR** (a REAL proof: algorithmic UnivGhostR + the `□`-P0 precision core at the stripped counterpart + a `∀◇`-wrap).  The enabling lemma is `a_inc_equiv_precise_msubst` (precision is stable under equivalent metasubstitutions), with the shared core `a_sub_complete_hole_p0_precision`.  ⚠️ Remaining obligation: transport P5's precision-substitution + the freshening kits to `_gv` for ForallL/ForallR.  See docs/PAPER-GAPS.md and DESIGN §9.1.3 / §1.  ⚠️ The property the paper marks with its own TODO at `:3243` ("input `P_0` concrete ⟹ RHS is `P_0`") is **FALSE** — machine-checked `frost/algo/cex/cex_p7_concrete_rhs.v` (`p7_concrete_rhs_is_false`).  Sub-Check / Sub-ForallR are unaffected: both already argue via the EQUIVALENCE, and BOTH halves of it are proved in `frost/algo/prop_sub_concrete_rhs.v` — `a_consis_concrete_output_equiv` and `a_sub_concrete_output_equiv`, each `Θ1 ⊢ P0 ≡ˢ P'`, both falling out of the SOUNDNESS theorems' refinement conjunct plus `ad_refine_syn_ghost_free_equiv`.  See docs/PAPER-GAPS.md and DESIGN §9.1
 
 **D. proofs.tex** (§Proofs for Algorithms) — STARTED 2026-08-06.  🟢 the
-DEFINITIONAL layer is in (`decorated_algo/def_decl_algo_typing.v`: `ad_pat`,
+DEFINITIONAL layer is in (`algo_decl/def_decl_algo_typing.v`: `ad_pat`,
 `ad_sd_typing`); the lemma/theorem block is teed up with per-item design in
 [`docs/HANDOFF-section-d.md`](docs/HANDOFF-section-d.md).
 ⚠️ Three of these are marked "straightforward induction" in the paper and are
 NOT straightforward in the mechanization — reasons recorded per lemma there.
 - 🟢 **Suffix moving — CLOSED 2026-08-06**, Qed + axiom-free
-  (`decorated_algo/prop_ctx_mono.v`): `ad_sd_typing_suffix_moving`,
+  (`algo_decl/ + deco_algo/prop_ctx_mono.v`): `ad_sd_typing_suffix_moving`,
   `ad_pat_suffix_moving`, plus the two "stability" corollaries
   `ad_sd_typing_weaken_suffix` / `ad_pat_weaken_suffix`.  ⭐ ONE lemma, not
   five: every `ad_*` judgement reads its context only through `binds` and
@@ -169,7 +169,7 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   (algo/typing/prop_closed.v) — the empty context, one per user-facing mode,
   and since 2026-08-10 stated against the paper's own §declarative system
   (`· ⊢ˢ[M] e ⦂ B` and `· ⊢[M] e ⦂ B`) through the conservativity bridge
-  `decorated_algo/prop_conserv.v`, with the run's output context closed off by a
+  `algo_decl/prop_conserv.v`, with the run's output context closed off by a
   metasubstitution the proof BUILDS.
   History of the build-up:
 - 🟡 (history) **Theorem: Soundness of type inference — STARTED 2026-08-06**
@@ -238,7 +238,34 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-11 (latest) — ⚙ **NOTATION SCOPES: the SYSTEM moves off the turnstile and onto a `{{ … }}d` / `{{ … }}ad` / `{{ … }}a` / `{{ … }}t` DELIMITER**
+## 2026-08-11 (latest) — ⚙ **`etag` → `tag`; `prop_decorate.v` DELETED into `prop_coercions.v`**
+
+**`make coq` exit 0; README.v 28/28 `Print Assumptions` closed.**
+
+- **`etag` → `tag`**, 689 occurrences: the `e` stood for the ε of the tag
+  variable, which the sort names already carry.  `frost/prop_etag.v` →
+  `prop_tag.v`, `decl/prop_etag_swap.v` → `prop_tag_swap.v`, and the ott
+  constructor `all_etag` → `all_tag` (so `utyp_all_etag` / `uskl_all_etag`
+  became `utyp_all_tag` / `uskl_all_tag`; `def_ott.v` / `prop_ln.v`
+  regenerate).  ⚠️ The rename is `(?<![A-Za-z])etag`, NOT a plain
+  `etag` → `tag`: **`solvetag` contains `etag` as a substring** (`solv`+`etag`),
+  and 55 identifiers in the `a_solvetag*` family would have become
+  `a_solvtag*`.  `retag` / `retagging` in prose are untouched for the same
+  reason.  ⚙ Regeneration was checked idempotent first (`touch language.ott
+  && make ott lngen` → zero diff) before editing the grammar.
+- **`deco_algo/prop_decorate.v` is gone.**  86 lines, six lemmas, every one of
+  them a `pskl_to_uskl` conversion fact — `prop_coercions.v` is the tree's
+  single home for those, so they moved into its §1 / §2 / §3 by KIND (the
+  file's own organisation), and the 29 `Require`s of the dead file were
+  dropped.  ⚠️ The move only became possible after `pskl_to_uskl` ITSELF moved
+  from `deco_algo/def_decorated.v` to `frost/coercions.v` — it is a map
+  between two of the six sorts, so `coercions.v` was always its home, and its
+  inverse `uskl_to_pskl` had already moved there earlier the same day.
+  ⚙ `pskl_to_uskl_lc` / `_guarded` went into §3 deliberately: that section is
+  inside the file's scoped `Set Implicit Arguments` region, which is what
+  keeps their subject implicit as it was in the old file.
+
+## 2026-08-11 — ⚙ **NOTATION SCOPES: the SYSTEM moves off the turnstile and onto a `{{ … }}d` / `{{ … }}ad` / `{{ … }}a` / `{{ … }}da` DELIMITER**
 
 **`make coq` exit 0; README.v 28/28 `Print Assumptions` closed; no `Admitted`, no `Axiom`.**
 
@@ -339,7 +366,7 @@ the repair.
 | `prop_conserv.v` §7 | NEW `d_pat_sub_to_ad_gv` / `_v` — ⚙ the fuel is easy at SK: `d_pat_sub` has no cofinite row, so no renaming (unlike §13's TY twin) |
 | `prop_conserv.v` §15 | ⭐ `d_pat_to_ad` — the bridge that used to be ASSUMED, now a hypothesis-free induction; `d_sd_typing_to_ad` loses its hypothesis |
 | `prop_closed.v` | ⭐⭐ `a_typing_complete_sd_infer` / `_sd_check` / `_decl_infer` / `_decl_check` |
-| `frost/coercions.v` | `uskl_to_pskl` (+ `⌊·⌋ˢ`) MOVED from `decorated_algo/def_decorated.v`, and `uskl_to_pskl_subst` from `prop_decorate_sub.v` — `decl/def_extra.v` is upstream of both and now needs the erasure |
+| `frost/coercions.v` | `uskl_to_pskl` (+ `⌊·⌋ˢ`) MOVED from `deco_algo/def_decorated.v`, and `uskl_to_pskl_subst` from `prop_decorate_sub.v` — `decl/def_extra.v` is upstream of both and now needs the erasure |
 
 ⚙ **Blast radius, measured**: 13 constructor sites for `d_pat_sub`'s three rows
 and 10 for `d_pat`'s. Everything else in the 39-file development compiled
@@ -356,7 +383,7 @@ Author-facing note, in the paper's own notation:
 
 ## 2026-08-11 (evening) — ⭐⭐ **`d_sd_typing` → `ad_sd_typing` IS PROVED IN GENERAL FORM, reduced to ONE hypothesis**
 
-`d_sd_typing_to_ad` (`decorated_algo/prop_conserv.v` §15), over an ARBITRARY Γ:
+`d_sd_typing_to_ad` (`algo_decl/prop_conserv.v` §15), over an ARBITRARY Γ:
 
 ```coq
 d_sd_typing M Γ e B -> d_wf_denv Γ -> a_wf_exp (denv_to_aenv Γ) e ->
@@ -396,23 +423,23 @@ own `btyp_to_ptyp B1 = A` to eliminate `A`, so the reconstruction must name
 `ad_sd_typing__freeze`'s premise type `B` is not determined by its conclusion —
 `apply` needs `with (B := A)`.
 
-## 2026-08-11 (later still) — ⚙ **`prop_conserv.v` MOVED to `decorated_algo/`**, where a `d_` ⇄ `ad_` bridge belongs
+## 2026-08-11 (later still) — ⚙ **`prop_conserv.v` MOVED to `algo_decl/` + `deco_algo/`**, where a `d_` ⇄ `ad_` bridge belongs
 
 The conservativity bridge was filed under `algo/typing/` when it was written,
 on the theory that needing `btyp_to_bskl_open` (algo/pat/) and `guarded_pskl_lc`
 (algo/sub/) would invert the layering.  ⚠️ It does not, and the file is not part
 of the algorithm: it relates the DECLARATIVE system to the decl-in-algo one, so
-it belongs to neither, and `decorated_algo/` is by CLAUDE.md's own description
+it belongs to neither, and `algo_decl/` + `deco_algo/` is by CLAUDE.md's own description
 "the layer BETWEEN the algorithmic and declarative systems … the bridge the
 soundness and completeness proofs both go through".
 
 ⭐ Why there is no inversion: the DEFINITION layers point one way
-(`algo/def_*` → `decorated_algo/def_*`, never back), while the PROOF layers
-already interleave — `decorated_algo/prop_decorate_key.v` reaches into
+(`algo/def_*` → `algo_decl/ + deco_algo/def_*`, never back), while the PROOF layers
+already interleave — `deco_algo/prop_decorate_key.v` reaches into
 `algo/prop_soundness_consis.v`, `algo/prop_pat_sub.v`, `algo/prop_refine.v` and
 `algo/prop_stability.v`.  One consumer (`algo/typing/prop_closed.v`) and a dozen
 prose references repointed; `frost/coercions.v` already CALLED it
-`decorated_algo/prop_conserv.v`, which is the tell that it was mis-filed.
+`algo_decl/prop_conserv.v`, which is the tell that it was mis-filed.
 
 ## 2026-08-11 (later) — ⭐⭐⭐ **THE UNIFORM READING OF `fresh Ψ'` LANDS: all four subtyping judgements carry GLOBAL tag hygiene, and CST pays for it**
 
@@ -428,8 +455,8 @@ README.v 24/24 `Print Assumptions` closed.  Full write-up:
 premise the fuel mirrors `ad_pat_sub_g` / `_gv` already had:
 
 ```coq
-Ψ' ∩ (ftag_in_utyp (utyp_all_etag ε C)) [=] empty     (* d_sub *)
-Ψ' ∩ (ftag_in_uskl (uskl_all_etag ε R)) [=] empty     (* d_pat_sub, ad_pat_sub *)
+Ψ' ∩ (ftag_in_utyp (utyp_all_tag ε C)) [=] empty     (* d_sub *)
+Ψ' ∩ (ftag_in_uskl (uskl_all_tag ε R)) [=] empty     (* d_pat_sub, ad_pat_sub *)
 ```
 
 That is the paper's single word *fresh* read GLOBALLY, which is what
@@ -442,7 +469,7 @@ too, so (A) could not have fixed it — is gone.
 
 ⭐ **The mechanical ones need ONE fact**, and it is worth having stated in its
 strongest form: `ftag_in_utyp_subst_tagfree` / `ftag_in_uskl_subst_tagfree`
-(`frost/prop_etag.v` §0) — substituting a TAG-FREE term cannot change a tag.
+(`frost/prop_tag.v` §0) — substituting a TAG-FREE term cannot change a tag.
 Every transport either keeps the subject, takes `Ψ' := ∅`, or substitutes a
 type variable / `1` / a monotype painting, so it reads off that lemma.
 
@@ -458,7 +485,7 @@ premise they were dropping.
 
 ### 3. ⭐ The CST repair: COLLECT, then move WHOLESALE
 
-`frost/decl/prop_etag_swap.v` §4–§5 (new, ~250 lines on top of the 2026-08-11
+`frost/decl/prop_tag_swap.v` §4–§5 (new, ~250 lines on top of the 2026-08-11
 equivariance kit).  The lesson is the shape:
 
 - §3's per-node freshening CANNOT be iterated through an induction.  At a
@@ -511,14 +538,14 @@ as `d_consis_sub_trans_mid_tagsin`.  `d_sd_typing` / `d_typing` are untouched.
   conservativity bridge carries the hygiene across the sorts.
   `ftag_in_bskl_to_uskl` was deleted from `prop_consis_precise.v` as its
   duplicate.
-- ⭐⭐ **THE ATOM TRANSPOSITION EXISTED TWICE**, in `frost/prop_etag.v` (ε tags)
+- ⭐⭐ **THE ATOM TRANSPOSITION EXISTED TWICE**, in `frost/prop_tag.v` (ε tags)
   and `frost/algo/prop_swap.v` (type variables) — under the **same six names**
   (`swap_atom`, `swap_atoms`, `swap_atom_invol`, `swap_atoms_empty`,
   `swap_atoms_in`, `swap_atoms_notin`), and `algo/prop_pat_sub.v` imports BOTH
   files.  ⚠️ That is the resolution hazard CLAUDE.md warns about, and the two
   `swap_atoms_notin`s were **different facts** (set-fixed vs pointwise).  A
   transposition of two ATOMS knows nothing about ε tags, so the layer now lives
-  once, upstream, in `prop_etag.v` §1; `prop_swap.v` imports it and keeps only
+  once, upstream, in `prop_tag.v` §1; `prop_swap.v` imports it and keeps only
   what the TYPE-variable side adds.  `swap_atom_fresh` was renamed to
   `prop_swap.v`'s `swap_atom_other` (one fact, one name) and `prop_swap.v`'s
   own `swap_atoms_notin` was dead.
@@ -529,11 +556,11 @@ Once §3 landed, the per-node freshening it replaces and everything reachable
 only from it went dead.  Deleted, with RESTART NOTEs at both files:
 `d_sub_freshen_forall_l` (+ `_aux`, + `swap_atoms_disjoint_keep`, which only
 measured it); `d_sub_tagsin_of`, the twin's forgetful direction (CST goes the
-other way — it was the round-trip certificate); `d_sub_swap_etag` and
-`d_pat_sub_swap_etag` (§3's `d_sub_tagsin_swap_etag` is the same proof with the
+other way — it was the round-trip certificate); `d_sub_swap_tag` and
+`d_pat_sub_swap_tag` (§3's `d_sub_tagsin_swap_tag` is the same proof with the
 `Ψ' ⊆ U` row carried); and with them the whole **`uskl` half** of the ε-swap
-kit — `swap_etag_in_uskl` and its nine transport lemmas, plus
-`d_tags_skl_swap_etag` / `d_wf_uskl_swap_etag` / `d_pat_consis_swap_etag`.
+kit — `swap_tag_in_uskl` and its nine transport lemmas, plus
+`d_tags_skl_swap_tag` / `d_wf_uskl_swap_tag` / `d_pat_consis_swap_tag`.
 ⚠️ The skeleton half was consumer-less SYMMETRY: the CST repair the file exists
 for runs at the TYPE sort.  Re-deriving it is the `utyp` half with
 `utyp`/`C` → `uskl`/`R` plus the four ghost constructors.  Also deleted:
@@ -546,7 +573,7 @@ paper's ForallL side condition `fresh Ψ'` as the `_g` / `_gv` mirrors.  `make
 coq` exit 0, 24/24 closed.  Full write-up: [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md)
 (⛔ GAP 2026-08-11) and the hand-off.
 
-⭐ **NEW: `frost/prop_etag.v` + `frost/decl/prop_etag_swap.v`** (~600 lines) —
+⭐ **NEW: `frost/prop_tag.v` + `frost/decl/prop_tag_swap.v`** (~600 lines) —
 the primitive that reconciles the two readings.  `fresh` is a statement about
 NAMES, so the right primitive is ε-tag EQUIVARIANCE: a TRANSPOSITION of two
 tags is an automorphism of `d_tags`, `d_tags_skl`, `d_wf_utyp`, `d_wf_uskl`,
@@ -599,7 +626,7 @@ Hand-off: [`docs/HANDOFF-closed-corollaries-declarative.md`](docs/HANDOFF-closed
 context — instead of `ad_sd_typing` over `nil : aenv`.  `make coq` exit 0,
 admit-free, axiom-free, 24/24 `Print Assumptions` closed.
 
-**New: `frost/decorated_algo/prop_conserv.v`** (~1300 lines) — the bridge the
+**New: `frost/algo_decl/prop_conserv.v`** (~1300 lines) — the bridge the
 paper asserts and never states (`app:decl-in-algo-context`: *"it is easy to
 extend them to algorithmic contexts Θ"*).  A declarative context IS a
 flexible-free algorithmic one (`denv_to_aenv`), each `ad_` judgment is its
@@ -707,7 +734,7 @@ forces `A0 = ⌊B⌋` anyway.
 an `a_wf_ptyp Θ A` premise (its four type-carrying siblings all have one),
 and its join constrains only the TARGET (`ad_pat_sub_target_wf`), so a
 derivation said nothing about the scope of the types its subject mentions.
-**The premise is now ON the rule** (decorated_algo/def_decl_algo_typing.v,
+**The premise is now ON the rule** (algo_decl/def_decl_algo_typing.v,
 registered in docs/PAPER-GAPS.md), which is free on the soundness side —
 `a_typing_sound` already carries `a_wf_exp Θ0 e`, which stores exactly this
 at every annotation — and buys the new
@@ -1511,7 +1538,7 @@ rows the RECURSIVE premise must be discharged FIRST because it is what fixes
 
 **4. §6.1's dependency-order blocker is GONE.**  `ad_pat_sub_g_of` (was
 `prop_completeness_sub_precise.v`) and `ad_pat_sub_gv_fuel_weaken` (was
-`prop_completeness_sub.v`) MOVED to `decorated_algo/def_decl_algo_sub_hyg.v`,
+`prop_completeness_sub.v`) MOVED to `algo_decl/def_decl_algo_sub_hyg.v`,
 joined by the composite `ad_pat_sub_of_gv`.  Both are plain inductions over
 the mirrors, so they need nothing that file does not already import — and
 `algo/prop_soundness_sub.v`, which now has to CONCLUDE `_gv`, sits before both
@@ -2033,7 +2060,7 @@ by `inversion Heq; subst; first [reflexivity | assumption]` instead.
 ## 2026-08-06 — ⭐⭐ **SECTION D: the whole support kit for thm:sound-skeleton-inference is Qed** — tm-verbatim stability, term-var renaming, and the split-shape analysis that retires split-refine + transitivity for theorem 1
 
 `make coq` clean, no admits, all new lemmas Closed under the global context.
-Three files: `decorated_algo/prop_ctx_mono.v` (reworked),
+Three files: `algo_decl/ + deco_algo/prop_ctx_mono.v` (reworked),
 `algo/prop_stability.v` (extended), `algo/prop_soundness_pat.v` (NEW — §1–§3
 kit; the theorem assembly is next, per-case routes in
 `docs/HANDOFF-section-d.md` §7).
@@ -2076,7 +2103,7 @@ kit; the theorem assembly is next, per-case routes in
    refinement under type equivalence", proofs.tex:1578) — also needed by
    theorem 2's Freeze case; build once for both.
 
-## 2026-08-06 — ⚙⚙ **HOUSEKEEPING: the pre-restart `.legacy` corpus deleted, `def_tags`+`predicates` folded into `def_extra`, `decorated_algo/` promoted, and two more renames retired into the SWAP kit**
+## 2026-08-06 — ⚙⚙ **HOUSEKEEPING: the pre-restart `.legacy` corpus deleted, `def_tags`+`predicates` folded into `def_extra`, `algo_decl/` + `deco_algo/` promoted, and two more renames retired into the SWAP kit**
 
 `make coq` clean; README.v still audits **28 × Closed under the global
 context**.  No statement of any paper-facing theorem changed — this is a
@@ -2114,7 +2141,7 @@ duplicate with live uses — unified onto `is_styp` at 22 sites, and the
 identity-in-disguise `is_styp_is_syn` deleted with its 6 call sites.
 `ftag_in_uskl` moved over verbatim.  `frost/README.v` (a 0-byte file) deleted.
 
-### 3. `decorated_algo/` promoted out of `algo/` to `frost/decorated_algo/`
+### 3. `algo_decl/` + `deco_algo/` promoted out of `algo/` to `frost/algo_decl/ + deco_algo/`
 
 It is not part of the algorithm: it is the ε-tagged BRIDGE that soundness and
 completeness both route through.  Module path `src.frost.algo.decorated_algo.*`
@@ -3087,7 +3114,7 @@ listed only the other:
 1. **TASK 0's `sub_shield`** for a `P0` carrying a ∀ below its head, whose
    boundary is machine-checked (`sub_shield_forall_flex_p0_fails`,
    cex/cex_p7_shield_forall_flex.v).
-2. ⚠️ **NEW FINDING — `NM = TY -> uskl_ghost_free (uskl_all_etag ε Rj)`**, the
+2. ⚠️ **NEW FINDING — `NM = TY -> uskl_ghost_free (uskl_all_tag ε Rj)`**, the
    ForallL rows' third premise.  It is the last premise of
    `ad_pat_sub_precise_upre_gv` (P5's precision-substitution transport, which
    threads the same predicate through every lemma of its pack), and it is **NOT
@@ -3356,9 +3383,9 @@ walk.  Composed with `fastep_all_r` (Sub-ForallL, which OPENS the guess and
 grows Δρ) they reach `(α̂, β→β)` at `β ∈ Δρ`, where nothing applies — that was
 `apart_w_fails`.  ⭐ **Without them the root obligation is SATISFIABLE**, and
 the proof is a general closure argument, not a witness-specific one: the
-invariant is `etag_free ψa ∧ (ψa is Δρ-clean ∨ ψa is an arrow-spine of
+invariant is `tag_free ψa ∧ (ψa is Δρ-clean ∨ ψa is an arrow-spine of
 Δρ-variables matching P0's)`, closed under every remaining step — `fastep_all_r`
-is VACUOUS on it (an ε-tagged ∀ is not `etag_free`), and `fastep_flexdef_r`
+is VACUOUS on it (an ε-tagged ∀ is not `tag_free`), and `fastep_flexdef_r`
 re-enters the clean branch because a monotype PAINTING carries no tag.
 
 **THE SPLIT.**  `fastep_p0_arrow_{l,r}` and `flex_apart_walk_p0` are DELETED.
@@ -3370,7 +3397,7 @@ not.
 
 **THE POSITIONAL RE-INDEXING (Part A).**  `ss_step` / `ss_walk` now step `P0`
 and the SUBJECT in lockstep and carry the looked-for `α`: `sss_arrow_r` moves
-both, `sss_all` moves P0 (Sub-ForallR), `sss_forall_l_{syn,etag}` and
+both, `sss_all` moves P0 (Sub-ForallR), `sss_forall_l_{syn,tag}` and
 `sss_univ_ghost_l{,g}` move the subject.  The premise reads
 
     sub_shield Θ0 Ψ' Δρ α P0 R ψa :=
@@ -3393,7 +3420,7 @@ is FREE exactly where they are consumed — the LS-Var row, where `R' = α`.
 conjuncts (guard free); Check and Arrow-left take `flex_apart_deep` via the new
 `sub_shield_here_p0`; Sub-ForallR steps by `sss_all`; Sub-Arrow-right by
 `sss_arrow_r` + `_weaken_flex_prefix`; the two Sub-ForallL rows now ALSO step
-the SUBJECT (`sss_forall_l_etag` / `sss_forall_l_syn`, premise `β <> α`, already
+the SUBJECT (`sss_forall_l_tag` / `sss_forall_l_syn`, premise `β <> α`, already
 on hand as `Hβα`) before `_add_fresh` + `_weaken_tvar`; the two UnivGhostL rows
 gained a `sub_shield_step` each (the subject moves, P0 stands still).
 
@@ -4982,7 +5009,7 @@ below — every interface it consumes is now Qed) and item 6 (P7a +
 bundle).
 
 **ROW IMPLEMENTATION MAP (scouted, for the next session).**  Statement:
-TWO variants (subject `uskl_all_etag ε Rj` / `uskl_all_syn Rj`),
+TWO variants (subject `uskl_all_tag ε Rj` / `uskl_all_syn Rj`),
 each taking the IH bundle + the join row's fields as explicit
 hypotheses (M ≠ ti, `Ψa ∩ Ψ`, `Ψa ∩ ftag(subject)`, `a_tags_sort`,
 wf ⌊ψa⌋, the `_gv` premise at `(Ψ ∪ Ψa, open Rj ψa)`), plus
@@ -4990,8 +5017,8 @@ wf ⌊ψa⌋, the `_gv` premise at `(Ψ ∪ Ψa, open Rj ψa)`), plus
 conclusion `sub_complete_concl (S n) …` (the motive's own Hsub is
 ignored — the future bundle dispatches, as ForallR did).  Steps with
 the located kit:
-(1) Pin `R = uskl_all_etag ε Rb` from Hrel by destructing R —
-    var-R refutes since paintings never have `all_etag` heads (untagged
+(1) Pin `R = uskl_all_tag ε Rb` from Hrel by destructing R —
+    var-R refutes since paintings never have `all_tag` heads (untagged
     variant: var-R refutes via image mono-ness, `a_inc_lookup_mono`);
     body family by inversion (∀-heads shape-rigid).
 (2) Fresh α; feed P6-L (Ψsub := Ψ ∪ Ψa) at
@@ -5065,7 +5092,7 @@ scoping entry's assembly sketch glossed over:
    Δ = ∅ paper-facing corollary keeps `Ψa`).
 
 **Landed now** (prop_sub_msubst_equiv.v, end): the ≡ᵘ row-enabler kit —
-`a_uskl_tyequiv_all_syn_inv` / `a_uskl_tyequiv_all_etag_inv` (∀-heads
+`a_uskl_tyequiv_all_syn_inv` / `a_uskl_tyequiv_all_tag_inv` (∀-heads
 are shape-rigid: `__mono` cannot produce one), `a_wf_ptyp_paint_notin`,
 `a_uskl_tyequiv_subst` (common substitution at a Θ-fresh variable; the
 `__mono` leaves are Θ-scoped hence untouched — exactly the consumer the
@@ -5185,7 +5212,7 @@ forms:
   `open_uskl_wrt_uskl R ψ`): `subst_uskl_in_uskl_intro` at a fresh α +
   the packaged form; body-lc premise stated as
   `∀ α, lc_uskl (R ^ α)` so it inverts from either `lc_uskl
-  (uskl_all_syn R)` or `lc_uskl (uskl_all_etag ε R)`.
+  (uskl_all_syn R)` or `lc_uskl (uskl_all_tag ε R)`.
 
 Note `subst_uskl_in_uskl` IS the uskl-into-uskl substitution (ott
 sort-naming quirk — its payload argument is a `uskl`); there is no
@@ -5315,7 +5342,7 @@ statements**:
    shape.  The upre rows that are Qm-shape-INDEPENDENT (refl / hole /
    tophole_remove / flex_l) are handled uniformly (`__hole` uses wf Qr;
    upre__hole itself CARRIES `Θb ⨟ ∅ ⊢ₚₛᵃ ⌊R⌋`).  Congruence rows pair up
-   (arrow/all_syn/all_etag/all_inst ↦ __arrow/__all with
+   (arrow/all_syn/all_tag/all_inst ↦ __arrow/__all with
    `strip_uskl_open` for the erasure-open commute; tophole-family ↦
    __tophole_keep with the guard from wf, or __tophole_fill REBUILT from
    Hr's own Θ-extended premise family — binds-mono composes into the
@@ -5357,7 +5384,7 @@ statements**:
    family is the renamed look + same solve + same guess.  ~40 lines.
    (This is also a de-cofinite-campaign candidate — converting
    `a_sub__forall_l` to exists-fresh would delete this step; defer.)
-5. **The row** `a_sub_complete_forall_l` (shape: subject `uskl_all_etag ε
+5. **The row** `a_sub_complete_forall_l` (shape: subject `uskl_all_tag ε
    R` / `uskl_all_syn R` — TWO variants or one lemma over both rows'
    common data; row hypotheses: the join row's fields incl. the tag
    conditions + `sub_shield`).  Assembly: erase the ≡ᵘ slack; P6-L; move
@@ -6339,7 +6366,7 @@ axiom-free, with a non-vacuity witness).  The sub-side analogue of
 — fails at **`ad_pat_sub_g__forall_l_tagged`**, not only at the `__ghost` row
 that was anticipated.  `is_tskl` does exclude `__ghost` (it admits the dotted
 ◈ `uskl_holeg`, not the plain ◇ `uskl_hole`), `__ghostg`, `__univ_ghost_l/lg`
-and `__forall_l_untagged` — but `uskl_all_etag` IS `is_tskl`, and ForallL's
+and `__forall_l_untagged` — but `uskl_all_tag` IS `is_tskl`, and ForallL's
 guess is bounded only by `dom Θ`, the DERIVATION's context, which
 `__forall_r` grows by the very β Sub-ForallR must strip.  Witness: Θ = β,
 subject `∀^ε α. α`, guess β, leaf `β ∼ β` ⇒ target `β`.  So `dom Θ` is the
@@ -6705,7 +6732,7 @@ two missing directions of ρ's tag/ftv transports);
 `a_wf_pskl_shielded_dom` — a well-formed skeleton's ∀◇-SHIELDED variables
 all live in `dom Θ`, never in Δ, which is exactly what lets Sub-ForallL add
 its fresh binder to Δρ (the discipline DESIGN §7 names in prose);
-`ad_ppre_guarded_all_etag_absurd`; and
+`ad_ppre_guarded_all_tag_absurd`; and
 `ad_partial_precise_tvar_to_delta_mid` — the converse of
 `a_wf_pskl_delta_to_tvar_mid`: a rigid binder ALREADY in Δ may be dropped
 from the aenv.  The `strip` version in prop_look_complete_cstr.v cannot be

@@ -17,7 +17,7 @@ Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.def_extra.
 Require Import src.frost.prop_basic.
-Require Import src.frost.prop_etag.
+Require Import src.frost.prop_tag.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_basic.
@@ -167,7 +167,7 @@ Proof.
     intros β Hβ. rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       try (apply lc_uskl_unit); try fsetdec.
     eapply (H0 β ltac:(auto) Γ1 α0 Γ2); reflexivity.
-  - simpl. apply d_wf_uskl__all_etag with (L := L `union` {{α0}}).
+  - simpl. apply d_wf_uskl__all_tag with (L := L `union` {{α0}}).
     intros β Hβ. rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       try (apply lc_uskl_unit); try fsetdec.
     eapply (H0 β ltac:(auto) Γ1 α0 Γ2); reflexivity.
@@ -221,7 +221,7 @@ Proof.
   - auto with frost.
   - destruct_if; auto with frost.
   - auto with frost.
-  - apply is_tskl__all_etag with (L := L `union` {{α}}). intros β Hβ.
+  - apply is_tskl__all_tag with (L := L `union` {{α}}). intros β Hβ.
     rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       try (apply lc_uskl_unit); try fsetdec. auto.
   - auto with frost.
@@ -246,7 +246,7 @@ Proof.
       [ apply d_tags_skl__unit; (assumption || fsetdec)
       | apply d_tags_skl__var; (assumption || fsetdec) ].
   - apply d_tags_skl__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2); assumption.
-  - apply d_tags_skl__all_etag with (L := L `union` {{α}}) (Ψ0 := Ψ0); [ | assumption | assumption ]. intros β Hβ.
+  - apply d_tags_skl__all_tag with (L := L `union` {{α}}) (Ψ0 := Ψ0); [ | assumption | assumption ]. intros β Hβ.
     rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       try (apply lc_uskl_unit); try fsetdec. auto.
   - apply d_tags_skl__holeg; (assumption || fsetdec).
@@ -381,8 +381,8 @@ Proof.
       (psi := subst_uskl_in_uskl uskl_unit α0 psi);
       [ assumption | eassumption
       | (* tag hygiene: substituting a TAG-FREE term cannot change a tag *)
-        change (uskl_all_etag ε (subst_uskl_in_uskl uskl_unit α0 R))
-          with (subst_uskl_in_uskl uskl_unit α0 (uskl_all_etag ε R));
+        change (uskl_all_tag ε (subst_uskl_in_uskl uskl_unit α0 R))
+          with (subst_uskl_in_uskl uskl_unit α0 (uskl_all_tag ε R));
         rewrite ftag_in_uskl_subst_tagfree by reflexivity; assumption
       | apply d_tags_skl_subst_unit; assumption
       | eapply d_wf_uskl_subst_unit; eauto | apply is_tskl_subst_unit; assumption | ].

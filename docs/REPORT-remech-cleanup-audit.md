@@ -499,7 +499,7 @@ removed developments).
 >
 > > **(c) the host must see every prerequisite of the PROOF.**
 >
-> That lemma needs `ad_pat_sub_gv` (`decorated_algo/def_decl_algo_sub_hyg.v`)
+> That lemma needs `ad_pat_sub_gv` (`algo_decl/def_decl_algo_sub_hyg.v`)
 > AND `ad_pat_consis_psi_cong` (`algo/consis/prop_soundness_consis.v`) — from
 > opposite sides of the tree.  Measured: **no** shared ancestor of the two
 > declaring files sees both, so the pair is unliftable.  The dedupe is by
@@ -654,7 +654,7 @@ the **eight mode-spine inductives**, the **82 duplicated names**, and the
 `swap_aenv_as_rename` (`prop_swap.v:635`) bridges the first two, so this is
 not a soundness issue — it is that a reader must learn three.  `rename_aenv`
 survives in only 5 files (`prop_flex.v`, `prop_looksub.v`,
-`decorated_algo/prop_decorate_sub.v`, plus its own definition and the bridge).
+`deco_algo/prop_decorate_sub.v`, plus its own definition and the bridge).
 
 **Recommendation (B).**  Retire `rename_aenv`/`rename_abind` in favour of
 `swap_aenv` + the bridge, or — if the directed form is genuinely needed at
@@ -782,10 +782,10 @@ Rule: **decl stays cofinite, algo goes full existential.**  Audit against it:
 | file | layer | cofinite rows | verdict |
 |---|---|---|---|
 | `decl/def_extra.v` | decl | 36 | ✅ correct |
-| `decorated_algo/def_decorated.v` | decl-in-algo | 13 | ✅ correct |
-| `decorated_algo/def_decl_algo_typing.v` | decl-in-algo | 10 | ✅ correct |
-| `decorated_algo/def_decl_algo.v` | decl-in-algo | 9 | ✅ correct |
-| `decorated_algo/def_decl_algo_sub{,_hyg}.v` | decl-in-algo | 4 + 2 | ✅ correct |
+| `deco_algo/def_decorated.v` | decl-in-algo | 13 | ✅ correct |
+| `algo_decl/def_decl_algo_typing.v` | decl-in-algo | 10 | ✅ correct |
+| `algo_decl/def_decl_algo.v` | decl-in-algo | 9 | ✅ correct |
+| `algo_decl/def_decl_algo_sub{,_hyg}.v` | decl-in-algo | 4 + 2 | ✅ correct |
 | `algo/def_meta.v` | algo (meta) | 2 | see below |
 | **`algo/def_extra.v`** | **algo** | **7** | **3 wf + 4 `a_pat` — see below** |
 
@@ -907,12 +907,12 @@ changes shape.  Real payoff, real cost — schedule it, don't slip it in.
 
 | function | defined in | note |
 |---|---|---|
-| `ptyp_to_bskl_syn` | `decorated_algo/def_decl_algo.v:38` | `= pskl_to_bskl_syn ∘ ptyp_to_pskl` |
-| `ptyp_to_uskl_syn` | `decorated_algo/def_decl_algo.v:40` | `= bskl_to_uskl ∘ ptyp_to_bskl_syn` |
-| `pskl_to_uskl`, `uskl_to_pskl` | `decorated_algo/` | ~20 lemmas about them there |
+| `ptyp_to_bskl_syn` | `algo_decl/def_decl_algo.v:38` | `= pskl_to_bskl_syn ∘ ptyp_to_pskl` |
+| `ptyp_to_uskl_syn` | `algo_decl/def_decl_algo.v:40` | `= bskl_to_uskl ∘ ptyp_to_bskl_syn` |
+| `pskl_to_uskl`, `uskl_to_pskl` | `algo_decl/` + `deco_algo/` | ~20 lemmas about them there |
 
 So the canonical chain is split across `frost/coercions.v` and
-`frost/decorated_algo/def_decl_algo.v`, and a reader looking for "how do I get
+`frost/algo_decl/def_decl_algo.v`, and a reader looking for "how do I get
 from `ptyp` to `uskl`" finds two of the three answers in the wrong file.
 
 ### 5.2 Two conversions are dead
@@ -947,7 +947,7 @@ equal, and the tree proves it — but the `syn` case lives at
 commuting square.  The retractions (`bskl_to_pskl_pskl_to_bskl_{syn,inh}`,
 `btyp_to_ptyp_ptyp_to_btyp_{syn,inh}`) are in `frost/prop_basic.v`; the
 `_open`/`_open_rec` squares are split between `coercions.v` and `prop_basic.v`;
-`uskl_to_pskl_pskl_to_uskl` is in `decorated_algo/prop_decorate.v:50`.
+`uskl_to_pskl_pskl_to_uskl` is in `deco_algo/prop_decorate.v:50`.
 
 **Recommendation (A/B).  This is the single best cleanup in the report.**
 Create `frost/prop_coercions.v` holding, for the six sorts, exactly:
@@ -1092,7 +1092,7 @@ because lemmas proved about one copy do not `apply` to the other:
   `algo/sub/look/prop_kit.v:6381`, each with its own satellite lemmas
   (`ptyp_to_pskl_no_hole` is duplicated too).  `prop_kit.v` **imports**
   `prop_completeness_consis.v`, so the second shadows the first.
-- **`msubst_lc`** — `decorated_algo/prop_decorate_sub.v:173` and
+- **`msubst_lc`** — `deco_algo/prop_decorate_sub.v:173` and
   `algo/prop_normal.v:143`.
 
 **28 of the 82 involve the `completeness_look/` cluster**, and this is exactly
@@ -1151,7 +1151,7 @@ directly above the algo layer and move the sort-agnostic ones there.  This kills
 | `algo/prop_completeness_sub_gen.v` | 7536 | no internal PART banners at all |
 | `sub/look/prop_kit.v` | 7030 | "the shared kit" — the grab-bag, and the source of most §8.1 duplicates |
 | `algo/prop_completeness_typing.v` | 4638 | theorem 4 |
-| `decorated_algo/prop_decorate_key.v` | 4208 | — |
+| `deco_algo/prop_decorate_key.v` | 4208 | — |
 
 **Recommendation (A).**  Do **not** split them for size — the facade file
 already argues, correctly, that splitting a linear chain buys no parallelism and

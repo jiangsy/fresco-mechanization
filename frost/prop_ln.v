@@ -115,7 +115,7 @@ Fixpoint close_utyp_wrt_utyp_rec (n1 : nat) (α1 : utypvar) (C1 : utyp) {struct 
     | utyp_var_b n2 => if (lt_ge_dec n2 n1) then (utyp_var_b n2) else (utyp_var_b (S n2))
     | utyp_arrow C2 C3 => utyp_arrow (close_utyp_wrt_utyp_rec n1 α1 C2) (close_utyp_wrt_utyp_rec n1 α1 C3)
     | utyp_all_syn C2 => utyp_all_syn (close_utyp_wrt_utyp_rec (S n1) α1 C2)
-    | utyp_all_etag ε1 C2 => utyp_all_etag ε1 (close_utyp_wrt_utyp_rec (S n1) α1 C2)
+    | utyp_all_tag ε1 C2 => utyp_all_tag ε1 (close_utyp_wrt_utyp_rec (S n1) α1 C2)
   end.
 
 Definition close_utyp_wrt_utyp α1 C1 := close_utyp_wrt_utyp_rec 0 α1 C1.
@@ -154,7 +154,7 @@ Fixpoint close_uskl_wrt_uskl_rec (n1 : nat) (α1 : usklvar) (R1 : uskl) {struct 
     | uskl_var_b n2 => if (lt_ge_dec n2 n1) then (uskl_var_b n2) else (uskl_var_b (S n2))
     | uskl_arrow R2 R3 => uskl_arrow (close_uskl_wrt_uskl_rec n1 α1 R2) (close_uskl_wrt_uskl_rec n1 α1 R3)
     | uskl_all_syn R2 => uskl_all_syn (close_uskl_wrt_uskl_rec (S n1) α1 R2)
-    | uskl_all_etag ε1 R2 => uskl_all_etag ε1 (close_uskl_wrt_uskl_rec (S n1) α1 R2)
+    | uskl_all_tag ε1 R2 => uskl_all_tag ε1 (close_uskl_wrt_uskl_rec (S n1) α1 R2)
     | uskl_hole => uskl_hole
     | uskl_tophole R2 => uskl_tophole (close_uskl_wrt_uskl_rec n1 α1 R2)
     | uskl_holeg => uskl_holeg
@@ -221,7 +221,7 @@ Fixpoint size_utyp (C1 : utyp) {struct C1} : nat :=
     | utyp_var_b n1 => 1
     | utyp_arrow C2 C3 => 1 + (size_utyp C2) + (size_utyp C3)
     | utyp_all_syn C2 => 1 + (size_utyp C2)
-    | utyp_all_etag ε1 C2 => 1 + (size_utyp C2)
+    | utyp_all_tag ε1 C2 => 1 + (size_utyp C2)
   end.
 
 Fixpoint size_pskl (P1 : pskl) {struct P1} : nat :=
@@ -254,7 +254,7 @@ Fixpoint size_uskl (R1 : uskl) {struct R1} : nat :=
     | uskl_var_b n1 => 1
     | uskl_arrow R2 R3 => 1 + (size_uskl R2) + (size_uskl R3)
     | uskl_all_syn R2 => 1 + (size_uskl R2)
-    | uskl_all_etag ε1 R2 => 1 + (size_uskl R2)
+    | uskl_all_tag ε1 R2 => 1 + (size_uskl R2)
     | uskl_hole => 1
     | uskl_tophole R2 => 1 + (size_uskl R2)
     | uskl_holeg => 1
@@ -348,9 +348,9 @@ Inductive degree_utyp_wrt_utyp : nat -> utyp -> Prop :=
   | degree_wrt_utyp_utyp_all_syn : forall n1 C1,
     degree_utyp_wrt_utyp (S n1) C1 ->
     degree_utyp_wrt_utyp n1 (utyp_all_syn C1)
-  | degree_wrt_utyp_utyp_all_etag : forall n1 ε1 C1,
+  | degree_wrt_utyp_utyp_all_tag : forall n1 ε1 C1,
     degree_utyp_wrt_utyp (S n1) C1 ->
-    degree_utyp_wrt_utyp n1 (utyp_all_etag ε1 C1).
+    degree_utyp_wrt_utyp n1 (utyp_all_tag ε1 C1).
 
 Scheme degree_utyp_wrt_utyp_ind' := Induction for degree_utyp_wrt_utyp Sort Prop.
 
@@ -430,9 +430,9 @@ Inductive degree_uskl_wrt_uskl : nat -> uskl -> Prop :=
   | degree_wrt_uskl_uskl_all_syn : forall n1 R1,
     degree_uskl_wrt_uskl (S n1) R1 ->
     degree_uskl_wrt_uskl n1 (uskl_all_syn R1)
-  | degree_wrt_uskl_uskl_all_etag : forall n1 ε1 R1,
+  | degree_wrt_uskl_uskl_all_tag : forall n1 ε1 R1,
     degree_uskl_wrt_uskl (S n1) R1 ->
-    degree_uskl_wrt_uskl n1 (uskl_all_etag ε1 R1)
+    degree_uskl_wrt_uskl n1 (uskl_all_tag ε1 R1)
   | degree_wrt_uskl_uskl_hole : forall n1,
     degree_uskl_wrt_uskl n1 (uskl_hole)
   | degree_wrt_uskl_uskl_tophole : forall n1 R1,
@@ -588,9 +588,9 @@ Inductive lc_set_utyp : utyp -> Set :=
   | lc_set_utyp_all_syn : forall C1,
     (forall α1 : utypvar, lc_set_utyp (open_utyp_wrt_utyp C1 (utyp_var_f α1))) ->
     lc_set_utyp (utyp_all_syn C1)
-  | lc_set_utyp_all_etag : forall ε1 C1,
+  | lc_set_utyp_all_tag : forall ε1 C1,
     (forall α1 : utypvar, lc_set_utyp (open_utyp_wrt_utyp C1 (utyp_var_f α1))) ->
-    lc_set_utyp (utyp_all_etag ε1 C1).
+    lc_set_utyp (utyp_all_tag ε1 C1).
 Scheme lc_utyp_ind' := Induction for lc_utyp Sort Prop.
 
 Combined Scheme lc_utyp_mutind from lc_utyp_ind'.
@@ -688,9 +688,9 @@ Inductive lc_set_uskl : uskl -> Set :=
   | lc_set_uskl_all_syn : forall R1,
     (forall α1 : usklvar, lc_set_uskl (open_uskl_wrt_uskl R1 (uskl_var_f α1))) ->
     lc_set_uskl (uskl_all_syn R1)
-  | lc_set_uskl_all_etag : forall ε1 R1,
+  | lc_set_uskl_all_tag : forall ε1 R1,
     (forall α1 : usklvar, lc_set_uskl (open_uskl_wrt_uskl R1 (uskl_var_f α1))) ->
-    lc_set_uskl (uskl_all_etag ε1 R1)
+    lc_set_uskl (uskl_all_tag ε1 R1)
   | lc_set_uskl_hole :
     lc_set_uskl (uskl_hole)
   | lc_set_uskl_tophole : forall R1,
@@ -5471,10 +5471,10 @@ Proof.
 intros; utyp_lc_exists_tac; eauto 6 with lngen.
 Qed.
 
-Lemma lc_utyp_all_etag_exists :
+Lemma lc_utyp_all_tag_exists :
 forall α1 ε1 C1,
   lc_utyp (open_utyp_wrt_utyp C1 (utyp_var_f α1)) ->
-  lc_utyp (utyp_all_etag ε1 C1).
+  lc_utyp (utyp_all_tag ε1 C1).
 Proof.
 intros; utyp_lc_exists_tac; eauto 6 with lngen.
 Qed.
@@ -5511,10 +5511,10 @@ Proof.
 intros; uskl_lc_exists_tac; eauto 6 with lngen.
 Qed.
 
-Lemma lc_uskl_all_etag_exists :
+Lemma lc_uskl_all_tag_exists :
 forall α1 ε1 R1,
   lc_uskl (open_uskl_wrt_uskl R1 (uskl_var_f α1)) ->
-  lc_uskl (uskl_all_etag ε1 R1).
+  lc_uskl (uskl_all_tag ε1 R1).
 Proof.
 intros; uskl_lc_exists_tac; eauto 6 with lngen.
 Qed.
@@ -5556,10 +5556,10 @@ Qed.
   pick_fresh α1;
   apply (lc_utyp_all_syn_exists α1) : core.
 
-#[export] Hint Extern 1 (lc_utyp (utyp_all_etag _ _)) =>
+#[export] Hint Extern 1 (lc_utyp (utyp_all_tag _ _)) =>
   let α1 := fresh in
   pick_fresh α1;
-  apply (lc_utyp_all_etag_exists α1) : core.
+  apply (lc_utyp_all_tag_exists α1) : core.
 
 #[export] Hint Extern 1 (lc_pskl (pskl_all_syn _)) =>
   let α1 := fresh in
@@ -5581,10 +5581,10 @@ Qed.
   pick_fresh α1;
   apply (lc_uskl_all_syn_exists α1) : core.
 
-#[export] Hint Extern 1 (lc_uskl (uskl_all_etag _ _)) =>
+#[export] Hint Extern 1 (lc_uskl (uskl_all_tag _ _)) =>
   let α1 := fresh in
   pick_fresh α1;
-  apply (lc_uskl_all_etag_exists α1) : core.
+  apply (lc_uskl_all_tag_exists α1) : core.
 
 #[export] Hint Extern 1 (lc_exp (exp_abs _)) =>
   let x1 := fresh in
@@ -5772,15 +5772,15 @@ Qed.
 
 #[export] Hint Resolve lc_body_utyp_all_syn_1 : lngen.
 
-Lemma lc_body_utyp_all_etag_2 :
+Lemma lc_body_utyp_all_tag_2 :
 forall ε1 C1,
-  lc_utyp (utyp_all_etag ε1 C1) ->
+  lc_utyp (utyp_all_tag ε1 C1) ->
   body_utyp_wrt_utyp C1.
 Proof.
 default_simp.
 Qed.
 
-#[export] Hint Resolve lc_body_utyp_all_etag_2 : lngen.
+#[export] Hint Resolve lc_body_utyp_all_tag_2 : lngen.
 
 Lemma lc_body_pskl_all_syn_1 :
 forall P1,
@@ -5822,15 +5822,15 @@ Qed.
 
 #[export] Hint Resolve lc_body_uskl_all_syn_1 : lngen.
 
-Lemma lc_body_uskl_all_etag_2 :
+Lemma lc_body_uskl_all_tag_2 :
 forall ε1 R1,
-  lc_uskl (uskl_all_etag ε1 R1) ->
+  lc_uskl (uskl_all_tag ε1 R1) ->
   body_uskl_wrt_uskl R1.
 Proof.
 default_simp.
 Qed.
 
-#[export] Hint Resolve lc_body_uskl_all_etag_2 : lngen.
+#[export] Hint Resolve lc_body_uskl_all_tag_2 : lngen.
 
 Lemma lc_body_exp_abs_1 :
 forall e1,
@@ -11782,16 +11782,16 @@ Qed.
 
 #[export] Hint Resolve subst_utyp_in_utyp_utyp_all_syn : lngen.
 
-Lemma subst_utyp_in_utyp_utyp_all_etag :
+Lemma subst_utyp_in_utyp_utyp_all_tag :
 forall α2 ε1 C2 C1 α1,
   lc_utyp C1 ->
   α2 `notin` ftvar_in_utyp C1 `union` ftvar_in_utyp C2 `union` singleton α1 ->
-  subst_utyp_in_utyp C1 α1 (utyp_all_etag ε1 C2) = utyp_all_etag (ε1) (close_utyp_wrt_utyp α2 (subst_utyp_in_utyp C1 α1 (open_utyp_wrt_utyp C2 (utyp_var_f α2)))).
+  subst_utyp_in_utyp C1 α1 (utyp_all_tag ε1 C2) = utyp_all_tag (ε1) (close_utyp_wrt_utyp α2 (subst_utyp_in_utyp C1 α1 (open_utyp_wrt_utyp C2 (utyp_var_f α2)))).
 Proof.
 default_simp.
 Qed.
 
-#[export] Hint Resolve subst_utyp_in_utyp_utyp_all_etag : lngen.
+#[export] Hint Resolve subst_utyp_in_utyp_utyp_all_tag : lngen.
 
 Lemma subst_pskl_in_pskl_pskl_all_syn :
 forall α2 P2 P1 α1,
@@ -11837,16 +11837,16 @@ Qed.
 
 #[export] Hint Resolve subst_uskl_in_uskl_uskl_all_syn : lngen.
 
-Lemma subst_uskl_in_uskl_uskl_all_etag :
+Lemma subst_uskl_in_uskl_uskl_all_tag :
 forall α2 ε1 R2 R1 α1,
   lc_uskl R1 ->
   α2 `notin` ftvar_in_uskl R1 `union` ftvar_in_uskl R2 `union` singleton α1 ->
-  subst_uskl_in_uskl R1 α1 (uskl_all_etag ε1 R2) = uskl_all_etag (ε1) (close_uskl_wrt_uskl α2 (subst_uskl_in_uskl R1 α1 (open_uskl_wrt_uskl R2 (uskl_var_f α2)))).
+  subst_uskl_in_uskl R1 α1 (uskl_all_tag ε1 R2) = uskl_all_tag (ε1) (close_uskl_wrt_uskl α2 (subst_uskl_in_uskl R1 α1 (open_uskl_wrt_uskl R2 (uskl_var_f α2)))).
 Proof.
 default_simp.
 Qed.
 
-#[export] Hint Resolve subst_uskl_in_uskl_uskl_all_etag : lngen.
+#[export] Hint Resolve subst_uskl_in_uskl_uskl_all_tag : lngen.
 
 Lemma subst_ptyp_in_exp_exp_abs :
 forall x1 e1 A1 α1,

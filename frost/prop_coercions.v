@@ -72,6 +72,11 @@ Proof.
     try (rewrite IHA1, IHA2; reflexivity).
 Qed.
 
+(** Erasure is a retraction of the embedding. *)
+Lemma uskl_to_pskl_pskl_to_uskl : forall P,
+  uskl_to_pskl (pskl_to_uskl P) = P.
+Proof. induction P; simpl; f_equal; auto. Qed.
+
 (** * 2. Commutation with opening.
 
     Every conversion is a structural map that leaves bound indices alone, so
@@ -400,6 +405,27 @@ Lemma uskl_to_bskl_utyp_to_uskl : forall C,
     uskl_to_bskl (utyp_to_uskl C) = btyp_to_bskl (utyp_to_btyp C).
 Proof. induction C; simpl; try reflexivity; congruence. Qed.
 
+Lemma pskl_to_uskl_open_rec : forall P P' k,
+  pskl_to_uskl (open_pskl_wrt_pskl_rec k P' P)
+  = open_uskl_wrt_uskl_rec k (pskl_to_uskl P') (pskl_to_uskl P).
+Proof.
+  induction P; intros; simpl; f_equal; auto.
+  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
+Qed.
+
+Lemma pskl_to_uskl_open : forall P Q,
+  pskl_to_uskl (open_pskl_wrt_pskl P Q)
+  = open_uskl_wrt_uskl (pskl_to_uskl P) (pskl_to_uskl Q).
+Proof.
+  intros; unfold open_pskl_wrt_pskl, open_uskl_wrt_uskl;
+    apply pskl_to_uskl_open_rec.
+Qed.
+
+Lemma pskl_to_uskl_open_var : forall P α,
+  pskl_to_uskl (open_pskl_wrt_pskl P (pskl_var_f α))
+  = open_uskl_wrt_uskl (pskl_to_uskl P) (uskl_var_f α).
+Proof. intros; apply pskl_to_uskl_open. Qed.
+
 (** * 3. Transport of local closure and of the shape predicates.
 
     Every one of these is the same one-line induction whose ∀ case rewrites
@@ -508,7 +534,7 @@ Lemma is_tskl_lc : forall ψ, is_tskl ψ -> lc_uskl ψ.
 Proof.
   intros ψ H; induction H; try (constructor; auto; fail).
   destruct (atom_fresh L) as [α Hα].
-  eapply lc_uskl_all_etag_exists; eauto.
+  eapply lc_uskl_all_tag_exists; eauto.
 Qed.
 
 (** The sort inclusion preserves local closure and tagged-ness. *)
@@ -520,18 +546,34 @@ Proof.
   - apply lc_uskl_arrow; auto.
   - apply lc_uskl_all_syn. intro α.
     rewrite <- utyp_to_uskl_open_var. auto.
-  - apply lc_uskl_all_etag. intro α.
+  - apply lc_uskl_all_tag. intro α.
     rewrite <- utyp_to_uskl_open_var. auto.
 Qed.
 
 Lemma is_tskl_utyp_to_uskl : forall C, is_ttyp C -> is_tskl (utyp_to_uskl C).
 Proof.
   intros C H; induction H; simpl; try solve [ constructor; auto ].
-  apply is_tskl__all_etag with (L := L). intros α Hα.
+  apply is_tskl__all_tag with (L := L). intros α Hα.
   rewrite <- utyp_to_uskl_open_var. auto.
 Qed.
 
 Unset Implicit Arguments.
+
+(** The sort inclusion [pskl_to_uskl] transports local closure and
+    guardedness. *)
+Lemma pskl_to_uskl_lc : forall P,
+  lc_pskl P -> lc_uskl (pskl_to_uskl P).
+Proof.
+  intros P H; induction H; simpl; auto.
+  apply lc_uskl_all_syn; intros α.
+  rewrite <- pskl_to_uskl_open_var; auto.
+Qed.
+
+Lemma pskl_to_uskl_guarded : forall P,
+  guarded_pskl P -> guarded_uskl (pskl_to_uskl P).
+Proof.
+  intros P H; inversion H; subst; simpl; constructor; auto using pskl_to_uskl_lc.
+Qed.
 
 (** * 4. Transport of free variables.
 

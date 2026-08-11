@@ -22,7 +22,7 @@ Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
-Require Import src.frost.prop_etag.   (* swap_atom_other — the ATOM layer *)
+Require Import src.frost.prop_tag.   (* swap_atom_other — the ATOM layer *)
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.sub.prop_solve_sub.
 Require Import src.frost.algo.consis.prop_soundness_consis.

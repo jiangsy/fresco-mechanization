@@ -26,7 +26,7 @@ Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.decl.prop_weakening.
 Require Import src.frost.decl.prop_renaming.
-Require Import src.frost.decl.prop_etag_swap.
+Require Import src.frost.decl.prop_tag_swap.
 
 Set Implicit Arguments.
 
@@ -53,7 +53,7 @@ Fixpoint compose_tags (C : utyp) (B : btyp) {struct C} : atoms :=
       | btyp_arrow B1 B2 => compose_tags C1 B1 `union` compose_tags C2 B2
       | _ => empty
       end
-  | utyp_all_etag ε C0 =>
+  | utyp_all_tag ε C0 =>
       match B with
       | btyp_all_inh B0 => add ε (compose_tags C0 B0)
       | btyp_all_syn B0 => compose_tags C0 B0
@@ -68,7 +68,7 @@ Fixpoint compose_tags (C : utyp) (B : btyp) {struct C} : atoms :=
   | _ => empty
   end.
 
-(** [compose_tags] inspects only the head constructors and etag names, never
+(** [compose_tags] inspects only the head constructors and tag names, never
     type variables, so it is invariant under opening with a variable. *)
 Lemma compose_tags_open_rec : forall C B α' β k,
     compose_tags (open_utyp_wrt_utyp_rec k (utyp_var_f α') C)
@@ -302,9 +302,9 @@ Proof.
   - apply lc_utyp_unit.
   - apply lc_utyp_var_f.
   - apply lc_utyp_arrow; assumption.
-  - pick fresh α. apply lc_utyp_all_etag_exists with (α1 := α). apply H0. fsetdec.
+  - pick fresh α. apply lc_utyp_all_tag_exists with (α1 := α). apply H0. fsetdec.
   - pick fresh α. apply lc_utyp_all_syn_exists with (α1 := α). apply H0. fsetdec.
-  - pick fresh α. apply lc_utyp_all_etag_exists with (α1 := α). apply H0. fsetdec.
+  - pick fresh α. apply lc_utyp_all_tag_exists with (α1 := α). apply H0. fsetdec.
   - pick fresh α. apply lc_utyp_all_syn_exists with (α1 := α). apply H0. fsetdec.
 Qed.
 
@@ -427,7 +427,7 @@ Qed.
 
 (** Consistency rigidity for monomorphic sources: a [mono] syn-source pins
     the bidirectional RHS to its syn painting (no tags, no colour freedom).
-    Holds at ANY tag context — a [mono] source carries no [etag], so the
+    Holds at ANY tag context — a [mono] source carries no [tag], so the
     arrow recursion threads through whatever [Δ] the split produced. *)
 Lemma d_consis_mono_determines : forall Δ Γ A B,
     {{ Δ ⨟ Γ ⊢ (ptyp_to_utyp_syn A) ∼ B }}d ->
@@ -804,12 +804,12 @@ Inductive utyp_tag_refines : utyp -> utyp -> Prop :=
 | utr_arrow : forall T1 T2 C1 C2,
     utyp_tag_refines T1 C1 -> utyp_tag_refines T2 C2 ->
     utyp_tag_refines (utyp_arrow T1 T2) (utyp_arrow C1 C2)
-| utr_etag_etag : forall ε T0 C0,
+| utr_tag_tag : forall ε T0 C0,
     utyp_tag_refines T0 C0 ->
-    utyp_tag_refines (utyp_all_etag ε T0) (utyp_all_etag ε C0)
-| utr_etag_syn : forall ε T0 C0,
+    utyp_tag_refines (utyp_all_tag ε T0) (utyp_all_tag ε C0)
+| utr_tag_syn : forall ε T0 C0,
     utyp_tag_refines T0 C0 ->
-    utyp_tag_refines (utyp_all_etag ε T0) (utyp_all_syn C0)
+    utyp_tag_refines (utyp_all_tag ε T0) (utyp_all_syn C0)
 | utr_syn_syn : forall T0 C0,
     utyp_tag_refines T0 C0 ->
     utyp_tag_refines (utyp_all_syn T0) (utyp_all_syn C0).
@@ -914,9 +914,9 @@ Proof.
   - apply utr_unit.
   - apply utr_var_f.
   - apply utr_arrow; assumption.
-  - apply utr_etag_syn. eapply consis_refines_paint_body; eauto.
+  - apply utr_tag_syn. eapply consis_refines_paint_body; eauto.
   - apply utr_syn_syn.  eapply consis_refines_paint_body; eauto.
-  - apply utr_etag_syn. eapply consis_refines_paint_body; eauto.
+  - apply utr_tag_syn. eapply consis_refines_paint_body; eauto.
   - apply utr_syn_syn.  eapply consis_refines_paint_body; eauto.
 Qed.
 
@@ -972,7 +972,7 @@ Proof.
   - inversion Href; subst. simpl. apply d_consis__var; [ assumption | reflexivity ].
   - inversion Href; subst. simpl.
     eapply d_consis__arrow; [ apply IHd_consis1 | apply IHd_consis2 | reflexivity ]; assumption.
-  - (* forall_inh_tagged: Cmid = utyp_all_etag ε C, B = btyp_all_inh; C = utyp_all_etag ε T0 *)
+  - (* forall_inh_tagged: Cmid = utyp_all_tag ε C, B = btyp_all_inh; C = utyp_all_tag ε T0 *)
     inversion Href; subst. simpl.
     eapply d_consis__forall_inh_tagged with (L := L) (Ψ0 := compose_tags T0 B); [ | reflexivity ].
     intros α Hα.
@@ -981,7 +981,7 @@ Proof.
     apply (H0 α Hα). apply utyp_tag_refines_open. assumption.
   - (* forall_inh_untagged: Cmid = utyp_all_syn C, B = btyp_all_inh; C tagged or syn *)
     inversion Href; subst; simpl.
-    + (* C = utyp_all_etag ε T0 (extra tag) *)
+    + (* C = utyp_all_tag ε T0 (extra tag) *)
       eapply d_consis__forall_inh_tagged with (L := L) (Ψ0 := compose_tags T0 B); [ | reflexivity ].
       intros α Hα.
       match goal with |- {{ compose_tags ?Tb ?Bb ⨟ _ ⊢ _ ∼ _ }}d =>
@@ -993,7 +993,7 @@ Proof.
       match goal with |- {{ compose_tags ?Tb ?Bb ⨟ _ ⊢ _ ∼ _ }}d =>
         rewrite <- (compose_tags_open Tb Bb α α) end.
       apply (H0 α Hα). apply utyp_tag_refines_open. assumption.
-  - (* forall_syn_tagged: Cmid = utyp_all_etag ε C, B = btyp_all_syn; C = utyp_all_etag ε T0 *)
+  - (* forall_syn_tagged: Cmid = utyp_all_tag ε C, B = btyp_all_syn; C = utyp_all_tag ε T0 *)
     inversion Href; subst. simpl.
     apply d_consis__forall_syn_tagged with (L := L).
     intros α Hα.
@@ -1002,7 +1002,7 @@ Proof.
     apply (H0 α Hα). apply utyp_tag_refines_open. assumption.
   - (* forall_syn: Cmid = utyp_all_syn C, B = btyp_all_syn; C tagged or syn *)
     inversion Href; subst; simpl.
-    + (* C = utyp_all_etag ε T0 *)
+    + (* C = utyp_all_tag ε T0 *)
       apply d_consis__forall_syn_tagged with (L := L).
       intros α Hα.
       match goal with |- {{ compose_tags ?Tb ?Bb ⨟ _ ⊢ _ ∼ _ }}d =>
@@ -1040,14 +1040,14 @@ Inductive utyp_tag_refines_in : atoms -> utyp -> utyp -> Prop :=
 | utri_arrow : forall V T1 T2 C1 C2,
     utyp_tag_refines_in V T1 C1 -> utyp_tag_refines_in V T2 C2 ->
     utyp_tag_refines_in V (utyp_arrow T1 T2) (utyp_arrow C1 C2)
-| utri_etag_etag : forall V ε T0 C0,
+| utri_tag_tag : forall V ε T0 C0,
     utyp_tag_refines_in V T0 C0 ->
-    utyp_tag_refines_in V (utyp_all_etag ε T0) (utyp_all_etag ε C0)
-| utri_etag_syn : forall V ε T0 C0,
+    utyp_tag_refines_in V (utyp_all_tag ε T0) (utyp_all_tag ε C0)
+| utri_tag_syn : forall V ε T0 C0,
     (* the ONE place a tag is ADDED, and the only premise [V] constrains *)
     ε `in` V ->
     utyp_tag_refines_in V T0 C0 ->
-    utyp_tag_refines_in V (utyp_all_etag ε T0) (utyp_all_syn C0)
+    utyp_tag_refines_in V (utyp_all_tag ε T0) (utyp_all_syn C0)
 | utri_syn_syn : forall V T0 C0,
     utyp_tag_refines_in V T0 C0 ->
     utyp_tag_refines_in V (utyp_all_syn T0) (utyp_all_syn C0).
@@ -1069,8 +1069,8 @@ Proof.
   - apply utri_arrow;
       [ apply IHutyp_tag_refines_in1 | apply IHutyp_tag_refines_in2 ];
       exact Hle.
-  - apply utri_etag_etag. apply IHutyp_tag_refines_in; exact Hle.
-  - apply utri_etag_syn;
+  - apply utri_tag_tag. apply IHutyp_tag_refines_in; exact Hle.
+  - apply utri_tag_syn;
       [ clear - H Hle; fsetdec | apply IHutyp_tag_refines_in; exact Hle ].
   - apply utri_syn_syn. apply IHutyp_tag_refines_in; exact Hle.
 Qed.
@@ -1088,9 +1088,9 @@ Proof.
       [ apply (utyp_tag_refines_in_mono IHutyp_tag_refines1)
       | apply (utyp_tag_refines_in_mono IHutyp_tag_refines2) ];
       clear; fsetdec.
-  - apply utri_etag_etag.
+  - apply utri_tag_tag.
     apply (utyp_tag_refines_in_mono IHutyp_tag_refines); clear; fsetdec.
-  - apply utri_etag_syn; [ clear; fsetdec | ].
+  - apply utri_tag_syn; [ clear; fsetdec | ].
     apply (utyp_tag_refines_in_mono IHutyp_tag_refines); clear; fsetdec.
   - apply utri_syn_syn.
     apply (utyp_tag_refines_in_mono IHutyp_tag_refines); clear; fsetdec.
@@ -1144,7 +1144,7 @@ Qed.
     from the tag context — rebuilding it at the REFINED source [C'] owes
     [Ψ' ∩ ftag C' = ∅], and the transported derivation supplies only
     [Ψ' ∩ ftag Cmid = ∅].  The gap is exactly the tags [utyp_tag_refines]
-    ADDED ([utr_etag_syn] turns a [∀ˢ] into a [∀^ε]), and nothing local bounds
+    ADDED ([utr_tag_syn] turns a [∀ˢ] into a [∀^ε]), and nothing local bounds
     them.  So the induction runs on [d_sub_tagsin U] instead: every [Ψ']
     inside the derivation is confined to one [U], the added tags are confined
     to one [V], and one global [U ∩ V = ∅] discharges every node at once.  The
@@ -1217,8 +1217,8 @@ Proof.
         [ match goal with Hr : utyp_tag_refines_in _ _ C1 |- _ =>
             apply (refines_consis_swap H (utyp_tag_refines_in_of Hr)) end
         | exact Hres | reflexivity ].
-  - (* forall_l_tagged: subtyping source is utyp_all_etag ε C; Href forces
-       C' = utyp_all_etag ε T0 (utri_etag_etag); reconstruct via forall_l_tagged. *)
+  - (* forall_l_tagged: subtyping source is utyp_all_tag ε C; Href forces
+       C' = utyp_all_tag ε T0 (utri_tag_tag); reconstruct via forall_l_tagged. *)
     dependent destruction Href.
     simpl in Hcons. dependent destruction Hcons.
     pick fresh α for (L `union` dom Γ `union` ftvar_in_utyp T0
@@ -1252,7 +1252,7 @@ Proof.
        from (Δ ∪ Ψ') ⊆ Δ_IH; refinement threaded by [open_gen]. *)
     simpl in Hcons.
     dependent destruction Hcons.
-    + (* C' = utyp_all_etag ε C0 (matched syn): mirror, reconstruct via forall_l_tagged *)
+    + (* C' = utyp_all_tag ε C0 (matched syn): mirror, reconstruct via forall_l_tagged *)
       dependent destruction Href.
       pick fresh α for (L `union` dom Γ `union` ftvar_in_utyp C0
                         `union` ftvar_in_utyp C `union` ftvar_in_btyp B
@@ -1273,7 +1273,7 @@ Proof.
       * eapply d_sub__forall_l_tagged with (Ψ' := Ψ').
         -- exact H.
         -- clear - Hbnd H0; fsetdec.
-        -- (* here refinement ADDED ε itself ([utri_etag_syn]'s [H7 : ε ∈ V]),
+        -- (* here refinement ADDED ε itself ([utri_tag_syn]'s [H7 : ε ∈ V]),
               so even the head tag is bounded away from Ψ' by [U ∩ V = ∅]. *)
            simpl in H1 |- *. clear - H1 H2 Hdisj Hft H7; fsetdec.
         -- exact H3.
@@ -1313,7 +1313,7 @@ Qed.
     PAINTING [⌈B⌉ˢ]) and the tag context is empty (CST is invoked at the root
     of a spine).  Together they license moving the WHOLE transported
     derivation's instantiation tags off [C']'s tags ([d_sub_freshen],
-    decl/prop_etag_swap.v §5) — a transposition of two inner tags leaves a
+    decl/prop_tag_swap.v §5) — a transposition of two inner tags leaves a
     tag-free conclusion fixed — which is exactly the [U ∩ V = ∅] the
     tags-bound form asks for. *)
 Lemma d_consis_sub_trans_mid : forall M Ψ2 Γ Cmid B,
@@ -1751,31 +1751,31 @@ Proof.
       fsetdec.
 Qed.
 
-(** The free ε-tags (etag binders) of a [utyp].  This is a purely syntactic
+(** The free ε-tags (tag binders) of a [utyp].  This is a purely syntactic
     upper bound on every tag context a subtyping/consistency can carry: a
     paint-image LHS has NONE, forcing its subtyping context to be empty. *)
 (** * Paint-LHS forces the empty tag context.
 
     A subtyping's tag context is bounded by the LHS's own ε-tags
-    ([d_sub_ctx_subset_etags]); a paint image has none, so any subtyping out
+    ([d_sub_ctx_subset_tags]); a paint image has none, so any subtyping out
     of one is at the empty context — the fact the spine [sub] case needs. *)
 
-Fixpoint utyp_etags (C : utyp) : atoms :=
+Fixpoint utyp_tags (C : utyp) : atoms :=
   match C with
-  | utyp_arrow C1 C2 => utyp_etags C1 `union` utyp_etags C2
-  | utyp_all_etag ε C0 => add ε (utyp_etags C0)
-  | utyp_all_syn C0 => utyp_etags C0
+  | utyp_arrow C1 C2 => utyp_tags C1 `union` utyp_tags C2
+  | utyp_all_tag ε C0 => add ε (utyp_tags C0)
+  | utyp_all_syn C0 => utyp_tags C0
   | _ => empty
   end.
 
-Lemma utyp_etags_paint : forall B, utyp_etags (btyp_to_utyp_syn B) [=] empty.
+Lemma utyp_tags_paint : forall B, utyp_tags (btyp_to_utyp_syn B) [=] empty.
 Proof.
   induction B; simpl; try reflexivity;
     [ rewrite IHB1, IHB2; fsetdec | exact IHB | exact IHB ].
 Qed.
 
-Lemma utyp_etags_open_rec_var : forall C α' k,
-    utyp_etags (open_utyp_wrt_utyp_rec k (utyp_var_f α') C) [=] utyp_etags C.
+Lemma utyp_tags_open_rec_var : forall C α' k,
+    utyp_tags (open_utyp_wrt_utyp_rec k (utyp_var_f α') C) [=] utyp_tags C.
 Proof.
   induction C; intros α' k; simpl; try reflexivity.
   - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
@@ -1784,12 +1784,12 @@ Proof.
   - rewrite IHC; reflexivity.
 Qed.
 
-Lemma utyp_etags_open_var : forall C α,
-    utyp_etags (open_utyp_wrt_utyp C (utyp_var_f α)) [=] utyp_etags C.
-Proof. intros C α. apply utyp_etags_open_rec_var. Qed.
+Lemma utyp_tags_open_var : forall C α,
+    utyp_tags (open_utyp_wrt_utyp C (utyp_var_f α)) [=] utyp_tags C.
+Proof. intros C α. apply utyp_tags_open_rec_var. Qed.
 
-Lemma utyp_etags_open_rec_le : forall C C' k,
-    utyp_etags (open_utyp_wrt_utyp_rec k C' C) [<=] utyp_etags C `union` utyp_etags C'.
+Lemma utyp_tags_open_rec_le : forall C C' k,
+    utyp_tags (open_utyp_wrt_utyp_rec k C' C) [<=] utyp_tags C `union` utyp_tags C'.
 Proof.
   induction C; intros C' k; simpl; try fsetdec.
   - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; fsetdec.
@@ -1798,12 +1798,12 @@ Proof.
   - specialize (IHC C' (S k)); fsetdec.
 Qed.
 
-Lemma utyp_etags_open_le : forall C C',
-    utyp_etags (open_utyp_wrt_utyp C C') [<=] utyp_etags C `union` utyp_etags C'.
-Proof. intros C C'. apply utyp_etags_open_rec_le. Qed.
+Lemma utyp_tags_open_le : forall C C',
+    utyp_tags (open_utyp_wrt_utyp C C') [<=] utyp_tags C `union` utyp_tags C'.
+Proof. intros C C'. apply utyp_tags_open_rec_le. Qed.
 
 (** [d_tags] records exactly the ε-tags of a tag-type. *)
-Lemma d_tags_etags : forall Δ C, d_tags Δ C -> Δ [=] utyp_etags C.
+Lemma d_tags_tags : forall Δ C, d_tags Δ C -> Δ [=] utyp_tags C.
 Proof.
   intros Δ C H. induction H; simpl.
   - fsetdec.
@@ -1812,58 +1812,58 @@ Proof.
   - pick fresh α for (L `union` ftvar_in_utyp C).
     match goal with IH : forall _, _ -> _ [=] _ |- _ =>
       specialize (IH α ltac:(solve_notin_auto)) end.
-    rewrite utyp_etags_open_var in *. fsetdec.
+    rewrite utyp_tags_open_var in *. fsetdec.
 Qed.
 
 (** A consistency's tag context is bounded by the LHS's own ε-tags. *)
-Lemma d_consis_ctx_subset_etags : forall Δ Γ C B,
-    {{ Δ ⨟ Γ ⊢ C ∼ B }}d -> Δ [<=] utyp_etags C.
+Lemma d_consis_ctx_subset_tags : forall Δ Γ C B,
+    {{ Δ ⨟ Γ ⊢ C ∼ B }}d -> Δ [<=] utyp_tags C.
 Proof.
   intros Δ Γ C B H. induction H; simpl;
     try (pick fresh α for (L `union` ftvar_in_utyp C);
          match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
            specialize (IH α ltac:(solve_notin_auto)) end;
-         rewrite utyp_etags_open_var in *); fsetdec.
+         rewrite utyp_tags_open_var in *); fsetdec.
 Qed.
 
 (** A subtyping's tag context is bounded by the LHS's own ε-tags.  [forall_l]
-    closes because the instantiation tags [Ψ'] sit inside [utyp_etags ph]
-    (via [d_tags_etags] + [utyp_etags_open_le]) and are disjoint from the
+    closes because the instantiation tags [Ψ'] sit inside [utyp_tags ph]
+    (via [d_tags_tags] + [utyp_tags_open_le]) and are disjoint from the
     conclusion [Δ] (the rule's freshness side-condition). *)
-Lemma d_sub_ctx_subset_etags : forall M Δ Γ C B,
-    {{ Δ ⨟ Γ ⊢[ M ] C ⩽ B }}d -> Δ [<=] utyp_etags C.
+Lemma d_sub_ctx_subset_tags : forall M Δ Γ C B,
+    {{ Δ ⨟ Γ ⊢[ M ] C ⩽ B }}d -> Δ [<=] utyp_tags C.
 Proof.
   intros M Δ Γ C B H. induction H; simpl.
   - (* infer *) fsetdec.
-  - (* check *) eapply d_consis_ctx_subset_etags; eassumption.
+  - (* check *) eapply d_consis_ctx_subset_tags; eassumption.
   - (* forall_r: same LHS; IH is cofinite *)
     pick fresh α for L.
     match goal with IH : forall _, _ `notin` _ -> _ [<=] _ |- _ =>
       apply (IH α); fsetdec end.
   - (* arg *)
     match goal with Hc : {{ _ ⨟ _ ⊢ C1 ∼ _ }}d |- _ =>
-      pose proof (d_consis_ctx_subset_etags Hc) as Hetag end.
+      pose proof (d_consis_ctx_subset_tags Hc) as Htag end.
     fsetdec.
-  - (* forall_l_tagged: Ψ' = utyp_etags ph (d_tags_etags), disjoint from Δ (H0). *)
-    pose proof (d_tags_etags H2) as Hph.
-    pose proof (utyp_etags_open_le C ph) as Hopen.
+  - (* forall_l_tagged: Ψ' = utyp_tags ph (d_tags_tags), disjoint from Δ (H0). *)
+    pose proof (d_tags_tags H2) as Hph.
+    pose proof (utyp_tags_open_le C ph) as Hopen.
     fsetdec.
   - (* forall_l_untagged *)
-    pose proof (d_tags_etags H2) as Hph.
-    pose proof (utyp_etags_open_le C ph) as Hopen.
+    pose proof (d_tags_tags H2) as Hph.
+    pose proof (utyp_tags_open_le C ph) as Hopen.
     fsetdec.
 Qed.
 
 (** A subtyping out of a paint-image LHS is forced to the EMPTY tag context:
-    paint has no ε-tags, and [d_sub_ctx_subset_etags] bounds the context by
+    paint has no ε-tags, and [d_sub_ctx_subset_tags] bounds the context by
     them.  This is what lets [d_sub_trans_spine]'s grown output be re-based to
     [empty] for the subsumption rule. *)
 Lemma d_sub_paint_lhs_empty : forall M Δ Γ B B',
     {{ Δ ⨟ Γ ⊢[ M ] (btyp_to_utyp_syn B) ⩽ B' }}d -> Δ [=] empty.
 Proof.
   intros M Δ Γ B B' H.
-  pose proof (d_sub_ctx_subset_etags H) as Hle.
-  rewrite utyp_etags_paint in Hle. fsetdec.
+  pose proof (d_sub_ctx_subset_tags H) as Hle.
+  rewrite utyp_tags_paint in Hle. fsetdec.
 Qed.
 
 (** Generalised General Subsumption for the SYNTAX-DIRECTED system (the

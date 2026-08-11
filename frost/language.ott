@@ -13,7 +13,7 @@
 %      dD → Δ   (tag context)
 %      dP → Ψ   (skleton-scope context)
 %   ε tags use the metavar `eps` in ott; the constructor for ε-tagged ∀ is
-%   renamed to `typ_all_etag` so that sed `eps → ε` doesn't mangle it.
+%   renamed to `typ_all_tag` so that sed `eps → ε` doesn't mangle it.
 
 metavar expvar, x, y, z ::= {{ repr-locally-nameless }}
 metavar epsvar, eps     ::= {{ coq var }}
@@ -82,13 +82,13 @@ utyp, C :: 'utyp_' ::=
   | Xut                  ::   :: var
   | C1 -> C2             ::   :: arrow
   | forall^syn Xut . C   ::   :: all_syn   (+ bind Xut in C +)
-  | forall@ eps Xut . C  ::   :: all_etag  (+ bind Xut in C +)
+  | forall@ eps Xut . C  ::   :: all_tag  (+ bind Xut in C +)
   | ( C )                :: S :: paren {{ coq ([[C]]) }}
   | { C2 / Xut } C1      :: M :: subst {{ coq (open_utyp_wrt_utyp [[Xut C1]] [[C2]]) }}
 
 % Skeletons — for d_wf_skl, d_refine, d_pat_consis, etc.
-% Broadest skleton: matches [bid] shapes (syn / inh / etag ∀s) plus
-% holes / tophole. Narrow classes (e.g. syn-only, no-etag) are
+% Broadest skleton: matches [bid] shapes (syn / inh / tag ∀s) plus
+% holes / tophole. Narrow classes (e.g. syn-only, no-tag) are
 % recovered via predicates over skl.
 pskl, P :: 'pskl_' ::=
   | UNIT                 ::   :: unit
@@ -116,13 +116,13 @@ uskl, R :: 'uskl_' ::=
   | Xus                  ::   :: var
   | R1 -> R2             ::   :: arrow
   | forall^syn Xus . R   ::   :: all_syn   (+ bind Xus in R +)
-  | forall@ eps Xus . R  ::   :: all_etag  (+ bind Xus in R +)
+  | forall@ eps Xus . R  ::   :: all_tag  (+ bind Xus in R +)
   | HOLE                 ::   :: hole
   | TOPHOLE . R          ::   :: tophole
   % Dotted ghosts (paper's HoleG / TopHoleG): ghost holes that coexist
   % with the plain Hole/TopHole in unresolved skeletons.  Both are
   % UNTAGGED (the universal dotted ghost TopHoleG.R carries no ε tag,
-  % unlike [all_etag]); its tags are exactly its body's tags.
+  % unlike [all_tag]); its tags are exactly its body's tags.
   | HOLEG                ::   :: holeg
   | TOPHOLEG . R         ::   :: topholeg
   | ( R )                :: S :: paren {{ coq ([[R]]) }}

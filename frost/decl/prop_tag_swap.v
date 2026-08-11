@@ -19,7 +19,7 @@
     a bijection, so it is an automorphism of every judgment with NO freshness
     side condition — the same reason algo/prop_swap.v takes equivariance as the
     renaming primitive for TYPE variables.  §1-§2 prove it for tag counting,
-    well-scopedness and consistency; frost/prop_etag.v has the syntactic layer.
+    well-scopedness and consistency; frost/prop_tag.v has the syntactic layer.
 
     ⚠️⚠️ WHY EQUIVARIANCE ALONE IS NOT ENOUGH.  A ForallL node's instantiation
     can be moved out of any finite set one transposition at a time — but that
@@ -45,10 +45,10 @@
 
     ⚙ RESTART NOTE (2026-08-11) — three statements were DELETED as
     consumer-less once §3-§4 landed, and each is cheap to re-derive:
-    [d_sub_swap_etag] and [d_pat_sub_swap_etag] (§3's [d_sub_tagsin_swap_etag]
+    [d_sub_swap_tag] and [d_pat_sub_swap_tag] (§3's [d_sub_tagsin_swap_tag]
     is the same proof with the [Ψ' ⊆ U] row carried, and [d_sub_to_tagsin]
-    recovers the plain statement from it), together with [d_pat_consis_swap_etag]
-    / [d_tags_skl_swap_etag] / [d_wf_uskl_swap_etag], which served only the
+    recovers the plain statement from it), together with [d_pat_consis_swap_tag]
+    / [d_tags_skl_swap_tag] / [d_wf_uskl_swap_tag], which served only the
     skeleton one; [d_sub_freshen_forall_l], the per-node freshening the
     paragraph above explains cannot be chained; and [d_sub_tagsin_of], the
     twin's forgetful direction — CST goes the other way, and it was here only
@@ -58,7 +58,7 @@
 
     ⚙ Each equivariance statement threads its tag context as [Ψs [=] swap Ψ]
     rather than substituting, because the rules state their contexts up to
-    [ [=] ]; the four re-derivations that needs are in frost/prop_etag.v §3.
+    [ [=] ]; the four re-derivations that needs are in frost/prop_tag.v §3.
 
     ⚙ NO [Set Implicit Arguments], for the same reason as
     algo_decl/prop_conserv.v: the statements thread equations, and under the
@@ -72,7 +72,7 @@ Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.def_extra.
-Require Import src.frost.prop_etag.
+Require Import src.frost.prop_tag.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_basic.
@@ -84,10 +84,10 @@ Require Import src.frost.decl.prop_renaming.
 (*  §1  THE LEAF JUDGMENTS: tag counting, and well-scopedness             *)
 (* ===================================================================== *)
 
-Lemma d_tags_swap_etag : forall Ψ C,
+Lemma d_tags_swap_tag : forall Ψ C,
   d_tags Ψ C ->
   forall ε1 ε2 Ψs, Ψs [=] swap_atoms ε1 ε2 Ψ ->
-  d_tags Ψs (swap_etag_in_utyp ε1 ε2 C).
+  d_tags Ψs (swap_tag_in_utyp ε1 ε2 C).
 Proof.
   intros Ψ C H; induction H; intros ε1 ε2 Ψs Heq; simpl.
   - apply d_tags__unit. eapply swap_atoms_empty_of; eassumption.
@@ -97,33 +97,33 @@ Proof.
       [ apply IHd_tags1; reflexivity | apply IHd_tags2; reflexivity
       | apply swap_atoms_disjoint_of; assumption
       | eapply swap_atoms_union_of; eassumption ].
-  - apply d_tags__all_etag with (L := L) (Ψ0 := swap_atoms ε1 ε2 Ψ0).
-    + intros α Hα. rewrite <- swap_etag_in_utyp_open_var.
+  - apply d_tags__all_tag with (L := L) (Ψ0 := swap_atoms ε1 ε2 Ψ0).
+    + intros α Hα. rewrite <- swap_tag_in_utyp_open_var.
       apply H0; [ exact Hα | reflexivity ].
     + apply swap_atoms_notin_of; assumption.
     + eapply swap_atoms_add_of; eassumption.
 Qed.
 
 (** Well-scopedness cannot see a tag at all. *)
-Lemma d_wf_utyp_swap_etag : forall Γ C,
-  d_wf_utyp Γ C -> forall ε1 ε2, d_wf_utyp Γ (swap_etag_in_utyp ε1 ε2 C).
+Lemma d_wf_utyp_swap_tag : forall Γ C,
+  d_wf_utyp Γ C -> forall ε1 ε2, d_wf_utyp Γ (swap_tag_in_utyp ε1 ε2 C).
 Proof.
   intros Γ C H; induction H; intros ε1 ε2; simpl;
     try solve [ constructor; auto ].
   - apply d_wf_utyp__all_syn with (L := L). intros α Hα.
-    rewrite <- swap_etag_in_utyp_open_var. auto.
-  - apply d_wf_utyp__all_etag with (L := L) (ε := swap_atom ε1 ε2 ε).
-    intros α Hα. rewrite <- swap_etag_in_utyp_open_var. auto.
+    rewrite <- swap_tag_in_utyp_open_var. auto.
+  - apply d_wf_utyp__all_tag with (L := L) (ε := swap_atom ε1 ε2 ε).
+    intros α Hα. rewrite <- swap_tag_in_utyp_open_var. auto.
 Qed.
 
 (* ===================================================================== *)
 (*  §2  CONSISTENCY                                                       *)
 (* ===================================================================== *)
 
-Lemma d_consis_swap_etag : forall Ψ Γ C B,
+Lemma d_consis_swap_tag : forall Ψ Γ C B,
   d_consis Ψ Γ C B ->
   forall ε1 ε2 Ψs, Ψs [=] swap_atoms ε1 ε2 Ψ ->
-  d_consis Ψs Γ (swap_etag_in_utyp ε1 ε2 C) B.
+  d_consis Ψs Γ (swap_tag_in_utyp ε1 ε2 C) B.
 Proof.
   intros Ψ Γ C B H; induction H; intros ε1 ε2 Ψs Heq; simpl.
   - apply d_consis__unit. eapply swap_atoms_empty_of; eassumption.
@@ -136,14 +136,14 @@ Proof.
   - apply d_consis__forall_inh_tagged
       with (L := L) (Ψ0 := swap_atoms ε1 ε2 Ψ0);
       [ | eapply swap_atoms_add_of; eassumption ].
-    intros α Hα. rewrite <- swap_etag_in_utyp_open_var.
+    intros α Hα. rewrite <- swap_tag_in_utyp_open_var.
     apply H0; [ exact Hα | reflexivity ].
   - apply d_consis__forall_inh_untagged with (L := L). intros α Hα.
-    rewrite <- swap_etag_in_utyp_open_var. apply H0; [ exact Hα | exact Heq ].
+    rewrite <- swap_tag_in_utyp_open_var. apply H0; [ exact Hα | exact Heq ].
   - apply d_consis__forall_syn_tagged with (L := L). intros α Hα.
-    rewrite <- swap_etag_in_utyp_open_var. apply H0; [ exact Hα | exact Heq ].
+    rewrite <- swap_tag_in_utyp_open_var. apply H0; [ exact Hα | exact Heq ].
   - apply d_consis__forall_syn with (L := L). intros α Hα.
-    rewrite <- swap_etag_in_utyp_open_var. apply H0; [ exact Hα | exact Heq ].
+    rewrite <- swap_tag_in_utyp_open_var. apply H0; [ exact Hα | exact Heq ].
 Qed.
 
 (* ===================================================================== *)
@@ -195,13 +195,13 @@ Inductive d_sub_tagsin :
 | d_sub_tagsin__forall_l_tagged : forall U Ψ Ψ' Γ m ε C ph B,
     m <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
-    Ψ' ∩ (ftag_in_utyp (utyp_all_etag ε C)) [=] empty ->
+    Ψ' ∩ (ftag_in_utyp (utyp_all_tag ε C)) [=] empty ->
     Ψ' [<=] U ->                     (* ⭐ the ONE premise [d_sub] does not have *)
     d_tags Ψ' ph ->
     {{ Γ ⊢ᵤ ph }}d ->
     is_ttyp ph ->
     d_sub_tagsin U m (Ψ `union` Ψ') Γ (open_utyp_wrt_utyp C ph) B ->
-    d_sub_tagsin U m Ψ Γ (utyp_all_etag ε C) B
+    d_sub_tagsin U m Ψ Γ (utyp_all_tag ε C) B
 | d_sub_tagsin__forall_l_untagged : forall U Ψ Ψ' Γ m C ph B,
     m <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
@@ -262,54 +262,54 @@ Qed.
 
 (** ⭐ EQUIVARIANCE OF THE TWIN — §1-§2 lifted to [d_sub] itself, with the
     bound carried along.  [__forall_r]'s side condition is about TYPE variables, which a
-    tag swap cannot see ([ftvar_swap_etag_in_utyp]). *)
-Lemma d_sub_tagsin_swap_etag : forall U m Ψ Γ C B,
+    tag swap cannot see ([ftvar_swap_tag_in_utyp]). *)
+Lemma d_sub_tagsin_swap_tag : forall U m Ψ Γ C B,
   d_sub_tagsin U m Ψ Γ C B ->
   forall ε1 ε2 Us Ψs,
     Us [=] swap_atoms ε1 ε2 U -> Ψs [=] swap_atoms ε1 ε2 Ψ ->
-    d_sub_tagsin Us m Ψs Γ (swap_etag_in_utyp ε1 ε2 C) B.
+    d_sub_tagsin Us m Ψs Γ (swap_tag_in_utyp ε1 ε2 C) B.
 Proof.
   intros U m Ψ Γ C B H; induction H; intros ε1 ε2 Us Ψs HU Heq; simpl.
   - apply d_sub_tagsin__infer;
-      [ eapply d_consis_swap_etag;
+      [ eapply d_consis_swap_tag;
           [ eassumption | symmetry; apply swap_atoms_empty ]
       | assumption | eapply swap_atoms_empty_of; eassumption ].
   - apply d_sub_tagsin__check;
-      [ apply guarded_utyp_swap_etag; assumption | assumption
-      | eapply d_consis_swap_etag; [ eassumption | exact Heq ]
+      [ apply guarded_utyp_swap_tag; assumption | assumption
+      | eapply d_consis_swap_tag; [ eassumption | exact Heq ]
       | assumption ].
   - apply d_sub_tagsin__forall_r with (α := α);
       [ assumption
-      | rewrite ftvar_swap_etag_in_utyp; assumption
+      | rewrite ftvar_swap_tag_in_utyp; assumption
       | apply IHd_sub_tagsin; assumption ].
   - apply d_sub_tagsin__arg with (Ψ1 := swap_atoms ε1 ε2 Ψ1)
                                  (Ψ2 := swap_atoms ε1 ε2 Ψ2);
-      [ eapply d_consis_swap_etag; [ eassumption | reflexivity ]
+      [ eapply d_consis_swap_tag; [ eassumption | reflexivity ]
       | apply IHd_sub_tagsin; [ exact HU | reflexivity ]
       | eapply swap_atoms_union_of; eassumption ].
   - apply d_sub_tagsin__forall_l_tagged
-      with (Ψ' := swap_atoms ε1 ε2 Ψ') (ph := swap_etag_in_utyp ε1 ε2 ph).
+      with (Ψ' := swap_atoms ε1 ε2 Ψ') (ph := swap_tag_in_utyp ε1 ε2 ph).
     + assumption.
     + rewrite Heq. apply swap_atoms_disjoint_of; assumption.
-    + rewrite (ftag_swap_etag_in_utyp ε1 ε2 (utyp_all_etag ε C)).
+    + rewrite (ftag_swap_tag_in_utyp ε1 ε2 (utyp_all_tag ε C)).
       apply swap_atoms_disjoint_of; assumption.
     + rewrite HU. apply swap_atoms_subset_of; assumption.
-    + eapply d_tags_swap_etag; [ eassumption | reflexivity ].
-    + apply d_wf_utyp_swap_etag; assumption.
-    + apply is_ttyp_swap_etag; assumption.
-    + rewrite <- swap_etag_in_utyp_open. apply IHd_sub_tagsin;
+    + eapply d_tags_swap_tag; [ eassumption | reflexivity ].
+    + apply d_wf_utyp_swap_tag; assumption.
+    + apply is_ttyp_swap_tag; assumption.
+    + rewrite <- swap_tag_in_utyp_open. apply IHd_sub_tagsin;
         [ exact HU | rewrite Heq; symmetry; apply swap_atoms_union ].
   - apply d_sub_tagsin__forall_l_untagged
-      with (Ψ' := swap_atoms ε1 ε2 Ψ') (ph := swap_etag_in_utyp ε1 ε2 ph).
+      with (Ψ' := swap_atoms ε1 ε2 Ψ') (ph := swap_tag_in_utyp ε1 ε2 ph).
     + assumption.
     + rewrite Heq. apply swap_atoms_disjoint_of; assumption.
-    + rewrite (ftag_swap_etag_in_utyp ε1 ε2 (utyp_all_syn C)).
+    + rewrite (ftag_swap_tag_in_utyp ε1 ε2 (utyp_all_syn C)).
       apply swap_atoms_disjoint_of; assumption.
     + rewrite HU. apply swap_atoms_subset_of; assumption.
-    + eapply d_tags_swap_etag; [ eassumption | reflexivity ].
-    + apply d_wf_utyp_swap_etag; assumption.
-    + apply is_ttyp_swap_etag; assumption.
-    + rewrite <- swap_etag_in_utyp_open. apply IHd_sub_tagsin;
+    + eapply d_tags_swap_tag; [ eassumption | reflexivity ].
+    + apply d_wf_utyp_swap_tag; assumption.
+    + apply is_ttyp_swap_tag; assumption.
+    + rewrite <- swap_tag_in_utyp_open. apply IHd_sub_tagsin;
         [ exact HU | rewrite Heq; symmetry; apply swap_atoms_union ].
 Qed.
 
@@ -347,10 +347,10 @@ Proof.
     pick fresh ε2 for (U `union` S `union` Ψ `union` ftag_in_utyp C).
     assert (Hε1Ψ : ε1 `notin` Ψ) by (clear - Hin1S HΨ; fsetdec).
     assert (Hε1C : ε1 `notin` ftag_in_utyp C) by (clear - Hin1S HC; fsetdec).
-    assert (HCeq : swap_etag_in_utyp ε1 ε2 C = C)
-      by (apply swap_etag_in_utyp_fresh_eq;
+    assert (HCeq : swap_tag_in_utyp ε1 ε2 C = C)
+      by (apply swap_tag_in_utyp_fresh_eq;
             [ exact Hε1C | clear - Fr; fsetdec ]).
-    pose proof (d_sub_tagsin_swap_etag U m Ψ Γ C B Hsub ε1 ε2
+    pose proof (d_sub_tagsin_swap_tag U m Ψ Γ C B Hsub ε1 ε2
                   (swap_atoms ε1 ε2 U) Ψ ltac:(reflexivity)
                   ltac:(symmetry; apply swap_atoms_notin;
                           [ exact Hε1Ψ | clear - Fr; fsetdec ])) as Hx.

@@ -97,7 +97,7 @@ Definition Θcex : aenv := (β ~ abind_tvar) ++ nil.
 
 (** Subject: the decorated identity quantifier [∀^ε α. α] — [is_tskl], and
     for [a_sub_mode_ty] also ghost-free. *)
-Definition Rcex : uskl := uskl_all_etag ε (uskl_var_b 0).
+Definition Rcex : uskl := uskl_all_tag ε (uskl_var_b 0).
 
 (** Target: the context's rigid, which the subject does not mention. *)
 Definition Qcex : bskl := bskl_var_f β.
@@ -107,7 +107,7 @@ Proof. apply a_wf_aenv__tvar; [ simpl; auto | apply a_wf_aenv__nil ]. Qed.
 
 Lemma Rcex_tskl : is_tskl Rcex.
 Proof.
-  apply is_tskl__all_etag with (L := empty); intros α _; cbn.
+  apply is_tskl__all_tag with (L := empty); intros α _; cbn.
   apply is_tskl__var.
 Qed.
 

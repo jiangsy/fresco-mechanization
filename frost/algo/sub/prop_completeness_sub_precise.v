@@ -35,7 +35,6 @@ Require Import src.frost.algo.sub.prop_soundness_sub.  (* ad_pat_sub_gv_psi_cong
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
-Require Import src.frost.deco_algo.prop_decorate.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.consis.prop_consis_precise.
 
@@ -70,7 +69,7 @@ Proof.
     specialize (IHad_partial_precise1 Hwf _ Hd1).
     specialize (IHad_partial_precise2 Hwf _ Hd2).
     fsetdec.
-  - apply d_tags_skl_all_etag_inv in Hdt as [L0 [Ψt0 [Hd0 [Hεt Heqt]]]].
+  - apply d_tags_skl_all_tag_inv in Hdt as [L0 [Ψt0 [Hd0 [Hεt Heqt]]]].
     pick fresh α for (L `union` L0).
     specialize (H0 α ltac:(solve_notin_auto) Hwf _ (Hd0 α ltac:(solve_notin_auto))).
     fsetdec.
@@ -78,7 +77,7 @@ Proof.
   - eapply IHad_partial_precise; eauto.
   - (* tophole_fill: the recursive premise keeps Ψ but drops the ε tag;
        here the sub-derivation extends Θ with the rigid α *)
-    apply d_tags_skl_all_etag_inv in Hdt as [L0 [Ψt0 [Hd0 [Hεt Heqt]]]].
+    apply d_tags_skl_all_tag_inv in Hdt as [L0 [Ψt0 [Hd0 [Hεt Heqt]]]].
     pick fresh α for (L `union` L0 `union` dom Θ).
     assert (Hwf' : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
       by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
@@ -126,8 +125,8 @@ Proof.
         [ exact Hwf
         | eapply a_tags_sort_psi_cong; [ exact Htb | clear - H1 Hun Hdisj Hs1 Hs2; fsetdec ]
         | assumption ].
-  - (* forall: ψ = all_etag ε ψ0, P = all_syn P0 *)
-    apply a_tags_sort_all_etag_inv in Htags as [Lt [Ψt [Hta [Hεt Hun]]]].
+  - (* forall: ψ = all_tag ε ψ0, P = all_syn P0 *)
+    apply a_tags_sort_all_tag_inv in Htags as [Lt [Ψt [Hta [Hεt Hun]]]].
     apply a_wf_pskl_all_inv in Hwfp as [Lw Hwbody].
     apply ad_refine_syn__all with (L := L `union` Lt `union` Lw `union` dom Θ
        `union` ftvar_in_pskl P `union` ftvar_in_uskl ψ).
@@ -155,7 +154,7 @@ Proof.
     apply IHad_partial_precise; [ exact Hwf | exact Htags | exact Hwfp ].
   - (* tophole_fill: VACUOUS via tags_sub — ε is solved but the premise drops it *)
     exfalso.
-    apply a_tags_sort_all_etag_inv in Htags as [Lt [Ψt [Hta [Hεt Hun]]]].
+    apply a_tags_sort_all_tag_inv in Htags as [Lt [Ψt [Hta [Hεt Hun]]]].
     pick fresh α for (L `union` Lt `union` dom Θ).
     assert (Hwf' : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
       by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
@@ -598,7 +597,7 @@ Proof.
       [ exact Hc3 | exact Hmon | exact Hwf
       | clear; fsetdec | clear; fsetdec | clear; fsetdec | exact Hwfq ].
   - (* all_syn cong: not a guarded subject *) inversion Hgd.
-  - (* all_etag cong *) inversion Hgd.
+  - (* all_tag cong *) inversion Hgd.
   - (* all_inst *) inversion Hgd.
   - (* tophole cong *) inversion Hgd.
   - (* topholeg cong *) inversion Hgd.
@@ -818,8 +817,8 @@ Proof.
 Qed.
 
 (** Cofinite inversions of ghost-freeness at the two quantifier heads. *)
-Lemma uskl_ghost_free_all_etag_inv : forall ε R,
-  uskl_ghost_free (uskl_all_etag ε R) ->
+Lemma uskl_ghost_free_all_tag_inv : forall ε R,
+  uskl_ghost_free (uskl_all_tag ε R) ->
   exists L0, forall α, α `notin` L0 ->
     uskl_ghost_free (open_uskl_wrt_uskl R (uskl_var_f α)).
 Proof. intros ε R Hg. inversion Hg; subst. eauto. Qed.
@@ -838,14 +837,14 @@ Proof. intros R Hg. inversion Hg; subst. eauto. Qed.
 Lemma ad_pat_sub_g_forall_l_tagged_transport : forall Θb Ψr Rg' Rgall,
   uskl_precise Θb Ψr Rg' Rgall ->
   forall n NM Mg Θ' Ψfull Ψi' εg Rg0 ψg Qg Ψsup Ψn Ψna,
-  Rgall = uskl_all_etag εg Rg0 ->
+  Rgall = uskl_all_tag εg Rg0 ->
   {{ ⊢ Θb }}a ->
   Ψr [<=] Ψsup ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
   {{ ⊢ Θ' }}a ->
   Mg <> mode_ti ->
   Ψi' ∩ Ψfull [=] empty ->
-  Ψi' ∩ (ftag_in_uskl (uskl_all_etag εg Rg0)) [=] empty ->
+  Ψi' ∩ (ftag_in_uskl (uskl_all_tag εg Rg0)) [=] empty ->
   a_tags_sort NM Ψi' ψg ->
   {{ Θ' ⨟ empty ⊢ₚₛ ⌊ ψg ⌋ˢ }}a ->
   ad_pat_sub_g n NM Mg (Ψfull `union` Ψi') Θ' (open_uskl_wrt_uskl Rg0 ψg) Qg ->
@@ -883,7 +882,7 @@ Proof.
         [ exact HMti | exact Hictx | exact Hihyg | exact Htags
         | exact Hwfψ | exact HDp ]
       | exact HΨf | exact HΨa | exact Hftag ].
-  - (* all_etag congruence: rebuild ForallL-tagged with ψg *)
+  - (* all_tag congruence: rebuild ForallL-tagged with ψg *)
     inversion HeqR; subst.
     assert (Hlcψ : lc_uskl ψg)
       by (apply is_tskl_lc; inversion Htags; subst; assumption).
@@ -907,7 +906,7 @@ Proof.
     assert (Hgfo : NM = a_sub_mode_ty ->
                    uskl_ghost_free (open_uskl_wrt_uskl R' ψg)).
     { intro He.
-      destruct (uskl_ghost_free_all_etag_inv (Hgf He)) as [Lg Hgb].
+      destruct (uskl_ghost_free_all_tag_inv (Hgf He)) as [Lg Hgb].
       pick fresh β for (Lg `union` ftvar_in_uskl R').
       rewrite (subst_uskl_in_uskl_intro β R' ψg
                  ltac:(clear - Fr0; solve_notin_auto)).
@@ -983,7 +982,7 @@ Proof.
           simpl in Hftag; clear - Hou Hftag Htgψ; fsetdec
         | exact Hwfq
         | exact Hgfo ].
-  - (* hole: no_forall of an all_etag erasure is absurd *)
+  - (* hole: no_forall of an all_tag erasure is absurd *)
     subst R. simpl in H0. contradiction.
   - (* tophole_remove *)
     destruct NM.
@@ -1742,7 +1741,7 @@ Proof.
         | intros β Hβ; exfalso; clear - Hβ; fsetdec
         | exact Hwfq | exact Hup' | exact Hmon | reflexivity ].
   - (* all_syn cong: not a guarded subject *) inversion Hgd.
-  - (* all_etag cong *) inversion Hgd.
+  - (* all_tag cong *) inversion Hgd.
   - (* all_inst *) inversion Hgd.
   - (* tophole cong *) inversion Hgd.
   - (* topholeg cong *) inversion Hgd.
@@ -1983,14 +1982,14 @@ Qed.
 Lemma ad_pat_sub_gv_forall_l_tagged_transport : forall Θb Ψr Rg' Rgall,
   uskl_precise Θb Ψr Rg' Rgall ->
   forall n NM Mg Θ' Ψfull Ψi' εg Rg0 ψg Qg Ψsup Ψn Ψna,
-  Rgall = uskl_all_etag εg Rg0 ->
+  Rgall = uskl_all_tag εg Rg0 ->
   {{ ⊢ Θb }}a ->
   Ψr [<=] Ψsup ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
   {{ ⊢ Θ' }}a ->
   Mg <> mode_ti ->
   Ψi' ∩ Ψfull [=] empty ->
-  Ψi' ∩ (ftag_in_uskl (uskl_all_etag εg Rg0)) [=] empty ->
+  Ψi' ∩ (ftag_in_uskl (uskl_all_tag εg Rg0)) [=] empty ->
   a_tags_sort NM Ψi' ψg ->
   {{ Θ' ⨟ empty ⊢ₚₛ ⌊ ψg ⌋ˢ }}a ->
   ad_pat_sub_gv n NM Mg (Ψfull `union` Ψi') Θ' (open_uskl_wrt_uskl Rg0 ψg) Qg ->
@@ -2028,7 +2027,7 @@ Proof.
         [ exact HMti | exact Hictx | exact Hihyg | exact Htags
         | exact Hwfψ | exact HDp ]
       | exact HΨf | exact HΨa | exact Hftag ].
-  - (* all_etag congruence: rebuild ForallL-tagged with ψg *)
+  - (* all_tag congruence: rebuild ForallL-tagged with ψg *)
     inversion HeqR; subst.
     assert (Hlcψ : lc_uskl ψg)
       by (apply is_tskl_lc; inversion Htags; subst; assumption).
@@ -2052,7 +2051,7 @@ Proof.
     assert (Hgfo : NM = a_sub_mode_ty ->
                    uskl_ghost_free (open_uskl_wrt_uskl R' ψg)).
     { intro He.
-      destruct (uskl_ghost_free_all_etag_inv (Hgf He)) as [Lg Hgb].
+      destruct (uskl_ghost_free_all_tag_inv (Hgf He)) as [Lg Hgb].
       pick fresh β for (Lg `union` ftvar_in_uskl R').
       rewrite (subst_uskl_in_uskl_intro β R' ψg
                  ltac:(clear - Fr0; solve_notin_auto)).
@@ -2128,7 +2127,7 @@ Proof.
           simpl in Hftag; clear - Hou Hftag Htgψ; fsetdec
         | exact Hwfq
         | exact Hgfo ].
-  - (* hole: no_forall of an all_etag erasure is absurd *)
+  - (* hole: no_forall of an all_tag erasure is absurd *)
     subst R. simpl in H0. contradiction.
   - (* tophole_remove *)
     destruct NM.

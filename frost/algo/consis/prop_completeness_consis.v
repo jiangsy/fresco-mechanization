@@ -54,7 +54,6 @@ Require Import src.frost.algo_decl.def_decl_algo.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_stability.
-Require Import src.frost.deco_algo.prop_decorate.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_compose.
 Require Import src.frost.algo.prop_normal.
@@ -4386,12 +4385,12 @@ Proof.
           exact Hle2. }
       split; [ | right ];
         simpl; pose proof (size_ptyp_min (⇓ᵗ[Θ] C1)); lia.
-  - (* forall_inh_tagged : R' = uskl_all_etag, unreachable *)
+  - (* forall_inh_tagged : R' = uskl_all_tag, unreachable *)
     destruct P0; simpl in HeqS; try discriminate;
       solve [ exfalso; eapply Hnv; reflexivity ].
   - (* forall_inh_untagged : Q = bskl_all_inh, never a mono syn painting *)
     destruct C0; simpl in HeqQ; discriminate.
-  - (* forall_syn_tagged : R' = uskl_all_etag, unreachable *)
+  - (* forall_syn_tagged : R' = uskl_all_tag, unreachable *)
     destruct P0; simpl in HeqS; try discriminate;
       solve [ exfalso; eapply Hnv; reflexivity ].
   - (* forall_syn : Q = bskl_all_syn, mono A refutes *)
@@ -4655,7 +4654,7 @@ Proof.
       apply Ht1. apply Ht2. exact HE. }
     simpl. apply a_tyequiv__arrow;
       [ rewrite Hag1; exact He1 | rewrite Hag2; exact He2 ].
-  - (* forall_inh_tagged : R' = uskl_all_etag, unreachable *)
+  - (* forall_inh_tagged : R' = uskl_all_tag, unreachable *)
     destruct P0; simpl in HeqS; try discriminate;
       solve [ exfalso; eapply Hnv; reflexivity ].
   - (* forall_inh_untagged : Q = bskl_all_inh, never a mono syn painting *)

@@ -68,7 +68,6 @@ Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.sub.prop_sub_msubst_equiv.
 Require Import src.frost.algo.prop_precise.       (* ad_precise, {{ _ ⊢ₚᵣ _ }}ad *)
-Require Import src.frost.deco_algo.prop_decorate.      (* uskl_to_pskl_pskl_to_uskl *)
 Require Import src.frost.algo.prop_pat_sub.       (* mono_ptyp_to_uskl_syn_ghost_free *)
 Require Import src.frost.algo.sub.prop_completeness_sub_gen.
 
@@ -100,8 +99,8 @@ Proof.
 Qed.
 
 (** A painting is never an ε-tagged ∀, never a ghost. *)
-Lemma ptyp_to_uskl_syn_not_etag : forall τ ε R,
-  ptyp_to_uskl_syn τ <> uskl_all_etag ε R.
+Lemma ptyp_to_uskl_syn_not_tag : forall τ ε R,
+  ptyp_to_uskl_syn τ <> uskl_all_tag ε R.
 Proof.
   intros τ ε R.
   destruct (ptyp_to_uskl_syn_shape τ)
@@ -145,12 +144,12 @@ Qed.
 
 (** …hence the κ-image pins the pre-image at every shape the paintings miss. *)
 
-Lemma msubst_uskl_syn_all_etag_inv : forall κ R ε X,
-  msubst_uskl_syn κ R = uskl_all_etag ε X ->
-  exists R0, R = uskl_all_etag ε R0 /\ msubst_uskl_syn κ R0 = X.
+Lemma msubst_uskl_syn_all_tag_inv : forall κ R ε X,
+  msubst_uskl_syn κ R = uskl_all_tag ε X ->
+  exists R0, R = uskl_all_tag ε R0 /\ msubst_uskl_syn κ R0 = X.
 Proof.
   intros κ R ε X He; destruct R; cbn in He; try discriminate He.
-  - exfalso; eapply ptyp_to_uskl_syn_not_etag; exact He.
+  - exfalso; eapply ptyp_to_uskl_syn_not_tag; exact He.
   - injection He as <- <-. eexists; split; reflexivity.
 Qed.
 
@@ -203,12 +202,12 @@ Qed.
 (*  that row cannot fire and the equivalence is structural.                *)
 (* --------------------------------------------------------------------- *)
 
-Lemma a_uskl_tyequiv_all_etag_l_inv : forall Θ ε R X,
-  {{ Θ ⊢ (uskl_all_etag ε R) ≡ᵘ X }}a ->
-  exists X0, X = uskl_all_etag ε X0.
+Lemma a_uskl_tyequiv_all_tag_l_inv : forall Θ ε R X,
+  {{ Θ ⊢ (uskl_all_tag ε R) ≡ᵘ X }}a ->
+  exists X0, X = uskl_all_tag ε X0.
 Proof.
   intros Θ ε R X H; inversion H; subst;
-    [ exfalso; eapply ptyp_to_uskl_syn_not_etag; eassumption | eexists; reflexivity ].
+    [ exfalso; eapply ptyp_to_uskl_syn_not_tag; eassumption | eexists; reflexivity ].
 Qed.
 
 Lemma a_uskl_tyequiv_all_syn_l_inv : forall Θ R X,
@@ -1074,9 +1073,9 @@ Proof.
        gone ([sub_shield_empty]), so the row's premises are EXACTLY the join
        rule's — [HM], [HΨ1], [HΨ2], [Htg], [Hwfψ], [Hsub] — plus the fuel IH
        and the WLOG the trichotomy supplies. *)
-    assert (Hhd : exists R0, R = uskl_all_etag εa R0).
-    { destruct (@a_uskl_tyequiv_all_etag_l_inv Θa εa Rj _ Hslack) as [X0 HX].
-      destruct (@msubst_uskl_syn_all_etag_inv κ R εa X0 HX) as [R0 [HR _]].
+    assert (Hhd : exists R0, R = uskl_all_tag εa R0).
+    { destruct (@a_uskl_tyequiv_all_tag_l_inv Θa εa Rj _ Hslack) as [X0 HX].
+      destruct (@msubst_uskl_syn_all_tag_inv κ R εa X0 HX) as [R0 [HR _]].
       exists R0; exact HR. }
     destruct Hhd as [R0 HR0]. subst R.
     destruct (p0_wlog_trichotomy Hmodsk Hmodty (a_wf_pskl_lc HwfP0))
@@ -1097,8 +1096,8 @@ Proof.
       cbn in Hrs.
       destruct (ad_refine_syn_f_all_inh_l_shape Hrs) as [B HB]. subst Qa.
       exact (@sub_complete_all_inh_counterpart n0 Θ0 (pskl_all_syn Pb) P
-               (uskl_all_etag εa R0)
-               (uskl_all_etag εa Rj) Ψ0 Θa κ B (Hfuel n0 ltac:(lia))
+               (uskl_all_tag εa R0)
+               (uskl_all_tag εa Rj) Ψ0 Θa κ B (Hfuel n0 ltac:(lia))
                Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
                HwfQ Hgf).
   - (* __forall_l_untagged : as above *)

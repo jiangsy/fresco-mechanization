@@ -39,10 +39,10 @@ Require Import src.frost.def_extra.
 Require Import src.frost.coercions.
 Require Import src.frost.prop_coercions.
 Require Import src.frost.ltac_utils.        (* destruct_if — §6's term-binder rows *)
-Require Import src.frost.prop_etag.         (* ⭐ §1's ATOM layer: the
+Require Import src.frost.prop_tag.         (* ⭐ §1's ATOM layer: the
     transposition on atoms and on atom SETS is sort-agnostic, so it is defined
     ONCE, upstream.  It used to be defined here TOO, under the same six names,
-    and algo/prop_pat_sub.v imports both files — see prop_etag.v's header. *)
+    and algo/prop_pat_sub.v imports both files — see prop_tag.v's header. *)
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 
@@ -148,7 +148,7 @@ Unset Implicit Arguments.
 
 (* ===================================================================== *)
 (*  §1  The atom transposition — the DEFINITION and its spec are upstream  *)
-(*  in frost/prop_etag.v §1 ([swap_atom], [swap_atom_invol],               *)
+(*  in frost/prop_tag.v §1 ([swap_atom], [swap_atom_invol],               *)
 (*  [swap_atom_other], [swap_atoms], [swap_atoms_spec], …).  What is here  *)
 (*  is only what the TYPE-variable side adds.                              *)
 (* ===================================================================== *)
@@ -586,7 +586,7 @@ Qed.
 (*  §6  Swap over atom SETS (the F / Δ1 / Δ2 indexes)                      *)
 (*                                                                        *)
 (*  [swap_atoms] and its membership SPEC [swap_atoms_spec] are upstream in *)
-(*  frost/prop_etag.v §1; what is here is the EXTENSIONAL packaging this   *)
+(*  frost/prop_tag.v §1; what is here is the EXTENSIONAL packaging this   *)
 (*  side needs.  [atoms] is opaque, so [swap_atoms] cannot be a Leibniz    *)
 (*  homomorphism: judgments indexed by sets take the swapped set           *)
 (*  extensionally ([S' [=] swap_atoms a b S]) in their equivariance lemmas.*)

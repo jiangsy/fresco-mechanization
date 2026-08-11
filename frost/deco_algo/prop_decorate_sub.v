@@ -29,7 +29,6 @@ Require Import src.frost.algo_decl.def_decl_algo_sub.
 Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_stability.
-Require Import src.frost.deco_algo.prop_decorate.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.sub.prop_looksub.
@@ -254,7 +253,7 @@ Proof.
             eapply (IHfam Ψg ψg Hfr Hsort Hera eq_refl)
         end.
         -- apply lc_body_uskl_wrt_uskl;
-             [ eauto using lc_body_uskl_all_syn_1, lc_body_uskl_all_etag_2
+             [ eauto using lc_body_uskl_all_syn_1, lc_body_uskl_all_tag_2
              | apply is_tskl_lc; inversion Hsort; assumption ].
         -- rewrite ! uskl_to_pskl_open_gen.
            match goal with Hb : ⌊ _ ⌋ˢ = ⌊ _ ⌋ˢ |- _ => rewrite Hb end.
@@ -276,7 +275,7 @@ Proof.
             eapply (IHfam Ψg ψg Hfr Hsort Hera eq_refl)
         end.
         -- apply lc_body_uskl_wrt_uskl;
-             [ eauto using lc_body_uskl_all_syn_1, lc_body_uskl_all_etag_2
+             [ eauto using lc_body_uskl_all_syn_1, lc_body_uskl_all_tag_2
              | apply is_tskl_lc; inversion Hsort; assumption ].
         -- rewrite ! uskl_to_pskl_open_gen.
            match goal with Hb : ⌊ _ ⌋ˢ = ⌊ _ ⌋ˢ |- _ => rewrite Hb end.
@@ -301,7 +300,7 @@ Proof.
             eapply (IHfam Ψg ψg Hfr Hsort Hera eq_refl)
         end.
         -- apply lc_body_uskl_wrt_uskl;
-             [ eauto using lc_body_uskl_all_syn_1, lc_body_uskl_all_etag_2
+             [ eauto using lc_body_uskl_all_syn_1, lc_body_uskl_all_tag_2
              | apply is_tskl_lc; inversion Hsort; assumption ].
         -- rewrite ! uskl_to_pskl_open_gen.
            match goal with Hb : ⌊ _ ⌋ˢ = ⌊ _ ⌋ˢ |- _ => rewrite Hb end.
@@ -323,7 +322,7 @@ Proof.
             eapply (IHfam Ψg ψg Hfr Hsort Hera eq_refl)
         end.
         -- apply lc_body_uskl_wrt_uskl;
-             [ eauto using lc_body_uskl_all_syn_1, lc_body_uskl_all_etag_2
+             [ eauto using lc_body_uskl_all_syn_1, lc_body_uskl_all_tag_2
              | apply is_tskl_lc; inversion Hsort; assumption ].
         -- rewrite ! uskl_to_pskl_open_gen.
            match goal with Hb : ⌊ _ ⌋ˢ = ⌊ _ ⌋ˢ |- _ => rewrite Hb end.
@@ -438,8 +437,8 @@ Lemma msubst_uskl_all_syn : forall ρ R,
   msubst_uskl ρ (uskl_all_syn R) = uskl_all_syn (msubst_uskl ρ R).
 Proof. induction ρ as [|[α1 g] ρ' IH]; intros; simpl; [reflexivity|]; rewrite IH; reflexivity. Qed.
 
-Lemma msubst_uskl_all_etag : forall ρ ε R,
-  msubst_uskl ρ (uskl_all_etag ε R) = uskl_all_etag ε (msubst_uskl ρ R).
+Lemma msubst_uskl_all_tag : forall ρ ε R,
+  msubst_uskl ρ (uskl_all_tag ε R) = uskl_all_tag ε (msubst_uskl ρ R).
 Proof. induction ρ as [|[α1 g] ρ' IH]; intros; simpl; [reflexivity|]; rewrite IH; reflexivity. Qed.
 
 (** strip = pskl_to_uskl ∘ uskl_to_pskl commutes with opening. *)
@@ -614,7 +613,7 @@ Proof.
     erewrite IHuskl_ghost_free1 by eassumption.
     erewrite IHuskl_ghost_free2 by eassumption.
     reflexivity.
-  - (* all_etag : strip is an all_syn, contradicting no_all_syn *)
+  - (* all_tag : strip is an all_syn, contradicting no_all_syn *)
     simpl in Hnas. rewrite msubst_uskl_all_syn in Hnas. inversion Hnas.
   - (* all_syn : likewise *)
     simpl in Hnas. rewrite msubst_uskl_all_syn in Hnas. inversion Hnas.
@@ -738,7 +737,7 @@ Proof.
     end.
   - (* SEq-ForallInh : open a fresh rigid; build the extended wf hyps as in
        a_consistag_sound_aux's ForallInh case, then IH the opened body. *)
-    rewrite msubst_uskl_all_etag.
+    rewrite msubst_uskl_all_tag.
     simpl in Hcons. rewrite msubst_uskl_all_syn in Hcons.
     inversion Hcons; subst.
     match goal with
@@ -821,7 +820,7 @@ Proof.
     end.
   - (* SEq-ForallSyn : as ForallInh but input ∀◇ (unchanged across opening,
        so its wf reassociates directly), tag pass-through. *)
-    rewrite msubst_uskl_all_etag.
+    rewrite msubst_uskl_all_tag.
     simpl in Hcons. rewrite msubst_uskl_all_syn in Hcons.
     inversion Hcons; subst;
       try (match goal with Hg : guarded_uskl (uskl_all_syn _) |- _ =>
@@ -997,7 +996,7 @@ Fixpoint utags_uskl (R : uskl) : atoms :=
   | uskl_var_f _ => empty
   | uskl_arrow R1 R2 => utags_uskl R1 `union` utags_uskl R2
   | uskl_all_syn R0 => utags_uskl R0
-  | uskl_all_etag ε R0 => add ε (utags_uskl R0)
+  | uskl_all_tag ε R0 => add ε (utags_uskl R0)
   | uskl_hole => empty
   | uskl_tophole R0 => utags_uskl R0
   | uskl_holeg => empty
@@ -1499,13 +1498,13 @@ Proof.
         | Ho : guarded_pskl (pskl_all_syn _) \/ _ |- _ =>
             destruct Ho as [Hg | Hd]; [ inversion Hg | discriminate Hd ]
         end.
-    + (* ψf = all_etag ε' ψ' : Vacuous or the ρ-extension crux; the
+    + (* ψf = all_tag ε' ψ' : Vacuous or the ρ-extension crux; the
          injected subject equation is substituted throughout *)
       inversion HeqT; subst; clear HeqT.
       inversion Hlcψ; subst.
       inversion Hst; subst.
       * (* ForallL : the crux.  Extend ρ with β ↦ ψg per family instance. *)
-        rewrite msubst_uskl_all_etag.
+        rewrite msubst_uskl_all_tag.
         match goal with
         | Hstb : forall b : atom, b `notin` ?L1 -> {{ _ ≼[ _ ] _ ⤳ _ }}da |- _ =>
             rename Hstb into Hstbody; rename L1 into Lst
@@ -1609,7 +1608,7 @@ Proof.
         all: try solve [ apply Hstbody; clear - Hβ; fsetdec ].
         all: try solve [ exact Hlcρ' ].
         all: try solve [ apply lc_body_uskl_wrt_uskl;
-                         [ eapply lc_body_uskl_all_etag_2; eassumption
+                         [ eapply lc_body_uskl_all_tag_2; eassumption
                          | constructor ] ].
         all: try solve [ exact HwfΞΘ ].
         all: try solve [ exact HlcSψ ].
@@ -2200,7 +2199,7 @@ Proof.
                   [ clear; fsetdec
                   | apply faf_open_tvar;
                       [ exact Hfaf | clear - Hβ; fsetdec ] ] ].
-    + (* R = all_etag ε R' *)
+    + (* R = all_tag ε R' *)
       simpl in Hcons |- *.
       inversion HlcS; subst.
       match goal with
@@ -2294,7 +2293,7 @@ Proof.
       inversion Hcons; subst;
         try (match goal with Hg : guarded_uskl (uskl_all_syn _) |- _ =>
                solve [ inversion Hg ] end);
-        try (match goal with Hg : guarded_uskl (uskl_all_etag _ _) |- _ =>
+        try (match goal with Hg : guarded_uskl (uskl_all_tag _ _) |- _ =>
                solve [ inversion Hg ] end).
       match goal with
       | Hcb : forall a, a `notin` ?L1 -> {{ _ ⊢[ _ | _ | _ | _ ] _ ∼ _ ⊣ _ }}da |- _ =>
@@ -2357,7 +2356,7 @@ Proof.
                   [ clear; fsetdec
                   | apply faf_open_tvar;
                       [ exact Hfaf | clear - Hβ; fsetdec ] ] ].
-    + (* R = all_etag ε R' *)
+    + (* R = all_tag ε R' *)
       simpl in Hcons |- *.
       inversion HlcS; subst.
       match goal with
@@ -2366,7 +2365,7 @@ Proof.
       simpl in HwfSub.
       inversion HwfSub as [ | | | LS ΘR ΔR SbS HbodyS HeqS' | | ]; subst.
       inversion Hcons; subst;
-        try (match goal with Hg : guarded_uskl (uskl_all_etag _ _) |- _ =>
+        try (match goal with Hg : guarded_uskl (uskl_all_tag _ _) |- _ =>
                solve [ inversion Hg ] end).
       match goal with
       | Hcb : forall a, a `notin` ?L1 -> {{ _ ⊢[ _ | _ | _ | _ ] _ ∼ _ ⊣ _ }}da |- _ =>

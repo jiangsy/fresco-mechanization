@@ -17,7 +17,7 @@ Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.def_extra.
 Require Import src.frost.prop_basic.
-Require Import src.frost.prop_etag.
+Require Import src.frost.prop_tag.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_skeleton.
@@ -35,7 +35,6 @@ Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
-Require Import src.frost.deco_algo.prop_decorate.
 
 Set Implicit Arguments.
 
@@ -728,7 +727,7 @@ Proof.
   - apply uskl_ghost_free__unit.
   - destruct_if as [-> | Hne]; [ exact Hψ | apply uskl_ghost_free__var ].
   - apply uskl_ghost_free__arrow; [ apply IHHR1 | apply IHHR2 ]; assumption.
-  - apply uskl_ghost_free__all_etag with (L := L `union` singleton α0).
+  - apply uskl_ghost_free__all_tag with (L := L `union` singleton α0).
     intros β Hβ.
     assert (HYX : α0 <> β) by (clear - Hβ; fsetdec).
     rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψ α0 β HYX Hlc).
@@ -761,8 +760,8 @@ Proof.
     [ apply Hbody; clear - Fr; fsetdec | exact Hψ | exact Hlc ].
 Qed.
 
-Lemma uskl_ghost_free_open_gen_etag : forall ε R ψ,
-  uskl_ghost_free (uskl_all_etag ε R) ->
+Lemma uskl_ghost_free_open_gen_tag : forall ε R ψ,
+  uskl_ghost_free (uskl_all_tag ε R) ->
   uskl_ghost_free ψ -> lc_uskl ψ ->
   uskl_ghost_free (open_uskl_wrt_uskl R ψ).
 Proof.
@@ -783,7 +782,7 @@ Proof.
   - auto with frost.
   - destruct_if; auto with frost.
   - auto with frost.
-  - apply uskl_ghost_free__all_etag with (L := L `union` {{β}}).
+  - apply uskl_ghost_free__all_tag with (L := L `union` {{β}}).
     intros α Hα.
     rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       [ auto | intro He; subst; clear - Hα; fsetdec | apply lc_uskl_unit ].
@@ -861,8 +860,8 @@ Proof.
       [ assumption
       | eassumption
       | (* tag hygiene: substituting a TAG-FREE term cannot change a tag *)
-        change (uskl_all_etag ε (subst_uskl_in_uskl uskl_unit β R))
-          with (subst_uskl_in_uskl uskl_unit β (uskl_all_etag ε R));
+        change (uskl_all_tag ε (subst_uskl_in_uskl uskl_unit β R))
+          with (subst_uskl_in_uskl uskl_unit β (uskl_all_tag ε R));
         rewrite ftag_in_uskl_subst_tagfree by reflexivity; assumption
       | apply a_tags_sort_subst_unit; eassumption
       | rewrite uskl_to_pskl_subst_unit;
@@ -1021,7 +1020,7 @@ Proof.
   - auto with frost.
   - destruct_if; auto using mono_ptyp_to_uskl_syn_is_tskl with frost.
   - auto with frost.
-  - apply is_tskl__all_etag with (L := L `union` {{β}}).
+  - apply is_tskl__all_tag with (L := L `union` {{β}}).
     intros α Hα.
     rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       [ auto | intro He; subst; clear - Hα; fsetdec
@@ -1038,7 +1037,7 @@ Proof.
   - auto with frost.
   - destruct_if; auto using mono_ptyp_to_uskl_syn_tags with frost.
   - eauto with frost.
-  - apply d_tags_skl__all_etag with (L := L `union` {{β}}) (Ψ0 := Ψ0);
+  - apply d_tags_skl__all_tag with (L := L `union` {{β}}) (Ψ0 := Ψ0);
       [ | assumption | assumption ].
     intros β0 Hβ0.
     rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
@@ -1056,7 +1055,7 @@ Proof.
   - auto with frost.
   - destruct_if; auto using mono_ptyp_to_uskl_syn_ghost_free with frost.
   - auto with frost.
-  - apply uskl_ghost_free__all_etag with (L := L `union` {{β}}).
+  - apply uskl_ghost_free__all_tag with (L := L `union` {{β}}).
     intros α Hα.
     rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       [ auto | intro He; subst; clear - Hα; fsetdec
@@ -1162,8 +1161,8 @@ Proof.
       [ assumption
       | eassumption
       | (* tag hygiene: a MONOTYPE's painting is tag-free *)
-        change (uskl_all_etag ε (subst_uskl_in_uskl (ptyp_to_uskl_syn τ0) β R))
-          with (subst_uskl_in_uskl (ptyp_to_uskl_syn τ0) β (uskl_all_etag ε R));
+        change (uskl_all_tag ε (subst_uskl_in_uskl (ptyp_to_uskl_syn τ0) β R))
+          with (subst_uskl_in_uskl (ptyp_to_uskl_syn τ0) β (uskl_all_tag ε R));
         rewrite ftag_in_uskl_subst_tagfree
           by (apply ftag_ptyp_to_uskl_syn); assumption
       | apply a_tags_sort_subst_mono; eassumption
@@ -1925,20 +1924,20 @@ Proof.
     + simpl. rewrite He1, He2. reflexivity.
     + intros Hg. simpl in Hg. destruct Hg as [Hga Hgb].
       apply uskl_ghost_free__arrow; [ apply Hgf1; auto | apply Hgf2; auto ].
-  - (* all_syn → all_etag ε *)
+  - (* all_syn → all_tag ε *)
     destruct (atom_fresh (L `union` ftvar_in_pskl P1)) as [α0 FrX].
     destruct (H0 α0 (L `union` singleton α0))
       as [Ψ0 [ψ0 [Hd0 [Ht0 [Hg0 [He0 Hgf0]]]]]].
     destruct (atom_fresh (L `union` Ψ0)) as [ε Frε].
-    exists (add ε Ψ0), (uskl_all_etag ε (close_uskl_wrt_uskl α0 ψ0)).
+    exists (add ε Ψ0), (uskl_all_tag ε (close_uskl_wrt_uskl α0 ψ0)).
     repeat apply conj.
     + clear - Hd0 Frε. fsetdec.
-    + apply is_tskl__all_etag with (L := singleton α0).
+    + apply is_tskl__all_tag with (L := singleton α0).
       intros β Hβ.
       rewrite <- subst_uskl_in_uskl_spec.
       change (uskl_var_f β) with (ptyp_to_uskl_syn (ptyp_var_f β)).
       apply is_tskl_subst_mono; [ exact Ht0 | apply mono_ptyp__var ].
-    + apply d_tags_skl__all_etag with (L := singleton α0) (Ψ0 := Ψ0);
+    + apply d_tags_skl__all_tag with (L := singleton α0) (Ψ0 := Ψ0);
         [ | clear - Frε; fsetdec | fsetdec ].
       intros β Hβ.
       rewrite <- subst_uskl_in_uskl_spec.
@@ -1948,7 +1947,7 @@ Proof.
       rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
         [ reflexivity | clear - FrX; fsetdec ].
     + intros Hg. simpl in Hg.
-      apply uskl_ghost_free__all_etag with (L := singleton α0).
+      apply uskl_ghost_free__all_tag with (L := singleton α0).
       intros β Hβ.
       rewrite <- subst_uskl_in_uskl_spec.
       change (uskl_var_f β) with (ptyp_to_uskl_syn (ptyp_var_f β)).

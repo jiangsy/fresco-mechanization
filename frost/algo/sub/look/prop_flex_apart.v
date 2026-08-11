@@ -43,7 +43,6 @@ Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
-Require Import src.frost.deco_algo.prop_decorate.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.consis.prop_consis_precise.
 Require Import src.frost.algo.prop_swap.
@@ -173,11 +172,11 @@ Inductive flex_apart (Θ0 : aenv) (Δρ : atoms) : pskl -> uskl -> Prop :=
     flex_apart Θ0 Δρ P1 ψ1 ->
     flex_apart Θ0 Δρ P2 ψ2 ->
     flex_apart Θ0 Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2)
-| fa_all_etag : forall L ε P0 ψ,
+| fa_all_tag : forall L ε P0 ψ,
     (forall α, α `notin` L ->
        flex_apart Θ0 Δρ (open_pskl_wrt_pskl P0 (pskl_var_f α))
                         (open_uskl_wrt_uskl ψ (uskl_var_f α))) ->
-    flex_apart Θ0 Δρ (pskl_all_syn P0) (uskl_all_etag ε ψ)
+    flex_apart Θ0 Δρ (pskl_all_syn P0) (uskl_all_tag ε ψ)
 | fa_all_syn : forall L P0 ψ,
     (forall α, α `notin` L ->
        flex_apart Θ0 Δρ (open_pskl_wrt_pskl P0 (pskl_var_f α))
@@ -188,7 +187,7 @@ Inductive flex_apart (Θ0 : aenv) (Δρ : atoms) : pskl -> uskl -> Prop :=
 (*                                                                        *)
 (*  DESIGN §10: the two repair premises legitimately differ in their       *)
 (*  DESCENT discipline — P6-Cv descends consistency, which matches ∀s in   *)
-(*  LOCKSTEP ([fa_all_etag] / [fa_all_syn], Δρ fixed), while P6-Sv         *)
+(*  LOCKSTEP ([fa_all_tag] / [fa_all_syn], Δρ fixed), while P6-Sv         *)
 (*  descends subtyping, which INSTANTIATES ([fsh_all_r], Δρ grows).  That  *)
 (*  difference is real and must stay.  Their BASE rows, on the other hand, *)
 (*  say the same thing about the same hazard and must agree — and these    *)
@@ -332,7 +331,7 @@ Proof.
     f_equal.
     apply open_uskl_wrt_uskl_inj with (α1 := α);
       [ clear - Fr; fsetdec | clear - Fr; fsetdec | exact Heq ].
-  - (* all_etag *)
+  - (* all_tag *)
     simpl in Hclean.
     pick fresh α for
       (L `union` Δρ `union` ftvar_in_uskl R' `union` ftvar_in_uskl R).
@@ -636,12 +635,12 @@ Proof.
           [ exact HwfΘ | reflexivity | exact Hma2 | exact HΔr'
           | exact Hm2 | exact Hr2 ]
       | reflexivity | exact Hmb | exact HΔr ].
-  - (* forall_inh_tagged: subject all_etag never a mono paint *)
-    exfalso; eapply ptyp_to_uskl_syn_all_etag_absurd; symmetry; exact HeqS.
+  - (* forall_inh_tagged: subject all_tag never a mono paint *)
+    exfalso; eapply ptyp_to_uskl_syn_all_tag_absurd; symmetry; exact HeqS.
   - (* forall_inh_untagged: subject all_syn, mono excluded *)
     destruct τa; simpl in HeqS; try discriminate HeqS. inversion Hma.
   - (* forall_syn_tagged *)
-    exfalso; eapply ptyp_to_uskl_syn_all_etag_absurd; symmetry; exact HeqS.
+    exfalso; eapply ptyp_to_uskl_syn_all_tag_absurd; symmetry; exact HeqS.
   - (* forall_syn *)
     destruct τa; simpl in HeqS; try discriminate HeqS. inversion Hma.
   - (* ghostg: subject holeg never a paint *)
@@ -1066,7 +1065,7 @@ Proof.
       [ reflexivity | apply mono_ptyp__arrow; assumption ].
   - (* all_syn : a mono paint is never a ∀ *)
     exfalso. destruct τ; simpl in Heq; try discriminate Heq. inversion Hm.
-  - (* all_etag *) exfalso. destruct τ; simpl in Heq; discriminate Heq.
+  - (* all_tag *) exfalso. destruct τ; simpl in Heq; discriminate Heq.
   - (* tophole *)  exfalso. destruct τ; simpl in Heq; discriminate Heq.
   - (* topholeg *) exfalso. destruct τ; simpl in Heq; discriminate Heq.
 Qed.
@@ -1084,7 +1083,7 @@ Proof.
     pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f α)).
     pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R' (uskl_var_f α)).
     simpl in *. clear - Hα H1 H2 Fr. fsetdec.
-  - (* all_etag *)
+  - (* all_tag *)
     pick fresh α for
       (L `union` ftvar_in_uskl R' `union` ftvar_in_uskl R).
     pose proof (H0 α ltac:(clear - Fr; solve_notin_auto)) as Hα.
@@ -1094,8 +1093,8 @@ Proof.
 Qed.
 
 (** Cofinite inversions of the tag-sorting components at a tagged ∀. *)
-Lemma is_tskl_all_etag_inv : forall ε ψ,
-  is_tskl (uskl_all_etag ε ψ) ->
+Lemma is_tskl_all_tag_inv : forall ε ψ,
+  is_tskl (uskl_all_tag ε ψ) ->
   exists L, forall α, α `notin` L ->
     is_tskl (open_uskl_wrt_uskl ψ (uskl_var_f α)).
 Proof. intros ε ψ H; inversion H; subst. eexists; eassumption. Qed.
@@ -1118,7 +1117,7 @@ Proof.
   - apply fa_hole.
   - apply fa_tophole; auto.
   - apply fa_arrow; auto.
-  - eapply fa_all_etag with (L := L); eauto.
+  - eapply fa_all_tag with (L := L); eauto.
   - eapply fa_all_syn with (L := L); eauto.
   - apply fa_flexfree; intros α Hα Hflex; apply (H α Hα); auto.
   - apply fa_rho_var; assumption.
@@ -1140,7 +1139,7 @@ Proof.
   - simpl in Hfr. apply fa_tophole; apply IHflex_apart; exact Hfr.
   - simpl in Hfr. apply fa_arrow;
       [ apply IHflex_apart1 | apply IHflex_apart2 ]; clear - Hfr; fsetdec.
-  - apply fa_all_etag with (L := L `union` dom Ξ); intros α Hα.
+  - apply fa_all_tag with (L := L `union` dom Ξ); intros α Hα.
     apply H0; [ clear - Hα; solve_notin | ].
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f α)) as Hup.
     simpl in Hup, Hfr. clear - Hup Hfr Hα; fsetdec.
@@ -1317,7 +1316,7 @@ Proof.
       solve [ exact Hle | cbn [ftvar_in_uskl] in Hcl; clear - Hcl; fsetdec ].
   - (* ⚠️ the binder must dodge [Δρ'] too: the growth condition only bounds
        [Δρ' ∩ ftv ψa], and opening puts the binder INTO the payload's ftv. *)
-    eapply fa_all_etag with (L := L `union` Δρ'); intros α0 Hα0.
+    eapply fa_all_tag with (L := L `union` Δρ'); intros α0 Hα0.
     apply H0; [ clear - Hα0; fsetdec | exact Hle | ].
     pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ (uskl_var_f α0)) as Hup.
     cbn [ftvar_in_uskl] in Hcl, Hup. clear - Hcl Hup Hα0; fsetdec.
@@ -1359,8 +1358,8 @@ Proof. intros Θ0 Δρ P0 ψa Hc P0' _; apply fa_clean; exact Hc. Qed.
     which the guess-OPENING step [fastep_all_r] does not. *)
 
 (** [flex_apart] binder descent at a tagged-∀ target with a ∀-source. *)
-Lemma flex_apart_all_etag_forall_inv : forall Θ0 Δρ ε P0 ψ,
-  flex_apart Θ0 Δρ (pskl_all_syn P0) (uskl_all_etag ε ψ) ->
+Lemma flex_apart_all_tag_forall_inv : forall Θ0 Δρ ε P0 ψ,
+  flex_apart Θ0 Δρ (pskl_all_syn P0) (uskl_all_tag ε ψ) ->
   exists L, forall α, α `notin` L ->
     flex_apart Θ0 Δρ (open_pskl_wrt_pskl P0 (pskl_var_f α))
                      (open_uskl_wrt_uskl ψ (uskl_var_f α)).
@@ -1373,7 +1372,7 @@ Proof.
                     (uskl_var_f α)) as Hup;
       simpl in *; clear - Hc Hup Hα; fsetdec
     end.
-  - (* fa_all_etag: the cofinite family, directly *)
+  - (* fa_all_tag: the cofinite family, directly *)
     match goal with
     | Hf : forall α, α `notin` ?L0 -> flex_apart _ _ _ _ |- _ =>
       exists L0; exact Hf

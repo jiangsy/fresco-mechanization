@@ -27,7 +27,7 @@ Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.prop_basic.
 Require Import src.frost.def_extra.
-Require Import src.frost.prop_etag.
+Require Import src.frost.prop_tag.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_basic.
@@ -117,7 +117,7 @@ Proof.
     eapply (H0 β ltac:(auto) ((β ~ dbind_tvar) ++ Γ1) α0 Γ2); [ simpl_env; reflexivity | ].
     pose proof (ftvar_in_utyp_open_utyp_wrt_utyp_upper C (utyp_var_f β)) as Hup.
     simpl in Hup. fsetdec.
-  - simpl in Hα. apply d_wf_utyp__all_etag with (L := L `union` {{α0}}).
+  - simpl in Hα. apply d_wf_utyp__all_tag with (L := L `union` {{α0}}).
     intros β Hβ. rewrite_env (((β ~ dbind_tvar) ++ Γ1) ++ Γ2).
     eapply (H0 β ltac:(auto) ((β ~ dbind_tvar) ++ Γ1) α0 Γ2); [ simpl_env; reflexivity | ].
     pose proof (ftvar_in_utyp_open_utyp_wrt_utyp_upper C (utyp_var_f β)) as Hup.
@@ -248,7 +248,7 @@ Proof.
   - auto with frost.
   - destruct (α0 == α); auto with frost.
   - auto with frost.
-  - apply is_ttyp__all_etag with (L := L `union` {{α}}). intros β Hβ.
+  - apply is_ttyp__all_tag with (L := L `union` {{α}}). intros β Hβ.
     rewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (first [ apply lc_utyp_unit | fsetdec ]). auto.
 Qed.
 
@@ -262,7 +262,7 @@ Proof.
   - auto with frost.
   - destruct_if; auto with frost.
   - eauto with frost.
-  - apply d_tags__all_etag with (L := L `union` {{α}}) (Ψ0 := Ψ0).
+  - apply d_tags__all_tag with (L := L `union` {{α}}) (Ψ0 := Ψ0).
     + intros α2 Hα2.
       erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
         by (solve [ fsetdec | apply lc_utyp_unit ]).
@@ -288,7 +288,7 @@ Proof.
     rewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (first [ apply lc_utyp_unit | fsetdec ]).
     rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
     eapply (H0 α2); [ fsetdec | simpl_env; reflexivity ].
-  - apply d_wf_utyp__all_etag with (L := L `union` dom (Γ1 ++ Γ2) `union` {{α0}}).
+  - apply d_wf_utyp__all_tag with (L := L `union` dom (Γ1 ++ Γ2) `union` {{α0}}).
     intros α2 Hα2.
     rewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (first [ apply lc_utyp_unit | fsetdec ]).
     rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
@@ -341,8 +341,8 @@ Proof.
       (Ψ' := Ψ') (ph := subst_utyp_in_utyp utyp_unit α0 ph);
       [ assumption | assumption
       | (* tag hygiene: substituting a TAG-FREE term cannot change a tag *)
-        change (utyp_all_etag ε (subst_utyp_in_utyp utyp_unit α0 C))
-          with (subst_utyp_in_utyp utyp_unit α0 (utyp_all_etag ε C));
+        change (utyp_all_tag ε (subst_utyp_in_utyp utyp_unit α0 C))
+          with (subst_utyp_in_utyp utyp_unit α0 (utyp_all_tag ε C));
         rewrite ftag_in_utyp_subst_tagfree by reflexivity; assumption
       | apply d_tags_subst_unit; assumption
       | eapply d_wf_utyp_subst_unit; [ eassumption | reflexivity ]
@@ -589,7 +589,7 @@ Proof.
   - apply d_wf_utyp__arrow; [ apply IHd_wf_utyp1 | apply IHd_wf_utyp2 ]; assumption.
   - apply d_wf_utyp__all_syn with (L := L). intros α Hα.
     apply H0; [ assumption | apply same_tvar_cons; assumption ].
-  - apply d_wf_utyp__all_etag with (L := L). intros α Hα.
+  - apply d_wf_utyp__all_tag with (L := L). intros α Hα.
     apply H0; [ assumption | apply same_tvar_cons; assumption ].
 Qed.
 
@@ -615,7 +615,7 @@ Proof.
   - apply d_wf_uskl__arrow; [ apply IHd_wf_uskl1 | apply IHd_wf_uskl2 ]; assumption.
   - apply d_wf_uskl__all_syn with (L := L). intros α Hα.
     apply H0; assumption.
-  - apply d_wf_uskl__all_etag with (L := L). intros α Hα.
+  - apply d_wf_uskl__all_tag with (L := L). intros α Hα.
     apply H0; assumption.
   - apply d_wf_uskl__hole.
   - apply d_wf_uskl__tophole; [ assumption | apply IHd_wf_uskl; assumption ].

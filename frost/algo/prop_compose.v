@@ -30,7 +30,6 @@ Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_stability.
-Require Import src.frost.deco_algo.prop_decorate.
 Require Import src.frost.algo.prop_flex.
 
 Set Implicit Arguments.

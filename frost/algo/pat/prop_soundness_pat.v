@@ -65,7 +65,6 @@ Require Import src.frost.algo.sub.prop_completeness_sub_gen.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.sub.prop_looksub.
 Require Import src.frost.algo.prop_wf_preservation.
-Require Import src.frost.deco_algo.prop_decorate.
 Require Import src.frost.deco_algo.prop_decorate_key.
 
 Set Implicit Arguments.
@@ -1326,7 +1325,7 @@ Proof.
       solve [ left; simpl; clear - Hl; fsetdec
             | right; left; exact Hm
             | right; right; exact Hr ].
-  - (* forall_inh_tagged : a type painting is never [uskl_all_etag] *)
+  - (* forall_inh_tagged : a type painting is never [uskl_all_tag] *)
     destruct A; simpl in HeqA, Hγ; try discriminate;
       try solve [ clear - Hγ; fsetdec ].
   - (* forall_inh_untagged *)

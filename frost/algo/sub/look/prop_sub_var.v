@@ -359,7 +359,7 @@ Proof.
             | exact Hne | apply lc_uskl_var_f ].
   - (* ∀^ε *)
     cbn [subst_uskl_in_uskl].
-    apply urho__all_etag with (L := L `union` singleton α1) (ε := ε);
+    apply urho__all_tag with (L := L `union` singleton α1) (ε := ε);
       intros α Hα.
     assert (Hne : α1 <> α) by (apply notin_singleton_1; clear - Hα; solve_notin).
     repeat rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
@@ -466,7 +466,7 @@ Proof.
       pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R
                     (uskl_var_f α0)) as Hlo.
       clear - Hin Hlo; fsetdec.
-    + apply urho__all_etag with (ε := ε) (L := dom Θ `union` singleton α0
+    + apply urho__all_tag with (ε := ε) (L := dom Θ `union` singleton α0
                                       `union` ftvar_in_uskl R
                                       `union` ftvar_in_uskl ψb
                                       `union` singleton β);
@@ -662,7 +662,7 @@ Proof.
                     (uskl_var_f α0)) as Hlo.
       cbn [ftvar_in_uskl] in Hin. clear - Hin Hlo; fsetdec.
     + cbn [subst_uskl_in_uskl].
-      apply urho__all_etag with (ε := ε)
+      apply urho__all_tag with (ε := ε)
         (L := L `union` dom Θ `union` Δρ `union` singleton α0
                 `union` singleton β `union` ftvar_in_uskl R
                 `union` ftvar_in_uskl R' `union` ftvar_in_uskl ψb);
@@ -878,12 +878,12 @@ Qed.
     skeleton is partially precise to a tagged quantifier.  The variable row
     is the only live one, and there the κ-image is a MONOTYPE, whose target
     must therefore be tag-free — while a tagged ∀ carries ε. *)
-Lemma ad_ppre_guarded_all_etag_absurd : forall Θ0 Θ κ Δ Ψ Ψd P ε ψ,
+Lemma ad_ppre_guarded_all_tag_absurd : forall Θ0 Θ κ Δ Ψ Ψd P ε ψ,
   {{ ⊢ Θ }}a ->
   κ ∷ Θ0 ⊑ Θ ->
   guarded_pskl P ->
-  d_tags_skl Ψd (uskl_all_etag ε ψ) ->
-  {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ P) ⊑ᵖ[ Ψ ] (uskl_all_etag ε ψ) }}ad ->
+  d_tags_skl Ψd (uskl_all_tag ε ψ) ->
+  {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ P) ⊑ᵖ[ Ψ ] (uskl_all_tag ε ψ) }}ad ->
   False.
 Proof.
   intros Θ0 Θ κ Δ Ψ Ψd P ε ψ HwfΘ Hκ Hg Hd Hpre.
@@ -893,7 +893,7 @@ Proof.
       by (eapply ad_ppre_mono_subject_target_tags_empty;
             [ exact HwfΘ | exact Hpre | reflexivity
             | eapply a_inc_lookup_mono; exact Hκ | exact Hd ]).
-    destruct (d_tags_skl_all_etag_inv Hd) as (Ld & Ψ0 & _ & _ & Heq).
+    destruct (d_tags_skl_all_tag_inv Hd) as (Ld & Ψ0 & _ & _ & Heq).
     assert (Hin : ε `in` empty) by (clear - HΨde Heq; fsetdec).
     clear - Hin; fsetdec.
   - inversion Hpre.
@@ -2247,7 +2247,7 @@ Proof.
     assert (Hwfg : {{ Θ ⨟ empty ⊢ₚₛ ⌊ ψ ⌋ˢ }}a)
       by (eapply a_wf_pskl_weaken; [ exact Hext | exact Hwfg0 ]).
     match goal with
-      Hf : _ ∩ (ftag_in_uskl (uskl_all_etag _ R)) [=] empty |- _ =>
+      Hf : _ ∩ (ftag_in_uskl (uskl_all_tag _ R)) [=] empty |- _ =>
       rename Hf into Hgfresh end.
     assert (Hlcg : lc_uskl ψ)
       by (apply is_tskl_lc; inversion Htagsg; assumption).
@@ -2256,14 +2256,14 @@ Proof.
       (forall α, α `notin` L0 ->
          uskl_rho NM Θ Δρ Ψρ (open_uskl_wrt_uskl R (uskl_var_f α))
                              (open_uskl_wrt_uskl ψsrc (uskl_var_f α))) ->
-      a_tags_sort NM Ψt (uskl_all_etag ε ψsrc) ->
-      {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_all_etag ε ψsrc) }}ad ->
+      a_tags_sort NM Ψt (uskl_all_tag ε ψsrc) ->
+      {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_all_tag ε ψsrc) }}ad ->
       solve_sub_ext Θ0 Θw M Pi P0 Lav
         (fun κ' Pa =>
            {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl (κ' ++ κ) Pa)
-             ⊑ᵖ[ Ψi `union` Ψa ] (uskl_all_etag ε ψsrc) }}ad)).
+             ⊑ᵖ[ Ψi `union` Ψa ] (uskl_all_tag ε ψsrc) }}ad)).
     { intros L0 ψsrc Hfam Htags0 Hpre0.
-      destruct (a_tags_sort_all_etag_inv Htags0)
+      destruct (a_tags_sort_all_tag_inv Htags0)
         as (Lt & Ψt0 & Htbody & Hεt0 & HΨteq).
       (* --- ε is solved by the INPUT, never by the premise --- *)
       assert (HftagR : ftag_in_uskl ψsrc [<=] ftag_in_uskl R).
@@ -2669,7 +2669,7 @@ Proof.
         assert (HgPi0 : guarded_pskl Pi0) by (inversion HwfPi; assumption).
         inversion Hpre0; subst.
         + (* P-UnivGhostRemove: wf makes the ∀◇-body guarded *)
-          eapply ad_ppre_guarded_all_etag_absurd;
+          eapply ad_ppre_guarded_all_tag_absurd;
             [ exact HwfΘ | exact Hκ | exact HgPi0
             | exact (a_tags_sort_d_tags Htags0) | eassumption ].
         + (* P-UnivGhostFill: the body carries no ε, so Ψi cannot either *)
@@ -2691,12 +2691,12 @@ Proof.
                              (Htbody α2 ltac:(clear - Fr; solve_notin))) ]).
           clear - HΨisub HεΨi Hεt0; fsetdec. }
     (* dispatch: ψa is ∀^ε itself (ρ = id or a congruence) or a ρ-leaf *)
-    destruct (uskl_rho_all_etag_l_inv Hrho) as [[Heq HΨρe] | [Hleaf | Hcong]].
+    destruct (uskl_rho_all_tag_l_inv Hrho) as [[Heq HΨρe] | [Hleaf | Hcong]].
     + (* refl: ρ is the identity here, so ψ' := R *)
       subst ψa.
-      assert (Htsk : is_tskl (uskl_all_etag ε R))
+      assert (Htsk : is_tskl (uskl_all_tag ε R))
         by (inversion Htags; assumption).
-      destruct (is_tskl_all_etag_inv Htsk) as (Li & Hti).
+      destruct (is_tskl_all_tag_inv Htsk) as (Li & Hti).
       eapply MAIN;
         solve [ intros α Hα; apply urho__refl;
                   [ apply is_tskl_lc; apply Hti; exact Hα
@@ -2714,7 +2714,7 @@ Proof.
         solve [ exact Hfam | exact Htags | exact Hpre ].
   - (* ForallL, untagged : IMPOSSIBLE.  The subject is an UNTAGGED ∀, and a
        decorated skeleton carries a tag on EVERY quantifier ([is_tskl] has
-       only [all_etag]) — so neither ψa nor a ρ-image has this shape.  This
+       only [all_tag]) — so neither ψa nor a ρ-image has this shape.  This
        is the mech's second constructor for the paper's single ForallL rule
        (its ∀^β1 subject has a POTENTIAL tag, declarative.tex:884); the
        tags-sorted target forces β1 = ε, i.e. the tagged row. *)

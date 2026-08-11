@@ -49,7 +49,6 @@ Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
-Require Import src.frost.deco_algo.prop_decorate.
 Require Import src.frost.deco_algo.prop_decorate_sub.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.consis.prop_consis_precise.
@@ -399,7 +398,7 @@ Qed.
 Lemma ad_pat_sub_g_ty_tc_subject : forall n Ψ Θ R Q,
   ad_pat_sub_g n a_sub_mode_ty mode_tc Ψ Θ R Q ->
   guarded_uskl R
-  \/ (exists ε R0, R = uskl_all_etag ε R0)
+  \/ (exists ε R0, R = uskl_all_tag ε R0)
   \/ (exists R0, R = uskl_all_syn R0).
 Proof.
   intros n Ψ Θ R Q H.
@@ -2113,18 +2112,18 @@ Proof.
       cbn in Hrho, HαR, HeraseR;
       try solve [ contradiction (HRnv _ eq_refl) | inversion Hrho
                 | clear - HαR; fsetdec ].
-    destruct (uskl_rho_all_etag_r_inv Hrho) as (Lρ & Rb0 & HRs & Hfam).
+    destruct (uskl_rho_all_tag_r_inv Hrho) as (Lρ & Rb0 & HRs & Hfam).
     injection HRs as HRsE HRsB. rewrite <- HRsB in Hfam. clear HRsB HRsE.
     (* --- THE THIRD COMPONENT OF THE PAPER'S GLOBAL FRESHNESS.  ψa sits inside
        the ideal (α ∈ ftv R'), and ρ only ADDS tags, so ψa's tags Ψ' are among
        the SUBJECT's — where the rule's own freshness premise already excludes
        the instantiation's.  (See the two lemmas above.) --- *)
     pose proof (d_tags_skl_ftag (a_tags_sort_d_tags Htags)) as Hψatag.
-    assert (HΨ'sub : Ψ' [<=] ftag_in_uskl (uskl_all_etag ε R)).
+    assert (HΨ'sub : Ψ' [<=] ftag_in_uskl (uskl_all_tag ε R)).
     { pose proof (uskl_rho_ftag_target_sub Hrho) as Ht.
       pose proof (@ftag_in_uskl_subst_lower ψa α
-                    (msubst_uskl_syn κ (uskl_all_etag εr R0))
-                    (@msubst_uskl_syn_ftv_keep κ α (uskl_all_etag εr R0)
+                    (msubst_uskl_syn κ (uskl_all_tag εr R0))
+                    (@msubst_uskl_syn_ftv_keep κ α (uskl_all_tag εr R0)
                        Hακdom HαR)) as Hl.
       cbn [ftag_in_uskl subst_uskl_in_uskl msubst_uskl_syn] in Ht, Hl |- *.
       clear - Ht Hl Hψatag; fsetdec. }
@@ -2232,7 +2231,7 @@ Proof.
       pose proof (a_wf_ptyp_ftv_dom
                     (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd.
       clear - Hd HβΘ; fsetdec. }
-    (* the SHIELD steps the SUBJECT by [sss_forall_l_etag] — Sub-ForallL is
+    (* the SHIELD steps the SUBJECT by [sss_forall_l_tag] — Sub-ForallL is
        so P0 does NOT move — only Δρ grows, by a rigid β fresh for the guess,
        and the context gains it too *)
     assert (Hapartβ : flex_apart_deep ((β ~ abind_tvar) ++ Θ0) (add β Δρ) P0 ψa)
@@ -3258,7 +3257,7 @@ Qed.
 (*  UNREACHABLE: its leaf needs the sub-side analogue of                   *)
 (*  [ad_pat_consis_target_ftv], and that is FALSE — machine-checked,       *)
 (*  cex/cex_p6ss_sub_target_ftv.v.  [is_tskl] excludes [__ghost] but NOT   *)
-(*  [__forall_l_tagged] ([uskl_all_etag] IS [is_tskl]), whose guess is     *)
+(*  [__forall_l_tagged] ([uskl_all_tag] IS [is_tskl]), whose guess is     *)
 (*  bounded only by [dom Θ], the DERIVATION's context — which              *)
 (*  [__forall_r] grows by the very β being stripped.                       *)
 (*                                                                        *)

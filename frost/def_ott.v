@@ -40,7 +40,7 @@ Inductive uskl : Set :=
  | uskl_var_f (α:usklvar)
  | uskl_arrow (R1:uskl) (R2:uskl)
  | uskl_all_syn (R:uskl)
- | uskl_all_etag (ε:εvar) (R:uskl)
+ | uskl_all_tag (ε:εvar) (R:uskl)
  | uskl_hole : uskl
  | uskl_tophole (R:uskl)
  | uskl_holeg : uskl
@@ -71,7 +71,7 @@ Inductive utyp : Set :=
  | utyp_var_f (α:utypvar)
  | utyp_arrow (C1:utyp) (C2:utyp)
  | utyp_all_syn (C:utyp)
- | utyp_all_etag (ε:εvar) (C:utyp).
+ | utyp_all_tag (ε:εvar) (C:utyp).
 
 Inductive btyp : Set := 
  | btyp_unit : btyp
@@ -142,7 +142,7 @@ Fixpoint open_uskl_wrt_uskl_rec (k:nat) (R_5:uskl) (R__6:uskl) {struct R__6}: us
   | (uskl_var_f α) => uskl_var_f α
   | (uskl_arrow R1 R2) => uskl_arrow (open_uskl_wrt_uskl_rec k R_5 R1) (open_uskl_wrt_uskl_rec k R_5 R2)
   | (uskl_all_syn R) => uskl_all_syn (open_uskl_wrt_uskl_rec (S k) R_5 R)
-  | (uskl_all_etag ε R) => uskl_all_etag ε (open_uskl_wrt_uskl_rec (S k) R_5 R)
+  | (uskl_all_tag ε R) => uskl_all_tag ε (open_uskl_wrt_uskl_rec (S k) R_5 R)
   | uskl_hole => uskl_hole 
   | (uskl_tophole R) => uskl_tophole (open_uskl_wrt_uskl_rec k R_5 R)
   | uskl_holeg => uskl_holeg 
@@ -194,7 +194,7 @@ Fixpoint open_utyp_wrt_utyp_rec (k:nat) (C_5:utyp) (C__6:utyp) {struct C__6}: ut
   | (utyp_var_f α) => utyp_var_f α
   | (utyp_arrow C1 C2) => utyp_arrow (open_utyp_wrt_utyp_rec k C_5 C1) (open_utyp_wrt_utyp_rec k C_5 C2)
   | (utyp_all_syn C) => utyp_all_syn (open_utyp_wrt_utyp_rec (S k) C_5 C)
-  | (utyp_all_etag ε C) => utyp_all_etag ε (open_utyp_wrt_utyp_rec (S k) C_5 C)
+  | (utyp_all_tag ε C) => utyp_all_tag ε (open_utyp_wrt_utyp_rec (S k) C_5 C)
 end.
 
 Fixpoint open_btyp_wrt_btyp_rec (k:nat) (B_5:btyp) (B__6:btyp) {struct B__6}: btyp :=
@@ -283,9 +283,9 @@ Inductive lc_uskl : uskl -> Prop :=    (* defn lc_uskl *)
  | lc_uskl_all_syn : forall (R:uskl),
       ( forall α , lc_uskl  ( open_uskl_wrt_uskl R (uskl_var_f α) )  )  ->
      (lc_uskl (uskl_all_syn R))
- | lc_uskl_all_etag : forall (ε:εvar) (R:uskl),
+ | lc_uskl_all_tag : forall (ε:εvar) (R:uskl),
       ( forall α , lc_uskl  ( open_uskl_wrt_uskl R (uskl_var_f α) )  )  ->
-     (lc_uskl (uskl_all_etag ε R))
+     (lc_uskl (uskl_all_tag ε R))
  | lc_uskl_hole : 
      (lc_uskl uskl_hole)
  | lc_uskl_tophole : forall (R:uskl),
@@ -351,9 +351,9 @@ Inductive lc_utyp : utyp -> Prop :=    (* defn lc_utyp *)
  | lc_utyp_all_syn : forall (C:utyp),
       ( forall α , lc_utyp  ( open_utyp_wrt_utyp C (utyp_var_f α) )  )  ->
      (lc_utyp (utyp_all_syn C))
- | lc_utyp_all_etag : forall (ε:εvar) (C:utyp),
+ | lc_utyp_all_tag : forall (ε:εvar) (C:utyp),
       ( forall α , lc_utyp  ( open_utyp_wrt_utyp C (utyp_var_f α) )  )  ->
-     (lc_utyp (utyp_all_etag ε C)).
+     (lc_utyp (utyp_all_tag ε C)).
 
 (* defns LC_btyp *)
 Inductive lc_btyp : btyp -> Prop :=    (* defn lc_btyp *)
@@ -400,7 +400,7 @@ Fixpoint ftvar_in_uskl (R_5:uskl) : vars :=
   | (uskl_var_f α) => {{α}}
   | (uskl_arrow R1 R2) => (ftvar_in_uskl R1) \u (ftvar_in_uskl R2)
   | (uskl_all_syn R) => (ftvar_in_uskl R)
-  | (uskl_all_etag ε R) => (ftvar_in_uskl R)
+  | (uskl_all_tag ε R) => (ftvar_in_uskl R)
   | uskl_hole => {}
   | (uskl_tophole R) => (ftvar_in_uskl R)
   | uskl_holeg => {}
@@ -437,7 +437,7 @@ Fixpoint ftvar_in_utyp (C_5:utyp) : vars :=
   | (utyp_var_f α) => {{α}}
   | (utyp_arrow C1 C2) => (ftvar_in_utyp C1) \u (ftvar_in_utyp C2)
   | (utyp_all_syn C) => (ftvar_in_utyp C)
-  | (utyp_all_etag ε C) => (ftvar_in_utyp C)
+  | (utyp_all_tag ε C) => (ftvar_in_utyp C)
 end.
 
 Fixpoint ftvar_in_btyp (B_5:btyp) : vars :=
@@ -491,7 +491,7 @@ Fixpoint subst_uskl_in_uskl (R_5:uskl) (α5:usklvar) (R__6:uskl) {struct R__6} :
   | (uskl_var_f α) => (if eq_var α α5 then R_5 else (uskl_var_f α))
   | (uskl_arrow R1 R2) => uskl_arrow (subst_uskl_in_uskl R_5 α5 R1) (subst_uskl_in_uskl R_5 α5 R2)
   | (uskl_all_syn R) => uskl_all_syn (subst_uskl_in_uskl R_5 α5 R)
-  | (uskl_all_etag ε R) => uskl_all_etag ε (subst_uskl_in_uskl R_5 α5 R)
+  | (uskl_all_tag ε R) => uskl_all_tag ε (subst_uskl_in_uskl R_5 α5 R)
   | uskl_hole => uskl_hole 
   | (uskl_tophole R) => uskl_tophole (subst_uskl_in_uskl R_5 α5 R)
   | uskl_holeg => uskl_holeg 
@@ -528,7 +528,7 @@ Fixpoint subst_utyp_in_utyp (C_5:utyp) (α5:utypvar) (C__6:utyp) {struct C__6} :
   | (utyp_var_f α) => (if eq_var α α5 then C_5 else (utyp_var_f α))
   | (utyp_arrow C1 C2) => utyp_arrow (subst_utyp_in_utyp C_5 α5 C1) (subst_utyp_in_utyp C_5 α5 C2)
   | (utyp_all_syn C) => utyp_all_syn (subst_utyp_in_utyp C_5 α5 C)
-  | (utyp_all_etag ε C) => utyp_all_etag ε (subst_utyp_in_utyp C_5 α5 C)
+  | (utyp_all_tag ε C) => utyp_all_tag ε (subst_utyp_in_utyp C_5 α5 C)
 end.
 
 Fixpoint subst_btyp_in_btyp (B_5:btyp) (α5:btypvar) (B__6:btyp) {struct B__6} : btyp :=

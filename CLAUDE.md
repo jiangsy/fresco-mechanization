@@ -123,7 +123,7 @@ mechanization.)  Corrected 2026-08-09.
 | [`docs/ghost-capture.tex`](docs/ghost-capture.tex) | **Author-facing note, in the paper's own notation**: the ghost-capture configuration — the consistency rules derive a pair that refinement rejects, so the paper's prose presupposition on skeleton consistency (`declarative.tex:2074`) is load-bearing and not derivable. Two refutations it forced (both since retracted BY the repair, and kept as its justification), and what the repair costs. Build: `make -f Makefile.ghost-capture` from `docs/` |
 | [`docs/refutations.tex`](docs/refutations.tex) | **Author-facing note, in the paper's own notation**: the two machine-checked refutations (Lemma E.17 Look completeness; Theorem 4.6 Completeness of subtyping), the shared configuration, the diagnosis (`SolE-FlexR` discards the accumulated pattern) and the suggested repair. Build: `make -f Makefile.refutations` from `docs/`, or `TEXINPUTS=../../paper: pdflatex refutations.tex` |
 | [`docs/WF-SIDE-CONDITIONS.md`](docs/WF-SIDE-CONDITIONS.md) | **Read before mechanizing any refinement / consistency / subtyping / skeleton-inference lemma.** The paper states well-formedness (and sometimes a further judgment) as an EXTERNAL requirement in prose, and its rules then omit the side conditions it would supply. Several judgments look FALSE until that condition is restored. |
-| [`docs/HANDOFF-closed-corollaries-declarative.md`](docs/HANDOFF-closed-corollaries-declarative.md) | **ACTIVE hand-off**: state the closed-program corollaries against `d_sd_typing` / `d_typing` instead of `ad_sd_typing`. ⭐ SOUNDNESS LANDED 2026-08-10 via the conservativity bridge `decorated_algo/prop_conserv.v`. ⭐ 2026-08-11 the TAG-HYGIENE blocker is CLOSED — all four subtyping judgements now read the paper's `fresh Ψ'` the same, GLOBAL way. ⛔ COMPLETENESS still open, blocked by ONE thing: the leaf-valid datum at a ghosty subject (`cex/cex_ad_pat_join_not_leaf_valid.v`) |
+| [`docs/HANDOFF-closed-corollaries-declarative.md`](docs/HANDOFF-closed-corollaries-declarative.md) | **ACTIVE hand-off**: state the closed-program corollaries against `d_sd_typing` / `d_typing` instead of `ad_sd_typing`. ⭐ SOUNDNESS LANDED 2026-08-10 via the conservativity bridge `algo_decl/prop_conserv.v`. ⭐ 2026-08-11 the TAG-HYGIENE blocker is CLOSED — all four subtyping judgements now read the paper's `fresh Ψ'` the same, GLOBAL way. ⛔ COMPLETENESS still open, blocked by ONE thing: the leaf-valid datum at a ghosty subject (`cex/cex_ad_pat_join_not_leaf_valid.v`) |
 | [`docs/HANDOFF-close-subtyping-completeness.md`](docs/HANDOFF-close-subtyping-completeness.md) | **ACTIVE hand-off**: close subtyping completeness — decide reachability (TASK A), state+prove the payload invariant (B), make the shield supply total or kill it (C), land it on the motive and discharge `main_forall` (D) |
 | [`docs/HANDOFF-p7c-finish.md`](docs/HANDOFF-p7c-finish.md) | **ACTIVE hand-off**: TASKS 1, 2a and 3 are DONE (2026-08-03); what is left is TASK 2b — TASK 0's `sub_shield` for a `P0` with a ∀ below its head, the bundle's one hypothesis |
 | [`docs/HANDOFF-section-d.md`](docs/HANDOFF-section-d.md) | **CLOSED 2026-08-08 — HISTORY**: section D (`proofs.tex`) — soundness/completeness of skeleton and type inference.  All four theorems are Qed and axiom-free; the file keeps the exact Coq statement, the design decision and the obstacle found for each of the six lemmas and four theorems, pass by pass.  ⚠️ Three lemmas the paper calls "straightforward induction" are not |
@@ -167,7 +167,7 @@ mechanization/
 │   ├── coercions.v       (paint/erase conversions — DEFINITIONS ONLY:
 │   │                      ptyp_to_btyp_syn, ptyp_to_utyp_syn,
 │   │                      btyp_to_utyp_syn, btyp_to_ptyp, … + the 4 Coercions)
-│   ├── prop_etag.v       (ε-TAG EQUIVARIANCE, syntactic layer: §0 tags are
+│   ├── prop_tag.v        (ε-TAG EQUIVARIANCE, syntactic layer: §0 tags are
 │   │                      blind to tvar substitution, §1 the transposition on
 │   │                      atoms and atom SETS, §2 its action on `utyp`.
 │   │                      The paper's ForallL `fresh Ψ'` is a statement about
@@ -198,7 +198,7 @@ mechanization/
 │   │   ├── prop_weakening.v           (weakening / narrowing, split-syntax)
 │   │   ├── prop_renaming.v            (tvar-renaming closure for all judgments)
 │   │   ├── prop_skeleton.v            (skeleton refinement preserves wf, D4)
-│   │   ├── prop_etag_swap.v           (ε-tag equivariance of d_tags /
+│   │   ├── prop_tag_swap.v            (ε-tag equivariance of d_tags /
 │   │   │                              d_consis / d_sub and their skeleton
 │   │   │                              twins; the per-node ForallL freshening;
 │   │   │                              and §4-§5 the tags-BOUND twin
@@ -214,26 +214,41 @@ mechanization/
 │   │   │                              d_sub_trans_spine)
 │   │   └── prop_stability.v           (order irrelevance d_typing_order_irrel +
 │   │                                  structural/stability lemmas)
-│   ├── decorated_algo/   (the layer BETWEEN the algorithmic and declarative
-│   │   │                  systems.  Moved out of algo/ 2026-08-06: it is not
-│   │   │                  part of the algorithm, it is the bridge the
-│   │   │                  soundness and completeness proofs both go through)
-│   │   ├── def_decorated.v      (the ε-tagged system)
-│   │   ├── def_decl_algo*.v     (declarative judgments over algo contexts:
-│   │   │                         consistency, refinement, subtyping, precision,
+│   ├── algo_decl/        (⭐ `{{ … }}ad` — the DECLARATIVE rules over an
+│   │   │                  ALGORITHMIC context: `a`lgorithmic-context
+│   │   │                  `d`eclarative, the paper's app:decl-in-algo-context.
+│   │   │                  Same rules as decl/, Θ in place of Γ.  ⚠️ NOT the
+│   │   │                  same thing as deco_algo/ below — see the legend in
+│   │   │                  frost/notations.v; the two were ONE directory named
+│   │   │                  `decorated_algo/` until 2026-08-11, which is exactly
+│   │   │                  what made them easy to confuse)
+│   │   ├── def_decl_algo*.v     (consistency, refinement, subtyping, precision,
 │   │   │                         and — def_decl_algo_typing.v — skeleton
 │   │   │                         inference `ad_pat` + syntax-directed typing
 │   │   │                         `ad_sd_typing`, which section D is stated over)
-│   │   ├── prop_decorate*.v     (decoration of consistency/subtyping;
-│   │   │                         prop_decorate_key.v holds a_sub_sound)
+│   │   ├── prop_ctx_mono.v      (monotonicity along ctx precision)
 │   │   └── prop_conserv.v       (⭐ CONSERVATIVITY: at a FLEXIBLE-FREE Θ the
 │   │                             decl-in-algo layer IS the plain declarative
 │   │                             system over Γ — the paper's unstated "it is
 │   │                             easy to extend them"; + the closing of the
 │   │                             run's output context.  ⚠️ Filed under
 │   │                             algo/typing/ when written and MOVED here
-│   │                             2026-08-11: it relates `d_` to `ad_`, so it
-│   │                             is part of neither system)
+│   │                             2026-08-11: it relates `d_` to `ad_`)
+│   ├── deco_algo/        (⭐ `{{ … }}da` — the paper's DECORATED ALGORITHMIC
+│   │   │                  system, app:decorated-algosub: the ALGORITHM's rules
+│   │   │                  (a run, with `⊣ Θ'`) over decorated / unresolved
+│   │   │                  skeletons `uskl` with a tag context Ψ.  So
+│   │   │                  `d → ad` changes the CONTEXT and `a → da` changes
+│   │   │                  the SUBJECT; soundness is the chain
+│   │   │                  `}}a` ⇒ `}}da` ⇒ `}}ad` ⇒ `}}d`)
+│   │   ├── def_decorated.v      (the decorated system's rules)
+│   │   └── prop_decorate_{sub,key}.v  (decoration of consistency / subtyping;
+│   │                             prop_decorate_key.v holds a_sub_sound.
+│   │                             ⚙ the third file, prop_decorate.v, was
+│   │                             deleted 2026-08-11: it held nothing but six
+│   │                             `pskl_to_uskl` conversion facts, which belong
+│   │                             in frost/prop_coercions.v and now live there —
+│   │                             the conversion itself moved to coercions.v)
 │   └── algo/             (algorithmic system — all admit-free.  Grouped BY
 │       │                  JUDGEMENT 2026-08-09; the shared machinery stays
 │       │                  FLAT because there is no soundness-only file —
@@ -247,7 +262,7 @@ mechanization/
 │       ├── prop_precise*.v      (precision)
 │       ├── prop_swap.v          (EQUIVARIANCE — the one renaming primitive
 │       │                         for TYPE variables.  ⚙ its §1 atom layer is
-│       │                         `frost/prop_etag.v` §1, imported not copied)
+│       │                         `frost/prop_tag.v` §1, imported not copied)
 │       ├── prop_pat_sub.v / prop_refine.v / prop_stability.v
 │       ├── prop_suffix_erase.v / prop_rename_decl.v
 │       ├── prop_wf_preservation.v  (a run's OUTPUT context is well-formed)
@@ -347,7 +362,7 @@ before changing any of them.
   for cross-system, `decl/` for declarative, `algo/` for algorithmic).
 - **Single `typ` AST with multiple colour / tag flavours of ∀.** Three
   `forall` constructors: `typ_all_col c A` (colour-tagged ∀, with
-  `c ∈ {colour_syn, colour_inh}` from the paper), `typ_all_etag ε A`
+  `c ∈ {colour_syn, colour_inh}` from the paper), `typ_all_tag ε A`
   (ε-tagged ∀ for instantiation tracking). Paper's "synthesised type"
   / "inherited type" / "bidirectional type" are **predicates** over
   `typ` (`is_syn_typ` / `is_inh_typ` / structural), not separate
@@ -375,7 +390,7 @@ before changing any of them.
   to BUILD — completeness must regenerate the whole family from the IH's one
   instance, which is exactly what `prop_swap.v` §6's `*_rename_tm` bridges
   exist for — and exists-fresh is the reverse.  Layer by layer:
-  - `decl/def_extra.v`, `decorated_algo/*` — cofinite. ✅
+  - `decl/def_extra.v`, `algo_decl/*` / `deco_algo/*` — cofinite. ✅
   - `algo/def_extra.v` operational judgments (`a_looksub`, `a_solve_*`,
     `a_assign` / `a_unify` / `a_consis`, `a_sub`, `a_typing`) — exists-fresh. ✅
   - `algo/def_extra.v` WELL-FORMEDNESS (`a_wf_ptyp`, `a_scope_pskl`,

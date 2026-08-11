@@ -82,7 +82,6 @@ Require Import src.frost.algo.sub.prop_sub_msubst_equiv. (* ≡ᵘ + erasure + g
 Require Import src.frost.algo.prop_stability.     (* a_wf_pskl_isub *)
 Require Import src.frost.algo.prop_inc_strengthen. (* a_assign_unify_consis_flex_preserve *)
 Require Import src.frost.deco_algo.prop_decorate_key.  (* a_sub_sound *)
-Require Import src.frost.deco_algo.prop_decorate.       (* pskl_to_uskl kit *)
 Require Import src.frost.algo.sub.prop_soundness_sub.      (* a_wf_pskl_subst_tvar *)
 Require Import src.frost.algo.consis.prop_consis_precise.   (* uskl_precise kit *)
 Require Import src.frost.algo.sub.prop_completeness_sub_precise.     (* P5 + the _gv transports *)
@@ -2432,7 +2431,7 @@ Lemma a_sub_complete_forall_l_tagged :
      sub_complete_concl n NM' M' Θ0' P0' P' R'' T'' Ψ' Θ' κ' Q') ->
   M <> mode_ti ->
   Ψa ∩ Ψ [=] empty ->
-  Ψa ∩ (ftag_in_uskl (uskl_all_etag ε Rj)) [=] empty ->
+  Ψa ∩ (ftag_in_uskl (uskl_all_tag ε Rj)) [=] empty ->
   a_tags_sort NM Ψa ψa ->
   {{ Θ ⨟ empty ⊢ₚₛ ⌊ ψa ⌋ˢ }}a ->
   ad_pat_sub_gv n NM M (Ψ `union` Ψa) Θ (open_uskl_wrt_uskl Rj ψa) Q ->
@@ -2444,8 +2443,8 @@ Lemma a_sub_complete_forall_l_tagged :
      and, at Δρ = ∅, is unconditionally TRUE ([sub_shield_empty]).  P6-L
      discharges it internally and no longer takes it. *)
   (guarded_pskl P0 \/ P0 = pskl_hole) ->
-  sub_complete_concl (S n) NM M Θ0 P0 P (uskl_all_etag ε Rb)
-    (uskl_all_etag ε Rj) Ψ Θ κ Q.
+  sub_complete_concl (S n) NM M Θ0 P0 P (uskl_all_tag ε Rb)
+    (uskl_all_tag ε Rj) Ψ Θ κ Q.
 Proof.
   intros n NM M Θ0 P0 P Rb Rj Ψ Θ κ Q ε Ψa ψa
     IH HMti HΨaΨ HΨaftag Htags Hwfψa HD HP0wlog.
@@ -2457,11 +2456,11 @@ Proof.
   assert (Htskψa : is_tskl ψa) by (inversion Htags; subst; assumption).
   assert (Hdtags : d_tags_skl Ψa ψa) by (inversion Htags; subst; assumption).
   assert (Hlcψa : lc_uskl ψa) by (apply is_tskl_lc; exact Htskψa).
-  assert (Hlcall : lc_uskl (uskl_all_etag ε Rb))
+  assert (Hlcall : lc_uskl (uskl_all_tag ε Rb))
     by (apply lc_uskl_of_pskl; eapply a_wf_pskl_lc; exact HwfP).
   assert (Hlcb : forall β, lc_uskl (open_uskl_wrt_uskl Rb (uskl_var_f β)))
     by (inversion Hlcall; subst; assumption).
-  assert (Hlcjall : lc_uskl (uskl_all_etag ε Rj))
+  assert (Hlcjall : lc_uskl (uskl_all_tag ε Rj))
     by (exact (proj1 (a_uskl_tyequiv_lc Hrel))).
   assert (Hlcj : forall β, lc_uskl (open_uskl_wrt_uskl Rj (uskl_var_f β)))
     by (inversion Hlcjall; subst; assumption).
@@ -2469,14 +2468,14 @@ Proof.
   assert (Hftvb : ftvar_in_uskl Rb [<=] dom Θ0).
   { intros β Hβ.
     pose proof (a_wf_pskl_ftv_dom_pointwise HwfP) as Hsc.
-    assert (Hβp : β `in` ftvar_in_pskl ⌊ uskl_all_etag ε Rb ⌋ˢ).
-    { change (ftvar_in_pskl ⌊ uskl_all_etag ε Rb ⌋ˢ)
+    assert (Hβp : β `in` ftvar_in_pskl ⌊ uskl_all_tag ε Rb ⌋ˢ).
+    { change (ftvar_in_pskl ⌊ uskl_all_tag ε Rb ⌋ˢ)
         with (ftvar_in_pskl ⌊ Rb ⌋ˢ).
       rewrite ftvar_in_pskl_uskl_to_pskl. exact Hβ. }
     apply Hsc. exact Hβp. }
   (* ---- 1. the body ≡ᵘ family and the ftag transfer ---- *)
   cbn in Hrel.
-  destruct (a_uskl_tyequiv_all_etag_inv Hrel) as [Le Hrelb].
+  destruct (a_uskl_tyequiv_all_tag_inv Hrel) as [Le Hrelb].
   assert (Hftjb : ftag_in_uskl Rj [=] ftag_in_uskl Rb).
   { destruct (atom_fresh Le) as [β Frβ].
     pose proof (a_uskl_tyequiv_ftag (Hrelb β Frβ)) as Hf.
@@ -2517,7 +2516,7 @@ Proof.
                   ltac:(clear - Fr; solve_notin_auto)).
     rewrite uskl_to_pskl_open_gen.
     apply a_wf_pskl_all_open; [ | exact Hwfψa ].
-    assert (HwfPθ : {{ Θ ⨟ empty ⊢ₚₛ (msubst_pskl κ ⌊ uskl_all_etag ε Rb ⌋ˢ) }}a).
+    assert (HwfPθ : {{ Θ ⨟ empty ⊢ₚₛ (msubst_pskl κ ⌊ uskl_all_tag ε Rb ⌋ˢ) }}a).
     { eapply a_wf_pskl_msubst_inc;
         [ exact Hinc | exact Hwf0 | exact HwfP
         | intros β Hβ; exfalso; clear - Hβ; fsetdec ]. }
@@ -2592,7 +2591,7 @@ Proof.
       rewrite msubst_pskl_ptyp_to_pskl in HwfPaΘ |- *.
       eapply pskl_to_uskl_paint_ghost_free;
         [ eapply a_wf_pskl_lc; exact HwfPaΘ | reflexivity ]. }
-    destruct (uskl_ghost_free_all_etag_inv (Hgf eq_refl)) as [Lg Hgb].
+    destruct (uskl_ghost_free_all_tag_inv (Hgf eq_refl)) as [Lg Hgb].
     destruct (atom_fresh (Lg `union` ftvar_in_uskl Rj)) as [γ Frγ].
     rewrite (subst_uskl_in_uskl_intro γ Rj
                (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa))
@@ -2631,7 +2630,7 @@ Proof.
   assert (HwfPnew : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ
                       (open_pskl_wrt_pskl ⌊ Rb ⌋ˢ Pa) }}a).
   { apply a_wf_pskl_all_open; [ | exact HwfPa ].
-    change (pskl_all_syn ⌊ Rb ⌋ˢ) with ⌊ uskl_all_etag ε Rb ⌋ˢ.
+    change (pskl_all_syn ⌊ Rb ⌋ˢ) with ⌊ uskl_all_tag ε Rb ⌋ˢ.
     eapply a_wf_pskl_weaken; [ exact Hmon0 | exact HwfP ]. }
   assert (Hcollapse : msubst_uskl_syn (κa ++ κ) Rb = msubst_uskl_syn κ Rb).
   { apply msubst_uskl_syn_agree. intros β Hβ.

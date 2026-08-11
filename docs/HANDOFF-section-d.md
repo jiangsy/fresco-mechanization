@@ -541,7 +541,7 @@ context*.  The table below is the record of what each row needed.
 
 ✅ **(a) SETTLED 2026-08-06 — the dependency order.**  `ad_pat_sub_g_of` and
 `ad_pat_sub_gv_fuel_weaken` MOVED to
-`decorated_algo/def_decl_algo_sub_hyg.v` (they are plain inductions over the
+`algo_decl/def_decl_algo_sub_hyg.v` (they are plain inductions over the
 mirrors and need nothing else), joined there by the composite
 `ad_pat_sub_of_gv : ad_pat_sub_gv n … -> Ψ ⨟ Θ ⊢ᵃᵈ[ NM | M ] R ⩽ Q`.  Both
 old sites keep a pointer comment.
@@ -779,7 +779,7 @@ LEAVES rather than the root, because at the root it is vacuous
 and type inference must therefore carry it at each embedded subtyping
 premise's leaves.  Registered in docs/PAPER-GAPS.md.
 
-**Shape to land** (`decorated_algo/def_decl_algo_typing.v`): replace the
+**Shape to land** (`algo_decl/def_decl_algo_typing.v`): replace the
 `ad_pat_sub` premise of `ad_pat__{unit,var,anno}` and
 `ad_sd_typing__{unit,var,anno}` with
 

@@ -226,7 +226,7 @@ Proof.
     + apply singleton_1 in HYX; subst.
       left. unfold binds; left; reflexivity.
     + apply a_binds_tvar_weaken_cons; auto.
-  - (* all_etag ↦ ∀ syn (ForallSyn on a tagged head, tag unsolved) *)
+  - (* all_tag ↦ ∀ syn (ForallSyn on a tagged head, tag unsolved) *)
     apply ad_pat_consis__forall_syn_tagged with (L := dom Θ).
     intros α Hα.
     rewrite <- pskl_to_bskl_syn_open.

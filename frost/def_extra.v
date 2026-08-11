@@ -43,7 +43,7 @@ Definition decr_mode (m : mode) : mode :=
     precision-substitution is FALSE over derivations that only have it
     (docs/DESIGN-completeness-subtyping.md §5.2).  What makes the strong
     reading legitimate is that a derivation's instantiation tags can always be
-    MOVED — frost/prop_etag.v, decl/prop_etag_swap.v. *)
+    MOVED — frost/prop_tag.v, decl/prop_tag_swap.v. *)
 
 Fixpoint ftag_in_utyp (C : utyp) : atoms :=
   match C with
@@ -52,7 +52,7 @@ Fixpoint ftag_in_utyp (C : utyp) : atoms :=
   | utyp_var_f _ => {}
   | utyp_arrow C1 C2 => ftag_in_utyp C1 `union` ftag_in_utyp C2
   | utyp_all_syn C0 => ftag_in_utyp C0
-  | utyp_all_etag ε C0 => add ε (ftag_in_utyp C0)
+  | utyp_all_tag ε C0 => add ε (ftag_in_utyp C0)
   end.
 
 Fixpoint ftag_in_uskl (R : uskl) : atoms :=
@@ -62,7 +62,7 @@ Fixpoint ftag_in_uskl (R : uskl) : atoms :=
   | uskl_var_f _ => {}
   | uskl_arrow R1 R2 => ftag_in_uskl R1 `union` ftag_in_uskl R2
   | uskl_all_syn R0 => ftag_in_uskl R0
-  | uskl_all_etag ε R0 => add ε (ftag_in_uskl R0)
+  | uskl_all_tag ε R0 => add ε (ftag_in_uskl R0)
   | uskl_hole => {}
   | uskl_tophole R0 => ftag_in_uskl R0
   | uskl_holeg => {}
@@ -89,10 +89,10 @@ Inductive is_ttyp : utyp -> Prop :=
 | is_ttyp__var   : forall α, is_ttyp (utyp_var_f α)
 | is_ttyp__arrow : forall C1 C2,
     is_ttyp C1 -> is_ttyp C2 -> is_ttyp (utyp_arrow C1 C2)
-| is_ttyp__all_etag   : forall L ε C,
+| is_ttyp__all_tag   : forall L ε C,
     (forall α, α `notin` L ->
        is_ttyp (open_utyp_wrt_utyp C (utyp_var_f α))) ->
-    is_ttyp (utyp_all_etag ε C).
+    is_ttyp (utyp_all_tag ε C).
 
 (** Tagged skletons: is_ttyp + holes + topholes. *)
 Inductive is_tskl : uskl -> Prop :=
@@ -105,10 +105,10 @@ Inductive is_tskl : uskl -> Prop :=
    NOT a decorated-skeleton forall (admitting it would let ForallL instantiate
    with quantifiers no inherited information determines, breaking the paper's
    no-guessing invariant). *)
-| is_tskl__all_etag     : forall L ε R,
+| is_tskl__all_tag     : forall L ε R,
     (forall α, α `notin` L ->
        is_tskl (open_uskl_wrt_uskl R (uskl_var_f α))) ->
-    is_tskl (uskl_all_etag ε R)
+    is_tskl (uskl_all_tag ε R)
 (* Paper decorated skeleton ψ (declarative.tex, grammar fig) carries the
    DOTTED GHOSTS [HoleG] / [TopHoleG], NOT plain [Hole] / [TopHole] (those
    live only in the unresolved skeleton R / the bid RHS).  So [is_tskl]

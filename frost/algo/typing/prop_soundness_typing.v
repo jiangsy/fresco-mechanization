@@ -61,7 +61,6 @@ Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_rename_decl.
 Require Import src.frost.algo.sub.prop_completeness_sub_gen.
 Require Import src.frost.algo.prop_suffix_erase.
-Require Import src.frost.deco_algo.prop_decorate.
 Require Import src.frost.deco_algo.prop_decorate_key.
 
 Set Implicit Arguments.

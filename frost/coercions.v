@@ -39,7 +39,7 @@ Fixpoint utyp_to_btyp (C : utyp) : btyp :=
   | utyp_var_f α => btyp_var_f α
   | utyp_arrow C1 C2 => btyp_arrow (utyp_to_btyp C1) (utyp_to_btyp C2)
   | utyp_all_syn C0 => btyp_all_syn (utyp_to_btyp C0)
-  | utyp_all_etag _ C0 => btyp_all_syn (utyp_to_btyp C0)
+  | utyp_all_tag _ C0 => btyp_all_syn (utyp_to_btyp C0)
   end.
 
 Coercion utyp_to_btyp : utyp >-> btyp.
@@ -166,7 +166,7 @@ Fixpoint uskl_to_pskl (R : uskl) : pskl :=
   | uskl_var_f α => pskl_var_f α
   | uskl_arrow R1 R2 => pskl_arrow (uskl_to_pskl R1) (uskl_to_pskl R2)
   | uskl_all_syn R0 => pskl_all_syn (uskl_to_pskl R0)
-  | uskl_all_etag _ R0 => pskl_all_syn (uskl_to_pskl R0)
+  | uskl_all_tag _ R0 => pskl_all_syn (uskl_to_pskl R0)
   | uskl_hole => pskl_hole
   | uskl_tophole R0 => pskl_tophole (uskl_to_pskl R0)
   | uskl_holeg => pskl_hole
@@ -174,6 +174,20 @@ Fixpoint uskl_to_pskl (R : uskl) : pskl :=
   end.
 
 Notation "⌊ R ⌋ˢ" := (uskl_to_pskl R) (at level 0, R at level 99).
+
+(** Plain skeletons as (untagged) unresolved skeletons: the embedding used
+    by the flexible-variable rules, which are inherited unchanged from the
+    ordinary algorithmic consistency (their subjects are plain skeletons). *)
+Fixpoint pskl_to_uskl (P : pskl) : uskl :=
+  match P with
+  | pskl_unit => uskl_unit
+  | pskl_var_b n => uskl_var_b n
+  | pskl_var_f α => uskl_var_f α
+  | pskl_arrow P1 P2 => uskl_arrow (pskl_to_uskl P1) (pskl_to_uskl P2)
+  | pskl_all_syn P0 => uskl_all_syn (pskl_to_uskl P0)
+  | pskl_hole => uskl_hole
+  | pskl_tophole P0 => uskl_tophole (pskl_to_uskl P0)
+  end.
 
 Fixpoint bskl_to_pskl (Q : bskl) : pskl :=
   match Q with
@@ -208,7 +222,7 @@ Fixpoint uskl_to_bskl (R : uskl) : bskl :=
   | uskl_var_f α => bskl_var_f α
   | uskl_arrow R1 R2 => bskl_arrow (uskl_to_bskl R1) (uskl_to_bskl R2)
   | uskl_all_syn R0 => bskl_all_syn (uskl_to_bskl R0)
-  | uskl_all_etag _ R0 => bskl_all_syn (uskl_to_bskl R0)
+  | uskl_all_tag _ R0 => bskl_all_syn (uskl_to_bskl R0)
   | uskl_hole => bskl_hole
   | uskl_tophole R0 => bskl_tophole (uskl_to_bskl R0)
   (* dotted ghosts erase to their plain counterparts (HoleG ~ Hole,
@@ -241,7 +255,7 @@ Fixpoint utyp_to_uskl (C : utyp) : uskl :=
   | utyp_var_f α => uskl_var_f α
   | utyp_arrow C1 C2 => uskl_arrow (utyp_to_uskl C1) (utyp_to_uskl C2)
   | utyp_all_syn C0 => uskl_all_syn (utyp_to_uskl C0)
-  | utyp_all_etag ε C0 => uskl_all_etag ε (utyp_to_uskl C0)
+  | utyp_all_tag ε C0 => uskl_all_tag ε (utyp_to_uskl C0)
   end.
 
 Fixpoint uskl_to_utyp (R : uskl) : utyp :=
@@ -251,7 +265,7 @@ Fixpoint uskl_to_utyp (R : uskl) : utyp :=
   | uskl_var_f α => utyp_var_f α
   | uskl_arrow R1 R2 => utyp_arrow (uskl_to_utyp R1) (uskl_to_utyp R2)
   | uskl_all_syn R0 => utyp_all_syn (uskl_to_utyp R0)
-  | uskl_all_etag ε R0 => utyp_all_etag ε (uskl_to_utyp R0)
+  | uskl_all_tag ε R0 => utyp_all_tag ε (uskl_to_utyp R0)
   | uskl_hole => utyp_unit
   | uskl_tophole _ => utyp_unit
   | uskl_holeg => utyp_unit

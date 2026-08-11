@@ -62,7 +62,6 @@ Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_inc_strengthen.
 Require Import src.frost.algo.prop_compose.
-Require Import src.frost.deco_algo.prop_decorate.
 Require Import src.frost.algo.sub.prop_sub_msubst_equiv.
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.sub.prop_completeness_sub_gen.

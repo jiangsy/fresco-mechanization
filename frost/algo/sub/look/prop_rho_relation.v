@@ -70,7 +70,6 @@ Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
-Require Import src.frost.deco_algo.prop_decorate.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.consis.prop_consis_precise.
 Require Import src.frost.algo.prop_swap.
@@ -109,12 +108,12 @@ Inductive uskl_rho (NM : a_sub_mode) (Θ : aenv)
          (open_uskl_wrt_uskl R' (uskl_var_f α))
          (open_uskl_wrt_uskl R (uskl_var_f α))) ->
     uskl_rho NM Θ Δρ Ψρ (uskl_all_syn R') (uskl_all_syn R)
-| urho__all_etag : forall L Δρ Ψρ ε R' R,
+| urho__all_tag : forall L Δρ Ψρ ε R' R,
     (forall α, α `notin` L ->
        uskl_rho NM Θ Δρ Ψρ
          (open_uskl_wrt_uskl R' (uskl_var_f α))
          (open_uskl_wrt_uskl R (uskl_var_f α))) ->
-    uskl_rho NM Θ Δρ Ψρ (uskl_all_etag ε R') (uskl_all_etag ε R)
+    uskl_rho NM Θ Δρ Ψρ (uskl_all_tag ε R') (uskl_all_tag ε R)
 | urho__tophole : forall Δρ Ψρ R' R,
     uskl_rho NM Θ Δρ Ψρ R' R ->
     uskl_rho NM Θ Δρ Ψρ (uskl_tophole R') (uskl_tophole R)
@@ -133,7 +132,7 @@ Proof.
   - eapply urho__leaf; [ exact H | exact H0 | exact H1 | fsetdec ].
   - eapply urho__arrow; [ exact H | exact H0 | fsetdec ].
   - eapply urho__all_syn with (L := L); intros α Hα; eauto.
-  - eapply urho__all_etag with (L := L); intros α Hα; eauto.
+  - eapply urho__all_tag with (L := L); intros α Hα; eauto.
   - apply urho__tophole; eauto.
   - apply urho__topholeg; eauto.
 Qed.
@@ -150,7 +149,7 @@ Proof.
   - eapply urho__arrow; [ apply IHuskl_rho1 | apply IHuskl_rho2 | ];
       assumption.
   - eapply urho__all_syn with (L := L); intros α Hα; eauto.
-  - eapply urho__all_etag with (L := L); intros α Hα; eauto.
+  - eapply urho__all_tag with (L := L); intros α Hα; eauto.
   - apply urho__tophole; eauto.
   - apply urho__topholeg; eauto.
 Qed.
@@ -170,7 +169,7 @@ Proof.
     pose proof (ftag_in_uskl_open_var R' α).
     pose proof (ftag_in_uskl_open_var R α).
     fsetdec.
-  - (* all_etag *)
+  - (* all_tag *)
     pick fresh α for L.
     pose proof (H0 α ltac:(solve_notin_auto)) as Hα.
     pose proof (ftag_in_uskl_open_var R' α).
@@ -287,11 +286,11 @@ Proof.
   - right; right; exists L, R; split; [ reflexivity | eassumption ].
 Qed.
 
-Lemma uskl_rho_all_etag_l_inv : forall NM Θ Δρ Ψρ ε R' ψa,
-  uskl_rho NM Θ Δρ Ψρ (uskl_all_etag ε R') ψa ->
-  (ψa = uskl_all_etag ε R' /\ Ψρ [=] empty)
-  \/ rho_leaf NM Θ Δρ Ψρ (uskl_all_etag ε R') ψa
-  \/ (exists L R, ψa = uskl_all_etag ε R /\
+Lemma uskl_rho_all_tag_l_inv : forall NM Θ Δρ Ψρ ε R' ψa,
+  uskl_rho NM Θ Δρ Ψρ (uskl_all_tag ε R') ψa ->
+  (ψa = uskl_all_tag ε R' /\ Ψρ [=] empty)
+  \/ rho_leaf NM Θ Δρ Ψρ (uskl_all_tag ε R') ψa
+  \/ (exists L R, ψa = uskl_all_tag ε R /\
         forall α, α `notin` L ->
           uskl_rho NM Θ Δρ Ψρ (open_uskl_wrt_uskl R' (uskl_var_f α))
                               (open_uskl_wrt_uskl R (uskl_var_f α))).
@@ -1091,15 +1090,15 @@ Proof.
   - exists L, R'0; split; [ reflexivity | eassumption ].
 Qed.
 
-Lemma uskl_rho_all_etag_r_inv : forall NM Θ Δρ Ψρ R' ε ψ,
-  uskl_rho NM Θ Δρ Ψρ R' (uskl_all_etag ε ψ) ->
-  exists L R0, R' = uskl_all_etag ε R0 /\
+Lemma uskl_rho_all_tag_r_inv : forall NM Θ Δρ Ψρ R' ε ψ,
+  uskl_rho NM Θ Δρ Ψρ R' (uskl_all_tag ε ψ) ->
+  exists L R0, R' = uskl_all_tag ε R0 /\
     forall α, α `notin` L ->
       uskl_rho NM Θ Δρ Ψρ (open_uskl_wrt_uskl R0 (uskl_var_f α))
                           (open_uskl_wrt_uskl ψ (uskl_var_f α)).
 Proof.
   intros NM Θ Δρ Ψρ R' ε ψ H; inversion H; subst.
-  - match goal with Hlc : lc_uskl (uskl_all_etag _ _) |- _ =>
+  - match goal with Hlc : lc_uskl (uskl_all_tag _ _) |- _ =>
       inversion Hlc; subst end.
     exists empty, ψ; split; [ reflexivity | ].
     intros α Hα; apply urho__refl; [ auto | assumption ].
@@ -1135,7 +1134,7 @@ Proof.
   - (* ∀^ε *)
     inversion Ht; subst.
     match goal with Hb : forall α, α `notin` ?L1 -> is_tskl _ |- _ =>
-      apply is_tskl__all_etag with (L := L `union` L1); intros α Hα;
+      apply is_tskl__all_tag with (L := L `union` L1); intros α Hα;
       apply H0; [ clear - Hα; solve_notin | apply Hb; clear - Hα; solve_notin ]
     end.
   - (* ∀◇ : not a decorated shape *) inversion Ht.
@@ -1224,7 +1223,7 @@ Proof.
     eapply a_wf_pskl_weaken; eassumption.
   - eapply urho__arrow; eauto.
   - eapply urho__all_syn with (L := L); eauto.
-  - eapply urho__all_etag with (L := L); eauto.
+  - eapply urho__all_tag with (L := L); eauto.
   - apply urho__tophole; eauto.
   - apply urho__topholeg; eauto.
 Qed.
@@ -2080,8 +2079,8 @@ Proof.
   inversion H; subst. exists τ1, τ2; repeat split; reflexivity.
 Qed.
 
-Lemma ptyp_to_uskl_syn_all_etag_absurd : forall τ ε ψ,
-  ptyp_to_uskl_syn τ = uskl_all_etag ε ψ -> False.
+Lemma ptyp_to_uskl_syn_all_tag_absurd : forall τ ε ψ,
+  ptyp_to_uskl_syn τ = uskl_all_tag ε ψ -> False.
 Proof. intros τ ε ψ H; destruct τ; simpl in H; discriminate. Qed.
 
 Lemma ptyp_to_uskl_syn_topholeg_absurd : forall τ ψ,
@@ -2290,13 +2289,13 @@ Proof.
     pose proof (IHad_partial_precise1 HwfΘ τ1 Heq1 Hm1) as He1.
     pose proof (IHad_partial_precise2 HwfΘ τ2 Heq2 Hm2) as He2.
     clear - H1 He1 He2; fsetdec.
-  - (* forall: target all_etag, never a mono paint *)
-    exfalso; eapply ptyp_to_uskl_syn_all_etag_absurd; symmetry; exact Hequ.
+  - (* forall: target all_tag, never a mono paint *)
+    exfalso; eapply ptyp_to_uskl_syn_all_tag_absurd; symmetry; exact Hequ.
   - (* hole *) assumption.
   - (* tophole_remove *)
     eapply IHad_partial_precise; eauto.
-  - (* tophole_fill: target all_etag *)
-    exfalso; eapply ptyp_to_uskl_syn_all_etag_absurd; symmetry; exact Hequ.
+  - (* tophole_fill: target all_tag *)
+    exfalso; eapply ptyp_to_uskl_syn_all_tag_absurd; symmetry; exact Hequ.
   - (* tophole_keep: target topholeg *)
     exfalso; eapply ptyp_to_uskl_syn_topholeg_absurd; symmetry; exact Hequ.
   - (* flex_l *)
@@ -2490,8 +2489,8 @@ Proof.
   - (* tophole_remove *)
     inversion HeqS; subst.
     exists τu. split; [ apply a_def_chain_refl | split; assumption ].
-  - (* tophole_fill: target all_etag, never a mono paint *)
-    exfalso; eapply ptyp_to_uskl_syn_all_etag_absurd; symmetry; exact Hequ.
+  - (* tophole_fill: target all_tag, never a mono paint *)
+    exfalso; eapply ptyp_to_uskl_syn_all_tag_absurd; symmetry; exact Hequ.
   - (* tophole_keep: target topholeg *)
     exfalso; eapply ptyp_to_uskl_syn_topholeg_absurd; symmetry; exact Hequ.
   - (* flex_r *)
@@ -2511,8 +2510,8 @@ Lemma ad_ppre_allsyn_subject_mono_absurd : forall Θ Δ Ψ P ψ,
 Proof.
   intros Θ Δ Ψ P ψ HwfΘ H; induction H; intros S0' HeqS τu Hequ Hmu;
     try discriminate HeqS.
-  - (* forall: target all_etag, never a mono paint *)
-    eapply ptyp_to_uskl_syn_all_etag_absurd; symmetry; exact Hequ.
+  - (* forall: target all_tag, never a mono paint *)
+    eapply ptyp_to_uskl_syn_all_tag_absurd; symmetry; exact Hequ.
   - (* flex_r *)
     symmetry in Hequ. apply ptyp_to_uskl_syn_var_inv in Hequ; subst.
     eapply IHad_partial_precise;

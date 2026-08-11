@@ -75,7 +75,7 @@ Inductive ad_pat_consis : atoms -> aenv -> uskl -> bskl -> Prop :=
          (open_uskl_wrt_uskl R (uskl_var_f α)) ∼
          (open_bskl_wrt_bskl Q (bskl_var_f α)) }}ad) ->
     Ψ [=] add ε Ψ0 ->
-    {{ Ψ ⨟ Θ ⊢ˢ (uskl_all_etag ε R) ∼ (bskl_all_inh Q) }}ad
+    {{ Ψ ⨟ Θ ⊢ˢ (uskl_all_tag ε R) ∼ (bskl_all_inh Q) }}ad
 | ad_pat_consis__forall_inh_untagged : forall L Ψ Θ R Q,
     (forall α, α `notin` L ->
        {{ Ψ ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ˢ
@@ -87,7 +87,7 @@ Inductive ad_pat_consis : atoms -> aenv -> uskl -> bskl -> Prop :=
        {{ Ψ ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ˢ
          (open_uskl_wrt_uskl R (uskl_var_f α)) ∼
          (open_bskl_wrt_bskl Q (bskl_var_f α)) }}ad) ->
-    {{ Ψ ⨟ Θ ⊢ˢ (uskl_all_etag ε R) ∼ (bskl_all_syn Q) }}ad
+    {{ Ψ ⨟ Θ ⊢ˢ (uskl_all_tag ε R) ∼ (bskl_all_syn Q) }}ad
 | ad_pat_consis__forall_syn : forall L Ψ Θ R Q,
     (forall α, α `notin` L ->
        {{ Ψ ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ˢ

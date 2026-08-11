@@ -54,7 +54,6 @@ Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
-Require Import src.frost.deco_algo.prop_decorate.
 Require Import src.frost.algo.prop_pat_sub.
 
 Set Implicit Arguments.
@@ -82,7 +81,7 @@ Proof.
   - rewrite IHP; auto.
 Qed.
 
-(** Empty tags ⇒ the erasure is quantifier-free ([all_etag] always carries a
+(** Empty tags ⇒ the erasure is quantifier-free ([all_tag] always carries a
     tag, so [d_tags_skl empty] excludes it). *)
 Lemma d_tags_empty_no_forall : forall Ψ ψ,
   d_tags_skl Ψ ψ -> Ψ [=] empty -> pskl_no_forall (uskl_to_pskl ψ).
@@ -149,8 +148,8 @@ Lemma d_tags_skl_arrow_inv : forall Ψ ψ1 ψ2,
              /\ Ψ1 ∩ Ψ2 [=] empty /\ Ψ [=] Ψ1 `union` Ψ2.
 Proof. intros Ψ ψ1 ψ2 H. inversion H; subst. eauto 10. Qed.
 
-Lemma d_tags_skl_all_etag_inv : forall Ψ ε ψ,
-  d_tags_skl Ψ (uskl_all_etag ε ψ) ->
+Lemma d_tags_skl_all_tag_inv : forall Ψ ε ψ,
+  d_tags_skl Ψ (uskl_all_tag ε ψ) ->
   exists L Ψ0,
     (forall α, α `notin` L ->
        d_tags_skl Ψ0 (open_uskl_wrt_uskl ψ (uskl_var_f α)))
@@ -176,7 +175,7 @@ Proof.
   - apply d_tags_skl__var; fsetdec.
   - eapply d_tags_skl__arrow;
       [ exact H | exact H0 | exact H1 | clear - H2 Heq; fsetdec ].
-  - eapply d_tags_skl__all_etag;
+  - eapply d_tags_skl__all_tag;
       [ exact H | exact H1 | clear - H2 Heq; fsetdec ].
   - apply d_tags_skl__holeg; fsetdec.
   - apply d_tags_skl__topholeg; apply IHd_tags_skl; exact Heq.
@@ -207,8 +206,8 @@ Proof.
     exists Ψa, Ψb. repeat apply conj; try assumption; apply a_tags_sort__ty; auto.
 Qed.
 
-Lemma a_tags_sort_all_etag_inv : forall NM Ψ ε ψ,
-  a_tags_sort NM Ψ (uskl_all_etag ε ψ) ->
+Lemma a_tags_sort_all_tag_inv : forall NM Ψ ε ψ,
+  a_tags_sort NM Ψ (uskl_all_tag ε ψ) ->
   exists L Ψ0,
     (forall α, α `notin` L ->
        a_tags_sort NM Ψ0 (open_uskl_wrt_uskl ψ (uskl_var_f α)))
@@ -216,19 +215,19 @@ Lemma a_tags_sort_all_etag_inv : forall NM Ψ ε ψ,
 Proof.
   intros NM Ψ ε ψ H. inversion H; subst.
   - (* sk *)
-    match goal with Hit : is_tskl (uskl_all_etag _ _) |- _ =>
+    match goal with Hit : is_tskl (uskl_all_tag _ _) |- _ =>
       inversion Hit; subst end.
-    match goal with Hd : d_tags_skl _ (uskl_all_etag _ _) |- _ =>
-      apply d_tags_skl_all_etag_inv in Hd as [Ld [Ψ0 [Hd0 [Hεt Hun]]]] end.
+    match goal with Hd : d_tags_skl _ (uskl_all_tag _ _) |- _ =>
+      apply d_tags_skl_all_tag_inv in Hd as [Ld [Ψ0 [Hd0 [Hεt Hun]]]] end.
     match goal with Hit0 : forall α, α `notin` ?Li -> is_tskl _ |- _ =>
       exists (Li `union` Ld), Ψ0; repeat apply conj; try assumption;
       intros α Hα; apply a_tags_sort__sk; [ apply Hit0 | apply Hd0 ]; fsetdec end.
   - (* ty *)
-    match goal with Hit : is_tskl (uskl_all_etag _ _) |- _ =>
+    match goal with Hit : is_tskl (uskl_all_tag _ _) |- _ =>
       inversion Hit; subst end.
-    match goal with Hd : d_tags_skl _ (uskl_all_etag _ _) |- _ =>
-      apply d_tags_skl_all_etag_inv in Hd as [Ld [Ψ0 [Hd0 [Hεt Hun]]]] end.
-    match goal with Hgf : uskl_ghost_free (uskl_all_etag _ _) |- _ =>
+    match goal with Hd : d_tags_skl _ (uskl_all_tag _ _) |- _ =>
+      apply d_tags_skl_all_tag_inv in Hd as [Ld [Ψ0 [Hd0 [Hεt Hun]]]] end.
+    match goal with Hgf : uskl_ghost_free (uskl_all_tag _ _) |- _ =>
       inversion Hgf; subst end.
     match goal with
     | Hit0 : forall α, α `notin` ?Li -> is_tskl _,
@@ -490,7 +489,7 @@ Proof.
     destruct (IHHc1 Hwfa _ eq_refl Hnf1) as [HΨ1 Heq1].
     destruct (IHHc2 Hwfa _ eq_refl Hnf2) as [HΨ2 Heq2].
     split; [ fsetdec | simpl; rewrite Heq1, Heq2; reflexivity ].
-  - (* forall_inh_tagged: subject all_etag — impossible *)
+  - (* forall_inh_tagged: subject all_tag — impossible *)
     destruct P0 as [ | n | αv | Pl Pr | Pq | | Pt ]; simpl in HR; discriminate HR.
   - (* forall_inh_untagged: subject all_syn ⇒ ¬nf *)
     destruct P0 as [ | n | αv | Pl Pr | Pq | | Pt ];
@@ -750,7 +749,7 @@ Proof.
 Qed.
 
 (** The consistency tag context is contained in the SUBJECT's syntactic
-    tags — every solved tag is consumed at an [all_etag] node of the
+    tags — every solved tag is consumed at an [all_tag] node of the
     subject.  (Syntactic counterpart of [ad_partial_precise_tags_sub],
     prop_sub_complete.v; the precision-substitution crux uses it to pin
     the residual tag context of a wholly-[ψa] subject to ∅.) *)
@@ -832,7 +831,7 @@ Qed.
 (*  Freshness reading (the paper's [fresh Ψ'], DESIGN §5.2/§5.4): [ψa]'s   *)
 (*  tags [Ψ'] are disjoint from BOTH the residual tag context [Ψ] and the  *)
 (*  subject's other syntactic tags [ftag_in_uskl R] — without the latter,  *)
-(*  a tag shared between an [all_etag] of [R] and one of [ψa] makes the    *)
+(*  a tag shared between an [all_tag] of [R] and one of [ψa] makes the    *)
 (*  conclusion underivable (the [R]-node is forced to re-consume a tag     *)
 (*  that substitution removed).  Consistency derivations introduce no new  *)
 (*  tags (no ForallL), so the syntactic premise is stable under the        *)
@@ -1234,19 +1233,19 @@ Inductive uskl_precise (Θ : aenv) : atoms -> uskl -> uskl -> Prop :=
          (open_uskl_wrt_uskl R' (uskl_var_f α))
          (open_uskl_wrt_uskl R (uskl_var_f α))) ->
     uskl_precise Θ Ψrep (uskl_all_syn R') (uskl_all_syn R)
-| upre__all_etag : forall L Ψrep ε R' R,
+| upre__all_tag : forall L Ψrep ε R' R,
     (forall α, α `notin` L ->
        uskl_precise Θ Ψrep
          (open_uskl_wrt_uskl R' (uskl_var_f α))
          (open_uskl_wrt_uskl R (uskl_var_f α))) ->
-    uskl_precise Θ Ψrep (uskl_all_etag ε R') (uskl_all_etag ε R)
+    uskl_precise Θ Ψrep (uskl_all_tag ε R') (uskl_all_tag ε R)
 | upre__all_inst : forall L Ψrep Ψ0 ε R' R,
     (forall α, α `notin` L ->
        uskl_precise Θ Ψ0
          (open_uskl_wrt_uskl R' (uskl_var_f α))
          (open_uskl_wrt_uskl R (uskl_var_f α))) ->
     Ψrep [=] add ε Ψ0 ->
-    uskl_precise Θ Ψrep (uskl_all_syn R') (uskl_all_etag ε R)
+    uskl_precise Θ Ψrep (uskl_all_syn R') (uskl_all_tag ε R)
 | upre__tophole : forall Ψrep R' R,
     uskl_precise Θ Ψrep R' R ->
     uskl_precise Θ Ψrep (uskl_tophole R') (uskl_tophole R)
@@ -1283,7 +1282,7 @@ Proof.
   - apply upre__refl; [ assumption | fsetdec ].
   - eapply upre__arrow; [ exact H | exact H0 | fsetdec ].
   - eapply upre__all_syn with (L := L); intros α Hα; eauto.
-  - eapply upre__all_etag with (L := L); intros α Hα; eauto.
+  - eapply upre__all_tag with (L := L); intros α Hα; eauto.
   - eapply upre__all_inst with (L := L) (Ψ0 := Ψ0);
       [ intros α Hα; eauto | fsetdec ].
   - apply upre__tophole; eauto.
@@ -1307,7 +1306,7 @@ Proof.
     pose proof (ftag_in_uskl_open_var R' α).
     pose proof (ftag_in_uskl_open_var R α).
     fsetdec.
-  - (* all_etag cong *)
+  - (* all_tag cong *)
     pick fresh α for L.
     pose proof (H0 α ltac:(solve_notin_auto)) as Hα.
     pose proof (ftag_in_uskl_open_var R' α).
@@ -1323,7 +1322,7 @@ Proof.
     pose proof (ftag_ptyp_to_uskl_syn τ). fsetdec.
 Qed.
 
-(** ∀-free erasure ⇒ no tags (all_etag erases to a quantifier). *)
+(** ∀-free erasure ⇒ no tags (all_tag erases to a quantifier). *)
 Lemma no_forall_uskl_ftag : forall ψ,
   pskl_no_forall (uskl_to_pskl ψ) ->
   ftag_in_uskl ψ [=] empty.
@@ -1369,8 +1368,8 @@ Proof.
     rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R' ψs α0 β HYX Hlc).
     rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψs α0 β HYX Hlc).
     apply H0; [ clear - Hβ; fsetdec | exact Hlc | exact Hwf | exact Hα ].
-  - (* all_etag cong *)
-    apply upre__all_etag with (L := L `union` singleton α0).
+  - (* all_tag cong *)
+    apply upre__all_tag with (L := L `union` singleton α0).
     intros β Hβ.
     assert (HYX : α0 <> β) by (clear - Hβ; fsetdec).
     rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R' ψs α0 β HYX Hlc).
@@ -1431,7 +1430,7 @@ Qed.
 (** EMBEDDING: plain precision [Pa ⊑ ⌊ψ⌋] against a DECORATED [ψ] lifts to
     ⊑ᵤ, with [Ψrep] = ψ's tag reading (all of ψ's decorations are replaced
     by the painting).  Induction on the refinement derivation, re-matching
-    erasure structure against decorated structure ([all_syn]↔[all_etag],
+    erasure structure against decorated structure ([all_syn]↔[all_tag],
     [tophole]↔[topholeg]); [tophole_fill] cannot occur (the ⊑-target is an
     inh-painting, never [all_syn]-headed). *)
 Lemma uskl_precise_of_precise : forall Θ Δ Qsrc Qtgt,
@@ -1470,7 +1469,7 @@ Proof.
       [ eapply IHHr1; try reflexivity; try eassumption
       | eapply IHHr2; try reflexivity; try eassumption
       | exact Hun ].
-  - (* all: Pa = all_syn Pa0, ψt = all_etag ε ψ0 *)
+  - (* all: Pa = all_syn Pa0, ψt = all_tag ε ψ0 *)
     destruct Pa as [ | n | α0 | Pa1 Pa2 | Pa0 | | Pa0 ];
       simpl in HSrc; try discriminate HSrc.
     destruct ψt as [ | n | α0 | ψ1 ψ2 | ψ0 | ε ψ0 | | ψ0 | | ψ0 ];
@@ -1478,7 +1477,7 @@ Proof.
       [ inversion Htsk | ].
     inversion HSrc; inversion HTgt; subst.
     inversion Htsk as [ | | | Lt ε' ψ0' Ht0 | | ]; subst.
-    apply d_tags_skl_all_etag_inv in Hdt
+    apply d_tags_skl_all_tag_inv in Hdt
       as [Ld [Ψ0d [Hd0 [Hε Hun]]]].
     simpl.
     apply upre__all_inst with (L := L `union` Lt `union` Ld) (Ψ0 := Ψ0d);
@@ -1664,17 +1663,17 @@ Proof.
       | eapply a_wf_aenv_binds_def_wf; eauto ].
 Qed.
 
-Lemma consis_split_transport_all_etag_cong : forall Θb Ψsup ε R0 R0' L0,
+Lemma consis_split_transport_all_tag_cong : forall Θb Ψsup ε R0 R0' L0,
   ε `notin` Ψsup ->
   (forall α, α `notin` L0 ->
      consis_split_transport Θb Ψsup
        (open_uskl_wrt_uskl R0 (uskl_var_f α))
        (open_uskl_wrt_uskl R0' (uskl_var_f α))) ->
-  consis_split_transport Θb Ψsup (uskl_all_etag ε R0) (uskl_all_etag ε R0').
+  consis_split_transport Θb Ψsup (uskl_all_tag ε R0) (uskl_all_tag ε R0').
 Proof.
   intros Θb Ψsup ε R0 R0' L0 Hεout Ht.
   intros Θ' Ψfull Ψn Ψna Q Hc Hmon Hwf HΨf HΨa Hdisj Hwfq.
-  remember (uskl_all_etag ε R0) as Ssub eqn:HeqS.
+  remember (uskl_all_tag ε R0) as Ssub eqn:HeqS.
   revert Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
   induction Hc; try discriminate HeqS;
     intros Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
@@ -1725,11 +1724,11 @@ Lemma consis_split_transport_all_inst : forall Θb Ψsup ε R0 R0' L0,
      consis_split_transport Θb Ψsup
        (open_uskl_wrt_uskl R0 (uskl_var_f α))
        (open_uskl_wrt_uskl R0' (uskl_var_f α))) ->
-  consis_split_transport Θb Ψsup (uskl_all_etag ε R0) (uskl_all_syn R0').
+  consis_split_transport Θb Ψsup (uskl_all_tag ε R0) (uskl_all_syn R0').
 Proof.
   intros Θb Ψsup ε R0 R0' L0 Hεin Ht.
   intros Θ' Ψfull Ψn Ψna Q Hc Hmon Hwf HΨf HΨa Hdisj Hwfq.
-  remember (uskl_all_etag ε R0) as Ssub eqn:HeqS.
+  remember (uskl_all_tag ε R0) as Ssub eqn:HeqS.
   revert Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
   induction Hc; try discriminate HeqS;
     intros Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
@@ -1955,9 +1954,9 @@ Proof.
                (ftag_in_uskl (open_uskl_wrt_uskl ?B _)) [=] _ =>
             pose proof (ftag_in_uskl_open_var B α) as Hov
         end; clear - Hftag Hov; fsetdec ].
-  - (* all_etag cong *)
+  - (* all_tag cong *)
     assert (Hεout : ε `notin` Ψsup) by (clear - Hftag; fsetdec).
-    apply consis_split_transport_all_etag_cong with (L0 := L);
+    apply consis_split_transport_all_tag_cong with (L0 := L);
       [ exact Hεout | ].
     intros α Hα.
     apply (H0 α Hα);
@@ -2053,7 +2052,7 @@ Proof.
     pick fresh α for L.
     pose proof (H0 α ltac:(solve_notin_auto)) as Hα.
     pose proof (ftag_in_uskl_open_var R α); fsetdec.
-  - (* all_etag cong *)
+  - (* all_tag cong *)
     pick fresh α for L.
     pose proof (H0 α ltac:(solve_notin_auto)) as Hα.
     pose proof (ftag_in_uskl_open_var R α); fsetdec.
@@ -2075,7 +2074,7 @@ Proof.
   - pick fresh α for L.
     apply lc_uskl_all_syn_exists with (α1 := α). apply H0; fsetdec.
   - pick fresh α for L.
-    apply lc_uskl_all_etag_exists with (α1 := α). apply H0; fsetdec.
+    apply lc_uskl_all_tag_exists with (α1 := α). apply H0; fsetdec.
   - pick fresh α for L.
     apply lc_uskl_all_syn_exists with (α1 := α). apply H0; fsetdec.
   - apply lc_uskl_tophole; assumption.
@@ -2144,9 +2143,9 @@ Proof.
     pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
       as Hlo.
     clear - Hin Hlo; fsetdec.
-  - (* all_etag *)
+  - (* all_tag *)
     assert (Hlcψ' : lc_uskl ψ') by (eapply uskl_precise_lc_l; exact Hp).
-    apply upre__all_etag with (L := singleton α0).
+    apply upre__all_tag with (L := singleton α0).
     intros β Hβ.
     assert (Hne : α0 <> β) by (clear - Hβ; fsetdec).
     rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψ' α0 β Hne Hlcψ').
@@ -2361,7 +2360,7 @@ Proof.
       unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn in Heq;
       simpl in Heq; try discriminate Heq.
     inversion Hm.
-  - (* all_etag cong *)
+  - (* all_tag cong *)
     destruct τ' as [ | n | β | τ1 τ2 | τ0 ];
       unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn in Heq;
       simpl in Heq; discriminate Heq.
@@ -2528,7 +2527,7 @@ Proof.
           | exact Hmon
           | apply uskl_to_pskl_open ]
       end.
-    + (* upre__all_etag *)
+    + (* upre__all_tag *)
       inversion Heq; subst.
       simpl.
       match goal with
