@@ -504,28 +504,9 @@ Proof.
   - rewrite Heq. exact Hmc.
 Qed.
 
-(** Ghost-freeness is closed under substituting a ghost-free skeleton. *)
-Lemma uskl_ghost_free_subst : forall R ψ α,
-  uskl_ghost_free R ->
-  uskl_ghost_free ψ ->
-  lc_uskl ψ ->
-  uskl_ghost_free (subst_uskl_in_uskl ψ α R).
-Proof.
-  intros R ψ α HR; revert α; induction HR; intros α0 Hψ Hlc; simpl.
-  - apply uskl_ghost_free__unit.
-  - destruct_if as [-> | Hne]; [ exact Hψ | apply uskl_ghost_free__var ].
-  - apply uskl_ghost_free__arrow; [ apply IHHR1 | apply IHHR2 ]; assumption.
-  - apply uskl_ghost_free__all_etag with (L := L `union` singleton α0).
-    intros β Hβ.
-    assert (HYX : α0 <> β) by (clear - Hβ; fsetdec).
-    rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψ α0 β HYX Hlc).
-    apply H0; [ clear - Hβ; fsetdec | assumption | assumption ].
-  - apply uskl_ghost_free__all_syn with (L := L `union` singleton α0).
-    intros β Hβ.
-    assert (HYX : α0 <> β) by (clear - Hβ; fsetdec).
-    rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψ α0 β HYX Hlc).
-    apply H0; [ clear - Hβ; fsetdec | assumption | assumption ].
-Qed.
+(* ⚙ [uskl_ghost_free_subst] MOVED 2026-08-11 to algo/prop_pat_sub.v, where
+   its two instances ([_subst_unit], [_subst_mono]) already lived and where
+   [uskl_ghost_free_open_gen] needs it. *)
 
 (** A painted monotype is a guarded subject. *)
 Lemma mono_paint_guarded : forall τ,

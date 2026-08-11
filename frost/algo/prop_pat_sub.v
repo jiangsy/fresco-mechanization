@@ -714,6 +714,66 @@ Proof.
       rewrite ftvar_in_bskl_ptyp_to_bskl_syn. eauto.
 Qed.
 
+(** Ghost-freeness is closed under substituting a ghost-free skeleton.
+    ⚙ MOVED here 2026-08-11 from algo/sub/prop_completeness_sub_precise.v: its
+    two INSTANCES ([_subst_unit], [_subst_mono]) were already in this file, and
+    [uskl_ghost_free_open_gen] below needs it upstream. *)
+Lemma uskl_ghost_free_subst : forall R ψ α,
+  uskl_ghost_free R ->
+  uskl_ghost_free ψ ->
+  lc_uskl ψ ->
+  uskl_ghost_free (subst_uskl_in_uskl ψ α R).
+Proof.
+  intros R ψ α HR; revert α; induction HR; intros α0 Hψ Hlc; simpl.
+  - apply uskl_ghost_free__unit.
+  - destruct_if as [-> | Hne]; [ exact Hψ | apply uskl_ghost_free__var ].
+  - apply uskl_ghost_free__arrow; [ apply IHHR1 | apply IHHR2 ]; assumption.
+  - apply uskl_ghost_free__all_etag with (L := L `union` singleton α0).
+    intros β Hβ.
+    assert (HYX : α0 <> β) by (clear - Hβ; fsetdec).
+    rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψ α0 β HYX Hlc).
+    apply H0; [ clear - Hβ; fsetdec | assumption | assumption ].
+  - apply uskl_ghost_free__all_syn with (L := L `union` singleton α0).
+    intros β Hβ.
+    assert (HYX : α0 <> β) by (clear - Hβ; fsetdec).
+    rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψ α0 β HYX Hlc).
+    apply H0; [ clear - Hβ; fsetdec | assumption | assumption ].
+Qed.
+
+(** ⭐ Ghost-freeness survives ForallL's INSTANTIATION, provided the
+    instantiation is itself ghost-free — which at the TYPE sort is forced by
+    the rule ([a_tags_sort__ty], def_decorated.v).  That is what makes every
+    leaf of a TY-sort join ghost-free once its ROOT subject is, and hence what
+    makes the leaf datum free there (algo/typing/prop_conserv.v §13).
+
+    ⚙ The subject is the WHOLE ∀ and not its body: [uskl_ghost_free] has no
+    [uskl_var_b] row, so it cannot hold of an open body at all. *)
+Lemma uskl_ghost_free_open_gen : forall R ψ,
+  uskl_ghost_free (uskl_all_syn R) ->
+  uskl_ghost_free ψ -> lc_uskl ψ ->
+  uskl_ghost_free (open_uskl_wrt_uskl R ψ).
+Proof.
+  intros R ψ HR Hψ Hlc.
+  inversion HR as [ | | | | L R0 Hbody ]; subst.
+  pick fresh α for (L `union` ftvar_in_uskl R).
+  rewrite (subst_uskl_in_uskl_intro α R ψ) by (clear - Fr; fsetdec).
+  apply uskl_ghost_free_subst;
+    [ apply Hbody; clear - Fr; fsetdec | exact Hψ | exact Hlc ].
+Qed.
+
+Lemma uskl_ghost_free_open_gen_etag : forall ε R ψ,
+  uskl_ghost_free (uskl_all_etag ε R) ->
+  uskl_ghost_free ψ -> lc_uskl ψ ->
+  uskl_ghost_free (open_uskl_wrt_uskl R ψ).
+Proof.
+  intros ε R ψ HR Hψ Hlc.
+  inversion HR as [ | | | L ε0 R0 Hbody | ]; subst.
+  pick fresh α for (L `union` ftvar_in_uskl R).
+  rewrite (subst_uskl_in_uskl_intro α R ψ) by (clear - Fr; fsetdec).
+  apply uskl_ghost_free_subst;
+    [ apply Hbody; clear - Fr; fsetdec | exact Hψ | exact Hlc ].
+Qed.
+
 (** Ghost-freeness survives the unit substitution. *)
 Lemma uskl_ghost_free_subst_unit : forall ψ β,
   uskl_ghost_free ψ ->
