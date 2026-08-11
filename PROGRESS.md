@@ -47,7 +47,7 @@ files were `Admitted` scaffolding subsumed by the current algo development.
 | Algorithmic type inference (fig:alg-type-inference) | `a_typing` | 🟢 ∀ᾱ.A₀ AbsCheck (step/base), typed Freeze |
 | Erasure ⌊·⌋, decorated subtyping/consistency, tag solving (app:decorated-algosub) | `algo/def_decorated.v` (`uskl_to_pskl`, `a_subtag`, `a_consistag`, `a_solvetag(_sub/_eq)`) | 🟢 |
 | Metasubstitutions κ : Θ ⇒ Θ' (app:metasubstitutions) | `algo/def_meta.v` (`a_inc`, `a_inc_equiv`, `a_tyequiv`, `⊴`, and the application family `msubst_{ptyp,btyp,pskl,uskl_syn}`) | 🟢 |
-| Decl judgments in algo contexts (app:decl-in-algo-context) | `algo_decl/def_decl_algo.v` (`ad_pat_consis`, `ad_refine_syn`, `ad_refine_pskl`, `ad_wf_pskl` + flex-lookup rules); `algo_decl/def_decl_algo_sub.v` (`ad_pat_sub`, its fuel-indexed `ad_pat_sub_n`, `ad_partial_precise`); `algo_decl/def_decl_algo_sub_hyg.v` (`ad_pat_sub_g` / `ad_pat_sub_gv`, the hygienic + leaf-valid mirrors); `algo_decl/def_decl_algo_typing.v` (`ad_pat`, `ad_sd_typing`) | 🟢 COMPLETE 2026-08-06.  The typing layer that section D needs landed: `ad_pat` (skeleton inference) and `ad_sd_typing` (SYNTAX-DIRECTED typing — the appendix ports that one, not `d_typing`).  Per the appendix, NO new rule was needed (every type-level lookup happens inside the embedded subtyping/consistency/refinement premises, which already carry their flexible rows); what was added are the appendix's THREE explicit type-equivalence premises, on `sd-Freeze`, `sd-AbsAnnoCheck` and `sd-AbsAnno`.  `abind_to_pskl` (the `dbind_to_pskl` mirror) added to `algo/def_extra.v` |
+| Decl judgments in algo contexts (app:decl-in-algo-context) | `algo_decl/def_consis_refine.v` (`ad_pat_consis`, `ad_refine_syn`, `ad_refine_pskl`, `ad_wf_pskl` + flex-lookup rules); `algo_decl/def_subtyping.v` (`ad_pat_sub`, `ad_partial_precise`, and — merged in 2026-08-11 — `ad_pat_sub_g` / `ad_pat_sub_gv`, the hygienic + leaf-valid mirrors); `algo_decl/def_typing.v` (`ad_pat`, `ad_sd_typing`) | 🟢 COMPLETE 2026-08-06.  The typing layer that section D needs landed: `ad_pat` (skeleton inference) and `ad_sd_typing` (SYNTAX-DIRECTED typing — the appendix ports that one, not `d_typing`).  Per the appendix, NO new rule was needed (every type-level lookup happens inside the embedded subtyping/consistency/refinement premises, which already carry their flexible rows); what was added are the appendix's THREE explicit type-equivalence premises, on `sd-Freeze`, `sd-AbsAnnoCheck` and `sd-AbsAnno`.  `abind_to_pskl` (the `dbind_to_pskl` mirror) added to `algo/def_extra.v` |
 
 ## Theorems / lemmas (bottom-up order; ⬜ = to prove, per paper appendix)
 
@@ -74,7 +74,7 @@ files were `Admitted` scaffolding subsumed by the current algo development.
 - 🟡 Theorem: Completeness and optimality of subtyping (subtyping-proofs:3050, P7b/P7c) — **IN PROGRESS**.  Motive locked AND REPAIRED 2026-07-30 (`sub_complete_concl` / `sub_flex_complete_concl` / `a_sub_complete_bundle`, `frost/algo/prop_sub_complete_thm.v`): the join is the LEAF-VALID mirror `ad_pat_sub_gv` (def_decl_algo_sub_hyg.v) carrying the subject refinement at the consistency leaves, with NO root-level third premise — the first-cut root premise was REFUTED as a lockstep condition (machine-checked `cex/cex_p7_univ_ghost_r_vacuous.v` + `cex/cex_p7_third_premise_forall.v`: it lost Sub-UnivGhostR entirely and the head-disagreeing ForallL/ForallR solutions `∀a.a ⩽ unit`, `unit ⩽ ∀a.unit`).  FIVE of P7b's rows closed, Qed + axiom-free — Sub-Ghost, Sub-GhostG, **Sub-Infer**, **Sub-Check** and **Sub-UnivGhostR** (a REAL proof: algorithmic UnivGhostR + the `□`-P0 precision core at the stripped counterpart + a `∀◇`-wrap).  The enabling lemma is `a_inc_equiv_precise_msubst` (precision is stable under equivalent metasubstitutions), with the shared core `a_sub_complete_hole_p0_precision`.  ⚠️ Remaining obligation: transport P5's precision-substitution + the freshening kits to `_gv` for ForallL/ForallR.  See docs/PAPER-GAPS.md and DESIGN §9.1.3 / §1.  ⚠️ The property the paper marks with its own TODO at `:3243` ("input `P_0` concrete ⟹ RHS is `P_0`") is **FALSE** — machine-checked `frost/algo/cex/cex_p7_concrete_rhs.v` (`p7_concrete_rhs_is_false`).  Sub-Check / Sub-ForallR are unaffected: both already argue via the EQUIVALENCE, and BOTH halves of it are proved in `frost/algo/prop_sub_concrete_rhs.v` — `a_consis_concrete_output_equiv` and `a_sub_concrete_output_equiv`, each `Θ1 ⊢ P0 ≡ˢ P'`, both falling out of the SOUNDNESS theorems' refinement conjunct plus `ad_refine_syn_ghost_free_equiv`.  See docs/PAPER-GAPS.md and DESIGN §9.1
 
 **D. proofs.tex** (§Proofs for Algorithms) — STARTED 2026-08-06.  🟢 the
-DEFINITIONAL layer is in (`algo_decl/def_decl_algo_typing.v`: `ad_pat`,
+DEFINITIONAL layer is in (`algo_decl/def_typing.v`: `ad_pat`,
 `ad_sd_typing`); the lemma/theorem block is teed up with per-item design in
 [`docs/HANDOFF-section-d.md`](docs/HANDOFF-section-d.md).
 ⚠️ Three of these are marked "straightforward induction" in the paper and are
@@ -612,7 +612,7 @@ mirror — and its five bridge lemmas (`ad_pat_sub_of_n`, `_n_succ`, `_n_mono`,
 consumer anywhere in the tree** — §1 of the completeness skeleton named `_n` as
 the measure, the development settled on the tag-hygienic `ad_pat_sub_g`, and
 nothing came back for it.  Deleted (~290 lines), RESTART NOTEs at both sites.
-And `def_decl_algo_sub_hyg.v` was MERGED into `def_decl_algo_sub.v`: one topic
+And `def_decl_algo_sub_hyg.v` was MERGED into `def_subtyping.v`: one topic
 (the paper's subtyping box and the mirrors that measure it), and per CLAUDE.md's
 DO-NOT-MERGE check the smaller file's only extra dependency was `Lia`.
 
@@ -734,7 +734,7 @@ forces `A0 = ⌊B⌋` anyway.
 an `a_wf_ptyp Θ A` premise (its four type-carrying siblings all have one),
 and its join constrains only the TARGET (`ad_pat_sub_target_wf`), so a
 derivation said nothing about the scope of the types its subject mentions.
-**The premise is now ON the rule** (algo_decl/def_decl_algo_typing.v,
+**The premise is now ON the rule** (algo_decl/def_typing.v,
 registered in docs/PAPER-GAPS.md), which is free on the soundness side —
 `a_typing_sound` already carries `a_wf_exp Θ0 e`, which stores exactly this
 at every annotation — and buys the new
@@ -3964,7 +3964,7 @@ solution-side judgments — refinement, fill, join — now move to a sub-context
 ⚠️ **CORRECTION, same day.**  I recorded that this REPLACES the consistency
 walk's ⇓-normalization route.  It does not.  All three strengthenings take
 `ftv Q [<=] dom Θ'` as a HYPOTHESIS, and that is **not derivable**: both
-`ad_pat_consis__flex_r` (def_decl_algo.v:116) and `ad_refine_syn_f__flex_r`
+`ad_pat_consis__flex_r` (def_consis_refine.v:116) and `ad_refine_syn_f__flex_r`
 (prop_consis_sound.v:384) let the COUNTERPART be an arbitrary DEFINED flexible
 of Θ, independent of the subject — so `Q` may name a flexible of the junk block
 `Ξv` that sits ABOVE β in the target.  `⇓[Θ]` unfolds exactly those, which is
@@ -7434,13 +7434,13 @@ Closed.
 ## 2026-07-11 (b) — meta/decl-algo layer, first Qed, ⊴-algebra, notations
 
 - `algo/def_meta.v` (metasubstitutions, `a_tyequiv`, `a_inc`/`⊴`) and
-  `algo/def_decl_algo.v` (decl judgments over Θ with flex lookups:
+  `algo/def_consis_refine.v` (decl judgments over Θ with flex lookups:
   `⊢ₚₛᵃ`/`⊨ₛᵃ`/`⊢ᵣᵃᵈ`/`⊢ᵣₚᵃᵈ`, Δ as `atoms` to align with `a_consis`).
 - **First lemma Qed**: `a_consis_decorate` = paper "Decorating algorithmic
   consistency" (`algo/prop_decorate.v`), with the `pskl→uskl` embedding kit.
 - `algo/prop_inc.v`: ⊴-algebra — `msubst_*_id`, `a_suffix_app`,
   `a_inc_refl_gen` ⇒ `a_isub_refl`, `a_isub_weaken_suffix` (all Qed).
-- Notation retrofit of `def_decorated.v`/`def_decl_algo.v` (ground rule 1);
+- Notation retrofit of `def_decorated.v`/`def_consis_refine.v` (ground rule 1);
   ground rules 1–3 added to CLAUDE.md.
 - `a_wf_ptyp`/`a_wf_pskl` made REAL scoping judgments (`a_binds_tvar` moved
   to `algo/def_extra.v`); `a_inc__flex_def` gained the paper-PROSE side

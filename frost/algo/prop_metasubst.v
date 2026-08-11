@@ -24,7 +24,7 @@ Set Implicit Arguments.
    The pure metasubst / a_inc_equiv / downarrow (⇓) / msubst-compose lemmas
    used by the optimality development.  Extracted from prop_completeness_consis.v (PART B)
    (which kept only the optimality defs, the consis<->metasubst bridge, and the
-   theorem).  Imports NO consistency definitions (def_decl_algo/def_decorated),
+   theorem).  Imports NO consistency definitions (algo_decl/ or deco_algo/),
    so the module graph enforces the layering:
      def_meta -> prop_inc/prop_compose/prop_normal -> prop_metasubst -> consis.
    ===================================================================== *)

@@ -40,7 +40,7 @@ Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.deco_algo.def_decorated.
-Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_flex.
@@ -910,7 +910,7 @@ Proof.
       with (Δ0 := add β' (remove α (add α0 Δ))); [ apply H0; auto | ].
     fsetdec.
   (* [P] is the hole rule's OWN fill binder ([ad_refine_syn_f__hole],
-     algo/def_decl_algo.v), auto-bound by the induction — not this lemma's Q'. *)
+     algo/def_consis_refine.v), auto-bound by the induction — not this lemma's Q'. *)
   - (* hole: the fill avoids α, so renaming leaves it untouched *)
     assert (Hfr : α `notin` ftvar_in_pskl P)
       by (clear - H HαF; fsetdec).

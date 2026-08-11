@@ -23,7 +23,7 @@
       precision: quantifiers of ψ whose tags are NOT in Ψ may be matched by
       ghosts in P.  Its definition "corresponds one to one to the definition
       of refinement in algorithmic contexts" (tex:1552-1554), so it mirrors
-      [ad_refine_pskl] (def_decl_algo.v:198) — including the placements the
+      [ad_refine_pskl] (def_consis_refine.v:198) — including the placements the
       mech settled there for the paper's external wf side conditions
       (docs/WF-SIDE-CONDITIONS.md): the var rule carries the
       [Δ ∨ a_binds_tvar] visibility disjunction, the ∀-rule extends only Δ
@@ -43,7 +43,7 @@ Require Import src.frost.def_extra.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.
-Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
 
 Set Implicit Arguments.
@@ -151,7 +151,7 @@ where "{{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad" :=
 (*  TAG-HYGIENIC FUEL MIRRORS of [ad_pat_sub]  (completeness-only)        *)
 (* ===================================================================== *)
 
-(** ⚙ MERGED IN 2026-08-11 from [def_decl_algo_sub.v].  The two files
+(** ⚙ MERGED IN 2026-08-11 from [def_subtyping.v].  The two files
     were one topic — the paper's all-in-one subtyping box and the mirrors
     the completeness proof measures it by — split only because the mirrors
     arrived later.  The split cost nothing to keep and nothing to remove:

@@ -19,7 +19,7 @@
 
     (1) THE FUEL JUDGMENT IS [ad_pat_sub_g].  §1's skeleton named a plain fuel
         mirror [ad_pat_sub_n]; the development settled on the TAG-HYGIENIC one
-        instead (def_decl_algo_sub.v), because precision-substitution
+        instead (def_subtyping.v), because precision-substitution
         — which the ForallL case applies to its premise to get the derivation it
         hands the IH — is FALSE over [_n] (the paper's "fresh Ψ'" means GLOBALLY
         fresh, and a plain mirror of [ad_pat_sub] renders it only as freshness
@@ -61,9 +61,9 @@ Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.prop_basic.              (* bskl_to_pskl_pskl_to_bskl_{syn,inh} *)
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
-Require Import src.frost.algo_decl.def_decl_algo_sub.
+Require Import src.frost.algo_decl.def_subtyping.
 Require Import src.frost.algo.prop_inc.           (* a_binds_tvar_weaken_mid *)
 Require Import src.frost.algo.prop_refine.        (* lc_pskl_to_bskl_inh, a_wf_pskl_delta_mono *)
 Require Import src.frost.algo.consis.prop_completeness_consis. (* ad_precise_f *)
@@ -136,7 +136,7 @@ Qed.
     cex/cex_p7_univ_ghost_r_vacuous.v + cex/cex_p7_third_premise_forall.v).
     The repair moves the condition INTO THE JOIN, at the consistency leaves
     where it is consumed: the join is now the LEAF-VALID mirror
-    [ad_pat_sub_gv] (def_decl_algo_sub.v), and there is no third root
+    [ad_pat_sub_gv] (def_subtyping.v), and there is no third root
     premise.  [ad_pat_sub_gv_forget] recovers the plain [_g] mirror for
     every P5/P6 invocation.
 

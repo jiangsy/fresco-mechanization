@@ -779,7 +779,7 @@ LEAVES rather than the root, because at the root it is vacuous
 and type inference must therefore carry it at each embedded subtyping
 premise's leaves.  Registered in docs/PAPER-GAPS.md.
 
-**Shape to land** (`algo_decl/def_decl_algo_typing.v`): replace the
+**Shape to land** (`algo_decl/def_typing.v`): replace the
 `ad_pat_sub` premise of `ad_pat__{unit,var,anno}` and
 `ad_sd_typing__{unit,var,anno}` with
 

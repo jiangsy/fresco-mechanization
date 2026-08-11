@@ -4,7 +4,7 @@
 
     ⭐ WHAT THIS IS FOR.  Section D's four theorems are stated against the
     decl-in-algo layer ([ad_pat] / [ad_sd_typing], algo_decl/
-    def_decl_algo_typing.v) because that is where the algorithm's output
+    def_typing.v) because that is where the algorithm's output
     context lives.  The CLOSED-PROGRAM corollaries (prop_closed.v) want the
     PURELY declarative system instead — a reader of the paper's §declarative
     figure has never met Θ.  This file is the missing translation.
@@ -75,9 +75,9 @@ Require Import src.frost.decl.prop_syntax_directed.       (* ftvar_btyp_to_bskl 
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.deco_algo.def_decorated.
-Require Import src.frost.algo_decl.def_decl_algo.
-Require Import src.frost.algo_decl.def_decl_algo_sub.
-Require Import src.frost.algo_decl.def_decl_algo_typing.
+Require Import src.frost.algo_decl.def_consis_refine.
+Require Import src.frost.algo_decl.def_subtyping.
+Require Import src.frost.algo_decl.def_typing.
 Require Import src.frost.algo_decl.prop_ctx_mono.   (* aenv_tbinds_le *)
 Require Import src.frost.algo.prop_pat_sub.   (* uskl_ghost_free_open_gen *)
 Require Import src.frost.algo.prop_refine.

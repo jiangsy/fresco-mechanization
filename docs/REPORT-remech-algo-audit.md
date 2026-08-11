@@ -4,7 +4,7 @@
 changed.  Three witnesses compared judgment-by-judgment:*
 
 - **Mech**: `frost/algo/def_extra.v`, `def_meta.v`, `def_decorated.v`,
-  `def_decl_algo.v`, `def_decl_algo_sub.v` (+ shared AST in `def_ott.v`).
+  `def_consis_refine.v`, `def_subtyping.v` (+ shared AST in `def_ott.v`).
 - **Paper**: `sections/algorithmic.tex`, `sections/appendices/full-algo-spec.tex`
   (+ `decorated-algosub.tex`, `consistency-proofs.tex`, `subtyping-proofs.tex`,
   `full-decl-spec.tex`), macros resolved via `macro.tex`
@@ -153,7 +153,7 @@ well-formedness**, … are naturally extended to algorithmic contexts"
 look up the definition of a flexible variable and check the well-formedness
 of its definition" (full-algo-spec.tex:128-129).  I.e. the transplanted
 declarative skeleton wf — with the Δ slot, ∀◇-ghost guardedness, and empty-Δ
-body discipline — which the mech has as `ad_wf_pskl` (def_decl_algo.v:51-71).
+body discipline — which the mech has as `ad_wf_pskl` (def_consis_refine.v:51-71).
 
 The mech instead uses the **scoping-only** `a_wf_pskl` (def_extra.v:113-131:
 no Δ, ∀-vars into Θ, no ghost discipline — `∀α.∀◇(α→α)` passes) at both

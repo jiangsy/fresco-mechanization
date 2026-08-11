@@ -13,7 +13,7 @@
     at the LEAVES rather than at the root because at the root it is vacuous
     (cex_p7_univ_ghost_r_vacuous.v, cex_p7_third_premise_forall.v).
 
-    But [ad_pat] / [ad_sd_typing] (algo_decl/def_decl_algo_typing.v)
+    But [ad_pat] / [ad_sd_typing] (algo_decl/def_typing.v)
     embed the PLAIN [ad_pat_sub] in their Unit / Var / Anno rows.  So a
     completeness proof that inducts on one of those judgements arrives at a
     base row holding a plain join and cannot invoke thm:complete-subtyping.
@@ -44,10 +44,10 @@ Require Import src.frost.coercions.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
-Require Import src.frost.algo_decl.def_decl_algo_sub.
-Require Import src.frost.algo_decl.def_decl_algo_typing.
+Require Import src.frost.algo_decl.def_subtyping.
+Require Import src.frost.algo_decl.def_typing.
 
 Set Implicit Arguments.
 

@@ -23,9 +23,9 @@ Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
-Require Import src.frost.algo_decl.def_decl_algo_sub.
+Require Import src.frost.algo_decl.def_subtyping.
 Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_stability.

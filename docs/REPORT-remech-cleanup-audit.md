@@ -715,8 +715,8 @@ whatever actually discharges the binder rows.
 
 | mirror | file | rows | what it adds |
 |---|---|---|---|
-| `ad_pat_sub` | `def_decl_algo_sub.v:59` | 12 | the paper's box |
-| `ad_pat_sub_n` | `def_decl_algo_sub.v:147` | 12 | + fuel |
+| `ad_pat_sub` | `def_subtyping.v:59` | 12 | the paper's box |
+| `ad_pat_sub_n` | `def_subtyping.v:147` | 12 | + fuel |
 | `ad_pat_sub_g` | `def_decl_algo_sub_hyg.v:48` | 12 | + fuel + tag hygiene |
 | `ad_pat_sub_gv` | `def_decl_algo_sub_hyg.v:143` | 12 | + fuel + hygiene + leaf refinement |
 | `ad_pat_sub_v` | `def_decl_algo_sub_hyg.v` (Definition) | — | `∃n, _gv` |
@@ -783,8 +783,8 @@ Rule: **decl stays cofinite, algo goes full existential.**  Audit against it:
 |---|---|---|---|
 | `decl/def_extra.v` | decl | 36 | ✅ correct |
 | `deco_algo/def_decorated.v` | decl-in-algo | 13 | ✅ correct |
-| `algo_decl/def_decl_algo_typing.v` | decl-in-algo | 10 | ✅ correct |
-| `algo_decl/def_decl_algo.v` | decl-in-algo | 9 | ✅ correct |
+| `algo_decl/def_typing.v` | decl-in-algo | 10 | ✅ correct |
+| `algo_decl/def_consis_refine.v` | decl-in-algo | 9 | ✅ correct |
 | `algo_decl/def_decl_algo_sub{,_hyg}.v` | decl-in-algo | 4 + 2 | ✅ correct |
 | `algo/def_meta.v` | algo (meta) | 2 | see below |
 | **`algo/def_extra.v`** | **algo** | **7** | **3 wf + 4 `a_pat` — see below** |
@@ -907,12 +907,12 @@ changes shape.  Real payoff, real cost — schedule it, don't slip it in.
 
 | function | defined in | note |
 |---|---|---|
-| `ptyp_to_bskl_syn` | `algo_decl/def_decl_algo.v:38` | `= pskl_to_bskl_syn ∘ ptyp_to_pskl` |
-| `ptyp_to_uskl_syn` | `algo_decl/def_decl_algo.v:40` | `= bskl_to_uskl ∘ ptyp_to_bskl_syn` |
+| `ptyp_to_bskl_syn` | `algo_decl/def_consis_refine.v:38` | `= pskl_to_bskl_syn ∘ ptyp_to_pskl` |
+| `ptyp_to_uskl_syn` | `algo_decl/def_consis_refine.v:40` | `= bskl_to_uskl ∘ ptyp_to_bskl_syn` |
 | `pskl_to_uskl`, `uskl_to_pskl` | `algo_decl/` + `deco_algo/` | ~20 lemmas about them there |
 
 So the canonical chain is split across `frost/coercions.v` and
-`frost/algo_decl/def_decl_algo.v`, and a reader looking for "how do I get
+`frost/algo_decl/def_consis_refine.v`, and a reader looking for "how do I get
 from `ptyp` to `uskl`" finds two of the three answers in the wrong file.
 
 ### 5.2 Two conversions are dead

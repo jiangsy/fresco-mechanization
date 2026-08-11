@@ -53,9 +53,9 @@ Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
-Require Import src.frost.algo_decl.def_decl_algo_sub.
+Require Import src.frost.algo_decl.def_subtyping.
 Require Import src.frost.prop_basic.
 
 Require Import src.frost.algo.prop_inc.

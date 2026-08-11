@@ -77,9 +77,9 @@ Require Import src.frost.coercions.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.
-Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
-Require Import src.frost.algo_decl.def_decl_algo_sub.
+Require Import src.frost.algo_decl.def_subtyping.
 Require Import src.frost.algo.sub.look.prop_eq_cstr.   (* def_ftv *)
 
 Set Implicit Arguments.

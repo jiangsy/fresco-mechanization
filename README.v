@@ -74,9 +74,9 @@ Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.          (* the algorithmic judgement notations *)
 Require Import src.frost.algo.def_meta.            (* κ ∷ Θ ⊑ Θ', Θ ⊴ Θ' *)
-Require Import src.frost.algo_decl.def_decl_algo.
-Require Import src.frost.algo_decl.def_decl_algo_sub.
-Require Import src.frost.algo_decl.def_decl_algo_typing.
+Require Import src.frost.algo_decl.def_consis_refine.
+Require Import src.frost.algo_decl.def_subtyping.
+Require Import src.frost.algo_decl.def_typing.
 Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.decl.prop_syntax_directed.
 Require Import src.frost.decl.prop_general_subsumption.

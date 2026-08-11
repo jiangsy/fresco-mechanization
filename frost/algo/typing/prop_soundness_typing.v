@@ -40,9 +40,9 @@ Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo_decl.def_decl_algo.
-Require Import src.frost.algo_decl.def_decl_algo_sub.
-Require Import src.frost.algo_decl.def_decl_algo_typing.
+Require Import src.frost.algo_decl.def_consis_refine.
+Require Import src.frost.algo_decl.def_subtyping.
+Require Import src.frost.algo_decl.def_typing.
 Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo_decl.prop_ctx_mono.
 Require Import src.frost.algo.prop_inc.

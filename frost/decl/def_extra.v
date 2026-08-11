@@ -446,7 +446,7 @@ where "{{ Γ ⨟ Δ ⊢ᵣ Q ⊳ P }}d" := (d_refine_syn Γ Δ Q P) : frost_d_sc
     because the presupposition erases both sides ([uskl_to_pskl] on the left,
     [bskl_to_pskl] on the right) and the two colourings need not agree at a ∀.
     The [ad] layer has had the uncoloured version all along
-    ([ad_refine_pskl], algo_decl/def_decl_algo.v); this is its
+    ([ad_refine_pskl], algo_decl/def_consis_refine.v); this is its
     flexible-free twin, and prop_conserv.v §5 relates them.
 
     ⚠️ [Δ] tracks the type variables bound IN THE SUBJECT, and

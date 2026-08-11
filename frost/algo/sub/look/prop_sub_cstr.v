@@ -38,9 +38,9 @@ Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
-Require Import src.frost.algo_decl.def_decl_algo_sub.
+Require Import src.frost.algo_decl.def_subtyping.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_stability.
@@ -222,7 +222,7 @@ Qed.
 
 (** [ad_pat_sub_g] renders the paper's GLOBAL freshness of an instantiation's
     tags as TWO conjuncts — freshness from the tag index and from the
-    SUBJECT's syntactic tags (def_decl_algo_sub.v).  Sub-ForallL needs a
+    SUBJECT's syntactic tags (def_subtyping.v).  Sub-ForallL needs a
     third, freshness from ψa's tags Ψ', to keep the ρ-dirt bound
     [Ψρ ∩ Ψ' = ∅] as it absorbs the guess.  That is NOT a new side condition:
     the main induction runs under [α ∈ ftv R'], so ψa sits inside the ideal

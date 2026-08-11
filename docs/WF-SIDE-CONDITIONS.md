@@ -226,7 +226,7 @@ that makes the bad derivation impossible usually lives *outside* the rule.
 The algo layer has TWO skeleton judgments, both in algo/def_extra.v:
 
 - **`a_wf_pskl` (`Θ ⨟ Δ ⊢ₚₛᵃ P`) — THE paper's skeleton wf** (ex-`ad_wf_pskl`,
-  moved up from def_decl_algo.v).  Two contexts: ∀ binds its variable in Δ,
+  moved up from def_consis_refine.v).  Two contexts: ∀ binds its variable in Δ,
   and a `∀◇`-body must be guarded and well-formed at the EMPTY Δ.  This is the
   ∀◇-discipline that rescued the refine-non-transitivity counterexample (§1):
   `∀α.∀◇.(α→α)` is well-formed in NO context.  Whenever the paper writes

@@ -235,7 +235,7 @@ form against how ForallL builds `refi`.)
 
 | phase | lemma (mech name) | paper | measure? | reuse |
 |---|---|---|---|---|
-| **P5a** | `ad_pat_sub_n` + `_of_n`/`_to_n`/`_n_mono` | — | defines fuel | new inductive in `def_decl_algo_sub.v` (append; no cascade) |
+| **P5a** | `ad_pat_sub_n` + `_of_n`/`_to_n`/`_n_mono` | — | defines fuel | new inductive in `def_subtyping.v` (append; no cascade) |
 | **P5b** | `ad_partial_precise_complete` | partial-precision-complete (1639) | none | induction on `ad_partial_precise`; see §5.1 worked case-plan |
 | **P5c** | `ad_pat_sub_precise_subst` | precision-substitution (1664) | **fuel-preserving** | induction on `ad_pat_sub_n`; uses P5b's precision to rule out mismatch |
 | **P6a** | `a_solve_complete_var` | complete-cc-solving-var (1697) | height IH | induction on `ad_pat_sub_n` deriv; assign-walk / increment-transformer |
@@ -2023,7 +2023,7 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   `S[ψa/α]` vs `S[Pa/α]` against how P6/ForallL build it — finalize when P6
   consumes it).
 - 2026-07-22: **P5a DONE** (axiom-free, full `make coq` green).
-  `ad_pat_sub_n` (fuel mirror, `def_decl_algo_sub.v`, appended — no
+  `ad_pat_sub_n` (fuel mirror, `def_subtyping.v`, appended — no
   cascade into soundness) + `prop_sub_complete.v` with
   `ad_pat_sub_of_n`, `ad_pat_sub_n_succ`, `ad_pat_sub_n_mono`,
   `ad_pat_sub_n_rename_tvar` (fuel-preserving tvar rename, mechanical
@@ -2258,7 +2258,7 @@ Other observations for the statements:
 ### 7.1 P6-Cs execution note (drafted 2026-07-27, after Task A)
 
 Reconnaissance (signatures verified in-tree):
-- Induct on **`ad_pat_consis`** (`Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q`, def_decl_algo.v:52-120;
+- Induct on **`ad_pat_consis`** (`Ψ ⨟ Θ ⊢ᵃᵈ R ∼ Q`, def_consis_refine.v:52-120;
   ctors unit/var/arrow/forall_inh_{tagged,untagged}/forall_syn{_tagged,}/
   ghostg/topholeg/hole/tophole/tophole_inh/tophole_drop/flex_{l,r}).  NO fuel.
 - Conclusion judgments: **`a_lookeq α P P0 C Ξc`** (def_extra.v:330) and
@@ -2272,9 +2272,9 @@ Reconnaissance (signatures verified in-tree):
   (prop_look_complete_var.v:3047 / :480), NOT on the P5 `consis_complete`
   driver (prop_consis_complete.v:8611, which uses `a_inc_equiv`+`msubst_compose`
   optimality — the wrong shape here).  Reuse verbatim: `⊑ᵖ`
-  (`ad_partial_precise`, def_decl_algo_sub.v:221), `a_inc` (`∷⊑`,
+  (`ad_partial_precise`, def_subtyping.v:221), `a_inc` (`∷⊑`,
   def_meta.v:184), `a_inc_equiv` (`κ≡κa`, def_meta.v:245), `a_tags_sort`
-  (def_decorated.v:96), `ad_refine_syn` (`⊢ᵣᵃᵈ`, def_decl_algo.v:126).
+  (def_decorated.v:96), `ad_refine_syn` (`⊢ᵣᵃᵈ`, def_consis_refine.v:126).
 
 **Open DESIGN DECISION to make FIRST — how to encode the subject
 `(κ S)[ψa/α]`.**  Unlike P6-Cv (whose subject `ψsub` is `uskl_rho`-related to

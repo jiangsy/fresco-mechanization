@@ -624,7 +624,7 @@ Proof. induction R; simpl; fsetdec. Qed.
 (*  A PAINTING invents no tag: [ptyp] / [btyp] have no ε slot at all, so   *)
 (*  everything painted out of them is tag-free.  ⚙ Proved here and only   *)
 (*  here.  ⚙ [ptyp_to_uskl_syn] is NOT one of these — it is defined only   *)
-(*  in algo_decl/def_decl_algo.v, so its tag-freeness lives with the  *)
+(*  in algo_decl/def_consis_refine.v, so its tag-freeness lives with the  *)
 (*  rest of its shape facts in algo/prop_pat_sub.v.                        *)
 (* ===================================================================== *)
 

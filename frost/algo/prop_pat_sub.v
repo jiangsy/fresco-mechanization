@@ -24,9 +24,9 @@ Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_swap.
-Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
-Require Import src.frost.algo_decl.def_decl_algo_sub.
+Require Import src.frost.algo_decl.def_subtyping.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_stability.
@@ -275,7 +275,7 @@ Qed.
     [ftag_in_uskl_ptyp_syn] (algo/consis/prop_consis_precise.v) and
     [ftag_in_uskl_ptyp_to_uskl_syn] (algo/sub/look/prop_eq_cstr.v), and the
     latter file could see both.  It sits HERE because [ptyp_to_uskl_syn] is
-    defined in algo_decl/def_decl_algo.v — too late for
+    defined in algo_decl/def_consis_refine.v — too late for
     frost/prop_coercions.v — and this file is upstream of every consumer. *)
 Lemma ftag_ptyp_to_uskl_syn : forall A,
   ftag_in_uskl (ptyp_to_uskl_syn A) [=] empty.

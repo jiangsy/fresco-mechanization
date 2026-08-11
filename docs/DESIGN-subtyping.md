@@ -74,7 +74,7 @@ Declarative side (all with weakening/renaming/subst/trans Qed in `decl/`):
 
 **(D1) `ad_pat_sub`** — fig:decl-subtyping-all's `typsub^N_M[Ψ] Γ ⊢ syn S ⊑
 bid P` transplanted to algorithmic contexts `Θ`, exactly as `ad_pat_consis`
-(def_decl_algo.v:77) transplants `d_pat_consis`: same rules
+(def_consis_refine.v:77) transplants `d_pat_consis`: same rules
 (Infer/Check/ForallR/UnivGhostR/Arrow/ForallL/Ghost/GhostG/UnivGhostL(G)) plus
 the flexible-variable *lookup* rules.  Notes:
 - Signature `a_sub_mode -> mode -> atoms(Ψ) -> aenv -> uskl -> bskl -> Prop`.

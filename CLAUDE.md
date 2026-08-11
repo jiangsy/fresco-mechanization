@@ -222,8 +222,8 @@ mechanization/
 │   │   │                  frost/notations.v; the two were ONE directory named
 │   │   │                  `decorated_algo/` until 2026-08-11, which is exactly
 │   │   │                  what made them easy to confuse)
-│   │   ├── def_decl_algo*.v     (consistency, refinement, subtyping, precision,
-│   │   │                         and — def_decl_algo_typing.v — skeleton
+│   │   ├── def_{consis_refine,subtyping,typing}.v     (consistency, refinement, subtyping, precision,
+│   │   │                         and — def_typing.v — skeleton
 │   │   │                         inference `ad_pat` + syntax-directed typing
 │   │   │                         `ad_sd_typing`, which section D is stated over)
 │   │   ├── prop_ctx_mono.v      (monotonicity along ctx precision)

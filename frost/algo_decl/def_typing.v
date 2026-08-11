@@ -1,8 +1,8 @@
 (** Declarative SKELETON INFERENCE and SYNTAX-DIRECTED TYPING in algorithmic
     contexts (paper app:decl-in-algo-context, fig:declarative-in-algo-context).
 
-    The last missing piece of the [decl-in-algo-context] layer: [def_decl_algo.v]
-    ported consistency / refinement / well-formedness, [def_decl_algo_sub.v]
+    The last missing piece of the [decl-in-algo-context] layer: [def_consis_refine.v]
+    ported consistency / refinement / well-formedness, [def_subtyping.v]
     ported subtyping, and this file ports the two judgements section D's
     soundness and completeness theorems are stated against —
     [d_pat] (skeleton inference) and [d_sd_typing] (syntax-directed typing).
@@ -44,7 +44,7 @@
 
     ⚙ SORTS.  [ad_pat_sub] is the paper's ALL-IN-ONE subtyping box
     [typsub[N][M][Ψ]] — one judgement over [uskl]/[bskl] carrying the paper's
-    N ∈ {TY, SK} as an index (def_decl_algo_sub.v).  So the declarative
+    N ∈ {TY, SK} as an index (def_subtyping.v).  So the declarative
     [d_pat_sub] premises of [d_pat] become [ad_pat_sub] at [a_sub_mode_sk] with
     their sorts unchanged, and the [d_sub] premises of [d_sd_typing] become
     [ad_pat_sub] at [a_sub_mode_ty] with their TYPE sorts painted into the
@@ -64,8 +64,8 @@ Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo_decl.def_decl_algo.
-Require Import src.frost.algo_decl.def_decl_algo_sub.
+Require Import src.frost.algo_decl.def_consis_refine.
+Require Import src.frost.algo_decl.def_subtyping.
 
 Set Implicit Arguments.
 

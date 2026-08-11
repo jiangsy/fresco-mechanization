@@ -225,7 +225,7 @@ subject well-formedness is one of the paper's EXTERNAL side conditions
 the scope of the types its subject mentions.
 
 **The mechanization adds `a_wf_ptyp Θ A` to the rule** (2026-08-10,
-algo_decl/def_decl_algo_typing.v).  It is free on the soundness side —
+algo_decl/def_typing.v).  It is free on the soundness side —
 `a_typing_sound` already carries `a_wf_exp Θ0 e`, which stores exactly this
 for every annotation — and it buys
 
@@ -3249,7 +3249,7 @@ See the two entries above.
 **Where.** `lemma:context-precision-skeleton` (proofs.tex, "Context precision
 preserves skeleton inference") and `thm:complete-skeleton-inference`'s Sub
 case; the declarative-in-algo skeleton-inference rules `P-Unit` / `P-Var` /
-`P-Anno` (`ad_pat`'s base rows, algo_decl/def_decl_algo_typing.v).
+`P-Anno` (`ad_pat`'s base rows, algo_decl/def_typing.v).
 
 **The gap.**  Both proofs invoke `lemma:precision-sub` at a base-term leaf,
 whose external side condition (the paper's usual prose convention) is

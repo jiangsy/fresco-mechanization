@@ -54,10 +54,10 @@ Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.algo.def_extra.
-Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
-Require Import src.frost.algo_decl.def_decl_algo_sub.
-Require Import src.frost.algo_decl.def_decl_algo_typing.
+Require Import src.frost.algo_decl.def_subtyping.
+Require Import src.frost.algo_decl.def_typing.
 Require Import src.frost.algo.pat.prop_soundness_pat.   (* a_wf_exp *)
 Require Import src.frost.algo_decl.prop_conserv.
 Require Import src.cex.cex_ad_pat_join_not_leaf_valid.

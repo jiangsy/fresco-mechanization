@@ -41,9 +41,9 @@ Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_swap.
-Require Import src.frost.algo_decl.def_decl_algo.
-Require Import src.frost.algo_decl.def_decl_algo_sub.
-Require Import src.frost.algo_decl.def_decl_algo_typing.
+Require Import src.frost.algo_decl.def_consis_refine.
+Require Import src.frost.algo_decl.def_subtyping.
+Require Import src.frost.algo_decl.def_typing.
 
 Set Implicit Arguments.
 

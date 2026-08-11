@@ -6,7 +6,7 @@
     This file builds bottom-up, starting at P5b.  ⚙ It used to open with a
     P5a block — the non-hygienic fuel measure [ad_pat_sub_n] and its five
     bridges — which was deleted 2026-08-11 with the judgment it served; see
-    the RESTART NOTE below and in algo_decl/def_decl_algo_sub.v. *)
+    the RESTART NOTE below and in algo_decl/def_subtyping.v. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -23,9 +23,9 @@ Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_swap.
-Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
-Require Import src.frost.algo_decl.def_decl_algo_sub.
+Require Import src.frost.algo_decl.def_subtyping.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_stability.
@@ -43,11 +43,11 @@ Set Implicit Arguments.
 (* ⚙ RESTART NOTE (2026-08-10) — P5a's fuel-measure block ([ad_pat_sub_of_n],
    [ad_pat_sub_n_succ], [ad_pat_sub_n_mono], [ad_pat_sub_n_rename_tvar],
    [ad_pat_sub_to_n]) was DELETED with the [ad_pat_sub_n] judgment it served
-   (algo_decl/def_decl_algo_sub.v — see the note there).  Nothing outside
+   (algo_decl/def_subtyping.v — see the note there).  Nothing outside
    the block ever used it: the completeness track settled on the tag-hygienic
    fuel [ad_pat_sub_g], whose own bridges are [ad_pat_sub_g_of] /
    [ad_pat_sub_gv_forget] / [ad_pat_sub_gv_fuel_weaken]
-   (def_decl_algo_sub.v). *)
+   (def_subtyping.v). *)
 
 (* ===================================================================== *)
 (*  P5b — partial-precision-complete + precision-substitution.            *)
@@ -225,7 +225,7 @@ Qed.
 
 (* ===================================================================== *)
 (*  P5b-ii step (3) — infrastructure over the TAG-HYGIENIC fuel mirror     *)
-(*  [ad_pat_sub_g] (def_decl_algo_sub.v; DESIGN §5.4).                 *)
+(*  [ad_pat_sub_g] (def_subtyping.v; DESIGN §5.4).                 *)
 (* ===================================================================== *)
 
 (** Re-tag under set equality. *)
