@@ -1,0 +1,644 @@
+% =====================================================================
+%  The ghost-capture gap in declarative skeleton consistency.
+%
+%  BUILD (from mechanization/docs/):
+%      TEXINPUTS=../../paper: pdflatex ghost-capture.tex     (twice)
+%  or  make -f Makefile.ghost-capture
+%
+%  Standalone document: it has its own preamble and body, and reuses the
+%  paper's notation by \input-ing paper/macro.tex, so every judgement and
+%  every rule name below is typeset by the paper's own macros.
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,mathtools,amsthm}
+\usepackage{graphicx}
+\usepackage{thmtools}
+\usepackage{mathpartir}
+\usepackage{stmaryrd}
+\usepackage{xspace}
+\usepackage{url}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{tikz}
+\usepackage[normalem]{ulem}
+\usepackage{enumerate}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{halloweenmath}
+\usepackage{trimclip}
+\usepackage{scalerel}[2016/12/29]
+\usepackage[old]{old-arrows}
+\usepackage[ruled, noend]{algorithm2e}
+\usepackage{listings}
+\usepackage{pifont}
+\usepackage{fontawesome}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{cleveref}
+
+\input{macro}
+
+\theoremstyle{definition}
+\newtheorem{factc}{Fact}
+\crefname{factc}{Fact}{Facts}
+\Crefname{factc}{Fact}{Facts}
+
+\newcommand{\coq}[1]{\texttt{\small #1}}
+\newcommand{\defeq}{\mathrel{{:}{=}}}
+\newcommand{\MC}{\textbf{[machine-checked]}\xspace}
+\newcommand{\ARG}{\textbf{[argued]}\xspace}
+
+% the configuration, written once
+\newcommand{\Scex}{\forall\alpha.\Hole}
+\newcommand{\Pcex}{\forall\alpha.\alpha}
+
+\title{The ghost-capture configuration\\
+  \large \Calc{} presupposes that skeleton consistency implies refinement.
+  That presupposition is load-bearing, it is not derivable from the rules,
+  and the mechanisation cannot go on deferring it}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+  \noindent
+\Calc{} declares, in prose, that skeleton consistency presupposes
+  refinement --- ``\emph{skeleton consistency
+  $\typconsis[\Psi]{\Gamma}{\syn{S}}{\bid{P}}$ requires well-formedness
+  of $\syn{S}$ and $\bid{P}$ under $\Gamma$ \textbf{as well as the
+  refinement judgement} $\Gamma \vdash \erase{S}\fill P$}''
+  (\coq{declarative.tex:2074}).  \textbf{This note is not a criticism of
+  that statement; it is a demonstration that it cannot be treated as
+  bookkeeping.}  The mechanisation deferred it --- its own registry
+  records the deferral as ``\emph{it has not bitten yet}''
+  (\coq{docs/WF-SIDE-CONDITIONS.md} \S2) --- and it has now bitten, at
+  the one place the two inference theorems have to cross.
+
+  The presupposition is not implied by the rules.  The consistency rules push a
+  quantifier's bound variable into $\Gamma$; the refinement rules push it
+  into $\Delta$ and then forbid a ghost's fill to mention $\Delta$.  So
+  the rules alone permit exactly the fill the side condition exists to
+  forbid: a ghost \emph{captured} by a quantifier of its own subject.
+  One configuration, $\syn{\Scex}$ against $\syn{\Pcex}$, exhibits it.
+
+  Three consequences follow, each with a Coq witness.  Read without the
+  presupposition, declarative skeleton inference derives
+  $\pati{\Gamma}{x}{\syn{\Pcex}}$ at $\Gamma = x:\Scex$, which no run can
+  produce.  The two inference theorems therefore cannot be restated over
+  the declarative judgements so read.  And the obvious weakening ---
+  exploiting the existential skeleton of \patlab{App} --- does not
+  survive either.
+
+  The repair is to put the paper's own sentence on the rules; no change
+  to any published statement is proposed.  \Cref{sec:repair} gives two
+  renderings and says what each costs, and \Cref{sec:survives} says which
+  of the facts below the repair retracts --- \emph{that they retract is
+  the point}.
+
+  Everything marked \MC is \texttt{Qed} and axiom-free
+  (\texttt{Print Assumptions}: \emph{closed under the global context}).
+\end{abstract}
+
+\begin{center}\fbox{\parbox{0.93\textwidth}{\small
+\textbf{Status (2026-08-11).}  The repair of \Cref{sec:repair} has been
+\textbf{applied}, in the form (R-a): the two presuppositions are now premises
+of the declarative rules.  Everything in
+\Cref{sec:gap,sec:inference,sec:app} describes the judgements read
+\emph{without} them, and under that reading it stands; with them,
+\Cref{fact:pat,fact:bridge,fact:app} are \textbf{retracted}, machine-checked at
+the very configuration that produced them
+(\coq{cap\_d\_pat\_excluded}, \coq{cap\_bridge\_holds}).
+\Cref{fact:consis,fact:refine} are untouched --- see \Cref{sec:survives}.
+
+\smallskip
+What it bought: \coq{d\_pat\_to\_ad} and \coq{d\_sd\_typing\_to\_ad} are
+theorems with \emph{no} hypothesis, and the closed-program completeness
+corollaries are now stated over \Calc's own declarative judgements
+($\sdtypp[\M]{\cdot}{M}{\bid{B}}$ and $\typp[\M]{\cdot}{M}{\bid{B}}$), matching
+the soundness ones.  \coq{make coq} exit 0; 28/28 \texttt{Print Assumptions}
+\emph{closed under the global context}; no \texttt{Admitted}, no
+\texttt{Axiom}.  Cost: two premises, one new judgement
+($\skctx[\Delta]{\Gamma} P \fill Q$, the uncoloured refinement the paper
+already defines at \coq{declarative.tex:1516}) and its three structural
+lemmas.  \emph{No published statement was changed.}}}\end{center}
+
+% =====================================================================
+\section{Summary}\label{sec:summary}
+% =====================================================================
+
+\begin{center}\small
+\begin{tabular}{@{}p{6.1cm}p{3.0cm}p{5.2cm}@{}}
+  \toprule
+  Statement & Status & Coq witness \\
+  \midrule
+  $\typconsis[\cdot]{\Gamma}{\syn{\Scex}}{\syn{\Pcex}}$ is derivable
+    & \MC
+    & \coq{cap\_consis} \\[.4ex]
+  $\skctx[\cdot]{\Gamma}\Scex \fill \Pcex$ is \emph{not}
+    & \MC
+    & \coq{cap\_no\_refine} \\[.9ex]
+  \midrule
+  \emph{hence} the paper's side condition is not derivable from the
+  consistency rules
+    & \MC
+    & the two above \\[.9ex]
+  \midrule
+  $\pati{x:\Scex}{x}{\syn{\Pcex}}$ is derivable declaratively
+    & \MC
+    & \coq{cap\_d\_pat} \\[.4ex]
+  \dots and refuted once the side condition is carried
+    & \MC
+    & \coq{cap\_not\_reachable} \\[.4ex]
+  \emph{hence} declarative skeleton inference does not bridge to the
+  side-condition-carrying one
+    & \MC
+    & \coq{d\_pat\_bridges\_false} \\[.9ex]
+  \midrule
+  \dots and \patlab{App}'s \emph{existentially quantified} skeleton does
+  not repair the bridge
+    & \MC
+    & \coq{d\_pat\_app\_package\_false} \\[.9ex]
+  \midrule
+  the configuration satisfies both conditions of
+  Def.~(problems and solutions of subtyping)
+    & \ARG (\Cref{sec:solutions})
+    & --- \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+Files: \coq{cex/cex\_ad\_pat\_join\_not\_leaf\_valid.v} (the
+configuration) and \coq{cex/cex\_d\_pat\_bridges\_false.v} (the two
+bridge refutations).  \Cref{sec:survives} says which rows of this table
+the repair of \Cref{sec:repair} retracts.
+
+% =====================================================================
+\section{What the paper says}\label{sec:paper}
+% =====================================================================
+
+Four statements, quoted or transcribed, are all this note needs.
+
+\paragraph{(P1) Refinement tracks the subject's own binders, and forbids
+ghosts to use them.}
+\coq{declarative.tex:1422--1452}:
+
+\begin{quote}\itshape
+  We define a skeleton refinement relation
+  $\Gamma \vdash \inh{P}\fillsyn\bid{Q}$ which fills in ghosts on the
+  LHS with synthesised skeletons to obtain the RHS.\ \dots\ given a
+  skeleton $P$, for every ghost in $P$, \textbf{it cannot represent
+  skeletons that use type variables bound in $P$}.\ \dots\ To enforce
+  this requirement, we augment the full judgement form to
+  $\skctx[\Delta]{\Gamma}\inh{P}\fillsyn\bid{Q}$, where the set $\Delta$
+  tracks type variables bound in $P$.
+\end{quote}
+
+\noindent
+The two rules that carry the discipline are
+
+\begin{mathpar}
+\inferrule*[Lab=\text{\scshape R-Forall}]
+{
+  \skctx[\Delta,\alpha]{\Gamma,\alpha} \inh{P}\fillsyn \bid{Q}
+}
+{\skctx[\Delta]{\Gamma}
+  \inh{\forall\alpha.P} \fillsyn \inh{\forall\alpha.}\bid{Q}}
+\and
+\inferrule*[Lab=\text{\scshape R-Ghost}]
+{
+  \Delta\cap\ftv{\syn{Q}} = \emptyset
+}
+{\skctx[\Delta]{\Gamma} \Hole \fillsyn \syn{Q}}
+\end{mathpar}
+
+\noindent
+\emph{The bound variable goes into $\Delta$, and $\Delta$ is what a
+ghost's fill must avoid.}
+
+\paragraph{(P2) Consistency puts the same bound variable somewhere else.}
+\coq{declarative.tex:1966--2045}.  The two rules this note needs are
+
+\begin{mathpar}
+\inferrule*[Lab=\eqlab{ForallSyn}]
+{
+  \typconsis[\Psi]{\Gamma,\alpha}{\syn{S}}{\bid{P}}
+}
+{\typconsis[\Psi]{\Gamma}
+  {\syn{\foralltag{\delta}\alpha.S}}{\syn{\forall\alpha.} \bid{P}}}
+\and
+\inferrule*[Lab=\eqlab{Ghost}]
+{~}
+{\typconsis[\cdot]{\Gamma}{\Hole}{\inh{P}}}
+\end{mathpar}
+
+\noindent
+\eqlab{ForallSyn} puts $\alpha$ into $\Gamma$; \eqlab{Ghost} matches a
+ghost against \emph{any} inherited skeleton.  There is no $\Delta$, so
+nothing stops the $\inh{P}$ of \eqlab{Ghost} from being the $\alpha$ that
+\eqlab{ForallSyn} just bound.
+
+\paragraph{(P3) The side condition that was meant to stop it.}
+\coq{declarative.tex:2073--2075}:
+
+\begin{quote}\itshape
+  Skeleton consistency $\typconsis[\Psi]{\Gamma}{\syn{S}}{\bid{P}}$
+  requires well-formedness of $\syn{S}$ and $\bid{P}$ under $\Gamma$
+  \textbf{as well as the refinement judgement}
+  $\Gamma \vdash \erase{S}\fill P$.
+\end{quote}
+
+\noindent
+This is an \emph{external} requirement in prose, in the style the
+mechanisation registers separately (\coq{docs/WF-SIDE-CONDITIONS.md}
+\S2).  It is exactly the missing $\Delta$ discipline of (P1),
+re-imposed from outside.  \Cref{sec:gap} shows it is not implied by the
+rules.
+
+\paragraph{(P4) Where consistency is consumed.}
+The three base rules of declarative skeleton inference embed the
+skeleton subtyping judgement, which bottoms out in consistency:
+
+\begin{mathpar}
+\inferrule*[Lab=\patlab{Var}]
+{
+  \Gamma\ni x:P \\
+  \patsub[\M][\cdot]{\Gamma}{\syn{P}}{\bid{Q}}
+}
+{\patp[\M]{\Gamma}{x}{\bid{Q}}}
+\and
+\inferrule*[Lab=\sublab{Infer}]
+{
+  \typconsis[\cdot]{\Gamma}{\syn{S}}{\syn{P}}
+}
+{\patsub[\TI][\cdot]{\Gamma}{\syn{S}}{\syn{P}}}
+\end{mathpar}
+
+\noindent
+(\coq{declarative.tex:1634--1653}, \coq{:1897}; \patlab{Unit} and
+\patlab{Anno} are the same shape with $\tunit$ and with the
+annotation's skeleton as subject.)  So a consistency judgement that
+violates (P3) is reachable from skeleton inference in one step.
+
+% =====================================================================
+\section{The gap}\label{sec:gap}
+% =====================================================================
+
+Take the subject and counterpart
+\[
+  \syn{S} \;=\; \syn{\Scex}
+  \qquad\qquad
+  \bid{P} \;=\; \syn{\Pcex}
+\]
+under any $\Gamma$ --- in particular under $\Gamma = \cdot$.  A ghost
+sits directly under a quantifier of its own subject, and the counterpart
+uses that quantifier's variable.
+
+\begin{factc}[the rules accept it]\label{fact:consis} \MC
+  $\typconsis[\cdot]{\Gamma}{\syn{\Scex}}{\syn{\Pcex}}$.
+\end{factc}
+
+\begin{proof}
+  \eqlab{ForallSyn} on $\alpha$, which extends the context to
+  $\Gamma,\alpha$; then \eqlab{Ghost} with $\inh{P} \defeq \alpha$,
+  whose only obligation is $\Gamma,\alpha\vdash\alpha$.
+  (\coq{cap\_consis}.)
+\end{proof}
+
+\begin{factc}[the side condition rejects it]\label{fact:refine} \MC
+  $\skctx[\cdot]{\Gamma}\Scex \fill \Pcex$ does \textbf{not} hold, for
+  any $\Gamma$.
+\end{factc}
+
+\begin{proof}
+  The only rule with a $\forall$ on both sides is \textsc{R-Forall}, and
+  it moves $\alpha$ into $\Delta$.  The residual obligation is
+  $\skctx[\alpha]{\Gamma,\alpha}\Hole\fill\alpha$, and the only rule
+  with $\Hole$ on the left is \textsc{R-Ghost}, whose side condition
+  reads $\{\alpha\}\cap\ftv{\alpha}=\emptyset$.
+  (\coq{cap\_no\_refine}.)
+\end{proof}
+
+\noindent
+So (P3) is a real restriction on the consistency \emph{rules}, not a
+consequence of them.  The mechanism is the asymmetry (P1)/(P2) names:
+
+\begin{center}\small
+\begin{tabular}{@{}lll@{}}
+  \toprule
+  & where a $\forall$-bound $\alpha$ goes & may a ghost's fill use it? \\
+  \midrule
+  consistency, \eqlab{ForallSyn} & $\Gamma$ & yes --- \eqlab{Ghost} has no condition \\
+  refinement, \textsc{R-Forall}  & $\Delta$ & no --- \textsc{R-Ghost} forbids $\Delta$ \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+One caveat, because it is the exception that confirms the rule.  The
+universal ghost $\TopHole$ behaves the \emph{other} way: its refinement
+rule
+$\skctx[\Delta]{\Gamma,\alpha}\TopHole.\inh{P}\fillsyn\bid{Q}
+ \;\Longrightarrow\;
+ \skctx[\Delta]{\Gamma}\TopHole.\inh{P}\fillsyn\syn{\forall\alpha.}\bid{Q}$
+extends $\Gamma$, not $\Delta$.  A universal ghost \emph{is} allowed to
+capture --- that is what generalisation means --- and any repair must
+keep that.  Only $\forall$ (both colours) creates the conflict.
+
+% =====================================================================
+\section{Consequence 1: skeleton inference, as published, outruns the
+  algorithm}\label{sec:inference}
+% =====================================================================
+
+Instantiate \patlab{Var} at $\Gamma = x : \Scex$.  The entry is
+well-formed: a ghost under a quantifier is a legal skeleton.
+
+\begin{factc}\label{fact:pat} \MC
+  $\pati{x:\Scex}{x}{\syn{\Pcex}}$.
+\end{factc}
+
+\begin{proof}
+  \patlab{Var} on $\Gamma\ni x:\Scex$ with \sublab{Infer} on
+  \Cref{fact:consis}.  (\coq{cap\_d\_pat}.)
+\end{proof}
+
+\begin{factc}\label{fact:notreach} \MC
+  Once the base rules carry (P3), the same judgement is
+  \textbf{underivable}.
+\end{factc}
+
+\begin{proof}
+  \patlab{Var} is the only rule for a variable, the singleton context
+  pins the skeleton to $\Scex$, \sublab{Infer} is the only subtyping rule
+  at $\M=\TI$, and its consistency premise now owes
+  \Cref{fact:refine}.  (\coq{cap\_not\_reachable}.)
+\end{proof}
+
+\noindent
+\Cref{fact:notreach} is not hypothetical: the mechanisation's
+decorated judgement $\patp[\M]{\Theta}{M}{\bid{Q}}$ carries (P3) at every
+consistency leaf of the embedded subtyping derivation, because that is
+\textsc{Completeness and optimality of subtyping} needs (\Cref{sec:solutions}).  So the two systems
+disagree, and \Cref{fact:pat} is on the wrong side of the disagreement:
+
+\begin{factc}\label{fact:bridge} \MC
+  There is no bridge
+  $\patp[\M]{\Gamma}{M}{\bid{Q}} \Longrightarrow
+   \patp[\M]{\Theta}{M}{\bid{Q}}$ from the published rules to the
+  side-condition-carrying ones, even assuming $\Gamma$ well-formed and
+  $M$ well-formed in $\Gamma$.  (\coq{d\_pat\_bridges\_false}.)
+\end{factc}
+
+\noindent
+This is why the closed-program corollaries of \textsc{Completeness and
+optimality of skeleton inference} and \textsc{\dots of type inference}
+cannot at present be restated over the published declarative judgements: their completeness halves need exactly this
+bridge.
+
+% =====================================================================
+\section{Consequence 2: \patlab{App}'s existential skeleton does not
+  help}\label{sec:app}
+% =====================================================================
+
+\Cref{fact:bridge} refutes a \emph{pointwise} bridge, and one might hope
+that is an artefact.  \patlab{App} and \sdtylab{App} do not fix the
+argument's skeleton:
+\[
+\inferrule*[Lab=\sdtylab{App}]
+{
+  {\pati{\Gamma}{N}{\syn{P}}} \\
+  {\Gamma \vdash  \inh{P} \fillsyn \bid{A}} \\
+  \sdtypp[\FN \M]{\Gamma}{M}{\bid{A}\to \bid{B}} \\
+  \sdtypc{\Gamma}{N}{\inh{A}}
+}
+{\sdtypp[\M]{\Gamma}{M\;N}{\bid{B}}}
+\]
+so a translation may answer with \emph{some other} $\syn{P'}$, provided
+it still refines into the same $\bid{A}$.  It cannot.
+
+\begin{factc}\label{fact:app} \MC
+  At $\Gamma = x:\Scex$, $N = \Freeze{x}$ and
+  $\bid{A} = \inh{\Pcex}$, the published rules give
+  $\pati{\Gamma}{N}{\syn{\Pcex}}$ together with
+  $\Gamma \vdash \inh{\Pcex}\fillsyn\inh{\Pcex}$; and there is
+  \textbf{no} $\syn{P'}$ at all with
+  $\pati{\Theta}{N}{\syn{P'}}$ and
+  $\Theta \vdash \inh{P'}\fillsyn\inh{\Pcex}$.
+  (\coq{d\_pat\_app\_package\_false}.)
+\end{factc}
+
+\begin{proof}[Proof sketch]
+  \patlab{Freeze} is the only rule for $\Freeze{x}$ and it preserves the
+  skeleton, so $\syn{P'}$ must come from \patlab{Var} at $x:\Scex$, whose
+  side condition (P3) forces $\skctx[\cdot]{\Theta}\Scex\fill P'$.  By
+  \textsc{R-Forall} and \textsc{R-Ghost} that makes $P' = \forall\alpha.Q$
+  with $\alpha\notin\ftv{Q}$ and $Q$ scoped in $\Theta$.  The refinement
+  premise of \sdtylab{App} demands
+  $\skctx[\cdot]{\Theta}\inh{\forall\alpha.Q}\fillsyn\inh{\Pcex}$, whose
+  body obligation is $\skctx[\alpha]{\Theta}\inh{Q}\fillsyn\alpha$ ---
+  and every rule that can produce a bare variable on the right
+  (\textsc{R-Var}, \textsc{R-Ghost}, and the $\TopHole$-removal chain
+  above them) puts $\alpha$ in $\Theta$.  Both cannot hold.
+\end{proof}
+
+\noindent
+The two demands read the \emph{same} binder in opposite directions: the
+side condition wants $P'$'s body free of $\alpha$, the App refinement
+wants it to \emph{be} $\alpha$.  With $\bid{A}$ free there is an answer
+($P' = \Scex$ against $\bid{A} = \inh{\forall\alpha.\tunit}$), so the
+refutation genuinely uses the fact that \sdtylab{App}'s $\bid{A}$ is
+pinned by the function premise.
+
+% =====================================================================
+\section{Why the side condition is at the leaves, and what the solution
+  notions do about it}\label{sec:solutions}
+% =====================================================================
+
+The paper's three problem/solution definitions
+(\coq{algorithmic.tex:392}, \coq{:559}, \coq{:1423}) all attach a
+refinement datum \emph{at the root}.  For subtyping:
+
+\begin{quote}\itshape
+  A subtyping problem is a tuple $(\Theta_0;\N;\M;P_0;P)$ \dots\ A
+  solution to it is a tuple $(\inc[\theta_1]{\Theta_0}{\Theta_1};P_1)$
+  such that $\typsub[\N][\M][]{\Theta_1}{\syn{\theta_1 P}}{\bid{P_1}}$
+  where $\Theta_1 \vdash \inh{\theta_1 P_0}\fillsyn\bid{P_1}$.
+\end{quote}
+
+\noindent
+Two facts about that root datum, both already recorded in the
+mechanisation:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{It does not imply (P3).}  Take the configuration of
+  \Cref{sec:gap} with $P_0 = \Hole$, $\N=\SK$, $\M=\TI$, $\theta_1 =
+  \mathit{id}$.  The join holds by \sublab{Infer} and
+  \Cref{fact:consis}; the root datum
+  $\skctx[\cdot]{\Theta_1}\Hole\fill\Pcex$ holds by \textsc{R-Ghost},
+  since $\Delta = \cdot$ there and the condition
+  $\cdot\cap\ftv{\Pcex}=\emptyset$ is vacuous.  So both solution
+  conditions pass while (P3) fails at the subject.  \ARG
+
+\item \textbf{Moving (P3) to the root instead would be wrong in the other
+  direction.}  Refinement is a lockstep relation, so a root-level
+  subject-refinement premise excludes every solution whose two sides
+  disagree at a head --- that is, precisely \sublab{ForallL},
+  \sublab{ForallR} and \sublab{UnivGhostR}, the rules instantiation and
+  generalisation live in.  \MC
+  (\coq{cex/cex\_p7\_univ\_ghost\_r\_vacuous.v},
+  \coq{cex/cex\_p7\_third\_premise\_forall.v}.)
+\end{enumerate}
+
+\noindent
+Hence the mechanisation carries (P3) where consistency actually
+occurs --- at the \sublab{Infer}, \sublab{Check} and
+\sublab{UnivGhostR} \emph{leaves} of a subtyping derivation, and at the
+domain premise of \sublab{Arrow}, which is itself a consistency call.
+That placement is not a strengthening of the paper: it is the paper's own
+sentence (P3), applied to each consistency judgement the derivation
+contains.
+
+\medskip\noindent
+For the record, the same reading is what makes the augmented
+\textsc{Completeness of consistency} (\coq{consistency-proofs.tex:2230--2242})
+correct: its third solution condition \emph{is} (P3), and the published
+two-condition form is false.
+
+% =====================================================================
+\section{What survives the repair, and what it is for}\label{sec:survives}
+% =====================================================================
+
+Restoring (P3) to the rules makes \Cref{fact:consis} underivable, and
+therefore \Cref{fact:pat} too.  It is worth being explicit about what
+that does to the rest, because the two halves of this note have
+different standing.
+
+\begin{center}\small
+\begin{tabular}{@{}p{7.2cm}p{7.2cm}@{}}
+  \toprule
+  \textbf{Survives the repair} & \textbf{Retracted by the repair} \\
+  \midrule
+  \Cref{fact:consis} + \Cref{fact:refine}: the consistency \emph{rules}
+  derive a pair that refinement rejects.  A statement about the published
+  rules; it is the proof that (P3) is a genuine restriction rather than
+  an derivable convenience, and it is why (P3) may not be dropped.
+  &
+  \Cref{fact:pat}, \Cref{fact:bridge}, \Cref{fact:app}: statements about
+  a skeleton-inference judgement read \emph{without} (P3).  After the
+  repair there is no such judgement, and all three become historical
+  witnesses --- the record of why the presupposition could not be
+  deferred. \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+This is the same shape as the earlier \soleqlab{FlexR} note in this
+directory (\coq{docs/refutations.tex}), whose two refutations were
+retracted by the repair they motivated and kept as its justification.
+
+\medskip\noindent
+Two further points on standing.  First, \emph{no published statement is
+being contradicted}: (P3) is the paper's own sentence, so the repair is a
+transcription, and the facts that retract are facts about the
+mechanisation's debt, not about \Calc.  Second, the repair is confined to
+the \emph{skeleton} sort.  Type consistency
+$\typconsis[\Psi]{\Gamma}{\syn{T}}{\bid{A}}$ ranges over types, which
+have no ghosts, so (P3) holds there for free --- which is exactly why the
+type-sorted half of the bridge is already closed and the skeleton-sorted
+half is not.  \sdtylab{Unit}, \sdtylab{Var} and \sdtylab{Anno} are
+therefore untouched; only \sdtylab{App}, through its
+$\pati{\Gamma}{N}{\syn{P}}$ premise, ever reaches the affected judgement.
+
+% =====================================================================
+\section{The repair}\label{sec:repair}
+% =====================================================================
+
+Put (P3) on the rules.  Two renderings; they differ in where the work
+goes, not in what they exclude.
+
+\paragraph{(R-a) Carry it as a premise.}
+Add $\skctx[\cdot]{\Gamma}\erase{S}\fill P$ to
+$\typconsis[\Psi]{\Gamma}{\syn{S}}{\bid{P}}$ --- as the paper's sentence
+literally says --- and, in the mechanisation, to the consistency-bearing
+rows of skeleton subtyping, mirroring what the decorated judgement
+already does.  This is a transcription of (P3) and nothing more, so it
+cannot exclude anything the paper does not already exclude.  Cost: a
+premise on the rows, and one new obligation wherever a consistency
+derivation is \emph{built}.
+
+\paragraph{(R-b) Make it derivable, by giving consistency the $\Delta$
+that refinement has.}
+Index skeleton consistency by $\Delta$,
+$\typconsis[\Psi]{\skctx[\Delta]{\Gamma}}{\syn{S}}{\bid{P}}$, and:
+\begin{itemize}[leftmargin=*,itemsep=.2ex]
+  \item the four $\forall$ rows (\eqlab{ForallInh}, \eqlab{ForallSyn},
+    tagged and untagged) put $\alpha$ into $\Delta$, not $\Gamma$;
+  \item \eqlab{Var} reads $\Gamma,\Delta\ni\alpha$, as
+    \textsc{R-Var} and skeleton well-formedness already do;
+  \item \eqlab{Ghost}'s $\inh{P}$ is well-formed with $\Delta$
+    \emph{cleared}, matching \textsc{R-Ghost};
+  \item \eqlab{UnivGhost1} keeps extending $\Gamma$ --- see the caveat
+    at the end of \Cref{sec:gap}.
+\end{itemize}
+Then (P3) is a \emph{theorem} about consistency rather than an
+assumption, at arbitrary subjects, and the leaf premises of the
+decorated judgement can be deleted rather than mirrored.
+
+\paragraph{Which.}
+(R-a) is the faithful minimum and is what this note recommends stating in
+the paper; (R-b) is the better mechanisation, because it removes a
+premise instead of adding one and it makes the two judgements' scoping
+disciplines visibly the same.  They should agree, but that has to be
+checked, and there is one known place where they might not: the
+mechanised \textsc{R-TopHoleKeep} carries an explicit
+$\guarded{\bid{Q}}$ that the paper's rule has commented out
+(\coq{declarative.tex:1508}, \coq{docs/WF-SIDE-CONDITIONS.md} \S3), so
+(R-b)'s derivation of (P3) at $\eqlab{UnivGhostG}$ and $\eqlab{UnivGhost}$
+needs that premise or the paper's version of the rule.
+
+\paragraph{What the repair buys.}
+\Cref{fact:pat} stops being derivable, so \Cref{fact:bridge,fact:app}
+evaporate; the published and decorated skeleton-inference judgements
+coincide; and the completeness halves of the two inference theorems can be
+restated over the published declarative system, which is what the
+closed-program corollaries want.
+
+\paragraph{What the repair costs, expressiveness-wise.}
+Exactly the derivations \Cref{fact:refine} rejects: a ghost filled with a
+variable bound by a quantifier of its own skeleton.  No algorithmic run
+produces such a fill --- algorithmic consistency solves ghosts with
+flexible variables scoped before the rigid is introduced --- so nothing
+the implementation accepts is lost.  Whether any \emph{source program}
+relies on one is the authors' question to answer; this note has not found
+one, and \Cref{sec:app}'s analysis suggests the configuration is hard to
+reach from a well-typed term, since a $\forall$-bound ghost can only be
+\emph{refined into} a skeleton, never created by one.
+
+% =====================================================================
+\section{Status}\label{sec:status}
+% =====================================================================
+
+\noindent
+Against \coq{mechanization/} at commit \coq{2cb0179} (branch
+\coq{remech}): \coq{make coq} exit 0, no \texttt{Admitted}, no
+\texttt{Axiom}, and every \texttt{Print Assumptions} in \coq{README.v}
+reads \emph{closed under the global context}.
+
+\medskip\noindent
+Nothing in \Cref{sec:gap,sec:inference,sec:app} depends on a
+mechanisation-only definition: \Cref{fact:consis,fact:refine} are about
+the paper's own consistency and refinement rules, and
+\Cref{fact:pat,fact:notreach,fact:bridge,fact:app} about the paper's
+skeleton inference and \sdtylab{App}.  The one place a
+mechanisation-internal judgement appears is the
+side-condition-carrying skeleton inference of
+\Cref{fact:notreach,fact:app}, and \Cref{sec:solutions} argues that
+judgement \emph{is} the paper's, read with (P3) in force.
+
+\end{document}

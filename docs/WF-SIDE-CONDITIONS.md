@@ -77,17 +77,40 @@ premise is not transportable and the soundness proof's ∀-cases break.
 
 ---
 
-## 2. Skeleton consistency — wf of both sides **AND a refinement premise**. `[WATCH]`
+## 2. Skeleton consistency — wf of both sides **AND a refinement premise**. ✅ `[CARRIED 2026-08-11]`
 
 > declarative.tex:2074 — "Skeleton consistency `Ψ ⨟ Γ ⊨ syn{S} ≈ bid{P}` requires
 > well-formedness of `syn{S}` and `bid{P}` under Γ **as well as the refinement
 > judgement `Γ ⊢ ⌊S⌋ ⊳ P`**."
 
 Note the second half: **consistency presupposes refinement.** The mechanized
-`d_pat_consis` / `ad_pat_consis` do **not** carry this. It has not bitten yet
-(appendix-B soundness went through without it), but any consistency lemma that
-needs to know the two sides are related beyond what the rules say must add it as
-a hypothesis. Check here first when a consistency lemma looks unprovable.
+`d_pat_consis` / `ad_pat_consis` do **not** carry this.
+
+✅ **IT BIT, AND IS NOW CARRIED (2026-08-11).** This entry used to read "it has
+not bitten yet (appendix-B soundness went through without it)". That is retired: the
+deferral is exactly what blocks the completeness half of the closed-program
+corollaries, and it is not a bookkeeping premise — it is **not derivable from
+the consistency rules**. At subject `∀α.◇` and counterpart `∀ˢα.α` the rules
+derive the consistency (`C-ForallSyn` puts `α` into Γ, so `C-Ghost` may fill the
+ghost with it) while refinement rejects it (`R-Forall` puts `α` into Δ, and
+`R-Ghost`'s fill must avoid Δ). Both halves machine-checked:
+`cex/cex_ad_pat_join_not_leaf_valid.v`; the two consequences for skeleton
+inference in `cex/cex_d_pat_bridges_false.v`.
+
+⭐ **ROUTE (A), DONE.** `ad_pat_sub_gv` had always carried it — at each
+consistency LEAF of a subtyping derivation, which is where consistency actually
+occurs. `d_pat_sub`'s three consistency-bearing rows (`Infer`, `UnivGhostR`, the
+`Arrow` domain) now carry it too, over the new uncoloured `d_refine_pskl`
+(`decl/def_extra.v`; the paper defines that sort at `declarative.tex:1516`). The
+`d` and `ad` skeleton-inference judgements therefore agree row for row, which is
+what made `d_pat_to_ad` / `d_sd_typing_to_ad` hypothesis-free. Kit: three
+structural lemmas mirroring `d_refine_syn`'s (`_weakening`, `_subst_unit`,
+`_same_tvar`) plus the ⇄ bridge in `prop_conserv.v` §5. Full statement, in the
+paper's notation: [`ghost-capture.tex`](ghost-capture.tex).
+
+⚠️ **Scope: the SKELETON sort only.** Type consistency ranges over types, which
+have no ghosts, so the condition is free there — which is why the TY half of the
+`d` ⇄ `ad` bridge is closed and the SK half is not.
 
 ---
 

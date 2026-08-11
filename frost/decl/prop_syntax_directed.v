@@ -681,14 +681,41 @@ Proof.
       | eapply d_wf_utyp_same_tvar; eassumption | assumption | apply IHd_sub; assumption ].
 Qed.
 
+(** The UNCOLOURED twin of [d_refine_syn_same_tvar] above — the presupposition
+    the consistency rows carry travels the same way. *)
+Lemma d_refine_pskl_same_tvar : forall Γ Δi P Q,
+    Γ ⨟ Δi ⊢ᵣₚ P ⊳ Q -> forall Γ', same_tvar Γ Γ' -> Γ' ⨟ Δi ⊢ᵣₚ P ⊳ Q.
+Proof.
+  intros Γ Δi P Q H. induction H; intros Γ' Hst.
+  - apply d_refine_pskl__unit.
+  - apply d_refine_pskl__var. destruct H as [HI | Hb];
+      [ left; assumption | right; apply Hst; assumption ].
+  - apply d_refine_pskl__arrow;
+      [ apply IHd_refine_pskl1 | apply IHd_refine_pskl2 ]; assumption.
+  - apply d_refine_pskl__all with (L := L). intros α Hα. apply H0; assumption.
+  - apply d_refine_pskl__hole. eapply d_wf_pskl_same_tvar; eassumption.
+  - apply d_refine_pskl__tophole_remove. apply IHd_refine_pskl; assumption.
+  - apply d_refine_pskl__tophole_fill with (L := L). intros α Hα.
+    apply (H0 α Hα ((α ~ dbind_tvar) ++ Γ')). apply same_tvar_cons. assumption.
+  - apply d_refine_pskl__tophole_keep;
+      [ assumption | apply IHd_refine_pskl; assumption ].
+Qed.
+
 Lemma d_pat_sub_same_tvar : forall m Δ Γ R Q,
     Δ ⨟ Γ ⊢ₛ[ m ] R ⩽ Q -> forall Γ', same_tvar Γ Γ' -> Δ ⨟ Γ' ⊢ₛ[ m ] R ⩽ Q.
 Proof.
   intros m Δ Γ R Q H. induction H; intros Γ' Hst.
-  - apply d_pat_sub__infer; [ assumption | eapply d_pat_consis_same_tvar; eassumption | assumption ].
+  - apply d_pat_sub__infer;
+      [ assumption | eapply d_pat_consis_same_tvar; eassumption | assumption
+      | eapply d_refine_pskl_same_tvar; eassumption ].
   - apply d_pat_sub__univ_ghost_r;
-      [ assumption | assumption | assumption | assumption | eapply d_pat_consis_same_tvar; eassumption ].
-  - eapply d_pat_sub__arg; [ eapply d_pat_consis_same_tvar; eassumption | apply IHd_pat_sub; eassumption | eassumption ].
+      [ assumption | assumption | assumption | assumption
+      | eapply d_pat_consis_same_tvar; eassumption
+      | eapply d_refine_pskl_same_tvar; eassumption ].
+  - eapply d_pat_sub__arg;
+      [ eapply d_pat_consis_same_tvar; eassumption
+      | eapply d_refine_pskl_same_tvar; eassumption
+      | apply IHd_pat_sub; eassumption | eassumption ].
   - eapply d_pat_sub__forall_l_tagged;
       [ eassumption | eassumption | eassumption | eassumption
       | eapply d_wf_uskl_same_tvar; eassumption | assumption | apply IHd_pat_sub; assumption ].
@@ -809,7 +836,12 @@ Lemma d_pat_subst_unit : forall m Γ e Q,
 Proof.
   intros m Γ e Q H. induction H; intros Γ1 α0 Γ2 Heq Hclean; subst; simpl.
   - (* unit: embedded [d_pat_sub] over [Γ1++Γ2] → swap to mapped context. *)
-    apply d_pat__unit.
+    apply d_pat__unit;
+    [ (* the counterpart's wf premise travels exactly like the join *)
+      rewrite bskl_to_pskl_subst_unit;
+      eapply d_wf_pskl_same_tvar;
+        [ eapply d_wf_pskl_subst_unit; [ eassumption | reflexivity ]
+        | apply same_tvar_map_subst_unit ] | ].
     change uskl_unit with (subst_uskl_in_uskl uskl_unit α0 uskl_unit).
     eapply d_pat_sub_same_tvar;
       [ eapply d_pat_sub_subst_unit; [ eassumption | reflexivity ]
@@ -821,7 +853,12 @@ Proof.
       assert (Hb : binds x (dbind_typ A) (Γ1 ++ Γ2)) by (analyze_binds H).
       eapply d_pat__var with (d := dbind_typ (subst_ptyp_in_ptyp ptyp_unit α0 A));
         [ apply binds_typ_subst_unit_dbind; eassumption
-        | reflexivity | ].
+        | reflexivity
+        | (* the counterpart's wf premise travels exactly like the join *)
+      rewrite bskl_to_pskl_subst_unit;
+      eapply d_wf_pskl_same_tvar;
+        [ eapply d_wf_pskl_subst_unit; [ eassumption | reflexivity ]
+        | apply same_tvar_map_subst_unit ] | ].
       rewrite <- ptyp_to_pskl_subst_unit.
       rewrite <- pskl_to_bskl_syn_subst_unit.
       rewrite <- bskl_to_uskl_subst_unit.
@@ -832,7 +869,12 @@ Proof.
       assert (Hb : binds x (dbind_skl P0) (Γ1 ++ Γ2)) by (analyze_binds H).
       eapply d_pat__var with (d := dbind_skl (subst_pskl_in_pskl pskl_unit α0 P0));
         [ apply binds_skl_subst_unit_dbind; eassumption
-        | reflexivity | ].
+        | reflexivity
+        | (* the counterpart's wf premise travels exactly like the join *)
+      rewrite bskl_to_pskl_subst_unit;
+      eapply d_wf_pskl_same_tvar;
+        [ eapply d_wf_pskl_subst_unit; [ eassumption | reflexivity ]
+        | apply same_tvar_map_subst_unit ] | ].
       rewrite <- pskl_to_bskl_syn_subst_unit.
       rewrite <- bskl_to_uskl_subst_unit.
       eapply d_pat_sub_same_tvar;
@@ -841,6 +883,11 @@ Proof.
   - (* anno: embedded sub premise as in unit. *)
     apply d_pat__anno.
     + eapply d_wf_ptyp_subst_unit_ctx; [ eassumption | reflexivity ].
+    + (* the counterpart's wf premise travels exactly like the join *)
+      rewrite bskl_to_pskl_subst_unit;
+      eapply d_wf_pskl_same_tvar;
+        [ eapply d_wf_pskl_subst_unit; [ eassumption | reflexivity ]
+        | apply same_tvar_map_subst_unit ].
     + rewrite <- ptyp_to_pskl_subst_unit.
       rewrite <- pskl_to_bskl_syn_subst_unit.
       rewrite <- bskl_to_uskl_subst_unit.

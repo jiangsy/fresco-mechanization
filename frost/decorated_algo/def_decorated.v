@@ -36,26 +36,11 @@ Reserved Notation "ψ ∼ᵗ Q ⤳ Ψ"
 Reserved Notation "C ⊩ᵗ ψ ⤳ Ψ"
   (at level 75, ψ at level 74, Ψ at level 74, no associativity).
 
-(* ===================================================================== *)
-(*  Erasure  ⌊R⌋ : uskl → pskl  (decorated-algosub.tex:27-38)             *)
-(*  Homomorphic; non-trivial cases: ∀^β1 ↦ ∀, HoleG ↦ □, TopHoleG ↦ ∀◇     *)
-(* ===================================================================== *)
-
-Fixpoint uskl_to_pskl (R : uskl) : pskl :=
-  match R with
-  | uskl_unit => pskl_unit
-  | uskl_var_b n => pskl_var_b n
-  | uskl_var_f α => pskl_var_f α
-  | uskl_arrow R1 R2 => pskl_arrow (uskl_to_pskl R1) (uskl_to_pskl R2)
-  | uskl_all_syn R0 => pskl_all_syn (uskl_to_pskl R0)
-  | uskl_all_etag _ R0 => pskl_all_syn (uskl_to_pskl R0)
-  | uskl_hole => pskl_hole
-  | uskl_tophole R0 => pskl_tophole (uskl_to_pskl R0)
-  | uskl_holeg => pskl_hole
-  | uskl_topholeg R0 => pskl_tophole (uskl_to_pskl R0)
-  end.
-
-Notation "⌊ R ⌋ˢ" := (uskl_to_pskl R) (at level 0, R at level 99).
+(* ⚙ MOVED 2026-08-11 to frost/coercions.v, next to its sibling
+   [bskl_to_pskl].  It had to: the paper's presupposition on skeleton
+   consistency (declarative.tex:2074) is stated at the UNCOLOURED sort, so
+   [decl/def_extra.v] — which is upstream of this file — now needs the
+   erasure.  The notation [⌊R⌋ˢ] moved with it. *)
 
 (** Plain skeletons as (untagged) unresolved skeletons: the embedding used
     by the flexible-variable rules, which are inherited unchanged from the

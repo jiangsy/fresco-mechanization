@@ -219,6 +219,27 @@ Proof.
   - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
 Qed.
 
+(** ⭐ Both erasures commute with substitution.  ⚙ [uskl_to_pskl_subst] used to
+    live in decorated_algo/prop_decorate_sub.v §4; it moved here 2026-08-11 with
+    its conversion (one fact, one name, one file — CLAUDE.md), because
+    decl/def_extra.v now needs the erasure for the paper's presupposition on
+    skeleton consistency and is upstream of that file. *)
+Lemma uskl_to_pskl_subst : forall R Rg β,
+  uskl_to_pskl (subst_uskl_in_uskl Rg β R)
+  = subst_pskl_in_pskl (uskl_to_pskl Rg) β (uskl_to_pskl R).
+Proof.
+  induction R; intros Rg β; simpl; try (f_equal; auto; fail).
+  destruct_if; reflexivity.
+Qed.
+
+Lemma bskl_to_pskl_subst : forall Q Qg β,
+  bskl_to_pskl (subst_bskl_in_bskl Qg β Q)
+  = subst_pskl_in_pskl (bskl_to_pskl Qg) β (bskl_to_pskl Q).
+Proof.
+  induction Q; intros Qg β; simpl; try (f_equal; auto; fail).
+  destruct_if; reflexivity.
+Qed.
+
 Lemma bskl_to_pskl_open : forall Q α,
     bskl_to_pskl (open_bskl_wrt_bskl Q (bskl_var_f α)) =
     open_pskl_wrt_pskl (bskl_to_pskl Q) (pskl_var_f α).

@@ -1,0 +1,8 @@
+# Build the standalone ghost-capture note.  It reuses the paper's notation
+# macros, so pdflatex must see paper/ on its input path.
+ghost-capture.pdf: ghost-capture.tex ../../paper/macro.tex
+	TEXINPUTS=../../paper: pdflatex -interaction=nonstopmode ghost-capture.tex
+	TEXINPUTS=../../paper: pdflatex -interaction=nonstopmode ghost-capture.tex
+
+clean-ghost-capture:
+	rm -f ghost-capture.aux ghost-capture.log ghost-capture.out ghost-capture.pdf

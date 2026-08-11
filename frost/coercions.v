@@ -154,6 +154,27 @@ Fixpoint btyp_to_bskl (B : btyp) : bskl :=
   | btyp_all_inh B0 => bskl_all_inh (btyp_to_bskl B0)
   end.
 
+(* ===================================================================== *)
+(*  Erasure  ⌊R⌋ˢ : uskl → pskl  (decorated-algosub.tex:27-38)            *)
+(*  Homomorphic; non-trivial cases: ∀^β1 ↦ ∀, HoleG ↦ □, TopHoleG ↦ ∀◇     *)
+(* ===================================================================== *)
+
+Fixpoint uskl_to_pskl (R : uskl) : pskl :=
+  match R with
+  | uskl_unit => pskl_unit
+  | uskl_var_b n => pskl_var_b n
+  | uskl_var_f α => pskl_var_f α
+  | uskl_arrow R1 R2 => pskl_arrow (uskl_to_pskl R1) (uskl_to_pskl R2)
+  | uskl_all_syn R0 => pskl_all_syn (uskl_to_pskl R0)
+  | uskl_all_etag _ R0 => pskl_all_syn (uskl_to_pskl R0)
+  | uskl_hole => pskl_hole
+  | uskl_tophole R0 => pskl_tophole (uskl_to_pskl R0)
+  | uskl_holeg => pskl_hole
+  | uskl_topholeg R0 => pskl_tophole (uskl_to_pskl R0)
+  end.
+
+Notation "⌊ R ⌋ˢ" := (uskl_to_pskl R) (at level 0, R at level 99).
+
 Fixpoint bskl_to_pskl (Q : bskl) : pskl :=
   match Q with
   | bskl_unit => pskl_unit

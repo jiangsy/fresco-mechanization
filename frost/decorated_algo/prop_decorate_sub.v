@@ -117,14 +117,8 @@ Qed.
 (*  §4  Erasure commutes with decorated substitution                     *)
 (* ===================================================================== *)
 
-Lemma uskl_to_pskl_subst : forall ψ ψg β,
-  ⌊ subst_uskl_in_uskl ψg β ψ ⌋ˢ
-  = subst_pskl_in_pskl ⌊ ψg ⌋ˢ β ⌊ ψ ⌋ˢ.
-Proof.
-  induction ψ; intros ψg β; simpl; try (f_equal; auto; fail).
-  destruct_if;
-    reflexivity.
-Qed.
+(* ⚙ [uskl_to_pskl_subst] MOVED 2026-08-11 to frost/prop_coercions.v, with its
+   conversion; decl/def_extra.v is upstream of this file and now needs it. *)
 
 (* ===================================================================== *)
 (*  §5  The ρ metasubstitution (rigid vars → decorated skeletons)         *)

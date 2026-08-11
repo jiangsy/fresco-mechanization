@@ -40,6 +40,11 @@ Reserved Notation "Ψ ⨟ Γ ⊢[ M ] C ⩽ B"
 Reserved Notation "Γ ⨟ Δ ⊢ᵣ Q ⊳ P"
   (at level 75, Δ at level 74,
    Q at level 74, P at level 74, no associativity).
+(* ⚙ the UNCOLOURED twin (declarative.tex:1516); [ₚ] is the sort subscript, as
+   in [⊢ₚₛ] — cf. the [ad] layer's [⊢ᵣᵃᵈ] / [⊢ᵣₚᵃᵈ] pair *)
+Reserved Notation "Γ ⨟ Δ ⊢ᵣₚ P ⊳ Q"
+  (at level 75, Δ at level 74,
+   P at level 74, Q at level 74, no associativity).
 Reserved Notation "Ψ ⨟ Γ ⊢ₛ R ∼ Q"
   (at level 75, Γ at level 74, R at level 74, Q at level 74, no associativity).
 Reserved Notation "Ψ ⨟ Γ ⊢ₛ[ M ] R ⩽ Q"
@@ -417,6 +422,61 @@ Inductive d_refine_syn : list (atom * dbind) -> list atom -> bskl -> bskl -> Pro
 where "Γ ⨟ Δ ⊢ᵣ Q ⊳ P" := (d_refine_syn Γ Δ Q P) : type_scope.
 
 (* Check passed *)
+(** ⭐ THE UNCOLOURED DECLARATIVE REFINEMENT [Γ ⨟ Δ ⊢ᵣₚ P ⊳ Q]
+    (declarative.tex:1516 — *"As with well-formedness, we define the refinement
+    of uncoloured skeletons by ignoring colours in the above rules"), which is
+    the sort the paper's own presupposition on skeleton CONSISTENCY is stated
+    at: *"skeleton consistency … requires well-formedness of syn{S} and bid{P}
+    under Γ as well as the refinement judgement Γ ⊢ ⌊S⌋ ⊳ P"*
+    (declarative.tex:2074).
+
+    ⚙ [d_refine_syn] above is the COLOURED one, over [bskl]; it cannot serve,
+    because the presupposition erases both sides ([uskl_to_pskl] on the left,
+    [bskl_to_pskl] on the right) and the two colourings need not agree at a ∀.
+    The [ad] layer has had the uncoloured version all along
+    ([ad_refine_pskl], decorated_algo/def_decl_algo.v); this is its
+    flexible-free twin, and prop_conserv.v §5 relates them.
+
+    ⚠️ [Δ] tracks the type variables bound IN THE SUBJECT, and
+    [d_refine_pskl__hole] clears it: that is the paper's "for every ghost in P,
+    it cannot represent skeletons that use type variables bound in P"
+    (declarative.tex:1433).  [__tophole_fill] extends Γ instead — a UNIVERSAL
+    ghost is allowed to capture, which is what generalisation means. *)
+Inductive d_refine_pskl :
+  list (atom * dbind) -> list atom -> pskl -> pskl -> Prop :=
+| d_refine_pskl__unit : forall Γ Δ,
+    Γ ⨟ Δ ⊢ᵣₚ pskl_unit ⊳ pskl_unit
+| d_refine_pskl__var : forall Γ Δ α,
+    List.In α Δ \/ binds α dbind_tvar Γ ->
+    Γ ⨟ Δ ⊢ᵣₚ (pskl_var_f α) ⊳ (pskl_var_f α)
+| d_refine_pskl__arrow : forall Γ Δ P1 P2 Q1 Q2,
+    Γ ⨟ Δ ⊢ᵣₚ P1 ⊳ Q1 ->
+    Γ ⨟ Δ ⊢ᵣₚ P2 ⊳ Q2 ->
+    Γ ⨟ Δ ⊢ᵣₚ (pskl_arrow P1 P2) ⊳ (pskl_arrow Q1 Q2)
+| d_refine_pskl__all : forall L Γ Δ P Q,
+    (forall α, α `notin` L ->
+       Γ ⨟ (α :: Δ) ⊢ᵣₚ
+         (open_pskl_wrt_pskl P (pskl_var_f α)) ⊳
+         (open_pskl_wrt_pskl Q (pskl_var_f α))) ->
+    Γ ⨟ Δ ⊢ᵣₚ (pskl_all_syn P) ⊳ (pskl_all_syn Q)
+| d_refine_pskl__hole : forall Γ Δ Q,
+    (* Δ CLEARED — the no-capture discipline *)
+    Γ ⨟ nil ⊢ₚₛ Q ->
+    Γ ⨟ Δ ⊢ᵣₚ pskl_hole ⊳ Q
+| d_refine_pskl__tophole_remove : forall Γ Δ P Q,
+    Γ ⨟ Δ ⊢ᵣₚ P ⊳ Q ->
+    Γ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ Q
+| d_refine_pskl__tophole_fill : forall L Γ Δ P Q,
+    (forall α, α `notin` L ->
+       ((α ~ dbind_tvar) ++ Γ) ⨟ Δ ⊢ᵣₚ
+         (pskl_tophole P) ⊳ (open_pskl_wrt_pskl Q (pskl_var_f α))) ->
+    Γ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_all_syn Q)
+| d_refine_pskl__tophole_keep : forall Γ Δ P Q,
+    guarded_pskl Q ->
+    Γ ⨟ Δ ⊢ᵣₚ P ⊳ Q ->
+    Γ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_tophole Q)
+where "Γ ⨟ Δ ⊢ᵣₚ P ⊳ Q" := (d_refine_pskl Γ Δ P Q) : type_scope.
+
 Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
 | d_pat_consis__unit : forall Ψ Γ,
     Ψ [=] empty ->
@@ -495,6 +555,17 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     Ψ [=] empty ->
     empty ⨟ Γ ⊢ₛ R ∼ Q ->
     is_sskl Q ->
+    (* ⭐ [paper-gap] THE PRESUPPOSITION OF SKELETON CONSISTENCY, transcribed.
+       declarative.tex:2074 — *"skeleton consistency requires well-formedness of
+       syn{S} and bid{P} under Γ AS WELL AS the refinement judgement
+       Γ ⊢ ⌊S⌋ ⊳ P"*.  It is NOT derivable from the consistency rules: they put
+       a ∀-bound rigid into Γ, refinement puts it into Δ and forbids a ghost's
+       fill to mention Δ, so the rules alone admit the CAPTURE ∀X.◇ ∼ ∀ˢX.X
+       that refinement rejects (cex/cex_ad_pat_join_not_leaf_valid.v).  The
+       [ad] side has carried it since 2026-08-07 ([ad_pat_sub_gv]); this is the
+       declarative twin, and until it was added the two systems disagreed
+       (cex/cex_d_pat_bridges_false.v).  docs/ghost-capture.tex. *)
+    Γ ⨟ nil ⊢ᵣₚ (uskl_to_pskl R) ⊳ (bskl_to_pskl Q) ->
     Ψ ⨟ Γ ⊢ₛ[ mode_ti ] R ⩽ Q
 | d_pat_sub__univ_ghost_r : forall Γ R Q,
     (* Paper [UnivGhostR] (replaces the out-of-sync [check]; WT review):
@@ -508,10 +579,16 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     guarded_bskl Q ->
     is_sskl Q ->
     empty ⨟ Γ ⊢ₛ R ∼ Q ->
+    (* the presupposition, at the STRIPPED counterpart [Q] — the [∀◇] the rule
+       adds is the conclusion's, not the consistency premise's *)
+    Γ ⨟ nil ⊢ᵣₚ (uskl_to_pskl R) ⊳ (bskl_to_pskl Q) ->
     Ψ ⨟ Γ ⊢ₛ[ mode_tc ] R ⩽ (bskl_tophole Q)
 | d_pat_sub__arg : forall Ψ Ψ1 Ψ2 Γ m R1 R2 Q1 Q2,
     (* Paper [Arrow]: set-union tag context. *)
     Ψ1 ⨟ Γ ⊢ₛ R1 ∼ Q1 ->
+    (* the DOMAIN premise is a consistency judgement, so it carries the
+       presupposition too *)
+    Γ ⨟ nil ⊢ᵣₚ (uskl_to_pskl R1) ⊳ (bskl_to_pskl Q1) ->
     Ψ2 ⨟ Γ ⊢ₛ[ m ] R2 ⩽ Q2 ->
     Ψ [=] Ψ1 `union` Ψ2 ->
     Ψ ⨟ Γ ⊢ₛ[ mode_fn m ] (uskl_arrow R1 R2) ⩽ (bskl_arrow Q1 Q2)
@@ -588,15 +665,29 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
    subtyping judgement is EMBEDDED in the three base rules at every mode —
    there is no standalone P-Sub rule and no base-term restriction. *)
 | d_pat__unit : forall Γ m Q,
+    (* ⭐ [paper-gap] THE COUNTERPART'S WF, the paper's OTHER presupposition
+       for skeleton inference: declarative.tex:1595 — *"we require
+       well-formedness of M and bid{P} under Γ … as well as the compatibility
+       between bidirectional skeletons and modes"* (WF-SIDE-CONDITIONS.md §4).
+       [ad_pat] has carried it on these three rows since 2026-08-07; it is on
+       the declarative twin from 2026-08-11 so the two agree rule for rule.
+       ⚠️ It is NOT derivable from the refinement premise above: refinement's
+       target wf would need the Γ↔Δ exchange, which the [⫯] row breaks (its
+       premise clears Δ), and the paper says so itself — *"it's fine to keep Δ
+       since we already required well-formedness separately"*
+       (declarative.tex:1502). *)
+    Γ ⨟ nil ⊢ₚₛ (bskl_to_pskl Q) ->
     empty ⨟ Γ ⊢ₛ[ m ] uskl_unit ⩽ Q ->
     Γ ⊢ₛ[ m ] exp_unit ⦂ Q
 | d_pat__var : forall Γ m x (P : pskl) d Q,
     binds x d Γ ->
     dbind_to_pskl d = Some P ->
+    Γ ⨟ nil ⊢ₚₛ (bskl_to_pskl Q) ->
     empty ⨟ Γ ⊢ₛ[ m ] (bskl_to_uskl (pskl_to_bskl_syn P)) ⩽ Q ->
     Γ ⊢ₛ[ m ] (exp_var_f x) ⦂ Q
 | d_pat__anno : forall Γ m e (A : ptyp) Q,
     Γ ⊢ₚ A ->
+    Γ ⨟ nil ⊢ₚₛ (bskl_to_pskl Q) ->
     empty ⨟ Γ ⊢ₛ[ m ] (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl A))) ⩽ Q ->
     Γ ⊢ₛ[ m ] (exp_anno e A) ⦂ Q
 | d_pat__freeze : forall Γ e P,

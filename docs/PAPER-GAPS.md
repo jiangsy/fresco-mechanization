@@ -343,7 +343,62 @@ increases out of the same question context carry the same substitution
 (`a_inc_id_msubst_unique`) — which is what lets the run's own identity
 witness stand in for the universally-quantified one.
 
-## ⛔ GAP (2026-08-06) — the SOLUTION notion for the two INFERENCE problems must carry the leaf data, exactly as the consistency one already does
+## ⛔ ⚠️ CORRECTED 2026-08-11 — this entry over-claimed. The paper DOES state the condition; the MECHANIZATION deferred it, and the deferral has now bitten
+
+**Read this correction before the entry below.** The 2026-08-06 text says the
+paper's solution notion for the two inference problems "does not carry the leaf
+data", and that "the paper's own proofs invoke a theorem whose hypothesis they
+have not established". Checked against the sources, both readings are too strong:
+
+1. **The paper's three solution notions all carry a refinement datum** — at the
+   ROOT. `algorithmic.tex:392` (type inference), `:559` (skeleton inference),
+   `:1423` (subtyping) each read "…such that ⟨judgement⟩ **where**
+   `Θ₁ ⊢ inh{θ₁P₀} ⊳ bid{P₁}`". The paper's own `sd-Sub` case
+   (`appendices/proofs.tex:721-730`) transports that datum from the typing
+   problem into the subtyping problem, so its chain is internally consistent.
+2. **And the paper separately states the LEAF condition, as a presupposition on
+   skeleton consistency itself**: `declarative.tex:2073-2075` — "skeleton
+   consistency … requires well-formedness of `syn{S}` and `bid{P}` under Γ **as
+   well as the refinement judgement `Γ ⊢ ⌊S⌋ ⊳ P`**". That is exactly the datum
+   `ad_pat_sub_gv` carries at its consistency leaves. Registered all along in
+   [`WF-SIDE-CONDITIONS.md`](WF-SIDE-CONDITIONS.md) §2 as `[WATCH]`.
+
+So this is **not a defect in the paper's statements**: it is a presupposition the
+paper declares and the mechanization deferred on the `d_` side. What the entry
+below gets RIGHT, and what remains the finding, is that the presupposition is
+**load-bearing and not derivable from the consistency rules** — machine-checked
+at the capture configuration.
+
+✅ **RESOLVED 2026-08-11 by carrying it.** `d_pat_sub`'s three
+consistency-bearing rows and `d_pat`'s three base rows now state the two
+presuppositions (`declarative.tex:2074` and `:1595`), so `d_pat` and `ad_pat`
+agree row for row. `d_pat_to_ad` and `d_sd_typing_to_ad` are hypothesis-free
+theorems, and the closed-program completeness corollaries are stated over the
+paper's own `⊢ˢ` / `⊢` (`a_typing_complete_sd_infer` and its three siblings,
+README.v). ⚠️ **For the authors the finding stands regardless of the mech**: a
+reader who takes the consistency rules at face value gets a system that types
+programs the algorithm provably cannot, so the prose sentence is doing real
+work and should be visible in the figure.
+
+⭐ Two things the correction adds:
+
+- the ROOT datum does **not** imply the leaf one (`P₀ = ◇` makes the root
+  condition vacuous while the subject captures), and moving the leaf condition
+  to the root is wrong in the other direction (`cex_p7_univ_ghost_r_vacuous.v`,
+  `cex_p7_third_premise_forall.v`) — so the leaf placement is forced;
+- the consequences for the `d_` side are machine-checked in
+  `cex/cex_d_pat_bridges_false.v`: skeleton inference read without the
+  presupposition derives `x : ∀α.◇ ⊢ₛ[TI] x ⦂ ∀ˢα.α`, no bridge to the
+  presupposition-carrying judgement exists, and `App`'s existentially quantified
+  skeleton does not repair it.
+
+**Author-facing note, in the paper's notation, with the repair costed:**
+[`ghost-capture.tex`](ghost-capture.tex) — build with
+`make -f Makefile.ghost-capture`.
+
+---
+
+## ⛔ GAP (2026-08-06, superseded by the correction above) — the SOLUTION notion for the two INFERENCE problems must carry the leaf data, exactly as the consistency one already does
 
 `thm:complete-skeleton-inference` and `thm:complete-type-inference` are
 stated over a declarative derivation `Θ ⊢ₛ[M] M ⦂ bid Q` / `typp[M]`, whose

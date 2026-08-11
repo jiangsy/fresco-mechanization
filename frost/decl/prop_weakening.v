@@ -126,6 +126,33 @@ Proof.
   - apply d_refine_syn__tophole_keep; [ assumption | auto ].
 Qed.
 
+(** ⭐ The UNCOLOURED twin.  Same eight rows, same proof — the colours the
+    coloured judgement tracks are exactly what this one drops, and no row's
+    scoping depends on them.  Needed because the paper's presupposition on
+    skeleton consistency (declarative.tex:2074) is stated at this sort. *)
+Lemma d_refine_pskl_weakening : forall Γ1 Γ2 Γ3 Δ P Q,
+    (Γ1 ++ Γ3) ⨟ Δ ⊢ᵣₚ P ⊳ Q ->
+    (Γ1 ++ Γ2 ++ Γ3) ⨟ Δ ⊢ᵣₚ P ⊳ Q.
+Proof.
+  intros Γ1 Γ2 Γ3 Δ P Q H.
+  remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.
+  induction H; intros Γ1 Γ3 Heq; subst Γ.
+  - apply d_refine_pskl__unit.
+  - apply d_refine_pskl__var.
+    match goal with H : _ \/ _ |- _ => destruct H as [HI | Hb] end;
+      [ left; assumption | right; analyze_binds Hb ].
+  - apply d_refine_pskl__arrow; auto.
+  - apply d_refine_pskl__all with (L := L `union` dom (Γ1 ++ Γ3)). intros α Hα.
+    eapply (H0 α ltac:(solve_notin_auto) Γ1 Γ3). reflexivity.
+  - apply d_refine_pskl__hole. apply d_wf_pskl_weakening. assumption.
+  - apply d_refine_pskl__tophole_remove; auto.
+  - apply d_refine_pskl__tophole_fill with (L := L `union` dom (Γ1 ++ Γ3)).
+    intros α Hα.
+    eapply (H0 α ltac:(solve_notin_auto) ((α ~ dbind_tvar) ++ Γ1) Γ3).
+    simpl_env. reflexivity.
+  - apply d_refine_pskl__tophole_keep; [ assumption | auto ].
+Qed.
+
 
 Lemma d_pat_consis_weakening : forall Γ1 Γ2 Γ3 Δ R Q,
     Δ ⨟ (Γ1 ++ Γ3) ⊢ₛ R ∼ Q ->
@@ -170,11 +197,16 @@ Proof.
   intros Γ1 Γ2 Γ3 m Δ R Q H.
   remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.
   induction H; intros Γ1 Γ3 Heq; subst Γ.
-  - apply d_pat_sub__infer; [ assumption | apply d_pat_consis_weakening; assumption | assumption ].
-  - apply d_pat_sub__univ_ghost_r; try assumption.
-    apply d_pat_consis_weakening; assumption.
+  - apply d_pat_sub__infer;
+      [ assumption | apply d_pat_consis_weakening; assumption | assumption
+      | apply d_refine_pskl_weakening; assumption ].
+  - apply d_pat_sub__univ_ghost_r; try assumption;
+      [ apply d_pat_consis_weakening; assumption
+      | apply d_refine_pskl_weakening; assumption ].
   - eapply d_pat_sub__arg;
-      [ apply d_pat_consis_weakening; eassumption | eapply IHd_pat_sub; reflexivity
+      [ apply d_pat_consis_weakening; eassumption
+      | apply d_refine_pskl_weakening; eassumption
+      | eapply IHd_pat_sub; reflexivity
       | eassumption ].
   - eapply d_pat_sub__forall_l_tagged.
     + assumption.
@@ -220,11 +252,15 @@ Lemma d_pat_weakening_mid : forall Γ2 m Γ e Q,
 Proof.
   intros Γ2 m Γ e Q H. induction H; intros Γ1 Γ3 Heq; subst.
   (* Paper P-Unit/P-Var/P-Anno now embed the skeleton-subtyping premise. *)
-  - apply d_pat__unit. apply d_pat_sub_weakening; assumption.
+  - apply d_pat__unit;
+      [ apply d_wf_pskl_weakening; assumption
+      | apply d_pat_sub_weakening; assumption ].
   - apply d_pat__var with (d := d) (P := P);
-      [ analyze_binds H | exact H0 | apply d_pat_sub_weakening; exact H1 ].
+      [ analyze_binds H | exact H0 | apply d_wf_pskl_weakening; exact H1
+      | apply d_pat_sub_weakening; exact H2 ].
   - apply d_pat__anno;
       [ apply d_wf_ptyp_weakening; assumption
+      | apply d_wf_pskl_weakening; assumption
       | apply d_pat_sub_weakening; assumption ].
   - apply d_pat__freeze. apply IHd_pat; reflexivity.
   - apply d_pat__abs with (L := L `union` dom (Γ1 ++ Γ3)) (P := P);

@@ -253,6 +253,59 @@ Proof.
   - apply d_tags_skl__topholeg; assumption.
 Qed.
 
+(** ⚙ The two erasures under [α := 1], in the shape the rows below rewrite
+    with; the general commutations are [uskl_to_pskl_subst] /
+    [bskl_to_pskl_subst] in frost/prop_coercions.v. *)
+Lemma uskl_to_pskl_subst_unit : forall R α,
+  uskl_to_pskl (subst_uskl_in_uskl uskl_unit α R)
+  = subst_pskl_in_pskl pskl_unit α (uskl_to_pskl R).
+Proof. intros R α. rewrite uskl_to_pskl_subst. reflexivity. Qed.
+
+Lemma bskl_to_pskl_subst_unit : forall Q α,
+  bskl_to_pskl (subst_bskl_in_bskl bskl_unit α Q)
+  = subst_pskl_in_pskl pskl_unit α (bskl_to_pskl Q).
+Proof. intros Q α. rewrite bskl_to_pskl_subst. reflexivity. Qed.
+
+(** The UNCOLOURED refinement under [α := 1].  ⚙ Its coloured twin
+    [d_refine_syn_subst_unit] lives in prop_syntax_directed.v, which is
+    downstream; this one is needed HERE, by [d_pat_sub_subst_unit] below, for
+    the presupposition the consistency rows now carry. *)
+Lemma d_refine_pskl_subst_unit : forall Γ Δi P Q,
+    Γ ⨟ Δi ⊢ᵣₚ P ⊳ Q ->
+    forall Γ1 α0 Γ2, Γ = Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2 ->
+    (Γ1 ++ Γ2) ⨟ Δi ⊢ᵣₚ
+      (subst_pskl_in_pskl pskl_unit α0 P) ⊳ (subst_pskl_in_pskl pskl_unit α0 Q).
+Proof.
+  intros Γ Δi P Q H. induction H; intros Γ1 α0 Γ2 Heq; subst; simpl.
+  - apply d_refine_pskl__unit.
+  - destruct_if.
+    + apply d_refine_pskl__unit.
+    + apply d_refine_pskl__var. destruct H as [HI | Hb];
+        [ left; assumption | right; analyze_binds Hb ].
+  - apply d_refine_pskl__arrow;
+      [ eapply IHd_refine_pskl1 | eapply IHd_refine_pskl2 ]; reflexivity.
+  - apply d_refine_pskl__all with (L := L `union` dom (Γ1 ++ Γ2) `union` {{α0}}).
+    intros α2 Hα2.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var
+      by (first [ apply lc_pskl_unit | fsetdec ]).
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var
+      by (first [ apply lc_pskl_unit | fsetdec ]).
+    eapply (H0 α2); [ fsetdec | reflexivity ].
+  - apply d_refine_pskl__hole.
+    eapply d_wf_pskl_subst_unit; [ eassumption | reflexivity ].
+  - apply d_refine_pskl__tophole_remove. eapply IHd_refine_pskl; reflexivity.
+  - apply d_refine_pskl__tophole_fill
+      with (L := L `union` dom (Γ1 ++ Γ2) `union` {{α0}}).
+    intros α2 Hα2.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var
+      by (first [ apply lc_pskl_unit | fsetdec ]).
+    eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2);
+      simpl_env; reflexivity.
+  - apply d_refine_pskl__tophole_keep;
+      [ apply guarded_pskl_subst_unit; assumption
+      | eapply IHd_refine_pskl; reflexivity ].
+Qed.
+
 Lemma d_pat_consis_subst_unit : forall Δ Γ R Q,
     Δ ⨟ Γ ⊢ₛ R ∼ Q ->
     forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
@@ -305,15 +358,25 @@ Lemma d_pat_sub_subst_unit : forall Δ Γ m R Q,
       (subst_uskl_in_uskl uskl_unit α R) ⩽ (subst_bskl_in_bskl bskl_unit α Q).
 Proof.
   intros Δ Γ m R Q H. induction H; intros Γ1 α0 Γ2 Heq; subst.
-  - apply d_pat_sub__infer; [ (assumption || fsetdec) | eapply d_pat_consis_subst_unit; eauto | apply is_sskl_subst_unit; assumption ].
+  - apply d_pat_sub__infer;
+      [ (assumption || fsetdec) | eapply d_pat_consis_subst_unit; eauto
+      | apply is_sskl_subst_unit; assumption
+      | (* the presupposition: the two erasures commute with the substitution *)
+        rewrite uskl_to_pskl_subst_unit, bskl_to_pskl_subst_unit;
+        eapply d_refine_pskl_subst_unit; eauto ].
   - simpl. apply d_pat_sub__univ_ghost_r;
       [ (assumption || fsetdec)
       | apply guarded_uskl_subst_unit; assumption
       | apply guarded_bskl_subst_unit; assumption
       | apply is_sskl_subst_unit; assumption
-      | eapply d_pat_consis_subst_unit; eauto ].
+      | eapply d_pat_consis_subst_unit; eauto
+      | rewrite uskl_to_pskl_subst_unit, bskl_to_pskl_subst_unit;
+        eapply d_refine_pskl_subst_unit; eauto ].
   - simpl. eapply d_pat_sub__arg;
-      [ eapply d_pat_consis_subst_unit; eauto | eapply IHd_pat_sub; eauto | (eassumption || fsetdec) ].
+      [ eapply d_pat_consis_subst_unit; eauto
+      | rewrite uskl_to_pskl_subst_unit, bskl_to_pskl_subst_unit;
+        eapply d_refine_pskl_subst_unit; eauto
+      | eapply IHd_pat_sub; eauto | (eassumption || fsetdec) ].
   - simpl. eapply d_pat_sub__forall_l_tagged with
       (psi := subst_uskl_in_uskl uskl_unit α0 psi);
       [ assumption | eassumption
@@ -398,12 +461,14 @@ Lemma d_pat_subst_var : forall m Γ e Q,
     Γ ⊢ₛ[ m ] (subst_exp_in_exp (exp_var_f y) x e) ⦂ Q.
 Proof.
   intros m Γ e Q H. induction H; intros x0 y0 d0 Huniq Hbx Hby; simpl.
-  - apply d_pat__unit. exact H.
+  - apply d_pat__unit; [ exact H | exact H0 ].
   - (* var *) destruct_if as [Heq | Hne].
     + subst x. assert (d = d0) by (eapply binds_unique; eauto). subst d.
-      apply d_pat__var with (d := d0) (P := P); [ exact Hby | exact H0 | exact H1 ].
-    + apply d_pat__var with (d := d) (P := P); [ exact H | exact H0 | exact H1 ].
-  - (* anno *) apply d_pat__anno; [ exact H | exact H0 ].
+      apply d_pat__var with (d := d0) (P := P);
+        [ exact Hby | exact H0 | exact H1 | exact H2 ].
+    + apply d_pat__var with (d := d) (P := P);
+        [ exact H | exact H0 | exact H1 | exact H2 ].
+  - (* anno *) apply d_pat__anno; [ exact H | exact H0 | exact H1 ].
   - (* freeze *) apply d_pat__freeze. eapply IHd_pat; eauto.
   - (* abs *) apply d_pat__abs with
       (L := L `union` {{x0}} `union` {{y0}} `union` dom Γ) (P := P);

@@ -391,6 +391,62 @@ Check a_typing_complete_check :
     exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
 Print Assumptions a_typing_complete_check.
 
+(* ⭐⭐ …AND OVER THE PAPER'S OWN §DECLARATIVE SYSTEM.  The two entries above
+   read [⊢ᵃᵈ], the decl-in-algo judgement a reader of the paper's declarative
+   figure has never met; these read [⊢ˢ] and [⊢], so soundness and
+   completeness finally meet on the SAME judgement (the soundness corollaries
+   have read [⊢ˢ] / [⊢] since 2026-08-10).
+
+   ⭐ What closed them: the mechanisation stopped deferring the paper's
+   presupposition that skeleton consistency implies refinement
+   (declarative.tex:2074) and the counterpart's well-formedness for skeleton
+   inference (:1595).  Carried on the rules, they make [d_pat] and [ad_pat]
+   agree row for row, so [d_sd_typing_to_ad] needs no hypothesis.  Before that
+   the bridge carried one that was provably FALSE, hence vacuous —
+   docs/ghost-capture.tex, cex/cex_d_pat_bridges_false.v.
+
+   ⚠️ [a_wf_exp nil e] is a real premise here and NOT bookkeeping: it is the
+   same one the soundness corollaries take, and on the declarative side it is
+   not derivable, because [d_sd_typing__anno] states no well-formedness for
+   its annotation (the sd-Anno gap, docs/PAPER-GAPS.md). *)
+Check a_typing_complete_sd_infer :
+  forall e (B : btyp),
+  a_wf_exp nil e ->
+  nil ⊢ˢ[ mode_ti ] e ⦂ B ->
+  exists A1 Θ1,
+    nil ⊢ᵃ[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 /\
+    exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
+Print Assumptions a_typing_complete_sd_infer.
+
+Check a_typing_complete_sd_check :
+  forall e (B : btyp),
+  a_wf_exp nil e ->
+  nil ⊢ˢ[ mode_tc ] e ⦂ B ->
+  exists A1 Θ1,
+    nil ⊢ᵃ[ mode_tc ; (ptyp_to_pskl (btyp_to_ptyp B)) ] e ⦂ A1 ⊣ Θ1 /\
+    exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
+Print Assumptions a_typing_complete_sd_check.
+
+(* …and over the ORIGINAL declarative judgement, through the syntax-directed
+   system's completeness for it ([d_sd_typing_complete]). *)
+Check a_typing_complete_decl_infer :
+  forall e (B : btyp),
+  a_wf_exp nil e ->
+  nil ⊢[ mode_ti ] e ⦂ B ->
+  exists A1 Θ1,
+    nil ⊢ᵃ[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 /\
+    exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
+Print Assumptions a_typing_complete_decl_infer.
+
+Check a_typing_complete_decl_check :
+  forall e (B : btyp),
+  a_wf_exp nil e ->
+  nil ⊢[ mode_tc ] e ⦂ B ->
+  exists A1 Θ1,
+    nil ⊢ᵃ[ mode_tc ; (ptyp_to_pskl (btyp_to_ptyp B)) ] e ⦂ A1 ⊣ Θ1 /\
+    exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
+Print Assumptions a_typing_complete_decl_check.
+
 (* --- the two section-D lemmas the paper states in its own right -------- *)
 
 (* Lemma [Precision extends skeleton subtyping]  lemma:precision-sub *)

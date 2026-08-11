@@ -41,7 +41,16 @@ mechanization.)  Corrected 2026-08-09.
     `Check`ed in `README.v`.
   - ⭐⭐⭐ Type-inference COMPLETENESS (section D,
     thm:complete-type-inference): `a_typing_complete` — Qed, axiom-free,
-    `Check`ed in `README.v`.  Its one unrecorded prerequisite was
+    `Check`ed in `README.v`.  ⭐⭐ **At a CLOSED program it is now stated over
+    the paper's own declarative judgements** (`· ⊢ˢ[M] e ⦂ B` and
+    `· ⊢[M] e ⦂ B`), matching the soundness corollaries:
+    `a_typing_complete_sd_infer` / `_sd_check` / `_decl_infer` / `_decl_check`.
+    What closed them (2026-08-11) was carrying two presuppositions the paper
+    states in PROSE and the mech had deferred — skeleton consistency implies
+    refinement (`declarative.tex:2074`) and the counterpart is well-formed
+    (`:1595`).  ⚠️ The first is NOT derivable from the consistency rules; read
+    without it, declarative skeleton inference types programs no run can
+    produce.  Author-facing note: [`docs/ghost-capture.tex`](docs/ghost-capture.tex).  Its one unrecorded prerequisite was
     `a_split_complete_tc`, completeness of SPLITTING at check mode (the
     paper's AbsCheck subcase 2); the suffix-discarding rows' scoping
     premise comes from `algo/typing/prop_scope.v`.
@@ -111,6 +120,7 @@ mechanization.)  Corrected 2026-08-09.
 | [`Makefile`](Makefile) | ott + lngen + coq pipeline; `coq` / `quick` / `clean` / `sync-paper-refs` targets |
 | [`scripts/sync_paper_refs.py`](scripts/sync_paper_refs.py) | Sync paper Lemma / Theorem numbers from `paper/frost.aux` into .v comments and the auto-managed reference-link block in `PROGRESS.md`. Run via `make sync-paper-refs` or `make sync-paper-refs-md`. |
 | [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md) | Canonical registry of everything the paper's authors should see (gaps, prose-completions, refuted statements) |
+| [`docs/ghost-capture.tex`](docs/ghost-capture.tex) | **Author-facing note, in the paper's own notation**: the ghost-capture configuration — the consistency rules derive a pair that refinement rejects, so the paper's prose presupposition on skeleton consistency (`declarative.tex:2074`) is load-bearing and not derivable. Two refutations it forced (both since retracted BY the repair, and kept as its justification), and what the repair costs. Build: `make -f Makefile.ghost-capture` from `docs/` |
 | [`docs/refutations.tex`](docs/refutations.tex) | **Author-facing note, in the paper's own notation**: the two machine-checked refutations (Lemma E.17 Look completeness; Theorem 4.6 Completeness of subtyping), the shared configuration, the diagnosis (`SolE-FlexR` discards the accumulated pattern) and the suggested repair. Build: `make -f Makefile.refutations` from `docs/`, or `TEXINPUTS=../../paper: pdflatex refutations.tex` |
 | [`docs/WF-SIDE-CONDITIONS.md`](docs/WF-SIDE-CONDITIONS.md) | **Read before mechanizing any refinement / consistency / subtyping / skeleton-inference lemma.** The paper states well-formedness (and sometimes a further judgment) as an EXTERNAL requirement in prose, and its rules then omit the side conditions it would supply. Several judgments look FALSE until that condition is restored. |
 | [`docs/HANDOFF-closed-corollaries-declarative.md`](docs/HANDOFF-closed-corollaries-declarative.md) | **ACTIVE hand-off**: state the closed-program corollaries against `d_sd_typing` / `d_typing` instead of `ad_sd_typing`. ⭐ SOUNDNESS LANDED 2026-08-10 via the conservativity bridge `decorated_algo/prop_conserv.v`. ⭐ 2026-08-11 the TAG-HYGIENE blocker is CLOSED — all four subtyping judgements now read the paper's `fresh Ψ'` the same, GLOBAL way. ⛔ COMPLETENESS still open, blocked by ONE thing: the leaf-valid datum at a ghosty subject (`cex/cex_ad_pat_join_not_leaf_valid.v`) |

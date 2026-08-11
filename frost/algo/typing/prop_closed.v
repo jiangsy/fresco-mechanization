@@ -72,6 +72,7 @@ Require Import src.frost.algo.typing.prop_shape.
 Require Import src.frost.algo.typing.prop_scope.
 Require Import src.frost.algo.typing.prop_completeness_typing.
 Require Import src.frost.decorated_algo.prop_conserv.
+Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.decl.prop_syntax_directed.
 
 Set Implicit Arguments.
@@ -275,4 +276,79 @@ Proof.
     by (rewrite <- HB; reflexivity).
   rewrite <- pskl_to_bskl_inh_ptyp.
   apply ad_refine_syn_refl_inh. apply a_wf_ptyp_to_wf_pskl. exact HwfB.
+Qed.
+
+(* ===================================================================== *)
+(*  ⭐ THE COMPLETENESS COROLLARIES OVER THE PAPER'S OWN DECLARATIVE       *)
+(*  SYSTEM.                                                               *)
+(*                                                                        *)
+(*  The two corollaries above read the decl-in-algo judgement [⊢ᵃᵈ], which *)
+(*  a reader of the paper's §declarative figure has never met.  These read *)
+(*  [⊢ˢ] and [⊢], matching what the SOUNDNESS corollaries already deliver, *)
+(*  so soundness and completeness now meet on the same judgement.         *)
+(*                                                                        *)
+(*  ⚙ What made this possible: [d_sd_typing_to_ad]                        *)
+(*  (decorated_algo/prop_conserv.v §15) is unconditional since 2026-08-11, *)
+(*  when [d_pat_sub] / [d_pat] took on the two presuppositions the paper   *)
+(*  states in prose and the mechanisation had deferred (declarative.tex:   *)
+(*  2074 and :1595).  Before that the bridge carried a hypothesis that was *)
+(*  provably FALSE, so it said nothing.  docs/ghost-capture.tex.           *)
+(*                                                                        *)
+(*  ⚠️ [a_wf_exp nil e] is a real premise here, not bookkeeping, and it is  *)
+(*  the SAME one the soundness corollaries take.  On the [ad] side it was  *)
+(*  free ([ad_sd_typing_wf_exp]); on the declarative side it is not,       *)
+(*  because [d_sd_typing__anno] states no well-formedness for its          *)
+(*  annotation — the [sd-Anno] gap, docs/PAPER-GAPS.md.                    *)
+(* ===================================================================== *)
+
+(** ⭐ Completeness + optimality at a closed program, INFERENCE mode, stated
+    over the paper's syntax-directed declarative judgement. *)
+Corollary a_typing_complete_sd_infer : forall e (B : btyp),
+  a_wf_exp nil e ->
+  nil ⊢ˢ[ mode_ti ] e ⦂ B ->
+  exists A1 Θ1,
+    nil ⊢ᵃ[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 /\
+    exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
+Proof.
+  intros e B Hwfe Hd.
+  apply a_typing_complete_infer.
+  exact (d_sd_typing_to_ad mode_ti nil e B Hd d_wf_denv__nil Hwfe).
+Qed.
+
+Corollary a_typing_complete_sd_check : forall e (B : btyp),
+  a_wf_exp nil e ->
+  nil ⊢ˢ[ mode_tc ] e ⦂ B ->
+  exists A1 Θ1,
+    nil ⊢ᵃ[ mode_tc ; (ptyp_to_pskl (btyp_to_ptyp B)) ] e ⦂ A1 ⊣ Θ1 /\
+    exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
+Proof.
+  intros e B Hwfe Hd.
+  apply a_typing_complete_check.
+  exact (d_sd_typing_to_ad mode_tc nil e B Hd d_wf_denv__nil Hwfe).
+Qed.
+
+(** …and over the ORIGINAL declarative judgement [⊢], through
+    [d_sd_typing_complete] (the syntax-directed system is complete for it). *)
+Corollary a_typing_complete_decl_infer : forall e (B : btyp),
+  a_wf_exp nil e ->
+  nil ⊢[ mode_ti ] e ⦂ B ->
+  exists A1 Θ1,
+    nil ⊢ᵃ[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 /\
+    exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
+Proof.
+  intros e B Hwfe Hd.
+  apply a_typing_complete_sd_infer;
+    [ exact Hwfe | apply d_sd_typing_complete; [ exact Hd | apply d_wf_denv__nil ] ].
+Qed.
+
+Corollary a_typing_complete_decl_check : forall e (B : btyp),
+  a_wf_exp nil e ->
+  nil ⊢[ mode_tc ] e ⦂ B ->
+  exists A1 Θ1,
+    nil ⊢ᵃ[ mode_tc ; (ptyp_to_pskl (btyp_to_ptyp B)) ] e ⦂ A1 ⊣ Θ1 /\
+    exists ζ, ζ ∷ Θ1 ⊑ nil /\ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B).
+Proof.
+  intros e B Hwfe Hd.
+  apply a_typing_complete_sd_check;
+    [ exact Hwfe | apply d_sd_typing_complete; [ exact Hd | apply d_wf_denv__nil ] ].
 Qed.

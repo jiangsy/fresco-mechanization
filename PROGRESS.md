@@ -238,6 +238,60 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-08-11 (night) — ⭐⭐⭐ **THE GHOST-CAPTURE REPAIR: two presuppositions the paper states in prose go ON the declarative rules, and TYPE-INFERENCE COMPLETENESS CLOSES OVER `⊢ˢ` / `⊢`**
+
+**`make coq` exit 0; README.v 28/28 `Print Assumptions` closed; no `Admitted`, no `Axiom`.**
+
+The one remaining hypothesis of the entry below (`d_pat_bridges`) turned out to
+be **FALSE**, which made `d_sd_typing_to_ad` *vacuous*. Diagnosing why produced
+the repair.
+
+- ⭐ **THE DIAGNOSIS.** The leaf-valid datum `Θ ⨟ ∅ ⊢ᵣₚᵃᵈ ⌊R⌋ˢ ⊳ ⌊Q⌋` that
+  `ad_pat_sub_gv` carries is **the paper's own presupposition on skeleton
+  consistency** — `declarative.tex:2074`, *"skeleton consistency … requires
+  well-formedness of `syn{S}` and `bid{P}` under Γ **as well as the refinement
+  judgement `Γ ⊢ ⌊S⌋ ⊳ P`**"* — which `docs/WF-SIDE-CONDITIONS.md` §2 had
+  recorded as deferred (*"it has not bitten yet"*). It bit.
+- ⚠️ **It is NOT derivable from the consistency rules**, and that is the finding
+  for the authors: consistency's ∀-rows put the bound rigid into **Γ** while
+  refinement's put it into **Δ** and forbid a ghost's fill to mention Δ. At
+  subject `∀X.◇` vs counterpart `∀ˢX.X` the rules derive the consistency
+  (`cap_consis`) and refinement rejects it (`cap_no_refine`).
+- ⭕ Two machine-checked refutations forced the diagnosis and are now
+  **retracted by the repair**, at the configuration that produced them
+  (`cex/cex_d_pat_bridges_false.v`): the pointwise `d_pat → ad_pat` bridge, and
+  the App **package** with the skeleton EXISTENTIALLY quantified — the latter
+  because the leaf datum wants the answer's body free of the ∀-bound rigid
+  while App's refinement wants it to *be* that rigid.
+
+**What changed** (no published statement altered):
+
+| where | what |
+|---|---|
+| `decl/def_extra.v` | NEW `d_refine_pskl` — the UNCOLOURED refinement, which the paper defines at `declarative.tex:1516` and the presupposition is stated at; `d_refine_syn` (coloured) cannot serve, the two paintings disagree at a ∀ |
+| `decl/def_extra.v` | `d_pat_sub`'s three consistency-bearing rows (`Infer`, `UnivGhostR`, `Arrow`'s domain) gain the presupposition — exactly the rows `ad_pat_sub_gv` decorates |
+| `decl/def_extra.v` | `d_pat`'s three base rows gain the counterpart's wf (`declarative.tex:1595`), which `ad_pat` has carried since 2026-08-07 |
+| `prop_weakening.v` / `prop_skeleton.v` / `prop_syntax_directed.v` | the `d_refine_pskl` kit: `_weakening`, `_subst_unit`, `_same_tvar`, mirroring `d_refine_syn`'s three |
+| `prop_conserv.v` §5 | `d_refine_pskl` ⇄ `ad_refine_pskl` |
+| `prop_conserv.v` §7 | `ad_pat_sub_sk_to_d` **deleted** (false now) → `ad_pat_sub_gv_sk_to_d`, from the leaf-valid mirror, which is what `ad_pat` embeds anyway |
+| `prop_conserv.v` §7 | NEW `d_pat_sub_to_ad_gv` / `_v` — ⚙ the fuel is easy at SK: `d_pat_sub` has no cofinite row, so no renaming (unlike §13's TY twin) |
+| `prop_conserv.v` §15 | ⭐ `d_pat_to_ad` — the bridge that used to be ASSUMED, now a hypothesis-free induction; `d_sd_typing_to_ad` loses its hypothesis |
+| `prop_closed.v` | ⭐⭐ `a_typing_complete_sd_infer` / `_sd_check` / `_decl_infer` / `_decl_check` |
+| `frost/coercions.v` | `uskl_to_pskl` (+ `⌊·⌋ˢ`) MOVED from `decorated_algo/def_decorated.v`, and `uskl_to_pskl_subst` from `prop_decorate_sub.v` — `decl/def_extra.v` is upstream of both and now needs the erasure |
+
+⚙ **Blast radius, measured**: 13 constructor sites for `d_pat_sub`'s three rows
+and 10 for `d_pat`'s. Everything else in the 39-file development compiled
+untouched — including all four section-D theorems.
+
+⚠️ `a_wf_exp nil e` is a real premise of the completeness corollaries (the same
+one soundness takes). On the `ad` side it was free; on the declarative side it
+is not, because `d_sd_typing__anno` states no wf for its annotation — the
+sd-Anno gap.
+
+Author-facing note, in the paper's own notation:
+[`docs/ghost-capture.tex`](docs/ghost-capture.tex)
+(`make -f Makefile.ghost-capture` from `docs/`).
+
 ## 2026-08-11 (evening) — ⭐⭐ **`d_sd_typing` → `ad_sd_typing` IS PROVED IN GENERAL FORM, reduced to ONE hypothesis**
 
 `d_sd_typing_to_ad` (`decorated_algo/prop_conserv.v` §15), over an ARBITRARY Γ:
