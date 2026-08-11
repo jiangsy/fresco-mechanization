@@ -654,6 +654,21 @@ Proof.
   apply Hd. apply degree_btyp_wrt_btyp_of_lc_btyp. assumption.
 Qed.
 
+(** …and back: erasure preserves STRUCTURE, so it reflects local closure too.
+    ⚙ Same degree argument as above, run the other way; needed where a rule
+    states its domain as a [btyp] but its well-formedness as the erasure's
+    ([d_sd_typing__abs_anno]). *)
+Lemma lc_btyp_of_lc_ptyp_erase : forall B,
+    lc_ptyp (btyp_to_ptyp B) -> lc_btyp B.
+Proof.
+  intros B H. apply lc_btyp_of_degree.
+  assert (forall k, degree_ptyp_wrt_ptyp k (btyp_to_ptyp B) ->
+                    degree_btyp_wrt_btyp k B) as Hd.
+  { clear H. induction B; intros k Hn; simpl in *; inversion Hn; subst;
+      constructor; auto. }
+  apply Hd. apply degree_ptyp_wrt_ptyp_of_lc_ptyp. assumption.
+Qed.
+
 Lemma d_wf_utyp_painting_syn_btyp : forall Γ B,
     d_wf_btyp Γ B -> d_wf_utyp Γ (ptyp_to_utyp_syn (btyp_to_ptyp B)).
 Proof.

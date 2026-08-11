@@ -309,6 +309,47 @@ Proof.
 Qed.
 
 
+(** ⭐ …and so is its [btyp] side.  ⚙ The [lc] twin of [d_consis_wf] /
+    [d_sub_wf]: those need the subject WELL-SCOPED and give well-scopedness
+    back, which is more than a caller who only wants to build an
+    [a_tyequiv__refl] can pay.  Kept GENERAL in Γ and Δ — the closed instance
+    would hide exactly the side conditions a bridge has to surface. *)
+Lemma d_consis_lc_btyp : forall Δ Γ C B,
+    Δ ⨟ Γ ⊢ C ∼ B -> lc_utyp C -> lc_btyp B.
+Proof.
+  intros Δ Γ C B H. induction H; intros Hlc.
+  - apply lc_btyp_unit.
+  - apply lc_btyp_var_f.
+  - inversion Hlc; subst. apply lc_btyp_arrow; auto.
+  - inversion Hlc; subst. pick fresh α.
+    apply lc_btyp_all_inh_exists with (α1 := α). apply H0; auto.
+  - inversion Hlc; subst. pick fresh α.
+    apply lc_btyp_all_inh_exists with (α1 := α). apply H0; auto.
+  - inversion Hlc; subst. pick fresh α.
+    apply lc_btyp_all_syn_exists with (α1 := α). apply H0; auto.
+  - inversion Hlc; subst. pick fresh α.
+    apply lc_btyp_all_syn_exists with (α1 := α). apply H0; auto.
+Qed.
+
+Lemma d_sub_lc_btyp : forall m Δ Γ C B,
+    Δ ⨟ Γ ⊢[ m ] C ⩽ B -> lc_utyp C -> lc_btyp B.
+Proof.
+  intros m Δ Γ C B H. induction H; intros Hlc.
+  - eapply d_consis_lc_btyp; eassumption.
+  - eapply d_consis_lc_btyp; eassumption.
+  - pick fresh α. apply lc_btyp_all_inh_exists with (α1 := α).
+    apply H1; [ solve_notin_auto | exact Hlc ].
+  - inversion Hlc; subst. apply lc_btyp_arrow;
+      [ eapply d_consis_lc_btyp; eassumption | auto ].
+  - (* forall_l: the premise's subject is the body opened by [ph] *)
+    inversion Hlc; subst. apply IHd_sub.
+    apply lc_body_utyp_wrt_utyp;
+      [ intro α; auto | eapply d_wf_utyp_lc; eassumption ].
+  - inversion Hlc; subst. apply IHd_sub.
+    apply lc_body_utyp_wrt_utyp;
+      [ intro α; auto | eapply d_wf_utyp_lc; eassumption ].
+Qed.
+
 (** A guarded middle forces a guarded source: consistency against a guarded
     ([unit]/[var]/[arrow]) erasure leaves no room for a forall on the LHS. *)
 Lemma d_consis_guarded_lhs : forall Δ Γ Csrc C,

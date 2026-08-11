@@ -238,6 +238,48 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-08-11 (evening) — ⭐⭐ **`d_sd_typing` → `ad_sd_typing` IS PROVED IN GENERAL FORM, reduced to ONE hypothesis**
+
+`d_sd_typing_to_ad` (`decorated_algo/prop_conserv.v` §15), over an ARBITRARY Γ:
+
+```coq
+d_sd_typing M Γ e B -> d_wf_denv Γ -> a_wf_exp (denv_to_aenv Γ) e ->
+d_pat_bridges -> ad_sd_typing M (denv_to_aenv Γ) e B
+```
+
+Every rule but App is discharged.  `d_pat_bridges` is obstruction (A), stated:
+`forall M Γ e Q, d_pat M Γ e Q -> … -> ad_pat M (denv_to_aenv Γ) e Q`.
+
+⭐ **STATED GENERAL ON PURPOSE.**  At `Γ = ·` both side conditions below are
+free, so a closed-only statement would have hidden them — and one of them is a
+real finding about the paper's §declarative figure, not bookkeeping:
+
+1. ⚠️ **`d_sd_typing__anno` states NO well-formedness of its annotation**, while
+   its four type-carrying siblings (`__abs`, `__abs_anno`, `__abs_check_base`,
+   `__abs_anno_check_base`) all state `Γ ⊢ₚ A`, and `ad_sd_typing__anno` demands
+   `a_wf_ptyp Θ A`.  It is NOT recoverable from the derivation, so the bridge
+   carries `a_wf_exp (denv_to_aenv Γ) e` — the paper's ambient "all inputs are
+   well-formed", in exactly the shape the `ad` side EXHIBITS
+   (`ad_sd_typing_wf_exp`).  docs/WF-SIDE-CONDITIONS.md.
+2. `d_wf_denv Γ`, which only the Var row consults.
+
+⭐ **NEW, and general: the declarative target-lc chain** — `d_consis_lc_btyp`
+and `d_sub_lc_btyp` (decl/prop_general_subsumption.v) and
+`d_sd_typing_target_lc` (decl/prop_syntax_directed.v), the declarative
+counterpart of `ad_sd_typing_target_wf`.  ⚙ These are the `lc` twins of
+`d_consis_wf` / `d_sub_wf`: those need the subject WELL-SCOPED and give
+well-scopedness back, which is more than a caller who only wants to build an
+`a_tyequiv__refl` can pay — and `a_tyequiv__refl` is what the appendix's four
+type-EQUIVALENCE premises reduce to over a flexible-free Θ.  Also
+`lc_btyp_of_lc_ptyp_erase` (prop_wellformed.v): erasure preserves STRUCTURE, so
+it reflects local closure too.
+
+⚙ **Traps**: `subst` after inverting `a_wf_exp` at `sd-AbsAnno` uses the rule's
+own `btyp_to_ptyp B1 = A` to eliminate `A`, so the reconstruction must name
+`btyp_to_ptyp B1` instead (the "subst eats rule premises" trap again).  And
+`ad_sd_typing__freeze`'s premise type `B` is not determined by its conclusion —
+`apply` needs `with (B := A)`.
+
 ## 2026-08-11 (later still) — ⚙ **`prop_conserv.v` MOVED to `decorated_algo/`**, where a `d_` ⇄ `ad_` bridge belongs
 
 The conservativity bridge was filed under `algo/typing/` when it was written,

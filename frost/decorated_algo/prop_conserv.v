@@ -76,6 +76,7 @@ Require Import src.frost.decorated_algo.def_decorated.
 Require Import src.frost.decorated_algo.def_decl_algo.
 Require Import src.frost.decorated_algo.def_decl_algo_sub.
 Require Import src.frost.decorated_algo.def_decl_algo_typing.
+Require Import src.frost.decorated_algo.prop_ctx_mono.   (* aenv_tbinds_le *)
 Require Import src.frost.algo.prop_pat_sub.   (* uskl_ghost_free_open_gen *)
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.consis.prop_soundness_consis.
@@ -1680,34 +1681,167 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §15  THE TYPING BRIDGE, [d_sd_typing] -> [ad_sd_typing] — WHAT IS     *)
-(*  LEFT, now that both TY-sort directions are closed.                     *)
+(*  §15  THE TYPING BRIDGE, [d_sd_typing] -> [ad_sd_typing], REDUCED TO   *)
+(*  SKELETON INFERENCE.                                                   *)
 (*                                                                        *)
-(*  ⚙ RESTART NOTE (2026-08-11).  The assembly was drafted and parked:     *)
-(*  every rule but App reduces to §13-§14 plus reflexivity of              *)
-(*  [a_tyequiv] (the appendix's four equivalence premises are trivial over *)
-(*  a flexible-free Θ, §1), and the binder rows only need [a_wf_exp_mono]  *)
-(*  to push the term-level hypothesis under a term entry.  Three things    *)
-(*  it still needs, none of them obstruction (A):                          *)
+(*  ⭐ Every rule but App goes through.  What the algorithmic rules ask    *)
+(*  for beyond the declarative ones is:                                   *)
+(*   - the LEAF-VALID join, which §13-§14 supply at [N = TY];             *)
+(*   - the appendix's four type-EQUIVALENCE premises, which are           *)
+(*     [a_tyequiv__refl] over a flexible-free Θ (§1) and so need only     *)
+(*     [lc_ptyp] — [d_sd_typing_target_lc], decl/prop_syntax_directed.v;  *)
+(*   - [a_wf_ptyp Θ A] on [sd-Anno].  ⚠️ [d_sd_typing__anno] states NO     *)
+(*     well-formedness (its four type-carrying siblings do), so this one  *)
+(*     is NOT recoverable from the derivation.  It is carried as the      *)
+(*     paper's ambient "all inputs are well-formed", in exactly the shape *)
+(*     the [ad] side EXHIBITS ([ad_sd_typing_wf_exp]).                    *)
+(*     docs/WF-SIDE-CONDITIONS.md.                                        *)
 (*                                                                        *)
-(*  1. [a_wf_ptyp Θ A] on [sd-Anno].  ⚠️ [d_sd_typing__anno] states NO      *)
-(*     well-formedness — its four type-carrying siblings do — so it        *)
-(*     cannot be recovered from the derivation.  Carry it as the paper's   *)
-(*     ambient "all inputs are well-formed", in the shape the [ad] side    *)
-(*     EXHIBITS: [a_wf_exp (denv_to_aenv Γ) e], whose [__anno] row is      *)
-(*     exactly [a_wf_ptyp Θ A] ([ad_sd_typing_wf_exp] is the mirror).      *)
-(*     docs/WF-SIDE-CONDITIONS.md.                                         *)
+(*  ⭐ STATED OVER AN ARBITRARY Γ, deliberately.  At [Γ = ·] both side     *)
+(*  conditions above are free, so a closed-only statement would hide      *)
+(*  them — and the [sd-Anno] one is a real finding about the paper's      *)
+(*  §declarative figure, not bookkeeping.                                 *)
 (*                                                                        *)
-(*  2. [lc_ptyp A] at [sd-Freeze], for [a_tyequiv__refl].  It has to come  *)
-(*     from the PREMISE's target ([Γ ⊢ˢ[TI] e ⦂ syn{A}]), and the tree has *)
-(*     no [d_sd_typing] target-lc lemma; the [ad] side's                   *)
-(*     [ad_sd_typing_target_wf] needs [a_wf_aenv Θ], so the bridge will    *)
-(*     take a context-wf hypothesis too.                                   *)
-(*                                                                        *)
-(*  3. ⚠️ App — and this one IS obstruction (A).  Its premise is SKELETON   *)
-(*     inference, where the join runs at [N = SK]: [a_tags_sort__sk]       *)
-(*     permits a GHOSTY instantiation and [ad_pat]'s P-Var reads a         *)
-(*     possibly-ghosty [P] out of the context, so §13's argument does not  *)
-(*     transfer.  Everything else in the bridge is bookkeeping; this is    *)
-(*     the mathematics.                                                    *)
+(*  ⚠️ App is the ONE hole, and it is obstruction (A): its premise is      *)
+(*  SKELETON inference, where the join runs at [N = SK], [a_tags_sort__sk]*)
+(*  permits a GHOSTY instantiation, and [ad_pat]'s P-Var reads a          *)
+(*  possibly-ghosty [P] out of the context — so §13's argument does not   *)
+(*  transfer.  [d_pat_bridges] IS that obstruction, stated.               *)
 (* ===================================================================== *)
+
+Definition d_pat_bridges : Prop :=
+  forall M Γ e Q,
+    d_pat M Γ e Q -> d_wf_denv Γ -> a_wf_exp (denv_to_aenv Γ) e ->
+    ad_pat M (denv_to_aenv Γ) e Q.
+
+Lemma aenv_tbinds_le_weaken_cons : forall Θ x (b : abind),
+  aenv_tbinds_le Θ ((x ~ b) ++ Θ).
+Proof. intros Θ x b y c Hc Hy. apply binds_app_3; exact Hy. Qed.
+
+(** The three base rows all read the same way: the embedded [d_sub] becomes an
+    [ad_pat_sub] at the TY sort (§14), and its subject is a PAINTING, hence
+    ghost-free, so §13 upgrades it to the leaf-valid join the rule wants. *)
+Ltac base_row lctac :=
+  (* ⚙ [ptyp_to_uskl_syn] is a Definition, so the goal never displays the
+     [bskl_to_uskl (pskl_to_bskl_syn …)] form the coercion lemma rewrites *)
+  unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn;
+  rewrite <- utyp_to_uskl_ptyp_to_utyp_syn;
+  eapply ad_pat_sub_ty_to_v;
+    [ apply d_sub_to_ad; eassumption | reflexivity
+    | apply uskl_ghost_free_incl; apply lc_ptyp_to_utyp_syn; lctac ].
+
+Lemma d_sd_typing_to_ad : forall M Γ e B,
+  d_sd_typing M Γ e B ->
+  d_wf_denv Γ ->
+  a_wf_exp (denv_to_aenv Γ) e ->
+  d_pat_bridges ->
+  ad_sd_typing M (denv_to_aenv Γ) e B.
+Proof.
+  intros M Γ e B H; induction H; intros Hwf Hwfe Hpat.
+  - (* sd-Unit *)
+    apply ad_sd_typing__unit. base_row ltac:(apply lc_ptyp_unit).
+  - (* sd-Var *)
+    apply ad_sd_typing__var with (A := A);
+      [ apply binds_denv_to_aenv with (d := dbind_typ A); assumption | ].
+    base_row ltac:(eapply d_wf_ptyp_lc; eapply d_wf_denv_binds_ptyp;
+                   eassumption).
+  - (* sd-Anno: the annotation's wf is the AMBIENT hypothesis, not the rule's *)
+    inversion Hwfe as [ | | Θ0 e0 A0 Hwfa Hwfe0 | | | | ]; subst.
+    apply ad_sd_typing__anno with (A := A);
+      [ exact Hwfa | apply IHd_sd_typing; assumption | ].
+    base_row ltac:(apply lc_ptyp_of_lc_btyp_inh;
+                   eapply d_sd_typing_target_lc; eassumption).
+  - (* sd-Freeze: the appendix's equivalence premise is REFLEXIVITY here *)
+    inversion Hwfe as [ | | | Θ0 e0 Hwfe0 | | | ]; subst.
+    apply ad_sd_typing__freeze with (B := A);
+      [ apply IHd_sd_typing; assumption
+      | apply a_tyequiv__refl; apply lc_ptyp_of_lc_btyp_syn;
+        eapply d_sd_typing_target_lc; eassumption ].
+  - (* sd-AbsCheck (∀) *)
+    apply ad_sd_typing__abs_check_step with (L := L `union` dom Γ);
+      [ assumption | ].
+    intros α Hα.
+    exact (H1 α ltac:(clear - Hα; solve_notin_auto)
+             ltac:(apply d_wf_denv__tvar;
+                     [ exact Hwf | clear - Hα; solve_notin_auto ])
+             ltac:(apply (a_wf_exp_mono Hwfe);
+                   apply aenv_tbinds_le_weaken_cons) Hpat).
+  - (* sd-AbsCheck (→) *)
+    inversion Hwfe as [ | | | | L0 Θ0 e0 Hbody | | ]; subst.
+    apply ad_sd_typing__abs_check_base
+      with (L := L `union` L0 `union` dom Γ) (A := A);
+      [ apply d_wf_ptyp_to_a; assumption | assumption | ].
+    intros x Hx.
+    exact (H2 x ltac:(clear - Hx; solve_notin_auto)
+             ltac:(apply d_wf_denv__typ;
+                     [ exact Hwf | clear - Hx; solve_notin_auto | assumption ])
+             ltac:(apply (a_wf_exp_mono
+                            (Hbody x ltac:(clear - Hx; solve_notin_auto)));
+                   apply aenv_tbinds_le_weaken_cons) Hpat).
+  - (* sd-AbsAnnoCheck (∀) *)
+    apply ad_sd_typing__abs_anno_check_step with (L := L `union` dom Γ);
+      [ assumption | ].
+    intros α Hα.
+    exact (H1 α ltac:(clear - Hα; solve_notin_auto)
+             ltac:(apply d_wf_denv__tvar;
+                     [ exact Hwf | clear - Hα; solve_notin_auto ])
+             ltac:(apply (a_wf_exp_mono Hwfe);
+                   apply aenv_tbinds_le_weaken_cons) Hpat).
+  - (* sd-AbsAnnoCheck (→) *)
+    inversion Hwfe as [ | | | | | L0 Θ0 A0 e0 Hwfa Hbody | ]; subst.
+    apply ad_sd_typing__abs_anno_check_base
+      with (L := L `union` L0 `union` dom Γ) (A := A);
+      [ exact Hwfa
+      | apply a_tyequiv__refl; eapply d_wf_ptyp_lc; eassumption
+      | assumption | ].
+    intros x Hx.
+    exact (H2 x ltac:(clear - Hx; solve_notin_auto)
+             ltac:(apply d_wf_denv__typ;
+                     [ exact Hwf | clear - Hx; solve_notin_auto | assumption ])
+             ltac:(apply (a_wf_exp_mono
+                            (Hbody x ltac:(clear - Hx; solve_notin_auto)));
+                   apply aenv_tbinds_le_weaken_cons) Hpat).
+  - (* sd-Abs *)
+    inversion Hwfe as [ | | | | L0 Θ0 e0 Hbody | | ]; subst.
+    apply ad_sd_typing__abs with (L := L `union` L0 `union` dom Γ) (A := A);
+      [ assumption | apply d_wf_ptyp_to_a; assumption | assumption | ].
+    intros x Hx.
+    exact (H3 x ltac:(clear - Hx; solve_notin_auto)
+             ltac:(apply d_wf_denv__typ;
+                     [ exact Hwf | clear - Hx; solve_notin_auto | assumption ])
+             ltac:(apply (a_wf_exp_mono
+                            (Hbody x ltac:(clear - Hx; solve_notin_auto)));
+                   apply aenv_tbinds_le_weaken_cons) Hpat).
+  - (* sd-AbsAnno *)
+    inversion Hwfe as [ | | | | | L0 Θ0 A0 e0 Hwfa Hbody | ]; subst.
+    (* ⚙ [subst] used [btyp_to_ptyp B1 = A] to eliminate [A] itself *)
+    apply ad_sd_typing__abs_anno
+      with (L := L `union` L0 `union` dom Γ)
+           (A := btyp_to_ptyp B1) (A' := btyp_to_ptyp B1) (B1 := B1);
+      [ assumption | exact Hwfa
+      | apply a_tyequiv__refl; eapply d_wf_ptyp_lc; eassumption
+      | reflexivity | assumption | ].
+    intros x Hx.
+    exact (H4 x ltac:(clear - Hx; solve_notin_auto)
+             ltac:(apply d_wf_denv__typ;
+                     [ exact Hwf | clear - Hx; solve_notin_auto | assumption ])
+             ltac:(apply (a_wf_exp_mono
+                            (Hbody x ltac:(clear - Hx; solve_notin_auto)));
+                   apply aenv_tbinds_le_weaken_cons) Hpat).
+  - (* sd-App: ⚠️ the ONE hole — its skeleton-inference premise *)
+    inversion Hwfe as [ | | | | | | Θ0 e10 e20 Hwf1 Hwf2 ]; subst.
+    apply ad_sd_typing__app with (P := P) (A2 := btyp_to_ptyp B1) (B1 := B1);
+      [ exact (Hpat mode_tc Γ e2 (pskl_to_bskl_syn P) H Hwf Hwf2)
+      | eapply d_refine_syn_to_ad; [ eassumption | apply delta_agree_nil ]
+      | apply IHd_sd_typing1; assumption
+      | apply a_tyequiv__refl; apply lc_ptyp_btyp_to_ptyp;
+        (* [lc_btyp B1] from the FUNCTION premise's arrow target *)
+        match goal with
+        | Hf : _ ⊢ˢ[ mode_fn _ ] _ ⦂ (btyp_arrow _ _) |- _ =>
+            let Ha := fresh "Ha" in
+            assert (Ha : lc_btyp (btyp_arrow B1 B2))
+              by (eapply d_sd_typing_target_lc; eassumption);
+            inversion Ha; subst; assumption
+        end
+      | apply IHd_sd_typing2; assumption ].
+Qed.

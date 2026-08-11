@@ -1391,3 +1391,73 @@ Proof.
     | apply ctx_weaken_refl
     | eassumption | eassumption | eassumption ].
 Qed.
+
+
+(** ⭐ A SYNTAX-DIRECTED derivation's target is locally closed, in the GENERAL
+    context.  The declarative counterpart of [ad_sd_typing_target_wf]
+    (algo/typing/prop_completeness_typing.v), and what the conservativity
+    bridge needs to build the appendix's type-EQUIVALENCE premises, which are
+    [a_tyequiv__refl] and so demand [lc_ptyp].
+
+    ⚙ Only the context's well-formedness is assumed, and only the Var row uses
+    it — every other row reads its [lc] off its own premises.  ⚠️ Stated over
+    an arbitrary Γ on purpose: at [Γ = ·] the hypothesis is free, and a
+    closed-only statement would hide that a bridge over a general context owes
+    it. *)
+Lemma d_sd_typing_target_lc : forall M Γ e B,
+    Γ ⊢ˢ[ M ] e ⦂ B -> d_wf_denv Γ -> lc_btyp B.
+Proof.
+  intros M Γ e B H; induction H; intros Hwf.
+  - (* sd-Unit *)
+    eapply d_sub_lc_btyp; [ eassumption | apply lc_utyp_unit ].
+  - (* sd-Var: the ONE row that consults the context *)
+    eapply d_sub_lc_btyp; [ eassumption | ].
+    apply lc_ptyp_to_utyp_syn. eapply d_wf_ptyp_lc.
+    eapply d_wf_denv_binds_ptyp; eassumption.
+  - (* sd-Anno: [lc] comes from the CHECKED premise, not from a wf premise —
+       [d_sd_typing__anno] has none *)
+    eapply d_sub_lc_btyp; [ eassumption | ].
+    apply lc_ptyp_to_utyp_syn, lc_ptyp_of_lc_btyp_inh.
+    apply IHd_sd_typing; exact Hwf.
+  - (* sd-Freeze *)
+    apply lc_ptyp_to_btyp_inh, lc_ptyp_of_lc_btyp_syn.
+    apply IHd_sd_typing; exact Hwf.
+  - (* sd-AbsCheck (∀) *)
+    pick fresh α for (L `union` dom Γ).
+    apply lc_btyp_all_inh_exists with (α1 := α).
+    apply H1; [ solve_notin_auto
+              | apply d_wf_denv__tvar; [ exact Hwf | solve_notin_auto ] ].
+  - (* sd-AbsCheck (→) *)
+    pick fresh x for (L `union` dom Γ). apply lc_btyp_arrow;
+      [ apply lc_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc; eassumption | ].
+    apply (H2 x); [ solve_notin_auto
+                  | apply d_wf_denv__typ;
+                      [ exact Hwf | solve_notin_auto | assumption ] ].
+  - (* sd-AbsAnnoCheck (∀) *)
+    pick fresh α for (L `union` dom Γ).
+    apply lc_btyp_all_inh_exists with (α1 := α).
+    apply H1; [ solve_notin_auto
+              | apply d_wf_denv__tvar; [ exact Hwf | solve_notin_auto ] ].
+  - (* sd-AbsAnnoCheck (→) *)
+    pick fresh x for (L `union` dom Γ). apply lc_btyp_arrow;
+      [ apply lc_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc; eassumption | ].
+    apply (H2 x); [ solve_notin_auto
+                  | apply d_wf_denv__typ;
+                      [ exact Hwf | solve_notin_auto | assumption ] ].
+  - (* sd-Abs *)
+    pick fresh x for (L `union` dom Γ). apply lc_btyp_arrow;
+      [ apply lc_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc; eassumption | ].
+    apply (H3 x); [ solve_notin_auto
+                  | apply d_wf_denv__typ;
+                      [ exact Hwf | solve_notin_auto | assumption ] ].
+  - (* sd-AbsAnno: the arrow's domain erases to the annotation *)
+    pick fresh x for (L `union` dom Γ). apply lc_btyp_arrow.
+    + apply lc_btyp_of_lc_ptyp_erase.
+      rewrite H1. eapply d_wf_ptyp_lc; eassumption.
+    + apply (H4 x); [ solve_notin_auto
+                    | apply d_wf_denv__typ;
+                        [ exact Hwf | solve_notin_auto | assumption ] ].
+  - (* sd-App: the function's arrow target *)
+    assert (Ha : lc_btyp (btyp_arrow B1 B2)) by (apply IHd_sd_typing1; exact Hwf).
+    inversion Ha; subst; assumption.
+Qed.
