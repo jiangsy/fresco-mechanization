@@ -24,9 +24,9 @@ Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_swap.
-Require Import src.frost.decorated_algo.def_decl_algo.
-Require Import src.frost.decorated_algo.def_decorated.
-Require Import src.frost.decorated_algo.def_decl_algo_sub.
+Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.deco_algo.def_decorated.
+Require Import src.frost.algo_decl.def_decl_algo_sub.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_stability.
@@ -35,7 +35,7 @@ Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
-Require Import src.frost.decorated_algo.prop_decorate.
+Require Import src.frost.deco_algo.prop_decorate.
 
 Set Implicit Arguments.
 
@@ -276,7 +276,7 @@ Qed.
     [ftag_in_uskl_ptyp_syn] (algo/consis/prop_consis_precise.v) and
     [ftag_in_uskl_ptyp_to_uskl_syn] (algo/sub/look/prop_eq_cstr.v), and the
     latter file could see both.  It sits HERE because [ptyp_to_uskl_syn] is
-    defined in decorated_algo/def_decl_algo.v — too late for
+    defined in algo_decl/def_decl_algo.v — too late for
     frost/prop_coercions.v — and this file is upstream of every consumer. *)
 Lemma ftag_ptyp_to_uskl_syn : forall A,
   ftag_in_uskl (ptyp_to_uskl_syn A) [=] empty.
@@ -744,7 +744,7 @@ Qed.
     instantiation is itself ghost-free — which at the TYPE sort is forced by
     the rule ([a_tags_sort__ty], def_decorated.v).  That is what makes every
     leaf of a TY-sort join ghost-free once its ROOT subject is, and hence what
-    makes the leaf datum free there (decorated_algo/prop_conserv.v §13).
+    makes the leaf datum free there (algo_decl/prop_conserv.v §13).
 
     ⚙ The subject is the WHOLE ∀ and not its body: [uskl_ghost_free] has no
     [uskl_var_b] row, so it cannot hold of an open body at all. *)

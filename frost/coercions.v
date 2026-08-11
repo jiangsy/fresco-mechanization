@@ -232,7 +232,7 @@ Coercion uskl_to_bskl : uskl >-> bskl.
 
     [uskl_to_utyp] is the retraction, defined on all of [uskl] by sending every
     ghost to [1] — an arbitrary choice, meaningful only on the ghost-free part
-    ([uskl_ghost_free_utyp_to_uskl], decorated_algo/prop_conserv.v). *)
+    ([uskl_ghost_free_utyp_to_uskl], algo_decl/prop_conserv.v). *)
 
 Fixpoint utyp_to_uskl (C : utyp) : uskl :=
   match C with
@@ -264,7 +264,7 @@ Fixpoint uskl_to_utyp (R : uskl) : utyp :=
    [is_tskl]) and was written for the ∀-instantiation in the pattern producer.
    It had ZERO uses outside this file; whatever consumed it is gone.
 
-   ⚠️ It is NOT the same map as [pskl_to_uskl] (decorated_algo/def_decorated.v),
+   ⚠️ It is NOT the same map as [pskl_to_uskl] (deco_algo/def_decorated.v),
    which is live: that one sends [pskl_hole] to the PLAIN [uskl_hole] and
    [pskl_tophole] to [uskl_tophole].  If a dotted witness is ever needed again,
    re-derive it here — the two lemmas were three-line inductions. *)

@@ -17,12 +17,22 @@
         {{ Γ ⨟ Δ ⊢ᵣ Q ⊳ P }}d      declarative           (`d_*`,  over Γ)
         {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad     declarative over algorithmic contexts
                                                           (`ad_*`, over Θ)
-        {{ Θ ⊢[ m ; P0 ] e ⦂ B ⊣ Θ' }}a    algorithmic    (`a_*`, with `⊣ Θ'`)
-        {{ Θ ⊢[ Δ1 | Δ2 | P0 | Ψ ] R ∼ Q ⊣ Θ' }}t   ε-tagged decorated
-                                                          (`a_consistag` / `a_subtag`)
+        {{ Θ ⊢[ m ; P0 ] e ⦂ B ⊣ Θ' }}a   algorithmic     (`a_*`, with `⊣ Θ'`)
+        {{ Θ ⊢[ Δ1 | Δ2 | P0 | Ψ ] R ∼ Q ⊣ Θ' }}da  decorated algorithmic
+                                                          (`a_*tag`, over `uskl`)
+
+    ⚠️ `}}ad` and `}}da` are NOT the same word read twice.  `ad` is
+    *`a`lgorithmic-context `d`eclarative* — the DECLARATIVE rules with `Θ` in
+    place of `Γ` (the paper's `app:decl-in-algo-context`).  `da` is the paper's
+    *`d`ecorated `a`lgorithmic* system (`app:decorated-algosub`) — the
+    ALGORITHM's rules, a run with `⊣ Θ'`, over decorated (unresolved) skeletons
+    `uskl` with a tag context `Ψ`.  They differ on opposite axes: `d → ad`
+    keeps the rules and changes the CONTEXT; `a → da` keeps the rules and
+    changes the SUBJECT (erased `pskl` → decorated `uskl`).  Soundness is the
+    chain `}}a` ⇒ `}}da` ⇒ `}}ad` ⇒ `}}d`.
 
     The four scopes are `frost_d_scope` / `frost_ad_scope` / `frost_a_scope` /
-    `frost_t_scope`, delimited `%d` / `%ad` / `%a` / `%t`; every file that
+    `frost_da_scope`, delimited `%d` / `%ad` / `%a` / `%da`; every file that
     declares a judgement notation in one of them also `Open Scope`s it, so the
     scope is open exactly where the notation is visible.
 
@@ -83,11 +93,14 @@
       that only holds at `M = TI` — at TC the skeleton is an input.  The
       paper writes its own mode-generic typing with a plain colon for the
       same reason (`\typp`, macro.tex:1087).
-    - ⚙ The ε-tagged system no longer needs its dots: `a_consistag` /
-      `a_subtag` wrote `∼˙` / `⩽˙` only to stay apart from the algorithmic
-      `∼` / `⩽`, and `}}t` now does that job, so they are plain again — the
-      one thing that still separates them from `}}a` INSIDE the braces is the
-      fourth bracket index, the tag scope `Ψ`.
+    - ⚙ The decorated system no longer needs its dots: `a_consistag` /
+      `a_subtag` wrote `∼˙` / `⩽˙` — the paper's own `\consisdec` / `\subtypedec`
+      (macro.tex:1439) — only to stay apart from the algorithmic `∼` / `⩽`, and
+      `}}da` now does that job, so they are plain again.  ⚠️ This IS a
+      departure from the paper's notation: the paper separates decorated from
+      ordinary by the RELATION SYMBOL, and the mech separates them by the
+      DELIMITER.  The one thing that still tells them apart INSIDE the braces
+      is the fourth bracket index, the tag scope `Ψ`.
 
     ⚙ WHAT IS NOT WRAPPED.  The delimiter separates SYSTEMS, so a relation
     with no cross-system twin keeps its bare form: the information-increase
@@ -129,9 +142,9 @@ Declare Scope frost_a_scope.
 Delimit Scope frost_a_scope with a.
 Open Scope frost_a_scope.
 
-Declare Scope frost_t_scope.
-Delimit Scope frost_t_scope with t.
-Open Scope frost_t_scope.
+Declare Scope frost_da_scope.
+Delimit Scope frost_da_scope with da.
+Open Scope frost_da_scope.
 
 (** ** Atom sets.
 

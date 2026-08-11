@@ -54,12 +54,12 @@ Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.algo.def_extra.
-Require Import src.frost.decorated_algo.def_decl_algo.
-Require Import src.frost.decorated_algo.def_decorated.
-Require Import src.frost.decorated_algo.def_decl_algo_sub.
-Require Import src.frost.decorated_algo.def_decl_algo_typing.
+Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.deco_algo.def_decorated.
+Require Import src.frost.algo_decl.def_decl_algo_sub.
+Require Import src.frost.algo_decl.def_decl_algo_typing.
 Require Import src.frost.algo.pat.prop_soundness_pat.   (* a_wf_exp *)
-Require Import src.frost.decorated_algo.prop_conserv.
+Require Import src.frost.algo_decl.prop_conserv.
 Require Import src.cex.cex_ad_pat_join_not_leaf_valid.
 
 (** ⚙ NO [Set Implicit Arguments] — prop_conserv.v is compiled without it
@@ -114,7 +114,7 @@ Qed.
 
 (** …and therefore the pointwise bridge it refuted can no longer be refuted
     THIS way: [d_pat] and [ad_pat] agree at the configuration.  The positive
-    statement is [d_pat_to_ad] (decorated_algo/prop_conserv.v §15), which is
+    statement is [d_pat_to_ad] (algo_decl/prop_conserv.v §15), which is
     now a theorem with no hypothesis at all. *)
 Theorem cap_bridge_holds : forall x,
   {{ (capΓ x) ⊢ˢ[ mode_ti ] (exp_var_f x) ⦂ capQ }}d ->

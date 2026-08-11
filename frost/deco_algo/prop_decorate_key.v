@@ -18,9 +18,9 @@ Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.decorated_algo.def_decl_algo.
-Require Import src.frost.decorated_algo.def_decorated.
-Require Import src.frost.decorated_algo.def_decl_algo_sub.
+Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.deco_algo.def_decorated.
+Require Import src.frost.algo_decl.def_decl_algo_sub.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_precise.
@@ -29,13 +29,13 @@ Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.consis.prop_consis_rename.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_stability.
-Require Import src.frost.decorated_algo.prop_decorate.
+Require Import src.frost.deco_algo.prop_decorate.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.sub.prop_solve_sub.
 Require Import src.frost.algo.sub.prop_looksub.
 Require Import src.frost.algo.sub.prop_soundness_sub.
-Require Import src.frost.decorated_algo.prop_decorate_sub.
+Require Import src.frost.deco_algo.prop_decorate_sub.
 
 Set Implicit Arguments.
 
@@ -99,7 +99,7 @@ Proof.
 Qed.
 
 Lemma a_subtag_decoration : forall NM M P0 Ψ Θ0 R' P Θ1,
-  {{ Θ0 ⊢[ NM | M | P0 | Ψ ] R' ⩽ P ⊣ Θ1 }}t ->
+  {{ Θ0 ⊢[ NM | M | P0 | Ψ ] R' ⩽ P ⊣ Θ1 }}da ->
   (* The look run carries its OWN context [Θl], universally quantified INSIDE
      the induction: the lemma only ever CONSUMES the run, so there is no
      alignment constraint with the subtag judgment's [Θ0], and the ForallL
@@ -108,7 +108,7 @@ Lemma a_subtag_decoration : forall NM M P0 Ψ Θ0 R' P Θ1,
   forall Θl R0 ψa Ψa αv Ξc 𝒞,
     R' = subst_uskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) αv R0 ->
     {{ Θl ⊢ ⌊ R0 ⌋ˢ ≼[ αv , M ] P0 ⤳ Ξc ⨾ 𝒞 }}a ->
-    {{ 𝒞 ⊩ ψa ⤳ Ψa }}t ->
+    {{ 𝒞 ⊩ ψa ⤳ Ψa }}da ->
     αv `notin` ftvar_in_uskl ψa ->
     αv `notin` ftvar_in_pskl P0 ->
     lc_uskl ψa ->
@@ -118,7 +118,7 @@ Lemma a_subtag_decoration : forall NM M P0 Ψ Θ0 R' P Θ1,
     {{ Θ0 ⨟ empty ⊢ₚₛ ⌊ R' ⌋ˢ }}a ->
     (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) M) ->
     {{ Θ0 ⊢[ NM | M | P0 | (Ψ `union` Ψa) ]
-      (subst_uskl_in_uskl ψa αv R0) ⩽ P ⊣ Θ1 }}t.
+      (subst_uskl_in_uskl ψa αv R0) ⩽ P ⊣ Θ1 }}da.
 Proof.
   intros NM M P0 Ψ Θ0 R' P Θ1 Hsub.
   induction Hsub;
@@ -162,7 +162,7 @@ Proof.
       { rewrite <- (ftvar_in_pskl_uskl_to_pskl R0). assumption. }
       rewrite subst_uskl_in_uskl_fresh_eq; [ | exact HαR ].
       match goal with
-      | Hg1 : guarded_uskl _, Hc : {{ _ ⊢[ _ | _ | _ | _ ] _ ∼ _ ⊣ _ }}t |- _ =>
+      | Hg1 : guarded_uskl _, Hc : {{ _ ⊢[ _ | _ | _ | _ ] _ ∼ _ ⊣ _ }}da |- _ =>
           rewrite subst_uskl_in_uskl_fresh_eq in Hg1, Hc; try exact HαR
       end.
       inversion Hst; subst.
@@ -335,7 +335,7 @@ Proof.
           (subst_uskl_in_uskl ψa αv'
              (subst_uskl_in_uskl (uskl_var_f αv') αv R0))
           ⩽ (open_pskl_wrt_pskl B (pskl_var_f α))
-          ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ1) }}t).
+          ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ1) }}da).
     { eapply IHprem.
       { exact HeqT'. }
       { exact HD2. }
@@ -437,8 +437,8 @@ Proof.
       destruct (a_solvetag_split _ _ Hst) as [Ψa1 [Ψa2 [Hst1 [Hst2 HΨs]]]].
       simpl.
       match goal with
-      | Hc1 : {{ _ ⊢[ _ | _ | ?P0a | ?Ψ1 ] _ ∼ ?Q1 ⊣ ?Θm }}t,
-        Hs2 : {{ ?Θm ⊢[ _ | _ | ?P0b | ?Ψ2 ] _ ⩽ ?Q2 ⊣ _ }}t,
+      | Hc1 : {{ _ ⊢[ _ | _ | ?P0a | ?Ψ1 ] _ ∼ ?Q1 ⊣ ?Θm }}da,
+        Hs2 : {{ ?Θm ⊢[ _ | _ | ?P0b | ?Ψ2 ] _ ⩽ ?Q2 ⊣ _ }}da,
         HΨc : _ [=] union ?Ψ1 ?Ψ2 |- _ =>
           destruct (a_consistag_sound_aux Hc1 Hwf
                       ltac:(apply subst_uskl_in_uskl_lc_uskl;
@@ -512,7 +512,7 @@ Proof.
                           (uskl_all_etag ε0
                              (subst_uskl_in_uskl
                                 (pskl_to_uskl (uskl_to_pskl ψa)) αv R0))
-                          ⩽ Q ⊣ Θ1 }}t)
+                          ⩽ Q ⊣ Θ1 }}da)
           by (eapply a_subtag__forall_l_tagged
                 with (L := L) (Ξ := Ξ) (P1 := P1); eassumption).
         rewrite subst_uskl_in_uskl_fresh_eq in Hnode; [ | exact HαR' ].
@@ -526,7 +526,7 @@ Proof.
                           (uskl_all_etag ε0
                              (subst_uskl_in_uskl
                                 (pskl_to_uskl (uskl_to_pskl ψa)) αv R0))
-                          ⩽ Q ⊣ Θ1 }}t)
+                          ⩽ Q ⊣ Θ1 }}da)
           by (eapply a_subtag__forall_l_tagged
                 with (L := L) (Ξ := Ξ) (P1 := P1); eassumption).
         inversion Hst; subst.
@@ -815,7 +815,7 @@ Proof.
                           (uskl_all_syn
                              (subst_uskl_in_uskl
                                 (pskl_to_uskl (uskl_to_pskl ψa)) αv R0))
-                          ⩽ Q ⊣ Θ1 }}t)
+                          ⩽ Q ⊣ Θ1 }}da)
           by (eapply a_subtag__forall_l_untagged
                 with (L := L) (Ξ := Ξ) (P1 := P1); eassumption).
         rewrite subst_uskl_in_uskl_fresh_eq in Hnode; [ | exact HαR' ].
@@ -829,7 +829,7 @@ Proof.
                           (uskl_all_syn
                              (subst_uskl_in_uskl
                                 (pskl_to_uskl (uskl_to_pskl ψa)) αv R0))
-                          ⩽ Q ⊣ Θ1 }}t)
+                          ⩽ Q ⊣ Θ1 }}da)
           by (eapply a_subtag__forall_l_untagged
                 with (L := L) (Ξ := Ξ) (P1 := P1); eassumption).
         inversion Hst; subst.
@@ -1188,7 +1188,7 @@ Proof.
         simpl. rewrite subst_uskl_in_uskl_fresh_eq; [ | exact HαR' ].
         match goal with
         | Hs' : {{ _ ⊢[ _ | _ | _ | _ ]
-                  (subst_uskl_in_uskl _ _ _) ⩽ _ ⊣ _ }}t |- _ =>
+                  (subst_uskl_in_uskl _ _ _) ⩽ _ ⊣ _ }}da |- _ =>
             rewrite subst_uskl_in_uskl_fresh_eq in Hs'; [ | exact HαR' ]
         end.
         eapply a_subtag_psi_cong with (Ψ := Ψ);
@@ -1251,7 +1251,7 @@ Proof.
         simpl. rewrite subst_uskl_in_uskl_fresh_eq; [ | exact HαR' ].
         match goal with
         | Hs' : {{ _ ⊢[ _ | _ | _ | _ ]
-                  (subst_uskl_in_uskl _ _ _) ⩽ _ ⊣ _ }}t |- _ =>
+                  (subst_uskl_in_uskl _ _ _) ⩽ _ ⊣ _ }}da |- _ =>
             rewrite subst_uskl_in_uskl_fresh_eq in Hs'; [ | exact HαR' ]
         end.
         eapply a_subtag_psi_cong with (Ψ := Ψ);
@@ -1447,20 +1447,20 @@ Qed.
 (** [solvetag] is invariant under a simultaneous skeleton-variable rename of
     subject and target (the tags are ε-markers, untouched). *)
 Lemma a_solvetag_sub_eq_rename_var :
-  (forall ψ M P Ψ, {{ ψ ≼[ M ] P ⤳ Ψ }}t ->
+  (forall ψ M P Ψ, {{ ψ ≼[ M ] P ⤳ Ψ }}da ->
      forall α β0, {{ (subst_uskl_in_uskl (uskl_var_f β0) α ψ) ≼[ M ]
-                 (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}t) /\
-  (forall ψ P Ψ, {{ ψ ∼ P ⤳ Ψ }}t ->
+                 (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}da) /\
+  (forall ψ P Ψ, {{ ψ ∼ P ⤳ Ψ }}da ->
      forall α β0, {{ (subst_uskl_in_uskl (uskl_var_f β0) α ψ) ∼
-                 (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}t).
+                 (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}da).
 Proof.
   apply (a_solvetag_sub_eq_mutind
            (fun ψ M P Ψ _ => forall α β0,
               {{ (subst_uskl_in_uskl (uskl_var_f β0) α ψ) ≼[ M ]
-              (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}t)
+              (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}da)
            (fun ψ P Ψ _ => forall α β0,
               {{ (subst_uskl_in_uskl (uskl_var_f β0) α ψ) ∼
-              (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}t));
+              (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}da));
     intros; simpl.
   - (* SSub-Var *)
     destruct_if;
@@ -1536,16 +1536,16 @@ Qed.
     cannot manufacture SSub-ForallR's cofinite family from the one instance
     the rule provides; this one can. *)
 Lemma a_solvetag_sub_eq_rename_target :
-  (forall ψ M P Ψ, {{ ψ ≼[ M ] P ⤳ Ψ }}t ->
-     forall α β0, {{ ψ ≼[ M ] (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}t) /\
-  (forall ψ P Ψ, {{ ψ ∼ P ⤳ Ψ }}t ->
-     forall α β0, {{ ψ ∼ (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}t).
+  (forall ψ M P Ψ, {{ ψ ≼[ M ] P ⤳ Ψ }}da ->
+     forall α β0, {{ ψ ≼[ M ] (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}da) /\
+  (forall ψ P Ψ, {{ ψ ∼ P ⤳ Ψ }}da ->
+     forall α β0, {{ ψ ∼ (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}da).
 Proof.
   apply (a_solvetag_sub_eq_mutind
            (fun ψ M P Ψ _ => forall α β0,
-              {{ ψ ≼[ M ] (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}t)
+              {{ ψ ≼[ M ] (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}da)
            (fun ψ P Ψ _ => forall α β0,
-              {{ ψ ∼ (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}t));
+              {{ ψ ∼ (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}da));
     intros; simpl.
   - (* SSub-Var *) apply a_solvetag_sub__var; assumption.
   - (* SSub-ForallL : only ψ opens, the target is untouched *)
@@ -1593,11 +1593,11 @@ Proof.
 Qed.
 
 (** SOUNDNESS (paper coverage, direction ⊆): a decorated solvetag collects
-    only tags that ψ actually carries.  Mutual over [≼[ M ]] / [∼] in [}}t]. *)
+    only tags that ψ actually carries.  Mutual over [≼[ M ]] / [∼] in [}}da]. *)
 Lemma a_solvetag_sub_eq_sound :
-  (forall ψ M P Ψ, {{ ψ ≼[ M ] P ⤳ Ψ }}t ->
+  (forall ψ M P Ψ, {{ ψ ≼[ M ] P ⤳ Ψ }}da ->
      forall Ψtot, d_tags_skl Ψtot ψ -> Ψ [<=] Ψtot) /\
-  (forall ψ P Ψ, {{ ψ ∼ P ⤳ Ψ }}t ->
+  (forall ψ P Ψ, {{ ψ ∼ P ⤳ Ψ }}da ->
      forall Ψtot, d_tags_skl Ψtot ψ -> Ψ [<=] Ψtot).
 Proof.
   apply a_solvetag_sub_eq_mutind.
@@ -1666,15 +1666,15 @@ Qed.
 
 (** The list-level solvetag collects only ψ's tags (per-constraint ⊆ + union). *)
 Lemma a_solvetag_sound : forall 𝒞 ψ Ψ Ψtot,
-  {{ 𝒞 ⊩ ψ ⤳ Ψ }}t -> d_tags_skl Ψtot ψ -> Ψ [<=] Ψtot.
+  {{ 𝒞 ⊩ ψ ⤳ Ψ }}da -> d_tags_skl Ψtot ψ -> Ψ [<=] Ψtot.
 Proof.
   intros 𝒞 ψ Ψ Ψtot Hc; revert Ψtot; induction Hc; intros Ψtot Hdt.
   - (* empty *) fsetdec_empty.
-  - (* sub *) match goal with H : {{ _ ≼[ _ ] _ ⤳ _ }}t |- _ =>
+  - (* sub *) match goal with H : {{ _ ≼[ _ ] _ ⤳ _ }}da |- _ =>
       pose proof ((proj1 a_solvetag_sub_eq_sound) _ _ _ _ H Ψtot Hdt) end; fsetdec.
   - (* eq *)
     match goal with
-    | Hs : {{ _ ∼ _ ⤳ ?Ψ1 }}t, He : _ [=] union ?Ψ1 ?Ψ2 |- _ =>
+    | Hs : {{ _ ∼ _ ⤳ ?Ψ1 }}da, He : _ [=] union ?Ψ1 ?Ψ2 |- _ =>
         pose proof ((proj2 a_solvetag_sub_eq_sound) _ _ _ Hs Ψtot Hdt) as Hae;
         pose proof (IHHc Ψtot Hdt) as Hai;
         clear - He Hae Hai; fsetdec
@@ -1687,7 +1687,7 @@ Qed.
     no ∀◇ frontier (topholeg aligns with ∀◇ via SEq-UnivGhostG) and no ε
     double-count (add ε handled by SEq-ForallInh). *)
 Lemma solvetag_eq_self : forall Ψ ψ,
-  d_tags_skl Ψ ψ -> {{ ψ ∼ ⌊ ψ ⌋ˢ ⤳ Ψ }}t.
+  d_tags_skl Ψ ψ -> {{ ψ ∼ ⌊ ψ ⌋ˢ ⤳ Ψ }}da.
 Proof.
   intros Ψ ψ H; induction H; simpl.
   - apply a_solvetag_eq__unit; assumption.
@@ -1698,7 +1698,7 @@ Proof.
     eapply a_solvetag_eq__forall_inh with (L := L) (Ψ0 := Ψ0); [ | assumption ].
     intros β Hβ. rewrite <- uskl_to_pskl_open.
     match goal with
-    | IH : forall α, α `notin` L -> {{ _ ∼ _ ⤳ Ψ0 }}t |- _ =>
+    | IH : forall α, α `notin` L -> {{ _ ∼ _ ⤳ Ψ0 }}da |- _ =>
         exact (IH β Hβ)
     end.
   - (* holeg : erasure is ◇ *) apply a_solvetag_eq__vacuous; assumption.
@@ -2190,7 +2190,7 @@ Qed.
     SEq-ForallSyn (whose un-collected ε is REMAINING in [absorb_all]). *)
 Lemma dec_ext_cover_eq : forall P ψ Ψ' Ψtot,
   dec_ext P ψ Ψ' -> d_tags_skl Ψtot ψ ->
-  exists Ψi, {{ ψ ∼ P ⤳ Ψi }}t /\ Ψtot [<=] Ψ' `union` Ψi.
+  exists Ψi, {{ ψ ∼ P ⤳ Ψi }}da /\ Ψtot [<=] Ψ' `union` Ψi.
 Proof.
   intros P ψ Ψ' Ψtot H; revert Ψtot; induction H; intros Ψtot Hdt.
   - (* hole : SEq-Vacuous, Ψ' = d_tags ψ = Ψtot *)
@@ -2432,7 +2432,7 @@ Proof. intros; eapply dec_ext_guess_source_size; eauto. Qed.
 (** FORWARD STEP (eq): one [eq Q] constraint, threaded through
     [solve_eq P ∼ Q ⤳ P'] — UNCONDITIONAL (no side condition on P or Q;
     the paper's lemma has none).  Produces the per-constraint solvetag
-    [{{ ψ ∼ Q ⤳ Ψi }}t] and re-relates ψ to the pre-step P with COVERAGE
+    [{{ ψ ∼ Q ⤳ Ψi }}da] and re-relates ψ to the pre-step P with COVERAGE
     [Ψp ⊆ Ψ' ∪ Ψi] (⊆, set membership).  ∀◇ solve steps decompose by the
     subject's relation to the output: dotted (topholeg ↦ SEq-UnivGhostG),
     guarded-skip (↦ SEq-UnivGhostR), absorbed-∀ (↦ SEq-ForallSyn), flex. *)
@@ -2457,7 +2457,7 @@ Lemma dec_ext_solve_eq_step_size : forall n Θ P P3 Ξ P' ψ Ψ' Ψtot,
      [solve_eq_guarded_r_head] is gone, that lemma being false now. *)
   pskl_top_guarded P ->
   dec_ext P' ψ Ψ' -> d_tags_skl Ψtot ψ ->
-  exists Ψi Ψp, {{ ψ ∼ P3 ⤳ Ψi }}t /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
+  exists Ψi Ψp, {{ ψ ∼ P3 ⤳ Ψi }}da /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
 Proof.
   induction n as [| n IHn];
     [ intros Θ P P3 Ξ P' ψ Ψ' Ψtot Hsz Hs;
@@ -2798,7 +2798,7 @@ Lemma dec_ext_solve_eq_step : forall Θ P P3 Ξ P' ψ Ψ' Ψtot,
   {{ Θ ⊢ₑ P ∼ P3 ⤳ Ξ ⨾ P' }}a ->
   pskl_top_guarded P ->
   dec_ext P' ψ Ψ' -> d_tags_skl Ψtot ψ ->
-  exists Ψi Ψp, {{ ψ ∼ P3 ⤳ Ψi }}t /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
+  exists Ψi Ψp, {{ ψ ∼ P3 ⤳ Ψi }}da /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
 Proof.
   intros Θ P P3 Ξ P' ψ Ψ' Ψtot Hs Htg Hdec Hdt.
   exact (dec_ext_solve_eq_step_size
@@ -2835,7 +2835,7 @@ Lemma dec_ext_solve_sub_step_size : forall n Θ m P P3 Ξ P' ψ Ψ' Ψtot,
      hands the subject straight to the eq step *)
   pskl_top_guarded P ->
   dec_ext P' ψ Ψ' -> d_tags_skl Ψtot ψ ->
-  exists Ψi Ψp, {{ ψ ≼[ m ] P3 ⤳ Ψi }}t /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
+  exists Ψi Ψp, {{ ψ ≼[ m ] P3 ⤳ Ψi }}da /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
 Proof.
   induction n as [| n IHn];
     [ intros Θ m P P3 Ξ P' ψ Ψ' Ψtot Hsz Hs;
@@ -3208,7 +3208,7 @@ Lemma dec_ext_solve_sub_step : forall Θ m P P3 Ξ P' ψ Ψ' Ψtot,
   {{ Θ ⊢ₛ P ≼[ m ] P3 ⤳ Ξ ⨾ P' }}a ->
   pskl_top_guarded P ->
   dec_ext P' ψ Ψ' -> d_tags_skl Ψtot ψ ->
-  exists Ψi Ψp, {{ ψ ≼[ m ] P3 ⤳ Ψi }}t /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
+  exists Ψi Ψp, {{ ψ ≼[ m ] P3 ⤳ Ψi }}da /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
 Proof.
   intros Θ m P P3 Ξ P' ψ Ψ' Ψtot Hs Htg Hdec Hdt.
   exact (dec_ext_solve_sub_step_size
@@ -3544,7 +3544,7 @@ Lemma solve_cstr_decorate : forall Θ 𝒞 P Ξ P' ψ Ψpost Ψtot,
   {{ Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' }}a ->
   pskl_top_guarded P -> List.Forall a_cstr_tg 𝒞 ->
   dec_ext P' ψ Ψpost -> d_tags_skl Ψtot ψ ->
-  exists Ψc Ψp, {{ 𝒞 ⊩ ψ ⤳ Ψc }}t /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψpost `union` Ψc.
+  exists Ψc Ψp, {{ 𝒞 ⊩ ψ ⤳ Ψc }}da /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψpost `union` Ψc.
 Proof.
   intros Θ 𝒞 P Ξ P' ψ Ψpost Ψtot Hsolve Htg Htgc Hdec Hdt;
     revert Ψpost Hdec; revert Htg Htgc;
@@ -3588,7 +3588,7 @@ Lemma a_extract_decorate : forall Θ0 NM αv M P P0 Ξ P1,
     ⌊ ψa ⌋ˢ = P1 ->
     exists Ξc 𝒞,
       {{ Θ0 ⊢ P ≼[ αv , M ] P0 ⤳ Ξc ⨾ 𝒞 }}a /\
-      {{ 𝒞 ⊩ ψa ⤳ Ψa }}t.
+      {{ 𝒞 ⊩ ψa ⤳ Ψa }}da.
 Proof.
   intros Θ0 NM αv M P P0 Ξ P1 Hext Htg0 Ψa ψa Htags Hera.
   inversion Hext; subst.
@@ -3635,7 +3635,7 @@ Definition sub_decorate_concl NM M P0 Θ0 P Q Θ1 : Prop :=
   {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
   (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) M) ->
   (NM = a_sub_mode_ty -> pskl_top_guarded P0) ->
-  {{ Θ0 ⊢[ NM | M | P0 | empty ] (pskl_to_uskl P) ⩽ Q ⊣ Θ1 }}t.
+  {{ Θ0 ⊢[ NM | M | P0 | empty ] (pskl_to_uskl P) ⩽ Q ⊣ Θ1 }}da.
 
 Definition sub_flex_decorate_concl NM M P0 Θ0 Ξw αf Q Θ1 : Prop :=
   a_decls Ξw ->
@@ -4106,7 +4106,7 @@ Lemma a_sub_decorate : forall NM M P0 Θ0 P P' Θ1,
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
   (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->
-  {{ Θ0 ⊢[ NM | M | P0 | empty ] (pskl_to_uskl P) ⩽ P' ⊣ Θ1 }}t.
+  {{ Θ0 ⊢[ NM | M | P0 | empty ] (pskl_to_uskl P) ⩽ P' ⊣ Θ1 }}da.
 Proof.
   intros NM M P0 Θ0 P P' Θ1 Hrun Hwf HwfP0 HwfP Hmod.
   eapply (proj1 a_sub_decorate_bundle); try eassumption.

@@ -61,7 +61,7 @@
     [ [=] ]; the four re-derivations that needs are in frost/prop_etag.v §3.
 
     ⚙ NO [Set Implicit Arguments], for the same reason as
-    decorated_algo/prop_conserv.v: the statements thread equations, and under the
+    algo_decl/prop_conserv.v: the statements thread equations, and under the
     flag their set arguments would become strictly implicit. *)
 
 Require Import Coq.Lists.List.

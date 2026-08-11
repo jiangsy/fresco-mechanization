@@ -53,9 +53,9 @@ Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.decorated_algo.def_decl_algo.
-Require Import src.frost.decorated_algo.def_decorated.
-Require Import src.frost.decorated_algo.def_decl_algo_sub.
+Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.deco_algo.def_decorated.
+Require Import src.frost.algo_decl.def_decl_algo_sub.
 Require Import src.frost.prop_basic.
 
 Require Import src.frost.algo.prop_inc.
@@ -68,7 +68,7 @@ Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.sub.prop_sub_msubst_equiv.
 Require Import src.frost.algo.prop_precise.       (* ad_precise, {{ _ ⊢ₚᵣ _ }}ad *)
-Require Import src.frost.decorated_algo.prop_decorate.      (* uskl_to_pskl_pskl_to_uskl *)
+Require Import src.frost.deco_algo.prop_decorate.      (* uskl_to_pskl_pskl_to_uskl *)
 Require Import src.frost.algo.prop_pat_sub.       (* mono_ptyp_to_uskl_syn_ghost_free *)
 Require Import src.frost.algo.sub.prop_completeness_sub_gen.
 

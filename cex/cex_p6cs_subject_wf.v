@@ -29,9 +29,9 @@ Require Import src.frost.def_extra.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.decorated_algo.def_decl_algo.
-Require Import src.frost.decorated_algo.def_decorated.
-Require Import src.frost.decorated_algo.def_decl_algo_sub.
+Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.deco_algo.def_decorated.
+Require Import src.frost.algo_decl.def_decl_algo_sub.
 Require Import src.frost.algo.sub.look.prop_rho_relation.  (* [delta_def_fresh] *)
 Require Import src.frost.algo.sub.look.prop_eq_cstr.  (* P6-Cs + [msubst_uskl_syn] *)
 

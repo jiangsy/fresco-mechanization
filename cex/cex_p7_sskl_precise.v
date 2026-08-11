@@ -49,8 +49,8 @@ Require Import src.frost.coercions.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.
-Require Import src.frost.decorated_algo.def_decl_algo.
-Require Import src.frost.decorated_algo.def_decorated.
+Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo.prop_precise.        (* ad_precise *)
 Require Import src.frost.algo.consis.prop_soundness_consis.   (* ad_refine_pskl_f *)
 

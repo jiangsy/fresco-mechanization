@@ -220,7 +220,7 @@ Proof.
 Qed.
 
 (** ⭐ Both erasures commute with substitution.  ⚙ [uskl_to_pskl_subst] used to
-    live in decorated_algo/prop_decorate_sub.v §4; it moved here 2026-08-11 with
+    live in deco_algo/prop_decorate_sub.v §4; it moved here 2026-08-11 with
     its conversion (one fact, one name, one file — CLAUDE.md), because
     decl/def_extra.v now needs the erasure for the paper's presupposition on
     skeleton consistency and is upstream of that file. *)
@@ -582,7 +582,7 @@ Proof. induction R; simpl; fsetdec. Qed.
 (*  A PAINTING invents no tag: [ptyp] / [btyp] have no ε slot at all, so   *)
 (*  everything painted out of them is tag-free.  ⚙ Proved here and only   *)
 (*  here.  ⚙ [ptyp_to_uskl_syn] is NOT one of these — it is defined only   *)
-(*  in decorated_algo/def_decl_algo.v, so its tag-freeness lives with the  *)
+(*  in algo_decl/def_decl_algo.v, so its tag-freeness lives with the  *)
 (*  rest of its shape facts in algo/prop_pat_sub.v.                        *)
 (* ===================================================================== *)
 

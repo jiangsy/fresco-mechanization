@@ -6,7 +6,7 @@
     This file builds bottom-up, starting at P5b.  ⚙ It used to open with a
     P5a block — the non-hygienic fuel measure [ad_pat_sub_n] and its five
     bridges — which was deleted 2026-08-11 with the judgment it served; see
-    the RESTART NOTE below and in decorated_algo/def_decl_algo_sub.v. *)
+    the RESTART NOTE below and in algo_decl/def_decl_algo_sub.v. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -23,9 +23,9 @@ Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_swap.
-Require Import src.frost.decorated_algo.def_decl_algo.
-Require Import src.frost.decorated_algo.def_decorated.
-Require Import src.frost.decorated_algo.def_decl_algo_sub.
+Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.deco_algo.def_decorated.
+Require Import src.frost.algo_decl.def_decl_algo_sub.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_stability.
@@ -35,7 +35,7 @@ Require Import src.frost.algo.sub.prop_soundness_sub.  (* ad_pat_sub_gv_psi_cong
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
-Require Import src.frost.decorated_algo.prop_decorate.
+Require Import src.frost.deco_algo.prop_decorate.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.consis.prop_consis_precise.
 
@@ -44,7 +44,7 @@ Set Implicit Arguments.
 (* ⚙ RESTART NOTE (2026-08-10) — P5a's fuel-measure block ([ad_pat_sub_of_n],
    [ad_pat_sub_n_succ], [ad_pat_sub_n_mono], [ad_pat_sub_n_rename_tvar],
    [ad_pat_sub_to_n]) was DELETED with the [ad_pat_sub_n] judgment it served
-   (decorated_algo/def_decl_algo_sub.v — see the note there).  Nothing outside
+   (algo_decl/def_decl_algo_sub.v — see the note there).  Nothing outside
    the block ever used it: the completeness track settled on the tag-hygienic
    fuel [ad_pat_sub_g], whose own bridges are [ad_pat_sub_g_of] /
    [ad_pat_sub_gv_forget] / [ad_pat_sub_gv_fuel_weaken]

@@ -44,8 +44,8 @@ Require Import src.frost.def_extra.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.decorated_algo.def_decl_algo.
-Require Import src.frost.decorated_algo.def_decl_algo_sub.
+Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.algo_decl.def_decl_algo_sub.
 
 Set Implicit Arguments.
 

@@ -35,10 +35,10 @@ Require Import src.frost.def_extra.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.decorated_algo.def_decl_algo.
-Require Import src.frost.decorated_algo.def_decorated.
+Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo.prop_flex.
-Require Import src.frost.decorated_algo.prop_decorate.
+Require Import src.frost.deco_algo.prop_decorate.
 
 Set Implicit Arguments.
 
@@ -1486,7 +1486,7 @@ Lemma a_consis_decorate_size : forall n Δ1 Δ2 Θ0 P0 P P' Θ1,
   size_pskl P + size_pskl P0 <= n ->
   {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 }}a ->
   uniq Θ0 ->
-  {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ∼ P' ⊣ Θ1 }}t.
+  {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ∼ P' ⊣ Θ1 }}da.
 Proof.
   induction n as [ | n IHn ];
     intros Δ1 Δ2 Θ0 P0 P P' Θ1 Hsz Hc Hu.
@@ -1679,7 +1679,7 @@ Qed.
 Lemma a_consis_decorate_gen : forall Δ1 Δ2 Θ0 P0 P P' Θ1,
   {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 }}a ->
   uniq Θ0 ->
-  {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ∼ P' ⊣ Θ1 }}t.
+  {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ∼ P' ⊣ Θ1 }}da.
 Proof.
   intros * Hc Hu.
   eapply a_consis_decorate_size; [ | exact Hc | exact Hu ].
@@ -1690,7 +1690,7 @@ Qed.
 Lemma a_consis_decorate : forall Δ1 Δ2 Θ0 P0 P P' Θ1,
   {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 }}a ->
   uniq Θ0 ->
-  {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ∼ P' ⊣ Θ1 }}t.
+  {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ∼ P' ⊣ Θ1 }}da.
 Proof.
   intros * Hc Hu; eapply a_consis_decorate_gen; eauto.
 Qed.

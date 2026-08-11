@@ -46,7 +46,7 @@
       [{{ … }}d]  declarative ([d_*], over Γ)
       [{{ … }}ad] declarative over algorithmic contexts ([ad_*], over Θ)
       [{{ … }}a]  algorithmic ([a_*], with [⊣ Θ'])
-      [{{ … }}t]  ε-tagged decorated ([a_consistag] / [a_subtag])
+      [{{ … }}da]  ε-tagged decorated ([a_consistag] / [a_subtag])
     That frees the turnstile for the judgement's own two axes:
       SUPERSCRIPT = WHICH COPY (in practice, the SORT).  bare = types,
         [⊢ˢ] = skeletons, [⊢ᵉ] = expressions ([a_wf_exp]), [⊢ˢᵈ] =
@@ -67,22 +67,22 @@ Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
-Require Import src.frost.decorated_algo.def_decorated.
+Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.def_extra.
 Require Import src.frost.coercions.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.          (* the algorithmic judgement notations *)
 Require Import src.frost.algo.def_meta.            (* κ ∷ Θ ⊑ Θ', Θ ⊴ Θ' *)
-Require Import src.frost.decorated_algo.def_decl_algo.
-Require Import src.frost.decorated_algo.def_decl_algo_sub.
-Require Import src.frost.decorated_algo.def_decl_algo_typing.
+Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.algo_decl.def_decl_algo_sub.
+Require Import src.frost.algo_decl.def_decl_algo_typing.
 Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.decl.prop_syntax_directed.
 Require Import src.frost.decl.prop_general_subsumption.
 Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.consis.prop_completeness_consis.
-Require Import src.frost.decorated_algo.prop_decorate_key.
+Require Import src.frost.deco_algo.prop_decorate_key.
 Require Import src.frost.algo.sub.prop_completeness_sub_precise.
 Require Import src.frost.algo.sub.look.prop_eq_var.
 Require Import src.frost.algo.sub.look.prop_eq_cstr.
@@ -283,10 +283,10 @@ Print Assumptions a_typing_sound.
    it — see the header note in typing/prop_closed.v.
    ⭐ [ζ] CLOSES the run's output context, which normally still holds
    flexibles ([fun x -> x] returns [α̂ → α̂] with [Θ1 = α̂]); it is built, not
-   assumed, so the statement is not vacuous (decorated_algo/prop_conserv.v §11).
+   assumed, so the statement is not vacuous (algo_decl/prop_conserv.v §11).
    The [{{ … }}ad] → [{{ … }}d] translation is the prose-completion of the paper's
    [app:decl-in-algo-context] "it is easy to extend them to algorithmic
-   contexts Θ" — decorated_algo/prop_conserv.v, docs/PAPER-GAPS.md. *)
+   contexts Θ" — algo_decl/prop_conserv.v, docs/PAPER-GAPS.md. *)
 Check a_typing_sound_infer :
   forall e A Θ1,
   {{ nil ⊢ᵉ e }}a ->

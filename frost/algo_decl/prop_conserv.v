@@ -3,7 +3,7 @@
     over the corresponding declarative context Γ.
 
     ⭐ WHAT THIS IS FOR.  Section D's four theorems are stated against the
-    decl-in-algo layer ([ad_pat] / [ad_sd_typing], decorated_algo/
+    decl-in-algo layer ([ad_pat] / [ad_sd_typing], algo_decl/
     def_decl_algo_typing.v) because that is where the algorithm's output
     context lives.  The CLOSED-PROGRAM corollaries (prop_closed.v) want the
     PURELY declarative system instead — a reader of the paper's §declarative
@@ -37,17 +37,19 @@
       the [d] side; they are related by membership rather than converted (§0b).
 
     ⚙ WHY IT LIVES HERE.  It relates the DECLARATIVE system to the
-    decl-in-algo one, so it belongs to neither — and [decorated_algo/] is
-    precisely the layer between them ("it is not part of the algorithm, it is
-    the bridge the soundness and completeness proofs both go through",
-    CLAUDE.md).  ⚠️ It was filed under [algo/typing/] when it was written, on
-    the theory that needing [btyp_to_bskl_open] (algo/pat/prop_soundness_pat.v)
-    and [guarded_pskl_lc] (algo/sub/prop_solve_sub.v) would invert the
-    layering.  It does not: the DEFINITION layers point one way
-    ([algo/def_*] -> [decorated_algo/def_*], never back), while the PROOF
-    layers already interleave — [decorated_algo/prop_decorate_key.v] reaches
-    into [algo/prop_soundness_consis.v], [algo/prop_pat_sub.v],
-    [algo/prop_refine.v] and [algo/prop_stability.v].  Moved 2026-08-11.
+    decl-in-algo one, and [algo_decl/] is where the decl-in-algo layer lives,
+    so this is its home.  ⚠️ It was filed under [algo/typing/] when it was
+    written, on the theory that needing [btyp_to_bskl_open]
+    (algo/pat/prop_soundness_pat.v) and [guarded_pskl_lc]
+    (algo/sub/prop_solve_sub.v) would invert the layering.  It does not: the
+    DEFINITION layers point one way ([algo/def_*] -> [algo_decl/def_*] and
+    [deco_algo/def_*], never back), while the PROOF layers already interleave —
+    [deco_algo/prop_decorate_key.v] reaches into
+    [algo/consis/prop_soundness_consis.v], [algo/prop_pat_sub.v],
+    [algo/prop_refine.v] and [algo/prop_stability.v].  Moved to the (then
+    undivided) decorated-algo layer 2026-08-11, and to [algo_decl/] when that
+    layer was split into [algo_decl/] (the `ad_*` decl-in-algo judgements) and
+    [deco_algo/] (the paper's `da` decorated-algorithmic system).
 
     ⚙ NO [Set Implicit Arguments] HERE, deliberately.  Every translation
     threads its context as an EQUATION ([Θ = denv_to_aenv Γ]) so that the
@@ -72,11 +74,11 @@ Require Import src.frost.decl.prop_wellformed.           (* d_wf_utyp_lc *)
 Require Import src.frost.decl.prop_syntax_directed.       (* ftvar_btyp_to_bskl *)
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
-Require Import src.frost.decorated_algo.def_decorated.
-Require Import src.frost.decorated_algo.def_decl_algo.
-Require Import src.frost.decorated_algo.def_decl_algo_sub.
-Require Import src.frost.decorated_algo.def_decl_algo_typing.
-Require Import src.frost.decorated_algo.prop_ctx_mono.   (* aenv_tbinds_le *)
+Require Import src.frost.deco_algo.def_decorated.
+Require Import src.frost.algo_decl.def_decl_algo.
+Require Import src.frost.algo_decl.def_decl_algo_sub.
+Require Import src.frost.algo_decl.def_decl_algo_typing.
+Require Import src.frost.algo_decl.prop_ctx_mono.   (* aenv_tbinds_le *)
 Require Import src.frost.algo.prop_pat_sub.   (* uskl_ghost_free_open_gen *)
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.consis.prop_soundness_consis.
