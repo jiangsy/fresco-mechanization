@@ -85,13 +85,44 @@ What blocks deleting it today is a **layering cycle**, not the mathematics:
 - the corollaries need the body run's **output well-formedness**, and for
   `a_typing` that is currently only available *inside* `a_typing_sound`.
 
-The fix is well-defined and matches what the tree already does one level down:
-**factor `a_typing_output_wf` out of `a_typing_sound` into
-`algo/prop_wf_preservation.v`**, which is already precisely the file that does
-this for `a_consis` (`a_consis_output_wf`) and `a_sub` (`a_sub_output_wf`).
-Then `prop_scope.v` imports it (no cycle — `prop_soundness_typing.v` does *not*
-import `prop_scope.v`), its check-row cases instantiate the IH the way the
-corollaries do, and both consumers call the corollary.
+⚠️ **RE-SCOPED 2026-08-12, after reading both proofs.**  The paragraph that
+stood here proposed factoring `a_typing_output_wf` out of `a_typing_sound` into
+`algo/prop_wf_preservation.v`, and called the cycle a layering accident.  Two
+things are wrong with it.
+
+**(a) `prop_scope.v` already imports `prop_soundness_typing.v`** (`:65`) and
+calls `a_typing_sound` at seven sites.  The dependency runs
+soundness → scope, not the other way, so soundness cannot reach the corollaries
+without first removing that import.  ⚙ All seven sites destruct only the FIRST
+THREE conjuncts (`Θ₀ ⊴ Θ₁`, `⊢ Θ₁`, `a_wf_ptyp Θ₁ A`) and never the declarative
+existential — so the split is exactly along the line proposed, but it has to
+happen *before* prop_scope, not after.
+
+**(b) The wf conjunct itself needs the scope invariant.**  This is the real
+obstruction.  In the check rows, `a_typing_sound` derives `a_wf_ptyp Θ₁ A` by
+stripping `Ξ` off `a_wf_ptyp (Ξ ++ … ++ Θ₁) A` with `a_wf_ptyp_strip_prefix`
+(`prop_soundness_typing.v:2372`), and the side condition it feeds that lemma IS
+premise (2).  So an `a_typing_output_wf` that does not assume premise (2) cannot
+be proved before `a_typing_scope`; and `a_typing_scope` needs output-wf.
+
+**They have to become ONE mutual induction over `a_typing`**, concluding
+
+```coq
+Θ0 ⊴ Θ1  /\  {{ ⊢ Θ1 }}a  /\  a_wf_ptyp Θ1 A  /\  <typing_scope_concl …>
+```
+
+in `prop_scope.v`, whose check rows feed their own scope conjunct (at the nil
+marker, exactly as the corollaries do) into the wf conjunct.  `prop_scope.v`
+then drops its `prop_soundness_typing` import, and `a_typing_sound` imports
+`prop_scope.v` and reads all four facts off it.
+
+**Cost, honestly.**  It merges `a_typing_scope` (≈550 lines) with the wf third of
+`a_typing_sound` (≈400), and every one of the twelve rows changes.  It is NOT
+purely additional work — `a_typing_sound` currently proves those three conjuncts
+inline and would stop, so the net line count is roughly flat — but it is a
+restructuring of the two largest typing proofs, not the bounded extraction this
+section originally described.  Worth doing; worth doing deliberately, on a
+branch, not as part of a cleanup sweep.
 
 Payoff: one of the four mech-only rule premises disappears, **and** the four
 sites in `prop_completeness_typing.v` (`:2902`, `:3157`, `:3810`, `:4145`) that
