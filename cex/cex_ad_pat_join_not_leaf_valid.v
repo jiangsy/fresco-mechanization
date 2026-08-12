@@ -82,11 +82,21 @@ Proof.
   apply a_wf_pskl__var. right. unfold a_binds_tvar. eauto.
 Qed.
 
-Lemma cap_plain : forall NM Θ, {{ empty ⨟ Θ ⊢ˢ[ NM | mode_ti ] capR ⩽ capQ }}ad.
-Proof.
-  intros NM Θ. apply ad_pat_sub__infer;
-    [ reflexivity | apply cap_consis | apply cap_is_sskl ].
-Qed.
+(** ⚠️ RETRACTED 2026-08-12 — AND THAT IS THE POINT.  Until then this section
+    proved
+
+      cap_plain : forall NM Θ, {{ empty ⨟ Θ ⊢ˢ[ NM | mode_ti ] capR ⩽ capQ }}ad
+
+    by [ad_pat_sub__infer] on [cap_consis] + [cap_is_sskl] — the PLAIN join
+    derived the capture pair, and only the leaf-valid mirror rejected it.  That
+    asymmetry is gone: [ad_pat_sub]'s four consistency-leaf rows now carry the
+    paper's presupposition (declarative.tex:2074) themselves, exactly as
+    [d_pat_sub] has since 2026-08-11, so the plain relation rejects the pair
+    for the same reason §2 does — [cap_no_refine].
+
+    What the file still shows is the reason the presupposition has to be ON THE
+    RULE and cannot be left to a mirror: §2's refutation is about the
+    REFINEMENT, and no amount of consistency reasoning recovers it. *)
 
 (* ===================================================================== *)
 (*  §2  NO leaf-valid join exists                                         *)
@@ -137,7 +147,8 @@ Qed.
 (*  §3  … and the configuration WAS reachable from [ad_pat] — which is     *)
 (*  why the rule had to change                                             *)
 (*                                                                        *)
-(*  ⭐ UPDATED 2026-08-07.  When [ad_pat]'s base rows embedded the PLAIN    *)
+(*  ⭐ UPDATED 2026-08-07, and again 2026-08-12 (see the retractions).      *)
+(*  When [ad_pat]'s base rows embedded the PLAIN                          *)
 (*  [ad_pat_sub], this section derived                                     *)
 (*      x : ∀X.◇  ⊢ˢ[TI]  x  ⦂  ∀ˢX.X                                      *)
 (*  by [P-Var] on §1's plain join — a judgement thm:complete-skeleton-      *)
@@ -172,10 +183,10 @@ Lemma cap_entry_wf : forall x,
   /\ abind_to_pskl (abind_var_skl capP) = Some capP.
 Proof. intros x. split; [ cbn; left; reflexivity | reflexivity ]. Qed.
 
-Lemma cap_var_plain_join : forall x,
-  {{ empty ⨟ ((x ~ abind_var_skl capP) ++ nil) ⊢ˢ[ a_sub_mode_sk | mode_ti ]
-    (bskl_to_uskl (pskl_to_bskl_syn capP)) ⩽ capQ }}ad.
-Proof.
-  intros x. cbn [pskl_to_bskl_syn bskl_to_uskl].
-  apply cap_plain.
-Qed.
+(** ⚠️ [cap_var_plain_join] RETRACTED 2026-08-12 with [cap_plain] above: it
+    read the join off the plain relation, which no longer derives the pair.
+    §3b's claim survives in the pieces that DO still hold — [cap_entry_wf]
+    above for the entry and the lookup, and [cap_consis] / [cap_is_sskl] in §1
+    for every premise of [__infer] EXCEPT the refinement.  So the leaf datum
+    remains the one and only thing that excludes the configuration; it is now
+    simply demanded by the rule instead of by a mirror. *)

@@ -618,6 +618,22 @@ Proof.
       pose proof (d_wf_utyp_ftvar HD Hβ) as Hb. analyze_binds Hb.
 Qed.
 
+(** …and hence a ∀ body, opened at an arbitrary well-formed [ph], is
+    well-formed: the cofinite premise supplies it at ONE fresh variable and the
+    substitution above moves it.  Every ForallL row wants this — [d_sub_wf]'s
+    two below, and the TY-sort bridge's two (algo_decl/prop_conserv.v). *)
+Lemma d_wf_utyp_open : forall L Γ C ph,
+    (forall α, α `notin` L ->
+       d_wf_utyp ((α ~ dbind_tvar) ++ Γ) (open_utyp_wrt_utyp C (utyp_var_f α))) ->
+    d_wf_utyp Γ ph ->
+    d_wf_utyp Γ (open_utyp_wrt_utyp C ph).
+Proof.
+  intros L Γ C ph Hcof Hph.
+  pick fresh α for (L `union` dom Γ `union` ftvar_in_utyp C).
+  rewrite (subst_utyp_in_utyp_intro α) by auto.
+  apply d_wf_utyp_subst_tvar; auto.
+Qed.
+
 Lemma d_sub_wf : forall m Δ Γ C B,
     {{ Δ ⨟ Γ ⊢[ m ] C ⩽ B }}d -> d_wf_utyp Γ C -> d_wf_btyp Γ B.
 Proof.
@@ -632,15 +648,9 @@ Proof.
     + eapply d_consis_wf; eassumption.
     + apply IHd_sub; assumption.
   - (* forall_l_tagged: utyp_all_tag ε C ⩽ B; recurse on opened body *)
-    inversion Hwf; subst. apply IHd_sub.
-    pick fresh α for (L `union` dom Γ `union` ftvar_in_utyp C).
-    rewrite (subst_utyp_in_utyp_intro α) by auto.
-    apply d_wf_utyp_subst_tvar; auto.
+    inversion Hwf; subst. apply IHd_sub. eapply d_wf_utyp_open; eassumption.
   - (* forall_l_untagged: utyp_all_syn C ⩽ B *)
-    inversion Hwf; subst. apply IHd_sub.
-    pick fresh α for (L `union` dom Γ `union` ftvar_in_utyp C).
-    rewrite (subst_utyp_in_utyp_intro α) by auto.
-    apply d_wf_utyp_subst_tvar; auto.
+    inversion Hwf; subst. apply IHd_sub. eapply d_wf_utyp_open; eassumption.
 Qed.
 
 (** For the [Sub] case: the subtyping LHS is [ptyp_to_utyp_syn] of the

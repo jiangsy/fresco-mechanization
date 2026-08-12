@@ -39,8 +39,41 @@ and with them on the rules the bridge is a rule-for-rule induction.
   `docs/ghost-capture.tex`.
 
 ⚠️ What is left of (B)'s neighbourhood is now purely a FUEL question: the
-`ad_pat_sub → ad_pat_sub_g` direction still has to be built, but the two
-judgements no longer differ in hygiene.
+`ad_pat_sub → ad_pat_sub_gv` direction still has to be built, but the two
+judgements no longer differ in hygiene — nor, since 2026-08-12, in the leaf
+datum.
+
+### 2026-08-12 — the leaf presupposition is ON `ad_pat_sub` too
+
+`ad_pat_sub`'s four consistency-leaf rows (`__infer`, `__check`,
+`__univ_ghost_r`, and `__arrow`'s domain) now carry
+`{{ Θ ⨟ ∅ ⊢ᵣₚ ⌊R⌋ˢ ⊳ ⌊Q⌋ }}ad` themselves, so the paper's relation and its
+decl-in-algo twin finally agree.  Consequences:
+
+- `ad_pat_sub_g_of : _g -> ad_pat_sub` is DELETED and is now FALSE; only the
+  leaf-valid mirror reaches the plain relation (`ad_pat_sub_of_gv`, a direct
+  induction).
+- `cex/cex_ad_pat_join_not_leaf_valid.v` §1/§3b are retracted deliberately —
+  they asserted the capture pair IS plainly derivable, which the change
+  forbids.  §2 stands and is the reason the premise must be on the rule.
+- the TY sort pays nothing (`d_consis_refine_ty`: the datum is REFLEXIVITY
+  there), so `d_sub_to_ad` gains only the paper's usual external
+  `d_wf_utyp Γ C`.
+
+⛔ **`ad_pat_sub_g` still exists.**  The measured cost of deleting it is in
+`PROGRESS.md` (2026-08-12): the look layer is NOT the obstacle — it only ever
+consumes `_g` — and every `_g`-concluding lemma already has a `_gv` twin
+EXCEPT the three `≡ᵘ`-subject reshapings in `algo/sub/prop_sub_msubst_equiv.v`
+that P7's ForallL rows use.  The one genuinely new obligation is
+
+```coq
+Lemma ad_refine_pskl_tyequiv_source : forall Θ Δ P P' Pt,
+  {{ Θ ⊢ P ≡ˢ P' }}a -> {{ Θ ⨟ Δ ⊢ᵣₚ P' ⊳ Pt }}ad ->
+  {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Pt }}ad.
+```
+
+(`a_uskl_tyequiv_erase` already reduces `≡ᵘ` to `≡ˢ`.)  Nothing in the tree
+relates `a_pskl_tyequiv` to `ad_refine_pskl`; it looks true and is unproved.
 
 ## WHAT LANDED
 

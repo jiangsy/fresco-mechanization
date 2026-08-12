@@ -878,12 +878,16 @@ Lemma d_pat_sub_to_ad : forall M Ψ Γ R Q,
 Proof.
   intros M Ψ Γ R Q H; induction H.
   - apply ad_pat_sub__infer;
-      [ assumption | apply d_pat_consis_to_ad; assumption | assumption ].
+      [ assumption | apply d_pat_consis_to_ad; assumption | assumption
+      | apply d_refine_pskl_to_ad_closed; assumption ].
   - apply ad_pat_sub__univ_ghost_r;
       [ assumption | assumption | assumption | assumption
-      | apply d_pat_consis_to_ad; assumption ].
+      | apply d_pat_consis_to_ad; assumption
+      | apply d_refine_pskl_to_ad_closed; assumption ].
   - apply ad_pat_sub__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
-      [ apply d_pat_consis_to_ad; assumption | assumption | assumption ].
+      [ apply d_pat_consis_to_ad; assumption
+      | apply d_refine_pskl_to_ad_closed; assumption
+      | assumption | assumption ].
   - apply ad_pat_sub__forall_l_tagged with (Ψ' := Ψ') (ψ := psi);
       [ assumption | assumption | assumption
       | apply a_tags_sort__sk; assumption
@@ -1768,28 +1772,83 @@ Qed.
     instantiation's sort data by [is_tskl_utyp_to_uskl] / [d_tags_skl_incl] /
     [uskl_ghost_free_incl] — the last of which is what [a_tags_sort__ty]
     demands and what makes this sort easy. *)
+(** ⭐ THE LEAF PRESUPPOSITION AT THE TY SORT IS REFLEXIVITY.  [ad_pat_sub]
+    demands the refinement at every consistency leaf (2026-08-12), and at
+    [N = TY] it costs nothing: consistency preserves the plain erasure
+    ([d_consis_btyp_erase]) and both sort inclusions agree with it
+    (prop_coercions.v), so the two sides of the refinement are the SAME
+    skeleton and [ad_refine_pskl_refl] closes it.
+
+    ⚙ Its scope premise is the paper's usual EXTERNAL well-formedness
+    (docs/WF-SIDE-CONDITIONS.md): refinement's var row needs the variable
+    bound, and [d_sub] states no well-formedness of its own. *)
+Lemma d_consis_refine_ty : forall Ψ Γ C B,
+  {{ Ψ ⨟ Γ ⊢ C ∼ B }}d ->
+  {{ (denv_to_aenv Γ) ⨟ empty ⊢ₚₛ (uskl_to_pskl (utyp_to_uskl C)) }}a ->
+  {{ (denv_to_aenv Γ) ⨟ empty ⊢ᵣₚ (uskl_to_pskl (utyp_to_uskl C))
+     ⊳ (bskl_to_pskl (btyp_to_bskl B)) }}ad.
+Proof.
+  intros Ψ Γ C B Hc Hwf.
+  rewrite bskl_to_pskl_btyp_to_bskl.
+  rewrite <- (d_consis_btyp_erase Hc).
+  rewrite <- uskl_to_pskl_utyp_to_uskl.
+  apply ad_refine_pskl_refl; exact Hwf.
+Qed.
+
+(** The SCOPE side condition of [d_consis_refine_ty], in the shape every leaf
+    row hands it: a well-scoped [utyp] is a well-scoped [pskl] once pushed
+    along the two sort inclusions (§0b's [Δ = ∅], §11's [delta_agree_nil]). *)
+Lemma a_wf_pskl_of_d_wf_utyp : forall Γ C,
+  d_wf_utyp Γ C ->
+  {{ (denv_to_aenv Γ) ⨟ empty ⊢ₚₛ (uskl_to_pskl (utyp_to_uskl C)) }}a.
+Proof.
+  intros Γ C H.
+  exact (a_wf_pskl_of_d_wf_uskl Γ nil (utyp_to_uskl C)
+           (d_wf_uskl_incl Γ C H) empty delta_agree_nil).
+Qed.
+
+(** ⚙ The [d_wf_utyp] premise is new with the leaf presupposition
+    (2026-08-12): §14's leaf rows now owe the refinement, and
+    [d_consis_refine_ty] discharges it by reflexivity given SCOPE.  It is the
+    paper's usual external well-formedness, and the one call site
+    ([base_row] below) has it — its subjects are paintings. *)
 Lemma d_sub_to_ad : forall M Ψ Γ C B,
   d_sub M Ψ Γ C B ->
+  d_wf_utyp Γ C ->
   ad_pat_sub a_sub_mode_ty M Ψ (denv_to_aenv Γ)
     (utyp_to_uskl C) (btyp_to_bskl B).
 Proof.
-  intros M Ψ Γ C B H; induction H; simpl.
+  intros M Ψ Γ C B H; induction H; intros Hwf; simpl.
   - (* infer *) apply ad_pat_sub__infer;
       [ assumption | apply d_consis_to_ad; assumption
-      | apply is_sskl_of_is_styp; assumption ].
+      | apply is_sskl_of_is_styp; assumption
+      | eapply d_consis_refine_ty;
+          [ eassumption | apply a_wf_pskl_of_d_wf_utyp; assumption ] ].
   - (* check *)
     destruct (guarded_ityp_inh_paint B ltac:(assumption) ltac:(assumption))
       as [ Heq Hgp ].
+    (* ⚙ the rule's [pskl] target is [bskl_to_pskl (btyp_to_bskl B)], which is
+       ALSO what [d_consis_refine_ty] concludes over — so the leaf premise is
+       that lemma verbatim, with no retraction step. *)
     rewrite Heq. apply ad_pat_sub__check;
-      [ apply guarded_uskl_incl; assumption | exact Hgp | ].
-    rewrite <- Heq. apply d_consis_to_ad; assumption.
+      [ apply guarded_uskl_incl; assumption | exact Hgp | | ].
+    + rewrite <- Heq. apply d_consis_to_ad; assumption.
+    + eapply d_consis_refine_ty;
+        [ eassumption | apply a_wf_pskl_of_d_wf_utyp; assumption ].
   - (* forall_r *)
-    apply ad_pat_sub__forall_r with (L := L). intros α Hα.
+    apply ad_pat_sub__forall_r with (L := L `union` dom Γ). intros α Hα.
     change (bskl_var_f α) with (btyp_to_bskl (btyp_var_f α)).
-    rewrite <- btyp_to_bskl_open. exact (H1 α Hα).
+    rewrite <- btyp_to_bskl_open.
+    apply H1; [ clear - Hα; fsetdec
+              | apply (d_wf_utyp_weakening_head ((α ~ dbind_tvar) ++ nil)); assumption ].
   - (* arg *)
+    inversion Hwf; subst.
     apply ad_pat_sub__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
-      [ apply d_consis_to_ad; assumption | assumption | assumption ].
+      [ apply d_consis_to_ad; assumption
+      | eapply d_consis_refine_ty;
+          [ eassumption | apply a_wf_pskl_of_d_wf_utyp; assumption ]
+      | apply IHd_sub; assumption
+      | assumption ].
   - (* forall_l, tagged *)
     apply ad_pat_sub__forall_l_tagged with
       (Ψ' := Ψ') (ψ := utyp_to_uskl ph);
@@ -1803,7 +1862,8 @@ Proof.
       | exact (a_wf_pskl_of_d_wf_uskl Γ nil (utyp_to_uskl ph)
                  (d_wf_uskl_incl Γ ph ltac:(assumption)) empty
                  delta_agree_nil)
-      | rewrite <- utyp_to_uskl_open; assumption ].
+      | rewrite <- utyp_to_uskl_open; apply IHd_sub;
+        inversion Hwf; subst; eapply d_wf_utyp_open; eassumption ].
   - (* forall_l, untagged *)
     apply ad_pat_sub__forall_l_untagged with
       (Ψ' := Ψ') (ψ := utyp_to_uskl ph);
@@ -1816,7 +1876,8 @@ Proof.
       | exact (a_wf_pskl_of_d_wf_uskl Γ nil (utyp_to_uskl ph)
                  (d_wf_uskl_incl Γ ph ltac:(assumption)) empty
                  delta_agree_nil)
-      | rewrite <- utyp_to_uskl_open; assumption ].
+      | rewrite <- utyp_to_uskl_open; apply IHd_sub;
+        inversion Hwf; subst; eapply d_wf_utyp_open; eassumption ].
 Qed.
 
 (* ===================================================================== *)
@@ -1896,14 +1957,20 @@ Proof. intros Θ x b y c Hc Hy. apply binds_app_3; exact Hy. Qed.
 
 (** The three base rows all read the same way: the embedded [d_sub] becomes an
     [ad_pat_sub] at the TY sort (§14), and its subject is a PAINTING, hence
-    ghost-free, so §13 upgrades it to the leaf-valid join the rule wants. *)
-Ltac base_row lctac :=
+    ghost-free, so §13 upgrades it to the leaf-valid join the rule wants.
+
+    ⚙ [wftac] is what §14's leaf presupposition costs here, and it costs
+    nothing: the subject is the painting of a [ptyp] the row already has
+    well-formed, so [d_wf_utyp_painting_syn] carries it across. *)
+Ltac base_row lctac wftac :=
   (* ⚙ [ptyp_to_uskl_syn] is a Definition, so the goal never displays the
      [bskl_to_uskl (pskl_to_bskl_syn …)] form the coercion lemma rewrites *)
   unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn;
   rewrite <- utyp_to_uskl_ptyp_to_utyp_syn;
   eapply ad_pat_sub_ty_to_v;
-    [ apply d_sub_to_ad; eassumption | reflexivity
+    [ apply d_sub_to_ad;
+        [ eassumption | apply d_wf_utyp_painting_syn; wftac ]
+    | reflexivity
     | apply uskl_ghost_free_incl; apply lc_ptyp_to_utyp_syn; lctac ].
 
 Lemma d_sd_typing_to_ad : forall M Γ e B,
@@ -1914,18 +1981,21 @@ Lemma d_sd_typing_to_ad : forall M Γ e B,
 Proof.
   intros M Γ e B H; induction H; intros Hwf Hwfe.
   - (* sd-Unit *)
-    apply ad_sd_typing__unit. base_row ltac:(apply lc_ptyp_unit).
+    apply ad_sd_typing__unit.
+    base_row ltac:(apply lc_ptyp_unit) ltac:(apply d_wf_ptyp__unit).
   - (* sd-Var *)
     apply ad_sd_typing__var with (A := A);
       [ apply binds_denv_to_aenv with (d := dbind_typ A); assumption | ].
     base_row ltac:(eapply d_wf_ptyp_lc; eapply d_wf_denv_binds_ptyp;
-                   eassumption).
+                   eassumption)
+             ltac:(eapply d_wf_denv_binds_ptyp; eassumption).
   - (* sd-Anno: the annotation's wf is the AMBIENT hypothesis, not the rule's *)
     inversion Hwfe as [ | | Θ0 e0 A0 Hwfa Hwfe0 | | | | ]; subst.
     apply ad_sd_typing__anno with (A := A);
       [ exact Hwfa | apply IHd_sd_typing; assumption | ].
     base_row ltac:(apply lc_ptyp_of_lc_btyp_inh;
-                   eapply d_sd_typing_target_lc; eassumption).
+                   eapply d_sd_typing_target_lc; eassumption)
+             ltac:(eapply a_wf_ptyp_to_d; [ eassumption | reflexivity ]).
   - (* sd-Freeze: the appendix's equivalence premise is REFLEXIVITY here *)
     inversion Hwfe as [ | | | Θ0 e0 Hwfe0 | | | ]; subst.
     apply ad_sd_typing__freeze with (B := A);

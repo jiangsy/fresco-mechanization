@@ -77,6 +77,18 @@ Lemma uskl_to_pskl_pskl_to_uskl : forall P,
   uskl_to_pskl (pskl_to_uskl P) = P.
 Proof. induction P; simpl; f_equal; auto. Qed.
 
+(** Both routes from a decorated type down to a [pskl] land on the same
+    skeleton.  This is what lets the TY sort discharge the leaf presupposition
+    by REFLEXIVITY: at that sort there are no ghosts, and consistency preserves
+    the erasure ([d_consis_btyp_erase]), so the two sides are already equal. *)
+Lemma uskl_to_pskl_utyp_to_uskl : forall C,
+  uskl_to_pskl (utyp_to_uskl C) = ptyp_to_pskl (btyp_to_ptyp (utyp_to_btyp C)).
+Proof. induction C; simpl; f_equal; auto. Qed.
+
+Lemma bskl_to_pskl_btyp_to_bskl : forall B,
+  bskl_to_pskl (btyp_to_bskl B) = ptyp_to_pskl (btyp_to_ptyp B).
+Proof. induction B; simpl; f_equal; auto. Qed.
+
 (** * 2. Commutation with opening.
 
     Every conversion is a structural map that leaves bound indices alone, so

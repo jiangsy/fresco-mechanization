@@ -46,8 +46,8 @@ Set Implicit Arguments.
    [ad_pat_sub_to_n]) was DELETED with the [ad_pat_sub_n] judgment it served
    (algo_decl/def_subtyping.v — see the note there).  Nothing outside
    the block ever used it: the completeness track settled on the tag-hygienic
-   fuel [ad_pat_sub_g], whose own bridges are [ad_pat_sub_g_of] /
-   [ad_pat_sub_gv_forget] / [ad_pat_sub_gv_fuel_weaken]
+   fuel [ad_pat_sub_g], whose own bridges are [ad_pat_sub_gv_forget] /
+   [ad_pat_sub_gv_fuel_weaken] / [ad_pat_sub_of_gv]
    (def_subtyping.v). *)
 
 (* ===================================================================== *)

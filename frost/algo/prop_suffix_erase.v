@@ -1044,7 +1044,11 @@ Proof.
       [ assumption
       | eapply ad_pat_consis_subst_mid; [ eassumption | reflexivity | .. ];
         eassumption
-      | apply is_sskl_subst_mono; assumption ].
+      | apply is_sskl_subst_mono; assumption
+      | rewrite uskl_to_pskl_subst_mono, bskl_to_pskl_subst_mono;
+        eapply ad_refine_pskl_subst_mid;
+          [ eassumption | reflexivity | exact Hs | exact Hu
+          | clear; fsetdec ] ].
   - (* check (TY) *)
     rewrite pskl_to_bskl_inh_subst_mono; [ | assumption ].
     apply ad_pat_sub__check;
@@ -1052,10 +1056,13 @@ Proof.
       | apply guarded_pskl_subst;
           [ assumption | apply guarded_pskl_mono; assumption
           | apply lc_ptyp_to_pskl; apply mono_ptyp_lc; assumption ]
-      | ].
-    rewrite <- pskl_to_bskl_inh_subst_mono; [ | assumption ].
-    eapply ad_pat_consis_subst_mid; [ eassumption | reflexivity | .. ];
-      eassumption.
+      | rewrite <- pskl_to_bskl_inh_subst_mono; [ | assumption ];
+        eapply ad_pat_consis_subst_mid; [ eassumption | reflexivity | .. ];
+        eassumption
+      | rewrite uskl_to_pskl_subst_mono;
+        eapply ad_refine_pskl_subst_mid;
+          [ eassumption | reflexivity | exact Hs | exact Hu
+          | clear; fsetdec ] ].
   - (* forall_r (TY) : the witness joins the PREFIX *)
     apply ad_pat_sub__forall_r
       with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
@@ -1071,11 +1078,21 @@ Proof.
       | apply guarded_bskl_subst_mono; assumption
       | apply is_sskl_subst_mono; assumption
       | eapply ad_pat_consis_subst_mid; [ eassumption | reflexivity | .. ];
-        eassumption ].
+        eassumption
+      |
+        rewrite uskl_to_pskl_subst_mono, bskl_to_pskl_subst_mono;
+        eapply ad_refine_pskl_subst_mid;
+          [ eassumption | reflexivity | exact Hs | exact Hu
+          | clear; fsetdec ] ].
   - (* arrow *)
     eapply ad_pat_sub__arrow;
       [ eapply ad_pat_consis_subst_mid; [ eassumption | reflexivity | .. ];
         eassumption
+      |
+        rewrite uskl_to_pskl_subst_mono, bskl_to_pskl_subst_mono;
+        eapply ad_refine_pskl_subst_mid;
+          [ eassumption | reflexivity | exact Hs | exact Hu
+          | clear; fsetdec ]
       | eauto | assumption ].
   - (* forall_l_tagged : ⭐ THE ROW.  The instantiation is substituted too *)
     match goal with

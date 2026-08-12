@@ -49,7 +49,7 @@ Qed.
 (* ===================================================================== *)
 (*  The three ERASURES + fuel monotonicity.                               *)
 (*                                                                        *)
-(*  ⚙ [ad_pat_sub_g_of] and [ad_pat_sub_gv_fuel_weaken] are HERE, not with *)
+(*  ⚙ [ad_pat_sub_of_gv] and [ad_pat_sub_gv_fuel_weaken] are HERE, not with *)
 (*  the completeness files: the SOUNDNESS side has to CONCLUDE [_gv]       *)
 (*  ([ad_pat] / [ad_sd_typing] embed the leaf-valid join, so               *)
 (*  thm:complete-skeleton/type-inference can consume it), and              *)
@@ -57,26 +57,6 @@ Qed.
 (*  order.  Both are plain inductions over the mirrors and need nothing    *)
 (*  this file does not already import.                                     *)
 (* ===================================================================== *)
-
-(** Erase hygiene + fuel: a hygienic derivation is a plain one. *)
-Lemma ad_pat_sub_g_of : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_g n NM M Ψ Θ R Q ->
-  {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad.
-Proof.
-  intros n NM M Ψ Θ R Q H. induction H.
-  - eapply ad_pat_sub__infer; eauto.
-  - eapply ad_pat_sub__check; eauto.
-  - eapply ad_pat_sub__forall_r; eauto.
-  - eapply ad_pat_sub__univ_ghost_r; eauto.
-  - eapply ad_pat_sub__arrow; eauto.
-  - eapply ad_pat_sub__forall_l_tagged; eauto.
-  - eapply ad_pat_sub__forall_l_untagged; eauto.
-  - eapply ad_pat_sub__ghost; eauto.
-  - eapply ad_pat_sub__ghostg; eauto.
-  - eapply ad_pat_sub__univ_ghost_l; eauto.
-  - eapply ad_pat_sub__univ_ghost_lg; eauto.
-  - eapply ad_pat_sub__flex_mono; eauto.
-Qed.
 
 (** Fuel monotonicity for the leaf-valid hygienic join.  The fuel is the
     declarative derivation's HEIGHT, so a derivation of height [n] is also
@@ -110,12 +90,33 @@ Proof.
       | apply IHad_pat_sub_gv; lia ].
 Qed.
 
-(** The composite erasure the [ad_pat] / [ad_sd_typing] consumers want:
-    a leaf-valid join IS a plain declarative subtyping derivation. *)
+(** The erasure the [ad_pat] / [ad_sd_typing] consumers want: a leaf-valid
+    join IS a plain declarative subtyping derivation.
+
+    ⚙ A DIRECT induction on [_gv] since 2026-08-12.  It used to factor through
+    [ad_pat_sub_g_of : _g -> ad_pat_sub] and then [ad_pat_sub_gv_forget], but
+    once [ad_pat_sub] itself carries the leaf presupposition that route is
+    FALSE — a plain [_g] has no leaf datum to hand over.  Only the leaf-valid
+    mirror can reach the plain relation now, which is the point of the
+    change. *)
 Lemma ad_pat_sub_of_gv : forall n NM M Ψ Θ R Q,
   ad_pat_sub_gv n NM M Ψ Θ R Q ->
   {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad.
-Proof. intros * H. exact (ad_pat_sub_g_of (ad_pat_sub_gv_forget H)). Qed.
+Proof.
+  intros n NM M Ψ Θ R Q H; induction H.
+  - eapply ad_pat_sub__infer; eauto.
+  - eapply ad_pat_sub__check; eauto.
+  - eapply ad_pat_sub__forall_r; eauto.
+  - eapply ad_pat_sub__univ_ghost_r; eauto.
+  - eapply ad_pat_sub__arrow; eauto.
+  - eapply ad_pat_sub__forall_l_tagged; eauto.
+  - eapply ad_pat_sub__forall_l_untagged; eauto.
+  - eapply ad_pat_sub__ghost; eauto.
+  - eapply ad_pat_sub__ghostg; eauto.
+  - eapply ad_pat_sub__univ_ghost_l; eauto.
+  - eapply ad_pat_sub__univ_ghost_lg; eauto.
+  - eapply ad_pat_sub__flex_mono; eauto.
+Qed.
 
 (** A leaf-valid join IS a plain declarative subtyping derivation. *)
 Lemma ad_pat_sub_of_v : forall NM M Ψ Θ R Q,

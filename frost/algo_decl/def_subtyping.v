@@ -67,11 +67,19 @@ Inductive ad_pat_sub :
     Ψ [=] empty ->
     {{ empty ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
     is_sskl Q ->
+    (* ⭐ [paper-gap] THE PRESUPPOSITION OF SKELETON CONSISTENCY at this leaf
+       (declarative.tex:2074), the same premise [d_pat_sub] carries.  Added
+       2026-08-12: until then only the mirror [ad_pat_sub_gv] had it, so the
+       plain relation and its declarative twin disagreed and the bridge had to
+       run through the mirror.  It is NOT derivable from the consistency
+       premise (cex/cex_ad_pat_join_not_leaf_valid.v). *)
+    {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) }}ad ->
     {{ Ψ ⨟ Θ ⊢ˢ[ NM | mode_ti ] R ⩽ Q }}ad
 | ad_pat_sub__check : forall Ψ Θ T B,                         (* Check (TY) *)
     guarded_uskl T ->
     guarded_pskl B ->
     {{ Ψ ⨟ Θ ⊢ˢ T ∼ (pskl_to_bskl_inh B) }}ad ->
+    {{ Θ ⨟ empty ⊢ᵣₚ ⌊ T ⌋ˢ ⊳ B }}ad ->
     {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_ty | mode_tc ] T ⩽ (pskl_to_bskl_inh B) }}ad
 | ad_pat_sub__forall_r : forall L Ψ Θ T B,                    (* ForallR (TY) *)
     (forall α, α `notin` L ->
@@ -84,9 +92,12 @@ Inductive ad_pat_sub :
     guarded_bskl Q ->
     is_sskl Q ->
     {{ empty ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
+    {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) }}ad ->
     {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_sk | mode_tc ] R ⩽ (bskl_tophole Q) }}ad
 | ad_pat_sub__arrow : forall NM Ψ Ψ1 Ψ2 Θ M R1 R2 Q1 Q2,      (* Arrow *)
     {{ Ψ1 ⨟ Θ ⊢ˢ R1 ∼ Q1 }}ad ->
+    (* the DOMAIN premise is itself a consistency leaf *)
+    {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R1 ⌋ˢ ⊳ (bskl_to_pskl Q1) }}ad ->
     {{ Ψ2 ⨟ Θ ⊢ˢ[ NM | M ] R2 ⩽ Q2 }}ad ->
     Ψ [=] Ψ1 `union` Ψ2 ->
     {{ Ψ ⨟ Θ ⊢ˢ[ NM | mode_fn M ] (uskl_arrow R1 R2) ⩽ (bskl_arrow Q1 Q2) }}ad
@@ -190,11 +201,15 @@ where "{{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad" :=
        non-incrementing rules recurse on structural sub-derivations, so
        the main induction uses lex(fuel, derivation)).
 
-    The erasure [_g → ad_pat_sub] is [ad_pat_sub_g_of] (prop_sub_mirrors.v).  ⚠️ The other
-    direction ([ad_pat_sub] → [_g], which is what a COMPLETENESS corollary over
-    the declarative system would need) is still owed — but it is now purely a
-    FUEL question: the hygiene is already there.  See
-    docs/HANDOFF-closed-corollaries-declarative.md. *)
+    ⚠️ THERE IS NO ERASURE [_g → ad_pat_sub] since 2026-08-12, and there cannot
+    be one: [ad_pat_sub]'s four consistency-leaf rows now carry the paper's
+    presupposition (declarative.tex:2074) and a plain [_g] derivation has no
+    leaf datum to hand over.  Only the LEAF-VALID mirror reaches the plain
+    relation, by [ad_pat_sub_of_gv] (prop_sub_mirrors.v).  ⚠️ The other
+    direction ([ad_pat_sub] → [_gv], which is what a COMPLETENESS corollary
+    over the declarative system would need) is still owed — but it is now
+    purely a FUEL question: hygiene and the leaf datum are both already there.
+    See docs/HANDOFF-closed-corollaries-declarative.md. *)
 
 Inductive ad_pat_sub_g :
   nat -> a_sub_mode -> mode -> atoms -> aenv -> uskl -> bskl -> Prop :=

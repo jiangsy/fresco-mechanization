@@ -238,7 +238,106 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-11 (latest) — ⚙ **`etag` → `tag`; `prop_decorate.v` DELETED into `prop_coercions.v`**
+## 2026-08-12 (latest) — ⭐⭐ **THE LEAF PRESUPPOSITION GOES ON `ad_pat_sub` ITSELF, and `ad_pat_sub_g_of` DIES**
+
+**`make coq` exit 0; README.v 28/28 `Print Assumptions` closed; no `Admitted`,
+no `Axiom`.**
+
+`d_pat_sub` has carried the paper's presupposition on skeleton consistency
+(`declarative.tex:2074`) on its consistency-leaf rows since 2026-08-11.
+`ad_pat_sub` did not — a separate mirror `ad_pat_sub_gv` carried it instead —
+so the paper's own relation and its decl-in-algo twin disagreed, and every
+bridge had to detour through the mirror.  The premise is now on
+`ad_pat_sub`'s four leaf rows (`__infer`, `__check`, `__univ_ghost_r`, and
+`__arrow`'s DOMAIN, which is itself a consistency leaf):
+
+```coq
+{{ Θ ⨟ empty ⊢ᵣₚ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) }}ad
+```
+
+- ⭐ **`ad_pat_sub_g_of : _g -> ad_pat_sub` IS DELETED, and it is now FALSE.**
+  A plain fuel derivation has no leaf datum to hand over.  `ad_pat_sub_of_gv`
+  is re-proved as a DIRECT induction on `_gv` instead of factoring through
+  `ad_pat_sub_gv_forget` + `_g_of`.  Only the leaf-valid mirror reaches the
+  plain relation now — which is the point of the change.
+- ⭐ **`cex/cex_ad_pat_join_not_leaf_valid.v` §1/§3b RETRACTED, deliberately.**
+  `cap_plain` asserted that the capture pair `∀X.◇ ⩽ ∀ˢX.X` IS derivable in
+  the plain relation; that is exactly what the change forbids.  The record is
+  KEPT, not deleted: §2 (`cap_no_refine`) is the reason the presupposition has
+  to be ON THE RULE, and no consistency reasoning recovers it.
+- ⭐ **The TY sort pays NOTHING.**  `d_consis_refine_ty`
+  (algo_decl/prop_conserv.v): at `N = TY` the datum is REFLEXIVITY, because
+  consistency preserves the plain erasure (`d_consis_btyp_erase`) and both
+  sort inclusions agree with it (the two new coercion equalities
+  `uskl_to_pskl_utyp_to_uskl` / `bskl_to_pskl_btyp_to_bskl` in
+  `frost/prop_coercions.v`).  So the TY-sort bridge `d_sub_to_ad` gains only
+  a `d_wf_utyp Γ C` hypothesis — the paper's usual EXTERNAL well-formedness
+  (docs/WF-SIDE-CONDITIONS.md) — and its one call site, `base_row`, has it for
+  free: every base row's subject is the painting of a `ptyp` the row already
+  has well-formed (`d_wf_utyp_painting_syn`).
+- ⚙ New in `decl/prop_wellformed.v`: `d_wf_utyp_open` (a ∀ body opened at an
+  arbitrary well-formed `ph` is well-formed).  It was `d_sub_wf`'s two ForallL
+  cases duplicated inline; both now call it, and so do `d_sub_to_ad`'s two.
+- ⚙ **FOUR DEAD LEMMAS REMOVED** from `algo/prop_pat_sub.v` —
+  `ad_pat_sub_isub`, `ad_pat_sub_weaken`, `ad_pat_sub_psi_cong`,
+  `ad_partial_precise_isub`.  Each had exactly one occurrence in the tree: its
+  own definition.
+- ⚙ `ad_pat_sub_{subst_flex,subst_flex_def,rename_tvar,strip_suffix}` MOVED
+  from `algo/prop_pat_sub.v` to `algo/sub/prop_soundness_sub.v`, beside their
+  `_gv` twins — that is where the refinement transports they now need live.
+  Both consumers (`prop_suffix_erase.v`, `prop_rename_decl.v`) already import
+  it.  ⚠️ In that file bare `guarded_pskl_subst` resolves to
+  `prop_looksub.v`'s homonym (it has an extra disequality premise); the one
+  wanted is `guarded_pskl_subst_var`.
+
+**⛔ `ad_pat_sub_g` IS NOT DELETED, and the hand-off's estimate of what that
+costs was wrong.**  See the next section.
+
+### What deleting `ad_pat_sub_g` actually costs (measured 2026-08-12, NOT attempted)
+
+The hand-off expected the migration to be ~10 look-layer lemmas that
+CONSTRUCT `_g` and would have to supply the leaf datum.  **The look layer
+never constructs `_g`.**  Every `_g` in `look/prop_sub_var.v`,
+`look/prop_sub_cstr.v` and `look/prop_extract.v` is a HYPOTHESIS — the
+declarative join being simulated — and every conclusion is an algorithmic
+`a_looksub` / `a_solve_sub` / `a_extract` fact.  Switching those hypotheses to
+`_gv` is free at the call sites too: every one of them already holds a `_gv`
+and calls `ad_pat_sub_gv_forget` to weaken it.
+
+The real cost is one level up, and it is:
+
+1. **~6 hypothesis-only facts re-proved by induction on `_gv`** (ignoring the
+   extra leaf premise): `ad_pat_sub_g_ftag_sub`, `_ty_tc_subject`,
+   `_hole_target_inh`, `_holeg_target_inh`, `_ti_consis`, `_concrete_target`.
+   Mechanical.
+2. **The `_g`-CONCLUDING lemmas already all have `_gv` twins** — the eight P5
+   row transports, `_refl_transport`, `_hole_intro`, `_wrap_tophole`,
+   `_fold_flex`, `_psi_cong`, and the flagship `ad_pat_sub_precise_upre`
+   (`prop_completeness_sub_precise.v` lines 1548-2522).  They just get deleted.
+3. **⭐ EXCEPT THREE, all in `algo/sub/prop_sub_msubst_equiv.v`**:
+   `ad_pat_sub_g_tyequiv_subject`, `_paint_tyequiv_subject`, `_unfold_flex`.
+   P7's two ForallL rows (`prop_completeness_sub_gen.v:2498`, `:2807`) reshape
+   the join's subject along `≡ᵘ` before handing it to the look layer, and that
+   reshaping is what has no leaf-valid twin.
+
+So the ONE genuinely new proof obligation is the refinement-side counterpart
+of `ad_pat_consis_tyequiv_subject`, and `a_uskl_tyequiv_erase` already reduces
+it from `≡ᵘ` to the `pskl`-level `≡ˢ`:
+
+```coq
+Lemma ad_refine_pskl_tyequiv_source : forall Θ Δ P P' Pt,
+  {{ Θ ⊢ P ≡ˢ P' }}a ->
+  {{ Θ ⨟ Δ ⊢ᵣₚ P' ⊳ Pt }}ad ->
+  {{ Θ ⨟ Δ ⊢ᵣₚ P  ⊳ Pt }}ad.
+```
+
+No lemma in the tree relates `a_pskl_tyequiv` to `ad_refine_pskl` at all.  It
+looks TRUE — `≡ˢ` is congruence plus mono-painting equality, refinement has
+the `__flex_l` row and `ad_refine_pskl_unfold_def_subject` already does the
+flexible-definition half — but it is unproved, so `_g` stays for now and the
+`_g`/`_gv` split is load-bearing until it lands.
+
+## 2026-08-11 — ⚙ **`etag` → `tag`; `prop_decorate.v` DELETED into `prop_coercions.v`**
 
 **`make coq` exit 0; README.v 28/28 `Print Assumptions` closed.**
 
