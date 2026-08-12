@@ -1056,7 +1056,7 @@ follow the paper.  It only upgrades our verdict on someone else's code.
   rule); the consequence hits `lemma:precision-preserves-refinement`
   (full-algo-spec.tex:716) and hence the whole completeness/optimality
   development, which rests on it.
-- Machine-checked artifact: `frost/algo/cex/cex_refine_not_transitive.v` —
+- Machine-checked artifact: `cex/cex_refine_not_transitive.v` —
   `ad_refine_syn_not_transitive` is Qed and axiom-free.
 - The GhostForall rule binds `α` in `Γ` but deliberately KEEPS `Δ`
   (the paper's own inline comment: "It's fine to keep Δ since we already
@@ -1759,7 +1759,7 @@ on the freshening so a raw Θ0-flex opposite a ρ-rigid-var cannot occur.
   `flex_shield Θ₀ Ψ' Δρ P₀ ψa` (a positional invariant: at every position
   where a raw Θ₀-flexible faces the guess, the guess is both Δρ-clean and
   Ψ'-tag-free — with an explicit row keeping it from being too strong, see
-  `fsh_rho_var`), plus `flex_apart_walk` (P6-Cv's own premise at every state
+  `fsh_rsubst_var`), plus `flex_apart_walk` (P6-Cv's own premise at every state
   the descents can reach).  `a_solve_sub_complete_var` is now **Qed and
   axiom-free** in `frost/algo/prop_look_complete_sub_var.v`, and
   `flex_shield_excludes_cex` is the machine-checked regression test that the
@@ -2143,7 +2143,7 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
   would need the sub-side analogue of `ad_pat_consis_target_ftv`
   (`ftv Q ⊆ ftv R ∪ def_ftv Θ` from a subtyping derivation with a decorated
   subject), and that lemma is FALSE — machine-checked,
-  `frost/algo/cex/cex_p6ss_sub_target_ftv.v`.  `is_tskl` excludes the
+  `cex/cex_p6ss_sub_target_ftv.v`.  `is_tskl` excludes the
   \sublab{Ghost} row but NOT \sublab{ForallL}: a tagged `∀^ε` IS a decorated
   skeleton, and its instantiation is bounded only by `dom Θ` — the
   DERIVATION's context, which \sublab{ForallR} grows by the very β being
@@ -2171,7 +2171,7 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
 ## GAP (proof-step, 2026-07-29) — `lemma:complete-constraint-collection-solving` (P6-Ss), ForallL case: the IH instance needs `θψ_b = ψ_b`, which fails even for legitimate θ; no side condition on θ repairs the step — the statement is believed TRUE via a ρ-generalized induction
 
 - Where: subtyping-proofs.tex:2600–2643 (the \sublab{ForallL} case of P6-Ss).
-  Machine-checked evidence: `frost/algo/cex/cex_p6ss_inc_compat.v`.
+  Machine-checked evidence: `cex/cex_p6ss_inc_compat.v`.
 - **The step.**  The rule's premise is
   `⊢ ((θ S')[ψ_a/α])[ψ_b/β] ⩽ Q`, and the proof rewrites it (\refe) as
   `⊢ ((θ S')[ψ_b/β])[ψ_a/α] ⩽ Q`, then applies the IH with
@@ -2240,7 +2240,7 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
   ForallL can sit above a Check — so **P6-Cs must be ρ-generalized too**.
   That is threading, not new theory: P6-Cv
   (`a_solve_eq_complete_var_gen`, prop_look_complete_var.v:505) ALREADY
-  takes `uskl_rho NM Θ Δρ Ψρ ψsub ψa` and the whole `uskl_rho_*_l_inv`
+  takes `uskl_rsubst NM Θ Δρ Ψρ ψsub ψa` and the whole `uskl_rho_*_l_inv`
   inversion kit exists, so P6-Cs's rows invert ρ per subject shape exactly
   as P6-Cv's do, its measure (`size R' + size P0`, on the ρ-FREE ideal
   subject) is unaffected, and its leaf passes the real ρ down instead of
@@ -2255,7 +2255,7 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
     wants the strengthened conclusion.
   - The reverse direction of
     `lemma:constraint-collection-stable-substitution` is mechanized as
-    `a_looksub_subst_stable_rev` (prop_looksub.v §4b, `Qed`, axiom-free).
+    `a_looksub_lookeq_subst_stable_rev` (algo/sub/prop_looksub.v §4b, `Qed`, axiom-free).
     The ρ-route does not need it (the looksub side stays on var-opened
     subjects), but it is the lemma the PAPER's own proof route ends with,
     and it is true and kept.
@@ -2270,7 +2270,7 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
     precision premise at `add β Δ` (β joins Δρ, and `Δρ ⊆ Δ`) and must
     return the conclusion at plain Δ.
 
-## ⚠️ REPAIR-PREMISE GAP (authors' call) — `flex_apart` is missing `fsh_rho_var`'s mirror, and without it P6-L's side condition is UNSATISFIABLE at an arrow (2026-07-30)
+## ⚠️ REPAIR-PREMISE GAP (authors' call) — `flex_apart` is missing `fsh_rsubst_var`'s mirror, and without it P6-L's side condition is UNSATISFIABLE at an arrow (2026-07-30)
 
 **Machine-checked:** `frost/algo/cex/cex_p7_shield_arrow.v`
 (`p7_shield_arrow_flexfree_is_unsatisfiable`,
@@ -2279,7 +2279,7 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
 P6-Cv's repair premise `flex_apart` and P6-Sv's `flex_shield` are deliberate
 mirrors, and `flex_shield` carries
 
-    fsh_rho_var : α ∈ Δρ  →  flex_shield Θ0 Ψ' Δρ P0 (uskl_var_f α)
+    fsh_rsubst_var : α ∈ Δρ  →  flex_shield Θ0 Ψ' Δρ P0 (uskl_var_f α)
 
 whose own comment records why it had to be added: *"a ρ-REPLACED RIGID VARIABLE
 is safe opposite ANY payload, flexible or not — this is P6-Cv's leaf … WITHOUT
@@ -2291,7 +2291,7 @@ walk step `fastep_all_r` — which P6-Sv's own ForallL row builds — opens a ta
 quantifier of the guess at a fresh β, adds β to Δρ, and leaves `P0` alone.  So
 from `(∅, P0, ∀^ε b. b)` the walk reaches `flex_apart Θ0 {β} P0 (var β)`, and at
 an **arrow** `P0` no rule applies: `fa_clean` wants `{β} ∩ {β} = ∅`, the
-congruence rows want another shape, and there is no `fa_rho_var`.
+congruence rows want another shape, and there is no `fa_rsubst_var`.
 
 So `sub_shield Θ0 Ψa ∅ (P1 → P2) (∀^ε b. b)` is **unsatisfiable** — P6-L is
 vacuous there, and P7b's Sub-ForallL cannot use it.  Two witnesses, because they
@@ -2299,10 +2299,10 @@ say different things: `⟨⟩ → ⟨⟩` is FLEX-FREE (so `flex_apart` is also 
 `fsh_flexfree`'s mirror), while `(∀γ. γ→γ) → α̂` is not flex-free and its
 counterpart is not mono-ish, so no existing route reaches it either.
 
-**Recommended repair:** add `fa_rho_var` to `flex_apart`, mirroring
-`fsh_rho_var` verbatim.  It kills both witnesses.  **Cost, measured:** the ~8
+**Recommended repair:** add `fa_rsubst_var` to `flex_apart`, mirroring
+`fsh_rsubst_var` verbatim.  It kills both witnesses.  **Cost, measured:** the ~8
 `flex_apart` inversion lemmas each gain a case, all but one closing with
-`apply fa_rho_var; assumption`; and `flex_apart_flex_var_clean` must weaken to a
+`apply fa_rsubst_var; assumption`; and `flex_apart_flex_var_clean` must weaken to a
 disjunction (its single consumer, P6-Cs's Arrow row, still reaches its "ψa is a
 mono paint" conclusion, since a Δρ-variable IS one — but only after peeling a
 ∀◈ stack, which at `SK` is not free).
@@ -2312,8 +2312,8 @@ the paper must adopt; see docs/DESIGN-completeness-subtyping.md §9.0.
 
 ### RESOLVED (2026-07-30) — the repair LANDED
 
-`fa_rho_var` **and** `fa_flexfree` were added to `flex_apart`, and
-`fa_topholeg_t` was deleted (with `fa_rho_var` present it was the only way a
+`fa_rsubst_var` **and** `fa_flexfree` were added to `flex_apart`, and
+`fa_topholeg_t` was deleted (with `fa_rsubst_var` present it was the only way a
 guard could hold at a ∀◈ that is neither clean nor flex-free, and it produced a
 "∀◈-stack over a Δρ-variable" that no consumer can use).  Both witnesses are
 now shielded; `cex/cex_p7_shield_arrow.v` became the regression test
@@ -2337,7 +2337,7 @@ The paper records, inside P7b's Sub-ForallR case:
 > % If yes, use this to simplify the proof.
 
 **Checked, and it is false.**  Machine-checked witness:
-`frost/algo/cex/cex_p7_concrete_rhs.v` (`p7_concrete_rhs_is_false`, Qed,
+`cex/cex_p7_concrete_rhs.v` (`p7_concrete_rhs_is_false`, Qed,
 axiom-free).
 
 At `N = TY` the mode constraint `skmod[TY]{P_0}{TC}` forces `P_0` to be a TYPE
@@ -2398,7 +2398,7 @@ The paper writes, at Sub-Infer:
 > \Cref{thm:complete-consistency}, gives `Θ ⊢ precise{θP}{Q}`.
 
 I read that as "read a precision off the consistency premise" and refuted THAT
-(`frost/algo/cex/cex_p7_sskl_precise.v`).  But the paper says what it means: it
+(`cex/cex_p7_sskl_precise.v`).  But the paper says what it means: it
 invokes **thm:complete-consistency** — a theorem, already mechanized as
 `a_consis_complete` — on the consistency problem `(Θ_0; □; P)`, and takes
 the precision from its conclusion.  That route is sound.
@@ -2463,7 +2463,7 @@ exports NO such conjunct — and it cannot, because algorithmic `UnivGhostR`
 outputs `∀◇.P` from the input `P`, while refinement has no rule putting a `∀◇`
 on the RIGHT of a non-ghost left-hand side.
 
-**Consequence, machine-checked** (`frost/algo/cex/cex_p7_univ_ghost_r_vacuous.v`,
+**Consequence, machine-checked** (`cex/cex_p7_univ_ghost_r_vacuous.v`,
 Qed + axiom-free, and `ad_refine_pskl_f_tophole_r_shape` in
 `prop_sub_complete_thm.v`): declarative `Sub-UnivGhostR` has a GUARDED subject
 and the counterpart `∀◇.Q_0`, so the third condition reads
@@ -2476,7 +2476,7 @@ so the exclusion is a real loss of coverage, not a vacuity that was there
 anyway.
 
 **The truncation is NOT confined to the ghost row — machine-checked
-(2026-07-30, `frost/algo/cex/cex_p7_third_premise_forall.v`, Qed +
+(2026-07-30, `cex/cex_p7_third_premise_forall.v`, Qed +
 axiom-free).**  The third condition is a LOCKSTEP relation —
 `ad_refine_pskl` descends both sides together, so it can hold only when
 subject and counterpart agree in shape (modulo ghosts on the LEFT and
@@ -2570,7 +2570,7 @@ The paper's constraint-collection stability lemma (algorithmic-proofs
 tex:504-520) says: substituting an `α`-free `Q` for `β ≠ α` into the SOURCE
 leaves the collected `Ξ ⨾ 𝒞` unchanged.  Under the Barendregt convention
 that is correct.  Stated without it, it is **false**, and the mechanization
-has the witness (`frost/algo/cex/cex_look_subst_stable_leak.v`, Qed,
+has the witness (`cex/cex_look_subst_stable_leak.v`, Qed,
 axiom-free):
 
     Θ ⊢ ∀. (α → β)   ∼[α]   ∀. (0 → 0)   ⤳   ·   ⨾   [ β₀ ≐ ]
@@ -2676,7 +2676,7 @@ The reference implementation's `assign` has the case —
 ```
 
 **⭐⭐⭐ MACHINE-CHECKED, AND THE IMPLEMENTATION CRASHES ON AN ORDINARY
-PROGRAM.**  `frost/algo/cex/cex_p7_flex_walk_tm_var.v`
+PROGRAM.**  `cex/cex_p7_flex_walk_tm_var.v`
 (`complete_subtyping_false_at_a_term_variable_head`, Qed + axiom-free)
 exhibits the smallest witness — `Θ0 = x : (), α̂`, `P_0 = ◇ → ◇`, `P = α̂`,
 `N = SK`, `M = FN TI` — and checks all three halves: the PROBLEM side holds,

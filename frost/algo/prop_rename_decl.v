@@ -53,20 +53,6 @@ Set Implicit Arguments.
 (*  §1  The context bridges: the painted prefix vs the plain one          *)
 (* ===================================================================== *)
 
-(** A binding seen in a painted context comes from a painted binding. *)
-Lemma binds_subst_aenv_inv : forall τ0 α x bd' Θ,
-  binds x bd' (subst_aenv τ0 α Θ) ->
-  exists bd, binds x bd Θ /\ bd' = subst_abind τ0 α bd.
-Proof.
-  intros τ0 α x bd' Θ; induction Θ as [ | [y bd0] Θ' IH ]; intros Hb.
-  - inversion Hb.
-  - simpl in Hb. unfold binds in Hb; simpl in Hb.
-    destruct Hb as [Heq | Hb].
-    + inversion Heq; subst. exists bd0. split; [ left; reflexivity | reflexivity ].
-    + destruct (IH Hb) as [bd [Hb0 Heq0]].
-      exists bd. split; [ right; exact Hb0 | exact Heq0 ].
-Qed.
-
 (** ⭐ THE BRIDGE.  [subst_aenv] repaints only TERM payloads once the flex
     definitions avoid [α], so the painted prefix and the plain one agree on
     every TYPE-LEVEL entry — which is all the embedded judgements

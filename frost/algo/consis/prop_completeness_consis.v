@@ -1173,7 +1173,7 @@ Qed.
     fresh for the body and the substitution is a no-op there.
 
     (Lives here, beside [a_wf_pskl_ftv_dom] which its ∀◇ case needs, so that
-    BOTH sub/look/prop_rho_relation.v and sub/look/prop_extract.v can see it —
+    BOTH sub/look/prop_rsubst.v and sub/look/prop_extract.v can see it —
     the two files are independent of each other.) *)
 
 (** ∀-INTRODUCTION FROM ONE INSTANCE — the exists-fresh idiom of DESIGN §4.3

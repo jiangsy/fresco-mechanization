@@ -820,19 +820,6 @@ Proof.
   intros C' C α H. unfold open_utyp_wrt_utyp. apply utyp_tag_refines_open_rec; auto.
 Qed.
 
-(** Opening with a GENERAL [U] (the [ph] instantiation): both sides gain the
-    SAME [U], so refinement is preserved (the bound variable becomes [U] on
-    both, [refl]). *)
-Lemma utyp_tag_refines_open_rec_gen : forall C' C,
-    utyp_tag_refines C' C ->
-    (* C0' , not C0: [induction 1] manufactures C0 in the var case. *)
-    forall k C0',
-      utyp_tag_refines (open_utyp_wrt_utyp_rec k C0' C') (open_utyp_wrt_utyp_rec k C0' C).
-Proof.
-  induction 1; intros k C0'; simpl; auto.
-  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; auto using utyp_tag_refines_refl.
-Qed.
-
 (** Closing (de Bruijn abstraction) preserves refinement — the inverse
     direction of opening, used to recover structural refinement of ∀ bodies
     from the cofinite hypothesis. *)

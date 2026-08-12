@@ -334,7 +334,7 @@ Qed.
     of the disjunctive ftv bounds ([a_looksub_lookeq_ftv],
     [a_solve_cstr_ftv]) for a variable it only knows to be rigid in the
     LARGER context — the ρ-replaced variables of P6-Cs / P6-Ss are exactly
-    that.  Promoted here from cex/cex_p6cs_rho_delta_vacuous.v, which is
+    that.  Promoted here from cex/cex_p6cs_rsubst_delta_vacuous.v, which is
     where it was first needed (to show the old [Δρ ∩ dom Θ0 = ∅] premise
     forced [Δρ = ∅]). *)
 Lemma a_inc_binds_tvar_rev : forall Θ κ Θ' α,

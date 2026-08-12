@@ -197,10 +197,6 @@ Lemma d_wf_ptyp_cons : forall x d Γ A,
     d_wf_ptyp Γ A -> d_wf_ptyp ((x ~ d) ++ Γ) A.
 Proof. intros. apply (d_wf_ptyp_weakening nil (x ~ d) Γ). simpl. auto. Qed.
 
-Lemma d_wf_pskl_cons : forall x d Ψ Γ P,
-    {{ Γ ⨟ Ψ ⊢ₚₛ P }}d -> {{ ((x ~ d) ++ Γ) ⨟ Ψ ⊢ₚₛ P }}d.
-Proof. intros. apply (d_wf_pskl_weakening nil (x ~ d) Γ). simpl. auto. Qed.
-
 (** Bindings recorded in a well-formed context are well-formed there (the
     binding's type/skeleton is wf in the prefix, weaken to the whole context). *)
 Lemma d_wf_denv_binds_typ : forall x A Γ,

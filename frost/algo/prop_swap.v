@@ -838,22 +838,6 @@ Proof.
   destruct H0; simpl; constructor.
 Qed.
 
-Lemma a_wf_ptyp_swap : forall a b (Θ : aenv) A,
-  a_wf_ptyp Θ A -> a_wf_ptyp (swap_aenv a b Θ) (swap_ptyp a b A).
-Proof.
-  intros * H; induction H; simpl.
-  - constructor.
-  - constructor. auto using a_binds_tvar_swap.
-  - constructor; auto.
-  - apply a_wf_ptyp__all with (L := swap_atoms a b L).
-    intros α0 Hα0.
-    assert (hin : swap_atom a b α0 `notin` L)
-      by (intro hc; apply Hα0; apply swap_atoms_spec; exact hc).
-    specialize (H0 _ hin).
-    rewrite swap_ptyp_open in H0. simpl in H0.
-    rewrite swap_atom_invol in H0. exact H0.
-Qed.
-
 Lemma a_wf_pskl_swap : forall a b (Θ : aenv) (Δ : atoms) P,
   a_wf_pskl Θ Δ P ->
   forall Δ', Δ' [=] swap_atoms a b Δ ->
@@ -1987,41 +1971,6 @@ Qed.
 (*  §14  Equivariance: the θ-algebra (metasubstitutions, ≡ᵗ/≡ˢ, a_inc)     *)
 (* ===================================================================== *)
 
-Definition swap_msubst (a b : atom) (κ : metasubst) : metasubst :=
-  List.map (fun e => (swap_atom a b (fst e), swap_ptyp a b (snd e))) κ.
-
-Lemma msubst_lookup_swap : forall a b (κ : metasubst) x,
-  swap_ptyp a b (msubst_lookup κ x)
-  = msubst_lookup (swap_msubst a b κ) (swap_atom a b x).
-Proof.
-  intros a b κ; induction κ as [| [y τ] κ']; intros x; simpl.
-  - reflexivity.
-  - destruct (x == y) as [e | n0].
-    + rewrite e.
-      match goal with
-      | |- context [if ?t then _ else _] => destruct t as [_ | n1]
-      end; [reflexivity | exfalso; apply n1; reflexivity].
-    + match goal with
-      | |- context [if ?t then _ else _] => destruct t as [e1 | ?]
-      end; [exfalso; apply n0; exact (swap_atom_inj a b _ _ e1) | auto].
-Qed.
-
-Lemma msubst_ptyp_swap : forall a b (κ : metasubst) A,
-  swap_ptyp a b (msubst_ptyp κ A)
-  = msubst_ptyp (swap_msubst a b κ) (swap_ptyp a b A).
-Proof.
-  intros a b κ; induction A; simpl; try solve [reflexivity | f_equal; auto].
-  apply msubst_lookup_swap.
-Qed.
-
-Lemma msubst_pskl_swap : forall a b (κ : metasubst) P,
-  swap_pskl a b (msubst_pskl κ P)
-  = msubst_pskl (swap_msubst a b κ) (swap_pskl a b P).
-Proof.
-  intros a b κ; induction P; simpl; try solve [reflexivity | f_equal; auto].
-  rewrite swap_pskl_ptyp_to_pskl, msubst_lookup_swap. reflexivity.
-Qed.
-
 Lemma a_tyequiv_swap : forall a b Θ A B,
   {{ Θ ⊢ A ≡ᵗ B }}a ->
   {{ (swap_aenv a b Θ) ⊢ (swap_ptyp a b A) ≡ᵗ (swap_ptyp a b B) }}a.
@@ -2040,28 +1989,6 @@ Proof.
     specialize (H0 _ hin).
     rewrite !swap_ptyp_open in H0. simpl in H0.
     rewrite swap_atom_invol in H0. exact H0.
-Qed.
-
-Lemma a_pskl_tyequiv_swap : forall a b Θ P Q,
-  {{ Θ ⊢ P ≡ˢ Q }}a ->
-  {{ (swap_aenv a b Θ) ⊢ (swap_pskl a b P) ≡ˢ (swap_pskl a b Q) }}a.
-Proof.
-  intros * H; induction H; simpl.
-  - apply a_pskl_tyequiv__refl. auto using lc_pskl_swap.
-  - apply a_pskl_tyequiv__sym; auto.
-  - eapply a_pskl_tyequiv__trans; eauto.
-  - rewrite swap_pskl_ptyp_to_pskl.
-    apply a_pskl_tyequiv__flex_def.
-    exact (swap_aenv_binds a b _ _ _ H).
-  - apply a_pskl_tyequiv__arrow; auto.
-  - apply a_pskl_tyequiv__all with (L := swap_atoms a b L).
-    intros α0 Hα0.
-    assert (hin : swap_atom a b α0 `notin` L)
-      by (intro hc; apply Hα0; apply swap_atoms_spec; exact hc).
-    specialize (H0 _ hin).
-    rewrite !swap_pskl_open_var in H0.
-    rewrite swap_atom_invol in H0. exact H0.
-  - apply a_pskl_tyequiv__tophole; auto.
 Qed.
 
 (* ===================================================================== *)

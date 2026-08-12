@@ -57,24 +57,6 @@ Fixpoint erase_lam_mono (e : exp) : exp :=
   | exp_freeze e1 => exp_freeze (erase_lam_mono e1)
   end.
 
-Lemma erase_lam_mono_open_rec : forall e u k,
-    erase_lam_mono (open_exp_wrt_exp_rec k u e)
-    = open_exp_wrt_exp_rec k (erase_lam_mono u) (erase_lam_mono e).
-Proof.
-  induction e; intros u k; simpl; try reflexivity;
-    try (rewrite IHe; reflexivity);
-    try (rewrite IHe1, IHe2; reflexivity).
-  - destruct (lt_eq_lt_dec n k) as [[|]|]; reflexivity.
-  - destruct (ptyp_is_mono A); simpl; rewrite IHe; reflexivity.
-Qed.
-
-Lemma erase_lam_mono_open : forall e u,
-    erase_lam_mono (open_exp_wrt_exp e u)
-    = open_exp_wrt_exp (erase_lam_mono e) (erase_lam_mono u).
-Proof.
-  intros. unfold open_exp_wrt_exp. apply erase_lam_mono_open_rec.
-Qed.
-
 (* RESTART NOTE: the pre-restart [erase_lam_mono_typing] ("erasing monotype
    lambda annotations preserves typing") lived here with an admitted [app]
    case (needs bespoke skeleton lemmas).  Dropped per the no-admits policy —

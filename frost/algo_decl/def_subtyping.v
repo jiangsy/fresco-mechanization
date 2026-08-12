@@ -212,7 +212,7 @@ where "{{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad" :=
        the main induction uses lex(fuel, derivation)).
 
     ⭐ THE TWO RELATIONS ARE INTERDERIVABLE (2026-08-12).  The erasure
-    [_fuel -> ad_pat_sub] is [ad_pat_sub_of_fuel] (prop_sub_mirrors.v), and
+    [_fuel -> ad_pat_sub] is [ad_pat_sub_of_fuel] (prop_ctx_mono.v), and
     the other direction — which a COMPLETENESS corollary over the declarative
     system needs — is [ad_pat_sub_to_fuel] (algo/sub/prop_soundness_subtag.v),
     UNCONDITIONAL at either sort over any Θ.  It was owed for a long time and

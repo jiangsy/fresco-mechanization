@@ -91,22 +91,6 @@ Qed.
 (*  Q-side definition folding at monotypes                                *)
 (* ===================================================================== *)
 
-(** Well-formedness of a monotype's skeleton is preserved when a
-    definition is folded back. *)
-Lemma a_wf_pskl_mono_subst_back : forall Θ α1 τ A,
-  binds α1 (abind_flex_mono_def τ) Θ ->
-  mono_ptyp A ->
-  a_wf_pskl Θ empty (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 A)) ->
-  a_wf_pskl Θ empty (ptyp_to_pskl A).
-Proof.
-  intros * Hb HmB; induction HmB; intros Hwf; simpl in *.
-  - apply a_wf_pskl__unit.
-  - destruct (eq_var α α1) as [->|Hne].
-    + apply a_wf_pskl__var. right. right; right; exists τ; auto.
-    + exact Hwf.
-  - inversion Hwf; subst. apply a_wf_pskl__arrow; auto.
-Qed.
-
 (* ===================================================================== *)
 (*  Soundness of variable unification, declaratively                      *)
 (*  (thm:sound-consistency part 2, read as the paper's Flex case does)    *)

@@ -55,7 +55,7 @@ Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo_decl.def_subtyping.
-Require Import src.frost.algo_decl.prop_sub_mirrors.
+Require Import src.frost.algo_decl.prop_ctx_mono.   (* ad_pat_sub_of_fuel, _fuel_le *)
 Require Import src.frost.prop_basic.
 
 Require Import src.frost.algo.prop_inc.

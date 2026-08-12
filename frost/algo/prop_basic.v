@@ -871,18 +871,6 @@ Proof.
     + apply (IH c b Θ); auto.
 Qed.
 
-(** [binds] is stable under swapping a middle entry with a prefix. *)
-Lemma binds_permute_mid : forall (b : abind) x Ξ (e : list (atom * abind)) Θ,
-  binds x b (Ξ ++ e ++ Θ) ->
-  binds x b (e ++ Ξ ++ Θ).
-Proof.
-  intros. unfold binds in *.
-  apply in_app_or in H. apply in_or_app.
-  destruct H as [H | H]; [ right; apply in_or_app; auto | ].
-  apply in_app_or in H. destruct H as [H | H];
-    [ auto | right; apply in_or_app; auto ].
-Qed.
-
 (** Removing a middle entry that cannot witness the lookup: either the
     atoms differ, or the entry's payload has none of the tvar-ish shapes. *)
 Lemma binds_strip_mid : forall (b b' : abind) x c Ξ Θ,

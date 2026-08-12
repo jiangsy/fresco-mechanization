@@ -32,7 +32,7 @@ Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo_decl.def_subtyping.
-Require Import src.frost.algo.sub.look.prop_rho_relation.
+Require Import src.frost.algo.sub.look.prop_rsubst.
 Require Import src.frost.algo.sub.look.prop_solve_ext.
 Require Import src.frost.algo.sub.look.prop_flex_apart.   (* bskl_monoish *)
 

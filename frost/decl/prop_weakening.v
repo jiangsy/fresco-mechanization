@@ -284,39 +284,6 @@ Proof.
   intros Γ1 Γ2 Γ3 m e Q H. eapply d_pat_weakening_mid; [ exact H | reflexivity ].
 Qed.
 
-(** [d_typing] weakening — its [App] [⦂] premise is closed by [d_pat_weakening]. *)
-Lemma d_typing_weakening_mid : forall Γ2 m Γ e B,
-    {{ Γ ⊢[ m ] e ⦂ B }}d ->
-    forall Γ1 Γ3, Γ = Γ1 ++ Γ3 -> {{ (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⦂ B }}d.
-Proof.
-  intros Γ2 m Γ e B H. induction H; intros Γ1 Γ3 Heq; subst Γ.
-  - apply d_typing__unit.
-  - apply d_typing__var. analyze_binds H.
-  - apply d_typing__anno. apply IHd_typing; reflexivity.
-  - apply d_typing__sub with (A := A);
-      [ apply IHd_typing; reflexivity | apply d_sub_weakening; exact H0 ].
-  - apply d_typing__freeze. apply IHd_typing; reflexivity.
-  - apply d_typing__forall with (L := L `union` dom (Γ1 ++ Γ3)); [ exact H | ].
-    intros α Hα. rewrite_env (((α ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
-  - apply d_typing__abs with (L := L `union` dom (Γ1 ++ Γ3)) (A := A);
-      [ apply d_wf_ptyp_weakening; assumption | exact H0 | ].
-    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
-  - apply d_typing__abs_anno with (L := L `union` dom (Γ1 ++ Γ3)) (A := A) (B1 := B1);
-      [ apply d_wf_ptyp_weakening; assumption | exact H0 | exact H1 | ].
-    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
-  - eapply d_typing__app;
-      [ eapply d_pat_weakening_mid; [ exact H | reflexivity ]
-      | apply d_refine_syn_weakening; eassumption
-      | wk_dir e1 | wk_dir e2 ].
-Qed.
-
-Lemma d_typing_weakening : forall Γ1 Γ2 Γ3 m e B,
-    {{ (Γ1 ++ Γ3) ⊢[ m ] e ⦂ B }}d ->
-    {{ (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⦂ B }}d.
-Proof.
-  intros Γ1 Γ2 Γ3 m e B H. eapply d_typing_weakening_mid; [ exact H | reflexivity ].
-Qed.
-
 (** General (order-preserving) context weakening: [Γ'] is [Γ] with extra
     bindings inserted at arbitrary positions.  Encoded as a chain of the
     middle-insertions that [d_typing_weakening] already supports, so the

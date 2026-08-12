@@ -96,13 +96,6 @@ Fixpoint subst_aenv (τ : ptyp) (α : atom) (Θ : aenv) : aenv :=
   | (x, bd) :: Θ' => (x, subst_abind τ α bd) :: subst_aenv τ α Θ'
   end.
 
-Lemma subst_aenv_app : forall τ α Θ1 Θ2,
-  subst_aenv τ α (Θ1 ++ Θ2) = subst_aenv τ α Θ1 ++ subst_aenv τ α Θ2.
-Proof.
-  intros τ α Θ1; induction Θ1 as [ | [x bd] Θ1' IH ]; intros Θ2; simpl;
-    [ reflexivity | rewrite IH; reflexivity ].
-Qed.
-
 Lemma binds_subst_aenv : forall τ α x bd Θ,
   binds x bd Θ -> binds x (subst_abind τ α bd) (subst_aenv τ α Θ).
 Proof.

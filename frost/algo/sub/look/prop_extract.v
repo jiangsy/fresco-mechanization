@@ -59,7 +59,7 @@ Require Import src.frost.algo.prop_compose.
 Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_normal.
 Require Import src.frost.algo.sub.prop_completeness_sub_precise.
-Require Import src.frost.algo.sub.look.prop_rho_relation.
+Require Import src.frost.algo.sub.look.prop_rsubst.
 Require Import src.frost.algo.sub.look.prop_solve_ext.
 Require Import src.frost.algo.sub.look.prop_flex_apart.
 Require Import src.frost.algo.sub.look.prop_eq_cstr.
@@ -241,25 +241,6 @@ Qed.
 (*     is the "removing β as necessary" move: the ∀ case runs the IH at    *)
 (*     ONE fresh β and must hand [ad_refine_syn__all] a COFINITE family.   *)
 (* ===================================================================== *)
-
-(** Ghost-freeness is a purely structural property of the constructor
-    skeleton, so opening by a variable neither creates nor destroys it. *)
-Lemma pskl_ghost_free_open_rec_iff : forall P Q k,
-  pskl_ghost_free Q ->
-  (pskl_ghost_free (open_pskl_wrt_pskl_rec k Q P) <-> pskl_ghost_free P).
-Proof.
-  intros P; induction P as [ | n | α | P1 IH1 P2 IH2 | P0 IH0 | | P0 IH0 ];
-    intros Q k HQ; cbn.
-  - tauto.
-  - (* a bound index either stays one or becomes [Q]; [pskl_var_b n] is
-       ghost-free and so, by hypothesis, is [Q] — the iff is trivial both ways *)
-    destruct (lt_eq_lt_dec n k) as [[? | ?] | ?]; cbn; tauto.
-  - tauto.
-  - specialize (IH1 Q k HQ); specialize (IH2 Q k HQ). tauto.
-  - specialize (IH0 Q (S k) HQ). tauto.
-  - (* ◇ is ghost-free on NEITHER side *) tauto.
-  - (* ∀◇ likewise *) tauto.
-Qed.
 
 (** [a_tags_sort a_sub_mode_ty] gives ghost-freeness of the DECORATED ψa;
     the witness induction runs against the erasure.  The ε-tagged ∀ erases
@@ -512,7 +493,7 @@ Qed.
 (* [a_wf_pskl_rename_delta] — the wf twin of §5's [ad_precise_rename_delta] —
    MOVED to prop_completeness_consis.v (PART B) (beside [a_wf_pskl_ftv_dom], which its ∀◇
    case needs): the freshness campaign's solve cluster needs it in
-   sub/look/prop_rho_relation.v too, and that file and this one are independent. *)
+   sub/look/prop_rsubst.v too, and that file and this one are independent. *)
 
 (* ===================================================================== *)
 (*  §8  THE TWO PROPERTIES OF THE INCOMING κ THE INDUCTION NEEDS           *)
@@ -549,7 +530,7 @@ Qed.
 
 (** Both properties survive prefixing a block of wf monotype images — which
     is what the ∀ / arrow cases hand back up.  [msubst_lc_app_wf] MOVED UP to
-    sub/look/prop_rho_relation.v (2026-08-04): under the SolE-FlexR repair every P6 ∀
+    sub/look/prop_rsubst.v (2026-08-04): under the SolE-FlexR repair every P6 ∀
     row prefixes such a block, not only P6-L. *)
 
 Lemma msubst_ftv_app_wf : forall Θ κa κb,

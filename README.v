@@ -472,6 +472,30 @@ Check ad_ctx_precise_pat :
   forall Θ', {{ Θ' ⪯ᶜᵗˣ Θ }}ad -> {{ ⊢ Θ }}a -> {{ ⊢ Θ' }}a -> {{ Θ' ⊢ˢ[ M ] e ⦂ Q }}ad.
 Print Assumptions ad_ctx_precise_pat.
 
+(* ⭐ CONSISTENT SUBTYPING IS TRANSITIVE (CST) — the paper's Lemma B.3, and the
+   engine of general subsumption.  The paper writes it
+
+       if  · ⨟ Γ ⊢[M] ⌈B_A⌉ˢ ⩽ B   and   Δt ⨟ Γ ⊢ C' ∼ B_A
+       then there is a Δ with   Δ ⨟ Γ ⊢[M] C' ⩽ B
+
+   for a SYNTHESISED B_A.  ⚙ The Coq statement threads two equations the paper
+   leaves implicit — the middle is pinned as a painting [C = ⌈B_A⌉ˢ] rather
+   than matched on, and [Δb] is the paper's own [·] written as a set equation
+   — because the [forall_l] case is proved through the erase-form
+   generalisation [d_consis_sub_trans_mid], which needs the middle in tagged
+   form.  Nothing is weakened: [Δb [=] empty] IS the paper's [·].  See
+   docs/PAPER-GAPS.md and the tag-hygiene note in decl/prop_tag_swap.v. *)
+Check d_consis_sub_trans :
+  forall M Δb Γ C B,
+  {{ Δb ⨟ Γ ⊢[ M ] C ⩽ B }}d ->
+  Δb [=] empty ->
+  forall B_A C' Δt,
+  C = btyp_to_utyp_syn B_A ->
+  is_styp B_A ->
+  {{ Δt ⨟ Γ ⊢ C' ∼ B_A }}d ->
+  exists Δ, Δb [<=] Δ /\ {{ Δ ⨟ Γ ⊢[ M ] C' ⩽ B }}d.
+Print Assumptions d_consis_sub_trans.
+
 
 (* ##################################################################### *)
 (*  V.  WHAT THE DECLARATIVE SYSTEM CAN EXPRESS                           *)

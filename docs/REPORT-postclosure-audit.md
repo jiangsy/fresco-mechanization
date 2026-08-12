@@ -95,6 +95,45 @@ Steps 2 and 3 of the suggested order below, plus the README indexing:
   The "0 duplicates" below is true of NAMES; scanning STATEMENTS found 58 more
   groups, now also 0.
 
+- **§2.1 RUN TO A FIXPOINT** (`b3afd34` = pass 1, then this commit) — see §2.1b.
+  Pass 1 deleted 175 orphans and left 54 zero-reference names; deleting an
+  orphan orphans whatever only IT used, so the count is not a fixpoint.  Four
+  more rounds took it to **19, and all 19 are the deliberate keepers** — the
+  first time this list has contained nothing but material that is meant to be
+  there.
+
+- **§3.1 CLOSED** — `d_consis_sub_trans` (CST, the paper's **B.3**) is now
+  `README.v` entry 32.  It was the last claim on §3.1's missing list, and the
+  reason it kept surfacing as an orphan: nothing in the tree consumes CST, so
+  without an index entry its assumption report was never printed.
+
+- **NAMING (not in the original audit; raised while reading the diff)** — three
+  families named for the paper's PROOF NUMBERING rather than for what they say:
+  - `cv_mono_*` → `solve_eq_mono_*` and `a_solve_eq_cv_*` → `a_solve_eq_*`.
+    `cv` meant "P6-Cv"; but the `a_solve_eq` prefix already says "the eq side",
+    so the infix carried nothing and read like "covariant".
+  - `p6cv_*` / `p6cs_*` → `solve_eq_complete_var_*`, `a_solve_eq_complete_rsubst_var`,
+    `subst_msubst_uskl_syn_open`.  The FILE already says which P6 lemma
+    (`prop_eq_var.v` is Cv), so the prefix was redundant as well as opaque.
+  - `rho` → **`rsubst`** in lemma names and file names — `prop_rho_relation.v`
+    → `prop_rsubst.v`, `uskl_rho` → `uskl_rsubst`, `rho_fresh`/`rho_lc`/
+    `rho_leaf` → `rsubst_*`, 39 declarations.  ⚠️ Deliberately NOT renamed: the
+    METAVARIABLES `ρ`, `Δρ`, `Ψρ`, the hypothesis names `Hrho*`, and every
+    prose comment.  `ρ` is the paper's own symbol
+    (`subtyping-proofs.tex:181`, "any substitution ρ from rigid type variables
+    to decorated skeletons"), so it stays where it denotes the OBJECT; what
+    changes is the API surface, where `rsubst` also distinguishes it from the
+    metasubstitution `msubst_*` and from the meta-level `subst_*`.
+
+- **`algo_decl/prop_sub_mirrors.v` is DELETED**, its two lemmas absorbed into
+  `algo_decl/prop_ctx_mono.v`.  Retiring `ad_pat_sub_g` / `_gv` / `_v` had left
+  it holding exactly `ad_pat_sub_fuel_le` and `ad_pat_sub_of_fuel` — not worth
+  an import line in nine consumers.  ⚙ The destination is NOT arbitrary: the
+  maps must sit upstream of `algo/sub/prop_soundness_subtag.v`, and
+  `prop_ctx_mono.v` is the only `prop_*.v` in `algo_decl/` that qualifies —
+  it already owned `ad_pat_sub_mono`, the same kind of structural fact about
+  the same relation.  Its header now says so.
+
 Not yet done: §1.1 PHASES 1–2 — see the ⚠️ RE-SCOPE note under §1.1 below.
 
 ---
@@ -319,6 +358,62 @@ The rest is genuinely orphan.  The clearest cases:
 - `decl/prop_annotation.v`'s `erase_lam_mono` kit (`:45`–`:95`) — orphan support
   for the `erase_lam_mono_typing` theorem that was aborted at `:97`.  Either
   re-prove the headline or drop the kit and keep `freeze_no_infer`.
+
+### 2.1b ⭐ THE ORPHAN SWEEP RUN TO A FIXPOINT — 193 → 19, and the 19 are the point
+
+Deleting an orphan orphans whatever only it used, so one pass is never enough.
+Five rounds:
+
+| round | zero-reference | deleted | note |
+|---|---:|---:|---|
+| pass 1 (`b3afd34`) | 193 | 175 | the big sweep |
+| pass 2 | 54 | 34 | 16 were pass-1's keepers, 4 new keepers found |
+| 3 | 28 | 9 | pure cascade |
+| 4 | 19+9 | 9 | the `no_top` chain unwinding |
+| 5 | 2 | 2 | |
+| 6 | **19** | 0 | **fixpoint — all 19 are deliberate keepers** |
+
+Declarations 3848 → 3794; ~1550 further lines.  The 19 survivors are the
+eleven `*_no_loss` encoding-justification lemmas, `freeze_no_infer`, and seven
+results kept for the reasons below.
+
+⭐ **The keep-rule that pass 1's heuristic would have got wrong.**  Pass 1 kept
+a lemma if its own doc comment carried a ⭐/⚠️/⛔/cex marker.  That is a proxy,
+and it misses two classes the scan cannot see, because the scan reads only
+`.v` files:
+
+1. **A numbered PAPER lemma with no consumer.**  `a_looksub_lookeq_subst_stable`
+   and `_rev` are the two halves of the paper's **Lemma E.8** (*Stability of
+   constraint collection*), which the paper states as an **iff** and uses in
+   both directions — forward at `subtyping-proofs.tex:890`, reverse at `:2632`
+   ("By the reverse direction of…").  Neither half has a mech consumer: the
+   forward one's two call sites (`prop_soundness_sub.v:511`, `:786`) died when
+   the look cluster went exists-fresh, and the reverse never had one, because
+   the mech proves P6 by the ρ-route, which keeps the looksub side on
+   var-opened subjects and so never has a substituted source to un-substitute
+   (recorded at PAPER-GAPS `:2257`).  Deleting either would leave the tree
+   claiming E.8 while proving half an iff.
+2. **Machine-checked evidence for a live PAPER-GAPS claim.**
+   `d_pat_consis_subject_refine_ghost_free` is cited at PAPER-GAPS `:196` as
+   "machine-checked"; deleting it would falsify the registry.
+
+So the rule is now three tests, not one: **a marker, OR a citation in
+`PROGRESS.md` Part 1 / `docs/PAPER-GAPS.md`, OR a paper label.**  ⚠️ A mention
+in `docs/DESIGN-*.md` or `docs/REPORT-remech-*.md` does NOT count — those are
+dated records, as §3.3 already established.
+
+⚙ **Two deletions worth naming, because they are the debatable ones.**
+
+- `d_typing_weakening` + `d_typing_weakening_mid` — weakening for the paper's
+  own `d_typing`, ~30 lines, no consumer.  Kept the sd-twin
+  (`d_sd_typing_weakening*`, which IS used).  Justification: the paper states
+  no weakening lemma anywhere, and the "context weakening" its proofs invoke
+  (`full-decl-proofs.tex:300` etc.) is about the SYNTAX-DIRECTED system, which
+  is the twin that survives.
+- the `no_top` chain in `deco_algo/prop_soundness_sub.v` (`a_cstr_no_top`,
+  `solve_sub_top_guarded`, `solve_eq_no_top`, `pskl_no_top_close{,_rec}`, …) —
+  its own section header says the `top_guarded`-INPUT chain **replaces** it.
+  It was superseded, not merely unused.
 
 ### 2.2 Two files nothing imports
 

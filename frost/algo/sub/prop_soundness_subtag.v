@@ -37,7 +37,7 @@ Require Import src.frost.algo.def_meta.
 Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.algo_decl.def_subtyping.
-Require Import src.frost.algo_decl.prop_sub_mirrors.   (* ad_pat_sub_of_fuel *)
+Require Import src.frost.algo_decl.prop_ctx_mono.   (* ad_pat_sub_of_fuel, _fuel_le *)
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_basic.
 Require Import src.frost.algo.prop_stability.
@@ -938,7 +938,7 @@ Qed.
 (* ===================================================================== *)
 (*  ⭐⭐ THE FUEL DIRECTION: every plain join ADMITS a fuel.                *)
 (*                                                                        *)
-(*  [ad_pat_sub_of_fuel] (algo_decl/prop_sub_mirrors.v) forgets the fuel;    *)
+(*  [ad_pat_sub_of_fuel] (algo_decl/prop_ctx_mono.v) forgets the fuel;    *)
 (*  this is its converse, and with it the two relations are               *)
 (*  INTERDERIVABLE.  It became provable on 2026-08-12, when [ad_pat_sub]   *)
 (*  took on the leaf presupposition: before that the leaf rows had to      *)

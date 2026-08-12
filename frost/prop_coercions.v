@@ -398,11 +398,6 @@ Lemma uskl_to_utyp_open_var : forall R α,
     open_utyp_wrt_utyp (uskl_to_utyp R) (utyp_var_f α).
 Proof. intros R α. exact (uskl_to_utyp_open R (uskl_var_f α)). Qed.
 
-(** [uskl_to_utyp] is a left inverse of the inclusion — so a [uskl] in the
-    image determines its [utyp], and the inclusion is injective. *)
-Lemma uskl_to_utyp_utyp_to_uskl : forall C, uskl_to_utyp (utyp_to_uskl C) = C.
-Proof. induction C; simpl; try reflexivity; congruence. Qed.
-
 (** The two ways of painting a [ptyp] into the unresolved SKELETON sort agree:
     through [utyp] (what [d_sub] uses) and through [pskl]/[bskl] (what
     [ad_pat_sub] uses, i.e. [ptyp_to_uskl_syn]). *)

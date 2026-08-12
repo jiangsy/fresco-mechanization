@@ -5,7 +5,7 @@
 
         forall α0, α0 ∈ Δρ -> α0 ∉ dom Θ0      ("ρ's binders postdate Θ0")
 
-    beside [κ ∷ Θ0 ⊑ Θ] and [rho_fresh Δρ Θ κ].  Those three together force
+    beside [κ ∷ Θ0 ⊑ Θ] and [rsubst_fresh Δρ Θ κ].  Those three together force
     [Δρ = ∅] — so the "generalized" statement is the ρ = identity one, and
     P6-Ss's Sub-ForallL (which needs Δρ ≠ ∅: it absorbs its guess as
     [ρ ∘ [ψ/β]] for a FRESH RIGID β) could never call it.
@@ -16,7 +16,7 @@
     with FLEXIBLE suffixes inserted and images refined — [a_suffix] admits
     only [α̂] / [α̂:=τ] entries — so every rigid of the target is a rigid of
     the source ([a_inc_binds_tvar_rev] below, the converse of the existing
-    [a_inc_binds_tvar]).  [rho_fresh] then puts every Δρ-variable in Θ0's
+    [a_inc_binds_tvar]).  [rsubst_fresh] then puts every Δρ-variable in Θ0's
     domain, and the premise puts it outside.
 
     Consequently a ρ-binder introduced by Sub-ForallL MUST enter Θ0 and Θ
@@ -36,7 +36,7 @@ Require Import src.frost.ltac_utils.
 Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_inc.
-Require Import src.frost.algo.sub.look.prop_rho_relation.
+Require Import src.frost.algo.sub.look.prop_rsubst.
 
 Set Implicit Arguments.
 
@@ -48,10 +48,10 @@ Set Implicit Arguments.
     into prop_inc.v beside its converse. *)
 
 (** …hence the refuted premise set. *)
-Theorem p6cs_rho_delta_apart_dom_is_vacuous :
+Theorem rsubst_delta_apart_dom_is_vacuous :
   forall Θ0 κ Θ Δρ,
   κ ∷ Θ0 ⊑ Θ ->
-  rho_fresh Δρ Θ κ ->
+  rsubst_fresh Δρ Θ κ ->
   (forall α0, α0 `in` Δρ -> α0 `notin` dom Θ0) ->
   Δρ [=] empty.
 Proof.

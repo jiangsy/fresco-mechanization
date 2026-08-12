@@ -332,34 +332,6 @@ Proof.
     destruct_uniq. unfold disjoint in *. simpl_env in *. fsetdec.
 Qed.
 
-(** [above_dom] is a PREFIX of the context, so it is closed downward: if
-    [δ] is not above the marker, nothing bound below [δ] is either. *)
-Lemma above_dom_downward : forall m Θa δ (b : abind) Θb γ,
-  δ `notin` above_dom m (Θa ++ (δ ~ b) ++ Θb) ->
-  γ `in` dom Θb ->
-  uniq (Θa ++ (δ ~ b) ++ Θb) ->
-  γ `notin` above_dom m (Θa ++ (δ ~ b) ++ Θb).
-Proof.
-  intros m Θa; induction Θa as [ | [y c] Θa' IH ];
-    intros δ b Θb γ Hδ Hγ Hu; simpl in *.
-  - (* δ is the head : it is not above m, so m = δ and the region is empty *)
-    destruct (δ == m) as [-> | Hne].
-    + clear; fsetdec.
-    + exfalso. clear - Hδ. fsetdec.
-  - destruct (y == m) as [-> | Hne].
-    + clear; fsetdec.
-    + (* γ ≠ y (γ is below, y is the head) and recurse *)
-      assert (Hγy : γ <> y).
-      { intros ->.
-        clear - Hu Hγ. destruct_uniq.
-        unfold disjoint in *. simpl_env in *. fsetdec. }
-      assert (Hδ' : δ `notin` above_dom m (Θa' ++ (δ ~ b) ++ Θb))
-        by (clear - Hδ; fsetdec).
-      inversion Hu; subst.
-      pose proof (IH _ _ _ _ Hδ' Hγ ltac:(assumption)) as Hrec.
-      clear - Hrec Hγy; fsetdec.
-Qed.
-
 (** ⊴ versions of the marker kit (the witness is the identity increase
     [a_isub] packages). *)
 Lemma a_isub_marker_mid : forall Θs Θt Ξ0 m (b : abind) Θ0',

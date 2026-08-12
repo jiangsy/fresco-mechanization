@@ -1,78 +1,63 @@
-=== FILES: 78  DECLS: 3848
+Zero-reference top-level names in frost/ — nothing in frost/, README.v, cex/ or
+test/ mentions them outside their own declaration line, and none is Hint-
+registered.  Generated files (def_ott.v, prop_ln.v) excluded.
 
-=== ZERO-REFERENCE NAMES (no textual use anywhere, not hint-registered): 54
+⭐ REGENERATED 2026-08-12 AT THE FIXPOINT.  The sweep was run to convergence
+(193 -> 175 deleted -> 54 -> 34 -> 28 -> 9 -> 19+9 -> 9 -> 2 -> 19, no change),
+so unlike every earlier version of this file, EVERY NAME BELOW IS DELIBERATE.
+There is nothing here to triage: a future pass that deletes from this list is
+deleting something the tree means to keep.
 
---- frost  (1)
-  frost/prop_coercions.v:403  Lemma uskl_to_utyp_utyp_to_uskl
+WHY EACH SURVIVES
+  [E] ENCODING JUSTIFICATION — the eleven prop_swap.v *_no_loss lemmas prove
+      that the exists-fresh freshness premises lose no derivations.  They are
+      consumed by the READER, not by a proof.
+  [P] A NUMBERED PAPER LEMMA with no mech consumer.  Deleting it would leave
+      the tree claiming the paper's result while not proving it.
+  [G] MACHINE-CHECKED EVIDENCE for a live claim in docs/PAPER-GAPS.md.
+  [T] TERMINAL — a standalone negative/expressiveness result; the point IS the
+      statement.  Indexed in README.v so its Print Assumptions is printed.
+  [K] KEPT BY AN EARLIER PASS with a documented reason; see
+      docs/REPORT-postclosure-audit.md §2.1b.
 
---- frost/algo  (24)
-  frost/algo/prop_basic.v:875  Lemma binds_permute_mid
-  frost/algo/prop_normal.v:429  Lemma a_inc_flex_def_tyequiv
-  frost/algo/prop_normal.v:569  Corollary a_inc_equiv_downarrow_ptyp_size
-  frost/algo/prop_precise.v:947  Corollary ad_refine_pskl_trans
-  frost/algo/prop_precise.v:969  Lemma ad_refine_pskl_of_inh_paintings
-  frost/algo/prop_rename_decl.v:57  Lemma binds_subst_aenv_inv
-  frost/algo/prop_suffix_erase.v:99  Lemma subst_aenv_app
-  frost/algo/prop_suffix_erase.v:247  Lemma solves_flex_self
-  frost/algo/prop_suffix_erase.v:1531  Lemma ad_pat_strip_suffix
-  frost/algo/prop_swap.v:841  Lemma a_wf_ptyp_swap
-  frost/algo/prop_swap.v:1668  Lemma a_sub_flex_skip_no_loss
-  frost/algo/prop_swap.v:1690  Lemma a_sub_flex_skip_rigid_no_loss
-  frost/algo/prop_swap.v:1716  Lemma a_sub_flex_assign_no_loss
-  frost/algo/prop_swap.v:1772  Lemma a_assign_skip_no_loss
-  frost/algo/prop_swap.v:1794  Lemma a_assign_skip_rigid_no_loss
-  frost/algo/prop_swap.v:1815  Lemma a_assign_skip_tm_var_no_loss
-  frost/algo/prop_swap.v:1835  Lemma a_assign_skip_tm_skl_no_loss
-  frost/algo/prop_swap.v:1859  Lemma a_assign_assign_no_loss
-  frost/algo/prop_swap.v:1900  Lemma a_unify_flex_skip_no_loss
-  frost/algo/prop_swap.v:1921  Lemma a_unify_skip_other_no_loss
-  frost/algo/prop_swap.v:1948  Lemma a_unify_flex_assign_no_loss
-  frost/algo/prop_swap.v:2009  Lemma msubst_ptyp_swap
-  frost/algo/prop_swap.v:2017  Lemma msubst_pskl_swap
-  frost/algo/prop_swap.v:2045  Lemma a_pskl_tyequiv_swap
+⚠️ THE SCAN READS ONLY .v FILES, so it CANNOT see [P] or [G] — a paper lemma
+and a PAPER-GAPS exhibit both look like dead code.  Before deleting anything
+from a regenerated list, check docs/PAPER-GAPS.md and PROGRESS.md Part 1 too.
 
---- frost/algo/consis  (2)
-  frost/algo/consis/prop_consis_precise.v:734  Lemma ad_pat_consis_precise_var_case
-  frost/algo/consis/prop_soundness_consis.v:96  Lemma a_wf_pskl_mono_subst_back
+=== FILES: 77  DECLS: 3794
 
---- frost/algo/sub  (5)
-  frost/algo/sub/prop_completeness_sub_gen.v:621  Corollary ad_refine_pskl_f_reassoc
-  frost/algo/sub/prop_completeness_sub_gen.v:645  Lemma is_sskl_inh_no_forall
+=== ZERO-REFERENCE NAMES: 19  (all deliberate)
+
+--- [E] encoding justification: the exists-fresh encoding loses nothing (11)
+  frost/algo/prop_swap.v:1652  Lemma a_sub_flex_skip_no_loss
+  frost/algo/prop_swap.v:1674  Lemma a_sub_flex_skip_rigid_no_loss
+  frost/algo/prop_swap.v:1700  Lemma a_sub_flex_assign_no_loss
+  frost/algo/prop_swap.v:1756  Lemma a_assign_skip_no_loss
+  frost/algo/prop_swap.v:1778  Lemma a_assign_skip_rigid_no_loss
+  frost/algo/prop_swap.v:1799  Lemma a_assign_skip_tm_var_no_loss
+  frost/algo/prop_swap.v:1819  Lemma a_assign_skip_tm_skl_no_loss
+  frost/algo/prop_swap.v:1843  Lemma a_assign_assign_no_loss
+  frost/algo/prop_swap.v:1884  Lemma a_unify_flex_skip_no_loss
+  frost/algo/prop_swap.v:1905  Lemma a_unify_skip_other_no_loss
+  frost/algo/prop_swap.v:1932  Lemma a_unify_flex_assign_no_loss
+
+--- [P] the paper's Lemma E.8, an IFF the paper uses in BOTH directions
+        (forward: subtyping-proofs.tex:890; reverse: :2632).  The mech's
+        P6 goes by the rsubst route and needs neither; see PAPER-GAPS:2257.
   frost/algo/sub/prop_looksub.v:406  Lemma a_looksub_lookeq_subst_stable
   frost/algo/sub/prop_looksub.v:632  Lemma a_looksub_lookeq_subst_stable_rev
-  frost/algo/sub/prop_solve_sub.v:576  Lemma a_solve_sub_eq_generated_occurs
 
---- frost/algo/sub/look  (8)
-  frost/algo/sub/look/prop_eq_cstr.v:300  Lemma binds_swap_app
-  frost/algo/sub/look/prop_eq_var.v:132  Lemma flex_apart_guarded_all_tag_descent
-  frost/algo/sub/look/prop_extract.v:247  Lemma pskl_ghost_free_open_rec_iff
-  frost/algo/sub/look/prop_flex_apart.v:88  Lemma pskl_flex_free_arrow_inv
-  frost/algo/sub/look/prop_flex_apart.v:95  Lemma pskl_flex_free_tophole_inv
-  frost/algo/sub/look/prop_flex_apart.v:1395  Lemma binds_def_split
-  frost/algo/sub/look/prop_flex_apart.v:1407  Lemma pskl_no_hole_open_rec_inv
-  frost/algo/sub/look/prop_solve_ext.v:921  Lemma solve_sub_ext_step
+--- [G] cited as machine-checked at docs/PAPER-GAPS.md:196
+  frost/algo_decl/prop_conserv.v:1347  Lemma d_pat_consis_subject_refine_ghost_free
 
---- frost/algo/typing  (3)
-  frost/algo/typing/prop_completeness_typing.v:1280  Lemma a_guess_mono_complete_ghost_free
+--- [T] terminal negative result, README.v §V
+  frost/decl/prop_annotation.v:72  Lemma freeze_no_infer
+
+--- [K] kept by an earlier pass (see the report's §2.1b)
+  frost/algo/prop_suffix_erase.v:240  Lemma solves_flex_self
+  frost/algo/prop_suffix_erase.v:1524  Lemma ad_pat_strip_suffix
+  frost/algo/typing/prop_completeness_typing.v:1279  Lemma a_guess_mono_complete_ghost_free
   frost/algo/typing/prop_scope.v:122  Lemma a_sub_ty_tc_verbatim
-  frost/algo/typing/prop_scope.v:337  Lemma above_dom_downward
-
---- frost/algo_decl  (1)
-  frost/algo_decl/prop_conserv.v:1348  Lemma d_pat_consis_subject_refine_ghost_free
-
---- frost/decl  (7)
-  frost/decl/prop_annotation.v:71  Lemma erase_lam_mono_open
-  frost/decl/prop_annotation.v:90  Lemma freeze_no_infer
-  frost/decl/prop_general_subsumption.v:826  Lemma utyp_tag_refines_open_rec_gen
-  frost/decl/prop_general_subsumption.v:1329  Lemma d_consis_sub_trans
-  frost/decl/prop_skeleton.v:39  Lemma d_wf_pskl_strengthen
-  frost/decl/prop_weakening.v:313  Lemma d_typing_weakening
-  frost/decl/prop_wellformed.v:200  Lemma d_wf_pskl_cons
-
---- frost/deco_algo  (3)
-  frost/deco_algo/prop_decorate_sub.v:2842  Lemma pskl_to_uskl_lc_inv
-  frost/deco_algo/prop_soundness_sub.v:3195  Lemma solve_sub_top_guarded
-  frost/deco_algo/prop_soundness_sub.v:3231  Definition a_cstr_no_top
 
 === ZERO-TEXTUAL-REF BUT HINT-REGISTERED: 0
 

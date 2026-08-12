@@ -119,7 +119,7 @@ mechanization.)  Corrected 2026-08-09.
 | [`CLAUDE.md`](CLAUDE.md) | (this file) ground rules, dirs, tooling, conventions |
 | [`DESIGN.md`](DESIGN.md) | **Two parts**: Part 1 — Frost calculus design (modes, colours, tags, skeletons, freezing); Part 2 — mechanization design (encoding choices, ctyp / `syn_color` / `inh_color`, proof-debugging methodology, gap rationales) |
 | [`PROGRESS.md`](PROGRESS.md) | **Two parts**: Part 1 — paper → Coq mapping (every paper Lemma / Theorem with status, statement, location); Part 2 — daily progress log |
-| [`README.v`](README.v) | **The compilable paper→Coq HEADLINE index — 31 entries.** Deliberately NOT a catalogue: a paper label is not a reason to appear (the exhaustive map is PROGRESS.md Part 1). Each entry is: the paper's Lemma/Theorem name + label, the statement in the PAPER'S OWN NOTATION (unicode), then `Check` and `Print Assumptions` **together**. So the build tail prints one assumption report per claim and every one must read "Closed under the global context". Adding a claim means adding all three parts. Run via `make coq`. |
+| [`README.v`](README.v) | **The compilable paper→Coq HEADLINE index — 32 entries.** Deliberately NOT a catalogue: a paper label is not a reason to appear (the exhaustive map is PROGRESS.md Part 1). Each entry is: the paper's Lemma/Theorem name + label, the statement in the PAPER'S OWN NOTATION (unicode), then `Check` and `Print Assumptions` **together**. So the build tail prints one assumption report per claim and every one must read "Closed under the global context". Adding a claim means adding all three parts. Run via `make coq`. |
 | [`Makefile`](Makefile) | ott + lngen + coq pipeline; `coq` / `quick` / `clean` / `sync-paper-refs` targets |
 | [`scripts/sync_paper_refs.py`](scripts/sync_paper_refs.py) | Sync paper Lemma / Theorem numbers from `paper/frost.aux` into .v comments and the auto-managed reference-link block in `PROGRESS.md`. Run via `make sync-paper-refs` or `make sync-paper-refs-md`. |
 | [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md) | Canonical registry of everything the paper's authors should see (gaps, prose-completions, refuted statements) |
@@ -228,9 +228,14 @@ mechanization/
 │   │   │                         and — def_typing.v — skeleton
 │   │   │                         inference `ad_pat` + syntax-directed typing
 │   │   │                         `ad_sd_typing`, which section D is stated over)
-│   │   ├── prop_ctx_mono.v      (monotonicity along ctx precision)
-│   │   ├── prop_sub_mirrors.v   (the bridges between the paper's [ad_pat_sub]
-│   │   │                         and its fuel-indexed mirror [ad_pat_sub_fuel])
+│   │   ├── prop_ctx_mono.v      (the STRUCTURAL theory of the ad_* relations:
+│   │   │                         monotonicity along ctx precision, section D's
+│   │   │                         suffix moving, and — since 2026-08-12 — the
+│   │   │                         two bridges between the paper's [ad_pat_sub]
+│   │   │                         and its fuel-indexed mirror [ad_pat_sub_fuel].
+│   │   │                         ⚙ those last two were prop_sub_mirrors.v,
+│   │   │                         which the retirement of [_g] / [_v] had left
+│   │   │                         holding exactly two lemmas)
 │   │   └── prop_conserv.v       (⭐ CONSERVATIVITY: at a FLEXIBLE-FREE Θ the
 │   │                             decl-in-algo layer IS the plain declarative
 │   │                             system over Γ — the paper's unstated "it is
@@ -300,9 +305,16 @@ mechanization/
 │       │   ├── prop_completeness_sub.v     (P7c, the paper's a_sub_complete)
 │       │   └── look/    (P6 — the look judgment's completeness, a strict
 │       │                 linear chain over a THREE-file shared substrate:
-│       │                   prop_rho_relation.v  the ρ relation + inversions
+│       │                   prop_rsubst.v        the ρ relation + inversions
+│       │                                        (⚙ named prop_rho_relation.v
+│       │                                        until 2026-08-12; ρ stays as
+│       │                                        the METAVARIABLE, but lemma
+│       │                                        and file names say `rsubst` —
+│       │                                        the paper's rigid-variable
+│       │                                        substitution, distinct from
+│       │                                        `msubst_*` and `subst_*`)
 │       │                   prop_solve_ext.v     solve_ext / solve_sub_ext /
-│       │                                        cv_mono_concl packages
+│       │                                        solve_eq_mono_concl packages
 │       │                   prop_flex_apart.v    flex_apart + Arrow repair
 │       │                 then prop_eq_var (Cv) -> prop_eq_cstr (Cs) ->
 │       │                 prop_sub_var (Sv) -> prop_sub_cstr (Ss) ->
@@ -348,6 +360,22 @@ their topic names.
   a dozen row-siblings (`a_typing_complete_var`, `…_app`, …).  ⚙ Four names
   carried a `_thm` suffix that meant nothing (no bare name was ever taken);
   they were renamed, so `_thm` is now free of meaning and must not come back.
+- ⚠️ **NEVER name a lemma after the paper's PROOF NUMBERING** (2026-08-12).
+  `p6cv_concl`, `p6cs_subject_open`, `cv_mono_wrap`, `a_solve_eq_cv_mono` all
+  encoded "this belongs to P6-Cv/P6-Cs" — which the READER cannot decode, which
+  the containing FILE already says (`prop_eq_var.v` *is* Cv), and which the
+  judgement prefix already says (`a_solve_eq_` *is* the eq side).  Name for what
+  the lemma states: `solve_eq_mono_concl`, `subst_msubst_uskl_syn_open`,
+  `a_solve_eq_complete_rsubst_var`.  ⚙ The one place a paper-numbering key IS
+  right is `cex/`: a counterexample's whole point is WHICH numbered statement it
+  refutes, so `cex_p6cs_*` keeps its key.
+- ⚠️ **A greek metavariable is not a lemma name.**  `ρ` is the paper's own
+  symbol for the rigid-variable substitution
+  (`subtyping-proofs.tex:181`) and stays as a METAVARIABLE — `ρ`, `Δρ`, `Ψρ`,
+  and the `Hrho*` hypothesis names.  But lemma names and FILE names spell it
+  **`rsubst`** (`uskl_rsubst`, `rsubst_fresh`, `prop_rsubst.v`), which also
+  keeps it apart from the metasubstitution `msubst_*` and the meta-level
+  `subst_*`.  Renamed 2026-08-12; 39 declarations and one file.
 - **A fact about a conversion is `<relation>_<conversion>`** — the conversion's
   own name, unabbreviated: `ftvar_ptyp_to_pskl`, `btyp_to_ptyp_open`,
   `lc_bskl_to_pskl`.  ⚠️ NOT `ftvar_in_<target>_<conversion>` and NOT
@@ -582,13 +610,13 @@ before changing any of them.
     baked in here. `θ` is unreadable next to the context `Θ` (they differ by
     one stroke), and `ρ` cannot be reused for metasubstitutions because
     subtyping completeness needs BOTH at once: P6-Sv states `κ ∷ Θ0 ⊑ Θ`
-    beside `uskl_rho NM Θ Δρ Ψρ ψsub ψa`, where `Δρ`/`Ψρ` are the
+    beside `uskl_rsubst NM Θ Δρ Ψρ ψsub ψa`, where `Δρ`/`Ψρ` are the
     ρ-replaced variables and the tags ρ introduces. So: `κ` is the
     information-increase metasubstitution (`msubst_*`, `a_inc`), `σ` the
     second one (`a_inc_equiv`), `ζ` the composing one (`ζ ∘ κ`); a second
     `κ` in one statement takes ONE prime (`κ'`), never `κ1`/`κ2` as fresh
-    bases. Anything spelled `ρ` denotes the paper's ρ (`uskl_rho`,
-    `rho_fresh`, `msubst_uskl` in prop_decorate_sub.v).
+    bases. Anything spelled `ρ` denotes the paper's ρ (`uskl_rsubst`,
+    `rsubst_fresh`, `msubst_uskl` in prop_decorate_sub.v).
   - **Disambiguate with ONE prime, then digits 0/3/4/… — never `Q1`/`Q2`.**
     ott names the arrow-constructor arguments `A1 A2 / … / R1 R2` and the var
     argument `α`, so those are exactly the names `induction` / `inversion`

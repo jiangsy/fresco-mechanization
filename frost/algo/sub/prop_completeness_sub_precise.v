@@ -26,7 +26,7 @@ Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo_decl.def_subtyping.
-Require Import src.frost.algo_decl.prop_sub_mirrors.
+Require Import src.frost.algo_decl.prop_ctx_mono.   (* ad_pat_sub_of_fuel, _fuel_le *)
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_basic.
 Require Import src.frost.algo.prop_stability.
@@ -1812,7 +1812,7 @@ Qed.
     relation and cannot be otherwise.  This statement has no fuel on either
     side, so the measure is introduced only to reach that lemma and discarded
     again; the two steps are [ad_pat_sub_to_fuel] / [ad_pat_sub_of_fuel]
-    (algo/sub/prop_soundness_subtag.v, algo_decl/prop_sub_mirrors.v). *)
+    (algo/sub/prop_soundness_subtag.v, algo_decl/prop_ctx_mono.v). *)
 Lemma ad_precise_extends_pat_sub : forall NM M Ψ Θ Δ P' P Q,
   {{ Θ ⨟ Δ ⊢ₚᵣ P' ⊑ P }}ad ->
   {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] (pskl_to_uskl P) ⩽ Q }}ad ->

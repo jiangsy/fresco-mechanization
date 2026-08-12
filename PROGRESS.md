@@ -47,7 +47,7 @@ files were `Admitted` scaffolding subsumed by the current algo development.
 | Algorithmic type inference (fig:alg-type-inference) | `a_typing` | 🟢 ∀ᾱ.A₀ AbsCheck (step/base), typed Freeze |
 | Erasure ⌊·⌋, decorated subtyping/consistency, tag solving (app:decorated-algosub) | `algo/def_decorated.v` (`uskl_to_pskl`, `a_subtag`, `a_consistag`, `a_solvetag(_sub/_eq)`) | 🟢 |
 | Metasubstitutions κ : Θ ⇒ Θ' (app:metasubstitutions) | `algo/def_meta.v` (`a_inc`, `a_inc_equiv`, `a_tyequiv`, `⊴`, and the application family `msubst_{ptyp,btyp,pskl,uskl_syn}`) | 🟢 |
-| Decl judgments in algo contexts (app:decl-in-algo-context) | `algo_decl/def_consis_refine.v` (`ad_pat_consis`, `ad_refine_syn`, `ad_refine_pskl`, `ad_wf_pskl` + flex-lookup rules); `algo_decl/def_subtyping.v` (`ad_pat_sub`, `ad_partial_precise`, and — merged in 2026-08-11 — `ad_pat_sub_g` / `ad_pat_sub_gv`, the hygienic + leaf-valid mirrors); `algo_decl/def_typing.v` (`ad_pat`, `ad_sd_typing`) | 🟢 COMPLETE 2026-08-06.  The typing layer that section D needs landed: `ad_pat` (skeleton inference) and `ad_sd_typing` (SYNTAX-DIRECTED typing — the appendix ports that one, not `d_typing`).  Per the appendix, NO new rule was needed (every type-level lookup happens inside the embedded subtyping/consistency/refinement premises, which already carry their flexible rows); what was added are the appendix's THREE explicit type-equivalence premises, on `sd-Freeze`, `sd-AbsAnnoCheck` and `sd-AbsAnno`.  `abind_to_pskl` (the `dbind_to_pskl` mirror) added to `algo/def_rules.v` |
+| Decl judgments in algo contexts (app:decl-in-algo-context) | `algo_decl/def_consis_refine.v` (`ad_pat_consis`, `ad_refine_syn`, `ad_refine_pskl` + flex-lookup rules); `algo_decl/def_subtyping.v` (`ad_pat_sub`, `ad_pat_sub_fuel`, `ad_partial_precise`); `algo_decl/def_typing.v` (`ad_pat`, `ad_sd_typing`) | 🟢 COMPLETE 2026-08-06.  The typing layer that section D needs landed: `ad_pat` (skeleton inference) and `ad_sd_typing` (SYNTAX-DIRECTED typing — the appendix ports that one, not `d_typing`).  Per the appendix, NO new rule was needed (every type-level lookup happens inside the embedded subtyping/consistency/refinement premises, which already carry their flexible rows); what was added are the appendix's THREE explicit type-equivalence premises, on `sd-Freeze`, `sd-AbsAnnoCheck` and `sd-AbsAnno`.  `abind_to_pskl` (the `dbind_to_pskl` mirror) added to `algo/def_rules.v` |
 
 ## Theorems / lemmas (bottom-up order; ⬜ = to prove, per paper appendix)
 
@@ -68,7 +68,7 @@ files were `Admitted` scaffolding subsumed by the current algo development.
 - ✅ **Theorem: Soundness of subtyping** (`a_sub_sound`, `algo/prop_soundness_sub.v`, axiom-free)
 - ✅ Complete partial precision (`algo/prop_sub_complete.v` P5b, lemma:partial-precision-complete); Stability of subtyping under more precise substitution (`ad_pat_sub_precise_upre`, same file — P5)
 - ✅ Completeness of constraint collection & solving **for variables** (subtyping-proofs:1696, P6-Sv) — `a_solve_sub_complete_var` in `frost/algo/prop_look_complete_sub_var.v`, **Qed and axiom-free** (`Print Assumptions`: closed under the global context).  The paper's statement is **FALSE as given**, machine-checked counterexample `frost/algo/cex/cex_p6sv_forall_flex.v` (`p6sv_with_p6cv_premises_is_false`): its own ForallL case builds, from a ρ = IDENTITY instance, the raw-flexible-payload configuration that `cex_p6_flex_freshened.v` rules unreachable on the constraint-collection route.  What is proved is the REPAIRED statement, which adds the positional premise `flex_shield Θ0 Ψ' Δρ P0 ψa` (plus `flex_apart_walk`, and a `binds`-monotone context generalization so Sub-ForallL can run the IH at `Θ,β`).  `flex_shield_excludes_cex` is kept as the regression test tying the premise to the counterexample.  See docs/PAPER-GAPS.md and DESIGN-completeness-subtyping.md §6 (x)–(a3)
-- 🟢 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_looksub_solve_complete_gen` (ρ-generalized) + the paper's premise-free ρ = identity corollary `a_looksub_solve_complete` in `frost/algo/prop_look_complete_sub_cstr.v`; **11 of 12 rows closed**, ALL TWELVE ROWS closed.  ⚠️ Phase B's planned prerequisite — a sub-side `ad_pat_consis_target_ftv` — is FALSE at `ad_pat_sub_g__forall_l_tagged` even under `is_tskl` (`cex/cex_p6ss_sub_target_ftv.v`); what Sub-ForallR carries instead is a MODE-GUARDED DISJUNCTION (DESIGN §8 (h)), whose right disjunct (`alpha_stack`) is the shape that never descends the target.  Like P6-Sv it is a REPAIRED statement (`sub_shield`).  ⚠️ P6-Cs's `Δρ ∩ dom Θ0 = ∅` premise was VACUOUS — `cex/cex_p6cs_rho_delta_vacuous.v` — and is now the ftv-level one.
+- 🟢 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_looksub_solve_complete_gen` (ρ-generalized) + the paper's premise-free ρ = identity corollary `a_looksub_solve_complete` in `frost/algo/prop_look_complete_sub_cstr.v`; **11 of 12 rows closed**, ALL TWELVE ROWS closed.  ⚠️ Phase B's planned prerequisite — a sub-side `ad_pat_consis_target_ftv` — is FALSE at `ad_pat_sub_g__forall_l_tagged` even under `is_tskl` (`cex/cex_p6ss_sub_target_ftv.v`); what Sub-ForallR carries instead is a MODE-GUARDED DISJUNCTION (DESIGN §8 (h)), whose right disjunct (`alpha_stack`) is the shape that never descends the target.  Like P6-Sv it is a REPAIRED statement (`sub_shield`).  ⚠️ P6-Cs's `Δρ ∩ dom Θ0 = ∅` premise was VACUOUS — `cex/cex_p6cs_rsubst_delta_vacuous.v` — and is now the ftv-level one.
 - ✅ **Look completeness** (subtyping-proofs:2730, P6-L) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_extract_complete_gen` in `frost/algo/prop_look_complete_extract.v`.  **P6 IS COMPLETE**: all five of its lemmas (P6-Cv, P6-Cs, P6-Sv, P6-Ss, P6-L) are closed.  The statement is the paper's, with the paper's own PROSE well-formedness of ψa restored on the statement (`Θ ⨟ Δ ⊢ₚₛᵃ ⌊ψa⌋ˢ`, which `ad_partial_precise_complete` needs, plus the precision hole rule's `Δ ∩ ftv ψa = ∅`); the paper's `inc[θ≡θa]{Θ0}{Θ}` appears as the reflexive `a_inc_equiv Θ0 κ κ Θ` beside an a_inc conclusion exhibiting θa as the EXTENSION `κa ++ κ` — the mech's `a_inc_equiv` is positional, so that is where the content lives (same reading as P6-Ss).  One ENCODING FIX was required first: `a_extract` now carries a context and solves at `Ξ ++ Θ0`, not `Ξ` alone — the paper's solve/guess judgments are context-FREE, and handing the solve `Ξ` alone hid Θ0's flexibles from the one context-sensitive rule of the cluster (`a_solve_eq__flex_r`), which made P6-L unprovable.  See DESIGN-completeness-subtyping.md §7.4 / §7.5
 - 🟢 Completeness of flexible-variable subtyping (subtyping-proofs:2836, P7a) — **ALL FIVE ROWS CLOSED 2026-08-03**, `Qed` + axiom-free, in `frost/algo/prop_sub_complete_thm.v`: §(F) `a_sub_flex_complete_depend`, §(G) `_skip`, §(I) `_assign`, §(K) `_solve`, §(M) `a_sub_flex_complete_skip_rigid`.  §(I)/§(K) are the CROSS-HALF rows (both re-enter the MAIN judgment, so their IH is the **P7b** motive).  §(M) needed the ⇓-apparatus of §(L0)/§(L1)/§(L) — `a_inc__tvar` shrinks the TARGET, so the IH runs at the truncation `Θ'` and every solution-side premise is ⇓-normalized before being strengthened there; its one obligation beyond the consistency walk's `Assign-SkipRigid` is `ad_precise_downarrow` (`⇓ˢP ⊑ P`), which brings the motive's PRECISION conjunct back from `⇓ᵇQ` to `Q`.  The motive's flexibility premise was STRENGTHENED to `a_flex_tvar Θ0 α` (the walk's own invariant, as in `assign_complete_at`); no downstream statement changed.  The remaining P7 work is the DISPATCHER (§12) plus its STUCK-CHECK.  What follows is the pre-closure record.  TASK 0 (supplying P6-L's `sub_shield` premise at P7b's Sub-ForallL) lives in `frost/algo/prop_sub_shield_supply.v`, all Qed + axiom-free: a mono-ish counterpart (§4, covers a raw FLEXIBLE `P0`), the non-composite shapes (§5), any **flex-free** `P0` (§6, uniformly in ψa and Δρ), and — the generalization that does the real work — any **inh-free counterpart** / any `P0` **with no ∀** (§7/§8: `ad_pat_consis_inh_free_tag_free`, `ad_pat_sub_g_inh_free_tag_free`, `ad_refine_syn_inh_free`, `sub_shield_supply_all_free_p0`).  ⚠️ Residual SETTLED 2026-08-03 and it is NEGATIVE: a `P0` carrying a ∀ below its head is not merely uncovered, it makes `sub_shield` FALSE at a REACHABLE configuration (`cex/cex_p7_shield_realizable.v`, Qed + axiom-free — the full completeness input, the ForallL join node, the fill, and `~ sub_shield` all machine-checked, plus `join_at_Rw_is_forall_l`: no other join rule applies there).  `sub_shield` is a MECH-INVENTED repair premise, so no paper statement is refuted and P6-Sv/P6-Ss stay `Qed`; what is refuted is its NON-POSITIONAL indexing, and the repair is a positional re-indexing replayed through P6-Ss and P7b's two ForallL rows.  Until then P7c's two ForallL cases are BLOCKED (the other ten are not).  DESIGN-completeness-subtyping.md §14.1 / §9.0.2
 - 🟡 Theorem: Completeness and optimality of subtyping (subtyping-proofs:3050, P7b/P7c) — **IN PROGRESS**.  Motive locked AND REPAIRED 2026-07-30 (`sub_complete_concl` / `sub_flex_complete_concl` / `a_sub_complete_bundle`, `frost/algo/prop_sub_complete_thm.v`): the join is the LEAF-VALID mirror `ad_pat_sub_gv` (def_decl_algo_sub_hyg.v) carrying the subject refinement at the consistency leaves, with NO root-level third premise — the first-cut root premise was REFUTED as a lockstep condition (machine-checked `cex/cex_p7_univ_ghost_r_vacuous.v` + `cex/cex_p7_third_premise_forall.v`: it lost Sub-UnivGhostR entirely and the head-disagreeing ForallL/ForallR solutions `∀a.a ⩽ unit`, `unit ⩽ ∀a.unit`).  FIVE of P7b's rows closed, Qed + axiom-free — Sub-Ghost, Sub-GhostG, **Sub-Infer**, **Sub-Check** and **Sub-UnivGhostR** (a REAL proof: algorithmic UnivGhostR + the `□`-P0 precision core at the stripped counterpart + a `∀◇`-wrap).  The enabling lemma is `a_inc_equiv_precise_msubst` (precision is stable under equivalent metasubstitutions), with the shared core `a_sub_complete_hole_p0_precision`.  ⚠️ Remaining obligation: transport P5's precision-substitution + the freshening kits to `_gv` for ForallL/ForallR.  See docs/PAPER-GAPS.md and DESIGN §9.1.3 / §1.  ⚠️ The property the paper marks with its own TODO at `:3243` ("input `P_0` concrete ⟹ RHS is `P_0`") is **FALSE** — machine-checked `frost/algo/cex/cex_p7_concrete_rhs.v` (`p7_concrete_rhs_is_false`).  Sub-Check / Sub-ForallR are unaffected: both already argue via the EQUIVALENCE, and BOTH halves of it are proved in `frost/algo/prop_sub_concrete_rhs.v` — `a_consis_concrete_output_equiv` and `a_sub_concrete_output_equiv`, each `Θ1 ⊢ P0 ≡ˢ P'`, both falling out of the SOUNDNESS theorems' refinement conjunct plus `ad_refine_syn_ghost_free_equiv`.  See docs/PAPER-GAPS.md and DESIGN §9.1
@@ -81,8 +81,7 @@ DEFINITIONAL layer is in (`algo_decl/def_typing.v`: `ad_pat`,
 NOT straightforward in the mechanization — reasons recorded per lemma there.
 - 🟢 **Suffix moving — CLOSED 2026-08-06**, Qed + axiom-free
   (`algo_decl/ + deco_algo/prop_ctx_mono.v`): `ad_sd_typing_suffix_moving`,
-  `ad_pat_suffix_moving`, plus the two "stability" corollaries
-  `ad_sd_typing_weaken_suffix` / `ad_pat_weaken_suffix`.  ⭐ ONE lemma, not
+  `ad_pat_suffix_moving`.  ⭐ ONE lemma, not
   five: every `ad_*` judgement reads its context only through `binds` and
   `a_binds_tvar` (itself a disjunction of `binds`), and NOTHING in the layer is
   anti-monotone — the negative side conditions (`a_non_flex`, `a_flex_tvar`)
@@ -117,7 +116,7 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   (Qed, axiom-free) adds the layers above it: the substitution kit
   (`subst_abind`/`subst_aenv` + the coercion commutations),
   `a_wf_ptyp`/`a_wf_pskl`, `a_tyequiv`, `ad_refine_syn`, `ad_pat_consis`,
-  and the drivers `ad_refine_syn_strip_suffix` / `a_tyequiv_strip_suffix`.
+  and the driver `ad_refine_syn_strip_suffix`.
   ⛔ LEFT: `ad_pat` and `ad_sd_typing`, which additionally need
   `ad_pat_sub_subst_mid` in the SUBSTITUTED-CONTEXT style (prop_pat_sub.v's
   version concludes at the un-substituted tail, which does not compose with
@@ -187,7 +186,7 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   **2026-08-06 sixth pass — two more prerequisites CLOSED**, both Qed and
   axiom-free: §8 `ad_sd_typing_mod_comp_ty` (⭐ not the SK proof one sort up
   — `mod_comp_ty` is stated on a `btyp` while the premise's target is that
-  `btyp`'s SKELETON, so it needs `is_styp_of_is_sskl_erase` and
+  `btyp`'s SKELETON, so it needs `is_styp_of_btyp_to_bskl` and
   `is_ityp_of_erase_inh`, the second of which genuinely needs local closure,
   supplied by `ad_pat_consis_lc_r` + `lc_btyp_of_lc_bskl_erase`; the `≡ᵗ`
   rows take theirs from `a_tyequiv_lc`, which carries `a_wf_aenv` exactly as
@@ -225,11 +224,14 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   enumeration is incomplete; the subcase-2 metasubstitution extension maps
   a flexible to a NON-monotype; the split run and the scoping step are
   asserted).
-- ⚙ §4b's composition gap (completeness consumes `a_sub_complete`, which
-  assumes `ad_pat_sub_gv`, while soundness only concludes plain
-  `ad_pat_sub`) is CLOSED — the fused base rows embed `ad_pat_sub_v`
-  (2026-08-06 rule change) and the consumers rebuild the plain triple via
-  `ad_pat_sub_of_v`.
+- ⚙ §4b's composition gap (completeness consumed a leaf-valid join while
+  soundness concluded only the plain one) is CLOSED, and since 2026-08-12 it
+  is closed at the SOURCE: the paper's leaf presupposition sits ON
+  `ad_pat_sub` itself (`3f08641`), so both sides speak of one relation.  The
+  three-relation era — `ad_pat_sub_g` / `_gv` / `_v` and the forgetful map
+  `ad_pat_sub_fuel_forget` — is retired; what is left is `ad_pat_sub` and its
+  fuel-indexed mirror `ad_pat_sub_fuel`, bridged at the end of
+  `algo_decl/prop_ctx_mono.v`.
 
 **A. full-decl-proofs.tex** (declarative metatheory — REBASED onto the synced defs)
 - ✅ Soundness/Completeness of syntax-directed rules (`d_sd_typing_sound` / `d_sd_typing_complete`, `prop_syntax_directed.v`, 0 admits)
@@ -4593,7 +4595,7 @@ RESTORE the exact bound where it is still true rather than weaken a consumer:
    arrow row's Δρ-apartness for its new `Pi := Pa1`, and both ForallSyn rows'
    `β ∉ ftv 𝒞`.
 2. **`a_inc_binds_tvar_rev`** (+ `a_suffix_no_tvar`) PROMOTED from
-   `cex/cex_p6cs_rho_delta_vacuous.v` into `prop_inc.v`, beside its converse
+   `cex/cex_p6cs_rsubst_delta_vacuous.v` into `prop_inc.v`, beside its converse
    `a_inc_binds_tvar`.  An increase never INVENTS a rigid, so `Δρ ⊆ dom Θ0`
    — which is what makes (1) applicable to a ρ-replaced variable.  The cex
    now imports it instead of re-proving it.
@@ -6656,7 +6658,7 @@ encoding choice (cofinite, β-free output).
 ρ = identity corollary, is closed.
 
 ⚠️ **P6-Cs's ρ-generalization was VACUOUS as landed** — machine-checked in
-`frost/algo/cex/cex_p6cs_rho_delta_vacuous.v`.  Its premise
+`frost/algo/cex/cex_p6cs_rsubst_delta_vacuous.v`.  Its premise
 `forall α0 ∈ Δρ, α0 ∉ dom Θ0`, beside `κ ∷ Θ0 ⊑ Θ` and `rho_fresh Δρ Θ κ`,
 forces `Δρ = ∅`: an INCREASE NEVER INVENTS A RIGID (`a_inc_binds_tvar_rev`, the
 converse of the existing `a_inc_binds_tvar` — `a_suffix` admits only flexible

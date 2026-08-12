@@ -12,7 +12,7 @@
     THE ρ REPRESENTATION (design locked in DESIGN §7, 2026-07-24): the
     paper's ρ — a substitution from rigid type variables to decorated
     skeletons, with Ψ the solved tags it introduces — is mechanized as
-    the RELATION [uskl_rho] "ψsub ⊒ρ[Δρ;Ψρ] ψa" (ψsub = ρ(ψa), Δρ = the
+    the RELATION [uskl_rsubst] "ψsub ⊒ρ[Δρ;Ψρ] ψa" (ψsub = ρ(ψa), Δρ = the
     replaced variables): same-constructor congruences + a REFL rule
     (identity-ρ call sites) + one replace-leaf [ψ'' ⊒ var α].  A relation
     rather than a function ([list (atom * uskl)] + msubst) NOT because of
@@ -20,7 +20,7 @@
     free, as for κ — but because the main inductions run on the
     derivation over the SUBJECT ψsub, where each case needs, at its own
     position: (i) the copy-vs-replacement-leaf split (the
-    [uskl_rho_*_l_inv] inversions); (ii) the image's tags Ψ'' AT THIS
+    [uskl_rsubst_*_l_inv] inversions); (ii) the image's tags Ψ'' AT THIS
     OCCURRENCE — a variable replaced in both arrow branches contributes
     its image's tags to BOTH copies, so Ψρ is a union WITHOUT cross-copy
     disjointness and the arrow case splits it per branch only by
@@ -34,7 +34,7 @@
     is RECOVERED as a lemma ([ad_ppre_delta_var_inv]) from FRESHNESS of
     the replaced variables — [α ∈ Δ] (blocks the precision hole rule),
     [binds α abind_tvar Θ] (blocks flex_r), α avoided by κ's images, by
-    Θ's definition images ([rho_fresh]), and by the subject's ∀◇-shielded
+    Θ's definition images ([rsubst_fresh]), and by the subject's ∀◇-shielded
     variables ([pskl_shielded_ftv]).  Δ-membership ALONE is insufficient
     (counterexamples v4/v5, DESIGN §7): precision's tophole_remove/flex_l
     admit ∀◇-wrapped or definition-chained leaf positions whose
@@ -85,45 +85,45 @@ Set Implicit Arguments.
 (*  The ρ relation  [ψsub ⊒ρ[Δρ;Ψρ] ψa]  (DESIGN §7).                      *)
 (* ===================================================================== *)
 
-Inductive uskl_rho (NM : a_sub_mode) (Θ : aenv)
+Inductive uskl_rsubst (NM : a_sub_mode) (Θ : aenv)
   : atoms -> atoms -> uskl -> uskl -> Prop :=
-| urho__refl : forall Δρ Ψρ R,
+| ursubst__refl : forall Δρ Ψρ R,
     lc_uskl R ->
     Ψρ [=] empty ->
-    uskl_rho NM Θ Δρ Ψρ R R
-| urho__leaf : forall Δρ Ψρ α Ψ'' ψ'',
+    uskl_rsubst NM Θ Δρ Ψρ R R
+| ursubst__leaf : forall Δρ Ψρ α Ψ'' ψ'',
     α `in` Δρ ->
     a_tags_sort NM Ψ'' ψ'' ->
     {{ Θ ⨟ empty ⊢ₚₛ ⌊ ψ'' ⌋ˢ }}a ->
     Ψρ [=] Ψ'' ->
-    uskl_rho NM Θ Δρ Ψρ ψ'' (uskl_var_f α)
-| urho__arrow : forall Δρ Ψρ Ψ1 Ψ2 R1' R2' R1 R2,
-    uskl_rho NM Θ Δρ Ψ1 R1' R1 ->
-    uskl_rho NM Θ Δρ Ψ2 R2' R2 ->
+    uskl_rsubst NM Θ Δρ Ψρ ψ'' (uskl_var_f α)
+| ursubst__arrow : forall Δρ Ψρ Ψ1 Ψ2 R1' R2' R1 R2,
+    uskl_rsubst NM Θ Δρ Ψ1 R1' R1 ->
+    uskl_rsubst NM Θ Δρ Ψ2 R2' R2 ->
     Ψρ [=] Ψ1 `union` Ψ2 ->
-    uskl_rho NM Θ Δρ Ψρ (uskl_arrow R1' R2') (uskl_arrow R1 R2)
-| urho__all_syn : forall L Δρ Ψρ R' R,
+    uskl_rsubst NM Θ Δρ Ψρ (uskl_arrow R1' R2') (uskl_arrow R1 R2)
+| ursubst__all_syn : forall L Δρ Ψρ R' R,
     (forall α, α `notin` L ->
-       uskl_rho NM Θ Δρ Ψρ
+       uskl_rsubst NM Θ Δρ Ψρ
          (open_uskl_wrt_uskl R' (uskl_var_f α))
          (open_uskl_wrt_uskl R (uskl_var_f α))) ->
-    uskl_rho NM Θ Δρ Ψρ (uskl_all_syn R') (uskl_all_syn R)
-| urho__all_tag : forall L Δρ Ψρ ε R' R,
+    uskl_rsubst NM Θ Δρ Ψρ (uskl_all_syn R') (uskl_all_syn R)
+| ursubst__all_tag : forall L Δρ Ψρ ε R' R,
     (forall α, α `notin` L ->
-       uskl_rho NM Θ Δρ Ψρ
+       uskl_rsubst NM Θ Δρ Ψρ
          (open_uskl_wrt_uskl R' (uskl_var_f α))
          (open_uskl_wrt_uskl R (uskl_var_f α))) ->
-    uskl_rho NM Θ Δρ Ψρ (uskl_all_tag ε R') (uskl_all_tag ε R)
-| urho__tophole : forall Δρ Ψρ R' R,
-    uskl_rho NM Θ Δρ Ψρ R' R ->
-    uskl_rho NM Θ Δρ Ψρ (uskl_tophole R') (uskl_tophole R)
-| urho__topholeg : forall Δρ Ψρ R' R,
-    uskl_rho NM Θ Δρ Ψρ R' R ->
-    uskl_rho NM Θ Δρ Ψρ (uskl_topholeg R') (uskl_topholeg R).
+    uskl_rsubst NM Θ Δρ Ψρ (uskl_all_tag ε R') (uskl_all_tag ε R)
+| ursubst__tophole : forall Δρ Ψρ R' R,
+    uskl_rsubst NM Θ Δρ Ψρ R' R ->
+    uskl_rsubst NM Θ Δρ Ψρ (uskl_tophole R') (uskl_tophole R)
+| ursubst__topholeg : forall Δρ Ψρ R' R,
+    uskl_rsubst NM Θ Δρ Ψρ R' R ->
+    uskl_rsubst NM Θ Δρ Ψρ (uskl_topholeg R') (uskl_topholeg R).
 
 (** The subject's tags are bounded by the replacement tags plus ψa's. *)
-Lemma uskl_rho_ftag_sub : forall NM Θ Δρ Ψρ R' R,
-  uskl_rho NM Θ Δρ Ψρ R' R ->
+Lemma uskl_rsubst_ftag_sub : forall NM Θ Δρ Ψρ R' R,
+  uskl_rsubst NM Θ Δρ Ψρ R' R ->
   ftag_in_uskl R' [<=] Ψρ `union` ftag_in_uskl R.
 Proof.
   intros NM Θ Δρ Ψρ R' R H; induction H; simpl; try fsetdec.
@@ -145,7 +145,7 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  Inversion of [uskl_rho] BY SUBJECT SHAPE (P6-Cv/Rv consume these: the   *)
+(*  Inversion of [uskl_rsubst] BY SUBJECT SHAPE (P6-Cv/Rv consume these: the   *)
 (*  induction is on the [ad_pat_consis]/[ad_pat_sub] derivation of the      *)
 (*  ρ(ψa)-SUBJECT, so each case fixes the subject shape and reads off ψa's  *)
 (*  shape — either a matching structural congruence / reflexive copy, or a  *)
@@ -153,22 +153,22 @@ Qed.
 (* ===================================================================== *)
 
 (** [ψa = var α] with the subject as X's ρ-image (the leaf disjunct). *)
-Definition rho_leaf (NM : a_sub_mode) (Θ : aenv) (Δρ Ψρ : atoms)
+Definition rsubst_leaf (NM : a_sub_mode) (Θ : aenv) (Δρ Ψρ : atoms)
     (R : uskl) (ψa : uskl) : Prop :=
   exists α Ψ'', ψa = uskl_var_f α /\ α `in` Δρ /\
     a_tags_sort NM Ψ'' R /\ {{ Θ ⨟ empty ⊢ₚₛ ⌊ R ⌋ˢ }}a /\ Ψρ [=] Ψ''.
 
 (* [andsplit] splits ONLY [/\] goals — plain [split] would enter the
-   single-constructor [a_tags_sort] inside [rho_leaf]. *)
+   single-constructor [a_tags_sort] inside [rsubst_leaf]. *)
 Local Ltac rho_andsplit := repeat match goal with |- _ /\ _ => split end.
 Local Ltac rho_refl_tac := left; split; [ reflexivity | assumption ].
 
-Lemma uskl_rho_arrow_l_inv : forall NM Θ Δρ Ψρ R1' R2' ψa,
-  uskl_rho NM Θ Δρ Ψρ (uskl_arrow R1' R2') ψa ->
+Lemma uskl_rsubst_arrow_l_inv : forall NM Θ Δρ Ψρ R1' R2' ψa,
+  uskl_rsubst NM Θ Δρ Ψρ (uskl_arrow R1' R2') ψa ->
   (ψa = uskl_arrow R1' R2' /\ Ψρ [=] empty)
-  \/ rho_leaf NM Θ Δρ Ψρ (uskl_arrow R1' R2') ψa
+  \/ rsubst_leaf NM Θ Δρ Ψρ (uskl_arrow R1' R2') ψa
   \/ (exists R1 R2 Ψ1 Ψ2, ψa = uskl_arrow R1 R2 /\
-        uskl_rho NM Θ Δρ Ψ1 R1' R1 /\ uskl_rho NM Θ Δρ Ψ2 R2' R2 /\
+        uskl_rsubst NM Θ Δρ Ψ1 R1' R1 /\ uskl_rsubst NM Θ Δρ Ψ2 R2' R2 /\
         Ψρ [=] Ψ1 `union` Ψ2).
 Proof.
   intros NM Θ Δρ Ψρ R1' R2' ψa H; inversion H; subst.
@@ -178,47 +178,47 @@ Proof.
       try reflexivity; assumption.
 Qed.
 
-Lemma uskl_rho_unit_l_inv : forall NM Θ Δρ Ψρ ψa,
-  uskl_rho NM Θ Δρ Ψρ uskl_unit ψa ->
-  (ψa = uskl_unit /\ Ψρ [=] empty) \/ rho_leaf NM Θ Δρ Ψρ uskl_unit ψa.
+Lemma uskl_rsubst_unit_l_inv : forall NM Θ Δρ Ψρ ψa,
+  uskl_rsubst NM Θ Δρ Ψρ uskl_unit ψa ->
+  (ψa = uskl_unit /\ Ψρ [=] empty) \/ rsubst_leaf NM Θ Δρ Ψρ uskl_unit ψa.
 Proof.
   intros NM Θ Δρ Ψρ ψa H; inversion H; subst.
   - rho_refl_tac.
   - right; exists α, Ψ''; rho_andsplit; try reflexivity; assumption.
 Qed.
 
-Lemma uskl_rho_var_l_inv : forall NM Θ Δρ Ψρ β ψa,
-  uskl_rho NM Θ Δρ Ψρ (uskl_var_f β) ψa ->
-  (ψa = uskl_var_f β /\ Ψρ [=] empty) \/ rho_leaf NM Θ Δρ Ψρ (uskl_var_f β) ψa.
+Lemma uskl_rsubst_var_l_inv : forall NM Θ Δρ Ψρ β ψa,
+  uskl_rsubst NM Θ Δρ Ψρ (uskl_var_f β) ψa ->
+  (ψa = uskl_var_f β /\ Ψρ [=] empty) \/ rsubst_leaf NM Θ Δρ Ψρ (uskl_var_f β) ψa.
 Proof.
   intros NM Θ Δρ Ψρ β ψa H; inversion H; subst.
   - rho_refl_tac.
   - right; exists α, Ψ''; rho_andsplit; try reflexivity; assumption.
 Qed.
 
-Lemma uskl_rho_hole_l_inv : forall NM Θ Δρ Ψρ ψa,
-  uskl_rho NM Θ Δρ Ψρ uskl_hole ψa ->
-  (ψa = uskl_hole /\ Ψρ [=] empty) \/ rho_leaf NM Θ Δρ Ψρ uskl_hole ψa.
+Lemma uskl_rsubst_hole_l_inv : forall NM Θ Δρ Ψρ ψa,
+  uskl_rsubst NM Θ Δρ Ψρ uskl_hole ψa ->
+  (ψa = uskl_hole /\ Ψρ [=] empty) \/ rsubst_leaf NM Θ Δρ Ψρ uskl_hole ψa.
 Proof.
   intros NM Θ Δρ Ψρ ψa H; inversion H; subst.
   - rho_refl_tac.
   - right; exists α, Ψ''; rho_andsplit; try reflexivity; assumption.
 Qed.
 
-Lemma uskl_rho_holeg_l_inv : forall NM Θ Δρ Ψρ ψa,
-  uskl_rho NM Θ Δρ Ψρ uskl_holeg ψa ->
-  (ψa = uskl_holeg /\ Ψρ [=] empty) \/ rho_leaf NM Θ Δρ Ψρ uskl_holeg ψa.
+Lemma uskl_rsubst_holeg_l_inv : forall NM Θ Δρ Ψρ ψa,
+  uskl_rsubst NM Θ Δρ Ψρ uskl_holeg ψa ->
+  (ψa = uskl_holeg /\ Ψρ [=] empty) \/ rsubst_leaf NM Θ Δρ Ψρ uskl_holeg ψa.
 Proof.
   intros NM Θ Δρ Ψρ ψa H; inversion H; subst.
   - rho_refl_tac.
   - right; exists α, Ψ''; rho_andsplit; try reflexivity; assumption.
 Qed.
 
-Lemma uskl_rho_tophole_l_inv : forall NM Θ Δρ Ψρ R' ψa,
-  uskl_rho NM Θ Δρ Ψρ (uskl_tophole R') ψa ->
+Lemma uskl_rsubst_tophole_l_inv : forall NM Θ Δρ Ψρ R' ψa,
+  uskl_rsubst NM Θ Δρ Ψρ (uskl_tophole R') ψa ->
   (ψa = uskl_tophole R' /\ Ψρ [=] empty)
-  \/ rho_leaf NM Θ Δρ Ψρ (uskl_tophole R') ψa
-  \/ (exists R, ψa = uskl_tophole R /\ uskl_rho NM Θ Δρ Ψρ R' R).
+  \/ rsubst_leaf NM Θ Δρ Ψρ (uskl_tophole R') ψa
+  \/ (exists R, ψa = uskl_tophole R /\ uskl_rsubst NM Θ Δρ Ψρ R' R).
 Proof.
   intros NM Θ Δρ Ψρ R' ψa H; inversion H; subst.
   - rho_refl_tac.
@@ -226,11 +226,11 @@ Proof.
   - right; right; exists R; split; [ reflexivity | assumption ].
 Qed.
 
-Lemma uskl_rho_topholeg_l_inv : forall NM Θ Δρ Ψρ R' ψa,
-  uskl_rho NM Θ Δρ Ψρ (uskl_topholeg R') ψa ->
+Lemma uskl_rsubst_topholeg_l_inv : forall NM Θ Δρ Ψρ R' ψa,
+  uskl_rsubst NM Θ Δρ Ψρ (uskl_topholeg R') ψa ->
   (ψa = uskl_topholeg R' /\ Ψρ [=] empty)
-  \/ rho_leaf NM Θ Δρ Ψρ (uskl_topholeg R') ψa
-  \/ (exists R, ψa = uskl_topholeg R /\ uskl_rho NM Θ Δρ Ψρ R' R).
+  \/ rsubst_leaf NM Θ Δρ Ψρ (uskl_topholeg R') ψa
+  \/ (exists R, ψa = uskl_topholeg R /\ uskl_rsubst NM Θ Δρ Ψρ R' R).
 Proof.
   intros NM Θ Δρ Ψρ R' ψa H; inversion H; subst.
   - rho_refl_tac.
@@ -238,13 +238,13 @@ Proof.
   - right; right; exists R; split; [ reflexivity | assumption ].
 Qed.
 
-Lemma uskl_rho_all_syn_l_inv : forall NM Θ Δρ Ψρ R' ψa,
-  uskl_rho NM Θ Δρ Ψρ (uskl_all_syn R') ψa ->
+Lemma uskl_rsubst_all_syn_l_inv : forall NM Θ Δρ Ψρ R' ψa,
+  uskl_rsubst NM Θ Δρ Ψρ (uskl_all_syn R') ψa ->
   (ψa = uskl_all_syn R' /\ Ψρ [=] empty)
-  \/ rho_leaf NM Θ Δρ Ψρ (uskl_all_syn R') ψa
+  \/ rsubst_leaf NM Θ Δρ Ψρ (uskl_all_syn R') ψa
   \/ (exists L R, ψa = uskl_all_syn R /\
         forall α, α `notin` L ->
-          uskl_rho NM Θ Δρ Ψρ (open_uskl_wrt_uskl R' (uskl_var_f α))
+          uskl_rsubst NM Θ Δρ Ψρ (open_uskl_wrt_uskl R' (uskl_var_f α))
                               (open_uskl_wrt_uskl R (uskl_var_f α))).
 Proof.
   intros NM Θ Δρ Ψρ R' ψa H; inversion H; subst.
@@ -253,13 +253,13 @@ Proof.
   - right; right; exists L, R; split; [ reflexivity | eassumption ].
 Qed.
 
-Lemma uskl_rho_all_tag_l_inv : forall NM Θ Δρ Ψρ ε R' ψa,
-  uskl_rho NM Θ Δρ Ψρ (uskl_all_tag ε R') ψa ->
+Lemma uskl_rsubst_all_tag_l_inv : forall NM Θ Δρ Ψρ ε R' ψa,
+  uskl_rsubst NM Θ Δρ Ψρ (uskl_all_tag ε R') ψa ->
   (ψa = uskl_all_tag ε R' /\ Ψρ [=] empty)
-  \/ rho_leaf NM Θ Δρ Ψρ (uskl_all_tag ε R') ψa
+  \/ rsubst_leaf NM Θ Δρ Ψρ (uskl_all_tag ε R') ψa
   \/ (exists L R, ψa = uskl_all_tag ε R /\
         forall α, α `notin` L ->
-          uskl_rho NM Θ Δρ Ψρ (open_uskl_wrt_uskl R' (uskl_var_f α))
+          uskl_rsubst NM Θ Δρ Ψρ (open_uskl_wrt_uskl R' (uskl_var_f α))
                               (open_uskl_wrt_uskl R (uskl_var_f α))).
 Proof.
   intros NM Θ Δρ Ψρ ε R' ψa H; inversion H; subst.
@@ -298,7 +298,7 @@ Proof. induction P; simpl; fsetdec. Qed.
     Θ's definition images.  (The Pi-dependent component —
     [α ∉ pskl_shielded_ftv (msubst_pskl κ Pi)] — and the Δ-membership
     [α ∈ Δ] are separate premises, since Pi and Δ vary per case.) *)
-Definition rho_fresh (Δρ : atoms) (Θ : aenv) (κ : metasubst) : Prop :=
+Definition rsubst_fresh (Δρ : atoms) (Θ : aenv) (κ : metasubst) : Prop :=
   forall α0, α0 `in` Δρ ->
     binds α0 abind_tvar Θ /\
     (forall p, In p κ -> α0 `notin` ftvar_in_ptyp (snd p)) /\
@@ -309,9 +309,9 @@ Definition rho_fresh (Δρ : atoms) (Θ : aenv) (κ : metasubst) : Prop :=
     P6-Ss run their IH at [Θ,β], and a rigid entry adds neither a κ-image
     nor a definition, so the only conjunct that moves is the [binds]
     one — monotonically. *)
-Lemma rho_fresh_weaken_tvar : forall Δρ Θ κ β,
-  rho_fresh Δρ Θ κ ->
-  rho_fresh Δρ ((β ~ abind_tvar) ++ Θ) κ.
+Lemma rsubst_fresh_weaken_tvar : forall Δρ Θ κ β,
+  rsubst_fresh Δρ Θ κ ->
+  rsubst_fresh Δρ ((β ~ abind_tvar) ++ Θ) κ.
 Proof.
   intros Δρ Θ κ β Hrf α0 Hα0.
   destruct (Hrf α0 Hα0) as (Hb & Hκ & Hdef).
@@ -895,24 +895,24 @@ Qed.
 (** Θ-weakening of the ρ relation (binds-monotone; the leaf's image wf
     weakens). *)
 (* ===================================================================== *)
-(*  Inversion of [uskl_rho] BY TARGET SHAPE — the mirror family            *)
+(*  Inversion of [uskl_rsubst] BY TARGET SHAPE — the mirror family            *)
 (*                                                                        *)
 (*  P6-Cs (and P6-Ss's Arrow / ∀ rows) dispatch on the IDEAL subject       *)
 (*  [R'], not on the derivation, so what they need is the opposite         *)
 (*  reading: the TARGET's shape is known and the ρ-IMAGE's has to be read  *)
 (*  off.  That direction is strictly simpler than [_l_inv] — for every     *)
-(*  NON-VARIABLE target only [urho__refl] and the matching congruence      *)
-(*  apply ([urho__leaf] demands a variable target) — and the two collapse: *)
-(*  [urho__refl] carries [lc_uskl], so its components are themselves       *)
+(*  NON-VARIABLE target only [ursubst__refl] and the matching congruence      *)
+(*  apply ([ursubst__leaf] demands a variable target) — and the two collapse: *)
+(*  [ursubst__refl] carries [lc_uskl], so its components are themselves       *)
 (*  reflexive ρ-images at [Ψρ = ∅].  Hence a SINGLE congruence conclusion, *)
-(*  with no [rho_leaf] disjunct to dispatch.                              *)
+(*  with no [rsubst_leaf] disjunct to dispatch.                              *)
 (* ===================================================================== *)
 
-Lemma uskl_rho_arrow_r_inv : forall NM Θ Δρ Ψρ R' ψ1 ψ2,
-  uskl_rho NM Θ Δρ Ψρ R' (uskl_arrow ψ1 ψ2) ->
+Lemma uskl_rsubst_arrow_r_inv : forall NM Θ Δρ Ψρ R' ψ1 ψ2,
+  uskl_rsubst NM Θ Δρ Ψρ R' (uskl_arrow ψ1 ψ2) ->
   exists R1' R2' Ψ1 Ψ2,
     R' = uskl_arrow R1' R2' /\
-    uskl_rho NM Θ Δρ Ψ1 R1' ψ1 /\ uskl_rho NM Θ Δρ Ψ2 R2' ψ2 /\
+    uskl_rsubst NM Θ Δρ Ψ1 R1' ψ1 /\ uskl_rsubst NM Θ Δρ Ψ2 R2' ψ2 /\
     Ψρ [=] Ψ1 `union` Ψ2.
 Proof.
   intros NM Θ Δρ Ψρ R' ψ1 ψ2 H; inversion H; subst.
@@ -921,69 +921,69 @@ Proof.
       inversion Hlc; subst end.
     exists ψ1, ψ2, empty, empty; rho_andsplit;
       [ reflexivity
-      | apply urho__refl; [ assumption | clear; fsetdec ]
-      | apply urho__refl; [ assumption | clear; fsetdec ]
+      | apply ursubst__refl; [ assumption | clear; fsetdec ]
+      | apply ursubst__refl; [ assumption | clear; fsetdec ]
       | clear - H1; fsetdec ].
   - exists R1', R2', Ψ1, Ψ2; rho_andsplit;
       try reflexivity; assumption.
 Qed.
 
-Lemma uskl_rho_tophole_r_inv : forall NM Θ Δρ Ψρ R' ψ,
-  uskl_rho NM Θ Δρ Ψρ R' (uskl_tophole ψ) ->
-  exists R0, R' = uskl_tophole R0 /\ uskl_rho NM Θ Δρ Ψρ R0 ψ.
+Lemma uskl_rsubst_tophole_r_inv : forall NM Θ Δρ Ψρ R' ψ,
+  uskl_rsubst NM Θ Δρ Ψρ R' (uskl_tophole ψ) ->
+  exists R0, R' = uskl_tophole R0 /\ uskl_rsubst NM Θ Δρ Ψρ R0 ψ.
 Proof.
   intros NM Θ Δρ Ψρ R' ψ H; inversion H; subst.
   - match goal with Hlc : lc_uskl (uskl_tophole _) |- _ =>
       inversion Hlc; subst end.
     exists ψ; split;
-      [ reflexivity | apply urho__refl; assumption ].
+      [ reflexivity | apply ursubst__refl; assumption ].
   - exists R'0; split; [ reflexivity | assumption ].
 Qed.
 
-Lemma uskl_rho_topholeg_r_inv : forall NM Θ Δρ Ψρ R' ψ,
-  uskl_rho NM Θ Δρ Ψρ R' (uskl_topholeg ψ) ->
-  exists R0, R' = uskl_topholeg R0 /\ uskl_rho NM Θ Δρ Ψρ R0 ψ.
+Lemma uskl_rsubst_topholeg_r_inv : forall NM Θ Δρ Ψρ R' ψ,
+  uskl_rsubst NM Θ Δρ Ψρ R' (uskl_topholeg ψ) ->
+  exists R0, R' = uskl_topholeg R0 /\ uskl_rsubst NM Θ Δρ Ψρ R0 ψ.
 Proof.
   intros NM Θ Δρ Ψρ R' ψ H; inversion H; subst.
   - match goal with Hlc : lc_uskl (uskl_topholeg _) |- _ =>
       inversion Hlc; subst end.
     exists ψ; split;
-      [ reflexivity | apply urho__refl; assumption ].
+      [ reflexivity | apply ursubst__refl; assumption ].
   - exists R'0; split; [ reflexivity | assumption ].
 Qed.
 
-Lemma uskl_rho_all_syn_r_inv : forall NM Θ Δρ Ψρ R' ψ,
-  uskl_rho NM Θ Δρ Ψρ R' (uskl_all_syn ψ) ->
+Lemma uskl_rsubst_all_syn_r_inv : forall NM Θ Δρ Ψρ R' ψ,
+  uskl_rsubst NM Θ Δρ Ψρ R' (uskl_all_syn ψ) ->
   exists L R0, R' = uskl_all_syn R0 /\
     forall α, α `notin` L ->
-      uskl_rho NM Θ Δρ Ψρ (open_uskl_wrt_uskl R0 (uskl_var_f α))
+      uskl_rsubst NM Θ Δρ Ψρ (open_uskl_wrt_uskl R0 (uskl_var_f α))
                           (open_uskl_wrt_uskl ψ (uskl_var_f α)).
 Proof.
   intros NM Θ Δρ Ψρ R' ψ H; inversion H; subst.
   - match goal with Hlc : lc_uskl (uskl_all_syn _) |- _ =>
       inversion Hlc; subst end.
     exists empty, ψ; split; [ reflexivity | ].
-    intros α Hα; apply urho__refl; [ auto | assumption ].
+    intros α Hα; apply ursubst__refl; [ auto | assumption ].
   - exists L, R'0; split; [ reflexivity | eassumption ].
 Qed.
 
-Lemma uskl_rho_all_tag_r_inv : forall NM Θ Δρ Ψρ R' ε ψ,
-  uskl_rho NM Θ Δρ Ψρ R' (uskl_all_tag ε ψ) ->
+Lemma uskl_rsubst_all_tag_r_inv : forall NM Θ Δρ Ψρ R' ε ψ,
+  uskl_rsubst NM Θ Δρ Ψρ R' (uskl_all_tag ε ψ) ->
   exists L R0, R' = uskl_all_tag ε R0 /\
     forall α, α `notin` L ->
-      uskl_rho NM Θ Δρ Ψρ (open_uskl_wrt_uskl R0 (uskl_var_f α))
+      uskl_rsubst NM Θ Δρ Ψρ (open_uskl_wrt_uskl R0 (uskl_var_f α))
                           (open_uskl_wrt_uskl ψ (uskl_var_f α)).
 Proof.
   intros NM Θ Δρ Ψρ R' ε ψ H; inversion H; subst.
   - match goal with Hlc : lc_uskl (uskl_all_tag _ _) |- _ =>
       inversion Hlc; subst end.
     exists empty, ψ; split; [ reflexivity | ].
-    intros α Hα; apply urho__refl; [ auto | assumption ].
+    intros α Hα; apply ursubst__refl; [ auto | assumption ].
   - exists L, R'0; split; [ reflexivity | eassumption ].
 Qed.
 
-Lemma uskl_rho_is_tskl : forall NM Θ Δρ Ψρ R' R,
-  uskl_rho NM Θ Δρ Ψρ R' R ->
+Lemma uskl_rsubst_is_tskl : forall NM Θ Δρ Ψρ R' R,
+  uskl_rsubst NM Θ Δρ Ψρ R' R ->
   is_tskl R ->
   is_tskl R'.
 Proof.
@@ -1003,13 +1003,13 @@ Proof.
   - inversion Ht; subst; apply is_tskl__topholeg; auto.
 Qed.
 
-Lemma uskl_rho_ftv_subject_bound : forall NM Θ Δρ Ψρ R' R,
-  uskl_rho NM Θ Δρ Ψρ R' R ->
+Lemma uskl_rsubst_ftv_subject_bound : forall NM Θ Δρ Ψρ R' R,
+  uskl_rsubst NM Θ Δρ Ψρ R' R ->
   ftvar_in_uskl R' [<=] ftvar_in_uskl R `union` dom Θ.
 Proof.
   intros NM Θ Δρ Ψρ R' R H; induction H; cbn [ftvar_in_uskl];
-    try solve [ clear; fsetdec | clear - IHuskl_rho; fsetdec
-              | clear - IHuskl_rho1 IHuskl_rho2; fsetdec ].
+    try solve [ clear; fsetdec | clear - IHuskl_rsubst; fsetdec
+              | clear - IHuskl_rsubst1 IHuskl_rsubst2; fsetdec ].
   - (* leaf : the image is well-formed in Θ *)
     pose proof (a_wf_pskl_ftv_dom H1) as Hd.
     (* [uskl_to_pskl_ftv] is a duplicate of this one and lives DOWNSTREAM *)
@@ -1029,7 +1029,7 @@ Proof.
 Qed.
 
 (** …and the SHARP version, which drops the [dom Θ] slack entirely.  ρ only
-    ever acts at a [Δρ]-variable ([urho__leaf] is the only non-congruence
+    ever acts at a [Δρ]-variable ([ursubst__leaf] is the only non-congruence
     rule), so an ideal that mentions no [Δρ]-variable is its own image.
 
     This is what P6-Ss Phase B needs: the ftv-𝒞 conclusion must survive a
@@ -1040,17 +1040,17 @@ Qed.
     P6-Cs keeps Δρ constant and never moves ψa, and P6-Ss's main induction
     picks every Sub-ForallL binder fresh for ψa, so both preserve it.
     See docs/DESIGN-completeness-subtyping.md §8 (h). *)
-Lemma uskl_rho_ftv_apart : forall NM Θ Δρ Ψρ R' R,
-  uskl_rho NM Θ Δρ Ψρ R' R ->
+Lemma uskl_rsubst_ftv_apart : forall NM Θ Δρ Ψρ R' R,
+  uskl_rsubst NM Θ Δρ Ψρ R' R ->
   (ftvar_in_uskl R) ∩ Δρ [=] empty ->
   ftvar_in_uskl R' [<=] ftvar_in_uskl R.
 Proof.
   intros NM Θ Δρ Ψρ R' R H; induction H; intros Hap; cbn [ftvar_in_uskl] in *;
     try solve [ clear; fsetdec
-              | apply IHuskl_rho; clear - Hap; fsetdec
+              | apply IHuskl_rsubst; clear - Hap; fsetdec
               | (* arrow *)
-                pose proof (IHuskl_rho1 ltac:(clear - Hap; solve_notin_auto));
-                pose proof (IHuskl_rho2 ltac:(clear - Hap; solve_notin_auto));
+                pose proof (IHuskl_rsubst1 ltac:(clear - Hap; solve_notin_auto));
+                pose proof (IHuskl_rsubst2 ltac:(clear - Hap; solve_notin_auto));
                 clear - H2 H3; fsetdec ].
   - (* leaf : the ideal IS a Δρ-variable, which the premise forbids *)
     exfalso. clear - H Hap; fsetdec.
@@ -1074,20 +1074,20 @@ Proof.
     clear - Hα Hlo Hup Fr; fsetdec.
 Qed.
 
-Lemma uskl_rho_weaken : forall NM Θ Δρ Ψρ R' R,
-  uskl_rho NM Θ Δρ Ψρ R' R ->
+Lemma uskl_rsubst_weaken : forall NM Θ Δρ Ψρ R' R,
+  uskl_rsubst NM Θ Δρ Ψρ R' R ->
   forall Θ', (forall x b, binds x b Θ -> binds x b Θ') ->
-  uskl_rho NM Θ' Δρ Ψρ R' R.
+  uskl_rsubst NM Θ' Δρ Ψρ R' R.
 Proof.
   intros NM Θ Δρ Ψρ R' R H; induction H; intros Θ' Hmon.
-  - apply urho__refl; assumption.
-  - eapply urho__leaf; [ exact H | exact H0 | | exact H2 ].
+  - apply ursubst__refl; assumption.
+  - eapply ursubst__leaf; [ exact H | exact H0 | | exact H2 ].
     eapply a_wf_pskl_weaken; eassumption.
-  - eapply urho__arrow; eauto.
-  - eapply urho__all_syn with (L := L); eauto.
-  - eapply urho__all_tag with (L := L); eauto.
-  - apply urho__tophole; eauto.
-  - apply urho__topholeg; eauto.
+  - eapply ursubst__arrow; eauto.
+  - eapply ursubst__all_syn with (L := L); eauto.
+  - eapply ursubst__all_tag with (L := L); eauto.
+  - apply ursubst__tophole; eauto.
+  - apply ursubst__topholeg; eauto.
 Qed.
 
 (** Drop a mid entry a binding does not match. *)
@@ -1701,7 +1701,7 @@ Qed.
 (* P0 is well-formed at empty Δ (the paper's [Θ0 ⊢ P0]); Pi carries the
    binder context Δ.  Strong induction on [size Pi + size P0] so the ∀◇
    stripping (Pi and P0 sides) recurses. *)
-Lemma a_solve_eq_cv_unit : forall n Θ0 Θ κ Δ Ψi Pi P0,
+Lemma a_solve_eq_unit : forall n Θ0 Θ κ Δ Ψi Pi P0,
   size_pskl Pi + size_pskl P0 <= n ->
   {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ Pi }}a -> {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->

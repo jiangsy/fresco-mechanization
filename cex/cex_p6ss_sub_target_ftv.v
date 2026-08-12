@@ -12,7 +12,7 @@
     (prop_look_complete_cstr.v:2031-2041)
 
         ad_refine_syn_src_ftv → ad_pat_consis_target_ftv
-                              → uskl_rho_ftv_subject_bound
+                              → uskl_rsubst_ftv_subject_bound
 
     whose MIDDLE link is "a decorated subject's counterpart only mentions the
     subject's own variables and the context's DEFINITIONS":

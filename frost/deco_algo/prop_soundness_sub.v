@@ -30,7 +30,7 @@ Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo_decl.def_subtyping.
-Require Import src.frost.algo_decl.prop_sub_mirrors.
+Require Import src.frost.algo_decl.prop_ctx_mono.   (* ad_pat_sub_of_fuel, _fuel_le *)
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_precise.
@@ -3131,31 +3131,6 @@ Fixpoint pskl_no_top (P : pskl) : Prop :=
   | _ => True
   end.
 
-Lemma pskl_no_top_open_rec : forall P α' k,
-  pskl_no_top P <-> pskl_no_top (open_pskl_wrt_pskl_rec k (pskl_var_f α') P).
-Proof.
-  induction P; intros α' k; simpl; try tauto.
-  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; tauto.
-  - rewrite (IHP1 α' k), (IHP2 α' k); tauto.
-  - rewrite (IHP α' (S k)); tauto.
-Qed.
-
-Lemma pskl_no_top_close_rec : forall P β k,
-  pskl_no_top P -> pskl_no_top (close_pskl_wrt_pskl_rec k β P).
-Proof.
-  induction P; intros β k H; simpl in *; auto.
-  - destruct (lt_ge_dec n k); simpl; auto.
-  - destruct (β == α); simpl; auto.
-  - destruct H; split; auto.
-Qed.
-
-Lemma pskl_no_top_close : forall P β,
-  pskl_no_top P -> pskl_no_top (close_pskl_wrt_pskl β P).
-Proof.
-  intros P β H; unfold close_pskl_wrt_pskl;
-    apply pskl_no_top_close_rec; exact H.
-Qed.
-
 Lemma pskl_no_top_top_guarded : forall P, pskl_no_top P -> pskl_top_guarded P.
 Proof. induction P; simpl; intuition. Qed.
 
@@ -3165,74 +3140,6 @@ Proof. induction P; simpl; intuition. Qed.
     result rather than the bare flexible. *)
 Lemma ptyp_to_pskl_no_top : forall A, pskl_no_top (ptyp_to_pskl A).
 Proof. induction A; simpl; intuition. Qed.
-
-(** No ∀◇ is created solving (eq) against a ∀◇-free target. *)
-Lemma solve_eq_no_top : forall Θ P P0 Ξ P',
-  {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a -> pskl_no_top P -> pskl_no_top P0 -> pskl_no_top P'.
-Proof.
-  intros Θ P P0 Ξ P' H; induction H; intros Hnt Hgf; simpl in Hnt, Hgf; simpl.
-  - (* unit *) exact I.
-  - (* var *) exact I.
-  - (* flex_r : guess^TY emits no ∀◇ *) apply ptyp_to_pskl_no_top.
-  - (* hole_l : P'=Q *) exact Hgf.
-  - (* hole_r : Q=◇, P'=P *) exact Hnt.
-  - (* arrow *) destruct Hnt as [Hnt1 Hnt2]; destruct Hgf as [Hgf1 Hgf2];
-      split; [ apply IHa_solve_eq1 | apply IHa_solve_eq2 ]; assumption.
-  - (* forall : the rule closes its output *)
-    apply pskl_no_top_close.
-    apply IHa_solve_eq;
-      [ apply (proj1 (pskl_no_top_open_rec P _ 0)); exact Hnt
-      | apply (proj1 (pskl_no_top_open_rec Q _ 0)); exact Hgf ].
-  - (* tophole_both : P=∀◇ *) contradiction.
-  - (* tophole_l_all : P=∀◇ *) contradiction.
-  - (* tophole_l_guarded : P=∀◇ *) contradiction.
-  - (* all_l_tophole : Q=∀◇ *) contradiction.
-  - (* tophole_r_guarded : Q=∀◇ *) contradiction.
-Qed.
-
-(** Every ∀◇ a sub-solve creates over a ∀◇-free skeleton/target heads a
-    GUARDED body (SS-GhostL: guarded premise; SS-GhostLF: an arrow). *)
-Lemma solve_sub_top_guarded : forall Θ m P P0 Ξ P',
-  {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a -> pskl_no_top P -> pskl_no_top P0 ->
-  pskl_top_guarded P'.
-Proof.
-  intros Θ m P P0 Ξ P' Hs; induction Hs; intros Hnt Hgf; simpl in Hnt, Hgf; simpl.
-  - (* var *) exact I.
-  - (* forall_l : ∀(close β P') — the rule closes its output *)
-    apply pskl_top_guarded_close.
-    apply IHHs;
-      [ apply (proj1 (pskl_no_top_open_rec P _ 0)); exact Hnt | exact Hgf ].
-  - (* univ_ghost_l : P=∀◇ *) contradiction.
-  - (* vacuous : P'=P *) apply pskl_no_top_top_guarded; exact Hnt.
-  - (* check : eq preserves no_top *)
-    apply pskl_no_top_top_guarded;
-      eapply solve_eq_no_top; [ eassumption | exact Hnt | exact Hgf ].
-  - (* forall_r : the output passes through *)
-    apply IHHs;
-      [ exact Hnt | apply (proj1 (pskl_no_top_open_rec B _ 0)); exact Hgf ].
-  - (* arrow *)
-    destruct Hnt as [Hnt1 Hnt2]; destruct Hgf as [Hgf1 Hgf2].
-    split;
-      [ apply pskl_no_top_top_guarded;
-        eapply solve_eq_no_top; [ eassumption | exact Hnt1 | exact Hgf1 ]
-      | apply IHHs; assumption ].
-  - (* ghost_l_fn : ∀◇(arrow P1' P2') *)
-    destruct Hgf as [Hgf1 Hgf2].
-    split; [ exact I | split;
-      [ apply pskl_no_top_top_guarded;
-        eapply solve_eq_no_top; [ eassumption | exact I | exact Hgf1 ]
-      | apply IHHs; [ exact I | exact Hgf2 ] ] ].
-  - (* ghost_l : ∀◇B, B guarded *)
-    split; [ apply guarded_pskl_head; assumption
-           | apply pskl_no_top_top_guarded; exact Hgf ].
-Qed.
-
-(** Every constraint target is ∀◇-free. *)
-Definition a_cstr_no_top (c : a_cstr) : Prop :=
-  match c with
-  | a_cstr_sub _ Q => pskl_no_top Q
-  | a_cstr_eq Q => pskl_no_top Q
-  end.
 
 (* ===================================================================== *)
 (*  [top_guarded]-INPUT propagation chain (replaces the [no_top] chain):   *)

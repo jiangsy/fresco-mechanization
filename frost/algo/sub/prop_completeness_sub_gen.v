@@ -65,7 +65,7 @@ Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo_decl.def_subtyping.
-Require Import src.frost.algo_decl.prop_sub_mirrors.
+Require Import src.frost.algo_decl.prop_ctx_mono.   (* ad_pat_sub_of_fuel, _fuel_le *)
 Require Import src.frost.algo.prop_inc.           (* a_binds_tvar_weaken_mid *)
 Require Import src.frost.algo.prop_refine.        (* lc_pskl_to_bskl_inh, a_wf_pskl_delta_mono *)
 Require Import src.frost.algo.consis.prop_completeness_consis. (* ad_precise_f *)
@@ -574,58 +574,6 @@ Proof.
       [ apply (IHa_wf_pskl Θ1 Θ2 α0 eq_refl) | clear; fsetdec ].
 Qed.
 
-Lemma ad_refine_pskl_f_reassoc_mid : forall F Θ Δ P Q,
-  ad_refine_pskl_f F Θ Δ P Q ->
-  forall Θ1 Θ2 α, Θ = Θ1 ++ Θ2 ->
-  ad_refine_pskl_f F (Θ1 ++ (α ~ abind_tvar) ++ Θ2) (remove α Δ) P Q.
-Proof.
-  intros F Θ Δ P Q H; induction H; intros Θ1 Θ2 α0 ->.
-  - (* unit *) apply ad_refine_pskl_f__unit.
-  - (* var : as in the wf transport *)
-    apply ad_refine_pskl_f__var.
-    destruct H as [HΔ | Htv].
-    + destruct (α == α0) as [-> | Hne].
-      * right; left; unfold binds; apply in_or_app; right; simpl; left;
-          reflexivity.
-      * left; clear - HΔ Hne; fsetdec.
-    + right; apply a_binds_tvar_insert_mid; exact Htv.
-  - (* arrow *) apply ad_refine_pskl_f__arrow; auto.
-  - (* all *)
-    apply ad_refine_pskl_f__all with (L := L `union` singleton α0);
-      intros α Hα.
-    eapply ad_refine_pskl_f_delta_mono;
-      [ apply (H0 α ltac:(clear - Hα; solve_notin_auto) Θ1 Θ2 α0 eq_refl)
-      | clear; fsetdec ].
-  - (* hole : the fill's wf moves by the transport above *)
-    apply ad_refine_pskl_f__hole; [ exact H | ].
-    eapply a_wf_pskl_delta_mono;
-      [ apply (a_wf_pskl_reassoc_mid H0 Θ1 Θ2 α0 eq_refl) | clear; fsetdec ].
-  - (* tophole_remove *) apply ad_refine_pskl_f__tophole_remove; auto.
-  - (* tophole_fill : ITS binder joins Θ above the insertion point, so the
-       induction is run with the head absorbed into the LEFT block — which is
-       exactly why this transport has to be the mid-insertion form *)
-    apply ad_refine_pskl_f__tophole_fill with (L := L `union` singleton α0);
-      intros α Hα.
-    apply (H0 α ltac:(clear - Hα; solve_notin_auto) ((α ~ abind_tvar) ++ Θ1) Θ2 α0);
-      simpl_env; reflexivity.
-  - (* tophole_keep *) apply ad_refine_pskl_f__tophole_keep; auto.
-  - (* flex_l *)
-    eapply ad_refine_pskl_f__flex_l; [ | auto ].
-    apply binds_insert_mid; exact H.
-  - (* flex_r *)
-    eapply ad_refine_pskl_f__flex_r; [ | auto ].
-    apply binds_insert_mid; exact H.
-Qed.
-
-(** The head form, which is what the threading actually applies. *)
-Corollary ad_refine_pskl_f_reassoc : forall F Θ Δ P Q,
-  ad_refine_pskl_f F Θ Δ P Q ->
-  forall α, ad_refine_pskl_f F ((α ~ abind_tvar) ++ Θ) (remove α Δ) P Q.
-Proof.
-  intros F Θ Δ P Q H α.
-  apply (ad_refine_pskl_f_reassoc_mid H nil Θ α); simpl_env; reflexivity.
-Qed.
-
 (* ===================================================================== *)
 (*  THE GHOST-ROW FACT — what the threaded induction needs at [__hole]     *)
 (*                                                                        *)
@@ -641,15 +589,6 @@ Qed.
 (*  Context-FREE, which is the point: the threading can use it without     *)
 (*  having to move the consistency derivation between Θ and Δ.             *)
 (* ===================================================================== *)
-
-Lemma is_sskl_inh_no_forall : forall P,
-  is_sskl (pskl_to_bskl_inh P) -> pskl_no_forall P.
-Proof.
-  intros P; induction P; cbn; intros H; try exact I.
-  - (* arrow *) inversion H; subst; split; auto.
-  - (* all_syn : its inherited painting IS a [bskl_all_inh] *) inversion H.
-  - (* tophole *) inversion H; subst; auto.
-Qed.
 
 (* ===================================================================== *)
 (*  F-GROWTH — the other half of what the strip needs                     *)

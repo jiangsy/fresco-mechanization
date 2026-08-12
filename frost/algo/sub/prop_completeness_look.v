@@ -9,8 +9,8 @@
 
     | file | paper | what it proves |
     |---|---|---|
-    | [sub/look/prop_rho_relation.v] | — | the ρ relation [uskl_rho], its inversions by subject and by target, shielded ftv / ρ-freshness, and the solve-context transports |
-    | [sub/look/prop_solve_ext.v] | — | the flex-block extension algebra and the three packages P6 is stated over: [solve_ext], [solve_sub_ext], [cv_mono_concl] |
+    | [sub/look/prop_rsubst.v] | — | the ρ relation [uskl_rsubst], its inversions by subject and by target, shielded ftv / ρ-freshness, and the solve-context transports |
+    | [sub/look/prop_solve_ext.v] | — | the flex-block extension algebra and the three packages P6 is stated over: [solve_ext], [solve_sub_ext], [solve_eq_mono_concl] |
     | [sub/look/prop_flex_apart.v] | — | [flex_apart] and the Arrow-case repair built on it |
     | [sub/look/prop_eq_var.v] | P6-Cv (consistency-proofs.tex:1180) | [a_solve_eq_complete_var] — the EQ collection at a variable |
     | [sub/look/prop_eq_cstr.v] | P6-Cs (consistency-proofs.tex:920) | [a_lookeq_solve_complete] — EQ collection AND solving |
@@ -46,7 +46,7 @@
        the LATE chain (the extra files are earlier, hence already required),
        and dangerous for one the cluster itself imports. *)
 
-Require Export src.frost.algo.sub.look.prop_rho_relation.
+Require Export src.frost.algo.sub.look.prop_rsubst.
 Require Export src.frost.algo.sub.look.prop_solve_ext.
 Require Export src.frost.algo.sub.look.prop_flex_apart.
 Require Export src.frost.algo.sub.look.prop_eq_var.

@@ -32,29 +32,6 @@ Set Implicit Arguments.
     refinement, well-formedness of both sides is a SEPARATE precondition of the
     judgement, not a derived property. *)
 
-(** A well-scoped type's skeleton is a well-formed [pskl].  ([ptyp_to_pskl]
-    images are ghost-free, so a scope-coverage premise lets the [∀] case
-    route the bound var into [Ψ].) *)
-(** Hence a well-formed type's skeleton is a well-formed [pskl] (any scope). *)
-Lemma d_wf_pskl_strengthen : forall Ψ Γ P,
-    {{ Γ ⨟ Ψ ⊢ₚₛ P }}d ->
-    forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
-    α `notin` ftvar_in_pskl P ->
-    {{ (Γ1 ++ Γ2) ⨟ Ψ ⊢ₚₛ P }}d.
-Proof.
-  intros Ψ Γ P H. induction H; intros Γ1 α0 Γ2 Heq Hα; subst.
-  - apply d_wf_pskl__unit.
-  - simpl in Hα. apply d_wf_pskl__var. destruct H as [HΨ | Hb]; [ left; assumption | right ].
-    analyze_binds Hb; try (exfalso; fsetdec); auto.
-  - simpl in Hα. apply d_wf_pskl__arrow; [ eapply IHd_wf_pskl1 | eapply IHd_wf_pskl2 ]; eauto.
-  - simpl in Hα. apply d_wf_pskl__all with (L := L `union` {{α0}}).
-    intros β Hβ. eapply (H0 β ltac:(auto) Γ1 α0 Γ2); [ reflexivity | ].
-    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f β)) as Hup.
-    simpl in Hup. fsetdec.
-  - apply d_wf_pskl__hole.
-  - simpl in Hα. apply d_wf_pskl__tophole; [ assumption | eapply IHd_wf_pskl; eauto ].
-Qed.
-
 Lemma ftvar_pskl_to_bskl_syn : forall P,
     ftvar_in_bskl (pskl_to_bskl_syn P) = ftvar_in_pskl P.
 Proof.

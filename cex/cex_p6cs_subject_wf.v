@@ -32,7 +32,7 @@ Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo_decl.def_subtyping.
-Require Import src.frost.algo.sub.look.prop_rho_relation.  (* [delta_def_fresh] *)
+Require Import src.frost.algo.sub.look.prop_rsubst.  (* [delta_def_fresh] *)
 Require Import src.frost.algo.sub.look.prop_eq_cstr.  (* P6-Cs + [msubst_uskl_syn] *)
 
 (* ===================================================================== *)

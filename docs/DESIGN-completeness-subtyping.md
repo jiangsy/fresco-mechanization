@@ -2896,7 +2896,7 @@ move to the general leaf).
 
 ⚠️ **The plan in (f) had a hole, and it was in P6-Cs, not P6-Ss.**  P6-Cs's ρ
 premise `forall α0 ∈ Δρ, α0 ∉ dom Θ0` makes the ρ-generalization VACUOUS —
-machine-checked, `frost/algo/cex/cex_p6cs_rho_delta_vacuous.v`.  Beside
+machine-checked, `frost/algo/cex/cex_p6cs_rsubst_delta_vacuous.v`.  Beside
 `κ ∷ Θ0 ⊑ Θ` and `rho_fresh Δρ Θ κ` it forces `Δρ = ∅`, because **an increase
 never invents a rigid**: `a_suffix` admits only flexible entries, so every rigid
 of the target is a rigid of the source (`a_inc_binds_tvar_rev`, the converse of

@@ -1,5 +1,13 @@
-(** CONTEXT MONOTONICITY of the [ad_*] layer, and section D's SUFFIX MOVING
-    (paper proofs.tex, lemma:suffix-moving).
+(** CONTEXT MONOTONICITY of the [ad_*] layer, section D's SUFFIX MOVING
+    (paper proofs.tex, lemma:suffix-moving), and — at the end — the two maps
+    between [ad_pat_sub] and its fuel-indexed mirror.
+
+    ⚙ The mirror maps arrived 2026-08-12 from [prop_sub_mirrors.v], which had
+    shrunk to exactly those two lemmas once the three-relation era ended (see
+    the section header down there).  A file per mirror pair was not worth an
+    import line in nine consumers; what they have in common with the rest of
+    this file is the subject — the structural theory of the [ad_*] layer's
+    own relations, upstream of everything that uses them.
 
     ⭐ THE OBSERVATION THAT MAKES THIS ONE LEMMA INSTEAD OF FIVE.  Every
     declarative-judgement-over-Θ reads its context in exactly two ways: a
@@ -31,6 +39,7 @@
     next item in docs/HANDOFF-section-d.md §1. *)
 
 Require Import Coq.Lists.List.
+Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
@@ -442,3 +451,83 @@ Proof.
     [ exact H | apply aenv_tbinds_le_strip_tm; intros [] ].
 Qed.
 
+
+(* ===================================================================== *)
+(*  THE FUEL MIRROR'S TWO MAPS                                            *)
+(*                                                                        *)
+(*  [def_subtyping.v] defines the paper's subtyping box [ad_pat_sub] and   *)
+(*  the one mech-internal mirror completeness measures it by,             *)
+(*  [ad_pat_sub_fuel] — that plus the FUEL.  These are the maps between.   *)
+(*                                                                        *)
+(*  ⚙ They are HERE, and not with the completeness files, because the      *)
+(*  SOUNDNESS side has to CONCLUDE the leaf-valid join ([ad_pat] /         *)
+(*  [ad_sd_typing] embed it, so thm:complete-skeleton/type-inference can   *)
+(*  consume it), and algo/sub/prop_soundness_subtag.v sits BEFORE the      *)
+(*  completeness files in the dependency order.  [algo_decl/] is upstream  *)
+(*  of all of [algo/sub/], so the constraint is met here.                  *)
+(*                                                                        *)
+(*  ⚙ There used to be THREE relations: [ad_pat_sub_g] (the fuel with the  *)
+(*  leaf datum forgotten) and [ad_pat_sub_v] (the fuel existentially       *)
+(*  closed), both needed while [ad_pat_sub] itself did not carry the       *)
+(*  paper's leaf presupposition.  It does since 2026-08-12, so [_g], [_v]  *)
+(*  and the forgetful map [ad_pat_sub_fuel_forget] are all gone — with the *)
+(*  datum on the rule, the existential closure IS [ad_pat_sub].            *)
+(* ===================================================================== *)
+
+(** Fuel monotonicity for the leaf-valid hygienic join.  The fuel is the
+    declarative derivation's HEIGHT, so a derivation of height [n] is also
+    one of every larger height.  Needed because the permutation returns the
+    family at whatever height the extraction yields, while
+    [a_sub_complete_forall_r] wants it at exactly [n] for a conclusion at
+    [S n]. *)
+Lemma ad_pat_sub_fuel_le : forall n NM M Ψ Θ R Q,
+  ad_pat_sub_fuel n NM M Ψ Θ R Q ->
+  forall m, n <= m -> ad_pat_sub_fuel m NM M Ψ Θ R Q.
+Proof.
+  intros n NM M Ψ Θ R Q H; induction H; intros m Hle;
+    try solve [ econstructor; eauto ].
+  - (* forall_r : the conclusion's fuel is [S n] *)
+    destruct m as [ | m' ]; [ lia | ].
+    apply ad_pat_sub_fuel__forall_r with (L := L).
+    intros α Hα. apply H0; [ exact Hα | lia ].
+  - (* arrow *)
+    destruct m as [ | m' ]; [ lia | ].
+    eapply ad_pat_sub_fuel__arrow;
+      [ exact H | exact H0 | apply IHad_pat_sub_fuel; lia | assumption ].
+  - (* forall_l_tagged *)
+    destruct m as [ | m' ]; [ lia | ].
+    eapply ad_pat_sub_fuel__forall_l_tagged;
+      [ eassumption | eassumption | eassumption | eassumption | eassumption
+      | apply IHad_pat_sub_fuel; lia ].
+  - (* forall_l_untagged *)
+    destruct m as [ | m' ]; [ lia | ].
+    eapply ad_pat_sub_fuel__forall_l_untagged;
+      [ eassumption | eassumption | eassumption | eassumption | eassumption
+      | apply IHad_pat_sub_fuel; lia ].
+Qed.
+
+(** The erasure the [ad_pat] / [ad_sd_typing] consumers want: a leaf-valid
+    join IS a plain declarative subtyping derivation.
+
+    ⚙ A DIRECT induction since 2026-08-12.  It used to factor through
+    [ad_pat_sub_g_of : _g -> ad_pat_sub] and then [ad_pat_sub_fuel_forget],
+    both of which are gone: once [ad_pat_sub] itself carries the leaf
+    presupposition, the leaf-FORGETTING mirror cannot reach it at all. *)
+Lemma ad_pat_sub_of_fuel : forall n NM M Ψ Θ R Q,
+  ad_pat_sub_fuel n NM M Ψ Θ R Q ->
+  {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad.
+Proof.
+  intros n NM M Ψ Θ R Q H; induction H.
+  - eapply ad_pat_sub__infer; eauto.
+  - eapply ad_pat_sub__check; eauto.
+  - eapply ad_pat_sub__forall_r; eauto.
+  - eapply ad_pat_sub__univ_ghost_r; eauto.
+  - eapply ad_pat_sub__arrow; eauto.
+  - eapply ad_pat_sub__forall_l_tagged; eauto.
+  - eapply ad_pat_sub__forall_l_untagged; eauto.
+  - eapply ad_pat_sub__ghost; eauto.
+  - eapply ad_pat_sub__ghostg; eauto.
+  - eapply ad_pat_sub__univ_ghost_l; eauto.
+  - eapply ad_pat_sub__univ_ghost_lg; eauto.
+  - eapply ad_pat_sub__flex_mono; eauto.
+Qed.

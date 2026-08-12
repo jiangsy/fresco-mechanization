@@ -560,7 +560,7 @@ where "{{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a" := (a_looksub Θ α m P P'
 (*  wrong avoid-set for anything that touches the guess — and SE-FlexR     *)
 (*  now does.  Concretely it is what makes the WITNESS-MOVE work: the      *)
 (*  swap [swap_aenv b δ Θ] collapses to [Θ] exactly when both atoms dodge  *)
-(*  [ftvar_in_aenv Θ] ([a_solve_eq_weaken_tvar], sub/look/prop_rho_relation.v),    *)
+(*  [ftvar_in_aenv Θ] ([a_solve_eq_weaken_tvar], sub/look/prop_rsubst.v),    *)
 (*  and the same set is what [a_solve_sub_eq_ctx_change] transports.       *)
 (*  The change only SHRINKS the judgment, so every consumer (soundness,    *)
 (*  decoration) is unaffected; the completeness proofs CONSTRUCT these     *)
@@ -713,7 +713,7 @@ with a_solve_eq : aenv -> pskl -> pskl -> aenv -> pskl -> Prop :=
        because on paper the two rows agreed.  Restoring the exclusion costs
        completeness NOTHING: at [◇] SE-GhostL is strictly more informative,
        and at [∀◇P0] SE-GhostGuarded peels to the same place.  It also keeps
-       [a_solve_eq_hole_subject_inv] (sub/look/prop_rho_relation.v) — "solving with
+       [a_solve_eq_hole_subject_inv] (sub/look/prop_rsubst.v) — "solving with
        the ghost subject returns the target verbatim", which the paper uses
        silently in every [P_i = □] subcase — TRUE. *)
     a_flex_tvar Θ α ->

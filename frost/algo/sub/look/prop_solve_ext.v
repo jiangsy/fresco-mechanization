@@ -1,7 +1,7 @@
 (** P6 — THE SOLVE-EXTENSION PACKAGES.
 
     Second of the three shared-substrate files under [algo/sub/look/]
-    ([prop_rho_relation.v] is first, [prop_flex_apart.v] third).
+    ([prop_rsubst.v] is first, [prop_flex_apart.v] third).
 
     What the SolE-FlexR repair costs the completeness proofs.  The repaired
     row returns [guess^TY(P_i)] rather than the target flexible, and
@@ -14,7 +14,7 @@
     - [guess^TY] reads its context only as an AVOID-SET, and a solve survives
       a fresh flexible block inserted in the middle;
     - the three packages the five P6 lemmas are actually stated over:
-      [solve_ext], its subtyping twin [solve_sub_ext], and [cv_mono_concl];
+      [solve_ext], its subtyping twin [solve_sub_ext], and [solve_eq_mono_concl];
     - the per-case kits (GhostG, Flex, Topholeg) built directly on them.
 
     ⚙ SPLIT 2026-08-09 out of prop_kit.v.  "kit" named nothing: the file was
@@ -54,7 +54,7 @@ Require Import src.frost.algo.sub.prop_solve_sub.
 Require Import src.frost.algo.sub.prop_completeness_sub_precise.
 Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_compose.   (* a_inc_dom_flex, a_inc_lookup_mono *)
-Require Import src.frost.algo.sub.look.prop_rho_relation.
+Require Import src.frost.algo.sub.look.prop_rsubst.
 
 (* ⚠️ Per-FILE flag — see prop_flex_apart.v's note.  It was line 84 of the old
    prop_kit.v, so each half of the split needs its own copy. *)
@@ -70,7 +70,7 @@ Set Implicit Arguments.
 (*  were the collection's and the final guess's, both below this file;     *)
 (*  the repaired [SolE-FlexR] makes the SOLVE emit one, and [SE-Arrow]     *)
 (*  THREADS — its second premise runs at [Ξ1 ++ Θ] — so the arrow case of  *)
-(*  [a_solve_eq_cv_mono] right below is now the FIRST consumer.           *)
+(*  [a_solve_eq_mono] right below is now the FIRST consumer.           *)
 (* ===================================================================== *)
 
 (** Split off an all-flex_mono prefix from an [a_inc]: the aligned images are
@@ -914,36 +914,17 @@ Proof.
   exact Hq.
 Qed.
 
-(** A row that PASSES ITS PREMISE THROUGH: block, extension, freshness and
-    output-wf are the premise's; only the solve step and the post-condition
-    move.  (The wf component rides along because a pass-through row does not
-    change the context.) *)
-Lemma solve_sub_ext_step : forall Θ0 Θ m m' Pi P0 Pi' P0' L Post Post',
-  (forall Ξ Pa, {{ Θ0 ⊢ₛ Pi' ≼[ m' ] P0' ⤳ Ξ ⨾ Pa }}a ->
-                {{ Θ0 ⊢ₛ Pi ≼[ m ] P0 ⤳ Ξ ⨾ Pa }}a) ->
-  (forall κ' Pa, Post' κ' Pa -> Post κ' Pa) ->
-  solve_sub_ext Θ0 Θ m' Pi' P0' L Post' ->
-  solve_sub_ext Θ0 Θ m Pi P0 L Post.
-Proof.
-  intros Θ0 Θ m m' Pi P0 Pi' P0' L Post Post' Hstep Hpost
-         (Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hwf & Hq).
-  exists Ξ, Pa, κ'.
-  repeat (split; [ solve [ apply Hstep; exact Hs | exact Hfm | exact Hu
-                         | exact Hk | exact Hfr | exact HF | exact Hwf ] | ]).
-  apply Hpost; exact Hq.
-Qed.
-
 (** The conclusion, named — it recurs at every site below. *)
-Definition cv_mono_concl (Θ0 Θ Θw : aenv) (κ : metasubst) (Δ Ψi : atoms)
+Definition solve_eq_mono_concl (Θ0 Θ Θw : aenv) (κ : metasubst) (Δ Ψi : atoms)
     (τ : ptyp) (Pi P0 : pskl) (L : atoms) : Prop :=
   solve_ext Θ0 Θw Pi P0 L
     (fun κ' Pa =>
        {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl (κ' ++ κ) Pa) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ) }}ad).
 
-Lemma cv_mono_nil : forall Θ0 Θ Θw κ Δ Ψi τ Pi P0 L Pa,
+Lemma solve_eq_mono_nil : forall Θ0 Θ Θw κ Δ Ψi τ Pi P0 L Pa,
   {{ Θ0 ⊢ₑ Pi ∼ P0 ⤳ nil ⨾ Pa }}a ->
   {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ) }}ad ->
-  cv_mono_concl Θ0 Θ Θw κ Δ Ψi τ Pi P0 L.
+  solve_eq_mono_concl Θ0 Θ Θw κ Δ Ψi τ Pi P0 L.
 Proof.
   intros Θ0 Θ Θw κ Δ Ψi τ Pi P0 L Pa Hs Hq.
   eapply solve_ext_nil; [ exact Hs | cbn [app]; exact Hq ].
@@ -951,11 +932,11 @@ Qed.
 
 (** The ∀◇ rows: the solve peels a constructor and the target hops one
     definition chain. *)
-Lemma cv_mono_wrap : forall Θ0 Θ Θw κ Δ Ψi τ τe Pi P0 Pi' P0' L,
+Lemma solve_eq_mono_wrap : forall Θ0 Θ Θw κ Δ Ψi τ τe Pi P0 Pi' P0' L,
   a_def_chain Θ τ τe ->
   (forall Ξ Pa, {{ Θ0 ⊢ₑ Pi' ∼ P0' ⤳ Ξ ⨾ Pa }}a -> {{ Θ0 ⊢ₑ Pi ∼ P0 ⤳ Ξ ⨾ Pa }}a) ->
-  cv_mono_concl Θ0 Θ Θw κ Δ Ψi τe Pi' P0' L ->
-  cv_mono_concl Θ0 Θ Θw κ Δ Ψi τ Pi P0 L.
+  solve_eq_mono_concl Θ0 Θ Θw κ Δ Ψi τe Pi' P0' L ->
+  solve_eq_mono_concl Θ0 Θ Θw κ Δ Ψi τ Pi P0 L.
 Proof.
   intros Θ0 Θ Θw κ Δ Ψi τ τe Pi P0 Pi' P0' L Hc Hstep H.
   eapply solve_ext_step;
@@ -964,7 +945,7 @@ Proof.
     | exact H ].
 Qed.
 
-Lemma a_solve_eq_cv_mono : forall n Θ0 Θ Θw κ Δ Ψi τ Pi P0,
+Lemma a_solve_eq_mono : forall n Θ0 Θ Θw κ Δ Ψi τ Pi P0,
   size_pskl Pi + size_pskl P0 <= n ->
   {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
   {{ ⊢ Θw }}a ->
@@ -985,7 +966,7 @@ Lemma a_solve_eq_cv_mono : forall n Θ0 Θ Θw κ Δ Ψi τ Pi P0,
   {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ) }}ad ->
   {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (ptyp_to_bskl_syn τ) }}ad ->
   forall L, ftvar_in_aenv Θ0 [<=] L ->
-  cv_mono_concl Θ0 Θ Θw κ Δ Ψi τ Pi P0 L.
+  solve_eq_mono_concl Θ0 Θ Θw κ Δ Ψi τ Pi P0 L.
 Proof.
   induction n; intros Θ0 Θ Θw κ Δ Ψi τ Pi P0 Hn
     HwfΘ HwfΘ0 HwfΘw Hmon Hdefs HwfPi HwfP0 Hκ Hmτ Hwfτ Hdf Hpre Hrefine L HL.
@@ -999,14 +980,14 @@ Proof.
     simpl in Href'.
     assert (Hpre_u : {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ pskl_unit) ⊑ᵖ[ Ψi ] uskl_unit }}ad)
       by (simpl; apply ad_ppre__unit; exact HΨi).
-    destruct (a_solve_eq_cv_unit (n := S n) (Θ := Θ) (Δ := Δ)
+    destruct (a_solve_eq_unit (n := S n) (Θ := Θ) (Δ := Δ)
                 Hn HwfΘ HwfΘ0 HwfPi HwfP0 Hκ Hpre_u Href')
       as (Pa & Hsolve & Hprec).
-    eapply cv_mono_nil;
+    eapply solve_eq_mono_nil;
       [ exact Hsolve | eapply ad_ppre_chain_fold; [ exact Hc | exact Hprec ] ].
   - (* Pi = var_b: not wf *) inversion HwfPi.
   - (* Pi = var_f α: SE-Var / SE-FlexL *)
-    eapply cv_mono_nil; [ apply a_solve_eq__var | exact Hpre ].
+    eapply solve_eq_mono_nil; [ apply a_solve_eq__var | exact Hpre ].
   - (* Pi = arrow Pi1 Pi2 *)
     assert (HwfPi1 : {{ Θ0 ⨟ empty ⊢ₚₛ Pi1 }}a) by (inversion HwfPi; assumption).
     assert (HwfPi2 : {{ Θ0 ⨟ empty ⊢ₚₛ Pi2 }}a) by (inversion HwfPi; assumption).
@@ -1202,7 +1183,7 @@ Proof.
         [ exact HwfΘ | exact Href' | reflexivity | reflexivity
         | apply mono_ptyp__arrow; assumption ].
     + (* P0 = hole: SE-VacuousR *)
-      eapply cv_mono_nil; [ apply a_solve_eq__hole_r | exact Hpre ].
+      eapply solve_eq_mono_nil; [ apply a_solve_eq__hole_r | exact Hpre ].
     + (* P0 = tophole P0': GuardedGhost-right, recurse at the resolved arrow *)
       assert (HwfP0' : {{ Θ0 ⨟ empty ⊢ₚₛ P0' }}a) by (inversion HwfP0; assumption).
       assert (Hwfar : a_wf_ptyp Θw (ptyp_arrow τ1 τ2))
@@ -1214,7 +1195,7 @@ Proof.
                         (ptyp_to_uskl_syn (ptyp_arrow τ1 τ2)) }}ad)
         by (simpl; eapply ad_ppre__arrow;
               [ exact Hp1 | exact Hp2 | exact HΨ ]).
-      assert (Hcv : cv_mono_concl Θ0 Θ Θw κ Δ Ψi (ptyp_arrow τ1 τ2)
+      assert (Hcv : solve_eq_mono_concl Θ0 Θ Θw κ Δ Ψi (ptyp_arrow τ1 τ2)
                       (pskl_arrow Pi1 Pi2) P0' L).
       { match goal with
         | Hin : {{ _ ⨟ _ ⊢ᵣ pskl_to_bskl_inh (msubst_pskl κ P0') ⊳ _ }}ad |- _ =>
@@ -1224,7 +1205,7 @@ Proof.
                    ltac:(apply mono_ptyp__arrow; assumption)
                    (or_introl Hwfar) Hdf Hpre' Hin L HL)
         end. }
-      eapply cv_mono_wrap; [ exact Hc | | exact Hcv ].
+      eapply solve_eq_mono_wrap; [ exact Hc | | exact Hcv ].
       intros Ξ0 Pa Hs. apply a_solve_eq__tophole_r_guarded;
         [ apply guarded_pskl__arrow;
             [ eapply a_wf_pskl_lc; exact HwfPi1
@@ -1237,12 +1218,12 @@ Proof.
       [ exact HwfΘ | exact Hpre | reflexivity | reflexivity | exact Hmτ ].
   - (* Pi = □: SE-GhostL, precision via Bridge B *)
     simpl in Hpre.
-    eapply cv_mono_nil; [ apply a_solve_eq__hole_l | ].
+    eapply solve_eq_mono_nil; [ apply a_solve_eq__hole_l | ].
     eapply ad_refine_inh_hole_ppre with (Δr := empty);
       [ exact HwfΘ | clear; fsetdec | exact Hrefine | reflexivity | reflexivity
       | exact Hmτ | exact Hdf | exact Hpre ].
   - (* Pi = ∀◇.Pi' — every row here is a PASS-THROUGH, which is what
-       [cv_mono_wrap] is for: the block, the extension and the freshness are
+       [solve_eq_mono_wrap] is for: the block, the extension and the freshness are
        the premise's, and only the solve step and the target move. *)
     assert (HgPi' : guarded_pskl Pi') by (inversion HwfPi; assumption).
     assert (HwfPi' : {{ Θ0 ⨟ empty ⊢ₚₛ Pi' }}a) by (inversion HwfPi; assumption).
@@ -1257,33 +1238,33 @@ Proof.
     pose proof (ad_refine_chain_unfold Hc HwfΘ Hrefine) as Href'.
     destruct P0 as [ | nb0 | β | P01 P02 | P0b | | P0' ].
     + (* P0 = unit: GhostGuarded *)
-      assert (Hcv : cv_mono_concl Θ0 Θ Θw κ Δ Ψi τe Pi' pskl_unit L)
+      assert (Hcv : solve_eq_mono_concl Θ0 Θ Θw κ Δ Ψi τe Pi' pskl_unit L)
         by (apply (IHn Θ0 Θ Θw κ Δ Ψi τe Pi' pskl_unit
                      ltac:(simpl in Hn; simpl; lia)
                      HwfΘ HwfΘ0 HwfΘw Hmon Hdefs HwfPi' HwfP0 Hκ Hme Hwfe
                      Hdf Hp' Href' L HL)).
-      eapply cv_mono_wrap; [ exact Hc | | exact Hcv ].
+      eapply solve_eq_mono_wrap; [ exact Hc | | exact Hcv ].
       intros Ξ0 Pa Hs. apply a_solve_eq__tophole_l_guarded;
         [ apply guarded_pskl__unit | exact Hs ].
     + (* P0 = var_b: not wf *) inversion HwfP0.
     + (* P0 = var β: GhostGuarded (var is guarded) *)
-      assert (Hcv : cv_mono_concl Θ0 Θ Θw κ Δ Ψi τe Pi' (pskl_var_f β) L)
+      assert (Hcv : solve_eq_mono_concl Θ0 Θ Θw κ Δ Ψi τe Pi' (pskl_var_f β) L)
         by (apply (IHn Θ0 Θ Θw κ Δ Ψi τe Pi' (pskl_var_f β)
                      ltac:(simpl in Hn; simpl; lia)
                      HwfΘ HwfΘ0 HwfΘw Hmon Hdefs HwfPi' HwfP0 Hκ Hme Hwfe
                      Hdf Hp' Href' L HL)).
-      eapply cv_mono_wrap; [ exact Hc | | exact Hcv ].
+      eapply solve_eq_mono_wrap; [ exact Hc | | exact Hcv ].
       intros Ξ0 Pa Hs. apply a_solve_eq__tophole_l_guarded;
         [ apply guarded_pskl__var | exact Hs ].
     + (* P0 = arrow: GhostGuarded *)
       assert (HwfP01 : {{ Θ0 ⨟ empty ⊢ₚₛ P01 }}a) by (inversion HwfP0; assumption).
       assert (HwfP02 : {{ Θ0 ⨟ empty ⊢ₚₛ P02 }}a) by (inversion HwfP0; assumption).
-      assert (Hcv : cv_mono_concl Θ0 Θ Θw κ Δ Ψi τe Pi' (pskl_arrow P01 P02) L)
+      assert (Hcv : solve_eq_mono_concl Θ0 Θ Θw κ Δ Ψi τe Pi' (pskl_arrow P01 P02) L)
         by (apply (IHn Θ0 Θ Θw κ Δ Ψi τe Pi' (pskl_arrow P01 P02)
                      ltac:(simpl in Hn; simpl; lia)
                      HwfΘ HwfΘ0 HwfΘw Hmon Hdefs HwfPi' HwfP0 Hκ Hme Hwfe
                      Hdf Hp' Href' L HL)).
-      eapply cv_mono_wrap; [ exact Hc | | exact Hcv ].
+      eapply solve_eq_mono_wrap; [ exact Hc | | exact Hcv ].
       intros Ξ0 Pa Hs. apply a_solve_eq__tophole_l_guarded;
         [ apply guarded_pskl__arrow;
             [ eapply a_wf_pskl_lc; exact HwfP01
@@ -1295,9 +1276,9 @@ Proof.
       eapply ad_refine_allinh_lhs_mono_absurd;
         [ exact HwfΘ | exact Href' | reflexivity | reflexivity | exact Hme ].
     + (* P0 = hole: SE-VacuousR *)
-      eapply cv_mono_nil; [ apply a_solve_eq__hole_r | exact Hpre ].
+      eapply solve_eq_mono_nil; [ apply a_solve_eq__hole_r | exact Hpre ].
     + (* P0 = ∀◇.P0': SE-UnivGhost, second chain hop off the ∀◇ counterpart.
-         NOT a [cv_mono_wrap]: this row RE-WRAPS its premise's output in a
+         NOT a [solve_eq_mono_wrap]: this row RE-WRAPS its premise's output in a
          [∀◇], so the package has to be rebuilt by hand — but the block and
          the extension still pass through untouched. *)
       assert (HwfP0' : {{ Θ0 ⨟ empty ⊢ₚₛ P0' }}a) by (inversion HwfP0; assumption).
@@ -1330,14 +1311,14 @@ Qed.
 (* ==== the Var consistency case: the τ = α instance ====
 
    ⚠️ [a_binds_tvar α Θ] is a NEW premise (2026-08-04).  It is the [τ = α]
-   reading of [a_solve_eq_cv_mono]'s own [a_wf_ptyp Θ τ], which the repaired
+   reading of [a_solve_eq_mono]'s own [a_wf_ptyp Θ τ], which the repaired
    SE-FlexR forces: [guess^TY]'s κ-extension sends the flexible it invents at
    a [◇] to the monotype standing at that position, and [a_inc__flex] admits
    only a monotype WELL-FORMED IN THE TARGET.  It is the paper's usual
    external wf side condition (docs/WF-SIDE-CONDITIONS.md), not a weakening:
    the counterpart of a completeness statement is always assumed well-formed
    in prose. *)
-Lemma a_solve_eq_cv_var : forall n Θ0 Θ Θw κ Δ Ψi α Pi P0,
+Lemma a_solve_eq_var : forall n Θ0 Θ Θw κ Δ Ψi α Pi P0,
   size_pskl Pi + size_pskl P0 <= n ->
   {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
   {{ ⊢ Θw }}a ->
@@ -1351,11 +1332,11 @@ Lemma a_solve_eq_cv_var : forall n Θ0 Θ Θw κ Δ Ψi α Pi P0,
   {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_var_f α) }}ad ->
   {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (bskl_var_f α) }}ad ->
   forall L, ftvar_in_aenv Θ0 [<=] L ->
-  cv_mono_concl Θ0 Θ Θw κ Δ Ψi (ptyp_var_f α) Pi P0 L.
+  solve_eq_mono_concl Θ0 Θ Θw κ Δ Ψi (ptyp_var_f α) Pi P0 L.
 Proof.
   intros n Θ0 Θ Θw κ Δ Ψi α Pi P0 Hn HwfΘ HwfΘ0 HwfΘw Hmon Hdefs
          HwfPi HwfP0 Hκ Hbα Hdf Hpre Hrefine L HL.
-  eapply a_solve_eq_cv_mono with (τ := ptyp_var_f α) (Θw := Θw); eauto.
+  eapply a_solve_eq_mono with (τ := ptyp_var_f α) (Θw := Θw); eauto.
   - auto with frost.
   - destruct Hbα as [Hb | Hb];
       [ left; apply a_wf_ptyp__var; exact Hb
@@ -1417,7 +1398,7 @@ Qed.
 (* ==== the GhostG consistency case, as a standalone lemma ==== *)
 (* No size induction: both sides are forced to [□]; every other shape is
    premise-absurd (a ∀◇'s guarded body dies one level down). *)
-Lemma a_solve_eq_cv_ghostg : forall Θ0 Θ κ Δ Ψi Pi P0,
+Lemma a_solve_eq_ghostg : forall Θ0 Θ κ Δ Ψi Pi P0,
   {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ Pi }}a -> {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   κ ∷ Θ0 ⊑ Θ ->

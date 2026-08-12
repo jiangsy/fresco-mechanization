@@ -76,7 +76,6 @@ Require Import src.frost.algo.def_meta.
 Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.algo_decl.def_subtyping.
-Require Import src.frost.algo_decl.prop_sub_mirrors.
 Require Import src.frost.algo_decl.def_typing.
 Require Import src.frost.algo_decl.prop_ctx_mono.   (* aenv_tbinds_le *)
 Require Import src.frost.algo.prop_pat_sub.   (* uskl_ghost_free_open_gen *)

@@ -1760,7 +1760,7 @@ Qed.
 (* ===================================================================== *)
 (*  ⭐ THE κ-EXTENSION PACKAGE.                                            *)
 (*                                                                        *)
-(*  Every P6 statement from sub/look/prop_rho_relation.v onwards has to    *)
+(*  Every P6 statement from sub/look/prop_rsubst.v onwards has to    *)
 (*  extend its metasubstitution over a generated flexible block — both the *)
 (*  SOLVE and the final guess emit one.  Nothing here is specific to the   *)
 (*  collection or extract layer: it is list algebra plus the fact that     *)

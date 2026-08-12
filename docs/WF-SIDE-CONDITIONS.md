@@ -201,7 +201,7 @@ statement is FALSE, not merely hard.
 **Why it is the paper's wf.** Δ grows at exactly three points, each of which
 supplies the condition for free: ForallInh binders are picked fresh from
 `dom Θ ⊇` def-ftvs (`a_wf_aenv_def_ftv_dom`); the ρ-replaced variables carry
-it inside the `rho_fresh` pack; and the initial Δ of the P6-Cs/Sv callers is
+it inside the `rsubst_fresh` pack; and the initial Δ of the P6-Cs/Sv callers is
 built from the same binder discipline. So the hypothesis is threading, never
 a real obligation.
 

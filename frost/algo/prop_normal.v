@@ -424,15 +424,6 @@ Proof.
   symmetry. apply a_tyequiv_downarrow; assumption.
 Qed.
 
-(** The [a_inc]-shaped packaging: the [≡ᵗ] premise comes straight out of the
-    information increase at a DEFINED head. *)
-Lemma a_inc_flex_def_tyequiv : forall Θ0 Θ κ0 α1 τ τ',
-  (α1, τ') :: κ0 ∷ ((α1 ~ abind_flex_mono_def τ) ++ Θ0) ⊑ Θ ->
-  {{ Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ) }}a.
-Proof.
-  intros Θ0 Θ κ0 α1 τ τ' Hinc. inversion Hinc; subst. assumption.
-Qed.
-
 (** The size corollaries (M2) hands to the measure. *)
 Corollary downarrow_subst_ptyp_size : forall Θ κ0 α1 τ τ' A,
   {{ ⊢ Θ }}a ->
@@ -535,21 +526,6 @@ Proof.
         | apply IHHie; assumption ].
 Qed.
 
-(** (M1), the type version. *)
-Lemma a_inc_equiv_downarrow_ptyp : forall Θ0 κ1 κ2 Θ A,
-  a_inc_equiv Θ0 κ1 κ2 Θ ->
-  {{ ⊢ Θ0 }}a ->
-  {{ ⊢ Θ }}a ->
-  a_wf_ptyp Θ0 A ->
-  ⇓ᵗ[Θ] (msubst_ptyp κ1 A) = ⇓ᵗ[Θ] (msubst_ptyp κ2 A).
-Proof.
-  intros Θ0 κ1 κ2 Θ A Hie Hwf0 Hwf HA.
-  apply msubst_ptyp_outer_ext. intros α Hα.
-  apply a_tyequiv_downarrow; [ exact Hwf | ].
-  eapply a_inc_equiv_lookup_tvar;
-    [ exact Hie | exact Hwf0 | eapply a_wf_ptyp_ftv_tvarish; eauto ].
-Qed.
-
 (** (M1), the skeleton version — this is what Arrow's second premise needs. *)
 Lemma a_inc_equiv_downarrow_pskl : forall Θ0 κ1 κ2 Θ P,
   a_inc_equiv Θ0 κ1 κ2 Θ ->
@@ -563,17 +539,6 @@ Proof.
   apply a_tyequiv_downarrow; [ exact Hwf | ].
   eapply a_inc_equiv_lookup_tvar;
     [ exact Hie | exact Hwf0 | eapply a_scope_pskl_ftv_tvarish; eauto ].
-Qed.
-
-(** The size corollaries (M1) hands to the measure. *)
-Corollary a_inc_equiv_downarrow_ptyp_size : forall Θ0 κ1 κ2 Θ A,
-  a_inc_equiv Θ0 κ1 κ2 Θ ->
-  {{ ⊢ Θ0 }}a ->
-  {{ ⊢ Θ }}a ->
-  a_wf_ptyp Θ0 A ->
-  size_ptyp (⇓ᵗ[Θ] (msubst_ptyp κ1 A)) = size_ptyp (⇓ᵗ[Θ] (msubst_ptyp κ2 A)).
-Proof.
-  intros. erewrite a_inc_equiv_downarrow_ptyp by eauto. reflexivity.
 Qed.
 
 Corollary a_inc_equiv_downarrow_pskl_size : forall Θ0 κ1 κ2 Θ P,
