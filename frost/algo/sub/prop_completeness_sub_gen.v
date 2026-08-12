@@ -59,6 +59,7 @@ Require Import src.frost.ltac_utils.   (* solve_notin_auto *)
 Require Import src.frost.coercions.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
+Require Import src.frost.algo.prop_mod_compat.
 Require Import src.frost.prop_basic.              (* bskl_to_pskl_pskl_to_bskl_{syn,inh} *)
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
@@ -3734,15 +3735,6 @@ Qed.
 (* ===================================================================== *)
 (*  (I)  P7a ROW — Flex-Assign  (a CROSS-HALF row: its IH is P7b's)       *)
 (* ===================================================================== *)
-
-Lemma a_sk_mode_compat_subst_mono : forall M P τ β,
-  a_sk_mode_compat M P -> mono_ptyp τ ->
-  a_sk_mode_compat M (subst_pskl_in_pskl (ptyp_to_pskl τ) β P).
-Proof.
-  intros M P τ β H Hm; induction H; simpl;
-    [ apply a_sk_mode_compat__ti | apply a_sk_mode_compat__tc
-    | apply a_sk_mode_compat__fn; assumption ].
-Qed.
 
 Lemma a_sub_flex_complete_assign :
   forall n NM M Θ0 Ξ α β τ P0 R' Ψ Θ κ Q,

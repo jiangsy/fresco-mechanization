@@ -42,6 +42,7 @@ Require Import src.frost.def_shapes.
 Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
+Require Import src.frost.algo.prop_mod_compat.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.

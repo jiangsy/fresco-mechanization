@@ -89,6 +89,17 @@ Lemma bskl_to_pskl_btyp_to_bskl : forall B,
   bskl_to_pskl (btyp_to_bskl B) = ptyp_to_pskl (btyp_to_ptyp B).
 Proof. induction B; simpl; f_equal; auto. Qed.
 
+(** Substitution commutes with the [ptyp] painting — the [pskl] analogue of
+    the [open] commutations below. *)
+Lemma subst_ptyp_to_pskl_comm : forall A τ β,
+  subst_pskl_in_pskl (ptyp_to_pskl τ) β (ptyp_to_pskl A)
+    = ptyp_to_pskl (subst_ptyp_in_ptyp τ β A).
+Proof.
+  induction A; intros τ β; simpl; try solve [ f_equal; auto ];
+    destruct_if;
+    reflexivity.
+Qed.
+
 (** * 2. Commutation with opening.
 
     Every conversion is a structural map that leaves bound indices alone, so

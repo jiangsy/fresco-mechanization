@@ -271,8 +271,11 @@ mechanization/
 │       │                         Called prop_flex.v until 2026-08-12, after a
 │       │                         header that had described only its first section)
 │       ├── prop_mod_compat.v     (mode compatibility, BOTH sorts: the
-│       │                         skmod{SK} / skmod{TY} inversions, which used to
-│       │                         sit half in pat/ and half in typing/)
+│       │                         skmod{SK} / skmod{TY} inversions, their
+│       │                         monotype-substitution stability, and the two
+│       │                         bridges (to mod_comp_sk, and TC ⇔ ghost-free).
+│       │                         They were spread over FIVE files, so half the
+│       │                         answers came with a theorem attached)
 │       ├── prop_normal.v / prop_mono_bridge.v   (monotypes)
 │       ├── prop_precise*.v      (precision)
 │       ├── prop_swap.v          (EQUIVARIANCE — the one renaming primitive

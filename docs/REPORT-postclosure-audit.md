@@ -65,10 +65,24 @@ Steps 2 and 3 of the suggested order below, plus the README indexing:
     lemmas — `a_wf_*`, binds/ftvar plumbing, `a_decls`, `a_isub` reflexivity,
     `rename_aenv`, `a_guess_mono`.  It had become the algo basics file without
     saying so, which is why wf lemmas kept landing in it.
-  - new **`frost/algo/prop_mod_compat.v`** — mode compatibility at BOTH sorts.
-    The `skmod{SK}` inversions were in `pat/prop_soundness_pat.v` and the
-    `skmod{TY}` ones in `typing/prop_soundness_typing.v`, so half the answers
-    came with a soundness theorem attached.
+  - new **`frost/algo/prop_mod_compat.v`** — mode compatibility at BOTH sorts:
+    14 lemmas that were spread over FIVE files (the `skmod{SK}` inversions in
+    `pat/prop_soundness_pat.v`, the `skmod{TY}` ones in
+    `typing/prop_soundness_typing.v`, the monotype-substitution halves in
+    `sub/prop_completeness_sub_gen.v` and `sub/prop_soundness_subtag.v`, the
+    `mod_comp_sk` bridge in `deco_algo/prop_soundness_sub.v`), so half the
+    answers came with a theorem attached and the TY question was answered in a
+    different file from its SK twin.  ⚙ `mod_comp_ty_tc_inv` stays in
+    `frost/prop_basic.v` (the declarative layer uses it) and the
+    `mod_comp_*_subst_mono` pair stays with the `is_*_subst_mono` shape lemmas
+    it is built from.
+  - ⚠️ **An eleventh duplicate, which the name-based scan could not see**:
+    `pskl_ghost_free_ptyp` (`sub/prop_soundness_subtag.v`) and
+    `pskl_ghost_free_to_ptyp` (`frost/prop_basic.v`) are the same statement
+    under two names.  Deleted the former.  §2.3's "one fact, one name" check has
+    to be run on STATEMENTS, not names — this one was found only by reading the
+    mode-compat cluster.  Also relocated: `subst_ptyp_to_pskl_comm` →
+    `frost/prop_coercions.v`, which is the file that owns conversion identities.
   - `a_split_wf` → `algo/prop_wf_preservation.v` (it *is* an output-wf lemma);
     `a_split_ty_shape` → beside its SK twin `a_split_sk_shape`;
     `a_isub_strip_var_typ_mid` → beside `uniq_mid_eq`.

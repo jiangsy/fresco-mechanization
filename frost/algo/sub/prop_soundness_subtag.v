@@ -31,6 +31,7 @@ Require Import src.frost.decl.prop_basic.
    (see the [guarded_pskl_subst] note in §1e). *)
 Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.algo.def_rules.
+Require Import src.frost.algo.prop_mod_compat.
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.deco_algo.def_decorated.
@@ -1874,55 +1875,6 @@ Qed.
 (* ===================================================================== *)
 (*  §2  The mutual soundness statement                                    *)
 (* ===================================================================== *)
-
-(** L-B threads the paper's [a_ty_mode_compat M P0] (:ty) instead of
-    [ghost_free P0]: a TC input IS a type (⟹ ghost_free where the refinement
-    needs it), an FN input is an arrow whose codomain recurses (the domain
-    goes to consistency via WF, not ghost-freeness), a TI input is ◇. *)
-Lemma a_ty_mode_compat_tc_ghost_free : forall P,
-  a_ty_mode_compat mode_tc P -> pskl_ghost_free P.
-Proof. intros P H; inversion H; subst; apply ptyp_to_pskl_ghost_free. Qed.
-
-Lemma subst_ptyp_to_pskl_comm : forall A τ β,
-  subst_pskl_in_pskl (ptyp_to_pskl τ) β (ptyp_to_pskl A)
-    = ptyp_to_pskl (subst_ptyp_in_ptyp τ β A).
-Proof.
-  induction A; intros τ β; simpl; try solve [ f_equal; auto ];
-    destruct_if;
-    reflexivity.
-Qed.
-
-Lemma a_ty_mode_compat_subst_mono : forall M P τ β,
-  a_ty_mode_compat M P -> mono_ptyp τ ->
-  a_ty_mode_compat M (subst_pskl_in_pskl (ptyp_to_pskl τ) β P).
-Proof.
-  intros M P τ β H Hm; induction H; simpl.
-  - apply a_ty_mode_compat__ti.
-  - rewrite subst_ptyp_to_pskl_comm; apply a_ty_mode_compat__tc.
-  - apply a_ty_mode_compat__fn; assumption.
-Qed.
-
-(** A ghost-free skeleton IS a type skeleton, hence TC-compatible — the reverse
-    of [a_ty_mode_compat_tc_ghost_free], for re-entering TC recursions (ForallR). *)
-Lemma pskl_ghost_free_ptyp : forall P,
-  pskl_ghost_free P -> exists A, P = ptyp_to_pskl A.
-Proof.
-  induction P; simpl; intros H.
-  - exists ptyp_unit; reflexivity.
-  - match goal with |- exists A, pskl_var_b ?n = _ => exists (ptyp_var_b n) end; reflexivity.
-  - match goal with |- exists A, pskl_var_f ?v = _ => exists (ptyp_var_f v) end; reflexivity.
-  - destruct H as [H1 H2]; destruct (IHP1 H1) as [A1 ->];
-      destruct (IHP2 H2) as [A2 ->]; exists (ptyp_arrow A1 A2); reflexivity.
-  - destruct (IHP H) as [A ->]; exists (ptyp_all A); reflexivity.
-  - contradiction.
-  - contradiction.
-Qed.
-
-Lemma pskl_ghost_free_ty_mode_compat_tc : forall P,
-  pskl_ghost_free P -> a_ty_mode_compat mode_tc P.
-Proof.
-  intros P H; destruct (pskl_ghost_free_ptyp _ H) as [A ->]; apply a_ty_mode_compat__tc.
-Qed.
 
 (** The subtyping conclusion (paper: ⊴, the fill of [P0], and the
     declarative subtyping of the subject, at the OUTPUT context). *)

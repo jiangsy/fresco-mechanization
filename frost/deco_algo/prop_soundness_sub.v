@@ -24,6 +24,7 @@ Require Import src.frost.decl.def_rules.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.algo.def_rules.
+Require Import src.frost.algo.prop_mod_compat.
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
@@ -4089,19 +4090,6 @@ Proof.
         | intros τ1 He; discriminate He ]. }
     { exact Hmod. }
     { exact Hgf0. }
-Qed.
-
-(** The paper-shaped corollary. *)
-(** The paper's [P0 :sk M] ([a_sk_mode_compat]) implies the internal
-    [mod_comp_sk] on the inhabited [bskl] — so the user-facing statements use the
-    direct [pskl] relation and the [bskl] detour stays hidden in the bundle. *)
-Lemma a_sk_mode_compat_mod_comp_sk : forall M P0,
-  a_sk_mode_compat M P0 -> mod_comp_sk (pskl_to_bskl_inh P0) M.
-Proof.
-  intros M P0 H; induction H; simpl.
-  - apply mod_comp_sk__ti; apply is_sskl__hole.
-  - apply mod_comp_sk__tc; apply is_sskl__hole.
-  - apply mod_comp_sk__fn; assumption.
 Qed.
 
 (** L-A corollary: NO TY side condition — [pskl_top_guarded P0] is DERIVED
