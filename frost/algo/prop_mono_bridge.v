@@ -33,30 +33,6 @@ Require Import src.frost.algo.prop_basic.
 
 Set Implicit Arguments.
 
-(** A monotype's skeleton painted [syn] and read back as an unresolved skeleton
-    is just the monotype's [uskl] image. *)
-Lemma ptyp_to_uskl_syn_eq : forall A,
-  pskl_to_uskl (ptyp_to_pskl A) = ptyp_to_uskl_syn A.
-Proof.
-  unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn.
-  induction A; simpl; f_equal; auto.
-Qed.
-
-(** A definition is well-formed in its own (tail) context, hence in the whole. *)
-Lemma a_wf_aenv_binds_def_wf_local : forall Θ α1 τ,
-  {{ ⊢ Θ }}a ->
-  binds α1 (abind_flex_mono_def τ) Θ ->
-  a_wf_ptyp Θ τ.
-Proof.
-  intros Θ α1 τ Hwf; induction Hwf; intros Hb; try solve [ inversion Hb ];
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqx Heqb] | Hb'];
-    try discriminate;
-    try (eapply a_wf_ptyp_weaken;
-         [ intros y b Hby; unfold binds; right; exact Hby | ];
-         first [ apply IHHwf; exact Hb'
-               | inversion Heqb; subst; assumption ]).
-Qed.
-
 (** On a MONOTYPE the inherited and synthesised paintings coincide — they only
     differ at quantifiers, and a monotype has none. *)
 Lemma ptyp_to_bskl_inh_syn_eq : forall A,
@@ -328,7 +304,7 @@ Proof.
 Qed.
 
 (** [ad_pat_consis] is congruent in the tag context. *)
-Lemma consis_psi_cong_local : forall Ψ Θ R Q,
+Lemma ad_pat_consis_psi_cong : forall Ψ Θ R Q,
   {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
   forall Ψ', Ψ [=] Ψ' ->
   {{ Ψ' ⨟ Θ ⊢ˢ R ∼ Q }}ad.
@@ -402,7 +378,7 @@ Proof.
     + eapply a_wf_aenv_binds_def_mono; eauto.
     + intros α0 Hα0.
       eapply a_wf_ptyp_ftv_tvarish;
-        [ eapply a_wf_aenv_binds_def_wf_local; eauto | exact Hα0 ].
+        [ eapply a_wf_aenv_binds_def_wf; eauto | exact Hα0 ].
   - (* flex_def, backward : τ ↦ α *)
     split; [ apply mono_ptyp__var | ].
     intros α0 Hα0. simpl in Hα0.
@@ -449,12 +425,12 @@ Proof.
   - (* var : the join is the same variable; fold it with [flex_r] *)
     inversion HeqS; subst.
     eapply ad_pat_consis__flex_r; [ exact Hb | ].
-    eapply consis_psi_cong_local;
+    eapply ad_pat_consis_psi_cong;
       [ apply consis_mono_refl | clear - H; fsetdec ].
     + eapply a_wf_aenv_binds_def_mono; eauto.
     + intros β Hβ.
       eapply a_wf_ptyp_ftv_tvarish;
-        [ eapply a_wf_aenv_binds_def_wf_local; eauto | exact Hβ ].
+        [ eapply a_wf_aenv_binds_def_wf; eauto | exact Hβ ].
   - (* flex_l : the same definition was already unfolded *)
     inversion HeqS; subst.
     assert (Huniq : uniq Θ) by (apply a_wf_aenv_uniq; auto).

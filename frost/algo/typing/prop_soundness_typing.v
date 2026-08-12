@@ -960,24 +960,6 @@ Qed.
 (*  §11  lemma:split-refine, COLOURED                                    *)
 (* ===================================================================== *)
 
-(** ≡ᵗ embeds into ≡ˢ on paintings — the codomain-generalized split
-    refinement below needs it. *)
-Lemma a_tyequiv_embed_pskl : forall Θ A B,
-  {{ Θ ⊢ A ≡ᵗ B }}a ->
-  {{ Θ ⊢ (ptyp_to_pskl A) ≡ˢ (ptyp_to_pskl B) }}a.
-Proof.
-  intros Θ A B H; induction H.
-  - apply a_pskl_tyequiv__refl. apply lc_ptyp_to_pskl. exact H.
-  - apply a_pskl_tyequiv__sym. exact IHa_tyequiv.
-  - eapply a_pskl_tyequiv__trans; eassumption.
-  - apply a_pskl_tyequiv__flex_def. exact H.
-  - simpl. apply a_pskl_tyequiv__arrow; assumption.
-  - simpl. apply a_pskl_tyequiv__all with (L := L).
-    intros α Hα.
-    rewrite <- !ptyp_to_pskl_open.
-    apply H0. exact Hα.
-Qed.
-
 (** ⭐ THE PAPER'S `lemma:split-refine` (proofs.tex), stated COLOURED — the
     shape `a_typing`'s four CHECK rows consume, rather than the uncoloured
     `ad_refine_pskl` one — and CODOMAIN-GENERALIZED (2026-08-08): the check rows'
@@ -1101,7 +1083,7 @@ Proof.
         [ exact Hmid' | exact Hwf1 | reflexivity | reflexivity ]. }
     rewrite btyp_to_ptyp_ptyp_to_btyp_inh in Heqv.
     pose proof (a_tyequiv_isub_le Hle Heqv) as Heqv'.
-    pose proof (a_tyequiv_embed_pskl Heqv') as Hskleq.
+    pose proof (a_tyequiv_pskl Heqv') as Hskleq.
     assert (Harr : {{ Θ' ⨟ empty ⊢ᵣ
               (pskl_to_bskl_inh
                  (ptyp_to_pskl (ptyp_arrow (ptyp_var_f β) (ptyp_var_f α1))))
@@ -1399,18 +1381,6 @@ Proof.
 Qed.
 
 (* --- §12i  odds and ends --------------------------------------------- *)
-
-Lemma is_styp_paint : forall A, lc_ptyp A -> is_styp (ptyp_to_btyp_syn A).
-Proof.
-  intros A H; induction H; simpl.
-  - apply is_styp__unit.
-  - apply is_styp__var.
-  - apply is_styp__arrow; assumption.
-  - apply is_styp__all with (L := empty). intros α _.
-    change (btyp_var_f α) with (ptyp_to_btyp_syn (ptyp_var_f α)).
-    rewrite <- ptyp_to_btyp_syn_open.
-    match goal with Hb : forall _, is_styp _ |- _ => apply Hb end.
-Qed.
 
 Lemma a_decls_binds_flex : forall Ξ y (b : abind),
   a_decls Ξ -> binds y b Ξ -> b = abind_flex_mono.
@@ -1746,7 +1716,7 @@ Proof.
           | apply btyp_to_ptyp_ptyp_to_btyp_syn
           | | intros y Hy; apply Hbody ].
         apply mod_comp_ty__ti. apply is_styp__arrow;
-          [ apply is_styp_paint; eapply a_wf_ptyp_lc; exact HwfA3
+          [ apply is_styp_ptyp_to_btyp_syn; eapply a_wf_ptyp_lc; exact HwfA3
           | apply mod_comp_ty_ti_inv; exact Hmq ].
       * simpl. rewrite btyp_to_bskl_ptyp_to_btyp_syn, HQt.
         change (bskl_arrow (pskl_to_bskl_syn (ptyp_to_pskl A))

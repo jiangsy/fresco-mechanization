@@ -2164,16 +2164,6 @@ Proof.
   intros Θ Δ P H; induction H; eauto using lc_pskl.
 Qed.
 
-(** The synthesised painting preserves local closure. *)
-Lemma pskl_to_bskl_syn_lc : forall P,
-  lc_pskl P -> lc_bskl (pskl_to_bskl_syn P).
-Proof.
-  intros P H; induction H; simpl;
-    try (now eauto using lc_bskl);
-    (apply lc_bskl_all_syn; intros α;
-     rewrite <- pskl_to_bskl_syn_open; now auto).
-Qed.
-
 (** Refinement outputs are locally closed. *)
 Lemma ad_refine_pskl_f_lc_r : forall F Θ Δ P P',
   ad_refine_pskl_f F Θ Δ P P' -> lc_pskl P'.
@@ -2189,7 +2179,7 @@ Lemma ad_refine_syn_f_lc_r : forall F Θ Δ Q Q',
 Proof.
   intros F Θ Δ Q Q' H; induction H;
     try (now eauto using lc_bskl);
-    try (now (apply pskl_to_bskl_syn_lc; eapply a_wf_pskl_lc; eauto));
+    try (now (apply lc_pskl_to_bskl_syn; eapply a_wf_pskl_lc; eauto));
     (pick fresh α; apply (lc_bskl_all_syn_exists α); auto).
 Qed.
 
@@ -2317,7 +2307,7 @@ Proof.
     inversion Heq; subst.
     assert (Hmt : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
     simpl. eapply ad_pat_consis__flex_l; [ exact H | ].
-    rewrite <- ptyp_to_uskl_syn_eq.
+    rewrite <- pskl_to_uskl_ptyp.
     apply IHHr; auto.
     unfold ptyp_to_bskl_syn. rewrite mono_inh_eq_syn; auto.
   - (* flex_r : the join is a DEFINED flexible variable *)
@@ -2343,7 +2333,7 @@ Proof.
     inversion HeqQ; subst.
     assert (Hmτ : mono_ptyp τ0) by (eapply a_wf_aenv_binds_def_mono; eauto).
     eapply ad_pat_consis__flex_l; [ exact Hb | ].
-    eapply consis_psi_cong_local;
+    eapply ad_pat_consis_psi_cong;
       [ apply consis_mono_refl | clear - H; fsetdec ]; auto.
     intros α Hα. eapply a_wf_ptyp_ftv_tvarish;
       [ eapply a_wf_aenv_binds_def_wf; eauto | exact Hα ].
@@ -2925,7 +2915,7 @@ Proof.
     (* 5. the augmented solution: eliminate the join [P3] *)
     (* (a) the join is a monotype painting, ≡ᵗ-equal to the subject *)
     rewrite subst_pskl_var_ptyp in HconsQ.
-    rewrite ptyp_to_uskl_syn_eq in HconsQ.
+    rewrite pskl_to_uskl_ptyp in HconsQ.
     destruct (consis_mono_join HconsQ Hwf1
                 (A := subst_ptyp_in_ptyp τ β (ptyp_var_f α))
                 eq_refl Hmsub)
@@ -3504,7 +3494,7 @@ Proof.
     assert (HeqAB : {{ Θ1 ⊢ (subst_ptyp_in_ptyp τ α1 (ptyp_var_f α))
                        ≡ᵗ (subst_ptyp_in_ptyp τ α1 (ptyp_var_f β)) }}a).
     { eapply consis_refine_mono_tyequiv with (Qt := Qt); eauto.
-      - rewrite <- ptyp_to_uskl_syn_eq. exact HconsQ.
+      - rewrite <- pskl_to_uskl_ptyp. exact HconsQ.
       - apply ad_refine_syn_f_forget with (F := empty). exact Hrs. }
     assert (Hlcτ : lc_ptyp τ) by (apply mono_ptyp_lc; assumption).
     assert (Hbγ : binds α1 (abind_flex_mono_def τ)
@@ -4571,16 +4561,6 @@ Lemma uskl_to_pskl_open : forall R α,
 Proof.
   intros. unfold open_uskl_wrt_uskl, open_pskl_wrt_pskl.
   rewrite uskl_to_pskl_open_rec. reflexivity.
-Qed.
-
-(** [ad_pat_consis] is congruent in the tag context. *)
-Lemma ad_pat_consis_psi_cong : forall Ψ Θ R Q,
-  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
-  forall Ψ', Ψ [=] Ψ' ->
-  {{ Ψ' ⨟ Θ ⊢ˢ R ∼ Q }}ad.
-Proof.
-  intros Ψ Θ R Q H; induction H; intros Ψ' Heq;
-    econstructor; eauto; fsetdec.
 Qed.
 
 Lemma a_consistag_sound_aux : forall Δ1 Δ2 P0 Ψ Θ0 R P' Θ1,

@@ -726,7 +726,7 @@ Lemma a_wf_pskl_arrow_inv_x : forall Θ Δ P1 P2,
   ({{ Θ ⨟ Δ ⊢ₚₛ P1 }}a) /\ ({{ Θ ⨟ Δ ⊢ₚₛ P2 }}a).
 Proof. intros * H; inversion H; subst; auto. Qed.
 
-Lemma a_wf_pskl_all_inv_x : forall Θ Δ P,
+Lemma a_wf_pskl_all_inv : forall Θ Δ P,
   {{ Θ ⨟ Δ ⊢ₚₛ (pskl_all_syn P) }}a ->
   exists L, forall α, α `notin` L ->
     {{ Θ ⨟ (add α Δ) ⊢ₚₛ (open_pskl_wrt_pskl P (pskl_var_f α)) }}a.
@@ -763,7 +763,7 @@ Proof.
     + eapply ad_refine_pskl__flex_l; [ eassumption | ]. apply IHHp; auto.
   - (* all : ∀ˢ P ⊳ ∀ˢ Q *)
     rename P into Pb. rename Q into Qb.
-    destruct (a_wf_pskl_all_inv_x HwfQr) as [L2 Hbody].
+    destruct (a_wf_pskl_all_inv HwfQr) as [L2 Hbody].
     remember (pskl_all_syn Pb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
     + (* ∀ ⊳ ∀ : compose the two families in Δx *)
@@ -858,7 +858,7 @@ Proof.
     + eapply ad_refine_pskl__flex_l; [ eassumption | ]. apply IHHp; auto.
   - (* tophole_fill : ∀◇P ⊳ ∀ˢ Q *)
     rename P into Pb. rename Q into Qb.
-    destruct (a_wf_pskl_all_inv_x HwfQr) as [L2 Hbody].
+    destruct (a_wf_pskl_all_inv HwfQr) as [L2 Hbody].
     remember (pskl_tophole Pb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
     + subst. eapply ad_refine_pskl_hole_l_gen with (Pm := pskl_tophole Pb);

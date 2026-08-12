@@ -302,7 +302,7 @@ Proof.
   assert (Hwfτ : a_wf_ptyp Θ τ)
     by (eapply a_wf_aenv_binds_def_wf; eassumption).
   assert (Hsc : ftvar_in_ptyp τ [<=] dom Θ)
-    by (eapply a_wf_ptyp_ftv_dom'; exact Hwfτ).
+    by (eapply a_wf_ptyp_ftv_dom; exact Hwfτ).
   clear - Hβ Hsc; fsetdec.
 Qed.
 
@@ -407,7 +407,7 @@ Proof.
       by (symmetry; apply ptyp_to_bskl_inh_syn_eq; exact Hmτ).
     destruct (IHad_refine_syn S1 S2 (ptyp_to_pskl τ) HeqS Hpaint HwfΘ
                 ltac:(apply ptyp_to_pskl_ghost_free)
-                ltac:(apply lc_ptyp_to_pskl; eapply a_wf_ptyp_lc; exact Hwfτ))
+                ltac:(apply ptyp_to_pskl_lc; eapply a_wf_ptyp_lc; exact Hwfτ))
       as (X1 & X2 & Hg1 & Hg2 & Hl1 & Hl2 & Hp1 & Hp2 & Hreplay).
     exists X1, X2.
     split; [ exact Hg1 | ]. split; [ exact Hg2 | ].
@@ -462,7 +462,7 @@ Proof.
       by (symmetry; apply ptyp_to_bskl_inh_syn_eq; exact Hmτ).
     destruct (IHad_refine_syn S0 (ptyp_to_pskl τ) HeqS Hpaint HwfΘ
                 ltac:(apply ptyp_to_pskl_ghost_free)
-                ltac:(apply lc_ptyp_to_pskl; eapply a_wf_ptyp_lc; exact Hwfτ))
+                ltac:(apply ptyp_to_pskl_lc; eapply a_wf_ptyp_lc; exact Hwfτ))
       as (X' & Hg' & Hl' & Hp' & Hreplay).
     exists X'.
     split; [ exact Hg' | ]. split; [ exact Hl' | ]. split; [ exact Hp' | ].
@@ -543,12 +543,12 @@ Proof.
   - clear; fsetdec.
   - destruct (α0 == α) as [-> | Hne].
     + assert (Hsc : ftvar_in_ptyp τ [<=] dom Θ')
-        by (eapply a_wf_ptyp_ftv_dom'; eassumption).
+        by (eapply a_wf_ptyp_ftv_dom; eassumption).
       clear - Hsc; fsetdec.
     + apply IHa_inc.
   - destruct (α0 == α) as [-> | Hne].
     + assert (Hsc : ftvar_in_ptyp τ' [<=] dom Θ')
-        by (eapply a_wf_ptyp_ftv_dom'; eassumption).
+        by (eapply a_wf_ptyp_ftv_dom; eassumption).
       clear - Hsc; fsetdec.
     + apply IHa_inc.
   - specialize (IHa_inc α0); simpl_env; clear - IHa_inc; fsetdec.
@@ -571,7 +571,7 @@ Proof.
   inversion Hall as [ | ph pt [Hwf1 Hm1] Hall' ]; subst; cbn in Hwf1.
   destruct (α == α1) as [-> | Hne].
   - assert (Hs1 : ftvar_in_ptyp τ1 [<=] dom Θ)
-      by (eapply a_wf_ptyp_ftv_dom'; exact Hwf1).
+      by (eapply a_wf_ptyp_ftv_dom; exact Hwf1).
     clear - Hs1; fsetdec.
   - apply IH; exact Hall'.
 Qed.
@@ -831,7 +831,7 @@ Proof.
       assert (HprβX : {{ Θ ⨟ (add β Δ) ⊢ₚᵣ
                 (msubst_pskl κs (open_pskl_wrt_pskl Ps0 (pskl_var_f β)))
                 ⊑ (open_pskl_wrt_pskl X0 (pskl_var_f β)) }}ad).
-      { rewrite (@msubst_pskl_open_lc_local κs Ps0 β Hκlc
+      { rewrite (@msubst_pskl_open_lc κs Ps0 β Hκlc
                    ltac:(clear - Fr; solve_notin_auto)).
         apply HprF; clear - Fr; fsetdec. }
       destruct (IH Θ0 Θ κs (add β Δ) (add β Δ0)
@@ -904,7 +904,7 @@ Proof.
       eapply ad_precise_all_of_one with (β := β);
         [ | exact HwfΘ | clear - Fr; fsetdec | clear - Fr; fsetdec
         | exact Hβκ | clear - Fr; fsetdec ].
-      rewrite <- (@msubst_pskl_open_lc_local (κ' ++ κs)
+      rewrite <- (@msubst_pskl_open_lc (κ' ++ κs)
                     (ptyp_to_pskl (close_ptyp_wrt_ptyp β A')) β
                     (msubst_lc_app_wf HF Hκlc)
                     ltac:(rewrite dom_app;
@@ -1164,7 +1164,7 @@ Proof.
         | simpl_env; clear - HuqAll; solve_uniq
         | exact HwfΘ0 ]. }
     split.
-    { apply all_flex_mono_a_decls. repeat apply all_flex_mono_app; assumption. }
+    { apply all_flex_mono_decls. repeat apply all_flex_mono_app; assumption. }
     split; [ rewrite ! keys_app; rewrite Hkeysc, Hks, Hkeys'; reflexivity | ].
     split.
     { apply (@a_inc_flex_prefix_build (Ξc ++ Ξs ++ Ξ') (κc ++ κs ++ κ') Θ0 κ Θ);
@@ -1215,7 +1215,7 @@ Proof.
         [ apply all_flex_mono_app; assumption
         | simpl_env; clear - HuqΞsc; solve_uniq
         | exact HwfΘ0 ]. }
-    split; [ apply all_flex_mono_a_decls; apply all_flex_mono_app; assumption | ].
+    split; [ apply all_flex_mono_decls; apply all_flex_mono_app; assumption | ].
     split; [ rewrite ! keys_app; rewrite Hkeysc, Hks; reflexivity | ].
     split.
     { apply (@a_inc_flex_prefix_build (Ξc ++ Ξs) (κc ++ κs) Θ0 κ Θ);

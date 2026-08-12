@@ -464,22 +464,13 @@ Proof.
   - eapply a_tyequiv__all; eauto.
 Qed.
 
-(** [ptyp_to_pskl] preserves local closure. *)
-Lemma lc_ptyp_to_pskl : forall A,
-  lc_ptyp A -> lc_pskl (ptyp_to_pskl A).
-Proof.
-  intros A H; induction H; simpl; try solve [ constructor; auto ].
-  constructor. intros α.
-  rewrite <- ptyp_to_pskl_open. auto.
-Qed.
-
 (** Type equivalence embeds into skeleton equivalence. *)
 Lemma a_tyequiv_pskl : forall Θ A A',
   {{ Θ ⊢ A ≡ᵗ A' }}a ->
   {{ Θ ⊢ (ptyp_to_pskl A) ≡ˢ (ptyp_to_pskl A') }}a.
 Proof.
   intros * Heq; induction Heq; simpl.
-  - apply a_pskl_tyequiv__refl. apply lc_ptyp_to_pskl; auto.
+  - apply a_pskl_tyequiv__refl. apply ptyp_to_pskl_lc; auto.
   - apply a_pskl_tyequiv__sym; auto.
   - eapply a_pskl_tyequiv__trans; eauto.
   - apply a_pskl_tyequiv__flex_def; auto.

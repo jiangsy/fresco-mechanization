@@ -673,7 +673,7 @@ Proof.
     assert (Huq : uniq (Ξ ++ (α0 ~ abind_flex_mono) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact Hwf).
     assert (Hwf0 : {{ ⊢ Θ0 }}a).
-    { eapply a_wf_aenv_app_r with (Θp := Ξ ++ (α0 ~ abind_flex_mono)).
+    { eapply a_wf_aenv_strip_prefix with (Ξ := Ξ ++ (α0 ~ abind_flex_mono)).
       simpl_env. exact Hwf. }
     assert (Hbα : binds α abind_flex_mono Θmid)
       by (unfold Θmid; unfold binds; simpl; right; left; reflexivity).
@@ -865,7 +865,7 @@ Proof.
     assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_mid; eauto).
     assert (HwfT : {{ ⊢ ((x ~ abind_var_typ Apay) ++ Θ0) }}a)
-      by (eapply a_wf_aenv_app_r; exact Hwf).
+      by (eapply a_wf_aenv_strip_prefix; exact Hwf).
     apply a_wf_aenv_var_typ_inv in HwfT.
     destruct HwfT as [_ [HwfQ0 _]].
     assert (HwfQ' : a_wf_ptyp (Ξ ++ Θ0) Apay)
@@ -911,7 +911,7 @@ Proof.
     assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_mid; eauto).
     assert (HwfT : {{ ⊢ ((x ~ abind_var_skl Qpay) ++ Θ0) }}a)
-      by (eapply a_wf_aenv_app_r; exact Hwf).
+      by (eapply a_wf_aenv_strip_prefix; exact Hwf).
     apply a_wf_aenv_var_skl_inv in HwfT.
     destruct HwfT as [_ [HscQ0 _]].
     assert (HscQ' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ Qpay }}a)

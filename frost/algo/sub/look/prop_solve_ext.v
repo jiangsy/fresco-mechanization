@@ -1600,10 +1600,6 @@ Qed.
 (*  skeleton — the ψa-side payload for the flex_l target switch.          *)
 (* ===================================================================== *)
 
-Lemma is_tskl_mono_paint : forall τ,
-  mono_ptyp τ -> is_tskl (ptyp_to_uskl_syn τ).
-Proof. intros τ Hm; induction Hm; simpl; constructor; auto. Qed.
-
 Lemma d_tags_skl_mono_paint : forall τ,
   mono_ptyp τ -> d_tags_skl empty (ptyp_to_uskl_syn τ).
 Proof.
@@ -1614,16 +1610,12 @@ Proof.
       [ assumption | assumption | fsetdec | fsetdec ].
 Qed.
 
-Lemma uskl_ghost_free_mono_paint : forall τ,
-  mono_ptyp τ -> uskl_ghost_free (ptyp_to_uskl_syn τ).
-Proof. intros τ Hm; induction Hm; simpl; constructor; auto. Qed.
-
 Lemma a_tags_sort_mono_paint : forall NM τ,
   mono_ptyp τ -> a_tags_sort NM empty (ptyp_to_uskl_syn τ).
 Proof.
   intros NM τ Hm; destruct NM; constructor;
-    auto using is_tskl_mono_paint, d_tags_skl_mono_paint,
-               uskl_ghost_free_mono_paint.
+    auto using mono_ptyp_to_uskl_syn_is_tskl, d_tags_skl_mono_paint,
+               mono_ptyp_to_uskl_syn_ghost_free.
 Qed.
 
 (* ===================================================================== *)

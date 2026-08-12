@@ -422,7 +422,7 @@ Proof.
   - (* refl *)
     apply a_uskl_tyequiv_refl.
     rewrite <- pskl_to_uskl_ptyp. apply pskl_to_uskl_lc.
-    apply lc_ptyp_to_pskl. exact H.
+    apply ptyp_to_pskl_lc. exact H.
   - (* sym *) apply a_uskl_tyequiv_sym; auto.
   - (* trans *) eapply a_uskl_tyequiv_trans; auto.
   - (* flex_def : a variable against its MONO definition *)
@@ -447,21 +447,6 @@ Qed.
 
 (* --- the three base rows' SLACK premises ------------------------------ *)
 
-(** ⭐ A RIGID variable of the question context is untouched by any
-    solution's metasubstitution: [a_inc]'s domain is exactly the source's
-    FLEXIBLES ([a_inc_dom_flex]). *)
-Lemma a_inc_rigid_notin_dom : forall Θ0 κ Θ α,
-  κ ∷ Θ0 ⊑ Θ ->
-  {{ ⊢ Θ0 }}a ->
-  binds α abind_tvar Θ0 ->
-  α `notin` dom κ.
-Proof.
-  intros Θ0 κ Θ α Hinc Hwf Hb Hin.
-  destruct (a_inc_dom_flex Hinc Hin) as [Hf | [τ Hf]];
-    pose proof (binds_unique _ _ _ _ _ Hb Hf (a_wf_aenv_uniq Hwf)) as Hc;
-    discriminate Hc.
-Qed.
-
 (** …hence a type all of whose free variables are rigid is a FIXPOINT of
     the metasubstitution.  This is what makes [P-Anno]'s slack REFLEXIVE:
     an annotation is SOURCE syntax, so it cannot mention a flexible the
@@ -474,7 +459,7 @@ Lemma msubst_ptyp_rigid_id : forall Θ0 κ Θ A,
 Proof.
   intros Θ0 κ Θ A Hinc Hwf Hrig.
   apply msubst_ptyp_notin. intros α Hα.
-  eapply a_inc_rigid_notin_dom; [ exact Hinc | exact Hwf | apply Hrig; exact Hα ].
+  eapply a_inc_tvar_notin_dom; [ exact Hinc | exact Hwf | apply Hrig; exact Hα ].
 Qed.
 
 (** [P-Unit]'s slack. *)
@@ -497,7 +482,7 @@ Proof.
   rewrite (@msubst_ptyp_rigid_id Θ0 κ Θ A Hinc Hwf Hrig).
   apply a_uskl_tyequiv_refl.
   rewrite <- pskl_to_uskl_ptyp. apply pskl_to_uskl_lc.
-  apply lc_ptyp_to_pskl. exact Hlc.
+  apply ptyp_to_pskl_lc. exact Hlc.
 Qed.
 
 (** ⭐ [P-Var]'s slack — NO side condition: the entry's own equivalence,
@@ -958,7 +943,6 @@ Qed.
    IH hands back one instance and the rule wants the whole family.  Converting
    [a_pat] would retire it. *)
 
-
 (* ===================================================================== *)
 (*  K8 — the binder rows' support: freshness of a TERM atom for the       *)
 (*  run's type-level data, identity-witness uniqueness, and the           *)
@@ -1032,7 +1016,7 @@ Lemma a_wf_aenv_notin_ftv_tm_below : forall Ξ x (b : abind) Θ,
 Proof.
   intros Ξ x b Θ Hwf.
   assert (HwfT : {{ ⊢ Θ }}a)
-    by (eapply a_wf_aenv_app_r with (Θp := Ξ ++ (x ~ b)); simpl_env; exact Hwf).
+    by (eapply a_wf_aenv_strip_prefix with (Ξ := Ξ ++ (x ~ b)); simpl_env; exact Hwf).
   assert (Hu : uniq (Ξ ++ (x ~ b) ++ Θ)) by (apply a_wf_aenv_uniq; exact Hwf).
   assert (Hd : x `notin` dom Θ)
     by (clear - Hu; simpl_env in Hu; destruct_uniq;
@@ -1530,7 +1514,7 @@ Proof.
     rewrite HmsAζ.
     apply ad_refine_syn__tophole_keep.
     { apply guarded_bskl__arrow;
-        [ apply lc_pskl_to_bskl_inh; apply lc_ptyp_to_pskl; exact HlcA
+        [ apply lc_pskl_to_bskl_inh; apply ptyp_to_pskl_lc; exact HlcA
         | apply lc_pskl_to_bskl_inh; eapply a_wf_pskl_lc; exact HwfP ]. }
     apply ad_refine_syn__arrow.
     - apply ad_precise_refl.
@@ -1830,7 +1814,7 @@ Proof.
           [ exfalso; clear - HΔ; fsetdec | ].
         destruct Htv as [Hb | [Hb | [τ Hb]]].
         + right.
-          eapply a_inc_rigid_notin_dom;
+          eapply a_inc_tvar_notin_dom;
             [ exact Hζs | exact Hwfmid
             | apply binds_app_3; eapply a_inc_binds_tvar;
                 [ exact Hincid' | exact Hb ] ].
@@ -2195,7 +2179,7 @@ Proof.
                  (fun h : abind_is_ty bA => h) HwfB')).
   (* the body's witness, target-weakened across the suffix *)
   assert (Hlcfin : lc_aenv Θ3)
-    by (apply a_wf_aenv_lc_aenv; eapply a_wf_aenv_app_r with (Θp := Ξ ++ (x ~ bA));
+    by (apply a_wf_aenv_lc_aenv; eapply a_wf_aenv_strip_prefix with (Ξ := Ξ ++ (x ~ bA));
         simpl_env; exact HwfB').
   destruct (a_inc_weaken_suffix_target Hincb' Hidb Hlcfin Hsuf)
     as [κb2 [Hidb2 Hincb2]].

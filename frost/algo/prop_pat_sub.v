@@ -175,7 +175,7 @@ Qed.
 Lemma ftvar_in_uskl_ptyp_to_uskl_syn : forall τ,
   ftvar_in_uskl (ptyp_to_uskl_syn τ) [=] ftvar_in_ptyp τ.
 Proof.
-  intros. rewrite <- ptyp_to_uskl_syn_eq.
+  intros. rewrite <- pskl_to_uskl_ptyp.
   rewrite ftvar_in_uskl_pskl. apply ftvar_ptyp_to_pskl.
 Qed.
 
@@ -866,7 +866,7 @@ Qed.
 Lemma uskl_to_pskl_ptyp_to_uskl_syn : forall τ,
   ⌊ ptyp_to_uskl_syn τ ⌋ˢ = ptyp_to_pskl τ.
 Proof.
-  intros. rewrite <- ptyp_to_uskl_syn_eq.
+  intros. rewrite <- pskl_to_uskl_ptyp.
   apply uskl_to_pskl_pskl_to_uskl.
 Qed.
 

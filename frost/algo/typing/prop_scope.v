@@ -149,8 +149,6 @@ Proof.
     apply IHa_sub; assumption.
 Qed.
 
-
-
 (** A MARKER is an entry kind every information increase (and every
     context-walking rule of the algorithm) keeps IN PLACE: rigid type
     variables and the two term-variable entries.  Flexibles are not
@@ -332,7 +330,6 @@ Proof.
   - (* β bound twice *)
     apply binds_In in Hb'. clear - Hu Hb'. solve_uniq.
 Qed.
-
 
 (* ===================================================================== *)
 (*  Suffixes carry no rigid variable — the fact that turns the scope      *)
@@ -674,7 +671,6 @@ Proof.
     rewrite (IH y b b' Θb). reflexivity.
 Qed.
 
-
 (** Dropping middle entries the marker is not among can only shrink the
     region — the converse of [above_dom_insert_sub], and the direction the
     walk's peeling rows consume. *)
@@ -809,14 +805,6 @@ Lemma pskl_nonvar_subst : forall ψ β P,
 Proof.
   intros ψ β P Hne γ; destruct P; simpl; try discriminate.
   exfalso; exact (Hne _ eq_refl).
-Qed.
-
-Lemma a_decls_binds_flex_mono : forall Ξ y (b : abind),
-  a_decls Ξ -> binds y b Ξ -> b = abind_flex_mono.
-Proof.
-  intros Ξ y b Hd; induction Hd; intros Hb; [ inversion Hb | ].
-  destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'];
-    [ exact Heq | apply IHHd; exact Hb' ].
 Qed.
 
 (** The marker is never the entry at the context HEAD when that entry is
@@ -964,7 +952,7 @@ Proof.
         clear - HγP Hγβ Hlow; fsetdec.
       - assert (Hγd : γ `in` dom Ξ) by exact Hγ.
         apply binds_In_inv in Hγd. destruct Hγd as [c Hbc].
-        rewrite (@a_decls_binds_flex_mono Ξ γ c Hdec Hbc) in Hbc.
+        rewrite (@a_decls_binds_flex Ξ γ c Hdec Hbc) in Hbc.
         apply binds_app_2; exact Hbc. }
     assert (Hreg0 : above_dom m Θ1 [<=] above_dom m Θ0).
     { intros γ Hγ.
@@ -1538,7 +1526,7 @@ Proof.
     assert (Huq : uniq (Ξ ++ (α0 ~ abind_flex_mono) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact Hwf).
     assert (Hwf0 : {{ ⊢ Θ0 }}a).
-    { eapply a_wf_aenv_app_r with (Θp := Ξ ++ (α0 ~ abind_flex_mono)).
+    { eapply a_wf_aenv_strip_prefix with (Ξ := Ξ ++ (α0 ~ abind_flex_mono)).
       simpl_env. exact Hwf. }
     assert (Hbαm : binds α abind_flex_mono Θmid)
       by (unfold Θmid; unfold binds; simpl; right; left; reflexivity).
@@ -1904,7 +1892,6 @@ Qed.
 (* ===================================================================== *)
 (*  ⭐ THE TYPING-LEVEL SCOPE WALK, and the two discharge corollaries.     *)
 (* ===================================================================== *)
-
 
 (** Opening a well-formed [∀] at ONE fresh atom — the exists-fresh form the
     check [_step] rows need (the rule binds a single [α], not a cofinite

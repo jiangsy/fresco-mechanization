@@ -95,9 +95,9 @@ Proof.
   intros Θ0 κ Θ H; induction H; intros p Hp; simpl in Hp.
   - contradiction.
   - destruct Hp as [<- | Hp];
-      [ simpl; apply a_wf_ptyp_ftv_dom'; assumption | eauto ].
+      [ simpl; apply a_wf_ptyp_ftv_dom; assumption | eauto ].
   - destruct Hp as [<- | Hp];
-      [ simpl; apply a_wf_ptyp_ftv_dom'; assumption | eauto ].
+      [ simpl; apply a_wf_ptyp_ftv_dom; assumption | eauto ].
   - pose proof (IHa_inc p Hp) as Hb.
     repeat rewrite dom_app. clear - Hb; fsetdec.
   - pose proof (IHa_inc p Hp) as Hb.
@@ -1626,7 +1626,7 @@ Proof.
           match goal with
           | Hf : forall α0, α0 `notin` ?L0 -> {{ _ ⨟ _ ⊢ᵣ _ ⊳ _ }}ad |- _ =>
             exists (L0 `union` dom κ); intros α0 Hα0;
-            rewrite msubst_pskl_open_lc_local;
+            rewrite msubst_pskl_open_lc;
               [ | exact Hlcκ | clear - Hα0; fsetdec ];
             rewrite pskl_to_bskl_inh_open;
             apply Hf; clear - Hα0; fsetdec
@@ -1871,7 +1871,7 @@ Proof.
                 {{ _ ⨟ _ ⊢ˢ _ ⊑ᵖ[ ?PS ] _ }}ad |- _ =>
               exists (L0 `union` dom κ), PS; split;
                 [ intros α0 Hα0;
-                  rewrite msubst_pskl_open_lc_local;
+                  rewrite msubst_pskl_open_lc;
                     [ apply Hf; clear - Hα0; fsetdec
                     | exact Hlcκ | clear - Hα0; fsetdec ]
                 | assumption ]
@@ -1900,7 +1900,7 @@ Proof.
                       ltac:(intros α0 HX0;
                             pose proof (Hapart α0 HX0) as Hs0;
                             simpl in Hs0;
-                            rewrite msubst_pskl_open_lc_local;
+                            rewrite msubst_pskl_open_lc;
                               [ | exact Hlcκ | clear - Fr; solve_notin ];
                             pose proof (pskl_shielded_ftv_open_upper
                               (msubst_pskl κ Pib) (pskl_var_f α)) as Hup;
@@ -1954,7 +1954,7 @@ Proof.
             (Ψ0 := Ψi' `union` (remove ε Ψa));
             [ | clear - HΨis Hεa; fsetdec ].
           intros α' HX'.
-          rewrite <- msubst_pskl_open_lc_local;
+          rewrite <- msubst_pskl_open_lc;
             [ | exact HlcκX
             | rewrite dom_app; clear - HX'; solve_notin ].
           assert (Hrun : {{ ((α ~ abind_tvar) ++ Θ) ⨟
@@ -2011,7 +2011,7 @@ Proof.
             (Ψ0 := empty `union` (remove ε Ψa));
             [ | clear - HΨie Hεa; fsetdec ].
           intros α' HX'.
-          rewrite <- msubst_pskl_open_lc_local;
+          rewrite <- msubst_pskl_open_lc;
             [ | exact Hlcκ | clear - HX'; solve_notin ].
           assert (Hp0X' : {{ ((α' ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ˢ
                     (msubst_pskl κ pskl_hole) ⊑ᵖ[ empty ]
@@ -2149,7 +2149,7 @@ Proof.
               (Ψ0 := Ψi `union` (remove ε Ψa));
               [ | clear - Hεa; fsetdec ].
             intros α' HX'.
-            rewrite <- msubst_pskl_open_lc_local;
+            rewrite <- msubst_pskl_open_lc;
               [ | exact HlcκX
               | rewrite dom_app; clear - HX'; solve_notin ].
             assert (Hrun : {{ ((α ~ abind_tvar) ++ Θ) ⨟
@@ -2648,7 +2648,7 @@ Proof.
                 {{ _ ⨟ _ ⊢ˢ _ ⊑ᵖ[ ?PS ] _ }}ad |- _ =>
               exists (L0 `union` dom κ), PS; split;
                 [ intros α0 Hα0;
-                  rewrite msubst_pskl_open_lc_local;
+                  rewrite msubst_pskl_open_lc;
                     [ apply Hf; clear - Hα0; fsetdec
                     | exact Hlcκ | clear - Hα0; fsetdec ]
                 | assumption ]
@@ -2680,7 +2680,7 @@ Proof.
                       ltac:(intros α0 HX0;
                             pose proof (Hapart α0 HX0) as Hs0;
                             simpl in Hs0;
-                            rewrite msubst_pskl_open_lc_local;
+                            rewrite msubst_pskl_open_lc;
                               [ | exact Hlcκ | clear - Fr; solve_notin ];
                             pose proof (pskl_shielded_ftv_open_upper
                               (msubst_pskl κ Pib) (pskl_var_f α)) as Hup;
@@ -2726,7 +2726,7 @@ Proof.
             (Ψ0 := Ψi' `union` Ψa);
             [ | clear - HΨis; fsetdec ].
           intros α' HX'.
-          rewrite <- msubst_pskl_open_lc_local;
+          rewrite <- msubst_pskl_open_lc;
             [ | exact HlcκX
             | rewrite dom_app; clear - HX'; solve_notin ].
           assert (Hrun : {{ ((α ~ abind_tvar) ++ Θ) ⨟

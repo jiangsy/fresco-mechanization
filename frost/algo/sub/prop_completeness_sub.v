@@ -401,30 +401,6 @@ Qed.
 (*  an arrow).                                                            *)
 (* ===================================================================== *)
 
-(** ⇓ only ever rewrites FLEXIBLE variables. *)
-Lemma aenv_msubst_dom_flex : forall Θ α,
-  α `in` dom (aenv_msubst Θ) ->
-  a_flex_tvar Θ α.
-Proof.
-  induction Θ as [ | [β b] Θ' IH ]; intros α Hin; cbn in Hin;
-    [ exfalso; clear - Hin; fsetdec | ].
-  destruct b as [ | A | P | | τ ]; cbn in Hin;
-    try (destruct (IH α Hin) as [Hb | [τ0 Hb]];
-         [ left | right; exists τ0 ]; unfold binds; cbn; right; exact Hb).
-  - (* β ~ flex_mono *)
-    destruct (α == β) as [-> | Hne];
-      [ left; unfold binds; cbn; left; reflexivity | ].
-    assert (Hin' : α `in` dom (aenv_msubst Θ')) by (clear - Hin Hne; fsetdec).
-    destruct (IH α Hin') as [Hb | [τ0 Hb]];
-      [ left | right; exists τ0 ]; unfold binds; cbn; right; exact Hb.
-  - (* β ~ flex_mono_def τ *)
-    destruct (α == β) as [-> | Hne];
-      [ right; exists τ; unfold binds; cbn; left; reflexivity | ].
-    assert (Hin' : α `in` dom (aenv_msubst Θ')) by (clear - Hin Hne; fsetdec).
-    destruct (IH α Hin') as [Hb | [τ0 Hb]];
-      [ left | right; exists τ0 ]; unfold binds; cbn; right; exact Hb.
-Qed.
-
 (** …so a rigid variable is its own ⇓-normal form. *)
 Lemma downarrow_rigid : forall Θ α,
   uniq Θ ->
@@ -434,7 +410,7 @@ Proof.
   intros Θ α Huq Hb. cbn.
   apply msubst_lookup_notin.
   intro Hin.
-  destruct (@aenv_msubst_dom_flex Θ α Hin) as [Hbf | [τ Hbf]];
+  destruct (@aenv_msubst_dom_inv Θ α Hin) as [Hbf | [τ Hbf]];
     pose proof (binds_unique _ _ _ _ _ Hb Hbf Huq) as Hc; discriminate Hc.
 Qed.
 
@@ -523,7 +499,7 @@ Proof.
   assert (HuqΘ : uniq Θ) by (apply a_wf_aenv_uniq; exact Hwfth).
   assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
     by (eapply a_wf_aenv_strip_mid; [ exact HdeclsΞ | exact Hwf ]).
-  assert (HwfΘ0 : {{ ⊢ Θ0 }}a) by (eapply a_wf_aenv_app_r; exact Hwf').
+  assert (HwfΘ0 : {{ ⊢ Θ0 }}a) by (eapply a_wf_aenv_strip_prefix; exact Hwf').
   assert (Hαb0 : a_binds_tvar α Θ0)
     by (destruct Hfα as [h | [τ0 h]];
         [ right; left; exact h | right; right; exists τ0; exact h ]).
@@ -541,7 +517,7 @@ Proof.
   destruct (a_inc_tvar_inv Hincxb) as [Ξv [Θ' [HeqΘ [HsufΞv Hincb]]]].
   assert (HwfΘ' : {{ ⊢ Θ' }}a).
   { rewrite HeqΘ in Hwfth.
-    eapply a_wf_aenv_app_r with (Θp := Ξv ++ (β ~ abind_tvar)).
+    eapply a_wf_aenv_strip_prefix with (Ξ := Ξv ++ (β ~ abind_tvar)).
     simpl_env. simpl_env in Hwfth. exact Hwfth. }
   assert (HeqW : (Ξv ++ (β ~ abind_tvar)) ++ Θ' = Θ)
     by (rewrite HeqΘ; simpl_env; reflexivity).
@@ -598,7 +574,7 @@ Proof.
   { intro Hin.
     assert (HbβΘ : binds β abind_tvar Θ)
       by (eapply a_inc_binds_tvar; [ exact Hinc | exact Hbβ ]).
-    destruct (@aenv_msubst_dom_flex Θ β Hin) as [Hbf | [τ0 Hbf]];
+    destruct (@aenv_msubst_dom_inv Θ β Hin) as [Hbf | [τ0 Hbf]];
       pose proof (binds_unique _ _ _ _ _ HbβΘ Hbf HuqΘ) as Hc; discriminate Hc. }
   assert (Hβdn : β `in` ftvar_in_pskl (⇓ˢ[ Θ ] (msubst_pskl κ P0)))
     by (apply msubst_pskl_ftv_notin_dom; [ exact HβΘdn | exact HβκP0 ]).

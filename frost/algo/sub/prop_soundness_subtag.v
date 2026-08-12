@@ -2450,7 +2450,7 @@ Proof.
     assert (Huq : uniq (Ξ ++ (α0 ~ abind_flex_mono) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact Hwf).
     assert (Hwf0 : {{ ⊢ Θ0 }}a).
-    { eapply a_wf_aenv_app_r with (Θp := Ξ ++ (α0 ~ abind_flex_mono)).
+    { eapply a_wf_aenv_strip_prefix with (Ξ := Ξ ++ (α0 ~ abind_flex_mono)).
       simpl_env. exact Hwf. }
     assert (Hbα : binds α abind_flex_mono Θmid)
       by (unfold Θmid; unfold binds; simpl; right; left; reflexivity).
@@ -2602,7 +2602,7 @@ Proof.
       * (* α = β : the subject reduced to the assigned monotype *)
         eapply ad_pat_sub_fuel__flex_mono.
         { unfold binds. left. reflexivity. }
-        rewrite <- ptyp_to_uskl_syn_eq. exact Hsub'.
+        rewrite <- pskl_to_uskl_ptyp. exact Hsub'.
       * (* α ≠ β : the subject is untouched *)
         exact Hsub'.
     + (* fill : fold the definition back into the source *)
@@ -2718,7 +2718,7 @@ Proof.
     assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_mid; eauto).
     assert (HwfT : {{ ⊢ ((x ~ abind_var_typ Q) ++ Θ0) }}a)
-      by (eapply a_wf_aenv_app_r; exact Hwf).
+      by (eapply a_wf_aenv_strip_prefix; exact Hwf).
     apply a_wf_aenv_var_typ_inv in HwfT.
     destruct HwfT as [_ [HwfQ0 _]].
     assert (HwfQ' : a_wf_ptyp (Ξ ++ Θ0) Q)
@@ -2769,7 +2769,7 @@ Proof.
     assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_mid; eauto).
     assert (HwfT : {{ ⊢ ((x ~ abind_var_skl Q) ++ Θ0) }}a)
-      by (eapply a_wf_aenv_app_r; exact Hwf).
+      by (eapply a_wf_aenv_strip_prefix; exact Hwf).
     apply a_wf_aenv_var_skl_inv in HwfT.
     destruct HwfT as [_ [HscQ0 _]].
     assert (HscQ' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ Q }}a)

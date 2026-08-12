@@ -247,7 +247,7 @@ Qed.
 (** [msubst_pskl] commutes with opening under a locally-closed metasubst.
     (Local copies of [prop_consis_exist]'s lemmas, which cannot be imported
     here — that file imports this one.) *)
-Lemma msubst_pskl_open_rec_lc_local : forall κ,
+Lemma msubst_pskl_open_rec_lc : forall κ,
   msubst_lc κ ->
   forall P P' k,
   msubst_pskl κ (open_pskl_wrt_pskl_rec k P' P)
@@ -261,17 +261,17 @@ Proof.
     apply open_pskl_wrt_pskl_rec_degree_pskl_wrt_pskl.
     apply degree_pskl_wrt_pskl_O.
     apply degree_pskl_wrt_pskl_of_lc_pskl.
-    apply lc_ptyp_to_pskl. apply Hlc.
+    apply ptyp_to_pskl_lc. apply Hlc.
 Qed.
 
-Lemma msubst_pskl_open_lc_local : forall κ P α,
+Lemma msubst_pskl_open_lc : forall κ P α,
   msubst_lc κ ->
   α `notin` dom κ ->
   msubst_pskl κ (open_pskl_wrt_pskl P (pskl_var_f α))
   = open_pskl_wrt_pskl (msubst_pskl κ P) (pskl_var_f α).
 Proof.
   intros κ P α Hlc Hα. unfold open_pskl_wrt_pskl.
-  rewrite (msubst_pskl_open_rec_lc_local Hlc P (pskl_var_f α) 0).
+  rewrite (msubst_pskl_open_rec_lc Hlc P (pskl_var_f α) 0).
   cbn [msubst_pskl]. rewrite msubst_lookup_notin by exact Hα.
   reflexivity.
 Qed.
@@ -320,8 +320,8 @@ Proof.
   - apply a_pskl_tyequiv__all
       with (L := L `union` dom κ1 `union` dom κ2 `union` dom Θ0).
     intros α Hα.
-    rewrite <- (msubst_pskl_open_lc_local P0 Hlc1) by (clear - Hα; fsetdec).
-    rewrite <- (msubst_pskl_open_lc_local P0 Hlc2) by (clear - Hα; fsetdec).
+    rewrite <- (msubst_pskl_open_lc P0 Hlc1) by (clear - Hα; fsetdec).
+    rewrite <- (msubst_pskl_open_lc P0 Hlc2) by (clear - Hα; fsetdec).
     eapply a_pskl_tyequiv_strengthen_tvar_cons with (α := α) (Θ := Θ); [ | reflexivity ].
     apply IH0 with (α := α); [ clear - Hα; fsetdec | | | exact Hlc1 | exact Hlc2 ].
     + apply a_inc_equiv__tvar with (Ξ := (@nil (atom * abind)));
@@ -1277,14 +1277,6 @@ Proof.
   apply a_tyequiv_to_downarrow; [ exact HwfB | exact Hwfaenv ].
 Qed.
 
-Lemma a_wf_aenv_app_r : forall Θp Θs,
-  {{ ⊢ (Θp ++ Θs) }}a -> {{ ⊢ Θs }}a.
-Proof.
-  induction Θp as [ | [a b] Θp' IH ]; intros Θs Hwf; simpl in Hwf.
-  - exact Hwf.
-  - inversion Hwf; subst; apply IH; assumption.
-Qed.
-
 Lemma msubst_compose_downarrow_tyequiv : forall Θ Θpre Θt κ A,
   Θ = Θpre ++ Θt -> uniq Θ -> {{ ⊢ Θ }}a -> {{ ⊢ Θt }}a ->
   msubst_lc κ ->
@@ -1355,7 +1347,7 @@ Proof.
       with (L := dom κ `union` dom Θt `union` dom Θpre
                  `union` dom (msubst_compose (aenv_msubst Θ) κ)).
     intros α Hα.
-    rewrite <- (@msubst_pskl_open_lc_local (msubst_compose (aenv_msubst Θ) κ) P1 α);
+    rewrite <- (@msubst_pskl_open_lc (msubst_compose (aenv_msubst Θ) κ) P1 α);
       [ | intros β; destruct (AtomSetProperties.In_dec β (dom κ)) as [Hyi | Hyn];
           [ rewrite msubst_lookup_compose by (left; exact Hyi);
             apply msubst_ptyp_lc_lc; [ apply aenv_msubst_lc; exact HwfΘ | apply Hlcκ ]
@@ -1363,7 +1355,7 @@ Proof.
               by (rewrite dom_msubst_compose; exact Hyn);
             rewrite (msubst_lookup_notin _ Hync); apply lc_ptyp_var_f ]
         | clear - Hα; fsetdec ].
-    rewrite <- (@msubst_pskl_open_lc_local κ P1 α); [ | exact Hlcκ | clear - Hα; fsetdec ].
+    rewrite <- (@msubst_pskl_open_lc κ P1 α); [ | exact Hlcκ | clear - Hα; fsetdec ].
     apply (H0 α Θpre Θt HeqΘ Huq Hwft Himg).
   - apply a_pskl_tyequiv__refl. constructor.
   - apply a_pskl_tyequiv__tophole. apply (IHHlc Θpre Θt HeqΘ Huq Hwft Himg).
@@ -1391,7 +1383,7 @@ Proof.
   - (* flex α τ : target Θ' unchanged, Θpre unchanged *)
     simpl.
     inversion Hwf0 as [ | α0 Θ0x Hnd0 Hwf0' | | | | ]; subst.
-    assert (HwfΘ' : {{ ⊢ Θ' }}a) by (eapply a_wf_aenv_app_r; exact HwfW).
+    assert (HwfΘ' : {{ ⊢ Θ' }}a) by (eapply a_wf_aenv_strip_prefix; exact HwfW).
     assert (Hdd : ⇓ᵗ[ Θpre ++ Θ' ] τ = ⇓ᵗ[ Θ' ] τ)
       by (apply downarrow_app_agree_ptyp; [ exact Huq | apply a_wf_ptyp_ftv_dom; exact H ]).
     destruct (IHHinc Θpre HwfW Huq Hwf0') as [IHa IHe].
@@ -1406,7 +1398,7 @@ Proof.
   - (* flex_def α ≔ τ : image τ', premise τ'≡msubst κ τ *)
     simpl.
     inversion Hwf0 as [ | | α0 τ0 Θ0x Hnd0 Hwpτ0 Hmτ0 Hwf0' | | | ]; subst.
-    assert (HwfΘ' : {{ ⊢ Θ' }}a) by (eapply a_wf_aenv_app_r; exact HwfW).
+    assert (HwfΘ' : {{ ⊢ Θ' }}a) by (eapply a_wf_aenv_strip_prefix; exact HwfW).
     assert (Hdd : ⇓ᵗ[ Θpre ++ Θ' ] τ' = ⇓ᵗ[ Θ' ] τ')
       by (apply downarrow_app_agree_ptyp; [ exact Huq | apply a_wf_ptyp_ftv_dom; exact H ]).
     assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hinc).
@@ -1435,7 +1427,7 @@ Proof.
   - (* var A : κ unchanged, target Ξ++(x~var A')++Θ' *)
     inversion Hwf0 as [ | | | | x0 A0 Θ0x Hnd0 HwpA Hwf0' | ]; subst.
     assert (HwfΘ' : {{ ⊢ Θ' }}a).
-    { eapply a_wf_aenv_app_r with (Θp := Θpre ++ Ξ ++ (x ~ abind_var_typ A')).
+    { eapply a_wf_aenv_strip_prefix with (Ξ := Θpre ++ Ξ ++ (x ~ abind_var_typ A')).
       simpl_env. simpl_env in HwfW. exact HwfW. }
     assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hinc).
     assert (HW' : {{ ⊢ ((Θpre ++ Ξ ++ x ~ abind_var_typ A') ++ Θ') }}a)
@@ -1465,7 +1457,7 @@ Proof.
   - (* var_skl P : κ unchanged, target Ξ++(x~var_skl P')++Θ' *)
     inversion Hwf0 as [ | | | x0 P0 Θ0x Hnd0 HwpP Hwf0' | | ]; subst.
     assert (HwfΘ' : {{ ⊢ Θ' }}a).
-    { eapply a_wf_aenv_app_r with (Θp := Θpre ++ Ξ ++ (x ~ abind_var_skl P')).
+    { eapply a_wf_aenv_strip_prefix with (Ξ := Θpre ++ Ξ ++ (x ~ abind_var_skl P')).
       simpl_env. simpl_env in HwfW. exact HwfW. }
     assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hinc).
     assert (HW' : {{ ⊢ ((Θpre ++ Ξ ++ x ~ abind_var_skl P') ++ Θ') }}a)
@@ -1794,7 +1786,6 @@ Proof.
     + clear - Hdσ Hasσ HaΞ. simpl_env in *. fsetdec.
 Qed.
 
-
 (* ===================================================================== *)
 (*  ⭐ THE κ-EXTENSION PACKAGE.                                            *)
 (*                                                                        *)
@@ -1830,26 +1821,6 @@ Lemma all_flex_mono_app : forall A B,
   all_flex_mono A -> all_flex_mono B -> all_flex_mono (A ++ B).
 Proof. intros A B HA HB. apply Forall_app; split; assumption. Qed.
 
-(** [msubst_pskl] only reads its argument's FREE variables, so entries keyed
-    outside them are invisible.  The arrow case needs exactly this: the two
-    branches' extensions are appended in one order but each branch's IH was
-    proved against its own extension alone. *)
-Lemma msubst_pskl_lookup_congr_ftv : forall κ σ P,
-  (forall α, α `in` ftvar_in_pskl P ->
-     msubst_lookup κ α = msubst_lookup σ α) ->
-  msubst_pskl κ P = msubst_pskl σ P.
-Proof.
-  intros κ σ P; revert κ σ;
-    induction P as [ | n | α | P1 IHP1 P2 IHP2 | P0 IHP0 | | P0 IHP0 ];
-    intros κ σ Heq; cbn in *; try reflexivity.
-  - rewrite Heq by (clear; fsetdec); reflexivity.
-  - rewrite (IHP1 κ σ), (IHP2 κ σ);
-      [ reflexivity | intros α Hα; apply Heq; clear - Hα; fsetdec
-      | intros α Hα; apply Heq; clear - Hα; fsetdec ].
-  - rewrite (IHP0 κ σ); [ reflexivity | exact Heq ].
-  - rewrite (IHP0 κ σ); [ reflexivity | exact Heq ].
-Qed.
-
 Lemma msubst_lookup_mid_skip : forall κa κm κb α,
   α `notin` dom κm ->
   msubst_lookup (κa ++ κm ++ κb) α = msubst_lookup (κa ++ κb) α.
@@ -1868,7 +1839,7 @@ Lemma msubst_pskl_mid_skip : forall κa κm κb P,
   msubst_pskl (κa ++ κm ++ κb) P = msubst_pskl (κa ++ κb) P.
 Proof.
   intros κa κm κb P Hdisj.
-  apply msubst_pskl_lookup_congr_ftv; intros α Hα.
+  apply msubst_pskl_agree; intros α Hα.
   apply msubst_lookup_mid_skip.
   intro Hc. apply (Hdisj α Hc). exact Hα.
 Qed.

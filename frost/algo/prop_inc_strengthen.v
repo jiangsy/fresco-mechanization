@@ -367,22 +367,6 @@ Qed.
 (*  ftv of a bound entry lives in the context's domain.                    *)
 (* ===================================================================== *)
 
-Lemma a_wf_ptyp_ftv_dom' : forall Θ A,
-  a_wf_ptyp Θ A -> ftvar_in_ptyp A [<=] dom Θ.
-Proof.
-  intros Θ A H α Hα.
-  apply (a_wf_ptyp_ftv_tvarish H) in Hα.
-  destruct Hα as [Hb | [Hb | [t Hb]]]; apply binds_In in Hb; exact Hb.
-Qed.
-
-Lemma a_scope_pskl_ftv_dom' : forall Θ P,
-  a_scope_pskl Θ P -> ftvar_in_pskl P [<=] dom Θ.
-Proof.
-  intros Θ P H α Hα.
-  apply (a_scope_pskl_ftv_tvarish H) in Hα.
-  destruct Hα as [Hb | [Hb | [t Hb]]]; apply binds_In in Hb; exact Hb.
-Qed.
-
 (** In a wf context, a term binding's payload draws its variables from the
     context's domain.  (Applied at a TAIL context to separate a fresh head.) *)
 Lemma a_wf_aenv_binds_var_typ_ftv : forall Θ x A,
@@ -395,7 +379,7 @@ Proof.
     try solve [ pose proof (IHHwf Hb') as Hs; simpl; clear - Hs; fsetdec ].
   (* var_typ head : A is wf in the tail *)
   injection Heq2 as Heq2. subst.
-  pose proof (a_wf_ptyp_ftv_dom' H0) as Hs. simpl. clear - Hs. fsetdec.
+  pose proof (a_wf_ptyp_ftv_dom H0) as Hs. simpl. clear - Hs. fsetdec.
 Qed.
 
 (** ⭐ A well-formed context's term entry is DISCIPLINED-well-formed in the
@@ -432,7 +416,7 @@ Proof.
     try solve [ pose proof (IHHwf Hb') as Hs; simpl; clear - Hs; fsetdec ].
   (* var_skl head : P is wf in the tail *)
   injection Heq2 as Heq2. subst.
-  pose proof (a_scope_pskl_ftv_dom' (a_scope_pskl_of_wf H0)) as Hs. simpl. clear - Hs. fsetdec.
+  pose proof (a_scope_pskl_ftv_dom (a_scope_pskl_of_wf H0)) as Hs. simpl. clear - Hs. fsetdec.
 Qed.
 
 (* ===================================================================== *)
@@ -471,5 +455,4 @@ Qed.
    binder payload is now only ≡ᵗ/≡ˢ-related to the substituted source
    payload, and the ζ-override machinery they supported is gone (see
    algo/cex/cex_assign_optimal_syn_middle.v for why it had to go). *)
-
 

@@ -484,7 +484,7 @@ Proof.
     assert (Hmd : mono_ptyp τ)
       by (eapply a_wf_aenv_binds_def_mono; [ exact HwfΘ | eassumption ]).
     destruct (IHad_pat_consis HwfΘ
-                ltac:(apply is_tskl_mono_paint; exact Hmd) Hmi)
+                ltac:(apply mono_ptyp_to_uskl_syn_is_tskl; exact Hmd) Hmi)
       as (HΨ & _).
     split; [ exact HΨ | ].
     exists (ptyp_var_f α); split; [ apply mono_ptyp__var | reflexivity ].
@@ -1706,7 +1706,7 @@ Lemma consis_subject_ftv_split_bound : forall Ψ Θ R Q Θtv Θr,
 Proof.
   intros Ψ Θ R Q Θtv Θr H HeqΘ Htvs Hwf.
   assert (HwfΘr : {{ ⊢ Θr }}a)
-    by (apply a_wf_aenv_app_r with (Θp := Θtv);
+    by (apply a_wf_aenv_strip_prefix with (Ξ := Θtv);
         rewrite <- HeqΘ; exact Hwf).
   intros x Hx.
   destruct (ad_pat_consis_ftv_bound H Hx) as [Hin | (α & τ & Hb & Hor)].
@@ -1810,9 +1810,9 @@ Proof.
     try (f_equal; auto; fail).
   (* var_f *)
   destruct (α == α') as [-> | Hne].
-    + rewrite (msubst_lookup_notin_dom _ Hα).
+    + rewrite (msubst_lookup_notin _ Hα).
       simpl.
-      rewrite (msubst_lookup_notin_dom _ Hβ).
+      rewrite (msubst_lookup_notin _ Hβ).
       default_simp.
     + assert (Hfr : α' `notin`
                 ftvar_in_pskl (ptyp_to_pskl (msubst_lookup κ α))).

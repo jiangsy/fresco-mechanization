@@ -1197,11 +1197,6 @@ Qed.
 (*  T4-K2 — two coercion composites                                       *)
 (* ===================================================================== *)
 
-(** A [btyp]'s colour erasure is the embedding of its type erasure. *)
-Lemma bskl_to_pskl_btyp : forall B,
-  bskl_to_pskl (btyp_to_bskl B) = ptyp_to_pskl (btyp_to_ptyp B).
-Proof. induction B; simpl; f_equal; auto. Qed.
-
 (** The inherited painting of an embedded type is the [bskl] of its
     all-inh colouring. *)
 Lemma pskl_to_bskl_inh_ptyp : forall A,

@@ -68,7 +68,7 @@ Require Import src.frost.algo.sub.look.prop_solve_ext.
 Require Import src.frost.algo.sub.look.prop_flex_apart.
 Require Import src.frost.algo.sub.look.prop_eq_var.
 Require Import src.frost.algo.sub.look.prop_eq_cstr.  (* the ∀-binder kit,
-    [mono_ptyp_to_uskl_syn_tskl], [ftag_in_uskl_msubst_uskl_syn], …
+    [mono_ptyp_to_uskl_syn_is_tskl], [ftag_in_uskl_msubst_uskl_syn], …
     (⚙ [ftag_ptyp_to_uskl_syn] moved to algo/prop_pat_sub.v 2026-08-11 — it
     was in this file AND in prop_consis_precise.v, under two names) *)
 
@@ -2912,7 +2912,7 @@ Proof.
       assert (Hrho' : uskl_rho NM Θ Δρ Ψρ
                         (ptyp_to_uskl_syn τ) (ptyp_to_uskl_syn τ))
         by (apply urho__refl;
-            [ apply is_tskl_lc; apply mono_ptyp_to_uskl_syn_tskl; exact Hmono
+            [ apply is_tskl_lc; apply mono_ptyp_to_uskl_syn_is_tskl; exact Hmono
             | exact HΨρe ]).
       edestruct (IHHsub Θ Θ0 κ Δ Δρ Ψρ Ψt Ψi Ψa (ptyp_to_uskl_syn τ) Pi P0
                    HwfΘ HwfΘ0 Hmon Hnr Hκw HΔρw

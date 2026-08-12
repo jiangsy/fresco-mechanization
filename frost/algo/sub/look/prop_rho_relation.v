@@ -780,7 +780,7 @@ Proof.
     apply IHad_pat_consis; [ assumption | ].
     unfold ptyp_to_bskl_syn.
     apply is_sskl_pskl_to_bskl_syn.
-    apply lc_ptyp_to_pskl.
+    apply ptyp_to_pskl_lc.
     eapply a_wf_ptyp_lc.
     eapply a_wf_aenv_binds_def_wf; eassumption.
 Qed.
@@ -1855,18 +1855,6 @@ Qed.
 
 (* ---- a_inc / refinement facts for the P0 = variable subcases ---- *)
 
-(** The metasubstitution's domain is exactly the source's flexibles, so a
-    variable outside it looks up to itself, and a RIGID source variable is
-    fixed by [msubst]. *)
-Lemma msubst_lookup_notin_dom : forall κ α,
-  α `notin` dom κ ->
-  msubst_lookup κ α = ptyp_var_f α.
-Proof.
-  induction κ as [ | [β τ] κ' IH ]; intros α Hni; simpl in *; auto.
-  destruct (α == β) as [->|Hne]; [ exfalso; auto | ].
-  apply IH. auto.
-Qed.
-
 Lemma msubst_pskl_tvar_id : forall Θ0 κ Θ α,
   {{ ⊢ Θ0 }}a ->
   κ ∷ Θ0 ⊑ Θ ->
@@ -1874,7 +1862,7 @@ Lemma msubst_pskl_tvar_id : forall Θ0 κ Θ α,
   msubst_pskl κ (pskl_var_f α) = pskl_var_f α.
 Proof.
   intros Θ0 κ Θ α Hwf Hinc Hb.
-  simpl. rewrite msubst_lookup_notin_dom; [ reflexivity | ].
+  simpl. rewrite msubst_lookup_notin; [ reflexivity | ].
   intros Hin. pose proof (a_inc_dom_flex Hinc Hin) as Hfl.
   pose proof (a_wf_aenv_uniq Hwf) as Huniq.
   destruct Hfl as [Hbf | [τ Hbf]];

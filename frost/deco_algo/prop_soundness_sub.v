@@ -1544,56 +1544,6 @@ Qed.
     [a_solvetag_sub_eq_rename_var] would move it inside ψ as well, so it
     cannot manufacture SSub-ForallR's cofinite family from the one instance
     the rule provides; this one can. *)
-Lemma a_solvetag_sub_eq_rename_target :
-  (forall ψ M P Ψ, {{ ψ ≼[ M ] P ⤳ Ψ }}da ->
-     forall α β0, {{ ψ ≼[ M ] (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}da) /\
-  (forall ψ P Ψ, {{ ψ ∼ P ⤳ Ψ }}da ->
-     forall α β0, {{ ψ ∼ (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}da).
-Proof.
-  apply (a_solvetag_sub_eq_mutind
-           (fun ψ M P Ψ _ => forall α β0,
-              {{ ψ ≼[ M ] (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}da)
-           (fun ψ P Ψ _ => forall α β0,
-              {{ ψ ∼ (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}da));
-    intros; simpl.
-  - (* SSub-Var *) apply a_solvetag_sub__var; assumption.
-  - (* SSub-ForallL : only ψ opens, the target is untouched *)
-    apply a_solvetag_sub__forall_l with (L := L); intros β Hβ.
-    match goal with IH : forall b, _ |- _ => apply IH; clear - Hβ; fsetdec end.
-  - (* SSub-UnivGhostLG *) apply a_solvetag_sub__univ_ghost_lg; auto.
-  - (* SSub-Vacuous *) apply a_solvetag_sub__vacuous; assumption.
-  - (* SSub-Check *)
-    apply a_solvetag_sub__check;
-      [ apply pskl_ghost_free_subst_var; assumption
-      | assumption | apply guarded_pskl_subst_var; assumption | auto ].
-  - (* SSub-ForallR *)
-    apply a_solvetag_sub__forall_r with (L := L `union` singleton α);
-      [ apply pskl_ghost_free_subst_var; assumption | ]; intros β Hβ.
-    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
-      [ | clear - Hβ; fsetdec | apply lc_pskl_var_f ].
-    match goal with IH : forall b, _ |- _ => apply IH; clear - Hβ; fsetdec end.
-  - (* SSub-Arrow *) eapply a_solvetag_sub__arrow; [ auto | auto | eassumption ].
-  - (* SEq-Unit *) apply a_solvetag_eq__unit; assumption.
-  - (* SEq-Var *) apply a_solvetag_eq__var; assumption.
-  - (* SEq-Vacuous *) apply a_solvetag_eq__vacuous; assumption.
-  - (* SEq-Arrow *) eapply a_solvetag_eq__arrow; [ auto | auto | eassumption ].
-  - (* SEq-ForallInh *)
-    eapply a_solvetag_eq__forall_inh with (L := L `union` singleton α);
-      [ intros β Hβ;
-        rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
-          [ | clear - Hβ; fsetdec | apply lc_pskl_var_f ];
-        match goal with IH : forall b, _ |- _ => apply IH; clear - Hβ; fsetdec end
-      | eassumption ].
-  - (* SEq-UnivGhostG *) apply a_solvetag_eq__univ_ghostg; auto.
-  - (* SEq-ForallSyn : only ψ opens *)
-    apply a_solvetag_eq__forall_syn with (L := L); intros β Hβ.
-    match goal with IH : forall b, _ |- _ =>
-      specialize (IH β ltac:(clear - Hβ; solve_notin_auto) α β0); simpl in IH; exact IH end.
-  - (* SEq-UnivGhostR *)
-    apply a_solvetag_eq__univ_ghost_r; [ assumption | auto ].
-  - (* SEq-FlexR : the target IS a variable — either way it stays one *)
-    destruct_if; apply a_solvetag_eq__flex_r; assumption.
-Qed.
 
 (** A tag reading witnesses that its subject is a decorated skeleton. *)
 Lemma d_tags_skl_is_tskl : forall Ψ ψ, d_tags_skl Ψ ψ -> is_tskl ψ.
@@ -3013,7 +2963,7 @@ Proof.
       intros β Hβ.
       rewrite (subst_pskl_in_pskl_intro b B (pskl_var_f β)
                  ltac:(clear - Hfr; solve_notin_auto)).
-      exact ((proj1 a_solvetag_sub_eq_rename_target) _ _ _ _ Hst0 b β).
+      exact ((proj1 a_solvetag_sub_eq_target_rename) _ _ _ _ Hst0 b β).
     + split; [ exact Hd0 | exact Hu0 ].
   - (* arrow : domain via eq_step, codomain via sub IH *)
     inversion Hdec; subst.
@@ -3884,7 +3834,7 @@ Proof.
     assert (Huq : uniq (Ξw ++ (α0 ~ abind_flex_mono) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact HwfΞ).
     assert (Hwf0 : {{ ⊢ Θ0 }}a).
-    { eapply a_wf_aenv_app_r with (Θp := Ξw ++ (α0 ~ abind_flex_mono)).
+    { eapply a_wf_aenv_strip_prefix with (Ξ := Ξw ++ (α0 ~ abind_flex_mono)).
       simpl_env. exact HwfΞ. }
     assert (Hbα : binds α abind_flex_mono Θmid)
       by (unfold Θmid; unfold binds; simpl; right; left; reflexivity).

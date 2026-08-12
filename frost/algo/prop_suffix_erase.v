@@ -376,14 +376,6 @@ Proof.
       [ reflexivity | exact Hs ].
 Qed.
 
-Lemma guarded_pskl_mono : forall τ,
-  mono_ptyp τ -> guarded_pskl (ptyp_to_pskl τ).
-Proof.
-  intros τ Hm; destruct Hm; simpl; auto with frost.
-  apply guarded_pskl__arrow; apply lc_ptyp_to_pskl; apply mono_ptyp_lc;
-    assumption.
-Qed.
-
 Lemma a_wf_pskl_subst_mid : forall Θ Δ P,
   {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
   forall τ α0 (b : abind) Θa Θ0,
@@ -406,15 +398,15 @@ Proof.
   - apply a_wf_pskl__all with (L := L `union` singleton α0). intros β Hβ.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
       [ | clear - Hβ; fsetdec
-      | apply lc_ptyp_to_pskl; eapply solves_flex_lc; eassumption ].
+      | apply ptyp_to_pskl_lc; eapply solves_flex_lc; eassumption ].
     apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τ α0 b Θa Θ0);
       [ reflexivity | exact Hs | clear - Hα0 Hβ; fsetdec ].
   - apply a_wf_pskl__hole.
   - apply a_wf_pskl__tophole.
     + apply guarded_pskl_subst;
         [ exact H
-        | apply guarded_pskl_mono; eapply solves_flex_mono; eassumption
-        | apply lc_ptyp_to_pskl; eapply solves_flex_lc; eassumption ].
+        | apply mono_ptyp_to_pskl_guarded; eapply solves_flex_mono; eassumption
+        | apply ptyp_to_pskl_lc; eapply solves_flex_lc; eassumption ].
     + match goal with
       | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
           apply (IH τ α0 b Θa Θ0); [ reflexivity | exact Hs | clear; fsetdec ]
@@ -638,7 +630,7 @@ Proof.
     apply ad_refine_pskl__all with (L := L `union` singleton α0). intros β Hβ.
     repeat rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
       try solve [ clear - Hβ; fsetdec
-                | apply lc_ptyp_to_pskl; eapply solves_flex_lc; eassumption ].
+                | apply ptyp_to_pskl_lc; eapply solves_flex_lc; eassumption ].
     apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b Θa Θ0);
       [ reflexivity | exact Hs | exact Hu | clear - Hα0 Hβ; fsetdec ].
   - (* hole : the fill is a plain wf skeleton — no painting rewrite *)
@@ -652,15 +644,15 @@ Proof.
     intros β Hβ.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
       [ | clear - Hβ; fsetdec
-        | apply lc_ptyp_to_pskl; eapply solves_flex_lc; eassumption ].
+        | apply ptyp_to_pskl_lc; eapply solves_flex_lc; eassumption ].
     apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ | exact Hα0 ].
   - (* tophole_keep *)
     apply ad_refine_pskl__tophole_keep;
       [ apply guarded_pskl_subst;
           [ exact H
-          | apply guarded_pskl_mono; eapply solves_flex_mono; eassumption
-          | apply lc_ptyp_to_pskl; eapply solves_flex_lc; eassumption ]
+          | apply mono_ptyp_to_pskl_guarded; eapply solves_flex_mono; eassumption
+          | apply ptyp_to_pskl_lc; eapply solves_flex_lc; eassumption ]
       | eauto ].
   - (* flex_l *)
     destruct_if as [Heqα | Hne].
@@ -730,7 +722,7 @@ Lemma ad_pat_consis_mono_refl_vis : forall Ψ Θ τ,
   {{ Ψ ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn τ) ∼ (ptyp_to_bskl_syn τ) }}ad.
 Proof.
   intros Ψ Θ τ HΨ Hm Hw.
-  eapply consis_psi_cong_local;
+  eapply ad_pat_consis_psi_cong;
     [ apply consis_mono_refl;
       [ exact Hm | intros β Hβ; eapply a_wf_ptyp_ftv_tvarish; eassumption ]
     | clear - HΨ; fsetdec ].
@@ -1014,7 +1006,6 @@ Qed.
 (*  §8  All-in-one subtyping, in the SUBSTITUTED-CONTEXT form            *)
 (* ===================================================================== *)
 
-
 (** Strip an interior entry by substituting a monotype for it, fuel carried
     UNCHANGED; the four leaf rows' refinement datum travels by
     [ad_refine_pskl_subst_mid], re-shaped by [uskl_to_pskl_subst_mono] /
@@ -1047,8 +1038,8 @@ Proof.
     apply ad_pat_sub_fuel__check;
       [ apply guarded_uskl_subst_mono; assumption
       | apply guarded_pskl_subst;
-          [ assumption | apply guarded_pskl_mono; assumption
-          | apply lc_ptyp_to_pskl; apply mono_ptyp_lc; assumption ]
+          [ assumption | apply mono_ptyp_to_pskl_guarded; assumption
+          | apply ptyp_to_pskl_lc; apply mono_ptyp_lc; assumption ]
       | rewrite <- pskl_to_bskl_inh_subst_mono; [ | assumption ];
         eapply ad_pat_consis_subst_mid; [ eassumption | reflexivity | .. ];
         eassumption
@@ -1190,8 +1181,8 @@ Proof.
     apply ad_pat_sub__check;
       [ apply guarded_uskl_subst_mono; assumption
       | apply guarded_pskl_subst;
-          [ assumption | apply guarded_pskl_mono; assumption
-          | apply lc_ptyp_to_pskl; apply mono_ptyp_lc; assumption ]
+          [ assumption | apply mono_ptyp_to_pskl_guarded; assumption
+          | apply ptyp_to_pskl_lc; apply mono_ptyp_lc; assumption ]
       | rewrite <- pskl_to_bskl_inh_subst_mono; [ | assumption ];
         eapply ad_pat_consis_subst_mid; [ eassumption | reflexivity | .. ];
         eassumption

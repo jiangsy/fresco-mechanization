@@ -632,7 +632,7 @@ Proof.
     apply open_pskl_wrt_pskl_rec_degree_pskl_wrt_pskl.
     apply degree_pskl_wrt_pskl_O.
     apply degree_pskl_wrt_pskl_of_lc_pskl.
-    apply lc_ptyp_to_pskl.
+    apply ptyp_to_pskl_lc.
     eapply a_inc_lookup_lc; exact Hinc.
 Qed.
 
@@ -654,7 +654,7 @@ Lemma msubst_pskl_lc : forall Θ1 ζ Θ P,
   lc_pskl (msubst_pskl ζ P).
 Proof.
   intros Θ1 ζ Θ P Hinc Hlc; induction Hlc; simpl; try solve [ constructor; auto ].
-  - apply lc_ptyp_to_pskl. eapply a_inc_lookup_lc; eauto.
+  - apply ptyp_to_pskl_lc. eapply a_inc_lookup_lc; eauto.
   - (* ∀ : pick a variable outside ζ's domain and push the substitution in *)
     pick fresh α for (dom ζ).
     apply lc_pskl_all_syn_exists with (α1 := α).

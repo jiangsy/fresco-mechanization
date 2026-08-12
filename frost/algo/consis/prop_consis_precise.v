@@ -238,13 +238,6 @@ Proof.
     end.
 Qed.
 
-(** Clean [a_wf_pskl] inversions (name-agnostic). *)
-Lemma a_wf_pskl_all_inv : forall Θ Δ P,
-  {{ Θ ⨟ Δ ⊢ₚₛ (pskl_all_syn P) }}a ->
-  exists L, forall α, α `notin` L ->
-    {{ Θ ⨟ (add α Δ) ⊢ₚₛ (open_pskl_wrt_pskl P (pskl_var_f α)) }}a.
-Proof. intros Θ Δ P H. inversion H; subst. eauto. Qed.
-
 (* ===================================================================== *)
 (*  P5b-ii — precision-substitution, foundational crux.                    *)
 (*  The paper's no-type-mismatch step is, on the consistency premises,       *)

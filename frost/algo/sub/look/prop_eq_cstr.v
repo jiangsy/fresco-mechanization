@@ -955,15 +955,6 @@ Qed.
 (*  — the paper's "these judgements hold without β".                      *)
 (* ===================================================================== *)
 
-Lemma all_flex_mono_a_decls : forall Ξ, all_flex_mono Ξ -> a_decls Ξ.
-Proof.
-  induction Ξ as [ | [x b] Ξ' IH ]; intros H.
-  - apply a_decls__nil.
-  - inversion H as [ | ph pt Hb H' ]; subst; simpl in Hb; subst b.
-    change ((x, abind_flex_mono) :: Ξ') with ((x ~ abind_flex_mono) ++ Ξ').
-    apply a_decls__cons; apply IH; exact H'.
-Qed.
-
 (* (i) a MONOTYPE well-formed under a rigid binder it does not mention is
    well-formed without it. *)
 Lemma a_wf_ptyp_mono_strip_tvar : forall β Θ τ,
@@ -1260,14 +1251,6 @@ Proof.
     clear - Hf IHa_wf_aenv; fsetdec.
 Qed.
 
-Lemma mono_ptyp_to_uskl_syn_tskl : forall τ,
-  mono_ptyp τ -> is_tskl (ptyp_to_uskl_syn τ).
-Proof.
-  induction 1; simpl;
-    [ apply is_tskl__unit | apply is_tskl__var
-    | apply is_tskl__arrow; assumption ].
-Qed.
-
 (* (a) a DECORATED subject's counterpart only mentions the subject's own
    variables and the context's definitions (the [__hole] rule, which invents
    an arbitrary target, needs a PLAIN hole — [is_tskl] has only ◈). *)
@@ -1314,7 +1297,7 @@ Proof.
     clear - IHad_pat_consis; fsetdec.
   - (* flex_l : the subject is a defined variable — recurse on its monotype *)
     assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
-    specialize (IHad_pat_consis HwfΘ (mono_ptyp_to_uskl_syn_tskl Hmτ)).
+    specialize (IHad_pat_consis HwfΘ (mono_ptyp_to_uskl_syn_is_tskl Hmτ)).
     rewrite ftvar_in_uskl_ptyp_to_uskl_syn in IHad_pat_consis.
     pose proof (@def_ftv_binds _ _ _ H) as Hdb.
     clear - IHad_pat_consis Hdb; fsetdec.
@@ -1496,20 +1479,6 @@ Qed.
    the ρ-images' scope — at [Θ] that bound would readmit the very binder being
    stripped. *)
 
-(** Precision RE-FOLDS along a definition chain: the chain is a sequence of
-    [ad_ppre__flex_r] steps, so a precision into the chain's END is a precision
-    into its START.  [ad_ppre_tophole_subject_chain_inv] unfolds; this folds
-    back, and the ∀◇-subject row of the flexible-P0 case needs both. *)
-Lemma ad_ppre_def_chain_fold : forall Θ τ τe,
-  a_def_chain Θ τ τe ->
-  forall Δ Ψ P, {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] (ptyp_to_uskl_syn τe) }}ad ->
-  {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] (ptyp_to_uskl_syn τ) }}ad.
-Proof.
-  intros Θ τ τe H; induction H; intros Δ Ψ P Hp; [ exact Hp | ].
-  cbn [ptyp_to_uskl_syn].
-  eapply ad_ppre__flex_r; [ eassumption | apply IHa_def_chain; exact Hp ].
-Qed.
-
 (* ⛔⛔ RESUME HERE (2026-08-04) — P6-Cs UNDER THE SolE-FlexR REPAIR.
 
    The STATEMENT below is converted and final; what is left is the PROOF.
@@ -1555,7 +1524,7 @@ Qed.
        peel always lands on a SE-FlexR/SE-Var node.
      * the ∀◇ peel needs the precision unfolded and re-folded along a
        DEFINITION CHAIN: [ad_ppre_tophole_subject_chain_inv] one way,
-       [ad_ppre_def_chain_fold] (new, just above this comment) the other.
+       [ad_ppre_chain_fold] (new, just above this comment) the other.
 
    ── rows left, hardest first ─────────────────────────────────────────────
    (a) ⛔ THE ARROW ROW.  Its LEFT IH is converted; [coqc] stops on the RIGHT
@@ -1812,7 +1781,7 @@ Proof.
   destruct (pskl_eq_var_dec P α) as [-> | HPnα].
   { (* P = α *)
     assert (Hlk : msubst_lookup κ α = ptyp_var_f α).
-    { apply msubst_lookup_notin_dom.
+    { apply msubst_lookup_notin.
       intro Hc. apply (a_inc_dom_sub Hκ) in Hc. contradiction. }
     (* ⌊R'⌋ = P = var α ⇒ R' = uskl_var α *)
     assert (HR : R' = uskl_var_f α).
@@ -2344,7 +2313,7 @@ Proof.
               split; [ exact HFg | ].
               rewrite Heqψ.
               eapply ad_partial_precise_psi_cong;
-                [ eapply ad_ppre_def_chain_fold; [ exact Hchain | exact Hqg ]
+                [ eapply ad_ppre_chain_fold; [ exact Hchain | exact Hqg ]
                 | clear - HΨae; fsetdec ].
             + (* var α0 : SE-Var *)
               exists nil, (pskl_var_f α0), (@nil (atom * ptyp)).
@@ -2364,7 +2333,7 @@ Proof.
                     [ contradiction | reflexivity ]).
               rewrite Heqψ.
               eapply ad_partial_precise_psi_cong;
-                [ eapply ad_ppre_def_chain_fold; [ exact Hchain | exact Hpree ]
+                [ eapply ad_ppre_chain_fold; [ exact Hchain | exact Hpree ]
                 | clear - HΨae; fsetdec ].
             + (* arrow *)
               destruct (WIT (pskl_arrow Pit1 Pit2) τe HwfPit Hα1Pit Hmτe
@@ -2384,7 +2353,7 @@ Proof.
               split; [ exact HFg | ].
               rewrite Heqψ.
               eapply ad_partial_precise_psi_cong;
-                [ eapply ad_ppre_def_chain_fold; [ exact Hchain | exact Hqg ]
+                [ eapply ad_ppre_chain_fold; [ exact Hchain | exact Hqg ]
                 | clear - HΨae; fsetdec ]. }
         destruct HPa as (Ξs & Pa & κs & Hsolve_eq & Hfms & Hus & Hks & Hfrs
                          & HFs & Hprec).
@@ -3268,7 +3237,7 @@ Proof.
              | exact HβPa ].
         -- (* a_wf_aenv *)
            eapply a_wf_aenv_strip_mid;
-             [ apply all_flex_mono_a_decls; exact Hfmc | exact HwfΞ ].
+             [ apply all_flex_mono_decls; exact Hfmc | exact HwfΞ ].
         -- (* α ∉ dom Ξc *) exact HαΞ.
         -- (* keys *) exact Hmapfst.
         -- (* κc images *) exact Himg.
@@ -3541,7 +3510,7 @@ Proof.
                 | exact HβPa ].
            ++ (* a_wf_aenv *)
               eapply a_wf_aenv_strip_mid;
-                [ apply all_flex_mono_a_decls; exact Hfmc | exact HwfΞ ].
+                [ apply all_flex_mono_decls; exact Hfmc | exact HwfΞ ].
            ++ (* α ∉ dom Ξc *) exact HαΞ.
            ++ (* keys *) exact Hmapfst.
            ++ (* κc images *) exact Himg.
@@ -3873,7 +3842,7 @@ Proof.
              | exact HβPa ].
         -- (* a_wf_aenv *)
            eapply a_wf_aenv_strip_mid;
-             [ apply all_flex_mono_a_decls; exact Hfmc | exact HwfΞ ].
+             [ apply all_flex_mono_decls; exact Hfmc | exact HwfΞ ].
         -- (* α ∉ dom Ξc *) exact HαΞ.
         -- (* keys *) exact Hmapfst.
         -- (* κc images *) exact Himg.
@@ -4176,7 +4145,7 @@ Proof.
                 | exact HβPa ].
            ++ (* a_wf_aenv *)
               eapply a_wf_aenv_strip_mid;
-                [ apply all_flex_mono_a_decls; exact Hfmc | exact HwfΞ ].
+                [ apply all_flex_mono_decls; exact Hfmc | exact HwfΞ ].
            ++ (* α ∉ dom Ξc *) exact HαΞ.
            ++ (* keys *) exact Hmapfst.
            ++ (* κc images *) exact Himg.
@@ -4493,7 +4462,7 @@ Proof.
                 | exact HβPa ].
            ++ (* a_wf_aenv *)
               eapply a_wf_aenv_strip_mid;
-                [ apply all_flex_mono_a_decls; exact Hfmc | exact HwfΞ ].
+                [ apply all_flex_mono_decls; exact Hfmc | exact HwfΞ ].
            ++ (* α ∉ dom Ξc *) exact HαΞ.
            ++ (* keys *) exact Hmapfst.
            ++ (* ρc images *) exact Himg.

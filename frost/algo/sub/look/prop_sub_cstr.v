@@ -261,7 +261,7 @@ Proof.
               | specialize (IHR Hin); clear - IHR; fsetdec ].
   - (* var_f : looks up to itself *)
     assert (Heq : α0 = α) by (clear - Hin; fsetdec); subst α0.
-    rewrite (msubst_lookup_notin_dom _ Hκ). rewrite ptyp_to_uskl_syn_var.
+    rewrite (msubst_lookup_notin _ Hκ). rewrite ptyp_to_uskl_syn_var.
     cbn [ftvar_in_uskl]; clear; fsetdec.
   - (* arrow *)
     destruct (AtomSetProperties.In_dec α (ftvar_in_uskl R1)) as [H1 | H1];
@@ -568,7 +568,7 @@ Proof.
        orient it the wrong way and discard it. *)
     rewrite Heqα in HeraseR |- *.
   { assert (Hlk : msubst_lookup κ α = ptyp_var_f α).
-    { apply msubst_lookup_notin_dom.
+    { apply msubst_lookup_notin.
       intro Hc. apply (a_inc_dom_sub Hκ) in Hc. contradiction. }
     assert (HR : R' = uskl_var_f α).
     { destruct R'; simpl in HeraseR; try discriminate HeraseR.
@@ -1281,7 +1281,7 @@ Proof.
              | exact HβPa ].
         -- (* a_wf_aenv *)
            eapply a_wf_aenv_strip_mid;
-             [ apply all_flex_mono_a_decls; exact Hfmc | exact HwfΞ ].
+             [ apply all_flex_mono_decls; exact Hfmc | exact HwfΞ ].
         -- (* α ∉ dom Ξc *) exact HαΞ.
         -- (* keys *) exact Hmapfst.
         -- (* κc images ⊆ ftv ψa *) exact Himg.
@@ -2489,7 +2489,7 @@ Proof.
          | exact HβPa ].
     -- (* a_wf_aenv *)
        eapply a_wf_aenv_strip_mid;
-         [ apply all_flex_mono_a_decls; exact Hfmc | exact HwfΞ ].
+         [ apply all_flex_mono_decls; exact Hfmc | exact HwfΞ ].
     -- (* α ∉ dom Ξc *) exact HαΞ.
     -- (* keys *) exact Hmapfst.
     -- (* κc images ⊆ ftv ψa *) exact Himg.
@@ -2940,7 +2940,7 @@ Proof.
          | exact HβPa ].
     -- (* a_wf_aenv *)
        eapply a_wf_aenv_strip_mid;
-         [ apply all_flex_mono_a_decls; exact Hfmc | exact HwfΞ ].
+         [ apply all_flex_mono_decls; exact Hfmc | exact HwfΞ ].
     -- (* α ∉ dom Ξc *) exact HαΞ.
     -- (* keys *) exact Hmapfst.
     -- (* κc images ⊆ ftv ψa *) exact Himg.

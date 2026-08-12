@@ -1067,7 +1067,7 @@ Proof.
     apply mod_comp_sk__tc. apply is_sskl__tophole. apply is_sskl__arrow.
     + rewrite btyp_to_bskl_ptyp_to_btyp_syn.
       apply is_sskl_pskl_to_bskl_syn.
-      apply lc_ptyp_to_pskl. eapply a_wf_ptyp_lc; eassumption.
+      apply ptyp_to_pskl_lc. eapply a_wf_ptyp_lc; eassumption.
     + apply mod_comp_sk_tc_inv; exact H1.
 Qed.
 
@@ -1185,33 +1185,6 @@ Proof.
 Qed.
 
 (* --- §4b  the transport's kit (2): a Δ-variable moved into the context -- *)
-
-(** Consistency binds a ∀'s witness in Θ, refinement binds it in Δ.  Going
-    Δ → Θ is a WEAKENING and holds — [__var] already accepts either side and
-    [__tophole]'s [{{ Θ ⨟ ∅ ⊢ₚₛ P }}a] only grows.  (The reverse direction is
-    false; the transport is arranged so it is never needed.) *)
-Lemma a_wf_pskl_delta_to_ctx : forall Θ Δ P,
-  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
-  forall α Δ', Δ [<=] add α Δ' ->
-  {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ' ⊢ₚₛ P }}a.
-Proof.
-  intros Θ Δ P H; induction H; intros α0 Δ' Hsub.
-  - apply a_wf_pskl__unit.
-  - apply a_wf_pskl__var.
-    destruct H as [HΔ | Ht].
-    + destruct (α == α0) as [-> | Hne].
-      * right. left. unfold binds; simpl; left; reflexivity.
-      * left. clear - HΔ Hsub Hne. fsetdec.
-    + right. destruct Ht as [Hb | [Hb | [τ Hb]]];
-        [ left | right; left | right; right; exists τ ];
-        unfold binds; simpl; right; exact Hb.
-  - apply a_wf_pskl__arrow; auto.
-  - apply a_wf_pskl__all with (L := L `union` singleton α0). intros β Hβ.
-    apply H0; [ clear - Hβ; fsetdec | clear - Hsub; fsetdec ].
-  - apply a_wf_pskl__hole.
-  - apply a_wf_pskl__tophole;
-      [ assumption | apply IHa_wf_pskl; clear; fsetdec ].
-Qed.
 
 (* --- §4c  the transport's kit (3): renaming a Δ-variable --------------- *)
 
@@ -1478,14 +1451,6 @@ Proof.
   - apply binds_app_3; unfold binds; simpl; right; exact Hb.
 Qed.
 
-Lemma subst_pskl_to_bskl_syn : forall P α β,
-  subst_bskl_in_bskl (bskl_var_f β) α (pskl_to_bskl_syn P)
-  = pskl_to_bskl_syn (subst_pskl_in_pskl (pskl_var_f β) α P).
-Proof.
-  intros P α β; induction P; simpl; try congruence.
-  destruct_if; reflexivity.
-Qed.
-
 (** Skeleton well-formedness under the same rename.  No condition on the
     block: [a_wf_pskl] reads the context only through [a_binds_tvar], and
     the renamed slot is a plain rigid variable on both sides. *)
@@ -1569,7 +1534,7 @@ Proof.
       [ clear - Hγ; fsetdec | reflexivity | exact Hblk | exact Hwf
       | clear - Hβ Hγ; fsetdec ].
   - (* hole *)
-    rewrite subst_pskl_to_bskl_syn.
+    rewrite subst_var_bskl_syn.
     apply ad_refine_syn__hole.
     eapply a_wf_pskl_rename_tvar_eq; [ exact H | reflexivity | clear; fsetdec ].
   - (* tophole_remove *)
@@ -2350,7 +2315,7 @@ Proof.
           [ | congruence ].
         apply mod_comp_sk__ti. apply is_sskl__arrow.
         -- rewrite btyp_to_bskl_ptyp_to_btyp_syn.
-           apply is_sskl_pskl_to_bskl_syn. apply lc_ptyp_to_pskl.
+           apply is_sskl_pskl_to_bskl_syn. apply ptyp_to_pskl_lc.
            eapply a_wf_ptyp_lc; exact HwfA.
         -- apply mod_comp_sk_ti_inv. apply (ad_pat_mod_comp_sk (Hbody x)).
       * simpl. rewrite btyp_to_bskl_ptyp_to_btyp_syn.
@@ -2484,7 +2449,7 @@ Proof.
                 (pskl_tophole (pskl_arrow (ptyp_to_pskl A) P'))).
       apply ad_refine_syn__hole. apply a_wf_pskl__tophole;
         [ apply guarded_pskl__arrow;
-            [ apply lc_ptyp_to_pskl; eapply a_wf_ptyp_lc; exact HwfA1
+            [ apply ptyp_to_pskl_lc; eapply a_wf_ptyp_lc; exact HwfA1
             | eapply a_wf_pskl_lc; exact HwfP' ]
         | apply a_wf_pskl__arrow;
             [ apply a_wf_ptyp_to_wf_pskl; exact HwfA1 | exact HwfP' ] ].

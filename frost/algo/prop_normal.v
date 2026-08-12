@@ -297,13 +297,6 @@ Qed.
 (*  §3  Transporting [⇓]-equalities through an outer metasubstitution      *)
 (* ===================================================================== *)
 
-(** [msubst_pskl] commutes with the [ptyp → pskl] embedding. *)
-Lemma msubst_pskl_ptyp_to_pskl : forall κ A,
-  msubst_pskl κ (ptyp_to_pskl A) = ptyp_to_pskl (msubst_ptyp κ A).
-Proof.
-  intros κ A; induction A; simpl; f_equal; auto.
-Qed.
-
 (** Two metasubstitutions whose images are [ζ]-equal on a type's free variables
     are indistinguishable after [ζ].  NB the [∀] case needs NO opening: [msubst]
     goes under the binder syntactically, and [ftvar_in_ptyp (ptyp_all A) =
@@ -332,7 +325,7 @@ Proof.
     intros Hag; simpl.
   - reflexivity.
   - reflexivity.
-  - rewrite !msubst_pskl_ptyp_to_pskl. f_equal. apply Hag. simpl. fsetdec.
+  - rewrite !msubst_pskl_embed_ptyp. f_equal. apply Hag. simpl. fsetdec.
   - f_equal; [ apply IHa | apply IHb ];
       intros α Hα; apply Hag; simpl; fsetdec.
   - f_equal. apply IHall. intros α Hα; apply Hag; simpl; fsetdec.
@@ -396,7 +389,7 @@ Proof.
     + subst β. cbn [subst_pskl_in_pskl msubst_pskl].
       destruct (α1 == α1) as [_ | Hc]; [ | congruence ].
       rewrite msubst_lookup_cons_eq.
-      apply msubst_pskl_ptyp_to_pskl.
+      apply msubst_pskl_embed_ptyp.
     + cbn [subst_pskl_in_pskl msubst_pskl].
       destruct (β == α1) as [Hc | _]; [ congruence | ].
       cbn [msubst_pskl].
