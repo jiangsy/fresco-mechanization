@@ -386,7 +386,7 @@ removed developments).
 > ⚠️ **A `soundness/` vs `completeness/` split would have been a lie**, and the
 > import graph says so: there is **no soundness-only file in the tree**.
 > `prop_soundness_consis.v` is imported by 13 completeness files,
-> `prop_soundness_sub.v` by 6.  Soundness results ARE kit for completeness.
+> `prop_soundness_subtag.v` by 6.  Soundness results ARE kit for completeness.
 > Judgement is the axis that matches the dependencies.
 >
 > ⚠️ **No `kit/` folder either** — 9 files whose only shared property is
@@ -503,7 +503,7 @@ removed developments).
 > AND `ad_pat_consis_psi_cong` (`algo/consis/prop_soundness_consis.v`) — from
 > opposite sides of the tree.  Measured: **no** shared ancestor of the two
 > declaring files sees both, so the pair is unliftable.  The dedupe is by
-> IMPORT: keep it in `sub/prop_soundness_sub.v`, the earliest file that sees
+> IMPORT: keep it in `sub/prop_soundness_subtag.v`, the earliest file that sees
 > both, and have `sub/prop_completeness_sub_precise.v` import that (verified
 > cycle-free, 0 name collisions, 0 reroutes before adding the import).
 >
@@ -1151,7 +1151,7 @@ directly above the algo layer and move the sort-agnostic ones there.  This kills
 | `algo/prop_completeness_sub_gen.v` | 7536 | no internal PART banners at all |
 | `sub/look/prop_kit.v` | 7030 | "the shared kit" — the grab-bag, and the source of most §8.1 duplicates |
 | `algo/prop_completeness_typing.v` | 4638 | theorem 4 |
-| `deco_algo/prop_decorate_key.v` | 4208 | — |
+| `deco_algo/prop_soundness_sub.v` | 4208 | — |
 
 **Recommendation (A).**  Do **not** split them for size — the facade file
 already argues, correctly, that splitting a linear chain buys no parallelism and

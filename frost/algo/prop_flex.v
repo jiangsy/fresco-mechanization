@@ -861,12 +861,7 @@ Lemma a_wf_pskl_tophole_inv : forall Θ Δ P,
   guarded_pskl P /\ ({{ Θ ⨟ empty ⊢ₚₛ P }}a).
 Proof. intros * H; inversion H; subst; auto. Qed.
 
-(** Removing a whole prefix preserves well-formedness of the tail.
-    ⚙ ONE name for this fact (2026-08-12): it used to exist three times —
-    [a_wf_aenv_strip_prefix] (prop_compose.v), an [a_decls]-restricted
-    [a_wf_aenv_strip_prefix] (consis/prop_soundness_consis.v) and a second
-    general copy (pat/prop_soundness_pat.v).  The two later ones COLLIDED, so
-    which one an unqualified [apply] meant depended on import order. *)
+(** Removing a whole prefix preserves well-formedness of the tail. *)
 Lemma a_wf_aenv_strip_prefix : forall Ξ Θ,
   {{ ⊢ (Ξ ++ Θ) }}a -> {{ ⊢ Θ }}a.
 Proof.

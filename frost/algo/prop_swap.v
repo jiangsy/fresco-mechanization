@@ -176,10 +176,6 @@ Qed.
 
 (** * The DIRECTED rename — the non-primitive sibling of [swap_aenv].
 
-    ⚙ MOVED here from algo/def_extra.v 2026-08-09: that file holds RULES, and
-    these are renaming operators; the bridge between them
-    ([swap_aenv_as_rename], below) was already here.
-
     ⚠️ WHICH TO REACH FOR: [swap_aenv γ β Θ] — the transposition — is THE
     renaming primitive by standing directive, because it is its own inverse and
     so needs no freshness side condition.  [rename_aenv γ β Θ] is DIRECTED (β
@@ -2496,9 +2492,7 @@ Set Implicit Arguments.
 (*  algorithmic tower; what was missing is the bridge that turns a SWAP   *)
 (*  of two atoms into the RENAMING of a term binder — which it is        *)
 (*  exactly when both atoms are fresh for everything else in sight        *)
-(*  ([swap_aenv_tm_head] below).  [a_pat_rename_tm] is the one consumer   *)
-(*  left; the per-judgment corollaries that used to sit between the two   *)
-(*  were deleted 2026-08-12 (note at their old site).                     *)
+(*  ([swap_aenv_tm_head] below).  [a_pat_rename_tm] is its one consumer.  *)
 (* ===================================================================== *)
 
 (** A binding the two swapped atoms do not occur in is untouched. *)
@@ -2547,16 +2541,6 @@ Proof.
   - apply swap_aenv_fresh_eq; [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
 Qed.
 
-(* ⚙ DELETED 2026-08-12 — the four CONSUMER-FACING renaming corollaries
-   [a_sub_rename_tm], [a_consis_rename_tm], [a_consis_chk_rename_tm] and
-   [a_split_rename_tm].  They were built for [a_typing]'s cofinite binder
-   rows, which became EXISTS-FRESH at `7061d31`; nothing has consumed them
-   since, and [a_pat_rename_tm] below uses the SWAP forms directly, exactly
-   as its own header says.  Each was three lines off its equivariance lemma
-   ([a_sub_sub_flex_swap] / [a_assign_unify_consis_swap] / [a_split_swap],
-   all still here) plus [swap_aenv_tm_head]: if [a_pat]'s four rows are ever
-   converted to exists-fresh and a consumer needs one back, re-derive it
-   rather than looking for it in history. *)
 (** Splitting is equivariant — three rows, the flexible one reusing the
     consistency walk's own equivariance. *)
 Lemma a_split_swap : forall a b Θ0 P0 P Q Θ1,

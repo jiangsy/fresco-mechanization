@@ -1460,8 +1460,7 @@ Qed.
     [aconsistag[Δ1|Δ2][P0][·]{Θ0}{P}{Q}{Θ1}]
     (consistency-proofs.tex, lemma:decorating-algorithmic-consistency).
 
-    MOVED here from prop_decorate.v by the freshness campaign's cluster 4,
-    and re-proved as a SIZE induction.  The decorated [a_consistag] ∀ rows
+    A SIZE induction, not a structural one.  The decorated [a_consistag] ∀ rows
     are (rightly) still COFINITE while [a_consis]'s are now exists-fresh, so
     each ∀ row must rebuild a whole family from the run's ONE binder — which
     means MOVING that binder with §8's rename, and the moved premise is no

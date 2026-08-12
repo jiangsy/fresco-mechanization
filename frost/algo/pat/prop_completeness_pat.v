@@ -49,7 +49,7 @@ Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.consis.prop_consis_rename.
 Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.prop_wf_preservation.
-Require Import src.frost.algo.sub.prop_soundness_sub.
+Require Import src.frost.algo.sub.prop_soundness_subtag.
 Require Import src.frost.algo.pat.prop_soundness_pat.
 Require Import src.frost.algo.typing.prop_soundness_typing.
 Require Import src.frost.algo.prop_suffix_erase.

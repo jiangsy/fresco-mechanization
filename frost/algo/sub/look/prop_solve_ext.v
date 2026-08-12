@@ -141,7 +141,7 @@ Qed.
 
 (** The extended context is well-formed as soon as the block is uniq and
     apart from the old domain.  (A local copy of [a_wf_aenv_prepend_decls],
-    which lives in prop_soundness_sub.v — a file this one does not import.) *)
+    which lives in prop_soundness_subtag.v — a file this one does not import.) *)
 Lemma a_wf_aenv_prepend_flex_block : forall Ξ Θ,
   all_flex_mono Ξ ->
   uniq Ξ ->

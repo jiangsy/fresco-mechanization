@@ -44,7 +44,7 @@
     (algo/sub/prop_solve_sub.v) would invert the layering.  It does not: the
     DEFINITION layers point one way ([algo/def_*] -> [algo_decl/def_*] and
     [deco_algo/def_*], never back), while the PROOF layers already interleave —
-    [deco_algo/prop_decorate_key.v] reaches into
+    [deco_algo/prop_soundness_sub.v] reaches into
     [algo/consis/prop_soundness_consis.v], [algo/prop_pat_sub.v],
     [algo/prop_refine.v] and [algo/prop_stability.v].  Moved to the (then
     undivided) decorated-algo layer 2026-08-11, and to [algo_decl/] when that
@@ -84,7 +84,7 @@ Require Import src.frost.algo.prop_pat_sub.   (* uskl_ghost_free_open_gen *)
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.sub.prop_solve_sub.
-Require Import src.frost.algo.sub.prop_soundness_sub.
+Require Import src.frost.algo.sub.prop_soundness_subtag.
 Require Import src.frost.algo.pat.prop_soundness_pat.
 Require Import src.frost.algo.prop_suffix_erase.
 Require Import src.frost.algo.prop_normal.
@@ -1517,7 +1517,7 @@ Qed.
 (*  ⭐ ALL THREE HYPOTHESES ARE GONE, and with them the obstruction: since  *)
 (*  [ad_pat_sub] carries the leaf presupposition itself, the datum is a    *)
 (*  PREMISE of the row that needs it, and the upgrade is                   *)
-(*  [ad_pat_sub_to_fuel] (algo/sub/prop_soundness_sub.v) — UNCONDITIONAL, at  *)
+(*  [ad_pat_sub_to_fuel] (algo/sub/prop_soundness_subtag.v) — UNCONDITIONAL, at  *)
 (*  either sort, over any Θ.  Only the fuel is left to collect.            *)
 (* ===================================================================== *)
 

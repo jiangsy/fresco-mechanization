@@ -1,6 +1,14 @@
-(** KEY subtyping decoration + decorate-constraint-solving + MAIN + the
-    assembled thm:sound-subtyping.  Split from prop_decorate_sub.v so the
-    heavy earlier sections are not re-checked on every iteration. *)
+(** ⭐ THE PAPER'S thm:sound-subtyping — [a_sub_sound], assembled here (§17).
+
+    §14 the KEY subtyping-decoration lemma, §15 decorating constraint solving,
+    §16 MAIN (decorating an algorithmic subtyping run), §17 the assembled
+    theorem: [a_sub_sound] = L-A ∘ L-B, where L-A is the decoration built in
+    §14–§16 and L-B is [a_subtag_sound_bundle]
+    (algo/sub/prop_soundness_subtag.v).
+
+    ⚙ Second half of a pair with [prop_decorate_sub.v], which holds the
+    bottom-up auxiliaries; the split is for BUILD TIME (the heavy earlier
+    sections are not re-checked on every iteration), not for topic. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -34,7 +42,7 @@ Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.sub.prop_solve_sub.
 Require Import src.frost.algo.sub.prop_looksub.
-Require Import src.frost.algo.sub.prop_soundness_sub.
+Require Import src.frost.algo.sub.prop_soundness_subtag.
 Require Import src.frost.deco_algo.prop_decorate_sub.
 
 Set Implicit Arguments.

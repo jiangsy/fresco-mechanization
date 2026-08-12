@@ -86,7 +86,7 @@ Require Import src.frost.decl.prop_stability.       (* order irrelevance *)
 Require Import src.frost.decl.prop_shallow.         (* the two expressiveness results *)
 Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.consis.prop_completeness_consis.
-Require Import src.frost.deco_algo.prop_decorate_key.
+Require Import src.frost.deco_algo.prop_soundness_sub.
 Require Import src.frost.algo.sub.prop_completeness_sub_precise.
 Require Import src.frost.algo.sub.look.prop_eq_var.
 Require Import src.frost.algo.sub.look.prop_eq_cstr.

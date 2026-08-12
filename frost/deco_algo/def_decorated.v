@@ -43,12 +43,6 @@ Reserved Notation "{{ C ⊩ ψ ⤳ Ψ }}da"
   (at level 0, ψ at level 74, Ψ at level 74,
    format "'{{'  C  ⊩  ψ  ⤳  Ψ  '}}da'").
 
-(* ⚙ MOVED 2026-08-11 to frost/coercions.v, next to its sibling
-   [bskl_to_pskl].  It had to: the paper's presupposition on skeleton
-   consistency (declarative.tex:2074) is stated at the UNCOLOURED sort, so
-   [decl/def_extra.v] — which is upstream of this file — now needs the
-   erasure.  The notation [⌊R⌋ˢ] moved with it. *)
-
 (** Ghost-free unresolved skeletons: no ghosts of any kind.  Used for (i) the
     [N = TY] instantiation candidates (decorated TYPES φ, once combined with
     [is_tskl]) and (ii) the dotted-ghost-freeness side condition of the

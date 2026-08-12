@@ -40,7 +40,7 @@ and with them on the rules the bridge is a rule-for-rule induction.
 
 ✅ **(B)'s neighbourhood is CLOSED too (2026-08-12).**  What was left of it was
 purely a FUEL question — the `ad_pat_sub → ad_pat_sub_fuel` direction — and
-that is now `ad_pat_sub_to_fuel` (`algo/sub/prop_soundness_sub.v`),
+that is now `ad_pat_sub_to_fuel` (`algo/sub/prop_soundness_subtag.v`),
 UNCONDITIONAL at either sort over any Θ.  The two judgements differ neither in
 hygiene nor in the leaf datum nor, now, in derivability: they are
 INTERDERIVABLE.

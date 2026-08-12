@@ -247,8 +247,9 @@ mechanization/
 │   │   │                  the SUBJECT; soundness is the chain
 │   │   │                  `}}a` ⇒ `}}da` ⇒ `}}ad` ⇒ `}}d`)
 │   │   ├── def_decorated.v      (the decorated system's rules)
-│   │   └── prop_decorate_{sub,key}.v  (decoration of consistency / subtyping;
-│   │                             prop_decorate_key.v holds a_sub_sound.
+│   │   └── prop_decorate_sub.v / prop_soundness_sub.v  (decoration of
+│   │                             consistency / subtyping;
+│   │                             prop_soundness_sub.v holds a_sub_sound.
 │   │                             ⚙ the third file, prop_decorate.v, was
 │   │                             deleted 2026-08-11: it held nothing but six
 │   │                             `pskl_to_uskl` conversion facts, which belong
@@ -275,7 +276,7 @@ mechanization/
 │       │                  prop_completeness_consis.v, prop_consis_rename.v,
 │       │                  prop_consis_precise.v)
 │       ├── sub/          (subtyping — both directions and the collection layer)
-│       │   ├── prop_soundness_sub.v
+│       │   ├── prop_soundness_subtag.v
 │       │   ├── prop_looksub.v / prop_solve_sub.v  (collection + solving)
 │       │   ├── prop_sub_msubst_equiv.v
 │       │   ├── prop_completeness_sub_precise.v (P5)
@@ -317,7 +318,9 @@ mechanization/
 **Naming of the soundness / completeness files** (2026-08-06):
 `prop_soundness_<judgment>.v` and `prop_completeness_<judgment>[_<role>].v` —
 `prop_soundness_consis.v`, `prop_completeness_consis.v`,
-`prop_soundness_sub.v`, and for subtyping completeness
+`deco_algo/prop_soundness_sub.v` (the paper's `a_sub_sound`) and
+`algo/sub/prop_soundness_subtag.v` (its decorated-run half), and for
+subtyping completeness
 `prop_completeness_sub_precise.v` (P5), `prop_completeness_look.v` (P6),
 `prop_completeness_sub_gen.v` (P7a+b, the GENERALIZED statement) and
 `prop_completeness_sub.v` (P7c, the paper's `a_sub_complete`).  The
@@ -354,9 +357,8 @@ their topic names.
   twice.  Before adding a helper, grep for it.  When two copies differ in
   strength (`=` vs `[=]` vs `[<=]`, general vs variable-instance), keep the
   STRONG one and let the weak uses `rewrite` with it; do not keep both.
-  Duplicate count: 82 → 39 (2026-08-09) → **0** (2026-08-12; the last ten are
-  recorded in `docs/REPORT-postclosure-audit.md` §2.3, and three of them were
-  one fact under three names).
+  Duplicate count: **0** (audited 2026-08-12; two of the last ten turned out to
+  be one fact under THREE names, so grep for the FACT, not just the name).
 
 ## Encoding conventions
 

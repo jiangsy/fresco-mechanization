@@ -215,7 +215,7 @@ where "{{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad" :=
     ⭐ THE TWO RELATIONS ARE INTERDERIVABLE (2026-08-12).  The erasure
     [_fuel -> ad_pat_sub] is [ad_pat_sub_of_fuel] (prop_sub_mirrors.v), and
     the other direction — which a COMPLETENESS corollary over the declarative
-    system needs — is [ad_pat_sub_to_fuel] (algo/sub/prop_soundness_sub.v),
+    system needs — is [ad_pat_sub_to_fuel] (algo/sub/prop_soundness_subtag.v),
     UNCONDITIONAL at either sort over any Θ.  It was owed for a long time and
     was only ever a FUEL question once hygiene and the leaf datum landed on
     the plain relation; the fuel is the derivation's height, and the one real

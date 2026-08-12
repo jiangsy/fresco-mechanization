@@ -236,11 +236,7 @@ Proof.
   - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
 Qed.
 
-(** ⭐ Both erasures commute with substitution.  ⚙ [uskl_to_pskl_subst] used to
-    live in deco_algo/prop_decorate_sub.v §4; it moved here 2026-08-11 with
-    its conversion (one fact, one name, one file — CLAUDE.md), because
-    decl/def_extra.v now needs the erasure for the paper's presupposition on
-    skeleton consistency and is upstream of that file. *)
+(** ⭐ Both erasures commute with substitution. *)
 Lemma uskl_to_pskl_subst : forall R Rg β,
   uskl_to_pskl (subst_uskl_in_uskl Rg β R)
   = subst_pskl_in_pskl (uskl_to_pskl Rg) β (uskl_to_pskl R).
@@ -523,14 +519,7 @@ Qed.
 Lemma mono_ptyp_to_pskl_lc : forall τ, mono_ptyp τ -> lc_pskl (ptyp_to_pskl τ).
 Proof. induction 1; simpl; auto using lc_pskl. Qed.
 
-(** The syn painting of an lc skeleton is synthesised.
-
-    ⚙ It was proved TWICE, in algo/prop_soundness_sub.v and
-    algo/sub/look/prop_rho_relation.v, and neither file imports the other — so
-    it could not be deduped in place, and was lifted to prop_basic.v on
-    2026-08-09 before landing here.  It belongs next to [lc_pskl_to_bskl_syn]:
-    same painting, same one-line induction, same [pskl_to_bskl_syn_open]
-    step. *)
+(** The syn painting of an lc skeleton is synthesised. *)
 Lemma is_sskl_pskl_to_bskl_syn : forall P,
     lc_pskl P -> is_sskl (pskl_to_bskl_syn P).
 Proof.

@@ -1824,9 +1824,6 @@ Qed.
 
 (* ===================================================================== *)
 (*  §11. The [a_extract] FAMILY from one instance                         *)
-(*  (moved here from sub/look/prop_extract.v, campaign cluster 5:    *)
-(*   [prop_decorate_key.v] needs it too, and that file is a sibling of    *)
-(*   P6-L's, not a consumer.)                                            *)
 (* ===================================================================== *)
 
 (* ⚙ The family HANDS BACK its own avoid-set (cluster 3).  Renaming the

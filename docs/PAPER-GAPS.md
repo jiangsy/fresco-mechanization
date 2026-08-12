@@ -2760,7 +2760,7 @@ mirrors on `a_subtag_flex` (algo/def_decorated.v) — the mech splits the
 paper's single `x : P` entry into a type binding and a skeleton binding, hence
 two rules for the paper's one.  All three mutual inductions over the
 `a_sub` / `a_sub_flex` pair carry their two new cases: the soundness bundle
-(prop_sub_sound.v), the decoration bundle (prop_decorate_key.v), and
+(prop_sub_sound.v), the decoration bundle (prop_soundness_sub.v), and
 equivariance (prop_swap.v).  `make coq` green, admit-free, axiom-free.
 
 ⭐ **One thing worth telling the authors**: neither the new rules nor the twin
@@ -3079,7 +3079,7 @@ things the authors need to know about the repaired rule itself.**
 
 ### FINDING 1 — soundness of subtyping survives, and its STATEMENT does not move
 
-`a_sub_sound` (prop_decorate_key.v) is `Qed` and axiom-free under the
+`a_sub_sound` (prop_soundness_sub.v) is `Qed` and axiom-free under the
 repaired row, with the *same statement*.  Every new obligation is absorbed
 inside the proof out of well-formedness premises the theorem already had.
 The one real obligation the repair creates — *a decoration of the guess is a

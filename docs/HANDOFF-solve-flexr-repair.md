@@ -120,7 +120,7 @@ side. It does **not** strip `∀`s. Those fresh flexibles are the `Ξ`.
 ## 3. What is green (Qed, `Closed under the global context`)
 
 `def_extra` · `prop_swap` · `prop_solve_sub` · `prop_looksub` ·
-`prop_sub_sound` · `prop_decorate_sub` · `prop_decorate_key` ·
+`prop_sub_sound` · `prop_decorate_sub` · `prop_soundness_sub` ·
 `test_examples` · `cex/cex_solve_sub_wf_leak` ·
 ⭐ **`cex/probe_flexr_repair`**.
 
@@ -408,7 +408,7 @@ what P6-Sv's Check row wants.
 **`prop_look_complete_cstr.v` (P6-Cs)** all compile, `Qed`, `Closed under the
 global context`. `a_sub_sound` and the whole soundness chain are unchanged
 and still green
-(`make -j10 -f CoqMakefile frost/algo/prop_decorate_key.vo`, ~15 s warm).
+(`make -j10 -f CoqMakefile frost/algo/prop_soundness_sub.vo`, ~15 s warm).
 
 #### ⭐⭐ HOW THE ∀-ROW PAYLOAD-SCOPE OBLIGATION WAS CLOSED — read this first
 
@@ -909,9 +909,9 @@ with `nonghost`), the `Ξ` suffix on all three solving judgements
 - ⚠️ `dom Θ` vs `ftvar_in_aenv Θ` is load-bearing everywhere.
 - ⚙️ After changing `prop_solve_sub.v` or `prop_swap.v`, rebuild
   `prop_looksub` → `prop_sub_sound` → `prop_decorate_sub` →
-  `prop_decorate_key` before the file you are working on, or you get
+  `prop_soundness_sub` before the file you are working on, or you get
   "makes inconsistent assumptions over library". `make -j10 -f CoqMakefile
-  frost/algo/prop_decorate_key.vo` does the whole chain in ~110 s.
+  frost/algo/prop_soundness_sub.vo` does the whole chain in ~110 s.
 - ⚙️ Iterate with `coqc -R . src -w -deprecated-hint-without-locality,-omega-is-deprecated frost/algo/<file>.v`
   on the single file; `make NJOBS=10 -k coq` only for the whole-tree picture.
 - ⚙️ To see what a blanket tactic left open:

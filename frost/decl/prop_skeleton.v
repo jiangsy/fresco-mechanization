@@ -1,11 +1,5 @@
-(** Frost — skeleton/wf lemmas needed by the syntax-directed equivalence.
-    RESTART NOTE: this file is the dependency closure of the lemmas that
-    prop_syntax_directed.v uses, extracted from the pre-restart development
-    (kept in full as prop_skeleton.v.legacy until 2026-08-06, now in git
-    history at `a81ef2d`); the skeleton-safety machinery is redone later
-    following the paper.  *)
-
-(** Frost — declarative skeleton metatheory for the split syntax. *)
+(** Frost — declarative skeleton metatheory for the split syntax: the
+    skeleton/wf lemmas the syntax-directed equivalence needs. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Equality.

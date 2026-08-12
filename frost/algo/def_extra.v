@@ -1214,7 +1214,7 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
        is the paper's Barendregt convention, prose-completed — the same
        style as [a_sub_flex__solve]'s deposited names.  Consumers that need
        the binder away from ambient data re-freshen via renaming lemmas
-       (cf. prop_decorate_key's [a_subtag_decoration] ForallR case). *)
+       (cf. prop_soundness_sub's [a_subtag_decoration] ForallR case). *)
     α `notin` dom (Ξ ++ Θ0) `union` dom Θ1 `union`
       ftvar_in_pskl A `union` ftvar_in_pskl B ->
     a_sub a_sub_mode_ty mode_tc (open_pskl_wrt_pskl B (pskl_var_f α))

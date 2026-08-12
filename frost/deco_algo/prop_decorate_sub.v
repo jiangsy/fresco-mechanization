@@ -32,7 +32,7 @@ Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.sub.prop_looksub.
-Require Import src.frost.algo.sub.prop_soundness_sub.
+Require Import src.frost.algo.sub.prop_soundness_subtag.
 
 Set Implicit Arguments.
 
@@ -112,12 +112,6 @@ Qed.
    consumes; the join is deferred until a call site fixes its shape. *)
 
 (* ===================================================================== *)
-(*  §4  Erasure commutes with decorated substitution                     *)
-(* ===================================================================== *)
-
-(* ⚙ [uskl_to_pskl_subst] MOVED 2026-08-11 to frost/prop_coercions.v, with its
-   conversion; decl/def_extra.v is upstream of this file and now needs it. *)
-
 (* ===================================================================== *)
 (*  §5  The ρ metasubstitution (rigid vars → decorated skeletons)         *)
 (*                                                                        *)
@@ -2655,7 +2649,7 @@ Proof.
           | exact Hrig | exact Hnfd | exact Hfaf ].
 Qed.
 
-(** The size-free form — the shape both call sites in prop_decorate_key.v use. *)
+(** The size-free form — the shape both call sites in prop_soundness_sub.v use. *)
 Lemma a_consistag_decoration : forall Θ α P P0 Ξc 𝒞,
   {{ Θ ⊢ P ∼[ α ] P0 ⤳ Ξc ⨾ 𝒞 }}a ->
   forall R' ψa Ψa Δ1 Δ2 Ψ Θ0 P' Θ1,

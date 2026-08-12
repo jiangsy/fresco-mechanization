@@ -16,7 +16,7 @@
       its plain skeleton (tags → ∅);
     - crux (1b) [ad_pat_consis_subject_refine]: transport the subject DOWN a
       refinement (subject-side mirror of the Qed target-side
-      [ad_pat_consis_refine_inh_gen], prop_soundness_sub.v), with the
+      [ad_pat_consis_refine_inh_gen], prop_soundness_subtag.v), with the
       wf-carrying transporters it needs;
     - crux (1) [ad_pat_consis_subject_precise] = (1a);(1b);
     - step (2) [ad_pat_consis_precise_subst]: the general subject
@@ -165,7 +165,7 @@ Lemma a_tags_sort_d_tags : forall NM Ψ ψ,
 Proof. intros NM Ψ ψ H. inversion H; auto. Qed.
 
 (** [d_tags_skl] respects set-equality (local copy of the lemma in
-    prop_decorate_key.v — kept here so completeness does not depend on the
+    prop_soundness_sub.v — kept here so completeness does not depend on the
     soundness decoration file). *)
 Lemma d_tags_skl_recong : forall Ψ Ψ' ψ,
   d_tags_skl Ψ ψ -> Ψ [=] Ψ' -> d_tags_skl Ψ' ψ.
@@ -252,7 +252,7 @@ Proof. intros Θ Δ P H. inversion H; subst. eauto. Qed.
 (*  consistency.  Built in two steps (DESIGN §5.2): (1a) strip the          *)
 (*  decorated subject to plain (tags drop to ∅); (1b) transport the erased  *)
 (*  subject along the refinement — the SUBJECT-side mirror of the Qed       *)
-(*  target-side [ad_pat_consis_refine_inh_gen] (prop_soundness_sub.v).          *)
+(*  target-side [ad_pat_consis_refine_inh_gen] (prop_soundness_subtag.v).          *)
 (* ===================================================================== *)
 
 (** [strip ψ := pskl_to_uskl ⌊ψ⌋ˢ] commutes with opening. *)
@@ -557,7 +557,7 @@ Qed.
     [Ptgt] is consistent with the GHOSTIER subject [Psrc].  Well-formedness of
     the (erased) target is THREADED as an input (the hole reconstruction needs
     it; see [consis_concrete_target_inh]).  Subject-side mirror of the target
-    template [ad_pat_consis_refine_inh_gen] (prop_soundness_sub.v). *)
+    template [ad_pat_consis_refine_inh_gen] (prop_soundness_subtag.v). *)
 Lemma ad_pat_consis_subject_refine : forall Θ Δ Qsrc Qtgt,
   ad_refine_syn Θ Δ Qsrc Qtgt ->
   forall Psrc Ptgt, Qsrc = pskl_to_bskl_inh Psrc -> Qtgt = pskl_to_bskl_inh Ptgt ->

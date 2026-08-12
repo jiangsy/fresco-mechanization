@@ -53,7 +53,7 @@ Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.algo.prop_precise.   (* bskl_to_pskl_open *)
 Require Import src.frost.algo.prop_pat_sub.   (* {pskl,bskl}_ghost_free *)
 Require Import src.frost.algo.consis.prop_soundness_consis.  (* a_consis_sound, ad_refine_syn_f_forget *)
-Require Import src.frost.deco_algo.prop_decorate_key.   (* a_sub_sound *)
+Require Import src.frost.deco_algo.prop_soundness_sub.   (* a_sub_sound *)
 
 Set Implicit Arguments.
 
@@ -222,7 +222,7 @@ Qed.
 (*  The paper's "P'_0 and P_1 are equivalent through Q" (:3238).  §4 was   *)
 (*  written for a MUTUAL INDUCTION over [a_sub] / [a_sub_flex]; that       *)
 (*  induction is not needed.  [a_sub_sound] (Qed,                     *)
-(*  prop_decorate_key.v:3326) already exports the refinement of the OUTPUT *)
+(*  prop_soundness_sub.v:3326) already exports the refinement of the OUTPUT *)
 (*  FROM the input skeleton — the very same conjunct [a_consis_sound]      *)
 (*  exports, in the very same shape — so §2 applies verbatim and the whole *)
 (*  [a_sub] half collapses to one destruct.                               *)

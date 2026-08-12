@@ -14,7 +14,7 @@
     ⚙ WHY IT IS THIS EARLY, and not with the completeness files: the
     SOUNDNESS side has to CONCLUDE [_gv] ([ad_pat] / [ad_sd_typing] embed the
     leaf-valid join, so thm:complete-skeleton/type-inference can consume it),
-    and [algo/sub/prop_soundness_sub.v] sits BEFORE the completeness files in
+    and [algo/sub/prop_soundness_subtag.v] sits BEFORE the completeness files in
     the dependency order.  [algo_decl/] is upstream of all of [algo/sub/], so
     the constraint is met here.
 
@@ -49,7 +49,7 @@ Open Scope frost_ad_scope.
 (*  the completeness files: the SOUNDNESS side has to CONCLUDE [_gv]       *)
 (*  ([ad_pat] / [ad_sd_typing] embed the leaf-valid join, so               *)
 (*  thm:complete-skeleton/type-inference can consume it), and              *)
-(*  algo/prop_soundness_sub.v sits BEFORE both of them in the dependency   *)
+(*  algo/prop_soundness_subtag.v sits BEFORE both of them in the dependency   *)
 (*  order.  Both are plain inductions over the mirrors and need nothing    *)
 (*  this file does not already import.                                     *)
 (* ===================================================================== *)

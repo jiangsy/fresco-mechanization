@@ -60,12 +60,12 @@ files were `Admitted` scaffolding subsumed by the current algo development.
 - ✅ Completeness and optimality of Consistency, all three parts (`a_consis_complete` / `complete_mu` / `assign_complete_step`, `algo/prop_consis_complete.v`)
 
 **C. subtyping-proofs.tex** (§Subtyping)
-- ✅ Decorating algorithmic subtyping (`a_sub_decorate` / `a_sub_decorate_bundle`, `algo/prop_decorate_sub.v` + `algo/prop_decorate_key.v`); Soundness of decorated subtyping (`a_subtag_sound_bundle`, `algo/prop_sub_sound.v`)
-- ✅ Look decoration (`algo/prop_pat_sub.v` §7); Decorating constraint solving (`algo/prop_decorate_key.v`); Constraint solving concatenation (`algo/prop_decorate_sub.v` §3, lemma:solvetag-concat)
+- ✅ Decorating algorithmic subtyping (`a_sub_decorate` / `a_sub_decorate_bundle`, `algo/prop_decorate_sub.v` + `algo/prop_soundness_sub.v`); Soundness of decorated subtyping (`a_subtag_sound_bundle`, `algo/prop_sub_sound.v`)
+- ✅ Look decoration (`algo/prop_pat_sub.v` §7); Decorating constraint solving (`algo/prop_soundness_sub.v`); Constraint solving concatenation (`algo/prop_decorate_sub.v` §3, lemma:solvetag-concat)
 - ✅ Subtyping decoration (variables → general) (`algo/prop_decorate_sub.v`, subtyping-proofs:175/541); Vacuous subtyping decoration (same file, :483)
 - ✅ Stability of constraint collection (`a_looksub_lookeq_subst_stable`); Look freshness (`a_extract_output_fresh`) — both `algo/prop_looksub.v`
-- ✅ Decorating instantiation (`a_extract_decorate`, `algo/prop_decorate_key.v`); Soundness of decorated algorithmic subtyping of flexible variables (the flex half of `a_subtag_sound_bundle`)
-- ✅ **Theorem: Soundness of subtyping** (`a_sub_sound`, `algo/prop_decorate_key.v`, axiom-free)
+- ✅ Decorating instantiation (`a_extract_decorate`, `algo/prop_soundness_sub.v`); Soundness of decorated algorithmic subtyping of flexible variables (the flex half of `a_subtag_sound_bundle`)
+- ✅ **Theorem: Soundness of subtyping** (`a_sub_sound`, `algo/prop_soundness_sub.v`, axiom-free)
 - ✅ Complete partial precision (`algo/prop_sub_complete.v` P5b, lemma:partial-precision-complete); Stability of subtyping under more precise substitution (`ad_pat_sub_precise_upre`, same file — P5)
 - ✅ Completeness of constraint collection & solving **for variables** (subtyping-proofs:1696, P6-Sv) — `a_solve_sub_complete_var` in `frost/algo/prop_look_complete_sub_var.v`, **Qed and axiom-free** (`Print Assumptions`: closed under the global context).  The paper's statement is **FALSE as given**, machine-checked counterexample `frost/algo/cex/cex_p6sv_forall_flex.v` (`p6sv_with_p6cv_premises_is_false`): its own ForallL case builds, from a ρ = IDENTITY instance, the raw-flexible-payload configuration that `cex_p6_flex_freshened.v` rules unreachable on the constraint-collection route.  What is proved is the REPAIRED statement, which adds the positional premise `flex_shield Θ0 Ψ' Δρ P0 ψa` (plus `flex_apart_walk`, and a `binds`-monotone context generalization so Sub-ForallL can run the IH at `Θ,β`).  `flex_shield_excludes_cex` is kept as the regression test tying the premise to the counterexample.  See docs/PAPER-GAPS.md and DESIGN-completeness-subtyping.md §6 (x)–(a3)
 - 🟢 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_looksub_solve_complete_gen` (ρ-generalized) + the paper's premise-free ρ = identity corollary `a_looksub_solve_complete` in `frost/algo/prop_look_complete_sub_cstr.v`; **11 of 12 rows closed**, ALL TWELVE ROWS closed.  ⚠️ Phase B's planned prerequisite — a sub-side `ad_pat_consis_target_ftv` — is FALSE at `ad_pat_sub_g__forall_l_tagged` even under `is_tskl` (`cex/cex_p6ss_sub_target_ftv.v`); what Sub-ForallR carries instead is a MODE-GUARDED DISJUNCTION (DESIGN §8 (h)), whose right disjunct (`alpha_stack`) is the shape that never descends the target.  Like P6-Sv it is a REPAIRED statement (`sub_shield`).  ⚠️ P6-Cs's `Δρ ∩ dom Θ0 = ∅` premise was VACUOUS — `cex/cex_p6cs_rho_delta_vacuous.v` — and is now the ftv-level one.
@@ -293,7 +293,7 @@ while this statement has no fuel on either side.
 **`make coq` exit 0; README.v 28/28 `Print Assumptions` closed; no `Admitted`,
 no `Axiom`.**  −561 / +136 lines.
 
-⭐ **`ad_pat_sub_to_v` (algo/sub/prop_soundness_sub.v): every plain join
+⭐ **`ad_pat_sub_to_v` (algo/sub/prop_soundness_subtag.v): every plain join
 ADMITS a fuel.**  With the existing `ad_pat_sub_of_gv` this makes the two
 relations INTERDERIVABLE.  It is **unconditional** — any sort, any Θ, no
 ghost-freeness — and that is new: it became provable only because
@@ -468,7 +468,7 @@ bridge had to detour through the mirror.  The premise is now on
   `ad_partial_precise_isub`.  Each had exactly one occurrence in the tree: its
   own definition.
 - ⚙ `ad_pat_sub_{subst_flex,subst_flex_def,rename_tvar,strip_suffix}` MOVED
-  from `algo/prop_pat_sub.v` to `algo/sub/prop_soundness_sub.v`, beside their
+  from `algo/prop_pat_sub.v` to `algo/sub/prop_soundness_subtag.v`, beside their
   `_gv` twins — that is where the refinement transports they now need live.
   Both consumers (`prop_suffix_erase.v`, `prop_rename_decl.v`) already import
   it.  ⚠️ In that file bare `guarded_pskl_subst` resolves to
@@ -673,7 +673,7 @@ soundness and completeness proofs both go through".
 
 ⭐ Why there is no inversion: the DEFINITION layers point one way
 (`algo/def_*` → `algo_decl/ + deco_algo/def_*`, never back), while the PROOF layers
-already interleave — `deco_algo/prop_decorate_key.v` reaches into
+already interleave — `deco_algo/prop_soundness_sub.v` reaches into
 `algo/prop_soundness_consis.v`, `algo/prop_pat_sub.v`, `algo/prop_refine.v` and
 `algo/prop_stability.v`.  One consumer (`algo/typing/prop_closed.v`) and a dozen
 prose references repointed; `frost/coercions.v` already CALLED it
@@ -1617,7 +1617,7 @@ reads the join through `ad_pat_sub_target_wf` — plain again, via
 since the wrapper keeps the plain lemma's quantifier prefix.
 
 ⚙ The predicted several-rebuild loop took exactly three: (i)
-prop_soundness_typing.v needed `Require Import …prop_soundness_sub` (a
+prop_soundness_typing.v needed `Require Import …prop_soundness_subtag` (a
 `Require Import` does not re-export — fourth occurrence of this trap), (ii)
 the `mod_comp_ty` triple, (iii) the `target_wf` triple.  Everything else —
 including the cex rewrite — compiled on the first attempt.
@@ -1662,7 +1662,7 @@ Registered in `docs/PAPER-GAPS.md`.
 `_step` rows, which needs an invariant no lemma states yet ("a TC run's result
 type is scoped BELOW any suffix the run deposits").
 
-**5. ✅ The `Check` row's missing lemma is BUILT** — `prop_soundness_sub.v`
+**5. ✅ The `Check` row's missing lemma is BUILT** — `prop_soundness_subtag.v`
 §1a–§1d, Qed and axiom-free, ~180 lines: `ad_refine_pskl_unfold_def_target`,
 ⭐ `ad_refine_syn_f_inh_wf_transfer`, `refine_transport_arrow` / `_all`, and
 `ad_refine_pskl_refine_inh_gen` / `_target`.  ⭐ **It needs TWO FEWER
@@ -1701,7 +1701,7 @@ they reuse the IH's `n`.
 
 ⚙ Consumers: of the three positional readers, one never touched the join; the
 other two recover the plain form with `ad_pat_sub_of_gv`.
-`prop_decorate_key.v` needed the `def_decl_algo_sub_hyg` import added — a
+`prop_soundness_sub.v` needed the `def_decl_algo_sub_hyg` import added — a
 `Require Import` does not re-export.  ⭐ `a_sub_sound`'s own statement is
 UNCHANGED (still the plain join, recovered at the call site), deliberately:
 its consumers still feed the plain join into `ad_pat` / `ad_sd_typing`.
@@ -1711,7 +1711,7 @@ its consumers still feed the plain join into `ad_pat` / `ad_sd_typing`.
 theorems 3 and 4.
 
 **9. ✅ THE `strip_suffix` CHAIN IS COMPLETE — and with it EVERY structural
-prerequisite of §6.1** (`prop_soundness_sub.v` §1h, Qed and axiom-free):
+prerequisite of §6.1** (`prop_soundness_subtag.v` §1h, Qed and axiom-free):
 `ad_refine_pskl_subst_flex_def`, `ad_pat_sub_gv_subst_flex_def`, and the
 driver `ad_pat_sub_gv_strip_suffix`, plus `bskl_to_pskl_subst_mono` and ⭐
 `ftag_in_uskl_subst_mono` (a MONOTYPE's painting is tag-free, so substituting
@@ -1726,7 +1726,7 @@ rows.
 ⚠️ `guarded_pskl_subst` had to be written FULLY QUALIFIED here — the bare name
 resolves to prop_looksub.v's homonym, which carries a DISEQUALITY premise.
 
-**8. ✅ The `strip_suffix` chain, UNDEFINED-HEAD half** — `prop_soundness_sub.v`
+**8. ✅ The `strip_suffix` chain, UNDEFINED-HEAD half** — `prop_soundness_subtag.v`
 §1g, Qed and axiom-free: ⭐ `ad_refine_pskl_subst_flex` (which did not exist in
 any form — no `ad_refine_pskl`/`_f` substitution-strip), then
 `ad_pat_sub_gv_subst_flex`, plus `bskl_to_pskl_subst_unit` and
@@ -1741,7 +1741,7 @@ DEFINED half (`ad_refine_pskl_subst_flex_def`, `ad_pat_sub_gv_subst_flex_def`)
 and the driver itself remain.
 
 **7. ✅ THREE of the FOUR `_gv` STRUCTURAL MIRRORS the bundle's rows consume**
-— `prop_soundness_sub.v` §1f, Qed and axiom-free: `ad_pat_sub_gv_psi_cong`
+— `prop_soundness_subtag.v` §1f, Qed and axiom-free: `ad_pat_sub_gv_psi_cong`
 (the leaf carries no Ψ), `_isub` and `_weaken` (leaf via
 `ad_refine_pskl_isub` / `_weaken`, both already in the tree).
 
@@ -1755,7 +1755,7 @@ a missing ingredient: the plain `ad_pat_sub_strip_suffix`
 and **`ad_refine_pskl_subst_flex` does not exist in any form**.  Details in
 HANDOFF §6.1(c).
 
-**6. ✅ `ad_pat_sub_gv_rename_tvar` is BUILT** — `prop_soundness_sub.v` §1e,
+**6. ✅ `ad_pat_sub_gv_rename_tvar` is BUILT** — `prop_soundness_subtag.v` §1e,
 Qed and axiom-free.  §6.1's `ForallR` row needs it because the ALGORITHMIC
 subtyping rule is EXISTS-FRESH (one α) while `ad_pat_sub_gv__forall_r` is
 COFINITE; the `_gv` version carries the fuel UNCHANGED.  Two new bridges:
@@ -1779,14 +1779,14 @@ rows the RECURSIVE premise must be discharged FIRST because it is what fixes
 `prop_completeness_sub.v`) MOVED to `algo_decl/def_decl_algo_sub_hyg.v`,
 joined by the composite `ad_pat_sub_of_gv`.  Both are plain inductions over
 the mirrors, so they need nothing that file does not already import — and
-`algo/prop_soundness_sub.v`, which now has to CONCLUDE `_gv`, sits before both
+`algo/prop_soundness_subtag.v`, which now has to CONCLUDE `_gv`, sits before both
 completeness files.  `make coq` clean.
 
 ⭐ **And §6.1's row table gained a row it under-estimated**: the `Check` row's
 leaf datum is `⌊T⌋ˢ ⊳ ⌊Qt⌋` for the CONSISTENCY's output `Qt`, while the row
 re-targets its conclusion to `inh B` (audit-F2 — the output is not literally
 `B`).  So it needs the `ad_refine_pskl` MIRROR of
-`ad_pat_consis_refine_inh_target` (prop_soundness_sub.v:366).  `Arrow`'s
+`ad_pat_consis_refine_inh_target` (prop_soundness_subtag.v:366).  `Arrow`'s
 domain leaf, by contrast, is direct.
 
 **3. `lemma:precision-sub` — the Ghost row is NOT the obstacle**
@@ -2556,7 +2556,7 @@ spots).  Two `fsetdec` misuses, both the hazard CLAUDE.md already names:
 
 `prop_flex.v` 133 s → 4.4 s.  **It is an EARLY dependency, so this is on the
 critical path of every rebuild.**  ⭐ And the sort premises paid for
-themselves: `prop_decorate_key.v` fell 96 s → 14.2 s, its
+themselves: `prop_soundness_sub.v` fell 96 s → 14.2 s, its
 `dec_ext_solve_eq_step_size` (76 s) dropping below 3 s — the premises PRUNE
 impossible rows out of that induction.
 
@@ -3403,7 +3403,7 @@ one.
 Flex-SkipRigid: the soundness bundle (`prop_sub_sound.v`, with
 `a_isub_cons_var_typ` / `_var_skl` for the increase and `a_wf_ptyp_isub` /
 `a_scope_pskl_isub` for the re-attached entry's wf), the decoration bundle
-(`prop_decorate_key.v`), and equivariance (`prop_swap.v`).
+(`prop_soundness_sub.v`), and equivariance (`prop_swap.v`).
 
 ⭐ **THE ONE THING THE RULES DO NOT CARRY** — and the twin walk's does not
 either — is a freshness premise for `P0`.  Both `a_wf_pskl_strip_mid`
@@ -3521,7 +3521,7 @@ has `U-Assign-SkipTmVar` (type.ml:386-390), `sub_flex` falls through to
 `Errors.type_mismatch` (type.ml:1047-1050).  The repair is `Flex-SkipTmVar` in
 the paper's own idiom, but it is a RULE change: `a_sub_flex` + `a_subtag_flex`
 each gain two constructors, three mutual inductions reopen
-(`prop_sub_sound.v`, `prop_decorate_key.v`, `prop_swap.v`), and P7a gains two
+(`prop_sub_sound.v`, `prop_soundness_sub.v`, `prop_swap.v`), and P7a gains two
 rows carrying `Flex-SkipRigid`'s whole ⇓-truncation apparatus (the consistency
 twin's two cases are ~670 lines).  So it is the authors' call, and `sub_flex_complete_holds`
 carries the explicit premise `a_sub_flex_walkable Θ0` meanwhile.  ⚠️ It cannot
@@ -4328,12 +4328,12 @@ repair.
 
 **THE RULE.**  One opener plus `α ∉ ftvar_in_aenv Θ0 ∪ ftv P ∪ ftv P0`, and the
 `a_extract` premise stated once.  `a_extract_family_of_instance` MOVED
-prop_look_complete_extract.v → prop_looksub.v §11, because prop_decorate_key.v
+prop_look_complete_extract.v → prop_looksub.v §11, because prop_soundness_sub.v
 needs it now and is a SIBLING of P6-L's file, not a consumer.
 
 **CONSUMERS.**  Construction got EASIER — prop_sub_complete_thm.v's two P7b
 sites used to build the family explicitly and now hand over P6-L's instance
-verbatim.  Inversion got harder in exactly one place, prop_decorate_key.v's
+verbatim.  Inversion got harder in exactly one place, prop_soundness_sub.v's
 `a_sub_sound` ForallL row, which rebuilds the family from the run's ONE
 opener (the decorated layer is still cofinite) and then picks its own α for the
 decoration as before.
@@ -4385,7 +4385,7 @@ anyway.
 
 **Files touched:** `algo/def_extra.v` (the rule), `prop_looksub.v` (§11, the
 relocated family lemma), `prop_look_complete_extract.v` (pointer),
-`prop_decorate_key.v`, `prop_sub_complete_thm.v`, `test_examples.v`, DESIGN §4.3.
+`prop_soundness_sub.v`, `prop_sub_complete_thm.v`, `test_examples.v`, DESIGN §4.3.
 
 **Remaining:** cluster 6 (`a_pat`/`a_typing`, 8 cofinite rules at
 algo/def_extra.v:1160–1264 — these bind TERM variables, so audit first whether
@@ -4479,7 +4479,7 @@ if the avoid-set starts leaking into consumer statements.
 **Files touched:** `def_extra.v` (the three rules), `prop_decorate.v` (lemma
 moved out), `prop_consis_rename.v` (§8 restructured, §9 admissibility, §10 the
 relocated decoration lemma), `prop_consis_sound.v`, `prop_consis_complete.v`,
-`prop_inc_strengthen.v`, `prop_decorate_key.v`, `test_examples.v`, `README.v`.
+`prop_inc_strengthen.v`, `prop_soundness_sub.v`, `test_examples.v`, `README.v`.
 
 **Remaining:** cluster 5 (`a_sub__forall_l` + `a_subtag__forall_l_*`; the four
 `a_consistag` ∀ rows are the same CLOSE shape as cluster 4 — ⚠️ still worth
@@ -4522,7 +4522,7 @@ name to a fresh `δ` moves the outputs and leaves the inputs alone.  It is what
 shrinking the look context away with `a_looksub_ctx_ftv_mono` to make the
 opener's `ftvar_in_aenv` condition vacuous.
 
-**`prop_decorate_key.v`.**  `a_subtag_decoration`'s look hypothesis now carries
+**`prop_soundness_sub.v`.**  `a_subtag_decoration`'s look hypothesis now carries
 its OWN context `Θl`, universally quantified INSIDE the induction — the ForallL
 rows hand the recursive call a run living under the look rule's binder while
 the subtag premise sits at `Ξ ++ Θ0`, and since the lemma only CONSUMES the run
@@ -4609,9 +4609,9 @@ RESTORE the exact bound where it is still true rather than weaken a consumer:
 `cex/cex_p6cs_subject_wf.v` got the look judgment's context argument (Qed,
 axiom-free).
 
-### ⛔ THE BLOCKER — `prop_decorate_key.v`'s two ForallL rows need a new enabler
+### ⛔ THE BLOCKER — `prop_soundness_sub.v`'s two ForallL rows need a new enabler
 
-`a_subtag_decoration` (prop_decorate_key.v:98) has not been converted at all —
+`a_subtag_decoration` (prop_soundness_sub.v:98) has not been converted at all —
 its look hypothesis is still written context-free, which is the file's
 first syntax error (:102).  Converting it is NOT mechanical, and the reason is
 worth writing down because it is the first place the campaign's avoid-input
@@ -4693,7 +4693,7 @@ Run against the actual consumer sets (`grep -rn NAME frost | grep '\.v:'`):
   the ρ apparatus therefore stay too.  The same argument applies to P6-Ss's
   mode-guarded ftv-𝒞 disjunction.
 - **`a_looksub_lookeq_subst_stable` (§4)** — consumers are exactly
-  prop_decorate_key.v:511 and :786, and both are the rows the blocker above
+  prop_soundness_sub.v:511 and :786, and both are the rows the blocker above
   rewrites.  RETIRE once the generalized lemma lands (with a RESTART NOTE).
   `cex/cex_look_subst_stable_leak.v` stays either way: it is a registered
   paper gap, not scaffolding.
@@ -4706,11 +4706,11 @@ Run against the actual consumer sets (`grep -rn NAME frost | grep '\.v:'`):
   consumers (P6-Cs's two `_keep` uses were the last, and they died in this
   commit).  Their `a_looksub` siblings are still used —
   prop_look_complete_sub_cstr.v:1262/:2176/:2561 for `_keep`,
-  prop_decorate_key.v and prop_look_complete_extract.v:1304 for `_rename_var`
+  prop_soundness_sub.v and prop_look_complete_extract.v:1304 for `_rename_var`
   — so the pairs are kept intact until P6-Ss and the decoration file are
   converted, at which point both `a_lookeq` halves should go.
 - **`a_looksub_rename_var` STAYS.**  The re-freshening dance at
-  prop_decorate_key.v:228-263 does NOT evaporate: `a_looksub_open_target_at`
+  prop_soundness_sub.v:228-263 does NOT evaporate: `a_looksub_open_target_at`
   requires `β <> α`, where `β` is the ForallR rule's Barendregt binder and `α`
   the looked-for variable — and the rule's binder is chosen by `induction
   Hsub`, i.e. BEFORE the looked-for variable is introduced, so no freshness
@@ -4807,7 +4807,7 @@ consumer holds after `inversion …; subst` has eaten the un-opened body's name
 legitimately leaks into it — so the lemmas hand back `subst_cstrs`, and
 `a_solvetag_subst_cstrs` carries the solvetag run across.
 
-**Still RED, and where.**  Two files.  `prop_decorate_key.v`
+**Still RED, and where.**  Two files.  `prop_soundness_sub.v`
 (`a_subtag_decoration` at :102 — the same ∀ rows, larger, plus the
 `HDf : forall b, b ∉ ?L1` cofinite-family reads at :489/:764).  And
 `prop_look_complete_cstr.v` (P6-Cs), which is PARTLY converted: the ∀ rows of
@@ -4823,7 +4823,7 @@ three ∀ rows (:3033 / :3533 / :4054) apply the rule at the binder they already
 picked.  `cex/cex_p6_flex_freshened.v` was fixed (arity) along the way.
 
 **Remaining, in order:** (i) `prop_look_complete_cstr.v`'s FlexR/∀ tail; (ii)
-`prop_decorate_key.v`; (iii) `prop_look_complete_sub_cstr.v` (P6-Ss, same
+`prop_soundness_sub.v`; (iii) `prop_look_complete_sub_cstr.v` (P6-Ss, same
 shape); (iv) `test_examples.v` and the remaining `cex/` look runs; (v) then
 clusters 4–6, F-deprecation, the walk's `∉ dom Θ1` premises (P7a), and finally
 the P7b dispatcher.
@@ -4895,7 +4895,7 @@ repaired `a_looksub_lookeq_subst_stable` and `_rev` (the reverse needed
    these should SIMPLIFY: they currently build a cofinite family by renaming
    a fresh representative, and exists-fresh lets them use the derivation's
    own binder.
-4. `prop_decorate_key.v` / `prop_decorate_sub.v` (`a_looksub_open_target_at`
+4. `prop_soundness_sub.v` / `prop_decorate_sub.v` (`a_looksub_open_target_at`
    is the one genuine "move a binder" consumer), then `test_examples.v` and
    the `cex/` files that build look runs.
 5. Then the rest of the campaign: cluster 4 (consis mutual), cluster 5
@@ -4915,7 +4915,7 @@ Three recurring shapes did the work:
    exists-fresh rule hands over ITS OWN binder, and a re-freshened premise
    is no sub-derivation.  Converted: `a_solve_sub_eq_weaken_mid_flex`
    (an inserted block can CAPTURE a pinned witness) and, in
-   prop_decorate_key.v, `dec_ext_solve_eq_step` / `dec_ext_solve_sub_step`
+   prop_soundness_sub.v, `dec_ext_solve_eq_step` / `dec_ext_solve_sub_step`
    — there the decoration ψ is an INPUT that may itself mention the rule's
    binder (a ◇ under the ∀ decorates to an arbitrary tagged skeleton), so
    the cofinite `dec_ext` / `d_tags_skl` / `a_solvetag` families cannot be
@@ -5066,7 +5066,7 @@ Options, all needing a decision:
 (C) Re-encode the three walk rules' prose-completion (e.g. re-attach
     through a rename on the output, or thread `β` positionally so no
     re-attachment freshness is needed) — touches the ALGORITHM's
-    encoding; soundness (prop_decorate_key) re-checks; needs sign-off
+    encoding; soundness (prop_soundness_sub) re-checks; needs sign-off
     on paper-faithfulness.
 (D) Parameterize the ALGORITHM's fresh choices by an avoid-set
     (algorithm-side) — also encoding-touching.

@@ -601,10 +601,9 @@ Proof.
       rewrite ftvar_in_bskl_ptyp_to_bskl_syn. eauto.
 Qed.
 
-(** Ghost-freeness is closed under substituting a ghost-free skeleton.
-    ⚙ MOVED here 2026-08-11 from algo/sub/prop_completeness_sub_precise.v: its
-    two INSTANCES ([_subst_unit], [_subst_mono]) were already in this file, and
-    [uskl_ghost_free_open_gen] below needs it upstream. *)
+(** Ghost-freeness is closed under substituting a ghost-free skeleton.  Its two
+    INSTANCES ([_subst_unit], [_subst_mono]) are below, as is its one consumer
+    [uskl_ghost_free_open_gen]. *)
 Lemma uskl_ghost_free_subst : forall R ψ α,
   uskl_ghost_free R ->
   uskl_ghost_free ψ ->

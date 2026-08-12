@@ -43,7 +43,7 @@ Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.consis.prop_soundness_consis.
-Require Import src.frost.algo.sub.prop_soundness_sub.
+Require Import src.frost.algo.sub.prop_soundness_subtag.
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.sub.prop_completeness_sub_precise.
 Require Import src.frost.algo.prop_suffix_erase.

@@ -56,13 +56,13 @@ Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.consis.prop_soundness_consis.
-Require Import src.frost.algo.sub.prop_soundness_sub.
+Require Import src.frost.algo.sub.prop_soundness_subtag.
 Require Import src.frost.algo.pat.prop_soundness_pat.
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_rename_decl.
 Require Import src.frost.algo.sub.prop_completeness_sub_gen.
 Require Import src.frost.algo.prop_suffix_erase.
-Require Import src.frost.deco_algo.prop_decorate_key.
+Require Import src.frost.deco_algo.prop_soundness_sub.
 
 Set Implicit Arguments.
 
@@ -962,13 +962,6 @@ Qed.
 (* ===================================================================== *)
 (*  §11  lemma:split-refine, COLOURED                                    *)
 (* ===================================================================== *)
-
-(* ⚙ DELETED 2026-08-12 — [a_split_refines], the UNCOLOURED-codomain form
-   ([Θ1 ⨟ ∅ ⊢ᵣ inh⌈P0⌉ ⊳ inh⌈P → Q⌉]).  It was superseded on 2026-08-08 by
-   [a_split_refines_gen] below, which is what both call sites use, and had
-   no consumer since.  ⚠️ It is still cited as a prerequisite of
-   thm:sound-type-inference in CLAUDE.md / PROGRESS.md and at
-   algo/def_extra.v — the lemma those mean is [_gen]. *)
 
 (** ≡ᵗ embeds into ≡ˢ on paintings — the codomain-generalized split
     refinement below needs it. *)

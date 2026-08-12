@@ -32,7 +32,7 @@ Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.consis.prop_soundness_consis.
-Require Import src.frost.algo.sub.prop_soundness_sub.  (* ad_pat_sub_fuel_psi_cong *)
+Require Import src.frost.algo.sub.prop_soundness_subtag.  (* ad_pat_sub_fuel_psi_cong *)
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
@@ -328,10 +328,6 @@ Proof.
     apply mono_ptyp_pskl_no_forall.
     eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact H ].
 Qed.
-
-(* ⚙ [uskl_ghost_free_subst] MOVED 2026-08-11 to algo/prop_pat_sub.v, where
-   its two instances ([_subst_unit], [_subst_mono]) already lived and where
-   [uskl_ghost_free_open_gen] needs it. *)
 
 (** A painted monotype is a guarded subject. *)
 Lemma mono_paint_guarded : forall τ,
@@ -1816,7 +1812,7 @@ Qed.
     relation and cannot be otherwise.  This statement has no fuel on either
     side, so the measure is introduced only to reach that lemma and discarded
     again; the two steps are [ad_pat_sub_to_fuel] / [ad_pat_sub_of_fuel]
-    (algo/sub/prop_soundness_sub.v, algo_decl/prop_sub_mirrors.v). *)
+    (algo/sub/prop_soundness_subtag.v, algo_decl/prop_sub_mirrors.v). *)
 Lemma ad_precise_extends_pat_sub : forall NM M Ψ Θ Δ P' P Q,
   {{ Θ ⨟ Δ ⊢ₚᵣ P' ⊑ P }}ad ->
   {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] (pskl_to_uskl P) ⩽ Q }}ad ->

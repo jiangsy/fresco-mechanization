@@ -53,7 +53,7 @@ Require Import src.frost.deco_algo.prop_decorate_sub.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.consis.prop_consis_precise.
 Require Import src.frost.algo.sub.prop_looksub.
-Require Import src.frost.algo.sub.prop_soundness_sub.    (* a_wf_pskl_open *)
+Require Import src.frost.algo.sub.prop_soundness_subtag.    (* a_wf_pskl_open *)
 Require Import src.frost.algo.sub.prop_solve_sub.
 Require Import src.frost.algo.sub.prop_completeness_sub_precise.
 Require Import src.frost.algo.prop_normal.

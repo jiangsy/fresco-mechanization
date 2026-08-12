@@ -5,7 +5,7 @@
     output context is an information increase of the input, and in it the
     DECLARATIVE judgement [ad_pat] holds at a colouring of the output, which
     refines the (inherited painting of the) input skeleton.  Mirrors
-    [a_sub_sound] (prop_decorate_key.v), which it consumes at the three
+    [a_sub_sound] (prop_soundness_sub.v), which it consumes at the three
     base rules; [a_consis_sound] (prop_soundness_consis.v) covers AbsAnno.
 
     ⭐ WHAT THE PAPER'S PROOF LEAVES TO THE MECHANIZATION:
@@ -60,13 +60,13 @@ Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.consis.prop_soundness_consis.
-Require Import src.frost.algo.sub.prop_soundness_sub.
+Require Import src.frost.algo.sub.prop_soundness_subtag.
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.sub.prop_completeness_sub_gen.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.sub.prop_looksub.
 Require Import src.frost.algo.prop_wf_preservation.
-Require Import src.frost.deco_algo.prop_decorate_key.
+Require Import src.frost.deco_algo.prop_soundness_sub.
 
 Set Implicit Arguments.
 

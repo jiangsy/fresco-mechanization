@@ -397,7 +397,7 @@ Order them soundness-first; the two soundness theorems are independent of the
 
 1. **Soundness of skeleton inference** — `a_pat` ⟹ information increase +
    `ad_pat` at the output context.  Consumes `a_sub_sound`
-   (prop_decorate_key.v; since `9189ba8` it concludes the PLAIN
+   (prop_soundness_sub.v; since `9189ba8` it concludes the PLAIN
    `Θ1 ⨟ ∅ ⊢ᵣᵃᵈ … ⊳ …`) and §1's suffix kit.
 2. **Soundness of type inference** — `a_typing` ⟹ increase + `ad_sd_typing`.
    Same shape; additionally needs `a_tyequiv` to discharge the appendix's three
@@ -519,7 +519,7 @@ and that FINAL `_` **is** `ad_pat_sub_gv`'s leaf premise
 (`ad_refine_pskl_f Δ2 Θ1 Δ2 ⌊R⌋ˢ P'`, plain at `Δ2 = ∅` via
 `ad_refine_pskl_f_forget`).  It is being dropped, not missing.
 
-**Row-by-row plan** (`frost/algo/prop_soundness_sub.v`, the ~820-line
+**Row-by-row plan** (`frost/algo/prop_soundness_subtag.v`, the ~820-line
 bundle at :466–:1286):
 
 | row | change |
@@ -533,7 +533,7 @@ context*.  The table below is the record of what each row needed.
 | `subtag_sound_concl` / `subtag_flex_sound_concl` | ✅ conclusion is now `exists n, ad_pat_sub_gv n NM M Ψ Θ1 R Qt` |
 | `Infer`, `UnivGhostR` | leaf refinement = `ad_refine_pskl_refl` (prop_refine.v:177) at the wf subject — both rows already build their target as the subject's own erasure |
 | `Arrow` (domain) | ⚙ DIRECT: `a_consistag_sound_aux`'s dropped conjunct IS `⌊R1⌋ˢ ⊳ P'1` and the row's `Q1` satisfies `bskl_to_pskl Q1 = P'1`.  `ad_refine_pskl_f_forget` then `ad_refine_pskl_f_isub` to reach Θ2 |
-| `Check` | ✅ **its missing lemma is BUILT** (2026-08-06, prop_soundness_sub.v §1a–§1d, Qed and axiom-free).  §6.1 had under-estimated this row: the dropped conjunct gives `⌊T⌋ˢ ⊳ ⌊Qt⌋` for the CONSISTENCY's output `Qt`, but the row re-targets its conclusion to `inh B` (audit-F2: the output is not literally `B`), so the leaf needs `⌊T⌋ˢ ⊳ B`.  `ad_refine_pskl_refine_inh_target` supplies exactly that.  See below |
+| `Check` | ✅ **its missing lemma is BUILT** (2026-08-06, prop_soundness_subtag.v §1a–§1d, Qed and axiom-free).  §6.1 had under-estimated this row: the dropped conjunct gives `⌊T⌋ˢ ⊳ ⌊Qt⌋` for the CONSISTENCY's output `Qt`, but the row re-targets its conclusion to `inh B` (audit-F2: the output is not literally `B`), so the leaf needs `⌊T⌋ˢ ⊳ B`.  `ad_refine_pskl_refine_inh_target` supplies exactly that.  See below |
 | `ForallR` | ⛔ **NEWLY FOUND (2026-08-06): needs `ad_pat_sub_gv_rename_tvar`, which does not exist.**  The algorithmic rule is exists-fresh (ONE α) while `_gv__forall_r` is cofinite, so the row must rename — exactly as the plain proof does with `ad_pat_sub_rename_tvar` (prop_pat_sub.v:1217, ~110 lines).  The `_gv` version must be FUEL-PRESERVING.  See the ingredient list below |
 | `ForallL` ×2 | widen the avoid-set (above); the hygiene premise is then `Hint0` |
 | `ForallR`, `UnivGhostL/LG`, `FlexMono`, ghosts | pass through |
@@ -548,10 +548,10 @@ old sites keep a pointer comment.
 
 ✅ **(b) DONE.**  Of the three positional consumers, one
 (`prop_completeness_sub_gen.v:3165`) never touched the join; the other two
-(`prop_decorate_key.v:4155`, `prop_completeness_sub_gen.v:3389`) recover the
-plain form with `ad_pat_sub_of_gv`.  ⚙ `prop_decorate_key.v` needed
+(`prop_soundness_sub.v:4155`, `prop_completeness_sub_gen.v:3389`) recover the
+plain form with `ad_pat_sub_of_gv`.  ⚙ `prop_soundness_sub.v` needed
 `Require Import …def_decl_algo_sub_hyg` added — a `Require Import` does not
-re-export, so the name was not in scope through `prop_soundness_sub`.
+re-export, so the name was not in scope through `prop_soundness_subtag`.
 
 ⚙ **`a_sub_sound`'s own statement is UNCHANGED** — it still concludes the
 plain `ad_pat_sub`, recovered at the call site.  That is deliberate: its
@@ -575,9 +575,9 @@ The plumbing below IS in the tree and green; the rule change itself is not.
 | in the tree | what it is |
 |---|---|
 | `ad_pat_sub_v` + `ad_pat_sub_of_v` (def_decl_algo_sub_hyg.v) | the leaf-valid join with the fuel forgotten — what the rules are to embed |
-| `a_sub_sound_v` (prop_decorate_key.v) | ⭐ the leaf-valid companion: hands the bundle's `_gv` ON instead of forgetting it.  The PLAIN version stays for its ~10 other consumers |
+| `a_sub_sound_v` (prop_soundness_sub.v) | ⭐ the leaf-valid companion: hands the bundle's `_gv` ON instead of forgetting it.  The PLAIN version stays for its ~10 other consumers |
 | `ad_pat_sub_gv_mono` / `_v_mono` (prop_ctx_mono.v) | context-monotonicity |
-| `ad_pat_sub_v_isub` / `_v_weaken` (prop_soundness_sub.v §1f) | the fuel-forgotten wrappers |
+| `ad_pat_sub_v_isub` / `_v_weaken` (prop_soundness_subtag.v §1f) | the fuel-forgotten wrappers |
 | the cex's §1/§2 at an ARBITRARY Θ | the refutation never needed `Θ = ·` |
 
 ⛔ **What blocked it.**  Changing the six base rows breaks EVERY proof over
@@ -660,7 +660,7 @@ converge).  Row-by-row leaf sources: `Infer`/`UnivGhostR` →
 
 #### ✅ The `Check` row's missing lemma — BUILT (2026-08-06)
 
-`prop_soundness_sub.v` §1a–§1d, all **Qed and axiom-free**, ~180 lines:
+`prop_soundness_subtag.v` §1a–§1d, all **Qed and axiom-free**, ~180 lines:
 
 | § | lemma | what it is |
 |---|---|---|
@@ -696,7 +696,7 @@ hypothesis is quantified over BOTH a Θ-extension and a Δ, because its two
   so the family goes in THIRD (§7.4: read the arity, don't count
   underscores).
 
-#### ✅ `ad_pat_sub_gv_rename_tvar` — BUILT (2026-08-06), `prop_soundness_sub.v` §1e
+#### ✅ `ad_pat_sub_gv_rename_tvar` — BUILT (2026-08-06), `prop_soundness_subtag.v` §1e
 
 Qed and axiom-free, with the two bridges it needed:
 `ad_refine_pskl_f_of_plain`, `ftag_in_uskl_subst_var` (⭐ renaming a TYPE
@@ -714,7 +714,7 @@ carried UNCHANGED:
         (subst_uskl_in_uskl (uskl_var_f β') α R)
         (subst_bskl_in_bskl (bskl_var_f β') α Q).
 
-**Ingredients — three of five are already in scope from `prop_soundness_sub.v`:**
+**Ingredients — three of five are already in scope from `prop_soundness_subtag.v`:**
 
 | need | status |
 |---|---|
@@ -727,7 +727,7 @@ carried UNCHANGED:
 ⚠️ **Four more traps, all from moving scratch-proved script INTO the tree.**
 A scratch file's hint context and name resolution are NOT the target file's:
 
-- `; auto` closes a DIFFERENT NUMBER of goals in `prop_soundness_sub.v` than
+- `; auto` closes a DIFFERENT NUMBER of goals in `prop_soundness_subtag.v` than
   in a scratch file, and the bullets silently stop lining up ("Wrong bullet"
   pointing at the NEXT row, not the guilty one).  State every premise chain
   explicitly.

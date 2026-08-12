@@ -8,10 +8,10 @@
 
          {{ Γ ⊢ A ≤ B }}d  →  {{ ∅ ⨟ Γ ⊢[TC] syn{A} ⩽ inh{B} }}d.
 
-       So [≤] is a LOWER bound on [⩽]'s expressive power.  ⚙ At [TC] only; the
+       So [≤] is a LOWER bound on [⩽]'s expressive power.  ⚙ At [TC] only: the
        FN-depth-indexed generalisation of Bruno's margin note ([≤ₘ⟨n⟩] at
-       [mode_fn^n TC]) is NOT proved here, and the relation it would need does
-       not exist — this header claimed otherwise until 2026-08-12.
+       [mode_fn^n TC]) is NOT proved, and the relation it would need does not
+       exist.
 
     2. [mono_lambda_anno_redundant] — a MONOTYPE annotation on a lambda binder
        is always redundant (introduction.tex:171).  ⚠️ Ascriptions are not:

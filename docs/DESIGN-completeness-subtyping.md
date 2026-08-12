@@ -3,7 +3,7 @@
 Companion to `DESIGN-subtyping.md` (which covers both halves at the map
 level and whose §2.2 / §4 / §5 this doc refines).  Soundness
 (`a_sub_sound`) is **DONE, Qed, axiom-free**
-(`prop_decorate_key.v:3406`).  This doc is the concrete plan for the
+(`prop_soundness_sub.v:3406`).  This doc is the concrete plan for the
 completeness half (paper `thm:complete-subtyping`), written **after**
 finishing soundness so the two hard lessons of that effort are baked in.
 
@@ -3697,7 +3697,7 @@ the only surviving rows are the two flexible lookups, which are
 
 ✅ **AND THE `a_sub` HALF TOO** (Sub-ForallR's ":3238"), `a_sub_concrete_output_equiv`.
 It was planned as a MUTUAL induction with `a_sub_flex`; that induction is NOT
-needed.  `a_sub_sound` (prop_decorate_key.v:3326) already exports the
+needed.  `a_sub_sound` (prop_soundness_sub.v:3326) already exports the
 output's refinement FROM the input skeleton — the very same conjunct
 `a_consis_sound` exports, in the very same shape — so the same
 `ad_refine_syn_ghost_free_equiv` applies verbatim and the whole half collapses
@@ -3884,7 +3884,7 @@ theorem says nothing about the solutions it describes.
 ⚠️ **The third premise is the MECH's, not the paper's**, and §1's justification
 for it does not survive contact.  §1 said it "is exactly what `a_consis_sound` /
 `a_sub_sound` PRODUCE for every algorithmic output".  `a_consis_sound` does.
-**`a_sub_sound` (prop_decorate_key.v:3326) does NOT** — its conclusion has
+**`a_sub_sound` (prop_soundness_sub.v:3326) does NOT** — its conclusion has
 `Θ0 ⊴ Θ1`, wf, the decorated subtyping judgment and the P0-fill, and no subject
 refinement.  It could not have one: algorithmic `UnivGhostR` outputs `∀◇.P` from
 the input `P`.  So for subtyping the third premise is not the sound/complete
@@ -5109,7 +5109,7 @@ Theorem a_sub_complete_bundle_holds : a_sub_complete_bundle.
 The authors' call was to add the missing rule, so `a_sub_flex__skip_tm_var` /
 `__skip_tm_skl` are in `algo/def_extra.v` with decorated mirrors, and the three
 mutual inductions over the `a_sub` / `a_sub_flex` pair carry their new cases
-(prop_sub_sound.v, prop_decorate_key.v, prop_swap.v).  `make coq` green,
+(prop_sub_sound.v, prop_soundness_sub.v, prop_swap.v).  `make coq` green,
 admit-free, axiom-free.  Each of those cases is Flex-SkipRigid's, with
 `a_isub_cons_var_typ` / `_var_skl` for the increase and `a_wf_ptyp_isub` /
 `a_scope_pskl_isub` for the re-attached entry's wf.

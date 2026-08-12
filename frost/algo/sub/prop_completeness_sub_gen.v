@@ -83,8 +83,8 @@ Require Import src.frost.algo.prop_pat_sub.       (* uskl_to_pskl_ptyp_to_uskl_s
 Require Import src.frost.algo.sub.prop_sub_msubst_equiv. (* ≡ᵘ + erasure + generation *)
 Require Import src.frost.algo.prop_stability.     (* a_wf_pskl_isub *)
 Require Import src.frost.algo.prop_inc_strengthen. (* a_assign_unify_consis_flex_preserve *)
-Require Import src.frost.deco_algo.prop_decorate_key.  (* a_sub_sound *)
-Require Import src.frost.algo.sub.prop_soundness_sub.      (* a_wf_pskl_subst_tvar *)
+Require Import src.frost.deco_algo.prop_soundness_sub.  (* a_sub_sound *)
+Require Import src.frost.algo.sub.prop_soundness_subtag.      (* a_wf_pskl_subst_tvar *)
 Require Import src.frost.algo.consis.prop_consis_precise.   (* uskl_precise kit *)
 Require Import src.frost.algo.sub.prop_completeness_sub_precise.     (* P5 + the fuelled transports *)
 (* P6 — via the facade (audit §8.1d).  The three piecewise imports this
@@ -269,7 +269,7 @@ Definition sub_flex_complete_concl
 (* ===================================================================== *)
 
 (** What the induction will establish — named after
-    [a_sub_decorate_bundle] (prop_decorate_key.v), the house shape for a
+    [a_sub_decorate_bundle] (prop_soundness_sub.v), the house shape for a
     two-half [a_sub] / [a_sub_flex] statement.  Both halves are quantified over
     the SAME fuel [n], and the lexicographic order is (n, |Θ0|) — see the note
     on [sub_flex_complete_concl]. *)

@@ -89,7 +89,7 @@
 
     THE REPAIR, as landed: two rules on [a_sub_flex] and two on
     [a_subtag_flex], plus the mirroring cases in the three mutual inductions
-    over the pair (prop_sub_sound.v's soundness bundle, prop_decorate_key.v's
+    over the pair (prop_sub_sound.v's soundness bundle, prop_soundness_sub.v's
     decoration bundle, prop_swap.v's equivariance) and two new P7a rows.  The
     one thing the rules do NOT carry, and the twin walk's does not either, is
     a freshness premise for [P0]: a term entry is never [a_binds_tvar], so

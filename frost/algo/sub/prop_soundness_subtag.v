@@ -1,4 +1,7 @@
-(** SOUNDNESS OF DECORATED SUBTYPING (lemma:sound-decorated-subtyping,
+(** SOUNDNESS OF DECORATED SUBTYPING — of [a_subtag], NOT of [a_sub].  The
+    paper's thm:sound-subtyping ([a_sub_sound]) is assembled in
+    deco_algo/prop_soundness_sub.v; this file is its L-B half.
+    (lemma:sound-decorated-subtyping,
     subtyping-proofs.tex:43-58, mutual with
     lemma:sound-decorated-flex-subtyping :1094) — the L-B half of
     thm:sound-subtyping (docs/DESIGN-subtyping.md §2.1).
@@ -703,7 +706,7 @@ Proof.
 Qed.
 
 (** ⭐ THE CONSUMER FORM — §6.1's Check row.  Mirrors
-    [ad_pat_consis_refine_inh_target] (prop_soundness_sub.v:366) exactly, but
+    [ad_pat_consis_refine_inh_target] (prop_soundness_subtag.v:366) exactly, but
     with TWO FEWER hypotheses (see §B). *)
 Lemma ad_refine_pskl_refine_inh_target : forall Θ Qt,
   {{ ⊢ Θ }}a ->

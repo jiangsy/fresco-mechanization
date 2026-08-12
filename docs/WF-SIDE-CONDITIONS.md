@@ -304,7 +304,7 @@ of the call site)` as the decomposition.
 
 The L-A decoration lemmas (`a_subtag_decoration_var`, `a_consistag_decoration`,
 KEY `a_subtag_decoration`, MAIN `a_sub_decorate` — algo/prop_decorate_sub.v,
-prop_decorate_key.v) all carry the external hypothesis
+prop_soundness_sub.v) all carry the external hypothesis
 
     NM = SK  ->  mod_comp_sk (pskl_to_bskl_inh P0) M
 

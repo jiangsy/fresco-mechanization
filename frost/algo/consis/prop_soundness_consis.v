@@ -1693,8 +1693,7 @@ Proof. intros; apply bskl_to_pskl_close_rec. Qed.
 (** Moving a variable from Δ into the context as a rigid (the skeleton
     well-formedness reassociation used to open ∀-binders). *)
 (* ===================================================================== *)
-(*  ∀-wf at a CHOSEN opener (moved here by the freshness campaign's        *)
-(*  cluster 4)                                                            *)
+(*  ∀-wf at a CHOSEN opener                                               *)
 (* ===================================================================== *)
 
 (** [a_consis]'s ∀ rows are exists-fresh now, so they hand their consumers
