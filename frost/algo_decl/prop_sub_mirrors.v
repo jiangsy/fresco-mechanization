@@ -45,7 +45,7 @@ Open Scope frost_ad_scope.
 (* ===================================================================== *)
 (*  The two ERASURES + fuel monotonicity.                                 *)
 (*                                                                        *)
-(*  ⚙ [ad_pat_sub_of_fuel] and [ad_pat_sub_fuel_weaken] are HERE, not with *)
+(*  ⚙ [ad_pat_sub_of_fuel] and [ad_pat_sub_fuel_le] are HERE, not with *)
 (*  the completeness files: the SOUNDNESS side has to CONCLUDE [_gv]       *)
 (*  ([ad_pat] / [ad_sd_typing] embed the leaf-valid join, so               *)
 (*  thm:complete-skeleton/type-inference can consume it), and              *)
@@ -60,7 +60,7 @@ Open Scope frost_ad_scope.
     returns the family at whatever height the extraction yields, while
     [a_sub_complete_forall_r] wants it at exactly [n] for a conclusion at
     [S n]. *)
-Lemma ad_pat_sub_fuel_weaken : forall n NM M Ψ Θ R Q,
+Lemma ad_pat_sub_fuel_le : forall n NM M Ψ Θ R Q,
   ad_pat_sub_fuel n NM M Ψ Θ R Q ->
   forall m, n <= m -> ad_pat_sub_fuel m NM M Ψ Θ R Q.
 Proof.

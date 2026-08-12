@@ -963,82 +963,12 @@ Qed.
 (*  §11  lemma:split-refine, COLOURED                                    *)
 (* ===================================================================== *)
 
-(** The paper's `lemma:split-refine` (proofs.tex): a split refines.  Stated
-    COLOURED — the shape `a_typing`'s four CHECK rows consume — rather than
-    in the uncoloured `ad_refine_pskl` form.
-
-    ⚙ THE FRESHNESS the flexible row needs — `a_assign_sound` demands the
-    extended context well-formed — now sits ON THE RULE
-    (`a_split__flex`, algo/def_extra.v), the way `a_guess_mono__hole`
-    carries its own.  WF-SIDE-CONDITIONS pattern, rule-premise variant. *)
-Lemma a_split_refines : forall Θ0 P0 P Q Θ1,
-  {{ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}a ->
-  {{ ⊢ Θ0 }}a ->
-  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
-  {{ Θ1 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P0)
-                ⊳ (pskl_to_bskl_inh (pskl_arrow P Q)) }}ad.
-Proof.
-  intros Θ0 P0 P Q Θ1 Hs Hwf HwfP; inversion Hs; subst.
-  - (* arrow : reflexivity at the inherited painting *)
-    apply ad_refine_syn_refl_inh. exact HwfP.
-  - (* hole : the fill is [□ → □] *)
-    simpl.
-    replace (bskl_arrow bskl_hole bskl_hole)
-      with (pskl_to_bskl_syn (pskl_arrow pskl_hole pskl_hole)) by reflexivity.
-    apply ad_refine_syn__hole.
-    apply a_wf_pskl__arrow; apply a_wf_pskl__hole.
-  - (* flex : the row's premise is a full consistency run *)
-    match goal with
-    | Hf1 : β `notin` ftvar_in_aenv Θ0,
-      Hf2 : α1 `notin` add β (ftvar_in_aenv Θ0) |- _ =>
-        pose proof (dom_subset_ftvar_in_aenv Θ0) as Hds;
-        assert (Hfrβ : β `notin` dom Θ0) by (clear - Hf1 Hds; fsetdec);
-        assert (Hfrα1 : α1 `notin` add β (dom Θ0))
-          by (clear - Hf2 Hds; fsetdec)
-    end.
-    assert (HwfX : {{ ⊢ ((α1 ~ abind_flex_mono)
-                               ++ (β ~ abind_flex_mono) ++ Θ0) }}a).
-    { apply a_wf_aenv__flex;
-        [ simpl_env; repeat rewrite dom_app; simpl;
-          clear - Hfrα1; fsetdec | ].
-      apply a_wf_aenv__flex; [ clear - Hfrβ; fsetdec | exact Hwf ]. }
-    assert (HwfArr : {{ ((α1 ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θ0)
-                       ⨟ empty ⊢ₚₛ (pskl_arrow (pskl_var_f β)
-                                                (pskl_var_f α1)) }}a).
-    { apply a_wf_pskl__arrow; apply a_wf_pskl__var; right; right; left;
-        [ unfold binds; simpl; right; left; reflexivity
-        | unfold binds; simpl; left; reflexivity ]. }
-    (* ⭐ ONLY FlexL can fire: the subject is a VARIABLE and the input an
-       ARROW, and no other row admits that pair. *)
-    match goal with
-    | Hc : a_consis _ _ _ _ _ _ _ |- _ => inversion Hc; subst
-    end.
-    match goal with
-    | Ha : {{ _ ⊲[ nil ] _ ≔ _ ⊣ _ }}a |- _ =>
-        pose proof (a_assign_sound Ha a_decls__nil
-                      ltac:(simpl_env; exact HwfX)
-                      ltac:(simpl_env; exact HwfArr)) as [Hle Hcons];
-        pose proof (a_assign_preserves_wf Ha a_decls__nil
-                      ltac:(simpl_env; exact HwfX)
-                      ltac:(simpl_env; exact HwfArr)) as Hwf1
-    end.
-    (* the run's own consistency can only be FlexR: an ARROW subject
-       against a bare variable target *)
-    inversion Hcons; subst.
-    match goal with
-    | Hb : binds _ (abind_flex_mono_def ?τ0) Θ1,
-      Hc2 : {{ _ ⨟ Θ1 ⊢ˢ _ ∼ (ptyp_to_bskl_syn ?τ0) }}ad |- _ =>
-        assert (Hmτ : mono_ptyp τ0)
-          by (eapply a_wf_aenv_binds_def_mono; eassumption);
-        eapply ad_refine_syn__flex_l; [ exact Hb | ];
-        eapply ad_pat_consis_mono_to_refine with (A := τ0);
-          [ eapply consis_mono_sym with
-              (A := ptyp_arrow (ptyp_var_f β) (ptyp_var_f α1)) (A' := τ0);
-              [ exact Hc2 | exact Hwf1 | reflexivity | reflexivity
-              | repeat constructor | exact Hmτ ]
-          | exact Hwf1 | reflexivity | exact Hmτ ]
-    end.
-Qed.
+(* ⚙ DELETED 2026-08-12 — [a_split_refines], the UNCOLOURED-codomain form
+   ([Θ1 ⨟ ∅ ⊢ᵣ inh⌈P0⌉ ⊳ inh⌈P → Q⌉]).  It was superseded on 2026-08-08 by
+   [a_split_refines_gen] below, which is what both call sites use, and had
+   no consumer since.  ⚠️ It is still cited as a prerequisite of
+   thm:sound-type-inference in CLAUDE.md / PROGRESS.md and at
+   algo/def_extra.v — the lemma those mean is [_gen]. *)
 
 (** ≡ᵗ embeds into ≡ˢ on paintings — the codomain-generalized split
     refinement below needs it. *)
@@ -1058,7 +988,9 @@ Proof.
     apply H0. exact Hα.
 Qed.
 
-(** [a_split_refines], CODOMAIN-GENERALIZED (2026-08-08): the check rows'
+(** ⭐ THE PAPER'S `lemma:split-refine` (proofs.tex), stated COLOURED — the
+    shape `a_typing`'s four CHECK rows consume, rather than the uncoloured
+    `ad_refine_pskl` one — and CODOMAIN-GENERALIZED (2026-08-08): the check rows'
     conclusions now pair the split's DOMAIN with the body's own result, so
     soundness needs the split refinement with an arbitrary refinement [Qb]
     of the codomain painting in place of the codomain's reflexivity.  The

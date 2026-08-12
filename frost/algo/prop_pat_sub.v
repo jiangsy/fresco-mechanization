@@ -158,15 +158,6 @@ Proof.
       end; eauto; try (clear; fsetdec).
 Qed.
 
-(** Erasure commutes with the unit substitution. *)
-Lemma uskl_to_pskl_subst_unit : forall R' β,
-  ⌊ subst_uskl_in_uskl uskl_unit β R' ⌋ˢ
-  = subst_pskl_in_pskl pskl_unit β ⌊ R' ⌋ˢ.
-Proof.
-  induction R'; intros; simpl; try (f_equal; auto; fail).
-  repeat destruct_if; try reflexivity; try contradiction.
-Qed.
-
 (** ⭐ A PAINTING invents no ε tag — [ptyp] has no tag slot at all.  ⚙ One
     fact, one name, one file: the tree carried it TWICE, as
     [ftag_in_uskl_ptyp_syn] (algo/consis/prop_consis_precise.v) and
@@ -704,7 +695,6 @@ Proof.
       | apply uskl_ghost_free_subst_unit; assumption ].
 Qed.
 
-
 (** Closure of the syntactic predicates under substitution by a monotype
     painting (the defined-entry strip's substituend). *)
 Lemma mono_ptyp_to_uskl_syn_guarded : forall τ,
@@ -889,9 +879,6 @@ Proof.
   repeat destruct_if; try contradiction;
     [ apply uskl_to_pskl_ptyp_to_uskl_syn | reflexivity ].
 Qed.
-
-
-
 
 (** Unique mid-split of a uniq environment at a shared key. *)
 Lemma app_mid_uniq_split : forall (Ξ : aenv) Ξ' Θ Θ' α (b b' : abind),

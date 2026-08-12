@@ -849,6 +849,31 @@ Proof.
     unfold binds in *; apply in_or_app; auto.
 Qed.
 
+(** Inverting a well-formed tophole: the body is GUARDED and well-formed at
+    the EMPTY tag scope.
+    ⚙ ONE name for this fact (2026-08-12): it used to exist three times —
+    here in its strong form (consis/prop_consis_precise.v), a wf-only weak
+    form (deco_algo/prop_decorate_sub.v) that COLLIDED with it, and a copy
+    named [_x] (algo/prop_precise.v) that existed only to escape the shadow.
+    Weak uses read the second component. *)
+Lemma a_wf_pskl_tophole_inv : forall Θ Δ P,
+  {{ Θ ⨟ Δ ⊢ₚₛ (pskl_tophole P) }}a ->
+  guarded_pskl P /\ ({{ Θ ⨟ empty ⊢ₚₛ P }}a).
+Proof. intros * H; inversion H; subst; auto. Qed.
+
+(** Removing a whole prefix preserves well-formedness of the tail.
+    ⚙ ONE name for this fact (2026-08-12): it used to exist three times —
+    [a_wf_aenv_strip_prefix] (prop_compose.v), an [a_decls]-restricted
+    [a_wf_aenv_strip_prefix] (consis/prop_soundness_consis.v) and a second
+    general copy (pat/prop_soundness_pat.v).  The two later ones COLLIDED, so
+    which one an unqualified [apply] meant depended on import order. *)
+Lemma a_wf_aenv_strip_prefix : forall Ξ Θ,
+  {{ ⊢ (Ξ ++ Θ) }}a -> {{ ⊢ Θ }}a.
+Proof.
+  induction Ξ as [ | [a b] Ξ' IH ]; intros Θ Hwf; simpl in *; auto.
+  inversion Hwf; subst; eauto.
+Qed.
+
 (** Stripping a middle entry below a declaration-only prefix preserves
     context well-formedness (declarations carry no scoping content). *)
 Lemma a_wf_aenv_strip_mid : forall Ξ (c : atom) (b : abind) Θ,
@@ -1176,6 +1201,18 @@ Proof.
   - apply a_wf_pskl__unit.
   - apply a_wf_pskl__var. right; auto.
   - apply a_wf_pskl__arrow; auto.
+Qed.
+
+(** A definition is a monotype (it is stored that way). *)
+Lemma a_wf_aenv_binds_def_mono : forall Θ α1 τ,
+  {{ ⊢ Θ }}a ->
+  binds α1 (abind_flex_mono_def τ) Θ ->
+  mono_ptyp τ.
+Proof.
+  intros Θ α1 τ Hwf; induction Hwf; intros Hb;
+    try solve [ inversion Hb ];
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
+    try discriminate; try (inversion Heqb; subst; assumption); auto.
 Qed.
 
 (** A defined flexible variable's definition is well-formed in the whole

@@ -76,7 +76,7 @@ Require Import src.frost.algo.prop_flex.          (* a_decls *)
 Require Import src.frost.algo.consis.prop_soundness_consis.  (* ad_refine_{syn,pskl}_f *)
 Require Import src.frost.algo.prop_compose.       (* a_inc_{dom_flex,lookup_wf,lookup_mono}, msubst_pskl_open *)
 Require Import src.frost.deco_algo.prop_decorate_sub.  (* lc_uskl_of_pskl *)
-Require Import src.frost.algo.prop_normal.        (* a_inc_equiv_lookup (the a_binds_tvar form) *)
+Require Import src.frost.algo.prop_normal.        (* a_inc_equiv_lookup_tvar (the a_binds_tvar form) *)
 Require Import src.frost.algo.prop_mono_bridge.   (* ptyp_to_bskl_inh_syn_eq *)
 Require Import src.frost.algo.prop_precise_recover. (* tyequiv_mono_refine_syn *)
 Require Import src.frost.algo.prop_pat_sub.       (* uskl_to_pskl_ptyp_to_uskl_syn *)
@@ -889,7 +889,7 @@ Qed.
 (*  wf supplies and [msubst] preserves); a Δ-bound or RIGID variable is    *)
 (*  missed by both metasubstitutions ([msubst_lookup_notin]) so both sides *)
 (*  are the same variable; and a FLEXIBLE variable is the only real case — *)
-(*  [a_inc_equiv_lookup] gives [{{ Θ ⊢ κα ≡ᵗ σα }}a], [a_inc_lookup_mono] gives *)
+(*  [a_inc_equiv_lookup_tvar] gives [{{ Θ ⊢ κα ≡ᵗ σα }}a], [a_inc_lookup_mono] gives *)
 (*  both monotypes, and [tyequiv_mono_refine_syn]                          *)
 (*  (prop_precise_recover.v:90) IS that case, already Qed.                 *)
 (*                                                                        *)
@@ -917,7 +917,7 @@ Qed.
 (* ===================================================================== *)
 
 (** The variable leaf, for a source-visible α — RIGID or FLEXIBLE alike.
-    [prop_normal.a_inc_equiv_lookup] is stated at [a_binds_tvar], so no case
+    [prop_normal.a_inc_equiv_lookup_tvar] is stated at [a_binds_tvar], so no case
     split is needed here: at a rigid α both images are α itself and the ≡ᵗ is
     reflexivity, which the same route absorbs. *)
 Lemma a_inc_equiv_precise_msubst_var : forall Θ0 κ σ Θ Δ α,
@@ -1028,7 +1028,7 @@ Corollary a_inc_equiv_precise_msubst : forall Θ0 Δ0 P κ σ Θ Δ,
 Proof.
   intros Θ0 Δ0 P κ σ Θ Δ HwfP Hwf0 Hwfth Hκ Hσ Hie Hsub.
   eapply a_inc_equiv_precise_msubst_gen; try eassumption.
-  intros α Hbt. eapply prop_normal.a_inc_equiv_lookup; eassumption.
+  intros α Hbt. eapply prop_normal.a_inc_equiv_lookup_tvar; eassumption.
 Qed.
 
 Corollary a_inc_equiv_precise_msubst_flip : forall Θ0 Δ0 P κ σ Θ Δ,
@@ -1042,7 +1042,7 @@ Proof.
   intros Θ0 Δ0 P κ σ Θ Δ HwfP Hwf0 Hwfth Hκ Hσ Hie Hsub.
   eapply a_inc_equiv_precise_msubst_gen; try eassumption.
   intros α Hbt. apply a_tyequiv__sym.
-  eapply prop_normal.a_inc_equiv_lookup; eassumption.
+  eapply prop_normal.a_inc_equiv_lookup_tvar; eassumption.
 Qed.
 
 (* ===================================================================== *)
@@ -3772,7 +3772,7 @@ Proof.
   assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
     by (eapply a_wf_aenv_strip_mid; [ exact HdeclsΞ | exact Hwf ]).
   assert (Hwfcons : {{ ⊢ ((β ~ abind_flex_mono_def τ) ++ Θ0) }}a)
-    by (eapply a_wf_aenv_strip_prefix; [ exact HdeclsΞ | exact Hwf ]).
+    by (eapply a_wf_aenv_strip_prefix; exact Hwf).
   inversion Hwfcons as [ | | βz τz Θz HβΘ0 HwfτΘ0 Hmτ HwfΘ0 | | | ]; subst.
   assert (Hftvτ : ftvar_in_ptyp τ [<=] dom Θ0)
     by (apply a_wf_ptyp_ftv_dom; exact HwfτΘ0).
@@ -4042,7 +4042,7 @@ Proof.
         (unfold binds in *; apply in_or_app; right; exact hb). }
     assert (Heq1 : {{ Θ ⊢ (msubst_lookup (κ1 ++ κ2) γ)
               ≡ᵗ (msubst_lookup (msubst_compose ζ (κf1 ++ κf2)) γ) }}a)
-      by (eapply src.frost.algo.prop_normal.a_inc_equiv_lookup;
+      by (eapply src.frost.algo.prop_normal.a_inc_equiv_lookup_tvar;
           [ exact Hie | exact Hwf' | exact Hbt ]).
     assert (Heq2 : msubst_lookup (msubst_compose ζ (κf1 ++ κf2)) γ
                  = msubst_lookup ζ γ).

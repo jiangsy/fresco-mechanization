@@ -111,7 +111,6 @@ Qed.
    list.  The forward split above is what the main decoration proof
    consumes; the join is deferred until a call site fixes its shape. *)
 
-
 (* ===================================================================== *)
 (*  §4  Erasure commutes with decorated substitution                     *)
 (* ===================================================================== *)
@@ -383,12 +382,6 @@ Proof.
       | fsetdec ].
 Qed.
 
-
-
-
-
-
-
 (* a_subtag/a_subtag_flex Ψ-congruence deferred until the subtyping-
    decoration-var lemma needs it (the mutual solve tactic needs per-case
    handling for flex_mono/forall_l; built when consumed). *)
@@ -658,10 +651,6 @@ Lemma a_wf_pskl_arrow_inv : forall Θ Δ P1 P2,
   {{ Θ ⨟ Δ ⊢ₚₛ (pskl_arrow P1 P2) }}a -> {{ Θ ⨟ Δ ⊢ₚₛ P1 }}a /\ {{ Θ ⨟ Δ ⊢ₚₛ P2 }}a.
 Proof. intros * H; inversion H; auto. Qed.
 
-Lemma a_wf_pskl_tophole_inv : forall Θ Δ P,
-  {{ Θ ⨟ Δ ⊢ₚₛ (pskl_tophole P) }}a -> {{ Θ ⨟ empty ⊢ₚₛ P }}a.
-Proof. intros * H; inversion H; auto. Qed.
-
 Lemma lc_uskl_tophole_inv : forall R,
   lc_uskl (uskl_tophole R) -> lc_uskl R.
 Proof. intros R H; inversion H; auto. Qed.
@@ -802,8 +791,8 @@ Proof.
     simpl in HlcS. rewrite msubst_uskl_tophole in HlcS.
     apply lc_uskl_tophole_inv in HlcS.
     simpl in HwfS. rewrite msubst_uskl_tophole in HwfS. simpl in HwfS.
-    apply a_wf_pskl_tophole_inv in HwfS.
-    apply a_wf_pskl_tophole_inv in HwfP0.
+    apply a_wf_pskl_tophole_inv in HwfS as [_ HwfS].
+    apply a_wf_pskl_tophole_inv in HwfP0 as [_ HwfP0].
     simpl in Hcons. rewrite msubst_uskl_tophole in Hcons.
     inversion Hcons; subst;
       try (match goal with Hg : guarded_pskl (pskl_tophole _) |- _ =>
@@ -893,7 +882,7 @@ Proof.
         by (apply msubst_uskl_lc; [ exact Hlcρ | apply lc_uskl_of_pskl; assumption ]).
       assert (Hml2 : lc_uskl (msubst_uskl ρ ψ2))
         by (apply msubst_uskl_lc; [ exact Hlcρ | apply lc_uskl_of_pskl; assumption ]).
-      apply a_wf_pskl_tophole_inv in HwfP0.
+      apply a_wf_pskl_tophole_inv in HwfP0 as [_ HwfP0].
       rewrite msubst_uskl_arrow in Hcons.
       inversion Hcons; subst.
       apply a_consistag__univ_ghost_r.
@@ -1064,19 +1053,6 @@ Qed.
 Lemma a_solvetag_sub_hole_empty : forall ψ M Ψ,
   {{ ψ ≼[ M ] pskl_hole ⤳ Ψ }}da -> Ψ [=] empty.
 Proof. intros; eapply (proj1 a_solvetag_sub_eq_hole_empty); eauto. Qed.
-
-(** (c) Target-variable renaming: solvetag is insensitive to the names of
-    rigid variables in the target (tags live on the subject). *)
-Lemma guarded_pskl_subst_var : forall P α β,
-  guarded_pskl P ->
-  guarded_pskl (subst_pskl_in_pskl (pskl_var_f β) α P).
-Proof.
-  intros P α β Hg; inversion Hg; subst; simpl.
-  - constructor.
-  - destruct_if;
-      constructor.
-  - constructor; apply subst_pskl_in_pskl_lc_pskl; auto.
-Qed.
 
 Lemma a_solvetag_sub_eq_target_rename :
   (forall ψ M P Ψ, {{ ψ ≼[ M ] P ⤳ Ψ }}da ->
@@ -1743,7 +1719,7 @@ Proof.
               | exact Hwf
               | apply lc_uskl_tophole_inv; exact HlcT
               | exact HwfP0
-              | simpl in HwfT; apply a_wf_pskl_tophole_inv in HwfT;
+              | simpl in HwfT; apply a_wf_pskl_tophole_inv in HwfT as [_ HwfT];
                 exact HwfT
               | exact Hmod ]
         end.
@@ -2435,8 +2411,8 @@ Proof.
       simpl in Hcons |- *.
       inversion HlcS; subst.
       simpl in HwfSub.
-      apply a_wf_pskl_tophole_inv in HwfSub.
-      apply a_wf_pskl_tophole_inv in HwfP0.
+      apply a_wf_pskl_tophole_inv in HwfSub as [_ HwfSub].
+      apply a_wf_pskl_tophole_inv in HwfP0 as [_ HwfP0].
       inversion Hcons; subst;
         try (match goal with Hg : guarded_pskl (pskl_tophole _) |- _ =>
                solve [ inversion Hg ] end);
@@ -2455,8 +2431,8 @@ Proof.
       simpl in Hcons |- *.
       inversion HlcS; subst.
       simpl in HwfSub.
-      apply a_wf_pskl_tophole_inv in HwfSub.
-      apply a_wf_pskl_tophole_inv in HwfP0.
+      apply a_wf_pskl_tophole_inv in HwfSub as [_ HwfSub].
+      apply a_wf_pskl_tophole_inv in HwfP0 as [_ HwfP0].
       inversion Hcons; subst;
         try (match goal with
              | Hg : guarded_uskl (uskl_topholeg _) |- _ =>
@@ -2554,7 +2530,7 @@ Proof.
       inversion HlcS; subst.
       simpl in HwfSub.
       pose proof HwfSub as HwfSubT.
-      apply a_wf_pskl_tophole_inv in HwfSub.
+      apply a_wf_pskl_tophole_inv in HwfSub as [_ HwfSub].
       pose proof Hcons as HconsSaved.
       inversion Hcons; subst;
         try (match goal with
@@ -2667,7 +2643,7 @@ Proof.
       * change (uskl_arrow (subst_uskl_in_uskl ψa α R1)
                            (subst_uskl_in_uskl ψa α R2))
           with (subst_uskl_in_uskl ψa α (uskl_arrow R1 R2)).
-        apply a_wf_pskl_tophole_inv in HwfP0.
+        apply a_wf_pskl_tophole_inv in HwfP0 as [_ HwfP0].
         match type of Hp with
         | {{ _ ⊢ ?Ps ∼[ _ ] ?Pt ⤳ _ ⨾ _ }}a =>
             assert (Hszb : size_pskl Ps + size_pskl Pt <= n) by (cbn in Hsz |- *; lia)
@@ -2716,7 +2692,6 @@ Qed.
 (*  across the family is needed; inside the forall_l case uniformity is   *)
 (*  recovered by source-side renaming (a_looksub_subst_stable).           *)
 (* ===================================================================== *)
-
 
 (** Open a look run's ∀-TARGET at a GIVEN opener β — the shape the decoration
     consumers need, since they must meet the binder the SUBTYPING rule chose,
@@ -2986,7 +2961,6 @@ Proof.
     inversion HlcS; subst.
     constructor; apply subst_uskl_in_uskl_lc_uskl; assumption.
 Qed.
-
 
 (* ===================================================================== *)
 (*  §8  SOURCE substitution with EXISTENTIAL outputs                      *)

@@ -173,7 +173,7 @@ Proof.
   intros Θmid κ1 κ2 Θ τ Hie Hwf Hwt Hm; revert Hwt; induction Hm; intros Hwt.
   - (* unit *) simpl. apply a_tyequiv__refl. constructor.
   - (* var α *) simpl. inversion Hwt; subst.
-    eapply prop_normal.a_inc_equiv_lookup; [ exact Hie | exact Hwf | assumption ].
+    eapply prop_normal.a_inc_equiv_lookup_tvar; [ exact Hie | exact Hwf | assumption ].
   - (* arrow A1 A2 *) simpl. inversion Hwt; subst.
     apply a_tyequiv__arrow; [ apply IHHm1 | apply IHHm2 ]; assumption.
 Qed.
@@ -276,7 +276,7 @@ Proof.
   reflexivity.
 Qed.
 
-(** The type lift of [a_inc_equiv_lookup] to arbitrary well-formed types. *)
+(** The type lift of [a_inc_equiv_lookup_tvar] to arbitrary well-formed types. *)
 Lemma a_inc_equiv_msubst_ptyp : forall A Θ0 κ1 κ2 Θ,
   a_wf_ptyp Θ0 A ->
   a_inc_equiv Θ0 κ1 κ2 Θ ->
@@ -288,7 +288,7 @@ Proof.
   induction Hwf as [ Θ0 | Θ0 α Hbt | Θ0 A1 A2 Hwf1 IH1 Hwf2 IH2 | L Θ0 A0 Hwf0 IH0 ];
     intros κ1 κ2 Θ Hie Hwf Hlc1 Hlc2; simpl.
   - apply a_tyequiv__refl; apply lc_ptyp_unit.
-  - eapply prop_normal.a_inc_equiv_lookup; eauto.
+  - eapply prop_normal.a_inc_equiv_lookup_tvar; eauto.
   - apply a_tyequiv__arrow; [ apply IH1 | apply IH2 ]; auto.
   - apply a_tyequiv__all
       with (L := L `union` dom κ1 `union` dom κ2 `union` dom Θ0).
@@ -315,7 +315,7 @@ Proof.
                    | L Θ0 P0 Hwf0 IH0 | Θ0 | Θ0 P0 Hwf0 IH0 ];
     intros κ1 κ2 Θ Hie Hwf Hlc1 Hlc2; simpl.
   - apply a_pskl_tyequiv__refl; apply lc_pskl_unit.
-  - apply a_tyequiv_pskl. eapply prop_normal.a_inc_equiv_lookup; eauto.
+  - apply a_tyequiv_pskl. eapply prop_normal.a_inc_equiv_lookup_tvar; eauto.
   - apply a_pskl_tyequiv__arrow; [ apply IH1 | apply IH2 ]; auto.
   - apply a_pskl_tyequiv__all
       with (L := L `union` dom κ1 `union` dom κ2 `union` dom Θ0).
@@ -878,7 +878,7 @@ Proof.
     pose proof (a_wf_aenv_uniq Hwf) as Hu.
     destruct (aenv_mid_split _ _ _ _ _ _ _ Hu Heqt) as [HeqΞ [Heqb HeqΘ]].
     injection Heqb as HeqA. subst.
-    apply a_wf_aenv_strip_prefix_local in Hwf.
+    apply a_wf_aenv_strip_prefix in Hwf.
     inversion Hwf; subst.
     apply a_inc_equiv__var;
       [ apply IHHab; assumption | assumption | assumption ].
@@ -888,7 +888,7 @@ Proof.
     pose proof (a_wf_aenv_uniq Hwf) as Hu.
     destruct (aenv_mid_split _ _ _ _ _ _ _ Hu Heqt) as [HeqΞ [Heqb HeqΘ]].
     injection Heqb as HeqP. subst.
-    apply a_wf_aenv_strip_prefix_local in Hwf.
+    apply a_wf_aenv_strip_prefix in Hwf.
     inversion Hwf; subst.
     apply a_inc_equiv__var_skl;
       [ apply IHHab; assumption | assumption | assumption ].
@@ -897,7 +897,7 @@ Proof.
     pose proof (a_wf_aenv_uniq Hwf) as Hu.
     destruct (aenv_mid_split _ _ _ _ _ _ _ Hu Heqt) as [HeqΞ [Heqb HeqΘ]].
     subst.
-    apply a_wf_aenv_strip_prefix_local in Hwf.
+    apply a_wf_aenv_strip_prefix in Hwf.
     inversion Hwf; subst.
     apply a_inc_equiv__tvar; [ apply IHHab; assumption | assumption ].
 Qed.
@@ -943,7 +943,7 @@ Proof.
   - (* var_typ x *)
     inversion Hwf0 as [ | | | | xh Ah Θh Hnd Hwp Hwa | ]; subst.
     assert (Hwf1t : {{ ⊢ Θ' }}a) by
-      (apply a_wf_aenv_strip_prefix_local in Hwf1;
+      (apply a_wf_aenv_strip_prefix in Hwf1;
        inversion Hwf1; subst; assumption).
     assert (Hdisj : forall α0, α0 `in` dom Ξ -> α0 `notin` dom Θ').
     { intros α0 Hα0. pose proof (a_wf_aenv_uniq Hwf1) as Hu1.
@@ -975,7 +975,7 @@ Proof.
           [ exact Hκ | intros α0 Hα0; apply Hdisj; rewrite <- Hdp2; exact Hα0 ]).
     rewrite Hc1, Hc2, Heqe.
     assert (HwfTe : {{ ⊢ Te }}a).
-    { rewrite Heqe in HwfT. apply a_wf_aenv_strip_prefix_local in HwfT.
+    { rewrite Heqe in HwfT. apply a_wf_aenv_strip_prefix in HwfT.
       inversion HwfT; subst; assumption. }
     apply a_inc_equiv__var; [ | | exact Hse ].
     { apply IHHκ; auto. }
@@ -992,7 +992,7 @@ Proof.
   - (* var_skl x *)
     inversion Hwf0 as [ | | | xh Ph Θh Hnd Hwp Hwa | | ]; subst.
     assert (Hwf1t : {{ ⊢ Θ' }}a) by
-      (apply a_wf_aenv_strip_prefix_local in Hwf1;
+      (apply a_wf_aenv_strip_prefix in Hwf1;
        inversion Hwf1; subst; assumption).
     assert (Hdisj : forall α0, α0 `in` dom Ξ -> α0 `notin` dom Θ').
     { intros α0 Hα0. pose proof (a_wf_aenv_uniq Hwf1) as Hu1.
@@ -1024,7 +1024,7 @@ Proof.
           [ exact Hκ | intros α0 Hα0; apply Hdisj; rewrite <- Hdp2; exact Hα0 ]).
     rewrite Hc1, Hc2, Heqe.
     assert (HwfTe : {{ ⊢ Te }}a).
-    { rewrite Heqe in HwfT. apply a_wf_aenv_strip_prefix_local in HwfT.
+    { rewrite Heqe in HwfT. apply a_wf_aenv_strip_prefix in HwfT.
       inversion HwfT; subst; assumption. }
     apply a_inc_equiv__var_skl; [ | | exact Hse ].
     { apply IHHκ; auto. }
@@ -1040,7 +1040,7 @@ Proof.
   - (* tvar α *)
     inversion Hwf0 as [ | | | | | αh Θh Hnd Hwa ]; subst.
     assert (Hwf1t : {{ ⊢ Θ' }}a) by
-      (apply a_wf_aenv_strip_prefix_local in Hwf1;
+      (apply a_wf_aenv_strip_prefix in Hwf1;
        inversion Hwf1; subst; assumption).
     edestruct a_inc_equiv_inc_peel_suffix
       as [κ1b [κ2b [Hie2 [Hib1 [Hib2 [[p1 [Hp1 Hdp1]] [p2 [Hp2 Hdp2]]]]]]]];
@@ -1068,7 +1068,7 @@ Proof.
     rewrite Hc1, Hc2, Heqe.
     apply a_inc_equiv__tvar; [ | exact Hse ].
     assert (HwfTe : {{ ⊢ Te }}a).
-    { rewrite Heqe in HwfT. apply a_wf_aenv_strip_prefix_local in HwfT.
+    { rewrite Heqe in HwfT. apply a_wf_aenv_strip_prefix in HwfT.
       inversion HwfT; subst; assumption. }
     apply IHHκ; auto.
 Qed.
@@ -1638,7 +1638,7 @@ Lemma a_tyequiv_strengthen_mono_mid : forall Ξ c b Θt A A',
 Proof.
   intros Ξ c b Θt A A' Hwf HwfA HmA HwfB HmB Heq.
   rewrite <- app_assoc in Hwf, Heq.
-  assert (Hwft : {{ ⊢ Θt }}a) by (apply a_wf_aenv_strip_prefix_local in Hwf; exact Hwf).
+  assert (Hwft : {{ ⊢ Θt }}a) by (apply a_wf_aenv_strip_prefix in Hwf; exact Hwf).
   assert (Huniq : uniq ((Ξ ++ (c ~ b)) ++ Θt)) by (apply a_wf_aenv_uniq; exact Hwf).
   pose proof (a_tyequiv_downarrow Hwf Heq) as Hd.
   assert (HdA : ⇓ᵗ[ (Ξ ++ (c ~ b)) ++ Θt ] A = ⇓ᵗ[ Θt ] A)

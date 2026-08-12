@@ -1,8 +1,9 @@
 (** Frost re-mechanization — the compilable paper-to-Coq theorem index.
 
     THIS FILE IS A HEADLINE INDEX, NOT A CATALOGUE.  It lists the results a
-    reader of the paper would come looking for: the flagship theorems, and the
-    P5/P6 chain thm:complete-subtyping is assembled from.  Everything the
+    reader of the paper would come looking for: the flagship theorems, the
+    P5/P6 chain thm:complete-subtyping is assembled from, and (§V) the
+    expressiveness results backing the paper's PROSE claims.  Everything the
     mechanization found BEYOND the paper — the facts it asserts inline and
     never states, the external wf conditions, the refuted statements — is
     recorded in docs/PAPER-GAPS.md and docs/WF-SIDE-CONDITIONS.md, not here.
@@ -64,6 +65,7 @@
       every mode: [⇨] would claim synthesis, which only holds at [M = TI].  *)
 
 Require Import Coq.Lists.List.
+Require Import Coq.Sorting.Permutation.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
@@ -80,6 +82,8 @@ Require Import src.frost.algo_decl.def_typing.
 Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.decl.prop_syntax_directed.
 Require Import src.frost.decl.prop_general_subsumption.
+Require Import src.frost.decl.prop_stability.       (* order irrelevance *)
+Require Import src.frost.decl.prop_shallow.         (* the two expressiveness results *)
 Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.deco_algo.prop_decorate_key.
@@ -469,3 +473,63 @@ Check ad_ctx_precise_pat :
   {{ Θ ⊢ˢ[ M ] e ⦂ Q }}ad ->
   forall Θ', {{ Θ' ⪯ᶜᵗˣ Θ }}ad -> {{ ⊢ Θ }}a -> {{ ⊢ Θ' }}a -> {{ Θ' ⊢ˢ[ M ] e ⦂ Q }}ad.
 Print Assumptions ad_ctx_precise_pat.
+
+
+(* ##################################################################### *)
+(*  V.  WHAT THE DECLARATIVE SYSTEM CAN EXPRESS                           *)
+(*      ⚙ These three back claims the paper makes in PROSE rather than as *)
+(*      numbered theorems, so each entry cites the PASSAGE.  They are the *)
+(*      terminal results of decl/prop_stability.v and decl/prop_shallow.v *)
+(*      — nothing in the tree consumes them, which is exactly why they    *)
+(*      belong here: without an entry their assumption reports are never  *)
+(*      printed.                                                          *)
+(* ##################################################################### *)
+
+(* ⭐ ORDER IRRELEVANCE — "Fresco is not sensitive to argument order"
+   (overview.tex:859, the paragraph of that name).  Permuting a function-typed
+   variable's arguments, and its argument types with them, does not affect
+   typability: one [Permutation] moves the [(type, term)] pairs together, the
+   head carries an arbitrary n-quantifier prefix and an arbitrary codomain, and
+   the result [B'] at mode [m] is arbitrary.  [Permutation] is symmetric, so
+   this gives the "iff" for free.
+   ⚙ [d_wf_denv Γ] is REQUIRED, not cosmetic: inverting the head's [ti]
+   derivation yields [B1 = ⌈A₀⌉ˢ] for SOME binding of [x], and [uniq Γ] is what
+   identifies that [A₀] with the lemma's own (decl/prop_stability.v). *)
+Check d_typing_order_irrel :
+  forall Γ m n x y args args' A B',
+  d_wf_denv Γ ->
+  Permutation args args' ->
+  binds x (dbind_typ (ptyp_forall_prefix n (curry_ptyp args A))) Γ ->
+  binds y (dbind_typ (ptyp_forall_prefix n (curry_ptyp args' A))) Γ ->
+  {{ Γ ⊢[ m ] (curry_exp (exp_var_f x) args) ⦂ B' }}d ->
+  {{ Γ ⊢[ m ] (curry_exp (exp_var_f y) args') ⦂ B' }}d.
+Print Assumptions d_typing_order_irrel.
+
+(* SHALLOW SUBTYPING IS SUBSUMED — the LOWER bound on [⩽]'s expressive power.
+   [{{ Γ ⊢ A ≤ B }}d] ([d_shallow_sub], decl/def_extra.v:375) is the standard
+   shallow polymorphic subtyping relation with MONOTYPE instantiation that
+   declarative.tex:1191 defines; the claim that check-mode [⩽] subsumes it is
+   at :1179.  ⚠️ Both passages currently sit inside an [\iffalse] block, so
+   this entry is a mechanized claim looking for a home in the paper, not a
+   transcription of a live one. *)
+Check d_shallow_sub_complete :
+  forall Γ A A',
+  {{ Γ ⊢ A ≤ A' }}d ->
+  {{ empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn A) ⩽ (ptyp_to_btyp_inh A') }}d.
+Print Assumptions d_shallow_sub_complete.
+
+(* ONLY POLYTYPES NEED ANNOTATION — a MONOTYPE annotation on a lambda binder
+   is always redundant: the monotype is guessed or inherited instead
+   (introduction.tex:171, also [\iffalse]'d).  The domain is forced rather
+   than assumed — any [btyp] erasing to a monotype [A] IS [inh{A}] at every
+   mode ([mono_btyp_to_ptyp_inv]).
+   ⚠️ ASCRIPTIONS [(e : A)] are NOT erasable even at a monotype: the
+   annotation's role there is MODE, not polymorphism — [freeze e] has no
+   inference-mode typing at all ([freeze_no_infer], decl/prop_annotation.v),
+   so an ascription can be the only way to give a term a [ti] typing. *)
+Check mono_lambda_anno_redundant :
+  forall m Γ A e B2,
+  mono_ptyp A ->
+  {{ Γ ⊢[ m ] (exp_abs_anno A e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B2) }}d ->
+  {{ Γ ⊢[ m ] (exp_abs e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B2) }}d.
+Print Assumptions mono_lambda_anno_redundant.

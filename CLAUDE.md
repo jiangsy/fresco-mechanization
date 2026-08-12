@@ -31,7 +31,7 @@ mechanization.)  Corrected 2026-08-09.
     `a_typing_sound` — Qed, axiom-free, `Check`ed in `README.v`.  Its
     prerequisites are `lemma:suffix-erasure` for all six judgements
     (`algo/prop_suffix_erase.v`) and `lemma:split-refine` COLOURED
-    (`a_split_refines`).  ⚠️ It required FOUR side conditions the paper
+    (`a_split_refines_gen`).  ⚠️ It required FOUR side conditions the paper
     leaves to prose to be stated ON the rules — the two Barendregt
     conditions the suffix-DISCARDING check rows need, the `uniq` filter
     `AT-Abs` needs on `guess^TY`'s block, and the correction of
@@ -54,10 +54,13 @@ mechanization.)  Corrected 2026-08-09.
     `a_split_complete_tc`, completeness of SPLITTING at check mode (the
     paper's AbsCheck subcase 2); the suffix-discarding rows' scoping
     premise comes from `algo/typing/prop_scope.v`.
-  - ⭐⭐⭐ Subtyping COMPLETENESS: `a_sub_complete_bundle_holds` and
-    `a_sub_complete` (thm:complete-subtyping), with **no residual
-    hypothesis** — both are `Check`ed and audited in `README.v`.  P5, all
-    five P6 lemmas (Cv/Cs/Sv/Ss/L) and P7a/b/c are green.
+  - ⭐⭐⭐ Subtyping COMPLETENESS: `a_sub_complete` (thm:complete-subtyping),
+    with **no residual hypothesis** — `Check`ed and audited in `README.v`.  Its
+    generalized bundle `a_sub_complete_bundle_holds`
+    (`algo/sub/prop_completeness_sub.v`) is deliberately NOT in `README.v`: the
+    index carries the paper's statements, not the mech's inductive
+    generalizations.  P5, all five P6 lemmas (Cv/Cs/Sv/Ss/L) and P7a/b/c are
+    green.
   - What the completeness statement carries BEYOND the paper's own
     premises is only the EXTERNAL wf side conditions registered in
     [`docs/WF-SIDE-CONDITIONS.md`](docs/WF-SIDE-CONDITIONS.md):
@@ -105,7 +108,7 @@ mechanization.)  Corrected 2026-08-09.
   BOTH culprits were `fsetdec` calls that `grep` would have called innocent
   (one already had a `clear -`, just too wide).
 
-- **Read these three docs before touching code**: `AGENTS.md` (this
+- **Read these three docs before touching code**: `CLAUDE.md` (this
   file, ground rules), `DESIGN.md` (calculus + encoding design),
   `PROGRESS.md` (per-lemma status + daily progress log).
 
@@ -113,10 +116,10 @@ mechanization.)  Corrected 2026-08-09.
 
 | File | Purpose |
 |---|---|
-| [`AGENTS.md`](AGENTS.md) | (this file) ground rules, dirs, tooling, conventions |
+| [`CLAUDE.md`](CLAUDE.md) | (this file) ground rules, dirs, tooling, conventions |
 | [`DESIGN.md`](DESIGN.md) | **Two parts**: Part 1 — Frost calculus design (modes, colours, tags, skeletons, freezing); Part 2 — mechanization design (encoding choices, ctyp / `syn_color` / `inh_color`, proof-debugging methodology, gap rationales) |
 | [`PROGRESS.md`](PROGRESS.md) | **Two parts**: Part 1 — paper → Coq mapping (every paper Lemma / Theorem with status, statement, location); Part 2 — daily progress log |
-| [`README.v`](README.v) | **The compilable paper→Coq HEADLINE index — 24 entries.** Deliberately NOT a catalogue: a paper label is not a reason to appear (the exhaustive map is PROGRESS.md Part 1). Each entry is: the paper's Lemma/Theorem name + label, the statement in the PAPER'S OWN NOTATION (unicode), then `Check` and `Print Assumptions` **together**. So the build tail prints one assumption report per claim and every one must read "Closed under the global context". Adding a claim means adding all three parts. Run via `make coq`. |
+| [`README.v`](README.v) | **The compilable paper→Coq HEADLINE index — 31 entries.** Deliberately NOT a catalogue: a paper label is not a reason to appear (the exhaustive map is PROGRESS.md Part 1). Each entry is: the paper's Lemma/Theorem name + label, the statement in the PAPER'S OWN NOTATION (unicode), then `Check` and `Print Assumptions` **together**. So the build tail prints one assumption report per claim and every one must read "Closed under the global context". Adding a claim means adding all three parts. Run via `make coq`. |
 | [`Makefile`](Makefile) | ott + lngen + coq pipeline; `coq` / `quick` / `clean` / `sync-paper-refs` targets |
 | [`scripts/sync_paper_refs.py`](scripts/sync_paper_refs.py) | Sync paper Lemma / Theorem numbers from `paper/frost.aux` into .v comments and the auto-managed reference-link block in `PROGRESS.md`. Run via `make sync-paper-refs` or `make sync-paper-refs-md`. |
 | [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md) | Canonical registry of everything the paper's authors should see (gaps, prose-completions, refuted statements) |
@@ -136,13 +139,13 @@ mechanization.)  Corrected 2026-08-09.
 |---|---|---|
 | 1 | Syntactic / judgment **definitions** for the declarative system; algorithmic placeholder. | 🟢 **done** |
 | 2 | Declarative metatheory (subsumption, subtyping soundness, refinement preserves wf, skeleton validity/safety, stability lemmas). | 🟢 **admit-free** — D1 / D12 and the restored chain are all Qed; `frost/decl/` has no `admit`/`Admitted` left. See [PROGRESS.md Part 1](PROGRESS.md#part-1-paper--mechanization-mapping). |
-| 3 | Algorithmic system definitions and soundness/completeness vs. declarative. | 🟢 **admit-free and axiom-free; both directions of subtyping CLOSED**.  Consistency soundness AND completeness/optimality closed; subtyping soundness (`a_sub_sound`) closed; ⭐⭐⭐ subtyping COMPLETENESS closed and UNCONDITIONAL (`a_sub_complete_bundle_holds`, `a_sub_complete`, both in `README.v`) — P5, all five P6 lemmas and P7a/b/c green.  The remaining work is the PAPER, not the mechanization (hand-off §6 Step 4). |
+| 3 | Algorithmic system definitions and soundness/completeness vs. declarative. | 🟢 **admit-free and axiom-free; both directions of subtyping CLOSED**.  Consistency soundness AND completeness/optimality closed; subtyping soundness (`a_sub_sound`) closed; ⭐⭐⭐ subtyping COMPLETENESS closed and UNCONDITIONAL (`a_sub_complete` in `README.v`, off the generalized bundle `a_sub_complete_bundle_holds`) — P5, all five P6 lemmas and P7a/b/c green.  The remaining work is the PAPER, not the mechanization (hand-off §6 Step 4). |
 
 ## Directory map
 
 ```text
 mechanization/
-├── CLAUDE.md             (this file — ground rules; also serves as AGENTS.md)
+├── CLAUDE.md             (this file — ground rules)
 ├── DESIGN.md
 ├── PROGRESS.md
 ├── README.v              (paper index + Print Assumptions, compilable)
@@ -227,6 +230,8 @@ mechanization/
 │   │   │                         inference `ad_pat` + syntax-directed typing
 │   │   │                         `ad_sd_typing`, which section D is stated over)
 │   │   ├── prop_ctx_mono.v      (monotonicity along ctx precision)
+│   │   ├── prop_sub_mirrors.v   (the bridges between the paper's [ad_pat_sub]
+│   │   │                         and its fuel-indexed mirror [ad_pat_sub_fuel])
 │   │   └── prop_conserv.v       (⭐ CONSERVATIVITY: at a FLEXIBLE-FREE Θ the
 │   │                             decl-in-algo layer IS the plain declarative
 │   │                             system over Γ — the paper's unstated "it is
@@ -349,7 +354,9 @@ their topic names.
   twice.  Before adding a helper, grep for it.  When two copies differ in
   strength (`=` vs `[=]` vs `[<=]`, general vs variable-instance), keep the
   STRONG one and let the weak uses `rewrite` with it; do not keep both.
-  Duplicate count: 82 → 39 as of 2026-08-09.
+  Duplicate count: 82 → 39 (2026-08-09) → **0** (2026-08-12; the last ten are
+  recorded in `docs/REPORT-postclosure-audit.md` §2.3, and three of them were
+  one fact under three names).
 
 ## Encoding conventions
 
@@ -500,7 +507,7 @@ before changing any of them.
     read it before adding or changing any judgment notation. **The SYSTEM is
     the DELIMITER**, and each delimiter is its own notation scope:
     `{{ … }}d` declarative (`frost_d_scope`), `{{ … }}ad` declarative-over-Θ,
-    `{{ … }}a` algorithmic, `{{ … }}t` ε-tagged. That frees the turnstile,
+    `{{ … }}a` algorithmic, `{{ … }}da` the DECORATED algorithmic system. That frees the turnstile,
     so **SUPERSCRIPT = which copy** (bare types, `⊢ˢ` skeletons, `⊢ˢᵈ`
     syntax-directed) and **SUBSCRIPT = which relation** (`⊢ᵣ`/`⊢ᵣₚ`
     refinement, `⊢ₚᵣ` precision, `⊢ₛ`/`⊢ₑ` the solve layer, and
@@ -667,7 +674,6 @@ before changing any of them.
 - Reference repo for file-organization patterns:
   <https://github.com/jiangsy/proof_worklist_remechnization>
   (different calculus — copy the structure, not the rules).
-- Phase 2 + 3 design spec:
-  [`../docs/superpowers/specs/2026-05-10-frost-phase23-design.md`](../docs/superpowers/specs/2026-05-10-frost-phase23-design.md).
-- Phase 1 design spec:
-  [`../docs/superpowers/specs/2026-05-09-frost-mechanization-design.md`](../docs/superpowers/specs/2026-05-09-frost-mechanization-design.md).
+- ⚙ The two original design specs (`docs/superpowers/specs/2026-05-09-frost-
+  mechanization-design.md`, `…-05-10-frost-phase23-design.md`) no longer exist
+  in the tree; what survived of them is [`DESIGN.md`](DESIGN.md) Part 2.

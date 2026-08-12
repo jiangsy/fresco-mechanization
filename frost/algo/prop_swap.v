@@ -2476,11 +2476,11 @@ Qed.
 (*  The term-variable half of the equivariance primitive; [a_split_swap]  *)
 (*  is a per-judgment equivariance lemma whose eleven siblings are above.  *)
 (*                                                                        *)
-(*  ⚠️ These ten were elaborated under [Set Implicit Arguments] in their    *)
-(*  old home, and this file deliberately has none (see the header).  The  *)
+(*  ⚠️ These were elaborated under [Set Implicit Arguments] in their old    *)
+(*  home, and this file deliberately has none (see the header).  The      *)
 (*  EXTERNAL call sites are all [@]-applications, which are insensitive   *)
-(*  to it — but the block's INTERNAL ones are not ([a_split_rename_tm]    *)
-(*  writes [a_split_swap x y Hrun], leaving five type-level arguments to  *)
+(*  to it — but the block's INTERNAL ones are not (a proof here writes    *)
+(*  [a_split_swap x y Hrun], leaving five type-level arguments to         *)
 (*  implicit inference).  So the flag is turned on for this section ONLY  *)
 (*  and off again at the end: §1–§5 keep the explicit-argument policy the *)
 (*  header argues for, and §6 keeps the elaboration it was written under. *)
@@ -2496,9 +2496,9 @@ Set Implicit Arguments.
 (*  algorithmic tower; what was missing is the bridge that turns a SWAP   *)
 (*  of two atoms into the RENAMING of a term binder — which it is        *)
 (*  exactly when both atoms are fresh for everything else in sight        *)
-(*  ([swap_aenv_tm_head] below).  [a_sub_rename_tm] is the first          *)
-(*  consumer; the same three lines give the consistency walk's and,       *)
-(*  above them, [a_pat]'s own.                                           *)
+(*  ([swap_aenv_tm_head] below).  [a_pat_rename_tm] is the one consumer   *)
+(*  left; the per-judgment corollaries that used to sit between the two   *)
+(*  were deleted 2026-08-12 (note at their old site).                     *)
 (* ===================================================================== *)
 
 (** A binding the two swapped atoms do not occur in is untouched. *)
@@ -2547,95 +2547,16 @@ Proof.
   - apply swap_aenv_fresh_eq; [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
 Qed.
 
-(** ⭐ K6's payload for the binder rows: the ALGORITHMIC subtyping walk is
-    stable under renaming a TERM binder.  Equivariance does the work
-    ([a_sub_sub_flex_swap]); the bridge above turns the swapped contexts
-    back into the renamed ones, and the type-level data is untouched
-    because both atoms are fresh for it. *)
-Lemma a_sub_rename_tm : forall NM M P0 Θ0 P Q Ξ Θ1 x y (b : abind),
-  a_sub NM M P0 ((x ~ b) ++ Θ0) P Q (Ξ ++ (x ~ b) ++ Θ1) ->
-  x `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
-             `union` dom Θ1 `union` ftvar_in_aenv Θ1
-             `union` dom Ξ `union` ftvar_in_aenv Ξ
-             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
-             `union` ftvar_in_pskl Q) ->
-  y `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
-             `union` dom Θ1 `union` ftvar_in_aenv Θ1
-             `union` dom Ξ `union` ftvar_in_aenv Ξ
-             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
-             `union` ftvar_in_pskl Q) ->
-  a_sub NM M P0 ((y ~ b) ++ Θ0) P Q (Ξ ++ (y ~ b) ++ Θ1).
-Proof.
-  intros NM M P0 Θ0 P Q Ξ Θ1 x y b Hrun Hx Hy.
-  pose proof ((proj1 (a_sub_sub_flex_swap x y)) _ _ _ _ _ _ _ Hrun) as Hsw.
-  rewrite (@swap_aenv_tm_head x y b Θ0
-             ltac:(clear - Hx; solve_notin_auto) ltac:(clear - Hy; solve_notin_auto)) in Hsw.
-  rewrite swap_aenv_app in Hsw.
-  rewrite (@swap_aenv_tm_head x y b Θ1
-             ltac:(clear - Hx; solve_notin_auto) ltac:(clear - Hy; solve_notin_auto)) in Hsw.
-  rewrite (@swap_aenv_fresh_eq x y Ξ
-             ltac:(clear - Hx; solve_notin_auto) ltac:(clear - Hy; solve_notin_auto)) in Hsw.
-  rewrite !swap_pskl_fresh_id in Hsw;
-    try solve [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
-  exact Hsw.
-Qed.
-
-(** The consistency walk's term renaming — the same three lines as
-    [a_sub_rename_tm], off [a_assign_unify_consis_swap].  This is what
-    [AP-AbsAnno]'s [a_consis_chk] premise needs. *)
-Lemma a_consis_rename_tm : forall Θ0 P0 P Q Ξ Θ1 x y (b : abind),
-  a_consis empty empty ((x ~ b) ++ Θ0) P0 P Q (Ξ ++ (x ~ b) ++ Θ1) ->
-  x `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
-             `union` dom Θ1 `union` ftvar_in_aenv Θ1
-             `union` dom Ξ `union` ftvar_in_aenv Ξ
-             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
-             `union` ftvar_in_pskl Q) ->
-  y `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
-             `union` dom Θ1 `union` ftvar_in_aenv Θ1
-             `union` dom Ξ `union` ftvar_in_aenv Ξ
-             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
-             `union` ftvar_in_pskl Q) ->
-  a_consis empty empty ((y ~ b) ++ Θ0) P0 P Q (Ξ ++ (y ~ b) ++ Θ1).
-Proof.
-  intros Θ0 P0 P Q Ξ Θ1 x y b Hrun Hx Hy.
-  pose proof ((proj2 (proj2 (a_assign_unify_consis_swap x y)))
-                _ _ _ _ _ _ _ Hrun empty empty
-                (empty_eq_swap_atoms_empty x y)
-                (empty_eq_swap_atoms_empty x y)) as Hsw.
-  rewrite (@swap_aenv_tm_head x y b Θ0
-             ltac:(clear - Hx; solve_notin_auto) ltac:(clear - Hy; solve_notin_auto)) in Hsw.
-  rewrite swap_aenv_app in Hsw.
-  rewrite (@swap_aenv_tm_head x y b Θ1
-             ltac:(clear - Hx; solve_notin_auto) ltac:(clear - Hy; solve_notin_auto)) in Hsw.
-  rewrite (@swap_aenv_fresh_eq x y Ξ
-             ltac:(clear - Hx; solve_notin_auto) ltac:(clear - Hy; solve_notin_auto)) in Hsw.
-  rewrite !swap_pskl_fresh_id in Hsw;
-    try solve [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
-  exact Hsw.
-Qed.
-
-(** …in the output-suppressed form the rule states. *)
-Corollary a_consis_chk_rename_tm : forall Θ0 P P0 Ξ Θ1 x y (b : abind),
-  (forall Q, a_consis empty empty ((x ~ b) ++ Θ0) P0 P Q (Ξ ++ (x ~ b) ++ Θ1) ->
-     x `notin` ftvar_in_pskl Q /\ y `notin` ftvar_in_pskl Q) ->
-  a_consis_chk ((x ~ b) ++ Θ0) P P0 (Ξ ++ (x ~ b) ++ Θ1) ->
-  x `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
-             `union` dom Θ1 `union` ftvar_in_aenv Θ1
-             `union` dom Ξ `union` ftvar_in_aenv Ξ
-             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P) ->
-  y `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
-             `union` dom Θ1 `union` ftvar_in_aenv Θ1
-             `union` dom Ξ `union` ftvar_in_aenv Ξ
-             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P) ->
-  a_consis_chk ((y ~ b) ++ Θ0) P P0 (Ξ ++ (y ~ b) ++ Θ1).
-Proof.
-  intros Θ0 P P0 Ξ Θ1 x y b HQ [Q Hrun] Hx Hy.
-  destruct (HQ Q Hrun) as [HxQ HyQ].
-  exists Q. eapply a_consis_rename_tm;
-    [ exact Hrun
-    | clear - Hx HxQ; fsetdec
-    | clear - Hy HyQ; fsetdec ].
-Qed.
+(* ⚙ DELETED 2026-08-12 — the four CONSUMER-FACING renaming corollaries
+   [a_sub_rename_tm], [a_consis_rename_tm], [a_consis_chk_rename_tm] and
+   [a_split_rename_tm].  They were built for [a_typing]'s cofinite binder
+   rows, which became EXISTS-FRESH at `7061d31`; nothing has consumed them
+   since, and [a_pat_rename_tm] below uses the SWAP forms directly, exactly
+   as its own header says.  Each was three lines off its equivariance lemma
+   ([a_sub_sub_flex_swap] / [a_assign_unify_consis_swap] / [a_split_swap],
+   all still here) plus [swap_aenv_tm_head]: if [a_pat]'s four rows are ever
+   converted to exists-fresh and a consumer needs one back, re-derive it
+   rather than looking for it in history. *)
 (** Splitting is equivariant — three rows, the flexible one reusing the
     consistency walk's own equivariance. *)
 Lemma a_split_swap : forall a b Θ0 P0 P Q Θ1,
@@ -2661,34 +2582,6 @@ Proof.
       simpl in Hsw. exact Hsw.
 Qed.
 
-(** …hence splitting's term renaming, by the bridge. *)
-Lemma a_split_rename_tm : forall Θ0 P0 P Q Ξ Θ1 x y (b : abind),
-  {{ ((x ~ b) ++ Θ0) ⊲ P0 ▹ P ⇢ Q ⊣ (Ξ ++ (x ~ b) ++ Θ1) }}a ->
-  x `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
-             `union` dom Θ1 `union` ftvar_in_aenv Θ1
-             `union` dom Ξ `union` ftvar_in_aenv Ξ
-             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
-             `union` ftvar_in_pskl Q) ->
-  y `notin` (dom Θ0 `union` ftvar_in_aenv Θ0 `union` ftvar_in_abind b
-             `union` dom Θ1 `union` ftvar_in_aenv Θ1
-             `union` dom Ξ `union` ftvar_in_aenv Ξ
-             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
-             `union` ftvar_in_pskl Q) ->
-  {{ ((y ~ b) ++ Θ0) ⊲ P0 ▹ P ⇢ Q ⊣ (Ξ ++ (y ~ b) ++ Θ1) }}a.
-Proof.
-  intros Θ0 P0 P Q Ξ Θ1 x y b Hrun Hx Hy.
-  pose proof (a_split_swap x y Hrun) as Hsw.
-  rewrite (@swap_aenv_tm_head x y b Θ0
-             ltac:(clear - Hx; solve_notin_auto) ltac:(clear - Hy; solve_notin_auto)) in Hsw.
-  rewrite swap_aenv_app in Hsw.
-  rewrite (@swap_aenv_tm_head x y b Θ1
-             ltac:(clear - Hx; solve_notin_auto) ltac:(clear - Hy; solve_notin_auto)) in Hsw.
-  rewrite (@swap_aenv_fresh_eq x y Ξ
-             ltac:(clear - Hx; solve_notin_auto) ltac:(clear - Hy; solve_notin_auto)) in Hsw.
-  rewrite !swap_pskl_fresh_id in Hsw;
-    try solve [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
-  exact Hsw.
-Qed.
 (* ===================================================================== *)
 (*  K6, LAST PIECE — [a_pat]'s own term renaming.                         *)
 (*                                                                       *)

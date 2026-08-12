@@ -879,7 +879,7 @@ Proof.
             Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
             HwfQ Hgf).
   intros α Hα.
-  eapply ad_pat_sub_fuel_weaken; [ exact (Hfam α Hα) | lia ].
+  eapply ad_pat_sub_fuel_le; [ exact (Hfam α Hα) | lia ].
 Qed.
 
 (** The WLOG's TRICHOTOMY, straight off mode compatibility.  At [NM = SK]

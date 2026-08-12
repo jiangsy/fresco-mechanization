@@ -72,7 +72,7 @@ carry the strong reading**, as one extra premise per `ForallL` row:
 sites are mechanical: every transport either keeps the subject, takes `Ψ' := ∅`,
 or substitutes a type variable — and a substitution by a TAG-FREE term cannot
 change a tag (`ftag_in_utyp_subst_tagfree` / `ftag_in_uskl_subst_tagfree`,
-`frost/prop_etag.v` §0).  Two places are genuine obstructions, and one of them
+`frost/prop_tag.v` §0).  Two places are genuine obstructions, and one of them
 is deep:
 
 > **`d_consis_sub_trans_mid`** — CST, paper B.3, `decl/prop_general_subsumption.v`,
@@ -96,20 +96,20 @@ is deep:
 
 **The repair for CST, and it is a general technique.**  Stop freshening node by node.
 
-1. `frost/prop_etag.v` + `frost/decl/prop_etag_swap.v` §1–§2 — ε-tag
+1. `frost/prop_tag.v` + `frost/decl/prop_tag_swap.v` §1–§2 — ε-tag
    EQUIVARIANCE.  `fresh` is a statement about NAMES, so the primitive is a
    TRANSPOSITION of two tags, which is an automorphism of `d_tags`,
    `d_tags_skl`, `d_wf_utyp`, `d_wf_uskl`, `d_consis`, `d_pat_consis`, `d_sub`
    and `d_pat_sub` with **no freshness side condition**.  (A one-way rename
    would need ε₂ fresh for the whole derivation, and "the tags of a derivation"
    is not collectable from a `Prop`.)
-2. `decl/prop_etag_swap.v` §4 — a tags-BOUND twin `d_sub_tagsin U`: `d_sub`
+2. `decl/prop_tag_swap.v` §4 — a tags-BOUND twin `d_sub_tagsin U`: `d_sub`
    with `Ψ' [<=] U` on the two `ForallL` rows.  `d_sub_to_tagsin` COLLECTS the
    bound by a plain induction (no freshening anywhere); `d_sub_tagsin_of`
    forgets it.  ⚙ Its `ForallR` is EXISTS-FRESH where `d_sub`'s is cofinite —
    the collection must produce ONE `U` for the whole rule, and a cofinite
    premise would demand a bound uniform in infinitely many `α`.
-3. `decl/prop_etag_swap.v` §5 — `d_sub_freshen`: with all the derivation's tags
+3. `decl/prop_tag_swap.v` §5 — `d_sub_freshen`: with all the derivation's tags
    inside one `U`, a single chain of transpositions moves `U` off any finite
    set, provided that set avoids what the CONCLUSION mentions (its tag context
    and its subject's tags) — then no swap touches the conclusion.

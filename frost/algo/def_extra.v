@@ -1356,7 +1356,7 @@ Inductive a_split : aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
        ("fresh"); the mech makes it a rule premise, INPUT-only and against
        [ftvar_in_aenv] rather than [dom], exactly as [a_guess_mono__hole]
        does — a payload [α̂ ≔ τ] may mention them, and it must not.  Without
-       this, [a_split_refines] (prop_soundness_typing.v) cannot reach
+       this, [a_split_refines_gen] (typing/prop_soundness_typing.v) cannot reach
        [a_assign_sound], whose own premise is that the extended context is
        well-formed.  WF-SIDE-CONDITIONS.md pattern. *)
     β `notin` ftvar_in_aenv Θ0 ->

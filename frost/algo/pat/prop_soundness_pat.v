@@ -1056,10 +1056,6 @@ Proof.
   exists Qt. split; [ exact Hcons | ]. eapply ad_refine_syn_f_forget; exact Hrs.
 Qed.
 
-Lemma bskl_to_pskl_btyp_to_bskl : forall B,
-  bskl_to_pskl (btyp_to_bskl B) = ptyp_to_pskl (btyp_to_ptyp B).
-Proof. induction B; simpl; congruence. Qed.
-
 Lemma ad_refine_syn_arrow_inv : forall Θ Δ Q1 Q2 P1 P2,
   {{ Θ ⨟ Δ ⊢ᵣ (bskl_arrow Q1 Q2) ⊳ (bskl_arrow P1 P2) }}ad ->
   {{ Θ ⨟ Δ ⊢ᵣ Q1 ⊳ P1 }}ad /\ {{ Θ ⨟ Δ ⊢ᵣ Q2 ⊳ P2 }}ad.
@@ -1430,14 +1426,6 @@ Proof.
       [ discriminate | exact Hb' ].
 Qed.
 
-Lemma a_wf_aenv_strip_prefix : forall Θa Θ,
-  {{ ⊢ (Θa ++ Θ) }}a -> {{ ⊢ Θ }}a.
-Proof.
-  intros Θa; induction Θa as [ | [y c] Θa' IH ]; intros Θ Hwf.
-  - rewrite app_nil_l in Hwf; exact Hwf.
-  - apply IH. inversion Hwf; subst; assumption.
-Qed.
-
 Lemma binds_swap_mid_tvar : forall (x : atom) (c : abind) Θa α Θ β,
   binds x c (Θa ++ (α ~ abind_tvar) ++ Θ) ->
   x <> α ->
@@ -1587,7 +1575,7 @@ Proof.
     { intros Hin.
       assert (Hwf' : {{ ⊢ Θ' }}a)
         by (eapply a_wf_aenv_strip_prefix;
-            eapply a_wf_aenv_strip_prefix with (Θa := Θa); simpl_env; exact Hwf).
+            eapply a_wf_aenv_strip_prefix with (Ξ := Θa); simpl_env; exact Hwf).
       assert (Hwfτ : a_wf_ptyp Θ' τ)
         by (eapply a_wf_aenv_binds_def_wf; eassumption).
       assert (Ht : a_binds_tvar α0 Θ')
@@ -1618,7 +1606,7 @@ Proof.
     { intros Hin.
       assert (Hwf' : {{ ⊢ Θ' }}a)
         by (eapply a_wf_aenv_strip_prefix;
-            eapply a_wf_aenv_strip_prefix with (Θa := Θa); simpl_env; exact Hwf).
+            eapply a_wf_aenv_strip_prefix with (Ξ := Θa); simpl_env; exact Hwf).
       assert (Hwfτ : a_wf_ptyp Θ' τ)
         by (eapply a_wf_aenv_binds_def_wf; eassumption).
       assert (Ht : a_binds_tvar α0 Θ')

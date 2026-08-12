@@ -245,11 +245,6 @@ Lemma a_wf_pskl_all_inv : forall Θ Δ P,
     {{ Θ ⨟ (add α Δ) ⊢ₚₛ (open_pskl_wrt_pskl P (pskl_var_f α)) }}a.
 Proof. intros Θ Δ P H. inversion H; subst. eauto. Qed.
 
-Lemma a_wf_pskl_tophole_inv : forall Θ Δ P,
-  {{ Θ ⨟ Δ ⊢ₚₛ (pskl_tophole P) }}a ->
-  guarded_pskl P /\ {{ Θ ⨟ empty ⊢ₚₛ P }}a.
-Proof. intros Θ Δ P H. inversion H; subst. auto. Qed.
-
 (* ===================================================================== *)
 (*  P5b-ii — precision-substitution, foundational crux.                    *)
 (*  The paper's no-type-mismatch step is, on the consistency premises,       *)
@@ -545,7 +540,6 @@ Proof.
     destruct (IHHc Hwfa P0 HR Hnf) as [HΨ _].
     split; [ exact HΨ | reflexivity ].
 Qed.
-
 
 (** Monotonicity of [a_binds_tvar] under context extension. *)
 Lemma a_binds_tvar_binds_le : forall α Θ Θ',
@@ -1425,7 +1419,6 @@ Proof.
       in Hrec.
     exact Hrec.
 Qed.
-
 
 (** EMBEDDING: plain precision [Pa ⊑ ⌊ψ⌋] against a DECORATED [ψ] lifts to
     ⊑ᵤ, with [Ψrep] = ψ's tag reading (all of ψ's decorations are replaced

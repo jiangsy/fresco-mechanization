@@ -528,14 +528,15 @@ free, so one relation's copies across systems differ by the delimiter ALONE:
 | `Γ ⊢ˢ[ M ] e ⦂ A` / `Θ ⊢ᵃᵈ[ M ] e ⦂ B` | `{{ Γ ⊢ˢᵈ[ M ] e ⦂ A }}d` / `{{ Θ ⊢ˢᵈ[ M ] e ⦂ B }}ad` |
 | `Γ ⨟ Δ ⊢ₚₛ P` / `Θ ⨟ Δ ⊢ₚₛᵃ P` | `{{ Γ ⨟ Δ ⊢ₚₛ P }}d` / `{{ Θ ⨟ Δ ⊢ₚₛ P }}a` |
 | `Γ ⊢ₛ[ M ] e ⦂ P` (skeleton) | `{{ Γ ⊢ˢ[ M ] e ⦂ P }}d` |
-| `Θ ⊢ᵗ[ Δ1 \| Δ2 \| P0 \| Ψ ] R ∼˙ Q ⊣ Θ'` | `{{ Θ ⊢[ Δ1 \| Δ2 \| P0 \| Ψ ] R ∼ Q ⊣ Θ' }}t` |
+| `Θ ⊢ᵗ[ Δ1 \| Δ2 \| P0 \| Ψ ] R ∼˙ Q ⊣ Θ'` | `{{ Θ ⊢[ Δ1 \| Δ2 \| P0 \| Ψ ] R ∼ Q ⊣ Θ' }}da` |
 
 The two axes left on the turnstile: **SUPERSCRIPT = which copy** (bare types,
 `⊢ˢ` skeletons, `⊢ˢᵈ` syntax-directed — `ˢ` and `ˢᵈ` are siblings, not a mark
 and its refinement) and **SUBSCRIPT = which relation** (`⊢ᵣ`/`⊢ᵣₚ`, `⊢ₚᵣ`,
 `⊢ₛ`/`⊢ₑ`, and `⊢ₚ`/`⊢ᵦ`/`⊢ᵤ`/`⊢ₚₛ`/`⊢ᵤₛ` for well-formedness).  The ε-tagged
 system drops its dots — `∼˙`/`⩽˙` existed only to stay apart from the
-algorithmic `∼`/`⩽`, and `}}t` does that job now.
+algorithmic `∼`/`⩽`, and `}}da` does that job now (the delimiter was spelled
+`}}t` until `93c3624`).
 
 **NOT wrapped**, deliberately: `κ ∷ Θ ⊑ Θ'` (`a_inc`), `Θ ⊴ Θ'` (`a_isub`) and
 the conversion / substitution functions.  The delimiter answers "which system?",

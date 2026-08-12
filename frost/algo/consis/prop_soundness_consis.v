@@ -105,22 +105,6 @@ Proof.
     [ left | right; left | right; right; exists τ ]; auto.
 Qed.
 
-(** A defined flexible variable's definition is a monotype in any
-    well-formed context. *)
-Lemma a_wf_aenv_binds_def_mono : forall Θ α1 τ,
-  {{ ⊢ Θ }}a ->
-  binds α1 (abind_flex_mono_def τ) Θ ->
-  mono_ptyp τ.
-Proof.
-  intros Θ α1 τ Hwf; induction Hwf; intros Hb;
-    try solve
-      [ inversion Hb
-      | destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
-        [ discriminate | auto ]
-      | destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
-        [ inversion Heq; subst; auto | auto ] ].
-Qed.
-
 (* ===================================================================== *)
 (*  Q-side definition folding at monotypes                                *)
 (* ===================================================================== *)
@@ -281,7 +265,6 @@ Qed.
    [Flex-Flex-Assign] recursed into [a_unify], so a substituted non-variable
    subject had nowhere to go.  [a_unify]'s subjects are now ATOMS (the paper's
    hatted [unifyvar{α̂}{β̂}]), so the statement is vacuous. *)
-
 
 (* [a_unify_sound_consis] REPLACED by the mutual soundness bundle
    ([a_unify_consis_sound] below): part 2 now produces a type EQUIVALENCE
@@ -1252,7 +1235,6 @@ Proof.
     rewrite ftvar_in_bskl_ptyp_syn. eauto.
 Qed.
 
-
 (* --------------------------------------------------------------------- *)
 (*  Θ-side renaming of the fill-hygienic judgments (ForallSyn/UnivGhost1  *)
 (*  cases: the tophole_fill-shaped components keep the binder rigid in    *)
@@ -1447,7 +1429,6 @@ Proof.
                   (ptyp_to_pskl τ) (pskl_var_f β') α Hfr).
     auto.
 Qed.
-
 
 (* ===================================================================== *)
 (*  The part-1 problem invariants and their preservation                  *)
@@ -1671,7 +1652,6 @@ Qed.
    more.  Re-exported from the bundle under its original name (with the
    [a_decls] / wf hypotheses the motive carries). *)
 
-
 (** Unification preserves the domain (no names are created). *)
 (* [a_unify_dom] DELETED — it is now FALSE.  It said unification preserves the
    context DOMAIN ([dom Θ1 [=] dom Θ0]).  With [Flex-Flex-Assign] recursing into
@@ -1680,12 +1660,10 @@ Qed.
    the paper's part-2 soundness only claims an information INCREASE
    ([⊑{Θ₀}{Θ₁}]), which permits growth.  Uses of it are reworked onto ⊴. *)
 
-
 (* [a_unify_preserves_inv] is now a CONJUNCT of the mutual soundness bundle
    ([a_unify_consis_sound] below), generalized over the Δ it protects — the
    consistency premise of [Flex-Flex-Assign] runs with [Δ1 = Δ2 = ∅], so a
    fixed-Δ statement would be useless there. *)
-
 
 (* ===================================================================== *)
 (*  Helpers for the main induction                                        *)
@@ -1859,7 +1837,6 @@ Proof.
     apply H. fsetdec.
 Qed.
 
-
 (** F-monotonicity: a proof forbidding MORE names in ghost fills is a
     proof forbidding fewer (fills avoiding the larger set avoid the
     smaller). *)
@@ -1893,18 +1870,6 @@ Proof.
   - apply a_wf_ptyp__var. eapply a_isub_binds_tvarish; eauto.
   - apply a_wf_ptyp__all with (L := L `union` dom Θ'). intros α Hα.
     apply H0; auto. apply a_isub_cons_tvar; auto.
-Qed.
-
-
-(** Removing a declaration-only prefix preserves well-formedness. *)
-Lemma a_wf_aenv_strip_prefix : forall Ξ Θ,
-  a_decls Ξ ->
-  {{ ⊢ (Ξ ++ Θ) }}a ->
-  {{ ⊢ Θ }}a.
-Proof.
-  induction Ξ as [ | [α1 b] Ξ' IH ]; intros Θ Hdecl Hwf; simpl in *.
-  - exact Hwf.
-  - inversion Hdecl; subst; inversion Hwf; subst; eauto.
 Qed.
 
 (** Algorithmic skeleton well-formedness transports along [⊴]. *)
@@ -2002,7 +1967,6 @@ Proof.
       [ apply IHmono_ptyp1 | apply IHmono_ptyp2 ];
       intros α Hα; apply Hvis; fsetdec.
 Qed.
-
 
 (** Clean inversions of context well-formedness. *)
 Lemma a_wf_aenv_flex_inv : forall α Θ,
@@ -2263,8 +2227,6 @@ Proof.
     apply mono_bskl_guarded, mono_ptyp_to_bskl_syn; auto.
   - auto with frost.
 Qed.
-
-
 
 (* ===================================================================== *)
 (*  The two SUBSIDIARY INDUCTIONS that Assign-Assign's soundness needs     *)
@@ -4564,7 +4526,6 @@ Proof.
     [ right; left | right; right; exists τ ]; exact Hb.
 Qed.
 
-
 (** Part 2, packaged (thm:sound-consistency part 2, paper reading). *)
 Corollary a_unify_sound : forall Θ0 α β Θ1,
   {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a ->
@@ -4591,7 +4552,6 @@ Proof.
     as [_ [_ [_ [Hinv _]]]].
   destruct (Hinv Δ Hnd Hfa Hcov) as [Hnd1 [Hfa1 _]]; auto.
 Qed.
-
 
 (* ===================================================================== *)
 (*  Soundness of DECORATED consistency (lemma:sound-decorated-consistency) *)
@@ -4623,7 +4583,6 @@ Proof.
   intros Ψ Θ R Q H; induction H; intros Ψ' Heq;
     econstructor; eauto; fsetdec.
 Qed.
-
 
 Lemma a_consistag_sound_aux : forall Δ1 Δ2 P0 Ψ Θ0 R P' Θ1,
   {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | Ψ ] R ∼ P' ⊣ Θ1 }}da ->
@@ -5528,7 +5487,6 @@ Proof.
     + exact Hrp.
 Qed.
 
-
 (* ===================================================================== *)
 (*  Soundness of consistency, part 1 (thm:sound-consistency)              *)
 (*                                                                        *)
@@ -5570,7 +5528,6 @@ Proof.
   split; [ exact Hnfd1 | ]. split; [ exact Hfaf1 | ].
   split; [ exact Hex | exact Hrp ].
 Qed.
-
 
 (** Paper-shaped statement (thm:sound-consistency, part 1): with the
     auxiliary Δ-contexts empty, a consistency run is an identity

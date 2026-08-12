@@ -107,10 +107,6 @@ Lemma lc_aenv_app_inv : forall Ξ Θ,
   lc_aenv (Ξ ++ Θ) -> lc_aenv Ξ /\ lc_aenv Θ.
 Proof. intros * H; apply Forall_app; auto. Qed.
 
-Lemma lc_aenv_app : forall Ξ Θ,
-  lc_aenv Ξ -> lc_aenv Θ -> lc_aenv (Ξ ++ Θ).
-Proof. intros; apply Forall_app; auto. Qed.
-
 #[export] Hint Resolve lc_aenv_nil : core.
 
 (* ===================================================================== *)

@@ -1158,12 +1158,6 @@ Proof.
   - f_equal. apply IHA. assumption.
 Qed.
 
-(* A Leibniz equality of atom-sets yields subset both ways (lets us thread the
-   painting-ftvar equalities through [subset_trans] without setoid rewriting,
-   which is awkward over the [atoms] setoid). *)
-Lemma eq_subset : forall (s t : atoms), s = t -> s [<=] t.
-Proof. intros s t Heq; subst; reflexivity. Qed.
-
 (* Leibniz [=] form of [ftvar_in_btyp ∘ ptyp_to_btyp_syn] — the imported
    [ftvar_ptyp_to_btyp_syn] is the weaker [<=] variant (it shadows the [=] one
    from prop_wellformed); we need both inclusions here. *)

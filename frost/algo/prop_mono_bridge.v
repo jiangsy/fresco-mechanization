@@ -42,18 +42,6 @@ Proof.
   induction A; simpl; f_equal; auto.
 Qed.
 
-(** A definition is a monotype (it is stored that way). *)
-Lemma a_wf_aenv_binds_def_mono : forall Θ α1 τ,
-  {{ ⊢ Θ }}a ->
-  binds α1 (abind_flex_mono_def τ) Θ ->
-  mono_ptyp τ.
-Proof.
-  intros Θ α1 τ Hwf; induction Hwf; intros Hb;
-    try solve [ inversion Hb ];
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
-    try discriminate; try (inversion Heqb; subst; assumption); auto.
-Qed.
-
 (** A definition is well-formed in its own (tail) context, hence in the whole. *)
 Lemma a_wf_aenv_binds_def_wf_local : forall Θ α1 τ,
   {{ ⊢ Θ }}a ->

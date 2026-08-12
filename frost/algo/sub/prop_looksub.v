@@ -451,7 +451,7 @@ Proof.
         end.
 Qed.
 
-Lemma guarded_pskl_subst : forall P P' β,
+Lemma guarded_pskl_subst_nonvar : forall P P' β,
   guarded_pskl P ->
   lc_pskl P' ->
   P <> pskl_var_f β ->

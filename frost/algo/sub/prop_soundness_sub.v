@@ -1344,18 +1344,6 @@ Proof.
       exact IHad_refine_pskl.
 Qed.
 
-(** The erasure of a [1]-substituted painting is the [1]-substituted erasure. *)
-Lemma bskl_to_pskl_subst_unit : forall Q β,
-  bskl_to_pskl (subst_bskl_in_bskl bskl_unit β Q)
-  = subst_pskl_in_pskl pskl_unit β (bskl_to_pskl Q).
-Proof.
-  induction Q; intros β; simpl;
-    try solve [ reflexivity
-              | destruct_if; reflexivity
-              | rewrite IHQ; reflexivity
-              | rewrite IHQ1, IHQ2; reflexivity ].
-Qed.
-
 (** ⭐ Substituting [1] cannot change TAGS either. *)
 Lemma ftag_in_uskl_subst_unit : forall R β,
   ftag_in_uskl (subst_uskl_in_uskl uskl_unit β R) [=] ftag_in_uskl R.

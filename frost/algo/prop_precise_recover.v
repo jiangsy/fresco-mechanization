@@ -149,7 +149,7 @@ Qed.
 (*  (prop_compose.v:489).                                                  *)
 (* ===================================================================== *)
 
-Lemma a_inc_equiv_lookup : forall Θ0 κ1 κ2 Θ,
+Lemma a_inc_equiv_lookup_flex : forall Θ0 κ1 κ2 Θ,
   a_inc_equiv Θ0 κ1 κ2 Θ ->
   forall α, a_flex_tvar Θ0 α ->
   {{ Θ ⊢ (msubst_lookup κ1 α) ≡ᵗ (msubst_lookup κ2 α) }}a.
@@ -214,7 +214,7 @@ Lemma a_inc_equiv_compose_id_at : forall Θ0 κ κ1 ζ Θ α,
   {{ Θ ⊢ (msubst_lookup κ α) ≡ᵗ (msubst_lookup ζ α) }}a.
 Proof.
   intros Θ0 κ κ1 ζ Θ α Hie Hflex Hdom Hid.
-  pose proof (a_inc_equiv_lookup Hie Hflex) as He.
+  pose proof (a_inc_equiv_lookup_flex Hie Hflex) as He.
   rewrite (msubst_lookup_compose ζ κ1 (or_introl Hdom)) in He.
   rewrite Hid in He. simpl in He.
   exact He.

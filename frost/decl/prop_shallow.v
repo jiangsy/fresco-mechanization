@@ -1,12 +1,21 @@
-(** Frost — completeness of check-mode subtyping [⩽] against the reference
-    shallow polymorphic subtyping [d_shallow_sub_mono] ([≤ₘ⟨n⟩]).
+(** Frost — TWO EXPRESSIVENESS RESULTS about the declarative system.  Both are
+    TERMINAL (nothing in the tree consumes them) and both are indexed in
+    README.v §V, which is where their assumption reports are printed.
 
-    Headline (Bruno's margin note, declarative.tex): the FN-depth-indexed
-    reference relation is a lower bound on [⩽]'s expressive power, i.e.
+    1. [d_shallow_sub_complete] — check-mode subtyping [⩽] is complete for the
+       standard shallow polymorphic subtyping [d_shallow_sub] ([≤],
+       decl/def_extra.v:375), the relation declarative.tex:1191 defines:
 
-      {{ Γ ⊢ A ≤ₘ⟨n⟩ B }}d  →  {{ ∅ ⨟ Γ ⊢[mode_fn^n mode_tc] syn{A} ⩽ inh{B} }}d.
+         {{ Γ ⊢ A ≤ B }}d  →  {{ ∅ ⨟ Γ ⊢[TC] syn{A} ⩽ inh{B} }}d.
 
-    See [decl/def_extra.v] for the design of [d_shallow_sub_mono]. *)
+       So [≤] is a LOWER bound on [⩽]'s expressive power.  ⚙ At [TC] only; the
+       FN-depth-indexed generalisation of Bruno's margin note ([≤ₘ⟨n⟩] at
+       [mode_fn^n TC]) is NOT proved here, and the relation it would need does
+       not exist — this header claimed otherwise until 2026-08-12.
+
+    2. [mono_lambda_anno_redundant] — a MONOTYPE annotation on a lambda binder
+       is always redundant (introduction.tex:171).  ⚠️ Ascriptions are not:
+       see [freeze_no_infer] in decl/prop_annotation.v. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Equality.

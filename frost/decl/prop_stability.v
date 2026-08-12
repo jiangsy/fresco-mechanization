@@ -325,22 +325,6 @@ Lemma paint_forall_prefix : forall n A,
     ptyp_to_utyp_syn (ptyp_forall_prefix n A) = utyp_all_syn_n n (ptyp_to_utyp_syn A).
 Proof. induction n; intros A; simpl; [ reflexivity | rewrite IHn; reflexivity ]. Qed.
 
-Lemma map_fst_combine : forall (X Y : Type) (l1 : list X) (l2 : list Y),
-    length l1 = length l2 -> List.map fst (combine l1 l2) = l1.
-Proof.
-  induction l1 as [ | a l1 IH ]; destruct l2 as [ | b l2 ]; simpl; intros H;
-    try reflexivity; try discriminate.
-  rewrite IH; [ reflexivity | congruence ].
-Qed.
-
-Lemma map_snd_combine : forall (X Y : Type) (l1 : list X) (l2 : list Y),
-    length l1 = length l2 -> List.map snd (combine l1 l2) = l2.
-Proof.
-  induction l1 as [ | a l1 IH ]; destruct l2 as [ | b l2 ]; simpl; intros H;
-    try reflexivity; try discriminate.
-  rewrite IH; [ reflexivity | congruence ].
-Qed.
-
 Lemma paint_curry_spine : forall args Bargs A,
     length args = length Bargs ->
     ptyp_to_utyp_syn (curry_ptyp args A)

@@ -503,7 +503,7 @@ Qed.
 
 (** Two equivalent metasubstitutions send every type-variable of the source to
     [≡ᵗ]-equivalent images. *)
-Lemma a_inc_equiv_lookup : forall Θ0 κ1 κ2 Θ,
+Lemma a_inc_equiv_lookup_tvar : forall Θ0 κ1 κ2 Θ,
   a_inc_equiv Θ0 κ1 κ2 Θ ->
   {{ ⊢ Θ0 }}a ->
   forall α', a_binds_tvar α' Θ0 ->
@@ -582,7 +582,7 @@ Proof.
   intros Θ0 κ1 κ2 Θ A Hie Hwf0 Hwf HA.
   apply msubst_ptyp_outer_ext. intros α Hα.
   apply a_tyequiv_downarrow; [ exact Hwf | ].
-  eapply a_inc_equiv_lookup;
+  eapply a_inc_equiv_lookup_tvar;
     [ exact Hie | exact Hwf0 | eapply a_wf_ptyp_ftv_tvarish; eauto ].
 Qed.
 
@@ -597,7 +597,7 @@ Proof.
   intros Θ0 κ1 κ2 Θ P Hie Hwf0 Hwf HP.
   apply msubst_pskl_outer_ext. intros α Hα.
   apply a_tyequiv_downarrow; [ exact Hwf | ].
-  eapply a_inc_equiv_lookup;
+  eapply a_inc_equiv_lookup_tvar;
     [ exact Hie | exact Hwf0 | eapply a_scope_pskl_ftv_tvarish; eauto ].
 Qed.
 

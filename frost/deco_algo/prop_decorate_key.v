@@ -1223,7 +1223,7 @@ Proof.
               [ reflexivity | eassumption | exact Hst | exact Hαψ
               | exact HαP0 | exact Hlcψ | assumption
               | exact Hwf | exact HwfP0
-              | simpl in HwfT; apply a_wf_pskl_tophole_inv in HwfT;
+              | simpl in HwfT; apply a_wf_pskl_tophole_inv in HwfT as [_ HwfT];
                 exact HwfT
               | exact Hmod ]
         end.
@@ -1286,7 +1286,7 @@ Proof.
               [ reflexivity | eassumption | exact Hst | exact Hαψ
               | exact HαP0 | exact Hlcψ | assumption
               | exact Hwf | exact HwfP0
-              | simpl in HwfT; apply a_wf_pskl_tophole_inv in HwfT;
+              | simpl in HwfT; apply a_wf_pskl_tophole_inv in HwfT as [_ HwfT];
                 exact HwfT
               | exact Hmod ]
         end.
@@ -3860,7 +3860,7 @@ Proof.
     apply a_subtag__univ_ghost_l; [ exact Hne | ].
     apply IH;
       [ exact Hwf | exact HwfP0
-      | apply a_wf_pskl_tophole_inv in HwfP;
+      | apply a_wf_pskl_tophole_inv in HwfP as [_ HwfP];
         eapply a_wf_pskl_delta_mono; [ exact HwfP | clear; fsetdec ]
       | exact Hmod
       | exact Hgf0 ].

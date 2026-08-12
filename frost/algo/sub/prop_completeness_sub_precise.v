@@ -47,7 +47,7 @@ Set Implicit Arguments.
    (algo_decl/def_subtyping.v — see the note there).  Nothing outside
    the block ever used it: the completeness track settled on the tag-hygienic
    fuel [ad_pat_sub_fuel], whose own bridges are
-   [ad_pat_sub_fuel_weaken] / [ad_pat_sub_of_fuel]
+   [ad_pat_sub_fuel_le] / [ad_pat_sub_of_fuel]
    (def_subtyping.v). *)
 
 (* ===================================================================== *)

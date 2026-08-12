@@ -715,12 +715,6 @@ Qed.
 (*  §7  Last small helpers for the rename                                 *)
 (* ===================================================================== *)
 
-Lemma app_mid_inv : forall (Ξ : aenv) (a : atom) (b : abind) (A B : aenv),
-  Ξ ++ (a ~ b) ++ A = Ξ ++ (a ~ b) ++ B -> A = B.
-Proof.
-  intros * H. apply app_inv_head in H. apply app_inv_head in H. exact H.
-Qed.
-
 (** A flexible variable is distinct from the rigid mid entry (uniqueness)
     and from any name outside the domain. *)
 Lemma flex_ne_rigid_mid : forall (Ξr Θb : aenv) α β1 Θi,

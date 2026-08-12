@@ -120,13 +120,6 @@ Proof.
   - auto.
 Qed.
 
-Lemma a_wf_aenv_strip_prefix_local : forall Ξ Θ,
-  {{ ⊢ (Ξ ++ Θ) }}a -> {{ ⊢ Θ }}a.
-Proof.
-  induction Ξ as [ | [a b] Ξ' IH ]; intros Θ Hwf; simpl in *; auto.
-  inversion Hwf; subst; eauto.
-Qed.
-
 Lemma a_inc_dom_flex : forall Θ κ Θ',
   κ ∷ Θ ⊑ Θ' ->
   forall α', α' `in` dom κ -> a_flex_tvar Θ α'.
@@ -826,7 +819,7 @@ Proof.
     assert (Hceq : msubst_compose (ζ1 ++ ζ2) κ = msubst_compose ζ2 κ)
       by (eapply msubst_compose_peel; eauto).
     assert (Hwf1c : {{ ⊢ ((x ~ abind_var_typ A') ++ Θ') }}a)
-      by (eapply a_wf_aenv_strip_prefix_local; exact Hwf1).
+      by (eapply a_wf_aenv_strip_prefix; exact Hwf1).
     assert (Hwf1t : {{ ⊢ Θ' }}a) by (inversion Hwf1c; subst; auto).
     destruct (a_inc_var_inv Hinc2')
       as [Ξ2 [A2 [Θt2 [-> [Heq2 [Hs2 Hinc2'']]]]]].
@@ -855,7 +848,7 @@ Proof.
     assert (Hceq : msubst_compose (ζ1 ++ ζ2) κ = msubst_compose ζ2 κ)
       by (eapply msubst_compose_peel; eauto).
     assert (Hwf1c : {{ ⊢ ((x ~ abind_var_skl P') ++ Θ') }}a)
-      by (eapply a_wf_aenv_strip_prefix_local; exact Hwf1).
+      by (eapply a_wf_aenv_strip_prefix; exact Hwf1).
     assert (Hwf1t : {{ ⊢ Θ' }}a) by (inversion Hwf1c; subst; auto).
     destruct (a_inc_var_skl_inv Hinc2')
       as [Ξ2 [P2 [Θt2 [-> [Heq2 [Hs2 Hinc2'']]]]]].
@@ -884,7 +877,7 @@ Proof.
     assert (Hceq : msubst_compose (ζ1 ++ ζ2) κ = msubst_compose ζ2 κ)
       by (eapply msubst_compose_peel; eauto).
     assert (Hwf1c : {{ ⊢ ((α ~ abind_tvar) ++ Θ') }}a)
-      by (eapply a_wf_aenv_strip_prefix_local; exact Hwf1).
+      by (eapply a_wf_aenv_strip_prefix; exact Hwf1).
     assert (Hwf1t : {{ ⊢ Θ' }}a) by (inversion Hwf1c; subst; auto).
     destruct (a_inc_tvar_inv Hinc2') as [Ξ2 [Θt2 [-> [Hs2 Hinc2'']]]].
     rewrite Hceq.

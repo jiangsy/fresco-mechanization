@@ -40,7 +40,7 @@ Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo.prop_inc.            (* a_tyequiv_pskl *)
 Require Import src.frost.algo.prop_flex.           (* a_tyequiv_weaken_cons *)
 Require Import src.frost.algo.prop_compose.        (* a_inc_lookup_{wf,mono}, msubst_lookup_notin *)
-Require Import src.frost.algo.prop_normal.         (* a_inc_equiv_lookup *)
+Require Import src.frost.algo.prop_normal.         (* a_inc_equiv_lookup_tvar *)
 Require Import src.frost.algo.prop_pat_sub.        (* uskl_to_pskl_ptyp_to_uskl_syn *)
 Require Import src.frost.algo.consis.prop_soundness_consis.   (* uskl_to_pskl_open *)
 Require Import src.frost.algo.sub.look.prop_eq_cstr. (* msubst_uskl_syn_open *)
@@ -221,7 +221,7 @@ Proof.
         | eapply a_inc_lookup_mono; exact Hincσ
         | eapply a_inc_lookup_wf; eassumption
         | eapply a_inc_lookup_wf; eassumption
-        | eapply a_inc_equiv_lookup; eassumption ].
+        | eapply a_inc_equiv_lookup_tvar; eassumption ].
     + rewrite (msubst_lookup_notin κ Hκ), (msubst_lookup_notin σ Hσ).
       cbn. apply a_uskl_tyequiv__var.
   - (* arrow *)

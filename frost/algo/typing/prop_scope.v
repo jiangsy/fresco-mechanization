@@ -2236,7 +2236,7 @@ Proof.
       by (eapply a_isub_strip_var_typ_mid;
           [ exact Huniq2 | exact H1 | exact Hle ]).
     assert (Hwf2 : {{ ⊢ Θ2 }}a).
-    { eapply prop_soundness_pat.a_wf_aenv_strip_prefix.
+    { eapply a_wf_aenv_strip_prefix.
       eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []. }
     exists (ptyp_arrow A B1). split; [ apply ptyp_ty_core__tc | ].
     intros m0 b0 Hbm Hmk Hcr.
@@ -2369,7 +2369,7 @@ Proof.
       by (eapply a_isub_strip_var_typ_mid;
           [ exact Huniq3 | exact H2 | exact Hle ]).
     assert (Hwf3 : {{ ⊢ Θ3 }}a).
-    { eapply prop_soundness_pat.a_wf_aenv_strip_prefix.
+    { eapply a_wf_aenv_strip_prefix.
       eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []. }
     exists (ptyp_arrow A' B1). split; [ apply ptyp_ty_core__tc | ].
     intros m0 b0 Hbm Hmk Hcr.

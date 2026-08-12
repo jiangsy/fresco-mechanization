@@ -732,11 +732,6 @@ Lemma a_wf_pskl_all_inv_x : forall Θ Δ P,
     {{ Θ ⨟ (add α Δ) ⊢ₚₛ (open_pskl_wrt_pskl P (pskl_var_f α)) }}a.
 Proof. intros * H; inversion H; subst; eauto. Qed.
 
-Lemma a_wf_pskl_tophole_inv_x : forall Θ Δ P,
-  {{ Θ ⨟ Δ ⊢ₚₛ (pskl_tophole P) }}a ->
-  guarded_pskl P /\ ({{ Θ ⨟ empty ⊢ₚₛ P }}a).
-Proof. intros * H; inversion H; subst; auto. Qed.
-
 Lemma ad_refine_pskl_trans_gen : forall Θ Δ Pm Pr,
   {{ Θ ⨟ Δ ⊢ᵣₚ Pm ⊳ Pr }}ad ->
   forall Θx Δx,
@@ -919,7 +914,7 @@ Proof.
         | exact Hmap | exact Hwf | exact Hdisj | eassumption | exact HwfQr ].
     + apply ad_refine_pskl__tophole_remove. apply IHHp; auto.
     + inversion HM; subst.
-      destruct (a_wf_pskl_tophole_inv_x HwfQr) as [Hg Hwb].
+      destruct (a_wf_pskl_tophole_inv HwfQr) as [Hg Hwb].
       apply ad_refine_pskl__tophole_keep; [ assumption | ].
       eapply IHHr; try eassumption.
       eapply a_wf_pskl_delta_mono; [ exact Hwb | clear; fsetdec ].

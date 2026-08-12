@@ -1,0 +1,227 @@
+Zero-reference top-level names in frost/ — nothing in frost/, README.v, cex/ or
+test/ mentions them outside their own declaration line, and none is Hint-
+registered.  Generated files (def_ott.v, prop_ln.v) excluded.
+Regenerated 2026-08-12, after the first cleanup pass.
+
+TRIAGE LEGEND
+  [T] TERMINAL — the result IS the point, not kit.  Keep; index it in README.v.
+      The eleven prop_swap.v *_no_loss lemmas are the argument that the
+      exists-fresh encoding loses no derivations; freeze_no_infer is a
+      standalone negative result.  Both are read, not applied.
+  [?] review — candidate for deletion.
+
+=== ZERO-REFERENCE NAMES (no textual use anywhere, not hint-registered): 193
+
+--- frost  (6)
+  [?] frost/prop_basic.v:102  Lemma pskl_ghost_free_subst_mono
+  [?] frost/prop_coercions.v:399  Lemma utyp_to_uskl_inj
+  [?] frost/prop_coercions.v:416  Lemma uskl_to_bskl_utyp_to_uskl
+  [?] frost/prop_coercions.v:500  Lemma lc_bskl_to_uskl
+  [?] frost/prop_coercions.v:623  Lemma ftvar_utyp_to_uskl
+  [?] frost/prop_coercions.v:629  Lemma ftvar_uskl_to_utyp
+
+--- frost/algo  (44)
+  [?] frost/algo/prop_flex.v:452  Lemma rename_aenv_app
+  [?] frost/algo/prop_flex.v:466  Lemma rename_aenv_cons_tvar_neq
+  [?] frost/algo/prop_flex.v:898  Lemma a_wf_aenv_move_decl
+  [?] frost/algo/prop_flex.v:932  Lemma a_binds_tvar_permute_mid
+  [?] frost/algo/prop_inc.v:27  Lemma subst_ptyp_in_ptyp_self
+  [?] frost/algo/prop_inc.v:34  Lemma subst_pskl_in_pskl_self
+  [?] frost/algo/prop_inc_strengthen.v:302  Corollary a_unify_flex_preserve
+  [?] frost/algo/prop_inc_strengthen.v:310  Corollary a_assign_flex_preserve
+  [?] frost/algo/prop_inc_strengthen.v:323  Lemma msubst_ptyp_agree_inv
+  [?] frost/algo/prop_inc_strengthen.v:347  Lemma msubst_pskl_agree_inv
+  [?] frost/algo/prop_inc_strengthen.v:459  Lemma msubst_pskl_cons_notin
+  [?] frost/algo/prop_metasubst.v:1605  Lemma a_assign_subject_flex_local
+  [?] frost/algo/prop_mono_bridge.v:342  Lemma consis_mono_psi_empty
+  [?] frost/algo/prop_mono_bridge.v:567  Corollary consis_mono_trans
+  [?] frost/algo/prop_normal.v:288  Corollary a_tyequiv_downarrow_size
+  [?] frost/algo/prop_normal.v:452  Corollary a_inc_downarrow_subst_ptyp
+  [?] frost/algo/prop_normal.v:462  Corollary a_inc_downarrow_subst_pskl
+  [?] frost/algo/prop_pat_sub.v:638  Lemma uskl_ghost_free_open_gen
+  [?] frost/algo/prop_pat_sub.v:651  Lemma uskl_ghost_free_open_gen_tag
+  [?] frost/algo/prop_pat_sub.v:1147  Lemma ad_refine_syn_f_ghost_free_erasure_inv
+  [?] frost/algo/prop_pat_sub.v:1458  Lemma pskl_ghost_free_to_uskl
+  [?] frost/algo/prop_precise.v:94  Lemma guarded_pskl_of_bskl_syn
+  [?] frost/algo/prop_precise.v:1060  Corollary ad_precise_preserves_refine_pskl
+  [?] frost/algo/prop_precise_sub.v:103  Lemma ad_ctx_precise_tbinds_ge
+  [?] frost/algo/prop_rename_decl.v:94  Lemma tbinds_le_subst_mid_inv
+  [?] frost/algo/prop_suffix_erase.v:107  Lemma dom_subst_aenv
+  [?] frost/algo/prop_suffix_erase.v:127  Lemma binds_subst_aenv_mid
+  [?] frost/algo/prop_suffix_erase.v:273  Lemma solves_flex_self
+  [?] frost/algo/prop_suffix_erase.v:983  Lemma a_tyequiv_strip_suffix
+  [?] frost/algo/prop_suffix_erase.v:1023  Lemma ad_pat_sub_fuel_subst_mid
+  [?] frost/algo/prop_suffix_erase.v:1766  Lemma ad_pat_strip_suffix
+  [T] frost/algo/prop_swap.v:1673  Lemma a_sub_flex_skip_no_loss
+  [T] frost/algo/prop_swap.v:1695  Lemma a_sub_flex_skip_rigid_no_loss
+  [T] frost/algo/prop_swap.v:1721  Lemma a_sub_flex_assign_no_loss
+  [T] frost/algo/prop_swap.v:1777  Lemma a_assign_skip_no_loss
+  [T] frost/algo/prop_swap.v:1799  Lemma a_assign_skip_rigid_no_loss
+  [T] frost/algo/prop_swap.v:1820  Lemma a_assign_skip_tm_var_no_loss
+  [T] frost/algo/prop_swap.v:1840  Lemma a_assign_skip_tm_skl_no_loss
+  [T] frost/algo/prop_swap.v:1864  Lemma a_assign_assign_no_loss
+  [T] frost/algo/prop_swap.v:1905  Lemma a_unify_flex_skip_no_loss
+  [T] frost/algo/prop_swap.v:1926  Lemma a_unify_skip_other_no_loss
+  [T] frost/algo/prop_swap.v:1953  Lemma a_unify_flex_assign_no_loss
+  [?] frost/algo/prop_swap.v:1998  Lemma swap_msubst_cons
+  [?] frost/algo/prop_swap.v:2077  Lemma a_inc_swap
+
+--- frost/algo/consis  (16)
+  [?] frost/algo/consis/prop_completeness_consis.v:189  Lemma Vvar_ptyp
+  [?] frost/algo/consis/prop_completeness_consis.v:285  Lemma Vptyp_inc_equiv
+  [?] frost/algo/consis/prop_completeness_consis.v:2392  Lemma avoid_mono
+  [?] frost/algo/consis/prop_consis_precise.v:685  Lemma ad_pat_consis_subject_precise
+  [?] frost/algo/consis/prop_consis_precise.v:835  Lemma ad_pat_consis_precise_subst
+  [?] frost/algo/consis/prop_consis_rename.v:1433  Lemma a_consis_univ_ghost1_cofinite
+  [?] frost/algo/consis/prop_soundness_consis.v:99  Lemma a_binds_tvar_mon
+  [?] frost/algo/consis/prop_soundness_consis.v:132  Lemma ad_pat_consis_fold_def_q_mono
+  [?] frost/algo/consis/prop_soundness_consis.v:281  Lemma ad_pat_consis_refine_syn_mono
+  [?] frost/algo/consis/prop_soundness_consis.v:529  Lemma subst_var_uskl
+  [?] frost/algo/consis/prop_soundness_consis.v:1109  Lemma ad_pat_consis_refine_pskl_mono
+  [?] frost/algo/consis/prop_soundness_consis.v:1829  Lemma delta_rigids_open
+  [?] frost/algo/consis/prop_soundness_consis.v:1876  Lemma a_scope_pskl_isub
+  [?] frost/algo/consis/prop_soundness_consis.v:1977  Lemma a_wf_aenv_flex_def_inv
+  [?] frost/algo/consis/prop_soundness_consis.v:2102  Lemma a_flex_tvar_permute_mid
+  [?] frost/algo/consis/prop_soundness_consis.v:4475  Lemma a_assign_dom_mono
+
+--- frost/algo/pat  (2)
+  [?] frost/algo/pat/prop_completeness_pat.v:639  Lemma a_isub_strip_tm_head
+  [?] frost/algo/pat/prop_soundness_pat.v:903  Lemma a_wf_ptyp_weaken_cons
+
+--- frost/algo/sub  (22)
+  [?] frost/algo/sub/prop_completeness_sub.v:112  Lemma ptyp_to_uskl_syn_not_hole
+  [?] frost/algo/sub/prop_completeness_sub.v:120  Lemma ptyp_to_uskl_syn_not_holeg
+  [?] frost/algo/sub/prop_completeness_sub_gen.v:686  Lemma ad_pat_consis_ghost_subject_no_forall
+  [?] frost/algo/sub/prop_completeness_sub_gen.v:729  Lemma ad_refine_pskl_f_fgrow
+  [?] frost/algo/sub/prop_completeness_sub_gen.v:761  Corollary ad_refine_pskl_f_weaken_tvar
+  [?] frost/algo/sub/prop_completeness_sub_gen.v:2020  Lemma ad_refine_syn_f_fgrow
+  [?] frost/algo/sub/prop_completeness_sub_gen.v:3349  Lemma a_flex_tvar_strip_mid
+  [?] frost/algo/sub/prop_completeness_sub_gen.v:4386  Lemma a_decls_binds
+  [?] frost/algo/sub/prop_looksub.v:60  Lemma a_lookeq_decls
+  [?] frost/algo/sub/prop_looksub.v:357  Lemma a_extract_output_fresh
+  [?] frost/algo/sub/prop_looksub.v:454  Lemma guarded_pskl_subst_nonvar
+  [?] frost/algo/sub/prop_looksub.v:664  Lemma a_looksub_subst_stable
+  [?] frost/algo/sub/prop_looksub.v:975  Lemma a_looksub_subst_stable_rev
+  [?] frost/algo/sub/prop_looksub.v:1197  Lemma a_lookeq_ctx_exchange
+  [?] frost/algo/sub/prop_solve_sub.v:213  Lemma a_solve_sub_guarded
+  [?] frost/algo/sub/prop_solve_sub.v:340  Corollary a_solve_sub_generated_notin_dom
+  [?] frost/algo/sub/prop_solve_sub.v:551  Corollary a_solve_eq_ftv_disj
+  [?] frost/algo/sub/prop_solve_sub.v:664  Lemma a_solve_sub_generated_occurs
+  [?] frost/algo/sub/prop_solve_sub.v:668  Lemma a_solve_eq_generated_occurs
+  [?] frost/algo/sub/prop_solve_sub.v:674  Lemma a_solve_block_swap_id
+  [?] frost/algo/sub/prop_solve_sub.v:683  Lemma a_solve_eq_block_swap_id
+  [?] frost/algo/sub/prop_soundness_sub.v:1185  Lemma ad_pat_sub_weaken
+
+--- frost/algo/sub/look  (39)
+  [?] frost/algo/sub/look/prop_eq_cstr.v:320  Lemma a_wf_pskl_swap_app
+  [?] frost/algo/sub/look/prop_eq_cstr.v:461  Lemma subst_uskl_in_uskl_var_self
+  [?] frost/algo/sub/look/prop_eq_cstr.v:1419  Lemma p6cs_subject_guarded_head
+  [?] frost/algo/sub/look/prop_eq_var.v:162  Lemma flex_apart_tophole_all_tag_descent
+  [?] frost/algo/sub/look/prop_extract.v:264  Lemma pskl_ghost_free_open_inv
+  [?] frost/algo/sub/look/prop_flex_apart.v:100  Lemma pskl_flex_free_subst
+  [?] frost/algo/sub/look/prop_flex_apart.v:115  Lemma pskl_flex_free_open_tvar
+  [?] frost/algo/sub/look/prop_flex_apart.v:137  Lemma pskl_flex_free_weaken_tvar
+  [?] frost/algo/sub/look/prop_flex_apart.v:228  Lemma flex_apart_topholeg_target_inv
+  [?] frost/algo/sub/look/prop_flex_apart.v:247  Lemma flex_apart_tophole_p0_inv
+  [?] frost/algo/sub/look/prop_flex_apart.v:756  Lemma flex_apart_arrow_inv
+  [?] frost/algo/sub/look/prop_flex_apart.v:917  Lemma ad_refine_syn_delta_to_tvar
+  [?] frost/algo/sub/look/prop_flex_apart.v:1361  Lemma flex_apart_all_tag_forall_inv
+  [?] frost/algo/sub/look/prop_flex_apart.v:1561  Lemma refine_primary_to_plain
+  [?] frost/algo/sub/look/prop_flex_apart.v:1588  Lemma pskl_no_hole_open_inv
+  [?] frost/algo/sub/look/prop_flex_apart.v:1700  Lemma consis_subject_ftv_split_bound
+  [?] frost/algo/sub/look/prop_rho_relation.v:125  Lemma uskl_rho_psi_cong
+  [?] frost/algo/sub/look/prop_rho_relation.v:141  Lemma uskl_rho_delta_mono
+  [?] frost/algo/sub/look/prop_rho_relation.v:648  Lemma a_solve_sub_strengthen_tvar
+  [?] frost/algo/sub/look/prop_rho_relation.v:696  Lemma a_non_flex_subst_var
+  [?] frost/algo/sub/look/prop_rho_relation.v:931  Lemma p6_leaf_var
+  [?] frost/algo/sub/look/prop_rho_relation.v:1010  Lemma uskl_rho_unit_r_inv
+  [?] frost/algo/sub/look/prop_rho_relation.v:1018  Lemma uskl_rho_hole_r_inv
+  [?] frost/algo/sub/look/prop_rho_relation.v:1026  Lemma uskl_rho_holeg_r_inv
+  [?] frost/algo/sub/look/prop_rho_relation.v:1110  Lemma uskl_rho_var_r_inv
+  [?] frost/algo/sub/look/prop_rho_relation.v:1757  Lemma p6cv_close_leaf
+  [?] frost/algo/sub/look/prop_rho_relation.v:1796  Lemma pskl_to_bskl_inh_all_inh_inv_eq
+  [?] frost/algo/sub/look/prop_rho_relation.v:1815  Lemma pskl_to_bskl_inh_tophole_inv_eq
+  [?] frost/algo/sub/look/prop_rho_relation.v:2217  Lemma a_def_chain_mono
+  [?] frost/algo/sub/look/prop_rho_relation.v:2832  Lemma a_def_chain_wf
+  [?] frost/algo/sub/look/prop_solve_ext.v:122  Lemma a_decls_all_flex_mono
+  [?] frost/algo/sub/look/prop_solve_ext.v:128  Lemma all_flex_mono_decls
+  [?] frost/algo/sub/look/prop_solve_ext.v:894  Lemma solve_ext_post
+  [?] frost/algo/sub/look/prop_solve_ext.v:978  Lemma solve_sub_ext_post
+  [?] frost/algo/sub/look/prop_solve_ext.v:988  Lemma solve_sub_ext_post_solve
+  [?] frost/algo/sub/look/prop_solve_ext.v:1005  Lemma solve_sub_ext_of_eq
+  [?] frost/algo/sub/look/prop_sub_cstr.v:398  Lemma ad_pat_sub_fuel_ty_tc_subject
+  [?] frost/algo/sub/look/prop_sub_var.v:281  Lemma a_non_flex_guarded_dec
+  [?] frost/algo/sub/look/prop_sub_var.v:1433  Lemma a_wf_pskl_flex_var
+
+--- frost/algo/typing  (15)
+  [?] frost/algo/typing/prop_completeness_typing.v:1291  Lemma pskl_ghost_free_dec
+  [?] frost/algo/typing/prop_completeness_typing.v:1302  Lemma a_guess_mono_complete_ghost_free
+  [?] frost/algo/typing/prop_completeness_typing.v:1363  Lemma mono_embed_no_tophole
+  [?] frost/algo/typing/prop_completeness_typing.v:1367  Lemma mono_embed_no_all
+  [?] frost/algo/typing/prop_completeness_typing.v:1371  Lemma mono_embed_no_hole
+  [?] frost/algo/typing/prop_scope.v:114  Lemma above_dom_below_disj
+  [?] frost/algo/typing/prop_scope.v:139  Lemma a_sub_ty_tc_verbatim
+  [?] frost/algo/typing/prop_scope.v:318  Lemma core_rigid_above_head_flex
+  [?] frost/algo/typing/prop_scope.v:402  Lemma above_dom_below_binds
+  [?] frost/algo/typing/prop_scope.v:563  Lemma core_rigid_above_strip_head
+  [?] frost/algo/typing/prop_scope.v:608  Lemma core_rigid_above_transfer
+  [?] frost/algo/typing/prop_scope.v:653  Lemma above_dom_insert_sub
+  [?] frost/algo/typing/prop_scope.v:667  Lemma above_dom_rebind
+  [?] frost/algo/typing/prop_soundness_typing.v:1251  Lemma ptyp_to_pskl_not_hole
+  [?] frost/algo/typing/prop_soundness_typing.v:1697  Lemma a_decls_binds_flex
+
+--- frost/algo_decl  (12)
+  [?] frost/algo_decl/prop_conserv.v:111  Lemma denv_to_aenv_cons
+  [?] frost/algo_decl/prop_conserv.v:115  Lemma denv_to_aenv_dom
+  [?] frost/algo_decl/prop_conserv.v:831  Lemma d_pat_sub_to_ad_fuel
+  [?] frost/algo_decl/prop_conserv.v:1498  Corollary d_pat_consis_subject_refine_closed
+  [?] frost/algo_decl/prop_ctx_mono.v:60  Lemma aenv_binds_le_refl
+  [?] frost/algo_decl/prop_ctx_mono.v:63  Lemma aenv_binds_le_trans
+  [?] frost/algo_decl/prop_ctx_mono.v:199  Lemma a_scope_pskl_mono
+  [?] frost/algo_decl/prop_ctx_mono.v:314  Lemma ad_pat_sub_fuel_mono
+  [?] frost/algo_decl/prop_ctx_mono.v:491  Corollary ad_sd_typing_weaken_suffix
+  [?] frost/algo_decl/prop_ctx_mono.v:498  Corollary ad_pat_weaken_suffix
+  [?] frost/algo_decl/prop_ctx_mono.v:530  Corollary ad_refine_pskl_strip_tm_typ
+  [?] frost/algo_decl/prop_ctx_mono.v:538  Corollary ad_refine_pskl_strip_tm_skl
+
+--- frost/decl  (25)
+  [?] frost/decl/prop_annotation.v:45  Lemma ptyp_is_mono_sound
+  [?] frost/decl/prop_annotation.v:86  Lemma erase_lam_mono_var
+  [?] frost/decl/prop_annotation.v:91  Lemma is_value_erase
+  [T] frost/decl/prop_annotation.v:109  Lemma freeze_no_infer
+  [?] frost/decl/prop_basic.v:31  Lemma list_disjoint_nil_l
+  [?] frost/decl/prop_basic.v:38  Lemma list_disjoint_cons_l
+  [?] frost/decl/prop_general_subsumption.v:853  Lemma utyp_tag_refines_open_gen
+  [?] frost/decl/prop_skeleton.v:77  Lemma d_refine_syn_strengthen
+  [?] frost/decl/prop_stability.v:75  Lemma d_typing_var_fn_factor
+  [T] frost/decl/prop_stability.v:718  Example order_irrel_x_y
+  [?] frost/decl/prop_syntax_directed.v:105  Lemma d_wf_utyp_strengthen
+  [?] frost/decl/prop_syntax_directed.v:127  Lemma d_consis_strengthen
+  [?] frost/decl/prop_syntax_directed.v:436  Lemma ftvar_bskl_to_uskl
+  [?] frost/decl/prop_syntax_directed.v:461  Lemma tvar_clean_cons_typ
+  [?] frost/decl/prop_syntax_directed.v:471  Lemma tvar_clean_cons_skl
+  [?] frost/decl/prop_syntax_directed.v:540  Lemma is_value_subst_ptyp
+  [?] frost/decl/prop_syntax_directed.v:572  Lemma d_wf_ptyp_same_tvar
+  [?] frost/decl/prop_syntax_directed.v:1152  Lemma ptyp_to_btyp_syn_inj
+  [?] frost/decl/prop_syntax_directed.v:1166  Lemma d_consis_ftvar_gen
+  [?] frost/decl/prop_weakening.v:333  Lemma d_typing_ctx_weaken
+  [?] frost/decl/prop_wellformed.v:81  Lemma d_wf_pskl_Psi_mono
+  [?] frost/decl/prop_wellformed.v:239  Lemma d_wf_denv_binds_skl
+  [?] frost/decl/prop_wellformed.v:368  Lemma d_wf_pskl_lc
+  [?] frost/decl/prop_wellformed.v:462  Lemma degree_btyp_inh_of_degree_ptyp
+  [?] frost/decl/prop_wellformed.v:745  Lemma d_typing_skmod
+
+--- frost/deco_algo  (12)
+  [?] frost/deco_algo/prop_decorate_key.v:1689  Lemma solvetag_eq_self
+  [?] frost/deco_algo/prop_decorate_key.v:1770  Lemma dec_ext_psi_cong
+  [?] frost/deco_algo/prop_decorate_key.v:3238  Lemma pskl_ghost_free_no_top
+  [?] frost/deco_algo/prop_decorate_key.v:3346  Lemma a_look_no_top
+  [?] frost/deco_algo/prop_decorate_key.v:3368  Lemma solve_cstr_top_guarded
+  [?] frost/deco_algo/prop_decorate_sub.v:96  Lemma a_solvetag_eq_psi_cong
+  [?] frost/deco_algo/prop_decorate_sub.v:154  Lemma msubst_uskl_var_notin
+  [?] frost/deco_algo/prop_decorate_sub.v:565  Lemma no_all_syn_pskl_to_uskl
+  [?] frost/deco_algo/prop_decorate_sub.v:1228  Lemma msubst_uskl_ftv_upper
+  [?] frost/deco_algo/prop_decorate_sub.v:1249  Lemma lc_msubst_strip
+  [?] frost/deco_algo/prop_decorate_sub.v:2939  Lemma pskl_to_uskl_guarded_inv
+  [?] frost/deco_algo/prop_decorate_sub.v:3500  Lemma a_lookeq_subst_gen
+

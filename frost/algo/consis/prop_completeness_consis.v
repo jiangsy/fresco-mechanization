@@ -3784,7 +3784,7 @@ Proof.
     apply a_inc_tvar_inv in Hinc as [Ξ [Θ2 [-> [HΞ Hinc']]]].
     assert (Hwfth2 : {{ ⊢ Θ2 }}a)
       by (rewrite <- app_assoc in Hwfth;
-          apply a_wf_aenv_strip_prefix_local in Hwfth; exact Hwfth).
+          apply a_wf_aenv_strip_prefix in Hwfth; exact Hwfth).
     assert (Hwflα : a_wf_ptyp Θ2 (msubst_lookup κ α))
       by (eapply a_inc_lookup_wf; [ exact Hinc' | exact Hwf0 | exact Hbtα ]).
     assert (Hwflβ : a_wf_ptyp Θ2 (msubst_lookup κ β))
@@ -3842,7 +3842,7 @@ Proof.
     apply a_inc_var_inv in Hinc as [Ξ [A' [Θ2 [-> [HA'eq [HΞ Hinc']]]]]].
     assert (Hwfth2 : {{ ⊢ Θ2 }}a)
       by (rewrite <- app_assoc in Hwfth;
-          apply a_wf_aenv_strip_prefix_local in Hwfth; exact Hwfth).
+          apply a_wf_aenv_strip_prefix in Hwfth; exact Hwfth).
     assert (Hwflα : a_wf_ptyp Θ2 (msubst_lookup κ α))
       by (eapply a_inc_lookup_wf; [ exact Hinc' | exact Hwf0 | exact Hbtα ]).
     assert (Hwflβ : a_wf_ptyp Θ2 (msubst_lookup κ β))
@@ -3912,7 +3912,7 @@ Proof.
     apply a_inc_var_skl_inv in Hinc as [Ξ [P' [Θ2 [-> [HP'eq [HΞ Hinc']]]]]].
     assert (Hwfth2 : {{ ⊢ Θ2 }}a)
       by (rewrite <- app_assoc in Hwfth;
-          apply a_wf_aenv_strip_prefix_local in Hwfth; exact Hwfth).
+          apply a_wf_aenv_strip_prefix in Hwfth; exact Hwfth).
     assert (Hwflα : a_wf_ptyp Θ2 (msubst_lookup κ α))
       by (eapply a_inc_lookup_wf; [ exact Hinc' | exact Hwf0 | exact Hbtα ]).
     assert (Hwflβ : a_wf_ptyp Θ2 (msubst_lookup κ β))
