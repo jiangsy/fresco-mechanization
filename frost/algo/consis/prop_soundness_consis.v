@@ -11,7 +11,7 @@
       [a_unify] + [a_consis] (the corrected [Flex-Flex-Assign] recurses
       into consistency, so the two judgments are mutually inductive).
       [a_assign] stays below the cycle (the mech reads Assign-Assign as
-      continuing the assignment, cf. algo/def_extra.v) — its lemmas
+      continuing the assignment, cf. algo/def_rules.v) — its lemmas
       ([a_assign_sound], [a_assign_preserves_wf/_inv], ...) are plain
       inductions consumed by the bundle's FlexL/FlexR cases.
     - [a_consistag_sound_aux]: the DECORATED main induction
@@ -32,11 +32,11 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.prop_basic.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.decl.def_rules.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.deco_algo.def_decorated.
@@ -2482,7 +2482,7 @@ Qed.
 (*  paper organises its own proof (consistency-proofs.tex:1562) — their     *)
 (*  soundness is ONE mutual induction.  [a_assign] stays BELOW the cycle    *)
 (*  (the mech reads Assign-Assign as continuing the assignment, see the     *)
-(*  note in algo/def_extra.v), so its lemmas enter as black boxes.          *)
+(*  note in algo/def_rules.v), so its lemmas enter as black boxes.          *)
 (*                                                                          *)
 (*  Conjuncts, per judgment  Θ0 → Θ1:                                       *)
 (*   1. Θ0 ⊴ Θ1                    (information increase)                   *)
@@ -2504,7 +2504,7 @@ Qed.
 (* ===================================================================== *)
 
 (* [a_assign_unify_consis_mutind] (+ the per-judgment Induction schemes)
-   relocated to def_extra.v, next to the inductives, so prop_inc_strengthen can
+   relocated to algo/def_rules.v, next to the inductives, so prop_inc_strengthen can
    use it without importing this file (cycle break). *)
 
 (** Conclusions of the two motives (hypotheses live in [*_concl] below). *)

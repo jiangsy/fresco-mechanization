@@ -31,12 +31,12 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.prop_basic.
-Require Import src.frost.decl.def_extra.
+Require Import src.frost.decl.def_rules.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_skeleton.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
@@ -475,7 +475,7 @@ Lemma a_looksub_solve_complete_leaf :
   exists 𝒞 Ξc Ξs Pa κc κs,
     ({{ Θ0 ⊢ P ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞 }}a) /\        (* looksub α P P0 𝒞 Ξc *)
     (* ⭐ the SOLVE's own block [Ξs] and its aligned extension [κs], stacked
-       the way [a_extract__solve] (def_extra.v:764) consumes them *)
+       the way [a_extract__solve] (algo/def_rules.v:764) consumes them *)
     {{ (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a /\          (* solve 𝒞 Pi Ξs Pa *)
     all_flex_mono Ξs /\
     uniq Ξs /\
@@ -744,7 +744,7 @@ Theorem a_looksub_solve_complete_gen :
   exists 𝒞 Ξc Ξs Pa κc κs,
     ({{ Θ0 ⊢ P ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞 }}a) /\        (* looksub α P P0 𝒞 Ξc *)
     (* ⭐ the SOLVE's own block [Ξs] and its aligned extension [κs], stacked
-       the way [a_extract__solve] (def_extra.v:764) consumes them *)
+       the way [a_extract__solve] (algo/def_rules.v:764) consumes them *)
     {{ (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a /\          (* solve 𝒞 Pi Ξs Pa *)
     all_flex_mono Ξs /\
     uniq Ξs /\
@@ -3326,7 +3326,7 @@ Theorem a_looksub_solve_complete :
   exists 𝒞 Ξc Ξs Pa κc κs,
     ({{ Θ0 ⊢ P ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞 }}a) /\        (* looksub α P P0 𝒞 Ξc *)
     (* ⭐ the SOLVE's own block [Ξs] and its aligned extension [κs], stacked
-       the way [a_extract__solve] (def_extra.v:764) consumes them *)
+       the way [a_extract__solve] (algo/def_rules.v:764) consumes them *)
     {{ (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a /\          (* solve 𝒞 Pi Ξs Pa *)
     all_flex_mono Ξs /\
     uniq Ξs /\

@@ -158,7 +158,7 @@ type. Used to disambiguate `single id` (returns `∀a. a→a List`) vs
 
 ## 3. The judgment families
 
-### 3.1 Declarative judgments (in `frost/decl/def_extra.v`)
+### 3.1 Declarative judgments (in `frost/decl/def_rules.v`)
 
 Roughly the dependency DAG:
 
@@ -198,7 +198,7 @@ The mutual `d_typing ⇄ d_pat` block exists because:
 
 So neither can be defined alone.
 
-### 3.2 Algorithmic judgments (in `frost/algo/def_extra.v`)
+### 3.2 Algorithmic judgments (in `frost/algo/def_rules.v`)
 
 The current algorithmic files are **split-syntax placeholders**, not a
 faithful mechanization of the algorithmic rules in
@@ -928,7 +928,7 @@ than represented as `is_utyp` / `is_uskel` predicate cases.
 new code should use `utyp_all_syn` / `utyp_all_tag` and the skeleton
 counterparts directly.
 
-**Rule ordering preference.** In `decl/def_extra.v` the tagged and
+**Rule ordering preference.** In `decl/def_rules.v` the tagged and
 untagged constructors of the same paper rule are kept ADJACENT (e.g.
 `d_consis__forall_inh_tagged` immediately followed by
 `d_consis__forall_inh_untagged`), grouped by paper rule rather than
@@ -938,7 +938,7 @@ spread for rule X?" a one-glance check.
 **Rule-body notation.** Notations for the 7 main judgments
 (`d_wf_pskl`, `d_wf_ttyp`, `d_wf_tskel`, `d_consis`, `d_sub`,
 `d_pat_consis`, `d_pat_sub`) are declared as `Reserved Notation` at
-the top of `decl/def_extra.v` and bound via `where` clauses on each
+the top of `decl/def_rules.v` and bound via `where` clauses on each
 `Inductive`. Rule bodies use the notations directly — same reason:
 audit-against-paper without translating `d_consis Δ Γ T A` ↔
 `Δ ⨟ Γ ⊨ T ≈ A` in your head.

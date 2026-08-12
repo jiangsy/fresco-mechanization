@@ -4,7 +4,7 @@
 
     1. [d_shallow_sub_complete] — check-mode subtyping [⩽] is complete for the
        standard shallow polymorphic subtyping [d_shallow_sub] ([≤],
-       decl/def_extra.v:375), the relation declarative.tex:1191 defines:
+       decl/def_rules.v:375), the relation declarative.tex:1191 defines:
 
          {{ Γ ⊢ A ≤ B }}d  →  {{ ∅ ⨟ Γ ⊢[TC] syn{A} ⩽ inh{B} }}d.
 
@@ -24,10 +24,9 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.prop_basic.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.decl.notations.
+Require Import src.frost.decl.def_rules.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_wellformed.
 

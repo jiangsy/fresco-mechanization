@@ -51,8 +51,8 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
-Require Import src.frost.def_extra.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.def_shapes.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.def_meta.
 
 Set Implicit Arguments.

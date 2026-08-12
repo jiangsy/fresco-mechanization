@@ -54,12 +54,11 @@ Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.ltac_utils.   (* solve_notin_auto *)
 Require Import src.frost.coercions.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.decl.notations.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.decl.def_rules.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.prop_basic.              (* bskl_to_pskl_pskl_to_bskl_{syn,inh} *)
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
@@ -3045,7 +3044,7 @@ Qed.
 (*  INSIDE the walk (Flex-Depend, Flex-Skip).                             *)
 (*                                                                        *)
 (*  The discharge pattern for a RE-ATTACHING row (the walk's Barendregt   *)
-(*  output premise [β ∉ dom Θ1], algo/def_extra.v:1100/:1116/:1123) is:   *)
+(*  output premise [β ∉ dom Θ1], algo/def_rules.v:1100/:1116/:1123) is:   *)
 (*                                                                        *)
 (*    (i)   PEEL the given [κ ∷ (Ξ ++ (β ~ ·) ++ Θ0) ⊑ Θ] around the mid  *)
 (*          β entry ([a_inc_strip_flex_mid]) — for a FLEXIBLE entry the   *)

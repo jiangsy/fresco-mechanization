@@ -14,13 +14,13 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.prop_ln.
 Require Import src.frost.prop_basic.
-Require Import src.frost.decl.def_extra.
+Require Import src.frost.decl.def_rules.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_skeleton.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
@@ -530,7 +530,7 @@ Qed.
 (*  FlexR decorates a run whose RHS is a flexible (monotype) variable α̂.  *)
 (*  The subject's erasure is assigned to α̂, so it must be a monotype — in  *)
 (*  particular quantifier-free.  Every [abind_flex_mono_def τ] carries a   *)
-(*  monotype [τ] BY WELL-FORMEDNESS (def_extra.v:147; Assign-SolveM's     *)
+(*  monotype [τ] BY WELL-FORMEDNESS (algo/def_rules.v:147; Assign-SolveM's     *)
 (*  guess is checked mono — type.ml:351), so the monotype fact is a wf     *)
 (*  lookup, not consistency reasoning; the existing [a_assign_sound] gives *)
 (*  a decorated pattern-consistency against α̂ that we read off below.      *)

@@ -566,7 +566,7 @@ Definition psienv : Set := list atom.
 Definition denv : Set := list (atom*dbind).
 
 
-(* Forward declaration used in formulae; full definition lives in def_extra.v.
+(* Forward declaration used in formulae; full definition lives in def_shapes.v.
    We pre-declare it here so def_ott.v compiles standalone. *)
 Definition list_disjoint (xs ys : list atom) : Prop :=
   forall a, List.In a xs -> ~ List.In a ys.

@@ -211,7 +211,7 @@ Inductive guarded_uskl : uskl -> Prop :=
 (** [nonghost_pskl P]: P's HEAD is not a ghost — it is neither [◇] nor
     [∀◇P0].  Weaker than [guarded_pskl], which also rules out a top-level ∀.
 
-    Its one use is SE-FlexR (algo/def_extra.v), and it is there to render the
+    Its one use is SE-FlexR (algo/def_rules.v), and it is there to render the
     reference implementation's DISPATCH ORDER: [solve_eq] is an OCaml match,
     and both ghost-subject rows — [SolE-GhostL] ([Ghost, q -> q],
     type.ml:412) and [SolE-GhostGuarded] ([UGhost p, q when is_guarded q],
@@ -244,7 +244,7 @@ Inductive is_value : exp -> Prop :=
     is unconstrained / bidirectional).  Implicitly required of every typing
     judgement; embedded as a premise on each rule's conclusion mode+type. *)
 (** ⚠️ ARGUMENT ORDER: this pair is SUBJECT-first, while their algorithmic
-    counterparts [a_ty_mode_compat] / [a_sk_mode_compat] (algo/def_extra.v) are
+    counterparts [a_ty_mode_compat] / [a_sk_mode_compat] (algo/def_rules.v) are
     MODE-first, as are [fn_arrow_shape*] and [pskl_ty_core] / [ptyp_ty_core].
     Mode-first is the majority (6 of the 8 arrow-spine relations).
 

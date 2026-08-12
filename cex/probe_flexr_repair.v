@@ -54,7 +54,7 @@
 
     ⚙️ SELF-CONTAINED BY DESIGN.  The configuration is RE-DECLARED here
     (identical to [Θ0d] / [P0d] of cex/cex_p7_shield_double_occ.v) rather
-    than imported, so that this file rests on nothing but [algo/def_extra.v]
+    than imported, so that this file rests on nothing but [algo/def_rules.v]
     — it must stay checkable while the completeness cluster downstream of it
     is being repaired. *)
 
@@ -62,12 +62,11 @@ Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.coercions.
 Require Import src.frost.prop_ln.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.decl.notations.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.decl.def_rules.
+Require Import src.frost.algo.def_rules.
 
 Set Implicit Arguments.
 

@@ -13,10 +13,10 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
 Require Import src.frost.prop_coercions.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.ltac_utils.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.decl.def_rules.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
@@ -966,7 +966,7 @@ Lemma a_wf_ptyp_ftv_tvarish : forall Θ A α,
 Proof.
   intros * Hwf; revert α; induction Hwf; intros β Hβ; simpl in Hβ.
   - fsetdec.
-  (* [α] is the var rule's OWN binder ([a_wf_ptyp__var], algo/def_extra.v),
+  (* [α] is the var rule's OWN binder ([a_wf_ptyp__var], algo/def_rules.v),
      auto-bound by [induction Hwf] — not this lemma's α, which [revert α]
      has just generalised away. *)
   - assert (β = α) by fsetdec. subst. auto.
@@ -1265,7 +1265,7 @@ Qed.
 
 (* ===================================================================== *)
 (*  [a_assign_sound] MOVED.  [a_assign] is now in the a_unify/a_consis    *)
-(*  MUTUAL block (algo/def_extra.v): its Assign-Assign premise is a       *)
+(*  MUTUAL block (algo/def_rules.v): its Assign-Assign premise is a       *)
 (*  CONSISTENCY derivation, so soundness of assignment can no longer be a *)
 (*  standalone induction — there is no IH for that premise.  It lives in  *)
 (*  the 3-motive bundle [a_assign_unify_consis_sound] (prop_consis_sound) *)

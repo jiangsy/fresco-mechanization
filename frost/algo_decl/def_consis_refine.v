@@ -18,10 +18,9 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.decl.notations.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.def_shapes.
+Require Import src.frost.decl.def_rules.
+Require Import src.frost.algo.def_rules.
 
 Set Implicit Arguments.
 
@@ -29,7 +28,7 @@ Set Implicit Arguments.
    transitive through `Require Import`, so the DECLARING file must open it *)
 Open Scope frost_ad_scope.
 
-(* Same level discipline as decl/def_extra.v: middle slots of ⨟-judgments at
+(* Same level discipline as decl/def_rules.v: middle slots of ⨟-judgments at
    level 74. *)
 Reserved Notation "{{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad"
   (at level 0, Θ at level 74, R at level 74, Q at level 74,
@@ -47,9 +46,9 @@ Definition ptyp_to_bskl_syn (A : ptyp) : bskl :=
 Definition ptyp_to_uskl_syn (A : ptyp) : uskl :=
   bskl_to_uskl (ptyp_to_bskl_syn A).
 
-(* [a_binds_tvar] now lives in algo/def_extra.v (shared with a_wf_ptyp). *)
+(* [a_binds_tvar] now lives in algo/def_rules.v (shared with a_wf_ptyp). *)
 
-(* [a_wf_pskl] now lives in algo/def_extra.v (needed by ForallL's
+(* [a_wf_pskl] now lives in algo/def_rules.v (needed by ForallL's
    disciplined instantiation premise). *)
 
 (* ===================================================================== *)

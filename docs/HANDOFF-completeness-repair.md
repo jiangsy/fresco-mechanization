@@ -162,7 +162,7 @@ TASK 2 — find the typing's ACTUAL payload invariant
 ================================================================
 The repair hinges on the right side condition.  Do NOT guess it — read it
 off the producers:
- (a) grep a_typing / a_pat (frost/algo/def_extra.v) for every a_sub call
+ (a) grep a_typing / a_pat (frost/algo/def_rules.v) for every a_sub call
      site; characterize the P0 each rule passes (paints of source types?
      holes? spine-collected skeletons with ghosts?).
  (b) Cross-check against the implementation's spine collection

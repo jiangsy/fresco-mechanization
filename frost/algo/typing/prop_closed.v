@@ -28,11 +28,11 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.prop_basic.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.decl.def_rules.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo_decl.def_consis_refine.

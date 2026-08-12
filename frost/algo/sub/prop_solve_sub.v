@@ -13,11 +13,11 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.prop_ln.
 Require Import src.frost.prop_basic.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.decl.def_rules.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.def_meta.
 (* SE-FlexR calls [guess^TY] (2026-08-04), so the solve basics now rest on
    the guess kit — [a_guess_mono_decls] / [_generated_fresh] / [_ftv].  No

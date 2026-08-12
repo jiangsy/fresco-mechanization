@@ -26,7 +26,7 @@
     the mechanisation's deferral of it as "it has not bitten yet".  It bit
     here.  The repair was to stop deferring: [d_pat_sub]'s three
     consistency-bearing rows now carry the presupposition, exactly as
-    [ad_pat_sub_fuel] always did (decl/def_extra.v).
+    [ad_pat_sub_fuel] always did (decl/def_rules.v).
 
     SO BOTH REFUTATIONS ARE RETRACTED, at the very configuration that produced
     them — [cap_d_pat] is no longer derivable ([cap_d_pat_excluded] below), so
@@ -47,13 +47,12 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.coercions.
 Require Import src.frost.prop_coercions.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.decl.notations.
+Require Import src.frost.decl.def_rules.
 Require Import src.frost.decl.prop_wellformed.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo_decl.def_subtyping.

@@ -60,11 +60,10 @@ Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.coercions.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.decl.notations.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.decl.def_rules.
+Require Import src.frost.algo.def_rules.
 
 Set Implicit Arguments.
 

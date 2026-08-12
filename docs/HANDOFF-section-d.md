@@ -225,7 +225,7 @@ Two of the three rows are easy; the third is a genuine proof.
   syntactic step.  (The paper writes it `unify{α̂}{β̂ → α1̂}`, but that `∼` is
   CONSISTENCY, not `unifyvar`: `unifyvar`'s subjects are hatted variables and
   the input here is an ARROW — see the `[paper-gap]` note on the rule in
-  `algo/def_extra.v`.)  To reach `Θ1 ⨟ ∅ ⊢ᵣₚᵃᵈ α̂ ⊳ (β̂ → α1̂)` you must
+  `algo/def_rules.v`.)  To reach `Θ1 ⨟ ∅ ⊢ᵣₚᵃᵈ α̂ ⊳ (β̂ → α1̂)` you must
 
   1. invert that run.  Only `a_consis__flex_l` can fire (subject `α̂` flexible,
      `P0 = β̂ → α1̂` non-flex), which hands back
@@ -1007,7 +1007,7 @@ context the argument is checked in.  It is the paper's ambient "all inputs are
 well-formed", threaded — and the four CHECK rows can prove it only because of
 the Barendregt premises below (`a_wf_ptyp_strip_mid` is the strip).
 
-⚠️ **FOUR RULE CHANGES landed with it** (all `algo/def_extra.v`, all
+⚠️ **FOUR RULE CHANGES landed with it** (all `algo/def_rules.v`, all
 INVERSION-only for existing consumers, all in docs/PAPER-GAPS.md, all cleanly
 revertible; the benchmark derivations discharge each at `Ξ = ·`):
 

@@ -78,7 +78,7 @@ side. It does **not** strip `∀`s. Those fresh flexibles are the `Ξ`.
 
 ---
 
-## 2. The definitional change (DONE — `frost/algo/def_extra.v`)
+## 2. The definitional change (DONE — `frost/algo/def_rules.v`)
 
 - `a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop`
   — `Θ ⊢ₛ P ≼[m] Q ⤳ Ξ ⨾ P'`
@@ -130,7 +130,7 @@ the proof out of wf premises the theorem already had.
 
 ⭐⭐ **`cex/probe_flexr_repair.v` — the repair WORKS at the refuting
 configuration** (Qed, axiom-free, and self-contained: it rests on nothing
-but `algo/def_extra.v`, so it stays checkable while the cluster is broken):
+but `algo/def_rules.v`, so it stays checkable while the cluster is broken):
 
 | lemma | negates |
 |---|---|
@@ -220,7 +220,7 @@ side condition: `a_wf_pskl_top_guarded` derives it from the paper's own
    never takes that branch — `solve_eq` is a **match**, and both ghost rows
    (`Ghost, q` at `type.ml:412`; `UGhost p, q when is_guarded q` at `:457`,
    and `is_guarded (MFlex _) = true`) precede FlexR at `:466`. Rendered as
-   the premise `nonghost_pskl P` (`frost/def_extra.v`). It costs
+   the premise `nonghost_pskl P` (`frost/def_shapes.v`). It costs
    completeness nothing and it keeps `a_solve_eq_hole_subject_inv` — the
    fact the paper uses silently in every `P_i = □` subcase — TRUE.
 3. **The binder rows need `ftvar(Θ)`, and the sibling rows must thread** —

@@ -2,7 +2,7 @@
     flexible SUBTYPING walk has NO rule for a TERM-VARIABLE head.
 
     ⭐ REPAIRED 2026-08-03: [a_sub_flex__skip_tm_var] / [__skip_tm_skl] are now
-    in algo/def_extra.v (with decorated mirrors in algo/def_decorated.v),
+    in algo/def_rules.v (with decorated mirrors in algo/def_decorated.v),
     verbatim mirrors of the twin walk's [Assign-SkipTmVar].  This file is
     stated so that it survives the repair and keeps recording WHY the rules
     are needed: §1 shows the new rule is the ONLY one that fires at a term
@@ -39,7 +39,7 @@
     ⭐⭐⭐ AND IT IS NOT AN EXOTIC CONFIGURATION — THE REFERENCE
     IMPLEMENTATION CRASHES ON IT.  [a_typing__abs] pushes the lambda binder
     ABOVE the flexibles [a_guess_mono] just invented
-    ([(x ~ abind_var_typ A) ++ αs ++ Θ1], algo/def_extra.v), and
+    ([(x ~ abind_var_typ A) ++ αs ++ Θ1], algo/def_rules.v), and
     [a_typing__var] hands that very flexible to SUBTYPING as the subject
     ([a_typing__var]'s premise is at [ptyp_to_pskl A] for [x : A]), at an FN
     mode when the variable is applied ([a_typing__app]).  So this context is
@@ -100,11 +100,10 @@ Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.coercions.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.decl.notations.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.decl.def_rules.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.algo_decl.def_subtyping.

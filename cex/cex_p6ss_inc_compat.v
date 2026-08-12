@@ -31,9 +31,9 @@
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
-Require Import src.frost.def_extra.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.def_shapes.
+Require Import src.frost.decl.def_rules.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.def_meta.
 
 (** 1: at the identity metasubstitution, dom θ ⊆ dom Θ. *)

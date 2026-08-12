@@ -1,7 +1,7 @@
 (** SCOPING OF RUN RESULTS (paper §6.3 #2) — the invariant that discharges
     the four suffix-discarding check rows' premise (2).
 
-    [a_typing]'s check rows (algo/def_extra.v, [a_typing__abs_check_step]
+    [a_typing]'s check rows (algo/def_rules.v, [a_typing__abs_check_step]
     and the three beside it) DROP the suffix [Ξ] their body run deposited,
     and carry as a premise that the run's RESULT does not mention it:
 
@@ -40,10 +40,10 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.prop_basic.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_stability.
@@ -1332,7 +1332,7 @@ Qed.
     [a_sub_sub_flex_ty_core] uses (typing/prop_rigidity.v:759) — the OUTPUT's core
     IS the input's — is FALSE once [core_rigid] is relaxed to
     [core_rigid_above]: [a_sub_flex__assign] SUBSTITUTES the input skeleton
-    ([subst_pskl_in_pskl ⌈τ⌉ β P0], algo/def_extra.v:1300), so when the
+    ([subst_pskl_in_pskl ⌈τ⌉ β P0], algo/def_rules.v:1300), so when the
     walked [β] is itself a core atom the core MOVES to [C[τ/β]].  The full
     [core_rigid] rules that out (a core atom is never flexible);
     [core_rigid_above] rules it out only ABOVE the marker, and a core atom

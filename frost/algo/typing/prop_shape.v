@@ -15,7 +15,7 @@
     ⚠️ [fn_arrow_shape_pskl] and [fn_arrow_shape] are the SAME relation modulo
     [ptyp_to_pskl] — the [ptyp] one is the [pskl] one restricted to paintings,
     and both have [True] base rows, which makes them the common ERASURE of
-    [a_ty_mode_compat] / [a_sk_mode_compat] (algo/def_extra.v).  Collapsing all
+    [a_ty_mode_compat] / [a_sk_mode_compat] (algo/def_rules.v).  Collapsing all
     four onto one arrow-spine relation is cleanup audit §4(c); until then
     [fn_arrow_shape_of_pskl] is the one bridge that is actually used. *)
 
@@ -24,10 +24,10 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.prop_basic.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_stability.       (* a_sub_sub_flex_tm_mutind *)
 

@@ -16,10 +16,9 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.decl.notations.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.def_shapes.
+Require Import src.frost.decl.def_rules.
+Require Import src.frost.algo.def_rules.
 
 Set Implicit Arguments.
 
@@ -366,7 +365,7 @@ with a_subtag_flex :
     a_subtag_flex NM M P0 Θ0 Ξ α A Θ1 ->
     a_subtag_flex NM M P0 ((β ~ abind_tvar) ++ Θ0) Ξ α A ((β ~ abind_tvar) ++ Θ1)
 (* the decorated mirrors of [a_sub_flex__skip_tm_var] / [__skip_tm_skl]
-   ([paper-gap] Flex-SkipTmVar, algo/def_extra.v) *)
+   ([paper-gap] Flex-SkipTmVar, algo/def_rules.v) *)
 | a_subtag_flex__skip_tm_var : forall NM M P0 Θ0 Θ1 Ξ α x Q A,
     x `notin` dom Θ1 ->
     a_subtag_flex NM M P0 Θ0 Ξ α A Θ1 ->

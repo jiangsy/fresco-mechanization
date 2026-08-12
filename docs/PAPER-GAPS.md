@@ -649,9 +649,9 @@ under the published `SolE-FlexR` — and their headers, at `18cc7e4^`.
 
 | deleted file | what it claimed | why it is retracted |
 |---|---|---|
-| `cex/cex_p6_flex_counterpart.v` | the `-var` completeness lemmas are false at a flexible solve counterpart (`cex_solve_forces_flex`: "the only solve derivation forces `P_a = β̂`") | that central lemma is now FALSE — the repaired row returns `guess^TY(P_i) = c → ⟨⟩`, and the obligation becomes reflexivity (row 1 of the table above).  Its OTHER half — that the configuration is unreachable because `LE-FlexR` freshens a flexible target facing a compound subject — survives untouched in `cex/cex_p6_flex_freshened.v` (still green), and the `a_flex_tvar` WIDENING it motivated (`algo/def_extra.v`, `SolE-FlexR`'s comment) still stands: that is about which counterparts the rule ACCEPTS, not what it RETURNS |
+| `cex/cex_p6_flex_counterpart.v` | the `-var` completeness lemmas are false at a flexible solve counterpart (`cex_solve_forces_flex`: "the only solve derivation forces `P_a = β̂`") | that central lemma is now FALSE — the repaired row returns `guess^TY(P_i) = c → ⟨⟩`, and the obligation becomes reflexivity (row 1 of the table above).  Its OTHER half — that the configuration is unreachable because `LE-FlexR` freshens a flexible target facing a compound subject — survives untouched in `cex/cex_p6_flex_freshened.v` (still green), and the `a_flex_tvar` WIDENING it motivated (`algo/def_rules.v`, `SolE-FlexR`'s comment) still stands: that is about which counterparts the rule ACCEPTS, not what it RETURNS |
 | `cex/cex_thm_complete_subtyping.v` | `thm_complete_subtyping_false` — Theorem 4.6 is false, by the double-occurrence instance `Θ0 = f̂`, `P0 = (∀γ.γ→γ) → f̂`, `P = ∀β.β→β` at `NM = TY`, `M = FN(TC)` | the authors accepted the refutation and replaced the row.  `guess^TY(β→β) = (·; β→β)`, so nothing is invented and nothing lost, the close re-binds a REAL occurrence, and A FULL RUN EXISTS.  Its direct negation is `cex/probe_flexr_repair.v` (`new_extract`, `new_run_exists`; Qed, axiom-free).  ⭐ Soundness of subtyping survived the repair unchanged (`a_sub_sound`) |
-| `cex/probe_solve_flexr.v` | `run_exists_at_correct_instantiation` — localizing the failure to that one row by showing the continuation succeeds if handed the right instantiation | SUPERSEDED, not false: under the repair the algorithm *chooses* that instantiation itself, so the hypothetical is the TAIL of `new_run_exists` in `cex/probe_flexr_repair.v`, which additionally rests on nothing but `algo/def_extra.v` |
+| `cex/probe_solve_flexr.v` | `run_exists_at_correct_instantiation` — localizing the failure to that one row by showing the continuation succeeds if handed the right instantiation | SUPERSEDED, not false: under the repair the algorithm *chooses* that instantiation itself, so the hypothetical is the TAIL of `new_run_exists` in `cex/probe_flexr_repair.v`, which additionally rests on nothing but `algo/def_rules.v` |
 
 ⛔ **What this does NOT settle.**  The mech's `sub_shield` premise was
 invented as the repair of the second of these, and P6-Sv / P6-Ss / P6-L
@@ -686,7 +686,7 @@ rule written with `P` / `Q` admits a full skeleton.  `\silab{Check}`
 
 Nothing in the *rule* forces `A`, `B` to be ghost-free; the sort is carried
 entirely by the choice of letter, and a Coq `Inductive` has no such notion.
-The mechanization therefore states it: `pskl_ghost_free` (frost/def_extra.v)
+The mechanization therefore states it: `pskl_ghost_free` (frost/def_shapes.v)
 holds exactly of the ghost-free skeletons, i.e. of the painted `ptyp`s
 (`pskl_ghost_free_to_ptyp`).
 
@@ -762,7 +762,7 @@ directions of subtyping stay closed and unconditional.
 ## MECH-BUG (FIXED 2026-07-14) — `Flex-Flex-Assign` must recurse into CONSISTENCY, not into `unifyvar`
 - Where: full-algo-spec.tex:1707 (`Flex-Flex-Assign`), :1754 (`Assign-Assign`),
   :393 / algorithmic.tex:330 (skeleton splitting); mech `a_unify__flex_assign`
-  (algo/def_extra.v:487).
+  (algo/def_rules.v:487).
 - NOTATION — **the paper says this outright**, full-algo-spec.tex:1440-1442:
 
       "We write  Θ₀ ⊢ P ∼ P₀ ⊣ Θ₁  for  Θ₀ ⊢[P₀] P ∼ Q ⊣ Θ₁
@@ -797,7 +797,7 @@ directions of subtyping stay closed and unconditional.
   produces via `guess^TY`.
 - NB `a_unify_var_inv` ("every derivable `a_unify` has VARIABLE subjects",
   prop_consis_sound.v) reads like a theorem but is a SYMPTOM of this bug.
-- FIX (IMPLEMENTED, algo/def_extra.v).  The premise became, with the output
+- FIX (IMPLEMENTED, algo/def_rules.v).  The premise became, with the output
   existential and both Δs empty (per the shorthand above):
 
       a_unify__flex_assign : forall Θ0 Θ1 γ τ A B Q,
@@ -813,7 +813,7 @@ directions of subtyping stay closed and unconditional.
   So `a_unify`
   and `a_consis` are MUTUALLY inductive — a 2-WAY mutual, not the paper's
   3-way: the mech reads `Assign-Assign` as CONTINUING the assignment (see the
-  note at `a_assign` in algo/def_extra.v), so `a_assign` stays BELOW the
+  note at `a_assign` in algo/def_rules.v), so `a_assign` stays BELOW the
   cycle and its lemmas enter the mutual soundness proof as black boxes.
   `a_unify`'s subjects became ATOMS (the paper's hatted `unifyvar{α̂}{β̂}`).
   Also fixed: `a_split__flex` (full-algo-spec.tex:393), whose premise input
@@ -1109,7 +1109,7 @@ follow the paper.  It only upgrades our verdict on someone else's code.
   FlexR case of lemma:sound-decorated-consistency.
 - The paper says the flexible-variable rules "are inherited unchanged" from
   fig:alg-consistency, whose FlexR subject is a PLAIN skeleton `P`
-  (`a_consis__flex_r`, algo/def_extra.v:630).  Read into the decorated
+  (`a_consis__flex_r`, algo/def_rules.v:630).  Read into the decorated
   system, its subject is therefore the embedding `pskl_to_uskl P` — a
   decorated skeleton with no tags and no dotted ghosts, exactly as
   `a_consis_decorate` produces.  The MECH rule instead took an ARBITRARY
@@ -1149,7 +1149,7 @@ follow the paper.  It only upgrades our verdict on someone else's code.
 ## PROSE-COMPLETION — unifyvar's hatted subjects + guess^TY freshness carry the no-Δ-dependence invariant
 - Where: fig:alg-consistency `Flex-Flex-L`/`Flex-Flex-R`
   (full-algo-spec.tex:1683-…); mech `a_unify__flex_l/_flex_r`
-  (algo/def_extra.v).  Found while assembling thm:sound-consistency
+  (algo/def_rules.v).  Found while assembling thm:sound-consistency
   part 1 (consistency-proofs.tex, "Soundness of Consistency").
 - The augmented solution in the part-1 proof requires that "no flexible
   variables in Θ depend on variables in Δ1 and Δ2", and the proof needs
@@ -1906,7 +1906,7 @@ nonflex{P}  ⊢  solveeq{P}{α̂}  ⤳  P        (was: ⤳ α̂)
    ∀-instantiation); restricting the declarative side would reject
    standard impredicative programs; freshening fails on scope as above.
 
-Mech impact if adopted: rule flip in algo/def_extra.v (full algo
+Mech impact if adopted: rule flip in algo/def_rules.v (full algo
 rebuild); ~13 construction sites (all in prop_look_complete*.v, get
 SIMPLER); one changed case in each induction over `a_solve_eq`
 (prop_solve_sub, prop_decorate_sub/key, prop_sub_sound,
@@ -2637,7 +2637,7 @@ walk of `fig:alg-consistency`, *does* have the corresponding rule:
 ```
 
 (full-algo-spec.tex:1791; mechanized as `a_assign__skip_tm_var` /
-`a_assign__skip_tm_skl`, algo/def_extra.v).  So the omission in the subtyping
+`a_assign__skip_tm_skl`, algo/def_rules.v).  So the omission in the subtyping
 box is almost certainly a typo rather than a design decision — but as printed
 it makes the walk **stuck** whenever a term entry sits above the subject
 `\hat\alpha`, and `thm:complete-subtyping` demands a run there.
@@ -2646,7 +2646,7 @@ Nothing in the theorem's problem definition (algorithmic.tex:1423-1436)
 excludes the configuration: it asks only that `\Theta_0` be well formed and
 `P_0`, `P` well formed in it, and well-formedness is perfectly happy to put a
 term entry above a flexible variable (`a_wf_aenv__var` / `__var_typ`,
-algo/def_extra.v:192-201).  The configuration is reachable in the real
+algo/def_rules.v:192-201).  The configuration is reachable in the real
 algorithm too: checking a lambda against a guessed `\hat\alpha` splits it,
 pushes `x : \hat\alpha_1`, and any later application-mode subtyping call whose
 subject is a flexible declared *before* the lambda must walk past `x`.
@@ -2755,7 +2755,7 @@ in the paper's own idiom, as verbatim mirrors of `Assign-SkipTmVar`:
    Θ₀, x:Q' ∣ Ξ  ⊢[N][FN M][P₀] α̂ ⩽ Q ⊣ Θ₁, x:Q'
 ```
 
-`a_sub_flex__skip_tm_var` / `__skip_tm_skl` (algo/def_extra.v) with decorated
+`a_sub_flex__skip_tm_var` / `__skip_tm_skl` (algo/def_rules.v) with decorated
 mirrors on `a_subtag_flex` (algo/def_decorated.v) — the mech splits the
 paper's single `x : P` entry into a type binding and a skeleton binding, hence
 two rules for the paper's one.  All three mutual inductions over the
@@ -2803,7 +2803,7 @@ at ForallL:
 * `\silab{ForallL}` fires when the **subject** is a `∀`, and carries the
   premise `\guarded{P_0} \gor P_0 = \Hole`;
 * `\silab{ForallR}` fires when the **input** `P_0` is a `∀`
-  (`a_sub__forall_r`, algo/def_extra.v:1013);
+  (`a_sub__forall_r`, algo/def_rules.v:1013);
 * `skmod[TY]{P_0}{TC}` is `P_0 = A` for an arbitrary **type** `A`
   (`a_ty_mode_compat__tc`), and a `∀`-type is a type.
 
@@ -3113,7 +3113,7 @@ order, so the exclusion has to be a premise:
 ```
 
 `nonghost(P)` = P's head is neither `◇` nor `∀◇` (mech `nonghost_pskl`,
-frost/def_extra.v).  It costs completeness NOTHING — at `◇`, `SolE-GhostL`
+frost/def_shapes.v).  It costs completeness NOTHING — at `◇`, `SolE-GhostL`
 is strictly *more* informative, and at `∀◇P₀`, `SolE-GhostGuarded` peels to
 the same place — and it keeps TRUE the fact the paper uses silently in every
 `P_i = □` subcase of the -var lemmas: *solving with the ghost subject
@@ -3247,7 +3247,7 @@ refinement is neither symmetric nor transitive
 
 **Suggested action:** either change the conclusion to `∀ᾱ. A' → B`, or flip
 the consistency to `A ∼ A'` and keep `A → B`.  The mechanization takes the
-first (`a_typing__abs_anno_check_base`, algo/def_extra.v).
+first (`a_typing__abs_anno_check_base`, algo/def_rules.v).
 
 ### 4. (already recorded) `sd-App`'s fourth `≡ᵗ`, and `a_split__flex`'s freshness
 
@@ -3295,7 +3295,7 @@ well-formed" convention silently assumes this result.
 
 Found while proving `thm:complete-type-inference`.  Three related repairs to
 the four suffix-discarding check rows (and, for uniformity, the two `AT-Abs`
-rows), all now in `frost/algo/def_extra.v` with the mech following the
+rows), all now in `frost/algo/def_rules.v` with the mech following the
 IMPLEMENTATION and the paper's own PROOF where they diverge from the figure.
 
 ### 1. The body premise's result must be FREE, and the conclusion's codomain is the BODY's result

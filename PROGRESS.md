@@ -25,15 +25,15 @@ files were `Admitted` scaffolding subsumed by the current algo development.
 | Paper | Mechanization | Status |
 |---|---|---|
 | Syntax (types/terms/skeletons, decl §3) | `frost/language.ott` → `def_ott.v` (`ptyp/btyp/utyp/pskl/bskl/uskl`, `exp`) | 🟢 synced |
-| Colour/shape predicates (syn/inh/decorated/guarded/values) | `frost/def_extra.v` | 🟢 synced (`is_tskl` fixed) |
-| `tags{Ψ}{φ}` / `tags{Ψ}{ψ}` | `decl/def_extra.v` `d_tags` / `d_tags_skl` | 🟢 synced (ψ-grammar exact) |
+| Colour/shape predicates (syn/inh/decorated/guarded/values) | `frost/def_shapes.v` | 🟢 synced (`is_tskl` fixed) |
+| `tags{Ψ}{φ}` / `tags{Ψ}{ψ}` | `decl/def_rules.v` `d_tags` / `d_tags_skl` | 🟢 synced (ψ-grammar exact) |
 | Typing (fig:decl-typing) | `d_typing` | 🟢 |
 | Syntax-directed typing (§3.3) | `d_sd_typing` | 🟢 |
 | Subtyping + consistency (fig:decl-subtyping-consistency) | `d_sub`, `d_consis` | 🟢 |
 | Skeleton wf / refinement (§3.5) | `d_wf_pskl/uskl`, `d_refine_syn` | 🟢 |
 | Skeleton inference (fig:decl-skeleton-inference) | `d_pat` | 🟢 restructured to embedded-subtyping base rules |
 | Skeleton subtyping/consistency (fig:decl-skeleton-subtyping-consistency) | `d_pat_sub`, `d_pat_consis` | 🟢 |
-| Algorithmic contexts/suffixes (§5.1) | `algo/def_extra.v` `aenv/abind/a_suffix` | 🟢 rewritten |
+| Algorithmic contexts/suffixes (§5.1) | `algo/def_rules.v` `aenv/abind/a_suffix` | 🟢 rewritten |
 | `skmod[TY]/[SK]` on input skeletons | `a_ty_mode_compat`, `a_sk_mode_compat` | 🟢 |
 | guess^TY / guess^N (LaTeX `\guessMono`/`\guess`) | `a_guess_mono`, `a_guess` | 🟢 |
 | Constraint collection (fig:poly-info-extraction) | `a_looksub`, `a_lookeq` | 🟢 no-refresh, □-Vacuous |
@@ -47,7 +47,7 @@ files were `Admitted` scaffolding subsumed by the current algo development.
 | Algorithmic type inference (fig:alg-type-inference) | `a_typing` | 🟢 ∀ᾱ.A₀ AbsCheck (step/base), typed Freeze |
 | Erasure ⌊·⌋, decorated subtyping/consistency, tag solving (app:decorated-algosub) | `algo/def_decorated.v` (`uskl_to_pskl`, `a_subtag`, `a_consistag`, `a_solvetag(_sub/_eq)`) | 🟢 |
 | Metasubstitutions κ : Θ ⇒ Θ' (app:metasubstitutions) | `algo/def_meta.v` (`a_inc`, `a_inc_equiv`, `a_tyequiv`, `⊴`, and the application family `msubst_{ptyp,btyp,pskl,uskl_syn}`) | 🟢 |
-| Decl judgments in algo contexts (app:decl-in-algo-context) | `algo_decl/def_consis_refine.v` (`ad_pat_consis`, `ad_refine_syn`, `ad_refine_pskl`, `ad_wf_pskl` + flex-lookup rules); `algo_decl/def_subtyping.v` (`ad_pat_sub`, `ad_partial_precise`, and — merged in 2026-08-11 — `ad_pat_sub_g` / `ad_pat_sub_gv`, the hygienic + leaf-valid mirrors); `algo_decl/def_typing.v` (`ad_pat`, `ad_sd_typing`) | 🟢 COMPLETE 2026-08-06.  The typing layer that section D needs landed: `ad_pat` (skeleton inference) and `ad_sd_typing` (SYNTAX-DIRECTED typing — the appendix ports that one, not `d_typing`).  Per the appendix, NO new rule was needed (every type-level lookup happens inside the embedded subtyping/consistency/refinement premises, which already carry their flexible rows); what was added are the appendix's THREE explicit type-equivalence premises, on `sd-Freeze`, `sd-AbsAnnoCheck` and `sd-AbsAnno`.  `abind_to_pskl` (the `dbind_to_pskl` mirror) added to `algo/def_extra.v` |
+| Decl judgments in algo contexts (app:decl-in-algo-context) | `algo_decl/def_consis_refine.v` (`ad_pat_consis`, `ad_refine_syn`, `ad_refine_pskl`, `ad_wf_pskl` + flex-lookup rules); `algo_decl/def_subtyping.v` (`ad_pat_sub`, `ad_partial_precise`, and — merged in 2026-08-11 — `ad_pat_sub_g` / `ad_pat_sub_gv`, the hygienic + leaf-valid mirrors); `algo_decl/def_typing.v` (`ad_pat`, `ad_sd_typing`) | 🟢 COMPLETE 2026-08-06.  The typing layer that section D needs landed: `ad_pat` (skeleton inference) and `ad_sd_typing` (SYNTAX-DIRECTED typing — the appendix ports that one, not `d_typing`).  Per the appendix, NO new rule was needed (every type-level lookup happens inside the embedded subtyping/consistency/refinement premises, which already carry their flexible rows); what was added are the appendix's THREE explicit type-equivalence premises, on `sd-Freeze`, `sd-AbsAnnoCheck` and `sd-AbsAnno`.  `abind_to_pskl` (the `dbind_to_pskl` mirror) added to `algo/def_rules.v` |
 
 ## Theorems / lemmas (bottom-up order; ⬜ = to prove, per paper appendix)
 
@@ -562,7 +562,7 @@ Two traps worth recording:
 Also fixed on the way through: the six `comment-terminator-in-string` warnings
 (a quoted phrase straddling a banner comment's `*)` — the ASCII quotes became
 typographic ones, prose unchanged), and the dead `Δ ⨟ Γ ⊢ᵤ C` reservation in
-`decl/def_extra.v`.  ⚙ Docs written before this date quote the old glyphs; the
+`decl/def_rules.v`.  ⚙ Docs written before this date quote the old glyphs; the
 legend in `frost/notations.v` keeps them as history.
 
 ## 2026-08-11 (night) — ⭐⭐⭐ **THE GHOST-CAPTURE REPAIR: two presuppositions the paper states in prose go ON the declarative rules, and TYPE-INFERENCE COMPLETENESS CLOSES OVER `⊢ˢ` / `⊢`**
@@ -595,16 +595,16 @@ the repair.
 
 | where | what |
 |---|---|
-| `decl/def_extra.v` | NEW `d_refine_pskl` — the UNCOLOURED refinement, which the paper defines at `declarative.tex:1516` and the presupposition is stated at; `d_refine_syn` (coloured) cannot serve, the two paintings disagree at a ∀ |
-| `decl/def_extra.v` | `d_pat_sub`'s three consistency-bearing rows (`Infer`, `UnivGhostR`, `Arrow`'s domain) gain the presupposition — exactly the rows `ad_pat_sub_gv` decorates |
-| `decl/def_extra.v` | `d_pat`'s three base rows gain the counterpart's wf (`declarative.tex:1595`), which `ad_pat` has carried since 2026-08-07 |
+| `decl/def_rules.v` | NEW `d_refine_pskl` — the UNCOLOURED refinement, which the paper defines at `declarative.tex:1516` and the presupposition is stated at; `d_refine_syn` (coloured) cannot serve, the two paintings disagree at a ∀ |
+| `decl/def_rules.v` | `d_pat_sub`'s three consistency-bearing rows (`Infer`, `UnivGhostR`, `Arrow`'s domain) gain the presupposition — exactly the rows `ad_pat_sub_gv` decorates |
+| `decl/def_rules.v` | `d_pat`'s three base rows gain the counterpart's wf (`declarative.tex:1595`), which `ad_pat` has carried since 2026-08-07 |
 | `prop_weakening.v` / `prop_skeleton.v` / `prop_syntax_directed.v` | the `d_refine_pskl` kit: `_weakening`, `_subst_unit`, `_same_tvar`, mirroring `d_refine_syn`'s three |
 | `prop_conserv.v` §5 | `d_refine_pskl` ⇄ `ad_refine_pskl` |
 | `prop_conserv.v` §7 | `ad_pat_sub_sk_to_d` **deleted** (false now) → `ad_pat_sub_gv_sk_to_d`, from the leaf-valid mirror, which is what `ad_pat` embeds anyway |
 | `prop_conserv.v` §7 | NEW `d_pat_sub_to_ad_gv` / `_v` — ⚙ the fuel is easy at SK: `d_pat_sub` has no cofinite row, so no renaming (unlike §13's TY twin) |
 | `prop_conserv.v` §15 | ⭐ `d_pat_to_ad` — the bridge that used to be ASSUMED, now a hypothesis-free induction; `d_sd_typing_to_ad` loses its hypothesis |
 | `prop_closed.v` | ⭐⭐ `a_typing_complete_sd_infer` / `_sd_check` / `_decl_infer` / `_decl_check` |
-| `frost/coercions.v` | `uskl_to_pskl` (+ `⌊·⌋ˢ`) MOVED from `deco_algo/def_decorated.v`, and `uskl_to_pskl_subst` from `prop_decorate_sub.v` — `decl/def_extra.v` is upstream of both and now needs the erasure |
+| `frost/coercions.v` | `uskl_to_pskl` (+ `⌊·⌋ˢ`) MOVED from `deco_algo/def_decorated.v`, and `uskl_to_pskl_subst` from `prop_decorate_sub.v` — `decl/def_rules.v` is upstream of both and now needs the erasure |
 
 ⚙ **Blast radius, measured**: 13 constructor sites for `d_pat_sub`'s three rows
 and 10 for `d_pat`'s. Everything else in the 39-file development compiled
@@ -1041,7 +1041,7 @@ A context's term entry `x : P` used to carry only `a_scope_pskl Θ P`
 their contexts.  The entry now carries `Θ ⨟ empty ⊢ₚₛᵃ P` directly.
 
 ⚙ **The obstruction was ORDERING, and it was shallow.**  `a_wf_pskl` was
-declared AFTER `a_wf_aenv` in `algo/def_extra.v`, so naming it in the
+declared AFTER `a_wf_aenv` in `algo/def_rules.v`, so naming it in the
 constructor was a forward reference — which is plausibly why the weak
 judgement was introduced at all (`a_scope_pskl` sits immediately before
 `a_wf_aenv`).  It depends only on `a_binds_tvar` and `guarded_pskl`, so its
@@ -1838,7 +1838,7 @@ hypothesis is simply re-run at every member of the cofinite family.  Row 11
 (`AT-App`) runs theorem 1 on premise 1, inverts the IH's arrow refinement, and
 gets the appendix's fourth `≡ᵗ` premise from `ad_refine_syn_inh_tyequiv`.
 
-**⚠️ FOUR RULE CHANGES, all in `algo/def_extra.v`, all documented in
+**⚠️ FOUR RULE CHANGES, all in `algo/def_rules.v`, all documented in
 [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md) and cleanly revertible.**
 
 1. **The four CHECK rows get the paper's two prose side conditions**:
@@ -2367,7 +2367,7 @@ starts.  Deleting `d_sub_rename_var` (below) also retired
 was to discharge the `sub` case of `d_typing_rename_var` — a lemma that only
 ever existed in `prop_safety.v.legacy`.
 
-### 2. `def_tags.v` + `predicates.v` folded into `frost/def_extra.v`
+### 2. `def_tags.v` + `predicates.v` folded into `frost/def_shapes.v`
 
 The three-way split bought nothing: every consumer imported all three, and the
 two smaller files held 6 predicates that were **exact duplicates** of ones
@@ -2503,7 +2503,7 @@ notion, so the mech was silently more liberal than the paper everywhere.
 ### 2. What landed
 
 `pskl_ghost_free` (the "is a type" predicate) moved from
-`algo/prop_pat_sub.v` up to [`frost/def_extra.v`](frost/def_extra.v) so the
+`algo/prop_pat_sub.v` up to [`frost/def_shapes.v`](frost/def_shapes.v) so the
 RULES can use it, with the syntactic closure kit (open / close / subst / swap
 / `ptyp_to_pskl` round-trip, `ghost_free_auto`) in
 [`frost/prop_basic.v`](frost/prop_basic.v).  Premises added:
@@ -3394,7 +3394,7 @@ the paper's own idiom, as verbatim mirrors of the twin walk's
 ```
 
 **DEFINITIONS.**  `a_sub_flex__skip_tm_var` / `__skip_tm_skl`
-(`algo/def_extra.v`) plus the decorated mirrors on `a_subtag_flex`
+(`algo/def_rules.v`) plus the decorated mirrors on `a_subtag_flex`
 (`algo/def_decorated.v`).  The mech splits the paper's single `x : P` entry
 into a type binding and a skeleton binding, hence two rules for the paper's
 one.
@@ -4087,7 +4087,7 @@ hypothesis (`a_consis_decorate_size` has only `uniq Θ0`) and unproved with one.
 and axiom-free):
 
 - **The pattern works end to end.**  `a_sub_flex_complete_skip` discharges the
-  walk's Barendregt output premise (`β ∉ dom Θ1`, algo/def_extra.v:1116) exactly
+  walk's Barendregt output premise (`β ∉ dom Θ1`, algo/def_rules.v:1116) exactly
   as the swap kit predicted: PEEL κ around the mid β entry
   (`a_inc_strip_flex_mid`) → IH at the stripped context → junk-swap the IH's run
   (`a_sub_flex_swap_junk`) → re-attach via `swap_junk_dom_out` → rebuild the
@@ -4383,12 +4383,12 @@ from scratch, since lngen generated only `subst_uskl_in_uskl` and there is no
 tag substitution on `uskl`.  Worth revisiting only if retagging gets built
 anyway.
 
-**Files touched:** `algo/def_extra.v` (the rule), `prop_looksub.v` (§11, the
+**Files touched:** `algo/def_rules.v` (the rule), `prop_looksub.v` (§11, the
 relocated family lemma), `prop_look_complete_extract.v` (pointer),
 `prop_soundness_sub.v`, `prop_sub_complete_thm.v`, `test_examples.v`, DESIGN §4.3.
 
 **Remaining:** cluster 6 (`a_pat`/`a_typing`, 8 cofinite rules at
-algo/def_extra.v:1160–1264 — these bind TERM variables, so audit first whether
+algo/def_rules.v:1160–1264 — these bind TERM variables, so audit first whether
 the same "is it the algorithm?" reasoning applies), the walk's three
 `∉ dom Θ1` premises (P7a), THEN the P7b dispatcher.  Deferred: the
 `a_tags_sort` → `a_tags_skl` rename (naming only, 244 occurrences).
@@ -7681,7 +7681,7 @@ Closed.
 - Notation retrofit of `def_decorated.v`/`def_consis_refine.v` (ground rule 1);
   ground rules 1–3 added to CLAUDE.md.
 - `a_wf_ptyp`/`a_wf_pskl` made REAL scoping judgments (`a_binds_tvar` moved
-  to `algo/def_extra.v`); `a_inc__flex_def` gained the paper-PROSE side
+  to `algo/def_rules.v`); `a_inc__flex_def` gained the paper-PROSE side
   condition (κ maps to well-formed monotypes in the target,
   algorithmic.tex:123) — this is what makes identity increases keep
   flexible variables and defined-variable transport provable.
@@ -7711,7 +7711,7 @@ Paper finalized (merge `8dfafca`); clean restart per the three-step plan:
 `is_tskl` untagged-∀ case removed (ψ requires every quantifier tagged),
 `d_tags_skl` restricted to ψ's grammar, `d_pat` restructured to the paper's
 embedded-subtyping P-Unit/P-Var/P-Anno (no `d_pat__sub` / `is_base_term`).
-(2) `frost/algo/def_extra.v` REWRITTEN from `full-algo-spec.tex`: new
+(2) `frost/algo/def_rules.v` REWRITTEN from `full-algo-spec.tex`: new
 `Δ₁∣Δ₂` tracking in `a_consis`, no `refresh`, `□`-RHS Vacuous rules,
 GhostLF/GhostL solve rules with `∀◇` outputs, `∀ᾱ.A₀`-input
 AbsCheck/AbsAnnoCheck (step/base), Freeze with type input, `a_guess` =

@@ -12,7 +12,7 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 
 Set Implicit Arguments.
 
@@ -432,6 +432,9 @@ Inductive d_refine_syn : list (atom * dbind) -> list atom -> bskl -> bskl -> Pro
     {{ Γ ⨟ Δ ⊢ᵣ Q ⊳ P }}d ->
     {{ Γ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_tophole P) }}d
 where "{{ Γ ⨟ Δ ⊢ᵣ Q ⊳ P }}d" := (d_refine_syn Γ Δ Q P) : frost_d_scope.
+(* ⚙ The [ᵣ] subscript is what keeps refinement apart from [d_shallow_sub]'s
+   bare [{{ Γ ⊢ A ≤ B }}d]; the [ad] layer's copy reads the same inside the
+   braces ([{{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad]), the delimiter carrying the system. *)
 
 (* Check passed *)
 (** ⭐ THE UNCOLOURED DECLARATIVE REFINEMENT [{{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}d]

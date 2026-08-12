@@ -3,7 +3,7 @@
     This file exports notations that depend ONLY on the cross-system
     definitions (def_ott / prop_ln / def_extra). Notations for declarative
     judgments live in `frost/decl/notations.v` to avoid a circular import
-    (decl/def_extra.v → frost/notations.v).
+    (decl/def_rules.v → frost/notations.v).
 
     Conventions:
     - Greek letters in the paper map to the same letters here (Γ, Δ, Ψ, ε, φ, ψ).
@@ -114,7 +114,7 @@ Require Export Metalib.Metatheory.
 
 Require Export src.frost.def_ott.
 Require Export src.frost.prop_ln.
-Require Export src.frost.def_extra.
+Require Export src.frost.def_shapes.
 
 (** ** The four judgement scopes.
 
@@ -124,7 +124,7 @@ Require Export src.frost.def_extra.
     visible through an import chain that reaches its defining file — which in
     turn reaches this one — so the "declare the notation in scope X" and
     "scope X is open" halves always travel together.  ⚠️ Each defining file
-    (`decl/def_extra.v`, `algo/def_extra.v`, …) repeats the `Open Scope` for
+    (`decl/def_rules.v`, `algo/def_rules.v`, …) repeats the `Open Scope` for
     its own scopes: `Open Scope` is NOT transitive through `Require Import`,
     so a file that reaches a notation via a two-step chain would otherwise see
     the notation with its scope closed, and Coq reports that as the notation

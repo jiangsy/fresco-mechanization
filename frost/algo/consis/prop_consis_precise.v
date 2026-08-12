@@ -23,7 +23,7 @@
       SUBSTITUTION [R[ψa/α] ∼ Q  ⇒  R[Pa/α] ∼ Q], by induction on the
       consistency derivation, whose [R = α] case is crux (1).  Its tag
       bookkeeping needs the syntactic-tag reading ([ftag_in_uskl],
-      def_extra.v): the tag context is contained in the subject's tags
+      algo/def_rules.v): the tag context is contained in the subject's tags
       ([ad_pat_consis_ftag_sub]), and the paper's [fresh Ψ'] side condition
       is rendered as disjointness from the subject's OTHER tags
       ([inter Ψ' (ftag R) = ∅]).  Consistency has no ForallL, so no new
@@ -36,13 +36,13 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.coercions.
 Require Import src.frost.prop_basic.
-Require Import src.frost.decl.def_extra.
+Require Import src.frost.decl.def_rules.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_skeleton.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
@@ -704,7 +704,7 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  Step (2) infrastructure — syntactic tags [ftag_in_uskl] (def_extra.v). *)
+(*  Step (2) infrastructure — syntactic tags [ftag_in_uskl] (algo/def_rules.v). *)
 (* ===================================================================== *)
 
 Lemma ftag_in_uskl_open_rec_var : forall α' R k,

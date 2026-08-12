@@ -27,12 +27,12 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.prop_basic.
-Require Import src.frost.decl.def_extra.
+Require Import src.frost.decl.def_rules.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_skeleton.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
@@ -1160,7 +1160,7 @@ Proof.
     + (* ⭐ P0 = arrow P01 P02: SE-Arrow, and THE TWO IHs' EXTENSIONS MERGE.
          This is the one case in the file with real content.
 
-         SE-Arrow THREADS (def_extra.v, §2(2) of the hand-off): its second
+         SE-Arrow THREADS (algo/def_rules.v, §2(2) of the hand-off): its second
          premise runs at [Ξ1 ++ Θ0] and its output block is [Ξ2 ++ Ξ1].  So
          the second IH is invoked AT THAT CONTEXT, under the metasubstitution
          the first branch has ALREADY extended — which is exactly what the

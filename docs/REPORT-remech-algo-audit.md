@@ -3,7 +3,7 @@
 *2026-07-18, branch `re-mech` (HEAD 24fd17d).  Read-only audit — no mech file was
 changed.  Three witnesses compared judgment-by-judgment:*
 
-- **Mech**: `frost/algo/def_extra.v`, `def_meta.v`, `def_decorated.v`,
+- **Mech**: `frost/algo/def_rules.v`, `def_meta.v`, `def_decorated.v`,
   `def_consis_refine.v`, `def_subtyping.v` (+ shared AST in `def_ott.v`).
 - **Paper**: `sections/algorithmic.tex`, `sections/appendices/full-algo-spec.tex`
   (+ `decorated-algosub.tex`, `consistency-proofs.tex`, `subtyping-proofs.tex`,

@@ -5,7 +5,7 @@
     declarative-judgement-over-Θ reads its context in exactly two ways: a
     [binds] (a flexible's definition, a term variable's entry) and
     [a_binds_tvar] — which is itself a three-way disjunction of [binds]
-    (algo/def_extra.v:145).  Nothing in the layer is ANTI-monotone: the
+    (algo/def_rules.v:145).  Nothing in the layer is ANTI-monotone: the
     negative side conditions that do appear ([a_non_flex], [a_flex_tvar]) live
     in the ALGORITHMIC judgments, not here.  So each judgement is stable under
     ANY context change that preserves [binds], and one relation
@@ -35,10 +35,9 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.decl.notations.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.def_shapes.
+Require Import src.frost.decl.def_rules.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo_decl.def_consis_refine.

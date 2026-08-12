@@ -101,7 +101,7 @@ inference in `cex/cex_d_pat_bridges_false.v`.
 consistency LEAF of a subtyping derivation, which is where consistency actually
 occurs. `d_pat_sub`'s three consistency-bearing rows (`Infer`, `UnivGhostR`, the
 `Arrow` domain) now carry it too, over the new uncoloured `d_refine_pskl`
-(`decl/def_extra.v`; the paper defines that sort at `declarative.tex:1516`). The
+(`decl/def_rules.v`; the paper defines that sort at `declarative.tex:1516`). The
 `d` and `ad` skeleton-inference judgements therefore agree row for row, which is
 what made `d_pat_to_ad` / `d_sd_typing_to_ad` hypothesis-free. Kit: three
 structural lemmas mirroring `d_refine_syn`'s (`_weakening`, `_subst_unit`,
@@ -223,7 +223,7 @@ that makes the bad derivation impossible usually lives *outside* the rule.
 ## Skeleton wf in the algo layer: `a_wf_pskl` (disciplined) vs `a_scope_pskl` (scoping-only)
    (registered 2026-07-18; renamed same day — the disciplined judgment now owns the `wf` name)
 
-The algo layer has TWO skeleton judgments, both in algo/def_extra.v:
+The algo layer has TWO skeleton judgments, both in algo/def_rules.v:
 
 - **`a_wf_pskl` (`Θ ⨟ Δ ⊢ₚₛᵃ P`) — THE paper's skeleton wf** (ex-`ad_wf_pskl`,
   moved up from def_consis_refine.v).  Two contexts: ∀ binds its variable in Δ,
@@ -232,7 +232,7 @@ The algo layer has TWO skeleton judgments, both in algo/def_extra.v:
   `∀α.∀◇.(α→α)` is well-formed in NO context.  Whenever the paper writes
   skeleton wf, it means this judgment — the paper has no weak variant.
 
-- **`a_scope_pskl` (algo/def_extra.v:113) — scoping only.**  Single context Θ,
+- **`a_scope_pskl` (algo/def_rules.v:113) — scoping only.**  Single context Θ,
   ∀ binds a plain `abind_tvar` into Θ, `pskl_tophole` merely recurses (no
   guardedness, no Δ-clearing).  `∀α.∀◇.(α→α)` PASSES it.  The reference
   implementation's `is_wf_` takes the same weak reading.
@@ -263,7 +263,7 @@ The algo layer has TWO skeleton judgments, both in algo/def_extra.v:
     `a_wf_pskl__hole`.  `ad_pat__abs` already carried the premise on the rule.
     No new pack was needed.
   - ⚙ **The real obstruction was ORDERING, and it was shallow**: `a_wf_pskl`
-    was declared AFTER `a_wf_aenv` in algo/def_extra.v, so naming it in the
+    was declared AFTER `a_wf_aenv` in algo/def_rules.v, so naming it in the
     constructor was a forward reference.  It depends only on `a_binds_tvar`
     and `guarded_pskl`, so its block moved above `a_wf_aenv` — 28 lines.
   - ⚠️ **The endgame "delete `a_scope_pskl`" is NOT reachable as stated.**  The

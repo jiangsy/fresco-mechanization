@@ -30,14 +30,13 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.prop_basic.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.decl.notations.
+Require Import src.frost.decl.def_rules.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_wellformed.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
@@ -1420,7 +1419,7 @@ Corollary a_guess_mono_wf : forall Θ P Ξ A Θ1,
   a_wf_ptyp Θ1 A.
 Proof. intros. eapply a_guess_mono_wf_size; eauto. Qed.
 
-(** [uniq] is what [AT-Abs]'s own premise supplies (algo/def_extra.v): the
+(** [uniq] is what [AT-Abs]'s own premise supplies (algo/def_rules.v): the
     block is declaration-only, so nothing else is needed to put it in
     front of a well-formed context. *)
 Lemma a_wf_aenv_decls_app : forall Ξ Θ,

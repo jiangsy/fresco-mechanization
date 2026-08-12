@@ -117,7 +117,7 @@ HAZARDS (all paid for already)
   15 s per iteration instead of 96 s.
 ⚙ Rebuild costs: prop_sub_complete_thm.v 96 s, dispatch.v 12 s,
   prop_look_complete.v 24 s, P6-Ss 16 s, P6-L 41 s; a touch of
-  algo/def_extra.v ≈ 10 min for the algo tree (`make NJOBS=8 coq`).
+  algo/def_rules.v ≈ 10 min for the algo tree (`make NJOBS=8 coq`).
 ⚠️ `Set Implicit Arguments` — on "term X has type T, expected U", write
   `@lemma` with the full argument list; do NOT trust rules of thumb about
   which args stay explicit.

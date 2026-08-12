@@ -500,7 +500,7 @@ precision-substitution is FALSE was WRONG — machine-refuted.**  The
 claimed counterexample was `uskl_hole ∼ bskl_arrow (bskl_var α) Q2` with
 `α` a defined flex, argued to be underivable because "`pskl_var α` is NOT
 wf for a flex `α` (flex ≠ tvar)".  **That premise is false in this
-codebase.**  `a_binds_tvar` (algo/def_extra.v:88-91) is a *disjunction*
+codebase.**  `a_binds_tvar` (algo/def_rules.v:88-91) is a *disjunction*
 that INCLUDES defined flex vars: `binds X abind_tvar ∨ binds X
 abind_flex_mono ∨ ∃τ, binds X (abind_flex_mono_def τ)`.  So
 `a_wf_pskl__var` accepts `pskl_var α` for a flex `α`, and therefore
@@ -549,7 +549,7 @@ in the subject/derivation.  Consequences:
 - The consistency level is safe with a SYNTACTIC premise
   `inter Ψ' (ftag_in_uskl S) = ∅` — consistency has no ForallL, so no new
   tags appear inside a derivation.  (`ftag_in_uskl` = hand-written
-  syntactic tag collector, `frost/def_extra.v` — a LEAF module over the
+  syntactic tag collector, `frost/def_shapes.v` — a LEAF module over the
   generated syntax, so it can be used by def-files without a rebuild
   cascade.  It lived in its own `frost/def_tags.v` until 2026-08-06.)  This is how step (2) is stated and proved.
 - The subtyping level ALSO introduces tags inside the derivation
@@ -1996,7 +1996,7 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   `ad_pat_consis_precise_var_case` (the packaged crux)); moved there
   from `prop_sub_complete.v`, which now holds only P5a + P5b-i (+ P5b-ii
   step (3) to come).  New leaf module `frost/def_tags.v`
-  (`ftag_in_uskl`; folded into `frost/def_extra.v` 2026-08-06).  `make coq` green; `Print Assumptions` on
+  (`ftag_in_uskl`; folded into `frost/def_shapes.v` 2026-08-06).  `make coq` green; `Print Assumptions` on
   `ad_pat_consis_precise_subst` / `ad_partial_precise_complete` /
   `ad_pat_sub_to_n` = Closed under the global context.  §5.4 written:
   step (3) needs the tag-HYGIENIC mirror `ad_pat_sub_g` (paper's
@@ -2132,7 +2132,7 @@ the context as `?S`.
 **Correction to the earlier P6 note.**  The paper's consistency-side
 lemmas (complete-consistency-cc-solving(-var), consistency-proofs.tex:921
 /1182) are about the **constraint cluster** `a_lookeq`/`a_solve_eq` —
-defined MUTUALLY with `a_looksub`/`a_solve_sub` in algo/def_extra.v
+defined MUTUALLY with `a_looksub`/`a_solve_sub` in algo/def_rules.v
 (299-469) — NOT about the μ-bundle's `a_consis` join.  The μ-bundle
 cannot stand in for them; they must be mechanized as their own
 inductions.  P6 therefore has FIVE lemmas, in dependency order:
@@ -4309,7 +4309,7 @@ target therefore cannot invent free variables.
    prop_sub_msubst_equiv.v;
 3. the ForallL cases, gated on TASK 0's residual;
 4. P7a itself, which needs the `a_sub` / `a_sub_flex` run-renaming kit (K1–K4)
-   to discharge the walk's three `β ∉ dom Θ1` premises (algo/def_extra.v
+   to discharge the walk's three `β ∉ dom Θ1` premises (algo/def_rules.v
    :1100/:1116/:1123).
 
 ## §13 P7a — what the walk rows actually cost (measured 2026-08-02, against the tree)
@@ -5107,7 +5107,7 @@ Theorem a_sub_complete_bundle_holds : a_sub_complete_bundle.
 ### ⭐ §12.3 Flex-SkipTmVar LANDED (2026-08-03), and what the two P7a rows cost
 
 The authors' call was to add the missing rule, so `a_sub_flex__skip_tm_var` /
-`__skip_tm_skl` are in `algo/def_extra.v` with decorated mirrors, and the three
+`__skip_tm_skl` are in `algo/def_rules.v` with decorated mirrors, and the three
 mutual inductions over the `a_sub` / `a_sub_flex` pair carry their new cases
 (prop_sub_sound.v, prop_soundness_sub.v, prop_swap.v).  `make coq` green,
 admit-free, axiom-free.  Each of those cases is Flex-SkipRigid's, with

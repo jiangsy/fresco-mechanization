@@ -63,16 +63,15 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
 Require Import src.frost.prop_coercions.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.prop_basic.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.decl.notations.
+Require Import src.frost.decl.def_rules.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_general_subsumption.  (* mono_ptyp_inh_eq_syn *)
 Require Import src.frost.decl.prop_wellformed.           (* d_wf_utyp_lc *)
 Require Import src.frost.decl.prop_syntax_directed.       (* ftvar_btyp_to_bskl *)
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo_decl.def_consis_refine.
@@ -1806,7 +1805,7 @@ Qed.
 (*  (cex/cex_d_pat_bridges_false.v at commit 09a1f0b) — so the lemma it    *)
 (*  guarded was vacuous.  What made the bridge false was the mechanisation *)
 (*  deferring the paper's presupposition on skeleton consistency; with     *)
-(*  that presupposition on the rules (decl/def_extra.v, 2026-08-11) the    *)
+(*  that presupposition on the rules (decl/def_rules.v, 2026-08-11) the    *)
 (*  bridge is a rule-for-rule induction — [d_pat_to_ad] below.             *)
 (* ===================================================================== *)
 

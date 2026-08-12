@@ -10,7 +10,7 @@
       (fig:declarative-in-algo-context, full-algo-spec.tex:170-176; LHS
       flexible in FUNCTION mode only; targets' flexibles are reached through
       the consistency premises' own FlexR).  The transplant mirrors the
-      SETTLED formulations of the mech's [d_pat_sub] (decl/def_extra.v:479 —
+      SETTLED formulations of the mech's [d_pat_sub] (decl/def_rules.v:479 —
       the WT-reviewed skeleton side: [is_sskl]/guardedness on
       Infer/UnivGhostR, [mod_comp_sk] on Ghost/GhostG, the scope premise on
       ForallL) and, for the TY-only rules Check/ForallR absent from
@@ -39,10 +39,9 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.decl.notations.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.def_shapes.
+Require Import src.frost.decl.def_rules.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
 

@@ -16,7 +16,7 @@
 
 Require Import Metalib.Metatheory.
 
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 
 (** ===== btyp -> utyp (synthesised erasure) ===== *)
 

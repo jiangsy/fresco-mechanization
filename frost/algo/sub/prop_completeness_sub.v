@@ -46,12 +46,11 @@ Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.ltac_utils.   (* solve_notin_auto *)
 Require Import src.frost.coercions.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.decl.notations.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.decl.def_rules.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
@@ -618,7 +617,7 @@ Qed.
 (*  CRASHES on — cex/cex_p7_flex_walk_tm_var.v, docs/PAPER-GAPS.md.        *)
 (*                                                                        *)
 (*  ⭐ THE RULES ARE IN THE TREE (2026-08-03): [a_sub_flex__skip_tm_var] /   *)
-(*  [__skip_tm_skl] (algo/def_extra.v) with decorated mirrors, and the      *)
+(*  [__skip_tm_skl] (algo/def_rules.v) with decorated mirrors, and the      *)
 (*  three mutual inductions over the [a_sub] / [a_sub_flex] pair — the      *)
 (*  soundness bundle, the decoration bundle and equivariance — all carry    *)
 (*  their two new cases.                                                   *)
@@ -958,7 +957,7 @@ Definition sub_flex_complete (n : nat) (Θ0 : aenv) : Prop :=
     are STATEMENTS.
 
     ⚙ NAMING.  The family is completeness of [a_sub], as opposed to the
-    auxiliary judgment [a_sub_flex] it is mutual with (def_extra.v's two
+    auxiliary judgment [a_sub_flex] it is mutual with (algo/def_rules.v's two
     boxes); the motive is [sub_complete_concl] and each name says what
     RESTRICTS it — [_arrow] to arrow subjects, [_ctx_lt] to contexts shorter
     than [k], [sub_flex_complete] to the auxiliary judgment.

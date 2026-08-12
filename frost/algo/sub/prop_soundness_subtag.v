@@ -22,15 +22,15 @@ Require Import src.frost.prop_tag.   (* ftag_in_uskl_subst_tagfree *)
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.prop_ln.
 Require Import src.frost.prop_basic.
-Require Import src.frost.decl.def_extra.
+Require Import src.frost.decl.def_rules.
 Require Import src.frost.decl.prop_basic.
 (* ⚙ EARLY on purpose: this file resolves several homonyms by import order
    (see the [guarded_pskl_subst] note in §1e). *)
 Require Import src.frost.decl.prop_skeleton.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.deco_algo.def_decorated.

@@ -17,9 +17,8 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.decl.notations.
+Require Import src.frost.def_shapes.
+Require Import src.frost.decl.def_rules.
 
 Set Implicit Arguments.
 
@@ -254,7 +253,7 @@ where "{{ ⊢ Θ }}a" := (a_wf_aenv Θ) : frost_a_scope.
 (* ===================================================================== *)
 
 (** ⚠️ These are the algorithmic counterparts of [mod_comp_ty] / [mod_comp_sk]
-    (frost/def_extra.v) — same concept, but the words are in the opposite order
+    (frost/def_shapes.v) — same concept, but the words are in the opposite order
     AND so are the arguments (this pair is mode-first, that one subject-first).
     See the ⛔ note at [mod_comp_ty] before trying to unify them. *)
 Inductive a_ty_mode_compat : mode -> pskl -> Prop :=
@@ -709,7 +708,7 @@ with a_solve_eq : aenv -> pskl -> pskl -> aenv -> pskl -> Prop :=
        the marker's solution land on [α̂] is lost.  The reference
        implementation never takes that branch (its match puts SolE-GhostL
        and SolE-GhostGuarded strictly before SolE-FlexR — see
-       [nonghost_pskl], frost/def_extra.v), and the paper's own
+       [nonghost_pskl], frost/def_shapes.v), and the paper's own
        [nonflex{P}] side condition is prose that says nothing about ghosts
        because on paper the two rows agreed.  Restoring the exclusion costs
        completeness NOTHING: at [◇] SE-GhostL is strictly more informative,

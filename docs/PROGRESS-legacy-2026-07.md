@@ -402,7 +402,7 @@ Paper labels resolved to file:line in the auto-managed block at end of file (reg
 | A11 | [Theorem 4.15: Soundness of skeleton inference][thm:sound-skeleton-inference] | **Mech:** `a_pat_sound` [`prop_soundness.v:716`](frost/algo/prop_soundness.v#L716):<br>`a_pat m Θ0 P0 e P Θ1 → a_transfers Θ0 Γ0 → a_transfers Θ1 Γ1 → Γ1 ⊢ₛ[ m ] e ⦂ P` | 🟠 HEADLINE — mutual with A8 |
 | A12 | [Theorem 4.16: Completeness of skeleton inference][thm:complete-skeleton-inference] | **Mech:** `a_pat_complete` [`prop_completeness.v:209`](frost/algo/prop_completeness.v#L209):<br>`Γ ⊢ₛ[ m ] e ⦂ P → ∀ Θ0 P0, a_transfers Θ0 Γ → a_wf_typ Θ0 P0 → ∃ Θ1 Q, a_pat m Θ0 P0 e Q Θ1 ∧ a_transfers Θ1 Γ` | 🟠 HEADLINE — mutual with A9 |
 | A13 | [Theorem 4.19: Soundness/Completeness/Minimality of subtyping][thm:sound-subtyping] | **Mech:** `a_sub_sound` [`prop_soundness.v:661`](frost/algo/prop_soundness.v#L661) + `a_sub_complete` [`prop_completeness.v:135`](frost/algo/prop_completeness.v#L135) | 🟠 HEADLINE — five auxiliary completeness/soundness lemmas blocked. `a_sub_decidable_existential` is Qed in vacuous-disjunct form (documents the obligation without fabricating a proof). |
-| A14 | [Lemma 4.21: Soundness and completeness and minimality of unification][thm:sound-unification] | — | 🔴 `a_unify` defined in `algo/def_extra.v`; no standalone soundness lemma stated (consumed via A13 / A8 chains) |
+| A14 | [Lemma 4.21: Soundness and completeness and minimality of unification][thm:sound-unification] | — | 🔴 `a_unify` defined in `algo/def_rules.v`; no standalone soundness lemma stated (consumed via A13 / A8 chains) |
 
 ## Mechanization-only support lemmas
 
@@ -483,7 +483,7 @@ Paper finalized (merge `8dfafca`); clean restart per the three-step plan:
 `is_tskl` untagged-∀ case removed (ψ requires every quantifier tagged),
 `d_tags_skl` restricted to ψ's grammar, `d_pat` restructured to the paper's
 embedded-subtyping P-Unit/P-Var/P-Anno (no `d_pat__sub` / `is_base_term`).
-(2) `frost/algo/def_extra.v` REWRITTEN from `full-algo-spec.tex`: new
+(2) `frost/algo/def_rules.v` REWRITTEN from `full-algo-spec.tex`: new
 `Δ₁∣Δ₂` tracking in `a_consis`, no `refresh`, `□`-RHS Vacuous rules,
 GhostLF/GhostL solve rules with `∀◇` outputs, `∀ᾱ.A₀`-input
 AbsCheck/AbsAnnoCheck (step/base), Freeze with type input, `a_guess` =
@@ -555,7 +555,7 @@ UNCOLOURED sorts only — [ptyp]/[pskl]/[uskl], never [btyp]/[bskl].  The
 coloured sorts are declarative; painting happens only at the
 soundness/completeness bridge ([algo/def_question.v]).
 
-**`algo/def_extra.v`** re-sorted + filled (`make coq` green):
+**`algo/def_rules.v`** re-sorted + filled (`make coq` green):
 
 - Removed dead bskl machinery: `a_pre_sub`/`a_pre_join` (superseded by the
   uncoloured constraint-based `a_solve_*`), `a_ajoin`, `a_meta_subst`.
@@ -859,7 +859,7 @@ factors the old combined premise `Δ | Γ ⊢ φ` into a pure tag-counting
 relation plus standard well-scopedness. Mechanized as:
 
 - `d_tags : list atom -> utyp -> Prop` and `d_tags_skl : list atom ->
-  uskl -> Prop` in [`decl/def_extra.v`](frost/decl/def_extra.v), with the
+  uskl -> Prop` in [`decl/def_rules.v`](frost/decl/def_rules.v), with the
   paper's rules (`⊎` modelled by `list_disjoint` / `~ In`; skeleton
   version adds `□ → ·` and `⫯ψ → Δ`).
 - Wired the new premise into `d_sub__forall_l_*` and
@@ -923,7 +923,7 @@ body is guarded). The `□` rule now clears `Ψ` (premise `nil ⨟ Γ ⊢ₚₛ 
 matches the paper's coloured refinement (8 rules), output sort `bskl`.
 
 **C. Pre-subtyping / pre-join ported to the split AST (+ 3 missing
-cases).** `algo/def_extra.v`'s `a_pre_sub` / `a_pre_join` were `refl`
+cases).** `algo/def_rules.v`'s `a_pre_sub` / `a_pre_join` were `refl`
 /`left` stubs (the type-hierarchy refactor gutted the algo defs), and
 `a_pre_sub` was mis-sorted as `btyp` (which has no ghosts). Ported the
 full paper rule sets to `bskl` as a mutual inductive, including the
@@ -990,7 +990,7 @@ paper's `Δ` is a *set* (`declarative.tex:818`): consistency `[Arrow]` uses
 set union (no disjointness) and `[ForallInh]` idempotent union (no
 freshness). The Coq `d_consis` rules carried *stricter* artifacts —
 `list_disjoint Δ1 Δ2` on `d_consis__arrow` and `~ List.In ε Δ` on
-`d_consis__forall_inh_tagged`. Both **dropped** (in `decl/def_extra.v`).
+`d_consis__forall_inh_tagged`. Both **dropped** (in `decl/def_rules.v`).
 Audit-confirmed safe: `d_consis__arrow` was constructed in one proof only;
 `d_consis__forall_inh_tagged` in none; D1/D12 never invert `d_consis`.
 
@@ -1411,13 +1411,13 @@ the n-quantifier version: with `typ_all_col` bindings, `d_sub` at `mode_fn _`
 has no instantiation rule, so the typing antecedent is vacuous.
 
 **What changed.**
-- **5 new rule constructors** (mechanization/frost/decl/def_extra.v):
+- **5 new rule constructors** (mechanization/frost/decl/def_rules.v):
   - `d_sub__forall_l_untagged` (LHS `typ_all_col colour_syn`)
   - `d_consis__forall_inh_untagged`
   - `d_pat_sub__forall_l_untagged`
   - `d_pat_consis__forall_inh_untagged`
   - `d_pat_consis__forall_syn_untagged`
-- **2 predicate-grammar gaps fixed** (frost/def_extra.v): `is_utyp__pall`
+- **2 predicate-grammar gaps fixed** (frost/def_shapes.v): `is_utyp__pall`
   and `is_uskel__pall` add the `typ_all_col colour_syn` case (paper's
   utyp grammar `T ::= unit | α | T → T | syn{∀^δα.T}` covers both
   `δ = ε ↦ typ_all_etag` and `δ = · ↦ typ_all_col colour_syn`).
@@ -1588,11 +1588,11 @@ guarded, hence wf. **No paper inconsistency.**
 
 ## Phase 1 (definitions only)
 
-🟢 Complete (commit `6b5f7c3`, 2026-05-10). Every paper rule from `paper/sections/declarative.tex` has a corresponding `Inductive` constructor in `mechanization/frost/decl/def_extra.v`; full clean build; no `Admitted`. Bug audit performed and 9 fixes applied. Mutual block reduced to just `d_typing` ↔ `d_pat`.
+🟢 Complete (commit `6b5f7c3`, 2026-05-10). Every paper rule from `paper/sections/declarative.tex` has a corresponding `Inductive` constructor in `mechanization/frost/decl/def_rules.v`; full clean build; no `Admitted`. Bug audit performed and 9 fixes applied. Mutual block reduced to just `d_typing` ↔ `d_pat`.
 
 ## Phase 3 status (post 2026-05-17)
 
-**3.A Algorithmic defs** (`frost/algo/def_extra.v`): 🟢 done. ~140 constructors across 16 inductives.
+**3.A Algorithmic defs** (`frost/algo/def_rules.v`): 🟢 done. ~140 constructors across 16 inductives.
 
 **3.A′ Metasubstitution / questions / solutions** (`frost/algo/def_meta.v`, `def_question.v`): 🟢 done (definitions). Replaces the trivial `a_transfers` with the paper's information-increase relation `a_inc`/`a_isub` (fig:information-increase), the `denv_of` projection, and the `*_solution`/`*_optimal` question layer for all four properties.
 

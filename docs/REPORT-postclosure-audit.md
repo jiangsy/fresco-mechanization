@@ -34,13 +34,23 @@ Steps 2 and 3 of the suggested order below, plus the README indexing:
   locally re-derived list/set utilities.  Zero-reference count 203 → 193.
 - **§3.4 / §3.5** — the stale `}}t` delimiter in `CLAUDE.md` / `PROGRESS.md`,
   the `prop_etag*` paths in `PAPER-GAPS.md`, the `a_split_refines` citation at
-  `algo/def_extra.v`, the false "`a_sub_complete_bundle_holds` is in `README.v`"
+  `algo/def_rules.v`, the false "`a_sub_complete_bundle_holds` is in `README.v`"
   claim, the `AGENTS.md` links, and the two dead design-spec references.  Every
   `[…](…)` link in `CLAUDE.md` now resolves.  `decl/prop_shallow.v`'s header
   described a `≤ₘ⟨n⟩` relation and a `d_shallow_sub_mono` that do not exist;
   it now describes what the file proves.
 
-Not yet done: §1.1/§1.2 (the `a_typing_output_wf` refactor), §1.9, §3.2, §3.3.
+- **§3.2** — `decl/notations.v` is deleted.  It had **zero** `Notation`s: 35
+  files imported it for two `Require Export`s, and all 35 already imported both
+  targets directly.  The one live fact in its comment (why refinement's
+  turnstile carries `ᵣ`) moved next to the relation in `decl/def_rules.v`.
+- **§3.3** — the three `def_extra.v` files are renamed for what they hold:
+  `frost/def_shapes.v`, `frost/decl/def_rules.v`, `frost/algo/def_rules.v`.
+  120 files carried a reference.  ⚙ The historical `docs/DESIGN-*.md` and
+  `docs/REPORT-remech-*.md` keep the old names on purpose — they are dated
+  records with line-number citations, not current pointers.
+
+Not yet done: §1.1/§1.2 — see the ⚠️ RE-SCOPE note under §1.1 below — and §1.9.
 
 ---
 
@@ -52,7 +62,7 @@ is avoidable at a bounded cost.
 
 ### 1.1 ⭐ AVOIDABLE — the four check rows' premise (2) is now DERIVABLE
 
-`algo/def_extra.v:1548,1561,1569,1584` — the four suffix-discarding check rows
+`algo/def_rules.v:1548,1561,1569,1584` — the four suffix-discarding check rows
 of `a_typing` carry
 
 ```coq
@@ -101,7 +111,7 @@ prose" that `CLAUDE.md` and `README.v` currently advertise.
 
 ### 1.3 AVOIDABLE IN PRINCIPLE, NOT WORTH IT — `uniq (αs ++ Θ1)` on `AT-Abs`
 
-`algo/def_extra.v:1476`.  The premise exists because `a_guess_mono__arrow`
+`algo/def_rules.v:1476`.  The premise exists because `a_guess_mono__arrow`
 (`:331`) runs both halves at the **same** `Θ`, so two independently invented
 blocks may pick the same atom.  Every other generating judgement in the tree
 threads instead (`a_sub`'s sibling premise `Ξ2 ++ Ξ1`, `def_extra.v:642`), and
@@ -124,14 +134,14 @@ and reads as a stronger claim than intended).
 
 ### 1.4 NECESSARY — `AT-AbsAnnoCheck`'s result domain `A'`
 
-`algo/def_extra.v:1588`.  This is a **correction of the paper**, not a mech
+`algo/def_rules.v:1588`.  This is a **correction of the paper**, not a mech
 artefact: the figure's `A → B` and its own consistency orientation `A' ∼ A`
 cannot both hold (soundness would owe refinement symmetry).  Keep, and keep it
 in PAPER-GAPS — it is a finding for the authors.
 
 ### 1.5 NECESSARY — the two prose presuppositions on the rules
 
-`decl/def_extra.v:570,683`, `algo_decl/def_subtyping.v:70`,
+`decl/def_rules.v:570,683`, `algo_decl/def_subtyping.v:70`,
 `algo_decl/def_typing.v:95,180,258`.  These transcribe presuppositions the paper
 *states* (declarative.tex:2074, :1595) and its figures then omit.  Carried on
 the rules they make `d_pat` and `ad_pat` agree row for row, which is what closed
@@ -140,14 +150,14 @@ every lemma) is strictly more bookkeeping.
 
 ### 1.6 NECESSARY — the sort-discipline (`pskl_ghost_free`) premises
 
-Eight sites in `algo/def_extra.v`.  They render the paper's *metavariable*
+Eight sites in `algo/def_rules.v`.  They render the paper's *metavariable*
 sorting (`A`/`B` type positions, `P`/`Q` skeleton positions), which a Coq
 `Inductive` cannot express otherwise.  The three places where the paper sorts and
 the mech deliberately does not are each argued in PAPER-GAPS.  No change.
 
 ### 1.7 NECESSARY BUT NON-UNIFORM — `a_pat`'s four cofinite binder rows
 
-`algo/def_extra.v:1382`.  Still the one departure from the exists-fresh
+`algo/def_rules.v:1382`.  Still the one departure from the exists-fresh
 discipline (`a_typing`'s six were converted at `7061d31`).  The note says
 converting them would retire `prop_swap.v` §6's rename bridges.  **That is now
 only half true**, and in a way that helps: three of the four bridges are already
@@ -289,28 +299,28 @@ encoding is admissible.  Suggest a short second index — `README.v` §V
 ### 3.2 `decl/notations.v` is an empty shell
 
 37 lines, **zero** `Notation` declarations — its own header says every notation
-moved inline to `decl/def_extra.v`.  What remains is two `Require Export`s and
+moved inline to `decl/def_rules.v`.  What remains is two `Require Export`s and
 four empty section headings.  Either delete it (and point its consumers at
-`frost/notations.v` + `decl/def_extra.v`) or rename it to what it now is
+`frost/notations.v` + `decl/def_rules.v`) or rename it to what it now is
 (a re-export module).  It is currently the only reason a reader looks in two
 places for declarative notations.
 
 ### 3.3 `def_extra.v` names three different things
 
-`frost/def_extra.v` (shape predicates), `decl/def_extra.v` (908 lines — *the
-declarative rules*), `algo/def_extra.v` (1606 lines — *the algorithmic rules*).
+`frost/def_shapes.v` (shape predicates), `decl/def_rules.v` (908 lines — *the
+declarative rules*), `algo/def_rules.v` (1606 lines — *the algorithmic rules*).
 The name is a leftover of the ott convention (`def_ott.v` + hand-written extra)
 and now describes none of them.  `algo_decl/` was already fixed in this spirit at
 `9402f3a` (`def_decl_algo*.v` → `def_{consis_refine,subtyping,typing}.v`).
 Applying the same treatment finishes the job:
 
-- `decl/def_extra.v` → `decl/def_rules.v`, or split by judgement as `algo_decl/`
+- `decl/def_rules.v` → `decl/def_rules.v`, or split by judgement as `algo_decl/`
   was (`def_wellformed.v` / `def_consis_refine.v` / `def_subtyping.v` /
   `def_typing.v` — the 17 `Inductive`s group cleanly along exactly those lines);
-- `algo/def_extra.v` → `algo/def_rules.v` (a split is less attractive: the
+- `algo/def_rules.v` → `algo/def_rules.v` (a split is less attractive: the
   `a_assign`/`a_unify`/`a_consis` and `a_sub`/`a_sub_flex` mutual blocks and the
   `where`-clause notations pin large groups together);
-- `frost/def_extra.v` → `frost/def_shapes.v` (all 16 `Inductive`s there are
+- `frost/def_shapes.v` → `frost/def_shapes.v` (all 16 `Inductive`s there are
   shape/mode predicates).
 
 Mechanical, `make quick`-checkable, and it removes the tree's worst

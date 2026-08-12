@@ -20,7 +20,7 @@ removed developments).
 > | §5.5 | dead `guarded_ptyp` deleted; **and its "3 remaining uses" turned out to be a verbatim duplicate lemma** — see correction (a) |
 > | §6 | `fn_arrow_shape*` split out of the rigidity file |
 > | §1.2 | the K6 block (**ten** items, not nine) moved into `prop_swap.v` as §6 |
-> | §3(a) | cofinite/exists-fresh discipline documented in `CLAUDE.md` and at both `algo/def_extra.v` sites |
+> | §3(a) | cofinite/exists-fresh discipline documented in `CLAUDE.md` and at both `algo/def_rules.v` sites |
 > | naming | four badly-named files renamed and clustered — see correction (c) |
 > | archive | `algo/prop_symmetry.v.deferred` (1011 lines) deleted — see correction (d) |
 >
@@ -486,7 +486,7 @@ removed developments).
 >
 > | fact | resolution |
 > |---|---|
-> | `mod_comp_ty_tc_inv` | lifted to `frost/prop_basic.v` (its predicate is declared in `frost/def_extra.v`) |
+> | `mod_comp_ty_tc_inv` | lifted to `frost/prop_basic.v` (its predicate is declared in `frost/def_shapes.v`) |
 > | `a_wf_ptyp_ftv_dom`, `a_binds_tvar_in_dom`, `a_scope_pskl_ftv_dom` | lifted to `algo/prop_flex.v`, joining `a_wf_ptyp_ftv_tvarish` — they are ONE "wf/scope ⟹ ftvar ⊆ dom" family that had been split across four mutually-invisible files |
 > | `ad_pat_sub_gv_psi_cong` | **could not be lifted** — see below; deduped by IMPORT instead |
 > | `a_wf_aenv_uniq_local` ×2 | a THIRD copy of `prop_flex.v`'s `a_wf_aenv_uniq`, byte-identical, under a different name.  Deleted; 11 files repointed |
@@ -512,7 +512,7 @@ removed developments).
 >
 > ### §1.1 — the cheap half done, the retirement not
 >
-> `rename_abind` / `rename_aenv` moved out of `algo/def_extra.v` (which should
+> `rename_abind` / `rename_aenv` moved out of `algo/def_rules.v` (which should
 > hold RULES) into `prop_swap.v` next to `swap_aenv`, with a ⚠️ note on which to
 > reach for; their bridge `swap_aenv_as_rename` was already there.  **Retiring
 > `rename_aenv` outright is NOT a rename** — its 23 sites are
@@ -648,7 +648,7 @@ the **eight mode-spine inductives**, the **82 duplicated names**, and the
 | operator | where | shape | uses |
 |---|---|---|---|
 | `swap_aenv γ β Θ` | `algo/prop_swap.v:135` | transposition (bijection) | 143 |
-| `rename_aenv γ β Θ` | `algo/def_extra.v:119` | directed rename, key + payload | 21 |
+| `rename_aenv γ β Θ` | `algo/def_rules.v:119` | directed rename, key + payload | 21 |
 | `subst_aenv` | `algo/def_meta.v` | payload-only substitution | 34 |
 
 `swap_aenv_as_rename` (`prop_swap.v:635`) bridges the first two, so this is
@@ -659,7 +659,7 @@ survives in only 5 files (`prop_flex.v`, `prop_looksub.v`,
 **Recommendation (B).**  Retire `rename_aenv`/`rename_abind` in favour of
 `swap_aenv` + the bridge, or — if the directed form is genuinely needed at
 those 21 sites — keep it but move it next to `swap_aenv` in `prop_swap.v` and
-say in one comment which to reach for.  Deleting it from `algo/def_extra.v`
+say in one comment which to reach for.  Deleting it from `algo/def_rules.v`
 also removes 20 lines of *definition* from a file that should hold rules.
 
 ### 1.2 The swap kit's term-variable half is stranded
@@ -781,20 +781,20 @@ Rule: **decl stays cofinite, algo goes full existential.**  Audit against it:
 
 | file | layer | cofinite rows | verdict |
 |---|---|---|---|
-| `decl/def_extra.v` | decl | 36 | ✅ correct |
+| `decl/def_rules.v` | decl | 36 | ✅ correct |
 | `deco_algo/def_decorated.v` | decl-in-algo | 13 | ✅ correct |
 | `algo_decl/def_typing.v` | decl-in-algo | 10 | ✅ correct |
 | `algo_decl/def_consis_refine.v` | decl-in-algo | 9 | ✅ correct |
 | `algo_decl/def_decl_algo_sub{,_hyg}.v` | decl-in-algo | 4 + 2 | ✅ correct |
 | `algo/def_meta.v` | algo (meta) | 2 | see below |
-| **`algo/def_extra.v`** | **algo** | **7** | **3 wf + 4 `a_pat` — see below** |
+| **`algo/def_rules.v`** | **algo** | **7** | **3 wf + 4 `a_pat` — see below** |
 
-The seven in `algo/def_extra.v` split into two groups:
+The seven in `algo/def_rules.v` split into two groups:
 
 **(a) Well-formedness — `a_wf_ptyp:166`, `a_scope_pskl:181`, `a_wf_pskl:282`.**
 These are static judgements, not algorithm runs.  Cofinite is the standard LN
 idiom and buys the strong elimination the whole tree leans on.  **Leave them.**
-Recommend adding one line to `algo/def_extra.v`'s header saying so, because a
+Recommend adding one line to `algo/def_rules.v`'s header saying so, because a
 reader applying the rule mechanically will otherwise "fix" them.
 
 **(b) `a_pat`'s four binder rows — `a_pat__abs:1406`, `__abs_anno:1415`,
@@ -836,8 +836,8 @@ subject, then constrain what is left".  They differ only in the base rows.
 |---|---|---|---|---|
 | `mod_comp_ty` | `def_extra.v:230` | `btyp → mode` | `is_styp B` | `is_ityp B` |
 | `mod_comp_sk` | `def_extra.v:243` | `bskl → mode` | `is_sskl Q` | `is_sskl Q` |
-| `a_ty_mode_compat` | `algo/def_extra.v:227` | `mode → pskl` | `P = □` | `P = ⌊A⌋` |
-| `a_sk_mode_compat` | `algo/def_extra.v:237` | `mode → pskl` | `P = □` | `P = □` |
+| `a_ty_mode_compat` | `algo/def_rules.v:227` | `mode → pskl` | `P = □` | `P = ⌊A⌋` |
+| `a_sk_mode_compat` | `algo/def_rules.v:237` | `mode → pskl` | `P = □` | `P = □` |
 | `pskl_ty_core` | `prop_ty_core.v:639` | `mode → pskl → ptyp` | — | `P = ⌊A⌋`, out `A` |
 | `ptyp_ty_core` | `prop_ty_core.v:647` | `mode → ptyp → ptyp` | — | out `= A` |
 | `fn_arrow_shape_pskl` | `prop_ty_core.v:1215` | `mode → pskl` | `True` | `True` |
@@ -852,7 +852,7 @@ subject first; every algorithmic counterpart puts the mode first.  Same concept,
 opposite convention, 106 combined call sites.  Naming is inconsistent too:
 `mod_comp_ty` / `mod_comp_sk` vs `a_ty_mode_compat` / `a_sk_mode_compat` — the
 words are in the other order *and* the decl pair has no `d_` prefix while
-living in the shared `frost/def_extra.v`.
+living in the shared `frost/def_shapes.v`.
 
 **(b) `fn_arrow_shape` and `fn_arrow_shape_pskl` are the same relation.**
 `fn_arrow_shape_of_pskl` (`prop_ty_core.v:1233`) proves one direction; the
@@ -961,7 +961,7 @@ the duplicated names in §8 at the same time (`bskl_to_pskl_open{,_rec}`,
 
 ### 5.5 The predicate layer
 
-`frost/def_extra.v` holds 6 `guarded_*` (one per sort), 5 `is_*` colour
+`frost/def_shapes.v` holds 6 `guarded_*` (one per sort), 5 `is_*` colour
 predicates, `mono_ptyp`, `nonghost_pskl`, `is_value`, and 2 `*_ghost_free`
 `Fixpoint`s.  This is well organised.  Two notes:
 
@@ -1190,7 +1190,7 @@ serves — that is the information needed to eventually break it up.
 4. §7.1 delete the inert `subst_typ_in` ott line.
 5. §6 move `fn_arrow_shape*` and `a_assign_flex_tvar` out of `prop_ty_core.v`.
 6. §1.2 move the nine K6 swap lemmas into `prop_swap.v`.
-7. §3(a) + §7 add the two convention notes to `AGENTS.md` / `algo/def_extra.v`.
+7. §3(a) + §7 add the two convention notes to `AGENTS.md` / `algo/def_rules.v`.
 
 **Phase 2 — mechanical, compiler-verified (grade B, ~2-3 days).**
 8. **§8.1 the 28 `completeness_look/` duplicates**, then flip

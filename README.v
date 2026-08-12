@@ -70,11 +70,10 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.deco_algo.def_decorated.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.coercions.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.decl.notations.
-Require Import src.frost.algo.def_extra.          (* the algorithmic judgement notations *)
+Require Import src.frost.decl.def_rules.
+Require Import src.frost.algo.def_rules.          (* the algorithmic judgement notations *)
 Require Import src.frost.algo.def_meta.            (* κ ∷ Θ ⊑ Θ', Θ ⊴ Θ' *)
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.algo_decl.def_subtyping.
@@ -506,7 +505,7 @@ Check d_typing_order_irrel :
 Print Assumptions d_typing_order_irrel.
 
 (* SHALLOW SUBTYPING IS SUBSUMED — the LOWER bound on [⩽]'s expressive power.
-   [{{ Γ ⊢ A ≤ B }}d] ([d_shallow_sub], decl/def_extra.v:375) is the standard
+   [{{ Γ ⊢ A ≤ B }}d] ([d_shallow_sub], decl/def_rules.v:375) is the standard
    shallow polymorphic subtyping relation with MONOTYPE instantiation that
    declarative.tex:1191 defines; the claim that check-mode [⩽] subsumes it is
    at :1179.  ⚠️ Both passages currently sit inside an [\iffalse] block, so

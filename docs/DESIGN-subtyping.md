@@ -55,19 +55,19 @@ height-non-increasing (§4.3).
 
 | judgment | file:line | paper |
 |---|---|---|
-| `a_sub` / `a_sub_flex` (mutual) | algo/def_extra.v:780/838 | `atypsub`, fig:alg-subtyping |
-| `a_looksub` (+ `a_cstr`/`a_cstrs`) | algo/def_extra.v:270/258 | `looksub` constraint collection |
-| `a_solve_sub` | algo/def_extra.v:359 | single-constraint solving |
-| `a_solve_cstr` | algo/def_extra.v:445 | constraint-list solving |
-| `a_extract` | algo/def_extra.v:463 | look ∘ solve ∘ guess (`\looksub^N`) |
-| `a_guess` / `a_guess_mono` | algo/def_extra.v:244/222 | `guess^SK` / `guess^TY` |
+| `a_sub` / `a_sub_flex` (mutual) | algo/def_rules.v:780/838 | `atypsub`, fig:alg-subtyping |
+| `a_looksub` (+ `a_cstr`/`a_cstrs`) | algo/def_rules.v:270/258 | `looksub` constraint collection |
+| `a_solve_sub` | algo/def_rules.v:359 | single-constraint solving |
+| `a_solve_cstr` | algo/def_rules.v:445 | constraint-list solving |
+| `a_extract` | algo/def_rules.v:463 | look ∘ solve ∘ guess (`\looksub^N`) |
+| `a_guess` / `a_guess_mono` | algo/def_rules.v:244/222 | `guess^SK` / `guess^TY` |
 | `a_subtag` | algo/def_decorated.v:229 | `asubtag`, decorated subtyping |
 | `a_solvetag_sub` / `a_solvetag_eq` | algo/def_decorated.v:312/341 | decorated single-constraint tag solving |
 | `a_solvetag` | algo/def_decorated.v:381 | `solvetag` over constraint lists |
 | `a_tags_sort` | algo/def_decorated.v:96 | `⊢^N tags{Ψ}{ψ}` (see §5.4) |
 
 Declarative side (all with weakening/renaming/subst/trans Qed in `decl/`):
-`d_sub` (decl/def_extra.v:301), `d_pat_sub` (:479), `d_tags`/`d_tags_skl`
+`d_sub` (decl/def_rules.v:301), `d_pat_sub` (:479), `d_tags`/`d_tags_skl`
 (:198/:225).
 
 ### 1.2 Missing (must be defined first)

@@ -32,12 +32,12 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.prop_basic.
-Require Import src.frost.decl.def_extra.
+Require Import src.frost.decl.def_rules.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_skeleton.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
@@ -1520,7 +1520,7 @@ Qed.
    1. The SOLVE now generates a block, so the conclusion carries [Ξs] beside
       [Ξc], at [Ξs ++ Ξc ++ Θ0], with the extensions stacked the same way:
       [(κs ++ κc ++ κ) ∷ (Ξs ++ Ξc ++ Θ0) ⊑ Θ].  The order is FORCED by
-      [a_extract__solve] (def_extra.v:764), P6-L's consumer, which runs the
+      [a_extract__solve] (algo/def_rules.v:764), P6-L's consumer, which runs the
       solve at [Ξ ++ Θ0] and the final guess at [Ξs ++ Ξ ++ Θ0].
    2. An avoid-set PARAMETER [L] with [ftvar_in_aenv Θ0 [<=] L], and the
       output freshness [dom Ξs ∩ L = ∅].  [L] must be an input: at a binder
@@ -1694,7 +1694,7 @@ Theorem a_lookeq_solve_complete_gen :
   exists 𝒞 Ξc Ξs Pa κc κs,
     ({{ Θ0 ⊢ P ∼[ α ] P0 ⤳ Ξc ⨾ 𝒞 }}a) /\              (* lookeq α P P0 𝒞 Ξc *)
     (* ⭐ the SOLVE's own block [Ξs] and its aligned extension [κs].  The order
-       [Ξs ++ Ξc ++ Θ0] is the one [a_extract__solve] (def_extra.v:764) runs
+       [Ξs ++ Ξc ++ Θ0] is the one [a_extract__solve] (algo/def_rules.v:764) runs
        the final guess at, so P6-L consumes this verbatim. *)
     {{ (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a /\            (* solve 𝒞 Pi Ξs Pa *)
     (* [all_flex_mono] is re-derivable ([a_solve_cstr_decls]) but [uniq Ξs] is
@@ -4761,7 +4761,7 @@ Theorem a_lookeq_solve_complete :
   {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a -> {{ Θ0 ⨟ empty ⊢ₚₛ Pi }}a ->
   κ ∷ Θ0 ⊑ Θ ->
-  (* α is the binder [a_sub__forall_l] opens (def_extra.v) — COFINITELY, and
+  (* α is the binder [a_sub__forall_l] opens (algo/def_rules.v) — COFINITELY, and
      only to run the lookup: it is never added to Θ0 or Θ, and the rule's own
      recursive call is already at [open P P1] with α replaced by the solved
      P1.  So it is FREE in R' and in NO context, which the scope premise below

@@ -8,7 +8,7 @@
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Export src.frost.prop_coercions.
 
 (** * Ghost-freeness — the TYPE sub-universe of [pskl] / [bskl].
@@ -16,7 +16,7 @@ Require Export src.frost.prop_coercions.
     [pskl_ghost_free] (frost/predicates.v) is how the algorithmic rules say
     "this position is one of the paper's [A] / [B], not one of its [P] / [Q]".
     The purely syntactic half of its kit lives here, where the RULE
-    definitions (algo/def_extra.v) and the proofs that CONSTRUCT them can
+    definitions (algo/def_rules.v) and the proofs that CONSTRUCT them can
     both reach it; the semantic half (fills, decorations) stays in
     algo/prop_pat_sub.v. *)
 
@@ -152,6 +152,6 @@ Qed.
     ⚙ LIFTED here 2026-08-09: it was proved identically in
     [algo/typing/prop_soundness_typing.v] and [decl/prop_syntax_directed.v],
     which do not see each other.  [mod_comp_ty] is declared in
-    [frost/def_extra.v], so its properties belong in this file. *)
+    [frost/def_shapes.v], so its properties belong in this file. *)
 Lemma mod_comp_ty_tc_inv : forall B, mod_comp_ty B mode_tc -> is_ityp B.
 Proof. intros B H. inversion H; subst; assumption. Qed.

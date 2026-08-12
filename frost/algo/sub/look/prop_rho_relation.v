@@ -1,6 +1,6 @@
 (** P6 — COMPLETENESS OF CONSTRAINT COLLECTION AND SOLVING (the "look"
     cluster [a_looksub]/[a_lookeq]/[a_solve_sub]/[a_solve_eq]/
-    [a_solve_cstr]/[a_extract], algo/def_extra.v:287-498).
+    [a_solve_cstr]/[a_extract], algo/def_rules.v:287-498).
 
     Paper lemmas (docs/DESIGN-completeness-subtyping.md §7):
       P6-Cv  [a_solve_eq_complete_var]   consistency-proofs.tex:1180
@@ -51,12 +51,12 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.prop_basic.
-Require Import src.frost.decl.def_extra.
+Require Import src.frost.decl.def_rules.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_skeleton.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
@@ -450,7 +450,7 @@ Qed.
    (2026-08-04).  SE-FlexR now calls [guess^TY], whose freshness is against
    [ftvar_in_aenv Θ] — a flexible's PAYLOAD may mention a name that is in no
    domain — so the five binder rows were strengthened to the same set
-   (algo/def_extra.v).  After that NOTHING in the solve cluster reads [dom Θ],
+   (algo/def_rules.v).  After that NOTHING in the solve cluster reads [dom Θ],
    and the old [dom Θ' [<=] dom Θ] premise is dead weight: it is dropped, so
    this lemma is now strictly stronger than the one the freshness campaign
    left.  Every consumer supplied it for free anyway — they all drop or add
@@ -975,7 +975,7 @@ Qed.
     existential output IS the target.
 
     ⚠️ SE-FlexR is what would break this, and it is exactly why its subject
-    carries [nonghost_pskl] (algo/def_extra.v): under the repaired row
+    carries [nonghost_pskl] (algo/def_rules.v): under the repaired row
     [guess^TY(◇)] invents a FRESH flexible, so [◇ ∼ α̂] would ALSO derive
     [⤳ (α̂1 ~ flex) ⨾ α̂1].  The reference implementation never takes that
     branch — its match puts SolE-GhostL first — and neither does this. *)

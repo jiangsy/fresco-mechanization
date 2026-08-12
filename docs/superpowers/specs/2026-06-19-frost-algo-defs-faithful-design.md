@@ -76,7 +76,7 @@ type-inference-in-context style. Three load-bearing encoding facts:
      to substitute a `ptyp` into a `pskl` — and lngen does **not** generate
      `subst_ptyp_in_pskl` (pskl is a parallel AST, not containing ptyp).
    - **Decision:** add a small hand-written
-     `psubst_flex : atom → ptyp → pskl → pskl` in `algo/def_extra.v` mapping
+     `psubst_flex : atom → ptyp → pskl → pskl` in `algo/def_rules.v` mapping
      `pskl_var_f β ↦ ptyp_to_pskl τ` and recursing structurally (cofinite under
      binders). Prove only the lemmas the *definitions* need now (lc preservation,
      `notin → identity`); defer substitution-commutes lemmas to the proof push.
@@ -87,7 +87,7 @@ type-inference-in-context style. Three load-bearing encoding facts:
 
 ## Unit 1 — Flex-variable move machinery + `a_consis` flex rules
 
-**Files:** `algo/def_extra.v`.
+**Files:** `algo/def_rules.v`.
 
 ### 1a. `a_unify` (paper `\boxed{\mov{\Theta}{\unifyvar{\hat\alpha}{\hat\beta}}{\Theta'}}`, alg.tex:1681–1733)
 
@@ -133,7 +133,7 @@ tighten if the current body is the accept-all `a_wf_ptyp` shim.
 
 ## Unit 2 — `a_broom` + `a_sub` `ForallL`/`FlexMono`
 
-**Files:** `algo/def_extra.v`. **Depends on:** Unit 1 encoding.
+**Files:** `algo/def_rules.v`. **Depends on:** Unit 1 encoding.
 
 ### 2a. `a_broom` (paper second box of fig:alg-subtyping, alg.tex:1091–1139)
 
@@ -155,7 +155,7 @@ Add the `Θ | Ξ` slot. Signature
 
 ## Unit 3 — `a_split` flex case (alg.tex:396–401)
 
-**Files:** `algo/def_extra.v`. **Depends on:** Unit 1 (`a_unify`).
+**Files:** `algo/def_rules.v`. **Depends on:** Unit 1 (`a_unify`).
 
 Add `a_split__flex`: introduce fresh `β̂, γ̂`, require
 `(Θ₀, β̂, γ̂) ⊲ α̂ ≈ β̂→γ̂ ⊣ Θ₁`, conclude
@@ -163,7 +163,7 @@ Add `a_split__flex`: introduce fresh `β̂, γ̂`, require
 
 ## Unit 4 — Skeleton/mode compatibility `\skmod` (alg.tex:278–300, 578–591)
 
-**Files:** `algo/def_extra.v`. Independent.
+**Files:** `algo/def_rules.v`. Independent.
 
 Replace `a_ty_mode_compat__any` / `a_sk_mode_compat__any`:
 - `skmod[TY]`: `□ / TI`; `A / TC` (any guarded type); `(P→Q)/(FN M) ⇐ Q/M`.

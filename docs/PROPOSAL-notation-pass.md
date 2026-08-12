@@ -112,7 +112,7 @@ not combining. But `⊢ᵗ` already carries the `ᵗ`.)
 
 1. **`d_wf_utyp` has two notations** — `Γ ⊢ᵤ C` (inline `where`) and
    `Γ ⊢ᵤₜ C` (`decl/notations.v:16`). Drop the `⊢ᵤₜ` alias; keep `⊢ᵤ`.
-2. **`d_wf_uskl` notation declared twice** — inline `where` (`decl/def_extra.v:184`)
+2. **`d_wf_uskl` notation declared twice** — inline `where` (`decl/def_rules.v:184`)
    and again in `decl/notations.v:19`. Delete the `decl/notations.v` copy.
 3. **`d_tags` / `d_tags_skl`** have *no* notation (always raw). Minor; give them
    the paper's `φ # Ψ` form (`\tags{Ψ}{φ}`) if desired — low traffic.

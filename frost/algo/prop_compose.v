@@ -21,11 +21,11 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.prop_basic.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.decl.def_rules.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.prop_inc.
@@ -102,7 +102,7 @@ Lemma a_scope_pskl_ftv_tvarish : forall Θ P α,
 Proof.
   intros Θ P α Hwf; revert α; induction Hwf; intros β Hβ; simpl in Hβ.
   - exfalso. clear - Hβ. fsetdec.
-  (* [α] is the var rule's OWN binder ([a_scope_pskl__var], algo/def_extra.v),
+  (* [α] is the var rule's OWN binder ([a_scope_pskl__var], algo/def_rules.v),
      auto-bound by [induction Hwf] — not this lemma's α ([revert α]). *)
   - assert (HeqY : β = α) by (clear - Hβ; fsetdec). subst. exact H.
   - destruct (union_1 Hβ); auto.

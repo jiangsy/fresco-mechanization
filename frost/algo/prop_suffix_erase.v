@@ -49,12 +49,11 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.prop_basic.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.decl.notations.
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.decl.def_rules.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
@@ -78,7 +77,7 @@ Set Implicit Arguments.
 (*  §1  Substituting a MONOTYPE for a flexible variable, in a context     *)
 (* ===================================================================== *)
 
-(** The `rename_abind` shape (algo/def_extra.v) with a general monotype in
+(** The `rename_abind` shape (algo/def_rules.v) with a general monotype in
     place of a variable.  A skeleton payload takes the skeleton reading of
     τ; every other payload is a type or has none. *)
 Definition subst_abind (τ : ptyp) (α : atom) (bd : abind) : abind :=

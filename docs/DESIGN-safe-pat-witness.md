@@ -34,7 +34,7 @@ design to build.
   - `d_pat_safety` (the public theorem) — existential; derived from `d_pat_total_gen`.
 - Algorithmic references (Phase 3, currently `Admitted`):
   `algo/def_question.v` (`a_pat_solution`, `a_pat_optimal`, `a_fillsyn`),
-  `algo/def_extra.v:655` (`a_pat` inference rules), `algo/prop_soundness.v`
+  `algo/def_rules.v:655` (`a_pat` inference rules), `algo/prop_soundness.v`
   (`a_pat_sound`), `algo/prop_completeness.v` (`a_pat_complete`).
 
 ## 1. The obstruction (rigorously established)

@@ -27,11 +27,11 @@
    to discharge both sides of equations. Verified working.
 3. **frost/def_ott.v** + **frost/prop_ln.v** — regenerated via
    `make ott lngen`. ctyp gets full lngen instrumentation.
-4. **frost/def_extra.v** — `is_utyp__pall` and `is_uskel__pall`
+4. **frost/def_shapes.v** — `is_utyp__pall` and `is_uskel__pall`
    dropped (typ_all_plain shapes gone).
 5. **frost/ltac_utils.v** — `discharge_category` Ltac: dropped
    `H : is_X (typ_all_plain _) |- _ => inversion H` patterns.
-6. **frost/decl/def_extra.v** — major rule-definition surgery:
+6. **frost/decl/def_rules.v** — major rule-definition surgery:
    - Hand-written ctyp infra removed (now ott-generated).
    - `erase` Fixpoint: dropped `typ_all_plain` case.
    - WF predicates (`d_wf_skel`, `d_wf_utyp`, `d_wf_uskel`): dropped
@@ -90,7 +90,7 @@ be left or updated.
 `d_refine ... (typ_all_plain P) Q` to
 `d_refine ... (typ_all_col colour_syn P) Q`, similarly for outputs.
 
-### frost/algo/def_extra.v
+### frost/algo/def_rules.v
 19 references. Same surgery applied to algo rules:
 `a_wf_typ`, `a_non_flex`, `a_non_flex_poly`, `a_guess_mono`,
 `a_pre_sub`, `a_pre_join`, `a_unify`, `a_consis` untagged variants,

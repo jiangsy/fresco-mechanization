@@ -9,11 +9,10 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.prop_basic.
 Require Import src.frost.prop_tag.
-Require Import src.frost.decl.def_extra.
-Require Import src.frost.decl.notations.
+Require Import src.frost.decl.def_rules.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_wellformed.
 
@@ -84,7 +83,7 @@ Proof.
   - simpl in Hα. apply d_refine_syn__all with (L := L `union` {{α0}}).
     intros α2 Hα2. eapply (H0 α2 ltac:(auto) Γ1 α0 Γ2); [ reflexivity | ].
     (* [P] is the rule's OWN target binder (d_refine_syn__all /
-       __tophole_fill, decl/def_extra.v), auto-bound by [induction H] —
+       __tophole_fill, decl/def_rules.v), auto-bound by [induction H] —
        not this lemma's Q'. *)
     pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f α2)) as Hup.
     simpl in Hup. fsetdec.
@@ -95,7 +94,7 @@ Proof.
     intros α2 Hα2. eapply (H0 α2 ltac:(auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2);
       [ simpl_env; reflexivity | ].
     (* [P] is the rule's OWN target binder (d_refine_syn__all /
-       __tophole_fill, decl/def_extra.v), auto-bound by [induction H] —
+       __tophole_fill, decl/def_rules.v), auto-bound by [induction H] —
        not this lemma's Q'. *)
     pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f α2)) as Hup.
     simpl in Hup. fsetdec.

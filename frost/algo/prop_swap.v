@@ -35,7 +35,7 @@ Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
-Require Import src.frost.def_extra.
+Require Import src.frost.def_shapes.
 Require Import src.frost.coercions.
 Require Import src.frost.prop_coercions.
 Require Import src.frost.ltac_utils.        (* destruct_if — §6's term-binder rows *)
@@ -43,7 +43,7 @@ Require Import src.frost.prop_tag.         (* ⭐ §1's ATOM layer: the
     transposition on atoms and on atom SETS is sort-agnostic, so it is defined
     ONCE, upstream.  It used to be defined here TOO, under the same six names,
     and algo/prop_pat_sub.v imports both files — see prop_tag.v's header. *)
-Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.def_meta.
 
 (* ⚙ [Set Implicit Arguments] is SCOPED to §0.  The file deliberately has
