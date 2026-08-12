@@ -38,7 +38,7 @@ Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo.prop_inc.            (* a_tyequiv_pskl *)
-Require Import src.frost.algo.prop_flex.           (* a_tyequiv_weaken_cons *)
+Require Import src.frost.algo.prop_basic.           (* a_tyequiv_weaken_cons *)
 Require Import src.frost.algo.prop_compose.        (* a_inc_lookup_{wf,mono}, msubst_lookup_notin *)
 Require Import src.frost.algo.prop_normal.         (* a_inc_equiv_lookup_tvar *)
 Require Import src.frost.algo.prop_pat_sub.        (* uskl_to_pskl_ptyp_to_uskl_syn *)

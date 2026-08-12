@@ -87,7 +87,7 @@ Require Import src.frost.algo.sub.prop_soundness_subtag.
 Require Import src.frost.algo.pat.prop_soundness_pat.
 Require Import src.frost.algo.prop_suffix_erase.
 Require Import src.frost.algo.prop_normal.
-Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_basic.
 
 (* ===================================================================== *)
 (*  §0  THE CONTEXT EMBEDDING                                             *)

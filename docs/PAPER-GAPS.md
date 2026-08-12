@@ -561,7 +561,7 @@ proved.
    the same transport in the function's DOMAIN instead.
 2. **`\tilab{Abs}`** — "By ⑯ and definition of `\guessMono{P}`, we have
    `Θ1,ᾱ ⊢ inh{P} ⊳ inh{A}`".  A refinement property of `guess^TY` used as
-   if definitional; the mech had no such lemma (prop_flex.v carries only its
+   if definitional; the mech had no such lemma (algo/prop_basic.v carries only its
    freshness, `a_decls` and ftv facts).
    **✅ SUPPLIED AND PROVED (2026-08-06)**: `a_guess_mono_refine`
    (`algo/prop_soundness_typing.v` §9), Qed and axiom-free.  What the
@@ -979,7 +979,7 @@ TWO REASONS IT STALLED, both worth knowing before anyone retries:
    does not abstract, so the `if` survives, the `match` fires again, and
    `repeat` loops forever.  The working form is
    `destruct (@eq_dec ptypvar EqDec_eq_of_X x y)`.  (Same gotcha bites
-   `subst_pskl_in_pskl`; recorded in prop_flex.v.)  The file also has ~10
+   `subst_pskl_in_pskl`; recorded in algo/prop_basic.v.)  The file also has ~10
    UNSCOPED `fsetdec` calls, which are minutes-slow in this codebase.
 
 2. **The design, which is the real obstacle.**  The output must be

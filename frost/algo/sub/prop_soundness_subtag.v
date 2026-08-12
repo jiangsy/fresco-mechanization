@@ -38,7 +38,7 @@ Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.algo_decl.def_subtyping.
 Require Import src.frost.algo_decl.prop_sub_mirrors.   (* ad_pat_sub_of_fuel *)
 Require Import src.frost.algo.prop_inc.
-Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_basic.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_compose.
@@ -970,7 +970,7 @@ Qed.
 (*  expensive to build, and this is the bridge that pays for it.  The      *)
 (*  rename's two side conditions are why the witness is picked fresh for   *)
 (*  [ftvar_in_aenv Θ] rather than [dom Θ]: a flexible's DEFINITION may     *)
-(*  mention a rigid ([ftvar_in_aenv_binds_def], prop_flex.v).              *)
+(*  mention a rigid ([ftvar_in_aenv_binds_def], algo/prop_basic.v).              *)
 (* ===================================================================== *)
 
 Lemma ad_pat_sub_to_fuel : forall NM M Ψ Θ R Q,

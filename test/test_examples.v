@@ -43,7 +43,7 @@ Require Import src.frost.def_shapes.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
-Require Import src.frost.algo.prop_flex.   (* the guess freshness kit *)
+Require Import src.frost.algo.prop_basic.   (* the guess freshness kit *)
 (* cluster 4: the ∀ rows are exists-fresh + close now, so these concrete
    examples go through the cofinite ADMISSIBILITY lemmas (§9) *)
 Require Import src.frost.algo.consis.prop_consis_rename.

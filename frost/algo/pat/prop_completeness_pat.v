@@ -42,7 +42,7 @@ Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.sub.prop_completeness_sub_gen.
 Require Import src.frost.algo.sub.prop_completeness_sub.
 Require Import src.frost.algo.prop_stability.
-Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_basic.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_precise.

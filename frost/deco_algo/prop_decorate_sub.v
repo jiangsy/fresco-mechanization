@@ -30,7 +30,7 @@ Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_pat_sub.
-Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_basic.
 Require Import src.frost.algo.sub.prop_looksub.
 Require Import src.frost.algo.sub.prop_soundness_subtag.
 

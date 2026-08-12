@@ -58,7 +58,7 @@ Set Implicit Arguments.
 (*  [a_scope_pskl_ftv_binds] below, because this is the EARLIEST algo      *)
 (*  proof file and [a_wf_aenv__var] stores the                             *)
 (*  DISCIPLINED [{{ Θ ⨟ ∅ ⊢ₚₛ P }}a] — so every file that inverts a context's *)
-(*  term entry needs them, this one included.  ⚠️ prop_flex.v would be the *)
+(*  term entry needs them, this one included.  ⚠️ algo/prop_basic.v would be the *)
 (*  topical home but it IMPORTS this file, so that direction is a cycle.   *)
 (* ===================================================================== *)
 

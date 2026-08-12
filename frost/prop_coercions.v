@@ -443,7 +443,7 @@ Proof. intros; apply pskl_to_uskl_open. Qed.
     ⚠️ [Set Implicit Arguments] is SCOPED TO THIS SECTION, and it is
     load-bearing.  Each lemma here has the shape [forall x, Pred x -> Pred' (f
     x)], whose subject is STRICTLY implicit — and most of these lemmas came
-    from files that do set the flag ([algo/prop_flex.v],
+    from files that do set the flag ([algo/prop_basic.v],
     [algo/prop_solve_sub.v], [algo/prop_pat_sub.v]).  Without the flag the
     subject becomes explicit here and every call site that applies the lemma to
     its hypothesis directly breaks: [mono_ptyp_to_pskl_lc Hm] reads [Hm] as the

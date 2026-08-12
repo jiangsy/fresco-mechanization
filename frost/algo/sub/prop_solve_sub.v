@@ -23,7 +23,7 @@ Require Import src.frost.algo.def_meta.
    the guess kit — [a_guess_mono_decls] / [_generated_fresh] / [_ftv].  No
    cycle: prop_flex's closure is def_extra, def_meta, def_decorated,
    prop_inc, prop_stability, prop_decorate, none of which sees this file. *)
-Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_basic.
 (* the swap kit: equivariance is the renaming primitive the solve's binder
    rows now need (their witness sits IN the premise's context) *)
 Require Import src.frost.algo.prop_swap.

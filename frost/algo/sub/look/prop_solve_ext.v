@@ -38,7 +38,7 @@ Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo_decl.def_subtyping.
 Require Import src.frost.algo.prop_inc.
-Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_basic.
 Require Import src.frost.algo.prop_normal.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_refine.
@@ -176,7 +176,7 @@ Qed.
 (*  implementation's global counter enforces.)                             *)
 (* ===================================================================== *)
 
-(** The [pskl] twin of [close_ptyp_subst_var] (prop_flex.v).  The
+(** The [pskl] twin of [close_ptyp_subst_var] (algo/prop_basic.v).  The
     CLOSE-after-rename step is what keeps a ∀ row's output untouched when its
     recorded binder has to be re-picked. *)
 Lemma close_pskl_subst_var : forall P α β,

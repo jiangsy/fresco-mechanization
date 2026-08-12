@@ -27,7 +27,7 @@ Steps 2 and 3 of the suggested order below, plus the README indexing:
   out to exist **three** times: `a_wf_aenv_strip_prefix` (a `_local` copy, an
   `a_decls`-restricted one and a general one) and `a_wf_pskl_tophole_inv` (a
   strong form, a wf-only weak form, and an `_x` copy that existed only to escape
-  the shadow).  Both now live once, in `algo/prop_flex.v`, which every user
+  the shadow).  Both now live once, in `algo/prop_basic.v`, which every user
   imports.
 - **§2.1 (the clear orphans)** — `a_split_refines` (superseded by `_gen`), the
   four consumer-facing renaming corollaries in `prop_swap.v` §6, and five
@@ -55,7 +55,29 @@ Steps 2 and 3 of the suggested order below, plus the README indexing:
   via `ad_sd_typing_wf_exp` + `a_wf_exp_lc`, which `prop_closed.v` was already
   computing by hand at the call site.
 
-Not yet done: §1.1/§1.2 only — see the ⚠️ RE-SCOPE note under §1.1 below.
+- **§1.1 PHASE 0** — the ingredients `a_typing_sound` consumes no longer travel
+  with it.  ⚠️ NOT by adding a `_aux` file (that names a role, not a topic, and
+  is the `prop_kit.v` mistake again): each lemma went to the file whose subject
+  it is.
+  - `frost/algo/prop_flex.v` → **`frost/algo/prop_basic.v`**, the per-layer
+    sibling of `frost/prop_basic.v` and `decl/prop_basic.v`.  Its header
+    described "soundness of the flexible-variable machinery"; the file holds 77
+    lemmas — `a_wf_*`, binds/ftvar plumbing, `a_decls`, `a_isub` reflexivity,
+    `rename_aenv`, `a_guess_mono`.  It had become the algo basics file without
+    saying so, which is why wf lemmas kept landing in it.
+  - new **`frost/algo/prop_mod_compat.v`** — mode compatibility at BOTH sorts.
+    The `skmod{SK}` inversions were in `pat/prop_soundness_pat.v` and the
+    `skmod{TY}` ones in `typing/prop_soundness_typing.v`, so half the answers
+    came with a soundness theorem attached.
+  - `a_split_wf` → `algo/prop_wf_preservation.v` (it *is* an output-wf lemma);
+    `a_split_ty_shape` → beside its SK twin `a_split_sk_shape`;
+    `a_isub_strip_var_typ_mid` → beside `uniq_mid_eq`.
+
+  Result: `prop_soundness_typing.v` goes 2681 → 2406 lines and 57 → 44 names,
+  and **`prop_scope.v` now uses exactly ONE name from it — `a_typing_sound`**,
+  the one Phase 1 removes.
+
+Not yet done: §1.1 PHASES 1–2 — see the ⚠️ RE-SCOPE note under §1.1 below.
 
 ---
 
@@ -162,7 +184,7 @@ threading `a_guess_mono` the same way
 
 would make `uniq` derivable and is *closer* to the implementation's global
 counter, not further.  **But**: `a_guess_mono` has 316 occurrences across 19
-files (`prop_flex.v` 42, `prop_completeness_typing.v` 37, `prop_solve_sub.v` 36,
+files (`algo/prop_basic.v` 42, `prop_completeness_typing.v` 37, `prop_solve_sub.v` 36,
 …).  The premise costs one line; the faithful generator costs a tree-wide
 re-proof.  **Keep the premise**; record the reason at the rule (it currently
 says only that `uniq` is "NOT derivable", which is true of *this* `a_guess_mono`

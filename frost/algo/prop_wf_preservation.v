@@ -46,7 +46,7 @@ Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_stability.
-Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_basic.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.consis.prop_consis_rename.
 Require Import src.frost.algo.consis.prop_soundness_consis.
@@ -954,4 +954,74 @@ Proof.
   destruct ((proj1 a_sub_output_wf_bundle) _ _ _ _ _ _ _ Hrun Hwf HwfP0 HwfP)
     as [_ [_ HwfOut]].
   exact HwfOut.
+Qed.
+
+(* ===================================================================== *)
+(*  SPLITTING                                                             *)
+(* ===================================================================== *)
+
+Lemma a_split_wf : forall Θ0 P0 P Q Θ1,
+  {{ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}a ->
+  {{ ⊢ Θ0 }}a ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
+  Θ0 ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\
+  {{ Θ1 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ1 ⨟ empty ⊢ₚₛ Q }}a.
+Proof.
+  intros Θ0 P0 P Q Θ1 Hs Hwf HwfP0; inversion Hs; subst.
+  - (* arrow *)
+    inversion HwfP0; subst.
+    split; [ apply a_isub_refl; exact Hwf | ].
+    split; [ exact Hwf | ]. split; assumption.
+  - (* hole *)
+    split; [ apply a_isub_refl; exact Hwf | ].
+    split; [ exact Hwf | ]. split; apply a_wf_pskl__hole.
+  - (* flex : the row's premise is a full consistency run *)
+    match goal with
+    | Hf1 : β `notin` ftvar_in_aenv Θ0,
+      Hf2 : α1 `notin` add β (ftvar_in_aenv Θ0) |- _ =>
+        pose proof (dom_subset_ftvar_in_aenv Θ0) as Hds;
+        assert (Hfrβ : β `notin` dom Θ0) by (clear - Hf1 Hds; fsetdec);
+        assert (Hfrα1 : α1 `notin` add β (dom Θ0))
+          by (clear - Hf2 Hds; fsetdec)
+    end.
+    assert (HwfX : {{ ⊢ ((α1 ~ abind_flex_mono)
+                               ++ (β ~ abind_flex_mono) ++ Θ0) }}a).
+    { apply a_wf_aenv__flex;
+        [ simpl_env; repeat rewrite dom_app; simpl;
+          clear - Hfrα1; fsetdec | ].
+      apply a_wf_aenv__flex; [ clear - Hfrβ; fsetdec | exact Hwf ]. }
+    assert (HwfArr : {{ ((α1 ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θ0)
+                       ⨟ empty ⊢ₚₛ (pskl_arrow (pskl_var_f β)
+                                                (pskl_var_f α1)) }}a).
+    { apply a_wf_pskl__arrow; apply a_wf_pskl__var; right; right; left;
+        [ unfold binds; simpl; right; left; reflexivity
+        | unfold binds; simpl; left; reflexivity ]. }
+    match goal with
+    | Hc : a_consis _ _ _ _ _ _ _ |- _ => inversion Hc; subst
+    end.
+    match goal with
+    | Ha : {{ _ ⊲[ nil ] _ ≔ _ ⊣ _ }}a |- _ =>
+        pose proof (a_assign_sound Ha a_decls__nil
+                      ltac:(simpl_env; exact HwfX)
+                      ltac:(simpl_env; exact HwfArr)) as [HleX _];
+        pose proof (a_assign_preserves_wf Ha a_decls__nil
+                      ltac:(simpl_env; exact HwfX)
+                      ltac:(simpl_env; exact HwfArr)) as Hwf1
+    end.
+    simpl_env in HleX.
+    assert (HleX0 : Θ0 ⊴ ((α1 ~ abind_flex_mono)
+                           ++ (β ~ abind_flex_mono) ++ Θ0)).
+    { apply a_isub_target_weaken;
+        [ apply a_isub_target_weaken;
+            [ apply a_isub_refl; exact Hwf
+            | apply a_suffix__cons;
+                [ apply a_suffix__nil | apply a_suffix_binding__flex_mono ] ]
+        | apply a_suffix__cons;
+            [ apply a_suffix__nil | apply a_suffix_binding__flex_mono ] ]. }
+    split; [ eapply a_isub_trans; [ exact HleX0 | exact HleX ] | ].
+    split; [ exact Hwf1 | ]. split;
+      [ apply a_wf_pskl__var; right; eapply a_isub_binds_flex;
+          [ exact HleX | unfold binds; simpl; right; left; reflexivity ]
+      | apply a_wf_pskl__var; right; eapply a_isub_binds_flex;
+          [ exact HleX | unfold binds; simpl; left; reflexivity ] ].
 Qed.

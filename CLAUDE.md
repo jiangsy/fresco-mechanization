@@ -104,7 +104,7 @@ mechanization.)  Corrected 2026-08-09.
 - ⚙ **Before any performance work, read the `.aux` files** — they record
   `proof_build_time` per proof, so the hot spots are known WITHOUT rebuilding.
   Then narrow a single call with `time "F1" fsetdec`.  The 2026-08-06 pass cut
-  the tree 970 s → 608 s serial; `prop_flex.v` alone went 133 s → 4.4 s, and
+  the tree 970 s → 608 s serial; `algo/prop_basic.v` alone went 133 s → 4.4 s, and
   BOTH culprits were `fsetdec` calls that `grep` would have called innocent
   (one already had a `clear -`, just too wide).
 
@@ -263,14 +263,25 @@ mechanization/
 │       ├── def_meta.v           (metasubstitutions κ, a_inc / a_inc_equiv /
 │       │                         ⊴, msubst_{ptyp,btyp,pskl,uskl_syn})
 │       ├── prop_inc*.v / prop_metasubst.v / prop_compose.v   (θ-algebra)
-│       ├── prop_flex.v / prop_normal.v / prop_mono_bridge.v  (flex + monotypes)
+│       ├── prop_basic.v          (⭐ THE ALGO BASICS — the per-layer sibling of
+│       │                         frost/prop_basic.v and decl/prop_basic.v: the
+│       │                         a_wf_ptyp / a_wf_pskl / a_wf_aenv facts, binds
+│       │                         and ftvar_in_aenv plumbing, a_decls, a_isub
+│       │                         reflexivity, rename_aenv and a_guess_mono.
+│       │                         Called prop_flex.v until 2026-08-12, after a
+│       │                         header that had described only its first section)
+│       ├── prop_mod_compat.v     (mode compatibility, BOTH sorts: the
+│       │                         skmod{SK} / skmod{TY} inversions, which used to
+│       │                         sit half in pat/ and half in typing/)
+│       ├── prop_normal.v / prop_mono_bridge.v   (monotypes)
 │       ├── prop_precise*.v      (precision)
 │       ├── prop_swap.v          (EQUIVARIANCE — the one renaming primitive
 │       │                         for TYPE variables.  ⚙ its §1 atom layer is
 │       │                         `frost/prop_tag.v` §1, imported not copied)
 │       ├── prop_pat_sub.v / prop_refine.v / prop_stability.v
 │       ├── prop_suffix_erase.v / prop_rename_decl.v
-│       ├── prop_wf_preservation.v  (a run's OUTPUT context is well-formed)
+│       ├── prop_wf_preservation.v  (a run's OUTPUT context is well-formed —
+│       │                         consistency, subtyping, and splitting)
 │       ├── consis/       (consistency: prop_soundness_consis.v,
 │       │                  prop_completeness_consis.v, prop_consis_rename.v,
 │       │                  prop_consis_precise.v)
@@ -323,7 +334,7 @@ subtyping completeness
 `prop_completeness_sub_precise.v` (P5), `prop_completeness_look.v` (P6),
 `prop_completeness_sub_gen.v` (P7a+b, the GENERALIZED statement) and
 `prop_completeness_sub.v` (P7c, the paper's `a_sub_complete`).  The
-shared kits (`prop_inc`, `prop_metasubst`, `prop_flex`, `prop_swap`,
+shared kits (`prop_inc`, `prop_metasubst`, `algo/prop_basic`, `prop_swap`,
 `prop_precise`, `prop_pat_sub`, `prop_looksub`, `prop_solve_sub`, …) keep
 their topic names.
 

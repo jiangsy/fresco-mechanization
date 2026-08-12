@@ -39,7 +39,7 @@ Require Import src.frost.algo.consis.prop_consis_rename.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_pat_sub.
-Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_basic.
 Require Import src.frost.algo.sub.prop_solve_sub.
 Require Import src.frost.algo.sub.prop_looksub.
 Require Import src.frost.algo.sub.prop_soundness_subtag.
@@ -1966,7 +1966,7 @@ Qed.
    while the target [dec_ext] is still cofinite, so the ∀ case must turn ONE
    guess instance into a family via [a_guess_mono_open_at] — whose output
    is no sub-derivation, hence no derivation-IH.  See
-   [a_guess_mono_rename_tvar_size] (prop_flex.v) for the recipe. *)
+   [a_guess_mono_rename_tvar_size] (algo/prop_basic.v) for the recipe. *)
 Lemma dec_ext_guess_mono_anchor_size : forall n Θ P' Ξ' A ψa,
   size_pskl P' <= n ->
   a_guess_mono Θ P' Ξ' A ->
@@ -2306,7 +2306,7 @@ Qed.
 (*  SIZE induction, not derivation induction: the ∀ case must read the      *)
 (*  cofinite [dec_ext__all] family at an α0 fresh for the DECORATION ψ0 as  *)
 (*  well, and [a_guess_mono] is exists-fresh — so the guess instance is     *)
-(*  moved to that α0 by [a_guess_mono_open_at] (prop_flex.v, THE decl/algo   *)
+(*  moved to that α0 by [a_guess_mono_open_at] (algo/prop_basic.v, THE decl/algo   *)
 (*  boundary bridge), whose output is no sub-derivation.                    *)
 (* ===================================================================== *)
 

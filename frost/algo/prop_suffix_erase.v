@@ -63,7 +63,7 @@ Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo_decl.prop_ctx_mono.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_mono_bridge.
-Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_basic.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.prop_tag.
 Require Import src.frost.algo.prop_pat_sub.
@@ -137,7 +137,7 @@ Qed.
 
 (** The PLAIN commutations first — each coercion is structural, so it
     commutes with substitution when the substituted term is coerced too.
-    [pskl_to_uskl_subst] is already in prop_flex.v. *)
+    [pskl_to_uskl_subst] is already in algo/prop_basic.v. *)
 
 Lemma ptyp_to_pskl_subst : forall A0 α A,
   ptyp_to_pskl (subst_ptyp_in_ptyp A0 α A)

@@ -37,6 +37,8 @@ Require Import src.frost.decl.def_rules.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.algo.def_rules.
+Require Import src.frost.algo.prop_mod_compat.
+Require Import src.frost.algo.prop_wf_preservation.   (* a_split_wf *)
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
@@ -50,7 +52,7 @@ Require Import src.frost.algo.prop_inc_strengthen.
 Require Import src.frost.algo.prop_compose.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_stability.
-Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_basic.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.prop_pat_sub.
@@ -700,10 +702,6 @@ Qed.
 
 (* --- §8c  the SK-sorted [ad_pat_sub_mod_comp_sk]'s TY analogue -------- *)
 
-Lemma mod_comp_ty_fn_inv : forall B1 B2 m,
-  mod_comp_ty (btyp_arrow B1 B2) (mode_fn m) -> mod_comp_ty B2 m.
-Proof. intros * H; inversion H; subst; assumption. Qed.
-
 (** The TY-sorted all-in-one subtyping run's target is mode-compatible —
     the paper's (commented-out) "refinement preserves correspondence" for
     TYPES.  [Infer] and [Check] are the two leaves; [Check]'s local
@@ -814,7 +812,7 @@ Qed.
 
 (** ⭐ The paper asserts this inline, with no lemma: [AT-Abs]'s case reads
     "By ⑯ and definition of [guess^TY], we have [Θ1,ᾱ ⊢ inh{P} ⊳ inh{A}]"
-    (proofs.tex, thm:sound-type-inference).  [prop_flex.v] has [guess^TY]'s
+    (proofs.tex, thm:sound-type-inference).  [algo/prop_basic.v] has [guess^TY]'s
     freshness / decls / ftv facts and its CONSISTENCY
     ([a_guess_mono_consis]) but no refinement one — see docs/PAPER-GAPS.md.
 
@@ -1134,51 +1132,6 @@ Qed.
 
 (* --- §12a  reading a PAINTING's skeleton well-formedness as a type's --- *)
 
-(** The converse of [a_wf_ptyp_to_wf_pskl] on a painting.  The two
-    judgements agree row by row except at [∀], where [a_wf_pskl] puts the
-    binder in [Δ] and [a_wf_ptyp] in [Θ] — so the statement quantifies the
-    target context and asks the caller to relate the two. *)
-Lemma a_wf_ptyp_of_wf_pskl : forall Θ Δ P,
-  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
-  forall A Θ', P = ptyp_to_pskl A ->
-  (forall α, α `in` Δ -> a_binds_tvar α Θ') ->
-  (forall α, a_binds_tvar α Θ -> a_binds_tvar α Θ') ->
-  a_wf_ptyp Θ' A.
-Proof.
-  intros Θ Δ P H; induction H; intros A0 Θ' Heq HΔ HΘ;
-    destruct A0; simpl in Heq; try discriminate.
-  - (* unit *) apply a_wf_ptyp__unit.
-  - (* var *)
-    inversion Heq; subst. apply a_wf_ptyp__var.
-    destruct H as [Hd | Ht]; [ apply HΔ | apply HΘ ]; assumption.
-  - (* arrow *)
-    inversion Heq; subst.
-    apply a_wf_ptyp__arrow;
-      [ eapply IHa_wf_pskl1 | eapply IHa_wf_pskl2 ];
-      solve [ reflexivity | assumption ].
-  - (* all : the binder moves from Δ to Θ' *)
-    inversion Heq; subst.
-    apply a_wf_ptyp__all with (L := L). intros α Hα.
-    eapply (H0 α Hα);
-      [ rewrite ptyp_to_pskl_open; reflexivity
-      | intros β Hβ;
-        destruct (eq_var β α) as [Heqβ | Hne];
-          [ subst β; unfold a_binds_tvar; left;
-            unfold binds; simpl; left; reflexivity
-          | apply a_binds_tvar_weaken_cons; apply HΔ;
-            clear - Hβ Hne; fsetdec ]
-      | intros β Hβ; apply a_binds_tvar_weaken_cons; apply HΘ; exact Hβ ].
-Qed.
-
-Corollary a_wf_ptyp_of_wf_pskl_empty : forall Θ A,
-  {{ Θ ⨟ empty ⊢ₚₛ (ptyp_to_pskl A) }}a -> a_wf_ptyp Θ A.
-Proof.
-  intros Θ A H. eapply a_wf_ptyp_of_wf_pskl;
-    [ exact H | reflexivity
-    | intros α Hα; exfalso; clear - Hα; fsetdec
-    | intros α Hα; exact Hα ].
-Qed.
-
 (* --- §12b  scoping bounds the suffix-erasure freshness reads off ------ *)
 
 (** A well-formed TERM mentions only type variables of its context — the
@@ -1243,231 +1196,11 @@ Qed.
 Lemma ptyp_to_pskl_not_hole : forall A, ptyp_to_pskl A <> pskl_hole.
 Proof. destruct A; simpl; discriminate. Qed.
 
-Lemma a_ty_mode_compat_hole_inv : forall m,
-  a_ty_mode_compat m pskl_hole -> m = mode_ti.
-Proof.
-  intros m H. remember pskl_hole as Ps eqn:HPs.
-  destruct H.
-  - reflexivity.
-  - destruct A; simpl in HPs; discriminate.
-  - discriminate.
-Qed.
-
-Lemma a_ty_mode_compat_arrow_inv : forall m P Q,
-  a_ty_mode_compat m (pskl_arrow P Q) ->
-  m <> mode_tc ->
-  exists m', m = mode_fn m' /\ a_ty_mode_compat m' Q.
-Proof.
-  intros m P Q H Hne. remember (pskl_arrow P Q) as Ps eqn:HPs.
-  destruct H.
-  - discriminate.
-  - exfalso; apply Hne; reflexivity.
-  - inversion HPs; subst. exists M; split; [ reflexivity | assumption ].
-Qed.
-
-(** The TY analogue of [a_split_sk_shape] (prop_soundness_pat.v): AWAY FROM
-    CHECK MODE the split is arrow-or-hole, so [a_split__flex] — and with it
-    [a_split_refines] — is out of reach at [AT-Abs] / [AT-AbsAnno].  At TC
-    the row IS reachable, because [a_ty_mode_compat]'s TC row admits any
-    [ptyp_to_pskl A]; that is the whole asymmetry between rows 5/6 and
-    rows 8/10. *)
-Lemma a_split_ty_shape : forall m Θ0 P0 P Q0 Θ1,
-  {{ Θ0 ⊲ P0 ▹ P ⇢ Q0 ⊣ Θ1 }}a ->
-  a_ty_mode_compat m P0 ->
-  m <> mode_tc ->
-  Θ1 = Θ0 /\
-  ((P0 = pskl_hole /\ P = pskl_hole /\ Q0 = pskl_hole) \/
-   P0 = pskl_arrow P Q0).
-Proof.
-  intros * Hs Hm Hne; inversion Hs; subst.
-  - split; [ reflexivity | right; reflexivity ].
-  - split; [ reflexivity | left; auto ].
-  - exfalso.
-    match goal with
-    | |- False =>
-        remember (pskl_var_f α) as Ps eqn:HPs;
-        destruct Hm; [ discriminate | apply Hne; reflexivity | discriminate ]
-    end.
-Qed.
-
 (* --- §12e  the split is sound: increase, wf, and both components ------ *)
-
-Lemma a_split_wf : forall Θ0 P0 P Q Θ1,
-  {{ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}a ->
-  {{ ⊢ Θ0 }}a ->
-  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
-  Θ0 ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\
-  {{ Θ1 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ1 ⨟ empty ⊢ₚₛ Q }}a.
-Proof.
-  intros Θ0 P0 P Q Θ1 Hs Hwf HwfP0; inversion Hs; subst.
-  - (* arrow *)
-    inversion HwfP0; subst.
-    split; [ apply a_isub_refl; exact Hwf | ].
-    split; [ exact Hwf | ]. split; assumption.
-  - (* hole *)
-    split; [ apply a_isub_refl; exact Hwf | ].
-    split; [ exact Hwf | ]. split; apply a_wf_pskl__hole.
-  - (* flex : the row's premise is a full consistency run *)
-    match goal with
-    | Hf1 : β `notin` ftvar_in_aenv Θ0,
-      Hf2 : α1 `notin` add β (ftvar_in_aenv Θ0) |- _ =>
-        pose proof (dom_subset_ftvar_in_aenv Θ0) as Hds;
-        assert (Hfrβ : β `notin` dom Θ0) by (clear - Hf1 Hds; fsetdec);
-        assert (Hfrα1 : α1 `notin` add β (dom Θ0))
-          by (clear - Hf2 Hds; fsetdec)
-    end.
-    assert (HwfX : {{ ⊢ ((α1 ~ abind_flex_mono)
-                               ++ (β ~ abind_flex_mono) ++ Θ0) }}a).
-    { apply a_wf_aenv__flex;
-        [ simpl_env; repeat rewrite dom_app; simpl;
-          clear - Hfrα1; fsetdec | ].
-      apply a_wf_aenv__flex; [ clear - Hfrβ; fsetdec | exact Hwf ]. }
-    assert (HwfArr : {{ ((α1 ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θ0)
-                       ⨟ empty ⊢ₚₛ (pskl_arrow (pskl_var_f β)
-                                                (pskl_var_f α1)) }}a).
-    { apply a_wf_pskl__arrow; apply a_wf_pskl__var; right; right; left;
-        [ unfold binds; simpl; right; left; reflexivity
-        | unfold binds; simpl; left; reflexivity ]. }
-    match goal with
-    | Hc : a_consis _ _ _ _ _ _ _ |- _ => inversion Hc; subst
-    end.
-    match goal with
-    | Ha : {{ _ ⊲[ nil ] _ ≔ _ ⊣ _ }}a |- _ =>
-        pose proof (a_assign_sound Ha a_decls__nil
-                      ltac:(simpl_env; exact HwfX)
-                      ltac:(simpl_env; exact HwfArr)) as [HleX _];
-        pose proof (a_assign_preserves_wf Ha a_decls__nil
-                      ltac:(simpl_env; exact HwfX)
-                      ltac:(simpl_env; exact HwfArr)) as Hwf1
-    end.
-    simpl_env in HleX.
-    assert (HleX0 : Θ0 ⊴ ((α1 ~ abind_flex_mono)
-                           ++ (β ~ abind_flex_mono) ++ Θ0)).
-    { apply a_isub_target_weaken;
-        [ apply a_isub_target_weaken;
-            [ apply a_isub_refl; exact Hwf
-            | apply a_suffix__cons;
-                [ apply a_suffix__nil | apply a_suffix_binding__flex_mono ] ]
-        | apply a_suffix__cons;
-            [ apply a_suffix__nil | apply a_suffix_binding__flex_mono ] ]. }
-    split; [ eapply a_isub_trans; [ exact HleX0 | exact HleX ] | ].
-    split; [ exact Hwf1 | ]. split;
-      [ apply a_wf_pskl__var; right; eapply a_isub_binds_flex;
-          [ exact HleX | unfold binds; simpl; right; left; reflexivity ]
-      | apply a_wf_pskl__var; right; eapply a_isub_binds_flex;
-          [ exact HleX | unfold binds; simpl; left; reflexivity ] ].
-Qed.
 
 (* --- §12f  guess^TY's block, and the type it produces ----------------- *)
 
-(** The [a_guess_mono_refine] (§9) companion: [guess^TY]'s output type is
-    well formed wherever its input skeleton's variables and its own
-    generated block are.  Same SIZE induction, same reason. *)
-Lemma a_guess_mono_wf_size : forall n Θ P Ξ A,
-  size_pskl P <= n ->
-  a_guess_mono Θ P Ξ A ->
-  forall Θ1,
-  (forall α, α `in` ftvar_in_pskl P -> a_binds_tvar α Θ1) ->
-  (forall α1, binds α1 abind_flex_mono Ξ -> a_binds_tvar α1 Θ1) ->
-  a_wf_ptyp Θ1 A.
-Proof.
-  induction n as [| n IHn]; intros Θ P Ξ A Hsz H;
-    [ destruct H; cbn in Hsz; lia | ].
-  destruct H as [ Θ α Hα | Θ P Ξ A Hg | Θ α | Θ
-                | Θ P Q Ξ1 Ξ2 A B Hg1 Hg2
-                | Θ P Ξ A β Hfr Hg ];
-    cbn in Hsz; intros Θ1 Hvars HΞ.
-  - (* hole ↦ fresh flexible *)
-    apply a_wf_ptyp__var. apply HΞ. unfold binds; left; reflexivity.
-  - (* ⫯.P *)
-    eapply IHn with (P := P); [ lia | exact Hg | exact Hvars | exact HΞ ].
-  - (* variable *) apply a_wf_ptyp__var. apply Hvars. simpl. fsetdec.
-  - (* unit *) apply a_wf_ptyp__unit.
-  - (* arrow *)
-    apply a_wf_ptyp__arrow;
-      [ eapply IHn with (P := P) | eapply IHn with (P := Q) ];
-      solve [ lia | eassumption
-            | intros α Hα; apply Hvars; simpl; clear - Hα; fsetdec
-            | intros α1 Hb; apply HΞ; unfold binds in *;
-              apply in_or_app; auto ].
-  - (* ∀ : exists-fresh source, cofinite target *)
-    apply a_wf_ptyp__all
-      with (L := dom Ξ `union` dom Θ1 `union` ftvar_in_aenv Θ
-                   `union` ftvar_in_pskl P `union` ftvar_in_ptyp A
-                   `union` singleton β).
-    intros α Hα.
-    eapply IHn with (P := open_pskl_wrt_pskl P (pskl_var_f α))
-                    (Θ := (α ~ abind_tvar) ++ Θ);
-      [ rewrite size_pskl_open_pskl_wrt_pskl_var; lia | | | ].
-    + apply a_guess_mono_open_at;
-        [ apply a_guess_mono__forall with (β := β); [ exact Hfr | exact Hg ]
-        | clear - Hα; fsetdec ].
-    + intros β0 Hβ0.
-      apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in Hβ0.
-      simpl in Hβ0.
-      destruct (union_1 Hβ0) as [HY' | HY'].
-      * apply singleton_1 in HY'; subst.
-        unfold a_binds_tvar; left; unfold binds; simpl; left; reflexivity.
-      * apply a_binds_tvar_weaken_cons. apply Hvars; exact HY'.
-    + intros α1 Hb. apply a_binds_tvar_weaken_cons. apply HΞ; exact Hb.
-Qed.
-
-Corollary a_guess_mono_wf : forall Θ P Ξ A Θ1,
-  a_guess_mono Θ P Ξ A ->
-  (forall α, α `in` ftvar_in_pskl P -> a_binds_tvar α Θ1) ->
-  (forall α1, binds α1 abind_flex_mono Ξ -> a_binds_tvar α1 Θ1) ->
-  a_wf_ptyp Θ1 A.
-Proof. intros. eapply a_guess_mono_wf_size; eauto. Qed.
-
-(** [uniq] is what [AT-Abs]'s own premise supplies (algo/def_rules.v): the
-    block is declaration-only, so nothing else is needed to put it in
-    front of a well-formed context. *)
-Lemma a_wf_aenv_decls_app : forall Ξ Θ,
-  a_decls Ξ -> uniq (Ξ ++ Θ) -> {{ ⊢ Θ }}a -> {{ ⊢ (Ξ ++ Θ) }}a.
-Proof.
-  intros Ξ Θ Hd; induction Hd as [ | α1 Ξ' Hd IH ];
-    intros Huq Hwf; simpl_env in *; [ exact Hwf | ].
-  apply a_wf_aenv__flex;
-    [ clear - Huq; destruct_uniq; simpl_env in *;
-      unfold disjoint in *; fsetdec
-    | apply IH; [ solve_uniq | exact Hwf ] ].
-Qed.
-
 (* --- §12g  the term-entry peel that DROPS the suffix ------------------ *)
-
-(** The [a_isub_strip_tvar_mid] (prop_pat_sub.v) mirror for a TERM entry:
-    the four CHECK rows return an output context WITHOUT the pending
-    suffix, so their ⊴-obligation has to drop it too.  [a_inc_var_inv]
-    already relates the two tails directly; the [Barendregt] premise
-    [uniq (Ξ ++ Θ0)] is what stops a DEFINED flexible of [Θ0] from being
-    the one thrown away. *)
-Lemma a_isub_strip_var_typ_mid : forall x A Ξ Θ0 Θ1,
-  uniq (Ξ ++ (x ~ abind_var_typ A) ++ Θ1) ->
-  uniq (Ξ ++ Θ0) ->
-  ((x ~ abind_var_typ A) ++ Θ0) ⊴ (Ξ ++ (x ~ abind_var_typ A) ++ Θ1) ->
-  Θ0 ⊴ Θ1.
-Proof.
-  intros x A Ξ Θ0 Θ1 Huq HuqΞ [[κ [Hid Hinc]] Hdef].
-  destruct (a_inc_var_inv Hinc) as [Ξ0 [A' [Θ2 [Heq [_ [_ Hinc']]]]]].
-  destruct (uniq_mid_eq Heq Huq) as [-> [Heqb ->]]. inversion Heqb; subst.
-  split.
-  - exists κ. split; [ exact Hid | exact Hinc' ].
-  - intros β τ Hb.
-    assert (HβΘ0 : β `in` dom Θ0) by (eapply binds_In; eauto).
-    assert (Hbw : binds β (abind_flex_mono_def τ)
-                    (Ξ0 ++ (x ~ abind_var_typ A') ++ Θ2))
-      by (apply Hdef; unfold binds; simpl; right;
-          unfold binds in Hb; exact Hb).
-    unfold binds in Hbw. apply in_app_or in Hbw.
-    destruct Hbw as [Hbw | Hbw].
-    { exfalso.
-      assert (HβΞ : β `in` dom Ξ0) by (eapply binds_In; exact Hbw).
-      clear - HuqΞ HβΘ0 HβΞ.
-      destruct_uniq. unfold disjoint in *. fsetdec. }
-    simpl in Hbw. destruct Hbw as [Heqp | Hbw].
-    { exfalso. inversion Heqp. }
-    exact Hbw.
-Qed.
 
 (* --- §12h  scoping: reading a scope off, and stripping a suffix ------- *)
 
@@ -1666,13 +1399,6 @@ Proof.
 Qed.
 
 (* --- §12i  odds and ends --------------------------------------------- *)
-
-Lemma a_wf_ptyp_arrow_inv : forall Θ A1 A2,
-  a_wf_ptyp Θ (ptyp_arrow A1 A2) -> a_wf_ptyp Θ A1 /\ a_wf_ptyp Θ A2.
-Proof. intros * H; inversion H; subst; split; assumption. Qed.
-
-Lemma mod_comp_ty_ti_inv : forall B, mod_comp_ty B mode_ti -> is_styp B.
-Proof. intros * H; inversion H; subst; assumption. Qed.
 
 Lemma is_styp_paint : forall A, lc_ptyp A -> is_styp (ptyp_to_btyp_syn A).
 Proof.

@@ -279,7 +279,7 @@ The algo layer has TWO skeleton judgments, both in algo/def_rules.v:
     Resolve`, so every site that discharged an entry's scope by `eauto` needed
     no edit at all.  `a_wf_pskl_ftv_tvarish` and `a_wf_pskl_to_a_scope_pskl`
     moved from the two consistency files to prop_swap.v §0 (the earliest algo
-    proof file; prop_flex.v would be the topical home but it IMPORTS
+    proof file; algo/prop_basic.v would be the topical home but it IMPORTS
     prop_swap.v).  `a_wf_pskl_scope` — pat/prop_soundness_pat.v's private copy
     of the same conversion — was retired.  ⚠️ prop_swap.v has NO global
     `Set Implicit Arguments` by design, so §0 scopes its own.

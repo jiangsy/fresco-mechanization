@@ -83,7 +83,7 @@ Qed.
 (*  ≡ᵗ/≡ˢ, def_meta.v), reflexivity of information increase needs the      *)
 (*  reflexivity of the equational theory, whose only base rule demands     *)
 (*  local closure.  [lc_aenv] is the minimal hypothesis; well-formed       *)
-(*  contexts satisfy it ([a_wf_aenv_lc_aenv], algo/prop_flex.v).           *)
+(*  contexts satisfy it ([a_wf_aenv_lc_aenv], algo/prop_basic.v).           *)
 (* ===================================================================== *)
 
 Definition lc_abind (b : abind) : Prop :=

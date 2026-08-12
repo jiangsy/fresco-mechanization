@@ -651,7 +651,7 @@ Three things the conversion cost, all of which generalize:
   UnivGhost1 fixes it and shrinks only the input, ForallSyn does the opposite).
   The decorated `a_consistag` rows are still cofinite, so each ∀ row must
   rebuild a family from the run's ONE opener; the rename lives downstream of
-  prop_decorate.v (via prop_flex.v), so the lemma moved rather than the asset.
+  prop_decorate.v (via algo/prop_basic.v), so the lemma moved rather than the asset.
   It gained a `uniq Θ0` premise, discharged at its three consumers from
   `a_wf_aenv_uniq`.
 

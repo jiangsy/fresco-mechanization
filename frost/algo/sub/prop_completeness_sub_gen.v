@@ -71,7 +71,7 @@ Require Import src.frost.algo.consis.prop_completeness_consis. (* ad_precise_f *
 Require Import src.frost.algo.consis.prop_consis_precise. (* pskl_no_forall *)
 Require Import src.frost.algo.prop_metasubst.     (* opt_axiom_factor *)
 Require Import src.frost.algo.prop_precise.       (* ad_precise, {{ _ ⊢ₚᵣ _ }}ad *)
-Require Import src.frost.algo.prop_flex.          (* a_decls *)
+Require Import src.frost.algo.prop_basic.          (* a_decls *)
 Require Import src.frost.algo.consis.prop_soundness_consis.  (* ad_refine_{syn,pskl}_f *)
 Require Import src.frost.algo.prop_compose.       (* a_inc_{dom_flex,lookup_wf,lookup_mono}, msubst_pskl_open *)
 Require Import src.frost.deco_algo.prop_decorate_sub.  (* lc_uskl_of_pskl *)

@@ -42,6 +42,7 @@ Require Import src.frost.ltac_utils.
 Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
+Require Import src.frost.algo.prop_mod_compat.
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo_decl.def_consis_refine.
@@ -55,7 +56,7 @@ Require Import src.frost.algo.prop_inc_strengthen.
 Require Import src.frost.algo.prop_compose.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_stability.
-Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_basic.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.consis.prop_soundness_consis.
@@ -507,14 +508,30 @@ Proof.
   - inversion Hm.
 Qed.
 
-Lemma a_sk_mode_compat_arrow_inv : forall m P Q,
-  a_sk_mode_compat m (pskl_arrow P Q) ->
-  exists m', m = mode_fn m' /\ a_sk_mode_compat m' Q.
-Proof. intros * H; inversion H; subst; eauto. Qed.
-
-Lemma a_sk_mode_compat_hole_inv : forall m,
-  a_sk_mode_compat m pskl_hole -> m = mode_ti \/ m = mode_tc.
-Proof. intros * H; inversion H; auto. Qed.
+(** The TY analogue of [a_split_sk_shape] (prop_soundness_pat.v): AWAY FROM
+    CHECK MODE the split is arrow-or-hole, so [a_split__flex] — and with it
+    [a_split_refines] — is out of reach at [AT-Abs] / [AT-AbsAnno].  At TC
+    the row IS reachable, because [a_ty_mode_compat]'s TC row admits any
+    [ptyp_to_pskl A]; that is the whole asymmetry between rows 5/6 and
+    rows 8/10. *)
+Lemma a_split_ty_shape : forall m Θ0 P0 P Q0 Θ1,
+  {{ Θ0 ⊲ P0 ▹ P ⇢ Q0 ⊣ Θ1 }}a ->
+  a_ty_mode_compat m P0 ->
+  m <> mode_tc ->
+  Θ1 = Θ0 /\
+  ((P0 = pskl_hole /\ P = pskl_hole /\ Q0 = pskl_hole) \/
+   P0 = pskl_arrow P Q0).
+Proof.
+  intros * Hs Hm Hne; inversion Hs; subst.
+  - split; [ reflexivity | right; reflexivity ].
+  - split; [ reflexivity | left; auto ].
+  - exfalso.
+    match goal with
+    | |- False =>
+        remember (pskl_var_f α) as Ps eqn:HPs;
+        destruct Hm; [ discriminate | apply Hne; reflexivity | discriminate ]
+    end.
+Qed.
 
 (* --- §3c  the SK-sorted subtyping's target is mode-compatible ---------- *)
 
@@ -774,6 +791,40 @@ Proof.
       auto.
 Qed.
 
+(** The [a_isub_strip_tvar_mid] (prop_pat_sub.v) mirror for a TERM entry:
+    the four CHECK rows return an output context WITHOUT the pending
+    suffix, so their ⊴-obligation has to drop it too.  [a_inc_var_inv]
+    already relates the two tails directly; the [Barendregt] premise
+    [uniq (Ξ ++ Θ0)] is what stops a DEFINED flexible of [Θ0] from being
+    the one thrown away. *)
+Lemma a_isub_strip_var_typ_mid : forall x A Ξ Θ0 Θ1,
+  uniq (Ξ ++ (x ~ abind_var_typ A) ++ Θ1) ->
+  uniq (Ξ ++ Θ0) ->
+  ((x ~ abind_var_typ A) ++ Θ0) ⊴ (Ξ ++ (x ~ abind_var_typ A) ++ Θ1) ->
+  Θ0 ⊴ Θ1.
+Proof.
+  intros x A Ξ Θ0 Θ1 Huq HuqΞ [[κ [Hid Hinc]] Hdef].
+  destruct (a_inc_var_inv Hinc) as [Ξ0 [A' [Θ2 [Heq [_ [_ Hinc']]]]]].
+  destruct (@uniq_mid_eq _ _ _ _ _ _ _ Heq Huq) as [-> [Heqb ->]]. inversion Heqb; subst.
+  split.
+  - exists κ. split; [ exact Hid | exact Hinc' ].
+  - intros β τ Hb.
+    assert (HβΘ0 : β `in` dom Θ0) by (eapply binds_In; eauto).
+    assert (Hbw : binds β (abind_flex_mono_def τ)
+                    (Ξ0 ++ (x ~ abind_var_typ A') ++ Θ2))
+      by (apply Hdef; unfold binds; simpl; right;
+          unfold binds in Hb; exact Hb).
+    unfold binds in Hbw. apply in_app_or in Hbw.
+    destruct Hbw as [Hbw | Hbw].
+    { exfalso.
+      assert (HβΞ : β `in` dom Ξ0) by (eapply binds_In; exact Hbw).
+      clear - HuqΞ HβΘ0 HβΞ.
+      destruct_uniq. unfold disjoint in *. fsetdec. }
+    simpl in Hbw. destruct Hbw as [Heqp | Hbw].
+    { exfalso. inversion Heqp. }
+    exact Hbw.
+Qed.
+
 Arguments uniq_mid_eq {Ξ1 x b1 Θ1 Ξ2 b2 Θ2} _ _.
 
 (** The target of an identity increase may always grow a fresh flexible
@@ -864,16 +915,6 @@ Qed.
 (* ===================================================================== *)
 (*  §3f  small inversions and coercion identities the assembly quotes     *)
 (* ===================================================================== *)
-
-Lemma mod_comp_sk_ti_inv : forall Q, mod_comp_sk Q mode_ti -> is_sskl Q.
-Proof. intros Q H; inversion H; subst; assumption. Qed.
-
-Lemma mod_comp_sk_tc_inv : forall Q, mod_comp_sk Q mode_tc -> is_sskl Q.
-Proof. intros Q H; inversion H; subst; assumption. Qed.
-
-Lemma mod_comp_sk_fn_inv : forall Q1 Q2 m,
-  mod_comp_sk (bskl_arrow Q1 Q2) (mode_fn m) -> mod_comp_sk Q2 m.
-Proof. intros * H; inversion H; subst; assumption. Qed.
 
 Lemma btyp_to_bskl_ptyp_to_btyp_syn : forall A,
   btyp_to_bskl (ptyp_to_btyp_syn A) = pskl_to_bskl_syn (ptyp_to_pskl A).

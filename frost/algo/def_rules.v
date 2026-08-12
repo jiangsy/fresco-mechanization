@@ -316,7 +316,7 @@ Inductive a_guess_mono : aenv -> pskl -> aenv -> ptyp -> Prop :=
        implementation's global counter ([incr counter; Bindlib.new_var],
        type.ml:92-95).  Together with the ∀ rule's witness entering the
        context, "generated names avoid enclosing witnesses" becomes a
-       DERIVABLE property ([a_guess_mono_generated_fresh], prop_flex.v)
+       DERIVABLE property ([a_guess_mono_generated_fresh], algo/prop_basic.v)
        instead of a hypothesis renaming lemmas cannot even state. *)
     α `notin` ftvar_in_aenv Θ ->
     a_guess_mono Θ pskl_hole ((α ~ abind_flex_mono) ++ nil) (ptyp_var_f α)

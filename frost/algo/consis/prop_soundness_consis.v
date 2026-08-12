@@ -43,7 +43,7 @@ Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo_decl.def_consis_refine.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_stability.
-Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_basic.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_mono_bridge.
 (* cluster 4: [a_consis_decorate] moved downstream, into §10 there *)
@@ -1619,7 +1619,7 @@ Proof.
   clear - Hd Hsc Hfr. fsetdec.
 Qed.
 
-(* [a_guess_mono_ftv] MOVED to prop_flex.v by the freshness campaign: the
+(* [a_guess_mono_ftv] MOVED to algo/prop_basic.v by the freshness campaign: the
    guess kit there derives target-side freshness from it instead of
    assuming output-side hypotheses.  prop_flex sits below this file, so
    the name is still in scope here. *)
@@ -1897,7 +1897,7 @@ Proof.
       intros α Hα; apply Hvis; fsetdec.
 Qed.
 
-(* [a_wf_aenv_uniq] relocated to prop_flex.v (pure base lemma needed by prop_metasubst). *)
+(* [a_wf_aenv_uniq] relocated to algo/prop_basic.v (pure base lemma needed by prop_metasubst). *)
 
 (** Every binding produced by guess^TY is a plain flexible variable. *)
 Lemma a_guess_mono_flex_binds : forall Θ P βs τ,
@@ -2016,7 +2016,7 @@ Proof. intros * H; inversion H; subst; auto. Qed.
    Re-exported from the bundle under its original name. *)
 
 (** Monotype skeletons are locally closed and guarded. *)
-(* [mono_ptyp_to_pskl_guarded] relocated to prop_flex.v (pure base lemma needed by prop_metasubst). *)
+(* [mono_ptyp_to_pskl_guarded] relocated to algo/prop_basic.v (pure base lemma needed by prop_metasubst). *)
 
 Lemma mono_bskl_lc : forall Q,
   mono_bskl Q -> lc_bskl Q.

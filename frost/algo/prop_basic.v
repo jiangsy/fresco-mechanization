@@ -1279,3 +1279,130 @@ Lemma a_wf_aenv_uniq : forall Θ,
 Proof.
   intros Θ H; induction H; solve_uniq.
 Qed.
+
+(* ===================================================================== *)
+(*  a_wf_ptyp / a_guess_mono / a_decls plumbing                           *)
+(* ===================================================================== *)
+
+(** The converse of [a_wf_ptyp_to_wf_pskl] on a painting.  The two
+    judgements agree row by row except at [∀], where [a_wf_pskl] puts the
+    binder in [Δ] and [a_wf_ptyp] in [Θ] — so the statement quantifies the
+    target context and asks the caller to relate the two. *)
+Lemma a_wf_ptyp_of_wf_pskl : forall Θ Δ P,
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
+  forall A Θ', P = ptyp_to_pskl A ->
+  (forall α, α `in` Δ -> a_binds_tvar α Θ') ->
+  (forall α, a_binds_tvar α Θ -> a_binds_tvar α Θ') ->
+  a_wf_ptyp Θ' A.
+Proof.
+  intros Θ Δ P H; induction H; intros A0 Θ' Heq HΔ HΘ;
+    destruct A0; simpl in Heq; try discriminate.
+  - (* unit *) apply a_wf_ptyp__unit.
+  - (* var *)
+    inversion Heq; subst. apply a_wf_ptyp__var.
+    destruct H as [Hd | Ht]; [ apply HΔ | apply HΘ ]; assumption.
+  - (* arrow *)
+    inversion Heq; subst.
+    apply a_wf_ptyp__arrow;
+      [ eapply IHa_wf_pskl1 | eapply IHa_wf_pskl2 ];
+      solve [ reflexivity | assumption ].
+  - (* all : the binder moves from Δ to Θ' *)
+    inversion Heq; subst.
+    apply a_wf_ptyp__all with (L := L). intros α Hα.
+    eapply (H0 α Hα);
+      [ rewrite ptyp_to_pskl_open; reflexivity
+      | intros β Hβ;
+        destruct (eq_var β α) as [Heqβ | Hne];
+          [ subst β; unfold a_binds_tvar; left;
+            unfold binds; simpl; left; reflexivity
+          | apply a_binds_tvar_weaken_cons; apply HΔ;
+            clear - Hβ Hne; fsetdec ]
+      | intros β Hβ; apply a_binds_tvar_weaken_cons; apply HΘ; exact Hβ ].
+Qed.
+
+Corollary a_wf_ptyp_of_wf_pskl_empty : forall Θ A,
+  {{ Θ ⨟ empty ⊢ₚₛ (ptyp_to_pskl A) }}a -> a_wf_ptyp Θ A.
+Proof.
+  intros Θ A H. eapply a_wf_ptyp_of_wf_pskl;
+    [ exact H | reflexivity
+    | intros α Hα; exfalso; clear - Hα; fsetdec
+    | intros α Hα; exact Hα ].
+Qed.
+
+(** The [a_guess_mono_refine] (§9) companion: [guess^TY]'s output type is
+    well formed wherever its input skeleton's variables and its own
+    generated block are.  Same SIZE induction, same reason. *)
+Lemma a_guess_mono_wf_size : forall n Θ P Ξ A,
+  size_pskl P <= n ->
+  a_guess_mono Θ P Ξ A ->
+  forall Θ1,
+  (forall α, α `in` ftvar_in_pskl P -> a_binds_tvar α Θ1) ->
+  (forall α1, binds α1 abind_flex_mono Ξ -> a_binds_tvar α1 Θ1) ->
+  a_wf_ptyp Θ1 A.
+Proof.
+  induction n as [| n IHn]; intros Θ P Ξ A Hsz H;
+    [ destruct H; cbn in Hsz; lia | ].
+  destruct H as [ Θ α Hα | Θ P Ξ A Hg | Θ α | Θ
+                | Θ P Q Ξ1 Ξ2 A B Hg1 Hg2
+                | Θ P Ξ A β Hfr Hg ];
+    cbn in Hsz; intros Θ1 Hvars HΞ.
+  - (* hole ↦ fresh flexible *)
+    apply a_wf_ptyp__var. apply HΞ. unfold binds; left; reflexivity.
+  - (* ⫯.P *)
+    eapply IHn with (P := P); [ lia | exact Hg | exact Hvars | exact HΞ ].
+  - (* variable *) apply a_wf_ptyp__var. apply Hvars. simpl. fsetdec.
+  - (* unit *) apply a_wf_ptyp__unit.
+  - (* arrow *)
+    apply a_wf_ptyp__arrow;
+      [ eapply IHn with (P := P) | eapply IHn with (P := Q) ];
+      solve [ lia | eassumption
+            | intros α Hα; apply Hvars; simpl; clear - Hα; fsetdec
+            | intros α1 Hb; apply HΞ; unfold binds in *;
+              apply in_or_app; auto ].
+  - (* ∀ : exists-fresh source, cofinite target *)
+    apply a_wf_ptyp__all
+      with (L := dom Ξ `union` dom Θ1 `union` ftvar_in_aenv Θ
+                   `union` ftvar_in_pskl P `union` ftvar_in_ptyp A
+                   `union` singleton β).
+    intros α Hα.
+    eapply IHn with (P := open_pskl_wrt_pskl P (pskl_var_f α))
+                    (Θ := (α ~ abind_tvar) ++ Θ);
+      [ rewrite size_pskl_open_pskl_wrt_pskl_var; lia | | | ].
+    + apply a_guess_mono_open_at;
+        [ apply a_guess_mono__forall with (β := β); [ exact Hfr | exact Hg ]
+        | clear - Hα; fsetdec ].
+    + intros β0 Hβ0.
+      apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in Hβ0.
+      simpl in Hβ0.
+      destruct (union_1 Hβ0) as [HY' | HY'].
+      * apply singleton_1 in HY'; subst.
+        unfold a_binds_tvar; left; unfold binds; simpl; left; reflexivity.
+      * apply a_binds_tvar_weaken_cons. apply Hvars; exact HY'.
+    + intros α1 Hb. apply a_binds_tvar_weaken_cons. apply HΞ; exact Hb.
+Qed.
+
+Corollary a_guess_mono_wf : forall Θ P Ξ A Θ1,
+  a_guess_mono Θ P Ξ A ->
+  (forall α, α `in` ftvar_in_pskl P -> a_binds_tvar α Θ1) ->
+  (forall α1, binds α1 abind_flex_mono Ξ -> a_binds_tvar α1 Θ1) ->
+  a_wf_ptyp Θ1 A.
+Proof. intros. eapply a_guess_mono_wf_size; eauto. Qed.
+
+(** [uniq] is what [AT-Abs]'s own premise supplies (algo/def_rules.v): the
+    block is declaration-only, so nothing else is needed to put it in
+    front of a well-formed context. *)
+Lemma a_wf_aenv_decls_app : forall Ξ Θ,
+  a_decls Ξ -> uniq (Ξ ++ Θ) -> {{ ⊢ Θ }}a -> {{ ⊢ (Ξ ++ Θ) }}a.
+Proof.
+  intros Ξ Θ Hd; induction Hd as [ | α1 Ξ' Hd IH ];
+    intros Huq Hwf; simpl_env in *; [ exact Hwf | ].
+  apply a_wf_aenv__flex;
+    [ clear - Huq; destruct_uniq; simpl_env in *;
+      unfold disjoint in *; fsetdec
+    | apply IH; [ solve_uniq | exact Hwf ] ].
+Qed.
+
+Lemma a_wf_ptyp_arrow_inv : forall Θ A1 A2,
+  a_wf_ptyp Θ (ptyp_arrow A1 A2) -> a_wf_ptyp Θ A1 /\ a_wf_ptyp Θ A2.
+Proof. intros * H; inversion H; subst; split; assumption. Qed.
+

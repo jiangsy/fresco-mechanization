@@ -803,7 +803,7 @@ existence lemma, one needs a real invariant:
 |---|---|---|---|
 | 1 | `uniq (Ξ ++ Θ)` | 4 CHECK rows | ✅ derivable: `a_typing_sound` on the body's run gives `a_wf_aenv (Ξ ++ …)` hence `uniq`; `Θ0 ⊴ Θ1` moves it down to the rule's own input |
 | 2 | `dom Ξ` ∉ `ftvar_in_ptyp` (result) | 4 CHECK rows | ⚠️ **the one to watch.**  At the two `_base` rows it is easy — the result's `A`/`B` are the SPLIT's halves, scoped in the pre-body context, so #1 plus `a_wf_ptyp` closes it.  At the two `_step` rows the result is the body run's own output type and the argument has to be an INVARIANT ("a TC run's result type is scoped BELOW any suffix the run deposits"), which no lemma states yet |
-| 3 | `uniq (αs ++ Θ1)` | `AT-Abs` | ✅ satisfiable, but needs a lemma the tree does not have: `a_guess_mono` EXISTENCE with an avoid set (`prop_flex.v` has only `_decls` / `_generated_fresh` / `_ftv` / `_open_at`).  Completeness CHOOSES this block, so an avoid-set-indexed generator settles it |
+| 3 | `uniq (αs ++ Θ1)` | `AT-Abs` | ✅ satisfiable, but needs a lemma the tree does not have: `a_guess_mono` EXISTENCE with an avoid set (`algo/prop_basic.v` has only `_decls` / `_generated_fresh` / `_ftv` / `_open_at`).  Completeness CHOOSES this block, so an avoid-set-indexed generator settles it |
 | 4 | `AT-AbsAnnoCheck`'s result domain is the split's `A'` | — | ✅ free: it is what `sd-AbsAnnoCheck`'s `≡ᵗ` premise is for, and the completeness side reads the domain off the split it performs |
 
 ⚙ Item 2's probe order when the induction reaches rows 7–10: build #3's
@@ -1105,7 +1105,7 @@ its goal from its own premises, and `App` recurses at the SAME context.
 
 Filling a ghost with a fresh flexible IS a refinement step; a universal
 ghost is DROPPED, so `⫯.P` is `__tophole_remove`, not `__tophole_keep`.
-⚙ SIZE induction, exactly like `a_guess_mono_consis_size` (prop_flex.v):
+⚙ SIZE induction, exactly like `a_guess_mono_consis_size` (algo/prop_basic.v):
 the source is exists-fresh, the target cofinite, so the ∀ row turns ONE
 guess instance into a family via `a_guess_mono_open_at`.  ⭐ The ∀ row puts
 its witness in **Δ**, not Θ — the §7.3 decoupling — and that is sound here
@@ -1169,7 +1169,7 @@ species as thm:sound-skeleton-inference's AbsAnno step):
    good evidence the lemma is the right shape.
 2. `AT-Abs`, "By ⑯ and definition of `guess^TY`, we have
    `Θ1,ᾱ ⊢ inh{P} ⊳ inh{A}`": a refinement property of `a_guess_mono` that
-   the mech has no lemma for (prop_flex.v has only its freshness / decls /
+   the mech has no lemma for (algo/prop_basic.v has only its freshness / decls /
    ftv facts).
 
 #### ⭐ THE ELEVEN-ROW INDUCTION — row-by-row plan (2026-08-06)

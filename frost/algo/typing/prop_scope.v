@@ -44,10 +44,11 @@ Require Import src.frost.def_shapes.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.prop_basic.
 Require Import src.frost.algo.def_rules.
+Require Import src.frost.algo.prop_mod_compat.
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_stability.
-Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_basic.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.pat.prop_soundness_pat.
 Require Import src.frost.algo.consis.prop_soundness_consis.

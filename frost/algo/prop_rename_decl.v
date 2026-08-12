@@ -39,7 +39,7 @@ Require Import src.frost.algo_decl.def_typing.
 Require Import src.frost.algo_decl.prop_ctx_mono.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_metasubst.
-Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_basic.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.algo.sub.prop_soundness_subtag.

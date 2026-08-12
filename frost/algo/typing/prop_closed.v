@@ -33,6 +33,7 @@ Require Import src.frost.ltac_utils.
 Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
+Require Import src.frost.algo.prop_mod_compat.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo_decl.def_consis_refine.
@@ -48,7 +49,7 @@ Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.sub.prop_completeness_sub_gen.
 Require Import src.frost.algo.sub.prop_completeness_sub.
 Require Import src.frost.algo.prop_stability.
-Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_basic.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_precise.

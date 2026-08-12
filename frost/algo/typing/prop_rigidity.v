@@ -31,7 +31,7 @@ Require Import src.frost.prop_basic.
 Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_stability.
-Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_basic.
 Require Import src.frost.algo.prop_inc_strengthen.
 Require Import src.frost.algo.prop_pat_sub.
 

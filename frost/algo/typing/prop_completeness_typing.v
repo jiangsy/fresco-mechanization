@@ -68,7 +68,7 @@ Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.sub.prop_completeness_sub_gen.
 Require Import src.frost.algo.sub.prop_completeness_sub.
 Require Import src.frost.algo.prop_stability.
-Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_basic.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.prop_precise.
@@ -3382,7 +3382,7 @@ Proof.
     assert (Hmτ : mono_ptyp τ)
       by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact H ]).
     assert (Hwfτ' : a_wf_ptyp Θ τ)
-      by (eapply prop_flex.a_wf_aenv_binds_def_wf; [ exact Hwf | exact H ]).
+      by (eapply prop_basic.a_wf_aenv_binds_def_wf; [ exact Hwf | exact H ]).
     destruct (IHad_refine_syn τ R1 R2 Hwf Hwfτ' Hmτ eq_refl eq_refl)
       as [τ1 [τ2 [Hm1 [Hm2 [Hw1 [Hw2 [Heqv [Hr1 Hr2]]]]]]]].
     exists τ1, τ2.
