@@ -210,8 +210,8 @@ Print Assumptions a_sub_complete.
    ⚙ Bare [Check]s deliberately: these statements carry the ρ / Ψ / Θw
    bookkeeping that makes the induction go through, and printing it here would
    bury the chain.  The statements are in the files named above. *)
-Check ad_pat_sub_precise_upre.
-Print Assumptions ad_pat_sub_precise_upre.
+Check ad_pat_sub_precise_upre_gv.
+Print Assumptions ad_pat_sub_precise_upre_gv.
 Check a_solve_eq_complete_var.
 Print Assumptions a_solve_eq_complete_var.
 Check a_lookeq_solve_complete.

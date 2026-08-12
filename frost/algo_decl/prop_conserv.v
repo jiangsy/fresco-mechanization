@@ -1443,7 +1443,7 @@ Qed.
 (*      ([d_consis_sub_trans_mid]) needs, its ForallL case transporting   *)
 (*      along [utyp_tag_refines] where the subject GAINS tags.            *)
 (*      ⚠️ WHAT IS STILL OWED in this neighbourhood is a FUEL question,    *)
-(*      not a hygiene one: [ad_pat_sub] → [ad_pat_sub_g].                 *)
+(*      not a hygiene one: [ad_pat_sub] → [ad_pat_sub_gv].                *)
 (* ===================================================================== *)
 
 Lemma binds_tvars_denv_inv : forall α Δ,

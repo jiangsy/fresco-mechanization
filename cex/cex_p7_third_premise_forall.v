@@ -80,30 +80,6 @@ Qed.
 Lemma cexL_p0_mode : a_ty_mode_compat mode_tc cexL_P0.
 Proof. exact (a_ty_mode_compat__tc ptyp_unit). Qed.
 
-(** (a) the JOIN — declarative Sub-ForallL (instantiate a ≔ unit), then
-    Sub-Check with the trivial consistency [unit ∼ unit]. *)
-Lemma cexL_join : forall n,
-  ad_pat_sub_g (S n) a_sub_mode_ty mode_tc empty nil
-    (msubst_uskl_syn nil cexL_R) cexL_Q.
-Proof.
-  intro n. cbn.
-  eapply ad_pat_sub_g__forall_l_untagged
-    with (Ψ' := empty) (ψ := uskl_unit).
-  - discriminate.
-  - clear; fsetdec.
-  - clear; fsetdec.
-  - apply a_tags_sort__ty;
-      [ apply is_tskl__unit
-      | apply d_tags_skl__unit; reflexivity
-      | apply uskl_ghost_free__unit ].
-  - cbn. apply a_wf_pskl__unit.
-  - cbn. change cexL_Q with (pskl_to_bskl_inh pskl_unit).
-    apply ad_pat_sub_g__check.
-    + apply guarded_uskl__unit.
-    + apply guarded_pskl__unit.
-    + cbn. apply ad_pat_consis__unit. clear; fsetdec.
-Qed.
-
 (** (b) the P0-FILL condition. *)
 Lemma cexL_p0_fill :
   ad_refine_syn_f empty nil empty
@@ -140,21 +116,6 @@ Proof. cbn. apply a_wf_pskl__unit. Qed.
 Lemma cexR_p0_mode : a_ty_mode_compat mode_tc cexR_P0.
 Proof. exact (a_ty_mode_compat__tc (ptyp_all ptyp_unit)). Qed.
 
-(** (a) the JOIN — declarative Sub-ForallR, then Sub-Check under the binder. *)
-Lemma cexR_join : forall n,
-  ad_pat_sub_g (S n) a_sub_mode_ty mode_tc empty nil
-    (msubst_uskl_syn nil cexR_R) cexR_Q.
-Proof.
-  intro n. cbn.
-  apply ad_pat_sub_g__forall_r with (L := empty).
-  intros α Hα. cbn.
-  change bskl_unit with (pskl_to_bskl_inh pskl_unit).
-  apply ad_pat_sub_g__check.
-  - apply guarded_uskl__unit.
-  - apply guarded_pskl__unit.
-  - cbn. apply ad_pat_consis__unit. clear; fsetdec.
-Qed.
-
 (** (b) the P0-FILL condition — the inherited painting of [∀a.unit] IS the
     counterpart, so the fill is the congruent descent. *)
 Lemma cexR_p0_fill :
@@ -183,6 +144,10 @@ Proof. cbn. intros H. inversion H. Qed.
 (*  Non-vacuity witnesses for the repaired motive: [ad_pat_sub_gv] IS      *)
 (*  derivable in both configurations above (each leaf's refinement is      *)
 (*  [unit ⊳ unit]), so both are inside the repaired theorem's coverage.    *)
+(*                                                                        *)
+(*  ⚙ 2026-08-12: the §1/§2 witnesses over the leaf-FORGETTING mirror      *)
+(*  [ad_pat_sub_g] went with that mirror.  These are what is left, and     *)
+(*  they say the same thing: the configurations are derivable joins.       *)
 (* ===================================================================== *)
 
 Lemma cexL_join_gv : forall n,

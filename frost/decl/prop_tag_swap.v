@@ -7,7 +7,7 @@
     is what [lemma:precision-substitution] needs and what the context-local
     reading does not give (Arrow splits the tag context but not the subject).
     All four subtyping judgments — [d_sub], [d_pat_sub], [ad_pat_sub] and the
-    fuel mirrors [ad_pat_sub_g] / [_gv] — now render it that way, and THIS FILE
+    fuel mirror [ad_pat_sub_gv] — now render it that way, and THIS FILE
     is what pays for it: the one place the strong reading is not free is
     [d_consis_sub_trans_mid] (CST, prop_general_subsumption.v), whose ForallL
     case transports along [utyp_tag_refines], where the subject GAINS tags.

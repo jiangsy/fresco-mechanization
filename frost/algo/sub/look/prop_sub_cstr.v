@@ -220,7 +220,7 @@ Qed.
 (*  ψa SURVIVES INTO THE SUBJECT — the ForallL rows' tag bookkeeping       *)
 (* ===================================================================== *)
 
-(** [ad_pat_sub_g] renders the paper's GLOBAL freshness of an instantiation's
+(** [ad_pat_sub_gv] renders the paper's GLOBAL freshness of an instantiation's
     tags as TWO conjuncts — freshness from the tag index and from the
     SUBJECT's syntactic tags (def_subtyping.v).  Sub-ForallL needs a
     third, freshness from ψa's tags Ψ', to keep the ρ-dirt bound
@@ -307,12 +307,12 @@ Qed.
 (*  [a_looksub__forall_r] is COFINITE in β with ONE [Ξ ⨾ 𝒞], so a          *)
 (*  β-mentioning 𝒞 cannot be rebuilt from a single instance — and 𝒞 CAN   *)
 (*  mention β: the sub-side analogue of [ad_pat_consis_target_ftv] is      *)
-(*  FALSE at [ad_pat_sub_g__forall_l_tagged] (cex/cex_p6ss_sub_target_ftv  *)
+(*  FALSE at [ad_pat_sub_gv__forall_l_tagged] (cex/cex_p6ss_sub_target_ftv  *)
 (*  .v), because a ForallL guess is bounded only by [dom Θ] and            *)
-(*  [ad_pat_sub_g__forall_r] grows that Θ by the very binder being         *)
+(*  [ad_pat_sub_gv__forall_r] grows that Θ by the very binder being         *)
 (*  stripped.                                                             *)
 (*                                                                        *)
-(*  The escape: [ad_pat_sub_g__forall_r] forces [a_sub_mode_ty] +          *)
+(*  The escape: [ad_pat_sub_gv__forall_r] forces [a_sub_mode_ty] +          *)
 (*  [mode_tc], and NM is invariant along a derivation, so at (ty, tc) the  *)
 (*  ONLY rows are [__check] (whose subtree is pure CONSISTENCY — no        *)
 (*  guesses), [__forall_r] and [__forall_l_*].  Mirroring that on the      *)
@@ -385,7 +385,7 @@ Proof.
   - apply a_looksub__univ_ghost_l; apply IHalpha_stack.
 Qed.
 
-(** THE MODE RESTRICTION, MACHINE-CHECKED.  [ad_pat_sub_g__forall_r] forces
+(** THE MODE RESTRICTION, MACHINE-CHECKED.  [ad_pat_sub_gv__forall_r] forces
     [a_sub_mode_ty] + [mode_tc], and NM is invariant along a derivation, so
     under a Sub-ForallR only three rows can fire: [__check], [__forall_r] and
     [__forall_l_*].  Hence the subject there is either GUARDED (the next step
@@ -395,8 +395,8 @@ Qed.
     In particular a ⊤◇ / ◇ / ◈ subject is IMPOSSIBLE at (ty, tc): stripping
     those needs [a_sub_mode_sk].  That is what lets Sub-ForallR's α-stack
     branch assume the stack is built from ∀s alone. *)
-Lemma ad_pat_sub_g_ty_tc_subject : forall n Ψ Θ R Q,
-  ad_pat_sub_g n a_sub_mode_ty mode_tc Ψ Θ R Q ->
+Lemma ad_pat_sub_gv_ty_tc_subject : forall n Ψ Θ R Q,
+  ad_pat_sub_gv n a_sub_mode_ty mode_tc Ψ Θ R Q ->
   guarded_uskl R
   \/ (exists ε R0, R = uskl_all_tag ε R0)
   \/ (exists R0, R = uskl_all_syn R0).
@@ -456,7 +456,7 @@ Lemma a_looksub_solve_complete_leaf :
      in every non-∀ row [Θs = Θ].  This is P6-Sv's device
      (sub/look/prop_sub_var.v:1674) and NOT P6-Cs's same-named one
      (whose [Θs] fixes the ρ-IMAGES' scope for the ftv-𝒞 bound — Phase B). *)
-  ad_pat_sub_g n NM M Ψsub Θs Rsub Q ->
+  ad_pat_sub_gv n NM M Ψsub Θs Rsub Q ->
   {{ Θ ⨟ empty ⊢ₚₛ (uskl_to_pskl Rsub) }}a ->
   {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
   (* --- the ρ pack (all vacuous at ρ = identity) --- *)
@@ -510,7 +510,7 @@ Lemma a_looksub_solve_complete_leaf :
        left disjunct with a right one.
        ⚠️ The disjunct-free bound is UNREACHABLE: its leaf would need a
        sub-side [ad_pat_consis_target_ftv], and that is FALSE at
-       [ad_pat_sub_g__forall_l_tagged] — cex/cex_p6ss_sub_target_ftv.v.
+       [ad_pat_sub_gv__forall_l_tagged] — cex/cex_p6ss_sub_target_ftv.v.
        docs/DESIGN-completeness-subtyping.md §8 (h). *)
     (M = mode_tc ->
        ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
@@ -537,7 +537,7 @@ Proof.
       rewrite (subst_uskl_in_uskl_fresh_eq (msubst_uskl_syn κ R') ψa α HαMS)
         in Hrho.
       assert (HΨsR : Ψsub [<=] ftag_in_uskl Rsub)
-        by (apply (ad_pat_sub_g_ftag_sub Hsubty)).
+        by (apply (ad_pat_sub_gv_ftag_sub Hsubty)).
       pose proof (uskl_rho_ftag_sub Hrho) as Hftr.
       rewrite ftag_in_uskl_msubst_uskl_syn in Hftr.
       assert (HΨa0 : Ψa [=] empty)
@@ -713,7 +713,7 @@ Theorem a_looksub_solve_complete_gen :
   Ψa [<=] Ψsub ->
   (* subject = the ρ-IMAGE of the paper's (κR')[ψa/α] (ρ = id ⇒ the paper's),
      in the DERIVATION's context Θs (see the header) *)
-  ad_pat_sub_g n NM M Ψsub Θs Rsub Q ->
+  ad_pat_sub_gv n NM M Ψsub Θs Rsub Q ->
   {{ Θ ⨟ empty ⊢ₚₛ (uskl_to_pskl Rsub) }}a ->
   {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
   (* --- the ρ pack (all VACUOUS at ρ = identity) --- *)
@@ -783,7 +783,7 @@ Theorem a_looksub_solve_complete_gen :
        left disjunct with a right one.
        ⚠️ The disjunct-free bound is UNREACHABLE: its leaf would need a
        sub-side [ad_pat_consis_target_ftv], and that is FALSE at
-       [ad_pat_sub_g__forall_l_tagged] — cex/cex_p6ss_sub_target_ftv.v.
+       [ad_pat_sub_gv__forall_l_tagged] — cex/cex_p6ss_sub_target_ftv.v.
        docs/DESIGN-completeness-subtyping.md §8 (h). *)
     (M = mode_tc ->
        ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
@@ -1025,7 +1025,7 @@ Proof.
 
        THE ROUTE, AS EXECUTED (docs/DESIGN-completeness-subtyping.md §8 (h)).
        The ψa-relative bound alone is UNREACHABLE — its leaf needs a sub-side
-       [ad_pat_consis_target_ftv], FALSE at [ad_pat_sub_g__forall_l_tagged]
+       [ad_pat_consis_target_ftv], FALSE at [ad_pat_sub_gv__forall_l_tagged]
        (cex/cex_p6ss_sub_target_ftv.v).  What the conclusion carries instead
        is the MODE-GUARDED DISJUNCTION, and this row consumes it:
          · LEFT  — β ∉ ftv 𝒞, so strip β from every output with P6-Cs's
@@ -1495,7 +1495,7 @@ Proof.
     (* --- tag algebra: Ψa = (Ψ1∩Ψ') ∪ (Ψ2∩Ψ') --- *)
     pose proof (d_tags_skl_ftag (a_tags_sort_d_tags Htags)) as Hψatag.
     assert (HΨa : Ψa [=] union (Ψ1 ∩ Ψ') (Ψ2 ∩ Ψ'))
-      by (clear - HΨs1 HΨs2 Hsub H0 Hdisj HΨρ; fsetdec).
+      by (clear - HΨs1 HΨs2 Hsub H1 Hdisj HΨρ; fsetdec).
     (* under ρ the per-component bounds read off the ρ-IMAGES, so each picks up
        its own slice of Ψρ ([uskl_rho_ftag_sub]) *)
     assert (HΨ1sub : Ψ1 [<=] union (ftag_in_uskl Ra) (union Ψρ1 Ψ')).
@@ -1506,7 +1506,7 @@ Proof.
       pose proof (ftag_in_uskl_msubst_uskl_syn κ Ra) as Hm1.
       clear - Hf1 Hr1 Hb1 Hm1 Hψatag; fsetdec. }
     assert (HΨ2sub : Ψ2 [<=] union (ftag_in_uskl Rb) (union Ψρ2 Ψ')).
-    { pose proof (ad_pat_sub_g_ftag_sub Hsubty) as Hf2.
+    { pose proof (ad_pat_sub_gv_ftag_sub Hsubty) as Hf2.
       pose proof (uskl_rho_ftag_sub Hrhob) as Hr2.
       pose proof (ftag_in_uskl_subst_uskl_in_uskl ψa α
                     (msubst_uskl_syn κ Rb)) as Hb2.
@@ -2209,7 +2209,7 @@ Proof.
          miss it ([HΨgfresh]) and Ψ's own bound [HΨs1] only offers εr there,
          which [Hdisj] excludes. *)
       rewrite ftag_in_uskl_open_var.
-      pose proof (ad_pat_sub_g_ftag_sub Hsubty) as Hs.
+      pose proof (ad_pat_sub_gv_ftag_sub Hsubty) as Hs.
       pose proof (uskl_rho_ftag_sub Hrho') as Hr.
       pose proof (@ftag_in_uskl_subst_uskl_in_uskl ψa α
                     (msubst_uskl_syn κ
@@ -2660,7 +2660,7 @@ Proof.
          (⊆ Ψ') plus R0's.  Ψ' is then killed on both sides: the guess's tags
          miss it ([HΨgfresh]) and Ψ's own bound [HΨs1] offers nothing there. *)
       rewrite ftag_in_uskl_open_var.
-      pose proof (ad_pat_sub_g_ftag_sub Hsubty) as Hs.
+      pose proof (ad_pat_sub_gv_ftag_sub Hsubty) as Hs.
       pose proof (uskl_rho_ftag_sub Hrho') as Hr.
       pose proof (@ftag_in_uskl_subst_uskl_in_uskl ψa α
                     (msubst_uskl_syn κ
@@ -3264,7 +3264,7 @@ Qed.
 (*  What works instead is the MODE-GUARDED DISJUNCTION this statement now  *)
 (*  carries.  [__forall_r] forces [a_sub_mode_ty] + [mode_tc], and NM is   *)
 (*  invariant along a derivation, so there only [__check], [__forall_r]    *)
-(*  and [__forall_l_*] can fire ([ad_pat_sub_g_ty_tc_subject]).  Hence     *)
+(*  and [__forall_l_*] can fire ([ad_pat_sub_gv_ty_tc_subject]).  Hence     *)
 (*  under a Sub-ForallR this LEAF ([P = α]) is reachable only when P is an *)
 (*  α-STACK — every other α-leaf sits under LS-Check, i.e. inside P6-Cs,   *)
 (*  whose bound is already ψa-relative — and an α-stack never descends the *)
@@ -3315,7 +3315,7 @@ Theorem a_looksub_solve_complete :
   Ψsub [<=] ftag_in_uskl R' `union` Ψa ->
   Ψa [<=] Ψsub ->
   (* subject = (κR')[ψa/α], EXACTLY the paper's form *)
-  ad_pat_sub_g n NM M Ψsub Θ
+  ad_pat_sub_gv n NM M Ψsub Θ
     (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) Q ->
   {{ Θ ⨟ empty ⊢ₚₛ
     (uskl_to_pskl (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R'))) }}a ->
@@ -3354,7 +3354,7 @@ Theorem a_looksub_solve_complete :
        left disjunct with a right one.
        ⚠️ The disjunct-free bound is UNREACHABLE: its leaf would need a
        sub-side [ad_pat_consis_target_ftv], and that is FALSE at
-       [ad_pat_sub_g__forall_l_tagged] — cex/cex_p6ss_sub_target_ftv.v.
+       [ad_pat_sub_gv__forall_l_tagged] — cex/cex_p6ss_sub_target_ftv.v.
        docs/DESIGN-completeness-subtyping.md §8 (h). *)
     (M = mode_tc ->
        ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc

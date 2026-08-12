@@ -46,7 +46,7 @@ Require Import src.frost.algo.consis.prop_soundness_consis.   (* uskl_to_pskl_op
 Require Import src.frost.algo.sub.look.prop_eq_cstr. (* msubst_uskl_syn_open *)
 Require Import src.frost.algo.consis.prop_consis_precise.  (* ftag_in_uskl_{open_var,ptyp_syn} *)
 Require Import src.frost.algo.consis.prop_completeness_consis. (* skl_tyequiv_consis_transport *)
-Require Import src.frost.algo_decl.def_subtyping. (* ad_pat_sub_g / _gv *)
+Require Import src.frost.algo_decl.def_subtyping. (* ad_pat_sub_gv *)
 Require Import src.frost.algo.sub.prop_completeness_sub_precise.     (* fold_flex, mono_paint_guarded *)
 
 Set Implicit Arguments.
@@ -1123,7 +1123,7 @@ Qed.
 
 (* ===================================================================== *)
 (*  Sub-ForallL enabler (iii), part 1: ≡ᵗ shape preservation and the      *)
-(*  flex UNFOLD twin of [ad_pat_sub_g_fold_flex].                         *)
+(*  flex UNFOLD twin of [ad_pat_sub_gv_fold_flex].                        *)
 (* ===================================================================== *)
 
 (** Under a wf context (definitions are monotypes), ≡ᵗ preserves
@@ -1177,37 +1177,62 @@ Proof.
     | apply a_tyequiv__sym; apply a_tyequiv__flex_def; exact Hb ].
 Qed.
 
-(** Unfold a defined flexible variable on the SUBJECT side of the plain
+(** ⭐ THE LEAF DATUM'S OWN ≡ᵘ-SUBJECT TRANSPORT — the ⊳-mirror of
+    [ad_pat_consis_tyequiv_subject], and what makes the leaf-valid mirror
+    survive the reshapings below.  It is [ad_refine_pskl_tyequiv_source]
+    (prop_completeness_sub_precise.v) read through [a_uskl_tyequiv_erase]:
+    the datum is stated on the ERASURE, and ≡ᵘ projects onto the pskl-level
+    ≡ˢ, so no uskl-level refinement theory is needed. *)
+Lemma ad_refine_pskl_tyequiv_uskl_subject : forall Θ Δ R T' Pt,
+  {{ Θ ⊢ T' ≡ᵘ R }}a ->
+  {{ ⊢ Θ }}a ->
+  {{ Θ ⨟ Δ ⊢ᵣₚ ⌊ R ⌋ˢ ⊳ Pt }}ad ->
+  {{ Θ ⨟ Δ ⊢ᵣₚ ⌊ T' ⌋ˢ ⊳ Pt }}ad.
+Proof.
+  intros Θ Δ R T' Pt Heq Hwf Href.
+  exact (proj1 (ad_refine_pskl_tyequiv_source
+                  (a_uskl_tyequiv_erase Heq) Δ Pt
+                  (fun x b Hb => Hb) Hwf) Href).
+Qed.
+
+(** Unfold a defined flexible variable on the SUBJECT side of the leaf-valid
     hygienic join, at the SAME fuel — the twin of
-    [ad_pat_sub_g_fold_flex].  The consistency premises transport by the
-    ≡ᵘ-subject transport (enabler (ii)); [FlexMono] IS the unfolding. *)
-Lemma ad_pat_sub_g_unfold_flex : forall n NM M Ψ Θ Rα Q,
-  ad_pat_sub_g n NM M Ψ Θ Rα Q ->
+    [ad_pat_sub_gv_fold_flex].  The consistency premises transport by the
+    ≡ᵘ-subject transport (enabler (ii)) and the LEAF data by
+    [ad_refine_pskl_unfold_def_subject]; [FlexMono] IS the unfolding. *)
+Lemma ad_pat_sub_gv_unfold_flex : forall n NM M Ψ Θ Rα Q,
+  ad_pat_sub_gv n NM M Ψ Θ Rα Q ->
   forall α τ,
   Rα = uskl_var_f α ->
   binds α (abind_flex_mono_def τ) Θ ->
   {{ ⊢ Θ }}a ->
-  ad_pat_sub_g n NM M Ψ Θ (ptyp_to_uskl_syn τ) Q.
+  ad_pat_sub_gv n NM M Ψ Θ (ptyp_to_uskl_syn τ) Q.
 Proof.
   intros n NM M Ψ Θ Rα Q HD; induction HD; intros α0 τ0 HeqS Hb Hwf;
     try discriminate HeqS.
   - (* infer *)
     subst R.
-    apply ad_pat_sub_g__infer; [ assumption | | assumption ].
-    eapply ad_pat_consis_tyequiv_subject;
-      [ eassumption | exact Hwf | apply flex_def_paint_tyequiv; assumption ].
+    apply ad_pat_sub_gv__infer; [ assumption | | assumption | ].
+    + eapply ad_pat_consis_tyequiv_subject;
+        [ eassumption | exact Hwf | apply flex_def_paint_tyequiv; assumption ].
+    + rewrite uskl_to_pskl_ptyp_to_uskl_syn.
+      eapply ad_refine_pskl_unfold_def_subject;
+        [ cbn in *; eassumption | exact Hwf | exact Hb ].
   - (* check *)
     subst T.
     assert (Hm : mono_ptyp τ0)
       by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact Hb ]).
-    apply ad_pat_sub_g__check;
+    apply ad_pat_sub_gv__check;
       [ apply mono_paint_guarded;
           [ exact Hm | apply mono_ptyp_to_uskl_syn_lc; exact Hm ]
-      | assumption | ].
-    eapply ad_pat_consis_tyequiv_subject;
-      [ eassumption | exact Hwf | apply flex_def_paint_tyequiv; assumption ].
+      | assumption | | ].
+    + eapply ad_pat_consis_tyequiv_subject;
+        [ eassumption | exact Hwf | apply flex_def_paint_tyequiv; assumption ].
+    + rewrite uskl_to_pskl_ptyp_to_uskl_syn.
+      eapply ad_refine_pskl_unfold_def_subject;
+        [ cbn in *; eassumption | exact Hwf | exact Hb ].
   - (* forall_r *)
-    eapply ad_pat_sub_g__forall_r with (L := L `union` dom Θ).
+    eapply ad_pat_sub_gv__forall_r with (L := L `union` dom Θ).
     intros β Hβ.
     eapply (H0 β ltac:(clear - Hβ; solve_notin_auto) α0 τ0 HeqS);
       [ unfold binds; simpl; right; exact Hb
@@ -1216,13 +1241,16 @@ Proof.
     subst R.
     assert (Hm : mono_ptyp τ0)
       by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact Hb ]).
-    apply ad_pat_sub_g__univ_ghost_r;
+    apply ad_pat_sub_gv__univ_ghost_r;
       [ assumption
       | apply mono_paint_guarded;
           [ exact Hm | apply mono_ptyp_to_uskl_syn_lc; exact Hm ]
-      | assumption | assumption | ].
-    eapply ad_pat_consis_tyequiv_subject;
-      [ eassumption | exact Hwf | apply flex_def_paint_tyequiv; assumption ].
+      | assumption | assumption | | ].
+    + eapply ad_pat_consis_tyequiv_subject;
+        [ eassumption | exact Hwf | apply flex_def_paint_tyequiv; assumption ].
+    + rewrite uskl_to_pskl_ptyp_to_uskl_syn.
+      eapply ad_refine_pskl_unfold_def_subject;
+        [ cbn in *; eassumption | exact Hwf | exact Hb ].
   - (* flex_mono: the premise IS the unfolding — align the definitions *)
     inversion HeqS; subst.
     assert (Hu : uniq Θ) by (apply a_wf_aenv_uniq; exact Hwf).
@@ -1259,7 +1287,22 @@ Proof.
   rewrite pskl_to_uskl_ptyp. exact Hc.
 Qed.
 
-Lemma ad_pat_sub_g_paint_tyequiv_subject : forall Θ A B,
+(** …and the leaf datum at a painting subject, likewise. *)
+Lemma ad_refine_pskl_paint_transport : forall Θ A B,
+  {{ Θ ⊢ A ≡ᵗ B }}a ->
+  forall Θ', {{ ⊢ Θ' }}a ->
+  (forall x b, binds x b Θ -> binds x b Θ') ->
+  forall Δ Pt,
+  {{ Θ' ⨟ Δ ⊢ᵣₚ ⌊ (ptyp_to_uskl_syn A) ⌋ˢ ⊳ Pt }}ad ->
+  {{ Θ' ⨟ Δ ⊢ᵣₚ ⌊ (ptyp_to_uskl_syn B) ⌋ˢ ⊳ Pt }}ad.
+Proof.
+  intros Θ A B Heq Θ' Hwf' Hmon Δ Pt Href.
+  rewrite uskl_to_pskl_ptyp_to_uskl_syn in Href |- *.
+  exact (proj2 (ad_refine_pskl_tyequiv_source
+                  (a_tyequiv_pskl Heq) Δ Pt Hmon Hwf') Href).
+Qed.
+
+Lemma ad_pat_sub_gv_paint_tyequiv_subject : forall Θ A B,
   {{ Θ ⊢ A ≡ᵗ B }}a ->
   {{ ⊢ Θ }}a ->
   forall Θ',
@@ -1267,11 +1310,11 @@ Lemma ad_pat_sub_g_paint_tyequiv_subject : forall Θ A B,
   {{ ⊢ Θ' }}a ->
   (forall x b, binds x b Θ -> binds x b Θ') ->
   (forall n NM M Ψ Q,
-     ad_pat_sub_g n NM M Ψ Θ' (ptyp_to_uskl_syn A) Q ->
-     ad_pat_sub_g n NM M Ψ Θ' (ptyp_to_uskl_syn B) Q) /\
+     ad_pat_sub_gv n NM M Ψ Θ' (ptyp_to_uskl_syn A) Q ->
+     ad_pat_sub_gv n NM M Ψ Θ' (ptyp_to_uskl_syn B) Q) /\
   (forall n NM M Ψ Q,
-     ad_pat_sub_g n NM M Ψ Θ' (ptyp_to_uskl_syn B) Q ->
-     ad_pat_sub_g n NM M Ψ Θ' (ptyp_to_uskl_syn A) Q).
+     ad_pat_sub_gv n NM M Ψ Θ' (ptyp_to_uskl_syn B) Q ->
+     ad_pat_sub_gv n NM M Ψ Θ' (ptyp_to_uskl_syn A) Q).
 Proof.
   intros Θ A B Heq Hwf; induction Heq; intros Θ' Hm Hwf' Hmon.
   - (* refl *)
@@ -1292,10 +1335,10 @@ Proof.
   - (* flex_def : fold / unfold *)
     split; intros n NM M Ψ Q HD.
     + (* var → definition *)
-      eapply ad_pat_sub_g_unfold_flex;
+      eapply ad_pat_sub_gv_unfold_flex;
         [ exact HD | reflexivity | apply Hmon; exact H | exact Hwf' ].
     + (* definition → var *)
-      eapply ad_pat_sub_g_fold_flex;
+      eapply ad_pat_sub_gv_fold_flex;
         [ exact HD | reflexivity | apply Hmon; exact H | exact Hwf' ].
   - (* arrow congruence *)
     inversion Hm; subst.
@@ -1316,24 +1359,32 @@ Proof.
         try (cbn in HeqS; discriminate HeqS).
       * (* infer *)
         subst R.
-        apply ad_pat_sub_g__infer; [ assumption | | assumption ].
-        eapply ad_pat_consis_paint_skl_transport
-          with (Θ := Θ) (A := ptyp_arrow A1 A2) (B := ptyp_arrow B1 B2);
-          [ apply a_tyequiv__arrow; assumption
-          | exact Hwf' | exact Hmon | assumption ].
+        apply ad_pat_sub_gv__infer; [ assumption | | assumption | ].
+        { eapply ad_pat_consis_paint_skl_transport
+            with (Θ := Θ) (A := ptyp_arrow A1 A2) (B := ptyp_arrow B1 B2);
+            [ apply a_tyequiv__arrow; assumption
+            | exact Hwf' | exact Hmon | assumption ]. }
+        { eapply ad_refine_pskl_paint_transport
+            with (Θ := Θ) (A := ptyp_arrow A1 A2) (B := ptyp_arrow B1 B2);
+            [ apply a_tyequiv__arrow; assumption
+            | exact Hwf' | exact Hmon | assumption ]. }
       * (* check *)
         subst T.
-        apply ad_pat_sub_g__check;
+        apply ad_pat_sub_gv__check;
           [ cbn; apply guarded_uskl__arrow;
               [ apply mono_ptyp_to_uskl_syn_lc; exact HmB1
               | apply mono_ptyp_to_uskl_syn_lc; exact HmB2 ]
-          | assumption | ].
-        eapply ad_pat_consis_paint_skl_transport
-          with (Θ := Θ) (A := ptyp_arrow A1 A2) (B := ptyp_arrow B1 B2);
-          [ apply a_tyequiv__arrow; assumption
-          | exact Hwf' | exact Hmon | assumption ].
+          | assumption | | ].
+        { eapply ad_pat_consis_paint_skl_transport
+            with (Θ := Θ) (A := ptyp_arrow A1 A2) (B := ptyp_arrow B1 B2);
+            [ apply a_tyequiv__arrow; assumption
+            | exact Hwf' | exact Hmon | assumption ]. }
+        { eapply ad_refine_pskl_paint_transport
+            with (Θ := Θ) (A := ptyp_arrow A1 A2) (B := ptyp_arrow B1 B2);
+            [ apply a_tyequiv__arrow; assumption
+            | exact Hwf' | exact Hmon | assumption ]. }
       * (* forall_r *)
-        eapply ad_pat_sub_g__forall_r with (L := L `union` dom Θ0).
+        eapply ad_pat_sub_gv__forall_r with (L := L `union` dom Θ0).
         intros β Hβ.
         eapply (H0 β ltac:(clear - Hβ; solve_notin_auto));
           [ exact HeqS
@@ -1341,23 +1392,32 @@ Proof.
           | intros x b Hb; unfold binds; simpl; right; apply Hmon; exact Hb ].
       * (* univ_ghost_r *)
         subst R.
-        apply ad_pat_sub_g__univ_ghost_r;
+        apply ad_pat_sub_gv__univ_ghost_r;
           [ assumption
           | cbn; apply guarded_uskl__arrow;
               [ apply mono_ptyp_to_uskl_syn_lc; exact HmB1
               | apply mono_ptyp_to_uskl_syn_lc; exact HmB2 ]
-          | assumption | assumption | ].
-        eapply ad_pat_consis_paint_skl_transport
-          with (Θ := Θ) (A := ptyp_arrow A1 A2) (B := ptyp_arrow B1 B2);
-          [ apply a_tyequiv__arrow; assumption
-          | exact Hwf' | exact Hmon | assumption ].
+          | assumption | assumption | | ].
+        { eapply ad_pat_consis_paint_skl_transport
+            with (Θ := Θ) (A := ptyp_arrow A1 A2) (B := ptyp_arrow B1 B2);
+            [ apply a_tyequiv__arrow; assumption
+            | exact Hwf' | exact Hmon | assumption ]. }
+        { eapply ad_refine_pskl_paint_transport
+            with (Θ := Θ) (A := ptyp_arrow A1 A2) (B := ptyp_arrow B1 B2);
+            [ apply a_tyequiv__arrow; assumption
+            | exact Hwf' | exact Hmon | assumption ]. }
       * (* arrow *)
         cbn in HeqS. injection HeqS as HeqR1 HeqR2. subst R1 R2.
         cbn.
-        eapply ad_pat_sub_g__arrow.
+        eapply ad_pat_sub_gv__arrow.
         { change (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl A1)))
             with (ptyp_to_uskl_syn A1) in *.
           eapply ad_pat_consis_paint_skl_transport
+            with (Θ := Θ) (A := A1) (B := B1);
+            [ exact Heq1 | exact Hwf' | exact Hmon | eassumption ]. }
+        { change (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl A1)))
+            with (ptyp_to_uskl_syn A1) in *.
+          eapply ad_refine_pskl_paint_transport
             with (Θ := Θ) (A := A1) (B := B1);
             [ exact Heq1 | exact Hwf' | exact Hmon | eassumption ]. }
         { change (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl A2)))
@@ -1373,24 +1433,32 @@ Proof.
         try (cbn in HeqS; discriminate HeqS).
       * (* infer *)
         subst R.
-        apply ad_pat_sub_g__infer; [ assumption | | assumption ].
-        eapply ad_pat_consis_paint_skl_transport
-          with (Θ := Θ) (A := ptyp_arrow B1 B2) (B := ptyp_arrow A1 A2);
-          [ apply a_tyequiv__sym; apply a_tyequiv__arrow; assumption
-          | exact Hwf' | exact Hmon | assumption ].
+        apply ad_pat_sub_gv__infer; [ assumption | | assumption | ].
+        { eapply ad_pat_consis_paint_skl_transport
+            with (Θ := Θ) (A := ptyp_arrow B1 B2) (B := ptyp_arrow A1 A2);
+            [ apply a_tyequiv__sym; apply a_tyequiv__arrow; assumption
+            | exact Hwf' | exact Hmon | assumption ]. }
+        { eapply ad_refine_pskl_paint_transport
+            with (Θ := Θ) (A := ptyp_arrow B1 B2) (B := ptyp_arrow A1 A2);
+            [ apply a_tyequiv__sym; apply a_tyequiv__arrow; assumption
+            | exact Hwf' | exact Hmon | assumption ]. }
       * (* check *)
         subst T.
-        apply ad_pat_sub_g__check;
+        apply ad_pat_sub_gv__check;
           [ cbn; apply guarded_uskl__arrow;
               [ apply mono_ptyp_to_uskl_syn_lc; exact Hm1
               | apply mono_ptyp_to_uskl_syn_lc; exact Hm2 ]
-          | assumption | ].
-        eapply ad_pat_consis_paint_skl_transport
-          with (Θ := Θ) (A := ptyp_arrow B1 B2) (B := ptyp_arrow A1 A2);
-          [ apply a_tyequiv__sym; apply a_tyequiv__arrow; assumption
-          | exact Hwf' | exact Hmon | assumption ].
+          | assumption | | ].
+        { eapply ad_pat_consis_paint_skl_transport
+            with (Θ := Θ) (A := ptyp_arrow B1 B2) (B := ptyp_arrow A1 A2);
+            [ apply a_tyequiv__sym; apply a_tyequiv__arrow; assumption
+            | exact Hwf' | exact Hmon | assumption ]. }
+        { eapply ad_refine_pskl_paint_transport
+            with (Θ := Θ) (A := ptyp_arrow B1 B2) (B := ptyp_arrow A1 A2);
+            [ apply a_tyequiv__sym; apply a_tyequiv__arrow; assumption
+            | exact Hwf' | exact Hmon | assumption ]. }
       * (* forall_r *)
-        eapply ad_pat_sub_g__forall_r with (L := L `union` dom Θ0).
+        eapply ad_pat_sub_gv__forall_r with (L := L `union` dom Θ0).
         intros β Hβ.
         eapply (H0 β ltac:(clear - Hβ; solve_notin_auto));
           [ exact HeqS
@@ -1398,23 +1466,33 @@ Proof.
           | intros x b Hb; unfold binds; simpl; right; apply Hmon; exact Hb ].
       * (* univ_ghost_r *)
         subst R.
-        apply ad_pat_sub_g__univ_ghost_r;
+        apply ad_pat_sub_gv__univ_ghost_r;
           [ assumption
           | cbn; apply guarded_uskl__arrow;
               [ apply mono_ptyp_to_uskl_syn_lc; exact Hm1
               | apply mono_ptyp_to_uskl_syn_lc; exact Hm2 ]
-          | assumption | assumption | ].
-        eapply ad_pat_consis_paint_skl_transport
-          with (Θ := Θ) (A := ptyp_arrow B1 B2) (B := ptyp_arrow A1 A2);
-          [ apply a_tyequiv__sym; apply a_tyequiv__arrow; assumption
-          | exact Hwf' | exact Hmon | assumption ].
+          | assumption | assumption | | ].
+        { eapply ad_pat_consis_paint_skl_transport
+            with (Θ := Θ) (A := ptyp_arrow B1 B2) (B := ptyp_arrow A1 A2);
+            [ apply a_tyequiv__sym; apply a_tyequiv__arrow; assumption
+            | exact Hwf' | exact Hmon | assumption ]. }
+        { eapply ad_refine_pskl_paint_transport
+            with (Θ := Θ) (A := ptyp_arrow B1 B2) (B := ptyp_arrow A1 A2);
+            [ apply a_tyequiv__sym; apply a_tyequiv__arrow; assumption
+            | exact Hwf' | exact Hmon | assumption ]. }
       * (* arrow *)
         cbn in HeqS. injection HeqS as HeqR1 HeqR2. subst R1 R2.
         cbn.
-        eapply ad_pat_sub_g__arrow.
+        eapply ad_pat_sub_gv__arrow.
         { change (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl B1)))
             with (ptyp_to_uskl_syn B1) in *.
           eapply ad_pat_consis_paint_skl_transport
+            with (Θ := Θ) (A := B1) (B := A1);
+            [ apply a_tyequiv__sym; exact Heq1
+            | exact Hwf' | exact Hmon | eassumption ]. }
+        { change (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl B1)))
+            with (ptyp_to_uskl_syn B1) in *.
+          eapply ad_refine_pskl_paint_transport
             with (Θ := Θ) (A := B1) (B := A1);
             [ apply a_tyequiv__sym; exact Heq1
             | exact Hwf' | exact Hmon | eassumption ]. }
@@ -1442,61 +1520,69 @@ Qed.
 (*  ftag preservation (enabler (i)).                                      *)
 (* ===================================================================== *)
 
-Lemma ad_pat_sub_g_tyequiv_subject : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_g n NM M Ψ Θ R Q ->
+Lemma ad_pat_sub_gv_tyequiv_subject : forall n NM M Ψ Θ R Q,
+  ad_pat_sub_gv n NM M Ψ Θ R Q ->
   {{ ⊢ Θ }}a ->
   forall T', {{ Θ ⊢ T' ≡ᵘ R }}a ->
-  ad_pat_sub_g n NM M Ψ Θ T' Q.
+  ad_pat_sub_gv n NM M Ψ Θ T' Q.
 Proof.
   intros n NM M Ψ Θ R Q HD; induction HD; intros Hwf T' Htyeq.
   - (* infer *)
-    apply ad_pat_sub_g__infer; [ exact H | | exact H1 ].
-    eapply ad_pat_consis_tyequiv_subject;
-      [ exact H0 | exact Hwf | exact Htyeq ].
+    apply ad_pat_sub_gv__infer; [ exact H | | exact H1 | ].
+    { eapply ad_pat_consis_tyequiv_subject;
+        [ exact H0 | exact Hwf | exact Htyeq ]. }
+    { eapply ad_refine_pskl_tyequiv_uskl_subject;
+        [ exact Htyeq | exact Hwf | exact H2 ]. }
   - (* check *)
-    apply ad_pat_sub_g__check;
+    apply ad_pat_sub_gv__check;
       [ eapply a_uskl_tyequiv_guarded;
           [ apply a_uskl_tyequiv_sym; exact Htyeq | exact H ]
-      | exact H0 | ].
-    eapply ad_pat_consis_tyequiv_subject;
-      [ exact H1 | exact Hwf | exact Htyeq ].
+      | exact H0 | | ].
+    { eapply ad_pat_consis_tyequiv_subject;
+        [ exact H1 | exact Hwf | exact Htyeq ]. }
+    { eapply ad_refine_pskl_tyequiv_uskl_subject;
+        [ exact Htyeq | exact Hwf | exact H2 ]. }
   - (* forall_r *)
-    eapply ad_pat_sub_g__forall_r with (L := L `union` dom Θ).
+    eapply ad_pat_sub_gv__forall_r with (L := L `union` dom Θ).
     intros α Hα.
     eapply (H0 α ltac:(clear - Hα; solve_notin_auto));
       [ apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]
       | apply a_uskl_tyequiv_weaken_cons; exact Htyeq ].
   - (* univ_ghost_r *)
-    apply ad_pat_sub_g__univ_ghost_r;
+    apply ad_pat_sub_gv__univ_ghost_r;
       [ exact H
       | eapply a_uskl_tyequiv_guarded;
           [ apply a_uskl_tyequiv_sym; exact Htyeq | exact H0 ]
-      | exact H1 | exact H2 | ].
-    eapply ad_pat_consis_tyequiv_subject;
-      [ exact H3 | exact Hwf | exact Htyeq ].
+      | exact H1 | exact H2 | | ].
+    { eapply ad_pat_consis_tyequiv_subject;
+        [ exact H3 | exact Hwf | exact Htyeq ]. }
+    { eapply ad_refine_pskl_tyequiv_uskl_subject;
+        [ exact Htyeq | exact Hwf | exact H4 ]. }
   - (* arrow *)
     inversion Htyeq; subst.
     + (* __mono : reconstitute the node and run the painting transport *)
       lazymatch goal with
       | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = uskl_arrow R1 R2
         |- _ =>
-        assert (Hrr : ad_pat_sub_g (S n) NM (mode_fn M) Ψ Θ
+        assert (Hrr : ad_pat_sub_gv (S n) NM (mode_fn M) Ψ Θ
                         (ptyp_to_uskl_syn t2) (bskl_arrow Q1 Q2))
-          by (rewrite He2; eapply ad_pat_sub_g__arrow; eassumption)
+          by (rewrite He2; eapply ad_pat_sub_gv__arrow; eassumption)
       end.
       lazymatch goal with
       | Hm1 : mono_ptyp ?t1, Ht : {{ Θ ⊢ ?t1 ≡ᵗ ?t2 }}a |- _ =>
-        destruct (@ad_pat_sub_g_paint_tyequiv_subject
+        destruct (@ad_pat_sub_gv_paint_tyequiv_subject
                     Θ t1 t2 Ht Hwf Θ Hm1 Hwf (fun x b Hb => Hb))
           as [_ d2]
       end.
       apply d2. exact Hrr.
     + (* __arrow *)
-      eapply ad_pat_sub_g__arrow;
+      eapply ad_pat_sub_gv__arrow;
         [ eapply ad_pat_consis_tyequiv_subject;
             [ exact H | exact Hwf | assumption ]
+        | eapply ad_refine_pskl_tyequiv_uskl_subject;
+            [ eassumption | exact Hwf | exact H0 ]
         | apply IHHD; [ exact Hwf | assumption ]
-        | exact H0 ].
+        | exact H1 ].
   - (* forall_l_tagged *)
     inversion Htyeq; subst;
       [ lazymatch goal with
@@ -1508,7 +1594,7 @@ Proof.
       by (apply is_tskl_lc; inversion H2; subst; assumption).
     lazymatch goal with
     | Hfam : forall α, α `notin` ?LL -> {{ _ ⊢ _ ≡ᵘ _ }}a |- _ =>
-      eapply ad_pat_sub_g__forall_l_tagged with (Ψ' := Ψ') (ψ := ψ);
+      eapply ad_pat_sub_gv__forall_l_tagged with (Ψ' := Ψ') (ψ := ψ);
         [ exact H | exact H0
         | clear - H1 Hft; fsetdec
         | exact H2 | exact H3
@@ -1528,7 +1614,7 @@ Proof.
       by (apply is_tskl_lc; inversion H2; subst; assumption).
     lazymatch goal with
     | Hfam : forall α, α `notin` ?LL -> {{ _ ⊢ _ ≡ᵘ _ }}a |- _ =>
-      eapply ad_pat_sub_g__forall_l_untagged with (Ψ' := Ψ') (ψ := ψ);
+      eapply ad_pat_sub_gv__forall_l_untagged with (Ψ' := Ψ') (ψ := ψ);
         [ exact H | exact H0
         | clear - H1 Hft; fsetdec
         | exact H2 | exact H3
@@ -1543,21 +1629,21 @@ Proof.
         | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = _ |- _ =>
             destruct Hm2; cbn in He2; discriminate He2
         end | ].
-    apply ad_pat_sub_g__ghost; [ exact H | exact H0 | exact H1 ].
+    apply ad_pat_sub_gv__ghost; [ exact H | exact H0 | exact H1 ].
   - (* ghostg *)
     inversion Htyeq; subst;
       [ lazymatch goal with
         | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = _ |- _ =>
             destruct Hm2; cbn in He2; discriminate He2
         end | ].
-    apply ad_pat_sub_g__ghostg; [ exact H | exact H0 ].
+    apply ad_pat_sub_gv__ghostg; [ exact H | exact H0 ].
   - (* univ_ghost_l *)
     inversion Htyeq; subst;
       [ lazymatch goal with
         | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = _ |- _ =>
             destruct Hm2; cbn in He2; discriminate He2
         end | ].
-    apply ad_pat_sub_g__univ_ghost_l; [ exact H | ].
+    apply ad_pat_sub_gv__univ_ghost_l; [ exact H | ].
     apply IHHD; [ exact Hwf | assumption ].
   - (* univ_ghost_lg *)
     inversion Htyeq; subst;
@@ -1565,7 +1651,7 @@ Proof.
         | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = _ |- _ =>
             destruct Hm2; cbn in He2; discriminate He2
         end | ].
-    apply ad_pat_sub_g__univ_ghost_lg; [ exact H | ].
+    apply ad_pat_sub_gv__univ_ghost_lg; [ exact H | ].
     apply IHHD; [ exact Hwf | assumption ].
   - (* flex_mono *)
     inversion Htyeq; subst.
@@ -1578,17 +1664,17 @@ Proof.
       lazymatch goal with
       | He2 : uskl_var_f _ = uskl_var_f α |- _ => injection He2 as ->
       end.
-      assert (Hrr : ad_pat_sub_g n NM (mode_fn M) Ψ Θ
+      assert (Hrr : ad_pat_sub_gv n NM (mode_fn M) Ψ Θ
                       (ptyp_to_uskl_syn (ptyp_var_f α)) Q)
         by (change (ptyp_to_uskl_syn (ptyp_var_f α)) with (uskl_var_f α);
-            eapply ad_pat_sub_g__flex_mono; [ exact H | exact HD ]).
+            eapply ad_pat_sub_gv__flex_mono; [ exact H | exact HD ]).
       lazymatch goal with
       | Hm1 : mono_ptyp ?t1, Ht : {{ Θ ⊢ ?t1 ≡ᵗ ptyp_var_f α }}a |- _ =>
-        destruct (@ad_pat_sub_g_paint_tyequiv_subject
+        destruct (@ad_pat_sub_gv_paint_tyequiv_subject
                     Θ t1 (ptyp_var_f α) Ht Hwf Θ Hm1 Hwf (fun x b Hb => Hb))
           as [_ d2]
       end.
       apply d2. exact Hrr.
     + (* __var *)
-      eapply ad_pat_sub_g__flex_mono; [ exact H | exact HD ].
+      eapply ad_pat_sub_gv__flex_mono; [ exact H | exact HD ].
 Qed.

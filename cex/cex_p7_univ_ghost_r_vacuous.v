@@ -106,19 +106,6 @@ Qed.
 Definition cex_R : uskl := uskl_unit.
 Definition cex_Q : bskl := bskl_tophole bskl_unit.
 
-(** (a) the JOIN condition — the declarative Sub-UnivGhostR derivation *)
-Lemma cex_join :
-  ad_pat_sub_g 0 a_sub_mode_sk mode_tc empty nil
-    (msubst_uskl_syn nil cex_R) cex_Q.
-Proof.
-  cbn. apply ad_pat_sub_g__univ_ghost_r.
-  - reflexivity.
-  - apply guarded_uskl__unit.
-  - apply guarded_bskl__unit.
-  - apply is_sskl__unit.
-  - apply ad_pat_consis__unit; reflexivity.
-Qed.
-
 (** (b) the P0-FILL condition, at the [P0 = □] that [skmod[SK]{P0}{TC}]
     prescribes for this row *)
 Lemma cex_p0_fill :
@@ -149,8 +136,8 @@ Proof.
     [ cbn; apply guarded_uskl__unit | exact H ].
 Qed.
 
-(** (e) REPAIR CHECK (2026-07-30): under the repaired motive the LEAF-VALID
-    join IS derivable here — the leaf's refinement is [unit ⊳ unit] at the
+(** (a/e) THE JOIN, and the REPAIR CHECK (2026-07-30): under the repaired
+    motive the LEAF-VALID join IS derivable here — the leaf's refinement is [unit ⊳ unit] at the
     STRIPPED counterpart — so this configuration is now inside the theorem's
     coverage. *)
 Lemma cex_join_gv :

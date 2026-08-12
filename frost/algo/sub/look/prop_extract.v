@@ -1022,7 +1022,7 @@ Theorem a_extract_complete_gen :
   Ψsub [<=] ftag_in_uskl R' `union` Ψa ->
   Ψa [<=] Ψsub ->
   (* subject = (κR')[ψa/α], EXACTLY the paper's form *)
-  ad_pat_sub_g n NM M Ψsub Θ
+  ad_pat_sub_gv n NM M Ψsub Θ
     (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) Q ->
   {{ Θ ⨟ empty ⊢ₚₛ
     (uskl_to_pskl (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R'))) }}a ->
@@ -1267,7 +1267,7 @@ Corollary a_extract_complete :
      [paper-external wf side condition — docs/WF-SIDE-CONDITIONS.md] *)
   ftvar_in_uskl ψa [<=] dom Θ ->
   {{ Θ ⨟ empty ⊢ₚₛ ⌊ ψa ⌋ˢ }}a ->
-  ad_pat_sub_g n NM M Ψa Θ
+  ad_pat_sub_gv n NM M Ψa Θ
     (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) Q ->
   {{ Θ ⨟ empty ⊢ₚₛ
     (uskl_to_pskl (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R'))) }}a ->

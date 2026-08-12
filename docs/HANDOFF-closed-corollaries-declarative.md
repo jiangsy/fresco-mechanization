@@ -60,20 +60,25 @@ decl-in-algo twin finally agree.  Consequences:
   there), so `d_sub_to_ad` gains only the paper's usual external
   `d_wf_utyp Γ C`.
 
-⛔ **`ad_pat_sub_g` still exists.**  The measured cost of deleting it is in
-`PROGRESS.md` (2026-08-12): the look layer is NOT the obstacle — it only ever
-consumes `_g` — and every `_g`-concluding lemma already has a `_gv` twin
-EXCEPT the three `≡ᵘ`-subject reshapings in `algo/sub/prop_sub_msubst_equiv.v`
-that P7's ForallL rows use.  The one genuinely new obligation is
+✅ **`ad_pat_sub_g` IS DELETED** (2026-08-12, same day).  There are now exactly
+two: `ad_pat_sub` and `ad_pat_sub_gv` (= that + the fuel).
+`ad_pat_sub_gv_forget` went with it.  The look layer was NOT the obstacle — it
+only ever CONSUMES `_g` — and every `_g`-concluding lemma already had a `_gv`
+twin except the three `≡ᵘ`-subject reshapings P7's ForallL rows use.  Those
+needed one genuinely new fact, now proved in
+`algo/sub/prop_completeness_sub_precise.v`:
 
 ```coq
-Lemma ad_refine_pskl_tyequiv_source : forall Θ Δ P P' Pt,
-  {{ Θ ⊢ P ≡ˢ P' }}a -> {{ Θ ⨟ Δ ⊢ᵣₚ P' ⊳ Pt }}ad ->
-  {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Pt }}ad.
+Lemma ad_refine_pskl_tyequiv_source : forall Θ0 P P',
+  {{ Θ0 ⊢ P ≡ˢ P' }}a -> forall Θ Δ Pt,
+    (forall x b, binds x b Θ0 -> binds x b Θ) -> {{ ⊢ Θ }}a ->
+    ({{ Θ ⨟ Δ ⊢ᵣₚ P' ⊳ Pt }}ad -> {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Pt }}ad)
+    /\ ({{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Pt }}ad -> {{ Θ ⨟ Δ ⊢ᵣₚ P' ⊳ Pt }}ad).
 ```
 
-(`a_uskl_tyequiv_erase` already reduces `≡ᵘ` to `≡ˢ`.)  Nothing in the tree
-relates `a_pskl_tyequiv` to `ad_refine_pskl`; it looks true and is unproved.
+`a_uskl_tyequiv_erase` reduces `≡ᵘ` to `≡ˢ`, which is the sort the leaf datum
+is stated on, so no uskl-level refinement theory was needed.  Details and the
+one trap (`_gv__arrow`'s extra premise is not last) in `PROGRESS.md`.
 
 ## WHAT LANDED
 

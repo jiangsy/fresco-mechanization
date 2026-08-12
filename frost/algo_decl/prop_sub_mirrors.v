@@ -2,10 +2,14 @@
     monotonicity the ForallR case needs.
 
     [def_subtyping.v] DEFINES the paper's all-in-one subtyping box
-    [ad_pat_sub] and the three mech-internal mirrors the completeness proof
-    measures it by — [ad_pat_sub_g] (the FUEL discipline), [ad_pat_sub_gv]
-    (that plus the LEAF-VALID datum) and [ad_pat_sub_v] (the latter with the
-    fuel existentially closed).  This file proves the maps BETWEEN them.
+    [ad_pat_sub] and the two mech-internal mirrors the completeness proof
+    measures it by — [ad_pat_sub_gv] (that plus the FUEL) and [ad_pat_sub_v]
+    (the fuel existentially closed).  This file proves the maps BETWEEN them.
+
+    ⚙ There used to be a THIRD, [ad_pat_sub_g] — the fuel with the leaf datum
+    forgotten — because [ad_pat_sub] itself did not carry the paper's leaf
+    presupposition.  It does since 2026-08-12, so [_g] and its forgetful map
+    [ad_pat_sub_gv_forget] are gone.
 
     ⚙ WHY IT IS THIS EARLY, and not with the completeness files: the
     SOUNDNESS side has to CONCLUDE [_gv] ([ad_pat] / [ad_sd_typing] embed the
@@ -38,16 +42,8 @@ Set Implicit Arguments.
    transitive through `Require Import`, so a consumer needs it open too *)
 Open Scope frost_ad_scope.
 
-(** Forgetting the leaf data recovers the plain hygienic mirror. *)
-Lemma ad_pat_sub_gv_forget : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_gv n NM M Ψ Θ R Q ->
-  ad_pat_sub_g n NM M Ψ Θ R Q.
-Proof.
-  intros * H; induction H; eauto using ad_pat_sub_g.
-Qed.
-
 (* ===================================================================== *)
-(*  The three ERASURES + fuel monotonicity.                               *)
+(*  The two ERASURES + fuel monotonicity.                                 *)
 (*                                                                        *)
 (*  ⚙ [ad_pat_sub_of_gv] and [ad_pat_sub_gv_fuel_weaken] are HERE, not with *)
 (*  the completeness files: the SOUNDNESS side has to CONCLUDE [_gv]       *)
@@ -94,11 +90,9 @@ Qed.
     join IS a plain declarative subtyping derivation.
 
     ⚙ A DIRECT induction on [_gv] since 2026-08-12.  It used to factor through
-    [ad_pat_sub_g_of : _g -> ad_pat_sub] and then [ad_pat_sub_gv_forget], but
-    once [ad_pat_sub] itself carries the leaf presupposition that route is
-    FALSE — a plain [_g] has no leaf datum to hand over.  Only the leaf-valid
-    mirror can reach the plain relation now, which is the point of the
-    change. *)
+    [ad_pat_sub_g_of : _g -> ad_pat_sub] and then [ad_pat_sub_gv_forget], both
+    of which are gone: once [ad_pat_sub] itself carries the leaf
+    presupposition, the leaf-FORGETTING mirror cannot reach it at all. *)
 Lemma ad_pat_sub_of_gv : forall n NM M Ψ Θ R Q,
   ad_pat_sub_gv n NM M Ψ Θ R Q ->
   {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad.

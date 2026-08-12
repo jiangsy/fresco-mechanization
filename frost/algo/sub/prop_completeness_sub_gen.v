@@ -17,14 +17,15 @@
 
     THREE DECISIONS, and two of them CORRECT DESIGN §1 as written.
 
-    (1) THE FUEL JUDGMENT IS [ad_pat_sub_g].  §1's skeleton named a plain fuel
+    (1) THE FUEL JUDGMENT IS [ad_pat_sub_gv].  §1's skeleton named a plain fuel
         mirror [ad_pat_sub_n]; the development settled on the TAG-HYGIENIC one
         instead (def_subtyping.v), because precision-substitution
         — which the ForallL case applies to its premise to get the derivation it
         hands the IH — is FALSE over [_n] (the paper's "fresh Ψ'" means GLOBALLY
         fresh, and a plain mirror of [ad_pat_sub] renders it only as freshness
-        from the tag context, which does not survive the Arrow split).  P5's [ad_pat_sub_precise_upre] and
-        ALL FIVE P6 lemmas are stated over [_g], so P7 must be too.
+        from the tag context, which does not survive the Arrow split).  P5's
+        [ad_pat_sub_precise_upre_gv] and ALL FIVE P6 lemmas are stated over
+        [_gv], so P7 must be too.
 
     (2) THE CONCLUSION KEEPS [a_consis_complete]'s FACTORED SHAPE — the
         [forall κ1, is_id_msubst κ1 → … → exists ζ] wrapper — rather than the
@@ -138,8 +139,12 @@ Qed.
     The repair moves the condition INTO THE JOIN, at the consistency leaves
     where it is consumed: the join is now the LEAF-VALID mirror
     [ad_pat_sub_gv] (def_subtyping.v), and there is no third root
-    premise.  [ad_pat_sub_gv_forget] recovers the plain [_g] mirror for
-    every P5/P6 invocation.
+    premise.  ⚙ Until 2026-08-12 a SECOND mirror [ad_pat_sub_g] — the same
+    fuel with the leaf data forgotten — carried every P5/P6 invocation, and
+    [ad_pat_sub_gv_forget] weakened the join into it.  Both are gone: the
+    leaf data survive each of P5's transports and P7's own ≡ᵘ reshapings
+    ([ad_refine_pskl_tyequiv_source], prop_completeness_sub_precise.v), so
+    there is exactly one fuel mirror.
 
     THE ≡ᵘ SLACK (2026-07-31).  The join is carried at an arbitrary subject
     [R'] with [{{ Θ ⊢ R' ≡ᵘ κR }}a] rather than at [κR] itself.  Sub-Arrow (and later
@@ -374,8 +379,8 @@ Qed.
     is an inherited painting on the rule) can fire: [__univ_ghost_r] wants
     [guarded_uskl ◇], and every other row wants another subject shape or
     [N = TY]. *)
-Lemma ad_pat_sub_g_hole_target_inh : forall n M Ψ Θ Q,
-  ad_pat_sub_g n a_sub_mode_sk M Ψ Θ uskl_hole Q ->
+Lemma ad_pat_sub_gv_hole_target_inh : forall n M Ψ Θ Q,
+  ad_pat_sub_gv n a_sub_mode_sk M Ψ Θ uskl_hole Q ->
   pskl_to_bskl_inh (bskl_to_pskl Q) = Q.
 Proof.
   intros n M Ψ Θ Q H; inversion H; subst.
@@ -411,13 +416,12 @@ Proof.
   subst R'.
   (* a ghost is ≡ᵘ-inert, so the κ-image is the hole as well *)
   pose proof (a_uskl_tyequiv_hole_l_inv Hrel) as Hsubj.
-  apply ad_pat_sub_gv_forget in Hsub.
   (* the subject is the hole, so the algorithm's input is [□] *)
   pose proof (msubst_uskl_syn_hole_inv κ R Hsubj) as HR; subst R.
   cbn in HeqP; subst P.
   (* the counterpart is an inherited painting — read off the derivation *)
   assert (HQ : pskl_to_bskl_inh (bskl_to_pskl Q) = Q)
-    by (eapply ad_pat_sub_g_hole_target_inh; exact Hsub).
+    by (eapply ad_pat_sub_gv_hole_target_inh; exact Hsub).
   (* the run: [Ghost], which returns the input skeleton unchanged *)
   exists P0, Θ0. split; [ apply a_sub__ghost | ].
   intros κ1 Hid Hinc1. exists κ.
@@ -453,8 +457,8 @@ Lemma ad_pat_consis_holeg_target_inh : forall Ψ Θ Q,
   pskl_to_bskl_inh (bskl_to_pskl Q) = Q.
 Proof. intros Ψ Θ Q H; inversion H; subst; reflexivity. Qed.
 
-Lemma ad_pat_sub_g_holeg_target_inh : forall n M Ψ Θ Q,
-  ad_pat_sub_g n a_sub_mode_sk M Ψ Θ uskl_holeg Q ->
+Lemma ad_pat_sub_gv_holeg_target_inh : forall n M Ψ Θ Q,
+  ad_pat_sub_gv n a_sub_mode_sk M Ψ Θ uskl_holeg Q ->
   pskl_to_bskl_inh (bskl_to_pskl Q) = Q.
 Proof.
   intros n M Ψ Θ Q H; inversion H; subst.
@@ -473,11 +477,10 @@ Proof.
   intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ Hgf.
   subst R'.
   pose proof (a_uskl_tyequiv_holeg_l_inv Hrel) as Hsubj.
-  apply ad_pat_sub_gv_forget in Hsub.
   pose proof (msubst_uskl_syn_holeg_inv κ R Hsubj) as HR; subst R.
   cbn in HeqP; subst P.
   assert (HQ : pskl_to_bskl_inh (bskl_to_pskl Q) = Q)
-    by (eapply ad_pat_sub_g_holeg_target_inh; exact Hsub).
+    by (eapply ad_pat_sub_gv_holeg_target_inh; exact Hsub).
   exists P0, Θ0. split; [ apply a_sub__ghost | ].
   intros κ1 Hid Hinc1. exists κ.
   destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
@@ -1133,12 +1136,12 @@ Qed.
     interesting node is a variable, where both sides are the image's
     [ptyp_to_pskl]. *)
 
-(** At [M = TI] every admissible row of [ad_pat_sub_g] carries a TAG-FREE
+(** At [M = TI] every admissible row of [ad_pat_sub_gv] carries a TAG-FREE
     consistency between the same two skeletons: [__infer] has it on the rule,
     and [__ghost] / [__ghostg] rebuild it from theirs.  Every other row is
     excluded by its mode ([M <> TI], [mode_tc], or [mode_fn M]). *)
-Lemma ad_pat_sub_g_ti_consis : forall n NM Ψ Θ R Q,
-  ad_pat_sub_g n NM mode_ti Ψ Θ R Q ->
+Lemma ad_pat_sub_gv_ti_consis : forall n NM Ψ Θ R Q,
+  ad_pat_sub_gv n NM mode_ti Ψ Θ R Q ->
   {{ empty ⨟ Θ ⊢ˢ R ∼ Q }}ad.
 Proof.
   intros n NM Ψ Θ R Q H; inversion H; subst; try congruence;
@@ -1183,7 +1186,7 @@ Proof.
   change ({{ Θ ⨟ empty ⊢ₚᵣ (msubst_pskl κ P) ⊑ (bskl_to_pskl Q) }}ad).
   (* the DECORATED premise undecorates, then the slack moves it to κP *)
   pose proof (ad_pat_consis_strip_tags
-                (ad_pat_sub_g_ti_consis (ad_pat_sub_gv_forget Hsub))) as Hc0.
+                (ad_pat_sub_gv_ti_consis Hsub)) as Hc0.
   destruct (skl_tyequiv_consis_transport Herase Hwfth
               (fun x b Hb => Hb)) as [Hct _].
   pose proof (Hct _ _ Hc0) as Hc.
@@ -2415,7 +2418,7 @@ Qed.
 (*  [sub_shield] gate and the paper's WLOG (H3: when [P0] is a ∀ the      *)
 (*  bundle dispatches ForallR first).  Assembly per the paper:            *)
 (*  slack-erase the join at the exact κ-image subject                     *)
-(*  ([ad_pat_sub_g_tyequiv_subject] on the inverted body ≡ᵘ family);      *)
+(*  ([ad_pat_sub_gv_tyequiv_subject] on the inverted body ≡ᵘ family);      *)
 (*  P6-L at ambient [Ψ ∪ Ψa] returns the extract + [κa];                  *)
 (*  [uskl_precise_of_precise] + [uskl_precise_open_into] build the ⊑ᵤ     *)
 (*  pair and [ad_pat_sub_precise_upre_gv] swaps the ORIGINAL join's       *)
@@ -2495,7 +2498,7 @@ Proof.
   { eapply a_uskl_tyequiv_open with (L := Le);
       [ intros β Hβ; exact (a_uskl_tyequiv_sym (Hrelb β Hβ))
       | exact Hlcψa ]. }
-  assert (Hsubty : ad_pat_sub_g n NM M (Ψ `union` Ψa) Θ
+  assert (Hsubty : ad_pat_sub_gv n NM M (Ψ `union` Ψa) Θ
                      (subst_uskl_in_uskl ψa α
                         (msubst_uskl_syn κ
                            (open_uskl_wrt_uskl Rb (uskl_var_f α)))) Q).
@@ -2503,8 +2506,8 @@ Proof.
                (α := α) ltac:(clear - Fr; solve_notin_auto)).
     rewrite <- (subst_uskl_in_uskl_intro α (msubst_uskl_syn κ Rb) ψa
                   ltac:(clear - Fr; solve_notin_auto)).
-    eapply ad_pat_sub_g_tyequiv_subject;
-      [ apply ad_pat_sub_gv_forget; exact HD | exact Hwfth
+    eapply ad_pat_sub_gv_tyequiv_subject;
+      [ exact HD | exact Hwfth
       | exact Hbody_eq ]. }
   assert (HwfSubj : {{ Θ ⨟ empty ⊢ₚₛ
             (uskl_to_pskl
@@ -2545,8 +2548,7 @@ Proof.
                     clear - Hdψ; solve_notin_auto)
               Hwfψa
               ltac:(intros β α0 τ Hβ; exfalso; clear - Hβ; solve_notin_auto)
-              ltac:(pose proof (ad_pat_sub_g_ftag_sub
-                                  (ad_pat_sub_gv_forget HD)) as Hfs;
+              ltac:(pose proof (ad_pat_sub_gv_ftag_sub HD) as Hfs;
                     pose proof (ftag_in_uskl_open_upper Rj ψa) as Hou;
                     pose proof (d_tags_skl_ftag Hdtags) as Htg;
                     rewrite (ftag_in_uskl_open_var Rb α);
@@ -2804,7 +2806,7 @@ Proof.
   { eapply a_uskl_tyequiv_open with (L := Le);
       [ intros β Hβ; exact (a_uskl_tyequiv_sym (Hrelb β Hβ))
       | exact Hlcψa ]. }
-  assert (Hsubty : ad_pat_sub_g n NM M (Ψ `union` Ψa) Θ
+  assert (Hsubty : ad_pat_sub_gv n NM M (Ψ `union` Ψa) Θ
                      (subst_uskl_in_uskl ψa α
                         (msubst_uskl_syn κ
                            (open_uskl_wrt_uskl Rb (uskl_var_f α)))) Q).
@@ -2812,8 +2814,8 @@ Proof.
                (α := α) ltac:(clear - Fr; solve_notin_auto)).
     rewrite <- (subst_uskl_in_uskl_intro α (msubst_uskl_syn κ Rb) ψa
                   ltac:(clear - Fr; solve_notin_auto)).
-    eapply ad_pat_sub_g_tyequiv_subject;
-      [ apply ad_pat_sub_gv_forget; exact HD | exact Hwfth
+    eapply ad_pat_sub_gv_tyequiv_subject;
+      [ exact HD | exact Hwfth
       | exact Hbody_eq ]. }
   assert (HwfSubj : {{ Θ ⨟ empty ⊢ₚₛ
             (uskl_to_pskl
@@ -2854,8 +2856,7 @@ Proof.
                     clear - Hdψ; solve_notin_auto)
               Hwfψa
               ltac:(intros β α0 τ Hβ; exfalso; clear - Hβ; solve_notin_auto)
-              ltac:(pose proof (ad_pat_sub_g_ftag_sub
-                                  (ad_pat_sub_gv_forget HD)) as Hfs;
+              ltac:(pose proof (ad_pat_sub_gv_ftag_sub HD) as Hfs;
                     pose proof (ftag_in_uskl_open_upper Rj ψa) as Hou;
                     pose proof (d_tags_skl_ftag Hdtags) as Htg;
                     rewrite (ftag_in_uskl_open_var Rb α);

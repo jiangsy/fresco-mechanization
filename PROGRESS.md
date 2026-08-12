@@ -238,7 +238,98 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-12 (latest) — ⭐⭐ **THE LEAF PRESUPPOSITION GOES ON `ad_pat_sub` ITSELF, and `ad_pat_sub_g_of` DIES**
+## 2026-08-12 (latest) — ⭐⭐ **`ad_pat_sub_g` IS DELETED: two relations where there were three**
+
+**`make coq` exit 0; README.v 28/28 `Print Assumptions` closed; no `Admitted`,
+no `Axiom`.**  −1505 / +539 lines.
+
+With the leaf presupposition on `ad_pat_sub` itself (previous entry), the
+third relation had nothing left to be: `ad_pat_sub_g` was `ad_pat_sub` + fuel
+− leaf datum, and every one of its ~20 lemmas duplicated a `_gv` twin.  Gone,
+together with `ad_pat_sub_gv_forget`.  What remains is exactly two:
+`ad_pat_sub` (paper-faithful `Inductive`, WITH the datum) and
+`ad_pat_sub_gv` (that + the completeness measure's fuel).
+
+**⭐ THE ONE GENUINELY NEW OBLIGATION — and it is not where it was expected.**
+The plan predicted ~10 look-layer lemmas that CONSTRUCT `_g` and would have to
+supply the leaf datum.  **The look layer never constructs `_g`.**  Every `_g`
+in `look/prop_sub_var.v`, `look/prop_sub_cstr.v`, `look/prop_extract.v` is a
+HYPOTHESIS — the declarative join being simulated — and every conclusion is an
+algorithmic `a_looksub` / `a_solve_sub` / `a_extract` fact; every call site
+already held a `_gv` and called `ad_pat_sub_gv_forget` to weaken it, so those
+migrations were a rename and a deletion.
+
+The obstacle was one level up: P7's two ForallL rows
+(`prop_completeness_sub_gen.v`) reshape the join's SUBJECT along `≡ᵘ` before
+handing it to the look layer, and the reshaped subject's leaf data cannot be
+read off the original's.  So refinement had to be shown stable under the
+equational theory on its SOURCE — a fact the tree did not have in any form
+(nothing related `a_pskl_tyequiv` to `ad_refine_pskl`):
+
+```coq
+Lemma ad_refine_pskl_tyequiv_source : forall Θ0 P P',
+  {{ Θ0 ⊢ P ≡ˢ P' }}a -> forall Θ Δ Pt,
+    (forall x b, binds x b Θ0 -> binds x b Θ) -> {{ ⊢ Θ }}a ->
+    ({{ Θ ⨟ Δ ⊢ᵣₚ P' ⊳ Pt }}ad -> {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Pt }}ad)
+    /\ ({{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Pt }}ad -> {{ Θ ⨟ Δ ⊢ᵣₚ P' ⊳ Pt }}ad).
+```
+
+⭐ It costs ~140 lines, and three things make it cheap:
+
+- **`a_uskl_tyequiv_erase` does the sort work.**  The datum is stated on the
+  ERASURE `⌊R⌋ˢ`, and `≡ᵘ` projects onto the `pskl`-level `≡ˢ` — so no
+  uskl-level refinement theory is needed at all.
+- **`≡ˢ`'s `__sym` forces a BICONDITIONAL motive**, and `__trans` then
+  composes.  Only four rows generate: `__flex_def` is
+  `ad_refine_pskl__flex_l` one way and the existing
+  `ad_refine_pskl_unfold_def_subject` the other.
+- **Each congruence row is an induction on the REFINEMENT, not on the
+  equivalence** (`refine_source_{arrow,all,tophole}`): the row that consumes
+  the source is unique, and the only other reachable row is `__flex_r`, which
+  does not touch the source and is simply peeled and rebuilt.
+  ⚠️ `ad_refine_pskl__tophole_fill` runs its premise at `(α ~ tvar) ++ Θ`,
+  which is why the statement is generalized over context EXTENSIONS and why
+  the tophole helper alone needs `{{ ⊢ Θ }}a` — to rebuild the row at
+  `L ∪ dom Θ` and keep the extended context well-formed.
+
+**The rest was mechanical**, in this order (each step compiling on its own):
+
+1. `ad_refine_pskl_tyequiv_source` + its three helpers into
+   `prop_completeness_sub_precise.v`, beside
+   `ad_refine_pskl_unfold_def_subject`.
+2. Two wrappers in `prop_sub_msubst_equiv.v` —
+   `ad_refine_pskl_tyequiv_uskl_subject` (via the erasure) and
+   `ad_refine_pskl_paint_transport` (the ⊳-mirror of
+   `ad_pat_consis_paint_skl_transport`, via `a_tyequiv_pskl`) — then its three
+   `≡ᵘ`-layer lemmas converted to `_gv`.
+3. `prop_completeness_sub_precise.v`: the 15 twinned `_g` lemmas deleted
+   (−1097 lines); `_g_ftag_sub` / `_g_concrete_target` renamed to `_gv`.
+4. The look layer, `prop_completeness_sub_gen.v` and `cex/`: renamed, and the
+   `ad_pat_sub_gv_forget` calls dropped.
+5. The `_g` `Inductive` and `ad_pat_sub_gv_forget` deleted.
+
+⚠️ **THE ONE TRAP, and it bites in three files**: `_gv__arrow` carries the
+DOMAIN's leaf refinement BETWEEN the consistency premise and the recursive
+one, so it is the single row where the extra premise is not last — every
+positional `H0` naming the tag equation `Ψ [=] Ψ1 ∪ Ψ2` in an arrow row
+shifts to `H1` (`ad_pat_sub_gv_ftag_sub`, `_gv_concrete_target`,
+`a_looksub_solve_complete_gen`).  The LEAF rows are safe: there the new
+premise comes last, so `H`…`H3` keep their meanings.
+
+⚙ `cex/` needed the datum at two witnesses and it was free at both: the
+configurations `∀ᵗᵃᵍε.#0 ⩽ β` (`cex_p6ss_sub_target_ftv.v`,
+`cex_p7_sub_monoish.v`) instantiate the ∀ with the rigid `β` itself, so the
+leaf refinement is `β ⊳ β` — `ad_refine_pskl__var`.  The other two cex files
+already carried `_gv` twins of their `_g` witnesses, so those `_g` witnesses
+were simply dropped.  ⚠️ `right. simpl; auto` does NOT close
+`a_binds_tvar β Θ` (a three-way disjunction), and **`auto` does not fail when
+it leaves the goal open** — the error surfaces only at `Qed` as "Attempt to
+save an incomplete proof".  Use `right; unfold a_binds_tvar; eauto`.
+
+README.v's P5 entry now `Check`s `ad_pat_sub_precise_upre_gv`.
+
+
+## 2026-08-12 — ⭐⭐ **THE LEAF PRESUPPOSITION GOES ON `ad_pat_sub` ITSELF, and `ad_pat_sub_g_of` DIES**
 
 **`make coq` exit 0; README.v 28/28 `Print Assumptions` closed; no `Admitted`,
 no `Axiom`.**
@@ -289,53 +380,6 @@ bridge had to detour through the mirror.  The premise is now on
   it.  ⚠️ In that file bare `guarded_pskl_subst` resolves to
   `prop_looksub.v`'s homonym (it has an extra disequality premise); the one
   wanted is `guarded_pskl_subst_var`.
-
-**⛔ `ad_pat_sub_g` IS NOT DELETED, and the hand-off's estimate of what that
-costs was wrong.**  See the next section.
-
-### What deleting `ad_pat_sub_g` actually costs (measured 2026-08-12, NOT attempted)
-
-The hand-off expected the migration to be ~10 look-layer lemmas that
-CONSTRUCT `_g` and would have to supply the leaf datum.  **The look layer
-never constructs `_g`.**  Every `_g` in `look/prop_sub_var.v`,
-`look/prop_sub_cstr.v` and `look/prop_extract.v` is a HYPOTHESIS — the
-declarative join being simulated — and every conclusion is an algorithmic
-`a_looksub` / `a_solve_sub` / `a_extract` fact.  Switching those hypotheses to
-`_gv` is free at the call sites too: every one of them already holds a `_gv`
-and calls `ad_pat_sub_gv_forget` to weaken it.
-
-The real cost is one level up, and it is:
-
-1. **~6 hypothesis-only facts re-proved by induction on `_gv`** (ignoring the
-   extra leaf premise): `ad_pat_sub_g_ftag_sub`, `_ty_tc_subject`,
-   `_hole_target_inh`, `_holeg_target_inh`, `_ti_consis`, `_concrete_target`.
-   Mechanical.
-2. **The `_g`-CONCLUDING lemmas already all have `_gv` twins** — the eight P5
-   row transports, `_refl_transport`, `_hole_intro`, `_wrap_tophole`,
-   `_fold_flex`, `_psi_cong`, and the flagship `ad_pat_sub_precise_upre`
-   (`prop_completeness_sub_precise.v` lines 1548-2522).  They just get deleted.
-3. **⭐ EXCEPT THREE, all in `algo/sub/prop_sub_msubst_equiv.v`**:
-   `ad_pat_sub_g_tyequiv_subject`, `_paint_tyequiv_subject`, `_unfold_flex`.
-   P7's two ForallL rows (`prop_completeness_sub_gen.v:2498`, `:2807`) reshape
-   the join's subject along `≡ᵘ` before handing it to the look layer, and that
-   reshaping is what has no leaf-valid twin.
-
-So the ONE genuinely new proof obligation is the refinement-side counterpart
-of `ad_pat_consis_tyequiv_subject`, and `a_uskl_tyequiv_erase` already reduces
-it from `≡ᵘ` to the `pskl`-level `≡ˢ`:
-
-```coq
-Lemma ad_refine_pskl_tyequiv_source : forall Θ Δ P P' Pt,
-  {{ Θ ⊢ P ≡ˢ P' }}a ->
-  {{ Θ ⨟ Δ ⊢ᵣₚ P' ⊳ Pt }}ad ->
-  {{ Θ ⨟ Δ ⊢ᵣₚ P  ⊳ Pt }}ad.
-```
-
-No lemma in the tree relates `a_pskl_tyequiv` to `ad_refine_pskl` at all.  It
-looks TRUE — `≡ˢ` is congruence plus mono-painting equality, refinement has
-the `__flex_l` row and `ad_refine_pskl_unfold_def_subject` already does the
-flexible-definition half — but it is unproved, so `_g` stays for now and the
-`_g`/`_gv` split is load-bearing until it lands.
 
 ## 2026-08-11 — ⚙ **`etag` → `tag`; `prop_decorate.v` DELETED into `prop_coercions.v`**
 
