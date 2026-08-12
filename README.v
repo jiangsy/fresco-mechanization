@@ -356,7 +356,6 @@ Check a_typing_complete :
     a_ty_mode_compat M P0 ->
     κ ∷ Θ0 ⊑ Θ ->
     (forall α, α `in` ftvar_in_exp e -> binds α abind_tvar Θ0) ->
-    lc_exp e ->
     {{ Θ ⊢ˢᵈ[ M ] e ⦂ B }}ad ->
     {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (btyp_to_bskl B) }}ad ->
     exists A1 Θ1,

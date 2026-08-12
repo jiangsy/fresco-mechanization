@@ -4396,16 +4396,18 @@ Qed.
 
     Hypotheses beyond the paper's statement are the same
     WF-SIDE-CONDITIONS.md externals theorem 3 carries: well-formedness of
-    the two contexts and the input skeleton, mode compatibility, [lc], and
-    the term side condition — an annotation is SOURCE syntax, so its type
-    variables are RIGID. *)
+    the two contexts and the input skeleton, mode compatibility, and the term
+    side condition — an annotation is SOURCE syntax, so its type variables are
+    RIGID.  ⚙ NOT [lc_exp e]: unlike theorem 3, this one has an [ad_sd_typing]
+    premise, and that judgement exhibits its own subject as well formed.  The
+    [a_pat] analogue does NOT hold — [ad_pat__anno] has no premise about its
+    subterm at all — so [a_pat_complete] keeps its [lc]. *)
 Theorem a_typing_complete : forall e M Θ0 P0 κ Θ B,
   {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat M P0 ->
   κ ∷ Θ0 ⊑ Θ ->
   (forall α, α `in` ftvar_in_exp e -> binds α abind_tvar Θ0) ->
-  lc_exp e ->
   {{ Θ ⊢ˢᵈ[ M ] e ⦂ B }}ad ->
   {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (btyp_to_bskl B) }}ad ->
   exists A1 Θ1,
@@ -4416,7 +4418,11 @@ Theorem a_typing_complete : forall e M Θ0 P0 κ Θ B,
          a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ /\
          {{ Θ ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B) }}a).
 Proof.
-  intros e M Θ0 P0 κ Θ B Hwf0 HwfΘ HwfP0 Hmod Hinc Hrig Hlc Had Href.
+  intros e M Θ0 P0 κ Θ B Hwf0 HwfΘ HwfP0 Hmod Hinc Hrig Had Href.
+  (* [lc_exp e] is NOT a hypothesis: a derivation exhibits its own subject as a
+     well-formed term ([ad_sd_typing_wf_exp], prop_soundness_typing.v §12h), and
+     a well-formed term is locally closed. *)
+  pose proof (a_wf_exp_lc (ad_sd_typing_wf_exp Had)) as Hlc.
   eapply a_typing_complete_gen
     with (n := S (size_exp e)) (m := S (size_btyp B));
     try eassumption;

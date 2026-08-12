@@ -205,7 +205,6 @@ Lemma a_typing_complete_nil : forall m P0 e (B : btyp),
 Proof.
   intros m P0 e B HwfP0 Hmod Hd Href.
   pose proof (ad_sd_typing_wf_exp Hd) as Hexp.
-  pose proof (a_wf_exp_lc Hexp) as Hlc.
   pose proof (a_wf_exp_ftv_dom Hexp) as Hftv. simpl in Hftv.
   assert (Hrig : forall α, α `in` ftvar_in_exp e -> binds α abind_tvar nil)
     by (intros α Hα; exfalso; clear - Hα Hftv; fsetdec).
@@ -213,7 +212,7 @@ Proof.
     by (apply a_inc__empty; apply a_suffix__nil).
   rewrite <- (msubst_pskl_nil P0) in Href.
   destruct (a_typing_complete a_wf_aenv__nil a_wf_aenv__nil HwfP0 Hmod
-              Hinc Hrig Hlc Hd Href) as [A1 [Θ1 [Hrun Hopt]]].
+              Hinc Hrig Hd Href) as [A1 [Θ1 [Hrun Hopt]]].
   exists A1, Θ1. split; [ exact Hrun | ].
   destruct (a_typing_sound Hrun a_wf_aenv__nil HwfP0 Hmod Hexp)
     as [[[κ1 [Hid1 Hinc1]] _] _].

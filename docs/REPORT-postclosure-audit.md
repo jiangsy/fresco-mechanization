@@ -50,7 +50,12 @@ Steps 2 and 3 of the suggested order below, plus the README indexing:
   `docs/REPORT-remech-*.md` keep the old names on purpose — they are dated
   records with line-number citations, not current pointers.
 
-Not yet done: §1.1/§1.2 — see the ⚠️ RE-SCOPE note under §1.1 below — and §1.9.
+- **§1.9** — `lc_exp e` is gone from `a_typing_complete` (statement and
+  `README.v` entry): it follows from the theorem's own `ad_sd_typing` premise
+  via `ad_sd_typing_wf_exp` + `a_wf_exp_lc`, which `prop_closed.v` was already
+  computing by hand at the call site.
+
+Not yet done: §1.1/§1.2 only — see the ⚠️ RE-SCOPE note under §1.1 below.
 
 ---
 
