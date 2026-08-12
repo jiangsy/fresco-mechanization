@@ -438,7 +438,7 @@ Proof.
   intros κ R α Hdom Hin.
   rewrite <- (ftvar_in_pskl_uskl_to_pskl (msubst_uskl_syn κ R)).
   rewrite uskl_to_pskl_msubst_uskl_syn.
-  apply msubst_pskl_ftv_notin_dom; [ exact Hdom | ].
+  apply msubst_pskl_ftv_keep; [ exact Hdom | ].
   rewrite ftvar_in_pskl_uskl_to_pskl; exact Hin.
 Qed.
 
@@ -1094,7 +1094,7 @@ Proof.
       | ].
     eapply IHad_partial_precise;
       [ reflexivity | exact Hdefs | exact HfrP
-      | rewrite ftvar_in_uskl_ptyp_to_uskl_syn;
+      | rewrite ftvar_ptyp_to_uskl_syn;
         pose proof (Hdefs α τ ltac:(eassumption)) as Hfrτ;
         clear - Hfrτ; fsetdec ].
 Qed.
@@ -1298,7 +1298,7 @@ Proof.
   - (* flex_l : the subject is a defined variable — recurse on its monotype *)
     assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
     specialize (IHad_pat_consis HwfΘ (mono_ptyp_to_uskl_syn_is_tskl Hmτ)).
-    rewrite ftvar_in_uskl_ptyp_to_uskl_syn in IHad_pat_consis.
+    rewrite ftvar_ptyp_to_uskl_syn in IHad_pat_consis.
     pose proof (@def_ftv_binds _ _ _ H) as Hdb.
     clear - IHad_pat_consis Hdb; fsetdec.
   - (* flex_r : the target IS a defined variable *)
@@ -1340,7 +1340,7 @@ Proof.
     pose proof (@def_ftv_binds _ _ _ H) as Hdb. clear - Hdb; fsetdec.
   - (* flex_r : recurse through the definition *)
     specialize (IHad_refine_syn HwfΘ).
-    rewrite ftvar_in_bskl_ptyp_syn in IHad_refine_syn.
+    rewrite ftvar_ptyp_to_bskl_syn in IHad_refine_syn.
     pose proof (@def_ftv_binds _ _ _ H) as Hdb.
     clear - IHad_refine_syn Hdb; fsetdec.
 Qed.
@@ -2126,7 +2126,7 @@ Proof.
         { eapply a_wf_ptyp_mono_strengthen_dom;
             [ exact HwfΘ | exact Hmon | exact Hτψmono | exact Hτψwf | ].
           rewrite Heqψ in Hψaw.
-          rewrite ftvar_in_uskl_ptyp_to_uskl_syn in Hψaw. exact Hψaw. }
+          rewrite ftvar_ptyp_to_uskl_syn in Hψaw. exact Hψaw. }
         (* ⭐⭐ THE WITNESS, shared by every NONGHOST subject shape.  Under the
            repair SE-FlexR returns [guess^TY(Pi)], not the flexible, so this
            node is EXACTLY P6-Cv's SE-FlexR node: the target is the mono paint
@@ -2385,12 +2385,12 @@ Proof.
         (* keys ρc = keys Ξc : auto-closed by [repeat split] (eq_refl) *)
         -- (* ρc images come from ψa : here ψa IS the paint of τψ *)
            apply Forall_cons; [ | apply Forall_nil ].
-           simpl. rewrite Heqψ. rewrite ftvar_in_uskl_ptyp_to_uskl_syn.
+           simpl. rewrite Heqψ. rewrite ftvar_ptyp_to_uskl_syn.
            clear; fsetdec.
         -- (* …and ψa is Δρ-clean at a flexible P0 *)
            apply Forall_cons; [ | apply Forall_nil ].
            simpl. rewrite Heqψ in Hclean.
-           rewrite ftvar_in_uskl_ptyp_to_uskl_syn in Hclean.
+           rewrite ftvar_ptyp_to_uskl_syn in Hclean.
            clear - Hclean; fsetdec.
         -- (* ftv 𝒞 : the only constraint is [eq α1], and α1 ∈ dom Ξc *)
            simpl; clear; fsetdec.
@@ -2966,7 +2966,7 @@ Proof.
         repeat split; try assumption.
         apply a_lookeq__univ_ghost_r;
           [ exact HPnα
-          | apply guarded_pskl__arrow; apply lc_uskl_to_pskl_local; assumption
+          | apply guarded_pskl__arrow; apply lc_uskl_to_pskl; assumption
           | exact HLK ].
   (* ---------------------------------------------------------------- *)
   (* The two ∀ cases (paper Cases C-ForallInh / C-ForallSyn) need the   *)
@@ -4511,7 +4511,7 @@ Proof.
               ψa itself, which may be a ∀ or a ∀◈.] *)
            exfalso.
            pose proof (guarded_uskl_head
-                         (@guarded_uskl_of_pskl
+                         (@guarded_uskl_of_uskl_to_pskl
                             (Rsub0) HgSub0))
              as Hghsub.
            match goal with
@@ -4569,7 +4569,7 @@ Proof.
         exfalso.
         inversion Hconsis; subst.
         pose proof (guarded_uskl_head
-                      (@guarded_uskl_of_pskl
+                      (@guarded_uskl_of_uskl_to_pskl
                          (Rsub0) HgSub0))
           as Hghsub.
         match goal with
@@ -4608,7 +4608,7 @@ Proof.
         -- (* C-UnivGhost2 : impossible against a ∀◇ target *)
            exfalso.
            pose proof (guarded_uskl_head
-                         (@guarded_uskl_of_pskl
+                         (@guarded_uskl_of_uskl_to_pskl
                             (Rsub0) HgSub0))
              as Hghsub.
            match goal with

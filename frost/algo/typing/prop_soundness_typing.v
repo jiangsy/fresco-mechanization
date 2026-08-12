@@ -656,27 +656,6 @@ Proof.
   apply degree_bskl_wrt_bskl_of_lc_bskl; exact H.
 Qed.
 
-(** ⭐ Bridge 1 (INFER mode): a [btyp] whose skeleton is SYNTHESISED is
-    itself all-synthesised.  No local closure needed — [is_sskl] carries
-    it, and its [hole] / [tophole] rows are unreachable because a [btyp]
-    has no ghost. *)
-Lemma is_styp_of_is_sskl_erase : forall Q,
-  is_sskl Q -> forall B0, Q = btyp_to_bskl B0 -> is_styp B0.
-Proof.
-  (* [B0], not [B]: [is_sskl__arrow]'s own binders are [A] and [B]. *)
-  intros Q H; induction H; intros B0 Heq;
-    destruct B0; simpl in Heq; try discriminate.
-  - (* unit *) apply is_styp__unit.
-  - (* var *) inversion Heq; subst. apply is_styp__var.
-  - (* arrow *)
-    inversion Heq; subst.
-    apply is_styp__arrow; [ apply IHis_sskl1 | apply IHis_sskl2 ]; reflexivity.
-  - (* all *)
-    inversion Heq; subst.
-    apply is_styp__all with (L := L). intros α Hα.
-    apply (H0 α Hα). rewrite btyp_to_bskl_open. reflexivity.
-Qed.
-
 (** ⭐ Bridge 2 (CHECK mode): a [btyp] whose skeleton is an INHERITED
     painting is itself all-inherited.  ⚠️ Unlike bridge 1 this one DOES
     need local closure — [btyp_to_bskl (btyp_var_b n)] and
@@ -716,7 +695,7 @@ Proof.
   remember a_sub_mode_ty as NM eqn:HNM.
   induction H; subst; try discriminate; intros Bt HeqB.
   - (* infer *)
-    apply mod_comp_ty__ti. eapply is_styp_of_is_sskl_erase; eassumption.
+    apply mod_comp_ty__ti. eapply is_styp_of_btyp_to_bskl; eassumption.
   - (* check *)
     apply mod_comp_ty__tc.
     eapply is_ityp_of_erase_inh; [ | symmetry; exact HeqB ].
@@ -789,16 +768,16 @@ Proof.
   - (* anno *) eapply ad_pat_sub_mod_comp_ty;
       [ eassumption | reflexivity ].
   - (* freeze *)
-    apply mod_comp_ty__tc. apply is_ityp_paint.
+    apply mod_comp_ty__tc. apply is_ityp_ptyp_to_btyp_inh.
     eapply a_tyequiv_lc_r; eassumption.
   - (* abs_check_step *) apply mod_comp_ty__tc; assumption.
   - (* abs_check_base *)
     apply mod_comp_ty__tc. apply is_ityp__arrow;
-      [ apply is_ityp_paint; eapply a_wf_ptyp_lc; eassumption | assumption ].
+      [ apply is_ityp_ptyp_to_btyp_inh; eapply a_wf_ptyp_lc; eassumption | assumption ].
   - (* abs_anno_check_step *) apply mod_comp_ty__tc; assumption.
   - (* abs_anno_check_base *)
     apply mod_comp_ty__tc. apply is_ityp__arrow;
-      [ apply is_ityp_paint; eapply a_tyequiv_lc_r; eassumption
+      [ apply is_ityp_ptyp_to_btyp_inh; eapply a_tyequiv_lc_r; eassumption
       | assumption ].
   - (* abs *) assumption.
   - (* abs_anno *) assumption.
@@ -1866,7 +1845,7 @@ Proof.
                      `union` ftvar_in_exp (exp_abs e) `union` singleton α).
       * change (btyp_all_inh (ptyp_to_btyp_inh A))
           with (ptyp_to_btyp_inh (ptyp_all A)).
-        apply is_ityp_paint. eapply a_wf_ptyp_lc; exact HwfAll.
+        apply is_ityp_ptyp_to_btyp_inh. eapply a_wf_ptyp_lc; exact HwfAll.
       * intros β Hβ.
         rewrite <- ptyp_to_btyp_inh_open_var.
         pose proof (@ad_sd_typing_rename_tvar _ _ _ _ Hdα1 nil α Θ1 β
@@ -2009,7 +1988,7 @@ Proof.
     split.
     + apply ad_sd_typing__abs_check_base with (L := singleton x);
         [ eapply a_wf_ptyp_isub; [ exact HwfAs | exact Hisub1 ]
-        | apply is_ityp_paint; eapply a_wf_ptyp_lc; exact HwfB2
+        | apply is_ityp_ptyp_to_btyp_inh; eapply a_wf_ptyp_lc; exact HwfB2
         | intros y Hy; apply Hbody ].
     + simpl. rewrite !btyp_to_bskl_ptyp_to_btyp_inh.
       eapply a_split_refines_gen with (Θ1 := Θ1);
@@ -2139,7 +2118,7 @@ Proof.
                      `union` singleton α).
       * change (btyp_all_inh (ptyp_to_btyp_inh A))
           with (ptyp_to_btyp_inh (ptyp_all A)).
-        apply is_ityp_paint. eapply a_wf_ptyp_lc; exact HwfAll.
+        apply is_ityp_ptyp_to_btyp_inh. eapply a_wf_ptyp_lc; exact HwfAll.
       * intros β Hβ.
         rewrite <- ptyp_to_btyp_inh_open_var.
         pose proof (@ad_sd_typing_rename_tvar _ _ _ _ Hdα1 nil α Θ1 β
@@ -2307,7 +2286,7 @@ Proof.
         [ eapply a_wf_ptyp_isub; [ exact HwfAan2 | exact Hisub2 ]
         | apply a_tyequiv__sym;
           eapply a_tyequiv_isub_le; [ exact Hisub2 | exact Hequiv ]
-        | apply is_ityp_paint; eapply a_wf_ptyp_lc; exact HwfB3
+        | apply is_ityp_ptyp_to_btyp_inh; eapply a_wf_ptyp_lc; exact HwfB3
         | intros y Hy; apply Hbody ].
     + simpl. rewrite !btyp_to_bskl_ptyp_to_btyp_inh.
       eapply a_split_refines_gen with (Θ1 := Θ1);

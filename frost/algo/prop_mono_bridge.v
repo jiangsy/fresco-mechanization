@@ -33,16 +33,6 @@ Require Import src.frost.algo.prop_basic.
 
 Set Implicit Arguments.
 
-(** On a MONOTYPE the inherited and synthesised paintings coincide — they only
-    differ at quantifiers, and a monotype has none. *)
-Lemma ptyp_to_bskl_inh_syn_eq : forall A,
-  mono_ptyp A ->
-  pskl_to_bskl_inh (ptyp_to_pskl A) = ptyp_to_bskl_syn A.
-Proof.
-  unfold ptyp_to_bskl_syn.
-  intros A Hm; induction Hm; simpl; f_equal; auto.
-Qed.
-
 (** The syn painting of a monotype determines it. *)
 Lemma ptyp_to_bskl_syn_inj : forall A A',
   mono_ptyp A -> mono_ptyp A' ->

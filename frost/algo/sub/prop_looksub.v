@@ -1046,15 +1046,6 @@ Proof.
   pose proof (@ftvar_in_aenv_rename_aenv Θ α1 β) as H. fsetdec.
 Qed.
 
-Lemma notin_ftvar_open_var : forall γ δ P,
-  γ <> δ -> γ `notin` ftvar_in_pskl P ->
-  γ `notin` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f δ)).
-Proof.
-  intros γ δ P Hne HP.
-  pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f δ)) as H.
-  simpl in H. fsetdec.
-Qed.
-
 Lemma notin_ftvar_subst_var : forall γ α1 β P,
   γ <> α1 -> γ `notin` ftvar_in_pskl P ->
   γ `notin` ftvar_in_pskl (subst_pskl_in_pskl (pskl_var_f α1) β P).
@@ -1099,7 +1090,7 @@ Ltac look_fresh :=
     | look_fresh_leaf
     | apply notin_ftvar_in_aenv_cons_tvar
     | apply notin_ftvar_in_aenv_rename
-    | apply notin_ftvar_open_var
+    | apply notin_ftvar_open_pskl_var
     | apply notin_ftvar_in_cstrs_subst_away
     | apply notin_ftvar_in_cstrs_subst
     | apply notin_ftvar_subst_var ].

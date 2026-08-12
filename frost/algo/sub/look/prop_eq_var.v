@@ -342,13 +342,13 @@ Proof.
     eapply ad_ppre__flex_r;
       [ eapply binds_swap_mid; [ exact H | exact Hne ] | ].
     assert (Hfr : α1 `notin` ftvar_in_uskl (ptyp_to_uskl_syn τ))
-      by (rewrite ftvar_in_uskl_ptyp_to_uskl_syn; exact Hα2τ).
+      by (rewrite ftvar_ptyp_to_uskl_syn; exact Hα2τ).
     rewrite <- (subst_uskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ)
                (uskl_var_f β1) α1 Hfr).
     apply IHad_partial_precise;
       [ exact Hu | reflexivity | exact HWd | exact Hβ2Δ
       | clear - HWP; solve_notin
-      | rewrite ftvar_in_uskl_ptyp_to_uskl_syn; exact Hβ2τ | exact Hdefs ].
+      | rewrite ftvar_ptyp_to_uskl_syn; exact Hβ2τ | exact Hdefs ].
 Qed.
 
 (* ===================================================================== *)
@@ -866,7 +866,7 @@ Proof.
                 | apply mono_ptyp__arrow; assumption ]
             | ].
           rewrite Heqψ1, Heqψ2 in Hftψ. simpl in Hftψ |- *.
-          rewrite !ftvar_in_uskl_ptyp_to_uskl_syn in Hftψ. exact Hftψ. }
+          rewrite !ftvar_ptyp_to_uskl_syn in Hftψ. exact Hftψ. }
         split; [ clear - Hsubeq2 H HΨ1e HΨ2e; fsetdec | ].
         split; [ exists τa1, τa2; repeat split; assumption | ].
         intros Δx.
@@ -971,7 +971,7 @@ Proof.
                         (urho__arrow Hrho1 Hrho2 HΨρs)) as Hb.
           rewrite Heq1, Heq2 in Hb.
           cbn [ftvar_in_uskl] in Hb.
-          rewrite !ftvar_in_uskl_ptyp_to_uskl_syn in Hb.
+          rewrite !ftvar_ptyp_to_uskl_syn in Hb.
           clear - Hb; fsetdec. }
         assert (Hwfar : a_wf_ptyp Θ (ptyp_arrow τa1 τa2)).
         { apply mono_ptyp_wf; [ apply mono_ptyp__arrow; assumption | ].
@@ -987,7 +987,7 @@ Proof.
                                    (ftvar_in_uskl R2))
               by (clear - Hftar Hα0 Hnin; fsetdec).
             rewrite HeqR1, HeqR2 in Hin'.
-            rewrite !ftvar_in_uskl_ptyp_to_uskl_syn in Hin'.
+            rewrite !ftvar_ptyp_to_uskl_syn in Hin'.
             cbn [ftvar_in_ptyp]. clear - Hin'; fsetdec. }
         split; [ clear - Hsubeq2 H HΨ1e HΨ2e; fsetdec | ].
         exists τa1, τa2. repeat split; try assumption.
@@ -1814,7 +1814,7 @@ Proof.
                 | pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψR
                                 (uskl_var_f α')) as Hup;
                   simpl in Hup;
-                  apply atoms_inter_empty_pointwise;
+                  apply inter_empty_pointwise;
                   intros y Hy;
                   assert (Heqy : y = α) by (clear - Hy; fsetdec);
                   subst y;
@@ -2592,7 +2592,7 @@ Proof.
                 | pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψR
                                 (uskl_var_f α')) as Hup;
                   simpl in Hup;
-                  apply atoms_inter_empty_pointwise;
+                  apply inter_empty_pointwise;
                   intros y Hy;
                   assert (Heqy : y = α) by (clear - Hy; fsetdec);
                   subst y;
@@ -3013,7 +3013,7 @@ Proof.
                   | pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψR
                                   (uskl_var_f α')) as Hup;
                     simpl in Hup;
-                    apply atoms_inter_empty_pointwise;
+                    apply inter_empty_pointwise;
                     intros y Hy;
                     assert (Heqy : y = α) by (clear - Hy; fsetdec);
                     subst y;

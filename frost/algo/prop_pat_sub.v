@@ -171,22 +171,6 @@ Proof.
   intro A. unfold ptyp_to_uskl_syn. apply ftag_bskl_to_uskl.
 Qed.
 
-(** Free variables of monotype paintings. *)
-Lemma ftvar_in_uskl_ptyp_to_uskl_syn : forall τ,
-  ftvar_in_uskl (ptyp_to_uskl_syn τ) [=] ftvar_in_ptyp τ.
-Proof.
-  intros. rewrite <- pskl_to_uskl_ptyp.
-  rewrite ftvar_in_uskl_pskl. apply ftvar_ptyp_to_pskl.
-Qed.
-
-Lemma ftvar_in_bskl_ptyp_to_bskl_syn : forall τ,
-  ftvar_in_bskl (ptyp_to_bskl_syn τ) [=] ftvar_in_ptyp τ.
-Proof.
-  intros. rewrite <- (ftvar_bskl_to_pskl (ptyp_to_bskl_syn τ)).
-  unfold ptyp_to_bskl_syn. rewrite bskl_to_pskl_pskl_to_bskl_syn.
-  apply ftvar_ptyp_to_pskl.
-Qed.
-
 (** A definition cannot live on an undefined-flex mid entry. *)
 Lemma binds_mid_flex_absurd : forall Θ1 β (τ : ptyp) Θ2,
   binds β (abind_flex_mono_def τ) (Θ1 ++ (β ~ abind_flex_mono) ++ Θ2) ->
@@ -340,7 +324,7 @@ Proof.
           specialize (IH Θ1 β Θ2 ltac:(reflexivity) Hfr Hdefs)
       end.
       rewrite subst_uskl_in_uskl_fresh_eq in *; [ auto | ].
-      rewrite ftvar_in_uskl_ptyp_to_uskl_syn. eauto.
+      rewrite ftvar_ptyp_to_uskl_syn. eauto.
   - (* flex_r *)
     destruct_if as [-> | Hne].
     + exfalso. eapply binds_mid_flex_absurd; eauto.
@@ -353,7 +337,7 @@ Proof.
           specialize (IH Θ1 β Θ2 ltac:(reflexivity) Hfr Hdefs)
       end.
       rewrite subst_bskl_in_bskl_fresh_eq in *; [ auto | ].
-      rewrite ftvar_in_bskl_ptyp_to_bskl_syn. eauto.
+      rewrite ftvar_ptyp_to_bskl_syn. eauto.
 Qed.
 
 (** Monotype paintings are locally closed in every sort. *)
@@ -568,7 +552,7 @@ Proof.
           specialize (IH Θ1 β τ0 Θ2 ltac:(reflexivity) Hfr Hm Hfrτ Hvis Hdefs)
       end.
       rewrite subst_uskl_in_uskl_fresh_eq in *; [ auto | ].
-      rewrite ftvar_in_uskl_ptyp_to_uskl_syn. exact Hfrτ.
+      rewrite ftvar_ptyp_to_uskl_syn. exact Hfrτ.
     + assert (Hb' : binds α (abind_flex_mono_def τ) (Θ1 ++ Θ2)).
       { eapply binds_strip_mid; eauto.
         intro He; inversion He; subst; exact (Hne eq_refl). }
@@ -578,7 +562,7 @@ Proof.
           specialize (IH Θ1 β τ0 Θ2 ltac:(reflexivity) Hfr Hm Hfrτ Hvis Hdefs)
       end.
       rewrite subst_uskl_in_uskl_fresh_eq in *; [ auto | ].
-      rewrite ftvar_in_uskl_ptyp_to_uskl_syn. eauto.
+      rewrite ftvar_ptyp_to_uskl_syn. eauto.
   - (* flex_r *)
     destruct_if as [-> | Hne].
     + assert (Heqdef : τ = τ0) by (eapply binds_mid_def_eq; eauto).
@@ -588,7 +572,7 @@ Proof.
           specialize (IH Θ1 β τ0 Θ2 ltac:(reflexivity) Hfr Hm Hfrτ Hvis Hdefs)
       end.
       rewrite subst_bskl_in_bskl_fresh_eq in *; [ auto | ].
-      rewrite ftvar_in_bskl_ptyp_to_bskl_syn. exact Hfrτ.
+      rewrite ftvar_ptyp_to_bskl_syn. exact Hfrτ.
     + assert (Hb' : binds α (abind_flex_mono_def τ) (Θ1 ++ Θ2)).
       { eapply binds_strip_mid; eauto.
         intro He; inversion He; subst; exact (Hne eq_refl). }
@@ -598,7 +582,7 @@ Proof.
           specialize (IH Θ1 β τ0 Θ2 ltac:(reflexivity) Hfr Hm Hfrτ Hvis Hdefs)
       end.
       rewrite subst_bskl_in_bskl_fresh_eq in *; [ auto | ].
-      rewrite ftvar_in_bskl_ptyp_to_bskl_syn. eauto.
+      rewrite ftvar_ptyp_to_bskl_syn. eauto.
 Qed.
 
 (** Ghost-freeness is closed under substituting a ghost-free skeleton.  Its two
@@ -1073,13 +1057,13 @@ Proof.
       eapply ad_refine_syn_f__flex_l; [ exact Hbb | ].
       rewrite <- (subst_bskl_in_bskl_fresh_eq
                     (ptyp_to_bskl_syn τ) (bskl_var_f β) α0).
-      2:{ rewrite ftvar_in_bskl_ptyp_to_bskl_syn.
+      2:{ rewrite ftvar_ptyp_to_bskl_syn.
           clear - Hτsc Hα0Θt. fsetdec. }
       eapply IHad_refine_syn_f; eauto.
       * apply mono_ptyp_to_bskl_syn_ghost_free.
         eapply a_wf_aenv_binds_def_mono; [ exact HwfΘt | exact Hbb ].
       * intros α2 Hα2.
-        rewrite ftvar_in_bskl_ptyp_to_bskl_syn in Hα2.
+        rewrite ftvar_ptyp_to_bskl_syn in Hα2.
         assert (HZfv : α2 `in` ftvar_in_ptyp τ \/ α2 `in` ftvar_in_bskl Q)
           by (clear - Hα2; fsetdec).
         destruct HZfv as [Hα2τ | HZQ];
@@ -1125,11 +1109,11 @@ Proof.
       eapply ad_refine_syn_f__flex_r; [ exact Hbb | ].
       rewrite <- (subst_bskl_in_bskl_fresh_eq
                     (ptyp_to_bskl_syn τ) (bskl_var_f β) α0).
-      2:{ rewrite ftvar_in_bskl_ptyp_to_bskl_syn.
+      2:{ rewrite ftvar_ptyp_to_bskl_syn.
           clear - Hτsc Hα0Θt. fsetdec. }
       eapply IHad_refine_syn_f; eauto.
       intros α2 Hα2.
-      rewrite ftvar_in_bskl_ptyp_to_bskl_syn in Hα2.
+      rewrite ftvar_ptyp_to_bskl_syn in Hα2.
       assert (HZfv : α2 `in` ftvar_in_ptyp τ \/ α2 `in` ftvar_in_bskl P)
         by (clear - Hα2; fsetdec).
       destruct HZfv as [Hα2τ | HZP];

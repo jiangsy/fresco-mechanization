@@ -65,16 +65,6 @@ Combined Scheme a_subtag_subtag_flex_mutind
 
 (** The syn painting of an lc skeleton is synthesised. *)
 
-(** Erasure preserves local closure. *)
-Lemma lc_uskl_to_pskl : forall R,
-  lc_uskl R ->
-  lc_pskl ⌊ R ⌋ˢ.
-Proof.
-  intros R H; induction H; simpl;
-    try (constructor; auto; fail);
-    constructor; intros α; rewrite <- uskl_to_pskl_open; auto.
-Qed.
-
 (** Erasure preserves guardedness (guarded shapes have no decorations). *)
 Lemma guarded_uskl_to_pskl : forall R,
   guarded_uskl R ->
@@ -338,9 +328,9 @@ Proof.
     assert (Hwfτ : a_wf_ptyp Θ' τ) by (eapply a_wf_aenv_binds_def_wf; eauto).
     rewrite <- HeqSrc.
     eapply ad_pat_consis__flex_r; [ exact Hbα' | ].
-    rewrite <- (mono_inh_eq_syn Hmτ).
+    rewrite <- (ptyp_to_bskl_inh_syn_eq Hmτ).
     eapply (IHHfill (ptyp_to_pskl τ));
-      [ symmetry; apply (mono_inh_eq_syn Hmτ)
+      [ symmetry; apply (ptyp_to_bskl_inh_syn_eq Hmτ)
       | apply ptyp_to_pskl_ghost_free
       | exact Hmon | exact Hrig | exact Hwf'
       | apply a_wf_pskl_mono_ptyp; [ exact Hmτ | exact Hwfτ ]
@@ -690,7 +680,7 @@ Proof.
           by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf' | exact Hbα' ]);
         eapply ad_refine_pskl__flex_r; [ exact Hbα' | ];
         eapply (IHHfill (ptyp_to_pskl t));
-          [ symmetry; apply (mono_inh_eq_syn Hmτ)
+          [ symmetry; apply (ptyp_to_bskl_inh_syn_eq Hmτ)
           | apply ptyp_to_pskl_ghost_free
           | exact Hmon | exact Hwf' | exact Hc ]
     end.
@@ -942,7 +932,7 @@ Proof.
       specialize (IHad_pat_sub_fuel Θ1 ltac:(reflexivity) Hdom Hdefs).
       rewrite subst_uskl_in_uskl_fresh_eq in IHad_pat_sub_fuel;
         [ exact IHad_pat_sub_fuel | ].
-      rewrite ftvar_in_uskl_ptyp_syn. eauto.
+      rewrite ftvar_ptyp_to_uskl_syn. eauto.
 Qed.
 
 (* ===================================================================== *)
@@ -1477,7 +1467,7 @@ Proof.
         intro He; inversion He; subst; exact (Hne eq_refl). }
       eapply ad_pat_sub_fuel__flex_mono; [ exact Hb' | ].
       assert (Hfrτ : β `notin` ftvar_in_uskl (ptyp_to_uskl_syn τ))
-        by (rewrite ftvar_in_uskl_ptyp_to_uskl_syn; eapply Hdefs; exact Hb').
+        by (rewrite ftvar_ptyp_to_uskl_syn; eapply Hdefs; exact Hb').
       specialize (IHad_pat_sub_fuel Θ1 β Θ2 ltac:(reflexivity) Hfr Hdefs).
       rewrite (subst_uskl_in_uskl_fresh_eq
                  (ptyp_to_uskl_syn τ) uskl_unit β Hfrτ)
@@ -1798,7 +1788,7 @@ Proof.
       subst τ.
       rewrite (subst_uskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ0)
                  (ptyp_to_uskl_syn τ0) β
-                 ltac:(rewrite ftvar_in_uskl_ptyp_to_uskl_syn; exact Hfrτ))
+                 ltac:(rewrite ftvar_ptyp_to_uskl_syn; exact Hfrτ))
         in IHad_pat_sub_fuel.
       exact IHad_pat_sub_fuel.
     + assert (Hb' : binds α (abind_flex_mono_def τ) (Θ1 ++ Θ2)).
@@ -1807,7 +1797,7 @@ Proof.
       eapply ad_pat_sub_fuel__flex_mono; [ exact Hb' | ].
       rewrite (subst_uskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ)
                  (ptyp_to_uskl_syn τ0) β
-                 ltac:(rewrite ftvar_in_uskl_ptyp_to_uskl_syn;
+                 ltac:(rewrite ftvar_ptyp_to_uskl_syn;
                        eapply Hdefs; exact Hb'))
         in IHad_pat_sub_fuel.
       exact IHad_pat_sub_fuel.
@@ -2981,5 +2971,5 @@ Proof.
       specialize (IHad_pat_sub Θ1 ltac:(reflexivity) Hdom Hdefs).
       rewrite subst_uskl_in_uskl_fresh_eq in IHad_pat_sub;
         [ exact IHad_pat_sub | ].
-      rewrite ftvar_in_uskl_ptyp_syn. eauto.
+      rewrite ftvar_ptyp_to_uskl_syn. eauto.
 Qed.

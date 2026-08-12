@@ -1661,20 +1661,6 @@ Proof.
       eapply msubst_pskl_lc; eauto.
 Qed.
 
-(* A monotype whose free type variables are all tvar-ish in Θ is well-formed
-   there — used to place a ⇓-normalized image in a sub-target. *)
-Lemma mono_ftv_wf : forall Θ τ,
-  mono_ptyp τ ->
-  (forall α, α `in` ftvar_in_ptyp τ -> a_binds_tvar α Θ) ->
-  a_wf_ptyp Θ τ.
-Proof.
-  intros Θ τ Hm; induction Hm; intros Hftv; simpl in *.
-  - apply a_wf_ptyp__unit.
-  - apply a_wf_ptyp__var. apply Hftv. fsetdec.
-  - apply a_wf_ptyp__arrow;
-      [ apply IHHm1 | apply IHHm2 ]; intros α Hα; apply Hftv; fsetdec.
-Qed.
-
 (* Normalize the decls-prefix images of a competing a_inc into a sub-target Θ'
    (below the walked binder): the Θ0-part increment is already into Θ' and the
    Ξ-prefix flex images ⇓-collapse into Θ' once they are join-grounded. *)
@@ -1718,7 +1704,7 @@ Proof.
     { pose proof (Hgr c ltac:(simpl; clear; solve_notin_auto)) as Hg.
       rewrite Hlkc in Hg. exact Hg. }
     assert (Hwfd : a_wf_ptyp Θ' (⇓ᵗ[ Θ ] t)).
-    { apply mono_ftv_wf; [ apply mono_downarrow; auto | ].
+    { apply mono_ptyp_wf; [ apply mono_downarrow; auto | ].
       intros α Hα.
       assert (HXd : α `in` dom Θ') by (clear - Hgrc Hα; fsetdec).
       eapply a_binds_tvar_strengthen;

@@ -862,8 +862,8 @@ Proof.
   - (* flex_r: the target hops to the definition's paint *)
     eapply ad_ppre__flex_r; [ eassumption | ].
     apply IHad_partial_precise; [ | exact Hdf ].
-    rewrite ftvar_in_uskl_ptyp_to_uskl_syn.
-    apply atoms_inter_empty_pointwise.
+    rewrite ftvar_ptyp_to_uskl_syn.
+    apply inter_empty_pointwise.
     intros y Hy. eapply Hdf; [ exact Hy | eassumption ].
 Qed.
 
@@ -1935,11 +1935,11 @@ Proof.
     destruct (Hdefs _ _ H) as [Hατ Hβτ].
     eapply ad_ppre__flex_r; [ eassumption | ].
     assert (Hfr : αr `notin` ftvar_in_uskl (ptyp_to_uskl_syn τ))
-      by (rewrite ftvar_in_uskl_ptyp_to_uskl_syn; exact Hατ).
+      by (rewrite ftvar_ptyp_to_uskl_syn; exact Hατ).
     rewrite <- (subst_uskl_in_uskl_fresh_eq
                   (ptyp_to_uskl_syn τ) (uskl_var_f βr) αr Hfr).
     apply IHad_partial_precise; auto.
-    rewrite ftvar_in_uskl_ptyp_to_uskl_syn. exact Hβτ.
+    rewrite ftvar_ptyp_to_uskl_syn. exact Hβτ.
 Qed.
 
 (* ===================================================================== *)

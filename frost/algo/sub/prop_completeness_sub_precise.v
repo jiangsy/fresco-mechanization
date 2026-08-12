@@ -1786,7 +1786,7 @@ Proof.
     rewrite <- pskl_to_uskl_ptyp.
     apply IHad_refine_syn;
       first [ exact Hwf | reflexivity
-            | symmetry; apply mono_inh_eq_syn; exact Hm ].
+            | symmetry; apply ptyp_to_bskl_inh_syn_eq; exact Hm ].
   - (* flex_r *)
     destruct F as [ | | α0 | | | | ]; simpl in HeqT; try discriminate.
     inversion HeqT; subst.
@@ -1796,7 +1796,7 @@ Proof.
     rewrite <- pskl_to_uskl_ptyp.
     apply IHad_refine_syn;
       first [ exact Hwf | reflexivity
-            | symmetry; apply mono_inh_eq_syn; exact Hm ].
+            | symmetry; apply ptyp_to_bskl_inh_syn_eq; exact Hm ].
 Qed.
 
 (** ⭐⭐ lemma:precision-sub (proofs.tex, "Precision extends skeleton

@@ -203,14 +203,6 @@ Proof.
   destruct_if; reflexivity.
 Qed.
 
-(** ⭐ A MONOTYPE HAS ONE COLOURING, so a single [τ] serves every sort at
-    once: the inherited painting of the substituted variable is the
-    synthesised one, which is what lets the [inh] and [syn] rows of the
-    same derivation be substituted with the same object. *)
-Lemma ptyp_to_btyp_inh_mono_syn : forall τ,
-  mono_ptyp τ -> ptyp_to_btyp_inh τ = ptyp_to_btyp_syn τ.
-Proof. intros τ Hm; induction Hm; simpl; congruence. Qed.
-
 (** The composite coercions, derived. *)
 Lemma ptyp_to_bskl_syn_subst : forall τ α A,
   ptyp_to_bskl_syn (subst_ptyp_in_ptyp τ α A)
@@ -556,7 +548,7 @@ Proof.
       assert (Hid : subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0
                       (ptyp_to_bskl_syn τs) = ptyp_to_bskl_syn τs)
         by (apply subst_bskl_in_bskl_fresh_eq;
-            rewrite ftvar_in_bskl_ptyp_to_bskl_syn; exact Hfrτs).
+            rewrite ftvar_ptyp_to_bskl_syn; exact Hfrτs).
       match goal with
       | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
           pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu Hα0) as IHx
@@ -582,7 +574,7 @@ Proof.
       assert (Hid : subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0
                       (ptyp_to_bskl_syn τs) = ptyp_to_bskl_syn τs)
         by (apply subst_bskl_in_bskl_fresh_eq;
-            rewrite ftvar_in_bskl_ptyp_to_bskl_syn; exact Hfrτs).
+            rewrite ftvar_ptyp_to_bskl_syn; exact Hfrτs).
       match goal with
       | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
           pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu Hα0) as IHx
@@ -842,7 +834,7 @@ Proof.
       assert (Hid : subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0
                       (ptyp_to_uskl_syn τs) = ptyp_to_uskl_syn τs)
         by (apply subst_uskl_in_uskl_fresh_eq;
-            rewrite ftvar_in_uskl_ptyp_to_uskl_syn; exact Hfrτs).
+            rewrite ftvar_ptyp_to_uskl_syn; exact Hfrτs).
       match goal with
       | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
           pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu) as IHx
@@ -867,7 +859,7 @@ Proof.
       assert (Hid : subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0
                       (ptyp_to_bskl_syn τs) = ptyp_to_bskl_syn τs)
         by (apply subst_bskl_in_bskl_fresh_eq;
-            rewrite ftvar_in_bskl_ptyp_to_bskl_syn; exact Hfrτs).
+            rewrite ftvar_ptyp_to_bskl_syn; exact Hfrτs).
       match goal with
       | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
           pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu) as IHx
@@ -883,27 +875,6 @@ Qed.
 (* ===================================================================== *)
 (*  §7  The suffix drivers                                               *)
 (* ===================================================================== *)
-
-(** ⚙ A well-formed context MENTIONS only its own domain: every payload is
-    scoped in the tail.  This is what turns the uniform substitution back
-    into the identity on the surviving context. *)
-Lemma a_wf_aenv_ftv_dom : forall Θ,
-  {{ ⊢ Θ }}a -> ftvar_in_aenv Θ [<=] dom Θ.
-Proof.
-  intros Θ H; induction H; simpl; try (clear - IHa_wf_aenv; fsetdec).
-  - fsetdec.
-  - assert (ftvar_in_ptyp τ [<=] dom Θ)
-      by (intros β Hβ; apply a_binds_tvar_in_dom;
-          eapply a_wf_ptyp_ftv_tvarish; eassumption).
-    clear - IHa_wf_aenv H3. fsetdec.
-  - assert (ftvar_in_pskl P [<=] dom Θ)
-      by (apply a_scope_pskl_ftv_dom; eauto).
-    clear - IHa_wf_aenv H2. fsetdec.
-  - assert (ftvar_in_ptyp A [<=] dom Θ)
-      by (intros β Hβ; apply a_binds_tvar_in_dom;
-          eapply a_wf_ptyp_ftv_tvarish; eassumption).
-    clear - IHa_wf_aenv H2. fsetdec.
-Qed.
 
 Lemma subst_aenv_fresh_eq : forall τ α Θ,
   α `notin` ftvar_in_aenv Θ -> subst_aenv τ α Θ = Θ.
@@ -1140,7 +1111,7 @@ Proof.
       assert (Hid : subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0
                       (ptyp_to_uskl_syn τs) = ptyp_to_uskl_syn τs)
         by (apply subst_uskl_in_uskl_fresh_eq;
-            rewrite ftvar_in_uskl_ptyp_to_uskl_syn; exact Hfrτs).
+            rewrite ftvar_ptyp_to_uskl_syn; exact Hfrτs).
       match goal with
       | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
           pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu) as IHx
@@ -1288,7 +1259,7 @@ Proof.
       assert (Hid : subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0
                       (ptyp_to_uskl_syn τs) = ptyp_to_uskl_syn τs)
         by (apply subst_uskl_in_uskl_fresh_eq;
-            rewrite ftvar_in_uskl_ptyp_to_uskl_syn; exact Hfrτs).
+            rewrite ftvar_ptyp_to_uskl_syn; exact Hfrτs).
       match goal with
       | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
           pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu) as IHx

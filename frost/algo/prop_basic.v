@@ -1406,3 +1406,103 @@ Lemma a_wf_ptyp_arrow_inv : forall Θ A1 A2,
   a_wf_ptyp Θ (ptyp_arrow A1 A2) -> a_wf_ptyp Θ A1 /\ a_wf_ptyp Θ A2.
 Proof. intros * H; inversion H; subst; split; assumption. Qed.
 
+(** A monotype all of whose free variables are tvar-ish is well-formed. *)
+Lemma mono_ptyp_wf : forall Θ τ,
+  mono_ptyp τ ->
+  (forall α, α `in` ftvar_in_ptyp τ -> a_binds_tvar α Θ) ->
+  a_wf_ptyp Θ τ.
+Proof.
+  intros Θ τ H; induction H; intros Hvis; simpl in *.
+  - apply a_wf_ptyp__unit.
+  - apply a_wf_ptyp__var. apply Hvis. fsetdec.
+  - apply a_wf_ptyp__arrow;
+      [ apply IHmono_ptyp1 | apply IHmono_ptyp2 ];
+      intros α Hα; apply Hvis; fsetdec.
+Qed.
+
+(** ⚙ A well-formed context MENTIONS only its own domain: every payload is
+    scoped in the tail.  This is what turns the uniform substitution back
+    into the identity on the surviving context. *)
+Lemma a_wf_aenv_ftv_dom : forall Θ,
+  {{ ⊢ Θ }}a -> ftvar_in_aenv Θ [<=] dom Θ.
+Proof.
+  intros Θ H; induction H; simpl; try (clear - IHa_wf_aenv; fsetdec).
+  - fsetdec.
+  - assert (ftvar_in_ptyp τ [<=] dom Θ)
+      by (intros β Hβ; apply a_binds_tvar_in_dom;
+          eapply a_wf_ptyp_ftv_tvarish; eassumption).
+    clear - IHa_wf_aenv H3. fsetdec.
+  - assert (ftvar_in_pskl P [<=] dom Θ)
+      by (apply a_scope_pskl_ftv_dom; eauto).
+    clear - IHa_wf_aenv H2. fsetdec.
+  - assert (ftvar_in_ptyp A [<=] dom Θ)
+      by (intros β Hβ; apply a_binds_tvar_in_dom;
+          eapply a_wf_ptyp_ftv_tvarish; eassumption).
+    clear - IHa_wf_aenv H2. fsetdec.
+Qed.
+
+Lemma a_flex_tvar_weaken_app : forall Ξ Θ α,
+  a_flex_tvar Θ α -> a_flex_tvar (Ξ ++ Θ) α.
+Proof.
+  intros * [Hb | [τ Hb]]; [ left | right; exists τ ];
+    unfold binds in *; apply in_or_app; right; assumption.
+Qed.
+
+(* ⚙ RENAMED from [binds_weaken_mid] 2026-08-09 (cleanup audit §8.1c): it collided with a
+   DIFFERENT lemma of that name, and this one inserts Ξm INSIDE an existing Ξl++Θ0; prop_inc.v's weakens a bare Θ on both sides. *)
+Lemma binds_weaken_inner : forall (x : atom) (b : abind) Ξl Ξm Θ0,
+  binds x b (Ξl ++ Θ0) -> binds x b (Ξl ++ Ξm ++ Θ0).
+Proof.
+  intros x b Ξl Ξm Θ0 H. apply binds_app_1 in H as [H | H].
+  - apply binds_app_2; exact H.
+  - apply binds_app_3; apply binds_app_3; exact H.
+Qed.
+
+Lemma a_flex_tvar_weaken_mid : forall Ξl Ξm Θ0 α,
+  a_flex_tvar (Ξl ++ Θ0) α -> a_flex_tvar (Ξl ++ Ξm ++ Θ0) α.
+Proof.
+  intros Ξl Ξm Θ0 α [Hb | [τ Hb]];
+    [ left | right; exists τ ]; apply binds_weaken_inner; exact Hb.
+Qed.
+
+(** The [Ghost]/[GhostR] side condition transports through the rename:
+    if [Δ] avoids [ftv P] then the renamed [Δ] avoids the renamed [ftv]. *)
+(** [ftvar_in_pskl_open_pskl_wrt_pskl_upper] is stated as a [<=]; the
+    [rewrite]s above need it as a set-level bound, so use it by [pose]. *)
+Lemma notin_ftvar_open_pskl_var : forall β α P,
+  β <> α -> β `notin` ftvar_in_pskl P ->
+  β `notin` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α)).
+Proof.
+  intros β α P Hne HβP.
+  pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f α)) as Hs.
+  simpl in Hs. clear - Hs Hne HβP. fsetdec.
+Qed.
+
+(* ⚙ These three mention [ptyp_to_bskl_syn] / [ptyp_to_uskl_syn], which are
+   defined in algo_decl/def_consis_refine.v rather than frost/coercions.v — so
+   unlike their siblings they cannot live in frost/prop_coercions.v. *)
+(** On a MONOTYPE the inherited and synthesised paintings coincide — they only
+    differ at quantifiers, and a monotype has none. *)
+Lemma ptyp_to_bskl_inh_syn_eq : forall A,
+  mono_ptyp A ->
+  pskl_to_bskl_inh (ptyp_to_pskl A) = ptyp_to_bskl_syn A.
+Proof.
+  unfold ptyp_to_bskl_syn.
+  intros A Hm; induction Hm; simpl; f_equal; auto.
+Qed.
+
+(** Free variables of monotype paintings. *)
+Lemma ftvar_ptyp_to_uskl_syn : forall τ,
+  ftvar_in_uskl (ptyp_to_uskl_syn τ) [=] ftvar_in_ptyp τ.
+Proof.
+  intros. rewrite <- pskl_to_uskl_ptyp.
+  rewrite ftvar_in_uskl_pskl. apply ftvar_ptyp_to_pskl.
+Qed.
+
+Lemma ftvar_ptyp_to_bskl_syn : forall τ,
+  ftvar_in_bskl (ptyp_to_bskl_syn τ) [=] ftvar_in_ptyp τ.
+Proof.
+  intros. rewrite <- (ftvar_bskl_to_pskl (ptyp_to_bskl_syn τ)).
+  unfold ptyp_to_bskl_syn. rewrite bskl_to_pskl_pskl_to_bskl_syn.
+  apply ftvar_ptyp_to_pskl.
+Qed.

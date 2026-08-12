@@ -316,6 +316,21 @@ Qed.
 (*  §3d  Opening by a rigid variable is invisible to V — the Forall edges  *)
 (* ===================================================================== *)
 
+(** A variable outside the metasubstitution's domain keeps its free
+    occurrences under it (substitution only adds or preserves them). *)
+Lemma msubst_pskl_ftv_keep : forall κ P α',
+  α' `notin` dom κ ->
+  α' `in` ftvar_in_pskl P ->
+  α' `in` ftvar_in_pskl (msubst_pskl κ P).
+Proof.
+  intros κ P α' Hnd;
+    induction P as [ | n | x | P1 IH1 P2 IH2 | Pb IHb | | Pt IHt ];
+    simpl; intros Hin; try solve [ fsetdec ].
+  (* var_f : the occurrence IS α', whose lookup is itself *)
+  assert (Heq : α' = x) by (clear - Hin; fsetdec). subst x.
+  rewrite (msubst_lookup_notin κ Hnd). simpl. fsetdec.
+Qed.
+
 (** [ForallInh]/[ForallSyn]/[UnivGhost1] open the body by a FRESH RIGID [α]
     added to the context.  [⇓] ignores the rigid entry ([aenv_msubst_tvar]) and
     [κ] does not touch [α] ([α ∉ dom κ]), so opening changes neither [⇓ˢ ∘ κ] nor
@@ -342,32 +357,6 @@ Qed.
 (*  §4  The STUCK-CHECK (design doc §9.2 — the paper gap)                 *)
 (* ===================================================================== *)
 
-(** A metasubstitution never ERASES a free variable outside its domain: if
-    [α ∉ dom κ] and [α ∈ ftv(P)] then [α ∈ ftv(κP)].  ([κ] can only REPLACE the
-    variables it is defined on; everything else survives verbatim.) *)
-Lemma msubst_pskl_ftv_notin_dom : forall κ P α',
-  α' `notin` dom κ ->
-  α' `in` ftvar_in_pskl P ->
-  α' `in` ftvar_in_pskl (msubst_pskl κ P).
-Proof.
-  intros κ P;
-    induction P as [ | n | β | Pa IHa Pb IHb | Pall IHall | | Pt IHt ];
-    intros α' Hα Hin; simpl in *.
-  - clear - Hin; fsetdec.
-  - clear - Hin; fsetdec.
-  - (* pskl_var_f β : Hin forces α' = β, and β ∉ dom κ so κ leaves it alone *)
-    assert (α' = β) by (clear - Hin; fsetdec); subst β.
-    rewrite msubst_lookup_notin by exact Hα. simpl. clear; fsetdec.
-  - apply union_1 in Hin. destruct Hin as [Hin | Hin].
-    + assert (Hs : α' `in` ftvar_in_pskl (msubst_pskl κ Pa)) by (apply IHa; auto).
-      clear - Hs; fsetdec.
-    + assert (Hs : α' `in` ftvar_in_pskl (msubst_pskl κ Pb)) by (apply IHb; auto).
-      clear - Hs; fsetdec.
-  - apply IHall; assumption.
-  - clear - Hin; fsetdec.
-  - apply IHt; assumption.
-Qed.
-
 (** THE STUCK-CHECK, provable half (design doc §9.2, the [Assign-SkipRigid] /
     [Assign-SolveM] "occurs" obligation): a RIGID variable [β] that occurs in the
     walked skeleton [P] is preserved by ANY solution's metasubstitution [κ] into
@@ -375,7 +364,7 @@ Qed.
 
     This is the "[β] is not erased" ingredient.  [a_inc] keeps a rigid variable
     rigid, so it never enters [κ]'s domain ([a_inc_tvar_notin_dom]); a variable
-    [κ] does not act on survives verbatim ([msubst_pskl_ftv_notin_dom]).
+    [κ] does not act on survives verbatim ([msubst_pskl_ftv_keep]).
 
     [paper-gap] The FULL not-stuck argument (that the assignment walk never
     reaches a rigid head [β ∈ ftv(P)], for which there is NO rule) closes the
@@ -405,7 +394,7 @@ Lemma rigid_survives_solution : forall Θ1 κ Θ β P,
   β `in` ftvar_in_pskl (msubst_pskl κ P).
 Proof.
   intros Θ1 κ Θ β P Hinc Hwf Hb Hin.
-  apply msubst_pskl_ftv_notin_dom; [ | exact Hin ].
+  apply msubst_pskl_ftv_keep; [ | exact Hin ].
   eapply a_inc_tvar_notin_dom; eauto.
 Qed.
 
@@ -638,7 +627,7 @@ Proof.
         by (eapply binds_strengthen; [ exact H | exact Hu | exact Hsub | apply HscS; fsetdec ]).
       assert (Hwfτ : a_wf_ptyp Θ' τ) by (eapply a_wf_aenv_binds_def_wf; [ exact Hwf' | exact Hbd' ]).
       pose proof (a_wf_ptyp_ftv_dom Hwfτ) as Hftv.
-      pose proof (ftvar_in_uskl_ptyp_syn τ) as Hco.
+      pose proof (ftvar_ptyp_to_uskl_syn τ) as Hco.
       clear - Hα0 Hftv Hco. fsetdec.
   - eapply ad_pat_consis__flex_r.
     + eapply binds_strengthen; [ exact H | exact Hu | exact Hsub | apply HscQ; fsetdec ].
@@ -648,7 +637,7 @@ Proof.
         by (eapply binds_strengthen; [ exact H | exact Hu | exact Hsub | apply HscQ; fsetdec ]).
       assert (Hwfτ : a_wf_ptyp Θ' τ) by (eapply a_wf_aenv_binds_def_wf; [ exact Hwf' | exact Hbd' ]).
       pose proof (a_wf_ptyp_ftv_dom Hwfτ) as Hftv.
-      pose proof (ftvar_in_bskl_ptyp_syn τ) as Hco.
+      pose proof (ftvar_ptyp_to_bskl_syn τ) as Hco.
       clear - Hα0 Hftv Hco. fsetdec.
 Qed.
 
@@ -1133,7 +1122,7 @@ Proof.
     intros α1 Hα1.
     destruct (Hcond α1 Hα1) as [HinF | [Hf Hd]];
       [ left; exact HinF | right; split; [ | exact Hd ] ].
-    rewrite ftvar_in_bskl_ptyp_syn. exact (Hd _ _ H).
+    rewrite ftvar_ptyp_to_bskl_syn. exact (Hd _ _ H).
 Qed.
 
 (** A hole-source Δ2-refinement polices its WHOLE target against rigid
@@ -2383,20 +2372,6 @@ Proof.
   reflexivity.
 Qed.
 
-(** A variable outside the metasubstitution's domain keeps its free
-    occurrences under it (substitution only adds or preserves them). *)
-Lemma msubst_pskl_ftv_keep : forall κ P α',
-  α' `notin` dom κ ->
-  α' `in` ftvar_in_pskl P ->
-  α' `in` ftvar_in_pskl (msubst_pskl κ P).
-Proof.
-  intros κ P α' Hnd;
-    induction P as [ | n | x | P1 IH1 P2 IH2 | Pb IHb | | Pt IHt ];
-    simpl; intros Hin; try solve [ fsetdec ].
-  (* var_f : the occurrence IS α', whose lookup is itself *)
-  assert (Heq : α' = x) by (clear - Hin; fsetdec). subst x.
-  rewrite (msubst_lookup_notin κ Hnd). simpl. fsetdec.
-Qed.
 
 (** Extending Θ with a fresh rigid entry preserves the three fixed
     hypotheses of the ftv-survival inductions below. *)
@@ -2473,7 +2448,7 @@ Proof.
     clear - Hne; fsetdec.
   - (* flex_r : unfold the target definition; its ftv avoids α' *)
     apply IHHr; [ assumption | assumption | assumption | ].
-    rewrite ftvar_in_bskl_ptyp_syn.
+    rewrite ftvar_ptyp_to_bskl_syn.
     apply (Hdefs _ _ H).
 Qed.
 
@@ -2577,7 +2552,7 @@ Proof.
     clear - Hne; fsetdec.
   - (* flex_r : unfold the join definition; its ftv avoids α' *)
     apply IHHc; [ assumption | assumption | assumption | ].
-    rewrite ftvar_in_bskl_ptyp_syn.
+    rewrite ftvar_ptyp_to_bskl_syn.
     apply (Hdefs _ _ H).
 Qed.
 
@@ -2756,7 +2731,7 @@ Proof.
     clear - Hne; fsetdec.
   - (* flex_r : the defined join is IN [D], so its definition is too *)
     apply (IHHc Hwf HbX D HXD Hdefs).
-    rewrite ftvar_in_bskl_ptyp_syn.
+    rewrite ftvar_ptyp_to_bskl_syn.
     apply (Hdefs _ _ H). clear - Hout. fsetdec.
 Qed.
 
@@ -2945,7 +2920,7 @@ Proof.
     assert (Hmτ : mono_ptyp τ)
       by (eapply a_wf_aenv_binds_def_mono; [ exact Hwfr | exact H ]).
     apply ad_refine_syn_f__flex_l with (τ := τ); [ exact H | ].
-    rewrite <- (mono_inh_eq_syn Hmτ).
+    rewrite <- (ptyp_to_bskl_inh_syn_eq Hmτ).
     eapply IHHr; try eassumption.
     + apply a_wf_ptyp_to_wf_pskl.
       eapply a_wf_aenv_binds_def_wf; [ exact Hwfr | exact H ].
@@ -2956,7 +2931,7 @@ Proof.
     assert (Hmτ : mono_ptyp τ)
       by (eapply a_wf_aenv_binds_def_mono; [ exact Hwfr | exact H ]).
     apply ad_refine_syn_f__flex_r with (τ := τ); [ exact H | ].
-    rewrite <- (mono_inh_eq_syn Hmτ).
+    rewrite <- (ptyp_to_bskl_inh_syn_eq Hmτ).
     eapply IHHr; try eassumption.
     unfold ptyp_to_bskl_syn.
     eapply consis_unfold_def_join;
@@ -3137,7 +3112,7 @@ Lemma ad_refine_syn_f_mono_refl : forall F Θ Δ τ,
   ad_refine_syn_f F Θ Δ (ptyp_to_bskl_syn τ) (ptyp_to_bskl_syn τ).
 Proof.
   intros F Θ Δ τ Hm Hwf.
-  rewrite <- (mono_inh_eq_syn Hm).
+  rewrite <- (ptyp_to_bskl_inh_syn_eq Hm).
   apply ad_refine_syn_f_refl_inh.
   apply a_wf_pskl_mono_ptyp; assumption.
 Qed.
@@ -3306,13 +3281,13 @@ Proof.
       by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf' | exact HbΘ' ]).
     split; intros F Δ Qt Hr.
     + (* unfold : the source's own definition *)
-      rewrite (mono_inh_eq_syn Hmτ).
+      rewrite (ptyp_to_bskl_inh_syn_eq Hmτ).
       eapply ad_refine_syn_f_unfold_def_source;
         [ exact Hr | exact Hwf' | reflexivity | exact HbΘ' ].
     + (* fold : one lookup rule *)
       simpl.
       eapply ad_refine_syn_f__flex_l; [ exact HbΘ' | ].
-      rewrite (mono_inh_eq_syn Hmτ) in Hr. exact Hr.
+      rewrite (ptyp_to_bskl_inh_syn_eq Hmτ) in Hr. exact Hr.
   - (* arrow *)
     destruct (IHHeq1 Θ' Hwf' Hincl) as [H1l H1r].
     destruct (IHHeq2 Θ' Hwf' Hincl) as [H2l H2r].
@@ -3571,18 +3546,6 @@ Proof.
   - (* flex_l *) assumption.
   - (* flex_r *)
     apply a_scope_pskl__var. right; right; exists τ; exact H.
-Qed.
-
-(** The empty hygiene set is free: the plain refinement IS the
-    fill-hygienic one at [F = ∅] (the hole rule's ∅-disjointness is
-    trivial).  Lets the precision goal reuse the [_f] transports. *)
-Lemma ad_refine_syn_f_of_plain : forall Θ Δ Q Q',
-  {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
-  ad_refine_syn_f empty Θ Δ Q Q'.
-Proof.
-  intros Θ Δ Q Q' H; induction H;
-    try solve [ eauto using ad_refine_syn_f ].
-  apply ad_refine_syn_f__hole; [ clear; fsetdec | exact H ].
 Qed.
 
 (** An inherited quantifier never refines to a guarded skeleton (the target
@@ -8247,7 +8210,7 @@ Proof.
     eapply ad_refine_syn_f__flex_r; [ exact Hbα | ].
     unfold ptyp_to_bskl_syn in Hprec.
     rewrite bskl_to_pskl_pskl_to_bskl_syn in Hprec.
-    rewrite (mono_inh_eq_syn Hmτ) in Hprec.
+    rewrite (ptyp_to_bskl_inh_syn_eq Hmτ) in Hprec.
     exact Hprec.
 Qed.
 

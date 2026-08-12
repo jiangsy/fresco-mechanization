@@ -428,50 +428,6 @@ Lemma msubst_uskl_all_tag : forall ρ ε R,
   msubst_uskl ρ (uskl_all_tag ε R) = uskl_all_tag ε (msubst_uskl ρ R).
 Proof. induction ρ as [|[α1 g] ρ' IH]; intros; simpl; [reflexivity|]; rewrite IH; reflexivity. Qed.
 
-(** strip = pskl_to_uskl ∘ uskl_to_pskl commutes with opening. *)
-Lemma strip_open : forall ψ β,
-  pskl_to_uskl (uskl_to_pskl (open_uskl_wrt_uskl ψ (uskl_var_f β)))
-  = open_uskl_wrt_uskl (pskl_to_uskl (uskl_to_pskl ψ)) (uskl_var_f β).
-Proof.
-  intros. rewrite uskl_to_pskl_open. rewrite pskl_to_uskl_open_var. reflexivity.
-Qed.
-
-Lemma lc_uskl_to_pskl_local : forall R, lc_uskl R -> lc_pskl (uskl_to_pskl R).
-Proof.
-  intros R H; induction H; simpl;
-    try (constructor; auto; fail);
-    constructor; intros α; rewrite <- uskl_to_pskl_open; auto.
-Qed.
-
-(** Reflection of local closure / guardedness through the erasure. *)
-Lemma degree_uskl_of_pskl : forall R' k,
-  degree_pskl_wrt_pskl k (uskl_to_pskl R') -> degree_uskl_wrt_uskl k R'.
-Proof.
-  induction R'; intros k Hd; simpl in Hd; inversion Hd; subst;
-    constructor; auto.
-Qed.
-
-Lemma lc_uskl_of_pskl : forall T,
-  lc_pskl (uskl_to_pskl T) -> lc_uskl T.
-Proof.
-  intros T H. apply lc_uskl_of_degree. apply degree_uskl_of_pskl.
-  apply degree_pskl_wrt_pskl_of_lc_pskl. exact H.
-Qed.
-
-Lemma guarded_uskl_to_pskl_fwd : forall R,
-  guarded_uskl R -> guarded_pskl (uskl_to_pskl R).
-Proof.
-  intros R H; inversion H; simpl; constructor;
-    apply lc_uskl_to_pskl_local; assumption.
-Qed.
-
-Lemma guarded_uskl_of_pskl : forall T,
-  guarded_pskl (uskl_to_pskl T) -> guarded_uskl T.
-Proof.
-  destruct T; simpl; intros H; inversion H; subst;
-    try (constructor; apply lc_uskl_of_pskl; assumption).
-Qed.
-
 (** ρ preserves local closure. *)
 Lemma msubst_uskl_lc : forall ρ R,
   rho_lc ρ -> lc_uskl R -> lc_uskl (msubst_uskl ρ R).
@@ -746,14 +702,14 @@ Proof.
     eapply (H0 β ltac:(clear - Hβ; solve_notin_auto));
       [ exact Hlcρ
       | (* consistency premise *)
-        rewrite strip_open;
+        rewrite strip_uskl_open;
         pose proof (Hcbody β ltac:(clear - Hβ; solve_notin_auto)) as Hcβ;
         rewrite <- (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
                       Hlcρ Hβρ Hβf) in Hcβ;
         exact Hcβ
       | apply a_wf_aenv__tvar; [ exact HβΘ | exact Hwf ]
       | (* lc of opened subject *)
-        rewrite strip_open;
+        rewrite strip_uskl_open;
         rewrite (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
                    Hlcρ Hβρ Hβf);
         apply HlcSbody
@@ -762,7 +718,7 @@ Proof.
           [ apply (a_wf_pskl_reassoc (Hbody0 β ltac:(clear - Hβ; solve_notin_auto)) β)
           | clear; fsetdec ]
       | (* wf of opened subject-erasure *)
-        rewrite strip_open;
+        rewrite strip_uskl_open;
         rewrite (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
                    Hlcρ Hβρ Hβf);
         rewrite uskl_to_pskl_open;
@@ -828,20 +784,20 @@ Proof.
     rewrite <- (@msubst_uskl_open_comm ρ ψ β Hlcρ Hβρ Hβf).
     eapply (H0 β ltac:(clear - Hβ; solve_notin_auto));
       [ exact Hlcρ
-      | rewrite strip_open;
+      | rewrite strip_uskl_open;
         pose proof (Hcbody β ltac:(clear - Hβ; solve_notin_auto)) as Hcβ;
         rewrite <- (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
                       Hlcρ Hβρ Hβf) in Hcβ;
         exact Hcβ
       | apply a_wf_aenv__tvar; [ exact HβΘ | exact Hwf ]
-      | rewrite strip_open;
+      | rewrite strip_uskl_open;
         rewrite (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
                    Hlcρ Hβρ Hβf);
         apply HlcSbody
       | (* input ∀◇ is unchanged: reassociate its wf under the fresh rigid *)
         eapply a_wf_pskl_delta_mono;
           [ apply (a_wf_pskl_reassoc HwfP0 β) | clear; fsetdec ]
-      | rewrite strip_open;
+      | rewrite strip_uskl_open;
         rewrite (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
                    Hlcρ Hβρ Hβf);
         rewrite uskl_to_pskl_open;
@@ -882,7 +838,7 @@ Proof.
       apply a_consistag__univ_ghost_r.
       * rewrite msubst_uskl_arrow. constructor; assumption.
       * rewrite msubst_uskl_arrow; unfold a_non_flex; simpl; split;
-          [ constructor; apply lc_uskl_to_pskl_local; assumption
+          [ constructor; apply lc_uskl_to_pskl; assumption
           | intro Hf; inversion Hf ].
       * eapply IHa_solvetag_eq;
           [ exact Hlcρ
@@ -1245,7 +1201,7 @@ Lemma lc_msubst_strip : forall ρ ψ,
   lc_uskl (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ))).
 Proof.
   intros. apply msubst_uskl_lc; [ assumption | ].
-  apply pskl_to_uskl_lc. apply lc_uskl_to_pskl_local. assumption.
+  apply pskl_to_uskl_lc. apply lc_uskl_to_pskl. assumption.
 Qed.
 
 (** The erasure-swap obligation of [a_subtag_vacuous_erasure]: the
@@ -1515,7 +1471,7 @@ Proof.
               (pskl_to_uskl (uskl_to_pskl (open_uskl_wrt_uskl ψf (uskl_var_f β))))
             = open_uskl_wrt_uskl
                 (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψf))) ψg).
-        { simpl. rewrite strip_open.
+        { simpl. rewrite strip_uskl_open.
           rewrite (@msubst_uskl_open_comm ρ _ β Hlcρ Hβρ Hβf).
           rewrite <- subst_uskl_in_uskl_intro;
             [ reflexivity | clear - Hβ; fsetdec ]. }
@@ -1984,7 +1940,7 @@ Proof.
       | simpl; exact Hcons
       | exact Hwf
       | simpl;
-        apply pskl_to_uskl_lc; apply lc_uskl_to_pskl_local; exact Hlcψ
+        apply pskl_to_uskl_lc; apply lc_uskl_to_pskl; exact Hlcψ
       | exact HwfP0
       | simpl; exact HwfSub
       | exact Hrig | exact Hnfd | exact Hfaf ].
@@ -2057,7 +2013,7 @@ Proof.
                     ltac:(apply subst_uskl_in_uskl_lc_uskl;
                           [ assumption
                           | apply pskl_to_uskl_lc;
-                            apply lc_uskl_to_pskl_local; assumption ])
+                            apply lc_uskl_to_pskl; assumption ])
                     HwfP0a HwfSub1 Hrig Hnfd Hfaf)
           as [Hle [HwfΘm [HnfdΘm [HfafΘm _]]]];
         eapply a_consistag__arrow
@@ -2089,7 +2045,7 @@ Proof.
     assert (HbΞ : b `notin` ftvar_in_aenv Ξ)
       by (eapply a_lookeq_binder_not_generated; exact Hp).
     assert (Hlcstrip : lc_uskl (pskl_to_uskl (uskl_to_pskl ψa)))
-      by (apply pskl_to_uskl_lc; apply lc_uskl_to_pskl_local; exact Hlcψ).
+      by (apply pskl_to_uskl_lc; apply lc_uskl_to_pskl; exact Hlcψ).
     destruct R; simpl in HeS; inversion HeS; subst;
       try solve [ inversion HlcS ].
     + (* R = all_syn R' *)
@@ -2249,7 +2205,7 @@ Proof.
                       [ exact Hfaf | clear - Hβ; fsetdec ] ] ].
   - (* LE-ForallSyn : ∀-headed source, ∀◇ input (unchanged across opening) *)
     assert (Hlcstrip : lc_uskl (pskl_to_uskl (uskl_to_pskl ψa)))
-      by (apply pskl_to_uskl_lc; apply lc_uskl_to_pskl_local; exact Hlcψ).
+      by (apply pskl_to_uskl_lc; apply lc_uskl_to_pskl; exact Hlcψ).
     destruct R; simpl in HeS; inversion HeS; subst;
       try solve [ inversion HlcS ].
     + (* R = all_syn R' *)
@@ -2631,7 +2587,7 @@ Proof.
       * constructor;
           apply subst_uskl_in_uskl_lc_uskl; assumption.
       * simpl. unfold a_non_flex. split.
-        -- constructor; apply lc_uskl_to_pskl_local;
+        -- constructor; apply lc_uskl_to_pskl;
              apply subst_uskl_in_uskl_lc_uskl; assumption.
         -- intro Hf; inversion Hf.
       * change (uskl_arrow (subst_uskl_in_uskl ψa α R1)
@@ -2927,7 +2883,7 @@ Lemma pskl_to_uskl_lc_inv : forall P,
 Proof.
   intros P H.
   rewrite <- (uskl_to_pskl_pskl_to_uskl P).
-  apply lc_uskl_to_pskl_local. exact H.
+  apply lc_uskl_to_pskl. exact H.
 Qed.
 
 Lemma pskl_to_uskl_guarded_inv : forall P,
@@ -2948,8 +2904,8 @@ Proof.
   - (* var *)
     revert Hg.
     destruct_if as [-> | Hne]; intro Hg; [ | exact Hg ].
-    apply guarded_uskl_of_pskl.
-    apply guarded_uskl_to_pskl_fwd in Hg.
+    apply guarded_uskl_of_uskl_to_pskl.
+    apply guarded_pskl_uskl_to_pskl in Hg.
     rewrite uskl_to_pskl_pskl_to_uskl in Hg. exact Hg.
   - (* arrow *)
     inversion HlcS; subst.

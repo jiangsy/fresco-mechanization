@@ -162,7 +162,7 @@ Proof.
         | intros α1 g Hb; inversion Hb
         | exact Hlcψ
         | exact Hwf
-        | apply pskl_to_uskl_lc; apply lc_uskl_to_pskl_local; exact Hlcψ
+        | apply pskl_to_uskl_lc; apply lc_uskl_to_pskl; exact Hlcψ
         | exact HwfP0
         | exact HwfT
         | exact Hmod ].
@@ -417,7 +417,7 @@ Proof.
         | exact Hlcψ
         | exact Hwf
         | rewrite HeqT;
-          apply pskl_to_uskl_lc; apply lc_uskl_to_pskl_local; exact Hlcψ
+          apply pskl_to_uskl_lc; apply lc_uskl_to_pskl; exact Hlcψ
         | exact HwfP0
         | exact HwfT
         | exact Hmod ].
@@ -453,7 +453,7 @@ Proof.
                       ltac:(apply subst_uskl_in_uskl_lc_uskl;
                             [ assumption
                             | apply pskl_to_uskl_lc;
-                              apply lc_uskl_to_pskl_local; assumption ])
+                              apply lc_uskl_to_pskl; assumption ])
                       HwfP0a HwfT1
                       (@rig_empty _) (@no_flex_dep_empty _) (@faf_empty _))
             as [Hle [HwfΘm _]];
@@ -570,7 +570,7 @@ Proof.
       | Hb : _ `notin` add αv _ |- _ => rename Hb into Hbfr
       end.
       assert (Hlcstrip : lc_uskl (pskl_to_uskl (uskl_to_pskl ψa)))
-        by (apply pskl_to_uskl_lc; apply lc_uskl_to_pskl_local; exact Hlcψ).
+        by (apply pskl_to_uskl_lc; apply lc_uskl_to_pskl; exact Hlcψ).
       assert (HlcP1 : lc_pskl P1)
         by (eapply a_wf_pskl_lc; eauto).
       match type of Dbody with
@@ -779,7 +779,7 @@ Proof.
           | exact Hlcψ
           | exact Hwf
           | rewrite HeqT;
-            apply pskl_to_uskl_lc; apply lc_uskl_to_pskl_local; exact Hlcψ
+            apply pskl_to_uskl_lc; apply lc_uskl_to_pskl; exact Hlcψ
           | exact HwfP0
           | exact HwfT
           | exact Hmod ].
@@ -870,7 +870,7 @@ Proof.
       | Hb : _ `notin` add αv _ |- _ => rename Hb into Hbfr
       end.
       assert (Hlcstrip : lc_uskl (pskl_to_uskl (uskl_to_pskl ψa)))
-        by (apply pskl_to_uskl_lc; apply lc_uskl_to_pskl_local; exact Hlcψ).
+        by (apply pskl_to_uskl_lc; apply lc_uskl_to_pskl; exact Hlcψ).
       assert (HlcP1 : lc_pskl P1)
         by (eapply a_wf_pskl_lc; eauto).
       match type of Dbody with
@@ -1072,7 +1072,7 @@ Proof.
           | exact Hlcψ
           | exact Hwf
           | rewrite HeqT;
-            apply pskl_to_uskl_lc; apply lc_uskl_to_pskl_local; exact Hlcψ
+            apply pskl_to_uskl_lc; apply lc_uskl_to_pskl; exact Hlcψ
           | exact HwfP0
           | exact HwfT
           | exact Hmod ].
@@ -1151,7 +1151,7 @@ Proof.
           | exact Hlcψ
           | exact Hwf
           | rewrite HeqT;
-            apply pskl_to_uskl_lc; apply lc_uskl_to_pskl_local; exact Hlcψ
+            apply pskl_to_uskl_lc; apply lc_uskl_to_pskl; exact Hlcψ
           | exact HwfP0
           | exact HwfT
           | exact Hmod ].
@@ -1322,7 +1322,7 @@ Proof.
           | exact Hlcψ
           | exact Hwf
           | rewrite HeqT;
-            apply pskl_to_uskl_lc; apply lc_uskl_to_pskl_local; exact Hlcψ
+            apply pskl_to_uskl_lc; apply lc_uskl_to_pskl; exact Hlcψ
           | exact HwfP0
           | exact HwfT
           | exact Hmod ].
@@ -1377,21 +1377,6 @@ Qed.
 (*  determinism / is_tskl, guarded+ghost-free skeleton-var rename, and    *)
 (*  a_solvetag_sub_eq_rename_var (the ∀-case output uniformity).          *)
 (* ===================================================================== *)
-
-(** [d_tags_skl] respects set-equality of the tag context. *)
-Lemma d_tags_skl_psi_cong : forall Ψ Ψ' ψ,
-  d_tags_skl Ψ ψ -> Ψ [=] Ψ' -> d_tags_skl Ψ' ψ.
-Proof.
-  intros Ψ Ψ' ψ H; revert Ψ'; induction H; intros Ψ' Heq.
-  - apply d_tags_skl__unit; fsetdec.
-  - apply d_tags_skl__var; fsetdec.
-  - eapply d_tags_skl__arrow;
-      [ exact H | exact H0 | exact H1 | clear - H2 Heq; fsetdec ].
-  - eapply d_tags_skl__all_tag;
-      [ exact H | exact H1 | clear - H2 Heq; fsetdec ].
-  - apply d_tags_skl__holeg; fsetdec.
-  - apply d_tags_skl__topholeg; apply IHd_tags_skl; exact Heq.
-Qed.
 
 (** Determinism of the tag reading (up to set-equality). *)
 Lemma d_tags_skl_det : forall Ψ1 Ψ' ψ,
@@ -1940,7 +1925,7 @@ Proof.
     simpl in Htg; destruct Htg as [Hhd Htg0].
     apply dec_ext__skip_tophole;
       [ rewrite Hera; apply lc_head_guarded;
-          [ rewrite <- Hera; apply lc_uskl_to_pskl_local; apply is_tskl_lc;
+          [ rewrite <- Hera; apply lc_uskl_to_pskl; apply is_tskl_lc;
             exact Histk
           | eapply a_guess_mono_head; eassumption ]
       | eapply IHn; [ lia | exact Hgb | exact Htg0 | exact Histk | exact Hgf
@@ -2136,7 +2121,7 @@ Proof.
   - auto with frost.
   - auto with frost.
   - apply guarded_pskl__arrow;
-      apply lc_uskl_to_pskl_local; apply is_tskl_lc;
+      apply lc_uskl_to_pskl; apply is_tskl_lc;
       eapply dec_ext_is_tskl; eassumption.
   - auto with frost.
 Qed.

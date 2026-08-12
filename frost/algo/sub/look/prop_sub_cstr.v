@@ -188,8 +188,8 @@ Proof.
        [delta_def_fresh] is for, exactly as in the weakening twin *)
     eapply ad_ppre__flex_r; [ eassumption | ].
     eapply (IHad_partial_precise Δ0 Δ'); [ exact Heq | | exact Hdf ].
-    rewrite ftvar_in_uskl_ptyp_to_uskl_syn.
-    apply atoms_inter_empty_pointwise.
+    rewrite ftvar_ptyp_to_uskl_syn.
+    apply inter_empty_pointwise.
     intros y Hy. eapply Hdf; [ exact Hy | eassumption ].
 Qed.
 
@@ -945,7 +945,7 @@ Proof.
                   | inversion Hrho; subst; inversion H ].
       - apply guarded_pskl__unit.
       - inversion HlcR; subst.
-        apply guarded_pskl__arrow; apply lc_uskl_to_pskl_local; assumption. }
+        apply guarded_pskl__arrow; apply lc_uskl_to_pskl; assumption. }
     (* this [⊆] must be discharged OUTSIDE the [edestruct]: as a bullet it
        runs while Ψi and Ψa are still EVARS (the goal does not constrain the
        lemma's conclusion), and [fsetdec] on an evar goal does not

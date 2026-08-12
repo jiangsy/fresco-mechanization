@@ -104,8 +104,8 @@ Proof.
       | apply d_consis__var; [ assumption | fsetdec ] | apply is_ityp__var ].
   - (* arrow: guarded both sides, consistency-refl, is_ityp from inh paint *)
     apply d_sub__check.
-    + apply guarded_utyp__arrow; apply lc_ptyp_to_utyp_syn; eapply d_wf_ptyp_lc_loc; eassumption.
-    + apply guarded_btyp__arrow; apply lc_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc_loc; eassumption.
+    + apply guarded_utyp__arrow; apply lc_ptyp_to_utyp_syn; eapply d_wf_ptyp_lc; eassumption.
+    + apply guarded_btyp__arrow; apply lc_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc; eassumption.
     + eapply d_consis__arrow;
         [ apply d_consis_refl_paint; eassumption
         | apply d_consis_refl_paint; eassumption | fsetdec ].

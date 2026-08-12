@@ -267,18 +267,6 @@ Lemma a_solve_eq_decls : forall Θ P P0 Ξ P',
   {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a -> a_decls Ξ.
 Proof. intros; eapply (proj2 a_solve_sub_eq_decls); eauto. Qed.
 
-(** Set-form bridge: the pointwise avoid-statements of the guess kit and
-    the set-form the induction below carries are interchangeable. *)
-Lemma inter_empty_of_pointwise : forall S1 S2,
-  (forall α, α `in` S1 -> α `notin` S2) -> S1 ∩ S2 [=] empty.
-Proof.
-  intros S1 S2 H α. split; intros Hin; [ | clear - Hin; fsetdec ].
-  exfalso.
-  assert (H1 : α `in` S1) by (clear - Hin; fsetdec).
-  assert (H2 : α `in` S2) by (clear - Hin; fsetdec).
-  exact (H α H1 H2).
-Qed.
-
 (** (K2) — the master scoping invariant.  Stated in SET form: the
     per-case reasoning is then pure set algebra and never has to match on
     the shape of an induction hypothesis. *)
@@ -295,7 +283,7 @@ Proof.
     try solve [ assumption ];
     (* SE-FlexR — guess^TY's own avoid-input, in set form *)
     try solve
-      [ apply inter_empty_of_pointwise; intros α0 Hα0;
+      [ apply inter_empty_pointwise; intros α0 Hα0;
         eapply a_guess_mono_generated_fresh; eassumption ];
     (* the four CLOSING binder rows + SS-ForallR: the premise ran at
        [(β ~ tvar) ++ Θ], so its block dodges β as well as Θ *)

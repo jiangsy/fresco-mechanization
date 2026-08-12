@@ -55,7 +55,7 @@ Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.consis.prop_consis_precise.  (* d_tags_skl_var_inv *)
 Require Import src.frost.algo.consis.prop_soundness_consis.    (* a_wf_pskl_lc *)
-Require Import src.frost.deco_algo.prop_decorate_sub.    (* lc_uskl_to_pskl_local *)
+Require Import src.frost.deco_algo.prop_decorate_sub.    (* lc_uskl_to_pskl *)
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_refine.       (* ad_refine_syn_weaken *)
 Require Import src.frost.algo.sub.prop_looksub.
@@ -118,7 +118,7 @@ Proof.
   - (* leaf: the guess is a variable *) apply guarded_pskl__var.
   - (* arrow: both sides are arrows; lc comes from the guess *)
     inversion Hlc; subst.
-    apply guarded_pskl__arrow; apply lc_uskl_to_pskl_local; assumption.
+    apply guarded_pskl__arrow; apply lc_uskl_to_pskl; assumption.
 Qed.
 
 (** A □ input skeleton solves to □ or to a universal ghost — the only rules
@@ -272,7 +272,7 @@ Proof.
   - (* flex_r: the guess unfolds to a definition, whose variables are
        covered by [def_ftv] *)
     apply IHad_partial_precise; try assumption.
-    rewrite ftvar_in_uskl_ptyp_to_uskl_syn.
+    rewrite ftvar_ptyp_to_uskl_syn.
     intros Hin. apply Hdf.
     pose proof (@def_ftv_binds Θ α τ H) as Hsub. clear - Hsub Hin; fsetdec.
 Qed.
@@ -2903,7 +2903,7 @@ Proof.
       (* the unfolded guess: a monotype painting, hence tag-free, and
          Δ-clean because a definition never mentions a Δ-variable *)
       assert (Hclean : (ftvar_in_uskl (ptyp_to_uskl_syn τ)) ∩ Δρ [=] empty).
-      { rewrite ftvar_in_uskl_ptyp_to_uskl_syn.
+      { rewrite ftvar_ptyp_to_uskl_syn.
         intros α0; split; intros Hin; [ | clear - Hin; fsetdec ].
         exfalso.
         assert (Hα0Δ : α0 `in` Δ) by (clear - Hin Hdelta; fsetdec).

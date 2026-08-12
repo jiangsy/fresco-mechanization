@@ -33,7 +33,6 @@ Inductive d_wf_denv : list (atom * dbind) -> Prop :=
     d_wf_pskl Γ nil P ->
     d_wf_denv ((x ~ dbind_skl P) ++ Γ).
 
-
 (** * Weakening. *)
 
 Lemma d_wf_ptyp_weakening : forall Γ1 Γ2 Γ3 A,
@@ -51,7 +50,6 @@ Proof.
     rewrite_env (((α ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     apply H0; auto.
 Qed.
-
 
 Lemma d_wf_utyp_weakening : forall Γ1 Γ2 Γ3 C,
     {{ (Γ1 ++ Γ3) ⊢ᵤ C }}d ->
@@ -131,7 +129,6 @@ Proof.
   - constructor.         (* holeg, as hole *)
   - constructor; auto.   (* topholeg, as tophole *)
 Qed.
-
 
 (** * Tag-relation under renaming.
 
@@ -214,7 +211,6 @@ Qed.
     proof layer is being moved off the old unified syntax; they are
     intentionally stated over the latest categories. *)
 
-
 (** Single-binding weakening (specialisations of the general weakening). *)
 Lemma d_wf_ptyp_cons : forall x d Γ A,
     d_wf_ptyp Γ A -> d_wf_ptyp ((x ~ d) ++ Γ) A.
@@ -242,18 +238,6 @@ Proof.
     analyze_binds Hb;
     try (match goal with HV : dbind_skl _ = dbind_skl _ |- _ => inversion HV; subst end);
     apply d_wf_pskl_cons; first [ assumption | apply IHHwf; assumption ].
-Qed.
-
-(** [d_wf_ptyp] local-closure / scoping projections.  (These are also
-    proven in prop_skeleton.v, which sits ABOVE this file in the dependency
-    order; restated here so the wf lemmas below can use them.) *)
-Lemma d_wf_ptyp_lc_loc : forall Γ A, d_wf_ptyp Γ A -> lc_ptyp A.
-Proof.
-  intros Γ A H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; assumption.
-  - pick fresh α. apply (lc_ptyp_all_exists α). apply H0. auto.
 Qed.
 
 Lemma d_wf_ptyp_ftvar : forall Γ A,
@@ -431,11 +415,21 @@ Proof.
     specialize (H0 α). rewrite ptyp_to_utyp_syn_open in H0. simpl in H0. exact H0.
 Qed.
 
+(** Well-formed plain types are locally closed. *)
+Lemma d_wf_ptyp_lc : forall Γ A, d_wf_ptyp Γ A -> lc_ptyp A.
+Proof.
+  intros Γ A H. induction H.
+  - apply lc_ptyp_unit.
+  - apply lc_ptyp_var_f.
+  - apply lc_ptyp_arrow; assumption.
+  - pick fresh α. apply (lc_ptyp_all_exists α). auto.
+Qed.
+
 Lemma d_wf_btyp_painting_syn : forall Γ A,
     d_wf_ptyp Γ A -> d_wf_btyp Γ (ptyp_to_btyp_syn A).
 Proof.
   intros Γ A H. apply d_wf_btyp_of_lc_ftvar.
-  - apply lc_ptyp_to_btyp_syn. eapply d_wf_ptyp_lc_loc; eassumption.
+  - apply lc_ptyp_to_btyp_syn. eapply d_wf_ptyp_lc; eassumption.
   - rewrite ftvar_ptyp_to_btyp_syn. intros α Hα. eapply d_wf_ptyp_ftvar; eassumption.
 Qed.
 
@@ -443,7 +437,7 @@ Lemma d_wf_btyp_painting_inh : forall Γ A,
     d_wf_ptyp Γ A -> d_wf_btyp Γ (ptyp_to_btyp_inh A).
 Proof.
   intros Γ A H. apply d_wf_btyp_of_lc_ftvar.
-  - apply lc_ptyp_to_btyp_inh. eapply d_wf_ptyp_lc_loc; eassumption.
+  - apply lc_ptyp_to_btyp_inh. eapply d_wf_ptyp_lc; eassumption.
   - rewrite ftvar_ptyp_to_btyp_inh. intros α Hα. eapply d_wf_ptyp_ftvar; eassumption.
 Qed.
 
@@ -451,7 +445,7 @@ Lemma d_wf_utyp_painting_syn : forall Γ A,
     d_wf_ptyp Γ A -> d_wf_utyp Γ (ptyp_to_utyp_syn A).
 Proof.
   intros Γ A H. apply d_wf_utyp_of_lc_ftvar.
-  - apply lc_ptyp_to_utyp_syn. eapply d_wf_ptyp_lc_loc; eassumption.
+  - apply lc_ptyp_to_utyp_syn. eapply d_wf_ptyp_lc; eassumption.
   - rewrite ftvar_ptyp_to_utyp_syn. intros α Hα. eapply d_wf_ptyp_ftvar; eassumption.
 Qed.
 
@@ -517,7 +511,7 @@ Qed.
     [forall_r] case of the abstraction-tail subsumption lemmas, where the result
     [btyp_all_inh B] (with [is_ityp B]) must be matched against the painted
     result [btyp_all_inh (ptyp_to_btyp_inh A)] forced by [d_typing__forall]. *)
-Lemma is_ityp_ptyp_to_btyp_inh : forall B,
+Lemma ptyp_to_btyp_inh_btyp_to_ptyp : forall B,
     is_ityp B -> ptyp_to_btyp_inh (btyp_to_ptyp B) = B.
 Proof.
   induction 1; simpl; try reflexivity.
@@ -533,19 +527,6 @@ Proof.
       simpl in H0. exact H0.
 Qed.
 
-(** The inh-painting of a (locally-closed) [ptyp] is fully inherited. *)
-Lemma is_ityp_paint : forall A, lc_ptyp A -> is_ityp (ptyp_to_btyp_inh A).
-Proof.
-  intros A H. induction H; simpl.
-  - apply is_ityp__unit.
-  - apply is_ityp__var.
-  - apply is_ityp__arrow; assumption.
-  - apply is_ityp__all with (L := empty). intros α _.
-    change (btyp_var_f α) with (ptyp_to_btyp_inh (ptyp_var_f α)).
-    rewrite <- ptyp_to_btyp_inh_open.
-    match goal with Hb : forall _, is_ityp _ |- _ => apply Hb end.
-Qed.
-
 Lemma degree_btyp_of_degree_ptyp_erase : forall B k,
     degree_ptyp_wrt_ptyp k (btyp_to_ptyp B) -> degree_btyp_wrt_btyp k B.
 Proof.
@@ -557,7 +538,7 @@ Lemma d_wf_btyp_of_wf_ptyp_erase : forall Γ B,
 Proof.
   intros Γ B H. apply d_wf_btyp_of_lc_ftvar.
   - apply lc_btyp_of_degree. apply degree_btyp_of_degree_ptyp_erase.
-    apply degree_ptyp_wrt_ptyp_of_lc_ptyp. eapply d_wf_ptyp_lc_loc; eassumption.
+    apply degree_ptyp_wrt_ptyp_of_lc_ptyp. eapply d_wf_ptyp_lc; eassumption.
   - intros α Hα. eapply d_wf_ptyp_ftvar; [ eassumption | ].
     rewrite ftvar_btyp_to_ptyp. assumption.
 Qed.
@@ -747,7 +728,7 @@ Proof.
   intros m Γ e B H. induction H; intros Hwf.
   - (* unit *) apply mod_comp_ty__ti. apply is_styp__unit.
   - (* var *) apply mod_comp_ty__ti. apply is_styp_ptyp_to_btyp_syn.
-    eapply d_wf_ptyp_lc_loc. eapply d_wf_denv_binds_typ; eassumption.
+    eapply d_wf_ptyp_lc. eapply d_wf_denv_binds_typ; eassumption.
   - (* anno: result syn A — lc A from the inherited premise (IH) *)
     apply mod_comp_ty__ti. apply is_styp_ptyp_to_btyp_syn.
     apply lc_ptyp_of_lc_btyp_inh. apply is_ityp_lc.
@@ -755,7 +736,7 @@ Proof.
     inversion Hi; subst. assumption.
   - (* sub *) eapply d_sub_skmod; eassumption.
   - (* freeze: result inh A — lc A from the synthesised premise (IH) *)
-    apply mod_comp_ty__tc. apply is_ityp_paint.
+    apply mod_comp_ty__tc. apply is_ityp_ptyp_to_btyp_inh.
     apply lc_ptyp_of_lc_btyp_syn. apply is_styp_lc.
     assert (Hs : mod_comp_ty (ptyp_to_btyp_syn A) mode_ti) by (apply IHd_typing; assumption).
     inversion Hs; subst. assumption.
@@ -865,12 +846,3 @@ Proof.
     + exact H0.
 Qed.
 
-(** Well-formed plain types are locally closed. *)
-Lemma d_wf_ptyp_lc : forall Γ A, d_wf_ptyp Γ A -> lc_ptyp A.
-Proof.
-  intros Γ A H. induction H.
-  - apply lc_ptyp_unit.
-  - apply lc_ptyp_var_f.
-  - apply lc_ptyp_arrow; assumption.
-  - pick fresh α. apply (lc_ptyp_all_exists α). auto.
-Qed.

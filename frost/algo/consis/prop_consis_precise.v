@@ -164,29 +164,12 @@ Lemma a_tags_sort_d_tags : forall NM Ψ ψ,
   a_tags_sort NM Ψ ψ -> d_tags_skl Ψ ψ.
 Proof. intros NM Ψ ψ H. inversion H; auto. Qed.
 
-(** [d_tags_skl] respects set-equality (local copy of the lemma in
-    prop_soundness_sub.v — kept here so completeness does not depend on the
-    soundness decoration file). *)
-Lemma d_tags_skl_recong : forall Ψ Ψ' ψ,
-  d_tags_skl Ψ ψ -> Ψ [=] Ψ' -> d_tags_skl Ψ' ψ.
-Proof.
-  intros Ψ Ψ' ψ H; revert Ψ'; induction H; intros Ψ' Heq.
-  - apply d_tags_skl__unit; fsetdec.
-  - apply d_tags_skl__var; fsetdec.
-  - eapply d_tags_skl__arrow;
-      [ exact H | exact H0 | exact H1 | clear - H2 Heq; fsetdec ].
-  - eapply d_tags_skl__all_tag;
-      [ exact H | exact H1 | clear - H2 Heq; fsetdec ].
-  - apply d_tags_skl__holeg; fsetdec.
-  - apply d_tags_skl__topholeg; apply IHd_tags_skl; exact Heq.
-Qed.
-
 Lemma a_tags_sort_psi_cong : forall NM Ψ Ψ' ψ,
   a_tags_sort NM Ψ ψ -> Ψ [=] Ψ' -> a_tags_sort NM Ψ' ψ.
 Proof.
   intros NM Ψ Ψ' ψ H Heq. inversion H; subst;
     [ apply a_tags_sort__sk | apply a_tags_sort__ty ]; auto;
-    eapply d_tags_skl_recong; eauto.
+    eapply d_tags_skl_psi_cong; eauto.
 Qed.
 
 (** Structural inversions of [a_tags_sort] (both modes at once), carrying the
@@ -247,14 +230,6 @@ Qed.
 (*  subject along the refinement — the SUBJECT-side mirror of the Qed       *)
 (*  target-side [ad_pat_consis_refine_inh_gen] (prop_soundness_subtag.v).          *)
 (* ===================================================================== *)
-
-(** [strip ψ := pskl_to_uskl ⌊ψ⌋ˢ] commutes with opening. *)
-Lemma strip_uskl_open : forall ψ α,
-  pskl_to_uskl (uskl_to_pskl (open_uskl_wrt_uskl ψ (uskl_var_f α)))
-  = open_uskl_wrt_uskl (pskl_to_uskl (uskl_to_pskl ψ)) (uskl_var_f α).
-Proof.
-  intros ψ α. rewrite uskl_to_pskl_open, pskl_to_uskl_open. reflexivity.
-Qed.
 
 (** (1a) Stripping the decorated subject to its plain skeleton preserves
     consistency; the subject is then tag-free so the tag context is [∅]. *)
@@ -652,7 +627,7 @@ Proof.
     replace (ptyp_to_uskl_syn τ) with (pskl_to_uskl (ptyp_to_pskl τ))
       by (apply pskl_to_uskl_ptyp).
     eapply IHHr with (Ptgt := Ptgt);
-      [ symmetry; apply (mono_inh_eq_syn Hmτ) | reflexivity
+      [ symmetry; apply (ptyp_to_bskl_inh_syn_eq Hmτ) | reflexivity
       | exact Hmon | exact Hrig | exact Hwf' | exact Hc | exact Hwfq ].
   - (* flex_r: Qtgt = bskl_var α (α ≔ τ), premise Qsrc ⊳ syn τ *)
     destruct Ptgt as [ | | α0 | | | | ]; simpl in HTgt; try discriminate HTgt.
@@ -666,7 +641,7 @@ Proof.
     replace (ptyp_to_uskl_syn τ) with (pskl_to_uskl (ptyp_to_pskl τ)) in Hc'
       by (apply pskl_to_uskl_ptyp).
     eapply IHHr with (Ptgt := ptyp_to_pskl τ);
-      [ reflexivity | symmetry; apply (mono_inh_eq_syn Hmτ)
+      [ reflexivity | symmetry; apply (ptyp_to_bskl_inh_syn_eq Hmτ)
       | exact Hmon | exact Hrig | exact Hwf' | exact Hc' | exact Hwfq ].
 Qed.
 
@@ -1155,7 +1130,7 @@ Proof.
         | exact HΨfull | exact Hdisj | exact Hwfq ].
     + inversion HeqS; subst.
       assert (Hfr : α `notin` ftvar_in_uskl (ptyp_to_uskl_syn τ)).
-      { rewrite ftvar_in_uskl_ptyp_syn.
+      { rewrite ftvar_ptyp_to_uskl_syn.
         assert (Hsc : ftvar_in_ptyp τ [<=] dom Θ)
           by (eapply a_wf_aenv_def_ftv_dom; [ exact Hwf | exact H ]).
         clear - Hαd Hsc; fsetdec. }
@@ -1390,7 +1365,7 @@ Proof.
     destruct_if as [-> | Hne]; [ exfalso; clear - Hdom Hα; fsetdec | ].
     eapply upre__flex_l; [ exact H | ].
     assert (Hfrτ : α0 `notin` ftvar_in_uskl (ptyp_to_uskl_syn τ)).
-    { rewrite ftvar_in_uskl_ptyp_syn.
+    { rewrite ftvar_ptyp_to_uskl_syn.
       assert (Hsc : ftvar_in_ptyp τ [<=] dom Θ)
         by (eapply a_wf_aenv_def_ftv_dom; [ exact Hwf | exact H ]).
       clear - Hsc Hα; fsetdec. }
@@ -1403,7 +1378,7 @@ Proof.
     destruct_if as [-> | Hne]; [ exfalso; clear - Hdom Hα; fsetdec | ].
     eapply upre__flex_r; [ exact H | ].
     assert (Hfrτ : α0 `notin` ftvar_in_uskl (ptyp_to_uskl_syn τ)).
-    { rewrite ftvar_in_uskl_ptyp_syn.
+    { rewrite ftvar_ptyp_to_uskl_syn.
       assert (Hsc : ftvar_in_ptyp τ [<=] dom Θ)
         by (eapply a_wf_aenv_def_ftv_dom; [ exact Hwf | exact H ]).
       clear - Hsc Hα; fsetdec. }
@@ -1519,7 +1494,7 @@ Proof.
     rewrite <- pskl_to_uskl_ptyp.
     eapply IHHr;
       [ exact Hwf
-      | symmetry; apply (mono_inh_eq_syn Hm)
+      | symmetry; apply (ptyp_to_bskl_inh_syn_eq Hm)
       | reflexivity | exact Htsk | exact Hdt ].
   - (* flex_r: ψt = var α *)
     destruct ψt as [ | n | α0 | ψ1 ψ2 | ψ0 | ε ψ0 | | ψ0 | | ψ0 ];
@@ -1534,7 +1509,7 @@ Proof.
       [ exact Hwf
       | reflexivity
       | rewrite uskl_to_pskl_ptyp_to_uskl_syn;
-        symmetry; apply (mono_inh_eq_syn Hm)
+        symmetry; apply (ptyp_to_bskl_inh_syn_eq Hm)
       | apply mono_ptyp_to_uskl_syn_is_tskl; exact Hm
       | apply (mono_ptyp_to_uskl_syn_tags Hm); reflexivity ].
 Qed.

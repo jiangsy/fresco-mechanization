@@ -504,7 +504,7 @@ Proof.
     by (destruct Hfα as [h | [τ0 h]];
         [ right; left; exact h | right; right; exists τ0; exact h ]).
   assert (Hαbfull : a_binds_tvar α (Ξ ++ (β ~ abind_tvar) ++ Θ0)).
-  { destruct (a_flex_tvar_app_weaken (Ξ ++ (β ~ abind_tvar)) Hfα)
+  { destruct (a_flex_tvar_weaken_app (Ξ ++ (β ~ abind_tvar)) Hfα)
       as [h | [τ0 h]];
       [ right; left | right; right; exists τ0 ]; simpl_env in h; exact h. }
   assert (Hbβ : binds β abind_tvar (Ξ ++ (β ~ abind_tvar) ++ Θ0))
@@ -577,7 +577,7 @@ Proof.
     destruct (@aenv_msubst_dom_inv Θ β Hin) as [Hbf | [τ0 Hbf]];
       pose proof (binds_unique _ _ _ _ _ HbβΘ Hbf HuqΘ) as Hc; discriminate Hc. }
   assert (Hβdn : β `in` ftvar_in_pskl (⇓ˢ[ Θ ] (msubst_pskl κ P0)))
-    by (apply msubst_pskl_ftv_notin_dom; [ exact HβΘdn | exact HβκP0 ]).
+    by (apply msubst_pskl_ftv_keep; [ exact HβΘdn | exact HβκP0 ]).
   clear - Hβdn HO3 HβΘ'. fsetdec.
 Qed.
 

@@ -1155,21 +1155,6 @@ Proof.
   apply btyp_to_bskl_close_rec.
 Qed.
 
-Lemma btyp_to_bskl_open_rec : forall B B' k,
-  btyp_to_bskl (open_btyp_wrt_btyp_rec k B' B)
-  = open_bskl_wrt_bskl_rec k (btyp_to_bskl B') (btyp_to_bskl B).
-Proof.
-  intros B; induction B; intros B' k; default_simp.
-Qed.
-
-Lemma btyp_to_bskl_open : forall B B',
-  btyp_to_bskl (open_btyp_wrt_btyp B B')
-  = open_bskl_wrt_bskl (btyp_to_bskl B) (btyp_to_bskl B').
-Proof.
-  intros. unfold open_btyp_wrt_btyp, open_bskl_wrt_bskl.
-  apply btyp_to_bskl_open_rec.
-Qed.
-
 (** ⭐ A MONOTYPE HAS ONLY ONE COLOURING — which is what lets the two
     flexible rows of the transport rebuild their answer: a definition
     [α̂ ≔ τ] is a monotype ([a_wf_aenv__flex_def]), so whatever colouring
@@ -1268,7 +1253,7 @@ Proof.
     pose proof (IHad_refine_syn Hwf α0 β Δ' Heq Hα) as IH2.
     rewrite (subst_bskl_in_bskl_fresh_eq (ptyp_to_bskl_syn τ)
                (bskl_var_f β) α0) in IH2;
-      [ exact IH2 | rewrite ftvar_in_bskl_ptyp_syn; exact Hfr ].
+      [ exact IH2 | rewrite ftvar_ptyp_to_bskl_syn; exact Hfr ].
   - (* flex_r *)
     assert (Hne : α <> α0)
       by (intros ->; apply binds_In in H; clear - H Hα; fsetdec).
@@ -1285,7 +1270,7 @@ Proof.
     pose proof (IHad_refine_syn Hwf α0 β Δ' Heq Hα) as IH2.
     rewrite (subst_bskl_in_bskl_fresh_eq (ptyp_to_bskl_syn τ)
                (bskl_var_f β) α0) in IH2;
-      [ exact IH2 | rewrite ftvar_in_bskl_ptyp_syn; exact Hfr ].
+      [ exact IH2 | rewrite ftvar_ptyp_to_bskl_syn; exact Hfr ].
 Qed.
 
 (* --- §4d  the transport's kit (4): the OCCURRENCE lemma ---------------- *)
@@ -1412,7 +1397,7 @@ Proof.
   - (* flex_r : escape into the definition's body *)
     destruct (IHad_pat_consis A ltac:(exact HeqA) γ Hγ) as [Hl | [Hm | Hr]].
     + right; right. exists α, τ. split; [ exact H | ].
-      rewrite ftvar_in_bskl_ptyp_syn in Hl. exact Hl.
+      rewrite ftvar_ptyp_to_bskl_syn in Hl. exact Hl.
     + right; left; exact Hm.
     + right; right; exact Hr.
 Qed.
@@ -1595,7 +1580,7 @@ Proof.
     pose proof (IHad_refine_syn Θa α0 Θ' β eq_refl Hblk Hwf Hβ) as IH2.
     rewrite (subst_bskl_in_bskl_fresh_eq (ptyp_to_bskl_syn τ)
                (bskl_var_f β) α0) in IH2;
-      [ exact IH2 | rewrite ftvar_in_bskl_ptyp_syn; exact Hfr ].
+      [ exact IH2 | rewrite ftvar_ptyp_to_bskl_syn; exact Hfr ].
   - (* flex_r *)
     assert (Hbτ : binds α (abind_flex_mono_def τ) Θ')
       by (eapply a_tvar_block_binds_def_inv;
@@ -1626,7 +1611,7 @@ Proof.
     pose proof (IHad_refine_syn Θa α0 Θ' β eq_refl Hblk Hwf Hβ) as IH2.
     rewrite (subst_bskl_in_bskl_fresh_eq (ptyp_to_bskl_syn τ)
                (bskl_var_f β) α0) in IH2;
-      [ exact IH2 | rewrite ftvar_in_bskl_ptyp_syn; exact Hfr ].
+      [ exact IH2 | rewrite ftvar_ptyp_to_bskl_syn; exact Hfr ].
 Qed.
 
 (* --- §4f  the TARGET TRANSPORT ----------------------------------------- *)

@@ -327,27 +327,6 @@ Qed.
 (*  §4  Subjects are flexible variables of the input                      *)
 (* ===================================================================== *)
 
-Lemma a_flex_tvar_weaken_app : forall Ξ Θ α,
-  a_flex_tvar Θ α -> a_flex_tvar (Ξ ++ Θ) α.
-Proof.
-  intros * [Hb | [τ Hb]]; [ left | right; exists τ ];
-    unfold binds in *; apply in_or_app; right; assumption.
-Qed.
-
-Lemma a_flex_tvar_insert_mid : forall Ξ mid Θ α,
-  a_flex_tvar (Ξ ++ Θ) α -> a_flex_tvar (Ξ ++ mid ++ Θ) α.
-Proof.
-  intros * H.
-  destruct H as [Hb | [τ Hb]].
-  - left. unfold binds in *. apply in_app_or in Hb. apply in_or_app.
-    destruct Hb as [Hb | Hb];
-      [ left; assumption | right; apply in_or_app; right; assumption ].
-  - right. exists τ. unfold binds in *.
-    apply in_app_or in Hb. apply in_or_app.
-    destruct Hb as [Hb | Hb];
-      [ left; assumption | right; apply in_or_app; right; assumption ].
-Qed.
-
 (** An assignment's subject is a flexible variable of its merged input
     [Ξ ++ Θ0]; a unification's two subjects are flexible variables of its
     input.  (Rules whose own shape does not show it thread it from their
@@ -378,16 +357,16 @@ Proof.
     simpl_env in IH. exact IH.
   - (* skip *)
     intros Θ0 Θ1 Ξ α β P Hne Hni Hbar Ha IH.
-    apply (a_flex_tvar_insert_mid Ξ (β ~ abind_flex_mono) Θ0). exact IH.
+    apply (a_flex_tvar_weaken_mid Ξ (β ~ abind_flex_mono) Θ0). exact IH.
   - (* skip_rigid *)
     intros Θ0 Θ1 Ξ α β P Hni Hbar Ha IH.
-    apply (a_flex_tvar_insert_mid Ξ (β ~ abind_tvar) Θ0). exact IH.
+    apply (a_flex_tvar_weaken_mid Ξ (β ~ abind_tvar) Θ0). exact IH.
   - (* skip_tm_var *)
     intros Θ0 Θ1 Ξ α x P' P Hbar Ha IH.
-    apply (a_flex_tvar_insert_mid Ξ (x ~ abind_var_typ P') Θ0). exact IH.
+    apply (a_flex_tvar_weaken_mid Ξ (x ~ abind_var_typ P') Θ0). exact IH.
   - (* skip_tm_skl *)
     intros Θ0 Θ1 Ξ α x P' P Hbar Ha IH.
-    apply (a_flex_tvar_insert_mid Ξ (x ~ abind_var_skl P') Θ0). exact IH.
+    apply (a_flex_tvar_weaken_mid Ξ (x ~ abind_var_skl P') Θ0). exact IH.
   - (* flex_id *)
     intros Θ0 α Hf. split; assumption.
   - (* flex_l *)
@@ -565,19 +544,6 @@ Proof.
     apply mem_iff in Hm2.
     exfalso. clear - Hm1 Hm2. fsetdec.
   - reflexivity.
-Qed.
-
-(** The [Ghost]/[GhostR] side condition transports through the rename:
-    if [Δ] avoids [ftv P] then the renamed [Δ] avoids the renamed [ftv]. *)
-(** [ftvar_in_pskl_open_pskl_wrt_pskl_upper] is stated as a [<=]; the
-    [rewrite]s above need it as a set-level bound, so use it by [pose]. *)
-Lemma notin_ftvar_open_pskl_var : forall β α P,
-  β <> α -> β `notin` ftvar_in_pskl P ->
-  β `notin` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α)).
-Proof.
-  intros β α P Hne HβP.
-  pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f α)) as Hs.
-  simpl in Hs. clear - Hs Hne HβP. fsetdec.
 Qed.
 
 Lemma rn_set_upper : forall β α s, rn_set β α s [<=] add β s.
@@ -1669,7 +1635,7 @@ Proof.
     eapply IHn; [ | exact Hc | exact Hu ]; lia.
 Qed.
 
-Lemma a_consis_decorate_gen : forall Δ1 Δ2 Θ0 P0 P P' Θ1,
+Lemma a_consis_decorate : forall Δ1 Δ2 Θ0 P0 P P' Θ1,
   {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 }}a ->
   uniq Θ0 ->
   {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ∼ P' ⊣ Θ1 }}da.
@@ -1677,13 +1643,4 @@ Proof.
   intros * Hc Hu.
   eapply a_consis_decorate_size; [ | exact Hc | exact Hu ].
   reflexivity.
-Qed.
-
-(** The paper-shaped instance (no used names at the root). *)
-Lemma a_consis_decorate : forall Δ1 Δ2 Θ0 P0 P P' Θ1,
-  {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 }}a ->
-  uniq Θ0 ->
-  {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ∼ P' ⊣ Θ1 }}da.
-Proof.
-  intros * Hc Hu; eapply a_consis_decorate_gen; eauto.
 Qed.

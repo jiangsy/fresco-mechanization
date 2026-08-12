@@ -1834,20 +1834,6 @@ Proof.
     split; [ simpl; rewrite Hl2; reflexivity | exact Heqv0 ].
 Qed.
 
-(** The inherited painting of a type is (vacuously) inherited. *)
-Lemma ptyp_to_btyp_inh_ityp : forall A,
-  lc_ptyp A -> is_ityp (ptyp_to_btyp_inh A).
-Proof.
-  intros A Hlc; induction Hlc; simpl.
-  - apply is_ityp__unit.
-  - apply is_ityp__var.
-  - apply is_ityp__arrow; assumption.
-  - apply is_ityp__all with (L := empty).
-    intros α _.
-    rewrite <- ptyp_to_btyp_inh_open_var.
-    auto.
-Qed.
-
 (** A declarations block's member is its flexible entry. *)
 Lemma a_decls_in_dom_binds : forall (Ξg : aenv) α,
   a_decls Ξg -> α `in` dom Ξg -> binds α abind_flex_mono Ξg.
@@ -1992,7 +1978,7 @@ Proof.
   (* ---- 3. the fills : the paper's "sketchy" ⑯⑰ ---- *)
   destruct (@a_guess_mono_complete Θ empty _ _ HrefD
               P (ptyp_to_btyp_inh A) Θ0 Ξg A' κ Θ0 HwfΘ eq_refl eq_refl
-              (ptyp_to_btyp_inh_ityp (a_wf_ptyp_lc HwfA))
+              (is_ityp_ptyp_to_btyp_inh (a_wf_ptyp_lc HwfA))
               Hguess Hinc Huqb
               ltac:(intros α Hα;
                     pose proof (Havb α Hα) as Hn; clear - Hn; solve_notin_auto))
@@ -2757,7 +2743,7 @@ Proof.
        guarded *)
     exfalso.
     pose proof (a_inc_lookup_mono β Hinc) as Hm.
-    rewrite (mono_inh_eq_syn Hm) in Href.
+    rewrite (ptyp_to_bskl_inh_syn_eq Hm) in Href.
     eapply ad_refine_syn_f_guarded_src_all_inh_absurd with (Θ := Θ);
       [ exact HwfΘ
       | eapply ad_refine_syn_f_of_plain; exact Href
@@ -3018,7 +3004,7 @@ Proof.
   - simpl in HwfP0. inversion HwfP0.
   - exfalso.
     pose proof (a_inc_lookup_mono β Hinc) as Hm.
-    rewrite (mono_inh_eq_syn Hm) in Href.
+    rewrite (ptyp_to_bskl_inh_syn_eq Hm) in Href.
     eapply ad_refine_syn_f_guarded_src_all_inh_absurd with (Θ := Θ);
       [ exact HwfΘ
       | eapply ad_refine_syn_f_of_plain; exact Href
@@ -3427,7 +3413,7 @@ Proof.
       pose proof (a_inc_lookup_mono β Hinc) as Hmτ.
       pose proof (@a_inc_lookup_wf Θ0 κ Θ β Hinc Hwf0 Hbt) as Hwfτ.
       cbn [ptyp_to_pskl msubst_ptyp] in Href.
-      rewrite (mono_inh_eq_syn Hmτ) in Href.
+      rewrite (ptyp_to_bskl_inh_syn_eq Hmτ) in Href.
       destruct Hbt as [Hrig | Hflex].
       { (* RIGID : the image is [β] itself, which refines only to itself *)
         exfalso.
@@ -3517,7 +3503,7 @@ Proof.
       { cbn [msubst_pskl]. rewrite Hlkβ1, Hlkα1.
         change (pskl_arrow (ptyp_to_pskl τ1) (ptyp_to_pskl τ2))
           with (ptyp_to_pskl (ptyp_arrow τ1 τ2)).
-        rewrite <- (mono_inh_eq_syn Hm12).
+        rewrite <- (ptyp_to_bskl_inh_syn_eq Hm12).
         apply ad_refine_syn_f_of_plain.
         apply ad_refine_syn_refl_inh.
         apply a_wf_ptyp_to_wf_pskl; exact HwfA12. }
@@ -3597,7 +3583,7 @@ Proof.
         rewrite <- (btyp_to_ptyp_ptyp_to_btyp_inh A).
         eapply ad_refine_syn_inh_tyequiv;
           [ exact Hr1 | exact HwfΘ
-          | rewrite <- (mono_inh_eq_syn Hm1); reflexivity
+          | rewrite <- (ptyp_to_bskl_inh_syn_eq Hm1); reflexivity
           | reflexivity ]. }
       { (* the codomain's refinement, subject-transported to [ζ α̂1] *)
         cbn [msubst_pskl ptyp_to_pskl].
@@ -3605,7 +3591,7 @@ Proof.
         eapply (proj1 (skl_tyequiv_refine_syn_f_transport
                          (a_tyequiv_pskl Hteq1) HwfΘ
                          (fun x b (h : binds x b Θ) => h))).
-        rewrite (mono_inh_eq_syn Hm2).
+        rewrite (ptyp_to_bskl_inh_syn_eq Hm2).
         apply ad_refine_syn_f_of_plain.
         exact Hr2. }
     - (* an ARROW : the IDENTITY split *)

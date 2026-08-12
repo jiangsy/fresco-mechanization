@@ -1043,7 +1043,7 @@ Proof.
     eapply ad_refine_pskl__flex_l; [ eassumption | ].
     apply IHad_refine_syn;
       first [ exact Hwf | reflexivity | assumption
-            | symmetry; apply mono_inh_eq_syn; exact Hm ].
+            | symmetry; apply ptyp_to_bskl_inh_syn_eq; exact Hm ].
   - (* flex_r *)
     destruct F as [ | | α0 | | | | ]; simpl in HeqT; try discriminate.
     inversion HeqT; subst.
@@ -1052,7 +1052,7 @@ Proof.
     eapply ad_refine_pskl__flex_r; [ eassumption | ].
     apply IHad_refine_syn;
       first [ exact Hwf | reflexivity | assumption
-            | symmetry; apply mono_inh_eq_syn; exact Hm ].
+            | symmetry; apply ptyp_to_bskl_inh_syn_eq; exact Hm ].
 Qed.
 
 (** lemma:precision-preserves-refinement, UNCOLOURED — the composition the

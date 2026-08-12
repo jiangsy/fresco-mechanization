@@ -2174,16 +2174,6 @@ Qed.
 
 (* ---- pointwise disjointness to set-level inter emptiness ---- *)
 
-Lemma atoms_inter_empty_pointwise : forall s1 s2,
-  (forall y, y `in` s1 -> y `notin` s2) ->
-  s1 ∩ s2 [=] empty.
-Proof.
-  intros s1 s2 H y; split; intro Hy.
-  - apply inter_iff in Hy as [H1 H2].
-    exfalso. exact (H y H1 H2).
-  - apply empty_iff in Hy; contradiction.
-Qed.
-
 (* ---- the Δ-vs-definitions freshness side condition (the paper's
    implicit wf of the Δ-extended context: Δ's binders postdate every
    definition image in Θ).  See DESIGN §6(h)/WF-SIDE-CONDITIONS. ---- *)
@@ -2317,8 +2307,8 @@ Proof.
       | clear - H; fsetdec ].
   - (* hole *)
     apply ad_ppre__hole; [ assumption | ].
-    rewrite ftvar_in_uskl_ptyp_to_uskl_syn.
-    apply atoms_inter_empty_pointwise.
+    rewrite ftvar_ptyp_to_uskl_syn.
+    apply inter_empty_pointwise.
     intros y Hy. eapply Hdf; eauto.
   - (* tophole_remove *)
     apply ad_ppre__tophole_remove. eauto.
@@ -2669,17 +2659,17 @@ Proof.
       match goal with
       | Hint : _ ∩ _ [=] empty |- _ => rename Hint into HInt
       end.
-      rewrite ftvar_in_uskl_ptyp_to_uskl_syn in HInt.
+      rewrite ftvar_ptyp_to_uskl_syn in HInt.
       simpl in HInt.
       assert (Hhp1 : {{ Θ ⨟ Δo ⊢ˢ pskl_hole ⊑ᵖ[ empty ] (ptyp_to_uskl_syn τ1) }}ad)
         by (apply ad_ppre__hole;
               [ clear; fsetdec
-              | rewrite ftvar_in_uskl_ptyp_to_uskl_syn;
+              | rewrite ftvar_ptyp_to_uskl_syn;
                 clear - HInt; fsetdec ]).
       assert (Hhp2 : {{ Θ ⨟ Δo ⊢ˢ pskl_hole ⊑ᵖ[ empty ] (ptyp_to_uskl_syn τ2) }}ad)
         by (apply ad_ppre__hole;
               [ clear; fsetdec
-              | rewrite ftvar_in_uskl_ptyp_to_uskl_syn;
+              | rewrite ftvar_ptyp_to_uskl_syn;
                 clear - HInt; fsetdec ]).
       simpl.
       apply ad_ppre__arrow with (Ψ1 := empty) (Ψ2 := empty);
@@ -2724,8 +2714,8 @@ Proof.
     { inversion Hhp; subst.
       - (* hole rule at the variable target: rebuild at the definition *)
         apply ad_ppre__hole; [ assumption | ].
-        rewrite ftvar_in_uskl_ptyp_to_uskl_syn.
-        apply atoms_inter_empty_pointwise.
+        rewrite ftvar_ptyp_to_uskl_syn.
+        apply inter_empty_pointwise.
         intros y Hy. eapply Hdf; eauto.
       - (* flex_r: same definition by uniqueness *)
         match goal with
@@ -2909,18 +2899,6 @@ Proof.
   eapply a_wf_aenv_binds_def_wf; [ exact Hwf | apply Hdefs; eassumption ].
 Qed.
 
-(** …the same chain at [Θw := Θ]: [a_wf_ptyp Θ] is preserved outright. *)
-Lemma a_def_chain_wf_self : forall Θ τ τe,
-  a_def_chain Θ τ τe ->
-  {{ ⊢ Θ }}a ->
-  a_wf_ptyp Θ τ ->
-  a_wf_ptyp Θ τe.
-Proof.
-  intros Θ τ τe Hc HwfΘ Hp.
-  eapply a_def_chain_wf_at;
-    [ exact Hc | exact HwfΘ | intros α0 τ0 Hb; exact Hb | exact Hp ].
-Qed.
-
 (** ⭐ …and the SCOPE bound the position-wise payload route threads
     (2026-08-05).  A chain STEP lands on a DEFINITION of [Θ], which [Hdefs]
     places in [Θw] and [Θw]'s own well-formedness scopes — so the bound is
@@ -2967,7 +2945,7 @@ Proof.
   - (* ad_ppre__hole : the rule's OWN side condition is the Δ-apartness *)
     assert (Hap : ftvar_in_ptyp τ ∩ Δ [=] empty).
     { match goal with Hd : Δ ∩ ftvar_in_uskl _ [=] empty |- _ =>
-        rewrite ftvar_in_uskl_ptyp_to_uskl_syn in Hd; clear - Hd; fsetdec
+        rewrite ftvar_ptyp_to_uskl_syn in Hd; clear - Hd; fsetdec
       end. }
     eapply a_wf_ptyp_mono_strengthen_dom;
       [ exact HwfΘ | exact Hmon | exact Hm | exact Hwf
@@ -3069,7 +3047,7 @@ Proof.
     destruct (ad_ppre_arrow_subject_chain_inv HwfΘ Hpre eq_refl eq_refl Hmτ)
       as (τ1 & τ2 & Ψ1 & Ψ2 & Hc & Hm1 & Hm2 & Hp1 & Hp2 & HΨ).
     assert (Hwfar : a_wf_ptyp Θ (ptyp_arrow τ1 τ2))
-      by (eapply a_def_chain_wf_self;
+      by (eapply a_def_chain_wf;
             [ exact Hc | exact HwfΘ | exact Hwfτ ]).
     assert (Hftar : ftvar_in_ptyp (ptyp_arrow τ1 τ2) [<=] dom Θw `union` Δ)
       by (eapply a_def_chain_ftv_at;
@@ -3191,7 +3169,7 @@ Proof.
     destruct (ad_ppre_tophole_subject_chain_inv HwfΘ Hpre eq_refl eq_refl Hmτ)
       as (τe & Hc & Hme & Hp').
     assert (Hwfe : a_wf_ptyp Θ τe)
-      by (eapply a_def_chain_wf_self;
+      by (eapply a_def_chain_wf;
             [ exact Hc | exact HwfΘ | exact Hwfτ ]).
     assert (Hfte : ftvar_in_ptyp τe [<=] dom Θw `union` Δ)
       by (eapply a_def_chain_ftv_at;

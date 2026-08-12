@@ -83,3 +83,18 @@ Proof.
     rewrite <- ptyp_to_btyp_syn_open.
     match goal with H : forall _, is_styp _ |- _ => apply H end.
 Qed.
+
+(** [d_tags_skl] respects set-equality of the tag context. *)
+Lemma d_tags_skl_psi_cong : forall Ψ Ψ' ψ,
+  d_tags_skl Ψ ψ -> Ψ [=] Ψ' -> d_tags_skl Ψ' ψ.
+Proof.
+  intros Ψ Ψ' ψ H; revert Ψ'; induction H; intros Ψ' Heq.
+  - apply d_tags_skl__unit; fsetdec.
+  - apply d_tags_skl__var; fsetdec.
+  - eapply d_tags_skl__arrow;
+      [ exact H | exact H0 | exact H1 | clear - H2 Heq; fsetdec ].
+  - eapply d_tags_skl__all_tag;
+      [ exact H | exact H1 | clear - H2 Heq; fsetdec ].
+  - apply d_tags_skl__holeg; fsetdec.
+  - apply d_tags_skl__topholeg; apply IHd_tags_skl; exact Heq.
+Qed.

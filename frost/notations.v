@@ -223,3 +223,14 @@ Notation "{ e' ᵉ/ₑ x } e" :=
 Notation "{ A ᵉ/ₜ α } e" :=
   (subst_ptyp_in_exp A α e)
     (at level 49, A at level 50, α at level 0, right associativity) : type_scope.
+
+Lemma inter_empty_pointwise : forall Δ Δ',
+  (forall α, α `in` Δ -> α `notin` Δ') ->
+  Δ ∩ Δ' [=] empty.
+Proof.
+  intros Δ Δ' H α. split; intro Hα.
+  - assert (H1 := inter_1 Hα).
+    assert (H2 := inter_2 Hα).
+    exfalso. apply (H α H1 H2).
+  - exfalso. clear - Hα. fsetdec.
+Qed.

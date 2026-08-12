@@ -781,7 +781,7 @@ Lemma a_wf_ptyp_paint_notin : forall Θ τ β,
   β `notin` ftvar_in_uskl (ptyp_to_uskl_syn τ).
 Proof.
   intros Θ τ β Hwf Hβ.
-  rewrite ftvar_in_uskl_ptyp_syn.
+  rewrite ftvar_ptyp_to_uskl_syn.
   intro Hc.
   pose proof (a_wf_ptyp_ftv_tvarish Hwf Hc) as Hbt.
   destruct Hbt as [Hb | [Hb | [τ0 Hb]]]; apply binds_In in Hb;

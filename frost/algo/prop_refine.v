@@ -20,16 +20,6 @@ Require Import src.frost.algo.prop_basic.
 
 Set Implicit Arguments.
 
-(** Erasure commutes with opening (converse direction of
-    [pskl_to_uskl_open_rec] in prop_decorate.v). *)
-Lemma uskl_to_pskl_open_rec : forall R0 R' k,
-  uskl_to_pskl (open_uskl_wrt_uskl_rec k R' R0)
-  = open_pskl_wrt_pskl_rec k (uskl_to_pskl R') (uskl_to_pskl R0).
-Proof.
-  induction R0; intros; simpl; f_equal; auto.
-  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
-Qed.
-
 (* ===================================================================== *)
 (*  Δ-monotonicity and painting transport                                 *)
 (* ===================================================================== *)

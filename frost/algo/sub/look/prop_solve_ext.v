@@ -290,16 +290,6 @@ Qed.
 (*    are exactly [swap_aenv_fresh_id] at the rule's own freshness.        *)
 (* ===================================================================== *)
 
-(* ⚙ RENAMED from [binds_weaken_mid] 2026-08-09 (cleanup audit §8.1c): it collided with a
-   DIFFERENT lemma of that name, and this one inserts Ξm INSIDE an existing Ξl++Θ0; prop_inc.v's weakens a bare Θ on both sides. *)
-Lemma binds_weaken_inner : forall (x : atom) (b : abind) Ξl Ξm Θ0,
-  binds x b (Ξl ++ Θ0) -> binds x b (Ξl ++ Ξm ++ Θ0).
-Proof.
-  intros x b Ξl Ξm Θ0 H. apply binds_app_1 in H as [H | H].
-  - apply binds_app_2; exact H.
-  - apply binds_app_3; apply binds_app_3; exact H.
-Qed.
-
 Lemma binds_strengthen_mid : forall (x : atom) (b : abind) Ξl Ξm Θ0,
   binds x b (Ξl ++ Ξm ++ Θ0) -> x `notin` dom Ξm -> binds x b (Ξl ++ Θ0).
 Proof.
@@ -308,13 +298,6 @@ Proof.
   - apply binds_app_1 in H as [H | H].
     + exfalso. apply Hx. eapply binds_In; exact H.
     + apply binds_app_3; exact H.
-Qed.
-
-Lemma a_flex_tvar_weaken_mid : forall Ξl Ξm Θ0 α,
-  a_flex_tvar (Ξl ++ Θ0) α -> a_flex_tvar (Ξl ++ Ξm ++ Θ0) α.
-Proof.
-  intros Ξl Ξm Θ0 α [Hb | [τ Hb]];
-    [ left | right; exists τ ]; apply binds_weaken_inner; exact Hb.
 Qed.
 
 Lemma a_non_flex_weaken_mid : forall Ξl Ξm Θ0 P,

@@ -62,7 +62,7 @@ Proof.
   - (* abs_check_step: peel one inherited ∀ via d_typing__forall.  The result
        body [B] is fully inherited ([is_ityp (btyp_all_inh B)]), hence equal to
        its own inh-repainting, which is what d_typing__forall demands. *)
-    pose proof (is_ityp_ptyp_to_btyp_inh H) as Hrt. simpl in Hrt. injection Hrt as Hrt.
+    pose proof (ptyp_to_btyp_inh_btyp_to_ptyp H) as Hrt. simpl in Hrt. injection Hrt as Hrt.
     rewrite <- Hrt. apply d_typing__forall with (L := L) (A := btyp_to_ptyp B).
     + apply is_value__abs.
     + intros α Hα. rewrite Hrt. apply H1; assumption.
@@ -73,10 +73,10 @@ Proof.
     apply d_typing__abs with (L := L) (A := A);
       [ assumption
       | apply mod_comp_ty__tc; apply is_ityp__arrow;
-          [ apply is_ityp_paint; eapply d_wf_ptyp_lc; eassumption | assumption ]
+          [ apply is_ityp_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc; eassumption | assumption ]
       | assumption ].
   - (* abs_anno_check_step: as abs_check_step, over the annotated lambda. *)
-    pose proof (is_ityp_ptyp_to_btyp_inh H) as Hrt. simpl in Hrt. injection Hrt as Hrt.
+    pose proof (ptyp_to_btyp_inh_btyp_to_ptyp H) as Hrt. simpl in Hrt. injection Hrt as Hrt.
     rewrite <- Hrt. apply d_typing__forall with (L := L) (A := btyp_to_ptyp B).
     + apply is_value__abs_anno.
     + intros α Hα. rewrite Hrt. apply H1; assumption.
@@ -86,7 +86,7 @@ Proof.
     + assumption.
     + apply btyp_to_ptyp_ptyp_to_btyp_inh.
     + apply mod_comp_ty__tc; apply is_ityp__arrow;
-        [ apply is_ityp_paint; eapply d_wf_ptyp_lc; eassumption | assumption ].
+        [ apply is_ityp_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc; eassumption | assumption ].
     + assumption.
   - (* abs (m ≠ tc) *)
     apply d_typing__abs with (L := L) (A := A); assumption.
@@ -178,7 +178,7 @@ Proof.
   intros Γ e B H. dependent induction H.
   - assumption.
   - apply is_ityp__arrow;
-      [ apply is_ityp_paint; eapply d_wf_ptyp_lc; eassumption | assumption ].
+      [ apply is_ityp_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc; eassumption | assumption ].
   - exfalso; match goal with Hne : _ <> mode_tc |- _ => apply Hne; reflexivity end.
 Qed.
 
@@ -188,7 +188,7 @@ Proof.
   intros Γ A0 e B H. dependent induction H.
   - assumption.
   - apply is_ityp__arrow;
-      [ apply is_ityp_paint; eapply d_wf_ptyp_lc; eassumption | assumption ].
+      [ apply is_ityp_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc; eassumption | assumption ].
   - exfalso; match goal with Hne : _ <> mode_tc |- _ => apply Hne; reflexivity end.
 Qed.
 
@@ -1385,7 +1385,7 @@ Proof.
         [ fsetdec | apply d_wf_denv__typ; [ exact Hwf | fsetdec | assumption ] ].
     + assert (Hia : is_ityp (btyp_arrow B1 B2)) by (apply mod_comp_ty_tc_inv; assumption).
       assert (HB1 : ptyp_to_btyp_inh A = B1).
-      { pose proof (is_ityp_ptyp_to_btyp_inh (is_ityp_arrow_l _ _ Hia)) as HR.
+      { pose proof (ptyp_to_btyp_inh_btyp_to_ptyp (is_ityp_arrow_l _ _ Hia)) as HR.
         rewrite H0 in HR. exact HR. }
       rewrite <- HB1.
       apply d_sd_typing__abs_anno_check_base with (L := L `union` dom Γ);

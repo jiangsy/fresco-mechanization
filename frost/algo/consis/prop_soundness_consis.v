@@ -68,15 +68,6 @@ Proof.
   induction 1; unfold ptyp_to_bskl_syn in *; simpl; constructor; auto.
 Qed.
 
-(** On monotypes the two paintings coincide (colours only differ at
-    quantifiers). *)
-Lemma mono_inh_eq_syn : forall τ,
-  mono_ptyp τ ->
-  pskl_to_bskl_inh (ptyp_to_pskl τ) = ptyp_to_bskl_syn τ.
-Proof.
-  induction 1; unfold ptyp_to_bskl_syn in *; simpl; f_equal; auto.
-Qed.
-
 Lemma mono_bskl_inh_syn : forall P,
   mono_bskl (pskl_to_bskl_inh P) ->
   pskl_to_bskl_syn P = pskl_to_bskl_inh P.
@@ -222,7 +213,7 @@ Proof.
       rewrite bskl_to_pskl_pskl_to_bskl_inh in HeqQ.
       unfold ptyp_to_bskl_syn in HeqQ.
       rewrite bskl_to_pskl_pskl_to_bskl_syn in HeqQ. exact HeqQ. }
-    rewrite <- (mono_inh_eq_syn HmB).
+    rewrite <- (ptyp_to_bskl_inh_syn_eq HmB).
     apply ad_pat_consis__hole; auto.
     apply a_wf_pskl_mono_subst_back with (α1 := α1) (τ := τ); auto.
     rewrite <- HP; auto.
@@ -304,7 +295,7 @@ Proof.
     apply ad_refine_syn__flex_l with (τ := τ); [ exact H | ].
     specialize (IHad_pat_consis Hwf HmQ Δ).
     rewrite uskl_to_pskl_ptyp in IHad_pat_consis.
-    rewrite (mono_inh_eq_syn Hmτ) in IHad_pat_consis.
+    rewrite (ptyp_to_bskl_inh_syn_eq Hmτ) in IHad_pat_consis.
     exact IHad_pat_consis.
   - (* flex_r *)
     assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
@@ -503,12 +494,6 @@ Proof.
   induction P; simpl; try fsetdec.
 Qed.
 
-Lemma ftvar_in_uskl_pskl : forall P,
-  ftvar_in_uskl (pskl_to_uskl P) [=] ftvar_in_pskl P.
-Proof.
-  induction P; simpl; try fsetdec.
-Qed.
-
 (** Variable renaming commutes with the paintings. *)
 Lemma subst_var_bskl_syn : forall P α α',
   subst_bskl_in_bskl (bskl_var_f α') α (pskl_to_bskl_syn P)
@@ -576,20 +561,6 @@ Proof.
   - apply a_wf_pskl__tophole;
       [ apply guarded_pskl_subst_var; auto
       | apply IHa_wf_pskl; auto; fsetdec ].
-Qed.
-
-Lemma ftvar_in_uskl_ptyp_syn : forall A,
-  ftvar_in_uskl (ptyp_to_uskl_syn A) [=] ftvar_in_ptyp A.
-Proof.
-  intros. rewrite <- pskl_to_uskl_ptyp.
-  rewrite ftvar_in_uskl_pskl. apply ftvar_ptyp_to_pskl.
-Qed.
-
-Lemma ftvar_in_bskl_ptyp_syn : forall A,
-  ftvar_in_bskl (ptyp_to_bskl_syn A) [=] ftvar_in_ptyp A.
-Proof.
-  intros. unfold ptyp_to_bskl_syn.
-  rewrite ftvar_in_bskl_syn. apply ftvar_ptyp_to_pskl.
 Qed.
 
 (** Case-split every renaming decision in the goal; contradictory
@@ -716,7 +687,7 @@ Proof.
     assert (Hαne : α0 <> α).
     { intro; subst. apply binds_In in Hb'. fsetdec. }
     assert (Hfr : α `notin` ftvar_in_uskl (ptyp_to_uskl_syn τ)).
-    { rewrite ftvar_in_uskl_ptyp_syn. eauto. }
+    { rewrite ftvar_ptyp_to_uskl_syn. eauto. }
     destruct_var_eqs.
     eapply ad_pat_consis__flex_l
       with (τ := τ);
@@ -731,7 +702,7 @@ Proof.
     assert (Hαne : α0 <> α).
     { intro; subst. apply binds_In in Hb'. fsetdec. }
     assert (Hfr : α `notin` ftvar_in_bskl (ptyp_to_bskl_syn τ)).
-    { rewrite ftvar_in_bskl_ptyp_syn. eauto. }
+    { rewrite ftvar_ptyp_to_bskl_syn. eauto. }
     destruct_var_eqs.
     eapply ad_pat_consis__flex_r
       with (τ := τ);
@@ -924,7 +895,7 @@ Proof.
     assert (Hαne : α0 <> α).
     { intro; subst. apply binds_In in H. fsetdec. }
     assert (Hfr : α `notin` ftvar_in_bskl (ptyp_to_bskl_syn τ)).
-    { rewrite ftvar_in_bskl_ptyp_syn. eauto. }
+    { rewrite ftvar_ptyp_to_bskl_syn. eauto. }
     destruct_var_eqs.
     apply ad_refine_syn_f__flex_l with (τ := τ); [ exact H | ].
     rewrite <- (subst_bskl_in_bskl_fresh_eq
@@ -934,7 +905,7 @@ Proof.
     assert (Hαne : α0 <> α).
     { intro; subst. apply binds_In in H. fsetdec. }
     assert (Hfr : α `notin` ftvar_in_bskl (ptyp_to_bskl_syn τ)).
-    { rewrite ftvar_in_bskl_ptyp_syn. eauto. }
+    { rewrite ftvar_ptyp_to_bskl_syn. eauto. }
     destruct_var_eqs.
     apply ad_refine_syn_f__flex_r with (τ := τ); [ exact H | ].
     rewrite <- (subst_bskl_in_bskl_fresh_eq
@@ -1182,13 +1153,13 @@ Proof.
     apply ad_refine_syn_f__flex_l with (τ := τ); [ exact H | ].
     specialize (IHad_pat_consis Hwf HmQ F Δ HFQ HFdefs).
     rewrite uskl_to_pskl_ptyp in IHad_pat_consis.
-    rewrite (mono_inh_eq_syn Hmτ) in IHad_pat_consis.
+    rewrite (ptyp_to_bskl_inh_syn_eq Hmτ) in IHad_pat_consis.
     exact IHad_pat_consis.
   - (* flex_r *)
     assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
     apply ad_refine_syn_f__flex_r with (τ := τ); [ exact H | ].
     apply IHad_pat_consis; auto using mono_ptyp_to_bskl_syn.
-    rewrite ftvar_in_bskl_ptyp_syn. eauto.
+    rewrite ftvar_ptyp_to_bskl_syn. eauto.
 Qed.
 
 Lemma ad_pat_consis_refine_pskl_f_mono : forall Ψ Θ R Q,
@@ -1232,7 +1203,7 @@ Proof.
     unfold ptyp_to_bskl_syn in IHad_pat_consis at 2.
     rewrite bskl_to_pskl_pskl_to_bskl_syn in IHad_pat_consis.
     apply IHad_pat_consis; auto.
-    rewrite ftvar_in_bskl_ptyp_syn. eauto.
+    rewrite ftvar_ptyp_to_bskl_syn. eauto.
 Qed.
 
 (* --------------------------------------------------------------------- *)
@@ -1312,7 +1283,7 @@ Proof.
     assert (Hαne : α0 <> α).
     { intro; subst. apply binds_In in Hb'. fsetdec. }
     assert (Hfr : α `notin` ftvar_in_bskl (ptyp_to_bskl_syn τ)).
-    { rewrite ftvar_in_bskl_ptyp_syn. eauto. }
+    { rewrite ftvar_ptyp_to_bskl_syn. eauto. }
     destruct_var_eqs.
     apply ad_refine_syn_f__flex_l with (τ := τ);
       [ apply (@binds_insert_mid (abind_flex_mono_def τ) α0
@@ -1326,7 +1297,7 @@ Proof.
     assert (Hαne : α0 <> α).
     { intro; subst. apply binds_In in Hb'. fsetdec. }
     assert (Hfr : α `notin` ftvar_in_bskl (ptyp_to_bskl_syn τ)).
-    { rewrite ftvar_in_bskl_ptyp_syn. eauto. }
+    { rewrite ftvar_ptyp_to_bskl_syn. eauto. }
     destruct_var_eqs.
     apply ad_refine_syn_f__flex_r with (τ := τ);
       [ apply (@binds_insert_mid (abind_flex_mono_def τ) α0
@@ -1624,17 +1595,6 @@ Qed.
    assuming output-side hypotheses.  prop_flex sits below this file, so
    the name is still in scope here. *)
 
-Lemma inter_empty_pointwise : forall Δ Δ',
-  (forall α, α `in` Δ -> α `notin` Δ') ->
-  Δ ∩ Δ' [=] empty.
-Proof.
-  intros Δ Δ' H α. split; intro Hα.
-  - assert (H1 := inter_1 Hα).
-    assert (H2 := inter_2 Hα).
-    exfalso. apply (H α H1 H2).
-  - exfalso. clear - Hα. fsetdec.
-Qed.
-
 Lemma a_decls_no_def : forall Ξ β τ,
   a_decls Ξ ->
   binds β (abind_flex_mono_def τ) Ξ ->
@@ -1883,20 +1843,6 @@ Proof.
     apply H0; auto. apply a_isub_cons_tvar; auto.
 Qed.
 
-(** A monotype all of whose free variables are tvar-ish is well-formed. *)
-Lemma mono_ptyp_wf : forall Θ τ,
-  mono_ptyp τ ->
-  (forall α, α `in` ftvar_in_ptyp τ -> a_binds_tvar α Θ) ->
-  a_wf_ptyp Θ τ.
-Proof.
-  intros Θ τ H; induction H; intros Hvis; simpl in *.
-  - apply a_wf_ptyp__unit.
-  - apply a_wf_ptyp__var. apply Hvis. fsetdec.
-  - apply a_wf_ptyp__arrow;
-      [ apply IHmono_ptyp1 | apply IHmono_ptyp2 ];
-      intros α Hα; apply Hvis; fsetdec.
-Qed.
-
 (* [a_wf_aenv_uniq] relocated to algo/prop_basic.v (pure base lemma needed by prop_metasubst). *)
 
 (** Every binding produced by guess^TY is a plain flexible variable. *)
@@ -2140,13 +2086,13 @@ Proof.
   - (* Depend : tail-append ⇒ just reassociate *)
     simpl_env in IHa_assign. exact IHa_assign.
   - (* Skip *)
-    apply a_flex_tvar_insert_mid; auto.
+    apply a_flex_tvar_weaken_mid; auto.
   - (* SkipRigid *)
-    apply a_flex_tvar_insert_mid; auto.
+    apply a_flex_tvar_weaken_mid; auto.
   - (* SkipTmVar (typ) *)
-    apply a_flex_tvar_insert_mid; auto.
+    apply a_flex_tvar_weaken_mid; auto.
   - (* SkipTmVar (skl) *)
-    apply a_flex_tvar_insert_mid; auto.
+    apply a_flex_tvar_weaken_mid; auto.
 Qed.
 
 (** Rigid bindings are preserved exactly along [⊴]. *)
@@ -2309,7 +2255,7 @@ Proof.
     simpl. eapply ad_pat_consis__flex_l; [ exact H | ].
     rewrite <- pskl_to_uskl_ptyp.
     apply IHHr; auto.
-    unfold ptyp_to_bskl_syn. rewrite mono_inh_eq_syn; auto.
+    unfold ptyp_to_bskl_syn. rewrite ptyp_to_bskl_inh_syn_eq; auto.
   - (* flex_r : the join is a DEFINED flexible variable *)
     assert (Hmt : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
     eapply ad_pat_consis__flex_r; [ exact H | ].
@@ -2341,7 +2287,7 @@ Proof.
     destruct P; simpl in HeqQ; try discriminate.
     inversion HeqQ; subst.
     assert (Hmτ : mono_ptyp τ0) by (eapply a_wf_aenv_binds_def_mono; eauto).
-    rewrite <- (mono_inh_eq_syn Hmτ).
+    rewrite <- (ptyp_to_bskl_inh_syn_eq Hmτ).
     apply ad_pat_consis__hole; [ exact H | ].
     apply a_wf_pskl_mono_ptyp; [ exact Hmτ | ].
     eapply a_wf_aenv_binds_def_wf; eauto.
@@ -2388,7 +2334,7 @@ Proof.
   - (* hole : rebuild the fill at the transported monotype *)
     assert (Hma : mono_ptyp (ptyp_arrow A1 A2))
       by (apply mono_ptyp__arrow; auto).
-    rewrite <- (mono_inh_eq_syn Hma).
+    rewrite <- (ptyp_to_bskl_inh_syn_eq Hma).
     apply ad_pat_consis__hole; [ exact H | ].
     apply mono_ptyp_wf_pskl; [ exact Hma | exact Hvis ].
   - (* tophole_drop *)
@@ -4263,7 +4209,7 @@ Proof.
         eapply ad_pat_consis_refine_syn_f_mono;
           [ exact Hcbα | exact Hwf1
           | apply mono_ptyp_to_bskl_syn; constructor | | ].
-        { rewrite ftvar_in_bskl_ptyp_syn. simpl. clear - HαnΔ. fsetdec. }
+        { rewrite ftvar_ptyp_to_bskl_syn. simpl. clear - HαnΔ. fsetdec. }
         { intros α1 τ Hb. eapply (Hnfd1 α1 τ) in Hb. clear - Hb. fsetdec. }
     + apply ad_refine_pskl_f__var. right. exact Hbα1.
   - (* C-FlexL : assign α̂ := P0 (the input skeleton).  MUTUAL case: the
@@ -4554,15 +4500,6 @@ Lemma ftvar_in_pskl_uskl_to_pskl : forall R,
   ftvar_in_pskl (uskl_to_pskl R) [=] ftvar_in_uskl R.
 Proof. induction R; simpl; fsetdec. Qed.
 
-(** Erasure commutes with variable-opening. *)
-Lemma uskl_to_pskl_open : forall R α,
-  uskl_to_pskl (open_uskl_wrt_uskl R (uskl_var_f α))
-  = open_pskl_wrt_pskl (uskl_to_pskl R) (pskl_var_f α).
-Proof.
-  intros. unfold open_uskl_wrt_uskl, open_pskl_wrt_pskl.
-  rewrite uskl_to_pskl_open_rec. reflexivity.
-Qed.
-
 Lemma a_consistag_sound_aux : forall Δ1 Δ2 P0 Ψ Θ0 R P' Θ1,
   {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | Ψ ] R ∼ P' ⊣ Θ1 }}da ->
   {{ ⊢ Θ0 }}a ->
@@ -4653,7 +4590,7 @@ Proof.
         eapply ad_pat_consis_refine_syn_f_mono;
           [ exact Hcbα | exact Hwf1
           | apply mono_ptyp_to_bskl_syn; constructor | | ].
-        { rewrite ftvar_in_bskl_ptyp_syn. simpl. clear - HαnΔ. fsetdec. }
+        { rewrite ftvar_ptyp_to_bskl_syn. simpl. clear - HαnΔ. fsetdec. }
         { intros α1 τ Hb. eapply (Hnfd1 α1 τ) in Hb.
           clear - Hb. fsetdec. }
     + apply ad_refine_pskl_f__var. right. exact Hbα1.
@@ -5538,4 +5475,16 @@ Proof.
   - exists Qt. split; [ exact HeQt | ]. split; [ exact Hcons | ].
     eapply ad_refine_syn_f_forget; exact Hrs.
   - eapply ad_refine_pskl_f_forget; exact Hrp.
+Qed.
+
+(** The empty hygiene set is free: the plain refinement IS the
+    fill-hygienic one at [F = ∅] (the hole rule's ∅-disjointness is
+    trivial).  Lets the precision goal reuse the [_f] transports. *)
+Lemma ad_refine_syn_f_of_plain : forall Θ Δ Q Q',
+  {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
+  ad_refine_syn_f empty Θ Δ Q Q'.
+Proof.
+  intros Θ Δ Q Q' H; induction H;
+    try solve [ eauto using ad_refine_syn_f ].
+  apply ad_refine_syn_f__hole; [ clear; fsetdec | exact H ].
 Qed.

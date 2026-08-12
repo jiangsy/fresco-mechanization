@@ -68,7 +68,7 @@ Require Import src.frost.ltac_utils.
 Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.decl.prop_basic.
-Require Import src.frost.decl.prop_general_subsumption.  (* mono_ptyp_inh_eq_syn *)
+Require Import src.frost.decl.prop_general_subsumption.  (* ptyp_to_btyp_inh_mono_syn *)
 Require Import src.frost.decl.prop_wellformed.           (* d_wf_utyp_lc *)
 Require Import src.frost.decl.prop_syntax_directed.       (* ftvar_btyp_to_bskl *)
 Require Import src.frost.algo.def_rules.
@@ -598,27 +598,6 @@ Proof.
   - apply lc_uskl_topholeg. apply IHlc_pskl; reflexivity.
 Qed.
 
-Lemma guarded_uskl_of_guarded_pskl_erase : forall R,
-  guarded_pskl (uskl_to_pskl R) -> guarded_uskl R.
-Proof.
-  intros R H; destruct R; simpl in H; inversion H; subst.
-  - apply guarded_uskl__unit.
-  - apply guarded_uskl__var.
-  - apply guarded_uskl__arrow;
-      [ apply (lc_uskl_of_lc_pskl_erase (uskl_to_pskl R1));
-          [ assumption | reflexivity ]
-      | apply (lc_uskl_of_lc_pskl_erase (uskl_to_pskl R2));
-          [ assumption | reflexivity ] ].
-Qed.
-
-Lemma guarded_pskl_of_guarded_uskl_erase : forall R,
-  guarded_uskl R -> guarded_pskl (uskl_to_pskl R).
-Proof.
-  intros R H; inversion H; subst; simpl;
-    [ apply guarded_pskl__unit | apply guarded_pskl__var
-    | apply guarded_pskl__arrow; apply lc_uskl_to_pskl; assumption ].
-Qed.
-
 Lemma d_wf_uskl_of_a_wf_pskl : forall Θ Δa P,
   a_wf_pskl Θ Δa P ->
   forall ψ, P = uskl_to_pskl ψ ->
@@ -646,10 +625,10 @@ Proof.
   - apply d_wf_uskl__hole.
   - apply d_wf_uskl__holeg.
   - inversion Hψ; subst. apply d_wf_uskl__tophole;
-      [ apply guarded_uskl_of_guarded_pskl_erase; exact H
+      [ apply guarded_uskl_of_uskl_to_pskl; exact H
       | exact (IHa_wf_pskl _ eq_refl Γ0 nil eq_refl delta_agree_nil) ].
   - inversion Hψ; subst. apply d_wf_uskl__topholeg;
-      [ apply guarded_uskl_of_guarded_pskl_erase; exact H
+      [ apply guarded_uskl_of_uskl_to_pskl; exact H
       | exact (IHa_wf_pskl _ eq_refl Γ0 nil eq_refl delta_agree_nil) ].
 Qed.
 
@@ -671,11 +650,11 @@ Proof.
     rewrite uskl_to_pskl_open in Hx. exact Hx.
   - apply a_wf_pskl__hole.
   - apply a_wf_pskl__tophole.
-    + apply guarded_pskl_of_guarded_uskl_erase; assumption.
+    + apply guarded_pskl_uskl_to_pskl; assumption.
     + exact (IHd_wf_uskl empty delta_agree_nil).
   - apply a_wf_pskl__hole.
   - apply a_wf_pskl__tophole.
-    + apply guarded_pskl_of_guarded_uskl_erase; assumption.
+    + apply guarded_pskl_uskl_to_pskl; assumption.
     + exact (IHd_wf_uskl empty delta_agree_nil).
 Qed.
 
@@ -910,19 +889,6 @@ Qed.
 (*  rather than assumed: at the TY sort the [ad] target is a [btyp]'s     *)
 (*  skeleton, and a skeleton predicate on it transports back.             *)
 (* ===================================================================== *)
-
-Lemma is_styp_of_btyp_to_bskl : forall Q,
-  is_sskl Q -> forall B, Q = btyp_to_bskl B -> is_styp B.
-Proof.
-  intros Q H; induction H; intros B0 HQ;
-    destruct B0; simpl in HQ; try discriminate HQ; inversion HQ; subst.
-  - apply is_styp__unit.
-  - apply is_styp__var.
-  - apply is_styp__arrow; [ apply IHis_sskl1 | apply IHis_sskl2 ]; reflexivity.
-  - apply is_styp__all with (L := L). intros α Hα.
-    apply (H0 α Hα (open_btyp_wrt_btyp B0 (btyp_var_f α))).
-    rewrite btyp_to_bskl_open; reflexivity.
-Qed.
 
 Lemma is_ityp_of_btyp_to_bskl : forall Q,
   is_iskl Q -> forall B, Q = btyp_to_bskl B -> is_ityp B.
@@ -1267,7 +1233,7 @@ Lemma msubst_btyp_ptyp_to_btyp_inh : forall ζ A,
   msubst_btyp ζ (ptyp_to_btyp_inh A) = ptyp_to_btyp_inh (msubst_ptyp ζ A).
 Proof.
   intros ζ A Hm. induction A; simpl; try congruence.
-  symmetry. apply mono_ptyp_inh_eq_syn. apply Hm.
+  symmetry. apply ptyp_to_btyp_inh_mono_syn. apply Hm.
 Qed.
 
 Lemma msubst_btyp_cons_subst : forall ζ β τ B,

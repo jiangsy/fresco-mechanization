@@ -199,7 +199,6 @@ Proof.
   exact (@d_consis_compose_strong (S (size_ptyp A)) A ltac:(lia) Δa Δb Γ C B H1 H2).
 Qed.
 
-
 (** Coercions never introduce free type variables. *)
 Lemma ftvar_btyp_to_utyp_syn : forall B,
     ftvar_in_utyp (btyp_to_utyp_syn B) [<=] ftvar_in_btyp B.
@@ -231,7 +230,6 @@ Proof.
       rewrite ptyp_to_btyp_syn_open in H0.
       exact H0.
 Qed.
-
 
 (** ===== [utyp_to_btyp] opening / erasure lemmas ===== *)
 
@@ -276,7 +274,6 @@ Proof.
     apply H0.
 Qed.
 
-
 (** Empty-context composition: arbitrary input tag contexts, syn middle and
     target ⟹ empty output (the [mode_ti] infer base demands the empty set). *)
 Lemma d_consis_compose_syn_nil_l : forall Δa Δb Γ C B2 B,
@@ -306,7 +303,6 @@ Proof.
   - pick fresh α. apply lc_utyp_all_tag_exists with (α1 := α). apply H0. fsetdec.
   - pick fresh α. apply lc_utyp_all_syn_exists with (α1 := α). apply H0. fsetdec.
 Qed.
-
 
 (** ⭐ …and so is its [btyp] side.  ⚙ The [lc] twin of [d_consis_wf] /
     [d_sub_wf]: those need the subject WELL-SCOPED and give well-scopedness
@@ -365,7 +361,6 @@ Proof.
     + eapply d_consis_lc_utyp; eauto.
 Qed.
 
-
 (** Mode arithmetic for the [FN^n] generalisation: replace the trailing
     [mode_ti] of an [FN^n TI] mode with [m_new]. *)
 Fixpoint mode_fn_n_subst (m_orig m_new : mode) : mode :=
@@ -404,14 +399,6 @@ Proof.
   - constructor.
   - dependent destruction Hst. constructor; auto.
   - inversion Hst.
-Qed.
-
-(** For monomorphic [A] the two paintings coincide (no ∀ to colour). *)
-Lemma mono_ptyp_inh_eq_syn : forall A,
-    mono_ptyp A -> ptyp_to_btyp_inh A = ptyp_to_btyp_syn A.
-Proof.
-  induction 1; simpl; [ reflexivity | reflexivity | ].
-  rewrite IHmono_ptyp1, IHmono_ptyp2. reflexivity.
 Qed.
 
 (** Paint round-trip: erasing a syn-painted [btyp] to a [utyp] equals the
@@ -486,9 +473,9 @@ Lemma consis_mono_arg : forall Δ Γ A B,
     B = ptyp_to_btyp_inh A.
 Proof.
   intros Δ Γ A B Hc Hmono.
-  rewrite (mono_ptyp_inh_eq_syn Hmono) in Hc.
+  rewrite (ptyp_to_btyp_inh_mono_syn Hmono) in Hc.
   rewrite btyp_to_utyp_syn_ptyp_to_btyp_syn in Hc.
-  rewrite (mono_ptyp_inh_eq_syn Hmono).
+  rewrite (ptyp_to_btyp_inh_mono_syn Hmono).
   eapply d_consis_mono_determines; eassumption.
 Qed.
 
@@ -560,7 +547,6 @@ Proof.
     | H : forall x, x `notin` _ -> is_ttyp _ |- _ => apply H; fsetdec
     end.
 Qed.
-
 
 (** [utyp_to_btyp] preserves local closure (needed for the btyp-side
     subst/open commute in the substitution lemma). *)
@@ -681,7 +667,6 @@ Proof.
     apply (@d_consis_rename_tvar _ _ _ _ HΨ'0 nil Γ α0 α); [ reflexivity | simpl; fsetdec ].
 Qed.
 
-
 (** [nil]-context variant for the reformulated CST's [infer] case: when the
     target [B] is synthesised the composed tag context collapses to [nil]
     (via [d_consis_compose_syn_nil_l]), which is what [d_sub__infer] demands. *)
@@ -780,7 +765,6 @@ Proof.
         apply d_wf_utyp_weakening_head; exact Hwf
       | assumption ].
 Qed.
-
 
 (** [utyp_tag_refines T Cmid]: [T] and [Cmid] have the same shape, and at
     every quantifier where [Cmid] is ε-tagged [T] carries the SAME tag, while
@@ -1706,7 +1690,7 @@ Proof.
       symmetry. exact He. }
     match goal with Hit : is_ityp (btyp_arrow _ Bn2) |- _ => inversion Hit; subst end.
     assert (HBn1 : Bn1 = ptyp_to_btyp_inh (btyp_to_ptyp Barg)).
-    { rewrite <- Herase. symmetry. apply is_ityp_ptyp_to_btyp_inh. assumption. }
+    { rewrite <- Herase. symmetry. apply ptyp_to_btyp_inh_btyp_to_ptyp. assumption. }
     rewrite HBn1.
     apply d_sd_typing__abs_anno_check_base with (L := L0 `union` dom Γ).
     + assumption.
