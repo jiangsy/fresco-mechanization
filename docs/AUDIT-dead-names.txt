@@ -43,7 +43,10 @@ from a regenerated list, check docs/PAPER-GAPS.md and PROGRESS.md Part 1 too.
 
 --- [P] the paper's Lemma E.8, an IFF the paper uses in BOTH directions
         (forward: subtyping-proofs.tex:890; reverse: :2632).  The mech's
-        P6 goes by the rsubst route and needs neither; see PAPER-GAPS:2257.
+        P6 goes by the ρ-route and needs neither; the FULL account — why
+        each half lost (or never had) a consumer, and why both are kept —
+        is the §4 banner in algo/sub/prop_looksub.v.  See also
+        docs/PAPER-GAPS.md:2257 and :2567.
   frost/algo/sub/prop_looksub.v:406  Lemma a_looksub_lookeq_subst_stable
   frost/algo/sub/prop_looksub.v:632  Lemma a_looksub_lookeq_subst_stable_rev
 

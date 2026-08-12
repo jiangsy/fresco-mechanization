@@ -376,6 +376,18 @@ their topic names.
   **`rsubst`** (`uskl_rsubst`, `rsubst_fresh`, `prop_rsubst.v`), which also
   keeps it apart from the metasubstitution `msubst_*` and the meta-level
   `subst_*`.  Renamed 2026-08-12; 39 declarations and one file.
+- ⛔ **`_no_loss` means "encoding justification — never delete for being
+  unreferenced".**  The eleven `*_no_loss` lemmas (`prop_swap.v` §13b) prove
+  that the exists-fresh output premises reject nothing the premise-free rule
+  accepts.  Their consumer is the READER, so zero references is what they are
+  FOR.  Any lemma whose point is that the ENCODING is admissible takes this
+  suffix, and an orphan sweep must skip the family.  ⚠️ More generally, a
+  zero-reference lemma is not automatically waste — before deleting, check
+  `docs/PAPER-GAPS.md` and `PROGRESS.md` Part 1 as well as the doc comment;
+  the reference scan reads only `.v` files and so cannot see a numbered PAPER
+  lemma with no consumer (`a_looksub_lookeq_subst_stable{,_rev}` is one) or a
+  PAPER-GAPS exhibit.  Rules and worked cases:
+  [`docs/REPORT-postclosure-audit.md`](docs/REPORT-postclosure-audit.md) §2.1b.
 - **A fact about a conversion is `<relation>_<conversion>`** — the conversion's
   own name, unabbreviated: `ftvar_ptyp_to_pskl`, `btyp_to_ptyp_open`,
   `lc_bskl_to_pskl`.  ⚠️ NOT `ftvar_in_<target>_<conversion>` and NOT

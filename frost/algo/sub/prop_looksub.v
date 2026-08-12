@@ -390,6 +390,35 @@ Proof.
         end.
 Qed.
 
+(* ===================================================================== *)
+(*  §4 / §4b — THE PAPER'S LEMMA E.8, "Stability of constraint collection" *)
+(*  (subtyping-proofs.tex:504).                                            *)
+(*                                                                        *)
+(*  ⛔ DO NOT DELETE EITHER HALF FOR BEING UNREFERENCED.  Both are Qed and  *)
+(*  axiom-free and NEITHER has a consumer; that is the expected state, not *)
+(*  rot, and an orphan sweep has already had to be told so twice.          *)
+(*                                                                        *)
+(*  E.8 is an IFF, and the paper uses each direction once — forward at     *)
+(*  subtyping-proofs.tex:890, reverse at :2632 ("by the reverse direction  *)
+(*  of ...").  So the tree owes both, and deleting one would leave         *)
+(*  PROGRESS.md Part 1 marking E.8 ✅ while half of it is unproved.         *)
+(*                                                                        *)
+(*  WHY NEITHER IS CALLED:                                                 *)
+(*   - §4 (forward) HAD two consumers, deco_algo/prop_soundness_sub.v:511  *)
+(*     and :786.  Both rows were rewritten when the look cluster's ∀ rules  *)
+(*     went cofinite -> exists-fresh, and the rewrites do not need it.      *)
+(*   - §4b (reverse) never had one.  The paper's route through that case    *)
+(*     ENDS by un-substituting; the mech proves P6 by the ρ-route, which    *)
+(*     carries the rigid-variable substitution explicitly and keeps the     *)
+(*     looksub side on VAR-OPENED subjects — so it is never holding a       *)
+(*     substituted source that has to be undone.  Recorded as a deliberate  *)
+(*     decision at docs/PAPER-GAPS.md:2257.                                 *)
+(*                                                                        *)
+(*  ⚠️ What is mechanized is NOT the paper's statement verbatim: it carries  *)
+(*  one extra premise, and the unconditional form is FALSE.  See the note   *)
+(*  directly below, and docs/PAPER-GAPS.md:2567 (PROSE-COMPLETION).         *)
+(* ===================================================================== *)
+
 (** The SCOPE premise [ftv P0 ⊆ α ∪ ftvar_in_aenv Θ] is the paper's Barendregt
     convention spelled out, and it is LOAD-BEARING since cluster 3: with a
     LEAKING exists-fresh binder the unconditional form is FALSE
@@ -401,7 +430,11 @@ Qed.
     [β0 ∉ ftv P0] is DERIVED.  It names the CONTEXT (not the input
     skeletons) because only the context is MONOTONE under descent: an arrow
     row shrinks the skeletons, a binder row grows the context, and
-    [ftvar_in_aenv Θ] therefore threads through both. *)
+    [ftvar_in_aenv Θ] therefore threads through both.
+
+    ⛔ §4, the FORWARD half of the paper's E.8 — consumer-free since the look
+    cluster went exists-fresh, and kept on purpose.  Read the banner above
+    before deleting it. *)
 
 Lemma a_looksub_lookeq_subst_stable :
   (forall Θ α m P P' Ξ 𝒞, {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
@@ -627,8 +660,10 @@ Proof.
   apply a_lookeq__absent. simpl. clear - Hβ. fsetdec.
 Qed.
 
-(** The REVERSE direction of
-    [lemma:constraint-collection-stable-substitution]. *)
+(** §4b — the REVERSE direction of
+    [lemma:constraint-collection-stable-substitution], i.e. the other half of
+    the paper's E.8 iff.  ⛔ Consumer-free BY DESIGN — see the §4 banner above
+    for why the ρ-route never needs it, and why it is kept anyway. *)
 Lemma a_looksub_lookeq_subst_stable_rev :
   (forall Θ α m Ps P' Ξ 𝒞, {{ Θ ⊢ Ps ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
      forall Pu βg Pg, Ps = subst_pskl_in_pskl Pg βg Pu ->

@@ -1647,6 +1647,14 @@ Qed.
 (*  an honest statement of the paper's Barendregt convention, not a        *)
 (*  strengthening of the algorithm.  (This is why the encoding is          *)
 (*  admissible at all; see DESIGN.md §4.3.)                                *)
+(*                                                                        *)
+(*  ⛔ ALL ELEVEN [*_no_loss] LEMMAS BELOW ARE UNREFERENCED ON PURPOSE and  *)
+(*  MUST NOT BE DELETED BY AN ORPHAN SWEEP.  They are consumed by the       *)
+(*  READER, not by a proof: they are the argument that the exists-fresh     *)
+(*  encoding is admissible, so having no consumer is exactly what they are  *)
+(*  for.  ⭐ THE SUFFIX IS THE MARKER — [_no_loss] means "encoding          *)
+(*  justification, keep"; see CLAUDE.md's lemma-naming rules and the [E]    *)
+(*  legend in docs/AUDIT-dead-names.txt.                                    *)
 (* ===================================================================== *)
 
 Lemma a_sub_flex_skip_no_loss : forall NM M P0 Θ0 Θ1 Ξ α β A,
