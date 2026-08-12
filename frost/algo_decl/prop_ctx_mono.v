@@ -308,42 +308,9 @@ Qed.
 (*  §4  Subtyping, skeleton inference, typing                             *)
 (* ===================================================================== *)
 
-(** The four leaf rows' refinement datum travels by [ad_refine_pskl_mono],
-    exactly as in the [_gv] mirror below. *)
-Lemma ad_pat_sub_mono : forall NM M Ψ Θ R Q,
-  {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad ->
-  forall Θ', aenv_tbinds_le Θ Θ' -> {{ Ψ ⨟ Θ' ⊢ˢ[ NM | M ] R ⩽ Q }}ad.
-Proof.
-  intros NM M Ψ Θ R Q H; induction H; intros Θ' Hle.
-  - apply ad_pat_sub__infer;
-      [ assumption | eapply ad_pat_consis_mono; eauto | assumption
-      | eapply ad_refine_pskl_mono; eauto ].
-  - apply ad_pat_sub__check;
-      [ assumption | assumption | eapply ad_pat_consis_mono; eauto
-      | eapply ad_refine_pskl_mono; eauto ].
-  - apply ad_pat_sub__forall_r with (L := L). intros α Hα.
-    apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
-  - apply ad_pat_sub__univ_ghost_r;
-      [ assumption | assumption | assumption | assumption
-      | eapply ad_pat_consis_mono; eauto
-      | eapply ad_refine_pskl_mono; eauto ].
-  - eapply ad_pat_sub__arrow;
-      [ eapply ad_pat_consis_mono; eauto
-      | eapply ad_refine_pskl_mono; eauto | auto | eassumption ].
-  - eapply ad_pat_sub__forall_l_tagged;
-      [ assumption | eassumption | eassumption | eassumption
-      | eapply a_wf_pskl_mono; eauto | auto ].
-  - eapply ad_pat_sub__forall_l_untagged;
-      [ assumption | eassumption | eassumption | eassumption
-      | eapply a_wf_pskl_mono; eauto | auto ].
-  - apply ad_pat_sub__ghost;
-      [ assumption | eapply a_wf_pskl_mono; eauto | assumption ].
-  - apply ad_pat_sub__ghostg; assumption.
-  - apply ad_pat_sub__univ_ghost_l; auto.
-  - apply ad_pat_sub__univ_ghost_lg; auto.
-  - eapply ad_pat_sub__flex_mono;
-      [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
-Qed.
+(* ⚙ RESTART NOTE (2026-08-12) — [ad_pat_sub_mono], the PLAIN-relation mirror
+   of [ad_pat_sub_gv_mono] below, was deleted: nothing in the tree ever used
+   it.  Same story as [ad_pat_sub_subst_mid] (algo/prop_suffix_erase.v). *)
 
 (** The LEAF-VALID mirror, fuel carried unchanged: the four leaf rows'
     refinement datum travels by [ad_refine_pskl_mono]. *)
