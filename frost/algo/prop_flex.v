@@ -364,6 +364,19 @@ Proof. intros. simpl. fsetdec. Qed.
 Lemma dom_subset_ftvar_in_aenv : forall Θ, dom Θ [<=] ftvar_in_aenv Θ.
 Proof. induction Θ as [ | [x bd] Θ' IH ]; simpl; fsetdec. Qed.
 
+(** A flexible's DEFINITION is part of what the context mentions.  So a name
+    chosen fresh for [ftvar_in_aenv Θ] is fresh for every definition in Θ —
+    which is the shape the renaming lemmas ask their side condition in. *)
+Lemma ftvar_in_aenv_binds_def : forall Θ β τ,
+  binds β (abind_flex_mono_def τ) Θ ->
+  ftvar_in_ptyp τ [<=] ftvar_in_aenv Θ.
+Proof.
+  induction Θ as [ | [x bd] Θ' IH ]; intros β τ Hb; [ inversion Hb | ].
+  destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [ [ Heq Hbd ] | Hb' ].
+  - subst bd. simpl. fsetdec.
+  - pose proof (IH _ _ Hb') as Hsub. simpl. fsetdec.
+Qed.
+
 (** ⭐ THE PROPERTY THAT MAKES THE KIT PROVABLE.  Every name guess^TY
     GENERATES avoids everything the ambient context mentions — DERIVED,
     not assumed: the hole rule picks fresh for [Θ] and the ∀ rule puts its

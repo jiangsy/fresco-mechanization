@@ -238,7 +238,51 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-12 (latest) — ⭐⭐ **`ad_pat_sub_g` IS DELETED: two relations where there were three**
+## 2026-08-12 (latest) — ⭐⭐ **THE FUEL DIRECTION LANDS UNCONDITIONALLY, and the plain relation's structural layer turns out to be DEAD**
+
+**`make coq` exit 0; README.v 28/28 `Print Assumptions` closed; no `Admitted`,
+no `Axiom`.**  −561 / +136 lines.
+
+⭐ **`ad_pat_sub_to_v` (algo/sub/prop_soundness_sub.v): every plain join
+ADMITS a fuel.**  With the existing `ad_pat_sub_of_gv` this makes the two
+relations INTERDERIVABLE.  It is **unconditional** — any sort, any Θ, no
+ghost-freeness — and that is new: it became provable only because
+`ad_pat_sub` took on the leaf presupposition earlier the same day.  Before
+that the leaf rows had to RECOVER the datum, which needed a ghost-free subject
+over a declarative context; now the datum is a PREMISE of the row that needs
+it, so every row matches one for one.
+
+⭕ **This CLOSES obstruction (A)** of `docs/HANDOFF-closed-corollaries-
+declarative.md` — the `ad_pat_sub → ad_pat_sub_gv` direction `def_subtyping.v`
+recorded as "still owed", and the SK sort it left open.  `prop_conserv.v` §13's
+`ad_pat_sub_ty_to_v` (~90 lines, TY sort only, ghost-free subject, declarative
+context) is RETIRED for it, and `base_row` lost a tactic argument with it.
+
+⚙ **THE FUEL IS THE DERIVATION'S HEIGHT** and the collection is routine —
+leaves conclude at any fuel, UnivGhostL/UnivGhostLG/FlexMono do not increment,
+and Arrow/ForallR/ForallL each have exactly ONE recursive premise, so no `max`
+and no `_fuel_weaken`.  ⚠️ ForallR is COFINITE, so one fuel must serve
+infinitely many α while the IH hands back a different one per α: take the IH at
+ONE fresh α and regenerate the family at THAT fuel with
+`ad_pat_sub_gv_rename_tvar`.  ⚠️ The witness must be fresh for
+`ftvar_in_aenv Θ`, NOT `dom Θ` — a flexible's DEFINITION may mention a rigid,
+which is the rename's second side condition (new `ftvar_in_aenv_binds_def`,
+prop_flex.v).
+
+⭐ **AND THEN THE PLAIN STRUCTURAL LAYER TURNED OUT TO BE DEAD.**
+`ad_pat_sub_{subst_flex,subst_flex_def,rename_tvar,strip_suffix}` — ~450 lines
+running in parallel with their `_gv` twins — have NO consumer anywhere: every
+occurrence in the tree is their own definition or a comment naming them.  Their
+users had long since moved to the `_gv` mirrors, which is where the fuel lives.
+Deleted.  ⚠️ **A grep that filters out lines STARTING with `(*` does not filter
+comment lines that merely MENTION the name** — that is what made them look live
+on the first pass; check for `Lemma`/`Qed` boundaries, or just delete and let
+the build answer.
+
+So no proof in the tree round-trips through the fuel: `ad_pat_sub_to_v`'s only
+consumer is `base_row`, where reaching `ad_pat_sub_v` is the actual content.
+
+## 2026-08-12 — ⭐⭐ **`ad_pat_sub_g` IS DELETED: two relations where there were three**
 
 **`make coq` exit 0; README.v 28/28 `Print Assumptions` closed; no `Admitted`,
 no `Axiom`.**  −1505 / +539 lines.
