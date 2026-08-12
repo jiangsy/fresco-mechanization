@@ -1154,9 +1154,6 @@ Qed.
 
 (* --- §12d  mode compatibility at the TY sort -------------------------- *)
 
-Lemma ptyp_to_pskl_not_hole : forall A, ptyp_to_pskl A <> pskl_hole.
-Proof. destruct A; simpl; discriminate. Qed.
-
 (* --- §12e  the split is sound: increase, wf, and both components ------ *)
 
 (* --- §12f  guess^TY's block, and the type it produces ----------------- *)

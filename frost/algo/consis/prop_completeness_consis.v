@@ -185,11 +185,6 @@ Definition V_unify (Θ : aenv) (κ : metasubst) (α β : atom) : nat :=
 Definition V_assign (Θ : aenv) (κ : metasubst) (α : atom) (P : pskl) : nat :=
   Vpskl Θ κ P + Vvar Θ κ α.
 
-(** [Vvar] is [Vptyp] on the variable seen as a type. *)
-Lemma Vvar_ptyp : forall Θ κ α,
-  Vvar Θ κ α = Vptyp Θ κ (ptyp_var_f α).
-Proof. reflexivity. Qed.
-
 (* ===================================================================== *)
 (*  §3a  Homomorphism of [Vpskl] — the consistency-internal V-decreases    *)
 (* ===================================================================== *)
@@ -280,14 +275,6 @@ Lemma Vpskl_inc_equiv : forall Θ0 κ1 κ2 Θ P,
   Vpskl Θ κ1 P = Vpskl Θ κ2 P.
 Proof.
   intros. unfold Vpskl. eapply a_inc_equiv_downarrow_pskl_size; eauto.
-Qed.
-
-Lemma Vptyp_inc_equiv : forall Θ0 κ1 κ2 Θ A,
-  a_inc_equiv Θ0 κ1 κ2 Θ ->
-  {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a -> a_wf_ptyp Θ0 A ->
-  Vptyp Θ κ1 A = Vptyp Θ κ2 A.
-Proof.
-  intros. unfold Vptyp. eapply a_inc_equiv_downarrow_ptyp_size; eauto.
 Qed.
 
 (** (M2) The BACK-EDGE move [α[τ/α1̂] ↦ α], with the outer metasubstitution
@@ -2333,11 +2320,6 @@ Lemma avoid_same_dom : forall (α1 : atom) (b1 b0 : abind) (N : atoms)
     γ `in` dom ((α1 ~ b0) ++ Θ0') \/ γ `notin` N.
 Proof. intros. left. simpl_env in *. fsetdec. Qed.
 
-(** The rows whose output domain merely contains the input's. *)
-Lemma avoid_mono : forall N (D0 D0' : atoms),
-  D0' [<=] D0 -> forall γ, γ `in` D0' -> γ `in` D0 \/ γ `notin` N.
-Proof. intros N D0 D0' Hs γ Hγ. left. clear - Hs Hγ. fsetdec. Qed.
-
 (** A hatted variable other than the head is hatted in the tail. *)
 Lemma a_flex_tvar_strip_head : forall (α1 : atom) b Θ0 β1,
   β1 <> α1 ->
@@ -2371,7 +2353,6 @@ Proof.
              (a_wf_ptyp_ftv_dom Hwf)).
   reflexivity.
 Qed.
-
 
 (** Extending Θ with a fresh rigid entry preserves the three fixed
     hypotheses of the ftv-survival inductions below. *)

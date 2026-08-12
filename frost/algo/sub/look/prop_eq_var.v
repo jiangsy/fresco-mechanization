@@ -158,29 +158,6 @@ Proof.
       simpl in *; clear - Hc Hup Hα; fsetdec end.
 Qed.
 
-(** ∀◇ source (guarded body): descend the all_tag target one binder. *)
-Lemma flex_apart_tophole_all_tag_descent : forall Θ0 Δρ P0' ε ψ,
-  guarded_pskl P0' ->
-  flex_apart Θ0 Δρ (pskl_tophole P0') (uskl_all_tag ε ψ) ->
-  forall α, α `notin` Δρ ->
-  flex_apart Θ0 Δρ (pskl_tophole P0') (open_uskl_wrt_uskl ψ (uskl_var_f α)).
-Proof.
-  intros Θ0 Δρ P0' ε ψ Hg Hfa α Hα.
-  inversion Hfa; subst.
-  - (* fa_clean *)
-    apply fa_clean.
-    match goal with Hc : _ ∩ _ [=] empty |- _ =>
-      pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ (uskl_var_f α))
-        as Hup;
-      simpl in *; clear - Hc Hup Hα; fsetdec end.
-  - (* fa_tophole: descend the guarded body *)
-    apply fa_tophole.
-    eapply flex_apart_guarded_all_tag_descent;
-      [ exact Hg | eassumption | exact Hα ].
-  - (* fa_flexfree : the payload is untouched *)
-    apply fa_flexfree; assumption.
-Qed.
-
 (* RESTART NOTE (no-hole removal rework): the "ForallSyn kit (2)" that
    lived here — [bskl_no_hole] + [ad_refine_syn_aenv_to_delta(_mid)], the
    aenv→Δr transport of the refinement premise, valid only for hole-free

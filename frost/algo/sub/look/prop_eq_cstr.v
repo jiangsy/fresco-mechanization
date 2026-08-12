@@ -317,13 +317,6 @@ Lemma binds_app_perm5 : forall (x : atom) (b : abind) A B C D E,
   binds x b (A ++ B ++ C ++ D ++ E) -> binds x b (A ++ C ++ D ++ B ++ E).
 Proof. intros x b A B C D E H. analyze_binds H. Qed.
 
-Lemma a_wf_pskl_swap_app : forall A B C Δ P,
-  {{ (A ++ B ++ C) ⨟ Δ ⊢ₚₛ P }}a -> {{ (B ++ A ++ C) ⨟ Δ ⊢ₚₛ P }}a.
-Proof.
-  intros A B C Δ P H. eapply a_wf_pskl_weaken; [ | exact H ].
-  intros x b Hb. apply binds_swap_app. exact Hb.
-Qed.
-
 (* Build [a_wf_aenv] of an all-flex_mono prefix over a wf tail. *)
 Lemma a_wf_aenv_flex_prefix : forall Ξ Θ0,
   all_flex_mono Ξ -> uniq (Ξ ++ Θ0) -> {{ ⊢ Θ0 }}a -> {{ ⊢ (Ξ ++ Θ0) }}a.
@@ -457,10 +450,6 @@ Proof.
         discriminate Hc
     end.
 Qed.
-
-Lemma subst_uskl_in_uskl_var_self : forall R α,
-  subst_uskl_in_uskl R α (uskl_var_f α) = R.
-Proof. intros; simpl; destruct (eq_var α α); [ reflexivity | contradiction ]. Qed.
 
 (* A mono-paint consistency subject is well-formed as a monotype: every
    variable leaf is [a_binds_tvar] (from [__var] / [__flex_l]). *)
@@ -1395,38 +1384,6 @@ Lemma guarded_uskl_head : forall R, guarded_uskl R -> uskl_guarded_head R.
 Proof.
   intros R H; inversion H;
     [ left | right; left; eexists | right; right; do 2 eexists ]; reflexivity.
-Qed.
-
-(* the ∀◇-body's subject really is guarded-headed, PROVIDED the body is not the
-   looked-up variable itself (there the subject is ψa, which may be a ∀ or ∀◈) *)
-Lemma p6cs_subject_guarded_head : forall Θ0 κ Θ ψa α R0,
-  κ ∷ Θ0 ⊑ Θ ->
-  guarded_pskl (uskl_to_pskl R0) ->
-  R0 <> uskl_var_f α ->
-  α `notin` dom κ ->
-  (forall p, In p κ -> α `notin` ftvar_in_ptyp (snd p)) ->
-  uskl_guarded_head (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R0)).
-Proof.
-  intros Θ0 κ Θ ψa α R0 Hκ Hg Hne Hακ Hκav.
-  destruct R0; simpl in Hg; try solve [ inversion Hg ].
-  - left; reflexivity.
-  - (* var_f *)
-    assert (Hαne : α0 <> α) by (intro Hc; subst; contradiction).
-    cbn [msubst_uskl_syn].
-    remember (msubst_lookup κ α0) as τ0 eqn:Heqτ0.
-    assert (Hmτ : mono_ptyp τ0)
-      by (subst τ0; eapply a_inc_lookup_mono; eauto).
-    assert (Hαimg : α `notin` ftvar_in_ptyp τ0).
-    { subst τ0. intro Hc.
-      pose proof (@msubst_lookup_ftv_avoid κ α α0 Hκav Hc) as Heq; congruence. }
-    clear Heqτ0.
-    destruct Hmτ; simpl in Hαimg |- *;
-      [ left; reflexivity
-      | match goal with |- context [if ?c then _ else _] => destruct c end;
-          [ exfalso; subst; simpl in Hαimg; clear - Hαimg; fsetdec
-          | right; left; eexists; reflexivity ]
-      | right; right; do 2 eexists; reflexivity ].
-  - (* arrow *) right; right; do 2 eexists; cbn; reflexivity.
 Qed.
 
 (* ===================================================================== *)

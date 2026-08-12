@@ -93,10 +93,6 @@ Lemma a_solvetag_sub_psi_cong : forall ψ M P Ψ Ψ',
   {{ ψ ≼[ M ] P ⤳ Ψ }}da -> Ψ [=] Ψ' -> {{ ψ ≼[ M ] P ⤳ Ψ' }}da.
 Proof. intros; eapply (proj1 a_solvetag_sub_eq_psi_cong); eauto. Qed.
 
-Lemma a_solvetag_eq_psi_cong : forall ψ P Ψ Ψ',
-  {{ ψ ∼ P ⤳ Ψ }}da -> Ψ [=] Ψ' -> {{ ψ ∼ P ⤳ Ψ' }}da.
-Proof. intros; eapply (proj2 a_solvetag_sub_eq_psi_cong); eauto. Qed.
-
 Lemma a_solvetag_psi_cong : forall 𝒞 ψ Ψ Ψ',
   {{ 𝒞 ⊩ ψ ⤳ Ψ }}da -> Ψ [=] Ψ' -> {{ 𝒞 ⊩ ψ ⤳ Ψ' }}da.
 Proof.
@@ -142,18 +138,6 @@ Lemma uskl_to_pskl_msubst : forall ρ R,
 Proof.
   induction ρ as [ | [β ψg] ρ' IH ]; intros R; simpl; [ reflexivity | ].
   rewrite uskl_to_pskl_subst. rewrite IH. reflexivity.
-Qed.
-
-(** A variable outside the domain is untouched. *)
-Lemma msubst_uskl_var_notin : forall ρ β,
-  β `notin` dom ρ ->
-  msubst_uskl ρ (uskl_var_f β) = uskl_var_f β.
-Proof.
-  induction ρ as [ | [α1 ψg] ρ' IH ]; intros β Hβ; simpl; [ reflexivity | ].
-  rewrite IH; [ | simpl in Hβ; clear - Hβ; fsetdec ].
-  simpl.
-  destruct_if as [-> | Hne];
-    [ simpl in Hβ; exfalso; clear - Hβ; fsetdec | reflexivity ].
 Qed.
 
 (** Local closure of every range skeleton lets ρ commute with opening. *)
@@ -511,10 +495,6 @@ Inductive no_all_syn_uskl : uskl -> Prop :=
 | nas_uskl__holeg    : no_all_syn_uskl uskl_holeg
 | nas_uskl__tophole  : forall R, no_all_syn_uskl R -> no_all_syn_uskl (uskl_tophole R)
 | nas_uskl__topholeg : forall R, no_all_syn_uskl R -> no_all_syn_uskl (uskl_topholeg R).
-
-Lemma no_all_syn_pskl_to_uskl : forall P,
-  no_all_syn_pskl P -> no_all_syn_uskl (pskl_to_uskl P).
-Proof. induction 1; simpl; constructor; auto. Qed.
 
 (** A pattern-consistency run against a monotype RHS reads a quantifier-free
     subject: erasure of a flex-var assignment can only remove tags that are
@@ -1174,17 +1154,6 @@ Proof.
   - rewrite msubst_uskl_tophole in Hg. inversion Hg.
 Qed.
 
-(** Free-variable bound for the metasubstitution. *)
-Lemma msubst_uskl_ftv_upper : forall ρ R,
-  ftvar_in_uskl (msubst_uskl ρ R)
-  [<=] ftvar_in_uskl R `union` msubst_ftv ρ.
-Proof.
-  induction ρ as [ | [α1 ψg] ρ' IH ]; intros R; simpl; [ fsetdec | ].
-  pose proof (ftvar_in_uskl_subst_uskl_in_uskl_upper
-                (msubst_uskl ρ' R) ψg α1) as Hup.
-  pose proof (IH R) as Hr. clear - Hup Hr. fsetdec.
-Qed.
-
 (** The trivial Δ-side conditions of consistency decoration at Δ = ∅. *)
 Lemma rig_empty : forall Θ : aenv,
   forall α, α `in` (empty `union` empty) -> binds α abind_tvar Θ.
@@ -1195,14 +1164,6 @@ Proof. intros Θ β τ Hb. clear. fsetdec. Qed.
 
 Lemma faf_empty : forall Θ, flex_above_free (empty `union` empty) Θ.
 Proof. intros Θ Θ1 β b Θ2 Heq Hne. clear. fsetdec. Qed.
-
-Lemma lc_msubst_strip : forall ρ ψ,
-  rho_lc ρ -> lc_uskl ψ ->
-  lc_uskl (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ))).
-Proof.
-  intros. apply msubst_uskl_lc; [ assumption | ].
-  apply pskl_to_uskl_lc. apply lc_uskl_to_pskl. assumption.
-Qed.
 
 (** The erasure-swap obligation of [a_subtag_vacuous_erasure]: the
     decorated ρ-image erases like anything erasure-equal to the strip's. *)
@@ -2886,13 +2847,6 @@ Proof.
   apply lc_uskl_to_pskl. exact H.
 Qed.
 
-Lemma pskl_to_uskl_guarded_inv : forall P,
-  guarded_uskl (pskl_to_uskl P) -> guarded_pskl P.
-Proof.
-  intros P Hg; destruct P; simpl in Hg; inversion Hg; subst;
-    constructor; apply pskl_to_uskl_lc_inv; assumption.
-Qed.
-
 Lemma guarded_subst_decorate : forall ψa α R',
   lc_uskl ψa ->
   lc_uskl R' ->
@@ -3444,20 +3398,6 @@ Proof.
   intros * Hlk Hst Hβα HαP0 HlcP0.
   eapply (proj1 (a_looksub_lookeq_subst_gen_size
                    (2 * (size_pskl P + size_pskl P') + 1)));
-    solve [ lia | eassumption ].
-Qed.
-
-Lemma a_lookeq_subst_gen : forall Θ α P P' Ξ 𝒞 β P0 ψa Ψa,
-  {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
-  {{ 𝒞 ⊩ ψa ⤳ Ψa }}da ->
-  β <> α -> α `notin` ftvar_in_pskl P0 -> lc_pskl P0 ->
-  exists Ξ' 𝒞',
-    {{ Θ ⊢ (subst_pskl_in_pskl P0 β P) ∼[ α ] P' ⤳ Ξ' ⨾ 𝒞' }}a /\
-    {{ 𝒞' ⊩ ψa ⤳ Ψa }}da.
-Proof.
-  intros * Hlk Hst Hβα HαP0 HlcP0.
-  eapply (proj2 (a_looksub_lookeq_subst_gen_size
-                   (2 * (size_pskl P + size_pskl P'))));
     solve [ lia | eassumption ].
 Qed.
 

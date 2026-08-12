@@ -1274,15 +1274,6 @@ Proof.
     split; [ reflexivity | simpl; rewrite He1, He2; reflexivity ].
 Qed.
 
-(** Ghost-freeness is decidable. *)
-Lemma pskl_ghost_free_dec : forall P,
-  sumbool (pskl_ghost_free P) (~ pskl_ghost_free P).
-Proof.
-  induction P; simpl; auto.
-  destruct IHP1; destruct IHP2; [ left; split; assumption | | | ];
-    right; intros [H1 H2]; contradiction.
-Qed.
-
 (** Looking up past a block the atom avoids. *)
 (** ⭐ The GHOST-FREE shortcut: a ghost-free subtree guesses to itself, and
     a refinement between two ghost-free paintings IS the equivalence. *)
@@ -1345,19 +1336,6 @@ Proof.
   exact (ad_refine_syn_inh_tyequiv Href HwfΘ
            (msubst_ptyp κ (ptyp_var_f β)) Bt eq_refl eq_refl).
 Qed.
-
-(** A monotype's embedding is never a ghost or a quantifier. *)
-Lemma mono_embed_no_tophole : forall τ P1,
-  mono_ptyp τ -> ptyp_to_pskl τ <> pskl_tophole P1.
-Proof. intros τ P1 Hm; destruct Hm; simpl; discriminate. Qed.
-
-Lemma mono_embed_no_all : forall τ P1,
-  mono_ptyp τ -> ptyp_to_pskl τ <> pskl_all_syn P1.
-Proof. intros τ P1 Hm; destruct Hm; simpl; discriminate. Qed.
-
-Lemma mono_embed_no_hole : forall τ,
-  mono_ptyp τ -> ptyp_to_pskl τ <> pskl_hole.
-Proof. intros τ Hm; destruct Hm; simpl; discriminate. Qed.
 
 (** An in-domain lookup through an increase is a Θ-wf image. *)
 Lemma a_inc_lookup_in_wf : forall Θ1 κg Θ β,

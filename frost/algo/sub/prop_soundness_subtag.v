@@ -1176,54 +1176,6 @@ Proof.
   - eapply ad_pat_sub_fuel__flex_mono; [ apply Hmon; eassumption | apply IHad_pat_sub_fuel; exact Hmon ].
 Qed.
 
-Lemma ad_pat_sub_weaken : forall NM M Ψ Θ R Q,
-  {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad ->
-  forall Θ', (forall x b, binds x b Θ -> binds x b Θ') ->
-  {{ Ψ ⨟ Θ' ⊢ˢ[ NM | M ] R ⩽ Q }}ad.
-Proof.
-  intros NM M Ψ Θ R Q H; induction H; intros Θ' Hmon.
-  - apply ad_pat_sub__infer;
-      [ assumption
-      | eapply ad_pat_consis_weaken; eassumption
-      | assumption
-      | eapply ad_refine_pskl_weaken; eassumption ].
-  - apply ad_pat_sub__check;
-      [ assumption | assumption
-      | eapply ad_pat_consis_weaken; eassumption
-      | eapply ad_refine_pskl_weaken; eassumption ].
-  - eapply ad_pat_sub__forall_r with (L := L).
-    intros α Hα.
-    apply H0;
-      first [ exact Hα
-            | (* the map must keep the freshly pushed rigid, so case-split *)
-              intros x b Hb;
-              destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> ->] | Hb'];
-                [ unfold binds; simpl; left; reflexivity
-                | unfold binds; simpl; right; apply Hmon; exact Hb' ] ].
-  - apply ad_pat_sub__univ_ghost_r;
-      [ assumption | assumption | assumption | assumption
-      | eapply ad_pat_consis_weaken; eassumption
-      | eapply ad_refine_pskl_weaken; eassumption ].
-  - eapply ad_pat_sub__arrow;
-      [ eapply ad_pat_consis_weaken; eassumption
-      | eapply ad_refine_pskl_weaken; eassumption
-      | apply IHad_pat_sub; exact Hmon | assumption ].
-  - eapply ad_pat_sub__forall_l_tagged with (Ψ' := Ψ') (ψ := ψ);
-      [ assumption | assumption | assumption | assumption
-      | eapply a_wf_pskl_weaken; eassumption
-      | apply IHad_pat_sub; exact Hmon ].
-  - eapply ad_pat_sub__forall_l_untagged with (Ψ' := Ψ') (ψ := ψ);
-      [ assumption | assumption | assumption | assumption
-      | eapply a_wf_pskl_weaken; eassumption
-      | apply IHad_pat_sub; exact Hmon ].
-  - apply ad_pat_sub__ghost;
-      [ assumption | eapply a_wf_pskl_weaken; eassumption | assumption ].
-  - apply ad_pat_sub__ghostg; [ assumption | assumption ].
-  - apply ad_pat_sub__univ_ghost_l; [ assumption | apply IHad_pat_sub; exact Hmon ].
-  - apply ad_pat_sub__univ_ghost_lg; [ assumption | apply IHad_pat_sub; exact Hmon ].
-  - eapply ad_pat_sub__flex_mono; [ apply Hmon; eassumption | apply IHad_pat_sub; exact Hmon ].
-Qed.
-
 (* ===================================================================== *)
 (*  §1g  THE [strip_suffix] CHAIN, UNDEFINED-HEAD HALF.                   *)
 (*                                                                        *)

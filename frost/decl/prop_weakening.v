@@ -152,7 +152,6 @@ Proof.
   - apply d_refine_pskl__tophole_keep; [ assumption | auto ].
 Qed.
 
-
 Lemma d_pat_consis_weakening : forall Γ1 Γ2 Γ3 Δ R Q,
     {{ Δ ⨟ (Γ1 ++ Γ3) ⊢ˢ R ∼ Q }}d ->
     {{ Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ˢ R ∼ Q }}d.
@@ -318,7 +317,6 @@ Proof.
   intros Γ1 Γ2 Γ3 m e B H. eapply d_typing_weakening_mid; [ exact H | reflexivity ].
 Qed.
 
-
 (** General (order-preserving) context weakening: [Γ'] is [Γ] with extra
     bindings inserted at arbitrary positions.  Encoded as a chain of the
     middle-insertions that [d_typing_weakening] already supports, so the
@@ -328,13 +326,6 @@ Inductive ctx_weaken : list (atom * dbind) -> list (atom * dbind) -> Prop :=
 | ctx_weaken_insert : forall Γ1 Γ2 Γ3 Γ',
     ctx_weaken (Γ1 ++ Γ2 ++ Γ3) Γ' ->
     ctx_weaken (Γ1 ++ Γ3) Γ'.
-
-Lemma d_typing_ctx_weaken : forall Γ Γ',
-    ctx_weaken Γ Γ' -> forall m e B, {{ Γ ⊢[ m ] e ⦂ B }}d -> {{ Γ' ⊢[ m ] e ⦂ B }}d.
-Proof.
-  induction 1; intros m e B Hty; [ assumption | ].
-  apply IHctx_weaken. apply d_typing_weakening. exact Hty.
-Qed.
 
 Lemma d_pat_ctx_weaken : forall Γ Γ',
     ctx_weaken Γ Γ' -> forall m e Q, {{ Γ ⊢ˢ[ m ] e ⦂ Q }}d -> {{ Γ' ⊢ˢ[ m ] e ⦂ Q }}d.

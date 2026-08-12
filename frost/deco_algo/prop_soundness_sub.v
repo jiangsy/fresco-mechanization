@@ -1625,31 +1625,6 @@ Proof.
     end.
 Qed.
 
-(** SELF-SOLVETAG (paper coverage, base shape): a decorated skeleton solves
-    against its OWN erasure, collecting EXACTLY its tags.  This is the SK
-    guess (⌊ψ⌋=Q, identity) case and the set-membership coverage anchor —
-    no ∀◇ frontier (topholeg aligns with ∀◇ via SEq-UnivGhostG) and no ε
-    double-count (add ε handled by SEq-ForallInh). *)
-Lemma solvetag_eq_self : forall Ψ ψ,
-  d_tags_skl Ψ ψ -> {{ ψ ∼ ⌊ ψ ⌋ˢ ⤳ Ψ }}da.
-Proof.
-  intros Ψ ψ H; induction H; simpl.
-  - apply a_solvetag_eq__unit; assumption.
-  - apply a_solvetag_eq__var; assumption.
-  - eapply a_solvetag_eq__arrow;
-      [ exact IHd_tags_skl1 | exact IHd_tags_skl2 | assumption ].
-  - (* all_tag ε R : target ∀⌊R⌋, Ψ = add ε Ψ0 *)
-    eapply a_solvetag_eq__forall_inh with (L := L) (Ψ0 := Ψ0); [ | assumption ].
-    intros β Hβ. rewrite <- uskl_to_pskl_open.
-    match goal with
-    | IH : forall α, α `notin` L -> {{ _ ∼ _ ⤳ Ψ0 }}da |- _ =>
-        exact (IH β Hβ)
-    end.
-  - (* holeg : erasure is ◇ *) apply a_solvetag_eq__vacuous; assumption.
-  - (* topholeg R : erasure ∀◇⌊R⌋ *)
-    apply a_solvetag_eq__univ_ghostg; exact IHd_tags_skl.
-Qed.
-
 (* --------------------------------------------------------------------- *)
 (*  PAPER COVERAGE (subtyping-proofs.tex:110-127): [dec_ext P ψ Ψ] is the
     ψ↔skeleton relation making the paper's "provenance observation"
@@ -1709,29 +1684,6 @@ Inductive dec_ext : pskl -> uskl -> atoms -> Prop :=
     dec_ext P (uskl_var_f α) Ψ.
 
 #[export] Hint Constructors dec_ext : frost.
-
-(** [dec_ext] respects set-equality of the remaining-tag context. *)
-Lemma dec_ext_psi_cong : forall P ψ Ψ Ψ',
-  dec_ext P ψ Ψ -> Ψ [=] Ψ' -> dec_ext P ψ Ψ'.
-Proof.
-  intros P ψ Ψ Ψ' H; revert Ψ'; induction H; intros Ψ' Heq.
-  - apply dec_ext__hole;
-      [ assumption | eapply d_tags_skl_psi_cong; [ exact H0 | exact Heq ] ].
-  - apply dec_ext__unit; fsetdec.
-  - apply dec_ext__var; fsetdec.
-  - eapply dec_ext__arrow;
-      [ exact H | exact H0 | clear - H1 Heq; fsetdec ].
-  - apply dec_ext__all with (L := L). intros α Hα.
-    match goal with
-    | IH : forall α, α `notin` L -> forall Ψ0, _ -> dec_ext _ _ Ψ0 |- _ =>
-        exact (IH α Hα Ψ' Heq)
-    end.
-  - apply dec_ext__skip_tophole; [ assumption | apply IHdec_ext; exact Heq ].
-  - apply dec_ext__topholeg. apply IHdec_ext. exact Heq.
-  - eapply dec_ext__absorb_all with (L := L) (Ψ0 := Ψ0);
-      [ assumption | clear - H1 Heq; fsetdec ].
-  - apply dec_ext__flex_forget; fsetdec.
-Qed.
 
 (** SK anchor / self-extension: a decorated skeleton extends its own erasure
     with no remaining tags. *)
@@ -3179,9 +3131,6 @@ Fixpoint pskl_no_top (P : pskl) : Prop :=
   | _ => True
   end.
 
-Lemma pskl_ghost_free_no_top : forall P, pskl_ghost_free P -> pskl_no_top P.
-Proof. induction P; simpl; intuition. Qed.
-
 Lemma pskl_no_top_open_rec : forall P α' k,
   pskl_no_top P <-> pskl_no_top (open_pskl_wrt_pskl_rec k (pskl_var_f α') P).
 Proof.
@@ -3284,43 +3233,6 @@ Definition a_cstr_no_top (c : a_cstr) : Prop :=
   | a_cstr_sub _ Q => pskl_no_top Q
   | a_cstr_eq Q => pskl_no_top Q
   end.
-
-(** The look's targets are sub-skeletons of P0 (or fresh flex vars) — all
-    ∀◇-free when P0 is. *)
-Lemma a_look_no_top :
-  (forall Θ α m P P0 Ξ 𝒞, {{ Θ ⊢ P ≼[ α , m ] P0 ⤳ Ξ ⨾ 𝒞 }}a ->
-     pskl_no_top P0 -> List.Forall a_cstr_no_top 𝒞) /\
-  (forall Θ α P P0 Ξ 𝒞, {{ Θ ⊢ P ∼[ α ] P0 ⤳ Ξ ⨾ 𝒞 }}a ->
-     pskl_no_top P0 -> List.Forall a_cstr_no_top 𝒞).
-Proof.
-  apply a_looksub_lookeq_mutind; intros; simpl in *;
-    try contradiction;                                       (* ∀◇-target *)
-    try (apply List.Forall_nil; fail);                       (* nil constraints *)
-    try (apply List.Forall_app; split; [ apply H | apply H0 ]; tauto);  (* arrow *)
-    try (repeat apply List.Forall_cons;
-         solve [ assumption | exact I | apply List.Forall_nil ]);  (* [sub/eq _] *)
-    try (apply H; assumption);                               (* same-target recursion *)
-    (* EXISTS-FRESH (cluster 3): the ∀ rows' IH is the premise's own, so there
-       is no representative to pick off an [L] — only the OPENED target to
-       walk back through [pskl_no_top_open_rec]. *)
-    try (apply H;
-         solve [ assumption
-               | apply (proj1 (pskl_no_top_open_rec _ _ _)); assumption ]).
-Qed.
-
-(** The TY solve output is top-guarded (walk the constraint list). *)
-Lemma solve_cstr_top_guarded : forall Θ 𝒞 P Ξ P',
-  {{ Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' }}a -> pskl_no_top P -> List.Forall a_cstr_no_top 𝒞 ->
-  pskl_top_guarded P'.
-Proof.
-  intros Θ 𝒞 P Ξ P' Hs; induction Hs; intros Hnt Hntc.
-  - apply pskl_no_top_top_guarded; exact Hnt.
-  - inversion Hntc as [ | ? ? Hnt0 ]; subst; simpl in Hnt0.
-    eapply solve_sub_top_guarded; [ exact H | exact Hnt | exact Hnt0 ].
-  - inversion Hntc as [ | ? ? Hnt0 HntC ]; subst; simpl in Hnt0.
-    apply IHHs;
-      [ eapply solve_eq_no_top; [ exact H | exact Hnt | exact Hnt0 ] | exact HntC ].
-Qed.
 
 (* ===================================================================== *)
 (*  [top_guarded]-INPUT propagation chain (replaces the [no_top] chain):   *)

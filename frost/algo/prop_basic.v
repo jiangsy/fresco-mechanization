@@ -190,7 +190,6 @@ Qed.
    mutual induction ([a_unify_consis_mutind]).  That is also how the paper
    organises its own proof (consistency-proofs.tex:1562). *)
 
-
 (* ===================================================================== *)
 (*  Source-prefix machinery for assignvar (the [Θ0 | Ξ] split): flexible  *)
 (*  declarations can be prepended to the SOURCE of an increase whenever   *)
@@ -305,7 +304,6 @@ Proof.
   - apply a_decls_app; auto.
   - pick fresh α. eauto.
 Qed.
-
 
 (* ===================================================================== *)
 (*  Embedding/open commutation (local; coercions.v lacks these two)       *)
@@ -449,26 +447,11 @@ Proof.
           | apply subst_pskl_in_pskl_fresh_eq; clear - Hβ; fsetdec ].
 Qed.
 
-Lemma rename_aenv_app : forall Ξ1 Ξ2 γ β,
-  rename_aenv γ β (Ξ1 ++ Ξ2) = rename_aenv γ β Ξ1 ++ rename_aenv γ β Ξ2.
-Proof.
-  induction Ξ1 as [ | [x bd] Ξ1' IH ]; intros; simpl; [ reflexivity | ].
-  rewrite IH. reflexivity.
-Qed.
-
 Lemma rename_aenv_cons_tvar_eq : forall γ β Θ,
   rename_aenv γ β ((β ~ abind_tvar) ++ Θ)
   = (γ ~ abind_tvar) ++ rename_aenv γ β Θ.
 Proof.
   intros. simpl. destruct (β == β); [ reflexivity | contradiction ].
-Qed.
-
-Lemma rename_aenv_cons_tvar_neq : forall γ β x Θ,
-  x <> β ->
-  rename_aenv γ β ((x ~ abind_tvar) ++ Θ)
-  = (x ~ abind_tvar) ++ rename_aenv γ β Θ.
-Proof.
-  intros. simpl. destruct (x == β); [ contradiction | reflexivity ].
 Qed.
 
 Lemma ftvar_in_aenv_rename_aenv : forall Θ γ β,
@@ -888,30 +871,6 @@ Proof.
     + apply (IH c b Θ); auto.
 Qed.
 
-(** Moving a flexible declaration to the front of a declaration-only
-    prefix preserves context well-formedness. *)
-Lemma a_wf_aenv_move_decl : forall Ξ β Θ,
-  a_decls Ξ ->
-  {{ ⊢ (Ξ ++ (β ~ abind_flex_mono) ++ Θ) }}a ->
-  {{ ⊢ ((β ~ abind_flex_mono) ++ Ξ ++ Θ) }}a.
-Proof.
-  intros * Hdecl Hwf.
-  apply a_wf_aenv__flex.
-  - (* β fresh for Ξ ++ Θ *)
-    revert Hwf; clear - Hdecl; induction Hdecl; intros Hwf; simpl_env in *.
-    + inversion Hwf; subst. auto.
-    + inversion Hwf; subst.
-      match goal with H : {{ ⊢ _ }}a |- _ => specialize (IHHdecl H) end.
-      repeat rewrite dom_app in *; simpl in *.
-      match goal with
-      | Hα1 : ?g `notin` _ |- _ `notin` _ =>
-          clear Hdecl; repeat match goal with
-                              | Hw : {{ ⊢ _ }}a |- _ => clear Hw
-                              end; fsetdec
-      end.
-  - eapply a_wf_aenv_strip_mid; eauto.
-Qed.
-
 (** [binds] is stable under swapping a middle entry with a prefix. *)
 Lemma binds_permute_mid : forall (b : abind) x Ξ (e : list (atom * abind)) Θ,
   binds x b (Ξ ++ e ++ Θ) ->
@@ -922,15 +881,6 @@ Proof.
   destruct H as [H | H]; [ right; apply in_or_app; auto | ].
   apply in_app_or in H. destruct H as [H | H];
     [ auto | right; apply in_or_app; auto ].
-Qed.
-
-Lemma a_binds_tvar_permute_mid : forall α Ξ (e : list (atom * abind)) Θ,
-  a_binds_tvar α (Ξ ++ e ++ Θ) ->
-  a_binds_tvar α (e ++ Ξ ++ Θ).
-Proof.
-  intros * [Hb | [Hb | [τ0 Hb]]];
-    [ left | right; left | right; right; exists τ0 ];
-    auto using binds_permute_mid.
 Qed.
 
 (** Removing a middle entry that cannot witness the lookup: either the
@@ -986,7 +936,6 @@ Proof.
       | intros τ0 Hc; inversion Hc ].
 Qed.
 
-
 (** ** [wf] / [scope] bound the free variables by the domain.  ⚠️ These four
     and [a_wf_ptyp_ftv_tvarish] just above are ONE family and this is their
     only home — do not re-prove an instance in a downstream file. *)
@@ -1013,7 +962,6 @@ Proof.
     specialize (H0 α ltac:(clear - Hα; solve_notin_auto)). simpl in H0.
     clear - H0 Hlo Hα. fsetdec.
 Qed.
-
 
 (** Embedding composition and substitution commutation for the fold step. *)
 Lemma pskl_to_uskl_ptyp : forall A,

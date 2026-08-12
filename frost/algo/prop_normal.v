@@ -284,15 +284,6 @@ Proof.
     apply H0; [ clear - Fr; fsetdec | exact Hwf ].
 Qed.
 
-(** The SIZE COROLLARY the measure consumes. *)
-Corollary a_tyequiv_downarrow_size : forall Θ A A',
-  {{ ⊢ Θ }}a ->
-  {{ Θ ⊢ A ≡ᵗ A' }}a ->
-  size_ptyp (⇓ᵗ[Θ] A) = size_ptyp (⇓ᵗ[Θ] A').
-Proof.
-  intros Θ A A' Hwf Heq. rewrite (a_tyequiv_downarrow Hwf Heq). reflexivity.
-Qed.
-
 (* ===================================================================== *)
 (*  §3  Transporting [⇓]-equalities through an outer metasubstitution      *)
 (* ===================================================================== *)
@@ -440,26 +431,6 @@ Lemma a_inc_flex_def_tyequiv : forall Θ0 Θ κ0 α1 τ τ',
   {{ Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ) }}a.
 Proof.
   intros Θ0 Θ κ0 α1 τ τ' Hinc. inversion Hinc; subst. assumption.
-Qed.
-
-Corollary a_inc_downarrow_subst_ptyp : forall Θ0 Θ κ0 α1 τ τ' A,
-  {{ ⊢ Θ }}a ->
-  (α1, τ') :: κ0 ∷ ((α1 ~ abind_flex_mono_def τ) ++ Θ0) ⊑ Θ ->
-  ⇓ᵗ[Θ] (msubst_ptyp κ0 (subst_ptyp_in_ptyp τ α1 A))
-  = ⇓ᵗ[Θ] (msubst_ptyp ((α1, τ') :: κ0) A).
-Proof.
-  intros. eapply downarrow_subst_ptyp;
-    [ assumption | eapply a_inc_flex_def_tyequiv; eauto ].
-Qed.
-
-Corollary a_inc_downarrow_subst_pskl : forall Θ0 Θ κ0 α1 τ τ' P,
-  {{ ⊢ Θ }}a ->
-  (α1, τ') :: κ0 ∷ ((α1 ~ abind_flex_mono_def τ) ++ Θ0) ⊑ Θ ->
-  ⇓ˢ[Θ] (msubst_pskl κ0 (subst_pskl_in_pskl (ptyp_to_pskl τ) α1 P))
-  = ⇓ˢ[Θ] (msubst_pskl ((α1, τ') :: κ0) P).
-Proof.
-  intros. eapply downarrow_subst_pskl;
-    [ assumption | eapply a_inc_flex_def_tyequiv; eauto ].
 Qed.
 
 (** The size corollaries (M2) hands to the measure. *)

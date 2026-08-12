@@ -618,31 +618,6 @@ Proof.
         | simpl_env; exact Heqv ].
 Qed.
 
-(** The identity-increase companion: [⊴] loses a term entry the same way.
-    ([a_isub] is [a_inc] at an identity witness plus the definition-
-    preservation component, which a strip cannot disturb.) *)
-Lemma a_isub_strip_tm_head : forall Ξ x (b b' : abind) Θ1 Θ,
-  a_suffix Ξ ->
-  ~ abind_is_ty b -> ~ abind_is_ty b' ->
-  {{ ⊢ (Ξ ++ (x ~ b) ++ Θ1) }}a ->
-  {{ ⊢ ((x ~ b') ++ Θ) }}a ->
-  (Ξ ++ (x ~ b) ++ Θ1) ⊴ ((x ~ b') ++ Θ) ->
-  (Ξ ++ Θ1) ⊴ Θ.
-Proof.
-  intros Ξ x b b' Θ1 Θ Hsuf Htm Htm' HwfS HwfT [[κ [Hid Hinc]] Hdefs].
-  split.
-  - exists κ. split; [ exact Hid | ].
-    eapply (@a_inc_strip_tm_head Ξ x b b' Θ1 κ Θ); assumption.
-  - intros α τ Hb.
-    assert (Hb' : binds α (abind_flex_mono_def τ) (Ξ ++ (x ~ b) ++ Θ1))
-      by (apply binds_app_1 in Hb as [Hb | Hb];
-          [ apply binds_app_2; exact Hb
-          | apply binds_app_3; apply binds_cons_3; exact Hb ]).
-    pose proof (Hdefs α τ Hb') as Hbt.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hbt) as [[_ Heq] | Hbt'];
-      [ subst; exfalso; apply Htm'; exact I | exact Hbt' ].
-Qed.
-
 (* ===================================================================== *)
 (*  THEOREM 3, the THREE BASE ROWS.                                      *)
 (*                                                                       *)

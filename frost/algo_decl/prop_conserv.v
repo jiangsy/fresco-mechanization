@@ -107,13 +107,6 @@ Definition abind_of_dbind (d : dbind) : abind :=
 Definition denv_to_aenv (Γ : denv) : aenv :=
   List.map (fun e => (fst e, abind_of_dbind (snd e))) Γ.
 
-Lemma denv_to_aenv_cons : forall x d Γ,
-  denv_to_aenv ((x ~ d) ++ Γ) = (x ~ abind_of_dbind d) ++ denv_to_aenv Γ.
-Proof. reflexivity. Qed.
-
-Lemma denv_to_aenv_dom : forall Γ, dom (denv_to_aenv Γ) [=] dom Γ.
-Proof. induction Γ as [ | [x d] Γ' IH ]; simpl; fsetdec. Qed.
-
 Lemma binds_denv_to_aenv : forall x d Γ,
   binds x d Γ -> binds x (abind_of_dbind d) (denv_to_aenv Γ).
 Proof.
@@ -581,23 +574,6 @@ Qed.
 (*  with the erasure threaded as an equation.                             *)
 (* ===================================================================== *)
 
-Lemma lc_uskl_of_lc_pskl_erase : forall P,
-  lc_pskl P -> forall R, P = uskl_to_pskl R -> lc_uskl R.
-Proof.
-  intros P H; induction H; intros R HR;
-    destruct R; simpl in HR; try discriminate HR; inversion HR; subst;
-    try solve [ constructor ].
-  - apply lc_uskl_arrow; [ apply IHlc_pskl1 | apply IHlc_pskl2 ]; reflexivity.
-  - apply lc_uskl_all_syn. intros α.
-    apply (H0 α (open_uskl_wrt_uskl R (uskl_var_f α)));
-      symmetry; apply uskl_to_pskl_open.
-  - apply lc_uskl_all_tag. intros α.
-    apply (H0 α (open_uskl_wrt_uskl R (uskl_var_f α)));
-      symmetry; apply uskl_to_pskl_open.
-  - apply lc_uskl_tophole. apply IHlc_pskl; reflexivity.
-  - apply lc_uskl_topholeg. apply IHlc_pskl; reflexivity.
-Qed.
-
 Lemma d_wf_uskl_of_a_wf_pskl : forall Θ Δa P,
   a_wf_pskl Θ Δa P ->
   forall ψ, P = uskl_to_pskl ψ ->
@@ -806,45 +782,6 @@ Qed.
     ⚙ And the fuel is easy HERE, unlike §13's type-sorted twin: [d_pat_sub] has
     no cofinite row (its ForallR is a TY-only rule), so one [n] per premise
     suffices and no renaming is needed. *)
-Lemma d_pat_sub_to_ad_fuel : forall M Ψ Γ R Q,
-  d_pat_sub M Ψ Γ R Q ->
-  exists n, ad_pat_sub_fuel n a_sub_mode_sk M Ψ (denv_to_aenv Γ) R Q.
-Proof.
-  intros M Ψ Γ R Q H; induction H.
-  - (* Infer *) exists 0. apply ad_pat_sub_fuel__infer;
-      [ assumption | apply d_pat_consis_to_ad; assumption | assumption
-      | apply d_refine_pskl_to_ad_closed; assumption ].
-  - (* UnivGhostR *) exists 0. apply ad_pat_sub_fuel__univ_ghost_r;
-      [ assumption | assumption | assumption | assumption
-      | apply d_pat_consis_to_ad; assumption
-      | apply d_refine_pskl_to_ad_closed; assumption ].
-  - (* Arrow *) destruct IHd_pat_sub as [ n Hn ]. exists (S n).
-    apply ad_pat_sub_fuel__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
-      [ apply d_pat_consis_to_ad; assumption
-      | apply d_refine_pskl_to_ad_closed; assumption
-      | exact Hn | assumption ].
-  - (* ForallL, tagged *) destruct IHd_pat_sub as [ n Hn ]. exists (S n).
-    apply ad_pat_sub_fuel__forall_l_tagged with (Ψ' := Ψ') (ψ := psi);
-      [ assumption | assumption | assumption
-      | apply a_tags_sort__sk; assumption
-      | exact (a_wf_pskl_of_d_wf_uskl Γ nil psi H3 empty delta_agree_nil)
-      | exact Hn ].
-  - (* ForallL, untagged *) destruct IHd_pat_sub as [ n Hn ]. exists (S n).
-    apply ad_pat_sub_fuel__forall_l_untagged with (Ψ' := Ψ') (ψ := psi);
-      [ assumption | assumption | assumption
-      | apply a_tags_sort__sk; assumption
-      | exact (a_wf_pskl_of_d_wf_uskl Γ nil psi H3 empty delta_agree_nil)
-      | exact Hn ].
-  - (* Ghost *) exists 0. apply ad_pat_sub_fuel__ghost;
-      [ assumption
-      | exact (d_wf_pskl_to_a Γ nil P H0 empty delta_agree_nil)
-      | assumption ].
-  - (* UnivGhostL *) destruct IHd_pat_sub as [ n Hn ]. exists n.
-    apply ad_pat_sub_fuel__univ_ghost_l; [ assumption | exact Hn ].
-  - (* GhostG *) exists 0. apply ad_pat_sub_fuel__ghostg; assumption.
-  - (* UnivGhostLG *) destruct IHd_pat_sub as [ n Hn ]. exists n.
-    apply ad_pat_sub_fuel__univ_ghost_lg; [ assumption | exact Hn ].
-Qed.
 
 Lemma d_pat_sub_to_ad : forall M Ψ Γ R Q,
   d_pat_sub M Ψ Γ R Q -> ad_pat_sub a_sub_mode_sk M Ψ (denv_to_aenv Γ) R Q.
@@ -1455,18 +1392,6 @@ Proof.
              (Hgf0 α ltac:(clear - Hα; solve_notin_auto))
              Γ0 (α :: Δd) (add α Δa));
       [ simpl_env; reflexivity | apply delta_agree_cons; exact HΔ ].
-Qed.
-
-(** …and at the top level, which is the shape [ad_pat_sub_fuel]'s leaf rows
-    ask for: [ad_sd_typing]'s base rows join the painting of a [ptyp], so
-    their subject is ghost-free and their leaf datum is free. *)
-Corollary d_pat_consis_subject_refine_closed : forall Ψ Γ R Q,
-  d_pat_consis Ψ Γ R Q -> uskl_ghost_free R ->
-  ad_refine_pskl (denv_to_aenv Γ) empty (uskl_to_pskl R) (bskl_to_pskl Q).
-Proof.
-  intros Ψ Γ R Q H Hgf.
-  exact (d_pat_consis_subject_refine_ghost_free Ψ Γ R Q H Hgf Γ nil empty
-           eq_refl delta_agree_nil).
 Qed.
 
 (* ===================================================================== *)

@@ -403,14 +403,6 @@ Proof. intros R α. exact (uskl_to_utyp_open R (uskl_var_f α)). Qed.
 Lemma uskl_to_utyp_utyp_to_uskl : forall C, uskl_to_utyp (utyp_to_uskl C) = C.
 Proof. induction C; simpl; try reflexivity; congruence. Qed.
 
-Lemma utyp_to_uskl_inj : forall C1 C2,
-    utyp_to_uskl C1 = utyp_to_uskl C2 -> C1 = C2.
-Proof.
-  intros C1 C2 Heq.
-  rewrite <- (uskl_to_utyp_utyp_to_uskl C1), <- (uskl_to_utyp_utyp_to_uskl C2).
-  rewrite Heq. reflexivity.
-Qed.
-
 (** The two ways of painting a [ptyp] into the unresolved SKELETON sort agree:
     through [utyp] (what [d_sub] uses) and through [pskl]/[bskl] (what
     [ad_pat_sub] uses, i.e. [ptyp_to_uskl_syn]). *)
@@ -418,11 +410,6 @@ Lemma utyp_to_uskl_ptyp_to_utyp_syn : forall A,
     utyp_to_uskl (ptyp_to_utyp_syn A)
     = bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl A)).
 Proof. induction A; simpl; try reflexivity; congruence. Qed.
-
-(** Erasing the inclusion's result into [btyp] is the ordinary [utyp] erasure. *)
-Lemma uskl_to_bskl_utyp_to_uskl : forall C,
-    uskl_to_bskl (utyp_to_uskl C) = btyp_to_bskl (utyp_to_btyp C).
-Proof. induction C; simpl; try reflexivity; congruence. Qed.
 
 Lemma pskl_to_uskl_open_rec : forall P P' k,
   pskl_to_uskl (open_pskl_wrt_pskl_rec k P' P)
@@ -547,20 +534,6 @@ Proof.
   - apply lc_bskl_all_syn. intro α. rewrite <- pskl_to_bskl_syn_open. auto.
   - apply lc_bskl_hole.
   - apply lc_bskl_tophole; auto.
-Qed.
-
-(** [bskl_to_uskl] preserves local closure. *)
-Lemma lc_bskl_to_uskl : forall Q,
-    lc_bskl Q -> lc_uskl (bskl_to_uskl Q).
-Proof.
-  intros Q H. induction H; simpl.
-  - apply lc_uskl_unit.
-  - apply lc_uskl_var_f.
-  - apply lc_uskl_arrow; auto.
-  - apply lc_uskl_all_syn. intro α. rewrite <- bskl_to_uskl_open. auto.
-  - apply lc_uskl_all_syn. intro α. rewrite <- bskl_to_uskl_open. auto.
-  - apply lc_uskl_hole.
-  - apply lc_uskl_tophole; auto.
 Qed.
 
 (** The painting of a type is locally closed as a skeleton. *)
@@ -744,16 +717,6 @@ Proof. induction A; simpl; fsetdec. Qed.
 Lemma ftvar_bskl_to_pskl : forall Q,
   ftvar_in_pskl (bskl_to_pskl Q) [=] ftvar_in_bskl Q.
 Proof. induction Q; simpl; fsetdec. Qed.
-
-Lemma ftvar_utyp_to_uskl : forall C,
-  ftvar_in_uskl (utyp_to_uskl C) = ftvar_in_utyp C.
-Proof. induction C; simpl; try reflexivity; try (rewrite IHC1, IHC2); auto. Qed.
-
-(** ⚙ [<=] and not [=]: the retraction sends every ghost to [1], so a
-    [∀◇]-wrapper's free variables are dropped. *)
-Lemma ftvar_uskl_to_utyp : forall R,
-  ftvar_in_utyp (uskl_to_utyp R) [<=] ftvar_in_uskl R.
-Proof. induction R; simpl; fsetdec. Qed.
 
 (* ===================================================================== *)
 (*  §5  ε TAGS ACROSS THE CONVERSIONS                                     *)

@@ -88,18 +88,6 @@ Proof.
   apply pskl_to_bskl_syn_close_rec.
 Qed.
 
-(** Colour erasure commutes with opening. *)
-(** Guardedness transfers back across the synthesised painting (the
-    local-closure side conditions come from the skeleton's own wf). *)
-Lemma guarded_pskl_of_bskl_syn : forall P,
-  lc_pskl P ->
-  guarded_bskl (pskl_to_bskl_syn P) ->
-  guarded_pskl P.
-Proof.
-  intros P Hlc Hg; destruct P; simpl in Hg; inversion Hg; subst;
-    inversion Hlc; subst; constructor; auto.
-Qed.
-
 (** A flexible variable's definition is well-formed in its own context. *)
 (** A monotype's skeleton is a well-formed skeleton.  Stated in VISIBILITY
     form: [a_wf_ptyp] puts a quantifier's variable in the CONTEXT, whereas
@@ -1055,19 +1043,3 @@ Proof.
             | symmetry; apply ptyp_to_bskl_inh_syn_eq; exact Hm ].
 Qed.
 
-(** lemma:precision-preserves-refinement, UNCOLOURED — the composition the
-    leaf-valid join's leaves transport along (§3, lemma:precision-sub). *)
-Corollary ad_precise_preserves_refine_pskl : forall Θ Δ P P' Qt,
-  {{ Θ ⨟ Δ ⊢ₚᵣ P ⊑ P' }}ad ->
-  {{ Θ ⨟ Δ ⊢ᵣₚ P' ⊳ Qt }}ad ->
-  {{ ⊢ Θ }}a ->
-  (forall α, α `in` Δ -> α `notin` dom Θ) ->
-  {{ Θ ⨟ Δ ⊢ₚₛ Qt }}a ->
-  {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Qt }}ad.
-Proof.
-  intros Θ Δ P P' Qt Hprec Href Hwf Hdisj HwfQ.
-  eapply ad_refine_pskl_trans;
-    [ exact Href | exact Hwf | exact Hdisj | exact HwfQ | ].
-  eapply ad_refine_pskl_of_inh_paintings;
-    [ exact Hprec | exact Hwf | reflexivity | reflexivity ].
-Qed.

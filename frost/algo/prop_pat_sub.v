@@ -618,31 +618,6 @@ Qed.
 
     ⚙ The subject is the WHOLE ∀ and not its body: [uskl_ghost_free] has no
     [uskl_var_b] row, so it cannot hold of an open body at all. *)
-Lemma uskl_ghost_free_open_gen : forall R ψ,
-  uskl_ghost_free (uskl_all_syn R) ->
-  uskl_ghost_free ψ -> lc_uskl ψ ->
-  uskl_ghost_free (open_uskl_wrt_uskl R ψ).
-Proof.
-  intros R ψ HR Hψ Hlc.
-  inversion HR as [ | | | | L R0 Hbody ]; subst.
-  pick fresh α for (L `union` ftvar_in_uskl R).
-  rewrite (subst_uskl_in_uskl_intro α R ψ) by (clear - Fr; fsetdec).
-  apply uskl_ghost_free_subst;
-    [ apply Hbody; clear - Fr; fsetdec | exact Hψ | exact Hlc ].
-Qed.
-
-Lemma uskl_ghost_free_open_gen_tag : forall ε R ψ,
-  uskl_ghost_free (uskl_all_tag ε R) ->
-  uskl_ghost_free ψ -> lc_uskl ψ ->
-  uskl_ghost_free (open_uskl_wrt_uskl R ψ).
-Proof.
-  intros ε R ψ HR Hψ Hlc.
-  inversion HR as [ | | | L ε0 R0 Hbody | ]; subst.
-  pick fresh α for (L `union` ftvar_in_uskl R).
-  rewrite (subst_uskl_in_uskl_intro α R ψ) by (clear - Fr; fsetdec).
-  apply uskl_ghost_free_subst;
-    [ apply Hbody; clear - Fr; fsetdec | exact Hψ | exact Hlc ].
-Qed.
 
 (** Ghost-freeness survives the unit substitution. *)
 Lemma uskl_ghost_free_subst_unit : forall ψ β,
@@ -1123,66 +1098,6 @@ Proof.
       unfold disjoint in *. simpl_env in *. fsetdec.
 Qed.
 
-(** INVERSION: a ghost-free-source fill whose target erases back to the
-    source is the inh painting itself — "the run lands on B" (the Check
-    case of subtyping soundness).  The flex rules cannot escape: a
-    variable's erasure pins the target variable node syntactically. *)
-Lemma ad_refine_syn_f_ghost_free_erasure_inv : forall F Θ Δ Qsrc Qtgt,
-  ad_refine_syn_f F Θ Δ Qsrc Qtgt ->
-  forall P',
-  Qsrc = pskl_to_bskl_inh P' ->
-  pskl_ghost_free P' ->
-  bskl_to_pskl Qtgt = P' ->
-  Qtgt = pskl_to_bskl_inh P'.
-Proof.
-  intros F Θ Δ Qsrc Qtgt H; induction H; intros P' HeqQ Hg HeqP;
-    destruct P'; simpl in HeqQ; inversion HeqQ; subst; simpl in *.
-  - (* unit *) reflexivity.
-  - (* var *) reflexivity.
-  - (* arrow *)
-    destruct Hg as [Hg1 Hg2].
-    inversion HeqP.
-    f_equal;
-      [ apply (IHad_refine_syn_f1 (bskl_to_pskl P1))
-      | apply (IHad_refine_syn_f2 (bskl_to_pskl P2)) ];
-      auto; congruence.
-  - (* all_inh *)
-    inversion HeqP.
-    match goal with
-    | Heq2 : bskl_to_pskl P = _ |- _ => rewrite <- Heq2 in H0, H, Hg
-    end.
-    f_equal.
-    destruct (atom_fresh
-                (L `union` ftvar_in_bskl P
-                   `union` ftvar_in_bskl
-                       (pskl_to_bskl_inh (bskl_to_pskl P))))
-      as [α Fr].
-    apply open_bskl_wrt_bskl_inj with (α1 := α);
-      [ clear - Fr; fsetdec | clear - Fr; fsetdec | ].
-    rewrite <- pskl_to_bskl_inh_open.
-    apply H0; [ clear - Fr; fsetdec | | | ].
-    + symmetry. apply pskl_to_bskl_inh_open.
-    + unfold open_pskl_wrt_pskl. apply pskl_ghost_free_open_rec.
-      exact Hg.
-    + rewrite bskl_to_pskl_open. reflexivity.
-  - (* hole : P' would be a ghost *) destruct Hg.
-  - (* tophole_remove *) destruct Hg.
-  - (* tophole_fill *) destruct Hg.
-  - (* tophole_keep *) destruct Hg.
-  - (* flex_l : the source variable pins the target *)
-    destruct Q; simpl in HeqP; inversion HeqP; subst; reflexivity.
-  - (* flex_r : Qsrc is a rule variable, so every P'-shape survives the
-       top-level destruct; the erasure equation discriminates all but the
-       variable one. *)
-    inversion HeqP; subst; reflexivity.
-  - inversion HeqP; subst; reflexivity.
-  - inversion HeqP; subst; reflexivity.
-  - inversion HeqP; subst; reflexivity.
-  - inversion HeqP; subst; reflexivity.
-  - inversion HeqP; subst; reflexivity.
-  - inversion HeqP; subst; reflexivity.
-Qed.
-
 (** FOLD a definition back into a fill's source: if the τ-image of Q0
     fills to Qt, then Q0 itself does — every β̂-node of Q0 caps its
     τ-subtree with [flex_l], rebuilt from the case's own premises.
@@ -1432,22 +1347,6 @@ Proof.
   - destruct (atom_fresh L) as [α Hα]; specialize (H0 α Hα).
     rewrite uskl_to_pskl_open in H0; unfold open_pskl_wrt_pskl in H0.
     eapply pskl_ghost_free_open_rec_inv; exact H0.
-Qed.
-
-(** …and the (untagged) painting keeps it in the other direction — what the
-    decoration lemmas need for [a_subtag__check]'s subject.  Local closure is
-    genuinely required: [pskl_ghost_free] ignores dangling indices, while
-    [uskl_ghost_free] has no [var_b] row. *)
-Lemma pskl_ghost_free_to_uskl : forall P,
-  lc_pskl P -> pskl_ghost_free P -> uskl_ghost_free (pskl_to_uskl P).
-Proof.
-  intros P Hlc; induction Hlc; cbn; intros Hg; try contradiction.
-  - apply uskl_ghost_free__unit.
-  - apply uskl_ghost_free__var.
-  - destruct Hg as [Hg1 Hg2]; apply uskl_ghost_free__arrow; auto.
-  - apply uskl_ghost_free__all_syn with (L := empty); intros α _.
-    rewrite <- pskl_to_uskl_open_var.
-    apply H0; apply pskl_ghost_free_open; exact Hg.
 Qed.
 
 Lemma a_extract_ty_ghost_free : forall Θ0 α M P P0 Ξ P1,

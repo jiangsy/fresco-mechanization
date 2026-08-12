@@ -121,39 +121,6 @@ Inductive uskl_rho (NM : a_sub_mode) (Θ : aenv)
     uskl_rho NM Θ Δρ Ψρ R' R ->
     uskl_rho NM Θ Δρ Ψρ (uskl_topholeg R') (uskl_topholeg R).
 
-(** Re-tag under set equality. *)
-Lemma uskl_rho_psi_cong : forall NM Θ Δρ Ψρ R' R,
-  uskl_rho NM Θ Δρ Ψρ R' R ->
-  forall Ψρ', Ψρ [=] Ψρ' ->
-  uskl_rho NM Θ Δρ Ψρ' R' R.
-Proof.
-  intros NM Θ Δρ Ψρ R' R H; induction H; intros Ψρ' Heq.
-  - apply urho__refl; [ assumption | fsetdec ].
-  - eapply urho__leaf; [ exact H | exact H0 | exact H1 | fsetdec ].
-  - eapply urho__arrow; [ exact H | exact H0 | fsetdec ].
-  - eapply urho__all_syn with (L := L); intros α Hα; eauto.
-  - eapply urho__all_tag with (L := L); intros α Hα; eauto.
-  - apply urho__tophole; eauto.
-  - apply urho__topholeg; eauto.
-Qed.
-
-(** Widen the replaced-variable bound. *)
-Lemma uskl_rho_delta_mono : forall NM Θ Δρ Ψρ R' R,
-  uskl_rho NM Θ Δρ Ψρ R' R ->
-  forall Δρ', Δρ [<=] Δρ' ->
-  uskl_rho NM Θ Δρ' Ψρ R' R.
-Proof.
-  intros NM Θ Δρ Ψρ R' R H; induction H; intros Δρ' Hsub.
-  - apply urho__refl; assumption.
-  - eapply urho__leaf; [ | exact H0 | exact H1 | exact H2 ]. fsetdec.
-  - eapply urho__arrow; [ apply IHuskl_rho1 | apply IHuskl_rho2 | ];
-      assumption.
-  - eapply urho__all_syn with (L := L); intros α Hα; eauto.
-  - eapply urho__all_tag with (L := L); intros α Hα; eauto.
-  - apply urho__tophole; eauto.
-  - apply urho__topholeg; eauto.
-Qed.
-
 (** The subject's tags are bounded by the replacement tags plus ψa's. *)
 Lemma uskl_rho_ftag_sub : forall NM Θ Δρ Ψρ R' R,
   uskl_rho NM Θ Δρ Ψρ R' R ->
@@ -645,17 +612,6 @@ Proof.
   - intros P0 Hf. apply (a_flex_cons β abind_tvar); exact Hf.
 Qed.
 
-Lemma a_solve_sub_strengthen_tvar : forall β Θ0 m P P3 Ξ P',
-  {{ ((β ~ abind_tvar) ++ Θ0) ⊢ₛ P ≼[ m ] P3 ⤳ Ξ ⨾ P' }}a ->
-  {{ Θ0 ⊢ₛ P ≼[ m ] P3 ⤳ Ξ ⨾ P' }}a.
-Proof.
-  intros β Θ0 m P P3 Ξ P' H.
-  eapply (proj1 a_solve_sub_eq_ctx_change); [ exact H | | | ].
-  - simpl. fsetdec.
-  - intros α Hft. eapply a_flex_tvar_strip_tvar; exact Hft.
-  - intros P0 Hf. apply (a_flex_cons β abind_tvar); exact Hf.
-Qed.
-
 (* ===================================================================== *)
 (*  RESTART NOTE (2026-08-04) — [a_solve_eq_weaken_tvar{,_size}] DELETED.  *)
 (*                                                                        *)
@@ -689,27 +645,6 @@ Qed.
 (*  EXCHANGE from [a_solve_sub_eq_ctx_change].  Restore from git if a      *)
 (*  consumer ever appears.                                                *)
 (* ===================================================================== *)
-
-(** Rename preserves non-flexibility when both names are fresh from Θ. *)
-(* ⚙ RENAMED from [a_non_flex_rename] 2026-08-09 (cleanup audit §8.1c): it collided with a
-   DIFFERENT lemma of that name, and this one substitutes in P at a FIXED context; prop_consis_rename.v's renames a context entry. *)
-Lemma a_non_flex_subst_var : forall Θ P α' β,
-  α' `notin` dom Θ -> β `notin` dom Θ ->
-  a_non_flex Θ P ->
-  a_non_flex Θ (subst_pskl_in_pskl (pskl_var_f β) α' P).
-Proof.
-  intros Θ P α' β Hα Hβ [Hlc Hnf].
-  split.
-  - apply subst_pskl_in_pskl_lc_pskl; [ exact Hlc | constructor ].
-  - intros Hf.
-    destruct P; simpl in Hf; try solve [ inversion Hf ].
-    match type of Hf with context [ if ?e then _ else _ ] =>
-      destruct e end.
-    + inversion Hf; subst;
-        match goal with Hb : binds _ _ Θ |- _ =>
-          apply binds_In in Hb; contradiction end.
-    + apply Hnf; exact Hf.
-Qed.
 
 (* [a_solve_sub_eq_rename] REPLACED by the equivariance kit's
    [a_solve_sub_eq_swap] (prop_swap.v): a transposition needs no
@@ -928,40 +863,6 @@ Qed.
 (*  recovered var subject against ANY target.                              *)
 (* ===================================================================== *)
 
-Lemma p6_leaf_var : forall NM Θ κ Pi Δ α' Ψ' Ψi Ψna,
-  {{ ⊢ Θ }}a ->
-  a_tags_sort NM Ψ' (uskl_var_f α') ->
-  Ψi [<=] Ψ' ->
-  Ψna [<=] Ψ' ->
-  α' `in` Δ ->
-  binds α' abind_tvar Θ ->
-  (forall p, In p κ -> α' `notin` ftvar_in_ptyp (snd p)) ->
-  (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
-     α' `notin` ftvar_in_ptyp τ) ->
-  α' `notin` pskl_shielded_ftv Pi ->
-  {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_var_f α') }}ad ->
-  Pi = pskl_var_f α' /\
-  Ψi [=] empty /\
-  Ψna [=] empty /\
-  {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi `union` Ψna ] (uskl_var_f α') }}ad.
-Proof.
-  intros NM Θ κ Pi Δ α' Ψ' Ψi Ψna
-    Hwf Htag HΨi HΨna HαΔ HXb Hκav Hdef Hsh Hpre.
-  assert (Hshκ : α' `notin` pskl_shielded_ftv (msubst_pskl κ Pi))
-    by (apply msubst_pskl_shielded_avoid; assumption).
-  destruct (ad_ppre_delta_var_inv Hpre eq_refl Hwf HαΔ HXb Hdef Hshκ)
-    as [Heqm HΨie].
-  assert (HeqPi : Pi = pskl_var_f α')
-    by (eapply msubst_pskl_var_inv; eassumption).
-  assert (HΨ'e : Ψ' [=] empty)
-    by (exact (d_tags_skl_var_inv (a_tags_sort_d_tags Htag))).
-  split; [ exact HeqPi | ].
-  split; [ exact HΨie | ].
-  split; [ clear - HΨna HΨ'e; fsetdec | ].
-  rewrite Heqm.
-  apply ad_ppre__var; [ clear - HΨie HΨna HΨ'e; fsetdec | left; exact HαΔ ].
-Qed.
-
 (* ===================================================================== *)
 (*  P6-Cv support kit: solve-eq determinism on the hole subject, wf        *)
 (*  preservation for [a_solve_eq], Θ-weakening of the ρ relation, and      *)
@@ -1006,30 +907,6 @@ Qed.
 (*  reflexive ρ-images at [Ψρ = ∅].  Hence a SINGLE congruence conclusion, *)
 (*  with no [rho_leaf] disjunct to dispatch.                              *)
 (* ===================================================================== *)
-
-Lemma uskl_rho_unit_r_inv : forall NM Θ Δρ Ψρ R',
-  uskl_rho NM Θ Δρ Ψρ R' uskl_unit ->
-  R' = uskl_unit /\ Ψρ [=] empty.
-Proof.
-  intros NM Θ Δρ Ψρ R' H; inversion H; subst;
-    split; [ reflexivity | assumption ].
-Qed.
-
-Lemma uskl_rho_hole_r_inv : forall NM Θ Δρ Ψρ R',
-  uskl_rho NM Θ Δρ Ψρ R' uskl_hole ->
-  R' = uskl_hole /\ Ψρ [=] empty.
-Proof.
-  intros NM Θ Δρ Ψρ R' H; inversion H; subst;
-    split; [ reflexivity | assumption ].
-Qed.
-
-Lemma uskl_rho_holeg_r_inv : forall NM Θ Δρ Ψρ R',
-  uskl_rho NM Θ Δρ Ψρ R' uskl_holeg ->
-  R' = uskl_holeg /\ Ψρ [=] empty.
-Proof.
-  intros NM Θ Δρ Ψρ R' H; inversion H; subst;
-    split; [ reflexivity | assumption ].
-Qed.
 
 Lemma uskl_rho_arrow_r_inv : forall NM Θ Δρ Ψρ R' ψ1 ψ2,
   uskl_rho NM Θ Δρ Ψρ R' (uskl_arrow ψ1 ψ2) ->
@@ -1103,21 +980,6 @@ Proof.
     exists empty, ψ; split; [ reflexivity | ].
     intros α Hα; apply urho__refl; [ auto | assumption ].
   - exists L, R'0; split; [ reflexivity | eassumption ].
-Qed.
-
-(** The VARIABLE target is the one shape that keeps the leaf disjunct — it
-    is the only place ρ actually does anything. *)
-Lemma uskl_rho_var_r_inv : forall NM Θ Δρ Ψρ R' β,
-  uskl_rho NM Θ Δρ Ψρ R' (uskl_var_f β) ->
-  (R' = uskl_var_f β /\ Ψρ [=] empty)
-  \/ (β `in` Δρ /\ a_tags_sort NM Ψρ R' /\ {{ Θ ⨟ empty ⊢ₚₛ ⌊ R' ⌋ˢ }}a).
-Proof.
-  intros NM Θ Δρ Ψρ R' β H; inversion H; subst.
-  - left; split; [ reflexivity | assumption ].
-  - right; rho_andsplit;
-      [ assumption
-      | eapply a_tags_sort_psi_cong; [ eassumption | fsetdec ]
-      | assumption ].
 Qed.
 
 Lemma uskl_rho_is_tskl : forall NM Θ Δρ Ψρ R' R,
@@ -1750,57 +1612,6 @@ Qed.
 (*  inversions, and the refinement→precision bridges.                      *)
 (* ===================================================================== *)
 
-(** Closer for the [rho_leaf] disjunct of every consistency case: the
-    target [ψa] is a replaced rigid variable [var α], the freshness pack
-    forces [Pi = var α], and SE-Var solves with [Pa := Pi].  Uniform across
-    all 15 cases of the main induction. *)
-Lemma p6cv_close_leaf :
-  forall NM Θ0 Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa ψsub ψa Pi P0,
-  {{ ⊢ Θ }}a ->
-  a_tags_sort NM Ψ' ψa ->
-  Ψi `union` Ψa [<=] Ψ' ->
-  rho_fresh Δρ Θ κ ->
-  Δρ [<=] Δ ->
-  (forall α, α `in` Δρ -> α `notin` pskl_shielded_ftv (msubst_pskl κ Pi)) ->
-  {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad ->
-  rho_leaf NM Θ Δρ Ψρ ψsub ψa ->
-  exists Pa, {{ Θ0 ⊢ₑ Pi ∼ P0 ⤳ nil ⨾ Pa }}a /\
-             {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa }}ad.
-Proof.
-  intros NM Θ0 Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa ψsub ψa Pi P0
-    HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf.
-  destruct Hleaf as (α & Ψ'' & Heqψa & HαΔρ & Htagsub & Hwfsub & HΨρ).
-  subst ψa.
-  pose proof (Hfresh α HαΔρ) as (HXb & Hκav & Hdef).
-  assert (HαΔ : α `in` Δ) by (clear - Hdelta HαΔρ; fsetdec).
-  pose proof (Hapart α HαΔρ) as Hsh.
-  destruct (ad_ppre_delta_var_inv Hpre eq_refl HwfΘ HαΔ HXb Hdef Hsh)
-    as (Heqm & HΨie).
-  assert (HeqPi : Pi = pskl_var_f α)
-    by (eapply msubst_pskl_var_inv; eassumption).
-  assert (HΨ'e : Ψ' [=] empty)
-    by (exact (d_tags_skl_var_inv (a_tags_sort_d_tags Htags))).
-  assert (HΨae : Ψa [=] empty) by (clear - Hsub HΨ'e; fsetdec).
-  exists Pi. split.
-  - rewrite HeqPi. apply a_solve_eq__var.
-  - rewrite Heqm.
-    apply ad_ppre__var; [ clear - HΨie HΨae; fsetdec | left; exact HαΔ ].
-Qed.
-
-(** Painting inversions.  An inherited painting equals a compound [bskl]
-    only for the matching [pskl] source; since [κ] maps flexibles to
-    MONOTYPES, [pskl_to_bskl_inh_all_inh_inv_eq] is what excludes a flexible
-    [P0] in the ForallInh/ForallSyn cases (a genuine [∀]-source is forced). *)
-(* ⚙ RENAMED from [pskl_to_bskl_inh_all_inh_inv] 2026-08-09 (cleanup audit §8.1c): it collided with a
-   DIFFERENT lemma of that name, and this one orients the equation as [f P0 = Q0]; prop_completeness_sub_gen.v's as [A = f X0]. *)
-Lemma pskl_to_bskl_inh_all_inh_inv_eq : forall P Q0,
-  pskl_to_bskl_inh P = bskl_all_inh Q0 ->
-  exists P0, P = pskl_all_syn P0 /\ pskl_to_bskl_inh P0 = Q0.
-Proof.
-  intros P Q0 H; destruct P; simpl in H; try discriminate.
-  inversion H; subst. exists P; split; reflexivity.
-Qed.
-
 Lemma pskl_to_bskl_inh_arrow_inv : forall P Q1 Q2,
   pskl_to_bskl_inh P = bskl_arrow Q1 Q2 ->
   exists P1 P2, P = pskl_arrow P1 P2 /\
@@ -1808,16 +1619,6 @@ Lemma pskl_to_bskl_inh_arrow_inv : forall P Q1 Q2,
 Proof.
   intros P Q1 Q2 H; destruct P; simpl in H; try discriminate.
   inversion H; subst. exists P1, P2; repeat split; reflexivity.
-Qed.
-
-(* ⚙ RENAMED from [pskl_to_bskl_inh_tophole_inv] 2026-08-09 (cleanup audit §8.1c): it collided with a
-   DIFFERENT lemma of that name, and this one also returns [f P0 = Q0]; prop_completeness_sub_gen.v's returns only the shape. *)
-Lemma pskl_to_bskl_inh_tophole_inv_eq : forall P Q0,
-  pskl_to_bskl_inh P = bskl_tophole Q0 ->
-  exists P0, P = pskl_tophole P0 /\ pskl_to_bskl_inh P0 = Q0.
-Proof.
-  intros P Q0 H; destruct P; simpl in H; try discriminate.
-  inversion H; subst. exists P; split; reflexivity.
 Qed.
 
 (** Refinement→precision bridge for the [unit] target.  An inherited
@@ -2191,17 +1992,6 @@ Inductive a_def_chain (Θ : aenv) : ptyp -> ptyp -> Prop :=
     binds α (abind_flex_mono_def τd) Θ ->
     a_def_chain Θ τd τe ->
     a_def_chain Θ (ptyp_var_f α) τe.
-
-Lemma a_def_chain_mono : forall Θ τ τe,
-  a_def_chain Θ τ τe ->
-  {{ ⊢ Θ }}a ->
-  mono_ptyp τ ->
-  mono_ptyp τe.
-Proof.
-  intros Θ τ τe Hc; induction Hc; intros Hwf Hm; auto.
-  apply IHHc; auto.
-  eapply a_wf_aenv_binds_def_mono; eauto.
-Qed.
 
 Lemma a_def_chain_trans : forall Θ τ1 τ2 τ3,
   a_def_chain Θ τ1 τ2 ->

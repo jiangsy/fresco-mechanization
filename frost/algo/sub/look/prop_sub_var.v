@@ -277,24 +277,6 @@ Proof.
     pose proof (@def_ftv_binds Θ α τ H) as Hsub. clear - Hsub Hin; fsetdec.
 Qed.
 
-(** Deciding [a_non_flex] on a GUARDED skeleton: it fails only for a
-    flexible variable. *)
-Lemma a_non_flex_guarded_dec : forall Θ0 P,
-  guarded_pskl P ->
-  a_non_flex Θ0 P \/ (exists α, P = pskl_var_f α /\ a_flex_tvar Θ0 α).
-Proof.
-  intros Θ0 P Hg; destruct Hg as [ | α | P1 P2 Hlc1 Hlc2 ].
-  - left; split; [ apply lc_pskl_unit | intros Hf; inversion Hf ].
-  - destruct (a_flex_tvar_dec Θ0 α) as [Hf | Hf];
-      [ right; exists α; split; [ reflexivity | exact Hf ]
-      | left; split;
-          [ apply lc_pskl_var_f
-          | intros Hfl; apply Hf; inversion Hfl; subst;
-            [ left | right; eexists ]; eassumption ] ].
-  - left; split;
-      [ apply lc_pskl_arrow; assumption | intros Hf; inversion Hf ].
-Qed.
-
 (* ===================================================================== *)
 (*  ρ-EXTENSION — what Sub-ForallL does to the ρ-relation                  *)
 (* ===================================================================== *)
@@ -1427,16 +1409,6 @@ Proof.
        is simply STRIPPED instead of moved *)
     apply a_wf_pskl__tophole; [ exact H | ].
     eapply (@a_wf_pskl_strip_tvar Θ1 β Θ2); [ exact H0 | exact Hsh ].
-Qed.
-
-(** A flexible entry is a context entry, so a flexible variable is wf.
-    (The three [a_binds_tvar] disjuncts are tvar / flex / defined flex.) *)
-Lemma a_wf_pskl_flex_var : forall Θ Δ α,
-  a_flex_tvar Θ α -> {{ Θ ⨟ Δ ⊢ₚₛ (pskl_var_f α) }}a.
-Proof.
-  intros Θ Δ α Hf. apply a_wf_pskl__var. right.
-  destruct Hf as [Hb | [τ Hb]];
-    [ right; left; exact Hb | right; right; exists τ; exact Hb ].
 Qed.
 
 (* ⭐⭐ P6-Sv UNDER THE SolE-FlexR REPAIR — GREEN (2026-08-05).

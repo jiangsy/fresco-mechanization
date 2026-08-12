@@ -108,22 +108,6 @@ Proof.
     rewrite He; discriminate.
 Qed.
 
-Lemma ptyp_to_uskl_syn_not_hole : forall τ, ptyp_to_uskl_syn τ <> uskl_hole.
-Proof.
-  intros τ.
-  destruct (ptyp_to_uskl_syn_shape τ)
-    as [[? He] | [He | [[? He] | [[? [? He]] | [? He]]]]];
-    rewrite He; discriminate.
-Qed.
-
-Lemma ptyp_to_uskl_syn_not_holeg : forall τ, ptyp_to_uskl_syn τ <> uskl_holeg.
-Proof.
-  intros τ.
-  destruct (ptyp_to_uskl_syn_shape τ)
-    as [[? He] | [He | [[? He] | [[? [? He]] | [? He]]]]];
-    rewrite He; discriminate.
-Qed.
-
 Lemma ptyp_to_uskl_syn_not_tophole : forall τ R,
   ptyp_to_uskl_syn τ <> uskl_tophole R.
 Proof.

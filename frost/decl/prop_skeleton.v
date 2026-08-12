@@ -23,7 +23,6 @@ Set Implicit Arguments.
     Only the coloured refinement relation [d_refine_syn] remains; the
     former uncoloured [d_refine] split lemmas were removed with it. *)
 
-
 (* No [tophole] split lemma: a universal ghost [⫯] now refines by three
    rules (remove / fill-with-∀α / keep), so the output is not uniquely a
    [bskl_tophole].  Invert [d_refine_syn] directly where needed. *)
@@ -61,44 +60,6 @@ Lemma ftvar_pskl_to_bskl_syn : forall P,
 Proof.
   induction P; simpl; try reflexivity;
     try (rewrite IHP1, IHP2; reflexivity); try (rewrite IHP; reflexivity).
-Qed.
-
-(** [d_pat_consis] strengthening: every tvar LOOKUP goes through the RHS skeleton
-    [Q] ([__var] matches [R'=Q'=var α']; [__hole]'s fill lives in [Q = inh P]), so
-    conditioning on [α ∉ ftvar Q] suffices.  Forall cases grow [Γ]; recurse with
-    [ftvar_in_bskl_open_bskl_wrt_bskl_upper]. *)
-Lemma d_refine_syn_strengthen : forall Γ Δi Q Q',
-    {{ Γ ⨟ Δi ⊢ᵣ Q ⊳ Q' }}d ->
-    forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
-    α `notin` ftvar_in_bskl Q' ->
-    {{ (Γ1 ++ Γ2) ⨟ Δi ⊢ᵣ Q ⊳ Q' }}d.
-Proof.
-  intros Γ Δi Q Q' H. induction H; intros Γ1 α0 Γ2 Heq Hα; subst.
-  - apply d_refine_syn__unit.
-  - simpl in Hα. apply d_refine_syn__var. destruct H as [HI | Hb];
-      [ left; assumption | right ].
-    analyze_binds Hb; try (exfalso; fsetdec); auto.
-  - simpl in Hα. apply d_refine_syn__arrow;
-      [ eapply IHd_refine_syn1 | eapply IHd_refine_syn2 ]; eauto.
-  - simpl in Hα. apply d_refine_syn__all with (L := L `union` {{α0}}).
-    intros α2 Hα2. eapply (H0 α2 ltac:(auto) Γ1 α0 Γ2); [ reflexivity | ].
-    (* [P] is the rule's OWN target binder (d_refine_syn__all /
-       __tophole_fill, decl/def_rules.v), auto-bound by [induction H] —
-       not this lemma's Q'. *)
-    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f α2)) as Hup.
-    simpl in Hup. fsetdec.
-  - apply d_refine_syn__hole. eapply d_wf_pskl_strengthen; eauto.
-    rewrite <- ftvar_pskl_to_bskl_syn. assumption.
-  - apply d_refine_syn__tophole_remove. eapply IHd_refine_syn; eauto.
-  - apply d_refine_syn__tophole_fill with (L := L `union` {{α0}}).
-    intros α2 Hα2. eapply (H0 α2 ltac:(auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2);
-      [ simpl_env; reflexivity | ].
-    (* [P] is the rule's OWN target binder (d_refine_syn__all /
-       __tophole_fill, decl/def_rules.v), auto-bound by [induction H] —
-       not this lemma's Q'. *)
-    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f α2)) as Hup.
-    simpl in Hup. fsetdec.
-  - simpl in Hα. apply d_refine_syn__tophole_keep; [ assumption | eapply IHd_refine_syn; eauto ].
 Qed.
 
 (** The LHS of a consistency / subtyping judgment has no free tvars beyond the
@@ -434,7 +395,6 @@ Qed.
     [d_consis] preserves the underlying [pskl]; a base term's [mode_ti] type is
     therefore skeleton-determined (sub-[ti] only re-types to a consistent
     variant, same skeleton). *)
-
 
 (** A well-formed type's free tvars are all bound in the context. *)
 Lemma is_value_subst_var : forall e x y,

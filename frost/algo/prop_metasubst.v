@@ -1594,21 +1594,6 @@ Proof.
   - pose proof (IHt α' Hα). clear - H; fsetdec.
 Qed.
 
-Lemma a_assign_subject_flex_local : forall Θ0 Ξ α P Θ1,
-  {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a ->
-  a_flex_tvar Θ0 α.
-Proof.
-  intros Θ0 Ξ α P Θ1 H; induction H.
-  - left. unfold binds; simpl; left; reflexivity.
-  - left. unfold binds; simpl; left; reflexivity.
-  - exact H.
-  - apply a_flex_tvar_weaken_prefix. exact IHa_assign.
-  - apply a_flex_tvar_weaken_prefix. exact IHa_assign.
-  - apply a_flex_tvar_weaken_prefix. exact IHa_assign.
-  - apply a_flex_tvar_weaken_prefix. exact IHa_assign.
-  - apply a_flex_tvar_weaken_prefix. exact IHa_assign.
-Qed.
-
 Lemma msubst_lookup_app_in : forall ζ1 ζ2 α,
   α `in` dom ζ1 -> msubst_lookup (ζ1 ++ ζ2) α = msubst_lookup ζ1 α.
 Proof.

@@ -1396,28 +1396,6 @@ Proof.
     [ clear - Fr; fsetdec | apply Hbody; clear - Fr; fsetdec ].
 Qed.
 
-Lemma a_consis_univ_ghost1_cofinite : forall L Δ1 Δ2 Θ0 Θ1 P0 P Q,
-  (forall α, α `notin` L ->
-     {{ ((α ~ abind_tvar) ++ Θ0)
-       ⊢[ (add α Δ1) | Δ2
-         | (open_pskl_wrt_pskl P0 (pskl_var_f α)) ]
-       (pskl_tophole P) ∼ (open_pskl_wrt_pskl Q (pskl_var_f α))
-       ⊣ ((α ~ abind_tvar) ++ Θ1) }}a) ->
-  {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_all_syn P0) ]
-    (pskl_tophole P) ∼ (pskl_all_syn Q) ⊣ Θ1 }}a.
-Proof.
-  intros L Δ1 Δ2 Θ0 Θ1 P0 P Q Hbody.
-  pick fresh α for (L `union` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
-                    `union` ftvar_in_pskl P `union` ftvar_in_pskl Q
-                    `union` Δ1 `union` Δ2).
-  replace Q with
-    (close_pskl_wrt_pskl α (open_pskl_wrt_pskl Q (pskl_var_f α)))
-    by (apply close_pskl_wrt_pskl_open_pskl_wrt_pskl;
-        clear - Fr; fsetdec).
-  apply a_consis__univ_ghost1 with (α := α);
-    [ clear - Fr; fsetdec | apply Hbody; clear - Fr; fsetdec ].
-Qed.
-
 (* ===================================================================== *)
 (*  §10  Lemma [Decorating algorithmic consistency]                       *)
 (* ===================================================================== *)

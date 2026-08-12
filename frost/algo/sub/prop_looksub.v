@@ -57,10 +57,6 @@ Lemma a_looksub_decls : forall Θ α m P P' Ξ 𝒞,
   {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a -> a_decls Ξ.
 Proof. intros; eapply (proj1 a_looksub_lookeq_decls); eauto. Qed.
 
-Lemma a_lookeq_decls : forall Θ α P P' Ξ 𝒞,
-  {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a -> a_decls Ξ.
-Proof. intros; eapply (proj2 a_looksub_lookeq_decls); eauto. Qed.
-
 (** [guess] generates only declarations ([SK]: none; [TY]: the fresh mono
     flexibles of [a_guess_mono]). *)
 Lemma a_guess_decls : forall Θ NM P Ξ P',
@@ -345,63 +341,6 @@ Lemma ptyp_to_pskl_ftv : forall A,
   ftvar_in_pskl (ptyp_to_pskl A) [<=] ftvar_in_ptyp A.
 Proof. induction A; simpl; fsetdec. Qed.
 
-(* The paper's lemma pins its variable only against [P0] and [Ξ]
-   (subtyping-proofs:522); the mech additionally pins it inside [dom Θ0] —
-   the Barendregt rendering that separates it from the LEAKED binders of
-   [SS-ForallR] and of look's five ∀ rules, which avoid the whole ambient
-   context by their side conditions.  Every name the consumers care about
-   (the looked-for variable, context binders) lives in [dom Θ0].
-   Since cluster 3 this discharges TWO "…or the run invented it" arms —
-   the solve's ([a_solve_cstr_ftv]) and the look's ([a_looksub_ftv]) — and
-   both die the same way: [α1 ∈ dom Θ0 ⊆ ftvar_in_aenv Θ0]. *)
-Lemma a_extract_output_fresh : forall Θ0 NM α M P P0 Ξ P1 α1,
-  {{ Θ0 ⊢ P ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ P1 }}a ->
-  α1 `in` dom Θ0 ->
-  α1 `notin` ftvar_in_pskl P0 ->
-  α1 `notin` dom Ξ ->
-  α1 `notin` ftvar_in_pskl P1.
-Proof.
-  intros * Hex Hdom Hγ0 Hα1Ξ. inversion Hex; subst.
-  simpl_env in Hα1Ξ.
-  match goal with
-  | Hlk : {{ _ ⊢ _ ≼[ _ , _ ] _ ⤳ _ ⨾ _ }}a , Hsc : {{ _ ⊩ _ ⨾ _ ⤳ _ ⨾ _ }}a |- _ =>
-      pose proof (a_looksub_ftv Hlk) as Hb1;
-      pose proof (a_solve_cstr_ftv Hsc) as Hb2
-  end.
-  pose proof (dom_subset_ftvar_in_aenv Θ0) as Hdf.
-  (* the shared refutation: a variable of the SOLVE's output is either an
-     input variable (⇒ in 𝒞, and then the LOOK's bound applies) or a name
-     one of the three runs invented (⇒ outside the ambient context) *)
-  match goal with
-  | Hsc : {{ _ ⊩ ?Cx ⨾ _ ⤳ _ ⨾ ?Qx }}a |- _ =>
-      assert (Hcore : α1 `notin` ftvar_in_pskl Qx);
-      [ intro Hin; destruct (Hb2 α1 Hin) as [Hl | Hr];
-        [ | apply Hr; rewrite dom_app; clear - Hdom; fsetdec ];
-        assert (Hc : α1 `in` ftvar_in_cstrs Cx)
-          by (clear - Hl; simpl in Hl; fsetdec);
-        destruct (Hb1 α1 Hc) as [Hl2 | Hr2];
-        [ clear - Hl2 Hγ0 Hα1Ξ; fsetdec | clear - Hr2 Hdom Hdf; fsetdec ]
-      | ]
-  end.
-  match goal with
-  | Hg : a_guess _ _ _ _ _ |- _ => inversion Hg; subst
-  end.
-  - (* SK : output = solve output *) exact Hcore.
-  - (* TY : output = guessed monotype *)
-    match goal with
-    | Hgm : a_guess_mono _ _ _ _ |- _ =>
-        pose proof (a_guess_mono_ftv Hgm) as Hb3
-    end.
-    intro Hin.
-    match goal with
-    | Hgm : a_guess_mono _ ?q _ _ |- False =>
-        assert (HinQ : α1 `in` ftvar_in_pskl q)
-          by (pose proof (ptyp_to_pskl_ftv A) as Hb4';
-              clear - Hb3 Hb4' Hin Hα1Ξ; fsetdec)
-    end.
-    exact (Hcore HinQ).
-Qed.
-
 (* ===================================================================== *)
 (*  §4  Stability of constraint collection under substitution             *)
 (*  (lemma:constraint-collection-stable-substitution, tex:504-520,        *)
@@ -449,18 +388,6 @@ Proof.
     try match goal with
         | IH : _ -> _ = nil /\ _ = nil |- _ => apply IH; assumption
         end.
-Qed.
-
-Lemma guarded_pskl_subst_nonvar : forall P P' β,
-  guarded_pskl P ->
-  lc_pskl P' ->
-  P <> pskl_var_f β ->
-  guarded_pskl (subst_pskl_in_pskl P' β P).
-Proof.
-  intros P P' β Hg Hlc Hne; inversion Hg; subst; simpl.
-  - constructor.
-  - destruct_if; [ exfalso; congruence | constructor ].
-  - constructor; apply subst_pskl_in_pskl_lc_pskl; auto.
 Qed.
 
 (** The SCOPE premise [ftv P0 ⊆ α ∪ ftvar_in_aenv Θ] is the paper's Barendregt
@@ -660,13 +587,6 @@ Proof.
               simpl in HI; exact HI
           end ].
 Qed.
-
-Lemma a_looksub_subst_stable : forall Θ α m P P' Ξ 𝒞 β P0,
-  {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
-  β <> α -> α `notin` ftvar_in_pskl P0 -> lc_pskl P0 ->
-  ftvar_in_pskl P0 [<=] add α (ftvar_in_aenv Θ) ->
-  {{ Θ ⊢ (subst_pskl_in_pskl P0 β P) ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a.
-Proof. intros; eapply (proj1 a_looksub_lookeq_subst_stable); eauto. Qed.
 
 (* ===================================================================== *)
 (*  §4b  The REVERSE direction of                                         *)
@@ -972,16 +892,6 @@ Proof.
     + inversion Hg.
 Qed.
 
-Lemma a_looksub_subst_stable_rev : forall Θ α m P' Ξ 𝒞 Pu βg Pg,
-  {{ Θ ⊢ (subst_pskl_in_pskl Pg βg Pu) ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
-  βg <> α -> βg `in` ftvar_in_aenv Θ ->
-  α `notin` ftvar_in_pskl Pg -> lc_pskl Pg -> lc_pskl Pu ->
-  {{ Θ ⊢ Pu ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a.
-Proof.
-  intros; eapply (proj1 a_looksub_lookeq_subst_stable_rev);
-    try eassumption; reflexivity.
-Qed.
-
 (* ===================================================================== *)
 (*  §5  Rigid renames of a look run (moved from prop_look_complete_cstr,  *)
 (*  2026-07-31 — the exists-fresh ForallR consumers need them below the   *)
@@ -1182,14 +1092,6 @@ Lemma a_looksub_ctx_exchange : forall Θ α m P P' Ξ 𝒞 β1 β2,
   {{ ((β2 ~ abind_tvar) ++ (β1 ~ abind_tvar) ++ Θ) ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a.
 Proof.
   intros. eapply a_looksub_ctx_ftv_mono; [ eassumption | ].
-  rewrite ! ftvar_in_aenv_cons_tvar. fsetdec.
-Qed.
-
-Lemma a_lookeq_ctx_exchange : forall Θ α P P' Ξ 𝒞 β1 β2,
-  {{ ((β1 ~ abind_tvar) ++ (β2 ~ abind_tvar) ++ Θ) ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
-  {{ ((β2 ~ abind_tvar) ++ (β1 ~ abind_tvar) ++ Θ) ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a.
-Proof.
-  intros. eapply a_lookeq_ctx_ftv_mono; [ eassumption | ].
   rewrite ! ftvar_in_aenv_cons_tvar. fsetdec.
 Qed.
 

@@ -71,25 +71,6 @@ Proof.
     apply H0; auto.
 Qed.
 
-(** [d_wf_pskl] is monotone in the scope set [Ψ]: enlarging [Ψ] only
-    relaxes the [var] rule (and the [∀] rule under its binder).  Used by
-    [d_refine_preserves_wf] to bridge a premise whose cleared context
-    yields a [Ψ ⊆] the one the conclusion needs. *)
-Lemma d_wf_pskl_Psi_mono : forall Ψ Γ P,
-    {{ Γ ⨟ Ψ ⊢ₚₛ P }}d ->
-    forall Ψ', (forall α, List.In α Ψ -> List.In α Ψ') ->
-    {{ Γ ⨟ Ψ' ⊢ₚₛ P }}d.
-Proof.
-  intros Ψ Γ P H. induction H; intros Ψ' Hmono.
-  - constructor.
-  - constructor. destruct H as [Hin | Hb]; [ left; auto | right; auto ].
-  - constructor; auto.
-  - inst_cofinites_for d_wf_pskl__all. intros α Hα. apply H0; auto.
-    intros β Hβ. simpl in Hβ |- *. destruct Hβ as [Hβ | Hβ]; [ left; auto | right; auto ].
-  - constructor.
-  - apply d_wf_pskl__tophole; auto.
-Qed.
-
 Lemma d_wf_pskl_weakening : forall Γ1 Γ2 Γ3 Ψ P,
     {{ (Γ1 ++ Γ3) ⨟ Ψ ⊢ₚₛ P }}d ->
     {{ (Γ1 ++ Γ2 ++ Γ3) ⨟ Ψ ⊢ₚₛ P }}d.
@@ -231,15 +212,6 @@ Proof.
     apply d_wf_ptyp_cons; first [ assumption | apply IHHwf; assumption ].
 Qed.
 
-Lemma d_wf_denv_binds_skl : forall x P Γ,
-    d_wf_denv Γ -> binds x (dbind_skl P) Γ -> {{ Γ ⨟ nil ⊢ₚₛ P }}d.
-Proof.
-  intros x P Γ Hwf. induction Hwf; intros Hb; try solve [ inversion Hb ];
-    analyze_binds Hb;
-    try (match goal with HV : dbind_skl _ = dbind_skl _ |- _ => inversion HV; subst end);
-    apply d_wf_pskl_cons; first [ assumption | apply IHHwf; assumption ].
-Qed.
-
 Lemma d_wf_ptyp_ftvar : forall Γ A,
     d_wf_ptyp Γ A ->
     forall α, α `in` ftvar_in_ptyp A -> binds α dbind_tvar Γ.
@@ -348,17 +320,6 @@ Proof.
   - pick fresh α. apply (lc_utyp_all_tag_exists α). apply H0. auto.
 Qed.
 
-Lemma d_wf_pskl_lc : forall Γ Δ P, {{ Γ ⨟ Δ ⊢ₚₛ P }}d -> lc_pskl P.
-Proof.
-  intros Γ Δ P H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; assumption.
-  - pick fresh α. apply (lc_pskl_all_syn_exists α). apply H0. auto.
-  - constructor.
-  - constructor; assumption.
-Qed.
-
 Lemma d_wf_utyp_ftvar : forall Γ C,
     d_wf_utyp Γ C ->
     forall α, α `in` ftvar_in_utyp C -> binds α dbind_tvar Γ.
@@ -447,15 +408,6 @@ Proof.
   intros Γ A H. apply d_wf_utyp_of_lc_ftvar.
   - apply lc_ptyp_to_utyp_syn. eapply d_wf_ptyp_lc; eassumption.
   - rewrite ftvar_ptyp_to_utyp_syn. intros α Hα. eapply d_wf_ptyp_ftvar; eassumption.
-Qed.
-
-(** A [ptyp] is lc whenever its inh painting is.  Route via [degree]:
-    the inh painting preserves binder structure exactly, so it preserves
-    [degree] at every level; then bridge degree 0 back to [lc_ptyp]. *)
-Lemma degree_btyp_inh_of_degree_ptyp : forall A k,
-    degree_ptyp_wrt_ptyp k A -> degree_btyp_wrt_btyp k (ptyp_to_btyp_inh A).
-Proof.
-  induction A; intros k H; simpl; inversion H; subst; constructor; auto.
 Qed.
 
 Lemma degree_ptyp_of_degree_btyp_inh : forall A k,
@@ -716,41 +668,6 @@ Proof.
   - apply mod_comp_ty__fn; assumption.
   - assumption.
   - assumption.
-Qed.
-
-(** Typing preserves the colour/mode discipline [skmod{TY}]: a well-formed
-    [d_typing] derivation's result type is [M]-coloured.  Companion to
-    [d_typing_wf_btyp] (this is the colour half of the implicit [skmod{TY}]
-    well-formedness on the conclusion). *)
-Lemma d_typing_skmod : forall m Γ e B,
-    d_typing m Γ e B -> d_wf_denv Γ -> mod_comp_ty B m.
-Proof.
-  intros m Γ e B H. induction H; intros Hwf.
-  - (* unit *) apply mod_comp_ty__ti. apply is_styp__unit.
-  - (* var *) apply mod_comp_ty__ti. apply is_styp_ptyp_to_btyp_syn.
-    eapply d_wf_ptyp_lc. eapply d_wf_denv_binds_typ; eassumption.
-  - (* anno: result syn A — lc A from the inherited premise (IH) *)
-    apply mod_comp_ty__ti. apply is_styp_ptyp_to_btyp_syn.
-    apply lc_ptyp_of_lc_btyp_inh. apply is_ityp_lc.
-    assert (Hi : mod_comp_ty (ptyp_to_btyp_inh A) mode_tc) by (apply IHd_typing; assumption).
-    inversion Hi; subst. assumption.
-  - (* sub *) eapply d_sub_skmod; eassumption.
-  - (* freeze: result inh A — lc A from the synthesised premise (IH) *)
-    apply mod_comp_ty__tc. apply is_ityp_ptyp_to_btyp_inh.
-    apply lc_ptyp_of_lc_btyp_syn. apply is_styp_lc.
-    assert (Hs : mod_comp_ty (ptyp_to_btyp_syn A) mode_ti) by (apply IHd_typing; assumption).
-    inversion Hs; subst. assumption.
-  - (* forall: result ∀-inherited — each instance is inherited (IH) *)
-    apply mod_comp_ty__tc. apply is_ityp__all with (L := L `union` dom Γ).
-    intros α Hα.
-    assert (Hsk : mod_comp_ty (open_btyp_wrt_btyp (ptyp_to_btyp_inh A) (btyp_var_f α)) mode_tc)
-      by (apply H1; [ auto | apply d_wf_denv__tvar; auto ]).
-    inversion Hsk; subst. assumption.
-  - (* abs: skmod premise is embedded on the rule *) assumption.
-  - (* abs_anno: skmod premise is embedded on the rule *) assumption.
-  - (* app: result B2 from the [fn m]-coloured function arrow *)
-    assert (Hf : mod_comp_ty (btyp_arrow B1 B2) (mode_fn m)) by (apply IHd_typing1; assumption).
-    inversion Hf; subst. assumption.
 Qed.
 
 (* RESTART NOTE: the pre-restart scaffold [d_typing_pat_preserves_wf]

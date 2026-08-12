@@ -1354,7 +1354,6 @@ Qed.
 (*  §12  Equivariance: [a_sub] / [a_sub_flex]                              *)
 (* ===================================================================== *)
 
-
 Lemma a_consis_empty_swap : forall a b Θ0 P0 P Q Θ1,
   {{ Θ0 ⊢[ P0 ] P ∼ Q ⊣ Θ1 }}a ->
   {{ (swap_aenv a b Θ0) ⊢[ swap_pskl a b P0 ]
@@ -1991,11 +1990,6 @@ Qed.
 Definition swap_msubst (a b : atom) (κ : metasubst) : metasubst :=
   List.map (fun e => (swap_atom a b (fst e), swap_ptyp a b (snd e))) κ.
 
-Lemma swap_msubst_cons : forall a b α τ (κ : metasubst),
-  swap_msubst a b ((α, τ) :: κ)
-  = (swap_atom a b α, swap_ptyp a b τ) :: swap_msubst a b κ.
-Proof. reflexivity. Qed.
-
 Lemma msubst_lookup_swap : forall a b (κ : metasubst) x,
   swap_ptyp a b (msubst_lookup κ x)
   = msubst_lookup (swap_msubst a b κ) (swap_atom a b x).
@@ -2068,28 +2062,6 @@ Proof.
     rewrite !swap_pskl_open_var in H0.
     rewrite swap_atom_invol in H0. exact H0.
   - apply a_pskl_tyequiv__tophole; auto.
-Qed.
-
-Lemma a_inc_swap : forall a b Θs (κ : metasubst) Θt,
-  κ ∷ Θs ⊑ Θt ->
-  (swap_msubst a b κ) ∷ (swap_aenv a b Θs) ⊑ (swap_aenv a b Θt).
-Proof.
-  intros * H; induction H; simpl.
-  - apply a_inc__empty. auto using a_suffix_swap.
-  - apply a_inc__flex; auto using a_wf_ptyp_swap, mono_ptyp_swap.
-  - apply a_inc__flex_def; auto using a_wf_ptyp_swap, mono_ptyp_swap.
-    pose proof (a_tyequiv_swap a b _ _ _ H2) as h.
-    rewrite msubst_ptyp_swap in h. exact h.
-  - rewrite swap_aenv_app.
-    apply a_inc__var; auto using a_suffix_swap.
-    pose proof (a_tyequiv_swap a b _ _ _ H0) as h.
-    rewrite msubst_ptyp_swap in h. exact h.
-  - rewrite swap_aenv_app.
-    apply a_inc__var_skl; auto using a_suffix_swap.
-    pose proof (a_pskl_tyequiv_swap a b _ _ _ H0) as h.
-    rewrite msubst_pskl_swap in h. exact h.
-  - rewrite swap_aenv_app.
-    apply a_inc__tvar; auto using a_suffix_swap.
 Qed.
 
 (* ===================================================================== *)
@@ -2464,7 +2436,6 @@ Proof.
       | simpl in Hb; fsetdec
       | intros bd hbd; apply Ha; right; exact hbd ].
 Qed.
-
 
 (* ##################################################################### *)
 (*  §6 — TERM BINDERS.                                                    *)

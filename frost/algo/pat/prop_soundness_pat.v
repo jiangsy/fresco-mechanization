@@ -940,13 +940,6 @@ Proof.
     [ exact H | apply aenv_tbinds_le_of_binds_le; apply aenv_binds_le_weaken_l ].
 Qed.
 
-Lemma a_wf_ptyp_weaken_cons : forall Θ A x (b : abind),
-  a_wf_ptyp Θ A -> a_wf_ptyp ((x ~ b) ++ Θ) A.
-Proof.
-  intros * H. eapply a_wf_ptyp_mono;
-    [ exact H | apply aenv_tbinds_le_of_binds_le; apply aenv_binds_le_weaken_l ].
-Qed.
-
 Lemma a_wf_exp_weaken_cons : forall Θ e x (b : abind),
   {{ Θ ⊢ᵉ e }}a -> {{ ((x ~ b) ++ Θ) ⊢ᵉ e }}a.
 Proof.

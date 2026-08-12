@@ -98,15 +98,6 @@ Lemma pskl_ghost_free_subst_var : forall P α β,
   pskl_ghost_free (subst_pskl_in_pskl (pskl_var_f α) β P).
 Proof. intros P α β Hg; apply pskl_ghost_free_subst; [ exact Hg | exact I ]. Qed.
 
-(** …in particular by a monotype painting. *)
-Lemma pskl_ghost_free_subst_mono : forall P τ β,
-  pskl_ghost_free P -> mono_ptyp τ ->
-  pskl_ghost_free (subst_pskl_in_pskl (ptyp_to_pskl τ) β P).
-Proof.
-  intros P τ β Hg _; apply pskl_ghost_free_subst;
-    [ exact Hg | apply ptyp_to_pskl_ghost_free ].
-Qed.
-
 Lemma bskl_ghost_free_open_rec : forall Q α' k,
   bskl_ghost_free Q ->
   bskl_ghost_free (open_bskl_wrt_bskl_rec k (bskl_var_f α') Q).

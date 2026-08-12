@@ -90,23 +90,6 @@ Proof.
       [ exact Hb' | eapply Hdefs; apply binds_app_2; exact Hb ].
 Qed.
 
-Lemma tbinds_le_subst_mid_inv : forall β' α Θ1 Θ0,
-  (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
-     α `notin` ftvar_in_ptyp τ) ->
-  aenv_tbinds_le ((subst_aenv (ptyp_var_f β') α Θ1) ++ (β' ~ abind_tvar) ++ Θ0)
-    (Θ1 ++ (β' ~ abind_tvar) ++ Θ0).
-Proof.
-  intros β' α Θ1 Θ0 Hdefs x b Hty Hb.
-  apply binds_app_1 in Hb as [Hb | Hb]; [ | apply binds_app_3; exact Hb ].
-  apply binds_app_2.
-  destruct (@binds_subst_aenv_inv (ptyp_var_f β') α x b Θ1 Hb)
-    as [bd [Hb0 Heq]]; subst b.
-  destruct bd as [ | A | P | | τ ]; simpl in Hty; try contradiction;
-    [ exact Hb0 | exact Hb0 | ].
-  simpl. rewrite subst_ptyp_in_ptyp_fresh_eq;
-    [ exact Hb0 | eapply Hdefs; apply binds_app_2; exact Hb0 ].
-Qed.
-
 (* ===================================================================== *)
 (*  §2  Variable-image commutations of the paintings                     *)
 (*                                                                        *)

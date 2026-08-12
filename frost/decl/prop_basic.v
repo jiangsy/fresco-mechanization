@@ -27,26 +27,6 @@ Qed.
 
 (** * list_disjoint algebra. *)
 
-
-Lemma list_disjoint_nil_l : forall (ys : list atom),
-    list_disjoint nil ys.
-Proof.
-  intros ys a Hy. inversion Hy.
-Qed.
-
-
-Lemma list_disjoint_cons_l : forall (a : atom) (xs ys : list atom),
-    ~ List.In a ys ->
-    list_disjoint xs ys ->
-    list_disjoint (a :: xs) ys.
-Proof.
-  intros a xs ys Hni Hd b Hb Hin.
-  destruct Hb as [Heq | Hb].
-  - subst. contradiction.
-  - apply (Hd b); auto.
-Qed.
-
-
 (** * Local closure for shape predicates. *)
 
 Lemma is_ityp_lc : forall B, is_ityp B -> lc_btyp B.
@@ -64,9 +44,7 @@ Proof.
   intros C H. induction H; eauto.
 Qed.
 
-
 (** * Coercion local-closure preservation. *)
-
 
 (** The synthesised painting of any locally-closed [ptyp] is synthesised
     ([is_styp]): every ∀ becomes [btyp_all_syn].  (Induct on [lc_ptyp] so the

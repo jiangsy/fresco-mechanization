@@ -100,19 +100,6 @@ Proof.
     + apply binds_cons_3; apply IHad_ctx_precise; assumption.
 Qed.
 
-Lemma ad_ctx_precise_tbinds_ge : forall Θ' Θ,
-  {{ Θ' ⪯ᶜᵗˣ Θ }}ad -> aenv_tbinds_le Θ' Θ.
-Proof.
-  intros Θ' Θ H; induction H; intros α b0 Hty Hb.
-  - exact Hb.
-  - destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> ->] | Hb'];
-      [ unfold binds; simpl; left; reflexivity
-      | apply binds_cons_3; apply IHad_ctx_precise; assumption ].
-  - destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> ->] | Hb'].
-    + exfalso. destruct b'; simpl in *; solve [ contradiction | congruence ].
-    + apply binds_cons_3; apply IHad_ctx_precise; assumption.
-Qed.
-
 (** The Var inversion: a term entry of [Θ] has a more precise counterpart
     in [Θ'].  Needs [uniq Θ] — [binds] is positional only up to
     duplicates. *)

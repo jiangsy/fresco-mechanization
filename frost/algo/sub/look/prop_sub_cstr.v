@@ -396,25 +396,6 @@ Qed.
     In particular a ⊤◇ / ◇ / ◈ subject is IMPOSSIBLE at (ty, tc): stripping
     those needs [a_sub_mode_sk].  That is what lets Sub-ForallR's α-stack
     branch assume the stack is built from ∀s alone. *)
-Lemma ad_pat_sub_fuel_ty_tc_subject : forall n Ψ Θ R Q,
-  ad_pat_sub_fuel n a_sub_mode_ty mode_tc Ψ Θ R Q ->
-  guarded_uskl R
-  \/ (exists ε R0, R = uskl_all_tag ε R0)
-  \/ (exists R0, R = uskl_all_syn R0).
-Proof.
-  intros n Ψ Θ R Q H.
-  remember a_sub_mode_ty as NM eqn:HNM; remember mode_tc as M eqn:HM.
-  induction H; try discriminate HNM; try discriminate HM.
-  - (* Check : the rule's own premise *) left; assumption.
-  - (* ForallR : the subject does not move, so the cofinite premise's own IH
-       answers for it directly *)
-    match goal with
-    | IH : forall α, α `notin` ?L -> _ |- _ =>
-        pick fresh α for L; apply (IH α ltac:(auto) HNM HM)
-    end.
-  - (* ForallL, tagged *) right; left; do 2 eexists; reflexivity.
-  - (* ForallL, untagged *) right; right; eexists; reflexivity.
-Qed.
 
 Lemma a_looksub_solve_complete_leaf :
   forall n NM M Θ0 Θs Θ Θw κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' Rsub α,

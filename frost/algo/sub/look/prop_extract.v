@@ -261,15 +261,6 @@ Proof.
   - (* ∀◇ likewise *) tauto.
 Qed.
 
-Lemma pskl_ghost_free_open_inv : forall P α,
-  pskl_ghost_free (open_pskl_wrt_pskl P (pskl_var_f α)) ->
-  pskl_ghost_free P.
-Proof.
-  intros P α H. unfold open_pskl_wrt_pskl in H.
-  eapply (@pskl_ghost_free_open_rec_iff P (pskl_var_f α) 0);
-    [ cbn; exact I | exact H ].
-Qed.
-
 (** [a_tags_sort a_sub_mode_ty] gives ghost-freeness of the DECORATED ψa;
     the witness induction runs against the erasure.  The ε-tagged ∀ erases
     to a plain [pskl_all_syn], which is exactly [pgf_all]. *)

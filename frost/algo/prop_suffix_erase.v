@@ -103,12 +103,6 @@ Proof.
     [ reflexivity | rewrite IH; reflexivity ].
 Qed.
 
-Lemma dom_subst_aenv : forall τ α Θ, dom (subst_aenv τ α Θ) [=] dom Θ.
-Proof.
-  intros τ α Θ; induction Θ as [ | [x bd] Θ' IH ]; simpl;
-    [ reflexivity | rewrite IH; reflexivity ].
-Qed.
-
 Lemma binds_subst_aenv : forall τ α x bd Θ,
   binds x bd Θ -> binds x (subst_abind τ α bd) (subst_aenv τ α Θ).
 Proof.
@@ -118,17 +112,6 @@ Proof.
     destruct Hb as [Heq | Hb].
     + inversion Heq; subst. left; reflexivity.
     + right. apply IH. exact Hb.
-Qed.
-
-(** The two shapes the lookup rules need, in the direction the proofs use:
-    a binding BELOW the substituted variable is untouched, because the
-    context's well-formedness scopes its payload in the tail. *)
-Lemma binds_subst_aenv_mid : forall τ α x bd Θa Θ0,
-  binds x bd (Θa ++ Θ0) ->
-  x <> α ->
-  binds x (subst_abind τ α bd) (subst_aenv τ α Θa ++ subst_aenv τ α Θ0).
-Proof.
-  intros. rewrite <- subst_aenv_app. apply binds_subst_aenv. assumption.
 Qed.
 
 (* ===================================================================== *)
@@ -941,188 +924,9 @@ Proof.
   intros α Hα. apply Hfv. simpl. clear - Hα; fsetdec.
 Qed.
 
-(** THE DRIVER for type equivalence. *)
-Lemma a_tyequiv_strip_suffix : forall Ξ Θ A A',
-  a_suffix Ξ ->
-  {{ ⊢ (Ξ ++ Θ) }}a ->
-  (forall α, α `in` dom Ξ ->
-     α `notin` (ftvar_in_ptyp A `union` ftvar_in_ptyp A')) ->
-  {{ (Ξ ++ Θ) ⊢ A ≡ᵗ A' }}a ->
-  {{ Θ ⊢ A ≡ᵗ A' }}a.
-Proof.
-  induction Ξ as [ | [β b] Ξ' IH ]; intros * Hsuf Hwf Hfv H; [ exact H | ].
-  inversion Hsuf as [ | ? ? ? Hsuf' Hbind ]; subst.
-  assert (Hβ : β `notin` (ftvar_in_ptyp A `union` ftvar_in_ptyp A'))
-    by (apply Hfv; simpl; fsetdec).
-  simpl_env in Hwf.
-  destruct (solves_flex_of_wf_head Hbind Hwf) as [τs Hs].
-  assert (Hwf' : {{ ⊢ (Ξ' ++ Θ) }}a)
-    by (inversion Hwf; subst; assumption).
-  pose proof (@a_tyequiv_subst_mid _ _ _ H τs β b nil (Ξ' ++ Θ)
-                ltac:(simpl_env; reflexivity) Hs
-                ltac:(simpl_env; apply a_wf_aenv_uniq; exact Hwf)) as Hx.
-  simpl_env in Hx.
-  assert (Hβd : β `notin` dom (Ξ' ++ Θ))
-    by (inversion Hwf; subst; assumption).
-  assert (Hd : ftvar_in_aenv (Ξ' ++ Θ) [<=] dom (Ξ' ++ Θ))
-    by (apply a_wf_aenv_ftv_dom; exact Hwf').
-  rewrite subst_aenv_fresh_eq in Hx by (clear - Hβd Hd; fsetdec).
-  rewrite subst_ptyp_in_ptyp_fresh_eq in Hx by (clear - Hβ; fsetdec).
-  rewrite subst_ptyp_in_ptyp_fresh_eq in Hx by (clear - Hβ; fsetdec).
-  apply IH; auto.
-  intros α Hα. apply Hfv. simpl. clear - Hα; fsetdec.
-Qed.
-
 (* ===================================================================== *)
 (*  §8  All-in-one subtyping, in the SUBSTITUTED-CONTEXT form            *)
 (* ===================================================================== *)
-
-(** Strip an interior entry by substituting a monotype for it, fuel carried
-    UNCHANGED; the four leaf rows' refinement datum travels by
-    [ad_refine_pskl_subst_mid], re-shaped by [uskl_to_pskl_subst_mono] /
-    [bskl_to_pskl_subst_mono]. *)
-Lemma ad_pat_sub_fuel_subst_mid : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_fuel n NM M Ψ Θ R Q ->
-  forall τs α0 (b : abind) Θa Θ0,
-  Θ = Θa ++ (α0 ~ b) ++ Θ0 ->
-  solves_flex τs α0 b Θ0 ->
-  uniq (Θa ++ (α0 ~ b) ++ Θ0) ->
-  ad_pat_sub_fuel n NM M Ψ (subst_aenv τs α0 (Θa ++ Θ0))
-    (subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0 R)
-    (subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 Q).
-Proof.
-  intros n NM M Ψ Θ R Q H; induction H;
-    intros τs α0 b Θa Θ0 Heq Hs Hu; subst; simpl;
-    (assert (Hm : mono_ptyp τs) by (eapply solves_flex_mono; eassumption)).
-  - (* infer *)
-    apply ad_pat_sub_fuel__infer;
-      [ assumption
-      | eapply ad_pat_consis_subst_mid; [ eassumption | reflexivity | .. ];
-        eassumption
-      | apply is_sskl_subst_mono; assumption
-      | rewrite uskl_to_pskl_subst_mono, bskl_to_pskl_subst_mono;
-        eapply ad_refine_pskl_subst_mid;
-          [ eassumption | reflexivity | exact Hs | exact Hu
-          | clear; fsetdec ] ].
-  - (* check (TY) *)
-    rewrite pskl_to_bskl_inh_subst_mono; [ | assumption ].
-    apply ad_pat_sub_fuel__check;
-      [ apply guarded_uskl_subst_mono; assumption
-      | apply guarded_pskl_subst;
-          [ assumption | apply mono_ptyp_to_pskl_guarded; assumption
-          | apply ptyp_to_pskl_lc; apply mono_ptyp_lc; assumption ]
-      | rewrite <- pskl_to_bskl_inh_subst_mono; [ | assumption ];
-        eapply ad_pat_consis_subst_mid; [ eassumption | reflexivity | .. ];
-        eassumption
-      | rewrite uskl_to_pskl_subst_mono;
-        eapply ad_refine_pskl_subst_mid;
-          [ eassumption | reflexivity | exact Hs | exact Hu
-          | clear; fsetdec ] ].
-  - (* forall_r (TY) : the witness joins the PREFIX; fuel S n *)
-    apply ad_pat_sub_fuel__forall_r
-      with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
-    intros β Hβ.
-    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
-      [ | clear - Hβ; fsetdec | apply mono_ptyp_to_bskl_syn_lc; assumption ].
-    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
-      [ reflexivity | exact Hs | push_uniq Hu Hβ ].
-  - (* univ_ghost_r (SK) *)
-    apply ad_pat_sub_fuel__univ_ghost_r;
-      [ assumption
-      | apply guarded_uskl_subst_mono; assumption
-      | apply guarded_bskl_subst_mono; assumption
-      | apply is_sskl_subst_mono; assumption
-      | eapply ad_pat_consis_subst_mid; [ eassumption | reflexivity | .. ];
-        eassumption
-      | rewrite uskl_to_pskl_subst_mono, bskl_to_pskl_subst_mono;
-        eapply ad_refine_pskl_subst_mid;
-          [ eassumption | reflexivity | exact Hs | exact Hu
-          | clear; fsetdec ] ].
-  - (* arrow : the DOMAIN premise is itself a consistency leaf *)
-    eapply ad_pat_sub_fuel__arrow;
-      [ eapply ad_pat_consis_subst_mid; [ eassumption | reflexivity | .. ];
-        eassumption
-      | rewrite uskl_to_pskl_subst_mono, bskl_to_pskl_subst_mono;
-        eapply ad_refine_pskl_subst_mid;
-          [ eassumption | reflexivity | exact Hs | exact Hu
-          | clear; fsetdec ]
-      | eauto | assumption ].
-  - (* forall_l_tagged : the instantiation is substituted too.  ⭐ The
-       recursive premise goes FIRST — it is what fixes ψ (§7.4). *)
-    match goal with
-    | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
-        pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu) as IHx
-    end.
-    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl in IHx;
-      [ | apply mono_ptyp_to_uskl_syn_lc; assumption ].
-    eapply ad_pat_sub_fuel__forall_l_tagged.
-    6: exact IHx.
-    + assumption.
-    + eassumption.
-    + simpl. rewrite ftag_in_uskl_subst_mono. assumption.
-    + apply a_tags_sort_subst_mono; eassumption.
-    + rewrite uskl_to_pskl_subst_mono.
-      eapply a_wf_pskl_subst_mid;
-        [ eassumption | reflexivity | exact Hs | clear; fsetdec ].
-  - (* forall_l_untagged *)
-    match goal with
-    | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
-        pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu) as IHx
-    end.
-    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl in IHx;
-      [ | apply mono_ptyp_to_uskl_syn_lc; assumption ].
-    eapply ad_pat_sub_fuel__forall_l_untagged.
-    6: exact IHx.
-    + assumption.
-    + eassumption.
-    + simpl. rewrite ftag_in_uskl_subst_mono. assumption.
-    + apply a_tags_sort_subst_mono; eassumption.
-    + rewrite uskl_to_pskl_subst_mono.
-      eapply a_wf_pskl_subst_mid;
-        [ eassumption | reflexivity | exact Hs | clear; fsetdec ].
-  - (* ghost (SK) *)
-    rewrite pskl_to_bskl_inh_subst_mono; [ | assumption ].
-    apply ad_pat_sub_fuel__ghost;
-      [ assumption
-      | eapply a_wf_pskl_subst_mid;
-          [ eassumption | reflexivity | exact Hs | clear; fsetdec ]
-      | rewrite <- pskl_to_bskl_inh_subst_mono; [ | assumption ];
-        apply mod_comp_sk_subst_mono; assumption ].
-  - (* ghostg (SK) *)
-    apply ad_pat_sub_fuel__ghostg; [ assumption | ].
-    change bskl_hole
-      with (subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 bskl_hole).
-    apply mod_comp_sk_subst_mono; assumption.
-  - (* univ_ghost_l *)
-    apply ad_pat_sub_fuel__univ_ghost_l; [ assumption | eauto ].
-  - (* univ_ghost_lg *)
-    apply ad_pat_sub_fuel__univ_ghost_lg; [ assumption | eauto ].
-  - (* flex_mono *)
-    destruct_if as [Heqα | Hne].
-    + subst α.
-      assert (Hb : abind_flex_mono_def τ = b)
-        by (eapply binds_mid_eq; eassumption).
-      assert (Hfrτs : α0 `notin` ftvar_in_ptyp τs)
-        by (destruct Hs as [_ [_ [Hf _]]]; exact Hf).
-      assert (Hττ : τ = τs).
-      { destruct Hs as [_ [_ [_ [Heqb | Heqb]]]];
-          rewrite Heqb in Hb; [ discriminate | inversion Hb; reflexivity ]. }
-      subst τ.
-      assert (Hid : subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0
-                      (ptyp_to_uskl_syn τs) = ptyp_to_uskl_syn τs)
-        by (apply subst_uskl_in_uskl_fresh_eq;
-            rewrite ftvar_ptyp_to_uskl_syn; exact Hfrτs).
-      match goal with
-      | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
-          pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu) as IHx
-      end.
-      rewrite Hid in IHx. exact IHx.
-    + apply ad_pat_sub_fuel__flex_mono with (τ := subst_ptyp_in_ptyp τs α0 τ).
-      * change (abind_flex_mono_def (subst_ptyp_in_ptyp τs α0 τ))
-          with (subst_abind τs α0 (abind_flex_mono_def τ)).
-        eapply binds_subst_strip_mid; eassumption.
-      * rewrite ptyp_to_uskl_syn_subst. eauto.
-Qed.
 
 Lemma ad_pat_sub_subst_mid : forall NM M Ψ Θ R Q,
   {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad ->

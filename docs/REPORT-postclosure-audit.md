@@ -91,6 +91,10 @@ Steps 2 and 3 of the suggested order below, plus the README indexing:
   and **`prop_scope.v` now uses exactly ONE name from it — `a_typing_sound`**,
   the one Phase 1 removes.
 
+- **§2.3 REDONE AT THE STATEMENT LEVEL** (`bc676bd`, `0c4c410`) — see §2.3b.
+  The "0 duplicates" below is true of NAMES; scanning STATEMENTS found 58 more
+  groups, now also 0.
+
 Not yet done: §1.1 PHASES 1–2 — see the ⚠️ RE-SCOPE note under §1.1 below.
 
 ---
@@ -341,6 +345,49 @@ which has broken this build twice.  Three are clear merges into
 `bskl_to_pskl_subst_unit`, `uskl_to_pskl_subst_unit` — all four sites are the
 coercion facts that file was created to own).  Note the tally is now **10**, not
 the 39 recorded in `CLAUDE.md:352`.
+
+### 2.3b ⭐ THE SAME CHECK AT THE STATEMENT LEVEL — 58 more groups (done)
+
+§2.3's count is of **names**.  Two lemmas proving the same thing under
+*different* names never collide, so that scan cannot see them — and after it
+reported 0, reading one cluster by hand turned up `pskl_ghost_free_ptyp` /
+`pskl_ghost_free_to_ptyp`.  That prompted the real check: extract all 2699
+statements, α-normalise over their `forall`-bound names, group by the normalised
+text.
+
+**58 groups.**  Three copies each of two facts; three *same-file* pairs; primed
+twins (`a_wf_ptyp_ftv_dom'`); and a FOURTH copy of the `⊢ Ξ ++ Θ → ⊢ Θ` fact
+that §1.1 Phase 0 had just unified from three.  All resolved: **58 → 0**,
+declarations 4094 → 4023, ~1100 lines.  Survivor *location* = lowest in the
+dependency graph; survivor *name* = its own unless another was strictly better
+(retiring four more empty suffixes).  Where the survivor was not visible to its
+users the lemma got a **topical home** rather than an import that inverts the
+layering — which dragged nine further scattered coercion facts down into
+`frost/prop_coercions.v`, none of which could be stated where their dependents
+lived.
+
+**Five traps, for whoever runs this again.**
+
+1. **Name visibility is not `Require`-reachability.**  Planning against the
+   transitive `Require` graph broke the build: `Require Import` does not
+   re-export, so a module sees its DIRECT requires plus their `Require Export`
+   closure, and nothing else.
+2. **A dedupe breaks named arguments.**  `apply L with (x := …)` names a BINDER;
+   merging copies whose binders differ (`Θp` vs `Ξ`) broke 20 sites in 11 files.
+3. **A "same statement" pair can be a lemma AND ITS TRIVIAL RESTATEMENT.**
+   Deleting the one with the real proof leaves the survivor calling itself.
+   Check whether the dropped name occurs in the survivor's own proof.
+4. **A rename can collide** — and once it has, the two lemmas' call sites are
+   textually identical, so recover them from the diff rather than by reading.
+5. **`Set Implicit Arguments` is per-file AND scoped within a file.**  A lemma
+   moved across that boundary silently re-elaborates its signature; the failure
+   surfaces as a TYPE error at the call site, not an arity one.
+
+⚠️ **What even this scan cannot see.**  `lc_uskl_to_pskl` existed twice, once
+written `⌊ R ⌋ˢ` and once `uskl_to_pskl R`.  Comparing statement TEXT misses
+notation-vs-application spellings; a semantic check would have to compare
+elaborated types, not source.  Assume the true count is slightly above what the
+scan reports.
 
 ---
 

@@ -833,13 +833,6 @@ Proof.
   destruct (lt_eq_lt_dec n k) as [[?|?]|?]; auto using utyp_tag_refines_refl.
 Qed.
 
-Lemma utyp_tag_refines_open_gen : forall C' C C0,
-    utyp_tag_refines C' C ->
-    utyp_tag_refines (open_utyp_wrt_utyp C' C0) (open_utyp_wrt_utyp C C0).
-Proof.
-  intros C' C C0 H. unfold open_utyp_wrt_utyp. apply utyp_tag_refines_open_rec_gen; auto.
-Qed.
-
 (** Closing (de Bruijn abstraction) preserves refinement — the inverse
     direction of opening, used to recover structural refinement of ∀ bodies
     from the cofinite hypothesis. *)

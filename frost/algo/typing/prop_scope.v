@@ -110,24 +110,6 @@ Proof.
   destruct (y == m) as [-> | Hne]; clear - IH; fsetdec.
 Qed.
 
-(** Below the marker is disjoint from above it, when the marker is bound
-    once ([uniq]). *)
-Lemma above_dom_below_disj : forall m b Ξ Θ,
-  uniq (Ξ ++ (m ~ b) ++ Θ) ->
-  forall γ, γ `in` dom Θ -> γ `notin` above_dom m (Ξ ++ (m ~ b) ++ Θ).
-Proof.
-  intros m b Ξ Θ Hu γ Hγ.
-  assert (Hm : m `notin` dom Ξ)
-    by (clear - Hu; destruct_uniq; unfold disjoint in *; simpl_env in *;
-        fsetdec).
-  rewrite (@above_dom_app_notin m Ξ ((m ~ b) ++ Θ) Hm).
-  rewrite (@above_dom_cons_marker m b Θ).
-  assert (HΞ : γ `notin` dom Ξ)
-    by (clear - Hu Hγ; destruct_uniq; unfold disjoint in *; simpl_env in *;
-        fsetdec).
-  clear - HΞ; fsetdec.
-Qed.
-
 (* ===================================================================== *)
 (*  ⭐ AT TC, [a_sub] RETURNS ITS INPUT VERBATIM.                          *)
 (*  Only Check / ForallR / ForallL can fire at [mode_tc] (Infer is TI;    *)
@@ -313,24 +295,6 @@ Definition core_rigid_above (m : atom) (Θ : aenv) (C : ptyp) : Prop :=
             γ `in` above_dom m Θ ->
             binds γ abind_tvar Θ.
 
-(** Above-marker membership at a context head. *)
-Lemma core_rigid_above_head_flex : forall m β (b : abind) Θ C,
-  core_rigid_above m ((β ~ b) ++ Θ) C ->
-  β <> m ->
-  (b = abind_flex_mono \/ exists τ, b = abind_flex_mono_def τ) ->
-  uniq ((β ~ b) ++ Θ) ->
-  β `notin` ftvar_in_ptyp C.
-Proof.
-  intros m β b Θ C Hcr Hne Hb Hu Hβ.
-  assert (Hab : β `in` above_dom m ((β ~ b) ++ Θ)).
-  { rewrite (@above_dom_cons_other m β b Θ Hne). clear; fsetdec. }
-  pose proof (Hcr β Hβ Hab) as Hbind.
-  destruct (binds_cons_1 _ _ _ _ _ _ Hbind) as [[_ Heq] | Hb'].
-  - destruct Hb as [-> | [τ ->]]; discriminate Heq.
-  - (* β bound twice *)
-    apply binds_In in Hb'. clear - Hu Hb'. solve_uniq.
-Qed.
-
 (* ===================================================================== *)
 (*  Suffixes carry no rigid variable — the fact that turns the scope      *)
 (*  conclusion into the check rows' premise (2).                          *)
@@ -394,17 +358,6 @@ Proof.
       inversion Hu; subst.
       pose proof (IH _ _ _ _ Hδ' Hγ ltac:(assumption)) as Hrec.
       clear - Hrec Hγy; fsetdec.
-Qed.
-
-(** The form the walk uses: [γ] is below [δ] in the SAME context. *)
-Lemma above_dom_below_binds : forall m Θ δ γ,
-  uniq Θ ->
-  δ `notin` above_dom m Θ ->
-  (exists Θa b Θb, Θ = Θa ++ (δ ~ b) ++ Θb /\ γ `in` dom Θb) ->
-  γ `notin` above_dom m Θ.
-Proof.
-  intros m Θ δ γ Hu Hδ [Θa [b [Θb [-> Hγ]]]].
-  eapply above_dom_downward; eauto.
 Qed.
 
 (** ⊴ versions of the marker kit (the witness is the identity increase
@@ -556,23 +509,6 @@ Proof.
   apply Hcr; [ exact Hγ | clear - Hab HγΞ; fsetdec ].
 Qed.
 
-(** Stripping a FLEXIBLE head keeps the condition (the walks peel flexible
-    entries off the context head as they descend). *)
-Lemma core_rigid_above_strip_head : forall m y (b : abind) Θ C,
-  core_rigid_above m ((y ~ b) ++ Θ) C ->
-  y <> m ->
-  (b = abind_flex_mono \/ (exists τ, b = abind_flex_mono_def τ)) ->
-  core_rigid_above m Θ C.
-Proof.
-  intros m y b Θ C Hcr Hne Hb γ Hγ Hab.
-  assert (Hab' : γ `in` above_dom m ((y ~ b) ++ Θ))
-    by (rewrite (@above_dom_cons_other m y b Θ Hne); clear - Hab; fsetdec).
-  pose proof (Hcr γ Hγ Hab') as Hbind.
-  destruct (binds_cons_1 _ _ _ _ _ _ Hbind) as [[_ Heq] | Hb'];
-    [ | exact Hb' ].
-  exfalso. destruct Hb as [-> | [τ ->]]; discriminate Heq.
-Qed.
-
 (** Dropping a whole PREFIX the core cannot reach — the form the check
     rows' discarded suffix needs (their premise (2) is exactly the third
     hypothesis). *)
@@ -600,25 +536,6 @@ Proof.
   destruct (union_1 Hγ) as [Hc | Hc]; [ apply HA | apply HB ]; assumption.
 Qed.
 
-(** Transfer along ANY context change that (i) cannot move an old core
-    atom into the above-region and (ii) preserves rigidity.  Every
-    bookkeeping row of the walk is an instance. *)
-Lemma core_rigid_above_transfer : forall m Θ Θ' C,
-  core_rigid_above m Θ C ->
-  (forall γ, γ `in` ftvar_in_ptyp C -> γ `in` above_dom m Θ' ->
-             γ `in` above_dom m Θ) ->
-  (* ⚙ restricted to CORE atoms: at [Flex-SkipRigid] the peeled entry is
-     itself rigid, so the unrestricted form would be false — but the core
-     misses it by the rule's own [β ∉ ftvar_in_pskl P0]. *)
-  (forall γ, γ `in` ftvar_in_ptyp C ->
-             binds γ abind_tvar Θ -> binds γ abind_tvar Θ') ->
-  core_rigid_above m Θ' C.
-Proof.
-  intros m Θ Θ' C Hcr Hreg Hrig γ Hγ Hab.
-  apply Hrig; [ exact Hγ | ].
-  apply Hcr; [ exact Hγ | exact (Hreg γ Hγ Hab) ].
-Qed.
-
 (** The marker's OWN region is empty: when the walk re-attaches the very
     entry the marker names, nothing sits above it. *)
 Lemma core_rigid_above_head_marker : forall m (b : abind) Θ C,
@@ -642,33 +559,6 @@ Proof.
   assert (Hγy : γ <> y) by (intros ->; clear - Hy Hγ; fsetdec).
   apply binds_cons_3.
   apply Hcr; [ exact Hγ | clear - Hab Hγy; fsetdec ].
-Qed.
-
-(** Inserting entries in the MIDDLE can only add those entries to the
-    region — the flat counterpart of "the walk's fresh names do not move
-    old atoms".  (No side condition: if [m] sits in the prefix both sides
-    are the same prefix; otherwise both sides collect everything above.) *)
-Lemma above_dom_insert_sub : forall m Θa E Θb,
-  above_dom m (Θa ++ E ++ Θb) [<=] above_dom m (Θa ++ Θb) `union` dom E.
-Proof.
-  intros m Θa; induction Θa as [ | [y c] Θa' IH ]; intros E Θb; simpl.
-  - induction E as [ | [z d] E' IHE ]; simpl.
-    + clear; fsetdec.
-    + destruct (z == m) as [-> | Hne]; [ clear; fsetdec | ].
-      clear - IHE; fsetdec.
-  - destruct (y == m) as [-> | Hne]; [ clear; fsetdec | ].
-    pose proof (IH E Θb) as Hrec. clear - Hrec; fsetdec.
-Qed.
-
-(** The region depends only on the KEYS, so re-binding an entry in place
-    leaves it alone (Flex-Assign/Flex-Solve rewrite bindings). *)
-Lemma above_dom_rebind : forall m Θa y (b b' : abind) Θb,
-  above_dom m (Θa ++ (y ~ b) ++ Θb) [=] above_dom m (Θa ++ (y ~ b') ++ Θb).
-Proof.
-  intros m Θa; induction Θa as [ | [z c] Θa' IH ]; intros y b b' Θb; simpl.
-  - destruct (y == m); reflexivity.
-  - destruct (z == m) as [-> | Hne]; [ reflexivity | ].
-    rewrite (IH y b b' Θb). reflexivity.
 Qed.
 
 (** Dropping middle entries the marker is not among can only shrink the

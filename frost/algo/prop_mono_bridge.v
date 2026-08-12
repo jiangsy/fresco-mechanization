@@ -303,34 +303,6 @@ Proof.
     econstructor; eauto; fsetdec.
 Qed.
 
-(** A monotype carries no TAGS, so a monotype-subject derivation has an empty
-    tag context.  (Tags only ever enter through a tagged quantifier.) *)
-Lemma consis_mono_psi_empty : forall Ψ Θ R Qt,
-  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Qt }}ad ->
-  {{ ⊢ Θ }}a ->
-  forall A, R = ptyp_to_uskl_syn A -> mono_ptyp A ->
-  Ψ [=] empty.
-Proof.
-  intros Ψ Θ R Qt Hc Hwf; induction Hc; intros A0 HeqS HmA0;
-    unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn in HeqS;
-    try (destruct HmA0; simpl in HeqS; discriminate).
-  - (* unit *) fsetdec.
-  - (* var *) fsetdec.
-  - (* arrow *)
-    destruct HmA0 as [ | | A1 A2 Hm1 Hm2 ]; simpl in HeqS; try discriminate.
-    inversion HeqS; subst.
-    assert (He1 : Ψ1 [=] empty) by (apply (IHHc1 Hwf A1 eq_refl Hm1)).
-    assert (He2 : Ψ2 [=] empty) by (apply (IHHc2 Hwf A2 eq_refl Hm2)).
-    clear - H He1 He2. fsetdec.
-  - (* flex_l : the subject unfolds to its DEFINITION, itself a monotype *)
-    destruct HmA0 as [ | α0 | ]; simpl in HeqS; try discriminate.
-    inversion HeqS; subst.
-    assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
-    apply (IHHc Hwf τ eq_refl Hmτ).
-  - (* flex_r : the tag context is simply inherited; the SUBJECT is untouched *)
-    apply (IHHc Hwf A0 HeqS HmA0).
-Qed.
-
 (* ===================================================================== *)
 (*  THE CONVERSE BRIDGE                                                     *)
 (*                                                                          *)
@@ -527,24 +499,3 @@ Proof.
   apply consis_mono_refl; auto.
 Qed.
 
-(** Transitivity of consistency on monotype paintings — recorded for the
-    paper's account: the forward bridge extracts [A ≡ᵗ B] from the first
-    derivation, and the transport re-subjects the second. *)
-Corollary consis_mono_trans : forall Θ A A' A0,
-  {{ ⊢ Θ }}a ->
-  mono_ptyp A -> mono_ptyp A' ->
-  (forall α, α `in` ftvar_in_ptyp A -> a_binds_tvar α Θ) ->
-  {{ empty ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A') }}ad ->
-  {{ empty ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A') ∼ (ptyp_to_bskl_syn A0) }}ad ->
-  {{ empty ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A0) }}ad.
-Proof.
-  intros * Hwf HmA HmB HvA Hc1 Hc2.
-  destruct (consis_mono_join Hc1 Hwf (A := A) eq_refl HmA)
-    as [B' [HmB' [HeqB' HeqAB']]].
-  assert (HBB' : B' = A')
-    by (apply ptyp_to_bskl_syn_inj; auto;
-        unfold ptyp_to_bskl_syn; rewrite <- HeqB'; reflexivity).
-  subst B'.
-  destruct (tyequiv_mono_consis_transport HeqAB' Hwf HmA HvA) as [Hd1 _].
-  apply Hd1. exact Hc2.
-Qed.

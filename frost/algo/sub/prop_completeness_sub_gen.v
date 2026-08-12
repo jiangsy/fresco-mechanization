@@ -651,21 +651,6 @@ Proof.
   - (* tophole *) inversion H; subst; auto.
 Qed.
 
-Lemma ad_pat_consis_ghost_subject_no_forall : forall Ψ Θ R Q,
-  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
-  is_sskl Q ->
-  uskl_to_pskl R = pskl_hole ->
-  pskl_no_forall (bskl_to_pskl Q).
-Proof.
-  intros Ψ Θ R Q H; induction H; intros Hsk Heq; cbn in Heq |- *;
-    try discriminate Heq.
-  - (* __ghostg : the counterpart is [◇] *) exact I.
-  - (* __hole : an INHERITED painting, and [is_sskl] makes it ∀-free *)
-    rewrite bskl_to_pskl_pskl_to_bskl_inh.
-    apply is_sskl_inh_no_forall; exact Hsk.
-  - (* __flex_r : a bare variable *) exact I.
-Qed.
-
 (* ===================================================================== *)
 (*  F-GROWTH — the other half of what the strip needs                     *)
 (*                                                                        *)
@@ -692,47 +677,6 @@ Lemma a_wf_pskl_ftv_dom_pointwise : forall Θ P,
 Proof.
   intros Θ P Hwf α Hα.
   pose proof (a_wf_pskl_ftv_dom Hwf) as Hs. clear - Hs Hα. fsetdec.
-Qed.
-
-Lemma ad_refine_pskl_f_fgrow : forall F Θ Δ P Q,
-  ad_refine_pskl_f F Θ Δ P Q ->
-  forall α, α `notin` dom Θ ->
-  ad_refine_pskl_f (add α F) Θ Δ P Q.
-Proof.
-  intros F Θ Δ P Q H; induction H; intros α0 Hα0.
-  - (* unit *) apply ad_refine_pskl_f__unit.
-  - (* var *) apply ad_refine_pskl_f__var; assumption.
-  - (* arrow *) apply ad_refine_pskl_f__arrow; auto.
-  - (* all : Θ does not move *)
-    apply ad_refine_pskl_f__all with (L := L); intros α Hα; auto.
-  - (* hole : the fill is Θ-scoped, and α0 is not in Θ *)
-    apply ad_refine_pskl_f__hole; [ | exact H0 ].
-    apply inter_empty_pointwise; intros β Hβ.
-    destruct (AtomSetProperties.In_dec β (ftvar_in_pskl Q)) as [Hin | Hni].
-    + assert (Hdom : β `in` dom Θ) by (eapply a_wf_pskl_ftv_dom_pointwise; eassumption).
-      assert (Hne : β <> α0) by (intros ->; clear - Hdom Hα0; fsetdec).
-      clear - H Hin Hne Hβ; fsetdec.
-    + clear - Hni Hβ; fsetdec.
-  - (* tophole_remove *) apply ad_refine_pskl_f__tophole_remove; auto.
-  - (* tophole_fill : ITS binder is picked apart from α0 *)
-    apply ad_refine_pskl_f__tophole_fill
-      with (L := L `union` singleton α0 `union` dom Θ);
-      intros α Hα.
-    apply H0; [ clear - Hα; fsetdec | simpl; clear - Hα Hα0; fsetdec ].
-  - (* tophole_keep *) apply ad_refine_pskl_f__tophole_keep; auto.
-  - (* flex_l *) eapply ad_refine_pskl_f__flex_l; [ exact H | auto ].
-  - (* flex_r *) eapply ad_refine_pskl_f__flex_r; [ exact H | auto ].
-Qed.
-
-(** …and the plain Θ-weakening the same rows need, which falls out of the
-    reassoc above once the [remove] is absorbed by Δ-monotonicity. *)
-Corollary ad_refine_pskl_f_weaken_tvar : forall F Θ Δ P Q,
-  ad_refine_pskl_f F Θ Δ P Q ->
-  forall α, ad_refine_pskl_f F ((α ~ abind_tvar) ++ Θ) Δ P Q.
-Proof.
-  intros F Θ Δ P Q H α.
-  eapply ad_refine_pskl_f_delta_mono;
-    [ apply (ad_refine_pskl_f_reassoc H α) | clear; fsetdec ].
 Qed.
 
 Corollary a_wf_pskl_weaken_tvar : forall Θ Δ P,
@@ -1966,33 +1910,6 @@ Qed.
 (* ===================================================================== *)
 (*  F-GROWTH for the SYN fill (mirror of [ad_refine_pskl_f_fgrow])         *)
 (* ===================================================================== *)
-
-Lemma ad_refine_syn_f_fgrow : forall F Θ Δ Q Q',
-  ad_refine_syn_f F Θ Δ Q Q' ->
-  forall α, α `notin` dom Θ ->
-  ad_refine_syn_f (add α F) Θ Δ Q Q'.
-Proof.
-  intros F Θ Δ Q Q' H; induction H; intros α0 Hα0.
-  - apply ad_refine_syn_f__unit.
-  - apply ad_refine_syn_f__var; assumption.
-  - apply ad_refine_syn_f__arrow; auto.
-  - apply ad_refine_syn_f__all with (L := L); intros α Hα; auto.
-  - apply ad_refine_syn_f__hole; [ | exact H0 ].
-    apply inter_empty_pointwise; intros β Hβ.
-    destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P)) as [Hin | Hni].
-    + assert (Hdom : β `in` dom Θ) by (eapply a_wf_pskl_ftv_dom_pointwise; eassumption).
-      assert (Hne : β <> α0) by (intros ->; clear - Hdom Hα0; fsetdec).
-      clear - H Hin Hne Hβ; fsetdec.
-    + clear - Hni Hβ; fsetdec.
-  - apply ad_refine_syn_f__tophole_remove; auto.
-  - apply ad_refine_syn_f__tophole_fill
-      with (L := L `union` singleton α0 `union` dom Θ);
-      intros α Hα.
-    apply H0; [ clear - Hα; fsetdec | simpl; clear - Hα Hα0; fsetdec ].
-  - apply ad_refine_syn_f__tophole_keep; auto.
-  - eapply ad_refine_syn_f__flex_l; [ exact H | auto ].
-  - eapply ad_refine_syn_f__flex_r; [ exact H | auto ].
-Qed.
 
 (* ===================================================================== *)
 (*  Sub-ForallR, THE ROW (paper :3196-3258)                                *)
@@ -3274,14 +3191,6 @@ Qed.
 (*  (F)  P7a ROW — Flex-Depend                                            *)
 (* ===================================================================== *)
 
-Lemma a_flex_tvar_strip_mid : forall α β b Ξ Θ0,
-  a_flex_tvar (Ξ ++ (β ~ b) ++ Θ0) α -> α <> β -> a_flex_tvar (Ξ ++ Θ0) α.
-Proof.
-  intros * Hf Hne; destruct Hf as [Hb | [τ Hb]];
-    [ left | right; exists τ ]; eapply binds_strip_mid;
-    solve [ eassumption | intro Hc; inversion Hc; subst; exact (Hne eq_refl) ].
-Qed.
-
 Lemma a_sub_flex_complete_depend : forall n NM M Θ0 Ξ α β P0 R' Ψ Θ κ Q,
   (* ⭐ THE IH IS LENGTH-GUARDED (P7c, 2026-08-03).  The dispatcher proves the
      flex half by a STRUCTURAL induction on [Θ0] with [Ξ] generalized and the
@@ -4291,13 +4200,6 @@ Proof.
   simpl in h. destruct h as [h | h];
     [ exfalso; inversion h; subst; apply Hne; reflexivity | ].
   simpl. right. apply in_or_app. right. apply in_or_app. right. exact h.
-Qed.
-
-Lemma a_decls_binds : forall Ξ γ b,
-  a_decls Ξ -> binds γ b Ξ -> b = abind_flex_mono.
-Proof.
-  intros Ξ γ b H; induction H; intros Hb;
-    [ inversion Hb | analyze_binds Hb; auto ].
 Qed.
 
 (* ===================================================================== *)

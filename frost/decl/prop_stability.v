@@ -24,7 +24,6 @@ Set Implicit Arguments.
    [d_consis_syn_refl], [d_consis_paint_syn_eq], [d_wf_ptyp_lc] — moved to
    [prop_wellformed], where the syntax-directed equivalence can also use it.) *)
 
-
 (** A [mode_ti] typing of a variable [x : A] synthesises a synthesised
     type [B1] that is consistent with the painting of [x]'s binding.
     [is_styp B1] holds because [__var] paints a [ptyp] and [__sub] at
@@ -64,33 +63,6 @@ Proof.
     + exact Hcons1.
     + exact Hcons0.
     + exists Δc. exact Hc.
-Qed.
-
-(** Variable head-factoring: typing [x] at a function mode reduces to a
-    subtyping out of [x]'s (painted) binding into the demanded type.
-    Only [d_typing__sub] can fire at [mode_fn _] (the [__var] / [__forall]
-    rules require [mode_ti] / [mode_tc]); the inner [mode_ti] typing is
-    absorbed by consistency transitivity. *)
-Lemma d_typing_var_fn_factor : forall Γ x A B m,
-    d_wf_denv Γ ->
-    binds x (dbind_typ A) Γ ->
-    {{ Γ ⊢[ mode_fn m ] (exp_var_f x) ⦂ B }}d ->
-    exists Δ, {{ Δ ⨟ Γ ⊢[ mode_fn m ] ptyp_to_utyp_syn A ⩽ B }}d.
-Proof.
-  intros Γ x A B m Hwf Hb Htyp.
-  remember (exp_var_f x) as e. remember (mode_fn m) as mf.
-  induction Htyp; subst; try discriminate; try congruence.
-  - (* __sub: inner [{{ Γ ⊢[ti] x ⦂ B1 }}d] (= Htyp), outer
-       [empty ⊢[fn m] paint B1 ⩽ B2] (= H0). *)
-    destruct (@d_typing_var_ti_consis Γ x A (ptyp_to_btyp_syn A0) Hwf Hb Htyp)
-      as [Hstyp1 [Δt Hcons1]].
-    edestruct (@d_consis_sub_trans (mode_fn m) empty Γ (ptyp_to_utyp_syn A0) B
-                 H ltac:(clear; fsetdec)
-                 (ptyp_to_btyp_syn A0) (ptyp_to_utyp_syn A) Δt) as [Δ [_ Hgoal]].
-    + rewrite <- ptyp_to_utyp_syn_btyp_to_ptyp, btyp_to_ptyp_ptyp_to_btyp_syn; reflexivity.
-    + exact Hstyp1.
-    + exact Hcons1.
-    + exists Δ. exact Hgoal.
 Qed.
 
 (** A curried function type [A1 → … → An → R] built from a list of
@@ -539,7 +511,6 @@ Proof.
     exists l2''. split; [ assumption | eapply Permutation_trans; eassumption ].
 Qed.
 
-
 (** * Head-subsumption permutation (the core).
 
     From a variable [x] typed (at the [k]-fold function mode) against a
@@ -714,24 +685,3 @@ Qed.
     [ptyp_forall_prefix]/[curry_ptyp]/[curry_exp] instances, so the lemma
     applies up to computation; the argument lists are swaps, so
     [Permutation] is [perm_swap]. *)
-Example order_irrel_x_y :
-  forall Γ m x y (one zid : exp) (Rint : ptyp) (R' : btyp),
-    d_wf_denv Γ ->
-    binds x (dbind_typ
-      (ptyp_all (ptyp_arrow (ptyp_var_b 0)
-        (ptyp_arrow (ptyp_arrow (ptyp_var_b 0) (ptyp_var_b 0)) Rint)))) Γ ->
-    binds y (dbind_typ
-      (ptyp_all (ptyp_arrow (ptyp_arrow (ptyp_var_b 0) (ptyp_var_b 0))
-        (ptyp_arrow (ptyp_var_b 0) Rint)))) Γ ->
-    {{ Γ ⊢[ m ] (exp_app (exp_app (exp_var_f x) one) zid) ⦂ R' }}d ->
-    {{ Γ ⊢[ m ] (exp_app (exp_app (exp_var_f y) zid) one) ⦂ R' }}d.
-Proof.
-  intros Γ m x y one zid Rint R' Hwf Hbx Hby Htyp.
-  apply (@d_typing_order_irrel Γ m 1 x y
-           ((ptyp_var_b 0, one)
-            :: (ptyp_arrow (ptyp_var_b 0) (ptyp_var_b 0), zid) :: nil)
-           ((ptyp_arrow (ptyp_var_b 0) (ptyp_var_b 0), zid)
-            :: (ptyp_var_b 0, one) :: nil)
-           Rint R');
-    [ exact Hwf | apply perm_swap | exact Hbx | exact Hby | exact Htyp ].
-Qed.

@@ -111,20 +111,6 @@ Proof.
     simpl. apply a_inc__flex; [ apply IH; assumption | exact Hwfτ | exact Hmτ ].
 Qed.
 
-(** A block of undefined flexibles is a declaration-only suffix — so it can
-    never be ill-scoped, only mis-named (the [Ξ] scoping kit's (K3),
-    prop_solve_sub.v).  Stated over [all_flex_mono] because that is the form
-    the completeness packages carry. *)
-(** The converse of [all_flex_mono_decls]: the two spellings of "the block is
-    undefined flexibles only" agree.  The [a_decls] side is what the solve kit
-    produces ([a_solve_*_decls]); the [all_flex_mono] side is what the
-    κ-extension package and [a_inc_flex_prefix_build] consume. *)
-Lemma a_decls_all_flex_mono : forall Ξ, a_decls Ξ -> all_flex_mono Ξ.
-Proof.
-  intros Ξ H; induction H; [ apply Forall_nil | ].
-  constructor; [ reflexivity | exact IHa_decls ].
-Qed.
-
 Lemma all_flex_mono_decls : forall Ξ, all_flex_mono Ξ -> a_decls Ξ.
 Proof.
   intros Ξ H; induction H as [ | [α b] Ξ' Hb Hall IH ]; [ constructor | ].
@@ -872,17 +858,6 @@ Proof.
   apply Hpost; exact Hq.
 Qed.
 
-(** The post-condition alone weakens (the solve and the block are untouched).
-    [solve_ext_step] with the identity step. *)
-Lemma solve_ext_post : forall Θ0 Θ Pi P0 L Post Post',
-  (forall κ' Pa, Post' κ' Pa -> Post κ' Pa) ->
-  solve_ext Θ0 Θ Pi P0 L Post' ->
-  solve_ext Θ0 Θ Pi P0 L Post.
-Proof.
-  intros Θ0 Θ Pi P0 L Post Post' Hpost H.
-  eapply solve_ext_step; [ intros Ξ Pa Hs; exact Hs | exact Hpost | exact H ].
-Qed.
-
 (** The same, with the SOLVE DERIVATION still in hand — several rows read a
     structural fact off it (hole-freedom, the ftv bound) while strengthening
     the post-condition. *)
@@ -956,52 +931,6 @@ Proof.
   repeat (split; [ solve [ apply Hstep; exact Hs | exact Hfm | exact Hu
                          | exact Hk | exact Hfr | exact HF | exact Hwf ] | ]).
   apply Hpost; exact Hq.
-Qed.
-
-Lemma solve_sub_ext_post : forall Θ0 Θ m Pi P0 L Post Post',
-  (forall κ' Pa, Post' κ' Pa -> Post κ' Pa) ->
-  solve_sub_ext Θ0 Θ m Pi P0 L Post' ->
-  solve_sub_ext Θ0 Θ m Pi P0 L Post.
-Proof.
-  intros Θ0 Θ m Pi P0 L Post Post' Hpost H.
-  eapply solve_sub_ext_step; [ intros Ξ Pa Hs; exact Hs | exact Hpost | exact H ].
-Qed.
-
-(** The same with the SOLVE DERIVATION and the OUTPUT-WF still in hand. *)
-Lemma solve_sub_ext_post_solve : forall Θ0 Θ m Pi P0 L Post Post',
-  (forall Ξ κ' Pa, {{ Θ0 ⊢ₛ Pi ≼[ m ] P0 ⤳ Ξ ⨾ Pa }}a ->
-     {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a -> Post' κ' Pa -> Post κ' Pa) ->
-  solve_sub_ext Θ0 Θ m Pi P0 L Post' ->
-  solve_sub_ext Θ0 Θ m Pi P0 L Post.
-Proof.
-  intros Θ0 Θ m Pi P0 L Post Post'  Hpost
-         (Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hwf & Hq).
-  exists Ξ, Pa, κ'.
-  repeat (split; [ solve [ exact Hs | exact Hfm | exact Hu
-                         | exact Hk | exact Hfr | exact HF | exact Hwf ] | ]).
-  eapply Hpost; [ exact Hs | exact Hwf | exact Hq ].
-Qed.
-
-(** An EQ package becomes a SUB one through SolS-Check, which is how P6-Sv's
-    Check row consumes P6-Cv.  The output-wf conjunct is supplied by the
-    caller ([a_solve_eq_wf] at the site). *)
-Lemma solve_sub_ext_of_eq : forall Θ0 Θ Pi P0 L Post,
-  (forall Ξ Pa, {{ Θ0 ⊢ₑ Pi ∼ P0 ⤳ Ξ ⨾ Pa }}a ->
-     {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a) ->
-  (* SORT: SolS-Check's target is a TYPE (see [a_solve_sub__check]).  At the
-     TY sort the caller reads it off [skmod{TY}]; at SK the row is vacuous. *)
-  pskl_ghost_free P0 ->
-  guarded_pskl Pi -> guarded_pskl P0 ->
-  solve_ext Θ0 Θ Pi P0 L Post ->
-  solve_sub_ext Θ0 Θ mode_tc Pi P0 L Post.
-Proof.
-  intros Θ0 Θ Pi P0 L Post Hwf Hgf Hgi Hg
-         (Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hq).
-  exists Ξ, Pa, κ'.
-  repeat (split; [ solve [ apply a_solve_sub__check; assumption
-                         | exact Hfm | exact Hu | exact Hk | exact Hfr
-                         | exact HF | apply Hwf; exact Hs ] | ]).
-  exact Hq.
 Qed.
 
 (** The conclusion, named — it recurs at every site below. *)

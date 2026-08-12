@@ -41,13 +41,6 @@ Fixpoint ptyp_is_mono (A : ptyp) : bool :=
   | ptyp_all _ => false
   end.
 
-Lemma ptyp_is_mono_sound : forall A, lc_ptyp A -> ptyp_is_mono A = true -> mono_ptyp A.
-Proof.
-  intros A Hlc. induction Hlc; simpl; intros Hm; try discriminate;
-    eauto using mono_ptyp.
-  apply andb_prop in Hm. destruct Hm. eauto using mono_ptyp.
-Qed.
-
 (** Erase monotype lambda annotations everywhere. *)
 Fixpoint erase_lam_mono (e : exp) : exp :=
   match e with
@@ -80,17 +73,6 @@ Lemma erase_lam_mono_open : forall e u,
     = open_exp_wrt_exp (erase_lam_mono e) (erase_lam_mono u).
 Proof.
   intros. unfold open_exp_wrt_exp. apply erase_lam_mono_open_rec.
-Qed.
-
-Lemma erase_lam_mono_var : forall e x,
-    erase_lam_mono (open_exp_wrt_exp e (exp_var_f x))
-    = open_exp_wrt_exp (erase_lam_mono e) (exp_var_f x).
-Proof. intros. rewrite erase_lam_mono_open. reflexivity. Qed.
-
-Lemma is_value_erase : forall e, is_value e -> is_value (erase_lam_mono e).
-Proof.
-  intros e H. induction H; simpl; eauto using is_value.
-  destruct (ptyp_is_mono A); eauto using is_value.
 Qed.
 
 (* RESTART NOTE: the pre-restart [erase_lam_mono_typing] ("erasing monotype

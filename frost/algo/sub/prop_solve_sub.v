@@ -210,11 +210,6 @@ Proof.
     end.
 Qed.
 
-Lemma a_solve_sub_guarded : forall Θ m P P0 Ξ P',
-  {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a ->
-  lc_pskl P -> lc_pskl P0 -> guarded_pskl P -> guarded_pskl P'.
-Proof. intros; eapply (proj1 a_solve_sub_eq_guarded); eauto. Qed.
-
 (* ===================================================================== *)
 (*  ⭐ THE GENERATED BLOCK [Ξ] — the scoping invariants (2026-08-04).       *)
 (*                                                                        *)
@@ -320,17 +315,6 @@ Proof.
   intros * H α Hin.
   pose proof ((proj2 a_solve_sub_eq_generated_fresh_set) _ _ _ _ _ H) as Hs.
   clear - Hs Hin; fsetdec.
-Qed.
-
-(** The two consequences the rest of the tree actually cites: a generated
-    name is apart from the DOMAIN, and — the capture-freeness of the four
-    closing rows — apart from an enclosing witness. *)
-Corollary a_solve_sub_generated_notin_dom : forall Θ m P P0 Ξ P' α,
-  {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a -> α `in` dom Ξ -> α `notin` dom Θ.
-Proof.
-  intros * H Hin.
-  pose proof (a_solve_sub_generated_fresh H Hin) as Hfr.
-  pose proof (dom_subset_ftvar_in_aenv Θ) as Hd. clear - Hfr Hd. fsetdec.
 Qed.
 
 Corollary a_solve_eq_generated_notin_dom : forall Θ P P0 Ξ P' α,
@@ -532,22 +516,6 @@ Lemma a_solve_eq_ftv : forall Θ P P0 Ξ P',
     ftvar_in_pskl P `union` ftvar_in_pskl P0 `union` dom Ξ.
 Proof. intros; eapply (proj2 a_solve_sub_eq_ftv); eauto. Qed.
 
-(** The EQ half in the SUB half's DISJUNCTIVE shape — the form every
-    consumer of the old (exact) [a_solve_eq_ftv] wants back: an output
-    variable is an input variable, or it is a name this run generated and
-    therefore misses [dom Θ] entirely. *)
-Corollary a_solve_eq_ftv_disj : forall Θ P P0 Ξ P',
-  {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a ->
-  forall α, α `in` ftvar_in_pskl P' ->
-    α `in` (ftvar_in_pskl P `union` ftvar_in_pskl P0) \/ α `notin` dom Θ.
-Proof.
-  intros * H α Hin.
-  pose proof (a_solve_eq_ftv H) as Hb.
-  destruct (AtomSetProperties.In_dec α (dom Ξ)) as [Hd | Hd];
-    [ right; eapply a_solve_eq_generated_notin_dom; eassumption
-    | left; clear - Hb Hin Hd; fsetdec ].
-Qed.
-
 (* ===================================================================== *)
 (*  ⭐ RENAMING THROUGH THE SOLVE — now DERIVED FROM EQUIVARIANCE          *)
 (*  (rewritten 2026-08-04; was a 540-line size induction).                 *)
@@ -647,34 +615,6 @@ Proof.
        | IH : dom ?X [<=] ftvar_in_pskl ?p' |- _ =>
            clear - IH Hb Hcl; fsetdec
        end.
-Qed.
-
-Lemma a_solve_sub_generated_occurs : forall Θ m P P0 Ξ P',
-  {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a -> dom Ξ [<=] ftvar_in_pskl P'.
-Proof. intros; eapply (proj1 a_solve_sub_eq_generated_occurs); eauto. Qed.
-
-Lemma a_solve_eq_generated_occurs : forall Θ P P0 Ξ P',
-  {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a -> dom Ξ [<=] ftvar_in_pskl P'.
-Proof. intros; eapply (proj2 a_solve_sub_eq_generated_occurs); eauto. Qed.
-
-(** The block is FIXED by any swap of two atoms it does not declare — (K3)
-    says it mentions nothing else. *)
-Lemma a_solve_block_swap_id : forall Θ m P P0 Ξ P' α0 β0,
-  {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a ->
-  α0 `notin` dom Ξ -> β0 `notin` dom Ξ -> swap_aenv α0 β0 Ξ = Ξ.
-Proof.
-  intros * H Hα Hβ.
-  pose proof ((proj1 a_solve_sub_eq_generated_ftvar) _ _ _ _ _ _ H) as Hf.
-  apply swap_aenv_fresh_id; [ clear - Hα Hf | clear - Hβ Hf ]; fsetdec.
-Qed.
-
-Lemma a_solve_eq_block_swap_id : forall Θ P P0 Ξ P' α0 β0,
-  {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a ->
-  α0 `notin` dom Ξ -> β0 `notin` dom Ξ -> swap_aenv α0 β0 Ξ = Ξ.
-Proof.
-  intros * H Hα Hβ.
-  pose proof ((proj2 a_solve_sub_eq_generated_ftvar) _ _ _ _ _ H) as Hf.
-  apply swap_aenv_fresh_id; [ clear - Hα Hf | clear - Hβ Hf ]; fsetdec.
 Qed.
 
 (** [guess^TY] consults its context ONLY through the avoid-conditions

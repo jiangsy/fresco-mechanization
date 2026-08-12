@@ -96,56 +96,6 @@ Lemma pskl_flex_free_tophole_inv : forall Θ0 P,
   pskl_flex_free Θ0 (pskl_tophole P) -> pskl_flex_free Θ0 P.
 Proof. intros Θ0 P H α Hα; apply H; simpl; exact Hα. Qed.
 
-(** Substituting a NON-flexible variable preserves flex-freedom. *)
-Lemma pskl_flex_free_subst : forall Θ0 P α1 α2,
-  pskl_flex_free Θ0 P ->
-  ~ a_flex_tvar Θ0 α2 ->
-  pskl_flex_free Θ0 (subst_pskl_in_pskl (pskl_var_f α2) α1 P).
-Proof.
-  intros Θ0 P α1 α2 H H2 α Hα.
-  pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P (pskl_var_f α2) α1)
-    as Hup.
-  simpl in Hup.
-  destruct (α == α2) as [-> | Hne]; [ exact H2 | ].
-  apply H. clear - Hα Hup Hne; fsetdec.
-Qed.
-
-(** Opening a ∀-body with a fresh RIGID binder, in the context extended by
-    that binder. *)
-Lemma pskl_flex_free_open_tvar : forall Θ0 P γ,
-  pskl_flex_free Θ0 (pskl_all_syn P) ->
-  γ `notin` dom Θ0 ->
-  pskl_flex_free ((γ ~ abind_tvar) ++ Θ0)
-    (open_pskl_wrt_pskl P (pskl_var_f γ)).
-Proof.
-  intros Θ0 P γ H Hγ α Hα Hflex.
-  pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f γ)) as Hup.
-  simpl in Hup.
-  destruct (α == γ) as [-> | Hne].
-  - (* the fresh binder is RIGID in the extended context *)
-    destruct Hflex as [Hb | [τ Hb]];
-      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-      solve [ discriminate Habs
-            | exfalso; apply Hγ; eapply binds_In; exact Hb' ].
-  - apply (H α); [ simpl; clear - Hα Hup Hne; fsetdec | ].
-    destruct Hflex as [Hb | [τ Hb]];
-      [ left | right; exists τ ];
-      (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq _] | Hb'];
-       [ contradiction | exact Hb' ]).
-Qed.
-
-Lemma pskl_flex_free_weaken_tvar : forall Θ0 P γ,
-  pskl_flex_free Θ0 P ->
-  pskl_flex_free ((γ ~ abind_tvar) ++ Θ0) P.
-Proof.
-  intros Θ0 P γ H α Hα Hflex.
-  apply (H α Hα).
-  destruct Hflex as [Hb | [τ Hb]];
-    [ left | right; exists τ ];
-    (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-     [ discriminate Habs | exact Hb' ]).
-Qed.
-
 Inductive flex_apart (Θ0 : aenv) (Δρ : atoms) : pskl -> uskl -> Prop :=
 | fa_clean : forall P0 ψa,
     (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
@@ -222,43 +172,6 @@ Inductive flex_apart (Θ0 : aenv) (Δρ : atoms) : pskl -> uskl -> Prop :=
 | fa_rho_var : forall P0 α,
     α `in` Δρ ->
     flex_apart Θ0 Δρ P0 (uskl_var_f α).
-
-
-(* Inversions used by the ∀◇/∀◈ congruence cases. *)
-Lemma flex_apart_topholeg_target_inv : forall Θ0 Δρ P ψ,
-  flex_apart Θ0 Δρ P (uskl_topholeg ψ) ->
-  flex_apart Θ0 Δρ P ψ.
-Proof.
-  intros Θ0 Δρ P ψ H.
-  remember (uskl_topholeg ψ) as t eqn:Heqt.
-  revert ψ Heqt; induction H; intros ψ' Heqt;
-    try discriminate Heqt; subst.
-  - apply fa_clean.
-    match goal with Hc : _ ∩ _ [=] empty |- _ =>
-      simpl in Hc; exact Hc end.
-  - apply fa_unit.
-  - apply fa_var_rigid; assumption.
-  - apply fa_hole.
-  - apply fa_tophole; auto.
-  - (* fa_flexfree : flex-freedom does not look at the target *)
-    apply fa_flexfree; assumption.
-Qed.
-
-Lemma flex_apart_tophole_p0_inv : forall Θ0 Δρ P ψ,
-  flex_apart Θ0 Δρ (pskl_tophole P) ψ ->
-  flex_apart Θ0 Δρ P ψ.
-Proof.
-  intros Θ0 Δρ P ψ H.
-  remember (pskl_tophole P) as t eqn:Heqt.
-  revert P Heqt; induction H; intros P' Heqt;
-    try discriminate Heqt; subst.
-  - apply fa_clean; assumption.
-  - inversion Heqt; subst; assumption.
-  - (* fa_flexfree : ∀◇'s body inherits flex-freedom *)
-    subst. apply fa_flexfree; eapply pskl_flex_free_tophole_inv; eassumption.
-  - (* fa_rho_var : the target is a bare Δρ-variable, unchanged *)
-    apply fa_rho_var; assumption.
-Qed.
 
 (** THE FLEX-P0 READ-OFF.  A [flex_apart] whose P0 is a FLEXIBLE variable has
     only two ways to hold.  [fa_var_rigid] wants that very variable RIGID and
@@ -750,27 +663,6 @@ Proof.
     exact (d_tags_skl_var_inv Hdt).
 Qed.
 
-(** [flex_apart] inversion at a both-arrow node: the clean case distributes
-    the free-variable condition; the arrow case is direct.  (Of the other
-    constructors, none matches an arrow P0 against an arrow target.) *)
-Lemma flex_apart_arrow_inv : forall Θ0 Δρ P1 P2 ψ1 ψ2,
-  flex_apart Θ0 Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) ->
-  flex_apart Θ0 Δρ P1 ψ1 /\ flex_apart Θ0 Δρ P2 ψ2.
-Proof.
-  intros Θ0 Δρ P1 P2 ψ1 ψ2 H; inversion H; subst.
-  - (* fa_clean *)
-    match goal with
-    | Hc : _ ∩ _ [=] empty |- _ => simpl in Hc;
-        split; apply fa_clean; clear - Hc; fsetdec
-    end.
-  - (* fa_arrow *)
-    split; assumption.
-  - (* fa_flexfree : both components inherit flex-freedom *)
-    match goal with Hff : pskl_flex_free _ _ |- _ =>
-      destruct (pskl_flex_free_arrow_inv Hff) as [Hff1 Hff2] end.
-    split; apply fa_flexfree; assumption.
-Qed.
-
 (* ===================================================================== *)
 (*  REPAIR KIT (DESIGN §6(l)) — support lemmas for the tagged-∀ cases.    *)
 (* ===================================================================== *)
@@ -912,16 +804,6 @@ Proof.
       [ apply binds_weaken; eassumption | auto ].
   - eapply ad_refine_syn__flex_r;
       [ apply binds_weaken; eassumption | auto ].
-Qed.
-
-Lemma ad_refine_syn_delta_to_tvar : forall Θ Δr Q' Q α1 Δr',
-  {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
-  Δr [<=] add α1 Δr' ->
-  {{ ((α1 ~ abind_tvar) ++ Θ) ⨟ Δr' ⊢ᵣ Q' ⊳ Q }}ad.
-Proof.
-  intros Θ Δr Q' Q α1 Δr' H Hsub.
-  exact (@ad_refine_syn_delta_to_tvar_mid _ _ _ _ H α1 nil Θ Δr'
-           eq_refl Hsub).
 Qed.
 
 (** Free variables of a consistency SUBJECT are counterpart variables or
@@ -1357,42 +1239,6 @@ Proof. intros Θ0 Δρ P0 ψa Hc P0' _; apply fa_clean; exact Hc. Qed.
     Δρ' quantifier there keeps the guess CLEAN for the grown part of Δρ',
     which the guess-OPENING step [fastep_all_r] does not. *)
 
-(** [flex_apart] binder descent at a tagged-∀ target with a ∀-source. *)
-Lemma flex_apart_all_tag_forall_inv : forall Θ0 Δρ ε P0 ψ,
-  flex_apart Θ0 Δρ (pskl_all_syn P0) (uskl_all_tag ε ψ) ->
-  exists L, forall α, α `notin` L ->
-    flex_apart Θ0 Δρ (open_pskl_wrt_pskl P0 (pskl_var_f α))
-                     (open_uskl_wrt_uskl ψ (uskl_var_f α)).
-Proof.
-  intros Θ0 Δρ ε P0 ψ H; inversion H; subst.
-  - (* fa_clean: bodies stay clean at fresh openings *)
-    match goal with Hc : _ ∩ _ [=] empty |- _ =>
-      exists Δρ; intros α Hα; apply fa_clean;
-      pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ
-                    (uskl_var_f α)) as Hup;
-      simpl in *; clear - Hc Hup Hα; fsetdec
-    end.
-  - (* fa_all_tag: the cofinite family, directly *)
-    match goal with
-    | Hf : forall α, α `notin` ?L0 -> flex_apart _ _ _ _ |- _ =>
-      exists L0; exact Hf
-    end.
-  - (* fa_flexfree : the ∀-body inherits flex-freedom at any fresh opener *)
-    match goal with Hff : pskl_flex_free _ _ |- _ =>
-      exists (ftvar_in_pskl P0 `union` dom Θ0); intros α Hα;
-      apply fa_flexfree; intros α0 Hα0 Hflex;
-      apply (Hff α0); [ | exact Hflex ];
-      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0
-                    (pskl_var_f α)) as Hup;
-      simpl in Hup |- *;
-      assert (Hne : α0 <> α)
-        by (intro; subst; destruct Hflex as [Hb | [τ Hb]];
-            apply binds_In in Hb; clear - Hα Hb; fsetdec);
-      clear - Hup Hα0 Hne; fsetdec
-    end.
-Qed.
-
-
 (** Absorb Δr-entries that are rigid tvars of the aenv (the Δr-refinement
     → statement-form transfer, given Δr ⊆ dom Θtv and Θ ⊇ Θtv). *)
 Lemma ad_refine_syn_delta_absorb : forall Θ Δr Q' Q,
@@ -1557,24 +1403,6 @@ Proof.
   exfalso. pose proof (Htvs _ _ Hb) as Hc. discriminate Hc.
 Qed.
 
-(** The primary (Θr, Δr)-refinement in statement form (Θ, ∅). *)
-Lemma refine_primary_to_plain : forall Θtv Θr Δr Q' Q,
-  (forall x b, binds x b Θtv -> b = abind_tvar) ->
-  Δr [=] dom Θtv ->
-  {{ Θr ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
-  {{ (Θtv ++ Θr) ⨟ empty ⊢ᵣ Q' ⊳ Q }}ad.
-Proof.
-  intros Θtv Θr Δr Q' Q Htvs HΔr H.
-  eapply ad_refine_syn_delta_absorb with (Δr := Δr).
-  - eapply ad_refine_syn_weaken; [ exact H | ].
-    intros x b Hb. unfold binds in *. apply in_or_app; right; exact Hb.
-  - intros α2 Hα2. right.
-    assert (HZd : α2 `in` dom Θtv) by (clear - Hα2 HΔr; fsetdec).
-    apply binds_In_inv in HZd; destruct HZd as [b Hb].
-    pose proof (Htvs _ _ Hb) as Heqb; subst b.
-    unfold binds in *. apply in_or_app; left; exact Hb.
-Qed.
-
 (** no_hole is reflected by opening. *)
 Lemma pskl_no_hole_open_rec_inv : forall P P' k,
   pskl_no_hole (open_pskl_wrt_pskl_rec k P' P) -> pskl_no_hole P.
@@ -1583,12 +1411,6 @@ Proof.
   - destruct H as [H1 H2]; split; eauto.
   - eauto.
   - eauto.
-Qed.
-
-Lemma pskl_no_hole_open_inv : forall P V,
-  pskl_no_hole (open_pskl_wrt_pskl P V) -> pskl_no_hole P.
-Proof.
-  intros P V H. eapply pskl_no_hole_open_rec_inv; exact H.
 Qed.
 
 (** no_hole survives ABSTRACTION — needed now that the solve ∀-rules close
@@ -1692,33 +1514,6 @@ Proof.
     exfalso. apply HX0.
     match goal with Hb : binds _ (abind_flex_mono_def _) _ |- _ =>
       eapply binds_In; exact Hb end.
-Qed.
-
-(** The consistency subject's variables under the split: counterpart
-    variables or Θr-scoped flex-definition data (the Θtv binders never
-    pollute the bound). *)
-Lemma consis_subject_ftv_split_bound : forall Ψ Θ R Q Θtv Θr,
-  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
-  Θ = Θtv ++ Θr ->
-  (forall x b, binds x b Θtv -> b = abind_tvar) ->
-  {{ ⊢ Θ }}a ->
-  ftvar_in_uskl R [<=] ftvar_in_bskl Q `union` dom Θr.
-Proof.
-  intros Ψ Θ R Q Θtv Θr H HeqΘ Htvs Hwf.
-  assert (HwfΘr : {{ ⊢ Θr }}a)
-    by (apply a_wf_aenv_strip_prefix with (Ξ := Θtv);
-        rewrite <- HeqΘ; exact Hwf).
-  intros x Hx.
-  destruct (ad_pat_consis_ftv_bound H Hx) as [Hin | (α & τ & Hb & Hor)].
-  - clear - Hin; fsetdec.
-  - subst Θ.
-    assert (Hbr : binds α (abind_flex_mono_def τ) Θr)
-      by (eapply binds_def_split; [ exact Htvs | exact Hb ]).
-    destruct Hor as [-> | Hτ].
-    + pose proof (binds_In _ _ _ _ Hbr) as Hd. clear - Hd; fsetdec.
-    + assert (Hd : ftvar_in_ptyp τ [<=] dom Θr)
-        by (eapply a_wf_aenv_def_ftv_dom; [ exact HwfΘr | exact Hbr ]).
-      clear - Hτ Hd; fsetdec.
 Qed.
 
 (** Rigid-variable-source refinement into a non-variable target is absurd,

@@ -298,43 +298,10 @@ Proof.
     intros Δ1 Δ2 Θ0 Θ1 P0 P P' Hg Hnf Hc IH α1 Hα1. apply IH, Hα1.
 Qed.
 
-(** Packaged corollaries. *)
-Corollary a_unify_flex_preserve : forall Θ0 α β Θ1 α1,
-  {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a ->
-  a_flex_tvar Θ0 α1 -> a_flex_tvar Θ1 α1.
-Proof.
-  intros * Hu Hα1.
-  exact (proj1 (proj2 a_assign_unify_consis_flex_preserve) _ _ _ _ Hu α1 Hα1).
-Qed.
-
-Corollary a_assign_flex_preserve : forall Θ0 Ξ α P Θ1 α1,
-  {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a ->
-  a_flex_tvar (Ξ ++ Θ0) α1 -> a_flex_tvar Θ1 α1.
-Proof.
-  intros * Ha Hα1.
-  exact (proj1 a_assign_unify_consis_flex_preserve _ _ _ _ _ Ha α1 Hα1).
-Qed.
-
 (* ===================================================================== *)
 (*  Pointwise inversion of substitution agreement (converse of              *)
 (*  [msubst_ptyp_agree] / [msubst_pskl_agree]).                             *)
 (* ===================================================================== *)
-
-Lemma msubst_ptyp_agree_inv : forall κ ζ A,
-  msubst_ptyp κ A = msubst_ptyp ζ A ->
-  forall α', α' `in` ftvar_in_ptyp A ->
-  msubst_lookup κ α' = msubst_lookup ζ α'.
-Proof.
-  intros κ ζ A; induction A; intros Heq α' Hα; simpl in *;
-    try solve [ exfalso; clear - Hα; fsetdec ].
-  - (* var_f *)
-    assert (HXY : α' = α) by (clear - Hα; fsetdec). subst. exact Heq.
-  - (* arrow *)
-    injection Heq as Heq1 Heq2.
-    apply union_1 in Hα; destruct Hα; eauto.
-  - (* all *)
-    injection Heq as Heq0. eauto.
-Qed.
 
 (** [ptyp_to_pskl] is injective (structural embedding). *)
 Lemma ptyp_to_pskl_inj : forall A B,
@@ -342,25 +309,6 @@ Lemma ptyp_to_pskl_inj : forall A B,
 Proof.
   induction A; destruct B; simpl; intros Heq; try discriminate;
     try reflexivity; injection Heq; intros; f_equal; auto.
-Qed.
-
-Lemma msubst_pskl_agree_inv : forall κ ζ P,
-  msubst_pskl κ P = msubst_pskl ζ P ->
-  forall α', α' `in` ftvar_in_pskl P ->
-  msubst_lookup κ α' = msubst_lookup ζ α'.
-Proof.
-  intros κ ζ P; induction P; intros Heq α' Hα; simpl in *;
-    try solve [ exfalso; clear - Hα; fsetdec ].
-  - (* var_f *)
-    assert (HXY : α' = α) by (clear - Hα; fsetdec). subst.
-    apply ptyp_to_pskl_inj. exact Heq.
-  - (* arrow *)
-    injection Heq as Heq1 Heq2.
-    apply union_1 in Hα; destruct Hα; eauto.
-  - (* all_syn *)
-    injection Heq as Heq0. eauto.
-  - (* tophole *)
-    injection Heq as Heq0. eauto.
 Qed.
 
 (* ===================================================================== *)
@@ -437,16 +385,6 @@ Proof.
   intros Ξ x P Hsuf; induction Hsuf; intros Hb; [ inversion Hb | ].
   destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq1 Heq2] | Hb'];
     [ subst; inversion H | auto ].
-Qed.
-
-(** pskl twin of [msubst_ptyp_cons_notin]. *)
-Lemma msubst_pskl_cons_notin : forall α0 τ0 ζ P,
-  α0 `notin` ftvar_in_pskl P ->
-  msubst_pskl ((α0, τ0) :: ζ) P = msubst_pskl ζ P.
-Proof.
-  intros α0 τ0 ζ P HP.
-  apply msubst_pskl_agree. intros α Hα. simpl.
-  destruct (α == α0) as [->|Hne]; [ exfalso; auto | reflexivity ].
 Qed.
 
 (* NB the forward/backward SYNTACTIC binding transports that lived here

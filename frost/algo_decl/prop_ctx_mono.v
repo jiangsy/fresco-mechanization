@@ -56,13 +56,6 @@ Set Implicit Arguments.
 Definition aenv_binds_le (Θ Θ' : aenv) : Prop :=
   forall x b, binds x b Θ -> binds x b Θ'.
 
-Lemma aenv_binds_le_refl : forall Θ, aenv_binds_le Θ Θ.
-Proof. intros Θ x b H; exact H. Qed.
-
-Lemma aenv_binds_le_trans : forall Θ1 Θ2 Θ3,
-  aenv_binds_le Θ1 Θ2 -> aenv_binds_le Θ2 Θ3 -> aenv_binds_le Θ1 Θ3.
-Proof. intros * H12 H23 x b H; auto. Qed.
-
 (** The shape every binder row needs: pushing the SAME entry on both sides. *)
 Lemma aenv_binds_le_cons : forall Θ Θ' x (b : abind),
   aenv_binds_le Θ Θ' -> aenv_binds_le ((x ~ b) ++ Θ) ((x ~ b) ++ Θ').
@@ -191,24 +184,6 @@ Proof.
   - apply a_wf_pskl__tophole; auto.
 Qed.
 
-(** The Δ-free scoping judgement — same proof as [a_wf_pskl_mono], except
-    that here the ∀-binder enters the CONTEXT rather than Δ.  Needed to
-    transport a term entry's payload when a term entry is dropped from the
-    middle of a well-formed context ([a_wf_aenv_strip_tm_mid]). *)
-Lemma a_scope_pskl_mono : forall Θ P,
-  a_scope_pskl Θ P ->
-  forall Θ', aenv_tbinds_le Θ Θ' -> a_scope_pskl Θ' P.
-Proof.
-  intros Θ P H; induction H; intros Θ' Hle.
-  - apply a_scope_pskl__unit.
-  - apply a_scope_pskl__var. eapply a_binds_tvar_mono; eauto.
-  - apply a_scope_pskl__arrow; auto.
-  - apply a_scope_pskl__all with (L := L). intros α Hα.
-    apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
-  - apply a_scope_pskl__hole.
-  - apply a_scope_pskl__tophole; auto.
-Qed.
-
 Lemma a_tyequiv_ctx_mono : forall Θ A B,
   {{ Θ ⊢ A ≡ᵗ B }}a ->
   forall Θ', aenv_tbinds_le Θ Θ' -> {{ Θ' ⊢ A ≡ᵗ B }}a.
@@ -306,48 +281,6 @@ Qed.
 (* ===================================================================== *)
 (*  §4  Subtyping, skeleton inference, typing                             *)
 (* ===================================================================== *)
-
-
-(** The LEAF-VALID mirror, fuel carried unchanged: the four leaf rows'
-    refinement datum travels by [ad_refine_pskl_mono]. *)
-Lemma ad_pat_sub_fuel_mono : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_fuel n NM M Ψ Θ R Q ->
-  forall Θ', aenv_tbinds_le Θ Θ' -> ad_pat_sub_fuel n NM M Ψ Θ' R Q.
-Proof.
-  intros n NM M Ψ Θ R Q H; induction H; intros Θ' Hle.
-  - apply ad_pat_sub_fuel__infer;
-      [ assumption | eapply ad_pat_consis_mono; eauto | assumption
-      | eapply ad_refine_pskl_mono; eauto ].
-  - apply ad_pat_sub_fuel__check;
-      [ assumption | assumption | eapply ad_pat_consis_mono; eauto
-      | eapply ad_refine_pskl_mono; eauto ].
-  - apply ad_pat_sub_fuel__forall_r with (L := L). intros α Hα.
-    apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
-  - apply ad_pat_sub_fuel__univ_ghost_r;
-      [ assumption | assumption | assumption | assumption
-      | eapply ad_pat_consis_mono; eauto
-      | eapply ad_refine_pskl_mono; eauto ].
-  - eapply ad_pat_sub_fuel__arrow;
-      [ eapply ad_pat_consis_mono; eauto
-      | eapply ad_refine_pskl_mono; eauto
-      | apply IHad_pat_sub_fuel; exact Hle | eassumption ].
-  - eapply ad_pat_sub_fuel__forall_l_tagged;
-      [ assumption | eassumption | eassumption | eassumption
-      | eapply a_wf_pskl_mono; eauto | apply IHad_pat_sub_fuel; exact Hle ].
-  - eapply ad_pat_sub_fuel__forall_l_untagged;
-      [ assumption | eassumption | eassumption | eassumption
-      | eapply a_wf_pskl_mono; eauto | apply IHad_pat_sub_fuel; exact Hle ].
-  - apply ad_pat_sub_fuel__ghost;
-      [ assumption | eapply a_wf_pskl_mono; eauto | assumption ].
-  - apply ad_pat_sub_fuel__ghostg; assumption.
-  - apply ad_pat_sub_fuel__univ_ghost_l;
-      [ assumption | apply IHad_pat_sub_fuel; exact Hle ].
-  - apply ad_pat_sub_fuel__univ_ghost_lg;
-      [ assumption | apply IHad_pat_sub_fuel; exact Hle ].
-  - eapply ad_pat_sub_fuel__flex_mono;
-      [ eapply aenv_tbinds_le_flex_def; eauto
-      | apply IHad_pat_sub_fuel; exact Hle ].
-Qed.
 
 (** The four leaf rows' refinement datum travels by [ad_refine_pskl_mono],
     exactly as in the fuelled mirror below. *)
@@ -484,23 +417,6 @@ Proof.
   eapply ad_pat_mono; [ exact H | apply aenv_binds_le_perm3 ].
 Qed.
 
-(** And the two the paper calls "stability": a judgement survives any context
-    that only ADDS entries — the [Ξ ++ Θ] shape every algorithmic step
-    produces. *)
-Corollary ad_sd_typing_weaken_suffix : forall M Θ Ξ e B,
-  {{ Θ ⊢ˢᵈ[ M ] e ⦂ B }}ad -> {{ (Ξ ++ Θ) ⊢ˢᵈ[ M ] e ⦂ B }}ad.
-Proof.
-  intros M Θ Ξ e B H.
-  eapply ad_sd_typing_mono; [ exact H | apply aenv_binds_le_weaken_l ].
-Qed.
-
-Corollary ad_pat_weaken_suffix : forall M Θ Ξ e Q,
-  {{ Θ ⊢ˢ[ M ] e ⦂ Q }}ad -> {{ (Ξ ++ Θ) ⊢ˢ[ M ] e ⦂ Q }}ad.
-Proof.
-  intros M Θ Ξ e Q H.
-  eapply ad_pat_mono; [ exact H | apply aenv_binds_le_weaken_l ].
-Qed.
-
 (* ===================================================================== *)
 (*  §6  Dropping a term variable                                          *)
 (*                                                                        *)
@@ -526,18 +442,3 @@ Proof.
     [ exact H | apply aenv_tbinds_le_strip_tm; intros [] ].
 Qed.
 
-Corollary ad_refine_pskl_strip_tm_typ : forall Ξ x A Θ Δ P Q,
-  {{ (Ξ ++ (x ~ abind_var_typ A) ++ Θ) ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad ->
-  {{ (Ξ ++ Θ) ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad.
-Proof.
-  intros * H. eapply ad_refine_pskl_mono;
-    [ exact H | apply aenv_tbinds_le_strip_tm; intros [] ].
-Qed.
-
-Corollary ad_refine_pskl_strip_tm_skl : forall Ξ x P0 Θ Δ P Q,
-  {{ (Ξ ++ (x ~ abind_var_skl P0) ++ Θ) ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad ->
-  {{ (Ξ ++ Θ) ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad.
-Proof.
-  intros * H. eapply ad_refine_pskl_mono;
-    [ exact H | apply aenv_tbinds_le_strip_tm; intros [] ].
-Qed.
