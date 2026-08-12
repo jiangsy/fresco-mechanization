@@ -1386,11 +1386,12 @@ where "{{ Θ ⊲ P0 ▹ P ⇢ Q ⊣ Θ' }}a" := (a_split Θ P0 P Q Θ') : frost_
    The cost is paid, and visible: because the IH delivers ONE instance while
    these rows share their outputs [Ξ]/[Θ1]/[Q] across the whole family,
    completeness has to REGENERATE the family — which is the only reason
-   prop_swap.v §6's [a_pat_rename_tm] and its four supporting bridges exist.
-   Converting these four would retire that block, but it re-opens BOTH
-   [a_pat_sound] (theorem 1) and [a_pat_complete] (theorem 3), and [a_typing]
-   invokes [a_pat], so theorems 2 and 4 feel it too.  Do it on a branch or not
-   at all. *)
+   prop_swap.v §6's [a_pat_rename_tm] exists.  ⚙ It used to have four
+   per-judgement siblings; they were built for [a_typing]'s rows and died with
+   the 2026-08-08 conversion, so converting these four now retires ONE lemma,
+   not five.  It still re-opens BOTH [a_pat_sound] (theorem 1) and
+   [a_pat_complete] (theorem 3), and [a_typing] invokes [a_pat], so theorems 2
+   and 4 feel it too.  Do it on a branch or not at all. *)
 Inductive a_pat : mode -> aenv -> pskl -> exp -> pskl -> aenv -> Prop :=
 | a_pat__unit : forall m Θ0 Θ1 P0 P,                        (* AP-Unit *)
     {{ Θ0 ⊢[ a_sub_mode_sk | m | P0 ] pskl_unit ⩽ P ⊣ Θ1 }}a ->
@@ -1476,10 +1477,17 @@ Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
        the premise [a_sub__forall_l] already carries for the same reason:
        [a_guess_mono]'s ARROW row runs both halves at the same [Θ], so two
        independently-invented blocks can pick the same atom and [uniq αs] is
-       NOT derivable ("two independent generators", docs/PAPER-GAPS.md).  The
-       implementation's global counter is what rules it out; a relational rule
-       has to filter it downstream, at the rule that puts the block in the
-       context.  Without it the body's run has no well-formed input context. *)
+       NOT derivable OF THIS [a_guess_mono] ("two independent generators",
+       docs/PAPER-GAPS.md).  The implementation's global counter is what rules
+       it out; a relational rule has to filter it downstream, at the rule that
+       puts the block in the context.  Without it the body's run has no
+       well-formed input context.
+       ⚙ A THREADED [a_guess_mono__arrow] (second half at [Ξ1 ++ Θ], result
+       [Ξ2 ++ Ξ1] — the shape every other generating judgement here already
+       uses) would make [uniq] derivable and drop this premise.  It is not a
+       gap in the paper, it is a choice in the encoding: 316 occurrences across
+       19 files, against one premise line.  docs/REPORT-postclosure-audit.md
+       §1.3. *)
     uniq (αs ++ Θ1) ->
     a_suffix Ξ ->
     (* EXISTS-FRESH binder, uniformly with the check rows below. *)
