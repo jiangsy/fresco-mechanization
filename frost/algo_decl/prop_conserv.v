@@ -767,16 +767,15 @@ Qed.
 (** ⚠️⚠️ THE SOURCE IS THE LEAF-VALID MIRROR, not the plain join, and it has to
     be.  Since 2026-08-11 [d_pat_sub]'s three consistency-bearing rows carry the
     paper's presupposition on skeleton consistency (declarative.tex:2074), which
-    a PLAIN [ad_pat_sub] does not supply — and provably cannot
-    (cex/cex_ad_pat_join_not_leaf_valid.v).  [ad_pat_sub_gv] does supply it, at
-    exactly those rows, and it is what [ad_pat] / [ad_sd_typing] embed, so
-    nothing is lost.  ⚙ RESTART NOTE: the previous [ad_pat_sub_sk_to_d], from
-    the plain judgement, is DELETED — it is false as stated now. *)
-Lemma ad_pat_sub_gv_sk_to_d : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_gv n NM M Ψ Θ R Q -> NM = a_sub_mode_sk ->
+    [ad_pat_sub] itself supplies since 2026-08-12, at exactly those rows.  ⚙ It
+    used to be statable only over the fuelled mirror, because the plain
+    relation did not carry the datum (cex/cex_ad_pat_join_not_leaf_valid.v)
+    — the fuel was never what the proof needed, only the datum was. *)
+Lemma ad_pat_sub_sk_to_d : forall NM M Ψ Θ R Q,
+  ad_pat_sub NM M Ψ Θ R Q -> NM = a_sub_mode_sk ->
   forall Γ, Θ = denv_to_aenv Γ -> d_pat_sub M Ψ Γ R Q.
 Proof.
-  intros n NM M Ψ Θ R Q H; induction H; intros HNM Γ0 HΘ;
+  intros NM M Ψ Θ R Q H; induction H; intros HNM Γ0 HΘ;
     try discriminate HNM; subst.
   - (* Infer *) apply d_pat_sub__infer;
       [ assumption
@@ -790,7 +789,7 @@ Proof.
   - (* Arrow *) apply d_pat_sub__arg with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
       [ exact (ad_pat_consis_to_d Ψ1 (denv_to_aenv Γ0) R1 Q1 H Γ0 eq_refl)
       | apply ad_refine_pskl_to_d_closed; assumption
-      | exact (IHad_pat_sub_gv eq_refl Γ0 eq_refl) | assumption ].
+      | exact (IHad_pat_sub eq_refl Γ0 eq_refl) | assumption ].
   - (* ForallL, tagged *) inversion H2; subst.
     apply d_pat_sub__forall_l_tagged with (Ψ' := Ψ') (psi := ψ);
       [ assumption | assumption
@@ -798,7 +797,7 @@ Proof.
            hygiene premise travels verbatim *) assumption | assumption
       | exact (d_wf_uskl_of_a_wf_pskl (denv_to_aenv Γ0) empty (uskl_to_pskl ψ)
                  H3 ψ eq_refl Γ0 nil eq_refl delta_agree_nil)
-      | assumption | exact (IHad_pat_sub_gv eq_refl Γ0 eq_refl) ].
+      | assumption | exact (IHad_pat_sub eq_refl Γ0 eq_refl) ].
   - (* ForallL, untagged *) inversion H2; subst.
     apply d_pat_sub__forall_l_untagged with (Ψ' := Ψ') (psi := ψ);
       [ assumption | assumption
@@ -806,7 +805,7 @@ Proof.
            hygiene premise travels verbatim *) assumption | assumption
       | exact (d_wf_uskl_of_a_wf_pskl (denv_to_aenv Γ0) empty (uskl_to_pskl ψ)
                  H3 ψ eq_refl Γ0 nil eq_refl delta_agree_nil)
-      | assumption | exact (IHad_pat_sub_gv eq_refl Γ0 eq_refl) ].
+      | assumption | exact (IHad_pat_sub eq_refl Γ0 eq_refl) ].
   - (* Ghost *) apply d_pat_sub__ghost;
       [ assumption
       | exact (a_wf_pskl_to_d (denv_to_aenv Γ0) empty P H0 Γ0 nil eq_refl
@@ -814,9 +813,9 @@ Proof.
       | assumption ].
   - (* GhostG *) apply d_pat_sub__ghostg; assumption.
   - (* UnivGhostL *) apply d_pat_sub__univ_ghost_l;
-      [ assumption | exact (IHad_pat_sub_gv eq_refl Γ0 eq_refl) ].
+      [ assumption | exact (IHad_pat_sub eq_refl Γ0 eq_refl) ].
   - (* UnivGhostLG *) apply d_pat_sub__univ_ghost_lg;
-      [ assumption | exact (IHad_pat_sub_gv eq_refl Γ0 eq_refl) ].
+      [ assumption | exact (IHad_pat_sub eq_refl Γ0 eq_refl) ].
   - (* FlexMono *) exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
 Qed.
 
@@ -829,49 +828,45 @@ Qed.
     ⚙ And the fuel is easy HERE, unlike §13's type-sorted twin: [d_pat_sub] has
     no cofinite row (its ForallR is a TY-only rule), so one [n] per premise
     suffices and no renaming is needed. *)
-Lemma d_pat_sub_to_ad_gv : forall M Ψ Γ R Q,
+Lemma d_pat_sub_to_ad_fuel : forall M Ψ Γ R Q,
   d_pat_sub M Ψ Γ R Q ->
-  exists n, ad_pat_sub_gv n a_sub_mode_sk M Ψ (denv_to_aenv Γ) R Q.
+  exists n, ad_pat_sub_fuel n a_sub_mode_sk M Ψ (denv_to_aenv Γ) R Q.
 Proof.
   intros M Ψ Γ R Q H; induction H.
-  - (* Infer *) exists 0. apply ad_pat_sub_gv__infer;
+  - (* Infer *) exists 0. apply ad_pat_sub_fuel__infer;
       [ assumption | apply d_pat_consis_to_ad; assumption | assumption
       | apply d_refine_pskl_to_ad_closed; assumption ].
-  - (* UnivGhostR *) exists 0. apply ad_pat_sub_gv__univ_ghost_r;
+  - (* UnivGhostR *) exists 0. apply ad_pat_sub_fuel__univ_ghost_r;
       [ assumption | assumption | assumption | assumption
       | apply d_pat_consis_to_ad; assumption
       | apply d_refine_pskl_to_ad_closed; assumption ].
   - (* Arrow *) destruct IHd_pat_sub as [ n Hn ]. exists (S n).
-    apply ad_pat_sub_gv__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
+    apply ad_pat_sub_fuel__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
       [ apply d_pat_consis_to_ad; assumption
       | apply d_refine_pskl_to_ad_closed; assumption
       | exact Hn | assumption ].
   - (* ForallL, tagged *) destruct IHd_pat_sub as [ n Hn ]. exists (S n).
-    apply ad_pat_sub_gv__forall_l_tagged with (Ψ' := Ψ') (ψ := psi);
+    apply ad_pat_sub_fuel__forall_l_tagged with (Ψ' := Ψ') (ψ := psi);
       [ assumption | assumption | assumption
       | apply a_tags_sort__sk; assumption
       | exact (a_wf_pskl_of_d_wf_uskl Γ nil psi H3 empty delta_agree_nil)
       | exact Hn ].
   - (* ForallL, untagged *) destruct IHd_pat_sub as [ n Hn ]. exists (S n).
-    apply ad_pat_sub_gv__forall_l_untagged with (Ψ' := Ψ') (ψ := psi);
+    apply ad_pat_sub_fuel__forall_l_untagged with (Ψ' := Ψ') (ψ := psi);
       [ assumption | assumption | assumption
       | apply a_tags_sort__sk; assumption
       | exact (a_wf_pskl_of_d_wf_uskl Γ nil psi H3 empty delta_agree_nil)
       | exact Hn ].
-  - (* Ghost *) exists 0. apply ad_pat_sub_gv__ghost;
+  - (* Ghost *) exists 0. apply ad_pat_sub_fuel__ghost;
       [ assumption
       | exact (d_wf_pskl_to_a Γ nil P H0 empty delta_agree_nil)
       | assumption ].
   - (* UnivGhostL *) destruct IHd_pat_sub as [ n Hn ]. exists n.
-    apply ad_pat_sub_gv__univ_ghost_l; [ assumption | exact Hn ].
-  - (* GhostG *) exists 0. apply ad_pat_sub_gv__ghostg; assumption.
+    apply ad_pat_sub_fuel__univ_ghost_l; [ assumption | exact Hn ].
+  - (* GhostG *) exists 0. apply ad_pat_sub_fuel__ghostg; assumption.
   - (* UnivGhostLG *) destruct IHd_pat_sub as [ n Hn ]. exists n.
-    apply ad_pat_sub_gv__univ_ghost_lg; [ assumption | exact Hn ].
+    apply ad_pat_sub_fuel__univ_ghost_lg; [ assumption | exact Hn ].
 Qed.
-
-Lemma d_pat_sub_to_ad_v : forall M Ψ Γ R Q,
-  d_pat_sub M Ψ Γ R Q -> ad_pat_sub_v a_sub_mode_sk M Ψ (denv_to_aenv Γ) R Q.
-Proof. intros M Ψ Γ R Q H. exact (d_pat_sub_to_ad_gv M Ψ Γ R Q H). Qed.
 
 Lemma d_pat_sub_to_ad : forall M Ψ Γ R Q,
   d_pat_sub M Ψ Γ R Q -> ad_pat_sub a_sub_mode_sk M Ψ (denv_to_aenv Γ) R Q.
@@ -1108,27 +1103,7 @@ Qed.
 (** The two forms in which the base rows of [ad_pat] / [ad_sd_typing] carry
     their join: the LEAF-VALID [ad_pat_sub_v], whose extra data the plain
     declarative rules do not ask for and which is therefore simply forgotten
-    ([ad_pat_sub_of_v]). *)
-Lemma ad_pat_sub_v_sk_to_d : forall m Ψ Γ R Q,
-  ad_pat_sub_v a_sub_mode_sk m Ψ (denv_to_aenv Γ) R Q -> d_pat_sub m Ψ Γ R Q.
-Proof.
-  intros m Ψ Γ R Q [ n Hn ].
-  exact (ad_pat_sub_gv_sk_to_d n a_sub_mode_sk m Ψ (denv_to_aenv Γ) R Q
-           Hn eq_refl Γ eq_refl).
-Qed.
-
-Lemma ad_pat_sub_v_ty_to_d : forall m Ψ Γ A B,
-  ad_pat_sub_v a_sub_mode_ty m Ψ (denv_to_aenv Γ)
-    (ptyp_to_uskl_syn A) (btyp_to_bskl B) ->
-  d_sub m Ψ Γ (ptyp_to_utyp_syn A) B.
-Proof.
-  intros m Ψ Γ A B Hv.
-  eapply ad_pat_sub_ty_to_d;
-    [ exact (ad_pat_sub_of_v Hv) | reflexivity | reflexivity | | reflexivity ].
-  unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn.
-  symmetry. apply utyp_to_uskl_ptyp_to_utyp_syn.
-Qed.
-
+    ([ad_pat_sub_of_fuel]). *)
 (* ===================================================================== *)
 (*  §9  SKELETON INFERENCE  [ad_pat] -> [d_pat].                          *)
 (* ===================================================================== *)
@@ -1140,7 +1115,7 @@ Proof.
   - (* P-Unit *) apply d_pat__unit;
       [ exact (a_wf_pskl_to_d (denv_to_aenv Γ0) empty (bskl_to_pskl Q) H Γ0 nil
                  eq_refl delta_agree_nil)
-      | apply ad_pat_sub_v_sk_to_d; assumption ].
+      | eapply ad_pat_sub_sk_to_d; [ eassumption | reflexivity | reflexivity ] ].
   - (* P-Var *)
     destruct (binds_denv_to_aenv_inv x b Γ0 H) as [d [Hd Heq]]; subst.
     apply d_pat__var with (P := P) (d := d);
@@ -1148,12 +1123,12 @@ Proof.
       | rewrite <- abind_to_pskl_of_dbind; exact H0
       | exact (a_wf_pskl_to_d (denv_to_aenv Γ0) empty (bskl_to_pskl Q) H1 Γ0 nil
                  eq_refl delta_agree_nil)
-      | apply ad_pat_sub_v_sk_to_d; assumption ].
+      | eapply ad_pat_sub_sk_to_d; [ eassumption | reflexivity | reflexivity ] ].
   - (* P-Anno *) apply d_pat__anno;
       [ exact (a_wf_ptyp_to_d (denv_to_aenv Γ0) A H Γ0 eq_refl)
       | exact (a_wf_pskl_to_d (denv_to_aenv Γ0) empty (bskl_to_pskl Q) H0 Γ0 nil
                  eq_refl delta_agree_nil)
-      | apply ad_pat_sub_v_sk_to_d; assumption ].
+      | eapply ad_pat_sub_sk_to_d; [ eassumption | reflexivity | reflexivity ] ].
   - (* P-Freeze *) apply d_pat__freeze. exact (IHad_pat Γ0 eq_refl).
   - (* P-Abs *) apply d_pat__abs with (L := L);
       [ assumption
@@ -1192,15 +1167,23 @@ Lemma ad_sd_typing_to_d : forall M Θ e B,
 Proof.
   intros M Θ e B H; induction H; intros Γ0 HΘ; subst Θ.
   - (* sd-Unit *) apply d_sd_typing__unit.
-    apply ad_pat_sub_v_ty_to_d; assumption.
+    eapply ad_pat_sub_ty_to_d;
+      [ eassumption | reflexivity | reflexivity | | reflexivity ];
+    unfold ptyp_to_uskl_syn; symmetry; apply utyp_to_uskl_ptyp_to_utyp_syn.
   - (* sd-Var *)
     destruct (binds_denv_to_aenv_inv x (abind_var_typ A) Γ0 H) as [d [Hd Heq]].
     destruct d as [ | A1 | P1 ]; simpl in Heq; try discriminate Heq.
     assert (HA : A = A1) by (injection Heq; auto). subst A1.
     apply d_sd_typing__var with (A := A);
-      [ exact Hd | apply ad_pat_sub_v_ty_to_d; assumption ].
+      [ exact Hd
+      | eapply ad_pat_sub_ty_to_d;
+          [ eassumption | reflexivity | reflexivity | | reflexivity ];
+        unfold ptyp_to_uskl_syn; symmetry; apply utyp_to_uskl_ptyp_to_utyp_syn ].
   - (* sd-Anno *) apply d_sd_typing__anno with (A := A);
-      [ exact (IHad_sd_typing Γ0 eq_refl) | apply ad_pat_sub_v_ty_to_d; assumption ].
+      [ exact (IHad_sd_typing Γ0 eq_refl)
+      | eapply ad_pat_sub_ty_to_d;
+          [ eassumption | reflexivity | reflexivity | | reflexivity ];
+        unfold ptyp_to_uskl_syn; symmetry; apply utyp_to_uskl_ptyp_to_utyp_syn ].
   - (* sd-Freeze *)
     rewrite (a_tyequiv_denv_eq (denv_to_aenv Γ0) B A H0 Γ0 eq_refl) in *.
     apply d_sd_typing__freeze. exact (IHad_sd_typing Γ0 eq_refl).
@@ -1443,7 +1426,7 @@ Qed.
 (*      ([d_consis_sub_trans_mid]) needs, its ForallL case transporting   *)
 (*      along [utyp_tag_refines] where the subject GAINS tags.            *)
 (*      ⚠️ WHAT IS STILL OWED in this neighbourhood is a FUEL question,    *)
-(*      not a hygiene one: [ad_pat_sub] → [ad_pat_sub_gv].                *)
+(*      not a hygiene one: [ad_pat_sub] → [ad_pat_sub_fuel].                *)
 (* ===================================================================== *)
 
 Lemma binds_tvars_denv_inv : forall α Δ,
@@ -1509,7 +1492,7 @@ Proof.
       [ simpl_env; reflexivity | apply delta_agree_cons; exact HΔ ].
 Qed.
 
-(** …and at the top level, which is the shape [ad_pat_sub_gv]'s leaf rows
+(** …and at the top level, which is the shape [ad_pat_sub_fuel]'s leaf rows
     ask for: [ad_sd_typing]'s base rows join the painting of a [ptyp], so
     their subject is ghost-free and their leaf datum is free. *)
 Corollary d_pat_consis_subject_refine_closed : forall Ψ Γ R Q,
@@ -1534,7 +1517,7 @@ Qed.
 (*  ⭐ ALL THREE HYPOTHESES ARE GONE, and with them the obstruction: since  *)
 (*  [ad_pat_sub] carries the leaf presupposition itself, the datum is a    *)
 (*  PREMISE of the row that needs it, and the upgrade is                   *)
-(*  [ad_pat_sub_to_v] (algo/sub/prop_soundness_sub.v) — UNCONDITIONAL, at  *)
+(*  [ad_pat_sub_to_fuel] (algo/sub/prop_soundness_sub.v) — UNCONDITIONAL, at  *)
 (*  either sort, over any Θ.  Only the fuel is left to collect.            *)
 (* ===================================================================== *)
 
@@ -1836,16 +1819,16 @@ Proof.
   intros M Γ e Q H; induction H.
   - (* P-Unit *) apply ad_pat__unit;
       [ exact (d_wf_pskl_to_a Γ nil (bskl_to_pskl Q) H empty delta_agree_nil)
-      | apply d_pat_sub_to_ad_v; assumption ].
+      | apply d_pat_sub_to_ad; assumption ].
   - (* P-Var *) apply ad_pat__var with (P := P) (b := abind_of_dbind d);
       [ apply binds_denv_to_aenv; assumption
       | rewrite abind_to_pskl_of_dbind; assumption
       | exact (d_wf_pskl_to_a Γ nil (bskl_to_pskl Q) H1 empty delta_agree_nil)
-      | apply d_pat_sub_to_ad_v; assumption ].
+      | apply d_pat_sub_to_ad; assumption ].
   - (* P-Anno *) apply ad_pat__anno;
       [ exact (d_wf_ptyp_to_a Γ A H)
       | exact (d_wf_pskl_to_a Γ nil (bskl_to_pskl Q) H0 empty delta_agree_nil)
-      | apply d_pat_sub_to_ad_v; assumption ].
+      | apply d_pat_sub_to_ad; assumption ].
   - (* P-Freeze *) apply ad_pat__freeze; assumption.
   - (* P-Abs *) apply ad_pat__abs with (L := L);
       [ assumption
@@ -1873,7 +1856,7 @@ Proof. intros Θ x b y c Hc Hy. apply binds_app_3; exact Hy. Qed.
 
 (** The three base rows all read the same way: the embedded [d_sub] becomes an
     [ad_pat_sub] at the TY sort (§14), and its subject is a PAINTING, hence
-    ghost-free — but that no longer matters: [ad_pat_sub_to_v] collects the
+    ghost-free — but that no longer matters: [ad_pat_sub_to_fuel] collects the
     fuel with no side condition at all (§13).
 
     ⚙ [wftac] is what §14's leaf presupposition costs here, and it costs
@@ -1886,7 +1869,6 @@ Ltac base_row wftac :=
      [bskl_to_uskl (pskl_to_bskl_syn …)] form the coercion lemma rewrites *)
   unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn;
   rewrite <- utyp_to_uskl_ptyp_to_utyp_syn;
-  apply ad_pat_sub_to_v;
   apply d_sub_to_ad;
     [ eassumption | apply d_wf_utyp_painting_syn; wftac ].
 

@@ -5,7 +5,7 @@
     ⭐ WHY THIS FILE EXISTS (2026-08-07, hand-off §5).  lemma:context-precision
     transports a [P-Var] leaf along an entry's precision via
     lemma:precision-sub, whose external side condition is the DISCIPLINED wf
-    of the leaf's subtyping counterpart ([ad_precise_extends_pat_sub_v],
+    of the leaf's subtyping counterpart ([ad_precise_extends_pat_sub],
     prop_completeness_sub_precise.v).  That wf can come only from the RULE
     ([ad_pat]'s base rows), and soundness must then SUPPLY it from the run —
     i.e. the algorithm's own outputs must be well-formed.  Neither the

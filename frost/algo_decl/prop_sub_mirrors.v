@@ -3,13 +3,13 @@
 
     [def_subtyping.v] DEFINES the paper's all-in-one subtyping box
     [ad_pat_sub] and the two mech-internal mirrors the completeness proof
-    measures it by — [ad_pat_sub_gv] (that plus the FUEL) and [ad_pat_sub_v]
+    measures it by — [ad_pat_sub_fuel] (that plus the FUEL) and [ad_pat_sub_v]
     (the fuel existentially closed).  This file proves the maps BETWEEN them.
 
     ⚙ There used to be a THIRD, [ad_pat_sub_g] — the fuel with the leaf datum
     forgotten — because [ad_pat_sub] itself did not carry the paper's leaf
     presupposition.  It does since 2026-08-12, so [_g] and its forgetful map
-    [ad_pat_sub_gv_forget] are gone.
+    [ad_pat_sub_fuel_forget] are gone.
 
     ⚙ WHY IT IS THIS EARLY, and not with the completeness files: the
     SOUNDNESS side has to CONCLUDE [_gv] ([ad_pat] / [ad_sd_typing] embed the
@@ -45,7 +45,7 @@ Open Scope frost_ad_scope.
 (* ===================================================================== *)
 (*  The two ERASURES + fuel monotonicity.                                 *)
 (*                                                                        *)
-(*  ⚙ [ad_pat_sub_of_gv] and [ad_pat_sub_gv_fuel_weaken] are HERE, not with *)
+(*  ⚙ [ad_pat_sub_of_fuel] and [ad_pat_sub_fuel_weaken] are HERE, not with *)
 (*  the completeness files: the SOUNDNESS side has to CONCLUDE [_gv]       *)
 (*  ([ad_pat] / [ad_sd_typing] embed the leaf-valid join, so               *)
 (*  thm:complete-skeleton/type-inference can consume it), and              *)
@@ -60,41 +60,41 @@ Open Scope frost_ad_scope.
     returns the family at whatever height the extraction yields, while
     [a_sub_complete_forall_r] wants it at exactly [n] for a conclusion at
     [S n]. *)
-Lemma ad_pat_sub_gv_fuel_weaken : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_gv n NM M Ψ Θ R Q ->
-  forall m, n <= m -> ad_pat_sub_gv m NM M Ψ Θ R Q.
+Lemma ad_pat_sub_fuel_weaken : forall n NM M Ψ Θ R Q,
+  ad_pat_sub_fuel n NM M Ψ Θ R Q ->
+  forall m, n <= m -> ad_pat_sub_fuel m NM M Ψ Θ R Q.
 Proof.
   intros n NM M Ψ Θ R Q H; induction H; intros m Hle;
     try solve [ econstructor; eauto ].
   - (* forall_r : the conclusion's fuel is [S n] *)
     destruct m as [ | m' ]; [ lia | ].
-    apply ad_pat_sub_gv__forall_r with (L := L).
+    apply ad_pat_sub_fuel__forall_r with (L := L).
     intros α Hα. apply H0; [ exact Hα | lia ].
   - (* arrow *)
     destruct m as [ | m' ]; [ lia | ].
-    eapply ad_pat_sub_gv__arrow;
-      [ exact H | exact H0 | apply IHad_pat_sub_gv; lia | assumption ].
+    eapply ad_pat_sub_fuel__arrow;
+      [ exact H | exact H0 | apply IHad_pat_sub_fuel; lia | assumption ].
   - (* forall_l_tagged *)
     destruct m as [ | m' ]; [ lia | ].
-    eapply ad_pat_sub_gv__forall_l_tagged;
+    eapply ad_pat_sub_fuel__forall_l_tagged;
       [ eassumption | eassumption | eassumption | eassumption | eassumption
-      | apply IHad_pat_sub_gv; lia ].
+      | apply IHad_pat_sub_fuel; lia ].
   - (* forall_l_untagged *)
     destruct m as [ | m' ]; [ lia | ].
-    eapply ad_pat_sub_gv__forall_l_untagged;
+    eapply ad_pat_sub_fuel__forall_l_untagged;
       [ eassumption | eassumption | eassumption | eassumption | eassumption
-      | apply IHad_pat_sub_gv; lia ].
+      | apply IHad_pat_sub_fuel; lia ].
 Qed.
 
 (** The erasure the [ad_pat] / [ad_sd_typing] consumers want: a leaf-valid
     join IS a plain declarative subtyping derivation.
 
     ⚙ A DIRECT induction on [_gv] since 2026-08-12.  It used to factor through
-    [ad_pat_sub_g_of : _g -> ad_pat_sub] and then [ad_pat_sub_gv_forget], both
+    [ad_pat_sub_g_of : _g -> ad_pat_sub] and then [ad_pat_sub_fuel_forget], both
     of which are gone: once [ad_pat_sub] itself carries the leaf
     presupposition, the leaf-FORGETTING mirror cannot reach it at all. *)
-Lemma ad_pat_sub_of_gv : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_gv n NM M Ψ Θ R Q ->
+Lemma ad_pat_sub_of_fuel : forall n NM M Ψ Θ R Q,
+  ad_pat_sub_fuel n NM M Ψ Θ R Q ->
   {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad.
 Proof.
   intros n NM M Ψ Θ R Q H; induction H.
@@ -112,8 +112,3 @@ Proof.
   - eapply ad_pat_sub__flex_mono; eauto.
 Qed.
 
-(** A leaf-valid join IS a plain declarative subtyping derivation. *)
-Lemma ad_pat_sub_of_v : forall NM M Ψ Θ R Q,
-  ad_pat_sub_v NM M Ψ Θ R Q ->
-  {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad.
-Proof. intros * [n H]. exact (ad_pat_sub_of_gv H). Qed.

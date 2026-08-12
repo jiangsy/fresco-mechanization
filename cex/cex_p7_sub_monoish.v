@@ -8,7 +8,7 @@
 
     holds, and it is load-bearing — it is how P6-Cv reads the counterpart
     monotype off a mono-ish [Q].  The SUBTYPING join has no such lemma, and
-    [ad_pat_sub_gv__forall_l_tagged] is why.
+    [ad_pat_sub_fuel__forall_l_tagged] is why.
 
     ⭐ THE ASYMMETRY, worth remembering on its own terms.  Consistency's ∀
     rules all require the COUNTERPART to be a quantifier too, so a mono-ish
@@ -83,10 +83,10 @@ Proof. cbn. apply a_wf_pskl__var. right. left. simpl; auto. Qed.
 (** The derivation: ForallL (tagged) instantiates with β, and the premise is
     the Check leaf, whose consistency is the plain variable rule. *)
 Lemma cex_derivation :
-  ad_pat_sub_gv 1 a_sub_mode_ty mode_tc empty Θw Rw Qw.
+  ad_pat_sub_fuel 1 a_sub_mode_ty mode_tc empty Θw Rw Qw.
 Proof.
   unfold Rw, Qw, Θw.
-  apply ad_pat_sub_gv__forall_l_tagged
+  apply ad_pat_sub_fuel__forall_l_tagged
     with (Ψ' := empty) (ψ := uskl_var_f β).
   - intro Hc; discriminate Hc.
   - clear; fsetdec.
@@ -95,7 +95,7 @@ Proof.
   - apply guess_wf.
   - cbn [open_uskl_wrt_uskl open_uskl_wrt_uskl_rec].
     change (bskl_var_f β) with (pskl_to_bskl_inh (pskl_var_f β)).
-    apply ad_pat_sub_gv__check;
+    apply ad_pat_sub_fuel__check;
       [ apply guarded_uskl__var | apply guarded_pskl__var | | ].
     + cbn. apply ad_pat_consis__var; [ clear; fsetdec | left; simpl; auto ].
     + (* the leaf presupposition: subject and counterpart are the SAME rigid *)
@@ -122,7 +122,7 @@ End CexP7SubMonoish.
     flex-mono wall stated directly, not this route. *)
 Theorem p7_sub_monoish_counterpart_is_false :
   ~ (forall n NM M Ψ Θ ψ Q,
-       ad_pat_sub_gv n NM M Ψ Θ ψ Q ->
+       ad_pat_sub_fuel n NM M Ψ Θ ψ Q ->
        {{ ⊢ Θ }}a ->
        is_tskl ψ ->
        bskl_monoish Q ->
@@ -141,7 +141,7 @@ Qed.
 (** ⚠️ READ THIS BEFORE CONCLUDING ANYTHING FROM THE ABOVE.  Only the
     MONO-PAINT half of the statement is false.  The OTHER conjunct — [Ψ = ∅],
     i.e. "against a mono-ish counterpart NO TAG IS SOLVED" — is TRUE, and it
-    was proved as [ad_pat_sub_gv_monoish_tag_free] (in the deleted
+    was proved as [ad_pat_sub_fuel_monoish_tag_free] (in the deleted
     prop_sub_shield_supply.v).  That was also the half the retired shield
     needed, because its clean rule's
     [ftag ψa ∩ Ψa = ∅] plus [d_tags_skl]'s [Ψa ⊆ ftag ψa] is exactly

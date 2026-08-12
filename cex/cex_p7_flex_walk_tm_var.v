@@ -228,13 +228,13 @@ Proof.
 Qed.
 
 Lemma tm_var_join :
-  ad_pat_sub_gv 1 a_sub_mode_sk (mode_fn mode_ti) empty Θw R'w Qw.
+  ad_pat_sub_fuel 1 a_sub_mode_sk (mode_fn mode_ti) empty Θw R'w Qw.
 Proof.
   unfold R'w, Qw.
-  eapply ad_pat_sub_gv__arrow with (Ψ1 := empty) (Ψ2 := empty);
+  eapply ad_pat_sub_fuel__arrow with (Ψ1 := empty) (Ψ2 := empty);
     [ apply ad_pat_consis__unit; clear; fsetdec
     | simpl; apply ad_refine_pskl__unit
-    | apply ad_pat_sub_gv__infer;
+    | apply ad_pat_sub_fuel__infer;
         [ clear; fsetdec
         | apply ad_pat_consis__unit; clear; fsetdec
         | apply is_sskl__unit
@@ -290,7 +290,7 @@ Theorem complete_subtyping_needs_flex_skip_tm_var :
   (* solution *)
   ({{ ⊢ Θw }}a /\ ⌊ Rw ⌋ˢ = Pw /\ κw ∷ Θ0w ⊑ Θw /\
    {{ Θw ⊢ R'w ≡ᵘ (msubst_uskl_syn κw Rw) }}a /\
-   ad_pat_sub_gv 1 a_sub_mode_sk (mode_fn mode_ti) empty Θw R'w Qw /\
+   ad_pat_sub_fuel 1 a_sub_mode_sk (mode_fn mode_ti) empty Θw R'w Qw /\
    ad_refine_syn_f empty Θw empty
      (pskl_to_bskl_inh (msubst_pskl κw P0w)) Qw /\
    {{ Θw ⨟ empty ⊢ₚₛ (bskl_to_pskl Qw) }}a)

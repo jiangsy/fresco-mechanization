@@ -14,7 +14,7 @@
     lemma" the paper's proof sketch names) or extends both contexts with the
     SAME entry (precision is reflexive).  [P-Var] alone reads a term entry,
     and its counterpart transport is lemma:precision-sub
-    ([ad_precise_extends_pat_sub_v], prop_completeness_sub_precise.v) — whose
+    ([ad_precise_extends_pat_sub], prop_completeness_sub_precise.v) — whose
     external wf side condition is discharged by the counterpart-wf premise
     the base rows now carry (hand-off §5; supplied from the algorithm by
     prop_wf_preservation.v). *)
@@ -172,7 +172,7 @@ Proof.
     pose proof (ad_ctx_precise_tbinds_le Hctx) as Htle.
   - (* unit *)
     apply ad_pat__unit;
-      [ eapply a_wf_pskl_mono; eauto | eapply ad_pat_sub_v_mono; eauto ].
+      [ eapply a_wf_pskl_mono; eauto | eapply ad_pat_sub_mono; eauto ].
   - (* var — THE row: transport the counterpart by lemma:precision-sub *)
     destruct (@ad_ctx_precise_binds_tm Θ' Θ x b P Hctx
                 ltac:(apply a_wf_aenv_uniq; exact HwfΘ) H H0)
@@ -182,17 +182,17 @@ Proof.
     eapply ad_pat__var with (b := b');
       [ exact Hb' | exact HP' | exact HwfQ' | ].
     rewrite pskl_to_uskl_via_bskl_syn.
-    eapply ad_precise_extends_pat_sub_v with (Δ := empty) (P := P);
+    eapply ad_precise_extends_pat_sub with (Δ := empty) (P := P);
       [ exact Hprec
       | rewrite <- pskl_to_uskl_via_bskl_syn;
-        eapply ad_pat_sub_v_mono; eauto
+        eapply ad_pat_sub_mono; eauto
       | exact HwfΘ'
       | exact HwfQ'
       | intros Hd; discriminate ].
   - (* anno *)
     apply ad_pat__anno;
       [ eapply a_wf_ptyp_mono; eauto | eapply a_wf_pskl_mono; eauto
-      | eapply ad_pat_sub_v_mono; eauto ].
+      | eapply ad_pat_sub_mono; eauto ].
   - (* freeze *)
     apply ad_pat__freeze; auto.
   - (* abs — extend both contexts with the SAME entry (precision refl) *)

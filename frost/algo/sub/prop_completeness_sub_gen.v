@@ -17,14 +17,14 @@
 
     THREE DECISIONS, and two of them CORRECT DESIGN §1 as written.
 
-    (1) THE FUEL JUDGMENT IS [ad_pat_sub_gv].  §1's skeleton named a plain fuel
+    (1) THE FUEL JUDGMENT IS [ad_pat_sub_fuel].  §1's skeleton named a plain fuel
         mirror [ad_pat_sub_n]; the development settled on the TAG-HYGIENIC one
         instead (def_subtyping.v), because precision-substitution
         — which the ForallL case applies to its premise to get the derivation it
         hands the IH — is FALSE over [_n] (the paper's "fresh Ψ'" means GLOBALLY
         fresh, and a plain mirror of [ad_pat_sub] renders it only as freshness
         from the tag context, which does not survive the Arrow split).  P5's
-        [ad_pat_sub_precise_upre_gv] and ALL FIVE P6 lemmas are stated over
+        [ad_pat_sub_precise_upre_fuel] and ALL FIVE P6 lemmas are stated over
         [_gv], so P7 must be too.
 
     (2) THE CONCLUSION KEEPS [a_consis_complete]'s FACTORED SHAPE — the
@@ -86,7 +86,7 @@ Require Import src.frost.algo.prop_inc_strengthen. (* a_assign_unify_consis_flex
 Require Import src.frost.deco_algo.prop_decorate_key.  (* a_sub_sound *)
 Require Import src.frost.algo.sub.prop_soundness_sub.      (* a_wf_pskl_subst_tvar *)
 Require Import src.frost.algo.consis.prop_consis_precise.   (* uskl_precise kit *)
-Require Import src.frost.algo.sub.prop_completeness_sub_precise.     (* P5 + the _gv transports *)
+Require Import src.frost.algo.sub.prop_completeness_sub_precise.     (* P5 + the fuelled transports *)
 (* P6 — via the facade (audit §8.1d).  The three piecewise imports this
    replaced were a workaround for the cluster-vs-outside name collisions, which
    are now at 0; verified this file has no own-name collision with the three
@@ -138,10 +138,10 @@ Qed.
     cex/cex_p7_univ_ghost_r_vacuous.v + cex/cex_p7_third_premise_forall.v).
     The repair moves the condition INTO THE JOIN, at the consistency leaves
     where it is consumed: the join is now the LEAF-VALID mirror
-    [ad_pat_sub_gv] (def_subtyping.v), and there is no third root
+    [ad_pat_sub_fuel] (def_subtyping.v), and there is no third root
     premise.  ⚙ Until 2026-08-12 a SECOND mirror [ad_pat_sub_g] — the same
     fuel with the leaf data forgotten — carried every P5/P6 invocation, and
-    [ad_pat_sub_gv_forget] weakened the join into it.  Both are gone: the
+    [ad_pat_sub_fuel_forget] weakened the join into it.  Both are gone: the
     leaf data survive each of P5's transports and P7's own ≡ᵘ reshapings
     ([ad_refine_pskl_tyequiv_source], prop_completeness_sub_precise.v), so
     there is exactly one fuel mirror.
@@ -170,7 +170,7 @@ Definition sub_complete_concl
           ≡ᵘ-equivalent to the κ-image), and the P0-fill ---- *)
   κ ∷ Θ0 ⊑ Θ ->
   {{ Θ ⊢ R' ≡ᵘ (msubst_uskl_syn κ R) }}a ->
-  ad_pat_sub_gv n NM M Ψ Θ R' Q ->
+  ad_pat_sub_fuel n NM M Ψ Θ R' Q ->
   ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh (msubst_pskl κ P0)) Q ->
   (* the solution's counterpart is well formed — the paper's EXTERNAL wf
      side condition (WF-SIDE-CONDITIONS.md), first consumed by
@@ -180,7 +180,7 @@ Definition sub_complete_concl
   (* the JOIN-side subject is ghost-free at the TY sort — an EXTERNAL side
      condition of the same family as the wf ones (WF-SIDE-CONDITIONS.md,
      2026-08-03).  P5's precision-substitution transport
-     ([ad_pat_sub_precise_upre_gv]) demands it at the ForallL rows and the
+     ([ad_pat_sub_precise_upre_fuel]) demands it at the ForallL rows and the
      join cannot supply it ([__arrow]'s domain leaf and [__infer] take an
      arbitrary subject).  Guarded by [NM = TY]: every ghost-heading join
      rule is SK-only, so the SK-side suppliers are all vacuous — which is
@@ -251,7 +251,7 @@ Definition sub_flex_complete_concl
      the join is the LEAF-VALID mirror at a ≡ᵘ-equivalent subject (see
      [sub_complete_concl]'s note) *)
   {{ Θ ⊢ R' ≡ᵘ (ptyp_to_uskl_syn (msubst_lookup κ α)) }}a ->
-  ad_pat_sub_gv n NM (mode_fn M) Ψ Θ R' Q ->
+  ad_pat_sub_fuel n NM (mode_fn M) Ψ Θ R' Q ->
   ad_refine_syn_f empty Θ empty
     (pskl_to_bskl_inh (msubst_pskl κ P0)) Q ->
   {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->    (* external wf, as in the main motive *)
@@ -338,8 +338,8 @@ Qed.
     subjects rebuild it from their own rule premises ([◇]'s fill is the
     counterpart's erasure, well-formed by the rule; [◈]'s counterpart is [◇]).
     Every other row is excluded by its mode. *)
-Lemma ad_pat_sub_gv_ti_refine : forall n NM Ψ Θ R Q,
-  ad_pat_sub_gv n NM mode_ti Ψ Θ R Q ->
+Lemma ad_pat_sub_fuel_ti_refine : forall n NM Ψ Θ R Q,
+  ad_pat_sub_fuel n NM mode_ti Ψ Θ R Q ->
   {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) }}ad.
 Proof.
   intros n NM Ψ Θ R Q H; inversion H; subst; try congruence.
@@ -379,8 +379,8 @@ Qed.
     is an inherited painting on the rule) can fire: [__univ_ghost_r] wants
     [guarded_uskl ◇], and every other row wants another subject shape or
     [N = TY]. *)
-Lemma ad_pat_sub_gv_hole_target_inh : forall n M Ψ Θ Q,
-  ad_pat_sub_gv n a_sub_mode_sk M Ψ Θ uskl_hole Q ->
+Lemma ad_pat_sub_fuel_hole_target_inh : forall n M Ψ Θ Q,
+  ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ uskl_hole Q ->
   pskl_to_bskl_inh (bskl_to_pskl Q) = Q.
 Proof.
   intros n M Ψ Θ Q H; inversion H; subst.
@@ -421,7 +421,7 @@ Proof.
   cbn in HeqP; subst P.
   (* the counterpart is an inherited painting — read off the derivation *)
   assert (HQ : pskl_to_bskl_inh (bskl_to_pskl Q) = Q)
-    by (eapply ad_pat_sub_gv_hole_target_inh; exact Hsub).
+    by (eapply ad_pat_sub_fuel_hole_target_inh; exact Hsub).
   (* the run: [Ghost], which returns the input skeleton unchanged *)
   exists P0, Θ0. split; [ apply a_sub__ghost | ].
   intros κ1 Hid Hinc1. exists κ.
@@ -457,8 +457,8 @@ Lemma ad_pat_consis_holeg_target_inh : forall Ψ Θ Q,
   pskl_to_bskl_inh (bskl_to_pskl Q) = Q.
 Proof. intros Ψ Θ Q H; inversion H; subst; reflexivity. Qed.
 
-Lemma ad_pat_sub_gv_holeg_target_inh : forall n M Ψ Θ Q,
-  ad_pat_sub_gv n a_sub_mode_sk M Ψ Θ uskl_holeg Q ->
+Lemma ad_pat_sub_fuel_holeg_target_inh : forall n M Ψ Θ Q,
+  ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ uskl_holeg Q ->
   pskl_to_bskl_inh (bskl_to_pskl Q) = Q.
 Proof.
   intros n M Ψ Θ Q H; inversion H; subst.
@@ -480,7 +480,7 @@ Proof.
   pose proof (msubst_uskl_syn_holeg_inv κ R Hsubj) as HR; subst R.
   cbn in HeqP; subst P.
   assert (HQ : pskl_to_bskl_inh (bskl_to_pskl Q) = Q)
-    by (eapply ad_pat_sub_gv_holeg_target_inh; exact Hsub).
+    by (eapply ad_pat_sub_fuel_holeg_target_inh; exact Hsub).
   exists P0, Θ0. split; [ apply a_sub__ghost | ].
   intros κ1 Hid Hinc1. exists κ.
   destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
@@ -1136,12 +1136,12 @@ Qed.
     interesting node is a variable, where both sides are the image's
     [ptyp_to_pskl]. *)
 
-(** At [M = TI] every admissible row of [ad_pat_sub_gv] carries a TAG-FREE
+(** At [M = TI] every admissible row of [ad_pat_sub_fuel] carries a TAG-FREE
     consistency between the same two skeletons: [__infer] has it on the rule,
     and [__ghost] / [__ghostg] rebuild it from theirs.  Every other row is
     excluded by its mode ([M <> TI], [mode_tc], or [mode_fn M]). *)
-Lemma ad_pat_sub_gv_ti_consis : forall n NM Ψ Θ R Q,
-  ad_pat_sub_gv n NM mode_ti Ψ Θ R Q ->
+Lemma ad_pat_sub_fuel_ti_consis : forall n NM Ψ Θ R Q,
+  ad_pat_sub_fuel n NM mode_ti Ψ Θ R Q ->
   {{ empty ⨟ Θ ⊢ˢ R ∼ Q }}ad.
 Proof.
   intros n NM Ψ Θ R Q H; inversion H; subst; try congruence;
@@ -1164,7 +1164,7 @@ Proof.
   pose proof (a_uskl_tyequiv_erase Hrel) as Herase.
   rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in Herase.
   (* 0. the leaf refinement — carried by the join's TI leaf, moved to κP *)
-  pose proof (ad_pat_sub_gv_ti_refine Hsub) as Hrp0.
+  pose proof (ad_pat_sub_fuel_ti_refine Hsub) as Hrp0.
   apply ad_refine_pskl_f_empty_intro in Hrp0.
   destruct (skl_tyequiv_refine_pskl_f_transport Herase Hwfth
               (fun x b Hb => Hb)) as [Hrpt _].
@@ -1186,7 +1186,7 @@ Proof.
   change ({{ Θ ⨟ empty ⊢ₚᵣ (msubst_pskl κ P) ⊑ (bskl_to_pskl Q) }}ad).
   (* the DECORATED premise undecorates, then the slack moves it to κP *)
   pose proof (ad_pat_consis_strip_tags
-                (ad_pat_sub_gv_ti_consis Hsub)) as Hc0.
+                (ad_pat_sub_fuel_ti_consis Hsub)) as Hc0.
   destruct (skl_tyequiv_consis_transport Herase Hwfth
               (fun x b Hb => Hb)) as [Hct _].
   pose proof (Hct _ _ Hc0) as Hc.
@@ -1560,7 +1560,7 @@ Proof.
   match goal with
   | Hj : {{ _ ⨟ Θ ⊢ˢ R1' ∼ Q1 }}ad,
     Hlf : {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R1' ⌋ˢ ⊳ _ }}ad,
-    Hs2 : ad_pat_sub_gv _ _ _ _ Θ R2' Q2 |- _ =>
+    Hs2 : ad_pat_sub_fuel _ _ _ _ Θ R2' Q2 |- _ =>
       rename Hj into Hj1; rename Hlf into Hrfn1; rename Hs2 into Hsub2
   end.
   (* P0 is an arrow, and the codomain keeps its mode-compatibility *)
@@ -2061,7 +2061,7 @@ Lemma a_sub_complete_forall_r : forall n Θ0 P0 P R R' Ψ Θ κ B L,
   (forall NM' M' Θ0' P0' P' R'' T'' Ψ' Θ' κ' Q',
      sub_complete_concl n NM' M' Θ0' P0' P' R'' T'' Ψ' Θ' κ' Q') ->
   (forall α, α `notin` L ->
-     ad_pat_sub_gv n a_sub_mode_ty mode_tc Ψ ((α ~ abind_tvar) ++ Θ) R'
+     ad_pat_sub_fuel n a_sub_mode_ty mode_tc Ψ ((α ~ abind_tvar) ++ Θ) R'
        (open_bskl_wrt_bskl B (bskl_var_f α))) ->
   sub_complete_concl (S n) a_sub_mode_ty mode_tc Θ0 P0 P R R' Ψ Θ κ
     (bskl_all_inh B).
@@ -2418,10 +2418,10 @@ Qed.
 (*  [sub_shield] gate and the paper's WLOG (H3: when [P0] is a ∀ the      *)
 (*  bundle dispatches ForallR first).  Assembly per the paper:            *)
 (*  slack-erase the join at the exact κ-image subject                     *)
-(*  ([ad_pat_sub_gv_tyequiv_subject] on the inverted body ≡ᵘ family);      *)
+(*  ([ad_pat_sub_fuel_tyequiv_subject] on the inverted body ≡ᵘ family);      *)
 (*  P6-L at ambient [Ψ ∪ Ψa] returns the extract + [κa];                  *)
 (*  [uskl_precise_of_precise] + [uskl_precise_open_into] build the ⊑ᵤ     *)
-(*  pair and [ad_pat_sub_precise_upre_gv] swaps the ORIGINAL join's       *)
+(*  pair and [ad_pat_sub_precise_upre_fuel] swaps the ORIGINAL join's       *)
 (*  subject to the guess's image, dropping [Ψa]; the IH runs at           *)
 (*  [(Ξ ++ Θ0, κa ++ κ)] with the slack regenerated at the new            *)
 (*  instantiation; algorithmic [ForallL] closes with the extract family;  *)
@@ -2438,7 +2438,7 @@ Lemma a_sub_complete_forall_l_tagged :
   Ψa ∩ (ftag_in_uskl (uskl_all_tag ε Rj)) [=] empty ->
   a_tags_sort NM Ψa ψa ->
   {{ Θ ⨟ empty ⊢ₚₛ ⌊ ψa ⌋ˢ }}a ->
-  ad_pat_sub_gv n NM M (Ψ `union` Ψa) Θ (open_uskl_wrt_uskl Rj ψa) Q ->
+  ad_pat_sub_fuel n NM M (Ψ `union` Ψa) Θ (open_uskl_wrt_uskl Rj ψa) Q ->
   (* ⭕⭕ TASK 0's GATE IS GONE (2026-08-05).  It used to demand
      [sub_shield Θ0 Ψa ∅ α P0 (open Rb α) ψa] at every marker, and no general
      supply route existed for a [P0] carrying a ∀ below its head — that
@@ -2498,7 +2498,7 @@ Proof.
   { eapply a_uskl_tyequiv_open with (L := Le);
       [ intros β Hβ; exact (a_uskl_tyequiv_sym (Hrelb β Hβ))
       | exact Hlcψa ]. }
-  assert (Hsubty : ad_pat_sub_gv n NM M (Ψ `union` Ψa) Θ
+  assert (Hsubty : ad_pat_sub_fuel n NM M (Ψ `union` Ψa) Θ
                      (subst_uskl_in_uskl ψa α
                         (msubst_uskl_syn κ
                            (open_uskl_wrt_uskl Rb (uskl_var_f α)))) Q).
@@ -2506,7 +2506,7 @@ Proof.
                (α := α) ltac:(clear - Fr; solve_notin_auto)).
     rewrite <- (subst_uskl_in_uskl_intro α (msubst_uskl_syn κ Rb) ψa
                   ltac:(clear - Fr; solve_notin_auto)).
-    eapply ad_pat_sub_gv_tyequiv_subject;
+    eapply ad_pat_sub_fuel_tyequiv_subject;
       [ exact HD | exact Hwfth
       | exact Hbody_eq ]. }
   assert (HwfSubj : {{ Θ ⨟ empty ⊢ₚₛ
@@ -2548,7 +2548,7 @@ Proof.
                     clear - Hdψ; solve_notin_auto)
               Hwfψa
               ltac:(intros β α0 τ Hβ; exfalso; clear - Hβ; solve_notin_auto)
-              ltac:(pose proof (ad_pat_sub_gv_ftag_sub HD) as Hfs;
+              ltac:(pose proof (ad_pat_sub_fuel_ftag_sub HD) as Hfs;
                     pose proof (ftag_in_uskl_open_upper Rj ψa) as Hou;
                     pose proof (d_tags_skl_ftag Hdtags) as Htg;
                     rewrite (ftag_in_uskl_open_var Rb α);
@@ -2601,10 +2601,10 @@ Proof.
                ltac:(clear - Frγ; solve_notin_auto)).
     apply uskl_ghost_free_subst;
       [ apply Hgb; clear - Frγ; fsetdec | exact HgfPa | exact HlcψPa ]. }
-  assert (HDswap : ad_pat_sub_gv n NM M Ψ Θ
+  assert (HDswap : ad_pat_sub_fuel n NM M Ψ Θ
             (open_uskl_wrt_uskl Rj
                (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa))) Q).
-  { eapply ad_pat_sub_precise_upre_gv with
+  { eapply ad_pat_sub_precise_upre_fuel with
       (Ψsup := Ψa) (Ψna := Ψa) (Ψr := Ψrep');
       [ exact HD | exact Hopen_pair | exact Hwfth
       | destruct HΨrep' as [He | He]; rewrite He; clear; fsetdec
@@ -2746,7 +2746,7 @@ Lemma a_sub_complete_forall_l_untagged :
   Ψa ∩ (ftag_in_uskl (uskl_all_syn Rj)) [=] empty ->
   a_tags_sort NM Ψa ψa ->
   {{ Θ ⨟ empty ⊢ₚₛ ⌊ ψa ⌋ˢ }}a ->
-  ad_pat_sub_gv n NM M (Ψ `union` Ψa) Θ (open_uskl_wrt_uskl Rj ψa) Q ->
+  ad_pat_sub_fuel n NM M (Ψ `union` Ψa) Θ (open_uskl_wrt_uskl Rj ψa) Q ->
   (* ⭕⭕ TASK 0's GATE IS GONE (2026-08-05).  It used to demand
      [sub_shield Θ0 Ψa ∅ α P0 (open Rb α) ψa] at every marker, and no general
      supply route existed for a [P0] carrying a ∀ below its head — that
@@ -2806,7 +2806,7 @@ Proof.
   { eapply a_uskl_tyequiv_open with (L := Le);
       [ intros β Hβ; exact (a_uskl_tyequiv_sym (Hrelb β Hβ))
       | exact Hlcψa ]. }
-  assert (Hsubty : ad_pat_sub_gv n NM M (Ψ `union` Ψa) Θ
+  assert (Hsubty : ad_pat_sub_fuel n NM M (Ψ `union` Ψa) Θ
                      (subst_uskl_in_uskl ψa α
                         (msubst_uskl_syn κ
                            (open_uskl_wrt_uskl Rb (uskl_var_f α)))) Q).
@@ -2814,7 +2814,7 @@ Proof.
                (α := α) ltac:(clear - Fr; solve_notin_auto)).
     rewrite <- (subst_uskl_in_uskl_intro α (msubst_uskl_syn κ Rb) ψa
                   ltac:(clear - Fr; solve_notin_auto)).
-    eapply ad_pat_sub_gv_tyequiv_subject;
+    eapply ad_pat_sub_fuel_tyequiv_subject;
       [ exact HD | exact Hwfth
       | exact Hbody_eq ]. }
   assert (HwfSubj : {{ Θ ⨟ empty ⊢ₚₛ
@@ -2856,7 +2856,7 @@ Proof.
                     clear - Hdψ; solve_notin_auto)
               Hwfψa
               ltac:(intros β α0 τ Hβ; exfalso; clear - Hβ; solve_notin_auto)
-              ltac:(pose proof (ad_pat_sub_gv_ftag_sub HD) as Hfs;
+              ltac:(pose proof (ad_pat_sub_fuel_ftag_sub HD) as Hfs;
                     pose proof (ftag_in_uskl_open_upper Rj ψa) as Hou;
                     pose proof (d_tags_skl_ftag Hdtags) as Htg;
                     rewrite (ftag_in_uskl_open_var Rb α);
@@ -2909,10 +2909,10 @@ Proof.
                ltac:(clear - Frγ; solve_notin_auto)).
     apply uskl_ghost_free_subst;
       [ apply Hgb; clear - Frγ; fsetdec | exact HgfPa | exact HlcψPa ]. }
-  assert (HDswap : ad_pat_sub_gv n NM M Ψ Θ
+  assert (HDswap : ad_pat_sub_fuel n NM M Ψ Θ
             (open_uskl_wrt_uskl Rj
                (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa))) Q).
-  { eapply ad_pat_sub_precise_upre_gv with
+  { eapply ad_pat_sub_precise_upre_fuel with
       (Ψsup := Ψa) (Ψna := Ψa) (Ψr := Ψrep');
       [ exact HD | exact Hopen_pair | exact Hwfth
       | destruct HΨrep' as [He | He]; rewrite He; clear; fsetdec
@@ -3314,7 +3314,7 @@ Proof.
                     apply Hmod; exact HSK)
               Hgf)
     as [_ [_ [Qt [HeqQt [[njoin Hjoin] _]]]]].
-  apply ad_pat_sub_of_gv in Hjoin.
+  apply ad_pat_sub_of_fuel in Hjoin.
   rewrite <- HeqQt. eapply ad_pat_sub_target_wf; exact Hjoin.
 Qed.
 
@@ -4182,8 +4182,8 @@ Qed.
     definition — same fuel), every other row being excluded by the mode or by
     the subject's shape (a mono painting is [unit] / a variable / an arrow,
     never a ghost and never a ∀). *)
-Lemma ad_pat_sub_gv_mono_fn_arrow_inv : forall n NM Mf Ψ Θ R Q,
-  ad_pat_sub_gv n NM Mf Ψ Θ R Q ->
+Lemma ad_pat_sub_fuel_mono_fn_arrow_inv : forall n NM Mf Ψ Θ R Q,
+  ad_pat_sub_fuel n NM Mf Ψ Θ R Q ->
   {{ ⊢ Θ }}a ->
   forall M τ, Mf = mode_fn M -> R = ptyp_to_uskl_syn τ ->
   mono_ptyp τ -> a_wf_ptyp Θ τ ->
@@ -4191,7 +4191,7 @@ Lemma ad_pat_sub_gv_mono_fn_arrow_inv : forall n NM Mf Ψ Θ R Q,
     {{ Θ ⊢ τ ≡ᵗ (ptyp_arrow τ1 τ2) }}a /\
     mono_ptyp τ1 /\ mono_ptyp τ2 /\
     a_wf_ptyp Θ τ1 /\ a_wf_ptyp Θ τ2 /\
-    ad_pat_sub_gv n NM (mode_fn M) Ψ Θ
+    ad_pat_sub_fuel n NM (mode_fn M) Ψ Θ
       (ptyp_to_uskl_syn (ptyp_arrow τ1 τ2)) Q.
 Proof.
   intros n NM Mf Ψ Θ R Q H Hwfth; induction H;
@@ -4208,14 +4208,14 @@ Proof.
     split; [ exact Hrefl | ].
     split; [ assumption | ]. split; [ assumption | ].
     split; [ assumption | ]. split; [ assumption | ].
-    cbn. eapply ad_pat_sub_gv__arrow; eassumption.
+    cbn. eapply ad_pat_sub_fuel__arrow; eassumption.
   - (* flex_mono : chase the definition, same fuel *)
     injection HeqR; intros He; subst.
     assert (Hmτ : mono_ptyp τ)
       by (eapply a_wf_aenv_binds_def_mono; [ exact Hwfth | eassumption ]).
     assert (Hwfτ : a_wf_ptyp Θ τ)
       by (eapply a_wf_aenv_binds_def_wf; [ exact Hwfth | eassumption ]).
-    destruct (IHad_pat_sub_gv Hwfth M0 τ HeqM eq_refl Hmτ Hwfτ)
+    destruct (IHad_pat_sub_fuel Hwfth M0 τ HeqM eq_refl Hmτ Hwfτ)
       as [τ1 [τ2 [Heq [Hm1 [Hm2 [Hwf1 [Hwf2 Hjoin]]]]]]].
     exists τ1, τ2.
     split.
@@ -4440,7 +4440,7 @@ Proof.
     as [τ' [HeqR' [Hmτ' [Hwfτ' Heqττ']]]].
   subst R'.
   (* ---- 3. … and the join makes it an ARROW ---- *)
-  destruct (ad_pat_sub_gv_mono_fn_arrow_inv HD Hwfth
+  destruct (ad_pat_sub_fuel_mono_fn_arrow_inv HD Hwfth
               (eq_refl (mode_fn M)) (eq_refl (ptyp_to_uskl_syn τ'))
               Hmτ' Hwfτ')
     as [τ1 [τ2 [Heqarr [Hm1 [Hm2 [Hwf1 [Hwf2 _]]]]]]].
@@ -5206,16 +5206,16 @@ Proof. reflexivity. Qed.
     ForallR / UnivGhostR / Arrow / FlexMono, and each either delegates to a
     leaf, recurses, or chases a definition ⇓ has already resolved. *)
 Lemma sub_gv_downarrow_mono : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_gv n NM M Ψ Θ R Q ->
+  ad_pat_sub_fuel n NM M Ψ Θ R Q ->
   {{ ⊢ Θ }}a ->
   forall A, R = ptyp_to_uskl_syn A -> mono_ptyp A -> a_wf_ptyp Θ A ->
-  ad_pat_sub_gv n NM M Ψ Θ (ptyp_to_uskl_syn (⇓ᵗ[ Θ ] A)) (⇓ᵇ[ Θ ] Q).
+  ad_pat_sub_fuel n NM M Ψ Θ (ptyp_to_uskl_syn (⇓ᵗ[ Θ ] A)) (⇓ᵇ[ Θ ] Q).
 Proof.
   intros n NM M Ψ Θ R Q H; induction H; intros Hwf A0 HeqR HmA HwfA.
   - (* infer *)
     assert (Hmd : mono_ptyp (⇓ᵗ[ Θ ] A0))
       by (apply mono_downarrow; [ exact Hwf | exact HwfA | exact HmA ]).
-    apply ad_pat_sub_gv__infer;
+    apply ad_pat_sub_fuel__infer;
       [ assumption
       | eapply consis_downarrow_mono;
           [ eassumption | exact Hwf | exact HeqR | exact HmA | exact HwfA ]
@@ -5237,7 +5237,7 @@ Proof.
       by (apply mono_downarrow; [ exact Hwf | exact HwfA | exact HmA ]).
     rewrite (msubst_bskl_pskl_to_bskl_inh (aenv_msubst Θ) B
                ltac:(intros; apply aenv_msubst_image_mono; exact Hwf)).
-    apply ad_pat_sub_gv__check;
+    apply ad_pat_sub_fuel__check;
       [ apply mono_ptyp_to_uskl_syn_guarded; exact Hmd
       | apply guarded_pskl_msubst_mono;
           [ apply aenv_msubst_lc; exact Hwf
@@ -5257,7 +5257,7 @@ Proof.
         | reflexivity ].
   - (* forall_r : the target's binder, under a fresh rigid entry *)
     simpl.
-    apply ad_pat_sub_gv__forall_r
+    apply ad_pat_sub_fuel__forall_r
       with (L := L `union` dom Θ `union` dom (aenv_msubst Θ)).
     intros α Hα.
     assert (Hwf' : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
@@ -5277,7 +5277,7 @@ Proof.
   - (* univ_ghost_r *)
     assert (Hmd : mono_ptyp (⇓ᵗ[ Θ ] A0))
       by (apply mono_downarrow; [ exact Hwf | exact HwfA | exact HmA ]).
-    simpl. apply ad_pat_sub_gv__univ_ghost_r;
+    simpl. apply ad_pat_sub_fuel__univ_ghost_r;
       [ assumption
       | apply mono_ptyp_to_uskl_syn_guarded; exact Hmd
       | apply guarded_bskl_msubst_mono;
@@ -5314,7 +5314,7 @@ Proof.
     rewrite ptyp_to_uskl_syn_arrow.
     change (⇓ᵇ[ Θ ] (bskl_arrow Q1 Q2))
       with (bskl_arrow (⇓ᵇ[ Θ ] Q1) (⇓ᵇ[ Θ ] Q2)).
-    apply ad_pat_sub_gv__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
+    apply ad_pat_sub_fuel__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
       [ | | | assumption ].
     + eapply consis_downarrow_mono;
         [ eassumption | exact Hwf | reflexivity | assumption | assumption ].
@@ -5324,7 +5324,7 @@ Proof.
       eapply refine_pskl_downarrow_mono;
         [ | exact Hwf | reflexivity | assumption | assumption ].
       rewrite <- uskl_to_pskl_ptyp_to_uskl_syn. eassumption.
-    + apply (IHad_pat_sub_gv Hwf A2 eq_refl ltac:(assumption)
+    + apply (IHad_pat_sub_fuel Hwf A2 eq_refl ltac:(assumption)
                ltac:(assumption)).
   - (* forall_l_tagged : a mono painting is never a ∀ *)
     destruct A0; cbn in HeqR; try discriminate HeqR; inversion HmA.
@@ -5346,17 +5346,17 @@ Proof.
       by (apply aenv_msubst_lookup_def; assumption).
     replace (⇓ᵗ[ Θ ] (ptyp_var_f α)) with (⇓ᵗ[ Θ ] τ)
       by (symmetry; exact Hlk).
-    exact (IHad_pat_sub_gv Hwf τ eq_refl Hmτ Hwfτ).
+    exact (IHad_pat_sub_fuel Hwf τ eq_refl Hmτ Hwfτ).
 Qed.
 
-(** THE JOIN's version.  Every row of [ad_pat_sub_gv] that a MONOTYPE-painting
+(** THE JOIN's version.  Every row of [ad_pat_sub_fuel] that a MONOTYPE-painting
     subject admits either ties [Q] to the subject through a consistency leaf
     (Infer / Check / UnivGhostR / Arrow's domain), recurses (Arrow's codomain,
     ForallR, FlexMono), or is excluded by the subject's shape — a mono
     painting is never a ∀, a ghost, or a tophole, which kills the two ForallL
     rows, Ghost / GhostG and UnivGhostL / LG. *)
 Lemma sub_gv_bskl_downarrow_mono_scoped : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_gv n NM M Ψ Θ R Q ->
+  ad_pat_sub_fuel n NM M Ψ Θ R Q ->
   {{ ⊢ Θ }}a ->
   forall A D,
     R = ptyp_to_uskl_syn A -> mono_ptyp A ->
@@ -5402,7 +5402,7 @@ Proof.
           [ exact H | exact Hwf | reflexivity | assumption
           | clear - HAD; fsetdec ]. }
       clear - h1 h; fsetdec.
-    + refine (IHad_pat_sub_gv Hwf A2 D eq_refl _ _ γ h);
+    + refine (IHad_pat_sub_fuel Hwf A2 D eq_refl _ _ γ h);
         [ assumption | clear - HAD; fsetdec ].
   - (* forall_l_tagged : a mono painting is never a ∀ *)
     destruct A0; cbn in HeqR; try discriminate HeqR; inversion HmA.
@@ -5428,7 +5428,7 @@ Proof.
           by (apply aenv_msubst_lookup_def; assumption)
     end.
     rewrite Hlk in HAD.
-    exact (IHad_pat_sub_gv Hwf τ D eq_refl Hmτ HAD).
+    exact (IHad_pat_sub_fuel Hwf τ D eq_refl Hmτ HAD).
 Qed.
 
 (* ===================================================================== *)
@@ -5588,21 +5588,21 @@ Qed.
 
     ⚠️ The mode must stay GENERAL: [__arrow]'s recursive premise runs at [M],
     not at [mode_fn M], so an FN-only statement does not even induct. *)
-Lemma ad_pat_sub_gv_mono_strengthen : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_gv n NM M Ψ Θ R Q ->
+Lemma ad_pat_sub_fuel_mono_strengthen : forall n NM M Ψ Θ R Q,
+  ad_pat_sub_fuel n NM M Ψ Θ R Q ->
   forall τ, R = ptyp_to_uskl_syn τ -> mono_ptyp τ ->
   forall Θ', uniq Θ -> {{ ⊢ Θ' }}a ->
   (forall x b, binds x b Θ' -> binds x b Θ) ->
   (forall γ, γ `in` ftvar_in_ptyp τ -> γ `in` dom Θ') ->
   (forall γ, γ `in` ftvar_in_bskl Q -> γ `in` dom Θ') ->
-  ad_pat_sub_gv n NM M Ψ Θ' R Q.
+  ad_pat_sub_fuel n NM M Ψ Θ' R Q.
 Proof.
   intros n NM M Ψ Θ R Q H; induction H;
     intros τ0 HeqR Hm Θ' Hu Hwf' Hsub HscR HscQ;
     pose proof (ftvar_in_uskl_ptyp_syn τ0) as HftvR;
     rewrite <- HeqR in HftvR.
   - (* infer *)
-    apply ad_pat_sub_gv__infer; try assumption.
+    apply ad_pat_sub_fuel__infer; try assumption.
     + eapply ad_pat_consis_strengthen; try eassumption;
         intros γ Hγ;
         solve [ apply HscR; clear - Hγ HftvR; fsetdec
@@ -5616,7 +5616,7 @@ Proof.
               | apply HscQ; rewrite ftvar_bskl_to_pskl in Hγ;
                 clear - Hγ; fsetdec ].
   - (* check *)
-    apply ad_pat_sub_gv__check; try assumption.
+    apply ad_pat_sub_fuel__check; try assumption.
     + eapply ad_pat_consis_strengthen; try eassumption;
         intros γ Hγ;
         solve [ apply HscR; clear - Hγ HftvR; fsetdec
@@ -5629,7 +5629,7 @@ Proof.
                 clear - Hγ HftvR; fsetdec
               | apply HscQ; rewrite ftvar_in_bskl_inh; clear - Hγ; fsetdec ].
   - (* forall_r : the opener joins the CONTEXT *)
-    apply ad_pat_sub_gv__forall_r with (L := L `union` dom Θ `union` dom Θ').
+    apply ad_pat_sub_fuel__forall_r with (L := L `union` dom Θ `union` dom Θ').
     intros α Hα.
     eapply H0;
       [ clear - Hα; fsetdec | exact HeqR | exact Hm
@@ -5646,7 +5646,7 @@ Proof.
       by (apply HscQ; simpl; clear - Hγ Hup Hne; fsetdec).
     clear - h; fsetdec.
   - (* univ_ghost_r *)
-    apply ad_pat_sub_gv__univ_ghost_r; try assumption.
+    apply ad_pat_sub_fuel__univ_ghost_r; try assumption.
     + eapply ad_pat_consis_strengthen; try eassumption;
         intros γ Hγ;
         solve [ apply HscR; clear - Hγ HftvR; fsetdec
@@ -5663,7 +5663,7 @@ Proof.
   - (* arrow *)
     destruct τ0; cbn in HeqR; try discriminate HeqR.
     inversion HeqR; subst. inversion Hm; subst.
-    eapply ad_pat_sub_gv__arrow; [ | | | eassumption ].
+    eapply ad_pat_sub_fuel__arrow; [ | | | eassumption ].
     + eapply ad_pat_consis_strengthen; try eassumption.
       * intros γ Hγ. apply HscR. simpl. simpl in HftvR.
         clear - Hγ HftvR. fsetdec.
@@ -5676,7 +5676,7 @@ Proof.
         simpl in HftvR. clear - Hγ HftvR. fsetdec.
       * intros γ Hγ. right. apply HscQ. simpl.
         rewrite ftvar_bskl_to_pskl in Hγ. clear - Hγ. fsetdec.
-    + eapply IHad_pat_sub_gv;
+    + eapply IHad_pat_sub_fuel;
         [ reflexivity | assumption | exact Hu | exact Hwf' | exact Hsub | | ].
       * intros γ Hγ. apply HscR. simpl. simpl in HftvR.
         clear - Hγ HftvR. fsetdec.
@@ -5706,8 +5706,8 @@ Proof.
     assert (Hb' : binds α (abind_flex_mono_def τ) Θ')
       by (eapply binds_strengthen; [ eassumption | exact Hu | exact Hsub
                                    | exact HαΘ' ]).
-    eapply ad_pat_sub_gv__flex_mono; [ exact Hb' | ].
-    eapply IHad_pat_sub_gv;
+    eapply ad_pat_sub_fuel__flex_mono; [ exact Hb' | ].
+    eapply IHad_pat_sub_fuel;
       [ reflexivity
       | eapply a_wf_aenv_binds_def_mono; [ exact Hwf' | exact Hb' ]
       | exact Hu | exact Hwf' | exact Hsub | | exact HscQ ].
@@ -6359,9 +6359,9 @@ Proof.
   { rewrite Hddτ'. rewrite Hddα.
     apply a_wf_ptyp_downarrow_mono;
       [ exact HwfΘ' | exact Hwfα' | exact Hmκα ]. }
-  assert (Hjoin' : ad_pat_sub_gv n NM (mode_fn M) Ψ Θ'
+  assert (Hjoin' : ad_pat_sub_fuel n NM (mode_fn M) Ψ Θ'
                      (ptyp_to_uskl_syn (⇓ᵗ[ Θ ] τ')) (⇓ᵇ[ Θ ] Q)).
-  { eapply ad_pat_sub_gv_mono_strengthen;
+  { eapply ad_pat_sub_fuel_mono_strengthen;
       [ eapply sub_gv_downarrow_mono;
           [ exact HD | exact Hwfth | reflexivity | exact Hmτ' | exact Hwfτ' ]
       | reflexivity | exact Hmd | exact HuqΘ | exact HwfΘ' | exact Hsub'
@@ -6745,9 +6745,9 @@ Proof.
   { rewrite Hddτ'. rewrite Hddα.
     apply a_wf_ptyp_downarrow_mono;
       [ exact HwfΘ' | exact Hwfα' | exact Hmκα ]. }
-  assert (Hjoin' : ad_pat_sub_gv n NM (mode_fn M) Ψ Θ'
+  assert (Hjoin' : ad_pat_sub_fuel n NM (mode_fn M) Ψ Θ'
                      (ptyp_to_uskl_syn (⇓ᵗ[ Θ ] τ')) (⇓ᵇ[ Θ ] Q)).
-  { eapply ad_pat_sub_gv_mono_strengthen;
+  { eapply ad_pat_sub_fuel_mono_strengthen;
       [ eapply sub_gv_downarrow_mono;
           [ exact HD | exact Hwfth | reflexivity | exact Hmτ' | exact Hwfτ' ]
       | reflexivity | exact Hmd | exact HuqΘ | exact HwfΘ' | exact Hsub'
@@ -7163,9 +7163,9 @@ Proof.
   { rewrite Hddτ'. rewrite Hddα.
     apply a_wf_ptyp_downarrow_mono;
       [ exact HwfΘ' | exact Hwfα' | exact Hmκα ]. }
-  assert (Hjoin' : ad_pat_sub_gv n NM (mode_fn M) Ψ Θ'
+  assert (Hjoin' : ad_pat_sub_fuel n NM (mode_fn M) Ψ Θ'
                      (ptyp_to_uskl_syn (⇓ᵗ[ Θ ] τ')) (⇓ᵇ[ Θ ] Q)).
-  { eapply ad_pat_sub_gv_mono_strengthen;
+  { eapply ad_pat_sub_fuel_mono_strengthen;
       [ eapply sub_gv_downarrow_mono;
           [ exact HD | exact Hwfth | reflexivity | exact Hmτ' | exact Hwfτ' ]
       | reflexivity | exact Hmd | exact HuqΘ | exact HwfΘ' | exact Hsub'

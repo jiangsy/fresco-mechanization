@@ -308,57 +308,83 @@ Qed.
 (*  §4  Subtyping, skeleton inference, typing                             *)
 (* ===================================================================== *)
 
-(* ⚙ RESTART NOTE (2026-08-12) — [ad_pat_sub_mono], the PLAIN-relation mirror
-   of [ad_pat_sub_gv_mono] below, was deleted: nothing in the tree ever used
-   it.  Same story as [ad_pat_sub_subst_mid] (algo/prop_suffix_erase.v). *)
 
 (** The LEAF-VALID mirror, fuel carried unchanged: the four leaf rows'
     refinement datum travels by [ad_refine_pskl_mono]. *)
-Lemma ad_pat_sub_gv_mono : forall n NM M Ψ Θ R Q,
-  ad_pat_sub_gv n NM M Ψ Θ R Q ->
-  forall Θ', aenv_tbinds_le Θ Θ' -> ad_pat_sub_gv n NM M Ψ Θ' R Q.
+Lemma ad_pat_sub_fuel_mono : forall n NM M Ψ Θ R Q,
+  ad_pat_sub_fuel n NM M Ψ Θ R Q ->
+  forall Θ', aenv_tbinds_le Θ Θ' -> ad_pat_sub_fuel n NM M Ψ Θ' R Q.
 Proof.
   intros n NM M Ψ Θ R Q H; induction H; intros Θ' Hle.
-  - apply ad_pat_sub_gv__infer;
+  - apply ad_pat_sub_fuel__infer;
       [ assumption | eapply ad_pat_consis_mono; eauto | assumption
       | eapply ad_refine_pskl_mono; eauto ].
-  - apply ad_pat_sub_gv__check;
+  - apply ad_pat_sub_fuel__check;
       [ assumption | assumption | eapply ad_pat_consis_mono; eauto
       | eapply ad_refine_pskl_mono; eauto ].
-  - apply ad_pat_sub_gv__forall_r with (L := L). intros α Hα.
+  - apply ad_pat_sub_fuel__forall_r with (L := L). intros α Hα.
     apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
-  - apply ad_pat_sub_gv__univ_ghost_r;
+  - apply ad_pat_sub_fuel__univ_ghost_r;
       [ assumption | assumption | assumption | assumption
       | eapply ad_pat_consis_mono; eauto
       | eapply ad_refine_pskl_mono; eauto ].
-  - eapply ad_pat_sub_gv__arrow;
+  - eapply ad_pat_sub_fuel__arrow;
       [ eapply ad_pat_consis_mono; eauto
       | eapply ad_refine_pskl_mono; eauto
-      | apply IHad_pat_sub_gv; exact Hle | eassumption ].
-  - eapply ad_pat_sub_gv__forall_l_tagged;
+      | apply IHad_pat_sub_fuel; exact Hle | eassumption ].
+  - eapply ad_pat_sub_fuel__forall_l_tagged;
       [ assumption | eassumption | eassumption | eassumption
-      | eapply a_wf_pskl_mono; eauto | apply IHad_pat_sub_gv; exact Hle ].
-  - eapply ad_pat_sub_gv__forall_l_untagged;
+      | eapply a_wf_pskl_mono; eauto | apply IHad_pat_sub_fuel; exact Hle ].
+  - eapply ad_pat_sub_fuel__forall_l_untagged;
       [ assumption | eassumption | eassumption | eassumption
-      | eapply a_wf_pskl_mono; eauto | apply IHad_pat_sub_gv; exact Hle ].
-  - apply ad_pat_sub_gv__ghost;
+      | eapply a_wf_pskl_mono; eauto | apply IHad_pat_sub_fuel; exact Hle ].
+  - apply ad_pat_sub_fuel__ghost;
       [ assumption | eapply a_wf_pskl_mono; eauto | assumption ].
-  - apply ad_pat_sub_gv__ghostg; assumption.
-  - apply ad_pat_sub_gv__univ_ghost_l;
-      [ assumption | apply IHad_pat_sub_gv; exact Hle ].
-  - apply ad_pat_sub_gv__univ_ghost_lg;
-      [ assumption | apply IHad_pat_sub_gv; exact Hle ].
-  - eapply ad_pat_sub_gv__flex_mono;
+  - apply ad_pat_sub_fuel__ghostg; assumption.
+  - apply ad_pat_sub_fuel__univ_ghost_l;
+      [ assumption | apply IHad_pat_sub_fuel; exact Hle ].
+  - apply ad_pat_sub_fuel__univ_ghost_lg;
+      [ assumption | apply IHad_pat_sub_fuel; exact Hle ].
+  - eapply ad_pat_sub_fuel__flex_mono;
       [ eapply aenv_tbinds_le_flex_def; eauto
-      | apply IHad_pat_sub_gv; exact Hle ].
+      | apply IHad_pat_sub_fuel; exact Hle ].
 Qed.
 
-Lemma ad_pat_sub_v_mono : forall NM M Ψ Θ R Q,
-  ad_pat_sub_v NM M Ψ Θ R Q ->
-  forall Θ', aenv_tbinds_le Θ Θ' -> ad_pat_sub_v NM M Ψ Θ' R Q.
+(** The four leaf rows' refinement datum travels by [ad_refine_pskl_mono],
+    exactly as in the fuelled mirror below. *)
+Lemma ad_pat_sub_mono : forall NM M Ψ Θ R Q,
+  {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad ->
+  forall Θ', aenv_tbinds_le Θ Θ' -> {{ Ψ ⨟ Θ' ⊢ˢ[ NM | M ] R ⩽ Q }}ad.
 Proof.
-  intros NM M Ψ Θ R Q [n H] Θ' Hle.
-  exists n. eapply ad_pat_sub_gv_mono; eauto.
+  intros NM M Ψ Θ R Q H; induction H; intros Θ' Hle.
+  - apply ad_pat_sub__infer;
+      [ assumption | eapply ad_pat_consis_mono; eauto | assumption
+      | eapply ad_refine_pskl_mono; eauto ].
+  - apply ad_pat_sub__check;
+      [ assumption | assumption | eapply ad_pat_consis_mono; eauto
+      | eapply ad_refine_pskl_mono; eauto ].
+  - apply ad_pat_sub__forall_r with (L := L). intros α Hα.
+    apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
+  - apply ad_pat_sub__univ_ghost_r;
+      [ assumption | assumption | assumption | assumption
+      | eapply ad_pat_consis_mono; eauto
+      | eapply ad_refine_pskl_mono; eauto ].
+  - eapply ad_pat_sub__arrow;
+      [ eapply ad_pat_consis_mono; eauto
+      | eapply ad_refine_pskl_mono; eauto | auto | eassumption ].
+  - eapply ad_pat_sub__forall_l_tagged;
+      [ assumption | eassumption | eassumption | eassumption
+      | eapply a_wf_pskl_mono; eauto | auto ].
+  - eapply ad_pat_sub__forall_l_untagged;
+      [ assumption | eassumption | eassumption | eassumption
+      | eapply a_wf_pskl_mono; eauto | auto ].
+  - apply ad_pat_sub__ghost;
+      [ assumption | eapply a_wf_pskl_mono; eauto | assumption ].
+  - apply ad_pat_sub__ghostg; assumption.
+  - apply ad_pat_sub__univ_ghost_l; auto.
+  - apply ad_pat_sub__univ_ghost_lg; auto.
+  - eapply ad_pat_sub__flex_mono;
+      [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
 Qed.
 
 (** [ad_pat] / [ad_sd_typing] DO read term entries (their Var rules), so
@@ -371,13 +397,13 @@ Proof.
   intros M Θ e Q H; induction H; intros Θ' Hle;
     pose proof (aenv_tbinds_le_of_binds_le Hle) as Htle.
   - apply ad_pat__unit;
-      [ eapply a_wf_pskl_mono; eauto | eapply ad_pat_sub_v_mono; eauto ].
+      [ eapply a_wf_pskl_mono; eauto | eapply ad_pat_sub_mono; eauto ].
   - eapply ad_pat__var;
       [ eauto | eassumption | eapply a_wf_pskl_mono; eauto
-      | eapply ad_pat_sub_v_mono; eauto ].
+      | eapply ad_pat_sub_mono; eauto ].
   - apply ad_pat__anno;
       [ eapply a_wf_ptyp_mono; eauto | eapply a_wf_pskl_mono; eauto
-      | eapply ad_pat_sub_v_mono; eauto ].
+      | eapply ad_pat_sub_mono; eauto ].
   - apply ad_pat__freeze; auto.
   - apply ad_pat__abs with (L := L);
       [ assumption | eapply a_wf_pskl_mono; eauto | assumption | ].
@@ -400,11 +426,11 @@ Lemma ad_sd_typing_mono : forall M Θ e B,
 Proof.
   intros M Θ e B H; induction H; intros Θ' Hle;
     pose proof (aenv_tbinds_le_of_binds_le Hle) as Htle.
-  - apply ad_sd_typing__unit. eapply ad_pat_sub_v_mono; eauto.
-  - eapply ad_sd_typing__var; [ eauto | eapply ad_pat_sub_v_mono; eauto ].
+  - apply ad_sd_typing__unit. eapply ad_pat_sub_mono; eauto.
+  - eapply ad_sd_typing__var; [ eauto | eapply ad_pat_sub_mono; eauto ].
   - eapply ad_sd_typing__anno;
       [ eapply a_wf_ptyp_mono; eauto | auto
-      | eapply ad_pat_sub_v_mono; eauto ].
+      | eapply ad_pat_sub_mono; eauto ].
   - eapply ad_sd_typing__freeze; [ auto | eapply a_tyequiv_ctx_mono; eauto ].
   - apply ad_sd_typing__abs_check_step with (L := L); [ assumption | ].
     intros α Hα. apply H1; [ exact Hα | apply aenv_binds_le_cons; exact Hle ].

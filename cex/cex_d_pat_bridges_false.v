@@ -26,7 +26,7 @@
     the mechanisation's deferral of it as "it has not bitten yet".  It bit
     here.  The repair was to stop deferring: [d_pat_sub]'s three
     consistency-bearing rows now carry the presupposition, exactly as
-    [ad_pat_sub_gv] always did (decl/def_extra.v).
+    [ad_pat_sub_fuel] always did (decl/def_extra.v).
 
     SO BOTH REFUTATIONS ARE RETRACTED, at the very configuration that produced
     them — [cap_d_pat] is no longer derivable ([cap_d_pat_excluded] below), so

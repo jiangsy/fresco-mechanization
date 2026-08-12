@@ -5,7 +5,7 @@
     Section D, scouting item 1 (docs/HANDOFF-section-d.md §6.1 / §6.2).
 
     THE SITUATION.  [a_sub_complete] (thm:complete-subtyping) takes its
-    declarative join as [ad_pat_sub_gv] — the LEAF-VALID mirror, which carries
+    declarative join as [ad_pat_sub_fuel] — the LEAF-VALID mirror, which carries
     at every consistency leaf the subject-refinement datum
     [{{ Θ ⨟ ∅ ⊢ᵣₚ ⌊R⌋ˢ ⊳ ⌊Q⌋ }}ad].  That is the third solution condition of the
     paper's own AUGMENTED thm:complete-consistency (consistency-proofs.tex:
@@ -23,7 +23,7 @@
 
         subject  ∀X.◇      counterpart  ∀ˢX.X
 
-    — has a plain [ad_pat_sub] derivation (§1) and NO [ad_pat_sub_gv] one
+    — has a plain [ad_pat_sub] derivation (§1) and NO [ad_pat_sub_fuel] one
     (§2), and it is reachable from [ad_pat] as [P-Var] at an entry
     [x : ∀X.◇] (§3).  Consistency's ∀-rows push the rigid [X] into Θ, so the
     ghost may be FILLED with it; refinement's ∀-row pushes it into Δ and
@@ -134,10 +134,13 @@ Proof.
   eapply cap_hole_no_fill; [ | exact Hβ ]. clear - Fr; fsetdec.
 Qed.
 
-Lemma cap_no_gv : forall NM Θ,
-  ~ (exists n, ad_pat_sub_gv n NM mode_ti empty Θ capR capQ).
+(** ⚙ Stated over the PLAIN relation since 2026-08-12: [ad_pat_sub] carries
+    the leaf datum itself, so the refutation no longer has to detour through
+    the fuelled mirror — and [ad_pat] embeds the plain relation now. *)
+Lemma cap_no_join : forall NM Θ,
+  ~ ({{ empty ⨟ Θ ⊢ˢ[ NM | mode_ti ] capR ⩽ capQ }}ad).
 Proof.
-  intros NM Θ [n H]. inversion H; subst; try congruence.
+  intros NM Θ H. inversion H; subst; try congruence.
   (* the only row concluding at [mode_ti] is [__infer]; its leaf datum is
      exactly the refinement refuted above *)
   eapply cap_no_refine; eassumption.
@@ -173,7 +176,7 @@ Proof.
      the counterpart-wf premise (hand-off §5) *)
   cbn [pskl_to_bskl_syn bskl_to_uskl] in H6.
   (* ⚙ [NM]/[Θ] are strict-implicit here (Set Implicit Arguments) *)
-  exact (cap_no_gv H6).
+  exact (cap_no_join H6).
 Qed.
 
 (** §3b — and it is ONLY the leaf datum that rejects it: the context entry,

@@ -4161,7 +4161,7 @@ Proof.
      theorem's own statement keeps the PLAIN one, recovered here.  When
      [ad_pat] / [ad_sd_typing] switch to [_gv], this is where the [_gv]
      is handed on instead. *)
-  destruct Hjoin as [njoin Hjoin]; apply ad_pat_sub_of_gv in Hjoin.
+  destruct Hjoin as [njoin Hjoin]; apply ad_pat_sub_of_fuel in Hjoin.
   exact (conj Hisub (conj Hwf1
            (ex_intro _ Qt (conj HeQt (conj Hjoin
               (ad_refine_syn_f_forget Hrs)))))).
@@ -4183,7 +4183,7 @@ Theorem a_sub_sound_v : forall NM M P0 Θ0 P P' Θ1,
   Θ0 ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\
   exists Qt,
     bskl_to_pskl Qt = P' /\
-    ad_pat_sub_v NM M empty Θ1 (pskl_to_uskl P) Qt /\
+    {{ empty ⨟ Θ1 ⊢ˢ[ NM | M ] (pskl_to_uskl P) ⩽ Qt }}ad /\
     {{ Θ1 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ Qt }}ad.
 Proof.
   intros NM M P0 Θ0 P P' Θ1 Hrun Hwf HwfP0 HwfP Hmod Hgf.
@@ -4197,7 +4197,8 @@ Proof.
                     apply Hmod; exact HSK)
               Hgf)
     as (Hisub & Hwf1 & Qt & HeQt & Hjoin & Hrs).
+  destruct Hjoin as [ njoin Hjoin ].
   exact (conj Hisub (conj Hwf1
-           (ex_intro _ Qt (conj HeQt (conj Hjoin
+           (ex_intro _ Qt (conj HeQt (conj (ad_pat_sub_of_fuel Hjoin)
               (ad_refine_syn_f_forget Hrs)))))).
 Qed.

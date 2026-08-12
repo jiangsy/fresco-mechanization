@@ -158,7 +158,7 @@ Proof. intros. rewrite ptyp_to_uskl_syn_subst. reflexivity. Qed.
 (*  §3  The missing LEAF renames                                         *)
 (*                                                                        *)
 (*  Prefix kept UNSUBSTITUTED, like every existing leaf rename            *)
-(*  ([ad_pat_consis_rename_tvar], [ad_pat_sub_gv_rename_tvar], …); §4     *)
+(*  ([ad_pat_consis_rename_tvar], [ad_pat_sub_fuel_rename_tvar], …); §4     *)
 (*  crosses to the painted prefix by [tbinds_le_subst_mid].               *)
 (* ===================================================================== *)
 
@@ -309,20 +309,18 @@ Proof.
     | apply tbinds_le_subst_mid; exact Hdefs ].
 Qed.
 
-Lemma ad_pat_sub_v_rename_paint : forall NM M Ψ Θ1 α Θ0 R Q β',
-  ad_pat_sub_v NM M Ψ (Θ1 ++ (α ~ abind_tvar) ++ Θ0) R Q ->
+Lemma ad_pat_sub_rename_paint : forall NM M Ψ Θ1 α Θ0 R Q β',
+  {{ Ψ ⨟ (Θ1 ++ (α ~ abind_tvar) ++ Θ0) ⊢ˢ[ NM | M ] R ⩽ Q }}ad ->
   α `notin` dom (Θ1 ++ Θ0) ->
   (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
      α `notin` ftvar_in_ptyp τ) ->
-  ad_pat_sub_v NM M Ψ
-    ((subst_aenv (ptyp_var_f β') α Θ1) ++ (β' ~ abind_tvar) ++ Θ0)
-    (subst_uskl_in_uskl (uskl_var_f β') α R)
-    (subst_bskl_in_bskl (bskl_var_f β') α Q).
+  {{ Ψ ⨟ ((subst_aenv (ptyp_var_f β') α Θ1) ++ (β' ~ abind_tvar) ++ Θ0)
+     ⊢ˢ[ NM | M ] (subst_uskl_in_uskl (uskl_var_f β') α R)
+                ⩽ (subst_bskl_in_bskl (bskl_var_f β') α Q) }}ad.
 Proof.
-  intros * [n Hn] Hdom Hdefs.
-  exists n.
-  eapply ad_pat_sub_gv_mono;
-    [ apply ad_pat_sub_gv_rename_tvar; [ exact Hn | exact Hdom | exact Hdefs ]
+  intros * Hn Hdom Hdefs.
+  eapply ad_pat_sub_mono;
+    [ apply ad_pat_sub_rename_tvar; [ exact Hn | exact Hdom | exact Hdefs ]
     | apply tbinds_le_subst_mid; exact Hdefs ].
 Qed.
 
@@ -351,7 +349,7 @@ Proof.
     apply ad_pat__unit.
     + rewrite <- bskl_to_pskl_subst_var.
       apply a_wf_pskl_rename_paint; [ exact H | exact Hdefs ].
-    + exact (@ad_pat_sub_v_rename_paint _ _ _ Θ1 α Θ0 _ _ β' H0 Hdom Hdefs).
+    + exact (@ad_pat_sub_rename_paint _ _ _ Θ1 α Θ0 _ _ β' H0 Hdom Hdefs).
   - (* var *)
     apply binds_app_1 in H as [Hb1 | Hb2];
       [ | apply binds_app_1 in Hb2 as [Hbm | Hb0] ].
@@ -365,7 +363,7 @@ Proof.
         apply abind_to_pskl_subst; exact H0.
       * rewrite <- bskl_to_pskl_subst_var.
         apply a_wf_pskl_rename_paint; [ exact H1 | exact Hdefs ].
-      * pose proof (@ad_pat_sub_v_rename_paint _ _ _ Θ1 α Θ0 _ _ β'
+      * pose proof (@ad_pat_sub_rename_paint _ _ _ Θ1 α Θ0 _ _ β'
                       H2 Hdom Hdefs) as Hs.
         rewrite subst_var_pskl_to_uskl_syn in Hs. exact Hs.
     + (* the renamed slot : impossible, a rigid entry has no skeleton *)
@@ -381,7 +379,7 @@ Proof.
       * exact H0.
       * rewrite <- bskl_to_pskl_subst_var.
         apply a_wf_pskl_rename_paint; [ exact H1 | exact Hdefs ].
-      * pose proof (@ad_pat_sub_v_rename_paint _ _ _ Θ1 α Θ0 _ _ β'
+      * pose proof (@ad_pat_sub_rename_paint _ _ _ Θ1 α Θ0 _ _ β'
                       H2 Hdom Hdefs) as Hs.
         rewrite subst_var_pskl_to_uskl_syn in Hs.
         rewrite subst_pskl_in_pskl_fresh_eq in Hs; [ exact Hs | exact Hfr ].
@@ -390,7 +388,7 @@ Proof.
     + apply a_wf_ptyp_rename_paint; [ exact H | exact Hdefs ].
     + rewrite <- bskl_to_pskl_subst_var.
       apply a_wf_pskl_rename_paint; [ exact H0 | exact Hdefs ].
-    + pose proof (@ad_pat_sub_v_rename_paint _ _ _ Θ1 α Θ0 _ _ β'
+    + pose proof (@ad_pat_sub_rename_paint _ _ _ Θ1 α Θ0 _ _ β'
                     H1 Hdom Hdefs) as Hs.
       rewrite subst_var_pskl_to_uskl_syn, subst_var_ptyp_to_pskl in Hs.
       exact Hs.
@@ -524,7 +522,7 @@ Proof.
   induction H; intros Θ1 ->; intros Hdom Hβ' Hdefs; simpl.
   - (* unit *)
     apply ad_sd_typing__unit.
-    pose proof (@ad_pat_sub_v_rename_paint _ _ _ Θ1 α Θ0 _ _ β'
+    pose proof (@ad_pat_sub_rename_paint _ _ _ Θ1 α Θ0 _ _ β'
                   H Hdom Hdefs) as Hs.
     rewrite subst_var_btyp_to_bskl in Hs. exact Hs.
   - (* var *)
@@ -537,7 +535,7 @@ Proof.
         change (abind_var_typ (subst_ptyp_in_ptyp (ptyp_var_f β') α A))
           with (subst_abind (ptyp_var_f β') α (abind_var_typ A)).
         apply (@binds_subst_aenv (ptyp_var_f β') α x (abind_var_typ A) Θ1 Hb1).
-      * pose proof (@ad_pat_sub_v_rename_paint _ _ _ Θ1 α Θ0 _ _ β'
+      * pose proof (@ad_pat_sub_rename_paint _ _ _ Θ1 α Θ0 _ _ β'
                       H0 Hdom Hdefs) as Hs.
         rewrite subst_var_btyp_to_bskl, subst_var_ptyp_to_uskl_syn in Hs.
         exact Hs.
@@ -547,7 +545,7 @@ Proof.
       assert (Hfr : α `notin` ftvar_in_ptyp A) by eauto.
       apply ad_sd_typing__var with (A := A).
       * apply binds_app_3. simpl. right. exact Hb0.
-      * pose proof (@ad_pat_sub_v_rename_paint _ _ _ Θ1 α Θ0 _ _ β'
+      * pose proof (@ad_pat_sub_rename_paint _ _ _ Θ1 α Θ0 _ _ β'
                       H0 Hdom Hdefs) as Hs.
         rewrite subst_var_btyp_to_bskl, subst_var_ptyp_to_uskl_syn in Hs.
         rewrite subst_ptyp_in_ptyp_fresh_eq in Hs; [ exact Hs | exact Hfr ].
@@ -556,7 +554,7 @@ Proof.
     + apply a_wf_ptyp_rename_paint; [ exact H | exact Hdefs ].
     + pose proof (IHad_sd_typing Θ1 eq_refl Hdom Hβ' Hdefs) as IHx.
       rewrite subst_var_ptyp_to_btyp_inh in IHx. exact IHx.
-    + pose proof (@ad_pat_sub_v_rename_paint _ _ _ Θ1 α Θ0 _ _ β'
+    + pose proof (@ad_pat_sub_rename_paint _ _ _ Θ1 α Θ0 _ _ β'
                     H1 Hdom Hdefs) as Hs.
       rewrite subst_var_btyp_to_bskl, subst_var_ptyp_to_uskl_syn in Hs.
       exact Hs.

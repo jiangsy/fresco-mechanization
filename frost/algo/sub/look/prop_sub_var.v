@@ -308,7 +308,7 @@ Qed.
     the guess, the instantiation contributes nothing, so the conclusion
     carries [Ψρ' ⊆ Ψρ ∪ Ψb] plus the two facts callers need — that Ψρ' still
     covers Ψρ, and that it covers Ψb whenever β really occurs.  (At the call
-    site the missing case is harmless: [ad_pat_sub_gv_ftag_sub] and the
+    site the missing case is harmless: [ad_pat_sub_fuel_ftag_sub] and the
     ForallL rule's hygiene premise force Ψb = ∅ when β is unused.) *)
 (** Erasure preserves free variables. *)
 Lemma uskl_to_pskl_ftv : forall R,
@@ -1077,9 +1077,9 @@ Qed.
 
     1. the mode [M] and the paper's [skmod{N}{P0}{M}], in the two-implication
        form used by [a_sub_sound] (prop_decorate_key.v:3331);
-    2. the subtyping premise [ad_pat_sub_gv] (the tag-hygienic fuel mirror)
+    2. the subtyping premise [ad_pat_sub_fuel] (the tag-hygienic fuel mirror)
        in place of consistency — the fuel rides inertly here, since ForallL's
-       premise is a structural sub-derivation of [ad_pat_sub_gv]; the fuel is
+       premise is a structural sub-derivation of [ad_pat_sub_fuel]; the fuel is
        what P7b's measure consumes;
     3. **[flex_shield] — the repair.**  Without it the statement is FALSE
        (cex_p6sv_forall_flex.v); [flex_shield_excludes_cex] above is the
@@ -1088,7 +1088,7 @@ Qed.
     Also carried, as in P6-Cs: well-formedness of the consistency SUBJECT
     (⌊ψsub⌋ˢ), the premise whose absence made P6-Cs false.
 
-    CASE MAP for the induction on [ad_pat_sub_gv] (paper's own case list at
+    CASE MAP for the induction on [ad_pat_sub_fuel] (paper's own case list at
     :1749, plus the mech-only rows):
       infer/univ_ghost_r/ghostg  ↔ Infer / UnivGhostR / GhostG — leaves with
                                    Ψ = ∅, so Ψa = ∅ and Pa := Pi
@@ -1471,7 +1471,7 @@ Qed.
       SolEq-GhostGuarded is the only surviving row: the paper's WLOG is now a
       THEOREM of the rule shape, and ~50 lines of case analysis are gone.
 
-   ⚙️ [L] is a BINDER NAME of the cofinite [ad_pat_sub_gv] rules, so the
+   ⚙️ [L] is a BINDER NAME of the cofinite [ad_pat_sub_fuel] rules, so the
    avoid-set is introduced as [Lav] after [induction]. *)
 Theorem a_solve_sub_complete_var :
   forall n NM M Θ0 Θs Θ Θw κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0,
@@ -1520,7 +1520,7 @@ Theorem a_solve_sub_complete_var :
      the mech's reading of the paper's "by weakening \refn[9] to Θ,β"
      (subtyping-proofs.tex:2153); at the top level [Θs = Θ]. *)
   (forall x b, binds x b Θs -> binds x b Θ) ->
-  ad_pat_sub_gv n NM M Ψsub Θs ψsub Q ->
+  ad_pat_sub_fuel n NM M Ψsub Θs ψsub Q ->
   {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
   (* ⭐ THE AVOID-SET PARAMETER: the SOLVE generates its own block now, and at
      a binder row the witness has to be fixed BEFORE the block is picked. *)
@@ -1561,7 +1561,7 @@ Proof.
     HwfΘ HwfΘ0 Hmon Hnr Hκw HΔρw
     HwfPi HwfP0 HmodSK HmodTY Hκ Hrho Htags HwfSub
     Htageq Hinter Hrhof Hdelta Hapart Hdfresh Hpre
-    (* ⚠️ [L] is a BINDER NAME of the cofinite [ad_pat_sub_gv] rules, which
+    (* ⚠️ [L] is a BINDER NAME of the cofinite [ad_pat_sub_fuel] rules, which
        [induction] has already claimed — the avoid-set comes in as [Lav]. *)
     HΨs1 HΨs2 Hext Hrefine Lav HLav;
     (* the derivation's own context is the rule binder [Θ]; the generalized
@@ -1976,7 +1976,7 @@ Proof.
        ρ-relation splits (or is a leaf).  The LEFT premise is a consistency
        judgment and goes to P6-Cv exactly as in Check; the RIGHT one is the
        IH.  Tags split by [arrow_tag_split]; the per-branch flow facts are
-       P6-Cv's own arrow recipe ([ad_pat_sub_gv_ftag_sub] /
+       P6-Cv's own arrow recipe ([ad_pat_sub_fuel_ftag_sub] /
        [ad_pat_consis_ftag_sub] + [uskl_rho_ftag_sub] + [d_tags_skl_ftag]). *)
     match goal with Hc : {{ _ ⨟ Θ ⊢ˢ R1 ∼ Q1 }}ad |- _ => rename Hc into Hcons end.
     match goal with Hu : Ψ [=] _ `union` _ |- _ => rename Hu into Hun end.
@@ -2044,7 +2044,7 @@ Proof.
         pose proof (d_tags_skl_ftag (a_tags_sort_d_tags Htags1)) as Hc.
         clear - Ha Hb Hc; fsetdec. }
       assert (Hft2 : Ψ2 [<=] Ψρ2 `union` Ψt2).
-      { pose proof (ad_pat_sub_gv_ftag_sub Hsub) as Ha.
+      { pose proof (ad_pat_sub_fuel_ftag_sub Hsub) as Ha.
         pose proof (uskl_rho_ftag_sub Hrho2) as Hb.
         pose proof (d_tags_skl_ftag (a_tags_sort_d_tags Htags2)) as Hc.
         clear - Ha Hb Hc; fsetdec. }
@@ -2240,7 +2240,7 @@ Proof.
        Δρ,β — β is the one variable ρ_b replaces and ρ did not, and it is
        the SAME β the precision premise pairs Pi's binder with. *)
     match goal with
-      Hd : ad_pat_sub_gv _ _ _ _ _ (open_uskl_wrt_uskl R ψ) _ |- _ =>
+      Hd : ad_pat_sub_fuel _ _ _ _ _ (open_uskl_wrt_uskl R ψ) _ |- _ =>
       rename Hd into Hprem end.
     match goal with Ht : a_tags_sort _ _ ψ |- _ => rename Ht into Htagsg end.
     match goal with Hw : {{ _ ⨟ _ ⊢ₚₛ ⌊ ψ ⌋ˢ }}a |- _ => rename Hw into Hwfg0 end.
@@ -2289,7 +2289,7 @@ Proof.
       (* the guess's own tags are Ψ', which the rule keeps off ∀^ε R, and the
          premise's solved tags are bounded by ITS subject's — so ε ∉ Ψsub *)
       assert (HεΨsub : ε `notin` Ψ).
-      { pose proof (ad_pat_sub_gv_ftag_sub Hprem) as Hb.
+      { pose proof (ad_pat_sub_fuel_ftag_sub Hprem) as Hb.
         pose proof (ftag_in_uskl_open_upper R ψ) as Hup.
         pose proof (d_tags_skl_ftag (a_tags_sort_d_tags Htagsg)) as Hg.
         cbn [ftag_in_uskl] in Hgfresh.
@@ -2366,7 +2366,7 @@ Proof.
                          = open_uskl_wrt_uskl R (uskl_var_f β)).
           { rewrite (@subst_uskl_in_uskl_intro β R ψ); [ | exact HβR ].
             apply subst_uskl_in_uskl_fresh_eq; exact HβRo. }
-          pose proof (ad_pat_sub_gv_ftag_sub Hprem) as Hb.
+          pose proof (ad_pat_sub_fuel_ftag_sub Hprem) as Hb.
           rewrite Heqo in Hb. rewrite (ftag_in_uskl_open_var R β) in Hb.
           cbn [ftag_in_uskl] in Hgfresh.
           clear - Hb Hgfresh; fsetdec. }

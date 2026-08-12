@@ -738,7 +738,8 @@ Proof.
   (* ⚙ name the two premises by SHAPE — an inversion pattern cannot
      destructure the fuel-forgotten join's existential *)
   match goal with
-  | H : ad_pat_sub_v _ _ _ _ _ _ |- _ => destruct H as [njoin Hjoin]
+  | H : ad_pat_sub _ _ _ _ _ _ |- _ =>
+      destruct (ad_pat_sub_to_fuel H) as [njoin Hjoin]
   end.
   match goal with
   | H : {{ _ ⨟ empty ⊢ₚₛ (bskl_to_pskl _) }}a |- _ => rename H into HwfQ
@@ -777,7 +778,8 @@ Proof.
     as Hskl.
   inversion Hd; subst.
   match goal with
-  | H : ad_pat_sub_v _ _ _ _ _ _ |- _ => destruct H as [njoin Hjoin]
+  | H : ad_pat_sub _ _ _ _ _ _ |- _ =>
+      destruct (ad_pat_sub_to_fuel H) as [njoin Hjoin]
   end.
   match goal with
   | H : {{ _ ⨟ empty ⊢ₚₛ (bskl_to_pskl _) }}a |- _ => rename H into HwfQ
@@ -830,7 +832,8 @@ Proof.
   intros M Θ0 P0 e A κ Θ Q Hwf0 HwfΘ HwfP0 Hmod Hinc Hrig Hd Href.
   inversion Hd; subst.
   match goal with
-  | H : ad_pat_sub_v _ _ _ _ _ _ |- _ => destruct H as [njoin Hjoin]
+  | H : ad_pat_sub _ _ _ _ _ _ |- _ =>
+      destruct (ad_pat_sub_to_fuel H) as [njoin Hjoin]
   end.
   match goal with
   | H : {{ _ ⨟ empty ⊢ₚₛ (bskl_to_pskl _) }}a |- _ => rename H into HwfQ

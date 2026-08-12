@@ -6,7 +6,7 @@
     them.  This file is that assembly.
 
     ⭐ THE DISPATCH IS ON THE JOIN, and it determines the subject.  Each row
-    lemma reads its premises off one [ad_pat_sub_gv] constructor; the
+    lemma reads its premises off one [ad_pat_sub_fuel] constructor; the
     dispatcher inverts the join and delegates.  What the join does NOT fix is
     the UNRESOLVED subject [R] — the motive relates it only by the ≡ᵘ slack
     [{{ Θ ⊢ R' ≡ᵘ κR }}a] — so every shape-fixing row owes a transfer from [R'] to
@@ -275,7 +275,7 @@ Qed.
 (*  than re-deriving it.  docs/DESIGN-completeness-subtyping.md §12.1      *)
 (*  carries the same content in prose.                                     *)
 (*                                                                        *)
-(*  THE CASE MAP.  Inverting [ad_pat_sub_gv] gives twelve rows.  What the  *)
+(*  THE CASE MAP.  Inverting [ad_pat_sub_fuel] gives twelve rows.  What the  *)
 (*  join does NOT fix is the motive's UNRESOLVED subject [R]; §1 is the    *)
 (*  transfer, and it is total except at [__arrow]:                         *)
 (*                                                                        *)
@@ -346,7 +346,7 @@ Qed.
 (*     Q]) and the join's subject is [κα̂].  So the chain must run          *)
 (*     β ∈ ftv P0 ⟹ β ∈ ftv (κP0) ⟹ β ∈ ftv Q ⟹ β ∈ ftv (κα̂) — and its     *)
 (*     last step is the direction "the SUBJECT confines the TARGET", which *)
-(*     is FALSE for the join in general ([ad_pat_sub_gv__ghost] gives a ◇   *)
+(*     is FALSE for the join in general ([ad_pat_sub_fuel__ghost] gives a ◇   *)
 (*     subject an arbitrary target).  It has to be re-derived for the      *)
 (*     MONOTYPE subject the walk actually has, where every row carries a   *)
 (*     refinement premise off the subject's HOLE-FREE erasure.  That is    *)
@@ -491,7 +491,7 @@ Qed.
 (*    β ∈ ftv P0  ⟹  β ∈ ftv (κP0)  ⟹  β ∈ ftv Q  ⟹  β ∈ ftv (κα̂)         *)
 (*                                                                        *)
 (*  whose last step is "the SUBJECT confines the TARGET" — FALSE for the   *)
-(*  join in general ([ad_pat_sub_gv__ghost] gives a ◇ subject an arbitrary *)
+(*  join in general ([ad_pat_sub_fuel__ghost] gives a ◇ subject an arbitrary *)
 (*  target).  ⭐ What makes it TRUE here is that the walk's subject is a    *)
 (*  MONOTYPE, and P7a's [Flex-SkipRigid] row already built exactly that    *)
 (*  confinement: [sub_gv_bskl_downarrow_mono_scoped] (the ⇓-form, which is *)
@@ -512,7 +512,7 @@ Lemma sub_flex_rigid_head_absurd :
   β `in` ftvar_in_pskl P0 ->                       (* the STUCK configuration *)
   κ ∷ (Ξ ++ (β ~ abind_tvar) ++ Θ0) ⊑ Θ ->
   {{ Θ ⊢ R' ≡ᵘ (ptyp_to_uskl_syn (msubst_lookup κ α)) }}a ->
-  ad_pat_sub_gv n NM (mode_fn M) Ψ Θ R' Q ->
+  ad_pat_sub_fuel n NM (mode_fn M) Ψ Θ R' Q ->
   ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh (msubst_pskl κ P0)) Q ->
   False.
 Proof.
@@ -805,11 +805,11 @@ Qed.
     premise refutes a ∀-inh counterpart (the same step §8 makes, read the
     other way round). *)
 Lemma sub_gv_all_inh_forall_r_family : forall n NM M Ψ Θ R Qt,
-  ad_pat_sub_gv n NM M Ψ Θ R Qt ->
+  ad_pat_sub_fuel n NM M Ψ Θ R Qt ->
   forall B, NM = a_sub_mode_ty -> M = mode_tc -> Qt = bskl_all_inh B ->
   exists L m, m < n /\
     forall α, α `notin` L ->
-      ad_pat_sub_gv m a_sub_mode_ty mode_tc Ψ ((α ~ abind_tvar) ++ Θ) R
+      ad_pat_sub_fuel m a_sub_mode_ty mode_tc Ψ ((α ~ abind_tvar) ++ Θ) R
         (open_bskl_wrt_bskl B (bskl_var_f α)).
 Proof.
   intros n NM M Ψ Θ R Qt H; induction H; intros B0 HNM HM HQ;
@@ -823,7 +823,7 @@ Proof.
     exists L, n. split; [ lia | ].
     intros α Hα.
     match goal with
-    | Hf : forall α, α `notin` L -> ad_pat_sub_gv _ _ _ _ _ _ _ |- _ =>
+    | Hf : forall α, α `notin` L -> ad_pat_sub_fuel _ _ _ _ _ _ _ |- _ =>
         exact (Hf α Hα)
     end.
   - (* forall_l_tagged : PERMUTE — the IH's family, re-instantiated under
@@ -835,7 +835,7 @@ Proof.
     end.
     exists L, (S m). split; [ lia | ].
     intros α Hα.
-    eapply ad_pat_sub_gv__forall_l_tagged;
+    eapply ad_pat_sub_fuel__forall_l_tagged;
       [ eassumption | eassumption | eassumption | eassumption
       | eapply a_wf_pskl_weaken;
           [ intros y c Hb; simpl_env; apply binds_app_3; exact Hb
@@ -849,7 +849,7 @@ Proof.
     end.
     exists L, (S m). split; [ lia | ].
     intros α Hα.
-    eapply ad_pat_sub_gv__forall_l_untagged;
+    eapply ad_pat_sub_fuel__forall_l_untagged;
       [ eassumption | eassumption | eassumption | eassumption
       | eapply a_wf_pskl_weaken;
           [ intros y c Hb; simpl_env; apply binds_app_3; exact Hb
@@ -879,7 +879,7 @@ Proof.
             Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
             HwfQ Hgf).
   intros α Hα.
-  eapply ad_pat_sub_gv_fuel_weaken; [ exact (Hfam α Hα) | lia ].
+  eapply ad_pat_sub_fuel_weaken; [ exact (Hfam α Hα) | lia ].
 Qed.
 
 (** The WLOG's TRICHOTOMY, straight off mode compatibility.  At [NM = SK]
@@ -980,7 +980,7 @@ Definition sub_flex_complete (n : nat) (Θ0 : aenv) : Prop :=
     judgments.  Instantiated with the constant [True] it gives the general
     assembly, and the third condition hands back [sub_flex_complete]. *)
 Lemma sub_complete_assemble : forall n NM M Ψ Θ R' Q,
-  ad_pat_sub_gv n NM M Ψ Θ R' Q ->
+  ad_pat_sub_fuel n NM M Ψ Θ R' Q ->
   (forall n', n' < n -> sub_complete n') ->
   forall Θ0 (PIH : uskl -> Prop),
     (forall R0, PIH (uskl_tophole R0) -> PIH R0) ->
@@ -1318,7 +1318,7 @@ Theorem a_sub_complete :
     (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
     κ ∷ Θ0 ⊑ Θ ->
     {{ Θ ⊢ R' ≡ᵘ (msubst_uskl_syn κ (pskl_to_uskl P)) }}a ->
-    ad_pat_sub_gv n NM M empty Θ R' Q ->
+    ad_pat_sub_fuel n NM M empty Θ R' Q ->
     (* ⚙ the PLAIN refinement, not the internal [ad_refine_syn_f] variant.
        [F] is consistency soundness' ghost-fill hygiene set (prop_soundness_
        consis.v §"Fill-hygienic refinement"); at the [F = ∅] this theorem

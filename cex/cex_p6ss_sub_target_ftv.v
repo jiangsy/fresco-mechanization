@@ -1,5 +1,5 @@
 (** ⚠️ THE SUB-SIDE ANALOGUE OF [ad_pat_consis_target_ftv] IS FALSE, AND
-    [is_tskl] DOES NOT REPAIR IT — [ad_pat_sub_gv__forall_l_tagged] IS THE
+    [is_tskl] DOES NOT REPAIR IT — [ad_pat_sub_fuel__forall_l_tagged] IS THE
     CULPRIT.
 
     P6-Ss Phase B (docs/DESIGN-completeness-subtyping.md §8 (g)) planned to
@@ -19,8 +19,8 @@
 
         {{ Ψ ⨟ Θ ⊢ˢ ψ ∼ Q }}ad  →  is_tskl ψ  →  ftv Q ⊆ ftv ψ ∪ def_ftv Θ.
 
-    The sub-side needs the same statement over [ad_pat_sub_gv].  It was known
-    to fail for [ad_pat_sub_gv__ghost] (subject ◇, target an ARBITRARY
+    The sub-side needs the same statement over [ad_pat_sub_fuel].  It was known
+    to fail for [ad_pat_sub_fuel__ghost] (subject ◇, target an ARBITRARY
     Θ-scoped P), and [is_tskl] does exclude that row — [is_tskl] admits the
     DOTTED ghost ◈ ([uskl_holeg]) but not the plain ◇ ([uskl_hole]).  It also
     excludes [__ghostg], [__univ_ghost_l], [__forall_l_untagged] (whose
@@ -39,7 +39,7 @@
     WHY NO SHAPE PREMISE REPAIRS IT.  The strongest bound the sub side can
     carry is [ftv Q ⊆ ftv R ∪ dom Θ] — the guess is Θ-scoped and nothing
     more.  But that Θ is the DERIVATION's context, and
-    [ad_pat_sub_gv__forall_r] runs its premise at [Θ,β], so the only sound
+    [ad_pat_sub_fuel__forall_r] runs its premise at [Θ,β], so the only sound
     bound readmits exactly the binder Sub-ForallR has to strip.  ForallL is
     the essential subtyping rule; consistency escapes the problem only
     because it HAS no ForallL.
@@ -49,7 +49,7 @@
     still collects a β-free 𝒞, by taking LS-ForallL / LS-UnivGhostL BEFORE
     LS-ForallR: LS-Var then fires at the UNDESCENDED [∀β.P0].  And those
     configurations are exactly characterised, because
-    [ad_pat_sub_gv__forall_r] forces [a_sub_mode_ty] + [mode_tc], where the
+    [ad_pat_sub_fuel__forall_r] forces [a_sub_mode_ty] + [mode_tc], where the
     ONLY applicable rows are [__check], [__forall_r] and [__forall_l_*] —
     so under a Sub-ForallR the P6-Ss LEAF ([P = α]) is reachable only when
     P is a ∀/⊤◇-STACK over α, and then every ∀-body is constant, every
@@ -130,10 +130,10 @@ Qed.
 (** The derivation.  ForallL (tagged) instantiates with [β]; the premise is
     then the Check leaf, whose consistency is the plain variable rule. *)
 Lemma cex_derivation :
-  ad_pat_sub_gv 1 a_sub_mode_ty mode_tc empty Θcex Rcex Qcex.
+  ad_pat_sub_fuel 1 a_sub_mode_ty mode_tc empty Θcex Rcex Qcex.
 Proof.
   unfold Rcex, Qcex, Θcex.
-  apply ad_pat_sub_gv__forall_l_tagged
+  apply ad_pat_sub_fuel__forall_l_tagged
     with (Ψ' := empty) (ψ := uskl_var_f β).
   - intro Hc; discriminate Hc.
   - clear; fsetdec.
@@ -143,7 +143,7 @@ Proof.
   - cbn [open_uskl_wrt_uskl open_uskl_wrt_uskl_rec].
     (* [pskl_to_bskl_inh (pskl_var_f β) = bskl_var_f β] *)
     change (bskl_var_f β) with (pskl_to_bskl_inh (pskl_var_f β)).
-    apply ad_pat_sub_gv__check.
+    apply ad_pat_sub_fuel__check.
     + apply guarded_uskl__var.
     + apply guarded_pskl__var.
     + cbn. apply ad_pat_consis__var;
@@ -173,7 +173,7 @@ End CexSubTargetFtv.
     subject and [a_wf_aenv] on the context. *)
 Theorem p6ss_sub_target_ftv_is_false :
   ~ (forall n NM M Ψ Θ R Q,
-       ad_pat_sub_gv n NM M Ψ Θ R Q ->
+       ad_pat_sub_fuel n NM M Ψ Θ R Q ->
        {{ ⊢ Θ }}a ->
        is_tskl R ->
        ftvar_in_bskl Q [<=] ftvar_in_uskl R `union` def_ftv Θ).
@@ -189,7 +189,7 @@ Qed.
 (** NON-VACUITY: the witness derivation really is a derivation, and its
     subject really is a decorated skeleton. *)
 Theorem p6ss_sub_target_ftv_cex_nonvacuous :
-  exists β ε, ad_pat_sub_gv 1 a_sub_mode_ty mode_tc empty (Θcex β)
+  exists β ε, ad_pat_sub_fuel 1 a_sub_mode_ty mode_tc empty (Θcex β)
                 (Rcex ε) (Qcex β)
               /\ is_tskl (Rcex ε)
               /\ {{ ⊢ (Θcex β) }}a.

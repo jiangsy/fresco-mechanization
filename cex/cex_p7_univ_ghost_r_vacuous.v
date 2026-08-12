@@ -1,7 +1,7 @@
 (** ⚠️ HISTORICAL WITNESS — the ROOT-level third solution premise made P7b's
     Sub-UnivGhostR row VACUOUS.  RESOLVED 2026-07-30: the motive was repaired
     the same day — the third premise was REMOVED from the root and moved to
-    the CONSISTENCY LEAVES of the join ([ad_pat_sub_gv],
+    the CONSISTENCY LEAVES of the join ([ad_pat_sub_fuel],
     def_subtyping.v), and [a_sub_complete_univ_ghost_r] is now a REAL
     proof (algorithmic UnivGhostR + the shared [□]-P0 precision core + a
     [∀◇]-wrap).  This file keeps the machine-checked record of WHY the
@@ -140,11 +140,11 @@ Qed.
     motive the LEAF-VALID join IS derivable here — the leaf's refinement is [unit ⊳ unit] at the
     STRIPPED counterpart — so this configuration is now inside the theorem's
     coverage. *)
-Lemma cex_join_gv :
-  ad_pat_sub_gv 0 a_sub_mode_sk mode_tc empty nil
+Lemma cex_join_fuel :
+  ad_pat_sub_fuel 0 a_sub_mode_sk mode_tc empty nil
     (msubst_uskl_syn nil cex_R) cex_Q.
 Proof.
-  cbn. apply ad_pat_sub_gv__univ_ghost_r.
+  cbn. apply ad_pat_sub_fuel__univ_ghost_r.
   - reflexivity.
   - apply guarded_uskl__unit.
   - apply guarded_bskl__unit.

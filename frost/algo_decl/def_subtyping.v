@@ -69,7 +69,7 @@ Inductive ad_pat_sub :
     is_sskl Q ->
     (* ⭐ [paper-gap] THE PRESUPPOSITION OF SKELETON CONSISTENCY at this leaf
        (declarative.tex:2074), the same premise [d_pat_sub] carries.  Added
-       2026-08-12: until then only the mirror [ad_pat_sub_gv] had it, so the
+       2026-08-12: until then only the mirror [ad_pat_sub_fuel] had it, so the
        plain relation and its declarative twin disagreed and the bridge had to
        run through the mirror.  It is NOT derivable from the consistency
        premise (cex/cex_ad_pat_join_not_leaf_valid.v). *)
@@ -148,9 +148,9 @@ where "{{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad" :=
    algo/sub/prop_completeness_sub_precise.v §P5a) were DELETED: NOTHING in the
    tree consumed any of them.  §1 of the completeness skeleton named [_n] as
    the measure, but the development settled on the TAG-HYGIENIC fuel
-   [ad_pat_sub_gv] (algo/sub/prop_completeness_sub_gen.v §1) and never came
+   [ad_pat_sub_fuel] (algo/sub/prop_completeness_sub_gen.v §1) and never came
    back, so [_n] was scaffolding that outlived its plan.
-   To re-derive: copy [ad_pat_sub_gv] (below) with the ORIGINAL fuel discipline
+   To re-derive: copy [ad_pat_sub_fuel] (below) with the ORIGINAL fuel discipline
    — every rule increments, leaves conclude at [S n].  ⚙ 2026-08-11: there is
    nothing else to drop — [ad_pat_sub] now carries the [ftag_in_uskl] hygiene
    itself, so "[_n] = non-hygienic mirror" no longer names a difference.
@@ -170,7 +170,7 @@ where "{{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad" :=
     arrived later.  The split cost nothing to keep and nothing to remove:
     the [_hyg] file's dependencies were this file's plus [Lia].
 
-    [ad_pat_sub_gv] refines [ad_pat_sub] in ONE way — the FUEL discipline.
+    [ad_pat_sub_fuel] refines [ad_pat_sub] in ONE way — the FUEL discipline.
     It used to refine it in three; the other two, TAG HYGIENE and the LEAF
     PRESUPPOSITION, are now shared.
 
@@ -193,7 +193,7 @@ where "{{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad" :=
     ⭐⭐ 2026-08-12: NOR IS THE LEAF PRESUPPOSITION.  [ad_pat_sub]'s own
     consistency-leaf rows carry it now, so the SECOND mirror this file used to
     declare — [ad_pat_sub_g], the same fuel with the leaf data forgotten — is
-    gone, together with [ad_pat_sub_gv_forget] and the ~20 [_g]-flavoured
+    gone, together with [ad_pat_sub_fuel_forget] and the ~20 [_g]-flavoured
     lemmas that duplicated their [_gv] twins.  What kept [_g] alive was P7's
     two ForallL rows, which reshape the join's subject along [≡ᵘ] before
     handing it to the look layer; the leaf data survive that reshaping by
@@ -212,7 +212,7 @@ where "{{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad" :=
        non-incrementing rules recurse on structural sub-derivations, so
        the main induction uses lex(fuel, derivation)).
 
-    The erasure [_gv -> ad_pat_sub] is [ad_pat_sub_of_gv]
+    The erasure [_fuel -> ad_pat_sub] is [ad_pat_sub_of_fuel]
     (prop_sub_mirrors.v).  ⚠️ The other direction ([ad_pat_sub] -> [_gv],
     which is what a COMPLETENESS corollary over the declarative system would
     need) is still owed — but it is now purely a FUEL question: hygiene and
@@ -220,7 +220,7 @@ where "{{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad" :=
     docs/HANDOFF-closed-corollaries-declarative.md. *)
 
 (* ===================================================================== *)
-(*  [ad_pat_sub_gv] (completeness-only, P7's join): [ad_pat_sub] + FUEL.   *)
+(*  [ad_pat_sub_fuel] (completeness-only, P7's join): [ad_pat_sub] + FUEL.   *)
 (*                                                                        *)
 (*  ⭐ The four CONSISTENCY-LEAF rows — [__infer], [__check],              *)
 (*  [__univ_ghost_r] and [__arrow]'s DOMAIN — carry the SUBJECT's         *)
@@ -248,92 +248,91 @@ where "{{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad" :=
 (*                                                                        *)
 (* ===================================================================== *)
 
-Inductive ad_pat_sub_gv :
+Inductive ad_pat_sub_fuel :
   nat -> a_sub_mode -> mode -> atoms -> aenv -> uskl -> bskl -> Prop :=
-| ad_pat_sub_gv__infer : forall n NM Ψ Θ R Q,                 (* Infer *)
+| ad_pat_sub_fuel__infer : forall n NM Ψ Θ R Q,                 (* Infer *)
     Ψ [=] empty ->
     {{ empty ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
     is_sskl Q ->
     {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) }}ad ->
-    ad_pat_sub_gv n NM mode_ti Ψ Θ R Q
-| ad_pat_sub_gv__check : forall n Ψ Θ T B,                    (* Check (TY) *)
+    ad_pat_sub_fuel n NM mode_ti Ψ Θ R Q
+| ad_pat_sub_fuel__check : forall n Ψ Θ T B,                    (* Check (TY) *)
     guarded_uskl T ->
     guarded_pskl B ->
     {{ Ψ ⨟ Θ ⊢ˢ T ∼ (pskl_to_bskl_inh B) }}ad ->
     {{ Θ ⨟ empty ⊢ᵣₚ ⌊ T ⌋ˢ ⊳ B }}ad ->
-    ad_pat_sub_gv n a_sub_mode_ty mode_tc Ψ Θ T (pskl_to_bskl_inh B)
-| ad_pat_sub_gv__forall_r : forall n L Ψ Θ T B,              (* ForallR (TY) *)
+    ad_pat_sub_fuel n a_sub_mode_ty mode_tc Ψ Θ T (pskl_to_bskl_inh B)
+| ad_pat_sub_fuel__forall_r : forall n L Ψ Θ T B,              (* ForallR (TY) *)
     (forall α, α `notin` L ->
-       ad_pat_sub_gv n a_sub_mode_ty mode_tc Ψ ((α ~ abind_tvar) ++ Θ)
+       ad_pat_sub_fuel n a_sub_mode_ty mode_tc Ψ ((α ~ abind_tvar) ++ Θ)
          T (open_bskl_wrt_bskl B (bskl_var_f α))) ->
-    ad_pat_sub_gv (S n) a_sub_mode_ty mode_tc Ψ Θ T (bskl_all_inh B)
-| ad_pat_sub_gv__univ_ghost_r : forall n Ψ Θ R Q,            (* UnivGhostR (SK) *)
+    ad_pat_sub_fuel (S n) a_sub_mode_ty mode_tc Ψ Θ T (bskl_all_inh B)
+| ad_pat_sub_fuel__univ_ghost_r : forall n Ψ Θ R Q,            (* UnivGhostR (SK) *)
     Ψ [=] empty ->
     guarded_uskl R ->
     guarded_bskl Q ->
     is_sskl Q ->
     {{ empty ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
     {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) }}ad ->
-    ad_pat_sub_gv n a_sub_mode_sk mode_tc Ψ Θ R (bskl_tophole Q)
-| ad_pat_sub_gv__arrow : forall n NM Ψ Ψ1 Ψ2 Θ M R1 R2 Q1 Q2, (* Arrow *)
+    ad_pat_sub_fuel n a_sub_mode_sk mode_tc Ψ Θ R (bskl_tophole Q)
+| ad_pat_sub_fuel__arrow : forall n NM Ψ Ψ1 Ψ2 Θ M R1 R2 Q1 Q2, (* Arrow *)
     {{ Ψ1 ⨟ Θ ⊢ˢ R1 ∼ Q1 }}ad ->
     (* the DOMAIN premise is itself a consistency leaf — Sub-Arrow invokes
        thm:complete-consistency on it (:3334), so it carries the same
        subject-refinement data as [__infer] *)
     {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R1 ⌋ˢ ⊳ (bskl_to_pskl Q1) }}ad ->
-    ad_pat_sub_gv n NM M Ψ2 Θ R2 Q2 ->
+    ad_pat_sub_fuel n NM M Ψ2 Θ R2 Q2 ->
     Ψ [=] Ψ1 `union` Ψ2 ->
-    ad_pat_sub_gv (S n) NM (mode_fn M) Ψ Θ (uskl_arrow R1 R2) (bskl_arrow Q1 Q2)
-| ad_pat_sub_gv__forall_l_tagged : forall n NM Ψ Ψ' Θ M ε R ψ Q, (* ForallL, β1=ε *)
+    ad_pat_sub_fuel (S n) NM (mode_fn M) Ψ Θ (uskl_arrow R1 R2) (bskl_arrow Q1 Q2)
+| ad_pat_sub_fuel__forall_l_tagged : forall n NM Ψ Ψ' Θ M ε R ψ Q, (* ForallL, β1=ε *)
     M <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
     Ψ' ∩ (ftag_in_uskl (uskl_all_tag ε R)) [=] empty ->
     a_tags_sort NM Ψ' ψ ->
     {{ Θ ⨟ empty ⊢ₚₛ ⌊ ψ ⌋ˢ }}a ->
-    ad_pat_sub_gv n NM M (Ψ `union` Ψ') Θ (open_uskl_wrt_uskl R ψ) Q ->
-    ad_pat_sub_gv (S n) NM M Ψ Θ (uskl_all_tag ε R) Q
-| ad_pat_sub_gv__forall_l_untagged : forall n NM Ψ Ψ' Θ M R ψ Q, (* ForallL, β1=· *)
+    ad_pat_sub_fuel n NM M (Ψ `union` Ψ') Θ (open_uskl_wrt_uskl R ψ) Q ->
+    ad_pat_sub_fuel (S n) NM M Ψ Θ (uskl_all_tag ε R) Q
+| ad_pat_sub_fuel__forall_l_untagged : forall n NM Ψ Ψ' Θ M R ψ Q, (* ForallL, β1=· *)
     M <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
     Ψ' ∩ (ftag_in_uskl (uskl_all_syn R)) [=] empty ->
     a_tags_sort NM Ψ' ψ ->
     {{ Θ ⨟ empty ⊢ₚₛ ⌊ ψ ⌋ˢ }}a ->
-    ad_pat_sub_gv n NM M (Ψ `union` Ψ') Θ (open_uskl_wrt_uskl R ψ) Q ->
-    ad_pat_sub_gv (S n) NM M Ψ Θ (uskl_all_syn R) Q
-| ad_pat_sub_gv__ghost : forall n Ψ Θ M P,                    (* Ghost (SK) *)
+    ad_pat_sub_fuel n NM M (Ψ `union` Ψ') Θ (open_uskl_wrt_uskl R ψ) Q ->
+    ad_pat_sub_fuel (S n) NM M Ψ Θ (uskl_all_syn R) Q
+| ad_pat_sub_fuel__ghost : forall n Ψ Θ M P,                    (* Ghost (SK) *)
     Ψ [=] empty ->
     {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
     mod_comp_sk (pskl_to_bskl_inh P) M ->
-    ad_pat_sub_gv n a_sub_mode_sk M Ψ Θ uskl_hole (pskl_to_bskl_inh P)
-| ad_pat_sub_gv__ghostg : forall n Ψ Θ M,                     (* GhostG (SK) *)
+    ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ uskl_hole (pskl_to_bskl_inh P)
+| ad_pat_sub_fuel__ghostg : forall n Ψ Θ M,                     (* GhostG (SK) *)
     Ψ [=] empty ->
     mod_comp_sk bskl_hole M ->
-    ad_pat_sub_gv n a_sub_mode_sk M Ψ Θ uskl_holeg bskl_hole
-| ad_pat_sub_gv__univ_ghost_l : forall n Ψ Θ M R Q,          (* UnivGhostL (SK) *)
+    ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ uskl_holeg bskl_hole
+| ad_pat_sub_fuel__univ_ghost_l : forall n Ψ Θ M R Q,          (* UnivGhostL (SK) *)
     M <> mode_ti ->
-    ad_pat_sub_gv n a_sub_mode_sk M Ψ Θ R Q ->
-    ad_pat_sub_gv n a_sub_mode_sk M Ψ Θ (uskl_tophole R) Q
-| ad_pat_sub_gv__univ_ghost_lg : forall n Ψ Θ M R Q,         (* UnivGhostLG (SK) *)
+    ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ R Q ->
+    ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ (uskl_tophole R) Q
+| ad_pat_sub_fuel__univ_ghost_lg : forall n Ψ Θ M R Q,         (* UnivGhostLG (SK) *)
     M <> mode_ti ->
-    ad_pat_sub_gv n a_sub_mode_sk M Ψ Θ R Q ->
-    ad_pat_sub_gv n a_sub_mode_sk M Ψ Θ (uskl_topholeg R) Q
-| ad_pat_sub_gv__flex_mono : forall n NM Ψ Θ M α τ Q,         (* FlexMono *)
+    ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ R Q ->
+    ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ (uskl_topholeg R) Q
+| ad_pat_sub_fuel__flex_mono : forall n NM Ψ Θ M α τ Q,         (* FlexMono *)
     binds α (abind_flex_mono_def τ) Θ ->
-    ad_pat_sub_gv n NM (mode_fn M) Ψ Θ (ptyp_to_uskl_syn τ) Q ->
-    ad_pat_sub_gv n NM (mode_fn M) Ψ Θ (uskl_var_f α) Q.
+    ad_pat_sub_fuel n NM (mode_fn M) Ψ Θ (ptyp_to_uskl_syn τ) Q ->
+    ad_pat_sub_fuel n NM (mode_fn M) Ψ Θ (uskl_var_f α) Q.
 
-(** ⭐ THE LEAF-VALID JOIN WITH THE FUEL FORGOTTEN — what the
-    declarative-in-algo judgements [ad_pat] / [ad_sd_typing] embed in their
-    base rows (hand-off §6.2).  The fuel is an artefact of the completeness
-    measure, so it has no business in a judgement's premise; what those rules
-    must carry is the LEAF DATUM, which the capture configuration shows is not
-    recoverable from a plain join (cex/cex_ad_pat_join_not_leaf_valid.v).
-
-    ⚙ No notation, deliberately: like [ad_pat_sub_gv] / [_n], this is a
-    mech-internal variant of the paper's box, not a paper judgement. *)
-Definition ad_pat_sub_v (NM : a_sub_mode) (M : mode) (Ψ : atoms)
-    (Θ : aenv) (R : uskl) (Q : bskl) : Prop :=
-  exists n, ad_pat_sub_gv n NM M Ψ Θ R Q.
+(* ⚙ RESTART NOTE (2026-08-12) — [ad_pat_sub_v], the fuel EXISTENTIALLY
+   CLOSED ([exists n, ad_pat_sub_fuel n …]), was deleted.  It existed so that
+   [ad_pat] / [ad_sd_typing] could embed the leaf-valid join without naming a
+   fuel in their rules — the fuel is the completeness measure's artefact, not
+   part of the specification.  Both halves of that reason are gone: since
+   [ad_pat_sub] carries the leaf presupposition itself, and
+   [ad_pat_sub_to_fuel] / [ad_pat_sub_of_fuel] make the two relations
+   INTERDERIVABLE, those rules embed [ad_pat_sub] — the paper's own relation —
+   directly.  So the tree has exactly two: [ad_pat_sub] in every rule and every
+   statement, and [ad_pat_sub_fuel] inside the subtyping-completeness proof,
+   where the measure actually lives. *)
 
 (* ===================================================================== *)
 (*  Partial precision  [{{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad]                       *)

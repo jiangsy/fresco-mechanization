@@ -574,7 +574,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
        a ∀-bound rigid into Γ, refinement puts it into Δ and forbids a ghost's
        fill to mention Δ, so the rules alone admit the CAPTURE ∀X.◇ ∼ ∀ˢX.X
        that refinement rejects (cex/cex_ad_pat_join_not_leaf_valid.v).  The
-       [ad] side has carried it since 2026-08-07 ([ad_pat_sub_gv]); this is the
+       [ad] side has carried it since 2026-08-07 ([ad_pat_sub_fuel]); this is the
        declarative twin, and until it was added the two systems disagreed
        (cex/cex_d_pat_bridges_false.v).  docs/ghost-capture.tex. *)
     {{ Γ ⨟ nil ⊢ᵣₚ (uskl_to_pskl R) ⊳ (bskl_to_pskl Q) }}d ->

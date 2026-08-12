@@ -164,17 +164,17 @@ Proof.
   intros M Θ e Q H; induction H; intros Θ' Hle Htm.
   - (* unit *)
     apply ad_pat__unit;
-      [ eapply a_wf_pskl_isub; eauto | eapply ad_pat_sub_v_isub; eauto ].
+      [ eapply a_wf_pskl_isub; eauto | eapply ad_pat_sub_isub; eauto ].
   - (* var *)
     eapply ad_pat__var;
       [ apply Htm; [ eapply abind_to_pskl_is_tm; eauto | exact H ]
       | eassumption
       | eapply a_wf_pskl_isub; eauto
-      | eapply ad_pat_sub_v_isub; eauto ].
+      | eapply ad_pat_sub_isub; eauto ].
   - (* anno *)
     apply ad_pat__anno;
       [ eapply a_wf_ptyp_isub; eauto | eapply a_wf_pskl_isub; eauto
-      | eapply ad_pat_sub_v_isub; eauto ].
+      | eapply ad_pat_sub_isub; eauto ].
   - (* freeze *) apply ad_pat__freeze; auto.
   - (* abs *)
     apply ad_pat__abs with (L := L);
@@ -578,7 +578,7 @@ Proof.
       [ eapply a_wf_pskl_mono;
           [ eassumption | apply aenv_tbinds_le_rename_tm;
                           apply abind_is_tm_not_ty; exact Htm ]
-      | eapply ad_pat_sub_v_mono;
+      | eapply ad_pat_sub_mono;
           [ eassumption | apply aenv_tbinds_le_rename_tm;
                           apply abind_is_tm_not_ty; exact Htm ] ].
   - (* var *)
@@ -598,7 +598,7 @@ Proof.
         | eapply a_wf_pskl_mono;
             [ eassumption | apply aenv_tbinds_le_rename_tm;
                             apply abind_is_tm_not_ty; exact Htm ]
-        | eapply ad_pat_sub_v_mono;
+        | eapply ad_pat_sub_mono;
             [ eassumption | apply aenv_tbinds_le_rename_tm;
                             apply abind_is_tm_not_ty; exact Htm ] ].
     + (* any other variable: its entry is untouched *)
@@ -607,7 +607,7 @@ Proof.
         | eapply a_wf_pskl_mono;
             [ eassumption | apply aenv_tbinds_le_rename_tm;
                             apply abind_is_tm_not_ty; exact Htm ]
-        | eapply ad_pat_sub_v_mono;
+        | eapply ad_pat_sub_mono;
             [ eassumption | apply aenv_tbinds_le_rename_tm;
                             apply abind_is_tm_not_ty; exact Htm ] ].
       apply binds_app_1 in H as [H | H];
@@ -623,7 +623,7 @@ Proof.
       | eapply a_wf_pskl_mono;
           [ eassumption | apply aenv_tbinds_le_rename_tm;
                           apply abind_is_tm_not_ty; exact Htm ]
-      | eapply ad_pat_sub_v_mono;
+      | eapply ad_pat_sub_mono;
           [ eassumption | apply aenv_tbinds_le_rename_tm;
                           apply abind_is_tm_not_ty; exact Htm ] ].
   - (* freeze *)
@@ -1011,9 +1011,9 @@ Lemma ad_pat_mod_comp_sk : forall M Θ e Q,
   {{ Θ ⊢ˢ[ M ] e ⦂ Q }}ad -> mod_comp_sk Q M.
 Proof.
   intros M Θ e Q H; induction H.
-  - (* unit *) eapply ad_pat_sub_mod_comp_sk; apply ad_pat_sub_of_v; eassumption.
-  - (* var *) eapply ad_pat_sub_mod_comp_sk; apply ad_pat_sub_of_v; eassumption.
-  - (* anno *) eapply ad_pat_sub_mod_comp_sk; apply ad_pat_sub_of_v; eassumption.
+  - (* unit *) eapply ad_pat_sub_mod_comp_sk; eassumption.
+  - (* var *) eapply ad_pat_sub_mod_comp_sk; eassumption.
+  - (* anno *) eapply ad_pat_sub_mod_comp_sk; eassumption.
   - (* freeze *) apply mod_comp_sk__tc. apply mod_comp_sk_ti_inv; assumption.
   - (* abs *) assumption.
   - (* abs_anno *) assumption.

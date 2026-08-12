@@ -210,8 +210,8 @@ Print Assumptions a_sub_complete.
    ⚙ Bare [Check]s deliberately: these statements carry the ρ / Ψ / Θw
    bookkeeping that makes the induction go through, and printing it here would
    bury the chain.  The statements are in the files named above. *)
-Check ad_pat_sub_precise_upre_gv.
-Print Assumptions ad_pat_sub_precise_upre_gv.
+Check ad_pat_sub_precise_upre_fuel.
+Print Assumptions ad_pat_sub_precise_upre_fuel.
 Check a_solve_eq_complete_var.
 Print Assumptions a_solve_eq_complete_var.
 Check a_lookeq_solve_complete.
@@ -459,8 +459,8 @@ Print Assumptions a_typing_complete_decl_check.
 (* --- the two section-D lemmas the paper states in its own right -------- *)
 
 (* Lemma [Precision extends skeleton subtyping]  lemma:precision-sub *)
-Check ad_precise_extends_pat_sub_v.
-Print Assumptions ad_precise_extends_pat_sub_v.
+Check ad_precise_extends_pat_sub.
+Print Assumptions ad_precise_extends_pat_sub.
 
 (* Lemma [Context precision preserves skeleton inference]
    lemma:context-precision-skeleton, over the paper's ⪯ᶜᵗˣ *)

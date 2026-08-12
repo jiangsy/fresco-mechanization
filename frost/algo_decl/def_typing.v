@@ -32,15 +32,19 @@
                                                conclusion's domain)
       [sdtylab{AbsAnno}]       [{{ Θ ⊢ A ≡ᵗ A' }}a]  (same, in the non-check modes)
 
-    ⭐ LEAF-VALID EMBEDDING (2026-08-07, hand-off §6.2).  The three BASE rows
-    of each judgement embed [ad_pat_sub_v] — the leaf-valid join — not the
-    plain [ad_pat_sub].  thm:complete-subtyping can only CONSUME a leaf-valid
-    join, and the capture configuration (subject [∀X.◇], counterpart [∀ˢX.X])
-    shows the leaf datum is NOT recoverable from a plain one and IS reachable
-    here: cex/cex_ad_pat_join_not_leaf_valid.v.  This is the paper's own
-    AUGMENTED consistency-solution notion propagating one layer up.
-    [ad_pat_sub_of_v] (prop_sub_mirrors.v) recovers the plain premise wherever only a declarative
-    subtyping derivation is wanted.
+    ⭐ LEAF-VALID EMBEDDING (2026-08-07, hand-off §6.2; RESHAPED 2026-08-12).
+    The three BASE rows of each judgement embed the join with its LEAF DATUM.
+    thm:complete-subtyping can only CONSUME a leaf-valid join, and the capture
+    configuration (subject [∀X.◇], counterpart [∀ˢX.X]) shows the datum is NOT
+    recoverable from a join that lacks it and IS reachable here:
+    cex/cex_ad_pat_join_not_leaf_valid.v.  This is the paper's own AUGMENTED
+    consistency-solution notion propagating one layer up.
+
+    ⚙ These rows used to embed [ad_pat_sub_v] — [exists n, ad_pat_sub_fuel n …]
+    — because the datum lived only on the fuelled mirror, so a fuel had to be
+    named (and then hidden) just to carry it.  Since [ad_pat_sub] carries the
+    presupposition itself, they embed [ad_pat_sub]: the PAPER'S OWN relation,
+    with no existential over a proof measure in the specification.
 
     ⚙ SORTS.  [ad_pat_sub] is the paper's ALL-IN-ONE subtyping box
     [typsub[N][M][Ψ]] — one judgement over [uskl]/[bskl] carrying the paper's
@@ -100,20 +104,20 @@ Inductive ad_pat : mode -> aenv -> exp -> bskl -> Prop :=
        supplies it from the run by [a_sub_output_wf] (algo/prop_wf_preservation.v
        — the algorithm's outputs ARE well-formed). *)
     {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
-    ad_pat_sub_v a_sub_mode_sk m empty Θ uskl_unit Q ->
+    ad_pat_sub a_sub_mode_sk m empty Θ uskl_unit Q ->
     {{ Θ ⊢ˢ[ m ] exp_unit ⦂ Q }}ad
 | ad_pat__var : forall Θ m x (P : pskl) b Q,                      (* P-Var *)
     (* the paper's single [x : P] entry, in either of its two [abind] forms *)
     binds x b Θ ->
     abind_to_pskl b = Some P ->
     {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
-    ad_pat_sub_v a_sub_mode_sk m empty Θ
+    ad_pat_sub a_sub_mode_sk m empty Θ
       (bskl_to_uskl (pskl_to_bskl_syn P)) Q ->
     {{ Θ ⊢ˢ[ m ] (exp_var_f x) ⦂ Q }}ad
 | ad_pat__anno : forall Θ m e (A : ptyp) Q,                      (* P-Anno *)
     a_wf_ptyp Θ A ->
     {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
-    ad_pat_sub_v a_sub_mode_sk m empty Θ
+    ad_pat_sub a_sub_mode_sk m empty Θ
       (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl A))) Q ->
     {{ Θ ⊢ˢ[ m ] (exp_anno e A) ⦂ Q }}ad
 | ad_pat__freeze : forall Θ e P,                               (* P-Freeze *)
@@ -164,12 +168,12 @@ where "{{ Θ ⊢ˢ[ M ] e ⦂ Q }}ad" := (ad_pat M Θ e Q) : frost_ad_scope.
 
 Inductive ad_sd_typing : mode -> aenv -> exp -> btyp -> Prop :=
 | ad_sd_typing__unit : forall Θ m B,                            (* sd-Unit *)
-    ad_pat_sub_v a_sub_mode_ty m empty Θ
+    ad_pat_sub a_sub_mode_ty m empty Θ
       (ptyp_to_uskl_syn ptyp_unit) (btyp_to_bskl B) ->
     {{ Θ ⊢ˢᵈ[ m ] exp_unit ⦂ B }}ad
 | ad_sd_typing__var : forall Θ m x A B,                          (* sd-Var *)
     binds x (abind_var_typ A) Θ ->
-    ad_pat_sub_v a_sub_mode_ty m empty Θ
+    ad_pat_sub a_sub_mode_ty m empty Θ
       (ptyp_to_uskl_syn A) (btyp_to_bskl B) ->
     {{ Θ ⊢ˢᵈ[ m ] (exp_var_f x) ⦂ B }}ad
 | ad_sd_typing__anno : forall Θ m e A B,                        (* sd-Anno *)
@@ -184,7 +188,7 @@ Inductive ad_sd_typing : mode -> aenv -> exp -> btyp -> Prop :=
        docs/PAPER-GAPS.md. *)
     a_wf_ptyp Θ A ->
     {{ Θ ⊢ˢᵈ[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) }}ad ->
-    ad_pat_sub_v a_sub_mode_ty m empty Θ
+    ad_pat_sub a_sub_mode_ty m empty Θ
       (ptyp_to_uskl_syn A) (btyp_to_bskl B) ->
     {{ Θ ⊢ˢᵈ[ m ] (exp_anno e A) ⦂ B }}ad
 | ad_sd_typing__freeze : forall Θ e A B,                      (* sd-Freeze *)

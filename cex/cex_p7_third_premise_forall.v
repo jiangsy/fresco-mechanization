@@ -2,7 +2,7 @@
     every solution whose subject and counterpart disagree at the head.
     RESOLVED 2026-07-30 (same day): the motive was repaired — the premise was
     removed from the root and moved to the join's CONSISTENCY LEAVES
-    ([ad_pat_sub_gv], def_subtyping.v), under which both
+    ([ad_pat_sub_fuel], def_subtyping.v), under which both
     configurations below are covered (their leaves are [unit ⊳ unit]).  This
     file keeps the machine-checked record of why the root-level formulation
     was wrong; the text below describes the PRE-repair state.
@@ -141,7 +141,7 @@ Proof. cbn. intros H. inversion H. Qed.
 (* ===================================================================== *)
 (*  §3  REPAIR CHECK — the LEAF-VALID join covers both configurations      *)
 (*                                                                        *)
-(*  Non-vacuity witnesses for the repaired motive: [ad_pat_sub_gv] IS      *)
+(*  Non-vacuity witnesses for the repaired motive: [ad_pat_sub_fuel] IS      *)
 (*  derivable in both configurations above (each leaf's refinement is      *)
 (*  [unit ⊳ unit]), so both are inside the repaired theorem's coverage.    *)
 (*                                                                        *)
@@ -150,12 +150,12 @@ Proof. cbn. intros H. inversion H. Qed.
 (*  they say the same thing: the configurations are derivable joins.       *)
 (* ===================================================================== *)
 
-Lemma cexL_join_gv : forall n,
-  ad_pat_sub_gv (S n) a_sub_mode_ty mode_tc empty nil
+Lemma cexL_join_fuel : forall n,
+  ad_pat_sub_fuel (S n) a_sub_mode_ty mode_tc empty nil
     (msubst_uskl_syn nil cexL_R) cexL_Q.
 Proof.
   intro n. cbn.
-  eapply ad_pat_sub_gv__forall_l_untagged
+  eapply ad_pat_sub_fuel__forall_l_untagged
     with (Ψ' := empty) (ψ := uskl_unit).
   - discriminate.
   - clear; fsetdec.
@@ -166,22 +166,22 @@ Proof.
       | apply uskl_ghost_free__unit ].
   - cbn. apply a_wf_pskl__unit.
   - cbn. change cexL_Q with (pskl_to_bskl_inh pskl_unit).
-    apply ad_pat_sub_gv__check.
+    apply ad_pat_sub_fuel__check.
     + apply guarded_uskl__unit.
     + apply guarded_pskl__unit.
     + cbn. apply ad_pat_consis__unit. clear; fsetdec.
     + cbn. apply ad_refine_pskl__unit.
 Qed.
 
-Lemma cexR_join_gv : forall n,
-  ad_pat_sub_gv (S n) a_sub_mode_ty mode_tc empty nil
+Lemma cexR_join_fuel : forall n,
+  ad_pat_sub_fuel (S n) a_sub_mode_ty mode_tc empty nil
     (msubst_uskl_syn nil cexR_R) cexR_Q.
 Proof.
   intro n. cbn.
-  apply ad_pat_sub_gv__forall_r with (L := empty).
+  apply ad_pat_sub_fuel__forall_r with (L := empty).
   intros α Hα. cbn.
   change bskl_unit with (pskl_to_bskl_inh pskl_unit).
-  apply ad_pat_sub_gv__check.
+  apply ad_pat_sub_fuel__check.
   - apply guarded_uskl__unit.
   - apply guarded_pskl__unit.
   - cbn. apply ad_pat_consis__unit. clear; fsetdec.

@@ -309,14 +309,14 @@ Lemma ad_sd_typing_isub_tm : forall M Θ e B,
   {{ Θ' ⊢ˢᵈ[ M ] e ⦂ B }}ad.
 Proof.
   intros M Θ e B H; induction H; intros Θ' Hle Htm.
-  - (* unit *) apply ad_sd_typing__unit. eapply ad_pat_sub_v_isub; eauto.
+  - (* unit *) apply ad_sd_typing__unit. eapply ad_pat_sub_isub; eauto.
   - (* var *)
     eapply ad_sd_typing__var;
-      [ apply Htm; [ exact I | exact H ] | eapply ad_pat_sub_v_isub; eauto ].
+      [ apply Htm; [ exact I | exact H ] | eapply ad_pat_sub_isub; eauto ].
   - (* anno *)
     eapply ad_sd_typing__anno;
       [ eapply a_wf_ptyp_isub; eassumption
-      | apply IHad_sd_typing; assumption | eapply ad_pat_sub_v_isub; eauto ].
+      | apply IHad_sd_typing; assumption | eapply ad_pat_sub_isub; eauto ].
   - (* freeze *)
     eapply ad_sd_typing__freeze;
       [ apply IHad_sd_typing; assumption | eapply a_tyequiv_isub_le; eauto ].
@@ -389,7 +389,7 @@ Proof.
     intros Θa x0 b0 Θb y Heq Htm Hx0; subst; simpl.
   - (* unit *)
     apply ad_sd_typing__unit.
-    eapply ad_pat_sub_v_mono;
+    eapply ad_pat_sub_mono;
       [ eassumption | apply aenv_tbinds_le_rename_tm;
                       apply abind_is_tm_not_ty; exact Htm ].
   - (* var *)
@@ -404,11 +404,11 @@ Proof.
       eapply ad_sd_typing__var;
         [ rewrite Hb0; apply binds_app_3;
           unfold binds; simpl; left; reflexivity
-        | eapply ad_pat_sub_v_mono;
+        | eapply ad_pat_sub_mono;
             [ eassumption | apply aenv_tbinds_le_rename_tm;
                             apply abind_is_tm_not_ty; exact Htm ] ].
     + eapply ad_sd_typing__var;
-        [ | eapply ad_pat_sub_v_mono;
+        [ | eapply ad_pat_sub_mono;
               [ eassumption | apply aenv_tbinds_le_rename_tm;
                               apply abind_is_tm_not_ty; exact Htm ] ].
       apply binds_app_1 in H as [Hb | Hb];
@@ -422,7 +422,7 @@ Proof.
           [ eassumption | apply aenv_tbinds_le_rename_tm;
                           apply abind_is_tm_not_ty; exact Htm ]
       | apply IHad_sd_typing; auto
-      | eapply ad_pat_sub_v_mono;
+      | eapply ad_pat_sub_mono;
           [ eassumption | apply aenv_tbinds_le_rename_tm;
                           apply abind_is_tm_not_ty; exact Htm ] ].
   - (* freeze *)
@@ -786,11 +786,11 @@ Lemma ad_sd_typing_mod_comp_ty : forall M Θ e B,
 Proof.
   intros M Θ e B H; induction H; intros Hwf.
   - (* unit *) eapply ad_pat_sub_mod_comp_ty;
-      [ apply ad_pat_sub_of_v; eassumption | reflexivity ].
+      [ eassumption | reflexivity ].
   - (* var *) eapply ad_pat_sub_mod_comp_ty;
-      [ apply ad_pat_sub_of_v; eassumption | reflexivity ].
+      [ eassumption | reflexivity ].
   - (* anno *) eapply ad_pat_sub_mod_comp_ty;
-      [ apply ad_pat_sub_of_v; eassumption | reflexivity ].
+      [ eassumption | reflexivity ].
   - (* freeze *)
     apply mod_comp_ty__tc. apply is_ityp_paint.
     eapply a_tyequiv_lc_r; eassumption.
@@ -1818,7 +1818,7 @@ Proof.
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     split.
     { eapply a_wf_ptyp_of_scope_pskl;
-        [ eapply ad_pat_sub_target_wf; exact (ad_pat_sub_of_v Hjoin) | exact HeQt ]. }
+        [ eapply ad_pat_sub_target_wf; exact Hjoin | exact HeQt ]. }
     exists Bt. split; [ exact HeA | ]. split; [ | rewrite HeB; exact Href ].
     apply ad_sd_typing__unit.
     rewrite HeB, ptyp_to_uskl_syn_via_pskl. exact Hjoin.
@@ -1834,7 +1834,7 @@ Proof.
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     split.
     { eapply a_wf_ptyp_of_scope_pskl;
-        [ eapply ad_pat_sub_target_wf; exact (ad_pat_sub_of_v Hjoin) | exact HeQt ]. }
+        [ eapply ad_pat_sub_target_wf; exact Hjoin | exact HeQt ]. }
     exists Bt. split; [ exact HeA | ]. split; [ | rewrite HeB; exact Href ].
     eapply ad_sd_typing__var;
       [ apply (a_sub_tm_le H0); [ exact I | exact H ]
@@ -1861,7 +1861,7 @@ Proof.
     split; [ eapply a_isub_trans; eassumption | ]. split; [ exact Hwf2 | ].
     split.
     { eapply a_wf_ptyp_of_scope_pskl;
-        [ eapply ad_pat_sub_target_wf; exact (ad_pat_sub_of_v Hjoin) | exact HeQt ]. }
+        [ eapply ad_pat_sub_target_wf; exact Hjoin | exact HeQt ]. }
     exists Bo. split; [ exact HeA | ]. split; [ | rewrite HeB; exact Href ].
     eapply ad_sd_typing__anno;
       [ eapply a_wf_ptyp_isub; [ exact HwfA1 | exact Hle2 ]

@@ -161,11 +161,12 @@ Proof.
   intros M Θ0 P0 κ Θ B Hwf0 HwfΘ HwfP0 Hmod Hinc Hd Href.
   inversion Hd; subst.
   match goal with
-  | H : ad_pat_sub_v _ _ _ _ _ _ |- _ => destruct H as [njoin Hjoin]
+  | H : ad_pat_sub _ _ _ _ _ _ |- _ =>
+      destruct (ad_pat_sub_to_fuel H) as [njoin Hjoin]
   end.
   assert (HwfQ : {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl (btyp_to_bskl B)) }}a)
     by (eapply typ_counterpart_wf;
-        exact (ad_pat_sub_of_v (ex_intro _ njoin Hjoin))).
+        exact (ad_pat_sub_of_fuel Hjoin)).
   destruct (@a_sub_complete njoin a_sub_mode_ty M Θ0 P0
               pskl_unit (ptyp_to_uskl_syn ptyp_unit) Θ κ (btyp_to_bskl B)
               Hwf0 HwfΘ HwfP0
@@ -205,7 +206,8 @@ Proof.
   intros M Θ0 P0 x κ Θ B Hwf0 HwfΘ HwfP0 Hmod Hinc Hd Href.
   inversion Hd; subst.
   match goal with
-  | H : ad_pat_sub_v _ _ _ _ _ _ |- _ => destruct H as [njoin Hjoin]
+  | H : ad_pat_sub _ _ _ _ _ _ |- _ =>
+      destruct (ad_pat_sub_to_fuel H) as [njoin Hjoin]
   end.
   match goal with
   | H : binds x (abind_var_typ _) Θ |- _ => rename H into Hb
@@ -227,7 +229,7 @@ Proof.
                     apply a_tyequiv_to_uskl; [ exact Heq | exact HwfΘ ])
               Hjoin Href
               ltac:(eapply typ_counterpart_wf;
-                    exact (ad_pat_sub_of_v (ex_intro _ njoin Hjoin)))
+                    exact (ad_pat_sub_of_fuel Hjoin))
               ltac:(intros _; rewrite <- pskl_to_uskl_ptyp;
                     apply pskl_to_uskl_ptyp_ghost_free;
                     eapply a_wf_ptyp_lc; exact HwfA))
@@ -280,7 +282,8 @@ Proof.
          IH Hd Href.
   inversion Hd; subst.
   match goal with
-  | H : ad_pat_sub_v _ _ _ _ _ _ |- _ => destruct H as [njoin Hjoin]
+  | H : ad_pat_sub _ _ _ _ _ _ |- _ =>
+      destruct (ad_pat_sub_to_fuel H) as [njoin Hjoin]
   end.
   match goal with
   | H : ad_sd_typing mode_tc Θ e _ |- _ => rename H into Hde
@@ -358,7 +361,7 @@ Proof.
         [ exact Hincb | exact Hwf0 | exact Hwfmid | exact Hζb ]).
   assert (HwfQ : {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl (btyp_to_bskl B)) }}a)
     by (eapply typ_counterpart_wf;
-        exact (ad_pat_sub_of_v (ex_intro _ njoin Hjoin))).
+        exact (ad_pat_sub_of_fuel Hjoin)).
   assert (Hpp : {{ Θ ⨟ empty ⊢ₚᵣ (msubst_pskl (msubst_compose ζb κb) P0)
                   ⊑ (msubst_pskl κ P0) }}ad).
   { eapply a_inc_equiv_precise_msubst_flip with (Θ0 := Θ0) (Δ0 := empty);
@@ -523,11 +526,10 @@ Lemma ad_sd_typing_target_wf : forall M Θ e (B : btyp),
 Proof.
   intros M Θ e B H; induction H; intros Hwf;
     try match goal with
-        | Hj : ad_pat_sub_v _ _ _ _ _ _ |- _ =>
-            destruct Hj as [n Hj];
+        | Hj : ad_pat_sub _ _ _ _ _ _ |- _ =>
             eapply a_wf_ptyp_of_scope_pskl;
               [ | rewrite <- bskl_to_pskl_btyp; reflexivity ];
-            eapply ad_pat_sub_target_wf; exact (ad_pat_sub_of_gv Hj)
+            eapply ad_pat_sub_target_wf; exact Hj
         end.
   - (* freeze *)
     rewrite btyp_to_ptyp_ptyp_to_btyp_inh.

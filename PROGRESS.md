@@ -238,7 +238,57 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-12 (latest) — ⭐⭐ **THE FUEL DIRECTION LANDS UNCONDITIONALLY, and the plain relation's structural layer turns out to be DEAD**
+## 2026-08-12 (latest) — ⭐⭐⭐ **TWO RELATIONS, AND THE RULES EMBED THE PAPER'S: `ad_pat_sub_v` RETIRED, `_gv` RENAMED `_fuel`**
+
+**`make coq` exit 0; README.v 28/28 `Print Assumptions` closed; no `Admitted`,
+no `Axiom`.**
+
+The `ad_pat_sub` family is now exactly **two `Inductive`s and nothing else**:
+
+| | what it is | where it appears |
+|---|---|---|
+| `ad_pat_sub` | the paper's all-in-one subtyping box, WITH the leaf presupposition | every rule, every statement |
+| `ad_pat_sub_fuel` | that plus the completeness measure's fuel index | inside the subtyping-completeness proof |
+
+- ⭐ **`ad_pat_sub_v` IS GONE.**  It was `exists n, ad_pat_sub_fuel n …` — a
+  three-line `Definition`, not a relation — and `ad_pat`'s / `ad_sd_typing`'s
+  six BASE ROWS embedded it, so **an existential over a proof-measure index sat
+  in the specification**.  It was there only because the plain relation lacked
+  the leaf datum, so a fuel had to be named (and then hidden) purely to carry
+  it.  Those rows now embed `ad_pat_sub` itself.
+- ⭐ **`ad_pat_sub_gv` → `ad_pat_sub_fuel`** (653 sites).  `_gv` encoded two
+  distinctions that no longer exist — `g` (the retired non-hygienic mirror) and
+  `v` (leaf-valid, which the plain relation now carries) — so the name recorded
+  history rather than content.  The one thing it adds is the FUEL.  Also
+  `_of_gv` → `_of_fuel`, `_to_v` → `_to_fuel`, `ad_pat_sub_precise_upre_gv` →
+  `_upre_fuel`, `ad_precise_extends_pat_sub_gv` → `_fuel` (then merged away).
+- ⭐ **The seven `ad_pat_sub_v_*` wrappers became PLAIN structural lemmas**,
+  by DIRECT induction — `mono`, `subst_mid`, `isub`, `weaken`, `rename_tvar`,
+  `rename_paint`, `sk_to_d`.  ⚠️ Five were restored from git, and TWO of the
+  five (`isub`, `weaken`) came from a PRE-leaf-premise commit and had to be
+  regenerated from their fuelled twins instead — their leaf rows were missing a
+  subgoal, which surfaces as `Wrong bullet -: Current bullet - is not finished`.
+- ⭐ **`ad_pat_sub_ty_to_d` and `ad_pat_sub_sk_to_d` are now siblings** on the
+  plain relation; the fuelled `sk_to_d` is gone.  It had been statable only
+  over the mirror — the fuel was never what that proof needed, only the datum.
+
+⭐⭐ **THE FACT THAT MAKES ALL OF THIS MECHANICAL: the two relations differ by
+the INDEX ALONE.**  Every premise of `ad_pat_sub_fuel`'s twelve rows lines up
+with `ad_pat_sub`'s, in order.  So porting a lemma between them is a statement
+change with an UNCHANGED body (only `IHad_pat_sub_fuel` → `IHad_pat_sub`), and
+that is how `sk_to_d`, `isub` and `weaken` were produced.
+
+⚙ **Where the two maps survive, and why none of them is a detour**:
+`ad_pat_sub_to_fuel` INTRODUCES the measure exactly where a proof is about to
+call `a_sub_complete` (three sites in `prop_completeness_typing.v`, three in
+`prop_completeness_pat.v`); `ad_pat_sub_of_fuel` drops it where a plain
+derivation is wanted.  The single lemma that does both,
+`ad_precise_extends_pat_sub`, documents why: precision-substitution must be
+fuel-PRESERVING (the completeness ForallL case applies its IH to the
+substituted premise), so `_upre_fuel` cannot be stated without the index,
+while this statement has no fuel on either side.
+
+## 2026-08-12 — ⭐⭐ **THE FUEL DIRECTION LANDS UNCONDITIONALLY, and the plain relation's structural layer turns out to be DEAD**
 
 **`make coq` exit 0; README.v 28/28 `Print Assumptions` closed; no `Admitted`,
 no `Axiom`.**  −561 / +136 lines.
