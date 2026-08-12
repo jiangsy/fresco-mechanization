@@ -10,6 +10,16 @@ finishing soundness so the two hard lessons of that effort are baked in.
 Paper: `paper/sections/algorithmic.tex:1446` (statement),
 `paper/sections/appendices/subtyping-proofs.tex:1526-3536` (proofs).
 
+
+> ⚠️ **NAMES (2026-08-12).**  The `ad_pat_sub` family was reduced to TWO
+> `Inductive`s.  What this file calls `ad_pat_sub_gv` (leaf-valid + fuel) is now
+> **`ad_pat_sub_fuel`**, and it appears nowhere outside the completeness proof;
+> `ad_pat_sub_g` (fuel without the leaf datum), `ad_pat_sub_n` and
+> `ad_pat_sub_v` (the fuel existentially closed) no longer exist — the leaf
+> presupposition sits on `ad_pat_sub` itself, so every rule and every statement
+> in the tree uses the paper's own relation.  Names below are kept as written:
+> they record the plan and the findings as they stood.
+
 ---
 
 ## 0. The two lessons from soundness (READ FIRST)

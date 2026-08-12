@@ -212,12 +212,19 @@ where "{{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad" :=
        non-incrementing rules recurse on structural sub-derivations, so
        the main induction uses lex(fuel, derivation)).
 
-    The erasure [_fuel -> ad_pat_sub] is [ad_pat_sub_of_fuel]
-    (prop_sub_mirrors.v).  ⚠️ The other direction ([ad_pat_sub] -> [_gv],
-    which is what a COMPLETENESS corollary over the declarative system would
-    need) is still owed — but it is now purely a FUEL question: hygiene and
-    the leaf datum are both already there.  See
-    docs/HANDOFF-closed-corollaries-declarative.md. *)
+    ⭐ THE TWO RELATIONS ARE INTERDERIVABLE (2026-08-12).  The erasure
+    [_fuel -> ad_pat_sub] is [ad_pat_sub_of_fuel] (prop_sub_mirrors.v), and
+    the other direction — which a COMPLETENESS corollary over the declarative
+    system needs — is [ad_pat_sub_to_fuel] (algo/sub/prop_soundness_sub.v),
+    UNCONDITIONAL at either sort over any Θ.  It was owed for a long time and
+    was only ever a FUEL question once hygiene and the leaf datum landed on
+    the plain relation; the fuel is the derivation's height, and the one real
+    step is regenerating ForallR's cofinite family at a single height.
+
+    ⚙ So this relation is NOT a mirror of [ad_pat_sub] in any sense a reader
+    needs to track: it is [ad_pat_sub] with the completeness measure made
+    visible, and it appears NOWHERE outside that proof.  Every rule and every
+    statement in the tree uses [ad_pat_sub]. *)
 
 (* ===================================================================== *)
 (*  [ad_pat_sub_fuel] (completeness-only, P7's join): [ad_pat_sub] + FUEL.   *)

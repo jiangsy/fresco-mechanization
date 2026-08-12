@@ -97,7 +97,7 @@ ghost with it) while refinement rejects it (`R-Forall` puts `α` into Δ, and
 `cex/cex_ad_pat_join_not_leaf_valid.v`; the two consequences for skeleton
 inference in `cex/cex_d_pat_bridges_false.v`.
 
-⭐ **ROUTE (A), DONE.** `ad_pat_sub_gv` had always carried it — at each
+⭐ **ROUTE (A), DONE.** `ad_pat_sub_fuel` had always carried it — at each
 consistency LEAF of a subtyping derivation, which is where consistency actually
 occurs. `d_pat_sub`'s three consistency-bearing rows (`Infer`, `UnivGhostR`, the
 `Arrow` domain) now carry it too, over the new uncoloured `d_refine_pskl`
@@ -493,7 +493,7 @@ It is what makes the SWAPPED subject `open Rj ⌈κPa⌉ᵘ` ghost-free, given t
 TY guess is a TYPE (`pskl_to_uskl_paint_ghost_free`).
 
 **⚠️ It is NOT derivable from the join, and the near-miss is worth recording.**
-All four rules that put a ghost AT THE HEAD of `ad_pat_sub_gv`'s subject —
+All four rules that put a ghost AT THE HEAD of `ad_pat_sub_fuel`'s subject —
 `__ghost`, `__ghostg`, `__univ_ghost_l`, `__univ_ghost_lg` — are SK-only, so
 ghost-freeness looks like a TY invariant.  It is not: `__arrow`'s DOMAIN is an
 arbitrary consistency leaf carrying no sort constraint, and `__infer` accepts

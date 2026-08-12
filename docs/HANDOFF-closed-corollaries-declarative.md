@@ -38,10 +38,18 @@ and with them on the rules the bridge is a rule-for-rule induction.
   VACUOUS.  §(A) and "THE REPAIR" below; author-facing note in
   `docs/ghost-capture.tex`.
 
-⚠️ What is left of (B)'s neighbourhood is now purely a FUEL question: the
-`ad_pat_sub → ad_pat_sub_gv` direction still has to be built, but the two
-judgements no longer differ in hygiene — nor, since 2026-08-12, in the leaf
-datum.
+✅ **(B)'s neighbourhood is CLOSED too (2026-08-12).**  What was left of it was
+purely a FUEL question — the `ad_pat_sub → ad_pat_sub_fuel` direction — and
+that is now `ad_pat_sub_to_fuel` (`algo/sub/prop_soundness_sub.v`),
+UNCONDITIONAL at either sort over any Θ.  The two judgements differ neither in
+hygiene nor in the leaf datum nor, now, in derivability: they are
+INTERDERIVABLE.
+
+⚠️ **NAMES BELOW ARE PRE-2026-08-12.**  The fuelled relation was called
+`ad_pat_sub_gv` and is now `ad_pat_sub_fuel`; `ad_pat_sub_v` (the fuel
+existentially closed) and `ad_pat_sub_g` (the fuel without the leaf datum) no
+longer exist.  The diagnosis sections keep the old names deliberately — they
+record what was true when the obstruction was found.
 
 ### 2026-08-12 — the leaf presupposition is ON `ad_pat_sub` too
 
@@ -61,8 +69,8 @@ decl-in-algo twin finally agree.  Consequences:
   `d_wf_utyp Γ C`.
 
 ✅ **`ad_pat_sub_g` IS DELETED** (2026-08-12, same day).  There are now exactly
-two: `ad_pat_sub` and `ad_pat_sub_gv` (= that + the fuel).
-`ad_pat_sub_gv_forget` went with it.  The look layer was NOT the obstacle — it
+two: `ad_pat_sub` and the fuelled relation (renamed `ad_pat_sub_fuel` later the
+same day).  `ad_pat_sub_gv_forget` went with it.  The look layer was NOT the obstacle — it
 only ever CONSUMES `_g` — and every `_g`-concluding lemma already had a `_gv`
 twin except the three `≡ᵘ`-subject reshapings P7's ForallL rows use.  Those
 needed one genuinely new fact, now proved in

@@ -6,6 +6,15 @@
 > is reserved for the paper's rigid-variable substitution.  See the
 > metavariable convention in CLAUDE.md.
 
+> ⚠️ **NAMES (2026-08-12).**  The `ad_pat_sub` family was reduced to TWO
+> `Inductive`s.  What this file calls `ad_pat_sub_gv` (leaf-valid + fuel) is now
+> **`ad_pat_sub_fuel`**, and it appears nowhere outside the completeness proof;
+> `ad_pat_sub_g` (fuel without the leaf datum), `ad_pat_sub_n` and
+> `ad_pat_sub_v` (the fuel existentially closed) no longer exist — the leaf
+> presupposition sits on `ad_pat_sub` itself, so every rule and every statement
+> in the tree uses the paper's own relation.  Names below are kept as written:
+> they record the plan and the findings as they stood.
+
 Canonical registry for everything found while mechanizing that the paper's
 authors should see.  Ground rule (CLAUDE.md): paper definitions and lemma
 statements are never changed; a broken proof STEP gets a repair here + a
