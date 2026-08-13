@@ -169,25 +169,43 @@ claim against the final paper, since a reviewer may read
 `thm:complete-type-inference` as implying it (it does not — completeness says
 a derivation EXISTS, not that a search finds it in finite time).
 
-**The three ways to satisfy Coq, in increasing cost:**
+**⛔ DECIDED (user, 2026-08-13): NO FUEL.  Prove termination directly.**
 
-- ⭐ **explicit FUEL** — the tree already has the idiom (`ad_pat_sub_fuel`), and
-  `algo_decl/prop_ctx_mono.v`'s `ad_pat_sub_fuel_le` (fuel is monotone) is
-  exactly the shape the "enough fuel exists" lemma needs.  Extracts to what a
-  reader expects, needs no well-foundedness argument, and defers the real
-  theorem into a separate ordinary lemma.  **Recommended.**
-- `Equations` with the lexicographic `(size_exp, size_btyp)` measure that
-  `a_typing_complete` already runs on.  Honest, and the measure is known to
-  work — but it must be shown to decrease for the ALGORITHM's steps, which is
-  not the same induction completeness does.
-- ⛔ `Program Fixpoint` with `Acc` — avoid: the accessibility proof leaks into
-  the extracted term and the OCaml becomes unreadable, defeating the point of
-  comparing it with `type.ml`.
+A fuel parameter would make the function exist today at the cost of leaving the
+real theorem unstated — and worse, a fuel-bounded runner is not the algorithm:
+its `None` conflates "untypable" with "ran out", so it cannot even be compared
+against `type.ml`, which has no such parameter.  ⚙ The tree's existing fuel
+idiom (`ad_pat_sub_fuel`) is a PROOF device for a completeness induction and is
+not a precedent for the runner.
 
-⚠️ **Fuel does not make the theorem go away, it relocates it.**  "There is
-enough fuel" IS termination.  What fuel buys is that the FUNCTION exists and
-extracts today, with the termination bound provable later and independently —
-which is the right order for a first extraction.
+So the deliverable is a well-founded recursion with a real measure, via
+`Equations … by wf` (or `Function`), and **the measure is the open research
+question of (2)** — settle it before writing any rules (§4).
+
+⚠️ **The measure is NOT the one completeness uses.**  `a_typing_complete` runs
+on a lexicographic `(size_exp, size_btyp)` over the DECLARATIVE derivation.
+What has to decrease here is the ALGORITHM's own state as it steps, and the
+run does things that measure does not see: it INVENTS flexible variables
+(`a_guess_mono`), it grows `Θ` under binders, and `a_sub`/`a_solve_*` recur on
+a context rather than on a subterm.  Candidate shape, to be confirmed rather
+than assumed — a lexicographic combination of
+  (i) the number of unsolved flexibles in `Θ`,
+  (ii) the ∀-depth / size of the subject and counterpart,
+  (iii) the size of the term,
+which is the standard shape for worklist-style inference and matches how the
+existing files already split their inductions.  ⭐ Check the reference repo
+`jiangsy/proof_worklist_remechnization` first — a worklist measure for a
+closely related algorithm is exactly the prior art, and the naming conventions
+here were already taken from it.
+
+⚙ **Extraction of well-founded recursion is fine, contrary to folklore.**
+`Acc` is `Prop`-valued, so extraction ERASES the accessibility argument and the
+result is an ordinary OCaml recursive function.  (An earlier draft of this file
+claimed the proof "leaks into the extracted term" — that was wrong.)  The real
+practical nuisance is the `Fix_sub` / `FixWf` wrappers `Program`/`Equations`
+generate, which obscure the output until inlined; `Extraction Inline Fix_sub`
+(or `Equations`' own extraction support) handles it.  So the choice between
+`Equations` and `Function` is about proof ergonomics, not extractability.
 
 ### A note on the word: termination vs decidability
 
@@ -208,22 +226,16 @@ derivation is two lines — case on `run x`:
 - `None` → if some `r` were typable, completeness would give
   `run x = Some r'`, contradicting `None`.  So `~ exists r, a_typing x r`.
 
-⚠️ **But only if `run` is TOTAL.**  This is the whole catch of the fuel route:
-a fuel-bounded `run_fuel : nat -> … -> option …` makes `None` ambiguous — it
-means "untypable OR out of fuel" — so soundness and completeness of
-`run_fuel` alone give nothing.  Completeness has to read
+⚠️ **The step that makes this work is `run` being TOTAL**, which is why
+termination has to come first and why the fuel shortcut was rejected: a
+fuel-bounded runner's `None` means "untypable OR out of fuel", and the second
+disjunct is exactly what the argument above must rule out.  Proved directly,
+the measure discharges it and `None` means untypable, full stop.
 
-    a_typing x r -> exists n r', run_fuel n x = Some r'
-
-and to collapse that into a decision you need **"enough fuel exists"**, i.e. a
-computable bound `N x` with `a_typing x r -> run_fuel (N x) x <> None`.  That
-bound IS the termination theorem.
-
-So the dependency is: **termination ⟹ totality ⟹ (with soundness +
-completeness) decidability.**  Fuel lets you write and extract the function
-before proving any of it, which is the right order for a first extraction —
-but it does not let you skip the theorem, it just names the place where the
-theorem is missing.
+So the dependency is **termination ⟹ totality ⟹ (with soundness +
+completeness) decidability** — one direction, no shortcuts, and decidability
+is then a corollary worth stating for the paper rather than a separate
+obligation.
 
 ### The shape of the deliverable
 
