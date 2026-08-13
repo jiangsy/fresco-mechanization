@@ -69,12 +69,16 @@ Require Import src.frost.coercions.
 Require Import src.frost.def_shapes.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
+Require Import src.frost.prop_coercions.
+Require Import src.frost.algo.sub.prop_solve_sub.
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
 Require Import src.frost.ext_algo.def_guess.
+Require Import src.frost.ext_algo.def_guess_impl.
 Require Import src.frost.ext_algo.def_look.
 Require Import src.frost.ext_algo.def_solve.
 Require Import src.frost.ext_algo.def_extract.
+Require Import src.frost.ext_algo.def_order.
 
 Set Implicit Arguments.
 
@@ -662,4 +666,275 @@ Proof.
   pose proof (@chain_hits_open_pure_chain P α 0 Hhit) as Hpure.
   rewrite (e_extract_pure_chain_hnall Hx Hpure Hg).
   lia.
+Qed.
+
+(* ===================================================================== *)
+(*  §10  Local closure through the pipeline                               *)
+(*                                                                        *)
+(*  Needed by §11's totality lemmas for exactly one reason: [guess^TY]'s  *)
+(*  domain predicate has no row for a dangling index (def_guess_impl.v),  *)
+(*  so wherever a runner may GUESS — SE-FlexR on the accumulated pattern, *)
+(*  and [guess^N] on the fold's yield — the input must be known locally   *)
+(*  closed.  Mirrors [a_solve_sub_eq_lc] (algo/sub/prop_solve_sub.v),     *)
+(*  whose kit this section imports rather than recreates.                 *)
+(* ===================================================================== *)
+
+Lemma e_guess_mono_lc : forall S0 P S1 Ξ A,
+  e_guess_mono S0 P S1 Ξ A -> lc_ptyp A.
+Proof.
+  intros * H; induction H;
+    try solve [ assumption | constructor; auto ].
+  (* ∀ : the rule's OWN witness serves — close/open round trip *)
+  match goal with
+  | |- lc_ptyp (ptyp_all (close_ptyp_wrt_ptyp ?b _)) =>
+      apply (lc_ptyp_all_exists b);
+      rewrite open_ptyp_wrt_ptyp_close_ptyp_wrt_ptyp; assumption
+  end.
+Qed.
+
+Corollary e_guess_mono_lc_pskl : forall S0 P S1 Ξ A,
+  e_guess_mono S0 P S1 Ξ A -> lc_pskl (ptyp_to_pskl A).
+Proof. intros. apply ptyp_to_pskl_lc. eauto using e_guess_mono_lc. Qed.
+
+(** The constraints a collection deposits are locally closed — they are
+    counterpart fragments, opened only at variables, or fresh variables. *)
+Definition lc_a_cstr (c : a_cstr) : Prop :=
+  match c with
+  | a_cstr_sub _ P => lc_pskl P
+  | a_cstr_eq P    => lc_pskl P
+  end.
+
+Lemma e_looksub_lookeq_cstrs_lc :
+  (forall S0 Θ α m P P' S1 Ξ C,
+     {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
+     lc_pskl P -> lc_pskl P' -> Forall lc_a_cstr C) /\
+  (forall S0 Θ α P P' S1 Ξ C,
+     {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
+     lc_pskl P -> lc_pskl P' -> Forall lc_a_cstr C).
+Proof.
+  apply (e_looksub_lookeq_mutind
+           (fun S0 Θ α m P P' S1 Ξ C _ =>
+              lc_pskl P -> lc_pskl P' -> Forall lc_a_cstr C)
+           (fun S0 Θ α P P' S1 Ξ C _ =>
+              lc_pskl P -> lc_pskl P' -> Forall lc_a_cstr C));
+    intros;
+    repeat match goal with
+    | H : lc_pskl (pskl_arrow _ _) |- _ =>
+        apply lc_pskl_arrow_inv in H; destruct H
+    | H : lc_pskl (pskl_tophole _) |- _ => apply lc_pskl_tophole_inv in H
+    end;
+    (* deposits and empty lists *)
+    try solve [ repeat (constructor; simpl; auto) ];
+    (* the two arrow rows *)
+    try solve [ rewrite Forall_app; split;
+                eauto using lc_pskl_all_syn_inv, lc_pskl_tophole ];
+    (* structural descents, re-wrapping what the saturation unpacked *)
+    try solve [ eauto using lc_pskl_all_syn_inv, lc_pskl_tophole ].
+Qed.
+
+Corollary e_looksub_cstrs_lc : forall S0 Θ α m P P' S1 Ξ C,
+  {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
+  lc_pskl P -> lc_pskl P' -> Forall lc_a_cstr C.
+Proof. intros. eapply (proj1 e_looksub_lookeq_cstrs_lc); eassumption. Qed.
+
+(** Solving preserves local closure — the e-side mirror of
+    [a_solve_sub_eq_lc], row for row. *)
+Lemma e_solve_sub_eq_lc :
+  (forall S0 Θ m P Q S1 Ξ P',
+     {{ S0 ↝ S1 ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e ->
+     lc_pskl P -> lc_pskl Q -> lc_pskl P') /\
+  (forall S0 Θ P Q S1 Ξ P',
+     {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e ->
+     lc_pskl P -> lc_pskl Q -> lc_pskl P').
+Proof.
+  apply (e_solve_sub_eq_mutind
+           (fun S0 Θ m P Q S1 Ξ P' _ => lc_pskl P -> lc_pskl Q -> lc_pskl P')
+           (fun S0 Θ P Q S1 Ξ P' _ => lc_pskl P -> lc_pskl Q -> lc_pskl P'));
+    intros;
+    (* SE-FlexR's output is [guess^TY]'s *)
+    try solve [ eapply e_guess_mono_lc_pskl; eassumption ];
+    repeat match goal with
+    | H : lc_pskl (pskl_arrow _ _) |- _ =>
+        apply lc_pskl_arrow_inv in H; destruct H
+    | H : lc_pskl (pskl_tophole _) |- _ => apply lc_pskl_tophole_inv in H
+    | H : guarded_pskl _           |- _ => apply guarded_pskl_lc in H
+    end;
+    try solve
+      [ assumption
+      | eauto
+      | constructor; eauto
+      | apply lc_pskl_tophole; eauto
+      | apply lc_pskl_tophole; constructor; eauto ];
+    (* binder rows — the rule's own witness serves via the close/open
+       round trip, exactly as in the a-side proof *)
+    try match goal with
+    | |- lc_pskl (pskl_all_syn (close_pskl_wrt_pskl ?b _)) =>
+        apply (lc_pskl_all_syn_exists b);
+        rewrite open_pskl_wrt_pskl_close_pskl_wrt_pskl
+    end;
+    match goal with
+    | IH : lc_pskl _ -> lc_pskl _ -> lc_pskl _ |- _ =>
+        apply IH;
+        eauto using lc_pskl_all_syn_inv, lc_pskl_tophole
+    end.
+Qed.
+
+Corollary e_solve_sub_lc : forall S0 Θ m P Q S1 Ξ P',
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e ->
+  lc_pskl P -> lc_pskl Q -> lc_pskl P'.
+Proof. intros. eapply (proj1 e_solve_sub_eq_lc); eassumption. Qed.
+
+Corollary e_solve_eq_lc : forall S0 Θ P Q S1 Ξ P',
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e ->
+  lc_pskl P -> lc_pskl Q -> lc_pskl P'.
+Proof. intros. eapply (proj2 e_solve_sub_eq_lc); eassumption. Qed.
+
+(** The fold's yield is locally closed when the seed and every payload are. *)
+Lemma e_solve_cstr_lc : forall S0 Θ C P S1 Ξ Q,
+  {{ S0 ↝ S1 ⊨ Θ ⊩ C ⨾ P ⤳ Ξ ⨾ Q }}e ->
+  lc_pskl P -> Forall lc_a_cstr C -> lc_pskl Q.
+Proof.
+  intros * H; induction H; intros Hlc HC;
+    try match goal with
+        | HC0 : Forall lc_a_cstr (_ :: _) |- _ =>
+            inversion HC0; subst; simpl in *
+        end;
+    eauto using e_solve_sub_lc, e_solve_eq_lc.
+Qed.
+
+(* ===================================================================== *)
+(*  §11  ⭐ TOTALITY OF THE ROUTINE ORDERS                                 *)
+(*                                                                        *)
+(*  The collection is total UNCONDITIONALLY — it never guesses, so not    *)
+(*  even local closure is needed (a dangling index just fires no row,     *)
+(*  and the one-constructor orders cover it vacuously).  The solving      *)
+(*  layer guesses at SE-FlexR, so its totality carries the subject's      *)
+(*  local closure; the fold and the extraction inherit the condition      *)
+(*  through §10's preservation lemmas.  Every measure here is the plain   *)
+(*  size sum: the sub→eq drops (LS-Check, SS-Check) go to a judgement     *)
+(*  whose totality is already established, so no lexicographic component  *)
+(*  is needed in the mechanization even where the informal measure says   *)
+(*  "eq before sub".                                                      *)
+(* ===================================================================== *)
+
+Lemma e_lookeq_order_total_n : forall n S0 Θ α P P',
+  size_pskl P + size_pskl P' <= n ->
+  e_lookeq_order S0 Θ α P P'.
+Proof.
+  induction n; intros * Hsz;
+    [ pose proof (size_pskl_min P); pose proof (size_pskl_min P'); lia | ].
+  constructor; intros; subst; simpl in Hsz;
+    repeat match goal with |- _ /\ _ => split end; intros;
+    apply IHn; repeat rewrite size_pskl_open_pskl_wrt_pskl_var; simpl; lia.
+Qed.
+
+Theorem e_lookeq_order_total : forall S0 Θ α P P',
+  e_lookeq_order S0 Θ α P P'.
+Proof. intros. eapply e_lookeq_order_total_n. apply le_n. Qed.
+
+Lemma e_looksub_order_total_n : forall n S0 Θ α m P P',
+  size_pskl P + size_pskl P' <= n ->
+  e_looksub_order S0 Θ α m P P'.
+Proof.
+  induction n; intros * Hsz;
+    [ pose proof (size_pskl_min P); pose proof (size_pskl_min P'); lia | ].
+  constructor; intros; subst; simpl in Hsz;
+    repeat match goal with |- _ /\ _ => split end; intros;
+    try apply e_lookeq_order_total;
+    apply IHn; repeat rewrite size_pskl_open_pskl_wrt_pskl_var; simpl; lia.
+Qed.
+
+Theorem e_looksub_order_total : forall S0 Θ α m P P',
+  e_looksub_order S0 Θ α m P P'.
+Proof. intros. eapply e_looksub_order_total_n. apply le_n. Qed.
+
+Lemma e_solve_eq_order_total_n : forall n S0 Θ P Q,
+  size_pskl P + size_pskl Q <= n ->
+  lc_pskl P ->
+  e_solve_eq_order S0 Θ P Q.
+Proof.
+  induction n; intros * Hsz Hlc;
+    [ pose proof (size_pskl_min P); pose proof (size_pskl_min Q); lia | ].
+  constructor; intros; subst; simpl in Hsz;
+    (* SE-FlexR — the guess on the CURRENT subject, before the saturation
+       below unpacks its local closure *)
+    try solve [ apply e_guess_mono_order_total; assumption ];
+    repeat match goal with
+    | H : lc_pskl (pskl_arrow _ _) |- _ =>
+        apply lc_pskl_arrow_inv in H; destruct H
+    | H : lc_pskl (pskl_tophole _) |- _ => apply lc_pskl_tophole_inv in H
+    end;
+    repeat match goal with |- _ /\ _ => split end; intros;
+    (apply IHn;
+     [ repeat rewrite size_pskl_open_pskl_wrt_pskl_var; simpl; lia
+     | eauto using lc_pskl_all_syn_inv, lc_pskl_tophole ]).
+Qed.
+
+Theorem e_solve_eq_order_total : forall S0 Θ P Q,
+  lc_pskl P -> e_solve_eq_order S0 Θ P Q.
+Proof. intros. eapply e_solve_eq_order_total_n; [ apply le_n | assumption ]. Qed.
+
+Lemma e_solve_sub_order_total_n : forall n S0 Θ m P Q,
+  size_pskl P + size_pskl Q <= n ->
+  lc_pskl P ->
+  e_solve_sub_order S0 Θ m P Q.
+Proof.
+  induction n; intros * Hsz Hlc;
+    [ pose proof (size_pskl_min P); pose proof (size_pskl_min Q); lia | ].
+  constructor; intros; subst; simpl in Hsz;
+    (* SS-Check — the drop into the eq layer, whose totality stands *)
+    try solve [ apply e_solve_eq_order_total; assumption ];
+    repeat match goal with
+    | H : lc_pskl (pskl_arrow _ _) |- _ =>
+        apply lc_pskl_arrow_inv in H; destruct H
+    | H : lc_pskl (pskl_tophole _) |- _ => apply lc_pskl_tophole_inv in H
+    end;
+    repeat match goal with |- _ /\ _ => split end; intros;
+    (* the arrow rows' eq half *)
+    try solve [ apply e_solve_eq_order_total;
+                solve [ assumption | constructor ] ];
+    (apply IHn;
+     [ repeat rewrite size_pskl_open_pskl_wrt_pskl_var; simpl; lia
+     | eauto using lc_pskl_all_syn_inv, lc_pskl_tophole;
+       try solve [ constructor ] ]).
+Qed.
+
+Theorem e_solve_sub_order_total : forall S0 Θ m P Q,
+  lc_pskl P -> e_solve_sub_order S0 Θ m P Q.
+Proof. intros. eapply e_solve_sub_order_total_n; [ apply le_n | assumption ]. Qed.
+
+Theorem e_solve_cstr_order_total : forall C S0 Θ P,
+  lc_pskl P -> Forall lc_a_cstr C -> e_solve_cstr_order S0 Θ C P.
+Proof.
+  induction C as [ | c C' IH ]; intros * Hlc HC; constructor; intros;
+    match goal with
+    | Heq : nil = _ :: _ |- _ => discriminate Heq
+    | Heq : _ :: _ = _ :: _ |- _ =>
+        inversion Heq; subst; inversion HC; subst; simpl in *
+    end.
+  - (* the singleton sub constraint *)
+    apply e_solve_sub_order_total; assumption.
+  - (* an eq constraint, then the tail at the yield *)
+    split; [ apply e_solve_eq_order_total; assumption | intros ].
+    apply IH; [ eapply e_solve_eq_lc; eauto | assumption ].
+Qed.
+
+Theorem e_guess_order_total : forall S0 NM Q,
+  lc_pskl Q -> e_guess_order S0 NM Q.
+Proof.
+  intros; constructor; intros _; apply e_guess_mono_order_total; assumption.
+Qed.
+
+(** ⭐ The extraction is total at locally-closed inputs — every stage of
+    [e_sub__forall_l]'s instantiation pipeline terminates. *)
+Theorem e_extract_order_total : forall S0 Θ0 NM α m P P',
+  lc_pskl P -> lc_pskl P' -> e_extract_order S0 Θ0 NM α m P P'.
+Proof.
+  intros; constructor.
+  - apply e_looksub_order_total.
+  - intros. apply e_solve_cstr_order_total;
+      [ constructor | eapply e_looksub_cstrs_lc; eassumption ].
+  - intros. apply e_guess_order_total.
+    eapply e_solve_cstr_lc;
+      [ eassumption | constructor | eapply e_looksub_cstrs_lc; eassumption ].
 Qed.
