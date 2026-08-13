@@ -1023,11 +1023,31 @@ than the skeleton it was guessed from.  The `∀` row is where the content is:
 row that INVENTS anything (`__hole`) invents a flexible variable, which is
 `∀`-free.
 
-⛔ **WHAT IS STILL OWED.**  `a_sub__forall_l`'s instantiation `P1` comes from
-`a_extract` = collection → solving → `guess^N`; the above bounds only the
-LAST stage against ITS input.  The measure needs the bound against the
-EXTRACTION's input, i.e. the same statement carried through the collection
-and the fold — whose inputs are the mode and the subject.  Then the spine
-argument of 8b.2 turns it into something that decreases.  ⚙ `nall_*` and the
-`open`/`close` invariance lemmas are in place for both.
+✅ **PHASE 1b (2026-08-13, later): the bound is carried through the WHOLE
+extraction.**  `prop_termination.v` §3–§6, axiom-free:
+
+    e_looksub_nall / e_lookeq_nall :
+        nall_a_cstrs C <= nall_pskl P + nall_pskl P'   (collection)
+    e_solve_sub_eq_nall :
+        nall_pskl P' <= nall_pskl P + nall_pskl Q      (each solving step)
+    e_solve_cstr_nall :
+        nall_pskl Q <= nall_a_cstrs C + nall_pskl P    (the fold)
+    e_extract_nall :
+        nall_pskl Q' <= nall_pskl P + nall_pskl P'     (⭐ the composition)
+
+plus `e_extract_nall_open`, the same statement in the exact shape of
+`e_sub__forall_l`'s premise: the instantiation `P1` is bounded by the ∀'s
+BODY plus the inherited skeleton `P0` — the quantifier the row consumed is
+not on the right-hand side.  The proofs are two mutual inductions and a
+fold, each discharged by one `lia` per row; the only row with content is
+SE-FlexR, where §2's `e_guess_mono_nall` is consumed (the collection's own
+generating row, LE-FlexR, deposits a fresh VARIABLE — ∀-free, like
+`guess^TY`'s hole row).
+
+⛔ **WHAT IS STILL OWED — phase 2.**  The spine measure (count ∀s on the
+CODOMAIN SPINE of the subject, per 8b.2's `SI-Arrow` observation), `e_sub`'s
+Bove–Capretta domain predicate, and its totality lemma.  `e_extract_nall`
+is the input to that argument, not the argument itself: it bounds what an
+instantiation can ADD, and the spine shape is what makes the addition land
+where it cannot fire `a_sub__forall_l` again.
 

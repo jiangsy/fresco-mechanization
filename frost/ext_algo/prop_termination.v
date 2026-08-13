@@ -31,17 +31,22 @@
     [e_guess_mono__hole] — the only row that INVENTS anything — invents a
     flexible VARIABLE, which is ∀-free.
 
-    ⚙ WHAT IS STILL OWED, precisely, so this file is not mistaken for more
-    than it is.  [a_sub__forall_l]'s [P1] comes from [a_extract], which is
-    collection -> solving -> [guess^N].  §2 bounds the LAST stage against ITS
-    input.  The measure needs the bound against the extraction's input — i.e.
-    the same statement carried through the collection and the fold, whose
-    own inputs are the mode and the subject.  That is the next lemma, and it
-    is the one that turns
+    ⭐ §3–§6 CARRY THE BOUND THROUGH THE WHOLE EXTRACTION (phase 1b).
+    [a_sub__forall_l]'s [P1] comes from [a_extract] = collection → solving
+    fold → [guess^N]; §2 bounds only the last stage against ITS input.  §4
+    bounds the collection's constraint yield by its two skeleton inputs, §5
+    bounds each solving step by its subject and its constraint, and §6
+    composes the three at [e_extract__solve]:
+
+        e_extract_nall : nall_pskl Q' <= nall_pskl P + nall_pskl P'
+
+    — the guessed instantiation has no more ∀s than the EXTRACTION's own
+    inputs, which at the [e_sub__forall_l] call site are the subject's body
+    and the inherited skeleton [P0].  That is the bound that turns
 
         the polytypes we guess are determined by inherited information
 
-    into a bound the recursion can decrease on.
+    into something a measure can decrease on.
 
     ⚙ AND THE SECOND HALF OF THE ARGUMENT IS NOT A SIZE BOUND AT ALL (user,
     2026-08-13): after an instantiation the walk falls back to CONSISTENCY at
@@ -63,10 +68,16 @@ Require Import src.frost.coercions.
 Require Import src.frost.def_shapes.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
+Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
 Require Import src.frost.ext_algo.def_guess.
+Require Import src.frost.ext_algo.def_look.
+Require Import src.frost.ext_algo.def_solve.
+Require Import src.frost.ext_algo.def_extract.
 
 Set Implicit Arguments.
+
+Open Scope frost_e_scope.
 
 (* ===================================================================== *)
 (*  §1  Counting ∀s                                                       *)
@@ -140,6 +151,31 @@ Corollary nall_ptyp_close : forall A β,
   nall_ptyp (close_ptyp_wrt_ptyp β A) = nall_ptyp A.
 Proof. intros. apply nall_ptyp_close_rec. Qed.
 
+(** The [pskl] twin, for the solving layer's close rows (SS-ForallL,
+    SE-Forall, SE-GhostForall, SE-ForallGhost all rebuild their binder). *)
+Lemma nall_pskl_close_rec : forall P β k,
+  nall_pskl (close_pskl_wrt_pskl_rec k β P) = nall_pskl P.
+Proof.
+  induction P; intros β k; simpl;
+    try reflexivity;
+    try (match goal with |- context [ if ?c then _ else _ ] => destruct c end;
+         reflexivity);
+    first [ solve [ auto ] | f_equal; auto ].
+Qed.
+
+Corollary nall_pskl_close : forall P β,
+  nall_pskl (close_pskl_wrt_pskl β P) = nall_pskl P.
+Proof. intros. apply nall_pskl_close_rec. Qed.
+
+(** Reading a guessed TYPE back into [pskl] preserves the count — [∀] maps to
+    [∀-syn], node for node.  ⚙ A conversion fact, named by the house rule
+    (<relation>_<conversion>); it lives here rather than in
+    [frost/prop_coercions.v] because [nall_*] does — same rationale as
+    [ftvar_in_a_cstrs] in def_look.v. *)
+Lemma nall_ptyp_to_pskl : forall A,
+  nall_pskl (ptyp_to_pskl A) = nall_ptyp A.
+Proof. induction A; simpl; lia. Qed.
+
 (* ===================================================================== *)
 (*  §2  ⭐ [guess^TY] NEVER GUESSES A POLYTYPE OUT OF THIN AIR             *)
 (*                                                                        *)
@@ -185,11 +221,7 @@ Lemma e_guess_nall : forall S0 NM Q S1 Ξ Q',
   e_guess S0 NM Q S1 Ξ Q' -> nall_pskl Q' <= nall_pskl Q.
 Proof.
   intros * H; destruct H as [ | S0 S1 Q0 Ξ0 A Hg ]; [ lia | ].
-  (* reading the guessed TYPE back into [pskl] preserves the count *)
-  pose proof (e_guess_mono_nall Hg) as Hb.
-  assert (Heq : nall_pskl (ptyp_to_pskl A) = nall_ptyp A)
-    by (clear; induction A; simpl; lia).
-  lia.
+  rewrite nall_ptyp_to_pskl. apply (e_guess_mono_nall Hg).
 Qed.
 
 (** ⭐ AND THE COROLLARY THE MEASURE WILL QUOTE: a ∀-free skeleton is guessed
@@ -201,4 +233,158 @@ Corollary e_guess_mono_nall_free : forall S0 P S1 Ξ A,
   e_guess_mono S0 P S1 Ξ A -> nall_pskl P = 0 -> nall_ptyp A = 0.
 Proof.
   intros * H Hz. pose proof (e_guess_mono_nall H). lia.
+Qed.
+
+(* ===================================================================== *)
+(*  §3  Counting ∀s in a constraint list                                  *)
+(*                                                                        *)
+(*  The collection deposits skeleton FRAGMENTS of its two inputs into     *)
+(*  [C]; the fold then replays them against the accumulated pattern.  So  *)
+(*  the count of a constraint list is the ledger the bound moves through. *)
+(* ===================================================================== *)
+
+Definition nall_a_cstr (c : a_cstr) : nat :=
+  match c with
+  | a_cstr_sub _ P => nall_pskl P
+  | a_cstr_eq P    => nall_pskl P
+  end.
+
+Fixpoint nall_a_cstrs (C : a_cstrs) : nat :=
+  match C with
+  | nil     => 0
+  | c :: C' => nall_a_cstr c + nall_a_cstrs C'
+  end.
+
+Lemma nall_a_cstrs_app : forall C1 C2,
+  nall_a_cstrs (C1 ++ C2) = nall_a_cstrs C1 + nall_a_cstrs C2.
+Proof.
+  induction C1 as [ | c C1' IH ]; intros; simpl; [ auto | rewrite IH; lia ].
+Qed.
+
+(* ===================================================================== *)
+(*  §4  ⭐ THE COLLECTION DEPOSITS NO ∀ OF ITS OWN                         *)
+(*                                                                        *)
+(*  Every skeleton a constraint carries is a fragment of the subject or   *)
+(*  of the counterpart.  The one generating row (LE-FlexR) deposits a     *)
+(*  fresh VARIABLE — ∀-free, exactly as [guess^TY]'s hole row.            *)
+(* ===================================================================== *)
+
+Lemma e_looksub_lookeq_nall :
+  (forall S0 Θ α m P P' S1 Ξ C,
+     {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
+     nall_a_cstrs C <= nall_pskl P + nall_pskl P') /\
+  (forall S0 Θ α P P' S1 Ξ C,
+     {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
+     nall_a_cstrs C <= nall_pskl P + nall_pskl P').
+Proof.
+  apply (e_looksub_lookeq_mutind
+           (fun S0 Θ α m P P' S1 Ξ C _ =>
+              nall_a_cstrs C <= nall_pskl P + nall_pskl P')
+           (fun S0 Θ α P P' S1 Ξ C _ =>
+              nall_a_cstrs C <= nall_pskl P + nall_pskl P'));
+    intros; simpl in *;
+    repeat rewrite nall_a_cstrs_app;
+    repeat rewrite nall_pskl_open in *;
+    lia.
+Qed.
+
+Corollary e_looksub_nall : forall S0 Θ α m P P' S1 Ξ C,
+  {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
+  nall_a_cstrs C <= nall_pskl P + nall_pskl P'.
+Proof. apply e_looksub_lookeq_nall. Qed.
+
+Corollary e_lookeq_nall : forall S0 Θ α P P' S1 Ξ C,
+  {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
+  nall_a_cstrs C <= nall_pskl P + nall_pskl P'.
+Proof. apply e_looksub_lookeq_nall. Qed.
+
+(* ===================================================================== *)
+(*  §5  ⭐ THE SOLVING LAYER INVENTS NO ∀ EITHER                           *)
+(*                                                                        *)
+(*  Each step's yield is bounded by its subject plus its constraint.  The *)
+(*  one generating row (SE-FlexR) hands the pattern to [guess^TY], which  *)
+(*  is where §2's bound is CONSUMED — the theorem below is what the       *)
+(*  paper's design principle buys downstream of the guess.                *)
+(* ===================================================================== *)
+
+Lemma e_solve_sub_eq_nall :
+  (forall S0 Θ m P Q S1 Ξ P',
+     {{ S0 ↝ S1 ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e ->
+     nall_pskl P' <= nall_pskl P + nall_pskl Q) /\
+  (forall S0 Θ P Q S1 Ξ P',
+     {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e ->
+     nall_pskl P' <= nall_pskl P + nall_pskl Q).
+Proof.
+  apply (e_solve_sub_eq_mutind
+           (fun S0 Θ m P Q S1 Ξ P' _ =>
+              nall_pskl P' <= nall_pskl P + nall_pskl Q)
+           (fun S0 Θ P Q S1 Ξ P' _ =>
+              nall_pskl P' <= nall_pskl P + nall_pskl Q));
+    intros; simpl in *;
+    repeat rewrite nall_pskl_close;
+    repeat rewrite nall_pskl_open in *;
+    try rewrite nall_ptyp_to_pskl;
+    (* SE-FlexR: the yield is [guess^TY]'s, so its bound is §2's *)
+    try match goal with
+        | Hg : e_guess_mono _ _ _ _ _ |- _ =>
+            pose proof (e_guess_mono_nall Hg)
+        end;
+    lia.
+Qed.
+
+(** The fold: what comes out is bounded by the constraints plus the seed.
+    ⚙ [a_extract] seeds with [◇], so the seed term vanishes there. *)
+Lemma e_solve_cstr_nall : forall S0 Θ C P S1 Ξ Q,
+  {{ S0 ↝ S1 ⊨ Θ ⊩ C ⨾ P ⤳ Ξ ⨾ Q }}e ->
+  nall_pskl Q <= nall_a_cstrs C + nall_pskl P.
+Proof.
+  intros * H; induction H; simpl in *;
+    repeat match goal with
+           | Hs : e_solve_sub _ _ _ _ _ _ _ _ |- _ =>
+               apply (proj1 e_solve_sub_eq_nall) in Hs
+           | He : e_solve_eq _ _ _ _ _ _ _ |- _ =>
+               apply (proj2 e_solve_sub_eq_nall) in He
+           end;
+    lia.
+Qed.
+
+(* ===================================================================== *)
+(*  §6  ⭐⭐ THE EXTRACTION'S BOUND — phase 1b's deliverable                *)
+(*                                                                        *)
+(*  Collection, fold and guess composed at [e_extract__solve]: the        *)
+(*  instantiation [a_sub__forall_l] recurses on carries no more ∀s than   *)
+(*  the extraction's own two inputs — the subject and the inherited       *)
+(*  skeleton.  This is the paper's principle stated against the inputs    *)
+(*  the MEASURE sees, which is what the spine argument (the file header)  *)
+(*  needs to make [a_sub__forall_l] decrease.                             *)
+(* ===================================================================== *)
+
+Theorem e_extract_nall : forall S0 Θ0 NM α m P P' S1 Ξ Q',
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q' }}e ->
+  nall_pskl Q' <= nall_pskl P + nall_pskl P'.
+Proof.
+  intros * H; destruct H.
+  repeat match goal with
+         | Hl : e_looksub _ _ _ _ _ _ _ _ _ |- _ =>
+             apply e_looksub_nall in Hl
+         | Hc : e_solve_cstr _ _ _ _ _ _ _ |- _ =>
+             apply e_solve_cstr_nall in Hc
+         | Hg : e_guess _ _ _ _ _ _ |- _ =>
+             apply e_guess_nall in Hg
+         end;
+    simpl in *; lia.
+Qed.
+
+(** ⭐ And in the shape of [e_sub__forall_l]'s own premise, where the subject
+    is the ∀'s body opened at the rule's fresh variable: the instantiation is
+    bounded by the BODY and the inherited skeleton — the ∀ the row consumed is
+    not on the right-hand side, which is what lets the row strictly decrease
+    when [P0]'s spine is ∀-free. *)
+Corollary e_extract_nall_open : forall S0 Θ0 NM α m P P0 S1 Ξ P1 β,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢ (open_pskl_wrt_pskl P (pskl_var_f β))
+     ⊳[ NM , α , m ] P0 ⤳ Ξ ↪ P1 }}e ->
+  nall_pskl P1 <= nall_pskl P + nall_pskl P0.
+Proof.
+  intros * H. apply e_extract_nall in H.
+  rewrite nall_pskl_open in H. assumption.
 Qed.
