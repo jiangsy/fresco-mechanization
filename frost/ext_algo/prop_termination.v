@@ -381,3 +381,285 @@ Proof.
          end;
     simpl in *; lia.
 Qed.
+
+(* ===================================================================== *)
+(*  §7  ⭐⭐ THE HEAD CHAIN — the count [a_sub__forall_l] actually consumes *)
+(*                                                                        *)
+(*  §8b.2 predicted "count ∀s on the CODOMAIN SPINE".  Working the rows   *)
+(*  refines that: a spine count does NOT decrease at [e_sub__forall_l] —  *)
+(*  an instantiation CAN put a ∀ on the spine (an eq-constraint hands a   *)
+(*  counterpart fragment to the fold wholesale, SE-GhostL).  What is true *)
+(*  is sharper, and it is what this section proves:                       *)
+(*                                                                        *)
+(*    - the count to take is the HEAD ∀/⫯-CHAIN length [hnall]: the ∀s    *)
+(*      reachable from the root through ∀ and ⫯ nodes only.  A ∀ below an *)
+(*      arrow is charged to the MODE instead — reaching it costs an       *)
+(*      [e_sub__arrow] step, which consumes one FN of [M] (the check      *)
+(*      rows cannot cross an arrow at all: subject arrow + TC is          *)
+(*      [e_sub__check], which leaves for consistency).                    *)
+(*    - the instantiation grafts onto the head chain ONLY when the ∀'s    *)
+(*      body IS its head chain (∀/⫯ are unary, so a chain ending at the   *)
+(*      bound variable is the whole body, §8's [chain_hits]).  In exactly *)
+(*      that case the collection deposits at most ONE constraint — a sub  *)
+(*      constraint carrying the inherited [P0] — and the ◇-seeded fold    *)
+(*      then yields a GUARDED-or-⫯-arrow head (§9), so the graft carries  *)
+(*      NO head ∀s.  The hypothesis this needs, [P0] guarded-or-◇, is     *)
+(*      [e_sub__forall_l]'s own premise.                                  *)
+(*                                                                        *)
+(*  Net: hnall(subject) strictly decreases at every [e_sub__forall_l]     *)
+(*  ([e_extract_forall_l_hnall], §9) — with [nall P0] (via §6) and the    *)
+(*  FN-depth of [M] the remaining lexicographic components.               *)
+(* ===================================================================== *)
+
+Fixpoint hnall_ptyp (A : ptyp) : nat :=
+  match A with
+  | ptyp_all A1 => 1 + hnall_ptyp A1
+  | _           => 0
+  end.
+
+Fixpoint hnall_pskl (P : pskl) : nat :=
+  match P with
+  | pskl_all_syn P1 => 1 + hnall_pskl P1
+  | pskl_tophole P1 => hnall_pskl P1
+  | _               => 0
+  end.
+
+(** The head chain is a prefix of the whole tree, so the head count is below
+    the total one — which is how §6's [nall] bound reaches [hnall]. *)
+Lemma hnall_le_nall_ptyp : forall A, hnall_ptyp A <= nall_ptyp A.
+Proof. induction A; simpl; lia. Qed.
+
+Lemma hnall_le_nall_pskl : forall P, hnall_pskl P <= nall_pskl P.
+Proof. induction P; simpl; lia. Qed.
+
+Lemma guarded_pskl_hnall : forall P, guarded_pskl P -> hnall_pskl P = 0.
+Proof. intros * H; destruct H; reflexivity. Qed.
+
+Lemma hnall_ptyp_to_pskl : forall A,
+  hnall_pskl (ptyp_to_pskl A) = hnall_ptyp A.
+Proof. induction A; simpl; lia. Qed.
+
+(** Closing at a variable leaves the head chain alone — the chain's tail can
+    only move between [var_f] and [var_b], both count 0. *)
+Lemma hnall_ptyp_close_rec : forall A β k,
+  hnall_ptyp (close_ptyp_wrt_ptyp_rec k β A) = hnall_ptyp A.
+Proof.
+  induction A; intros β k; simpl;
+    try reflexivity;
+    try (match goal with |- context [ if ?c then _ else _ ] => destruct c end;
+         reflexivity);
+    auto.
+Qed.
+
+Corollary hnall_ptyp_close : forall A β,
+  hnall_ptyp (close_ptyp_wrt_ptyp β A) = hnall_ptyp A.
+Proof. intros. apply hnall_ptyp_close_rec. Qed.
+
+(* ===================================================================== *)
+(*  §8  Where an opening grafts onto the head chain                       *)
+(* ===================================================================== *)
+
+(** [chain_hits_pskl k P]: the ∀/⫯ head chain of [P] ends at the bound
+    variable [k] — the index [open_pskl_wrt_pskl_rec k] substitutes.  Because
+    ∀ and ⫯ are UNARY, a chain that hits is the WHOLE term: [P] is literally
+    [∀…⫯…∀. k], with nothing beside it. *)
+Fixpoint chain_hits_pskl (k : nat) (P : pskl) : bool :=
+  match P with
+  | pskl_var_b j    => Nat.eqb j k
+  | pskl_all_syn P1 => chain_hits_pskl (S k) P1
+  | pskl_tophole P1 => chain_hits_pskl k P1
+  | _               => false
+  end.
+
+(** ⭐ THE GRAFT FORMULA.  Opening adds the argument's head count exactly when
+    the chain hits the opened index; everywhere else the argument lands off
+    the chain and the head count is untouched. *)
+Lemma hnall_pskl_open_rec_graft : forall P Q k,
+  hnall_pskl (open_pskl_wrt_pskl_rec k Q P)
+  = hnall_pskl P + (if chain_hits_pskl k P then hnall_pskl Q else 0).
+Proof.
+  induction P; intros Q k; simpl;
+    try lia;
+    (* all / tophole — the chain descends *)
+    try (rewrite IHP; destruct (chain_hits_pskl _ P); lia);
+    (* var_b — the graft point: the three-way comparison of the opening and
+       the boolean of the chain must agree *)
+    match goal with
+    | |- context [ lt_eq_lt_dec ?j ?k0 ] =>
+        destruct (lt_eq_lt_dec j k0) as [[?|?]|?];
+        destruct (Nat.eqb_spec j k0); simpl; subst; lia
+    end.
+Qed.
+
+Corollary hnall_pskl_open_graft : forall P Q,
+  hnall_pskl (open_pskl_wrt_pskl P Q)
+  = hnall_pskl P + (if chain_hits_pskl 0 P then hnall_pskl Q else 0).
+Proof. intros. apply hnall_pskl_open_rec_graft. Qed.
+
+Corollary hnall_pskl_open : forall P β,
+  hnall_pskl (open_pskl_wrt_pskl P (pskl_var_f β)) = hnall_pskl P.
+Proof.
+  intros. rewrite hnall_pskl_open_graft. simpl.
+  destruct (chain_hits_pskl 0 P); lia.
+Qed.
+
+(** [pure_chain_to α P]: the head chain ends at the FREE variable [α] — the
+    shape [chain_hits_pskl] becomes after the opening, and the shape the
+    collection lemma of §9 is stated over. *)
+Fixpoint pure_chain_to (α : atom) (P : pskl) : Prop :=
+  match P with
+  | pskl_var_f β    => β = α
+  | pskl_all_syn P1 => pure_chain_to α P1
+  | pskl_tophole P1 => pure_chain_to α P1
+  | _               => False
+  end.
+
+(** Opening at a DIFFERENT variable cannot break the chain: the tail [α] is
+    free, and the chain's nodes are preserved verbatim. *)
+Lemma pure_chain_to_open_rec : forall P α β k,
+  pure_chain_to α P ->
+  pure_chain_to α (open_pskl_wrt_pskl_rec k (pskl_var_f β) P).
+Proof.
+  (* [α0]/[β0]: [induction P] manufactures [pskl_var_f]'s ott binder [α] *)
+  induction P; intros α0 β0 k Hc; simpl in *; try contradiction; auto.
+Qed.
+
+(** A hitting chain, opened at its own index, is a pure chain to the opened
+    variable. *)
+Lemma chain_hits_open_pure_chain : forall P α k,
+  chain_hits_pskl k P = true ->
+  pure_chain_to α (open_pskl_wrt_pskl_rec k (pskl_var_f α) P).
+Proof.
+  (* [α0]: [induction P] manufactures [pskl_var_f]'s ott binder [α] *)
+  induction P; intros α0 k Hc; simpl in *; try discriminate; auto.
+  match goal with
+  | Hc : Nat.eqb ?j ?k0 = true |- _ =>
+      destruct (Nat.eqb_spec j k0); [ subst | discriminate ];
+      destruct (lt_eq_lt_dec k0 k0) as [[?|?]|?]; simpl; auto; lia
+  end.
+Qed.
+
+(* ===================================================================== *)
+(*  §9  ⭐⭐ THE CRUX: the graft carries NO head ∀                          *)
+(*                                                                        *)
+(*  Assembled in four steps along the extraction pipeline, each an        *)
+(*  inversion or a one-hypothesis induction.                              *)
+(* ===================================================================== *)
+
+(** Step 1 — collection at a pure chain deposits AT MOST the one sub
+    constraint carrying the counterpart.  The walk never leaves [e_looksub]:
+    LS-Check needs a GUARDED subject that is not the variable itself, and a
+    pure chain's every node is ∀, ⫯, or [α]; LS-ForallR needs a ∀-headed
+    counterpart, excluded by [e_sub__forall_l]'s own guarded-or-◇ premise
+    (the chain rows keep the counterpart untouched, so it stays excluded). *)
+Lemma e_looksub_pure_chain_cstrs : forall S0 Θ α m P P' S1 Ξ C,
+  {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
+  pure_chain_to α P ->
+  (guarded_pskl P' \/ P' = pskl_hole) ->
+  C = (a_cstr_sub m P' :: nil) \/ C = nil.
+Proof.
+  intros * H; induction H; intros Hchain Hg; simpl in *;
+    try contradiction;
+    (* LS-ForallL descends under its binder, so its IH wants the chain fact
+       at the OPENED body — [pure_chain_to_open_rec] transports it *)
+    eauto using pure_chain_to_open_rec.
+  - (* LS-Check: a pure chain's head is ∀, ⫯ or the variable itself — the
+       guarded shapes are unit (no chain), a variable (must be [α] by the
+       chain, contradicting the row's disequality), and an arrow (no chain) *)
+    exfalso.
+    match goal with
+    | HgA : guarded_pskl ?A, Hne : ?A <> pskl_var_f _ |- _ =>
+        destruct HgA; simpl in *; [ contradiction | congruence | contradiction ]
+    end.
+  - (* LS-ForallR: the counterpart is ∀-headed, excluded by guarded-or-◇ *)
+    exfalso. destruct Hg as [ Hg | Hg ]; [ inversion Hg | discriminate ].
+Qed.
+
+(** Step 2 — the ◇-seeded solving of a guarded-or-◇ constraint yields a head
+    with NO ∀ on it: the yield is ◇ (SS-Vacuous), a ⫯-arrow (SS-GhostLF), or
+    a ⫯ over the guarded counterpart (SS-GhostL).  Pure inversion — a ◇
+    subject has NO recursive row at all: SS-Check demands a GUARDED subject,
+    so not even the drop into the eq layer is reachable, and SS-ForallR's
+    ∀-headed counterpart is excluded by the guarded-or-◇ hypothesis. *)
+Lemma e_solve_sub_hole_hnall : forall S0 Θ m Q S1 Ξ P',
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₛ pskl_hole ≼[ m ] Q ⤳ Ξ ⨾ P' }}e ->
+  (guarded_pskl Q \/ Q = pskl_hole) ->
+  hnall_pskl P' = 0.
+Proof.
+  intros * H Hg; inversion H; subst; simpl in *; try reflexivity;
+    (* SS-Check: its subject is required GUARDED, absurd at ◇ *)
+    try solve [ match goal with
+                | Hga : guarded_pskl pskl_hole |- _ => inversion Hga
+                end ];
+    (* SS-ForallR: its counterpart is ∀-headed, absurd at guarded-or-◇ *)
+    try solve [ exfalso; destruct Hg as [ Hg | Hg ];
+                [ inversion Hg | discriminate ] ].
+  (* SS-GhostL: the yield is ⫯ over the guarded counterpart *)
+  apply guarded_pskl_hnall; assumption.
+Qed.
+
+(** Step 3 — [guess^N] never RAISES the head count: the ∀ row rebuilds the
+    quantifier the input had ([close] moves the tail between [var_f] and
+    [var_b], count 0 either way), the ⫯ row strips a transparent node, and
+    the hole row invents a flexible. *)
+Lemma e_guess_mono_hnall : forall S0 P S1 Ξ A,
+  e_guess_mono S0 P S1 Ξ A -> hnall_ptyp A <= hnall_pskl P.
+Proof.
+  intros * H; induction H; simpl in *; try lia.
+  rewrite hnall_ptyp_close. rewrite hnall_pskl_open in IHe_guess_mono. lia.
+Qed.
+
+Lemma e_guess_hnall : forall S0 NM Q S1 Ξ Q',
+  e_guess S0 NM Q S1 Ξ Q' -> hnall_pskl Q' <= hnall_pskl Q.
+Proof.
+  intros * H; destruct H as [ | S0 S1 Q0 Ξ0 A Hg ]; [ lia | ].
+  rewrite hnall_ptyp_to_pskl. apply (e_guess_mono_hnall Hg).
+Qed.
+
+(** Step 4 — composed: an extraction whose subject is a pure chain to the
+    looked-up variable, against a guarded-or-◇ counterpart, yields a head
+    with NO ∀. *)
+Theorem e_extract_pure_chain_hnall : forall S0 Θ0 NM α m P P' S1 Ξ Q',
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q' }}e ->
+  pure_chain_to α P ->
+  (guarded_pskl P' \/ P' = pskl_hole) ->
+  hnall_pskl Q' = 0.
+Proof.
+  intros * H Hchain Hg; destruct H.
+  match goal with
+  | Hl : e_looksub _ _ _ _ _ _ _ _ ?C |- _ =>
+      destruct (e_looksub_pure_chain_cstrs Hl Hchain Hg); subst C
+  end;
+  match goal with
+  | Hc : e_solve_cstr _ _ _ _ _ _ _ |- _ => inversion Hc; subst
+  end;
+  match goal with
+  | Hgs : e_guess _ _ ?Q _ _ _ |- _ =>
+      pose proof (e_guess_hnall Hgs);
+      assert (hnall_pskl Q = 0)
+        by (solve [ eapply e_solve_sub_hole_hnall; eassumption
+                  | reflexivity ]);
+      lia
+  end.
+Qed.
+
+(** ⭐⭐ THE DECREASE THEOREM — [e_sub__forall_l]'s recursion strictly drops
+    the subject's head count, stated against the rule's own premises: the
+    extraction premise (at the ∀'s body opened at the rule's fresh [α]) and
+    the guarded-or-◇ premise on [P0].  Two cases: if the body's chain does
+    not reach the bound variable, the instantiation lands off the head chain
+    entirely; if it does, the body IS the chain, so the extraction's subject
+    is a pure chain to [α] and §9 says the graft carries no head ∀. *)
+Theorem e_extract_forall_l_hnall : forall S0 Θ0 NM α M P P0 S1 Ξ P1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢ (open_pskl_wrt_pskl P (pskl_var_f α))
+     ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ P1 }}e ->
+  (guarded_pskl P0 \/ P0 = pskl_hole) ->
+  hnall_pskl (open_pskl_wrt_pskl P P1) < hnall_pskl (pskl_all_syn P).
+Proof.
+  intros * Hx Hg. simpl.
+  rewrite hnall_pskl_open_graft.
+  destruct (chain_hits_pskl 0 P) eqn:Hhit; [ | lia ].
+  pose proof (@chain_hits_open_pure_chain P α 0 Hhit) as Hpure.
+  rewrite (e_extract_pure_chain_hnall Hx Hpure Hg).
+  lia.
+Qed.

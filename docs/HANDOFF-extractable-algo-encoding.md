@@ -1048,10 +1048,64 @@ The proofs are two mutual inductions and a fold, one `lia` per row; the
 only row with content is SE-FlexR, where §2's `e_guess_mono_nall` is
 consumed.
 
-⛔ **WHAT IS STILL OWED — phase 2.**  The spine measure (count ∀s on the
-CODOMAIN SPINE of the subject, per 8b.2's `SI-Arrow` observation), `e_sub`'s
-Bove–Capretta domain predicate, and its totality lemma.  `e_extract_nall`
-is the input to that argument, not the argument itself: it bounds what an
-instantiation can ADD, and the spine shape is what makes the addition land
-where it cannot fire `a_sub__forall_l` again.
+### 8b.4 ✅ PHASE 2's HEART — the head-chain count strictly decreases at ForallL
+
+⭐⭐ **8b.2's "count ∀s on the codomain spine" is REFINED, not confirmed:
+a spine count does NOT decrease at `e_sub__forall_l`.**  An instantiation
+CAN put a ∀ on the spine — an eq-constraint hands a counterpart fragment
+to the fold wholesale (`SE-GhostL`), so `P1` can be ∀-HEADED (concretely:
+subject `∀a.(a→a)`, counterpart `(∀c.c)→D` puts `∀c.c` on the new spine).
+What is true is sharper, and it is now a theorem
+(`prop_termination.v` §7–§9, axiom-free):
+
+- The right count is `hnall`, the HEAD ∀/⫯-chain length — ∀s reachable from
+  the root through ∀ and ⫯ nodes only.  A ∀ below an arrow is charged to
+  the MODE: reaching it costs an `e_sub__arrow` step, which consumes one FN
+  of `M` (and TC-mode cannot cross an arrow at all — subject arrow + TC is
+  `e_sub__check`, which leaves for consistency).
+- The instantiation grafts onto the head chain ONLY when the ∀'s body IS
+  its own head chain (∀/⫯ are unary — a chain ending at the bound variable
+  is the whole body; `chain_hits_pskl` + the graft formula
+  `hnall_pskl_open_rec_graft`).  In exactly that case the collection
+  deposits AT MOST the one sub constraint carrying `P0`
+  (`e_looksub_pure_chain_cstrs` — LS-Check needs a guarded non-α subject,
+  LS-ForallR a ∀-headed counterpart, both impossible there), and the
+  ◇-seeded fold then yields a guarded-or-⫯-arrow head
+  (`e_solve_sub_hole_hnall` — ⚙ a ◇ subject has NO recursive solve row:
+  SS-Check demands a GUARDED subject, so the eq layer is not even
+  reachable).  `guess^N` never raises the head count (`e_guess_hnall`).
+
+⭐ Composed:
+
+    e_extract_forall_l_hnall :
+      e_extract at (open P α) against guarded-or-◇ P0 yields P1 with
+      hnall (open P P1) < hnall (∀.P)
+
+with BOTH hypotheses being `e_sub__forall_l`'s own premises.  So the
+measure's shape is settled: lexicographic
+**( FN-depth of M , nall P0 , hnall subject , #defined-flex , size , walk )**
+— arrow rows consume an FN; ForallR consumes `nall P0` (open-at-var
+preserves it, the ∀ is gone); ForallL consumes `hnall subject` (this
+theorem); Flex-Assign consumes a defined-flex entry (its substituted mono
+is ∀-free so the earlier components hold, `hnall`/`nall` stable under
+mono-substitution); ⫯-strips consume size.  ⚠️ Flex-Solve's re-entry TIES
+the first components (subject `α̂ → β̂`, same mode) — the totality proof
+must INLINE one step there: the re-entered subject is an arrow, so its
+only non-failure row is `e_sub__arrow`, which strictly drops FN-depth.
+
+⛔ **WHAT IS STILL OWED — phase 2's assembly.**  (i) The order (domain)
+predicates for `e_sub`'s call graph, read off the rules per §7.1's recipe —
+`e_looksub/e_lookeq`, `e_solve_sub/e_solve_eq`, `e_solve_cstr`,
+`e_extract`, the consistency block, `e_sub/e_sub_flex` — with each
+constructor embedding its callees' orders (McTT's `subtyping_order` shape).
+(ii) Totality for the routine ones (look and solve are size-lex with
+sub→eq allowed at equal size; the fold is structural on the constraint
+list; extract composes).  (iii) ⚠️⚠️ THE CONSISTENCY BLOCK'S TOTALITY IS
+NOT ROUTINE — `e_assign__solve_m` trades one undefined flexible for a
+guess block of fresh ones, and `e_assign__assign`/`e_unify__flex_assign`
+substitute a defined entry away and re-enter `e_consis` at a GROWN
+pattern.  That is unification-style termination (the worklist prior art's
+`num_etvar`/`split_depth` components, §7.4) and deserves its own campaign;
+`e_sub`'s totality should be stated CONDITIONAL on the consistency block's
+order until then (an honest hypothesis, not an admit).
 
