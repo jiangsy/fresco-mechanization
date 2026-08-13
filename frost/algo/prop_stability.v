@@ -411,8 +411,14 @@ Proof.
 Qed.
 
 (** Skeleton inference runs.  The Abs rows drop the walked binder [x] from
-    the output; the invariant survives because a fresh [x] can be chosen
-    away from any looked-up name. *)
+    the output; the invariant survives because the looked-up name [y] IS
+    bound in the body run's input while [x], by the row's own side
+    condition, is not — so the two are distinct.
+
+    ⚙ Before the 2026-08-13 exists-fresh conversion these rows CHOSE an [x]
+    away from [y] and instantiated the cofinite family there.  Exists-fresh
+    hands the binder over, so the disequality is derived instead of arranged
+    — one [binds_In] per row. *)
 Lemma a_pat_tm_le : forall m Θ0 P0 e P Θ1,
   {{ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ P ⊣ Θ1 }}a -> aenv_tm_le Θ0 Θ1.
 Proof.
@@ -425,36 +431,37 @@ Proof.
   - (* abs *)
     intros y b Htm Hb.
     apply a_split_tm_le in H0.
-    destruct (atom_fresh (L `union` singleton y)) as [x Hx].
+    assert (Hb1 : binds y b Θ1) by (apply H0; [ exact Htm | exact Hb ]).
     apply binds_app_3.
     eapply aenv_tm_le_via_binder with (x := x);
-      [ exact H1 | apply H3; clear - Hx; fsetdec | exact Htm
-      | intros Heq; subst; clear - Hx; fsetdec
-      | apply H0; [ exact Htm | exact Hb ] ].
+      [ exact H1 | exact IHa_pat | exact Htm | | exact Hb1 ].
+    intros Heq; subst.
+    apply binds_In in Hb1. simpl_env in H2. clear - H2 Hb1. fsetdec.
   - (* abs_anno *)
     intros y b Htm Hb.
     apply a_split_tm_le in H0.
     apply a_consis_chk_tm_le in H1.
-    destruct (atom_fresh (L `union` singleton y)) as [x Hx].
+    assert (Hb2 : binds y b Θ2)
+      by (apply H1; [ exact Htm | apply H0; [ exact Htm | exact Hb ] ]).
     apply binds_app_3.
     eapply aenv_tm_le_via_binder with (x := x);
-      [ exact H2 | apply H4; clear - Hx; fsetdec | exact Htm
-      | intros Heq; subst; clear - Hx; fsetdec
-      | apply H1; [ exact Htm | apply H0; [ exact Htm | exact Hb ] ] ].
+      [ exact H2 | exact IHa_pat | exact Htm | | exact Hb2 ].
+    intros Heq; subst.
+    apply binds_In in Hb2. simpl_env in H3. clear - H3 Hb2. fsetdec.
   - (* abs_check *)
     intros y b Htm Hb.
-    destruct (atom_fresh (L `union` singleton y)) as [x Hx].
     apply binds_app_3.
     eapply aenv_tm_le_via_binder with (x := x);
-      [ exact H | apply H1; clear - Hx; fsetdec | exact Htm
-      | intros Heq; subst; clear - Hx; fsetdec | exact Hb ].
+      [ exact H | exact IHa_pat | exact Htm | | exact Hb ].
+    intros Heq; subst.
+    apply binds_In in Hb. simpl_env in H0. clear - H0 Hb. fsetdec.
   - (* abs_anno_check *)
     intros y b Htm Hb.
-    destruct (atom_fresh (L `union` singleton y)) as [x Hx].
     apply binds_app_3.
     eapply aenv_tm_le_via_binder with (x := x);
-      [ exact H | apply H1; clear - Hx; fsetdec | exact Htm
-      | intros Heq; subst; clear - Hx; fsetdec | exact Hb ].
+      [ exact H | exact IHa_pat | exact Htm | | exact Hb ].
+    intros Heq; subst.
+    apply binds_In in Hb. simpl_env in H0. clear - H0 Hb. fsetdec.
   - (* app *) eapply aenv_tm_le_trans; eassumption.
 Qed.
 

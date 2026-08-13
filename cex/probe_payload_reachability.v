@@ -210,20 +210,16 @@ Proof.
   - (* AP-VarSkl *) exfalso; eapply a_sub_sk_no_spine_all; eassumption.
   - (* AP-Anno *) exfalso; eapply a_sub_sk_no_spine_all; eassumption.
   - (* AP-Freeze *) exact I.
+  (* ⚙ EXISTS-FRESH (2026-08-13): the row hands the IH over one named binder,
+     so there is no family to instantiate — the [atom_fresh] dance is gone. *)
   - (* AP-Abs *)
     inversion Hc; subst; cbn.
-    destruct (atom_fresh L) as [y Hy].
-    eapply (exp_freeze_inside_open e y).
-    match goal with IH : forall _ : atom, _ |- _ =>
-      apply (IH y Hy); [ eapply a_split_mode_compat; eassumption | eassumption ]
-    end.
+    eapply exp_freeze_inside_open.
+    apply IHa_pat; [ eapply a_split_mode_compat; eassumption | eassumption ].
   - (* AP-AbsAnno *)
     inversion Hc; subst; cbn.
-    destruct (atom_fresh L) as [y Hy].
-    eapply (exp_freeze_inside_open e y).
-    match goal with IH : forall _ : atom, _ |- _ =>
-      apply (IH y Hy); [ eapply a_split_mode_compat; eassumption | eassumption ]
-    end.
+    eapply exp_freeze_inside_open.
+    apply IHa_pat; [ eapply a_split_mode_compat; eassumption | eassumption ].
   - (* AP-AbsCheck *) inversion Hc.
   - (* AP-AbsAnnoCheck *) inversion Hc.
   - (* AP-App *)

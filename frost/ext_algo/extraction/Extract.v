@@ -1,0 +1,52 @@
+(** ⭐ THE TREE'S FIRST EXTRACTION — a real OCaml artifact, not a comment.
+
+    The hand-off's §0 records that the tree contained ZERO [Extraction]
+    commands, so the paper's shipped implementation
+    ([paper/artifact/implementation/lib/type.ml]) was related to the
+    mechanization only by our reading of it.  This file closes that for the
+    part of the algorithm that has a runner.
+
+    ⚙ WHAT IS EMITTED, and what is not.  Every judgement of [frost/ext_algo]
+    is a threaded RELATION bridged to [frost/algo]'s (TODO (1), complete).
+    A relation is [Prop] and extracts to nothing, so what can be emitted is
+    exactly what has a Bove–Capretta runner: [guess^TY] (M1.7,
+    def_guess_impl.v) and its sort wrapper [guess^N] (def_guess_impl_sk.v).
+    ⛔ The rest of TODO (2) is precisely writing the remaining runners; the
+    directives here will not change when they land, only the export list.
+
+    ⚠️ [ExtrOcamlNatInt] IS NOT A FOOTNOTE.  Without it metalib's atoms
+    extract as UNARY [nat] — [supply_fresh] becomes [S (nat_list_max xs)] and
+    the output is unusable for a differential test against [type.ml].  McTT
+    imports it at its own entry point for the same reason
+    (theories/Entrypoint.v).
+
+    ⚙ OUTPUT.  [extracted/frost_guess.ml] beside this file.  It is a BUILD
+    PRODUCT — regenerated on every build, removed by [make clean], and
+    git-ignored — so treat it as a snapshot to READ, never to edit.  ⚠️ The
+    directory has to exist before [coqc] runs, because
+    [Set Extraction Output Directory] does NOT create it; the Makefile's
+    [coq] and [quick] targets [mkdir -p] it. *)
+
+From Coq Require Extraction.
+From Coq Require Import ExtrOcamlBasic ExtrOcamlNatInt.
+
+Require Import src.frost.ext_algo.def_supply.
+Require Import src.frost.ext_algo.def_guess.
+Require Import src.frost.ext_algo.def_guess_impl.
+Require Import src.frost.ext_algo.def_guess_impl_sk.
+Require Import src.frost.ext_algo.extraction.PseudoMonadic.
+
+Extraction Language OCaml.
+
+(** ⭐ THE STANDING BAR (hand-off §8): the extracted program must read as an
+    ordinary OCaml program that can be diffed against [type.ml] — no
+    [Acc_rect] / [Fix_sub] / [FixWf] wrappers, no [sumbool] / [sig]
+    scaffolding, no [Obj.magic], no residue of the termination argument.
+    Bove–Capretta gets us most of the way (the domain predicate is [Prop] and
+    is ERASED); these two directives remove what is left. *)
+Extraction Inline proj1_sig.
+Extraction Inline e_guess_mono_run.
+
+Set Extraction Output Directory "frost/ext_algo/extraction/extracted".
+
+Extraction "frost_guess.ml" e_guess_mono_run e_guess_run.

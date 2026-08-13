@@ -462,10 +462,13 @@ Example ex_A10b :
 Proof.
   eapply a_typing__app with (A := σ_id)
     (P := pskl_tophole (pskl_arrow pskl_hole pskl_hole)) (Θ2 := Θlib).
-  - (* λx.x ⦂[TC;□] ∀◇(□→□) *)
-    eapply a_pat__abs_check with (L := dom Θlib `union` singleton fa `union` singleton fb) (Ξ := nil) (Θ1 := Θlib).
+  - (* λx.x ⦂[TC;□] ∀◇(□→□) — EXISTS-FRESH since 2026-08-13, so the binder is
+       named here rather than avoided cofinitely *)
+    destruct (atom_fresh (dom Θlib)) as [xb Hxb].
+    eapply a_pat__abs_check with (x := xb) (Ξ := nil) (Θ1 := Θlib).
     + constructor.
-    + intros x Hx. simpl_open.
+    + simpl_env; simpl fvar_in_exp; clear - Hxb; fsetdec.
+    + simpl_open.
       eapply a_pat__var_skl; [ crush_binds | ].
       apply a_sub__ghost.
   - (* poly ⦂[FN TI; ∀◇(□→□) → □]  σ_id → σ_prodIB *)
@@ -761,13 +764,17 @@ Proof.
                  (pskl_tophole (pskl_arrow pskl_hole pskl_hole))))
          (Θ2 := Θlib).
   - (* λx.λy.y ⦂[TC;□] ∀◇(□ → ∀◇(□→□)) *)
-    eapply a_pat__abs_check with (L := dom Θlib `union` singleton fa `union` singleton fb) (Ξ := nil) (Θ1 := Θlib).
+    destruct (atom_fresh (dom Θlib)) as [xb Hxb].
+    destruct (atom_fresh (dom Θlib `union` singleton xb)) as [yb Hyb].
+    eapply a_pat__abs_check with (x := xb) (Ξ := nil) (Θ1 := Θlib).
     + constructor.
-    + intros x Hx. simpl_open.
-      eapply a_pat__abs_check with (L := dom Θlib `union` singleton fa `union` singleton fb) (Ξ := nil)
-        (Θ1 := (x ~ abind_var_skl pskl_hole) ++ Θlib).
+    + simpl_env; simpl fvar_in_exp; clear - Hxb; fsetdec.
+    + simpl_open.
+      eapply a_pat__abs_check with (x := yb) (Ξ := nil)
+        (Θ1 := (xb ~ abind_var_skl pskl_hole) ++ Θlib).
       * constructor.
-      * intros y _. simpl_open.
+      * simpl_env; simpl fvar_in_exp; clear - Hyb; fsetdec.
+      * simpl_open.
         eapply a_pat__var_skl; [ crush_binds | ].
         apply a_sub__ghost.
   - (* r ⦂[FN TI; ∀◇(□→∀◇(□→□)) → □]  (∀a.a→∀b.b→b) → Int *)

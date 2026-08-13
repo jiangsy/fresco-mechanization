@@ -447,35 +447,43 @@ Proof.
   - (* var_skl *) eapply a_sub_tm_ge; eassumption.
   - (* anno *) eapply a_sub_tm_ge; eassumption.
   - (* freeze *) assumption.
+  (* ⚙ EXISTS-FRESH (2026-08-13): the binder arrives named, so [y <> x] is
+     read off the row's own side condition — [y] is bound in the OUTPUT
+     [Ξ ++ Θ'], which [x] is fresh for — instead of arranged by choosing an
+     [x] away from [y]. *)
   - (* abs *)
     intros y b Htm Hb.
     apply a_split_tm_ge in H0.
-    destruct (atom_fresh (L `union` singleton y)) as [x Hx].
     apply H0; [ exact Htm | ].
     eapply aenv_tm_le_via_binder_ge with (x := x);
-      [ apply H3; clear - Hx; fsetdec | exact Htm
-      | intros Heq; subst; clear - Hx; fsetdec | exact Hb ].
+      [ exact IHa_pat | exact Htm
+      | intros Heq; subst; apply binds_In in Hb; clear - H2 Hb;
+        simpl_env in *; fsetdec
+      | exact Hb ].
   - (* abs_anno *)
     intros y b Htm Hb.
     apply a_split_tm_ge in H0.
     apply a_consis_chk_tm_ge in H1.
-    destruct (atom_fresh (L `union` singleton y)) as [x Hx].
     apply H0; [ exact Htm | ]. apply H1; [ exact Htm | ].
     eapply aenv_tm_le_via_binder_ge with (x := x);
-      [ apply H4; clear - Hx; fsetdec | exact Htm
-      | intros Heq; subst; clear - Hx; fsetdec | exact Hb ].
+      [ exact IHa_pat | exact Htm
+      | intros Heq; subst; apply binds_In in Hb; clear - H3 Hb;
+        simpl_env in *; fsetdec
+      | exact Hb ].
   - (* abs_check *)
     intros y b Htm Hb.
-    destruct (atom_fresh (L `union` singleton y)) as [x Hx].
     eapply aenv_tm_le_via_binder_ge with (x := x);
-      [ apply H1; clear - Hx; fsetdec | exact Htm
-      | intros Heq; subst; clear - Hx; fsetdec | exact Hb ].
+      [ exact IHa_pat | exact Htm
+      | intros Heq; subst; apply binds_In in Hb; clear - H0 Hb;
+        simpl_env in *; fsetdec
+      | exact Hb ].
   - (* abs_anno_check *)
     intros y b Htm Hb.
-    destruct (atom_fresh (L `union` singleton y)) as [x Hx].
     eapply aenv_tm_le_via_binder_ge with (x := x);
-      [ apply H1; clear - Hx; fsetdec | exact Htm
-      | intros Heq; subst; clear - Hx; fsetdec | exact Hb ].
+      [ exact IHa_pat | exact Htm
+      | intros Heq; subst; apply binds_In in Hb; clear - H0 Hb;
+        simpl_env in *; fsetdec
+      | exact Hb ].
   - (* app *)
     eapply aenv_tm_le_trans; [ exact IHa_pat2 | exact IHa_pat1 ].
 Qed.
@@ -960,11 +968,13 @@ Lemma a_wf_exp_app_inv : forall Θ e1 e2,
   {{ Θ ⊢ᵉ (exp_app e1 e2) }}a -> {{ Θ ⊢ᵉ e1 }}a /\ {{ Θ ⊢ᵉ e2 }}a.
 Proof. intros * H; inversion H; subst; auto. Qed.
 
-Lemma a_wf_exp_abs_inv : forall Θ e,
-  {{ Θ ⊢ᵉ (exp_abs e) }}a ->
-  exists L, forall x, x `notin` L ->
-    {{ Θ ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a.
-Proof. intros * H; inversion H; subst; eauto. Qed.
+(* ⚙ [a_wf_exp_abs_inv] — the [exp_abs] sibling of the two above — was DELETED
+   2026-08-13 with [a_pat]'s exists-fresh conversion.  It handed back the
+   cofinite family, and its two consumers (this file's AP-Abs / AP-AbsCheck
+   rows) now want the instance at the row's OWN binder instead, which is
+   [a_wf_exp_abs_pick] just below.  ⚠️ Do not re-add it as a matter of symmetry
+   with [a_wf_exp_freeze_inv] / [a_wf_exp_app_inv]: those two have no binder,
+   so there is no family and nothing to pick. *)
 
 Lemma a_wf_exp_abs_anno_inv : forall Θ A e,
   {{ Θ ⊢ᵉ (exp_abs_anno A e) }}a ->
@@ -2138,9 +2148,14 @@ Proof.
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     exists (pskl_to_bskl_syn P'). split; [ exact HeQt | ].
     split; [ apply ad_pat__freeze; exact Hpat | exact Href ].
+  (* ⚙ THE FOUR BINDER ROWS ARE EXISTS-FRESH (2026-08-13).  The row hands the
+     binder over, so [atom_fresh] is gone and the [a_wf_exp] family is opened
+     at the row's OWN [x] instead — which is what [a_wf_exp_abs_pick] /
+     [a_wf_exp_abs_anno_pick] (§3) exist for.  Everything downstream of the
+     body run is unchanged, [ad_pat_rename_tm] included: the DECLARATIVE
+     rules are still cofinite, so this half still regenerates a family. *)
   - (* AP-Abs *)
     destruct (a_split_sk_shape H0 Hmod) as [HeqΘ Hshape]; subst Θ1.
-    destruct (a_wf_exp_abs_inv Hexp) as [L0 Hexp0].
     assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q0 }}a /\
                    a_sk_mode_compat (decr_mode m) Q0).
     { destruct Hshape as [[HP0 [HP HQ0]] | HP0]; subst.
@@ -2151,15 +2166,13 @@ Proof.
         destruct (a_sk_mode_compat_arrow_inv Hmod) as [m' [Hm Hm']]; subst m.
         repeat split; assumption. }
     destruct Hpre as [HwfPP [HwfQ0 Hmod']].
-    destruct (atom_fresh (L `union` L0 `union` dom Θ0 `union` dom Ξ
-                            `union` dom Θ2 `union` fvar_in_exp e)) as [x Hx].
+    assert (Hxd : x `notin` dom Θ0) by (clear - H2; simpl_env in *; fsetdec).
     assert (Hwfx : {{ ⊢ ((x ~ abind_var_skl P) ++ Θ0) }}a).
-    { apply a_wf_aenv__var;
-        [ clear - Hx; fsetdec | exact HwfPP | exact Hwf ]. }
-    destruct (H3 x ltac:(clear - Hx; solve_notin_auto) Hwfx
+    { apply a_wf_aenv__var; [ exact Hxd | exact HwfPP | exact Hwf ]. }
+    destruct (IHa_pat Hwfx
                 (a_wf_pskl_weaken_cons x (abind_var_skl P) HwfQ0) Hmod'
                 (a_wf_exp_weaken_cons x (abind_var_skl P)
-                   (Hexp0 x ltac:(clear - Hx; solve_notin_auto))))
+                   (@a_wf_exp_abs_pick _ _ x Hexp)))
       as [Hle [Hwfout [Qt [HeQt [Hpat Href]]]]].
     assert (Huniq : uniq (Ξ ++ (x ~ abind_var_skl P) ++ Θ2))
       by (apply a_wf_aenv_uniq; exact Hwfout).
@@ -2212,10 +2225,10 @@ Proof.
       [ apply ad_pat_suffix_moving with (Ξ := Ξ) (Θ2 := (x ~ abind_var_skl P));
           exact Hpat
       | exact I
-      | clear - Hx; simpl_env; fsetdec ].
+      | clear - H2; simpl_env in *; fsetdec ].
   - (* AP-AbsAnno *)
     destruct (a_split_sk_shape H0 Hmod) as [HeqΘ Hshape]; subst Θ1.
-    destruct (a_wf_exp_abs_anno_inv Hexp) as [HwfA [L0 Hexp0]].
+    destruct (a_wf_exp_abs_anno_inv Hexp) as [HwfA _].
     assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q0 }}a /\
                    a_sk_mode_compat (decr_mode m) Q0).
     { destruct Hshape as [[HP0 [HP HQ0]] | HP0]; subst.
@@ -2229,18 +2242,16 @@ Proof.
     destruct (a_consis_chk_sound H1 Hwf HwfPP
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA))
       as [Hlec [Hwfc _]].
-    destruct (atom_fresh (L `union` L0 `union` dom Θ2 `union` dom Ξ
-                            `union` dom Θ3 `union` fvar_in_exp e)) as [x Hx].
+    assert (Hxd : x `notin` dom Θ2) by (clear - H3; simpl_env in *; fsetdec).
     assert (HwfAc : a_wf_ptyp Θ2 A) by (eapply a_wf_ptyp_isub; eassumption).
     assert (Hwfx : {{ ⊢ ((x ~ abind_var_typ A) ++ Θ2) }}a)
-      by (apply a_wf_aenv__var_typ;
-          [ clear - Hx; fsetdec | exact HwfAc | exact Hwfc ]).
-    destruct (H4 x ltac:(clear - Hx; solve_notin_auto) Hwfx
+      by (apply a_wf_aenv__var_typ; [ exact Hxd | exact HwfAc | exact Hwfc ]).
+    destruct (IHa_pat Hwfx
                 (a_wf_pskl_weaken_cons x (abind_var_typ A)
                    ltac:(eapply a_wf_pskl_isub; [ exact HwfQ0 | exact Hlec ]))
                 Hmod'
                 (a_wf_exp_weaken_cons x (abind_var_typ A)
-                   (a_wf_exp_isub (Hexp0 x ltac:(clear - Hx; solve_notin_auto)) Hlec)))
+                   (a_wf_exp_isub (@a_wf_exp_abs_anno_pick _ _ _ x Hexp) Hlec)))
       as [Hle [Hwfout [Qt [HeQt [Hpat Href]]]]].
     assert (Huniq : uniq (Ξ ++ (x ~ abind_var_typ A) ++ Θ3))
       by (apply a_wf_aenv_uniq; exact Hwfout).
@@ -2260,7 +2271,7 @@ Proof.
         [ apply ad_pat_suffix_moving with (Ξ := Ξ) (Θ2 := (x ~ abind_var_typ A));
             exact Hpat
         | exact I
-        | clear - Hx; simpl_env; fsetdec ]. }
+        | clear - H3; simpl_env in *; fsetdec ]. }
     (* the annotation's colouring: at the HOLE shape the refinement forces
        the all-synthesised painting; at the ARROW shape it is the one the
        consistency run's output transports to (§4) *)
@@ -2323,16 +2334,14 @@ Proof.
           [ eapply ad_refine_syn_isub; [ exact HrefA | exact Hisub ]
           | eapply ad_refine_syn_strip_tm_typ; exact Href ].
   - (* AP-AbsCheck *)
-    destruct (a_wf_exp_abs_inv Hexp) as [L0 Hexp0].
-    destruct (atom_fresh (L `union` L0 `union` dom Θ0 `union` dom Ξ
-                            `union` dom Θ1 `union` fvar_in_exp e)) as [x Hx].
+    assert (Hxd : x `notin` dom Θ0) by (clear - H0; simpl_env in *; fsetdec).
     assert (Hwfx : {{ ⊢ ((x ~ abind_var_skl pskl_hole) ++ Θ0) }}a)
       by (apply a_wf_aenv__var;
-          [ clear - Hx; fsetdec | apply a_wf_pskl__hole | exact Hwf ]).
-    destruct (H1 x ltac:(clear - Hx; solve_notin_auto) Hwfx
+          [ exact Hxd | apply a_wf_pskl__hole | exact Hwf ]).
+    destruct (IHa_pat Hwfx
                 ltac:(apply a_wf_pskl__hole) a_sk_mode_compat__tc
                 (a_wf_exp_weaken_cons x (abind_var_skl pskl_hole)
-                   (Hexp0 x ltac:(clear - Hx; solve_notin_auto))))
+                   (@a_wf_exp_abs_pick _ _ x Hexp)))
       as [Hle [Hwfout [Qt [HeQt [Hpat Href]]]]].
     destruct (ad_refine_syn_syn_l Href pskl_hole eq_refl) as [P' HQt].
     subst Qt.
@@ -2364,7 +2373,7 @@ Proof.
                                           (Θ2 := (x ~ abind_var_skl pskl_hole));
             exact Hpat
         | exact I
-        | clear - Hx; simpl_env; fsetdec ].
+        | clear - H0; simpl_env in *; fsetdec ].
     + change (bskl_tophole (bskl_arrow bskl_hole (pskl_to_bskl_syn P')))
         with (pskl_to_bskl_syn (pskl_tophole (pskl_arrow pskl_hole P'))).
       apply ad_refine_syn__hole. apply a_wf_pskl__tophole;
@@ -2372,16 +2381,15 @@ Proof.
             [ apply lc_pskl_hole | eapply a_wf_pskl_lc; exact HwfP' ]
         | apply a_wf_pskl__arrow; [ apply a_wf_pskl__hole | exact HwfP' ] ].
   - (* AP-AbsAnnoCheck *)
-    destruct (a_wf_exp_abs_anno_inv Hexp) as [HwfA [L0 Hexp0]].
-    destruct (atom_fresh (L `union` L0 `union` dom Θ0 `union` dom Ξ
-                            `union` dom Θ1 `union` fvar_in_exp e)) as [x Hx].
+    destruct (a_wf_exp_abs_anno_inv Hexp) as [HwfA _].
+    assert (Hxd : x `notin` dom Θ0) by (clear - H0; simpl_env in *; fsetdec).
     assert (Hwfx : {{ ⊢ ((x ~ abind_var_typ A) ++ Θ0) }}a)
       by (apply a_wf_aenv__var_typ;
-          [ clear - Hx; fsetdec | exact HwfA | exact Hwf ]).
-    destruct (H1 x ltac:(clear - Hx; solve_notin_auto) Hwfx
+          [ exact Hxd | exact HwfA | exact Hwf ]).
+    destruct (IHa_pat Hwfx
                 ltac:(apply a_wf_pskl__hole) a_sk_mode_compat__tc
                 (a_wf_exp_weaken_cons x (abind_var_typ A)
-                   (Hexp0 x ltac:(clear - Hx; solve_notin_auto))))
+                   (@a_wf_exp_abs_anno_pick _ _ _ x Hexp)))
       as [Hle [Hwfout [Qt [HeQt [Hpat Href]]]]].
     destruct (ad_refine_syn_syn_l Href pskl_hole eq_refl) as [P' HQt].
     subst Qt.
@@ -2418,7 +2426,7 @@ Proof.
                                           (Θ2 := (x ~ abind_var_typ A));
             exact Hpat
         | exact I
-        | clear - Hx; simpl_env; fsetdec ].
+        | clear - H0; simpl_env in *; fsetdec ].
     + rewrite btyp_to_bskl_ptyp_to_btyp_syn.
       change (bskl_tophole (bskl_arrow (pskl_to_bskl_syn (ptyp_to_pskl A))
                                        (pskl_to_bskl_syn P')))

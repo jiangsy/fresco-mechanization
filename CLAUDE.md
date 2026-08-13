@@ -127,7 +127,7 @@ mechanization.)  Corrected 2026-08-09.
 | [`docs/refutations.tex`](docs/refutations.tex) | **Author-facing note, in the paper's own notation**: the two machine-checked refutations (Lemma E.17 Look completeness; Theorem 4.6 Completeness of subtyping), the shared configuration, the diagnosis (`SolE-FlexR` discards the accumulated pattern) and the suggested repair. Build: `make -f Makefile.refutations` from `docs/`, or `TEXINPUTS=../../paper: pdflatex refutations.tex` |
 | [`docs/WF-SIDE-CONDITIONS.md`](docs/WF-SIDE-CONDITIONS.md) | **Read before mechanizing any refinement / consistency / subtyping / skeleton-inference lemma.** The paper states well-formedness (and sometimes a further judgment) as an EXTERNAL requirement in prose, and its rules then omit the side conditions it would supply. Several judgments look FALSE until that condition is restored. |
 | [`docs/HANDOFF-closed-corollaries-declarative.md`](docs/HANDOFF-closed-corollaries-declarative.md) | **ACTIVE hand-off**: state the closed-program corollaries against `d_sd_typing` / `d_typing` instead of `ad_sd_typing`. ⭐ SOUNDNESS LANDED 2026-08-10 via the conservativity bridge `algo_decl/prop_conserv.v`. ⭐ 2026-08-11 the TAG-HYGIENE blocker is CLOSED — all four subtyping judgements now read the paper's `fresh Ψ'` the same, GLOBAL way. ⛔ COMPLETENESS still open, blocked by ONE thing: the leaf-valid datum at a ghosty subject (`cex/cex_ad_pat_join_not_leaf_valid.v`) |
-| [`docs/HANDOFF-extractable-algo-encoding.md`](docs/HANDOFF-extractable-algo-encoding.md) | **OPEN, not started** — two technical TODOs: (1) a SECOND algorithmic encoding whose freshness does not constrain its own OUTPUT, proved equivalent to today's; (2) on top of it, make the encoding EXTRACTABLE. ⭐ ROUTE DECIDED — thread a global avoidance set as STATE through every algorithmic component, which is what the real implementation does (`type.ml`'s `counter`), so the extracted code is structurally comparable to it. ⭐ (1) is half done: `prop_swap.v` §13b's eleven `*_no_loss` lemmas ARE that argument for three rule groups. ⚠️ Nothing in the tree is executable today — zero `Extraction` commands; and the real obligation is TERMINATION, which the paper never argues anywhere — decidability then follows from the runner's soundness + completeness, but only once the runner is TOTAL |
+| [`docs/HANDOFF-extractable-algo-encoding.md`](docs/HANDOFF-extractable-algo-encoding.md) | **ACTIVE hand-off. ⭐ TODO (1) IS COMPLETE (2026-08-13)** — `frost/ext_algo/` is a SECOND algorithmic encoding in which no rule's freshness constrains its own output, because a fresh-name SUPPLY is threaded through every component (which is what `type.ml`'s `counter` does). All fourteen judgements are threaded AND bridged to `frost/algo`'s encoding over the SAME contexts, so the four flagship theorems apply to a threaded run verbatim. ⭐ Two prose-completions became theorems on the way (`AT-Abs`'s and `a_sub__forall_l`'s `uniq` filters on generated blocks). ⛔ **TODO (2) — EXTRACTION — is spiked but not scaled**: M1.7 has a Bove–Capretta runner for `guess^TY` extracting to clean OCaml, axiom-free; nothing else has one. ⚠️ The real obligation there is TERMINATION, which the paper never argues anywhere; §7.3 sharpens that into a finding worth sending the authors |
 | [`docs/HANDOFF-close-subtyping-completeness.md`](docs/HANDOFF-close-subtyping-completeness.md) | **ACTIVE hand-off**: close subtyping completeness — decide reachability (TASK A), state+prove the payload invariant (B), make the shield supply total or kill it (C), land it on the motive and discharge `main_forall` (D) |
 | [`docs/HANDOFF-p7c-finish.md`](docs/HANDOFF-p7c-finish.md) | **ACTIVE hand-off**: TASKS 1, 2a and 3 are DONE (2026-08-03); what is left is TASK 2b — TASK 0's `sub_shield` for a `P0` with a ∀ below its head, the bundle's one hypothesis |
 | [`docs/HANDOFF-section-d.md`](docs/HANDOFF-section-d.md) | **CLOSED 2026-08-08 — HISTORY**: section D (`proofs.tex`) — soundness/completeness of skeleton and type inference.  All four theorems are Qed and axiom-free; the file keeps the exact Coq statement, the design decision and the obstacle found for each of the six lemmas and four theorems, pass by pass.  ⚠️ Three lemmas the paper calls "straightforward induction" are not |
@@ -260,6 +260,17 @@ mechanization/
 │   │                             `pskl_to_uskl` conversion facts, which belong
 │   │                             in frost/prop_coercions.v and now live there —
 │   │                             the conversion itself moved to coercions.v)
+│   ├── ext_algo/        (⭐ `{{ … }}e` — THE STATE-THREADED SECOND ENCODING of
+│   │                     the SAME algorithm as algo/: every rule carries a
+│   │                     fresh-name SUPPLY in and out (`S0 ↝ S1 ⊨ …`), so no
+│   │                     rule's freshness side condition constrains its own
+│   │                     OUTPUT.  Each judgement is bridged to its algo/ twin
+│   │                     over the SAME contexts (`e_*_sound`), which is what
+│   │                     makes the four flagships apply to a threaded run.
+│   │                     Files pair up `def_X.v` / `prop_X.v` by judgement,
+│   │                     as algo/ does.  ⚠️ NOT a fork — do not migrate
+│   │                     metatheory here; the point is that both exist and
+│   │                     compose.  docs/HANDOFF-extractable-algo-encoding.md)
 │   └── algo/             (algorithmic system — all admit-free.  Grouped BY
 │       │                  JUDGEMENT 2026-08-09; the shared machinery stays
 │       │                  FLAT because there is no soundness-only file —
@@ -458,14 +469,21 @@ before changing any of them.
   exist for — and exists-fresh is the reverse.  Layer by layer:
   - `decl/def_rules.v`, `algo_decl/*` / `deco_algo/*` — cofinite. ✅
   - `algo/def_rules.v` operational judgments (`a_looksub`, `a_solve_*`,
-    `a_assign` / `a_unify` / `a_consis`, `a_sub`, `a_typing`) — exists-fresh. ✅
+    `a_assign` / `a_unify` / `a_consis`, `a_sub`, `a_pat`, `a_typing`) —
+    exists-fresh. ✅  **`a_pat`'s four binder rows were the last holdout and
+    were converted 2026-08-13**, so the discipline now has NO exception among
+    the operational judgements ([`docs/REPORT-remech-cleanup-audit.md`](docs/REPORT-remech-cleanup-audit.md) §3
+    recommended it; `a_typing`'s six went 2026-08-08, `7061d31`).  It did
+    re-open theorems 1 and 3, and the two moved in opposite directions:
+    completeness got **shorter** (it no longer regenerates a family, so the
+    four `a_pat_rename_tm` calls and the lemma itself are gone — see the ⛔
+    note where §6 of `algo/prop_swap.v` used to end), soundness slightly
+    longer (it opens the `a_wf_exp` families at the row's own binder, via
+    `a_wf_exp_abs_pick` / `a_wf_exp_abs_anno_pick`).  All four flagships are
+    Qed and axiom-free after the move.
   - `algo/def_rules.v` WELL-FORMEDNESS (`a_wf_ptyp`, `a_scope_pskl`,
     `a_wf_pskl`) — cofinite, deliberately.  These are static judgments, not
     runs; do not "fix" them to match their file-mates.
-  - ⚠️ `a_pat`'s four binder rows — still cofinite, the one outstanding
-    violation.  `a_typing`'s six were converted 2026-08-08 (`7061d31`);
-    `a_pat` was not, because converting it re-opens theorems 1 and 3.  See
-    [`docs/REPORT-remech-cleanup-audit.md`](docs/REPORT-remech-cleanup-audit.md) §3.
 
 ## Build and workflow
 

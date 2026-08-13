@@ -2398,14 +2398,18 @@ Qed.
 Set Implicit Arguments.
 
 (* ===================================================================== *)
-(*  K6 — TERM-VARIABLE RENAMING for the cofinite binder rows.            *)
+(*  K6 — TERM-VARIABLE RENAMING for cofinite binder rows.                *)
 (*                                                                       *)
 (*  ⭐ The route is the standing directive's: EQUIVARIANCE is the one     *)
 (*  renaming primitive.  prop_swap.v already proves it for the whole      *)
 (*  algorithmic tower; what was missing is the bridge that turns a SWAP   *)
 (*  of two atoms into the RENAMING of a term binder — which it is        *)
 (*  exactly when both atoms are fresh for everything else in sight        *)
-(*  ([swap_aenv_tm_head] below).  [a_pat_rename_tm] is its one consumer.  *)
+(*  ([swap_aenv_tm_head] below).                                          *)
+(*                                                                       *)
+(*  ⚙ ITS CONSUMER RETIRED 2026-08-13 — see the ⛔ note at the end of      *)
+(*  this section.  [a_pat] went exists-fresh, and with it went            *)
+(*  [a_pat_rename_tm], the only lemma this bridge was built for.          *)
 (* ===================================================================== *)
 
 (** A binding the two swapped atoms do not occur in is untouched. *)
@@ -2480,26 +2484,37 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  K6, LAST PIECE — [a_pat]'s own term renaming.                         *)
-(*                                                                       *)
-(*  The obvious statement — substitute the term variable, keep            *)
-(*  everything else, assume x,y fresh for it — CANNOT be proved: the      *)
-(*  [AP-App] row's intermediate skeleton (the argument's OUTPUT, [P0] of  *)
-(*  the function premise) is EXISTENTIAL, so no freshness for it can be   *)
-(*  carried from the statement's hypotheses.                             *)
-(*                                                                       *)
-(*  ⭐ The statement that works is the HYBRID: SWAP the type-level data   *)
-(*  (contexts and both skeletons — so nothing needs to be fresh for it,   *)
-(*  exactly as in the equivariance lemmas this file already consumes) and *)
-(*  SUBSTITUTE in the term, whose freshness obligations shrink with the   *)
-(*  term.  This is why no [swap_exp] is needed (prop_swap.v has none, and *)
-(*  adding one would have to swap ANNOTATION types too).  The ten rows    *)
-(*  transport by [a_sub_sub_flex_swap], [a_assign_unify_consis_swap] and  *)
-(*  [a_split_swap] — the SWAP forms directly, not the renaming            *)
-(*  corollaries above, which are for the CONSUMERS.  The binder rows      *)
-(*  follow [ad_pat_subst_tm]'s cofinite dance (prop_soundness_pat.v §4).  *)
-(*  Consumers read the conclusion back with [swap_aenv_tm_head] /         *)
-(*  [swap_aenv_fresh_eq] / [swap_pskl_fresh_id].                         *)
+(*  K6, LAST PIECE — RETIRED 2026-08-13 with the exists-fresh conversion   *)
+(*  of [a_pat]'s four binder rows (frost/algo/def_rules.v).                *)
+(*                                                                        *)
+(*  ⛔ [a_pat_rename_tm] IS GONE, AND IT CANNOT COME BACK IN THIS SHAPE.   *)
+(*  It renamed a term binder across an [a_pat] run — the hybrid that       *)
+(*  SWAPS the type-level data and SUBSTITUTES in the term — and its ONLY   *)
+(*  consumers were the four binder rows of [a_pat_complete], which used it *)
+(*  to REGENERATE a cofinite family from the IH's one instance.            *)
+(*  Exists-fresh rows need one instance, so all four calls went with the   *)
+(*  conversion.                                                            *)
+(*                                                                        *)
+(*  ⚠️ AND IT IS NOT MERELY UNUSED — restated over the converted rules it   *)
+(*  is NOT PROVABLE.  Its binder rows needed [b ∉ fvar_in_exp (open e x)], *)
+(*  i.e. [b <> x].  Cofinitely that was free: the row picked its own [x]   *)
+(*  away from [b].  Exists-fresh the row HANDS OVER an [x] the statement   *)
+(*  cannot constrain, and no hypothesis on [Θ0]/[Θ1]/[e] bounds it — the   *)
+(*  conclusion's output [Ξ ++ Θ2] has had [x] removed.  A size induction    *)
+(*  does not rescue it either: the inner rename would need                 *)
+(*  [x ∉ ftvar_in_exp e], which the row does not state.                    *)
+(*                                                                        *)
+(*  ⚙ WHAT STAYED, and why it is not orphan sweepings.                     *)
+(*  [swap_aenv_fresh_eq] has three live consumers in                       *)
+(*  typing/prop_completeness_typing.v (theorem 4 keeps its own K6, over    *)
+(*  the DECLARATIVE cofinite rows, which is a different lemma).            *)
+(*  [swap_abind_fresh_eq] is its helper.  [swap_aenv_tm_head],             *)
+(*  [swap_aenv_one], [a_split_swap], [a_suffix_swap] and                   *)
+(*  [a_consis_chk_swap] lost their consumer with the lemma above; they are *)
+(*  kept as the equivariance of the judgements they name — the same        *)
+(*  standing directive (equivariance is THE renaming primitive) that the   *)
+(*  rest of this file is built on, and the form any later renaming         *)
+(*  argument over [a_split] / [a_consis_chk] would start from.             *)
 (* ===================================================================== *)
 
 (** Swapping distributes over a one-entry block. *)
@@ -2507,171 +2522,5 @@ Lemma swap_aenv_one : forall a b x (bd : abind),
   swap_aenv a b (x ~ bd) = (swap_atom a b x) ~ (swap_abind a b bd).
 Proof. reflexivity. Qed.
 
-(** [a_pat] is equivariant in the swapped type-level data and renames its
-    term variable by substitution — the hybrid statement above.
-
-    ⚠️ The design note's recorded statement lacked the THIRD freshness
-    premise, and without it the lemma is FALSE at the [AP-Var] rows: take
-    [e = exp_var_f b] with [b]'s entry in [Θ0] and [a ∉ dom Θ0] — the swap
-    moves the entry to key [a] while the substitution leaves the term
-    reading [b], and no rule derives the conclusion.  [b ∉ fvar_in_exp e]
-    (the NEW name avoids the term) restores it; the consumers have that
-    for free (they rename TO a fresh atom), and it still shrinks with the
-    term, which is all the [AP-App] row needs. *)
-Lemma a_pat_rename_tm : forall a b m Θ0 P0 e P Θ1,
-  {{ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ P ⊣ Θ1 }}a ->
-  a `notin` ftvar_in_exp e -> b `notin` ftvar_in_exp e ->
-  b `notin` fvar_in_exp e ->
-  a_pat m (swap_aenv a b Θ0) (swap_pskl a b P0)
-    (subst_exp_in_exp (exp_var_f b) a e) (swap_pskl a b P)
-    (swap_aenv a b Θ1).
-Proof.
-  intros a b m Θ0 P0 e P Θ1 H.
-  induction H; intros Ha Hb Hbv;
-    simpl in Ha, Hb, Hbv; cbn [subst_exp_in_exp].
-  - (* unit *)
-    apply a_pat__unit.
-    pose proof (proj1 (a_sub_sub_flex_swap a b) _ _ _ _ _ _ _ H) as h.
-    exact h.
-  - (* var (type-bound) *)
-    pose proof (proj1 (a_sub_sub_flex_swap a b) _ _ _ _ _ _ _ H0) as hsub.
-    rewrite swap_pskl_ptyp_to_pskl in hsub.
-    pose proof (swap_aenv_binds a b _ _ _ H) as hb.
-    cbn [swap_abind] in hb.
-    destruct_if as [Heq | Hne].
-    + subst x. rewrite swap_atom_l in hb.
-      eapply a_pat__var; [ exact hb | exact hsub ].
-    + assert (Hxb : x <> b) by (intros ->; clear - Hbv; fsetdec).
-      rewrite (swap_atom_other a b x Hne Hxb) in hb.
-      eapply a_pat__var; [ exact hb | exact hsub ].
-  - (* var (skeleton-bound) *)
-    pose proof (proj1 (a_sub_sub_flex_swap a b) _ _ _ _ _ _ _ H0) as hsub.
-    pose proof (swap_aenv_binds a b _ _ _ H) as hb.
-    cbn [swap_abind] in hb.
-    destruct_if as [Heq | Hne].
-    + subst x. rewrite swap_atom_l in hb.
-      eapply a_pat__var_skl; [ exact hb | exact hsub ].
-    + assert (Hxb : x <> b) by (intros ->; clear - Hbv; fsetdec).
-      rewrite (swap_atom_other a b x Hne Hxb) in hb.
-      eapply a_pat__var_skl; [ exact hb | exact hsub ].
-  - (* anno *)
-    apply a_pat__anno.
-    pose proof (proj1 (a_sub_sub_flex_swap a b) _ _ _ _ _ _ _ H) as h.
-    rewrite swap_pskl_ptyp_to_pskl in h.
-    rewrite swap_ptyp_fresh_id in h;
-      [ exact h | clear - Ha; fsetdec | clear - Hb; fsetdec ].
-  - (* freeze *)
-    apply a_pat__freeze. apply IHa_pat; assumption.
-  - (* abs *)
-    rewrite swap_aenv_app.
-    eapply a_pat__abs with (L := L `union` singleton a `union` singleton b);
-      [ assumption
-      | apply a_split_swap; eassumption
-      | apply a_suffix_swap; assumption
-      | ].
-    intros z Hz.
-    rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
-      [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
-    assert (Hza : z <> a) by (clear - Hz; fsetdec).
-    assert (Hzb : z <> b) by (clear - Hz; fsetdec).
-    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hfu.
-    pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hvu.
-    simpl in hfu, hvu.
-    pose proof (H3 z ltac:(clear - Hz; solve_notin_auto)
-                  ltac:(clear - Ha hfu; solve_notin_auto)
-                  ltac:(clear - Hb hfu; solve_notin_auto)
-                  ltac:(clear - Hbv hvu Hzb; solve_notin_auto)) as IH.
-    rewrite !swap_aenv_app, !swap_aenv_one,
-      (swap_atom_other a b z Hza Hzb) in IH.
-    cbn [swap_abind] in IH.
-    exact IH.
-  - (* abs_anno *)
-    rewrite swap_aenv_app.
-    cbn [swap_pskl].
-    rewrite swap_pskl_ptyp_to_pskl.
-    rewrite (swap_ptyp_fresh_id a b A);
-      [ | clear - Ha; fsetdec | clear - Hb; fsetdec ].
-    eapply a_pat__abs_anno with (L := L `union` singleton a `union` singleton b);
-      [ assumption
-      | apply a_split_swap; eassumption
-      | pose proof (a_consis_chk_swap a b _ _ _ _ H1) as hc;
-        rewrite swap_pskl_ptyp_to_pskl in hc;
-        rewrite (swap_ptyp_fresh_id a b A) in hc;
-        [ exact hc | clear - Ha; fsetdec | clear - Hb; fsetdec ]
-      | apply a_suffix_swap; assumption
-      | ].
-    intros z Hz.
-    rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
-      [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
-    assert (Hza : z <> a) by (clear - Hz; fsetdec).
-    assert (Hzb : z <> b) by (clear - Hz; fsetdec).
-    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hfu.
-    pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hvu.
-    simpl in hfu, hvu.
-    pose proof (H4 z ltac:(clear - Hz; solve_notin_auto)
-                  ltac:(clear - Ha hfu; solve_notin_auto)
-                  ltac:(clear - Hb hfu; solve_notin_auto)
-                  ltac:(clear - Hbv hvu Hzb; solve_notin_auto)) as IH.
-    rewrite !swap_aenv_app, !swap_aenv_one,
-      (swap_atom_other a b z Hza Hzb) in IH.
-    cbn [swap_abind] in IH.
-    rewrite (swap_ptyp_fresh_id a b A) in IH;
-      [ | clear - Ha; fsetdec | clear - Hb; fsetdec ].
-    exact IH.
-  - (* abs_check *)
-    rewrite swap_aenv_app.
-    eapply a_pat__abs_check
-      with (L := L `union` singleton a `union` singleton b);
-      [ apply a_suffix_swap; assumption | ].
-    intros z Hz.
-    rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
-      [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
-    assert (Hza : z <> a) by (clear - Hz; fsetdec).
-    assert (Hzb : z <> b) by (clear - Hz; fsetdec).
-    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hfu.
-    pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hvu.
-    simpl in hfu, hvu.
-    pose proof (H1 z ltac:(clear - Hz; solve_notin_auto)
-                  ltac:(clear - Ha hfu; solve_notin_auto)
-                  ltac:(clear - Hb hfu; solve_notin_auto)
-                  ltac:(clear - Hbv hvu Hzb; solve_notin_auto)) as IH.
-    rewrite !swap_aenv_app, !swap_aenv_one,
-      (swap_atom_other a b z Hza Hzb) in IH.
-    cbn [swap_abind] in IH.
-    exact IH.
-  - (* abs_anno_check *)
-    rewrite swap_aenv_app.
-    cbn [swap_pskl].
-    rewrite swap_pskl_ptyp_to_pskl.
-    rewrite (swap_ptyp_fresh_id a b A);
-      [ | clear - Ha; fsetdec | clear - Hb; fsetdec ].
-    eapply a_pat__abs_anno_check
-      with (L := L `union` singleton a `union` singleton b);
-      [ apply a_suffix_swap; assumption | ].
-    intros z Hz.
-    rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
-      [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
-    assert (Hza : z <> a) by (clear - Hz; fsetdec).
-    assert (Hzb : z <> b) by (clear - Hz; fsetdec).
-    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hfu.
-    pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f z)) as hvu.
-    simpl in hfu, hvu.
-    pose proof (H1 z ltac:(clear - Hz; solve_notin_auto)
-                  ltac:(clear - Ha hfu; solve_notin_auto)
-                  ltac:(clear - Hb hfu; solve_notin_auto)
-                  ltac:(clear - Hbv hvu Hzb; solve_notin_auto)) as IH.
-    rewrite !swap_aenv_app, !swap_aenv_one,
-      (swap_atom_other a b z Hza Hzb) in IH.
-    cbn [swap_abind] in IH.
-    rewrite (swap_ptyp_fresh_id a b A) in IH;
-      [ | clear - Ha; fsetdec | clear - Hb; fsetdec ].
-    exact IH.
-  - (* app *)
-    eapply a_pat__app.
-    + apply IHa_pat1;
-        [ clear - Ha; fsetdec | clear - Hb; fsetdec | clear - Hbv; fsetdec ].
-    + apply IHa_pat2;
-        [ clear - Ha; fsetdec | clear - Hb; fsetdec | clear - Hbv; fsetdec ].
-Qed.
 
 Unset Implicit Arguments.

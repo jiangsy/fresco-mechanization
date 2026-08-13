@@ -632,7 +632,7 @@ the **eight mode-spine inductives**, the **82 duplicated names**, and the
 |---|---|---|---|
 | 1 | rename / swap | B + C | swap kit is THE primitive by directive but covers 2 of 3 renaming idioms; its term-var half is stranded inside `prop_completeness_pat.v`; 59 `*_rename_*` lemmas across 20 files |
 | 2 | `_gv` / `_g` | C | **five** mirrors of `ad_pat_sub` (~560 lines of duplicated rule text) + 25 lemma pairs proved twice |
-| 3 | cofinite vs existential | C | `a_pat`'s four binder rows are still COFINITE while `a_typing`'s six are EXISTS-FRESH — the one remaining violation of the stated discipline |
+| 3 | cofinite vs existential | C | ✅ **DONE 2026-08-13** — `a_pat`'s four binder rows were the last COFINITE algorithm rows and are now EXISTS-FRESH, uniformly with `a_typing`'s six.  Net −250 lines; theorems 1–4 all re-closed |
 | 4 | `fn_arrow_shape` / `mode_compat` | C | **eight** inductives over the same arrow-spine-on-`mode` shape, in three files, with inconsistent argument order |
 | 5 | coercions / predicates | A + B | 14 conversions in `coercions.v` + ≥4 more elsewhere; 2 dead; no composite names (35+32 raw nested chains); commuting squares scattered over 5 files |
 | 6 | `ty_core` | A | `prop_ty_core.v` is coherent for 2 of its 3 clusters; `fn_arrow_shape*` (lines 1215-1300) does not belong there |
@@ -824,6 +824,35 @@ being written against this tree, the argument for converting is that the
 the mechanization is the deliverable, defer it and document the split at the
 top of `a_pat`.  I would do the documentation now and hold the conversion for a
 dedicated branch.
+
+### ✅ DONE 2026-08-13 — and it was cheaper than this section priced it
+
+The four rows are exists-fresh, with `a_typing`'s own side condition verbatim
+(`x ∉ dom (Ξ ++ Θ1) ∪ dom Θ2 ∪ fvar_in_exp e`).  `make coq` green, all 32
+`README.v` assumption reports still "Closed under the global context", so
+theorems 1–4 all survived.  Three corrections to the estimate above:
+
+- ⭐ **It was not a multi-day campaign.**  Eight files, and the net is
+  **−250 lines**: `prop_completeness_pat.v` −102 and `prop_swap.v` −155
+  against small additions elsewhere.  The `7061d31` precedent over-priced it
+  because that pass ALSO changed what the rules mean (the discarded suffix,
+  the free `B1`); this one changes only how the binder is quantified.
+- ⭐ **The completeness side is where the saving is**, as predicted: the four
+  ~30-line family-regeneration blocks became three lines each, and
+  `a_pat_rename_tm` — the whole reason K6's last piece existed — is **gone**.
+  ⚠️ It could not merely be left unreferenced: over exists-fresh rows it is
+  not provable (its binder rows need `b <> x` for an `x` the statement cannot
+  constrain).  The ⛔ note where it used to be, in `algo/prop_swap.v`, records
+  that argument.
+- ⚙ **The soundness side cost four `atom_fresh` blocks**, replaced by opening
+  the `a_wf_exp` families at the row's own binder.  The two lemmas that does
+  it (`a_wf_exp_abs_pick`, `a_wf_exp_abs_anno_pick`) already existed — built
+  for `7061d31` — so this was substitution, not new mathematics.  The cofinite
+  `a_wf_exp_abs_inv` was deleted as its last consumer went.
+
+⚙ The §1.3 recommendation to add `a_pat_swap` (item 19 of the closing list)
+is **not** affected: `a_pat_rename_tm` was the term-variable renaming, and the
+type-variable equivariance it asks for was never written.
 
 ---
 

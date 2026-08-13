@@ -503,50 +503,35 @@ Proof.
   - (* var_skl *) eapply a_sub_rigid_only; eassumption.
   - (* anno *) eapply a_sub_rigid_only; eassumption.
   - (* freeze *) apply IHa_pat, Hr.
+  (* ⚙ EXISTS-FRESH (2026-08-13): the IH is already at the row's own binder. *)
   - (* abs *)
-    destruct (atom_fresh L) as [x Hx].
     assert (Hr1 : a_rigid_only Θ1 γ)
       by (eapply a_split_rigid_only; [ eassumption | exact Hr ]).
     assert (Hbig : a_rigid_only (Ξ ++ (x ~ abind_var_skl P) ++ Θ2) γ).
-    { match goal with
-      | IHf : forall y, y `notin` _ -> forall δ, a_rigid_only _ δ -> a_rigid_only _ δ |- _ =>
-          apply (IHf x Hx)
-      end.
+    { apply IHa_pat.
       apply a_rigid_only_cons_nonsuffix;
         [ intros Hb; inversion Hb | exact Hr1 ]. }
     eapply a_rigid_only_strip_mid_nonrigid; [ | exact Hbig ]; discriminate.
   - (* abs_anno *)
-    destruct (atom_fresh L) as [x Hx].
     assert (Hr1 : a_rigid_only Θ1 γ)
       by (eapply a_split_rigid_only; [ eassumption | exact Hr ]).
     destruct H1 as [Qc Hc].
     assert (Hr2 : a_rigid_only Θ2 γ)
       by (eapply a_consis_rigid_only; [ exact Hc | exact Hr1 ]).
     assert (Hbig : a_rigid_only (Ξ ++ (x ~ abind_var_typ A) ++ Θ3) γ).
-    { match goal with
-      | IHf : forall y, y `notin` _ -> forall δ, a_rigid_only _ δ -> a_rigid_only _ δ |- _ =>
-          apply (IHf x Hx)
-      end.
+    { apply IHa_pat.
       apply a_rigid_only_cons_nonsuffix;
         [ intros Hb; inversion Hb | exact Hr2 ]. }
     eapply a_rigid_only_strip_mid_nonrigid; [ | exact Hbig ]; discriminate.
   - (* abs_check *)
-    destruct (atom_fresh L) as [x Hx].
     assert (Hbig : a_rigid_only (Ξ ++ (x ~ abind_var_skl pskl_hole) ++ Θ1) γ).
-    { match goal with
-      | IHf : forall y, y `notin` _ -> forall δ, a_rigid_only _ δ -> a_rigid_only _ δ |- _ =>
-          apply (IHf x Hx)
-      end.
+    { apply IHa_pat.
       apply a_rigid_only_cons_nonsuffix;
         [ intros Hb; inversion Hb | exact Hr ]. }
     eapply a_rigid_only_strip_mid_nonrigid; [ | exact Hbig ]; discriminate.
   - (* abs_anno_check *)
-    destruct (atom_fresh L) as [x Hx].
     assert (Hbig : a_rigid_only (Ξ ++ (x ~ abind_var_typ A) ++ Θ1) γ).
-    { match goal with
-      | IHf : forall y, y `notin` _ -> forall δ, a_rigid_only _ δ -> a_rigid_only _ δ |- _ =>
-          apply (IHf x Hx)
-      end.
+    { apply IHa_pat.
       apply a_rigid_only_cons_nonsuffix;
         [ intros Hb; inversion Hb | exact Hr ]. }
     eapply a_rigid_only_strip_mid_nonrigid; [ | exact Hbig ]; discriminate.

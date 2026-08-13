@@ -8,11 +8,12 @@
     EXISTS-FRESH conversion (2026-08-08, `7061d31`).  While [a_typing]'s six
     binder rows were cofinite they shared their outputs across the family, so
     completeness would have had to generate the family from the IH's one fresh
-    instance — theorem 4's "K6", the analogue of [a_pat_rename_tm]
-    (prop_completeness_pat.v §K6).  Exists-fresh rows are INTRODUCED at a
-    chosen witness instead, so every binder row below just applies its rule
-    [with (x := x)] and the obligation disappears.  ⚠️ [a_pat] is still
-    cofinite, which is exactly why prop_completeness_pat.v still carries K6.
+    instance.  Exists-fresh rows are INTRODUCED at a chosen witness instead, so
+    every binder row below just applies its rule [with (x := x)] and the
+    obligation disappears.  ⭐ [a_pat] made the same move 2026-08-13, so
+    prop_completeness_pat.v no longer carries its renaming kit either — and
+    the lemma it was built around is gone (see the ⛔ note at the end of
+    algo/prop_swap.v §6).
 
     ⭐ MEASURE SETTLED (2026-08-07 scouting): plain STRUCTURAL induction on
     [ad_sd_typing] suffices — NO height mirror [ad_sd_typing_n].  Every IH

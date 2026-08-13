@@ -905,18 +905,18 @@ Proof.
   exists P1, Θ1. split; [ apply a_pat__freeze; exact Hrun | exact Hopt ].
 Qed.
 
-(* ⚙ K6 — TERM-VARIABLE RENAMING for the cofinite binder rows: MOVED
-   2026-08-09 to algo/prop_swap.v §6 (cleanup audit §1.2).  It is the
-   term-variable half of the swap kit — [swap_abind_fresh_eq],
-   [swap_aenv_fresh_eq], [swap_aenv_tm_head], [swap_aenv_one],
-   [a_split_swap], and the four [*_rename_tm] bridges for
-   [a_sub] / [a_consis] / [a_consis_chk] / [a_split], plus [a_pat_rename_tm]
-   itself.  This file imports prop_swap.v, so the rows below are unchanged.
+(* ⚙ K6 — THE TERM-VARIABLE RENAMING KIT IS NO LONGER USED BY THIS FILE.
+   It lived here, moved to algo/prop_swap.v §6 in 2026-08-09 (cleanup audit
+   §1.2), and existed for ONE reason: while [a_pat]'s four binder rows were
+   COFINITE the IH handed back one instance and the rule wanted the whole
+   family, so each of the four rows below rebuilt it — [a_pat_rename_tm] plus
+   five [swap_*] read-backs, about thirty lines apiece.
 
-   ⚠️ The block exists at all because [a_pat]'s four binder rows are still
-   COFINITE while [a_typing]'s six are EXISTS-FRESH (cleanup audit §3): the
-   IH hands back one instance and the rule wants the whole family.  Converting
-   [a_pat] would retire it. *)
+   ⭐ The 2026-08-13 exists-fresh conversion (cleanup audit §3) deleted all
+   four blocks and [a_pat_rename_tm] with them.  What survives in prop_swap.v
+   §6 is the general kit ([swap_abind_fresh_eq], [swap_aenv_fresh_eq],
+   [swap_aenv_tm_head], [swap_aenv_one], [a_split_swap]); [swap_aenv_fresh_eq]
+   still has live consumers in typing/prop_completeness_typing.v. *)
 
 (* ===================================================================== *)
 (*  K8 — the binder rows' support: freshness of a TERM atom for the       *)
@@ -1221,38 +1221,15 @@ Proof.
   (* ---- 5. the run ---- *)
   exists (pskl_tophole (pskl_arrow pskl_hole Q')), (Ξ ++ Θ2).
   split.
-  { apply a_pat__abs_check
-      with (L := dom Θ0 `union` ftvar_in_aenv Θ0
-                 `union` dom Ξ `union` ftvar_in_aenv Ξ
-                 `union` dom Θ2 `union` ftvar_in_aenv Θ2
-                 `union` ftvar_in_pskl Q'
-                 `union` fvar_in_exp e `union` ftvar_in_exp e
-                 `union` singleton x);
-      [ exact Hsuf | ].
-    intros z Hz.
-    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hup.
-    pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hvup.
-    simpl in Hup, Hvup.
-    pose proof (@a_pat_rename_tm x z _ _ _ _ _ _ Hrun
-                  ltac:(clear - Hx Hup; solve_notin_auto)
-                  ltac:(clear - Hz Hup; solve_notin_auto)
-                  ltac:(clear - Hz Hvup; solve_notin_auto)) as Hsw.
-    rewrite (@swap_aenv_tm_head x z bx Θ0
-               ltac:(simpl; clear - Hx; solve_notin_auto)
-               ltac:(simpl; clear - Hz; solve_notin_auto)) in Hsw.
-    rewrite swap_aenv_app in Hsw.
-    rewrite (@swap_aenv_tm_head x z (abind_var_skl pskl_hole) Θ2
-               ltac:(simpl; clear - HxΘ2; solve_notin_auto)
-               ltac:(simpl; clear - Hz; solve_notin_auto)) in Hsw.
-    rewrite (@swap_aenv_fresh_eq x z Ξ
-               ltac:(clear - HxΞ; solve_notin_auto)
-               ltac:(clear - Hz; solve_notin_auto)) in Hsw.
-    rewrite (@swap_pskl_fresh_id x z Q'
-               ltac:(clear - HxQ'; solve_notin_auto)
-               ltac:(clear - Hz; solve_notin_auto)) in Hsw.
-    rewrite <- (@subst_exp_in_exp_intro x e (exp_var_f z)
-                  ltac:(clear - Hx; solve_notin_auto)) in Hsw.
-    exact Hsw. }
+  { (* ⭐ EXISTS-FRESH (2026-08-13).  What stood here was ~30 lines that
+       REGENERATED the cofinite family from the one instance [Hrun] —
+       [a_pat_rename_tm] plus five [swap_*] read-backs.  The converted row
+       wants exactly the instance, so all of it went, and the lemma with it
+       (prop_swap.v §6).  This is the half of the conversion that PAYS. *)
+    apply a_pat__abs_check with (x := x);
+      [ exact Hsuf
+      | clear - Hx HxΞ HxΘ2; simpl_env; solve_notin_auto
+      | exact Hrun ]. }
   (* ---- 6. optimality ---- *)
   intros κ1 Hid1 Hinc1.
   (* the caller's identity witness IS the run's own (identity witnesses are
@@ -1414,39 +1391,15 @@ Proof.
   (* ---- 5. the run ---- *)
   exists (pskl_tophole (pskl_arrow (ptyp_to_pskl A) Q')), (Ξ ++ Θ2).
   split.
-  { apply a_pat__abs_anno_check
-      with (L := dom Θ0 `union` ftvar_in_aenv Θ0
-                 `union` dom Ξ `union` ftvar_in_aenv Ξ
-                 `union` dom Θ2 `union` ftvar_in_aenv Θ2
-                 `union` ftvar_in_pskl Q'
-                 `union` fvar_in_exp e `union` ftvar_in_exp e
-                 `union` ftvar_in_ptyp A
-                 `union` singleton x);
-      [ exact Hsuf | ].
-    intros z Hz.
-    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hup.
-    pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hvup.
-    simpl in Hup, Hvup.
-    pose proof (@a_pat_rename_tm x z _ _ _ _ _ _ Hrun
-                  ltac:(clear - Hx Hup; solve_notin_auto)
-                  ltac:(clear - Hz Hup; solve_notin_auto)
-                  ltac:(clear - Hz Hvup; solve_notin_auto)) as Hsw.
-    rewrite (@swap_aenv_tm_head x z bx Θ0
-               ltac:(simpl; clear - Hx; solve_notin_auto)
-               ltac:(simpl; clear - Hz; solve_notin_auto)) in Hsw.
-    rewrite swap_aenv_app in Hsw.
-    rewrite (@swap_aenv_tm_head x z (abind_var_typ A) Θ2
-               ltac:(simpl; clear - HxΘ2 Hx; solve_notin_auto)
-               ltac:(simpl; clear - Hz; solve_notin_auto)) in Hsw.
-    rewrite (@swap_aenv_fresh_eq x z Ξ
-               ltac:(clear - HxΞ; solve_notin_auto)
-               ltac:(clear - Hz; solve_notin_auto)) in Hsw.
-    rewrite (@swap_pskl_fresh_id x z Q'
-               ltac:(clear - HxQ'; solve_notin_auto)
-               ltac:(clear - Hz; solve_notin_auto)) in Hsw.
-    rewrite <- (@subst_exp_in_exp_intro x e (exp_var_f z)
-                  ltac:(clear - Hx; solve_notin_auto)) in Hsw.
-    exact Hsw. }
+  { (* ⭐ EXISTS-FRESH (2026-08-13).  What stood here was ~30 lines that
+       REGENERATED the cofinite family from the one instance [Hrun] —
+       [a_pat_rename_tm] plus five [swap_*] read-backs.  The converted row
+       wants exactly the instance, so all of it went, and the lemma with it
+       (prop_swap.v §6).  This is the half of the conversion that PAYS. *)
+    apply a_pat__abs_anno_check with (x := x);
+      [ exact Hsuf
+      | clear - Hx HxΞ HxΘ2; simpl_env; solve_notin_auto
+      | exact Hrun ]. }
   (* ---- 6. optimality ---- *)
   intros κ1 Hid1 Hinc1.
   assert (Heqκ : κ1 = κid)
@@ -1701,42 +1654,15 @@ Proof.
   (* ---- 8. the run ---- *)
   exists (pskl_arrow P1 Q'), (Ξ ++ Θ2).
   split.
-  { eapply a_pat__abs
-      with (L := dom Θ0 `union` ftvar_in_aenv Θ0
-                 `union` dom Ξ `union` ftvar_in_aenv Ξ
-                 `union` dom Θ2 `union` ftvar_in_aenv Θ2
-                 `union` ftvar_in_pskl Q'
-                 `union` ftvar_in_pskl P1 `union` ftvar_in_pskl Q1
-                 `union` fvar_in_exp e `union` ftvar_in_exp e
-                 `union` singleton x);
-      [ exact HMne | exact Hsplit | exact Hsuf | ].
-    intros z Hz.
-    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hup.
-    pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hvup.
-    simpl in Hup, Hvup.
-    pose proof (@a_pat_rename_tm x z _ _ _ _ _ _ Hrun
-                  ltac:(clear - Hx Hup; solve_notin_auto)
-                  ltac:(clear - Hz Hup; solve_notin_auto)
-                  ltac:(clear - Hz Hvup; solve_notin_auto)) as Hsw.
-    rewrite (@swap_aenv_tm_head x z bq Θ0
-               ltac:(simpl; clear - Hx; solve_notin_auto)
-               ltac:(simpl; clear - Hz; solve_notin_auto)) in Hsw.
-    rewrite swap_aenv_app in Hsw.
-    rewrite (@swap_aenv_tm_head x z (abind_var_skl P1) Θ2
-               ltac:(simpl; clear - HxΘ2 Hx; solve_notin_auto)
-               ltac:(simpl; clear - Hz; solve_notin_auto)) in Hsw.
-    rewrite (@swap_aenv_fresh_eq x z Ξ
-               ltac:(clear - HxΞ; solve_notin_auto)
-               ltac:(clear - Hz; solve_notin_auto)) in Hsw.
-    rewrite (@swap_pskl_fresh_id x z Q'
-               ltac:(clear - HxQ'; solve_notin_auto)
-               ltac:(clear - Hz; solve_notin_auto)) in Hsw.
-    rewrite (@swap_pskl_fresh_id x z Q1
-               ltac:(clear - Hx; solve_notin_auto)
-               ltac:(clear - Hz; solve_notin_auto)) in Hsw.
-    rewrite <- (@subst_exp_in_exp_intro x e (exp_var_f z)
-                  ltac:(clear - Hx; solve_notin_auto)) in Hsw.
-    exact Hsw. }
+  { (* ⭐ EXISTS-FRESH (2026-08-13).  What stood here was ~30 lines that
+       REGENERATED the cofinite family from the one instance [Hrun] —
+       [a_pat_rename_tm] plus five [swap_*] read-backs.  The converted row
+       wants exactly the instance, so all of it went, and the lemma with it
+       (prop_swap.v §6).  This is the half of the conversion that PAYS. *)
+    eapply a_pat__abs with (x := x);
+      [ exact HMne | exact Hsplit | exact Hsuf
+      | clear - Hx HxΞ HxΘ2; simpl_env; solve_notin_auto
+      | exact Hrun ]. }
   (* ---- 9. optimality ---- *)
   intros κ1 Hid1 Hinc1.
   assert (Heqκ : κ1 = κid)
@@ -2093,43 +2019,15 @@ Proof.
   (* ---- 9. the run ---- *)
   exists (pskl_arrow (ptyp_to_pskl A) Q'), (Ξ ++ Θ3).
   split.
-  { eapply a_pat__abs_anno
-      with (L := dom Θ0 `union` ftvar_in_aenv Θ0
-                 `union` dom Θmid `union` ftvar_in_aenv Θmid
-                 `union` dom Ξ `union` ftvar_in_aenv Ξ
-                 `union` dom Θ3 `union` ftvar_in_aenv Θ3
-                 `union` ftvar_in_pskl Q'
-                 `union` ftvar_in_ptyp A `union` ftvar_in_pskl Q1
-                 `union` fvar_in_exp e `union` ftvar_in_exp e
-                 `union` singleton x);
-      [ exact HMne | exact Hsplit | exists Ac; exact HcRun | exact Hsuf | ].
-    intros z Hz.
-    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hup.
-    pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hvup.
-    simpl in Hup, Hvup.
-    pose proof (@a_pat_rename_tm x z _ _ _ _ _ _ HrunB
-                  ltac:(clear - Hx Hup; solve_notin_auto)
-                  ltac:(clear - Hz Hup; solve_notin_auto)
-                  ltac:(clear - Hz Hvup; solve_notin_auto)) as Hsw.
-    rewrite (@swap_aenv_tm_head x z bA Θmid
-               ltac:(simpl; clear - Hx; solve_notin_auto)
-               ltac:(simpl; clear - Hz; solve_notin_auto)) in Hsw.
-    rewrite swap_aenv_app in Hsw.
-    rewrite (@swap_aenv_tm_head x z (abind_var_typ A) Θ3
-               ltac:(simpl; clear - HxΘ3 Hx; solve_notin_auto)
-               ltac:(simpl; clear - Hz; solve_notin_auto)) in Hsw.
-    rewrite (@swap_aenv_fresh_eq x z Ξ
-               ltac:(clear - HxΞ; solve_notin_auto)
-               ltac:(clear - Hz; solve_notin_auto)) in Hsw.
-    rewrite (@swap_pskl_fresh_id x z Q'
-               ltac:(clear - HxQ'; solve_notin_auto)
-               ltac:(clear - Hz; solve_notin_auto)) in Hsw.
-    rewrite (@swap_pskl_fresh_id x z Q1
-               ltac:(clear - Hx; solve_notin_auto)
-               ltac:(clear - Hz; solve_notin_auto)) in Hsw.
-    rewrite <- (@subst_exp_in_exp_intro x e (exp_var_f z)
-                  ltac:(clear - Hx; solve_notin_auto)) in Hsw.
-    exact Hsw. }
+  { (* ⭐ EXISTS-FRESH (2026-08-13).  What stood here was ~30 lines that
+       REGENERATED the cofinite family from the one instance [Hrun] —
+       [a_pat_rename_tm] plus five [swap_*] read-backs.  The converted row
+       wants exactly the instance, so all of it went, and the lemma with it
+       (prop_swap.v §6).  This is the half of the conversion that PAYS. *)
+    eapply a_pat__abs_anno with (x := x);
+      [ exact HMne | exact Hsplit | exists Ac; exact HcRun | exact Hsuf
+      | clear - Hx HxΞ HxΘ3; simpl_env; solve_notin_auto
+      | exact HrunB ]. }
   (* ---- 10. optimality: glue the two stages ---- *)
   intros κ1 Hid1 Hinc1.
   assert (Heqκc : κ1 = κc)

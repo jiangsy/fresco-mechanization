@@ -81,7 +81,14 @@ FORCE:
 ${COQ_MAKEFILE} : ${COQ_PROJECT} .FILE_LIST ${LNGEN_OUTS}
 	tree . -if -I ${IGNORE_DIRS} | grep -E "v$$" | cut -c3- | xargs coq_makefile -o $@ -f ${COQ_PROJECT}
 
+# The extraction driver (frost/ext_algo/extraction/Extract.v) writes its OCaml
+# into a fixed directory, and `Set Extraction Output Directory` does NOT create
+# it — a fresh clone would fail there.  Make it unconditionally; it is one
+# mkdir and it keeps the build self-contained.
+EXTRACT_DIR := frost/ext_algo/extraction/extracted
+
 coq : ${COQ_MAKEFILE}
+	mkdir -p ${EXTRACT_DIR}
 	${MAKE} -j ${NJOBS} -f ${COQ_MAKEFILE}
 
 # `quick` skips Qed-proof checking via `vos`/`vok` mode (much faster for
@@ -89,6 +96,7 @@ coq : ${COQ_MAKEFILE}
 # than .vo; opaque proofs aren't replayed. Use plain `make coq` before
 # committing to verify the full kernel acceptance.
 quick : ${COQ_MAKEFILE}
+	mkdir -p ${EXTRACT_DIR}
 	${MAKE} -j ${NJOBS} -f ${COQ_MAKEFILE} vos
 
 clean : tidy
@@ -101,6 +109,8 @@ clean : tidy
 	find . -name '.*.aux' -delete
 	find . -name '.DS_Store' -delete
 	rm -f .lia.cache
+	# The extracted OCaml is a BUILD PRODUCT, regenerated on every `make coq`.
+	rm -rf ${EXTRACT_DIR}
 
 # `tidy` removes ONLY orphaned build artifacts — a .glob/.vo/.vok/.vos/.aux
 # whose companion .v no longer exists.  Safe to run at any time, and unlike

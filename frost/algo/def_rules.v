@@ -1378,20 +1378,31 @@ where "{{ Θ ⊲ P0 ▹ P ⇢ Q ⊣ Θ' }}a" := (a_split Θ P0 P Q Θ') : frost_
 (*  Algorithmic skeleton inference  [{{ Θ ⊢ˢ[ M ; P0 ] e ⦂ Q ⊣ Θ' }}a]     *)
 (*  (fig:alg-skeleton-inference)                                          *)
 (* ===================================================================== *)
-(* ⚠️ THE FOUR BINDER ROWS BELOW ARE STILL COFINITE, and that is the tree's one
-   remaining departure from the exists-fresh discipline for algorithmic rules
-   (docs/REPORT-remech-cleanup-audit.md §3).  [a_typing]'s six counterparts
-   were converted 2026-08-08 (`7061d31`) and now name their witness.
+(* ⭐ THE FOUR BINDER ROWS BELOW ARE EXISTS-FRESH (converted 2026-08-13), so the
+   tree's LAST departure from the exists-fresh discipline for algorithmic rules
+   is gone (docs/REPORT-remech-cleanup-audit.md §3 recommended exactly this;
+   [a_typing]'s six counterparts were converted 2026-08-08, `7061d31`).
 
-   The cost is paid, and visible: because the IH delivers ONE instance while
-   these rows share their outputs [Ξ]/[Θ1]/[Q] across the whole family,
-   completeness has to REGENERATE the family — which is the only reason
-   prop_swap.v §6's [a_pat_rename_tm] exists.  ⚙ It used to have four
-   per-judgement siblings; they were built for [a_typing]'s rows and died with
-   the 2026-08-08 conversion, so converting these four now retires ONE lemma,
-   not five.  It still re-opens BOTH [a_pat_sound] (theorem 1) and
-   [a_pat_complete] (theorem 3), and [a_typing] invokes [a_pat], so theorems 2
-   and 4 feel it too.  Do it on a branch or not at all. *)
+   The side condition is verbatim [a_typing__abs]'s: the run names the binder it
+   opens at and keeps it away from the input, from the discarded suffix, and
+   from the term.  ⚙ [dom Θ2] is an OUTPUT constraint, the Barendregt
+   prose-completion the six [a_typing] rows already carry.
+
+   ⚙ WHAT THE CONVERSION COST, measured rather than estimated.  It re-opened
+   [a_pat_sound] (theorem 1) and [a_pat_complete] (theorem 3), and the two
+   moved in OPPOSITE directions, which is the whole trade:
+
+   - COMPLETENESS got shorter.  It no longer has to regenerate a cofinite
+     family from the IH's one instance, so the four [a_pat_rename_tm] calls
+     went away — and with them the lemma itself (prop_swap.v §6), whose only
+     consumers they were.  ⚙ It could not have been kept: stated over
+     exists-fresh rows it would have to rename the rule's OWN binder, which is
+     the thing it was being used to do.
+   - SOUNDNESS got slightly longer.  It receives ONE binder name instead of
+     choosing its own, so the cofinite [a_wf_exp] families must be opened at
+     exactly that name — which is what [a_wf_exp_abs_pick] /
+     [a_wf_exp_abs_anno_pick] (prop_soundness_pat.v §3) already existed for,
+     built for [a_typing]'s 2026-08-08 conversion. *)
 Inductive a_pat : mode -> aenv -> pskl -> exp -> pskl -> aenv -> Prop :=
 | a_pat__unit : forall m Θ0 Θ1 P0 P,                        (* AP-Unit *)
     {{ Θ0 ⊢[ a_sub_mode_sk | m | P0 ] pskl_unit ⩽ P ⊣ Θ1 }}a ->
@@ -1410,35 +1421,35 @@ Inductive a_pat : mode -> aenv -> pskl -> exp -> pskl -> aenv -> Prop :=
 | a_pat__freeze : forall Θ0 e Q Θ1,                         (* AP-Freeze *)
     {{ Θ0 ⊢ˢ[ mode_ti ; pskl_hole ] e ⦂ Q ⊣ Θ1 }}a ->
     {{ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] (exp_freeze e) ⦂ Q ⊣ Θ1 }}a
-| a_pat__abs : forall L m Θ0 Θ1 Θ2 P0 P Q0 e Q Ξ,           (* AP-Abs *)
+| a_pat__abs : forall x m Θ0 Θ1 Θ2 P0 P Q0 e Q Ξ,           (* AP-Abs *)
     m <> mode_tc ->
     {{ Θ0 ⊲ P0 ▹ P ⇢ Q0 ⊣ Θ1 }}a ->
     a_suffix Ξ ->
-    (forall x, x `notin` L ->
-       {{ ((x ~ abind_var_skl P) ++ Θ1) ⊢ˢ[ (decr_mode m) ; Q0 ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q ⊣ (Ξ ++ (x ~ abind_var_skl P) ++ Θ2) }}a) ->
+    x `notin` dom (Ξ ++ Θ1) `union` dom Θ2 `union` fvar_in_exp e ->
+    {{ ((x ~ abind_var_skl P) ++ Θ1) ⊢ˢ[ (decr_mode m) ; Q0 ]
+      (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q ⊣ (Ξ ++ (x ~ abind_var_skl P) ++ Θ2) }}a ->
     {{ Θ0 ⊢ˢ[ m ; P0 ] (exp_abs e) ⦂ (pskl_arrow P Q) ⊣ (Ξ ++ Θ2) }}a
-| a_pat__abs_anno : forall L m Θ0 Θ1 Θ2 Θ3 P0 P Q0 A e Q Ξ,  (* AP-AbsAnno *)
+| a_pat__abs_anno : forall x m Θ0 Θ1 Θ2 Θ3 P0 P Q0 A e Q Ξ,  (* AP-AbsAnno *)
     m <> mode_tc ->
     {{ Θ0 ⊲ P0 ▹ P ⇢ Q0 ⊣ Θ1 }}a ->
     a_consis_chk Θ1 (ptyp_to_pskl A) P Θ2 ->
     a_suffix Ξ ->
-    (forall x, x `notin` L ->
-       {{ ((x ~ abind_var_typ A) ++ Θ2) ⊢ˢ[ (decr_mode m) ; Q0 ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ3) }}a) ->
+    x `notin` dom (Ξ ++ Θ2) `union` dom Θ3 `union` fvar_in_exp e ->
+    {{ ((x ~ abind_var_typ A) ++ Θ2) ⊢ˢ[ (decr_mode m) ; Q0 ]
+      (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ3) }}a ->
     {{ Θ0 ⊢ˢ[ m ; P0 ] (exp_abs_anno A e) ⦂ (pskl_arrow (ptyp_to_pskl A) Q) ⊣ (Ξ ++ Θ3) }}a
-| a_pat__abs_check : forall L Θ0 Θ1 e Q Ξ,                  (* AP-AbsCheck *)
+| a_pat__abs_check : forall x Θ0 Θ1 e Q Ξ,                  (* AP-AbsCheck *)
     a_suffix Ξ ->
-    (forall x, x `notin` L ->
-       {{ ((x ~ abind_var_skl pskl_hole) ++ Θ0) ⊢ˢ[ mode_tc ; pskl_hole ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q ⊣ (Ξ ++ (x ~ abind_var_skl pskl_hole) ++ Θ1) }}a) ->
+    x `notin` dom (Ξ ++ Θ0) `union` dom Θ1 `union` fvar_in_exp e ->
+    {{ ((x ~ abind_var_skl pskl_hole) ++ Θ0) ⊢ˢ[ mode_tc ; pskl_hole ]
+      (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q ⊣ (Ξ ++ (x ~ abind_var_skl pskl_hole) ++ Θ1) }}a ->
     {{ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] (exp_abs e)
       ⦂ (pskl_tophole (pskl_arrow pskl_hole Q)) ⊣ (Ξ ++ Θ1) }}a
-| a_pat__abs_anno_check : forall L Θ0 Θ1 A e Q Ξ,           (* AP-AbsAnnoCheck *)
+| a_pat__abs_anno_check : forall x Θ0 Θ1 A e Q Ξ,           (* AP-AbsAnnoCheck *)
     a_suffix Ξ ->
-    (forall x, x `notin` L ->
-       {{ ((x ~ abind_var_typ A) ++ Θ0) ⊢ˢ[ mode_tc ; pskl_hole ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ1) }}a) ->
+    x `notin` dom (Ξ ++ Θ0) `union` dom Θ1 `union` fvar_in_exp e ->
+    {{ ((x ~ abind_var_typ A) ++ Θ0) ⊢ˢ[ mode_tc ; pskl_hole ]
+      (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ1) }}a ->
     {{ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] (exp_abs_anno A e)
       ⦂ (pskl_tophole (pskl_arrow (ptyp_to_pskl A) Q)) ⊣ (Ξ ++ Θ1) }}a
 | a_pat__app : forall m Θ0 Θ1 Θ2 P0 Q0 P Q e1 e2,           (* AP-App *)
