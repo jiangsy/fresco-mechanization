@@ -1024,25 +1024,29 @@ row that INVENTS anything (`__hole`) invents a flexible variable, which is
 `∀`-free.
 
 ✅ **PHASE 1b (2026-08-13, later): the bound is carried through the WHOLE
-extraction.**  `prop_termination.v` §3–§6, axiom-free:
+extraction — and it is SHARPER than the phase plan asked for.**
+`prop_termination.v` §3–§6, axiom-free:
 
     e_looksub_nall / e_lookeq_nall :
-        nall_a_cstrs C <= nall_pskl P + nall_pskl P'   (collection)
+        nall_a_cstrs C <= nall_pskl P'                 (collection)
     e_solve_sub_eq_nall :
         nall_pskl P' <= nall_pskl P + nall_pskl Q      (each solving step)
     e_solve_cstr_nall :
         nall_pskl Q <= nall_a_cstrs C + nall_pskl P    (the fold)
     e_extract_nall :
-        nall_pskl Q' <= nall_pskl P + nall_pskl P'     (⭐ the composition)
+        nall_pskl Q' <= nall_pskl P'                   (⭐ the composition)
 
-plus `e_extract_nall_open`, the same statement in the exact shape of
-`e_sub__forall_l`'s premise: the instantiation `P1` is bounded by the ∀'s
-BODY plus the inherited skeleton `P0` — the quantifier the row consumed is
-not on the right-hand side.  The proofs are two mutual inductions and a
-fold, each discharged by one `lia` per row; the only row with content is
-SE-FlexR, where §2's `e_guess_mono_nall` is consumed (the collection's own
-generating row, LE-FlexR, deposits a fresh VARIABLE — ∀-free, like
-`guess^TY`'s hole row).
+⭐ The plan predicted `nall C <= nall P + nall P'`; the truth is the
+COUNTERPART ALONE.  Reading the three depositing rows says why: LS-Var and
+LE-Var deposit the counterpart standing opposite the looked-up variable,
+LE-FlexR deposits a fresh VARIABLE (∀-free, like `guess^TY`'s hole row) —
+the subject is only ever WALKED.  Composed with the fold's `◇` seed, the
+instantiation `e_sub__forall_l` recurses on satisfies `nall P1 <= nall P0`
+— "we only guess polytypes that can be determined by inherited type
+information" with "inherited information" pinned to the single input `P0`.
+The proofs are two mutual inductions and a fold, one `lia` per row; the
+only row with content is SE-FlexR, where §2's `e_guess_mono_nall` is
+consumed.
 
 ⛔ **WHAT IS STILL OWED — phase 2.**  The spine measure (count ∀s on the
 CODOMAIN SPINE of the subject, per 8b.2's `SI-Arrow` observation), `e_sub`'s

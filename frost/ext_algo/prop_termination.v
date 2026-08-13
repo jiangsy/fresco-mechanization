@@ -34,19 +34,20 @@
     ⭐ §3–§6 CARRY THE BOUND THROUGH THE WHOLE EXTRACTION (phase 1b).
     [a_sub__forall_l]'s [P1] comes from [a_extract] = collection → solving
     fold → [guess^N]; §2 bounds only the last stage against ITS input.  §4
-    bounds the collection's constraint yield by its two skeleton inputs, §5
-    bounds each solving step by its subject and its constraint, and §6
-    composes the three at [e_extract__solve]:
+    bounds the collection's constraint yield by the COUNTERPART alone (the
+    subject is only walked, never deposited), §5 bounds each solving step by
+    its subject and its constraint, and §6 composes the three at
+    [e_extract__solve], where the fold's seed is [◇]:
 
-        e_extract_nall : nall_pskl Q' <= nall_pskl P + nall_pskl P'
+        e_extract_nall : nall_pskl Q' <= nall_pskl P'
 
-    — the guessed instantiation has no more ∀s than the EXTRACTION's own
-    inputs, which at the [e_sub__forall_l] call site are the subject's body
-    and the inherited skeleton [P0].  That is the bound that turns
+    — the guessed instantiation has no more ∀s than the INHERITED SKELETON,
+    which at the [e_sub__forall_l] call site is [P0].  That is the paper's
 
         the polytypes we guess are determined by inherited information
 
-    into something a measure can decrease on.
+    with "inherited information" pinned to a single input, and it is the
+    bound the measure charges against [P0].
 
     ⚙ AND THE SECOND HALF OF THE ARGUMENT IS NOT A SIZE BOUND AT ALL (user,
     2026-08-13): after an instantiation the walk falls back to CONSISTENCY at
@@ -262,26 +263,27 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §4  ⭐ THE COLLECTION DEPOSITS NO ∀ OF ITS OWN                         *)
+(*  §4  ⭐ EVERY ∀ THE COLLECTION DEPOSITS IS THE COUNTERPART'S            *)
 (*                                                                        *)
-(*  Every skeleton a constraint carries is a fragment of the subject or   *)
-(*  of the counterpart.  The one generating row (LE-FlexR) deposits a     *)
-(*  fresh VARIABLE — ∀-free, exactly as [guess^TY]'s hole row.            *)
+(*  Sharper than "no ∀ of its own": the constraints are bounded by the    *)
+(*  COUNTERPART alone, the subject contributes nothing.  Read the three   *)
+(*  depositing rows and the reason is visible — LS-Var and LE-Var         *)
+(*  deposit the counterpart standing opposite the looked-up variable,     *)
+(*  and LE-FlexR deposits a fresh VARIABLE (∀-free, exactly as            *)
+(*  [guess^TY]'s hole row).  The subject is only ever WALKED.             *)
 (* ===================================================================== *)
 
 Lemma e_looksub_lookeq_nall :
   (forall S0 Θ α m P P' S1 Ξ C,
      {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
-     nall_a_cstrs C <= nall_pskl P + nall_pskl P') /\
+     nall_a_cstrs C <= nall_pskl P') /\
   (forall S0 Θ α P P' S1 Ξ C,
      {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
-     nall_a_cstrs C <= nall_pskl P + nall_pskl P').
+     nall_a_cstrs C <= nall_pskl P').
 Proof.
   apply (e_looksub_lookeq_mutind
-           (fun S0 Θ α m P P' S1 Ξ C _ =>
-              nall_a_cstrs C <= nall_pskl P + nall_pskl P')
-           (fun S0 Θ α P P' S1 Ξ C _ =>
-              nall_a_cstrs C <= nall_pskl P + nall_pskl P'));
+           (fun S0 Θ α m P P' S1 Ξ C _ => nall_a_cstrs C <= nall_pskl P')
+           (fun S0 Θ α P P' S1 Ξ C _ => nall_a_cstrs C <= nall_pskl P'));
     intros; simpl in *;
     repeat rewrite nall_a_cstrs_app;
     repeat rewrite nall_pskl_open in *;
@@ -290,12 +292,12 @@ Qed.
 
 Corollary e_looksub_nall : forall S0 Θ α m P P' S1 Ξ C,
   {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
-  nall_a_cstrs C <= nall_pskl P + nall_pskl P'.
+  nall_a_cstrs C <= nall_pskl P'.
 Proof. apply e_looksub_lookeq_nall. Qed.
 
 Corollary e_lookeq_nall : forall S0 Θ α P P' S1 Ξ C,
   {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
-  nall_a_cstrs C <= nall_pskl P + nall_pskl P'.
+  nall_a_cstrs C <= nall_pskl P'.
 Proof. apply e_looksub_lookeq_nall. Qed.
 
 (* ===================================================================== *)
@@ -353,15 +355,20 @@ Qed.
 (*                                                                        *)
 (*  Collection, fold and guess composed at [e_extract__solve]: the        *)
 (*  instantiation [a_sub__forall_l] recurses on carries no more ∀s than   *)
-(*  the extraction's own two inputs — the subject and the inherited       *)
-(*  skeleton.  This is the paper's principle stated against the inputs    *)
-(*  the MEASURE sees, which is what the spine argument (the file header)  *)
-(*  needs to make [a_sub__forall_l] decrease.                             *)
+(*  the INHERITED SKELETON [P'] — the subject does not appear on the      *)
+(*  right-hand side at all.  This is the paper's principle,               *)
+(*                                                                        *)
+(*      we only guess polytypes that can be determined by inherited       *)
+(*      type information                     (declarative.tex:856-860)    *)
+(*                                                                        *)
+(*  as a theorem: "inherited type information" is exactly [P'], and the   *)
+(*  ∀ the row consumed is gone for good — what replaces it was paid for   *)
+(*  by [P'], which is what the spine measure (the file header) charges.   *)
 (* ===================================================================== *)
 
 Theorem e_extract_nall : forall S0 Θ0 NM α m P P' S1 Ξ Q',
   {{ S0 ↝ S1 ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q' }}e ->
-  nall_pskl Q' <= nall_pskl P + nall_pskl P'.
+  nall_pskl Q' <= nall_pskl P'.
 Proof.
   intros * H; destruct H.
   repeat match goal with
@@ -373,18 +380,4 @@ Proof.
              apply e_guess_nall in Hg
          end;
     simpl in *; lia.
-Qed.
-
-(** ⭐ And in the shape of [e_sub__forall_l]'s own premise, where the subject
-    is the ∀'s body opened at the rule's fresh variable: the instantiation is
-    bounded by the BODY and the inherited skeleton — the ∀ the row consumed is
-    not on the right-hand side, which is what lets the row strictly decrease
-    when [P0]'s spine is ∀-free. *)
-Corollary e_extract_nall_open : forall S0 Θ0 NM α m P P0 S1 Ξ P1 β,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢ (open_pskl_wrt_pskl P (pskl_var_f β))
-     ⊳[ NM , α , m ] P0 ⤳ Ξ ↪ P1 }}e ->
-  nall_pskl P1 <= nall_pskl P + nall_pskl P0.
-Proof.
-  intros * H. apply e_extract_nall in H.
-  rewrite nall_pskl_open in H. assumption.
 Qed.
