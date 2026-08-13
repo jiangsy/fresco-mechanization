@@ -386,13 +386,23 @@ and it misses two classes the scan cannot see, because the scan reads only
    and `_rev` are the two halves of the paper's **Lemma E.8** (*Stability of
    constraint collection*), which the paper states as an **iff** and uses in
    both directions — forward at `subtyping-proofs.tex:890`, reverse at `:2632`
-   ("By the reverse direction of…").  Neither half has a mech consumer: the
-   forward one's two call sites (`prop_soundness_sub.v:511`, `:786`) died when
-   the look cluster went exists-fresh, and the reverse never had one, because
-   the mech proves P6 by the ρ-route, which keeps the looksub side on
-   var-opened subjects and so never has a substituted source to un-substitute
-   (recorded at PAPER-GAPS `:2257`).  Deleting either would leave the tree
-   claiming E.8 while proving half an iff.
+   ("By the reverse direction of…").  Neither half has a mech consumer, and
+   ⚠️ **for the forward half the reason is not the obvious one** — its two call
+   sites (the decoration layer's ForallL rows) did NOT stop needing the fact;
+   §4 stopped being APPLICABLE to them.  Chain, at `56b0b3b`: the look cluster
+   went exists-fresh ⇒ a ∀ row owns and LEAKS its binder into `𝒞` ⇒ the
+   unconditional E.8 is false (`cex/cex_look_subst_stable_leak.v`) ⇒ §4 must
+   carry `ftv P0 ⊆ add α (ftvar_in_aenv Θ)` ⇒ **that premise is unsuppliable at
+   those rows**, since the substituted skeleton is a ForallL node's guess whose
+   variables live in the extract's fresh block, generated *after* the run.  The
+   rows moved to `a_looksub_lookeq_subst_gen_size`
+   (`deco_algo/prop_decorate_sub.v:2925`), which buys applicability by
+   WEAKENING the conclusion — `Ξ ⨾ 𝒞` go existential.  ⭐ That sibling is not
+   the paper's statement; §4, with `Ξ ⨾ 𝒞` FIXED, is.  The reverse half never
+   had a consumer at all, because the mech proves P6 by the ρ-route, which
+   keeps the looksub side on var-opened subjects and so never has a
+   substituted source to un-substitute (PAPER-GAPS `:2257`).  Deleting either
+   would leave the tree claiming E.8 while proving half an iff.
 2. **Machine-checked evidence for a live PAPER-GAPS claim.**
    `d_pat_consis_subject_refine_ghost_free` is cited at PAPER-GAPS `:196` as
    "machine-checked"; deleting it would falsify the registry.

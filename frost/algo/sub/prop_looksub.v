@@ -404,9 +404,27 @@ Qed.
 (*  PROGRESS.md Part 1 marking E.8 ✅ while half of it is unproved.         *)
 (*                                                                        *)
 (*  WHY NEITHER IS CALLED:                                                 *)
-(*   - §4 (forward) HAD two consumers, deco_algo/prop_soundness_sub.v:511  *)
-(*     and :786.  Both rows were rewritten when the look cluster's ∀ rules  *)
-(*     went cofinite -> exists-fresh, and the rewrites do not need it.      *)
+(*   - §4 (forward) HAD two consumers — the decoration layer's ForallL      *)
+(*     rows.  ⚠️ They did NOT stop needing the FACT; §4 stopped being        *)
+(*     APPLICABLE to them, which is a different thing and the reason the    *)
+(*     lemma is still here.  The chain (56b0b3b):                           *)
+(*       (a) the look cluster went cofinite -> exists-fresh, so a ∀ row now  *)
+(*           OWNS its binder and LEAKS it into 𝒞;                           *)
+(*       (b) that makes the unconditional E.8 FALSE                         *)
+(*           (cex/cex_look_subst_stable_leak.v), so §4 must carry the       *)
+(*           Barendregt premise [ftv P0 ⊆ add α (ftvar_in_aenv Θ)];         *)
+(*       (c) at those rows the premise is UNSUPPLIABLE — the substituted    *)
+(*           skeleton is a ForallL node's GUESS, and its variables live in  *)
+(*           the extract's fresh block, generated AFTER the run by an       *)
+(*           independent generator, hence not in [ftvar_in_aenv Θ].         *)
+(*     So the rows moved to [a_looksub_lookeq_subst_gen_size]               *)
+(*     (deco_algo/prop_decorate_sub.v:2925, used :3391), which buys         *)
+(*     applicability by WEAKENING THE CONCLUSION: it drops the context      *)
+(*     premise and lets [Ξ ⨾ 𝒞] go EXISTENTIAL — the ∀ rows re-pick their   *)
+(*     binder away from [P0] and hand back RENAMED outputs, which the leak  *)
+(*     witness does not touch.  ⭐ That sibling is NOT the paper's           *)
+(*     statement; §4, which keeps [Ξ ⨾ 𝒞] FIXED, is.  Hence: the mech does  *)
+(*     the work with §8's form and owes E.8 in §4's.                        *)
 (*   - §4b (reverse) never had one.  The paper's route through that case    *)
 (*     ENDS by un-substituting; the mech proves P6 by the ρ-route, which    *)
 (*     carries the rigid-variable substitution explicitly and keeps the     *)
@@ -432,9 +450,10 @@ Qed.
     row shrinks the skeletons, a binder row grows the context, and
     [ftvar_in_aenv Θ] therefore threads through both.
 
-    ⛔ §4, the FORWARD half of the paper's E.8 — consumer-free since the look
-    cluster went exists-fresh, and kept on purpose.  Read the banner above
-    before deleting it. *)
+    ⛔ §4, the FORWARD half of the paper's E.8 — consumer-free because THIS
+    premise is unsuppliable at the two rows that used to call it, not because
+    they stopped needing the fact.  Kept on purpose: it is the paper's own
+    statement, with [Ξ ⨾ 𝒞] FIXED.  Read the banner above before deleting. *)
 
 Lemma a_looksub_lookeq_subst_stable :
   (forall Θ α m P P' Ξ 𝒞, {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
