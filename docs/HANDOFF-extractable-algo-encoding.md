@@ -950,3 +950,84 @@ change.  The order that matches the dependency graph is
 ⭐ Termination is owed ONLY by the totality lemmas (§7.1), and §7.3 records
 that WT expects the argument to be mostly straightforward.
 
+## 8b. ⭐ THE TERMINATION CAMPAIGN — phase 0 and phase 1 (2026-08-13)
+
+Prompted by the user, who pushed back on sequencing the remaining runners
+(routine) ahead of termination (the only part that can invalidate them).
+That push is right, and it exposes a dependency I had backwards: §7.1 says a
+Bove–Capretta runner exists WITHOUT the measure, which I read as "the measure
+can wait".  The useful reading is the opposite — **the domain predicate is
+read off the rules, so its totality lemma needs no runner, and termination
+can therefore be proved FIRST.**
+
+### 8b.1 ✅ PHASE 3 IS ALREADY ANSWERED — `type.ml` commits ForallR first
+
+The search-strategy question (§5: the rule set is not syntax-directed, so a
+runner must commit) turns out to be settled by reading the reference
+implementation.  `benchmark/Fresco/lib/type.ml`'s `sub` is an OCaml `match`,
+so it is ordered, and `SI-ForallR` (`:910`) precedes `SI-ForallL` (`:958`).
+**When both the checked type and the subject are `∀`, the target's quantifier
+is peeled first.**  That is the order a runner must reproduce, and it is now
+a citation rather than a design decision to make.
+
+### 8b.2 ✅ PHASE 0 — no divergence found, and the probes' limits
+
+The reference implementation builds and runs (OCaml 5.4 switch; `bindlib`,
+`multicont`, `core`; `dune build --profile release bin/met.exe` — the default
+profile fails on an unrelated `unused-var-strict` warning in `type.ml:942`).
+`--debug` prints the rule trace, which makes **the count of `SI-ForallL`
+firings a divergence detector**.
+
+Result: **no divergence.**  ⚠️ But the battery was weak and should not be
+quoted as strong evidence:
+
+- the pair-doubling family did not even parse (`(x, x)` needs a declared
+  `Pair` constructor) — it tested nothing;
+- the deep-∀-nesting family flatlined at 3 `SI-ForallL` firings for every
+  depth 1..12 — it never iterated the interesting path;
+- only the self-application family exercised it, and its firing counts
+  (3, 8, 20, 48, 112, 256, 576, 1280) track the term size, which itself
+  doubles per level — constant work per node, not a blowup.
+
+⭐ **The structural reason it did not diverge is visible in the source**, and
+it is worth more than the probes:
+
+- `guess_mono` (`type.ml:80-108`) is a structural map: `Ghost` ↦ a fresh
+  flexible, `TForA (k,a)` ↦ recurse and REBUILD the same `TForA`.  It never
+  manufactures a quantifier; it only copies one the skeleton already had.
+  That IS the paper's "never guess polytypes out of thin air", as a shape
+  property.
+- `SI-Arrow` (`type.ml:918-922`) sends the DOMAIN to `join_sk` (consistency)
+  and keeps only the CODOMAIN in `sub`.  So `sub` walks the arrow SPINE and
+  nothing else — and a `∀` that an instantiation drops into a domain
+  position can never fire `SI-ForallL` again.
+
+⭐ **THE USER'S ARGUMENT (2026-08-13), which is the frame to build the measure
+in**: polymorphic instantiations always come from known information, and
+after an instantiation the walk falls back to consistency at every position
+except the final contravariance — so it terminates.  Both halves are the two
+source facts above.
+
+### 8b.3 ✅ PHASE 1 — the first half is a theorem now
+
+`frost/ext_algo/prop_termination.v`, axiom-free:
+
+    e_guess_mono_nall : e_guess_mono S0 P S1 Ξ A -> nall_ptyp A <= nall_pskl P
+    e_guess_mono_size : e_guess_mono S0 P S1 Ξ A -> size_ptyp A <= size_pskl P
+    e_guess_nall      : the same, through the sort wrapper
+
+so **`guess^TY` never guesses a polytype out of thin air** is no longer a
+reading of the code — the guessed type has no more `∀`s, and is no bigger,
+than the skeleton it was guessed from.  The `∀` row is where the content is:
+`e_guess_mono__forall` rebuilds the quantifier the skeleton had, and the only
+row that INVENTS anything (`__hole`) invents a flexible variable, which is
+`∀`-free.
+
+⛔ **WHAT IS STILL OWED.**  `a_sub__forall_l`'s instantiation `P1` comes from
+`a_extract` = collection → solving → `guess^N`; the above bounds only the
+LAST stage against ITS input.  The measure needs the bound against the
+EXTRACTION's input, i.e. the same statement carried through the collection
+and the fold — whose inputs are the mode and the subject.  Then the spine
+argument of 8b.2 turns it into something that decreases.  ⚙ `nall_*` and the
+`open`/`close` invariance lemmas are in place for both.
+
