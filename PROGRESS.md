@@ -240,7 +240,39 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-12 (latest) — ⭐⭐⭐ **TWO RELATIONS, AND THE RULES EMBED THE PAPER'S: `ad_pat_sub_v` RETIRED, `_gv` RENAMED `_fuel`**
+## 2026-08-13/14 (latest) — ⭐⭐⭐ **THE TERMINATION CAMPAIGN: `e_sub_order_total` — the subtyping walk terminates, one hypothesis from decidability**
+
+**`make coq` exit 0; zero `Admitted`/`Axiom`; every named theorem `Print
+Assumptions`-closed.**  The paper's undischarged decidability argument
+(HANDOFF-extractable-algo-encoding.md §7.3: "never guess polytypes out of
+thin air" is offered *against* the undecidability of impredicative
+polymorphic subtyping, and never proved) is now mechanized for the
+subtyping side, over `frost/ext_algo/`'s threaded encoding:
+
+- **The principle as theorems** (`prop_termination.v` §2–§6):
+  `e_guess_mono_nall` (the guess copies ∀s, never invents one), carried
+  through the WHOLE extraction — `e_extract_nall : nall Q' ≤ nall P'`,
+  the instantiation bounded by the INHERITED SKELETON ALONE (sharper than
+  planned: the collection deposits only counterpart fragments).
+- **The decrease theorem** (§7–§9): the codomain-spine prediction of §8b.2
+  REFINED to the head ∀/⫯-chain count `hnall` — a spine count does NOT
+  decrease at ForallL (an eq-payload can be ∀-headed); `hnall` does:
+  `e_extract_forall_l_hnall`, with both hypotheses the rule's own premises.
+- **Bove–Capretta orders for the whole call graph** (`def_order.v`, new):
+  one constructor per judgement, shape-conditional premises (partial
+  judgements need no failure enumeration; runners invert once).
+- **Totality**: collection UNCONDITIONAL; solving/fold/extraction at lc
+  inputs (§10–§11); ⭐⭐ `e_sub_order_total` (§13) by the lex measure
+  `(fnd_mode M, nall P0, hnall P, ndef Θ, size P, walk)` — with the
+  consistency block's totality as its ONE explicit hypothesis
+  (unification-style, its own campaign; its orders are defined and its
+  defs-mono preservation proved, §12).
+
+Phase 0 (reference-implementation probes, honest weakness notes) and
+phase 3 (ForallR-before-ForallL, settled by citation `type.ml:910/958`)
+are in HANDOFF §8b.1–8b.2.  Full state and traps: HANDOFF §8b.3–8b.5.
+
+## 2026-08-12 — ⭐⭐⭐ **TWO RELATIONS, AND THE RULES EMBED THE PAPER'S: `ad_pat_sub_v` RETIRED, `_gv` RENAMED `_fuel`**
 
 **`make coq` exit 0; README.v 28/28 `Print Assumptions` closed; no `Admitted`,
 no `Axiom`.**

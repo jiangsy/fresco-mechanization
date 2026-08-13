@@ -62,6 +62,7 @@
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
+Require Import Coq.Arith.Wf_nat.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
@@ -70,11 +71,13 @@ Require Import src.frost.def_shapes.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
 Require Import src.frost.prop_coercions.
+Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.sub.prop_solve_sub.
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
 Require Import src.frost.ext_algo.def_guess.
 Require Import src.frost.ext_algo.def_guess_impl.
+Require Import src.frost.ext_algo.def_consis.
 Require Import src.frost.ext_algo.def_look.
 Require Import src.frost.ext_algo.def_solve.
 Require Import src.frost.ext_algo.def_extract.
@@ -937,4 +940,527 @@ Proof.
   - intros. apply e_guess_order_total.
     eapply e_solve_cstr_lc;
       [ eassumption | constructor | eapply e_looksub_cstrs_lc; eassumption ].
+Qed.
+
+(* ===================================================================== *)
+(*  §12  The remaining measure components, and their stability            *)
+(*                                                                        *)
+(*  The lexicographic measure of the subtyping walk (§13) is              *)
+(*                                                                        *)
+(*    ( fnd_mode M , nall P0 , hnall P , ndef Θ , size P , |Θ|-walk )     *)
+(*                                                                        *)
+(*  This section defines the two components not yet on file and proves    *)
+(*  what each recursive edge needs: mono-substitution moves neither ∀     *)
+(*  count (Flex-Assign), a generated block holds no defined flexible      *)
+(*  (ForallL's context growth is ndef-neutral), and the consistency       *)
+(*  block preserves the def-payloads-are-mono discipline (the Arrow row   *)
+(*  runs its codomain at the domain's OUTPUT context).                    *)
+(* ===================================================================== *)
+
+Fixpoint fnd_mode (M : mode) : nat :=
+  match M with
+  | mode_fn M' => 1 + fnd_mode M'
+  | _          => 0
+  end.
+
+Fixpoint ndef_aenv (Θ : aenv) : nat :=
+  match Θ with
+  | nil                                => 0
+  | (_, abind_flex_mono_def _) :: Θ'   => 1 + ndef_aenv Θ'
+  | _ :: Θ'                            => ndef_aenv Θ'
+  end.
+
+Lemma ndef_aenv_app : forall Θ1 Θ2,
+  ndef_aenv (Θ1 ++ Θ2) = ndef_aenv Θ1 + ndef_aenv Θ2.
+Proof.
+  induction Θ1 as [ | [x b] Θ1' IH ]; intros; simpl; [ auto | ].
+  destruct b; rewrite IH; lia.
+Qed.
+
+(** Def payloads are monotypes — the context discipline the measure rides
+    on: it is what keeps Flex-Assign's substitution ∀-free.  [aenv] entries
+    other than a defined flexible carry no payload obligation. *)
+Definition entry_def_mono (xb : atom * abind) : Prop :=
+  match snd xb with
+  | abind_flex_mono_def τ => mono_ptyp τ
+  | _                     => True
+  end.
+
+Notation aenv_defs_mono := (Forall entry_def_mono).
+
+Lemma entry_def_mono_flex : forall α, entry_def_mono (α, abind_flex_mono).
+Proof. intros; exact I. Qed.
+
+Lemma entry_def_mono_tvar : forall α, entry_def_mono (α, abind_tvar).
+Proof. intros; exact I. Qed.
+
+Lemma entry_def_mono_var_typ : forall x A, entry_def_mono (x, abind_var_typ A).
+Proof. intros; exact I. Qed.
+
+Lemma entry_def_mono_var_skl : forall x Q, entry_def_mono (x, abind_var_skl Q).
+Proof. intros; exact I. Qed.
+
+Lemma entry_def_mono_def : forall α τ,
+  mono_ptyp τ -> entry_def_mono (α, abind_flex_mono_def τ).
+Proof. intros; exact H. Qed.
+
+Lemma Forall_app_intro : forall (X : Type) (Pr : X -> Prop) l1 l2,
+  Forall Pr l1 -> Forall Pr l2 -> Forall Pr (l1 ++ l2).
+Proof. intros; apply Forall_app; split; assumption. Qed.
+
+(** A flex-only block ([all_flex_mono], algo/prop_metasubst.v) counts no
+    defined flexible and trivially satisfies the payload discipline. *)
+Lemma all_flex_mono_ndef : forall Ξ, all_flex_mono Ξ -> ndef_aenv Ξ = 0.
+Proof.
+  unfold all_flex_mono; induction 1 as [ | [x b] Ξ' Hb _ IH ];
+    simpl in *; subst; auto.
+Qed.
+
+Lemma all_flex_mono_defs_mono : forall Ξ, all_flex_mono Ξ -> aenv_defs_mono Ξ.
+Proof.
+  unfold all_flex_mono; induction 1 as [ | [x b] Ξ' Hb _ IH ];
+    constructor; simpl in *; subst; auto using entry_def_mono_flex.
+Qed.
+
+(** Every generated block along the extraction is flex-only. *)
+Lemma e_guess_mono_block_flex : forall S0 P S1 Ξ A,
+  e_guess_mono S0 P S1 Ξ A -> all_flex_mono Ξ.
+Proof.
+  intros * H; induction H;
+    try solve [ repeat constructor ];
+    try solve [ apply all_flex_mono_app; assumption ];
+    assumption.
+Qed.
+
+Lemma e_guess_block_flex : forall S0 NM Q S1 Ξ Q',
+  e_guess S0 NM Q S1 Ξ Q' -> all_flex_mono Ξ.
+Proof.
+  intros * H; destruct H; [ constructor | ].
+  eauto using e_guess_mono_block_flex.
+Qed.
+
+Lemma e_looksub_lookeq_block_flex :
+  (forall S0 Θ α m P P' S1 Ξ C,
+     {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e -> all_flex_mono Ξ) /\
+  (forall S0 Θ α P P' S1 Ξ C,
+     {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e -> all_flex_mono Ξ).
+Proof.
+  apply (e_looksub_lookeq_mutind
+           (fun S0 Θ α m P P' S1 Ξ C _ => all_flex_mono Ξ)
+           (fun S0 Θ α P P' S1 Ξ C _ => all_flex_mono Ξ));
+    intros;
+    try solve [ repeat constructor ];
+    try solve [ apply all_flex_mono_app; assumption ];
+    assumption.
+Qed.
+
+Lemma e_solve_sub_eq_block_flex :
+  (forall S0 Θ m P Q S1 Ξ P',
+     {{ S0 ↝ S1 ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e -> all_flex_mono Ξ) /\
+  (forall S0 Θ P Q S1 Ξ P',
+     {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e -> all_flex_mono Ξ).
+Proof.
+  apply (e_solve_sub_eq_mutind
+           (fun S0 Θ m P Q S1 Ξ P' _ => all_flex_mono Ξ)
+           (fun S0 Θ P Q S1 Ξ P' _ => all_flex_mono Ξ));
+    intros;
+    try solve [ repeat constructor ];
+    try solve [ apply all_flex_mono_app; assumption ];
+    eauto using e_guess_mono_block_flex.
+Qed.
+
+Lemma e_solve_cstr_block_flex : forall S0 Θ C P S1 Ξ Q,
+  {{ S0 ↝ S1 ⊨ Θ ⊩ C ⨾ P ⤳ Ξ ⨾ Q }}e -> all_flex_mono Ξ.
+Proof.
+  intros * H; induction H;
+    eauto using all_flex_mono_app, (proj1 e_solve_sub_eq_block_flex),
+      (proj2 e_solve_sub_eq_block_flex).
+  constructor.
+Qed.
+
+Lemma e_extract_block_flex : forall S0 Θ0 NM α m P P' S1 Ξ Q',
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q' }}e ->
+  all_flex_mono Ξ.
+Proof.
+  intros * H; destruct H.
+  repeat apply all_flex_mono_app;
+    eauto using (proj1 e_looksub_lookeq_block_flex),
+      e_solve_cstr_block_flex, e_guess_block_flex.
+Qed.
+
+(** Mono substitution moves neither ∀ count. *)
+Lemma mono_ptyp_nall : forall τ, mono_ptyp τ -> nall_ptyp τ = 0.
+Proof. induction 1; simpl; lia. Qed.
+
+Lemma mono_pskl_nall : forall τ,
+  mono_ptyp τ -> nall_pskl (ptyp_to_pskl τ) = 0.
+Proof. intros. rewrite nall_ptyp_to_pskl. auto using mono_ptyp_nall. Qed.
+
+Lemma mono_pskl_hnall : forall τ,
+  mono_ptyp τ -> hnall_pskl (ptyp_to_pskl τ) = 0.
+Proof.
+  intros. pose proof (hnall_le_nall_pskl (ptyp_to_pskl τ)).
+  pose proof (mono_pskl_nall H). lia.
+Qed.
+
+Lemma nall_pskl_subst_nallfree : forall P Q β,
+  nall_pskl Q = 0 ->
+  nall_pskl (subst_pskl_in_pskl Q β P) = nall_pskl P.
+Proof.
+  induction P; intros * Hz; simpl;
+    try (match goal with |- context [ if ?c then _ else _ ] => destruct c end);
+    repeat match goal with
+    | IH : context [ subst_pskl_in_pskl ] |- _ => rewrite IH by assumption
+    end;
+    simpl; lia.
+Qed.
+
+Lemma hnall_pskl_subst_hnallfree : forall P Q β,
+  hnall_pskl Q = 0 ->
+  hnall_pskl (subst_pskl_in_pskl Q β P) = hnall_pskl P.
+Proof.
+  induction P; intros * Hz; simpl;
+    try (match goal with |- context [ if ?c then _ else _ ] => destruct c end);
+    repeat match goal with
+    | IH : context [ subst_pskl_in_pskl ] |- _ => rewrite IH by assumption
+    end;
+    simpl; lia.
+Qed.
+
+(** ⭐ The consistency block PRESERVES the payload discipline: every def it
+    installs is mono by its own rules (Assign-SolveM carries [mono_ptyp τ];
+    the unify solutions are variables), and every def it re-attaches came
+    from its input.  This is what lets §13's Arrow case hand the domain's
+    output context to the codomain. *)
+Lemma e_assign_unify_consis_defs_mono :
+  (forall S0 Θ Ξ α P S1 Θ',
+     {{ S0 ↝ S1 ⊨ Θ ⊲[ Ξ ] α ≔ P ⊣ Θ' }}e ->
+     aenv_defs_mono Θ -> aenv_defs_mono Ξ -> aenv_defs_mono Θ') /\
+  (forall S0 Θ α β S1 Θ',
+     {{ S0 ↝ S1 ⊨ Θ ⊲ α ≈ᵘ β ⊣ Θ' }}e ->
+     aenv_defs_mono Θ -> aenv_defs_mono Θ') /\
+  (forall Δ1 Δ2 S0 Θ P0 P Q S1 Θ',
+     {{ S0 ↝ S1 ⊨ Θ ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ' }}e ->
+     aenv_defs_mono Θ -> aenv_defs_mono Θ').
+Proof.
+  apply (e_assign_unify_consis_mutind
+           (fun S0 Θ Ξ α P S1 Θ' _ =>
+              aenv_defs_mono Θ -> aenv_defs_mono Ξ -> aenv_defs_mono Θ')
+           (fun S0 Θ α β S1 Θ' _ =>
+              aenv_defs_mono Θ -> aenv_defs_mono Θ')
+           (fun Δ1 Δ2 S0 Θ P0 P Q S1 Θ' _ =>
+              aenv_defs_mono Θ -> aenv_defs_mono Θ'));
+    intros;
+    (* reduce the [(x ~ b) ++ Θ] spellings to cons form so the [Forall]
+       patterns below see them *)
+    simpl in *;
+    (* unpack the input contexts *)
+    repeat match goal with
+    | H : Forall entry_def_mono (_ ++ _) |- _ =>
+        apply Forall_app in H; destruct H
+    | H : Forall entry_def_mono (_ :: _) |- _ =>
+        inversion H; subst; clear H
+    end;
+    (* the ∀ rows' IH yields the output UNDER the fresh rigid entry —
+       invert it back off *)
+    repeat match goal with
+    | IH : Forall entry_def_mono ?Θin -> Forall entry_def_mono (_ :: _)
+      |- _ =>
+        let HH := fresh "Hout" in
+        assert (HH := IH ltac:(eauto using Forall_app_intro,
+                                 entry_def_mono_tvar));
+        inversion HH; subst; clear IH HH
+    end;
+    eauto 8 using Forall_app_intro, Forall_cons, Forall_nil,
+      entry_def_mono_flex, entry_def_mono_tvar, entry_def_mono_def,
+      entry_def_mono_var_typ, entry_def_mono_var_skl,
+      all_flex_mono_defs_mono, e_guess_mono_block_flex,
+      mono_ptyp__var.
+Qed.
+
+Corollary e_consis_defs_mono : forall Δ1 Δ2 S0 Θ P0 P Q S1 Θ',
+  {{ S0 ↝ S1 ⊨ Θ ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ' }}e ->
+  aenv_defs_mono Θ -> aenv_defs_mono Θ'.
+Proof.
+  intros. eapply (proj2 (proj2 e_assign_unify_consis_defs_mono)); eassumption.
+Qed.
+
+(** Local closure of the extraction's yield — §10 composed, in the shape
+    §13's ForallL case consumes. *)
+Lemma e_guess_lc : forall S0 NM Q S1 Ξ Q',
+  e_guess S0 NM Q S1 Ξ Q' -> lc_pskl Q -> lc_pskl Q'.
+Proof.
+  intros * H Hlc; destruct H; eauto using e_guess_mono_lc_pskl.
+Qed.
+
+Lemma e_extract_lc : forall S0 Θ0 NM α m P P' S1 Ξ Q',
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q' }}e ->
+  lc_pskl P -> lc_pskl P' -> lc_pskl Q'.
+Proof.
+  intros * H HP HP'; destruct H.
+  eapply e_guess_lc; [ eassumption | ].
+  eapply e_solve_cstr_lc;
+    [ eassumption | constructor | eapply e_looksub_cstrs_lc; eassumption ].
+Qed.
+
+(* ===================================================================== *)
+(*  §13  ⭐⭐⭐ TOTALITY OF THE SUBTYPING WALK                               *)
+(*                                                                        *)
+(*  The lexicographic argument, assembled.  Which component each rule     *)
+(*  consumes:                                                             *)
+(*                                                                        *)
+(*    Arrow        fnd_mode M   (an FN is crossed; everything resets)     *)
+(*    ForallR      nall P0      (the pattern's ∀ is opened at a variable  *)
+(*                              and GONE — open-at-var preserves nall)    *)
+(*    ForallL      hnall P      (§9's decrease theorem; the context grows *)
+(*                              by a flex-only block, so ndef holds)      *)
+(*    Flex-Assign  ndef Θ       (a defined flexible is substituted away;  *)
+(*                              mono-substitution fixes nall and hnall)   *)
+(*    UnivGhostL   size P       (a ⫯ is stripped; hnall is transparent)   *)
+(*    the walk     |Θ0|         (every e_sub_flex row peels an entry)     *)
+(*    Flex-Solve   —            (TIED: the re-entered subject α̂→β̂ has     *)
+(*                              only the Arrow row, so ONE inline step    *)
+(*                              reaches fnd_mode M — 8b.4's ⚠️)            *)
+(*                                                                        *)
+(*  ⛔ THE ONE HYPOTHESIS is the consistency block's totality — the       *)
+(*  unification-style campaign of §8b.4, NOT discharged here.  Everything *)
+(*  else about consistency that §13 needs (the payload discipline) is     *)
+(*  §12's theorem.                                                        *)
+(* ===================================================================== *)
+
+Lemma e_sub_order_total_n :
+  (forall Δ1 Δ2 S Θ P0 P, e_consis_order Δ1 Δ2 S Θ P0 P) ->
+  forall n1 n2 n4,
+  (forall n3 n5 S0 NM M P0 Θ0 P,
+     fnd_mode M <= n1 ->
+     nall_pskl P0 <= n2 ->
+     ndef_aenv Θ0 <= n4 ->
+     hnall_pskl P <= n3 ->
+     size_pskl P <= n5 ->
+     lc_pskl P -> lc_pskl P0 -> aenv_defs_mono Θ0 ->
+     e_sub_order S0 NM M P0 Θ0 P)
+  /\
+  (forall n6 S0 NM M P0 Θ0 Ξ α,
+     fnd_mode (mode_fn M) <= n1 ->
+     nall_pskl P0 <= n2 ->
+     ndef_aenv (Ξ ++ Θ0) <= n4 ->
+     length Θ0 <= n6 ->
+     lc_pskl P0 -> aenv_defs_mono (Ξ ++ Θ0) ->
+     e_sub_flex_order S0 NM M P0 Θ0 Ξ α).
+Proof.
+  intros Hco n1; induction n1 as [n1 IH1] using lt_wf_ind;
+    intros n2; induction n2 as [n2 IH2] using lt_wf_ind;
+    intros n4; induction n4 as [n4 IH4] using lt_wf_ind.
+  (* ------------------------------------------------------------------ *)
+  (*  Ψ — the flexible walk.  Its exits reach Φ only through IH1 (an     *)
+  (*  arrow crossed, via the inline step), IH4 (a def consumed), and its *)
+  (*  own rows only peel the context (IH6).                              *)
+  (* ------------------------------------------------------------------ *)
+  assert (Hpsi : forall n6 S0 NM M P0 Θ0 Ξ α,
+             fnd_mode (mode_fn M) <= n1 ->
+             nall_pskl P0 <= n2 ->
+             ndef_aenv (Ξ ++ Θ0) <= n4 ->
+             length Θ0 <= n6 ->
+             lc_pskl P0 -> aenv_defs_mono (Ξ ++ Θ0) ->
+             e_sub_flex_order S0 NM M P0 Θ0 Ξ α).
+  { intros n6; induction n6 as [n6 IH6] using lt_wf_ind;
+      intros * Hfnd Hnall Hndef Hlen Hlc0 Hdm.
+    constructor; intros; subst;
+      (* ⚙ [simpl in *] first: metalib's [x ~ a] is [one (x, a)], a
+         DEFINITION, so neither the [Forall] patterns nor [ndef]'s
+         reduction see the cons until it is unfolded *)
+      simpl in *;
+      repeat rewrite ndef_aenv_app in Hndef; simpl in Hndef;
+      repeat match goal with
+      | H : Forall entry_def_mono (_ ++ _) |- _ =>
+          apply Forall_app in H; destruct H
+      | H : Forall entry_def_mono (_ :: _) |- _ =>
+          inversion H; subst; clear H
+      end.
+    - (* Flex-Solve: the ONE tied edge — build the re-entered call's order
+         by hand; its subject is an arrow, so its only live premise is the
+         Arrow row, which strictly drops fnd_mode.  *)
+      constructor; intros; subst; try congruence.
+      (* the Arrow premise survives *)
+      match goal with
+      | Heq : mode_fn _ = mode_fn _ |- _ =>
+          inversion Heq; subst; clear Heq
+      end;
+      match goal with
+      | Heq : pskl_arrow _ _ = pskl_arrow _ _ |- _ =>
+          inversion Heq; subst; clear Heq
+      end.
+      split; [ apply Hco | ].
+      intros * Hcons.
+      (* the mode is read off the GOAL — [subst] may have renamed [M] *)
+      match goal with
+      | |- e_sub_order _ _ ?Mg _ _ _ =>
+          unshelve eapply (proj1 (IH1 (fnd_mode Mg)
+                                    ltac:(simpl in Hfnd; lia)
+                                    (nall_pskl _) (ndef_aenv _))
+                             (hnall_pskl _) (size_pskl _))
+      end;
+        try apply le_n;
+        try solve [ constructor ].
+      + (* the codomain of the pattern is locally closed *)
+        match goal with
+        | Hl : lc_pskl (pskl_arrow _ _) |- _ =>
+            apply lc_pskl_arrow_inv in Hl; destruct Hl; assumption
+        end.
+      + (* the domain run's output keeps the payload discipline *)
+        eapply e_consis_defs_mono; [ eassumption | ].
+        repeat apply Forall_app_intro;
+          eauto 10 using Forall_cons, Forall_nil, entry_def_mono_flex,
+            entry_def_mono_def, mono_ptyp__arrow, mono_ptyp__var.
+    - (* Flex-Assign: the def is consumed — IH4, with the ∀ counts fixed
+         by mono-substitution *)
+      match goal with
+      | He : entry_def_mono (_, abind_flex_mono_def _) |- _ =>
+          unfold entry_def_mono in He; simpl in He
+      end.
+      unshelve eapply (proj1 (IH4 (ndef_aenv (Ξ ++ Θ0'))
+                                ltac:(rewrite ndef_aenv_app in *; lia))
+                         (hnall_pskl _) (size_pskl _));
+        try apply le_n;
+        try assumption;
+        (* nall (subst τ β P0) = nall P0 *)
+        try solve [ rewrite nall_pskl_subst_nallfree
+                      by auto using mono_pskl_nall; assumption ];
+        (* both substituted skeletons are locally closed — the subject's
+           substitution has already REDUCED (it is a variable), so it shows
+           as the bare comparison *)
+        try solve [ match goal with
+                    | |- lc_pskl (if ?c then _ else _) => destruct c
+                    end;
+                    auto using ptyp_to_pskl_lc, mono_ptyp_lc;
+                    constructor ];
+        try solve [ apply subst_pskl_in_pskl_lc_pskl;
+                    auto using ptyp_to_pskl_lc, mono_ptyp_lc;
+                    constructor ];
+        (* the payload discipline, reassembled without the def *)
+        auto using Forall_app_intro.
+    - (* Flex-Depend / Flex-Skip *)
+      split;
+        (apply (IH6 (length Θ0')); [ lia | .. ];
+         try assumption;
+         repeat rewrite ndef_aenv_app; simpl;
+         try lia;
+         repeat apply Forall_app_intro;
+         eauto using Forall_cons, Forall_nil, entry_def_mono_flex).
+    - (* Flex-SkipRigid *)
+      apply (IH6 (length Θ0')); [ lia | .. ];
+        try assumption;
+        repeat rewrite ndef_aenv_app; simpl;
+        try lia;
+        auto using Forall_app_intro.
+    - (* Flex-SkipTmVar (typ payload) *)
+      apply (IH6 (length Θ0')); [ lia | .. ];
+        try assumption;
+        repeat rewrite ndef_aenv_app; simpl;
+        try lia;
+        auto using Forall_app_intro.
+    - (* Flex-SkipTmVar (skl payload) *)
+      apply (IH6 (length Θ0')); [ lia | .. ];
+        try assumption;
+        repeat rewrite ndef_aenv_app; simpl;
+        try lia;
+        auto using Forall_app_intro. }
+  split; [ | exact Hpsi ].
+  (* ------------------------------------------------------------------ *)
+  (*  Φ — the subtyping judgement proper.                                *)
+  (* ------------------------------------------------------------------ *)
+  intros n3; induction n3 as [n3 IH3] using lt_wf_ind;
+    intros n5; induction n5 as [n5 IH5] using lt_wf_ind;
+    intros * Hfnd Hnall Hndef Hh Hsz Hlc Hlc0 Hdm.
+  constructor; intros; subst.
+  - (* Check — the consistency hypothesis *)
+    apply Hco.
+  - (* ForallR — the pattern's ∀ is consumed: IH2 *)
+    simpl in Hnall.
+    unshelve eapply (proj1 (IH2 (nall_pskl
+                                   (open_pskl_wrt_pskl B
+                                      (pskl_var_f (supply_fresh S0))))
+                              ltac:(rewrite nall_pskl_open; lia)
+                              (ndef_aenv _))
+                       (hnall_pskl _) (size_pskl _));
+      try apply le_n;
+      try assumption.
+    + (* the opened pattern is locally closed *)
+      eauto using lc_pskl_all_syn_inv.
+    + constructor; [ apply entry_def_mono_tvar | assumption ].
+  - (* FlexMono — enter the walk *)
+    apply (Hpsi (length Θ0));
+      simpl; try assumption; try apply le_n.
+  - (* Arrow — an FN is crossed: IH1, everything resets *)
+    split; [ apply Hco | ].
+    intros * Hcons.
+    repeat match goal with
+    | Hl : lc_pskl (pskl_arrow _ _) |- _ =>
+        apply lc_pskl_arrow_inv in Hl; destruct Hl
+    end.
+    match goal with
+    | |- e_sub_order _ _ ?Mg _ _ _ =>
+        unshelve eapply (proj1 (IH1 (fnd_mode Mg)
+                                  ltac:(simpl in Hfnd; lia)
+                                  (nall_pskl _) (ndef_aenv _))
+                           (hnall_pskl _) (size_pskl _))
+    end;
+      try apply le_n;
+      try assumption.
+    eapply e_consis_defs_mono; eassumption.
+  - (* ForallL — §9's decrease theorem: IH3 *)
+    match goal with
+    | Hg : guarded_pskl _ \/ _ = pskl_hole |- _ => idtac
+    end.
+    split.
+    + apply e_extract_order_total;
+        eauto using lc_pskl_all_syn_inv.
+    + intros * Hxt Hwf.
+      (* the instantiation is locally closed — §12's composition *)
+      assert (Hlc1 : lc_pskl P1)
+        by (eapply e_extract_lc;
+            eauto using lc_pskl_all_syn_inv).
+      unshelve eapply (IH3 (hnall_pskl (open_pskl_wrt_pskl Q P1))
+                         ltac:(pose proof (@e_extract_forall_l_hnall
+                                             S0 Θ0 NM (supply_fresh S0)
+                                             M Q P0 S1 Ξ P1 Hxt
+                                             ltac:(assumption));
+                               lia)
+                         (size_pskl _));
+        try apply le_n;
+        try assumption.
+      * (* the block is flex-only, so ndef is untouched *)
+        rewrite ndef_aenv_app.
+        rewrite (all_flex_mono_ndef (e_extract_block_flex Hxt)).
+        lia.
+      * (* lc (open Q P1): graft via a fresh name *)
+        destruct (atom_fresh (ftvar_in_pskl Q)) as [x Hx].
+        rewrite (subst_pskl_in_pskl_intro x) by assumption.
+        apply subst_pskl_in_pskl_lc_pskl;
+          eauto using lc_pskl_all_syn_inv.
+      * apply Forall_app_intro;
+          eauto using all_flex_mono_defs_mono, e_extract_block_flex.
+  - (* UnivGhostL — a ⫯ is stripped: IH5 *)
+    simpl in Hh, Hsz.
+    unshelve eapply (IH5 (size_pskl Q) ltac:(lia));
+      try apply le_n;
+      try assumption.
+    eauto using lc_pskl_tophole_inv.
+Qed.
+
+(** ⭐⭐ THE THEOREM — the subtyping walk terminates on every input that is
+    locally closed and whose context keeps the payload discipline, GIVEN
+    that the consistency block does (§8b.4's remaining campaign; an honest
+    hypothesis, not an admit). *)
+Theorem e_sub_order_total :
+  (forall Δ1 Δ2 S Θ P0 P, e_consis_order Δ1 Δ2 S Θ P0 P) ->
+  forall S0 NM M P0 Θ0 P,
+    lc_pskl P -> lc_pskl P0 -> aenv_defs_mono Θ0 ->
+    e_sub_order S0 NM M P0 Θ0 P.
+Proof.
+  intros Hco *; intros.
+  unshelve eapply (proj1 (e_sub_order_total_n Hco (fnd_mode M)
+                            (nall_pskl P0) (ndef_aenv Θ0))
+                     (hnall_pskl P) (size_pskl P));
+    try apply le_n; assumption.
 Qed.

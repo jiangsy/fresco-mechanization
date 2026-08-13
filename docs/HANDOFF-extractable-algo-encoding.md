@@ -1093,19 +1093,66 @@ the first components (subject `α̂ → β̂`, same mode) — the totality proof
 must INLINE one step there: the re-entered subject is an arrow, so its
 only non-failure row is `e_sub__arrow`, which strictly drops FN-depth.
 
-⛔ **WHAT IS STILL OWED — phase 2's assembly.**  (i) The order (domain)
-predicates for `e_sub`'s call graph, read off the rules per §7.1's recipe —
-`e_looksub/e_lookeq`, `e_solve_sub/e_solve_eq`, `e_solve_cstr`,
-`e_extract`, the consistency block, `e_sub/e_sub_flex` — with each
-constructor embedding its callees' orders (McTT's `subtyping_order` shape).
-(ii) Totality for the routine ones (look and solve are size-lex with
-sub→eq allowed at equal size; the fold is structural on the constraint
-list; extract composes).  (iii) ⚠️⚠️ THE CONSISTENCY BLOCK'S TOTALITY IS
-NOT ROUTINE — `e_assign__solve_m` trades one undefined flexible for a
-guess block of fresh ones, and `e_assign__assign`/`e_unify__flex_assign`
-substitute a defined entry away and re-enter `e_consis` at a GROWN
-pattern.  That is unification-style termination (the worklist prior art's
-`num_etvar`/`split_depth` components, §7.4) and deserves its own campaign;
-`e_sub`'s totality should be stated CONDITIONAL on the consistency block's
-order until then (an honest hypothesis, not an admit).
+### 8b.5 ✅ PHASE 2 ASSEMBLED — `e_sub_order_total` is Qed (2026-08-14)
+
+The plan of the paragraph this section replaces was executed in full;
+everything below is axiom-free, zero admits, `make coq` green.
+
+- **`def_order.v`** — the Bove–Capretta domain predicates for `e_sub`'s
+  whole call graph (`guess^N` wrapper, collection, solving, the fold,
+  extraction, the consistency block, `e_sub`/`e_sub_flex`).  ⭐ ONE
+  constructor per judgement with SHAPE-CONDITIONAL premises — a deliberate
+  departure from `e_guess_mono_order`'s per-rule shape: these judgements
+  are PARTIAL, and per-rule constructors would owe a failure constructor
+  per non-matching shape; here a failing input satisfies the constructor
+  with every premise vacuous, totality needs no failure enumeration, and a
+  runner branch inverts `H` once and selects with its own equations.  Rule
+  GUARDS are dropped (the runner tests them; a stronger order is fine) —
+  with ONE exception: `e_sub_order`'s ForallL premise keeps guarded-or-◇
+  on `P0` (the decrease theorem consumes it) and the wf check on `P1`
+  (type.ml:966 recurses behind `is_wf p1`).
+- **Routine totality** (`prop_termination.v` §10–§11): collection
+  UNCONDITIONAL (it never guesses — not even lc is needed); solving at an
+  lc subject (SE-FlexR guesses the accumulated pattern); the fold at lc
+  seed + payloads; `e_extract_order_total` at lc inputs.  The informal
+  "eq before sub" lex component dissolves — the sub→eq drops go to a
+  judgement whose totality is already established.  Fed by an e-side lc
+  kit (§10) mirroring `a_solve_sub_eq_lc` row for row.
+- **The measure kit** (§12): `fnd_mode`, `ndef_aenv`, mono-substitution
+  stability of `nall`/`hnall`, every generated block is flex-only
+  (`all_flex_mono`, five lemmas up the pipeline), and ⭐ the consistency
+  block PRESERVES the def-payloads-are-mono discipline
+  (`e_assign_unify_consis_defs_mono`) — which is what lets the Arrow case
+  hand the domain's OUTPUT context to the codomain.
+- **⭐⭐ `e_sub_order_total`** (§13): the lex measure
+  `(fnd_mode M, nall P0, hnall P, ndef Θ, size P, |Θ|-walk)` assembled as
+  nested `lt_wf_ind` inductions, Ψ (the flex walk) proved before Φ inside
+  the `ndef` level (its exits reach Φ only through IH1/IH4 or the inline
+  arrow step at Flex-Solve — the tied edge, exactly as 8b.4 predicted).
+
+      e_sub_order_total :
+        (forall Δ1 Δ2 S Θ P0 P, e_consis_order Δ1 Δ2 S Θ P0 P) ->
+        forall S0 NM M P0 Θ0 P,
+          lc_pskl P -> lc_pskl P0 -> aenv_defs_mono Θ0 ->
+          e_sub_order S0 NM M P0 Θ0 P
+
+⛔ **WHAT REMAINS OF THE CAMPAIGN — the ONE hypothesis.**  The consistency
+block's totality is unification-style termination and NOT routine:
+`e_assign__solve_m` trades one undefined flexible for a guess block of
+fresh ones, and `e_assign__assign`/`e_unify__flex_assign` substitute a
+defined entry away and re-enter `e_consis` at a GROWN pattern (the
+worklist prior art's `num_etvar`/`split_depth` components, §7.4).  Its
+order predicates are DEFINED (def_order.v §5) and its defs-mono
+preservation is proved; only `e_consis_order`'s inhabitation is owed.
+Discharging it turns `e_sub_order_total`'s hypothesis into a theorem —
+and with it, decidability of the subtyping walk.  Phase 4 (the runners)
+is unblocked for everything below the consistency block already.
+
+⚙ Traps paid for in the assembly, for whoever extends it: metalib's
+`x ~ a` is `one (x, a)` — a DEFINITION — so `Forall`/`ndef` patterns see
+the cons only after `simpl`; a `; [ … | … ]` dispatch after a chain binds
+to ALL accumulated goals (parenthesize per-goal); `subst` renames the
+mode/context variables, so read them off the GOAL in `match goal`; under
+`Set Implicit Arguments` a lemma argument under a FUNCTION application
+(`open P …`) stays explicit — use `@` and spell everything.
 

@@ -443,10 +443,13 @@ Inductive e_sub_order : supply -> a_sub_mode -> mode -> pskl -> aenv -> pskl
              {{ S0 ↝ S1 ⊨ Θ0 ⊢[ empty | empty | P0a ] P1 ∼ Q1 ⊣ Θ1 }}e ->
              e_sub_order S1 NM M' P0b Θ1 P2)) ->
     (* ForallL — extract an instantiation, then recurse on the opened body.
-       ⚙ The ONE premise that keeps a rule guard: the recursion happens only
-       behind the rule's wf check on [P1] (type.ml:966's [is_wf p1]). *)
+       ⚙ The ONE row that keeps its rule GUARDS: the guarded-or-◇ premise on
+       [P0] is what §9's decrease theorem consumes (the graft carries no head
+       ∀ only against such a [P0]), and the recursion happens only behind the
+       rule's wf check on [P1] (type.ml:966's [is_wf p1]). *)
     (forall Q,
        P = pskl_all_syn Q -> M <> mode_ti ->
+       (guarded_pskl P0 \/ P0 = pskl_hole) ->
        e_extract_order S0 Θ0 NM (supply_fresh S0) M
          (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0))) P0
        /\ (forall S1 Ξ P1,
