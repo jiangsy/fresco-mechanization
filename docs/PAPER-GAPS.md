@@ -3465,3 +3465,74 @@ The theorem's statement, the declarative rules, and the subcase-1 argument
 all stand verbatim.  Subcase 1's steps ⑫/⑬ ("by the solution, `θA' ≡ᵗ A` and
 `θB' ≡ᵗ B`") are read off the arrow refinement by `ad_refine_syn_inh_tyequiv`,
 the same lemma `Freeze` uses.
+
+## ⭐⭐⭐ MISSING ARGUMENT — the paper's central design principle is offered AGAINST an undecidability result, and the decidability it thereby claims is never discharged (filed 2026-08-14; found 2026-08-13, confirmed by the user)
+
+**Status: GAP (missing theorem, not a broken step) — and the mechanization
+has now DISCHARGED it for the subtyping walk** (see "Mechanized status"
+below), so this entry is both the finding and the repair's location.
+
+### The finding
+
+The undecidability of impredicative polymorphic subtyping is the paper's own
+stated motivation, cited twice as `\citep{chrzaszcz1998poly,tiuryn1996subtyping}`:
+
+- `overview.tex:79` — "We cannot simply extend such systems with arbitrary
+  implicit polymorphic instantiation as this is an undecidable problem";
+- `introduction.tex:463` — "even implicit polymorphic instantiation itself
+  (question ③) is undecidable".
+
+The design principle offered in answer is `declarative.tex:856-860`:
+
+> "A fundamental principle of \Calc is to **never guess polytypes out of
+> thin air**.  Instead, we only guess polytypes that can be determined by
+> inherited type information."
+
+Read against the citations, this is an argument that the algorithm IS
+decidable — the general problem is undecidable, *therefore* guessing is
+restricted to what inherited information determines.  That argument is
+nowhere discharged: the paper proves soundness and completeness, and a
+derivation EXISTING is not a search TERMINATING.  A reader who reaches
+`thm:complete-type-inference` having read `overview.tex:79` will read
+decidability into it; nothing in the paper supports that reading.
+
+### Mechanized status (frost/ext_algo/, 2026-08-13/14) — the argument, made and checked
+
+The principle itself is now a theorem, in the exact currency the
+termination argument needs (`frost/ext_algo/prop_termination.v`; all
+axiom-free):
+
+- `guess^TY` copies quantifiers and never invents one
+  (`e_guess_mono_nall`): the guessed type carries no more `∀`s than the
+  skeleton it was guessed from — the only inventing row maps a ghost to a
+  fresh flexible, which is `∀`-free.
+- Carried through SI-ForallL's whole extraction pipeline (collection →
+  solving → `guess^N`): the instantiation `P₁` satisfies
+  **`nall P₁ ≤ nall P₀`** — bounded by the INHERITED skeleton alone
+  (`e_extract_nall`; the subject contributes nothing, because the
+  collection only ever deposits counterpart fragments).  This is
+  `declarative.tex:856-860` with "inherited type information" pinned to a
+  single input of a single rule.
+- The measure the principle buys: the subject's HEAD `∀`-chain strictly
+  shrinks at every SI-ForallL (`e_extract_forall_l_hnall`), with the
+  remaining lexicographic components the FN-depth of the mode (SI-Arrow),
+  the pattern's `∀`-count (SI-ForallR), the defined-flexible count of the
+  context (SI-Flex-Assign), and syntactic size.  ⚠️ Note for the authors:
+  the naive "count `∀`s on the codomain spine" does NOT decrease — an
+  eq-constraint can hand a counterpart fragment to the solving fold
+  wholesale (SolE-GhostL), putting a `∀`-headed instantiation on the
+  spine; the head-chain count is the one that works, and the case where
+  the instantiation grafts onto the head chain is exactly the case where
+  SI-ForallL's own guarded-or-ghost side condition forces the graft
+  `∀`-free.
+- Assembled: `e_sub_order_total` — the subtyping walk's search terminates
+  on every locally-closed input whose context keeps monotype payloads
+  (the consistency block's totality is its one lemma-level input; see
+  docs/HANDOFF-extractable-algo-encoding.md §8b for the live state).
+
+The paper could state this as a theorem ("the algorithm terminates on
+well-formed inputs"), with the proof sketch: instantiations are bounded by
+inherited information (the principle), inherited information is finite and
+consumed (ForallR consumes the pattern's quantifiers, Arrow consumes the
+mode, ForallL consumes the subject's head chain and cannot re-arm it), and
+the flexible walks consume the context.
