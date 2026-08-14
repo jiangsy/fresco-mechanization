@@ -1366,13 +1366,43 @@ error names the level-75 alternatives rather than the missing notation.
     ⚠️ `e_sub_lc` needs `aenv_defs_mono Θ0`: `Flex-Assign` substitutes a
     context DEFINITION into the counterpart, so the counterpart's local
     closure survives only because the payload is mono, hence lc.
-  - ⛔ **STILL OPEN in (2b)**: lc / defs-mono for the `e_pat` and `e_typing`
-    OUTPUTS, and the relation-side SHAPE facts — that a ForallR run's output
-    context really is `Ξ ++ (α~tvar) ++ Θ1`, that the abs rows' output splits
-    at the binder marker, and that the readback positions really are
-    `⌈⌉`-images.  §6 says the decomposers succeed ON those shapes; what is
-    owed is that the relation PRODUCES them.  `algo/prop_wf_preservation.v`
-    is the a-side prior art.
+  - `prop_run_invariants.v` §3 — `e_split_defs_mono`, `e_pat_defs_mono`,
+    `e_typing_defs_mono`.  ⭐ **The def-payload discipline now holds across
+    ALL FOURTEEN judgements, from the entry point down**, which is what the
+    runners' `defs_mono_ck` tests need: `def_typing_impl.v` tests it on
+    `ty_ctx r1`, the context a RECURSIVE CALL produced, and only a statement
+    about OUTPUTS can discharge that.  Two rows generate a block and both
+    generate a FLEX-ONLY one (`e_split__flex`'s invented pair, `AT-Abs`'s
+    `guess^TY` block), so neither can break the discipline.
+    ⚙ Proof-engineering note worth copying: pose the delegations as
+    IMPLICATIONS (`pose proof (e_sub_defs_mono H)`, not `… H Hd`) and let
+    `eauto` chain them.  Rows like AT-Anno / AT-Freeze / AT-App thread
+    `Θ0 → Θ1 → Θ2` through two or three premises and only the FIRST link's
+    input is a hypothesis; the guarded form silently matches nothing.
+  - ⛔ **STILL OPEN in (2b)**, and ⭐ **the route is cheaper than this list
+    assumed**: lc for the `e_pat` / `e_typing` OUTPUTS, and the
+    relation-side SHAPE facts (a ForallR run's output context really is
+    `Ξ ++ (α~tvar) ++ Θ1`, the abs rows' output splits at the binder marker,
+    the readback positions really are `⌈⌉`-images).  §6 says the decomposers
+    succeed ON those shapes; what is owed is that the relation PRODUCES
+    them.
+    ⭐ **Do NOT write these as fresh inductions.**  `a_pat_sound`
+    (`algo/pat/prop_soundness_pat.v:2065`) already returns `{{ ⊢ Θ1 }}a` and
+    `bskl_to_pskl Qt = P`, and `a_typing_sound` already returns
+    `a_wf_ptyp Θ1 A` — so output well-formedness, and with it local closure
+    and the readback shapes, comes through the BRIDGE (`e_pat_sound` /
+    `e_typing_sound`) composed with the a-side soundness theorems.
+    ⚠️ The cost is that soundness' premises come with it (`{{ ⊢ Θ0 }}a`,
+    `a_wf_pskl`, mode compatibility, `{{ Θ0 ⊢ᵉ e }}a`).  At the ENTRY POINT
+    all four are discharged (`prop_run_corollaries.v`), so the composed
+    corollary is free there; what (2d) needs is the INDUCTIVE version, which
+    must thread them.  ⭐ Deciding whether to thread those four or to prove a
+    lighter payload-lc invariant directly is the FIRST design call of the
+    next session, and it should be made together with (2d)'s formulation —
+    they constrain each other.
+    ⚙ `aenv_defs_mono` does NOT suffice on its own: it constrains
+    `abind_flex_mono_def` payloads only, and `AP-Var` needs `lc_ptyp A` for
+    an `abind_var_typ A` entry.
 - **(2c) The a→e LIFT** (independent of the runner; parallelisable with 2b):
   every `a_*` run is an `e_*` run at any supply covering its inputs.  This is
   `algo/prop_swap.v` §13b's transposition argument promoted to all fourteen

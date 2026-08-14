@@ -12,6 +12,8 @@
         twin of [e_consis_defs_mono] (prop_termination.v §12)
     §2  ⭐ local closure of the consistency block's and the subtyping walk's
         OUTPUT SKELETON — the two the §10 pipeline kit does not reach
+    §3  ⭐ the def-payload discipline through SPLITTING, SKELETON INFERENCE
+        and TYPE INFERENCE — closing the chain over all fourteen judgements
 
     ⚙ WHY THIS ONE WAS MISSING.  §12 proved the consistency block preserves
     [aenv_defs_mono] because the TERMINATION argument needed it there — the
@@ -62,6 +64,8 @@ Require Import src.frost.ext_algo.def_look.
 Require Import src.frost.ext_algo.def_solve.
 Require Import src.frost.ext_algo.def_extract.
 Require Import src.frost.ext_algo.def_sub.
+Require Import src.frost.ext_algo.def_pat.
+Require Import src.frost.ext_algo.def_typing.
 Require Import src.frost.ext_algo.def_dec.             (* lc_pskl_open_graft *)
 Require Import src.frost.ext_algo.prop_termination.
 
@@ -290,3 +294,124 @@ Corollary e_sub_flex_lc : forall S0 NM M P0 Θ0 Ξ α Q S1 Θ1,
   e_sub_flex S0 NM M P0 Θ0 Ξ α Q S1 Θ1 ->
   lc_pskl P0 -> aenv_defs_mono Θ0 -> aenv_defs_mono Ξ -> lc_pskl Q.
 Proof. intros. eapply (proj2 e_sub_sub_flex_lc); eassumption. Qed.
+
+(* ===================================================================== *)
+(*  §3  Def payloads stay MONO through the whole algorithm                *)
+(*                                                                        *)
+(*  §1 closed the subtyping walk; the three judgements above it —         *)
+(*  splitting, skeleton inference, type inference — close the chain, so   *)
+(*  the discipline now holds from the ENTRY POINT down.  That is what     *)
+(*  the runners' [defs_mono_ck] tests need: [def_typing_impl.v] tests it  *)
+(*  on [ty_ctx r1], the context a RECURSIVE CALL produced, and only a     *)
+(*  statement about outputs can discharge that.                           *)
+(*                                                                        *)
+(*  ⭐ Two rows generate a block, and both generate a FLEX-ONLY one:       *)
+(*  [e_split__flex] invents the pair [β̂ → α1̂] as undefined flexibles,     *)
+(*  and [AT-Abs]'s [guess^TY] block is all-flexible                       *)
+(*  ([e_guess_mono_block_flex]).  A flexible with no definition carries   *)
+(*  no payload obligation, so neither row can break the discipline.       *)
+(* ===================================================================== *)
+
+Lemma e_split_defs_mono : forall S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}e ->
+  aenv_defs_mono Θ0 -> aenv_defs_mono Θ1.
+Proof.
+  intros * H Hdm. destruct H; try exact Hdm.
+  (* the flex row runs consistency under two invented FLEXIBLES *)
+  eapply e_consis_defs_mono; [ eassumption | ].
+  simpl. eauto using Forall_cons, entry_def_mono_flex.
+Qed.
+
+(** ⚙ The abs rows' shape is uniform: the body runs under a term-variable
+    marker (and, at [AT-Abs], under [guess^TY]'s flex block), and returns
+    [Ξ ++ <marker> ++ Θout] — so the IH's output is peeled twice, once for
+    the junk suffix and once for the marker. *)
+Lemma e_pat_defs_mono : forall S0 m Θ0 P0 e Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ1 }}e ->
+  aenv_defs_mono Θ0 -> aenv_defs_mono Θ1.
+Proof.
+  intros S0 m Θ0 P0 e Q S1 Θ1 H; induction H; intros Hdm;
+    (* splitting, subtyping and consistency all delegate *)
+    repeat match goal with
+    | H : e_consis_chk _ _ _ _ _ _ |- _ => destruct H as [? H]
+    end;
+    (* ⚙ Posed as IMPLICATIONS, not applied: a row like AP-App threads
+       Θ0 → Θ1 → Θ2 through two premises, and only the FIRST link's input
+       is in context up front.  [eauto] chains the rest itself. *)
+    repeat match goal with
+    | H : {{ _ ↝ _ ⊨ _ ⊲ _ ▹ _ ⇢ _ ⊣ _ }}e |- _ =>
+        pose proof (e_split_defs_mono H); clear H
+    | H : {{ _ ↝ _ ⊨ _ ⊢[ _ | _ | _ ] _ ⩽ _ ⊣ _ }}e |- _ =>
+        pose proof (e_sub_defs_mono H); clear H
+    | H : {{ _ ↝ _ ⊨ _ ⊢[ _ | _ | _ ] _ ∼ _ ⊣ _ }}e |- _ =>
+        pose proof (e_consis_defs_mono H); clear H
+    end;
+    (* the abs rows: feed the IH the marker-extended context, then peel the
+       junk suffix and the marker back off its output *)
+    repeat match goal with
+    | IH : aenv_defs_mono ?Θin -> aenv_defs_mono (_ ++ _) |- _ =>
+        let HH := fresh "Hout" in
+        assert (HH := IH ltac:(simpl; eauto using Forall_app_intro,
+                                 Forall_cons, Forall_nil,
+                                 entry_def_mono_var_skl,
+                                 entry_def_mono_var_typ));
+        simpl in HH;
+        repeat (apply Forall_app in HH; destruct HH as [? HH]);
+        repeat match goal with
+        | H : Forall entry_def_mono (_ :: _) |- _ =>
+            inversion H; subst; clear H
+        end;
+        clear IH
+    end;
+    eauto 8 using Forall_app_intro, Forall_cons, Forall_nil,
+      entry_def_mono_var_skl, entry_def_mono_var_typ.
+Qed.
+
+Lemma e_typing_defs_mono : forall S0 m Θ0 P0 e B S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}e ->
+  aenv_defs_mono Θ0 -> aenv_defs_mono Θ1.
+Proof.
+  intros S0 m Θ0 P0 e B S1 Θ1 H; induction H; intros Hdm;
+    repeat match goal with
+    | H : e_consis_chk _ _ _ _ _ _ |- _ => destruct H as [? H]
+    end;
+    (* ⚙ As in [e_pat_defs_mono]: implications, so [eauto] can chain the
+       AT-Anno / AT-Freeze / AT-App sequences whose middle contexts are
+       nobody's hypothesis. *)
+    repeat match goal with
+    | H : {{ _ ↝ _ ⊨ _ ⊲ _ ▹ _ ⇢ _ ⊣ _ }}e |- _ =>
+        pose proof (e_split_defs_mono H); clear H
+    | H : {{ _ ↝ _ ⊨ _ ⊢ˢ[ _ ; _ ] _ ⦂ _ ⊣ _ }}e |- _ =>
+        pose proof (e_pat_defs_mono H); clear H
+    | H : {{ _ ↝ _ ⊨ _ ⊢[ _ | _ | _ ] _ ⩽ _ ⊣ _ }}e |- _ =>
+        pose proof (e_sub_defs_mono H); clear H
+    | H : {{ _ ↝ _ ⊨ _ ⊢[ _ | _ | _ ] _ ∼ _ ⊣ _ }}e |- _ =>
+        pose proof (e_consis_defs_mono H); clear H
+    end;
+    (* ⭐ AT-Abs runs the body under [guess^TY]'s block, which is flex-only *)
+    repeat match goal with
+    | H : e_guess_mono _ _ _ ?Xs _ |- _ =>
+        lazymatch goal with
+        | _ : all_flex_mono Xs |- _ => fail
+        | _ => pose proof (e_guess_mono_block_flex H)
+        end
+    end;
+    repeat match goal with
+    | IH : aenv_defs_mono ?Θin -> aenv_defs_mono (_ ++ _) |- _ =>
+        let HH := fresh "Hout" in
+        assert (HH := IH ltac:(simpl; eauto 8 using Forall_app_intro,
+                                 Forall_cons, Forall_nil,
+                                 entry_def_mono_var_typ, entry_def_mono_tvar,
+                                 all_flex_mono_defs_mono));
+        simpl in HH;
+        repeat (apply Forall_app in HH; destruct HH as [? HH]);
+        repeat match goal with
+        | H : Forall entry_def_mono (_ :: _) |- _ =>
+            inversion H; subst; clear H
+        end;
+        clear IH
+    end;
+    eauto 8 using Forall_app_intro, Forall_cons, Forall_nil,
+      entry_def_mono_var_typ, entry_def_mono_tvar,
+      all_flex_mono_defs_mono.
+Qed.
