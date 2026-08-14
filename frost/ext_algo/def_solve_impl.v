@@ -44,6 +44,7 @@ Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.sub.prop_solve_sub.   (* lc_pskl_*_inv *)
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
+Require Import src.frost.ext_algo.def_uip.
 Require Import src.frost.ext_algo.def_dec.
 Require Import src.frost.ext_algo.def_guess.
 Require Import src.frost.ext_algo.def_guess_impl.
@@ -53,6 +54,10 @@ Require Import src.frost.ext_algo.prop_termination.
 
 (* ⚠️ NO [Set Implicit Arguments] in an implementation file — see
    def_guess_impl.v's header. *)
+
+(* ⭐ §8c.4 — the unfolding equations, derived against def_uip.v's
+   Hedberg UIP so no axiom is incurred.  ⚠️ per-FILE flag. *)
+Set Equations With UIP.
 
 Open Scope frost_e_scope.
 
@@ -156,7 +161,7 @@ Definition solve_cstr_spec (S0 : supply) (Θ : aenv) (C : a_cstrs) (P : pskl)
 (*  §3  [e_solve_eq_impl]  (≈ solve_eq, type.ml:399)                      *)
 (* ===================================================================== *)
 
-#[tactic="solve_impl_tac", derive(equations=no,eliminator=no)]
+#[tactic="solve_impl_tac", derive(equations=yes,eliminator=no)]
 Equations e_solve_eq_impl (S0 : supply) (Θ : aenv) (P Q : pskl)
     (HP : lc_pskl P) (HQ : lc_pskl Q)
     (H : e_solve_eq_order S0 Θ P Q)
@@ -307,7 +312,7 @@ Equations e_solve_eq_impl (S0 : supply) (Θ : aenv) (P Q : pskl)
 (*  §4  [e_solve_sub_impl]  (≈ solve_sub, type.ml:489)                    *)
 (* ===================================================================== *)
 
-#[tactic="solve_impl_tac", derive(equations=no,eliminator=no)]
+#[tactic="solve_impl_tac", derive(equations=yes,eliminator=no)]
 Equations e_solve_sub_impl (S0 : supply) (Θ : aenv) (m : mode) (P Q : pskl)
     (HP : lc_pskl P) (HQ : lc_pskl Q)
     (H : e_solve_sub_order S0 Θ m P Q)
@@ -397,7 +402,7 @@ Equations e_solve_sub_impl (S0 : supply) (Θ : aenv) (m : mode) (P Q : pskl)
 (*  §5  [e_solve_cstr_impl] — the fold  (≈ constr_solve, type.ml:537)     *)
 (* ===================================================================== *)
 
-#[tactic="solve_impl_tac", derive(equations=no,eliminator=no)]
+#[tactic="solve_impl_tac", derive(equations=yes,eliminator=no)]
 Equations e_solve_cstr_impl (S0 : supply) (Θ : aenv) (C : a_cstrs) (P : pskl)
     (HP : lc_pskl P) (HC : Forall lc_a_cstr C)
     (H : e_solve_cstr_order S0 Θ C P)

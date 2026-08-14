@@ -46,6 +46,7 @@ Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.sub.prop_solve_sub.   (* lc_pskl_*_inv *)
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
+Require Import src.frost.ext_algo.def_uip.
 Require Import src.frost.ext_algo.def_dec.
 Require Import src.frost.ext_algo.def_look.
 Require Import src.frost.ext_algo.def_guess_impl.
@@ -54,6 +55,10 @@ Require Import src.frost.ext_algo.prop_termination.
 
 (* ⚠️ NO [Set Implicit Arguments] in an implementation file — see
    def_guess_impl.v's header. *)
+
+(* ⭐ §8c.4 — the unfolding equations, derived against def_uip.v's
+   Hedberg UIP so no axiom is incurred.  ⚠️ per-FILE flag. *)
+Set Equations With UIP.
 
 Open Scope frost_e_scope.
 
@@ -157,7 +162,7 @@ Definition looksub_spec (S0 : supply) (Θ : aenv) (α : atom) (m : mode)
 (*  §3  [e_lookeq_impl]  (≈ constr_collect_eq, type.ml:542)               *)
 (* ===================================================================== *)
 
-#[tactic="look_impl_tac", derive(equations=no,eliminator=no)]
+#[tactic="look_impl_tac", derive(equations=yes,eliminator=no)]
 Equations e_lookeq_impl (S0 : supply) (Θ : aenv) (α : atom) (P P' : pskl)
     (HP : lc_pskl P) (HP' : lc_pskl P')
     (H : e_lookeq_order S0 Θ α P P')
@@ -327,7 +332,7 @@ Equations e_lookeq_impl (S0 : supply) (Θ : aenv) (α : atom) (P P' : pskl)
 (*  BEFORE ForallL (:680) / UnivGhostL (:690), Check LAST (:695).         *)
 (* ===================================================================== *)
 
-#[tactic="look_impl_tac", derive(equations=no,eliminator=no)]
+#[tactic="look_impl_tac", derive(equations=yes,eliminator=no)]
 Equations e_looksub_impl (S0 : supply) (Θ : aenv) (α : atom) (m : mode)
     (P P' : pskl) (HP : lc_pskl P) (HP' : lc_pskl P')
     (H : e_looksub_order S0 Θ α m P P')

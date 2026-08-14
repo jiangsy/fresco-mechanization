@@ -38,6 +38,7 @@ Require Import src.frost.prop_coercions.
 Require Import src.frost.prop_ln.
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
+Require Import src.frost.ext_algo.def_uip.
 Require Import src.frost.ext_algo.def_dec.
 Require Import src.frost.ext_algo.def_guess.
 Require Import src.frost.ext_algo.def_guess_impl.
@@ -56,6 +57,10 @@ Require Import src.frost.ext_algo.def_pat_impl.
 
 (* ⚠️ NO [Set Implicit Arguments] in an implementation file — see
    def_guess_impl.v's header. *)
+
+(* ⭐ §8c.4 — the unfolding equations, derived against def_uip.v's
+   Hedberg UIP so no axiom is incurred.  ⚠️ per-FILE flag. *)
+Set Equations With UIP.
 
 Open Scope frost_e_scope.
 
@@ -305,7 +310,7 @@ Definition typing_spec (S0 : supply) (m : mode) (Θ0 : aenv) (P0 : pskl)
 (*  §4  [e_typing_impl]                                                   *)
 (* ===================================================================== *)
 
-#[tactic="typing_impl_tac", derive(equations=no,eliminator=no)]
+#[tactic="typing_impl_tac", derive(equations=yes,eliminator=no)]
 Equations e_typing_impl (S0 : supply) (m : mode) (Θ0 : aenv) (P0 : pskl)
     (e : exp) (H : e_typing_order S0 m Θ0 P0 e)
     : option (sig (typing_spec S0 m Θ0 P0 e)) by struct H :=

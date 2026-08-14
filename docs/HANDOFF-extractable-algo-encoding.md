@@ -1570,8 +1570,30 @@ the reasoning) and `def_guess_impl.v` flipped to `equations=yes`.
 ⚠️ `Set Equations With UIP` is a per-FILE flag — `Require` does not export
 it, so every impl file needs its own line.
 
-🟡 **MEASURED, on flipping all twelve at once** (then reverted, so the tree
-carries only the exemplar):
+✅ **SETTLED (2026-08-14, later): TEN OF THE TWELVE BLOCKS ARE FLIPPED AND
+IN THE TREE.**  `def_guess_impl.v`, `def_look_impl.v` (2 blocks),
+`def_solve_impl.v` (3), `def_extract_impl.v`, `def_pat_impl.v` (2) and
+⭐ `def_typing_impl.v` — the ENTRY POINT, the one runner whose dispatch the
+completeness induction must analyse — all derive their unfolding equations
+against `def_uip.v`'s Hedberg UIP, with no extra instances and no tactic
+changes.  `make coq` green, README 32/32, spot-checked `Print Assumptions`
+(including on `e_typing_impl_equation_1` and `e_pat_impl_equation_1`) all
+"Closed under the global context".  ⭐ And the STANDING BAR is untouched:
+the emitted `frost_guess.ml` is the same 3,873 lines, still passes
+`ocamlc -c`, and still contains no `Obj.magic` / `Acc_rect` / `Fix_sub` /
+`FixWf` — the derivation is proof-side only and does not reach extraction.
+
+⛔ **THE TWO THAT DO NOT: `def_consis_impl.v` and `def_sub_impl.v`.**  Both
+are left at `equations=no`.  ⚙ What distinguishes them from the ten is that
+each is a MUTUAL walk — `e_assign` / `e_unify` / `e_consis` in one block,
+and `e_sub` with its flex walk in the other — which makes mutual
+`Equations` over a `Prop` domain predicate the concrete suspect rather than
+a guess.  ⭐ Whether the campaign even needs them is the open question:
+see the alternative below, under which only a judgement whose OWN dispatch
+must be analysed needs its equations.
+
+🟡 **The measurement trail that got there** (first pass flipped all twelve
+at once and was reverted):
 
 - ✅ `def_look_impl.v` (2 blocks) and `def_solve_impl.v` (3 blocks) derive
   their equations with no extra instances at all.
@@ -1634,9 +1656,11 @@ order, the STEP/BASE readback split) is already the raw material for.  ⚙ If
 that works, only the judgements whose own dispatch must be analysed need
 `equations=yes` — and the mutual consistency block may be reachable purely
 through its soundness and determinism.
-- ⚪ `def_extract_impl.v`, `def_sub_impl.v`, `def_pat_impl.v` and
-  `def_typing_impl.v` were never reached — the build stops at the first
-  failure — so their status is UNKNOWN, not good.
+- ✅ `def_extract_impl.v`, `def_pat_impl.v` and `def_typing_impl.v` were
+  UNKNOWN at first (the build stops at the first failure) and were settled
+  by reverting the failures and rebuilding: all three derive cleanly.
+- ⛔ `def_sub_impl.v` is the second failure, on the same day and with the
+  same shape as the consistency block.
 
 ⚠️ **And a build-hygiene note**: flipping a file that others `Require`
 leaves their `.vo`s stale, and the failure reads "makes inconsistent

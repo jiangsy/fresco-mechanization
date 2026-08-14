@@ -29,6 +29,7 @@ Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
+Require Import src.frost.ext_algo.def_uip.
 Require Import src.frost.ext_algo.def_dec.
 Require Import src.frost.ext_algo.def_guess.
 Require Import src.frost.ext_algo.def_guess_impl.
@@ -43,6 +44,10 @@ Require Import src.frost.ext_algo.def_solve_impl.
 
 (* ⚠️ NO [Set Implicit Arguments] in an implementation file — see
    def_guess_impl.v's header. *)
+
+(* ⭐ §8c.4 — the unfolding equations, derived against def_uip.v's
+   Hedberg UIP so no axiom is incurred.  ⚠️ per-FILE flag. *)
+Set Equations With UIP.
 
 Open Scope frost_e_scope.
 
@@ -72,7 +77,7 @@ Definition extract_spec (S0 : supply) (Θ0 : aenv) (NM : a_sub_mode)
   solve [ eapply e_extract__solve;
           [ eassumption | eassumption | apply e_guess_run_sound ] ].
 
-#[tactic="extract_impl_tac", derive(equations=no,eliminator=no)]
+#[tactic="extract_impl_tac", derive(equations=yes,eliminator=no)]
 Equations e_extract_impl (S0 : supply) (Θ0 : aenv) (NM : a_sub_mode)
     (α : atom) (m : mode) (P P' : pskl)
     (HP : lc_pskl P) (HP' : lc_pskl P')
