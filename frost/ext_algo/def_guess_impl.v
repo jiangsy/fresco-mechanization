@@ -28,7 +28,7 @@
 
     The pattern is McTT's (`~/Documents/HKU/Research/mctt_ref`,
     `theories/Extraction/{Evaluation,Readback,NbE,Subtyping,TypeCheck}.v`),
-    including the [derive(equations=no,eliminator=no)] attribute: the derived
+    including the [derive(equations=yes,eliminator=no)] attribute: the derived
     equation lemmas and eliminator are what would drag dependent-elimination
     axioms in, and nothing here needs them.
 
@@ -109,6 +109,7 @@ Require Import src.frost.def_shapes.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
 Require Import src.frost.ext_algo.def_supply.
+Require Import src.frost.ext_algo.def_uip.
 Require Import src.frost.ext_algo.def_guess.
 
 (* ⚠️ NO [Set Implicit Arguments] IN THIS FILE, unlike every other file in the
@@ -219,7 +220,7 @@ Proof. intros * H; inversion H. Qed.
   unfold guess_spec in *; simpl in *;
   eauto using e_guess_mono, supply_fresh_notin.
 
-#[tactic="guess_impl_tac", derive(equations=no,eliminator=no)]
+#[tactic="guess_impl_tac", derive(equations=yes,eliminator=no)]
 Equations e_guess_mono_impl (S0 : supply) (P : pskl)
     (H : e_guess_mono_order S0 P) : guess_res S0 P
   by struct H :=

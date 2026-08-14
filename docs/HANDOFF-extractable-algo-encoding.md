@@ -1557,11 +1557,42 @@ Three things to carry into the next session:
 - ⭐ **`eliminator=no` stays off.**  Only the unfolding equations are
   needed; the derived eliminator is the part with the larger axiom surface,
   and §8c.3's induction runs on `e_*_order`, not on the runner.
-- ⚙ Scaling to the other eleven blocks needs the same four lines once, in a
-  file they all import, plus `EqDec`/`NoConfusion` for whatever other index
-  sorts appear (`ptyp`, `exp`, `mode`, `a_sub_mode`, `abind`/`aenv` — each a
-  first-order inductive over atoms, so each is Hedberg again).  ⚠️ Verify
-  `Print Assumptions` after every one; the bar is unchanged.
+- ⚙ Scaling to the other eleven blocks needs the same setup once, in a file
+  they all import, plus `EqDec`/`NoConfusion` for whatever other index sorts
+  turn out to be inverted.  ⚠️ Verify `Print Assumptions` after every one;
+  the bar is unchanged.
+
+✅ **LANDED (2026-08-14)**: `frost/ext_algo/def_uip.v` (the four lines, with
+the reasoning) and `def_guess_impl.v` flipped to `equations=yes`.
+`make coq` green, README 32/32, and `Print Assumptions` on
+`e_guess_mono_impl`, `e_guess_mono_run`, `e_guess_mono_run_sound` AND
+`e_guess_mono_impl_equation_1` all "Closed under the global context".
+⚠️ `Set Equations With UIP` is a per-FILE flag — `Require` does not export
+it, so every impl file needs its own line.
+
+🟡 **MEASURED, on flipping all twelve at once** (then reverted, so the tree
+carries only the exemplar):
+
+- ✅ `def_look_impl.v` (2 blocks) and `def_solve_impl.v` (3 blocks) derive
+  their equations with no extra instances at all.
+- ⛔ `def_consis_impl.v` is the FIRST failure: "Unsolved obligations when
+  closing file".  The unsolved goals are the equation obligations of the
+  mutual block's nested-match clauses (the log shows one for the
+  `pskl_tophole` / `pskl_tophole` row).  ⚙ The cause is structural, not
+  deep: `#[tactic="consis_impl_tac"]` applies to EVERY obligation, and that
+  tactic was written for the SOUNDNESS obligations — it has no case for an
+  unfolding equation, so the equation goals fall through unsolved.  ⭐ The
+  fix to try first is to give each `*_impl_tac` an equation-goal branch (or
+  a fallback to `Equations`' own equation solver) rather than to weaken
+  anything.
+- ⚪ `def_extract_impl.v`, `def_sub_impl.v`, `def_pat_impl.v` and
+  `def_typing_impl.v` were never reached — the build stops at the first
+  failure — so their status is UNKNOWN, not good.
+
+⚠️ **And a build-hygiene note**: flipping a file that others `Require`
+leaves their `.vo`s stale, and the failure reads "makes inconsistent
+assumptions over library …", which looks like an axiom problem and is not.
+Rebuild through `make coq`, never file-by-file with `coqc`.
 
 ⚙ **What this does NOT change.**  Milestone (1)'s soundness corollary and
 its fixed entry supply stay exactly as they are; the decidability corollary
