@@ -1324,10 +1324,22 @@ error names the level-75 alternatives rather than the missing notation.
 
 ### 8c.2 ⛔ OPEN — the remaining steps, in dependency order
 
-- **(2a) Completeness directions of the deciders.**  `def_dec.v` and
-  `def_pat_impl.v` §1 deliberately proved only `_ck = true -> P`; each owes
-  `P -> _ck = true`.  All are routine except `wf_pskl_ck`, which owes fuel
-  adequacy at `size_pskl` plus the cofinite→one-instance direction.
+- ✅ **(2a) DONE (2026-08-14)** — `frost/ext_algo/prop_dec.v`, 24 lemmas, all
+  `Closed under the global context`.  The whole inventory of `def_dec.v` and
+  `def_pat_impl.v` §1 now has its converse `<the guard> -> … _ck = true`.
+  ⭐ All but one are the same induction read backwards, which is what the
+  deciders being structural mirrors of their predicates buys.  The exception
+  is `wf_pskl_ck`, and both of its difficulties are the ones its own header
+  named: FUEL ADEQUACY — the bound is `size_pskl P`, and the ∀ row's descent
+  into `open P1 (pskl_var_f β)` costs exactly the `S` the `pskl_all_syn` node
+  pays for (`size_pskl_open_pskl_wrt_pskl_var`), so the fuel is the checker's
+  own structural depth made explicit rather than a search bound that might
+  be short — and THE COFINITE ROW, instantiated at the checker's own
+  `supply_fresh` name by `a_wf_pskl_all_inv_at`, the exact mirror of the
+  soundness direction's `a_wf_pskl_all_intro_at`.
+  ⚠️ State the fuel as an INEQUALITY (`size_pskl P <= n`): at exact fuel the
+  statement is not its own induction hypothesis.  The corollary the runners
+  call, `wf_pskl_ck_complete_at_size`, specialises it.
 - **(2b) The invariants the runners TEST become theorems the relation
   GUARANTEES.**  lc preservation for the `e_consis`/`e_sub`/`e_pat`/`e_typing`
   OUTPUTS (§10's kit covers look/solve/cstr; `e_consis_defs_mono` exists, its
