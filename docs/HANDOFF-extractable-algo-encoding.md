@@ -1583,14 +1583,34 @@ the emitted `frost_guess.ml` is the same 3,873 lines, still passes
 `ocamlc -c`, and still contains no `Obj.magic` / `Acc_rect` / `Fix_sub` /
 `FixWf` — the derivation is proof-side only and does not reach extraction.
 
-⛔ **THE TWO THAT DO NOT: `def_consis_impl.v` and `def_sub_impl.v`.**  Both
-are left at `equations=no`.  ⚙ What distinguishes them from the ten is that
-each is a MUTUAL walk — `e_assign` / `e_unify` / `e_consis` in one block,
-and `e_sub` with its flex walk in the other — which makes mutual
-`Equations` over a `Prop` domain predicate the concrete suspect rather than
-a guess.  ⭐ Whether the campaign even needs them is the open question:
-see the alternative below, under which only a judgement whose OWN dispatch
-must be analysed needs its equations.
+⛔ **THE TWO THAT DO NOT: `def_consis_impl.v` and `def_sub_impl.v`** — left
+at `equations=no`.  ⭐⭐ **The characterisation is sharp, not a guess: these
+are exactly the two files that use `Equations`' MUTUAL `with` syntax**
+(`with e_unify_impl` / `with e_consis_impl`; `with e_sub_flex_impl`), and in
+both the derivation fails on a `with`-COMPANION's clause:
+
+    Unable to unify "None" with "e_unify_impl    S0 nil α β HD H"
+    Unable to unify "None" with "e_sub_flex_impl S0 NM M P0 nil Ξ α HP0 HD H"
+
+Both are the companion's base clause — the one that returns `None` at an
+empty context.  Every standalone `Equations` block in the tree derives; no
+mutual one does.
+
+⚙ **Three routes, in the order worth trying:**
+
+1. Establish whether equation derivation for mutual `with` blocks is
+   supported at all in this Equations version — a documentation/changelog
+   question, and the cheapest thing to settle first.  Everything else is
+   contingent on the answer.
+2. If it is not: the flex walk recurses on the CONTEXT and re-enters
+   `e_sub_impl` only at `Flex-Solve`, so ask whether it can be hoisted out
+   of the `with` into its own block (the consistency mutual is genuinely
+   three-way and will not yield to this).
+3. ⚠️ The determinism route below does NOT rescue `def_sub_impl.v`:
+   §8c.5 shows `e_typing_impl`'s branch calls `e_sub_impl` directly, and
+   `e_sub_impl`'s own FlexMono branch calls `e_sub_flex_impl`, so knowing
+   the RELATION holds still does not yield `Some`.  It may well rescue the
+   consistency block, which `e_sub` reaches only through its own rules.
 
 🟡 **The measurement trail that got there** (first pass flipped all twelve
 at once and was reverted):
