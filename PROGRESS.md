@@ -240,7 +240,28 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-14 (latest) — ⭐⭐⭐ **PHASE 4 CLOSED: EVERY JUDGEMENT EXECUTES — TODO (2) of the extractable-encoding hand-off is COMPLETE**
+## 2026-08-14 (b, latest) — ⭐⭐ **THE RUNNER'S SOUNDNESS REACHES THE PAPER'S OWN DECLARATIVE JUDGEMENT**
+
+`frost/ext_algo/prop_run_corollaries.v`: two corollaries, one per mode,
+composing the four links that already existed — `e_typing_run_sound`
+(def_typing_impl.v §5) ∘ `e_typing_sound_init` (prop_typing.v §2) ∘
+`a_typing_sound` ∘ the conservativity corollaries
+(`algo/typing/prop_closed.v`).  At a closed, well-formed program, if the
+EXTRACTED function answers `Some r` then `{{ nil ⊢ˢᵈ[ m ] e ⦂ … }}d` and
+`{{ nil ⊢[ m ] e ⦂ … }}d` — the paper's own declarative systems, with the
+run's residual flexibles closed off by the metasubstitution `ζ` soundness
+hands back.  Both `Closed under the global context`.  The entry supply is
+FIXED at `ftvar_in_pskl P0 ∪ fvar_in_exp e ∪ ftvar_in_exp e`, which is the
+one `e_typing_sound_init` chooses and the reason it is hypothesis-free;
+the only side condition left is `{{ nil ⊢ᵉ e }}a`, which is
+`a_typing_sound_infer`'s and expected.  ⚠️ SOUNDNESS ONLY — `None` is
+still justified by nothing; that is runner completeness, and with
+totality it is what yields decidability.  ⚙ Deliberately NOT in
+`README.v`: the paper index carries the paper's labelled statements, and
+the README-worthy claim on this line is the decidability corollary that
+completeness owes.
+
+## 2026-08-14 — ⭐⭐⭐ **PHASE 4 CLOSED: EVERY JUDGEMENT EXECUTES — TODO (2) of the extractable-encoding hand-off is COMPLETE**
 
 The Bove–Capretta runners for all thirteen judgements beyond `guess^TY`
 landed (`docs/HANDOFF-extractable-algo-encoding.md` §8b.7): the guard

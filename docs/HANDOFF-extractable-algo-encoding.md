@@ -1271,3 +1271,84 @@ application in prop_termination.v §17 moved with it; nothing else.
 §8 bar as the two existing inlines); the output keeps its M1.7 name
 `frost_guess.ml` though it now holds the whole algorithm.
 
+
+## 8c. ⭐ THE COMPLETENESS CAMPAIGN — from a sound runner to DECIDABILITY
+
+§8b closed TODO (2): every judgement executes, every runner is sound, the
+extracted OCaml compiles.  What that does NOT give is the second half of §5's
+two-statement contract.  The runner's `None` is justified by nothing — the
+result shape was chosen SOUNDNESS-ONLY on purpose (§8b.7) — so the chain
+§5 states,
+
+    termination ⟹ totality ⟹ (with soundness + completeness) decidability
+
+is missing exactly one link.  Termination and totality are closed and
+unconditional (§8b.5–§8b.6).  This section is the last link, and its payoff is
+the one claim worth putting in `README.v`: **the paper's own undischarged
+decidability argument (§7.3), discharged end to end.**
+
+### 8c.1 ✅ STEP (1) — the composed SOUNDNESS corollary (2026-08-14)
+
+`frost/ext_algo/prop_run_corollaries.v`, axiom-free, two corollaries:
+
+    e_typing_run_sound_infer :
+      {{ nil ⊢ᵉ e }}a ->
+      e_typing_run (ftvar_in_pskl □ ∪ fvar_in_exp e ∪ ftvar_in_exp e)
+        mode_ti nil □ e = Some r ->
+      … /\ exists ζ, ζ ∷ (ty_ctx r) ⊑ nil /\
+        {{ nil ⊢ˢᵈ[ mode_ti ] e ⦂ syn{ msubst_ptyp ζ (ty_out r) } }}d /\
+        {{ nil ⊢[ mode_ti ] e ⦂ syn{ msubst_ptyp ζ (ty_out r) } }}d
+
+and `e_typing_run_sound_check` at `⌈A0⌉`, whose answer is `inh{…}`.  Nothing
+new is proved: it is `e_typing_run_sound` ∘ `e_typing_sound_init` ∘
+`a_typing_sound` ∘ the conservativity corollaries, each already closed.  Three
+notes for whoever extends it:
+
+- ⭐ **The entry supply is not a parameter of the claim.**  Both corollaries
+  fix it at `ftvar_in_pskl P0 ∪ fvar_in_exp e ∪ ftvar_in_exp e` — the supply
+  `e_typing_sound_init` chooses, which is what makes coverage `reflexivity`
+  and `uniq` `uniq_nil` (§7.11's argument, at the top of the algorithm).
+  A completeness corollary must be stated at the SAME supply or the two do not
+  compose into decidability.
+- ⚠️ The one surviving side condition is `{{ nil ⊢ᵉ e }}a`, and it is
+  `a_typing_sound_infer`'s, not the runner's — a runner may legitimately be
+  handed an open term.
+- ⚙ **Not in `README.v`, deliberately.**  The paper index carries the paper's
+  own labelled statements; this is the extracted program's contract.  The
+  README entry belongs to the decidability theorem at the end of 8c.5.
+
+⚠️ **`a_wf_exp` and its `{{ Θ ⊢ᵉ e }}a` notation live in
+`algo/pat/prop_soundness_pat.v`**, not in `algo/def_rules.v` — a `Require` of
+`prop_closed.v` alone does not bring the notation into scope, and the parse
+error names the level-75 alternatives rather than the missing notation.
+
+### 8c.2 ⛔ OPEN — the remaining steps, in dependency order
+
+- **(2a) Completeness directions of the deciders.**  `def_dec.v` and
+  `def_pat_impl.v` §1 deliberately proved only `_ck = true -> P`; each owes
+  `P -> _ck = true`.  All are routine except `wf_pskl_ck`, which owes fuel
+  adequacy at `size_pskl` plus the cofinite→one-instance direction.
+- **(2b) The invariants the runners TEST become theorems the relation
+  GUARANTEES.**  lc preservation for the `e_consis`/`e_sub`/`e_pat`/`e_typing`
+  OUTPUTS (§10's kit covers look/solve/cstr; `e_consis_defs_mono` exists, its
+  `e_sub` twin does not), and "run outputs decompose as tested" — the ForallR
+  context split, the abs rows' binder-marker split, the `⌈⌉`-image readbacks.
+  `algo/prop_wf_preservation.v` is the a-side prior art.
+- **(2c) The a→e LIFT** (independent of the runner; parallelisable with 2b):
+  every `a_*` run is an `e_*` run at any supply covering its inputs.  This is
+  `algo/prop_swap.v` §13b's transposition argument promoted to all fourteen
+  judgements — equivariance, never a one-way rename.
+- **(2d) RUNNER completeness against the e-relation — the crux.**  ⚠️ It is
+  AGREEMENT, not mere `Some`-ness: the ForallR output-equality test
+  (`pskl_eqb (sb_out r) (open B α)`) and the abs rows' payload checks make
+  `Some` alone insufficient.  The rule-overlap analysis is where the dispatch
+  orders earn their keep (§8b.1's ForallR-before-ForallL; LE-Var/Absent
+  priority; consis's type.ml order; the STEP/BASE readback split).
+- **(2e) Compose**, then the two-line decidability corollary of §5, a
+  `README.v` entry, and `docs/PAPER-GAPS.md` §7.3 updated to
+  "discharged end-to-end".
+
+⛔ **A standing constraint from §8b.7: completeness ADDS lemmas, it does not
+reshape runners.**  If a runner's test turns out genuinely incomplete-able —
+a test the relation does not guarantee — STOP and flag it; do not silently
+weaken the test.
