@@ -1340,12 +1340,39 @@ error names the level-75 alternatives rather than the missing notation.
   ⚠️ State the fuel as an INEQUALITY (`size_pskl P <= n`): at exact fuel the
   statement is not its own induction hypothesis.  The corollary the runners
   call, `wf_pskl_ck_complete_at_size`, specialises it.
-- **(2b) The invariants the runners TEST become theorems the relation
-  GUARANTEES.**  lc preservation for the `e_consis`/`e_sub`/`e_pat`/`e_typing`
-  OUTPUTS (§10's kit covers look/solve/cstr; `e_consis_defs_mono` exists, its
-  `e_sub` twin does not), and "run outputs decompose as tested" — the ForallR
-  context split, the abs rows' binder-marker split, the `⌈⌉`-image readbacks.
-  `algo/prop_wf_preservation.v` is the a-side prior art.
+- 🟡 **(2b) HALF DONE (2026-08-14).**  Two files moved:
+  - `prop_dec.v` §6 — the nine evidence-carrying DECOMPOSITIONS
+    (`arrow_split`, `ptyp_arrow_split`, the two `abind_var_*_get`,
+    `lookup_binding`, the two `split_at_key_*`, `pskl_readback`,
+    `pskl_readback_all`) now each have their converse too, so **every test a
+    runner performs — boolean or not — has both directions**.  ⚠️ `uniq` is
+    load-bearing in three of them, not decoration: `lookup_binding` and the
+    `split_at_key_*` scans stop at the FIRST occurrence, and `binds` is an
+    "appears somewhere" predicate, so without uniqueness the scan may return
+    a DIFFERENT payload than the derivation used.  The bridge's `uniq`
+    conjunct supplies it at every call site.
+  - `prop_run_invariants.v` (new) — §1 `e_sub_defs_mono` /
+    `e_sub_flex_defs_mono`, the twin of `e_consis_defs_mono` this list flagged
+    as missing; §2 `e_consis_lc` and `e_sub_lc` / `e_sub_flex_lc`, the two
+    output-skeleton lc facts §10's pipeline kit stops short of.  All eight
+    `Closed under the global context`.
+    ⭐ Why the `e_sub` twin was missing: §12 proved the consistency block's
+    because TERMINATION needed it there (Arrow hands the domain's output
+    context to the codomain); `e_sub_order_total` takes `aenv_defs_mono Θ0`
+    as an INPUT hypothesis, so the walk never owed the output side.
+    Completeness is what makes it load-bearing — `def_typing_impl.v`'s
+    AT-Anno/AT-Freeze rows TEST `defs_mono_ck (ty_ctx r1)` on a subtyping
+    run's result.
+    ⚠️ `e_sub_lc` needs `aenv_defs_mono Θ0`: `Flex-Assign` substitutes a
+    context DEFINITION into the counterpart, so the counterpart's local
+    closure survives only because the payload is mono, hence lc.
+  - ⛔ **STILL OPEN in (2b)**: lc / defs-mono for the `e_pat` and `e_typing`
+    OUTPUTS, and the relation-side SHAPE facts — that a ForallR run's output
+    context really is `Ξ ++ (α~tvar) ++ Θ1`, that the abs rows' output splits
+    at the binder marker, and that the readback positions really are
+    `⌈⌉`-images.  §6 says the decomposers succeed ON those shapes; what is
+    owed is that the relation PRODUCES them.  `algo/prop_wf_preservation.v`
+    is the a-side prior art.
 - **(2c) The a→e LIFT** (independent of the runner; parallelisable with 2b):
   every `a_*` run is an `e_*` run at any supply covering its inputs.  This is
   `algo/prop_swap.v` §13b's transposition argument promoted to all fourteen

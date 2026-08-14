@@ -240,7 +240,50 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-14 (b, latest) — ⭐⭐ **THE RUNNER'S SOUNDNESS REACHES THE PAPER'S OWN DECLARATIVE JUDGEMENT**
+## 2026-08-14 (c, latest) — ⭐⭐ **COMPLETENESS CAMPAIGN 2a + 2b(part): every runner TEST gains its converse, and the subtyping walk gains the two run-invariants it was missing**
+
+`frost/ext_algo/prop_dec.v` (new, 33 lemmas) and
+`frost/ext_algo/prop_run_invariants.v` (new, 8 lemmas) — all
+`Closed under the global context`.
+
+**2a — the deciders.**  `def_dec.v` and `def_pat_impl.v` §1 proved their
+inventory SOUND ONLY, which is all a soundness-only runner owes.  Once
+`None` has to mean UNTYPABLE every `false` must be earned, so each check
+owes `<the guard> -> … _ck = true`.  All but one are the same induction
+read backwards; `wf_pskl_ck` is the exception on both counts its header
+named — FUEL ADEQUACY (the bound `size_pskl P` is the checker's own
+structural depth: the ∀ row's descent into `open P1 (pskl_var_f β)` costs
+exactly the `S` the `pskl_all_syn` node pays for, ⚠️ state it as an
+inequality or it is not its own IH) and THE COFINITE ROW (instantiated at
+the checker's `supply_fresh` name by `a_wf_pskl_all_inv_at`).  §6 adds the
+nine evidence-carrying DECOMPOSITIONS, so **every test a runner performs —
+boolean or not — now has both directions**.  ⚠️ `uniq` is load-bearing in
+`lookup_binding` and the two `split_at_key_*`: the scans stop at the FIRST
+occurrence and `binds` is an "appears somewhere" predicate.
+
+**2b (part) — the run invariants.**  `e_sub_defs_mono` /
+`e_sub_flex_defs_mono`, the twin of `e_consis_defs_mono` the campaign
+flagged as missing, plus `e_consis_lc` and `e_sub_lc` / `e_sub_flex_lc`.
+⭐ The `e_sub` twin was missing because TERMINATION only needed the
+consistency block's (`e_sub_order_total` takes `aenv_defs_mono Θ0` as an
+INPUT hypothesis); completeness makes the output side load-bearing, since
+`def_typing_impl.v`'s AT-Anno/AT-Freeze rows test `defs_mono_ck` on a
+subtyping run's result.  ⚠️ `e_sub_lc` needs `aenv_defs_mono Θ0` —
+`Flex-Assign` substitutes a context DEFINITION into the counterpart, so
+the counterpart's local closure survives only because the payload is mono.
+
+⛔ Still open in 2b: lc / defs-mono for the `e_pat` and `e_typing` OUTPUTS,
+and the relation-side SHAPE facts (ForallR's `Ξ ++ (α~tvar) ++ Θ1`, the abs
+rows' binder-marker split, the `⌈⌉`-image readbacks).  Handoff §8c.2.
+
+⚠️ Traps re-paid: the metalib `one` form (a `change`, not `simpl_env`,
+bridges cons-form goals to `x ~ b ++ Θ` hypotheses); an intro pattern `_`
+on an equation the returned `sig` proof MENTIONS fails with "used in
+conclusion"; and `simpl` turns `Flex-Assign`'s substituted VARIABLE into an
+`if α == β then … else …` that must be decided before anything downstream
+can see a skeleton.
+
+## 2026-08-14 (b) — ⭐⭐ **THE RUNNER'S SOUNDNESS REACHES THE PAPER'S OWN DECLARATIVE JUDGEMENT**
 
 `frost/ext_algo/prop_run_corollaries.v`: two corollaries, one per mode,
 composing the four links that already existed — `e_typing_run_sound`

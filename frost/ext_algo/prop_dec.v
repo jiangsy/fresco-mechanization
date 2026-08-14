@@ -17,6 +17,7 @@
     §3  context-shape checks and structural equality
     §4  local closure  (def_pat_impl.v §1's degree checks)
     §5  ⭐ the wf checker — the only one with content
+    §6  the evidence-carrying DECOMPOSITIONS (not every test is a boolean)
 
     ⭐ ALL BUT ONE ARE MECHANICAL, and that is the point: the deciders were
     written as structural mirrors of their predicates, so the converse is the
@@ -60,6 +61,7 @@ Require Import src.frost.ext_algo.def_supply.
 Require Import src.frost.ext_algo.def_dec.
 Require Import src.frost.ext_algo.prop_termination.   (* aenv_defs_mono *)
 Require Import src.frost.ext_algo.def_pat_impl.       (* §1's deciders *)
+Require Import src.frost.ext_algo.def_typing_impl.    (* ptyp_arrow_split *)
 
 (* ⚠️ NO [Set Implicit Arguments] — this file's statements are about
    def_dec.v's and def_pat_impl.v's constants, which are declared without it
@@ -313,3 +315,147 @@ Qed.
 Corollary wf_pskl_ck_complete_at_size : forall Θ Δ P,
   {{ Θ ⨟ Δ ⊢ₚₛ P }}a -> wf_pskl_ck (size_pskl P) Θ Δ P = true.
 Proof. intros; apply wf_pskl_ck_complete; [ assumption | lia ]. Qed.
+
+(* ===================================================================== *)
+(*  §6  The evidence-carrying DECOMPOSITIONS                              *)
+(*                                                                        *)
+(*  Not every runner test is a boolean.  Where a rule needs a piece of    *)
+(*  its input taken apart, the runner calls a decomposer that returns     *)
+(*  the pieces WITH the defining equation ([option (sig …)] again), and   *)
+(*  [None] is a rejection exactly as a [false] is.  So each owes the      *)
+(*  same converse: on the shape the relation produces, it SUCCEEDS —      *)
+(*  and, since a later step must know WHICH pieces came back, it returns  *)
+(*  the expected ones.                                                    *)
+(*                                                                        *)
+(*  ⚙ Stated as [exists r, … = Some r /\ proj1_sig r = <pieces>] rather   *)
+(*  than as an equation between [sig]s: the second component is a proof,  *)
+(*  and two proofs of the same equation need not be syntactically equal.  *)
+(*  The [proj1_sig] form is also what a caller consumes — it is the       *)
+(*  witness, not the evidence, that the next match binds.                 *)
+(* ===================================================================== *)
+
+Lemma arrow_split_complete : forall P1 P2,
+  exists r, arrow_split (pskl_arrow P1 P2) = Some r
+            /\ proj1_sig r = (P1, P2).
+Proof. intros. eexists. split; reflexivity. Qed.
+
+Lemma ptyp_arrow_split_complete : forall A1 A2,
+  exists r, ptyp_arrow_split (ptyp_arrow A1 A2) = Some r
+            /\ proj1_sig r = (A1, A2).
+Proof. intros. eexists. split; reflexivity. Qed.
+
+Lemma abind_var_skl_get_complete : forall P,
+  exists r, abind_var_skl_get (abind_var_skl P) = Some r /\ proj1_sig r = P.
+Proof. intros. eexists. split; reflexivity. Qed.
+
+Lemma abind_var_typ_get_complete : forall A,
+  exists r, abind_var_typ_get (abind_var_typ A) = Some r /\ proj1_sig r = A.
+Proof. intros. eexists. split; reflexivity. Qed.
+
+(** ⚠️ [uniq] is not decoration.  [lookup_binding] returns the FIRST binding,
+    and [binds] is an "appears somewhere" predicate (def_dec.v §2's own
+    warning), so without uniqueness the scan may legitimately return a
+    DIFFERENT payload than the one the derivation used. *)
+Lemma lookup_binding_complete : forall x Θ b,
+  uniq Θ -> binds x b Θ ->
+  exists r, lookup_binding x Θ = Some r /\ proj1_sig r = b.
+Proof.
+  intros x Θ. induction Θ as [ | [y b'] Θ' IH ]; intros b Hu Hb;
+    [ inversion Hb | ].
+  inversion Hu; subst. simpl.
+  destruct (x == y) as [-> | Hne].
+  - (* the head IS the key, so uniqueness makes it the only binding *)
+    destruct Hb as [Heq | Hin].
+    + inversion Heq; subst. eexists. split; reflexivity.
+    + exfalso. assert (y `in` dom Θ') by (eapply binds_In; exact Hin).
+      fsetdec.
+  - destruct Hb as [Heq | Hin]; [ inversion Heq; congruence | ].
+    (* ⚙ destruct the recursive answer BEFORE rewriting: the clause matches
+       [Some (exist _ b' Hb')], so an un-destructed [r] leaves a stuck [let]. *)
+    destruct (IH b ltac:(assumption) Hin) as [[b0 Hb0] [Hr Hpr]].
+    simpl in Hpr; subst b0.
+    rewrite Hr. eexists. split; reflexivity.
+Qed.
+
+(** The binder-marker split of the abs rows' output contexts.  ⚠️ Same
+    caveat, for the same reason: the scan stops at the FIRST occurrence of
+    the key, so it agrees with the derivation's decomposition only when the
+    context is unique — which is exactly what the bridge's [uniq] conjunct
+    supplies at every call site. *)
+Lemma split_at_key_skl_complete : forall x Ξ P Θ',
+  uniq (Ξ ++ (x ~ abind_var_skl P) ++ Θ') ->
+  exists r, split_at_key_skl x (Ξ ++ (x ~ abind_var_skl P) ++ Θ') = Some r
+            /\ proj1_sig r = (Ξ, P, Θ').
+Proof.
+  intros x Ξ. induction Ξ as [ | [y b] Ξ' IH ]; intros P Θ' Hu.
+  - (* ⚠️ NAME the equation, never [_]: the [Some] branch's returned proof
+       term MENTIONS it, so clearing it fails with "used in conclusion". *)
+    simpl. destruct (x == x) as [Heq | Hne]; [ | congruence ].
+    eexists. split; reflexivity.
+  - simpl in Hu |- *. inversion Hu; subst.
+    destruct (x == y) as [Heq | Hne].
+    + (* the key cannot be the head: uniqueness puts it strictly below *)
+      exfalso. subst y. simpl_env in *. fsetdec.
+    + destruct (IH P Θ' ltac:(assumption)) as [[t Ht] [Hr Hpr]].
+      simpl in Hpr; subst t.
+      (* ⚠️ the metalib [one] trap again: [simpl] left the GOAL's recursive
+         call in cons form while the IH speaks of [x ~ b ++ Θ'].  The two are
+         CONVERTIBLE but not syntactically equal, so [rewrite] finds no
+         subterm and [simpl_env] does not bridge it — [change] does. *)
+      change (x ~ abind_var_skl P ++ Θ')
+        with ((x, abind_var_skl P) :: Θ') in Hr.
+      rewrite Hr. eexists. split; reflexivity.
+Qed.
+
+Lemma split_at_key_typ_complete : forall x Ξ A Θ',
+  uniq (Ξ ++ (x ~ abind_var_typ A) ++ Θ') ->
+  exists r, split_at_key_typ x (Ξ ++ (x ~ abind_var_typ A) ++ Θ') = Some r
+            /\ proj1_sig r = (Ξ, A, Θ').
+Proof.
+  intros x Ξ. induction Ξ as [ | [y b] Ξ' IH ]; intros A Θ' Hu.
+  - (* ⚠️ NAME the equation, never [_]: the [Some] branch's returned proof
+       term MENTIONS it, so clearing it fails with "used in conclusion". *)
+    simpl. destruct (x == x) as [Heq | Hne]; [ | congruence ].
+    eexists. split; reflexivity.
+  - simpl in Hu |- *. inversion Hu; subst.
+    destruct (x == y) as [Heq | Hne].
+    + (* the key cannot be the head: uniqueness puts it strictly below *)
+      exfalso. subst y. simpl_env in *. fsetdec.
+    + destruct (IH A Θ' ltac:(assumption)) as [[t Ht] [Hr Hpr]].
+      simpl in Hpr; subst t.
+      (* ⚠️ the metalib [one] trap again: [simpl] left the GOAL's recursive
+         call in cons form while the IH speaks of [x ~ b ++ Θ'].  The two are
+         CONVERTIBLE but not syntactically equal, so [rewrite] finds no
+         subterm and [simpl_env] does not bridge it — [change] does. *)
+      change (x ~ abind_var_typ A ++ Θ')
+        with ((x, abind_var_typ A) :: Θ') in Hr.
+      rewrite Hr. eexists. split; reflexivity.
+Qed.
+
+(** ⭐ The readback succeeds on exactly the [⌈⌉]-IMAGES, and returns the type
+    it is the painting of.  [ptyp_to_pskl] is injective (it is a constructor
+    relabelling), so the answer is forced — which is what makes the readback
+    a decomposition rather than a search. *)
+Lemma pskl_readback_complete : forall A,
+  exists r, pskl_readback (ptyp_to_pskl A) = Some r /\ proj1_sig r = A.
+Proof.
+  induction A; simpl;
+    try solve [ eexists; split; reflexivity ].
+  - destruct IHA1 as [r1 [Hr1 Hp1]]. destruct IHA2 as [r2 [Hr2 Hp2]].
+    rewrite Hr1. destruct r1 as [A1' H1']. simpl in Hp1; subst A1'.
+    rewrite Hr2. destruct r2 as [A2' H2']. simpl in Hp2; subst A2'.
+    eexists. split; reflexivity.
+  - destruct IHA as [r [Hr Hp]].
+    rewrite Hr. destruct r as [A' H']. simpl in Hp; subst A'.
+    eexists. split; reflexivity.
+Qed.
+
+Lemma pskl_readback_all_complete : forall A0,
+  exists r, pskl_readback_all (ptyp_to_pskl (ptyp_all A0)) = Some r
+            /\ proj1_sig r = A0.
+Proof.
+  intros A0. unfold pskl_readback_all. simpl.
+  destruct (pskl_readback_complete A0) as [r [Hr Hp]].
+  rewrite Hr. destruct r as [A' H']. simpl in Hp; subst A'.
+  eexists. split; reflexivity.
+Qed.
