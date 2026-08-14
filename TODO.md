@@ -1,0 +1,4 @@
+- [ ] finish extraction soundness
+- [ ] finish extraction completeness
+- [ ] define a combined relation for d_consis and join
+- [ ] frontend (mctt like)
