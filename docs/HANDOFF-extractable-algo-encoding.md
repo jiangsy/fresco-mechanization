@@ -1598,10 +1598,38 @@ mutual one does.
 
 ⚙ **Three routes, in the order worth trying:**
 
-1. Establish whether equation derivation for mutual `with` blocks is
-   supported at all in this Equations version — a documentation/changelog
-   question, and the cheapest thing to settle first.  Everything else is
-   contingent on the answer.
+1. ⛔ ~~Establish whether equation derivation for mutual `with` blocks is
+   supported at all~~ — **SETTLED, and the answer is no.**  It reproduces
+   in thirty lines with nothing of Frost in it, so this is an `Equations`
+   limitation and not something about our rules:
+
+```coq
+From Equations Require Import Equations.
+Set Equations With UIP.
+Derive NoConfusion EqDec for nat.
+#[export] Instance uip_nat : UIP nat := eqdec_uip _.
+
+Inductive domA : nat -> Prop :=
+| dA : forall n, (forall m, n = S m -> domB m) -> domA n
+with domB : nat -> Prop :=
+| dB : forall n, (forall m, n = S m -> domA m) -> domB n.
+
+#[tactic="idtac", derive(equations=yes,eliminator=no)]
+Equations fA (n : nat) (H : domA n) : option nat by struct H :=
+fA O H := None ;
+fA (S m) H := match fB m _ with None => Some 0 | Some k => Some (S k) end
+with fB (n : nat) (H : domB n) : option nat by struct H :=
+fB O H := None ;
+fB (S m) H := match fA m _ with None => Some 1 | Some k => Some (S k) end.
+Next Obligation. inversion H; subst; auto. Defined.
+Next Obligation. inversion H; subst; auto. Defined.
+```
+
+   fails with `Unable to unify "None" with "fB 0 H"` — the `with`-COMPANION's
+   equations, exactly as in `def_consis_impl.v` and `def_sub_impl.v`.  ⭐ So
+   no amount of obligation-tactic engineering will fix our two files, and
+   the three cycles already spent on that (§8c.4 above) should not be
+   repeated.  ⚙ Worth reporting upstream; it is a clean minimal case.
 2. If it is not: the flex walk recurses on the CONTEXT and re-enters
    `e_sub_impl` only at `Flex-Solve`, so ask whether it can be hoisted out
    of the `with` into its own block (the consistency mutual is genuinely
