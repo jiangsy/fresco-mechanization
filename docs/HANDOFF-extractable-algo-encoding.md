@@ -1504,6 +1504,65 @@ transposition moves EVERY atom at once, so `x` is not left behind and no
 side condition on it is owed.  ⚙ Read the ⛔ note as scoped to its own
 statement shape, not as a blanket obstruction.
 
+### 8c.4 ⭐⭐⭐ THE RUNNERS MUST BE MADE REDUCIBLE FIRST — and it is free
+
+⛔ **Before writing a line of §8c.3's induction, know this: as they stand
+the runners cannot be reasoned about computationally at all.**  Probed
+2026-08-14 on `e_guess_mono_impl`:
+
+- `cbn [e_guess_mono_impl]` does not reduce the application;
+- `destruct H` on the domain proof loses the index (it is an indexed `Prop`,
+  so plain `destruct` generalises `P` and lands in the wrong branch);
+- `reflexivity` is stuck, and `simp` does not exist.
+
+The cause is the `derive(equations=no,eliminator=no)` attribute every one of
+the twelve `Equations` blocks carries.  It was chosen for a good reason
+(def_guess_impl.v's header: the derived lemmas "would drag dependent
+elimination axioms in, and nothing here needs them") — but completeness DOES
+need them, so the choice has to be revisited.
+
+⚠️ **Turning `equations=yes` on naively FAILS**, and the error names the
+obligation exactly: it asks for
+
+    eq_rect … H0 … (DepElim.pack_sigma_eq_nondep eq_refl e) = ego_unit S0
+
+i.e. **UIP on the domain predicate's PACKED INDEX**.  (A one-index domain
+predicate derives its equations with no such obligation — a minimal probe
+of the same shape went through untouched, which is why this only shows up
+on the real runners.)
+
+⭐⭐⭐ **AND UIP IS AVAILABLE HERE AS A THEOREM, NOT AN AXIOM.**  Verified on
+the real `e_guess_mono_impl`: adding
+
+```coq
+Set Equations With UIP.
+#[export] Instance eqdec_atom : EqDec atom := { eq_dec := fun x y => x == y }.
+Derive NoConfusion EqDec for pskl.
+#[export] Instance uip_pskl : UIP pskl := eqdec_uip _.
+```
+
+makes `derive(equations=yes,eliminator=no)` succeed, and `Print Assumptions`
+on the implementation, on `e_guess_mono_impl_equation_1` AND on
+`e_guess_mono_run_sound` all report **"Closed under the global context"**.
+`pskl` is a first-order inductive over atoms, so its Leibniz equality is
+decidable and UIP is Hedberg's theorem.
+
+Three things to carry into the next session:
+
+- ⭐ **`UIP pskl` ALONE is enough.**  The supply component of the packed
+  index is matched by `eq_refl`, so no UIP on `atoms` is needed — which is
+  fortunate, because metalib's set type carries a sortedness proof and its
+  Leibniz equality is NOT readily decidable.  ⛔ Do not go looking for
+  `UIP supply`; the first attempt at this wasted a cycle on it.
+- ⭐ **`eliminator=no` stays off.**  Only the unfolding equations are
+  needed; the derived eliminator is the part with the larger axiom surface,
+  and §8c.3's induction runs on `e_*_order`, not on the runner.
+- ⚙ Scaling to the other eleven blocks needs the same four lines once, in a
+  file they all import, plus `EqDec`/`NoConfusion` for whatever other index
+  sorts appear (`ptyp`, `exp`, `mode`, `a_sub_mode`, `abind`/`aenv` — each a
+  first-order inductive over atoms, so each is Hedberg again).  ⚠️ Verify
+  `Print Assumptions` after every one; the bar is unchanged.
+
 ⚙ **What this does NOT change.**  Milestone (1)'s soundness corollary and
 its fixed entry supply stay exactly as they are; the decidability corollary
 still composes as §5 says.  And the final statement needs only `Some`-ness —
