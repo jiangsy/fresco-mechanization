@@ -240,7 +240,55 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-14 (c, latest) — ⭐⭐ **COMPLETENESS CAMPAIGN 2a + 2b(part): every runner TEST gains its converse, and the subtyping walk gains the two run-invariants it was missing**
+## 2026-08-14 (d, latest) — ⭐⭐ **THE COMPLETENESS CAMPAIGN IS RESHAPED — induct on the ORDER; and `algo/prop_swap.v` gains the two equivariance lemmas it never had**
+
+Two things, and the first is why the second was written.
+
+**⭐⭐ (2c)+(2d) SHOULD BE ONE INDUCTION, ON THE ORDER** (handoff §8c.3).
+Lifting an `a_*` run to an `e_*` run by structural induction on the `a_*`
+derivation does NOT go through: the `a_*` rule opened its binder at its own
+`α0`, the `e_*` rule must open at the supply's `α`, so the IH has to be
+applied to the TRANSPOSED sub-derivation — which is not a structural
+subterm.  The two textbook repairs (a nominal permutation-parameterised
+motive; a height-indexed mirror of all fourteen judgements) are both
+expensive.  ⭐ The repair is to induct on `e_*_order` instead: the domain
+predicates of `def_order.v` are not merely total but CANONICAL — their
+premises name `supply_fresh S0` explicitly (`def_order.v:429-433`).  So the
+induction is always available (the orders are unconditional), the IHs land
+at the runner's committed names, and the `a_*` derivation is only INVERTED
+and transposed at each level, by ONE transposition, with the existing
+single-swap kit.  ⭐ It also collapses (2c) and (2d): the conclusion can be
+the runner's `Some` directly, and the AGREEMENT the ForallR output test
+needs is available because the order pins the name.
+
+**`algo/prop_swap.v` §16** — the prerequisite that finding exposed:
+`swap_exp` plus `swap_exp_open_var` / `_fresh_id` / `_fvar_notin` /
+`_ftvar_notin`, `lc_exp_swap`, `swap_block_ftv_filter`, and ⭐ `a_pat_swap`
+and `a_typing_swap`.  §5–§12 covered the whole tower below them; these two
+were never written because nothing needed them (`a_pat_complete`
+regenerated its cofinite family with `a_pat_rename_tm`, which went with the
+exists-fresh conversion).  `prop_completeness_pat.v:885` had already
+predicted `a_pat_swap` mirrors the others row by row.  All eight `Closed
+under the global context`; `make coq` green, README 32/32.
+
+⚠️ `swap_exp` is not optional — holding the term fixed fails at the binder
+rows, whose IH would then need `a <> x` for a binder the ROW chooses.
+⚠️ And this is NOT `a_pat_rename_tm` returning: that lemma renamed a type
+variable across a run while `x` stayed put and unconstrained; a
+transposition moves every atom at once, so no side condition on `x` is
+owed.  The ⛔ note at the end of §6 is scoped to its own statement shape.
+
+⚠️ Traps: the boxed-comment quote trap bit again (a quoted phrase inside
+`(* … *)` swallows the terminator); `swap_aenv` is a `map`, so
+`swap_aenv (Ξ ++ Θ)` and `swap_aenv Ξ ++ swap_aenv Θ` are equal only
+PROPOSITIONALLY while the singleton `swap_aenv (x ~ b)` does reduce — fold
+the appends back and `exact` stops working; and a positional
+`[ t1 | … | tn ]` freshness dispatch is wrong at exactly one row, because
+`ftvar_in_exp (exp_abs_anno Aan e)` splits under `simpl` into two
+components where `exp_abs e` gives one.  The file now selects by GOAL SHAPE
+(`swap_notin_split`).
+
+## 2026-08-14 (c) — ⭐⭐ **COMPLETENESS CAMPAIGN 2a + 2b(part): every runner TEST gains its converse, and the subtyping walk gains the two run-invariants it was missing**
 
 `frost/ext_algo/prop_dec.v` (new, 33 lemmas) and
 `frost/ext_algo/prop_run_invariants.v` (new, 8 lemmas) — all

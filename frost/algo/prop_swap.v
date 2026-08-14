@@ -2524,3 +2524,358 @@ Proof. reflexivity. Qed.
 
 
 Unset Implicit Arguments.
+
+(* ##################################################################### *)
+(*  §16  EQUIVARIANCE OF THE TWO TOP JUDGEMENTS — [a_pat] and [a_typing]  *)
+(*                                                                       *)
+(*  ⭐ WHY THESE WERE MISSING, AND WHY THEY ARE WANTED NOW.               *)
+(*  §5–§12 cover the whole algorithmic tower BELOW skeleton inference:    *)
+(*  [a_guess_mono]/[a_guess], the look / solve / extract cluster, the     *)
+(*  assign / unify / consis mutual, [a_sub]/[a_sub_flex], and (§6)        *)
+(*  [a_split].  [a_pat] and [a_typing] were never added because nothing   *)
+(*  needed them — [a_pat_complete] regenerated its cofinite family with   *)
+(*  [a_pat_rename_tm] instead, and that lemma went with the exists-fresh  *)
+(*  conversion (the ⛔ note above).  ⚙ The tree even names the gap:       *)
+(*  [algo/pat/prop_completeness_pat.v:885] already says [a_pat_swap]     *)
+(*  mirrors them row by row -- written while [a_pat] was still cofinite. *)
+(*                                                                       *)
+(*  The consumer is the extractable encoding's COMPLETENESS campaign      *)
+(*  (docs/HANDOFF-extractable-algo-encoding.md §8c.3): the runner's       *)
+(*  domain predicate commits to [supply_fresh S0], so an [a_*] derivation *)
+(*  must be transposed onto that name at each binder before the           *)
+(*  induction's hypothesis applies.                                      *)
+(*                                                                       *)
+(*  ⚠️ THESE ROWS BIND A TERM VARIABLE, so equivariance has to act on the  *)
+(*  SUBJECT too — hence [swap_exp] below.  A statement with the term      *)
+(*  held fixed does NOT work: the binder rows recurse on                  *)
+(*  [open_exp_wrt_exp e (exp_var_f x)], and the hypothesis would then     *)
+(*  need [a <> x] and [b <> x] for a binder the row chooses.  Swapping    *)
+(*  the term makes the row's own binder move with everything else, which  *)
+(*  is what a transposition is for.                                      *)
+(*                                                                       *)
+(*  ⚠️ NOT a resurrection of [a_pat_rename_tm], and the difference is      *)
+(*  exactly the ⛔ note's diagnosis.  That lemma renamed a type variable   *)
+(*  ACROSS a run while the row's own [x] stayed put and unconstrained;    *)
+(*  it needed [b <> x] and nothing bounded [x].  A transposition moves    *)
+(*  EVERY atom at once, so [x] is not left behind and no side condition   *)
+(*  on it is owed.                                                       *)
+(* ##################################################################### *)
+
+Set Implicit Arguments.
+
+(* ===================================================================== *)
+(*  §16.1  The transposition on terms                                     *)
+(* ===================================================================== *)
+
+Fixpoint swap_exp (a b : atom) (e : exp) : exp :=
+  match e with
+  | exp_unit          => exp_unit
+  | exp_var_b n       => exp_var_b n
+  | exp_var_f x       => exp_var_f (swap_atom a b x)
+  | exp_abs e1        => exp_abs (swap_exp a b e1)
+  | exp_abs_anno A e1 => exp_abs_anno (swap_ptyp a b A) (swap_exp a b e1)
+  | exp_app e1 e2     => exp_app (swap_exp a b e1) (swap_exp a b e2)
+  | exp_anno e1 A     => exp_anno (swap_exp a b e1) (swap_ptyp a b A)
+  | exp_freeze e1     => exp_freeze (swap_exp a b e1)
+  end.
+
+Lemma swap_exp_open_rec : forall a b e u k,
+  swap_exp a b (open_exp_wrt_exp_rec k u e)
+  = open_exp_wrt_exp_rec k (swap_exp a b u) (swap_exp a b e).
+Proof.
+  intros a b e; induction e; intros u k; simpl; f_equal; auto.
+  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
+Qed.
+
+Lemma swap_exp_open_var : forall a b e x,
+  swap_exp a b (open_exp_wrt_exp e (exp_var_f x))
+  = open_exp_wrt_exp (swap_exp a b e) (exp_var_f (swap_atom a b x)).
+Proof. intros. apply swap_exp_open_rec. Qed.
+
+(** A term neither atom occurs in — as a TERM variable or inside an
+    annotation — is fixed. *)
+Lemma swap_exp_fresh_id : forall a b e,
+  a `notin` fvar_in_exp e `union` ftvar_in_exp e ->
+  b `notin` fvar_in_exp e `union` ftvar_in_exp e ->
+  swap_exp a b e = e.
+Proof.
+  intros a b e; induction e; simpl; intros Ha Hb; f_equal;
+    solve [ reflexivity
+          | apply IHe; clear - Ha Hb; fsetdec
+          | apply IHe1; clear - Ha Hb; fsetdec
+          | apply IHe2; clear - Ha Hb; fsetdec
+          | apply swap_ptyp_fresh_id; clear - Ha Hb; fsetdec
+          | apply swap_atom_other; clear - Ha Hb; fsetdec ].
+Qed.
+
+Lemma swap_exp_fvar_notin : forall a b e x,
+  x `notin` fvar_in_exp e ->
+  swap_atom a b x `notin` fvar_in_exp (swap_exp a b e).
+Proof.
+  intros a b e; induction e; simpl; intros y Hn;
+    try solve [ fsetdec
+              | apply IHe; clear - Hn; fsetdec
+              | apply notin_union_3; [ apply IHe1 | apply IHe2 ];
+                clear - Hn; fsetdec ].
+  (* [exp_var_f] — the only row with content, and it is INJECTIVITY of the
+     transposition, not a set fact, which is why [fsetdec] cannot have it *)
+  intros Hc. apply AtomSetFacts.singleton_iff in Hc.
+  apply swap_atom_inj in Hc. subst. clear - Hn; fsetdec.
+Qed.
+
+Lemma swap_exp_ftvar_notin : forall a b e x,
+  x `notin` ftvar_in_exp e ->
+  swap_atom a b x `notin` ftvar_in_exp (swap_exp a b e).
+Proof.
+  intros a b e; induction e; simpl; intros y Hn;
+    try solve [ fsetdec
+              | apply IHe; clear - Hn; fsetdec
+              | apply notin_union_3; [ apply IHe1 | apply IHe2 ];
+                clear - Hn; fsetdec
+              | apply notin_union_3;
+                [ apply swap_ptyp_ftv_notin | apply IHe ];
+                clear - Hn; fsetdec
+              | apply notin_union_3;
+                [ apply IHe | apply swap_ptyp_ftv_notin ];
+                clear - Hn; fsetdec ].
+Qed.
+
+(** The check rows' γ-FILTER on the discarded suffix transports.  ⚙ It is
+    not a set fact: the filter quantifies over [dom Ξ], and an atom of
+    [dom (swap Ξ)] is the swap-image of one of [dom Ξ] only by INVOLUTION. *)
+Lemma swap_block_ftv_filter : forall a b (Ξ : aenv) A,
+  (forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_ptyp A) ->
+  forall γ, γ `in` dom (swap_aenv a b Ξ) ->
+            γ `notin` ftvar_in_ptyp (swap_ptyp a b A).
+Proof.
+  intros a b Ξ A Hf γ Hγ.
+  pose proof (swap_ptyp_ftv_notin a b A (swap_atom a b γ)
+                (Hf _ (swap_aenv_dom_in_rev a b Ξ γ Hγ))) as h.
+  rewrite swap_atom_invol in h. exact h.
+Qed.
+
+Lemma lc_exp_swap : forall a b e, lc_exp e -> lc_exp (swap_exp a b e).
+Proof.
+  (* ⚙ [lc_exp_anno] carries an [lc_ptyp] premise, so the uniform closer
+     needs [lc_ptyp_swap]; only the two binder rows are left over. *)
+  intros a b e H; induction H; simpl;
+    try solve [ constructor; auto using lc_ptyp_swap ].
+  - apply lc_exp_abs. intro x.
+    pose proof (H0 (swap_atom a b x)) as Hx.
+    rewrite swap_exp_open_var, swap_atom_invol in Hx. exact Hx.
+  - apply lc_exp_abs_anno; [ apply lc_ptyp_swap; assumption | ].
+    intro x.
+    pose proof (H1 (swap_atom a b x)) as Hx.
+    rewrite swap_exp_open_var, swap_atom_invol in Hx. exact Hx.
+Qed.
+
+(* ===================================================================== *)
+(*  §16.2  [a_pat] and [a_typing]                                         *)
+(* ===================================================================== *)
+
+(** ⚠️ The binder rows' side conditions are a union whose SHAPE varies with
+    the row — [ftvar_in_exp (exp_abs_anno Aan e)] splits under [simpl] into
+    two components where [ftvar_in_exp (exp_abs e)] gives one — so a
+    positional [ [ t1 | … | tn ] ] dispatch is wrong at exactly one row and
+    fails with "incorrect number of goals".  Select by GOAL SHAPE instead. *)
+#[local] Ltac swap_notin_split H :=
+  repeat apply notin_union_3;
+  solve [ apply swap_aenv_dom_notin; clear - H; simpl in H |- *; fsetdec
+        | apply swap_ptyp_ftv_notin;  clear - H; simpl in H |- *; fsetdec
+        | apply swap_exp_ftvar_notin; clear - H; simpl in H |- *; fsetdec
+        | apply swap_exp_fvar_notin;  clear - H; simpl in H |- *; fsetdec ].
+
+Lemma a_pat_swap : forall a b m Θ0 P0 e Q Θ1,
+  {{ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ1 }}a ->
+  {{ (swap_aenv a b Θ0) ⊢ˢ[ m ; (swap_pskl a b P0) ] (swap_exp a b e)
+     ⦂ (swap_pskl a b Q) ⊣ (swap_aenv a b Θ1) }}a.
+Proof.
+  intros a b m Θ0 P0 e Q Θ1 H; induction H; simpl;
+    (* the binder rows all state [x ∉ dom (…) ∪ dom (…) ∪ fvar_in_exp e] *)
+    try (rewrite ?swap_aenv_app in *; rewrite ?swap_pskl_ptyp_to_pskl in * ).
+  - (* AP-Unit *)
+    apply a_pat__unit.
+    exact (proj1 (a_sub_sub_flex_swap a b) _ _ _ _ _ _ _ H).
+  - (* AP-Var (type-bound) *)
+    apply a_pat__var with (A := swap_ptyp a b A).
+    + exact (swap_aenv_binds a b _ _ _ H).
+    + pose proof (proj1 (a_sub_sub_flex_swap a b) _ _ _ _ _ _ _ H0) as h.
+      rewrite ?swap_pskl_ptyp_to_pskl in h. exact h.
+  - (* AP-Var (skeleton-bound) *)
+    apply a_pat__var_skl with (P := swap_pskl a b P).
+    + exact (swap_aenv_binds a b _ _ _ H).
+    + exact (proj1 (a_sub_sub_flex_swap a b) _ _ _ _ _ _ _ H0).
+  - (* AP-Anno *)
+    apply a_pat__anno.
+    pose proof (proj1 (a_sub_sub_flex_swap a b) _ _ _ _ _ _ _ H) as h.
+    rewrite ?swap_pskl_ptyp_to_pskl in h. exact h.
+  - (* AP-Freeze *)
+    apply a_pat__freeze; exact IHa_pat.
+  - (* AP-Abs *)
+    apply a_pat__abs with (x := swap_atom a b x) (Θ1 := swap_aenv a b Θ1)
+      (P := swap_pskl a b P) (Q0 := swap_pskl a b Q0);
+      [ assumption
+      | exact (a_split_swap a b H0)
+      | auto using a_suffix_swap
+      | | ].
+    + rewrite <- swap_aenv_app.
+      swap_notin_split H2.
+    + rewrite <- swap_exp_open_var. exact IHa_pat.
+  - (* AP-AbsAnno *)
+    apply a_pat__abs_anno with (x := swap_atom a b x) (Θ1 := swap_aenv a b Θ1)
+      (Θ2 := swap_aenv a b Θ2) (P := swap_pskl a b P)
+      (Q0 := swap_pskl a b Q0);
+      [ assumption
+      | exact (a_split_swap a b H0)
+      | | auto using a_suffix_swap
+      | | ].
+    + pose proof (a_consis_chk_swap a b _ _ _ _ H1) as h.
+      rewrite ?swap_pskl_ptyp_to_pskl in h. exact h.
+    + rewrite <- swap_aenv_app.
+      swap_notin_split H3.
+    + rewrite <- swap_exp_open_var. exact IHa_pat.
+  - (* AP-AbsCheck *)
+    apply a_pat__abs_check with (x := swap_atom a b x)
+      (Θ1 := swap_aenv a b Θ1);
+      [ auto using a_suffix_swap | | ].
+    + rewrite <- swap_aenv_app.
+      swap_notin_split H0.
+    + rewrite <- swap_exp_open_var. exact IHa_pat.
+  - (* AP-AbsAnnoCheck *)
+    apply a_pat__abs_anno_check with (x := swap_atom a b x)
+      (Θ1 := swap_aenv a b Θ1) (A := swap_ptyp a b A);
+      [ auto using a_suffix_swap | | ].
+    + rewrite <- swap_aenv_app.
+      swap_notin_split H0.
+    + rewrite <- swap_exp_open_var. exact IHa_pat.
+  - (* AP-App *)
+    apply a_pat__app with (P0 := swap_pskl a b P0) (Θ1 := swap_aenv a b Θ1)
+      (P := swap_pskl a b P);
+      [ exact IHa_pat1 | exact IHa_pat2 ].
+Qed.
+
+Lemma a_typing_swap : forall a b m Θ0 P0 e B Θ1,
+  {{ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}a ->
+  {{ (swap_aenv a b Θ0) ⊢[ m ; (swap_pskl a b P0) ] (swap_exp a b e)
+     ⦂ (swap_ptyp a b B) ⊣ (swap_aenv a b Θ1) }}a.
+Proof.
+  intros a b m Θ0 P0 e B Θ1 H; induction H; simpl;
+    try (rewrite ?swap_aenv_app in *;
+         rewrite ?swap_pskl_ptyp_to_pskl in *;
+         rewrite ?swap_ptyp_open in * ).
+  - (* AT-Unit *)
+    apply a_typing__unit.
+    pose proof (proj1 (a_sub_sub_flex_swap a b) _ _ _ _ _ _ _ H) as h.
+    rewrite ?swap_pskl_ptyp_to_pskl in h. exact h.
+  - (* AT-Var *)
+    apply a_typing__var with (A := swap_ptyp a b A).
+    + exact (swap_aenv_binds a b _ _ _ H).
+    + pose proof (proj1 (a_sub_sub_flex_swap a b) _ _ _ _ _ _ _ H0) as h.
+      rewrite ?swap_pskl_ptyp_to_pskl in h. exact h.
+  - (* AT-Anno *)
+    apply a_typing__anno with (A := swap_ptyp a b A)
+      (Θ1 := swap_aenv a b Θ1);
+      [ exact IHa_typing | ].
+    pose proof (proj1 (a_sub_sub_flex_swap a b) _ _ _ _ _ _ _ H0) as h.
+    rewrite ?swap_pskl_ptyp_to_pskl in h. exact h.
+  - (* AT-Freeze *)
+    apply a_typing__freeze with (B := swap_ptyp a b B)
+      (Θ1 := swap_aenv a b Θ1);
+      [ exact IHa_typing | ].
+    pose proof (a_consis_chk_swap a b _ _ _ _ H0) as h.
+    rewrite ?swap_pskl_ptyp_to_pskl in h. exact h.
+  - (* AT-Abs *)
+    (* ⚠️ SEVEN premises — the [uniq (αs ++ Θ1)] filter on [guess^TY]'s block
+       is one of them (it is the premise ext_algo retires; here it must be
+       transported). *)
+    apply a_typing__abs with (x := swap_atom a b x) (Θ1 := swap_aenv a b Θ1)
+      (P := swap_pskl a b P) (Q := swap_pskl a b Q)
+      (αs := swap_aenv a b αs) (A := swap_ptyp a b A);
+      [ assumption
+      | exact (a_split_swap a b H0)
+      | exact (a_guess_mono_swap a b _ _ _ _ H1)
+      | rewrite <- swap_aenv_app; auto using swap_aenv_uniq
+      | auto using a_suffix_swap
+      | | ].
+    + rewrite <- ?swap_aenv_app.
+      swap_notin_split H4.
+    + (* ⚠️ do NOT fold the appends back here: [swap_aenv] is a [map], so
+         [swap_aenv (Ξ ++ Θ)] and [swap_aenv Ξ ++ swap_aenv Θ] are equal only
+         PROPOSITIONALLY, and [exact] works up to conversion.  The singleton
+         [swap_aenv (x ~ b)] does reduce, so it needs no help. *)
+      rewrite <- swap_exp_open_var. exact IHa_typing.
+  - (* AT-AbsAnno *)
+    apply a_typing__abs_anno with (x := swap_atom a b x)
+      (Θ1 := swap_aenv a b Θ1) (Θ2 := swap_aenv a b Θ2)
+      (P := swap_pskl a b P) (Q := swap_pskl a b Q);
+      [ assumption
+      | exact (a_split_swap a b H0)
+      | | auto using a_suffix_swap
+      | | ].
+    + pose proof (a_consis_chk_swap a b _ _ _ _ H1) as h.
+      rewrite ?swap_pskl_ptyp_to_pskl in h. exact h.
+    + rewrite <- swap_aenv_app.
+      swap_notin_split H3.
+    + rewrite <- swap_exp_open_var. exact IHa_typing.
+  - (* AT-AbsCheck STEP — a TYPE binder, and the row's own α moves with it *)
+    apply a_typing__abs_check_step with (α := swap_atom a b α)
+      (Θ1 := swap_aenv a b Θ1) (Ξ := swap_aenv a b Ξ)
+      (A0 := swap_ptyp a b A0);
+      [ auto using a_suffix_swap
+      | rewrite <- swap_aenv_app; auto using swap_aenv_uniq
+      | apply swap_block_ftv_filter; exact H1
+      | | ].
+    + rewrite <- swap_aenv_app.
+      swap_notin_split H2.
+    + exact IHa_typing.
+  - (* AT-AbsCheck BASE — a TERM binder *)
+    apply a_typing__abs_check_base with (x := swap_atom a b x)
+      (Θ1 := swap_aenv a b Θ1) (A0 := swap_ptyp a b A0)
+      (A := swap_ptyp a b A) (B := swap_ptyp a b B) (Ξ := swap_aenv a b Ξ);
+      [ | auto using a_suffix_swap
+      | rewrite <- swap_aenv_app; auto using swap_aenv_uniq
+      | apply swap_block_ftv_filter; exact H2
+      | | ].
+    + pose proof (a_split_swap a b H) as h.
+      rewrite ?swap_pskl_ptyp_to_pskl in h. exact h.
+    + rewrite <- swap_aenv_app.
+      swap_notin_split H3.
+    + rewrite <- swap_exp_open_var. exact IHa_typing.
+  - (* AT-AbsAnnoCheck STEP *)
+    apply a_typing__abs_anno_check_step with (α := swap_atom a b α)
+      (Θ1 := swap_aenv a b Θ1) (Ξ := swap_aenv a b Ξ)
+      (A0 := swap_ptyp a b A0);
+      [ auto using a_suffix_swap
+      | rewrite <- swap_aenv_app; auto using swap_aenv_uniq
+      | apply swap_block_ftv_filter; exact H1
+      | | ].
+    + rewrite <- swap_aenv_app.
+      swap_notin_split H2.
+    + exact IHa_typing.
+  - (* AT-AbsAnnoCheck BASE — ⭐ the row whose result domain is the SPLIT's
+       [A'], not the written annotation (the [paper-gap] at the rule) *)
+    apply a_typing__abs_anno_check_base with (x := swap_atom a b x)
+      (Θ1 := swap_aenv a b Θ1) (Θ2 := swap_aenv a b Θ2)
+      (A0 := swap_ptyp a b A0) (A := swap_ptyp a b A)
+      (B := swap_ptyp a b B) (Ξ := swap_aenv a b Ξ);
+      [ | | auto using a_suffix_swap
+      | rewrite <- swap_aenv_app; auto using swap_aenv_uniq
+      | apply swap_block_ftv_filter; exact H3
+      | | ].
+    + pose proof (a_split_swap a b H) as h.
+      rewrite ?swap_pskl_ptyp_to_pskl in h. exact h.
+    + pose proof (a_consis_chk_swap a b _ _ _ _ H0) as h.
+      rewrite ?swap_pskl_ptyp_to_pskl in h. exact h.
+    + rewrite <- swap_aenv_app.
+      swap_notin_split H4.
+    + rewrite <- swap_exp_open_var. exact IHa_typing.
+  - (* AT-App — the argument runs TWICE, the second time at the function's
+       inferred domain *)
+    apply a_typing__app with (P := swap_pskl a b P) (Θ1 := swap_aenv a b Θ1)
+      (Θ2 := swap_aenv a b Θ2) (A := swap_ptyp a b A)
+      (A' := swap_ptyp a b A');
+      [ exact (a_pat_swap a b H) | exact IHa_typing1 | ].
+    pose proof IHa_typing2 as h. rewrite ?swap_pskl_ptyp_to_pskl in h. exact h.
+Qed.
+
+Unset Implicit Arguments.

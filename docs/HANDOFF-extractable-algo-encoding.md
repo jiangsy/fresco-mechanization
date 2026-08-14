@@ -1403,16 +1403,8 @@ error names the level-75 alternatives rather than the missing notation.
     ⚙ `aenv_defs_mono` does NOT suffice on its own: it constrains
     `abind_flex_mono_def` payloads only, and `AP-Var` needs `lc_ptyp A` for
     an `abind_var_typ A` entry.
-- **(2c) The a→e LIFT** (independent of the runner; parallelisable with 2b):
-  every `a_*` run is an `e_*` run at any supply covering its inputs.  This is
-  `algo/prop_swap.v` §13b's transposition argument promoted to all fourteen
-  judgements — equivariance, never a one-way rename.
-- **(2d) RUNNER completeness against the e-relation — the crux.**  ⚠️ It is
-  AGREEMENT, not mere `Some`-ness: the ForallR output-equality test
-  (`pskl_eqb (sb_out r) (open B α)`) and the abs rows' payload checks make
-  `Some` alone insufficient.  The rule-overlap analysis is where the dispatch
-  orders earn their keep (§8b.1's ForallR-before-ForallL; LE-Var/Absent
-  priority; consis's type.ml order; the STEP/BASE readback split).
+- **(2c)+(2d) — ⭐⭐ RESHAPED 2026-08-14.  See §8c.3: they should be ONE
+  induction, and it should run on the ORDER, not on either derivation.**
 - **(2e) Compose**, then the two-line decidability corollary of §5, a
   `README.v` entry, and `docs/PAPER-GAPS.md` §7.3 updated to
   "discharged end-to-end".
@@ -1421,3 +1413,99 @@ error names the level-75 alternatives rather than the missing notation.
 reshape runners.**  If a runner's test turns out genuinely incomplete-able —
 a test the relation does not guarantee — STOP and flag it; do not silently
 weaken the test.
+
+### 8c.3 ⭐⭐ RESHAPING (2c)+(2d) — induct on the ORDER, not on either derivation
+
+The plan §8c.2 inherited splits the work as: (2c) lift an `a_*` run to an
+`e_*` run at any covering supply, then (2d) turn an `e_*` derivation into a
+runner `Some`.  Working (2b) turned up an obstruction to (2c) as stated and,
+with it, a better decomposition.  ⛔ **Do not start (2c) in the three-step
+shape; start it in the shape below.**
+
+**THE OBSTRUCTION.**  (2c) by structural induction on the `a_*` derivation
+does not go through at a binder row.  The `a_*` rule opened its binder at
+some `α0` of its own choosing; the `e_*` rule must open at an `α` the SUPPLY
+hands out.  So the IH has to be applied to the *transposed* sub-derivation
+`(α0 α)·D` — and that is not a structural subterm of `D`, so `induction`
+never offers an IH for it.  The two standard repairs are both expensive:
+
+- a nominal-style motive quantified over a PERMUTATION, which needs a
+  `list (atom * atom)` action defined and proved an automorphism over every
+  sort and every one of the fourteen judgements; or
+- a height-indexed mirror of all fourteen judgements (the `ad_pat_sub_fuel`
+  idiom) so the induction can run on the height.
+
+**THE REPAIR — induct on `e_*_order`.**  ⭐ The domain predicates of
+`def_order.v` are not merely total, they are **CANONICAL**: their premises
+name `supply_fresh S0` explicitly rather than quantifying over fresh atoms.
+`e_sub_order`'s ForallR premise reads
+
+    e_sub_order (add (supply_fresh S0) S0) a_sub_mode_ty mode_tc
+      (open_pskl_wrt_pskl B (pskl_var_f (supply_fresh S0)))
+      ((supply_fresh S0 ~ abind_tvar) ++ Θ0) P
+
+(`def_order.v:429-433`; ForallL and the flex walk are the same, the latter
+drawing two names in sequence).  Three consequences, and together they are
+the whole reason to switch:
+
+- ⭐ **The induction is always available.**  `e_sub_order_total` and
+  `e_consis_order_total` are UNCONDITIONAL (§8b.5–§8b.6), and `e_pat_order`
+  / `e_typing_order` need no hypotheses either (§8b.7), so the order can be
+  produced for any input and inducted on.
+- ⭐ **The IHs land at the runner's COMMITTED names.**  The `a_*`
+  derivation is then only INVERTED at each step, never inducted on — so it
+  may be freely transposed before the IH is applied, by ONE transposition,
+  with the existing single-swap equivariance lemmas.  No permutation layer,
+  no height mirror.  This is exactly §13b's argument, applied once per
+  level instead of globally.
+- ⭐ **(2c) and (2d) collapse.**  Inducting on the order, the conclusion can
+  be the runner's directly — "this branch does not return `None`" — so
+  there is no intermediate `e_*` derivation to build and then re-consume,
+  and the AGREEMENT the ForallR output test
+  (`pskl_eqb (sb_out r) (open B α)`) needs is available because the order
+  pins the name the recursive result is compared against.
+
+⚙ **Statement shape to aim at** (type inference; the others mirror it):
+
+    a_typing m Θ0 P0 e B Θ1 ->
+    <supply covers the inputs> ->
+    exists r, e_typing_run S0 m Θ0 P0 e = Some r
+
+by induction on `e_typing_order S0 m Θ0 P0 e`, inverting the `a_typing`
+derivation at each level and transposing it onto the order's committed
+names.  ⚠️ `e_typing_run` fixes its domain argument to the totality proof,
+so the proof must go through `Equations`' unfolding equations (`simp`),
+which compute a clause from the SET arguments and are insensitive to which
+domain proof was supplied.
+
+✅ **The one real prerequisite is now SUPPLIED** (2026-08-14):
+`algo/prop_swap.v` §16 adds `swap_exp` and the two missing equivariance
+lemmas, `a_pat_swap` and `a_typing_swap`, all `Closed under the global
+context`.  §5–§12 had covered the whole tower BELOW them
+(`a_guess_mono`/`a_guess`, the look/solve/extract cluster, the consis
+mutual, `a_sub`/`a_sub_flex`, `a_split`) and nothing else was left.
+⚙ The tree had already anticipated the first —
+`algo/pat/prop_completeness_pat.v:885` says `a_pat_swap` mirrors them row
+by row, written when `a_pat` was still cofinite and it was not yet needed.
+
+⚠️ **`swap_exp` is not optional, and "hold the term fixed" does not work.**
+These rows bind a TERM variable, so the transposition has to act on the
+subject too.  A statement with the term held fixed fails at the binder
+rows: they recurse on `open_exp_wrt_exp e (exp_var_f x)`, so the induction
+hypothesis would need `a <> x` and `b <> x` for a binder the ROW chooses.
+Swapping the term makes the row's own binder move with everything else,
+which is what a transposition is for.
+
+⚠️ **This is NOT a resurrection of `a_pat_rename_tm`**, and the difference
+is exactly the ⛔ note's own diagnosis (`prop_swap.v`, end of §6).  That
+lemma renamed a type variable ACROSS a run while the row's `x` stayed put
+and unconstrained, so it needed `b <> x` with nothing bounding `x`.  A
+transposition moves EVERY atom at once, so `x` is not left behind and no
+side condition on it is owed.  ⚙ Read the ⛔ note as scoped to its own
+statement shape, not as a blanket obstruction.
+
+⚙ **What this does NOT change.**  Milestone (1)'s soundness corollary and
+its fixed entry supply stay exactly as they are; the decidability corollary
+still composes as §5 says.  And the final statement needs only `Some`-ness —
+agreement is an INTERNAL obligation of the induction (the ForallR and abs
+output tests), not part of what decidability consumes.
