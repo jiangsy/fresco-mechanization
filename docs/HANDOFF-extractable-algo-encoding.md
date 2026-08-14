@@ -1580,11 +1580,32 @@ carries only the exemplar):
   mutual block's nested-match clauses (the log shows one for the
   `pskl_tophole` / `pskl_tophole` row).  ⚙ The cause is structural, not
   deep: `#[tactic="consis_impl_tac"]` applies to EVERY obligation, and that
-  tactic was written for the SOUNDNESS obligations — it has no case for an
-  unfolding equation, so the equation goals fall through unsolved.  ⭐ The
-  fix to try first is to give each `*_impl_tac` an equation-goal branch (or
-  a fallback to `Equations`' own equation solver) rather than to weaken
-  anything.
+  tactic was written for the SOUNDNESS obligations — it opens with
+  `intros; inversion <the order>`, which destroys an equation goal — so the
+  equation obligations fall through unsolved.
+
+  ⚙ **Two attempts made, and what they establish** (so the next session does
+  not repeat them):
+
+  1. `Equations.CoreTactics.solve_equation` **does not exist**.  What the
+     installed `CoreTactics` exports is `equations_simpl`,
+     `equations_simplify` and `simpl_equations`.
+  2. Giving `consis_impl_tac` a leading
+     `first [ solve [ Equations.CoreTactics.equations_simpl ] | … ]` branch
+     changes the failure but does not fix it.  The surviving goal is, e.g.
+
+         e_unify_impl S0 nil α β HD H = None
+
+     ⭐ which says what is actually needed: the runner recurses ON THE DOMAIN
+     PROOF, so nothing unfolds until `H` is ELIMINATED.  The equation branch
+     has to `depelim` the order hypothesis (`e_assign_order` /
+     `e_unify_order` / `e_consis_order`) and only then reduce — which is
+     exactly where the `UIP pskl` instance gets used, and why
+     `Set Equations With UIP` is the enabling ingredient rather than a
+     formality.  ⚙ It also explains the split measured above:
+     `def_guess_impl.v`, `def_look_impl.v` and `def_solve_impl.v` needed
+     nothing extra because their clauses reduce WITHOUT eliminating the
+     domain proof.
 - ⚪ `def_extract_impl.v`, `def_sub_impl.v`, `def_pat_impl.v` and
   `def_typing_impl.v` were never reached — the build stops at the first
   failure — so their status is UNKNOWN, not good.
