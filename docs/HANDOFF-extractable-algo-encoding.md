@@ -1667,6 +1667,46 @@ leaves their `.vo`s stale, and the failure reads "makes inconsistent
 assumptions over library …", which looks like an axiom problem and is not.
 Rebuild through `make coq`, never file-by-file with `coqc`.
 
+### 8c.5 ⭐⭐⭐ THE TECHNIQUE IS VALIDATED AT THE ENTRY POINT
+
+With `def_typing_impl.v` flipped (§8c.4), `simp e_typing_impl` exposes the
+runner's branch in a proof goal.  Measured on AT-Unit — the goal after
+`simp`, verbatim and abridged only in the obligation names:
+
+```coq
+match Sumbool.sumbool_of_bool (degree_pskl_ck 0 P0 && defs_mono_ck Θ0) with
+| left e =>
+    match e_sub_impl S0 a_sub_mode_ty m P0 Θ0 pskl_unit … with
+    | Some (exist _ r Hr) =>
+        match pskl_readback (sb_out r) with
+        | Some (exist _ A HA) =>
+            Some (exist _ {| ty_supply := sb_supply r;
+                             ty_ctx    := sb_ctx r;
+                             ty_out    := A |} …)
+        | None => None end
+    | None => None end
+| right _ => None end
+```
+
+⭐⭐ **So the completeness obligation is concrete now, and this session's
+2a/2b lemmas are exactly its ingredients.**  To show this branch is not
+`None`, in order:
+
+1. `degree_pskl_ck 0 P0 && defs_mono_ck Θ0 = true` — `lc_pskl_ck_complete`
+   and `defs_mono_ck_complete` (prop_dec.v §4), fed by the input's local
+   closure and by the def-payload discipline (prop_run_invariants.v §1/§3).
+2. `e_sub_impl … = Some r` — the sub-call.
+3. `pskl_readback (sb_out r) = Some …` — `pskl_readback_complete`
+   (prop_dec.v §6), fed by "the subtyping run's output is a `⌈⌉`-image",
+   which is the one 2b item still open.
+
+⚠️ **And it settles the priority of the two unflipped blocks.**  Step 2
+calls `e_sub_impl` DIRECTLY, so `def_sub_impl.v`'s equations are on the
+critical path — the determinism route can spare the consistency block
+(which `e_sub` reaches only through its own rules) but not the subtyping
+walk.  ⭐ Getting mutual `Equations` blocks to derive is therefore the next
+task, not an optional cleanup.
+
 ⚙ **What this does NOT change.**  Milestone (1)'s soundness corollary and
 its fixed entry supply stay exactly as they are; the decidability corollary
 still composes as §5 says.  And the final statement needs only `Some`-ness —
