@@ -240,7 +240,21 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-13/14 (latest) — ⭐⭐⭐ **THE TERMINATION CAMPAIGN: `e_sub_order_total` — the subtyping walk terminates, one hypothesis from decidability**
+## 2026-08-13/14 (latest) — ⭐⭐⭐ **THE TERMINATION CAMPAIGN CLOSED: `e_sub_order_total` UNCONDITIONAL — the subtyping walk and its whole call graph terminate**
+
+**Later on 2026-08-14 the one hypothesis was DISCHARGED**: the consistency
+block's totality (`e_consis_order_total`) is proved by the measure
+`(W, ndef, size, walk)` with `W := holes + undefined-flexibles` — holes are
+the only source of new flexibles (Assign-SolveM's guess block is exactly the
+pattern's holes), so any run that grows the context strictly consumed W; the
+W-preservation inequality `nundef Θ' + ndef Θ' ≤ nundef Θ + ndef Θ + holes`
+chains at the Arrow row and, with ndef-monotonicity, decides the tie/strict
+case split.  ⚙ §7.4's prediction that the worklist's `num_etvar`/`split_depth`
+machinery would be needed was pessimistic — holes-as-fuel replaces
+split-depth, because the guess consumes the whole pattern shape at once.
+`e_sub_order_total` now carries NO hypothesis.  The §7.3 finding is FILED in
+PAPER-GAPS.md with its mechanized status.  Remaining for TODO (2): phase 4's
+runners only, unblocked end to end.  The original entry:
 
 **`make coq` exit 0; zero `Admitted`/`Axiom`; every named theorem `Print
 Assumptions`-closed.**  The paper's undischarged decidability argument

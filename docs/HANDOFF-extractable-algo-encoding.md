@@ -1136,17 +1136,61 @@ everything below is axiom-free, zero admits, `make coq` green.
           lc_pskl P -> lc_pskl P0 -> aenv_defs_mono Θ0 ->
           e_sub_order S0 NM M P0 Θ0 P
 
-⛔ **WHAT REMAINS OF THE CAMPAIGN — the ONE hypothesis.**  The consistency
-block's totality is unification-style termination and NOT routine:
-`e_assign__solve_m` trades one undefined flexible for a guess block of
-fresh ones, and `e_assign__assign`/`e_unify__flex_assign` substitute a
-defined entry away and re-enter `e_consis` at a GROWN pattern (the
-worklist prior art's `num_etvar`/`split_depth` components, §7.4).  Its
-order predicates are DEFINED (def_order.v §5) and its defs-mono
-preservation is proved; only `e_consis_order`'s inhabitation is owed.
-Discharging it turns `e_sub_order_total`'s hypothesis into a theorem —
-and with it, decidability of the subtyping walk.  Phase 4 (the runners)
-is unblocked for everything below the consistency block already.
+### 8b.6 ✅ THE HYPOTHESIS IS DISCHARGED — the consistency block terminates, and `e_sub_order_total` is UNCONDITIONAL (2026-08-14, later)
+
+The "NOT routine" campaign closed in one day, because the right fuel
+turned out to be visible in the rules (`prop_termination.v` §14–§16,
+axiom-free):
+
+    W := nholes(pattern) + nholes(subject) + nundef(context)
+
+⭐ **W never increases, and creating a def strictly consumes it** — holes
+are the ONLY source of new flexibles (`e_guess_mono_block_nundef`:
+Assign-SolveM's guess block is EXACTLY the pattern's holes), monotype
+substitution creates neither a hole nor a flexible
+(`nholes_pskl_subst_holefree`, and `ptyp` has no hole constructor at
+all), and the unify solutions are variables.  Stated in the addition
+form that CHAINS at the Arrow row:
+
+    e_consis_wpres :
+      nundef Θ' + ndef Θ' <= nundef Θ + ndef Θ + nholes P0 + nholes P
+
+together with ndef-monotonicity (`e_consis_ndef_mono`).  So at Arrow's
+second premise (which runs at the first's OUTPUT context): either the
+domain's run created a def — then W strictly dropped and the lex
+restarts — or it created none, ndef ties by monotonicity, and SIZE pays.
+The walks consume `ndef` at the def-crossings (the crossed entry is
+dropped below) and `|Θ|` elsewhere; a variable leaving the skeleton
+inputs pays by size on the way into a walk.  Full lex:
+
+    ( W , ndef Θ , size P0 + size P , |Θ|-walk )
+
+assembled as `e_consis_block_order_total_n` (three conjuncts, nested
+`lt_wf_ind`, the walks proved inside the ndef level — the §13/§17
+template).  Wrapped:
+
+    e_consis_order_total :
+      lc P0 -> lc P -> aenv_defs_mono Θ -> e_consis_order Δ1 Δ2 S Θ P0 P
+
+and §17's hypothesis was restated in exactly that shape and DISCHARGED:
+
+    e_sub_order_total : forall S0 NM M P0 Θ0 P,
+      lc_pskl P -> lc_pskl P0 -> aenv_defs_mono Θ0 ->
+      e_sub_order S0 NM M P0 Θ0 P
+
+**No hypothesis left.**  The termination of the subtyping side — the
+walk plus its whole call graph (consistency, collection, solving,
+extraction, guessing) — is a closed, axiom-free theorem.  ⚙ The §7.4
+prediction that the worklist's `num_etvar`/`split_depth` machinery would
+be needed was PESSIMISTIC: holes-as-fuel replaces split-depth entirely,
+because Frost's guess consumes the whole pattern shape at once instead
+of splitting incrementally.
+
+⛔ **WHAT REMAINS OF TODO (2) — phase 4 only**: the runners (`Equations
+… by struct` bodies + soundness) for the thirteen judgements beyond
+`guess^TY`, now unblocked END TO END, with every domain predicate
+inhabited on the inputs the drivers will call them at.  The PAPER-GAPS
+entry for §7.3 is FILED (2026-08-14) and records the mechanized status.
 
 ⚙ Traps paid for in the assembly, for whoever extends it: metalib's
 `x ~ a` is `one (x, a)` — a DEFINITION — so `Forall`/`ndef` patterns see

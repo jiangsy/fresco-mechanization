@@ -1204,7 +1204,469 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §13  ⭐⭐⭐ TOTALITY OF THE SUBTYPING WALK                               *)
+(*  §14  The consistency block's fuel: HOLES and UNDEFINED FLEXIBLES      *)
+(*                                                                        *)
+(*  The block's danger cycles are (i) the Arrow row, whose second premise *)
+(*  runs at the first's OUTPUT context — which Assign-SolveM may have     *)
+(*  GROWN — and (ii) the flexible walks, which substitute a defined       *)
+(*  entry away and re-enter [e_consis] at a BIGGER pattern.  What pays    *)
+(*  for both is one quantity:                                             *)
+(*                                                                        *)
+(*      W := nholes(pattern) + nholes(subject) + nundef(context)          *)
+(*                                                                        *)
+(*  ⭐ W NEVER INCREASES, because holes are the ONLY source of new         *)
+(*  flexibles — Assign-SolveM's guess block is exactly the pattern's      *)
+(*  holes ([e_guess_mono_block_nundef]), monotype substitution creates    *)
+(*  neither a hole nor a flexible, and the unify solutions are            *)
+(*  variables.  And any run that CREATES a def must have DEFINED an       *)
+(*  undefined flexible, so W then strictly DROPS (§15's inequality) —    *)
+(*  which is what pays for the Arrow row's grown output context.  The    *)
+(*  def-crossings of the walks are paid by [ndef] (each crossing drops   *)
+(*  the entry from the sub-run's context), and everything else by size   *)
+(*  and the walk position.                                                *)
+(* ===================================================================== *)
+
+Fixpoint nholes_pskl (P : pskl) : nat :=
+  match P with
+  | pskl_hole        => 1
+  | pskl_arrow P1 P2 => nholes_pskl P1 + nholes_pskl P2
+  | pskl_all_syn P1  => nholes_pskl P1
+  | pskl_tophole P1  => nholes_pskl P1
+  | _                => 0
+  end.
+
+Fixpoint nundef_aenv (Θ : aenv) : nat :=
+  match Θ with
+  | nil                            => 0
+  | (_, abind_flex_mono) :: Θ'     => 1 + nundef_aenv Θ'
+  | _ :: Θ'                        => nundef_aenv Θ'
+  end.
+
+Lemma nundef_aenv_app : forall Θ1 Θ2,
+  nundef_aenv (Θ1 ++ Θ2) = nundef_aenv Θ1 + nundef_aenv Θ2.
+Proof.
+  induction Θ1 as [ | [x b] Θ1' IH ]; intros; simpl; [ auto | ].
+  destruct b; rewrite IH; lia.
+Qed.
+
+(** [ptyp] has no hole constructor at all, so any read-back is hole-free. *)
+Lemma nholes_ptyp_to_pskl : forall A, nholes_pskl (ptyp_to_pskl A) = 0.
+Proof. induction A; simpl; lia. Qed.
+
+Lemma nholes_pskl_open_rec_var : forall P β k,
+  nholes_pskl (open_pskl_wrt_pskl_rec k (pskl_var_f β) P) = nholes_pskl P.
+Proof.
+  induction P; intros β k; simpl;
+    try reflexivity;
+    try (match goal with
+         | |- context [ lt_eq_lt_dec ?a ?b ] =>
+             destruct (lt_eq_lt_dec a b) as [[?|?]|?]
+         end; reflexivity);
+    first [ solve [ auto ] | f_equal; auto ].
+Qed.
+
+Corollary nholes_pskl_open : forall P β,
+  nholes_pskl (open_pskl_wrt_pskl P (pskl_var_f β)) = nholes_pskl P.
+Proof. intros. apply nholes_pskl_open_rec_var. Qed.
+
+Lemma nholes_pskl_subst_holefree : forall P Q β,
+  nholes_pskl Q = 0 ->
+  nholes_pskl (subst_pskl_in_pskl Q β P) = nholes_pskl P.
+Proof.
+  induction P; intros * Hz; simpl;
+    try (match goal with |- context [ if ?c then _ else _ ] => destruct c end);
+    repeat match goal with
+    | IH : context [ subst_pskl_in_pskl ] |- _ => rewrite IH by assumption
+    end;
+    simpl; lia.
+Qed.
+
+(** ⭐ The guess block is EXACTLY the pattern's holes — the accounting fact
+    that makes W conservative at Assign-SolveM. *)
+Lemma e_guess_mono_block_nundef : forall S0 P S1 Ξ A,
+  e_guess_mono S0 P S1 Ξ A -> nundef_aenv Ξ = nholes_pskl P.
+Proof.
+  intros * H; induction H; simpl;
+    repeat rewrite nundef_aenv_app;
+    repeat rewrite nholes_pskl_open in *;
+    lia.
+Qed.
+
+(* ===================================================================== *)
+(*  §15  The two run-invariants the Arrow row needs                       *)
+(* ===================================================================== *)
+
+(** Defined flexibles never disappear along a run — every row re-attaches
+    what it stripped, and Assign-SolveM only adds. *)
+Lemma e_assign_unify_consis_ndef_mono :
+  (forall S0 Θ Ξ α P S1 Θ',
+     {{ S0 ↝ S1 ⊨ Θ ⊲[ Ξ ] α ≔ P ⊣ Θ' }}e ->
+     ndef_aenv Ξ + ndef_aenv Θ <= ndef_aenv Θ') /\
+  (forall S0 Θ α β S1 Θ',
+     {{ S0 ↝ S1 ⊨ Θ ⊲ α ≈ᵘ β ⊣ Θ' }}e ->
+     ndef_aenv Θ <= ndef_aenv Θ') /\
+  (forall Δ1 Δ2 S0 Θ P0 P Q S1 Θ',
+     {{ S0 ↝ S1 ⊨ Θ ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ' }}e ->
+     ndef_aenv Θ <= ndef_aenv Θ').
+Proof.
+  apply (e_assign_unify_consis_mutind
+           (fun S0 Θ Ξ α P S1 Θ' _ =>
+              ndef_aenv Ξ + ndef_aenv Θ <= ndef_aenv Θ')
+           (fun S0 Θ α β S1 Θ' _ => ndef_aenv Θ <= ndef_aenv Θ')
+           (fun Δ1 Δ2 S0 Θ P0 P Q S1 Θ' _ =>
+              ndef_aenv Θ <= ndef_aenv Θ'));
+    intros; simpl in *;
+    repeat rewrite ndef_aenv_app in *; simpl in *;
+    (* Flex-Flex-Skip' carries its binding as a disjunction *)
+    repeat match goal with
+    | H : _ \/ _ |- _ => destruct H
+    | H : exists _, _ |- _ => destruct H
+    end; subst; simpl in *;
+    lia.
+Qed.
+
+Corollary e_consis_ndef_mono : forall Δ1 Δ2 S0 Θ P0 P Q S1 Θ',
+  {{ S0 ↝ S1 ⊨ Θ ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ' }}e ->
+  ndef_aenv Θ <= ndef_aenv Θ'.
+Proof.
+  intros. eapply (proj2 (proj2 e_assign_unify_consis_ndef_mono)); eassumption.
+Qed.
+
+(** ⭐ W-PRESERVATION, in the addition form that CHAINS at the Arrow row:
+    what a run leaves behind (its undefs plus its defs) is bounded by what
+    it was given plus the holes of its skeleton inputs.  Read off it: a run
+    that created a def (ndef up by d) consumed at least d undefs-or-holes —
+    so W strictly drops whenever the context grew. *)
+Lemma e_assign_unify_consis_wpres :
+  (forall S0 Θ Ξ α P S1 Θ',
+     {{ S0 ↝ S1 ⊨ Θ ⊲[ Ξ ] α ≔ P ⊣ Θ' }}e ->
+     nundef_aenv Θ' + ndef_aenv Θ'
+     <= nundef_aenv (Ξ ++ Θ) + ndef_aenv (Ξ ++ Θ) + nholes_pskl P) /\
+  (forall S0 Θ α β S1 Θ',
+     {{ S0 ↝ S1 ⊨ Θ ⊲ α ≈ᵘ β ⊣ Θ' }}e ->
+     nundef_aenv Θ' + ndef_aenv Θ' <= nundef_aenv Θ + ndef_aenv Θ) /\
+  (forall Δ1 Δ2 S0 Θ P0 P Q S1 Θ',
+     {{ S0 ↝ S1 ⊨ Θ ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ' }}e ->
+     nundef_aenv Θ' + ndef_aenv Θ'
+     <= nundef_aenv Θ + ndef_aenv Θ + nholes_pskl P0 + nholes_pskl P).
+Proof.
+  apply (e_assign_unify_consis_mutind
+           (fun S0 Θ Ξ α P S1 Θ' _ =>
+              nundef_aenv Θ' + ndef_aenv Θ'
+              <= nundef_aenv (Ξ ++ Θ) + ndef_aenv (Ξ ++ Θ) + nholes_pskl P)
+           (fun S0 Θ α β S1 Θ' _ =>
+              nundef_aenv Θ' + ndef_aenv Θ' <= nundef_aenv Θ + ndef_aenv Θ)
+           (fun Δ1 Δ2 S0 Θ P0 P Q S1 Θ' _ =>
+              nundef_aenv Θ' + ndef_aenv Θ'
+              <= nundef_aenv Θ + ndef_aenv Θ
+                 + nholes_pskl P0 + nholes_pskl P));
+    intros; simpl in *;
+    (* Assign-SolveM: the guess block is the pattern's holes, and flex-only *)
+    repeat match goal with
+    | Hg : e_guess_mono _ _ _ _ _ |- _ =>
+        pose proof (e_guess_mono_block_nundef Hg);
+        pose proof (all_flex_mono_ndef (e_guess_mono_block_flex Hg));
+        clear Hg
+    end;
+    (* the substitution on a VARIABLE subject has already reduced to the
+       bare comparison — resolve it so its hole count computes *)
+    repeat match goal with
+    | H : context [ nholes_pskl (if ?c then _ else _) ] |- _ => destruct c
+    | |- context [ nholes_pskl (if ?c then _ else _) ] => destruct c
+    end;
+    (* the substituted skeletons keep their hole counts *)
+    repeat rewrite nholes_pskl_subst_holefree in *
+      by (auto using nholes_ptyp_to_pskl);
+    repeat rewrite nholes_ptyp_to_pskl in *;
+    repeat rewrite nholes_pskl_open in *;
+    repeat rewrite nundef_aenv_app in *;
+    repeat rewrite ndef_aenv_app in *;
+    simpl in *;
+    (* Flex-Flex-Skip' carries its binding as a disjunction *)
+    repeat match goal with
+    | H : _ \/ _ |- _ => destruct H
+    | H : exists _, _ |- _ => destruct H
+    end; subst; simpl in *;
+    lia.
+Qed.
+
+Corollary e_consis_wpres : forall Δ1 Δ2 S0 Θ P0 P Q S1 Θ',
+  {{ S0 ↝ S1 ⊨ Θ ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ' }}e ->
+  nundef_aenv Θ' + ndef_aenv Θ'
+  <= nundef_aenv Θ + ndef_aenv Θ + nholes_pskl P0 + nholes_pskl P.
+Proof.
+  intros. eapply (proj2 (proj2 e_assign_unify_consis_wpres)); eassumption.
+Qed.
+
+(* ===================================================================== *)
+(*  §16  ⭐⭐⭐ TOTALITY OF THE CONSISTENCY BLOCK                            *)
+(*                                                                        *)
+(*  The lex measure ( W , ndef Θ , size P0 + size P , |Θ|-walk ), with    *)
+(*  W := nholes P0 + nholes P + nundef Θ.  Which component each rule      *)
+(*  consumes:                                                             *)
+(*                                                                        *)
+(*    Arrow p2         W, or size: if the domain's run created a def, W   *)
+(*                     strictly dropped (§15's inequality — creating a    *)
+(*                     def costs an undef or a hole); if it created none, *)
+(*                     ndef ties by monotonicity and SIZE pays            *)
+(*    structural rows  size                                               *)
+(*    Flex/FlexL/R     size (a variable leaves the skeleton inputs)       *)
+(*    Assign / FF-Assign  ndef (the crossed def is dropped below)         *)
+(*    walk rows        |Θ| (every row peels an entry)                     *)
+(*    Assign-SolveM    the guess, total at an lc pattern (§11)            *)
+(* ===================================================================== *)
+
+Lemma e_consis_block_order_total_n :
+  forall n1 n2,
+  (forall n4 S Θ α β,
+     nundef_aenv Θ <= n1 ->
+     ndef_aenv Θ <= n2 ->
+     length Θ <= n4 ->
+     aenv_defs_mono Θ ->
+     e_unify_order S Θ α β) /\
+  (forall n4 S Θ Ξ α P,
+     nholes_pskl P + nundef_aenv (Ξ ++ Θ) <= n1 ->
+     ndef_aenv (Ξ ++ Θ) <= n2 ->
+     length Θ <= n4 ->
+     lc_pskl P -> aenv_defs_mono (Ξ ++ Θ) ->
+     e_assign_order S Θ Ξ α P) /\
+  (forall n3 Δ1 Δ2 S Θ P0 P,
+     nholes_pskl P0 + nholes_pskl P + nundef_aenv Θ <= n1 ->
+     ndef_aenv Θ <= n2 ->
+     size_pskl P0 + size_pskl P <= n3 ->
+     lc_pskl P0 -> lc_pskl P -> aenv_defs_mono Θ ->
+     e_consis_order Δ1 Δ2 S Θ P0 P).
+Proof.
+  intros n1; induction n1 as [n1 IH1] using lt_wf_ind;
+    intros n2; induction n2 as [n2 IH2] using lt_wf_ind.
+  (* ------------------------------------------------------------------ *)
+  (*  The unify walk — peels the context, and consumes a def at          *)
+  (*  Flex-Flex-Assign.                                                  *)
+  (* ------------------------------------------------------------------ *)
+  assert (Huni : forall n4 S Θ α β,
+             nundef_aenv Θ <= n1 -> ndef_aenv Θ <= n2 -> length Θ <= n4 ->
+             aenv_defs_mono Θ ->
+             e_unify_order S Θ α β).
+  { intros n4; induction n4 as [n4 IH4] using lt_wf_ind;
+      intros * Hw Hnd Hlen Hdm.
+    constructor; intros; subst; simpl in *;
+      repeat match goal with
+      | H : Forall entry_def_mono (_ :: _) |- _ =>
+          inversion H; subst; clear H
+      end.
+    - (* Flex-Flex-Assign: the crossed def is consumed — the consis
+         conjunct at ndef − 1, on two hole-free read-backs *)
+      match goal with
+      | He : entry_def_mono (_, abind_flex_mono_def _) |- _ =>
+          unfold entry_def_mono in He; simpl in He
+      end.
+      unshelve eapply (proj2 (proj2 (IH2 (ndef_aenv Θ0) ltac:(lia)))
+                         (size_pskl _ + size_pskl _));
+        try apply le_n;
+        try assumption;
+        try solve [ repeat rewrite nholes_ptyp_to_pskl; simpl; lia ];
+        try solve [ apply ptyp_to_pskl_lc;
+                    match goal with
+                    | |- context [ if ?c then _ else _ ] => destruct c
+                    end;
+                    auto using mono_ptyp_lc; constructor ].
+    - (* Flex-Flex-Skip *)
+      apply (IH4 (length Θ0)); try assumption; try lia.
+    - (* Flex-Flex-Skip', rigid *)
+      apply (IH4 (length Θ0)); try assumption; try lia.
+    - (* Flex-Flex-Skip', term (typ) *)
+      apply (IH4 (length Θ0)); try assumption; try lia.
+    - (* Flex-Flex-Skip', term (skl) *)
+      apply (IH4 (length Θ0)); try assumption; try lia. }
+  (* ------------------------------------------------------------------ *)
+  (*  The assign walk — same shape, plus the guess at the target.        *)
+  (* ------------------------------------------------------------------ *)
+  assert (Hass : forall n4 S Θ Ξ α P,
+             nholes_pskl P + nundef_aenv (Ξ ++ Θ) <= n1 ->
+             ndef_aenv (Ξ ++ Θ) <= n2 ->
+             length Θ <= n4 ->
+             lc_pskl P -> aenv_defs_mono (Ξ ++ Θ) ->
+             e_assign_order S Θ Ξ α P).
+  { intros n4; induction n4 as [n4 IH4] using lt_wf_ind;
+      intros * Hw Hnd Hlen Hlc Hdm.
+    constructor; intros; subst; simpl in *;
+      repeat rewrite nundef_aenv_app in Hw; simpl in Hw;
+      repeat rewrite ndef_aenv_app in Hnd; simpl in Hnd;
+      repeat match goal with
+      | H : Forall entry_def_mono (_ ++ _) |- _ =>
+          apply Forall_app in H; destruct H
+      | H : Forall entry_def_mono (_ :: _) |- _ =>
+          inversion H; subst; clear H
+      end.
+    - (* Assign-SolveM — the guess, total at the lc pattern *)
+      apply e_guess_mono_order_total; assumption.
+    - (* Assign-Assign — the consis conjunct at ndef − 1; mono
+         substitution keeps the hole counts *)
+      match goal with
+      | He : entry_def_mono (_, abind_flex_mono_def _) |- _ =>
+          unfold entry_def_mono in He; simpl in He
+      end.
+      unshelve eapply (proj2 (proj2 (IH2 (ndef_aenv (Ξ ++ Θ0))
+                                       ltac:(rewrite ndef_aenv_app; lia)))
+                         (size_pskl _ + size_pskl _));
+        try apply le_n;
+        try assumption;
+        (* W: hole counts survive the mono substitution *)
+        try solve [ rewrite nholes_pskl_subst_holefree
+                      by auto using nholes_ptyp_to_pskl;
+                    repeat match goal with
+                    | |- context [ nholes_pskl (if ?c then _ else _) ] =>
+                        destruct c
+                    end;
+                    repeat rewrite nholes_ptyp_to_pskl;
+                    rewrite nundef_aenv_app; simpl; lia ];
+        (* the ndef bound *)
+        try solve [ rewrite ndef_aenv_app; apply le_n ];
+        (* lc of the substituted subject (already reduced) and pattern *)
+        try solve [ match goal with
+                    | |- lc_pskl (if ?c then _ else _) => destruct c
+                    end;
+                    auto using ptyp_to_pskl_lc, mono_ptyp_lc;
+                    constructor ];
+        try solve [ apply subst_pskl_in_pskl_lc_pskl;
+                    auto using ptyp_to_pskl_lc, mono_ptyp_lc ];
+        auto using Forall_app_intro.
+    - (* Assign-Depend / Assign-Skip *)
+      split;
+        (apply (IH4 (length Θ0)); [ lia | .. ];
+         try assumption;
+         repeat rewrite nundef_aenv_app; repeat rewrite ndef_aenv_app;
+         simpl; try lia;
+         repeat apply Forall_app_intro;
+         eauto using Forall_cons, Forall_nil, entry_def_mono_flex).
+    - (* Assign-SkipRigid *)
+      apply (IH4 (length Θ0)); [ lia | .. ];
+        try assumption;
+        repeat rewrite nundef_aenv_app; repeat rewrite ndef_aenv_app;
+        simpl; try lia;
+        auto using Forall_app_intro.
+    - (* Assign-SkipTmVar (typ) *)
+      apply (IH4 (length Θ0)); [ lia | .. ];
+        try assumption;
+        repeat rewrite nundef_aenv_app; repeat rewrite ndef_aenv_app;
+        simpl; try lia;
+        auto using Forall_app_intro.
+    - (* Assign-SkipTmVar (skl) *)
+      apply (IH4 (length Θ0)); [ lia | .. ];
+        try assumption;
+        repeat rewrite nundef_aenv_app; repeat rewrite ndef_aenv_app;
+        simpl; try lia;
+        auto using Forall_app_intro. }
+  split; [ exact Huni | split; [ exact Hass | ] ].
+  (* ------------------------------------------------------------------ *)
+  (*  Consistency proper.                                                *)
+  (* ------------------------------------------------------------------ *)
+  intros n3; induction n3 as [n3 IH3] using lt_wf_ind;
+    intros * Hw Hnd Hsz Hlc0 Hlc Hdm.
+  constructor; intros; subst; simpl in Hw, Hsz.
+  - (* Arrow — the domain by size; the codomain by the case split the two
+       §15 invariants decide *)
+    repeat match goal with
+    | Hl : lc_pskl (pskl_arrow _ _) |- _ =>
+        apply lc_pskl_arrow_inv in Hl; destruct Hl
+    end.
+    split.
+    + unshelve eapply (IH3 (size_pskl P0a + size_pskl P1) ltac:(lia));
+        try apply le_n; try assumption; lia.
+    + intros * Hc1.
+      pose proof (e_consis_wpres Hc1) as Hwp.
+      pose proof (e_consis_ndef_mono Hc1) as Hmono.
+      pose proof (e_consis_defs_mono Hc1 Hdm) as Hdm1.
+      destruct (lt_eq_lt_dec (ndef_aenv Θ) (ndef_aenv Θ1)) as [[Hlt|Heq]|Hgt];
+        [ | | lia ].
+      * (* the domain created a def — W strictly dropped: restart at IH1 *)
+        unshelve eapply (proj2 (proj2 (IH1 (nholes_pskl P0b + nholes_pskl P2
+                                            + nundef_aenv Θ1)
+                                         ltac:(lia)
+                                         (ndef_aenv Θ1)))
+                           (size_pskl P0b + size_pskl P2));
+          try apply le_n; try assumption.
+      * (* no def created — ndef ties, size pays *)
+        unshelve eapply (IH3 (size_pskl P0b + size_pskl P2) ltac:(lia));
+          try apply le_n; try assumption; lia.
+  - (* ForallInh *)
+    unshelve eapply (IH3 (size_pskl (open_pskl_wrt_pskl P0'
+                                       (pskl_var_f (supply_fresh S)))
+                          + size_pskl (open_pskl_wrt_pskl P1
+                                         (pskl_var_f (supply_fresh S))))
+                       ltac:(repeat rewrite size_pskl_open_pskl_wrt_pskl_var;
+                             lia));
+      try apply le_n; try assumption;
+      try solve [ repeat rewrite nholes_pskl_open; simpl; lia ];
+      try solve [ simpl; lia ];
+      try solve [ eauto using lc_pskl_all_syn_inv ];
+      try solve [ constructor; [ apply entry_def_mono_tvar | assumption ] ].
+  - (* ForallSyn *)
+    unshelve eapply (IH3 (size_pskl (pskl_tophole P0')
+                          + size_pskl (open_pskl_wrt_pskl P1
+                                         (pskl_var_f (supply_fresh S))))
+                       ltac:(simpl;
+                             repeat rewrite size_pskl_open_pskl_wrt_pskl_var;
+                             lia));
+      try apply le_n; try assumption;
+      try solve [ simpl; repeat rewrite nholes_pskl_open; simpl; lia ];
+      try solve [ simpl; lia ];
+      try solve [ eauto using lc_pskl_all_syn_inv ];
+      try solve [ constructor; [ apply entry_def_mono_tvar | assumption ] ].
+  - (* UnivGhost *)
+    unshelve eapply (IH3 (size_pskl P0' + size_pskl P1) ltac:(simpl in *; lia));
+      try apply le_n; try assumption;
+      try solve [ simpl in *; lia ];
+      eauto using lc_pskl_tophole_inv.
+  - (* UnivGhost1 *)
+    unshelve eapply (IH3 (size_pskl (open_pskl_wrt_pskl P0'
+                                       (pskl_var_f (supply_fresh S)))
+                          + size_pskl (pskl_tophole P1))
+                       ltac:(simpl;
+                             repeat rewrite size_pskl_open_pskl_wrt_pskl_var;
+                             lia));
+      try apply le_n; try assumption;
+      try solve [ simpl; repeat rewrite nholes_pskl_open; simpl; lia ];
+      try solve [ simpl; lia ];
+      try solve [ eauto using lc_pskl_all_syn_inv ];
+      try solve [ constructor; [ apply entry_def_mono_tvar | assumption ] ].
+  - (* UnivGhost2 *)
+    unshelve eapply (IH3 (size_pskl P0 + size_pskl P1) ltac:(simpl in *; lia));
+      try apply le_n; try assumption;
+      try solve [ simpl in *; lia ];
+      eauto using lc_pskl_tophole_inv.
+  - (* UnivGhostR *)
+    unshelve eapply (IH3 (size_pskl P0' + size_pskl P) ltac:(simpl in *; lia));
+      try apply le_n; try assumption;
+      try solve [ simpl in *; lia ];
+      eauto using lc_pskl_tophole_inv.
+  - (* Flex — the unify walk *)
+    apply (Huni (length Θ)); try apply le_n; try assumption; simpl in *; lia.
+  - (* FlexL — assign the pattern *)
+    apply (Hass (length Θ)); simpl; try apply le_n; try assumption; lia.
+  - (* FlexR — assign the subject *)
+    apply (Hass (length Θ)); simpl; try apply le_n; try assumption; lia.
+Qed.
+
+(** ⭐⭐ THE CONSISTENCY BLOCK TERMINATES — §8b.4's "not routine" campaign,
+    closed.  The measure the paper's design principle buys: holes and
+    undefined flexibles are the fuel, defined flexibles are consumed by the
+    walks, and sizes referee the structural descent. *)
+Theorem e_consis_order_total : forall Δ1 Δ2 S Θ P0 P,
+  lc_pskl P0 -> lc_pskl P -> aenv_defs_mono Θ ->
+  e_consis_order Δ1 Δ2 S Θ P0 P.
+Proof.
+  intros.
+  unshelve eapply (proj2 (proj2 (e_consis_block_order_total_n
+                                   (nholes_pskl P0 + nholes_pskl P
+                                    + nundef_aenv Θ)
+                                   (ndef_aenv Θ)))
+                     (size_pskl P0 + size_pskl P));
+    try apply le_n; assumption.
+Qed.
+
+(* ===================================================================== *)
+(*  §17  ⭐⭐⭐ TOTALITY OF THE SUBTYPING WALK                               *)
 (*                                                                        *)
 (*  The lexicographic argument, assembled.  Which component each rule     *)
 (*  consumes:                                                             *)
@@ -1222,14 +1684,15 @@ Qed.
 (*                              only the Arrow row, so ONE inline step    *)
 (*                              reaches fnd_mode M — 8b.4's ⚠️)            *)
 (*                                                                        *)
-(*  ⛔ THE ONE HYPOTHESIS is the consistency block's totality — the       *)
-(*  unification-style campaign of §8b.4, NOT discharged here.  Everything *)
-(*  else about consistency that §13 needs (the payload discipline) is     *)
-(*  §12's theorem.                                                        *)
+(*  The consistency block's totality enters as the hypothesis [Hco] —     *)
+(*  in exactly [e_consis_order_total]'s shape, so the final theorem       *)
+(*  below discharges it and carries NO hypothesis.                        *)
 (* ===================================================================== *)
 
 Lemma e_sub_order_total_n :
-  (forall Δ1 Δ2 S Θ P0 P, e_consis_order Δ1 Δ2 S Θ P0 P) ->
+  (forall Δ1 Δ2 S Θ P0 P,
+     lc_pskl P0 -> lc_pskl P -> aenv_defs_mono Θ ->
+     e_consis_order Δ1 Δ2 S Θ P0 P) ->
   forall n1 n2 n4,
   (forall n3 n5 S0 NM M P0 Θ0 P,
      fnd_mode M <= n1 ->
@@ -1290,7 +1753,16 @@ Proof.
       | Heq : pskl_arrow _ _ = pskl_arrow _ _ |- _ =>
           inversion Heq; subst; clear Heq
       end.
-      split; [ apply Hco | ].
+      split.
+      { apply Hco.
+        - match goal with
+          | Hl : lc_pskl (pskl_arrow _ _) |- _ =>
+              apply lc_pskl_arrow_inv in Hl; destruct Hl; assumption
+          end.
+        - constructor.
+        - repeat apply Forall_app_intro;
+            eauto 10 using Forall_cons, Forall_nil, entry_def_mono_flex,
+              entry_def_mono_def, mono_ptyp__arrow, mono_ptyp__var. }
       intros * Hcons.
       (* the mode is read off the GOAL — [subst] may have renamed [M] *)
       match goal with
@@ -1374,7 +1846,7 @@ Proof.
     intros * Hfnd Hnall Hndef Hh Hsz Hlc Hlc0 Hdm.
   constructor; intros; subst.
   - (* Check — the consistency hypothesis *)
-    apply Hco.
+    apply Hco; assumption.
   - (* ForallR — the pattern's ∀ is consumed: IH2 *)
     simpl in Hnall.
     unshelve eapply (proj1 (IH2 (nall_pskl
@@ -1392,7 +1864,13 @@ Proof.
     apply (Hpsi (length Θ0));
       simpl; try assumption; try apply le_n.
   - (* Arrow — an FN is crossed: IH1, everything resets *)
-    split; [ apply Hco | ].
+    split.
+    { apply Hco;
+        try solve [ match goal with
+                    | Hl : lc_pskl (pskl_arrow _ _) |- _ =>
+                        apply lc_pskl_arrow_inv in Hl; destruct Hl; assumption
+                    end ];
+        assumption. }
     intros * Hcons.
     repeat match goal with
     | Hl : lc_pskl (pskl_arrow _ _) |- _ =>
@@ -1448,19 +1926,16 @@ Proof.
     eauto using lc_pskl_tophole_inv.
 Qed.
 
-(** ⭐⭐ THE THEOREM — the subtyping walk terminates on every input that is
-    locally closed and whose context keeps the payload discipline, GIVEN
-    that the consistency block does (§8b.4's remaining campaign; an honest
-    hypothesis, not an admit). *)
-Theorem e_sub_order_total :
-  (forall Δ1 Δ2 S Θ P0 P, e_consis_order Δ1 Δ2 S Θ P0 P) ->
-  forall S0 NM M P0 Θ0 P,
-    lc_pskl P -> lc_pskl P0 -> aenv_defs_mono Θ0 ->
-    e_sub_order S0 NM M P0 Θ0 P.
+(** ⭐⭐⭐ THE THEOREM — the subtyping walk terminates on every input that is
+    locally closed and whose context keeps the payload discipline.  NO
+    hypothesis left: §16 discharged the consistency block. *)
+Theorem e_sub_order_total : forall S0 NM M P0 Θ0 P,
+  lc_pskl P -> lc_pskl P0 -> aenv_defs_mono Θ0 ->
+  e_sub_order S0 NM M P0 Θ0 P.
 Proof.
-  intros Hco *; intros.
-  unshelve eapply (proj1 (e_sub_order_total_n Hco (fnd_mode M)
-                            (nall_pskl P0) (ndef_aenv Θ0))
+  intros.
+  unshelve eapply (proj1 (e_sub_order_total_n e_consis_order_total
+                            (fnd_mode M) (nall_pskl P0) (ndef_aenv Θ0))
                      (hnall_pskl P) (size_pskl P));
     try apply le_n; assumption.
 Qed.

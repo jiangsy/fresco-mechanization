@@ -3526,9 +3526,13 @@ axiom-free):
   SI-ForallL's own guarded-or-ghost side condition forces the graft
   `∀`-free.
 - Assembled: `e_sub_order_total` — the subtyping walk's search terminates
-  on every locally-closed input whose context keeps monotype payloads
-  (the consistency block's totality is its one lemma-level input; see
-  docs/HANDOFF-extractable-algo-encoding.md §8b for the live state).
+  on every locally-closed input whose context keeps monotype payloads.
+  UNCONDITIONAL: the consistency block's own termination
+  (`e_consis_order_total`) is proved by the measure (holes + undefined
+  flexibles, then defined flexibles, then size) — holes are the only
+  source of new flexibles (Assign-SolveM's guess block is exactly the
+  pattern's holes), so any run that grows the context strictly consumed
+  that fuel.  See docs/HANDOFF-extractable-algo-encoding.md §8b.
 
 The paper could state this as a theorem ("the algorithm terminates on
 well-formed inputs"), with the proof sketch: instantiations are bounded by
