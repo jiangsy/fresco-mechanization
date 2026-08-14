@@ -1606,6 +1606,34 @@ carries only the exemplar):
      `def_guess_impl.v`, `def_look_impl.v` and `def_solve_impl.v` needed
      nothing extra because their clauses reduce WITHOUT eliminating the
      domain proof.
+  3. ⛔ **And `depelim` does NOT fix it.**  Tried, in the same run: an
+     equation branch `intros; repeat depelim <the order>; simp …; simpl;
+     try reflexivity`, with and without `Set Equations Transparent`.  The
+     goal is unchanged each time —
+
+         Unable to unify "None" with "e_unify_impl S0 nil α β HD H"
+
+     so the block's equations are not merely unproved by the wrong tactic;
+     `Equations` is not generating a reducible unfolding for them at all.
+     ⚙ The distinguishing feature of the three files that fail-or-are-
+     unknown versus the three that work is that this one is a MUTUAL block
+     (`e_assign_impl` / `e_unify_impl` / `e_consis_impl` defined together).
+     Mutual `Equations` definitions over a `Prop` domain predicate are the
+     suspect; confirm that before attacking the tactic again.
+
+⭐⭐ **AN ALTERNATIVE WORTH COSTING BEFORE MORE TACTIC WORK.**  The
+completeness induction may not need every runner's equations.  It needs the
+unfolding only for the DISPATCH of the judgement currently being proved
+complete; for the SUB-CALLS it needs just (i) the sub-call returns `Some`
+and (ii) its result is the derivation's.  (ii) does not need any unfolding
+if the RELATION is deterministic at fixed inputs and committed names —
+which is a `Prop`-level statement, provable by ordinary induction with no
+`Equations` machinery at all, and which the dispatch-order analysis
+(§8b.1's ForallR-before-ForallL, LE-Var/Absent priority, `type.ml`'s consis
+order, the STEP/BASE readback split) is already the raw material for.  ⚙ If
+that works, only the judgements whose own dispatch must be analysed need
+`equations=yes` — and the mutual consistency block may be reachable purely
+through its soundness and determinism.
 - ⚪ `def_extract_impl.v`, `def_sub_impl.v`, `def_pat_impl.v` and
   `def_typing_impl.v` were never reached — the build stops at the first
   failure — so their status is UNKNOWN, not good.
