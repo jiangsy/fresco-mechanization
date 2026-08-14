@@ -1900,7 +1900,8 @@ Proof.
             eauto using lc_pskl_all_syn_inv).
       unshelve eapply (IH3 (hnall_pskl (open_pskl_wrt_pskl Q P1))
                          ltac:(pose proof (@e_extract_forall_l_hnall
-                                             S0 Θ0 NM (supply_fresh S0)
+                                             (add (supply_fresh S0) S0)
+                                             Θ0 NM (supply_fresh S0)
                                              M Q P0 S1 Ξ P1 Hxt
                                              ltac:(assumption));
                                lia)

@@ -446,14 +446,19 @@ Inductive e_sub_order : supply -> a_sub_mode -> mode -> pskl -> aenv -> pskl
        ⚙ The ONE row that keeps its rule GUARDS: the guarded-or-◇ premise on
        [P0] is what §9's decrease theorem consumes (the graft carries no head
        ∀ only against such a [P0]), and the recursion happens only behind the
-       rule's wf check on [P1] (type.ml:966's [is_wf p1]). *)
+       rule's wf check on [P1] (type.ml:966's [is_wf p1]).
+       ⚙ Δ (phase 4): the extraction runs at [add (supply_fresh S0) S0] — the
+       supply AFTER the binder is drawn — exactly as [e_sub__forall_l]'s
+       premise states it.  As first written both slots said [S0]; totality
+       never noticed (every extraction lemma is supply-parametric), the
+       RUNNER did (its extract call must satisfy this premise AND the rule). *)
     (forall Q,
        P = pskl_all_syn Q -> M <> mode_ti ->
        (guarded_pskl P0 \/ P0 = pskl_hole) ->
-       e_extract_order S0 Θ0 NM (supply_fresh S0) M
+       e_extract_order (add (supply_fresh S0) S0) Θ0 NM (supply_fresh S0) M
          (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0))) P0
        /\ (forall S1 Ξ P1,
-             {{ S0 ↝ S1 ⊨ Θ0
+             {{ (add (supply_fresh S0) S0) ↝ S1 ⊨ Θ0
                 ⊢ (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0)))
                 ⊳[ NM , (supply_fresh S0) , M ] P0 ⤳ Ξ ↪ P1 }}e ->
              {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P1 }}a ->

@@ -240,7 +240,33 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-13/14 (latest) — ⭐⭐⭐ **THE TERMINATION CAMPAIGN CLOSED: `e_sub_order_total` UNCONDITIONAL — the subtyping walk and its whole call graph terminate**
+## 2026-08-14 (latest) — ⭐⭐⭐ **PHASE 4 CLOSED: EVERY JUDGEMENT EXECUTES — TODO (2) of the extractable-encoding hand-off is COMPLETE**
+
+The Bove–Capretta runners for all thirteen judgements beyond `guess^TY`
+landed (`docs/HANDOFF-extractable-algo-encoding.md` §8b.7): the guard
+deciders (`def_dec.v`, soundness-only), the collection
+(`def_look_impl.v`), the solving layer and its fold (`def_solve_impl.v`),
+the extraction pipeline (`def_extract_impl.v`), the MUTUAL
+`assign`/`unifyvar`/`consistency` block (`def_consis_impl.v`), the MUTUAL
+subtyping walk (`def_sub_impl.v`, ForallR before ForallL per §8b.1), and
+`e_split`/`e_pat`/`e_typing` (`def_pat_impl.v` / `def_typing_impl.v`,
+which also carry the two judgements' NEW orders and totality —
+unconditional: every walk precondition is TESTED at the call site rather
+than threaded as metatheory).  Result shape decided for all partial
+runners: `option (sig (spec …))` — soundness-only, rejection-justification
+deferred to a determinism pass.  Every `*_run_sound` is Qed and
+axiom-free; `extraction/Extract.v` exports all runners and the emitted
+OCaml passes `ocamlc -c`.  ⭐ One phase-2 bug surfaced BY the runners and
+fixed: `def_order.v`'s ForallL premise pinned the extraction's supply at
+`S0` where `e_sub__forall_l` runs it at `add α S0` — invisible to the
+(supply-parametric) totality proofs, forced by the runner's double duty
+(satisfy the order's premise AND the rule).  The traps paid for
+(silent-obligation Equations mode, the cons/`++` simple-apply gap, the
+`Forall_app_intro` eauto explosion, `subst`-through-`fix` guard breakage,
+catch-all row expansion, `coqc | head` SIGPIPE corruption) are recorded in
+§8b.7.
+
+## 2026-08-13/14 — ⭐⭐⭐ **THE TERMINATION CAMPAIGN CLOSED: `e_sub_order_total` UNCONDITIONAL — the subtyping walk and its whole call graph terminate**
 
 **Later on 2026-08-14 the one hypothesis was DISCHARGED**: the consistency
 block's totality (`e_consis_order_total`) is proved by the measure

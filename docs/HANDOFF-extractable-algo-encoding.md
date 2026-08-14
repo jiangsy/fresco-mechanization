@@ -1186,10 +1186,9 @@ be needed was PESSIMISTIC: holes-as-fuel replaces split-depth entirely,
 because Frost's guess consumes the whole pattern shape at once instead
 of splitting incrementally.
 
-⛔ **WHAT REMAINS OF TODO (2) — phase 4 only**: the runners (`Equations
+⛔ ~~**WHAT REMAINS OF TODO (2) — phase 4 only**: the runners (`Equations
 … by struct` bodies + soundness) for the thirteen judgements beyond
-`guess^TY`, now unblocked END TO END, with every domain predicate
-inhabited on the inputs the drivers will call them at.  The PAPER-GAPS
+`guess^TY`~~ — ✅ **DONE, see §8b.7.**  The PAPER-GAPS
 entry for §7.3 is FILED (2026-08-14) and records the mechanized status.
 
 ⚙ Traps paid for in the assembly, for whoever extends it: metalib's
@@ -1199,4 +1198,76 @@ to ALL accumulated goals (parenthesize per-goal); `subst` renames the
 mode/context variables, so read them off the GOAL in `match goal`; under
 `Set Implicit Arguments` a lemma argument under a FUNCTION application
 (`open P …`) stays explicit — use `@` and spell everything.
+
+### 8b.7 ✅ PHASE 4 COMPLETE — EVERY JUDGEMENT EXECUTES (2026-08-14, later)
+
+**TODO (2) IS DONE.**  Twelve runners now exist beyond `guess^TY`'s —
+`e_lookeq_run`/`e_looksub_run` (def_look_impl.v), `e_solve_eq_run`/
+`e_solve_sub_run`/`e_solve_cstr_run` (def_solve_impl.v), `e_extract_run`
+(def_extract_impl.v), `e_consis_run` for the mutual
+`assign`/`unifyvar`/`consistency` block (def_consis_impl.v), `e_sub_run`
+for the mutual subtyping walk (def_sub_impl.v), and `e_split_impl`/
+`e_pat_run`/`e_typing_run` (def_pat_impl.v, def_typing_impl.v — these two
+judgements had no phase-2 orders, so their files carry the template's full
+four-layer stack: order, totality, implementation, runner).  Each runner
+follows def_guess_impl.v's shape and each `*_run_sound` is Qed and
+axiom-free; the dispatch orders are the reference implementation's, cited
+per match arm in the file headers (§8b.1's ForallR-before-ForallL
+commitment included, def_sub_impl.v).
+
+⭐ **THE RESULT SHAPE, decided at step 2 and used throughout:
+`option (sig (spec …))`** — `None` means "no rule applied" and is justified
+by nothing; the contract is SOUNDNESS-ONLY, and "rejection is justified"
+(runner completeness / determinism) is deferred, exactly as §5's runner-
+completeness paragraph anticipated.  `sig` erases, so the OCaml type is a
+plain `option`.
+
+⭐ **EVERY REMAINING PRECONDITION IS TESTED, NOT ASSUMED** (def_dec.v, the
+guard-decider inventory, each with a SOUNDNESS-ONLY lemma): `guarded`/
+`ghost-free`/`mono`/`non-flex` shape checks, context scans, `uniq_ck`,
+`suffix_ck`, a fuel-at-`size` wf checker (`wf_pskl_ck` ≈ type.ml's
+`is_wf`; the ∀ row's soundness regenerates the cofinite family via
+`a_wf_pskl_rename_delta`), `degree_*_ck` for local closure via
+`lc_*_of_degree`, and `defs_mono_ck` — so `e_pat_run`/`e_typing_run` take
+NO hypotheses at all, and their totality needs none (a pure `size_exp`
+induction for `e_pat_order`; lex `(size_exp, size_pskl pattern)` for
+`e_typing_order`, the pattern component paying for the check-mode STEP
+rows, which recurse on the SAME subject with the pattern's ∀ peeled).
+
+⭐ **ONE PHASE-2 BUG FOUND AND FIXED, BY THE RUNNER** (def_order.v,
+ForallL): both extract slots said `S0` where `e_sub__forall_l` runs the
+extraction at `add α S0`.  Totality never noticed — every extraction lemma
+is supply-parametric — but the runner's extract call must satisfy the
+order's premise AND the rule, which pins the slot.  One explicit
+application in prop_termination.v §17 moved with it; nothing else.
+
+⚠️ Traps paid for in phase 4, beyond §8b.6's list:
+- An `Equations` definition with UNSOLVED obligations behaves like
+  `Program`: the command SUCCEEDS silently and the constant simply does
+  not exist.  `Obligations.` lists what is left; obligation counts vary
+  with the match compiler's clause splitting.
+- The re-attaching rows' conclusions are `(β ~ b) ++ Θ` while clause
+  patterns produce cons-form goals — a conversion `Hint Constructors`'
+  simple-apply cannot make, and an `econstructor` Extern does not
+  backtrack usefully inside `eauto`.  The rule instance is built by the
+  obligation tactic's TRAILING `solve [ econstructor; eauto ]`, whose
+  `;`-composition does backtrack across constructors.
+- `Forall_app_intro` must NOT be a bare `Hint Resolve`: on `Forall _ ?l`
+  goals `eauto` splits an evar-able list forever (this is what made the
+  first def_consis_impl.v build run >25 min).  Deterministic assembly
+  Extern instead.
+- In a `refine (fix go …)` helper, `subst` on an equation whose variable
+  occurs in `go`'s TYPE generalizes over `go` and breaks the guard
+  ("recursive call has not enough arguments") — rewrite the GOAL only.
+  And a catch-all match row beside a specific-constructor row is
+  EXPANDED per constructor, orphaning holes written against the row's
+  binder — decide the marker with a `sumbool` helper instead.
+- `coqc … | head` lets `head`'s exit kill `coqc` mid-write (SIGPIPE) and
+  the stale `.vo` then fails later Requires with "inconsistent
+  assumptions" — same family as CLAUDE.md's `make coq > log` trap.
+
+⚙ extraction/Extract.v grew its export list to all runners (plus
+`Extraction Inline Sumbool.sumbool_of_bool`, in the service of the same
+§8 bar as the two existing inlines); the output keeps its M1.7 name
+`frost_guess.ml` though it now holds the whole algorithm.
 

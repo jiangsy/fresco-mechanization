@@ -9,10 +9,12 @@
     ⚙ WHAT IS EMITTED, and what is not.  Every judgement of [frost/ext_algo]
     is a threaded RELATION bridged to [frost/algo]'s (TODO (1), complete).
     A relation is [Prop] and extracts to nothing, so what can be emitted is
-    exactly what has a Bove–Capretta runner: [guess^TY] (M1.7,
-    def_guess_impl.v) and its sort wrapper [guess^N] (def_guess_impl_sk.v).
-    ⛔ The rest of TODO (2) is precisely writing the remaining runners; the
-    directives here will not change when they land, only the export list.
+    exactly what has a Bove–Capretta runner — which since phase 4 (§8b) is
+    EVERY judgement: the export list below reaches from [guess^TY] up to
+    [e_typing_run], the algorithm's entry point.  ⚙ The output file keeps
+    its M1.7 name [frost_guess.ml]; it now holds the whole algorithm, and
+    renaming it is deliberately deferred (the name is wired into the
+    Makefile's acceptance step and this file's history).
 
     ⚠️ [ExtrOcamlNatInt] IS NOT A FOOTNOTE.  Without it metalib's atoms
     extract as UNARY [nat] — [supply_fresh] becomes [S (nat_list_max xs)] and
@@ -34,6 +36,14 @@ Require Import src.frost.ext_algo.def_supply.
 Require Import src.frost.ext_algo.def_guess.
 Require Import src.frost.ext_algo.def_guess_impl.
 Require Import src.frost.ext_algo.def_guess_impl_sk.
+Require Import src.frost.ext_algo.def_dec.
+Require Import src.frost.ext_algo.def_look_impl.
+Require Import src.frost.ext_algo.def_solve_impl.
+Require Import src.frost.ext_algo.def_extract_impl.
+Require Import src.frost.ext_algo.def_consis_impl.
+Require Import src.frost.ext_algo.def_sub_impl.
+Require Import src.frost.ext_algo.def_pat_impl.
+Require Import src.frost.ext_algo.def_typing_impl.
 Require Import src.frost.ext_algo.extraction.PseudoMonadic.
 
 Extraction Language OCaml.
@@ -46,7 +56,19 @@ Extraction Language OCaml.
     is ERASED); these two directives remove what is left. *)
 Extraction Inline proj1_sig.
 Extraction Inline e_guess_mono_run.
+(* the phase-4 runners test their guards through [sumbool_of_bool]; inlined,
+   each test extracts as a bare [if] — the same §8 bar the two inlines above
+   serve *)
+Extraction Inline Sumbool.sumbool_of_bool.
 
 Set Extraction Output Directory "frost/ext_algo/extraction/extracted".
 
-Extraction "frost_guess.ml" e_guess_mono_run e_guess_run.
+Extraction "frost_guess.ml"
+  e_guess_mono_run e_guess_run
+  e_lookeq_run e_looksub_run
+  e_solve_eq_run e_solve_sub_run e_solve_cstr_run
+  e_extract_run
+  e_consis_run
+  e_sub_run
+  e_pat_run
+  e_typing_run.
