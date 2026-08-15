@@ -80,22 +80,51 @@ inputs, and the rules as given do not determine it.  Anything that reasons
 "the collection's output" — rather than "some collection's output" — needs
 either the guard or a weaker, solve-level equivalence.
 
-**Suggested repair.**  Give `LS-ForallL` the same premise `SI-ForallL`
-has — `guarded{P'} or P' = □` on its *target* — and, symmetrically, check
-whether `LE-ForallSyn` / `LE-UnivGhost1` need theirs.  It costs
-completeness nothing at the crossing we can see: a `ForallL`-rooted
-derivation at a ∀ target can always be re-rooted at `ForallR`
-(mechanized as `a_looksub_forall_r_first`,
-`frost/ext_algo/prop_run_complete.v` §2b — the runner's dispatch relies on
-exactly that).
+**Suggested repair, and what it costs — MEASURED (2026-08-16).**  The
+guard cannot be `SI-ForallL`'s literal `guarded{P'} or P' = □`: that also
+blocks a `⫯` target and a non-ghost-free `∀` target, where no other rule
+applies at a `∀` subject, and "the target is guarded or `□`" is not an
+invariant of this judgement (`LS-Arrow` splits a guarded arrow target
+into halves of any shape).  The minimal correct premise is *"`LS-ForallR`
+does not apply"*:
 
-⛔ **Open in the mechanization.**  Restoring the guard changes
-`frost/algo/def_rules.v` and re-opens the look level's completeness plus
-`a_extract_complete_gen` (P6-L); leaving it out means the extractable
-encoding's EXTRACT level must carry a solve-equivalence invariant instead
-of a renaming.  The fork is stated in
-[`HANDOFF-extractable-algo-encoding.md`](HANDOFF-extractable-algo-encoding.md) §8c.7
-and is a USER decision.
+```
+  ∀B.  P' = ∀B  →  M = TC  →  ¬ guarded-free(B)
+```
+
+⛔ **But it is NOT free, and the price falls on Lemma E.17's own proof.**
+The change was carried through the mechanization far enough to be
+decisive and then reverted.  Everything below the completeness layer
+absorbs it mechanically — the runner discharges the premise from its own
+dispatch, since the three ways a `ForallL` branch is reached are exactly
+the three ways the premise holds.  What breaks is one step of the
+look-completeness argument:
+
+> an **α-stack** subject (`∀…∀. α`, the shape a `Sub-ForallR` leaves
+> behind) collects the WHOLE target, *undescended*, for any target and
+> any mode — because `LS-ForallL` peels the stack while the target stays
+> put, and `LS-Var` fires at the leaf.
+
+Mechanized as `alpha_stack_looksub`
+(`frost/algo/sub/look/prop_sub_cstr.v:373`), whose comment records the
+consequence the proof relies on: *"Sub-ForallR's stack branch never
+invokes `LS-ForallR`, and the β it would have had to strip is simply
+never introduced."*  With the guard that is false exactly at `M = TC`
+with a ghost-free `∀` target — i.e. at the counterexample above, since
+`∀_. α` *is* an α-stack.  The `Sub-ForallR` stack branch would have to be
+re-derived against a PEELED target (`≼TC B[β]` in place of `≼TC ∀β.B`),
+which changes what the solving half of the lemma is handed.
+
+**So the authors have a real choice**, and it is worth their attention
+either way: guard `LS-ForallL` and redo that step of Lemma E.17 with the
+peeled target, or leave the rules alone and treat `look`'s output as
+determined only up to solve-equivalence — in which case the paper should
+not speak of *the* collected constraints.
+
+⛔ **Open in the mechanization.**  The fork, with the measured evidence
+for each side, is in
+[`HANDOFF-extractable-algo-encoding.md`](HANDOFF-extractable-algo-encoding.md) §8c.7;
+it is a USER decision.
 
 ## ✅ RESOLVED (2026-08-11) — `fresh Ψ'` must mean GLOBAL freshness, and all four subtyping judgements now read it that way
 

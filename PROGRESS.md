@@ -265,14 +265,34 @@ In hindsight the evidence was already in the tree — level 1's reorder
 lemma `a_looksub_forall_r_first` is stated with EXISTENTIAL outputs
 precisely because re-rooting changes them.
 
-⛔ The extract level is therefore blocked on a design fork (§8c.7),
-parallel to the yield-mismatch one: (a) restore the guard on
-`LS-ForallL` — smaller, matches what the paper already does one
-judgement over, but touches `frost/algo/def_rules.v` and re-opens the
-look level's completeness and P6-L; (b) keep the rules and carry a
-SOLVE-EQUIVALENCE invariant instead of a renaming — no rule change, but
-materially bigger metatheory, and not compositional through `LS-Arrow`.
-Recommendation (a); awaiting the user.
+⛔ **(a) WAS THEN TRIED, AND IT BREAKS COMPLETENESS — reverted, evidence
+recorded.**  The minimal correct guard is "`LS-ForallR` does not apply"
+(the paper's literal `guarded{P'} ∨ P' = □` is too strong: it also blocks
+`⫯` and non-ghost-free `∀` targets, where nothing else applies, since
+"the target is guarded or ◇" is not an invariant — `LS-Arrow` splits a
+guarded arrow target into halves of any shape).  Everything below the
+completeness layer absorbs it mechanically: the e-side rule mirrors it,
+`prop_swap.v` gains `looksub_no_forall_r_swap`/`_open`, and — the design
+working — the RUNNER discharges it from its own dispatch, the three ways
+a ForallL branch is reached being exactly the three ways the premise
+holds (⚙ via a `Hint Extern` into `lookdec`: it is a constructor PREMISE
+`eauto` must solve, not a top-level goal; and `ghost_free_ck_complete`
+must MOVE to `def_dec.v`, since `prop_dec.v` sits below the runners).
+⛔ It dies at P6: `alpha_stack_looksub`
+(`algo/sub/look/prop_sub_cstr.v:373`) proves an α-stack collects the
+WHOLE target *undescended, for ANY target and ANY mode*, and its own
+header records why that matters — *"Sub-ForallR's stack branch never
+invokes LS-ForallR"*.  The guard falsifies it exactly at TC with a
+ghost-free ∀ target, i.e. at the counterexample (`∀_.α` IS an α-stack);
+repairing it means re-deriving the Sub-ForallR stack branch against a
+PEELED target, which changes what P6's solving half is handed.
+
+So the fork now reads: redesign that step of P6, or carry (b)'s
+solve-equivalence invariant at the extract level (no rule change, bigger
+metatheory, not compositional through `LS-Arrow`).  (b) at least leaves
+the closed theorems alone.  ⚠️ It is also a real choice for the paper's
+authors, not only a mechanization one — filed in PAPER-GAPS.md.
+Awaiting the user.
 
 ## 2026-08-15 (g) — ⭐⭐⭐ **§8c.3 LEVEL 3 CLOSED: the CSTR FOLD is complete — the yield mismatch is paid by TRANSPORTING the derivation's tail along the determinism chain**
 

@@ -2211,8 +2211,53 @@ output, and this exhibit is what that existential was hiding.
     ⚠️ This is (b) in disguise: what a reorder must preserve is exactly
     solvability, since the exhibit shows it cannot preserve the output.
 
-Recommendation: **(a)**.  It is the smaller change, it is what the paper
-already does one judgement over, and the repair is one the authors would
-plausibly want in the paper independently of this mechanization.  ⚠️ It
-touches `frost/algo/def_rules.v`, so it needs the user's go-ahead before
-any code moves.
+⛔⛔ **(a) WAS TRIED AND IT BREAKS COMPLETENESS (2026-08-16).**  The
+experiment was carried far enough to be decisive and then reverted;
+what it established, so nobody repeats it:
+
+- **The guard must be the MINIMAL one.**  The paper's literal
+  `guarded{P'} ∨ P' = □` also blocks a `⫯` target and a non-ghost-free
+  `∀` target, where NOTHING else applies at a `∀` subject — the
+  collection would be stuck, because "the target is guarded or `□`" is
+  not an invariant of this judgement (`LS-Arrow` splits a guarded arrow
+  target into halves of any shape).  The right premise is
+  `looksub_no_forall_r m P' := ∀B, P' = ∀B → m = TC → ¬ ghost_free B`,
+  i.e. "fire only where `LS-ForallR` does not".
+- **Everything below P6 goes through, mechanically.**  The e-side rule
+  mirrors it; `prop_swap.v` needs `looksub_no_forall_r_swap` and
+  `_open`; `def_look_impl.v` discharges it from the runner's OWN
+  dispatch (a `Hint Extern` into `lookdec`, since it is a constructor
+  PREMISE that `eauto` must solve, not a top-level goal) — the three
+  ways a ForallL branch is reached are exactly the three ways the
+  premise is discharged, which is the design working; `prop_looksub.v`
+  (6 sites) and `prop_decorate_sub.v` (4 sites) need only an extra
+  intro name and `assumption`/`looksub_no_forall_r_open`.
+  ⚙ `ghost_free_ck_complete` has to MOVE from `prop_dec.v` to
+  `def_dec.v` — `prop_dec.v` sits below the runners (it requires
+  `def_pat_impl` / `def_typing_impl`), so the runner cannot import it.
+- ⛔ **P6 is where it dies, at a documented design point.**
+  `alpha_stack_looksub` (`algo/sub/look/prop_sub_cstr.v:373`) proves
+
+        alpha_stack α P → ∀ Θ m P0,
+          {{ Θ ⊢ P ≼[α,m] P0 ⤳ nil ⨾ (≼m P0 :: nil) }}a
+
+  — an α-stack collects the WHOLE target, **undescended, for ANY target
+  and ANY mode**, by peeling the stack with `LS-ForallL`.  Its header
+  says so in as many words: *"So Sub-ForallR's stack branch never
+  invokes LS-ForallR, and the β it would have had to strip is simply
+  never introduced."*  The guard makes that FALSE at `m = TC` with a
+  ghost-free `∀` target — which is the counterexample verbatim, since
+  `∀_.α` IS an α-stack.  Repairing it is not a fix-up: the Sub-ForallR
+  stack branch would have to be re-derived with the target PEELED
+  (`≼TC (open B β)` in place of `≼TC ∀B`), and that changes what the
+  solve side of P6-Ss is handed.
+
+So the fork stands, with (a) eliminated: **either P6's Sub-ForallR
+stack branch is redesigned around a peeled target (a genuine piece of
+work inside a closed proof), or the extract level carries (b)'s
+solve-equivalence invariant.**  Both are substantial; (b) at least
+leaves the closed theorems alone, which now makes it the better bet.
+⚠️ A third possibility worth weighing first: the paper's authors may
+prefer to guard `LS-ForallL` AND accept the peeled target in their own
+Lemma E.17 proof — this is a finding to send them, not only a
+mechanization choice.
