@@ -1584,9 +1584,10 @@ the emitted `frost_guess.ml` is the same 3,873 lines, still passes
 `FixWf` — the derivation is proof-side only and does not reach extraction.
 
 ⛔ **THE TWO THAT DID NOT: `def_consis_impl.v` and `def_sub_impl.v`** — left
-at `equations=no` at first.  (✅ **`def_sub_impl.v` has since been flipped
-by re-encoding, 2026-08-15 — see the tagged-mode entry at the end of this
-section**; `def_consis_impl.v` remains.)  ⭐⭐ **The characterisation is
+at `equations=no` at first.  (✅ **BOTH have since been flipped by
+re-encoding, 2026-08-15 — see the tagged-mode entries at the end of this
+section; ALL TWELVE blocks now derive their equations.**)  ⭐⭐ **The
+characterisation is
 sharp, not a guess: these
 are exactly the two files that use `Equations`' MUTUAL `with` syntax**
 (`with e_unify_impl` / `with e_consis_impl`; `with e_sub_flex_impl`), and in
@@ -1774,10 +1775,38 @@ Frost-free reproduction, same style as the one above; no shape of option
   Assumptions` on the impl, on `..._equation_1`, on the injection and on
   `e_sub_run_sound`: all "Closed under the global context".
 
-⛔ Still at `equations=no`: `def_consis_impl.v` alone — and §8c.5's
-priority note stands: the determinism route may spare it entirely.  If it
-does need flipping, this file is the template (tag `consis_call` over the
-three-way mutual, tag first, term-level dispatch).
+✅ **AND `def_consis_impl.v` IS FLIPPED TOO (2026-08-15, later) — ALL
+TWELVE BLOCKS NOW DERIVE THEIR EQUATIONS.**  The template applied
+verbatim: tag `consis_call` (`_assign Ξ α P | _unify α β
+| _consis Δ1 Δ2 P0 P` — ⚠️ `Type`, not `Set`: the Δ-slots carry metalib's
+`atoms`), combined order `e_consis_call_order` mirroring §5's mutual
+trio, a three-way mutual `Fixpoint` injection, and the three public
+functions as wrappers.  Two consis-specific notes:
+
+- ⚠️ **The block returns `consis_result` UNIFORMLY** — assign/unify used
+  their own two-field `unify_result`, and a tag-DEPENDENT result type
+  would extract through `Obj.magic` (§8's bar).  The assign/unify rows
+  put `pskl_unit` in the join field (their specs never read it) and the
+  wrappers repack.
+- The leaf-explosion trap was avoided up front: the consistency side's
+  P0 × P matrix is ONE clause with a convoy double-match in the original
+  first-match row order, and assign's `Assign-UnivGhost-Id` special row
+  is an inner convoy inside the flexible-head clause (the α-test commutes
+  with the shape test, so the two original rows' first-match is
+  preserved).  Unify's six clauses cover `nil` + all five heads with no
+  catch-all and stay as patterns.  Result: **13 equations — exactly one
+  per clause — 117 s, a 17.8 MB `.vo`**, every obligation closed by the
+  adjusted tactic on the first run, all axiom-free.
+
+⭐ **The check-mode entry-point exhibit is Qed with it**
+(`prop_run_complete.v`): `e_typing_run S0 mode_tc nil ⌈unit⌉ exp_unit
+= Some (unit result)` — one layer deeper than the infer twin, through
+SI-Check into the consistency block's U-Unit row
+(`simp e_consis_call_impl`).  It is the end-to-end witness that all
+twelve runner blocks are computationally analysable.  Extraction after
+both flips: `frost_guess.ml` 3,873 → **3,460 lines** (each mutual family
+merged into one tagged function), `ocamlc -c` clean, no forbidden
+constructs.
 
 ### 8c.5 ⭐⭐⭐ THE TECHNIQUE IS VALIDATED AT THE ENTRY POINT
 

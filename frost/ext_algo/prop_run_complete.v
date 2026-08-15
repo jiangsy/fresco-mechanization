@@ -16,17 +16,19 @@
     which is exactly why the chain goes through (§8c.3's "insensitive to
     which domain proof was supplied").
 
-    ⚠️ The check-mode twin of this exhibit is NOT provable yet: the
-    SI-Check branch calls [e_consis_impl], and the consistency block is
-    still [equations=no] (§8c.4) — it is stuck on its own opaque domain
-    proof.  That is the measured boundary of what the sub flip bought, and
-    it is the §8c.5 priority argument in one line. *)
+    The check-mode twin runs one layer deeper — SI-Check calls
+    [e_consis_impl], so it additionally exercises the consistency block's
+    §8c.4 equations ([simp e_consis_call_impl]; U-Unit answers).  It
+    became provable the moment def_consis_impl.v flipped, and it is the
+    end-to-end witness that ALL TWELVE runner blocks are now
+    computationally analysable. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 From Equations Require Import Equations.
 
 Require Import src.frost.notations.
+Require Import src.frost.coercions.
 Require Import src.frost.def_shapes.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
@@ -34,6 +36,7 @@ Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
 Require Import src.frost.ext_algo.def_sub.
 Require Import src.frost.ext_algo.def_order.
+Require Import src.frost.ext_algo.def_consis_impl.
 Require Import src.frost.ext_algo.def_sub_impl.
 Require Import src.frost.ext_algo.def_pat_impl.
 Require Import src.frost.ext_algo.def_typing_impl.
@@ -53,6 +56,25 @@ Proof.
   cbn.
   unfold e_sub_impl.
   simp e_sub_call_impl.
+  cbn.
+  reflexivity.
+Qed.
+
+(** The check-mode twin, at the paper's own pattern shape [⌈unit⌉]: one
+    layer deeper — SI-Check runs the consistency block, whose U-Unit row
+    answers. *)
+Lemma e_typing_run_complete_unit_check : forall S0,
+  e_typing_run S0 mode_tc nil (ptyp_to_pskl ptyp_unit) exp_unit
+  = Some (mk_typing_result S0 nil ptyp_unit).
+Proof.
+  intros. unfold e_typing_run.
+  simp e_typing_impl.
+  cbn.
+  unfold e_sub_impl.
+  simp e_sub_call_impl.
+  cbn.
+  unfold e_consis_impl.
+  simp e_consis_call_impl.
   cbn.
   reflexivity.
 Qed.

@@ -240,7 +240,29 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-15 (latest) — ⭐⭐ **`def_sub_impl.v` DERIVES ITS UNFOLDING EQUATIONS — the mutual `with` re-encoded as ONE tagged block (user directive), with two measured compile-time traps on the way**
+## 2026-08-15 (b, latest) — ⭐⭐⭐ **ALL TWELVE RUNNER BLOCKS DERIVE THEIR EQUATIONS — `def_consis_impl.v` flipped by the same tagged encoding, and BOTH entry-point exhibits are Qed**
+
+The (a) entry's template applied to the three-way mutual
+(`assign`/`unifyvar`/`consistency`): tag `consis_call` (⚠️ `Type`, not
+`Set` — the Δ-slots carry metalib's `atoms`), combined order, three-way
+`Fixpoint` injection, wrappers.  Consis-specific: the block returns
+`consis_result` UNIFORMLY (a tag-dependent result type would extract
+through `Obj.magic`; assign/unify rows dummy the join field and the
+wrappers repack), the P0 × P matrix is ONE clause with a convoy
+double-match in the original first-match order, and `Assign-UnivGhost-Id`
+is an inner convoy in the flexible-head clause (the α-test commutes with
+the shape test).  **13 equations — one per clause — 117 s, 17.8 MB `.vo`,
+every obligation closed on the first run, axiom-free.**  With it the
+check-mode entry exhibit is Qed (`prop_run_complete.v`):
+`e_typing_run S0 mode_tc nil ⌈unit⌉ exp_unit = Some (unit result)`,
+through SI-Check into U-Unit — the end-to-end witness that every runner
+is computationally analysable.  Extraction after both flips:
+`frost_guess.ml` 3,873 → 3,460 lines, `ocamlc -c` clean, no `Obj.magic` /
+`Acc_rect` / `Fix_sub` / `FixWf`.  `make coq` green.  ⭐ Nothing is left
+at `equations=no`; §8c.3's order-driven completeness induction has no
+blocker left in the runners.
+
+## 2026-08-15 (a) — ⭐⭐ **`def_sub_impl.v` DERIVES ITS UNFOLDING EQUATIONS — the mutual `with` re-encoded as ONE tagged block (user directive), with two measured compile-time traps on the way**
 
 The §8c.4 blocker on the critical path is closed: `e_sub_impl` is
 reducible.  `Equations` cannot derive unfolding equations for a mutual
