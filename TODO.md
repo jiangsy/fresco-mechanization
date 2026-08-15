@@ -1,4 +1,6 @@
 - [ ] finish extraction soundness
 - [ ] finish extraction completeness
+- [ ] uniform statment about rename and swap
+- [ ] build time optimization
 - [ ] define a combined relation for d_consis and join
 - [ ] frontend (mctt like)
