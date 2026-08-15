@@ -121,6 +121,18 @@ peeled target, or leave the rules alone and treat `look`'s output as
 determined only up to solve-equivalence — in which case the paper should
 not speak of *the* collected constraints.
 
+⚙ **SEVERITY, checked against the running implementation (2026-08-16).**
+This is a presentation/metatheory issue, **not** a defect in the
+algorithm: the two collections are not merely both solvable, they solve
+to the *same* result.  `SolS-ForallR` is the DELAYED `LS-ForallR` —
+peeling a ∀ target during collection and peeling it during solving do the
+same work, and *neither closes the binder* (`type.ml:517-518` opens the
+RHS and discards the name; the paper's rule runs its premise at `B` with
+β still free).  On the exhibit above both lists solve to `⫯1`.  So
+nothing the implementation accepts or rejects turns on the choice; what
+turns on it is any statement that speaks of *the* collected constraints
+as a function of the inputs.
+
 ⛔ **Open in the mechanization.**  The fork, with the measured evidence
 for each side, is in
 [`HANDOFF-extractable-algo-encoding.md`](HANDOFF-extractable-algo-encoding.md) §8c.7;

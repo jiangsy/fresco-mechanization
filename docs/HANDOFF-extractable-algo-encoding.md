@@ -2261,3 +2261,73 @@ leaves the closed theorems alone, which now makes it the better bet.
 prefer to guard `LS-ForallL` AND accept the peeled target in their own
 Lemma E.17 proof — this is a finding to send them, not only a
 mechanization choice.
+
+### 8c.8 ⭐ The reference implementation, re-checked (2026-08-16) — and why (b) is the right invariant
+
+The user asked whether `type.ml` is deterministic here, and if so whether
+its choice is INCOMPLETE or simply better.  Answered against the running
+binary (`paper/artifact/implementation`, `bin/met.exe --debug`):
+
+**It is deterministic**, trivially: `constr_collect_sub` is one OCaml
+`match` with first-match semantics (type.ml:654-706).  Its order is
+Absent, Var, Vacuous, **ForallR**, ModR, Arrow, **ForallL**, ModL,
+UnivGhostL, Check — so `LS-ForallR` strictly precedes `LS-ForallL`,
+exactly as `e_looksub_impl` mirrors it.  ⚙ Note `LS-Var` precedes BOTH:
+when the subject is already the looked-for variable the whole target is
+collected verbatim, which is why the non-determinism needs a ∀-STACK
+subject (`∀…∀.α`) to show up at all.
+
+**But the order is NOT where anything is lost**, and this is the useful
+finding.  A `--debug` trace of
+
+      val f : forall a . forall d . []( unit -> (forall e . a) )
+      val h : []( (forall b . b) -> unit )
+      let test = h (f u)
+
+walks `SI-ForallL → LS-ForallL → LS-ModL → LS-Arrow → LS-ForallR →
+LS-ForallL → LS-Var → SolS-GhostL` and then rejects at SI-ForallL's own
+`unless (is_wf p1)` (type.ml:961, the paper's `Θ₀,Ξ ⊢ P₁`): the target's
+binder leaked into the collected constraint, so the solved instantiation
+is the out-of-scope `β`.  ⚠️ It is TEMPTING to read that as "ForallL-first
+would have found the better, closed answer `∀b.b`".  **It would not.**
+`SolS-ForallR` does not close either — it opens the RHS and DISCARDS the
+binder name (type.ml:517-518), and the mech's `a_solve_sub__forall_r`
+says the same in its own comment: *"NO close: the result passes through
+unchanged, so β may legitimately ESCAPE into [P'] … The leak is BY
+DESIGN; ill-scoped results are filtered downstream by wf side
+conditions"* (`algo/def_rules.v:614-640`).  So both orders leak, and the
+loss is the DESIGN's (a polymorphic instantiation is not something
+`guess^TY` can invent — it produces monotypes), not the dispatch's.
+
+⭐⭐ **THAT IS EXACTLY WHY (b) IS THE RIGHT INVARIANT, and it is tighter
+than "equivalent".**  `SolS-ForallR` IS the DELAYED `LS-ForallR`: peeling
+a ∀ target during collection and peeling it during solving do the same
+work, and neither closes.  On §8c.7's own exhibit the two lists do not
+merely both solve — they solve to the SAME yield:
+
+      [ ≼TC ∀_.1 ]  --SolS-ForallR--> [ ≼TC 1 ] --SolS-GhostL--> ⫯1
+      [ ≼TC 1    ]                              --SolS-GhostL--> ⫯1
+
+So the invariant to carry at the extract level is not a renaming and not
+bare solvability, but **the fold's RESULT agrees** (up to the fresh
+renaming §8c.6 already pays at the solve layer).  Concretely, the shape
+to aim for:
+
+      a_looksub Θ α m P P' Ξ1 𝒞1  ->  a_looksub Θ' α m P P' Ξ2 𝒞2  ->
+      {{ (Ξ1 ++ Θ) ⊩ 𝒞1 ⨾ ◇ ⤳ Ξs1 ⨾ Q1 }}a  ->  uniq … ->
+      ∃ Ξs2 Q2 ρ, {{ (Ξ2 ++ Θ') ⊩ 𝒞2 ⨾ ◇ ⤳ Ξs2 ⨾ Q2 }}a
+                  ∧ rel_pskl ρ V Q1 Q2 ∧ …
+
+which composes with §8c.6's `rel_pskl` machinery instead of replacing it,
+and whose ∀-crossing case is discharged by SS-ForallR-invertibility
+rather than by any reorder lemma.  ⚠️ Still to settle before coding: the
+`LS-Arrow` case, where the fold THREADS its pattern through `𝒞1 ++ 𝒞2`,
+so the two halves' agreements have to compose — that is the one place
+this is not a straight induction, and it is where the design effort
+should go.
+
+⚙ The `is_wf`-rejection above is worth a separate look by the authors:
+`h (f u)` is rejected while the same program with the instantiation
+already applied (`f3 : ∀d. unit → ∀e.∀b.b`) is accepted.  Whether that is
+a genuine incompleteness or the intended monotype-only guess discipline
+is NOT settled here — the declarative side was not checked.
