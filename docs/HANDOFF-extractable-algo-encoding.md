@@ -1583,8 +1583,11 @@ the emitted `frost_guess.ml` is the same 3,873 lines, still passes
 `ocamlc -c`, and still contains no `Obj.magic` / `Acc_rect` / `Fix_sub` /
 `FixWf` — the derivation is proof-side only and does not reach extraction.
 
-⛔ **THE TWO THAT DO NOT: `def_consis_impl.v` and `def_sub_impl.v`** — left
-at `equations=no`.  ⭐⭐ **The characterisation is sharp, not a guess: these
+⛔ **THE TWO THAT DID NOT: `def_consis_impl.v` and `def_sub_impl.v`** — left
+at `equations=no` at first.  (✅ **`def_sub_impl.v` has since been flipped
+by re-encoding, 2026-08-15 — see the tagged-mode entry at the end of this
+section**; `def_consis_impl.v` remains.)  ⭐⭐ **The characterisation is
+sharp, not a guess: these
 are exactly the two files that use `Equations`' MUTUAL `with` syntax**
 (`with e_unify_impl` / `with e_consis_impl`; `with e_sub_flex_impl`), and in
 both the derivation fails on a `with`-COMPANION's clause:
@@ -1630,10 +1633,11 @@ Next Obligation. inversion H; subst; auto. Defined.
    no amount of obligation-tactic engineering will fix our two files, and
    the three cycles already spent on that (§8c.4 above) should not be
    repeated.  ⚙ Worth reporting upstream; it is a clean minimal case.
-2. If it is not: the flex walk recurses on the CONTEXT and re-enters
+2. ⛔ ~~the flex walk recurses on the CONTEXT and re-enters
    `e_sub_impl` only at `Flex-Solve`, so ask whether it can be hoisted out
-   of the `with` into its own block (the consistency mutual is genuinely
-   three-way and will not yield to this).
+   of the `with` into its own block~~ — **REFUTED at the guard checker
+   (2026-08-15)**: any continuation-shaped hoist fails guardedness; see
+   the tagged-mode entry at the end of this section.
 3. ⚠️ The determinism route below does NOT rescue `def_sub_impl.v`:
    §8c.5 shows `e_typing_impl`'s branch calls `e_sub_impl` directly, and
    `e_sub_impl`'s own FlexMono branch calls `e_sub_flex_impl`, so knowing
@@ -1714,6 +1718,66 @@ through its soundness and determinism.
 leaves their `.vo`s stale, and the failure reads "makes inconsistent
 assumptions over library …", which looks like an axiom problem and is not.
 Rebuild through `make coq`, never file-by-file with `coqc`.
+
+✅ **`def_sub_impl.v` IS FLIPPED (2026-08-15) — BY THE USER'S TAGGED-MODE
+ENCODING** (directive: "encode mutual with an extra mode to distinguish
+which rule to use"), **plus one measured compile-time repair.**  Route 2
+(hoist the flex walk out of the `with`) was REFUTED at the guard checker
+first: a walk parameterized by a continuation that re-enters subtyping
+fails `Recursive definition is ill-formed` — the checker does not thread
+subterm specs through the walk's own inner fix, so the continuation's
+domain-proof argument is never recognised as a subterm.  Thirty-line
+Frost-free reproduction, same style as the one above; no shape of option
+(2) can work.  What landed:
+
+- **The tag.**  `sub_call : Set := sub_call_sub P | sub_call_flex Ξ α`;
+  ONE `Equations` block `e_sub_call_impl` over it, `by struct` on a
+  combined single-inductive order `e_sub_call_order` (def_order.v §6's
+  mutual pair with the same tag, premise for premise).  The mutual orders
+  and `e_sub_order_total` are UNTOUCHED — a mutual `Fixpoint` injection
+  (`e_sub_order_to_call` / `e_sub_flex_order_to_call`) converts, and
+  `e_sub_impl` / `e_sub_flex_impl` survive as thin same-signature
+  `Definition` wrappers, so def_typing_impl.v, def_pat_impl.v and
+  Extract.v needed NO change.  `sub_call_spec`/`sub_call_lc`/
+  `sub_call_defs_mono` key the spec and the two hypotheses by the tag;
+  at a concrete tag they are iota-convertible to the side's own forms.
+- ⚠️ **The tag must be the FIRST argument.**  Tag-last, Equations split
+  the M/P0 columns first and duplicated every mode/shape-generic flex
+  clause under each specialization — 840 obligations, 30 of which do not
+  close.  Tag-first: 315, all close.
+- ⚠️⚠️ **Clause-pattern dispatch + `derive(equations=yes)` is a
+  COMPILE-TIME TRAP at this block's size.**  The derivation proves one
+  unfolding lemma per case-tree LEAF, and catch-all rows expand per
+  constructor of every split column: measured **102 leaf equations,
+  965 s, a 105 MB `.vo`** (the original mutual file: 6 s, 3.3 MB, same
+  ~309 obligations; the biggest already-flipped peer, def_solve_impl.v:
+  85 s).  The obligations are NOT the cost — the same block at
+  `equations=no` is 9 s.  **The repair: ONE clause for the whole sub
+  side, with the mode/shape dispatch as TERM-LEVEL convoy matches**
+  (`match M as M1 return M = M1 -> … with … end eq_refl`).  Term matches
+  are opaque to the equations machinery, so the block derives **7 clause
+  equations in 150 s with a 26 MB `.vo`** — and each arm's convoy
+  equality is exactly what the obligation tactic's `subst` consumes to
+  specialize the order's premises, so `sub_impl_tac` needed only the
+  combined-order inversion, the tag-wrapper unfolds and a
+  `cbv beta iota in *`.  The flex side keeps its six clause patterns —
+  `nil` + all five `abind` heads, no catch-all, so it never expanded.
+  Extraction is unchanged in shape: the convoy equality is a Prop and
+  erases, leaving the same plain nested matches.  Measured:
+  `frost_guess.ml` went 3,873 → 3,783 lines (the two mutual functions
+  merge into one tagged `e_sub_call_impl` plus two thin wrappers),
+  `ocamlc -c` clean, and still no `Obj.magic` / `Acc_rect` / `Fix_sub`
+  / `FixWf`.
+- `e_sub_call_impl_equation_1` is the ∀-domain-proof clause equation
+  §8c.3 wants (`simp` exposes the dispatch term; concrete `M`/`NM`/
+  `P0`/`P` then reduce it by `cbn` with H untouched).  `Print
+  Assumptions` on the impl, on `..._equation_1`, on the injection and on
+  `e_sub_run_sound`: all "Closed under the global context".
+
+⛔ Still at `equations=no`: `def_consis_impl.v` alone — and §8c.5's
+priority note stands: the determinism route may spare it entirely.  If it
+does need flipping, this file is the template (tag `consis_call` over the
+three-way mutual, tag first, term-level dispatch).
 
 ### 8c.5 ⭐⭐⭐ THE TECHNIQUE IS VALIDATED AT THE ENTRY POINT
 

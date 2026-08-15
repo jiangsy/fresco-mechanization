@@ -240,7 +240,37 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-14 (d, latest) — ⭐⭐ **THE COMPLETENESS CAMPAIGN IS RESHAPED — induct on the ORDER; and `algo/prop_swap.v` gains the two equivariance lemmas it never had**
+## 2026-08-15 (latest) — ⭐⭐ **`def_sub_impl.v` DERIVES ITS UNFOLDING EQUATIONS — the mutual `with` re-encoded as ONE tagged block (user directive), with two measured compile-time traps on the way**
+
+The §8c.4 blocker on the critical path is closed: `e_sub_impl` is
+reducible.  `Equations` cannot derive unfolding equations for a mutual
+`with` companion (settled, thirty-line reproduction), and the
+continuation-hoist alternative is REFUTED at the guard checker (the
+checker does not thread subterm specs through the walk's own inner fix —
+also a thirty-line reproduction).  What landed is the user's encoding:
+`sub_call : Set := sub_call_sub P | sub_call_flex Ξ α`, one block
+`e_sub_call_impl` over the tag, `by struct` on a combined single-inductive
+order `e_sub_call_order` mirroring `def_order.v` §6, with a mutual
+`Fixpoint` injection from the untouched mutual orders and thin
+same-signature wrappers `e_sub_impl` / `e_sub_flex_impl` — so
+`def_typing_impl.v`, `def_pat_impl.v` and `Extract.v` are byte-identical.
+Two traps, both measured and both in handoff §8c.4: (i) the tag must be
+the FIRST argument or the case tree cross-multiplies the flex clauses
+under the sub clauses' column splits (840 obligations, 30 unclosable);
+(ii) clause-pattern dispatch makes `equations=yes` prove one lemma per
+case-tree LEAF — 102 equations, 965 s, a 105 MB `.vo` — so the sub side
+is ONE clause whose dispatch is term-level convoy matches (each arm binds
+the equality the obligation tactic `subst`s), which derives 7 clause
+equations in 150 s / 26 MB.  Dispatch order is the reference
+implementation's, unchanged (ForallR before ForallL, §8b.1).  Extraction:
+`frost_guess.ml` 3,873 → 3,783 lines (the two mutual functions merge into
+one tagged function plus wrappers), `ocamlc -c` clean, no `Obj.magic` /
+`Acc_rect` / `Fix_sub` / `FixWf`.  `make coq` green, README 32/32,
+`Print Assumptions` closed on the impl, its equations, the injection and
+`e_sub_run_sound`.  ⛔ Left at `equations=no`: `def_consis_impl.v` only —
+§8c.5's determinism route may spare it; if not, this file is the template.
+
+## 2026-08-14 (d) — ⭐⭐ **THE COMPLETENESS CAMPAIGN IS RESHAPED — induct on the ORDER; and `algo/prop_swap.v` gains the two equivariance lemmas it never had**
 
 Two things, and the first is why the second was written.
 
