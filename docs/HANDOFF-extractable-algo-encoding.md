@@ -1879,7 +1879,7 @@ statement about the RUNNER's dispatch, not the relation.
 (✅ **Done the same day — see the end of §8c.4; the check-mode twin is Qed
 alongside the infer one in `prop_run_complete.v`.**)
 
-### 8c.6 ⭐ §8c.3 levels 1 and 2a are CLOSED (2026-08-15): the LOOK block, and the SOLVE block's eq layer
+### 8c.6 ⭐ §8c.3 levels 1, 2a, 2b and 3 are CLOSED (2026-08-15): the LOOK block, BOTH SOLVE layers, and the CSTR FOLD
 
 `prop_run_complete.v` §2 (1,381 lines total, 18.6 s):
 `e_lookeq_run_complete` and `e_looksub_run_complete` are Qed and
@@ -2085,23 +2085,61 @@ proof ADDED to it, and what the next levels should copy or watch:
     as "No matching clauses", not as an unbound-reference error — probe
     with markers before blaming the pattern.
 
+- ⭐⭐ **LEVEL 3 IS CLOSED TOO (2026-08-15): the CSTR FOLD**
+  (`e_solve_cstr_run_complete` / `e_solve_cstr_impl_complete`,
+  prop_run_complete.v §5, axiom-free; file ~39 s).  The recipe below
+  held whole — invert the eq-cons row, kill the head by §3's lemma,
+  bridge (`e_solve_eq_sound`), read off ρ (`a_solve_eq_det`), transport
+  the TAIL along `chain ρ zs`.  What it added:
+
+  - ⚠️⚠️ **THE `fsetdec` CLIFF IS AT 6 SET VARIABLES, AND IT DICTATES
+    HOW A MOTIVE SET IS WRITTEN.**  Measured on this very case, for a
+    DISJOINTNESS goal (`_ ∩ _ [=] empty` hypotheses, `∉`/`∈`
+    conclusion): **4 vars 0.25 s, 5 vars 2 s, 6 vars > 120 s.**  The
+    fold's motive set is `ftv P ∪ ftv 𝒞`, which at the eq-cons row
+    reduces to `ftv P ∪ ftv Q0 ∪ ftv 𝒞'` — spelling that out costs
+    THREE variables in every column-freshness goal and HANGS the
+    build.  The fix, and the rule for every level above: hold the set
+    OPAQUE — `pose (V := …)`, one `HVdef : V = …`, `clearbody V`, and
+    re-open `HVdef` only in the (four) places that must look inside.
+    ⚙ PURE-SUBSET goals are NOT on this cliff (9 set variables cost
+    0.1 s), so the discipline is needed for the disjointness family
+    alone.  ⚙ This is the same failure MODE as the evar-set hang, but
+    a different CAUSE — here every set is concrete.
+  - The transport's own kit is mechanical: `flex_agree_swaps_left` and
+    `ftvar_in_aenv_swaps_subset` are folds of §3a's singles under ONE
+    hypothesis — every chain pair avoids `V` — which is `chain_atoms`
+    plus the two column-freshness facts (left column ⊆ `dom Ξd1`,
+    which dodges `ftvar_in_aenv Θd ⊇ V`; right column ⊆
+    `dom (sv_block r1)`, which dodges `S0 ⊇ V`; intermediates freshly
+    drawn).  ⭐ The one NEW lemma is `flex_agree_flex_block`: both
+    sides gain the SAME flex block at the head, so agreement EXTENDS
+    to that block's atoms — needed because `rel_pskl_ftv_r` bounds the
+    transported yield by `V ∪ cols_r ρ`, not by `V`.  (No disjointness
+    premise: an atom of the block is flexible on both sides outright,
+    and `binds` is membership, so head shadowing is a non-issue.)
+  - prop_solve_det.v gained the four facts nothing in the tree had:
+    `atoms_fresh_list` (a fresh LIST, by iterating `atom_fresh`
+    against a growing avoid-set), `uniq_flex_pairs_l_nodup` / `_r_nodup`
+    (the `uniq` premises ARE the chain's two `NoDup`s — ⚠️ `map` is
+    metalib's env-map, write `List.map`), and `swaps_aenv_uniq`.
+  - The sind is the campaign's smallest — ONE doubled premise, the eq
+    tail companion, which already sits at the runner's yield — and the
+    case bash has 4 leaves (`Print Rewrite HintDb e_solve_cstr_impl`).
+    The sub-WITH-A-TAIL leaf closes by `inversion Hd` alone: no rule
+    fits, so the runner's `None` is never reached.  Both fold
+    inversions are packaged as lemmas (`a_solve_cstr_sub_inv` /
+    `a_solve_cstr_eq_inv`) rather than inlined — the eq one must hand
+    back NAMES for both block halves and the middle yield.
+  - `uniq Ξd` propagates by `uniq_app_1` / `uniq_app_2` (metalib), and
+    the runner's own block is `uniq` for free (`e_solve_eq_uniq`).
+
 - ⛔ **NEXT, in order:**
-  1. **The CSTR fold** (`e_solve_cstr_run_complete`, prop_run_complete
-     §5): sind for `e_solve_cstr_order` (eq-cons companion already sits
-     at the runner's yield); eq-cons case = kill the head by the §3 eq
-     lemma, bridge the runner's run to an a-side derivation
-     (`e_solve_eq_sound` — coverage is in the motive), `a_solve_eq_det`
-     against the inverted head, transport the derivation's tail along
-     `chain ρ zs` (`a_solve_cstr_swaps`; C' is fixed — its pairs avoid
-     it; the context rides), re-establish the motive facts
-     (`chain_flex_pairs` aligns the transported block with
-     `sv_block r1`, both sides bind flex_mono, so agreement at the
-     block's atoms is by construction; `rel_pskl_ftv_r` bounds
-     `ftv (sv_out r1)` for coverage).  Statement carries `uniq Ξd` on
-     the derivation and BOTH scoped premises (Θd's and Θ's).
-  2. Then extract (needs the LOOK judgements' det — note the collected
-     𝒞 leaks openers, so its det needs a cstr-list `rel`), the consis
-     trio, and sub through the tagged blocks' equations
-     (`simp e_consis_call_impl` / `simp e_sub_call_impl` after
-     unfolding the wrappers), with the §8c.2 (2b) shape facts needed
-     from the sub level up.
+  1. **The EXTRACT level** (`e_extract_run_complete`) — scouted below
+     (§8c.7); it is the first level that needs the LOOK judgements'
+     determinism, and that is NOT a mirror of the solve one.
+  2. Then the consis trio, and sub through the tagged blocks'
+     equations (`simp e_consis_call_impl` / `simp e_sub_call_impl`
+     after unfolding the wrappers), with the §8c.2 (2b) shape facts
+     needed from the sub level up, ending at the flagship
+     `e_typing_run_complete`.

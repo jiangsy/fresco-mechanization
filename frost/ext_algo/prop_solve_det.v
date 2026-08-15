@@ -297,6 +297,26 @@ Proof.
   pose proof (IH _ Hxs). fsetdec.
 Qed.
 
+(** A fresh LIST of a prescribed length — the chain's intermediates.
+    Nothing in the tree provides one ([atom_fresh] gives a single atom),
+    so it is built by iterating [atom_fresh] against the growing
+    avoid-set. *)
+Lemma atoms_fresh_list : forall n (L : atoms),
+  exists zs, length zs = n /\ NoDup zs /\ atoms_of zs ∩ L [=] empty.
+Proof.
+  induction n as [ | n IH ]; intros L.
+  - exists nil. simpl.
+    split; [ reflexivity | split; [ constructor | fsetdec ] ].
+  - destruct (IH L) as [zs [Hlen [Hnd Hdis]]].
+    destruct (atom_fresh (L ∪ atoms_of zs)) as [z Hz].
+    exists (z :: zs). simpl.
+    split; [ auto | ].
+    split.
+    + constructor; [ | exact Hnd ].
+      intro Hin. apply atoms_of_in in Hin. clear - Hz Hin. fsetdec.
+    + clear - Hz Hdis. fsetdec.
+Qed.
+
 Lemma swaps_atom_app : forall ps1 ps2 α,
   swaps_atom (ps1 ++ ps2) α = swaps_atom ps2 (swaps_atom ps1 α).
 Proof.
@@ -516,6 +536,47 @@ Proof.
   rewrite IH. fsetdec.
 Qed.
 
+(** ⚠️ [map] is metalib's ENV-map; the list one is [List.map] — the columns
+    are read off the pair list, not off the blocks. *)
+Lemma in_map_fst_cols_l : forall (ρ : list (atom * atom)) α,
+  In α (List.map fst ρ) -> α `in` cols_l ρ.
+Proof.
+  intros * Hin. apply List.in_map_iff in Hin.
+  destruct Hin as [[a b] [Heq Hin]]. simpl in Heq; subst.
+  eapply cols_l_in; eassumption.
+Qed.
+
+Lemma in_map_snd_cols_r : forall (ρ : list (atom * atom)) β,
+  In β (List.map snd ρ) -> β `in` cols_r ρ.
+Proof.
+  intros * Hin. apply List.in_map_iff in Hin.
+  destruct Hin as [[a b] [Heq Hin]]. simpl in Heq; subst.
+  eapply cols_r_in; eassumption.
+Qed.
+
+(** ⭐ The [uniq] hypotheses of §1's header, converted into the two NoDups
+    [chain_image_pair] needs: duplicate-freedom of a block's domain IS
+    duplicate-freedom of the corresponding column. *)
+Lemma uniq_flex_pairs_l_nodup : forall ρ,
+  uniq (flex_pairs_l ρ) -> NoDup (List.map fst ρ).
+Proof.
+  induction ρ as [ | [a b] ρ IH ]; intros Hu; simpl; [ constructor | ].
+  simpl in Hu. apply uniq_cons_iff in Hu. destruct Hu as [Hu Hn].
+  constructor; [ | apply IH; exact Hu ].
+  intro Hin. apply in_map_fst_cols_l in Hin.
+  rewrite <- dom_flex_pairs_l in Hin. contradiction.
+Qed.
+
+Lemma uniq_flex_pairs_r_nodup : forall ρ,
+  uniq (flex_pairs_r ρ) -> NoDup (List.map snd ρ).
+Proof.
+  induction ρ as [ | [a b] ρ IH ]; intros Hu; simpl; [ constructor | ].
+  simpl in Hu. apply uniq_cons_iff in Hu. destruct Hu as [Hu Hn].
+  constructor; [ | apply IH; exact Hu ].
+  intro Hin. apply in_map_snd_cols_r in Hin.
+  rewrite <- dom_flex_pairs_r in Hin. contradiction.
+Qed.
+
 Fixpoint swaps_abind (ps : list (atom * atom)) (bd : abind) : abind :=
   match ps with
   | nil => bd
@@ -553,6 +614,15 @@ Proof.
              (Hincl _ (or_introl eq_refl)) Hnl Hnr Hnz Hlen Hdis).
   f_equal.
   apply IH; auto. intros p Hp. apply Hincl. right. exact Hp.
+Qed.
+
+(** [uniq] of a transported block: [swap_atom] is injective, so a single
+    swap preserves it ([swap_aenv_uniq]) and the chain is its fold. *)
+Lemma swaps_aenv_uniq : forall ps (Θ : aenv),
+  uniq Θ -> uniq (swaps_aenv ps Θ).
+Proof.
+  induction ps as [ | [a b] ps IH ]; intros Θ Hu; simpl;
+    [ exact Hu | apply IH; apply swap_aenv_uniq; exact Hu ].
 Qed.
 
 Lemma swaps_cstrs_fresh_id : forall ps C,

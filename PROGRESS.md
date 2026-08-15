@@ -240,7 +240,64 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-15 (f, latest) — ⭐⭐⭐ **THE YIELD-MISMATCH FORK IS RESOLVED AND ITS METATHEORY LANDED: the solve layer is DETERMINISTIC UP TO FRESH RENAMING**
+## 2026-08-15 (g, latest) — ⭐⭐⭐ **§8c.3 LEVEL 3 CLOSED: the CSTR FOLD is complete — the yield mismatch is paid by TRANSPORTING the derivation's tail along the determinism chain**
+
+`prop_run_complete.v` §5 (`e_solve_cstr_run_complete` /
+`e_solve_cstr_impl_complete`, axiom-free; file 3,432 → 3,831 lines,
+~39 s): a constraint-fold derivation at scoped, covered inputs — plus
+`uniq` of its block — means the fold runner does not return `None`.
+This is the first level to CONSUME the determinism metatheory, and it
+consumes it exactly as §8c.6's recipe predicted: invert the eq-cons row,
+kill the head by level 2a's finished lemma, bridge the runner's run back
+to an a-side derivation (`e_solve_eq_sound`), read off the aligned
+renaming ρ (`a_solve_eq_det`), and transport the derivation's TAIL along
+ρ's palindromic swap chain (`a_solve_cstr_swaps` on `chain ρ zs`) so
+that its context, subject and constraint list land on the runner's:
+`chain_flex_pairs` aligns the two blocks entrywise, `rel_pskl_chain`
+turns the derivation's yield into `sv_out r1`, and
+`swaps_cstrs_fresh_id` leaves `𝒞'` FIXED (the left column dodges
+`ftvar_in_aenv Θd`, the right dodges the supply, the intermediates are
+freshly drawn).  ⚠️ `uniq Ξd` is a REQUIRED premise, not a defensive
+one — without it the derivation's block need not be a renaming of the
+runner's at all; it splits recursively because blocks only append
+upward (`uniq_app_1`/`_2`).
+
+What the level ADDED to the plan, and what every level above should
+copy:
+
+- ⚠️⚠️ **THE `fsetdec` CLIFF WAS MEASURED, and it decides how the
+  motive sets must be WRITTEN.**  On a DISJOINTNESS goal
+  (`_ ∩ _ [=] empty` hypotheses, a membership conclusion) `fsetdec`
+  costs 0.25 s at 4 set variables, 2 s at 5, and **> 120 s at 6** —
+  the fold's first draft spelled its variable set out as
+  `ftv P ∪ ftv Q0 ∪ ftv 𝒞'`, which put THREE variables into every
+  column-freshness goal and hung the build.  The fix is to hold the
+  set OPAQUE (`pose` + `clearbody` + one `HVdef` equation re-opened in
+  the four places that look inside), keeping every such goal at ≤ 4.
+  ⚙ PURE-SUBSET goals are NOT on this cliff — 9 set variables cost
+  0.1 s — so only the disjointness family needs the discipline.
+- The n-fold context kit is mechanical (`flex_agree_swaps_left`,
+  `ftvar_in_aenv_swaps_subset` — folds of §3a's singles under one
+  "every chain pair avoids V" hypothesis, itself `chain_atoms` plus
+  the two column-freshness facts), with ONE genuinely new lemma:
+  `flex_agree_flex_block`, both sides gaining the SAME flex block at
+  the head, so agreement EXTENDS to the block's own atoms — needed
+  because `rel_pskl_ftv_r` bounds the transported yield by
+  `V ∪ cols_r ρ`, not by `V`.
+- The det file gained the four small facts the transport needs and
+  nothing in the tree provided: `atoms_fresh_list` (a fresh LIST, by
+  iterating `atom_fresh` against a growing avoid-set),
+  `uniq_flex_pairs_l_nodup`/`_r_nodup` (the `uniq` premises ARE the
+  chain's two `NoDup`s — ⚠️ `map` is metalib's env-map, write
+  `List.map`), and `swaps_aenv_uniq`.
+- The sind is the smallest of the campaign (ONE doubled premise: the
+  eq tail companion, which already sits at the RUNNER's yield), and
+  the case bash has only 4 leaves — the sub-with-a-tail leaf closes by
+  `inversion Hd` alone (no rule fits).
+
+`make coq` green, README 32/32, zero admits.
+
+## 2026-08-15 (f) — ⭐⭐⭐ **THE YIELD-MISMATCH FORK IS RESOLVED AND ITS METATHEORY LANDED: the solve layer is DETERMINISTIC UP TO FRESH RENAMING**
 
 The §8c.6 design fork is decided — option (a), the USER's call — and
 `frost/ext_algo/prop_solve_det.v` (1,177 lines, ~15 s, axiom-free) now
