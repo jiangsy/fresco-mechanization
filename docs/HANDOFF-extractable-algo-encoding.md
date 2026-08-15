@@ -1992,16 +1992,65 @@ proof ADDED to it, and what the next levels should copy or watch:
     compute by `simpl` (the runner's FlexR subjects are never variables —
     the Var clause catches those first).
 
+- ⭐ **The SOLVE level's SUB layer is CLOSED too (2026-08-15, level 2b):**
+  `e_solve_sub_run_complete` / `e_solve_sub_impl_complete`
+  (prop_run_complete.v §4), axiom-free — same motive as the eq layer
+  (`flex_agree` + scoped inputs + coverage; `Θd := Θ` and reflexive
+  agreement at the run level).  What the level added, and what the next
+  ones should copy:
+
+  - ⭐⭐ **The ∃-context reorder CANNOT be proved by one direct
+    induction** — the scouted "let the context ride and deliver the
+    motive facts" statement is right as an INTERFACE, but inside the
+    induction the IH hands back an ABSTRACT context, and re-applying
+    SS-ForallR needs a witness fresh for it: any swap that renames the
+    target opener to such a witness re-pollutes the context it swaps
+    (the junk chases the witness).  The resolution is a SPLIT:
+    `a_solve_sub_forall_l_hoist` proves the reorder with the context
+    FIXED under the STRONG freshness `β ∉ ftvar_in_aenv Θd` — which
+    makes the look level's R-first dance apply verbatim (IH first at an
+    interim δ, then fixed-context rebinds + `a_solve_sub_ctx_exchange`,
+    a `ctx_change` instance as scouted) — and the wrapper
+    `a_solve_sub_forall_l_first` BUYS that freshness with ONE
+    sanitizing pre-swap `(β δ)` on the input derivation (inputs fixed:
+    β, δ avoid them; agreement survives `flex_agree_swap_left`; and
+    `β ∉ dom Θd'` — what `flex_agree_push_tvar` needs — is the swap's
+    own by-product).  Expect the same split at every later level whose
+    runner commits a binder rule the relation leaves open.
+  - `a_solve_sub_tophole_l_first` (strip-first) is as easy as scouted:
+    no swaps, the ForallR case re-applies at the SAME witness (the
+    freshness set only shrinks), Vacuous answers fresh, Check dies
+    (guarded excludes ⫯).
+  - The case bash: the ∀/⫯ SUBJECT clauses apply their reorder to the
+    derivation UNIFORMLY — no inversion at all; the ForallR-committing
+    clauses (ghost-free ∀ target over unit/arrow/◇ subjects) rebind the
+    rule's witness with the context RIDING (`a_solve_sub_rebind_r_ctx`)
+    and re-establish agreement by the §3d chain verbatim; the Check
+    clause drops into the finished §3 eq lemma with the motive premises
+    passed UNCHANGED (same variable set); Arrow/GhostLF copy §3d's
+    arrow case.  All 79 leaf equations
+    (`Print Rewrite HintDb e_solve_sub_impl`) close; the pure-`None`
+    ti/fn leaves close by `inversion Hd` alone (no rule fits).
+  - ⚠️ Three new traps, all now paid for:
+    (1) `repeat split` on the conjunction of motive facts DIVES INTO
+    `flex_agree` (constructor-search introduces the ∀ and splits the
+    iff) — use explicit nested `split`s.
+    (2) The §3d by-clauses `clear - Hcov; simpl in Hcov; fsetdec` fail
+    whenever the motive set mentions a COMPOSITE subject
+    (`ftvar_in_pskl (pskl_arrow …)` stays unreduced in the GOAL and
+    fsetdec treats it as an opaque set) — always `simpl in *`.  §3
+    never saw this because the eq level's threading cases have bare
+    metavariable subjects.
+    (3) A finished `_impl_complete` lemma has its result-side arguments
+    (`Θd Ξd P'd`) IMPLICIT, so the kill tactic that applies it directly
+    must NOT pass the three `_` placeholders the sind-companion version
+    passes — `kill_seq_call_g` (mirroring §2c's `kill_eq_call_g`)
+    exists for exactly this.
+  - `look_absurd` grew the sub level's two clauses: the Check clause's
+    3-conjunct test, and `guarded_pskl pskl_hole`.
+
 - ⛔ **NEXT, in order:**
-  1. **sub-solve** (`e_solve_sub_run_complete`): same motive; the
-     dispatch peels ∀/⫯ SUBJECTS FIRST (SolS-ForallL before ForallR —
-     the OPPOSITE of the look walk), so the two reorder lemmas are
-     `a_solve_sub_forall_l_first` (mirror of the look level's R-first,
-     same two-swap + exchange dance; exchange for the solve = an
-     `a_solve_sub_eq_ctx_change` instance) and a strip-first for the ⫯
-     subject vs ForallR (easy — no exchange, the witness stays put).
-     LS→check drops into the finished eq lemma.
-  2. ⛔⛔ **The CSTR fold and everything above it hit a NEW design
+  1. ⛔⛔ **The CSTR fold and everything above it hit a NEW design
      fork the ORDER-induction plan has not addressed: the tail runs at
      the runner's own YIELD** (`sv_out r1`) where the derivation's tail
      sits at the DERIVATION's yield — and unlike contexts, yields are
@@ -2019,7 +2068,7 @@ proof ADDED to it, and what the next levels should copy or watch:
      derivation's midpoints.  (b) matches how the a-side handled the
      same problem and adds no new metatheory; its cost is that the
      composite statements carry the declarative premises.
-  3. Then the consis trio and sub through the tagged blocks' equations
+  2. Then the consis trio and sub through the tagged blocks' equations
      (`simp e_consis_call_impl` / `simp e_sub_call_impl` after
      unfolding the wrappers), with the §8c.2 (2b) shape facts needed
      from the sub level up.

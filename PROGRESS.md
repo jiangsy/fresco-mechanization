@@ -240,7 +240,41 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-15 (d, latest) — ⭐⭐ **§8c.3 LEVEL 2a: the SOLVE block's eq runner is complete — and the threading levels' interface is settled**
+## 2026-08-15 (e, latest) — ⭐⭐ **§8c.3 LEVEL 2b: the SOLVE block's SUB runner is complete — the LEFT-first reorders paid, via a hoist/wrapper split**
+
+`prop_run_complete.v` §4 (`e_solve_sub_run_complete` /
+`e_solve_sub_impl_complete`, axiom-free, file ~30 s): an `a_solve_sub`
+derivation at scoped, covered inputs means the sub-solve runner answers —
+same `flex_agree` motive as level 2a, reflexive at the run level.  The
+level's own price was the dispatch's LEFT-first rule priorities
+(type.ml:489-533 peels ∀/⫯ SUBJECTS first, the opposite of the look
+walk): `a_solve_sub_tophole_l_first` (strip-first; easy — no swaps, the
+ForallR case re-applies at the SAME witness) and
+`a_solve_sub_forall_l_first` (ForallL-first).  ⭐⭐ The scouted
+∃-context interface for the latter is right, but it CANNOT be proved by
+one direct induction — the IH returns an ABSTRACT context, and
+re-applying SS-ForallR needs a witness fresh for it, which any
+opener-renaming swap re-pollutes.  The resolution:
+`a_solve_sub_forall_l_hoist` proves the reorder with the context FIXED
+under the strong freshness `β ∉ ftvar_in_aenv Θd` (the look level's
+R-first dance then applies verbatim — IH at an interim δ, fixed-context
+rebinds, `a_solve_sub_ctx_exchange` as a `ctx_change` instance), and the
+wrapper buys that freshness with ONE sanitizing pre-swap `(β δ)` on the
+input derivation, delivering the motive facts (incl. `β ∉ dom Θd'`) at
+the sanitized context.  The case bash (79 leaves): reorders applied
+UNIFORMLY at ∀/⫯ subjects (no inversion), riding rebind
+(`a_solve_sub_rebind_r_ctx`) at the ForallR-committing clauses, the
+Check clause dropping into the finished §3 eq lemma with premises passed
+unchanged, Arrow/GhostLF verbatim from §3d.  ⚠️ Three new traps in
+§8c.6: `repeat split` dives into `flex_agree`; `simpl in <one hyp>`
+by-clauses fail at COMPOSITE subjects (goal's `ftvar_in_pskl` stays
+opaque to `fsetdec` — always `simpl in *`); a finished `_impl_complete`
+lemma's implicit result args need their own kill tactic
+(`kill_seq_call_g`).  ⛔ Next is the cstr fold's DESIGN FORK (§8c.6) —
+decide (a) determinism-up-to-renaming vs (b) composing through the
+a-side P5–P7 tower BEFORE writing the fold.  `make coq` green.
+
+## 2026-08-15 (d) — ⭐⭐ **§8c.3 LEVEL 2a: the SOLVE block's eq runner is complete — and the threading levels' interface is settled**
 
 `prop_run_complete.v` §3 (`e_solve_eq_run_complete` /
 `e_solve_eq_impl_complete`, axiom-free, file 21 s): a `a_solve_eq`
