@@ -1824,3 +1824,26 @@ its fixed entry supply stay exactly as they are; the decidability corollary
 still composes as §5 says.  And the final statement needs only `Some`-ness —
 agreement is an INTERNAL obligation of the induction (the ForallR and abs
 output tests), not part of what decidability consumes.
+
+✅ **THE ENTRY-POINT EXHIBIT IS QED (2026-08-15)** —
+`frost/ext_algo/prop_run_complete.v` §1, the campaign's new file:
+
+    e_typing_run_complete_unit_infer : forall S0,
+      e_typing_run S0 mode_ti nil pskl_hole exp_unit
+      = Some (mk_typing_result S0 nil ptyp_unit)
+
+axiom-free, and the proof is the §8c.4 machinery end to end:
+`simp e_typing_impl` (clause equation), `cbn` (the checker tests compute),
+`unfold e_sub_impl` (the wrapper), `simp e_sub_call_impl` (the tagged
+block's equation), `cbn` (the term-level dispatch reduces at
+mode_ti/pskl_hole to SI-Infer; `pskl_readback` computes), `reflexivity`.
+⚙ No `vm_compute` can replace this — the runners recurse on a Qed-opaque
+totality proof, so plain reduction is stuck BY DESIGN; the equations
+quantify over the domain proof, which is the §8c.3 point in action.
+⚠️ **The check-mode twin is the measured boundary**: SI-Check calls
+`e_consis_impl`, whose block is still `equations=no`, so its value is
+stuck on its own opaque domain proof.  Flipping `def_consis_impl.v` with
+§8c.4's template (tag over the three-way mutual, tag FIRST, term-level
+convoy dispatch) is therefore the next unblocking move — the determinism
+alternative cannot supply "the consis sub-call returns `Some`", which is a
+statement about the RUNNER's dispatch, not the relation.

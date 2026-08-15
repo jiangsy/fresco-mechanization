@@ -268,7 +268,20 @@ one tagged function plus wrappers), `ocamlc -c` clean, no `Obj.magic` /
 `Acc_rect` / `Fix_sub` / `FixWf`.  `make coq` green, README 32/32,
 `Print Assumptions` closed on the impl, its equations, the injection and
 `e_sub_run_sound`.  ⛔ Left at `equations=no`: `def_consis_impl.v` only —
-§8c.5's determinism route may spare it; if not, this file is the template.
+and the exhibit below shows it is now THE blocker; this file is the
+template for flipping it.
+
+**Later the same day — ⭐ THE ENTRY-POINT COMPLETENESS EXHIBIT IS QED**
+(`frost/ext_algo/prop_run_complete.v`, the campaign file of §8c.3/§8c.5):
+`e_typing_run_complete_unit_infer` — `e_typing_run S0 mode_ti nil
+pskl_hole exp_unit = Some (mk_typing_result S0 nil ptyp_unit)`,
+axiom-free, six tactics, every one of them a §8c.4 deliverable
+(`simp e_typing_impl`, `cbn`, `unfold e_sub_impl`,
+`simp e_sub_call_impl`, `cbn`, `reflexivity`).  A Qed-opaque totality
+proof sits in the term, so no plain computation could have done this —
+the equations quantify over the domain proof, which is §8c.3's argument
+made concrete.  ⚠️ The check-mode twin is stuck exactly at
+`e_consis_impl` (no equations), which settles the next move.
 
 ## 2026-08-14 (d) — ⭐⭐ **THE COMPLETENESS CAMPAIGN IS RESHAPED — induct on the ORDER; and `algo/prop_swap.v` gains the two equivariance lemmas it never had**
 
