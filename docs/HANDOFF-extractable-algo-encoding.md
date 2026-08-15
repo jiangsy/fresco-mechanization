@@ -2049,26 +2049,59 @@ proof ADDED to it, and what the next levels should copy or watch:
   - `look_absurd` grew the sub level's two clauses: the Check clause's
     3-conjunct test, and `guarded_pskl pskl_hole`.
 
+- ⭐⭐ **The YIELD-MISMATCH design fork is RESOLVED — option (a),
+  determinism-up-to-fresh-renaming (2026-08-15, USER DECISION), and its
+  metatheory is LANDED** (`frost/ext_algo/prop_solve_det.v`, 1,177
+  lines, ~15 s, axiom-free): `a_solve_eq_det` / `a_guess_mono_det` —
+  two derivations on the same inputs, at ANY two contexts, produce the
+  same block and yield up to an aligned fresh-pair renaming.  Design
+  points the file's header records, the short version:
+
+  - ⚠️ A FUNCTIONAL renaming does not exist in general —
+    `a_guess_mono__arrow` runs both halves at the same Θ, so ONE
+    derivation may legally guess the SAME flexible for two holes
+    (yield `α̂→α̂`) where another guesses two distinct ones.  So
+    determinism is stated RELATIONALLY (`rel_pskl ρ V`, pairs ρ +
+    identity support V), unconditionally; column UNIQUENESS is paid
+    only at the TRANSPORT (`rel_pskl_chain` — a PALINDROMIC swap chain
+    `(a,z)::(chain …)++[(z,b)]` through globally fresh intermediates,
+    built from single swaps, no permutation datatype).  The fold will
+    hypothesize `uniq` of the DERIVATION's block (the runner's is
+    `uniq` by `e_solve_eq_uniq`), which propagates as ONE `uniq Ξd`
+    premise per composite statement (blocks only append upward).
+  - ⭐ The det lemmas are HYPOTHESIS-FREE (no flex_agree, no scoping):
+    each derivation's side conditions held at its own context, and the
+    eq rule choice is forced by input shapes — the overlaps all
+    produce identical outputs (`a_solve_eq_var_subject_inv`).  Size
+    induction (every eq rule strictly shrinks `size P + size Q`) lets
+    BOTH binder rows rebind to a common fresh opener by plain swaps;
+    `rel_pskl_close` DROPS the opener from the identity support, so no
+    strengthening lemma is ever needed.
+  - ⚠️⚠️ Two of the three >100 s hangs this file hit were the KNOWN
+    evar-set fsetdec trap in new clothes: `eapply rel_pskl_mono` then
+    `apply Hrel` leaves the source V an evar (pin it: `apply (Hrel V)`),
+    and un-`clear`ed fsetdecs beside a size-induction IH crawl.  The
+    third: `Require`-missing names inside a `match goal` body surface
+    as "No matching clauses", not as an unbound-reference error — probe
+    with markers before blaming the pattern.
+
 - ⛔ **NEXT, in order:**
-  1. ⛔⛔ **The CSTR fold and everything above it hit a NEW design
-     fork the ORDER-induction plan has not addressed: the tail runs at
-     the runner's own YIELD** (`sv_out r1`) where the derivation's tail
-     sits at the DERIVATION's yield — and unlike contexts, yields are
-     SUBJECTS, so `flex_agree` does not cover the mismatch.  Same shape
-     at every composition above (extract's three stages, consis's
-     output-context threading, sub's ForallL consuming an `a_extract`).
-     Two candidate resolutions, to be DECIDED before writing the fold:
-     (a) determinism-up-to-fresh-renaming per judgement — principled,
-     but renaming = the permutation layer the tree has always refused;
-     (b) ⭐ compose through the EXISTING a-side completeness tower
-     instead: state the composite levels' completeness from the
-     SEMANTIC premises (as P6-L/P7 already do on the a-side), so each
-     stage's needed derivation is re-derived AT THE RUN'S OWN OUTPUTS
-     by the P5–P7 lemmas rather than transported from the inverted
-     derivation's midpoints.  (b) matches how the a-side handled the
-     same problem and adds no new metatheory; its cost is that the
-     composite statements carry the declarative premises.
-  2. Then the consis trio and sub through the tagged blocks' equations
+  1. **The CSTR fold** (`e_solve_cstr_run_complete`, prop_run_complete
+     §5): sind for `e_solve_cstr_order` (eq-cons companion already sits
+     at the runner's yield); eq-cons case = kill the head by the §3 eq
+     lemma, bridge the runner's run to an a-side derivation
+     (`e_solve_eq_sound` — coverage is in the motive), `a_solve_eq_det`
+     against the inverted head, transport the derivation's tail along
+     `chain ρ zs` (`a_solve_cstr_swaps`; C' is fixed — its pairs avoid
+     it; the context rides), re-establish the motive facts
+     (`chain_flex_pairs` aligns the transported block with
+     `sv_block r1`, both sides bind flex_mono, so agreement at the
+     block's atoms is by construction; `rel_pskl_ftv_r` bounds
+     `ftv (sv_out r1)` for coverage).  Statement carries `uniq Ξd` on
+     the derivation and BOTH scoped premises (Θd's and Θ's).
+  2. Then extract (needs the LOOK judgements' det — note the collected
+     𝒞 leaks openers, so its det needs a cstr-list `rel`), the consis
+     trio, and sub through the tagged blocks' equations
      (`simp e_consis_call_impl` / `simp e_sub_call_impl` after
      unfolding the wrappers), with the §8c.2 (2b) shape facts needed
      from the sub level up.

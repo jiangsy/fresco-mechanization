@@ -240,7 +240,34 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-15 (e, latest) — ⭐⭐ **§8c.3 LEVEL 2b: the SOLVE block's SUB runner is complete — the LEFT-first reorders paid, via a hoist/wrapper split**
+## 2026-08-15 (f, latest) — ⭐⭐⭐ **THE YIELD-MISMATCH FORK IS RESOLVED AND ITS METATHEORY LANDED: the solve layer is DETERMINISTIC UP TO FRESH RENAMING**
+
+The §8c.6 design fork is decided — option (a), the USER's call — and
+`frost/ext_algo/prop_solve_det.v` (1,177 lines, ~15 s, axiom-free) now
+holds what the cstr fold and every composition above it will consume:
+`a_solve_eq_det` and `a_guess_mono_det` — two derivations on the same
+inputs, at ANY two contexts, produce the same block and yield up to an
+aligned fresh-pair renaming.  ⭐⭐ The statement is RELATIONAL
+(`rel_pskl ρ V`) because a functional renaming is genuinely absent:
+`a_guess_mono__arrow` runs both halves at the same Θ, so one derivation
+may guess the SAME flexible for two holes where another guesses two —
+column uniqueness is paid only at the TRANSPORT (`rel_pskl_chain`, a
+palindromic swap chain through globally fresh intermediates, built
+solely from the tree's single-swap primitive).  ⭐ The det lemmas are
+HYPOTHESIS-FREE — no flex_agree, no scoping: rule choice is forced by
+input shapes, the overlaps produce identical outputs
+(`a_solve_eq_var_subject_inv` — the 12-rule matrix has exactly the
+var-subject and ghost-corner crossings), and the size induction rebinds
+both binder rows to a common fresh opener while `rel_pskl_close` DROPS
+the opener from the identity support.  ⚠️ Two >100 s hangs were the
+KNOWN evar-set fsetdec trap resurfacing (`eapply rel_pskl_mono` then
+un-pinned `apply Hrel`; un-`clear`ed fsetdec beside the size IH) — both
+now in §8c.6; a third pitfall: an unimported name inside a `match goal`
+body reports "No matching clauses", not an unbound reference.
+`make coq` green; the fold's completeness (prop_run_complete §5) is the
+next consumer, per the updated §8c.6 recipe.
+
+## 2026-08-15 (e) — ⭐⭐ **§8c.3 LEVEL 2b: the SOLVE block's SUB runner is complete — the LEFT-first reorders paid, via a hoist/wrapper split**
 
 `prop_run_complete.v` §4 (`e_solve_sub_run_complete` /
 `e_solve_sub_impl_complete`, axiom-free, file ~30 s): an `a_solve_sub`
