@@ -240,7 +240,36 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-15 (b, latest) — ⭐⭐⭐ **ALL TWELVE RUNNER BLOCKS DERIVE THEIR EQUATIONS — `def_consis_impl.v` flipped by the same tagged encoding, and BOTH entry-point exhibits are Qed**
+## 2026-08-15 (c, latest) — ⭐⭐⭐ **THE FIRST §8c.3 COMPLETENESS INDUCTION IS CLOSED — the LOOK block's two runners answer wherever a derivation exists**
+
+`prop_run_complete.v` §2 (the file 92 → 1,381 lines, 18.6 s, axiom-free):
+`e_lookeq_run_complete` and `e_looksub_run_complete` — an `a_lookeq` /
+`a_looksub` derivation whose inputs the supply covers
+(`ftvar_in_aenv Θ ∪ {{α}} ∪ ftv P ∪ ftv P' [<=] S0`) means the runner
+does not return `None`.  Coverage is the ONLY premise beyond the
+derivation, and it re-establishes trivially at every recursive call.
+The §8c.6 scouting held: hand strong-induction principles per order
+(`e_lookeq_order_sind` / `e_looksub_order_sind`, Section + term-level
+`Fixpoint`, every premise doubled with its motive companion — the auto
+`_ind` gives no IH through the Arrow conjunction), a runner-dispatch
+case bash through the §8c.4 `simp` equations, and ONE swap per binder
+row (`a_lookeq_rebind`/`_l`/`_r`, `a_looksub_rebind_l`/`_r`) — the
+outputs are requantified existentially, so unlike the `_move` family no
+`β ∉ dom Ξ ∪ ftv 𝒞` is owed.  ⭐⭐ The one thing scouting missed: the
+runner's ForallR PRIORITY at a ghost-free ∀ target overlaps LS-ForallL /
+LS-UnivGhostL in the relation, so a left-rooted derivation must be
+REORDERED — `a_looksub_forall_r_first`, structural induction with the
+swaps AFTER the IH and `a_looksub_ctx_exchange` gluing the two binder
+entries; the eq layer has no overlap because `guarded_pskl` excludes
+∀/⫯ heads.  ⚠️ Mechanics for the next levels, recorded in §8c.6: the
+`kill_*_call` tactics must run OUTSIDE `match goal` branches
+(rename-first scripts); `destruct … eqn:` substitutes the scrutinee into
+the pre-asserted `≠ None` hypothesis and the `None` branch closes by
+`False_ind _ (Hne eq_refl)`; `Set Implicit Arguments` leaves
+under-`open` arguments explicit (pin with `Arguments`).  `make coq`
+green.  Next: the solve level, same template.
+
+## 2026-08-15 (b) — ⭐⭐⭐ **ALL TWELVE RUNNER BLOCKS DERIVE THEIR EQUATIONS — `def_consis_impl.v` flipped by the same tagged encoding, and BOTH entry-point exhibits are Qed**
 
 The (a) entry's template applied to the three-way mutual
 (`assign`/`unifyvar`/`consistency`): tag `consis_call` (⚠️ `Type`, not

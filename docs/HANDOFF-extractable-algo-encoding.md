@@ -1879,61 +1879,91 @@ statement about the RUNNER's dispatch, not the relation.
 (✅ **Done the same day — see the end of §8c.4; the check-mode twin is Qed
 alongside the infer one in `prop_run_complete.v`.**)
 
-### 8c.6 ⛔ NEXT — the first §8c.3 induction: the LOOK block, scouted
+### 8c.6 ⭐ the first §8c.3 induction — the LOOK block — is CLOSED (2026-08-15)
 
-With every runner's equations derived, §8c.3's order-driven completeness
-induction is the whole remaining campaign.  It should go BOTTOM-UP through
-the call graph — look, then solve, extract, the consis trio, sub, split /
-pat / typing — and the LOOK block is the right first target: it is at the
-bottom, small, and still exercises every ingredient of the method
-(committed names, one transposition per binder row, layered rather than
-mutual).  Scouted 2026-08-15, ready to start:
-
-- **Statement shape** (eq layer first; sub layer mirrors it with `m`):
+`prop_run_complete.v` §2 (1,381 lines total, 18.6 s):
+`e_lookeq_run_complete` and `e_looksub_run_complete` are Qed and
+axiom-free — an `a_*` derivation whose inputs the supply covers means the
+runner does not return `None`:
 
       {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}a ->
       ftvar_in_aenv Θ ∪ {{α}} ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P' [<=] S0 ->
       e_lookeq_run S0 Θ α P P' HP HP' <> None
 
-  The coverage premise is the ONLY hypothesis beyond the derivation: the
-  e-side rules state freshness against the SUPPLY, so the runner's own
-  fresh draws need nothing, and coverage is consumed exactly at the
-  transposition steps.  It re-establishes trivially at every recursive
-  call (components shrink; ∀-rows go to `add (supply_fresh S0) S0` with
-  the opened body ⊆ old ∪ the new name).
+(and the `≼[α,m]` mirror).  The coverage premise is the ONLY hypothesis
+beyond the derivation, exactly as scouted, and it re-establishes at every
+recursive call by `ftvar_in_aenv_cons_tvar` + lngen's open-upper +
+`clear -; simpl in *; fsetdec`.  The scouted plan held up whole; what the
+proof ADDED to it, and what the next levels should copy or watch:
 
-- ⚠️ **The auto induction principle of `e_lookeq_order` is UNUSABLE.**
-  The Arrow premise nests its recursive order under a conjunction
-  (`e_lookeq_order … /\ (forall S1 Ξ1 C1, run -> e_lookeq_order …)`), and
-  Coq generates no IH through `/\`.  Write ONE hand `fix` strong-induction
-  lemma per order (motive `Q S0 Θ α P P'`, every premise doubled with its
-  `Q`), exactly like the §8c.4 injections — mechanical, guard-safe
-  (applied-premise subterms, `proj1`/`proj2` through the conj).  This will
-  be needed for EVERY order in the campaign; make it the reusable idiom.
+- **§2a — the hand strong inductions ARE the reusable idiom.**
+  `e_lookeq_order_sind` / `e_looksub_order_sind`: a `Section` with the
+  motive as a `Variable`, ONE `Hstep` hypothesis with every order premise
+  doubled by its motive companion, and a term-level `Fixpoint` that
+  rebuilds `Hstep`'s arguments — guard-safe exactly as the §8c.4
+  injections were (applied-premise subterms; `match … with conj _ Hb =>
+  Hb end` through the Arrow conjunction).  Both passed the guard checker
+  first try.  For a LAYERED pair (lookeq never calls looksub) the lower
+  layer's premises stay UNDOUBLED in the upper sind — the lower lemma is
+  finished and ∀-quantified over its domain proof, so it applies at
+  whatever proof term the equation's RHS carries.
 
-- **The transposition, per binder row**: invert the `a_*` derivation; its
-  ∀-row opened at its own `β` with the rule's OWN freshness premise
-  (`β ∉ add α (ftvar_in_aenv Θ ∪ ftvar P ∪ ftvar P')` — def_rules.v:495ff);
-  the runner commits to `β' := supply_fresh S0` with `β' ∉ S0 ⊇` the same
-  set by coverage.  Apply `a_looksub_lookeq_swap` (algo/prop_swap.v:913)
-  at `(β β')`: the context, `α`, and the closed skeletons are fixed by the
-  two freshness facts, the opened bodies become the runner's committed
-  opens, and the IH applies.  No permutation layer, no height mirror —
-  §8c.3's argument, one swap per row.
+- **§2b — one swap per row, and outputs requantified EXISTENTIALLY.**
+  The five `rebind` helpers (`a_lookeq_rebind`/`_l`/`_r`,
+  `a_looksub_rebind_l`/`_r`) move a binder-row premise from the rule's
+  own witness `b` to the committed `supply_fresh S0` by ONE
+  `a_looksub_lookeq_swap`, with `swap_*_fresh_id` pinning the inputs.
+  ⭐ Because the completeness motive is `∀ Ξ 𝒞`, the outputs just ride
+  the swap — no `β ∉ dom Ξ ∪ ftv 𝒞` is owed, which is what
+  `a_lookeq_forall_move` (which preserves `Ξ`) has to pay.  ⚠️ Under
+  `Set Implicit Arguments` their skeleton arguments stay EXPLICIT (they
+  sit only under `open_pskl_wrt_pskl`/`ftvar_in_pskl` — non-rigid), so
+  each carries an explicit `Arguments {…}` directive; do the same for
+  every future helper meant to be applied to hypotheses.
 
-- **The case bash**: the proof walks the RUNNER's dispatch
-  (`simp e_lookeq_impl`, then the branch tests give hypotheses), not the
-  derivation's rules.  A branch whose tests pass may answer by a
-  DIFFERENT rule than the derivation's root (LE-Absent answers anything
-  with `α ∉ ftvar P`) — that is fine, `Some` is `Some`; the derivation is
-  inverted only to FEED the recursive branches, and at a pinned
-  configuration the possible last rules are few.  ⚠️ Remember
-  `e_lookeq_run` pins its domain proof to `e_lookeq_order_total`: work
-  through `simp`, never reduction.
+- ⭐⭐ **The ONE thing scouting missed: the runner's rule PRIORITY needs a
+  reorder lemma.**  At mode TC with a ghost-free `∀` target, THREE rules
+  can root a derivation (LS-ForallR, LS-ForallL, LS-UnivGhostL) and the
+  runner commits to ForallR (type.ml:663) — so a left-rooted derivation
+  cannot feed the ForallR recursion by inversion alone.
+  `a_looksub_forall_r_first` reorders it: plain structural induction on
+  the derivation, where the left-rule cases apply the IH FIRST (at a
+  fresh opener) and only then swap the two binders into place —
+  swaps-after-IH is what keeps it structural, and
+  `a_looksub_ctx_exchange` glues the two context entries.  The EQ layer
+  has no such overlap: `guarded_pskl` excludes `∀`/`⫯` heads, so every
+  eq branch is fed by exactly one candidate rule.  ⚠️ At each NEXT level,
+  check the dispatch order in the `_impl` header against the relation's
+  overlapping rules FIRST — every priority the runner commits to that the
+  relation leaves open needs its own (small) reorder lemma.
 
-- **After look**: solve (3 runners, layered like look), extract (one
-  composition), then the consis trio and sub — those two go through the
-  tagged blocks' equations (`simp e_consis_call_impl` /
+- **§2c mechanics** (the case bash walks the runner's dispatch through
+  `simp`; the derivation is inverted only to feed recursion — `Some` is
+  `Some`):
+  - `look_absurd` closes every impossible inversion case from the branch
+    tests: mem-vs-`∉`, `guarded_pskl (∀/⫯ …)` inversion, the
+    `ghost_free_ck`/`guarded_shape_ck` `_complete` converses against a
+    false test, `lc_pskl (var_b _)`.
+  - the `kill_*_call` tactics discharge a recursive call: assert
+    `≠ None` from the IH, `destruct … eqn:` — ⚠️ the destruct SUBSTITUTES
+    the call inside the pre-asserted hypothesis too, and the `None`
+    branch closes by `exact (False_ind _ (Hne eq_refl))`, NOT by `exact
+    Hne` (the inner call's `option (sig …)` differs from the outer
+    result type).  ⚠️⚠️ They must run OUTSIDE any `match goal` branch —
+    inside one, the same script makes the whole match report "No matching
+    clauses"; the working shape is RENAME-FIRST: a `match goal` that only
+    renames the inverted premises into stable names, then the kills at
+    the top level.
+  - `destruct m` only where the case tree split the mode (arrow subject;
+    `∀` target under a `∀`/`⫯` subject).  ⚙ Read the leaf list off
+    `Print Rewrite HintDb e_lookeq_impl` (25 leaves) /
+    `e_looksub_impl` (41) rather than guessing from the clauses.
+
+- **After look** (unchanged): solve (3 runners, layered like look),
+  extract (one composition), then the consis trio and sub — those two go
+  through the tagged blocks' equations (`simp e_consis_call_impl` /
   `simp e_sub_call_impl` after unfolding the wrappers), with the
   §8c.2 (2b) shape facts ("the readback positions are `⌈⌉`-images")
-  needed from the sub level up.
+  needed from the sub level up.  Each level copies §2's template:
+  order-sind, rebind-by-swap, reorder lemmas for the dispatch's
+  priorities, rename-first case scripts.
