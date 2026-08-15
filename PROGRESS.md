@@ -240,7 +240,32 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-15 (c, latest) — ⭐⭐⭐ **THE FIRST §8c.3 COMPLETENESS INDUCTION IS CLOSED — the LOOK block's two runners answer wherever a derivation exists**
+## 2026-08-15 (d, latest) — ⭐⭐ **§8c.3 LEVEL 2a: the SOLVE block's eq runner is complete — and the threading levels' interface is settled**
+
+`prop_run_complete.v` §3 (`e_solve_eq_run_complete` /
+`e_solve_eq_impl_complete`, axiom-free, file 21 s): a `a_solve_eq`
+derivation at scoped, covered inputs means the eq-solve runner answers.
+⭐⭐ The design addition over the look template: the solve's ARROW row
+threads the CONTEXT with each side's own fresh block, so the motive
+carries the derivation's context `Θd` separately, related to the
+runner's by `flex_agree V Θd Θr` — agreement of `a_flex_tvar` on the
+inputs' variables (SE-FlexR's test is the solve cluster's ONLY
+context-sensitive read) — plus a scoped-inputs premise
+`V ⊆ ftvar_in_aenv Θd`; junk blocks ride by `flex_agree_push_blocks`
+(`a_solve_sub_eq_generated_fresh_set` d-side, `e_solve_sub_eq_block`
+r-side), and the §3b rebinds let the context RIDE the swap (no `β == b`
+split anywhere).  ⚠️ Two traps: `eapply flex_agree_weaken` FIRST leaves
+the set an evar and `fsetdec` under it hangs (>110 s → build agreement
+bottom-up with explicit sets); `nonghost_pskl (⫯ _)`/`◇` have no
+constructor and need their own `look_absurd` kill.  ⛔ Recorded in
+§8c.6: sub-solve next (ForallL-first + strip-first reorders — the
+dispatch peels subjects first, OPPOSITE of look); then a real DESIGN
+FORK before the cstr fold — the tail runs at the runner's own YIELD,
+which `flex_agree` cannot cover; candidate resolutions (determinism-up-
+to-renaming vs composing through the a-side P5–P7 tower) are laid out
+there.  `make coq` green.
+
+## 2026-08-15 (c) — ⭐⭐⭐ **THE FIRST §8c.3 COMPLETENESS INDUCTION IS CLOSED — the LOOK block's two runners answer wherever a derivation exists**
 
 `prop_run_complete.v` §2 (the file 92 → 1,381 lines, 18.6 s, axiom-free):
 `e_lookeq_run_complete` and `e_looksub_run_complete` — an `a_lookeq` /

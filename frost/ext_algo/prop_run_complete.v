@@ -60,6 +60,13 @@ Require Import src.frost.ext_algo.def_order.
 Require Import src.frost.ext_algo.prop_termination.
 Require Import src.frost.ext_algo.def_look_impl.
 Require Import src.frost.ext_algo.prop_look.
+Require Import src.frost.algo.sub.prop_solve_sub.
+Require Import src.frost.ext_algo.def_guess.
+Require Import src.frost.ext_algo.def_guess_impl.
+Require Import src.frost.ext_algo.def_solve.
+Require Import src.frost.ext_algo.def_solve_impl.
+Require Import src.frost.ext_algo.prop_solve.
+Require Import src.frost.ext_algo.prop_guess.
 Require Import src.frost.ext_algo.def_consis_impl.
 Require Import src.frost.ext_algo.def_sub_impl.
 Require Import src.frost.ext_algo.def_pat_impl.
@@ -607,6 +614,8 @@ Local Ltac look_absurd :=
         | match goal with
           | Hg : guarded_pskl (pskl_all_syn _) |- _ => inversion Hg
           | Hg : guarded_pskl (pskl_tophole _) |- _ => inversion Hg
+          | Hg : nonghost_pskl (pskl_tophole _) |- _ => inversion Hg
+          | Hg : nonghost_pskl pskl_hole |- _ => inversion Hg
           end
         | match goal with
           | Hck : ghost_free_ck ?P = false, Hg : pskl_ghost_free ?P |- _ =>
@@ -1375,6 +1384,919 @@ Proof.
   revert Hne.
   destruct (e_looksub_impl S0 Θ α m P P' HP HP'
               (e_looksub_order_total S0 Θ α m P P')) as [ [r Hr] | ];
+    intros Hne.
+  - discriminate.
+  - exact (False_ind _ (Hne eq_refl)).
+Qed.
+
+(* ===================================================================== *)
+(*  §3  The SOLVE level, eq layer (§8c.3, level 2a)                       *)
+(*                                                                        *)
+(*  New over §2's template, and the reason for §3a: the solve's ARROW     *)
+(*  row threads the CONTEXT — the second premise runs at [Ξ1 ++ Θ] with   *)
+(*  the FIRST premise's own fresh block Ξ1.  The runner's second call     *)
+(*  therefore runs at ITS block while the inverted derivation's second    *)
+(*  premise sits at the DERIVATION's block, and the two contexts diverge. *)
+(*  The motive carries the derivation's context [Θd] separately, related  *)
+(*  to the runner's by FLEX-AGREEMENT ON THE INPUTS' VARIABLES            *)
+(*  ([flex_agree]): the only context-sensitive rule in the whole solve    *)
+(*  cluster is SE-FlexR ([a_flex_tvar] on the target variable — see the   *)
+(*  box above [a_extract], algo/def_rules.v), so agreement on the inputs' *)
+(*  variables is the WHOLE interface, and junk flex blocks on either      *)
+(*  side ride along ([flex_agree_push_blocks]): the derivation's block    *)
+(*  avoids [ftvar_in_aenv Θd] ([a_solve_sub_eq_generated_fresh_set]) ⊇    *)
+(*  the inputs by the scoped-inputs premise, and the runner's block       *)
+(*  avoids the covering supply ([e_solve_sub_eq_block]).                  *)
+(*                                                                        *)
+(*  The d-side transposition consequently lets the CONTEXT RIDE the swap  *)
+(*  ([a_solve_eq_rebind*] conclude at [swap_aenv b β Θd], not at [Θd]) —  *)
+(*  agreement survives because the two swapped atoms avoid the inputs'    *)
+(*  variables ([flex_agree_swap_left]).                                   *)
+(* ===================================================================== *)
+
+(* --------------------------------------------------------------------- *)
+(*  §3a  flex-agreement on a variable set                                 *)
+(* --------------------------------------------------------------------- *)
+
+Definition flex_agree (V : atoms) (Θ1 Θ2 : aenv) : Prop :=
+  forall α, α `in` V -> (a_flex_tvar Θ1 α <-> a_flex_tvar Θ2 α).
+
+Lemma flex_agree_refl : forall V Θ, flex_agree V Θ Θ.
+Proof. intros V Θ α _. tauto. Qed.
+
+Lemma flex_agree_weaken : forall V V' Θ1 Θ2,
+  flex_agree V Θ1 Θ2 -> V' [<=] V -> flex_agree V' Θ1 Θ2.
+Proof. intros * H Hsub α Hα. apply H. fsetdec. Qed.
+
+Lemma binds_swap_aenv : forall a b (Θ : aenv) x (bd : abind),
+  binds x bd Θ ->
+  binds (swap_atom a b x) (swap_abind a b bd) (swap_aenv a b Θ).
+Proof.
+  intros * Hb. unfold binds in *. unfold swap_aenv.
+  change (swap_atom a b x, swap_abind a b bd)
+    with ((fun e => (swap_atom a b (fst e), swap_abind a b (snd e))) (x, bd)).
+  apply List.in_map. exact Hb.
+Qed.
+
+Lemma a_flex_tvar_swap_other : forall a b (Θ : aenv) α,
+  α <> a -> α <> b ->
+  a_flex_tvar (swap_aenv a b Θ) α <-> a_flex_tvar Θ α.
+Proof.
+  intros * Hna Hnb. split.
+  - intros [Hb1 | [τ Hb1]].
+    + apply (binds_swap_aenv a b) in Hb1.
+      rewrite swap_aenv_invol in Hb1.
+      rewrite (swap_atom_other a b α Hna Hnb) in Hb1.
+      left. exact Hb1.
+    + apply (binds_swap_aenv a b) in Hb1.
+      rewrite swap_aenv_invol in Hb1.
+      rewrite (swap_atom_other a b α Hna Hnb) in Hb1.
+      right. eexists. exact Hb1.
+  - intros [Hb1 | [τ Hb1]].
+    + apply (binds_swap_aenv a b) in Hb1.
+      rewrite (swap_atom_other a b α Hna Hnb) in Hb1.
+      left. exact Hb1.
+    + apply (binds_swap_aenv a b) in Hb1.
+      rewrite (swap_atom_other a b α Hna Hnb) in Hb1.
+      right. eexists. exact Hb1.
+Qed.
+
+Lemma flex_agree_swap_left : forall a b V Θ1 Θ2,
+  a `notin` V -> b `notin` V ->
+  flex_agree V Θ1 Θ2 ->
+  flex_agree V (swap_aenv a b Θ1) Θ2.
+Proof.
+  intros * Hna Hnb Hag α Hα.
+  rewrite a_flex_tvar_swap_other;
+    [ apply Hag; exact Hα
+    | clear - Hna Hα; fsetdec
+    | clear - Hnb Hα; fsetdec ].
+Qed.
+
+Lemma a_flex_tvar_notin_app : forall (Ξ Θ : aenv) α,
+  α `notin` dom Ξ ->
+  (a_flex_tvar (Ξ ++ Θ) α <-> a_flex_tvar Θ α).
+Proof.
+  intros * Hn. split.
+  - intros [Hb | [τ Hb]]; unfold binds in *;
+      apply in_app_or in Hb; destruct Hb as [Hb | Hb];
+      try solve [ exfalso; apply Hn; eapply binds_In; exact Hb ];
+      [ left; exact Hb | right; eexists; exact Hb ].
+  - intros [Hb | [τ Hb]]; unfold binds in *;
+      [ left | right; eexists ]; apply in_or_app; right; eassumption.
+Qed.
+
+Lemma flex_agree_push_blocks : forall V Ξ1 Ξ2 Θ1 Θ2,
+  dom Ξ1 ∩ V [=] empty ->
+  dom Ξ2 ∩ V [=] empty ->
+  flex_agree V Θ1 Θ2 ->
+  flex_agree V (Ξ1 ++ Θ1) (Ξ2 ++ Θ2).
+Proof.
+  intros * H1 H2 Hag α Hα.
+  rewrite (a_flex_tvar_notin_app Ξ1) by (clear - H1 Hα; fsetdec).
+  rewrite (a_flex_tvar_notin_app Ξ2) by (clear - H2 Hα; fsetdec).
+  apply Hag; exact Hα.
+Qed.
+
+Lemma a_flex_tvar_cons_tvar_other : forall β (Θ : aenv) α,
+  α <> β ->
+  (a_flex_tvar ((β ~ abind_tvar) ++ Θ) α <-> a_flex_tvar Θ α).
+Proof.
+  intros * Hne. split.
+  - intros [Hb | [τ Hb]]; unfold binds in Hb; simpl in Hb;
+      (destruct Hb as [Hb | Hb]; [ solve [ inversion Hb; congruence ] | ]);
+      [ left; exact Hb | right; eexists; exact Hb ].
+  - intros [Hb | [τ Hb]]; [ left | right; eexists ];
+      unfold binds in *; simpl; right; eassumption.
+Qed.
+
+Lemma flex_agree_push_tvar : forall V β Θ1 Θ2,
+  β `notin` dom Θ1 -> β `notin` dom Θ2 ->
+  flex_agree V Θ1 Θ2 ->
+  flex_agree (add β V) ((β ~ abind_tvar) ++ Θ1) ((β ~ abind_tvar) ++ Θ2).
+Proof.
+  intros * Hn1 Hn2 Hag α Hα.
+  destruct (α == β) as [-> | Hne].
+  - split; intros [Hb | [τ Hb]]; exfalso;
+      unfold binds in Hb; simpl in Hb; destruct Hb as [Hb | Hb];
+      try solve [ inversion Hb ];
+      solve [ apply Hn1; eapply binds_In; exact Hb
+            | apply Hn2; eapply binds_In; exact Hb ].
+  - assert (Hin : α `in` V) by (clear - Hα Hne; fsetdec).
+    split; intro Hx.
+    + apply (proj2 (a_flex_tvar_cons_tvar_other Θ2 Hne)).
+      apply (proj1 (Hag α Hin)).
+      apply (proj1 (a_flex_tvar_cons_tvar_other Θ1 Hne)). exact Hx.
+    + apply (proj2 (a_flex_tvar_cons_tvar_other Θ1 Hne)).
+      apply (proj2 (Hag α Hin)).
+      apply (proj1 (a_flex_tvar_cons_tvar_other Θ2 Hne)). exact Hx.
+Qed.
+
+(* --------------------------------------------------------------------- *)
+(*  §3b  Transposition, solve shape: the context RIDES the swap           *)
+(*                                                                        *)
+(*  Unlike §2b there is no looked-for variable to fix and no reason to    *)
+(*  fix the context either — the motive relates the derivation's context  *)
+(*  to the runner's by [flex_agree], which survives the swap              *)
+(*  ([flex_agree_swap_left]).  So the helpers demand freshness only for   *)
+(*  the two SKELETONS, and no case split on [β == b] is needed (a swap    *)
+(*  at equal atoms is still a swap).                                      *)
+(* --------------------------------------------------------------------- *)
+
+Lemma a_solve_eq_rebind : forall Θ P Q Ξ P' b β,
+  {{ ((b ~ abind_tvar) ++ Θ) ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f b))
+     ∼ (open_pskl_wrt_pskl Q (pskl_var_f b)) ⤳ Ξ ⨾ P' }}a ->
+  b `notin` ftvar_in_pskl P ∪ ftvar_in_pskl Q ->
+  β `notin` ftvar_in_pskl P ∪ ftvar_in_pskl Q ->
+  exists Ξ' P'',
+    {{ ((β ~ abind_tvar) ++ swap_aenv b β Θ) ⊢ₑ
+       (open_pskl_wrt_pskl P (pskl_var_f β))
+       ∼ (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ Ξ' ⨾ P'' }}a.
+Proof.
+  intros * Hp Hb Hβ.
+  pose proof (proj2 (a_solve_sub_eq_swap b β) _ _ _ _ _ Hp) as Hs.
+  assert (Hctx : swap_aenv b β ((b ~ abind_tvar) ++ Θ)
+                 = (β ~ abind_tvar) ++ swap_aenv b β Θ)
+    by (simpl; rewrite swap_atom_l; reflexivity).
+  rewrite Hctx in Hs.
+  rewrite ! swap_pskl_open_var in Hs.
+  rewrite ! swap_atom_l in Hs.
+  rewrite (swap_pskl_fresh_id b β P) in Hs by (clear - Hb Hβ; fsetdec).
+  rewrite (swap_pskl_fresh_id b β Q) in Hs by (clear - Hb Hβ; fsetdec).
+  exists (swap_aenv b β Ξ), (swap_pskl b β P'). exact Hs.
+Qed.
+Arguments a_solve_eq_rebind {Θ P Q Ξ P' b β}.
+
+(** Subject opens, target fixed (SE-ForallGhost's shape). *)
+Lemma a_solve_eq_rebind_l : forall Θ P Qt Ξ P' b β,
+  {{ ((b ~ abind_tvar) ++ Θ) ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f b))
+     ∼ Qt ⤳ Ξ ⨾ P' }}a ->
+  b `notin` ftvar_in_pskl P ∪ ftvar_in_pskl Qt ->
+  β `notin` ftvar_in_pskl P ∪ ftvar_in_pskl Qt ->
+  exists Ξ' P'',
+    {{ ((β ~ abind_tvar) ++ swap_aenv b β Θ) ⊢ₑ
+       (open_pskl_wrt_pskl P (pskl_var_f β)) ∼ Qt ⤳ Ξ' ⨾ P'' }}a.
+Proof.
+  intros * Hp Hb Hβ.
+  pose proof (proj2 (a_solve_sub_eq_swap b β) _ _ _ _ _ Hp) as Hs.
+  assert (Hctx : swap_aenv b β ((b ~ abind_tvar) ++ Θ)
+                 = (β ~ abind_tvar) ++ swap_aenv b β Θ)
+    by (simpl; rewrite swap_atom_l; reflexivity).
+  rewrite Hctx in Hs.
+  rewrite swap_pskl_open_var in Hs.
+  rewrite swap_atom_l in Hs.
+  rewrite (swap_pskl_fresh_id b β P) in Hs by (clear - Hb Hβ; fsetdec).
+  rewrite (swap_pskl_fresh_id b β Qt) in Hs by (clear - Hb Hβ; fsetdec).
+  exists (swap_aenv b β Ξ), (swap_pskl b β P'). exact Hs.
+Qed.
+Arguments a_solve_eq_rebind_l {Θ P Qt Ξ P' b β}.
+
+(** Subject fixed, target opens (SE-GhostForall's shape). *)
+Lemma a_solve_eq_rebind_r : forall Θ Ps Q Ξ P' b β,
+  {{ ((b ~ abind_tvar) ++ Θ) ⊢ₑ Ps
+     ∼ (open_pskl_wrt_pskl Q (pskl_var_f b)) ⤳ Ξ ⨾ P' }}a ->
+  b `notin` ftvar_in_pskl Ps ∪ ftvar_in_pskl Q ->
+  β `notin` ftvar_in_pskl Ps ∪ ftvar_in_pskl Q ->
+  exists Ξ' P'',
+    {{ ((β ~ abind_tvar) ++ swap_aenv b β Θ) ⊢ₑ Ps
+       ∼ (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ Ξ' ⨾ P'' }}a.
+Proof.
+  intros * Hp Hb Hβ.
+  pose proof (proj2 (a_solve_sub_eq_swap b β) _ _ _ _ _ Hp) as Hs.
+  assert (Hctx : swap_aenv b β ((b ~ abind_tvar) ++ Θ)
+                 = (β ~ abind_tvar) ++ swap_aenv b β Θ)
+    by (simpl; rewrite swap_atom_l; reflexivity).
+  rewrite Hctx in Hs.
+  rewrite swap_pskl_open_var in Hs.
+  rewrite swap_atom_l in Hs.
+  rewrite (swap_pskl_fresh_id b β Ps) in Hs by (clear - Hb Hβ; fsetdec).
+  rewrite (swap_pskl_fresh_id b β Q) in Hs by (clear - Hb Hβ; fsetdec).
+  exists (swap_aenv b β Ξ), (swap_pskl b β P'). exact Hs.
+Qed.
+Arguments a_solve_eq_rebind_r {Θ Ps Q Ξ P' b β}.
+
+(* --------------------------------------------------------------------- *)
+(*  §3c  Strong induction for [e_solve_eq_order]                          *)
+(*                                                                        *)
+(*  §2a's idiom.  The FlexR premise is the GUESS layer's order and stays  *)
+(*  undoubled — the guess runner is total, so the branch owes nothing.    *)
+(* --------------------------------------------------------------------- *)
+
+Section e_solve_eq_order_sind.
+
+Variable Qe : supply -> aenv -> pskl -> pskl -> Prop.
+
+Hypothesis Hstep : forall S0 Θ P Q,
+    (* SE-FlexR — the guess layer's order, as-is *)
+    (forall β, Q = pskl_var_f β -> e_guess_mono_order S0 P) ->
+    (* SE-Arrow — order premise + motive companion *)
+    (forall P1 P2 Q1 Q2,
+       P = pskl_arrow P1 P2 -> Q = pskl_arrow Q1 Q2 ->
+       e_solve_eq_order S0 Θ P1 Q1
+       /\ (forall S1 Ξ1 P1',
+             {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' }}e ->
+             e_solve_eq_order S1 (Ξ1 ++ Θ) P2 Q2)) ->
+    (forall P1 P2 Q1 Q2,
+       P = pskl_arrow P1 P2 -> Q = pskl_arrow Q1 Q2 ->
+       Qe S0 Θ P1 Q1
+       /\ (forall S1 Ξ1 P1',
+             {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' }}e ->
+             Qe S1 (Ξ1 ++ Θ) P2 Q2)) ->
+    (* SE-Forall *)
+    (forall P1 Q1,
+       P = pskl_all_syn P1 -> Q = pskl_all_syn Q1 ->
+       e_solve_eq_order (add (supply_fresh S0) S0)
+         ((supply_fresh S0 ~ abind_tvar) ++ Θ)
+         (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0)))
+         (open_pskl_wrt_pskl Q1 (pskl_var_f (supply_fresh S0)))) ->
+    (forall P1 Q1,
+       P = pskl_all_syn P1 -> Q = pskl_all_syn Q1 ->
+       Qe (add (supply_fresh S0) S0)
+         ((supply_fresh S0 ~ abind_tvar) ++ Θ)
+         (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0)))
+         (open_pskl_wrt_pskl Q1 (pskl_var_f (supply_fresh S0)))) ->
+    (* SE-UnivGhost *)
+    (forall P1 Q1,
+       P = pskl_tophole P1 -> Q = pskl_tophole Q1 ->
+       e_solve_eq_order S0 Θ P1 Q1) ->
+    (forall P1 Q1,
+       P = pskl_tophole P1 -> Q = pskl_tophole Q1 ->
+       Qe S0 Θ P1 Q1) ->
+    (* SE-GhostForall *)
+    (forall P1 Q1,
+       P = pskl_tophole P1 -> Q = pskl_all_syn Q1 ->
+       e_solve_eq_order (add (supply_fresh S0) S0)
+         ((supply_fresh S0 ~ abind_tvar) ++ Θ)
+         (pskl_tophole P1)
+         (open_pskl_wrt_pskl Q1 (pskl_var_f (supply_fresh S0)))) ->
+    (forall P1 Q1,
+       P = pskl_tophole P1 -> Q = pskl_all_syn Q1 ->
+       Qe (add (supply_fresh S0) S0)
+         ((supply_fresh S0 ~ abind_tvar) ++ Θ)
+         (pskl_tophole P1)
+         (open_pskl_wrt_pskl Q1 (pskl_var_f (supply_fresh S0)))) ->
+    (* SE-GhostGuarded *)
+    (forall P1,
+       P = pskl_tophole P1 ->
+       e_solve_eq_order S0 Θ P1 Q) ->
+    (forall P1,
+       P = pskl_tophole P1 ->
+       Qe S0 Θ P1 Q) ->
+    (* SE-ForallGhost *)
+    (forall P1 Q1,
+       P = pskl_all_syn P1 -> Q = pskl_tophole Q1 ->
+       e_solve_eq_order (add (supply_fresh S0) S0)
+         ((supply_fresh S0 ~ abind_tvar) ++ Θ)
+         (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0)))
+         (pskl_tophole Q1)) ->
+    (forall P1 Q1,
+       P = pskl_all_syn P1 -> Q = pskl_tophole Q1 ->
+       Qe (add (supply_fresh S0) S0)
+         ((supply_fresh S0 ~ abind_tvar) ++ Θ)
+         (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0)))
+         (pskl_tophole Q1)) ->
+    (* SE-GuardedGhost *)
+    (forall Q1,
+       Q = pskl_tophole Q1 ->
+       e_solve_eq_order S0 Θ P Q1) ->
+    (forall Q1,
+       Q = pskl_tophole Q1 ->
+       Qe S0 Θ P Q1) ->
+    Qe S0 Θ P Q.
+
+Fixpoint e_solve_eq_order_sind S0 Θ P Q
+    (H : e_solve_eq_order S0 Θ P Q) {struct H} : Qe S0 Θ P Q :=
+  match H in e_solve_eq_order S0' Θ' Pa Qa return Qe S0' Θ' Pa Qa with
+  | e_solve_eq_order__intro _ _ _ _ p1 p2 p3 p4 p5 p6 p7 p8 =>
+      Hstep
+        p1
+        p2
+        (fun P1 P2 Q1 Q2 e1 e2 =>
+           match p2 P1 P2 Q1 Q2 e1 e2 with
+           | conj Ha Hb =>
+               conj (e_solve_eq_order_sind Ha)
+                    (fun S1 Ξ1 P1' Hrun =>
+                       e_solve_eq_order_sind (Hb S1 Ξ1 P1' Hrun))
+           end)
+        p3
+        (fun P1 Q1 e1 e2 => e_solve_eq_order_sind (p3 P1 Q1 e1 e2))
+        p4
+        (fun P1 Q1 e1 e2 => e_solve_eq_order_sind (p4 P1 Q1 e1 e2))
+        p5
+        (fun P1 Q1 e1 e2 => e_solve_eq_order_sind (p5 P1 Q1 e1 e2))
+        p6
+        (fun P1 e1 => e_solve_eq_order_sind (p6 P1 e1))
+        p7
+        (fun P1 Q1 e1 e2 => e_solve_eq_order_sind (p7 P1 Q1 e1 e2))
+        p8
+        (fun Q1 e1 => e_solve_eq_order_sind (p8 Q1 e1))
+  end.
+
+End e_solve_eq_order_sind.
+
+(* --------------------------------------------------------------------- *)
+(*  §3d  Completeness of the eq-solve runner                              *)
+(* --------------------------------------------------------------------- *)
+
+(** Set-level corollary of [swap_aenv_ftvar_in]: a variable set inside the
+    context's support, avoided by both swapped atoms, stays inside it. *)
+Lemma ftvar_in_aenv_swap_subset : forall a b (Θ : aenv) V,
+  V [<=] ftvar_in_aenv Θ ->
+  a `notin` V -> b `notin` V ->
+  V [<=] ftvar_in_aenv (swap_aenv a b Θ).
+Proof.
+  intros * Hsub Ha Hb α Hα.
+  pose proof (swap_aenv_ftvar_in a b Θ α (Hsub α Hα)) as Hin.
+  rewrite swap_atom_other in Hin;
+    [ exact Hin
+    | clear - Ha Hα; fsetdec
+    | clear - Hb Hα; fsetdec ].
+Qed.
+
+Local Ltac kill_seq_call IH Hder Hagr Hscp Hcv r Hr :=
+  match goal with
+  | |- context [ e_solve_eq_impl ?S ?T ?p ?q ?hp ?hq ?h ] =>
+      let Hne := fresh "Hne" in
+      let Hcl := fresh "Hcl" in
+      assert (Hne : e_solve_eq_impl S T p q hp hq h <> None)
+        by (exact (IH hp hq h _ _ _ Hder Hagr Hscp Hcv));
+      destruct (e_solve_eq_impl S T p q hp hq h)
+        as [ [r Hr] | ] eqn:Hcl;
+      [ cbv beta iota; clear Hne Hcl | exact (False_ind _ (Hne eq_refl)) ]
+  end.
+
+Lemma e_solve_eq_impl_complete : forall S0 Θ P Q
+    (HP : lc_pskl P) (HQ : lc_pskl Q)
+    (H : e_solve_eq_order S0 Θ P Q) Θd Ξd P'd,
+  {{ Θd ⊢ₑ P ∼ Q ⤳ Ξd ⨾ P'd }}a ->
+  flex_agree (ftvar_in_pskl P ∪ ftvar_in_pskl Q) Θd Θ ->
+  ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] ftvar_in_aenv Θd ->
+  ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] S0 ->
+  e_solve_eq_impl S0 Θ P Q HP HQ H <> None.
+Proof.
+  intros S0 Θ P Q HP HQ H Θd Ξd P'd Hd Hagr Hscp Hcov.
+  pose proof H as Hind.
+  revert HP HQ H Θd Ξd P'd Hd Hagr Hscp Hcov.
+  apply (e_solve_eq_order_sind
+           (fun S0 Θ P Q =>
+              forall (HP : lc_pskl P) (HQ : lc_pskl Q)
+                     (H : e_solve_eq_order S0 Θ P Q) Θd Ξd P'd,
+                {{ Θd ⊢ₑ P ∼ Q ⤳ Ξd ⨾ P'd }}a ->
+                flex_agree (ftvar_in_pskl P ∪ ftvar_in_pskl Q) Θd Θ ->
+                ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] ftvar_in_aenv Θd ->
+                ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] S0 ->
+                e_solve_eq_impl S0 Θ P Q HP HQ H <> None));
+    [ | exact Hind ].
+  clear.
+  intros S0 Θ P Q p1 p2 q2 p3 q3 p4 q4 p5 q5 p6 q6 p7 q7 p8 q8
+         HP HQ H Θd Ξd P'd Hd Hagr Hscp Hcov.
+  destruct P as [ | n | βs | P1 P2 | P1 | | P1 ].
+  - (* subject unit *)
+    destruct Q as [ | n' | β' | Q1 Q2 | Q1 | | Q1 ].
+    + (* unit — SE-Unit *) simp e_solve_eq_impl. discriminate.
+    + (* var_b — no lc *) inversion HQ.
+    + (* var_f — SE-FlexR *)
+      simp e_solve_eq_impl. case_test.
+      * match goal with
+        | |- context [ e_guess_mono_impl ?s ?p ?h ] =>
+            destruct (e_guess_mono_impl s p h) as [gr Hgr]
+        end.
+        discriminate.
+      * exfalso. inversion Hd; subst.
+        match goal with
+        | Hfx : a_flex_tvar Θd ?bv |- _ =>
+            let Hfr := fresh "Hfr" in
+            assert (Hfr : a_flex_tvar Θ bv)
+              by (apply (proj1 (Hagr bv ltac:(simpl; clear; fsetdec)));
+                  exact Hfx);
+            apply flex_bound_ck_complete in Hfr;
+            rewrite Hfr in Htest; simpl in Htest; discriminate
+        end.
+    + (* arrow — no rule *) inversion Hd.
+    + (* all_syn — no rule *) inversion Hd.
+    + (* hole — SE-VacuousR *) simp e_solve_eq_impl. discriminate.
+    + (* tophole — SE-GuardedGhost *)
+      simp e_solve_eq_impl.
+      inversion Hd; subst; try look_absurd.
+      match goal with
+      | Hp0 : a_solve_eq Θd pskl_unit Q1 _ _ |- _ => rename Hp0 into HPREM
+      end.
+      pose proof (q8 Q1 eq_refl) as IHf.
+      assert (Hagr1 : flex_agree (ftvar_in_pskl pskl_unit ∪ ftvar_in_pskl Q1)
+                        Θd Θ)
+        by (eapply flex_agree_weaken; [ exact Hagr | simpl; clear; fsetdec ]).
+      assert (Hscp1 : ftvar_in_pskl pskl_unit ∪ ftvar_in_pskl Q1
+                        [<=] ftvar_in_aenv Θd)
+        by (clear - Hscp; simpl in *; fsetdec).
+      assert (Hcov1 : ftvar_in_aenv Θ ∪ ftvar_in_pskl pskl_unit
+                        ∪ ftvar_in_pskl Q1 [<=] S0)
+        by (clear - Hcov; simpl in *; fsetdec).
+      kill_seq_call IHf HPREM Hagr1 Hscp1 Hcov1 r1 Hr1. discriminate.
+  - (* subject var_b — no lc *)
+    inversion HP.
+  - (* subject var_f — SE-Var *)
+    simp e_solve_eq_impl. discriminate.
+  - (* subject arrow *)
+    destruct Q as [ | n' | β' | Q1 Q2 | Q1 | | Q1 ].
+    + (* unit — no rule *) inversion Hd.
+    + (* var_b — no lc *) inversion HQ.
+    + (* var_f — SE-FlexR *)
+      simp e_solve_eq_impl. case_test.
+      * match goal with
+        | |- context [ e_guess_mono_impl ?s ?p ?h ] =>
+            destruct (e_guess_mono_impl s p h) as [gr Hgr]
+        end.
+        discriminate.
+      * exfalso. inversion Hd; subst.
+        match goal with
+        | Hfx : a_flex_tvar Θd ?bv |- _ =>
+            let Hfr := fresh "Hfr" in
+            assert (Hfr : a_flex_tvar Θ bv)
+              by (apply (proj1 (Hagr bv ltac:(simpl; clear; fsetdec)));
+                  exact Hfx);
+            apply flex_bound_ck_complete in Hfr;
+            rewrite Hfr in Htest; simpl in Htest; discriminate
+        end.
+    + (* arrow — SE-Arrow: the context-threading case *)
+      simp e_solve_eq_impl.
+      inversion Hd; subst; try look_absurd.
+      destruct (q2 P1 P2 Q1 Q2 eq_refl eq_refl) as [IH1 IH2].
+      match goal with
+      | Hda : a_solve_eq Θd P1 Q1 _ _ |- _ => rename Hda into HD1
+      end.
+      match goal with
+      | Hdb : a_solve_eq (_ ++ Θd) P2 Q2 _ _ |- _ => rename Hdb into HD2
+      end.
+      pose proof ((proj2 a_solve_sub_eq_generated_fresh_set)
+                    _ _ _ _ _ HD1) as HXd.
+      assert (Hagr1 : flex_agree (ftvar_in_pskl P1 ∪ ftvar_in_pskl Q1) Θd Θ)
+        by (eapply flex_agree_weaken; [ exact Hagr | simpl; clear; fsetdec ]).
+      assert (Hscp1 : ftvar_in_pskl P1 ∪ ftvar_in_pskl Q1
+                        [<=] ftvar_in_aenv Θd)
+        by (clear - Hscp; simpl in *; fsetdec).
+      assert (Hcov1 : ftvar_in_aenv Θ ∪ ftvar_in_pskl P1 ∪ ftvar_in_pskl Q1
+                        [<=] S0)
+        by (clear - Hcov; simpl in *; fsetdec).
+      kill_seq_call IH1 HD1 Hagr1 Hscp1 Hcov1 r1 Hr1.
+      unfold solve_eq_spec in Hr1.
+      pose proof (e_solve_eq_supply_grows Hr1) as Hgrow.
+      pose proof ((proj2 e_solve_sub_eq_block) _ _ _ _ _ _ _ Hr1)
+        as [Hb1 [Hb2 [Hb3 Hb4]]].
+      specialize (IH2 _ _ _ Hr1).
+      match goal with
+      | HD2' : a_solve_eq (?X ++ Θd) P2 Q2 _ _ |- _ =>
+          assert (Hagr2 : flex_agree
+                            (ftvar_in_pskl P2 ∪ ftvar_in_pskl Q2)
+                            (X ++ Θd) (sv_block r1 ++ Θ))
+            by (apply flex_agree_push_blocks;
+                [ clear - HXd Hscp; simpl in Hscp; fsetdec
+                | clear - Hb2 Hcov; simpl in Hcov; fsetdec
+                | eapply flex_agree_weaken;
+                  [ exact Hagr | simpl; clear; fsetdec ] ]);
+          assert (Hscp2 : ftvar_in_pskl P2 ∪ ftvar_in_pskl Q2
+                            [<=] ftvar_in_aenv (X ++ Θd))
+            by (rewrite ftvar_in_aenv_app; clear - Hscp; simpl in Hscp;
+                fsetdec)
+      end.
+      assert (Hcov2 : ftvar_in_aenv (sv_block r1 ++ Θ)
+                        ∪ ftvar_in_pskl P2 ∪ ftvar_in_pskl Q2
+                        [<=] sv_supply r1)
+        by (rewrite ftvar_in_aenv_app;
+            clear - Hb1 Hb4 Hgrow Hcov; simpl in Hcov; fsetdec).
+      kill_seq_call IH2 HD2 Hagr2 Hscp2 Hcov2 r2 Hr2. discriminate.
+    + (* all_syn — no rule *) inversion Hd.
+    + (* hole — SE-VacuousR *) simp e_solve_eq_impl. discriminate.
+    + (* tophole — SE-GuardedGhost *)
+      simp e_solve_eq_impl.
+      inversion Hd; subst; try look_absurd.
+      match goal with
+      | Hp0 : a_solve_eq Θd (pskl_arrow P1 P2) Q1 _ _ |- _ =>
+          rename Hp0 into HPREM
+      end.
+      pose proof (q8 Q1 eq_refl) as IHf.
+      assert (Hagr1 : flex_agree (ftvar_in_pskl (pskl_arrow P1 P2)
+                                    ∪ ftvar_in_pskl Q1) Θd Θ)
+        by (eapply flex_agree_weaken; [ exact Hagr | simpl; clear; fsetdec ]).
+      assert (Hscp1 : ftvar_in_pskl (pskl_arrow P1 P2) ∪ ftvar_in_pskl Q1
+                        [<=] ftvar_in_aenv Θd)
+        by (clear - Hscp; simpl in *; fsetdec).
+      assert (Hcov1 : ftvar_in_aenv Θ ∪ ftvar_in_pskl (pskl_arrow P1 P2)
+                        ∪ ftvar_in_pskl Q1 [<=] S0)
+        by (clear - Hcov; simpl in *; fsetdec).
+      kill_seq_call IHf HPREM Hagr1 Hscp1 Hcov1 r1 Hr1. discriminate.
+  - (* subject all_syn *)
+    destruct Q as [ | n' | β' | Q1 Q2 | Q1 | | Q1 ].
+    + (* unit — no rule *) inversion Hd.
+    + (* var_b — no lc *) inversion HQ.
+    + (* var_f — SE-FlexR *)
+      simp e_solve_eq_impl. case_test.
+      * match goal with
+        | |- context [ e_guess_mono_impl ?s ?p ?h ] =>
+            destruct (e_guess_mono_impl s p h) as [gr Hgr]
+        end.
+        discriminate.
+      * exfalso. inversion Hd; subst.
+        match goal with
+        | Hfx : a_flex_tvar Θd ?bv |- _ =>
+            let Hfr := fresh "Hfr" in
+            assert (Hfr : a_flex_tvar Θ bv)
+              by (apply (proj1 (Hagr bv ltac:(simpl; clear; fsetdec)));
+                  exact Hfx);
+            apply flex_bound_ck_complete in Hfr;
+            rewrite Hfr in Htest; simpl in Htest; discriminate
+        end.
+    + (* arrow — no rule *) inversion Hd.
+    + (* all_syn — SE-Forall: the transposition case *)
+      simp e_solve_eq_impl.
+      inversion Hd; subst; try look_absurd.
+      match goal with
+      | Hfr0 : ?b `notin` _,
+        Hp0 : a_solve_eq ((?b ~ abind_tvar) ++ Θd) _ _ _ _ |- _ =>
+          assert (Hbfr : b `notin` ftvar_in_pskl P1 ∪ ftvar_in_pskl Q1)
+            by (clear - Hfr0; fsetdec);
+          assert (Hβfr : supply_fresh S0 `notin`
+                    ftvar_in_pskl P1 ∪ ftvar_in_pskl Q1)
+            by (pose proof (supply_fresh_notin S0) as Hsf;
+                clear - Hcov Hsf; simpl in Hcov; fsetdec);
+          destruct (a_solve_eq_rebind Hp0 Hbfr Hβfr) as [Ξ2 [P2' HP2]];
+          assert (HbΘ : b `notin` dom Θd)
+            by (pose proof (dom_subset_ftvar_in_aenv Θd);
+                clear - Hfr0 H0; fsetdec);
+          assert (Hag0 : flex_agree (ftvar_in_pskl P1 ∪ ftvar_in_pskl Q1)
+                           (swap_aenv b (supply_fresh S0) Θd) Θ)
+            by (apply flex_agree_swap_left;
+                [ clear - Hfr0; fsetdec
+                | pose proof (supply_fresh_notin S0);
+                  clear - Hcov H0; simpl in Hcov; fsetdec
+                | eapply flex_agree_weaken;
+                  [ exact Hagr | simpl; clear; fsetdec ] ]);
+          assert (Hag1 : flex_agree
+                    (add (supply_fresh S0)
+                       (ftvar_in_pskl P1 ∪ ftvar_in_pskl Q1))
+                    ((supply_fresh S0 ~ abind_tvar)
+                       ++ swap_aenv b (supply_fresh S0) Θd)
+                    ((supply_fresh S0 ~ abind_tvar) ++ Θ))
+            by (apply flex_agree_push_tvar;
+                [ rewrite <- (swap_atom_l b (supply_fresh S0)) at 1;
+                  apply swap_aenv_dom_notin; exact HbΘ
+                | pose proof (dom_subset_ftvar_in_aenv Θ);
+                  pose proof (supply_fresh_notin S0);
+                  clear - Hcov H0 H1; fsetdec
+                | exact Hag0 ]);
+          assert (Hagr2 : flex_agree
+                    (ftvar_in_pskl
+                       (open_pskl_wrt_pskl P1
+                          (pskl_var_f (supply_fresh S0)))
+                     ∪ ftvar_in_pskl
+                         (open_pskl_wrt_pskl Q1
+                            (pskl_var_f (supply_fresh S0))))
+                    ((supply_fresh S0 ~ abind_tvar) ++ swap_aenv b (supply_fresh S0) Θd)
+                    ((supply_fresh S0 ~ abind_tvar) ++ Θ))
+            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P1
+                              (pskl_var_f (supply_fresh S0))) as Hu1;
+                pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q1
+                              (pskl_var_f (supply_fresh S0))) as Hu2;
+                eapply flex_agree_weaken;
+                [ exact Hag1 | clear - Hu1 Hu2; simpl in *; fsetdec ]);
+          assert (Hscp2 : ftvar_in_pskl
+                            (open_pskl_wrt_pskl P1
+                               (pskl_var_f (supply_fresh S0)))
+                          ∪ ftvar_in_pskl
+                              (open_pskl_wrt_pskl Q1
+                                 (pskl_var_f (supply_fresh S0)))
+                          [<=] ftvar_in_aenv
+                                 ((supply_fresh S0 ~ abind_tvar)
+                                    ++ swap_aenv b (supply_fresh S0) Θd));
+          [ pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P1
+                          (pskl_var_f (supply_fresh S0))) as Hu1;
+            pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q1
+                          (pskl_var_f (supply_fresh S0))) as Hu2;
+            assert (Hsw : ftvar_in_pskl P1 ∪ ftvar_in_pskl Q1
+                            [<=] ftvar_in_aenv
+                                   (swap_aenv b (supply_fresh S0) Θd))
+              by (apply ftvar_in_aenv_swap_subset;
+                  [ clear - Hscp; simpl in Hscp; fsetdec
+                  | exact Hbfr | exact Hβfr ]);
+            rewrite ftvar_in_aenv_cons_tvar;
+            clear - Hu1 Hu2 Hsw; simpl in *; fsetdec
+          | ]
+      end.
+      pose proof (q3 P1 Q1 eq_refl eq_refl) as IHf.
+      assert (Hcov2 : ftvar_in_aenv ((supply_fresh S0 ~ abind_tvar) ++ Θ)
+                        ∪ ftvar_in_pskl
+                            (open_pskl_wrt_pskl P1
+                               (pskl_var_f (supply_fresh S0)))
+                        ∪ ftvar_in_pskl
+                            (open_pskl_wrt_pskl Q1
+                               (pskl_var_f (supply_fresh S0)))
+                        [<=] add (supply_fresh S0) S0).
+      { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P1
+                      (pskl_var_f (supply_fresh S0))) as Hu1.
+        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q1
+                      (pskl_var_f (supply_fresh S0))) as Hu2.
+        rewrite ftvar_in_aenv_cons_tvar.
+        clear - Hu1 Hu2 Hcov. simpl in *. fsetdec. }
+      kill_seq_call IHf HP2 Hagr2 Hscp2 Hcov2 r1 Hr1. discriminate.
+    + (* hole — SE-VacuousR *) simp e_solve_eq_impl. discriminate.
+    + (* tophole — SE-ForallGhost *)
+      simp e_solve_eq_impl.
+      inversion Hd; subst; try look_absurd.
+      match goal with
+      | Hfr0 : ?b `notin` _,
+        Hp0 : a_solve_eq ((?b ~ abind_tvar) ++ Θd) _ _ _ _ |- _ =>
+          assert (Hbfr : b `notin`
+                    ftvar_in_pskl P1 ∪ ftvar_in_pskl (pskl_tophole Q1))
+            by (clear - Hfr0; simpl in *; fsetdec);
+          assert (Hβfr : supply_fresh S0 `notin`
+                    ftvar_in_pskl P1 ∪ ftvar_in_pskl (pskl_tophole Q1))
+            by (pose proof (supply_fresh_notin S0) as Hsf;
+                clear - Hcov Hsf; simpl in *; fsetdec);
+          destruct (a_solve_eq_rebind_l Hp0 Hbfr Hβfr) as [Ξ2 [P2' HP2]];
+          assert (HbΘ : b `notin` dom Θd)
+            by (pose proof (dom_subset_ftvar_in_aenv Θd);
+                clear - Hfr0 H0; fsetdec);
+          assert (Hag0 : flex_agree (ftvar_in_pskl P1 ∪ ftvar_in_pskl Q1)
+                           (swap_aenv b (supply_fresh S0) Θd) Θ)
+            by (apply flex_agree_swap_left;
+                [ clear - Hfr0; fsetdec
+                | pose proof (supply_fresh_notin S0);
+                  clear - Hcov H0; simpl in Hcov; fsetdec
+                | eapply flex_agree_weaken;
+                  [ exact Hagr | simpl; clear; fsetdec ] ]);
+          assert (Hag1 : flex_agree
+                    (add (supply_fresh S0)
+                       (ftvar_in_pskl P1 ∪ ftvar_in_pskl Q1))
+                    ((supply_fresh S0 ~ abind_tvar)
+                       ++ swap_aenv b (supply_fresh S0) Θd)
+                    ((supply_fresh S0 ~ abind_tvar) ++ Θ))
+            by (apply flex_agree_push_tvar;
+                [ rewrite <- (swap_atom_l b (supply_fresh S0)) at 1;
+                  apply swap_aenv_dom_notin; exact HbΘ
+                | pose proof (dom_subset_ftvar_in_aenv Θ);
+                  pose proof (supply_fresh_notin S0);
+                  clear - Hcov H0 H1; fsetdec
+                | exact Hag0 ]);
+          assert (Hagr2 : flex_agree
+                    (ftvar_in_pskl
+                       (open_pskl_wrt_pskl P1
+                          (pskl_var_f (supply_fresh S0)))
+                     ∪ ftvar_in_pskl (pskl_tophole Q1))
+                    ((supply_fresh S0 ~ abind_tvar)
+                       ++ swap_aenv b (supply_fresh S0) Θd)
+                    ((supply_fresh S0 ~ abind_tvar) ++ Θ))
+            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P1
+                              (pskl_var_f (supply_fresh S0))) as Hu1;
+                eapply flex_agree_weaken;
+                [ exact Hag1 | clear - Hu1; simpl in *; fsetdec ]);
+          assert (Hscp2 : ftvar_in_pskl
+                            (open_pskl_wrt_pskl P1
+                               (pskl_var_f (supply_fresh S0)))
+                          ∪ ftvar_in_pskl (pskl_tophole Q1)
+                          [<=] ftvar_in_aenv
+                                 ((supply_fresh S0 ~ abind_tvar)
+                                    ++ swap_aenv b (supply_fresh S0) Θd));
+          [ pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P1
+                          (pskl_var_f (supply_fresh S0))) as Hu1;
+            assert (Hsw : ftvar_in_pskl P1 ∪ ftvar_in_pskl Q1
+                            [<=] ftvar_in_aenv
+                                   (swap_aenv b (supply_fresh S0) Θd))
+              by (apply ftvar_in_aenv_swap_subset;
+                  [ clear - Hscp; simpl in Hscp; fsetdec
+                  | clear - Hbfr; simpl in *; fsetdec
+                  | clear - Hβfr; simpl in *; fsetdec ]);
+            rewrite ftvar_in_aenv_cons_tvar;
+            clear - Hu1 Hsw; simpl in *; fsetdec
+          | ]
+      end.
+      pose proof (q7 P1 Q1 eq_refl eq_refl) as IHf.
+      assert (Hcov2 : ftvar_in_aenv ((supply_fresh S0 ~ abind_tvar) ++ Θ)
+                        ∪ ftvar_in_pskl
+                            (open_pskl_wrt_pskl P1
+                               (pskl_var_f (supply_fresh S0)))
+                        ∪ ftvar_in_pskl (pskl_tophole Q1)
+                        [<=] add (supply_fresh S0) S0).
+      { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P1
+                      (pskl_var_f (supply_fresh S0))) as Hu1.
+        rewrite ftvar_in_aenv_cons_tvar.
+        clear - Hu1 Hcov. simpl in *. fsetdec. }
+      kill_seq_call IHf HP2 Hagr2 Hscp2 Hcov2 r1 Hr1. discriminate.
+  - (* subject hole — SE-GhostL *)
+    simp e_solve_eq_impl. discriminate.
+  - (* subject tophole *)
+    destruct Q as [ | n' | β' | Q1 Q2 | Q1 | | Q1 ].
+    + (* unit — SE-GhostGuarded *)
+      simp e_solve_eq_impl.
+      inversion Hd; subst; try look_absurd.
+      match goal with
+      | Hp0 : a_solve_eq Θd P1 pskl_unit _ _ |- _ => rename Hp0 into HPREM
+      end.
+      pose proof (q6 P1 eq_refl) as IHf.
+      assert (Hagr1 : flex_agree (ftvar_in_pskl P1 ∪ ftvar_in_pskl pskl_unit)
+                        Θd Θ)
+        by (eapply flex_agree_weaken; [ exact Hagr | simpl; clear; fsetdec ]).
+      assert (Hscp1 : ftvar_in_pskl P1 ∪ ftvar_in_pskl pskl_unit
+                        [<=] ftvar_in_aenv Θd)
+        by (clear - Hscp; simpl in *; fsetdec).
+      assert (Hcov1 : ftvar_in_aenv Θ ∪ ftvar_in_pskl P1
+                        ∪ ftvar_in_pskl pskl_unit [<=] S0)
+        by (clear - Hcov; simpl in *; fsetdec).
+      kill_seq_call IHf HPREM Hagr1 Hscp1 Hcov1 r1 Hr1. discriminate.
+    + (* var_b — no lc *) inversion HQ.
+    + (* var_f — SE-GhostGuarded *)
+      simp e_solve_eq_impl.
+      inversion Hd; subst; try look_absurd.
+      match goal with
+      | Hp0 : a_solve_eq Θd P1 (pskl_var_f β') _ _ |- _ =>
+          rename Hp0 into HPREM
+      end.
+      pose proof (q6 P1 eq_refl) as IHf.
+      assert (Hagr1 : flex_agree (ftvar_in_pskl P1
+                                    ∪ ftvar_in_pskl (pskl_var_f β')) Θd Θ)
+        by (eapply flex_agree_weaken; [ exact Hagr | simpl; clear; fsetdec ]).
+      assert (Hscp1 : ftvar_in_pskl P1 ∪ ftvar_in_pskl (pskl_var_f β')
+                        [<=] ftvar_in_aenv Θd)
+        by (clear - Hscp; simpl in *; fsetdec).
+      assert (Hcov1 : ftvar_in_aenv Θ ∪ ftvar_in_pskl P1
+                        ∪ ftvar_in_pskl (pskl_var_f β') [<=] S0)
+        by (clear - Hcov; simpl in *; fsetdec).
+      kill_seq_call IHf HPREM Hagr1 Hscp1 Hcov1 r1 Hr1. discriminate.
+    + (* arrow — SE-GhostGuarded *)
+      simp e_solve_eq_impl.
+      inversion Hd; subst; try look_absurd.
+      match goal with
+      | Hp0 : a_solve_eq Θd P1 (pskl_arrow Q1 Q2) _ _ |- _ =>
+          rename Hp0 into HPREM
+      end.
+      pose proof (q6 P1 eq_refl) as IHf.
+      assert (Hagr1 : flex_agree (ftvar_in_pskl P1
+                                    ∪ ftvar_in_pskl (pskl_arrow Q1 Q2)) Θd Θ)
+        by (eapply flex_agree_weaken; [ exact Hagr | simpl; clear; fsetdec ]).
+      assert (Hscp1 : ftvar_in_pskl P1 ∪ ftvar_in_pskl (pskl_arrow Q1 Q2)
+                        [<=] ftvar_in_aenv Θd)
+        by (clear - Hscp; simpl in *; fsetdec).
+      assert (Hcov1 : ftvar_in_aenv Θ ∪ ftvar_in_pskl P1
+                        ∪ ftvar_in_pskl (pskl_arrow Q1 Q2) [<=] S0)
+        by (clear - Hcov; simpl in *; fsetdec).
+      kill_seq_call IHf HPREM Hagr1 Hscp1 Hcov1 r1 Hr1. discriminate.
+    + (* all_syn — SE-GhostForall *)
+      simp e_solve_eq_impl.
+      inversion Hd; subst; try look_absurd.
+      match goal with
+      | Hfr0 : ?b `notin` _,
+        Hp0 : a_solve_eq ((?b ~ abind_tvar) ++ Θd) _ _ _ _ |- _ =>
+          assert (Hbfr : b `notin`
+                    ftvar_in_pskl (pskl_tophole P1) ∪ ftvar_in_pskl Q1)
+            by (clear - Hfr0; simpl in *; fsetdec);
+          assert (Hβfr : supply_fresh S0 `notin`
+                    ftvar_in_pskl (pskl_tophole P1) ∪ ftvar_in_pskl Q1)
+            by (pose proof (supply_fresh_notin S0) as Hsf;
+                clear - Hcov Hsf; simpl in *; fsetdec);
+          destruct (a_solve_eq_rebind_r Hp0 Hbfr Hβfr) as [Ξ2 [P2' HP2]];
+          assert (HbΘ : b `notin` dom Θd)
+            by (pose proof (dom_subset_ftvar_in_aenv Θd);
+                clear - Hfr0 H0; fsetdec);
+          assert (Hag0 : flex_agree (ftvar_in_pskl P1 ∪ ftvar_in_pskl Q1)
+                           (swap_aenv b (supply_fresh S0) Θd) Θ)
+            by (apply flex_agree_swap_left;
+                [ clear - Hfr0; fsetdec
+                | pose proof (supply_fresh_notin S0);
+                  clear - Hcov H0; simpl in Hcov; fsetdec
+                | eapply flex_agree_weaken;
+                  [ exact Hagr | simpl; clear; fsetdec ] ]);
+          assert (Hag1 : flex_agree
+                    (add (supply_fresh S0)
+                       (ftvar_in_pskl P1 ∪ ftvar_in_pskl Q1))
+                    ((supply_fresh S0 ~ abind_tvar)
+                       ++ swap_aenv b (supply_fresh S0) Θd)
+                    ((supply_fresh S0 ~ abind_tvar) ++ Θ))
+            by (apply flex_agree_push_tvar;
+                [ rewrite <- (swap_atom_l b (supply_fresh S0)) at 1;
+                  apply swap_aenv_dom_notin; exact HbΘ
+                | pose proof (dom_subset_ftvar_in_aenv Θ);
+                  pose proof (supply_fresh_notin S0);
+                  clear - Hcov H0 H1; fsetdec
+                | exact Hag0 ]);
+          assert (Hagr2 : flex_agree
+                    (ftvar_in_pskl (pskl_tophole P1)
+                     ∪ ftvar_in_pskl
+                         (open_pskl_wrt_pskl Q1
+                            (pskl_var_f (supply_fresh S0))))
+                    ((supply_fresh S0 ~ abind_tvar)
+                       ++ swap_aenv b (supply_fresh S0) Θd)
+                    ((supply_fresh S0 ~ abind_tvar) ++ Θ))
+            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q1
+                              (pskl_var_f (supply_fresh S0))) as Hu1;
+                eapply flex_agree_weaken;
+                [ exact Hag1 | clear - Hu1; simpl in *; fsetdec ]);
+          assert (Hscp2 : ftvar_in_pskl (pskl_tophole P1)
+                          ∪ ftvar_in_pskl
+                              (open_pskl_wrt_pskl Q1
+                                 (pskl_var_f (supply_fresh S0)))
+                          [<=] ftvar_in_aenv
+                                 ((supply_fresh S0 ~ abind_tvar)
+                                    ++ swap_aenv b (supply_fresh S0) Θd));
+          [ pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q1
+                          (pskl_var_f (supply_fresh S0))) as Hu1;
+            assert (Hsw : ftvar_in_pskl P1 ∪ ftvar_in_pskl Q1
+                            [<=] ftvar_in_aenv
+                                   (swap_aenv b (supply_fresh S0) Θd))
+              by (apply ftvar_in_aenv_swap_subset;
+                  [ clear - Hscp; simpl in Hscp; fsetdec
+                  | clear - Hbfr; simpl in *; fsetdec
+                  | clear - Hβfr; simpl in *; fsetdec ]);
+            rewrite ftvar_in_aenv_cons_tvar;
+            clear - Hu1 Hsw; simpl in *; fsetdec
+          | ]
+      end.
+      pose proof (q5 P1 Q1 eq_refl eq_refl) as IHf.
+      assert (Hcov2 : ftvar_in_aenv ((supply_fresh S0 ~ abind_tvar) ++ Θ)
+                        ∪ ftvar_in_pskl (pskl_tophole P1)
+                        ∪ ftvar_in_pskl
+                            (open_pskl_wrt_pskl Q1
+                               (pskl_var_f (supply_fresh S0)))
+                        [<=] add (supply_fresh S0) S0).
+      { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q1
+                      (pskl_var_f (supply_fresh S0))) as Hu1.
+        rewrite ftvar_in_aenv_cons_tvar.
+        clear - Hu1 Hcov. simpl in *. fsetdec. }
+      kill_seq_call IHf HP2 Hagr2 Hscp2 Hcov2 r1 Hr1. discriminate.
+    + (* hole — SE-VacuousR *) simp e_solve_eq_impl. discriminate.
+    + (* tophole — SE-UnivGhost *)
+      simp e_solve_eq_impl.
+      inversion Hd; subst; try look_absurd.
+      match goal with
+      | Hp0 : a_solve_eq Θd P1 Q1 _ _ |- _ => rename Hp0 into HPREM
+      end.
+      pose proof (q4 P1 Q1 eq_refl eq_refl) as IHf.
+      assert (Hagr1 : flex_agree (ftvar_in_pskl P1 ∪ ftvar_in_pskl Q1) Θd Θ)
+        by (eapply flex_agree_weaken; [ exact Hagr | simpl; clear; fsetdec ]).
+      assert (Hscp1 : ftvar_in_pskl P1 ∪ ftvar_in_pskl Q1
+                        [<=] ftvar_in_aenv Θd)
+        by (clear - Hscp; simpl in *; fsetdec).
+      assert (Hcov1 : ftvar_in_aenv Θ ∪ ftvar_in_pskl P1 ∪ ftvar_in_pskl Q1
+                        [<=] S0)
+        by (clear - Hcov; simpl in *; fsetdec).
+      kill_seq_call IHf HPREM Hagr1 Hscp1 Hcov1 r1 Hr1. discriminate.
+Qed.
+
+(** ⭐ The eq-solve headline: a derivation at scoped, covered inputs means
+    the runner answers.  The context equality at the entry point makes the
+    agreement premise reflexive. *)
+Lemma e_solve_eq_run_complete : forall S0 Θ P Q HP HQ Ξ P',
+  {{ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}a ->
+  ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] ftvar_in_aenv Θ ->
+  ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] S0 ->
+  e_solve_eq_run S0 Θ P Q HP HQ <> None.
+Proof.
+  intros * Hd Hscp Hcov. unfold e_solve_eq_run.
+  assert (Hagr : flex_agree (ftvar_in_pskl P ∪ ftvar_in_pskl Q) Θ Θ)
+    by apply flex_agree_refl.
+  pose proof (e_solve_eq_impl_complete HP HQ
+                (@e_solve_eq_order_total S0 Θ P Q HP)
+                Hd Hagr Hscp Hcov) as Hne.
+  revert Hne.
+  destruct (e_solve_eq_impl S0 Θ P Q HP HQ
+              (@e_solve_eq_order_total S0 Θ P Q HP)) as [ [r Hr] | ];
     intros Hne.
   - discriminate.
   - exact (False_ind _ (Hne eq_refl)).

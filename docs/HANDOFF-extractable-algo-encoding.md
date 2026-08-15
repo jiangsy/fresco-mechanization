@@ -1879,7 +1879,7 @@ statement about the RUNNER's dispatch, not the relation.
 (✅ **Done the same day — see the end of §8c.4; the check-mode twin is Qed
 alongside the infer one in `prop_run_complete.v`.**)
 
-### 8c.6 ⭐ the first §8c.3 induction — the LOOK block — is CLOSED (2026-08-15)
+### 8c.6 ⭐ §8c.3 levels 1 and 2a are CLOSED (2026-08-15): the LOOK block, and the SOLVE block's eq layer
 
 `prop_run_complete.v` §2 (1,381 lines total, 18.6 s):
 `e_lookeq_run_complete` and `e_looksub_run_complete` are Qed and
@@ -1959,11 +1959,67 @@ proof ADDED to it, and what the next levels should copy or watch:
     `Print Rewrite HintDb e_lookeq_impl` (25 leaves) /
     `e_looksub_impl` (41) rather than guessing from the clauses.
 
-- **After look** (unchanged): solve (3 runners, layered like look),
-  extract (one composition), then the consis trio and sub — those two go
-  through the tagged blocks' equations (`simp e_consis_call_impl` /
-  `simp e_sub_call_impl` after unfolding the wrappers), with the
-  §8c.2 (2b) shape facts ("the readback positions are `⌈⌉`-images")
-  needed from the sub level up.  Each level copies §2's template:
-  order-sind, rebind-by-swap, reorder lemmas for the dispatch's
-  priorities, rename-first case scripts.
+- ⭐ **The SOLVE level's eq layer is ALSO CLOSED (2026-08-15, same day):**
+  `e_solve_eq_run_complete` / `e_solve_eq_impl_complete`
+  (prop_run_complete.v §3), axiom-free.  What the solve adds to the look
+  template, and every threading level above will need:
+
+  - ⭐⭐ **The arrow row threads the CONTEXT, so the motive carries the
+    derivation's context [`Θd`] separately**, related to the runner's by
+    `flex_agree V Θd Θr` — agreement of `a_flex_tvar` on the INPUTS'
+    variables `V` — plus a scoped-inputs premise `V ⊆ ftvar_in_aenv Θd`
+    (new, also on the run-level statement; every call site satisfies it).
+    SE-FlexR's `a_flex_tvar` test is the ONLY context-sensitive read in
+    the solve cluster, so this is the whole interface: at the arrow row,
+    the derivation's block avoids `ftvar Θd ⊇ V`
+    (`a_solve_sub_eq_generated_fresh_set`) and the runner's block avoids
+    the covering supply (`e_solve_sub_eq_block`), so
+    `flex_agree_push_blocks` lets both blocks ride.  The §3b rebinds
+    consequently let the context RIDE the swap (conclusions at
+    `swap_aenv b β Θd`; `flex_agree_swap_left` re-establishes agreement) —
+    and no `β == b` case split is needed anywhere.
+  - ⚠️ **Never `eapply flex_agree_weaken` FIRST** — its set becomes an
+    evar and the first `fsetdec` under it HANGS (measured: >110 s vs
+    0.3 s).  Build agreement bottom-up with explicit sets (weaken →
+    swap_left → push_tvar → final weaken), each as its own `assert`.
+  - ⚠️ `nonghost_pskl (pskl_tophole _)` / `pskl_hole` have no
+    constructor — SE-FlexR survives inversion at a ⫯ subject until
+    `look_absurd` kills the `nonghost_pskl` evidence too.
+  - The FlexR branches owe NOTHING for the guess: `e_guess_mono_impl` is
+    total (a `sig`, not an `option`), so the branch is `Some` once the
+    three tests pass — `flex_bound_ck` by `a_flex_tvar` transport
+    through the agreement + `flex_bound_ck_complete`; the other two
+    compute by `simpl` (the runner's FlexR subjects are never variables —
+    the Var clause catches those first).
+
+- ⛔ **NEXT, in order:**
+  1. **sub-solve** (`e_solve_sub_run_complete`): same motive; the
+     dispatch peels ∀/⫯ SUBJECTS FIRST (SolS-ForallL before ForallR —
+     the OPPOSITE of the look walk), so the two reorder lemmas are
+     `a_solve_sub_forall_l_first` (mirror of the look level's R-first,
+     same two-swap + exchange dance; exchange for the solve = an
+     `a_solve_sub_eq_ctx_change` instance) and a strip-first for the ⫯
+     subject vs ForallR (easy — no exchange, the witness stays put).
+     LS→check drops into the finished eq lemma.
+  2. ⛔⛔ **The CSTR fold and everything above it hit a NEW design
+     fork the ORDER-induction plan has not addressed: the tail runs at
+     the runner's own YIELD** (`sv_out r1`) where the derivation's tail
+     sits at the DERIVATION's yield — and unlike contexts, yields are
+     SUBJECTS, so `flex_agree` does not cover the mismatch.  Same shape
+     at every composition above (extract's three stages, consis's
+     output-context threading, sub's ForallL consuming an `a_extract`).
+     Two candidate resolutions, to be DECIDED before writing the fold:
+     (a) determinism-up-to-fresh-renaming per judgement — principled,
+     but renaming = the permutation layer the tree has always refused;
+     (b) ⭐ compose through the EXISTING a-side completeness tower
+     instead: state the composite levels' completeness from the
+     SEMANTIC premises (as P6-L/P7 already do on the a-side), so each
+     stage's needed derivation is re-derived AT THE RUN'S OWN OUTPUTS
+     by the P5–P7 lemmas rather than transported from the inverted
+     derivation's midpoints.  (b) matches how the a-side handled the
+     same problem and adds no new metatheory; its cost is that the
+     composite statements carry the declarative premises.
+  3. Then the consis trio and sub through the tagged blocks' equations
+     (`simp e_consis_call_impl` / `simp e_sub_call_impl` after
+     unfolding the wrappers), with the §8c.2 (2b) shape facts needed
+     from the sub level up.
