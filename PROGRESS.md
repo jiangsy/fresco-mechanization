@@ -240,7 +240,41 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-15 (g, latest) — ⭐⭐⭐ **§8c.3 LEVEL 3 CLOSED: the CSTR FOLD is complete — the yield mismatch is paid by TRANSPORTING the derivation's tail along the determinism chain**
+## 2026-08-15 (h, latest) — ⛔ **SCOUTING RESULT: the EXTRACT level's planned route is REFUTED — the COLLECTION is not deterministic up to renaming, and the root cause is a side condition the paper omits**
+
+§8c.6's next item was to repeat level 3's transport one layer up, which
+needs `a_looksub` / `a_lookeq` determinism up to fresh renaming.  It does
+not hold.  `cex/cex_looksub_not_det.v` (Qed, axiom-free) exhibits, at
+subject `∀_.α`, target `∀_.1`, mode TC, two derivations of the SAME
+collection judgement with the same (empty) block and constraint lists
+`[≼TC ∀_.1]` vs `[≼TC 1]` — both CLOSED, so no renaming and no swap chain
+relates them.  The mechanism: `LS-Var` emits its constraint at the
+CURRENT target, so peeling the target (LS-ForallR) and peeling the
+subject (LS-ForallL) collect different things, and at a ∀/∀ crossing both
+rules apply.
+
+⭐ **Root cause is the paper's own omission** (filed in PAPER-GAPS.md):
+`SI-ForallL` carries `guarded{P_0} ∨ P_0 = □` with the paper's own
+comment *"avoid overlapping with ForallR; only need in an algorithmic
+presentation"* (`full-algo-spec.tex:838`), and `SI-UnivGhostR` carries the
+same guard for the same stated reason — but the COLLECTION's `LS-ForallL`
+(`:1065`) and `LS-ForallR` (`:1049`) have none.  ⚙ The ALGORITHM is
+unaffected: both lists are solvable and the runner commits to ForallR;
+what fails is the invariant that the collection's output is determined.
+In hindsight the evidence was already in the tree — level 1's reorder
+lemma `a_looksub_forall_r_first` is stated with EXISTENTIAL outputs
+precisely because re-rooting changes them.
+
+⛔ The extract level is therefore blocked on a design fork (§8c.7),
+parallel to the yield-mismatch one: (a) restore the guard on
+`LS-ForallL` — smaller, matches what the paper already does one
+judgement over, but touches `frost/algo/def_rules.v` and re-opens the
+look level's completeness and P6-L; (b) keep the rules and carry a
+SOLVE-EQUIVALENCE invariant instead of a renaming — no rule change, but
+materially bigger metatheory, and not compositional through `LS-Arrow`.
+Recommendation (a); awaiting the user.
+
+## 2026-08-15 (g) — ⭐⭐⭐ **§8c.3 LEVEL 3 CLOSED: the CSTR FOLD is complete — the yield mismatch is paid by TRANSPORTING the derivation's tail along the determinism chain**
 
 `prop_run_complete.v` §5 (`e_solve_cstr_run_complete` /
 `e_solve_cstr_impl_complete`, axiom-free; file 3,432 → 3,831 lines,

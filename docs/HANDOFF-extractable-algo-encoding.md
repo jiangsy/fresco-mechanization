@@ -2143,3 +2143,76 @@ proof ADDED to it, and what the next levels should copy or watch:
      after unfolding the wrappers), with the §8c.2 (2b) shape facts
      needed from the sub level up, ending at the flagship
      `e_typing_run_complete`.
+
+### 8c.7 ⛔ SCOUTING RESULT (2026-08-15): the EXTRACT level's planned route is REFUTED — the collection is not deterministic up to renaming
+
+§8c.6's "NEXT" item 1 was to repeat level 3's recipe one layer up: prove
+`a_looksub` / `a_lookeq` determinism up to fresh renaming (with a
+`rel_cstrs` congruence over `rel_pskl`, since the openers leak into the
+collected 𝒞), then transport `a_extract`'s solve premise from the
+derivation's 𝒞 to the runner's.  **That premise is false.**
+
+`cex/cex_looksub_not_det.v` (Qed, axiom-free) exhibits, at subject
+`∀_. α`, target `∀_. 1`, mode TC:
+
+      LS-ForallL first:  ∀_.α ≼ ∀_.1  ↝  α ≼ ∀_.1  ↝  𝒞 = [ ≼TC ∀_.1 ]
+      LS-ForallR first:  ∀_.α ≼ ∀_.1  ↝  ∀_.α ≼ 1  ↝  𝒞 = [ ≼TC 1    ]
+
+Both derivations exist at the same context with the same block (`nil`),
+and **both constraint lists are CLOSED** — so no renaming, and in
+particular no swap chain, relates them.  The mechanism is simple and
+applies wherever the two peeling rules cross: `LS-Var` emits `≼M P'` at
+the CURRENT target, so peeling the target changes what is collected.
+
+⭐ **Root cause, and it is the PAPER's own omission** (filed in
+PAPER-GAPS.md): `SI-ForallL` carries the premise
+`guarded{P_0} ∨ P_0 = □` with the paper's own comment "avoid overlapping
+with ForallR; only need in an algorithmic presentation"
+(`full-algo-spec.tex:838`), and `SI-UnivGhostR` carries the same guard
+for the same stated reason (`:813`).  The COLLECTION's `LS-ForallL`
+(`:1065`) and `LS-ForallR` (`:1049`) have **no such guard**.
+
+⚙ The algorithm is unaffected: both lists are solvable, and the runner
+commits to ForallR (`type.ml:663`), which is why level 1 needed
+`a_looksub_forall_r_first` and why that lemma is stated with EXISTENTIAL
+outputs — it was already the evidence that the reorder changes the
+output, and this exhibit is what that existential was hiding.
+
+⛔ **THE FORK — a USER decision, exactly parallel to §8c.6's:**
+
+(a) **Restore the guard.**  Give `LS-ForallL` its counterpart's premise
+    (`guarded{P'} ∨ P' = □` on the target) in `frost/algo/def_rules.v`,
+    and audit `LE-ForallSyn` / `LE-UnivGhost1` for the same.  Then the
+    scouted plan works verbatim: look-det up to renaming becomes
+    provable (the crossing is gone), `rel_cstrs` + the ρ split (flex zip
+    ++ rigid zip — note `chain_flex_pairs` ALREADY takes a sublist ρ0,
+    so no loosening of `rel_pskl` is needed) carry it, and the extract
+    level is a copy of level 3.
+    COST: re-opens the look level's completeness, `a_extract_complete_gen`
+    (P6-L), and the soundness chain through the collection — the guard is
+    a new premise every construction site must discharge.  ⚙ The
+    re-rooting lemma `a_looksub_forall_r_first` is exactly the tool for
+    the completeness direction, and it already exists.
+
+(b) **Keep the rules; carry a SOLVE-EQUIVALENCE invariant instead.**
+    Replace "the two collections agree up to renaming" with "a fold
+    derivation on one 𝒞 yields a fold derivation on the other (with a
+    `uniq` block)".  It is true at the crossing above — `SS-ForallR`
+    peels `≼TC ∀_.1` to exactly the `≼TC 1` the other list starts from —
+    but it is NOT compositional in the obvious way: the fold THREADS its
+    pattern through the list, so equivalence of `𝒞1 ++ 𝒞2` does not
+    follow from equivalence of the halves, and the invariant has to be
+    threaded through `LS-Arrow` as well as the ∀ crossings.
+    COST: a new relation and its metatheory, materially bigger than the
+    `rel_pskl` layer prop_solve_det.v already paid for.
+
+(c) **Strengthen the reorder lemmas to be output-aware** and normalize
+    the a-side derivation to the runner's dispatch BEFORE applying det.
+    ⚠️ This is (b) in disguise: what a reorder must preserve is exactly
+    solvability, since the exhibit shows it cannot preserve the output.
+
+Recommendation: **(a)**.  It is the smaller change, it is what the paper
+already does one judgement over, and the repair is one the authors would
+plausibly want in the paper independently of this mechanization.  ⚠️ It
+touches `frost/algo/def_rules.v`, so it needs the user's go-ahead before
+any code moves.

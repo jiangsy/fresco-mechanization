@@ -37,6 +37,66 @@ recently P6-Sv at the end of this file)}.
 > Several judgments looked broken until that condition was restored.  **Check
 > that file before concluding a lemma is unprovable.**
 
+## MISSING SIDE CONDITION (2026-08-15, machine-checked) — `LS-ForallL` lacks the `guarded` guard that `SI-ForallL` carries "to avoid overlapping with ForallR", so the COLLECTION is not deterministic — and its two answers differ in SHAPE, not just in names
+
+**What the paper says.**  `SI-ForallL` (`full-algo-spec.tex:835-838`) carries
+the premise
+
+```
+  guarded{P_0}  or  P_0 = □          % avoid overlapping with ForallR;
+                                     % only need in an algorithmic presentation
+```
+
+— the comment is the paper's own, verbatim, and `P_0` is the *inherited*
+(target) type.  `SI-UnivGhostR` (`:813-816`) carries the same guard for the
+same stated reason (`guarded{P}`, "% avoid overlapping").
+
+**What is missing.**  The *collection* judgement's own ∀ rules —
+`LS-ForallR` (`:1049-1054`) and `LS-ForallL` (`:1065-1071`) — carry **no
+such guard**.  `LS-ForallL`'s only commented-out side condition is
+`M ≠ TI`.  So at mode `TC`, subject `∀β.P` and target `∀β.B`, *both* rules
+apply.
+
+**Why that is not harmless.**  `LS-Var` emits `≼M P'` where `P'` is the
+**current target**, so peeling the target changes what gets collected.
+At subject `∀_. α`, target `∀_. 1`, mode `TC`:
+
+```
+  LS-ForallL first:  ∀_.α ≼ ∀_.1  ↝  α ≼ ∀_.1  ↝  𝒞 = [ ≼TC ∀_.1 ]
+  LS-ForallR first:  ∀_.α ≼ ∀_.1  ↝  ∀_.α ≼ 1  ↝  𝒞 = [ ≼TC 1    ]
+```
+
+Both derivations exist; both constraint lists are **closed** (no free type
+variables), so this is not a choice-of-fresh-name difference that a
+renaming could absorb — the two lists are simply different constraints.
+Machine-checked: [`cex/cex_looksub_not_det.v`](../cex/cex_looksub_not_det.v)
+(`cex_looksub_not_det`, Qed, axiom-free).
+
+**Is the algorithm wrong?  No.**  Both lists are solvable, and the
+reference implementation commits to `ForallR` (`type.ml:663`), so it
+always collects the second.  What the omission costs is the *invariant*:
+the paper presents `look[N][M]{α}{P}{P'}{𝒞}[Ξ]` as computing 𝒞 from its
+inputs, and the rules as given do not determine it.  Anything that reasons
+"the collection's output" — rather than "some collection's output" — needs
+either the guard or a weaker, solve-level equivalence.
+
+**Suggested repair.**  Give `LS-ForallL` the same premise `SI-ForallL`
+has — `guarded{P'} or P' = □` on its *target* — and, symmetrically, check
+whether `LE-ForallSyn` / `LE-UnivGhost1` need theirs.  It costs
+completeness nothing at the crossing we can see: a `ForallL`-rooted
+derivation at a ∀ target can always be re-rooted at `ForallR`
+(mechanized as `a_looksub_forall_r_first`,
+`frost/ext_algo/prop_run_complete.v` §2b — the runner's dispatch relies on
+exactly that).
+
+⛔ **Open in the mechanization.**  Restoring the guard changes
+`frost/algo/def_rules.v` and re-opens the look level's completeness plus
+`a_extract_complete_gen` (P6-L); leaving it out means the extractable
+encoding's EXTRACT level must carry a solve-equivalence invariant instead
+of a renaming.  The fork is stated in
+[`HANDOFF-extractable-algo-encoding.md`](HANDOFF-extractable-algo-encoding.md) §8c.7
+and is a USER decision.
+
 ## ✅ RESOLVED (2026-08-11) — `fresh Ψ'` must mean GLOBAL freshness, and all four subtyping judgements now read it that way
 
 `ForallL`'s side condition is the single word *fresh* on `Ψ'`:
