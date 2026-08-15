@@ -1876,3 +1876,64 @@ stuck on its own opaque domain proof.  Flipping `def_consis_impl.v` with
 convoy dispatch) is therefore the next unblocking move — the determinism
 alternative cannot supply "the consis sub-call returns `Some`", which is a
 statement about the RUNNER's dispatch, not the relation.
+(✅ **Done the same day — see the end of §8c.4; the check-mode twin is Qed
+alongside the infer one in `prop_run_complete.v`.**)
+
+### 8c.6 ⛔ NEXT — the first §8c.3 induction: the LOOK block, scouted
+
+With every runner's equations derived, §8c.3's order-driven completeness
+induction is the whole remaining campaign.  It should go BOTTOM-UP through
+the call graph — look, then solve, extract, the consis trio, sub, split /
+pat / typing — and the LOOK block is the right first target: it is at the
+bottom, small, and still exercises every ingredient of the method
+(committed names, one transposition per binder row, layered rather than
+mutual).  Scouted 2026-08-15, ready to start:
+
+- **Statement shape** (eq layer first; sub layer mirrors it with `m`):
+
+      {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}a ->
+      ftvar_in_aenv Θ ∪ {{α}} ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P' [<=] S0 ->
+      e_lookeq_run S0 Θ α P P' HP HP' <> None
+
+  The coverage premise is the ONLY hypothesis beyond the derivation: the
+  e-side rules state freshness against the SUPPLY, so the runner's own
+  fresh draws need nothing, and coverage is consumed exactly at the
+  transposition steps.  It re-establishes trivially at every recursive
+  call (components shrink; ∀-rows go to `add (supply_fresh S0) S0` with
+  the opened body ⊆ old ∪ the new name).
+
+- ⚠️ **The auto induction principle of `e_lookeq_order` is UNUSABLE.**
+  The Arrow premise nests its recursive order under a conjunction
+  (`e_lookeq_order … /\ (forall S1 Ξ1 C1, run -> e_lookeq_order …)`), and
+  Coq generates no IH through `/\`.  Write ONE hand `fix` strong-induction
+  lemma per order (motive `Q S0 Θ α P P'`, every premise doubled with its
+  `Q`), exactly like the §8c.4 injections — mechanical, guard-safe
+  (applied-premise subterms, `proj1`/`proj2` through the conj).  This will
+  be needed for EVERY order in the campaign; make it the reusable idiom.
+
+- **The transposition, per binder row**: invert the `a_*` derivation; its
+  ∀-row opened at its own `β` with the rule's OWN freshness premise
+  (`β ∉ add α (ftvar_in_aenv Θ ∪ ftvar P ∪ ftvar P')` — def_rules.v:495ff);
+  the runner commits to `β' := supply_fresh S0` with `β' ∉ S0 ⊇` the same
+  set by coverage.  Apply `a_looksub_lookeq_swap` (algo/prop_swap.v:913)
+  at `(β β')`: the context, `α`, and the closed skeletons are fixed by the
+  two freshness facts, the opened bodies become the runner's committed
+  opens, and the IH applies.  No permutation layer, no height mirror —
+  §8c.3's argument, one swap per row.
+
+- **The case bash**: the proof walks the RUNNER's dispatch
+  (`simp e_lookeq_impl`, then the branch tests give hypotheses), not the
+  derivation's rules.  A branch whose tests pass may answer by a
+  DIFFERENT rule than the derivation's root (LE-Absent answers anything
+  with `α ∉ ftvar P`) — that is fine, `Some` is `Some`; the derivation is
+  inverted only to FEED the recursive branches, and at a pinned
+  configuration the possible last rules are few.  ⚠️ Remember
+  `e_lookeq_run` pins its domain proof to `e_lookeq_order_total`: work
+  through `simp`, never reduction.
+
+- **After look**: solve (3 runners, layered like look), extract (one
+  composition), then the consis trio and sub — those two go through the
+  tagged blocks' equations (`simp e_consis_call_impl` /
+  `simp e_sub_call_impl` after unfolding the wrappers), with the
+  §8c.2 (2b) shape facts ("the readback positions are `⌈⌉`-images")
+  needed from the sub level up.
