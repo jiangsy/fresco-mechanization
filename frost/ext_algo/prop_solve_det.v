@@ -241,6 +241,76 @@ Proof.
   intros. unfold close_pskl_wrt_pskl. apply rel_pskl_close_rec; auto.
 Qed.
 
+(** Opening related bodies at a PAIR of names extends the relation by
+    that pair — the §8c.9 pair induction's binder-row move: the two
+    sides' openers are never renamed to a common atom, they are simply
+    paired into ρ. *)
+Lemma rel_pskl_open_rec_pair : forall ρ V P1 P2 β1 β2 k,
+  rel_pskl ρ V P1 P2 ->
+  rel_pskl ((β1, β2) :: ρ) V
+    (open_pskl_wrt_pskl_rec k (pskl_var_f β1) P1)
+    (open_pskl_wrt_pskl_rec k (pskl_var_f β2) P2).
+Proof.
+  intros * Hrel; revert k; induction Hrel; intros k; simpl;
+    try (constructor; auto; fail).
+  - (* var_b: below the binder both sides stay; AT it the pair enters *)
+    destruct (lt_eq_lt_dec n k) as [[Hlt | Heq] | Hgt];
+      [ constructor | | constructor ].
+    apply rel_pskl__var_f. apply rel_atom__pair. left. reflexivity.
+  - (* var_f: the old relation rides into the extended ρ *)
+    apply rel_pskl__var_f.
+    match goal with
+    | Ha : rel_atom _ _ _ _ |- _ => inversion Ha; subst
+    end.
+    + apply rel_atom__pair. right. assumption.
+    + apply rel_atom__id. assumption.
+Qed.
+
+Lemma rel_pskl_open_pair : forall ρ V P1 P2 β1 β2,
+  rel_pskl ρ V P1 P2 ->
+  rel_pskl ((β1, β2) :: ρ) V
+    (open_pskl_wrt_pskl P1 (pskl_var_f β1))
+    (open_pskl_wrt_pskl P2 (pskl_var_f β2)).
+Proof.
+  intros. unfold open_pskl_wrt_pskl. apply rel_pskl_open_rec_pair; auto.
+Qed.
+
+(** Opening both sides at ONE common name grows the identity support
+    instead — the transports' binder rows (a globally fresh atom
+    satisfies both sides' per-side freshness). *)
+Lemma rel_pskl_open_rec_var : forall ρ V P1 P2 β k,
+  rel_pskl ρ V P1 P2 ->
+  rel_pskl ρ (add β V)
+    (open_pskl_wrt_pskl_rec k (pskl_var_f β) P1)
+    (open_pskl_wrt_pskl_rec k (pskl_var_f β) P2).
+Proof.
+  intros * Hrel; revert k; induction Hrel; intros k; simpl;
+    try (constructor; auto; fail).
+  - (* var_b *)
+    destruct (lt_eq_lt_dec n k) as [[Hlt | Heq] | Hgt];
+      [ constructor | | constructor ].
+    apply rel_pskl__var_f. apply rel_atom__id. clear. fsetdec.
+  - (* var_f *)
+    apply rel_pskl__var_f.
+    match goal with
+    | Ha : rel_atom _ _ _ _ |- _ => inversion Ha; subst
+    end.
+    + apply rel_atom__pair. assumption.
+    + apply rel_atom__id.
+      match goal with
+      | Hin : _ `in` V |- _ => clear - Hin; fsetdec
+      end.
+Qed.
+
+Lemma rel_pskl_open_var : forall ρ V P1 P2 β,
+  rel_pskl ρ V P1 P2 ->
+  rel_pskl ρ (add β V)
+    (open_pskl_wrt_pskl P1 (pskl_var_f β))
+    (open_pskl_wrt_pskl P2 (pskl_var_f β)).
+Proof.
+  intros. unfold open_pskl_wrt_pskl. apply rel_pskl_open_rec_var; auto.
+Qed.
+
 (* ===================================================================== *)
 (*  §2  The transport: a PALINDROMIC swap chain realizes the relation     *)
 (*                                                                        *)

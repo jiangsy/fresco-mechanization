@@ -2585,9 +2585,16 @@ get side-1 hygiene by re-running the runner on side-1's inputs: the
 runner is deterministic, so that just reproduces side 2 and is
 circular.
 
-⛔ STILL OPEN, in order: the rel kit extensions
-(`rel_pskl_open_pair`, `rel_pskl_open_var`, `flex_agree_rel` +
-basics), the four REL-transports (guess_mono, solve_eq, solve_sub,
-fold), the hygienic rederivation, the b-core pair induction (§6b),
-the §6c assembly `e_extract_impl_complete` / `e_extract_run_complete`.
-Then the consis trio and sub per §8c.6's NEXT list.
+⚙ The rel kit's open-compat is LANDED too (prop_solve_det.v §1, Qed):
+`rel_pskl_open_pair` (open related bodies at a PAIR — the pair
+induction's binder move) and `rel_pskl_open_var` (common opener, the
+transports' binder rows), each with its `_rec` engine mirroring
+`rel_pskl_close_rec`.
+
+⛔ STILL OPEN, in order: `flex_agree_rel` + basics (new file
+`prop_solve_rel.v` between prop_solve_det and prop_run_complete is the
+natural home), the four REL-transports (guess_mono, solve_eq,
+solve_sub, fold), the hygienic rederivation, the b-core pair induction
+(§6b), the §6c assembly `e_extract_impl_complete` /
+`e_extract_run_complete`.  Then the consis trio and sub per §8c.6's
+NEXT list.
