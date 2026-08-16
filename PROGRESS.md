@@ -342,6 +342,30 @@ args are all implicit under `Set Implicit Arguments` (pin with `@`), and
 a blanket `intros` after a `mutind` makes hypothesis names unstable —
 write the intro lists out.
 
+⭐ **AND THE EQUIVARIANCE KIT IS Qed** (`prop_guess.v` §8
+`e_guess_mono_swap`, `prop_consis.v` §10
+`e_assign_unify_consis_swap` + the three projections; axiom-free).  The
+completeness level needs it because the RUNNER opens its binders at
+`supply_fresh S0` while a derivation opens them at ANY fresh atom, so
+the two agree only up to a transposition.  `algo/prop_swap.v` §5/§11 is
+the template rule for rule, and the supply-threaded copy differs in
+exactly the four ways the encoding does: `Δ-drop` deletes the
+`∉ dom Θ1` premises (the a-side's `swap_aenv_dom_notin` calls are gone),
+`Δ-supply` turns the ∀ rows' freshness into `α ∉ S0` (one
+`swap_notin_eq`), `Δ-guess` routes `Assign-SolveM` through
+`e_guess_mono_swap`, and `Δ-thread` is what forces the ∃-form —
+`swap_atoms` is not a Leibniz homomorphism on the opaque `atoms`, so the
+swapped run's OUTPUT supply is fixed only up to `[=]` and `U-Arrow`
+chains the two witnesses.  The whole a-side support layer was reusable
+unchanged (`eq_swap_atoms_add`, `swap_notin_eq`, `swap_pskl_open_var`,
+`swap_ptyp_close`, `a_flex_tvar_swap`, `a_non_flex_swap`,
+`guarded_pskl_swap`, `swap_inter_ftv_empty`), so nothing new was added
+to `frost/`.
+
+⛔ WHAT IS LEFT for the hole-free rung: the ~30-case main induction over
+`e_consis_call_order_sind`, and the hole-free invariant itself
+(`pskl_no_hole` exists, in `algo/consis/prop_completeness_consis.v`).
+
 
 ## 2026-08-16 — ⭐⭐⭐ **§8c.9 CLOSED: THE EXTRACT LEVEL (campaign level 4) IS COMPLETE — the b-core and the assembly are Qed**
 

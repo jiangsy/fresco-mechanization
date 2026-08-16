@@ -33,6 +33,8 @@ Require Import src.frost.ltac_utils.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.prop_basic.
+Require Import src.frost.prop_tag.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
 Require Import src.frost.ext_algo.def_guess.
@@ -1234,3 +1236,289 @@ Corollary e_consis_supply_respect : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
   exists S1', S1' [=] S1 /\
     {{ S0' ↝ S1' ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e.
 Proof. apply e_assign_unify_consis_supply_respect. Qed.
+
+(* ===================================================================== *)
+(*  §10  EQUIVARIANCE for the whole trio                                  *)
+(*                                                                        *)
+(*  prop_guess.v §8's companion, and needed for the same reason: §8c.10's *)
+(*  completeness level compares a derivation, which opens its binders at  *)
+(*  ANY fresh atom, with the RUNNER, which opens them at                   *)
+(*  [supply_fresh S0] — so the two agree only up to a transposition.      *)
+(*  algo/prop_swap.v §11's [a_assign_unify_consis_swap] is the template,  *)
+(*  rule for rule; the supply-threaded copy differs in exactly the four   *)
+(*  ways the encoding does.  [Δ-drop] deletes the [∉ dom Θ1] premises     *)
+(*  (so the a-side's [swap_aenv_dom_notin] calls are gone), [Δ-supply]    *)
+(*  turns the ∀ rows' freshness into [α ∉ S0] (one [swap_notin_eq]),      *)
+(*  [Δ-guess] routes [Assign-SolveM] through [e_guess_mono_swap], and     *)
+(*  [Δ-thread] is what forces the ∃-form: the swapped run's OUTPUT supply *)
+(*  is fixed only up to [=], and at [U-Arrow] the two ∃-witnesses chain.  *)
+(*                                                                        *)
+(*  ⚠️ The Δ-slots and the supply are all atom SETS, so they enter        *)
+(*  extensionally ([Δ1' [=] swap_atoms a b Δ1], …): [swap_atoms] cannot   *)
+(*  be a Leibniz homomorphism on the opaque [atoms], which is why the     *)
+(*  ∀ rows go through [eq_swap_atoms_add] rather than [rewrite].          *)
+(* ===================================================================== *)
+
+Lemma e_assign_unify_consis_swap : forall a b,
+  (forall S0 Θ0 Ξ α P S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e ->
+     forall S0', S0' [=] swap_atoms a b S0 ->
+     exists S1', S1' [=] swap_atoms a b S1 /\
+       {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊲[ swap_aenv a b Ξ ]
+          (swap_atom a b α) ≔ (swap_pskl a b P)
+          ⊣ (swap_aenv a b Θ1) }}e) /\
+  (forall S0 Θ0 α β S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e ->
+     forall S0', S0' [=] swap_atoms a b S0 ->
+     exists S1', S1' [=] swap_atoms a b S1 /\
+       {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊲
+          (swap_atom a b α) ≈ᵘ (swap_atom a b β)
+          ⊣ (swap_aenv a b Θ1) }}e) /\
+  (forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+     forall Δ1' Δ2' S0',
+       Δ1' [=] swap_atoms a b Δ1 -> Δ2' [=] swap_atoms a b Δ2 ->
+       S0' [=] swap_atoms a b S0 ->
+     exists S1', S1' [=] swap_atoms a b S1 /\
+       {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊢[ Δ1' | Δ2' | (swap_pskl a b P0) ]
+          (swap_pskl a b P) ∼ (swap_pskl a b Q)
+          ⊣ (swap_aenv a b Θ1) }}e).
+Proof.
+  intros a b.
+  apply (e_assign_unify_consis_mutind
+           (fun S0 Θ0 Ξ α P S1 Θ1 _ =>
+              forall S0', S0' [=] swap_atoms a b S0 ->
+              exists S1', S1' [=] swap_atoms a b S1 /\
+                {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊲[ swap_aenv a b Ξ ]
+                   (swap_atom a b α) ≔ (swap_pskl a b P)
+                   ⊣ (swap_aenv a b Θ1) }}e)
+           (fun S0 Θ0 α β S1 Θ1 _ =>
+              forall S0', S0' [=] swap_atoms a b S0 ->
+              exists S1', S1' [=] swap_atoms a b S1 /\
+                {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊲
+                   (swap_atom a b α) ≈ᵘ (swap_atom a b β)
+                   ⊣ (swap_aenv a b Θ1) }}e)
+           (fun Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1 _ =>
+              forall Δ1' Δ2' S0',
+                Δ1' [=] swap_atoms a b Δ1 -> Δ2' [=] swap_atoms a b Δ2 ->
+                S0' [=] swap_atoms a b S0 ->
+              exists S1', S1' [=] swap_atoms a b S1 /\
+                {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0)
+                   ⊢[ Δ1' | Δ2' | (swap_pskl a b P0) ]
+                   (swap_pskl a b P) ∼ (swap_pskl a b Q)
+                   ⊣ (swap_aenv a b Θ1) }}e)).
+  (* ==================== assign ==================== *)
+  - (* Assign-UnivGhost-Id *)
+    intros S Θ0 α S0' Heq. simpl.
+    exists S0'. split; [ exact Heq | apply e_assign__univ_ghost_id ].
+  - (* Assign-SolveM — the generative row *)
+    intros S0 S1 Θ0 Ξ α P βs τ Hocc Hg Hm S0' Heq. simpl.
+    destruct (e_guess_mono_swap Hg Heq) as [S1' [HS1 Hg']].
+    exists S1'. split; [ exact HS1 | ].
+    rewrite !swap_aenv_app.
+    apply e_assign__solve_m with (βs := swap_aenv a b βs);
+      auto using swap_pskl_ftv_notin, mono_ptyp_swap.
+  - (* Assign-Assign *)
+    intros S0 S1 Θ0 Θ1 Ξ α β τ P Q Hflex Hd IH S0' Heq. simpl.
+    destruct (IH empty empty S0'
+                 (empty_eq_swap_atoms_empty a b)
+                 (empty_eq_swap_atoms_empty a b) Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    eapply e_assign__assign.
+    + exact (a_flex_tvar_swap a b _ _ Hflex).
+    + rewrite swap_aenv_app in Hd'.
+      rewrite !swap_pskl_subst in Hd'.
+      rewrite !swap_pskl_ptyp_to_pskl in Hd'.
+      change (swap_pskl a b (pskl_var_f α)) with
+        (pskl_var_f (swap_atom a b α)) in Hd'.
+      exact Hd'.
+  - (* Assign-Depend *)
+    intros S0 S1 Θ0 Θ1 Ξ α β P Hne Hin Hd IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    rewrite swap_aenv_app in Hd'.
+    apply e_assign__depend;
+      [ auto using swap_atom_neq | auto using swap_pskl_ftv_in | exact Hd' ].
+  - (* Assign-Skip *)
+    intros S0 S1 Θ0 Θ1 Ξ α β P Hne Hnf Hd IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_assign__skip;
+      [ auto using swap_atom_neq | auto using swap_pskl_ftv_notin
+      | exact Hd' ].
+  - (* Assign-SkipRigid *)
+    intros S0 S1 Θ0 Θ1 Ξ α β P Hnf Hd IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_assign__skip_rigid;
+      [ auto using swap_pskl_ftv_notin | exact Hd' ].
+  - (* Assign-SkipTmVar (typ payload) *)
+    intros S0 S1 Θ0 Θ1 Ξ α x A P Hd IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | apply e_assign__skip_tm_var; exact Hd' ].
+  - (* Assign-SkipTmVar (skl payload) *)
+    intros S0 S1 Θ0 Θ1 Ξ α x Q P Hd IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | apply e_assign__skip_tm_skl; exact Hd' ].
+  (* ==================== unify ==================== *)
+  - (* Flex-Flex-Id *)
+    intros S Θ0 α Hflex S0' Heq. simpl.
+    exists S0'. split; [ exact Heq | ].
+    apply e_unify__flex_id. exact (a_flex_tvar_swap a b _ _ Hflex).
+  - (* Flex-Flex-L *)
+    intros S Θ0 α β Hne Hflex S0' Heq. simpl.
+    exists S0'. split; [ exact Heq | ].
+    apply e_unify__flex_l;
+      [ auto using swap_atom_neq | exact (a_flex_tvar_swap a b _ _ Hflex) ].
+  - (* Flex-Flex-R *)
+    intros S Θ0 α β Hne Hflex S0' Heq. simpl.
+    exists S0'. split; [ exact Heq | ].
+    apply e_unify__flex_r;
+      [ auto using swap_atom_neq | exact (a_flex_tvar_swap a b _ _ Hflex) ].
+  - (* Flex-Flex-Assign *)
+    intros S0 S1 Θ0 Θ1 α1 τ α β Q Hf1 Hf2 Hd IH S0' Heq. simpl.
+    destruct (IH empty empty S0'
+                 (empty_eq_swap_atoms_empty a b)
+                 (empty_eq_swap_atoms_empty a b) Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    eapply e_unify__flex_assign.
+    + exact (a_flex_tvar_swap a b _ _ Hf1).
+    + exact (a_flex_tvar_swap a b _ _ Hf2).
+    + rewrite !swap_pskl_ptyp_to_pskl in Hd'.
+      rewrite !swap_ptyp_subst in Hd'.
+      change (swap_ptyp a b (ptyp_var_f β)) with
+        (ptyp_var_f (swap_atom a b β)) in Hd'.
+      change (swap_ptyp a b (ptyp_var_f α)) with
+        (ptyp_var_f (swap_atom a b α)) in Hd'.
+      exact Hd'.
+  - (* Flex-Flex-Skip *)
+    intros S0 S1 Θ0 Θ1 α1 α β Hne1 Hne2 Hd IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_unify__flex_skip;
+      [ auto using swap_atom_neq | auto using swap_atom_neq | exact Hd' ].
+  - (* Flex-Flex-Skip' *)
+    intros S0 S1 Θ0 Θ1 c bd α β Hb Hd IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_unify__skip_other; [ | exact Hd' ].
+    destruct Hb as [-> | [[A ->] | [Qb ->]]]; simpl.
+    + left; reflexivity.
+    + right; left; eexists; reflexivity.
+    + right; right; eexists; reflexivity.
+  (* ==================== consis ==================== *)
+  - (* Ghost *)
+    intros Δ1 Δ2 S Θ0 P0 Hemp Δ1' Δ2' S0' HΔ1 HΔ2 Heq. simpl.
+    exists S0'. split; [ exact Heq | ].
+    apply e_consis__ghost. eauto using swap_inter_ftv_empty.
+  - (* Unit *)
+    intros Δ1 Δ2 S Θ0 Δ1' Δ2' S0' HΔ1 HΔ2 Heq. simpl.
+    exists S0'. split; [ exact Heq | apply e_consis__unit ].
+  - (* Rigid *)
+    intros Δ1 Δ2 S Θ0 α Hb Δ1' Δ2' S0' HΔ1 HΔ2 Heq. simpl.
+    exists S0'. split; [ exact Heq | ].
+    apply e_consis__rigid. exact (swap_aenv_binds a b _ _ _ Hb).
+  - (* Arrow — the THREADING row *)
+    intros Δ1 Δ2 S0 S1 S2 Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hd1 IH1 Hd2 IH2
+           Δ1' Δ2' S0' HΔ1 HΔ2 Heq. simpl.
+    destruct (IH1 _ _ _ HΔ1 HΔ2 Heq) as [S1' [HS1 Hd1']].
+    destruct (IH2 _ _ _ HΔ1 HΔ2 HS1) as [S2' [HS2 Hd2']].
+    exists S2'. split; [ exact HS2 | eapply e_consis__arrow; eassumption ].
+  - (* ForallInh *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hfr Hd IH Δ1' Δ2' S0' HΔ1 HΔ2 Heq.
+    simpl. rewrite swap_pskl_close.
+    destruct (IH (add (swap_atom a b α) Δ1') (add (swap_atom a b α) Δ2')
+                 (add (swap_atom a b α) S0')
+                 (eq_swap_atoms_add a b α _ _ HΔ1)
+                 (eq_swap_atoms_add a b α _ _ HΔ2)
+                 (eq_swap_atoms_add a b α _ _ Heq)) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_consis__forall_inh with (α := swap_atom a b α).
+    + eapply swap_notin_eq; eassumption.
+    + rewrite !swap_pskl_open_var in Hd'. exact Hd'.
+  - (* ForallSyn *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hfr Hd IH Δ1' Δ2' S0' HΔ1 HΔ2 Heq.
+    simpl. rewrite swap_pskl_close.
+    destruct (IH Δ1' (add (swap_atom a b α) Δ2')
+                 (add (swap_atom a b α) S0')
+                 HΔ1 (eq_swap_atoms_add a b α _ _ HΔ2)
+                 (eq_swap_atoms_add a b α _ _ Heq)) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_consis__forall_syn with (α := swap_atom a b α).
+    + eapply swap_notin_eq; eassumption.
+    + rewrite !swap_pskl_open_var in Hd'. exact Hd'.
+  - (* UnivGhost *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q Hd IH Δ1' Δ2' S0' HΔ1 HΔ2 Heq. simpl.
+    destruct (IH _ _ _ HΔ1 HΔ2 Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | apply e_consis__univ_ghost; exact Hd' ].
+  - (* UnivGhost1 *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hfr Hd IH Δ1' Δ2' S0' HΔ1 HΔ2 Heq.
+    simpl. rewrite swap_pskl_close.
+    destruct (IH (add (swap_atom a b α) Δ1') Δ2'
+                 (add (swap_atom a b α) S0')
+                 (eq_swap_atoms_add a b α _ _ HΔ1) HΔ2
+                 (eq_swap_atoms_add a b α _ _ Heq)) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_consis__univ_ghost1 with (α := swap_atom a b α).
+    + eapply swap_notin_eq; eassumption.
+    + rewrite !swap_pskl_open_var in Hd'. exact Hd'.
+  - (* UnivGhost2 *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q Hg Hnf Hd IH Δ1' Δ2' S0' HΔ1 HΔ2 Heq.
+    simpl.
+    destruct (IH _ _ _ HΔ1 HΔ2 Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_consis__univ_ghost2;
+      auto using guarded_pskl_swap, a_non_flex_swap.
+  - (* Flex *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α β Hd IH Δ1' Δ2' S0' HΔ1 HΔ2 Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | apply e_consis__flex; exact Hd' ].
+  - (* FlexL *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P0 Hnf Hd IH Δ1' Δ2' S0' HΔ1 HΔ2 Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_consis__flex_l; [ auto using a_non_flex_swap | exact Hd' ].
+  - (* FlexR *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P Hnf Hd IH Δ1' Δ2' S0' HΔ1 HΔ2 Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_consis__flex_r; [ auto using a_non_flex_swap | exact Hd' ].
+  - (* GhostR *)
+    intros Δ1 Δ2 S Θ0 P Hemp Δ1' Δ2' S0' HΔ1 HΔ2 Heq. simpl.
+    exists S0'. split; [ exact Heq | ].
+    apply e_consis__ghost_r. eauto using swap_inter_ftv_empty.
+  - (* UnivGhostR *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q Hg Hnf Hd IH Δ1' Δ2' S0' HΔ1 HΔ2 Heq.
+    simpl.
+    destruct (IH _ _ _ HΔ1 HΔ2 Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_consis__univ_ghost_r;
+      auto using guarded_pskl_swap, a_non_flex_swap.
+Qed.
+
+(** The three projections. *)
+Corollary e_assign_swap : forall a b S0 Θ0 Ξ α P S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e ->
+  forall S0', S0' [=] swap_atoms a b S0 ->
+  exists S1', S1' [=] swap_atoms a b S1 /\
+    {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊲[ swap_aenv a b Ξ ]
+       (swap_atom a b α) ≔ (swap_pskl a b P) ⊣ (swap_aenv a b Θ1) }}e.
+Proof. intros a b. apply e_assign_unify_consis_swap. Qed.
+
+Corollary e_unify_swap : forall a b S0 Θ0 α β S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e ->
+  forall S0', S0' [=] swap_atoms a b S0 ->
+  exists S1', S1' [=] swap_atoms a b S1 /\
+    {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊲
+       (swap_atom a b α) ≈ᵘ (swap_atom a b β) ⊣ (swap_aenv a b Θ1) }}e.
+Proof. intros a b. apply e_assign_unify_consis_swap. Qed.
+
+Corollary e_consis_swap : forall a b Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+  forall Δ1' Δ2' S0',
+    Δ1' [=] swap_atoms a b Δ1 -> Δ2' [=] swap_atoms a b Δ2 ->
+    S0' [=] swap_atoms a b S0 ->
+  exists S1', S1' [=] swap_atoms a b S1 /\
+    {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊢[ Δ1' | Δ2' | (swap_pskl a b P0) ]
+       (swap_pskl a b P) ∼ (swap_pskl a b Q) ⊣ (swap_aenv a b Θ1) }}e.
+Proof. intros a b. apply e_assign_unify_consis_swap. Qed.

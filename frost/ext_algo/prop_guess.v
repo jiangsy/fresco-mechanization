@@ -28,6 +28,8 @@ Require Import src.frost.ltac_utils.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.prop_basic.
+Require Import src.frost.prop_tag.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.ext_algo.def_supply.
 Require Import src.frost.ext_algo.def_guess.
 
@@ -459,4 +461,48 @@ Proof.
     exists S1'. split; [ exact HS1 | ].
     apply e_guess_mono__forall with (β := β);
       [ clear - H Heq; fsetdec | exact Hd ].
+Qed.
+
+(* ===================================================================== *)
+(*  §8  EQUIVARIANCE                                                      *)
+(*                                                                        *)
+(*  §8c.10's completeness level needs it because the RUNNER opens its     *)
+(*  binders at [supply_fresh S0] while a derivation opens them at any     *)
+(*  fresh atom: the two answers agree only up to a transposition.         *)
+(*  algo/prop_swap.v §5's [a_guess_mono_swap] is the template; what the   *)
+(*  supply-threaded copy adds is the ∃-form of prop_guess.v §7 — the      *)
+(*  swapped run's OUTPUT supply is fixed only up to [=], because          *)
+(*  [swap_atoms] is not a Leibniz homomorphism on the opaque [atoms].     *)
+(* ===================================================================== *)
+
+Lemma e_guess_mono_swap : forall a b S0 P S1 Ξ τ,
+  e_guess_mono S0 P S1 Ξ τ ->
+  forall S0', S0' [=] swap_atoms a b S0 ->
+  exists S1', S1' [=] swap_atoms a b S1 /\
+    e_guess_mono S0' (swap_pskl a b P) S1' (swap_aenv a b Ξ)
+      (swap_ptyp a b τ).
+Proof.
+  intros a b S0 P S1 Ξ τ H. induction H; intros S0' Heq; simpl.
+  - (* hole — the row that INVENTS; its witness rides the swap *)
+    exists (add (swap_atom a b α) S0'). split;
+      [ apply eq_swap_atoms_add; exact Heq | ].
+    apply e_guess_mono__hole. eapply swap_notin_eq; eassumption.
+  - (* tophole *)
+    destruct (IHe_guess_mono _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_guess_mono__tophole; exact Hd ].
+  - (* var *) exists S0'. split; [ exact Heq | apply e_guess_mono__var ].
+  - (* unit *) exists S0'. split; [ exact Heq | apply e_guess_mono__unit ].
+  - (* arrow — threaded, so the two ∃-witnesses chain *)
+    destruct (IHe_guess_mono1 _ Heq) as [S1' [HS1 Hd1]].
+    destruct (IHe_guess_mono2 _ HS1) as [S2' [HS2 Hd2]].
+    exists S2'. split; [ exact HS2 | ].
+    rewrite swap_aenv_app. eapply e_guess_mono__arrow; eassumption.
+  - (* forall — the witness is drawn FROM the supply *)
+    destruct (IHe_guess_mono (add (swap_atom a b β) S0'))
+      as [S1' [HS1 Hd]]; [ apply eq_swap_atoms_add; exact Heq | ].
+    exists S1'. split; [ exact HS1 | ].
+    rewrite swap_ptyp_close.
+    apply e_guess_mono__forall with (β := swap_atom a b β).
+    + eapply swap_notin_eq; eassumption.
+    + rewrite swap_pskl_open_var in Hd. exact Hd.
 Qed.
