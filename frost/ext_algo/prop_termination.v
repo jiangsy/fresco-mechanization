@@ -1004,6 +1004,14 @@ Lemma entry_def_mono_def : forall α τ,
   mono_ptyp τ -> entry_def_mono (α, abind_flex_mono_def τ).
 Proof. intros; exact H. Qed.
 
+(** The head inversion, stated at the [(x ~ b) ++ Θ] spelling the rules
+    use rather than at [::], so a walk row can read off both halves
+    without an [unfold one] first. *)
+Lemma aenv_defs_mono_cons_inv : forall x b (Θ : aenv),
+  aenv_defs_mono ((x ~ b) ++ Θ) ->
+  entry_def_mono (x, b) /\ aenv_defs_mono Θ.
+Proof. intros * HF. inversion HF; subst. split; assumption. Qed.
+
 Lemma Forall_app_intro : forall (X : Type) (Pr : X -> Prop) l1 l2,
   Forall Pr l1 -> Forall Pr l2 -> Forall Pr (l1 ++ l2).
 Proof. intros; apply Forall_app; split; assumption. Qed.

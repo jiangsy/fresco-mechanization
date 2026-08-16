@@ -422,6 +422,15 @@ Fixpoint swaps_cstrs (ps : list (atom * atom)) (C : a_cstrs) : a_cstrs :=
   | (a, b) :: ps' => swaps_cstrs ps' (swap_cstrs a b C)
   end.
 
+(** ⚙ The [ptyp] member, added 2026-08-17 for §8c.10: [guess^TY] returns a
+    [ptyp], and the consistency level relates the derivation's payload to
+    the runner's along a chain. *)
+Fixpoint swaps_ptyp (ps : list (atom * atom)) (A : ptyp) : ptyp :=
+  match ps with
+  | nil => A
+  | (a, b) :: ps' => swaps_ptyp ps' (swap_ptyp a b A)
+  end.
+
 Fixpoint atoms_of (xs : list atom) : atoms :=
   match xs with
   | nil => empty
@@ -541,6 +550,95 @@ Proof.
   induction ps as [ | [a b] ps IH ]; intros; simpl; auto.
   rewrite swap_aenv_app. apply IH.
 Qed.
+
+(* ---- what §8c.10's level-5 induction adds (2026-08-17) ----------------
+   The four sorts' [fresh_id] / structural / composition members.  A chain
+   is applied LEFT TO RIGHT ([swaps_X (p :: ps) = swaps_X ps (swap_X p ·)]),
+   which is why composition reads [swaps_X (ps1 ++ ps2) = swaps_X ps2 ∘
+   swaps_X ps1] — the order the consistency level's [U-Arrow] needs. *)
+
+Lemma swaps_pskl_app : forall ps1 ps2 P,
+  swaps_pskl (ps1 ++ ps2) P = swaps_pskl ps2 (swaps_pskl ps1 P).
+Proof. induction ps1 as [ | [a b] ps1 IH ]; intros; simpl; auto. Qed.
+
+Lemma swaps_aenv_app : forall ps1 ps2 (Θ : aenv),
+  swaps_aenv (ps1 ++ ps2) Θ = swaps_aenv ps2 (swaps_aenv ps1 Θ).
+Proof. induction ps1 as [ | [a b] ps1 IH ]; intros; simpl; auto. Qed.
+
+Lemma swaps_atoms_app : forall ps1 ps2 (S : atoms),
+  swaps_atoms (ps1 ++ ps2) S = swaps_atoms ps2 (swaps_atoms ps1 S).
+Proof. induction ps1 as [ | [a b] ps1 IH ]; intros; simpl; auto. Qed.
+
+Lemma swaps_ptyp_app : forall ps1 ps2 A,
+  swaps_ptyp (ps1 ++ ps2) A = swaps_ptyp ps2 (swaps_ptyp ps1 A).
+Proof. induction ps1 as [ | [a b] ps1 IH ]; intros; simpl; auto. Qed.
+
+Lemma swaps_ptyp_unit : forall ps, swaps_ptyp ps ptyp_unit = ptyp_unit.
+Proof. induction ps as [ | [a b] ps IH ]; simpl; auto. Qed.
+
+Lemma swaps_ptyp_var_f : forall ps α,
+  swaps_ptyp ps (ptyp_var_f α) = ptyp_var_f (swaps_atom ps α).
+Proof. induction ps as [ | [a b] ps IH ]; simpl; auto. Qed.
+
+Lemma swaps_ptyp_arrow : forall ps A B,
+  swaps_ptyp ps (ptyp_arrow A B)
+  = ptyp_arrow (swaps_ptyp ps A) (swaps_ptyp ps B).
+Proof. induction ps as [ | [a b] ps IH ]; simpl; auto. Qed.
+
+Lemma swaps_ptyp_all : forall ps A,
+  swaps_ptyp ps (ptyp_all A) = ptyp_all (swaps_ptyp ps A).
+Proof. induction ps as [ | [a b] ps IH ]; simpl; auto. Qed.
+
+Lemma swaps_ptyp_close : forall ps c A,
+  swaps_ptyp ps (close_ptyp_wrt_ptyp c A)
+  = close_ptyp_wrt_ptyp (swaps_atom ps c) (swaps_ptyp ps A).
+Proof.
+  induction ps as [ | [a b] ps IH ]; intros; simpl; auto.
+  rewrite swap_ptyp_close. apply IH.
+Qed.
+
+Lemma swaps_pskl_close : forall ps c P,
+  swaps_pskl ps (close_pskl_wrt_pskl c P)
+  = close_pskl_wrt_pskl (swaps_atom ps c) (swaps_pskl ps P).
+Proof.
+  induction ps as [ | [a b] ps IH ]; intros; simpl; auto.
+  rewrite swap_pskl_close. apply IH.
+Qed.
+
+Lemma swaps_ptyp_fresh_id : forall ps A,
+  (forall a b, In (a, b) ps ->
+     a `notin` ftvar_in_ptyp A /\ b `notin` ftvar_in_ptyp A) ->
+  swaps_ptyp ps A = A.
+Proof.
+  induction ps as [ | [a b] ps IH ]; intros A Hav; simpl; auto.
+  destruct (Hav a b (or_introl eq_refl)) as [Hna Hnb].
+  rewrite (swap_ptyp_fresh_id a b A Hna Hnb).
+  apply IH. intros a' b' Hin. apply Hav. right. exact Hin.
+Qed.
+
+Lemma swaps_aenv_fresh_id : forall ps (Θ : aenv),
+  (forall a b, In (a, b) ps ->
+     a `notin` ftvar_in_aenv Θ /\ b `notin` ftvar_in_aenv Θ) ->
+  swaps_aenv ps Θ = Θ.
+Proof.
+  induction ps as [ | [a b] ps IH ]; intros Θ Hav; simpl; auto.
+  destruct (Hav a b (or_introl eq_refl)) as [Hna Hnb].
+  rewrite (swap_aenv_fresh_id a b Θ Hna Hnb).
+  apply IH. intros a' b' Hin. apply Hav. right. exact Hin.
+Qed.
+
+Lemma swaps_atoms_notin : forall ps (S : atoms),
+  (forall a b, In (a, b) ps -> a `notin` S /\ b `notin` S) ->
+  swaps_atoms ps S [=] S.
+Proof.
+  induction ps as [ | [a b] ps IH ]; intros S Hav; simpl;
+    [ reflexivity | ].
+  destruct (Hav a b (or_introl eq_refl)) as [Hna Hnb].
+  assert (Hs : swaps_atoms ps (swap_atoms a b S) [=] swaps_atoms ps S)
+    by (apply swaps_atoms_cong; apply swap_atoms_notin; assumption).
+  rewrite Hs. apply IH. intros a' b' Hin. apply Hav. right. exact Hin.
+Qed.
+
 
 (** The chain: (a,z) outermost, (z,b) innermost, one z per pair. *)
 Fixpoint chain (ρ : list (atom * atom)) (zs : list atom)
@@ -751,6 +849,10 @@ Lemma swaps_abind_flex_mono : forall ps,
   swaps_abind ps abind_flex_mono = abind_flex_mono.
 Proof. induction ps as [ | [a b] ps IH ]; simpl; auto. Qed.
 
+Lemma swaps_abind_tvar : forall ps,
+  swaps_abind ps abind_tvar = abind_tvar.
+Proof. induction ps as [ | [a b] ps IH ]; simpl; auto. Qed.
+
 Lemma swaps_aenv_nil : forall ps, swaps_aenv ps nil = nil.
 Proof. induction ps as [ | [a b] ps IH ]; simpl; auto. Qed.
 
@@ -759,6 +861,27 @@ Lemma swaps_aenv_cons : forall ps x bd Θ,
   = (swaps_atom ps x, swaps_abind ps bd) :: swaps_aenv ps Θ.
 Proof.
   induction ps as [ | [a b] ps IH ]; intros; simpl; auto.
+Qed.
+
+(** The rigid marker a ∀ row pushes, transported — the packaged form
+    §8c.10's three ∀ rows read off ([split_tvar_head] wants the head
+    literally). *)
+Lemma swaps_aenv_cons_tvar : forall ps x (Θ : aenv),
+  swaps_aenv ps ((x ~ abind_tvar) ++ Θ)
+  = (swaps_atom ps x ~ abind_tvar) ++ swaps_aenv ps Θ.
+Proof.
+  intros. rewrite swaps_aenv_app_dist. f_equal.
+  unfold one. rewrite swaps_aenv_cons, swaps_abind_tvar, swaps_aenv_nil.
+  reflexivity.
+Qed.
+
+Lemma swaps_aenv_one_flex : forall ps x,
+  swaps_aenv ps (x ~ abind_flex_mono)
+  = (swaps_atom ps x ~ abind_flex_mono).
+Proof.
+  intros. unfold one.
+  rewrite swaps_aenv_cons, swaps_abind_flex_mono, swaps_aenv_nil.
+  reflexivity.
 Qed.
 
 (** The chain sends the derivation's block to the runner's, entry by

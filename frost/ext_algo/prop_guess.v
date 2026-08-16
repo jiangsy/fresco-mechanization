@@ -506,3 +506,51 @@ Proof.
     + eapply swap_notin_eq; eassumption.
     + rewrite swap_pskl_open_var in Hd. exact Hd.
 Qed.
+
+(* ===================================================================== *)
+(*  §9  SHAPE INVERSIONS                                                  *)
+(*                                                                        *)
+(*  One per subject constructor.  Written out rather than left to         *)
+(*  [inversion … as], whose binder COUNT shifts with what the unifier     *)
+(*  already determined — the same discipline prop_consis_complete.v §4    *)
+(*  applies to the consistency rules.  ⚙ [guess^TY] is syntax-directed,   *)
+(*  so every one of them is unconditional.                                *)
+(* ===================================================================== *)
+
+Lemma e_guess_mono_inv_hole : forall S0 S1 Ξ A,
+  e_guess_mono S0 pskl_hole S1 Ξ A ->
+  exists α, α `notin` S0 /\ S1 = add α S0 /\
+    Ξ = (α ~ abind_flex_mono) ++ nil /\ A = ptyp_var_f α.
+Proof. intros * Hd. inversion Hd; subst; eauto 10. Qed.
+
+Lemma e_guess_mono_inv_unit : forall S0 S1 Ξ A,
+  e_guess_mono S0 pskl_unit S1 Ξ A -> S1 = S0 /\ Ξ = nil /\ A = ptyp_unit.
+Proof. intros * Hd. inversion Hd; subst; auto. Qed.
+
+Lemma e_guess_mono_inv_var : forall S0 α S1 Ξ A,
+  e_guess_mono S0 (pskl_var_f α) S1 Ξ A ->
+  S1 = S0 /\ Ξ = nil /\ A = ptyp_var_f α.
+Proof. intros * Hd. inversion Hd; subst; auto. Qed.
+
+Lemma e_guess_mono_inv_arrow : forall S0 P Q S2 Ξ A,
+  e_guess_mono S0 (pskl_arrow P Q) S2 Ξ A ->
+  exists S1 Ξ1 Ξ2 A1 A2,
+    Ξ = Ξ1 ++ Ξ2 /\ A = ptyp_arrow A1 A2 /\
+    e_guess_mono S0 P S1 Ξ1 A1 /\ e_guess_mono S1 Q S2 Ξ2 A2.
+Proof. intros * Hd. inversion Hd; subst; eauto 10. Qed.
+
+Lemma e_guess_mono_inv_all_syn : forall S0 P S1 Ξ A,
+  e_guess_mono S0 (pskl_all_syn P) S1 Ξ A ->
+  exists β A0, β `notin` S0 /\ A = ptyp_all (close_ptyp_wrt_ptyp β A0) /\
+    e_guess_mono (add β S0) (open_pskl_wrt_pskl P (pskl_var_f β)) S1 Ξ A0.
+Proof. intros * Hd. inversion Hd; subst; eauto 10. Qed.
+
+Lemma e_guess_mono_inv_tophole : forall S0 P S1 Ξ A,
+  e_guess_mono S0 (pskl_tophole P) S1 Ξ A -> e_guess_mono S0 P S1 Ξ A.
+Proof. intros * Hd. inversion Hd; subst; auto. Qed.
+
+(** A dangling index is not a skeleton any run can be given — the same
+    fact [e_guess_mono_order_var_b_absurd] states for the ORDER. *)
+Lemma e_guess_mono_inv_var_b : forall S0 n S1 Ξ A,
+  e_guess_mono S0 (pskl_var_b n) S1 Ξ A -> False.
+Proof. intros * Hd. inversion Hd. Qed.

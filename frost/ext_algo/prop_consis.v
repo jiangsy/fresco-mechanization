@@ -883,27 +883,27 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §8  ⭐ REFLEXIVITY OF [unifyvar] — [α̂ ≈ᵘ α̂] MOVES NOTHING            *)
+(*  §8  ⭐ WHAT A WALK FOUND — the two flexibility facts                   *)
 (*                                                                        *)
-(*  §8c.10's completeness level owes this.  [Flex-Flex-Id] carries no      *)
-(*  [α <> β], so at [α̂ ≈ᵘ α̂] it OVERLAPS both [Flex-Flex-Skip] (at an      *)
-(*  undefined non-matching head) and [Flex-Flex-Assign] (at a DEFINED      *)
-(*  one) — and the runner commits to [Flex-Flex-Id], returning the         *)
-(*  context untouched (def_consis_impl.v:619).  So a completeness motive   *)
-(*  relating the derivation's output context to the runner's needs the     *)
-(*  overlap to be BENIGN, which is what this says.                         *)
+(*  §8c.10's completeness level reads the runner's flexibility TESTS       *)
+(*  ([flex_bound_ck] / [rigid_bound_ck]) against the derivation's root,    *)
+(*  and every one of those confrontations goes through one of these two:   *)
+(*  a walk that reached its target found that target flex-bound.  They     *)
+(*  are what makes the three ambiguous shape pairs come out as EXCLUSIVE   *)
+(*  disjunctions (prop_consis_complete.v §4).                              *)
 (*                                                                        *)
-(*  ⭐ WHY IT IS TRUE.  [Flex-Flex-Assign]'s premise is a consistency of a  *)
-(*  DEFINITION PAYLOAD with itself, and a payload is a [ptyp] — no ◇, no   *)
-(*  ⫯ and (after the substitution) no shape the ∀ rows can read on BOTH    *)
-(*  sides at once.  So only Unit / Rigid / Arrow / Flex fire, and none of  *)
-(*  them moves the context.  ⚠️ The SUPPLY is a different matter: a ∀      *)
-(*  payload's [ForallInh] draws an opener, so the statement is about the   *)
-(*  context only ([e_unify_supply_grows] is the supply's half).            *)
+(*  ⚙ [e_unify]'s version is about BOTH names, which is what the runner's  *)
+(*  [Flex-Flex-Id] arm needs: at [α̂ ≈ᵘ α̂] it tests [flex_bound_ck Θ α],    *)
+(*  and a derivation exists only if that test succeeds.                    *)
 (*                                                                        *)
-(*  The three motives have to travel together: the consis motive's         *)
-(*  [FlexL]/[FlexR] rows are refuted by the ASSIGN one, which says the     *)
-(*  walk can only have reached [α] through a flex-bound head.              *)
+(*  ⛔ THE REFLEXIVITY FACT ITSELF ([α̂ ≈ᵘ α̂] moves neither the context nor *)
+(*  the supply) IS NOT HERE.  Its hypothesis is [aenv_defs_mono], the      *)
+(*  runner's own context discipline, whose definition sits above this file *)
+(*  (prop_termination.v); the fact lives in prop_consis_complete.v §5,     *)
+(*  where that is in scope.  ⚠️ An earlier, weaker version stated here —   *)
+(*  context-only, hypothesis-free on the payload's sort — was DELETED      *)
+(*  2026-08-17: the runner's [Flex-Flex-Id] arm needs the SUPPLY too, and  *)
+(*  the supply moves unless the payload is a monotype.                     *)
 (*                                                                        *)
 (*  ⚙ The two helpers below are [frost/algo]-side facts kept here, like    *)
 (*  prop_run_complete.v §2b's, only because this campaign leaves frost/    *)
@@ -911,136 +911,19 @@ Qed.
 (*  already has it as [a_flex_tvar_weaken_app].                            *)
 (* ===================================================================== *)
 
-Lemma ptyp_to_pskl_not_tophole : forall A P, ptyp_to_pskl A <> pskl_tophole P.
-Proof. destruct A; simpl; discriminate. Qed.
+(** A flexible variable, as a [a_flex] SUBJECT — what the [FlexL]/[FlexR]
+    refutations turn [e_assign_target_flex] into.
 
+    ⚙ [ptyp_to_pskl_not_tophole] used to sit here as well and was DELETED
+    2026-08-17: it duplicated algo/sub/prop_completeness_sub_gen.v:1781
+    verbatim (a duplicate top-level name is a resolution hazard, CLAUDE.md),
+    and its only consumer here was the reflexivity proof that moved to
+    prop_consis_complete.v §5. *)
 Lemma a_flex_tvar_flex : forall Θ α,
   a_flex_tvar Θ α -> a_flex Θ (pskl_var_f α).
 Proof.
   intros * [Hb | [τ Hb]];
     [ apply a_flex__var | eapply a_flex__var_def ]; eassumption.
-Qed.
-
-(** The consis motive's shape hypothesis, inverted: a [ptyp]'s skeleton
-    view is never a ◇ and never a ⫯, and its arrow / ∀ shapes come from
-    the [ptyp]'s own. *)
-Local Ltac shape_inv :=
-  match goal with
-  | HA : @ex ptyp _ |- _ =>
-      let A := fresh "Ash" in
-      let He := fresh "Hsh" in
-      destruct HA as [A He]; destruct A; simpl in He; try discriminate
-  end.
-
-Lemma e_assign_unify_consis_refl :
-  (forall S0 Θ0 Ξ α P S1 Θ1,
-     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e ->
-     P = pskl_var_f α -> a_flex_tvar Θ0 α) /\
-  (forall S0 Θ0 α β S1 Θ1,
-     {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e -> α = β -> Θ1 = Θ0) /\
-  (forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
-     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
-     P0 = P -> (exists A, P = ptyp_to_pskl A) -> Θ1 = Θ0).
-Proof.
-  apply (e_assign_unify_consis_mutind
-           (fun S0 Θ0 Ξ α P S1 Θ1 _ =>
-              P = pskl_var_f α -> a_flex_tvar Θ0 α)
-           (fun S0 Θ0 α β S1 Θ1 _ => α = β -> Θ1 = Θ0)
-           (fun Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1 _ =>
-              P0 = P -> (exists A, P = ptyp_to_pskl A) -> Θ1 = Θ0));
-    intros.
-  (* ---- assign ---- *)
-  - (* Assign-UnivGhost-Id: the pattern is ⫯(α), not a bare variable *)
-    discriminate.
-  - (* Assign-SolveM: the occurs check rules the self-pattern out *)
-    subst. simpl in *. exfalso. fsetdec.
-  - (* Assign-Assign: the rule's own premise IS the goal *) assumption.
-  - (* Assign-Depend: β occurs in [var α], so β = α, against α <> β *)
-    subst. simpl in *. exfalso. fsetdec.
-  - (* Assign-Skip *) apply a_flex_tvar_weaken_app; auto.
-  - (* Assign-SkipRigid *) apply a_flex_tvar_weaken_app; auto.
-  - (* Assign-SkipTmVar (typ payload) *) apply a_flex_tvar_weaken_app; auto.
-  - (* Assign-SkipTmVar (skl payload) *) apply a_flex_tvar_weaken_app; auto.
-  (* ---- unify ---- *)
-  - (* Flex-Flex-Id — the runner's own choice *) reflexivity.
-  - (* Flex-Flex-L: needs α <> β *) contradiction.
-  - (* Flex-Flex-R: needs α <> β *) contradiction.
-  - (* Flex-Flex-Assign: its premise is a SELF-consistency of the payload *)
-    subst. f_equal. eauto.
-  - (* Flex-Flex-Skip *) subst. f_equal. auto.
-  - (* Flex-Flex-Skip' *) subst. f_equal. auto.
-  (* ---- consis ---- *)
-  - (* Ghost: the rule does not move the context *) reflexivity.
-  - (* Unit *) reflexivity.
-  - (* Rigid *) reflexivity.
-  - (* Arrow: both halves are self-consistencies of a [ptyp] half *)
-    shape_inv.
-    match goal with
-    | Heq : pskl_arrow _ _ = pskl_arrow _ _ |- _ => inversion Heq; subst
-    end.
-    match goal with
-    | Heq : pskl_arrow _ _ = pskl_arrow _ _ |- _ => inversion Heq; subst
-    end.
-    match goal with
-    | IH1 : _ -> _ -> ?Θ1 = ?Θ0, IH2 : _ -> _ -> ?Θ2 = ?Θ1 |- ?Θ2 = ?Θ0 =>
-        rewrite IH2 by eauto; apply IH1; eauto
-    end.
-  - (* ForallInh: identify the two ∀ bodies FIRST (the IH's premises must be
-       closable by [reflexivity]), then strip the pushed rigid marker.
-       ⚠️ [ptyp_to_pskl_open] is what makes the OPENED body a [ptyp] view
-       again — without its import the [match] below reports "no matching
-       clauses", not a missing reference. *)
-    shape_inv.
-    match goal with
-    | Heq : pskl_all_syn _ = pskl_all_syn _ |- _ => inversion Heq; subst
-    end.
-    match goal with
-    | Heq : pskl_all_syn _ = pskl_all_syn _ |- _ => inversion Heq; subst
-    end.
-    match goal with
-    | IH : _ -> _ -> ?X = ?Y |- _ =>
-        assert (Hc : X = Y)
-          by (apply IH;
-              [ reflexivity | eexists; symmetry; apply ptyp_to_pskl_open ])
-    end.
-    simpl in Hc. inversion Hc. reflexivity.
-  - (* ForallSyn: ⫯P0 = ∀P is impossible *) discriminate.
-  - (* UnivGhost: a ⫯ is no [ptyp_to_pskl] *) exfalso. shape_inv.
-  - (* UnivGhost1: ∀P0 = ⫯P is impossible *) discriminate.
-  - (* UnivGhost2: the subject is a ⫯ *) exfalso. shape_inv.
-  - (* Flex: the pattern and the subject are the SAME variable *)
-    match goal with
-    | Heq : pskl_var_f _ = pskl_var_f _ |- _ => inversion Heq; subst
-    end.
-    auto.
-  - (* FlexL: [nonflex] of the pattern contradicts the assign's own walk —
-       the walk had to FIND α, and only a flex-bound head lets it *)
-    exfalso. subst.
-    match goal with
-    | Hnf : a_non_flex _ _ |- _ =>
-        let Hf := fresh "Hf" in destruct Hnf as [_ Hf]; apply Hf
-    end.
-    apply a_flex_tvar_flex. eauto.
-  - (* FlexR: the mirror *)
-    exfalso. subst.
-    match goal with
-    | Hnf : a_non_flex _ _ |- _ =>
-        let Hf := fresh "Hf" in destruct Hnf as [_ Hf]; apply Hf
-    end.
-    apply a_flex_tvar_flex. eauto.
-  - (* GhostR *) reflexivity.
-  - (* UnivGhostR: the SUBJECT is a variable here, so identify it with the
-       ⫯ pattern first; then the shape hypothesis refutes *)
-    exfalso. subst. shape_inv.
-Qed.
-
-(** What §8c.10 consumes: the runner's [Flex-Flex-Id] answer is the only
-    context a derivation of [α̂ ≈ᵘ α̂] can produce. *)
-Corollary e_unify_refl_ctx : forall S0 Θ0 α S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ α ⊣ Θ1 }}e -> Θ1 = Θ0.
-Proof.
-  intros. eapply (proj1 (proj2 e_assign_unify_consis_refl));
-    [ eassumption | reflexivity ].
 Qed.
 
 (** The assign half, and STRONGER than the motive needed: a walk that
@@ -1049,8 +932,8 @@ Qed.
     [Assign-SolveM]), demands the fact outright ([Assign-Assign]), or
     steps past one more entry — so the walk cannot reach [nil].
 
-    ⚙ This replaces the [P = α̂] instance the §8 induction produces: one
-    fact, one name, in its strongest form. *)
+    ⚙ Stated in its strongest form — for an arbitrary pattern, not for the
+    [P = α̂] instance a mutual induction would hand out. *)
 Lemma e_assign_target_flex : forall S0 Θ0 Ξ α P S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e -> a_flex_tvar Θ0 α.
 Proof.
@@ -1059,6 +942,26 @@ Proof.
   - (* Assign-UnivGhost-Id — the head IS the target *) left; simpl; auto.
   - (* Assign-SolveM — likewise *) left; simpl; auto.
   - (* Assign-Assign — the rule's own premise *) assumption.
+Qed.
+
+(** The unify half, and about BOTH names: the walk cannot reach [nil]
+    either, so it bottoms out at [Flex-Flex-Id] / [-L] / [-R] /
+    [-Assign], and every one of those either IS the flexible entry for one
+    of the two names or demands the fact outright for both. *)
+Lemma e_unify_target_flex : forall S0 Θ0 α β S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e ->
+  a_flex_tvar Θ0 α /\ a_flex_tvar Θ0 β.
+Proof.
+  intros * Hd.
+  induction Hd;
+    try (destruct IHHd as [Hα Hβ];
+         split; apply a_flex_tvar_weaken_app; assumption).
+  - (* Flex-Flex-Id *) split; assumption.
+  - (* Flex-Flex-L — the head IS α *)
+    split; [ left; simpl; auto | apply a_flex_tvar_weaken_app; assumption ].
+  - (* Flex-Flex-R — the head IS β *)
+    split; [ apply a_flex_tvar_weaken_app; assumption | left; simpl; auto ].
+  - (* Flex-Flex-Assign — both are rule premises *) split; assumption.
 Qed.
 
 (* ===================================================================== *)
@@ -1244,6 +1147,51 @@ Corollary e_consis_supply_respect : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
   exists S1', S1' [=] S1 /\
     {{ S0' ↝ S1' ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e.
 Proof. apply e_assign_unify_consis_supply_respect. Qed.
+
+(** ⭐ AND THE SAME FOR THE TWO Δ-SLOTS, which are read as judgement
+    INDEXES exactly as the supply is.  ⚙ NO ∃-form here and no companion
+    on the other two judgements: [Δ1]/[Δ2] are pure INPUTS (the ∀ rows
+    grow them by an [add], nothing returns them), and [assign] /
+    [unifyvar] do not carry them at all — so the plain non-mutual
+    [e_consis] scheme suffices, and the four rows that read a Δ
+    ([Ghost], [GhostR] and the three ∀ openers) each close by [fsetdec].
+
+    §8c.10 consumes it twice: [U-Arrow] transports its second premise
+    along a CHAIN, which moves the Δ-slots only up to [=], and the chain
+    lemma's own base case is this. *)
+Lemma e_consis_delta_respect : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+  forall Δ1' Δ2', Δ1' [=] Δ1 -> Δ2' [=] Δ2 ->
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1' | Δ2' | P0 ] P ∼ Q ⊣ Θ1 }}e.
+Proof.
+  induction 1; intros Δ1' Δ2' HD1 HD2.
+  - (* Ghost *) apply e_consis__ghost. clear - H HD2; fsetdec.
+  - (* Unit *) apply e_consis__unit.
+  - (* Rigid *) apply e_consis__rigid; assumption.
+  - (* Arrow *)
+    eapply e_consis__arrow;
+      [ apply IHe_consis1 | apply IHe_consis2 ]; assumption.
+  - (* ForallInh *)
+    apply e_consis__forall_inh with (α := α); [ assumption | ].
+    apply IHe_consis; [ clear - HD1; fsetdec | clear - HD2; fsetdec ].
+  - (* ForallSyn *)
+    apply e_consis__forall_syn with (α := α); [ assumption | ].
+    apply IHe_consis; [ assumption | clear - HD2; fsetdec ].
+  - (* UnivGhost *) apply e_consis__univ_ghost. apply IHe_consis; assumption.
+  - (* UnivGhost1 *)
+    apply e_consis__univ_ghost1 with (α := α); [ assumption | ].
+    apply IHe_consis; [ clear - HD1; fsetdec | assumption ].
+  - (* UnivGhost2 *)
+    apply e_consis__univ_ghost2; [ assumption | assumption | ].
+    apply IHe_consis; assumption.
+  - (* Flex *) apply e_consis__flex; assumption.
+  - (* FlexL *) apply e_consis__flex_l; assumption.
+  - (* FlexR *) apply e_consis__flex_r; assumption.
+  - (* GhostR *) apply e_consis__ghost_r. clear - H HD1; fsetdec.
+  - (* UnivGhostR *)
+    apply e_consis__univ_ghost_r; [ assumption | assumption | ].
+    apply IHe_consis; assumption.
+Qed.
 
 (* ===================================================================== *)
 (*  §10  EQUIVARIANCE for the whole trio                                  *)
