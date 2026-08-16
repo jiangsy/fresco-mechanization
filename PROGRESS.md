@@ -240,7 +240,36 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-15 (h, latest) — ⛔ **SCOUTING RESULT: the EXTRACT level's planned route is REFUTED — the COLLECTION is not deterministic up to renaming, and the root cause is a side condition the paper omits**
+## 2026-08-16 (latest) — ⭐⭐ **§8c.8 SETTLED: the buried-∀ rejection is the DESIGN, on all four layers — `a_sub` rejects it machine-checked, and the declarative tag discipline explains why `a_sub_complete` is (consistently) vacuous there**
+
+`cex/probe_buried_forall_reject.v` (Qed, axiom-free, 0.6 s) closes the
+question §8c.8 left open.  At the node the reference implementation
+rejects — subject `⌈∀a.∀d.(1→∀e.a)⌉`, pattern `⫯1 → ⌈∀b.b⌉` at
+`[TY | FN TC]`, which is AT-App premise 3 painting the inferred domain
+RIGIDLY — `probe_buried_forall_sub_reject` proves **no `a_sub`
+derivation exists, over any context**, by exhaustive inversion: ForallL
+is the only applicable row, its collection has exactly
+cex_looksub_not_det.v's ForallR-first/ForallL-first choice
+(`[≼TC β]` leaked vs `[≼TC ∀b.b]` closed), and BOTH fold to `⫯β` with a
+LEAKED opener (at `◇ ≼TC ∀B` only SolS-ForallR applies and it does not
+close), so `guess^TY` returns the bare `β` and the disciplined-wf
+premise fails.  ⭐ The two orders' folds agreeing up to the opener is
+§8c.7's option-(b) invariant exhibited LIVE — the runner's
+ForallR-first commit misses nothing at this node.  ⭐ The declarative
+side rejects the program too (read off the rules, recorded in the
+probe's header): instantiation quantifiers are forcibly TAGGED, the
+consistency leaves demand `Ψ [=] empty`, and the only Ψ-consuming row
+matches a tagged ∀ against an INH-∀ inside a consistency premise —
+which a TC-position target never offers, since Sub-ForallR peels it
+first.  So impl, algorithm and spec agree; the accepted
+pre-instantiated variant differs precisely in its `∀b.b` being a
+DECLARED (untagged) quantifier.  No PAPER-GAPS entry owed (no
+divergence).  The previous session's retracted one-path claim happened
+to be true; the probe is the exhaustive argument it lacked.
+Handoff: §8c.8 rewritten; next is §8c.9 (option (b) at the extract
+level).
+
+## 2026-08-15 (h) — ⛔ **SCOUTING RESULT: the EXTRACT level's planned route is REFUTED — the COLLECTION is not deterministic up to renaming, and the root cause is a side condition the paper omits**
 
 §8c.6's next item was to repeat level 3's transport one layer up, which
 needs `a_looksub` / `a_lookeq` determinism up to fresh renaming.  It does

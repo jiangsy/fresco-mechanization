@@ -2326,8 +2326,46 @@ so the two halves' agreements have to compose — that is the one place
 this is not a straight induction, and it is where the design effort
 should go.
 
-⚙ The `is_wf`-rejection above is worth a separate look by the authors:
-`h (f u)` is rejected while the same program with the instantiation
-already applied (`f3 : ∀d. unit → ∀e.∀b.b`) is accepted.  Whether that is
-a genuine incompleteness or the intended monotype-only guess discipline
-is NOT settled here — the declarative side was not checked.
+⭐ **SETTLED (2026-08-16), and the whole configuration is now COHERENT
+across all four layers** — `cex/probe_buried_forall_reject.v` (Qed,
+axiom-free, 0.6 s) machine-checks the a-side:
+
+- **`a_sub` REJECTS the configuration — every derivation, every
+  collection order, over ANY context**
+  (`probe_buried_forall_sub_reject`).  The node is AT-App's function
+  premise inside the argument's SECOND (typing) pass — premise 3 of
+  `a_typing__app` paints the inferred domain RIGIDLY (`ptyp_to_pskl A`),
+  which is how a rigid `⌈∀b.b⌉` reaches the pattern at all (the SK-phase
+  passes only `◇`, so skeleton inference never sees the crossing).
+  Machine-checked, branch by branch: ForallL is the only applicable row;
+  the collection at `∀_.α ≼TC ⌈∀b.b⌉` has exactly the
+  cex_looksub_not_det.v choice (`[≼TC β]` leaked vs `[≼TC ∀b.b]`
+  closed); BOTH fold to `⫯β` with β a LEAKED opener — at `◇ ≼TC ∀B`
+  only SolS-ForallR applies (∀ is not guarded), and it does not close —
+  `guess^TY` returns the bare `β`, and ForallL's disciplined-wf premise
+  has no rule for an unbound variable.  So the two orders' folds agree
+  up to the fresh opener — the (b) invariant, exhibited live — and the
+  runner's ForallR-first commit misses nothing at this node.
+- **The DECLARATIVE side rejects the program too** — read off the rules
+  (not machine-checked; recorded in the probe's header): a `ForallL`
+  instantiation's quantifiers are forcibly TAGGED (`a_tags_sort` at
+  either sort requires `is_tskl`, which has no untagged constructor),
+  the consistency LEAVES demand `Ψ [=] empty`, and the only Ψ-consuming
+  row is `ad_pat_consis__forall_inh_tagged` — a tagged ∀ must meet an
+  **inh-∀ of the target inside a consistency premise**.  In this
+  configuration the target's only inh-∀ sits at a TC position, where
+  Sub-ForallR peels it into a rigid binder before any consistency fires
+  (and Check refuses unguarded subjects), so `a ≔ ∀b.b` can never
+  discharge its tag: no `ad_pat_sub` derivation exists, and
+  `a_sub_complete` is (consistently) vacuous here.  ⭐ This also
+  explains the (iii)-vs-(iv) asymmetry as DESIGN, not incompleteness:
+  in `f3` the `∀b.b` is part of the DECLARED type — untagged
+  `all_syn`, instantiable by the UNTAGGED ForallL with a rigid opener,
+  no tag owed.  Impredicative instantiation is exactly as available as
+  the tag discipline says: where the instantiated ∀ meets an inh-∀.
+- So impl, algorithm, and spec agree on the program; there is no
+  impl-vs-spec divergence and no PAPER-GAPS entry owed.  The previous
+  session's retracted claim ("a_sub rejects too") happened to be TRUE,
+  but for a reason its one-path trace could not establish — the probe
+  is the missing exhaustive-inversion argument, and the declarative
+  rejection is what squares it with `a_sub_complete`.
