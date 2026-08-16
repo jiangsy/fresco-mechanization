@@ -397,12 +397,29 @@ step feeds the next its own `swap_atoms`, so no set is ever moved across
 `[=]`) and only the supply is carried up to `[=]`, where §9's
 supply-respect discharges the empty chain.
 
+⭐ **AND THE CASE BACKBONE IS NOW MACHINE-CHECKED** (`§4`, 15 root
+inversions): the audit §8c.10b had settled by INSPECTION — that every
+(pattern, subject) shape pair but three admits exactly ONE consistency
+rule — is now one lemma per clause of the runner's dispatch, each
+turning a derivation at that shape into the rule's premises.
+⭐ NONE of them needs hole-freeness: `U-Ghost` demands the SUBJECT be
+literally `◇` and `U-GhostR` the PATTERN, so at a concrete shape they
+cannot fire at all — hole-freeness is what keeps the recursion away from
+the two clauses where they CAN, not what makes these unique.  The three
+ambiguous pairs (the ones the runner decides with a flexibility test)
+come out as disjunctions whose branches are EXCLUSIVE, which needed a
+new and stronger fact: `e_assign_target_flex` (prop_consis.v §8) — a
+walk that assigns `α̂` ANYTHING must have found `α̂` flex-bound, since
+every row either IS the flexible entry, demands the fact outright, or
+steps past one more entry.  It replaces the `P = α̂` instance the §8
+induction produced (one fact, one name, strongest form).
+
 ⛔ WHAT IS LEFT for the hole-free rung: the ~30-case main induction over
-`e_consis_call_order_sind`.  Its whole support layer is now Qed — the
-sind principle, the hole-free invariant, supply-respect, single-swap and
-chain equivariance — and `swaps_pskl_fresh_id` / `swaps_atom_notin` are
-what will make the chain act as the identity on the caller's own
-skeletons.
+`e_consis_call_order_sind` — and nothing else.  Its whole support layer
+is Qed: the sind principle, the hole-free invariant, supply-respect,
+single-swap and chain equivariance, and now the root inversions.
+`swaps_pskl_fresh_id` / `swaps_atom_notin` are what will make the chain
+act as the identity on the caller's own skeletons.
 
 
 ## 2026-08-16 — ⭐⭐⭐ **§8c.9 CLOSED: THE EXTRACT LEVEL (campaign level 4) IS COMPLETE — the b-core and the assembly are Qed**

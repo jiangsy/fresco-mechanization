@@ -476,3 +476,199 @@ Proof.
     exists S1'. split; [ | exact Hd' ].
     rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
 Qed.
+
+(* ===================================================================== *)
+(*  §4  ROOT INVERSIONS — the case backbone, machine-checked              *)
+(*                                                                        *)
+(*  §8c.10b settled by INSPECTION that every (pattern, subject) shape     *)
+(*  pair but three admits exactly ONE consistency rule, so the runner's   *)
+(*  first-match commits to the derivation's root.  These are that audit   *)
+(*  as lemmas: one per clause of the runner's dispatch, each turning a    *)
+(*  derivation at the clause's shape into that rule's premises.           *)
+(*                                                                        *)
+(*  ⭐ NONE of them needs hole-freeness.  [U-Ghost] demands the SUBJECT   *)
+(*  be literally [◇] and [U-GhostR] the PATTERN, so at any concrete       *)
+(*  shape they cannot fire at all; hole-freeness is what keeps the        *)
+(*  recursion away from the two clauses where they can (§8c.10b's         *)
+(*  divergence), not what makes these inversions unique.                  *)
+(*                                                                        *)
+(*  The three genuinely ambiguous pairs are the ones the runner decides   *)
+(*  with a flexibility TEST, and they come out as disjunctions whose      *)
+(*  branches are EXCLUSIVE — [e_assign_target_flex] (prop_consis.v §8)    *)
+(*  is what makes the assign branch imply the very [a_flex_tvar] the      *)
+(*  other branch's [a_non_flex] denies.                                    *)
+(* ===================================================================== *)
+
+(** After [inversion], the rows that COULD have matched the shape but
+    demand [guarded_pskl] of a ∀ / ⫯ / ◇ leave that demand behind; it is
+    never derivable, so one [inversion] each closes them. *)
+Local Ltac kill_unguarded :=
+  repeat match goal with
+         | Hg : guarded_pskl (pskl_all_syn _) |- _ => inversion Hg
+         | Hg : guarded_pskl (pskl_tophole _) |- _ => inversion Hg
+         | Hg : guarded_pskl pskl_hole |- _ => inversion Hg
+         end.
+
+(* --- the UNAMBIGUOUS shape pairs: exactly one rule fires --- *)
+
+Lemma e_consis_inv_arrow : forall Δ1 Δ2 S0 Θ0 P0a P0b P1 P2 Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_arrow P0a P0b) ]
+     (pskl_arrow P1 P2) ∼ Q ⊣ Θ1 }}e ->
+  exists Sm Θm Q1 Q2,
+    Q = pskl_arrow Q1 Q2 /\
+    {{ S0 ↝ Sm ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0a ] P1 ∼ Q1 ⊣ Θm }}e /\
+    {{ Sm ↝ S1 ⊨ Θm ⊢[ Δ1 | Δ2 | P0b ] P2 ∼ Q2 ⊣ Θ1 }}e.
+Proof. intros * Hd. inversion Hd; subst; kill_unguarded; eauto 10. Qed.
+
+Lemma e_consis_inv_unit : forall Δ1 Δ2 S0 Θ0 Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | pskl_unit ] pskl_unit ∼ Q ⊣ Θ1 }}e ->
+  Q = pskl_unit /\ S1 = S0 /\ Θ1 = Θ0.
+Proof. intros * Hd. inversion Hd; subst; kill_unguarded; auto. Qed.
+
+Lemma e_consis_inv_forall_inh : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_all_syn P0) ]
+     (pskl_all_syn P) ∼ Q ⊣ Θ1 }}e ->
+  exists α Qb,
+    α `notin` S0 /\ Q = pskl_all_syn (close_pskl_wrt_pskl α Qb) /\
+    {{ (add α S0) ↝ S1 ⊨ ((α ~ abind_tvar) ++ Θ0)
+       ⊢[ (add α Δ1) | (add α Δ2)
+         | (open_pskl_wrt_pskl P0 (pskl_var_f α)) ]
+       (open_pskl_wrt_pskl P (pskl_var_f α)) ∼ Qb
+       ⊣ ((α ~ abind_tvar) ++ Θ1) }}e.
+Proof. intros * Hd. inversion Hd; subst; kill_unguarded; eauto 10. Qed.
+
+Lemma e_consis_inv_forall_syn : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) ]
+     (pskl_all_syn P) ∼ Q ⊣ Θ1 }}e ->
+  exists α Qb,
+    α `notin` S0 /\ Q = pskl_all_syn (close_pskl_wrt_pskl α Qb) /\
+    {{ (add α S0) ↝ S1 ⊨ ((α ~ abind_tvar) ++ Θ0)
+       ⊢[ Δ1 | (add α Δ2) | (pskl_tophole P0) ]
+       (open_pskl_wrt_pskl P (pskl_var_f α)) ∼ Qb
+       ⊣ ((α ~ abind_tvar) ++ Θ1) }}e.
+Proof. intros * Hd. inversion Hd; subst; kill_unguarded; eauto 10. Qed.
+
+Lemma e_consis_inv_univ_ghost : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) ]
+     (pskl_tophole P) ∼ Q ⊣ Θ1 }}e ->
+  exists Qb,
+    Q = pskl_tophole Qb /\
+    {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Qb ⊣ Θ1 }}e.
+Proof. intros * Hd. inversion Hd; subst; kill_unguarded; eauto. Qed.
+
+Lemma e_consis_inv_univ_ghost1 : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_all_syn P0) ]
+     (pskl_tophole P) ∼ Q ⊣ Θ1 }}e ->
+  exists α Qb,
+    α `notin` S0 /\ Q = pskl_all_syn (close_pskl_wrt_pskl α Qb) /\
+    {{ (add α S0) ↝ S1 ⊨ ((α ~ abind_tvar) ++ Θ0)
+       ⊢[ (add α Δ1) | Δ2
+         | (open_pskl_wrt_pskl P0 (pskl_var_f α)) ]
+       (pskl_tophole P) ∼ Qb ⊣ ((α ~ abind_tvar) ++ Θ1) }}e.
+Proof. intros * Hd. inversion Hd; subst; kill_unguarded; eauto 10. Qed.
+
+Lemma e_consis_inv_univ_ghost2_unit : forall Δ1 Δ2 S0 Θ0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | pskl_unit ]
+     (pskl_tophole P) ∼ Q ⊣ Θ1 }}e ->
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | pskl_unit ] P ∼ Q ⊣ Θ1 }}e.
+Proof. intros * Hd. inversion Hd; subst; kill_unguarded; auto. Qed.
+
+Lemma e_consis_inv_univ_ghost2_arrow : forall Δ1 Δ2 S0 Θ0 P0a P0b P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_arrow P0a P0b) ]
+     (pskl_tophole P) ∼ Q ⊣ Θ1 }}e ->
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_arrow P0a P0b) ] P ∼ Q ⊣ Θ1 }}e.
+Proof. intros * Hd. inversion Hd; subst; kill_unguarded; auto. Qed.
+
+Lemma e_consis_inv_univ_ghost_r_unit : forall Δ1 Δ2 S0 Θ0 P0 Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) ]
+     pskl_unit ∼ Q ⊣ Θ1 }}e ->
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] pskl_unit ∼ Q ⊣ Θ1 }}e.
+Proof. intros * Hd. inversion Hd; subst; kill_unguarded; auto. Qed.
+
+Lemma e_consis_inv_univ_ghost_r_arrow : forall Δ1 Δ2 S0 Θ0 P0 P1 P2 Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) ]
+     (pskl_arrow P1 P2) ∼ Q ⊣ Θ1 }}e ->
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] (pskl_arrow P1 P2) ∼ Q ⊣ Θ1 }}e.
+Proof. intros * Hd. inversion Hd; subst; kill_unguarded; auto. Qed.
+
+(* --- a flexible PATTERN against a non-variable subject: only U-FlexR --- *)
+
+Lemma e_consis_inv_flex_r : forall Δ1 Δ2 S0 Θ0 α P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f α) ] P ∼ Q ⊣ Θ1 }}e ->
+  (forall β, P <> pskl_var_f β) -> P <> pskl_hole ->
+  (forall Pb, P <> pskl_tophole Pb) ->
+  Q = pskl_var_f α /\ a_non_flex Θ0 P /\
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲[ nil ] α ≔ P ⊣ Θ1 }}e.
+Proof.
+  intros * Hd Hnv Hnh Hnt. inversion Hd; subst; kill_unguarded;
+    try solve [ congruence
+              | exfalso; eapply Hnv; reflexivity
+              | exfalso; eapply Hnt; reflexivity ].
+  all: (split; [ reflexivity | split; assumption ]).
+Qed.
+
+(* --- a flexible SUBJECT against a non-variable pattern: only U-FlexL --- *)
+
+Lemma e_consis_inv_flex_l : forall Δ1 Δ2 S0 Θ0 α P0 Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] (pskl_var_f α) ∼ Q ⊣ Θ1 }}e ->
+  (forall β, P0 <> pskl_var_f β) -> P0 <> pskl_hole ->
+  (forall Pb, P0 <> pskl_tophole Pb) ->
+  Q = pskl_var_f α /\ a_non_flex Θ0 P0 /\
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲[ nil ] α ≔ P0 ⊣ Θ1 }}e.
+Proof.
+  intros * Hd Hnv Hnh Hnt. inversion Hd; subst; kill_unguarded;
+    try solve [ congruence
+              | exfalso; eapply Hnv; reflexivity
+              | exfalso; eapply Hnt; reflexivity ].
+  all: (split; [ reflexivity | split; assumption ]).
+Qed.
+
+(* --- the three pairs the runner resolves by a flexibility TEST --- *)
+
+Lemma e_consis_inv_var_tophole : forall Δ1 Δ2 S0 Θ0 β P1 Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f β) ]
+     (pskl_tophole P1) ∼ Q ⊣ Θ1 }}e ->
+  (a_flex_tvar Θ0 β /\ Q = pskl_var_f β /\
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ nil ] β ≔ (pskl_tophole P1) ⊣ Θ1 }}e)
+  \/ (a_non_flex Θ0 (pskl_var_f β) /\
+      {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f β) ] P1 ∼ Q ⊣ Θ1 }}e).
+Proof.
+  intros * Hd. inversion Hd; subst; kill_unguarded.
+  - right; auto.
+  - left; repeat split; auto. eapply e_assign_target_flex; eassumption.
+Qed.
+
+Lemma e_consis_inv_tophole_var : forall Δ1 Δ2 S0 Θ0 α P0 Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) ]
+     (pskl_var_f α) ∼ Q ⊣ Θ1 }}e ->
+  (a_flex_tvar Θ0 α /\ Q = pskl_var_f α /\
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ nil ] α ≔ (pskl_tophole P0) ⊣ Θ1 }}e)
+  \/ (a_non_flex Θ0 (pskl_var_f α) /\
+      {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] (pskl_var_f α) ∼ Q ⊣ Θ1 }}e).
+Proof.
+  intros * Hd. inversion Hd; subst; kill_unguarded.
+  - left; repeat split; auto. eapply e_assign_target_flex; eassumption.
+  - right; auto.
+Qed.
+
+Lemma e_consis_inv_var_var : forall Δ1 Δ2 S0 Θ0 α β Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f β) ]
+     (pskl_var_f α) ∼ Q ⊣ Θ1 }}e ->
+  (* U-Rigid *)
+  (α = β /\ binds α abind_tvar Θ0 /\ Q = pskl_var_f α /\
+     S1 = S0 /\ Θ1 = Θ0)
+  (* U-Flex *)
+  \/ (Q = pskl_var_f α /\ {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e)
+  (* U-FlexL — the SUBJECT variable is assigned *)
+  \/ (a_non_flex Θ0 (pskl_var_f β) /\ Q = pskl_var_f α /\
+      {{ S0 ↝ S1 ⊨ Θ0 ⊲[ nil ] α ≔ (pskl_var_f β) ⊣ Θ1 }}e)
+  (* U-FlexR — the PATTERN variable is assigned *)
+  \/ (a_non_flex Θ0 (pskl_var_f α) /\ Q = pskl_var_f β /\
+      {{ S0 ↝ S1 ⊨ Θ0 ⊲[ nil ] β ≔ (pskl_var_f α) ⊣ Θ1 }}e).
+Proof.
+  intros * Hd. inversion Hd; subst; kill_unguarded.
+  - left; repeat split; auto.
+  - right; left; auto.
+  - right; right; left; auto.
+  - right; right; right; auto.
+Qed.

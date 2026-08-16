@@ -1043,14 +1043,22 @@ Proof.
     [ eassumption | reflexivity ].
 Qed.
 
-(** The assign half, on its own: a walk that assigns [α̂] the pattern
-    [α̂] must have found [α̂] flex-bound. *)
-Corollary e_assign_self_flex : forall S0 Θ0 Ξ α S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ (pskl_var_f α) ⊣ Θ1 }}e ->
-  a_flex_tvar Θ0 α.
+(** The assign half, and STRONGER than the motive needed: a walk that
+    assigns [α̂] anything at all must have found [α̂] flex-bound.  Every
+    row either IS the flexible entry ([Assign-UnivGhost-Id],
+    [Assign-SolveM]), demands the fact outright ([Assign-Assign]), or
+    steps past one more entry — so the walk cannot reach [nil].
+
+    ⚙ This replaces the [P = α̂] instance the §8 induction produces: one
+    fact, one name, in its strongest form. *)
+Lemma e_assign_target_flex : forall S0 Θ0 Ξ α P S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e -> a_flex_tvar Θ0 α.
 Proof.
-  intros. eapply (proj1 e_assign_unify_consis_refl);
-    [ eassumption | reflexivity ].
+  intros * Hd.
+  induction Hd; try (apply a_flex_tvar_weaken_app; assumption).
+  - (* Assign-UnivGhost-Id — the head IS the target *) left; simpl; auto.
+  - (* Assign-SolveM — likewise *) left; simpl; auto.
+  - (* Assign-Assign — the rule's own premise *) assumption.
 Qed.
 
 (* ===================================================================== *)
