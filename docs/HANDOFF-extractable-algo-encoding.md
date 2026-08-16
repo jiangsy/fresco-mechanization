@@ -2518,7 +2518,76 @@ the fused motive replaces the plan of strengthening it).
   three); `clear -.` is not syntax (keep one hypothesis); the file
   needed its first `Require Import Coq.micromega.Lia`.
 
-⛔ STILL OPEN, in order: `flex_agree_rel`, the b-core pair induction
-(§6b — the fused motive above, consuming the peel at crossing 2), the
-§6c assembly `e_extract_impl_complete` / `e_extract_run_complete`.
+⭐⭐ **THE PAIR INDUCTION'S DESIGN REFINED (2026-08-16, second pass) —
+no rebinds, and the re-rootings apply to EITHER side.**  Three
+discoveries that reshape §6b, plus its one open hazard, resolved:
+
+1. **The motive relates REL-RELATED node pairs and never rebinds.**
+   State the pair over `(P1 ≼[α,m] P1')` vs `(P2 ≼[α,m] P2')` with
+   `rel_pskl ρ V` relating subjects and targets componentwise (both
+   looks at the SAME Θ — true at the assembly and preserved).  At a
+   same-root binder pair the two openers are PAIRED into ρ
+   (`rel_pskl_open_pair`: rel bodies → rel of the opens at a fresh
+   pair) — no side is ever swapped, so none of the swap-chain/acc
+   bookkeeping the first design fought exists at all.  Size induction
+   on `size P1 + size P1'` (rel preserves size).
+2. **R′/R″ are COLLECTION-PRESERVING, so they may be applied to the
+   PINNED side too.**  A constraint list is built from TARGET material
+   and generated names alone — the subject never enters it (LS/LE-Var
+   emit the target, LE-FlexR a fresh name) — so re-rooting a subject
+   peel to the front preserves `(Ξ, 𝒞)` EXACTLY and any fold on 𝒞
+   rides for free.  Landed Qed (prop_look_equiv.v §6):
+   `a_looksub_strip_tophole_l` (R″ — no freshness owed) and
+   `a_looksub_open_forall_l_first` (R′ — target-only size induction;
+   LS-ForallL's case is its own premise rebound by one swap, whose
+   output-avoidance is `a_looksub_lookeq_generated_fresh` +
+   `a_decls_no_ftvar` for the block and the disjunctive
+   `a_looksub_lookeq_ftv` for the collection; LS-ForallR's case
+   recurses, exchanges, rebuilds, rebinds).  At a
+   ForallR-vs-subject-peel diagonal, apply R′/R″ to WHICHEVER side is
+   ForallR-rooted and recurse aligned.  With §5's ◇-collapse
+   (`a_looksub_hole_target` / `a_lookeq_hole_target`, also Qed) and
+   §2's α-free collapse, the ONLY remaining crossing is
+   (Var, ForallR-ish) at a ghost-free ∀ target — and there the look
+   needs nothing: the fold pays via `a_solve_sub_peel_forall_r` (§6a),
+   then the pair recurses on two Var-instances.  ⚙ Support landed:
+   `swap_cstr_fresh_id`/`swap_cstrs_fresh_id` (prop_looksub.v, beside
+   `ftvar_in_cstrs`), `a_decls_no_ftvar` MOVED to algo/prop_basic.v
+   (its a_decls home; only consumer was the P7 file).
+3. **The fold transports are REL-transports, not chain equivariance.**
+   Direct inductions mirroring the solve rules: given a solve on
+   side-1 data and componentwise `rel_pskl ρ V` inputs, produce the
+   side-2 solve with rel-related yield, ρ growing by the fresh pairs
+   the generative steps invent (SE-FlexR's guess) — binder rows open
+   BOTH sides at one common fresh name (each side's freshness is
+   per-side, so a globally fresh atom serves both).  Context
+   interface: `flex_agree_rel ρ V Θf1 Θf2` := id-agreement on V plus
+   `(a,b) ∈ ρ → (flex Θf1 a ↔ flex Θf2 b)`.  Needed for: guess_mono,
+   solve_eq, solve_sub, and the fold (pointwise-rel constraint
+   lists); the ∀-peel slack enters only through §6a.
+
+⚠️ **THE ONE HAZARD, AND ITS RESOLUTION — pre-normalize side 1.**  A
+raw `a_looksub` derivation may reuse ONE atom in two roles (sibling
+subtrees' freshness sets don't mention each other — e.g. an eq-half
+LE-FlexR name equal to a sub-half ForallR opener).  At the crossing
+that atom would need two ρ-pairs with INCOMPATIBLE flex-status on the
+runner side (a FlexR name is flex, an opener rigid), making the
+extended `flex_agree_rel` unsatisfiable — so the pair motive carries
+side-1 APARTNESS premises on the visible outputs, and the assembly
+discharges them by PRE-NORMALIZING side 1: a hygienic REDERIVATION
+lemma (thread an avoid-set through the look, mirroring the supply
+discipline; same rule at every node, fresh pairwise-apart generated
+names, outputs pointwise `rel_pskl` at fresh pairs) followed by the
+fold rel-transport at the ◇ accumulator.  The runner side needs no
+normalization — its supply discipline already yields apartness
+(read it off the e_-level block/coverage lemmas).  ⚠️ Do NOT try to
+get side-1 hygiene by re-running the runner on side-1's inputs: the
+runner is deterministic, so that just reproduces side 2 and is
+circular.
+
+⛔ STILL OPEN, in order: the rel kit extensions
+(`rel_pskl_open_pair`, `rel_pskl_open_var`, `flex_agree_rel` +
+basics), the four REL-transports (guess_mono, solve_eq, solve_sub,
+fold), the hygienic rederivation, the b-core pair induction (§6b),
+the §6c assembly `e_extract_impl_complete` / `e_extract_run_complete`.
 Then the consis trio and sub per §8c.6's NEXT list.

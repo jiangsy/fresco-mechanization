@@ -8,8 +8,8 @@
     node differ ONLY by fresh names, by the ∀-peel slack at the final
     sub-constraint, and by ◇-EMISSION slack ([≼m ◇] / [eq ◇] vs
     nothing) — and a ◇-target solve step is the IDENTITY, which is what
-    makes the slack free to transport.  This file proves the four
-    foundation facts of that inventory:
+    makes the slack free to transport.  This file proves that
+    inventory's foundation facts:
 
     §1  a lookeq collection is PURE-EQ (so LS-Arrow's left half never
         contributes a sub-constraint, and the fold of [𝒞1 ++ 𝒞2]
@@ -25,15 +25,26 @@
         splits the given fold with.  ⚙ [a_solve_cstr_sub_inv] /
         [a_solve_cstr_eq_inv] MOVED here from prop_run_complete.v §5
         (2026-08-16, one fact one name one file — this file sits below
-        the runner-completeness stack, which now imports it). *)
+        the runner-completeness stack, which now imports it);
+    §5  a ◇-TARGET look collapses to at most one trivial constraint,
+        through EVERY derivation (crossing 3's look half);
+    §6  the COLLECTION-PRESERVING re-rootings R′/R″ — a subject peel
+        moves to the root with [(Ξ, 𝒞)] EXACTLY preserved, so they
+        apply to EITHER side of the b-core pair (even the pinned one)
+        and any fold rides for free. *)
 
 Require Import Coq.Lists.List.
+Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.prop_ln.
+Require Import src.frost.prop_tag.
 Require Import src.frost.def_shapes.
 Require Import src.frost.algo.def_rules.
+Require Import src.frost.algo.prop_basic.
+Require Import src.frost.algo.prop_swap.
+Require Import src.frost.algo.sub.prop_looksub.
 
 (* the ∀-quantified inputs are inferable from the derivation arguments, so
    applications read [lemma Hd Habs] — the §8c.6 note on implicit result
@@ -254,4 +265,214 @@ Proof.
     + replace ((Ξ1' ++ Ξa) ++ Θ) with (Ξ1' ++ (Ξa ++ Θ))
         by (solve [ apply app_assoc | symmetry; apply app_assoc ]).
       exact Hpost.
+Qed.
+
+(* ===================================================================== *)
+(*  §5  A ◇-target look collapses to at most one trivial constraint       *)
+(* ===================================================================== *)
+
+(** Crossing 3's other half: at a ◇ target the only reachable rules are
+    Var/Absent/Vacuous (plus subject-peels on the sub layer), so EVERY
+    derivation returns [nil] or the single trivial constraint — whose
+    solve step is the §3 identity.  With §2 this prunes the pair
+    induction to subjects containing α and non-◇ targets. *)
+Lemma a_lookeq_hole_target : forall Θ α P Ξ C,
+  {{ Θ ⊢ P ∼[ α ] pskl_hole ⤳ Ξ ⨾ C }}a ->
+  Ξ = nil /\ (C = nil \/ C = a_cstr_eq pskl_hole :: nil).
+Proof.
+  intros * H.
+  inversion H; subst; auto.
+  match goal with
+  | Hg : guarded_pskl pskl_hole |- _ => inversion Hg
+  end.
+Qed.
+
+Lemma a_looksub_hole_target : forall Θ α m P Ξ C,
+  {{ Θ ⊢ P ≼[ α , m ] pskl_hole ⤳ Ξ ⨾ C }}a ->
+  Ξ = nil /\ (C = nil \/ C = a_cstr_sub m pskl_hole :: nil).
+Proof.
+  intros Θ α m P Ξ C H.
+  remember pskl_hole as T eqn:HT.
+  induction H; inversion HT; subst.
+  - (* LS-Var *) split; [ reflexivity | right; reflexivity ].
+  - (* LS-Absent *) auto.
+  - (* LS-Vacuous *) auto.
+  - (* LS-Check: guarded ◇ has no constructor *)
+    match goal with
+    | Hg : guarded_pskl pskl_hole |- _ => inversion Hg
+    end.
+  - (* LS-ForallL *) apply IHa_looksub. reflexivity.
+  - (* LS-UnivGhostL *) apply IHa_looksub. reflexivity.
+Qed.
+
+(* ===================================================================== *)
+(*  §6  The COLLECTION-PRESERVING re-rootings (§8c.9's R′/R″)             *)
+(*                                                                        *)
+(*  A constraint list is built from TARGET material and generated names   *)
+(*  alone — the subject never enters it — so re-rooting a SUBJECT-peel    *)
+(*  to the front preserves (Ξ, 𝒞) EXACTLY, and any fold on 𝒞 rides for   *)
+(*  free.  These are what let the b-core pair induction descend the       *)
+(*  subject on whichever side is ForallR-rooted: apply R′/R″ to THAT      *)
+(*  side (either one — the outputs are pinned), then recurse aligned.     *)
+(*  The only output-CHANGING re-rooting is the target peel at a Var       *)
+(*  root, and there the fold pays by [a_solve_sub_peel_forall_r]          *)
+(*  (prop_run_complete.v §6a).                                            *)
+(* ===================================================================== *)
+
+(** R″ — strip a ⫯ subject to the front.  No freshness owed at all. *)
+Lemma a_looksub_strip_tophole_l : forall Θ α m P0 P' Ξ C,
+  {{ Θ ⊢ (pskl_tophole P0) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
+  {{ Θ ⊢ P0 ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a.
+Proof.
+  intros Θ α m P0 P' Ξ C H.
+  remember (pskl_tophole P0) as S eqn:HS.
+  revert P0 HS.
+  induction H; intros P0' HS; inversion HS; subst.
+  - (* LS-Absent *)
+    apply a_looksub__absent. simpl in *. assumption.
+  - (* LS-Vacuous *)
+    apply a_looksub__vacuous.
+  - (* LS-Check: a ⫯ subject is not guarded *)
+    match goal with
+    | Hg : guarded_pskl (pskl_tophole _) |- _ => inversion Hg
+    end.
+  - (* LS-ForallR *)
+    apply a_looksub__forall_r with (β := β);
+      [ assumption | simpl in *; assumption | ].
+    apply IHa_looksub. reflexivity.
+  - (* LS-UnivGhostL *)
+    assumption.
+Qed.
+
+(** R′ — open a ∀ subject at the front, at ANY name fresh for the node's
+    data AND its outputs.  The size induction is on the TARGET alone:
+    only LS-ForallR recurses, and it peels the target; LS-ForallL's own
+    premise IS the goal at the derivation's opener, rebound by one swap
+    (its opener avoids the outputs — [a_looksub_lookeq_generated_fresh]
+    for the block, the disjunctive [a_looksub_lookeq_ftv] for the
+    collection). *)
+Lemma a_looksub_open_forall_l_first_n : forall n Θ α m P0 P' Ξ C γ,
+  size_pskl P' < n ->
+  {{ Θ ⊢ (pskl_all_syn P0) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
+  γ `notin` add α (ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P'
+      ∪ ftvar_in_aenv Ξ ∪ ftvar_in_cstrs C) ->
+  {{ ((γ ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P0 (pskl_var_f γ))
+      ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a.
+Proof.
+  induction n as [ | n IH ]; intros Θ α m P0 P' Ξ C γ Hsz Hd Hγ;
+    [ exfalso; clear - Hsz; lia | ].
+  inversion Hd; subst.
+  - (* LS-Absent *)
+    apply a_looksub__absent.
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f γ))
+      as Hup.
+    match goal with
+    | Ha : α `notin` ftvar_in_pskl (pskl_all_syn _) |- _ =>
+        clear - Ha Hγ Hup; simpl in *; fsetdec
+    end.
+  - (* LS-Vacuous *)
+    apply a_looksub__vacuous.
+  - (* LS-Check *)
+    match goal with
+    | Hg : guarded_pskl (pskl_all_syn _) |- _ => inversion Hg
+    end.
+  - (* LS-ForallR: recurse below, exchange, rebuild, rebind *)
+    match goal with
+    | Hfr : ?b `notin` add α _ ,
+      Hp : a_looksub ((?b ~ abind_tvar) ++ _) _ _ (pskl_all_syn _) _ _ _ |- _ =>
+        rename Hfr into Hβ1; rename Hp into Hprem; rename b into β1
+    end.
+    destruct (atom_fresh (add α (add β1 (add γ
+                (ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl B
+                 ∪ ftvar_in_aenv Ξ ∪ ftvar_in_cstrs C))))) as [γ'' Hγ''].
+    assert (Hszp : size_pskl (open_pskl_wrt_pskl B (pskl_var_f β1)) < n)
+      by (rewrite size_pskl_open_pskl_wrt_pskl_var;
+          clear - Hsz; simpl in *; lia).
+    assert (Hγ''p : γ'' `notin` add α (ftvar_in_aenv ((β1 ~ abind_tvar) ++ Θ)
+              ∪ ftvar_in_pskl P0
+              ∪ ftvar_in_pskl (open_pskl_wrt_pskl B (pskl_var_f β1))
+              ∪ ftvar_in_aenv Ξ ∪ ftvar_in_cstrs C)).
+    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f β1))
+        as Hup.
+      clear - Hγ'' Hup. simpl in *. fsetdec. }
+    pose proof (IH _ _ _ _ _ _ _ _ Hszp Hprem Hγ''p) as Hih.
+    apply a_looksub_ctx_exchange in Hih.
+    assert (Hre : {{ ((γ'' ~ abind_tvar) ++ Θ)
+        ⊢ (open_pskl_wrt_pskl P0 (pskl_var_f γ'')) ≼[ α , mode_tc ]
+        (pskl_all_syn B) ⤳ Ξ ⨾ C }}a).
+    { apply a_looksub__forall_r with (β := β1); [ assumption | | exact Hih ].
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f γ''))
+        as Hup.
+      clear - Hβ1 Hγ'' Hup. simpl in *. fsetdec. }
+    destruct (γ'' == γ) as [-> | Hne]; [ exact Hre | ].
+    pose proof (proj1 (a_looksub_lookeq_swap γ'' γ) _ _ _ _ _ _ _ Hre) as Hs.
+    revert Hs.
+    assert (Hctx : swap_aenv γ'' γ ((γ'' ~ abind_tvar) ++ Θ)
+                   = (γ ~ abind_tvar) ++ Θ).
+    { simpl. rewrite swap_atom_l.
+      rewrite (swap_aenv_fresh_id γ'' γ Θ) by (clear - Hγ Hγ''; fsetdec).
+      reflexivity. }
+    rewrite Hctx.
+    rewrite (swap_atom_other γ'' γ α) by (clear - Hγ Hγ''; fsetdec).
+    rewrite swap_pskl_open_var.
+    rewrite swap_atom_l.
+    rewrite (swap_pskl_fresh_id γ'' γ P0) by (clear - Hγ Hγ''; fsetdec).
+    assert (Hall : swap_pskl γ'' γ (pskl_all_syn B) = pskl_all_syn B)
+      by (apply swap_pskl_fresh_id; clear - Hγ Hγ''; simpl in *; fsetdec).
+    rewrite Hall.
+    rewrite (swap_aenv_fresh_id γ'' γ Ξ) by (clear - Hγ Hγ''; fsetdec).
+    rewrite swap_cstrs_fresh_id by (clear - Hγ Hγ''; fsetdec).
+    intros Hs; exact Hs.
+  - (* LS-ForallL: the premise IS the goal at its own opener; rebind *)
+    match goal with
+    | Hfr : ?b `notin` add α _ ,
+      Hp : a_looksub ((?b ~ abind_tvar) ++ _) _ _ _ _ _ _ |- _ =>
+        rename Hfr into Hγ1; rename Hp into Hprem; rename b into γ1
+    end.
+    (* the opener avoids the outputs: generated names dodge the context,
+       and the collection's variables are target material or generated *)
+    assert (Hd1 : γ1 `notin` dom Ξ).
+    { eapply (proj1 a_looksub_lookeq_generated_fresh); [ exact Hprem | ].
+      simpl. clear - Hγ. fsetdec. }
+    assert (HΞ1 : γ1 `notin` ftvar_in_aenv Ξ).
+    { pose proof (a_looksub_decls Hprem) as Hdc.
+      pose proof (a_decls_no_ftvar Hdc) as Hsub.
+      clear - Hd1 Hsub. fsetdec. }
+    assert (HC1 : γ1 `notin` ftvar_in_cstrs C).
+    { intros Hin.
+      destruct ((proj1 a_looksub_lookeq_ftv) _ _ _ _ _ _ _ Hprem _ Hin)
+        as [Hio | Hno].
+      - clear - Hio Hγ1 Hd1. fsetdec.
+      - apply Hno. simpl. clear - Hγ. fsetdec.
+    }
+    destruct (γ1 == γ) as [-> | Hne]; [ exact Hprem | ].
+    pose proof (proj1 (a_looksub_lookeq_swap γ1 γ) _ _ _ _ _ _ _ Hprem) as Hs.
+    revert Hs.
+    assert (Hctx : swap_aenv γ1 γ ((γ1 ~ abind_tvar) ++ Θ)
+                   = (γ ~ abind_tvar) ++ Θ).
+    { simpl. rewrite swap_atom_l.
+      rewrite (swap_aenv_fresh_id γ1 γ Θ) by (clear - Hγ Hγ1; fsetdec).
+      reflexivity. }
+    rewrite Hctx.
+    rewrite (swap_atom_other γ1 γ α) by (clear - Hγ Hγ1; fsetdec).
+    rewrite swap_pskl_open_var.
+    rewrite swap_atom_l.
+    rewrite (swap_pskl_fresh_id γ1 γ P0) by (clear - Hγ Hγ1; fsetdec).
+    rewrite (swap_pskl_fresh_id γ1 γ P') by (clear - Hγ Hγ1; fsetdec).
+    rewrite (swap_aenv_fresh_id γ1 γ Ξ) by (clear - Hγ HΞ1; fsetdec).
+    rewrite swap_cstrs_fresh_id by (clear - Hγ HC1; fsetdec).
+    intros Hs; exact Hs.
+Qed.
+
+(** R′, packaged. *)
+Lemma a_looksub_open_forall_l_first : forall Θ α m P0 P' Ξ C γ,
+  {{ Θ ⊢ (pskl_all_syn P0) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
+  γ `notin` add α (ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P'
+      ∪ ftvar_in_aenv Ξ ∪ ftvar_in_cstrs C) ->
+  {{ ((γ ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P0 (pskl_var_f γ))
+      ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a.
+Proof.
+  intros.
+  eapply a_looksub_open_forall_l_first_n with (n := S (size_pskl P'));
+    eauto.
 Qed.

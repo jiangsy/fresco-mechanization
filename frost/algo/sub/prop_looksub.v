@@ -127,6 +127,29 @@ Lemma ftvar_in_cstrs_app : forall C1 C2,
   ftvar_in_cstrs (C1 ++ C2) [=] ftvar_in_cstrs C1 `union` ftvar_in_cstrs C2.
 Proof. induction C1; intros; simpl; [ fsetdec | rewrite IHC1; fsetdec ]. Qed.
 
+Lemma swap_cstr_fresh_id : forall a b c,
+  a `notin` ftvar_in_cstr c ->
+  b `notin` ftvar_in_cstr c ->
+  swap_cstr a b c = c.
+Proof.
+  intros * Ha Hb.
+  destruct c as [m P | P]; simpl in *;
+    rewrite swap_pskl_fresh_id by (clear - Ha Hb; fsetdec); reflexivity.
+Qed.
+
+Lemma swap_cstrs_fresh_id : forall a b C,
+  a `notin` ftvar_in_cstrs C ->
+  b `notin` ftvar_in_cstrs C ->
+  swap_cstrs a b C = C.
+Proof.
+  intros a b C; induction C as [ | c C' IH ]; intros Ha Hb;
+    [ reflexivity | ].
+  simpl in *.
+  rewrite swap_cstr_fresh_id by (clear - Ha Hb; fsetdec).
+  rewrite IH by (clear - Ha Hb; fsetdec).
+  reflexivity.
+Qed.
+
 (** Renaming a variable throughout a collected constraint list.  Needed by
     the TARGET-only rename below: the collected [𝒞] is an OUTPUT, so a
     canonical renaming lemma must rename it rather than demand the source

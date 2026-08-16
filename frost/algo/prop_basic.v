@@ -238,6 +238,17 @@ Proof.
   apply (a_suffix__cons α1 (b := abind_flex_mono)); auto; constructor.
 Qed.
 
+(** A declaration block carries no payload, so its variables ARE its
+    domain.  ⚙ Moved here from algo/sub/prop_completeness_sub_gen.v
+    (2026-08-16): the extract level's look re-rootings need it below the
+    P7 stack, and this is [a_decls]'s home. *)
+Lemma a_decls_no_ftvar : forall Ξ,
+  a_decls Ξ -> ftvar_in_aenv Ξ [<=] dom Ξ.
+Proof.
+  intros Ξ H; induction H as [| α1 Ξ' Hd IH]; simpl;
+    [ clear; fsetdec | clear - IH; fsetdec ].
+Qed.
+
 Lemma a_inc_prepend_flex_src : forall Θ κ Θ' α1,
   κ ∷ Θ ⊑ Θ' ->
   a_binds_tvar α1 Θ' ->

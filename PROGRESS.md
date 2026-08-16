@@ -269,6 +269,29 @@ to be true; the probe is the exhaustive argument it lacked.
 Handoff: §8c.8 rewritten; next is §8c.9 (option (b) at the extract
 level).
 
+⭐⭐ LATER THE SAME DAY, §8c.9's DESIGN REFINED AND ITS §6b LOOK LAYER
+LANDED (Qed, axiom-free): the b-core pair induction is restated over
+REL-RELATED node pairs (`rel_pskl` componentwise, both looks at ONE Θ)
+with binder openers PAIRED into ρ — no side is ever rebound, which
+deletes the first design's swap-chain/accumulator bookkeeping
+entirely.  ⭐ KEY FACT, machine-checked: a collection is built from
+TARGET material and generated names alone (the subject never enters
+it), so subject-peel re-rootings preserve `(Ξ, 𝒞)` EXACTLY and apply
+to EITHER side of the pair — `a_looksub_strip_tophole_l` (R″) and
+`a_looksub_open_forall_l_first` (R′), prop_look_equiv.v §6, plus the
+◇-target look collapses (§5); with those, the ONLY output-changing
+crossing left is (Var, ForallR) at a ghost-free ∀ target, already paid
+by §6a's peel lemma.  Support: `swap_cstr(s)_fresh_id` (prop_looksub),
+`a_decls_no_ftvar` moved to algo/prop_basic.v.  ⚠️ The one hazard found
+and resolved on paper: a raw derivation can reuse ONE atom in two
+roles (sibling freshness sets don't mention each other), making the
+extended pair-agreement unsatisfiable at a crossing — so the assembly
+PRE-NORMALIZES side 1 by a hygienic rederivation + fold rel-transport
+at ◇ (§8c.9's hazard box; do NOT re-run the runner for this — that's
+circular).  Still open: the rel kit extensions, the four
+rel-transports, the hygienic rederivation, the pair induction, the
+assembly.
+
 ⭐ SAME DAY, §8c.9 OPENED AND ITS FIRST TWO PIECES LANDED (all Qed,
 axiom-free, `make coq` green): (1) the extract level's design is
 settled and recorded — the b-core is a FUSED look-pair/fold-transport

@@ -3119,13 +3119,6 @@ Qed.
 (*  (E)  A well-formed context mentions only its own domain               *)
 (* ===================================================================== *)
 
-Lemma a_decls_no_ftvar : forall Ξ,
-  a_decls Ξ -> ftvar_in_aenv Ξ [<=] dom Ξ.
-Proof.
-  intros Ξ H; induction H as [| α1 Ξ' Hd IH]; simpl;
-    [ clear; fsetdec | clear - IH; fsetdec ].
-Qed.
-
 (* ===================================================================== *)
 (*  (F)  P7a ROW — Flex-Depend                                            *)
 (* ===================================================================== *)
