@@ -518,6 +518,23 @@ Proof.
   apply IH. intros a' b' Hin. apply Hav. right. exact Hin.
 Qed.
 
+(** The atom-SET member of the [swaps_*] family.  ⚙ Added 2026-08-16 for
+    §8c.10, whose judgements carry two set indexes (Δ1/Δ2) and a set-valued
+    SUPPLY; the single-transposition [swap_atoms] and its congruence are
+    upstream in frost/prop_tag.v. *)
+Fixpoint swaps_atoms (ps : list (atom * atom)) (S : atoms) : atoms :=
+  match ps with
+  | nil => S
+  | (a, b) :: ps' => swaps_atoms ps' (swap_atoms a b S)
+  end.
+
+Lemma swaps_atoms_cong : forall ps S T,
+  S [=] T -> swaps_atoms ps S [=] swaps_atoms ps T.
+Proof.
+  induction ps as [ | [a b] ps IH ]; intros S T Heq; simpl; auto.
+  apply IH. apply swap_atoms_cong. exact Heq.
+Qed.
+
 Lemma swaps_aenv_app_dist : forall ps Θ1 Θ2,
   swaps_aenv ps (Θ1 ++ Θ2) = swaps_aenv ps Θ1 ++ swaps_aenv ps Θ2.
 Proof.

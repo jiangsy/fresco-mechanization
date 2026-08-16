@@ -384,11 +384,25 @@ the PREDICATES in `frost/def_shapes.v`, the `_open` / `_open_rec` pair
 files carry ⚙ notes pointing at the new homes, and the full tree
 rebuilds green.
 
+⭐ **AND THE CHAIN EQUIVARIANCE IS Qed** (`prop_consis_complete.v` §3:
+`e_assign_swaps` / `e_unify_swaps` / `e_consis_swaps`; plus
+`swaps_atoms` + `swaps_atoms_cong`, added to prop_solve_det.v §1's
+`swaps_*` family — the judgements carry two set indexes AND a set-valued
+supply, which the family did not cover).  This is what `U-Arrow` will
+consume: its second premise runs at the first's output, and the
+derivation's output differs from the runner's by the fresh names each
+side happened to pick — a whole CHAIN of transpositions, not one.
+⭐ The iteration needs NO new transport: the Δ-slots stay LITERAL (each
+step feeds the next its own `swap_atoms`, so no set is ever moved across
+`[=]`) and only the supply is carried up to `[=]`, where §9's
+supply-respect discharges the empty chain.
+
 ⛔ WHAT IS LEFT for the hole-free rung: the ~30-case main induction over
-`e_consis_call_order_sind`, whose motive is the ∃-form with a
-swap-CHAIN output relation (prop_solve_det.v §1's `swaps_*` kit, whose
-`swaps_pskl_fresh_id` is what makes the chain act as the identity on the
-caller's own skeletons).
+`e_consis_call_order_sind`.  Its whole support layer is now Qed — the
+sind principle, the hole-free invariant, supply-respect, single-swap and
+chain equivariance — and `swaps_pskl_fresh_id` / `swaps_atom_notin` are
+what will make the chain act as the identity on the caller's own
+skeletons.
 
 
 ## 2026-08-16 — ⭐⭐⭐ **§8c.9 CLOSED: THE EXTRACT LEVEL (campaign level 4) IS COMPLETE — the b-core and the assembly are Qed**

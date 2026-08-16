@@ -36,6 +36,8 @@ Require Import src.frost.notations.
 Require Import src.frost.coercions.
 Require Import src.frost.def_shapes.
 Require Import src.frost.prop_coercions.
+Require Import src.frost.prop_tag.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
 Require Import src.frost.prop_basic.
@@ -48,6 +50,7 @@ Require Import src.frost.ext_algo.def_consis.
 Require Import src.frost.ext_algo.def_order.
 Require Import src.frost.ext_algo.prop_consis.
 Require Import src.frost.ext_algo.prop_termination.
+Require Import src.frost.ext_algo.prop_solve_det.
 Require Import src.frost.ext_algo.def_consis_impl.
 
 Set Implicit Arguments.
@@ -403,3 +406,73 @@ Proof. intros. split; apply pskl_no_hole_open; assumption. Qed.
 #[local] Hint Resolve ptyp_to_pskl_no_hole pskl_no_hole_open
   pskl_no_hole_subst consis_call_no_hole_assign_assign
   consis_call_no_hole_flex_assign consis_call_no_hole_open : nohole.
+
+(* ===================================================================== *)
+(*  §3  EQUIVARIANCE ALONG A CHAIN                                        *)
+(*                                                                        *)
+(*  What [U-Arrow] will consume.  Its second premise runs at the FIRST    *)
+(*  premise's output, and the derivation's output differs from the        *)
+(*  runner's by the fresh names each side happened to pick — a whole      *)
+(*  CHAIN of transpositions, not one.  prop_consis.v §10 iterates: the    *)
+(*  Δ-slots stay LITERAL (each step feeds the next its own                *)
+(*  [swap_atoms], so no set ever has to be moved across [=]), and only    *)
+(*  the supply is carried up to [=], which is where prop_consis.v §9's    *)
+(*  supply-respect discharges the empty chain.                            *)
+(*                                                                        *)
+(*  ⚙ The chain acts as the IDENTITY on anything the caller already held  *)
+(*  — that is [swaps_pskl_fresh_id] / [swaps_atom_notin]                  *)
+(*  (prop_solve_det.v §1), given that every pair in the chain avoids the  *)
+(*  input supply.                                                         *)
+(* ===================================================================== *)
+
+Lemma e_assign_swaps : forall ps S0 Θ0 Ξ α P S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e ->
+  forall S0', S0' [=] swaps_atoms ps S0 ->
+  exists S1', S1' [=] swaps_atoms ps S1 /\
+    {{ S0' ↝ S1' ⊨ (swaps_aenv ps Θ0) ⊲[ swaps_aenv ps Ξ ]
+       (swaps_atom ps α) ≔ (swaps_pskl ps P) ⊣ (swaps_aenv ps Θ1) }}e.
+Proof.
+  induction ps as [ | [a b] ps IH ]; intros * Hd S0' Heq; simpl in *.
+  - (* the empty chain is the identity — only the supply has to move *)
+    exact (e_assign_supply_respect Hd Heq).
+  - assert (Hr : swap_atoms a b S0 [=] swap_atoms a b S0) by reflexivity.
+    destruct (e_assign_swap Hd Hr) as [S1a [HS1a Hda]].
+    destruct (IH _ _ _ _ _ _ _ Hda _ Heq) as [S1' [HS1' Hd']].
+    exists S1'. split; [ | exact Hd' ].
+    rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
+Qed.
+
+Lemma e_unify_swaps : forall ps S0 Θ0 α β S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e ->
+  forall S0', S0' [=] swaps_atoms ps S0 ->
+  exists S1', S1' [=] swaps_atoms ps S1 /\
+    {{ S0' ↝ S1' ⊨ (swaps_aenv ps Θ0) ⊲
+       (swaps_atom ps α) ≈ᵘ (swaps_atom ps β) ⊣ (swaps_aenv ps Θ1) }}e.
+Proof.
+  induction ps as [ | [a b] ps IH ]; intros * Hd S0' Heq; simpl in *.
+  - exact (e_unify_supply_respect Hd Heq).
+  - assert (Hr : swap_atoms a b S0 [=] swap_atoms a b S0) by reflexivity.
+    destruct (e_unify_swap Hd Hr) as [S1a [HS1a Hda]].
+    destruct (IH _ _ _ _ _ _ Hda _ Heq) as [S1' [HS1' Hd']].
+    exists S1'. split; [ | exact Hd' ].
+    rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
+Qed.
+
+Lemma e_consis_swaps : forall ps Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+  forall S0', S0' [=] swaps_atoms ps S0 ->
+  exists S1', S1' [=] swaps_atoms ps S1 /\
+    {{ S0' ↝ S1' ⊨ (swaps_aenv ps Θ0)
+       ⊢[ (swaps_atoms ps Δ1) | (swaps_atoms ps Δ2) | (swaps_pskl ps P0) ]
+       (swaps_pskl ps P) ∼ (swaps_pskl ps Q) ⊣ (swaps_aenv ps Θ1) }}e.
+Proof.
+  induction ps as [ | [a b] ps IH ]; intros * Hd S0' Heq; simpl in *.
+  - exact (e_consis_supply_respect Hd Heq).
+  - assert (H1 : swap_atoms a b Δ1 [=] swap_atoms a b Δ1) by reflexivity.
+    assert (H2 : swap_atoms a b Δ2 [=] swap_atoms a b Δ2) by reflexivity.
+    assert (Hr : swap_atoms a b S0 [=] swap_atoms a b S0) by reflexivity.
+    destruct (e_consis_swap Hd H1 H2 Hr) as [S1a [HS1a Hda]].
+    destruct (IH _ _ _ _ _ _ _ _ _ Hda _ Heq) as [S1' [HS1' Hd']].
+    exists S1'. split; [ | exact Hd' ].
+    rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
+Qed.
