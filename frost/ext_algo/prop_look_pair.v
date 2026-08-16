@@ -62,6 +62,13 @@ Require Import src.frost.ext_algo.prop_solve_rel.
 Require Import src.frost.ext_algo.def_order.
 Require Import src.frost.ext_algo.prop_termination.
 Require Import src.frost.ext_algo.def_look_impl.
+Require Import src.frost.ext_algo.def_guess.
+Require Import src.frost.ext_algo.def_guess_impl.
+Require Import src.frost.ext_algo.def_guess_impl_sk.
+Require Import src.frost.ext_algo.def_solve_impl.
+Require Import src.frost.ext_algo.def_uip.
+Require Import src.frost.ext_algo.def_extract.
+Require Import src.frost.ext_algo.def_extract_impl.
 Require Import src.frost.ext_algo.prop_run_complete.
 
 Set Implicit Arguments.
@@ -4735,4 +4742,283 @@ Proof.
       all: try solve [ simpl in Hsz |- *; lia
                      | clear - Hcov1; simpl in *; fsetdec
                      | clear - Hcov2; simpl in *; fsetdec ].
+Qed.
+
+(* ===================================================================== *)
+(*  §4  The §6c ASSEMBLY — the extract level's run-completeness           *)
+(*                                                                        *)
+(*  The hygiene premises (both stages of an e-extract on the SAME         *)
+(*  outputs as the raw derivation) are the level-above's debt — the       *)
+(*  fourth-pass finding is that NEITHER can be manufactured from a raw    *)
+(*  [a_extract] inversion down here (the raw fold's collection mentions   *)
+(*  leaked look-openers outside every context, so no transport of it      *)
+(*  exists to build).  Transport 5 supplies the look half; its fold       *)
+(*  analog is the flagship's burden (handoff §8c.9, fourth pass).         *)
+(* ===================================================================== *)
+
+(** Rigid enrichment: one [~ tvar] entry per atom of a finite set. *)
+Definition rigids (S : atoms) : aenv :=
+  List.map (fun x => (x, abind_tvar)) (AtomSetImpl.elements S).
+
+Lemma rigids_binds_tvar : forall S x bd,
+  binds x bd (rigids S) -> bd = abind_tvar.
+Proof.
+  intros S. unfold rigids.
+  induction (AtomSetImpl.elements S) as [ | a l IH ]; intros x bd Hb.
+  - inversion Hb.
+  - unfold binds in Hb. simpl in Hb.
+    destruct Hb as [ E | Hb ]; [ inversion E; reflexivity | ].
+    apply (IH x). exact Hb.
+Qed.
+
+Lemma rigids_dom : forall S, dom (rigids S) [=] S.
+Proof.
+  intros S. unfold rigids.
+  intros x. split.
+  - intros Hx.
+    assert (Hin : In x (AtomSetImpl.elements S)).
+    { induction (AtomSetImpl.elements S) as [ | a l IH ]; simpl in *.
+      - exfalso. clear - Hx. fsetdec.
+      - destruct (x == a) as [ -> | Hne ]; [ auto | ].
+        right. apply IH. clear - Hx Hne. fsetdec. }
+    apply AtomSetImpl.elements_2.
+    apply CoqListFacts.InA_iff_In. exact Hin.
+  - intros Hx.
+    apply AtomSetImpl.elements_1 in Hx.
+    apply CoqListFacts.InA_iff_In in Hx.
+    induction (AtomSetImpl.elements S) as [ | a l IH ]; simpl in *.
+    + inversion Hx.
+    + destruct Hx as [ -> | Hx ]; [ fsetdec | ].
+      pose proof (IH Hx). fsetdec.
+Qed.
+
+Lemma map_tvar_ftvar_dom : forall (l : list atom),
+  ftvar_in_aenv (List.map (fun x => (x, abind_tvar)) l)
+  [=] dom (List.map (fun x => (x, abind_tvar)) l).
+Proof.
+  induction l as [ | a l IH ]; simpl.
+  - clear. fsetdec.
+  - rewrite IH. clear. fsetdec.
+Qed.
+
+Lemma rigids_ftvar : forall S, ftvar_in_aenv (rigids S) [=] S.
+Proof.
+  intros S. unfold rigids.
+  rewrite map_tvar_ftvar_dom.
+  exact (rigids_dom S).
+Qed.
+
+(** ⚠️ THE STAGE-KILL IDIOM IS LOAD-BEARING FOR SPEED (measured
+    2026-08-16): matching the goal's nested [match ?call with Some …]
+    and destructing the captured scrutinee HANGS (>200 s, killed) —
+    [context] can select an inner stage whose type depends on an
+    outer, not-yet-introduced result.  Matching the APPLICATION with
+    its argument metavariables, asserting [<> None] first and then
+    destructing that exact application — prop_run_complete.v §5c's
+    [kill_*] recipe — runs in 0.05 s. *)
+Lemma e_extract_impl_complete : forall S0 Θ0 NM α m P P'
+    (HP : lc_pskl P) (HP' : lc_pskl P')
+    (H : e_extract_order S0 Θ0 NM α m P P')
+    Ξl 𝒞l Ξs1 Q1 Sh0 Sh1 Sf1,
+  {{ Sh0 ↝ Sh1 ⊨ Θ0 ⊢ P ≼[ α , m ] P' ⤳ Ξl ⨾ 𝒞l }}e ->
+  {{ Sh1 ↝ Sf1 ⊨ (Ξl ++ Θ0) ⊩ 𝒞l ⨾ pskl_hole ⤳ Ξs1 ⨾ Q1 }}e ->
+  add α (ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] ftvar_in_aenv Θ0 ->
+  add α (ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] Sh0 ->
+  add α (ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] S0 ->
+  e_extract_impl S0 Θ0 NM α m P P' HP HP' H <> None.
+Proof.
+  intros * Hhl Hhf Hscp0 HcovH Hcov0.
+  simp e_extract_impl.
+  (* ---- stage 1: the runner's look answers (level 1) ---- *)
+  pose proof ((proj1 e_looksub_lookeq_sound) _ _ _ _ _ _ _ _ _ Hhl
+                ltac:(clear - HcovH; fsetdec)) as Hlookraw.
+  match goal with
+  | |- context [ e_looksub_impl ?S ?T ?a ?mm ?p ?q ?hp ?hq ?h ] =>
+      let Hne := fresh "Hne" in let Hcl := fresh "Hcl" in
+      assert (Hne : e_looksub_impl S T a mm p q hp hq h <> None)
+        by (exact (e_looksub_impl_complete hp hq h Hlookraw
+                     ltac:(clear - Hcov0; fsetdec)));
+      destruct (e_looksub_impl S T a mm p q hp hq h) as [ [r1 Hr1] | ] eqn:Hcl;
+      [ cbv beta iota | exact (False_ind _ (Hne eq_refl)) ]
+  end.
+  unfold looksub_spec in Hr1.
+  (* ---- the two sides' supply/block facts ---- *)
+  pose proof (e_looksub_supply_grows Hhl) as HgrH.
+  pose proof (e_looksub_supply_grows Hr1) as Hgr1.
+  pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hhl)
+    as (Hbl1a & Hbl1b & Hbu1 & Hbf1).
+  pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hr1)
+    as (Hbl2a & Hbl2b & Hbu2 & Hbf2).
+  pose proof ((proj1 e_looksub_lookeq_cstr_ftvar_tight)
+                _ _ _ _ _ _ _ _ _ Hhl) as Htight1.
+  pose proof ((proj1 e_looksub_lookeq_cstr_ftvar_tight)
+                _ _ _ _ _ _ _ _ _ Hr1) as Htight2.
+  pose proof (dom_subset_ftvar_in_aenv Θ0) as Hd0.
+  (* ---- the RIGID ENRICHMENT (§8c.9 decision (a), fourth-pass form):
+     each side's whole generated interval, so the b-core's scoping
+     premises hold of the leaked openers the collections mention ---- *)
+  set (Δr1 := rigids (Sh1 ∖ Sh0)) in *.
+  set (Δr2 := rigids (lk_supply r1 ∖ S0)) in *.
+  set (Θf1 := Δr1 ++ Ξl ++ Θ0) in *.
+  set (Θf2 := Δr2 ++ lk_block r1 ++ Θ0) in *.
+  assert (Hr1d : dom Δr1 [=] Sh1 ∖ Sh0) by apply rigids_dom.
+  assert (Hr2d : dom Δr2 [=] lk_supply r1 ∖ S0) by apply rigids_dom.
+  assert (Hr1f : ftvar_in_aenv Δr1 [=] Sh1 ∖ Sh0) by apply rigids_ftvar.
+  assert (Hr2f : ftvar_in_aenv Δr2 [=] lk_supply r1 ∖ S0)
+    by apply rigids_ftvar.
+  assert (Hrig1 : forall x bd, binds x bd Δr1 -> bd = abind_tvar)
+    by (intros x bd Hb; eapply rigids_binds_tvar; exact Hb).
+  assert (Hrig2 : forall x bd, binds x bd Δr2 -> bd = abind_tvar)
+    by (intros x bd Hb; eapply rigids_binds_tvar; exact Hb).
+  (* the HYGIENIC fold rigid-weakens to the enriched context (its
+     freshness reads the supply), then projects to the a-side fold *)
+  assert (Hcovf : ftvar_in_aenv Θf1 ∪ ftvar_in_a_cstrs 𝒞l
+            ∪ ftvar_in_pskl pskl_hole [<=] Sh1).
+  { unfold Θf1. rewrite ! ftvar_in_aenv_app. rewrite Hr1f. simpl.
+    assert (Hx : ftvar_in_aenv Ξl [<=] Sh1) by (clear - Hbl1a Hbf1; fsetdec).
+    assert (Hy : ftvar_in_a_cstrs 𝒞l [<=] Sh1)
+      by (clear - Htight1 HcovH HgrH; fsetdec).
+    assert (Hz : ftvar_in_aenv Θ0 [<=] Sh1) by (clear - HcovH HgrH; fsetdec).
+    clear - Hx Hy Hz. fsetdec. }
+  assert (Hfold1 : {{ Θf1 ⊩ 𝒞l ⨾ pskl_hole ⤳ Ξs1 ⨾ Q1 }}a).
+  { eapply e_solve_cstr_sound; [ | exact Hcovf ].
+    unfold Θf1. apply e_solve_cstr_weaken_rigid; [ exact Hhf | exact Hrig1 ]. }
+  (* ---- the b-core: the runner-side fold ---- *)
+  set (V := add α (ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P')) in *.
+  assert (HVΘ : V [<=] ftvar_in_aenv Θ0) by (unfold V; clear - Hscp0; fsetdec).
+  assert (HrelP : rel_pskl nil V P P)
+    by (apply rel_pskl_refl; unfold V; clear; fsetdec).
+  assert (HrelP' : rel_pskl nil V P' P')
+    by (apply rel_pskl_refl; unfold V; clear; fsetdec).
+  assert (Hagr : flex_agree_rel nil V Θf1 Θf2).
+  { split; [ | intros a b Hin; inversion Hin ].
+    intros x Hx.
+    assert (Hx1 : x `notin` dom Δr1)
+      by (rewrite Hr1d; clear - Hx HVΘ HcovH; fsetdec).
+    assert (Hx2 : x `notin` dom Δr2)
+      by (rewrite Hr2d; clear - Hx HVΘ Hcov0; fsetdec).
+    assert (Hx3 : x `notin` dom Ξl)
+      by (clear - Hx HVΘ Hbl1b HcovH; fsetdec).
+    assert (Hx4 : x `notin` dom (lk_block r1))
+      by (clear - Hx HVΘ Hbl2b Hcov0; fsetdec).
+    unfold Θf1, Θf2.
+    rewrite (a_flex_tvar_notin_app Δr1 (Ξl ++ Θ0) Hx1).
+    rewrite (a_flex_tvar_notin_app Δr2 (lk_block r1 ++ Θ0) Hx2).
+    rewrite (a_flex_tvar_notin_app Ξl Θ0 Hx3).
+    rewrite (a_flex_tvar_notin_app (lk_block r1) Θ0 Hx4).
+    reflexivity. }
+  assert (Hb1 : forall x bd, binds x bd Ξl -> binds x bd Θf1)
+    by (intros x bd Hxb; unfold Θf1; unfold binds in *;
+        apply in_or_app; right; apply in_or_app; left; exact Hxb).
+  assert (Hb2 : forall x bd, binds x bd (lk_block r1) -> binds x bd Θf2)
+    by (intros x bd Hxb; unfold Θf2; unfold binds in *;
+        apply in_or_app; right; apply in_or_app; left; exact Hxb).
+  assert (Hop1 : forall x, x `in` Sh1 -> x `notin` Sh0 ->
+            x `notin` dom Ξl -> ~ a_flex_tvar Θf1 x).
+  { intros x h1 h2 h3 Hf. unfold Θf1 in Hf.
+    apply (proj1 (a_flex_tvar_app_or Δr1 (Ξl ++ Θ0) x)) in Hf.
+    destruct Hf as [ Hf | Hf ].
+    - destruct Hf as [ Hb | [τ Hb] ];
+        pose proof (Hrig1 _ _ Hb); discriminate.
+    - apply (proj1 (a_flex_tvar_app_or Ξl Θ0 x)) in Hf.
+      destruct Hf as [ Hf | Hf ].
+      + apply h3. eapply a_flex_tvar_dom. exact Hf.
+      + assert (Hxd : x `in` dom Θ0) by (eapply a_flex_tvar_dom; exact Hf).
+        clear - h2 HcovH Hd0 Hxd. fsetdec. }
+  assert (Hop2 : forall x, x `in` lk_supply r1 -> x `notin` S0 ->
+            x `notin` dom (lk_block r1) -> ~ a_flex_tvar Θf2 x).
+  { intros x h1 h2 h3 Hf. unfold Θf2 in Hf.
+    apply (proj1 (a_flex_tvar_app_or Δr2 (lk_block r1 ++ Θ0) x)) in Hf.
+    destruct Hf as [ Hf | Hf ].
+    - destruct Hf as [ Hb | [τ Hb] ];
+        pose proof (Hrig2 _ _ Hb); discriminate.
+    - apply (proj1 (a_flex_tvar_app_or (lk_block r1) Θ0 x)) in Hf.
+      destruct Hf as [ Hf | Hf ].
+      + apply h3. eapply a_flex_tvar_dom. exact Hf.
+      + assert (Hxd : x `in` dom Θ0) by (eapply a_flex_tvar_dom; exact Hf).
+        clear - h2 Hcov0 Hd0 Hxd. fsetdec. }
+  assert (Henr1 : Sh1 ∖ Sh0 [<=] ftvar_in_aenv Θf1)
+    by (unfold Θf1; rewrite ! ftvar_in_aenv_app; rewrite Hr1f;
+        clear; fsetdec).
+  assert (Henr2 : lk_supply r1 ∖ S0 [<=] ftvar_in_aenv Θf2)
+    by (unfold Θf2; rewrite ! ftvar_in_aenv_app; rewrite Hr2f;
+        clear; fsetdec).
+  assert (Hscp1 : V ∪ cols_l nil ∪ ftvar_in_pskl pskl_hole
+            ∪ ftvar_in_a_cstrs 𝒞l [<=] ftvar_in_aenv Θf1).
+  { unfold Θf1. rewrite ! ftvar_in_aenv_app. rewrite Hr1f. simpl.
+    clear - Htight1 HVΘ. fsetdec. }
+  assert (Hscp2 : V ∪ cols_r nil ∪ ftvar_in_pskl pskl_hole
+            ∪ ftvar_in_a_cstrs (lk_cstrs r1) [<=] ftvar_in_aenv Θf2).
+  { unfold Θf2. rewrite ! ftvar_in_aenv_app. rewrite Hr2f. simpl.
+    clear - Htight2 HVΘ. fsetdec. }
+  pose proof (@bcore_sub (S (size_pskl P + size_pskl P'))
+                Sh0 Sh1 _ _ _ P P' _ _ ltac:(lia) Hhl
+                _ _ _ _ _ _ _ (exist _ r1 Hr1) Hcl
+                nil _ _ _ _ _ _ _ empty
+                HrelP HrelP'
+                ltac:(unfold V; clear; fsetdec)
+                ltac:(simpl; clear; fsetdec)
+                ltac:(simpl; clear; fsetdec)
+                Hfold1 (rel_pskl__hole nil V) Hagr
+                Hb1 Hb2 Hop1 Hop2 Henr1 Henr2 Hscp1 Hscp2
+                ltac:(clear - HcovH HVΘ; unfold V; fsetdec)
+                ltac:(clear - Hcov0 HVΘ; unfold V; fsetdec)) as HB.
+  destruct HB as (Ξs2 & Q2 & Hfold2 & Hu2 & _).
+  simpl in Hfold2.
+  (* ---- stage 2: the runner's fold answers (level 3) ---- *)
+  assert (Hagr2 : flex_agree
+            (ftvar_in_pskl pskl_hole ∪ ftvar_in_a_cstrs (lk_cstrs r1))
+            Θf2 (lk_block r1 ++ Θ0)).
+  { intros x _. unfold Θf2.
+    apply a_flex_tvar_rigid_prefix_iff. exact Hrig2. }
+  assert (Hscpf : ftvar_in_pskl pskl_hole ∪ ftvar_in_a_cstrs (lk_cstrs r1)
+            [<=] ftvar_in_aenv Θf2)
+    by (clear - Hscp2; simpl in *; fsetdec).
+  assert (Hcovf2 : ftvar_in_aenv (lk_block r1 ++ Θ0)
+            ∪ ftvar_in_pskl pskl_hole ∪ ftvar_in_a_cstrs (lk_cstrs r1)
+            [<=] lk_supply r1).
+  { rewrite ftvar_in_aenv_app. simpl.
+    assert (Hx : ftvar_in_aenv (lk_block r1) [<=] lk_supply r1)
+      by (clear - Hbl2a Hbf2; fsetdec).
+    assert (Hy : ftvar_in_a_cstrs (lk_cstrs r1) [<=] lk_supply r1)
+      by (clear - Htight2 Hcov0 Hgr1; fsetdec).
+    assert (Hz : ftvar_in_aenv Θ0 [<=] lk_supply r1)
+      by (clear - Hcov0 Hgr1; fsetdec).
+    clear - Hx Hy Hz. fsetdec. }
+  match goal with
+  | |- context [ e_solve_cstr_impl ?S ?T ?c ?pp ?hp ?hc ?h ] =>
+      let Hne := fresh "Hne" in let Hcl2 := fresh "Hcl2" in
+      assert (Hne : e_solve_cstr_impl S T c pp hp hc h <> None)
+        by (exact (e_solve_cstr_impl_complete hp hc h Hfold2 Hu2
+                     Hagr2 Hscpf Hcovf2));
+      destruct (e_solve_cstr_impl S T c pp hp hc h) as [ [r2 Hr2] | ] eqn:Hcl2;
+      [ cbv beta iota | exact (False_ind _ (Hne eq_refl)) ]
+  end.
+  (* ---- stage 3 (the guess) is TOTAL ---- *)
+  discriminate.
+Qed.
+
+(** ⭐ THE EXTRACT LEVEL'S HEADLINE (campaign §8c.3 level 4): a raw
+    [a_extract]'s two stages, given e-DERIVABLY (the hygiene premises
+    the level above owes — see the file header and §8c.9's fourth
+    pass), make the EXTRACTED runner succeed. *)
+Lemma e_extract_run_complete : forall S0 Θ0 NM α m P P' HP HP'
+    Ξl 𝒞l Ξs1 Q1 Sh0 Sh1 Sf1,
+  {{ Sh0 ↝ Sh1 ⊨ Θ0 ⊢ P ≼[ α , m ] P' ⤳ Ξl ⨾ 𝒞l }}e ->
+  {{ Sh1 ↝ Sf1 ⊨ (Ξl ++ Θ0) ⊩ 𝒞l ⨾ pskl_hole ⤳ Ξs1 ⨾ Q1 }}e ->
+  add α (ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] ftvar_in_aenv Θ0 ->
+  add α (ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] Sh0 ->
+  add α (ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] S0 ->
+  e_extract_run S0 Θ0 NM α m P P' HP HP' <> None.
+Proof.
+  intros * Hhl Hhf Hscp0 HcovH Hcov0. unfold e_extract_run.
+  pose proof (e_extract_impl_complete HP HP'
+                (@e_extract_order_total S0 Θ0 NM α m P P' HP HP')
+                Hhl Hhf Hscp0 HcovH Hcov0) as Hne.
+  revert Hne.
+  destruct (e_extract_impl S0 Θ0 NM α m P P' HP HP'
+              (@e_extract_order_total S0 Θ0 NM α m P P' HP HP'))
+    as [ [r Hr] | ]; intros Hne.
+  - discriminate.
+  - exact (False_ind _ (Hne eq_refl)).
 Qed.
