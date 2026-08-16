@@ -1050,3 +1050,187 @@ Proof.
   intros. eapply (proj1 e_assign_unify_consis_refl);
     [ eassumption | reflexivity ].
 Qed.
+
+(* ===================================================================== *)
+(*  §9  THE SUPPLY IS READ UP TO [=], for the whole trio                   *)
+(*                                                                        *)
+(*  prop_guess.v §7's companion, and needed for the same reason: the      *)
+(*  supply is a SET carried as a judgement INDEX, so a caller holding an  *)
+(*  [=]-variant cannot [rewrite] it into place.  ∃-form, as               *)
+(*  prop_look_pair.v §1's look-side twin: the OUTPUT supply moves too,    *)
+(*  and only up to [=].                                                   *)
+(*                                                                        *)
+(*  ⭐ Only four rows do any work — [Assign-SolveM] (through [guess^TY])  *)
+(*  and the three ∀ rows (whose opener is drawn from the supply); the     *)
+(*  rest either keep the supply or thread it, and [U-Arrow] is the one    *)
+(*  row where the two ∃-witnesses have to CHAIN.                          *)
+(* ===================================================================== *)
+
+Lemma e_assign_unify_consis_supply_respect :
+  (forall S0 Θ0 Ξ α P S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e) /\
+  (forall S0 Θ0 α β S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e) /\
+  (forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\
+       {{ S0' ↝ S1' ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e).
+Proof.
+  apply (e_assign_unify_consis_mutind
+           (fun S0 Θ0 Ξ α P S1 Θ1 _ =>
+              forall S0', S0' [=] S0 ->
+              exists S1', S1' [=] S1 /\
+                {{ S0' ↝ S1' ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e)
+           (fun S0 Θ0 α β S1 Θ1 _ =>
+              forall S0', S0' [=] S0 ->
+              exists S1', S1' [=] S1 /\
+                {{ S0' ↝ S1' ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e)
+           (fun Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1 _ =>
+              forall S0', S0' [=] S0 ->
+              exists S1', S1' [=] S1 /\
+                {{ S0' ↝ S1' ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e)).
+  (* ---- assign ---- *)
+  - (* Assign-UnivGhost-Id *)
+    intros S Θ0 α S0' Heq.
+    exists S0'. split; [ assumption | apply e_assign__univ_ghost_id ].
+  - (* Assign-SolveM — the supply moves through [guess^TY] *)
+    intros S0 S1 Θ0 Ξ α P βs τ Hocc Hg Hm S0' Heq.
+    destruct (e_guess_mono_supply_respect Hg Heq) as [S1' [HS1 Hg']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_assign__solve_m with (βs := βs); assumption.
+  - (* Assign-Assign *)
+    intros S0 S1 Θ0 Θ1 Ξ α β τ P Q Hflex Hd IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_assign__assign with (τ := τ) (Q := Q); assumption.
+  - (* Assign-Depend *)
+    intros S0 S1 Θ0 Θ1 Ξ α β P Hne Hin Hd IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | apply e_assign__depend; assumption ].
+  - (* Assign-Skip *)
+    intros S0 S1 Θ0 Θ1 Ξ α β P Hne Hnf Hd IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | apply e_assign__skip; assumption ].
+  - (* Assign-SkipRigid *)
+    intros S0 S1 Θ0 Θ1 Ξ α β P Hnf Hd IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | apply e_assign__skip_rigid; assumption ].
+  - (* Assign-SkipTmVar (typ payload) *)
+    intros S0 S1 Θ0 Θ1 Ξ α x A P Hd IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | apply e_assign__skip_tm_var; assumption ].
+  - (* Assign-SkipTmVar (skl payload) *)
+    intros S0 S1 Θ0 Θ1 Ξ α x Q P Hd IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | apply e_assign__skip_tm_skl; assumption ].
+  (* ---- unify ---- *)
+  - (* Flex-Flex-Id *)
+    intros S Θ0 α Hflex S0' Heq.
+    exists S0'. split; [ assumption | apply e_unify__flex_id; assumption ].
+  - (* Flex-Flex-L *)
+    intros S Θ0 α β Hne Hflex S0' Heq.
+    exists S0'. split; [ assumption | apply e_unify__flex_l; assumption ].
+  - (* Flex-Flex-R *)
+    intros S Θ0 α β Hne Hflex S0' Heq.
+    exists S0'. split; [ assumption | apply e_unify__flex_r; assumption ].
+  - (* Flex-Flex-Assign *)
+    intros S0 S1 Θ0 Θ1 α1 τ α β Q Hf1 Hf2 Hd IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_unify__flex_assign with (Q := Q); assumption.
+  - (* Flex-Flex-Skip *)
+    intros S0 S1 Θ0 Θ1 α1 α β Hne1 Hne2 Hd IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | apply e_unify__flex_skip; assumption ].
+  - (* Flex-Flex-Skip' *)
+    intros S0 S1 Θ0 Θ1 c b α β Hb Hd IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | apply e_unify__skip_other; assumption ].
+  (* ---- consis ---- *)
+  - (* Ghost *)
+    intros Δ1 Δ2 S Θ0 P0 Hdis S0' Heq.
+    exists S0'. split; [ assumption | apply e_consis__ghost; assumption ].
+  - (* Unit *)
+    intros Δ1 Δ2 S Θ0 S0' Heq.
+    exists S0'. split; [ assumption | apply e_consis__unit ].
+  - (* Rigid *)
+    intros Δ1 Δ2 S Θ0 α Hb S0' Heq.
+    exists S0'. split; [ assumption | apply e_consis__rigid; assumption ].
+  - (* Arrow — the one THREADING row: the sibling reads the first half's
+       output supply, so the two [=]-witnesses chain *)
+    intros Δ1 Δ2 S0 S1 S2 Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hd1 IH1 Hd2 IH2
+           S0' Heq.
+    destruct (IH1 _ Heq) as [S1' [HS1 Hd1']].
+    destruct (IH2 _ HS1) as [S2' [HS2 Hd2']].
+    exists S2'. split; [ exact HS2 | eapply e_consis__arrow; eassumption ].
+  - (* ForallInh — the opener is drawn from the supply *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hα Hd IH S0' Heq.
+    destruct (IH (add α S0')) as [S1' [HS1 Hd']]; [ clear - Heq; fsetdec | ].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_consis__forall_inh with (α := α);
+      [ clear - Hα Heq; fsetdec | exact Hd' ].
+  - (* ForallSyn *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hα Hd IH S0' Heq.
+    destruct (IH (add α S0')) as [S1' [HS1 Hd']]; [ clear - Heq; fsetdec | ].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_consis__forall_syn with (α := α);
+      [ clear - Hα Heq; fsetdec | exact Hd' ].
+  - (* UnivGhost *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q Hd IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | apply e_consis__univ_ghost; exact Hd' ].
+  - (* UnivGhost1 *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hα Hd IH S0' Heq.
+    destruct (IH (add α S0')) as [S1' [HS1 Hd']]; [ clear - Heq; fsetdec | ].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_consis__univ_ghost1 with (α := α);
+      [ clear - Hα Heq; fsetdec | exact Hd' ].
+  - (* UnivGhost2 *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q Hgd Hnf Hd IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | apply e_consis__univ_ghost2; assumption ].
+  - (* Flex *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α β Hd IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | apply e_consis__flex; exact Hd' ].
+  - (* FlexL *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P0 Hnf Hd IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | apply e_consis__flex_l; assumption ].
+  - (* FlexR *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P Hnf Hd IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | apply e_consis__flex_r; assumption ].
+  - (* GhostR *)
+    intros Δ1 Δ2 S Θ0 P Hdis S0' Heq.
+    exists S0'. split; [ assumption | apply e_consis__ghost_r; assumption ].
+  - (* UnivGhostR *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q Hgd Hnf Hd IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | apply e_consis__univ_ghost_r; assumption ].
+Qed.
+
+(** The three projections. *)
+Corollary e_assign_supply_respect : forall S0 Θ0 Ξ α P S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e.
+Proof. apply e_assign_unify_consis_supply_respect. Qed.
+
+Corollary e_unify_supply_respect : forall S0 Θ0 α β S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e.
+Proof. apply e_assign_unify_consis_supply_respect. Qed.
+
+Corollary e_consis_supply_respect : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\
+    {{ S0' ↝ S1' ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e.
+Proof. apply e_assign_unify_consis_supply_respect. Qed.

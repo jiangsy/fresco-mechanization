@@ -420,3 +420,43 @@ Proof.
   - apply a_guess__sk.
   - apply a_guess__ty. eapply e_guess_mono_sound; eassumption.
 Qed.
+
+(* ===================================================================== *)
+(*  §7  THE SUPPLY IS READ UP TO [=]                                      *)
+(*                                                                        *)
+(*  A supply is a SET, so a caller that has assembled one by a different  *)
+(*  route holds an [=]-variant, not the same term — and the judgement     *)
+(*  takes it as an INDEX, which no [rewrite] can move under.  Every       *)
+(*  consumer above therefore needs this transport; §8c.10's completeness  *)
+(*  level is the first, and prop_look_pair.v §1's look-side twin          *)
+(*  ([e_looksub_lookeq_supply_respect]) is the template, including the    *)
+(*  ∃-form: the OUTPUT supply moves too, and only up to [=].              *)
+(* ===================================================================== *)
+
+Lemma e_guess_mono_supply_respect : forall S0 P S1 Ξ A,
+  e_guess_mono S0 P S1 Ξ A ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\ e_guess_mono S0' P S1' Ξ A.
+Proof.
+  induction 1; intros S0' Heq.
+  - (* hole — the one row that INVENTS *)
+    exists (add α S0'). split; [ clear - Heq; fsetdec | ].
+    apply e_guess_mono__hole. clear - H Heq. fsetdec.
+  - (* tophole *)
+    destruct (IHe_guess_mono _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_guess_mono__tophole; exact Hd ].
+  - (* var *)
+    exists S0'. split; [ exact Heq | apply e_guess_mono__var ].
+  - (* unit *)
+    exists S0'. split; [ exact Heq | apply e_guess_mono__unit ].
+  - (* arrow — threaded, so the two [=]-witnesses chain *)
+    destruct (IHe_guess_mono1 _ Heq) as [S1' [HS1 Hd1]].
+    destruct (IHe_guess_mono2 _ HS1) as [S2' [HS2 Hd2]].
+    exists S2'. split; [ exact HS2 | eapply e_guess_mono__arrow; eassumption ].
+  - (* forall — the witness is drawn FROM the supply *)
+    destruct (IHe_guess_mono (add β S0')) as [S1' [HS1 Hd]];
+      [ clear - Heq; fsetdec | ].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_guess_mono__forall with (β := β);
+      [ clear - H Heq; fsetdec | exact Hd ].
+Qed.

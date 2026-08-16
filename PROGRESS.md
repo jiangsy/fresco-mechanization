@@ -323,6 +323,25 @@ an opener.  ⚙ No duplicate name added — `a_flex_tvar`'s weakening is
 MISSING IMPORT inside a `match goal` body reports "No matching clauses",
 not a missing reference (`ptyp_to_pskl_open`, prop_coercions.v).
 
+⭐ **AND THE LEVEL'S SKELETON IS STARTED** (all Qed, axiom-free):
+`prop_consis_complete.v` §1 `e_consis_call_order_sind` — the order's
+strong induction principle, every premise DOUBLED (the order premise and
+its motive companion) per prop_run_complete.v §2a's idiom, over all
+three tag constructors; ⚙ `Assign-SolveM`'s premise is an
+`e_guess_mono_order`, not a recursive call, so it is the one premise
+with no companion.  Plus the SUPPLY-RESPECT transports both routes need
+— `prop_guess.v` §7 `e_guess_mono_supply_respect` and `prop_consis.v` §9
+`e_assign_unify_consis_supply_respect` (+ the three projections), in
+prop_look_pair.v §1's ∃-form (the OUTPUT supply moves too, and only up
+to `[=]`): a supply is a SET carried as a judgement INDEX, so a caller
+holding an `[=]`-variant cannot `rewrite` it into place.  Only four rows
+do work — `Assign-SolveM` through `guess^TY`, and the three ∀ rows whose
+opener is drawn from the supply — and `U-Arrow` is where the two
+∃-witnesses chain.  ⚠️ Two naming traps: section hypotheses' leading
+args are all implicit under `Set Implicit Arguments` (pin with `@`), and
+a blanket `intros` after a `mutind` makes hypothesis names unstable —
+write the intro lists out.
+
 
 ## 2026-08-16 — ⭐⭐⭐ **§8c.9 CLOSED: THE EXTRACT LEVEL (campaign level 4) IS COMPLETE — the b-core and the assembly are Qed**
 
