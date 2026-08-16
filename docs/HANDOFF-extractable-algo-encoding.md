@@ -2664,24 +2664,31 @@ induction on `size P1 + size P1'` (`rel_pskl_size`) with BOTH
 e-derivations INVERTED at each step (never structurally inducted), the
 fused fold hypothesis riding as designed; each side's freshness facts
 read off its own supply thread; same-root binder pairs still pair
-openers with NO rebinds.  What the e-side re-rooting needs, in
-dependency order (all mirrors of Qed a-side facts):
+openers with NO rebinds.
 
-- an e-side SUPPLY-RESPECT lemma (`[=]`-transport of both supply
-  indexes — `swap_atoms` images are only `[=]`-equal to the rule
-  shapes);
-- the e-SWAP KIT: equivariance of `e_looksub`/`e_lookeq` under one
-  swap, supplies via `swap_atoms` (template `a_looksub_lookeq_swap`,
-  prop_swap.v:913; set images via prop_tag §1's `swap_atoms_spec` /
-  `swap_atoms_add`);
-- e-R″ (strip ⫯ subject; NO swaps — pure restructuring, supplies
-  preserved exactly) and e-R′ (∀-subject opened first at a chosen
-  `γ ∉ S1`; its ForallL/ForallR cases rebind by ONE e-swap);
-- the b-core itself, then §6c with `Hhyg`.
+⭐ **THE e-SIDE LOOK KIT IS LANDED** (`frost/ext_algo/prop_look_pair.v`
+§1, Qed, axiom-free, 2026-08-16) — and it came out SMALLER than
+planned, because the e-look's CONTEXT IS INERT (every freshness
+condition reads the supply; the context only mirrors the a-shape):
 
-⛔ STILL OPEN, in order: e-supply-respect, e-swap kit, e-R″/e-R′, the
-b-core pair induction (§6b, new file `prop_look_pair.v` above
-prop_run_complete), the §6c assembly `e_extract_impl_complete` /
+- §1a `e_looksub_lookeq_ctx_any` — a derivation transports to ANY
+  context; replaces every a-side `ctx_exchange` surgery.
+- §1b `e_looksub_lookeq_supply_respect` — both supply indexes
+  transport along `[=]` (the re-rootings re-associate `add`s).
+- §1c e-R″ `e_looksub_strip_tophole_l` (outputs AND supplies exact)
+  and e-R′ `e_looksub_open_forall_l_first` — ⭐ stated with an
+  EXISTENTIAL opener (`∃ γ ∉ S0`, derivation of the γ-opened subject
+  at `add γ S0`): its ForallL case's premise IS the goal at the
+  derivation's own opener, its ForallR case reuses the IH's opener
+  below the rebuilt root.  Consequently NO e-swap is ever performed —
+  **the planned e-SWAP KIT is NOT NEEDED and was not built** (the
+  b-core pairs whatever opener e-R′ returns; its freshness class,
+  `∉ S0`, is the same as any e-opener's).
+
+⛔ STILL OPEN, in order: the b-core pair induction (§6b,
+prop_look_pair.v §2 — it will need prop_look_pair to import
+prop_solve_rel and prop_run_complete for the transports and the §6a
+peel), the §6c assembly `e_extract_impl_complete` /
 `e_extract_run_complete` (WITH the Hhyg premise — record it in the
 statement's doc comment and in PROGRESS.md when it lands).  Then the
 consis trio and sub per §8c.6's
