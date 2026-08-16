@@ -307,6 +307,23 @@ flagship path, which calls consistency on ghost-carrying skeletons.
 
 ⚠️ Levels 1–4 are untouched and remain Qed.
 
+⭐ **AND THE FIRST ROUTE-INDEPENDENT PIECE IS LANDED**: `prop_consis.v` §8
+— `e_assign_unify_consis_refl` (Qed, axiom-free) with the projections
+`e_unify_refl_ctx` and `e_assign_self_flex`.  It discharges the benign
+`unifyvar` overlap above: `α̂ ≈ᵘ α̂` leaves the CONTEXT untouched, which
+is exactly the runner's `Flex-Flex-Id` answer.  Three motives that must
+travel together — the consis motive's `FlexL`/`FlexR` rows are refuted
+by the ASSIGN motive ("the walk can only have reached `α̂` through a
+flex-bound head"), and `Flex-Flex-Assign`'s premise is a
+self-consistency of a `ptyp` PAYLOAD, so only Unit/Rigid/Arrow/Flex fire
+and none of them moves the context.  ⚠️ The SUPPLY is a different
+matter and is deliberately not claimed: a ∀ payload's `ForallInh` draws
+an opener.  ⚙ No duplicate name added — `a_flex_tvar`'s weakening is
+`algo/prop_basic.v`'s `a_flex_tvar_weaken_app`.  ⚠️ Trap re-paid: a
+MISSING IMPORT inside a `match goal` body reports "No matching clauses",
+not a missing reference (`ptyp_to_pskl_open`, prop_coercions.v).
+
+
 ## 2026-08-16 — ⭐⭐⭐ **§8c.9 CLOSED: THE EXTRACT LEVEL (campaign level 4) IS COMPLETE — the b-core and the assembly are Qed**
 
 Five commits (`43fc259` probe+design, `ffafc83` kit, `e314bff` eq-core,
