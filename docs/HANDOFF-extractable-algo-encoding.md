@@ -2857,5 +2857,48 @@ emitting e-side folds directly from the completeness constructions) is
 the flagship's burden, exactly the "transport 4's role moves up"
 the third pass anticipated.
 
-⛔ NEXT: the consis trio (§8c.10), then sub, pat/typing, and the
+### 8c.10 ⛔ THE CONSIS TRIO — the design crux, settled by inspection (2026-08-16)
+
+Level 5's fork (rel_aenv transports vs determinism-up-to-renaming) was
+to be decided by "does any rule re-read a threaded output in a
+premise".  **Checked against the rules — it does**, in two places:
+`e_consis__arrow` runs its SECOND premise at `Θ1`, the first premise's
+OUTPUT context (def_consis.v:183), and `e_assign__assign` runs its
+consistency premise at `Ξ ++ Θ0` and re-wraps the resulting `Θ1`
+(:96).  So the output context is DATA that later premises read, not a
+by-product — a status-only interface like `flex_agree_rel` cannot
+carry it.
+
+⚠️ And relating contexts here is strictly heavier than at the extract
+level: payloads are `ptyp` (`abind_flex_mono_def τ`,
+algo/def_rules.v:63), so a `rel_aenv` would need a ptyp-level
+companion to `rel_pskl`, plus transports for all three judgements —
+a whole new layer.
+
+⭐⭐ **THE LEVEL-4 LESSON COLLAPSES THE FORK: go RUNNER-SIDED from the
+start.**  The extract level's b-core did NOT need a free-standing
+relation between two arbitrary derivations — and the attempt to state
+one was FALSE (see the fourth pass).  Stating level 5 the same way —
+side 1 an arbitrary e-derivation, side 2 the RUNNER'S computation —
+means the motive relates the derivation's `Θ1` to the RUNNER'S output
+context, which is a single relation carried through one induction, not
+a transport layer that must compose with itself.  Build `rel_aenv`
+only if a case genuinely needs it, and expect the same YIELD-HATCH
+trick where a generative row (Assign-SolveM's `guess^TY`) makes the
+two output contexts differ by invented names.
+
+⭐ **The runner's shape is already favourable**: the trio extracts as
+ONE tagged `Equations` block, `e_consis_call_impl`, over a
+`consis_call` sum (def_consis_impl.v:471) — so completeness is ONE
+induction over `e_consis_call_order`, mirroring levels 1–2's
+order-sind template, NOT the 3-way mutual induction the original plan
+assumed.  Per-priority reorder lemmas are still owed wherever the
+dispatch commits (the file's own comments flag the convoyed
+`Assign-UnivGhost-Id` row as the first such site).
+
+⚠️ Carry the §6c speed trap: kill each runner call with the `kill_*`
+recipe (match the APPLICATION, `assert (… <> None)`, destruct that),
+never by capturing the goal's nested match.
+
+⛔ NEXT: §8c.10 as scoped above, then sub, pat/typing, and the
 flagship — per §8c.6's NEXT list.
