@@ -47,6 +47,7 @@
 
 Require Import Coq.Lists.List.
 Require Import Coq.Bool.Sumbool.
+Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 From Equations Require Import Equations.
 
@@ -3801,4 +3802,153 @@ Proof.
     intros Hne.
   - discriminate.
   - exact (False_ind _ (Hne eq_refl)).
+Qed.
+
+(* ===================================================================== *)
+(*  §6  The EXTRACT level (§8c.3 level 4) — §8c.9's plan                  *)
+(* ===================================================================== *)
+
+(* --------------------------------------------------------------------- *)
+(*  §6a  The ∀-peel on the solve layer — crossing 2's engine              *)
+(*                                                                        *)
+(*  A ghost-free ∀ target may be read WHOLE by the collection (LS-Var    *)
+(*  now) or PEELED first (LS-ForallR), and the fold pays the difference  *)
+(*  here: at a ∀ target only SS-Var (target ignored), the two            *)
+(*  subject-peels, and SS-ForallR itself can root a solve, so the peel   *)
+(*  commutes all the way down.  EXISTENCE-only, deliberately: the        *)
+(*  extract level's run-completeness consumes a bare ∃-fold (level 3's   *)
+(*  statement); the yield relation is the SUB level's business and will  *)
+(*  strengthen this lemma when that level needs it (§8c.9).              *)
+(*                                                                        *)
+(*  ⚙ The SS-ForallR case rebinds its opener to the REQUESTED β and then *)
+(*  STRIPS the now-spent [β ~ tvar] entry by [a_solve_sub_eq_ctx_change] *)
+(*  — a rigid entry is invisible to the solve: [a_flex_tvar] is false at *)
+(*  it either way, and the freshness avoid-sets only shrink.             *)
+(* --------------------------------------------------------------------- *)
+
+Lemma a_flex_tvar_strip_tvar : forall β (Θ : aenv) α,
+  β `notin` dom Θ ->
+  a_flex_tvar ((β ~ abind_tvar) ++ Θ) α ->
+  a_flex_tvar Θ α.
+Proof.
+  intros * Hfr Hf.
+  unfold a_flex_tvar in *.
+  destruct Hf as [Hb | [τ Hb]].
+  - apply binds_cons_1 in Hb.
+    destruct Hb as [[Heqx Heqa] | Hb']; [ discriminate | ].
+    left; exact Hb'.
+  - apply binds_cons_1 in Hb.
+    destruct Hb as [[Heqx Heqa] | Hb']; [ discriminate | ].
+    right; exists τ; exact Hb'.
+Qed.
+
+Lemma a_flex_weaken_cons : forall (e : atom * abind) (Θ : aenv) P,
+  a_flex Θ P ->
+  a_flex (e :: Θ) P.
+Proof.
+  intros * Hf.
+  inversion Hf; subst.
+  - apply a_flex__var. right. assumption.
+  - eapply a_flex__var_def. right. eassumption.
+Qed.
+
+Lemma a_solve_sub_peel_forall_r_n : forall n P B Θ Ξ P' β,
+  size_pskl P + size_pskl B < n ->
+  {{ Θ ⊢ₛ P ≼[ mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ P' }}a ->
+  β `notin` ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl B ->
+  exists Ξ' P'',
+    {{ Θ ⊢ₛ P ≼[ mode_tc ] (open_pskl_wrt_pskl B (pskl_var_f β))
+       ⤳ Ξ' ⨾ P'' }}a.
+Proof.
+  induction n as [ | n IH ]; intros P B Θ Ξ P' β Hsz Hd Hβ;
+    [ exfalso; clear - Hsz; lia | ].
+  inversion Hd; subst.
+  - (* SS-Var: the target is ignored *)
+    do 2 eexists. apply a_solve_sub__var.
+  - (* SS-ForallL: rebind the subject opener away from β, IH, rebuild *)
+    match goal with
+    | Hfr : ?g `notin` union _ _ ,
+      Hp : a_solve_sub ((?g ~ abind_tvar) ++ _) _ _ _ _ _ |- _ =>
+        rename Hfr into Hγfr; rename Hp into Hprem
+    end.
+    match goal with
+    | Hprem : a_solve_sub _ _ (open_pskl_wrt_pskl ?B0 _) _ _ _ |- _ =>
+        rename B0 into P0
+    end.
+    destruct (atom_fresh (ftvar_in_aenv Θ ∪ ftvar_in_pskl P0
+                ∪ ftvar_in_pskl B ∪ {{ β }})) as [γ' Hγ'].
+    assert (Hγ'r : γ' `notin` ftvar_in_aenv Θ ∪ ftvar_in_pskl P0
+                     ∪ ftvar_in_pskl (pskl_all_syn B))
+      by (simpl; clear - Hγ'; fsetdec).
+    destruct (a_solve_sub_rebind_l Hprem Hγfr Hγ'r) as [Ξ2 [P2 Hp']].
+    assert (Hsz' : size_pskl (open_pskl_wrt_pskl P0 (pskl_var_f γ'))
+                     + size_pskl B < n)
+      by (rewrite size_pskl_open_pskl_wrt_pskl_var;
+          clear - Hsz; simpl in *; lia).
+    assert (Hβ' : β `notin`
+              ftvar_in_aenv ((γ' ~ abind_tvar) ++ Θ)
+              ∪ ftvar_in_pskl (open_pskl_wrt_pskl P0 (pskl_var_f γ'))
+              ∪ ftvar_in_pskl B).
+    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0
+                    (pskl_var_f γ')) as Hup.
+      clear - Hβ Hγ' Hup. simpl in *. fsetdec. }
+    destruct (IH _ _ _ _ _ β Hsz' Hp' Hβ') as [Ξ3 [P3 Hpeel]].
+    do 2 eexists.
+    apply a_solve_sub__forall_l with (β := γ').
+    + pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B
+                    (pskl_var_f β)) as Hup.
+      clear - Hγ' Hup. simpl in *. fsetdec.
+    + exact Hpeel.
+  - (* SS-UnivGhostL *)
+    match goal with
+    | Hp : a_solve_sub _ _ ?P0 (pskl_all_syn _) _ _ |- _ =>
+        assert (Hsz' : size_pskl P0 + size_pskl B < n)
+          by (clear - Hsz; simpl in *; lia);
+        assert (Hβ' : β `notin` ftvar_in_aenv Θ ∪ ftvar_in_pskl P0
+                        ∪ ftvar_in_pskl B)
+          by (clear - Hβ; simpl in *; fsetdec);
+        destruct (IH _ _ _ _ _ β Hsz' Hp Hβ') as [Ξ3 [P3 Hpeel]]
+    end.
+    do 2 eexists. apply a_solve_sub__univ_ghost_l. exact Hpeel.
+  - (* SS-Check: guarded ∀ has no constructor *)
+    match goal with
+    | Hg : guarded_pskl (pskl_all_syn _) |- _ => inversion Hg
+    end.
+  - (* SS-ForallR: rebind its opener to β, then strip the spent entry *)
+    match goal with
+    | Hfr : ?g `notin` union _ _ ,
+      Hp : a_solve_sub ((?g ~ abind_tvar) ++ _) _ _ _ _ _ |- _ =>
+        rename Hfr into Hγfr; rename Hp into Hprem
+    end.
+    assert (Hβr : β `notin` ftvar_in_aenv Θ ∪ ftvar_in_pskl P
+                    ∪ ftvar_in_pskl B)
+      by (clear - Hβ; fsetdec).
+    destruct (a_solve_sub_rebind_r Hprem Hγfr Hβr) as [Ξ2 [P2 Hp']].
+    exists Ξ2, P2.
+    apply (proj1 a_solve_sub_eq_ctx_change) with
+      (Θ := (β ~ abind_tvar) ++ Θ).
+    + exact Hp'.
+    + clear - Hβ. simpl. fsetdec.
+    + intros α0 Hf0.
+      eapply a_flex_tvar_strip_tvar; [ | exact Hf0 ].
+      pose proof (dom_subset_ftvar_in_aenv Θ) as Hds.
+      clear - Hβ Hds. fsetdec.
+    + intros P0 Hf0. apply a_flex_weaken_cons. exact Hf0.
+  - (* SS-GhostL: guarded ∀ has no constructor *)
+    match goal with
+    | Hg : guarded_pskl (pskl_all_syn _) |- _ => inversion Hg
+    end.
+Qed.
+
+(** Crossing 2's engine, packaged (see the box above). *)
+Lemma a_solve_sub_peel_forall_r : forall P B Θ Ξ P' β,
+  {{ Θ ⊢ₛ P ≼[ mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ P' }}a ->
+  β `notin` ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl B ->
+  exists Ξ' P'',
+    {{ Θ ⊢ₛ P ≼[ mode_tc ] (open_pskl_wrt_pskl B (pskl_var_f β))
+       ⤳ Ξ' ⨾ P'' }}a.
+Proof.
+  intros.
+  eapply a_solve_sub_peel_forall_r_n
+    with (n := S (size_pskl P + size_pskl B)); eauto.
 Qed.

@@ -2498,12 +2498,27 @@ push/swap kit (§3a + §5's `flex_agree_swaps_left`), the level-1/2/3
 `*_run_complete`s, and `a_looksub_forall_r_first` (which stays as-is;
 the fused motive replaces the plan of strengthening it).
 
-**Foundations landed 2026-08-16** in
-`frost/ext_algo/prop_look_equiv.v` (new file; see its header):
-`a_lookeq_cstrs_pure_eq` (slack-4 support), `a_looksub_subject_absent`
-/ `a_lookeq_subject_absent` (slack 4), the ◇-target identity steps
-(slack 3), and `a_solve_cstr_app_inv` (the Arrow decomposition).  ⛔
-STILL OPEN, in order: `a_solve_sub_peel_forall_r` (+ the context-strip
-lemma it needs), `flex_agree_rel`, the b-core pair induction, the §6
-assembly `e_extract_impl_complete` / `e_extract_run_complete`.  Then
-the consis trio and sub per §8c.6's NEXT list.
+**Landed 2026-08-16, all Qed and axiom-free:**
+
+- `frost/ext_algo/prop_look_equiv.v` (new file, below the runner
+  stack): `a_lookeq_cstrs_pure_eq`, `a_looksub_subject_absent` /
+  `a_lookeq_subject_absent` (crossing 4), the ◇-target identity
+  inversions on both solve layers (crossing 3), and
+  `a_solve_cstr_app_inv` (the Arrow decomposition); the fold's two head
+  inversions moved in from prop_run_complete.v §5.
+- **THE ∀-PEEL LEMMA is Qed** — `a_solve_sub_peel_forall_r`
+  (prop_run_complete.v §6a), by exactly the recipe above: size
+  induction on `size P + size B`; the SS-ForallL case rebinds its
+  opener away from the requested β before the IH
+  (`a_solve_sub_rebind_l`), the SS-ForallR case rebinds TO β
+  (`a_solve_sub_rebind_r`) and strips the spent `β ~ tvar` entry with
+  `a_solve_sub_eq_ctx_change` via two new inline helpers
+  (`a_flex_tvar_strip_tvar`, `a_flex_weaken_cons`).  ⚠️ Traps paid:
+  `a_flex_tvar` has TWO disjuncts (it is `a_binds_tvar` that has
+  three); `clear -.` is not syntax (keep one hypothesis); the file
+  needed its first `Require Import Coq.micromega.Lia`.
+
+⛔ STILL OPEN, in order: `flex_agree_rel`, the b-core pair induction
+(§6b — the fused motive above, consuming the peel at crossing 2), the
+§6c assembly `e_extract_impl_complete` / `e_extract_run_complete`.
+Then the consis trio and sub per §8c.6's NEXT list.

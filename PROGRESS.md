@@ -269,6 +269,25 @@ to be true; the probe is the exhaustive argument it lacked.
 Handoff: §8c.8 rewritten; next is §8c.9 (option (b) at the extract
 level).
 
+⭐ SAME DAY, §8c.9 OPENED AND ITS FIRST TWO PIECES LANDED (all Qed,
+axiom-free, `make coq` green): (1) the extract level's design is
+settled and recorded — the b-core is a FUSED look-pair/fold-transport
+size induction (no `rel_cstrs` relation; the Arrow case composes via
+the motive's ∀-quantified accumulators), against a COMPLETE crossing
+inventory (fresh names / directional ∀-peel / directional ◇-emission /
+α-free collapse); (2) the foundations file
+`frost/ext_algo/prop_look_equiv.v` (pure-eq collections, α-free
+collapse on both look layers, ◇-target identity inversions on both
+solve layers, `a_solve_cstr_app_inv`; the fold's head inversions moved
+in from prop_run_complete.v §5); and (3) ⭐ **the ∀-PEEL LEMMA**
+`a_solve_sub_peel_forall_r` (prop_run_complete.v §6a) — crossing 2's
+engine: a solve at a ghost-free ∀ target yields one at the β-peeled
+target, by size induction with rebind-before-IH (ForallL), and
+rebind-to-β + context-STRIP by `a_solve_sub_eq_ctx_change` (ForallR; a
+rigid entry is invisible to the solve).  Still open: `flex_agree_rel`,
+the b-core induction (§6b), the assembly `e_extract_run_complete`
+(§6c).
+
 ## 2026-08-15 (h) — ⛔ **SCOUTING RESULT: the EXTRACT level's planned route is REFUTED — the COLLECTION is not deterministic up to renaming, and the root cause is a side condition the paper omits**
 
 §8c.6's next item was to repeat level 3's transport one layer up, which
