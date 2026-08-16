@@ -3641,3 +3641,59 @@ inherited information (the principle), inherited information is finite and
 consumed (ForallR consumes the pattern's quantifiers, Arrow consumes the
 mode, ForallL consumes the subject's head chain and cannot re-arm it), and
 the flexible walks consume the context.
+
+## ⭐ THE CONSISTENCY RULES ARE NON-DETERMINISTIC IN THEIR OUTPUT CONTEXT, and the implementation's rule ORDER is what resolves it (2026-08-16)
+
+Machine-checked: `mechanization/cex/probe_consis_ghost_flex.v`
+(five exhibits, assumptions-closed).
+
+### The finding
+
+`U-GhostR` and `U-FlexL` overlap, and their outputs differ.  At
+
+    Θ ⊢[Δ1 | Δ2 | ◇]  α̂  ∼  ?  ⊣ ?          (α̂ an UNDEFINED flexible)
+
+- `U-GhostR` needs only `Δ1 ∩ ftv(α̂) = ∅` (algorithmic.tex:782), which
+  holds — `Δ1` collects the ∀-rows' RIGID openers, never a flexible —
+  and answers `α̂ ⊣ Θ`, leaving the context alone.
+- `U-FlexL` needs `\nonflex{P_0}` (:757).  `nonflex` rules out a
+  flexible VARIABLE, not a hole, so it holds of `◇`, and the rule
+  assigns `α̂ := ◇`.  Since `guess^TY(◇)` invents a fresh flexible, the
+  output context is `Θ` with `α̂` SOLVED — `α̂ ↦ β̂`, `β̂` fresh.
+
+So the same premises derive two different output contexts.  `U-Ghost`
+and `U-FlexR` overlap the same way at the mirror node (pattern `α̂`,
+subject `◇`).
+
+Neither choice is wrong — the solution `α̂ ↦ β̂` with `β̂` fresh and
+unconstrained is information-free, so the two answers are equi-general.
+But they are not equal, and they are not related by a renaming: one
+context has an entry the other does not.
+
+### Why it matters
+
+1. **`type.ml`'s clause order is load-bearing and unstated.**  The
+   reference implementation matches the hole rows FIRST (`join_sk`,
+   :143-262), so it always takes `U-GhostR` / `U-Ghost` and returns the
+   more general answer.  The figure gives no priority, so a reader
+   implementing the rules as written may solve the flexible instead and
+   compute a strictly less general context.  Worth one sentence in the
+   rule figure, or a `nonghost` side condition on `U-FlexL`/`U-FlexR`.
+
+2. **It costs any "the implementation realizes the rules" proof a whole
+   layer.**  `U-Arrow` runs its second premise at the first's OUTPUT
+   context, so a completeness proof of the implementation against the
+   rules must transport a derivation from the rules' output context to
+   the implementation's.  Because the two differ by a solved-to-fresh
+   flexible rather than by a renaming, that transport is a
+   generalization (`κ ∷ Θ0 ⊑ Θ`) argument, not a bookkeeping one.  This
+   is the obstacle recorded in
+   `docs/HANDOFF-extractable-algo-encoding.md` §8c.10b.
+
+### What is NOT affected
+
+Soundness and completeness of consistency against the declarative
+system (`a_consis_sound`, `a_consis_complete` / `complete_mu`) are
+unaffected: they quantify over the derivations that exist, and the
+optimality package is stated up to `⊑` precisely because the
+algorithm's answers are only determined up to generality.

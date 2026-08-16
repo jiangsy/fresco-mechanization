@@ -240,7 +240,74 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-16 (latest) — ⭐⭐⭐ **§8c.9 CLOSED: THE EXTRACT LEVEL (campaign level 4) IS COMPLETE — the b-core and the assembly are Qed**
+## 2026-08-16 (latest) — ⛔⭐ **§8c.10 SECOND PASS: the consis trio's scoped output relation is REFUTED — the runner and the rules diverge at a ghost-vs-flexible node, and the divergence is not a renaming**
+
+New probe `cex/probe_consis_ghost_flex.v` (five exhibits,
+assumptions-closed).  §8c.10 had left exactly one decision to the
+proof — the shape of level 5's output relation, recommended as
+"equality up to a RENAMING, forced only by `Assign-SolveM`'s
+`guess^TY`".  Settled against real goals; the recommendation is wrong.
+
+⛔ **THE DIVERGENCE.**  At (pattern `◇`, subject `α̂`) with `α̂` an
+UNDEFINED flexible, BOTH `U-GhostR` and `U-FlexL` fire — `nonflex{P0}`
+rules out a flexible VARIABLE, not a hole — and their output CONTEXTS
+differ: `U-GhostR` leaves `Θ0` alone, `U-FlexL` SOLVES `α̂` to the
+fresh flexible `guess^TY(◇)` invents.  The RUNNER takes `U-GhostR`,
+machine-checked by REDUCING `e_consis_run` itself
+(`probe_consis_runner_ghostr`) rather than reading the clause order.
+The mirror pair (pattern `α̂`, subject `◇`) diverges identically,
+`U-Ghost` against `U-FlexR`.  ⚠️ This is the paper's own system:
+`U-FlexL`/`U-FlexR` carry only `nonflex` (algorithmic.tex:757, :764)
+and `frost/algo`'s twin is identical — filed in PAPER-GAPS.
+
+⭐ **THE CASE BACKBONE IS SETTLED** (by inspection, rule-by-rule
+against the runner's clause list).  Every OTHER (pattern, subject)
+shape pair admits exactly one rule, so the runner's first-match commits
+to the derivation's root everywhere else.  Two further overlaps are
+benign: `(◇, ◇)` agrees on both output and join, and inside `unifyvar`
+`Flex-Flex-Id` against `Flex-Flex-Skip`/`Flex-Flex-Assign` at `α̂ ≈ᵘ α̂`
+— which owes one small lemma ("unifying a variable with ITSELF returns
+supply and context unchanged"; its Assign route runs a
+self-consistency of a MONOTYPE, and monotypes admit only
+Unit/Rigid/Arrow/Flex, none of which invents a name or moves the
+context).  ⭐ `guarded_pskl` does NOT re-run level 4's hazard here:
+`U-UnivGhost2`/`U-UnivGhostR` additionally demand `nonflex`.
+
+⛔ **WHY IT BLOCKS, and it is ONLY `U-Arrow`.**  Re-checked: `U-Arrow`
+is the only row whose premise re-reads a threaded output as another
+premise's INPUT (`Assign-Assign` and `Flex-Flex-Assign` re-wrap their
+single premise's output but never re-read it).  So the level owes
+exactly "premise 2 derivable at the derivation's `Θd1` ⇒ derivable at
+the runner's `Θr1`".  The divergence is INFORMATION-FREE — the runner's
+context is strictly MORE GENERAL and cannot fail where the derivation
+succeeds — but not a renaming, so that step is a generalization
+argument.
+
+⛔ **AND THE CHEAP REPAIR IS NOT CLOSED** (inferred, not yet probed): a
+syntactic `alias α β̂ Θ` relation survives the delicate
+`Assign-SolveM`-at-the-alias-entry case (the occurs check forces
+`α ∉ ftv P`, so the substitution is the identity and the two sides land
+on matching contexts) but FAILS when the assign's target is `δ̂ ≠ α` and
+the pattern mentions `α`: the two sides end with
+`δ̂ ~ def guess(P[α:=β̂])` vs `δ̂ ~ def guess(P)`.  Equi-general,
+syntactically different ⇒ the relation must be up to RESOLUTION, i.e.
+the `a_inc`/`msubst_*` order of `algo/def_meta.v`.
+
+**THE FORK** (recorded in the handoff §8c.10b, awaiting the user):
+(A) round-trip through `algo/`'s metasubstitution layer plus a NEW a→e
+transport for the trio — ⚠️ cost checked, `a_consis_complete` /
+`complete_mu` is stated against the `ad_` layer, so (A) must go through
+`ad_` joins, not just through κ; (B) build the ⊑ layer directly on
+`e_`.  ⚙ A smaller third option if the ladder wants a rung now:
+hole-freeness is MAINTAINED by the whole recursion (`Assign-Assign` and
+`Flex-Flex-Assign` substitute `ptyp`s, which have no holes), so the
+hole-free restriction is exactly the originally-scoped design and
+yields `e_unify_run_complete` UNRESTRICTED — but it does not reach the
+flagship path, which calls consistency on ghost-carrying skeletons.
+
+⚠️ Levels 1–4 are untouched and remain Qed.
+
+## 2026-08-16 — ⭐⭐⭐ **§8c.9 CLOSED: THE EXTRACT LEVEL (campaign level 4) IS COMPLETE — the b-core and the assembly are Qed**
 
 Five commits (`43fc259` probe+design, `ffafc83` kit, `e314bff` eq-core,
 `8ecd372` sub-core, `6aa230c` assembly), all Qed, axiom-free, `make coq`

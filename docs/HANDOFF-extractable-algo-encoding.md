@@ -2902,3 +2902,134 @@ never by capturing the goal's nested match.
 
 ⛔ NEXT: §8c.10 as scoped above, then sub, pat/typing, and the
 flagship — per §8c.6's NEXT list.
+
+### 8c.10b ⛔⭐ SECOND PASS — the scoped output relation is REFUTED, and the case backbone is settled (2026-08-16)
+
+§8c.10 above left exactly one decision to the proof: the shape of the
+output relation, with the recommendation "equality up to a RENAMING,
+the renaming forced only by `Assign-SolveM`'s `guess^TY`".  **Settled
+against real goals, and the recommendation is wrong**
+(`cex/probe_consis_ghost_flex.v`, five exhibits, assumptions-closed).
+
+**⛔ THE FINDING (machine-checked).**  At a GHOST-versus-FLEXIBLE node
+
+    pattern ◇     subject α̂        (α̂ an UNDEFINED flexible)
+
+both `U-GhostR` and `U-FlexL` fire — `nonflex{P0}` rules out a
+flexible VARIABLE, not a hole — and their output CONTEXTS differ:
+
+    U-GhostR    Θ0                                  (unchanged)
+    U-FlexL     (α ~ def β̂) ++ (β̂ ~ flex) ++ Θ0'    (α̂ SOLVED)
+
+because `guess^TY(◇)` invents a fresh flexible (`e_guess_mono__hole`).
+**The RUNNER takes `U-GhostR`** — machine-checked by reducing
+`e_consis_run` itself (`probe_consis_runner_ghostr`), not merely read
+off the clause order: the consistency clause matches the PATTERN first
+and its `pskl_hole` arm is unconditional in the subject
+(def_consis_impl.v:759).  The mirror pair (pattern α̂, subject ◇)
+diverges identically, `U-Ghost` against `U-FlexR`.
+
+⚠️ This is the PAPER's system, not an encoding artefact: `U-FlexL` /
+`U-FlexR` carry only `\nonflex{P_0}` / `\nonflex{P}`
+(algorithmic.tex:757, :764) and `U-GhostR` only `Δ1 ∩ ftv(P) = ∅`
+(:782); `frost/algo`'s twin is identical (def_rules.v:1127-1137).
+Filed in PAPER-GAPS.
+
+**⭐ THE CASE BACKBONE IS SETTLED** (INSPECTED, rule-by-rule against
+the runner's clause list — not machine-checked; the enumeration is
+what a builder should re-verify case by case as the induction is
+written).  Every OTHER (pattern, subject) shape pair admits **exactly
+one** consistency rule, so the runner's first-match commits to the
+derivation's root everywhere else.  The complete overlap inventory:
+
+- (◇, α̂) and (α̂, ◇) — **the genuine divergence**, above.
+- (◇, ◇) — `U-Ghost` and `U-GhostR` agree on BOTH output and join.
+  Benign, no lemma owed.
+- inside `unifyvar`: `Flex-Flex-Id` overlaps `Flex-Flex-Skip` (at an
+  undefined non-matching head) and `Flex-Flex-Assign` (at a DEFINED
+  head), because neither carries `α ≠ β`.  Benign, but it owes one
+  small lemma: **`α̂ ≈ᵘ α̂` returns the supply AND the context
+  unchanged** — the Assign route runs a self-consistency of a
+  MONOTYPE, and monotypes have no ∀/⫯/◇, so only Unit / Rigid / Arrow
+  / Flex fire and none of them invents a name or moves the context.
+  State it jointly with `consis P ∼ P at a ptyp_to_pskl P` and prove
+  it by the trio's mutual induction.
+- everything else: unique.  In particular `guarded_pskl` does NOT
+  cause the level-4 hazard here, because `U-UnivGhost2` / `U-UnivGhostR`
+  additionally demand `nonflex`, which excludes the flexible variable
+  that made `guarded_pskl` dangerous at the look level.
+
+**⛔ WHY IT BREAKS THE DESIGN, and it is ONLY the Arrow row.**  The
+output relation is consumed in exactly ONE place: `U-Arrow`, the only
+row whose premise re-reads a threaded output as another premise's
+INPUT.  (Re-checked: `Assign-Assign` and `Flex-Flex-Assign` re-wrap
+their single premise's output but never re-read it; the ∀ rows split
+the head off theirs and have no sibling premise.  §8c.10's first pass
+cited these two as evidence that the output is "data later premises
+read" — that is right that a status-only interface cannot carry it,
+but the CONSUMER is Arrow alone.)  So what the level owes is:
+
+    given premise 2 derivable at the DERIVATION's Θd1,
+    derive it at the RUNNER's Θr1.
+
+The divergence is INFORMATION-FREE (α̂ solved to a fresh unconstrained
+flexible, so the runner's context is strictly MORE GENERAL and can
+never fail where the derivation succeeds), but it is **not a
+renaming**: Θd1 has one entry more than Θr1 and binds α̂ where the
+runner leaves it free.
+
+**⛔ AND A SYNTACTIC ALIAS RELATION IS NOT CLOSED** (INFERRED — worth
+a probe before anyone builds on it).  The obvious repair is a context
+operation `alias α β̂ Θ` (split at α, keep the prefix verbatim, replace
+`(α ~ b)` by `(α ~ def β̂) ++ (β̂ ~ b)`) and the claim
+`Θd = alias α β̂ Θr`, maintained.  It survives the easy cases —
+including the delicate one, `Assign-SolveM` at the alias entry, where
+the Θd side does `Assign-Assign` into a consistency that re-walks the
+SAME Depend block and lands on `β̂ ~ def guess(P)`, matching
+`alias α β̂` of the Θr side's `α ~ def guess(P)` exactly (the
+occurs-check forces `α ∉ ftv P`, so the substitution `P[α:=β̂]` is the
+identity).  It **fails** when the assign's TARGET is some δ̂ ≠ α and
+the pattern P DOES mention α: the Θd side takes `Assign-Assign` at the
+alias entry and ends with `δ̂ ~ def guess(P[α:=β̂])`, mentioning β̂,
+where the Θr side takes `Assign-Depend` and ends with
+`δ̂ ~ def guess(P)`, mentioning α.  Equi-general, syntactically
+different.  ⇒ the relation must be **up to RESOLUTION** — the two
+contexts induce the same idempotent substitution modulo the renaming
+`α ↦ β̂` — which is the `a_inc` / `msubst_*` metasubstitution order of
+`algo/def_meta.v`, not a syntactic context relation.
+
+**THE FORK, for the next session (USER DECISION).**  Both routes are
+multi-session; neither is the "one induction" §8c.10 scoped.
+
+  (A) **Reuse `algo/`'s metasubstitution layer.**  Project the Arrow
+      row's premise 2 to the `a_` side (`e_consis_sound`, Qed), move it
+      from Θd1 to the more general Θr1 with the `κ ∷ Θ0 ⊑ Θ` machinery,
+      and lift back to `e_` by a NEW a→e transport for the trio (the
+      analog of transport 5 — mechanically the same job: rename the
+      generated names to avoid the supply, `Δ-drop`/`Δ-guess` both make
+      `e_` the WEAKER side, so the direction is favourable).
+      ⚠️ COST CHECKED: the a-side generalization is not sitting there
+      ready.  `a_consis_complete` / `complete_mu`
+      (`algo/consis/prop_completeness_consis.v`, ~8600 lines) is stated
+      against the DECLARATIVE-in-algo layer — it takes an `ad_` join
+      and two `ad_refine_*_f` premises and returns an optimality
+      package — so route (A) would have to round-trip through `ad_`
+      joins, not just through κ.
+  (B) **Build the metasubstitution/⊑ layer directly on `e_`** and prove
+      one generalization transport for the trio.  Self-contained, no
+      a→e bridge and no `ad_` round trip, but duplicates machinery
+      `algo/` already has.
+
+  ⚙ A THIRD, SMALLER OPTION, if the ladder wants a rung now: the
+  divergence needs a `pskl_hole` on one side, and hole-freeness is
+  MAINTAINED by the entire recursion (arrow halves, ∀ openings, and —
+  the point — `Assign-Assign` / `Flex-Flex-Assign` substitute `ptyp`s,
+  which have no holes).  So level 5 restricted to hole-free inputs is
+  exactly the originally-scoped design (one induction, output relation
+  up to renaming).  That yields **`e_unify_run_complete` UNRESTRICTED**
+  — a unify call's only consistency premise is on `ptyp_to_pskl`
+  monotypes — and assign/consis restricted.  ⛔ It does NOT reach the
+  flagship path: subtyping and typing call consistency precisely on
+  ghost-carrying skeletons.
+
+⚠️ Nothing above changes levels 1–4; they are Qed and untouched.
