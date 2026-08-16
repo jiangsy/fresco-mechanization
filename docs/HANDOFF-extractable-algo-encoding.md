@@ -2802,12 +2802,60 @@ fold analog of transport 5 (or emits e-side folds directly from the
 completeness constructions) — the "transport 4's role moves up"
 already anticipated.
 
-⛔ STILL OPEN, in order: the b-core KIT (e-side collapse mirrors:
-pure-eq, subject-absent, hole-target, var-target inversion, the TIGHT
-`ftv C ⊆ (S1 ∖ S0) ∪ ftv P ∪ ftv P'` bound; the junk-target head
-transport; the keep-peel; the disjunctive e-ForallR-first;
-`flex_agree_rel` one-sided pushes + iff-pair extension; var-pattern
-fold totality/inversion; `a_solve_cstr` generated-fresh), the
-runner-sided b-core pair induction (§6b, prop_look_pair.v §2), the
-§6c assembly `e_extract_impl_complete` / `e_extract_run_complete`.
-Then the consis trio and sub per §8c.6's NEXT list.
+⭐⭐⭐ **THE EXTRACT LEVEL IS CLOSED (2026-08-16, four commits:
+`ffafc83` kit, `e314bff` eq-core, `8ecd372` sub-core, `6aa230c`
+assembly — all Qed, axiom-free, `make coq` green).**  What landed, in
+the order it was built:
+
+- **§2, the KIT** (prop_look_pair.v, 22 lemmas): `flex_agree_rel`
+  iff-pair cons + one-sided rigid pushes; the e-side collection
+  structure (pure-eq, the sub-shape `Ce ++ (at most one sub)`, the
+  α-free and ◇-target collapses, the var-target inversion, and the
+  TIGHT bound `ftv C ⊆ (S1 ∖ S0) ∪ ftv P ∪ ftv P'` — the interval form
+  the enrichment needs); the DISJUNCTIVE e-ForallR-first; the
+  var-pattern fold fixed point (build + invert, both with and without
+  a terminal sub); fold structure facts; the JUNK-TARGET head
+  transport; the KEEP-peel; and e-solve context equivalence with its
+  rigid-weakening corollary.
+- **§3, the b-CORE** — two size inductions, `bcore_eq` then
+  `bcore_sub` (the eq layer never calls the sub layer, so the eq half
+  stands alone and the sub half's Check row consumes it).  Both are
+  RUNNER-SIDED: side 1 an arbitrary e-derivation, side 2 the runner's
+  `Some`-equation.  The eq conclusion carries block pairing, the
+  interval/status-iff pack for its ρe extension, and the rel-or-HATCH
+  yield; the sub conclusion is BARE (`∃ fold2, uniq, L-avoid`).
+  Crossings paid exactly as designed: the (FlexR/UG2-var vs runner)
+  divergence by the junk transport into the hatch, the o2 crossing
+  (ForallR₁ vs runner-Var₂) by rebuilding SS-ForallR around a freshly
+  invoked runner Var-leaf at a RIGHT-enriched fold context, and the
+  (ForallL/UGL vs runner-ForallR) diagonals by re-rooting side 1 with
+  the disjunctive ForallR-first — its Var-bottom disjunct paid by the
+  keep-peel at a LEFT-enriched fold context.
+- **§4, the ASSEMBLY**: `e_extract_impl_complete` /
+  `e_extract_run_complete`.  Enrichment decision (a) works in its
+  fourth-pass form — `rigids (S1 ∖ S0)` per side, the hygienic e-fold
+  rigid-weakens into it and projects by `e_solve_cstr_sound`; stage 2
+  reads the b-core's fold back down to the runner's own context
+  through the rigid-prefix agreement.
+
+⚠️⚠️ **A MEASURED SPEED TRAP, new and general** (§6c): killing a
+runner call by matching the GOAL'S NESTED MATCH —
+`match goal with |- context [ match ?call with Some _ => _ | None => _
+end ] => destruct call …` — HANGS (>200 s, killed; the `context`
+selection can land on an inner stage whose type depends on an outer,
+not-yet-introduced result).  prop_run_complete.v §5c's `kill_*` recipe
+— match the APPLICATION with its argument metavariables, `assert (… <>
+None)` first, then `destruct` that exact application — does the same
+job in 0.05 s.  Use it at every level above.
+
+⛔ **WHAT THE LEVEL OWES UPWARD** (unchanged by the closure, and now
+concrete): `e_extract_*_complete` takes the look half AND the fold
+half as supply-threaded e-derivations on the SAME outputs, chained
+`Sh0 ↝ Sh1 ↝ Sf1`.  Transport 5 manufactures the look half from any
+raw look; the FOLD half has no transport yet — building one (or
+emitting e-side folds directly from the completeness constructions) is
+the flagship's burden, exactly the "transport 4's role moves up"
+the third pass anticipated.
+
+⛔ NEXT: the consis trio (§8c.10), then sub, pat/typing, and the
+flagship — per §8c.6's NEXT list.
