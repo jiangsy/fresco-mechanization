@@ -79,6 +79,7 @@ Require Import src.frost.ext_algo.def_solve_impl.
 Require Import src.frost.ext_algo.prop_solve.
 Require Import src.frost.ext_algo.prop_guess.
 Require Import src.frost.ext_algo.prop_solve_det.
+Require Import src.frost.ext_algo.prop_look_equiv.
 Require Import src.frost.ext_algo.def_consis_impl.
 Require Import src.frost.ext_algo.def_sub_impl.
 Require Import src.frost.ext_algo.def_pat_impl.
@@ -3528,29 +3529,10 @@ Proof.
             | intros a' b' Hin; apply Hav; right; exact Hin ].
 Qed.
 
-(** The fold's two inversions, packaged: the case bash needs handles on
-    the derivation's own block halves and its middle yield. *)
-Lemma a_solve_cstr_sub_inv : forall Θ m Q C P Ξ P',
-  {{ Θ ⊩ (a_cstr_sub m Q :: C) ⨾ P ⤳ Ξ ⨾ P' }}a ->
-  C = nil /\ {{ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}a.
-Proof.
-  intros * Hd. inversion Hd; subst. split; [ reflexivity | assumption ].
-Qed.
-
-Lemma a_solve_cstr_eq_inv : forall Θ Q C P Ξ P',
-  {{ Θ ⊩ (a_cstr_eq Q :: C) ⨾ P ⤳ Ξ ⨾ P' }}a ->
-  exists Ξ1 Ξ2 P'',
-    Ξ = Ξ2 ++ Ξ1
-    /\ {{ Θ ⊢ₑ P ∼ Q ⤳ Ξ1 ⨾ P'' }}a
-    /\ {{ (Ξ1 ++ Θ) ⊩ C ⨾ P'' ⤳ Ξ2 ⨾ P' }}a.
-Proof.
-  intros * Hd. inversion Hd; subst.
-  match goal with
-  | Hh : a_solve_eq _ _ _ ?X1 ?Pm, Ht : a_solve_cstr _ _ _ ?X2 _ |- _ =>
-      exists X1, X2, Pm
-  end.
-  repeat split; assumption.
-Qed.
+(* ⚙ The fold's two head inversions ([a_solve_cstr_sub_inv] /
+   [a_solve_cstr_eq_inv]) MOVED to ext_algo/prop_look_equiv.v (2026-08-16,
+   with the extract level's foundations — that file sits below this one
+   and §6 will consume both). *)
 
 (* --------------------------------------------------------------------- *)
 (*  §5b  Strong induction for [e_solve_cstr_order]                        *)

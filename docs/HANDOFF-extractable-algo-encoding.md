@@ -2369,3 +2369,141 @@ axiom-free, 0.6 s) machine-checks the a-side:
   but for a reason its one-path trace could not establish — the probe
   is the missing exhaustive-inversion argument, and the declarative
   rejection is what squares it with `a_sub_complete`.
+
+⭐ **COROLLARY FOR THE CAMPAIGN: the e_ runner needs NO backtracking at
+the look level.**  Phase 2's shapes (A)/(B) from the task plan are DEAD
+WEIGHT and must not be built: the probe shows the choice point's two
+branches fold to the same yield up to a fresh opener, i.e. shape (C) —
+"ForallR-first never loses" — is what holds, and (C) IS option (b)'s
+invariant one layer down.  §8c.9 is that invariant's design.
+
+### 8c.9 ⛔ THE EXTRACT LEVEL, option (b) — the design, settled before coding (2026-08-16)
+
+The target is `e_extract_run_complete`.  The extract runner
+(def_extract_impl.v:81) is a straight three-stage pipeline — look, fold,
+guess — with no recursion of its own, so the completeness proof is an
+ASSEMBLY: stage 1 answers by `e_looksub_run_complete` (level 1), stage 3
+is total (`e_guess_run`), and the WHOLE new content is stage 2's
+obligation — `e_solve_cstr_impl_complete` (level 3) demands an a-side
+fold derivation ON THE RUNNER'S collection `𝒞2`, while the inverted
+`a_extract` supplies a fold only on the DERIVATION's `𝒞1`.  So the one
+new theorem is the b-core, a pure a-side lemma:
+
+      look1 : {{ Θd ⊢ P ≼[α,m] P' ⤳ Ξ1 ⨾ 𝒞1 }}a →
+      look2 : {{ Θr ⊢ P ≼[α,m] P' ⤳ Ξ2 ⨾ 𝒞2 }}a →
+      {{ Θf1 ⊩ 𝒞1 ⨾ acc1 ⤳ Ξs1 ⨾ Q1 }}a →
+      rel_pskl ρ V acc1 acc2 → (agreement/uniq/scoping side conditions) →
+      ∃ Ξs2 Q2 ρ', {{ Θf2 ⊩ 𝒞2 ⨾ acc2 ⤳ Ξs2 ⨾ Q2 }}a
+                   ∧ rel_pskl ρ' V Q1 Q2 ∧ …
+
+stated FUSED (the fold hypothesis rides the look-pair induction) — do
+NOT define a `rel_cstrs` relation first; the fused motive is what makes
+the LS-Arrow case compose, which was §8c.8's open design point (see
+"the Arrow case" below).  At the assembly, `look2` comes from
+`e_looksub_sound` on the runner's stage-1 result, `Θf2` is the runner's
+`lk_block r1 ++ Θ0`, and level 3's `e_solve_cstr_run_complete` consumes
+the ∃-fold.
+
+**The induction, and why it is the §8c.6 template verbatim.**  Strong
+induction on `size_pskl P + size_pskl P'` (every look rule strictly
+shrinks it; opens are at variables, so `size_pskl_open_pskl_wrt_pskl_var`
+applies), with BOTH look derivations INVERTED at each step, never
+structurally inducted — exactly `a_solve_eq_det`'s scheme, which is what
+lets either side be REBOUND to a common fresh opener by plain swaps
+(`a_looksub_rebind_l/_r`, prop_run_complete.v §2b) before the IH fires.
+A structural induction on either look dies at precisely that rebind; do
+not try it.
+
+**The crossing inventory — measured against the rules, complete.**  Two
+derivations of the same look node can differ ONLY by:
+
+1. **Opener/FlexR names** (all five ∀-rows leak; LE-FlexR invents α1) —
+   a fresh-pair renaming, carried by ρ and discharged with the LEVEL-3
+   TRANSPORT KIT VERBATIM (`rel_pskl_chain` + `a_solve_cstr_swaps` +
+   `flex_agree_swaps_left` + `ftvar_in_aenv_swaps_subset`, all Qed in
+   prop_solve_det.v / prop_run_complete.v §5).
+2. **The ∀-peel slack** (§8c.7's crossing): at a ghost-free ∀ target at
+   TC, LS-Var-now vs LS-ForallR-first changes the final sub-constraint
+   from `[≼TC ∀B]` to `[≼TC B^β]` with β leaked.  DIRECTIONAL: the
+   runner peels maximally, so the runner's final target is the
+   MORE-peeled one, always.  Discharged in the fold transport by the
+   NEW ∀-peel lemma on the solve layer (below), never by a look-level
+   reorder.
+3. **The ◇-emission slack**: at target `◇` with subject `α`, LS-Var vs
+   LS-Vacuous is `[≼m ◇]` vs `nil` (and LE-Var vs LE-Vacuous is
+   `[eq ◇]` vs `nil`).  Also DIRECTIONAL (the runner's match puts Var
+   before Vacuous, so the runner emits MORE).  A `◇`-target solve step
+   is the IDENTITY (SS-Vacuous / SE-VacuousR, nil block), so the extra
+   constraints are free to BUILD on the runner side; nothing to invert.
+4. **α-free subtrees**: LS/LE-Absent vs a structural derivation — both
+   produce `nil ⨾ nil` (the only emitting rules, Var/FlexR, need an
+   α-occurrence), so no slack at all.  Small lemma:
+   `α ∉ ftvar_in_pskl P → look → Ξ = nil ∧ 𝒞 = nil`.
+
+Everything else is shape-forced (checked rule-by-rule for both layers:
+the eq layer's only overlaps are 3 and 4; LS-Check×ForallR is excluded
+by guardedness, Var×Check by Check's own `A ≠ α`, FlexR×Var by
+`P ≠ α`).
+
+**The NEW engine — the ∀-peel lemma** (this is what §8c.8 meant by
+"discharged by SS-ForallR-invertibility"):
+
+      a_solve_sub_peel_forall_r :
+        {{ Θ ⊢ₛ P ≼[TC] ∀B ⤳ Ξ ⨾ P' }}a → β fresh →
+        ∃ Ξ' P'', {{ Θ ⊢ₛ P ≼[TC] B^β ⤳ Ξ' ⨾ P'' }}a  ∧  (P'' ~ρ P')
+
+by size induction on `size P + size Q`: at a ∀ target only SS-Var
+(target ignored — rebuild by SS-Var), SS-ForallL / SS-UnivGhostL
+(subject peels — rebind the opener away from β, IH, rebuild) and
+SS-ForallR (rebind its opener to β; then STRIP the now-unused
+`β ~ tvar` entry — context-shrinking is sound because the solve reads
+its context only through SE-FlexR's `a_flex_tvar` (β is rigid: not
+flex either way) and through freshness avoid-sets (monotone under
+shrinking)) can root the derivation — SS-Check/GhostL die on
+`guarded (∀B)`.  The REVERSE direction is one constructor (SS-ForallR
+at β) and is what the derivation-peeled-runner-not case would need —
+it cannot arise (slack 2 is directional), but the constructor is there
+if a later consumer wants it.
+
+**The Arrow case (the §8c.8 design point), now closed on paper.**
+`𝒞1 = C1a ++ C1b` with `C1a` PURE-EQ (a_lookeq emits only eq
+constraints — small lemma) and look2's `𝒞2 = C2a ++ C2b` likewise.
+Decompose the given fold by the pure-eq append decomposition (the
+missing mirror of `a_solve_cstr_app`, prop_eq_cstr.v:155 — write
+`a_solve_cstr_app_inv`), IH-eq on (C1a, C2a) at (acc1, acc2, ρ)
+producing the runner-side eq-fold and RELATED mid-yields at ρ', then
+IH-sub on (C1b, C2b) at the mids and ρ', recompose with
+`a_solve_cstr_app`.  The threading is absorbed by the motive's
+∀-quantified (acc1, acc2, ρ) — this is exactly why the statement must
+be fused; with a standalone `rel_cstrs` the two halves' agreements do
+not compose (the fold's mid-pattern is not describable list-locally).
+
+**Side conditions to carry on the motive** (all §8c.6-standard): the
+two folds' contexts related by `flex_agree` on the inputs' variables,
+extended to ρ-PAIRS — new small definition, `flex_agree_rel ρ V Θ1 Θ2`
+:= id-agreement on V plus `(a,b) ∈ ρ → (flex Θ1 a ↔ flex Θ2 b)` — the
+pairs arise at LE-FlexR's invented flexibles, which both sides test
+with `a_flex_tvar` later; `uniq` of the derivation-side blocks (the
+runner's are uniq for free); scoped inputs `V ⊆ ftvar Θf1`; ρ's columns
+fresh on their own sides (what `rel_pskl_chain` needs).  Expect the
+exact trap list of §8c.6: hold motive sets opaque (the fsetdec cliff),
+pin `apply (Hrel V)`, explicit nested splits, rename-first matches.
+
+**What EXISTS and is reused unchanged**: `rel_pskl` + mono/close/chain
+(prop_solve_det.v §1-§2), `a_solve_cstr_swap(s)` (prop_swap.v:1067,
+prop_solve_det.v:647), `a_solve_cstr_app` (prop_eq_cstr.v:155),
+`a_solve_cstr_sub_inv`/`_eq_inv` (prop_run_complete.v §5),
+`a_looksub_rebind_*`/`a_lookeq_rebind_*` (§2b), `flex_agree` + its
+push/swap kit (§3a + §5's `flex_agree_swaps_left`), the level-1/2/3
+`*_run_complete`s, and `a_looksub_forall_r_first` (which stays as-is;
+the fused motive replaces the plan of strengthening it).
+
+**Foundations landed 2026-08-16** in
+`frost/ext_algo/prop_look_equiv.v` (new file; see its header):
+`a_lookeq_cstrs_pure_eq` (slack-4 support), `a_looksub_subject_absent`
+/ `a_lookeq_subject_absent` (slack 4), the ◇-target identity steps
+(slack 3), and `a_solve_cstr_app_inv` (the Arrow decomposition).  ⛔
+STILL OPEN, in order: `a_solve_sub_peel_forall_r` (+ the context-strip
+lemma it needs), `flex_agree_rel`, the b-core pair induction, the §6
+assembly `e_extract_impl_complete` / `e_extract_run_complete`.  Then
+the consis trio and sub per §8c.6's NEXT list.
