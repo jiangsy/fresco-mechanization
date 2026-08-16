@@ -3033,3 +3033,121 @@ multi-session; neither is the "one induction" §8c.10 scoped.
   ghost-carrying skeletons.
 
 ⚠️ Nothing above changes levels 1–4; they are Qed and untouched.
+
+### 8c.10c ⭐ THE HOLE-FREE RUNG'S MAIN INDUCTION — WRITTEN AND CHECKED IN PIECES, BLOCKED ON COMPILE TIME (2026-08-17)
+
+§8c.10b left one thing: `e_consis_call_impl_complete`.  It is now
+WRITTEN, and every case has been machine-checked — but not yet in one
+file, and not yet in the tree, because the `unifyvar` case alone costs
+**~7 minutes** and nothing has been committed that would double the
+tree's build.  What follows is everything a finishing session needs.
+
+**⭐ THE MOTIVE, and it is the one that composes.**  Direction matters:
+the derivation is transported ONTO the runner's rails, not the other way
+round —
+
+```coq
+Definition consis_call_complete (S0 : supply) (Θ : aenv) (c : consis_call)
+    : Prop :=
+  forall (Hlc : consis_call_lc c) (HD : consis_call_defs_mono Θ c)
+         (H : e_consis_call_order S0 Θ c),
+    consis_call_no_hole c ->
+    consis_call_uniq Θ c ->                    (* uniq (Ξ ++ Θ) / uniq Θ *)
+    consis_call_cover Θ c [<=] S0 ->           (* §4's coverage, verbatim *)
+    forall Sd Θd Qd, consis_call_run S0 Θ c Sd Θd Qd ->
+    exists r ps,
+      consis_call_answer (e_consis_call_impl c S0 Θ Hlc HD H) = Some r
+      /\ (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0)
+      /\ swaps_atoms ps Sd [=] cs_supply r
+      /\ swaps_aenv ps Θd = cs_ctx r
+      /\ consis_call_out_rel c (swaps_pskl ps Qd) (cs_out r).
+```
+
+with `consis_call_answer` the `proj1_sig`-through-`option` projection,
+`consis_call_run` / `consis_call_out_rel` / `consis_call_uniq` /
+`consis_call_cover` the tag-keyed companions of `consis_call_spec`
+(`out_rel` is `=` at the consis tag and `True` at the other two, exactly
+as `consis_call_spec` ignores `cs_out` there).
+
+⚠️ **The OTHER direction does not compose.**  `Θd = swaps_aenv ps (cs_ctx r)`
+looks equally good and dies at `U-Arrow`: transporting premise 2 along
+`ps1` would then apply the chain a SECOND time, and a chain is not an
+involution (only each transposition is).  With the direction above,
+`swaps_aenv ps1 Θd1 = cs_ctx r1` is exactly what `e_consis_swaps` needs.
+Composition is `ps1 ++ ps2` and `swaps_X (ps1 ++ ps2) = swaps_X ps2 ∘
+swaps_X ps1`; what `ps2` must not disturb is the FIRST half's yield,
+which is why `U-Arrow` consumes prop_consis.v §7's output-skeleton bound
+and §4's output-context bound.
+
+**⭐ THE CASE LIST, and where each answer comes from.**  assign: 6 head
+shapes (§4's walk inversions), the flexible-head one splitting into
+`Assign-UnivGhost-Id` / `Assign-SolveM` (occurs check) and
+`Assign-Depend` / `Assign-Skip` (the same occurrence test the runner
+performs).  unifyvar: 6 head shapes, each first splitting on `α == β` —
+the `left` arm is §5's reflexivity at EVERY head, the `right` arm is
+`Flex-Flex-L` / `-R` / `-Skip` / `-Assign` / `-Skip'`.  consis: the 5 × 5
+live shape matrix (`◇` excluded by hole-freeness, `pskl_var_b` by `lc`),
+of which six pairs — (1,→) (1,∀) (→,1) (→,∀) (∀,1) (∀,→) — admit no rule
+and close by one `inversion`.  ⭐ `U-Rigid` versus `U-Flex` at
+`(β̂, α̂)` with `α0 = β0` needs NO uniqueness argument: whichever the
+derivation took, §5's `e_unify_refl` says the answer is `(S0, Θ)` — the
+`uniq` premise on the motive is for the walks, not for this.
+
+**⚠️⚠️ FOUR MECHANICS TRAPS, all measured.**
+
+1. **`simp` is the wrong tool at the consistency clause.**  Its recursive
+   call sits at the SAME clause pattern, so `simp` unfolds that too and
+   the application `kill_ccall` matches is gone.  Rewrite with the
+   clause's own equation instead — `e_consis_call_impl_equation_13` is
+   consistency, `_1`/`_2`/`_3`/`_4`/`_5`/`_6` are assign at
+   nil/tvar/var_typ/var_skl/flex/def, `_7`…`_12` the unify twins.
+2. **The runner's atom tests are CONVOYED**, so `destruct (x == y)` on a
+   term of one's own does not abstract the goal's occurrence — and in
+   `ext_algo`'s import environment `x == y` does not even elaborate to
+   the instance baked into `def_consis_impl.vo`.  Destruct the GOAL's own
+   scrutinee.  ⚠️ And the pattern must stay FIRST-ORDER: matching
+   `context [ match ?e with left _ => _ | right _ => _ end ]` against a
+   clause body of this size does not terminate in useful time (>800 s,
+   measured).  What works: `destruct (β0 == α)` at the assign clause
+   (there it DOES abstract), and a `lazymatch` on `@eq_dec ?T ?E ?x ?y`
+   elsewhere.
+3. **`repeat split` introduces products** (Coq's `constructor` does), so
+   it dives through a `forall a b, In (a,b) ps -> …` conjunct and leaves
+   goals with the pair already introduced.  Spell the splits.
+4. **`cbn [cs_supply]` is not enough** once a witness comes from
+   `eexists`: the answer is `proj1_sig (exist …)` and `proj1_sig` must be
+   in the delta list.  Likewise `split_tvar_head` at `cs_ctx r` cannot be
+   reached by `rewrite` (the branch's obligation reads the decomposition
+   proof) — go through an eq-form hit lemma
+   (`split_tvar_head_hit_eq : Θout = (α ~ tvar) ++ Θ1 -> exists p,
+   split_tvar_head α Θout = Some (exist _ Θ1 p)`).
+
+**⛔ WHAT IS LEFT, and it is performance, not mathematics.**  Measured on
+this machine, with the other two cases admitted: **assign 11.7 s, consis
+4.6 s, unifyvar ~7 min** (and the three together did not finish in 20).
+The `unifyvar` case is the outlier by two orders of magnitude and nobody
+has bisected it yet.  Ruled out so far: the `Flex-Flex-Assign` coverage
+`fsetdec` (hoisting its `clear -` before the `simpl … in *` did not
+help), and the `@eq_dec` instance (spelling `@eq_dec _ EqDec_eq_of_X`
+did not help).  Next suspects, in order: the five `do_flex_id` calls
+(each ends in a `reflexivity` against an obligation term that inlines a
+match on `Hord` over all ten companions), and the `cbv beta iota` after
+`rewrite e_consis_call_impl_equation_11/12`.  ⚙ Bisect by admitting
+individual unify head-shapes; each probe is one ~7-minute compile.
+
+**The scripts are kept, outside the tree**, at
+`~/frost-level5-scratch/`: `level5-assign-unify.v` (preamble + motive +
+tactics + assign + unifyvar, consis admitted — compiles, ~7 min),
+`level5-consis.v` (same preamble, consis only — compiles, 4.6 s),
+`level5-merged.v` (all three; not yet seen to finish).  They import
+`prop_consis_complete` and re-declare the helpers that still owe the tree
+a home: `mono_ck_complete`, `rigid_bound_ck_complete`,
+`flex_tvar_flex_bound_ck`, `split_tvar_head_hit{,_eq}` → `def_dec.v`;
+`mono_ptyp_swap` → `algo/prop_swap.v`; `mono_ptyp_swaps`,
+`swaps_abind_def`, `swaps_aenv_one_def` → `prop_solve_det.v`.  After the
+performance fix: move §6/§7 into prop_consis_complete.v, add the three
+headline corollaries (⭐ the `unifyvar` one UNRESTRICTED, assign and
+consis on hole-free inputs), then `make coq` and commit.
+
+⚠️ Nothing above is committed except the SUPPORT LAYER (`9ef3c02`), which
+is green and assumptions-closed on its own.
