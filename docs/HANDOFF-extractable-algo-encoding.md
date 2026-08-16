@@ -2685,6 +2685,39 @@ condition reads the supply; the context only mirrors the a-shape):
   b-core pairs whatever opener e-R′ returns; its freshness class,
   `∉ S0`, is the same as any e-opener's).
 
+**The b-core's MOTIVE, first cut (worked out on paper 2026-08-16;
+maintenance checked for the arrow/binder descents).**  Beyond the
+§8c.6-standard pack (fold on `C1` from `acc1` at `Θf1`; `rel_pskl ρ V`
+on `acc`; `flex_agree_rel ρ V Θf1 Θf2`; scoped inputs), carry per
+side:
+
+- the BINDS premise `∀ (x,bd) ∈ Ξi, binds x bd Θfi` — the collections'
+  LE-FlexR names must be FLEX in the fold contexts (their pairs extend
+  the agreement True↔True);
+- ⭐ the SUPPLY-INTERVAL invariant
+  `Hopi : ∀ x, x ∈ Si1 → x ∉ Si0 → x ∉ dom Ξi → ¬ a_flex_tvar Θfi x`
+  ("a name of THIS subtree's supply interval that is not in its block
+  is non-flex in the fold context") — this is what makes an opener
+  pair extend the agreement False↔False, and it MAINTAINS: an arrow's
+  first half strengthens `x ∈ S-mid` to exclude the second half's
+  block (which avoids S-mid), the second half dually via
+  `Sa0 ⊆ S-mid`; a binder premise shrinks the interval.  The naive
+  alternatives (`flex Θf1 x → x ∈ Sa0 ∪ dom Ξ1`, or coverage
+  `ftvar Θf1 ⊆ Sa0`) are NOT maintainable — checked and rejected.
+
+⚠️ ONE OPEN DESIGN POINT for §6b: when an opener pair `(β1,β2)` enters
+ρ, the rel-transports' SCOPING hypotheses demand
+`cols_l ρ ⊆ ftvar Θf1` — but a leaked opener is NOT in the fold
+context unless enriched.  Two candidate resolutions, to be decided at
+the proof: (a) pre-enrich `Θf1`/`Θf2` AT THE ASSEMBLY with rigid
+entries for the whole generated interval (atoms are FINITE sets —
+`elements (diff Sa1 Sa0)`-style), so the scoping holds globally and
+the motive never re-enriches; or (b) generalize the transports'
+scoping hypotheses to carry rigid-pair columns separately (a per-pair
+avoidance premise instead of ftvar-containment).  (a) touches only the
+assembly; (b) touches prop_solve_rel's statements — prefer (a) unless
+its `elements`-plumbing turns ugly.
+
 ⛔ STILL OPEN, in order: the b-core pair induction (§6b,
 prop_look_pair.v §2 — it will need prop_look_pair to import
 prop_solve_rel and prop_run_complete for the transports and the §6a
