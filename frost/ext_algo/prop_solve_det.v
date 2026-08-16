@@ -112,6 +112,17 @@ Proof.
   pose proof (IH _ _ Hin). fsetdec.
 Qed.
 
+Lemma cols_r_in_inv : forall ρ b,
+  b `in` cols_r ρ -> exists a, In (a, b) ρ.
+Proof.
+  induction ρ as [ | [x y] ρ IH ]; intros b Hb; simpl in *.
+  - exfalso. clear - Hb. fsetdec.
+  - destruct (b == y) as [-> | Hne].
+    + exists x. left. reflexivity.
+    + assert (Hb' : b `in` cols_r ρ) by (clear - Hb Hne; fsetdec).
+      destruct (IH _ Hb') as [a Hin]. exists a. right. exact Hin.
+Qed.
+
 Inductive rel_atom (ρ : list (atom * atom)) (V : atoms)
     : atom -> atom -> Prop :=
 | rel_atom__pair : forall α β, In (α, β) ρ -> rel_atom ρ V α β
