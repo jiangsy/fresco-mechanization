@@ -146,3 +146,39 @@ Qed.
     [frost/def_shapes.v], so its properties belong in this file. *)
 Lemma mod_comp_ty_tc_inv : forall B, mod_comp_ty B mode_tc -> is_ityp B.
 Proof. intros B H. inversion H; subst; assumption. Qed.
+
+(* ===================================================================== *)
+(*  HOLE-FREENESS is stable under the operations the rules perform         *)
+(*                                                                        *)
+(*  ⚙ The [_open] pair MOVED here 2026-08-16 from                          *)
+(*  algo/sub/look/prop_flex_apart.v, following the predicate itself        *)
+(*  (frost/def_shapes.v): a consumer that needs hole-freeness cannot be    *)
+(*  asked to import the subtyping-completeness chain.  [_subst] is new —   *)
+(*  ext_algo §8c.10 needs it for [Assign-Assign] / [Flex-Flex-Assign],     *)
+(*  whose recursion substitutes a definition PAYLOAD into the skeletons.   *)
+(* ===================================================================== *)
+
+Lemma pskl_no_hole_open_rec : forall P P' k,
+  pskl_no_hole P -> pskl_no_hole P' ->
+  pskl_no_hole (open_pskl_wrt_pskl_rec k P' P).
+Proof.
+  induction P; intros P' k HP HV; simpl in *; auto.
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; auto.
+  - destruct HP; split; auto.
+Qed.
+
+Lemma pskl_no_hole_open : forall P α,
+  pskl_no_hole P ->
+  pskl_no_hole (open_pskl_wrt_pskl P (pskl_var_f α)).
+Proof.
+  intros P α HP. apply pskl_no_hole_open_rec; simpl; auto.
+Qed.
+
+Lemma pskl_no_hole_subst : forall Q β P,
+  pskl_no_hole Q -> pskl_no_hole P ->
+  pskl_no_hole (subst_pskl_in_pskl Q β P).
+Proof.
+  induction P; simpl; intros HQ HP; auto.
+  - destruct (α == β); [ exact HQ | simpl; exact I ].
+  - destruct HP; split; auto.
+Qed.

@@ -38,6 +38,7 @@ Require Import src.frost.def_shapes.
 Require Import src.frost.prop_coercions.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
+Require Import src.frost.prop_basic.
 Require Import src.frost.algo.prop_basic.
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
@@ -335,3 +336,70 @@ Fixpoint e_consis_call_order_sind S0 Θ c
   end.
 
 End e_consis_call_order_sind.
+
+(* ===================================================================== *)
+(*  §2  HOLE-FREENESS, and why it is an INVARIANT of the whole recursion  *)
+(*                                                                        *)
+(*  §8c.10b's divergence needs a [◇] on one side — [U-GhostR] against     *)
+(*  [U-FlexL] at (pattern ◇, subject α̂), and its mirror.  Hole-freeness    *)
+(*  therefore excludes it, and it is MAINTAINED everywhere the block       *)
+(*  recurses:                                                             *)
+(*                                                                        *)
+(*    - the structural rows take sub-skeletons (arrow halves, the ⫯       *)
+(*      strips) or open a ∀ body with a VARIABLE — [pskl_no_hole_open];   *)
+(*    - [Assign-Assign] and [Flex-Flex-Assign], the only rows that        *)
+(*      REWRITE their skeletons, substitute a definition PAYLOAD, and a   *)
+(*      payload is a [ptyp], which has no holes at all                     *)
+(*      ([ptyp_to_pskl_no_hole] + [pskl_no_hole_subst]);                  *)
+(*    - [U-FlexL] / [U-FlexR] hand the assign layer the pattern or the    *)
+(*      subject unchanged.                                                *)
+(*                                                                        *)
+(*  ⭐ So [unifyvar] is inside the fragment UNCONDITIONALLY: a unify call  *)
+(*  carries no skeleton, and its one consistency premise runs on          *)
+(*  [ptyp_to_pskl] payloads.  That is why the unify headline needs no     *)
+(*  restriction while the assign / consistency ones do.                    *)
+(* ===================================================================== *)
+
+Definition consis_call_no_hole (c : consis_call) : Prop :=
+  match c with
+  | consis_call_assign _ _ P    => pskl_no_hole P
+  | consis_call_unify _ _       => True
+  | consis_call_consis _ _ P0 P => pskl_no_hole P0 /\ pskl_no_hole P
+  end.
+
+(** [Assign-Assign]'s recursive call: the payload is substituted into both
+    the pattern and the target variable, and neither can gain a hole. *)
+Lemma consis_call_no_hole_assign_assign : forall (α : atom) (P : pskl)
+    (β : atom) (τ : ptyp),
+  pskl_no_hole P ->
+  consis_call_no_hole
+    (consis_call_consis empty empty
+       (subst_pskl_in_pskl (ptyp_to_pskl τ) β P)
+       (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α))).
+Proof.
+  intros. split; apply pskl_no_hole_subst;
+    auto using ptyp_to_pskl_no_hole; simpl; exact I.
+Qed.
+
+(** [Flex-Flex-Assign]'s: both sides are payload views outright. *)
+Lemma consis_call_no_hole_flex_assign : forall (τ : ptyp)
+    (α1 α β : atom),
+  consis_call_no_hole
+    (consis_call_consis empty empty
+       (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f β)))
+       (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f α)))).
+Proof. intros. split; apply ptyp_to_pskl_no_hole. Qed.
+
+(** The ∀ rows open with a VARIABLE. *)
+Lemma consis_call_no_hole_open : forall (Δ1 Δ2 : atoms)
+    (P0 P : pskl) (α : atom),
+  pskl_no_hole P0 -> pskl_no_hole P ->
+  consis_call_no_hole
+    (consis_call_consis Δ1 Δ2
+       (open_pskl_wrt_pskl P0 (pskl_var_f α))
+       (open_pskl_wrt_pskl P (pskl_var_f α))).
+Proof. intros. split; apply pskl_no_hole_open; assumption. Qed.
+
+#[local] Hint Resolve ptyp_to_pskl_no_hole pskl_no_hole_open
+  pskl_no_hole_subst consis_call_no_hole_assign_assign
+  consis_call_no_hole_flex_assign consis_call_no_hole_open : nohole.

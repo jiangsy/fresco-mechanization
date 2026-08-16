@@ -705,6 +705,13 @@ Lemma ftvar_btyp_to_ptyp : forall B,
     ftvar_in_ptyp (btyp_to_ptyp B) = ftvar_in_btyp B.
 Proof. induction B; simpl; try reflexivity; try (rewrite IHB1, IHB2); auto. Qed.
 
+(** A TYPE has no ghosts, so its skeleton view is hole-free.  ⚙ MOVED here
+    2026-08-16 from algo/consis/prop_completeness_consis.v: a fact about a
+    conversion, named for it, so this is its documented home (CLAUDE.md's
+    naming rules); the predicate itself moved to def_shapes.v. *)
+Lemma ptyp_to_pskl_no_hole : forall A, pskl_no_hole (ptyp_to_pskl A).
+Proof. induction A; simpl; tauto. Qed.
+
 Lemma ftvar_ptyp_to_pskl : forall A,
   ftvar_in_pskl (ptyp_to_pskl A) [=] ftvar_in_ptyp A.
 Proof. induction A; simpl; fsetdec. Qed.

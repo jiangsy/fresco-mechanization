@@ -944,29 +944,10 @@ Proof.
 Qed.
 
 (** Hole-free skeletons: the [__hole] rule can never fire on them, so a
-    plain refinement lifts to the [_f] form at ANY [F]. *)
-Fixpoint bskl_no_hole (Q : bskl) : Prop :=
-  match Q with
-  | bskl_unit => True
-  | bskl_var_b _ => True
-  | bskl_var_f _ => True
-  | bskl_arrow Q1 Q2 => bskl_no_hole Q1 /\ bskl_no_hole Q2
-  | bskl_all_syn Q0 => bskl_no_hole Q0
-  | bskl_all_inh Q0 => bskl_no_hole Q0
-  | bskl_hole => False
-  | bskl_tophole Q0 => bskl_no_hole Q0
-  end.
-
-Fixpoint pskl_no_hole (P : pskl) : Prop :=
-  match P with
-  | pskl_unit => True
-  | pskl_var_b _ => True
-  | pskl_var_f _ => True
-  | pskl_arrow P1 P2 => pskl_no_hole P1 /\ pskl_no_hole P2
-  | pskl_all_syn P0 => pskl_no_hole P0
-  | pskl_hole => False
-  | pskl_tophole P0 => pskl_no_hole P0
-  end.
+    plain refinement lifts to the [_f] form at ANY [F].  ⚙ [bskl_no_hole]
+    and [pskl_no_hole] MOVED to frost/def_shapes.v 2026-08-16 (they are
+    shape predicates, and ext_algo needs them without importing this
+    bundle); [ptyp_to_pskl_no_hole] moved to frost/prop_coercions.v. *)
 
 Lemma bskl_no_hole_open_rec : forall Q α' k,
   bskl_no_hole Q ->
@@ -983,9 +964,6 @@ Lemma bskl_no_hole_open : forall Q α,
   bskl_no_hole Q ->
   bskl_no_hole (open_bskl_wrt_bskl Q (bskl_var_f α)).
 Proof. intros. apply bskl_no_hole_open_rec. assumption. Qed.
-
-Lemma ptyp_to_pskl_no_hole : forall A, pskl_no_hole (ptyp_to_pskl A).
-Proof. induction A; simpl; tauto. Qed.
 
 Lemma pskl_to_bskl_syn_no_hole : forall P,
   pskl_no_hole P -> bskl_no_hole (pskl_to_bskl_syn P).

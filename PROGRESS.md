@@ -362,9 +362,33 @@ unchanged (`eq_swap_atoms_add`, `swap_notin_eq`, `swap_pskl_open_var`,
 `guarded_pskl_swap`, `swap_inter_ftv_empty`), so nothing new was added
 to `frost/`.
 
+⭐ **AND THE HOLE-FREE LAYER IS IN** (`prop_consis_complete.v` §2):
+`consis_call_no_hole` plus the three facts the dispatch's rewriting rows
+need.  Hole-freeness is MAINTAINED everywhere the block recurses — the
+structural rows take sub-skeletons or open a ∀ body with a VARIABLE, and
+`Assign-Assign` / `Flex-Flex-Assign`, the only rows that rewrite their
+skeletons, substitute a definition PAYLOAD, which is a `ptyp` and so has
+no holes at all.  ⭐ That is exactly why `unifyvar` is inside the
+fragment unconditionally.
+
+⚙ **A MOVE, endorsed by the naming rules and forced by the import
+graph**: `pskl_no_hole` / `bskl_no_hole` were stranded inside
+`algo/consis/prop_completeness_consis.v` (8600 lines), their `_open`
+pair inside `algo/sub/look/prop_flex_apart.v`, and `ptyp_to_pskl_no_hole`
+beside the first — so no consumer outside the subtyping-completeness
+chain could use them.  They are now in their documented homes:
+the PREDICATES in `frost/def_shapes.v`, the `_open` / `_open_rec` pair
+(plus a new `_subst`, which the payload-substituting rows need) in
+`frost/prop_basic.v`, and the conversion fact in
+`frost/prop_coercions.v`.  Nothing was duplicated; the three source
+files carry ⚙ notes pointing at the new homes, and the full tree
+rebuilds green.
+
 ⛔ WHAT IS LEFT for the hole-free rung: the ~30-case main induction over
-`e_consis_call_order_sind`, and the hole-free invariant itself
-(`pskl_no_hole` exists, in `algo/consis/prop_completeness_consis.v`).
+`e_consis_call_order_sind`, whose motive is the ∃-form with a
+swap-CHAIN output relation (prop_solve_det.v §1's `swaps_*` kit, whose
+`swaps_pskl_fresh_id` is what makes the chain act as the identity on the
+caller's own skeletons).
 
 
 ## 2026-08-16 — ⭐⭐⭐ **§8c.9 CLOSED: THE EXTRACT LEVEL (campaign level 4) IS COMPLETE — the b-core and the assembly are Qed**

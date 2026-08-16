@@ -1265,28 +1265,12 @@ Qed.
 
 (* ⚙ [pskl_no_hole] (hole-free skeletons — for them partial precision is fully
    Δ-MONOTONE, since the □-rule, the only Δ-antitone one, never fires) is
-   DEFINED in prop_completeness_consis.v, which this file imports; so is
-   [ptyp_to_pskl_no_hole].  The rest of the family — _open, _open_rec, their
-   _inv converses, _close, and the msubst_* transports — is below, and has no
-   counterpart there. *)
-
-Lemma pskl_no_hole_open_rec : forall P P' k,
-  pskl_no_hole P -> pskl_no_hole P' ->
-  pskl_no_hole (open_pskl_wrt_pskl_rec k P' P).
-Proof.
-  induction P; intros P' k HP HV; simpl in *; auto.
-  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; auto.
-  - destruct HP; split; auto.
-Qed.
-
-Lemma pskl_no_hole_open : forall P α,
-  pskl_no_hole P ->
-  pskl_no_hole (open_pskl_wrt_pskl P (pskl_var_f α)).
-Proof.
-  intros P α HP. apply pskl_no_hole_open_rec; simpl; auto.
-Qed.
-
-(* [ptyp_to_pskl_no_hole] likewise — prop_completeness_consis.v:1074. *)
+   DEFINED in frost/def_shapes.v, and its [_open] / [_open_rec] / [_subst]
+   family in frost/prop_basic.v; [ptyp_to_pskl_no_hole] is in
+   frost/prop_coercions.v.  All three MOVED there 2026-08-16, out of this
+   chain and out of prop_completeness_consis.v, so that ext_algo can use
+   them without importing either.  The _inv converses and the msubst_*
+   transports stay below — they have no counterpart upstream. *)
 
 Lemma ad_ppre_no_hole_subject_delta_mono : forall Θ Δ Ψ P ψ,
   {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
