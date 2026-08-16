@@ -240,7 +240,35 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-16 (latest) — ⭐⭐ **§8c.8 SETTLED: the buried-∀ rejection is the DESIGN, on all four layers — `a_sub` rejects it machine-checked, and the declarative tag discipline explains why `a_sub_complete` is (consistently) vacuous there**
+## 2026-08-16 (latest) — ⭐⭐ **§8c.9: ALL FIVE REL-TRANSPORTS Qed (`prop_solve_rel.v`, new) — and the b-core's design sharpened to e_looksub on BOTH sides**
+
+Two commits (`d64d164`, `5999406`), all Qed, axiom-free, `make coq`
+green.  New file `frost/ext_algo/prop_solve_rel.v` (between
+prop_solve_det and prop_run_complete): §2 `flex_agree_rel` + push kit
+(the `a_flex_tvar` plumbing MOVED here from prop_run_complete §3a/§5a);
+§3–§6 the four solve-layer transports (`a_guess_mono_rel`,
+`a_solve_eq_rel`, `a_solve_sub_rel`, `a_solve_cstr_rel`); §7 the look
+transport `a_looksub_lookeq_rel_e` INTO the supply-threaded encoding —
+§8c.9's hygienic rederivation.  ⭐ The proof shape beat the plan: NO
+side-1 rebind anywhere — binder rows pair the two sides' openers
+(`rel_pskl_open_pair`) and re-close by the new `rel_pskl_close_pair`
+(prop_solve_det §1), so plain structural induction replaces the det
+template's size induction + swap chains.  The sub layer returns `ρx`
+(SS-ForallR's leaked opener pairs, rigid, never re-closed).
+
+⭐⭐ Design sharpened (handoff §8c.9, third pass): the b-core pair
+induction must be stated over `e_looksub` derivations on BOTH sides —
+(1) output-level apartness premises are NOT maintainable (a hygiene
+companion doesn't invert in lockstep: different rule trees derive one
+instance); (2) a conflated raw `a_extract` (leaked opener = sibling
+FlexR name) can fire SE-FlexR where the hygienic collection is STUCK,
+so `e_extract_impl_complete` must carry an e-derivability premise on
+the look half (level 3's `uniq Ξd` precedent) — the sub level will
+thread it, transport 5 manufactures it.  ⛔ Open, in order:
+e-supply-respect, e-swap kit, e-R″/e-R′, the b-core (new
+`prop_look_pair.v`), the §6c assembly.
+
+## 2026-08-16 — ⭐⭐ **§8c.8 SETTLED: the buried-∀ rejection is the DESIGN, on all four layers — `a_sub` rejects it machine-checked, and the declarative tag discipline explains why `a_sub_complete` is (consistently) vacuous there**
 
 `cex/probe_buried_forall_reject.v` (Qed, axiom-free, 0.6 s) closes the
 question §8c.8 left open.  At the node the reference implementation

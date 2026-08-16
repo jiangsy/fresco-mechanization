@@ -2591,10 +2591,98 @@ induction's binder move) and `rel_pskl_open_var` (common opener, the
 transports' binder rows), each with its `_rec` engine mirroring
 `rel_pskl_close_rec`.
 
-⛔ STILL OPEN, in order: `flex_agree_rel` + basics (new file
-`prop_solve_rel.v` between prop_solve_det and prop_run_complete is the
-natural home), the four REL-transports (guess_mono, solve_eq,
-solve_sub, fold), the hygienic rederivation, the b-core pair induction
-(§6b), the §6c assembly `e_extract_impl_complete` /
-`e_extract_run_complete`.  Then the consis trio and sub per §8c.6's
+⭐⭐ **ALL FIVE REL-TRANSPORTS ARE Qed (2026-08-16, `d64d164` +
+`5999406`)** — new file `frost/ext_algo/prop_solve_rel.v` (between
+prop_solve_det and prop_run_complete, which now imports it):
+
+- §2 `flex_agree_rel ρ V Θ1 Θ2` (id-agreement on V + pairwise on ρ's
+  pairs) with its push kit: rigid PAIR (`_push_tvar_pair`, both-False),
+  common rigid (`_push_tvar`), aligned flex-pair blocks
+  (`_push_pairs`); the `a_flex_tvar` context plumbing MOVED here from
+  prop_run_complete §3a/§5a.
+- §3–§6 transports 1–4: `a_guess_mono_rel` (no agreement — the guess
+  never reads flexibility), `a_solve_eq_rel`, `a_solve_sub_rel`,
+  `a_solve_cstr_rel` (pointwise `rel_a_cstrs`; ⚠️ the b-core stays
+  FUSED, the list rel serves aligned-collection consumers only).
+  ⭐ THE PROOF SHAPE BEAT THE PLAN: no side-1 rebind ANYWHERE — binder
+  rows open side 2 at its OWN fresh witness, PAIR the openers
+  (`rel_pskl_open_pair`), and closing rows re-close by the NEW
+  `rel_pskl_close_pair` (det §1, the open_pair mirror; conditions =
+  the pair's atoms have no other role) — so none of the det template's
+  swap-chain machinery is used, and plain STRUCTURAL induction on the
+  side-1 derivation suffices (no size induction: side 1's premises are
+  used as-is).  The sub layer's conclusion adds `ρx` — SS-ForallR's
+  opener pairs, which never re-close and ride the yield relation as
+  RIGID pairs fresh on their own sides.  Every side-2 generated name
+  additionally dodges a caller avoid-set `L` (the supply discipline's
+  relational rendering); side-2 blocks are `uniq` by construction.
+- §7 transport 5 = **THE HYGIENIC REDERIVATION**:
+  `a_looksub_lookeq_rel_e` — an a-side look transports to an
+  `e_looksub`/`e_lookeq` derivation on rel-related inputs over any
+  covering supply (with reflexive inputs: same instance, supply-fresh
+  pairwise-apart names, outputs pointwise rel at fresh pairs).  The
+  looked-for α stays COMMON (α ∈ V, α outside both columns;
+  `rel_pskl_in_id`/`rel_pskl_notin_r` route Var/Absent to the same
+  rule).  `ρx` = the five ∀-rows' leaked opener pairs (side-2 names in
+  `S1 ∖ S0`, apart from the side-2 block: `cols_r ρx ∩ dom Ξ2`), `ρn`
+  = LE-FlexR's block pairs.
+
+⭐⭐ **THE b-CORE'S DESIGN SHARPENED (third pass, 2026-08-16) — state
+it over `e_looksub` on BOTH sides.**  Two findings force this:
+
+1. ⛔ "side-1 apartness premises on the visible outputs" are NOT
+   MAINTAINABLE: a hygiene companion (an e-derivation of the same
+   instance, or any output-level fact pack) does NOT invert in
+   lockstep with the a-derivation being inducted on — two derivations
+   of ONE instance may use different root rules (that slack IS the
+   crossing inventory), so the companion cannot follow the descent.
+   Hygiene must ride the inverted derivation itself — i.e. the
+   derivation must BE supply-threaded.  (R′/R″-stability of
+   output-level premises is real but irrelevant — maintainability is
+   what fails.)
+2. ⚠️ **A conflated RAW `a_extract` can ACCEPT MORE than the runner**
+   — so `e_extract_impl_complete` MUST carry a hygiene premise, in
+   level 3's `uniq Ξd` precedent (not internally dischargeable): if a
+   leaked look-opener β collides with a SIBLING subtree's LE-FlexR
+   name (reachable: LS-Arrow runs both premises at Θ), the raw fold at
+   `Ξ ++ Θ0` sees β BOUND FLEX (the sibling's block entry) and may
+   fire SE-FlexR at a position where the hygienic collection has a
+   RIGID opener — and `[P ≼ β-rigid]` with P non-var non-ghost is
+   STUCK.  The honest closed premise: **the look half is e-derivable
+   with the same outputs** (`Hhyg : ∃ S0h S1h, {{S0h ↝ S1h ⊨ Θ0 ⊢ P
+   ≼[α,m] P' ⤳ Ξ ⨾ 𝒞}}e` + coverage), which the SUB level's
+   completeness will thread (transport 5 manufactures it from any raw
+   look, at rel-renamed outputs; wf-preservation is the alternative
+   source).  Consequently the assembly has NO pre-normalization step:
+   side 1 of the b-core IS `Hhyg`'s derivation, and the fold
+   rel-transport at the ◇ accumulator is not needed at the assembly
+   (transport 5's and 4's roles move UP one level, to whoever
+   discharges Hhyg from a raw derivation).
+
+The b-core is then: BOTH looks as e-derivations over the SAME Θ, size
+induction on `size P1 + size P1'` (`rel_pskl_size`) with BOTH
+e-derivations INVERTED at each step (never structurally inducted), the
+fused fold hypothesis riding as designed; each side's freshness facts
+read off its own supply thread; same-root binder pairs still pair
+openers with NO rebinds.  What the e-side re-rooting needs, in
+dependency order (all mirrors of Qed a-side facts):
+
+- an e-side SUPPLY-RESPECT lemma (`[=]`-transport of both supply
+  indexes — `swap_atoms` images are only `[=]`-equal to the rule
+  shapes);
+- the e-SWAP KIT: equivariance of `e_looksub`/`e_lookeq` under one
+  swap, supplies via `swap_atoms` (template `a_looksub_lookeq_swap`,
+  prop_swap.v:913; set images via prop_tag §1's `swap_atoms_spec` /
+  `swap_atoms_add`);
+- e-R″ (strip ⫯ subject; NO swaps — pure restructuring, supplies
+  preserved exactly) and e-R′ (∀-subject opened first at a chosen
+  `γ ∉ S1`; its ForallL/ForallR cases rebind by ONE e-swap);
+- the b-core itself, then §6c with `Hhyg`.
+
+⛔ STILL OPEN, in order: e-supply-respect, e-swap kit, e-R″/e-R′, the
+b-core pair induction (§6b, new file `prop_look_pair.v` above
+prop_run_complete), the §6c assembly `e_extract_impl_complete` /
+`e_extract_run_complete` (WITH the Hhyg premise — record it in the
+statement's doc comment and in PROGRESS.md when it lands).  Then the
+consis trio and sub per §8c.6's
 NEXT list.
