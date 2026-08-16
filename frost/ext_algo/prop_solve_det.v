@@ -311,6 +311,72 @@ Proof.
   intros. unfold open_pskl_wrt_pskl. apply rel_pskl_open_rec_var; auto.
 Qed.
 
+(** The relation preserves size — the §8c.9 pair induction's measure moves
+    freely between the two sides. *)
+Lemma rel_pskl_size : forall ρ V P1 P2,
+  rel_pskl ρ V P1 P2 -> size_pskl P1 = size_pskl P2.
+Proof. intros * Hrel; induction Hrel; simpl; lia. Qed.
+
+(** [close] at a PAIR of names — the mirror of [rel_pskl_open_pair]: the
+    two sides close their own opener in lockstep, and the pair leaves the
+    relation.  The column-freshness side conditions say the pair's atoms
+    have no OTHER role in the relation — which is what the rel-transports'
+    binder rows (ext_algo/prop_solve_rel.v) supply from the rules' own
+    freshness. *)
+Lemma rel_pskl_close_rec_pair : forall ρ V P1 P2 β1 β2 k,
+  rel_pskl ((β1, β2) :: ρ) V P1 P2 ->
+  β1 `notin` V -> β1 `notin` cols_l ρ ->
+  β2 `notin` V -> β2 `notin` cols_r ρ ->
+  rel_pskl ρ V (close_pskl_wrt_pskl_rec k β1 P1)
+               (close_pskl_wrt_pskl_rec k β2 P2).
+Proof.
+  intros * Hrel Hb1V Hb1c Hb2V Hb2c.
+  remember ((β1, β2) :: ρ) as ρ0 eqn:Hρ0. revert k.
+  induction Hrel; subst; intros k; simpl; try (constructor; auto; fail).
+  - (* var_b: both sides shift identically *)
+    destruct (lt_ge_dec n k); constructor.
+  - (* var_f *)
+    match goal with
+    | Ha : rel_atom _ _ _ _ |- _ => inversion Ha; subst
+    end.
+    + (* pair: the head pair closes in lockstep; a ρ-pair survives *)
+      match goal with
+      | Hx : In (?a, ?b) ((β1, β2) :: _) |- _ => rename Hx into HIn0
+      end.
+      destruct HIn0 as [E | HIn0]; [ inversion E; subst | ].
+      * repeat match goal with
+               | |- context [ if ?X then _ else _ ] => destruct X
+               end;
+          try (exfalso; congruence); constructor.
+      * pose proof (cols_l_in _ _ _ HIn0) as Hcl.
+        pose proof (cols_r_in _ _ _ HIn0) as Hcr.
+        repeat match goal with
+               | |- context [ if ?X then _ else _ ] => destruct X; subst
+               end;
+          try solve [ exfalso; clear - Hb1c Hcl; fsetdec
+                    | exfalso; clear - Hb2c Hcr; fsetdec ];
+          constructor; apply rel_atom__pair; exact HIn0.
+    + (* id: the atom is in V, so it is neither β1 nor β2 *)
+      match goal with
+      | Hv : _ `in` V |- _ => rename Hv into HVin
+      end.
+      repeat match goal with
+             | |- context [ if ?X then _ else _ ] => destruct X; subst
+             end;
+        try solve [ exfalso; clear - Hb1V HVin; fsetdec
+                  | exfalso; clear - Hb2V HVin; fsetdec ];
+        constructor; apply rel_atom__id; exact HVin.
+Qed.
+
+Lemma rel_pskl_close_pair : forall ρ V P1 P2 β1 β2,
+  rel_pskl ((β1, β2) :: ρ) V P1 P2 ->
+  β1 `notin` V -> β1 `notin` cols_l ρ ->
+  β2 `notin` V -> β2 `notin` cols_r ρ ->
+  rel_pskl ρ V (close_pskl_wrt_pskl β1 P1) (close_pskl_wrt_pskl β2 P2).
+Proof.
+  intros. unfold close_pskl_wrt_pskl. apply rel_pskl_close_rec_pair; auto.
+Qed.
+
 (* ===================================================================== *)
 (*  §2  The transport: a PALINDROMIC swap chain realizes the relation     *)
 (*                                                                        *)

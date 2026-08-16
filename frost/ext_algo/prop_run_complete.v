@@ -80,6 +80,7 @@ Require Import src.frost.ext_algo.def_solve_impl.
 Require Import src.frost.ext_algo.prop_solve.
 Require Import src.frost.ext_algo.prop_guess.
 Require Import src.frost.ext_algo.prop_solve_det.
+Require Import src.frost.ext_algo.prop_solve_rel.
 Require Import src.frost.ext_algo.prop_look_equiv.
 Require Import src.frost.ext_algo.def_consis_impl.
 Require Import src.frost.ext_algo.def_sub_impl.
@@ -1499,18 +1500,8 @@ Proof.
     | clear - Hnb Hα; fsetdec ].
 Qed.
 
-Lemma a_flex_tvar_notin_app : forall (Ξ Θ : aenv) α,
-  α `notin` dom Ξ ->
-  (a_flex_tvar (Ξ ++ Θ) α <-> a_flex_tvar Θ α).
-Proof.
-  intros * Hn. split.
-  - intros [Hb | [τ Hb]]; unfold binds in *;
-      apply in_app_or in Hb; destruct Hb as [Hb | Hb];
-      try solve [ exfalso; apply Hn; eapply binds_In; exact Hb ];
-      [ left; exact Hb | right; eexists; exact Hb ].
-  - intros [Hb | [τ Hb]]; unfold binds in *;
-      [ left | right; eexists ]; apply in_or_app; right; eassumption.
-Qed.
+(* ⚙ [a_flex_tvar_notin_app] MOVED to ext_algo/prop_solve_rel.v §2
+   (2026-08-16, with the rel-transport kit that also consumes it). *)
 
 Lemma flex_agree_push_blocks : forall V Ξ1 Ξ2 Θ1 Θ2,
   dom Ξ1 ∩ V [=] empty ->
@@ -1524,17 +1515,8 @@ Proof.
   apply Hag; exact Hα.
 Qed.
 
-Lemma a_flex_tvar_cons_tvar_other : forall β (Θ : aenv) α,
-  α <> β ->
-  (a_flex_tvar ((β ~ abind_tvar) ++ Θ) α <-> a_flex_tvar Θ α).
-Proof.
-  intros * Hne. split.
-  - intros [Hb | [τ Hb]]; unfold binds in Hb; simpl in Hb;
-      (destruct Hb as [Hb | Hb]; [ solve [ inversion Hb; congruence ] | ]);
-      [ left; exact Hb | right; eexists; exact Hb ].
-  - intros [Hb | [τ Hb]]; [ left | right; eexists ];
-      unfold binds in *; simpl; right; eassumption.
-Qed.
+(* ⚙ [a_flex_tvar_cons_tvar_other] MOVED to ext_algo/prop_solve_rel.v §2
+   (2026-08-16). *)
 
 Lemma flex_agree_push_tvar : forall V β Θ1 Θ2,
   β `notin` dom Θ1 -> β `notin` dom Θ2 ->
@@ -3476,17 +3458,8 @@ Qed.
 (*  mention them).                                                        *)
 (* --------------------------------------------------------------------- *)
 
-Lemma a_flex_tvar_cons_flex_other : forall b (Θ : aenv) α,
-  α <> b ->
-  (a_flex_tvar ((b, abind_flex_mono) :: Θ) α <-> a_flex_tvar Θ α).
-Proof.
-  intros * Hne. split.
-  - intros [Hb | [τ Hb]]; unfold binds in Hb; simpl in Hb;
-      (destruct Hb as [Hb | Hb]; [ solve [ inversion Hb; congruence ] | ]);
-      [ left; exact Hb | right; eexists; exact Hb ].
-  - intros [Hb | [τ Hb]]; [ left | right; eexists ];
-      unfold binds in *; simpl; right; eassumption.
-Qed.
+(* ⚙ [a_flex_tvar_cons_flex_other] MOVED to ext_algo/prop_solve_rel.v §2
+   (2026-08-16). *)
 
 Lemma flex_agree_flex_block : forall ρ V Θ1 Θ2,
   flex_agree V Θ1 Θ2 ->
