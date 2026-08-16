@@ -2718,11 +2718,96 @@ avoidance premise instead of ftvar-containment).  (a) touches only the
 assembly; (b) touches prop_solve_rel's statements — prefer (a) unless
 its `elements`-plumbing turns ugly.
 
-⛔ STILL OPEN, in order: the b-core pair induction (§6b,
-prop_look_pair.v §2 — it will need prop_look_pair to import
-prop_solve_rel and prop_run_complete for the transports and the §6a
-peel), the §6c assembly `e_extract_impl_complete` /
-`e_extract_run_complete` (WITH the Hhyg premise — record it in the
-statement's doc comment and in PROGRESS.md when it lands).  Then the
-consis trio and sub per §8c.6's
-NEXT list.
+⛔⭐ **FOURTH PASS (2026-08-16) — the third-pass b-core is FALSE as
+designed, and the repair is structural.**  Two machine-level findings:
+
+1. ⛔ **The b-core over two ARBITRARY e-derivations is FALSE**
+   (`cex/probe_bcore_ug2_flexr.v`, four exhibits, assumptions-closed).
+   `guarded_pskl` includes VARIABLES, so at `⫯(α) ∼[α] β` both
+   `LE-FlexR` and `LE-UnivGhost2` fire — a root overlap the crossing
+   inventory missed (it checked FlexR×Var, not FlexR×UnivGhost2).  The
+   collections diverge in KIND (`[eq α̂1]` fresh-flexible vs `[eq β]`
+   raw target), and with β RIGID at pattern `1` the FlexR-side fold
+   succeeds where the UG2-side fold is STUCK — all of the third-pass
+   motive's side conditions are satisfiable around the pair.
+
+2. ⛔ **Decision (a)'s enrichment route cannot run**: "pre-rename
+   fold1 via `a_solve_cstr_rel` with reflexive inputs" needs
+   `ftv 𝒞l ⊆ V` (`rel_pskl_refl`) AND `V ⊆ ftvar Θf1` (the
+   transports' scoping) — but a raw `a_extract`'s collection mentions
+   leaked look-openers in NEITHER (rule freshness makes them avoid
+   `ftvar Θ0`).  No output-level premise repairs it: a raw fold can
+   internally collide with LATER-constraint payload names (the
+   one-atom-two-roles hazard, fold edition), so no transport of a raw
+   fold exists to build.
+
+**The pivot — the b-core is RUNNER-SIDED.**  Side 2 of the pair
+induction is THE RUNNER'S COMPUTATION — the hypothesis is
+`e_looksub_impl S0 Θr α m P2 P2' hp hp' H = Some s` (and the eq twin),
+with `proj2_sig s` supplying side 2's e-derivation for the
+supply/block facts.  Side 1 stays an arbitrary e-derivation (what the
+Hhyg premise gives).  Consequences, all favourable:
+
+- The fatal orientation dies structurally: the runner takes FlexR at
+  every (⫯-subject, var-target) node (def_look_impl.v).  The surviving
+  one (side 1 = UG2ⁿ∘Var retaining the raw target, runner = FlexR) is
+  transportable because the runner's target is a FRESH UNDEFINED
+  FLEXIBLE: a small JUNK-TARGET head transport (target vars unrelated,
+  only "side-2 target flex" assumed; 4 rule cases — SE-Var, SE-FlexR,
+  SE-GhostL, SE-GhostGuarded) always answers, at worst with a VAR
+  yield on both sides.  The eq motive carries that as a YIELD HATCH
+  (`Q1`, `Q2` both vars, NO facts) — harmless because a var pattern is
+  a FIXED POINT of the fold (SE-Var/SS-Var ignore their targets), so
+  side 2's continuation is total (`a_solve_cstr` from a var pattern
+  derives with `nil` block) and side 1's inverts to the same shape.
+- Each case has exactly ONE side-2 root (the dispatch is a function of
+  the shapes + the mem/gf tests, which side-1 facts resolve).  In
+  particular the runner NEVER target-peels at a var subject (the
+  var-subject clause fires first), so of §8c.9's crossing 2 only the
+  (ForallR₁, runner-Var₂) orientation lives — discharged by recursing
+  at a freshly-invoked runner Var-leaf on the peeled target and
+  REBUILDING SS-ForallR around the recursion's solve (its premise
+  lands exactly at the `(β₂'~tvar)`-consed fold context).  The §6a
+  peel is consumed only via a NEW KEEP-variant
+  (conclusion at the `(β~tvar)`-consed context — no strip) at the
+  OTHER diagonal's Var-bottom.
+- The (ForallL/UGL vs runner-ForallR) diagonals re-root SIDE 1 by a
+  NEW disjunctive e-side ForallR-FIRST lemma (existential opener β₁,
+  `β₁ ∈ S1 ∖ S0`, supply claim `S1' [=] add β₁ S1`; the disjunct
+  records the Var-bottom case, whose outputs LEGITIMATELY change from
+  `[sub TC ∀B]` to `[sub TC B^β₁]` — there the keep-peel pays on the
+  fold and the recursion runs at one-sided-enriched fold contexts).
+  §1c's e-R′/R″ are NOT consumed by the runner-sided b-core; they stay
+  as Qed kit.
+- Conclusion packs split: the SUB pack is BARE (`∃ fold2, uniq,
+  L-avoid` — nothing consumes a sub yield or pairing), the EQ pack
+  keeps block-pairing (`ρn`), an interval/status-iff fact pack for its
+  `ρe` extension (look-opener pairs AND the same-root flex pairs ride
+  one iff-shaped promise), and the rel-or-hatch yield.
+- Contexts: the two LOOK contexts need not be related at all (the
+  e-look context is inert; no ctx_any is spent).  Coverage premises:
+  `V ∪ ftv P ∪ ftv P' ⊆ S0`, per side.
+
+**The hygiene premise GROWS a fold half.**  `e_extract_impl_complete`
+takes, beyond scoping (`add α (ftv P ∪ ftv P') ⊆ ftvar Θ0`) and the
+two coverages: the look half `{{Sh0 ↝ Sh1 ⊨ Θ0 ⊢ P ≼[α,m] P' ⤳ Ξl ⨾
+𝒞l}}e` AND the fold half `{{Sh1 ↝ Sf1 ⊨ (Ξl ++ Θ0) ⊩ 𝒞l ⨾ ◇ ⤳ Ξs1 ⨾
+Q1}}e`, supply-chained.  The e-fold's freshness reads the SUPPLY, so
+it rigid-weakens freely (new small lemma) to the ENRICHED context
+(rigid entries at `elements (Sh1 ∖ Sh0)`) and projects
+(`e_solve_cstr_sound`) to the well-scoped a-fold the motive carries —
+enrichment decision (a) survives in THIS form only.  The raw a-side
+look is no longer a premise (project the look half).  Level 8 owes a
+fold analog of transport 5 (or emits e-side folds directly from the
+completeness constructions) — the "transport 4's role moves up"
+already anticipated.
+
+⛔ STILL OPEN, in order: the b-core KIT (e-side collapse mirrors:
+pure-eq, subject-absent, hole-target, var-target inversion, the TIGHT
+`ftv C ⊆ (S1 ∖ S0) ∪ ftv P ∪ ftv P'` bound; the junk-target head
+transport; the keep-peel; the disjunctive e-ForallR-first;
+`flex_agree_rel` one-sided pushes + iff-pair extension; var-pattern
+fold totality/inversion; `a_solve_cstr` generated-fresh), the
+runner-sided b-core pair induction (§6b, prop_look_pair.v §2), the
+§6c assembly `e_extract_impl_complete` / `e_extract_run_complete`.
+Then the consis trio and sub per §8c.6's NEXT list.

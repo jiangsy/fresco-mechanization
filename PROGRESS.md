@@ -240,7 +240,51 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-16 (latest) — ⭐⭐ **§8c.9: ALL FIVE REL-TRANSPORTS Qed (`prop_solve_rel.v`, new) — and the b-core's design sharpened to e_looksub on BOTH sides**
+## 2026-08-16 (latest) — ⛔⭐ **§8c.9 fourth pass: the two-arbitrary-derivations b-core is FALSE (machine-checked) — the pair induction goes RUNNER-SIDED, and the hygiene premise grows a fold half**
+
+New probe `cex/probe_bcore_ug2_flexr.v` (compiles clean, all four
+exhibits `Print Assumptions`-closed): `guarded_pskl` includes
+VARIABLES, so at a node `⫯(α) ∼[α] β` BOTH `LE-FlexR` and
+`LE-UnivGhost2` fire — a root overlap the §8c.9 crossing inventory
+missed ("the eq layer's only overlaps are 3 and 4" checked FlexR×Var
+but not FlexR×UnivGhost2).  The two routes' collections diverge in
+KIND — `[eq α̂1]` at a fresh flexible vs `[eq β]` retaining the RAW
+target — and with β RIGID and accumulated pattern `1`, the FlexR-side
+fold SUCCEEDS (SE-FlexR guesses) while the UG2-side fold is STUCK
+(`1 ∼ β` matches no solve rule).  Every side condition of the
+third-pass motive is satisfiable around the pair, so the b-core over
+two arbitrary `e_looksub`/`e_lookeq` derivations is unprovable.
+
+⭐ THE PIVOT (handoff §8c.9 fourth pass, design recorded there in
+full): side 2 of the pair induction becomes THE RUNNER'S COMPUTATION
+(`e_lookeq_impl`/`e_looksub_impl … = Some s`), side 1 stays an
+arbitrary e-derivation (= the Hhyg premise).  The fatal orientation
+dies structurally (the runner FlexRs at every (⫯, var) node), each
+case has exactly ONE side-2 root (the dispatch is a function of the
+shapes), and the assembly plugs the stage-1 `Some`-equation in
+directly.  The surviving divergence (side 1 retains the raw var
+target, runner emits a fresh flexible) is transportable because the
+runner-side target is an UNDEFINED FLEXIBLE: the head solve always
+answers, at worst yielding a VAR on both sides — carried as a YIELD
+HATCH in the eq motive, harmless since a var pattern is a FIXED POINT
+of the fold.
+
+⛔ SECOND HOLE, closing the third pass's open design point: decision
+(a)'s "pre-rename fold1 by reflexive transport 4, then enrich" cannot
+run — `rel_pskl_refl` needs `ftv 𝒞l ⊆ V` and the transports need
+`V ⊆ ftvar Θf1`, but a raw `a_extract`'s collection mentions leaked
+look-openers in NEITHER set (they avoid `ftvar Θ0` by rule freshness).
+Resolution: `e_extract_impl_complete`'s hygiene premise GROWS — the
+look half AND the fold half arrive e-derivable (supply-chained); an
+e-fold's freshness reads the SUPPLY, so it rigid-weakens freely to the
+enriched context and projects (`e_solve_cstr_sound`) to the
+well-scoped a-fold the transports need.  Level 8 owes a fold analog of
+transport 5, exactly the "transport 4's role moves up" the third pass
+anticipated.  ⛔ Open: the b-core kit (e-side collapse mirrors, the
+junk head-transport, the keep-peel, the disjunctive e-ForallR-first),
+the runner-sided b-core, the §6c assembly.
+
+## 2026-08-16 — ⭐⭐ **§8c.9: ALL FIVE REL-TRANSPORTS Qed (`prop_solve_rel.v`, new) — and the b-core's design sharpened to e_looksub on BOTH sides**
 
 Two commits (`d64d164`, `5999406`), all Qed, axiom-free, `make coq`
 green.  New file `frost/ext_algo/prop_solve_rel.v` (between
