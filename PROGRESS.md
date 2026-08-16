@@ -264,9 +264,14 @@ instance); (2) a conflated raw `a_extract` (leaked opener = sibling
 FlexR name) can fire SE-FlexR where the hygienic collection is STUCK,
 so `e_extract_impl_complete` must carry an e-derivability premise on
 the look half (level 3's `uniq Ξd` precedent) — the sub level will
-thread it, transport 5 manufactures it.  ⛔ Open, in order:
-e-supply-respect, e-swap kit, e-R″/e-R′, the b-core (new
-`prop_look_pair.v`), the §6c assembly.
+thread it, transport 5 manufactures it.  ⭐ The e-side look kit then
+LANDED the same day (`a6da48d`, new `prop_look_pair.v` §1): ctx_any
+(the e-look's context is INERT — every freshness condition reads the
+supply), supply-respect, e-R″, and e-R′ with an EXISTENTIAL opener
+(its ForallL case's premise IS the goal at the derivation's own
+opener) — so the planned e-SWAP KIT proved unnecessary and was not
+built.  ⛔ Open, in order: the b-core (prop_look_pair.v §2), the §6c
+assembly with Hhyg.
 
 ## 2026-08-16 — ⭐⭐ **§8c.8 SETTLED: the buried-∀ rejection is the DESIGN, on all four layers — `a_sub` rejects it machine-checked, and the declarative tag discipline explains why `a_sub_complete` is (consistently) vacuous there**
 
