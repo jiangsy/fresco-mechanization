@@ -3527,3 +3527,46 @@ puts all the rule-switching content in one relation-only induction (28 rows,
 no runner) instead of spreading it through the runner's 40 cells.  ⚠️ Not yet
 checked for truth — the flexibility-sensitive rows are where it would fail
 too, so probe it before building.
+
+### 8c.12b ⚙ TWO SCOUTING RESULTS FOR (c) — one dead end, one primitive (2026-08-17)
+
+**⛔ THE OPTIMALITY LEAD IS A DEAD END, and it is worth knowing why.**
+§8c.12a floated reusing `a_consis_complete`'s optimality conjunct
+(`ζ ∷ Θ1 ⊑ Θ` — the algorithm's output factors any competing solution)
+instead of rebuilding the context clause.  The pieces really do fit:
+`a_consis_sound` (consis/prop_soundness_consis.v:5163) concludes exactly
+what `a_consis_complete` (consis/prop_completeness_consis.v:8605) consumes —
+a `}}ad` join plus the two refinements — at `κ = identity` and `Θ` := the
+derivation's own output.  So the composition is available.
+
+⚠️ But its conclusion is `exists P1 Θ1, a_consis … P1 Θ1 /\ …`: the
+derivation is EXISTENTIALLY QUANTIFIED.  It says *some* algorithmic
+derivation is optimal, not that *the runner's* answer is.  Connecting the two
+is exactly what level 5 proves, so the lead is circular.  ⇒ Do not spend time
+on it; (c) needs its own induction.
+
+⚙ **THE PRIMITIVE THE MOTIVE WILL NEED IS ALREADY THERE.**  The motive mixes
+a renaming with an increase (`cs_ctx r ⊑ swaps_aenv ps Θd`), so it needs
+`a_inc` to be equivariant.  `a_inc_kswap` (algo/prop_swap.v:2260) is the
+SINGLE-swap, SOURCE-only transport:
+
+```coq
+  ζ ∷ Θ1 ⊑ Θ -> a <> b -> {{ ⊢ Θ1 }}a ->
+  b `notin` ftvar_in_aenv Θ1 ->
+  (forall bd, binds a bd Θ1 -> bd = abind_flex_mono
+                            \/ exists τ, bd = abind_flex_mono_def τ) ->
+  (kswap_msubst a b ζ) ∷ (swap_aenv a b Θ1) ⊑ Θ
+```
+
+and `kswap_msubst` is the matching action on metasubstitutions.
+prop_consis_complete.v §3 already shows how to iterate a single swap into a
+CHAIN (`swaps_*`), so the chain version is a mechanical lift of that pattern.
+⚠️ Which DIRECTION is needed — source-side as above, or a target-side twin —
+cannot be pinned until the induction is written, so do not build it
+speculatively; write the `U-Arrow` case first and let it say.
+
+⛔ **STATE.**  (a) and (b) are Qed and in the tree; (c) is designed, its
+relation is settled as `a_inc` (§8c.12a's correction), its cost is understood
+(a real induction, content in the flexible rows), and its two scouting
+questions are answered.  Nothing of (c) is started, and nothing partial is
+committed.
