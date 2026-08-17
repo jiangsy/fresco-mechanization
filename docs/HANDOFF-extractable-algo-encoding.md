@@ -3570,3 +3570,66 @@ relation is settled as `a_inc` (§8c.12a's correction), its cost is understood
 (a real induction, content in the flexible rows), and its two scouting
 questions are answered.  Nothing of (c) is started, and nothing partial is
 committed.
+
+### 8c.12c ⛔ (c)'s DESIGN HAS A THIRD OBSTRUCTION — `a_inc` IS HEAD-BLIND (2026-08-17)
+
+**Machine-checked: `cex/probe_inc_head_blind.v`.**  §8c.12a settled the
+motive as "the derivation runs at some `Θd` with `κ ∷ Θ ⊑ Θd`" and checked
+that `U-Arrow` closes under that reading.  It did NOT check the ASSIGN
+component, and that is where the reading breaks.
+
+The assignment judgement dispatches on the CONTEXT'S HEAD — `Assign-SolveM`
+when the head IS the flexible target, `Assign-Assign` when it is another
+DEFINED flexible, `Assign-Skip`/`Depend`/`SkipRigid` otherwise.  `a_inc`
+constrains none of that.  The probe exhibits
+
+    Θ  = α̂                     Θd = β̂ ≔ 1, α̂
+
+with `id ∷ Θ ⊑ Θd` — an entirely new defined flexible pushed ON TOP, and the
+increase still holds at the IDENTITY.  So the runner at `Θ` fires
+`Assign-SolveM` at once while the derivation at `Θd` must first step past
+`β̂ ≔ 1` by `Assign-Assign`.  ⇒ From `κ ∷ Θ ⊑ Θd` one may conclude neither
+that the two walks take the same RULE nor that they take the same NUMBER of
+steps, and a runner-sided induction consumes exactly one runner step per
+case, so the derivation's extra steps have nowhere to go.
+
+⚠️ **And this also sinks the alternative factoring of §8c.12b.**  Runner
+MONOTONICITY ("the runner's answer at `Θ` is `⊑`-below its answer at any
+`⊑`-larger `Θd`") reads the head of `Θd` for its own dispatch, so it meets
+the identical problem.  Both routes recorded so far are blocked by the same
+fact.
+
+⭐ **WHAT WOULD WORK — a STRUCTURAL refinement, and it is the next design
+pass.**  Replace bare `a_inc` in the motive by a relation that DOES
+determine the head, e.g.
+
+```coq
+Inductive ctx_ref : aenv -> aenv -> Prop :=
+| ctx_ref__nil    : ctx_ref nil nil
+| ctx_ref__same   : forall a b Θr Θd, ctx_ref Θr Θd ->
+                      ctx_ref ((a ~ b) ++ Θr) ((a ~ b) ++ Θd)
+| ctx_ref__solve  : forall a τ Θr Θd, ctx_ref Θr Θd ->      (* solved IN PLACE *)
+                      ctx_ref ((a ~ abind_flex_mono) ++ Θr)
+                              ((a ~ abind_flex_mono_def τ) ++ Θd)
+| ctx_ref__insert : forall a b Θr Θd, a_suffix_binding b -> ctx_ref Θr Θd ->
+                      ctx_ref Θr ((a ~ b) ++ Θd).           (* fresh, right only *)
+```
+
+`__solve` is what a divergent ghost cell produces and `__insert` is what
+`guess^TY(◇)`'s fresh flexible adds.  Then (c) needs, beside the motive:
+
+1. `ctx_ref` implies `a_inc` (so §8c.12's landed increase still plugs in);
+2. an ABSORPTION lemma — a walk at `Θd` whose head is an `__insert`ed entry
+   reduces to a walk at `Θd`'s tail — proved by induction on `ctx_ref`, NOT
+   on the runner's order, which is what makes the extra derivation steps
+   affordable;
+3. the ghost cells produce `ctx_ref`, not merely `a_inc`.
+
+⛔ **HONEST STATE.**  (c) is NOT close.  Three designs have now been tried
+and each was refuted by a machine-checked probe — the renaming form
+(§8c.10b), the `⊴` form (`cex/probe_isub_too_strong.v`), and now the bare
+`a_inc` form.  What survives is the list above, and it is a fresh design pass
+plus at least two new inductions.  ⚙ None of this disturbs what is landed:
+the increase, its `e_` face and the ghost-row inversions are all statements
+at a SINGLE context and are unaffected by how the two-context relation is
+eventually chosen.
