@@ -3381,30 +3381,58 @@ comes from `e_assign_unify_consis_sound` (prop_consis.v §4), whose `uniq` and
 coverage hypotheses **the level-5 motive already carries**
 (`consis_call_uniq` / `consis_call_cover`), so they are free at the use site.
 
-**STATE OF THE TWO INDUCTIONS** (both `Admitted` in the scratch file):
+**⭐ BOTH INDUCTIONS ARE NOW Qed** — `frost/algo/consis/prop_consis_inc.v`
+(commit `faadc87`, assumptions-closed, tree green 32/32, the file costs
+18 s).  Three results:
 
-1. `a_assign_unify_consis_lc` — the output context is locally closed.  Needed
-   because `U-Arrow`'s second premise runs at the FIRST's output, so the
-   increase's own induction cannot supply its `lc` side condition.  ⚙ A
-   SEPARATE induction on purpose, as prop_consis.v §7 is.  **4 rows open**:
-   `Assign-SolveM` and the three entry-pushing rows
-   (`var_typ` / `var_skl` / `skip_other`), all of which need the payload's
-   `lc_abind` rebuilt after `simpl` — the `lc_ih` tactic in the scratch is
-   the thing to fix, and it regressed `SolveM` when simplified, so fix it
-   without dropping the `a_decls βs` branch.
-2. `a_assign_unify_consis_isub` — the increase itself, motives
-   `a_suffix Ξ -> lc_aenv (Ξ ++ Θ0) -> Θ0 ⊴ Θ1` (assign) and
-   `lc_aenv Θ0 -> Θ0 ⊴ Θ1` (unify / consis).  ⭐ The motive drops the block
-   from the SOURCE — that is what makes almost every row a one-liner; the
-   alternative `(Ξ ++ Θ0) ⊴ Θ1` forces a reordering argument at SolveM,
-   Assign and the three skips.  6 rows close by `a_isub_refl_lc` alone and
-   11 more by the congruence block; **the open ones are** `Assign-SolveM`
-   (use `a_isub_solve_head` — already **Qed** in the scratch — over
-   `a_isub_weaken_suffix` with `a_guess_mono_decls`), `Assign-Depend` (needs
-   `a_isub_prepend_decls_src` plus `flex_preserve` for "the head survives"),
-   `U-Arrow` (`a_isub_trans`, blocked on induction 1), and the three `∀` rows
-   (`a_isub_strip_tvar`).
+| lemma | what it says |
+|---|---|
+| `a_assign_unify_consis_lc` | the output context is locally closed.  A SEPARATE induction on purpose, as prop_consis.v §7 is — `U-Arrow`'s second premise runs at the FIRST's output, so the increase cannot supply its own side condition |
+| `a_assign_unify_consis_defs_lc` | every DEFINITION in the output is locally closed.  ⚠️ Needed because `lc_abind` sends `flex_mono_def τ` to `True` (algo/prop_inc.v:75) and so constrains no payload at all, while `a_isub_cons_flex_def` wants `lc_ptyp τ`.  ⚙ The `e_` layer gets the same content free from `e_assign_unify_consis_defs_mono` (ext_algo/prop_termination.v), whose `aenv_defs_mono` is already an INPUT of every runner call |
+| **`a_assign_unify_consis_isub`** | **`Θ0 ⊴ Θ1`** — the increase itself |
 
-⚙ `a_suffix Ξ` had to join the assign motive: `Assign-SolveM` deposits the
-block below the solved head and needs it to be a suffix to weaken past.  It
-is `nil` at the top and `Depend` only ever extends it with a flexible.
+⭐ Four helpers the tree did not have, all in the same file:
+`a_isub_solve_head` (solving a flexible HEAD is an increase, with the
+target's tail allowed to have grown — SolveM's shape),
+`a_isub_weaken_suffix2`, `a_isub_strengthen_suffix_src` (the `a_decls`
+version existed; `Assign-Assign` needs the `a_suffix` one, because a pending
+block may already carry DEFINITIONS), and the `lc_aenv` / `aenv_defs_lc`
+plumbing.
+
+⚠️ **Two mechanics traps, both measured, both worth carrying to level 6.**
+
+1. **An unknown constant inside a tactic fails SILENTLY.**  Half of the case
+   scripts sat "unprovable" for several rounds because `a_isub_solve_head`
+   had been dropped in a refactor — `apply <unknown>` inside a
+   `try (now …)` just fails, and the case falls through to the next
+   alternative with no diagnostic.  Same hazard the notation pass recorded
+   for `match goal`.  ⚙ Check the lemma EXISTS before believing a case is
+   hard.
+2. **⚠️⚠️ `eapply` of a lemma with a list-valued index leaves an EVAR that a
+   structural tactic then explores forever.**  `eapply
+   a_isub_strengthen_suffix_src` left `a_suffix ?Ξ`, and the `a_suffix_app`
+   loop ran past 900 s.  Fix: pin the index from the IH with a `match goal`
+   (`IH : lc_aenv (?X ++ ?A) -> … -> (?X ++ ?A) ⊴ ?B`), then `apply` the
+   strengthening at `X` explicitly.  Cost of NOT doing it: two killed runs.
+
+⚙ **The technique that made this tractable** and should be reused at every
+later level: after the mutual induction, close the easy rows with
+`all: try (now …)` and then
+`all: match goal with |- ?G => idtac "REMAINS:"; idtac G end` — `coqc`
+prints every surviving goal, so ONE run gives the exact open-row list.  It
+took the increase from 28 rows to a tracked list that shrank 22 → 13 → 11
+→ 9 → 8 → 5 → 1 → 0.
+
+⛔ **WHAT §8c.12 STILL OWES.**  The increase is the level's one piece of new
+content, but the lift itself is not done.  Remaining:
+(a) the `e_`-layer corollary — `{{ S0 ↝ S1 ⊨ Θ0 ⊲[nil] α ≔ P ⊣ Θ1 }}e` gives
+`Θ0 ⊴ Θ1`, via `e_assign_unify_consis_sound` (prop_consis.v §4), whose
+`uniq` and coverage hypotheses the level-5 motive ALREADY carries.  ⚠️ Check
+what supplies `lc_aenv Θ0` there: `consis_call_lc` is about the SKELETONS,
+and coverage does not give it, so the motive may have to carry it;
+`aenv_defs_lc` is free (mono ⇒ lc, and `aenv_defs_mono` is the runner's own
+`HD` input);
+(b) the six ghost-row inversions (four are unique-rule cells needing no `⊑`
+at all — §8c.12a's table);
+(c) rewiring prop_consis_complete.v §6/§7's motive to conclude `⊴` in place
+of the renaming at those rows, and `a_isub_trans` at `U-Arrow`.
