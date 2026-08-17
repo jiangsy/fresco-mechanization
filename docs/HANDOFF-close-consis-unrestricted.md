@@ -169,6 +169,19 @@ motive of (ii) consumes R once more at the very end (the flagship
 corollaries' conclusions must tolerate it, which §2's ⊴-increase face is
 shaped for).
 
+⚙ **Candidate for R, to try first: `a_inc` AT THE ALIAS-COLLAPSE κ.**
+The divergence only ever ADDS an alias block — `α̂ ≔ ε̂` with `ε̂` fresh
+and unconstrained — so the two contexts differ by a KNOWN substitution
+(collapse each alias `ε̂` back to its target `α̂`) plus entry deletion.
+Head-blindness (dead end 3) refuted `a_inc` as an IH for predicting the
+RUNNER's rule; with derivations on both sides that role is gone, and
+`a_inc` scores on every remaining constraint: composable (C1,
+`a_inc_compose`), produced by the ghost cells (C2, §2's increase),
+semantic on definitions (C3), non-positional (C5).  State the transport
+with the alias SET tracked explicitly and κ fixed by it, not
+existentially quantified — the existential is what made dead end 3's
+motive unusable.
+
 ### (R2) ⛔ REFUTED (2026-08-17): weaken the FRAGMENT instead of solving the general problem
 
 **Dead — `cex/probe_pat_presents_hole_flex.v`.**  The question this
