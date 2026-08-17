@@ -3171,7 +3171,7 @@ Proof.
               β this row already picked, so there is no representative to rename
               back — the payoff the campaign predicted. *)
            rewrite uskl_to_pskl_open in HLK.
-           apply a_lookeq__forall_inh with (β := β);
+           apply a_lookeq_forall_inh_adm with (β := β);
              [ clear - Fr; solve_notin | exact HLK ].
         -- (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
         -- (* all_flex_mono Ξs *) exact Hfms.
@@ -3445,7 +3445,7 @@ Proof.
            repeat split.
            ++ (* a_lookeq : LE-ForallSyn — exists-fresh, fire at the picked β *)
               rewrite uskl_to_pskl_open in HLK.
-              apply a_lookeq__forall_syn with (β := β);
+              apply a_lookeq_forall_syn_adm with (β := β);
                 [ clear - Fr; solve_notin | exact HLK ].
            ++ (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
            ++ (* all_flex_mono Ξs *) exact Hfms.
@@ -3776,7 +3776,7 @@ Proof.
               β this row already picked, so there is no representative to rename
               back — the payoff the campaign predicted. *)
            rewrite uskl_to_pskl_open in HLK.
-           apply a_lookeq__forall_inh with (β := β);
+           apply a_lookeq_forall_inh_adm with (β := β);
              [ clear - Fr; solve_notin | exact HLK ].
         -- (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
         -- (* all_flex_mono Ξs *) exact Hfms.
@@ -4080,7 +4080,7 @@ Proof.
            repeat split.
            ++ (* a_lookeq : LE-ForallSyn — exists-fresh, fire at the picked β *)
               rewrite uskl_to_pskl_open in HLK.
-              apply a_lookeq__forall_syn with (β := β);
+              apply a_lookeq_forall_syn_adm with (β := β);
                 [ clear - Fr; solve_notin | exact HLK ].
            ++ (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
            ++ (* all_flex_mono Ξs *) exact Hfms.
@@ -4397,7 +4397,7 @@ Proof.
            exists 𝒞, Ξc, Ξs, Pa, κc, κs.
            repeat split.
            ++ (* a_lookeq : LE-UnivGhost1 — exists-fresh, fire at the picked β *)
-              apply a_lookeq__univ_ghost1 with (β := β);
+              apply a_lookeq_univ_ghost1_adm with (β := β);
                 [ clear - Fr; solve_notin | exact HLK ].
            ++ (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
            ++ (* all_flex_mono Ξs *) exact Hfms.

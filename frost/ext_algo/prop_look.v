@@ -354,6 +354,7 @@ Proof.
     apply a_looksub__forall_r with (β := β).
     + assumption.
     + simpl in Hcov. clear - Hβ Hcov. fsetdec.
+    + exact Hocc.
     + apply IH.
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f β)) as Hup.
       simpl in Hup, Hcov |- *.
@@ -369,6 +370,7 @@ Proof.
     intros S0 S1 Θ α m P P' Ξ C β Hβ Hocc Hl IH Hcov.
     apply a_looksub__forall_l with (β := β).
     + simpl in Hcov. clear - Hβ Hcov. fsetdec.
+    + exact Hocc.
     + apply IH.
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f β)) as Hup.
       simpl in Hup, Hcov |- *.
@@ -397,6 +399,7 @@ Proof.
     intros S0 S1 Θ α P P' Ξ C β Hβ Hocc He IH Hcov.
     apply a_lookeq__forall_inh with (β := β).
     + simpl in Hcov. clear - Hβ Hcov. fsetdec.
+    + exact Hocc.
     + apply IH.
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f β)) as H1.
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P' (pskl_var_f β)) as H2.
@@ -406,6 +409,7 @@ Proof.
     intros S0 S1 Θ α P P' Ξ C β Hβ Hocc He IH Hcov.
     apply a_lookeq__forall_syn with (β := β).
     + simpl in Hcov. clear - Hβ Hcov. fsetdec.
+    + exact Hocc.
     + apply IH.
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f β)) as H1.
       simpl in H1, Hcov |- *.
@@ -417,6 +421,7 @@ Proof.
     intros S0 S1 Θ α P P' Ξ C β Hβ Hocc He IH Hcov.
     apply a_lookeq__univ_ghost1 with (β := β).
     + simpl in Hcov. clear - Hβ Hcov. fsetdec.
+    + exact Hocc.
     + apply IH.
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P' (pskl_var_f β)) as H2.
       simpl in H2, Hcov |- *.

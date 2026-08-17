@@ -68,7 +68,9 @@ Lemma cex_run : forall Θ α β β0,
 Proof.
   intros Θ α β β0 Hβ0α Hβ0β Hβ0Θ Hαβ.
   apply a_lookeq__forall_inh with (β := β0);
-    [ cbn; clear - Hβ0α Hβ0β Hβ0Θ; fsetdec | ].
+    [ cbn; clear - Hβ0α Hβ0β Hβ0Θ; fsetdec
+    | (* the absence-first guard: α occurs in the subject *)
+      cbn; clear; fsetdec | ].
   unfold open_pskl_wrt_pskl; cbn.
   assert (Harr : {{ ((β0 ~ abind_tvar) ++ Θ) ⊢
                    (pskl_arrow (pskl_var_f α) (pskl_var_f β)) ∼[ α ]

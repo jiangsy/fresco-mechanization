@@ -588,7 +588,10 @@ Proof.
           as HupBβ;
         exists Ξ3, C3;
         apply a_looksub__forall_l with (β := γ');
-        [ clear - Hγ' HupBβ; simpl in *; fsetdec | exact E3 ]
+        [ clear - Hγ' HupBβ; simpl in *; fsetdec
+        | (* the subject is UNCHANGED by the rebinding, so the rule's own
+             absence-first guard is the goal verbatim *) assumption
+        | exact E3 ]
     end.
   - (* LS-UnivGhostL — strip, IH, re-strip *)
     subst m. simpl in Hβ.

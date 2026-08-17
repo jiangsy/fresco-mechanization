@@ -69,6 +69,8 @@ Proof.
   intros α β Hβ. unfold cex_subj, cex_tgt, cex_C_l.
   apply a_looksub__forall_l with (β := β).
   - simpl. clear - Hβ. fsetdec.
+  - (* the absence-first guard is SATISFIED: the binder is vacuous over α *)
+    simpl. clear. fsetdec.
   - unfold open_pskl_wrt_pskl. simpl.
     apply a_looksub__var.
 Qed.
@@ -82,9 +84,11 @@ Proof.
   apply a_looksub__forall_r with (β := β').
   - simpl. exact I.
   - simpl. clear - Hβ'. fsetdec.
+  - simpl. clear. fsetdec.
   - unfold open_pskl_wrt_pskl. simpl.
     apply a_looksub__forall_l with (β := β).
     + simpl. clear - Hβ Hne. fsetdec.
+    + simpl. clear. fsetdec.
     + unfold open_pskl_wrt_pskl. simpl.
       apply a_looksub__var.
 Qed.

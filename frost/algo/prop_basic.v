@@ -1453,3 +1453,49 @@ Proof.
   unfold ptyp_to_bskl_syn. rewrite bskl_to_pskl_pskl_to_bskl_syn.
   apply ftvar_ptyp_to_pskl.
 Qed.
+
+(* ===================================================================== *)
+(*  ⭐ THE ABSENCE-FIRST GUARD'S TRANSPORT KIT                             *)
+(*                                                                        *)
+(*  The collection rules carry [α ∈ ftvar_in_pskl <subject>] (the         *)
+(*  implementation's absence-first dispatch, rendered as a premise — see  *)
+(*  algo/def_rules.v and docs/PAPER-GAPS.md).  Its structural lemmas      *)
+(*  travel with it: the guard must survive every way a rule REBUILDS its  *)
+(*  subject, and there are exactly two, an OPENING and a SUBSTITUTION.    *)
+(*  The opening direction is lngen's                                      *)
+(*  [ftvar_in_pskl_open_pskl_wrt_pskl_lower] verbatim; the substitution   *)
+(*  direction needs the substituted variable to differ from the           *)
+(*  looked-for one, which every consumer already carries.                 *)
+(* ===================================================================== *)
+
+Lemma ftvar_in_pskl_subst_keep : forall α β P0 P,
+  β <> α ->
+  α `in` ftvar_in_pskl P ->
+  α `in` ftvar_in_pskl (subst_pskl_in_pskl P0 β P).
+Proof.
+  intros α β P0 P Hne Hin.
+  pose proof (ftvar_in_pskl_subst_pskl_in_pskl_lower P P0 β) as Hlo.
+  clear - Hne Hin Hlo. fsetdec.
+Qed.
+
+Lemma ftvar_in_pskl_open_keep : forall α P Q,
+  α `in` ftvar_in_pskl P ->
+  α `in` ftvar_in_pskl (open_pskl_wrt_pskl P Q).
+Proof.
+  intros α P Q Hin.
+  pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P Q) as Hlo.
+  clear - Hin Hlo. fsetdec.
+Qed.
+
+(** …and its REFLECTION, for the reverse (un-substitution) direction: if the
+    looked-for variable survives the substitution and the substituted
+    skeleton does not contain it, it was in the subject all along. *)
+Lemma ftvar_in_pskl_subst_reflect : forall α β P0 P,
+  α `notin` ftvar_in_pskl P0 ->
+  α `in` ftvar_in_pskl (subst_pskl_in_pskl P0 β P) ->
+  α `in` ftvar_in_pskl P.
+Proof.
+  intros α β P0 P Hn Hin.
+  pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P P0 β) as Hup.
+  clear - Hn Hin Hup. fsetdec.
+Qed.

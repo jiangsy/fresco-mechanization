@@ -305,7 +305,7 @@ Qed.
 (* ===================================================================== *)
 (*  α-STACKS — Sub-ForallR's second branch                                *)
 (*                                                                        *)
-(*  [a_looksub__forall_r] is COFINITE in β with ONE [Ξ ⨾ 𝒞], so a          *)
+(*  [a_looksub_forall_r_adm] is COFINITE in β with ONE [Ξ ⨾ 𝒞], so a          *)
 (*  β-mentioning 𝒞 cannot be rebuilt from a single instance — and 𝒞 CAN   *)
 (*  mention β: the sub-side analogue of [ad_pat_consis_target_ftv] is      *)
 (*  FALSE at [ad_pat_sub_fuel__forall_l_tagged] (cex/cex_p6ss_sub_target_ftv  *)
@@ -381,7 +381,7 @@ Proof.
     pick fresh β for
       (L `union` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
          `union` ftvar_in_pskl P0)).
-    apply a_looksub__forall_l with (β := β);
+    apply a_looksub_forall_l_adm with (β := β);
       [ clear - Fr; solve_notin | apply H0; clear - Fr; fsetdec ].
   - apply a_looksub__univ_ghost_l; apply IHalpha_stack.
 Qed.
@@ -982,7 +982,7 @@ Proof.
        deliberately scoping-AGNOSTIC; the scope check is the SEPARATE
        [Θ0,Ξ ⊢ P1] premise at the EXTRACT use site.  So \lslab{ForallR}
        carries no side condition and the paper's proof owes nothing.  The
-       locally nameless [a_looksub__forall_r] is COFINITE in β with one
+       locally nameless [a_looksub_forall_r_adm] is COFINITE in β with one
        [Ξ ⨾ 𝒞], which IS that side condition, so the mech rule is strictly
        narrower — KEEP IT: completeness of a NARROWER algorithm is a
        STRONGER theorem, and soundness is unaffected.
@@ -1244,7 +1244,7 @@ Proof.
         -- (* a_looksub : LS-ForallR, the single β-instance renamed into the
               cofinite family *)
            (* EXISTS-FRESH (cluster 3): fire at the β this row already picked *)
-           apply a_looksub__forall_r with (β := β);
+           apply a_looksub_forall_r_adm with (β := β);
              [ exact (ptyp_to_pskl_ghost_free (ptyp_all A0))
              | clear - Fr; solve_notin | exact HLK ].
         -- (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
@@ -2453,7 +2453,7 @@ Proof.
        rewrite <- HeraseR.
        (* EXISTS-FRESH (cluster 3): fire at the β this row already picked *)
        rewrite HeraseRβ in HLK.
-       apply a_looksub__forall_l with (β := β);
+       apply a_looksub_forall_l_adm with (β := β);
          [ clear - Fr; solve_notin | exact HLK ].
     -- (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
     -- (* all_flex_mono Ξs *) exact Hfms.
@@ -2904,7 +2904,7 @@ Proof.
        rewrite <- HeraseR.
        (* EXISTS-FRESH (cluster 3): fire at the β this row already picked *)
        rewrite HeraseRβ in HLK.
-       apply a_looksub__forall_l with (β := β);
+       apply a_looksub_forall_l_adm with (β := β);
          [ clear - Fr; solve_notin | exact HLK ].
     -- (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
     -- (* all_flex_mono Ξs *) exact Hfms.

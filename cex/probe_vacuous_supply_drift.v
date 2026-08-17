@@ -170,6 +170,8 @@ Proof.
   intros α β m Hβ. unfold vac_subj.
   apply a_looksub__forall_l with (β := β).
   - simpl. clear - Hβ. fsetdec.
+  - (* the absence-first guard is SATISFIED — vacuous binder over α *)
+    simpl. clear. fsetdec.
   - unfold open_pskl_wrt_pskl. simpl. apply a_looksub__var.
 Qed.
 

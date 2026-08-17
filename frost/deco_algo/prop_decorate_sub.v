@@ -1868,10 +1868,10 @@ Proof.
     | Θ α P                                     (* LE-Vacuous *)
     | Θ α P β α1 Hfr0 Hne0 Hin0                 (* LE-FlexR *)
     | Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 Hp2     (* LE-Arrow *)
-    | Θ α P P' Ξ C b Hfr0 Hp                    (* LE-ForallInh *)
-    | Θ α P P' Ξ C b Hfr0 Hp                    (* LE-ForallSyn *)
+    | Θ α P P' Ξ C b Hfr0 Hocc0 Hp              (* LE-ForallInh *)
+    | Θ α P P' Ξ C b Hfr0 Hocc0 Hp              (* LE-ForallSyn *)
     | Θ α P P' Ξ C Hp                           (* LE-UnivGhost *)
-    | Θ α P P' Ξ C b Hfr0 Hp                    (* LE-UnivGhost1 *)
+    | Θ α P P' Ξ C b Hfr0 Hocc0 Hp              (* LE-UnivGhost1 *)
     | Θ α P P' Ξ C Hg0 Hp                       (* LE-UnivGhost2 *)
     | Θ α P P' Ξ C Hne0 Hg0 Hp ];               (* LE-UnivGhostR *)
     intros R ψa Ψa Δ1 Δ2 Ψc Θ0 Qc Θ1
@@ -2640,9 +2640,9 @@ Proof.
     | Θ α m Q Q' Hnf                            (* LS-Absent *)
     | Θ α m Q                                   (* LS-Vacuous *)
     | Θ α A B Ξ0 C0 Hgf0 Hne Hg Hg0 Hp          (* LS-Check *)
-    | Θ α A B Ξ0 C0 b Hgf0 Hfr0 Hp              (* LS-ForallR *)
+    | Θ α A B Ξ0 C0 b Hgf0 Hfr0 Hocc0 Hp        (* LS-ForallR *)
     | Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 Hp2   (* LS-Arrow *)
-    | Θ α m Q Q' Ξ0 C0 b Hfr0 Hp                (* LS-ForallL *)
+    | Θ α m Q Q' Ξ0 C0 b Hfr0 Hocc0 Hp          (* LS-ForallL *)
     | Θ α m Q Q' Ξ0 C0 Hp ];                    (* LS-UnivGhostL *)
     intros B0 ψa Ψa HT HM Hst β Hβα Hβ;
     try discriminate HT; try discriminate HM;
@@ -2724,7 +2724,8 @@ Proof.
       destruct (IHn _ _ _ _ _ _ _ Hsz1 Hr B0 ψa Ψa eq_refl eq_refl Hst1
                   b Hbα Hfr1) as [C' [Hlk' Hst']].
       exists C'. split; [ | exact Hst' ].
-      apply a_looksub__forall_l with (β := δ); [ look_fresh | ].
+      apply a_looksub__forall_l with (β := δ);
+        [ look_fresh | exact Hocc0 | ].
       apply a_looksub_ctx_exchange; exact Hlk'.
     + assert (Hsz1 : size_pskl (open_pskl_wrt_pskl Q (pskl_var_f b)) <= n)
         by (rewrite size_pskl_open_pskl_wrt_pskl_var; lia).
@@ -2737,7 +2738,8 @@ Proof.
       destruct (IHn _ _ _ _ _ _ _ Hsz1 Hp B0 ψa Ψa eq_refl eq_refl Hst
                   β Hβα Hfr1) as [C' [Hlk' Hst']].
       exists C'. split; [ | exact Hst' ].
-      apply a_looksub__forall_l with (β := b); [ look_fresh | ].
+      apply a_looksub__forall_l with (β := b);
+        [ look_fresh | exact Hocc0 | ].
       apply a_looksub_ctx_exchange; exact Hlk'.
   - (* LS-UnivGhostL : peel the source ∀◇ *)
     subst.
@@ -2953,9 +2955,9 @@ Proof.
       | Θ α m Q Q' Hnf                            (* LS-Absent *)
       | Θ α m Q                                   (* LS-Vacuous *)
       | Θ α A B Ξ0 C0 Hgf0 Hne Hg Hg0 Hp          (* LS-Check *)
-      | Θ α A B Ξ0 C0 b Hgf0 Hfr0 Hp              (* LS-ForallR *)
+      | Θ α A B Ξ0 C0 b Hgf0 Hfr0 Hocc0 Hp        (* LS-ForallR *)
       | Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 Hp2   (* LS-Arrow *)
-      | Θ α m Q Q' Ξ0 C0 b Hfr0 Hp                (* LS-ForallL *)
+      | Θ α m Q Q' Ξ0 C0 b Hfr0 Hocc0 Hp          (* LS-ForallL *)
       | Θ α m Q Q' Ξ0 C0 Hp ];                    (* LS-UnivGhostL *)
       cbn [size_pskl] in Hn.
     - (* LS-Var : the looked-for variable is not the substituted one *)
@@ -3043,7 +3045,8 @@ Proof.
         clear - Hup HδP0 HδA; fsetdec. }
       cbn [subst_pskl_in_pskl].
       apply a_looksub__forall_r with (β := δ);
-        [ exact Hgf0 | clear - Hδα HδΘ Hδsub HδB; solve_notin | exact Hlk' ].
+        [ exact Hgf0 | clear - Hδα HδΘ Hδsub HδB; solve_notin
+        | apply ftvar_in_pskl_subst_keep; assumption | exact Hlk' ].
     - (* LS-Arrow *)
       assert (Hall1 : Forall (fun c => exists Q, c = a_cstr_eq Q) C1)
         by (eapply a_lookeq_cstr_eq; exact Hp1).
@@ -3075,7 +3078,8 @@ Proof.
         exists Ξ0, C0. cbn [subst_pskl_in_pskl].
         rewrite (subst_pskl_in_pskl_fresh_eq Q) by exact HbQ.
         split; [ apply a_looksub__forall_l with (β := b);
-                   [ clear - Hbα HbΘ HbQ HbQ'; solve_notin | exact Hp ]
+                   [ clear - Hbα HbΘ HbQ HbQ'; solve_notin
+                   | exact Hocc0 | exact Hp ]
                | exact Hst ].
       + pick fresh δ for
           (add α (add β (add b (ftvar_in_aenv Θ `union` ftvar_in_pskl Q
@@ -3113,7 +3117,11 @@ Proof.
           clear - Hup HδP0 HδQ; fsetdec. }
         cbn [subst_pskl_in_pskl].
         apply a_looksub__forall_l with (β := δ);
-          [ clear - Hδα HδΘ Hδsub HδQ'; solve_notin | exact Hlk' ].
+          [ clear - Hδα HδΘ Hδsub HδQ'; solve_notin
+          | change (ftvar_in_pskl (pskl_all_syn (subst_pskl_in_pskl P0 β Q)))
+              with (ftvar_in_pskl (subst_pskl_in_pskl P0 β (pskl_all_syn Q)));
+            apply ftvar_in_pskl_subst_keep; assumption
+          | exact Hlk' ].
     - (* LS-UnivGhostL *)
       assert (Hsz1 : 2 * (size_pskl Q + size_pskl Q') + 1 <= n) by lia.
       destruct (IHs _ _ _ _ _ _ _ Hsz1 Hp β P0 ψa Ψa Hβα HαP0 HlcP0 Hst)
@@ -3128,10 +3136,10 @@ Proof.
       | Θ α Q                                     (* LE-Vacuous *)
       | Θ α Q bt γ Hfrγ Hne Hin                   (* LE-FlexR *)
       | Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 Hp2     (* LE-Arrow *)
-      | Θ α Q Q' Ξ0 C0 b Hfr0 Hp                  (* LE-ForallInh *)
-      | Θ α Q Q' Ξ0 C0 b Hfr0 Hp                  (* LE-ForallSyn *)
+      | Θ α Q Q' Ξ0 C0 b Hfr0 Hocc0 Hp            (* LE-ForallInh *)
+      | Θ α Q Q' Ξ0 C0 b Hfr0 Hocc0 Hp            (* LE-ForallSyn *)
       | Θ α Q Q' Ξ0 C0 Hp                         (* LE-UnivGhost *)
-      | Θ α Q Q' Ξ0 C0 b Hfr0 Hp                  (* LE-UnivGhost1 *)
+      | Θ α Q Q' Ξ0 C0 b Hfr0 Hocc0 Hp            (* LE-UnivGhost1 *)
       | Θ α Q Q' Ξ0 C0 Hg Hp                      (* LE-UnivGhost2 *)
       | Θ α Q Q' Ξ0 C0 Hne Hg Hp ];               (* LE-UnivGhostR *)
       cbn [size_pskl] in Hn.
@@ -3201,7 +3209,8 @@ Proof.
       + exists Ξ0, C0. cbn [subst_pskl_in_pskl].
         rewrite (subst_pskl_in_pskl_fresh_eq Q) by exact HbQ.
         split; [ apply a_lookeq__forall_inh with (β := b);
-                   [ clear - Hbα HbΘ HbQ HbQ'; solve_notin | exact Hp ]
+                   [ clear - Hbα HbΘ HbQ HbQ'; solve_notin
+                   | exact Hocc0 | exact Hp ]
                | exact Hst ].
       + pick fresh δ for
           (add α (add β (add b (ftvar_in_aenv Θ `union` ftvar_in_pskl Q
@@ -3240,7 +3249,11 @@ Proof.
           clear - Hup HδP0 HδQ; fsetdec. }
         cbn [subst_pskl_in_pskl].
         apply a_lookeq__forall_inh with (β := δ);
-          [ clear - Hδα HδΘ Hδsub HδQ'; solve_notin | exact Hlk' ].
+          [ clear - Hδα HδΘ Hδsub HδQ'; solve_notin
+          | change (ftvar_in_pskl (pskl_all_syn (subst_pskl_in_pskl P0 β Q)))
+              with (ftvar_in_pskl (subst_pskl_in_pskl P0 β (pskl_all_syn Q)));
+            apply ftvar_in_pskl_subst_keep; assumption
+          | exact Hlk' ].
     - (* LE-ForallSyn : only the SOURCE opens; the target is untouched *)
       assert (Hbα : b <> α) by (clear - Hfr0; fsetdec).
       assert (HbΘ : b `notin` ftvar_in_aenv Θ) by (clear - Hfr0; fsetdec).
@@ -3253,7 +3266,8 @@ Proof.
       + exists Ξ0, C0. cbn [subst_pskl_in_pskl].
         rewrite (subst_pskl_in_pskl_fresh_eq Q) by exact HbQ.
         split; [ apply a_lookeq__forall_syn with (β := b);
-                   [ clear - Hbα HbΘ HbQ HbQ'; solve_notin | exact Hp ]
+                   [ clear - Hbα HbΘ HbQ HbQ'; solve_notin
+                   | exact Hocc0 | exact Hp ]
                | exact Hst ].
       + pick fresh δ for
           (add α (add β (add b (ftvar_in_aenv Θ `union` ftvar_in_pskl Q
@@ -3292,7 +3306,11 @@ Proof.
           clear - Hup HδP0 HδQ; fsetdec. }
         cbn [subst_pskl_in_pskl] in Hlk' |- *.
         apply a_lookeq__forall_syn with (β := δ);
-          [ clear - Hδα HδΘ Hδsub HδQ'; solve_notin | exact Hlk' ].
+          [ clear - Hδα HδΘ Hδsub HδQ'; solve_notin
+          | change (ftvar_in_pskl (pskl_all_syn (subst_pskl_in_pskl P0 β Q)))
+              with (ftvar_in_pskl (subst_pskl_in_pskl P0 β (pskl_all_syn Q)));
+            apply ftvar_in_pskl_subst_keep; assumption
+          | exact Hlk' ].
     - (* LE-UnivGhost *)
       assert (Hsz1 : 2 * (size_pskl Q + size_pskl Q') <= n) by lia.
       destruct (IHe _ _ _ _ _ _ Hsz1 Hp β P0 ψa Ψa Hβα HαP0 HlcP0 Hst)
@@ -3342,7 +3360,11 @@ Proof.
         clear - Hup HδP0 HδQ; fsetdec. }
       cbn [subst_pskl_in_pskl] in Hlk' |- *.
       apply a_lookeq__univ_ghost1 with (β := δ);
-        [ clear - Hδα HδΘ Hδsub HδQ'; solve_notin | exact Hlk' ].
+        [ clear - Hδα HδΘ Hδsub HδQ'; solve_notin
+        | change (ftvar_in_pskl (pskl_tophole (subst_pskl_in_pskl P0 β Q)))
+            with (ftvar_in_pskl (subst_pskl_in_pskl P0 β (pskl_tophole Q)));
+          apply ftvar_in_pskl_subst_keep; assumption
+        | exact Hlk' ].
     - (* LE-UnivGhost2 : the guard is on the TARGET, untouched *)
       assert (Hsz1 : 2 * (size_pskl Q + size_pskl Q') <= n) by lia.
       destruct (IHe _ _ _ _ _ _ Hsz1 Hp β P0 ψa Ψa Hβα HαP0 HlcP0 Hst)

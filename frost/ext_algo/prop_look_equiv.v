@@ -87,40 +87,22 @@ Lemma a_lookeq_subject_absent : forall Θ α P P' Ξ C,
   Ξ = nil /\ C = nil.
 Proof.
   intros * H.
-  induction H; intros Habs; simpl in *; auto.
+  induction H; intros Habs; simpl in *;
+    (* ⭐ WITH THE ABSENCE-FIRST GUARD the LEAKING rows are not merely
+       collection-free here, they are IMPOSSIBLE: their own premise
+       [α ∈ ftv <subject>] contradicts [Habs] outright.  Before the guard
+       each had to be walked through its opener. *)
+    try (exfalso;
+         match goal with
+         | Hin : α `in` ftvar_in_pskl _ |- _ => clear - Habs Hin; fsetdec
+         end);
+    auto.
   - (* LE-Var: subject IS α *)
     exfalso. clear - Habs. fsetdec.
-  - (* LE-FlexR: α ∈ ftv P by the rule's own premise *)
-    exfalso.
-    match goal with
-    | Hin : α `in` ftvar_in_pskl _ |- _ => clear - Habs Hin; fsetdec
-    end.
   - (* LE-Arrow *)
     destruct IHa_lookeq1 as [-> ->]; [ clear - Habs; fsetdec | ].
     destruct IHa_lookeq2 as [-> ->]; [ clear - Habs; fsetdec | ].
     auto.
-  - (* LE-ForallInh: the opener is fresh from α *)
-    apply IHa_lookeq.
-    match goal with
-    | |- α `notin` ftvar_in_pskl (open_pskl_wrt_pskl ?B (pskl_var_f ?b)) =>
-        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f b))
-          as Hup;
-        match goal with
-        | Hfr : b `notin` add α _ |- _ =>
-            clear - Habs Hfr Hup; simpl in *; fsetdec
-        end
-    end.
-  - (* LE-ForallSyn *)
-    apply IHa_lookeq.
-    match goal with
-    | |- α `notin` ftvar_in_pskl (open_pskl_wrt_pskl ?B (pskl_var_f ?b)) =>
-        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f b))
-          as Hup;
-        match goal with
-        | Hfr : b `notin` add α _ |- _ =>
-            clear - Habs Hfr Hup; simpl in *; fsetdec
-        end
-    end.
 Qed.
 
 Lemma a_looksub_subject_absent : forall Θ α m P P' Ξ C,
@@ -129,7 +111,12 @@ Lemma a_looksub_subject_absent : forall Θ α m P P' Ξ C,
   Ξ = nil /\ C = nil.
 Proof.
   intros * H.
-  induction H; intros Habs; simpl in *; auto.
+  induction H; intros Habs; simpl in *;
+    try (exfalso;
+         match goal with
+         | Hin : α `in` ftvar_in_pskl _ |- _ => clear - Habs Hin; fsetdec
+         end);
+    auto.
   - (* LS-Var: subject IS α *)
     exfalso. clear - Habs. fsetdec.
   - (* LS-Check: drops into the eq layer *)
@@ -146,17 +133,6 @@ Proof.
     end.
     destruct IHa_looksub as [-> ->]; [ clear - Habs; fsetdec | ].
     auto.
-  - (* LS-ForallL: the opener is fresh from α *)
-    apply IHa_looksub.
-    match goal with
-    | |- α `notin` ftvar_in_pskl (open_pskl_wrt_pskl ?B (pskl_var_f ?b)) =>
-        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f b))
-          as Hup;
-        match goal with
-        | Hfr : b `notin` add α _ |- _ =>
-            clear - Habs Hfr Hup; simpl in *; fsetdec
-        end
-    end.
 Qed.
 
 (* ===================================================================== *)
@@ -338,7 +314,9 @@ Proof.
     end.
   - (* LS-ForallR *)
     apply a_looksub__forall_r with (β := β);
-      [ assumption | simpl in *; assumption | ].
+      [ assumption | simpl in *; assumption
+      | (* the guard on [⫯P0] IS the guard on [P0] *) simpl in *; assumption
+      | ].
     apply IHa_looksub. reflexivity.
   - (* LS-UnivGhostL *)
     assumption.
@@ -400,10 +378,18 @@ Proof.
     assert (Hre : {{ ((γ'' ~ abind_tvar) ++ Θ)
         ⊢ (open_pskl_wrt_pskl P0 (pskl_var_f γ'')) ≼[ α , mode_tc ]
         (pskl_all_syn B) ⤳ Ξ ⨾ C }}a).
-    { apply a_looksub__forall_r with (β := β1); [ assumption | | exact Hih ].
-      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f γ''))
-        as Hup.
-      clear - Hβ1 Hγ'' Hup. simpl in *. fsetdec. }
+    { apply a_looksub__forall_r with (β := β1);
+        [ assumption
+        | pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0
+                        (pskl_var_f γ'')) as Hup;
+          clear - Hβ1 Hγ'' Hup; simpl in *; fsetdec
+        | (* ⭐ the absence-first guard SURVIVES THE RE-OPENING *)
+          apply ftvar_in_pskl_open_keep;
+          match goal with
+          | Ho : α `in` ftvar_in_pskl (pskl_all_syn _) |- _ =>
+              simpl in Ho; exact Ho
+          end
+        | exact Hih ]. }
     destruct (γ'' == γ) as [-> | Hne]; [ exact Hre | ].
     pose proof (proj1 (a_looksub_lookeq_swap γ'' γ) _ _ _ _ _ _ _ Hre) as Hs.
     revert Hs.

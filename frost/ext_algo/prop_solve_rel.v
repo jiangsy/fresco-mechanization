@@ -44,11 +44,8 @@ Require Import src.frost.algo.sub.prop_looksub.
 Require Import src.frost.algo.sub.prop_solve_sub.
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
-Require Import Coq.Bool.Sumbool.
 Require Import src.frost.ext_algo.def_look.
-Require Import src.frost.ext_algo.def_dec.             (* mem_true_in, … *)
 Require Import src.frost.ext_algo.prop_look.
-Require Import src.frost.ext_algo.prop_look_equiv.     (* a_looksub_subject_absent *)
 Require Import src.frost.ext_algo.prop_solve_det.
 
 (* the ∀-quantified inputs are inferable from the derivation and relation
@@ -1458,77 +1455,6 @@ Local Ltac cstrs_perm H :=
 
 (* ---- §7 — transport 5: the look, a → e ---- *)
 
-(* ---- §7a — THE EMPTY ANSWER, which is what the ASYMMETRY costs ---- *)
-
-(** ⭐⭐ THE ONE PLACE THE TWO ENCODINGS' COLLECTIONS DIFFER.  [e_looksub] /
-    [e_lookeq] carry the ABSENCE-FIRST GUARD (def_look.v's header) and
-    [a_looksub] / [a_lookeq] deliberately do not — the guard protects the
-    SUPPLY, and only the threaded encoding has one.  So transport 5 below,
-    which turns an a-side derivation into an e-side one, is the single site
-    where an UNGUARDED row has to be answered by a GUARDED relation.
-
-    ⭐ It is answered by the EMPTY one, and that is not a weakening: at an
-    α-free subject the a-side's own answer is already [Ξ = ·], [𝒞 = ·]
-    ([a_looksub_subject_absent], prop_look_equiv.v §2), because the only
-    EMITTING rows need an α-occurrence.  So where a leaking e-row can no
-    longer fire, LS/LE-Absent gives the SAME block and the SAME collection,
-    and the transport's conclusion holds with [ρx = ρn = ·].
-
-    ⚙ The α-occurrence travels between the sides by [rel_pskl_notin_r]:
-    [α] is in the identity support and outside both columns, so it means
-    the same thing on both. *)
-Lemma rel_e_absent_sub : forall Θ1 α m P1 P1' Ξ1 C1 S0 Θ2 P2 P2' ρ V,
-  {{ Θ1 ⊢ P1 ≼[ α , m ] P1' ⤳ Ξ1 ⨾ C1 }}a ->
-  rel_pskl ρ V P1 P2 ->
-  α `notin` ftvar_in_pskl P1 ->
-  α `notin` cols_r ρ ->
-  exists S1 ρx ρn Ξ2 C2,
-    {{ S0 ↝ S1 ⊨ Θ2 ⊢ P2 ≼[ α , m ] P2' ⤳ Ξ2 ⨾ C2 }}e
-    /\ Ξ1 = flex_pairs_l ρn /\ Ξ2 = flex_pairs_r ρn
-    /\ (forall a b, In (a, b) (ρx ++ ρn) ->
-          a `notin` add α (ftvar_in_aenv Θ1)
-          /\ b `in` S1 /\ b `notin` S0)
-    /\ cols_r ρx ∩ dom Ξ2 [=] empty
-    /\ rel_a_cstrs (ρx ++ ρn ++ ρ) V C1 C2.
-Proof.
-  intros * Ha Hrel Habs Hαr.
-  destruct (a_looksub_subject_absent Ha Habs) as [-> ->].
-  exists S0, nil, nil, nil, nil.
-  split.
-  { apply e_looksub__absent.
-    eapply rel_pskl_notin_r; [ exact Hrel | exact Habs | exact Hαr ]. }
-  split; [ reflexivity | ]. split; [ reflexivity | ].
-  split; [ intros a b Hin; inversion Hin | ].
-  split; [ simpl; clear; fsetdec | ].
-  simpl. constructor.
-Qed.
-
-Lemma rel_e_absent_eq : forall Θ1 α P1 P1' Ξ1 C1 S0 Θ2 P2 P2' ρ V,
-  {{ Θ1 ⊢ P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 }}a ->
-  rel_pskl ρ V P1 P2 ->
-  α `notin` ftvar_in_pskl P1 ->
-  α `notin` cols_r ρ ->
-  exists S1 ρx ρn Ξ2 C2,
-    {{ S0 ↝ S1 ⊨ Θ2 ⊢ P2 ∼[ α ] P2' ⤳ Ξ2 ⨾ C2 }}e
-    /\ Ξ1 = flex_pairs_l ρn /\ Ξ2 = flex_pairs_r ρn
-    /\ (forall a b, In (a, b) (ρx ++ ρn) ->
-          a `notin` add α (ftvar_in_aenv Θ1)
-          /\ b `in` S1 /\ b `notin` S0)
-    /\ cols_r ρx ∩ dom Ξ2 [=] empty
-    /\ rel_a_cstrs (ρx ++ ρn ++ ρ) V C1 C2.
-Proof.
-  intros * Ha Hrel Habs Hαr.
-  destruct (a_lookeq_subject_absent Ha Habs) as [-> ->].
-  exists S0, nil, nil, nil, nil.
-  split.
-  { apply e_lookeq__absent.
-    eapply rel_pskl_notin_r; [ exact Hrel | exact Habs | exact Hαr ]. }
-  split; [ reflexivity | ]. split; [ reflexivity | ].
-  split; [ intros a b Hin; inversion Hin | ].
-  split; [ simpl; clear; fsetdec | ].
-  simpl. constructor.
-Qed.
-
 (** ⭐ TRANSPORT 5 — the look layer, targeting the SUPPLY-THREADED
     encoding: an [a_looksub]/[a_lookeq] derivation transports to an
     [e_looksub]/[e_lookeq] derivation on rel-related inputs, over any
@@ -1677,14 +1603,8 @@ Proof.
     split; [ exact Hpairs | ]. split; [ exact Hxb | ].
     exact Hrel'.
   - (* LS-ForallR — leaks its opener *)
-    intros Θ1 α A B Ξ C β Hgf Hβ1 Hprem IH
+    intros Θ1 α A B Ξ C β Hgf Hβ1 Hocc Hprem IH
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hcov.
-    destruct (sumbool_of_bool (mem α (ftvar_in_pskl A))) as [Hocc | Hocc];
-      [ apply mem_true_in in Hocc
-      | apply mem_false_notin in Hocc;
-        eapply rel_e_absent_sub;
-          [ apply a_looksub__forall_r with (β := β); eassumption
-          | exact HrelP | exact Hocc | exact Hαr ] ].
     inversion HrelP'; subst.
     match goal with
     | Hb : rel_pskl ρ V B ?x |- _ => rename Hb into HrB0; rename x into B2
@@ -1804,15 +1724,8 @@ Proof.
     + cstrs_perm HrelA.
     + cstrs_perm HrelB.
   - (* LS-ForallL — leaks its opener *)
-    intros Θ1 α m Pb Pt Ξ C β Hβ1 Hprem IH
+    intros Θ1 α m Pb Pt Ξ C β Hβ1 Hocc Hprem IH
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hcov.
-    destruct (sumbool_of_bool (mem α (ftvar_in_pskl (pskl_all_syn Pb))))
-      as [Hocc | Hocc];
-      [ apply mem_true_in in Hocc
-      | apply mem_false_notin in Hocc;
-        eapply rel_e_absent_sub;
-          [ apply a_looksub__forall_l with (β := β); eassumption
-          | exact HrelP | exact Hocc | exact Hαr ] ].
     inversion HrelP; subst.
     match goal with
     | Hb : rel_pskl ρ V Pb ?x |- _ => rename Hb into HrP0; rename x into P2b
@@ -2012,15 +1925,8 @@ Proof.
     + cstrs_perm HrelA.
     + cstrs_perm HrelB.
   - (* LE-ForallInh — leaks; BOTH sides open at the opener *)
-    intros Θ1 α Pb Pb' Ξ C β Hβ1 Hprem IH
+    intros Θ1 α Pb Pb' Ξ C β Hβ1 Hocc Hprem IH
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hcov.
-    destruct (sumbool_of_bool (mem α (ftvar_in_pskl (pskl_all_syn Pb))))
-      as [Hocc | Hocc];
-      [ apply mem_true_in in Hocc
-      | apply mem_false_notin in Hocc;
-        eapply rel_e_absent_eq;
-          [ apply a_lookeq__forall_inh with (β := β); eassumption
-          | exact HrelP | exact Hocc | exact Hαr ] ].
     inversion HrelP; subst. inversion HrelP'; subst.
     match goal with
     | Ha : rel_pskl ρ V Pb ?xa, Hb : rel_pskl ρ V Pb' ?xb |- _ =>
@@ -2078,15 +1984,8 @@ Proof.
     { simpl. clear - Hxb Hd2. fsetdec. }
     cstrs_perm Hrel'.
   - (* LE-ForallSyn — leaks; only the SUBJECT opens *)
-    intros Θ1 α Pb Pb' Ξ C β Hβ1 Hprem IH
+    intros Θ1 α Pb Pb' Ξ C β Hβ1 Hocc Hprem IH
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hcov.
-    destruct (sumbool_of_bool (mem α (ftvar_in_pskl (pskl_all_syn Pb))))
-      as [Hocc | Hocc];
-      [ apply mem_true_in in Hocc
-      | apply mem_false_notin in Hocc;
-        eapply rel_e_absent_eq;
-          [ apply a_lookeq__forall_syn with (β := β); eassumption
-          | exact HrelP | exact Hocc | exact Hαr ] ].
     inversion HrelP; subst. inversion HrelP'; subst.
     match goal with
     | Ha : rel_pskl ρ V Pb ?xa, Hb : rel_pskl ρ V Pb' ?xb |- _ =>
@@ -2160,15 +2059,8 @@ Proof.
     split; [ exact Hpairs | ]. split; [ exact Hxb | ].
     exact Hrel'.
   - (* LE-UnivGhost1 — leaks; only the TARGET opens *)
-    intros Θ1 α Pb Pb' Ξ C β Hβ1 Hprem IH
+    intros Θ1 α Pb Pb' Ξ C β Hβ1 Hocc Hprem IH
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hcov.
-    destruct (sumbool_of_bool (mem α (ftvar_in_pskl (pskl_tophole Pb))))
-      as [Hocc | Hocc];
-      [ apply mem_true_in in Hocc
-      | apply mem_false_notin in Hocc;
-        eapply rel_e_absent_eq;
-          [ apply a_lookeq__univ_ghost1 with (β := β); eassumption
-          | exact HrelP | exact Hocc | exact Hαr ] ].
     inversion HrelP; subst. inversion HrelP'; subst.
     match goal with
     | Ha : rel_pskl ρ V Pb ?xa, Hb : rel_pskl ρ V Pb' ?xb |- _ =>

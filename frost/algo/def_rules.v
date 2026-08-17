@@ -453,6 +453,8 @@ Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs ->
     pskl_ghost_free (pskl_all_syn B) ->
     β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl A
                        `union` ftvar_in_pskl B) ->
+    (* [paper-gap] ABSENCE-FIRST GUARD — see [a_looksub__forall_r]. *)
+    α `in` ftvar_in_pskl A ->
     {{ ((β ~ abind_tvar) ++ Θ) ⊢ A ≼[ α , mode_tc ]
       (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ C }}a ->
     {{ Θ ⊢ A ≼[ α , mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ C }}a
@@ -464,6 +466,8 @@ Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs ->
 | a_looksub__forall_l : forall Θ α m P P' Ξ C β, (* LS-ForallL — LEAKS *)
     β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
                        `union` ftvar_in_pskl P') ->
+    (* [paper-gap] ABSENCE-FIRST GUARD — see [a_looksub__forall_r]. *)
+    α `in` ftvar_in_pskl (pskl_all_syn P) ->
     {{ ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β))
       ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
     {{ Θ ⊢ (pskl_all_syn P) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a
@@ -495,12 +499,16 @@ with a_lookeq : aenv -> atom -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
 | a_lookeq__forall_inh : forall Θ α P P' Ξ C β,  (* LE-ForallInh — LEAKS *)
     β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
                        `union` ftvar_in_pskl P') ->
+    (* [paper-gap] ABSENCE-FIRST GUARD — see [a_looksub__forall_r]. *)
+    α `in` ftvar_in_pskl (pskl_all_syn P) ->
     {{ ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ]
       (open_pskl_wrt_pskl P' (pskl_var_f β)) ⤳ Ξ ⨾ C }}a ->
     {{ Θ ⊢ (pskl_all_syn P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C }}a
 | a_lookeq__forall_syn : forall Θ α P P' Ξ C β,  (* LE-ForallSyn — LEAKS *)
     β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
                        `union` ftvar_in_pskl P') ->
+    (* [paper-gap] ABSENCE-FIRST GUARD — see [a_looksub__forall_r]. *)
+    α `in` ftvar_in_pskl (pskl_all_syn P) ->
     {{ ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ]
       (pskl_tophole P') ⤳ Ξ ⨾ C }}a ->
     {{ Θ ⊢ (pskl_all_syn P) ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C }}a
@@ -510,6 +518,8 @@ with a_lookeq : aenv -> atom -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
 | a_lookeq__univ_ghost1 : forall Θ α P P' Ξ C β, (* LE-UnivGhost1 — LEAKS *)
     β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
                        `union` ftvar_in_pskl P') ->
+    (* [paper-gap] ABSENCE-FIRST GUARD — see [a_looksub__forall_r]. *)
+    α `in` ftvar_in_pskl (pskl_tophole P) ->
     {{ ((β ~ abind_tvar) ++ Θ) ⊢ (pskl_tophole P) ∼[ α ]
       (open_pskl_wrt_pskl P' (pskl_var_f β)) ⤳ Ξ ⨾ C }}a ->
     {{ Θ ⊢ (pskl_tophole P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C }}a

@@ -951,14 +951,18 @@ Proof.
       auto using swap_pskl_neq_var, guarded_pskl_swap, pskl_ghost_free_swap.
   - (* forall_r *)
     apply a_looksub__forall_r with (β := swap_atom a b β);
-      [ apply pskl_ghost_free_swap; assumption | swap_freshness |].
+      [ apply pskl_ghost_free_swap; assumption | swap_freshness
+      | apply swap_pskl_ftv_in; assumption
+      |].
     rewrite swap_pskl_open_var in H. exact H.
   - (* arrow *)
     rewrite swap_aenv_app, swap_cstrs_app.
     apply a_looksub__arrow; auto.
   - (* forall_l *)
     apply a_looksub__forall_l with (β := swap_atom a b β);
-      [ swap_freshness |].
+      [ swap_freshness
+      | apply swap_pskl_ftv_in; assumption
+      |].
     rewrite swap_pskl_open_var in H. exact H.
   - (* univ_ghost_l *) apply a_looksub__univ_ghost_l; auto.
   (* -------- a_lookeq -------- *)
@@ -975,16 +979,22 @@ Proof.
     apply a_lookeq__arrow; auto.
   - (* forall_inh *)
     apply a_lookeq__forall_inh with (β := swap_atom a b β);
-      [ swap_freshness |].
+      [ swap_freshness
+      | apply swap_pskl_ftv_in; assumption
+      |].
     rewrite !swap_pskl_open_var in H. exact H.
   - (* forall_syn *)
     apply a_lookeq__forall_syn with (β := swap_atom a b β);
-      [ swap_freshness |].
+      [ swap_freshness
+      | apply swap_pskl_ftv_in; assumption
+      |].
     rewrite swap_pskl_open_var in H. exact H.
   - (* univ_ghost *) apply a_lookeq__univ_ghost; auto.
   - (* univ_ghost1 *)
     apply a_lookeq__univ_ghost1 with (β := swap_atom a b β);
-      [ swap_freshness |].
+      [ swap_freshness
+      | apply swap_pskl_ftv_in; assumption
+      |].
     rewrite swap_pskl_open_var in H. exact H.
   - (* univ_ghost2 *)
     apply a_lookeq__univ_ghost2; auto using guarded_pskl_swap.
