@@ -240,6 +240,20 @@ prove, mutually over the trio (then iterate over a chain):
     where the action is.
   - The transport will need wf-strength hypotheses (γ-below-freshness is
     a wf fact); `algo/prop_wf_preservation.v` supplies preservation.
+  - ⚙ **Scouted (session 2): the statement TYPECHECKS and the scheme
+    runs** — all 28 rows enumerated (scratch, not in tree; re-create from
+    the statement in this section).  Two corrections the rows forced
+    immediately: (i) name-SLOTS (the walk's target, unify's pair) must go
+    through the atom-MERGE `if α == ε̂ then γ else α`, NOT `swap_atom` —
+    the swap would send `γ` to `ε̂` in slots where `γ` legitimately
+    occurs; skeleton/payload slots keep the subst-image `cpskl`.
+    (ii) rows that dispatch on `ε̂`'s own entry need a hypothesis pinning
+    its SHAPE (undefined until the run defines it) — package it with the
+    wf invariant rather than ad hoc.  Also visible: `Flex-Flex-L/R` can
+    DEFINE `α ≔ ε̂-var` mid-run, so κ-images on definition payloads are
+    live in every row, and the SolveM/skip rows want the collapse1
+    app/cons computation algebra first (`collapse1_app`, per-entry
+    clauses) — build exactly those, they are no longer speculative.
 
 **Step 4 — assembly** (after step 3): extend the motive's conclusion from
 `swaps_aenv ps Θd = cs_ctx r` to `swaps_aenv ps (collapse_chain als Θd) =
