@@ -135,7 +135,9 @@ Proof.
     end.
   - (* LS-ForallR *)
     apply e_looksub__forall_r with (β := β);
-      [ assumption | assumption | ].
+      [ assumption | assumption
+      | (* the guard on [⫯P0] IS the guard on [P0] *) simpl in *; assumption
+      | ].
     apply IHe_looksub. reflexivity.
   - (* LS-UnivGhostL *)
     assumption.
@@ -200,7 +202,15 @@ Proof.
     exists γ, S1''.
     split; [ clear - Hγ; fsetdec | ].
     apply e_looksub__forall_r with (β := β1);
-      [ assumption | clear - Hγ H0; fsetdec | exact Hd3 ].
+      [ assumption | clear - Hγ H0; fsetdec
+      | (* ⭐ the absence-first guard SURVIVES THE OPENING *)
+        match goal with
+        | Hocc : α `in` ftvar_in_pskl (pskl_all_syn P0) |- _ =>
+            pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P0
+                          (pskl_var_f γ)) as Hlo;
+            simpl in Hocc; clear - Hocc Hlo; fsetdec
+        end
+      | exact Hd3 ].
   - (* LS-ForallL: the premise IS the goal at its own opener *)
     match goal with
     | Hp : e_looksub (add ?b S0) _ _ _ _ _ _ _ _ |- _ =>
@@ -597,7 +607,7 @@ Proof.
     split; [ rewrite HS1''; exact HS1' | ].
     split.
     { apply e_looksub__forall_l with (β := γ);
-        [ clear - Hγfr Hβ1; fsetdec | exact Hd'' ]. }
+        [ clear - Hγfr Hβ1; fsetdec | exact Hα | exact Hd'' ]. }
     destruct Hdisj as [ (HinS & -> & ->) | (HL & -> & -> & -> & ->) ].
     + left. split; [ assumption | ]. split; reflexivity.
     + right. split; [ assumption | ].
@@ -1762,15 +1772,19 @@ Proof.
     assert (Hcov1' : V ∪ ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f β1n))
               ∪ ftvar_in_pskl (open_pskl_wrt_pskl P' (pskl_var_f β1n))
               [<=] add β1n Sa0).
-    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f β1n)).
-      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P' (pskl_var_f β1n)).
-      clear - Hcov1 H H0. simpl in *. fsetdec. }
+    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f β1n))
+        as Hup1.
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P' (pskl_var_f β1n))
+        as Hup2.
+      clear - Hcov1 Hup1 Hup2. simpl in *. fsetdec. }
     assert (Hcov2' : V ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q2s (pskl_var_f sf))
               ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q2t (pskl_var_f sf))
               [<=] add sf Sb0).
-    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q2s (pskl_var_f sf)).
-      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q2t (pskl_var_f sf)).
-      clear - Hcov2 H H0. simpl in *. fsetdec. }
+    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q2s (pskl_var_f sf))
+        as Hup1.
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q2t (pskl_var_f sf))
+        as Hup2.
+      clear - Hcov2 Hup1 Hup2. simpl in *. fsetdec. }
     assert (Hrs' : rel_pskl ((β1n, sf) :: ρ) V
               (open_pskl_wrt_pskl P (pskl_var_f β1n))
               (open_pskl_wrt_pskl Q2s (pskl_var_f sf)))
@@ -1906,12 +1920,14 @@ Proof.
       by (apply rel_pskl_extend_pair; exact HrelP').
     assert (Hcov1' : V ∪ ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f β1n))
               ∪ ftvar_in_pskl (pskl_tophole P') [<=] add β1n Sa0).
-    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f β1n)).
-      clear - Hcov1 H. simpl in *. fsetdec. }
+    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f β1n))
+          as Hup1.
+      clear - Hcov1 Hup1. simpl in *. fsetdec. }
     assert (Hcov2' : V ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q2s (pskl_var_f sf))
               ∪ ftvar_in_pskl (pskl_tophole Q2t) [<=] add sf Sb0).
-    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q2s (pskl_var_f sf)).
-      clear - Hcov2 H. simpl in *. fsetdec. }
+    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q2s (pskl_var_f sf))
+          as Hup1.
+      clear - Hcov2 Hup1. simpl in *. fsetdec. }
     pose proof (IHn (add β1n Sa0) Sa1 _ _ _ _ _ _ Hsz' Hprem
                   _ _ _ _ _ _ _ (exist _ r1 Hr1) Er
                   ((β1n, sf) :: ρ) _ _ _ _ _ _ _ L
@@ -2065,13 +2081,15 @@ Proof.
     assert (Hcov1' : V ∪ ftvar_in_pskl (pskl_tophole P)
               ∪ ftvar_in_pskl (open_pskl_wrt_pskl P' (pskl_var_f β1n))
               [<=] add β1n Sa0).
-    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P' (pskl_var_f β1n)).
-      clear - Hcov1 H. simpl in *. fsetdec. }
+    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P' (pskl_var_f β1n))
+          as Hup1.
+      clear - Hcov1 Hup1. simpl in *. fsetdec. }
     assert (Hcov2' : V ∪ ftvar_in_pskl (pskl_tophole Q2s)
               ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q2t (pskl_var_f sf))
               [<=] add sf Sb0).
-    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q2t (pskl_var_f sf)).
-      clear - Hcov2 H. simpl in *. fsetdec. }
+    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q2t (pskl_var_f sf))
+          as Hup1.
+      clear - Hcov2 Hup1. simpl in *. fsetdec. }
     pose proof (IHn (add β1n Sa0) Sa1 _ _ _ _ _ _ Hsz' Hprem
                   _ _ _ _ _ _ _ (exist _ r1 Hr1) Er
                   ((β1n, sf) :: ρ) _ _ _ _ _ _ _ L

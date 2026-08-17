@@ -26,7 +26,47 @@
     conditions are already INPUT-only ([β ∉ add α (ftvar_in_aenv Θ ∪ …)]), so
     unlike M2 this file retires no [Δ-drop] premise.  What it does is put the
     generated names under the supply's accounting, which is what (2) needs and
-    what the [uniq] payoff above rests on. *)
+    what the [uniq] payoff above rests on.
+
+    ⭐⭐ [paper-gap] THE ABSENCE-FIRST DISPATCH GUARD (2026-08-17).  Five rows
+    below carry a premise the paper's collection figure does not state:
+
+        α ∈ ftvar_in_pskl <subject>
+
+    on [LS-ForallR], [LS-ForallL], [LE-ForallInh], [LE-ForallSyn] and
+    [LE-UnivGhost1].  ⚙ [LE-FlexR] already carried it; that is the precedent,
+    and it is the exact premise the other four-plus-one were missing.
+
+    WHY.  The reference implementation tests ABSENCE FIRST — [type.ml]'s
+    [constr_collect_sub] (:649-701) — and this tree's runner renders that
+    faithfully: every non-Absent clause of [e_looksub_impl] / [e_lookeq_impl]
+    sits behind [mem α (ftvar_in_pskl P)] (def_look_impl.v:360, 377, 393,
+    406, …), with the Vacuous test second.  A RELATIONAL encoding has no match
+    order, so the exclusion has to be a PREMISE.  Without it the five rows
+    listed above overlap [LS-Absent] / [LE-Absent] at an α-free subject, and
+    they are exactly the rows that SPEND A NAME — so the collection can burn
+    supply it never needed, and [e_extract] stops being deterministic up to a
+    renaming.  Machine-checked, at both levels:
+    [cex/probe_extract_supply_drift.v] (the extraction) and
+    [cex/probe_sub_supply_drift.v] (the same drift reaching [e_sub] through
+    [SI-ForallL], which is what blocks level 6's motive).
+
+    ⭐ WHAT IT COSTS: NOTHING SEMANTIC.  Where a guarded row can no longer
+    fire, the subject is α-free and [LS-Absent] / [LE-Absent] give the SAME
+    block and the SAME collection ([a_looksub_subject_absent], prop_look_equiv.v);
+    the guard survives an opening ([ftvar_in_pskl_open_pskl_wrt_pskl_lower])
+    and a substitution (the substituted variable is [≠ α]).
+
+    ⚙ SCOPED TO THIS ENCODING, DELIBERATELY.  The fact the guard protects is
+    the SUPPLY, and only the threaded encoding has one.  [e_looksub_sound]
+    is unaffected — a SMALLER relation still maps into the [a_] side — and the
+    one place the two meet, [a_looksub_lookeq_rel_e] (prop_solve_rel.v §7),
+    pays for the asymmetry with [rel_e_absent_{sub,eq}]: at an α-free subject
+    the a-side's own answer is already the empty one, so the transport hands
+    back [Ξ = ·], [𝒞 = ·].  Guarding [a_looksub] too would reopen ~250
+    construction sites across eleven files AND break [alpha_stack_looksub]
+    (algo/sub/look/prop_sub_cstr.v:373) once the second guard lands.
+    docs/PAPER-GAPS.md carries the finding in the paper's own notation. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -106,11 +146,13 @@ Inductive e_looksub : supply -> aenv -> atom -> mode -> pskl -> pskl
     guarded_pskl B ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ A ∼[ α ] B ⤳ Ξ ⨾ C }}e ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ A ≼[ α , mode_tc ] B ⤳ Ξ ⨾ C }}e
-| e_looksub__forall_r : forall S0 S1 Θ α A B Ξ C β,     (* LS-ForallR — LEAKS *)
+| e_looksub__forall_r : forall S0 S1 Θ α A B Ξ C β,     (* LS-ForallR *)
     (* Δ-supply.  The paper's side condition names [α], the context and both
        skeletons; a supply that covers the run holds all four. *)
+    (* [paper-gap] ABSENCE-FIRST GUARD — see the header. *)
     pskl_ghost_free (pskl_all_syn B) ->
     β `notin` S0 ->
+    α `in` ftvar_in_pskl A ->
     {{ (add β S0) ↝ S1 ⊨ ((β ~ abind_tvar) ++ Θ) ⊢ A ≼[ α , mode_tc ]
        (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ C }}e ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ A ≼[ α , mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ C }}e
@@ -120,8 +162,10 @@ Inductive e_looksub : supply -> aenv -> atom -> mode -> pskl -> pskl
     {{ S1 ↝ S2 ⊨ Θ ⊢ P2 ≼[ α , m ] P2' ⤳ Ξ2 ⨾ C2 }}e ->
     {{ S0 ↝ S2 ⊨ Θ ⊢ (pskl_arrow P1 P2) ≼[ α , (mode_fn m) ]
        (pskl_arrow P1' P2') ⤳ (Ξ1 ++ Ξ2) ⨾ (C1 ++ C2) }}e
-| e_looksub__forall_l : forall S0 S1 Θ α m P P' Ξ C β,  (* LS-ForallL — LEAKS *)
+| e_looksub__forall_l : forall S0 S1 Θ α m P P' Ξ C β,  (* LS-ForallL *)
+    (* [paper-gap] ABSENCE-FIRST GUARD — see the header. *)
     β `notin` S0 ->
+    α `in` ftvar_in_pskl (pskl_all_syn P) ->
     {{ (add β S0) ↝ S1 ⊨ ((β ~ abind_tvar) ++ Θ)
        ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_all_syn P) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e
@@ -155,14 +199,18 @@ with e_lookeq : supply -> aenv -> atom -> pskl -> pskl
     {{ S1 ↝ S2 ⊨ Θ ⊢ P2 ∼[ α ] P2' ⤳ Ξ2 ⨾ C2 }}e ->
     {{ S0 ↝ S2 ⊨ Θ ⊢ (pskl_arrow P1 P2) ∼[ α ] (pskl_arrow P1' P2')
        ⤳ (Ξ1 ++ Ξ2) ⨾ (C1 ++ C2) }}e
-| e_lookeq__forall_inh : forall S0 S1 Θ α P P' Ξ C β,   (* LE-ForallInh — LEAKS *)
+| e_lookeq__forall_inh : forall S0 S1 Θ α P P' Ξ C β,   (* LE-ForallInh *)
+    (* [paper-gap] ABSENCE-FIRST GUARD — see the header. *)
     β `notin` S0 ->
+    α `in` ftvar_in_pskl (pskl_all_syn P) ->
     {{ (add β S0) ↝ S1 ⊨ ((β ~ abind_tvar) ++ Θ)
        ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ]
        (open_pskl_wrt_pskl P' (pskl_var_f β)) ⤳ Ξ ⨾ C }}e ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_all_syn P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C }}e
-| e_lookeq__forall_syn : forall S0 S1 Θ α P P' Ξ C β,   (* LE-ForallSyn — LEAKS *)
+| e_lookeq__forall_syn : forall S0 S1 Θ α P P' Ξ C β,   (* LE-ForallSyn *)
+    (* [paper-gap] ABSENCE-FIRST GUARD — see the header. *)
     β `notin` S0 ->
+    α `in` ftvar_in_pskl (pskl_all_syn P) ->
     {{ (add β S0) ↝ S1 ⊨ ((β ~ abind_tvar) ++ Θ)
        ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ]
        (pskl_tophole P') ⤳ Ξ ⨾ C }}e ->
@@ -170,8 +218,10 @@ with e_lookeq : supply -> aenv -> atom -> pskl -> pskl
 | e_lookeq__univ_ghost : forall S0 S1 Θ α P P' Ξ C,     (* LE-UnivGhost *)
     {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_tophole P) ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C }}e
-| e_lookeq__univ_ghost1 : forall S0 S1 Θ α P P' Ξ C β,  (* LE-UnivGhost1 — LEAKS *)
+| e_lookeq__univ_ghost1 : forall S0 S1 Θ α P P' Ξ C β,  (* LE-UnivGhost1 *)
+    (* [paper-gap] ABSENCE-FIRST GUARD — see the header. *)
     β `notin` S0 ->
+    α `in` ftvar_in_pskl (pskl_tophole P) ->
     {{ (add β S0) ↝ S1 ⊨ ((β ~ abind_tvar) ++ Θ)
        ⊢ (pskl_tophole P) ∼[ α ]
        (open_pskl_wrt_pskl P' (pskl_var_f β)) ⤳ Ξ ⨾ C }}e ->

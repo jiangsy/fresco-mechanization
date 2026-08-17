@@ -39,6 +39,43 @@ recently P6-Sv at the end of this file)}.
 
 ## MISSING SIDE CONDITION (2026-08-17, machine-checked) — the COLLECTION rules lack the `α ∈ ftv(subject)` guard that renders the implementation's absence-first dispatch, so a collection call can spend a fresh name it never needed
 
+> **✅ FIXED IN THE MECH (2026-08-17), scoped to the THREADED encoding.**  The
+> five LEAKING rows of `frost/ext_algo/def_look.v` — `LS-ForallR`,
+> `LS-ForallL`, `LE-ForallInh`, `LE-ForallSyn`, `LE-UnivGhost1` — now carry
+> `α ∈ ftvar_in_pskl <subject>` (`LE-FlexR` already did).  `make coq` rc=0,
+> `README.v` 32/32.  **The finding below stands unchanged for the PAPER**: the
+> figure still owes the exclusion premise on both of its collection judgements.
+>
+> ⭐ **Why `ext_algo/` only, and why that is not a half-measure.**  The fact the
+> guard protects is the SUPPLY, and only the threaded encoding has one;
+> `a_looksub` / `a_lookeq` stay as published.  `e_looksub_sound` is unaffected
+> (a SMALLER relation still maps into the a-side).  The single place the two
+> meet is `a_looksub_lookeq_rel_e` (`prop_solve_rel.v` §7), where an unguarded
+> a-row must be answered by a guarded relation — and it is answered by the
+> EMPTY one, which is not a weakening: at an α-free subject the a-side's own
+> answer is already `Ξ = ·`, `𝒞 = ·` (`a_looksub_subject_absent`).  Guarding
+> `a_looksub` too would touch ~250 construction sites over eleven files
+> (`algo/sub/prop_looksub.v` alone has 107) and — once the SECOND guard lands
+> for `e_extract_det` — would break `alpha_stack_looksub`
+> (`algo/sub/look/prop_sub_cstr.v:373`) and force Lemma E.17's `Sub-ForallR`
+> stack branch to be redone against a peeled target.  One-sided, that
+> obstruction does not arise at all.
+>
+> ⭐ **What it bought**, and it is exactly the refutation read forwards:
+> `e_looksub_lookeq_absent_pins` (`prop_look.v` §2c) — at an α-free subject the
+> collection returns `Ξ = ·`, `𝒞 = ·` **and the supply unchanged**,
+> hypothesis-free.  The third conjunct is FALSE without the guard.
+>
+> ⛔ **The two refutations are RETRACTED**, because they refute the UNGUARDED
+> rules and stop typechecking the moment the guard lands.  Their proof texts
+> are preserved in git at commit **`eabf308`**; see "WHERE THE RETRACTED FILES
+> WENT" below, to which their citations elsewhere now resolve.
+>
+> | deleted file | what it proved |
+> |---|---|
+> | `cex/probe_extract_supply_drift.v` | `e_extract_det_false` — `e_extract` is not deterministic up to a renaming: at `Θ = ·`, subject `1`, counterpart `∀_. 1`, `NM = SK`, LS-Absent spends nothing and LS-ForallR draws an opener, both emitting the empty collection |
+> | `cex/probe_sub_supply_drift.v` | `e_sub_det_false` — ⭐ the drift REACHES SUBTYPING, which had been argued by inspection only.  At `NM = SK`, `M = FN TC`, `P0 = 1 → ∀_.1`, subject `∀_. (◇ → ◇)`, `SI-ForallL` runs the collection at the α-free subject `◇ → ◇` and the tail below the fork is two AXIOMS (`C-Ghost`, `SI-Ghost`), so the two derivations agree on their output CONTEXT and SKELETON and differ by exactly one atom of supply |
+
 **Where.**  `LS-ForallR`, `LS-Arrow`, `LS-ForallL`, `LS-UnivGhostL`, `LS-Check`
 and their `LE-*` twins (`full-algo-spec.tex`'s collection figure;
 `frost/algo/def_rules.v:418-528` and its threaded copy
@@ -980,6 +1017,15 @@ under the published `SolE-FlexR` — and their headers, at `18cc7e4^`.
 | `cex/cex_p6_flex_counterpart.v` | the `-var` completeness lemmas are false at a flexible solve counterpart (`cex_solve_forces_flex`: "the only solve derivation forces `P_a = β̂`") | that central lemma is now FALSE — the repaired row returns `guess^TY(P_i) = c → ⟨⟩`, and the obligation becomes reflexivity (row 1 of the table above).  Its OTHER half — that the configuration is unreachable because `LE-FlexR` freshens a flexible target facing a compound subject — survives untouched in `cex/cex_p6_flex_freshened.v` (still green), and the `a_flex_tvar` WIDENING it motivated (`algo/def_rules.v`, `SolE-FlexR`'s comment) still stands: that is about which counterparts the rule ACCEPTS, not what it RETURNS |
 | `cex/cex_thm_complete_subtyping.v` | `thm_complete_subtyping_false` — Theorem 4.6 is false, by the double-occurrence instance `Θ0 = f̂`, `P0 = (∀γ.γ→γ) → f̂`, `P = ∀β.β→β` at `NM = TY`, `M = FN(TC)` | the authors accepted the refutation and replaced the row.  `guess^TY(β→β) = (·; β→β)`, so nothing is invented and nothing lost, the close re-binds a REAL occurrence, and A FULL RUN EXISTS.  Its direct negation is `cex/probe_flexr_repair.v` (`new_extract`, `new_run_exists`; Qed, axiom-free).  ⭐ Soundness of subtyping survived the repair unchanged (`a_sub_sound`) |
 | `cex/probe_solve_flexr.v` | `run_exists_at_correct_instantiation` — localizing the failure to that one row by showing the continuation succeeds if handed the right instantiation | SUPERSEDED, not false: under the repair the algorithm *chooses* that instantiation itself, so the hypothetical is the TAIL of `new_run_exists` in `cex/probe_flexr_repair.v`, which additionally rests on nothing but `algo/def_rules.v` |
+
+⚙ **A SECOND PAIR WENT THE SAME WAY (2026-08-17)**, and for the cleanest
+possible reason: they are refutations OF a rule set, and the rule set was
+repaired.  Both proof texts are preserved in git at commit **`eabf308`**.
+
+| deleted file | what it proved | why it is retracted |
+|---|---|---|
+| `cex/probe_extract_supply_drift.v` | `e_extract_det_false` — `e_extract` is not deterministic up to a renaming, because at an α-FREE subject against a `∀` counterpart both `LS-Absent` (spends nothing) and `LS-ForallR` (draws an opener) fire and both emit the empty collection | the absence-first guard landed on `e_looksub`/`e_lookeq`'s five leaking rows, so the second derivation cannot be built.  ⭐ Its POSITIVE replacement is `e_looksub_lookeq_absent_pins` (`ext_algo/prop_look.v` §2c): at an α-free subject the collection returns `Ξ = ·`, `𝒞 = ·` AND the supply unchanged, hypothesis-free — which is precisely the conjunct this file refuted |
+| `cex/probe_sub_supply_drift.v` | `e_sub_det_false` — the same drift REACHES SUBTYPING through `SI-ForallL`, so level 6's motive is false at its supply conjunct.  ⭐ It closed the one step of the §8c.13 diagnosis that had been argued by INSPECTION | same guard.  It was written as the GATE for the repair — the whole plan rested on the inspection step, so it was machine-checked first and the repair only then begun.  Having done its job it is retracted with the file it was checking |
 
 ⛔ **What this does NOT settle.**  The mech's `sub_shield` premise was
 invented as the repair of the second of these, and P6-Sv / P6-Ss / P6-L
