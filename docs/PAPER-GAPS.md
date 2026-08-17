@@ -39,27 +39,33 @@ recently P6-Sv at the end of this file)}.
 
 ## MISSING SIDE CONDITION (2026-08-17, machine-checked) — the COLLECTION rules lack the `α ∈ ftv(subject)` guard that renders the implementation's absence-first dispatch, so a collection call can spend a fresh name it never needed
 
-> **✅ FIXED IN THE MECH (2026-08-17), scoped to the THREADED encoding.**  The
-> five LEAKING rows of `frost/ext_algo/def_look.v` — `LS-ForallR`,
-> `LS-ForallL`, `LE-ForallInh`, `LE-ForallSyn`, `LE-UnivGhost1` — now carry
-> `α ∈ ftvar_in_pskl <subject>` (`LE-FlexR` already did).  `make coq` rc=0,
-> `README.v` 32/32.  **The finding below stands unchanged for the PAPER**: the
-> figure still owes the exclusion premise on both of its collection judgements.
+> **✅ FIXED IN THE MECH ON BOTH ENCODINGS (2026-08-17/18).**  The five LEAKING
+> rows of `frost/algo/def_rules.v` AND `frost/ext_algo/def_look.v` —
+> `LS-ForallR`, `LS-ForallL`, `LE-ForallInh`, `LE-ForallSyn`, `LE-UnivGhost1` —
+> now carry `α ∈ ftvar_in_pskl <subject>` (`LE-FlexR` already did).
+> `make coq` rc=0, `README.v` 32/32.  **The finding below stands unchanged for
+> the PAPER**: the figure still owes the exclusion premise on both of its
+> collection judgements.
 >
-> ⭐ **Why `ext_algo/` only, and why that is not a half-measure.**  The fact the
-> guard protects is the SUPPLY, and only the threaded encoding has one;
-> `a_looksub` / `a_lookeq` stay as published.  `e_looksub_sound` is unaffected
-> (a SMALLER relation still maps into the a-side).  The single place the two
-> meet is `a_looksub_lookeq_rel_e` (`prop_solve_rel.v` §7), where an unguarded
-> a-row must be answered by a guarded relation — and it is answered by the
-> EMPTY one, which is not a weakening: at an α-free subject the a-side's own
-> answer is already `Ξ = ·`, `𝒞 = ·` (`a_looksub_subject_absent`).  Guarding
-> `a_looksub` too would touch ~250 construction sites over eleven files
-> (`algo/sub/prop_looksub.v` alone has 107) and — once the SECOND guard lands
-> for `e_extract_det` — would break `alpha_stack_looksub`
-> (`algo/sub/look/prop_sub_cstr.v:373`) and force Lemma E.17's `Sub-ForallR`
-> stack branch to be redone against a peeled target.  One-sided, that
-> obstruction does not arise at all.
+> ⭐⭐ **AND IT COST THE CONSUMERS NOTHING, because THE GUARD IS ADMISSIBLE** —
+> the result worth passing to the authors alongside the gap itself.
+> `algo/sub/prop_looksub.v` §2b proves each rule in its PRE-GUARD form
+> (`a_looksub_forall_r_adm`, …) by the one case split the guard introduces: at
+> an α-free subject the rule's own opener is fresh for `α`, so the premise
+> collected NOTHING (`a_looksub_lookeq_absent_nil`) and `LS`/`LE-Absent`
+> returns the very same answer.  **So the premise rejects no ANSWER the
+> premise-free rule accepted, only a wasteful DERIVATION of it.**  Every
+> construction site swaps a constructor for a lemma of the same name: the P6
+> completeness chain — the estimated ~250-site risk — cost ELEVEN one-word
+> substitutions, and `alpha_stack_looksub` was untouched.
+>
+> ⚠️ **The admissibility does NOT extend to the two REMAINING dispatch guards**
+> (the `◇` exclusion the runner tests second, and the ForallR-before-ForallL
+> priority).  Those change WHICH RULE fires rather than blocking a no-op, so
+> they shrink the relation for real, they must be two-sided, and they make
+> `alpha_stack_looksub` FALSE at a `◇` target.  Machine-checked in
+> `cex/probe_vacuous_supply_drift.v`; the execution order is
+> `docs/HANDOFF-extractable-algo-encoding.md` §8c.14.
 >
 > ⭐ **What it bought**, and it is exactly the refutation read forwards:
 > `e_looksub_lookeq_absent_pins` (`prop_look.v` §2c) — at an α-free subject the

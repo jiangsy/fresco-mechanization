@@ -3736,3 +3736,94 @@ re-writing verbatim when it is redone: `e_looksub_lookeq_absent_pins` (at an
 unchanged — hypothesis-free, and FALSE without the guard) and
 `rel_e_absent_{sub,eq}` (the empty answer for `a_looksub_lookeq_rel_e`, which
 is where the a-side's un-guarded rules meet the e-side's guarded ones).
+
+### 8c.14 ⭐⭐⭐ THE ABSENCE-FIRST GUARD IS LANDED ON BOTH ENCODINGS — and the level-6 gate is machine-checked (2026-08-17/18)
+
+**What §8c.13 left open is now closed at its first two steps, and the third is
+scoped exactly.**
+
+**⭐ THE GATE (`eabf308`).**  §8c.13's diagnosis had one step argued by
+INSPECTION: that the collection's supply drift REACHES `e_sub` through
+`SI-ForallL`.  It is now `e_sub_det_false`, Qed and assumptions-closed.  The
+configuration is tuned so that EVERYTHING BELOW THE FORK IS FREE, which is why
+no counting argument is needed:
+
+    NM = SK    M = FN TC    P0 = 1 → ∀_.1    subject ∀_. (◇ → ◇)
+
+`SI-ForallL` applies (`M ≠ TI`, `P0` an arrow hence guarded) and runs
+`extract` at the α-FREE subject `◇ → ◇`; at `NM = SK` the guess is the
+IDENTITY, so the block is `·` and `P1 = ◇`; and the tail is two AXIOMS —
+`SI-Arrow` splits into `C-Ghost` (`◇ ∼ 1`) and `SI-Ghost` (`◇ ⩽ ∀_.1`).
+⚙ It needs `swaps_atoms_add` (prop_solve_det.v §2, three lines, new): peel the
+`add`, fix the base with `swaps_atoms_notin`, and the chain is forced to
+identify the drawn opener with the drawn peeler.
+
+**⭐⭐ THE GUARD, ON BOTH ENCODINGS (`3f371c2`, `caf096c`).**  The five leaking
+rows of `a_looksub`/`a_lookeq` AND `e_looksub`/`e_lookeq` carry
+`α ∈ ftvar_in_pskl <subject>`.  `make coq` rc=0, README 32/32.
+
+⭐ **THE MOVE THAT MADE THE a-SIDE CHEAP, and it is the reusable lesson:
+THE GUARD IS ADMISSIBLE.**  `prop_looksub.v` §2b gives five lemmas
+(`a_looksub_forall_r_adm`, …) reinstating each rule in its PRE-GUARD form by
+the one case split the guard introduces — at an α-free subject the opener is
+fresh for α, so the premise collected NOTHING
+(`a_looksub_lookeq_absent_nil`) and LS/LE-Absent gives the very same answer.
+So the premise rejects no ANSWER, only a wasteful DERIVATION of it, and every
+CONSTRUCTION site swaps a constructor for a lemma of the same name.  **P6 cost
+eleven one-word substitutions**, against an estimate of a re-opened
+completeness chain.  ⚙ Where the guard IS available the sites take it
+directly; its two structural transports are named once in `algo/prop_basic.v`
+(`ftvar_in_pskl_subst_keep` / `_reflect`, `ftvar_in_pskl_open_keep`).
+
+⭐ And **transport 5 SIMPLIFIED AWAY**: `rel_e_absent_{sub,eq}` plus five
+`sumbool` splits — the whole price of the one-sided design — are deleted,
+because `a_looksub_lookeq_rel_e` now hands the a-side's own premise to the
+e-side rule through `rel_pskl_in_id`.
+
+**⛔⛔ WHAT IS STILL OWED, AND WHY IT IS NOT ANOTHER `caf096c`.**
+`e_extract_det` is STILL FALSE after this guard —
+`cex/probe_vacuous_supply_drift.v`, Qed:
+
+    Θ = ·   α ∈ S0   subject ∀_. α   counterpart ◇
+
+The binder is VACUOUS over the looked-for variable, so the absence-first guard
+is SATISFIED; LS-Vacuous spends nothing, LS-ForallL peels at a drawn opener,
+and both answer `·  ⨾ ·`.  The runner tests VACUOUS second — every `pskl_hole`
+counterpart answers before the α-membership test is reached — and that test is
+still not on the rules.
+
+⚠️ **THE ADMISSIBILITY TRICK DOES NOT EXTEND**, and that is machine-checked in
+the same file (§3–§4).  At (subject `α`, counterpart `◇`) LS-Var and
+LS-Vacuous emit DIFFERENT collections (`[≼m ◇]` vs `·`), so the a-side's
+ForallL-over-Var derivation at `(∀_. α, ◇)` has NO guarded counterpart with
+the same answer — `rel_a_cstrs` is a `Forall2` and the lists differ in LENGTH.
+The remaining guards therefore SHRINK the relation for real, which also means
+they must be two-sided (a one-sided ◇-guard breaks transport 5 outright).
+
+**THE REMAINING GUARD SET, read off the runner's dispatch
+(`def_look_impl.v`) — this is the audit, do not redo it.**  Subject first,
+then counterpart, then mode:
+
+| subject | counterpart | mode | runner takes | relation owes |
+|---|---|---|---|---|
+| `var_f α` | any | any | LS-Var | `LS-Vacuous` needs `P ≠ α`; `LS-ForallR` needs `A ≠ α` |
+| `arrow` / `∀Q` / `⫯Q` | `◇` | any | LS-Vacuous | `LS-ForallL`, `LS-UnivGhostL` need `P' ≠ ◇` |
+| `∀Q` | `∀B` | tc | ghost-free `B` ? ForallR : ForallL | `LS-ForallL` needs "ForallR does not apply" |
+| `⫯Q` | `∀B` | tc | ghost-free `B` ? ForallR : UnivGhostL | `LS-UnivGhostL` needs the same |
+| everything else | | | — | already single-rule (audited) |
+
+⛔ **THE ONE HARD OBSTRUCTION, and it bites at the ◇ guard, not only at the
+ForallR one.**  `alpha_stack_looksub` (`algo/sub/look/prop_sub_cstr.v:373`) is
+stated `forall Θ m P0` — **including `P0 = ◇`** — and claims the α-stack
+collects `[≼m P0]` undescended.  Under `P' ≠ ◇` the stack cannot be peeled at
+a ghost target, so the lemma becomes FALSE there, not merely unproved.  Lemma
+E.17's `Sub-ForallR` stack branch must be redone against a PEELED target
+before the ◇ guard can land.  **That is the next unit of work**, and it is
+self-contained.
+
+⚙ Order to execute in: (1) restate/re-prove `alpha_stack_looksub` at a peeled
+target and repair E.17's `Sub-ForallR` branch; (2) land `P' ≠ ◇` on
+`LS-ForallL`/`LS-UnivGhostL` and `P ≠ α` on `LS-Vacuous`/`LS-ForallR`, both
+encodings; (3) land the ForallR-priority split; (4) `e_extract_det` is then a
+direct induction and level 6 is level 5's shape verbatim (§8c.13's plan, §6/§7
+of `prop_sub_complete.v`, whose §1/§3/§4 are already Qed).
