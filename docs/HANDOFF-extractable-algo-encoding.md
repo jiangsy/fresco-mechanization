@@ -3323,3 +3323,88 @@ as the only row with content.  ⚙ Start by checking whether the monotonicity
 premise needs `{{ ⊢ Θ }}a` — `a_inc_compose` takes well-formedness of BOTH
 contexts, so the motive will have to carry it or derive it from
 `prop_run_invariants.v`.
+### 8c.12a ⚙ §8c.12 IN PROGRESS — the scoping is DONE and much smaller than feared; the support induction is NOT finished (2026-08-17)
+
+⛔ **Nothing from this section is committed to the tree.**  The work in
+progress is `~/frost-level6-scratch/isub-increase-wip.v`, which compiles
+(`timeout 900 coqc -R . src <file>` from `mechanization/`) with `Admitted`
+on the two inductions below.  ⚠️ Do not land it until both are Qed.
+
+**⭐⭐ THE SCOPING RESULT, and it is the useful part.**  The hole-free
+restriction buys EXACTLY SIX case-kills in the level-5 induction — five
+`destruct Hnh1` and one `destruct Hnh0`
+(prop_consis_complete.v:1824, 2006, 2112, 2209, 2292, 2402).  Reading them
+against the rule set:
+
+| cell | rules that fire | verdict |
+|---|---|---|
+| pattern `1` / `→` / `∀` / `⫯`, subject `◇` | `U-Ghost` alone | ⭐ UNIQUE — no `⊑` needed |
+| pattern `β̂` RIGID, subject `◇` | `U-Ghost` alone (`U-FlexR` would need `β̂` flex-bound, and `e_assign_target_flex` forbids it) | ⭐ UNIQUE |
+| pattern `◇`, subject not a flexible var | `U-GhostR` alone (at `(◇, ◇)` `U-Ghost` also fires, but returns the SAME triple) | ⭐ UNIQUE |
+| **pattern `β̂` FLEXIBLE, subject `◇`** | `U-Ghost` vs `U-FlexR` | ⛔ divergent |
+| **pattern `◇`, subject `α̂` FLEXIBLE** | `U-GhostR` vs `U-FlexL` | ⛔ divergent |
+
+So `⊑` is needed at TWO cells, mirror images of each other, and the other
+four groups are ordinary work.
+
+**⭐⭐ AND THE TWO CELLS COLLAPSE TO ONE FACT.**  At subject `◇` the runner
+takes `U-Ghost` in EVERY pattern clause, and at pattern `◇` it takes
+`U-GhostR` unconditionally in the subject (def_consis_impl.v:759-763 and the
+`pskl_hole` subject arm of each pattern clause, :770, :808, :938, :989,
+:1056, :1134) — in both cases returning `(S0, Θ, other side)` with the
+context **UNCHANGED**.  The runner never commits at a ghost row.  So the
+whole `⊑` obligation is
+
+    Θ ⊲[nil] α̂ ≔ P ⊣ Θd   ⇒   Θ ⊴ Θd
+
+— *an assign walk only adds information*.  Not a runner-monotonicity
+induction over 40 cells, as §8c.12 assumed.
+
+**⚠️ AND THE RELATION IS `⊴`, NOT GENERAL `a_inc`.**  Pushing the same entry
+on both sides is FALSE for a general `κ`: `a_inc__flex_def` demands
+`τ' ≡ᵗ msubst_ptyp κ τ`, and `a_inc` permits a `κ` that solves variables the
+TARGET leaves flexible (take `Θ = Θ' = (α̂)`, `κ = [1/α̂]`), so `τ` and `κτ`
+need not be equivalent there.  The identity shorthand `⊴` has exactly the
+right content — the paper's own "all entries of flexible variables in Θ are
+preserved in Θ'" (algorithmic.tex:135) — and its congruence family already
+exists: `a_isub_cons_{flex,flex_def,var_typ,var_skl}` (prop_basic.v:109-176)
+and `a_isub_cons_tvar` (prop_stability.v:44).  ⭐ `cex/probe_inc_more_general.v`
+proves the divergence's instance with a NON-identity `κ`; the identity one
+works too and is what to use.
+
+**WHERE TO BUILD IT.**  At the `a_` layer, in a NEW file
+`frost/algo/consis/prop_consis_inc.v` (no cycle: it imports
+`prop_soundness_consis` for `a_isub_strip_tvar`, `prop_stability` for
+`a_isub_cons_tvar`, `prop_inc_strengthen` for
+`a_assign_unify_consis_flex_preserve`; none imports it).  The `e_` side then
+comes from `e_assign_unify_consis_sound` (prop_consis.v §4), whose `uniq` and
+coverage hypotheses **the level-5 motive already carries**
+(`consis_call_uniq` / `consis_call_cover`), so they are free at the use site.
+
+**STATE OF THE TWO INDUCTIONS** (both `Admitted` in the scratch file):
+
+1. `a_assign_unify_consis_lc` — the output context is locally closed.  Needed
+   because `U-Arrow`'s second premise runs at the FIRST's output, so the
+   increase's own induction cannot supply its `lc` side condition.  ⚙ A
+   SEPARATE induction on purpose, as prop_consis.v §7 is.  **4 rows open**:
+   `Assign-SolveM` and the three entry-pushing rows
+   (`var_typ` / `var_skl` / `skip_other`), all of which need the payload's
+   `lc_abind` rebuilt after `simpl` — the `lc_ih` tactic in the scratch is
+   the thing to fix, and it regressed `SolveM` when simplified, so fix it
+   without dropping the `a_decls βs` branch.
+2. `a_assign_unify_consis_isub` — the increase itself, motives
+   `a_suffix Ξ -> lc_aenv (Ξ ++ Θ0) -> Θ0 ⊴ Θ1` (assign) and
+   `lc_aenv Θ0 -> Θ0 ⊴ Θ1` (unify / consis).  ⭐ The motive drops the block
+   from the SOURCE — that is what makes almost every row a one-liner; the
+   alternative `(Ξ ++ Θ0) ⊴ Θ1` forces a reordering argument at SolveM,
+   Assign and the three skips.  6 rows close by `a_isub_refl_lc` alone and
+   11 more by the congruence block; **the open ones are** `Assign-SolveM`
+   (use `a_isub_solve_head` — already **Qed** in the scratch — over
+   `a_isub_weaken_suffix` with `a_guess_mono_decls`), `Assign-Depend` (needs
+   `a_isub_prepend_decls_src` plus `flex_preserve` for "the head survives"),
+   `U-Arrow` (`a_isub_trans`, blocked on induction 1), and the three `∀` rows
+   (`a_isub_strip_tvar`).
+
+⚙ `a_suffix Ξ` had to join the assign motive: `Assign-SolveM` deposits the
+block below the solved head and needs it to be a suffix to weaken past.  It
+is `nil` at the top and `Depend` only ever extends it with a flexible.
