@@ -240,7 +240,42 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-16 (latest) — ⛔⭐ **§8c.10 SECOND PASS: the consis trio's scoped output relation is REFUTED — the runner and the rules diverge at a ghost-vs-flexible node, and the divergence is not a renaming**
+## 2026-08-17 (latest) — ⛔ **THE FRAGMENT ESCAPE IS REFUTED TOO: skeleton inference PRESENTS the divergent cell, machine-checked (`cex/probe_pat_presents_hole_flex.v`) — the two-context problem must be solved, not fenced off**
+
+The lift of level 5 off its hole-free restriction
+(docs/HANDOFF-close-consis-unrestricted.md) had one cheap exit left,
+(R2): find a predicate weaker than `pskl_no_hole` that the flagship's own
+consistency calls satisfy and that still excludes the two divergent
+cells.  Its gating question — do subtyping and typing ever actually
+PRESENT a hole opposite a flexible variable? — has answer YES:
+
+- `e_guess_mono` MIRRORS a skeleton's structure, inventing a fresh
+  flexible exactly at each `◇`, so `AT-Abs` at binder skeleton `⫯(◇→◇)`
+  (an abstraction applied to an unannotated abstraction) binds
+  `f : δ̂1→δ̂2`, an ARROW of undefined flexibles;
+- `AT-App` re-runs pat on its argument at pattern `◇` in that context,
+  and under the argument's own λ, `AP-AbsCheck`'s skeleton-`◇` binder
+  echoes `◇` out through `e_sub__ghost`, so the body run for `f y` types
+  `f` at the NAKED pattern `◇→◇`;
+- `AP-Var` + `Arrow` then pair `◇` against `δ̂1` — the divergent cell —
+  at the source program `(λf. f (λy. f y)) (λz. z)`.
+
+The probe exhibits that pat call with two derivations whose output
+contexts differ in LENGTH (U-GhostR leaves Θ unchanged; U-FlexL solves
+`δ̂1 ≔ ε̂` and deposits `ε̂`), plus `probe_pat_outputs_not_swap_related`:
+no swap chain relates them, so the swap-equality conclusion of
+`consis_call_complete` (and of any level-6 mirror) is FALSE at a call the
+flagship makes.  Three exhibits, all `Print Assumptions`-closed.
+
+⭐ What survives, sharpened in the handover §5 (R1): pre-normalisation is
+now the lead, and R2's refutation analysis says WHY it can work where the
+four dead relations could not — in the normalisation lemma's own
+two-context transport, BOTH sides are derivations, so C4
+(head-determinism), the constraint that killed designs 2–4, evaporates;
+only C3/C5 (semantic on definitions, migration-tolerant) still constrain
+the relation.
+
+## 2026-08-16 — ⛔⭐ **§8c.10 SECOND PASS: the consis trio's scoped output relation is REFUTED — the runner and the rules diverge at a ghost-vs-flexible node, and the divergence is not a renaming**
 
 New probe `cex/probe_consis_ghost_flex.v` (five exhibits,
 assumptions-closed).  §8c.10 had left exactly one decision to the

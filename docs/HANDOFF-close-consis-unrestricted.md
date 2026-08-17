@@ -1,8 +1,11 @@
 # HANDOFF — close consistency-runner completeness WITHOUT the hole-free restriction
 
-**Status (2026-08-17): the supporting layer is Qed and in the tree; the
-main step is OPEN, and FOUR designs for it have been refuted by
-machine-checked probes.**  This file is the whole problem in one place:
+**Status (2026-08-17, second pass): the supporting layer is Qed and in the
+tree; the main step is OPEN.  FOUR designs for the two-context relation are
+refuted by machine-checked probes — and so is the FRAGMENT ESCAPE (§5's R2):
+skeleton inference PRESENTS the divergent cell
+(`cex/probe_pat_presents_hole_flex.v`), so the two-context problem must be
+solved, not fenced off.**  This file is the whole problem in one place:
 what is proved, what is ruled out, what any solution must satisfy, and the
 experiments worth running next.
 
@@ -141,18 +144,59 @@ derivation by a normalised one whose alias chains are collapsed, then compare.
 ⚠️ §8c.9 also records that a RUNNER-RERUN normalisation is CIRCULAR — read
 that note before designing this.
 
-### (R2) ⭐ Weaken the FRAGMENT instead of solving the general problem
+⭐ **Sharpened by R2's refutation analysis (2026-08-17): this is now the
+lead, and the reason it can work where designs 1–4 failed is the QUANTIFIER
+STRUCTURE.**  Concretely: (i) a normalisation lemma — every `e_consis`
+derivation yields a GHOST-PREFERRING one (take `U-Ghost`/`U-GhostR`
+wherever they fire, i.e. the runner's dispatch order) — and (ii) a main
+induction that runs the runner against the NORMALISED derivation in
+LOCKSTEP, where the two-context problem never arises because a
+ghost-preferring derivation makes the runner's choices.  The two-context
+transport then lives inside (i) at `U-Arrow` only: premise 2's derivation
+sits at the un-normalised premise-1 output `Θd`, and must be replayed at
+the normalised output `Θn`.  ⭐ The crucial difference from dead ends 2–4:
+in that transport BOTH sides are DERIVATIONS, and the replayed side may
+CHOOSE ITS RULES FREELY — C4 (head-determinism) was only ever needed to
+predict the RUNNER's single admissible rule, so it evaporates, and the
+relation `Θn R Θd` can be as semantic as C3/C5 want (alias-extension /
+`a_inc`-shaped).  What (i) owes is therefore an ALIAS-ELIMINATION
+transport, the exact thing probe_consis_ghost_flex.v's header already
+named.  ⚠️ Costs to budget: the transport is still an induction over the
+derivation with a two-context motive (the head-blindness trap does not
+bite, but the migration one — C5 — still constrains how R is stated), and
+the normalised derivation's OUTPUTS differ from the original's, so the
+motive of (ii) consumes R once more at the very end (the flagship
+corollaries' conclusions must tolerate it, which §2's ⊴-increase face is
+shaped for).
 
-The four unique cells need nothing; only `(flexible var, ◇)` and its mirror
-diverge.  So look for a predicate WEAKER than `pskl_no_hole` that (a) is
-closed under the recursion and (b) excludes just those two shapes — roughly
-"no hole ever stands opposite a flexible variable".  ⚠️ Closure is the whole
-question: the context changes as the run proceeds, so a variable that is
-rigid at one node can be flexible at a later one; check that first.
-⭐ **This is the cheapest thing that could still reach the flagship** — and
-it is worth first asking whether subtyping and typing ever actually PRESENT
-a hole opposite a flexible.  If they do not, the fragment suffices and §4's
-tension never has to be resolved.
+### (R2) ⛔ REFUTED (2026-08-17): weaken the FRAGMENT instead of solving the general problem
+
+**Dead — `cex/probe_pat_presents_hole_flex.v`.**  The question this
+direction turned on — do subtyping and typing ever actually PRESENT a hole
+opposite a flexible? — has answer YES, and the probe machine-checks it.
+The program `(λf. f (λy. f y)) (λz. z)` composes three innocent moves:
+
+1. `AT-Abs` GUESSES a λ-binder's type from its split skeleton, and
+   `e_guess_mono` MIRRORS the skeleton's structure — a fresh flexible at
+   each `◇`.  An abstraction applied to an unannotated abstraction has
+   binder skeleton `⫯(◇→◇)`, so `f : δ̂1→δ̂2`, an arrow of UNDEFINED
+   flexibles.
+2. `AT-App` re-runs skeleton inference on its argument at pattern `◇` in
+   that context, and under the argument's own λ, `AP-AbsCheck` binds `y`
+   at SKELETON `◇`, which `e_sub__ghost` echoes back out — so the body
+   run for `f y` types `f` at the NAKED pattern `◇ → ◇`.
+3. `AP-Var` + `Arrow` pair that pattern componentwise against `f`'s type:
+   `consis(pattern ◇, subject δ̂1)` — the divergent cell.
+
+The probe exhibits that pat call with TWO derivations whose output
+contexts differ in LENGTH (U-GhostR leaves Θ; U-FlexL solves `δ̂1 ≔ ε̂`),
+so no swap chain relates them and no restriction can both hold at the
+flagship's calls and exclude the divergent cells.  ⇒ §4's tension MUST be
+resolved.  ⚙ Worth keeping from the analysis: the cell is reached only
+through `◇`-carrying PATTERNS meeting guessed arrow TYPES — every other
+pairing in the sweep was absorbed safely (FlexL at a `⫯`-rooted pattern
+assigns the whole payload and `guess^TY` fills its `◇`s; `Ghost`/`GhostR`
+at a non-flex opposite are unique).
 
 ### (R3) Derivation-sided induction for the two-context part
 
