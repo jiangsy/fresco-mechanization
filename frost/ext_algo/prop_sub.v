@@ -354,8 +354,8 @@ Proof.
     clear - Hnα Hcov. fsetdec.
 
   - (* Ghost *)
-    intros S M Θ0 P0 Hu Hcov.
-    repeat split; [ apply a_sub__ghost | assumption
+    intros S M Θ0 P0 Hne Hu Hcov.
+    repeat split; [ apply a_sub__ghost; exact Hne | assumption
                   | clear - Hcov; fsetdec | clear - Hcov; fsetdec ].
 
   - (* UnivGhostL *)

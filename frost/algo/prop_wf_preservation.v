@@ -664,7 +664,7 @@ Proof.
     split; [ eapply a_isub_strengthen_decls_src; eauto | ].
     split; [ exact Hwf1 | exact HwfQ ].
   - (* Ghost (SK) : output = the check-against, context unchanged *)
-    intros M Θ0 P0 Hwf HwfP0 HwfP.
+    intros M Θ0 P0 Hmghost Hwf HwfP0 HwfP.
     split; [ apply a_isub_refl; exact Hwf | ].
     split; [ exact Hwf | exact HwfP0 ].
   - (* UnivGhostL (SK) : strip the subject's ⊤ *)

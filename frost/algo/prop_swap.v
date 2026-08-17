@@ -1433,7 +1433,7 @@ Proof.
     + rewrite swap_pskl_open in IH.
       rewrite swap_aenv_app in IH. exact IH.
   - (* ghost *)
-    intros M Θ0 P0. simpl. apply a_sub__ghost.
+    intros M Θ0 P0 Hm. simpl. apply a_sub__ghost; exact Hm.
   - (* univ_ghost_l *)
     intros M Θ0 Θ1 P0 P Q Hm Hd IH. simpl.
     apply a_sub__univ_ghost_l; auto.

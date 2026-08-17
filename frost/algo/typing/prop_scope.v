@@ -1361,7 +1361,7 @@ Proof.
       | clear - Huq Hbm; apply binds_In in Hbm; solve_uniq
       | clear - Huq; intros γ Hγ Hc; solve_uniq ].
   - (* Ghost : SK *)
-    intros M Θ0 P0 Heq; discriminate Heq.
+    intros M Θ0 P0 Hmghost Heq; discriminate Heq.
   - (* UnivGhostL : SK *)
     intros M Θ0 Θ1 P0 P Q Hm Hs IH Heq; discriminate Heq.
   - (* Flex-Solve : three FRESH entries go on top and [α0] is re-bound to

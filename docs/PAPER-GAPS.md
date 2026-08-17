@@ -91,6 +91,21 @@ the problem at its source instead.
 
 ## MISSING SIDE CONDITION (2026-08-17, machine-checked) — `SI-Ghost` lacks the `M ≠ TI` guard that its NEIGHBOUR `SI-UnivGhostL` carries, so the relation derives inference-mode judgements against a counterpart the implementation never accepts
 
+> **✅ FIXED IN THE MECH (2026-08-17).**  `a_sub__ghost` now carries
+> `M <> mode_ti` (`frost/algo/def_rules.v`; `e_sub__ghost` likewise), which
+> makes `SI-Infer` the ONLY rule at `TI` — every other row fixes the mode to
+> `TC` or `FN _`, and `SI-ForallL` / `SI-UnivGhostL` already carried this
+> very premise.  ⭐ The guard had to go ON THE RULE rather than onto a
+> completeness motive, because the bad configuration is reached
+> HEREDITARILY: `SI-Arrow` runs its second premise at `M` against the
+> counterpart's codomain, so a root-level premise is vacuous one arrow down
+> (`cex/probe_sub_ghost_ti.v` §3).  ⚙ Completeness is UNAFFECTED — the
+> subtyping bundle's ghost case already carried `skmod[SK]{P0}{M}`, which
+> forces `P0 = ◇` at `TI`, so it simply names `SI-Infer` there instead;
+> that is the same invariant `type.ml`'s fused `mode` has by construction.
+> The probe now machine-checks the RESOLUTION (relation and runner agree,
+> at the root and one arrow down).
+
 **What the paper says.**  `SI-Ghost` (`full-algo-spec.tex:849-853`) is an
 axiom over an arbitrary mode:
 

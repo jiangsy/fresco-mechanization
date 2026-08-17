@@ -391,7 +391,19 @@ Proof.
   assert (HQ : pskl_to_bskl_inh (bskl_to_pskl Q) = Q)
     by (eapply ad_pat_sub_fuel_hole_target_inh; exact Hsub).
   (* the run: [Ghost], which returns the input skeleton unchanged *)
-  exists P0, Θ0. split; [ apply a_sub__ghost | ].
+  (* ⭐ THE RUN.  Since [SI-Ghost] gained its neighbour's [M <> TI] guard
+     (algo/def_rules.v), the [TI] mode is [SI-Infer]'s — and that is exactly
+     the case this lemma's own header already described, because [skmod[SK]]
+     forces the counterpart to be [◇] there ([a_sk_mode_compat] has only the
+     [__ti] row at [TI]).  So one witness still serves both rules; only the
+     RULE NAME now depends on the mode. *)
+  exists P0, Θ0. split;
+    [ destruct M as [ | | M0 ];
+      [ pose proof (HmodSK eq_refl) as Hmc; inversion Hmc; subst;
+        apply a_sub__infer
+      | apply a_sub__ghost; discriminate
+      | apply a_sub__ghost; discriminate ]
+    | ].
   intros κ1 Hid Hinc1. exists κ.
   destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
   split; [ exact Hout | split; [ exact Hfact | ] ].
@@ -449,7 +461,19 @@ Proof.
   cbn in HeqP; subst P.
   assert (HQ : pskl_to_bskl_inh (bskl_to_pskl Q) = Q)
     by (eapply ad_pat_sub_fuel_holeg_target_inh; exact Hsub).
-  exists P0, Θ0. split; [ apply a_sub__ghost | ].
+  (* ⭐ THE RUN.  Since [SI-Ghost] gained its neighbour's [M <> TI] guard
+     (algo/def_rules.v), the [TI] mode is [SI-Infer]'s — and that is exactly
+     the case this lemma's own header already described, because [skmod[SK]]
+     forces the counterpart to be [◇] there ([a_sk_mode_compat] has only the
+     [__ti] row at [TI]).  So one witness still serves both rules; only the
+     RULE NAME now depends on the mode. *)
+  exists P0, Θ0. split;
+    [ destruct M as [ | | M0 ];
+      [ pose proof (HmodSK eq_refl) as Hmc; inversion Hmc; subst;
+        apply a_sub__infer
+      | apply a_sub__ghost; discriminate
+      | apply a_sub__ghost; discriminate ]
+    | ].
   intros κ1 Hid Hinc1. exists κ.
   destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
   split; [ exact Hout | split; [ exact Hfact | ] ].

@@ -3615,7 +3615,7 @@ Proof.
         | exact Hmod ]
       | clear; fsetdec ].
   - (* Ghost *)
-    intros M Θ0 P0 Hwf HwfP0 HwfP Hmod Hgf0.
+    intros M Θ0 P0 Hmghost Hwf HwfP0 HwfP Hmod Hgf0.
     simpl. apply a_subtag__ghost. fsetdec.
   - (* UnivGhostL *)
     intros M Θ0 Θ1 P0 P P' Hne Hs IH Hwf HwfP0 HwfP Hmod Hgf0.

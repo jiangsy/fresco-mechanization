@@ -113,6 +113,8 @@ Inductive e_sub : supply -> a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl
        (open_pskl_wrt_pskl P P1) ⩽ Q ⊣ Θ1 }}e ->
     {{ S0 ↝ S2 ⊨ Θ0 ⊢[ NM | M | P0 ] (pskl_all_syn P) ⩽ Q ⊣ Θ1 }}e
 | e_sub__ghost : forall S M Θ0 P0,                            (* Ghost *)
+    (* Δ-none: the a-side's guard verbatim — see its header there. *)
+    M <> mode_ti ->
     {{ S ↝ S ⊨ Θ0 ⊢[ a_sub_mode_sk | M | P0 ] pskl_hole ⩽ P0 ⊣ Θ0 }}e
 | e_sub__univ_ghost_l : forall S0 S1 M Θ0 Θ1 P0 P Q,          (* UnivGhostL *)
     M <> mode_ti ->

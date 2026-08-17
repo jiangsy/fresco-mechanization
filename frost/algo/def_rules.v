@@ -1285,7 +1285,29 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
     {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P1 }}a ->
     a_sub NM M P0 (Ξ ++ Θ0) (open_pskl_wrt_pskl P P1) Q Θ1 ->
     a_sub NM M P0 Θ0 (pskl_all_syn P) Q Θ1
+(* ⭐ [M <> mode_ti] is the guard SI-Ghost's IMMEDIATE NEIGHBOUR
+   [SI-UnivGhostL] spells out below ("should not inst when TI",
+   full-algo-spec.tex:855) and that SI-Ghost itself omits (:849).  The
+   RUNNER dispatches on the mode first and its [mode_ti] arm is SI-Infer's
+   alone — it tests the counterpart for [◇] and rejects otherwise
+   (ext_algo/def_sub_impl.v:509-515) — so without the guard the relation
+   derives, at [(SK, TI, P0 ≠ ◇, subject ◇)], a judgement the runner
+   rejects: cex/probe_sub_ghost_ti.v, machine-checked.
+
+   ⚙ WHY ON THE RULE rather than as a premise on level 6's motive: the
+   configuration is REACHED HEREDITARILY.  [SI-Arrow] concludes at [FN M]
+   and runs its second premise at [M] against the counterpart's CODOMAIN,
+   so a root-level premise ["M = TI -> P0 = ◇"] is vacuous at the
+   conclusion and says nothing one arrow down (§3 of that probe).  On the
+   rule it holds at every node, which is what the authors' own
+   implementation gets by construction: [type.ml]'s [mode] FUSES the mode
+   with its counterpart, and [sk_of_mode] sends [Infer] to [Ghost], so
+   [TI] pairs with [◇] and cannot do otherwise.  With the guard, SI-Infer
+   is the ONLY rule at [TI] (every other row fixes the mode to [TC] or
+   [FN _], and [SI-ForallL] / [SI-UnivGhostL] already carry this very
+   premise).  [paper-gap] filed in docs/PAPER-GAPS.md. *)
 | a_sub__ghost : forall M Θ0 P0,                              (* Ghost *)
+    M <> mode_ti ->
     a_sub a_sub_mode_sk M P0 Θ0 pskl_hole P0 Θ0
 | a_sub__univ_ghost_l : forall M Θ0 Θ1 P0 P Q,                (* UnivGhostL *)
     M <> mode_ti ->

@@ -106,7 +106,8 @@ Proof.
   - (* pat y at (tc, ◇): the skeleton-◇ binder echoes ◇ (Ghost). *)
     apply e_pat__var_skl with (P := pskl_hole).
     + unfold probe_pf_ctx, binds. simpl. auto.
-    + apply e_sub__ghost.
+    + (* mode TC, so SI-Ghost's [M <> TI] guard is immediate *)
+      apply e_sub__ghost; discriminate.
   - (* pat f at (fn tc, ◇→◇): Arrow pairs ◇ against δ̂1 — the cell. *)
     apply e_pat__var
       with (A := ptyp_arrow (ptyp_var_f δ1) (ptyp_var_f δ2)).

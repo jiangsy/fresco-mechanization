@@ -798,7 +798,7 @@ Proof.
           [ exact Huq | apply a_rigid_only_in_dom; apply Hr; exact Hα' ]
       | apply Hr; exact Hα' ].
   - (* Ghost : SK *)
-    intros M Θ0 P0 Heq; discriminate Heq.
+    intros M Θ0 P0 Hm Heq; discriminate Heq.
   - (* UnivGhostL : SK *)
     intros M Θ0 Θ1 P0 P Q Hm Hs IH Heq; discriminate Heq.
   - (* Flex-Solve *)

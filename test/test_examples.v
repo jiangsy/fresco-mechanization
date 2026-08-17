@@ -470,7 +470,8 @@ Proof.
     + simpl_env; simpl fvar_in_exp; clear - Hxb; fsetdec.
     + simpl_open.
       eapply a_pat__var_skl; [ crush_binds | ].
-      apply a_sub__ghost.
+      (* the mode here is TC, so SI-Ghost's [M <> TI] guard is immediate *)
+      apply a_sub__ghost; discriminate.
   - (* poly ⦂[FN TI; ∀◇(□→□) → □]  σ_id → σ_prodIB *)
     eapply a_typing__var; [ crush_binds | ].
     unfold σ_poly at 1; simpl ptyp_to_pskl.
@@ -776,7 +777,7 @@ Proof.
       * simpl_env; simpl fvar_in_exp; clear - Hyb; fsetdec.
       * simpl_open.
         eapply a_pat__var_skl; [ crush_binds | ].
-        apply a_sub__ghost.
+        apply a_sub__ghost; discriminate.
   - (* r ⦂[FN TI; ∀◇(□→∀◇(□→□)) → □]  (∀a.a→∀b.b→b) → Int *)
     eapply a_typing__var; [ crush_binds | ].
     unfold σ_r; simpl ptyp_to_pskl.

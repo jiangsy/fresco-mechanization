@@ -74,16 +74,21 @@ From src Require Import frost.ext_algo.def_sub_impl.
 Open Scope frost_e_scope.
 
 (* ===================================================================== *)
-(*  1.  The RELATION accepts.                                            *)
+(*  1.  ⭐ RESOLVED (2026-08-17): the RELATION NO LONGER ACCEPTS.          *)
 (* ===================================================================== *)
 
-Lemma probe_sub_ghost_ti_derivable : forall S0 Θ0,
-  {{ S0 ↝ S0 ⊨ Θ0 ⊢[ a_sub_mode_sk | mode_ti | pskl_unit ]
-     pskl_hole ⩽ pskl_unit ⊣ Θ0 }}e.
-Proof. intros. apply e_sub__ghost. Qed.
+(** [SI-Ghost] now carries the [M <> TI] guard its neighbour always had
+    (algo/def_rules.v, and see its header), so at the configuration this
+    probe was written about NO rule fires: [SI-Infer] wants the counterpart
+    to be [◇] and it is [1]; [SI-Ghost] is barred by the guard; every other
+    row fixes the mode to [TC] or [FN _], or wants a non-[◇] subject. *)
+Lemma probe_sub_ghost_ti_not_derivable : forall S0 S1 Θ0 Θ1 Q,
+  ~ {{ S0 ↝ S1 ⊨ Θ0 ⊢[ a_sub_mode_sk | mode_ti | pskl_unit ]
+       pskl_hole ⩽ Q ⊣ Θ1 }}e.
+Proof. intros * Hd. inversion Hd; subst; congruence. Qed.
 
 (* ===================================================================== *)
-(*  2.  The RUNNER rejects — at every order proof.                       *)
+(*  2.  The RUNNER rejects — at every order proof.  Now they AGREE.       *)
 (* ===================================================================== *)
 
 Lemma probe_sub_ghost_ti_runner_none : forall S0 Θ0 HP HP0 HD H,
@@ -94,17 +99,19 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  3.  One [SI-Arrow] down — the relation half of the configuration a    *)
-(*      root-level premise would NOT exclude.                            *)
+(*  3.  ⭐ WHY THE GUARD HAD TO GO ON THE RULE, not on a motive: the       *)
+(*      configuration is reached HEREDITARILY, one [SI-Arrow] down, where   *)
+(*      a root-level premise is vacuous.  With the guard the inner node is  *)
+(*      barred too, so the whole family is gone.                           *)
 (* ===================================================================== *)
 
-Lemma probe_sub_ghost_ti_under_arrow : forall S0 Θ0,
-  {{ S0 ↝ S0 ⊨ Θ0 ⊢[ a_sub_mode_sk | (mode_fn mode_ti)
-                    | (pskl_arrow pskl_unit pskl_unit) ]
-     (pskl_arrow pskl_unit pskl_hole)
-     ⩽ (pskl_arrow pskl_unit pskl_unit) ⊣ Θ0 }}e.
+Lemma probe_sub_ghost_ti_under_arrow_not_derivable : forall S0 S1 Θ0 Θ1 Q,
+  ~ {{ S0 ↝ S1 ⊨ Θ0 ⊢[ a_sub_mode_sk | (mode_fn mode_ti)
+                      | (pskl_arrow pskl_unit pskl_unit) ]
+       (pskl_arrow pskl_unit pskl_hole) ⩽ Q ⊣ Θ1 }}e.
 Proof.
-  intros. apply e_sub__arrow with (S1 := S0) (Θ1 := Θ0).
-  - apply e_consis__unit.
-  - apply e_sub__ghost.
+  intros * Hd. inversion Hd; subst.
+  (* the only row at an arrow subject is [SI-Arrow], and its SECOND premise
+     IS §1's configuration — barred by the same lemma *)
+  eapply probe_sub_ghost_ti_not_derivable; eassumption.
 Qed.
