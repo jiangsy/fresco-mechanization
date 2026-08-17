@@ -3633,3 +3633,28 @@ plus at least two new inductions.  ⚙ None of this disturbs what is landed:
 the increase, its `e_` face and the ghost-row inversions are all statements
 at a SINGLE context and are unaffected by how the two-context relation is
 eventually chosen.
+
+### 8c.12d ⛔ THE `ctx_ref` SKETCH IS REFUTED TOO — the walk MIGRATES (2026-08-17)
+
+**Machine-checked: `cex/probe_assign_migrates.v`.**  §8c.12c proposed
+replacing bare `a_inc` by a POSITIONAL structural refinement (same entry /
+solved in place / fresh insert).  All three rows walk the two contexts in
+lockstep, and the assignment walk does not respect positions:
+`Assign-Depend` moves a flexible the payload MENTIONS into the pending
+block, and `Assign-SolveM` deposits that block BELOW the solved target.
+
+```
+    input   β̂, α̂        walk:  α̂ ≔ β̂
+    output  α̂ ≔ β̂, β̂    — the two entries have SWAPPED
+```
+
+⚙ The migration is forced by well-formedness (the deposited definition
+mentions `β̂`), and it is the same phenomenon PAPER-GAPS records under "flex
+migration below term binders defeats the factoring" — which is why the
+paper's own information increase is non-positional.
+
+⇒ **FOUR designs, four machine-checked refutations.**  The problem is now
+stated as a constraint system, with C4 (head-determining) pulling against C5
+(migration-tolerant), in the dedicated self-contained hand-off
+[`HANDOFF-close-consis-unrestricted.md`](HANDOFF-close-consis-unrestricted.md).
+**Continue there, not here.**

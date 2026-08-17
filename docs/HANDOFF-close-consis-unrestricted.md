@@ -1,0 +1,224 @@
+# HANDOFF — close consistency-runner completeness WITHOUT the hole-free restriction
+
+**Status (2026-08-17): the supporting layer is Qed and in the tree; the
+main step is OPEN, and FOUR designs for it have been refuted by
+machine-checked probes.**  This file is the whole problem in one place:
+what is proved, what is ruled out, what any solution must satisfy, and the
+experiments worth running next.
+
+Campaign context: `HANDOFF-extractable-algo-encoding.md` §8c.10 (level 5),
+§8c.10b (the refutation that created the restriction), §8c.12 / §8c.12a–c
+(this work).  Read those only if this file is not enough; it is meant to be
+self-contained.
+
+---
+
+## 1. The goal, exactly
+
+`frost/ext_algo/prop_consis_complete.v` proves
+
+```coq
+Lemma e_consis_call_impl_complete : forall S0 Θ c, consis_call_complete S0 Θ c.
+```
+
+whose motive (§6 of that file) carries the restriction
+
+```coq
+    consis_call_no_hole c ->        (* ← DELETE THIS *)
+```
+
+**The task is to delete that premise** and repair the proof, which then
+lifts the three headline corollaries (`e_assign_impl_complete`,
+`e_consis_run_complete`; `e_unify_impl_complete` is already unrestricted)
+onto ghost-carrying skeletons — the inputs subtyping and typing actually
+hand consistency, which is what makes the flagship path reachable.
+
+⚙ The restriction buys exactly SIX case-kills, at
+prop_consis_complete.v:1824, 2006, 2112, 2209, 2292 and 2402 (`destruct
+Hnh0.` / `destruct Hnh1.`).
+
+---
+
+## 2. What is already Qed — do not rebuild any of it
+
+### `frost/algo/consis/prop_consis_inc.v`
+
+| lemma | statement |
+|---|---|
+| `a_assign_unify_consis_isub` | **the trio only adds information** — `Θ0 ⊴ Θ1`, for assign / unify / consis |
+| `a_assign_unify_consis_lc` | the output context is locally closed |
+| `a_assign_unify_consis_defs_lc` | every definition in the output is locally closed |
+| `a_consis_isub_wf` | the same under `a_wf_aenv`, recovering `a_consis_sound`'s first conjunct |
+
+Helpers added there: `a_isub_solve_head`, `a_isub_weaken_suffix2`,
+`a_isub_strengthen_suffix_src`, `a_wf_aenv_defs_lc`, and the
+`lc_aenv` / `aenv_defs_lc` plumbing.
+
+### `frost/ext_algo/prop_consis_inc.v`
+
+`e_assign_isub`, `e_unify_isub`, `e_consis_isub`, `e_assign_nil_isub` (the
+`e_` faces, by composition with prop_consis.v §4's bridge), plus §3's four
+GHOST-ROW INVERSIONS: `e_consis_inv_hole_subject`,
+`e_consis_inv_hole_pattern`, `e_consis_inv_hole_flex_pattern`,
+`e_consis_inv_flex_subject_hole`.
+
+⭐ **Everything above is a statement at a SINGLE context**, so it is
+independent of how the two-context question in §4 is eventually settled.
+None of it is at risk.
+
+---
+
+## 3. The case analysis, settled
+
+Of the six kills, **four need nothing new** — one rule fires and the
+inversions in §2 already give it:
+
+| cell | why it is unique |
+|---|---|
+| pattern `1`/`→`/`∀`/`⫯`, subject `◇` | only `U-Ghost`; `U-UnivGhostR` wants a GUARDED subject and `◇` is not guarded (`guarded_pskl` is `1 \| α \| A → B` and nothing else) |
+| pattern `β̂` RIGID, subject `◇` | only `U-Ghost`; `U-FlexR` would need `β̂` flex-bound, which `e_assign_target_flex` forbids |
+| pattern `◇`, subject not a flexible var | only `U-GhostR`; at `(◇, ◇)` `U-Ghost` also fires but returns the SAME triple |
+
+**Two cells diverge**, and they are mirror images:
+
+```
+  pattern β̂ FLEXIBLE, subject ◇     U-Ghost   vs  U-FlexR
+  pattern ◇, subject α̂ FLEXIBLE     U-GhostR  vs  U-FlexL
+```
+
+At BOTH, the runner answers with its input context UNCHANGED
+(def_consis_impl.v:759-763 for the hole pattern; the `pskl_hole` subject arm
+of each pattern clause, :770, :808, :938, :989, :1056, :1134).  The
+derivation may instead run an assignment walk.  §2's increase is exactly the
+measure of that walk.
+
+---
+
+## 4. THE OPEN PROBLEM, and four dead ends
+
+The divergence is local, but it PROPAGATES: `U-Arrow`'s second premise runs
+at the first's output, so from there on the runner's context and the
+derivation's differ.  The motive must therefore relate two DIFFERENT
+contexts.  Four candidate relations have been tried.
+
+| # | relation | refuted by | why |
+|---|---|---|---|
+| 1 | renaming (`swaps_aenv ps Θd = cs_ctx r`) | `cex/probe_consis_ghost_flex.v` | the divergence is information-free but is not a renaming |
+| 2 | `⊴` (identity increase) | `cex/probe_isub_too_strong.v` | `a_isub`'s SECOND conjunct wants definitions preserved SYNTACTICALLY; the derivation's `β̂ ≔ γ̂` is an alias where the runner committed to `β̂ ≔ 1` |
+| 3 | bare `a_inc` | `cex/probe_inc_head_blind.v` | `a_inc` is blind to the HEAD, and the assign judgement dispatches on it — the two walks agree on neither the rule nor the number of steps |
+| 4 | a POSITIONAL structural refinement (`ctx_ref`: same / solved-in-place / fresh-insert) | `cex/probe_assign_migrates.v` | `Assign-Depend` + `Assign-SolveM` move a mentioned flexible from ABOVE the target to BELOW it, so the contexts cannot be walked in lockstep |
+
+⭐ **The constraints, which is what this section is really for.**  Any
+working relation `R Θr Θd` must satisfy all of:
+
+- **C1 composable** — preserved along `U-Arrow`'s threading, so the two
+  halves chain (`a_inc_compose` / `a_isub_trans` are available).
+- **C2 produced by the ghost cells** — must hold between `Θ` and the output
+  of `Θ ⊲[nil] α̂ ≔ ◇`; §2's increase gives `⊴`, hence also `a_inc`.
+- **C3 not syntactic on definitions** (dead end 2) — the derivation reaches
+  a value through a fresh ALIAS chain; only the equational theory sees the
+  agreement.
+- **C4 head-determining enough** to predict the assign walk's rule (dead
+  end 3).
+- **C5 migration-tolerant** — no positional lockstep (dead end 4).
+
+**C4 and C5 pull against each other, and that tension IS the open
+problem.**  C4 wants structure the walk can be read off; C5 says the walk
+destroys exactly that structure.
+
+---
+
+## 5. Directions worth trying, best first
+
+### (R1) ⭐ PRE-NORMALISE one side — the campaign's own precedent
+
+Level 4 hit a structurally similar hazard ("one atom in two roles breaks
+`flex_agree_rel`") and solved it NOT by strengthening the relation but by
+**pre-normalising side 1** — a hygienic rederivation — see §8c.9 and
+`remech-buried-forall-settled-and-peel`.  The analogue here: instead of
+relating the runner's context to an arbitrary derivation's, first replace the
+derivation by a normalised one whose alias chains are collapsed, then compare.
+⚠️ §8c.9 also records that a RUNNER-RERUN normalisation is CIRCULAR — read
+that note before designing this.
+
+### (R2) ⭐ Weaken the FRAGMENT instead of solving the general problem
+
+The four unique cells need nothing; only `(flexible var, ◇)` and its mirror
+diverge.  So look for a predicate WEAKER than `pskl_no_hole` that (a) is
+closed under the recursion and (b) excludes just those two shapes — roughly
+"no hole ever stands opposite a flexible variable".  ⚠️ Closure is the whole
+question: the context changes as the run proceeds, so a variable that is
+rigid at one node can be flexible at a later one; check that first.
+⭐ **This is the cheapest thing that could still reach the flagship** — and
+it is worth first asking whether subtyping and typing ever actually PRESENT
+a hole opposite a flexible.  If they do not, the fragment suffices and §4's
+tension never has to be resolved.
+
+### (R3) Derivation-sided induction for the two-context part
+
+The runner-sided doctrine (§8c.9) forbids stating a level over two arbitrary
+derivations — but it has one sanctioned exception, `e_guess_mono_rel`,
+justified because `guess^TY` is syntax-directed.  Ask whether the
+two-context step has the same justification.  ⚠️ Do not weaken the doctrine
+casually; it is what kept levels 1–5 tractable.
+
+### (R4) A relation indexed by the pending block
+
+C5's migration only ever moves entries that are IN the block `Ξ`, which is a
+PARAMETER of the assign judgement.  A relation that relates `(Ξr ++ Θr)` to
+`(Ξd ++ Θd)` while tracking the blocks separately might tolerate migration
+and still determine the head.  ⚙ Untried; no probe either way.
+
+---
+
+## 6. Dead ends already paid for — do not re-run these
+
+- **`a_consis_complete`'s optimality conjunct does NOT close it** (§8c.12b).
+  The pieces fit — `a_consis_sound` concludes exactly what
+  `a_consis_complete` consumes, at `κ = identity` — but its conclusion
+  EXISTENTIALLY quantifies the derivation, so it says *some* algorithmic
+  derivation is optimal, not that *the runner's* is.  Connecting those is
+  the very thing level 5 proves.  Circular.
+- **Runner monotonicity** ("the runner at `Θ` is `⊑`-below the runner at any
+  `⊑`-larger `Θd`") meets dead end 3 identically: it reads `Θd`'s head for
+  its own dispatch.
+- **A syntactic alias relation** was already tried and rejected in §8c.10b
+  ("not closed").
+
+---
+
+## 7. Mechanics that will bite
+
+- ⚠️⚠️ **An unknown constant inside a tactic fails SILENTLY.**  Half a
+  case-script sat "unprovable" for rounds this session because one lemma had
+  been dropped in a refactor.  Verify the lemma EXISTS before believing a
+  case is hard.
+- ⚠️⚠️ **`eapply` of a lemma with a list-valued index leaves an evar that a
+  structural tactic explores forever.**  `eapply a_isub_strengthen_suffix_src`
+  left `a_suffix ?Ξ` and `a_suffix_app` ran past 900 s, twice.  Pin the index
+  from the IH with `match goal`, then `apply` explicitly.
+- ⚠️ **`repeat split` dives into `a_non_flex`** (itself a conjunction), and
+  into the motive's `In`-quantified conjunct.  Spell the splits out.
+- ⚠️ `lc_abind` sends `flex_mono_def τ` to `True` — `lc_aenv` constrains NO
+  definition payload.  That is why `aenv_defs_lc` exists.
+- ⚠️ `simp` is the wrong tool at the consistency clause (its recursive call
+  sits at the same clause pattern); rewrite with `_13`'s own equation.
+- ⚠️⚠️ fsetdec cliff: disjointness goals hang at ≥6 set variables, and the
+  cliff is the GOAL's variable count, not the context's, so `clear -` does
+  not help.  Spell the derivation out.
+- ⚙⚙ **The technique that made §8c.12 tractable**: after a mutual induction,
+  close the easy rows with `all: try (now …)` and then
+  `all: match goal with |- ?G => idtac "REMAINS:"; idtac G end` — `coqc`
+  prints every surviving goal, so ONE run gives the exact open-row list.  It
+  took the increase from 28 rows to 0 in seven measured steps.
+
+---
+
+## 8. Gate
+
+`make coq > log 2>&1; rc=$?; exit $rc` — never pipe or chain — then VERIFY
+`.vo` TIMESTAMPS MOVED.  For the assumption report, `touch README.v` and
+re-run: it must print 32 × "Closed under the global context".  ZERO
+`Admitted`/`Axiom`; `Print Assumptions` on everything new.  **Never commit a
+partial induction** — abort with a RESTART NOTE instead.  Scratch files stay
+out of the tree; commit tag `[mech]`.
