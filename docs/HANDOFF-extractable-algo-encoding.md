@@ -3423,16 +3423,64 @@ prints every surviving goal, so ONE run gives the exact open-row list.  It
 took the increase from 28 rows to a tracked list that shrank 22 → 13 → 11
 → 9 → 8 → 5 → 1 → 0.
 
-⛔ **WHAT §8c.12 STILL OWES.**  The increase is the level's one piece of new
-content, but the lift itself is not done.  Remaining:
-(a) the `e_`-layer corollary — `{{ S0 ↝ S1 ⊨ Θ0 ⊲[nil] α ≔ P ⊣ Θ1 }}e` gives
-`Θ0 ⊴ Θ1`, via `e_assign_unify_consis_sound` (prop_consis.v §4), whose
-`uniq` and coverage hypotheses the level-5 motive ALREADY carries.  ⚠️ Check
-what supplies `lc_aenv Θ0` there: `consis_call_lc` is about the SKELETONS,
-and coverage does not give it, so the motive may have to carry it;
-`aenv_defs_lc` is free (mono ⇒ lc, and `aenv_defs_mono` is the runner's own
-`HD` input);
-(b) the six ghost-row inversions (four are unique-rule cells needing no `⊑`
-at all — §8c.12a's table);
-(c) rewiring prop_consis_complete.v §6/§7's motive to conclude `⊴` in place
-of the renaming at those rows, and `a_isub_trans` at `U-Arrow`.
+⭐ **(a) AND (b) ARE NOW DONE TOO** — `frost/ext_algo/prop_consis_inc.v`
+(commit `970f423`, assumptions-closed, tree green 32/32).
+
+§2 gives the three `e_`-level increases (`e_assign_isub`, `e_unify_isub`,
+`e_consis_isub`) and the one the divergent cells actually consume,
+`e_assign_nil_isub` — both `U-FlexL` and `U-FlexR` call the walk with an
+EMPTY pending block.  They are pure bridge composition, and their `uniq` and
+coverage hypotheses are EXACTLY `consis_call_uniq` / `consis_call_cover`, so
+they cost the consumer nothing.
+⚠️ **`lc_aenv Θ` is a genuinely new side condition** the motive must carry:
+`consis_call_lc` constrains the SKELETONS, coverage is about names, and
+reflexivity of `⊴` cannot do without it (`a_inc`'s term-variable rows demand
+`Θ' ⊢ A' ≡ᵗ κA`, whose base rule demands local closure).  It is the minimal
+such hypothesis — every well-formed context satisfies it.  `aenv_defs_lc` is
+FREE (`aenv_defs_mono` is already an input of every runner call).
+
+§3's four inversions confirm §8c.12a's table by machine: at a hole SUBJECT
+only `U-Ghost` fires unless the pattern is a variable; at a hole PATTERN only
+`U-GhostR` unless the subject is; `U-UnivGhostR` is excluded throughout
+because it demands a GUARDED subject and `◇` is not guarded.  The two
+divergent cells come out as disjunctions whose second branch is the
+assignment walk §2 measures.  ⚙ The `(◇, ◇)` overlap needs no uniqueness
+argument — `U-Ghost` and `U-GhostR` return the same triple there.
+
+⛔ **WHAT IS LEFT IS (c), THE MOTIVE — and here is its shape.**  The
+existing motive fixes the derivation's context to be the runner's own `Θ`.
+That cannot survive `U-Arrow` once the ghost rows diverge: the runner's
+second call sits at `cs_ctx r1` while the derivation's second premise sits
+at `Θd1`, and those are related by `⊴`, not by equality.  So the motive has
+to quantify over the derivation's input separately:
+
+```coq
+  ... -> forall Θd0, cs_ctx-side ⊴ Θd0 ->
+         forall Sd Θd Qd, consis_call_run S0 Θd0 c Sd Θd Qd ->
+         exists r ps, answer = Some r /\ … /\ cs_ctx r ⊴ swaps_aenv ps Θd /\ …
+```
+
+⭐ **Why it then composes at `U-Arrow`, and why the sind already supports
+it.**  §1's arrow companion quantifies the second half over ANY
+relation-derived `(S1, Θ1, Q1)`, not over the runner's own output.  So
+instantiate it with the RUNNER's first-half answer — legitimate because the
+runner is SOUND, `consis_call_spec` being exactly that — which yields the
+motive at `(cs_supply r1, cs_ctx r1)`, i.e. at the runner's actual second
+call.  Feed that the derivation's premise 2 together with
+`cs_ctx r1 ⊴ Θd1` from the first IH, and the chain closes by
+`a_isub_trans`.  ⚙ This is the same soundness-bridge move §8c.10c already
+used; what changes is only that the relation carried across is `⊴` rather
+than an equality.
+
+⚠️ **The renaming does NOT go away.**  `guess^TY` still invents names, so
+`ps` stays and the two relations COMPOSE — the context clause becomes
+`cs_ctx r ⊴ swaps_aenv ps Θd`, keeping §8c.10c's direction (the derivation
+is transported onto the RUNNER's rails).  Every existing case that today
+produces `swaps_aenv ps Θd = cs_ctx r` then discharges the new clause by
+reflexivity of `⊴` (`a_isub_refl_lc`, which is where the new `lc_aenv`
+premise is spent), and only the two ghost cells produce a proper increase.
+⚙ So the rewiring is mechanical for ~38 of the 40 cells; budget the effort
+for threading `lc_aenv` through the recursive calls, which is the one new
+obligation every case acquires.  ⚙ `lc` PRESERVATION along the trio is
+already proved at the `a_` layer (`a_assign_unify_consis_lc`) and reaches
+`e_` through the same bridge §2 uses.
