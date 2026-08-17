@@ -1697,36 +1697,6 @@ Proof.
     by (intros α0 τ0 Hb; destruct (Hnr _ _ Hb) as [Hb' | Hc];
         [ exact Hb' | discriminate Hc ]).
   (* ---------------------------------------------------------------- *)
-  (* Special case P0 = □ (LE-Vacuous): refinement inversion gives Q   *)
-  (* synthesised ⇒ Ψsub = ∅ ⇒ Ψa = ∅; take 𝒞=·, Ξc=·, Pa=Pi, κa=κ.    *)
-  (* ---------------------------------------------------------------- *)
-  destruct (pskl_hole_dec P0) as [-> | HP0nh].
-  { (* P0 = □ *)
-    simpl in Hrefine.  (* msubst κ □ = □ ; inh □ = bskl_hole *)
-    assert (Hsk : is_sskl Q)
-      by (eapply ad_refine_syn_hole_sskl; [ exact Hrefine | reflexivity ]).
-    assert (HΨe : Ψsub [=] empty)
-      by (eapply ad_pat_consis_sskl_tags; [ exact Hconsis | exact HwfΘ | exact Hsk ]).
-    assert (HΨa0 : Ψa [=] empty) by (clear - HΨs2 HΨe; fsetdec).
-    exists nil, nil, nil, Pi, (@nil (atom * ptyp)), (@nil (atom * ptyp)).
-    repeat split.
-    - apply a_lookeq__vacuous.
-    - simpl. apply a_solve_cstr__empty.
-    - apply Forall_nil.
-    - apply uniq_nil.
-    - intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec.
-    - apply Forall_nil.
-    - simpl. exact HwfPi.
-    - simpl. exact HwfΘ0.
-    - simpl; clear; fsetdec.
-    - apply Forall_nil.
-    - apply Forall_nil.
-    - (* ftv 𝒞 : no constraints *) simpl; clear; fsetdec.
-    - simpl. exact Hκ.
-    - simpl. apply a_inc_equiv_refl; exact Hκ.
-    - intros α0 Hα0; simpl in Hα0; clear - Hα0; fsetdec.
-    - simpl. eapply ad_partial_precise_psi_cong; [ exact Hpre | clear - HΨa0; fsetdec ]. }
-  (* ---------------------------------------------------------------- *)
   (* Special case P = α (LE-Var): R = var α ⇒ subject = ψa; delegate   *)
   (* to P6-Cv (a_solve_eq_complete_var) with the identity ρ.           *)
   (* ---------------------------------------------------------------- *)
@@ -1812,6 +1782,37 @@ Proof.
     - simpl. apply a_inc_equiv_refl; exact Hκ.
     - intros α0 Hα0; simpl in Hα0; clear - Hα0; fsetdec.
     - cbn [app]. exact Hprec. }
+  (* ---------------------------------------------------------------- *)
+  (* Special case P0 = □ (LE-Vacuous): refinement inversion gives Q   *)
+  (* synthesised ⇒ Ψsub = ∅ ⇒ Ψa = ∅; take 𝒞=·, Ξc=·, Pa=Pi, κa=κ.    *)
+  (* ---------------------------------------------------------------- *)
+  destruct (pskl_hole_dec P0) as [-> | HP0nh].
+  { (* P0 = □ *)
+    simpl in Hrefine.  (* msubst κ □ = □ ; inh □ = bskl_hole *)
+    assert (Hsk : is_sskl Q)
+      by (eapply ad_refine_syn_hole_sskl; [ exact Hrefine | reflexivity ]).
+    assert (HΨe : Ψsub [=] empty)
+      by (eapply ad_pat_consis_sskl_tags; [ exact Hconsis | exact HwfΘ | exact Hsk ]).
+    assert (HΨa0 : Ψa [=] empty) by (clear - HΨs2 HΨe; fsetdec).
+    exists nil, nil, nil, Pi, (@nil (atom * ptyp)), (@nil (atom * ptyp)).
+    repeat split.
+    - (* ◇-dispatch guard: the SUBJECT check ran first, so [P ≠ α] *)
+      apply a_lookeq__vacuous; exact HPnα.
+    - simpl. apply a_solve_cstr__empty.
+    - apply Forall_nil.
+    - apply uniq_nil.
+    - intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec.
+    - apply Forall_nil.
+    - simpl. exact HwfPi.
+    - simpl. exact HwfΘ0.
+    - simpl; clear; fsetdec.
+    - apply Forall_nil.
+    - apply Forall_nil.
+    - (* ftv 𝒞 : no constraints *) simpl; clear; fsetdec.
+    - simpl. exact Hκ.
+    - simpl. apply a_inc_equiv_refl; exact Hκ.
+    - intros α0 Hα0; simpl in Hα0; clear - Hα0; fsetdec.
+    - simpl. eapply ad_partial_precise_psi_cong; [ exact Hpre | clear - HΨa0; fsetdec ]. }
   (* ---------------------------------------------------------------- *)
   (* Special case α ∉ ftv P (LE-Absent): subject = κR (ψa absent) ⇒    *)
   (* Ψsub ⊆ ftag(κR) = ftag R', and Ψa ⊆ Ψsub while Ψa ⊆ Ψ' ⊥ ftag R' ⇒ *)

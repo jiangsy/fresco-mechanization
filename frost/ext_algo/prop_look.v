@@ -246,12 +246,12 @@ Proof.
     intros S Θ α m P P' Hn Habs.
     split; [ reflexivity | ]. split; [ reflexivity | reflexivity ].
   - (* LS-Vacuous *)
-    intros S Θ α m P Habs.
+    intros S Θ α m P Hne Habs.
     split; [ reflexivity | ]. split; [ reflexivity | reflexivity ].
   - (* LS-Check — same subject, one layer down *)
     intros S0 S1 Θ α A B Ξ C Hgf Hne Hg1 Hg2 He IH Habs. exact (IH Habs).
   - (* LS-ForallR — ⭐ GUARDED, so it cannot fire here *)
-    intros S0 S1 Θ α A B Ξ C β Hgf Hβ Hocc He IH Habs.
+    intros S0 S1 Θ α A B Ξ C β Hgf Hβ Hocc Hnv He IH Habs.
     exfalso. clear - Hocc Habs. fsetdec.
   - (* LS-Arrow — both halves are α-free, and the supplies compose *)
     intros S0 S1 S2 Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 He IH1 Hs IH2 Habs.
@@ -261,10 +261,10 @@ Proof.
     split; [ reflexivity | ]. split; [ reflexivity | ].
     clear - HS1 HS2. fsetdec.
   - (* LS-ForallL — ⭐ GUARDED *)
-    intros S0 S1 Θ α m P P' Ξ C β Hβ Hocc He IH Habs.
+    intros S0 S1 Θ α m P P' Ξ C β Hβ Hocc Hnh He IH Habs.
     exfalso. clear - Hocc Habs. fsetdec.
   - (* LS-UnivGhostL *)
-    intros S0 S1 Θ α m P P' Ξ C He IH Habs.
+    intros S0 S1 Θ α m P P' Ξ C Hnh He IH Habs.
     apply IH. simpl in Habs. exact Habs.
 
   - (* LE-Var — the subject IS α *)
@@ -273,7 +273,7 @@ Proof.
     intros S Θ α P P' Hn Habs.
     split; [ reflexivity | ]. split; [ reflexivity | reflexivity ].
   - (* LE-Vacuous *)
-    intros S Θ α P Habs.
+    intros S Θ α P Hne Habs.
     split; [ reflexivity | ]. split; [ reflexivity | reflexivity ].
   - (* LE-FlexR — the one row that already carried the guard *)
     intros S Θ α P β α1 Hα1 Hne Hin Habs.
@@ -345,16 +345,17 @@ Proof.
 
   - (* LS-Var *) intros. apply a_looksub__var.
   - (* LS-Absent *) intros. apply a_looksub__absent; assumption.
-  - (* LS-Vacuous *) intros. apply a_looksub__vacuous.
+  - (* LS-Vacuous *) intros. apply a_looksub__vacuous. assumption.
   - (* LS-Check *)
     intros S0 S1 Θ α A B Ξ C Hgf Hne Hg1 Hg2 Hl IH Hcov.
     apply a_looksub__check; auto.
   - (* LS-ForallR — the witness enters BOTH the supply and the context *)
-    intros S0 S1 Θ α A B Ξ C β Hgf Hβ Hocc Hl IH Hcov.
+    intros S0 S1 Θ α A B Ξ C β Hgf Hβ Hocc Hnv Hl IH Hcov.
     apply a_looksub__forall_r with (β := β).
     + assumption.
     + simpl in Hcov. clear - Hβ Hcov. fsetdec.
     + exact Hocc.
+    + exact Hnv.
     + apply IH.
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f β)) as Hup.
       simpl in Hup, Hcov |- *.
@@ -367,22 +368,23 @@ Proof.
     + apply IH1. clear - Hcov. fsetdec.
     + apply IH2. clear - Hcov Hgrow. fsetdec.
   - (* LS-ForallL *)
-    intros S0 S1 Θ α m P P' Ξ C β Hβ Hocc Hl IH Hcov.
+    intros S0 S1 Θ α m P P' Ξ C β Hβ Hocc Hnh Hl IH Hcov.
     apply a_looksub__forall_l with (β := β).
     + simpl in Hcov. clear - Hβ Hcov. fsetdec.
     + exact Hocc.
+    + exact Hnh.
     + apply IH.
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f β)) as Hup.
       simpl in Hup, Hcov |- *.
       clear - Hup Hcov. fsetdec.
   - (* LS-UnivGhostL *)
-    intros S0 S1 Θ α m P P' Ξ C Hl IH Hcov.
-    apply a_looksub__univ_ghost_l. apply IH. simpl in Hcov.
+    intros S0 S1 Θ α m P P' Ξ C Hnh Hl IH Hcov.
+    apply a_looksub__univ_ghost_l; [ exact Hnh | ]. apply IH. simpl in Hcov.
     clear - Hcov. fsetdec.
 
   - (* LE-Var *) intros. apply a_lookeq__var.
   - (* LE-Absent *) intros. apply a_lookeq__absent; assumption.
-  - (* LE-Vacuous *) intros. apply a_lookeq__vacuous.
+  - (* LE-Vacuous *) intros. apply a_lookeq__vacuous. assumption.
   - (* LE-FlexR — ⭐ the generating row: [α1 ∉ S] covers all four names the
        paper's side condition lists, [β] included (it is [P']'s only ftv) *)
     intros S Θ α P β α1 Hα1 Hne Hin Hcov.
@@ -514,20 +516,21 @@ Proof.
     intros * Habs * Heq. eexists. split; [ exact Heq | ].
     apply e_looksub__absent. exact Habs.
   - (* LS-Vacuous *)
-    intros * Heq. eexists. split; [ exact Heq | ].
-    apply e_looksub__vacuous.
+    intros * Hne * Heq. eexists. split; [ exact Heq | ].
+    apply e_looksub__vacuous. exact Hne.
   - (* LS-Check *)
     intros * Hgf Hne HgA HgB Hd IH S0' Heq.
     destruct (IH S0' Heq) as [S1' [Heq1 Hd']].
     exists S1'. split; [ exact Heq1 | ].
     apply e_looksub__check; assumption.
   - (* LS-ForallR *)
-    intros * Hgf Hβ Hocc Hd IH S0' Heq.
+    intros * Hgf Hβ Hocc Hnv Hd IH S0' Heq.
     destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
       as [S1' [Heq1 Hd']].
     exists S1'. split; [ exact Heq1 | ].
     apply e_looksub__forall_r with (β := β);
-      [ assumption | rewrite Heq; assumption | exact Hocc | exact Hd' ].
+      [ assumption | rewrite Heq; assumption | exact Hocc | exact Hnv
+      | exact Hd' ].
   - (* LS-Arrow *)
     intros * Hd1 IH1 Hd2 IH2 S0' Heq.
     destruct (IH1 S0' Heq) as [S1' [Heq1 Hd1']].
@@ -535,17 +538,17 @@ Proof.
     exists S2'. split; [ exact Heq2 | ].
     eapply e_looksub__arrow; [ exact Hd1' | exact Hd2' ].
   - (* LS-ForallL *)
-    intros * Hβ Hocc Hd IH S0' Heq.
+    intros * Hβ Hocc Hnh Hd IH S0' Heq.
     destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
       as [S1' [Heq1 Hd']].
     exists S1'. split; [ exact Heq1 | ].
     apply e_looksub__forall_l with (β := β);
-      [ rewrite Heq; assumption | exact Hocc | exact Hd' ].
+      [ rewrite Heq; assumption | exact Hocc | exact Hnh | exact Hd' ].
   - (* LS-UnivGhostL *)
-    intros * Hd IH S0' Heq.
+    intros * Hnh Hd IH S0' Heq.
     destruct (IH S0' Heq) as [S1' [Heq1 Hd']].
     exists S1'. split; [ exact Heq1 | ].
-    apply e_looksub__univ_ghost_l. exact Hd'.
+    apply e_looksub__univ_ghost_l; [ exact Hnh | exact Hd' ].
   - (* LE-Var *)
     intros * Heq. eexists. split; [ exact Heq | ].
     apply e_lookeq__var.
@@ -553,8 +556,8 @@ Proof.
     intros * Habs * Heq. eexists. split; [ exact Heq | ].
     apply e_lookeq__absent. exact Habs.
   - (* LE-Vacuous *)
-    intros * Heq. eexists. split; [ exact Heq | ].
-    apply e_lookeq__vacuous.
+    intros * Hne * Heq. eexists. split; [ exact Heq | ].
+    apply e_lookeq__vacuous. exact Hne.
   - (* LE-FlexR *)
     intros * Hα1 Hne Hocc S0' Heq.
     exists (add α1 S0'). split; [ rewrite Heq; reflexivity | ].
@@ -662,8 +665,9 @@ Proof.
     exists S0'. split; [ exact Heq | ].
     apply e_looksub__absent. auto using swap_pskl_ftv_notin.
   - (* LS-Vacuous *)
-    intros S Θ α m P S0' Heq. simpl.
-    exists S0'. split; [ exact Heq | apply e_looksub__vacuous ].
+    intros S Θ α m P Hne S0' Heq. simpl.
+    exists S0'. split;
+      [ exact Heq | apply e_looksub__vacuous; apply swap_pskl_neq_var; exact Hne ].
   - (* LS-Check *)
     intros S0 S1 Θ α A B Ξ C Hgf Hne Hg1 Hg2 Hl IH S0' Heq. simpl.
     destruct (IH _ Heq) as [S1' [HS1 Hd]].
@@ -671,14 +675,15 @@ Proof.
     apply e_looksub__check;
       auto using swap_pskl_neq_var, guarded_pskl_swap, pskl_ghost_free_swap.
   - (* LS-ForallR — LEAKS *)
-    intros S0 S1 Θ α A B Ξ C β Hgf Hβ Hocc Hl IH S0' Heq. simpl.
+    intros S0 S1 Θ α A B Ξ C β Hgf Hβ Hocc Hnv Hl IH S0' Heq. simpl.
     destruct (IH (add (swap_atom a b β) S0')) as [S1' [HS1 Hd]];
       [ apply eq_swap_atoms_add; exact Heq | ].
     exists S1'. split; [ exact HS1 | ].
     apply e_looksub__forall_r with (β := swap_atom a b β);
       [ apply pskl_ghost_free_swap; exact Hgf
       | eapply swap_notin_eq; eassumption
-      | apply swap_pskl_ftv_in; exact Hocc | ].
+      | apply swap_pskl_ftv_in; exact Hocc
+      | apply swap_pskl_neq_var; exact Hnv | ].
     rewrite swap_pskl_open_var in Hd. exact Hd.
   - (* LS-Arrow — threaded, so the two ∃-witnesses chain *)
     intros S0 S1 S2 Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 He IH1 Hs IH2 S0' Heq.
@@ -689,18 +694,22 @@ Proof.
     rewrite swap_aenv_app, swap_cstrs_app.
     eapply e_looksub__arrow; eassumption.
   - (* LS-ForallL — LEAKS *)
-    intros S0 S1 Θ α m P P' Ξ C β Hβ Hocc Hl IH S0' Heq. simpl.
+    intros S0 S1 Θ α m P P' Ξ C β Hβ Hocc Hnh Hl IH S0' Heq. simpl.
     destruct (IH (add (swap_atom a b β) S0')) as [S1' [HS1 Hd]];
       [ apply eq_swap_atoms_add; exact Heq | ].
     exists S1'. split; [ exact HS1 | ].
     apply e_looksub__forall_l with (β := swap_atom a b β);
       [ eapply swap_notin_eq; eassumption
-      | apply swap_pskl_ftv_in; exact Hocc | ].
+      | apply swap_pskl_ftv_in; exact Hocc
+      | apply swap_pskl_neq_hole; exact Hnh | ].
     rewrite swap_pskl_open_var in Hd. exact Hd.
   - (* LS-UnivGhostL *)
-    intros S0 S1 Θ α m P P' Ξ C Hl IH S0' Heq. simpl.
+    intros S0 S1 Θ α m P P' Ξ C Hnh Hl IH S0' Heq. simpl.
     destruct (IH _ Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_looksub__univ_ghost_l; exact Hd ].
+    exists S1'. split;
+      [ exact HS1
+      | apply e_looksub__univ_ghost_l;
+          [ apply swap_pskl_neq_hole; exact Hnh | exact Hd ] ].
 
   (* ------------------------- e_lookeq -------------------------- *)
   - (* LE-Var *)
@@ -711,8 +720,9 @@ Proof.
     exists S0'. split; [ exact Heq | ].
     apply e_lookeq__absent. auto using swap_pskl_ftv_notin.
   - (* LE-Vacuous *)
-    intros S Θ α P S0' Heq. simpl.
-    exists S0'. split; [ exact Heq | apply e_lookeq__vacuous ].
+    intros S Θ α P Hne S0' Heq. simpl.
+    exists S0'. split;
+      [ exact Heq | apply e_lookeq__vacuous; apply swap_pskl_neq_var; exact Hne ].
   - (* LE-FlexR — the cluster's ONE generating row *)
     intros S Θ α P β α1 Hα1 Hne Hin S0' Heq. simpl.
     exists (add (swap_atom a b α1) S0'). split;

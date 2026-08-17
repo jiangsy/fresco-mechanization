@@ -71,6 +71,8 @@ Proof.
   - simpl. clear - Hβ. fsetdec.
   - (* the absence-first guard is SATISFIED: the binder is vacuous over α *)
     simpl. clear. fsetdec.
+  - (* the ◇-dispatch guard is SATISFIED: the target is a ∀, not a ghost *)
+    discriminate.
   - unfold open_pskl_wrt_pskl. simpl.
     apply a_looksub__var.
 Qed.
@@ -85,10 +87,12 @@ Proof.
   - simpl. exact I.
   - simpl. clear - Hβ'. fsetdec.
   - simpl. clear. fsetdec.
+  - (* the subject is a ∀, not the looked-for variable *) discriminate.
   - unfold open_pskl_wrt_pskl. simpl.
     apply a_looksub__forall_l with (β := β).
     + simpl. clear - Hβ Hne. fsetdec.
     + simpl. clear. fsetdec.
+    + discriminate.
     + unfold open_pskl_wrt_pskl. simpl.
       apply a_looksub__var.
 Qed.

@@ -506,14 +506,17 @@ Arguments a_looksub_rebind_r {Θ α m Ps P' Ξ C b β}.
     are existential for the §2b reason. *)
 Lemma a_looksub_forall_r_first : forall Θ α m P P' Ξ C,
   {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
-  forall B β, P' = pskl_all_syn B -> m = mode_tc ->
+  (* ⚙ the ◇-dispatch guard asks the PEELED target not to be a ghost; the
+     runner's own ForallR test is exactly this [ghost_free] check *)
+  forall B β, pskl_ghost_free (pskl_all_syn B) ->
+  P' = pskl_all_syn B -> m = mode_tc ->
   β `notin` add α (ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl B) ->
   exists Ξ' C',
     {{ ((β ~ abind_tvar) ++ Θ) ⊢ P ≼[ α , mode_tc ]
        (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ' ⨾ C' }}a.
 Proof.
   intros Θ α m P P' Ξ C Hd.
-  induction Hd; intros B0 βr HeqP' Heqm Hβ; try discriminate.
+  induction Hd; intros B0 βr Hgft HeqP' Heqm Hβ; try discriminate.
   - (* LS-Var — answer by LS-Var at the opened target *)
     subst P. do 2 eexists. apply a_looksub__var.
   - (* LS-Absent *)
@@ -550,7 +553,7 @@ Proof.
                            ∪ ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f b))
                            ∪ ftvar_in_pskl B0))
           by (clear - Hδ HupPb; simpl in *; fsetdec);
-        destruct (IH B0 δ eq_refl eq_refl Hδ') as [Ξ1 [C1 E1]];
+        destruct (IH B0 δ Hgft eq_refl eq_refl Hδ') as [Ξ1 [C1 E1]];
         apply a_looksub_ctx_exchange in E1;
         (* γ': the final ForallL witness *)
         destruct (atom_fresh (add α (add βr (add b (add δ
@@ -591,17 +594,20 @@ Proof.
         [ clear - Hγ' HupBβ; simpl in *; fsetdec
         | (* the subject is UNCHANGED by the rebinding, so the rule's own
              absence-first guard is the goal verbatim *) assumption
+        | apply ghost_free_open_var_neq_hole; exact Hgft
         | exact E3 ]
     end.
   - (* LS-UnivGhostL — strip, IH, re-strip *)
     subst m. simpl in Hβ.
     match goal with
     | IH : forall _ _, _ -> _ -> _ -> _ |- _ =>
-        destruct (IH B0 βr HeqP' eq_refl Hβ) as [Ξ' [C' E]]
+        destruct (IH B0 βr Hgft HeqP' eq_refl Hβ) as [Ξ' [C' E]]
     end.
-    exists Ξ', C'. apply a_looksub__univ_ghost_l. exact E.
+    exists Ξ', C'.
+    apply a_looksub__univ_ghost_l;
+      [ apply ghost_free_open_var_neq_hole; exact Hgft | exact E ].
 Qed.
-Arguments a_looksub_forall_r_first {Θ α m P P' Ξ C} _ {B β}.
+Arguments a_looksub_forall_r_first {Θ α m P P' Ξ C} _ {B β} _.
 
 (* --------------------------------------------------------------------- *)
 (*  §2c  The completeness inductions                                      *)
@@ -1058,7 +1064,9 @@ Proof.
                               ∪ ftvar_in_pskl B))
              by (pose proof (supply_fresh_notin S0) as Hsf;
                  clear - Hcov Hsf; simpl in *; fsetdec).
-           destruct (a_looksub_forall_r_first Hd eq_refl eq_refl HFRESH)
+           destruct (a_looksub_forall_r_first Hd
+                        ltac:(apply ghost_free_ck_sound; eassumption)
+                        eq_refl eq_refl HFRESH)
              as [Ξ2 [C2 HP2]].
            pose proof (qfr B eq_refl eq_refl) as IHf.
            pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B
@@ -1204,7 +1212,9 @@ Proof.
                               ∪ ftvar_in_pskl B))
              by (pose proof (supply_fresh_notin S0) as Hsf;
                  clear - Hcov Hsf; simpl in *; fsetdec).
-           destruct (a_looksub_forall_r_first Hd eq_refl eq_refl HFRESH)
+           destruct (a_looksub_forall_r_first Hd
+                        ltac:(apply ghost_free_ck_sound; eassumption)
+                        eq_refl eq_refl HFRESH)
              as [Ξ2 [C2 HP2]].
            pose proof (qfr B eq_refl eq_refl) as IHf.
            pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B
@@ -1354,7 +1364,9 @@ Proof.
                               ∪ ftvar_in_pskl B))
              by (pose proof (supply_fresh_notin S0) as Hsf;
                  clear - Hcov Hsf; simpl in *; fsetdec).
-           destruct (a_looksub_forall_r_first Hd eq_refl eq_refl HFRESH)
+           destruct (a_looksub_forall_r_first Hd
+                        ltac:(apply ghost_free_ck_sound; eassumption)
+                        eq_refl eq_refl HFRESH)
              as [Ξ2 [C2 HP2]].
            pose proof (qfr B eq_refl eq_refl) as IHf.
            pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B

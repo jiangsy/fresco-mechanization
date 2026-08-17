@@ -370,11 +370,18 @@ Qed.
     LS-Var fires at the leaf.  So Sub-ForallR's stack branch never invokes
     LS-ForallR, and the β it would have had to strip is simply never
     introduced. *)
+(** ⚠️ [P0 ≠ ◇] IS LOAD-BEARING, and the unconditional form is FALSE under the
+    ◇-dispatch guard: at a ghost target the runner answers by LS-Vacuous with
+    [𝒞 = ·] as soon as the subject is a ∀ or a ⫯, so an α-stack does NOT
+    collect [≼m ◇] there — only the BARE-variable stack does, by LS-Var.
+    ⚙ The one consumer (Lemma E.17's Sub-ForallR stack branch, below) is at a
+    ∀ target and supplies it by [discriminate]. *)
 Lemma alpha_stack_looksub : forall α P,
   alpha_stack α P ->
-  forall Θ m P0, {{ Θ ⊢ P ≼[ α , m ] P0 ⤳ nil ⨾ (a_cstr_sub m P0 :: nil) }}a.
+  forall Θ m P0, P0 <> pskl_hole ->
+  {{ Θ ⊢ P ≼[ α , m ] P0 ⤳ nil ⨾ (a_cstr_sub m P0 :: nil) }}a.
 Proof.
-  intros α P H; induction H; intros Θ m P0.
+  intros α P H; induction H; intros Θ m P0 Hnh.
   - apply a_looksub__var.
   - (* EXISTS-FRESH (cluster 3): pick the ONE binder here, avoiding the rule's
        own inputs, and run the α-stack's cofinite premise at it *)
@@ -382,8 +389,10 @@ Proof.
       (L `union` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
          `union` ftvar_in_pskl P0)).
     apply a_looksub_forall_l_adm with (β := β);
-      [ clear - Fr; solve_notin | apply H0; clear - Fr; fsetdec ].
-  - apply a_looksub__univ_ghost_l; apply IHalpha_stack.
+      [ exact Hnh | clear - Fr; solve_notin
+      | apply H0; [ clear - Fr; fsetdec | exact Hnh ] ].
+  - apply a_looksub__univ_ghost_l;
+      [ exact Hnh | apply IHalpha_stack; exact Hnh ].
 Qed.
 
 (** THE MODE RESTRICTION, MACHINE-CHECKED.  [ad_pat_sub_fuel__forall_r] forces
@@ -867,7 +876,8 @@ Proof.
     subst P0.
     exists nil, nil, nil, Pi, (@nil (atom * ptyp)), (@nil (atom * ptyp)).
     repeat split.
-    + apply a_looksub__vacuous.
+    + (* ◇-dispatch guard: the [P = α] special case ran earlier *)
+      apply a_looksub__vacuous; assumption.
     + simpl. apply a_solve_cstr__empty.
     + apply Forall_nil.
     + apply uniq_nil.
@@ -1246,6 +1256,8 @@ Proof.
            (* EXISTS-FRESH (cluster 3): fire at the β this row already picked *)
            apply a_looksub_forall_r_adm with (β := β);
              [ exact (ptyp_to_pskl_ghost_free (ptyp_all A0))
+             | (* ◇-dispatch guard: the [P = α] special case ran earlier *)
+               assumption
              | clear - Fr; solve_notin | exact HLK ].
         -- (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
         -- (* all_flex_mono Ξs *) exact Hfms.
@@ -1352,7 +1364,7 @@ Proof.
         repeat split.
         -- (* a_looksub : LS-ForallL* / LS-UnivGhostL* then LS-Var, at the
               UNDESCENDED target *)
-           apply alpha_stack_looksub; exact Hstk.
+           apply alpha_stack_looksub; [ exact Hstk | discriminate ].
         -- (* solve : lift the β-instance over the ∀ by SS-ForallR, which is
               EXISTS-FRESH and LEAKS its binder (DESIGN §4.3) — the instance
               at β IS the premise, no family to build *)
@@ -1414,7 +1426,8 @@ Proof.
     subst P0.
     exists nil, nil, nil, Pi, (@nil (atom * ptyp)), (@nil (atom * ptyp)).
     repeat split.
-    + apply a_looksub__vacuous.
+    + (* ◇-dispatch guard: the [P = α] special case ran earlier *)
+      apply a_looksub__vacuous; assumption.
     + simpl. apply a_solve_cstr__empty.
     + apply Forall_nil.
     + apply uniq_nil.
@@ -2454,7 +2467,14 @@ Proof.
        (* EXISTS-FRESH (cluster 3): fire at the β this row already picked *)
        rewrite HeraseRβ in HLK.
        apply a_looksub_forall_l_adm with (β := β);
-         [ clear - Fr; solve_notin | exact HLK ].
+         [ (* ◇-dispatch guard on the TARGET: mode compatibility already
+              makes it ghost-FREE, hence not the ghost *)
+           solve [ assumption
+                 | apply ghost_free_neq_hole; assumption
+                 | apply ghost_free_neq_hole;
+                   apply a_ty_mode_compat_tc_ghost_free; exact (HmodTY eq_refl)
+                 | discriminate ]
+         | clear - Fr; solve_notin | exact HLK ].
     -- (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
     -- (* all_flex_mono Ξs *) exact Hfms.
     -- (* uniq Ξs *) exact Hus.
@@ -2905,7 +2925,14 @@ Proof.
        (* EXISTS-FRESH (cluster 3): fire at the β this row already picked *)
        rewrite HeraseRβ in HLK.
        apply a_looksub_forall_l_adm with (β := β);
-         [ clear - Fr; solve_notin | exact HLK ].
+         [ (* ◇-dispatch guard on the TARGET: mode compatibility already
+              makes it ghost-FREE, hence not the ghost *)
+           solve [ assumption
+                 | apply ghost_free_neq_hole; assumption
+                 | apply ghost_free_neq_hole;
+                   apply a_ty_mode_compat_tc_ghost_free; exact (HmodTY eq_refl)
+                 | discriminate ]
+         | clear - Fr; solve_notin | exact HLK ].
     -- (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
     -- (* all_flex_mono Ξs *) exact Hfms.
     -- (* uniq Ξs *) exact Hus.

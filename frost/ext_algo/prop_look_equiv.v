@@ -297,17 +297,24 @@ Qed.
 
 (** R″ — strip a ⫯ subject to the front.  No freshness owed at all. *)
 Lemma a_looksub_strip_tophole_l : forall Θ α m P0 P' Ξ C,
+  (* ⚠️ [P' ≠ ◇] IS LOAD-BEARING under the ◇-dispatch guard, and the
+     unconditional form is FALSE: at [⫯α ≼[α,m] ◇] the ⫯ subject answers by
+     LS-Vacuous with [𝒞 = ·], while the STRIPPED subject [α] is an LS-Var
+     node and answers [𝒞 = [≼m ◇]].  The runner agrees — it dispatches on
+     the subject, so it takes Vacuous at [⫯] and Var at [α]. *)
+  P' <> pskl_hole ->
+  P0 <> pskl_var_f α ->
   {{ Θ ⊢ (pskl_tophole P0) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
   {{ Θ ⊢ P0 ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a.
 Proof.
-  intros Θ α m P0 P' Ξ C H.
+  intros Θ α m P0 P' Ξ C Hnh Hnv H.
   remember (pskl_tophole P0) as S eqn:HS.
-  revert P0 HS.
-  induction H; intros P0' HS; inversion HS; subst.
+  revert P0 Hnv HS.
+  induction H; intros P0' Hnv HS; inversion HS; subst.
   - (* LS-Absent *)
     apply a_looksub__absent. simpl in *. assumption.
-  - (* LS-Vacuous *)
-    apply a_looksub__vacuous.
+  - (* LS-Vacuous — impossible: the counterpart is ◇ *)
+    exfalso. apply Hnh. reflexivity.
   - (* LS-Check: a ⫯ subject is not guarded *)
     match goal with
     | Hg : guarded_pskl (pskl_tophole _) |- _ => inversion Hg
@@ -316,8 +323,12 @@ Proof.
     apply a_looksub__forall_r with (β := β);
       [ assumption | simpl in *; assumption
       | (* the guard on [⫯P0] IS the guard on [P0] *) simpl in *; assumption
+      | (* ⚠️ NOT derivable from the row's own [⫯P0 ≠ α], which is vacuous —
+           this is the lemma's second side condition *) exact Hnv
       | ].
-    apply IHa_looksub. reflexivity.
+    apply IHa_looksub;
+      [ apply ghost_free_open_var_neq_hole; exact H
+      | exact Hnv | reflexivity ].
   - (* LS-UnivGhostL *)
     assumption.
 Qed.
@@ -330,6 +341,11 @@ Qed.
     for the block, the disjunctive [a_looksub_lookeq_ftv] for the
     collection). *)
 Lemma a_looksub_open_forall_l_first_n : forall n Θ α m P0 P' Ξ C γ,
+  (* ⚠️ [P' ≠ ◇] under the ◇-dispatch guard, and the unconditional form is
+     FALSE: at [∀_. α ≼[α,m] ◇] the ∀ subject answers by LS-Vacuous, while
+     its OPENED body [α] is an LS-Var node. *)
+  P' <> pskl_hole ->
+  P0 <> pskl_var_f α ->
   size_pskl P' < n ->
   {{ Θ ⊢ (pskl_all_syn P0) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
   γ `notin` add α (ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P'
@@ -337,7 +353,7 @@ Lemma a_looksub_open_forall_l_first_n : forall n Θ α m P0 P' Ξ C γ,
   {{ ((γ ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P0 (pskl_var_f γ))
       ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a.
 Proof.
-  induction n as [ | n IH ]; intros Θ α m P0 P' Ξ C γ Hsz Hd Hγ;
+  induction n as [ | n IH ]; intros Θ α m P0 P' Ξ C γ Hnh Hnv Hsz Hd Hγ;
     [ exfalso; clear - Hsz; lia | ].
   inversion Hd; subst.
   - (* LS-Absent *)
@@ -348,8 +364,8 @@ Proof.
     | Ha : α `notin` ftvar_in_pskl (pskl_all_syn _) |- _ =>
         clear - Ha Hγ Hup; simpl in *; fsetdec
     end.
-  - (* LS-Vacuous *)
-    apply a_looksub__vacuous.
+  - (* LS-Vacuous — impossible: the counterpart is ◇ *)
+    exfalso. apply Hnh. reflexivity.
   - (* LS-Check *)
     match goal with
     | Hg : guarded_pskl (pskl_all_syn _) |- _ => inversion Hg
@@ -373,7 +389,9 @@ Proof.
     { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f β1))
         as Hup.
       clear - Hγ'' Hup. simpl in *. fsetdec. }
-    pose proof (IH _ _ _ _ _ _ _ _ Hszp Hprem Hγ''p) as Hih.
+    pose proof (IH _ _ _ _ _ _ _ _
+                  (ghost_free_open_var_neq_hole B β1 ltac:(assumption))
+                  Hnv Hszp Hprem Hγ''p) as Hih.
     apply a_looksub_ctx_exchange in Hih.
     assert (Hre : {{ ((γ'' ~ abind_tvar) ++ Θ)
         ⊢ (open_pskl_wrt_pskl P0 (pskl_var_f γ'')) ≼[ α , mode_tc ]
@@ -389,6 +407,8 @@ Proof.
           | Ho : α `in` ftvar_in_pskl (pskl_all_syn _) |- _ =>
               simpl in Ho; exact Ho
           end
+        | (* the subject re-opens at [γ''] — [open_var_neq_var] *)
+          apply open_var_neq_var; [ exact Hnv | clear - Hγ''; fsetdec ]
         | exact Hih ]. }
     destruct (γ'' == γ) as [-> | Hne]; [ exact Hre | ].
     pose proof (proj1 (a_looksub_lookeq_swap γ'' γ) _ _ _ _ _ _ _ Hre) as Hs.
@@ -452,6 +472,9 @@ Qed.
 
 (** R′, packaged. *)
 Lemma a_looksub_open_forall_l_first : forall Θ α m P0 P' Ξ C γ,
+  (* the two ◇-dispatch side conditions — see the [_n] form above *)
+  P' <> pskl_hole ->
+  P0 <> pskl_var_f α ->
   {{ Θ ⊢ (pskl_all_syn P0) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
   γ `notin` add α (ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P'
       ∪ ftvar_in_aenv Ξ ∪ ftvar_in_cstrs C) ->

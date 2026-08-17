@@ -255,7 +255,7 @@ Proof.
   - clear - Hα; fsetdec.
   - eapply a_extract__solve with (Ξ := nil) (Ξs := nil)
                                  (C := nil) (Q := pskl_hole).
-    + simpl_open. apply a_looksub__vacuous.
+    + simpl_open. apply a_looksub__vacuous; discriminate.
     + apply a_solve_cstr__empty.
     + apply a_guess__sk.
   - crush_uniq.
@@ -407,17 +407,22 @@ Proof.
     + left. crush_lc.
     + clear - Hα; fsetdec.
     + eapply a_extract__solve with (Ξ := nil) (Ξs := nil)
-        (C := (a_cstr_eq (pskl_tophole (ptyp_to_pskl σ_auto)) :: nil))
+        (C := (a_cstr_eq (pskl_tophole (ptyp_to_pskl σ_auto))
+               :: a_cstr_sub mode_ti pskl_hole :: nil))
         (Q := pskl_tophole (ptyp_to_pskl σ_auto)).
       * simpl_open.
         apply a_looksub__arrow with (Ξ1 := nil) (Ξ2 := nil)
           (C1 := a_cstr_eq (pskl_tophole (ptyp_to_pskl σ_auto)) :: nil)
-          (C2 := nil).
+          (C2 := a_cstr_sub mode_ti pskl_hole :: nil).
         { apply a_lookeq__var. }
-        { apply a_looksub__vacuous. }
+        { (* ⭐ UNDER THE ◇-DISPATCH GUARD this cell is LS-Var, not
+             LS-Vacuous: the runner dispatches on the SUBJECT, and here the
+             subject IS the looked-for variable.  So the collection carries
+             one more constraint — which SS-Vacuous then solves away. *)
+          apply a_looksub__var. }
       * eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
         { apply a_solve_eq__hole_l. }
-        { apply a_solve_cstr__empty. }
+        { apply a_solve_cstr__sub. apply a_solve_sub__vacuous. }
       * apply (a_guess__ty (Ξ := nil) (A := σ_auto)).
         apply a_guess_mono__tophole.
         unfold σ_auto, σ_id; simpl.
@@ -548,7 +553,11 @@ Proof.
           (C1 := a_cstr_eq (pskl_tophole (pskl_arrow pskl_hole pskl_hole)) :: nil)
           (C2 := nil).
         { apply a_lookeq__var. }
-        { apply a_looksub__vacuous. }
+        { apply a_looksub__vacuous.
+          (* the codomain is the looked-for variable's SIBLING, not itself *)
+          unfold σ_auto, σ_id; simpl; try discriminate;
+            solve [ intros Hc; inversion Hc; subst; clear - Hα; fsetdec
+                  | intros Hc; inversion Hc ]. }
       * eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
         { apply a_solve_eq__hole_l. }
         { apply a_solve_cstr__empty. }
@@ -653,17 +662,20 @@ Proof.
       * left. crush_lc.
       * clear - Hα; fsetdec.
       * eapply a_extract__solve with (Ξ := nil) (Ξs := nil)
-          (C := a_cstr_eq (pskl_tophole (pskl_arrow pskl_hole pskl_hole)) :: nil)
+          (C := a_cstr_eq (pskl_tophole (pskl_arrow pskl_hole pskl_hole))
+                :: a_cstr_sub mode_ti pskl_hole :: nil)
           (Q := pskl_tophole (pskl_arrow pskl_hole pskl_hole)).
         { simpl_open.
           apply a_looksub__arrow with (Ξ1 := nil) (Ξ2 := nil)
             (C1 := a_cstr_eq (pskl_tophole (pskl_arrow pskl_hole pskl_hole)) :: nil)
-            (C2 := nil).
+            (C2 := a_cstr_sub mode_ti pskl_hole :: nil).
           - apply a_lookeq__var.
-          - apply a_looksub__vacuous. }
+          - (* ◇-dispatch guard: the subject IS the looked-for variable, so
+               this cell is LS-Var and collects one more constraint *)
+            apply a_looksub__var. }
         { eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
           - apply a_solve_eq__hole_l.
-          - apply a_solve_cstr__empty. }
+          - apply a_solve_cstr__sub. apply a_solve_sub__vacuous. }
         { apply (a_guess__ty
                    (A := ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb))).
           apply a_guess_mono__tophole.

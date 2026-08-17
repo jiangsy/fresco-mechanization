@@ -138,6 +138,7 @@ Inductive e_looksub : supply -> aenv -> atom -> mode -> pskl -> pskl
     α `notin` ftvar_in_pskl P ->
     {{ S ↝ S ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ nil ⨾ nil }}e
 | e_looksub__vacuous : forall S Θ α m P,                (* LS-Vacuous *)
+    P <> pskl_var_f α ->
     {{ S ↝ S ⊨ Θ ⊢ P ≼[ α , m ] pskl_hole ⤳ nil ⨾ nil }}e
 | e_looksub__check : forall S0 S1 Θ α A B Ξ C,          (* LS-Check *)
     pskl_ghost_free B ->
@@ -153,6 +154,7 @@ Inductive e_looksub : supply -> aenv -> atom -> mode -> pskl -> pskl
     pskl_ghost_free (pskl_all_syn B) ->
     β `notin` S0 ->
     α `in` ftvar_in_pskl A ->
+    A <> pskl_var_f α ->
     {{ (add β S0) ↝ S1 ⊨ ((β ~ abind_tvar) ++ Θ) ⊢ A ≼[ α , mode_tc ]
        (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ C }}e ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ A ≼[ α , mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ C }}e
@@ -166,10 +168,12 @@ Inductive e_looksub : supply -> aenv -> atom -> mode -> pskl -> pskl
     (* [paper-gap] ABSENCE-FIRST GUARD — see the header. *)
     β `notin` S0 ->
     α `in` ftvar_in_pskl (pskl_all_syn P) ->
+    P' <> pskl_hole ->
     {{ (add β S0) ↝ S1 ⊨ ((β ~ abind_tvar) ++ Θ)
        ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_all_syn P) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e
 | e_looksub__univ_ghost_l : forall S0 S1 Θ α m P P' Ξ C, (* LS-UnivGhostL *)
+    P' <> pskl_hole ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_tophole P) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e
 
@@ -182,6 +186,7 @@ with e_lookeq : supply -> aenv -> atom -> pskl -> pskl
     α `notin` ftvar_in_pskl P ->
     {{ S ↝ S ⊨ Θ ⊢ P ∼[ α ] P' ⤳ nil ⨾ nil }}e
 | e_lookeq__vacuous : forall S Θ α P,                   (* LE-Vacuous *)
+    P <> pskl_var_f α ->
     {{ S ↝ S ⊨ Θ ⊢ P ∼[ α ] pskl_hole ⤳ nil ⨾ nil }}e
 | e_lookeq__flex_r : forall S Θ α P β α1,               (* LE-FlexR *)
     (* Δ-supply.  ⭐ THE ONLY GENERATING ROW of the cluster — the paper's

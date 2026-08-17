@@ -334,7 +334,7 @@ Proof.
                       `union` ftvar_in_pskl B
                       `union` dom Ξf `union` ftvar_in_cstrs Cf)
       by (cbn in HαB |- *; clear - HαP HαB Hαf; fsetdec).
-    destruct (a_looksub_open_target_at HDf Hstf Hααv' Hopen)
+    destruct (a_looksub_open_target_at ltac:(eassumption) HDf Hstf Hααv' Hopen)
       as [C' [HD2 Hst2]].
     (* the transported premise, via the IH at the re-freshened variable *)
     assert (Htrans :

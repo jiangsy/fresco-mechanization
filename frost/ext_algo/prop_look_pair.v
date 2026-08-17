@@ -118,17 +118,21 @@ Qed.
 
 (** R″ — strip a ⫯ subject to the front; outputs AND supplies exact. *)
 Lemma e_looksub_strip_tophole_l : forall S0 Θ α m P0 P' S1 Ξ C,
+  (* ⚠️ [P' ≠ ◇] — see the a-side twin in prop_look_equiv.v: unconditionally
+     this is FALSE under the ◇-dispatch guard. *)
+  P' <> pskl_hole ->
+  P0 <> pskl_var_f α ->
   {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_tophole P0) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
   {{ S0 ↝ S1 ⊨ Θ ⊢ P0 ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e.
 Proof.
-  intros * H.
+  intros * Hnh Hnv H.
   remember (pskl_tophole P0) as S eqn:HS.
-  revert P0 HS.
-  induction H; intros P0' HS; inversion HS; subst.
+  revert P0 Hnv HS.
+  induction H; intros P0' Hnv HS; inversion HS; subst.
   - (* LS-Absent *)
     apply e_looksub__absent. simpl in *. assumption.
-  - (* LS-Vacuous *)
-    apply e_looksub__vacuous.
+  - (* LS-Vacuous — impossible: the counterpart is ◇ *)
+    exfalso. apply Hnh. reflexivity.
   - (* LS-Check: a ⫯ subject is not guarded *)
     match goal with
     | Hg : guarded_pskl (pskl_tophole _) |- _ => inversion Hg
@@ -137,8 +141,10 @@ Proof.
     apply e_looksub__forall_r with (β := β);
       [ assumption | assumption
       | (* the guard on [⫯P0] IS the guard on [P0] *) simpl in *; assumption
-      | ].
-    apply IHe_looksub. reflexivity.
+      | exact Hnv | ].
+    apply IHe_looksub;
+      [ apply ghost_free_open_var_neq_hole; exact H
+      | exact Hnv | reflexivity ].
   - (* LS-UnivGhostL *)
     assumption.
 Qed.
@@ -147,6 +153,13 @@ Qed.
     outputs exact, the output supply exact up to [=] after inserting the
     opener.  Size induction on the TARGET (only LS-ForallR recurses). *)
 Lemma e_looksub_open_forall_l_first_n : forall n S0 Θ α m P0 P' S1 Ξ C,
+  (* the two ◇-dispatch side conditions — see the a-side twin in
+     prop_look_equiv.v; unconditionally this is FALSE *)
+  P' <> pskl_hole ->
+  P0 <> pskl_var_f α ->
+  (* ⚙ coverage: it is what makes every DRAWN opener differ from [α], which
+     the [≠ α] half of the guard needs after the binder peel *)
+  α `in` S0 ->
   size_pskl P' < n ->
   {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_all_syn P0) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
   exists γ S1',
@@ -155,7 +168,7 @@ Lemma e_looksub_open_forall_l_first_n : forall n S0 Θ α m P0 P' S1 Ξ C,
        ⊢ (open_pskl_wrt_pskl P0 (pskl_var_f γ)) ≼[ α , m ] P'
        ⤳ Ξ ⨾ C }}e.
 Proof.
-  induction n as [ | n IH ]; intros * Hsz Hd;
+  induction n as [ | n IH ]; intros * Hnh Hnv HαS Hsz Hd;
     [ exfalso; clear - Hsz; lia | ].
   inversion Hd; subst.
   - (* LS-Absent — ⚙ the S ↝ S leaf merged the lemma's two supplies *)
@@ -172,14 +185,8 @@ Proof.
                       (pskl_var_f γ)) as Hup;
         simpl in Ha; clear - Ha Hγ Hup; simpl in *; fsetdec
     end.
-  - (* LS-Vacuous — same merge *)
-    match goal with
-    | |- exists _ _, _ `notin` ?SS /\ _ =>
-        destruct (atom_fresh (add α SS)) as [γ Hγ];
-        exists γ, (add γ SS)
-    end.
-    split; [ clear - Hγ; fsetdec | ].
-    apply e_looksub__vacuous.
+  - (* LS-Vacuous — impossible: the counterpart is ◇ *)
+    exfalso. apply Hnh. reflexivity.
   - (* LS-Check: a ∀ subject is not guarded *)
     match goal with
     | Hg : guarded_pskl (pskl_all_syn _) |- _ => inversion Hg
@@ -192,13 +199,20 @@ Proof.
     assert (Hszp : size_pskl (open_pskl_wrt_pskl B (pskl_var_f β1)) < n)
       by (rewrite size_pskl_open_pskl_wrt_pskl_var;
           clear - Hsz; simpl in *; lia).
-    destruct (IH _ _ _ _ _ _ _ _ _ Hszp Hprem)
+    (* ⚠️ HOIST both side conditions OUT of the [destruct]: inside it the
+       [_] placeholders are still EVARS, and an [fsetdec] on an evar set-goal
+       is the classic hang (this one alone cost the file >15 min). *)
+    assert (HαS1 : α `in` add β1 S0) by (clear - HαS; fsetdec).
+    assert (Hnh1 : open_pskl_wrt_pskl B (pskl_var_f β1) <> pskl_hole)
+      by (apply ghost_free_open_var_neq_hole; assumption).
+    destruct (IH _ _ _ _ _ _ _ _ _ Hnh1 Hnv HαS1 Hszp Hprem)
       as (γ & S1' & Hγ & Hd').
     destruct ((proj1 e_looksub_lookeq_supply_respect) _ _ _ _ _ _ _ _ _ Hd'
                 (add β1 (add γ S0)) ltac:(clear; fsetdec))
       as [S1'' [Heq Hd'']].
     pose proof ((proj1 e_looksub_lookeq_ctx_any) _ _ _ _ _ _ _ _ _ Hd''
                   ((β1 ~ abind_tvar) ++ (γ ~ abind_tvar) ++ Θ)) as Hd3.
+    assert (Hγα : γ <> α) by (clear - Hγ HαS; fsetdec).
     exists γ, S1''.
     split; [ clear - Hγ; fsetdec | ].
     apply e_looksub__forall_r with (β := β1);
@@ -210,6 +224,7 @@ Proof.
                           (pskl_var_f γ)) as Hlo;
             simpl in Hocc; clear - Hocc Hlo; fsetdec
         end
+      | apply open_var_neq_var; [ exact Hnv | exact Hγα ]
       | exact Hd3 ].
   - (* LS-ForallL: the premise IS the goal at its own opener *)
     match goal with
@@ -222,8 +237,11 @@ Proof.
              ((β1 ~ abind_tvar) ++ Θ)).
 Qed.
 
-(** R′, packaged. *)
+(** R′, packaged.  ⚙ carries the [_n] form's three side conditions. *)
 Lemma e_looksub_open_forall_l_first : forall S0 Θ α m P0 P' S1 Ξ C,
+  P' <> pskl_hole ->
+  P0 <> pskl_var_f α ->
+  α `in` S0 ->
   {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_all_syn P0) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
   exists γ S1',
     γ `notin` S0 /\
@@ -231,9 +249,9 @@ Lemma e_looksub_open_forall_l_first : forall S0 Θ α m P0 P' S1 Ξ C,
        ⊢ (open_pskl_wrt_pskl P0 (pskl_var_f γ)) ≼[ α , m ] P'
        ⤳ Ξ ⨾ C }}e.
 Proof.
-  intros * Hd.
+  intros * Hnh Hnv HαS Hd.
   exact (@e_looksub_open_forall_l_first_n (S (size_pskl P'))
-           S0 Θ α m P0 P' S1 Ξ C ltac:(lia) Hd).
+           S0 Θ α m P0 P' S1 Ξ C Hnh Hnv HαS ltac:(lia) Hd).
 Qed.
 
 (* ===================================================================== *)
@@ -539,6 +557,9 @@ Qed.
 
 Lemma e_looksub_forall_r_first : forall S0 Θ α P B S1 Ξ C (Lβ : atoms),
   {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ C }}e ->
+  (* ⚙ the ◇-dispatch guard asks the PEELED target not to be a ghost — the
+     runner's own ForallR test is exactly this check *)
+  pskl_ghost_free (pskl_all_syn B) ->
   α `in` ftvar_in_pskl P ->
   exists β1 S1' Ξ' C',
     β1 `notin` S0 /\ S1' [=] add β1 S1 /\
@@ -552,11 +573,11 @@ Lemma e_looksub_forall_r_first : forall S0 Θ α P B S1 Ξ C (Lβ : atoms),
           /\ C' = a_cstr_sub mode_tc
                     (open_pskl_wrt_pskl B (pskl_var_f β1)) :: nil) ).
 Proof.
-  intros * H.
+  intros * H Hgft.
   remember (pskl_all_syn B) as T eqn:HT.
   remember mode_tc as m0 eqn:Hm.
-  revert B HT.
-  induction H; intros B0 HT Hα; inversion HT; subst; subst.
+  revert B Hgft HT.
+  induction H; intros B0 Hgft HT Hα; inversion HT; subst; subst.
   - (* LS-Var: the Var bottom — outputs change, disjunct 2 *)
     destruct (atom_fresh (S ∪ Lβ)) as [β1 Hβ1].
     exists β1, (add β1 S), nil,
@@ -594,7 +615,7 @@ Proof.
               ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f γ))).
     { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P (pskl_var_f γ)) as Hlo.
       simpl in Hα. clear - Hα Hlo. fsetdec. }
-    destruct (IHe_looksub eq_refl _ eq_refl Hαo)
+    destruct (IHe_looksub eq_refl _ Hgft eq_refl Hαo)
       as (β1 & S1' & Ξ' & C' & Hβ1 & HS1' & Hd & Hdisj).
     destruct ((proj1 e_looksub_lookeq_supply_respect)
                 _ _ _ _ _ _ _ _ _ Hd (add γ (add β1 S0))
@@ -607,19 +628,23 @@ Proof.
     split; [ rewrite HS1''; exact HS1' | ].
     split.
     { apply e_looksub__forall_l with (β := γ);
-        [ clear - Hγfr Hβ1; fsetdec | exact Hα | exact Hd'' ]. }
+        [ clear - Hγfr Hβ1; fsetdec | exact Hα
+        | apply ghost_free_open_var_neq_hole; exact Hgft
+        | exact Hd'' ]. }
     destruct Hdisj as [ (HinS & -> & ->) | (HL & -> & -> & -> & ->) ].
     + left. split; [ assumption | ]. split; reflexivity.
     + right. split; [ assumption | ].
       repeat (split; [ reflexivity | ]); reflexivity.
   - (* LS-UnivGhostL: recurse and rebuild *)
     simpl in Hα.
-    destruct (IHe_looksub eq_refl _ eq_refl Hα)
+    destruct (IHe_looksub eq_refl _ Hgft eq_refl Hα)
       as (β1 & S1' & Ξ' & C' & Hβ1 & HS1' & Hd & Hdisj).
     exists β1, S1', Ξ', C'.
     split; [ assumption | ].
     split; [ assumption | ].
-    split; [ apply e_looksub__univ_ghost_l; exact Hd | ].
+    split;
+      [ apply e_looksub__univ_ghost_l;
+          [ apply ghost_free_open_var_neq_hole; exact Hgft | exact Hd ] | ].
     destruct Hdisj as [ (HinS & -> & ->) | (HL & -> & -> & -> & ->) ].
     + left. split; [ assumption | ]. split; reflexivity.
     + right. split; [ assumption | ].
@@ -3815,7 +3840,12 @@ Proof.
           set (sf := supply_fresh Sb0) in *.
       set (Lβd := ftvar_in_aenv Θf1 ∪ ftvar_in_pskl acc1
                   ∪ ftvar_in_pskl B1 ∪ V ∪ cols_l ρ ∪ {{ α }}) in *.
-      destruct (e_looksub_forall_r_first Lβd E1 HαP1)
+      (* the runner's own ForallR test supplies the ghost-freeness *)
+      assert (Hgft1 : pskl_ghost_free (pskl_all_syn B1))
+        by (eapply rel_pskl_ghost_free_rev;
+              [ apply rel_pskl__all_syn; exact Hrt
+              | apply ghost_free_ck_sound; exact Hgt ]).
+      destruct (e_looksub_forall_r_first Lβd E1 Hgft1 HαP1)
         as (β1d & S1' & Ξ' & C' & Hβ1d & HS1' & E1r & Hdisj).
       assert (HαSa : α `in` Sa0) by (clear - HαV Hcov1; fsetdec).
       assert (HαSb : α `in` Sb0) by (clear - HαV Hcov2; fsetdec).
@@ -4411,7 +4441,12 @@ Proof.
           set (sf := supply_fresh Sb0) in *.
       set (Lβd := ftvar_in_aenv Θf1 ∪ ftvar_in_pskl acc1
                   ∪ ftvar_in_pskl B1 ∪ V ∪ cols_l ρ ∪ {{ α }}) in *.
-      destruct (e_looksub_forall_r_first Lβd E1 HαP1)
+      (* the runner's own ForallR test supplies the ghost-freeness *)
+      assert (Hgft1 : pskl_ghost_free (pskl_all_syn B1))
+        by (eapply rel_pskl_ghost_free_rev;
+              [ apply rel_pskl__all_syn; exact Hrt
+              | apply ghost_free_ck_sound; exact Hgt ]).
+      destruct (e_looksub_forall_r_first Lβd E1 Hgft1 HαP1)
         as (β1d & S1' & Ξ' & C' & Hβ1d & HS1' & E1r & Hdisj).
       assert (HαSa : α `in` Sa0) by (clear - HαV Hcov1; fsetdec).
       assert (HαSb : α `in` Sb0) by (clear - HαV Hcov2; fsetdec).

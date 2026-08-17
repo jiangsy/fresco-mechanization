@@ -890,6 +890,16 @@ Proof.
   rewrite swap_atom_invol. reflexivity.
 Qed.
 
+(** …and its ghost sibling, for the ◇-DISPATCH GUARD: a swap is structural,
+    so it maps [◇] to [◇] and nothing else to it. *)
+Lemma swap_pskl_neq_hole : forall a b P,
+  P <> pskl_hole ->
+  swap_pskl a b P <> pskl_hole.
+Proof.
+  intros * Hne He. apply Hne.
+  rewrite <- (swap_pskl_invol a b P), He. reflexivity.
+Qed.
+
 Local Lemma notin_add_split : forall (x y : atom) (S : atoms),
   x `notin` add y S -> x <> y /\ x `notin` S.
 Proof. intros; split; fsetdec. Qed.
@@ -946,6 +956,7 @@ Proof.
   - (* var *) apply a_looksub__var.
   - (* absent *) apply a_looksub__absent. auto using swap_pskl_ftv_notin.
   - (* vacuous *) apply a_looksub__vacuous.
+    apply swap_pskl_neq_var; assumption.
   - (* check *)
     apply a_looksub__check;
       auto using swap_pskl_neq_var, guarded_pskl_swap, pskl_ghost_free_swap.
@@ -953,6 +964,7 @@ Proof.
     apply a_looksub__forall_r with (β := swap_atom a b β);
       [ apply pskl_ghost_free_swap; assumption | swap_freshness
       | apply swap_pskl_ftv_in; assumption
+      | apply swap_pskl_neq_var; assumption
       |].
     rewrite swap_pskl_open_var in H. exact H.
   - (* arrow *)
@@ -962,13 +974,17 @@ Proof.
     apply a_looksub__forall_l with (β := swap_atom a b β);
       [ swap_freshness
       | apply swap_pskl_ftv_in; assumption
+      | apply swap_pskl_neq_hole; assumption
       |].
     rewrite swap_pskl_open_var in H. exact H.
-  - (* univ_ghost_l *) apply a_looksub__univ_ghost_l; auto.
+  - (* univ_ghost_l *)
+    apply a_looksub__univ_ghost_l;
+      [ apply swap_pskl_neq_hole; assumption | auto ].
   (* -------- a_lookeq -------- *)
   - (* var *) apply a_lookeq__var.
   - (* absent *) apply a_lookeq__absent. auto using swap_pskl_ftv_notin.
   - (* vacuous *) apply a_lookeq__vacuous.
+    apply swap_pskl_neq_var; assumption.
   - (* flex_r *)
     apply a_lookeq__flex_r;
       [ swap_freshness

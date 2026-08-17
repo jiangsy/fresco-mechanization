@@ -1499,3 +1499,37 @@ Proof.
   pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P P0 β) as Hup.
   clear - Hn Hin Hup. fsetdec.
 Qed.
+
+(** A ghost-free body cannot OPEN to a ghost — the fact the ◇-dispatch guard
+    needs in order to thread through [LS-ForallR], whose premise runs at the
+    counterpart's opened body. *)
+Lemma ghost_free_open_var_neq_hole : forall P β,
+  pskl_ghost_free P ->
+  open_pskl_wrt_pskl P (pskl_var_f β) <> pskl_hole.
+Proof.
+  intros P β Hgf. unfold open_pskl_wrt_pskl.
+  destruct P; simpl in *; try contradiction; try discriminate.
+  destruct (lt_eq_lt_dec n 0) as [ [ _ | _ ] | _ ]; discriminate.
+Qed.
+
+(** An OPENING at a variable other than the looked-for one cannot produce the
+    looked-for one — the [≠ α] half of the ◇-dispatch guard, transported
+    through a binder peel. *)
+Lemma open_var_neq_var : forall P γ α,
+  P <> pskl_var_f α -> γ <> α ->
+  open_pskl_wrt_pskl P (pskl_var_f γ) <> pskl_var_f α.
+Proof.
+  intros P γ α Hne Hγ. unfold open_pskl_wrt_pskl.
+  destruct P; simpl; try discriminate.
+  - destruct (lt_eq_lt_dec n 0) as [ [ _ | _ ] | _ ]; simpl;
+      [ discriminate
+      | intros Hc; inversion Hc; congruence
+      | discriminate ].
+  - exact Hne.
+Qed.
+
+(** A ghost-free skeleton is not itself the ghost — the cheapest way to meet
+    the ◇-dispatch guard wherever mode compatibility already gives
+    ghost-freeness of the counterpart. *)
+Lemma ghost_free_neq_hole : forall P, pskl_ghost_free P -> P <> pskl_hole.
+Proof. intros P Hgf ->; exact Hgf. Qed.

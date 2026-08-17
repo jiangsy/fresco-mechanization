@@ -97,6 +97,14 @@ Proof.
   intros * Hrel; induction Hrel; simpl; intros; try tauto.
 Qed.
 
+(** …and BACKWARDS, which the b-core needs: the runner tests ghost-freeness
+    on SIDE 2, while the side-1 derivation is the one being re-rooted. *)
+Lemma rel_pskl_ghost_free_rev : forall ρ V P1 P2,
+  rel_pskl ρ V P1 P2 -> pskl_ghost_free P2 -> pskl_ghost_free P1.
+Proof.
+  intros * Hrel; induction Hrel; simpl; intros; try tauto.
+Qed.
+
 (** An atom OUTSIDE the right columns cannot appear on side 2 unless it
     appears on side 1. *)
 Lemma rel_pskl_notin_r : forall ρ V P1 P2 α,
@@ -111,6 +119,35 @@ Proof.
   end.
   - pose proof (cols_r_in _ _ _ ltac:(eassumption)). fsetdec.
   - fsetdec.
+Qed.
+
+(** ⭐ THE ◇-DISPATCH GUARD'S [≠ α] HALF TRAVELS ACROSS THE REL.  ⚙ It needs
+    the RIGHT columns, not the left: side 2's variable is the one that must
+    miss [α], and a paired variable lands in [cols_r]. *)
+Lemma rel_pskl_neq_var : forall ρ V P1 P2 α,
+  rel_pskl ρ V P1 P2 ->
+  P1 <> pskl_var_f α ->
+  α `notin` cols_r ρ ->
+  P2 <> pskl_var_f α.
+Proof.
+  intros * Hrel; induction Hrel; intros Hne Hc; try discriminate.
+  match goal with
+  | Ha : rel_atom _ _ ?x ?y |- _ => inversion Ha; subst
+  end.
+  - intros Heq; inversion Heq; subst.
+    apply Hc. eapply cols_r_in; eassumption.
+  - exact Hne.
+Qed.
+
+(** …and the [≠ ◇] half, which is easier: [rel_pskl] is structural, so a
+    non-ghost on side 1 has a non-ghost image. *)
+Lemma rel_pskl_neq_hole : forall ρ V P1 P2,
+  rel_pskl ρ V P1 P2 ->
+  P1 <> pskl_hole ->
+  P2 <> pskl_hole.
+Proof.
+  intros * Hrel; induction Hrel; intros Hne; try discriminate.
+  exact Hne.
 Qed.
 
 (** An atom OUTSIDE the left columns survives onto side 2. *)
@@ -1569,10 +1606,12 @@ Proof.
     split; [ simpl; clear; fsetdec | ].
     simpl. constructor.
   - (* LS-Vacuous *)
-    intros Θ1 α m Ps S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hcov.
+    intros Θ1 α m Ps Hne S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hcov.
     inversion HrelP'; subst.
     exists S0, nil, nil, nil, nil.
-    split; [ apply e_looksub__vacuous | ].
+    split;
+      [ apply e_looksub__vacuous;
+        eapply rel_pskl_neq_var; [ exact HrelP | exact Hne | exact Hαr ] | ].
     split; [ reflexivity | ]. split; [ reflexivity | ].
     split; [ intros a b Hin; inversion Hin | ].
     split; [ simpl; clear; fsetdec | ].
@@ -1603,7 +1642,7 @@ Proof.
     split; [ exact Hpairs | ]. split; [ exact Hxb | ].
     exact Hrel'.
   - (* LS-ForallR — leaks its opener *)
-    intros Θ1 α A B Ξ C β Hgf Hβ1 Hocc Hprem IH
+    intros Θ1 α A B Ξ C β Hgf Hβ1 Hocc Hnv Hprem IH
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hcov.
     inversion HrelP'; subst.
     match goal with
@@ -1641,6 +1680,7 @@ Proof.
       - eapply rel_pskl_ghost_free; [ exact HrelP' | assumption ].
       - exact Hβ2.
       - eapply rel_pskl_in_id; [ exact HrelP | exact Hocc | exact Hαl ].
+      - eapply rel_pskl_neq_var; [ exact HrelP | exact Hnv | exact Hαr ].
       - exact D2. }
     split; [ exact E1 | ]. split; [ exact E2 | ].
     split.
@@ -1724,7 +1764,7 @@ Proof.
     + cstrs_perm HrelA.
     + cstrs_perm HrelB.
   - (* LS-ForallL — leaks its opener *)
-    intros Θ1 α m Pb Pt Ξ C β Hβ1 Hocc Hprem IH
+    intros Θ1 α m Pb Pt Ξ C β Hβ1 Hocc Hnh Hprem IH
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hcov.
     inversion HrelP; subst.
     match goal with
@@ -1761,6 +1801,7 @@ Proof.
     { apply e_looksub__forall_l with (β := β2);
         [ exact Hβ2
         | eapply rel_pskl_in_id; [ exact HrelP | exact Hocc | exact Hαl ]
+        | eapply rel_pskl_neq_hole; [ exact HrelP' | exact Hnh ]
         | exact D2 ]. }
     split; [ exact E1 | ]. split; [ exact E2 | ].
     split.
@@ -1776,7 +1817,7 @@ Proof.
     { simpl. clear - Hxb Hd2. fsetdec. }
     cstrs_perm Hrel'.
   - (* LS-UnivGhostL *)
-    intros Θ1 α m Pb Pt Ξ C Hprem IH
+    intros Θ1 α m Pb Pt Ξ C Hnh Hprem IH
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hcov.
     inversion HrelP; subst.
     match goal with
@@ -1788,7 +1829,9 @@ Proof.
     destruct (IH S0 Θ2 P2b P2' ρ V HrP0 HrelP' HαV Hαl Hαr Hcov')
       as (S1 & ρx & ρn & Ξ2 & C2 & D2 & E1 & E2 & Hpairs & Hxb & Hrel').
     exists S1, ρx, ρn, Ξ2, C2.
-    split; [ apply e_looksub__univ_ghost_l; exact D2 | ].
+    split;
+      [ apply e_looksub__univ_ghost_l;
+          [ eapply rel_pskl_neq_hole; [ exact HrelP' | exact Hnh ] | exact D2 ] | ].
     split; [ exact E1 | ]. split; [ exact E2 | ].
     split; [ exact Hpairs | ]. split; [ exact Hxb | ].
     exact Hrel'.
@@ -1820,10 +1863,12 @@ Proof.
     split; [ simpl; clear; fsetdec | ].
     simpl. constructor.
   - (* LE-Vacuous *)
-    intros Θ1 α Ps S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hcov.
+    intros Θ1 α Ps Hne S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hcov.
     inversion HrelP'; subst.
     exists S0, nil, nil, nil, nil.
-    split; [ apply e_lookeq__vacuous | ].
+    split;
+      [ apply e_lookeq__vacuous;
+        eapply rel_pskl_neq_var; [ exact HrelP | exact Hne | exact Hαr ] | ].
     split; [ reflexivity | ]. split; [ reflexivity | ].
     split; [ intros a b Hin; inversion Hin | ].
     split; [ simpl; clear; fsetdec | ].

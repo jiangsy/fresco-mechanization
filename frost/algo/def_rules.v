@@ -422,6 +422,10 @@ Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs ->
     α `notin` ftvar_in_pskl P ->
     {{ Θ ⊢ P ≼[ α , m ] P' ⤳ nil ⨾ nil }}a
 | a_looksub__vacuous : forall Θ α m P,           (* LS-Vacuous: RHS is □ *)
+    (* [paper-gap] ◇-DISPATCH GUARD — the runner answers a ghost
+       counterpart immediately (LS/LE-Vacuous), and dispatches on the
+       SUBJECT before any counterpart test, so LS-Var wins at [α]. *)
+    P <> pskl_var_f α ->
     {{ Θ ⊢ P ≼[ α , m ] pskl_hole ⤳ nil ⨾ nil }}a
 | a_looksub__check : forall Θ α A B Ξ C,         (* LS-Check *)
     (* SORT: [A] and [B] are TYPES in the paper (full-algo-spec.tex:1042-1049),
@@ -455,6 +459,7 @@ Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs ->
                        `union` ftvar_in_pskl B) ->
     (* [paper-gap] ABSENCE-FIRST GUARD — see [a_looksub__forall_r]. *)
     α `in` ftvar_in_pskl A ->
+    A <> pskl_var_f α ->
     {{ ((β ~ abind_tvar) ++ Θ) ⊢ A ≼[ α , mode_tc ]
       (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ C }}a ->
     {{ Θ ⊢ A ≼[ α , mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ C }}a
@@ -468,10 +473,12 @@ Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs ->
                        `union` ftvar_in_pskl P') ->
     (* [paper-gap] ABSENCE-FIRST GUARD — see [a_looksub__forall_r]. *)
     α `in` ftvar_in_pskl (pskl_all_syn P) ->
+    P' <> pskl_hole ->
     {{ ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β))
       ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
     {{ Θ ⊢ (pskl_all_syn P) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a
 | a_looksub__univ_ghost_l : forall Θ α m P P' Ξ C, (* LS-UnivGhostL *)
+    P' <> pskl_hole ->
     {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
     {{ Θ ⊢ (pskl_tophole P) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a
 
@@ -482,6 +489,10 @@ with a_lookeq : aenv -> atom -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
     α `notin` ftvar_in_pskl P ->
     {{ Θ ⊢ P ∼[ α ] P' ⤳ nil ⨾ nil }}a
 | a_lookeq__vacuous : forall Θ α P,              (* LE-Vacuous: RHS is □ *)
+    (* [paper-gap] ◇-DISPATCH GUARD — the runner answers a ghost
+       counterpart immediately (LS/LE-Vacuous), and dispatches on the
+       SUBJECT before any counterpart test, so LS-Var wins at [α]. *)
+    P <> pskl_var_f α ->
     {{ Θ ⊢ P ∼[ α ] pskl_hole ⤳ nil ⨾ nil }}a
 | a_lookeq__flex_r : forall Θ α P β α1,          (* LE-FlexR (β̂ a flex var) *)
     (* the paper's [fresh γ̂] (algorithmic.tex:1204).  [ftvar_in_aenv], not
