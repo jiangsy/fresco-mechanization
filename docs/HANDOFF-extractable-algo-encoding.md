@@ -3658,3 +3658,65 @@ stated as a constraint system, with C4 (head-determining) pulling against C5
 (migration-tolerant), in the dedicated self-contained hand-off
 [`HANDOFF-close-consis-unrestricted.md`](HANDOFF-close-consis-unrestricted.md).
 **Continue there, not here.**
+
+### 8c.13 ⛔⛔ LEVEL 6 IS BLOCKED ON A MISSING DISPATCH GUARD IN THE COLLECTION — machine-checked (2026-08-17)
+
+**The level-5 motive does not mirror.**  Level 5 relates the derivation's
+outputs to the runner's UP TO A SWAP CHAIN, with the supply conjunct
+`swaps_atoms ps Sd [=] cs_supply r`.  At level 6 that conjunct is **FALSE**,
+and the witness is `cex/probe_extract_supply_drift.v`
+(`e_extract_det_false`, Qed, assumptions-closed):
+
+    Θ = ·      α ∈ S0      subject  1      counterpart  ∀_. 1      NM = SK
+
+    LS-Absent    α ∉ ftv(1): collects nothing, spends nothing   (S0 ↝ S0)
+    LS-ForallR   peels the counterpart at a DRAWN opener β,
+                 then LS-Absent                                 (S0 ↝ S0 ∪ {β})
+
+Both emit `Ξ = ·` and `𝒞 = ·`, so the fold is empty, the yield is the
+accumulator `◇` on both sides and the guess is the identity at `SK`.  The two
+`e_extract` derivations therefore agree on their BLOCK and their
+INSTANTIATION and differ only in how much supply they spent — by one atom.
+A chain whose pairs dodge `S0` fixes `S0` exactly (`swaps_atoms_notin`), so no
+renaming relates the two output supplies.
+
+⚠️ The further claim — that the drift REACHES `e_sub` through `SI-ForallL`,
+so the level-6 motive itself is false — is argued by inspection in that
+file's closing note (`NM = TY`, `M = FN TC`, `P0 = 1 → ∀_.1`, subject
+`∀β. (1 → 1)`: the same two routes reappear one arrow down, and `P0` is an
+arrow so `SI-ForallL`'s `guarded P0 ∨ P0 = ◇` guard is satisfied).  Writing
+that end-to-end probe is the first thing to do on resuming.
+
+**⭐⭐ THE DIAGNOSIS IS §8c.12's, ONE LAYER DOWN.**  The reference
+implementation tests ABSENCE FIRST (`type.ml`'s `constr_collect_sub`,
+:649-701), and so does this tree's runner: every non-Absent clause of
+`e_looksub_impl` / `e_lookeq_impl` sits behind `mem α (ftvar_in_pskl P)`
+(`def_look_impl.v:360, 377, 393, 406, …`).  A relational encoding has no match
+order, so that exclusion must be a PREMISE — and `LS-ForallR` and its
+neighbours carry none.  Identical species to `U-FlexL`/`U-FlexR`'s missing
+`≠ ◇` (`0829607`) and `SI-Ghost`'s missing `M ≠ TI` (`35a13b3`), and the same
+one-line-per-rule fix is indicated:
+
+- add `α ∈ ftvar_in_pskl P` to every `a_looksub` / `a_lookeq` row except
+  `LS-Absent` / `LE-Absent` (and to their `e_` twins), and
+- add the mirror exclusion for `LS-Vacuous` / `LE-Vacuous` (counterpart `◇`),
+  which the runner tests second.
+
+⚠️ Budget one build-iterate loop per rule changed: adding a premise shifts
+every `intros` pattern in every induction over the collection, and P6's
+`look/` chain is the tree's biggest consumer.  Both encodings need it, plus a
+`[paper-gap]` comment and a `docs/PAPER-GAPS.md` entry.
+
+**WHAT LANDED ANYWAY, and it is motive-independent** — `frost/ext_algo/prop_sub_complete.v`:
+
+| § | content |
+|---|---|
+| §1 | the strong-induction principle for `e_sub_call_order` (premises DOUBLED, prop_consis_complete.v §1's idiom) |
+| §3 | `e_sub_swaps` / `e_sub_flex_swaps` (chains) and `a_suffix_swaps` |
+| §4 | ⭐ THE ROOT INVERSIONS — §8c.11's overlap table as sixteen lemmas, every one a SINGLE rule: `guarded_pskl` is `unit \| var \| arrow` and nothing else, so the ∀/◇/⫯ overlaps the rule list suggests are all vacuous, and the four cells where the runner returns `None` come out as `False` |
+
+and the whole RENAMING KIT it rests on (`b9daaa8`): equivariance and supply
+respect for `e_looksub`/`e_lookeq`, `e_solve_sub`/`e_solve_eq`/`e_solve_cstr`,
+`e_guess`, `e_extract` and `e_sub`/`e_sub_flex` — none of which existed, and
+all of which the level needs whatever the motive ends up being.
+

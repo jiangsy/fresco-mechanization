@@ -37,6 +37,50 @@ recently P6-Sv at the end of this file)}.
 > Several judgments looked broken until that condition was restored.  **Check
 > that file before concluding a lemma is unprovable.**
 
+## MISSING SIDE CONDITION (2026-08-17, machine-checked) — the COLLECTION rules lack the `α ∈ ftv(subject)` guard that renders the implementation's absence-first dispatch, so a collection call can spend a fresh name it never needed
+
+**Where.**  `LS-ForallR`, `LS-Arrow`, `LS-ForallL`, `LS-UnivGhostL`, `LS-Check`
+and their `LE-*` twins (`full-algo-spec.tex`'s collection figure;
+`frost/algo/def_rules.v:418-528` and its threaded copy
+`frost/ext_algo/def_look.v`).  `LS-Absent` fires whenever the looked-for
+variable `α` does not occur in the SUBJECT, and it is stated with no exclusion
+against any of them.  The same holds for `LS-Vacuous` (counterpart `◇`).
+
+**What the implementation does.**  It tests ABSENCE FIRST — `type.ml`'s
+`constr_collect_sub` (:649-701) and `constr_collect_eq` (:542-626) — and this
+tree's runner faithfully renders that: every non-Absent clause of
+`e_looksub_impl` / `e_lookeq_impl` sits behind `mem α (ftvar_in_pskl P)`
+(`frost/ext_algo/def_look_impl.v:360, 377, 393, 406, …`), with the Vacuous test
+second.  A relational encoding has no match order, so the exclusion has to be a
+PREMISE.
+
+**Why it matters, machine-checked** (`cex/probe_extract_supply_drift.v`,
+`e_extract_det_false`, Qed and assumptions-closed).  At
+
+    Θ = ·      α ∈ S      subject  1      counterpart  ∀_. 1
+
+`LS-Absent` collects nothing and spends nothing, while `LS-ForallR` peels the
+counterpart at a freshly drawn opener and THEN collects nothing.  Both emit the
+empty block and the empty constraint list, so the solving fold and the guess
+agree — the two runs of `extract` differ ONLY in how much of the fresh-name
+supply they consumed, by exactly one name.  Consequently `extract` is not
+deterministic up to renaming: no bijection on names relates the two results,
+because one result's name set properly contains the other's.
+
+⚠️ The knock-on claim — that the drift reaches SUBTYPING through `SI-ForallL`
+(at `NM = TY`, `M = FN TC`, counterpart `1 → ∀_. 1`, subject `∀β. (1 → 1)`), so
+the algorithm's own answer is not merely one of several equally-general ones but
+differs in name COUNT from a legal derivation — is argued by inspection in that
+file's closing note and is not yet machine-checked.
+
+**The repair** (the same one-line-per-rule shape as the two entries below):
+add `α ∈ ftv(P)` to every collection row except `LS-Absent`/`LE-Absent`, and the
+mirror `P' ≠ ◇` exclusion against `LS-Vacuous`/`LE-Vacuous`.  ⚙ This is the
+THIRD instance of one species in three days — `SolE-FlexR`'s `nonghost`,
+`U-FlexL`/`U-FlexR`'s `≠ ◇`, `SI-Ghost`'s `M ≠ TI` — and the pattern is worth
+stating to the authors directly: **wherever the reference implementation
+dispatches by match order, the figure owes an exclusion premise.**
+
 ## MISSING SIDE CONDITION (2026-08-17, machine-checked) — `U-FlexL` / `U-FlexR` lack the `≠ ◇` guard that renders the implementation's ghost-first dispatch, so consistency is AMBIGUOUS at two cells and derives a strictly less general answer than the algorithm computes
 
 `U-FlexL` (`algorithmic.tex:757`) and `U-FlexR` (`:764`) carry only
