@@ -3245,3 +3245,81 @@ UnivGhostL are both `SK` rules).
 level 6 proper is the template of §8c.6 plus the four mechanics traps of
 §8c.10c — which the audit expects to recur verbatim, since the sub runner is
 the same tagged-block shape with the same convoyed atom tests.
+### 8c.12 ⭐⭐ THE FORK, RESOLVED AS (B) — and the route is much cheaper than §8c.10b estimated (2026-08-17)
+
+USER decision (2026-08-17): "at your discretion, try to build an elegant
+proof."  Route **(B)** — the generalization layer native to `e_` — chosen
+over (A)'s round-trip through `algo/`'s metasubstitution layer, on two
+grounds: it keeps the runner-sided architecture levels 1–5 were built on,
+and (A)'s cost was already checked to be a THREE-level round-trip
+(`a_consis_complete` / `complete_mu`, ~8600 lines, is stated against the
+`ad_` layer, so (A) must go through `ad_` joins, not just through `κ`).
+
+⭐ **And (A) would not have bought the right statement anyway.**
+`a_consis_complete` (algo/consis/prop_completeness_consis.v:8605) is
+DECLARATIVE completeness — "if a `}}ad` join exists, the algorithm finds a
+most-general solution".  What level 5 needs is RUNNER completeness — "if the
+`e_` RELATION derives it, the RUNNER computes it".  Different statement;
+(A)'s reuse was never as direct as the fork note assumed.
+
+**⭐⭐ THE COST ESTIMATE WAS WRONG, IN OUR FAVOUR: (B) OWES NO NEW RELATION.**
+§8c.10b called (B) "self-contained, duplicates machinery algo/ already has".
+It does not have to duplicate any of it: `ext_algo` shares `aenv` with
+`algo/`, so the paper's own information-increase `κ ∷ Θ ⊑ Θ'`
+(`a_inc`, algo/def_meta.v:213) applies to a THREADED run's contexts
+verbatim — and so does its metatheory.  Already Qed in the tree and
+directly usable:
+
+| fact | where | what it gives §8c.12 |
+|---|---|---|
+| `a_inc_compose` | prop_compose.v:778 | `κ ∷ Θ0 ⊑ Θ1` and `ζ ∷ Θ1 ⊑ Θ` give `ζ∘κ ∷ Θ0 ⊑ Θ` — **GENERAL, not identity-restricted**, which is exactly what U-Arrow's chain composes with |
+| `a_inc_trans` | prop_inc.v:491 | the identity shorthand `⊴` |
+| `a_isub_refl` | prop_basic.v:222 | `Θ ⊴ Θ` at a well-formed `Θ` — the reflexive base |
+| `a_isub_cons_{flex,flex_def,var_typ,var_skl}` | prop_basic.v:109-166 | the four entry-extension rows |
+
+⚠️ Grep before adding anything here — this is exactly the situation
+`feedback-grep-completeness-kits-first` warns about, and the fork note's own
+cost estimate is what it caught.
+
+**⭐ FEASIBILITY, MACHINE-CHECKED: `cex/probe_inc_more_general.v`.**  At the
+very configuration that refuted the first scoping, the runner's answer is
+the ⊑-more-general one:
+
+    runner      (U-GhostR)   α̂                 (untouched)
+    derivation  (U-FlexL)    α̂ := β̂, β̂        (α̂ SOLVED)
+
+and `[β̂/α̂] ∷ (α̂) ⊑ (α̂ := β̂, β̂)` holds in `a_inc` outright.  ⭐ Note the
+two routes' output SKELETONS already AGREE (both `α̂` —
+`cex/probe_consis_ghost_flex.v`), so only the CONTEXT slot of the motive has
+to weaken; the payload slot can stay as it is.
+
+**THE STATEMENT TO BUILD.**  Level 5's hole-free rung relates the
+derivation's output to the runner's up to a fresh RENAMING `ps`.  The
+unrestricted rung replaces that with an increase, in the same direction (the
+derivation is still transported onto the runner's rails — §8c.10c's finding
+stands, and for the same reason):
+
+    forall Sd Θd Qd, consis_call_run S0 Θ c Sd Θd Qd ->
+    exists r κ,
+      consis_call_answer (e_consis_call_impl c S0 Θ …) = Some r
+      /\ κ ∷ cs_ctx r ⊑ Θd                     (* runner is MORE GENERAL *)
+      /\ (the payload relation, msubst'd along κ)
+
+⭐ **Why this is the elegant form and not merely the weaker one.**  A
+renaming IS an increase in both directions, so the new statement SUBSUMES
+the hole-free rung rather than sitting beside it, and the `swaps`/`ps`
+bookkeeping of §8c.3-§8c.10 is absorbed into `κ` — `a_inc_compose` does at
+U-Arrow what the `ps1 ++ ps2` chain did, with composition already proved.
+The one thing to keep from the old shape is the SUPPLY relation, which is
+orthogonal to `⊑` and still needs threading.
+
+⛔ **WHAT IS STILL OWED — this is the induction, and it is NOT started.**
+The trio's ⊑-MONOTONICITY: run at a more general context, the runner still
+succeeds and its output is still more general.  That is genuinely new (the
+facts above are about `⊑` alone, not about `e_assign`/`e_unify`/`e_consis`),
+and it is the whole of §8c.12.  Expect the level-5 shape: order-sind over
+the runner's clause list, the four mechanics traps of §8c.10c, and U-Arrow
+as the only row with content.  ⚙ Start by checking whether the monotonicity
+premise needs `{{ ⊢ Θ }}a` — `a_inc_compose` takes well-formedness of BOTH
+contexts, so the motive will have to carry it or derive it from
+`prop_run_invariants.v`.
