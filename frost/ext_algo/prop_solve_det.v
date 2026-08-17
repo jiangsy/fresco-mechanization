@@ -544,6 +544,19 @@ Proof.
   apply IH. apply swap_atoms_cong. exact Heq.
 Qed.
 
+(** A chain commutes with [add] — the set-level companion of
+    [swaps_atom]'s action on a single name.  ⭐ THIS IS THE SHAPE EVERY
+    SUPPLY OBLIGATION TAKES: the supplies a run threads are built by
+    [add]ing the drawn names onto the input supply, so relating two of them
+    across a chain means peeling the [add]s down to the common base, where
+    [swaps_atoms_notin] finishes. *)
+Lemma swaps_atoms_add : forall ps α (S : atoms),
+  swaps_atoms ps (add α S) [=] add (swaps_atom ps α) (swaps_atoms ps S).
+Proof.
+  induction ps as [ | [a b] ps IH ]; intros α S; simpl; [ reflexivity | ].
+  rewrite (swaps_atoms_cong ps _ _ (swap_atoms_add a b α S)). apply IH.
+Qed.
+
 Lemma swaps_aenv_app_dist : forall ps Θ1 Θ2,
   swaps_aenv ps (Θ1 ++ Θ2) = swaps_aenv ps Θ1 ++ swaps_aenv ps Θ2.
 Proof.
