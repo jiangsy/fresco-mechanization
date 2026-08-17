@@ -156,32 +156,6 @@ Proof.
   end.
 Qed.
 
-Lemma a_solve_sub_hole_target_inv : forall Θ m P Ξ P',
-  {{ Θ ⊢ₛ P ≼[ m ] pskl_hole ⤳ Ξ ⨾ P' }}a ->
-  Ξ = nil /\ P' = P.
-Proof.
-  intros Θ m P Ξ P' H.
-  remember pskl_hole as T eqn:HT.
-  induction H; inversion HT; subst.
-  - (* SS-Var *) auto.
-  - (* SS-ForallL: the yield re-closes to the subject *)
-    destruct IHa_solve_sub as [-> ->]; [ reflexivity | ].
-    split; [ reflexivity | ].
-    rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
-      [ reflexivity | clear - H; fsetdec ].
-  - (* SS-UnivGhostL *)
-    destruct IHa_solve_sub as [-> ->]; [ reflexivity | ]. auto.
-  - (* SS-Vacuous *) auto.
-  - (* SS-Check: guarded ◇ has no constructor *)
-    match goal with
-    | Hg : guarded_pskl pskl_hole |- _ => inversion Hg
-    end.
-  - (* SS-GhostL at B = ◇: ghost-free ◇ has no constructor *)
-    match goal with
-    | Hg : pskl_ghost_free pskl_hole |- _ => inversion Hg
-    end.
-Qed.
-
 (* ===================================================================== *)
 (*  §4  The fold's head inversions and the pure-eq append decomposition   *)
 (* ===================================================================== *)

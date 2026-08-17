@@ -733,3 +733,48 @@ Proof.
     + assert (Hin1 : α `in` dom Ξ1) by (clear - Hin Hnin2; fsetdec).
       eapply a_solve_eq_generated_fresh; eassumption.
 Qed.
+
+(** ⭐⭐ A GHOST TARGET SOLVES TO THE IDENTITY — block empty, accumulator
+    untouched, whatever the subject.
+
+    ⚙ NOTE THAT NO DISPATCH GUARD IS OWED HERE, unlike the COLLECTION.  The
+    runner does answer a ghost target by SS-Vacuous first
+    (ext_algo/def_solve_impl.v:341), so SS-ForallL and SS-UnivGhostL DO
+    overlap it — but they AGREE with it: SS-ForallL re-CLOSES its opener
+    ([close β (open P β) = P]) and SS-UnivGhostL rebuilds its [⫯], so every
+    surviving row returns the accumulator.  The collection has no such
+    property, which is exactly why the guard is needed there and not here.
+
+    ⚙ MOVED here 2026-08-18 from ext_algo/prop_look_equiv.v: P6's ForallL row
+    (sub/look/prop_sub_cstr.v) consumes it, and that file is UPSTREAM of
+    ext_algo — one fact, one name, one file, in the layer its consumers see. *)
+Lemma a_solve_sub_hole_target_inv : forall Θ m P Ξ P',
+  {{ Θ ⊢ₛ P ≼[ m ] pskl_hole ⤳ Ξ ⨾ P' }}a ->
+  Ξ = nil /\ P' = P.
+Proof.
+  intros Θ m P Ξ P' Hd.
+  remember pskl_hole as T eqn:HT.
+  induction Hd; inversion HT; subst.
+  - (* SS-Var *) auto.
+  - (* SS-ForallL: the yield re-closes to the subject *)
+    destruct IHHd as [-> ->]; [ reflexivity | ].
+    split; [ reflexivity | ].
+    rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
+      [ reflexivity
+      | match goal with
+        | Hfr : ?b `notin` ftvar_in_aenv _ `union` _ `union` _ |- _ =>
+            clear - Hfr; fsetdec
+        end ].
+  - (* SS-UnivGhostL *)
+    destruct IHHd as [-> ->]; [ reflexivity | ]. auto.
+  - (* SS-Vacuous *) auto.
+  - (* SS-Check: guarded ◇ has no constructor *)
+    match goal with
+    | Hg : guarded_pskl pskl_hole |- _ => inversion Hg
+    end.
+  - (* SS-GhostL at B = ◇: ghost-free ◇ has no constructor *)
+    match goal with
+    | Hg : pskl_ghost_free pskl_hole |- _ => inversion Hg
+    end.
+Qed.
+
