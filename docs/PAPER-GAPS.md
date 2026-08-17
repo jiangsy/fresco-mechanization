@@ -73,10 +73,36 @@ the algorithm's own answer is not merely one of several equally-general ones but
 differs in name COUNT from a legal derivation — is argued by inspection in that
 file's closing note and is not yet machine-checked.
 
-**The repair** (the same one-line-per-rule shape as the two entries below):
-add `α ∈ ftv(P)` to every collection row except `LS-Absent`/`LE-Absent`, and the
-mirror `P' ≠ ◇` exclusion against `LS-Vacuous`/`LE-Vacuous`.  ⚙ This is the
-THIRD instance of one species in three days — `SolE-FlexR`'s `nonghost`,
+**The repair, and its MEASURED cost (2026-08-17).**  The premise
+`α ∈ ftv(subject)` is enough on the LEAKING rows alone — `LS-ForallR`,
+`LS-ForallL`, `LE-ForallInh`, `LE-ForallSyn`, `LE-UnivGhost1` (`LE-FlexR`
+already carries it) — because those are the only rows that spend a name, and
+at an α-free subject every remaining rule is a no-op hereditarily.
+
+⚙ The change was carried through the mechanization far enough to be decisive
+and then reverted.  **No semantic obstruction appeared.**  The guard threads:
+it survives an opening (`ftvar_in_pskl_open_pskl_wrt_pskl_lower`) and survives
+a substitution (the substituted variable is `≠ α`, so
+`ftvar_in_pskl_subst_pskl_in_pskl_lower` keeps it); each of the two transport
+tactics it needs is three lines; and where a rule can no longer fire, the
+`LS-Absent` row gives the SAME block and collection
+(`a_looksub_subject_absent`), so the answer that replaces it is the empty one.
+Two lemmas were written and pass: `e_looksub_lookeq_absent_pins` — at an
+α-free subject the collection returns `Ξ = ·`, `𝒞 = ·` **and the supply
+unchanged**, hypothesis-free, which is exactly what the guard buys — and
+`rel_e_absent_{sub,eq}`, the empty answer for the a→e transport.
+
+⛔ What it costs is BREADTH.  Both encodings: ~70 constructor sites and ~170
+case labels over twelve files, of which `algo/sub/prop_looksub.v` (32 sites),
+`deco_algo/prop_decorate_sub.v` (10) and the P6 `look/` chain are the bulk.
+Scoped to the THREADED encoding alone — which is where the fact it protects
+(the supply) lives, and where `e_looksub_sound` keeps the a-side untouched —
+it is five files; `def_look.v`, `prop_look.v` and `prop_solve_rel.v` were all
+carried to green, and the residue is `prop_look_pair.v`'s b-core, where the
+breakage is not the guard but the `pose proof`-without-`as` names it shifts.
+Budget a day, not a research risk.
+
+⚙ This is the THIRD instance of one species in three days — `SolE-FlexR`'s `nonghost`,
 `U-FlexL`/`U-FlexR`'s `≠ ◇`, `SI-Ghost`'s `M ≠ TI` — and the pattern is worth
 stating to the authors directly: **wherever the reference implementation
 dispatches by match order, the figure owes an exclusion premise.**

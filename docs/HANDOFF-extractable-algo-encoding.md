@@ -3720,3 +3720,19 @@ respect for `e_looksub`/`e_lookeq`, `e_solve_sub`/`e_solve_eq`/`e_solve_cstr`,
 `e_guess`, `e_extract` and `e_sub`/`e_sub_flex` — none of which existed, and
 all of which the level needs whatever the motive ends up being.
 
+⚙ **THE REPAIR WAS ATTEMPTED AND MEASURED (2026-08-17), then reverted.**  The
+guard was carried through both encodings far enough to be decisive; the
+measurement and the two lemmas it produced are in `docs/PAPER-GAPS.md` under
+this entry.  Headline: **no semantic obstruction** — the guard threads through
+openings and substitutions, and where a leaking row can no longer fire the
+`LS-Absent` row gives the same block and collection, so the replacement answer
+is the empty one.  The cost is BREADTH (~70 constructor sites / ~170 case
+labels over twelve files; five files if scoped to `ext_algo/`, of which
+`def_look.v`, `prop_look.v` and `prop_solve_rel.v` reached green and only
+`prop_look_pair.v`'s b-core is left — and its breakage is the shifted
+`pose proof`-without-`as` names, not the guard).  ⭐ Two lemmas worth
+re-writing verbatim when it is redone: `e_looksub_lookeq_absent_pins` (at an
+α-free subject the collection returns `Ξ = ·`, `𝒞 = ·` AND the supply
+unchanged — hypothesis-free, and FALSE without the guard) and
+`rel_e_absent_{sub,eq}` (the empty answer for `a_looksub_lookeq_rel_e`, which
+is where the a-side's un-guarded rules meet the e-side's guarded ones).
