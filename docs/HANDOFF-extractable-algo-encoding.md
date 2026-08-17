@@ -3177,21 +3177,64 @@ settled, because at `(TI, ◇)` both Infer and Ghost fire and return the SAME
 triple `(S0, Θ0, P)`: no uniqueness argument needed, exactly as
 `e_unify_refl` settled level 5's `U-Rigid`/`U-Flex` pair.
 
-⚠️ **But the premise is not hereditary, and that is the design constraint.**
-`SI-Arrow` concludes at `FN M` and runs premise 2 at `M` against the
-counterpart's CODOMAIN, so
+⚠️ **But the premise is not hereditary — and the right invariant is not
+something to design, it is something to TRANSCRIBE.**  `SI-Arrow` concludes
+at `FN M` and runs premise 2 at `M` against the counterpart's CODOMAIN, so
 
     NM = SK    M = FN TI    P0 = 1 → 1    subject 1 → ◇
 
 puts the rejected configuration one level down with `P0b = 1 ≠ ◇`, and a
 root-level premise is vacuous at the conclusion (`FN TI ≠ TI`).  The probe's
-§3 checks this configuration's relation half.  So level 6's invariant has to
-walk the counterpart's arrow spine alongside the mode — `FN`s in `M` matched
-against arrows in `P0`, `◇` required where the mode bottoms out at `TI` —
-rather than constrain the root.  ⚙ `SI-Flex-Assign` is where such an
-invariant must be RE-ESTABLISHED rather than threaded: it re-enters
-subtyping under a substitution, which can turn a counterpart VARIABLE into
-an arrow.
+§3 checks this configuration's relation half.
+
+⭐⭐ **The authors' implementation already carries the invariant in its
+TYPES.**  The paper's figure indexes the judgement by `M` and `P0`
+separately; the implementation fuses them into ONE datum and projects the
+paper's `P0` back out (`paper/artifact/implementation/lib/type.ml:8-11` and
+`:395-398`):
+
+```ocaml
+  type mode = Infer | Check of pure_type | Fun of pure_type * mode
+
+  let rec sk_of_mode = function
+    | Infer -> Ghost
+    | Check p -> p
+    | Fun (p, m) -> TArr (p, sk_of_mode m)
+```
+
+So `P0 = sk_of_mode M` holds by construction there: `TI` pairs with `◇` and
+cannot do otherwise, and each `FN` layer pairs with one arrow of the
+counterpart.  That is exactly the hereditary premise level 6 needs, and in
+this encoding it is a relation rather than a function, since Coq's `mode`
+carries no payload:
+
+```coq
+Fixpoint mode_counterpart (M : mode) (P0 : pskl) : Prop :=
+  match M with
+  | mode_ti    => P0 = pskl_hole
+  | mode_tc    => True
+  | mode_fn M' => exists P0a P0b,
+                    P0 = pskl_arrow P0a P0b /\ mode_counterpart M' P0b
+  end.
+```
+
+⚙ **And it threads, contrary to what the first pass of this section said.**
+`SI-Flex-Assign` re-enters subtyping under `subst τ β P0`, which looked like
+it would have to RE-ESTABLISH the invariant — a substitution can turn a
+counterpart variable into an arrow.  It cannot break this one: substitution
+is structural, so it maps `pskl_arrow P0a P0b` to an arrow and `pskl_hole`
+to `pskl_hole`, and `mode_counterpart` only ever inspects those two
+positions.  Every other recursive site is easier — `SI-Arrow` peels one
+layer off both indices at once, `SI-ForallL` / `SI-UnivGhostL` /
+`SI-Flex-Solve` / the four skip rows leave `(M, P0)` alone, and `SI-ForallR`
+lands at `mode_tc`, where the invariant is `True`.  ⚠️ Preservation is
+argued by INSPECTION here, not machine-checked; it is the first thing
+level 6 should prove.
+
+⭐ One free consequence worth noticing: under the invariant, `P0` at any
+`FN` mode IS an arrow, hence `guarded`, so `SI-ForallL`'s
+`guarded P0 \/ P0 = ◇` guard is automatic in function mode and a real test
+only at `TC`.
 
 ⚙ Two more configurations the audit clears, both by the runner and the
 relation agreeing to reject: `(tc, sk)` with a guarded subject and `P0 ≠ ◇`

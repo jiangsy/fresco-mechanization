@@ -37,6 +37,96 @@ recently P6-Sv at the end of this file)}.
 > Several judgments looked broken until that condition was restored.  **Check
 > that file before concluding a lemma is unprovable.**
 
+## MISSING SIDE CONDITION (2026-08-17, machine-checked) — `SI-Ghost` lacks the `M ≠ TI` guard that its NEIGHBOUR `SI-UnivGhostL` carries, so the relation derives inference-mode judgements against a counterpart the implementation never accepts
+
+**What the paper says.**  `SI-Ghost` (`full-algo-spec.tex:849-853`) is an
+axiom over an arbitrary mode:
+
+```
+  ─────────────────────────────── SI-Ghost
+   Θ_0 ⊢[SK][M][P_0] □ ⩽ P_0 ⊣ Θ_0
+```
+
+The very next rule in the same figure, `SI-UnivGhostL` (`:855-860`), does
+carry the restriction, with the paper's own comment on the line:
+
+```
+  M ≠ TI          % should not inst when TI
+```
+
+**Why the omission bites.**  At `M = TI` there is no counterpart to check
+against — that is exactly why `SI-Infer` (`:795-797`) fixes `P_0 = □`.  With
+`M` unrestricted, `SI-Ghost` also fires at `M = TI` for an ARBITRARY `P_0`,
+and returns that `P_0` as the result: a counterpart nothing synthesised.
+
+**The authors' own implementation carries the restriction.**  Its `SI-Ghost`
+clause patterns the mode explicitly, and `Infer` is not among the shapes it
+matches (`paper/artifact/implementation/lib/type.ml:981-984`):
+
+```ocaml
+  (* SI-Ghost *)
+  | (Fun _ | Check _), Sk, Ghost ->
+    rule "SI-Ghost" >> end_rule @@ sk_of_mode m
+```
+
+— the same `(Fun _ | Check _)` guard its `SI-UnivGhostL` (`:976`) and
+`SI-ForallL` (`:957`) carry, and `SI-Infer` (`:903-906`) is the first clause
+of the match, taking `Infer` for every subject.  So the paper's figure is
+strictly more permissive than the algorithm it specifies: it admits
+derivations no run produces.
+
+**Machine-checked** in `cex/probe_sub_ghost_ti.v` — at `NM = SK`, `M = TI`,
+`P_0 = 1`, subject `□`, the relation derives the judgement (§1) and the
+mechanized runner returns `None` (§2), the latter for EVERY termination
+proof, since its `TI` arm consumes none.
+
+**Suggested repair.**  Add `M ≠ TI` to `SI-Ghost`, matching `SI-UnivGhostL`
+and the implementation.  It costs nothing reachable: at `(TI, □)` — the only
+inference-mode configuration that arises — `SI-Infer` already derives the
+same triple `(Θ_0, P, Θ_0)` that `SI-Ghost` would.
+
+⭐ **A second, larger observation the same clause exposes, and it is not a
+gap so much as an invariant the paper leaves implicit.**  The figure carries
+`M` and `P_0` as two independent indices, but the implementation fuses them
+into ONE datum (`type.ml:8-11`), with a projection back to the paper's
+`P_0` (`:395-398`):
+
+```ocaml
+  type mode = Infer | Check of pure_type | Fun of pure_type * mode
+
+  let rec sk_of_mode = function
+    | Infer -> Ghost
+    | Check p -> p
+    | Fun (p, m) -> TArr (p, sk_of_mode m)
+```
+
+So in the implementation `P_0 = sk_of_mode M` holds BY CONSTRUCTION: `TI`
+pairs with `□` and cannot do otherwise, and each `FN` layer of the mode
+pairs with one arrow of the counterpart.  The paper's two-index presentation
+can express pairs that are not of this form, and `SI-Ghost` at `TI` is
+simply the first place that shows.  ⚠️ Note the consequence for a
+root-level repair: `SI-Arrow` concludes at `FN M` and runs its second
+premise at `M` against the counterpart's CODOMAIN, so
+
+```
+  NM = SK    M = FN TI    P_0 = 1 → 1    subject 1 → □
+```
+
+reaches the offending configuration one level down, where a restriction
+phrased on the judgement's root is vacuous (`FN TI ≠ TI`).  The probe's §3
+checks that configuration's relation half.  Repairing `SI-Ghost` alone fixes
+the rule; stating `P_0 = sk_of_mode M` as a standing well-formedness
+condition on the judgement's indices — as the implementation's types already
+do — would fix the class.
+
+⚙ Found by the overlap audit run before mechanizing subtyping completeness
+against the runner (`docs/HANDOFF-extractable-algo-encoding.md` §8c.11).
+The same audit clears every OTHER apparent overlap in the figure: `guarded`
+is `1 | α | A → B` and nothing else, so `∀`, `□` and `⫯` are unguarded and
+the five candidate pairs — including `SI-Ghost` against `SI-UnivGhostR` at
+`□ ⩽ □`, whose results would have DIFFERED (`P_0` versus `⫯P`) — cannot
+both fire.
+
 ## MISSING SIDE CONDITION (2026-08-15, machine-checked) — `LS-ForallL` lacks the `guarded` guard that `SI-ForallL` carries "to avoid overlapping with ForallR", so the COLLECTION is not deterministic — and its two answers differ in SHAPE, not just in names
 
 **What the paper says.**  `SI-ForallL` (`full-algo-spec.tex:835-838`) carries

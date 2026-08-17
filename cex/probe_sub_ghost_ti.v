@@ -33,23 +33,32 @@
     argument — the level-6 analogue of level 5's [U-Rigid]/[U-Flex] pair,
     which [e_unify_refl] settled the same way.
 
-    ⚠️ BUT THAT PREMISE IS NOT HEREDITARY, and that is the part to design
-    around.  [SI-Arrow] concludes at [FN M] and runs its SECOND premise at
-    [M] against the counterpart's CODOMAIN, so from
+    ⚠️ BUT THAT PREMISE IS NOT HEREDITARY.  [SI-Arrow] concludes at [FN M]
+    and runs its SECOND premise at [M] against the counterpart's CODOMAIN,
+    so from
 
         NM = SK    M = FN TI    P0 = 1 → 1    subject 1 → ◇
 
     the second premise is exactly the rejected configuration above, with
     [P0b = 1 ≠ ◇].  A root-level premise says nothing there ([FN TI ≠ TI]
-    makes it vacuous at the conclusion), so the invariant level 6 carries
-    must follow the counterpart's arrow spine down alongside the mode —
-    [FN]s in [M] matched against arrows in [P0], with [◇] required where the
-    mode bottoms out at [TI].  ⚙ [SI-Flex-Assign] is where that has to be
-    re-established rather than merely threaded: it re-enters subtyping under
-    a substitution, which can turn a counterpart VARIABLE into an arrow.
-    (The arrow configuration is stated but NOT machine-checked here — only
-    its relation half is, below; the runner half needs the [e_consis_impl]
-    call to reduce, which costs order proofs this probe has no use for.) *)
+    makes it vacuous at the conclusion).  §3 below checks this
+    configuration's RELATION half; its runner half is not checked here,
+    since reducing the [e_consis_impl] call costs order proofs the probe has
+    no other use for.
+
+    ⭐⭐ The invariant to carry instead is the authors' own, and their
+    implementation states it in its TYPES: the paper indexes the judgement
+    by [M] and [P0] separately, but [type.ml] fuses them and projects [P0]
+    back out (paper/artifact/implementation/lib/type.ml:8-11, :395-398 —
+    [type mode = Infer | Check of pure_type | Fun of pure_type * mode] with
+    [sk_of_mode] sending [Infer] to [Ghost] and [Fun (p, m)] to
+    [TArr (p, sk_of_mode m)]).  So [P0 = sk_of_mode M] holds there by
+    construction: [TI] pairs with [◇] and cannot do otherwise, and each [FN]
+    layer pairs with one arrow of the counterpart.  ⚙ It also THREADS —
+    [SI-Flex-Assign] re-enters under [subst τ β P0], but substitution is
+    structural, so it maps an arrow to an arrow and [◇] to [◇], the only two
+    positions such an invariant inspects.  §8c.11 has the spelling and the
+    per-row check. *)
 
 From Coq Require Import Lists.List.
 From Metalib Require Import Metatheory.
