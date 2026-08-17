@@ -3473,14 +3473,57 @@ used; what changes is only that the relation carried across is `⊴` rather
 than an equality.
 
 ⚠️ **The renaming does NOT go away.**  `guess^TY` still invents names, so
-`ps` stays and the two relations COMPOSE — the context clause becomes
-`cs_ctx r ⊴ swaps_aenv ps Θd`, keeping §8c.10c's direction (the derivation
-is transported onto the RUNNER's rails).  Every existing case that today
-produces `swaps_aenv ps Θd = cs_ctx r` then discharges the new clause by
-reflexivity of `⊴` (`a_isub_refl_lc`, which is where the new `lc_aenv`
-premise is spent), and only the two ghost cells produce a proper increase.
-⚙ So the rewiring is mechanical for ~38 of the 40 cells; budget the effort
-for threading `lc_aenv` through the recursive calls, which is the one new
-obligation every case acquires.  ⚙ `lc` PRESERVATION along the trio is
-already proved at the `a_` layer (`a_assign_unify_consis_lc`) and reaches
-`e_` through the same bridge §2 uses.
+`ps` stays and the two relations COMPOSE, keeping §8c.10c's direction (the
+derivation is transported onto the RUNNER's rails).
+
+⛔⛔ **CORRECTION (same day, machine-checked): the context clause is
+`a_inc`, NOT `⊴`.**  The paragraph above originally wrote it as
+`cs_ctx r ⊴ swaps_aenv ps Θd`.  That is TOO STRONG, and the counterexample
+sits ONE `U-Arrow` away from the divergent ghost cell — i.e. it is reached by
+exactly the configuration the lift exists to handle
+(`cex/probe_isub_too_strong.v`).  At `Θ = (β̂)`, pattern `β̂ → β̂`, subject
+`◇ → 1`:
+
+```
+  RUNNER      half 1 U-Ghost (Θ untouched), half 2 U-FlexR → SolveM
+              ⇒  β̂ ≔ 1
+  DERIVATION  half 1 U-FlexR → SolveM, and guess^TY(◇) invents a FRESH γ̂
+              ⇒  β̂ ≔ γ̂ ; half 2 finds β̂ DEFINED, so Assign-Assign
+                 substitutes and solves γ̂
+              ⇒  β̂ ≔ γ̂, γ̂ ≔ 1
+```
+
+The two agree on everything the equational theory can see
+(`β̂ ≡ᵗ γ̂ ≡ᵗ 1` in the derivation's context) but disagree SYNTACTICALLY on
+what `β̂` is defined to be.  `a_isub` has two conjuncts and it is the second
+that dies: it demands `binds α (flex_def τ) Θ -> binds α (flex_def τ) Θ'`,
+and the derivation's `β̂ ≔ γ̂` is an ALIAS where the runner committed to
+`β̂ ≔ 1`.  The `a_inc` half SURVIVES — `a_inc__flex_def` asks only for
+`Θ' ⊢ τ' ≡ᵗ κτ`, equivalence rather than equality, and the alias chain
+supplies it (the probe's §2 witness is the IDENTITY metasubstitution).
+
+⭐ **The increase lemma is unaffected and still usable.**
+`a_assign_unify_consis_isub` compares a walk's INPUT with its OUTPUT, where
+there is no committed definition to contradict — the walk only adds — so its
+`⊴` conclusion stands, and `⊴`'s FIRST conjunct is precisely the `a_inc` the
+motive needs.
+
+⚠️⚠️ **AND THE COST ESTIMATE ABOVE WAS TOO OPTIMISTIC.**  "Mechanical for ~38
+of 40 cells" assumed the runner and the derivation still take the SAME rule
+everywhere but the two ghost cells.  Once the motive lets the derivation run
+at a more informative context, that is false: flexibility is read off the
+CONTEXT, so wherever the derivation's context has a flexible SOLVED that the
+runner's leaves open, the derivation takes `Assign-Assign` where the runner
+takes `Assign-SolveM` — a different rule, at every flexible-sensitive row.
+The probe above is exactly that situation.  ⇒ Budget (c) as a genuine
+induction with content in the flexible rows, not as a mechanical rewrite.
+
+⚙ One factoring worth weighing before starting: instead of generalizing the
+motive, prove `⊑`-MONOTONICITY OF THE RELATION as a separate lemma
+(`Θr ⊑ Θd` and a derivation at `Θd` give a derivation at `Θr` with a
+`⊑`-below output), then transport the derivation's second premise DOWN onto
+the runner's context at `U-Arrow` and keep the same-context motive.  That
+puts all the rule-switching content in one relation-only induction (28 rows,
+no runner) instead of spreading it through the runner's 40 cells.  ⚠️ Not yet
+checked for truth — the flexibility-sensitive rows are where it would fail
+too, so probe it before building.
