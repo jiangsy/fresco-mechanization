@@ -3122,3 +3122,83 @@ statement, then level 6 (e_sub) per §8c.6's NEXT list.  ⚠️ Re-run the
 OVERLAP AUDIT first — that audit is what turned §8c.10 from three design
 passes into one.
 
+### 8c.11 ⭐ LEVEL 6's OVERLAP AUDIT — done, and it found ONE thing (2026-08-17)
+
+The audit §8c.10c's NEXT list asks for, run before any level-6 proof: for
+every input shape, which `e_sub` rules can fire, and which one the runner
+takes.  Sources: `ext_algo/def_sub.v` (nine `e_sub` rows + seven
+`e_sub_flex` rows) against `ext_algo/def_sub_impl.v:484-857` (the runner's
+dispatch, which is the case list).
+
+**⭐ THE AUDIT'S GOOD NEWS: `guarded_pskl` collapses almost everything.**
+It is `unit | var | arrow` and NOTHING else (`frost/def_shapes.v:182`), so
+`∀`, `◇` and `⫯` are all UNGUARDED, and five candidate overlaps that look
+real on the rule list are vacuous:
+
+| configuration | looks like | actually |
+|---|---|---|
+| `tc`, `ty`, `P0 = ∀B` | ForallR vs Check vs ForallL | **ForallR alone** — Check wants `guarded P0`, ForallL wants `guarded P0 ∨ P0 = ◇` |
+| `tc`, `ty`, `P = ∀Q` | ForallL vs Check | **ForallL alone** — Check wants `guarded` of the SUBJECT |
+| `tc`, `sk`, `P = ∀Q`, `P0 = ◇` | ForallL vs UnivGhostR | **ForallL alone** — UnivGhostR wants `guarded P` |
+| `tc`, `sk`, `P = ⫯Q`, `P0 = ◇` | UnivGhostL vs UnivGhostR | **UnivGhostL alone**, same reason |
+| `tc`, `sk`, `P = ◇`, `P0 = ◇` | Ghost vs UnivGhostR | **Ghost alone**, same reason |
+
+The last one matters most: Ghost yields `P0` and UnivGhostR yields `⫯P`, so
+had `◇` been guarded the level would have opened with a genuine
+output divergence — §8c.10b's shape, at the sub level.  It is not.
+
+⭐ **The whole `e_sub_flex` side is overlap-free by construction** — the
+three `flex_mono` rows are separated by `γ = α` / `γ ∈ ftv P0` / neither,
+which is a decision, and the other four rows are keyed to distinct binding
+shapes.  `Flex-Assign` carries no `γ ≠ α` side condition and the runner
+fires it unconditionally at a `def` head: they agree.  The rigid row is the
+only one whose rule conditions the runner re-tests (`γ ≠ α`, `γ ∉ ftv P0`),
+and it rejects on exactly those two.
+
+**⛔ THE ONE FINDING, machine-checked: `cex/probe_sub_ghost_ti.v`.**
+`SI-Ghost` has NO mode restriction — the paper writes it as an axiom over
+an arbitrary `M` (full-algo-spec.tex:849) while the neighbouring
+`SI-UnivGhostL` (:855) says `M ≠ TI` outright, with the comment "should not
+inst when TI".  The runner dispatches on the MODE first and its `mode_ti`
+arm is `SI-Infer`'s alone: counterpart `◇` or `None`
+(def_sub_impl.v:509-515).  So at
+
+    NM = SK    M = TI    P0 ≠ ◇    subject ◇
+
+the relation derives what the runner rejects.  The probe checks both halves
+at `P0 = 1`, the runner half for EVERY order proof (that arm consumes none).
+
+⭐ **The premise this buys, and why it is not enough by itself.**  The
+callers do satisfy `M = ti -> P0 = ◇`: `e_typing` calls subtyping only at
+`NM = ty` (def_typing.v:66,71,76) and reaches `TI` only at `◇`
+(`e_typing__freeze`, :80), and `e_pat` — the only `NM = sk` caller —
+threads its own `(m; P0)` unchanged.  Under that premise the `TI` mode is
+settled, because at `(TI, ◇)` both Infer and Ghost fire and return the SAME
+triple `(S0, Θ0, P)`: no uniqueness argument needed, exactly as
+`e_unify_refl` settled level 5's `U-Rigid`/`U-Flex` pair.
+
+⚠️ **But the premise is not hereditary, and that is the design constraint.**
+`SI-Arrow` concludes at `FN M` and runs premise 2 at `M` against the
+counterpart's CODOMAIN, so
+
+    NM = SK    M = FN TI    P0 = 1 → 1    subject 1 → ◇
+
+puts the rejected configuration one level down with `P0b = 1 ≠ ◇`, and a
+root-level premise is vacuous at the conclusion (`FN TI ≠ TI`).  The probe's
+§3 checks this configuration's relation half.  So level 6's invariant has to
+walk the counterpart's arrow spine alongside the mode — `FN`s in `M` matched
+against arrows in `P0`, `◇` required where the mode bottoms out at `TI` —
+rather than constrain the root.  ⚙ `SI-Flex-Assign` is where such an
+invariant must be RE-ESTABLISHED rather than threaded: it re-enters
+subtyping under a substitution, which can turn a counterpart VARIABLE into
+an arrow.
+
+⚙ Two more configurations the audit clears, both by the runner and the
+relation agreeing to reject: `(tc, sk)` with a guarded subject and `P0 ≠ ◇`
+(no rule at all), and `(fn, ty)` with subject `◇` or `⫯Q` (Ghost and
+UnivGhostL are both `SK` rules).
+
+⛔ NEXT, unchanged: THE FORK (§8c.10b (A)/(B)) is still the user's call, and
+level 6 proper is the template of §8c.6 plus the four mechanics traps of
+§8c.10c — which the audit expects to recur verbatim, since the sub runner is
+the same tagged-block shape with the same convoyed atom tests.
