@@ -450,3 +450,51 @@ Proof.
                  | le_ih ])).
   all: le_ih.
 Qed.
+
+(* ===================================================================== *)
+(*  §4  RELATION TO [a_consis_sound]                                      *)
+(*                                                                        *)
+(*  ⚠️ OVERLAP, recorded deliberately.  [a_consis_sound]                   *)
+(*  (consis/prop_soundness_consis.v) already carries [Θ0 ⊴ Θ1] as its     *)
+(*  FIRST conjunct, for the CONSISTENCY component, under FULL             *)
+(*  well-formedness of the context and both skeletons.  §3 is the         *)
+(*  STRONGER form and is why the duplicate is kept — CLAUDE.md asks for  *)
+(*  one fact, one name, in its STRONGEST form:                            *)
+(*                                                                        *)
+(*    · its hypotheses are weaker — [lc_aenv] + [aenv_defs_lc] rather     *)
+(*      than [a_wf_aenv], and nothing at all about the skeletons;         *)
+(*    · it covers the ASSIGN and UNIFY components too, which              *)
+(*      [a_consis_sound] does not state.                                  *)
+(*                                                                        *)
+(*  ⚙ The corollary below discharges the comparison: it recovers          *)
+(*  [a_consis_sound]'s conjunct from §3.  ⚠️ It is also the shape a        *)
+(*  well-formed caller wants, so prefer it over §3 when [a_wf_aenv] is    *)
+(*  already in hand.                                                      *)
+(* ===================================================================== *)
+
+Lemma a_wf_aenv_defs_lc : forall Θ, {{ ⊢ Θ }}a -> aenv_defs_lc Θ.
+Proof.
+  intros Θ H; induction H; intros β τ0 Hb.
+  - inversion Hb.
+  - destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+      [ discriminate | eapply IHa_wf_aenv; exact Hb' ].
+  - destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+      [ inversion Heq; subst; apply mono_ptyp_lc; assumption
+      | eapply IHa_wf_aenv; exact Hb' ].
+  - destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+      [ discriminate | eapply IHa_wf_aenv; exact Hb' ].
+  - destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+      [ discriminate | eapply IHa_wf_aenv; exact Hb' ].
+  - destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+      [ discriminate | eapply IHa_wf_aenv; exact Hb' ].
+Qed.
+
+Corollary a_consis_isub_wf : forall Δ1 Δ2 Θ0 P0 P P' Θ1,
+  {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 }}a ->
+  {{ ⊢ Θ0 }}a ->
+  Θ0 ⊴ Θ1.
+Proof.
+  intros * Hc Hwf.
+  exact (proj2 (proj2 a_assign_unify_consis_isub) _ _ _ _ _ _ _ Hc
+           (a_wf_aenv_lc_aenv Hwf) (a_wf_aenv_defs_lc Hwf)).
+Qed.
