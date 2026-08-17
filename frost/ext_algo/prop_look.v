@@ -20,7 +20,9 @@ Require Import src.frost.def_shapes.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
+Require Import src.frost.prop_tag.
 Require Import src.frost.algo.prop_basic.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
 Require Import src.frost.ext_algo.def_look.
@@ -359,3 +361,311 @@ Proof.
   assert (Hin : y `in` S0) by (clear - Hy2 Hdom Hcov; fsetdec).
   contradiction.
 Qed.
+
+(* ===================================================================== *)
+(*  §5  SUPPLY RESPECT — the two supply indexes transport along [=]       *)
+(*                                                                        *)
+(*  ⚙ MOVED here 2026-08-17 from prop_look_pair.v §1b: prop_solve.v and    *)
+(*  prop_extract.v need it for their own supply-respect statements, and    *)
+(*  they are BELOW prop_look_pair.v in the [Require] graph.               *)
+(* ===================================================================== *)
+
+Lemma e_looksub_lookeq_supply_respect :
+  (forall S0 Θ α m P P' S1 Ξ C,
+     {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\
+       {{ S0' ↝ S1' ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e) /\
+  (forall S0 Θ α P P' S1 Ξ C,
+     {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\
+       {{ S0' ↝ S1' ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e).
+Proof.
+  apply (e_looksub_lookeq_mutind
+           (fun S0 Θ α m P P' S1 Ξ C _ =>
+              forall S0', S0' [=] S0 ->
+              exists S1', S1' [=] S1 /\
+                {{ S0' ↝ S1' ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e)
+           (fun S0 Θ α P P' S1 Ξ C _ =>
+              forall S0', S0' [=] S0 ->
+              exists S1', S1' [=] S1 /\
+                {{ S0' ↝ S1' ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e)).
+  - (* LS-Var *)
+    intros * Heq. eexists. split; [ exact Heq | ].
+    apply e_looksub__var.
+  - (* LS-Absent *)
+    intros * Habs * Heq. eexists. split; [ exact Heq | ].
+    apply e_looksub__absent. exact Habs.
+  - (* LS-Vacuous *)
+    intros * Heq. eexists. split; [ exact Heq | ].
+    apply e_looksub__vacuous.
+  - (* LS-Check *)
+    intros * Hgf Hne HgA HgB Hd IH S0' Heq.
+    destruct (IH S0' Heq) as [S1' [Heq1 Hd']].
+    exists S1'. split; [ exact Heq1 | ].
+    apply e_looksub__check; assumption.
+  - (* LS-ForallR *)
+    intros * Hgf Hβ Hd IH S0' Heq.
+    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
+      as [S1' [Heq1 Hd']].
+    exists S1'. split; [ exact Heq1 | ].
+    apply e_looksub__forall_r with (β := β);
+      [ assumption | rewrite Heq; assumption | exact Hd' ].
+  - (* LS-Arrow *)
+    intros * Hd1 IH1 Hd2 IH2 S0' Heq.
+    destruct (IH1 S0' Heq) as [S1' [Heq1 Hd1']].
+    destruct (IH2 S1' Heq1) as [S2' [Heq2 Hd2']].
+    exists S2'. split; [ exact Heq2 | ].
+    eapply e_looksub__arrow; [ exact Hd1' | exact Hd2' ].
+  - (* LS-ForallL *)
+    intros * Hβ Hd IH S0' Heq.
+    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
+      as [S1' [Heq1 Hd']].
+    exists S1'. split; [ exact Heq1 | ].
+    apply e_looksub__forall_l with (β := β);
+      [ rewrite Heq; assumption | exact Hd' ].
+  - (* LS-UnivGhostL *)
+    intros * Hd IH S0' Heq.
+    destruct (IH S0' Heq) as [S1' [Heq1 Hd']].
+    exists S1'. split; [ exact Heq1 | ].
+    apply e_looksub__univ_ghost_l. exact Hd'.
+  - (* LE-Var *)
+    intros * Heq. eexists. split; [ exact Heq | ].
+    apply e_lookeq__var.
+  - (* LE-Absent *)
+    intros * Habs * Heq. eexists. split; [ exact Heq | ].
+    apply e_lookeq__absent. exact Habs.
+  - (* LE-Vacuous *)
+    intros * Heq. eexists. split; [ exact Heq | ].
+    apply e_lookeq__vacuous.
+  - (* LE-FlexR *)
+    intros * Hα1 Hne Hocc S0' Heq.
+    exists (add α1 S0'). split; [ rewrite Heq; reflexivity | ].
+    apply e_lookeq__flex_r;
+      [ rewrite Heq; assumption | assumption | assumption ].
+  - (* LE-Arrow *)
+    intros * Hd1 IH1 Hd2 IH2 S0' Heq.
+    destruct (IH1 S0' Heq) as [S1' [Heq1 Hd1']].
+    destruct (IH2 S1' Heq1) as [S2' [Heq2 Hd2']].
+    exists S2'. split; [ exact Heq2 | ].
+    eapply e_lookeq__arrow; [ exact Hd1' | exact Hd2' ].
+  - (* LE-ForallInh *)
+    intros * Hβ Hd IH S0' Heq.
+    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
+      as [S1' [Heq1 Hd']].
+    exists S1'. split; [ exact Heq1 | ].
+    apply e_lookeq__forall_inh with (β := β);
+      [ rewrite Heq; assumption | exact Hd' ].
+  - (* LE-ForallSyn *)
+    intros * Hβ Hd IH S0' Heq.
+    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
+      as [S1' [Heq1 Hd']].
+    exists S1'. split; [ exact Heq1 | ].
+    apply e_lookeq__forall_syn with (β := β);
+      [ rewrite Heq; assumption | exact Hd' ].
+  - (* LE-UnivGhost *)
+    intros * Hd IH S0' Heq.
+    destruct (IH S0' Heq) as [S1' [Heq1 Hd']].
+    exists S1'. split; [ exact Heq1 | ].
+    apply e_lookeq__univ_ghost. exact Hd'.
+  - (* LE-UnivGhost1 *)
+    intros * Hβ Hd IH S0' Heq.
+    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
+      as [S1' [Heq1 Hd']].
+    exists S1'. split; [ exact Heq1 | ].
+    apply e_lookeq__univ_ghost1 with (β := β);
+      [ rewrite Heq; assumption | exact Hd' ].
+  - (* LE-UnivGhost2 *)
+    intros * Hg Hd IH S0' Heq.
+    destruct (IH S0' Heq) as [S1' [Heq1 Hd']].
+    exists S1'. split; [ exact Heq1 | ].
+    apply e_lookeq__univ_ghost2; [ assumption | exact Hd' ].
+  - (* LE-UnivGhostR *)
+    intros * Hne Hg Hd IH S0' Heq.
+    destruct (IH S0' Heq) as [S1' [Heq1 Hd']].
+    exists S1'. split; [ exact Heq1 | ].
+    apply e_lookeq__univ_ghost_r; [ assumption | assumption | exact Hd' ].
+Qed.
+
+
+(* ===================================================================== *)
+(*  §6  EQUIVARIANCE                                                      *)
+(*                                                                        *)
+(*  algo/prop_swap.v §10's [a_looksub_lookeq_swap], rule for rule, in the  *)
+(*  ∃-form the supply forces (prop_guess.v §8's reason: [swap_atoms] is    *)
+(*  not a Leibniz homomorphism on the opaque [atoms], so the OUTPUT supply *)
+(*  is fixed only up to [=]).  ⚙ The four LEAKING rows draw their opener   *)
+(*  from the supply, so their freshness moves by [swap_notin_eq] and the   *)
+(*  premise's supply by [eq_swap_atoms_add]; the two ARROW rows thread, so *)
+(*  their ∃-witnesses chain.                                              *)
+(*                                                                        *)
+(*  Its consumer is §8c.11's level, through [e_extract_swap] and           *)
+(*  [e_sub_sub_flex_swap]: a derivation opens a binder at ANY fresh atom   *)
+(*  and the runner opens it at [supply_fresh], so the two agree only up to *)
+(*  a transposition.                                                      *)
+(* ===================================================================== *)
+
+Lemma e_looksub_lookeq_swap : forall a b,
+  (forall S0 Θ α m P P' S1 Ξ C,
+     {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
+     forall S0', S0' [=] swap_atoms a b S0 ->
+     exists S1', S1' [=] swap_atoms a b S1 /\
+       {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ) ⊢ (swap_pskl a b P)
+          ≼[ (swap_atom a b α) , m ] (swap_pskl a b P')
+          ⤳ (swap_aenv a b Ξ) ⨾ (swap_cstrs a b C) }}e) /\
+  (forall S0 Θ α P P' S1 Ξ C,
+     {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
+     forall S0', S0' [=] swap_atoms a b S0 ->
+     exists S1', S1' [=] swap_atoms a b S1 /\
+       {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ) ⊢ (swap_pskl a b P)
+          ∼[ (swap_atom a b α) ] (swap_pskl a b P')
+          ⤳ (swap_aenv a b Ξ) ⨾ (swap_cstrs a b C) }}e).
+Proof.
+  intros a b.
+  apply (e_looksub_lookeq_mutind
+    (fun S0 Θ α m P P' S1 Ξ C _ =>
+       forall S0', S0' [=] swap_atoms a b S0 ->
+       exists S1', S1' [=] swap_atoms a b S1 /\
+         {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ) ⊢ (swap_pskl a b P)
+            ≼[ (swap_atom a b α) , m ] (swap_pskl a b P')
+            ⤳ (swap_aenv a b Ξ) ⨾ (swap_cstrs a b C) }}e)
+    (fun S0 Θ α P P' S1 Ξ C _ =>
+       forall S0', S0' [=] swap_atoms a b S0 ->
+       exists S1', S1' [=] swap_atoms a b S1 /\
+         {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ) ⊢ (swap_pskl a b P)
+            ∼[ (swap_atom a b α) ] (swap_pskl a b P')
+            ⤳ (swap_aenv a b Ξ) ⨾ (swap_cstrs a b C) }}e)).
+
+  (* ------------------------- e_looksub ------------------------- *)
+  - (* LS-Var *)
+    intros S Θ α m P S0' Heq. simpl.
+    exists S0'. split; [ exact Heq | apply e_looksub__var ].
+  - (* LS-Absent *)
+    intros S Θ α m P P' Hni S0' Heq. simpl.
+    exists S0'. split; [ exact Heq | ].
+    apply e_looksub__absent. auto using swap_pskl_ftv_notin.
+  - (* LS-Vacuous *)
+    intros S Θ α m P S0' Heq. simpl.
+    exists S0'. split; [ exact Heq | apply e_looksub__vacuous ].
+  - (* LS-Check *)
+    intros S0 S1 Θ α A B Ξ C Hgf Hne Hg1 Hg2 Hl IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_looksub__check;
+      auto using swap_pskl_neq_var, guarded_pskl_swap, pskl_ghost_free_swap.
+  - (* LS-ForallR — LEAKS *)
+    intros S0 S1 Θ α A B Ξ C β Hgf Hβ Hl IH S0' Heq. simpl.
+    destruct (IH (add (swap_atom a b β) S0')) as [S1' [HS1 Hd]];
+      [ apply eq_swap_atoms_add; exact Heq | ].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_looksub__forall_r with (β := swap_atom a b β);
+      [ apply pskl_ghost_free_swap; exact Hgf
+      | eapply swap_notin_eq; eassumption | ].
+    rewrite swap_pskl_open_var in Hd. exact Hd.
+  - (* LS-Arrow — threaded, so the two ∃-witnesses chain *)
+    intros S0 S1 S2 Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 He IH1 Hs IH2 S0' Heq.
+    simpl.
+    destruct (IH1 _ Heq) as [S1' [HS1 Hd1]].
+    destruct (IH2 _ HS1) as [S2' [HS2 Hd2]].
+    exists S2'. split; [ exact HS2 | ].
+    rewrite swap_aenv_app, swap_cstrs_app.
+    eapply e_looksub__arrow; eassumption.
+  - (* LS-ForallL — LEAKS *)
+    intros S0 S1 Θ α m P P' Ξ C β Hβ Hl IH S0' Heq. simpl.
+    destruct (IH (add (swap_atom a b β) S0')) as [S1' [HS1 Hd]];
+      [ apply eq_swap_atoms_add; exact Heq | ].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_looksub__forall_l with (β := swap_atom a b β);
+      [ eapply swap_notin_eq; eassumption | ].
+    rewrite swap_pskl_open_var in Hd. exact Hd.
+  - (* LS-UnivGhostL *)
+    intros S0 S1 Θ α m P P' Ξ C Hl IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_looksub__univ_ghost_l; exact Hd ].
+
+  (* ------------------------- e_lookeq -------------------------- *)
+  - (* LE-Var *)
+    intros S Θ α P S0' Heq. simpl.
+    exists S0'. split; [ exact Heq | apply e_lookeq__var ].
+  - (* LE-Absent *)
+    intros S Θ α P P' Hni S0' Heq. simpl.
+    exists S0'. split; [ exact Heq | ].
+    apply e_lookeq__absent. auto using swap_pskl_ftv_notin.
+  - (* LE-Vacuous *)
+    intros S Θ α P S0' Heq. simpl.
+    exists S0'. split; [ exact Heq | apply e_lookeq__vacuous ].
+  - (* LE-FlexR — the cluster's ONE generating row *)
+    intros S Θ α P β α1 Hα1 Hne Hin S0' Heq. simpl.
+    exists (add (swap_atom a b α1) S0'). split;
+      [ apply eq_swap_atoms_add; exact Heq | ].
+    apply e_lookeq__flex_r;
+      [ eapply swap_notin_eq; eassumption
+      | auto using swap_pskl_neq_var
+      | auto using swap_pskl_ftv_in ].
+  - (* LE-Arrow — threaded *)
+    intros S0 S1 S2 Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 He1 IH1 He2 IH2 S0' Heq.
+    simpl.
+    destruct (IH1 _ Heq) as [S1' [HS1 Hd1]].
+    destruct (IH2 _ HS1) as [S2' [HS2 Hd2]].
+    exists S2'. split; [ exact HS2 | ].
+    rewrite swap_aenv_app, swap_cstrs_app.
+    eapply e_lookeq__arrow; eassumption.
+  - (* LE-ForallInh — LEAKS *)
+    intros S0 S1 Θ α P P' Ξ C β Hβ He IH S0' Heq. simpl.
+    destruct (IH (add (swap_atom a b β) S0')) as [S1' [HS1 Hd]];
+      [ apply eq_swap_atoms_add; exact Heq | ].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_lookeq__forall_inh with (β := swap_atom a b β);
+      [ eapply swap_notin_eq; eassumption | ].
+    rewrite !swap_pskl_open_var in Hd. exact Hd.
+  - (* LE-ForallSyn — LEAKS *)
+    intros S0 S1 Θ α P P' Ξ C β Hβ He IH S0' Heq. simpl.
+    destruct (IH (add (swap_atom a b β) S0')) as [S1' [HS1 Hd]];
+      [ apply eq_swap_atoms_add; exact Heq | ].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_lookeq__forall_syn with (β := swap_atom a b β);
+      [ eapply swap_notin_eq; eassumption | ].
+    rewrite swap_pskl_open_var in Hd. exact Hd.
+  - (* LE-UnivGhost *)
+    intros S0 S1 Θ α P P' Ξ C He IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_lookeq__univ_ghost; exact Hd ].
+  - (* LE-UnivGhost1 — LEAKS *)
+    intros S0 S1 Θ α P P' Ξ C β Hβ He IH S0' Heq. simpl.
+    destruct (IH (add (swap_atom a b β) S0')) as [S1' [HS1 Hd]];
+      [ apply eq_swap_atoms_add; exact Heq | ].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_lookeq__univ_ghost1 with (β := swap_atom a b β);
+      [ eapply swap_notin_eq; eassumption | ].
+    rewrite swap_pskl_open_var in Hd. exact Hd.
+  - (* LE-UnivGhost2 *)
+    intros S0 S1 Θ α P P' Ξ C Hg He IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_lookeq__univ_ghost2; auto using guarded_pskl_swap.
+  - (* LE-UnivGhostR *)
+    intros S0 S1 Θ α P P' Ξ C Hne Hg He IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_lookeq__univ_ghost_r;
+      auto using swap_pskl_neq_var, guarded_pskl_swap.
+Qed.
+
+Corollary e_looksub_swap : forall a b S0 Θ α m P P' S1 Ξ C,
+  {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
+  forall S0', S0' [=] swap_atoms a b S0 ->
+  exists S1', S1' [=] swap_atoms a b S1 /\
+    {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ) ⊢ (swap_pskl a b P)
+       ≼[ (swap_atom a b α) , m ] (swap_pskl a b P')
+       ⤳ (swap_aenv a b Ξ) ⨾ (swap_cstrs a b C) }}e.
+Proof. intros a b. apply e_looksub_lookeq_swap. Qed.
+
+Corollary e_lookeq_swap : forall a b S0 Θ α P P' S1 Ξ C,
+  {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
+  forall S0', S0' [=] swap_atoms a b S0 ->
+  exists S1', S1' [=] swap_atoms a b S1 /\
+    {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ) ⊢ (swap_pskl a b P)
+       ∼[ (swap_atom a b α) ] (swap_pskl a b P')
+       ⤳ (swap_aenv a b Ξ) ⨾ (swap_cstrs a b C) }}e.
+Proof. intros a b. apply e_looksub_lookeq_swap. Qed.

@@ -22,7 +22,9 @@ Require Import src.frost.def_shapes.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
+Require Import src.frost.prop_tag.
 Require Import src.frost.algo.prop_basic.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
 Require Import src.frost.ext_algo.def_guess.
@@ -470,4 +472,349 @@ Proof.
         by (apply e_solve_ctx_cov with (S0 := S0);
             solve [ clear - Hcov; fsetdec | assumption ]).
       clear - Hctx Hout Hcov Hg1. fsetdec.
+Qed.
+
+(* ===================================================================== *)
+(*  §4b  SUPPLY RESPECT — the supply indexes transport along [=]          *)
+(*                                                                        *)
+(*  prop_look.v §5's twin, and the base case §5's CHAINS need: a chain of *)
+(*  length zero moves nothing but the supply, and a supply is a SET, so    *)
+(*  the caller holds an [=]-variant rather than the term.                  *)
+(* ===================================================================== *)
+
+Lemma e_solve_sub_eq_supply_respect :
+  (forall S0 Θ m P Q S1 Ξ P',
+     {{ S0 ↝ S1 ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\
+       {{ S0' ↝ S1' ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e) /\
+  (forall S0 Θ P Q S1 Ξ P',
+     {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\
+       {{ S0' ↝ S1' ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e).
+Proof.
+  apply (e_solve_sub_eq_mutind
+    (fun S0 Θ m P Q S1 Ξ P' _ =>
+       forall S0', S0' [=] S0 ->
+       exists S1', S1' [=] S1 /\
+         {{ S0' ↝ S1' ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e)
+    (fun S0 Θ P Q S1 Ξ P' _ =>
+       forall S0', S0' [=] S0 ->
+       exists S1', S1' [=] S1 /\
+         {{ S0' ↝ S1' ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e)).
+
+  (* ------------------------ e_solve_sub ------------------------ *)
+  - intros S Θ m α Q S0' Heq.
+    exists S0'. split; [ exact Heq | apply e_solve_sub__var ].
+  - intros S0 S1 Θ m P Q Ξ P' β Hβ Hs IH S0' Heq.
+    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
+      as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_solve_sub__forall_l with (β := β);
+      [ rewrite Heq; exact Hβ | exact Hd ].
+  - intros S0 S1 Θ m P Q Ξ P' Hs IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_solve_sub__univ_ghost_l; exact Hd ].
+  - intros S Θ m P S0' Heq.
+    exists S0'. split; [ exact Heq | apply e_solve_sub__vacuous ].
+  - intros S0 S1 Θ P Q Ξ P' Hgf Hg1 Hg2 He IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_solve_sub__check; assumption ].
+  - intros S0 S1 Θ P B Ξ P' β Hgf Hβ Hs IH S0' Heq.
+    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
+      as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_solve_sub__forall_r with (β := β);
+      [ exact Hgf | rewrite Heq; exact Hβ | exact Hd ].
+  - intros S0 S1 S2 Θ m P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2' He IH1 Hs IH2 S0' Heq.
+    destruct (IH1 _ Heq) as [S1' [HS1 Hd1]].
+    destruct (IH2 _ HS1) as [S2' [HS2 Hd2]].
+    exists S2'. split; [ exact HS2 | eapply e_solve_sub__arrow; eassumption ].
+  - intros S0 S1 S2 Θ m Q1 Q2 Ξ1 Ξ2 P1' P2' He IH1 Hs IH2 S0' Heq.
+    destruct (IH1 _ Heq) as [S1' [HS1 Hd1]].
+    destruct (IH2 _ HS1) as [S2' [HS2 Hd2]].
+    exists S2'. split;
+      [ exact HS2 | eapply e_solve_sub__ghost_l_fn; eassumption ].
+  - intros S Θ B Hgf Hg S0' Heq.
+    exists S0'. split; [ exact Heq | apply e_solve_sub__ghost_l; assumption ].
+
+  (* ------------------------ e_solve_eq ------------------------- *)
+  - intros S Θ S0' Heq.
+    exists S0'. split; [ exact Heq | apply e_solve_eq__unit ].
+  - intros S Θ α Q S0' Heq.
+    exists S0'. split; [ exact Heq | apply e_solve_eq__var ].
+  - intros S0 S1 Θ α P Ξ A Hft Hnf Hng Hg S0' Heq.
+    destruct (e_guess_mono_supply_respect Hg Heq) as [S1' [HS1 Hg']].
+    exists S1'. split; [ exact HS1 | apply e_solve_eq__flex_r; assumption ].
+  - intros S Θ Q S0' Heq.
+    exists S0'. split; [ exact Heq | apply e_solve_eq__hole_l ].
+  - intros S Θ P S0' Heq.
+    exists S0'. split; [ exact Heq | apply e_solve_eq__hole_r ].
+  - intros S0 S1 S2 Θ P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2' He1 IH1 He2 IH2 S0' Heq.
+    destruct (IH1 _ Heq) as [S1' [HS1 Hd1]].
+    destruct (IH2 _ HS1) as [S2' [HS2 Hd2]].
+    exists S2'. split; [ exact HS2 | eapply e_solve_eq__arrow; eassumption ].
+  - intros S0 S1 Θ P Q Ξ P' β Hβ He IH S0' Heq.
+    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
+      as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_solve_eq__forall with (β := β);
+      [ rewrite Heq; exact Hβ | exact Hd ].
+  - intros S0 S1 Θ P Q Ξ P' He IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_solve_eq__tophole_both; exact Hd ].
+  - intros S0 S1 Θ P Q Ξ P' β Hβ He IH S0' Heq.
+    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
+      as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_solve_eq__tophole_l_all with (β := β);
+      [ rewrite Heq; exact Hβ | exact Hd ].
+  - intros S0 S1 Θ P Q Ξ P' Hg He IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split;
+      [ exact HS1 | apply e_solve_eq__tophole_l_guarded; assumption ].
+  - intros S0 S1 Θ P Q Ξ P' β Hβ He IH S0' Heq.
+    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
+      as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_solve_eq__all_l_tophole with (β := β);
+      [ rewrite Heq; exact Hβ | exact Hd ].
+  - intros S0 S1 Θ P Q Ξ P' Hg He IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split;
+      [ exact HS1 | apply e_solve_eq__tophole_r_guarded; assumption ].
+Qed.
+
+Corollary e_solve_sub_supply_respect : forall S0 Θ m P Q S1 Ξ P',
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e.
+Proof. apply e_solve_sub_eq_supply_respect. Qed.
+
+Corollary e_solve_eq_supply_respect : forall S0 Θ P Q S1 Ξ P',
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e.
+Proof. apply e_solve_sub_eq_supply_respect. Qed.
+
+Lemma e_solve_cstr_supply_respect : forall S0 Θ C P S1 Ξ Q,
+  {{ S0 ↝ S1 ⊨ Θ ⊩ C ⨾ P ⤳ Ξ ⨾ Q }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ ⊩ C ⨾ P ⤳ Ξ ⨾ Q }}e.
+Proof.
+  intros S0 Θ C P S1 Ξ Q H; induction H as
+    [ S Θ P | S0 S1 Θ m Q P Ξ P' Hs
+    | S0 S1 S2 Θ Q C P Ξ1 Ξ2 P' P'' He Hc IH ];
+    intros S0' Heq.
+  - exists S0'. split; [ exact Heq | apply e_solve_cstr__empty ].
+  - destruct (e_solve_sub_supply_respect Hs Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_solve_cstr__sub; exact Hd ].
+  - destruct (e_solve_eq_supply_respect He Heq) as [S1' [HS1 Hd1]].
+    destruct (IH _ HS1) as [S2' [HS2 Hd2]].
+    exists S2'. split; [ exact HS2 | eapply e_solve_cstr__eq; eassumption ].
+Qed.
+
+(* ===================================================================== *)
+(*  §5  EQUIVARIANCE                                                      *)
+(*                                                                        *)
+(*  algo/prop_swap.v §10's [a_solve_sub_eq_swap] / [a_solve_cstr_swap] in  *)
+(*  the ∃-form the supply forces (prop_guess.v §8's reason).  ⚙ The four   *)
+(*  CLOSING rows go through [swap_pskl_close]; SS-ForallR deliberately     *)
+(*  does not close (its binder may escape into the yield — def_solve.v),   *)
+(*  and equivariance does not care either way; SE-FlexR routes through     *)
+(*  [e_guess_mono_swap], the layer's one generating row.                   *)
+(* ===================================================================== *)
+
+Lemma e_solve_sub_eq_swap : forall a b,
+  (forall S0 Θ m P Q S1 Ξ P',
+     {{ S0 ↝ S1 ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e ->
+     forall S0', S0' [=] swap_atoms a b S0 ->
+     exists S1', S1' [=] swap_atoms a b S1 /\
+       {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ) ⊢ₛ (swap_pskl a b P) ≼[ m ]
+          (swap_pskl a b Q) ⤳ (swap_aenv a b Ξ) ⨾ (swap_pskl a b P') }}e) /\
+  (forall S0 Θ P Q S1 Ξ P',
+     {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e ->
+     forall S0', S0' [=] swap_atoms a b S0 ->
+     exists S1', S1' [=] swap_atoms a b S1 /\
+       {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ) ⊢ₑ (swap_pskl a b P) ∼
+          (swap_pskl a b Q) ⤳ (swap_aenv a b Ξ) ⨾ (swap_pskl a b P') }}e).
+Proof.
+  intros a b.
+  apply (e_solve_sub_eq_mutind
+    (fun S0 Θ m P Q S1 Ξ P' _ =>
+       forall S0', S0' [=] swap_atoms a b S0 ->
+       exists S1', S1' [=] swap_atoms a b S1 /\
+         {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ) ⊢ₛ (swap_pskl a b P) ≼[ m ]
+            (swap_pskl a b Q) ⤳ (swap_aenv a b Ξ) ⨾ (swap_pskl a b P') }}e)
+    (fun S0 Θ P Q S1 Ξ P' _ =>
+       forall S0', S0' [=] swap_atoms a b S0 ->
+       exists S1', S1' [=] swap_atoms a b S1 /\
+         {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ) ⊢ₑ (swap_pskl a b P) ∼
+            (swap_pskl a b Q) ⤳ (swap_aenv a b Ξ) ⨾ (swap_pskl a b P') }}e)).
+
+  (* ------------------------ e_solve_sub ------------------------ *)
+  - (* SS-Var + SS-Flex *)
+    intros S Θ m α Q S0' Heq. simpl.
+    exists S0'. split; [ exact Heq | apply e_solve_sub__var ].
+  - (* SS-ForallL — the yield CLOSES over the drawn binder *)
+    intros S0 S1 Θ m P Q Ξ P' β Hβ Hs IH S0' Heq. simpl.
+    destruct (IH (add (swap_atom a b β) S0')) as [S1' [HS1 Hd]];
+      [ apply eq_swap_atoms_add; exact Heq | ].
+    exists S1'. split; [ exact HS1 | ].
+    rewrite swap_pskl_close.
+    apply e_solve_sub__forall_l with (β := swap_atom a b β);
+      [ eapply swap_notin_eq; eassumption | ].
+    rewrite swap_pskl_open_var in Hd.    exact Hd.
+  - (* SS-UnivGhostL *)
+    intros S0 S1 Θ m P Q Ξ P' Hs IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_solve_sub__univ_ghost_l; exact Hd ].
+  - (* SS-Vacuous *)
+    intros S Θ m P S0' Heq. simpl.
+    exists S0'. split; [ exact Heq | apply e_solve_sub__vacuous ].
+  - (* SS-Check *)
+    intros S0 S1 Θ P Q Ξ P' Hgf Hg1 Hg2 He IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_solve_sub__check;
+      auto using guarded_pskl_swap, pskl_ghost_free_swap.
+  - (* SS-ForallR — the binder LEAKS into the yield; no close *)
+    intros S0 S1 Θ P B Ξ P' β Hgf Hβ Hs IH S0' Heq. simpl.
+    destruct (IH (add (swap_atom a b β) S0')) as [S1' [HS1 Hd]];
+      [ apply eq_swap_atoms_add; exact Heq | ].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_solve_sub__forall_r with (β := swap_atom a b β);
+      [ apply pskl_ghost_free_swap; exact Hgf
+      | eapply swap_notin_eq; eassumption | ].
+    rewrite swap_pskl_open_var in Hd.    exact Hd.
+  - (* SS-Arrow — threaded in BOTH the supply and the context *)
+    intros S0 S1 S2 Θ m P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2' He IH1 Hs IH2 S0' Heq. simpl.
+    destruct (IH1 _ Heq) as [S1' [HS1 Hd1]].
+    destruct (IH2 _ HS1) as [S2' [HS2 Hd2]].
+    exists S2'. split; [ exact HS2 | ].
+    rewrite swap_aenv_app.
+    eapply e_solve_sub__arrow; [ exact Hd1 | ].
+    rewrite <- swap_aenv_app. exact Hd2.
+  - (* SS-GhostLF *)
+    intros S0 S1 S2 Θ m Q1 Q2 Ξ1 Ξ2 P1' P2' He IH1 Hs IH2 S0' Heq. simpl.
+    destruct (IH1 _ Heq) as [S1' [HS1 Hd1]].
+    destruct (IH2 _ HS1) as [S2' [HS2 Hd2]].
+    exists S2'. split; [ exact HS2 | ].
+    rewrite swap_aenv_app.
+    eapply e_solve_sub__ghost_l_fn; [ exact Hd1 | ].
+    rewrite <- swap_aenv_app. exact Hd2.
+  - (* SS-GhostL *)
+    intros S Θ B Hgf Hg S0' Heq. simpl.
+    exists S0'. split; [ exact Heq | ].
+    apply e_solve_sub__ghost_l;
+      auto using guarded_pskl_swap, pskl_ghost_free_swap.
+
+  (* ------------------------ e_solve_eq ------------------------- *)
+  - (* SE-Unit *)
+    intros S Θ S0' Heq. simpl.
+    exists S0'. split; [ exact Heq | apply e_solve_eq__unit ].
+  - (* SE-Var + SE-FlexL *)
+    intros S Θ α Q S0' Heq. simpl.
+    exists S0'. split; [ exact Heq | apply e_solve_eq__var ].
+  - (* SE-FlexR — the layer's ONE generating row *)
+    intros S0 S1 Θ α P Ξ A Hft Hnf Hng Hg S0' Heq. simpl.
+    destruct (e_guess_mono_swap Hg Heq) as [S1' [HS1 Hg']].
+    exists S1'. split; [ exact HS1 | ].
+    rewrite swap_pskl_ptyp_to_pskl.
+    apply e_solve_eq__flex_r;
+      auto using a_flex_tvar_swap, a_non_flex_swap, nonghost_pskl_swap.
+  - (* SE-GhostL *)
+    intros S Θ Q S0' Heq. simpl.
+    exists S0'. split; [ exact Heq | apply e_solve_eq__hole_l ].
+  - (* SE-VacuousR *)
+    intros S Θ P S0' Heq. simpl.
+    exists S0'. split; [ exact Heq | apply e_solve_eq__hole_r ].
+  - (* SE-Arrow *)
+    intros S0 S1 S2 Θ P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2' He1 IH1 He2 IH2 S0' Heq. simpl.
+    destruct (IH1 _ Heq) as [S1' [HS1 Hd1]].
+    destruct (IH2 _ HS1) as [S2' [HS2 Hd2]].
+    exists S2'. split; [ exact HS2 | ].
+    rewrite swap_aenv_app.
+    eapply e_solve_eq__arrow; [ exact Hd1 | ].
+    rewrite <- swap_aenv_app. exact Hd2.
+  - (* SE-Forall — CLOSES *)
+    intros S0 S1 Θ P Q Ξ P' β Hβ He IH S0' Heq. simpl.
+    destruct (IH (add (swap_atom a b β) S0')) as [S1' [HS1 Hd]];
+      [ apply eq_swap_atoms_add; exact Heq | ].
+    exists S1'. split; [ exact HS1 | ].
+    rewrite swap_pskl_close.
+    apply e_solve_eq__forall with (β := swap_atom a b β);
+      [ eapply swap_notin_eq; eassumption | ].
+    rewrite !swap_pskl_open_var in Hd.    exact Hd.
+  - (* SE-UnivGhost *)
+    intros S0 S1 Θ P Q Ξ P' He IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_solve_eq__tophole_both; exact Hd ].
+  - (* SE-GhostForall — CLOSES *)
+    intros S0 S1 Θ P Q Ξ P' β Hβ He IH S0' Heq. simpl.
+    destruct (IH (add (swap_atom a b β) S0')) as [S1' [HS1 Hd]];
+      [ apply eq_swap_atoms_add; exact Heq | ].
+    exists S1'. split; [ exact HS1 | ].
+    rewrite swap_pskl_close.
+    apply e_solve_eq__tophole_l_all with (β := swap_atom a b β);
+      [ eapply swap_notin_eq; eassumption | ].
+    rewrite swap_pskl_open_var in Hd.    exact Hd.
+  - (* SE-GhostGuarded *)
+    intros S0 S1 Θ P Q Ξ P' Hg He IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_solve_eq__tophole_l_guarded; auto using guarded_pskl_swap.
+  - (* SE-ForallGhost — CLOSES *)
+    intros S0 S1 Θ P Q Ξ P' β Hβ He IH S0' Heq. simpl.
+    destruct (IH (add (swap_atom a b β) S0')) as [S1' [HS1 Hd]];
+      [ apply eq_swap_atoms_add; exact Heq | ].
+    exists S1'. split; [ exact HS1 | ].
+    rewrite swap_pskl_close.
+    apply e_solve_eq__all_l_tophole with (β := swap_atom a b β);
+      [ eapply swap_notin_eq; eassumption | ].
+    rewrite swap_pskl_open_var in Hd.    exact Hd.
+  - (* SE-GuardedGhost *)
+    intros S0 S1 Θ P Q Ξ P' Hg He IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_solve_eq__tophole_r_guarded; auto using guarded_pskl_swap.
+Qed.
+
+Corollary e_solve_sub_swap : forall a b S0 Θ m P Q S1 Ξ P',
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e ->
+  forall S0', S0' [=] swap_atoms a b S0 ->
+  exists S1', S1' [=] swap_atoms a b S1 /\
+    {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ) ⊢ₛ (swap_pskl a b P) ≼[ m ]
+       (swap_pskl a b Q) ⤳ (swap_aenv a b Ξ) ⨾ (swap_pskl a b P') }}e.
+Proof. intros a b. apply e_solve_sub_eq_swap. Qed.
+
+Corollary e_solve_eq_swap : forall a b S0 Θ P Q S1 Ξ P',
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e ->
+  forall S0', S0' [=] swap_atoms a b S0 ->
+  exists S1', S1' [=] swap_atoms a b S1 /\
+    {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ) ⊢ₑ (swap_pskl a b P) ∼
+       (swap_pskl a b Q) ⤳ (swap_aenv a b Ξ) ⨾ (swap_pskl a b P') }}e.
+Proof. intros a b. apply e_solve_sub_eq_swap. Qed.
+
+Lemma e_solve_cstr_swap : forall a b S0 Θ C P S1 Ξ Q,
+  {{ S0 ↝ S1 ⊨ Θ ⊩ C ⨾ P ⤳ Ξ ⨾ Q }}e ->
+  forall S0', S0' [=] swap_atoms a b S0 ->
+  exists S1', S1' [=] swap_atoms a b S1 /\
+    {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ) ⊩ (swap_cstrs a b C) ⨾ (swap_pskl a b P)
+       ⤳ (swap_aenv a b Ξ) ⨾ (swap_pskl a b Q) }}e.
+Proof.
+  intros a b S0 Θ C P S1 Ξ Q H; induction H as
+    [ S Θ P | S0 S1 Θ m Q P Ξ P' Hs
+    | S0 S1 S2 Θ Q C P Ξ1 Ξ2 P' P'' He Hc IH ];
+    intros S0' Heq; simpl.
+  - exists S0'. split; [ exact Heq | apply e_solve_cstr__empty ].
+  - destruct (e_solve_sub_swap Hs Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_solve_cstr__sub; exact Hd ].
+  - destruct (e_solve_eq_swap He Heq) as [S1' [HS1 Hd1]].
+    destruct (IH _ HS1) as [S2' [HS2 Hd2]].
+    exists S2'. split; [ exact HS2 | ].
+    rewrite swap_aenv_app.
+    eapply e_solve_cstr__eq;
+      [ exact Hd1 | rewrite <- swap_aenv_app; exact Hd2 ].
 Qed.

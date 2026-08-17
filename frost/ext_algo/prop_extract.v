@@ -15,7 +15,9 @@ Require Import src.frost.def_shapes.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
+Require Import src.frost.prop_tag.
 Require Import src.frost.algo.prop_basic.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
 Require Import src.frost.ext_algo.def_guess.
@@ -130,4 +132,56 @@ Proof.
     simpl. clear - HctxF Hcs. fsetdec.
   - eapply e_guess_sound;
       [ exact Hg | exact HctxG | clear - Hq Hcs Hg2; fsetdec ].
+Qed.
+
+(** SUPPLY RESPECT — the three clusters' own, composed.  What the chain
+    lemmas of prop_sub_complete.v §3 need at length zero. *)
+Lemma e_extract_supply_respect : forall S0 Θ0 NM α m P P' S1 Ξ Q,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\
+    {{ S0' ↝ S1' ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q }}e.
+Proof.
+  intros S0 Θ0 NM α m P P' S1 Ξ Q H.
+  destruct H as [ S0 S1 S2 S3 Θ0 NM α m P P' Ξ Ξs Ξ' C Q Q' Hl Hc Hg ].
+  intros S0' Heq.
+  destruct ((proj1 e_looksub_lookeq_supply_respect) _ _ _ _ _ _ _ _ _ Hl _ Heq)
+    as [S1' [HS1 Hl']].
+  destruct (e_solve_cstr_supply_respect Hc HS1) as [S2' [HS2 Hc']].
+  destruct (e_guess_supply_respect Hg HS2) as [S3' [HS3 Hg']].
+  exists S3'. split; [ exact HS3 | ].
+  eapply e_extract__solve; eassumption.
+Qed.
+
+(* ===================================================================== *)
+(*  EQUIVARIANCE — algo/prop_swap.v §10's [a_extract_swap], threaded       *)
+(*                                                                        *)
+(*  One rule, so again no induction: the three clusters' own equivariance  *)
+(*  composed, and the three ∃-witnesses chain because the pipeline         *)
+(*  threads.  ⚙ Its consumer is [e_sub_sub_flex_swap] (prop_sub.v), which  *)
+(*  §8c.11's level needs at [SI-ForallL]: the derivation draws the         *)
+(*  extraction's opener at ANY fresh atom and the runner draws it at       *)
+(*  [supply_fresh].                                                       *)
+(* ===================================================================== *)
+
+Lemma e_extract_swap : forall a b S0 Θ0 NM α m P P' S1 Ξ Q,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q }}e ->
+  forall S0', S0' [=] swap_atoms a b S0 ->
+  exists S1', S1' [=] swap_atoms a b S1 /\
+    {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊢ (swap_pskl a b P)
+       ⊳[ NM , (swap_atom a b α) , m ] (swap_pskl a b P')
+       ⤳ (swap_aenv a b Ξ) ↪ (swap_pskl a b Q) }}e.
+Proof.
+  intros a b S0 Θ0 NM α m P P' S1 Ξ Q H.
+  destruct H as [ S0 S1 S2 S3 Θ0 NM α m P P' Ξ Ξs Ξ' C Q Q' Hl Hc Hg ].
+  intros S0' Heq.
+  destruct (e_looksub_swap Hl Heq) as [S1' [HS1 Hl']].
+  destruct (e_solve_cstr_swap Hc HS1) as [S2' [HS2 Hc']].
+  destruct (e_guess_swap Hg HS2) as [S3' [HS3 Hg']].
+  exists S3'. split; [ exact HS3 | ].
+  rewrite !swap_aenv_app.
+  eapply e_extract__solve.
+  - exact Hl'.
+  - rewrite <- swap_aenv_app. exact Hc'.
+  - exact Hg'.
 Qed.

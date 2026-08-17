@@ -463,6 +463,18 @@ Proof.
       [ clear - H Heq; fsetdec | exact Hd ].
 Qed.
 
+(** The sort wrapper reads its supply up to [=] as well. *)
+Lemma e_guess_supply_respect : forall S0 NM Q S1 Ξ Q',
+  e_guess S0 NM Q S1 Ξ Q' ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\ e_guess S0' NM Q S1' Ξ Q'.
+Proof.
+  intros * H. destruct H as [ S Q0 | S0' S1' Q0 Ξ0 A Hg ]; intros S0'' Heq.
+  - exists S0''. split; [ exact Heq | apply e_guess__sk ].
+  - destruct (e_guess_mono_supply_respect Hg Heq) as [S1'' [HS1 Hg']].
+    exists S1''. split; [ exact HS1 | apply e_guess__ty; exact Hg' ].
+Qed.
+
 (* ===================================================================== *)
 (*  §8  EQUIVARIANCE                                                      *)
 (*                                                                        *)
@@ -505,6 +517,24 @@ Proof.
     apply e_guess_mono__forall with (β := swap_atom a b β).
     + eapply swap_notin_eq; eassumption.
     + rewrite swap_pskl_open_var in Hd. exact Hd.
+Qed.
+
+(** §1b's wrapper along the same transposition: [guess^SK] moves nothing,
+    [guess^TY] is the mono row read back through the coercion.  ⚙ Added for
+    §8c.11's level, which reaches it through [e_extract_swap]. *)
+Lemma e_guess_swap : forall a b S0 NM Q S1 Ξ Q',
+  e_guess S0 NM Q S1 Ξ Q' ->
+  forall S0', S0' [=] swap_atoms a b S0 ->
+  exists S1', S1' [=] swap_atoms a b S1 /\
+    e_guess S0' NM (swap_pskl a b Q) S1' (swap_aenv a b Ξ)
+      (swap_pskl a b Q').
+Proof.
+  intros a b S0 NM Q S1 Ξ Q' H.
+  destruct H as [ S Q0 | S0' S1' Q0 Ξ0 A Hg ]; intros S0'' Heq.
+  - exists S0''. split; [ exact Heq | simpl; apply e_guess__sk ].
+  - destruct (e_guess_mono_swap Hg Heq) as [S1'' [HS1 Hg']].
+    exists S1''. split; [ exact HS1 | ].
+    rewrite swap_pskl_ptyp_to_pskl. apply e_guess__ty. exact Hg'.
 Qed.
 
 (* ===================================================================== *)

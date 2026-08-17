@@ -7,16 +7,14 @@
     §1a  the e-look's context is INERT (every freshness condition reads
          the SUPPLY), so derivations transport to ANY context — which is
          what replaces the a-side [a_looksub_ctx_exchange] surgery;
-    §1b  the two supply indexes transport along [=] (the re-rootings
-         re-associate [add]s, which is only a [=]-equality);
     §1c  the COLLECTION-PRESERVING re-rootings, e-side: R″
          ([e_looksub_strip_tophole_l] — outputs AND supplies exact) and
          R′ ([e_looksub_open_forall_l_first]) — ⭐ stated with an
          EXISTENTIAL opener, which kills the whole rebinding apparatus:
          in its ForallL case the premise IS the goal at the derivation's
          own opener (+ ctx_any), and in its ForallR case the IH's opener
-         is reused below the rebuilt root (+ supply respect for the
-         [add]-exchange) — so unlike the a-side R′
+         is reused below the rebuilt root (+ prop_look.v §5's supply
+         respect for the [add]-exchange) — so unlike the a-side R′
          (prop_look_equiv.v §6) NO swap is ever performed, and no e-side
          swap kit exists or is needed.
 
@@ -107,128 +105,6 @@ Proof.
       e_lookeq__flex_r, e_lookeq__arrow, e_lookeq__forall_inh,
       e_lookeq__forall_syn, e_lookeq__univ_ghost, e_lookeq__univ_ghost1,
       e_lookeq__univ_ghost2, e_lookeq__univ_ghost_r.
-Qed.
-
-(* ===================================================================== *)
-(*  §1b  Supply respect: the two supply indexes transport along [=]       *)
-(* ===================================================================== *)
-
-Lemma e_looksub_lookeq_supply_respect :
-  (forall S0 Θ α m P P' S1 Ξ C,
-     {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
-     forall S0', S0' [=] S0 ->
-     exists S1', S1' [=] S1 /\
-       {{ S0' ↝ S1' ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e) /\
-  (forall S0 Θ α P P' S1 Ξ C,
-     {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
-     forall S0', S0' [=] S0 ->
-     exists S1', S1' [=] S1 /\
-       {{ S0' ↝ S1' ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e).
-Proof.
-  apply (e_looksub_lookeq_mutind
-           (fun S0 Θ α m P P' S1 Ξ C _ =>
-              forall S0', S0' [=] S0 ->
-              exists S1', S1' [=] S1 /\
-                {{ S0' ↝ S1' ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e)
-           (fun S0 Θ α P P' S1 Ξ C _ =>
-              forall S0', S0' [=] S0 ->
-              exists S1', S1' [=] S1 /\
-                {{ S0' ↝ S1' ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e)).
-  - (* LS-Var *)
-    intros * Heq. eexists. split; [ exact Heq | ].
-    apply e_looksub__var.
-  - (* LS-Absent *)
-    intros * Habs * Heq. eexists. split; [ exact Heq | ].
-    apply e_looksub__absent. exact Habs.
-  - (* LS-Vacuous *)
-    intros * Heq. eexists. split; [ exact Heq | ].
-    apply e_looksub__vacuous.
-  - (* LS-Check *)
-    intros * Hgf Hne HgA HgB Hd IH S0' Heq.
-    destruct (IH S0' Heq) as [S1' [Heq1 Hd']].
-    exists S1'. split; [ exact Heq1 | ].
-    apply e_looksub__check; assumption.
-  - (* LS-ForallR *)
-    intros * Hgf Hβ Hd IH S0' Heq.
-    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
-      as [S1' [Heq1 Hd']].
-    exists S1'. split; [ exact Heq1 | ].
-    apply e_looksub__forall_r with (β := β);
-      [ assumption | rewrite Heq; assumption | exact Hd' ].
-  - (* LS-Arrow *)
-    intros * Hd1 IH1 Hd2 IH2 S0' Heq.
-    destruct (IH1 S0' Heq) as [S1' [Heq1 Hd1']].
-    destruct (IH2 S1' Heq1) as [S2' [Heq2 Hd2']].
-    exists S2'. split; [ exact Heq2 | ].
-    eapply e_looksub__arrow; [ exact Hd1' | exact Hd2' ].
-  - (* LS-ForallL *)
-    intros * Hβ Hd IH S0' Heq.
-    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
-      as [S1' [Heq1 Hd']].
-    exists S1'. split; [ exact Heq1 | ].
-    apply e_looksub__forall_l with (β := β);
-      [ rewrite Heq; assumption | exact Hd' ].
-  - (* LS-UnivGhostL *)
-    intros * Hd IH S0' Heq.
-    destruct (IH S0' Heq) as [S1' [Heq1 Hd']].
-    exists S1'. split; [ exact Heq1 | ].
-    apply e_looksub__univ_ghost_l. exact Hd'.
-  - (* LE-Var *)
-    intros * Heq. eexists. split; [ exact Heq | ].
-    apply e_lookeq__var.
-  - (* LE-Absent *)
-    intros * Habs * Heq. eexists. split; [ exact Heq | ].
-    apply e_lookeq__absent. exact Habs.
-  - (* LE-Vacuous *)
-    intros * Heq. eexists. split; [ exact Heq | ].
-    apply e_lookeq__vacuous.
-  - (* LE-FlexR *)
-    intros * Hα1 Hne Hocc S0' Heq.
-    exists (add α1 S0'). split; [ rewrite Heq; reflexivity | ].
-    apply e_lookeq__flex_r;
-      [ rewrite Heq; assumption | assumption | assumption ].
-  - (* LE-Arrow *)
-    intros * Hd1 IH1 Hd2 IH2 S0' Heq.
-    destruct (IH1 S0' Heq) as [S1' [Heq1 Hd1']].
-    destruct (IH2 S1' Heq1) as [S2' [Heq2 Hd2']].
-    exists S2'. split; [ exact Heq2 | ].
-    eapply e_lookeq__arrow; [ exact Hd1' | exact Hd2' ].
-  - (* LE-ForallInh *)
-    intros * Hβ Hd IH S0' Heq.
-    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
-      as [S1' [Heq1 Hd']].
-    exists S1'. split; [ exact Heq1 | ].
-    apply e_lookeq__forall_inh with (β := β);
-      [ rewrite Heq; assumption | exact Hd' ].
-  - (* LE-ForallSyn *)
-    intros * Hβ Hd IH S0' Heq.
-    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
-      as [S1' [Heq1 Hd']].
-    exists S1'. split; [ exact Heq1 | ].
-    apply e_lookeq__forall_syn with (β := β);
-      [ rewrite Heq; assumption | exact Hd' ].
-  - (* LE-UnivGhost *)
-    intros * Hd IH S0' Heq.
-    destruct (IH S0' Heq) as [S1' [Heq1 Hd']].
-    exists S1'. split; [ exact Heq1 | ].
-    apply e_lookeq__univ_ghost. exact Hd'.
-  - (* LE-UnivGhost1 *)
-    intros * Hβ Hd IH S0' Heq.
-    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
-      as [S1' [Heq1 Hd']].
-    exists S1'. split; [ exact Heq1 | ].
-    apply e_lookeq__univ_ghost1 with (β := β);
-      [ rewrite Heq; assumption | exact Hd' ].
-  - (* LE-UnivGhost2 *)
-    intros * Hg Hd IH S0' Heq.
-    destruct (IH S0' Heq) as [S1' [Heq1 Hd']].
-    exists S1'. split; [ exact Heq1 | ].
-    apply e_lookeq__univ_ghost2; [ assumption | exact Hd' ].
-  - (* LE-UnivGhostR *)
-    intros * Hne Hg Hd IH S0' Heq.
-    destruct (IH S0' Heq) as [S1' [Heq1 Hd']].
-    exists S1'. split; [ exact Heq1 | ].
-    apply e_lookeq__univ_ghost_r; [ assumption | assumption | exact Hd' ].
 Qed.
 
 (* ===================================================================== *)

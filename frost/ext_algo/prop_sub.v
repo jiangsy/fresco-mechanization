@@ -35,7 +35,9 @@ Require Import src.frost.def_shapes.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
+Require Import src.frost.prop_tag.
 Require Import src.frost.algo.prop_basic.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
 Require Import src.frost.ext_algo.def_guess.
@@ -560,3 +562,319 @@ Proof.
   intros * He. eapply e_sub_sound; [ exact He | apply uniq_nil | ].
   simpl. fsetdec.
 Qed.
+
+(* ===================================================================== *)
+(*  §5  EQUIVARIANCE                                                      *)
+(*                                                                        *)
+(*  algo/prop_swap.v §12's [a_sub_sub_flex_swap] in the ∃-form the supply  *)
+(*  forces (prop_guess.v §8's reason).  ⚙ Every [Δ-drop] premise the       *)
+(*  a-side has to re-establish under the swap ([α ∉ dom Θ1],              *)
+(*  [β ∉ dom Θ1], six of them) is simply GONE here, which is what makes    *)
+(*  this the shorter proof of the two; what replaces them is one          *)
+(*  [swap_notin_eq] per drawn atom and one [eq_swap_atoms_add] per premise *)
+(*  supply.                                                               *)
+(*                                                                        *)
+(*  ⭐ WHY THE LEVEL NEEDS IT.  A derivation opens [SI-ForallR]'s binder,  *)
+(*  [SI-ForallL]'s extraction opener and [SI-Flex-Solve]'s two deposited   *)
+(*  flexibles at ANY atom fresh for the supply; the runner draws every one *)
+(*  of them at [supply_fresh].  So the derivation has to be moved onto the *)
+(*  runner's rails before an IH stated at the runner's inputs can apply,   *)
+(*  and a transposition is the move (USER DIRECTIVE, swap kit).           *)
+(* ===================================================================== *)
+
+(** SUPPLY RESPECT.  A supply is a SET, so a caller that assembled one by a
+    different route holds an [=]-variant rather than the term — and the
+    judgement takes it as an INDEX, which no [rewrite] can move under.  This
+    is what prop_sub_complete.v §3's CHAIN needs at length zero. *)
+Lemma e_sub_sub_flex_supply_respect :
+  (forall S0 NM M P0 Θ0 P Q S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\
+       {{ S0' ↝ S1' ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e) /\
+  (forall S0 NM M P0 Θ0 Ξ α Q S1 Θ1,
+     e_sub_flex S0 NM M P0 Θ0 Ξ α Q S1 Θ1 ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\
+       e_sub_flex S0' NM M P0 Θ0 Ξ α Q S1' Θ1).
+Proof.
+  apply (e_sub_sub_flex_mutind
+    (fun S0 NM M P0 Θ0 P Q S1 Θ1 _ =>
+       forall S0', S0' [=] S0 ->
+       exists S1', S1' [=] S1 /\
+         {{ S0' ↝ S1' ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e)
+    (fun S0 NM M P0 Θ0 Ξ α Q S1 Θ1 _ =>
+       forall S0', S0' [=] S0 ->
+       exists S1', S1' [=] S1 /\
+         e_sub_flex S0' NM M P0 Θ0 Ξ α Q S1' Θ1)).
+
+  (* --------------------------- e_sub --------------------------- *)
+  - intros S NM P Θ0 S0' Heq.
+    exists S0'. split; [ exact Heq | apply e_sub__infer ].
+  - intros S0 S1 Θ0 Θ1 A B HgfA HgfB HgdA HgdB [Q Hc] S0' Heq.
+    destruct (e_consis_supply_respect Hc Heq) as [S1' [HS1 Hc']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_sub__check; try assumption. exists Q. exact Hc'.
+  - intros α S0 S1 Θ0 Θ1 Ξ A B Hgf Hsuf HuΞΘ Hnα Hs IH S0' Heq.
+    destruct (IH (add α S0') ltac:(rewrite Heq; reflexivity))
+      as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_sub__forall_r with (α := α) (Ξ := Ξ);
+      solve [ assumption | rewrite Heq; assumption ].
+  - intros S Θ0 P Hgd S0' Heq.
+    exists S0'. split; [ exact Heq | apply e_sub__univ_ghost_r; assumption ].
+  - intros S0 S1 NM M P0 Θ0 Θ1 α Q Hf IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_sub__flex_mono; exact Hd ].
+  - intros S0 S1 S2 NM M Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hc Hs IH S0' Heq.
+    destruct (e_consis_supply_respect Hc Heq) as [S1' [HS1 Hc']].
+    destruct (IH _ HS1) as [S2' [HS2 Hd]].
+    exists S2'. split; [ exact HS2 | eapply e_sub__arrow; eassumption ].
+  - intros α S0 S1 S2 NM M P0 Θ0 Θ1 P Q Ξ P1 Hne Hgd Hnα Hex Hwf Hs IH S0' Heq.
+    assert (Heqα : add α S0' [=] add α S0) by (rewrite Heq; reflexivity).
+    destruct (e_extract_supply_respect Hex Heqα) as [S1' [HS1 Hex']].
+    destruct (IH _ HS1) as [S2' [HS2 Hd]].
+    exists S2'. split; [ exact HS2 | ].
+    eapply e_sub__forall_l with (α := α) (Ξ := Ξ) (P1 := P1).
+    + exact Hne.
+    + exact Hgd.
+    + rewrite Heq. exact Hnα.
+    + exact Hex'.
+    + exact Hwf.
+    + exact Hd.
+  - intros S M Θ0 P0 Hne S0' Heq.
+    exists S0'. split; [ exact Heq | apply e_sub__ghost; exact Hne ].
+  - intros S0 S1 M Θ0 Θ1 P0 P Q Hne Hs IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_sub__univ_ghost_l; assumption ].
+
+  (* ------------------------- e_sub_flex ------------------------ *)
+  - intros S0 S1 NM M P0 Θ0 Θ1 Ξ α0 α β Q Hnα Hnβ Hs IH S0' Heq.
+    destruct (IH (add β (add α S0')) ltac:(rewrite Heq; reflexivity))
+      as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_sub_flex__solve with (α := α) (β := β);
+      [ rewrite Heq; exact Hnα | rewrite Heq; exact Hnβ | exact Hd ].
+  - intros S0 S1 NM M P0 Θ0 Θ1 Ξ α β τ Q Hs IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_sub_flex__assign; exact Hd ].
+  - intros S0 S1 NM M P0 Θ0 Θ1 Ξ α β Q Hne Hin Hf IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_sub_flex__depend; assumption ].
+  - intros S0 S1 NM M P0 Θ0 Θ1 Ξ α β Q Hne Hni Hf IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_sub_flex__skip; assumption ].
+  - intros S0 S1 NM M P0 Θ0 Θ1 Ξ α β Q Hne Hni Hf IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_sub_flex__skip_rigid; assumption ].
+  - intros S0 S1 NM M P0 Θ0 Θ1 Ξ α x Apay Q Hf IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_sub_flex__skip_tm_var; exact Hd ].
+  - intros S0 S1 NM M P0 Θ0 Θ1 Ξ α x Qpay Q Hf IH S0' Heq.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_sub_flex__skip_tm_skl; exact Hd ].
+Qed.
+
+Corollary e_sub_supply_respect : forall S0 NM M P0 Θ0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\
+    {{ S0' ↝ S1' ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e.
+Proof. apply e_sub_sub_flex_supply_respect. Qed.
+
+Corollary e_sub_flex_supply_respect : forall S0 NM M P0 Θ0 Ξ α Q S1 Θ1,
+  e_sub_flex S0 NM M P0 Θ0 Ξ α Q S1 Θ1 ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\ e_sub_flex S0' NM M P0 Θ0 Ξ α Q S1' Θ1.
+Proof. apply e_sub_sub_flex_supply_respect. Qed.
+
+(** The output-suppressed consistency abbreviation along a swap — [Check]'s
+    premise, and the shape [Arrow]'s first premise reduces to. *)
+Lemma e_consis_empty_swap : forall a b S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ empty | empty | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+  forall S0', S0' [=] swap_atoms a b S0 ->
+  exists S1', S1' [=] swap_atoms a b S1 /\
+    {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊢[ empty | empty | (swap_pskl a b P0) ]
+       (swap_pskl a b P) ∼ (swap_pskl a b Q) ⊣ (swap_aenv a b Θ1) }}e.
+Proof.
+  intros a b S0 Θ0 P0 P Q S1 Θ1 Hc S0' Heq.
+  eapply e_consis_swap;
+    [ exact Hc | apply empty_eq_swap_atoms_empty
+    | apply empty_eq_swap_atoms_empty | exact Heq ].
+Qed.
+
+Lemma e_consis_chk_swap : forall a b S0 Θ0 A B S1 Θ1,
+  e_consis_chk S0 Θ0 A B S1 Θ1 ->
+  forall S0', S0' [=] swap_atoms a b S0 ->
+  exists S1', S1' [=] swap_atoms a b S1 /\
+    e_consis_chk S0' (swap_aenv a b Θ0) (swap_pskl a b A) (swap_pskl a b B)
+      S1' (swap_aenv a b Θ1).
+Proof.
+  intros a b S0 Θ0 A B S1 Θ1 [Q Hc] S0' Heq.
+  destruct (e_consis_empty_swap Hc Heq) as [S1' [HS1 Hc']].
+  exists S1'. split; [ exact HS1 | exists (swap_pskl a b Q); exact Hc' ].
+Qed.
+
+Lemma e_sub_sub_flex_swap : forall a b,
+  (forall S0 NM M P0 Θ0 P Q S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e ->
+     forall S0', S0' [=] swap_atoms a b S0 ->
+     exists S1', S1' [=] swap_atoms a b S1 /\
+       {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊢[ NM | M | (swap_pskl a b P0) ]
+          (swap_pskl a b P) ⩽ (swap_pskl a b Q)
+          ⊣ (swap_aenv a b Θ1) }}e) /\
+  (forall S0 NM M P0 Θ0 Ξ α Q S1 Θ1,
+     e_sub_flex S0 NM M P0 Θ0 Ξ α Q S1 Θ1 ->
+     forall S0', S0' [=] swap_atoms a b S0 ->
+     exists S1', S1' [=] swap_atoms a b S1 /\
+       e_sub_flex S0' NM M (swap_pskl a b P0) (swap_aenv a b Θ0)
+         (swap_aenv a b Ξ) (swap_atom a b α) (swap_pskl a b Q)
+         S1' (swap_aenv a b Θ1)).
+Proof.
+  intros a b.
+  apply (e_sub_sub_flex_mutind
+    (fun S0 NM M P0 Θ0 P Q S1 Θ1 _ =>
+       forall S0', S0' [=] swap_atoms a b S0 ->
+       exists S1', S1' [=] swap_atoms a b S1 /\
+         {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊢[ NM | M | (swap_pskl a b P0) ]
+            (swap_pskl a b P) ⩽ (swap_pskl a b Q)
+            ⊣ (swap_aenv a b Θ1) }}e)
+    (fun S0 NM M P0 Θ0 Ξ α Q S1 Θ1 _ =>
+       forall S0', S0' [=] swap_atoms a b S0 ->
+       exists S1', S1' [=] swap_atoms a b S1 /\
+         e_sub_flex S0' NM M (swap_pskl a b P0) (swap_aenv a b Θ0)
+           (swap_aenv a b Ξ) (swap_atom a b α) (swap_pskl a b Q)
+           S1' (swap_aenv a b Θ1))).
+
+  (* --------------------------- e_sub --------------------------- *)
+  - (* SI-Infer *)
+    intros S NM P Θ0 S0' Heq. simpl.
+    exists S0'. split; [ exact Heq | apply e_sub__infer ].
+  - (* SI-Check *)
+    intros S0 S1 Θ0 Θ1 A B HgfA HgfB HgdA HgdB Hc S0' Heq. simpl.
+    destruct (e_consis_chk_swap Hc Heq) as [S1' [HS1 Hc']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_sub__check;
+      auto using guarded_pskl_swap, pskl_ghost_free_swap.
+  - (* SI-ForallR — the drawn binder rides the swap, on BOTH sides of the
+       premise's output decomposition *)
+    intros α S0 S1 Θ0 Θ1 Ξ A B Hgf Hsuf HuΞΘ Hnα Hs IH S0' Heq. simpl.
+    destruct (IH (add (swap_atom a b α) S0')) as [S1' [HS1 Hd]];
+      [ apply eq_swap_atoms_add; exact Heq | ].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_sub__forall_r with (α := swap_atom a b α) (Ξ := swap_aenv a b Ξ).
+    + apply pskl_ghost_free_swap; exact Hgf.
+    + apply a_suffix_swap; exact Hsuf.
+    + rewrite <- swap_aenv_app. apply swap_aenv_uniq; exact HuΞΘ.
+    + eapply swap_notin_eq; eassumption.
+    + rewrite swap_pskl_open_var in Hd. rewrite !swap_aenv_app in Hd.
+      exact Hd.
+  - (* SI-UnivGhostR *)
+    intros S Θ0 P Hgd S0' Heq. simpl.
+    exists S0'. split; [ exact Heq | ].
+    apply e_sub__univ_ghost_r; auto using guarded_pskl_swap.
+  - (* SI-FlexMono — the walk starts at an EMPTY accumulator *)
+    intros S0 S1 NM M P0 Θ0 Θ1 α Q Hf IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_sub__flex_mono; exact Hd ].
+  - (* SI-Arrow — threaded, so the two ∃-witnesses chain *)
+    intros S0 S1 S2 NM M Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hc Hs IH S0' Heq. simpl.
+    destruct (e_consis_empty_swap Hc Heq) as [S1' [HS1 Hc']].
+    destruct (IH _ HS1) as [S2' [HS2 Hd]].
+    exists S2'. split; [ exact HS2 | ].
+    eapply e_sub__arrow; [ exact Hc' | exact Hd ].
+  - (* SI-ForallL — the extraction's opener and its block ride the swap *)
+    intros α S0 S1 S2 NM M P0 Θ0 Θ1 P Q Ξ P1 Hne Hgd Hnα Hex Hwf Hs IH S0' Heq.
+    simpl.
+    assert (Heqα : add (swap_atom a b α) S0' [=] swap_atoms a b (add α S0))
+      by (apply eq_swap_atoms_add; exact Heq).
+    destruct (e_extract_swap Hex Heqα) as [S1' [HS1 Hex']].
+    destruct (IH _ HS1) as [S2' [HS2 Hd]].
+    exists S2'. split; [ exact HS2 | ].
+    eapply e_sub__forall_l with (α := swap_atom a b α)
+      (Ξ := swap_aenv a b Ξ) (P1 := swap_pskl a b P1).
+    + exact Hne.
+    + destruct Hgd as [hg | ->];
+        [ left; apply guarded_pskl_swap; exact hg | right; reflexivity ].
+    + eapply swap_notin_eq; eassumption.
+    + rewrite swap_pskl_open_var in Hex'. exact Hex'.
+    + rewrite <- swap_aenv_app.
+      apply (a_wf_pskl_swap a b _ _ _ Hwf). apply empty_eq_swap_atoms_empty.
+    + rewrite swap_pskl_open in Hd. rewrite swap_aenv_app in Hd. exact Hd.
+  - (* SI-Ghost *)
+    intros S M Θ0 P0 Hne S0' Heq. simpl.
+    exists S0'. split; [ exact Heq | apply e_sub__ghost; exact Hne ].
+  - (* SI-UnivGhostL *)
+    intros S0 S1 M Θ0 Θ1 P0 P Q Hne Hs IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_sub__univ_ghost_l; [ exact Hne | exact Hd ].
+
+  (* ------------------------- e_sub_flex ------------------------ *)
+  - (* SI-Flex-Solve — TWO atoms drawn from the supply, in sequence *)
+    intros S0 S1 NM M P0 Θ0 Θ1 Ξ α0 α β Q Hnα Hnβ Hs IH S0' Heq. simpl.
+    destruct (IH (add (swap_atom a b β) (add (swap_atom a b α) S0')))
+      as [S1' [HS1 Hd]];
+      [ apply eq_swap_atoms_add; apply eq_swap_atoms_add; exact Heq | ].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_sub_flex__solve with (α := swap_atom a b α)
+      (β := swap_atom a b β).
+    + eapply swap_notin_eq; eassumption.
+    + eapply swap_notin_eq;
+        [ apply eq_swap_atoms_add; exact Heq | exact Hnβ ].
+    + rewrite !swap_aenv_app in Hd. exact Hd.
+  - (* SI-Flex-Assign — the defined head is substituted away *)
+    intros S0 S1 NM M P0 Θ0 Θ1 Ξ α β τ Q Hs IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_sub_flex__assign.
+    rewrite !swap_pskl_subst in Hd.
+    rewrite !swap_pskl_ptyp_to_pskl in Hd.
+    change (swap_pskl a b (pskl_var_f α)) with
+      (pskl_var_f (swap_atom a b α)) in Hd.
+    rewrite swap_aenv_app in Hd. exact Hd.
+  - (* SI-Flex-Depend *)
+    intros S0 S1 NM M P0 Θ0 Θ1 Ξ α β Q Hne Hin Hf IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_sub_flex__depend;
+      auto using swap_atom_neq, swap_pskl_ftv_in.
+    rewrite swap_aenv_app in Hd. exact Hd.
+  - (* SI-Flex-Skip *)
+    intros S0 S1 NM M P0 Θ0 Θ1 Ξ α β Q Hne Hni Hf IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_sub_flex__skip;
+      auto using swap_atom_neq, swap_pskl_ftv_notin.
+  - (* SI-Flex-SkipRigid *)
+    intros S0 S1 NM M P0 Θ0 Θ1 Ξ α β Q Hne Hni Hf IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_sub_flex__skip_rigid;
+      auto using swap_atom_neq, swap_pskl_ftv_notin.
+  - (* SI-Flex-SkipTmVar, TYPE payload *)
+    intros S0 S1 NM M P0 Θ0 Θ1 Ξ α x Apay Q Hf IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_sub_flex__skip_tm_var; exact Hd ].
+  - (* SI-Flex-SkipTmVar, SKELETON payload *)
+    intros S0 S1 NM M P0 Θ0 Θ1 Ξ α x Qpay Q Hf IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_sub_flex__skip_tm_skl; exact Hd ].
+Qed.
+
+Corollary e_sub_swap : forall a b S0 NM M P0 Θ0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e ->
+  forall S0', S0' [=] swap_atoms a b S0 ->
+  exists S1', S1' [=] swap_atoms a b S1 /\
+    {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊢[ NM | M | (swap_pskl a b P0) ]
+       (swap_pskl a b P) ⩽ (swap_pskl a b Q) ⊣ (swap_aenv a b Θ1) }}e.
+Proof. intros a b. apply e_sub_sub_flex_swap. Qed.
+
+Corollary e_sub_flex_swap : forall a b S0 NM M P0 Θ0 Ξ α Q S1 Θ1,
+  e_sub_flex S0 NM M P0 Θ0 Ξ α Q S1 Θ1 ->
+  forall S0', S0' [=] swap_atoms a b S0 ->
+  exists S1', S1' [=] swap_atoms a b S1 /\
+    e_sub_flex S0' NM M (swap_pskl a b P0) (swap_aenv a b Θ0)
+      (swap_aenv a b Ξ) (swap_atom a b α) (swap_pskl a b Q)
+      S1' (swap_aenv a b Θ1).
+Proof. intros a b. apply e_sub_sub_flex_swap. Qed.
