@@ -240,7 +240,43 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-17 (latest) — ⭐ **ABSORPTION LANDED** (the piece §8c.12c predicted) — ⛔ **and the alias-collapse transport is REFUTED, machine-checked (`cex/probe_collapse_orientation.v`): the FIFTH dead design, and it yields constraint C6**
+## 2026-08-17 (latest) — ⭐⭐⭐ **LEVEL 5 IS UNRESTRICTED: `consis_call_no_hole` is DELETED and the three consistency-runner headlines hold on GHOST-CARRYING skeletons — the flagship path is reachable**
+
+`e_assign_impl_complete`, `e_unify_impl_complete` and
+`e_consis_run_complete` are now Qed, assumptions-closed, and carry NO
+hole-freeness premise.  That was the goal of
+`docs/HANDOFF-close-consis-unrestricted.md`, which is CLOSED.
+
+⭐ **It closed by removing the ambiguity, not by solving the two-context
+problem.**  `U-FlexL` / `U-FlexR` gained `P0 <> ◇` / `P <> ◇`
+(`frost/algo/def_rules.v`), rendering the reference implementation's
+ghost-first dispatch — the same prose-completion the tree already makes
+for `SE-FlexR` via `nonghost_pskl`, and filed for the authors in
+PAPER-GAPS.  Consequences, in order:
+
+- `a_consis_complete` RE-PROVED with the guards, by dispatching in the
+  implementation's order: `C-GhostR` HOISTED above the two flexible layers
+  (sound — that block reads neither `HnfP` nor `HnfP0`, and being an axiom
+  node it carries no measure obligation), plus the mirror `C-Ghost` node
+  at a FLEXIBLE input, whose one real obligation (precision of the input's
+  image) is discharged by the same `consis_precise_via_refine` the
+  `C-FlexR` branch below it uses, at `ζ := κ`, `Θ1 := Θ0`.
+- `ext_algo/prop_consis_inc.v` §3's two DIVERGENT-CELL inversions collapse
+  from disjunctions to single-rule statements; `e_consis_inv_hole_pattern`
+  additionally now returns the `Δ1`-disjointness the runner tests.
+- the six case-kills the restriction bought became ordinary cases, each a
+  three-line `do_ghost_cell` (new local tactic) against those inversions.
+- `consis_call_no_hole` and its four maintenance lemmas are RETIRED
+  (`prop_consis_complete.v` §2 now records why).  `pskl_no_hole` itself
+  stays — partial precision's Δ-monotonicity still uses it.
+
+⛔ **The two-context problem is MOOT, not solved.**  All five refutations
+and constraints C1–C6 are kept in the hand-off as the record of why the
+guard is the right fix; do not restart them.
+
+Gate: `make coq` rc=0 twice, README.v 32/32, zero `Admitted`/`Axiom`.
+
+## 2026-08-17 — ⭐ **ABSORPTION LANDED** (the piece §8c.12c predicted) — ⛔ **and the alias-collapse transport is REFUTED, machine-checked (`cex/probe_collapse_orientation.v`): the FIFTH dead design, and it yields constraint C6**
 
 Building (R1) step 3 turned up its own refutation, plus the one lemma
 that survives it.

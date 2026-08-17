@@ -1,13 +1,38 @@
 # HANDOFF — close consistency-runner completeness WITHOUT the hole-free restriction
 
-**Status (2026-08-17, second pass): the supporting layer is Qed and in the
-tree; the main step is OPEN.  FOUR designs for the two-context relation are
-refuted by machine-checked probes — and so is the FRAGMENT ESCAPE (§5's R2):
-skeleton inference PRESENTS the divergent cell
-(`cex/probe_pat_presents_hole_flex.v`), so the two-context problem must be
-solved, not fenced off.**  This file is the whole problem in one place:
-what is proved, what is ruled out, what any solution must satisfy, and the
-experiments worth running next.
+**✅ CLOSED (2026-08-17).  `consis_call_no_hole` is GONE from the motive,
+and all three headline corollaries — `e_assign_impl_complete`,
+`e_unify_impl_complete`, `e_consis_run_complete` — are unrestricted, Qed
+and assumptions-closed.**
+
+⭐ **HOW IT CLOSED, and it was not by solving the problem this file is
+about.**  The problem was: at two cells the rules admit BOTH a ghost row
+and a flex row, at different output contexts, so completeness had to
+RELATE the runner's context to the derivation's.  Five candidate
+relations are machine-checked refuted (§4), and the fragment escape too
+(§5's R2).  The resolution was to remove the AMBIGUITY instead:
+`U-FlexL` / `U-FlexR` now carry `P0 <> ◇` / `P <> ◇`
+(`frost/algo/def_rules.v`), which renders the reference implementation's
+ghost-first dispatch — the same prose-completion the tree already makes
+for `SE-FlexR` via `nonghost_pskl`.  Then
+
+- every ghost cell admits exactly ONE rule, so
+  `ext_algo/prop_consis_inc.v` §3's two divergent-cell inversions
+  collapse from disjunctions to single-rule statements;
+- the six case-kills the restriction bought became ordinary cases, each a
+  three-line `do_ghost_cell` against those inversions;
+- `a_consis_complete` was RE-PROVED with the guards, by dispatching in the
+  implementation's order — `C-GhostR` hoisted above the two flexible
+  layers, plus the mirror `C-Ghost` node at a flexible input (its one real
+  obligation discharged by the same `consis_precise_via_refine` the
+  `C-FlexR` branch uses).
+
+⛔ **The two-context problem is therefore MOOT, not solved.**  Constraints
+C1–C6 and the five refutations below are kept as the record of why the
+guard is the right fix and what it cost to find out; do not restart any of
+them.  Filed for the authors in `docs/PAPER-GAPS.md`.
+
+---
 
 Campaign context: `HANDOFF-extractable-algo-encoding.md` §8c.10 (level 5),
 §8c.10b (the refutation that created the restriction), §8c.12 / §8c.12a–c

@@ -178,7 +178,7 @@ Qed.
 Lemma e_consis_inv_hole_pattern : forall Δ1 Δ2 S0 Θ0 P Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | pskl_hole ] P ∼ Q ⊣ Θ1 }}e ->
   (forall β, P <> pskl_var_f β) ->
-  S1 = S0 /\ Θ1 = Θ0 /\ Q = P.
+  S1 = S0 /\ Θ1 = Θ0 /\ Q = P /\ Δ1 ∩ ftvar_in_pskl P [=] empty.
 Proof.
   intros * Hd Hnv. inversion Hd; subst;
     try solve [ congruence
