@@ -240,7 +240,36 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-17 (latest) — ⛔ **THE FRAGMENT ESCAPE IS REFUTED TOO: skeleton inference PRESENTS the divergent cell, machine-checked (`cex/probe_pat_presents_hole_flex.v`) — the two-context problem must be solved, not fenced off**
+## 2026-08-17 (latest) — ⭐ **(R1) BUILD, STEPS 1–2 LANDED: the ◇-walk characterization and the alias-collapse (`frost/ext_algo/prop_consis_alias.v`), Qed and assumptions-closed**
+
+The pre-normalisation campaign's first two committable units:
+
+- `e_assign_hole_out` (off the mutual `e_assign_unify_consis_hole_walk`):
+  a `◇`-payload walk `Θ ⊲[nil] α ≔ ◇ ⊣ Θ1` either changes NOTHING (an
+  inner `U-GhostR` stops it) or replaces exactly one undefined flexible
+  `γ̂`'s entry in place by `γ̂ ≔ ε̂, ε̂` with `ε̂ = guess^TY(◇)` fresh.
+  ⚙ `◇` mentions nothing, so `Assign-Depend` never fires and the
+  insertion is positional despite walks migrating in general.  ⚠️ Found
+  while writing it: `a_flex_tvar` admits DEFINED targets, so the walk
+  alias-CHASES (`Assign-Assign` can fire at `β = α`, re-entering at the
+  definition's image) — the insertion lands at the END of the chase, and
+  the lemma existentially quantifies the solved variable.
+- `collapse1 γ ε := rename_aenv γ ε ∘ aenv_remove γ` with
+  `collapse1_insert`: collapsing the insertion recovers the input — the
+  runner's unchanged answer at the divergent cells.  The directed rename
+  earns its keep here (a collapse MERGES `ε̂` into `γ`; no transposition
+  can express it).
+
+⭐ The step-3 transport's statement is PINNED in the handover §5 (R1),
+along with the session's structural discoveries: the two sides do NOT
+peel walks in lockstep (defined heads force `Assign-Assign`, which
+converts the walk to a consis that may RESTART a walk), so the transport
+must reconstruct rather than simulate; below the alias entry the
+collapse is a pure SWAP (wf keeps `γ` out of its own tail), so §3's
+chain equivariance carries that half; `is_alias` survives the run via
+the ⊴-increase's syntactic definition clause.
+
+## 2026-08-17 — ⛔ **THE FRAGMENT ESCAPE IS REFUTED TOO: skeleton inference PRESENTS the divergent cell, machine-checked (`cex/probe_pat_presents_hole_flex.v`) — the two-context problem must be solved, not fenced off**
 
 The lift of level 5 off its hole-free restriction
 (docs/HANDOFF-close-consis-unrestricted.md) had one cheap exit left,

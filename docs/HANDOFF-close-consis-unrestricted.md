@@ -182,6 +182,74 @@ with the alias SET tracked explicitly and κ fixed by it, not
 existentially quantified — the existential is what made dead end 3's
 motive unusable.
 
+### (R1) BUILD STATE (2026-08-17, session 2) — steps 1–2 LANDED
+
+`frost/ext_algo/prop_consis_alias.v`, Qed and assumptions-closed:
+
+- **Step 1, `e_assign_hole_out`** (+ the mutual
+  `e_assign_unify_consis_hole_walk`): the `◇`-payload walk's output is
+  EXACTLY `alias_insert_out` — unchanged (an inner `U-GhostR` stops it),
+  or ONE undefined flexible `γ̂` replaced in place by `γ̂ ≔ ε̂, ε̂` with
+  `ε̂` fresh.  ⚙ `◇` has no free variables, so `Assign-Depend` never
+  fires: the insertion is POSITIONAL even though walks in general
+  migrate.  ⚠️ `a_flex_tvar` admits DEFINED targets, so the walk
+  alias-CHASES (`Assign-Assign` at `β = α` re-enters at the definition's
+  image); the insertion lands at the END of the chase — the lemma
+  existentially quantifies the solved variable.
+- **Step 2, `collapse1 γ ε := rename_aenv γ ε ∘ aenv_remove γ`** (the
+  directed rename is right here: a collapse MERGES `ε̂` into `γ`, no
+  transposition can say that), with `collapse1_insert`: collapsing the
+  insertion recovers the input — the runner's answer at the cells.
+
+**Step 3 — THE TRANSPORT (open, the heart).**  Single-pair statement to
+prove, mutually over the trio (then iterate over a chain):
+
+    is_alias γ ε Θ := binds γ (γ ≔ ε̂-var) Θ  (ε̂ the alias name)
+    D : {{S0 ↝ S1 ⊨ Θ ⊢[Δ1|Δ2|P0] P ∼ Q ⊣ Θ1}}  ∧  is_alias γ ε Θ
+      ⇒ {{S0 ↝ S1 ⊨ collapse1 γ ε Θ ⊢[Δ1|Δ2|cP0] cP ∼ cQ
+           ⊣ collapse1 γ ε Θ1}}   ∧  is_alias γ ε Θ1
+    (c• := subst by γ for ε̂; SAME supplies both sides — the transported
+     derivation re-uses the original's draws)
+
+  Discoveries from this session's design pass, to build on:
+  - ⚠️ **The two sides do NOT peel walks in lockstep.**  At the alias
+    entry the original walk MUST take `Assign-Assign` (defined heads have
+    no skip row), which CONVERTS the walk to a consis judgement at the
+    tail — and `U-FlexL` inside that consis RESTARTS a walk from the top
+    of the dumped block.  The collapsed side keeps peeling.  So the
+    transport cannot be a rule-for-rule simulation; organize it as a
+    derivation-sided induction that freely RECONSTRUCTS the collapsed
+    derivation (inversion kits + the two enablers below).
+  - ⭐ **Below the alias entry the collapse is a pure SWAP.**  `γ` cannot
+    occur below its own entry (wf points mentions downward), so
+    `rename ε̂→γ` on the tail = `swap γ ε̂` — and §3's chain equivariance
+    (`e_consis_swap`/`e_consis_swaps`) already transports derivations
+    along swaps.  The above-the-alias part is a genuine κ-image (entries
+    above may mention BOTH `γ` and `ε̂` — a merge), and only there does
+    the induction have real content.
+  - ⚠️ **The chase can hit the alias itself** (`α = γ` as walk target):
+    the original's continuation retargets `ε̂` while the collapsed side
+    keeps target `γ`; the two continuations are again swap-related.
+  - ⭐ **`is_alias` survives the run** via the landed ⊴-increase
+    (`e_assign_isub` et al.): `a_isub`'s definition clause preserves
+    definitions SYNTACTICALLY.
+  - ⚙ Closest precedent for the mechanics: prop_consis_rename.v L9
+    (`a_assign_unify_consis_rename_tvar`) — mid-entry surgery over the
+    trio, with `binds_mid_swap` / `a_flex_tvar_mid_swap`; but L9's entry
+    is RIGID and its walk skips it verbatim, while the alias entry is
+    where the action is.
+  - The transport will need wf-strength hypotheses (γ-below-freshness is
+    a wf fact); `algo/prop_wf_preservation.v` supplies preservation.
+
+**Step 4 — assembly** (after step 3): extend the motive's conclusion from
+`swaps_aenv ps Θd = cs_ctx r` to `swaps_aenv ps (collapse_chain als Θd) =
+cs_ctx r` (collapse-then-swap normal form; supply clause drops the alias
+names; out clause takes the collapse image), re-close the six kill sites
+— the two divergent cells via `e_consis_inv_flex_subject_hole` +
+`e_assign_hole_out` + `collapse1_insert`, the four unique ones unchanged
+— and thread `U-Arrow` by transport-then-swap.  Then re-derive the three
+headlines with the weakened (but alias-tolerant) conclusion.
+
 ### (R2) ⛔ REFUTED (2026-08-17): weaken the FRAGMENT instead of solving the general problem
 
 **Dead — `cex/probe_pat_presents_hole_flex.v`.**  The question this
