@@ -45,6 +45,7 @@ Require Import src.frost.prop_basic.
 Require Import src.frost.algo.prop_basic.
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
+Require Import src.frost.ext_algo.def_dec.
 Require Import src.frost.ext_algo.def_guess.
 Require Import src.frost.ext_algo.def_guess_impl.
 Require Import src.frost.ext_algo.prop_guess.
@@ -1151,4 +1152,1363 @@ Corollary e_unify_refl : forall S0 Θ0 α S1 Θ1,
 Proof.
   intros. eapply (proj1 (proj2 e_unify_consis_refl_mono));
     [ eassumption | reflexivity | assumption ].
+Qed.
+
+(* ===================================================================== *)
+(*  §6  THE MOTIVE                                                        *)
+(* ===================================================================== *)
+
+Definition consis_call_answer {S0 : supply} {Θ : aenv} {c : consis_call}
+    (o : option (sig (consis_call_spec S0 Θ c))) : option consis_result :=
+  match o with None => None | Some r => Some (proj1_sig r) end.
+
+Definition consis_call_run (S0 : supply) (Θ : aenv) (c : consis_call)
+    (Sd : supply) (Θd : aenv) (Qd : pskl) : Prop :=
+  match c with
+  | consis_call_assign Ξ α P => {{ S0 ↝ Sd ⊨ Θ ⊲[ Ξ ] α ≔ P ⊣ Θd }}e
+  | consis_call_unify α β    => {{ S0 ↝ Sd ⊨ Θ ⊲ α ≈ᵘ β ⊣ Θd }}e
+  | consis_call_consis Δ1 Δ2 P0 P =>
+      {{ S0 ↝ Sd ⊨ Θ ⊢[ Δ1 | Δ2 | P0 ] P ∼ Qd ⊣ Θd }}e
+  end.
+
+Definition consis_call_out_rel (c : consis_call) (Qd Qr : pskl) : Prop :=
+  match c with
+  | consis_call_consis _ _ _ _ => Qd = Qr
+  | _                          => True
+  end.
+
+Definition consis_call_uniq (Θ : aenv) (c : consis_call) : Prop :=
+  match c with
+  | consis_call_assign Ξ _ _ => uniq (Ξ ++ Θ)
+  | _                        => uniq Θ
+  end.
+
+Definition consis_call_cover (Θ : aenv) (c : consis_call) : atoms :=
+  match c with
+  | consis_call_assign Ξ _ P => ftvar_in_aenv (Ξ ++ Θ) ∪ ftvar_in_pskl P
+  | consis_call_unify _ _    => ftvar_in_aenv Θ
+  | consis_call_consis Δ1 Δ2 P0 P =>
+      ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P ∪ Δ1 ∪ Δ2
+  end.
+
+Definition consis_call_complete (S0 : supply) (Θ : aenv) (c : consis_call)
+    : Prop :=
+  forall (Hlc : consis_call_lc c) (HD : consis_call_defs_mono Θ c)
+         (H : e_consis_call_order S0 Θ c),
+    consis_call_no_hole c ->
+    consis_call_uniq Θ c ->
+    consis_call_cover Θ c [<=] S0 ->
+    forall Sd Θd Qd, consis_call_run S0 Θ c Sd Θd Qd ->
+    exists r ps,
+      consis_call_answer (e_consis_call_impl c S0 Θ Hlc HD H) = Some r
+      /\ (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0)
+      /\ swaps_atoms ps Sd [=] cs_supply r
+      /\ swaps_aenv ps Θd = cs_ctx r
+      /\ consis_call_out_rel c (swaps_pskl ps Qd) (cs_out r).
+
+(* ===================================================================== *)
+(*  §7  THE MAIN INDUCTION                                                *)
+(* ===================================================================== *)
+
+Local Ltac kill_ccall Hmot Hnh Hu Hcov Hder q r Hr ps Hav HS HT HQ :=
+  match goal with
+  | |- context [ e_consis_call_impl ?c ?S ?T ?hl ?hd ?h ] =>
+      let Hx := fresh "Hx" in
+      let Hcl := fresh "Hcl" in
+      let rr := fresh "rr" in
+      destruct (Hmot hl hd h Hnh Hu Hcov _ _ q Hder)
+        as [r [ps [Hx [Hav [HS [HT HQ]]]]]];
+      destruct (e_consis_call_impl c S T hl hd h) as [ [rr Hr] | ] eqn:Hcl;
+      try rewrite Hcl in Hx; cbn [consis_call_answer] in Hx;
+      [ inversion Hx; subst; clear Hx Hcl; cbv beta iota
+      | discriminate ]
+  end.
+
+Local Ltac head_fresh Hav Hcov :=
+  apply swaps_aenv_fresh_id; intros a0 b0 Hin;
+  let Ha0 := fresh "Ha0" in let Hb0 := fresh "Hb0" in
+  destruct (Hav a0 b0 Hin) as [Ha0 Hb0]; split;
+  clear - Ha0 Hb0 Hcov; repeat rewrite ftvar_in_aenv_app in Hcov;
+  simpl in *; fsetdec.
+
+Local Ltac split4 := split; [ | split; [ | split ] ].
+
+(** A [pskl_var_f]-shaped output: the runner answers with the variable it
+    was handed, and the chain fixes it because it is in the supply. *)
+Local Ltac out_var_id Hav Hcov :=
+  cbn [cs_out proj1_sig]; rewrite swaps_pskl_var_f; f_equal;
+  apply swaps_atom_notin; intros a0 b0 Hin;
+  let Ha0 := fresh "Ha0" in let Hb0 := fresh "Hb0" in
+  let Heq := fresh "Heq" in
+  destruct (Hav a0 b0 Hin) as [Ha0 Hb0];
+  split; intro Heq; subst; clear - Ha0 Hb0 Hcov; simpl in *; fsetdec.
+
+(** The flexibility test the runner performs, decided by the derivation's
+    own assign walk. *)
+Local Ltac flex_test_true Hft :=
+  let Hfb := fresh "Hfb" in
+  lazymatch goal with
+  | |- context [ sumbool_of_bool (flex_bound_ck ?T ?a) ] =>
+      destruct (sumbool_of_bool (flex_bound_ck T a)) as [Hfb | Hfb];
+      [ | exfalso; eapply flex_bound_ck_not_flex_tvar;
+          [ exact Hfb | exact Hft ] ]
+  end.
+
+(** [Assign-SolveM]'s three leaves — the runner's [Ξ]×[P] dispatch reaches
+    the same code from all of them, so the script is one tactic. *)
+(** [Assign-SolveM]'s leaves — the runner's [Ξ] × [P] dispatch reaches the
+    same code from all of them, so the script is one tactic. *)
+Local Ltac do_solve_m Hocc Hg Hmt Hcov rg Hgs ps Hav HSg HXg HAg :=
+  match goal with
+  | |- context [ sumbool_of_bool (mem ?a (ftvar_in_pskl ?p)) ] =>
+      let Hmem := fresh "Hmem" in
+      destruct (sumbool_of_bool (mem a (ftvar_in_pskl p))) as [Hmem | Hmem];
+      [ exfalso; apply mem_true_in in Hmem; contradiction | ]
+  end;
+  cbv beta iota;
+  match goal with
+  | |- context [ e_guess_mono_impl ?s ?p ?h ] =>
+      destruct (e_guess_mono_impl s p h) as [rg Hgs];
+      unfold guess_spec in Hgs
+  end;
+  cbv beta iota;
+  destruct (e_guess_mono_rel Hg Hgs
+              ltac:(clear - Hcov; repeat rewrite ftvar_in_aenv_app in Hcov;
+                    simpl in *; fsetdec))
+    as [ps [Hav [HSg [HXg HAg]]]];
+  match goal with
+  | |- context [ sumbool_of_bool (mono_ck (gr_type ?r)) ] =>
+      let Hmc := fresh "Hmc" in
+      destruct (sumbool_of_bool (mono_ck (gr_type r))) as [Hmc | Hmc];
+      [ | exfalso; rewrite <- HAg in Hmc;
+          contradict Hmc; apply Bool.not_false_iff_true;
+          apply mono_ck_complete; apply mono_ptyp_swaps; exact Hmt ]
+  end;
+  cbv beta iota;
+  let Hain := fresh "Hain" in
+  assert (Hain : True) by exact I;
+  eexists; exists ps;
+  split; [ reflexivity | ];
+  split4;
+  [ exact Hav
+  | cbn [cs_supply proj1_sig]; exact HSg
+  | cbn [cs_ctx proj1_sig];
+    rewrite swaps_aenv_app_dist; rewrite swaps_aenv_app_dist;
+    rewrite swaps_aenv_one_def, HXg, HAg;
+    rewrite (swaps_atom_notin ps)
+      by (intros a0 b0 Hin;
+          let Ha0 := fresh "Ha0" in let Hb0 := fresh "Hb0" in
+          let Heq := fresh "Heq" in
+          destruct (Hav a0 b0 Hin) as [Ha0 Hb0];
+          split; intro Heq; subst;
+          clear - Ha0 Hb0 Hcov;
+          repeat rewrite ftvar_in_aenv_app in Hcov; simpl in *; fsetdec);
+    rewrite (swaps_aenv_fresh_id ps)
+      by (intros a0 b0 Hin;
+          let Ha0 := fresh "Ha0" in let Hb0 := fresh "Hb0" in
+          destruct (Hav a0 b0 Hin) as [Ha0 Hb0]; split;
+          clear - Ha0 Hb0 Hcov;
+          repeat rewrite ftvar_in_aenv_app in *; simpl in *; fsetdec);
+    reflexivity
+  | exact I ].
+
+(** Every head shape reaches the runner's [Flex-Flex-Id] arm the same way:
+    the [α == β] test succeeds, and §5's reflexivity says the derivation
+    left the supply AND the context where they were. *)
+Local Ltac do_flex_id HD Hd :=
+  let Hs := fresh "Hs" in let Ht := fresh "Ht" in
+  destruct (e_unify_refl Hd HD) as [Hs Ht]; subst;
+  match goal with
+  | |- context [ sumbool_of_bool (flex_bound_ck ?T ?a) ] =>
+      let Hfb := fresh "Hfb" in
+      destruct (sumbool_of_bool (flex_bound_ck T a)) as [Hfb | Hfb];
+      [ | exfalso; eapply flex_bound_ck_not_flex_tvar;
+          [ exact Hfb | exact (proj1 (e_unify_target_flex Hd)) ] ]
+  end;
+  cbv beta iota;
+  eexists; exists (@nil (atom * atom));
+  split; [ reflexivity | ];
+  split4; [ intros ? ? [] | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
+          | cbn [swaps_aenv cs_ctx proj1_sig]; reflexivity | exact I ].
+
+(** The runner's binary tests are DEPENDENT matches (the branch's Equations
+    obligation reads the equality), so [destruct (x == y)] does not abstract
+    them — destruct the GOAL's own scrutinee. *)
+(** ⚠️ The runner's atom tests are CONVOYED (Equations compiles
+    [match x == y with …] with the scrutinee in the return type), so
+    [destruct (x == y)] on a term of one's own does not abstract the goal's
+    occurrence — the goal's OWN term has to be destructed.  ⚠️⚠️ And the
+    pattern must stay FIRST-ORDER: matching [context [match ?e with left _
+    => _ | right _ => _ end]] against a clause body of this size does not
+    terminate in any useful time (measured, >800 s). *)
+Local Ltac split_eqdec Hl Hr :=
+  lazymatch goal with
+  | |- context [ @eq_dec ?T ?E ?x ?y ] =>
+      destruct (@eq_dec T E x y) as [ Hl | Hr ]
+  end.
+
+(** U-FlexL at a concrete non-variable PATTERN: the runner assigns the
+    subject's flexible and answers with it. *)
+Local Ltac do_flex_l Hmot Hd Hnh0 Hu Hcov :=
+  let Hnf := fresh "Hnf" in let Da := fresh "Da" in
+  let Hft := fresh "Hft" in let Hcov0 := fresh "Hcov0" in
+  let r := fresh "r" in let Hr := fresh "Hr" in
+  let ps := fresh "ps" in let Hav := fresh "Hav" in
+  let HS := fresh "HS" in let HT := fresh "HT" in let HQ := fresh "HQ" in
+  destruct (e_consis_inv_flex_l Hd ltac:(intros; discriminate)
+              ltac:(discriminate) ltac:(intros; discriminate))
+    as [-> [Hnf Da]];
+  pose proof (e_assign_target_flex Da) as Hft;
+  flex_test_true Hft; cbv beta iota;
+  lazymatch goal with
+  | |- context [ e_consis_call_impl (consis_call_assign nil ?a ?p)
+                   ?s ?t ?x ?y ?zz ] =>
+      assert (Hcov0 : ftvar_in_aenv (nil ++ t) ∪ ftvar_in_pskl p [<=] s)
+        by (clear - Hcov; simpl in *; fsetdec)
+  end;
+  kill_ccall Hmot Hnh0 Hu Hcov0 Da pskl_unit r Hr ps Hav HS HT HQ;
+  eexists; exists ps;
+  split; [ reflexivity | ];
+  split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
+          | cbn [cs_ctx proj1_sig]; exact HT | ];
+  out_var_id Hav Hcov.
+
+(** The ⫯-stripping rows: the runner passes the recursive answer through
+    verbatim. *)
+Local Ltac do_pass Hmot Hd Hu Hcov Qd :=
+  let Hnh' := fresh "Hnh'" in let Hcov0 := fresh "Hcov0" in
+  let r := fresh "r" in let Hr := fresh "Hr" in
+  let ps := fresh "ps" in let Hav := fresh "Hav" in
+  let HS := fresh "HS" in let HT := fresh "HT" in let HQ := fresh "HQ" in
+  lazymatch goal with
+  | |- context [ e_consis_call_impl ?c ?s ?t ?x ?y ?zz ] =>
+      assert (Hnh' : consis_call_no_hole c)
+        by (cbn [consis_call_no_hole] in *; split; assumption);
+      assert (Hcov0 : consis_call_cover t c [<=] s)
+        by (clear - Hcov;
+            cbn [consis_call_cover ftvar_in_pskl] in *; fsetdec)
+  end;
+  kill_ccall Hmot Hnh' Hu Hcov0 Hd Qd r Hr ps Hav HS HT HQ;
+  exists r, ps;
+  split; [ reflexivity | ];
+  split4; [ exact Hav | exact HS | exact HT | exact HQ ].
+
+(** U-FlexR at a concrete non-variable subject: the runner assigns the
+    pattern's flexible and answers with it. *)
+Local Ltac do_flex_r Hmot Hd Hnh1 Hu Hcov :=
+  let Hnf := fresh "Hnf" in let Da := fresh "Da" in
+  let Hft := fresh "Hft" in let Hcov0 := fresh "Hcov0" in
+  let r := fresh "r" in let Hr := fresh "Hr" in
+  let ps := fresh "ps" in let Hav := fresh "Hav" in
+  let HS := fresh "HS" in let HT := fresh "HT" in let HQ := fresh "HQ" in
+  destruct (e_consis_inv_flex_r Hd ltac:(intros; discriminate)
+              ltac:(discriminate) ltac:(intros; discriminate))
+    as [-> [Hnf Da]];
+  pose proof (e_assign_target_flex Da) as Hft;
+  flex_test_true Hft; cbv beta iota;
+  lazymatch goal with
+  | |- context [ e_consis_call_impl (consis_call_assign nil ?a ?p)
+                   ?s ?t ?x ?y ?zz ] =>
+      assert (Hcov0 : ftvar_in_aenv (nil ++ t) ∪ ftvar_in_pskl p [<=] s)
+        by (clear - Hcov; simpl in *; fsetdec)
+  end;
+  kill_ccall Hmot Hnh1 Hu Hcov0 Da pskl_unit r Hr ps Hav HS HT HQ;
+  eexists; exists ps;
+  split; [ reflexivity | ];
+  split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
+          | cbn [cs_ctx proj1_sig]; exact HT | ];
+  cbn [cs_out proj1_sig]; out_var_id Hav Hcov.
+
+Lemma e_consis_call_impl_complete : forall S0 Θ c
+    (H0 : e_consis_call_order S0 Θ c), consis_call_complete S0 Θ c.
+Proof.
+  intros S0 Θ c H0.
+  apply (e_consis_call_order_sind consis_call_complete); [ | | | exact H0 ].
+  - (* ================== assign ================== *)
+    intros S1 Θ' Ξ α P hg has Has hds Hds hrg Hrg htv Htv hts Hts.
+    unfold consis_call_complete.
+    intros Hlc HD Hord Hnh Hu Hcov Sd Θd Qd Hd.
+    cbn [consis_call_no_hole consis_call_uniq consis_call_cover
+         consis_call_run consis_call_out_rel] in *.
+    destruct Θ' as [ | [β0 b] Θ0 ];
+      [ destruct (e_assign_inv_nil Hd) | ].
+    destruct b as [ | A | Q | | τ ].
+    + (* rigid head — Assign-SkipRigid *)
+      rewrite e_consis_call_impl_equation_2. cbv beta iota.
+      destruct (e_assign_inv_tvar Hd) as [Hnf [Θd' [-> Dt]]].
+      destruct (sumbool_of_bool (mem β0 (ftvar_in_pskl P))) as [Hm | Hm];
+        [ exfalso; apply mem_true_in in Hm; contradiction | ].
+      cbv beta iota.
+      assert (Hu0 : uniq (Ξ ++ Θ0)) by (clear - Hu; solve_uniq).
+      assert (Hcov0 : ftvar_in_aenv (Ξ ++ Θ0) ∪ ftvar_in_pskl P [<=] S1)
+        by (clear - Hcov; rewrite ftvar_in_aenv_app in *; simpl in *;
+            fsetdec).
+      kill_ccall (Hrg β0 Θ0 eq_refl) Hnh Hu0 Hcov0 Dt pskl_unit
+        r Hr ps Hav HS HT HQ.
+      exists (mk_consis_result (cs_supply r)
+                ((β0 ~ abind_tvar) ++ cs_ctx r) pskl_unit), ps.
+      split; [ reflexivity | ].
+      split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
+      head_fresh Hav Hcov.
+    + (* term variable, TYPE payload — Assign-SkipTmVar *)
+      rewrite e_consis_call_impl_equation_3. cbv beta iota.
+      destruct (e_assign_inv_var_typ Hd) as [Θd' [-> Dt]].
+      assert (Hu0 : uniq (Ξ ++ Θ0)) by (clear - Hu; solve_uniq).
+      assert (Hcov0 : ftvar_in_aenv (Ξ ++ Θ0) ∪ ftvar_in_pskl P [<=] S1)
+        by (clear - Hcov; rewrite ftvar_in_aenv_app in *; simpl in *;
+            fsetdec).
+      kill_ccall (Htv β0 A Θ0 eq_refl) Hnh Hu0 Hcov0 Dt pskl_unit
+        r Hr ps Hav HS HT HQ.
+      exists (mk_consis_result (cs_supply r)
+                ((β0 ~ abind_var_typ A) ++ cs_ctx r) pskl_unit), ps.
+      split; [ reflexivity | ].
+      split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
+      head_fresh Hav Hcov.
+    + (* term variable, SKELETON payload *)
+      rewrite e_consis_call_impl_equation_4. cbv beta iota.
+      destruct (e_assign_inv_var_skl Hd) as [Θd' [-> Dt]].
+      assert (Hu0 : uniq (Ξ ++ Θ0)) by (clear - Hu; solve_uniq).
+      assert (Hcov0 : ftvar_in_aenv (Ξ ++ Θ0) ∪ ftvar_in_pskl P [<=] S1)
+        by (clear - Hcov; rewrite ftvar_in_aenv_app in *; simpl in *;
+            fsetdec).
+      kill_ccall (Hts β0 Q Θ0 eq_refl) Hnh Hu0 Hcov0 Dt pskl_unit
+        r Hr ps Hav HS HT HQ.
+      exists (mk_consis_result (cs_supply r)
+                ((β0 ~ abind_var_skl Q) ++ cs_ctx r) pskl_unit), ps.
+      split; [ reflexivity | ].
+      split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
+      head_fresh Hav Hcov.
+    + (* undefined flexible head *)
+      rewrite e_consis_call_impl_equation_5. cbv beta iota.
+      destruct (β0 == α) as [-> | Hne].
+      * (* the head IS the target: Assign-UnivGhost-Id or Assign-SolveM *)
+        destruct (e_assign_inv_flex_self Hd)
+          as [[HΞ [HP [HSd HΘd]]] | [Hocc [bs [tau [Hg [Hmt HΘd]]]]]].
+        -- (* Assign-UnivGhost-Id — the runner's own special row *)
+           subst Ξ. subst P. subst Sd. subst Θd. cbv beta iota.
+           split_eqdec Hca1 Hca2; [ | congruence ].
+           cbv beta iota.
+           exists (mk_consis_result S1 ((α ~ abind_flex_mono) ++ Θ0)
+                     pskl_unit), (@nil (atom * atom)).
+           split; [ reflexivity | ].
+           split4; [ intros ? ? [] | cbn [cs_supply proj1_sig]; reflexivity
+                   | cbn [cs_ctx proj1_sig]; reflexivity
+                   | exact I ].
+        -- (* Assign-SolveM, at every leaf of the runner's Ξ × P dispatch *)
+           subst Θd.
+           destruct Ξ as [ | e Ξ' ];
+             [ destruct P as [ | n | γ | Pa Pb | Pb | | Pb ];
+               [ | | | | | | destruct Pb as [ | n' | γ | Pa' Pb' | Pb' | | Pb' ] ]
+             | ];
+             cbv beta iota;
+             try (destruct (γ == α) as [-> | Hnγ];
+                  [ exfalso; apply Hocc; simpl; fsetdec | ]);
+             cbv beta iota;
+             do_solve_m Hocc Hg Hmt Hcov rg Hgs psg Havg HSg HXg HAg.
+      * (* a non-target flexible head — Assign-Depend / Assign-Skip *)
+        destruct (e_assign_inv_flex_other (not_eq_sym Hne) Hd)
+          as [[Hin Dd] | [Hni [Θd' [-> Ds]]]].
+        -- destruct (sumbool_of_bool (mem β0 (ftvar_in_pskl P)))
+             as [Hm | Hm];
+             [ | exfalso; apply mem_false_notin in Hm; contradiction ].
+           cbv beta iota.
+           assert (Hu0 : uniq ((Ξ ++ (β0 ~ abind_flex_mono)) ++ Θ0))
+             by (clear - Hu; solve_uniq).
+           assert (Hcov0 : ftvar_in_aenv ((Ξ ++ (β0 ~ abind_flex_mono))
+                             ++ Θ0) ∪ ftvar_in_pskl P [<=] S1)
+             by (clear - Hcov; repeat rewrite ftvar_in_aenv_app in *;
+                 simpl in *; fsetdec).
+           kill_ccall (proj1 (Hds β0 Θ0 eq_refl)) Hnh Hu0 Hcov0 Dd pskl_unit
+             r Hr ps Hav HS HT HQ.
+           exists r, ps.
+           split; [ reflexivity | ].
+           split4; [ exact Hav | exact HS | exact HT | exact I ].
+        -- destruct (sumbool_of_bool (mem β0 (ftvar_in_pskl P)))
+             as [Hm | Hm];
+             [ exfalso; apply mem_true_in in Hm; contradiction | ].
+           cbv beta iota.
+           assert (Hu0 : uniq (Ξ ++ Θ0)) by (clear - Hu; solve_uniq).
+           assert (Hcov0 : ftvar_in_aenv (Ξ ++ Θ0) ∪ ftvar_in_pskl P [<=] S1)
+             by (clear - Hcov; repeat rewrite ftvar_in_aenv_app in *;
+                 simpl in *; fsetdec).
+           kill_ccall (proj2 (Hds β0 Θ0 eq_refl)) Hnh Hu0 Hcov0 Ds pskl_unit
+             r Hr ps Hav HS HT HQ.
+           exists (mk_consis_result (cs_supply r)
+                     ((β0 ~ abind_flex_mono) ++ cs_ctx r) pskl_unit), ps.
+           split; [ reflexivity | ].
+           split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+           cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
+           head_fresh Hav Hcov.
+    + (* defined flexible head — Assign-Assign *)
+      rewrite e_consis_call_impl_equation_6. cbv beta iota.
+      destruct (e_assign_inv_def Hd) as [Hft [Θd' [Qm [-> Dc]]]].
+      destruct (sumbool_of_bool
+                  (flex_bound_ck ((β0, abind_flex_mono_def τ) :: Θ0) α))
+        as [Hfb | Hfb];
+        [ | exfalso; eapply flex_bound_ck_not_flex_tvar;
+            [ exact Hfb | exact Hft ] ].
+      cbv beta iota.
+      assert (Hnh' : consis_call_no_hole
+                (consis_call_consis empty empty
+                   (subst_pskl_in_pskl (ptyp_to_pskl τ) β0 P)
+                   (subst_pskl_in_pskl (ptyp_to_pskl τ) β0 (pskl_var_f α))))
+        by (apply consis_call_no_hole_assign_assign; exact Hnh).
+      assert (Hu0 : uniq (Ξ ++ Θ0)) by (clear - Hu; solve_uniq).
+      pose proof (a_flex_tvar_in_dom Hft) as Hαdom.
+      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P
+                    (ptyp_to_pskl τ) β0) as Hsu1.
+      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper (pskl_var_f α)
+                    (ptyp_to_pskl τ) β0) as Hsu2.
+      pose proof (ftvar_ptyp_to_pskl τ) as Hftτ.
+      pose proof (dom_subset_ftvar_in_aenv
+                    ((β0, abind_flex_mono_def τ) :: Θ0)) as Hdm.
+      (* ⚠️⚠️ SPELLED OUT — see the unify twin below for why: as one
+         [fsetdec] this goal is over the cliff. *)
+      assert (HΘ : ftvar_in_aenv ((β0, abind_flex_mono_def τ) :: Θ0)
+                [<=] S1)
+        by (clear - Hcov; rewrite ftvar_in_aenv_app in Hcov; fsetdec).
+      assert (HαS : α `in` S1) by (clear - HΘ Hαdom Hdm; fsetdec).
+      assert (Hτ : ftvar_in_pskl (ptyp_to_pskl τ) [<=] S1)
+        by (rewrite Hftτ; clear - HΘ; simpl in HΘ; fsetdec).
+      assert (HP : ftvar_in_pskl P [<=] S1) by (clear - Hcov; fsetdec).
+      assert (HΞΘ : ftvar_in_aenv (Ξ ++ Θ0) [<=] S1)
+        by (clear - Hcov; repeat rewrite ftvar_in_aenv_app in *;
+            simpl in *; fsetdec).
+      assert (Hb1 : ftvar_in_pskl
+                (subst_pskl_in_pskl (ptyp_to_pskl τ) β0 P) [<=] S1).
+      { clear - Hsu1 Hτ HP.
+        assert (Hrm : remove β0 (ftvar_in_pskl P) [<=] ftvar_in_pskl P)
+          by (clear; fsetdec).
+        fsetdec. }
+      assert (Hb2 : ftvar_in_pskl
+                (subst_pskl_in_pskl (ptyp_to_pskl τ) β0 (pskl_var_f α))
+                [<=] S1).
+      { clear - Hsu2 Hτ HαS. simpl in Hsu2.
+        assert (Hrm : remove β0 (singleton α) [<=] singleton α)
+          by (clear; fsetdec).
+        fsetdec. }
+      assert (Hcov0 : consis_call_cover (Ξ ++ Θ0)
+                (consis_call_consis empty empty
+                   (subst_pskl_in_pskl (ptyp_to_pskl τ) β0 P)
+                   (subst_pskl_in_pskl (ptyp_to_pskl τ) β0 (pskl_var_f α)))
+                [<=] S1)
+        by (cbn [consis_call_cover]; clear - HΞΘ Hb1 Hb2; fsetdec).
+      kill_ccall (Has β0 τ Θ0 eq_refl) Hnh' Hu0 Hcov0 Dc Qm
+        r Hr ps Hav HS HT HQ.
+      exists (mk_consis_result (cs_supply r)
+                ((β0 ~ abind_flex_mono_def τ) ++ cs_ctx r) pskl_unit), ps.
+      split; [ reflexivity | ].
+      split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
+      head_fresh Hav Hcov.
+  - (* ================== unify =================== *)
+    intros S1 Θ' α β has Has hsk Hsk hrg Hrg htv Htv hts Hts.
+    unfold consis_call_complete.
+    intros Hlc HD Hord Hnh Hu Hcov Sd Θd Qd Hd.
+    cbn [consis_call_no_hole consis_call_uniq consis_call_cover
+         consis_call_run consis_call_out_rel consis_call_defs_mono] in *.
+    destruct Θ' as [ | [γ b] Θ0 ];
+      [ destruct (e_unify_inv_nil Hd) | ].
+    destruct b as [ | A | Q | | τ ].
+    + (* rigid head — Flex-Flex-Skip' *)
+      rewrite e_consis_call_impl_equation_8. cbv beta iota.
+      split_eqdec Heq Hne; [ subst; cbv beta iota; do_flex_id HD Hd | ].
+      cbv beta iota.
+      destruct (e_unify_inv_other Hne ltac:(left; reflexivity) Hd)
+        as [Θd' [-> Ds]].
+      assert (Hu0 : uniq Θ0) by (clear - Hu; solve_uniq).
+      assert (Hcov0 : ftvar_in_aenv Θ0 [<=] S1)
+        by (clear - Hcov; simpl in *; fsetdec).
+      kill_ccall (Hrg γ Θ0 eq_refl) Hnh Hu0 Hcov0 Ds pskl_unit
+        r Hr ps Hav HS HT HQ.
+      exists (mk_consis_result (cs_supply r)
+                ((γ ~ abind_tvar) ++ cs_ctx r) pskl_unit), ps.
+      split; [ reflexivity | ].
+      split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
+      head_fresh Hav Hcov.
+    + (* term variable, TYPE payload *)
+      rewrite e_consis_call_impl_equation_9. cbv beta iota.
+      split_eqdec Heq Hne; [ subst; cbv beta iota; do_flex_id HD Hd | ].
+      cbv beta iota.
+      destruct (e_unify_inv_other Hne
+                  ltac:(right; left; exists A; reflexivity) Hd)
+        as [Θd' [-> Ds]].
+      assert (Hu0 : uniq Θ0) by (clear - Hu; solve_uniq).
+      assert (Hcov0 : ftvar_in_aenv Θ0 [<=] S1)
+        by (clear - Hcov; simpl in *; fsetdec).
+      kill_ccall (Htv γ A Θ0 eq_refl) Hnh Hu0 Hcov0 Ds pskl_unit
+        r Hr ps Hav HS HT HQ.
+      exists (mk_consis_result (cs_supply r)
+                ((γ ~ abind_var_typ A) ++ cs_ctx r) pskl_unit), ps.
+      split; [ reflexivity | ].
+      split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
+      head_fresh Hav Hcov.
+    + (* term variable, SKELETON payload *)
+      rewrite e_consis_call_impl_equation_10. cbv beta iota.
+      split_eqdec Heq Hne; [ subst; cbv beta iota; do_flex_id HD Hd | ].
+      cbv beta iota.
+      destruct (e_unify_inv_other Hne
+                  ltac:(right; right; exists Q; reflexivity) Hd)
+        as [Θd' [-> Ds]].
+      assert (Hu0 : uniq Θ0) by (clear - Hu; solve_uniq).
+      assert (Hcov0 : ftvar_in_aenv Θ0 [<=] S1)
+        by (clear - Hcov; simpl in *; fsetdec).
+      kill_ccall (Hts γ Q Θ0 eq_refl) Hnh Hu0 Hcov0 Ds pskl_unit
+        r Hr ps Hav HS HT HQ.
+      exists (mk_consis_result (cs_supply r)
+                ((γ ~ abind_var_skl Q) ++ cs_ctx r) pskl_unit), ps.
+      split; [ reflexivity | ].
+      split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
+      head_fresh Hav Hcov.
+    + (* undefined flexible head — L / R / Skip *)
+      rewrite e_consis_call_impl_equation_11. cbv beta iota.
+      split_eqdec Heq Hne; [ subst; cbv beta iota; do_flex_id HD Hd | ].
+      cbv beta iota.
+      split_eqdec Heq2 Hne2.
+      * (* the head IS α — Flex-Flex-L *)
+        subst. cbv beta iota.
+        destruct (e_unify_inv_flex_l Hne Hd) as [Hfβ [-> ->]].
+        destruct (sumbool_of_bool (flex_bound_ck Θ0 β)) as [Hfb | Hfb];
+          [ | exfalso; eapply flex_bound_ck_not_flex_tvar;
+              [ exact Hfb | exact Hfβ ] ].
+        cbv beta iota.
+        eexists; exists (@nil (atom * atom)).
+        split; [ reflexivity | ].
+        split4; [ intros ? ? [] | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
+                | cbn [swaps_aenv cs_ctx proj1_sig]; reflexivity | exact I ].
+      * cbv beta iota. split_eqdec Heq3 Hne3.
+        -- (* the head IS β — Flex-Flex-R *)
+           subst. cbv beta iota.
+           destruct (e_unify_inv_flex_r Hne Hd) as [Hfα [-> ->]].
+           destruct (sumbool_of_bool (flex_bound_ck Θ0 α)) as [Hfb | Hfb];
+             [ | exfalso; eapply flex_bound_ck_not_flex_tvar;
+                 [ exact Hfb | exact Hfα ] ].
+           cbv beta iota.
+           eexists; exists (@nil (atom * atom)).
+           split; [ reflexivity | ].
+           split4; [ intros ? ? [] | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
+                   | cbn [swaps_aenv cs_ctx proj1_sig]; reflexivity | exact I ].
+        -- (* Flex-Flex-Skip *)
+           cbv beta iota.
+           destruct (e_unify_inv_flex_skip Hne Hne2 Hne3 Hd)
+             as [Θd' [-> Ds]].
+           assert (Hu0 : uniq Θ0) by (clear - Hu; solve_uniq).
+           assert (Hcov0 : ftvar_in_aenv Θ0 [<=] S1)
+             by (clear - Hcov; simpl in *; fsetdec).
+           kill_ccall (Hsk γ Θ0 eq_refl) Hnh Hu0 Hcov0 Ds pskl_unit
+             r Hr ps Hav HS HT HQ.
+           exists (mk_consis_result (cs_supply r)
+                     ((γ ~ abind_flex_mono) ++ cs_ctx r) pskl_unit), ps.
+           split; [ reflexivity | ].
+           split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+           cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
+           head_fresh Hav Hcov.
+    + (* defined flexible head — Flex-Flex-Assign *)
+      rewrite e_consis_call_impl_equation_12. cbv beta iota.
+      split_eqdec Heq Hne; [ subst; cbv beta iota; do_flex_id HD Hd | ].
+      cbv beta iota.
+      destruct (e_unify_inv_def Hne Hd) as [Hfa [Hfb [Θd' [Qm [-> Dc]]]]].
+      destruct (sumbool_of_bool
+                  (flex_bound_ck ((γ, abind_flex_mono_def τ) :: Θ0) α
+                   && flex_bound_ck ((γ, abind_flex_mono_def τ) :: Θ0) β))
+        as [Hbb | Hbb];
+        [ | exfalso; apply andb_false_iff in Hbb;
+            destruct Hbb as [Hbb | Hbb];
+            eapply flex_bound_ck_not_flex_tvar; eassumption ].
+      cbv beta iota.
+      assert (Hnh' : consis_call_no_hole
+                (consis_call_consis empty empty
+                   (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ (ptyp_var_f β)))
+                   (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ (ptyp_var_f α)))))
+        by (apply consis_call_no_hole_flex_assign).
+      assert (Hu0 : uniq Θ0) by (clear - Hu; solve_uniq).
+      pose proof (a_flex_tvar_in_dom Hfa) as Hαdom.
+      pose proof (a_flex_tvar_in_dom Hfb) as Hβdom.
+      pose proof (dom_subset_ftvar_in_aenv
+                    ((γ, abind_flex_mono_def τ) :: Θ0)) as Hdm.
+      pose proof (ftvar_in_ptyp_subst_ptyp_in_ptyp_upper
+                    (ptyp_var_f β) τ γ) as Hsu1.
+      pose proof (ftvar_in_ptyp_subst_ptyp_in_ptyp_upper
+                    (ptyp_var_f α) τ γ) as Hsu2.
+      pose proof (ftvar_ptyp_to_pskl
+                    (subst_ptyp_in_ptyp τ γ (ptyp_var_f β))) as Hft1.
+      pose proof (ftvar_ptyp_to_pskl
+                    (subst_ptyp_in_ptyp τ γ (ptyp_var_f α))) as Hft2.
+      (* ⚠️⚠️ SPELLED OUT, and it has to be.  As ONE [fsetdec] over the
+         eight facts below this goal does not terminate (measured with
+         [coqc -time]: it is the only sentence of the unify case that
+         never returns).  The set variables are ~8 and one of them sits
+         under a [remove] — the cliff CLAUDE.md warns about.  Each step
+         here keeps [fsetdec] at three or four variables, and the two
+         [in]-facts are proved WITHOUT [simpl], so [dom Θ] and
+         [ftvar_in_aenv Θ] stay opaque. *)
+      assert (HβS : β `in` S1) by (clear - Hcov Hβdom Hdm; fsetdec).
+      assert (HαS : α `in` S1) by (clear - Hcov Hαdom Hdm; fsetdec).
+      assert (Hτ : ftvar_in_ptyp τ [<=] S1)
+        by (clear - Hcov; simpl in Hcov; fsetdec).
+      assert (HΘ0 : ftvar_in_aenv Θ0 [<=] S1)
+        by (clear - Hcov; simpl in Hcov; fsetdec).
+      assert (Hb1 : ftvar_in_pskl
+                (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ (ptyp_var_f β)))
+                [<=] S1).
+      { rewrite Hft1. clear - Hsu1 Hτ HβS. simpl in Hsu1.
+        assert (Hrm : remove γ (singleton β) [<=] singleton β)
+          by (clear; fsetdec).
+        fsetdec. }
+      assert (Hb2 : ftvar_in_pskl
+                (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ (ptyp_var_f α)))
+                [<=] S1).
+      { rewrite Hft2. clear - Hsu2 Hτ HαS. simpl in Hsu2.
+        assert (Hrm : remove γ (singleton α) [<=] singleton α)
+          by (clear; fsetdec).
+        fsetdec. }
+      assert (Hcov0 : consis_call_cover Θ0
+                (consis_call_consis empty empty
+                   (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ (ptyp_var_f β)))
+                   (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ (ptyp_var_f α))))
+                [<=] S1)
+        by (cbn [consis_call_cover]; clear - HΘ0 Hb1 Hb2; fsetdec).
+      kill_ccall (Has γ τ Θ0 eq_refl) Hnh' Hu0 Hcov0 Dc Qm
+        r Hr ps Hav HS HT HQ.
+      exists (mk_consis_result (cs_supply r)
+                ((γ ~ abind_flex_mono_def τ) ++ cs_ctx r) pskl_unit), ps.
+      split; [ reflexivity | ].
+      split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
+      head_fresh Hav Hcov.
+  - (* ================== consis ================== *)
+    intros S1 Θ' Δ1 Δ2 P0 P
+           q1 Q1 q2 Q2 q3 Q3 q4 Q4 q5 Q5 q6 Q6 q7 Q7 q8 Q8 q9 Q9 q10 Q10.
+    unfold consis_call_complete.
+    intros Hlc HD Hord Hnh Hu Hcov Sd Θd Qd Hd.
+    cbn [consis_call_lc consis_call_no_hole consis_call_uniq
+         consis_call_cover consis_call_run consis_call_out_rel
+         consis_call_defs_mono] in *.
+    destruct Hlc as [Hlc0 Hlc1]. destruct Hnh as [Hnh0 Hnh1].
+    rewrite e_consis_call_impl_equation_13.
+    destruct P0 as [ | n0 | β0 | P0a P0b | P0' | | P0' ]; cbv beta iota.
+    + (* ================= pattern [1] ================= *)
+      destruct P as [ | n | α0 | Pa Pb | Pb | | Pb ]; cbv beta iota.
+      * (* 1 ∼ 1 — U-Unit *)
+        destruct (e_consis_inv_unit Hd) as [-> [-> ->]].
+        exists (mk_consis_result S1 Θ' pskl_unit), (@nil (atom * atom)).
+        split; [ reflexivity | ].
+        split4; [ intros ? ? [] | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
+                | cbn [swaps_aenv cs_ctx proj1_sig]; reflexivity
+                | cbn [swaps_pskl cs_out proj1_sig]; reflexivity ].
+      * (* a dangling index is no subject *) inversion Hlc1.
+      * (* 1 ∼ α̂ — U-FlexL *)
+        destruct (e_consis_inv_flex_l Hd ltac:(intros; discriminate)
+                    ltac:(discriminate) ltac:(intros; discriminate))
+          as [-> [Hnf Da]].
+        pose proof (e_assign_target_flex Da) as Hft.
+        flex_test_true Hft. cbv beta iota.
+        assert (Hcov0 : ftvar_in_aenv (nil ++ Θ') ∪ ftvar_in_pskl pskl_unit
+                          [<=] S1) by (clear - Hcov; simpl in *; fsetdec).
+        kill_ccall (Q9 α0 eq_refl) Hnh0 Hu Hcov0 Da pskl_unit
+          r Hr ps Hav HS HT HQ.
+        exists (mk_consis_result (cs_supply r) (cs_ctx r) (pskl_var_f α0)),
+               ps.
+        split; [ reflexivity | ].
+        split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
+                | cbn [cs_ctx proj1_sig]; exact HT | ].
+        cbn [cs_out proj1_sig]. out_var_id Hav Hcov.
+      * (* 1 ∼ → : no rule fires *) inversion Hd.
+      * (* 1 ∼ ∀ : no rule fires *) inversion Hd.
+      * (* a ◇ subject is out of the fragment *) destruct Hnh1.
+      * (* 1 ∼ ⫯P — U-UnivGhost2 *)
+        pose proof (e_consis_inv_univ_ghost2_unit Hd) as Dc.
+        assert (Hnh' : consis_call_no_hole
+                  (consis_call_consis Δ1 Δ2 pskl_unit Pb))
+          by (cbn [consis_call_no_hole]; split; assumption).
+        assert (Hcov0 : consis_call_cover Θ'
+                  (consis_call_consis Δ1 Δ2 pskl_unit Pb) [<=] S1)
+          by (clear - Hcov;
+              cbn [consis_call_cover ftvar_in_pskl] in *; fsetdec).
+        kill_ccall (Q6 Pb eq_refl) Hnh' Hu Hcov0 Dc Qd r Hr ps Hav HS HT HQ.
+        exists r, ps.
+        split; [ reflexivity | ].
+        split4; [ exact Hav | exact HS | exact HT | exact HQ ].
+    + (* a dangling index is no pattern *) inversion Hlc0.
+    + (* ================= pattern [β̂] ================= *)
+      destruct P as [ | n | α0 | Pa Pb | Pb | | Pb ]; cbv beta iota.
+      * (* β̂ ∼ 1 — U-FlexR *) do_flex_r (Q10 β0 eq_refl) Hd Hnh1 Hu Hcov.
+      * inversion Hlc1.
+      * (* β̂ ∼ α̂ — U-Rigid / U-Flex / U-FlexL / U-FlexR *)
+        split_eqdec Heqab Hneab.
+        -- (* the two variables COINCIDE *)
+           subst β0. cbv beta iota.
+           destruct (sumbool_of_bool (rigid_bound_ck Θ' α0)) as [Hrb | Hrb];
+             cbv beta iota.
+           ++ (* the runner answers U-Rigid *)
+              destruct (e_consis_inv_var_var Hd)
+                as [ [_ [_ [-> [-> ->]]]]
+                   | [ [-> Du]
+                     | [ [Hnf [-> Da]] | [Hnf [-> Da]] ] ] ].
+              ** exists (mk_consis_result S1 Θ' (pskl_var_f α0)),
+                        (@nil (atom * atom)).
+                 split; [ reflexivity | ].
+                 split4; [ intros ? ? []
+                         | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
+                         | cbn [swaps_aenv cs_ctx proj1_sig]; reflexivity
+                         | cbn [swaps_pskl cs_out proj1_sig]; reflexivity ].
+              ** (* U-Flex at α̂ ≈ᵘ α̂ moves nothing (§5) *)
+                 destruct (e_unify_refl Du HD) as [-> ->].
+                 exists (mk_consis_result S1 Θ' (pskl_var_f α0)),
+                        (@nil (atom * atom)).
+                 split; [ reflexivity | ].
+                 split4; [ intros ? ? []
+                         | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
+                         | cbn [swaps_aenv cs_ctx proj1_sig]; reflexivity
+                         | cbn [swaps_pskl cs_out proj1_sig]; reflexivity ].
+              ** exfalso. destruct Hnf as [_ Hf]. apply Hf.
+                 apply a_flex_tvar_flex. eapply e_assign_target_flex;
+                   eassumption.
+              ** exfalso. destruct Hnf as [_ Hf]. apply Hf.
+                 apply a_flex_tvar_flex. eapply e_assign_target_flex;
+                   eassumption.
+           ++ (* the runner recurses into [unifyvar] *)
+              destruct (e_consis_inv_var_var Hd)
+                as [ [_ [Hbt _]]
+                   | [ [-> Du]
+                     | [ [Hnf [-> Da]] | [Hnf [-> Da]] ] ] ].
+              ** exfalso.
+                 assert (Hct : rigid_bound_ck Θ' α0 = true)
+                   by (apply rigid_bound_ck_complete; exact Hbt).
+                 rewrite Hct in Hrb. discriminate.
+              ** assert (Hcov0 : ftvar_in_aenv Θ' [<=] S1)
+                   by (clear - Hcov; simpl in *; fsetdec).
+                 kill_ccall (Q8 α0 α0 eq_refl eq_refl) I Hu Hcov0 Du
+                   pskl_unit r Hr ps Hav HS HT HQ.
+                 exists (mk_consis_result (cs_supply r) (cs_ctx r)
+                           (pskl_var_f α0)), ps.
+                 split; [ reflexivity | ].
+                 split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
+                         | cbn [cs_ctx proj1_sig]; exact HT | ].
+                 cbn [cs_out proj1_sig]. out_var_id Hav Hcov.
+              ** exfalso. destruct Hnf as [_ Hf]. apply Hf.
+                 apply a_flex_tvar_flex. eapply e_assign_target_flex;
+                   eassumption.
+              ** exfalso. destruct Hnf as [_ Hf]. apply Hf.
+                 apply a_flex_tvar_flex. eapply e_assign_target_flex;
+                   eassumption.
+        -- (* the two variables DIFFER *)
+           cbv beta iota.
+           destruct (sumbool_of_bool
+                       (flex_bound_ck Θ' α0 && flex_bound_ck Θ' β0))
+             as [Hbb | Hbb]; cbv beta iota.
+           ++ (* both flexible — U-Flex *)
+              pose proof (andb_prop _ _ Hbb) as [Hba Hbβ].
+              destruct (e_consis_inv_var_var Hd)
+                as [ [Heq _]
+                   | [ [-> Du]
+                     | [ [Hnf [-> Da]] | [Hnf [-> Da]] ] ] ].
+              ** congruence.
+              ** assert (Hcov0 : ftvar_in_aenv Θ' [<=] S1)
+                   by (clear - Hcov; simpl in *; fsetdec).
+                 kill_ccall (Q8 α0 β0 eq_refl eq_refl) I Hu Hcov0 Du
+                   pskl_unit r Hr ps Hav HS HT HQ.
+                 exists (mk_consis_result (cs_supply r) (cs_ctx r)
+                           (pskl_var_f α0)), ps.
+                 split; [ reflexivity | ].
+                 split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
+                         | cbn [cs_ctx proj1_sig]; exact HT | ].
+                 cbn [cs_out proj1_sig]. out_var_id Hav Hcov.
+              ** exfalso. destruct Hnf as [_ Hf]. apply Hf.
+                 apply a_flex_tvar_flex. apply flex_bound_ck_flex_tvar.
+                 exact Hbβ.
+              ** exfalso. destruct Hnf as [_ Hf]. apply Hf.
+                 apply a_flex_tvar_flex. apply flex_bound_ck_flex_tvar.
+                 exact Hba.
+           ++ destruct (sumbool_of_bool (flex_bound_ck Θ' β0))
+                as [Hbβ | Hbβ]; cbv beta iota.
+              ** (* only the PATTERN is flexible — U-FlexR *)
+                 destruct (e_consis_inv_var_var Hd)
+                   as [ [Heq _]
+                      | [ [-> Du]
+                        | [ [Hnf [-> Da]] | [Hnf [-> Da]] ] ] ].
+                 --- congruence.
+                 --- exfalso.
+                     destruct (e_unify_target_flex Du) as [Hfa Hfb2].
+                     assert (Hca : flex_bound_ck Θ' α0 = true)
+                       by (apply flex_tvar_flex_bound_ck; exact Hfa).
+                     assert (Hcb : flex_bound_ck Θ' β0 = true)
+                       by (apply flex_tvar_flex_bound_ck; exact Hfb2).
+                     rewrite Hca, Hcb in Hbb. discriminate.
+                 --- exfalso. destruct Hnf as [_ Hf]. apply Hf.
+                     apply a_flex_tvar_flex. apply flex_bound_ck_flex_tvar.
+                     exact Hbβ.
+                 --- assert (Hcov0 : ftvar_in_aenv (nil ++ Θ')
+                               ∪ ftvar_in_pskl (pskl_var_f α0) [<=] S1)
+                       by (clear - Hcov; simpl in *; fsetdec).
+                     kill_ccall (Q10 β0 eq_refl) Hnh1 Hu Hcov0 Da pskl_unit
+                       r Hr ps Hav HS HT HQ.
+                     exists (mk_consis_result (cs_supply r) (cs_ctx r)
+                               (pskl_var_f β0)), ps.
+                     split; [ reflexivity | ].
+                     split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
+                             | cbn [cs_ctx proj1_sig]; exact HT | ].
+                     cbn [cs_out proj1_sig]. out_var_id Hav Hcov.
+              ** destruct (sumbool_of_bool (flex_bound_ck Θ' α0))
+                   as [Hba | Hba]; cbv beta iota.
+                 --- (* only the SUBJECT is flexible — U-FlexL *)
+                     destruct (e_consis_inv_var_var Hd)
+                       as [ [Heq _]
+                          | [ [-> Du]
+                            | [ [Hnf [-> Da]] | [Hnf [-> Da]] ] ] ].
+                     +++ congruence.
+                     +++ exfalso.
+                         destruct (e_unify_target_flex Du) as [Hfa Hfb2].
+                         assert (Hcb : flex_bound_ck Θ' β0 = true)
+                           by (apply flex_tvar_flex_bound_ck; exact Hfb2).
+                         rewrite Hcb in Hbβ. discriminate.
+                     +++ assert (Hcov0 : ftvar_in_aenv (nil ++ Θ')
+                                   ∪ ftvar_in_pskl (pskl_var_f β0) [<=] S1)
+                           by (clear - Hcov; simpl in *; fsetdec).
+                         kill_ccall (Q9 α0 eq_refl) Hnh0 Hu Hcov0 Da
+                           pskl_unit r Hr ps Hav HS HT HQ.
+                         exists (mk_consis_result (cs_supply r) (cs_ctx r)
+                                   (pskl_var_f α0)), ps.
+                         split; [ reflexivity | ].
+                         split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
+                                 | cbn [cs_ctx proj1_sig]; exact HT | ].
+                         cbn [cs_out proj1_sig]. out_var_id Hav Hcov.
+                     +++ exfalso. destruct Hnf as [_ Hf]. apply Hf.
+                         apply a_flex_tvar_flex. apply flex_bound_ck_flex_tvar.
+                         exact Hba.
+                 --- (* NEITHER is flexible: no rule can have fired *)
+                     exfalso.
+                     destruct (e_consis_inv_var_var Hd)
+                       as [ [Heq _]
+                          | [ [-> Du]
+                            | [ [Hnf [-> Da]] | [Hnf [-> Da]] ] ] ].
+                     +++ congruence.
+                     +++ destruct (e_unify_target_flex Du) as [Hfa _].
+                         assert (Hca : flex_bound_ck Θ' α0 = true)
+                           by (apply flex_tvar_flex_bound_ck; exact Hfa).
+                         rewrite Hca in Hba. discriminate.
+                     +++ assert (Hca : flex_bound_ck Θ' α0 = true)
+                           by (apply flex_tvar_flex_bound_ck;
+                               eapply e_assign_target_flex; eassumption).
+                         rewrite Hca in Hba. discriminate.
+                     +++ assert (Hcb : flex_bound_ck Θ' β0 = true)
+                           by (apply flex_tvar_flex_bound_ck;
+                               eapply e_assign_target_flex; eassumption).
+                         rewrite Hcb in Hbβ. discriminate.
+      * (* β̂ ∼ → — U-FlexR *) do_flex_r (Q10 β0 eq_refl) Hd Hnh1 Hu Hcov.
+      * (* β̂ ∼ ∀ — U-FlexR *) do_flex_r (Q10 β0 eq_refl) Hd Hnh1 Hu Hcov.
+      * destruct Hnh1.
+      * (* β̂ ∼ ⫯P — U-FlexR, with U-UnivGhost2 as the rigid fallback *)
+        destruct (e_consis_inv_var_tophole Hd)
+          as [ [Hft [-> Da]] | [Hnf Dc] ].
+        -- flex_test_true Hft. cbv beta iota.
+           assert (Hcov0 : ftvar_in_aenv (nil ++ Θ')
+                     ∪ ftvar_in_pskl (pskl_tophole Pb) [<=] S1)
+             by (clear - Hcov; simpl in *; fsetdec).
+           kill_ccall (Q10 β0 eq_refl) Hnh1 Hu Hcov0 Da pskl_unit
+             r Hr ps Hav HS HT HQ.
+           exists (mk_consis_result (cs_supply r) (cs_ctx r)
+                     (pskl_var_f β0)), ps.
+           split; [ reflexivity | ].
+           split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
+                   | cbn [cs_ctx proj1_sig]; exact HT | ].
+           cbn [cs_out proj1_sig]. out_var_id Hav Hcov.
+        -- destruct (sumbool_of_bool (flex_bound_ck Θ' β0)) as [Hfb | Hfb];
+             [ exfalso; destruct Hnf as [_ Hf]; apply Hf;
+               apply a_flex_tvar_flex; apply flex_bound_ck_flex_tvar;
+               exact Hfb | ].
+           cbv beta iota.
+           assert (Hnh' : consis_call_no_hole
+                     (consis_call_consis Δ1 Δ2 (pskl_var_f β0) Pb))
+             by (cbn [consis_call_no_hole]; split; assumption).
+           assert (Hcov0 : consis_call_cover Θ'
+                     (consis_call_consis Δ1 Δ2 (pskl_var_f β0) Pb) [<=] S1)
+             by (clear - Hcov;
+                 cbn [consis_call_cover ftvar_in_pskl] in *; fsetdec).
+           kill_ccall (Q6 Pb eq_refl) Hnh' Hu Hcov0 Dc Qd r Hr ps Hav HS HT HQ.
+           exists r, ps.
+           split; [ reflexivity | ].
+           split4; [ exact Hav | exact HS | exact HT | exact HQ ].
+    + (* ================= pattern [→] ================= *)
+      destruct P as [ | n | α0 | Pa Pb | Pb | | Pb ]; cbv beta iota.
+      * (* → ∼ 1 : no rule fires *) inversion Hd.
+      * inversion Hlc1.
+      * (* → ∼ α̂ — U-FlexL *) do_flex_l (Q9 α0 eq_refl) Hd Hnh0 Hu Hcov.
+      * (* → ∼ → — U-Arrow, the one THREADING row *)
+        destruct (Q1 P0a P0b Pa Pb eq_refl eq_refl) as [IH1 IH2].
+        destruct Hnh0 as [Hnh0a Hnh0b]. destruct Hnh1 as [Hnha Hnhb].
+        cbn [ftvar_in_pskl] in Hcov.
+        destruct (e_consis_inv_arrow Hd)
+          as [Sm [Θm [Qd1 [Qd2 [-> [D1 D2]]]]]].
+        assert (Hnh1' : consis_call_no_hole
+                  (consis_call_consis Δ1 Δ2 P0a Pa))
+          by (cbn [consis_call_no_hole]; split; assumption).
+        assert (Hcov1 : consis_call_cover Θ'
+                  (consis_call_consis Δ1 Δ2 P0a Pa) [<=] S1)
+          by (cbn [consis_call_cover] in *; clear - Hcov; fsetdec).
+        kill_ccall IH1 Hnh1' Hu Hcov1 D1 Qd1 r1 Hr1 ps1 Hav1 HS1 HT1 HQ1.
+        cbn [consis_call_spec consis_spec] in Hr1.
+        pose proof ((proj2 (proj2 e_assign_unify_consis_sound))
+                      _ _ _ _ _ _ _ _ _ Hr1 Hu
+                      ltac:(cbn [consis_call_cover] in *; clear - Hcov;
+                            fsetdec))
+          as [Da1 [Hu1' Hcov1']].
+        pose proof (e_consis_supply_grows Hr1) as Hgr1.
+        pose proof ((proj2 (proj2 e_assign_unify_consis_out_ftvar))
+                      _ _ _ _ _ _ _ _ _ Hr1 Hu
+                      ltac:(cbn [consis_call_cover] in *; clear - Hcov;
+                            fsetdec)) as Hout1.
+        assert (HDl : Δ1 [=] swaps_atoms ps1 Δ1)
+          by (symmetry; apply swaps_atoms_notin; intros a0 b0 Hin;
+              destruct (Hav1 a0 b0 Hin) as [Ha0 Hb0]; split;
+              clear - Ha0 Hb0 Hcov; fsetdec).
+        assert (HDr : Δ2 [=] swaps_atoms ps1 Δ2)
+          by (symmetry; apply swaps_atoms_notin; intros a0 b0 Hin;
+              destruct (Hav1 a0 b0 Hin) as [Ha0 Hb0]; split;
+              clear - Ha0 Hb0 Hcov; fsetdec).
+        assert (HSm : cs_supply r1 [=] swaps_atoms ps1 Sm)
+          by (symmetry; exact HS1).
+        destruct (e_consis_swaps ps1 D2 HDl HDr HSm) as [S2t [HS2t D2t]].
+        rewrite HT1 in D2t.
+        rewrite (swaps_pskl_fresh_id ps1 P0b) in D2t;
+          [ | intros a0 b0 Hin; destruct (Hav1 a0 b0 Hin) as [Ha0 Hb0];
+              split; clear - Ha0 Hb0 Hcov; fsetdec ].
+        rewrite (swaps_pskl_fresh_id ps1 Pb) in D2t;
+          [ | intros a0 b0 Hin; destruct (Hav1 a0 b0 Hin) as [Ha0 Hb0];
+              split; clear - Ha0 Hb0 Hcov; fsetdec ].
+        specialize (IH2 (cs_supply r1) (cs_ctx r1) (cs_out r1) Hr1).
+        assert (Hnh2' : consis_call_no_hole
+                  (consis_call_consis Δ1 Δ2 P0b Pb))
+          by (cbn [consis_call_no_hole]; split; assumption).
+        assert (Hcov2 : consis_call_cover (cs_ctx r1)
+                  (consis_call_consis Δ1 Δ2 P0b Pb) [<=] cs_supply r1)
+          by (cbn [consis_call_cover] in *;
+              clear - Hcov Hcov1' Hgr1; fsetdec).
+        kill_ccall IH2 Hnh2' Hu1' Hcov2 D2t (swaps_pskl ps1 Qd2)
+          r2 Hr2 ps2 Hav2 HS2 HT2 HQ2.
+        exists (mk_consis_result (cs_supply r2) (cs_ctx r2)
+                  (pskl_arrow (cs_out r1) (cs_out r2))), (ps1 ++ ps2).
+        split; [ reflexivity | ].
+        split4.
+        -- intros a0 b0 Hin. apply in_app_or in Hin.
+           destruct Hin as [Hin | Hin]; [ exact (Hav1 a0 b0 Hin) | ].
+           destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
+           split; clear - Ha0 Hb0 Hgr1; fsetdec.
+        -- cbn [cs_supply]. rewrite swaps_atoms_app. rewrite <- HS2.
+           apply swaps_atoms_cong. symmetry. exact HS2t.
+        -- cbn [cs_ctx]. rewrite swaps_aenv_app. exact HT2.
+        -- cbn [cs_out]. rewrite swaps_pskl_app, !swaps_pskl_arrow.
+           rewrite HQ1 in *. f_equal; [ | exact HQ2 ].
+           apply swaps_pskl_fresh_id. intros a0 b0 Hin.
+           destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
+           split; clear - Ha0 Hb0 Hout1; fsetdec.
+      * (* → ∼ ∀ : no rule fires *) inversion Hd.
+      * destruct Hnh1.
+      * (* → ∼ ⫯P — U-UnivGhost2 *)
+        pose proof (e_consis_inv_univ_ghost2_arrow Hd) as Dc.
+        do_pass (Q6 Pb eq_refl) Dc Hu Hcov Qd.
+    + (* ================= pattern [∀] ================= *)
+      destruct P as [ | n | α0 | Pa Pb | Pb | | Pb ]; cbv beta iota.
+      * (* ∀ ∼ 1 : no rule fires *) inversion Hd.
+      * inversion Hlc1.
+      * (* ∀ ∼ α̂ — U-FlexL *) do_flex_l (Q9 α0 eq_refl) Hd Hnh0 Hu Hcov.
+      * (* ∀ ∼ → : no rule fires *) inversion Hd.
+      * (* ∀ ∼ ∀ — U-ForallInh *)
+        destruct (e_consis_inv_forall_inh Hd) as [α [Qb [Hα [-> Dp]]]].
+        pose proof (supply_fresh_notin S1) as Hz.
+        simpl ftvar_in_pskl in Hcov.
+        assert (HD1 : add (supply_fresh S1) Δ1
+                  [=] swap_atoms α (supply_fresh S1) (add α Δ1)).
+        { rewrite swap_atoms_add.
+          rewrite (swap_atoms_notin α (supply_fresh S1) Δ1)
+            by (clear - Hα Hz Hcov; fsetdec).
+          unfold swap_atom. destruct (α == α); [ reflexivity | congruence ]. }
+        assert (HD2 : add (supply_fresh S1) Δ2
+                  [=] swap_atoms α (supply_fresh S1) (add α Δ2)).
+        { rewrite swap_atoms_add.
+          rewrite (swap_atoms_notin α (supply_fresh S1) Δ2)
+            by (clear - Hα Hz Hcov; fsetdec).
+          unfold swap_atom. destruct (α == α); [ reflexivity | congruence ]. }
+        assert (HSq : add (supply_fresh S1) S1
+                  [=] swap_atoms α (supply_fresh S1) (add α S1)).
+        { rewrite swap_atoms_add.
+          rewrite (swap_atoms_notin α (supply_fresh S1) S1)
+            by (clear - Hα Hz; fsetdec).
+          unfold swap_atom. destruct (α == α); [ reflexivity | congruence ]. }
+        destruct (e_consis_swap Dp HD1 HD2 HSq) as [S1t [HS1t Dpt]].
+        rewrite !swap_aenv_app, !swap_aenv_one_tvar in Dpt.
+        rewrite (swap_aenv_fresh_id α (supply_fresh S1) Θ') in Dpt
+          by (clear - Hα Hz Hcov; fsetdec).
+        rewrite !swap_pskl_open_var in Dpt.
+        rewrite (swap_pskl_fresh_id α (supply_fresh S1) P0') in Dpt
+          by (clear - Hα Hz Hcov; fsetdec).
+        rewrite (swap_pskl_fresh_id α (supply_fresh S1) Pb) in Dpt
+          by (clear - Hα Hz Hcov; fsetdec).
+        replace (swap_atom α (supply_fresh S1) α) with (supply_fresh S1)
+          in Dpt by (unfold swap_atom; destruct (α == α); congruence).
+        assert (Hnh' : consis_call_no_hole (consis_call_consis
+                  (add (supply_fresh S1) Δ1) (add (supply_fresh S1) Δ2)
+                  (open_pskl_wrt_pskl P0' (pskl_var_f (supply_fresh S1)))
+                  (open_pskl_wrt_pskl Pb (pskl_var_f (supply_fresh S1)))))
+          by (apply consis_call_no_hole_open; assumption).
+        pose proof (dom_subset_ftvar_in_aenv Θ') as Hdm.
+        assert (Hu' : uniq ((supply_fresh S1 ~ abind_tvar) ++ Θ'))
+          by (apply uniq_push;
+              [ exact Hu | clear - Hz Hcov Hdm; fsetdec ]).
+        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0'
+                      (pskl_var_f (supply_fresh S1))) as Hup1.
+        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Pb
+                      (pskl_var_f (supply_fresh S1))) as Hup2.
+        assert (Hcov' : consis_call_cover
+                  ((supply_fresh S1 ~ abind_tvar) ++ Θ')
+                  (consis_call_consis
+                     (add (supply_fresh S1) Δ1) (add (supply_fresh S1) Δ2)
+                     (open_pskl_wrt_pskl P0' (pskl_var_f (supply_fresh S1)))
+                     (open_pskl_wrt_pskl Pb (pskl_var_f (supply_fresh S1))))
+                  [<=] add (supply_fresh S1) S1).
+        { cbn [consis_call_cover]. simpl ftvar_in_aenv.
+          clear - Hcov Hup1 Hup2. simpl in *. fsetdec. }
+        kill_ccall (Q2 P0' Pb eq_refl eq_refl) Hnh' Hu' Hcov' Dpt
+          (swap_pskl α (supply_fresh S1) Qb) r Hr ps Hav HS HT HQ.
+        assert (HTz : cs_ctx r = (supply_fresh S1 ~ abind_tvar)
+                  ++ swaps_aenv ps (swap_aenv α (supply_fresh S1) Θd)).
+        { rewrite <- HT. rewrite swaps_aenv_cons_tvar. repeat f_equal.
+          apply swaps_atom_notin. intros a0 b0 Hin.
+          destruct (Hav a0 b0 Hin) as [Ha0 Hb0].
+          split; intro Heq; subst; clear - Ha0 Hb0; fsetdec. }
+        destruct (@split_tvar_head_hit_eq _ _ _ HTz) as [pf Hsp].
+        rewrite Hsp. cbv beta iota.
+        exists (mk_consis_result (cs_supply r)
+                  (swaps_aenv ps (swap_aenv α (supply_fresh S1) Θd))
+                  (pskl_all_syn (close_pskl_wrt_pskl (supply_fresh S1)
+                                   (cs_out r)))),
+               ((α, supply_fresh S1) :: ps).
+        split; [ reflexivity | ].
+        split4.
+        -- intros a0 b0 [Heqp | Hin];
+             [ inversion Heqp; subst; split; assumption | ].
+           destruct (Hav a0 b0 Hin) as [Ha0 Hb0].
+           split; clear - Ha0 Hb0; fsetdec.
+        -- cbn [swaps_atoms cs_supply proj1_sig]. rewrite <- HS.
+           apply swaps_atoms_cong. symmetry. exact HS1t.
+        -- cbn [swaps_aenv cs_ctx proj1_sig]. reflexivity.
+        -- cbn [swaps_pskl swap_pskl]. rewrite swap_pskl_close.
+           replace (swap_atom α (supply_fresh S1) α) with (supply_fresh S1)
+             by (unfold swap_atom; destruct (α == α); congruence).
+           rewrite swaps_pskl_all_syn, swaps_pskl_close.
+           rewrite (swaps_atom_notin ps (supply_fresh S1))
+             by (intros a0 b0 Hin; destruct (Hav a0 b0 Hin) as [Ha0 Hb0];
+                 split; intro Heq; subst; clear - Ha0 Hb0; fsetdec).
+           cbn [cs_out proj1_sig]. rewrite HQ. reflexivity.
+      * destruct Hnh1.
+      * (* ∀ ∼ ⫯P — U-UnivGhost1 *)
+        destruct (e_consis_inv_univ_ghost1 Hd) as [α [Qb [Hα [-> Dp]]]].
+        pose proof (supply_fresh_notin S1) as Hz.
+        simpl ftvar_in_pskl in Hcov.
+        assert (HD1 : add (supply_fresh S1) Δ1
+                  [=] swap_atoms α (supply_fresh S1) (add α Δ1)).
+        { rewrite swap_atoms_add.
+          rewrite (swap_atoms_notin α (supply_fresh S1) Δ1)
+            by (clear - Hα Hz Hcov; fsetdec).
+          unfold swap_atom. destruct (α == α); [ reflexivity | congruence ]. }
+        assert (HD2 : Δ2 [=] swap_atoms α (supply_fresh S1) Δ2)
+          by (symmetry; apply swap_atoms_notin;
+              clear - Hα Hz Hcov; fsetdec).
+        assert (HSq : add (supply_fresh S1) S1
+                  [=] swap_atoms α (supply_fresh S1) (add α S1)).
+        { rewrite swap_atoms_add.
+          rewrite (swap_atoms_notin α (supply_fresh S1) S1)
+            by (clear - Hα Hz; fsetdec).
+          unfold swap_atom. destruct (α == α); [ reflexivity | congruence ]. }
+        destruct (e_consis_swap Dp HD1 HD2 HSq) as [S1t [HS1t Dpt]].
+        rewrite !swap_aenv_app, !swap_aenv_one_tvar in Dpt.
+        rewrite (swap_aenv_fresh_id α (supply_fresh S1) Θ') in Dpt
+          by (clear - Hα Hz Hcov; fsetdec).
+        rewrite !swap_pskl_open_var in Dpt.
+        rewrite (swap_pskl_fresh_id α (supply_fresh S1) P0') in Dpt
+          by (clear - Hα Hz Hcov; fsetdec).
+        rewrite (swap_pskl_fresh_id α (supply_fresh S1) (pskl_tophole Pb))
+          in Dpt by (clear - Hα Hz Hcov; simpl; fsetdec).
+        replace (swap_atom α (supply_fresh S1) α) with (supply_fresh S1)
+          in Dpt by (unfold swap_atom; destruct (α == α); congruence).
+        assert (Hnh' : consis_call_no_hole (consis_call_consis
+                  (add (supply_fresh S1) Δ1) Δ2
+                  (open_pskl_wrt_pskl P0' (pskl_var_f (supply_fresh S1)))
+                  (pskl_tophole Pb)))
+          by (cbn [consis_call_no_hole]; split;
+              [ apply pskl_no_hole_open; assumption | assumption ]).
+        pose proof (dom_subset_ftvar_in_aenv Θ') as Hdm.
+        assert (Hu' : uniq ((supply_fresh S1 ~ abind_tvar) ++ Θ'))
+          by (apply uniq_push;
+              [ exact Hu | clear - Hz Hcov Hdm; fsetdec ]).
+        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0'
+                      (pskl_var_f (supply_fresh S1))) as Hup1.
+        assert (Hcov' : consis_call_cover
+                  ((supply_fresh S1 ~ abind_tvar) ++ Θ')
+                  (consis_call_consis (add (supply_fresh S1) Δ1) Δ2
+                     (open_pskl_wrt_pskl P0' (pskl_var_f (supply_fresh S1)))
+                     (pskl_tophole Pb))
+                  [<=] add (supply_fresh S1) S1).
+        { cbn [consis_call_cover]. simpl ftvar_in_aenv.
+          clear - Hcov Hup1. simpl in *. fsetdec. }
+        kill_ccall (Q5 P0' Pb eq_refl eq_refl) Hnh' Hu' Hcov' Dpt
+          (swap_pskl α (supply_fresh S1) Qb) r Hr ps Hav HS HT HQ.
+        assert (HTz : cs_ctx r = (supply_fresh S1 ~ abind_tvar)
+                  ++ swaps_aenv ps (swap_aenv α (supply_fresh S1) Θd)).
+        { rewrite <- HT. rewrite swaps_aenv_cons_tvar. repeat f_equal.
+          apply swaps_atom_notin. intros a0 b0 Hin.
+          destruct (Hav a0 b0 Hin) as [Ha0 Hb0].
+          split; intro Heq; subst; clear - Ha0 Hb0; fsetdec. }
+        destruct (@split_tvar_head_hit_eq _ _ _ HTz) as [pf Hsp].
+        rewrite Hsp. cbv beta iota.
+        exists (mk_consis_result (cs_supply r)
+                  (swaps_aenv ps (swap_aenv α (supply_fresh S1) Θd))
+                  (pskl_all_syn (close_pskl_wrt_pskl (supply_fresh S1)
+                                   (cs_out r)))),
+               ((α, supply_fresh S1) :: ps).
+        split; [ reflexivity | ].
+        split4.
+        -- intros a0 b0 [Heqp | Hin];
+             [ inversion Heqp; subst; split; assumption | ].
+           destruct (Hav a0 b0 Hin) as [Ha0 Hb0].
+           split; clear - Ha0 Hb0; fsetdec.
+        -- cbn [swaps_atoms cs_supply proj1_sig]. rewrite <- HS.
+           apply swaps_atoms_cong. symmetry. exact HS1t.
+        -- cbn [swaps_aenv cs_ctx proj1_sig]. reflexivity.
+        -- cbn [swaps_pskl swap_pskl]. rewrite swap_pskl_close.
+           replace (swap_atom α (supply_fresh S1) α) with (supply_fresh S1)
+             by (unfold swap_atom; destruct (α == α); congruence).
+           rewrite swaps_pskl_all_syn, swaps_pskl_close.
+           rewrite (swaps_atom_notin ps (supply_fresh S1))
+             by (intros a0 b0 Hin; destruct (Hav a0 b0 Hin) as [Ha0 Hb0];
+                 split; intro Heq; subst; clear - Ha0 Hb0; fsetdec).
+           cbn [cs_out proj1_sig]. rewrite HQ. reflexivity.
+    + (* a ◇ pattern is out of the fragment *) destruct Hnh0.
+    + (* ================= pattern [⫯] ================= *)
+      destruct P as [ | n | α0 | Pa Pb | Pb | | Pb ]; cbv beta iota.
+      * (* ⫯P0 ∼ 1 — U-UnivGhostR *)
+        pose proof (e_consis_inv_univ_ghost_r_unit Hd) as Dc.
+        do_pass (Q7 P0' eq_refl) Dc Hu Hcov Qd.
+      * inversion Hlc1.
+      * (* ⫯P0 ∼ α̂ — U-FlexL, with U-UnivGhostR as the rigid fallback *)
+        destruct (e_consis_inv_tophole_var Hd)
+          as [ [Hft [-> Da]] | [Hnf Dc] ].
+        -- flex_test_true Hft. cbv beta iota.
+           assert (Hcov0 : ftvar_in_aenv (nil ++ Θ')
+                     ∪ ftvar_in_pskl (pskl_tophole P0') [<=] S1)
+             by (clear - Hcov; simpl in *; fsetdec).
+           kill_ccall (Q9 α0 eq_refl) Hnh0 Hu Hcov0 Da pskl_unit
+             r Hr ps Hav HS HT HQ.
+           eexists; exists ps.
+           split; [ reflexivity | ].
+           split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
+                   | cbn [cs_ctx proj1_sig]; exact HT | ].
+           out_var_id Hav Hcov.
+        -- destruct (sumbool_of_bool (flex_bound_ck Θ' α0)) as [Hfb | Hfb];
+             [ exfalso; destruct Hnf as [_ Hf]; apply Hf;
+               apply a_flex_tvar_flex; apply flex_bound_ck_flex_tvar;
+               exact Hfb | ].
+           cbv beta iota. do_pass (Q7 P0' eq_refl) Dc Hu Hcov Qd.
+      * (* ⫯P0 ∼ → — U-UnivGhostR *)
+        pose proof (e_consis_inv_univ_ghost_r_arrow Hd) as Dc.
+        do_pass (Q7 P0' eq_refl) Dc Hu Hcov Qd.
+      * (* ⫯P0 ∼ ∀ — U-ForallSyn *)
+        destruct (e_consis_inv_forall_syn Hd) as [α [Qb [Hα [-> Dp]]]].
+        pose proof (supply_fresh_notin S1) as Hz.
+        simpl ftvar_in_pskl in Hcov.
+        assert (HD1 : Δ1 [=] swap_atoms α (supply_fresh S1) Δ1)
+          by (symmetry; apply swap_atoms_notin;
+              clear - Hα Hz Hcov; fsetdec).
+        assert (HD2 : add (supply_fresh S1) Δ2
+                  [=] swap_atoms α (supply_fresh S1) (add α Δ2)).
+        { rewrite swap_atoms_add.
+          rewrite (swap_atoms_notin α (supply_fresh S1) Δ2)
+            by (clear - Hα Hz Hcov; fsetdec).
+          unfold swap_atom. destruct (α == α); [ reflexivity | congruence ]. }
+        assert (HSq : add (supply_fresh S1) S1
+                  [=] swap_atoms α (supply_fresh S1) (add α S1)).
+        { rewrite swap_atoms_add.
+          rewrite (swap_atoms_notin α (supply_fresh S1) S1)
+            by (clear - Hα Hz; fsetdec).
+          unfold swap_atom. destruct (α == α); [ reflexivity | congruence ]. }
+        destruct (e_consis_swap Dp HD1 HD2 HSq) as [S1t [HS1t Dpt]].
+        rewrite !swap_aenv_app, !swap_aenv_one_tvar in Dpt.
+        rewrite (swap_aenv_fresh_id α (supply_fresh S1) Θ') in Dpt
+          by (clear - Hα Hz Hcov; fsetdec).
+        rewrite !swap_pskl_open_var in Dpt.
+        rewrite (swap_pskl_fresh_id α (supply_fresh S1) (pskl_tophole P0'))
+          in Dpt by (clear - Hα Hz Hcov; simpl; fsetdec).
+        rewrite (swap_pskl_fresh_id α (supply_fresh S1) Pb) in Dpt
+          by (clear - Hα Hz Hcov; fsetdec).
+        replace (swap_atom α (supply_fresh S1) α) with (supply_fresh S1)
+          in Dpt by (unfold swap_atom; destruct (α == α); congruence).
+        assert (Hnh' : consis_call_no_hole (consis_call_consis
+                  Δ1 (add (supply_fresh S1) Δ2) (pskl_tophole P0')
+                  (open_pskl_wrt_pskl Pb (pskl_var_f (supply_fresh S1)))))
+          by (cbn [consis_call_no_hole]; split;
+              [ assumption | apply pskl_no_hole_open; assumption ]).
+        pose proof (dom_subset_ftvar_in_aenv Θ') as Hdm.
+        assert (Hu' : uniq ((supply_fresh S1 ~ abind_tvar) ++ Θ'))
+          by (apply uniq_push;
+              [ exact Hu | clear - Hz Hcov Hdm; fsetdec ]).
+        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Pb
+                      (pskl_var_f (supply_fresh S1))) as Hup2.
+        assert (Hcov' : consis_call_cover
+                  ((supply_fresh S1 ~ abind_tvar) ++ Θ')
+                  (consis_call_consis Δ1 (add (supply_fresh S1) Δ2)
+                     (pskl_tophole P0')
+                     (open_pskl_wrt_pskl Pb (pskl_var_f (supply_fresh S1))))
+                  [<=] add (supply_fresh S1) S1).
+        { cbn [consis_call_cover]. simpl ftvar_in_aenv.
+          clear - Hcov Hup2. simpl in *. fsetdec. }
+        kill_ccall (Q3 P0' Pb eq_refl eq_refl) Hnh' Hu' Hcov' Dpt
+          (swap_pskl α (supply_fresh S1) Qb) r Hr ps Hav HS HT HQ.
+        assert (HTz : cs_ctx r = (supply_fresh S1 ~ abind_tvar)
+                  ++ swaps_aenv ps (swap_aenv α (supply_fresh S1) Θd)).
+        { rewrite <- HT. rewrite swaps_aenv_cons_tvar. repeat f_equal.
+          apply swaps_atom_notin. intros a0 b0 Hin.
+          destruct (Hav a0 b0 Hin) as [Ha0 Hb0].
+          split; intro Heq; subst; clear - Ha0 Hb0; fsetdec. }
+        destruct (@split_tvar_head_hit_eq _ _ _ HTz) as [pf Hsp].
+        rewrite Hsp. cbv beta iota.
+        exists (mk_consis_result (cs_supply r)
+                  (swaps_aenv ps (swap_aenv α (supply_fresh S1) Θd))
+                  (pskl_all_syn (close_pskl_wrt_pskl (supply_fresh S1)
+                                   (cs_out r)))),
+               ((α, supply_fresh S1) :: ps).
+        split; [ reflexivity | ].
+        split4.
+        -- intros a0 b0 [Heqp | Hin];
+             [ inversion Heqp; subst; split; assumption | ].
+           destruct (Hav a0 b0 Hin) as [Ha0 Hb0].
+           split; clear - Ha0 Hb0; fsetdec.
+        -- cbn [swaps_atoms cs_supply proj1_sig]. rewrite <- HS.
+           apply swaps_atoms_cong. symmetry. exact HS1t.
+        -- cbn [swaps_aenv cs_ctx proj1_sig]. reflexivity.
+        -- cbn [swaps_pskl swap_pskl]. rewrite swap_pskl_close.
+           replace (swap_atom α (supply_fresh S1) α) with (supply_fresh S1)
+             by (unfold swap_atom; destruct (α == α); congruence).
+           rewrite swaps_pskl_all_syn, swaps_pskl_close.
+           rewrite (swaps_atom_notin ps (supply_fresh S1))
+             by (intros a0 b0 Hin; destruct (Hav a0 b0 Hin) as [Ha0 Hb0];
+                 split; intro Heq; subst; clear - Ha0 Hb0; fsetdec).
+           cbn [cs_out proj1_sig]. rewrite HQ. reflexivity.
+      * destruct Hnh1.
+      * (* ⫯P0 ∼ ⫯P — U-UnivGhost *)
+        destruct (e_consis_inv_univ_ghost Hd) as [Qb [-> Dc]].
+        assert (Hnh' : consis_call_no_hole
+                  (consis_call_consis Δ1 Δ2 P0' Pb))
+          by (cbn [consis_call_no_hole]; split; assumption).
+        assert (Hcov0 : consis_call_cover Θ'
+                  (consis_call_consis Δ1 Δ2 P0' Pb) [<=] S1)
+          by (clear - Hcov;
+              cbn [consis_call_cover ftvar_in_pskl] in *; fsetdec).
+        kill_ccall (Q4 P0' Pb eq_refl eq_refl) Hnh' Hu Hcov0 Dc Qb
+          r Hr ps Hav HS HT HQ.
+        exists (mk_consis_result (cs_supply r) (cs_ctx r)
+                  (pskl_tophole (cs_out r))), ps.
+        split; [ reflexivity | ].
+        split4; [ exact Hav | cbn [cs_supply]; exact HS
+                | cbn [cs_ctx]; exact HT | ].
+        cbn [cs_out]. rewrite swaps_pskl_tophole. f_equal. exact HQ.
+
+
+Qed.
+
+(* ===================================================================== *)
+(*  §8  THE THREE HEADLINES                                               *)
+(*                                                                        *)
+(*  ⭐ THE UNIFY ONE IS UNRESTRICTED.  A [unifyvar] call carries no        *)
+(*  skeleton and its one consistency premise runs on [ptyp_to_pskl]       *)
+(*  payloads, which have no holes at all — so the hole-free fragment      *)
+(*  contains it outright (§2).  The other two carry the restriction, and  *)
+(*  §8c.10b says what lifting it costs.                                   *)
+(*                                                                        *)
+(*  The side conditions are prop_consis.v §4's, verbatim: the context is  *)
+(*  [uniq] and the supply covers it — ⚠️ including [Δ1] and [Δ2], which    *)
+(*  are reachable from neither the context nor the skeletons.             *)
+(* ===================================================================== *)
+
+Corollary e_assign_impl_complete : forall S0 Θ Ξ α P
+    (HP : lc_pskl P) (HD : aenv_defs_mono (Ξ ++ Θ))
+    (H : e_assign_order S0 Θ Ξ α P) Sd Θd,
+  {{ S0 ↝ Sd ⊨ Θ ⊲[ Ξ ] α ≔ P ⊣ Θd }}e ->
+  pskl_no_hole P ->
+  uniq (Ξ ++ Θ) ->
+  ftvar_in_aenv (Ξ ++ Θ) ∪ ftvar_in_pskl P [<=] S0 ->
+  exists r ps,
+    e_assign_impl S0 Θ Ξ α P HP HD H = Some r
+    /\ (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0)
+    /\ swaps_atoms ps Sd [=] ur_supply (proj1_sig r)
+    /\ swaps_aenv ps Θd = ur_ctx (proj1_sig r).
+Proof.
+  intros * Hd Hnh Hu Hcov.
+  set (Ho := e_assign_order_to_call _ _ _ _ _ H).
+  destruct (e_consis_call_impl_complete Ho HP HD Ho Hnh Hu Hcov
+              Sd Θd pskl_unit Hd) as [r0 [ps [Heq [Hav [HS [HT _]]]]]].
+  unfold e_assign_impl. fold Ho.
+  destruct (e_consis_call_impl (consis_call_assign Ξ α P) S0 Θ HP HD Ho)
+    as [ [rr Hrr] | ] eqn:Hcl;
+    try rewrite Hcl in Heq; cbn [consis_call_answer proj1_sig] in Heq;
+    [ inversion Heq; subst | discriminate ].
+  exists (exist _ (mk_unify_result (cs_supply r0) (cs_ctx r0)) Hrr), ps.
+  split; [ reflexivity | ].
+  split; [ exact Hav | ]. split; [ exact HS | exact HT ].
+Qed.
+
+Corollary e_unify_impl_complete : forall S0 Θ α β
+    (HD : aenv_defs_mono Θ) (H : e_unify_order S0 Θ α β) Sd Θd,
+  {{ S0 ↝ Sd ⊨ Θ ⊲ α ≈ᵘ β ⊣ Θd }}e ->
+  uniq Θ ->
+  ftvar_in_aenv Θ [<=] S0 ->
+  exists r ps,
+    e_unify_impl S0 Θ α β HD H = Some r
+    /\ (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0)
+    /\ swaps_atoms ps Sd [=] ur_supply (proj1_sig r)
+    /\ swaps_aenv ps Θd = ur_ctx (proj1_sig r).
+Proof.
+  intros * Hd Hu Hcov.
+  set (Ho := e_unify_order_to_call _ _ _ _ H).
+  destruct (e_consis_call_impl_complete Ho I HD Ho I Hu Hcov
+              Sd Θd pskl_unit Hd) as [r0 [ps [Heq [Hav [HS [HT _]]]]]].
+  unfold e_unify_impl. fold Ho.
+  destruct (e_consis_call_impl (consis_call_unify α β) S0 Θ I HD Ho)
+    as [ [rr Hrr] | ] eqn:Hcl;
+    try rewrite Hcl in Heq; cbn [consis_call_answer proj1_sig] in Heq;
+    [ inversion Heq; subst | discriminate ].
+  exists (exist _ (mk_unify_result (cs_supply r0) (cs_ctx r0)) Hrr), ps.
+  split; [ reflexivity | ].
+  split; [ exact Hav | ]. split; [ exact HS | exact HT ].
+Qed.
+
+(** ⭐ The consistency headline, over the argument-free runner of
+    def_consis_impl.v §4 — the twin of [e_consis_run_sound]. *)
+Theorem e_consis_run_complete : forall Δ1 Δ2 S0 Θ P0 P
+    (HP0 : lc_pskl P0) (HP : lc_pskl P) (HD : aenv_defs_mono Θ) Sd Θd Qd,
+  {{ S0 ↝ Sd ⊨ Θ ⊢[ Δ1 | Δ2 | P0 ] P ∼ Qd ⊣ Θd }}e ->
+  pskl_no_hole P0 -> pskl_no_hole P ->
+  uniq Θ ->
+  ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P ∪ Δ1 ∪ Δ2 [<=] S0 ->
+  exists r ps,
+    e_consis_run Δ1 Δ2 S0 Θ P0 P HP0 HP HD = Some r
+    /\ (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0)
+    /\ swaps_atoms ps Sd [=] cs_supply r
+    /\ swaps_aenv ps Θd = cs_ctx r
+    /\ swaps_pskl ps Qd = cs_out r.
+Proof.
+  intros * Hd Hnh0 Hnh1 Hu Hcov.
+  set (Ho := e_consis_order_to_call _ _ _ _ _ _
+               (@e_consis_order_total Δ1 Δ2 S0 Θ P0 P HP0 HP HD)).
+  destruct (e_consis_call_impl_complete Ho (conj HP0 HP) HD Ho
+              (conj Hnh0 Hnh1) Hu Hcov Sd Θd Qd Hd)
+    as [r [ps [Heq [Hav [HS [HT HQ]]]]]].
+  exists r, ps. split; [ exact Heq | ].
+  split; [ exact Hav | ]. split; [ exact HS | ].
+  split; [ exact HT | exact HQ ].
 Qed.

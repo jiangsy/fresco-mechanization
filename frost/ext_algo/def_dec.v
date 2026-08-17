@@ -187,6 +187,26 @@ Proof.
     [ left; reflexivity | right; apply IH; exact Hck ].
 Qed.
 
+(** ⚙ The converses of the two positive scans, for the same reason as
+    [mono_ck_complete]: a completeness proof reads the runner's test
+    against what the derivation found. *)
+Lemma rigid_bound_ck_complete : forall Θ α,
+  binds α abind_tvar Θ -> rigid_bound_ck Θ α = true.
+Proof.
+  induction Θ as [ | [β b] Θ' IH ]; intros α Hb; [ inversion Hb | ].
+  destruct Hb as [Heq | Hin]; simpl.
+  - inversion Heq; subst. destruct (α == α); congruence.
+  - destruct b; try (apply IH; exact Hin).
+    destruct (α == β); [ reflexivity | apply IH; exact Hin ].
+Qed.
+
+Lemma flex_tvar_flex_bound_ck : forall Θ α,
+  a_flex_tvar Θ α -> flex_bound_ck Θ α = true.
+Proof.
+  intros Θ α Hf. destruct (flex_bound_ck Θ α) eqn:E; [ reflexivity | ].
+  exfalso. eapply flex_bound_ck_not_flex_tvar; eassumption.
+Qed.
+
 (** [a_binds_tvar]: any type-variable-ish binding (rigid or flexible). *)
 Definition tvarish_ck (Θ : aenv) (α : atom) : bool :=
   rigid_bound_ck Θ α || flex_bound_ck Θ α.
@@ -252,6 +272,14 @@ Proof.
   induction A; simpl; intros Hck; try discriminate;
     try solve [ constructor ].
   apply andb_prop in Hck; destruct Hck; constructor; auto.
+Qed.
+
+(** ⚙ The converse.  A runner that TESTS [mono_ck] and a derivation that
+    CARRIES [mono_ptyp] meet at a completeness proof, which needs the test
+    to succeed — the soundness direction alone never does that. *)
+Lemma mono_ck_complete : forall A, mono_ptyp A -> mono_ck A = true.
+Proof.
+  induction 1; simpl; auto. rewrite IHmono_ptyp1, IHmono_ptyp2. reflexivity.
 Qed.
 
 Definition nonghost_ck (P : pskl) : bool :=
@@ -361,6 +389,27 @@ Proof.
           end).
   subst; reflexivity.
 Defined.
+
+(** It HITS whenever the head really is that marker.  ⚠️ Stated in the
+    ∃-form because the [sig]'s proof component is the decomposition
+    equation itself; and in the [Θout = …] form because the ∀ rows meet it
+    at [cs_ctx r], which no [rewrite] can reach (the branch's Equations
+    obligation reads that very proof). *)
+Lemma split_tvar_head_hit : forall α (Θ1 : aenv),
+  exists p, split_tvar_head α ((α ~ abind_tvar) ++ Θ1)
+            = Some (exist _ Θ1 p).
+Proof.
+  intros. unfold one, split_tvar_head. cbn [app].
+  match goal with
+  | |- context [ match ?e with left _ => _ | right _ => _ end ] =>
+      destruct e as [ E | Ne ]
+  end; [ eexists; reflexivity | congruence ].
+Qed.
+
+Lemma split_tvar_head_hit_eq : forall α (Θout Θ1 : aenv),
+  Θout = (α ~ abind_tvar) ++ Θ1 ->
+  exists p, split_tvar_head α Θout = Some (exist _ Θ1 p).
+Proof. intros; subst; apply split_tvar_head_hit. Qed.
 
 (* ===================================================================== *)
 (*  §5  The wf checker  (≈ type.ml's [is_wf_], :50)                       *)

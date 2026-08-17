@@ -589,6 +589,13 @@ Lemma swaps_ptyp_all : forall ps A,
   swaps_ptyp ps (ptyp_all A) = ptyp_all (swaps_ptyp ps A).
 Proof. induction ps as [ | [a b] ps IH ]; simpl; auto. Qed.
 
+Lemma mono_ptyp_swaps : forall ps A,
+  mono_ptyp A -> mono_ptyp (swaps_ptyp ps A).
+Proof.
+  induction ps as [ | [a b] ps IH ]; intros A H; simpl; auto.
+  apply IH. apply mono_ptyp_swap. exact H.
+Qed.
+
 Lemma swaps_ptyp_close : forall ps c A,
   swaps_ptyp ps (close_ptyp_wrt_ptyp c A)
   = close_ptyp_wrt_ptyp (swaps_atom ps c) (swaps_ptyp ps A).
@@ -873,6 +880,19 @@ Proof.
   intros. rewrite swaps_aenv_app_dist. f_equal.
   unfold one. rewrite swaps_aenv_cons, swaps_abind_tvar, swaps_aenv_nil.
   reflexivity.
+Qed.
+
+Lemma swaps_abind_def : forall ps τ,
+  swaps_abind ps (abind_flex_mono_def τ)
+  = abind_flex_mono_def (swaps_ptyp ps τ).
+Proof. induction ps as [ | [a b] ps IH ]; intros; simpl; auto. Qed.
+
+Lemma swaps_aenv_one_def : forall ps x τ,
+  swaps_aenv ps (x ~ abind_flex_mono_def τ)
+  = (swaps_atom ps x ~ abind_flex_mono_def (swaps_ptyp ps τ)).
+Proof.
+  intros. unfold one.
+  rewrite swaps_aenv_cons, swaps_abind_def, swaps_aenv_nil. reflexivity.
 Qed.
 
 Lemma swaps_aenv_one_flex : forall ps x,
