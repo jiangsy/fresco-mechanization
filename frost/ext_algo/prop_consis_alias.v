@@ -193,7 +193,7 @@ Proof.
     apply alias_insert_out_cons.
     apply IH; auto. clear - Hu. solve_uniq.
   - (* U-FlexL: the walk *)
-    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P0 Hnf D IH HP0 Hvar Hu. subst.
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P0 Hnf Hnhole D IH HP0 Hvar Hu. subst.
     split; [ reflexivity | ]. apply IH; auto.
   - (* U-GhostR: the runner's route — unchanged *)
     intros Δ1 Δ2 S Θ0 P Hdis HP0 Hvar Hu.

@@ -61,6 +61,7 @@ Proof.
     + (* nonflex(unit → unit) *)
       split; [ repeat constructor | ].
       intros Hflex; inversion Hflex.
+    + (* the [<> ◇] dispatch guard *) discriminate.
     + (* Assign-SolveM with guess^TY(unit → unit) = (·; unit → unit) *)
       apply (@a_assign__solve_m nil nil b
                (ptyp_to_pskl Tarr) nil Tarr).

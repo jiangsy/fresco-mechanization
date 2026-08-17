@@ -290,9 +290,9 @@ Proof.
   - (* flex : unify IH *)
     intros Δ1 Δ2 Θ0 Θ1 α β Hu IH α1 Hα1. apply IH, Hα1.
   - (* flex_l : assign IH at Ξ = nil *)
-    intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Ha IH α1 Hα1. apply IH. simpl_env. exact Hα1.
+    intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hnhole Ha IH α1 Hα1. apply IH. simpl_env. exact Hα1.
   - (* flex_r : assign IH at Ξ = nil *)
-    intros Δ1 Δ2 Θ0 Θ1 α P Hnf Ha IH α1 Hα1. apply IH. simpl_env. exact Hα1.
+    intros Δ1 Δ2 Θ0 Θ1 α P Hnf Hnhole Ha IH α1 Hα1. apply IH. simpl_env. exact Hα1.
   - (* ghost_r : identity *) intros; auto.
   - (* univ_ghost_r : direct IH *)
     intros Δ1 Δ2 Θ0 Θ1 P0 P P' Hg Hnf Hc IH α1 Hα1. apply IH, Hα1.

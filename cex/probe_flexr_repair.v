@@ -295,6 +295,7 @@ Proof.
         unfold binds in Hb; simpl in Hb; destruct Hb as [Hb|Hb];
         [ discriminate Hb | destruct Hb as [Hb|Hb];
           [ discriminate Hb | destruct Hb ] ] end. }
+  { discriminate. }                          (* the new [<> ◇] guard *)
   simpl.
   eapply a_assign__depend.
   { auto. }

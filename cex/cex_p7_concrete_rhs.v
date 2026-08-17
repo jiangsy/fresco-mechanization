@@ -111,6 +111,7 @@ Lemma cex_consis :
 Proof.
   apply a_consis__flex_l;
     [ split; [ apply lc_pskl_unit | intros Hf; inversion Hf ]
+    | discriminate                          (* the new [<> ◇] guard *)
     | apply cex_assign ].
 Qed.
 

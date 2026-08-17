@@ -641,7 +641,7 @@ Proof.
     repeat split; [ apply a_consis__flex | | ]; assumption.
 
   - (* FlexL *)
-    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P0 Hnf Ha IH Hu Hcov.
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P0 Hnf Hnhole Ha IH Hu Hcov.
     assert (Hu' : uniq (nil ++ Θ0)) by (clear - Hu; simpl_env; assumption).
     assert (Hcov' : ftvar_in_aenv (nil ++ Θ0) ∪ ftvar_in_pskl P0 [<=] S0)
       by (clear - Hcov; env_simp; fsetdec).
@@ -649,7 +649,7 @@ Proof.
     repeat split; [ apply a_consis__flex_l | | ]; assumption.
 
   - (* FlexR *)
-    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P Hnf Ha IH Hu Hcov.
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P Hnf Hnhole Ha IH Hu Hcov.
     assert (Hu' : uniq (nil ++ Θ0)) by (clear - Hu; simpl_env; assumption).
     assert (Hcov' : ftvar_in_aenv (nil ++ Θ0) ∪ ftvar_in_pskl P [<=] S0)
       by (clear - Hcov; env_simp; fsetdec).
@@ -858,11 +858,11 @@ Proof.
     pose proof (e_unify_supply_grows Hun) as Hg.
     clear - Hcov Hg. simpl in *. fsetdec.
   - (* FlexL *)
-    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P0 Hnf Ha IH Hu Hcov.
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P0 Hnf Hnhole Ha IH Hu Hcov.
     pose proof (e_assign_supply_grows Ha) as Hg.
     clear - Hcov Hg. simpl in *. fsetdec.
   - (* FlexR *)
-    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P Hnf Ha IH Hu Hcov.
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P Hnf Hnhole Ha IH Hu Hcov.
     pose proof (e_assign_supply_grows Ha) as Hg.
     clear - Hcov Hg. simpl in *. fsetdec.
 
@@ -1112,11 +1112,11 @@ Proof.
     destruct (IH _ Heq) as [S1' [HS1 Hd']].
     exists S1'. split; [ exact HS1 | apply e_consis__flex; exact Hd' ].
   - (* FlexL *)
-    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P0 Hnf Hd IH S0' Heq.
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P0 Hnf Hnhole Hd IH S0' Heq.
     destruct (IH _ Heq) as [S1' [HS1 Hd']].
     exists S1'. split; [ exact HS1 | apply e_consis__flex_l; assumption ].
   - (* FlexR *)
-    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P Hnf Hd IH S0' Heq.
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P Hnf Hnhole Hd IH S0' Heq.
     destruct (IH _ Heq) as [S1' [HS1 Hd']].
     exists S1'. split; [ exact HS1 | apply e_consis__flex_r; assumption ].
   - (* GhostR *)
@@ -1430,15 +1430,19 @@ Proof.
     destruct (IH _ Heq) as [S1' [HS1 Hd']].
     exists S1'. split; [ exact HS1 | apply e_consis__flex; exact Hd' ].
   - (* FlexL *)
-    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P0 Hnf Hd IH Δ1' Δ2' S0' HΔ1 HΔ2 Heq. simpl.
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P0 Hnf Hnhole Hd IH Δ1' Δ2' S0' HΔ1 HΔ2 Heq. simpl.
     destruct (IH _ Heq) as [S1' [HS1 Hd']].
     exists S1'. split; [ exact HS1 | ].
-    apply e_consis__flex_l; [ auto using a_non_flex_swap | exact Hd' ].
+    apply e_consis__flex_l;
+      [ auto using a_non_flex_swap | auto using swap_pskl_not_hole
+      | exact Hd' ].
   - (* FlexR *)
-    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P Hnf Hd IH Δ1' Δ2' S0' HΔ1 HΔ2 Heq. simpl.
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P Hnf Hnhole Hd IH Δ1' Δ2' S0' HΔ1 HΔ2 Heq. simpl.
     destruct (IH _ Heq) as [S1' [HS1 Hd']].
     exists S1'. split; [ exact HS1 | ].
-    apply e_consis__flex_r; [ auto using a_non_flex_swap | exact Hd' ].
+    apply e_consis__flex_r;
+      [ auto using a_non_flex_swap | auto using swap_pskl_not_hole
+      | exact Hd' ].
   - (* GhostR *)
     intros Δ1 Δ2 S Θ0 P Hemp Δ1' Δ2' S0' HΔ1 HΔ2 Heq. simpl.
     exists S0'. split; [ exact Heq | ].

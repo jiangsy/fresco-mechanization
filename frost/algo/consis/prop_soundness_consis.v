@@ -3937,7 +3937,7 @@ Proof.
     + apply ad_refine_pskl_f__var. right. exact Hbα1.
   - (* C-FlexL : assign α̂ := P0 (the input skeleton).  MUTUAL case: the
        [a_assign] premise is handled by the bundle's ASSIGN motive. *)
-    intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hassign IHassign Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
+    intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hnhole Hassign IHassign Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     destruct (IHassign a_decls__nil Hwf HwfP0)
       as [Hle [Hwf1 [Hdom [Hinv Hcons]]]].
     assert (Hfα : a_flex_tvar Θ0 α)
@@ -3991,7 +3991,7 @@ Proof.
     + apply ad_refine_pskl_f__var. right. exact Hbα1.
   - (* C-FlexR : assign α̂ := P (the subject skeleton), output var α̂.
        MUTUAL case: the [a_assign] premise is the bundle's ASSIGN motive. *)
-    intros Δ1 Δ2 Θ0 Θ1 α P Hnf Hassign IHassign Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
+    intros Δ1 Δ2 Θ0 Θ1 α P Hnf Hnhole Hassign IHassign Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     destruct (IHassign a_decls__nil Hwf HwfP)
       as [Hle [Hwf1 [Hdom [Hinv Hcons]]]].
     assert (Hfα : a_flex_tvar Θ0 α)

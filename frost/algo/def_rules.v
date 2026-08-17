@@ -1124,12 +1124,36 @@ with a_consis : atoms -> atoms -> aenv -> pskl -> pskl -> pskl -> aenv -> Prop :
 | a_consis__flex : forall Δ1 Δ2 Θ0 Θ1 α β,                  (* Flex *)
     {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f β) ] (pskl_var_f α) ∼ (pskl_var_f α) ⊣ Θ1 }}a
+(* ⭐ [P0 <> ◇] / [P <> ◇] on the two FlexL/FlexR rows render the reference
+   implementation's DISPATCH ORDER, exactly as [nonghost_pskl] does for
+   [SE-FlexR] above (:721, and see its header).  [a_consis]'s consistency
+   clause in [type.ml] matches the PATTERN first and its hole arm is
+   unconditional in the subject, so the implementation NEVER reaches FlexL
+   at a [◇] pattern; the mirror arm bars FlexR at a [◇] subject.  A
+   relational encoding has no match order, so each exclusion must be a
+   premise — and [a_non_flex] does NOT supply it ("nonflex{P0} rules out a
+   flexible VARIABLE, not a hole", cex/probe_consis_ghost_flex.v).
+
+   ⚙ WHAT THE GUARDS BUY, and why they cost completeness nothing: at a [◇]
+   pattern [C-GhostR] fires and is STRICTLY MORE GENERAL — it leaves the
+   flexible unsolved, where FlexL would commit it to [guess^TY(◇)], a fresh
+   unconstrained variable — and the mirror holds at a [◇] subject with
+   [C-Ghost].  Without them the rules admit BOTH, at different output
+   contexts, which is the divergence
+   docs/HANDOFF-close-consis-unrestricted.md was written about: five
+   candidate relations between those two outputs are machine-checked
+   refuted (cex/probe_consis_ghost_flex.v, probe_isub_too_strong.v,
+   probe_inc_head_blind.v, probe_assign_migrates.v,
+   probe_collapse_orientation.v).  [paper-gap] filed in docs/PAPER-GAPS.md
+   beside SE-FlexR's. *)
 | a_consis__flex_l : forall Δ1 Δ2 Θ0 Θ1 α P0,               (* FlexL *)
     a_non_flex Θ0 P0 ->
+    P0 <> pskl_hole ->
     {{ Θ0 ⊲[ nil ] α ≔ P0 ⊣ Θ1 }}a ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] (pskl_var_f α) ∼ (pskl_var_f α) ⊣ Θ1 }}a
 | a_consis__flex_r : forall Δ1 Δ2 Θ0 Θ1 α P,                (* FlexR *)
     a_non_flex Θ0 P ->
+    P <> pskl_hole ->
     {{ Θ0 ⊲[ nil ] α ≔ P ⊣ Θ1 }}a ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f α) ] P ∼ (pskl_var_f α) ⊣ Θ1 }}a
 | a_consis__ghost_r : forall Δ1 Δ2 Θ0 P,                    (* GhostR *)

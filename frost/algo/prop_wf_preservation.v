@@ -463,8 +463,11 @@ Proof.
     { inversion HwfP as [ | Θz Δz αz Hd | | | | ]; subst.
       destruct Hd as [Hd | Hd]; [ clear - Hd; fsetdec | exact Hd ]. }
     pose proof a_assign_unify_consis_sound as [Has _].
-    destruct (Has _ _ _ _ _ H0 (a_decls__nil) Hwf HwfP0)
-      as [Hle [Hwf1 _]].
+    match goal with
+    | Ha : {{ _ ⊲[ _ ] _ ≔ _ ⊣ _ }}a |- _ =>
+        destruct (Has _ _ _ _ _ Ha (a_decls__nil) Hwf HwfP0)
+          as [Hle [Hwf1 _]]
+    end.
     split.
     { apply a_wf_pskl__var. right.
       eapply a_isub_binds_tvarish; [ exact Hle | exact Hbα ]. }
@@ -476,8 +479,11 @@ Proof.
     { inversion HwfP0 as [ | Θz Δz αz Hd | | | | ]; subst.
       destruct Hd as [Hd | Hd]; [ clear - Hd; fsetdec | exact Hd ]. }
     pose proof a_assign_unify_consis_sound as [Has _].
-    destruct (Has _ _ _ _ _ H0 (a_decls__nil) Hwf HwfP)
-      as [Hle [Hwf1 _]].
+    match goal with
+    | Ha : {{ _ ⊲[ _ ] _ ≔ _ ⊣ _ }}a |- _ =>
+        destruct (Has _ _ _ _ _ Ha (a_decls__nil) Hwf HwfP)
+          as [Hle [Hwf1 _]]
+    end.
     split.
     { apply a_wf_pskl__var. right.
       eapply a_isub_binds_tvarish; [ exact Hle | exact Hbα ]. }

@@ -233,10 +233,10 @@ Proof.
     intros Δ1 Δ2 Θ0 Θ1 α β Hu IH Ξr Θt Heq Htv.
     exact (IH Ξr Θt Heq Htv).
   - (* flex_l *)
-    intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Ha IH Ξr Θt Heq Htv.
+    intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hnhole Ha IH Ξr Θt Heq Htv.
     exact (IH Ξr Θt Heq Htv).
   - (* flex_r *)
-    intros Δ1 Δ2 Θ0 Θ1 α P Hnf Ha IH Ξr Θt Heq Htv.
+    intros Δ1 Δ2 Θ0 Θ1 α P Hnf Hnhole Ha IH Ξr Θt Heq Htv.
     exact (IH Ξr Θt Heq Htv).
   - (* ghost_r *)
     intros Δ1 Δ2 Θ0 P Hi Ξr Θt Heq Htv. exists Θt. assumption.
@@ -309,10 +309,10 @@ Proof.
   - (* flex : the premise is a unification, no Δ *)
     intros Δ1 Δ2 Θ0 Θ1 α β Hu _ Δ1' Δ2' H1 H2. apply a_consis__flex; exact Hu.
   - (* flex_l *)
-    intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Ha _ Δ1' Δ2' H1 H2.
+    intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hnhole Ha _ Δ1' Δ2' H1 H2.
     apply a_consis__flex_l; assumption.
   - (* flex_r *)
-    intros Δ1 Δ2 Θ0 Θ1 α P Hnf Ha _ Δ1' Δ2' H1 H2.
+    intros Δ1 Δ2 Θ0 Θ1 α P Hnf Hnhole Ha _ Δ1' Δ2' H1 H2.
     apply a_consis__flex_r; assumption.
   - (* ghost_r *)
     intros Δ1 Δ2 Θ0 P Hi Δ1' Δ2' H1 H2.
@@ -496,9 +496,9 @@ Proof.
     intros Δ1 Δ2 Θ0 Θ1 P0 P Q Hg Hnf Hc IH Hu. apply IH, Hu.
   - (* flex *) intros Δ1 Δ2 Θ0 Θ1 α β Hu0 IH Hu. apply IH, Hu.
   - (* flex_l *)
-    intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Ha IH Hu. apply IH. simpl_env. exact Hu.
+    intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hnhole Ha IH Hu. apply IH. simpl_env. exact Hu.
   - (* flex_r *)
-    intros Δ1 Δ2 Θ0 Θ1 α P Hnf Ha IH Hu. apply IH. simpl_env. exact Hu.
+    intros Δ1 Δ2 Θ0 Θ1 α P Hnf Hnhole Ha IH Hu. apply IH. simpl_env. exact Hu.
   - (* ghost_r *) intros Δ1 Δ2 Θ0 P Hi Hu. exact Hu.
   - (* univ_ghost_r *)
     intros Δ1 Δ2 Θ0 Θ1 P0 P Q Hg Hnf Hc IH Hu. apply IH, Hu.
@@ -592,6 +592,19 @@ Proof.
   intros. simpl.
   destruct_if;
     [ subst; congruence | reflexivity ].
+Qed.
+
+(** The [<> ◇] guard the consistency FlexL/FlexR rows carry (algo/def_rules.v)
+    survives a RIGID RENAME: the replacement is a variable, so no constructor
+    can turn into a hole.  ⚠️ It does NOT survive an arbitrary substitution —
+    [subst ◇ α (pskl_var_f α)] is a hole — which is why this is stated for a
+    variable replacement only. *)
+Lemma subst_pskl_var_not_hole : forall (β α : atom) P,
+  P <> pskl_hole ->
+  subst_pskl_in_pskl (pskl_var_f β) α P <> pskl_hole.
+Proof.
+  intros * H. destruct P; simpl; try discriminate; [ | congruence ].
+  destruct_if; discriminate.
 Qed.
 
 (** Swapping the name of a rigid mid entry under a binding NOT at it. *)
@@ -1277,7 +1290,7 @@ Proof.
     rewrite (subst_pskl_var_neq (pskl_var_f β0) Hne1α).
     apply a_consis__flex. exact Hren.
   - (* flex_l : the assign back-edge *)
-    intros Δ1 Δ2 Θ0 Θ1 β1 P0 Hnf Ha IH.
+    intros Δ1 Δ2 Θ0 Θ1 β1 P0 Hnf Hnhole Ha IH.
     destruct IH as [Lih IH]. exists Lih.
     intros β0 HL Ξr Θb Heq Htv Hu HYi HYo HYP0 HYP HYQ Hβ0Δ1 Hβ0Δ2.
     pose proof (auc_subject_assign Ha) as Hf. simpl in Hf.
@@ -1293,9 +1306,10 @@ Proof.
     apply a_consis__flex_l.
     + subst Θ0. apply a_non_flex_rename; [ | exact Hnf ].
       clear - HYi. rewrite dom_app in *. simpl dom in HYi. fsetdec.
+    + apply subst_pskl_var_not_hole. exact Hnhole.
     + exact Hren.
   - (* flex_r : the assign back-edge, mirrored *)
-    intros Δ1 Δ2 Θ0 Θ1 β1 P Hnf Ha IH.
+    intros Δ1 Δ2 Θ0 Θ1 β1 P Hnf Hnhole Ha IH.
     destruct IH as [Lih IH]. exists Lih.
     intros β0 HL Ξr Θb Heq Htv Hu HYi HYo HYP0 HYP HYQ Hβ0Δ1 Hβ0Δ2.
     pose proof (auc_subject_assign Ha) as Hf. simpl in Hf.
@@ -1311,6 +1325,7 @@ Proof.
     apply a_consis__flex_r.
     + subst Θ0. apply a_non_flex_rename; [ | exact Hnf ].
       clear - HYi. rewrite dom_app in *. simpl dom in HYi. fsetdec.
+    + apply subst_pskl_var_not_hole. exact Hnhole.
     + exact Hren.
   - (* ghost_r : axiom node *)
     intros Δ1 Δ2 Θ0 P Hi. exists empty.

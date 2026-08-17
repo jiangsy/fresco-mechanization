@@ -37,6 +37,58 @@ recently P6-Sv at the end of this file)}.
 > Several judgments looked broken until that condition was restored.  **Check
 > that file before concluding a lemma is unprovable.**
 
+## MISSING SIDE CONDITION (2026-08-17, machine-checked) — `U-FlexL` / `U-FlexR` lack the `≠ ◇` guard that renders the implementation's ghost-first dispatch, so consistency is AMBIGUOUS at two cells and derives a strictly less general answer than the algorithm computes
+
+`U-FlexL` (`algorithmic.tex:757`) and `U-FlexR` (`:764`) carry only
+`nonflex{P_0}` / `nonflex{P}`.  That predicate rules out a flexible
+VARIABLE — **it does not rule out a hole** — so at
+
+```
+    pattern ◇,  subject α̂   (α̂ an undefined flexible)
+    pattern β̂,  subject ◇   (the mirror)
+```
+
+TWO rules fire, and they disagree on the OUTPUT CONTEXT:
+
+| rule | output |
+|---|---|
+| `U-GhostR` / `U-Ghost` | `Θ` unchanged |
+| `U-FlexL` / `U-FlexR`  | `α̂` SOLVED to `guess^TY(◇)`, a fresh unconstrained flexible |
+
+⭐ **The implementation never takes the second route.**  Its consistency
+clause matches the PATTERN first and the hole arm is unconditional in the
+subject, so a `◇` pattern always answers by `GhostR`; the mirror arm bars
+`FlexR` at a `◇` subject.  This is exactly the situation the paper's own
+`SolE-FlexR` is in, where the mechanization already carries
+`nonghost{P}` as a premise for the same reason (`algo/def_rules.v`, and
+the note in this file's `SolE-FlexR` entries): **a relational encoding has
+no match order, so a dispatch exclusion must be a premise.**
+
+⚙ **The ghost route is also the RIGHT one**, independently of the
+implementation: it leaves the flexible unsolved, where `FlexL` commits it
+to a fresh unconstrained variable, so `GhostR`/`Ghost` is strictly more
+general.  The rules as published therefore admit a derivation that is not
+optimal, at a configuration that is REACHED — `(λf. f (λy. f y)) (λz. z)`
+gets there through `AT-Abs`'s guess, `AP-AbsCheck`'s skeleton-`◇` binder
+and `AP-Var`+`Arrow` (`cex/probe_pat_presents_hole_flex.v`).
+
+**What the mechanization does**: `a_consis__flex_l` carries
+`P0 <> pskl_hole` and `a_consis__flex_r` carries `P <> pskl_hole`
+(`frost/algo/def_rules.v`), with the `ext_algo` twins identical.
+Completeness is UNAFFECTED — `a_consis_complete` is re-proved with the
+guards, by trying `C-GhostR` BEFORE the two flexible layers (the
+implementation's own order) and adding the mirror `C-Ghost` node at a
+flexible input.
+
+⚠️ **What it cost to discover.**  Without the guards the two outputs must
+be RELATED by the completeness proof, and five candidate relations are
+machine-checked refuted: renaming (`cex/probe_consis_ghost_flex.v`), `⊴`
+(`probe_isub_too_strong.v`), bare `a_inc` (`probe_inc_head_blind.v`), a
+positional refinement (`probe_assign_migrates.v`) and the alias-collapse
+function (`probe_collapse_orientation.v`, where the two sides pick
+opposite REPRESENTATIVES for one equivalence class).  The guard removes
+the problem at its source instead.
+
 ## MISSING SIDE CONDITION (2026-08-17, machine-checked) — `SI-Ghost` lacks the `M ≠ TI` guard that its NEIGHBOUR `SI-UnivGhostL` carries, so the relation derives inference-mode judgements against a counterpart the implementation never accepts
 
 **What the paper says.**  `SI-Ghost` (`full-algo-spec.tex:849-853`) is an

@@ -189,45 +189,41 @@ Proof.
   all: ghost_close.
 Qed.
 
-(** ⛔ DIVERGENT CELL 1 — a hole subject against a FLEXIBLE pattern.
-    [U-Ghost] leaves the context alone; [U-FlexR] assigns.  The runner
-    takes the first (def_consis_impl.v:807-813), so the second branch is
-    where §2's increase is consumed. *)
+(** ⭐ FORMERLY DIVERGENT CELL 1 — a hole subject against a FLEXIBLE
+    pattern.  [U-Ghost] leaves the context alone; [U-FlexR] would have
+    assigned, and the runner takes the first
+    (def_consis_impl.v:807-813).  Since the [<> ◇] dispatch guards landed
+    on [U-FlexL]/[U-FlexR] (algo/def_rules.v) the second route is BARRED,
+    so this cell now admits exactly ONE rule and the inversion is no
+    longer a disjunction — which is what retires the two-context problem
+    docs/HANDOFF-close-consis-unrestricted.md was written about. *)
 Lemma e_consis_inv_hole_flex_pattern : forall Δ1 Δ2 S0 Θ0 β Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f β) ] pskl_hole ∼ Q ⊣ Θ1 }}e ->
-  (S1 = S0 /\ Θ1 = Θ0 /\ Q = pskl_var_f β
-     /\ Δ2 ∩ ftvar_in_pskl (pskl_var_f β) [=] empty)
-  \/ (Q = pskl_var_f β /\ a_non_flex Θ0 pskl_hole
-      /\ {{ S0 ↝ S1 ⊨ Θ0 ⊲[ nil ] β ≔ pskl_hole ⊣ Θ1 }}e).
+  S1 = S0 /\ Θ1 = Θ0 /\ Q = pskl_var_f β
+    /\ Δ2 ∩ ftvar_in_pskl (pskl_var_f β) [=] empty.
 Proof.
   intros * Hd. inversion Hd; subst;
     try solve [ congruence
               | match goal with
                 | H : guarded_pskl pskl_hole |- _ => inversion H
                 end ].
-  - left; ghost_close.
-  (* ⚠️ spell the splits out — [a_non_flex] is itself a conjunction, so
-     [repeat split] dives into it (the trap prop_consis_complete.v §7
-     records for the motive's [In]-quantified conjunct). *)
-  - right; split; [ reflexivity | split; assumption ].
+  ghost_close.
 Qed.
 
-(** ⛔ DIVERGENT CELL 2 — the mirror: a FLEXIBLE subject against a hole
-    pattern.  [U-GhostR] versus [U-FlexL], and the runner takes GhostR
+(** ⭐ FORMERLY DIVERGENT CELL 2 — the mirror: a FLEXIBLE subject against
+    a hole pattern.  [U-GhostR] versus [U-FlexL], the runner takes GhostR
     (def_consis_impl.v:759-763, whose hole-pattern arm is unconditional in
-    the subject). *)
+    the subject), and the [<> ◇] guard now bars [U-FlexL] here, so this
+    cell too admits exactly one rule. *)
 Lemma e_consis_inv_flex_subject_hole : forall Δ1 Δ2 S0 Θ0 α Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | pskl_hole ] (pskl_var_f α) ∼ Q ⊣ Θ1 }}e ->
-  (S1 = S0 /\ Θ1 = Θ0 /\ Q = pskl_var_f α
-     /\ Δ1 ∩ ftvar_in_pskl (pskl_var_f α) [=] empty)
-  \/ (Q = pskl_var_f α /\ a_non_flex Θ0 pskl_hole
-      /\ {{ S0 ↝ S1 ⊨ Θ0 ⊲[ nil ] α ≔ pskl_hole ⊣ Θ1 }}e).
+  S1 = S0 /\ Θ1 = Θ0 /\ Q = pskl_var_f α
+    /\ Δ1 ∩ ftvar_in_pskl (pskl_var_f α) [=] empty.
 Proof.
   intros * Hd. inversion Hd; subst;
     try solve [ congruence
               | match goal with
                 | H : guarded_pskl pskl_hole |- _ => inversion H
                 end ].
-  - right; split; [ reflexivity | split; assumption ].
-  - left; ghost_close.
+  ghost_close.
 Qed.

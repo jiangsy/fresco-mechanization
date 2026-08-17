@@ -1028,7 +1028,7 @@ Proof.
     intros Δ1 Δ2 Θ0 Θ1 α β Hu IHu m b α0 Hbm Hmk Huq Heq Hflex Hnab Hnv.
     exfalso; exact (Hnv β eq_refl).
   - (* ⭐ FlexL : the only live row — hand over to the assignment *)
-    intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Ha IH m b α0 Hbm Hmk Huq Heq Hflex Hnab Hnv.
+    intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hnhole Ha IH m b α0 Hbm Hmk Huq Heq Hflex Hnab Hnv.
     inversion Heq; subst α0.
     apply (IH m b Hbm Hmk);
       [ simpl_env; exact Huq
@@ -1037,7 +1037,7 @@ Proof.
       | exact Hnab
       | exact Hnv ].
   - (* FlexR : the PAYLOAD is a variable *)
-    intros Δ1 Δ2 Θ0 Θ1 α P Hnf Ha IHa m b α0 Hbm Hmk Huq Heq Hflex Hnab Hnv.
+    intros Δ1 Δ2 Θ0 Θ1 α P Hnf Hnhole Ha IHa m b α0 Hbm Hmk Huq Heq Hflex Hnab Hnv.
     exfalso; exact (Hnv α eq_refl).
   - (* GhostR : the payload is [◇], with no atoms at all *)
     intros Δ1 Δ2 Θ0 P Hd m b α Hbm Hmk Huq Heq Hflex Hnab Hnv.

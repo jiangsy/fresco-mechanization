@@ -8181,6 +8181,115 @@ Proof.
   intros N Δ1 Δ2 Θ0 P0 P κ Θ Ψ Qb Hm Hwf0 HwfP0 HwfP Hrig Hnfd0 Hfaf
     Hinc Hwfth Hnfdth HΨ Hjoin Hrs Hrp.
   subst m.
+  (* ⭐ DISPATCH ORDER (2026-08-17): [C-GhostR] is tried BEFORE the two
+     flexible layers, which is the order the reference implementation
+     matches in and the order the runner dispatches in.  It is also what
+     the [<> ◇] guards on [C-FlexL]/[C-FlexR] (algo/def_rules.v) now
+     REQUIRE: [HneP0hole] below is exactly the guard those layers
+     discharge.  ⚙ The move is sound because this block reads neither
+     [HnfP] nor [HnfP0] — it is an axiom node, so it also carries no
+     measure obligation. *)
+  (* ---- Layer 0c: P0 = ◇ : C-GhostR ---------------------------------- *)
+  destruct (pskl_eq_dec P0 pskl_hole) as [-> | HneP0hole].
+  { (* axiom node [a_consis__ghost_r].  The side condition
+       [Δ1 ∩ ftv(P) = ∅] is the mirror rigid-ftv chase, through the JOIN
+       ([ad_pat_consis_rigid_ftv_rev]) against the Δ1-hygiene of the hole
+       fill in Hrs; precision re-inherits the Δ2-refinement through the
+       join by [refine_join_reinherit]. *)
+    assert (Hjoin' : {{ empty ⨟ Θ ⊢ˢ (pskl_to_uskl (msubst_pskl κ P)) ∼ Qb }}ad)
+      by (eapply ad_pat_consis_psi_cong; [ exact Hjoin | exact HΨ ]).
+    change (ad_refine_syn_f Δ1 Θ Δ1 bskl_hole Qb) in Hrs.
+    (* Qb is a syn-painting fixed point (its refinement source is ◇) *)
+    assert (HQb : pskl_to_bskl_syn (bskl_to_pskl Qb) = Qb).
+    { inversion Hrs; subst.
+      - rewrite bskl_to_pskl_pskl_to_bskl_syn. reflexivity.
+      - simpl. reflexivity. }
+    (* the ftv chase for the GhostR side condition *)
+    assert (Hside : forall α, α `in` Δ1 -> α `notin` ftvar_in_pskl P).
+    { intros α HinΔ1 HinP.
+      assert (HbX0 : binds α abind_tvar Θ0)
+        by (apply Hrig; clear - HinΔ1; fsetdec).
+      assert (HbX : binds α abind_tvar Θ)
+        by (eapply a_inc_binds_tvar; eauto).
+      assert (HXnd : α `notin` dom κ)
+        by (eapply a_inc_tvar_notin_dom; eauto).
+      assert (Hdefs : forall β τ, binds β (abind_flex_mono_def τ) Θ ->
+                                  α `notin` ftvar_in_ptyp τ).
+      { intros β τ Hb. pose proof (Hnfdth _ _ Hb) as Hd.
+        clear - Hd HinΔ1. fsetdec. }
+      assert (HninQb : α `notin` ftvar_in_bskl Qb).
+      { inversion Hrs; subst.
+        - (* hole : the Δ1-hygiene of the fill *)
+          match goal with
+          | Hint : Δ1 ∩ (ftvar_in_pskl ?Pf) [=] empty |- _ =>
+              pose proof (ftvar_in_bskl_syn Pf) as Hfe;
+              clear - Hint HinΔ1 Hfe; fsetdec
+          end.
+        - (* flex_r : Qb is a defined flexible, never the rigid α *)
+          simpl.
+          match goal with
+          | Hbr : binds ?α0 (abind_flex_mono_def _) Θ |- _ =>
+              assert (Hne : α <> α0)
+                by (intro Heq; subst;
+                    pose proof (binds_unique _ _ _ _ _ HbX Hbr
+                                  (a_wf_aenv_uniq Hwfth)) as Hcon;
+                    discriminate)
+          end.
+          clear - Hne; fsetdec. }
+      assert (HinκP : α `in` ftvar_in_pskl (msubst_pskl κ P))
+        by (apply msubst_pskl_ftv_keep; assumption).
+      assert (HninS : α `notin`
+                ftvar_in_uskl (pskl_to_uskl (msubst_pskl κ P))).
+      { eapply ad_pat_consis_rigid_ftv_rev;
+          [ exact Hwfth | exact HbX | exact Hdefs | exact Hjoin'
+          | exact HninQb ]. }
+      pose proof (ftvar_in_uskl_pskl (msubst_pskl κ P)) as Hfe2.
+      clear - HninS HinκP Hfe2. fsetdec. }
+    exists P, Θ0. split.
+    { apply a_consis__ghost_r.
+      apply inter_empty_pointwise. exact Hside. }
+    split; [ intros γ Hγ; left; exact Hγ | ].
+    intros κ1 Hid Hinc1. exists κ.
+    destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
+    split; [ exact Hout | ]. split; [ exact Hfact | ].
+    (* precision by the re-inherit bridge (subset goal second, AFTER the
+       bridge instantiates the Δ) *)
+    assert (HwfκP : {{ Θ ⨟ Δ2 ⊢ₚₛ (msubst_pskl κ P) }}a).
+    { eapply a_wf_pskl_delta_mono;
+        [ eapply a_wf_pskl_msubst_inc;
+            [ exact Hinc | exact Hwf0 | exact HwfP
+            | intros α Hα; exfalso; clear - Hα; fsetdec ]
+        | clear; fsetdec ]. }
+    unfold ad_precise_f.
+    rewrite bskl_to_pskl_msubst_bskl.
+    rewrite bskl_to_pskl_pskl_to_bskl_syn.
+    eapply ad_refine_syn_f_delta_mono with (Δ0 := Δ2);
+      [ | clear; fsetdec ].
+    eapply ad_refine_syn_f_fextend_ftv;
+      [ eapply refine_join_reinherit with (Θj := Θ);
+          [ exact Hrp | exact Hwfth | exact Hwfth
+          | intros x b Hb; exact Hb
+          | exact HwfκP
+          | rewrite HQb; exact Hjoin' ]
+      | ].
+    intros α1 Hα1.
+    destruct (AtomSetProperties.In_dec α1 Δ2) as [Hα1Δ2 | Hα1Δ2];
+      [ left; exact Hα1Δ2 | right ].
+    assert (Hα1Δ1 : α1 `in` Δ1) by (clear - Hα1 Hα1Δ2; fsetdec).
+    assert (Hbγ : binds α1 abind_tvar Θ)
+      by (eapply a_inc_binds_tvar; [ exact Hinc | ];
+          apply Hrig; clear - Hα1Δ1; fsetdec).
+    split.
+    + assert (Hnq : α1 `notin` ftvar_in_bskl Qb)
+        by (eapply ad_refine_syn_f_hole_src_target_ftv;
+            [ exact Hrs | exact Hwfth
+            | clear - Hα1Δ1; fsetdec | exact Hbγ ]).
+      pose proof (ftvar_in_bskl_inh (bskl_to_pskl Qb)) as Hfe.
+      pose proof (ftvar_bskl_to_pskl Qb) as Hfe2.
+      clear - Hnq Hfe Hfe2. fsetdec.
+    + intros β τ Hb.
+      pose proof (Hnfdth β τ Hb) as Hi.
+      clear - Hi Hα1Δ1. fsetdec. }
   (* ---- Layer 0a: flexible SUBJECT — parts 2/3 (t breaks the tie) ---- *)
   destruct (a_flex_shape_dec HwfP) as [[β [-> Hfβ]] | HnfP].
   { destruct (a_flex_shape_dec HwfP0) as [[β10 [-> Hfδ0]] | HnfP0].
@@ -8296,7 +8405,7 @@ Proof.
                      HwfP0 HnfP0 Hdom Hinc Hwfth Hjoin3)
         as [Θ1 [Ha [Hnew Hopt']]].
       exists (pskl_var_f β), Θ1. split.
-      { apply a_consis__flex_l; [ exact HnfP0 | exact Ha ]. }
+      { apply a_consis__flex_l; [ exact HnfP0 | exact HneP0hole | exact Ha ]. }
       split;
         [ intros γ Hγ; destruct (Hnew γ Hγ) as [Hin | Hni];
           [ left; simpl_env in Hin; exact Hin | right; exact Hni ] | ].
@@ -8324,7 +8433,40 @@ Proof.
         | exact Hjoin' ]. }
   (* ---- Layer 0b: flexible INPUT, non-flex subject : C-FlexR --------- *)
   destruct (a_flex_shape_dec HwfP0) as [[β10 [-> Hfδ0]] | HnfP0].
-  { (* part 3 (assignment β1̂0 ≔ P): the input β1̂0's image is a monotype, so
+  { (* ⭐ GHOST FIRST, the mirror of the hoisted Layer 0c: a [◇] SUBJECT is
+       answered by [C-Ghost], which is the rule the runner takes and the
+       one the [<> ◇] guard on [C-FlexR] now leaves as the only option.
+       The main dispatch already proves that node, and its tophole side
+       condition is vacuous here because the input is a VARIABLE. *)
+    destruct (pskl_eq_dec P pskl_hole) as [-> | HnePhole].
+    { exists (pskl_var_f β10), Θ0. split.
+      { apply a_consis__ghost.
+        assert (Hβ2 : β10 `notin` Δ2).
+        { intros Hin.
+          assert (Hbt : binds β10 abind_tvar Θ0)
+            by (apply Hrig; clear - Hin; fsetdec).
+          destruct Hfδ0 as [Hb | [τ Hb]];
+            pose proof (binds_unique _ _ _ _ _ Hbt Hb (a_wf_aenv_uniq Hwf0))
+              as Hcon; discriminate. }
+        simpl. clear - Hβ2. fsetdec. }
+      split; [ intros γ Hγ; left; exact Hγ | ].
+      intros κ1 Hid Hinc1. exists κ.
+      destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
+      split; [ exact Hout | ]. split; [ exact Hfact | ].
+      (* precision of the INPUT's image — the same shape the FlexR branch
+         below discharges, at [ζ := κ] and [Θ1 := Θ0]. *)
+      assert (HbtδΘ0 : a_binds_tvar β10 Θ0) by (right; exact Hfδ0).
+      unfold ad_precise_f.
+      apply ad_refine_syn_f_of_plain_no_hole;
+        [ | apply pskl_to_bskl_inh_no_hole, bskl_to_pskl_no_hole,
+            msubst_bskl_no_hole; simpl; exact I ].
+      eapply consis_precise_via_refine with (Θ0 := Θ0) (κ1 := κ1);
+        [ exact Hwfth | exact Hfδ0 | exact Hinc | exact HbtδΘ0
+        | exact Hinc | exact Hwf0 | exact Hfact
+        | eapply a_inc_flex_dom; [ exact Hinc1 | exact Hwf0 | exact Hfδ0 ]
+        | apply (msubst_lookup_id β10 Hid)
+        | exact Hrs ]. }
+    (* part 3 (assignment β1̂0 ≔ P): the input β1̂0's image is a monotype, so
        [refine_mono_join] reads Qb = syn C off the Δ1-refinement and the
        join's TARGET transports from C to κβ1̂0 along the equivalence
        ([tyequiv_mono_consis_transport_q] — general subject); precision by
@@ -8366,7 +8508,7 @@ Proof.
                    HwfP HnfP Hdom Hinc Hwfth Hjoin3)
       as [Θ1 [Ha [Hnew Hopt']]].
     exists (pskl_var_f β10), Θ1. split.
-    { apply a_consis__flex_r; [ exact HnfP | exact Ha ]. }
+    { apply a_consis__flex_r; [ exact HnfP | exact HnePhole | exact Ha ]. }
     split;
       [ intros γ Hγ; destruct (Hnew γ Hγ) as [Hin | Hni];
         [ left; simpl_env in Hin; exact Hin | right; exact Hni ] | ].
@@ -8392,107 +8534,6 @@ Proof.
       | eapply a_inc_flex_dom; [ exact Hinc1 | exact Hwf0 | exact Hfδ0 ]
       | apply (msubst_lookup_id β10 Hid)
       | exact Hrs ]. }
-  (* ---- Layer 0c: P0 = ◇ : C-GhostR ---------------------------------- *)
-  destruct (pskl_eq_dec P0 pskl_hole) as [-> | HneP0hole].
-  { (* axiom node [a_consis__ghost_r].  The side condition
-       [Δ1 ∩ ftv(P) = ∅] is the mirror rigid-ftv chase, through the JOIN
-       ([ad_pat_consis_rigid_ftv_rev]) against the Δ1-hygiene of the hole
-       fill in Hrs; precision re-inherits the Δ2-refinement through the
-       join by [refine_join_reinherit]. *)
-    assert (Hjoin' : {{ empty ⨟ Θ ⊢ˢ (pskl_to_uskl (msubst_pskl κ P)) ∼ Qb }}ad)
-      by (eapply ad_pat_consis_psi_cong; [ exact Hjoin | exact HΨ ]).
-    change (ad_refine_syn_f Δ1 Θ Δ1 bskl_hole Qb) in Hrs.
-    (* Qb is a syn-painting fixed point (its refinement source is ◇) *)
-    assert (HQb : pskl_to_bskl_syn (bskl_to_pskl Qb) = Qb).
-    { inversion Hrs; subst.
-      - rewrite bskl_to_pskl_pskl_to_bskl_syn. reflexivity.
-      - simpl. reflexivity. }
-    (* the ftv chase for the GhostR side condition *)
-    assert (Hside : forall α, α `in` Δ1 -> α `notin` ftvar_in_pskl P).
-    { intros α HinΔ1 HinP.
-      assert (HbX0 : binds α abind_tvar Θ0)
-        by (apply Hrig; clear - HinΔ1; fsetdec).
-      assert (HbX : binds α abind_tvar Θ)
-        by (eapply a_inc_binds_tvar; eauto).
-      assert (HXnd : α `notin` dom κ)
-        by (eapply a_inc_tvar_notin_dom; eauto).
-      assert (Hdefs : forall β τ, binds β (abind_flex_mono_def τ) Θ ->
-                                  α `notin` ftvar_in_ptyp τ).
-      { intros β τ Hb. pose proof (Hnfdth _ _ Hb) as Hd.
-        clear - Hd HinΔ1. fsetdec. }
-      assert (HninQb : α `notin` ftvar_in_bskl Qb).
-      { inversion Hrs; subst.
-        - (* hole : the Δ1-hygiene of the fill *)
-          match goal with
-          | Hint : Δ1 ∩ (ftvar_in_pskl ?Pf) [=] empty |- _ =>
-              pose proof (ftvar_in_bskl_syn Pf) as Hfe;
-              clear - Hint HinΔ1 Hfe; fsetdec
-          end.
-        - (* flex_r : Qb is a defined flexible, never the rigid α *)
-          simpl.
-          match goal with
-          | Hbr : binds ?α0 (abind_flex_mono_def _) Θ |- _ =>
-              assert (Hne : α <> α0)
-                by (intro Heq; subst;
-                    pose proof (binds_unique _ _ _ _ _ HbX Hbr
-                                  (a_wf_aenv_uniq Hwfth)) as Hcon;
-                    discriminate)
-          end.
-          clear - Hne; fsetdec. }
-      assert (HinκP : α `in` ftvar_in_pskl (msubst_pskl κ P))
-        by (apply msubst_pskl_ftv_keep; assumption).
-      assert (HninS : α `notin`
-                ftvar_in_uskl (pskl_to_uskl (msubst_pskl κ P))).
-      { eapply ad_pat_consis_rigid_ftv_rev;
-          [ exact Hwfth | exact HbX | exact Hdefs | exact Hjoin'
-          | exact HninQb ]. }
-      pose proof (ftvar_in_uskl_pskl (msubst_pskl κ P)) as Hfe2.
-      clear - HninS HinκP Hfe2. fsetdec. }
-    exists P, Θ0. split.
-    { apply a_consis__ghost_r.
-      apply inter_empty_pointwise. exact Hside. }
-    split; [ intros γ Hγ; left; exact Hγ | ].
-    intros κ1 Hid Hinc1. exists κ.
-    destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
-    split; [ exact Hout | ]. split; [ exact Hfact | ].
-    (* precision by the re-inherit bridge (subset goal second, AFTER the
-       bridge instantiates the Δ) *)
-    assert (HwfκP : {{ Θ ⨟ Δ2 ⊢ₚₛ (msubst_pskl κ P) }}a).
-    { eapply a_wf_pskl_delta_mono;
-        [ eapply a_wf_pskl_msubst_inc;
-            [ exact Hinc | exact Hwf0 | exact HwfP
-            | intros α Hα; exfalso; clear - Hα; fsetdec ]
-        | clear; fsetdec ]. }
-    unfold ad_precise_f.
-    rewrite bskl_to_pskl_msubst_bskl.
-    rewrite bskl_to_pskl_pskl_to_bskl_syn.
-    eapply ad_refine_syn_f_delta_mono with (Δ0 := Δ2);
-      [ | clear; fsetdec ].
-    eapply ad_refine_syn_f_fextend_ftv;
-      [ eapply refine_join_reinherit with (Θj := Θ);
-          [ exact Hrp | exact Hwfth | exact Hwfth
-          | intros x b Hb; exact Hb
-          | exact HwfκP
-          | rewrite HQb; exact Hjoin' ]
-      | ].
-    intros α1 Hα1.
-    destruct (AtomSetProperties.In_dec α1 Δ2) as [Hα1Δ2 | Hα1Δ2];
-      [ left; exact Hα1Δ2 | right ].
-    assert (Hα1Δ1 : α1 `in` Δ1) by (clear - Hα1 Hα1Δ2; fsetdec).
-    assert (Hbγ : binds α1 abind_tvar Θ)
-      by (eapply a_inc_binds_tvar; [ exact Hinc | ];
-          apply Hrig; clear - Hα1Δ1; fsetdec).
-    split.
-    + assert (Hnq : α1 `notin` ftvar_in_bskl Qb)
-        by (eapply ad_refine_syn_f_hole_src_target_ftv;
-            [ exact Hrs | exact Hwfth
-            | clear - Hα1Δ1; fsetdec | exact Hbγ ]).
-      pose proof (ftvar_in_bskl_inh (bskl_to_pskl Qb)) as Hfe.
-      pose proof (ftvar_bskl_to_pskl Qb) as Hfe2.
-      clear - Hnq Hfe Hfe2. fsetdec.
-    + intros β τ Hb.
-      pose proof (Hnfdth β τ Hb) as Hi.
-      clear - Hi Hα1Δ1. fsetdec. }
   (* ---- Layer 0d: P0 = ∀◇.P0', P guarded : C-UnivGhostR -------------- *)
   assert (Hthdec : (exists P0', P0 = pskl_tophole P0') \/
                    (forall P0', P0 <> pskl_tophole P0')).

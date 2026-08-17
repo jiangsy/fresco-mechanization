@@ -231,13 +231,18 @@ with e_consis : atoms -> atoms -> supply -> aenv -> pskl -> pskl -> pskl
     {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e ->
     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f β) ]
        (pskl_var_f α) ∼ (pskl_var_f α) ⊣ Θ1 }}e
+(* Δ-none: the two [<> ◇] guards are the a-side's verbatim, and they are
+   what make the runner's ghost-first dispatch the ONLY derivation at the
+   two cells that used to diverge (algo/def_rules.v's header there). *)
 | e_consis__flex_l : forall Δ1 Δ2 S0 S1 Θ0 Θ1 α P0,          (* FlexL *)
     a_non_flex Θ0 P0 ->
+    P0 <> pskl_hole ->
     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ nil ] α ≔ P0 ⊣ Θ1 }}e ->
     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ]
        (pskl_var_f α) ∼ (pskl_var_f α) ⊣ Θ1 }}e
 | e_consis__flex_r : forall Δ1 Δ2 S0 S1 Θ0 Θ1 α P,           (* FlexR *)
     a_non_flex Θ0 P ->
+    P <> pskl_hole ->
     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ nil ] α ≔ P ⊣ Θ1 }}e ->
     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f α) ] P ∼ (pskl_var_f α) ⊣ Θ1 }}e
 | e_consis__ghost_r : forall Δ1 Δ2 S Θ0 P,                   (* GhostR *)

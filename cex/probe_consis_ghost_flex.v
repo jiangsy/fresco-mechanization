@@ -114,84 +114,21 @@ Proof.
   intros. apply e_consis__ghost_r. assumption.
 Qed.
 
-(** (2) the rules ALSO admit [U-FlexL] there — [nonflex{◇}] holds — and
-    it SOLVES the subject. *)
-Lemma probe_consis_flexl_route : forall Δ1 Δ2 S α β,
+(** The mirror walk, likewise no longer liftable: [U-FlexR] demands
+    [P <> ◇]. *)
+Lemma probe_consis_flexr_walk : forall S α β,
   β `notin` S ->
-  {{ S ↝ (add β S) ⊨ (probe_gf_ctx α) ⊢[ Δ1 | Δ2 | pskl_hole ]
-     (pskl_var_f α) ∼ (pskl_var_f α) ⊣ (probe_gf_ctx_solved α β) }}e.
+  {{ S ↝ (add β S) ⊨ (probe_gf_ctx α) ⊲[ nil ] α ≔ pskl_hole
+     ⊣ (probe_gf_ctx_solved α β) }}e.
 Proof.
   intros * Hβ. unfold probe_gf_ctx, probe_gf_ctx_solved.
-  apply e_consis__flex_l.
-  - split; [ apply lc_pskl_hole | intros Hf; inversion Hf ].
-  - replace ((α ~ abind_flex_mono_def (ptyp_var_f β))
-               ++ (β ~ abind_flex_mono) ++ nil)
-      with ((α ~ abind_flex_mono_def (ptyp_var_f β))
-               ++ ((β ~ abind_flex_mono) ++ nil) ++ nil ++ nil)
-      by reflexivity.
-    apply e_assign__solve_m.
-    + simpl. fsetdec.
-    + apply e_guess_mono__hole. assumption.
-    + apply mono_ptyp__var.
-Qed.
-
-(* --------------------------------------------------------------------- *)
-(*  (3)  the RUNNER, reduced: it commits to U-GhostR                      *)
-(* --------------------------------------------------------------------- *)
-
-Lemma probe_consis_runner_ghostr : forall S α HP0 HP HD,
-  e_consis_run empty empty S (probe_gf_ctx α) pskl_hole (pskl_var_f α)
-    HP0 HP HD
-  = Some (mk_consis_result S (probe_gf_ctx α) (pskl_var_f α)).
-Proof.
-  intros. unfold e_consis_run, e_consis_impl.
-  simp e_consis_call_impl.
-  match goal with
-  | |- context [ match ?scr with left _ => _ | right _ => _ end ] =>
-      destruct scr as [He | He]
-  end.
-  - reflexivity.
-  - exfalso. rewrite AtomSetImpl.is_empty_1 in He;
-      [ discriminate | clear; fsetdec ].
-Qed.
-
-(* --------------------------------------------------------------------- *)
-(*  (4)  the two output contexts are different                            *)
-(* --------------------------------------------------------------------- *)
-
-Lemma probe_consis_outputs_differ : forall α β,
-  probe_gf_ctx α <> probe_gf_ctx_solved α β.
-Proof.
-  intros α β H. unfold probe_gf_ctx, probe_gf_ctx_solved in H. inversion H.
-Qed.
-
-(* --------------------------------------------------------------------- *)
-(*  (5)  the mirror: a flexible pattern against a ◇ subject               *)
-(* --------------------------------------------------------------------- *)
-
-Lemma probe_consis_ghost_route : forall Δ1 Δ2 S α,
-  Δ2 ∩ ftvar_in_pskl (pskl_var_f α) [=] empty ->
-  {{ S ↝ S ⊨ (probe_gf_ctx α) ⊢[ Δ1 | Δ2 | (pskl_var_f α) ]
-     pskl_hole ∼ (pskl_var_f α) ⊣ (probe_gf_ctx α) }}e.
-Proof.
-  intros. apply e_consis__ghost. assumption.
-Qed.
-
-Lemma probe_consis_flexr_route : forall Δ1 Δ2 S α β,
-  β `notin` S ->
-  {{ S ↝ (add β S) ⊨ (probe_gf_ctx α) ⊢[ Δ1 | Δ2 | (pskl_var_f α) ]
-     pskl_hole ∼ (pskl_var_f α) ⊣ (probe_gf_ctx_solved α β) }}e.
-Proof.
-  intros * Hβ. unfold probe_gf_ctx, probe_gf_ctx_solved.
-  apply e_consis__flex_r.
-  - split; [ apply lc_pskl_hole | intros Hf; inversion Hf ].
-  - replace ((α ~ abind_flex_mono_def (ptyp_var_f β))
-               ++ (β ~ abind_flex_mono) ++ nil)
-      with ((α ~ abind_flex_mono_def (ptyp_var_f β))
-               ++ ((β ~ abind_flex_mono) ++ nil) ++ nil ++ nil)
-      by reflexivity.
-    apply e_assign__solve_m.
-    + simpl. fsetdec.
-    + apply e_guess_mono__hole. assumption.
-    + apply mono_ptyp__var.
+  replace ((α ~ abind_flex_mono_def (ptyp_var_f β))
+             ++ (β ~ abind_flex_mono) ++ nil)
+    with ((α ~ abind_flex_mono_def (ptyp_var_f β))
+             ++ ((β ~ abind_flex_mono) ++ nil) ++ nil ++ nil)
+    by reflexivity.
+  apply e_assign__solve_m.
+  + simpl. fsetdec.
+  + apply e_guess_mono__hole. assumption.
+  + apply mono_ptyp__var.
 Qed.

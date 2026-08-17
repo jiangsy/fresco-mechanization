@@ -367,8 +367,8 @@ Proof.
     apply a_rigid_only_cons_nonsuffix; [ intros Hs; inversion Hs | exact H ].
   - (* C-UnivGhost2 *) intros * Hg Hnf Hc IH γ H. apply IH, H.
   - (* C-Flex *) intros Δ1 Δ2 Θ0 Θ1 α β Hu IH γ H. exact (IH γ H).
-  - (* C-FlexL *) intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Ha IH γ H. exact (IH γ H).
-  - (* C-FlexR *) intros Δ1 Δ2 Θ0 Θ1 α P Hnf Ha IH γ H. exact (IH γ H).
+  - (* C-FlexL *) intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hnhole Ha IH γ H. exact (IH γ H).
+  - (* C-FlexR *) intros Δ1 Δ2 Θ0 Θ1 α P Hnf Hnhole Ha IH γ H. exact (IH γ H).
   - (* C-GhostR *) intros; assumption.
   - (* C-UnivGhostR *) intros * Hg Hnf Hc IH γ H. apply IH, H.
 Qed.

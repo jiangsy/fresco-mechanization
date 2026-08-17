@@ -32,18 +32,20 @@
 
     WHAT IS MACHINE-CHECKED HERE: the skeleton-inference call itself — the
     run [AP-AbsCheck] launches for the body [f y], inside the argument-pat
-    of [AT-App], at a context of exactly the shape [AT-Abs] builds — admits
-    TWO derivations whose output contexts differ in LENGTH:
+    of [AT-App], at a context of exactly the shape [AT-Abs] builds — really
+    does present the cell, and [probe_pat_ghostr_route] derives it.
 
-        route A  ([U-GhostR] at the cell)  ⊣ Θ             (4 entries)
-        route B  ([U-FlexL]  at the cell)  ⊣ Θ + 1 entry   (δ̂1 ≔ ε̂, ε̂)
-
-    and no swap chain relates them ([probe_pat_outputs_not_swap_related]),
-    so a completeness motive whose conclusion is swap-equality of contexts
-    ([consis_call_complete]'s, and any level-6 mirror of it) is FALSE at a
-    call skeleton inference PRESENTS.  ⇒ No restriction can both hold at
-    the flagship's calls and exclude the divergent cells; the two-context
-    problem (handover §4) must be solved, not fenced off.
+    ⭐ HOW IT WAS RESOLVED (2026-08-17).  When this probe was written the
+    same call ALSO admitted a second derivation, [U-FlexL] at the cell,
+    whose output was ONE ENTRY LONGER ([δ̂1 ≔ ε̂, ε̂]); no swap chain
+    relates contexts of different length
+    ([probe_pat_outputs_not_swap_related] below), so no restriction could
+    both hold at the flagship's calls and exclude the divergent cells.
+    That ambiguity is now GONE at the source: [U-FlexL]/[U-FlexR] carry
+    [P0 <> ◇] / [P <> ◇] (algo/def_rules.v), rendering the reference
+    implementation's ghost-first dispatch, so [U-GhostR] is the only rule
+    that fires here.  ⇒ What this file records TODAY is the REACHABILITY —
+    why the cell had to be resolved rather than fenced off.
 
     ⚙ INSPECTED, NOT CHECKED: that the probe's context is the one the
     pipeline builds for the program above — (1)–(2) name the constructing
@@ -117,46 +119,24 @@ Proof.
 Qed.
 
 (* --------------------------------------------------------------------- *)
-(*  Route B: the SAME call, [U-FlexL] at the cell — δ̂1 gets SOLVED.       *)
+(*  ⭐ UPDATED 2026-08-17: Route B IS NOW BARRED — and that is the point.  *)
 (* --------------------------------------------------------------------- *)
 
-Lemma probe_pat_flexl_route : forall S y f δ1 δ2 ε,
-  ε `notin` S ->
-  {{ S ↝ (add ε S) ⊨ (probe_pf_ctx y f δ1 δ2) ⊢ˢ[ mode_tc ; pskl_hole ]
-     (probe_pf_body y f) ⦂ (pskl_tophole (pskl_var_f δ2))
-     ⊣ (probe_pf_ctx_solved y f δ1 δ2 ε) }}e.
-Proof.
-  intros * Hε. unfold probe_pf_body.
-  apply e_pat__app with (S1 := S) (Θ1 := probe_pf_ctx y f δ1 δ2)
-    (P0 := pskl_hole) (P := pskl_var_f δ1).
-  - apply e_pat__var_skl with (P := pskl_hole).
-    + unfold probe_pf_ctx, binds. simpl. auto.
-    + apply e_sub__ghost.
-  - apply e_pat__var
-      with (A := ptyp_arrow (ptyp_var_f δ1) (ptyp_var_f δ2)).
-    + unfold probe_pf_ctx, binds. simpl. auto.
-    + simpl.
-      apply e_sub__arrow
-        with (S1 := add ε S) (Θ1 := probe_pf_ctx_solved y f δ1 δ2 ε).
-      * (* THE CELL, route B: U-FlexL — nonflex{◇} holds, so the rules
-           may ASSIGN δ̂1 ≔ ◇, and [guess^TY(◇)] invents ε̂. *)
-        apply e_consis__flex_l.
-        { split; [ apply lc_pskl_hole | intros Hf; inversion Hf ]. }
-        unfold probe_pf_ctx, probe_pf_ctx_solved.
-        apply e_assign__skip_tm_skl.
-        apply e_assign__skip_tm_var.
-        replace ((δ1 ~ abind_flex_mono_def (ptyp_var_f ε))
-                   ++ (ε ~ abind_flex_mono) ++ (δ2 ~ abind_flex_mono) ++ nil)
-          with ((δ1 ~ abind_flex_mono_def (ptyp_var_f ε))
-                  ++ ((ε ~ abind_flex_mono) ++ nil) ++ nil
-                  ++ (δ2 ~ abind_flex_mono) ++ nil)
-          by (simpl_env; reflexivity).
-        apply e_assign__solve_m.
-        { simpl. clear. fsetdec. }
-        { apply e_guess_mono__hole. assumption. }
-        { apply mono_ptyp__var. }
-      * apply e_sub__univ_ghost_r. apply guarded_pskl__var.
-Qed.
+(** Before the [<> ◇] guards landed on [U-FlexL]/[U-FlexR]
+    (algo/def_rules.v, and see its header), the SAME call also admitted a
+    second derivation: [U-FlexL] assigned [δ̂1 ≔ guess^TY(◇)], deposited a
+    fresh [ε̂], and answered at a context ONE ENTRY LONGER — so the pat
+    call had two derivations whose outputs no swap chain could relate,
+    and no restriction weaker than hole-freeness could exclude the cell
+    while still holding at the calls skeleton inference makes.
+
+    The guards remove that second derivation, because they render the
+    reference implementation's ghost-first dispatch.  What survives — and
+    what this file is now FOR — is the REACHABILITY above: subtyping and
+    typing really do present a [◇] opposite a flexible variable, so the
+    ambiguity had to be resolved rather than fenced off.  The underlying
+    assignment walk is still derivable in isolation; the mirror exhibit
+    is cex/probe_consis_ghost_flex.v. *)
 
 (* --------------------------------------------------------------------- *)
 (*  The two outputs are not related by ANY swap chain: a swap preserves   *)
@@ -175,6 +155,8 @@ Proof.
   - rewrite IH. apply probe_swap_aenv_length.
 Qed.
 
+(** The shape fact that made Route B irreconcilable: its output is one
+    entry longer, and a swap chain preserves length. *)
 Lemma probe_pat_outputs_not_swap_related : forall y f δ1 δ2 ε ps,
   swaps_aenv ps (probe_pf_ctx_solved y f δ1 δ2 ε) <> probe_pf_ctx y f δ1 δ2.
 Proof.

@@ -1130,11 +1130,11 @@ Proof.
     destruct IH as [-> ->]; [ reflexivity | exact HD | ].
     split; reflexivity.
   - (* FlexL — [nonflex] against the assign walk's own finding *)
-    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P0 Hnf Hd IH Heq Hsh HD.
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P0 Hnf Hnhole Hd IH Heq Hsh HD.
     exfalso. subst. destruct Hnf as [_ Hf]. apply Hf.
     apply a_flex_tvar_flex. eapply e_assign_target_flex; eassumption.
   - (* FlexR — the mirror *)
-    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P Hnf Hd IH Heq Hsh HD.
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P Hnf Hnhole Hd IH Heq Hsh HD.
     exfalso. subst. destruct Hnf as [_ Hf]. apply Hf.
     apply a_flex_tvar_flex. eapply e_assign_target_flex; eassumption.
   - (* GhostR *)

@@ -786,6 +786,15 @@ Lemma nonghost_pskl_swap : forall a b P,
   nonghost_pskl P -> nonghost_pskl (swap_pskl a b P).
 Proof. intros * H; destruct H; simpl; constructor. Qed.
 
+(** The [<> ◇] guard the consistency FlexL/FlexR rows carry (def_rules.v)
+    transports along a swap: a transposition is structural, so it maps a
+    hole to a hole and everything else to its own constructor. *)
+Lemma swap_pskl_not_hole : forall a b P,
+  P <> pskl_hole -> swap_pskl a b P <> pskl_hole.
+Proof.
+  intros * H. destruct P; simpl; try discriminate. congruence.
+Qed.
+
 (** A swap only renames free variables, so it cannot create or destroy a
     ghost — the TYPE sort of the [Check] / [ForallR] / [GhostL] rows is
     swap-stable, which is what those rows' side conditions need here. *)
@@ -1318,13 +1327,15 @@ Proof.
     intros Δ1 Δ2 Θ0 Θ1 α β Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
     apply a_consis__flex; auto.
   - (* flex_l *)
-    intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
+    intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hnh Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
     apply a_consis__flex_l;
-      [ auto using a_non_flex_swap | exact IH ].
+      [ auto using a_non_flex_swap | auto using swap_pskl_not_hole
+      | exact IH ].
   - (* flex_r *)
-    intros Δ1 Δ2 Θ0 Θ1 α P Hnf Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
+    intros Δ1 Δ2 Θ0 Θ1 α P Hnf Hnh Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
     apply a_consis__flex_r;
-      [ auto using a_non_flex_swap | exact IH ].
+      [ auto using a_non_flex_swap | auto using swap_pskl_not_hole
+      | exact IH ].
   - (* ghost_r *)
     intros Δ1 Δ2 Θ0 P Hemp Δ1' Δ2' HΔ1 HΔ2. simpl.
     apply a_consis__ghost_r. eauto using swap_inter_ftv_empty.
