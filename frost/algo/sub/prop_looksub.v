@@ -451,6 +451,43 @@ Proof.
         end.
 Qed.
 
+(** ⭐⭐ A GHOST TARGET COLLECTS ALMOST NOTHING — the inversion the
+    ◇-DISPATCH GUARD buys, and the one P6-Ss's ForallL row needs.
+
+    Under the guard the runner answers a [◇] counterpart immediately, and the
+    rules now say so: [LS-ForallL] and [LS-UnivGhostL] carry [P' ≠ ◇], and
+    [LS-Check] cannot fire because [◇] is not [guarded].  So at a ghost target
+    exactly THREE rows survive — Var, Absent, Vacuous — and only Var emits
+    anything, at the looked-for variable itself.
+
+    ⭐⭐ WHAT MAKES IT USABLE: the emitting row PINS THE SUBJECT to [α].  So at
+    any subject that is not the looked-for variable — a ∀ or a ⫯, which is
+    exactly where P6's ForallL / UnivGhostL rows work — the collection is
+    FORCED to be [· ⨾ ·], and one collection derivation can be swapped for
+    another without moving the answer the solve computes from it. *)
+Lemma a_looksub_hole_target : forall Θ α m P Ξ 𝒞,
+  {{ Θ ⊢ P ≼[ α , m ] pskl_hole ⤳ Ξ ⨾ 𝒞 }}a ->
+  Ξ = nil /\ (𝒞 = nil
+              \/ (P = pskl_var_f α /\ 𝒞 = a_cstr_sub m pskl_hole :: nil)).
+Proof.
+  intros Θ α m P Ξ 𝒞 H.
+  remember pskl_hole as T eqn:HT.
+  induction H; subst; try discriminate HT.
+  - (* LS-Var — the ONE emitting row at a ghost target, and it PINS the
+       subject to the looked-for variable *)
+    split; [ reflexivity | right; split; reflexivity ].
+  - (* LS-Absent *) split; [ reflexivity | left; reflexivity ].
+  - (* LS-Vacuous *) split; [ reflexivity | left; reflexivity ].
+  - (* LS-Check — [◇] is not guarded *)
+    match goal with Hg : guarded_pskl pskl_hole |- _ => inversion Hg end.
+  - (* LS-ForallL — blocked by the ◇-dispatch guard *)
+    match goal with Hnh : pskl_hole <> pskl_hole |- _ =>
+      exfalso; exact (Hnh eq_refl) end.
+  - (* LS-UnivGhostL — likewise *)
+    match goal with Hnh : pskl_hole <> pskl_hole |- _ =>
+      exfalso; exact (Hnh eq_refl) end.
+Qed.
+
 (* ===================================================================== *)
 (*  §2b  ⭐⭐ THE ABSENCE-FIRST GUARD IS ADMISSIBLE                        *)
 (*                                                                        *)
