@@ -240,7 +240,45 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-17 (latest) — ⭐ **(R1) BUILD, STEPS 1–2 LANDED: the ◇-walk characterization and the alias-collapse (`frost/ext_algo/prop_consis_alias.v`), Qed and assumptions-closed**
+## 2026-08-17 (latest) — ⭐ **ABSORPTION LANDED** (the piece §8c.12c predicted) — ⛔ **and the alias-collapse transport is REFUTED, machine-checked (`cex/probe_collapse_orientation.v`): the FIFTH dead design, and it yields constraint C6**
+
+Building (R1) step 3 turned up its own refutation, plus the one lemma
+that survives it.
+
+⭐ **`e_assign_absorb` / `e_assign_absorb_nil`** (`prop_consis_alias.v`
+§3, Qed): a NIL-blocked walk at `Ξ ++ Θ` IS the `Ξ`-blocked walk at `Θ`,
+provided every entry of `Ξ` is an undefined flexible the payload
+mentions — which is exactly the block's own invariant, since `Ξ` grows
+only by `Assign-Depend`.  ⭐ This is what §8c.12c asked for ("an
+ABSORPTION lemma for insert-headed walks"), and it is a statement about
+ONE side, so the refutation below does not touch it.  It is what makes
+the re-walk `Assign-Assign` triggers harmless.
+
+⛔ **The exact transport across `collapse1` is FALSE.**  Configuration:
+context `(γ̂ ≔ ε̂, ε̂, α̂)`, walk target `α̂`, payload the ALIAS VARIABLE
+`γ̂` itself.  The alias entry forces `Assign-Assign` (a defined head has
+no skip row), whose substitution turns the payload into `ε̂` — so the
+premise is a consistency between TWO FLEXIBLES, i.e. a UNIFY, and
+`Flex-Flex-R` records `ε̂ ≔ α̂`.  The collapsed side has no alias entry
+and simply walks: `Assign-Depend`, then `SolveM`, recording `α̂ ≔ γ̂`.
+Collapsing the first gives `(γ̂ ≔ α̂, α̂)`; the second is `(α̂ ≔ γ̂, γ̂)`,
+and the probe proves that answer is UNIQUE (both steps inverted, so this
+is not "one derivation happens to differ").  Same equivalence class,
+opposite REPRESENTATIVE.
+
+⭐ **The new constraint, C6 (orientation-tolerance)**: the two sides may
+pick different representatives for the same class, and the transposition
+relating them moves names that are NOT fresh, so the motive's swap chain
+(`a,b ∉ S0`) cannot absorb it.  ⚠️ C6 rules out any relation that is a
+FUNCTION of the context — the orientation is chosen by the derivation,
+not determined by the input — which is what killed design 5.  Together
+C3 + C5 + C6 point at EQUI-GENERALITY (`a_inc` both ways), i.e. the
+successor is no longer bookkeeping but the theorem that the algorithm is
+representation-independent.  That should be scoped and costed before
+being attempted, and weighed against reporting the hole-free restriction
+as a documented limitation.
+
+## 2026-08-17 — ⭐ **(R1) BUILD, STEPS 1–2 LANDED: the ◇-walk characterization and the alias-collapse (`frost/ext_algo/prop_consis_alias.v`), Qed and assumptions-closed**
 
 The pre-normalisation campaign's first two committable units:
 

@@ -34,9 +34,25 @@
         one-way form": a collapse MERGES [ε̂] into [γ] — it is not
         injective on {γ, ε̂} — so no transposition can express it.
 
-    ⛔ NOT here yet (the campaign's step 3, see the handover): the
-    transport of a derivation across [collapse1] — that is the induction
-    the completeness motive's [U-Arrow] threading will consume. *)
+    §3  [e_assign_absorb] — a NIL-blocked walk at [Ξ ++ Θ] IS the
+        [Ξ]-blocked walk at [Θ], when every entry of [Ξ] is an undefined
+        flexible the payload mentions.  ⭐ The piece §8c.12c predicted
+        ("an ABSORPTION lemma for insert-headed walks"); it is what makes
+        the re-walk [Assign-Assign] triggers harmless, and it is a
+        statement about ONE side, so it is independent of the ⛔ below.
+
+    ⛔⛔ WHAT THIS FILE DOES **NOT** SUPPORT, and must not be used for:
+    an EXACT transport of a derivation across [collapse1] — i.e. "the
+    collapsed derivation's output is [collapse1] of the original's".
+    That is REFUTED, machine-checked, by cex/probe_collapse_orientation.v:
+    at the alias entry a walk must take [Assign-Assign], which converts it
+    to a CONSIS, and when the payload is the alias variable itself that
+    consis is a UNIFY whose [Flex-Flex-R] orients the new definition the
+    OPPOSITE way from the collapsed walk's [SolveM] — [(α̂ ≔ γ̂, γ̂)]
+    against [(γ̂ ≔ α̂, α̂)], the same equivalence class with a different
+    REPRESENTATIVE.  ⚙ The handover records this as dead end 5 and derives
+    constraint C6 (orientation-tolerance) from it, which is what rules out
+    ANY relation that is a function of the context. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -48,6 +64,7 @@ Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.prop_basic.
+Require Import src.frost.algo.consis.prop_consis_rename.
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
 Require Import src.frost.ext_algo.def_guess.
@@ -85,26 +102,10 @@ Proof.
     simpl_env. repeat split; auto.
 Qed.
 
-(** The two var-instance subst reductions, packaged once — the scrutinee
-    is fetched from the goal's own [if] (the [eq_dec] term does not
-    survive [simpl] in a matchable form; prop_consis_complete.v §7 records
-    the same trap for the runner's tests). *)
-Local Lemma subst_pskl_var_same : forall u (α : atom),
-  subst_pskl_in_pskl u α (pskl_var_f α) = u.
-Proof.
-  intros. simpl.
-  match goal with |- context [ if ?t then _ else _ ] => destruct t end;
-    [ reflexivity | congruence ].
-Qed.
-
-Local Lemma subst_pskl_var_other : forall u (α β : atom),
-  α <> β ->
-  subst_pskl_in_pskl u β (pskl_var_f α) = pskl_var_f α.
-Proof.
-  intros * Hne. simpl.
-  match goal with |- context [ if ?t then _ else _ ] => destruct t end;
-    [ congruence | reflexivity ].
-Qed.
+(* ⚙ The two var-instance subst reductions this file needs already exist,
+   as [subst_pskl_var_eq] / [subst_pskl_var_neq]
+   (algo/consis/prop_consis_rename.v §0) — imported above rather than
+   restated, per CLAUDE.md's one-fact-one-name rule. *)
 
 Lemma e_assign_unify_consis_hole_walk :
   (forall S0 Θ Ξ α P S1 Θ1,
@@ -148,7 +149,7 @@ Proof.
     assert (Hu0 : uniq (nil ++ Θ0)) by (clear - Hu; solve_uniq).
     destruct (α == β) as [Heq | Hne].
     + (* the chase: the definition's image becomes the subject *)
-      subst β. rewrite subst_pskl_var_same in D.
+      subst β. rewrite subst_pskl_var_eq in D.
       destruct τ as [ | n | γ' | τ1 τ2 | τ0 ];
         (* the four non-variable images: only [U-GhostR]; unchanged *)
         try (destruct (e_consis_inv_hole_pattern D
@@ -160,7 +161,7 @@ Proof.
       assert (Hsubj : exists β',
           subst_pskl_in_pskl (ptyp_to_pskl (ptyp_var_f γ')) α
             (pskl_var_f α) = pskl_var_f β').
-      { exists γ'. rewrite subst_pskl_var_same. simpl. reflexivity. }
+      { exists γ'. rewrite subst_pskl_var_eq. simpl. reflexivity. }
       specialize (IH eq_refl Hsubj Hu0).
       destruct IH as [_ Hout].
       apply alias_insert_out_cons. exact Hout.
@@ -168,7 +169,7 @@ Proof.
       assert (Hsubj : exists β',
           subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)
           = pskl_var_f β').
-      { exists α. rewrite subst_pskl_var_other by exact Hne. reflexivity. }
+      { exists α. rewrite subst_pskl_var_neq by exact Hne. reflexivity. }
       specialize (IH eq_refl Hsubj Hu0).
       destruct IH as [_ Hout].
       apply alias_insert_out_cons. exact Hout.
@@ -275,4 +276,86 @@ Proof.
   simpl. destruct (ε == ε) as [_ | Hn]; [ | congruence ].
   rewrite (rename_aenv_fresh_eq _ γ) by (clear - Hε; fsetdec).
   reflexivity.
+Qed.
+
+(* ===================================================================== *)
+(*  §3  ABSORPTION — a re-walked block is the SAME block                  *)
+(*                                                                        *)
+(*  ⭐ THE LEMMA §8c.12c PREDICTED — an ABSORPTION lemma for              *)
+(*  insert-headed walks — and the one the transport's hardest row needs.  *)
+(*                                                                        *)
+(*  At the alias entry a walk MUST take [Assign-Assign] (a defined head    *)
+(*  has no skip row), which PREPENDS the pending block to the context and  *)
+(*  re-enters CONSISTENCY there — so the collapsed side, which has no      *)
+(*  such entry, is left holding a walk at [Ξ ++ Θ] with an EMPTY block     *)
+(*  where it wants one at [Θ] with block [Ξ].  Those are not the same      *)
+(*  judgement in general (a skipped entry is re-attached ABOVE the output, *)
+(*  a blocked one is dumped BELOW the solved target).  They ARE the same   *)
+(*  when every entry of [Ξ] is an undefined flexible the payload MENTIONS: *)
+(*  then the re-walk can only [Assign-Depend] each one, rebuilding [Ξ] in  *)
+(*  order.  ⚙ And that is exactly the block's own invariant — [Ξ] grows    *)
+(*  ONLY by [Assign-Depend], whose premises are those two conditions.      *)
+(* ===================================================================== *)
+
+(** What [Assign-Depend] puts in the block, as a property of a slice. *)
+Definition block_absorbable (Ξ0 : aenv) (α : atom) (P : pskl) : Prop :=
+  List.Forall (fun e => snd e = abind_flex_mono /\ fst e <> α
+                        /\ fst e `in` ftvar_in_pskl P) Ξ0.
+
+(** One entry.  ⚙ The inversion is CLEAN: at a [flex_mono] head that is
+    neither the target nor absent from the payload, [Assign-Depend] is the
+    only row that can fire — [SolveM] and [UnivGhost-Id] want the head to
+    BE the target, [Assign-Skip] wants it OUT of the payload,
+    [Assign-Assign] wants it DEFINED, and the three [Skip*] rows want a
+    rigid or term binding. *)
+Lemma e_assign_absorb_one : forall S0 S1 Θ Ξ α β P Θ',
+  α <> β ->
+  β `in` ftvar_in_pskl P ->
+  {{ S0 ↝ S1 ⊨ ((β ~ abind_flex_mono) ++ Θ) ⊲[ Ξ ] α ≔ P ⊣ Θ' }}e ->
+  {{ S0 ↝ S1 ⊨ Θ ⊲[ Ξ ++ (β ~ abind_flex_mono) ] α ≔ P ⊣ Θ' }}e.
+Proof.
+  intros * Hne Hin Hd. inversion Hd; subst;
+    (* [UnivGhost-Id] and [SolveM] both force the head to BE the target *)
+    try congruence;
+    (* [Assign-Skip] wants the head OUT of the payload *)
+    try (match goal with
+         | Hout : ?b `notin` ftvar_in_pskl ?p |- _ =>
+             exfalso; clear - Hin Hout; fsetdec
+         end).
+  (* ⚙ [Assign-Depend], the only survivor, is closed by the [congruence]
+     above — its goal IS its own premise. *)
+Qed.
+
+(** The slice.  ⚙ Induction on [Ξ0]; the block accumulates on the RIGHT,
+    which is the order [Assign-Depend] itself builds. *)
+Lemma e_assign_absorb : forall Ξ0 S0 S1 Θ Ξ α P Θ',
+  block_absorbable Ξ0 α P ->
+  {{ S0 ↝ S1 ⊨ (Ξ0 ++ Θ) ⊲[ Ξ ] α ≔ P ⊣ Θ' }}e ->
+  {{ S0 ↝ S1 ⊨ Θ ⊲[ Ξ ++ Ξ0 ] α ≔ P ⊣ Θ' }}e.
+Proof.
+  induction Ξ0 as [ | [β b] Ξ0' IH ]; intros * Hok Hd.
+  - simpl_env in *. assumption.
+  - unfold block_absorbable in Hok. inversion Hok as [ | ? ? Hhd Htl ]; subst.
+    simpl in Hhd. destruct Hhd as [-> [Hne Hin]].
+    simpl_env in Hd.
+    apply (e_assign_absorb_one (not_eq_sym Hne) Hin) in Hd.
+    apply IH in Hd; [ | exact Htl ].
+    simpl_env in *. assumption.
+Qed.
+
+(** ⭐ The form the transport consumes: a NIL-blocked walk at the prepended
+    context is the SAME derivation as the [Ξ]-blocked walk below it. *)
+Corollary e_assign_absorb_nil : forall S0 S1 Θ Ξ α P Θ',
+  block_absorbable Ξ α P ->
+  {{ S0 ↝ S1 ⊨ (Ξ ++ Θ) ⊲[ nil ] α ≔ P ⊣ Θ' }}e ->
+  {{ S0 ↝ S1 ⊨ Θ ⊲[ Ξ ] α ≔ P ⊣ Θ' }}e.
+Proof.
+  intros * Hok Hd.
+  (* ⚠️ Pin the block index from the GOAL's shape ([nil ++ Ξ]) and let
+     unification split it — a named-argument application does not bind
+     here, and an [eapply] would leave the list-valued index as an evar
+     (the >900 s trap the handover records). *)
+  assert (Hd' : {{ S0 ↝ S1 ⊨ Θ ⊲[ (nil ++ Ξ) ] α ≔ P ⊣ Θ' }}e)
+    by (apply e_assign_absorb; [ exact Hok | simpl_env; exact Hd ]).
+  simpl_env in Hd'. exact Hd'.
 Qed.

@@ -110,6 +110,7 @@ contexts.  Four candidate relations have been tried.
 | 2 | `⊴` (identity increase) | `cex/probe_isub_too_strong.v` | `a_isub`'s SECOND conjunct wants definitions preserved SYNTACTICALLY; the derivation's `β̂ ≔ γ̂` is an alias where the runner committed to `β̂ ≔ 1` |
 | 3 | bare `a_inc` | `cex/probe_inc_head_blind.v` | `a_inc` is blind to the HEAD, and the assign judgement dispatches on it — the two walks agree on neither the rule nor the number of steps |
 | 4 | a POSITIONAL structural refinement (`ctx_ref`: same / solved-in-place / fresh-insert) | `cex/probe_assign_migrates.v` | `Assign-Depend` + `Assign-SolveM` move a mentioned flexible from ABOVE the target to BELOW it, so the contexts cannot be walked in lockstep |
+| 5 | the ALIAS-COLLAPSE **function** (`collapse1`), as an exact transport | `cex/probe_collapse_orientation.v` | at the alias entry a walk must take `Assign-Assign`, which converts it to a CONSIS; when the payload is the alias variable itself that consis is a UNIFY, and `Flex-Flex-R` orients the new definition the OPPOSITE way from the collapsed walk's `SolveM` — `(α̂ ≔ γ̂, γ̂)` versus `(γ̂ ≔ α̂, α̂)` |
 
 ⭐ **The constraints, which is what this section is really for.**  Any
 working relation `R Θr Θd` must satisfy all of:
@@ -124,10 +125,24 @@ working relation `R Θr Θd` must satisfy all of:
 - **C4 head-determining enough** to predict the assign walk's rule (dead
   end 3).
 - **C5 migration-tolerant** — no positional lockstep (dead end 4).
+- **C6 orientation-tolerant** (NEW, dead end 5) — when the two sides
+  create the same equivalence class of variables, they may pick DIFFERENT
+  REPRESENTATIVES: one side derives `α̂ ≔ γ̂`, the other `γ̂ ≔ α̂`.  The two
+  are related by a transposition, but of names that are NOT fresh, so the
+  motive's swap chain (`a,b ∉ S0`) cannot absorb it.
 
 **C4 and C5 pull against each other, and that tension IS the open
 problem.**  C4 wants structure the walk can be read off; C5 says the walk
-destroys exactly that structure.
+destroys exactly that structure.  ⚠️ **C6 additionally rules out any
+relation that is a FUNCTION of the context** (dead end 5 was exactly
+that), because the orientation is chosen by the derivation, not
+determined by the input.  C3 + C5 + C6 together point at EQUI-GENERALITY
+(`a_inc` in both directions) — i.e. the successor is no longer a
+bookkeeping relation but the statement that *the algorithm is
+representation-independent*.  ⚙ Scope and cost that before attempting
+it; it is a substantially bigger theorem than anything levels 1–5
+needed, and it should be weighed against simply reporting the
+restriction as a documented limitation of the mechanized result.
 
 ---
 
@@ -201,8 +216,32 @@ motive unusable.
   transposition can say that), with `collapse1_insert`: collapsing the
   insertion recovers the input — the runner's answer at the cells.
 
-**Step 3 — THE TRANSPORT (open, the heart).**  Single-pair statement to
-prove, mutually over the trio (then iterate over a chain):
+⭐ **Step 3's ABSORPTION lemma also LANDED** (`prop_consis_alias.v` §3,
+Qed): `e_assign_absorb` / `e_assign_absorb_nil` — a NIL-blocked walk at
+`Ξ ++ Θ` IS the `Ξ`-blocked walk at `Θ`, when every entry of `Ξ` is an
+undefined flexible the payload mentions (which is exactly the block's own
+invariant, since `Ξ` grows only by `Assign-Depend`).  ⭐ This is the
+piece §8c.12c predicted would be needed ("an ABSORPTION lemma for
+insert-headed walks") and it is INDEPENDENT of the refuted relation — it
+is a statement about one side.  It is what makes the re-walk that
+`Assign-Assign` triggers harmless.
+
+⛔ **Step 3 AS AN EXACT TRANSPORT IS REFUTED** —
+`cex/probe_collapse_orientation.v`, dead end 5 in §4's table.  Do not
+retry it.  The killer configuration is small: context `(γ̂ ≔ ε̂, ε̂, α̂)`,
+walk target `α̂`, payload the ALIAS VARIABLE `γ̂`.  The alias entry forces
+`Assign-Assign`, whose substitution turns the payload into `ε̂` — so the
+premise is a consistency between TWO FLEXIBLES, i.e. a UNIFY, and
+`Flex-Flex-R` records `ε̂ ≔ α̂`.  The collapsed side has no alias entry,
+so it simply walks: `Assign-Depend` then `SolveM`, recording `α̂ ≔ γ̂`.
+Collapsing the first gives `(γ̂ ≔ α̂, α̂)`; the second is `(α̂ ≔ γ̂, γ̂)`,
+and the probe proves that output is UNIQUE (both steps inverted).  Same
+equivalence class, opposite representative.
+
+**Step 3 — WHAT A SUCCESSOR MUST DO** (open, and now known to need C6).
+The statement below is kept because it is the shape any successor still
+has, but its conclusion must relate the outputs SEMANTICALLY (§4's C3 +
+C5 + C6) rather than by the collapse function:
 
     is_alias γ ε Θ := binds γ (γ ≔ ε̂-var) Θ  (ε̂ the alias name)
     D : {{S0 ↝ S1 ⊨ Θ ⊢[Δ1|Δ2|P0] P ∼ Q ⊣ Θ1}}  ∧  is_alias γ ε Θ
