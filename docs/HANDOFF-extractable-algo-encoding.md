@@ -4109,8 +4109,9 @@ DROPS FLEXIBLES, which a GLOBAL flex-agreement cannot survive:
 2. `deco_algo/prop_soundness_sub.v:296` — shrinks the run's own context to
    `nil`, to make an opener's `ftvar_in_aenv` freshness vacuous.
 
-⭐ **THE FIX THAT IS INDICATED, and it is a STATEMENT change, not a proof
-one**: the side condition should be agreement on the COUNTERPART's free
+⭐ **THE FIX IS A STATEMENT CHANGE, NOT A PROOF ONE — AND IT IS NOW LANDED,
+WITH THE FIRST OBSTRUCTION CASHED** (second pass, `remech-guard4b-wip`
+`b412b61`): the side condition is agreement on the COUNTERPART's free
 variables, not a global iff —
 
 ```coq
@@ -4119,16 +4120,47 @@ variables, not a global iff —
 ```
 
 — which is exactly what the collection reads, and which the induction
-PRESERVES: `LE-Arrow` shrinks `ftv P'`, and every binder row adds an opener
-that is RIGID on both sides (`a_flex_tvar_cons_tvar_any`).  Site 1 then
-follows from the block-disjointness facts it already proves (`HΞ2Pi` and its
-neighbours); site 2 needs either the run's counterpart apart from `Θl`'s
-flexibles, or — cleaner — `a_looksub_avoid_atom` restated to conclude at
-`rename_aenv δ β Θ`, which drops its `β ∉ ftvar_in_aenv Θ` premise and makes
-the context shrink unnecessary altogether (`Θl` is universally quantified
-INSIDE `a_subtag_decoration`'s induction, so the IH accepts any context).
+PRESERVES: `LE-Arrow` SHRINKS `ftv P'`, and every binder row adds an opener
+that is RIGID on both sides.  Its kit is in `frost/algo/prop_basic.v`, where
+both encodings can see it:
 
-**Resume there.**
+| lemma | content |
+|---|---|
+| `a_flex_tvar_cons_tvar_any` | ⭐ a RIGID entry is invisible to `a_flex_tvar` at EVERY atom, **its own included** — `binds` is membership, so a rigid binding neither creates a flexible one nor hides one further down.  Every transport rests on this. |
+| `a_flex_tvar_in_dom` | flexible ⇒ in the domain |
+| `a_flex_tvar_app_notin` | a PREFIX the atom is not bound in is invisible |
+
+✅ **THE FIRST OBSTRUCTION IS CLOSED.**  `prop_eq_cstr.v`'s `LE-Arrow` row
+drops its two all-flex blocks and the agreement survives, because `P02` is
+Θ0-scoped and misses both — exactly the `HfrP02Ξs` / `HfrP02Ξ` the site
+already proves.  ⚠️ `Set Implicit Arguments` makes all three binders of
+`a_flex_tvar_app_notin` implicit (each occurs in the conclusion), so the site
+drives it with `@`.
+
+⛔ **THE TWO SITES THAT REMAIN**, and they are the whole of what is left:
+
+1. **`algo/sub/look/prop_eq_cstr.v:4712`** — the ⫯-subject grid's
+   `P0 = pskl_var_f β0` row builds `LE-UnivGhost2`.  Under (B) it must SPLIT
+   on β0's hattedness: RIGID keeps the row (`flex_r_off_rigid`), FLEXIBLE must
+   be re-derived through `LE-FlexR`.  ⭐ The mirror to copy is the ARROW
+   grid's own flex-P0 block (`:2398-2530`), which already splits
+   `a_binds_tvar β0` and kills its RIGID half as refinement-absurd — here BOTH
+   halves are live, so the block is COPIED rather than moved.  It is
+   self-contained: `𝒞 := [≐ γ̂]`, `Ξc := γ̂ ~ flex_mono`, and a Pi-grid for the
+   solve (`:2701-2810`: `SE-FlexR` at the guess / `SE-GhostL` at `◇` /
+   `SE-GhostGuarded` at `∀◇`).  ⚙ Its two neighbours (`P0 = unit` at `:4688`,
+   `P0 = arrow` at `:4737`) need only `flex_r_off_nonvar`.
+2. **`deco_algo/prop_soundness_sub.v:296`** — shrinks the run's context to
+   `·`, to make an opener's `ftvar_in_aenv` freshness vacuous.  The scoped
+   condition asks only `~ a_flex_tvar Θl β` for β in the counterpart, and
+   `Θl` is universally quantified INSIDE `a_subtag_decoration` with no
+   constraint at all.  ⭐ Two routes: give the Θl-block that hypothesis
+   (there is exactly ONE external caller, `:3593`), or — cleaner — restate
+   `a_looksub_avoid_atom` and `a_looksub_open_target_at` to conclude at
+   `rename_aenv δ β Θ`, which drops their `β ∉ ftvar_in_aenv Θ` premise and
+   makes the context move unnecessary altogether.
+
+**Resume there**, then §D's four lemmas.
 
 ⭐ **AND ONE THING (B) BUYS BACK.**  Under (A), `prop_decorate_sub.v`'s "FlexR
 assignment of the ∀◇-headed subject to the flexible input" branch collapsed to
