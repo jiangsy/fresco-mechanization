@@ -1866,13 +1866,13 @@ Proof.
     [ Θ α P                                     (* LE-Var *)
     | Θ α P P' Hnf                              (* LE-Absent *)
     | Θ α P                                     (* LE-Vacuous *)
-    | Θ α P β α1 Hfr0 Hne0 Hin0                 (* LE-FlexR *)
+    | Θ α P β α1 Hfr0 Hflx0 Hne0 Hin0           (* LE-FlexR *)
     | Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 Hp2     (* LE-Arrow *)
     | Θ α P P' Ξ C b Hfr0 Hocc0 Hp              (* LE-ForallInh *)
     | Θ α P P' Ξ C b Hfr0 Hocc0 Hp              (* LE-ForallSyn *)
     | Θ α P P' Ξ C Hp                           (* LE-UnivGhost *)
     | Θ α P P' Ξ C b Hfr0 Hocc0 Hp              (* LE-UnivGhost1 *)
-    | Θ α P P' Ξ C Hg0 Hp                       (* LE-UnivGhost2 *)
+    | Θ α P P' Ξ C Hg0 Hfx0 Hp                  (* LE-UnivGhost2 *)
     | Θ α P P' Ξ C Hne0 Hg0 Hp ];               (* LE-UnivGhostR *)
     intros R ψa Ψa Δ1 Δ2 Ψc Θ0 Qc Θ1
       Hst HeS Hαψ Hlcψ HlcS Hcons Hwf HwfP0 HwfSub Hrig Hnfd Hfaf;
@@ -3081,13 +3081,13 @@ Proof.
       [ Θ α Q                                     (* LE-Var *)
       | Θ α Q Q' Hnf                              (* LE-Absent *)
       | Θ α Q                                     (* LE-Vacuous *)
-      | Θ α Q bt γ Hfrγ Hne Hin                   (* LE-FlexR *)
+      | Θ α Q bt γ Hfrγ Hflxb Hne Hin             (* LE-FlexR *)
       | Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 Hp2     (* LE-Arrow *)
       | Θ α Q Q' Ξ0 C0 b Hfr0 Hocc0 Hp            (* LE-ForallInh *)
       | Θ α Q Q' Ξ0 C0 b Hfr0 Hocc0 Hp            (* LE-ForallSyn *)
       | Θ α Q Q' Ξ0 C0 Hp                         (* LE-UnivGhost *)
       | Θ α Q Q' Ξ0 C0 b Hfr0 Hocc0 Hp            (* LE-UnivGhost1 *)
-      | Θ α Q Q' Ξ0 C0 Hg Hp                      (* LE-UnivGhost2 *)
+      | Θ α Q Q' Ξ0 C0 Hg Hfx Hp                  (* LE-UnivGhost2 *)
       | Θ α Q Q' Ξ0 C0 Hne Hg Hp ];               (* LE-UnivGhostR *)
       cbn [size_pskl] in Hn.
     - (* LE-Var *)
@@ -3122,6 +3122,8 @@ Proof.
       split.
       + apply a_lookeq__flex_r.
         * clear - Hγ'α Hγ'bt Hγ'Θ Hγ'sub; look_fresh.
+         * (* the COUNTERPART is untouched, so its hattedness rides through *)
+           exact Hflxb.
         * apply subst_pskl_in_pskl_neq_var; [ exact Hne | exact HαP0 ].
         * pose proof (ftvar_in_pskl_subst_pskl_in_pskl_lower Q P0 β) as Hlo.
           clear - Hlo Hin Hβα; fsetdec.
@@ -3319,7 +3321,9 @@ Proof.
       destruct (IHe _ _ _ _ _ _ Hsz1 Hp β P0 ψa Ψa Hβα HαP0 HlcP0 Hst)
         as (Ξ' & C' & Hlk' & Hst').
       exists Ξ', C'. cbn [subst_pskl_in_pskl]. split;
-        [ apply a_lookeq__univ_ghost2; [ exact Hg | exact Hlk' ] | exact Hst' ].
+        [ apply a_lookeq__univ_ghost2;
+            [ exact Hg | exact Hfx | exact Hlk' ]
+        | exact Hst' ].
     - (* LE-UnivGhostR : the guard is on the SOURCE — same three shapes as
          LS-Check, and the [var] shape switches to LE-Absent *)
       assert (Hsz1 : 2 * (size_pskl Q + size_pskl Q') <= n) by lia.

@@ -38,6 +38,7 @@ Require Import Metalib.Metatheory.
 From Equations Require Import Equations.
 
 Require Import src.frost.notations.
+Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.prop_ln.
 Require Import src.frost.def_shapes.
@@ -84,27 +85,76 @@ Open Scope frost_e_scope.
 (*  on this where the a-side versions needed [a_looksub_ctx_exchange].    *)
 (* ===================================================================== *)
 
+(** ⚠️ ALMOST INERT (2026-08-18).  Every FRESHNESS side condition of the
+    e-encoding reads the SUPPLY, so the context is carried only to mirror the
+    a-shape — but under the FlexR-PRIORITY GUARD two eq rows read it for
+    HATTEDNESS ([LE-FlexR] wants the counterpart flexible, [LE-UnivGhost2]
+    wants it not).  So a derivation transports to any context the two AGREE
+    with, which is what every consumer here has: they move between contexts
+    differing by RIGID entries only ([a_flex_tvar_cons_tvar_any]). *)
+(** ⚠️ ALMOST INERT (2026-08-18).  Every FRESHNESS side condition of the
+    e-encoding reads the SUPPLY, so the context is carried only to mirror the
+    a-shape — but under the FlexR-PRIORITY GUARD two eq rows read it for
+    HATTEDNESS ([LE-FlexR] wants the counterpart flexible, [LE-UnivGhost2]
+    wants it not).  So a derivation transports to any context the two AGREE
+    with, which is what every consumer here has: they move between contexts
+    differing by RIGID entries only ([a_flex_tvar_cons_tvar_any]). *)
+(** ⚙ The shape every consumer of the lemma below needs: the two contexts
+    differ by RIGID prefixes only, which [a_flex_tvar] cannot see. *)
+Local Ltac flex_rigid_iff :=
+  let b := fresh "b" in
+  intros b; repeat rewrite a_flex_tvar_cons_tvar_any; reflexivity.
+
 Lemma e_looksub_lookeq_ctx_any :
   (forall S0 Θ α m P P' S1 Ξ C,
      {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
-     forall Θ', {{ S0 ↝ S1 ⊨ Θ' ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e) /\
+     forall Θ', (forall β, a_flex_tvar Θ β <-> a_flex_tvar Θ' β) ->
+     {{ S0 ↝ S1 ⊨ Θ' ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e) /\
   (forall S0 Θ α P P' S1 Ξ C,
      {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
-     forall Θ', {{ S0 ↝ S1 ⊨ Θ' ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e).
+     forall Θ', (forall β, a_flex_tvar Θ β <-> a_flex_tvar Θ' β) ->
+     {{ S0 ↝ S1 ⊨ Θ' ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e).
 Proof.
+  assert (Hcons : forall (b : atom) (Θa Θb : aenv),
+            (forall β, a_flex_tvar Θa β <-> a_flex_tvar Θb β) ->
+            forall β, a_flex_tvar ((b ~ abind_tvar) ++ Θa) β
+                      <-> a_flex_tvar ((b ~ abind_tvar) ++ Θb) β)
+    by (intros b Θa Θb Hiff β0;
+        rewrite ! a_flex_tvar_cons_tvar_any; exact (Hiff β0)).
   apply (e_looksub_lookeq_mutind
            (fun S0 Θ α m P P' S1 Ξ C _ =>
-              forall Θ', {{ S0 ↝ S1 ⊨ Θ' ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e)
+              forall Θ', (forall β, a_flex_tvar Θ β <-> a_flex_tvar Θ' β) ->
+              {{ S0 ↝ S1 ⊨ Θ' ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e)
            (fun S0 Θ α P P' S1 Ξ C _ =>
-              forall Θ', {{ S0 ↝ S1 ⊨ Θ' ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e));
+              forall Θ', (forall β, a_flex_tvar Θ β <-> a_flex_tvar Θ' β) ->
+              {{ S0 ↝ S1 ⊨ Θ' ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e));
     intros;
-    eauto using e_looksub__var, e_looksub__absent, e_looksub__vacuous,
-      e_looksub__check, e_looksub__forall_r, e_looksub__arrow,
-      e_looksub__forall_l, e_looksub__univ_ghost_l,
-      e_lookeq__var, e_lookeq__absent, e_lookeq__vacuous,
-      e_lookeq__flex_r, e_lookeq__arrow, e_lookeq__forall_inh,
-      e_lookeq__forall_syn, e_lookeq__univ_ghost, e_lookeq__univ_ghost1,
-      e_lookeq__univ_ghost2, e_lookeq__univ_ghost_r.
+    try solve
+      [ match goal with
+        | Hf : forall β, a_flex_tvar _ β <-> a_flex_tvar _ β |- _ =>
+            solve [ econstructor;
+                    solve [ eassumption
+                          | match goal with
+                            | IH : forall Θ', _ -> _ |- _ =>
+                                solve [ apply IH; exact Hf
+                                      | apply IH; apply Hcons; exact Hf ]
+                            end ] ]
+        end ].
+  - (* LE-FlexR — ⭐ the counterpart's HATTEDNESS transports *)
+    match goal with
+    | Hf : forall β, a_flex_tvar _ β <-> a_flex_tvar _ β |- _ =>
+        apply e_lookeq__flex_r;
+          solve [ assumption | apply (proj1 (Hf _)); assumption ]
+    end.
+  - (* LE-UnivGhost2 — ⭐ and the guard needs the OTHER direction *)
+    match goal with
+    | Hf : forall β, a_flex_tvar _ β <-> a_flex_tvar _ β,
+      Hfx : flex_r_off _ _, IH : forall Θ', _ -> _ |- _ =>
+        apply e_lookeq__univ_ghost2;
+          [ assumption
+          | intros b Heq Hflx; exact (Hfx b Heq (proj2 (Hf b) Hflx))
+          | apply IH; exact Hf ]
+    end.
 Qed.
 
 (* ===================================================================== *)
@@ -211,7 +261,8 @@ Proof.
                 (add β1 (add γ S0)) ltac:(clear; fsetdec))
       as [S1'' [Heq Hd'']].
     pose proof ((proj1 e_looksub_lookeq_ctx_any) _ _ _ _ _ _ _ _ _ Hd''
-                  ((β1 ~ abind_tvar) ++ (γ ~ abind_tvar) ++ Θ)) as Hd3.
+                  ((β1 ~ abind_tvar) ++ (γ ~ abind_tvar) ++ Θ)
+                  ltac:(flex_rigid_iff)) as Hd3.
     assert (Hγα : γ <> α) by (clear - Hγ HαS; fsetdec).
     exists γ, S1''.
     split; [ clear - Hγ; fsetdec | ].
@@ -234,7 +285,7 @@ Proof.
     exists β1, S1.
     split; [ assumption | ].
     exact ((proj1 e_looksub_lookeq_ctx_any) _ _ _ _ _ _ _ _ _ Hprem
-             ((β1 ~ abind_tvar) ++ Θ)).
+             ((β1 ~ abind_tvar) ++ Θ) ltac:(flex_rigid_iff)).
 Qed.
 
 (** R′, packaged.  ⚙ carries the [_n] form's three side conditions. *)
@@ -494,7 +545,11 @@ Lemma e_lookeq_var_target_inv : forall S0 Θ α P t S1 Ξ C,
   (Ξ = nil /\ C = a_cstr_eq (pskl_var_f t) :: nil)
   \/ (exists α1, Ξ = (α1 ~ abind_flex_mono) ++ nil
         /\ C = a_cstr_eq (pskl_var_f α1) :: nil
-        /\ α1 `in` S1 /\ α1 `notin` S0).
+        /\ α1 `in` S1 /\ α1 `notin` S0
+        (* ⭐ AND THE TARGET IS HATTED (2026-08-18) — that is LE-FlexR's own
+           premise under the FlexR-PRIORITY GUARD, and it is what carries the
+           runner's [flex_bound_ck] test on the other side. *)
+        /\ a_flex_tvar Θ t).
 Proof.
   intros * H.
   remember (pskl_var_f t) as T eqn:HT.
@@ -1155,6 +1210,21 @@ Definition bcore_eq_stmt (n : nat) : Prop :=
     ∪ ftvar_in_a_cstrs (lk_cstrs (proj1_sig s)) [<=] ftvar_in_aenv Θf2 ->
   V ∪ ftvar_in_pskl P1 ∪ ftvar_in_pskl P1' [<=] Sa0 ->
   V ∪ ftvar_in_pskl P2 ∪ ftvar_in_pskl P2' [<=] Sb0 ->
+  (* ⭐ THE LOOK CONTEXTS AGREE (2026-08-18).  Under the FlexR-PRIORITY GUARD
+     the eq layer reads its context for HATTEDNESS, so side 2's runner takes
+     LE-FlexR exactly where side 1's derivation did.  ⚙ The two scopings are
+     what the binder rows need to push the agreement over a fresh opener; both
+     are reflexive at the call site, where the runner runs at the derivation's
+     own context. *)
+  flex_agree_rel ρ V Θd Θr ->
+  ftvar_in_aenv Θd [<=] Sa0 ->
+  ftvar_in_aenv Θr [<=] Sb0 ->
+  (* ⭐ and the two look contexts' FLEXIBLES are visible in the FOLD contexts —
+     which is what kills the fold's own pairing when ρ grows at an arrow row.
+     ⚙ Both survive a binder row for free: a RIGID entry is invisible to
+     [a_flex_tvar] ([a_flex_tvar_cons_tvar_any]). *)
+  (forall a, a_flex_tvar Θd a -> a `in` ftvar_in_aenv Θf1) ->
+  (forall b, a_flex_tvar Θr b -> b `in` ftvar_in_aenv Θf2) ->
   exists ρe ρn Ξs2 Q2,
     {{ Θf2 ⊩ (lk_cstrs (proj1_sig s)) ⨾ acc2 ⤳ Ξs2 ⨾ Q2 }}a
     /\ Ξs1 = flex_pairs_l ρn /\ Ξs2 = flex_pairs_r ρn
@@ -1166,6 +1236,72 @@ Definition bcore_eq_stmt (n : nat) : Prop :=
     /\ ( rel_pskl (ρe ++ ρn ++ ρ) V Q1 Q2
          \/ (exists γ1 γ2, Q1 = pskl_var_f γ1 /\ Q2 = pskl_var_f γ2) ).
 
+(** ⚙ THE THREE NEW ARGUMENTS, discharged uniformly (2026-08-18).  A
+    structural row passes them through; a BINDER row pushes the agreement over
+    the two fresh openers ([flex_agree_rel_push_look], whose side conditions
+    are exactly the two scopings), and the scopings themselves grow by the same
+    opener on both sides. *)
+Local Ltac bcore_scp :=
+  solve [ assumption
+        | rewrite ftvar_in_aenv_cons_tvar;
+          match goal with
+          | Hs : ftvar_in_aenv ?T [<=] ?S |- _ => clear - Hs; fsetdec
+          end
+        | match goal with
+          | Hs : ftvar_in_aenv ?T [<=] ?S, Hg : ?S [<=] ?S' |- _ =>
+              clear - Hs Hg; fsetdec
+          end
+        | match goal with
+          | Hs : ftvar_in_aenv ?T [<=] ?S |- _ => clear - Hs; fsetdec
+          end ].
+
+Local Ltac bcore_flx :=
+  let a := fresh "a" in let Hfx := fresh "Hfx" in
+  solve [ assumption
+        | intros a Hfx; rewrite a_flex_tvar_cons_tvar_any in Hfx;
+          solve [ assumption | eauto ]
+        | intros a Hfx;
+          match goal with
+          | Hv : forall x, a_flex_tvar _ x -> x `in` ftvar_in_aenv ?T |- _ =>
+              pose proof (Hv a Hfx) as Hin0;
+              rewrite ftvar_in_aenv_app; clear - Hin0; fsetdec
+          end
+        | intros a Hfx;
+          match goal with
+          | Hv : forall x, a_flex_tvar _ x -> x `in` ftvar_in_aenv ?T |- _ =>
+              rewrite a_flex_tvar_cons_tvar_any in Hfx;
+              pose proof (Hv a Hfx) as Hin0;
+              solve [ exact Hin0
+                    | rewrite ftvar_in_aenv_app; clear - Hin0; fsetdec ]
+          end ].
+
+(** ⚠️⚠️ THE ATOM IS READ OFF [Hf], NEVER LEFT AS AN EVAR: an [assert] with a
+    hole makes [fsetdec] chase it, and that is the tree's oldest performance
+    trap. *)
+(** ⚠️⚠️ NO SEARCH HERE.  A [match goal] version hangs: it must guess which
+    scope hypothesis to use, and every wrong guess pays an exponential
+    [fsetdec].  Two explicit lemmas + [eassumption] instead. *)
+Local Ltac bcore_nonflex :=
+  solve [ eapply nonflex_of_scope; eassumption
+        | eapply nonflex_of_scope_cons; eassumption
+        | eapply nonflex_of_scope;
+          [ eassumption | destruct_notin; assumption ]
+        | eapply nonflex_of_scope_cons;
+          [ eassumption | destruct_notin; assumption ] ].
+
+Local Ltac bcore_agr_base :=
+  solve [ assumption
+        | apply flex_agree_rel_cons_tvar_l;
+          solve [ assumption | apply flex_agree_rel_cons_tvar_r; assumption ]
+        | apply flex_agree_rel_cons_tvar_r;
+          solve [ assumption | apply flex_agree_rel_cons_tvar_l; assumption ] ].
+
+Local Ltac bcore_dr :=
+  solve [ assumption
+        | bcore_agr_base
+        | apply flex_agree_rel_push_pair_nonflex;
+          [ bcore_agr_base | bcore_nonflex | bcore_nonflex ] ].
+
 Lemma bcore_eq : forall n, bcore_eq_stmt n.
 Proof.
   induction n as [ | n IHn ]; unfold bcore_eq_stmt;
@@ -1173,7 +1309,7 @@ Proof.
   intros Sa0 Sa1 Θd α P1 P1' Ξ1 C1 Hsz E1 Sb0 Θr P2 P2' hp2 hp2' Hord s Hs
     ρ V Θf1 Θf2 acc1 acc2 Ξs1 Q1 L
     HrelP HrelP' HαV Hαl Hαr Hfold Hrelacc Hagr Hb1 Hb2 Hop1 Hop2
-    Henr1 Henr2 Hscp1 Hscp2 Hcov1 Hcov2.
+    Henr1 Henr2 Hscp1 Hscp2 Hcov1 Hcov2 Hagrdr Hscpd Hscpr Hflxd Hflxr.
   destruct (sumbool_of_bool (mem α (ftvar_in_pskl P1))) as [Hmem | Hmem].
   2:{ (* ---- the α-FREE collapse: both sides emit nothing ---- *)
     apply mem_false_notin in Hmem.
@@ -1303,8 +1439,11 @@ Proof.
       left. simpl. exact Hrelacc.
   - (* LE-FlexR: shaped subject, var target — the junk head *)
     inversion HrelP'; subst.
+    (* ⭐ KEEP the counterpart's ρ-link (2026-08-18): under the FlexR-PRIORITY
+       GUARD it is what carries side 1's HATTEDNESS onto side 2, where the
+       runner's own [flex_bound_ck] test now asks for it. *)
     match goal with
-    | Ha : rel_atom ρ V ?t1r ?t2r |- _ => clear Ha
+    | Ha : rel_atom ρ V ?t1r ?t2r |- _ => rename Ha into Hratgt
     end.
     apply a_solve_cstr_eq_inv in Hfold
       as (Ξh & Ξt & mid & EΞ & Hh & Ht).
@@ -1333,7 +1472,22 @@ Proof.
            [ | exfalso; apply mem_false_notin in Hmf;
                simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
        end;
-       intros Hs; inversion Hs; subst s; clear Hs;
+        (* ⭐ AND THE HATTEDNESS TEST (2026-08-18).  Side 1 rooted at
+           LE-FlexR, so its counterpart is flexible in [Θd]; the two look
+           contexts AGREE along ρ, so side 2's is flexible in [Θr] and the
+           runner's own test cannot answer [false]. *)
+        match goal with
+        | |- context [ match sumbool_of_bool (flex_bound_ck ?T ?b) with
+                       _ => _ end ] =>
+            let Hft := fresh "Hft" in let Hff := fresh "Hff" in
+            destruct (sumbool_of_bool (flex_bound_ck T b)) as [Hft | Hff];
+            [ | exfalso;
+                apply (flex_bound_ck_not_flex_tvar _ _ Hff);
+                destruct Hratgt as [ a0 b0 Hin | a0 Hin ];
+                [ exact (proj1 (proj2 Hagrdr a0 b0 Hin) ltac:(assumption))
+                | exact (proj1 (proj1 Hagrdr a0 Hin) ltac:(assumption)) ] ]
+        end;
+        intros Hs; inversion Hs; subst s; clear Hs;
        simpl in Hb2, Hop2, Henr2, Hscp2 |- * );
       (assert (Hflex2 : a_flex_tvar Θf2 (supply_fresh Sb0))
         by (left; apply Hb2; unfold binds; simpl; auto));
@@ -1455,7 +1609,9 @@ Proof.
                   Hra Hra'
                   HαV Hαl Hαr Hf1a Hrelacc Hagr
                   Hb1a Hb2a Hop1a Hop2a Henr1a Henr2a Hscp1a Hscp2a
-                  Hcov1a Hcov2a) as HRECa.
+                  Hcov1a Hcov2a
+                  ltac:(bcore_dr) ltac:(bcore_scp) ltac:(bcore_scp)
+                  ltac:(bcore_flx) ltac:(bcore_flx)) as HRECa.
     destruct HRECa as (ρea & ρna & Ξ2a & mid2 & Hf2a & E1pa & E2pa & Hua
                        & HLa & Hρea & Hyielda).
     simpl in Hρea.
@@ -1531,6 +1687,27 @@ Proof.
           [ exact Hpp
           | intros a b Hi; revert Hi; rewrite ? in_app_iff; tauto
           | intros x Hx; exact Hx ]. }
+      (* ⭐ THE LOOK-CONTEXT AGREEMENT SURVIVES ρ's GROWTH (2026-08-18), and
+         the two families of new pairs die differently: the LOOK's extension
+         is drawn OUTSIDE both supplies, and the FOLD's pairing dodges the two
+         FOLD contexts — which is exactly what [Hflxd] / [Hflxr] are for. *)
+      assert (Hagrdr'' : flex_agree_rel (ρea ++ ρna ++ ρ) V Θd Θr).
+      { rewrite <- (@app_assoc _ ρea ρna ρ).
+        apply flex_agree_rel_extend_nonflex; [ exact Hagrdr | ].
+        intros a b Hin. apply in_app_or in Hin.
+        pose proof (dom_subset_ftvar_in_aenv Θd) as Hdd.
+        pose proof (dom_subset_ftvar_in_aenv Θr) as Hdr.
+        destruct Hin as [Hin | Hin].
+        - destruct (Hρea _ _ Hin) as (Hea1 & Hea2 & Heb1 & Heb2 & _).
+          split; intro Hf; apply a_flex_tvar_in_dom in Hf;
+            [ clear - Hf Hdd Hscpd Hea2 | clear - Hf Hdr Hscpr Heb2 ]; fsetdec.
+        - assert (Hac : a `in` cols_l ρna) by (eapply cols_l_in; exact Hin).
+          assert (Hbc : b `in` cols_r ρna) by (eapply cols_r_in; exact Hin).
+          rewrite <- dom_flex_pairs_l, <- E1pa in Hac.
+          rewrite <- dom_flex_pairs_r, <- E2pa in Hbc.
+          split; intro Hf;
+            [ apply Hflxd in Hf; clear - Hf Hac Hfsa
+            | apply Hflxr in Hf; clear - Hf Hbc Hfs2a ]; fsetdec. }
       assert (Hb1b : forall x bd, binds x bd Ξ1b ->
                 binds x bd (Ξsa ++ Θf1))
         by (intros x bd Hxb; apply binds_app_right; apply Hb1;
@@ -1621,7 +1798,9 @@ Proof.
                     Hrbw Hrbw'
                     HαV Hαl'' Hαr'' Hf1b Hrelmid Hagr''
                     Hb1b Hb2b Hop1b Hop2b Henr1b Henr2b Hscp1b Hscp2b
-                    Hcov1b Hcov2b) as HRECb.
+                    Hcov1b Hcov2b
+                  ltac:(bcore_dr) ltac:(bcore_scp) ltac:(bcore_scp)
+                  ltac:(bcore_flx) ltac:(bcore_flx)) as HRECb.
       destruct HRECb as (ρeb & ρnb & Ξs2b & Q2f & Hf2b & E1pb & E2pb & Hub
                          & HLb & Hρeb & Hyieldb).
       simpl in Hρeb.
@@ -1802,7 +1981,9 @@ Proof.
                   Hrs' Hrt'
                   HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
                   Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                  Hcov1' Hcov2') as HREC.
+                  Hcov1' Hcov2'
+                  ltac:(bcore_dr) ltac:(bcore_scp) ltac:(bcore_scp)
+                  ltac:(bcore_flx) ltac:(bcore_flx)) as HREC.
     destruct HREC as (ρe' & ρn & Ξs2 & Q2f & Hf2 & E1p & E2p & Hu & HL
                       & Hρe & Hyield).
     exists (ρe' ++ ((β1n, sf) :: nil)), ρn, Ξs2, Q2f.
@@ -1935,7 +2116,9 @@ Proof.
                   Hrs' Hrt'
                   HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
                   Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                  Hcov1' Hcov2') as HREC.
+                  Hcov1' Hcov2'
+                  ltac:(bcore_dr) ltac:(bcore_scp) ltac:(bcore_scp)
+                  ltac:(bcore_flx) ltac:(bcore_flx)) as HREC.
     destruct HREC as (ρe' & ρn & Ξs2 & Q2f & Hf2 & E1p & E2p & Hu & HL
                       & Hρe & Hyield).
     exists (ρe' ++ ((β1n, sf) :: nil)), ρn, Ξs2, Q2f.
@@ -1986,7 +2169,8 @@ Proof.
     end; try eassumption.
     all: try solve [ simpl in Hsz |- *; lia
                    | clear - Hcov1; simpl in *; fsetdec
-                   | clear - Hcov2; simpl in *; fsetdec ].
+                   | clear - Hcov2; simpl in *; fsetdec
+                   | bcore_dr | bcore_scp | bcore_flx ].
   - (* LE-UnivGhost1: (⫯,∀) — pair (β1n, sf), subject unchanged *)
     match goal with
     | Hfr : ?b `notin` Sa0, Hp : e_lookeq (add ?b Sa0) _ _ _ _ _ _ _ |- _ =>
@@ -2097,7 +2281,9 @@ Proof.
                   Hrs' Hrt'
                   HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
                   Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                  Hcov1' Hcov2') as HREC.
+                  Hcov1' Hcov2'
+                  ltac:(bcore_dr) ltac:(bcore_scp) ltac:(bcore_scp)
+                  ltac:(bcore_flx) ltac:(bcore_flx)) as HREC.
     destruct HREC as (ρe' & ρn & Ξs2 & Q2f & Hf2 & E1p & E2p & Hu & HL
                       & Hρe & Hyield).
     exists (ρe' ++ ((β1n, sf) :: nil)), ρn, Ξs2, Q2f.
@@ -2154,46 +2340,62 @@ Proof.
       all: try solve [ simpl in Hsz |- *; lia
                      | clear - Hcov1; simpl in *; fsetdec
                      | clear - Hcov2; simpl in *; fsetdec ].
-    + (* target a VAR: the runner FlexRs — the junk head *)
+    + (* target a VAR: ⭐ UNDER THE FlexR-PRIORITY GUARD THE RUNNER DOES NOT
+         FlexR HERE (2026-08-18).  Side 1 stripped a ⫯ at this target, so its
+         [LE-UnivGhost2] carries [flex_r_off Θd (var t)] — the target is
+         RIGID — and the two look contexts agree, so the runner's own
+         [flex_bound_ck] test answers FALSE and it takes its UG2 RECURSION.
+         The branch simply follows it, exactly as the unit and arrow ones do.
+         ⛔ Before the guard this cell was the "junk head": the runner FlexRed
+         while side 1 stripped, and the two yields were unrelated variables —
+         which is the HATCH in this lemma's conclusion, and the reason the
+         whole statement had to be runner-sided (§8c.9's fourth pass). *)
       inversion HrelP'; subst.
-      apply e_lookeq_var_target_inv in E1;
-        [ | simpl in HαP1; exact HαP1 ].
+      match goal with
+      | Ha : rel_atom ρ V ?t1r ?t2r |- _ => rename Ha into Hratgt
+      end.
       revert Hs. simp e_lookeq_impl.
       match goal with
-      | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
+      | |- context [ match sumbool_of_bool (mem ?a ?st) with _ => _ end ] =>
           let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
-          destruct (sumbool_of_bool scr) as [Hmt | Hmf];
+          destruct (sumbool_of_bool (mem a st)) as [Hmt | Hmf];
           [ | exfalso; apply mem_false_notin in Hmf;
               simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
       end.
+      match goal with
+      | |- context [ match sumbool_of_bool (flex_bound_ck ?T ?b) with
+                     _ => _ end ] =>
+          let Hft := fresh "Hft" in let Hff := fresh "Hff" in
+          destruct (sumbool_of_bool (flex_bound_ck T b)) as [Hft | Hff];
+          [ exfalso;
+            apply flex_bound_ck_flex_tvar in Hft;
+            match goal with
+            | Hfx : flex_r_off Θd (pskl_var_f ?t1) |- _ =>
+                apply (Hfx t1 eq_refl);
+                destruct Hratgt as [ a0 b0 Hin | a0 Hin ];
+                [ exact (proj2 (proj2 Hagrdr a0 b0 Hin) Hft)
+                | exact (proj2 (proj1 Hagrdr a0 Hin) Hft) ]
+            end
+          | ]
+      end.
+      match goal with
+      | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
+          let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
+          let Er := fresh "Er" in
+          destruct call as [ [r1 Hr1] | ] eqn:Er;
+          [ | intros Hs; discriminate ]
+      end.
       intros Hs. inversion Hs; subst s; clear Hs.
       simpl in Hb2, Hop2, Henr2, Hscp2 |- *.
-      assert (Hflex2 : a_flex_tvar Θf2 (supply_fresh Sb0))
-        by (left; apply Hb2; unfold binds; simpl; auto).
-      assert (Hscp1' : V ∪ cols_l ρ [<=] ftvar_in_aenv Θf1)
-        by (clear - Hscp1; fsetdec).
-      assert (Hscp2' : V ∪ cols_r ρ [<=] ftvar_in_aenv Θf2)
-        by (clear - Hscp2; fsetdec).
-      destruct E1 as [ [EΞ1 EC1] | (α1x & EΞ1 & EC1 & _) ]; subst;
-        (apply a_solve_cstr_eq_inv in Hfold
-          as (Ξh & Ξt & mid & EΞ & Hh & Ht));
-        (inversion Ht; subst);
-        (destruct (a_solve_eq_var_target_junk Hh L Hrelacc Hflex2
-                     Hagr Hscp1' Hscp2')
-          as (ρn & Ξh2 & mid2 & D2 & E1p & E2p & Hu & HL & Hyield));
-        (exists (@nil (atom * atom)), ρn, (nil ++ Ξh2));
-        eexists;
-        (split;
-         [ eapply a_solve_cstr__eq;
-           [ exact D2 | apply a_solve_cstr__empty ] | ]);
-        (split; [ simpl; exact E1p | ]);
-        (split; [ simpl; exact E2p | ]);
-        (split; [ simpl; exact Hu | ]);
-        (split; [ simpl; exact HL | ]);
-        (split; [ intros a b Hin; inversion Hin | ]);
-        (destruct Hyield as [ Hrel' | [Emid1 Emid2] ];
-         [ left; simpl; exact Hrel'
-         | right; subst; eauto ]).
+      clear E1.
+      match goal with
+      | Hr1x : lookeq_spec _ _ _ _ _ ?r |- _ =>
+          eapply (IHn Sa0 Sa1) with (s := exist _ r Hr1x)
+      end; try eassumption.
+      all: try solve [ simpl in Hsz |- *; lia
+                     | clear - Hcov1; simpl in *; fsetdec
+                     | clear - Hcov2; simpl in *; fsetdec
+                     | bcore_dr | bcore_scp | bcore_flx ].
     + (* target an arrow: recurse through the runner's UG2 clause *)
       inversion HrelP'; subst.
       revert Hs. simp e_lookeq_impl.
@@ -2307,6 +2509,16 @@ Definition bcore_sub_stmt (n : nat) : Prop :=
     ∪ ftvar_in_a_cstrs (lk_cstrs (proj1_sig s)) [<=] ftvar_in_aenv Θf2 ->
   V ∪ ftvar_in_pskl P1 ∪ ftvar_in_pskl P1' [<=] Sa0 ->
   V ∪ ftvar_in_pskl P2 ∪ ftvar_in_pskl P2' [<=] Sb0 ->
+  (* ⭐ THE LOOK CONTEXTS AGREE — see [bcore_eq_stmt]. *)
+  flex_agree_rel ρ V Θd Θr ->
+  ftvar_in_aenv Θd [<=] Sa0 ->
+  ftvar_in_aenv Θr [<=] Sb0 ->
+  (* ⭐ and the two look contexts' FLEXIBLES are visible in the FOLD contexts —
+     which is what kills the fold's own pairing when ρ grows at an arrow row.
+     ⚙ Both survive a binder row for free: a RIGID entry is invisible to
+     [a_flex_tvar] ([a_flex_tvar_cons_tvar_any]). *)
+  (forall a, a_flex_tvar Θd a -> a `in` ftvar_in_aenv Θf1) ->
+  (forall b, a_flex_tvar Θr b -> b `in` ftvar_in_aenv Θf2) ->
   exists Ξs2 Q2,
     {{ Θf2 ⊩ (lk_cstrs (proj1_sig s)) ⨾ acc2 ⤳ Ξs2 ⨾ Q2 }}a
     /\ uniq Ξs2 /\ dom Ξs2 ∩ L [=] empty.
@@ -2318,7 +2530,7 @@ Proof.
   intros Sa0 Sa1 Θd α m P1 P1' Ξ1 C1 Hsz E1 Sb0 Θr P2 P2' hp2 hp2' Hord s Hs
     ρ V Θf1 Θf2 acc1 acc2 Ξs1 Q1 L
     HrelP HrelP' HαV Hαl Hαr Hfold Hrelacc Hagr Hb1 Hb2 Hop1 Hop2
-    Henr1 Henr2 Hscp1 Hscp2 Hcov1 Hcov2.
+    Henr1 Henr2 Hscp1 Hscp2 Hcov1 Hcov2 Hagrdr Hscpd Hscpr Hflxd Hflxr.
   destruct (sumbool_of_bool (mem α (ftvar_in_pskl P1))) as [Hmem | Hmem].
   2:{ (* ---- the α-FREE collapse ---- *)
     apply mem_false_notin in Hmem.
@@ -2486,7 +2698,8 @@ Proof.
                     HrelP HrelP'
                     HαV Hαl Hαr Hfold Hrelacc Hagr
                     Hb1 Hb2 Hop1 Hop2 Henr1 Henr2 Hscp1 Hscp2
-                    Hcov1 Hcov2) as HREC.
+                    Hcov1 Hcov2
+                    Hagrdr Hscpd Hscpr Hflxd Hflxr) as HREC.
       destruct HREC as (ρe & ρn & Ξs2 & Q2c & Hf2 & _ & _ & Hu & HL & _ & _).
       exists Ξs2, Q2c.
       split; [ exact Hf2 | ]. split; [ exact Hu | exact HL ].
@@ -2527,7 +2740,8 @@ Proof.
                     HrelP HrelP'
                     HαV Hαl Hαr Hfold Hrelacc Hagr
                     Hb1 Hb2 Hop1 Hop2 Henr1 Henr2 Hscp1 Hscp2
-                    Hcov1 Hcov2) as HREC
+                    Hcov1 Hcov2
+                    Hagrdr Hscpd Hscpr Hflxd Hflxr) as HREC
       end;
       destruct HREC as (ρe & ρn & Ξs2 & Q2c & Hf2 & _ & _ & Hu & HL & _ & _);
       exists Ξs2, Q2c;
@@ -2569,7 +2783,8 @@ Proof.
                     HrelP HrelP'
                     HαV Hαl Hαr Hfold Hrelacc Hagr
                     Hb1 Hb2 Hop1 Hop2 Henr1 Henr2 Hscp1 Hscp2
-                    Hcov1 Hcov2) as HREC
+                    Hcov1 Hcov2
+                    Hagrdr Hscpd Hscpr Hflxd Hflxr) as HREC
       end;
       destruct HREC as (ρe & ρn & Ξs2 & Q2c & Hf2 & _ & _ & Hu & HL & _ & _);
       exists Ξs2, Q2c;
@@ -2724,13 +2939,28 @@ Proof.
       { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B2
                       (pskl_var_f β2')) as Hup.
         clear - Hcov2 Hup HαSb. simpl in *. fsetdec. }
+      (* ⚠️ HOISTED, not [ltac:] inline: inside the application the context
+         arguments are still EVARS, and the agreement tactics loop there. *)
+      assert (Hagrdr' : flex_agree_rel ((β1n, β2') :: ρ) V
+                          ((β1n ~ abind_tvar) ++ Θd) Θr) by bcore_dr.
+      assert (Hscpd' : ftvar_in_aenv ((β1n ~ abind_tvar) ++ Θd)
+                         [<=] add β1n Sa0) by bcore_scp.
+      assert (Hflxd' : forall a, a_flex_tvar ((β1n ~ abind_tvar) ++ Θd) a ->
+                         a `in` ftvar_in_aenv Θf1) by bcore_flx.
+      assert (Hscpr' : ftvar_in_aenv Θr [<=] add β2' Sb0)
+        by (clear - Hscpr; fsetdec).
+      assert (Hflxr' : forall b, a_flex_tvar Θr b ->
+                         b `in` ftvar_in_aenv ((β2' ~ abind_tvar) ++ Θf2))
+        by (intros b Hfb; pose proof (Hflxr b Hfb) as Hin0;
+            rewrite ftvar_in_aenv_cons_tvar; clear - Hin0; fsetdec).
       pose proof (IHn (add β1n Sa0) Sa1 _ _ _ _ _ _ _ Hsz' Hprem
                     _ _ _ _ _ _ _ _ EleafT
                     ((β1n, β2') :: ρ) _ _ _ _ _ _ _ L
                     Hrs' Hrt'
                     HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
                     Hb1 Hb2L Hop1' Hop2L Henr1' Henr2L Hscp1' Hscp2L
-                    Hcov1' Hcov2') as HREC.
+                    Hcov1' Hcov2'
+                    Hagrdr' Hscpd' Hscpr' Hflxd' Hflxr') as HREC.
       destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
       simpl in Hf2'.
       destruct (a_solve_cstr_sub_inv Hf2') as [_ Hsolve2].
@@ -2846,7 +3076,9 @@ Proof.
                     Hrs' Hrt'
                     HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
                     Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                    Hcov1x Hcov2x) as HREC.
+                    Hcov1x Hcov2x
+                  ltac:(bcore_dr) ltac:(bcore_scp) ltac:(bcore_scp)
+                  ltac:(bcore_flx) ltac:(bcore_flx)) as HREC.
       destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
       exists Ξs2, Q2c.
       split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
@@ -2956,7 +3188,9 @@ Proof.
                     Hrs' Hrt'
                     HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
                     Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                    Hcov1x Hcov2x) as HREC.
+                    Hcov1x Hcov2x
+                  ltac:(bcore_dr) ltac:(bcore_scp) ltac:(bcore_scp)
+                  ltac:(bcore_flx) ltac:(bcore_flx)) as HREC.
       destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
       exists Ξs2, Q2c.
       split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
@@ -3066,7 +3300,9 @@ Proof.
                     Hrs' Hrt'
                     HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
                     Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                    Hcov1x Hcov2x) as HREC.
+                    Hcov1x Hcov2x
+                  ltac:(bcore_dr) ltac:(bcore_scp) ltac:(bcore_scp)
+                  ltac:(bcore_flx) ltac:(bcore_flx)) as HREC.
       destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
       exists Ξs2, Q2c.
       split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
@@ -3168,7 +3404,8 @@ Proof.
                   Hra Hra'
                   HαV Hαl Hαr Hf1a Hrelacc Hagr
                   Hb1a Hb2a Hop1a Hop2a Henr1a Henr2a Hscp1a Hscp2a
-                  Hcov1a Hcov2a) as HRECa.
+                  Hcov1a Hcov2a
+                  Hagrdr Hscpd Hscpr Hflxd Hflxr) as HRECa.
     destruct HRECa as (ρea & ρna & Ξ2a & mid2 & Hf2a & E1pa & E2pa & Hua
                        & HLa & Hρea & Hyielda).
     simpl in Hρea, Hf2a.
@@ -3243,6 +3480,27 @@ Proof.
           [ exact Hpp
           | intros a b Hi; revert Hi; rewrite ? in_app_iff; tauto
           | intros x Hx; exact Hx ]. }
+      (* ⭐ THE LOOK-CONTEXT AGREEMENT SURVIVES ρ's GROWTH (2026-08-18), and
+         the two families of new pairs die differently: the LOOK's extension
+         is drawn OUTSIDE both supplies, and the FOLD's pairing dodges the two
+         FOLD contexts — which is exactly what [Hflxd] / [Hflxr] are for. *)
+      assert (Hagrdr'' : flex_agree_rel (ρea ++ ρna ++ ρ) V Θd Θr).
+      { rewrite <- (@app_assoc _ ρea ρna ρ).
+        apply flex_agree_rel_extend_nonflex; [ exact Hagrdr | ].
+        intros a b Hin. apply in_app_or in Hin.
+        pose proof (dom_subset_ftvar_in_aenv Θd) as Hdd.
+        pose proof (dom_subset_ftvar_in_aenv Θr) as Hdr.
+        destruct Hin as [Hin | Hin].
+        - destruct (Hρea _ _ Hin) as (Hea1 & Hea2 & Heb1 & Heb2 & _).
+          split; intro Hf; apply a_flex_tvar_in_dom in Hf;
+            [ clear - Hf Hdd Hscpd Hea2 | clear - Hf Hdr Hscpr Heb2 ]; fsetdec.
+        - assert (Hac : a `in` cols_l ρna) by (eapply cols_l_in; exact Hin).
+          assert (Hbc : b `in` cols_r ρna) by (eapply cols_r_in; exact Hin).
+          rewrite <- dom_flex_pairs_l, <- E1pa in Hac.
+          rewrite <- dom_flex_pairs_r, <- E2pa in Hbc.
+          split; intro Hf;
+            [ apply Hflxd in Hf; clear - Hf Hac Hfsa
+            | apply Hflxr in Hf; clear - Hf Hbc Hfs2a ]; fsetdec. }
       assert (Hb1b : forall x bd, binds x bd Ξ1b ->
                 binds x bd (Ξsa ++ Θf1))
         by (intros x bd Hxb; apply binds_app_right; apply Hb1;
@@ -3333,7 +3591,9 @@ Proof.
                     Hrbw Hrbw'
                     HαV Hαl'' Hαr'' Hf1b Hrelmid Hagr''
                     Hb1b Hb2b Hop1b Hop2b Henr1b Henr2b Hscp1b Hscp2b
-                    Hcov1b Hcov2b) as HRECb.
+                    Hcov1b Hcov2b
+                  ltac:(bcore_dr) ltac:(bcore_scp) ltac:(bcore_scp)
+                  ltac:(bcore_flx) ltac:(bcore_flx)) as HRECb.
       destruct HRECb as (Ξs2b & Q2f & Hf2b & Hub & HLb).
       simpl in Hf2b.
       exists (Ξs2b ++ Ξ2a), Q2f.
@@ -3472,7 +3732,9 @@ Proof.
                     Hrs' Hrt2'
                     HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
                     Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                    Hcov1x Hcov2x) as HREC.
+                    Hcov1x Hcov2x
+                  ltac:(bcore_dr) ltac:(bcore_scp) ltac:(bcore_scp)
+                  ltac:(bcore_flx) ltac:(bcore_flx)) as HREC.
       destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
       exists Ξs2, Q2c.
       split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
@@ -3574,7 +3836,9 @@ Proof.
                     Hrs' Hrt2'
                     HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
                     Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                    Hcov1x Hcov2x) as HREC.
+                    Hcov1x Hcov2x
+                  ltac:(bcore_dr) ltac:(bcore_scp) ltac:(bcore_scp)
+                  ltac:(bcore_flx) ltac:(bcore_flx)) as HREC.
       destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
       exists Ξs2, Q2c.
       split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
@@ -3676,7 +3940,9 @@ Proof.
                     Hrs' Hrt2'
                     HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
                     Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                    Hcov1x Hcov2x) as HREC.
+                    Hcov1x Hcov2x
+                  ltac:(bcore_dr) ltac:(bcore_scp) ltac:(bcore_scp)
+                  ltac:(bcore_flx) ltac:(bcore_flx)) as HREC.
       destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
       exists Ξs2, Q2c.
       split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
@@ -3785,7 +4051,9 @@ Proof.
                     Hrs' Hrt2'
                     HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
                     Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                    Hcov1x Hcov2x) as HREC.
+                    Hcov1x Hcov2x
+                  ltac:(bcore_dr) ltac:(bcore_scp) ltac:(bcore_scp)
+                  ltac:(bcore_flx) ltac:(bcore_flx)) as HREC.
       destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
       exists Ξs2, Q2c.
       split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
@@ -3904,7 +4172,9 @@ Proof.
                       Hrs' Hrt'
                       HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
                       Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                      Hcov1x Hcov2x) as HREC.
+                      Hcov1x Hcov2x
+                  ltac:(bcore_dr) ltac:(bcore_scp) ltac:(bcore_scp)
+                  ltac:(bcore_flx) ltac:(bcore_flx)) as HREC.
         destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
         exists Ξs2, Q2c.
         split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
@@ -3962,7 +4232,9 @@ Proof.
                       Hrs' Hrt'
                       HαV Hαl' Hαr' Hfold' Hrelacc' Hagr'
                       Hb1' Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                      Hcov1x Hcov2x) as HREC.
+                      Hcov1x Hcov2x
+                  ltac:(bcore_dr) ltac:(bcore_scp) ltac:(bcore_scp)
+                  ltac:(bcore_flx) ltac:(bcore_flx)) as HREC.
         destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
         exists Ξs2, Q2c.
         split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ]. }
@@ -4056,7 +4328,9 @@ Proof.
                     Hrs' Hrt2'
                     HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
                     Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                    Hcov1x Hcov2x) as HREC.
+                    Hcov1x Hcov2x
+                  ltac:(bcore_dr) ltac:(bcore_scp) ltac:(bcore_scp)
+                  ltac:(bcore_flx) ltac:(bcore_flx)) as HREC.
       destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
       exists Ξs2, Q2c.
       split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ]. }
@@ -4158,7 +4432,9 @@ Proof.
                     Hrs' Hrt2'
                     HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
                     Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                    Hcov1x Hcov2x) as HREC.
+                    Hcov1x Hcov2x
+                  ltac:(bcore_dr) ltac:(bcore_scp) ltac:(bcore_scp)
+                  ltac:(bcore_flx) ltac:(bcore_flx)) as HREC.
       destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
       exists Ξs2, Q2c.
       split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
@@ -4270,7 +4546,9 @@ Proof.
                     Hrs' Hrt2'
                     HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
                     Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                    Hcov1x Hcov2x) as HREC.
+                    Hcov1x Hcov2x
+                  ltac:(bcore_dr) ltac:(bcore_scp) ltac:(bcore_scp)
+                  ltac:(bcore_flx) ltac:(bcore_flx)) as HREC.
       destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
       exists Ξs2, Q2c.
       split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
@@ -4505,7 +4783,9 @@ Proof.
                       Hrs' Hrt'
                       HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
                       Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                      Hcov1x Hcov2x) as HREC.
+                      Hcov1x Hcov2x
+                  ltac:(bcore_dr) ltac:(bcore_scp) ltac:(bcore_scp)
+                  ltac:(bcore_flx) ltac:(bcore_flx)) as HREC.
         destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
         exists Ξs2, Q2c.
         split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
@@ -4563,7 +4843,9 @@ Proof.
                       Hrs' Hrt'
                       HαV Hαl' Hαr' Hfold' Hrelacc' Hagr'
                       Hb1' Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                      Hcov1x Hcov2x) as HREC.
+                      Hcov1x Hcov2x
+                  ltac:(bcore_dr) ltac:(bcore_scp) ltac:(bcore_scp)
+                  ltac:(bcore_flx) ltac:(bcore_flx)) as HREC.
         destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
         exists Ξs2, Q2c.
         split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ]. }
@@ -4867,7 +5149,22 @@ Proof.
                 Hfold1 (rel_pskl__hole nil V) Hagr
                 Hb1 Hb2 Hop1 Hop2 Henr1 Henr2 Hscp1 Hscp2
                 ltac:(clear - HcovH HVΘ; unfold V; fsetdec)
-                ltac:(clear - Hcov0 HVΘ; unfold V; fsetdec)) as HB.
+                ltac:(clear - Hcov0 HVΘ; unfold V; fsetdec)
+                (* ⭐ the five look-context premises (2026-08-18): the runner
+                   runs at the DERIVATION's own [Θ0], so the agreement is
+                   reflexivity and the two visibilities are the block-prefix
+                   weakening. *)
+                ltac:(split; intros; [ reflexivity | contradiction ])
+                ltac:(clear - HcovH; fsetdec)
+                ltac:(clear - Hcov0; fsetdec)
+                ltac:(intros a Hfa; apply a_flex_tvar_in_dom in Hfa;
+                      unfold Θf1; repeat rewrite ftvar_in_aenv_app;
+                      pose proof (dom_subset_ftvar_in_aenv Θ0) as Hdx1;
+                      clear - Hfa Hdx1; fsetdec)
+                ltac:(intros b Hfb; apply a_flex_tvar_in_dom in Hfb;
+                      unfold Θf2; repeat rewrite ftvar_in_aenv_app;
+                      pose proof (dom_subset_ftvar_in_aenv Θ0) as Hdx2;
+                      clear - Hfb Hdx2; fsetdec)) as HB.
   destruct HB as (Ξs2 & Q2 & Hfold2 & Hu2 & _).
   simpl in Hfold2.
   (* ---- stage 2: the runner's fold answers (level 3) ---- *)

@@ -662,6 +662,44 @@ Proof.
   - (* LS-ForallR — ◇-dispatch guard *) exfalso. congruence.
 Qed.
 
+(** ⭐⭐ AT A FLEXIBLE COUNTERPART A ⫯ ON THE SUBJECT IS INVISIBLE — provided
+    the stripped subject is not the looked-for variable itself.
+
+    Under the FlexR-PRIORITY GUARD this is what REPLACES [LE-UnivGhost2] at a
+    hatted counterpart, and it is why the completeness chain does not have to
+    re-derive that cell from scratch: at a variable counterpart only four rows
+    can root a collection — [LE-Var] (excluded by the hypothesis),
+    [LE-UnivGhost2] (⛔ barred, that IS the guard), and [LE-Absent] /
+    [LE-FlexR], both of which read the subject ONLY through [ftv] and [≠ α],
+    neither of which a ⫯ changes.  So the outputs come through ON THE NOSE.
+
+    ⚠️ The excluded leaf is real, not an artefact: at [P = α] the stripped run
+    is [LE-Var] and collects the RAW counterpart [≐ β̂], while the ⫯-headed one
+    must invent ([≐ γ̂]).  That is exactly the disagreement the guard removes,
+    and a caller meeting it has to build the FlexR answer itself. *)
+Lemma a_lookeq_tophole_flex_counterpart : forall Θ α P β Ξ 𝒞,
+  {{ Θ ⊢ P ∼[ α ] (pskl_var_f β) ⤳ Ξ ⨾ 𝒞 }}a ->
+  a_flex_tvar Θ β ->
+  P <> pskl_var_f α ->
+  {{ Θ ⊢ (pskl_tophole P) ∼[ α ] (pskl_var_f β) ⤳ Ξ ⨾ 𝒞 }}a.
+Proof.
+  intros Θ α P β Ξ 𝒞 H Hflx Hne.
+  inversion H; subst.
+  - (* LE-Var — the subject IS the looked-for variable, and that leaf is
+       exactly the one the statement excludes *)
+    exfalso. exact (Hne eq_refl).
+  - (* LE-Absent — the ⫯ does not change [ftv] *)
+    apply a_lookeq__absent. cbn. assumption.
+  - (* LE-FlexR — the row re-fires VERBATIM: its three subject-facing side
+       conditions are [ftv]-only and [≠ α] *)
+    apply a_lookeq__flex_r; solve [ cbn; assumption | discriminate ].
+  - (* LE-UnivGhost2 — ⛔ barred by the FlexR-PRIORITY GUARD *)
+    exfalso.
+    match goal with
+    | Hfx : flex_r_off _ (pskl_var_f _) |- _ => exact (Hfx β eq_refl Hflx)
+    end.
+Qed.
+
 (** ⭐⭐ ONE PEEL OF THE COUNTERPART, and the block and the collected
     constraints come through UNTOUCHED.
 
@@ -898,6 +936,8 @@ Proof.
       pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P P0 β0) as Hup.
       match goal with Hsc : ftvar_in_pskl P0 [<=] _ |- _ =>
           clear - Hup Hsc n; fsetdec end.
+    + (* the COUNTERPART is untouched, so its hattedness rides through *)
+      assumption.
     + intro Hc. destruct P; simpl in Hc; try discriminate Hc.
       revert Hc.
       destruct_if as [-> | HneX]; intro Hc.
@@ -1178,13 +1218,14 @@ Proof.
     (* un-substituting cannot CREATE the looked-for variable: [βg ≠ α] *)
     eapply unsubst_neq_var; [ exact Hβ | exact Hne ].
   - (* LE-FlexR *)
-    intros Θ α P β α1 Hfr Hne Hin Pu βg Pg Heq Hβ Hβin Hα HlcPg HlcPu.
+    intros Θ α P β α1 Hfr Hflx Hne Hin Pu βg Pg Heq Hβ Hβin Hα HlcPg HlcPu.
     subst P. apply a_lookeq__flex_r.
     + (* the generated flexible avoids the UN-substituted source too: it
          avoids [ftvar_in_aenv Θ], where [βg] lives *)
       pose proof (ftvar_in_pskl_subst_pskl_in_pskl_lower Pu Pg βg) as Hlow.
       assert (Hα1βg : α1 <> βg) by (clear - Hfr Hβin; fsetdec).
       clear - Hfr Hlow Hα1βg; fsetdec.
+    + (* the COUNTERPART is untouched *) exact Hflx.
     + intro Hc. subst Pu. cbn in Hne.
       (* destruct the scrutinee IN Hne, so its [if] actually reduces *)
       match type of Hne with context[if ?e then _ else _] => destruct e end;
@@ -1278,7 +1319,7 @@ Proof.
         [ reflexivity | assumption | clear - Hβin; cbn; fsetdec
         | assumption | assumption | assumption ].
   - (* LE-UnivGhost2 *)
-    intros Θ α P P' Ξ C Hg Hpre IH Pu βg Pg Heq Hβ Hβin Hα HlcPg HlcPu.
+    intros Θ α P P' Ξ C Hg Hfx Hpre IH Pu βg Pg Heq Hβ Hβin Hα HlcPg HlcPu.
     destruct Pu as [ | n | β' | Pa Pb | Pb | | Pb ]; cbn in Heq;
       try discriminate Heq.
     + destruct (β' == βg) as [-> | Hne']; [ | discriminate Heq ].
@@ -1288,7 +1329,7 @@ Proof.
         | assumption | assumption ].
     + inversion HlcPu as [ | | | | | ? HlcPb ]; subst.
       injection Heq as Heq0. subst P.
-      apply a_lookeq__univ_ghost2; [ assumption | ].
+      apply a_lookeq__univ_ghost2; [ assumption | assumption | ].
       apply (IH Pb βg Pg); solve [ assumption | reflexivity ].
   - (* LE-UnivGhostR *)
     intros Θ α P P' Ξ C Hne Hg Hpre IH Pu βg Pg Heq Hβ Hβin Hα HlcPg HlcPu.
@@ -1431,12 +1472,29 @@ Ltac look_fresh :=
     that opens two binders in the other order needs.  (Contexts are lists, so
     [(β~tvar) ++ (b~tvar) ++ Θ] and [(b~tvar) ++ (β~tvar) ++ Θ] are different
     terms with the same [ftvar_in_aenv].) *)
+(** ⚠️ AND IT NOW CARRIES A FLEX-AGREEMENT SIDE CONDITION (2026-08-18).  The
+    ftvar inclusion alone is no longer enough: under the FlexR-PRIORITY GUARD
+    the eq layer reads its context for HATTEDNESS — [LE-FlexR] wants the
+    counterpart hatted and [LE-UnivGhost2] wants it not — and an
+    ftvar-shrinking context can turn a flexible into a rigid.
+
+    ⭐ AND IT IS SCOPED TO THE COUNTERPART'S FREE VARIABLES, which is exactly
+    what the collection reads.  A GLOBAL iff would be unusable: two consumers
+    move to a context that DROPS flexibles wholesale (the P6 arrow row peels
+    off its own all-flex blocks; the decoration-soundness proof shrinks the
+    run's context to [·]).  The scoped condition is preserved by the
+    induction — [LE-Arrow] SHRINKS [ftv P'], and every binder row adds an
+    opener that is RIGID on both sides ([a_flex_tvar_cons_tvar_any]). *)
 Lemma a_looksub_lookeq_ctx_ftv_mono :
   (forall Θ α m P P' Ξ 𝒞, {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
      forall Θ', ftvar_in_aenv Θ' [<=] ftvar_in_aenv Θ ->
+     (forall β, β `in` ftvar_in_pskl P' ->
+        (a_flex_tvar Θ β <-> a_flex_tvar Θ' β)) ->
      {{ Θ' ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a) /\
   (forall Θ α P P' Ξ 𝒞, {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
      forall Θ', ftvar_in_aenv Θ' [<=] ftvar_in_aenv Θ ->
+     (forall β, β `in` ftvar_in_pskl P' ->
+        (a_flex_tvar Θ β <-> a_flex_tvar Θ' β)) ->
      {{ Θ' ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a).
 Proof.
   (* the binder rows all discharge the same way: the premise's context grows
@@ -1446,69 +1504,132 @@ Proof.
             ftvar_in_aenv ((β ~ abind_tvar) ++ Θ')
               [<=] ftvar_in_aenv ((β ~ abind_tvar) ++ Θ))
     by (intros; rewrite ! ftvar_in_aenv_cons_tvar; fsetdec).
+  (* ⭐ and the flex-agreement rides through an OPENING: the opener is rigid on
+     both sides, and it is fresh for the LARGER context, hence for both *)
+  assert (Hfopen : forall (b : atom) (Θa Θb : aenv) (B : pskl),
+            ftvar_in_aenv Θb [<=] ftvar_in_aenv Θa ->
+            b `notin` ftvar_in_aenv Θa ->
+            (forall β, β `in` ftvar_in_pskl B ->
+               (a_flex_tvar Θa β <-> a_flex_tvar Θb β)) ->
+            forall β,
+              β `in` ftvar_in_pskl (open_pskl_wrt_pskl B (pskl_var_f b)) ->
+              (a_flex_tvar ((b ~ abind_tvar) ++ Θa) β
+               <-> a_flex_tvar ((b ~ abind_tvar) ++ Θb) β)).
+  { intros b Θa Θb B Hincl Hb Hf β Hβ.
+    rewrite ! a_flex_tvar_cons_tvar_any.
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f b))
+      as Hup.
+    destruct (β == b) as [-> | Hne].
+    - (* the opener: flex-free on BOTH sides, since it dodges the larger one *)
+      pose proof (dom_subset_ftvar_in_aenv Θa) as HdA.
+      pose proof (dom_subset_ftvar_in_aenv Θb) as HdB.
+      split; intro Hfx; exfalso; apply a_flex_tvar_in_dom in Hfx;
+        [ clear - Hb HdA Hfx | clear - Hb HdA HdB Hincl Hfx ]; fsetdec.
+    - apply Hf. simpl in Hup. clear - Hup Hβ Hne. fsetdec. }
   apply (a_looksub_lookeq_mutind
            (fun Θ α m P P' Ξ 𝒞 _ => forall Θ',
               ftvar_in_aenv Θ' [<=] ftvar_in_aenv Θ ->
+              (forall β, β `in` ftvar_in_pskl P' ->
+                 (a_flex_tvar Θ β <-> a_flex_tvar Θ' β)) ->
               {{ Θ' ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a)
            (fun Θ α P P' Ξ 𝒞 _ => forall Θ',
               ftvar_in_aenv Θ' [<=] ftvar_in_aenv Θ ->
+              (forall β, β `in` ftvar_in_pskl P' ->
+                 (a_flex_tvar Θ β <-> a_flex_tvar Θ' β)) ->
               {{ Θ' ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a)).
   - (* LS-Var *) intros. apply a_looksub__var.
-  - (* LS-Absent *) intros Θ α m P P' Hnf Θ' Hm.
+  - (* LS-Absent *) intros Θ α m P P' Hnf Θ' Hm Hf.
     apply a_looksub__absent; exact Hnf.
   - (* LS-Vacuous *) intros. apply a_looksub__vacuous. assumption.
-  - (* LS-Check *) intros Θ α A B Ξ C Hgf Hne Hg Hg0 Hp IH Θ' Hm.
-    apply a_looksub__check; solve [ assumption | apply IH; exact Hm ].
-  - (* LS-ForallR *) intros Θ α A B Ξ C β Hgf Hfr Hocc Hnv Hp IH Θ' Hm.
+  - (* LS-Check *) intros Θ α A B Ξ C Hgf Hne Hg Hg0 Hp IH Θ' Hm Hf.
+    apply a_looksub__check;
+      solve [ assumption | apply IH; [ exact Hm | exact Hf ] ].
+  - (* LS-ForallR *) intros Θ α A B Ξ C β Hgf Hfr Hocc Hnv Hp IH Θ' Hm Hf.
     apply a_looksub__forall_r with (β := β);
       [ exact Hgf | clear - Hfr Hm; fsetdec | exact Hocc | exact Hnv
-      | apply IH; apply Hcons; exact Hm ].
-  - (* LS-Arrow *) intros Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 IH1 Hp2 IH2 Θ' Hm.
-    apply a_looksub__arrow; [ apply IH1 | apply IH2 ]; exact Hm.
-  - (* LS-ForallL *) intros Θ α m P P' Ξ C β Hfr Hocc Hnh Hfr3 Hp IH Θ' Hm.
+      | apply IH;
+        [ apply Hcons; exact Hm
+        | apply Hfopen;
+          [ exact Hm | clear - Hfr; fsetdec | exact Hf ] ] ].
+  - (* LS-Arrow *)
+    intros Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 IH1 Hp2 IH2 Θ' Hm Hf.
+    apply a_looksub__arrow;
+      [ apply IH1 | apply IH2 ]; solve
+      [ exact Hm | intros β0 Hβ0; apply Hf; simpl; clear - Hβ0; fsetdec ].
+  - (* LS-ForallL *) intros Θ α m P P' Ξ C β Hfr Hocc Hnh Hfr3 Hp IH Θ' Hm Hf.
     apply a_looksub__forall_l with (β := β);
       [ clear - Hfr Hm; fsetdec | exact Hocc | exact Hnh | exact Hfr3
-      | apply IH; apply Hcons; exact Hm ].
-  - (* LS-UnivGhostL *) intros Θ α m P P' Ξ C Hnh Hfr3 Hp IH Θ' Hm.
+      | apply IH;
+        [ apply Hcons; exact Hm
+        | intros β0 Hβ0; rewrite ! a_flex_tvar_cons_tvar_any;
+          exact (Hf β0 Hβ0) ] ].
+  - (* LS-UnivGhostL *) intros Θ α m P P' Ξ C Hnh Hfr3 Hp IH Θ' Hm Hf.
     apply a_looksub__univ_ghost_l;
-      [ exact Hnh | exact Hfr3 | apply IH; exact Hm ].
+      [ exact Hnh | exact Hfr3 | apply IH; [ exact Hm | exact Hf ] ].
   - (* LE-Var *) intros. apply a_lookeq__var.
-  - (* LE-Absent *) intros Θ α P P' Hnf Θ' Hm.
+  - (* LE-Absent *) intros Θ α P P' Hnf Θ' Hm Hf.
     apply a_lookeq__absent; exact Hnf.
   - (* LE-Vacuous *) intros. apply a_lookeq__vacuous. assumption.
-  - (* LE-FlexR *) intros Θ α P β α1 Hfr Hne Hin Θ' Hm.
-    apply a_lookeq__flex_r; [ clear - Hfr Hm; fsetdec | exact Hne | exact Hin ].
-  - (* LE-Arrow *) intros Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 IH1 Hp2 IH2 Θ' Hm.
-    apply a_lookeq__arrow; [ apply IH1 | apply IH2 ]; exact Hm.
-  - (* LE-ForallInh *) intros Θ α P P' Ξ C β Hfr Hocc Hp IH Θ' Hm.
+  - (* LE-FlexR — ⭐ the row the flex-agreement is FOR *)
+    intros Θ α P β α1 Hfr Hflx Hne Hin Θ' Hm Hf.
+    apply a_lookeq__flex_r;
+      [ clear - Hfr Hm; fsetdec
+      | apply (proj1 (Hf β ltac:(simpl; clear; fsetdec))); exact Hflx
+      | exact Hne | exact Hin ].
+  - (* LE-Arrow *)
+    intros Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 IH1 Hp2 IH2 Θ' Hm Hf.
+    apply a_lookeq__arrow;
+      [ apply IH1 | apply IH2 ]; solve
+      [ exact Hm | intros β0 Hβ0; apply Hf; simpl; clear - Hβ0; fsetdec ].
+  - (* LE-ForallInh *) intros Θ α P P' Ξ C β Hfr Hocc Hp IH Θ' Hm Hf.
     apply a_lookeq__forall_inh with (β := β);
       [ clear - Hfr Hm; fsetdec | exact Hocc
-      | apply IH; apply Hcons; exact Hm ].
-  - (* LE-ForallSyn *) intros Θ α P P' Ξ C β Hfr Hocc Hp IH Θ' Hm.
+      | apply IH;
+        [ apply Hcons; exact Hm
+        | apply Hfopen;
+          [ exact Hm | clear - Hfr; fsetdec | exact Hf ] ] ].
+  - (* LE-ForallSyn *) intros Θ α P P' Ξ C β Hfr Hocc Hp IH Θ' Hm Hf.
     apply a_lookeq__forall_syn with (β := β);
       [ clear - Hfr Hm; fsetdec | exact Hocc
-      | apply IH; apply Hcons; exact Hm ].
-  - (* LE-UnivGhost *) intros Θ α P P' Ξ C Hp IH Θ' Hm.
-    apply a_lookeq__univ_ghost; apply IH; exact Hm.
-  - (* LE-UnivGhost1 *) intros Θ α P P' Ξ C β Hfr Hocc Hp IH Θ' Hm.
+      | apply IH;
+        [ apply Hcons; exact Hm
+        | intros β0 Hβ0; rewrite ! a_flex_tvar_cons_tvar_any;
+          exact (Hf β0 Hβ0) ] ].
+  - (* LE-UnivGhost *) intros Θ α P P' Ξ C Hp IH Θ' Hm Hf.
+    apply a_lookeq__univ_ghost; apply IH; [ exact Hm | exact Hf ].
+  - (* LE-UnivGhost1 *) intros Θ α P P' Ξ C β Hfr Hocc Hp IH Θ' Hm Hf.
     apply a_lookeq__univ_ghost1 with (β := β);
       [ clear - Hfr Hm; fsetdec | exact Hocc
-      | apply IH; apply Hcons; exact Hm ].
-  - (* LE-UnivGhost2 *) intros Θ α P P' Ξ C Hg Hp IH Θ' Hm.
-    apply a_lookeq__univ_ghost2; [ exact Hg | apply IH; exact Hm ].
-  - (* LE-UnivGhostR *) intros Θ α P P' Ξ C Hne Hg Hp IH Θ' Hm.
-    apply a_lookeq__univ_ghost_r; [ exact Hne | exact Hg | apply IH; exact Hm ].
+      | apply IH;
+        [ apply Hcons; exact Hm
+        | apply Hfopen;
+          [ exact Hm | clear - Hfr; fsetdec | exact Hf ] ] ].
+  - (* LE-UnivGhost2 — ⭐ the guard needs the OTHER direction *)
+    intros Θ α P P' Ξ C Hg Hfx Hp IH Θ' Hm Hf.
+    apply a_lookeq__univ_ghost2;
+      [ exact Hg
+      | intros β Heq Hflx; subst P';
+        exact (Hfx β eq_refl
+                 (proj2 (Hf β ltac:(simpl; clear; fsetdec)) Hflx))
+      | apply IH; [ exact Hm | exact Hf ] ].
+  - (* LE-UnivGhostR *) intros Θ α P P' Ξ C Hne Hg Hp IH Θ' Hm Hf.
+    apply a_lookeq__univ_ghost_r;
+      [ exact Hne | exact Hg | apply IH; [ exact Hm | exact Hf ] ].
 Qed.
 
 Lemma a_looksub_ctx_ftv_mono : forall Θ α m P P' Ξ 𝒞 Θ',
   {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
   ftvar_in_aenv Θ' [<=] ftvar_in_aenv Θ ->
+  (forall β, β `in` ftvar_in_pskl P' ->
+     (a_flex_tvar Θ β <-> a_flex_tvar Θ' β)) ->
   {{ Θ' ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a.
 Proof. intros; eapply (proj1 a_looksub_lookeq_ctx_ftv_mono); eauto. Qed.
 
 Lemma a_lookeq_ctx_ftv_mono : forall Θ α P P' Ξ 𝒞 Θ',
   {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
   ftvar_in_aenv Θ' [<=] ftvar_in_aenv Θ ->
+  (forall β, β `in` ftvar_in_pskl P' ->
+     (a_flex_tvar Θ β <-> a_flex_tvar Θ' β)) ->
   {{ Θ' ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a.
 Proof. intros; eapply (proj2 a_looksub_lookeq_ctx_ftv_mono); eauto. Qed.
 
@@ -1517,8 +1638,11 @@ Lemma a_looksub_ctx_exchange : forall Θ α m P P' Ξ 𝒞 β1 β2,
   {{ ((β1 ~ abind_tvar) ++ (β2 ~ abind_tvar) ++ Θ) ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
   {{ ((β2 ~ abind_tvar) ++ (β1 ~ abind_tvar) ++ Θ) ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a.
 Proof.
-  intros. eapply a_looksub_ctx_ftv_mono; [ eassumption | ].
-  rewrite ! ftvar_in_aenv_cons_tvar. fsetdec.
+  intros. eapply a_looksub_ctx_ftv_mono; [ eassumption | | ].
+  - rewrite ! ftvar_in_aenv_cons_tvar. fsetdec.
+  - (* ⭐ FREE: the two entries exchanged are RIGID, so flexibility is
+       untouched in both directions ([binds_tvar_exchange]'s content). *)
+    intros β0 _; rewrite ! a_flex_tvar_cons_tvar_any; reflexivity.
 Qed.
 
 (** DERIVED junk-freeness for the look cluster (cluster 1's principle, cluster
@@ -1559,7 +1683,7 @@ Proof.
   - (* LE-Absent *) intros; simpl; fsetdec.
   - (* LE-Vacuous *) intros; simpl; fsetdec.
   - (* LE-FlexR — the single generative rule *)
-    intros Θ α P β α1 Hfr Hne Hin γ Hγ.
+    intros Θ α P β α1 Hfr Hflx Hne Hin γ Hγ.
     simpl. clear - Hfr Hγ. fsetdec.
   - (* LE-Arrow *) intros Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 IH1 Hp2 IH2 γ Hγ.
     rewrite dom_app.
@@ -1571,7 +1695,7 @@ Proof.
   - (* LE-UnivGhost *) intros Θ α P P' Ξ C Hp IH γ Hγ. exact (IH γ Hγ).
   - (* LE-UnivGhost1 *) intros Θ α P P' Ξ C β Hfr Hocc Hp IH γ Hγ.
     apply IH; apply Hgrow; exact Hγ.
-  - (* LE-UnivGhost2 *) intros Θ α P P' Ξ C Hg Hp IH γ Hγ. exact (IH γ Hγ).
+  - (* LE-UnivGhost2 *) intros Θ α P P' Ξ C Hg Hfx Hp IH γ Hγ. exact (IH γ Hγ).
   - (* LE-UnivGhostR *) intros Θ α P P' Ξ C Hne Hg Hp IH γ Hγ. exact (IH γ Hγ).
 Qed.
 
@@ -1978,13 +2102,13 @@ Proof.
       [ Θ α Q                                     (* LE-Var *)
       | Θ α Q Q' Hnf                              (* LE-Absent *)
       | Θ α Q                                     (* LE-Vacuous *)
-      | Θ α Q b γ Hfr0 Hne Hin                    (* LE-FlexR *)
+      | Θ α Q b γ Hfr0 Hflx Hne Hin               (* LE-FlexR *)
       | Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 Hp2     (* LE-Arrow *)
       | Θ α Q Q' Ξ0 C0 b Hfr0 Hocc0 Hp            (* LE-ForallInh *)
       | Θ α Q Q' Ξ0 C0 b Hfr0 Hocc0 Hp            (* LE-ForallSyn *)
       | Θ α Q Q' Ξ0 C0 Hp                         (* LE-UnivGhost *)
       | Θ α Q Q' Ξ0 C0 b Hfr0 Hocc0 Hp            (* LE-UnivGhost1 *)
-      | Θ α Q Q' Ξ0 C0 Hg Hp                      (* LE-UnivGhost2 *)
+      | Θ α Q Q' Ξ0 C0 Hg Hfx Hp                  (* LE-UnivGhost2 *)
       | Θ α Q Q' Ξ0 C0 Hne Hg Hp ];               (* LE-UnivGhostR *)
       cbn in Hn, Hα'P |- *.
     - (* LE-Var *)
@@ -2000,6 +2124,7 @@ Proof.
       cbn in Hfr0, Hα'Ξ |- *.
       apply a_lookeq__flex_r;
         [ look_fresh
+        | exact Hflx
         | apply subst_var_neq_new; assumption
         | apply ftv_subst_var_in; exact Hin ].
     - (* LE-Arrow *)
@@ -2140,7 +2265,7 @@ Proof.
           | exact Hp | cbn; exact Hα'P | exact Hα'Ξ | exact Hα'C ].
     - (* LE-UnivGhost2 *)
       apply a_lookeq__univ_ghost2;
-        [ exact Hg | apply IHe; solve [ lia | assumption ] ].
+        [ exact Hg | exact Hfx | apply IHe; solve [ lia | assumption ] ].
     - (* LE-UnivGhostR *)
       apply a_lookeq__univ_ghost_r;
         [ apply subst_var_neq_new; assumption

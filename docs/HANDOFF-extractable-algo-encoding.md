@@ -4000,9 +4000,25 @@ determinism above has to be composed with `e_extract_supply_respect` and
 After that: §6/§7 of `frost/ext_algo/prop_sub_complete.v` (§8c.13's recipe;
 §1/§3/§4 are already Qed), then §8's three headlines.
 
-### 8c.16 ⛔⛔ STEP 2 IS BLOCKED ON A **FOURTH** DISPATCH GUARD — machine-checked, and the CHEAP form of it is refuted (2026-08-18)
+### 8c.16 ✅ GUARD 4, THE FlexR-PRIORITY SPLIT — LANDED, AND THE TREE IS GREEN (2026-08-18)
 
-`e_extract_det` is **still false after the three landed guards**, and the
+✅ **`make coq` rc=0, `README.v` 32/32, zero `Admitted`.**  `LE-UnivGhost2`
+carries `flex_r_off Θ P'` and `LE-FlexR` carries the HAT it was missing
+(`a_flex_tvar Θ β`), on both encodings and in the runner.  ⭐ **AND IT FIXED A
+MECH BUG**: pre-guard the runner invented a fresh flexible at a RIGID-variable
+counterpart, where the paper strips the ⫯.
+
+⚙ What the landing cost, in one line each: the collection's context lemmas
+gained a COUNTERPART-SCOPED flex-agreement; the P6 flex-P0 block was FACTORED
+out of the induction (454 lines, no IH, subject-generic); the
+decoration-soundness proof's shrink-to-`·` became `flex_restrict`; and the
+b-core gained five threaded premises and lost one branch that only existed
+because of the unguarded cell.
+
+---
+
+**The record of why the guard was needed.**
+`e_extract_det` was **false after the three earlier guards**, and the
 witness is `cex/probe_extract_flexr_ug2_drift.v` (`e_extract_det_false`, Qed,
 assumptions-closed).  §8c.15 G's plan — "compose the three factors" — is
 sound as far as it goes, but its first factor does not exist yet, because the

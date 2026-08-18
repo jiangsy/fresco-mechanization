@@ -568,6 +568,22 @@ Local Ltac case_test :=
       destruct (sumbool_of_bool b) as [Hm | Hm]
   end.
 
+(** ⭐ THE FlexR-PRIORITY DISPATCH, on the completeness side (2026-08-18).
+    The runner's new [flex_bound_ck Θ β] test can answer [None]; the
+    derivation's own [LE-FlexR] premise says it cannot, and its [LE-UnivGhost2]
+    premise says the same in the other direction. *)
+Local Ltac flex_test_absurd :=
+  solve [ match goal with
+          | Hm : flex_bound_ck ?T ?b = false, Hf : a_flex_tvar ?T ?b |- _ =>
+              exfalso; rewrite (flex_bound_ck_complete _ _ Hf) in Hm;
+              discriminate
+          end
+        | match goal with
+          | Hm : flex_bound_ck ?T ?b = true,
+            Hg : flex_r_off ?T (pskl_var_f ?b) |- _ =>
+              exfalso; exact (Hg b eq_refl (flex_bound_ck_flex_tvar _ _ Hm))
+          end ].
+
 (** Close an impossible inversion case: the branch's decision tests
     contradict the rule's own side conditions. *)
 Local Ltac look_absurd :=
@@ -658,8 +674,11 @@ Proof.
         [ exfalso; inversion Hd; subst; look_absurd | discriminate ].
     + (* var_b — no lc *)
       simp e_lookeq_impl. case_test; [ inversion HP' | discriminate ].
-    + (* var_f — LE-FlexR / LE-Absent, both answer *)
-      simp e_lookeq_impl. case_test; discriminate.
+    + (* var_f — LE-FlexR / LE-Absent, both answer; ⭐ and the runner's new
+         hattedness test is forced by LE-FlexR's own premise *)
+      simp e_lookeq_impl. case_test; [ | discriminate ].
+      case_test; [ discriminate | ].
+      inversion Hd; subst; try look_absurd; flex_test_absurd.
     + (* arrow — LE-Arrow *)
       simp e_lookeq_impl. case_test; [ | discriminate ].
       inversion Hd; subst; try look_absurd.
@@ -708,8 +727,10 @@ Proof.
         [ exfalso; inversion Hd; subst; look_absurd | discriminate ].
     + (* var_b *)
       simp e_lookeq_impl. case_test; [ inversion HP' | discriminate ].
-    + (* var_f — LE-FlexR / LE-Absent *)
-      simp e_lookeq_impl. case_test; discriminate.
+    + (* var_f — LE-FlexR / LE-Absent; ⭐ plus the hattedness test *)
+      simp e_lookeq_impl. case_test; [ | discriminate ].
+      case_test; [ discriminate | ].
+      inversion Hd; subst; try look_absurd; flex_test_absurd.
     + (* arrow — no rule fits *)
       simp e_lookeq_impl. case_test;
         [ exfalso; inversion Hd; subst; look_absurd | discriminate ].
@@ -786,8 +807,21 @@ Proof.
       discriminate.
     + (* var_b *)
       simp e_lookeq_impl. case_test; [ inversion HP' | discriminate ].
-    + (* var_f — LE-FlexR / LE-Absent *)
-      simp e_lookeq_impl. case_test; discriminate.
+    + (* var_f — ⭐⭐ THE CELL THE FlexR-PRIORITY GUARD IS ABOUT: LE-FlexR at
+         a HATTED counterpart, LE-UnivGhost2 at a RIGID one, and the runner's
+         own [flex_bound_ck] test tells the two apart *)
+      simp e_lookeq_impl. case_test; [ | discriminate ].
+      case_test; [ discriminate | ].
+      inversion Hd; subst; try look_absurd; try flex_test_absurd.
+      match goal with
+      | Hp0 : a_lookeq Θ α Q (pskl_var_f _) _ _ |- _ => rename Hp0 into HPREM
+      end.
+      pose proof (q6 Q eq_refl) as IH6.
+      assert (Hcv1 : ftvar_in_aenv Θ ∪ {{ α }} ∪ ftvar_in_pskl Q
+                       ∪ ftvar_in_pskl (pskl_var_f β') [<=] S0)
+        by (clear - Hcov; simpl in *; fsetdec).
+      kill_eq_call IH6 HPREM Hcv1 r1 Hr1.
+      discriminate.
     + (* arrow — LE-UnivGhost2 *)
       simp e_lookeq_impl. case_test; [ | discriminate ].
       inversion Hd; subst; try look_absurd.

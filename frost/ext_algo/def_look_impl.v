@@ -99,6 +99,16 @@ Definition looksub_spec (S0 : supply) (Θ : aenv) (α : atom) (m : mode)
   guarded_shape_ck_sound ghost_free_ck_sound lc_pskl_all_syn_inv : lookdec.
 #[local] Hint Constructors e_lookeq e_looksub lc_pskl : lookdec.
 #[local] Hint Extern 4 (_ <> _) => congruence : lookdec.
+(* ⭐ THE FlexR-PRIORITY GUARD, inside the search: it is a [Definition]
+   unfolding to a product, so [eauto] cannot touch it on its own.  Two arms:
+   a counterpart that is not a variable at all, or one the runner's own
+   dispatch has just tested RIGID. *)
+#[local] Hint Extern 1 (flex_r_off _ _) =>
+  (solve [ apply flex_r_off_nonvar; intros ?; discriminate
+         | apply flex_r_off_rigid; apply flex_bound_ck_not_flex_tvar;
+           assumption ]) : lookdec.
+#[local] Hint Extern 1 (a_flex_tvar _ _) =>
+  (apply flex_bound_ck_flex_tvar; assumption) : lookdec.
 #[local] Hint Extern 4 (_ `notin` _) =>
   solve [ apply mem_false_notin; assumption | simpl in *; fsetdec ] : lookdec.
 #[local] Hint Extern 4 (_ `in` _) =>
@@ -212,10 +222,16 @@ Equations e_lookeq_impl (S0 : supply) (Θ : aenv) (α : atom) (P P' : pskl)
 | S0, Θ, α, pskl_arrow P1 P2, pskl_var_f β, HP, HP', H =>
     match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_arrow P1 P2))) with
     | right _ => Some (exist _ (mk_look_result S0 nil nil) _)
-    | left _ =>                                            (* LE-FlexR *)
-        Some (exist _ (mk_look_result (add (supply_fresh S0) S0)
-                ((supply_fresh S0 ~ abind_flex_mono) ++ nil)
-                (a_cstr_eq (pskl_var_f (supply_fresh S0)) :: nil)) _)
+    | left _ =>
+        (* ⭐ THE HAT.  LE-FlexR wants a FLEXIBLE counterpart; at a RIGID
+           variable no row applies at an arrow subject. *)
+        match sumbool_of_bool (flex_bound_ck Θ β) with
+        | right _ => None
+        | left _ =>                                        (* LE-FlexR *)
+            Some (exist _ (mk_look_result (add (supply_fresh S0) S0)
+                    ((supply_fresh S0 ~ abind_flex_mono) ++ nil)
+                    (a_cstr_eq (pskl_var_f (supply_fresh S0)) :: nil)) _)
+        end
     end
 | S0, Θ, α, pskl_arrow P1 P2, pskl_arrow P1' P2', HP, HP', H =>
     match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_arrow P1 P2))) with
@@ -254,10 +270,15 @@ Equations e_lookeq_impl (S0 : supply) (Θ : aenv) (α : atom) (P P' : pskl)
 | S0, Θ, α, pskl_all_syn Q, pskl_var_f β, HP, HP', H =>
     match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_all_syn Q))) with
     | right _ => Some (exist _ (mk_look_result S0 nil nil) _)
-    | left _ =>                                            (* LE-FlexR *)
-        Some (exist _ (mk_look_result (add (supply_fresh S0) S0)
-                ((supply_fresh S0 ~ abind_flex_mono) ++ nil)
-                (a_cstr_eq (pskl_var_f (supply_fresh S0)) :: nil)) _)
+    | left _ =>
+        (* ⭐ THE HAT — see the arrow clause. *)
+        match sumbool_of_bool (flex_bound_ck Θ β) with
+        | right _ => None
+        | left _ =>                                        (* LE-FlexR *)
+            Some (exist _ (mk_look_result (add (supply_fresh S0) S0)
+                    ((supply_fresh S0 ~ abind_flex_mono) ++ nil)
+                    (a_cstr_eq (pskl_var_f (supply_fresh S0)) :: nil)) _)
+        end
     end
 | S0, Θ, α, pskl_all_syn Q, pskl_all_syn Q', HP, HP', H =>
     match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_all_syn Q))) with
@@ -296,10 +317,24 @@ Equations e_lookeq_impl (S0 : supply) (Θ : aenv) (α : atom) (P P' : pskl)
 | S0, Θ, α, pskl_tophole Q, pskl_var_f β, HP, HP', H =>
     match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_tophole Q))) with
     | right _ => Some (exist _ (mk_look_result S0 nil nil) _)
-    | left _ =>                                            (* LE-FlexR *)
-        Some (exist _ (mk_look_result (add (supply_fresh S0) S0)
-                ((supply_fresh S0 ~ abind_flex_mono) ++ nil)
-                (a_cstr_eq (pskl_var_f (supply_fresh S0)) :: nil)) _)
+    | left _ =>
+        (* ⭐⭐ THE CELL THE FlexR-PRIORITY GUARD IS ABOUT (2026-08-18).  At a
+           FLEXIBLE counterpart LE-FlexR wins ([constr_collect_eq]'s
+           `| _, MFlex beta` arm, type.ml:561); at a RIGID one the match falls
+           through to LE-UnivGhost2 (:618), which strips the ⫯.  Both rows
+           fire in the RELATION, and their answers differ in KIND — that is
+           what [flex_r_off] excludes.  docs/PAPER-GAPS.md. *)
+        match sumbool_of_bool (flex_bound_ck Θ β) with
+        | left _ =>                                        (* LE-FlexR *)
+            Some (exist _ (mk_look_result (add (supply_fresh S0) S0)
+                    ((supply_fresh S0 ~ abind_flex_mono) ++ nil)
+                    (a_cstr_eq (pskl_var_f (supply_fresh S0)) :: nil)) _)
+        | right _ =>                                       (* LE-UnivGhost2 *)
+            match e_lookeq_impl S0 Θ α Q (pskl_var_f β) _ _ _ with
+            | None => None
+            | Some (exist _ r Hr) => Some (exist _ r _)
+            end
+        end
     end
 | S0, Θ, α, pskl_tophole Q, pskl_tophole Q', HP, HP', H =>
     match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_tophole Q))) with

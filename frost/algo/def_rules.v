@@ -300,6 +300,38 @@ Definition a_flex_tvar (Θ : aenv) (α : atom) : Prop :=
   binds α abind_flex_mono Θ \/
   (exists τ, binds α (abind_flex_mono_def τ) Θ).
 
+(** ⭐ THE FlexR-PRIORITY GUARD (2026-08-18).  [flex_r_off Θ P'] says the
+    collection's LE-FlexR row does NOT apply at counterpart [P'].
+
+    The paper's row concludes at a HATTED counterpart —
+    [lookeq{α}{P}{β̂}{≐ γ̂}[γ̂]], full-algo-spec.tex:1110-1116 — and the
+    reference implementation renders that as the match arm [| _, MFlex beta],
+    type.ml:561, where [MFlex] is a constructor DISTINCT from [TVar]
+    (lib/type.ml:23).  So the row fires at a FLEXIBLE counterpart and at
+    nothing else, and [LE-UnivGhost2] (:618) is reached only after that test
+    has failed.
+
+    ⚠️ NOT admissible, like the ForallR-priority guard and unlike the
+    absence-first one: [guarded_pskl] includes VARIABLES, so without it the
+    two rows both fire at a ⫯ subject against a flexible and their answers
+    differ in KIND — FlexR invents a flexible and spends supply, UnivGhost2
+    strips and collects whatever the premise collected.  Machine-checked at
+    the collection (cex/probe_bcore_ug2_flexr.v) and, one level up, at
+    [e_extract] (cex/probe_extract_flexr_ug2_drift.v).  docs/PAPER-GAPS.md. *)
+
+Definition flex_r_off (Θ : aenv) (P' : pskl) : Prop :=
+  forall β, P' = pskl_var_f β -> ~ a_flex_tvar Θ β.
+
+(** The two ways a site discharges it. *)
+
+Lemma flex_r_off_nonvar : forall Θ P',           (* not a variable at all *)
+  (forall β, P' <> pskl_var_f β) -> flex_r_off Θ P'.
+Proof. intros Θ P' H β Heq; exfalso; exact (H β Heq). Qed.
+
+Lemma flex_r_off_rigid : forall Θ β,             (* a RIGID variable *)
+  ~ a_flex_tvar Θ β -> flex_r_off Θ (pskl_var_f β).
+Proof. intros Θ β H β0 Heq; injection Heq as ->; exact H. Qed.
+
 (* ===================================================================== *)
 (*  guess^TY  (full-algo-spec.tex:479-491; the LaTeX source writes the     *)
 (*  \guessMono macro, which renders as guess^TY — macro.tex:1505)          *)
@@ -504,6 +536,12 @@ with a_lookeq : aenv -> atom -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
     (* the paper's [fresh γ̂] (algorithmic.tex:1204).  [ftvar_in_aenv], not
        [dom]: a payload ([α̂ ≔ τ]) may mention the name, and it must not. *)
     α1 `notin` add α (add β (ftvar_in_aenv Θ `union` ftvar_in_pskl P)) ->
+    (* [paper-gap] THE HAT.  The paper's row concludes at [β̂]; one atom class
+       means the mech must SAY so, exactly as its SOLVE-layer mirror
+       [a_solve_eq__flex_r] already does.  Without it the row fires at a RIGID
+       variable too, where the implementation takes LE-UnivGhost2 — and there
+       the two answers DISAGREE ([flex_r_off], above). *)
+    a_flex_tvar Θ β ->
     P <> pskl_var_f α ->
     α `in` ftvar_in_pskl P ->
     {{ Θ ⊢ P ∼[ α ] (pskl_var_f β) ⤳ ((α1 ~ abind_flex_mono) ++ nil)
@@ -542,6 +580,10 @@ with a_lookeq : aenv -> atom -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
     {{ Θ ⊢ (pskl_tophole P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C }}a
 | a_lookeq__univ_ghost2 : forall Θ α P P' Ξ C,   (* LE-UnivGhost2 *)
     guarded_pskl P' ->
+    (* [paper-gap] FlexR-PRIORITY GUARD — [guarded_pskl] includes VARIABLES,
+       and the runner reaches this row only after the flexible-counterpart
+       test has failed ([flex_r_off], above). *)
+    flex_r_off Θ P' ->
     {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}a ->
     {{ Θ ⊢ (pskl_tophole P) ∼[ α ] P' ⤳ Ξ ⨾ C }}a
 | a_lookeq__univ_ghost_r : forall Θ α P P' Ξ C,  (* LE-UnivGhostR *)

@@ -287,13 +287,25 @@ Proof.
         assert (HinR0 : α `in` ftvar_in_uskl R0)
           by (clear - Hup Hc Hααv'; fsetdec).
         exact (HαR0 α HαRR Hααv HinR0). }
-    (* the run's own context is IRRELEVANT here — the lemma only consumes the
-       run — so shrink it away, which makes the opener's [ftvar_in_aenv]
-       condition vacuous ([a_looksub_ctx_ftv_mono] shrinks, which is the
-       direction available) *)
-    assert (Hmono0 : ftvar_in_aenv (nil : aenv) [<=] ftvar_in_aenv Θl)
-      by (cbn; clear; fsetdec).
-    pose proof (@a_looksub_ctx_ftv_mono _ _ _ _ _ _ _ nil HD1 Hmono0) as HD1n.
+    assert (HαB : α `notin` ftvar_in_pskl (pskl_all_syn B))
+      by (cbn; clear - Hfr; fsetdec).
+    (* ⭐ THE RUN'S OWN CONTEXT IS IRRELEVANT HERE — the lemma only consumes
+       the run — so shrink it, which makes the opener's [ftvar_in_aenv]
+       condition vacuous.  ⚠️ UNDER THE FlexR-PRIORITY GUARD IT CANNOT BE
+       SHRUNK TO [·] (2026-08-18): the eq layer reads its context for
+       HATTEDNESS, and dropping every entry would turn a flexible counterpart
+       rigid.  [flex_restrict] keeps exactly the flexibles the COUNTERPART
+       mentions, with their payloads dropped — enough for the guard, whose
+       condition is scoped to [ftv P'], and its [ftvar_in_aenv] still lands
+       inside [ftv (∀B)], which is what the shrink was for. *)
+    assert (Hmono0 : ftvar_in_aenv
+                       (flex_restrict (ftvar_in_pskl (pskl_all_syn B)) Θl)
+                     [<=] ftvar_in_aenv Θl)
+      by (apply flex_restrict_dom).
+    pose proof (@a_looksub_ctx_ftv_mono _ _ _ _ _ _ _
+                  (flex_restrict (ftvar_in_pskl (pskl_all_syn B)) Θl)
+                  HD1 Hmono0
+                  (fun β Hβ => @flex_restrict_iff _ Θl β Hβ)) as HD1n.
     clear HD1 Hmono0; rename HD1n into HD1.
     (* α is the [a_subtag] rule's OWN Barendregt binder; nothing relates it to
        the run's generated names, so freshen the run away from it first
@@ -303,9 +315,9 @@ Proof.
     { pose proof (ftvar_in_pskl_uskl_to_pskl
                     (subst_uskl_in_uskl (uskl_var_f αv') αv R0)) as Hepq.
       clear - HαR0' Hepq; fsetdec. }
-    assert (HαB : α `notin` ftvar_in_pskl (pskl_all_syn B))
-      by (cbn; clear - Hfr; fsetdec).
     assert (Hααv' : α <> αv') by (intros ->; clear - Hαv'; fsetdec).
+    pose proof (flex_restrict_ftvar (ftvar_in_pskl (pskl_all_syn B)) Θl)
+      as HΘlr.
     destruct (atom_fresh (singleton α `union` singleton αv'
                 `union` ftvar_in_pskl
                     ⌊ subst_uskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
@@ -315,25 +327,28 @@ Proof.
        partially-applied lemma is elaborated while [β]/[δ] are still evars *)
     assert (Hδαv' : δ <> αv') by (intros ->; clear - Hδ; fsetdec).
     assert (Hδα : δ <> α) by (intros ->; clear - Hδ; fsetdec).
-    assert (Hβin : α `notin` ftvar_in_aenv (nil : aenv)
+    assert (Hβin : α `notin` ftvar_in_aenv
+                       (flex_restrict (ftvar_in_pskl (pskl_all_syn B)) Θl)
                      `union` ftvar_in_pskl
                          ⌊ subst_uskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
                      `union` ftvar_in_pskl (pskl_all_syn B))
-      by (cbn; clear - HαP HαB; cbn in HαB; fsetdec).
-    assert (Hδin : δ `notin` ftvar_in_aenv (nil : aenv)
+      by (cbn in HαB |- *; clear - HαP HαB HΘlr; fsetdec).
+    assert (Hδin : δ `notin` ftvar_in_aenv
+                       (flex_restrict (ftvar_in_pskl (pskl_all_syn B)) Θl)
                      `union` ftvar_in_pskl
                          ⌊ subst_uskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
                      `union` ftvar_in_pskl (pskl_all_syn B)
                      `union` dom Ξc `union` ftvar_in_cstrs C)
-      by (cbn; clear - Hδ; fsetdec).
+      by (cbn in HΘlr |- *; clear - Hδ HΘlr; fsetdec).
     destruct (a_looksub_avoid_atom HD1 Hst Hααv' Hδαv' Hδα Hβin Hδin)
       as (Ξf & Cf & HDf & Hstf & Hαf).
-    assert (Hopen : α `notin` ftvar_in_aenv (nil : aenv)
+    assert (Hopen : α `notin` ftvar_in_aenv
+                        (flex_restrict (ftvar_in_pskl (pskl_all_syn B)) Θl)
                       `union` ftvar_in_pskl
                           ⌊ subst_uskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
                       `union` ftvar_in_pskl B
                       `union` dom Ξf `union` ftvar_in_cstrs Cf)
-      by (cbn in HαB |- *; clear - HαP HαB Hαf; fsetdec).
+      by (cbn in HαB, HΘlr |- *; clear - HαP HαB Hαf HΘlr; fsetdec).
     destruct (a_looksub_open_target_at ltac:(eassumption) HDf Hstf Hααv' Hopen)
       as [C' [HD2 Hst2]].
     (* the transported premise, via the IH at the re-freshened variable *)

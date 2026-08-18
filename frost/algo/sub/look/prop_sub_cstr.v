@@ -1991,11 +1991,22 @@ Proof.
     -- (* a_looksub : LS-Arrow.  The RIGHT branch ran at the GROWN
           [Ξs1 ++ Ξc1 ++ Θ0]; dropping declarations only SHRINKS the
           avoid-set, which is the direction [a_looksub_ctx_ftv_mono] goes. *)
-       rewrite <- HeraseR. apply a_looksub__arrow;
-         [ exact HLK1
-         | eapply a_looksub_ctx_ftv_mono;
-             [ exact HLK2
-             | repeat rewrite ftvar_in_aenv_app; clear; fsetdec ] ].
+        rewrite <- HeraseR. apply a_looksub__arrow;
+          [ exact HLK1
+          | eapply a_looksub_ctx_ftv_mono with (Θ := (Ξs1 ++ Ξc1 ++ Θ0));
+              [ exact HLK2
+              | repeat rewrite ftvar_in_aenv_app; clear; fsetdec
+              | (* ⭐ AND THE FLEXIBLES SURVIVE THE DROP: the guard's condition
+                   is scoped to the COUNTERPART's variables, and [P02] is
+                   Θ0-scoped, so it misses both blocks ([HfrΞs1] / [HfrΞ1]). *)
+                intros β0 Hβ0;
+                assert (Hns : β0 `notin` dom Ξs1)
+                  by (clear - HfrΞs1 Hβ0; fsetdec);
+                assert (Hnc : β0 `notin` dom Ξc1)
+                  by (clear - HfrΞ1 Hβ0; fsetdec);
+                rewrite (@a_flex_tvar_app_notin Ξs1 (Ξc1 ++ Θ0) β0 Hns);
+                rewrite (@a_flex_tvar_app_notin Ξc1 Θ0 β0 Hnc);
+                reflexivity ] ].
     -- (* solve *)
        assert (HΞ2Pi : forall x, x `in` dom Ξc2 -> x `notin` ftvar_in_pskl Pi).
        { intros x Hx; pose proof (a_wf_pskl_ftv_dom HwfPi) as Hfd;

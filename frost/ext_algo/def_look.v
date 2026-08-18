@@ -197,6 +197,8 @@ with e_lookeq : supply -> aenv -> atom -> pskl -> pskl
        "fresh γ̂" (algorithmic.tex:1204).  Everything the old side condition
        named ([α], [β], the context, the subject) is in the supply. *)
     α1 `notin` S ->
+    (* [paper-gap] THE HAT — see [a_lookeq__flex_r]. *)
+    a_flex_tvar Θ β ->
     P <> pskl_var_f α ->
     α `in` ftvar_in_pskl P ->
     {{ S ↝ (add α1 S) ⊨ Θ ⊢ P ∼[ α ] (pskl_var_f β)
@@ -237,6 +239,8 @@ with e_lookeq : supply -> aenv -> atom -> pskl -> pskl
     {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_tophole P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C }}e
 | e_lookeq__univ_ghost2 : forall S0 S1 Θ α P P' Ξ C,    (* LE-UnivGhost2 *)
     guarded_pskl P' ->
+    (* [paper-gap] FlexR-PRIORITY GUARD — see [a_lookeq__univ_ghost2]. *)
+    flex_r_off Θ P' ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_tophole P) ∼[ α ] P' ⤳ Ξ ⨾ C }}e
 | e_lookeq__univ_ghost_r : forall S0 S1 Θ α P P' Ξ C,   (* LE-UnivGhostR *)

@@ -1,5 +1,6 @@
 - [ ] finish extraction soundness
 - [ ] finish extraction completeness
+- [ ] clean over-designed proof path
 - [ ] uniform statment about rename and swap
 - [ ] build time optimization
 - [ ] define a combined relation for d_consis and join

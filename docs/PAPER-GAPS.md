@@ -309,12 +309,26 @@ both fire.
 
 ## MISSING SIDE CONDITION (2026-08-18, machine-checked) — `LE-UnivGhost2` lacks the exclusion that would keep `LE-FlexR` off a FLEXIBLE counterpart, so the COLLECTION is still ambiguous at a ⫯ subject — and the two answers differ in KIND, not in names
 
-> ⛔ **NOT YET FIXED IN THE MECH.**  The guard's CONTEXT-FREE form was carried
-> through and is REFUTED (see "the fork", below); the faithful form is scoped
-> and costed in
+> **✅ FIXED IN THE MECH ON BOTH ENCODINGS (2026-08-18).**  `LE-UnivGhost2` —
+> and its `e_` twin — carries `flex_r_off Θ P'` (`frost/algo/def_rules.v`),
+> *"`LE-FlexR` does not apply at this counterpart"*, and `LE-FlexR` gains the
+> HAT it was missing, `a_flex_tvar Θ β`.  `make coq` rc=0, `README.v` 32/32.
+> **The finding below stands unchanged for the PAPER**: the figure still owes
+> the exclusion premise.
+>
+> ⭐ **AND THE MECH HAD A BUG OF ITS OWN HERE**, which the same repair fixes:
+> `a_lookeq__flex_r` fired at ANY `pskl_var_f β`, so at a RIGID variable
+> counterpart the runner invented a fresh flexible where the paper strips the
+> ⫯.  That cell is ordinary — the counterpart is a sub-skeleton of the
+> inherited type — so it was not a corner case.
+>
+> ⛔ **The CONTEXT-FREE form of the guard is REFUTED** (`remech-guard4-wip`):
+> it is machine-blocked at `algo/sub/look/prop_eq_cstr.v`'s ⫯-grid, and the
+> implementation sides with that site (`MFlex` ≠ `TVar`, `lib/type.ml:23`).
+> The design, the four passes it took, and the two simplifications it bought
+> are in
 > [`HANDOFF-extractable-algo-encoding.md`](HANDOFF-extractable-algo-encoding.md)
-> §8c.16.  This is the fourth entry of the same species as the three above,
-> and it is the one still blocking level 6.
+> §8c.16.
 
 **What the paper says.**  `LE-FlexR` (`full-algo-spec.tex:1110-1116`) concludes
 at a HATTED counterpart,

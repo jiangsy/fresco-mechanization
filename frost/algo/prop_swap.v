@@ -903,6 +903,19 @@ Qed.
 (** …and its ForallR sibling, for the ForallR-PRIORITY GUARD: a swap is
     structural, so it maps a [∀] to a [∀] and preserves ghost-freeness in
     both directions ([pskl_ghost_free_swap] + [swap_pskl_invol]). *)
+(** The FlexR-priority guard transports too, and needs the REVERSE of
+    [a_flex_tvar_swap] — which involutivity supplies. *)
+Lemma flex_r_off_swap : forall a b Θ P',
+  flex_r_off Θ P' -> flex_r_off (swap_aenv a b Θ) (swap_pskl a b P').
+Proof.
+  intros a b Θ P' H β Heq Hf.
+  destruct P' as [ | | γ | | | | ]; simpl in Heq; try discriminate Heq.
+  injection Heq as <-.
+  apply (H γ eq_refl).
+  apply (a_flex_tvar_swap a b) in Hf.
+  rewrite swap_aenv_invol, swap_atom_invol in Hf. exact Hf.
+Qed.
+
 Lemma forall_r_off_swap : forall a b m P',
   forall_r_off m P' -> forall_r_off m (swap_pskl a b P').
 Proof.
@@ -1005,6 +1018,7 @@ Proof.
   - (* flex_r *)
     apply a_lookeq__flex_r;
       [ swap_freshness
+      | auto using a_flex_tvar_swap
       | auto using swap_pskl_neq_var
       | auto using swap_pskl_ftv_in ].
   - (* arrow *)
@@ -1030,7 +1044,8 @@ Proof.
       |].
     rewrite swap_pskl_open_var in H. exact H.
   - (* univ_ghost2 *)
-    apply a_lookeq__univ_ghost2; auto using guarded_pskl_swap.
+    apply a_lookeq__univ_ghost2;
+      auto using guarded_pskl_swap, flex_r_off_swap.
   - (* univ_ghost_r *)
     apply a_lookeq__univ_ghost_r;
       auto using swap_pskl_neq_var, guarded_pskl_swap.

@@ -270,6 +270,7 @@ Proof.
       { apply guarded_pskl__var. }
       eapply a_lookeq__flex_r with (α1 := α1).
       { simpl. clear - Hα1. fsetdec. }
+      { left. unfold Θ0r, binds; simpl; auto. }
       { discriminate. }
       { simpl. clear. fsetdec. } }
     { change (@nil (atom * abind))

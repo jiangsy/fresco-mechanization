@@ -1388,11 +1388,166 @@ Proof.
     clear - IHa_wf_aenv H2. fsetdec.
 Qed.
 
+(** ⭐ A RIGID entry is INVISIBLE to [a_flex_tvar] — at EVERY atom, its own
+    included, because [binds] is MEMBERSHIP: a rigid binding neither creates a
+    flexible one nor hides one further down.  ⚙ The FlexR-priority guard's
+    transports all rest on this (2026-08-18). *)
+Lemma a_flex_tvar_cons_tvar_any : forall b (Θ : aenv) x,
+  a_flex_tvar ((b ~ abind_tvar) ++ Θ) x <-> a_flex_tvar Θ x.
+Proof.
+  intros b Θ x; unfold a_flex_tvar; split.
+  - intros [Hb | [τ Hb]]; analyze_binds Hb;
+      solve [ left; assumption | right; exists τ; assumption ].
+  - intros [Hb | [τ Hb]]; [ left | right; exists τ ];
+      unfold binds; simpl; right; assumption.
+Qed.
+
+(** …and an atom outside a context's domain is not flexible in it. *)
+Lemma a_flex_tvar_in_dom : forall (Θ : aenv) x,
+  a_flex_tvar Θ x -> x `in` dom Θ.
+Proof. intros Θ x [Hb | [τ Hb]]; eapply binds_In; eassumption. Qed.
+
 Lemma a_flex_tvar_weaken_app : forall Ξ Θ α,
   a_flex_tvar Θ α -> a_flex_tvar (Ξ ++ Θ) α.
 Proof.
   intros * [Hb | [τ Hb]]; [ left | right; exists τ ];
     unfold binds in *; apply in_or_app; right; assumption.
+Qed.
+
+(** ⭐ NON-FLEXIBILITY FROM A SCOPE BOUND, as LEMMAS rather than a tactic
+    search: an atom outside a context's [ftvar_in_aenv] bound cannot be
+    flexible in it.  ⚠️⚠️ The tactic version of this HANGS — [match goal] has to
+    guess which scope hypothesis to use, and every wrong guess pays an
+    exponential [fsetdec] on a context with dozens of set variables. *)
+Lemma nonflex_of_scope : forall (Θ : aenv) S b,
+  ftvar_in_aenv Θ [<=] S -> b `notin` S -> ~ a_flex_tvar Θ b.
+Proof.
+  intros Θ S b Hs Hb Hf. apply a_flex_tvar_in_dom in Hf.
+  pose proof (dom_subset_ftvar_in_aenv Θ) as Hd.
+  clear - Hs Hb Hd Hf. fsetdec.
+Qed.
+
+Lemma nonflex_of_scope_cons : forall (Θ : aenv) S b c,
+  ftvar_in_aenv Θ [<=] S -> b `notin` S ->
+  ~ a_flex_tvar ((c ~ abind_tvar) ++ Θ) b.
+Proof.
+  intros Θ S b c Hs Hb Hf.
+  rewrite a_flex_tvar_cons_tvar_any in Hf.
+  exact (nonflex_of_scope Hs Hb Hf).
+Qed.
+
+(** ⭐⭐ THE FLEXIBILITY-PRESERVING SHRINK (2026-08-18).  Under the
+    FlexR-PRIORITY GUARD a consumer can no longer throw a collection's context
+    away wholesale — the eq layer reads it for HATTEDNESS.  What it CAN do is
+    keep exactly the flexibles the COUNTERPART mentions, with their payloads
+    dropped: that is enough for the guard (whose condition is scoped to
+    [ftv P']) and it lands [ftvar_in_aenv] inside [S], which is what the
+    freshness side conditions wanted the shrink for in the first place. *)
+Fixpoint flex_restrict (S : atoms) (Θ : aenv) : aenv :=
+  match Θ with
+  | nil => nil
+  | (x, abind_flex_mono) :: Θ' =>
+      if AtomSetImpl.mem x S
+      then (x, abind_flex_mono) :: flex_restrict S Θ'
+      else flex_restrict S Θ'
+  | (x, abind_flex_mono_def _) :: Θ' =>
+      if AtomSetImpl.mem x S
+      then (x, abind_flex_mono) :: flex_restrict S Θ'
+      else flex_restrict S Θ'
+  | _ :: Θ' => flex_restrict S Θ'
+  end.
+
+Lemma flex_restrict_ftvar : forall S Θ,
+  ftvar_in_aenv (flex_restrict S Θ) [<=] S.
+Proof.
+  intros S Θ; induction Θ as [ | [x b] Θ' IH ]; simpl; [ fsetdec | ].
+  destruct b;
+    try (destruct (AtomSetImpl.mem x S) eqn:Hm; simpl;
+         [ assert (x `in` S) by (apply AtomSetImpl.mem_2; exact Hm);
+           clear - IH H; fsetdec
+         | exact IH ]);
+    exact IH.
+Qed.
+
+Lemma flex_restrict_dom : forall S Θ,
+  ftvar_in_aenv (flex_restrict S Θ) [<=] ftvar_in_aenv Θ.
+Proof.
+  intros S Θ; induction Θ as [ | [x b] Θ' IH ]; simpl; [ fsetdec | ].
+  destruct b;
+    try (destruct (AtomSetImpl.mem x S); simpl; clear - IH; fsetdec);
+    clear - IH; fsetdec.
+Qed.
+
+(** Everything the restriction keeps is an UNDEFINED flexible drawn from [S]
+    and flexible in the source. *)
+Lemma flex_restrict_binds_inv : forall S Θ x bd,
+  binds x bd (flex_restrict S Θ) ->
+  x `in` S /\ a_flex_tvar Θ x.
+Proof.
+  intros S Θ; induction Θ as [ | [y b] Θ' IH ]; intros x bd Hb; simpl in Hb.
+  - inversion Hb.
+  - assert (Hup : x `in` S /\ a_flex_tvar Θ' x ->
+                  x `in` S /\ a_flex_tvar ((y, b) :: Θ') x).
+    { intros [HS [H1 | [τ H1]]]; split;
+        [ exact HS | left | exact HS | right; exists τ ];
+        unfold binds; simpl; right; exact H1. }
+    destruct b;
+      try (apply Hup; exact (IH x bd Hb));
+      (destruct (AtomSetImpl.mem y S) eqn:Hm;
+       [ destruct Hb as [E | Hb];
+         [ inversion E; subst; split;
+           [ apply AtomSetImpl.mem_2; exact Hm
+           | solve [ left; unfold binds; simpl; left; reflexivity
+                   | right; eexists; unfold binds; simpl; left; reflexivity ] ]
+         | apply Hup; exact (IH x bd Hb) ]
+       | apply Hup; exact (IH x bd Hb) ]).
+Qed.
+
+(** …and it keeps EVERY flexible of [S]. *)
+Lemma flex_restrict_binds : forall S Θ x,
+  x `in` S -> a_flex_tvar Θ x -> binds x abind_flex_mono (flex_restrict S Θ).
+Proof.
+  intros S Θ; induction Θ as [ | [y b] Θ' IH ]; intros x HS Hf; simpl.
+  - destruct Hf as [Hb | [τ Hb]]; inversion Hb.
+  - assert (Hmem : AtomSetImpl.mem x S = true)
+      by (apply AtomSetImpl.mem_1; exact HS).
+    destruct b;
+      try (apply IH; [ exact HS | ];
+           destruct Hf as [Hb | [τ Hb]]; analyze_binds Hb;
+           solve [ left; assumption | right; exists τ; assumption ]);
+      (destruct (AtomSetImpl.mem y S) eqn:Hm;
+       [ destruct (x == y) as [-> | Hne];
+         [ unfold binds; simpl; left; reflexivity
+         | unfold binds; simpl; right; apply IH; [ exact HS | ];
+           destruct Hf as [Hb | [τ Hb]]; analyze_binds Hb;
+           solve [ left; assumption | right; exists τ; assumption ] ]
+       | destruct (x == y) as [-> | Hne];
+         [ exfalso; rewrite Hmem in Hm; discriminate
+         | apply IH; [ exact HS | ];
+           destruct Hf as [Hb | [τ Hb]]; analyze_binds Hb;
+           solve [ left; assumption | right; exists τ; assumption ] ] ]).
+Qed.
+
+Lemma flex_restrict_iff : forall S Θ β,
+  β `in` S -> (a_flex_tvar Θ β <-> a_flex_tvar (flex_restrict S Θ) β).
+Proof.
+  intros S Θ β HβS; split.
+  - intros Hf. left. apply flex_restrict_binds; assumption.
+  - intros [Hb | [τ Hb]];
+      exact (proj2 (flex_restrict_binds_inv _ _ _ _ Hb)).
+Qed.
+
+(** …and a PREFIX the atom is not bound in is likewise invisible — the shape
+    the FlexR-priority guard's context moves need (2026-08-18). *)
+Lemma a_flex_tvar_app_notin : forall (Ξ Θ : aenv) α,
+  α `notin` dom Ξ -> (a_flex_tvar (Ξ ++ Θ) α <-> a_flex_tvar Θ α).
+Proof.
+  intros Ξ Θ α Hα; split; [ | apply a_flex_tvar_weaken_app ].
+  intros [Hb | [τ Hb]]; unfold binds in Hb; apply in_app_or in Hb;
+    destruct Hb as [Hin | Hin];
+    solve [ exfalso; apply Hα; eapply binds_In; exact Hin
+          | left; exact Hin
+          | right; exists τ; exact Hin ].
 Qed.
 
 (* ⚙ RENAMED from [binds_weaken_mid] 2026-08-09 (cleanup audit §8.1c): it collided with a
