@@ -5029,12 +5029,11 @@ Lemma e_extract_impl_complete : forall S0 Θ0 NM α m P P'
     Ξl 𝒞l Ξs1 Q1 Sh0 Sh1 Sf1,
   {{ Sh0 ↝ Sh1 ⊨ Θ0 ⊢ P ≼[ α , m ] P' ⤳ Ξl ⨾ 𝒞l }}e ->
   {{ Sh1 ↝ Sf1 ⊨ (Ξl ++ Θ0) ⊩ 𝒞l ⨾ pskl_hole ⤳ Ξs1 ⨾ Q1 }}e ->
-  add α (ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] ftvar_in_aenv Θ0 ->
   add α (ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] Sh0 ->
   add α (ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] S0 ->
   e_extract_impl S0 Θ0 NM α m P P' HP HP' H <> None.
 Proof.
-  intros * Hhl Hhf Hscp0 HcovH Hcov0.
+  intros * Hhl Hhf HcovH Hcov0.
   simp e_extract_impl.
   (* ---- stage 1: the runner's look answers (level 1) ---- *)
   pose proof ((proj1 e_looksub_lookeq_sound) _ _ _ _ _ _ _ _ _ Hhl
@@ -5064,14 +5063,24 @@ Proof.
   (* ---- the RIGID ENRICHMENT (§8c.9 decision (a), fourth-pass form):
      each side's whole generated interval, so the b-core's scoping
      premises hold of the leaked openers the collections mention ---- *)
-  set (Δr1 := rigids (Sh1 ∖ Sh0)) in *.
-  set (Δr2 := rigids (lk_supply r1 ∖ S0)) in *.
+  (* ⭐⭐ THE ENRICHMENT IS CUT AT THE CONTEXT, NOT AT THE INPUT SUPPLY
+     (2026-08-18).  [α] is the variable the collection is solving FOR, and
+     at the SUB level's [SI-ForallL] it is the rule's own FRESH opener — so
+     [α ∈ ftvar Θ0] is not merely unproved, it is FALSE, and the old
+     scoping premise made this lemma unusable at its only consumer.  Taking
+     the rigid interval down to [ftvar Θ0] instead of to the input supply
+     puts the WHOLE supply — hence [α], [ftv P] and [ftv P'] — inside the
+     enriched contexts, and the premise is retired. *)
+  set (Δr1 := rigids (Sh1 ∖ ftvar_in_aenv Θ0)) in *.
+  set (Δr2 := rigids (lk_supply r1 ∖ ftvar_in_aenv Θ0)) in *.
   set (Θf1 := Δr1 ++ Ξl ++ Θ0) in *.
   set (Θf2 := Δr2 ++ lk_block r1 ++ Θ0) in *.
-  assert (Hr1d : dom Δr1 [=] Sh1 ∖ Sh0) by apply rigids_dom.
-  assert (Hr2d : dom Δr2 [=] lk_supply r1 ∖ S0) by apply rigids_dom.
-  assert (Hr1f : ftvar_in_aenv Δr1 [=] Sh1 ∖ Sh0) by apply rigids_ftvar.
-  assert (Hr2f : ftvar_in_aenv Δr2 [=] lk_supply r1 ∖ S0)
+  assert (Hr1d : dom Δr1 [=] Sh1 ∖ ftvar_in_aenv Θ0) by apply rigids_dom.
+  assert (Hr2d : dom Δr2 [=] lk_supply r1 ∖ ftvar_in_aenv Θ0)
+    by apply rigids_dom.
+  assert (Hr1f : ftvar_in_aenv Δr1 [=] Sh1 ∖ ftvar_in_aenv Θ0)
+    by apply rigids_ftvar.
+  assert (Hr2f : ftvar_in_aenv Δr2 [=] lk_supply r1 ∖ ftvar_in_aenv Θ0)
     by apply rigids_ftvar.
   assert (Hrig1 : forall x bd, binds x bd Δr1 -> bd = abind_tvar)
     by (intros x bd Hb; eapply rigids_binds_tvar; exact Hb).
@@ -5092,25 +5101,39 @@ Proof.
     unfold Θf1. apply e_solve_cstr_weaken_rigid; [ exact Hhf | exact Hrig1 ]. }
   (* ---- the b-core: the runner-side fold ---- *)
   set (V := add α (ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P')) in *.
-  assert (HVΘ : V [<=] ftvar_in_aenv Θ0) by (unfold V; clear - Hscp0; fsetdec).
+  (* the whole of each side's supply is now VISIBLE in that side's enriched
+     context, and [V] sits inside both supplies *)
+  assert (HΘSh0 : ftvar_in_aenv Θ0 [<=] Sh0)
+    by (clear - HcovH; unfold V in *; fsetdec).
+  assert (HΘS0 : ftvar_in_aenv Θ0 [<=] S0)
+    by (clear - Hcov0; unfold V in *; fsetdec).
+  assert (HSh1f1 : Sh1 [<=] ftvar_in_aenv Θf1).
+  { unfold Θf1. rewrite ! ftvar_in_aenv_app. rewrite Hr1f. clear. fsetdec. }
+  assert (HS1f2 : lk_supply r1 [<=] ftvar_in_aenv Θf2).
+  { unfold Θf2. rewrite ! ftvar_in_aenv_app. rewrite Hr2f. clear. fsetdec. }
+  assert (HVSh1 : V [<=] Sh1) by (clear - HcovH HgrH; fsetdec).
+  assert (HVS1 : V [<=] lk_supply r1) by (clear - Hcov0 Hgr1; fsetdec).
+  assert (HVf1 : V [<=] ftvar_in_aenv Θf1)
+    by (clear - HVSh1 HSh1f1; fsetdec).
+  assert (HVf2 : V [<=] ftvar_in_aenv Θf2)
+    by (clear - HVS1 HS1f2; fsetdec).
   assert (HrelP : rel_pskl nil V P P)
     by (apply rel_pskl_refl; unfold V; clear; fsetdec).
   assert (HrelP' : rel_pskl nil V P' P')
     by (apply rel_pskl_refl; unfold V; clear; fsetdec).
+  (* ⚙ The two rigid prefixes are peeled by RIGIDITY, not by freshness —
+     which is what lets the enrichment cover names of [V] that [Θ0] does not
+     mention (the opener [α] is exactly such a name). *)
   assert (Hagr : flex_agree_rel nil V Θf1 Θf2).
   { split; [ | intros a b Hin; inversion Hin ].
     intros x Hx.
-    assert (Hx1 : x `notin` dom Δr1)
-      by (rewrite Hr1d; clear - Hx HVΘ HcovH; fsetdec).
-    assert (Hx2 : x `notin` dom Δr2)
-      by (rewrite Hr2d; clear - Hx HVΘ Hcov0; fsetdec).
     assert (Hx3 : x `notin` dom Ξl)
-      by (clear - Hx HVΘ Hbl1b HcovH; fsetdec).
+      by (clear - Hx HVSh1 Hbl1b HcovH; fsetdec).
     assert (Hx4 : x `notin` dom (lk_block r1))
-      by (clear - Hx HVΘ Hbl2b Hcov0; fsetdec).
+      by (clear - Hx HVS1 Hbl2b Hcov0; fsetdec).
     unfold Θf1, Θf2.
-    rewrite (a_flex_tvar_notin_app Δr1 (Ξl ++ Θ0) Hx1).
-    rewrite (a_flex_tvar_notin_app Δr2 (lk_block r1 ++ Θ0) Hx2).
+    rewrite (a_flex_tvar_rigid_prefix_iff Δr1 (Ξl ++ Θ0) x Hrig1).
+    rewrite (a_flex_tvar_rigid_prefix_iff Δr2 (lk_block r1 ++ Θ0) x Hrig2).
     rewrite (a_flex_tvar_notin_app Ξl Θ0 Hx3).
     rewrite (a_flex_tvar_notin_app (lk_block r1) Θ0 Hx4).
     reflexivity. }
@@ -5145,19 +5168,23 @@ Proof.
       + assert (Hxd : x `in` dom Θ0) by (eapply a_flex_tvar_dom; exact Hf).
         clear - h2 Hcov0 Hd0 Hxd. fsetdec. }
   assert (Henr1 : Sh1 ∖ Sh0 [<=] ftvar_in_aenv Θf1)
-    by (unfold Θf1; rewrite ! ftvar_in_aenv_app; rewrite Hr1f;
-        clear; fsetdec).
+    by (clear - HSh1f1; fsetdec).
   assert (Henr2 : lk_supply r1 ∖ S0 [<=] ftvar_in_aenv Θf2)
-    by (unfold Θf2; rewrite ! ftvar_in_aenv_app; rewrite Hr2f;
-        clear; fsetdec).
+    by (clear - HS1f2; fsetdec).
+  assert (Hcs1 : ftvar_in_a_cstrs 𝒞l [<=] ftvar_in_aenv Θf1).
+  { assert (Hx : ftvar_in_pskl P ∪ ftvar_in_pskl P' [<=] ftvar_in_aenv Θf1)
+      by (clear - HVf1; unfold V in HVf1; fsetdec).
+    clear - Htight1 HSh1f1 Hx. fsetdec. }
+  assert (Hcs2 : ftvar_in_a_cstrs (lk_cstrs r1) [<=] ftvar_in_aenv Θf2).
+  { assert (Hx : ftvar_in_pskl P ∪ ftvar_in_pskl P' [<=] ftvar_in_aenv Θf2)
+      by (clear - HVf2; unfold V in HVf2; fsetdec).
+    clear - Htight2 HS1f2 Hx. fsetdec. }
   assert (Hscp1 : V ∪ cols_l nil ∪ ftvar_in_pskl pskl_hole
-            ∪ ftvar_in_a_cstrs 𝒞l [<=] ftvar_in_aenv Θf1).
-  { unfold Θf1. rewrite ! ftvar_in_aenv_app. rewrite Hr1f. simpl.
-    clear - Htight1 HVΘ. fsetdec. }
+            ∪ ftvar_in_a_cstrs 𝒞l [<=] ftvar_in_aenv Θf1)
+    by (simpl; clear - HVf1 Hcs1; fsetdec).
   assert (Hscp2 : V ∪ cols_r nil ∪ ftvar_in_pskl pskl_hole
-            ∪ ftvar_in_a_cstrs (lk_cstrs r1) [<=] ftvar_in_aenv Θf2).
-  { unfold Θf2. rewrite ! ftvar_in_aenv_app. rewrite Hr2f. simpl.
-    clear - Htight2 HVΘ. fsetdec. }
+            ∪ ftvar_in_a_cstrs (lk_cstrs r1) [<=] ftvar_in_aenv Θf2)
+    by (simpl; clear - HVf2 Hcs2; fsetdec).
   pose proof (@bcore_sub (S (size_pskl P + size_pskl P'))
                 Sh0 Sh1 _ _ _ P P' _ _ ltac:(lia) Hhl
                 _ _ _ _ _ _ _ (exist _ r1 Hr1) Hcl
@@ -5168,8 +5195,8 @@ Proof.
                 ltac:(simpl; clear; fsetdec)
                 Hfold1 (rel_pskl__hole nil V) Hagr
                 Hb1 Hb2 Hop1 Hop2 Henr1 Henr2 Hscp1 Hscp2
-                ltac:(clear - HcovH HVΘ; unfold V; fsetdec)
-                ltac:(clear - Hcov0 HVΘ; unfold V; fsetdec)
+                ltac:(clear - HcovH; unfold V; fsetdec)
+                ltac:(clear - Hcov0; unfold V; fsetdec)
                 (* ⭐ the five look-context premises (2026-08-18): the runner
                    runs at the DERIVATION's own [Θ0], so the agreement is
                    reflexivity and the two visibilities are the block-prefix
@@ -5228,15 +5255,14 @@ Lemma e_extract_run_complete : forall S0 Θ0 NM α m P P' HP HP'
     Ξl 𝒞l Ξs1 Q1 Sh0 Sh1 Sf1,
   {{ Sh0 ↝ Sh1 ⊨ Θ0 ⊢ P ≼[ α , m ] P' ⤳ Ξl ⨾ 𝒞l }}e ->
   {{ Sh1 ↝ Sf1 ⊨ (Ξl ++ Θ0) ⊩ 𝒞l ⨾ pskl_hole ⤳ Ξs1 ⨾ Q1 }}e ->
-  add α (ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] ftvar_in_aenv Θ0 ->
   add α (ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] Sh0 ->
   add α (ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] S0 ->
   e_extract_run S0 Θ0 NM α m P P' HP HP' <> None.
 Proof.
-  intros * Hhl Hhf Hscp0 HcovH Hcov0. unfold e_extract_run.
+  intros * Hhl Hhf HcovH Hcov0. unfold e_extract_run.
   pose proof (e_extract_impl_complete HP HP'
                 (@e_extract_order_total S0 Θ0 NM α m P P' HP HP')
-                Hhl Hhf Hscp0 HcovH Hcov0) as Hne.
+                Hhl Hhf HcovH Hcov0) as Hne.
   revert Hne.
   destruct (e_extract_impl S0 Θ0 NM α m P P' HP HP'
               (@e_extract_order_total S0 Θ0 NM α m P P' HP HP'))
