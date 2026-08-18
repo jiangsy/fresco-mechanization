@@ -5168,10 +5168,12 @@ exists.  ⚙ Nothing else is missing on the declarative side:
 
 ### 8c.24 ⛔ THE LIFT, `a_*` ⟹ `e_*` — the campaign's LAST DEBT, SCOUTED AND DESIGNED (2026-08-19)
 
-⛔ **NOT STARTED IN THE TREE.**  This section is a design, not a closure:
-one file was written, compiled as far as the scout, and DELETED rather than
-committed half-built.  What follows is what the scout established, so the
-next session types rather than re-derives.
+🟡 **THE SCOUT HAS LANDED; TEN BLOCKS REMAIN.**
+`frost/ext_algo/prop_lift.v` §2 is Qed and `Closed under the global context`:
+`e_guess_mono_lift` and `e_guess_lift`, plus §1's `close` rename fact.  That
+is `guess^TY` — the block with all three hard shapes — so the MOTIVE below is
+no longer a proposal but a validated one.  What is left is look, solve, cstr,
+extract, consis, sub, split, pat and typing, in that order.
 
 #### Why it is the last debt
 
@@ -5237,30 +5239,37 @@ BODY sub-derivation are both plain hypotheses, so one application of
 `(αs, A)` and the body's context together, and the chain fixes `Θ1` because
 `a_guess_mono_generated_fresh` puts `dom αs` off `ftvar_in_aenv Θ1`.
 
-#### ⚙ The motive the scout converged on (for `guess^TY`; the others mirror it)
+#### ⭐⭐ THE MOTIVE, AS BUILT — and it carries TWO avoid-sets
 
 ```coq
 Lemma e_guess_mono_lift_n : forall n P, size_pskl P <= n ->
   forall Θ Ξ A, a_guess_mono Θ P Ξ A -> uniq Ξ ->
-  forall S0 (L : atoms),
+  forall S0 (L K : atoms),
     ftvar_in_pskl P [<=] S0 ->
-    S0 ∩ L [=] empty ->                       (* (2), at the top *)
-    dom Ξ ∩ (S0 ∪ L) [=] empty ->             (* (2), on the block *)
+    dom Ξ ∩ (S0 ∪ L) [=] empty ->
+    S0 ∩ K [=] empty ->
   exists S1 ps,
     e_guess_mono S0 P S1 (swaps_aenv ps Ξ) (swaps_ptyp ps A)
     /\ (forall a b, In (a, b) ps -> a `in` dom Ξ /\ b `notin` L)
-    /\ (forall a b, In (a, b) ps -> b `in` dom (swaps_aenv ps Ξ))
-    /\ S1 ∩ L [=] empty.
+    /\ dom (swaps_aenv ps Ξ) ∩ L [=] empty
+    /\ S1 ∩ K [=] empty.
 ```
 
-- the SOURCE column ranges over `dom Ξ` and the TARGET column dodges `L`:
-  that pair is what makes every "the other premise's data is fixed by this
-  premise's chain" step a one-liner;
-- the third conjunct (targets land INSIDE the image block) is what the ∀ row
-  needs to know its own witness is not moved by the recursive chain — the
-  image block is fresh for the input supply, which contains that witness;
-- the fourth is what the arrow row's SECOND call needs to know the right
-  block is still off the threaded supply.
+⭐ **`L` and `K` do different jobs and ONE SET CANNOT DO BOTH.**  `L` is
+dodged by the chain's TARGETS and by the IMAGE BLOCK — that is what lets one
+premise's answer be fixed by the other premise's chain.  `K` is dodged by the
+OUTPUT SUPPLY — that is what lets the arrow row's SECOND call know the
+right-hand block is still off the threaded supply.  Demanding a single set be
+disjoint from both is CONTRADICTORY, because the image block LIVES in the
+output supply.  ⚙ The arrow row instantiates them as
+`L1 := L ∪ dom Ξ2 ∪ S0`, `K1 := K ∪ dom Ξ2` on the left, and
+`L2 := L ∪ dom (swaps_aenv ps1 Ξ1) ∪ S1`, `K2 := K` on the right.
+
+⭐ The SOURCE column ranging over `dom Ξ` is the other half of the trick: it
+is what the ∀ row uses to know the recursive chain does not move its own
+witness (choose the witness outside `dom Ξ`), so the third conjunct an
+earlier draft carried — "targets land inside the image block" — is not
+needed.
 
 ⭐ **THE ∀ ROW IS SHORTER THAN IT LOOKS.**  `close` does not remember which
 atom it abstracted, so the transposition that moves the `a_` rule's witness
@@ -5292,7 +5301,7 @@ Sixteen judgements, 120 `a_*` rows:
 
 | block | rows |
 |---|---|
-| `a_guess_mono` / `a_guess` | 6 + 2 |
+| `a_guess_mono` / `a_guess` | 6 + 2 ✅ **DONE** |
 | `a_lookeq` / `a_looksub` | 11 + 8 |
 | `a_solve_eq` / `a_solve_sub` / `a_solve_cstr` | 12 + 9 + 3 |
 | `a_extract` | 1 |
@@ -5320,3 +5329,23 @@ by `a_typing_complete_decl_infer` → `e_typing_lift` → `e_typing_run_complete
 and the decidability corollary's NEGATIVE branch then refutes the DECLARATIVE
 judgement rather than the threaded one.  That is the statement README.v §VI
 should carry when it lands.
+
+#### ⚙ WHAT THE SCOUT COST, AND WHERE — measure before writing the next block
+
+`e_guess_mono_lift_n` is 11 s.  Its first draft was **>120 s with no error**,
+and `coqc -time` put the whole of it in two places, both the documented
+traps:
+
+- **40 s in the `ltac:`-ARGUMENT `fsetdec`s** of the two `IHn` applications.
+  Every side condition of a recursive call is now a NAMED hypothesis
+  (`HcovP`, `HΞ1`, `HK1`, …) asserted before the call.
+- **10 s + 3.7 s in two `fsetdec`s over EIGHT set variables.**  Each is now
+  split into two or three `assert`s of at most five.
+
+⚠️ And one that is new: the ∀ row draws its witness against SEVEN sets at
+once, so every use of that freshness goes through `destruct_notin; auto`, not
+through an `fsetdec` over the seven-fold union.  Expect the same at every
+binder row above.
+
+⚙ Write the next block with those three rules from the start; they are not
+optimisations, they are the difference between 10 s and not returning.
