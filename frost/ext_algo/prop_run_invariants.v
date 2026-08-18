@@ -54,6 +54,7 @@ Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
 Require Import src.frost.prop_ln.
 Require Import src.frost.prop_coercions.               (* mono_ptyp_lc *)
+Require Import src.frost.algo.prop_inc.                (* lc_aenv *)
 Require Import src.frost.algo.prop_metasubst.          (* all_flex_mono *)
 Require Import src.frost.algo.sub.prop_solve_sub.      (* lc_pskl_*_inv *)
 Require Import src.frost.ext_algo.notations.
@@ -415,3 +416,333 @@ Proof.
       entry_def_mono_var_typ, entry_def_mono_tvar,
       all_flex_mono_defs_mono.
 Qed.
+
+(* ===================================================================== *)
+(*  §4  Context PAYLOADS stay LOCALLY CLOSED, and the outputs with them   *)
+(*                                                                        *)
+(*  §8c.2's (2b), taken by the LIGHTER of its two routes.  The alternative *)
+(*  was to compose the bridge with [a_pat_sound] / [a_typing_sound], which *)
+(*  already return output well-formedness — but that drags soundness' four *)
+(*  premises ([{{ ⊢ Θ0 }}a], [a_wf_pskl], mode compatibility,             *)
+(*  [{{ Θ0 ⊢ᵉ e }}a]) into every completeness motive above, and each has   *)
+(*  to be re-established at every recursive call.  A direct invariant      *)
+(*  costs ONE context hypothesis instead, and it costs almost nothing to   *)
+(*  prove: [lc_abind] (algo/prop_inc.v) sends [tvar], [flex_mono] AND      *)
+(*  [flex_mono_def] to [True], so every block the algorithm generates is   *)
+(*  [lc_aenv] for free, and only the four rows that push a TERM VARIABLE   *)
+(*  have anything to discharge.                                           *)
+(*                                                                        *)
+(*  ⚙ The predicate is not new — [lc_aenv] is algo/prop_inc.v's, and it is *)
+(*  what [a_wf_aenv_lc_aenv] projects a well-formed context to.  What is   *)
+(*  new is that the RUN preserves it.                                     *)
+(* ===================================================================== *)
+
+Lemma lc_abind_tvar : lc_abind abind_tvar.
+Proof. exact I. Qed.
+
+Lemma lc_abind_flex_mono : lc_abind abind_flex_mono.
+Proof. exact I. Qed.
+
+Lemma lc_abind_def : forall τ, lc_abind (abind_flex_mono_def τ).
+Proof. intros; exact I. Qed.
+
+Lemma lc_abind_var_typ : forall A, lc_ptyp A -> lc_abind (abind_var_typ A).
+Proof. intros; assumption. Qed.
+
+Lemma lc_abind_var_skl : forall P, lc_pskl P -> lc_abind (abind_var_skl P).
+Proof. intros; assumption. Qed.
+
+(** ⭐ Every block the algorithm generates is flexible-only, so it satisfies
+    the discipline outright — this is the whole reason the invariant is
+    cheap. *)
+Lemma all_flex_mono_lc_aenv : forall Ξ, all_flex_mono Ξ -> lc_aenv Ξ.
+Proof.
+  intros Ξ H. unfold lc_aenv. induction H as [ | [x b] Ξ' Hb Ht IH ];
+    [ constructor | ].
+  constructor; [ simpl in *; subst; exact I | exact IH ].
+Qed.
+
+(** A [a_suffix] block is flexible-only too ([a_suffix_binding] is
+    [flex_mono | flex_mono_def]), and both payload shapes are [True]. *)
+Lemma a_suffix_lc_aenv : forall Ξ, a_suffix Ξ -> lc_aenv Ξ.
+Proof.
+  intros Ξ H. unfold lc_aenv. induction H as [ | Ξ' x b Ht IH Hb ];
+    [ constructor | ].
+  simpl. constructor; [ destruct Hb; exact I | exact IH ].
+Qed.
+
+(** ⚠️ [eauto] indexes hints by the head symbol of their CONCLUSION, and the
+    scripts below run with [lc_aenv] unfolded (the [Forall] surgery needs it),
+    so a hint whose conclusion says [lc_aenv] is never even tried.  Restate
+    the two block facts with [Forall] at the head. *)
+Lemma all_flex_mono_lc_forall : forall Ξ,
+  all_flex_mono Ξ -> Forall (fun e : atom * abind => lc_abind (snd e)) Ξ.
+Proof. exact all_flex_mono_lc_aenv. Qed.
+
+Lemma a_suffix_lc_forall : forall Ξ,
+  a_suffix Ξ -> Forall (fun e : atom * abind => lc_abind (snd e)) Ξ.
+Proof. exact a_suffix_lc_aenv. Qed.
+
+Lemma lc_aenv_app_intro : forall Ξ Θ,
+  lc_aenv Ξ -> lc_aenv Θ -> lc_aenv (Ξ ++ Θ).
+Proof. intros. apply Forall_app; split; assumption. Qed.
+
+Lemma lc_aenv_binds : forall (x : atom) b (Θ : aenv),
+  lc_aenv Θ -> binds x b Θ -> lc_abind b.
+Proof.
+  intros x b Θ H. unfold lc_aenv in H.
+  induction H as [ | [y b'] Θ' Hb Ht IH ]; intros Hbd; [ inversion Hbd | ].
+  destruct Hbd as [Heq | Hin];
+    [ inversion Heq; subst; exact Hb | exact (IH Hin) ].
+Qed.
+
+(* ⚠️ [binds] / [lc_aenv] / [lc_abind] are DEFINITIONS, so none of the three
+   indexes is a strict implicit — pin the prefix rather than counting. *)
+Arguments lc_aenv_binds {x b Θ} _ _.
+
+(* --- §4a  the CONSISTENCY block, and the SUBTYPING walk ---------------- *)
+
+Lemma e_assign_unify_consis_env_lc :
+  (forall S0 Θ Ξ α P S1 Θ',
+     {{ S0 ↝ S1 ⊨ Θ ⊲[ Ξ ] α ≔ P ⊣ Θ' }}e ->
+     lc_aenv Θ -> lc_aenv Ξ -> lc_aenv Θ') /\
+  (forall S0 Θ α β S1 Θ',
+     {{ S0 ↝ S1 ⊨ Θ ⊲ α ≈ᵘ β ⊣ Θ' }}e ->
+     lc_aenv Θ -> lc_aenv Θ') /\
+  (forall Δ1 Δ2 S0 Θ P0 P Q S1 Θ',
+     {{ S0 ↝ S1 ⊨ Θ ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ' }}e ->
+     lc_aenv Θ -> lc_aenv Θ').
+Proof.
+  apply (e_assign_unify_consis_mutind
+           (fun S0 Θ Ξ α P S1 Θ' _ => lc_aenv Θ -> lc_aenv Ξ -> lc_aenv Θ')
+           (fun S0 Θ α β S1 Θ' _ => lc_aenv Θ -> lc_aenv Θ')
+           (fun Δ1 Δ2 S0 Θ P0 P Q S1 Θ' _ => lc_aenv Θ -> lc_aenv Θ'));
+    intros;
+    unfold lc_aenv in *;
+    simpl in *;
+    repeat match goal with
+    | H : Forall _ (_ ++ _) |- _ => apply Forall_app in H; destruct H
+    | H : Forall _ (_ :: _) |- _ => inversion H; subst; clear H
+    end;
+    (* the ∀ rows' IH yields the output UNDER the fresh rigid entry *)
+    repeat match goal with
+    | IH : Forall ?F ?Θin -> Forall ?F (_ :: _) |- _ =>
+        let HH := fresh "Hout" in
+        assert (HH := IH ltac:(eauto using Forall_app_intro, Forall_cons,
+                                 Forall_nil, lc_abind_tvar,
+                                 lc_abind_flex_mono, lc_abind_def));
+        inversion HH; subst; clear IH HH
+    end;
+    (* the guess's block is flex-only, so it is [lc_aenv] outright *)
+    repeat match goal with
+    | H : e_guess_mono _ _ _ ?Ξ _ |- _ =>
+        lazymatch goal with
+        | _ : all_flex_mono Ξ |- _ => fail
+        | _ => pose proof (e_guess_mono_block_flex H)
+        end
+    end;
+    eauto 8 using Forall_app_intro, Forall_cons, Forall_nil,
+      all_flex_mono_lc_forall, a_suffix_lc_forall, lc_abind_tvar,
+      lc_abind_flex_mono, lc_abind_def, lc_abind_var_typ, lc_abind_var_skl.
+Qed.
+
+Corollary e_consis_env_lc : forall Δ1 Δ2 S0 Θ P0 P Q S1 Θ',
+  {{ S0 ↝ S1 ⊨ Θ ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ' }}e ->
+  lc_aenv Θ -> lc_aenv Θ'.
+Proof.
+  intros. eapply (proj2 (proj2 e_assign_unify_consis_env_lc)); eassumption.
+Qed.
+
+Lemma e_sub_sub_flex_env_lc :
+  (forall S0 NM M P0 Θ0 P Q S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e ->
+     lc_aenv Θ0 -> lc_aenv Θ1) /\
+  (forall S0 NM M P0 Θ0 Ξ α Q S1 Θ1,
+     e_sub_flex S0 NM M P0 Θ0 Ξ α Q S1 Θ1 ->
+     lc_aenv Θ0 -> lc_aenv Ξ -> lc_aenv Θ1).
+Proof.
+  apply e_sub_sub_flex_mutind;
+    intros;
+    unfold lc_aenv in *;
+    simpl in *;
+    repeat match goal with
+    | H : e_consis_chk _ _ _ _ _ _ |- _ => destruct H as [? H]
+    end;
+    repeat match goal with
+    | H : Forall _ (_ ++ _) |- _ => apply Forall_app in H; destruct H
+    | H : Forall _ (_ :: _) |- _ => inversion H; subst; clear H
+    end;
+    (* the Check row and Arrow's first premise delegate to §4a *)
+    repeat match goal with
+    | H : {{ _ ↝ _ ⊨ ?Θ ⊢[ _ | _ | _ ] _ ∼ _ ⊣ _ }}e |- _ =>
+        let HH := fresh "Hlc" in
+        pose proof (e_consis_env_lc H) as HH; unfold lc_aenv in HH; clear H
+    end;
+    (* ForallR's IH yields the output under the rigid entry AND the junk *)
+    repeat match goal with
+    | IH : Forall ?F ?Θin -> Forall ?F (_ ++ _) |- _ =>
+        let HH := fresh "Hout" in
+        assert (HH := IH ltac:(eauto using Forall_app_intro, Forall_cons,
+                                 Forall_nil, lc_abind_tvar,
+                                 lc_abind_flex_mono, lc_abind_def));
+        simpl in HH;
+        repeat (apply Forall_app in HH; destruct HH as [? HH]);
+        repeat match goal with
+        | H : Forall _ (_ :: _) |- _ => inversion H; subst; clear H
+        end;
+        clear IH
+    end;
+    (* ForallL's generated block is FLEX-ONLY *)
+    repeat match goal with
+    | H : {{ _ ↝ _ ⊨ _ ⊢ _ ⊳[ _ , _ , _ ] _ ⤳ ?Ξ ↪ _ }}e |- _ =>
+        lazymatch goal with
+        | _ : all_flex_mono Ξ |- _ => fail
+        | _ => pose proof (e_extract_block_flex H)
+        end
+    end;
+    eauto 10 using Forall_app_intro, Forall_cons, Forall_nil,
+      all_flex_mono_lc_forall, a_suffix_lc_forall, lc_abind_tvar,
+      lc_abind_flex_mono, lc_abind_def, lc_abind_var_typ, lc_abind_var_skl.
+Qed.
+
+Corollary e_sub_env_lc : forall S0 NM M P0 Θ0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e ->
+  lc_aenv Θ0 -> lc_aenv Θ1.
+Proof. intros. eapply (proj1 e_sub_sub_flex_env_lc); eassumption. Qed.
+
+(* --- §4b  the SPLIT, both outputs and the context --------------------- *)
+
+Lemma e_split_lc : forall S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}e ->
+  lc_pskl P0 -> lc_pskl P /\ lc_pskl Q.
+Proof.
+  intros * H Hlc. destruct H.
+  - destruct (lc_pskl_arrow_inv Hlc). split; assumption.
+  - split; constructor.
+  - split; apply lc_pskl_var_f.
+Qed.
+
+(** ⚙ The flex row's output context is a CONSISTENCY run's, at the two
+    freshly invented flexibles — so it delegates to §4a. *)
+Lemma e_split_env_lc : forall S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}e ->
+  lc_aenv Θ0 -> lc_aenv Θ1.
+Proof.
+  intros * H Hlc. destruct H; [ assumption | assumption | ].
+  eapply e_consis_env_lc; [ eassumption | ].
+  unfold lc_aenv in *; simpl.
+  constructor; [ exact I | ]. constructor; [ exact I | ]. assumption.
+Qed.
+
+(* --- §4c  SKELETON INFERENCE — the output skeleton and the context ----- *)
+
+(** ⚠️ [lc_exp]'s two binder rows are COFINITE, so their inversion yields a
+    FAMILY; the [abs] rows need it at the rule's own witness, and the
+    hypothesis' generated name shifts from row to row.  Select it by TYPE. *)
+Local Ltac open_exp_lc x :=
+  match goal with
+  | Hx : forall _ : _, lc_exp (open_exp_wrt_exp _ (exp_var_f _)) |- _ =>
+      exact (Hx x)
+  end.
+
+(** The abs rows discard the binder AND the junk suffix: the premise's output
+    is [Ξ ++ (x ~ b) ++ Θ], the conclusion's is [Ξ ++ Θ]. *)
+Local Ltac drop_binder H :=
+  unfold lc_aenv in *; simpl in H;
+  apply Forall_app in H; destruct H as [? H];
+  inversion H; subst;
+  apply Forall_app; split; assumption.
+
+(** The two conjuncts are proved TOGETHER: the abs rows recurse under a term
+    variable whose payload comes from the SPLIT's output, so the output-lc
+    conjunct feeds the context-lc one at the very next row. *)
+Lemma e_pat_lc_env : forall S0 m Θ0 P0 e Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ1 }}e ->
+  lc_pskl P0 -> lc_exp e -> lc_aenv Θ0 -> aenv_defs_mono Θ0 ->
+  lc_pskl Q /\ lc_aenv Θ1.
+Proof.
+  intros S0 m Θ0 P0 e Q S1 Θ1 H.
+  induction H; intros HP0 He HΘ Hdm.
+  - (* AP-Unit *)
+    split; [ eapply e_sub_lc | eapply e_sub_env_lc ];
+      eauto using lc_pskl_unit.
+  - (* AP-Var, type-bound *)
+    assert (HA : lc_ptyp A)
+      by (exact (lc_aenv_binds HΘ H)).
+    split; [ eapply e_sub_lc | eapply e_sub_env_lc ];
+      eauto using ptyp_to_pskl_lc.
+  - (* AP-Var, skeleton-bound *)
+    assert (HA : lc_pskl P)
+      by (exact (lc_aenv_binds HΘ H)).
+    split; [ eapply e_sub_lc | eapply e_sub_env_lc ]; eauto.
+  - (* AP-Anno *)
+    inversion He; subst.
+    split; [ eapply e_sub_lc | eapply e_sub_env_lc ];
+      eauto using ptyp_to_pskl_lc.
+  - (* AP-Freeze *)
+    inversion He; subst. apply IHe_pat; auto.
+  - (* AP-Abs *)
+    inversion He; subst.
+    destruct (e_split_lc H0 HP0) as [HPlc HQ0lc].
+    pose proof (e_split_env_lc H0 HΘ) as HΘ1.
+    pose proof (e_split_defs_mono H0 Hdm) as Hdm1.
+    destruct (IHe_pat HQ0lc ltac:(open_exp_lc x) ltac:(unfold lc_aenv in *; simpl;
+                constructor; [ simpl; exact HPlc | exact HΘ1 ])
+                ltac:(simpl; constructor;
+                      [ exact I | exact Hdm1 ])) as [HQlc HΘout].
+    split; [ apply lc_pskl_arrow; assumption | ].
+    drop_binder HΘout.
+  - (* AP-AbsAnno *)
+    inversion He; subst.
+    destruct (e_split_lc H0 HP0) as [HPlc HQ0lc].
+    pose proof (e_split_env_lc H0 HΘ) as HΘ1.
+    pose proof (e_split_defs_mono H0 Hdm) as Hdm1.
+    destruct H1 as [Qm Hc].
+    pose proof (e_consis_env_lc Hc HΘ1) as HΘ2.
+    pose proof (e_consis_defs_mono Hc Hdm1) as Hdm2.
+    destruct (IHe_pat HQ0lc ltac:(open_exp_lc x) ltac:(unfold lc_aenv in *; simpl;
+                constructor; [ simpl; assumption | exact HΘ2 ])
+                ltac:(simpl; constructor;
+                      [ exact I | exact Hdm2 ])) as [HQlc HΘout].
+    split; [ apply lc_pskl_arrow;
+             [ apply ptyp_to_pskl_lc; assumption | assumption ] | ].
+    drop_binder HΘout.
+  - (* AP-AbsCheck *)
+    inversion He; subst.
+    destruct (IHe_pat (lc_pskl_hole) ltac:(open_exp_lc x)
+                ltac:(unfold lc_aenv in *; simpl;
+                      constructor; [ simpl; exact lc_pskl_hole | exact HΘ ])
+                ltac:(simpl; constructor; [ exact I | exact Hdm ]))
+      as [HQlc HΘout].
+    split; [ apply lc_pskl_tophole; apply lc_pskl_arrow;
+             [ exact lc_pskl_hole | exact HQlc ] | ].
+    drop_binder HΘout.
+  - (* AP-AbsAnnoCheck *)
+    inversion He; subst.
+    destruct (IHe_pat (lc_pskl_hole) ltac:(open_exp_lc x)
+                ltac:(unfold lc_aenv in *; simpl;
+                      constructor; [ simpl; assumption | exact HΘ ])
+                ltac:(simpl; constructor; [ exact I | exact Hdm ]))
+      as [HQlc HΘout].
+    split; [ apply lc_pskl_tophole; apply lc_pskl_arrow;
+             [ apply ptyp_to_pskl_lc; assumption | exact HQlc ] | ].
+    drop_binder HΘout.
+  - (* AP-App *)
+    inversion He; subst.
+    destruct (IHe_pat1 lc_pskl_hole ltac:(assumption) HΘ Hdm)
+      as [HP0lc HΘ1].
+    pose proof (e_pat_defs_mono H Hdm) as Hdm1.
+    destruct (IHe_pat2 ltac:(apply lc_pskl_arrow; assumption)
+                ltac:(assumption) HΘ1 Hdm1) as [HPQlc HΘ2].
+    split; [ exact (proj2 (lc_pskl_arrow_inv HPQlc)) | exact HΘ2 ].
+Qed.
+
+Corollary e_pat_lc : forall S0 m Θ0 P0 e Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ1 }}e ->
+  lc_pskl P0 -> lc_exp e -> lc_aenv Θ0 -> aenv_defs_mono Θ0 -> lc_pskl Q.
+Proof. intros. eapply e_pat_lc_env; eassumption. Qed.
+
+Corollary e_pat_env_lc : forall S0 m Θ0 P0 e Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ1 }}e ->
+  lc_pskl P0 -> lc_exp e -> lc_aenv Θ0 -> aenv_defs_mono Θ0 -> lc_aenv Θ1.
+Proof. intros. eapply e_pat_lc_env; eassumption. Qed.
