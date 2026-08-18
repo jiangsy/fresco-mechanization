@@ -10,6 +10,7 @@
     §3  [e_lookeq_rel]     — the eq collection
     §4  [e_looksub_rel]    — the sub collection
     §5  [e_solve_eq_rel]   — the solve layer's EQ half
+    §6  [e_guess_rel]      — [guess], three lines off [e_guess_mono_rel]
 
     ⭐ WHY A CHAIN AND NOT A PAIRING.  The statement STEP 2 has to hit is
 
@@ -36,21 +37,17 @@
     (2) Names are taken off [match type of D1], never off [inversion]'s
     generated ones.
 
-    ⛔⛔ WHAT IS *NOT* HERE, AND WHY — [e_solve_sub_rel], and with it
-    [e_solve_cstr_rel] / [e_guess_rel] / [e_extract_rel].  §8c.16 §D's
-    premise ("[e_extract_det] is TRUE now that the four dispatch guards are
-    landed") is REFUTED: a FIFTH guard is owed, on the SOLVE layer, and the
-    witness is [cex/probe_solve_sub_forall_r_drift.v] (Qed,
-    assumptions-closed).  At a VARIABLE subject against a ghost-free [∀]
-    counterpart in check mode, [SS-Var] and [SS-ForallR] both fire and agree
-    on the block and the yield, differing ONLY in supply, by one atom; and
-    [SS-Vacuous] races [SS-ForallL] the same way at a [∀] subject against a
-    [◇] counterpart.  The reference implementation has neither ambiguity —
-    [solve_sub] matches [SolS-Var] first and [SolS-ForallL] before
-    [SolS-Vacuous] (type.ml:494) — so the exclusions have to be PREMISES,
-    exactly as for guards 1-4.  docs/HANDOFF-extractable-algo-encoding.md
-    §8c.18 has the overlap audit and the design fork; docs/PAPER-GAPS.md has
-    the paper-facing half. *)
+    ⛔ WHAT IS STILL OWED — [e_solve_sub_rel], and downstream of it
+    [e_solve_cstr_rel] and [e_extract_rel].  ⚙ Both were BLOCKED until
+    2026-08-18: §8c.16 §D's premise ("[e_extract_det] is TRUE now that the
+    four dispatch guards are landed") was REFUTED, because the SOLVE layer
+    was still ambiguous — at a VARIABLE subject against a ghost-free [∀]
+    counterpart in check mode [SS-Var] and [SS-ForallR] both fired and
+    differed ONLY in supply, by one atom, and [SS-Vacuous] raced
+    [SS-ForallL] the same way at a [∀] subject against [◇].  GUARD 5
+    (§8c.19) closes both cells on both encodings, so the statement is TRUE
+    again and the two lemmas are ordinary work.
+    docs/HANDOFF-extractable-algo-encoding.md §8c.18–§8c.19. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -1679,4 +1676,36 @@ Corollary e_solve_eq_rel : forall S0 Θ P Q S1 Ξ Y S1' Ξ' Y',
 Proof.
   intros * D1 D2 Hcov.
   exact (e_solve_eq_rel_n D1 (le_n _) Hcov D2).
+Qed.
+
+(* ===================================================================== *)
+(*  §6  [guess] — three lines off [e_guess_mono_rel]                      *)
+(*                                                                        *)
+(*  ⚙ At [NM = SK] the judgement is the IDENTITY and the empty chain does *)
+(*  it; at [NM = TY] it is [guess^TY] followed by the [ptyp → pskl]       *)
+(*  reading, which the chain commutes with.                              *)
+(* ===================================================================== *)
+
+Lemma e_guess_rel : forall S0 NM Q S1 Ξ Y S1' Ξ' Y',
+  e_guess S0 NM Q S1 Ξ Y ->
+  e_guess S0 NM Q S1' Ξ' Y' ->
+  ftvar_in_pskl Q [<=] S0 ->
+  exists ps,
+    (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0) /\
+    swaps_atoms ps S1 [=] S1' /\
+    swaps_aenv ps Ξ = Ξ' /\
+    swaps_pskl ps Y = Y'.
+Proof.
+  intros * D1 D2 Hcov.
+  inversion D1; subst; inversion D2; subst.
+  - (* SK — the identity *)
+    exists (@nil (atom * atom)). rel4; simpl; try reflexivity.
+    intros ? ? [].
+  - (* TY — [guess^TY]'s own determinism, read through [ptyp_to_pskl] *)
+    match goal with
+    | G1 : e_guess_mono S0 Q S1 Ξ _, G2 : e_guess_mono S0 Q S1' Ξ' _ |- _ =>
+        destruct (e_guess_mono_rel G1 G2 Hcov) as [ps [Hav [HS [HX HA]]]]
+    end.
+    exists ps. rel4; [ exact Hav | exact HS | exact HX | ].
+    rewrite swaps_pskl_ptyp_to_pskl, HA. reflexivity.
 Qed.
