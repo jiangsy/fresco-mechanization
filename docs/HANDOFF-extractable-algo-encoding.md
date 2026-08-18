@@ -3830,8 +3830,9 @@ of `prop_sub_complete.v`, whose §1/§3/§4 are already Qed).
 
 ### 8c.15 ⚙ GUARD 3, THE ForallR-PRIORITY SPLIT — landed and green on 14 of 15 files; P6-Ss is the one owed, and its price is FIVE MEASURED OBLIGATIONS, not one (2026-08-18)
 
-**Where the work is.**  Branch **`remech-guard3-wip`**, commit **`d78d8f6`**,
-marked `[WIP — DOES NOT BUILD]`.  `remech` itself is untouched and GREEN
+**Where the work is.**  Branch **`remech-guard3-wip`**, commits **`d78d8f6`**
+(the guard + the fourteen repaired files) and **`ab5ba02`** (the two PEELS of
+§E, both Qed), both marked `[WIP — DOES NOT BUILD]`.  `remech` itself is untouched and GREEN
 (`make coq` rc=0, README 32/32).  The branch carries the rule change, the
 whole kit, and the fourteen repaired files; `frost/algo/sub/look/prop_sub_cstr.v`
 (P6-Ss) is reverted there to its pre-guard state and is the single file owed.
@@ -3947,12 +3948,32 @@ target, `SS-Vacuous` a ghost one, `SS-Arrow`/`SS-GhostLF` an arrow).
 `SS-ForallR` renames; `SS-ForallL` / `SS-UnivGhostL` recurse and need a
 CONTEXT EXCHANGE — check `a_solve_sub_eq_ctx_change` before writing one.
 
-**(3) `a_looksub_solve_forall_l` — the ITERATED reorder**, by induction on
-`size_pskl P'`: if `forall_r_off M P'` holds, fire `LS-ForallL` directly
-(today's proof); otherwise peel with (1)+(2) and rebuild with `LS-ForallR` on
-top.  ⚠️ One peel is NOT enough — the peeled target can be a ghost-free `∀`
-again, which is why this is an induction and not a lemma application.  Sites
-3–6 call this.
+**(3) ⛔ THE ITERATED REORDER IS NOT A LEMMA — THE BINDER MISMATCH.**
+The plan was an induction on `size_pskl P'`: if `forall_r_off M P'` holds, fire
+`LS-ForallL` directly (today's proof); otherwise peel with (1)+(2) and rebuild
+with `LS-ForallR` on top.  ⚠️ One peel is not enough (the peeled target can be
+a ghost-free `∀` again), so it has to be an induction — but that is not what
+blocks it.
+
+**What blocks it**: the collected constraint NAMES the peeled counterpart, so
+the collection's peel binder and the solve's peel binder must be **the same
+atom**, and neither side can always yield.
+
+| where | collection's binder | solve's binder |
+|---|---|---|
+| at the α-STACK LEAF | FREE — `LS-Var` has no binder | FORCED — `SS-ForallR` LEAKS its binder into the output `P'`, so renaming it MOVES `Pa` |
+| above the leaf | FORCED — `LS-ForallR` leaks into 𝒞 | free-ish |
+
+and `Pa` is exactly what P6-Ss's precision, `a_wf_pskl` and `a_inc` conjuncts
+are stated about, so it cannot be moved.
+
+⇒ **The peel has to happen AT THE ROW, not in a lemma.**  Only there is the
+PRECISION pack in scope, and precision is what shows the forced binder is
+fresh for `Pa` — `ad_partial_precise_src_ftv_avoid`, the very argument the
+`Sub-ForallR` α-stack branch already makes for its own `β`
+(`prop_sub_cstr.v:1341-1360`).  So sites 3–6 are a RESTRUCTURING of P6-Ss's
+`Sub-ForallL` / `Sub-UnivGhostL` rows, not a lemma call.  ✅ (1) and (2) are
+Qed on the branch (`ab5ba02`) and are what that restructuring will use.
 
 **(4) The α-stack cell (site 2).**  `alpha_stack_looksub` gains the guard, and
 its consumer splits on `Hstk`:
