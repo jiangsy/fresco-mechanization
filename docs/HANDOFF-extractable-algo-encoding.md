@@ -4197,18 +4197,40 @@ Plus `flex_agree_rel_extend_nonflex` (`prop_solve_rel.v`): ρ may grow by pairs
 the two contexts know nothing about, and there both halves of the new
 obligation are FALSE.
 
-⛔ **WHAT IS LEFT — the arrow rows' `bcore_dr`, ~4 sites.**  Each needs
-`flex_agree_rel_extend_nonflex` at `ρx := ρea ++ ρna` with a two-way split:
+✅ **THE ρ-GROWTH IS CLOSED** (seventh pass, `remech-guard4b-wip` `dba1382`).
+Both arrow rows build the extended agreement with
+`flex_agree_rel_extend_nonflex`, splitting the new pairs two ways:
 
 | new pairs | how they die |
 |---|---|
 | `ρea` (the look's extension) | `Hρea` gives `a ∉ Sa0` and `b ∉ Sb0`; `Hscpd` / `Hscpr` turn those into non-flexibility |
 | `ρna` (the FOLD's pairing — `cols_l ρna = dom Ξs1a`, `cols_r ρna = dom Ξ2a`) | ⭐ `Hflxd` / `Hflxr` send a flexible into `ftvar_in_aenv Θf1` / `Θf2`, and `a_solve_cstr_generated_fresh_set` says the fold's block dodges exactly that — **which is why the two new premises are stated about the FOLD contexts and not about the supplies** |
 
-⚙ The sites are per-case (the hypothesis names differ), so this is ~4 × 15
-lines, not another uniform append.  ⚙ `e_extract_impl_complete` is the only
-call site of the b-core, and there `Θd = Θr = Θ0`, so all five new premises are
-reflexivity or a one-line `binds` argument.
+⚙ Also repaired on the way: **10** `eapply (IHn Sa0 Sa1 …) with (s := …)`
+sites, where the blanket append had put the new arguments in the WRONG
+positions (they now go through the trailing `all: try solve`);
+`bcore_dom_fresh` no longer `clear`s the opener's own freshness; and
+`e_lookeq_var_target_inv` now REPORTS the target's hattedness, which is
+`LE-FlexR`'s own premise under the guard.
+
+⛔ **WHAT IS LEFT — ONE CASE, AND IT IS A RESTRUCTURE, NOT A DISCHARGE.**
+`bcore_eq`'s `LE-UnivGhost2` case, sub-case *"target a VAR"*.  Its comment says
+*"the runner FlexRs"* — that was the **pre-guard** dispatch.  Under the guard,
+side 1 stripping a ⫯ at a variable target carries `flex_r_off Θd (var t)`, i.e.
+`t` is RIGID, so the runner does **not** FlexR: it takes the `LE-UnivGhost2`
+RECURSION.  The branch has to follow that recursion (call the IH at the
+stripped subject) instead of treating the head as junk.  ~30 lines.
+
+⭐⭐⭐ **AND THAT IS THE ARGUMENT FOR §C'.**  The b-core's case structure was
+shaped by the UNGUARDED dispatch: runner-sidedness, the rel-or-HATCH yield, and
+now this branch all trace to the same cell.  **Re-stating the b-core two-sided
+with a clean `rel_pskl` yield is very likely cheaper than repairing it case by
+case — and it is what level 6 needs anyway.**  Decide that before spending the
+~30 lines.
+
+⚙ `e_extract_impl_complete` is the only call site of the b-core, and there
+`Θd = Θr = Θ0`, so all five new premises are reflexivity or a one-line `binds`
+argument.
 
 ⚙ **HISTORICAL — the two sites this replaces:**
 
