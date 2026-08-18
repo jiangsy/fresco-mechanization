@@ -4177,13 +4177,38 @@ NEW pairs too.
 | `ρea` (the look's own extension) | ✅ free — `Hρea` gives `a ∈ Sa1 ∖ Sa0` and `b ∈ lk_supply ∖ Sb0`, which with the two new scopings makes BOTH sides non-flexible, so the iff is `False <-> False` |
 | `ρna` (the FOLD's pairing, `Ξs1 = flex_pairs_l ρn`) | ⛔ no handle — the fold is on the `a_` side and its generated names are known fresh only for `ftvar_in_aenv Θf1` and `L`, never for `Sa0` / `Sb0` |
 
-⇒ **THE NEXT STEP** is one more b-core invariant tying the fold contexts to the
-supplies — e.g. `Sa0 [<=] ftvar_in_aenv Θf1` and `Sb0 [<=] ftvar_in_aenv Θf2`.
-They are plausible (the fold context is the block over the derivation's own
-context, and the supply covers that context) and would make `ρna`'s columns
-dodge the supplies via `a_solve_cstr_generated_fresh_set`.  ⚙ **Check them at
-`e_extract_impl_complete` first** — it is the only call site, and there
-`Θd = Θr = Θ0`, so the top-level agreement is reflexivity.
+⭐⭐ **THE DESIGN THAT RESOLVES IT IS IN** (sixth pass, `remech-guard4b-wip`
+`1ebde40`), and the non-obvious part is WHICH invariant to add.  Two premises
+kill the ρ-growth, and a BINDER row preserves them for FREE:
+
+```coq
+  (forall a, a_flex_tvar Θd a -> a `in` ftvar_in_aenv Θf1)
+  (forall b, a_flex_tvar Θr b -> b `in` ftvar_in_aenv Θf2)
+```
+
+⚙ Free because **a RIGID entry is invisible to `a_flex_tvar` at every atom**
+(`a_flex_tvar_cons_tvar_any`), so `Θd` growing by an opener changes nothing.
+⛔ The two obvious candidates both BREAK there — `ftvar_in_aenv Θd [<=]
+ftvar_in_aenv Θf1` and `Sa0 [<=] ftvar_in_aenv Θf1` — because `Θf1` is CONSTANT
+across the recursion while `Θd` and `Sa0` are not.  That is the whole content
+of the choice.
+
+Plus `flex_agree_rel_extend_nonflex` (`prop_solve_rel.v`): ρ may grow by pairs
+the two contexts know nothing about, and there both halves of the new
+obligation are FALSE.
+
+⛔ **WHAT IS LEFT — the arrow rows' `bcore_dr`, ~4 sites.**  Each needs
+`flex_agree_rel_extend_nonflex` at `ρx := ρea ++ ρna` with a two-way split:
+
+| new pairs | how they die |
+|---|---|
+| `ρea` (the look's extension) | `Hρea` gives `a ∉ Sa0` and `b ∉ Sb0`; `Hscpd` / `Hscpr` turn those into non-flexibility |
+| `ρna` (the FOLD's pairing — `cols_l ρna = dom Ξs1a`, `cols_r ρna = dom Ξ2a`) | ⭐ `Hflxd` / `Hflxr` send a flexible into `ftvar_in_aenv Θf1` / `Θf2`, and `a_solve_cstr_generated_fresh_set` says the fold's block dodges exactly that — **which is why the two new premises are stated about the FOLD contexts and not about the supplies** |
+
+⚙ The sites are per-case (the hypothesis names differ), so this is ~4 × 15
+lines, not another uniform append.  ⚙ `e_extract_impl_complete` is the only
+call site of the b-core, and there `Θd = Θr = Θ0`, so all five new premises are
+reflexivity or a one-line `binds` argument.
 
 ⚙ **HISTORICAL — the two sites this replaces:**
 
@@ -4239,6 +4264,41 @@ assignment of the ∀◇-headed subject to the flexible input" branch collapsed 
 `exfalso`, retiring a use of `flexvar_decoration_swap`.  Under (B) that branch
 SURVIVES (its input IS flexible) — so expect (B) to remove less work than (A)
 appeared to, and budget the branch as-is.
+
+#### C'. ⭐⭐ IS THE DESIGN OPTIMAL?  — a review, and ONE thing it changes
+
+Worth asking, because (B) has now cascaded through four layers.  The answer is
+that the FORK is forced but the PLAN downstream of it should change.
+
+**The fork is forced.**  ⛔ (A) dies at `prop_eq_cstr.v:4676` and disagrees with
+`constr_collect_eq`.  ⛔ Putting the guard on `LE-UnivGhost2` ALONE leaves the
+(⫯, RIGID var) overlap standing, because without the hat `LE-FlexR` still
+fires there.  ⛔ Copying the SOLVE layer's answer (`nonghost_pskl` on FlexR)
+inverts the implementation's own match order.  So both premises are needed,
+and the cost is the price of fixing a REAL mech bug: pre-guard, the runner
+invents a fresh flexible at a rigid-variable counterpart where the paper
+strips the ⫯.  That cell is ordinary — the counterpart is a sub-skeleton of
+the inherited type — so this is not a corner.
+
+**The b-core's premise shape is right too**, and the alternatives were checked:
+a V-only agreement does not reach the cell (the counterparts can be ρ-paired);
+collapsing `Θd`/`Θr` does not help for the same reason; and stating the
+agreement at the cell's own counterparts is not re-establishable at the
+recursive calls.  ⭐ The one simplification worth taking is to state it as an
+IMPLICATION rather than an iff — the cell only needs "side 1 flexible ⇒ side 2
+flexible", which halves every discharge obligation.
+
+⭐⭐⭐ **WHAT THE REVIEW DOES CHANGE — §D's plan.**  Level 4's b-core carries a
+rel-or-**HATCH** yield ("or both are raw variables"), and that hatch is there
+for exactly ONE reason: the (⫯, var) cell, where `LE-FlexR` and
+`LE-UnivGhost2` disagreed and the two yields were unrelated variables
+(`cex/probe_bcore_ug2_flexr.v`, §8c.9's fourth pass).  **Under the guard that
+cell is gone, so the hatch can be DELETED and the b-core's conclusion becomes a
+clean `rel_pskl`.**  The hatch is precisely what made level 4's conclusion too
+weak for level 6.  So before writing §D's four new `_rel` lemmas — which
+duplicate a great deal of the b-core — check whether STRENGTHENING the b-core
+(drop the hatch, add the supply conjunct) reaches `e_extract_impl_rel`
+directly.  That is a smaller and better-tested path than a fresh induction.
 
 #### D. What this leaves for STEP 2, unchanged and still correct
 
