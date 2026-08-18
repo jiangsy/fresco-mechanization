@@ -4850,7 +4850,7 @@ verbatim; the sub half dispatches as `e_sub_call_impl_equation_1` does
    recipe off level 4's `e_extract_impl_complete`, whose two supply-threaded
    halves come free from `e_extract_inv` (`e_extract` has ONE rule).
 
-#### ⛔⛔ AND LEVEL 4's HEADLINE HAD A PREMISE THAT IS FALSE AT ITS ONLY CONSUMER
+#### ⛔⛔ AND LEVEL 4's HEADLINE HAD A PREMISE THAT IS UNSATISFIABLE AT ITS ONLY CONSUMER
 
 `e_extract_impl_complete` (prop_look_pair.v §4) carried
 
@@ -4861,10 +4861,12 @@ verbatim; the sub half dispatches as `e_sub_call_impl_equation_1` does
 ("scoping", §8c.9's fourth pass).  ⛔ At `SI-ForallL` the extraction's `α`
 IS the rule's own FRESH opener — `a_sub__forall_l` states
 `α ∉ ftvar_in_aenv Θ0 ∪ ftv P ∪ ftv P0` — so `α ∈ ftvar_in_aenv Θ0` is not
-merely unproved, it is FALSE, and `e_extract_*_complete` was unusable at
-the only place that calls it.  The level's own note ("what the level owes
-upward") listed the two e-derivation halves and treated the scoping
-premise as free; it is not.
+merely unproved, it is UNSATISFIABLE there, and `e_extract_*_complete` was
+unusable at the only place that calls it.  ⚙ **The lemma was never wrong**;
+it was too weak to apply, and dropping the hypothesis makes it strictly
+stronger, so no existing use is disturbed.  The level's own note ("what the
+level owes upward") listed the two e-derivation halves and treated the
+scoping premise as free; it is not.
 
 ✅ **The repair is local to that one proof and RETIRES the premise.**  The
 premise existed only to put `V := add α (ftvar Θ0 ∪ ftv P ∪ ftv P')` inside

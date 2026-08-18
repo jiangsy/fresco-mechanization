@@ -54,10 +54,13 @@
     runner's own answer), and [SI-ForallL] (pre-swap the opener, then
     [e_extract_det]).
 
-    ⛔ ONE UPSTREAM PREMISE HAD TO GO, and it was FALSE at its only
-    consumer: [e_extract_impl_complete] (prop_look_pair.v §4) carried
-    [add α (ftv P ∪ ftv P') ⊆ ftvar Θ0], but at [SI-ForallL] the extract's
-    [α] IS the rule's fresh opener, so [α ∈ ftvar Θ0] cannot hold.  The
+    ⛔ ONE UPSTREAM PREMISE HAD TO GO — not because it was wrong, but
+    because it is UNSATISFIABLE at its only consumer, so a true lemma was
+    unusable.  [e_extract_impl_complete] (prop_look_pair.v §4) carried
+    [add α (ftv P ∪ ftv P') ⊆ ftvar Θ0], and at [SI-ForallL] the extract's
+    [α] IS the rule's fresh opener, so [α ∈ ftvar Θ0] cannot hold.  ⚙
+    Dropping it yields a STRICTLY STRONGER statement, so nothing that used
+    the old form is disturbed (nothing did — see below).  The
     repair is local to that proof: cut the b-core's RIGID ENRICHMENT at
     [ftvar Θ0] rather than at the input supply, so the whole supply — hence
     [α], [ftv P] and [ftv P'] — is visible in the enriched contexts, and
