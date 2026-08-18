@@ -4577,3 +4577,88 @@ type.ml:`is_type`) — and neither `a_solve_sub__forall_r` nor
 **Resume: take the fork, land guard 5 on both encodings + the runner
 (`[paper-gap]` comment + `docs/PAPER-GAPS.md` entry), then §6–§9 of
 `prop_extract_det.v`.**
+
+### 8c.19 ✅ GUARD 5, THE SOLVE-DISPATCH SPLIT — LANDED, AND THE TREE IS GREEN (2026-08-18)
+
+✅ **`make coq` rc=0, `README.v` 32/32, zero `Admitted`.**  §8c.18's fork was
+taken as **(ii), MIRROR THE RUNNER** (user's call).  On both encodings:
+
+```coq
+  (* frost/def_shapes.v *)
+  Definition peel_l_off (P : pskl) : Prop :=        (* SS-ForallL / SS-UnivGhostL *)
+    (forall Q, P <> pskl_all_syn Q) /\ (forall Q, P <> pskl_tophole Q).
+  Definition solve_l_off (P : pskl) : Prop :=       (* … and SS-Var as well *)
+    (forall α, P <> pskl_var_f α) /\ peel_l_off P.
+```
+
+`SS-Vacuous` gains `peel_l_off P`; `SS-ForallR` gains `solve_l_off P`.
+⛔ `cex/probe_solve_sub_forall_r_drift.v` is RETRACTED by the guard and
+DELETED; its text is at `5e2384f`.
+
+#### ⭐ WHAT THE GUARD REMOVED, AND WHAT IT MOVED — both, and it is worth knowing which
+
+**REMOVED.**  `prop_run_complete.v`'s two reorder lemmas collapse.
+`a_solve_sub_tophole_l_first`'s Vacuous and ForallR roots and
+`a_solve_sub_forall_l_hoist`'s are now `exfalso` — three lines each — and
+with them goes the hoist's ~45-line INTERIM-OPENER DANCE (IH at a fresh δ on
+top of the premise's context, then two rebinds and two context exchanges to
+renest the openers).  §8c.15's lesson a third time.
+
+**MOVED, not removed.**  ⚠️ The commutation reappears one level up, because
+the completeness chain BUILDS `SS-ForallR` at an arbitrary accumulated
+pattern.  The old rule survives as a DERIVED one, proved once in
+`algo/sub/look/prop_eq_cstr.v`:
+
+```coq
+  Lemma a_solve_sub_forall_r_gen : forall Θ P B Ξ P' β,
+    pskl_ghost_free (pskl_all_syn B) ->
+    β `notin` ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl B ->
+    {{ ((β ~ abind_tvar) ++ Θ) ⊢ₛ P ≼[ mode_tc ]
+       (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ P' }}a ->
+    {{ Θ ⊢ₛ P ≼[ mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ P' }}a.
+```
+
+a size induction on the SUBJECT with three interesting leaves — a VARIABLE
+subject (`a_solve_sub_var_subject`: every route answers the variable itself,
+so `SS-Var` rebuilds the conclusion), a `∀` subject (peel, `EXCHANGE` the two
+rigid openers, recurse, re-close — the commutation, paid ONCE here instead of
+at every consumer), and a `⫯` subject (strip, recurse, re-wrap).  Its
+supporting inversions — `a_solve_eq_var_subject`,
+`a_solve_sub_inv_forall_l`, `a_solve_sub_inv_univ_ghost_l` — are the guard's
+own single-rule dispatch, machine-checked.  ⭐ Net: the dance is written once
+and deleted twice.
+
+⚙ **AND THE SAME SHAPE FOR `SS-Vacuous`** — `a_solve_sub_vacuous_gen`
+(`algo/prop_basic.v`), an unconditional
+`{{ Θ ⊢ₛ P ≼[m] ◇ ⤳ · ⨾ P }}a`: at a `∀` the peeled route re-CLOSES over
+the opener it drew and at a `⫯` it re-wraps, so the answer is the subject
+back either way.  Every old `apply a_solve_sub__vacuous` site reads this
+instead, verbatim.
+
+#### ⚙ THE LANDING, SITE BY SITE
+
+| file | what |
+|---|---|
+| `frost/def_shapes.v` | `peel_l_off` / `solve_l_off` + nine discharge lemmas + `frost` hints |
+| `frost/algo/def_rules.v`, `frost/ext_algo/def_solve.v` | the two premises, `[paper-gap]`-commented |
+| `frost/algo/prop_swap.v` | `peel_l_off_swap` / `solve_l_off_swap` — pure shape predicates, so a swap moves them for free |
+| `frost/algo/prop_basic.v` | ⭐ `a_solve_sub_vacuous_gen` |
+| `frost/algo/sub/look/prop_eq_cstr.v` | ⭐⭐ `a_solve_sub_forall_r_gen` + its three inversions |
+| `frost/ext_algo/prop_solve_rel.v` | `rel_pskl_peel_l_off` / `rel_pskl_solve_l_off` — the guards transport along `rel_pskl` (a variable relates only to a variable, so even the var-exclusion survives) |
+| `frost/ext_algo/def_solve_impl.v` | the runner: guard hints in `solvedec`, and ⚠️ TWO `Next Obligation`s spelled out — the obligation tactic does not reach the `SS-Vacuous` leaves at `var_b` / `arrow` |
+| `frost/ext_algo/prop_run_complete.v` | the two reorder lemmas collapse |
+| the rest | intros / `destruct … as` patterns shifted by one, at `prop_rsubst.v`, `prop_solve_ext.v`, `prop_soundness_sub.v`, `prop_look_pair.v`, `prop_solve.v`, `test_examples.v`, `cex_solve_sub_wf_leak.v` |
+
+⚠️ **THE DECORATED SYSTEM NEEDED NOTHING.**  Decoration CONSUMES an
+`a_solve_sub` derivation, so a new premise on the source is extra
+information, not an extra obligation.
+
+⚠️ **A TRAP PAID.** An Equations obligation that its `#[tactic=…]` does not
+reach is deferred with NO diagnostic; `Next Obligation. lazymatch goal with
+|- ?G => idtac "CONCL:" G end. Admitted.` on a TRUNCATED copy is what named
+the two leaves.  ⚠️ And raising `eauto 6` to `eauto 8` there does not fix it
+— it just never terminates.
+
+**Resume: §6–§9 of `prop_extract_det.v`** — `e_solve_sub_rel` is now TRUE
+(its two drifting cells are gone and the (∀,∀) / (⫯,∀) commutations are
+single-rule), then `e_solve_cstr_rel`, `e_guess_rel`, `e_extract_rel`.

@@ -928,6 +928,28 @@ Proof.
   rewrite swap_pskl_invol in Hgf. exact Hgf.
 Qed.
 
+(** ⭐ The SOLVE-DISPATCH guards are pure SHAPE predicates, so a swap moves
+    them for free — the head constructor is what they read, and a swap
+    preserves it. *)
+Lemma peel_l_off_swap : forall a b P,
+  peel_l_off P -> peel_l_off (swap_pskl a b P).
+Proof.
+  intros a b P [H1 H2]; destruct P; simpl;
+    try solve [ split; intros; discriminate ];
+    [ exfalso; exact (H1 _ eq_refl) | exfalso; exact (H2 _ eq_refl) ].
+Qed.
+
+Lemma solve_l_off_swap : forall a b P,
+  solve_l_off P -> solve_l_off (swap_pskl a b P).
+Proof.
+  intros a b P [H0 [H1 H2]]; destruct P; simpl;
+    try solve [ split;
+                [ intros; discriminate | split; intros; discriminate ] ];
+    [ exfalso; exact (H0 _ eq_refl)
+    | exfalso; exact (H1 _ eq_refl)
+    | exfalso; exact (H2 _ eq_refl) ].
+Qed.
+
 Local Lemma notin_add_split : forall (x y : atom) (S : atoms),
   x `notin` add y S -> x <> y /\ x `notin` S.
 Proof. intros; split; fsetdec. Qed.
@@ -1090,12 +1112,13 @@ Proof.
     apply a_solve_sub__forall_l; [ swap_freshness |].
     rewrite swap_pskl_open_var in H. exact H.
   - (* univ_ghost_l *) apply a_solve_sub__univ_ghost_l; auto.
-  - (* vacuous *) apply a_solve_sub__vacuous.
+  - (* vacuous *) apply a_solve_sub__vacuous. apply peel_l_off_swap. assumption.
   - (* check *) apply a_solve_sub__check;
       auto using guarded_pskl_swap, pskl_ghost_free_swap.
   - (* forall_r: the binder LEAKS into the output — no close, no re-bind *)
     apply a_solve_sub__forall_r with (β := swap_atom a b β);
-      [ apply pskl_ghost_free_swap; assumption | swap_freshness |].
+      [ apply pskl_ghost_free_swap; assumption
+      | apply solve_l_off_swap; assumption | swap_freshness |].
     rewrite swap_pskl_open_var in H. exact H.
   - (* arrow *) apply a_solve_sub__arrow; auto.
   - (* ghost_l_fn *) apply a_solve_sub__ghost_l_fn; auto.

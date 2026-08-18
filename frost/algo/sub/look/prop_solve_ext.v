@@ -356,9 +356,9 @@ Proof.
       [ Θ m α Q                                     (* SS-Var *)
       | Θ m P Q Ξ P' b Hfr Hp                       (* SS-ForallL *)
       | Θ m P Q Ξ P' Hp                             (* SS-UnivGhostL *)
-      | Θ m P                                       (* SS-Vacuous *)
+      | Θ m P Hoff                                  (* SS-Vacuous *)
       | Θ P Q Ξ P' Hgf0 Hg1 Hg2 Hp                  (* SS-Check *)
-      | Θ A B Ξ P' b Hgf0 Hfr Hp                    (* SS-ForallR *)
+      | Θ A B Ξ P' b Hgf0 Hoff Hfr Hp               (* SS-ForallR *)
       | Θ m P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2' Hp1 Hp2       (* SS-Arrow *)
       | Θ m Q1 Q2 Ξ1 Ξ2 P1' P2' Hp1 Hp2             (* SS-GhostLF *)
       | Θ B Hgf0 Hg ];                              (* SS-GhostL *)
@@ -412,7 +412,7 @@ Proof.
         | intros x Hx; specialize (Hftv x Hx); cbn in Hftv; exact Hftv
         | intros x Hx; specialize (Hout x Hx); cbn in Hout; exact Hout
         | exact Hblk ].
-    - (* SS-Vacuous *) apply a_solve_sub__vacuous.
+    - (* SS-Vacuous *) apply a_solve_sub__vacuous; exact Hoff.
     - (* SS-Check *)
       apply a_solve_sub__check; [ exact Hgf0 | exact Hg1 | exact Hg2 | ].
       eapply IHe with (Ξl := Ξl) (Ξm := Ξm) (Θ0 := Θ0);
@@ -440,7 +440,7 @@ Proof.
         rewrite (subst_pskl_in_pskl_fresh_eq P') in Hr
           by (clear - HbP'; fsetdec).
         apply a_solve_sub__forall_r with (β := δ);
-          [ exact Hgf0
+          [ exact Hgf0 | exact Hoff
           | rewrite ftvar_in_aenv_weaken_mid by exact Hfm;
             clear - Fr; fsetdec | ].
         eapply IHs with (Ξl := ((δ ~ abind_tvar) ++ Ξl)) (Ξm := Ξm) (Θ0 := Θ0);
@@ -453,7 +453,7 @@ Proof.
           | intros x Hx; specialize (Hftv x Hx); cbn in Hftv; exact Hftv
           | exact Hout | exact Hblk ].
       + apply a_solve_sub__forall_r with (β := b);
-          [ exact Hgf0
+          [ exact Hgf0 | exact Hoff
           | rewrite ftvar_in_aenv_weaken_mid by exact Hfm;
             clear - Hfr Hnin; fsetdec | ].
         eapply IHs with (Ξl := ((b ~ abind_tvar) ++ Ξl)) (Ξm := Ξm) (Θ0 := Θ0);

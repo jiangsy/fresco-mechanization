@@ -568,8 +568,9 @@ Proof.
     try solve
       [ match goal with
         | Hfr : ?b `notin` _ |- {{ _ ⊢ₛ _ ≼[ _ ] pskl_all_syn _ ⤳ _ ⨾ _ }}a =>
-            apply a_solve_sub__forall_r with (β := b); [ | | ];
+            apply a_solve_sub__forall_r with (β := b); [ | | | ];
             [ assumption
+            | assumption
             | match goal with Hf : ftvar_in_aenv _ [<=] _ |- _ =>
                 clear - Hfr Hf; fsetdec end
             | solve_ctx_change_ih ]

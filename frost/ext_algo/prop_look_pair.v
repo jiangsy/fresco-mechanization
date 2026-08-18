@@ -1041,12 +1041,12 @@ Proof.
   - (* SS-ForallL *)
     apply e_solve_sub__forall_l; [ assumption | ctx_equiv_ih ].
   - (* SS-UnivGhostL *) apply e_solve_sub__univ_ghost_l; ctx_equiv_ih.
-  - (* SS-Vacuous *) apply e_solve_sub__vacuous.
+  - (* SS-Vacuous *) apply e_solve_sub__vacuous; assumption.
   - (* SS-Check *)
     apply e_solve_sub__check; try assumption; ctx_equiv_ih.
   - (* SS-ForallR *)
     eapply e_solve_sub__forall_r;
-      [ assumption | eassumption | ctx_equiv_ih ].
+      [ assumption | assumption | eassumption | ctx_equiv_ih ].
   - (* SS-Arrow *) eapply e_solve_sub__arrow; ctx_equiv_ih.
   - (* SS-GhostLF *) eapply e_solve_sub__ghost_l_fn; ctx_equiv_ih.
   - (* SS-GhostL *) apply e_solve_sub__ghost_l; assumption.
@@ -2641,7 +2641,7 @@ Proof.
       exists (@nil (atom * abind)).
       eexists.
       split.
-      { apply a_solve_cstr__sub. apply a_solve_sub__vacuous. }
+      { apply a_solve_cstr__sub. apply a_solve_sub_vacuous_gen. }
       split; [ auto | simpl; clear; fsetdec ].
     + (* arrow subject *)
       revert Hs. simp e_looksub_impl. intros Hs.
@@ -3001,7 +3001,8 @@ Proof.
       exists Ξs2, Q2c.
       split.
       { apply a_solve_cstr__sub.
-        apply a_solve_sub__forall_r with (β := β2');
+        (* ⭐ the DERIVED form under the SOLVE-DISPATCH guard *)
+        apply a_solve_sub_forall_r_gen with (β := β2');
           [ exact Hgf2' | clear - Hβ2'; fsetdec | exact Hsolve2 ]. }
       split; [ exact Hu | exact HL ].
     + (* arrow subject — same root *)
@@ -4465,7 +4466,7 @@ Proof.
         split; [ apply a_solve_cstr__empty | ].
         split; [ auto | simpl; clear; fsetdec ].
       * exists (@nil (atom * abind)). eexists.
-        split; [ apply a_solve_cstr__sub; apply a_solve_sub__vacuous | ].
+        split; [ apply a_solve_cstr__sub; apply a_solve_sub_vacuous_gen | ].
         split; [ auto | simpl; clear; fsetdec ].
     + (* ⫯ target — same root *)
       revert Hs. simp e_looksub_impl.
@@ -4920,7 +4921,7 @@ Proof.
         split; [ apply a_solve_cstr__empty | ].
         split; [ auto | simpl; clear; fsetdec ].
       * exists (@nil (atom * abind)). eexists.
-        split; [ apply a_solve_cstr__sub; apply a_solve_sub__vacuous | ].
+        split; [ apply a_solve_cstr__sub; apply a_solve_sub_vacuous_gen | ].
         split; [ auto | simpl; clear; fsetdec ].
     + (* ⫯ target *)
       revert Hs. simp e_looksub_impl.

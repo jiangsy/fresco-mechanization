@@ -1704,3 +1704,50 @@ Qed.
     ghost-freeness of the counterpart. *)
 Lemma ghost_free_neq_hole : forall P, pskl_ghost_free P -> P <> pskl_hole.
 Proof. intros P Hgf ->; exact Hgf. Qed.
+
+(* ===================================================================== *)
+(*  ⭐ SS-Vacuous, GENERALIZED PAST THE SOLVE-DISPATCH GUARD (2026-08-18)  *)
+(*                                                                        *)
+(*  Under guard 5 [SS-Vacuous] no longer fires at a [∀] or [⫯] subject —   *)
+(*  the implementation peels there first (type.ml:494 matches              *)
+(*  [SolS-ForallL] and [SolS-UnivGhostL] before [SolS-Vacuous]).  ⭐ But    *)
+(*  the PEELED route gives the SAME answer: an empty block and the         *)
+(*  subject back, because [∀]'s row re-CLOSES over the opener it drew and  *)
+(*  [⫯]'s re-wraps.  So every old [apply a_solve_sub__vacuous] site can    *)
+(*  read this lemma instead, with no change to what it proves.            *)
+(*                                                                        *)
+(*  ⚙ SIZE induction: the [∀] row opens, which preserves [size_pskl], so   *)
+(*  a structural induction on the skeleton would not go through.          *)
+(* ===================================================================== *)
+
+Lemma a_solve_sub_vacuous_gen_n : forall n Θ m P,
+  size_pskl P <= n ->
+  {{ Θ ⊢ₛ P ≼[ m ] pskl_hole ⤳ nil ⨾ P }}a.
+Proof.
+  induction n as [ | n IH ]; intros Θ m P Hsz;
+    [ exfalso; destruct P; simpl in Hsz; lia | ].
+  destruct P as [ | k | α | P1 P2 | P0 | | P0 ];
+    try solve [ apply a_solve_sub__vacuous;
+                solve [ apply peel_l_off_unit | apply peel_l_off_var_b
+                      | apply peel_l_off_var | apply peel_l_off_arrow
+                      | apply peel_l_off_hole ] ].
+  - (* ∀ — peel, then RE-CLOSE over the same opener *)
+    simpl in Hsz.
+    destruct (atom_fresh (ftvar_in_aenv Θ ∪ ftvar_in_pskl P0)) as [β Hβ].
+    replace (pskl_all_syn P0)
+      with (pskl_all_syn
+              (close_pskl_wrt_pskl β (open_pskl_wrt_pskl P0 (pskl_var_f β))))
+      at 2
+      by (f_equal; apply close_pskl_wrt_pskl_open_pskl_wrt_pskl;
+          clear - Hβ; fsetdec).
+    apply a_solve_sub__forall_l with (β := β).
+    + simpl. clear - Hβ. fsetdec.
+    + apply IH. rewrite size_pskl_open_pskl_wrt_pskl_var. lia.
+  - (* ⫯ — strip, then RE-WRAP *)
+    simpl in Hsz.
+    apply a_solve_sub__univ_ghost_l. apply IH. lia.
+Qed.
+
+Lemma a_solve_sub_vacuous_gen : forall Θ m P,
+  {{ Θ ⊢ₛ P ≼[ m ] pskl_hole ⤳ nil ⨾ P }}a.
+Proof. intros. exact (a_solve_sub_vacuous_gen_n Θ m P (le_n _)). Qed.

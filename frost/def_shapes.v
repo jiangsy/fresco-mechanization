@@ -387,6 +387,83 @@ Proof.
   intros m B Hg B0 Heq _. injection Heq as Heq0; subst B0. exact Hg.
 Qed.
 
+(** ⭐ THE SOLVE-DISPATCH GUARDS (2026-08-18) — guard 5, and the layer they
+    sit on is the SOLVE one, not the collection.
+
+    [solve_sub] dispatches on the SUBJECT first and only then on the
+    counterpart (`paper/artifact/implementation/lib/type.ml:494`):
+
+        | _, (TVar _ as alpha)              -> SolS-Var
+        | m, TForA (k, p)                   -> SolS-ForallL
+        | m, TMod (mu, p)                   -> SolS-ModL
+        | m, UGhost p                       -> SolS-UnivGhostL
+        | (Infer | Check Ghost), p          -> SolS-Vacuous
+        | Check (TForA (_, b)), a           -> SolS-ForallR
+        …
+
+    so a VARIABLE subject takes [SolS-Var] in every mode and never reaches
+    [SolS-ForallR], and a [∀] subject takes [SolS-ForallL] before
+    [SolS-Vacuous].  A relational encoding has no match order, so the two
+    exclusions have to be PREMISES.
+
+    ⚠️ NOT admissible.  Without them the layer answers the SAME query with
+    two different amounts of fresh supply — machine-checked at [e_extract]
+    in [cex/probe_solve_sub_forall_r_drift.v], where [SS-Var] and
+    [SS-ForallR]∘[SS-Var] agree on the block and the yield and differ by one
+    atom, and again where [SS-Vacuous] races [SS-ForallL].  Identical species
+    to the four guards above.  docs/PAPER-GAPS.md. *)
+
+Definition peel_l_off (P : pskl) : Prop :=      (* SS-ForallL / SS-UnivGhostL *)
+  (forall Q, P <> pskl_all_syn Q) /\ (forall Q, P <> pskl_tophole Q).
+
+Definition solve_l_off (P : pskl) : Prop :=     (* … and SS-Var as well *)
+  (forall α, P <> pskl_var_f α) /\ peel_l_off P.
+
+(** The ways a site discharges them.  Every subject shape but [∀] and [⫯]
+    peels off, and every shape but those two and a VARIABLE dispatches off. *)
+
+Lemma solve_l_off_peel : forall P, solve_l_off P -> peel_l_off P.
+Proof. intros P [_ H]; exact H. Qed.
+
+Lemma peel_l_off_unit : peel_l_off pskl_unit.
+Proof. split; intros; discriminate. Qed.
+
+Lemma peel_l_off_var_b : forall n, peel_l_off (pskl_var_b n).
+Proof. intros; split; intros; discriminate. Qed.
+
+Lemma peel_l_off_var : forall α, peel_l_off (pskl_var_f α).
+Proof. intros; split; intros; discriminate. Qed.
+
+Lemma peel_l_off_arrow : forall P Q, peel_l_off (pskl_arrow P Q).
+Proof. intros; split; intros; discriminate. Qed.
+
+Lemma peel_l_off_hole : peel_l_off pskl_hole.
+Proof. split; intros; discriminate. Qed.
+
+Lemma solve_l_off_unit : solve_l_off pskl_unit.
+Proof. split; [ intros; discriminate | apply peel_l_off_unit ]. Qed.
+
+Lemma solve_l_off_var_b : forall n, solve_l_off (pskl_var_b n).
+Proof. intros; split; [ intros; discriminate | apply peel_l_off_var_b ]. Qed.
+
+Lemma solve_l_off_arrow : forall P Q, solve_l_off (pskl_arrow P Q).
+Proof. intros; split; [ intros; discriminate | apply peel_l_off_arrow ]. Qed.
+
+Lemma solve_l_off_hole : solve_l_off pskl_hole.
+Proof. split; [ intros; discriminate | apply peel_l_off_hole ]. Qed.
+
+(** ⭐ A GUARDED subject always peels off — [guarded_pskl] is
+    [unit | var | arrow] and none of those is a binder. *)
+Lemma guarded_peel_l_off : forall P, guarded_pskl P -> peel_l_off P.
+Proof.
+  intros P Hg; destruct Hg;
+    [ apply peel_l_off_unit | apply peel_l_off_var | apply peel_l_off_arrow ].
+Qed.
+
+#[export] Hint Resolve peel_l_off_unit peel_l_off_var_b peel_l_off_var
+  peel_l_off_arrow peel_l_off_hole solve_l_off_unit solve_l_off_var_b
+  solve_l_off_arrow solve_l_off_hole solve_l_off_peel : frost.
+
 (* Constructor hints for the small structural shape / guardedness / mode
    predicates: they are dispatched trivially in metatheory proofs, so
    [eauto with frost] can discharge those cases directly.  A DEDICATED [frost]

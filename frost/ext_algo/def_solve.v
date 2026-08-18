@@ -81,6 +81,8 @@ Inductive e_solve_sub : supply -> aenv -> mode -> pskl -> pskl
     {{ S0 ↝ S1 ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ₛ (pskl_tophole P) ≼[ m ] Q ⤳ Ξ ⨾ (pskl_tophole P') }}e
 | e_solve_sub__vacuous : forall S Θ m P,                (* SS-Vacuous *)
+    (* [paper-gap] SOLVE-DISPATCH GUARD — see [a_solve_sub__vacuous]. *)
+    peel_l_off P ->
     {{ S ↝ S ⊨ Θ ⊢ₛ P ≼[ m ] pskl_hole ⤳ nil ⨾ P }}e
 | e_solve_sub__check : forall S0 S1 Θ P Q Ξ P',         (* SS-Check *)
     pskl_ghost_free Q ->
@@ -93,6 +95,8 @@ Inductive e_solve_sub : supply -> aenv -> mode -> pskl -> pskl
        [P'] (def_rules.v:625-638).  Threading changes nothing about that —
        the supply records that β was spent, which is all it ever claims. *)
     pskl_ghost_free (pskl_all_syn B) ->
+    (* [paper-gap] SOLVE-DISPATCH GUARD — see [a_solve_sub__forall_r]. *)
+    solve_l_off P ->
     β `notin` S0 ->
     {{ (add β S0) ↝ S1 ⊨ ((β ~ abind_tvar) ++ Θ) ⊢ₛ P ≼[ mode_tc ]
        (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ P' }}e ->

@@ -2441,10 +2441,11 @@ Arguments a_solve_sub_ctx_exchange {β1 β2 Θ m P Q Ξ P'}.
 (* --------------------------------------------------------------------- *)
 
 (** At a ⫯ subject the runner strips (SS-UnivGhostL) before Vacuous and
-    ForallR.  No swaps: a ForallR-rooted derivation re-applies ForallR at
-    the SAME witness after the IH (the freshness set only shrinks), a
-    Vacuous root answers with a fresh Vacuous, and a Check root dies
-    (a ⫯ subject is never guarded). *)
+    ForallR.  ⭐ SINCE THE SOLVE-DISPATCH GUARD THERE IS NOTHING TO REORDER:
+    the guard says exactly that Vacuous and ForallR do not apply at a ⫯
+    subject, so both of those roots are now [exfalso] and a Check root dies
+    as before (a ⫯ subject is never guarded).  Only SS-UnivGhostL survives,
+    and its premise IS the answer. *)
 Lemma a_solve_sub_tophole_l_first : forall Θ m Ps Q Ξ P',
   {{ Θ ⊢ₛ Ps ≼[ m ] Q ⤳ Ξ ⨾ P' }}a ->
   forall P0, Ps = pskl_tophole P0 ->
@@ -2455,23 +2456,20 @@ Proof.
   induction Hd; intros P0' HeqP; try discriminate.
   - (* SS-UnivGhostL — the premise is the answer *)
     injection HeqP as ->. eauto.
-  - (* SS-Vacuous *)
-    subst. do 2 eexists. apply a_solve_sub__vacuous.
+  - (* SS-Vacuous — ⛔ BARRED at a ⫯ subject by the SOLVE-DISPATCH guard *)
+    subst. exfalso.
+    match goal with
+    | Hoff : peel_l_off (pskl_tophole _) |- _ => exact (proj2 Hoff _ eq_refl)
+    end.
   - (* SS-Check — a ⫯ subject is never guarded *)
     subst. match goal with
     | Hg : guarded_pskl (pskl_tophole _) |- _ => inversion Hg
     end.
-  - (* SS-ForallR — IH under the SAME witness, then re-apply *)
-    subst.
+  - (* SS-ForallR — ⛔ BARRED at a ⫯ subject by the SOLVE-DISPATCH guard *)
+    subst. exfalso.
     match goal with
-    | Hfr : ?b `notin` _,
-      IH : forall _, _ -> _ |- _ =>
-        destruct (IH P0' eq_refl) as [Ξ' [P'' E]];
-        exists Ξ', P'';
-        apply a_solve_sub__forall_r with (β := b);
-        [ assumption
-        | clear - Hfr; simpl in *; fsetdec
-        | exact E ]
+    | Hoff : solve_l_off (pskl_tophole _) |- _ =>
+        exact (proj2 (proj2 Hoff) _ eq_refl)
     end.
 Qed.
 Arguments a_solve_sub_tophole_l_first {Θ m Ps Q Ξ P'} _ {P0}.
@@ -2505,70 +2503,27 @@ Proof.
         destruct (a_solve_sub_rebind_l Hp Hfr Hβ) as [Ξ2 [P2 E]]
     end.
     exists Ξ2, P2. exact E.
-  - (* SS-Vacuous — answer with a fresh Vacuous on the opened subject *)
-    subst. do 2 eexists. apply a_solve_sub__vacuous.
+  - (* SS-Vacuous — ⛔ BARRED at an ∀ subject by the SOLVE-DISPATCH guard *)
+    subst. exfalso.
+    match goal with
+    | Hoff : peel_l_off (pskl_all_syn _) |- _ => exact (proj1 Hoff _ eq_refl)
+    end.
   - (* SS-Check — an ∀ subject is never guarded *)
     subst. match goal with
     | Hg : guarded_pskl (pskl_all_syn _) |- _ => inversion Hg
     end.
-  - (* SS-ForallR — IH first (interim opener δ on TOP of the premise's
-       context), then two rebinds + exchanges renest the two openers *)
-    subst.
+  - (* SS-ForallR — ⛔ BARRED at an ∀ subject by the SOLVE-DISPATCH guard.
+       ⭐⭐ THIS IS THE PEEL EVAPORATING (§8c.18).  Before the guard this
+       case was the interim-opener DANCE — IH at a fresh δ on top of the
+       premise's context, then two rebinds and two context exchanges to
+       renest the two openers into the ForallR-inside shape — ~45 lines,
+       and it is exactly the commutation §8c.16 §D budgeted as the hard
+       part of the solve layer.  The guard says the row does not fire
+       here, so there is no commutation left to perform. *)
+    subst. exfalso.
     match goal with
-    | Hfr : ?b `notin` _,
-      Hp : a_solve_sub ((?b ~ abind_tvar) ++ ?Th) mode_tc _
-             (open_pskl_wrt_pskl ?B0 (pskl_var_f ?b)) _ _,
-      IH : forall _ _, _ -> _ -> _ |- _ =>
-        (* δ: the subject's interim opener *)
-        destruct (atom_fresh (add βh (add b (ftvar_in_aenv Th
-                    ∪ ftvar_in_pskl P0' ∪ ftvar_in_pskl B0)))) as [δ Hδ];
-        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B0 (pskl_var_f b))
-          as HupBb;
-        assert (Hδ' : δ `notin`
-                  ftvar_in_aenv ((b ~ abind_tvar) ++ Th)
-                    ∪ ftvar_in_pskl P0'
-                    ∪ ftvar_in_pskl (open_pskl_wrt_pskl B0 (pskl_var_f b)))
-          by (clear - Hδ HupBb; simpl in *; fsetdec);
-        destruct (IH P0' δ eq_refl Hδ') as [Ξ1 [P1 E1]];
-        apply a_solve_sub_ctx_exchange in E1;
-        (* γ': the re-applied ForallR's witness *)
-        destruct (atom_fresh (add βh (add b (add δ (ftvar_in_aenv Th
-                    ∪ ftvar_in_pskl P0' ∪ ftvar_in_pskl B0))))) as [γ' Hγ'];
-        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0' (pskl_var_f δ))
-          as HupPδ;
-        assert (Hf1 : b `notin`
-                  ftvar_in_aenv ((δ ~ abind_tvar) ++ Th)
-                    ∪ ftvar_in_pskl (open_pskl_wrt_pskl P0' (pskl_var_f δ))
-                    ∪ ftvar_in_pskl B0)
-          by (clear - Hfr Hδ HupPδ; simpl in *; fsetdec);
-        assert (Hf2 : γ' `notin`
-                  ftvar_in_aenv ((δ ~ abind_tvar) ++ Th)
-                    ∪ ftvar_in_pskl (open_pskl_wrt_pskl P0' (pskl_var_f δ))
-                    ∪ ftvar_in_pskl B0)
-          by (clear - Hγ' HupPδ; simpl in *; fsetdec);
-        destruct (a_solve_sub_rebind_r E1 Hf1 Hf2) as [Ξ2 [P2 E2]];
-        apply a_solve_sub_ctx_exchange in E2;
-        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B0 (pskl_var_f γ'))
-          as HupBγ;
-        assert (Hf3 : δ `notin`
-                  ftvar_in_aenv ((γ' ~ abind_tvar) ++ Th)
-                    ∪ ftvar_in_pskl P0'
-                    ∪ ftvar_in_pskl (open_pskl_wrt_pskl B0 (pskl_var_f γ')))
-          by (clear - Hδ Hγ' HupBγ; simpl in *; fsetdec);
-        assert (Hf4 : βh `notin`
-                  ftvar_in_aenv ((γ' ~ abind_tvar) ++ Th)
-                    ∪ ftvar_in_pskl P0'
-                    ∪ ftvar_in_pskl (open_pskl_wrt_pskl B0 (pskl_var_f γ')))
-          by (clear - Hβ Hγ' HupBγ; simpl in *; fsetdec);
-        destruct (a_solve_sub_rebind_l E2 Hf3 Hf4) as [Ξ3 [P3 E3]];
-        apply a_solve_sub_ctx_exchange in E3;
-        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0' (pskl_var_f βh))
-          as HupPβ;
-        exists Ξ3, P3;
-        apply a_solve_sub__forall_r with (β := γ');
-        [ assumption
-        | clear - Hγ' HupPβ; simpl in *; fsetdec
-        | exact E3 ]
+    | Hoff : solve_l_off (pskl_all_syn _) |- _ =>
+        exact (proj1 (proj2 Hoff) _ eq_refl)
     end.
 Qed.
 Arguments a_solve_sub_forall_l_hoist {Θ m Ps Q Ξ P'} _ {P0 β}.

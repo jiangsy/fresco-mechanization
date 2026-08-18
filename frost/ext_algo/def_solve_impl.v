@@ -93,6 +93,14 @@ Definition solve_cstr_spec (S0 : supply) (Θ : aenv) (C : a_cstrs) (P : pskl)
   e_solve_eq_lc e_solve_sub_lc : solvedec.
 #[local] Hint Constructors e_solve_eq e_solve_sub e_solve_cstr
   lc_pskl : solvedec.
+(* ⭐ THE SOLVE-DISPATCH GUARD (2026-08-18).  [SS-Vacuous] and [SS-ForallR]
+   now demand that the earlier, SUBJECT-dispatching clauses do not apply —
+   which is exactly the information Equations' own splitting leaves in the
+   goal, since by the time control reaches those clauses the subject has
+   been split away from [var_f] / [all_syn] / [tophole]. *)
+#[local] Hint Resolve peel_l_off_unit peel_l_off_var_b peel_l_off_var
+  peel_l_off_arrow peel_l_off_hole solve_l_off_unit solve_l_off_var_b
+  solve_l_off_arrow solve_l_off_hole : solvedec.
 
 #[local] Ltac select_shape_premises :=
   repeat match goal with
@@ -397,6 +405,22 @@ Equations e_solve_sub_impl (S0 : supply) (Θ : aenv) (m : mode) (P Q : pskl)
         end
     end
 | S0, Θ, m, P, Q, HP, HQ, H => None.
+
+(** ⭐ THE SS-Vacuous OBLIGATIONS, SPELLED OUT (2026-08-18).  Under the
+    SOLVE-DISPATCH guard the row carries [peel_l_off P], and at the two
+    leaves Equations reaches it with a NON-atomic subject ([var_b] and
+    [arrow]) the obligation tactic does not close it — so they are
+    discharged here.  ⚙ Both are one line: by the time control reaches the
+    [SS-Vacuous] clause the subject has already been split away from
+    [var_f] / [∀] / [⫯], which is exactly what the guard asks. *)
+Next Obligation.
+  unfold solve_sub_spec; simpl.
+  apply e_solve_sub__vacuous; auto with frost.
+Qed.
+Next Obligation.
+  unfold solve_sub_spec; simpl.
+  apply e_solve_sub__vacuous; auto with frost.
+Qed.
 
 (* ===================================================================== *)
 (*  §5  [e_solve_cstr_impl] — the fold  (≈ constr_solve, type.ml:537)     *)

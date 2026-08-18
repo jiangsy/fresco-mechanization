@@ -668,6 +668,11 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
     {{ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}a ->
     {{ Θ ⊢ₛ (pskl_tophole P) ≼[ m ] Q ⤳ Ξ ⨾ (pskl_tophole P') }}a
 | a_solve_sub__vacuous : forall Θ m P,           (* SS-Vacuous: RHS is □ *)
+    (* [paper-gap] SOLVE-DISPATCH GUARD — see [peel_l_off], def_shapes.v.
+       [SolS-ForallL] and [SolS-UnivGhostL] are matched BEFORE this row
+       (type.ml:494), and at a ∀ subject the ForallL route draws an opener
+       this one does not — same answer, one more atom spent. *)
+    peel_l_off P ->
     {{ Θ ⊢ₛ P ≼[ m ] pskl_hole ⤳ nil ⨾ P }}a
 | a_solve_sub__check : forall Θ P Q Ξ P',        (* SS-Check *)
     (* SORT: the paper writes [solvesub{P}{TC}{B}{P'}] — the LHS is the
@@ -691,6 +696,12 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
        still [◇]).  docs/PAPER-GAPS.md.  The binder is therefore named [P],
        not [A], per the mech's own convention. *)
     pskl_ghost_free (pskl_all_syn B) ->
+    (* [paper-gap] SOLVE-DISPATCH GUARD — see [solve_l_off], def_shapes.v.
+       [SolS-Var], [SolS-ForallL] and [SolS-UnivGhostL] are all matched
+       BEFORE this row (type.ml:494); at a VARIABLE subject in particular
+       the implementation answers with the variable and never peels, where
+       this row would peel and spend an opener. *)
+    solve_l_off P ->
     (* exists-fresh, INPUT-only freshness, NO close: the result passes
        through unchanged, so β may legitimately ESCAPE into [P'] — the
        implementation opens the RHS and DISCARDS the binder name

@@ -1045,6 +1045,175 @@ Proof.
       apply binds_tvar_exchange; eassumption.
 Qed.
 
+(** ⭐⭐ SS-ForallR, GENERALIZED PAST THE SOLVE-DISPATCH GUARD (2026-08-18).
+
+    Under guard 5 the row no longer fires at a VARIABLE, a [∀] or a [⫯]
+    subject — the implementation dispatches on the subject first
+    (type.ml:494) — but the completeness chain builds it at an ARBITRARY
+    accumulated pattern.  ⭐ The peeled routes give the SAME answer, and
+    that is what this block proves: the old rule survives as a DERIVED one.
+
+    ⚙ Three inversions and a size induction.  The [∀] case is the
+    COMMUTATION §8c.16 §D budgeted, and it is paid exactly once, here,
+    instead of at every consumer: peel the subject's binder, EXCHANGE the
+    two rigid openers, recurse, and re-close. *)
+
+Lemma a_solve_eq_var_subject : forall Θ P Q Ξ P',
+  {{ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}a ->
+  forall α, P = pskl_var_f α -> Ξ = nil /\ P' = pskl_var_f α.
+Proof.
+  intros Θ P Q Ξ P' HD.
+  induction HD; intros α0 Heq; try discriminate.
+  - (* SE-Var *) inversion Heq; subst. split; reflexivity.
+  - (* SE-FlexR — the guess at a variable IS the variable *)
+    subst.
+    match goal with
+    | G : a_guess_mono _ (pskl_var_f _) _ _ |- _ => inversion G; subst
+    end.
+    split; reflexivity.
+  - (* SE-VacuousR *) subst. split; reflexivity.
+  - (* SE-GuardedGhost *) eauto.
+Qed.
+
+Lemma a_solve_sub_var_subject : forall Θ m α Q Ξ P',
+  {{ Θ ⊢ₛ (pskl_var_f α) ≼[ m ] Q ⤳ Ξ ⨾ P' }}a ->
+  Ξ = nil /\ P' = pskl_var_f α.
+Proof.
+  intros * HD; inversion HD; subst.
+  - (* SS-Var *) split; reflexivity.
+  - (* SS-Vacuous *) split; reflexivity.
+  - (* SS-Check — the EQ layer answers a variable subject with itself *)
+    match goal with
+    | He : a_solve_eq _ _ _ _ _ |- _ =>
+        apply (a_solve_eq_var_subject He); reflexivity
+    end.
+  - (* SS-ForallR — ⛔ BARRED at a variable subject by the guard *)
+    exfalso.
+    match goal with
+    | Hoff : solve_l_off (pskl_var_f _) |- _ => exact (proj1 Hoff _ eq_refl)
+    end.
+Qed.
+
+Lemma a_solve_sub_inv_forall_l : forall Θ m P0 Q Ξ P',
+  {{ Θ ⊢ₛ (pskl_all_syn P0) ≼[ m ] Q ⤳ Ξ ⨾ P' }}a ->
+  exists β P'',
+    β `notin` ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl Q
+    /\ P' = pskl_all_syn (close_pskl_wrt_pskl β P'')
+    /\ {{ ((β ~ abind_tvar) ++ Θ) ⊢ₛ (open_pskl_wrt_pskl P0 (pskl_var_f β))
+          ≼[ m ] Q ⤳ Ξ ⨾ P'' }}a.
+Proof.
+  intros * H; inversion H; subst.
+  - (* SS-ForallL *)
+    match goal with
+    | Hfr : ?b `notin` _, Hp : a_solve_sub _ _ _ _ _ ?y |- _ =>
+        exists b, y
+    end.
+    repeat split; assumption.
+  - (* SS-Vacuous — ⛔ BARRED at a ∀ subject *)
+    exfalso.
+    match goal with
+    | Hoff : peel_l_off (pskl_all_syn _) |- _ => exact (proj1 Hoff _ eq_refl)
+    end.
+  - (* SS-Check — a ∀ subject is never guarded *)
+    match goal with
+    | Hg : guarded_pskl (pskl_all_syn _) |- _ => inversion Hg
+    end.
+  - (* SS-ForallR — ⛔ BARRED at a ∀ subject *)
+    exfalso.
+    match goal with
+    | Hoff : solve_l_off (pskl_all_syn _) |- _ =>
+        exact (proj1 (proj2 Hoff) _ eq_refl)
+    end.
+Qed.
+
+Lemma a_solve_sub_inv_univ_ghost_l : forall Θ m P0 Q Ξ P',
+  {{ Θ ⊢ₛ (pskl_tophole P0) ≼[ m ] Q ⤳ Ξ ⨾ P' }}a ->
+  exists P'', P' = pskl_tophole P''
+    /\ {{ Θ ⊢ₛ P0 ≼[ m ] Q ⤳ Ξ ⨾ P'' }}a.
+Proof.
+  intros * H; inversion H; subst.
+  - (* SS-UnivGhostL *)
+    match goal with
+    | Hp : a_solve_sub _ _ P0 _ _ ?y |- _ => exists y
+    end.
+    split; [ reflexivity | assumption ].
+  - (* SS-Vacuous — ⛔ BARRED at a ⫯ subject *)
+    exfalso.
+    match goal with
+    | Hoff : peel_l_off (pskl_tophole _) |- _ => exact (proj2 Hoff _ eq_refl)
+    end.
+  - (* SS-Check — a ⫯ subject is never guarded *)
+    match goal with
+    | Hg : guarded_pskl (pskl_tophole _) |- _ => inversion Hg
+    end.
+  - (* SS-ForallR — ⛔ BARRED at a ⫯ subject *)
+    exfalso.
+    match goal with
+    | Hoff : solve_l_off (pskl_tophole _) |- _ =>
+        exact (proj2 (proj2 Hoff) _ eq_refl)
+    end.
+Qed.
+
+Lemma a_solve_sub_forall_r_gen_n : forall n Θ P B Ξ P' β,
+  size_pskl P <= n ->
+  pskl_ghost_free (pskl_all_syn B) ->
+  β `notin` ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl B ->
+  {{ ((β ~ abind_tvar) ++ Θ) ⊢ₛ P ≼[ mode_tc ]
+     (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ P' }}a ->
+  {{ Θ ⊢ₛ P ≼[ mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ P' }}a.
+Proof.
+  induction n as [ | n IH ]; intros Θ P B Ξ P' β Hsz Hgf Hβ HD;
+    [ exfalso; destruct P; simpl in Hsz; lia | ].
+  destruct P as [ | k | α | P1 P2 | P0 | | P0 ].
+  - apply a_solve_sub__forall_r with (β := β);
+      [ exact Hgf | apply solve_l_off_unit | exact Hβ | exact HD ].
+  - apply a_solve_sub__forall_r with (β := β);
+      [ exact Hgf | apply solve_l_off_var_b | exact Hβ | exact HD ].
+  - (* a VARIABLE subject: [SS-Var] answers it, and so did the premise *)
+    destruct (a_solve_sub_var_subject HD) as [-> ->].
+    apply a_solve_sub__var.
+  - apply a_solve_sub__forall_r with (β := β);
+      [ exact Hgf | apply solve_l_off_arrow | exact Hβ | exact HD ].
+  - (* ⭐ a ∀ subject: THE COMMUTATION.  Peel, exchange the two rigid
+       openers, recurse, re-close. *)
+    destruct (a_solve_sub_inv_forall_l HD) as (β' & P'' & Hβ' & -> & Hp).
+    apply a_solve_sub_ctx_exchange in Hp.
+    simpl in Hsz, Hβ.
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f β'))
+      as Hup.
+    rewrite ftvar_in_aenv_cons_tvar in Hβ'.
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower B (pskl_var_f β))
+      as Hlow.
+    apply a_solve_sub__forall_l with (β := β').
+    + clear - Hβ' Hlow. simpl in *. fsetdec.
+    + apply (IH _ _ _ _ _ β).
+      * rewrite size_pskl_open_pskl_wrt_pskl_var. lia.
+      * exact Hgf.
+      * rewrite ftvar_in_aenv_cons_tvar.
+        assert (Hne : β <> β') by (clear - Hβ'; fsetdec).
+        clear - Hβ Hup Hne. simpl in *. fsetdec.
+      * exact Hp.
+  - apply a_solve_sub__forall_r with (β := β);
+      [ exact Hgf | apply solve_l_off_hole | exact Hβ | exact HD ].
+  - (* a ⫯ subject: strip, recurse, re-wrap *)
+    destruct (a_solve_sub_inv_univ_ghost_l HD) as (P'' & -> & Hp).
+    simpl in Hsz, Hβ.
+    apply a_solve_sub__univ_ghost_l.
+    apply (IH _ _ _ _ _ β); [ lia | exact Hgf | exact Hβ | exact Hp ].
+Qed.
+
+Lemma a_solve_sub_forall_r_gen : forall Θ P B Ξ P' β,
+  pskl_ghost_free (pskl_all_syn B) ->
+  β `notin` ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl B ->
+  {{ ((β ~ abind_tvar) ++ Θ) ⊢ₛ P ≼[ mode_tc ]
+     (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ P' }}a ->
+  {{ Θ ⊢ₛ P ≼[ mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ P' }}a.
+Proof.
+  intros. eapply a_solve_sub_forall_r_gen_n;
+    [ apply le_n | eassumption | eassumption | eassumption ].
+Qed.
+
+
 (** ⭐ ONE PEEL OF THE COUNTERPART, SOLVE SIDE.  At a ghost-free ∀ target in
     check mode only four rows can end an [a_solve_sub] derivation — SS-Var,
     SS-ForallL, SS-UnivGhostL and SS-ForallR (SS-Check and SS-GhostL want a

@@ -91,6 +91,28 @@ Proof.
     constructor; eauto using rel_pskl_lc.
 Qed.
 
+(** ⭐ The SOLVE-DISPATCH guards transport too — they read the HEAD
+    constructor, and [rel_pskl] preserves it (a variable relates only to a
+    variable, so even [solve_l_off]'s var-exclusion survives). *)
+Lemma rel_pskl_peel_l_off : forall ρ V P1 P2,
+  rel_pskl ρ V P1 P2 -> peel_l_off P1 -> peel_l_off P2.
+Proof.
+  intros * Hrel [H1 H2]; inversion Hrel; subst;
+    try solve [ split; intros; discriminate ];
+    [ exfalso; exact (H1 _ eq_refl) | exfalso; exact (H2 _ eq_refl) ].
+Qed.
+
+Lemma rel_pskl_solve_l_off : forall ρ V P1 P2,
+  rel_pskl ρ V P1 P2 -> solve_l_off P1 -> solve_l_off P2.
+Proof.
+  intros * Hrel [H0 [H1 H2]]; inversion Hrel; subst;
+    try solve [ split;
+                [ intros; discriminate | split; intros; discriminate ] ];
+    [ exfalso; exact (H0 _ eq_refl)
+    | exfalso; exact (H1 _ eq_refl)
+    | exfalso; exact (H2 _ eq_refl) ].
+Qed.
+
 Lemma rel_pskl_ghost_free : forall ρ V P1 P2,
   rel_pskl ρ V P1 P2 -> pskl_ghost_free P1 -> pskl_ghost_free P2.
 Proof.
@@ -1216,7 +1238,9 @@ Proof.
   - (* SS-Vacuous *)
     inversion HrelQ; subst.
     exists nil, nil, nil, P3.
-    split; [ apply a_solve_sub__vacuous | ].
+    split;
+      [ apply a_solve_sub__vacuous;
+        eapply rel_pskl_peel_l_off; [ exact HrelP | assumption ] | ].
     split; [ reflexivity | ]. split; [ reflexivity | ].
     split; [ solve_uniq | ]. split; [ simpl; clear; fsetdec | ].
     split; [ intros a b Hin; inversion Hin | ].
@@ -1273,6 +1297,7 @@ Proof.
     split.
     { apply a_solve_sub__forall_r with (β := β2).
       - eapply rel_pskl_ghost_free; [ exact HrelQ | assumption ].
+      - eapply rel_pskl_solve_l_off; [ exact HrelP | assumption ].
       - clear - Hβ2; fsetdec.
       - exact D2p. }
     split; [ exact E1 | ]. split; [ exact E2 | ].

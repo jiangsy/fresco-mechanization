@@ -292,13 +292,14 @@ Proof.
     intros S0 S1 Θ m P Q Ξ P' Hs IH Hcov.
     apply a_solve_sub__univ_ghost_l. apply IH. simpl in Hcov.
     clear - Hcov. fsetdec.
-  - (* SS-Vacuous *) intros. apply a_solve_sub__vacuous.
+  - (* SS-Vacuous *) intros. apply a_solve_sub__vacuous. assumption.
   - (* SS-Check *)
     intros S0 S1 Θ P Q Ξ P' Hgf Hg1 Hg2 He IH Hcov.
     apply a_solve_sub__check; auto.
   - (* SS-ForallR *)
-    intros S0 S1 Θ P B Ξ P' β Hgf Hβ Hs IH Hcov.
-    apply a_solve_sub__forall_r with (β := β); [ assumption | | ].
+    intros S0 S1 Θ P B Ξ P' β Hgf Hoff Hβ Hs IH Hcov.
+    apply a_solve_sub__forall_r with (β := β);
+      [ assumption | assumption | | ].
     + simpl in Hcov. clear - Hβ Hcov. fsetdec.
     + apply IH.
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f β)) as H1.
@@ -516,17 +517,17 @@ Proof.
   - intros S0 S1 Θ m P Q Ξ P' Hs IH S0' Heq.
     destruct (IH _ Heq) as [S1' [HS1 Hd]].
     exists S1'. split; [ exact HS1 | apply e_solve_sub__univ_ghost_l; exact Hd ].
-  - intros S Θ m P S0' Heq.
-    exists S0'. split; [ exact Heq | apply e_solve_sub__vacuous ].
+  - intros S Θ m P Hoff S0' Heq.
+    exists S0'. split; [ exact Heq | apply e_solve_sub__vacuous; exact Hoff ].
   - intros S0 S1 Θ P Q Ξ P' Hgf Hg1 Hg2 He IH S0' Heq.
     destruct (IH _ Heq) as [S1' [HS1 Hd]].
     exists S1'. split; [ exact HS1 | apply e_solve_sub__check; assumption ].
-  - intros S0 S1 Θ P B Ξ P' β Hgf Hβ Hs IH S0' Heq.
+  - intros S0 S1 Θ P B Ξ P' β Hgf Hoff Hβ Hs IH S0' Heq.
     destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
       as [S1' [HS1 Hd]].
     exists S1'. split; [ exact HS1 | ].
     apply e_solve_sub__forall_r with (β := β);
-      [ exact Hgf | rewrite Heq; exact Hβ | exact Hd ].
+      [ exact Hgf | exact Hoff | rewrite Heq; exact Hβ | exact Hd ].
   - intros S0 S1 S2 Θ m P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2' He IH1 Hs IH2 S0' Heq.
     destruct (IH1 _ Heq) as [S1' [HS1 Hd1]].
     destruct (IH2 _ HS1) as [S2' [HS2 Hd2]].
@@ -671,8 +672,9 @@ Proof.
     destruct (IH _ Heq) as [S1' [HS1 Hd]].
     exists S1'. split; [ exact HS1 | apply e_solve_sub__univ_ghost_l; exact Hd ].
   - (* SS-Vacuous *)
-    intros S Θ m P S0' Heq. simpl.
-    exists S0'. split; [ exact Heq | apply e_solve_sub__vacuous ].
+    intros S Θ m P Hoff S0' Heq. simpl.
+    exists S0'. split;
+      [ exact Heq | apply e_solve_sub__vacuous; apply peel_l_off_swap; exact Hoff ].
   - (* SS-Check *)
     intros S0 S1 Θ P Q Ξ P' Hgf Hg1 Hg2 He IH S0' Heq. simpl.
     destruct (IH _ Heq) as [S1' [HS1 Hd]].
@@ -680,12 +682,13 @@ Proof.
     apply e_solve_sub__check;
       auto using guarded_pskl_swap, pskl_ghost_free_swap.
   - (* SS-ForallR — the binder LEAKS into the yield; no close *)
-    intros S0 S1 Θ P B Ξ P' β Hgf Hβ Hs IH S0' Heq. simpl.
+    intros S0 S1 Θ P B Ξ P' β Hgf Hoff Hβ Hs IH S0' Heq. simpl.
     destruct (IH (add (swap_atom a b β) S0')) as [S1' [HS1 Hd]];
       [ apply eq_swap_atoms_add; exact Heq | ].
     exists S1'. split; [ exact HS1 | ].
     apply e_solve_sub__forall_r with (β := swap_atom a b β);
       [ apply pskl_ghost_free_swap; exact Hgf
+      | apply solve_l_off_swap; exact Hoff
       | eapply swap_notin_eq; eassumption | ].
     rewrite swap_pskl_open_var in Hd.    exact Hd.
   - (* SS-Arrow — threaded in BOTH the supply and the context *)

@@ -1568,7 +1568,10 @@ Proof.
     subst P0.
     (* SolS-Vacuous generates nothing *)
     eapply solve_sub_ext_nil with (Pa := Pi);
-      [ apply a_solve_sub__vacuous | exact HwfPi | cbn [app] ].
+      (* ⭐ SS-Vacuous is guarded now, so the PEELED route is the one that
+         applies at a ∀ / ⫯ pattern — [a_solve_sub_vacuous_gen] gives the
+         SAME answer (empty block, the pattern back) at every shape. *)
+      [ apply a_solve_sub_vacuous_gen | exact HwfPi | cbn [app] ].
     eapply ad_partial_precise_psi_cong; [ exact Hpre | ].
     assert (HPsiae : Ψa [=] empty) by (clear - HΨs2 H; fsetdec).
     clear - HPsiae; fsetdec.
@@ -1911,7 +1914,11 @@ Proof.
                      its binder, and — since the repair — it runs its premise
                      at [(β ~ tvar) ++ Θ0], so the IH's output IS the premise:
                      no strengthening, no family to manufacture. *)
-                  apply a_solve_sub__forall_r with (β := β);
+                  (* ⭐ SS-ForallR is guarded now, so the DERIVED form is
+                     what applies at an arbitrary accumulated pattern —
+                     [a_solve_sub_forall_r_gen] peels a var / ∀ / ⫯ subject
+                     the way the implementation does and answers the same. *)
+                  apply a_solve_sub_forall_r_gen with (β := β);
                     [ exact (ptyp_to_pskl_ghost_free (ptyp_all A0))
                     | clear - Fr; solve_notin | exact Hs ]
                 | exact Hfm | exact Hu | exact Hk
@@ -1942,7 +1949,10 @@ Proof.
     subst P0.
     (* SolS-Vacuous generates nothing *)
     eapply solve_sub_ext_nil with (Pa := Pi);
-      [ apply a_solve_sub__vacuous | exact HwfPi | cbn [app] ].
+      (* ⭐ SS-Vacuous is guarded now, so the PEELED route is the one that
+         applies at a ∀ / ⫯ pattern — [a_solve_sub_vacuous_gen] gives the
+         SAME answer (empty block, the pattern back) at every shape. *)
+      [ apply a_solve_sub_vacuous_gen | exact HwfPi | cbn [app] ].
     eapply ad_partial_precise_psi_cong; [ exact Hpre | ].
     assert (HPsiae : Ψa [=] empty) by (clear - HΨs2 H; fsetdec).
     clear - HPsiae; fsetdec.
@@ -2719,7 +2729,10 @@ Proof.
     subst P0.
     (* SolS-Vacuous generates nothing *)
     eapply solve_sub_ext_nil with (Pa := Pi);
-      [ apply a_solve_sub__vacuous | exact HwfPi | cbn [app] ].
+      (* ⭐ SS-Vacuous is guarded now, so the PEELED route is the one that
+         applies at a ∀ / ⫯ pattern — [a_solve_sub_vacuous_gen] gives the
+         SAME answer (empty block, the pattern back) at every shape. *)
+      [ apply a_solve_sub_vacuous_gen | exact HwfPi | cbn [app] ].
     eapply ad_partial_precise_psi_cong; [ exact Hpre | ].
     assert (HPsiae : Ψa [=] empty) by (clear - HΨs2 H; fsetdec).
     clear - HPsiae; fsetdec.

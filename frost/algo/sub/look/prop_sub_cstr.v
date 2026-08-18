@@ -1378,7 +1378,10 @@ Proof.
            ++ (* solve : lift the β-instance over the ∀ by SS-ForallR, which is
                  EXISTS-FRESH and LEAKS its binder (DESIGN §4.3) *)
               cbn. apply a_solve_cstr__sub.
-              apply a_solve_sub__forall_r with (β := β);
+              (* ⭐ the DERIVED form — SS-ForallR is guarded now, and
+                 [a_solve_sub_forall_r_gen] peels a var / ∀ / ⫯ pattern the
+                 way the implementation does, with the same answer. *)
+              apply a_solve_sub_forall_r_gen with (β := β);
                 [ exact (ptyp_to_pskl_ghost_free (ptyp_all A0))
                 | clear - Fr; solve_notin | exact Hss ].
            ++ (* all_flex_mono Ξs *) exact Hfms.

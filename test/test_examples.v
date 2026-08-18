@@ -422,7 +422,12 @@ Proof.
           apply a_looksub__var. }
       * eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
         { apply a_solve_eq__hole_l. }
-        { apply a_solve_cstr__sub. apply a_solve_sub__vacuous. }
+        { apply a_solve_cstr__sub.
+          (* ⭐ UNDER THE SOLVE-DISPATCH GUARD the ⫯ must be STRIPPED first:
+             [SS-UnivGhostL] is matched before [SS-Vacuous] (type.ml:494),
+             and the two routes agree — [⫯X] either way. *)
+          apply a_solve_sub__univ_ghost_l.
+          apply a_solve_sub__vacuous; split; intros; discriminate. }
       * apply (a_guess__ty (Ξ := nil) (A := σ_auto)).
         apply a_guess_mono__tophole.
         unfold σ_auto, σ_id; simpl.
@@ -675,7 +680,12 @@ Proof.
             apply a_looksub__var. }
         { eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
           - apply a_solve_eq__hole_l.
-          - apply a_solve_cstr__sub. apply a_solve_sub__vacuous. }
+          - apply a_solve_cstr__sub.
+          (* ⭐ UNDER THE SOLVE-DISPATCH GUARD the ⫯ must be STRIPPED first:
+             [SS-UnivGhostL] is matched before [SS-Vacuous] (type.ml:494),
+             and the two routes agree — [⫯X] either way. *)
+          apply a_solve_sub__univ_ghost_l.
+          apply a_solve_sub__vacuous; split; intros; discriminate. }
         { apply (a_guess__ty
                    (A := ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb))).
           apply a_guess_mono__tophole.
