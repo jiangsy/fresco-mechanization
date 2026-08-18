@@ -4420,3 +4420,53 @@ unchanged).  Where the marker DOES occur:
 
 ⚠️ `frost/ext_algo/prop_sub_complete.v`'s file header (lines 19-46) is STALE:
 it names the absence-first guard as what is owed.  Update it when (B) lands.
+
+### 8c.17 ✅ THE HATCH IS DELETED — the b-core's yield is a clean `rel_pskl` (2026-08-18)
+
+✅ **`make coq` rc=0, `README.v` 32/32, zero `Admitted`.**  §C''s prediction
+holds: `bcore_eq_stmt`'s conclusion is now
+
+```coq
+  /\ rel_pskl (ρe ++ ρn ++ ρ) V Q1 Q2
+```
+
+with no `\/ (exists γ1 γ2, Q1 = pskl_var_f γ1 /\ Q2 = pskl_var_f γ2)`.  That
+disjunct is what made level 4 too weak for level 6, and it is gone.
+
+**⭐ THE SOURCE WAS ONE ROW, AND THE FIX IS ONE PAIR.**
+`a_solve_eq_var_target_junk` took `t1` and `t2` with nothing relating them, and
+its `SE-GhostL` row yields the TARGET on each side — so with unrelated targets
+the conclusion could not be a `rel_pskl`.  The lemma now takes
+`rel_atom ρ V t1 t2` and concludes `rel_pskl (ρn ++ ρ) V mid1 mid2`
+unconditionally; `SE-GhostL` closes by `rel_pskl__var_f`.
+
+⚙ **AND THE TARGETS WERE ALWAYS RELATABLE — the b-core just never said so.**
+Its single caller is `bcore_eq`'s `LE-FlexR` row, where `t1` is the
+derivation's own generated flexible (`α1 ∉ Sa0`, `Sa1 = add α1 Sa0`) and `t2`
+is the runner's (`supply_fresh Sb0`).  ⭐ That is EXACTLY the shape of a `ρe`
+entry — `a ∈ Sa1 ∖ Sa0`, `b ∈ lk_supply ∖ Sb0`, flex-status agreeing — so the
+row now emits `ρe := (α1, supply_fresh Sb0) :: nil` instead of `nil` and calls
+the junk head at the extended pair list.  The five interval obligations are
+one line each, and the flex-status iff is `True <-> True` (both names are
+`abind_flex_mono` in their own fold context, via `Hb1` / `Hb2`).
+
+⚙ **NOTHING ELSE HAD TO MOVE.**  The `LE-Arrow` rows are generic in `ρea` —
+they only ever read `Hρea`'s five facts — so a `ρe` that is no longer always
+`nil` costs them nothing, and the ρ-growth argument of the seventh pass covers
+the new pair unchanged (`α1 ∉ Sa0 ⊇ ftvar_in_aenv Θd` makes it non-flexible on
+the LOOK side, which is what `flex_agree_rel_extend_nonflex` wants).
+
+⚙ **WHAT WENT AWAY**: both "hatch branch" blocks (`bcore_eq`'s `LE-Arrow` and
+`bcore_sub`'s `LS-Arrow`, ~25 lines each), six `destruct Hyield as [ … | … ]`
+splits, and §2d's role in the roadmap (the var-pattern fixed point is still
+used elsewhere, but it is no longer *what makes the hatch harmless*).
+⚠️ **The net line count went UP by 19**, not down as §C' guessed: the pairing
+bookkeeping at `LE-FlexR` (~46 lines) costs about what the two hatch branches
+paid.  The win is the STATEMENT, not the size.
+
+⚙ `bcore_sub_stmt` needed no change — its conclusion was already BARE (no
+yield); it consumes `bcore_eq`'s at its `LS-Arrow` row, and at three
+`LS-Check` sites it discards it with `_`.
+
+**Resume: §D's four lemmas** (§8c.16 §D), then §6/§7 of
+`prop_sub_complete.v`, then §8's three headlines.
