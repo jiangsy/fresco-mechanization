@@ -307,6 +307,111 @@ the five candidate pairs — including `SI-Ghost` against `SI-UnivGhostR` at
 `□ ⩽ □`, whose results would have DIFFERED (`P_0` versus `⫯P`) — cannot
 both fire.
 
+## MISSING SIDE CONDITION (2026-08-18, machine-checked) — `LE-UnivGhost2` lacks the exclusion that would keep `LE-FlexR` off a FLEXIBLE counterpart, so the COLLECTION is still ambiguous at a ⫯ subject — and the two answers differ in KIND, not in names
+
+> ⛔ **NOT YET FIXED IN THE MECH.**  The guard's CONTEXT-FREE form was carried
+> through and is REFUTED (see "the fork", below); the faithful form is scoped
+> and costed in
+> [`HANDOFF-extractable-algo-encoding.md`](HANDOFF-extractable-algo-encoding.md)
+> §8c.16.  This is the fourth entry of the same species as the three above,
+> and it is the one still blocking level 6.
+
+**What the paper says.**  `LE-FlexR` (`full-algo-spec.tex:1110-1116`) concludes
+at a HATTED counterpart,
+
+```
+  P ≠ α      α ∈ ftv(P)      fresh γ̂
+  ------------------------------------------
+  look_eq[α]{P}{β̂}{ ≐ γ̂ }[γ̂]
+```
+
+and `LE-UnivGhost2` (`:1155-1161`) carries exactly one side condition:
+
+```
+  guarded{P'}      look_eq[α]{P}{P'}{𝒞}[Ξ]
+  ----------------------------------------
+  look_eq[α]{⫯P}{P'}{𝒞}[Ξ]
+```
+
+**What is missing.**  `guarded` is defined on skeletons as *"`⫯.P` and `◇`
+are unguarded"* (`declarative.tex:1304-1306`), so **a flexible `β̂` IS
+guarded** — and at
+
+```
+  ⫯P   ≐?   β̂          (α ∈ ftv P,  P ≠ α)
+```
+
+*both* rules apply.  Their answers are of different KINDS:
+
+```
+  LE-FlexR       Ξ = γ̂            𝒞 = [ ≐ γ̂ ]      (a FRESH flexible, invented)
+  LE-UnivGhost2  Ξ = the IH's     𝒞 = the IH's     (the ⫯ is stripped)
+```
+
+— at `P = α` the second is `Ξ = ·`, `𝒞 = [≐ β̂]`, so the two disagree in the
+block, in the collected constraint, and (with a threaded name supply) in how
+much supply was spent.
+
+**Which one is the algorithm?**  `LE-FlexR`.  `constr_collect_eq`'s match is
+
+```
+  LE-Var (type.ml:549) → LE-Absent (:553) → LE-Vacuous (:557)
+                       → ⭐ LE-FlexR (:561) → … → LE-UnivGhost2 (:618)
+```
+
+and `MFlex` is a constructor DISTINCT from `TVar` (`lib/type.ml:23`), so the
+row fires only at a FLEXIBLE counterpart; at a RIGID variable the match falls
+through to `LE-UnivGhost2`.  So the minimal correct premise on
+`LE-UnivGhost2` is *"`LE-FlexR` does not apply"*:
+
+```
+  P' is not a flexible variable
+```
+
+**Why that is not harmless, and where it bites.**  Machine-checked twice, in
+the mech's `e_` (supply-threaded) encoding:
+
+- [`cex/probe_bcore_ug2_flexr.v`](../cex/probe_bcore_ug2_flexr.v) — the two
+  routes at the cell, plus the two folds below them (one succeeds, one is
+  stuck).  Found 2026-08-16; the level-4 b-core DODGED it by being stated
+  RUNNER-SIDED, which is sound there because that level's conclusion carries
+  a rel-or-HATCH yield and no supply.
+- [`cex/probe_extract_flexr_ug2_drift.v`](../cex/probe_extract_flexr_ug2_drift.v)
+  (`e_extract_det_false`, Qed, assumptions-closed) — the LIFT, one arrow and
+  one `LS-Check` up: at `NM = SK`, `m = TC`, `Θ0 = ·`, subject `(⫯α) → 1`,
+  counterpart `β → 1`, two `extract` derivations at the SAME inputs differ in
+  their BLOCK (`·` versus a singleton), so no renaming relates them.  Level 6
+  cannot dodge it: `SI-ForallL` must move the DERIVATION's extract outputs
+  onto the RUNNER's rails by a swap chain.
+
+⛔ **THE FORK, AND THE CHEAP FORM IS REFUTED.**  Two guards are available:
+
+| | premise on `LE-UnivGhost2` | verdict |
+|---|---|---|
+| (A) | `P'` is not a VARIABLE (context-free) | ⛔ **REFUTED** |
+| (B) | `P'` is not a FLEXIBLE variable, *and* `LE-FlexR` gains `α̂ ∈ Θ` | ✅ faithful |
+
+(A) is what the mech's own runner would justify, because `e_lookeq_impl`
+takes FlexR at ANY variable counterpart — but that is the MECH being
+unfaithful, not the paper.  It is machine-BLOCKED: `algo/sub/look/prop_eq_cstr.v`
+:4676-4698, the P6 chain at a ⫯-headed subject against `P0 = pskl_var_f β0`,
+BUILDS `LE-UnivGhost2` there, and under (A) that row is barred.  Parked on
+branch `remech-guard4-wip` (`40f900c`) with the full measurement.
+
+⭐ **AND THE MECH HAS ITS OWN BUG HERE, which (B) fixes.**
+`a_lookeq__flex_r` / `e_lookeq__flex_r` (`frost/algo/def_rules.v`,
+`frost/ext_algo/def_look.v`) fire at ANY `pskl_var_f β` — no `a_flex_tvar Θ β`
+premise — where the paper's conclusion is at `β̂`.  Contrast the SOLVE layer's
+twin `a_solve_eq__flex_r`, which DOES carry `a_flex_tvar Θ α` and documents at
+length why the exclusion matters.  The two rows are mirror images and only one
+of them was made faithful.
+
+⚙ **SEVERITY.**  Presentation/metatheory, as with the `LS-ForallL` entry
+below: the implementation is unambiguous and the paper's figure is not.  What
+turns on it is any statement that speaks of *the* collected constraints — and,
+in this mech, campaign level 6, which needs the collection's outputs to be a
+function of its inputs up to renaming.
+
 ## MISSING SIDE CONDITION (2026-08-15, machine-checked) — `LS-ForallL` lacks the `guarded` guard that `SI-ForallL` carries "to avoid overlapping with ForallR", so the COLLECTION is not deterministic — and its two answers differ in SHAPE, not just in names
 
 > **✅ FIXED IN THE MECH ON BOTH ENCODINGS (2026-08-18).**  `LS-ForallL` and

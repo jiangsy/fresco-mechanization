@@ -3999,3 +3999,187 @@ determinism above has to be composed with `e_extract_supply_respect` and
 
 After that: §6/§7 of `frost/ext_algo/prop_sub_complete.v` (§8c.13's recipe;
 §1/§3/§4 are already Qed), then §8's three headlines.
+
+### 8c.16 ⛔⛔ STEP 2 IS BLOCKED ON A **FOURTH** DISPATCH GUARD — machine-checked, and the CHEAP form of it is refuted (2026-08-18)
+
+`e_extract_det` is **still false after the three landed guards**, and the
+witness is `cex/probe_extract_flexr_ug2_drift.v` (`e_extract_det_false`, Qed,
+assumptions-closed).  §8c.15 G's plan — "compose the three factors" — is
+sound as far as it goes, but its first factor does not exist yet, because the
+COLLECTION is still ambiguous at one cell.
+
+#### A. The cell, and it is `probe_bcore_ug2_flexr.v`'s, one level up
+
+`guarded_pskl` is `unit | var | arrow` (frost/def_shapes.v), so a VARIABLE is
+guarded.  At
+
+    ⫯Q   ∼[α]   β          (α ∈ ftv Q,  the subject is not α)
+
+both rows fire and their answers are of different KINDS:
+
+| row | Ξ | 𝒞 | supply |
+|---|---|---|---|
+| `LE-FlexR` | `α̂1 ~ flex` | `[ ≐ α̂1 ]` | `S ↝ add α̂1 S` |
+| `LE-UnivGhost2` ∘ `LE-Var` | `·` | `[ ≐ β ]` | `S ↝ S` |
+
+⭐ **THE LIFT TO `e_extract` IS ONE ARROW AND ONE `LS-Check`**, and everything
+below the fork is free:
+
+    NM = SK   m = TC   Θ0 = ·   subject (⫯α) → 1   counterpart β → 1
+
+`LS-Check` is the only collection row there (α occurs, the counterpart is
+guarded and ghost-free), and it hands the pair straight to `LE-Arrow`, whose
+LEFT half IS the cell.  The right halves are α-free, both folds are one
+`SE-GhostL` at the accumulator `◇`, and at `NM = SK` the guess is the
+identity.  ⛔ The BLOCK conjunct alone refutes the statement — a chain maps
+`·` to `·` — so no counting argument is needed.
+
+⚙ **WHY LEVEL 4 DID NOT HAVE TO CARE.**  §8c.9's fourth pass met this exact
+pair and DODGED it, by re-stating the b-core RUNNER-SIDED.  That is sound
+there: `bcore_eq_stmt`'s conclusion carries a **rel-or-HATCH** yield ("or both
+are raw variables") and NO supply conjunct, and the runner always takes FlexR,
+so only the transportable orientation arises.  ⛔ Level 6 cannot dodge it:
+`SI-ForallL` calls `e_extract_impl` and then recurses at
+`(ex_supply rx, ex_block rx ++ Θ0, open Q (ex_out rx))`, so the DERIVATION's
+extract outputs must be moved onto those rails by a swap chain — and a chain
+relates neither the two blocks nor the two supplies, and the HATCH is exactly
+a pair of variables it cannot relate (one of them is in `S0`).
+
+#### B. ⛔ THE FORK — and (A), the cheap form, is REFUTED
+
+| | premise on `LE-UnivGhost2` | verdict |
+|---|---|---|
+| (A) | `flex_r_off P' := forall β, P' <> pskl_var_f β` — context-free | ⛔ **REFUTED** |
+| (B) | `P'` is not a FLEXIBLE variable, **and** `LE-FlexR` gains `a_flex_tvar Θ β` | ✅ the faithful one |
+
+**(A) was carried through both encodings and is parked on branch
+`remech-guard4-wip` (`40f900c`, marked [WIP — DOES NOT BUILD]).**  It is
+machine-BLOCKED at `algo/sub/look/prop_eq_cstr.v:4676-4698`: the P6 chain at a
+⫯-headed subject against `P0 = pskl_var_f β0` BUILDS `LE-UnivGhost2` there,
+and (A) bars the row.  Under (A) that site would have to route through
+`LE-FlexR`, whose answer throws the counterpart away — wrong when `β0` is
+RIGID, and the site does not split on rigidity.
+
+⭐ **AND THE REFERENCE IMPLEMENTATION SIDES WITH THE SITE.**
+`constr_collect_eq`'s FlexR row is `| _, MFlex beta ->` (type.ml:561) and
+`MFlex` is a constructor DISTINCT from `TVar` (lib/type.ml:23), so at a RIGID
+variable counterpart the match falls through to `| UGhost p, p' ->`
+LE-UnivGhost2 (:618).  The implementation takes FlexR only at a FLEXIBLE
+counterpart.
+
+⭐⭐ **SO THE MECH HAS A BUG OF ITS OWN, AND (B) FIXES BOTH.**
+`a_lookeq__flex_r` / `e_lookeq__flex_r` fire at ANY `pskl_var_f β` — no
+`a_flex_tvar Θ β` premise — where the paper's conclusion is at `β̂`
+(`full-algo-spec.tex:1110-1116`).  Contrast the SOLVE layer's mirror
+`a_solve_eq__flex_r`, which DOES carry `a_flex_tvar Θ α` and whose comment
+argues at length that the narrow reading is the unfaithful one.  The two rows
+are mirror images and only one of them was made faithful.  `docs/PAPER-GAPS.md`
+has the paper-facing half.
+
+#### C. ⚙ WHAT (B) COSTS — measured where it could be, named where it could not
+
+| site | what it needs | status |
+|---|---|---|
+| the 12 `LE-FlexR` construction sites | `a_flex_tvar Θ β` | ⭐ the two P6 ones ALREADY HAVE IT — `prop_eq_cstr.v:2405-2418` splits `a_binds_tvar β0` and kills the RIGID branch as refinement-absurd; the other ten are transports (swap / rename / ctx-change), where it moves with the transport |
+| the ~6 `LE-UnivGhost2` construction sites | the negative | vacuous by `discriminate` at a non-variable counterpart; ⛔ `prop_eq_cstr.v:4676` must ADD the rigid/flexible split and route the FLEXIBLE branch through `LE-FlexR`, mirroring `:2497` |
+| `e_lookeq_impl` | `sumbool_of_bool (flex_bound_ck Θ β)` at the three (subject, `var`) clauses | `flex_bound_ck` already exists (`ext_algo/def_dec.v:146`) with soundness AND the `flex_bound_false_non_flex` corollary |
+| `e_lookeq_order` | — | ⭐ **NOTHING**: its LE-UnivGhost2 clause is already `forall Q, P = ⫯Q -> e_lookeq_order S0 Θ α Q P'`, unconditional in `P'` (def_order.v:126-129), so the new recursion at a rigid-variable counterpart is already covered |
+| the intros / destruct patterns | one extra binder per mutual induction over the collection | ⚙ MEASURED under (A): six sites — `ext_algo/prop_look.v` ×3, `algo/sub/prop_looksub.v` ×3 (incl. two `destruct … as` lists), `deco_algo/prop_decorate_sub.v` ×2, `ext_algo/prop_solve_rel.v` ×1 |
+| the transports | `flex_r_off_swap` (`algo/prop_swap.v`), `rel_pskl_flex_r_off` (`ext_algo/prop_solve_rel.v`) | ⚙ both WRITTEN under (A) and reusable verbatim once the predicate gains its `Θ` |
+
+⛔ **THE ONE OBSTRUCTION (B) HAS AND (A) DID NOT**, and it is the analogue of
+guard 3's `alpha_stack_looksub`: the collection's CONTEXT-WEAKENING lemma
+(`prop_looksub.v` §, the one whose hypothesis is
+`ftvar_in_aenv Θ' [<=] ftvar_in_aenv Θ`) does NOT preserve flexibility, so
+under (B) `LE-FlexR`'s new premise cannot be transported across it.  That
+lemma must gain a flex-agreement hypothesis and every consumer must supply it.
+**Scope that before anything else** — it is where the cost lives.
+
+⭐ **AND ONE THING (B) BUYS BACK.**  Under (A), `prop_decorate_sub.v`'s "FlexR
+assignment of the ∀◇-headed subject to the flexible input" branch collapsed to
+`exfalso`, retiring a use of `flexvar_decoration_swap`.  Under (B) that branch
+SURVIVES (its input IS flexible) — so expect (B) to remove less work than (A)
+appeared to, and budget the branch as-is.
+
+#### D. What this leaves for STEP 2, unchanged and still correct
+
+Once (B) lands, §8c.15 G's factor table stands, with one correction: the
+statement to prove is on the `e_` judgements with SWAP CHAINS, and the
+template is **not** `prop_solve_det.v` §3/§4 (which are `a_`-level and in the
+PAIRING formulation, carrying no supply) but
+**`prop_consis_complete.v` §3b, `e_guess_mono_rel_n` / `e_guess_mono_rel`** —
+already Qed, already chain-formulated, already a size induction for exactly
+the reason level 6 needs one (the arrow row threads, so the second halves sit
+at DIFFERENT input supplies and a derivation-indexed IH would be pinned to
+one).  ⚙ **THE FORK OF §8c.15 G IS THEREBY RESOLVED: go `e_`, not `a_`.**  The
+`a_`-level pairing form cannot express the supply conjunct at all, and
+bridging it would require a separate "the supply increment is the block domain
+plus the openers" invariant for each of look / solve / guess — three different
+fates for an opener (LEAKED into 𝒞 by `LS-ForallR`, LEAKED into the output by
+`SS-ForallR`, CLOSED by `SS-ForallL`), none of which exists.
+
+The four lemmas STEP 2 then owes, in order:
+
+1. `e_looksub_lookeq_rel` — mutual, size induction, chain conclusion.  ⭐ Its
+   case analysis is the audit in §E below.
+2. `e_solve_sub_eq_rel` + `e_solve_cstr_rel`.  ⚙ The `a_`-level
+   `a_solve_eq_det` (prop_solve_det.v §4) is Qed and HYPOTHESIS-FREE, and its
+   case skeleton — `det_absurd`, `det_nil_refl`,
+   `a_solve_eq_var_subject_inv` — transfers row for row.
+3. `e_guess_rel` — three lines from `e_guess_mono_rel` (`e_guess__sk` is the
+   identity at `ps = nil`; `e_guess__ty` needs
+   `swaps_pskl ps (ptyp_to_pskl A) = ptyp_to_pskl (swaps_ptyp ps A)`).
+4. `e_extract_rel` — compose, moving each stage onto the previous chain with
+   the `_swaps` iterations of §3 (`e_looksub_lookeq_swaps` etc. do NOT exist
+   yet; `e_guess_mono_swaps` and `e_consis_swaps` are the pattern).
+
+#### E. ⭐ THE COLLECTION'S OVERLAP AUDIT — done, do not redo it
+
+Checked row by row against `e_looksub_impl` / `e_lookeq_impl`
+(`ext_algo/def_look_impl.v`).  With guards 1–3 landed and (B) added, the
+dispatch is SINGLE-RULE at every cell where the answers could differ:
+
+**`e_looksub`** — at a subject the marker does not occur in, `LS-Absent`
+races `LS-Vacuous` / `LS-Check` / `LS-Arrow` / `LS-UnivGhostL` and they all
+COINCIDE (`e_looksub_lookeq_absent_pins`: `Ξ = ·`, `𝒞 = ·`, supply
+unchanged).  Where the marker DOES occur:
+
+| subject | counterpart | rule, and what excludes the others |
+|---|---|---|
+| `α` | any | `LS-Var` — the ◇-dispatch guard puts `≠ α` on Vacuous / Check / ForallR |
+| any | `◇` | `LS-Vacuous` — `P' ≠ ◇` on ForallL / UnivGhostL |
+| `∀Q` / `⫯Q` | ghost-free `∀B`, `TC` | `LS-ForallR` — `forall_r_off` blocks ForallL / UnivGhostL |
+| `∀Q` | else | `LS-ForallL` — Check wants a `guarded` subject, and `∀` is not |
+| `⫯Q` | else | `LS-UnivGhostL` — likewise |
+| `arrow` | `guarded` ghost-free, `TC` | `LS-Check` — Arrow wants `mode_fn` |
+| `arrow` | `arrow`, `mode_fn` | `LS-Arrow` — Check wants `TC` |
+
+**`e_lookeq`** — same absent-race, and then:
+
+| subject | counterpart | rule |
+|---|---|---|
+| `α` | any | `LE-Var` |
+| any | `◇` | `LE-Vacuous` |
+| any | flexible `β̂` | `LE-FlexR` — ⛔ **this is the row (B) is about**; today `LE-UnivGhost2` races it at a `⫯` subject |
+| `arrow` | `arrow` | `LE-Arrow` |
+| `arrow` | `⫯Q'` | `LE-UnivGhostR` (`guarded` subject) |
+| `∀Q` | `∀Q'` / `⫯Q'` | `LE-ForallInh` / `LE-ForallSyn` |
+| `⫯Q` | `⫯Q'` / `∀Q'` | `LE-UnivGhost` / `LE-UnivGhost1` |
+| `⫯Q` | `1`, `arrow`, RIGID var | `LE-UnivGhost2` |
+
+⚙ Every other (subject, counterpart) pair has NO rule, which is the runner's
+`None`.
+
+#### F. Resume point
+
+1. Scope the collection's context-weakening lemma against (B) (§C's
+   obstruction).  Everything else in (B) is mechanical.
+2. Land (B) on both encodings + the runner; `[paper-gap]` comments and the
+   `docs/PAPER-GAPS.md` entry are ALREADY WRITTEN (the 2026-08-18
+   `LE-UnivGhost2` entry).
+3. Then §D's four lemmas, then §6/§7 of `prop_sub_complete.v` (§8c.13's
+   recipe — its header still says the level is blocked on the ABSENCE guard,
+   which is stale; the blocker is now this one), then §8's three headlines.
+
+⚠️ `frost/ext_algo/prop_sub_complete.v`'s file header (lines 19-46) is STALE:
+it names the absence-first guard as what is owed.  Update it when (B) lands.
