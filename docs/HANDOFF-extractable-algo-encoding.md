@@ -4137,7 +4137,35 @@ already proves.  ⚠️ `Set Implicit Arguments` makes all three binders of
 `a_flex_tvar_app_notin` implicit (each occurs in the conclusion), so the site
 drives it with `@`.
 
-⛔ **THE TWO SITES THAT REMAIN**, and they are the whole of what is left:
+✅ **BOTH OF THOSE SITES ARE NOW CLOSED** (fourth pass, `remech-guard4b-wip`
+`9c6a4de`), and `make -k` fails in exactly ONE file.
+
+| site | how it closed |
+|---|---|
+| `prop_eq_cstr.v` | ⭐⭐ **`a_lookeq_flex_p0_complete`** — the ARROW grid's flex-P0 case, 454 lines, LIFTED OUT OF THE INDUCTION into a standalone Qed lemma.  It works because **the block never looked at the subject's shape** (only `≠ α`, `α ∈ ftv`, and its freshness unions) and uses NO induction hypothesis.  Factoring was a RENAMING of SIX spots.  Both grids call it; the ⫯ grid's var-P0 row becomes a rigid/flexible split.  ⚠️ `Set Implicit Arguments` makes ALL its binders implicit, so the calls use `@` + a positional list; and `apply a_lookeq__flex_r`'s subgoal ORDER is not the premise order, so its bullets must be `solve [ … ]`. |
+| `prop_soundness_sub.v` | ⭐ **`flex_restrict`** (`frost/algo/prop_basic.v`) — keep exactly the flexibles the COUNTERPART mentions, payloads dropped.  Enough for the guard (scoped to `ftv P'`) and it still lands `ftvar_in_aenv` inside `ftv (∀B)`, which is what the shrink to `·` was for. |
+| `prop_sub_cstr.v` | the same block-drop repair as `prop_eq_cstr.v`'s `LS-Arrow` row |
+| `prop_look_pair.v` §1a | ⚠️ **the e-look's context is NO LONGER INERT** — two eq rows read it for hattedness — so `e_looksub_lookeq_ctx_any` gains a flex-agreement side condition, discharged FREE at both consumers (`flex_rigid_iff`) |
+
+⛔ **WHAT IS LEFT — ONE SITE, AND IT IS A THIRD LAYER.**
+`ext_algo/prop_look_pair.v:1386`, the b-CORE's `LE-FlexR` cell.  The runner's
+new `flex_bound_ck Θr β` test must be shown TRUE, and the b-core has NO
+relation between the DERIVATION's look context `Θd` and the RUNNER's `Θr` —
+its `flex_agree_rel ρ V Θf1 Θf2` is about the FOLD contexts.  The fix:
+
+1. add `flex_agree_rel ρ V Θd Θr` to `bcore_eq_stmt` / `bcore_sub_stmt`;
+2. thread it through the **35** `IHn` applications — one appended argument
+   each: `Hagrdr` at the structural rows, `flex_agree_rel_push_look`
+   (prop_solve_rel.v) at the binder rows;
+3. ⚠️ that push wants `β ∉ dom Θd` and `β2 ∉ dom Θr`, so the b-core also needs
+   Θd/Θr SCOPING hypotheses — today it has them only for `Θf1` / `Θf2`.
+
+⭐ It is TRUE and dischargeable at the one call site: `e_extract_impl_complete`
+runs the runner at the SAME `Θ0` the derivation uses, so the top-level
+agreement is reflexivity, and every recursion adds RIGID openers on both
+sides.
+
+⚙ **HISTORICAL — the two sites this replaces:**
 
 1. **`algo/sub/look/prop_eq_cstr.v:4737`** — ⭐ **now ONE LEAF, not a case**
    (third pass, `remech-guard4b-wip` `244971e`).  A new lemma does the work:
