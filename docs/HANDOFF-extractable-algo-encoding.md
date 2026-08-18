@@ -5014,3 +5014,153 @@ RULE (transported along the chain), not from an invariant about outputs.
 Expect the same at `AT-AbsCheck`'s `split_at_tvar` and at the
 `pskl_readback` positions — the rule pins them.  What genuinely needed an
 invariant was local closure, and that is what §4 is.
+
+### 8c.23 ⭐⭐⭐ LEVELS 7 AND 8 ARE CLOSED, AND SO IS (2e) — THE CAMPAIGN IS FINISHED (2026-08-19)
+
+✅ **`make coq` rc=0, `README.v` 33/33 (the new entry is §VI, DECIDABILITY),
+zero `Admitted`/`Axiom` in `frost/`, `cex/`, `test/`.**  Three new files'
+worth of work, all Qed and `Closed under the global context`:
+
+| headline | file | what it says |
+|---|---|---|
+| `e_split_impl_complete` | prop_pat_complete.v §4 | the splitting runner answers wherever the relation derives |
+| `e_pat_impl_complete` / `e_pat_run_complete` | §7 | the same for SKELETON INFERENCE |
+| `e_typing_impl_complete` / `e_typing_run_complete` | prop_typing_complete.v §5 | and for TYPE INFERENCE |
+| `e_typing_dec` / `e_typing_dec_init` | prop_run_corollaries.v §4 | ⭐⭐ DECIDABILITY |
+
+#### ⭐ The level's good news, and it was checked before any code was written
+
+**The runners above subtyping are INDEPENDENT.**  `e_pat_impl` calls
+`e_sub_impl`, `e_split_impl` and itself; `e_typing_impl` calls those three
+and itself.  Neither calls the other, so §8c.4's tagged single-block
+workaround is NOT needed here: each is one `Equations` with its own order,
+and completeness is one order-induction per runner.
+
+⭐ **And §1's hand-written induction principle has no counterpart.**
+`e_pat_order` and `e_typing_order` are conjunction-free ONE-CONSTRUCTOR
+orders, so Coq's own `_ind` already doubles every recursive premise — the
+exact shape prop_sub_complete.v §1 had to write by hand for
+`e_sub_call_order`, whose premises carry `/\`.
+
+#### ⭐⭐ What was new above level 6, and it is one thing
+
+The four abs rows bind a TERM variable.  So the chain that realigns a
+derivation onto the runner's rails has to act on the SUBJECT too, and the
+e-side equivariance for that did not exist:
+
+- `prop_pat.v` §4 — `e_split_supply_respect` / `e_pat_supply_respect` and
+  `e_split_swap` / `e_pat_swap`, the ∃-shaped twins of algo/prop_swap.v
+  §16's `a_split_swap` / `a_pat_swap`.
+- `prop_typing.v` §3 — the same for `e_typing`.
+- `prop_pat_complete.v` §1 — `swaps_exp` and its two lemmas,
+  `swaps_notin_eq`, `swaps_atom_dodge`, the `swaps_abind`/`swaps_aenv`
+  var-marker clauses, and the `e_split_swaps` / `e_pat_swaps` iterations.
+
+#### ⭐ THE DISPATCH IS OVERLAP-FREE, and stating the inversions as
+#### DISJUNCTIONS is what cashes it
+
+Nine of the ten `e_pat` rows and eight of the eleven `e_typing` rows are
+keyed by the SUBJECT's head constructor.  The cells that are not:
+
+- `exp_abs` / `exp_abs_anno` at `e_pat`: the two rows are separated by
+  `m <> mode_tc`.
+- `exp_abs` / `exp_abs_anno` at `e_typing`: THREE rows, separated by
+  `m <> mode_tc` and then by whether the pattern is `⌈∀A0⌉`.  ⭐ The check
+  cell needs no new side condition: at `⌈∀A0⌉` the BASE row would need a
+  SPLIT of `pskl_all_syn ⌈A0⌉` and `e_split` has no ∀ row, so the STEP row
+  is the only one — which is what the runner picks (`pskl_readback_all`).
+- `exp_var_f`: the two `AP-Var` rows are separated by the BINDING's payload
+  sort, and `uniq Θ0` makes that binding unique.
+
+⭐ **Stating each such cell's inversion as ONE DISJUNCTION** (rather than as
+two or three lemmas with discriminating premises) is what lets each branch
+of the mode/readback dispatch kill the arms it does not want by
+`congruence`, WITHOUT first having to produce the discriminating premise —
+and the check arm hands back `P0 = pskl_hole` (resp. `P0 = ⌈∀A0⌉`), which is
+what makes the runner's clause reachable at all.
+
+#### ⭐⭐ ONE PIECE OF UPSTREAM METATHEORY WAS MISSING: `e_guess_mono_det`
+
+`AT-Abs` runs `guess^TY`, the runner runs its own copy, and the two invent
+different atoms — so the level needs `guess^TY` DETERMINISTIC UP TO A
+FRESH-PAIR CHAIN (prop_typing_complete.v §1).  Every other recursive call in
+these two files is a runner whose completeness already comes in that form.
+
+⚙ **Its COVERAGE hypothesis (`ftv P ⊆ S0`) is load-bearing, not
+decoration**: at a VARIABLE subject the row returns `α` itself, so without it
+the answer could mention a name the chain is free to move.  Every call site
+has it — `AT-Abs` guesses on a SPLIT's domain, and prop_pat.v §2 bounds that
+by the split's output supply.
+
+⚙ It sits in the level-8 file rather than in prop_guess.v because the
+`swaps_*` family it is stated over (prop_solve_det.v §2) is downstream of
+that file — prop_solve_det.v §3's own precedent for `ptyp_to_pskl_close`.
+Alongside it: `e_guess_mono_swaps`, the block's `lc_aenv` / `aenv_defs_mono`
+(bare flexibles, so both are immediate), `e_guess_mono_lc_type`, and
+`ptyp_to_pskl_inj` — the painting is a constructor relabelling, and that is
+what identifies the ∀-body the runner READ BACK with the one `AT-AbsCheck`'s
+STEP rule existentially names.
+
+#### ✅ (2e) IS CLOSED TOO — and read its SCOPE before citing it
+
+`prop_run_corollaries.v` gains §3 (the completeness half at the entry point,
+where every side condition but local closure of the two inputs is
+`reflexivity`) and §4, the decidability corollary §5 of this document
+predicted, verbatim: case on the runner's answer; `Some r` is a derivation by
+soundness, `None` would be contradicted by completeness.  ⭐ The step that
+makes it work is the runner being TOTAL, which is why termination had to come
+first.
+
+⚠️⚠️ **What `None` refutes is a derivation of the SUPPLY-THREADED relation
+`e_typing`** — the relation every rung of the ladder is stated over.  The
+POSITIVE branch composes all the way down to the paper's declarative
+judgement (§1/§2 of that file); the NEGATIVE branch stops at `e_typing`,
+because the converse of the bridge — `a_typing` ⟹ `e_typing` at a covering
+supply — is NOT proved.
+
+⛔ **That converse is the one thing the campaign still owes**, and it is not
+an oversight: it is §8c.3's obstruction, unchanged.  A derivation opens its
+binder wherever it likes and the threaded rules open at the SUPPLY, so a
+structural induction on the `a_*` derivation would need its IH at a
+TRANSPOSED sub-derivation, which is not a subterm — which is exactly why the
+campaign quantified over `e_*` throughout.  ⭐ Closing it is one more
+order-induction of the same shape as levels 7/8, and the a-side equivariance
+it needs (`a_pat_swap` / `a_typing_swap`, algo/prop_swap.v §16) already
+exists.  ⚙ Nothing else is missing on the declarative side:
+`a_typing_complete` and its closed-program corollaries are closed
+(README.v §III).
+
+#### ⚙ Traps paid, none of them new in kind
+
+- ⚠️⚠️ **An `fsetdec` inside an `ltac:` ARGUMENT does not return** — the
+  recursive call's own `S0` is still an EVAR there, so the search is
+  unbounded.  Every coverage side condition is a NAMED hypothesis.  (The
+  feedback rule already says this; it cost a >150 s compile with no error to
+  rediscover.)
+- ⚠️⚠️ **An `fsetdec` over six or seven set variables does not return
+  either.**  The abs rows' coverage is assembled SUMMAND BY SUMMAND, four or
+  five variables at a step.
+- ⚠️⚠️ **A `[=]` lemma cannot be `rewrite`n UNDER `swaps_atoms`**: there is no
+  `Proper` instance and the failure reads "setoid rewrite failed: UNDEFINED
+  EVARS".  Go through `swaps_atoms_cong` explicitly.
+- ⚠️ **§8c.21's fourth trap, at four new places.**  A recursive answer's
+  projection must NOT be rewritten into a decomposed form; §4b of
+  prop_pat_complete.v and §2b of prop_typing_complete.v restate
+  `arrow_split`, `ptyp_arrow_split`, `split_at_key_skl` / `_typ` and the two
+  readbacks with the DECOMPOSITION AS A PREMISE, and `kill_dec` destructs the
+  goal's own call.  `AT-AbsCheck`'s STEP row must not rewrite its `close`
+  into the goal either, and `AT-App` needs a COPY of the function's spec
+  proof before rewriting its arrow shape into it.
+- ⚠️ `Set Implicit Arguments` makes everything under `++` (and under
+  `ptyp_to_pskl`) explicit — a non-rigid position — so every `_complete_eq`
+  lemma pins its prefix with `Arguments`.
+- ⚙ **An `all: ( … )` block is a tactic INVOCATION, not an `Ltac`
+  definition**, so names its own `destruct as` patterns introduce resolve
+  fine.  That is what lets the two non-check abs clauses share one script
+  instead of being written twice.
+- ⚠️ `bool_true_ty` freshens to `Hb0` on its SECOND use in a case, so a later
+  `destruct … as [Ha0 Hb0]` collides; the scripts use `Hka`/`Hkb`.
+- ⚠️ The tree's meta-level substitution notations claim the `{ term …`
+  prefix, so Coq's own `sumbool` notation does not parse — §4's statements
+  are written in APPLICATION form (`sumbool A B`), the same trap
+  def_guess_impl.v's header records for `sig`.

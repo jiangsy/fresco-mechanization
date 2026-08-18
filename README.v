@@ -100,6 +100,11 @@ Require Import src.frost.algo.prop_precise_sub.
 Require Import src.frost.algo.pat.prop_completeness_pat.
 Require Import src.frost.algo.typing.prop_completeness_typing.
 Require Import src.frost.algo.typing.prop_closed.
+Require Import src.frost.ext_algo.notations.
+Require Import src.frost.ext_algo.def_supply.
+Require Import src.frost.ext_algo.def_typing.
+Require Import src.frost.ext_algo.def_typing_impl.
+Require Import src.frost.ext_algo.prop_run_corollaries.
 
 
 (* ##################################################################### *)
@@ -555,3 +560,53 @@ Check mono_lambda_anno_redundant :
   {{ Γ ⊢[ m ] (exp_abs_anno A e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B2) }}d ->
   {{ Γ ⊢[ m ] (exp_abs e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B2) }}d.
 Print Assumptions mono_lambda_anno_redundant.
+
+
+(* ##################################################################### *)
+(*  VI.  DECIDABILITY — the argument the paper offers and never discharges *)
+(* ##################################################################### *)
+
+(* ⭐⭐⭐ TYPE INFERENCE IS DECIDABLE, and the decision procedure is the
+   EXTRACTED FUNCTION itself.
+
+   The paper's central design principle — "never guess polytypes out of thin
+   air" (declarative.tex:856-860) — is offered in answer to the undecidability
+   of impredicative polymorphic subtyping, which it cites twice
+   (overview.tex:79, introduction.tex:463).  Read against those citations the
+   principle is an argument that Frost's algorithm IS decidable, and the paper
+   never discharges it: a derivation EXISTING is not a search TERMINATING.
+   The gap is filed in docs/PAPER-GAPS.md; this entry is the discharge.
+
+   Three closed results compose into it, all over the SUPPLY-THREADED encoding
+   of frost/ext_algo/ (which prop_typing.v §2 shows is frost/algo/'s own
+   [a_typing] at the entry supply, over the same contexts):
+
+     e_typing_order_total  (def_typing_impl.v §2)  the search TERMINATES, so
+                                                   [e_typing_run] is TOTAL and
+                                                   [None] is a REJECTION, not
+                                                   exhausted fuel
+     e_typing_run_sound    (def_typing_impl.v §5)  [Some r] is a derivation
+     e_typing_run_complete (prop_typing_complete.v §5)  a derivation makes it
+                                                   answer [Some] — campaign
+                                                   levels 1-8, and the reason
+                                                   [None] means anything
+
+   ⚠️ SCOPE, and it is part of the claim: [None] refutes a derivation of the
+   THREADED relation, which is what every rung of the ladder is stated over.
+   The POSITIVE branch composes all the way down to the paper's declarative
+   judgement ([e_typing_run_sound_infer] / [_check], prop_run_corollaries.v
+   §1/§2); the NEGATIVE branch stops at [e_typing], because the converse of
+   the bridge ([a_typing] ⟹ [e_typing] at a covering supply) is not proved —
+   a derivation opens its binder wherever it likes and the threaded rules open
+   at the SUPPLY, which is the obstruction that made the campaign quantify
+   over [e_*] throughout (docs/HANDOFF-extractable-algo-encoding.md §8c.3).
+   ⚙ The two hypotheses are INPUTS, not obligations: a dangling de Bruijn
+   index is not a program. *)
+Check e_typing_dec_init :
+  forall m P0 e,
+  lc_pskl P0 -> lc_exp e ->
+  sumbool
+    (e_typable (ftvar_in_pskl P0 ∪ fvar_in_exp e ∪ ftvar_in_exp e) m nil P0 e)
+    (~ e_typable (ftvar_in_pskl P0 ∪ fvar_in_exp e ∪ ftvar_in_exp e)
+         m nil P0 e).
+Print Assumptions e_typing_dec_init.

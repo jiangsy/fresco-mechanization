@@ -240,7 +240,58 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-17 (latest) — ⭐⭐⭐ **LEVEL 5 IS UNRESTRICTED: `consis_call_no_hole` is DELETED and the three consistency-runner headlines hold on GHOST-CARRYING skeletons — the flagship path is reachable**
+## 2026-08-19 (latest) — ⭐⭐⭐ **THE COMPLETENESS CAMPAIGN IS FINISHED: levels 7 and 8 are closed, and with (2e) TYPE INFERENCE IS DECIDABLE — the paper's own undischarged decidability argument, discharged**
+
+`README.v` is 33/33 and its new §VI is the claim: `e_typing_dec_init` —
+at a locally-closed input skeleton and a locally-closed program, typability
+is DECIDED, and the decision procedure is the extracted function itself.
+Three closed results compose into it, none re-derived: `e_typing_order_total`
+(the search terminates, so `None` is a REJECTION rather than exhausted fuel),
+`e_typing_run_sound`, and the new `e_typing_run_complete`.
+
+Landed, all Qed and assumptions-closed:
+
+- `frost/ext_algo/prop_pat_complete.v` (new) — level 7:
+  `e_split_impl_complete`, `e_pat_impl_complete`, `e_pat_run_complete`.
+- `frost/ext_algo/prop_typing_complete.v` (new) — level 8:
+  `e_typing_impl_complete`, `e_typing_run_complete`.
+- `frost/ext_algo/prop_run_corollaries.v` §3/§4 — the completeness half at
+  the entry point, and `e_typing_dec` / `e_typing_dec_init`.
+- `prop_pat.v` §4 / `prop_typing.v` §3 — the e-side EQUIVARIANCE the levels
+  needed (`e_split_swap`, `e_pat_swap`, `e_typing_swap` and their
+  supply-respect twins), the ∃-shaped counterparts of algo/prop_swap.v §16.
+- `prop_consis_complete.v` §8 — `e_consis_impl_complete`, the
+  arbitrary-order-proof form levels 7/8 call.
+
+⭐ **The level's good news, checked before any code: the runners above
+subtyping are INDEPENDENT.**  `e_pat_impl` and `e_typing_impl` do not call
+each other, so §8c.4's tagged single-block workaround is not needed — one
+`Equations`, one order, one order-induction each.  And both orders are
+conjunction-free one-constructor inductives, so Coq's own `_ind` already
+doubles every recursive premise: prop_sub_complete.v §1's hand-written
+principle has no counterpart here.
+
+⭐⭐ **What was new is one thing: the four abs rows bind a TERM variable**, so
+the realignment chain has to act on the SUBJECT too — hence `swaps_exp` and
+the equivariance layer above.  ⭐⭐ And one piece of upstream metatheory was
+missing: `e_guess_mono_det`, `guess^TY` deterministic up to a fresh-pair
+chain, which `AT-Abs` needs because the runner guesses its own atoms.  Its
+coverage hypothesis is load-bearing — at a VARIABLE subject the row returns
+`α` itself.
+
+⚠️⚠️ **SCOPE of the decidability claim, and it is part of the statement:**
+`None` refutes a derivation of the SUPPLY-THREADED relation, which is what
+every rung of the ladder is stated over.  The positive branch composes all
+the way to the paper's declarative judgement; the negative branch stops at
+`e_typing`, because `a_typing` ⟹ `e_typing` at a covering supply is not
+proved — §8c.3's obstruction, and the one thing the campaign still owes.
+It is one more order-induction of the same shape, and the a-side
+equivariance it needs already exists.
+
+Gate: `make coq` rc=0, README.v 33/33, zero `Admitted`/`Axiom`.
+See docs/HANDOFF-extractable-algo-encoding.md §8c.23.
+
+## 2026-08-17 — ⭐⭐⭐ **LEVEL 5 IS UNRESTRICTED: `consis_call_no_hole` is DELETED and the three consistency-runner headlines hold on GHOST-CARRYING skeletons — the flagship path is reachable**
 
 `e_assign_impl_complete`, `e_unify_impl_complete` and
 `e_consis_run_complete` are now Qed, assumptions-closed, and carry NO

@@ -4175,6 +4175,44 @@ consumed (ForallR consumes the pattern's quantifiers, Arrow consumes the
 mode, ForallL consumes the subject's head chain and cannot re-arm it), and
 the flexible walks consume the context.
 
+### ⭐⭐⭐ DISCHARGED (2026-08-19) — the decidability corollary is now Qed
+
+Termination was only two thirds of the argument; the third is that the
+runner's `None` MEANS something.  The completeness ladder is now finished —
+campaign levels 1–8, every runner of `frost/ext_algo/` — and the corollary
+is the two lines §5 of the hand-off predicted:
+
+- `e_typing_dec` / `e_typing_dec_init`
+  (`frost/ext_algo/prop_run_corollaries.v` §4, `Closed under the global
+  context`, `README.v` §VI): at a locally-closed input skeleton and a
+  locally-closed program, typability is DECIDED, and the decision procedure
+  is the extracted function itself.
+
+The three links, none re-derived there:
+
+| link | file | what it gives |
+|---|---|---|
+| `e_typing_order_total` | def_typing_impl.v §2 | the search terminates, so `e_typing_run` is TOTAL and `None` is a REJECTION rather than exhausted fuel |
+| `e_typing_run_sound` | def_typing_impl.v §5 | `Some r` is a derivation |
+| `e_typing_run_complete` | prop_typing_complete.v §5 | a derivation makes it answer `Some` |
+
+⚠️ **SCOPE, and it is part of the claim.**  What `None` refutes is a
+derivation of the SUPPLY-THREADED relation `e_typing`, which is the relation
+every rung of the ladder is stated over.  The POSITIVE branch composes all
+the way down to the paper's own declarative judgement
+(`e_typing_run_sound_infer` / `_check`); the NEGATIVE branch stops at
+`e_typing`, because the converse of the bridge — `a_typing` ⟹ `e_typing` at
+a covering supply — is not proved.  ⚙ That converse is not an oversight: a
+derivation opens its binder wherever it likes and the threaded rules open at
+the SUPPLY, so a structural induction on the `a_*` derivation needs its own
+IH at a TRANSPOSED sub-derivation, which is not a subterm.  It is exactly the
+obstruction that made the campaign quantify over `e_*` throughout
+(docs/HANDOFF-extractable-algo-encoding.md §8c.3), and closing it would be
+one more order-induction — the a-side equivariance it needs
+(`a_pat_swap` / `a_typing_swap`, algo/prop_swap.v §16) already exists.
+⚙ Nothing else is missing on the declarative side: `a_typing_complete` and
+its closed-program corollaries are closed (README.v §III).
+
 ## ⭐ THE CONSISTENCY RULES ARE NON-DETERMINISTIC IN THEIR OUTPUT CONTEXT, and the implementation's rule ORDER is what resolves it (2026-08-16)
 
 Machine-checked: `mechanization/cex/probe_consis_ghost_flex.v`
