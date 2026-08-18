@@ -189,13 +189,6 @@ Proof.
   intros. rewrite swaps_aenv_app_dist, swaps_aenv_one_var_skl. reflexivity.
 Qed.
 
-Lemma swaps_aenv_cons_var_typ : forall ps x A (Θ : aenv),
-  swaps_aenv ps ((x ~ abind_var_typ A) ++ Θ)
-  = (swaps_atom ps x ~ abind_var_typ (swaps_ptyp ps A)) ++ swaps_aenv ps Θ.
-Proof.
-  intros. rewrite swaps_aenv_app_dist, swaps_aenv_one_var_typ. reflexivity.
-Qed.
-
 (** [swap_notin_eq] along a chain — a binder the derivation drew fresh for
     its own supply is fresh for the transported one. *)
 Lemma swaps_notin_eq : forall ps x (S S' : atoms),
