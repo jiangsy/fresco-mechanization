@@ -1,48 +1,46 @@
-(** ext_algo — §8c.11, campaign level 6: the SUBTYPING runner's
-    completeness SCAFFOLDING — the parts that are settled, and the
-    machine-checked reason the level cannot be closed on level 5's design.
+(** ext_algo — §8c.11 / §8c.13, campaign level 6: the SUBTYPING runner's
+    COMPLETENESS.
 
     §1  a strong-induction principle for [e_sub_call_order]
     §3  equivariance along a CHAIN, for [e_sub] / [e_sub_flex]
     §4  the ROOT INVERSIONS — §8c.11's overlap table, as lemmas
+    §6  THE MOTIVE
+    §7  THE MAIN INDUCTION
+    §8  the three headlines
 
-    ⭐ §4 IS THE LEVEL'S GOOD NEWS AND IT IS ALL HERE.  [guarded_pskl] is
-    [unit | var | arrow] and NOTHING else, so [∀], [◇] and [⫯] are all
-    UNGUARDED and every cell of the runner's dispatch admits EXACTLY ONE
-    rule — including [◇ ⩽ ◇], where [SI-Ghost] and [SI-UnivGhostR] would
-    otherwise have returned different answers.  Contrast level 5, whose §4
-    has three genuinely disjunctive cells.  The [e_sub_flex] side is
-    overlap-free by construction, and at [TI] the only rule is [SI-Infer],
-    hereditarily (the audit's one finding, fixed in `35a13b3`).
+    ⭐ §4 IS THE LEVEL'S GOOD NEWS.  [guarded_pskl] is [unit | var | arrow]
+    and NOTHING else, so [∀], [◇] and [⫯] are all UNGUARDED and every cell
+    of the runner's dispatch admits EXACTLY ONE rule — including [◇ ⩽ ◇],
+    where [SI-Ghost] and [SI-UnivGhostR] would otherwise have returned
+    different answers.  Contrast level 5, whose §4 has three genuinely
+    disjunctive cells.  The [e_sub_flex] side is overlap-free by
+    construction, and at [TI] the only rule is [SI-Infer], hereditarily
+    (the audit's one finding, fixed in `35a13b3`).
 
-    ⛔⛔ WHY §6/§7 ARE NOT HERE.  Level 5's motive relates the derivation's
-    outputs to the runner's UP TO A SWAP CHAIN, and its supply conjunct is
-    [swaps_atoms ps Sd [=] cs_supply r].  Mirrored to this level that
-    conjunct is FALSE, and [cex/probe_extract_supply_drift.v] is the
-    witness: at an α-FREE subject against a ∀ counterpart, [LS-Absent] and
-    [LS-ForallR] both fire, the first spends no supply and the second draws
-    an opener, and both emit the empty collection — so two [e_extract]
-    derivations at the SAME inputs agree on their block and their
-    instantiation and differ ONLY in how much supply they spent, by one
-    atom.  No renaming can relate them; a chain that fixes the input supply
-    fixes it exactly.  [SI-ForallL] runs precisely that extraction (see
-    that file's closing note for the configuration, argued by inspection).
+    ⭐⭐ WHAT THE MOTIVE OWES, AND WHY IT IS LEVEL 5's WITH ONE
+    SIMPLIFICATION.  Level 5 relates the derivation's outputs to the
+    runner's up to a SWAP CHAIN, and its output relation is a MATCH on the
+    call tag because only the consistency tag carries an output skeleton.
+    Here BOTH tags do ([e_sub] returns the counterpart, [e_sub_flex] returns
+    it too), so the output conjunct is a plain EQUALITY at every tag.
 
-    ⭐⭐ THE DIAGNOSIS IS LEVEL 5's, ONE LAYER DOWN — A MISSING DISPATCH
-    GUARD.  The reference implementation tests ABSENCE FIRST, and so does
-    this tree's runner: every non-Absent clause of [e_looksub_impl] /
-    [e_lookeq_impl] sits behind [mem α (ftvar_in_pskl P)]
-    (def_look_impl.v:360, 377, 393, 406, …).  A relational encoding has no
-    match order, so that exclusion has to be a PREMISE — and
-    [e_looksub__forall_r] and its neighbours carry none.  Identical species
-    to [U-FlexL]/[U-FlexR]'s missing [≠ ◇] (`0829607`) and [SI-Ghost]'s
-    missing [M ≠ TI] (`35a13b3`).  ⚙ [LS-Vacuous] (counterpart [◇])
-    overlaps the same way, so the repair is a pair of guards, not one, and
-    it is owed on BOTH encodings ([algo/def_rules.v] and
-    [ext_algo/def_look.v]) with a [paper-gap] entry.
+    ⛔⛔ THE HISTORY, because it is the level's whole story.  The motive's
+    SUPPLY conjunct, [swaps_atoms ps Sd [=] sb_supply r], was machine-checked
+    FALSE three times over, each time because a DISPATCH GUARD was missing
+    one layer down and the algorithm therefore answered the same query with
+    two different amounts of fresh supply.  [SI-ForallL] runs an extraction,
+    so every one of them reached this level:
 
-    So: everything below is Qed and motive-independent, and it is what the
-    level resumes from once the collection's guards land. *)
+    | refutation | the guard that retracts it |
+    |---|---|
+    | `cex/probe_extract_supply_drift.v` | ABSENCE-FIRST (§8c.14) |
+    | `cex/probe_extract_flexr_ug2_drift.v` | FlexR-PRIORITY (§8c.16) |
+    | `cex/probe_solve_sub_forall_r_drift.v` | SOLVE-DISPATCH (§8c.19) |
+
+    All five guards are landed, and [e_extract_det]
+    (`ext_algo/prop_extract_det.v` §9) is the statement they buy — the one
+    [SI-ForallL] needs to move a derivation's extraction onto the runner's
+    rails.  docs/HANDOFF-extractable-algo-encoding.md §8c.13–§8c.19. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -593,3 +591,53 @@ Lemma e_sub_flex_inv_var_skl : forall S0 NM M P0 Θ0 Ξ α x Qp Q S1 Θ1,
     e_sub_flex S0 NM M P0 Θ0 Ξ α Q S1 Θ1'.
 Proof. intros * Hd. inversion Hd; subst. eauto. Qed.
 
+
+(* ===================================================================== *)
+(*  §6  THE MOTIVE                                                        *)
+(*                                                                        *)
+(*  prop_consis_complete.v §6's shape, with the ONE simplification §8c.13  *)
+(*  predicted: both call tags carry an output skeleton, so the output      *)
+(*  conjunct is a plain EQUALITY rather than a tag-keyed match.            *)
+(* ===================================================================== *)
+
+Definition sub_call_answer {S0 : supply} {NM : a_sub_mode} {M : mode}
+    {P0 : pskl} {Θ0 : aenv} {c : sub_call}
+    (o : option (sig (sub_call_spec S0 NM M P0 Θ0 c))) : option sub_result :=
+  match o with None => None | Some r => Some (proj1_sig r) end.
+
+Definition sub_call_run (S0 : supply) (NM : a_sub_mode) (M : mode)
+    (P0 : pskl) (Θ0 : aenv) (c : sub_call)
+    (Sd : supply) (Θd : aenv) (Qd : pskl) : Prop :=
+  match c with
+  | sub_call_sub P    => {{ S0 ↝ Sd ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Qd ⊣ Θd }}e
+  | sub_call_flex Ξ α => e_sub_flex S0 NM M P0 Θ0 Ξ α Qd Sd Θd
+  end.
+
+Definition sub_call_uniq (Θ0 : aenv) (c : sub_call) : Prop :=
+  match c with
+  | sub_call_sub _    => uniq Θ0
+  | sub_call_flex Ξ _ => uniq (Ξ ++ Θ0)
+  end.
+
+Definition sub_call_cover (P0 : pskl) (Θ0 : aenv) (c : sub_call) : atoms :=
+  match c with
+  | sub_call_sub P    =>
+      ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P
+  | sub_call_flex Ξ α =>
+      ftvar_in_aenv (Ξ ++ Θ0) ∪ ftvar_in_pskl P0 ∪ singleton α
+  end.
+
+Definition sub_call_complete (S0 : supply) (NM : a_sub_mode) (M : mode)
+    (P0 : pskl) (Θ0 : aenv) (c : sub_call) : Prop :=
+  forall (HP : sub_call_lc c) (HP0 : lc_pskl P0)
+         (HD : sub_call_defs_mono Θ0 c)
+         (H : e_sub_call_order S0 NM M P0 Θ0 c),
+    sub_call_uniq Θ0 c ->
+    sub_call_cover P0 Θ0 c [<=] S0 ->
+    forall Sd Θd Qd, sub_call_run S0 NM M P0 Θ0 c Sd Θd Qd ->
+    exists r ps,
+      sub_call_answer (e_sub_call_impl c S0 NM M P0 Θ0 HP HP0 HD H) = Some r
+      /\ (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0)
+      /\ swaps_atoms ps Sd [=] sb_supply r
+      /\ swaps_aenv ps Θd = sb_ctx r
+      /\ swaps_pskl ps Qd = sb_out r.
