@@ -44,6 +44,7 @@ Require Import src.frost.deco_algo.def_decorated.
 Require Import src.frost.algo_decl.def_subtyping.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_basic.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.consis.prop_soundness_consis.
@@ -1005,6 +1006,496 @@ Proof.
   - intros P0 Hf; inversion Hf; subst;
       [ eapply a_flex__var | eapply a_flex__var_def ];
       apply binds_weaken_inner; eassumption.
+Qed.
+
+(* ===================================================================== *)
+(*  ⭐⭐ THE ForallR-PRIORITY REORDER (2026-08-18)                          *)
+(*                                                                        *)
+(*  Under the ForallR-PRIORITY GUARD [forall_r_off] an LS-ForallL step is  *)
+(*  BLOCKED at a ghost-free ∀ counterpart in check mode, because there the *)
+(*  runner commits to LS-ForallR.  P6-Ss builds exactly such steps, so it  *)
+(*  needs the reordered derivation: peel the COUNTERPART first, and only   *)
+(*  then the subject.                                                      *)
+(*                                                                        *)
+(*  The collection side of one peel is [a_looksub_open_target]             *)
+(*  (algo/sub/prop_looksub.v §2c) — an INVERSION, since under the guard    *)
+(*  only Var / Absent / ForallR can be the root there.  What follows is    *)
+(*  the SOLVE side of the same peel, and then the two together, iterated   *)
+(*  on the counterpart's size.                                             *)
+(* ===================================================================== *)
+
+Lemma binds_tvar_exchange : forall (x : atom) b β1 β2 (Θ : aenv),
+  binds x b ((β1 ~ abind_tvar) ++ (β2 ~ abind_tvar) ++ Θ) ->
+  binds x b ((β2 ~ abind_tvar) ++ (β1 ~ abind_tvar) ++ Θ).
+Proof. intros x b β1 β2 Θ H. analyze_binds H. Qed.
+
+(** The solve reads its context only for FLEXIBILITY and for freshness, and
+    two rigid entries commute in both. *)
+Lemma a_solve_sub_ctx_exchange : forall Θ m P Q Ξ P' β1 β2,
+  {{ ((β1 ~ abind_tvar) ++ (β2 ~ abind_tvar) ++ Θ) ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}a ->
+  {{ ((β2 ~ abind_tvar) ++ (β1 ~ abind_tvar) ++ Θ) ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}a.
+Proof.
+  intros Θ m P Q Ξ P' β1 β2 H.
+  eapply (proj1 a_solve_sub_eq_ctx_change); [ exact H | | | ].
+  - rewrite ! ftvar_in_aenv_cons_tvar. clear; fsetdec.
+  - intros α Hft; destruct Hft as [Hb | [τ Hb]];
+      [ left | right; exists τ ]; apply binds_tvar_exchange; exact Hb.
+  - intros P0 Hf; inversion Hf; subst;
+      [ eapply a_flex__var | eapply a_flex__var_def ];
+      apply binds_tvar_exchange; eassumption.
+Qed.
+
+(** ⭐ ONE PEEL OF THE COUNTERPART, SOLVE SIDE.  At a ghost-free ∀ target in
+    check mode only four rows can end an [a_solve_sub] derivation — SS-Var,
+    SS-ForallL, SS-UnivGhostL and SS-ForallR (SS-Check and SS-GhostL want a
+    [guarded] target, SS-Vacuous a ghost one, SS-Arrow / SS-GhostLF an arrow
+    and a function mode).  ⚠️ The opener is EXISTENTIAL for the same reason as
+    on the collection side: SS-ForallR LEAKS its binder into the OUTPUT, so
+    re-picking it would move [P']. *)
+Lemma a_solve_sub_open_target : forall Θ m0 Pi T Ξ Pa,
+  {{ Θ ⊢ₛ Pi ≼[ m0 ] T ⤳ Ξ ⨾ Pa }}a ->
+  forall B, T = pskl_all_syn B -> m0 = mode_tc ->
+  exists γ,
+    γ `notin` (ftvar_in_aenv Θ `union` ftvar_in_pskl Pi `union` ftvar_in_pskl B
+                 `union` dom Ξ)
+    /\ {{ ((γ ~ abind_tvar) ++ Θ) ⊢ₛ Pi ≼[ mode_tc ]
+          (open_pskl_wrt_pskl B (pskl_var_f γ)) ⤳ Ξ ⨾ Pa }}a.
+Proof.
+  intros Θ m0 Pi T Ξ Pa H.
+  induction H; intros B0 HT Hm0;
+    try discriminate HT; try discriminate Hm0; subst.
+  - (* SS-Var — the row answers at ANY target *)
+    pick fresh γ for
+      (ftvar_in_aenv Θ `union` ftvar_in_pskl (pskl_var_f α)
+         `union` ftvar_in_pskl B0).
+    exists γ. split; [ simpl in Fr |- *; clear - Fr; fsetdec
+                     | apply a_solve_sub__var ].
+  - (* SS-ForallL — recurse, then EXCHANGE the two rigid entries back *)
+    destruct (IHa_solve_sub B0 eq_refl eq_refl) as [γ [Hγ Hp]].
+    rewrite ftvar_in_aenv_cons_tvar in Hγ.
+    exists γ. split.
+    + pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P (pskl_var_f β))
+        as Hlo.
+      simpl. clear - Hγ Hlo. fsetdec.
+    + apply a_solve_sub_ctx_exchange in Hp.
+      apply a_solve_sub__forall_l with (β := β); [ | exact Hp ].
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B0 (pskl_var_f γ))
+        as Hup.
+      rewrite ftvar_in_aenv_cons_tvar.
+      (* ⚙ [H] is the rule's own freshness side condition; [Hγ] gives
+         [γ ≠ β] and [Hup] bounds the opened counterpart. *)
+      simpl in H, Hup |- *. clear - H Hγ Hup. fsetdec.
+  - (* SS-UnivGhostL *)
+    destruct (IHa_solve_sub B0 eq_refl eq_refl) as [γ [Hγ Hp]].
+    exists γ. split; [ simpl in Hγ |- *; clear - Hγ; fsetdec | ].
+    apply a_solve_sub__univ_ghost_l; exact Hp.
+  - (* SS-Check — a ∀ target is never [guarded] *)
+    exfalso. match goal with Hg : guarded_pskl _ |- _ => inversion Hg end.
+  - (* SS-ForallR — THE ROW: hand its own binder back *)
+    injection HT as HTB; subst B0.
+    match goal with
+    | Hfr : ?b `notin` _ ,
+      Hp : {{ ((?b ~ abind_tvar) ++ _) ⊢ₛ _ ≼[ _ ] _ ⤳ _ ⨾ _ }}a |- _ =>
+        exists b;
+        (* ⭐ [b ∉ dom Ξ] is the run's OWN junk-freeness: the premise ran at
+           [(b ~ tvar) ++ Θ], so its block dodges b
+           ([a_solve_sub_eq_generated_fresh_set], prop_solve_sub.v) *)
+        pose proof ((proj1 a_solve_sub_eq_generated_fresh_set)
+                      _ _ _ _ _ _ Hp) as Hjf;
+        rewrite ftvar_in_aenv_cons_tvar in Hjf;
+        split; [ simpl in Hfr; clear - Hfr Hjf; fsetdec | exact Hp ]
+    end.
+  - (* SS-GhostL — a ∀ target is never [guarded] *)
+    exfalso. match goal with Hg : guarded_pskl _ |- _ => inversion Hg end.
+Qed.
+
+(** ⭐⭐ THE PEEL AT A CHOSEN OPENER — and this is what unblocks the reorder.
+
+    The collected constraint NAMES the peeled counterpart, so the collection's
+    opener and the solve's opener must be THE SAME atom; but the solve's is
+    FORCED (SS-ForallR hands its own binder back) while the collection's is
+    sometimes free.  The way out is that the forced opener can be SWAPPED to
+    any other, and the two side conditions the swap needs are BOTH consequences
+    of the run itself:
+
+      γ0 ∉ dom Ξ    — the run's junk-freeness, since its premise ran at
+                      [(γ0 ~ tvar) ++ Θ] ([a_solve_sub_open_target]);
+      γ0 ∉ ftv Pa   — because the OUTPUT is bounded by the block and the
+                      context ([a_wf_pskl_ftv_dom] at the use site), and γ0
+                      dodges both.
+
+    So the caller supplies the output's own scope bound and gets an opener
+    avoiding whatever it likes. *)
+Lemma a_solve_sub_open_target_avoid : forall (L : atoms) Θ Pi B Ξ Pa,
+  {{ Θ ⊢ₛ Pi ≼[ mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ Pa }}a ->
+  all_flex_mono Ξ ->
+  ftvar_in_pskl Pa [<=] dom Ξ `union` ftvar_in_aenv Θ ->
+  exists γ,
+    γ `notin` (L `union` ftvar_in_aenv Θ `union` ftvar_in_pskl Pi
+                 `union` ftvar_in_pskl B `union` dom Ξ
+                 `union` ftvar_in_pskl Pa)
+    /\ {{ ((γ ~ abind_tvar) ++ Θ) ⊢ₛ Pi ≼[ mode_tc ]
+          (open_pskl_wrt_pskl B (pskl_var_f γ)) ⤳ Ξ ⨾ Pa }}a.
+Proof.
+  intros L Θ Pi B Ξ Pa H Hfm Hbound.
+  destruct (a_solve_sub_open_target H eq_refl eq_refl) as [γ0 [Hγ0 Hd]].
+  pose proof (all_flex_mono_ftvar_in_aenv Hfm) as HΞftv.
+  assert (Hγ0Pa : γ0 `notin` ftvar_in_pskl Pa)
+    by (clear - Hγ0 Hbound; fsetdec).
+  pick fresh γ for
+    (L `union` ftvar_in_aenv Θ `union` ftvar_in_pskl Pi `union` ftvar_in_pskl B
+       `union` dom Ξ `union` ftvar_in_pskl Pa `union` singleton γ0).
+  exists γ. split; [ clear - Fr; fsetdec | ].
+  destruct (γ == γ0) as [-> | Hne]; [ exact Hd | ].
+  pose proof ((proj1 (a_solve_sub_eq_swap γ0 γ)) _ _ _ _ _ _ Hd) as Hs.
+  assert (Hctx : swap_aenv γ0 γ ((γ0 ~ abind_tvar) ++ Θ)
+                 = (γ ~ abind_tvar) ++ Θ).
+  { simpl. rewrite swap_atom_l.
+    rewrite (swap_aenv_fresh_id γ0 γ Θ) by (clear - Hγ0 Fr; fsetdec).
+    reflexivity. }
+  rewrite Hctx in Hs.
+  rewrite swap_pskl_open_var in Hs. rewrite swap_atom_l in Hs.
+  rewrite (swap_pskl_fresh_id γ0 γ Pi) in Hs
+    by (clear - Hγ0 Fr; fsetdec).
+  rewrite (swap_pskl_fresh_id γ0 γ B) in Hs
+    by (clear - Hγ0 Fr; fsetdec).
+  rewrite (swap_pskl_fresh_id γ0 γ Pa) in Hs
+    by (clear - Hγ0Pa Fr; fsetdec).
+  rewrite (swap_aenv_fresh_id γ0 γ Ξ) in Hs
+    by (clear - Hγ0 Fr HΞftv; fsetdec).
+  exact Hs.
+Qed.
+
+(** The single-constraint solve inverts. *)
+Lemma a_solve_cstr_sub_single_inv : forall Θ m T Pi Ξ Pa,
+  {{ Θ ⊩ (a_cstr_sub m T :: nil) ⨾ Pi ⤳ Ξ ⨾ Pa }}a ->
+  {{ Θ ⊢ₛ Pi ≼[ m ] T ⤳ Ξ ⨾ Pa }}a.
+Proof.
+  intros Θ m T Pi Ξ Pa H. inversion H; subst. assumption.
+Qed.
+
+(** ⭐⭐⭐ THE REORDER.  P6-Ss caps a collection derivation with LS-ForallL;
+    under the ForallR-PRIORITY GUARD that row is BLOCKED whenever the
+    counterpart is a ghost-free ∀ at check mode, and there the run must peel
+    the COUNTERPART first — repeatedly, since the peeled counterpart can be a
+    ghost-free ∀ again.  Hence the induction on the counterpart's SIZE.
+
+    ⭐ The collected constraints come through UNCHANGED except at the α-STACK
+    leaf, where LS-Var deposits the counterpart itself.  That is the only cell
+    where the SOLVE has to follow the peel, and it is the cell where the two
+    sides must agree on ONE opener: the collection's is free there and the
+    solve's is forced, so [a_solve_sub_open_target_avoid] moves the forced one.
+
+    ⚙ The last two premises are that lemma's price, and P6-Ss has both on hand:
+    the solve's block is all-flex_mono, and its output is scoped by the block
+    and the context ([a_wf_pskl_ftv_dom] on the IH's [a_wf_pskl] conjunct). *)
+Lemma a_looksub_solve_forall_l : forall n Θ α Q P' Ξ 𝒞 Θ2 Pi Ξs Pa β,
+  size_pskl P' <= n ->
+  {{ ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl Q (pskl_var_f β))
+     ≼[ α , mode_tc ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
+  {{ Θ2 ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a ->
+  P' <> pskl_hole ->
+  β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl Q
+                     `union` ftvar_in_pskl P') ->
+  all_flex_mono Ξs ->
+  ftvar_in_pskl Pa [<=] dom Ξs `union` ftvar_in_aenv Θ2 ->
+  exists 𝒞',
+    {{ Θ ⊢ (pskl_all_syn Q) ≼[ α , mode_tc ] P' ⤳ Ξ ⨾ 𝒞' }}a
+    /\ {{ Θ2 ⊩ 𝒞' ⨾ Pi ⤳ Ξs ⨾ Pa }}a
+    /\ (𝒞' = 𝒞
+        \/ (Q = pskl_var_f α /\ Ξ = nil
+            /\ exists T T', 𝒞 = a_cstr_sub mode_tc T :: nil
+                          /\ 𝒞' = a_cstr_sub mode_tc T' :: nil)).
+Proof.
+  induction n as [ | n IHn ].
+  { intros Θ α Q P' Ξ 𝒞 Θ2 Pi Ξs Pa β Hsz.
+    exfalso. pose proof (size_pskl_min P'). lia. }
+  intros Θ α Q P' Ξ 𝒞 Θ2 Pi Ξs Pa β Hsz Hlk Hsol Hnh Hβ Hfm Hbound.
+  (* the counterpart's shape decides whether LS-ForallR has priority here *)
+  destruct P' as [ | nq | γq | Pd1 Pd2 | B | | Pt ];
+    try solve
+      [ exists 𝒞;
+        split; [ apply a_looksub_forall_l_adm with (β := β);
+                   [ exact Hnh
+                   | apply forall_r_off_nonall; intros ?; discriminate
+                   | exact Hβ | exact Hlk ]
+               | split; [ exact Hsol | left; reflexivity ] ] ].
+  (* ⚙ the [◇] shape is closed by the same arm — [P' ≠ ◇] is a hypothesis, so
+     the branch discharges its own [exact Hnh]. *)
+  (* --- a ∀ counterpart at CHECK mode --- *)
+  destruct (pskl_ghost_free_dec (pskl_all_syn B)) as [Hgf | Hngf].
+  2: { exists 𝒞.
+       split; [ apply a_looksub_forall_l_adm with (β := β);
+                  [ exact Hnh | apply forall_r_off_ghosty; exact Hngf
+                  | exact Hβ | exact Hlk ]
+              | split; [ exact Hsol | left; reflexivity ] ]. }
+  (* GHOST-FREE: LS-ForallR has priority, so the counterpart must peel *)
+  destruct (AtomSetProperties.In_dec α (ftvar_in_pskl (pskl_all_syn Q)))
+    as [Hin | Hni].
+  2: { (* the subject is α-free — LS-Absent answers on both sides *)
+       assert (Hno : α `notin` ftvar_in_pskl
+                       (open_pskl_wrt_pskl Q (pskl_var_f β)))
+         by (apply ftv_open_absent; [ clear - Hβ; fsetdec | exact Hni ]).
+       destruct ((proj1 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ _ Hlk Hno)
+         as [-> ->].
+       exists nil.
+       split; [ apply a_looksub__absent; exact Hni | ].
+       split; [ exact Hsol | left; reflexivity ]. }
+  assert (Hβα : β <> α) by (clear - Hβ; fsetdec).
+  destruct (a_looksub_open_target Hlk Hgf)
+    as [ (Hvar & HΞ & H𝒞) | [b [Hb Hpeel]] ].
+  - (* ⭐ THE α-STACK LEAF.  [Q] IS the looked-for variable, so the collection
+       is LS-ForallR* then LS-ForallL then LS-Var, and the deposited
+       constraint moves with the counterpart — which is why the SOLVE has to
+       be peeled at THE SAME opener. *)
+    assert (HQ : Q = pskl_var_f α)
+      by (eapply open_var_eq_var_inv; [ exact Hvar | exact Hβα ]). subst Q. subst Ξ. subst 𝒞.
+    pose proof (a_solve_cstr_sub_single_inv Hsol) as Hsolsub.
+    destruct (a_solve_sub_open_target_avoid
+                (add α (ftvar_in_aenv Θ)) Hsolsub Hfm Hbound)
+      as [γ [Hγ Hsol']].
+    assert (Hsolγ : {{ ((γ ~ abind_tvar) ++ Θ2)
+                       ⊩ (a_cstr_sub mode_tc
+                            (open_pskl_wrt_pskl B (pskl_var_f γ)) :: nil)
+                       ⨾ Pi ⤳ Ξs ⨾ Pa }}a)
+      by (apply a_solve_cstr__sub; exact Hsol').
+    assert (Hsol2 : {{ Θ2 ⊩ (a_cstr_sub mode_tc
+                               (open_pskl_wrt_pskl B (pskl_var_f γ)) :: nil)
+                       ⨾ Pi ⤳ Ξs ⨾ Pa }}a)
+      by (exact (@a_solve_cstr_strip_tvar_mid nil γ Θ2 _ _ _ _ Hsolγ)).
+    pick fresh β1 for
+      (add α (ftvar_in_aenv ((γ ~ abind_tvar) ++ Θ)
+                `union` ftvar_in_pskl (pskl_var_f α)
+                `union` ftvar_in_pskl
+                          (open_pskl_wrt_pskl B (pskl_var_f γ)))).
+    assert (Hleaf : {{ ((β1 ~ abind_tvar) ++ (γ ~ abind_tvar) ++ Θ)
+                       ⊢ (open_pskl_wrt_pskl (pskl_var_f α) (pskl_var_f β1))
+                       ≼[ α , mode_tc ]
+                       (open_pskl_wrt_pskl B (pskl_var_f γ))
+                       ⤳ nil ⨾ (a_cstr_sub mode_tc
+                                  (open_pskl_wrt_pskl B (pskl_var_f γ))
+                                :: nil) }}a).
+    { unfold open_pskl_wrt_pskl; simpl. apply a_looksub__var. }
+    destruct (IHn ((γ ~ abind_tvar) ++ Θ) α (pskl_var_f α)
+                (open_pskl_wrt_pskl B (pskl_var_f γ)) nil
+                (a_cstr_sub mode_tc (open_pskl_wrt_pskl B (pskl_var_f γ))
+                 :: nil)
+                Θ2 Pi Ξs Pa β1
+                ltac:(rewrite size_pskl_open_pskl_wrt_pskl_var;
+                      cbn [size_pskl] in Hsz; lia)
+                Hleaf Hsol2
+                ltac:(apply ghost_free_open_var_neq_hole; exact Hgf)
+                ltac:(clear - Fr; fsetdec) Hfm Hbound)
+      as [𝒞'' [Hlk'' [Hsol'' Hdisj]]].
+    exists 𝒞''. split.
+    + apply a_looksub__forall_r with (β := γ);
+        [ exact Hgf
+        | simpl; clear - Hγ; fsetdec
+        | simpl; clear; fsetdec
+        | discriminate
+        | exact Hlk'' ].
+    + split; [ exact Hsol'' | ].
+      right. split; [ reflexivity | ]. split; [ reflexivity | ].
+      exists (pskl_all_syn B).
+      destruct Hdisj as [ -> | (_ & _ & T & T' & HT & HT') ];
+        [ exists (open_pskl_wrt_pskl B (pskl_var_f γ))
+        | exists T' ]; split; solve [ reflexivity | exact HT' ].
+  - (* the counterpart peels at the derivation's OWN binder, and 𝒞 is
+       untouched — so the solve rides through unchanged *)
+    assert (Hbβ : b <> β)
+      by (rewrite ftvar_in_aenv_cons_tvar in Hb; clear - Hb; fsetdec).
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f b))
+      as HupB.
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower Q (pskl_var_f β))
+      as HloQ.
+    rewrite ftvar_in_aenv_cons_tvar in Hb.
+    destruct (IHn ((b ~ abind_tvar) ++ Θ) α Q
+                (open_pskl_wrt_pskl B (pskl_var_f b)) Ξ 𝒞 Θ2 Pi Ξs Pa β
+                ltac:(rewrite size_pskl_open_pskl_wrt_pskl_var;
+                      cbn [size_pskl] in Hsz; lia)
+                ltac:(apply a_looksub_ctx_exchange; exact Hpeel)
+                Hsol
+                ltac:(apply ghost_free_open_var_neq_hole; exact Hgf)
+                ltac:(rewrite ftvar_in_aenv_cons_tvar;
+                      simpl in Hβ, HupB |- *;
+                      clear - Hβ Hbβ HupB; fsetdec)
+                Hfm Hbound)
+      as [𝒞'' [Hlk'' [Hsol'' Hdisj]]].
+    exists 𝒞''. split.
+    + apply a_looksub__forall_r with (β := b);
+        [ exact Hgf
+        | simpl; simpl in Hb; clear - Hb HloQ; fsetdec
+        | exact Hin
+        | discriminate
+        | exact Hlk'' ].
+    + split; [ exact Hsol'' | exact Hdisj ].
+Qed.
+
+(** The [⫯] twin.  [LS-UnivGhostL] has no binder of its own, so the statement
+    loses the opener — everything else is [a_looksub_solve_forall_l] verbatim,
+    including the α-stack leaf and its opener move. *)
+Lemma a_looksub_solve_univ_ghost_l : forall n Θ α Q P' Ξ 𝒞 Θ2 Pi Ξs Pa,
+  size_pskl P' <= n ->
+  {{ Θ ⊢ Q ≼[ α , mode_tc ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
+  {{ Θ2 ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a ->
+  P' <> pskl_hole ->
+  all_flex_mono Ξs ->
+  ftvar_in_pskl Pa [<=] dom Ξs `union` ftvar_in_aenv Θ2 ->
+  exists 𝒞',
+    {{ Θ ⊢ (pskl_tophole Q) ≼[ α , mode_tc ] P' ⤳ Ξ ⨾ 𝒞' }}a
+    /\ {{ Θ2 ⊩ 𝒞' ⨾ Pi ⤳ Ξs ⨾ Pa }}a
+    /\ (𝒞' = 𝒞
+        \/ (Q = pskl_var_f α /\ Ξ = nil
+            /\ exists T T', 𝒞 = a_cstr_sub mode_tc T :: nil
+                          /\ 𝒞' = a_cstr_sub mode_tc T' :: nil)).
+Proof.
+  induction n as [ | n IHn ].
+  { intros Θ α Q P' Ξ 𝒞 Θ2 Pi Ξs Pa Hsz.
+    exfalso. pose proof (size_pskl_min P'). lia. }
+  intros Θ α Q P' Ξ 𝒞 Θ2 Pi Ξs Pa Hsz Hlk Hsol Hnh Hfm Hbound.
+  destruct P' as [ | nq | γq | Pd1 Pd2 | B | | Pt ];
+    try solve
+      [ exists 𝒞;
+        split; [ apply a_looksub__univ_ghost_l;
+                   [ exact Hnh
+                   | apply forall_r_off_nonall; intros ?; discriminate
+                   | exact Hlk ]
+               | split; [ exact Hsol | left; reflexivity ] ] ].
+  destruct (pskl_ghost_free_dec (pskl_all_syn B)) as [Hgf | Hngf].
+  2: { exists 𝒞.
+       split; [ apply a_looksub__univ_ghost_l;
+                  [ exact Hnh | apply forall_r_off_ghosty; exact Hngf
+                  | exact Hlk ]
+              | split; [ exact Hsol | left; reflexivity ] ]. }
+  destruct (AtomSetProperties.In_dec α (ftvar_in_pskl (pskl_tophole Q)))
+    as [Hin | Hni].
+  2: { simpl in Hni.
+       destruct ((proj1 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ _ Hlk Hni)
+         as [-> ->].
+       exists nil.
+       split; [ apply a_looksub__absent; simpl; exact Hni | ].
+       split; [ exact Hsol | left; reflexivity ]. }
+  destruct (a_looksub_open_target Hlk Hgf)
+    as [ (Hvar & HΞ & H𝒞) | [b [Hb Hpeel]] ].
+  - (* ⭐ THE α-STACK LEAF, under a [⫯] this time *)
+    subst Q. subst Ξ. subst 𝒞.
+    pose proof (a_solve_cstr_sub_single_inv Hsol) as Hsolsub.
+    destruct (a_solve_sub_open_target_avoid
+                (add α (ftvar_in_aenv Θ)) Hsolsub Hfm Hbound)
+      as [γ [Hγ Hsol']].
+    assert (Hsolγ : {{ ((γ ~ abind_tvar) ++ Θ2)
+                       ⊩ (a_cstr_sub mode_tc
+                            (open_pskl_wrt_pskl B (pskl_var_f γ)) :: nil)
+                       ⨾ Pi ⤳ Ξs ⨾ Pa }}a)
+      by (apply a_solve_cstr__sub; exact Hsol').
+    assert (Hsol2 : {{ Θ2 ⊩ (a_cstr_sub mode_tc
+                               (open_pskl_wrt_pskl B (pskl_var_f γ)) :: nil)
+                       ⨾ Pi ⤳ Ξs ⨾ Pa }}a)
+      by (exact (@a_solve_cstr_strip_tvar_mid nil γ Θ2 _ _ _ _ Hsolγ)).
+    destruct (IHn ((γ ~ abind_tvar) ++ Θ) α (pskl_var_f α)
+                (open_pskl_wrt_pskl B (pskl_var_f γ)) nil
+                (a_cstr_sub mode_tc (open_pskl_wrt_pskl B (pskl_var_f γ))
+                 :: nil)
+                Θ2 Pi Ξs Pa
+                ltac:(rewrite size_pskl_open_pskl_wrt_pskl_var;
+                      cbn [size_pskl] in Hsz; lia)
+                (a_looksub__var ((γ ~ abind_tvar) ++ Θ) α mode_tc
+                   (open_pskl_wrt_pskl B (pskl_var_f γ)))
+                Hsol2
+                ltac:(apply ghost_free_open_var_neq_hole; exact Hgf)
+                Hfm Hbound)
+      as [𝒞'' [Hlk'' [Hsol'' Hdisj]]].
+    exists 𝒞''. split.
+    + apply a_looksub__forall_r with (β := γ);
+        [ exact Hgf
+        | simpl; clear - Hγ; fsetdec
+        | simpl; clear; fsetdec
+        | discriminate
+        | exact Hlk'' ].
+    + split; [ exact Hsol'' | ].
+      right. split; [ reflexivity | ]. split; [ reflexivity | ].
+      exists (pskl_all_syn B).
+      destruct Hdisj as [ -> | (_ & _ & T & T' & HT & HT') ];
+        [ exists (open_pskl_wrt_pskl B (pskl_var_f γ))
+        | exists T' ]; split; solve [ reflexivity | exact HT' ].
+  - (* the counterpart peels at the derivation's own binder *)
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f b))
+      as HupB.
+    destruct (IHn ((b ~ abind_tvar) ++ Θ) α Q
+                (open_pskl_wrt_pskl B (pskl_var_f b)) Ξ 𝒞 Θ2 Pi Ξs Pa
+                ltac:(rewrite size_pskl_open_pskl_wrt_pskl_var;
+                      cbn [size_pskl] in Hsz; lia)
+                Hpeel Hsol
+                ltac:(apply ghost_free_open_var_neq_hole; exact Hgf)
+                Hfm Hbound)
+      as [𝒞'' [Hlk'' [Hsol'' Hdisj]]].
+    exists 𝒞''. split.
+    + apply a_looksub__forall_r with (β := b);
+        [ exact Hgf
+        | simpl; simpl in Hb; clear - Hb; fsetdec
+        | exact Hin
+        | discriminate
+        | exact Hlk'' ].
+    + split; [ exact Hsol'' | exact Hdisj ].
+Qed.
+
+(** ⭐ The two shapes P6-Ss actually applies, at an ARBITRARY mode: outside
+    CHECK mode the guard is vacuous and the rule fires as before. *)
+Lemma a_looksub_solve_forall_l_mode : forall Θ α m Q P' Ξ 𝒞 Θ2 Pi Ξs Pa β,
+  {{ ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl Q (pskl_var_f β))
+     ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
+  {{ Θ2 ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a ->
+  P' <> pskl_hole ->
+  β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl Q
+                     `union` ftvar_in_pskl P') ->
+  all_flex_mono Ξs ->
+  ftvar_in_pskl Pa [<=] dom Ξs `union` ftvar_in_aenv Θ2 ->
+  exists 𝒞',
+    {{ Θ ⊢ (pskl_all_syn Q) ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞' }}a
+    /\ {{ Θ2 ⊩ 𝒞' ⨾ Pi ⤳ Ξs ⨾ Pa }}a
+    /\ (𝒞' = 𝒞
+        \/ (Q = pskl_var_f α /\ Ξ = nil
+            /\ exists T T', 𝒞 = a_cstr_sub m T :: nil
+                          /\ 𝒞' = a_cstr_sub m T' :: nil)).
+Proof.
+  intros Θ α m Q P' Ξ 𝒞 Θ2 Pi Ξs Pa β Hlk Hsol Hnh Hβ Hfm Hbound.
+  destruct m as [ | | m' ];
+    try solve
+      [ exists 𝒞;
+        split; [ apply a_looksub_forall_l_adm with (β := β);
+                   [ exact Hnh | apply forall_r_off_nontc; discriminate
+                   | exact Hβ | exact Hlk ]
+               | split; [ exact Hsol | left; reflexivity ] ] ].
+  eapply a_looksub_solve_forall_l;
+    [ apply le_n | exact Hlk | exact Hsol | exact Hnh | exact Hβ
+    | exact Hfm | exact Hbound ].
+Qed.
+
+Lemma a_looksub_solve_univ_ghost_l_mode : forall Θ α m Q P' Ξ 𝒞 Θ2 Pi Ξs Pa,
+  {{ Θ ⊢ Q ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
+  {{ Θ2 ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a ->
+  P' <> pskl_hole ->
+  all_flex_mono Ξs ->
+  ftvar_in_pskl Pa [<=] dom Ξs `union` ftvar_in_aenv Θ2 ->
+  exists 𝒞',
+    {{ Θ ⊢ (pskl_tophole Q) ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞' }}a
+    /\ {{ Θ2 ⊩ 𝒞' ⨾ Pi ⤳ Ξs ⨾ Pa }}a
+    /\ (𝒞' = 𝒞
+        \/ (Q = pskl_var_f α /\ Ξ = nil
+            /\ exists T T', 𝒞 = a_cstr_sub m T :: nil
+                          /\ 𝒞' = a_cstr_sub m T' :: nil)).
+Proof.
+  intros Θ α m Q P' Ξ 𝒞 Θ2 Pi Ξs Pa Hlk Hsol Hnh Hfm Hbound.
+  destruct m as [ | | m' ];
+    try solve
+      [ exists 𝒞;
+        split; [ apply a_looksub__univ_ghost_l;
+                   [ exact Hnh | apply forall_r_off_nontc; discriminate
+                   | exact Hlk ]
+               | split; [ exact Hsol | left; reflexivity ] ] ].
+  eapply a_looksub_solve_univ_ghost_l;
+    [ apply le_n | exact Hlk | exact Hsol | exact Hnh
+    | exact Hfm | exact Hbound ].
 Qed.
 
 (* (iv) partial precision: strip a rigid binder that neither side mentions

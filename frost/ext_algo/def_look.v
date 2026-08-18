@@ -169,11 +169,15 @@ Inductive e_looksub : supply -> aenv -> atom -> mode -> pskl -> pskl
     β `notin` S0 ->
     α `in` ftvar_in_pskl (pskl_all_syn P) ->
     P' <> pskl_hole ->
+    (* [paper-gap] ForallR-PRIORITY GUARD — see [a_looksub__forall_l]. *)
+    forall_r_off m P' ->
     {{ (add β S0) ↝ S1 ⊨ ((β ~ abind_tvar) ++ Θ)
        ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_all_syn P) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e
 | e_looksub__univ_ghost_l : forall S0 S1 Θ α m P P' Ξ C, (* LS-UnivGhostL *)
     P' <> pskl_hole ->
+    (* [paper-gap] ForallR-PRIORITY GUARD — see [a_looksub__forall_l]. *)
+    forall_r_off m P' ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_tophole P) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e
 

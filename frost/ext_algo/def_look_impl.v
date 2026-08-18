@@ -103,6 +103,13 @@ Definition looksub_spec (S0 : supply) (Θ : aenv) (α : atom) (m : mode)
   solve [ apply mem_false_notin; assumption | simpl in *; fsetdec ] : lookdec.
 #[local] Hint Extern 4 (_ `in` _) =>
   solve [ apply mem_true_in; assumption | simpl in *; fsetdec ] : lookdec.
+(* ⭐ THE ForallR-PRIORITY GUARD.  Three ways the dispatch supplies it, one
+   per way a ForallL / UnivGhostL branch is reached: a function mode, a
+   counterpart that is not a ∀, or a ∀ whose ghost-freeness test FAILED. *)
+#[local] Hint Extern 4 (forall_r_off _ _) =>
+  solve [ apply forall_r_off_nontc; discriminate
+        | apply forall_r_off_nonall; intros ?; discriminate
+        | apply forall_r_off_ck; assumption ] : lookdec.
 
 #[local] Ltac select_shape_premises :=
   repeat match goal with
@@ -142,7 +149,22 @@ Definition looksub_spec (S0 : supply) (Θ : aenv) (α : atom) (m : mode)
              end
          end.
 
+(** ⭐ THE ForallR-PRIORITY GUARD, discharged from the dispatch itself and
+    BEFORE [intros] — the guard is a [Definition] that unfolds to a product,
+    so [intros] would strip it to [~ pskl_ghost_free …] and lose the shape
+    the three discharge lemmas match on.  The three arms are exactly the
+    three ways a ForallL / UnivGhostL branch is reached: a function mode, a
+    counterpart that is not a ∀, or a ∀ whose ghost-freeness test FAILED. *)
+#[local] Ltac forall_r_off_tac :=
+  match goal with
+  | |- forall_r_off _ _ =>
+      solve [ apply forall_r_off_nontc; discriminate
+            | apply forall_r_off_nonall; intros ?; discriminate
+            | apply forall_r_off_ck; assumption ]
+  end.
+
 #[local] Ltac look_impl_tac :=
+  try forall_r_off_tac;
   intros;
   try match goal with
       | H : e_lookeq_order _ _ _ _ _ |- _ => inversion H; subst

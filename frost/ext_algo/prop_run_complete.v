@@ -534,78 +534,19 @@ Proof.
         destruct (a_looksub_rebind_r Hp Hfr Hβ) as [Ξ' [C' E]]
     end.
     exists Ξ', C'. exact E.
-  - (* LS-ForallL — re-derive the premise at the opened target (IH), then
-       swap the two binders into place *)
-    subst m. subst P'. simpl in Hβ.
+  - (* LS-ForallL — ⛔ IMPOSSIBLE under the ForallR-PRIORITY GUARD (2026-08-18).
+       The target here is a GHOST-FREE ∀ at check mode, which is exactly the
+       cell the guard reserves for LS-ForallR.  ⭐ THIS IS THE WHOLE POINT OF
+       THE GUARD: the reordering this lemma performs used to need the IH plus
+       four rebindings and a context exchange; now the left rules simply
+       cannot be the root, and the derivation ALREADY has ForallR first. *)
     match goal with
-    | Hfr : ?b `notin` add α _,
-      Hp : a_looksub ((?b ~ abind_tvar) ++ Θ) α mode_tc _ _ _ _,
-      IH : forall _ _, _ -> _ -> _ -> _ |- _ =>
-        simpl in Hfr;
-        (* δ: the IH's target opener, fresh for everything in sight *)
-        destruct (atom_fresh (add α (add βr (add b
-                    (ftvar_in_aenv Θ ∪ ftvar_in_pskl P
-                       ∪ ftvar_in_pskl B0))))) as [δ Hδ];
-        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f b))
-          as HupPb;
-        assert (Hδ' : δ `notin`
-                  add α (ftvar_in_aenv ((b ~ abind_tvar) ++ Θ)
-                           ∪ ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f b))
-                           ∪ ftvar_in_pskl B0))
-          by (clear - Hδ HupPb; simpl in *; fsetdec);
-        destruct (IH B0 δ Hgft eq_refl eq_refl Hδ') as [Ξ1 [C1 E1]];
-        apply a_looksub_ctx_exchange in E1;
-        (* γ': the final ForallL witness *)
-        destruct (atom_fresh (add α (add βr (add b (add δ
-                    (ftvar_in_aenv Θ ∪ ftvar_in_pskl P
-                       ∪ ftvar_in_pskl B0)))))) as [γ' Hγ'];
-        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B0 (pskl_var_f δ))
-          as HupBδ;
-        assert (Hf1 : b `notin`
-                  add α (ftvar_in_aenv ((δ ~ abind_tvar) ++ Θ)
-                           ∪ ftvar_in_pskl P
-                           ∪ ftvar_in_pskl (open_pskl_wrt_pskl B0 (pskl_var_f δ))))
-          by (clear - Hfr Hδ HupBδ; simpl in *; fsetdec);
-        assert (Hf2 : γ' `notin`
-                  add α (ftvar_in_aenv ((δ ~ abind_tvar) ++ Θ)
-                           ∪ ftvar_in_pskl P
-                           ∪ ftvar_in_pskl (open_pskl_wrt_pskl B0 (pskl_var_f δ))))
-          by (clear - Hγ' HupBδ; simpl in *; fsetdec);
-        destruct (a_looksub_rebind_l E1 Hf1 Hf2) as [Ξ2 [C2 E2]];
-        apply a_looksub_ctx_exchange in E2;
-        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f γ'))
-          as HupPγ;
-        assert (Hf3 : δ `notin`
-                  add α (ftvar_in_aenv ((γ' ~ abind_tvar) ++ Θ)
-                           ∪ ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f γ'))
-                           ∪ ftvar_in_pskl B0))
-          by (clear - Hδ Hγ' HupPγ; simpl in *; fsetdec);
-        assert (Hf4 : βr `notin`
-                  add α (ftvar_in_aenv ((γ' ~ abind_tvar) ++ Θ)
-                           ∪ ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f γ'))
-                           ∪ ftvar_in_pskl B0))
-          by (clear - Hβ Hγ' HupPγ; simpl in *; fsetdec);
-        destruct (a_looksub_rebind_r E2 Hf3 Hf4) as [Ξ3 [C3 E3]];
-        apply a_looksub_ctx_exchange in E3;
-        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B0 (pskl_var_f βr))
-          as HupBβ;
-        exists Ξ3, C3;
-        apply a_looksub__forall_l with (β := γ');
-        [ clear - Hγ' HupBβ; simpl in *; fsetdec
-        | (* the subject is UNCHANGED by the rebinding, so the rule's own
-             absence-first guard is the goal verbatim *) assumption
-        | apply ghost_free_open_var_neq_hole; exact Hgft
-        | exact E3 ]
+    | Hf : forall_r_off _ _ |- _ => exfalso; exact (Hf B0 HeqP' Heqm Hgft)
     end.
-  - (* LS-UnivGhostL — strip, IH, re-strip *)
-    subst m. simpl in Hβ.
+  - (* LS-UnivGhostL — likewise *)
     match goal with
-    | IH : forall _ _, _ -> _ -> _ -> _ |- _ =>
-        destruct (IH B0 βr Hgft HeqP' eq_refl Hβ) as [Ξ' [C' E]]
+    | Hf : forall_r_off _ _ |- _ => exfalso; exact (Hf B0 HeqP' Heqm Hgft)
     end.
-    exists Ξ', C'.
-    apply a_looksub__univ_ghost_l;
-      [ apply ghost_free_open_var_neq_hole; exact Hgft | exact E ].
 Qed.
 Arguments a_looksub_forall_r_first {Θ α m P P' Ξ C} _ {B β} _.
 

@@ -150,6 +150,33 @@ Proof.
   exact Hne.
 Qed.
 
+(** …and the ForallR-PRIORITY GUARD travels the same way: [rel_pskl] maps a
+    [∀] to a [∀] and nothing else to one, and ghost-freeness comes BACK
+    across it ([rel_pskl_ghost_free_rev]) — which is exactly the direction
+    the NEGATED guard needs. *)
+Lemma rel_pskl_all_syn_r_inv : forall ρ V P1 B,
+  rel_pskl ρ V P1 (pskl_all_syn B) ->
+  exists P, P1 = pskl_all_syn P /\ rel_pskl ρ V P B.
+Proof.
+  intros ρ V P1 B Hrel.
+  remember (pskl_all_syn B) as T eqn:HT.
+  destruct Hrel; try discriminate HT.
+  injection HT as HT0; subst.
+  eexists; split; [ reflexivity | eassumption ].
+Qed.
+
+Lemma rel_pskl_forall_r_off : forall ρ V m P1 P2,
+  rel_pskl ρ V P1 P2 ->
+  forall_r_off m P1 ->
+  forall_r_off m P2.
+Proof.
+  intros ρ V m P1 P2 Hrel Hoff B Heq Hm.
+  rewrite Heq in Hrel.
+  destruct (rel_pskl_all_syn_r_inv Hrel) as (P & -> & Hr).
+  intro Hgf. apply (Hoff P eq_refl Hm). simpl in Hgf |- *.
+  eapply rel_pskl_ghost_free_rev; [ exact Hr | exact Hgf ].
+Qed.
+
 (** An atom OUTSIDE the left columns survives onto side 2. *)
 Lemma rel_pskl_in_id : forall ρ V P1 P2 α,
   rel_pskl ρ V P1 P2 ->
@@ -1764,7 +1791,7 @@ Proof.
     + cstrs_perm HrelA.
     + cstrs_perm HrelB.
   - (* LS-ForallL — leaks its opener *)
-    intros Θ1 α m Pb Pt Ξ C β Hβ1 Hocc Hnh Hprem IH
+    intros Θ1 α m Pb Pt Ξ C β Hβ1 Hocc Hnh Hfr3 Hprem IH
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hcov.
     inversion HrelP; subst.
     match goal with
@@ -1802,6 +1829,7 @@ Proof.
         [ exact Hβ2
         | eapply rel_pskl_in_id; [ exact HrelP | exact Hocc | exact Hαl ]
         | eapply rel_pskl_neq_hole; [ exact HrelP' | exact Hnh ]
+        | eapply rel_pskl_forall_r_off; [ exact HrelP' | exact Hfr3 ]
         | exact D2 ]. }
     split; [ exact E1 | ]. split; [ exact E2 | ].
     split.
@@ -1817,7 +1845,7 @@ Proof.
     { simpl. clear - Hxb Hd2. fsetdec. }
     cstrs_perm Hrel'.
   - (* LS-UnivGhostL *)
-    intros Θ1 α m Pb Pt Ξ C Hnh Hprem IH
+    intros Θ1 α m Pb Pt Ξ C Hnh Hfr3 Hprem IH
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hcov.
     inversion HrelP; subst.
     match goal with
@@ -1831,7 +1859,9 @@ Proof.
     exists S1, ρx, ρn, Ξ2, C2.
     split;
       [ apply e_looksub__univ_ghost_l;
-          [ eapply rel_pskl_neq_hole; [ exact HrelP' | exact Hnh ] | exact D2 ] | ].
+          [ eapply rel_pskl_neq_hole; [ exact HrelP' | exact Hnh ]
+          | eapply rel_pskl_forall_r_off; [ exact HrelP' | exact Hfr3 ]
+          | exact D2 ] | ].
     split; [ exact E1 | ]. split; [ exact E2 | ].
     split; [ exact Hpairs | ]. split; [ exact Hxb | ].
     exact Hrel'.

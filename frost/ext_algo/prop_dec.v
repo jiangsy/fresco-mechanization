@@ -138,13 +138,9 @@ Lemma guarded_shape_ck_complete : forall P,
   guarded_pskl P -> guarded_shape_ck P = true.
 Proof. intros P H; inversion H; subst; reflexivity. Qed.
 
-Lemma ghost_free_ck_complete : forall P,
-  pskl_ghost_free P -> ghost_free_ck P = true.
-Proof.
-  induction P; simpl; intros Hgf;
-    try reflexivity; try contradiction; try solve [ apply IHP; exact Hgf ].
-  destruct Hgf as [H1 H2]. apply andb_true_intro; split; auto.
-Qed.
+(* ⚙ [ghost_free_ck_complete] MOVED to def_dec.v (2026-08-18) — the runner's
+   ForallL / UnivGhostL obligations need it, and this file is downstream of
+   def_look_impl.v.  It is still in scope here, through def_dec.v. *)
 
 Lemma mono_ck_complete : forall A, mono_ptyp A -> mono_ck A = true.
 Proof.

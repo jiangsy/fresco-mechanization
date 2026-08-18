@@ -350,6 +350,43 @@ Fixpoint bskl_ghost_free (Q : bskl) : Prop :=
   | bskl_tophole _ => False
   end.
 
+(** ⭐ THE ForallR-PRIORITY GUARD (2026-08-18).  [forall_r_off m P'] says the
+    collection's LS-ForallR row does NOT apply at counterpart [P'] in mode
+    [m]: that row fires exactly at a GHOST-FREE ∀ counterpart in CHECK mode
+    ([a_looksub__forall_r], frost/algo/def_rules.v), and the reference
+    implementation reaches LS-ForallL / LS-UnivGhostL only after that test
+    has FAILED — [constr_collect_sub] commits ForallR at type.ml:663, before
+    ForallL (:680) and UnivGhostL (:690), and this tree's runner renders the
+    same order (frost/ext_algo/def_look_impl.v:415, :456).  A relational
+    encoding has no match order, so the exclusion must be a PREMISE.
+
+    ⚠️ Unlike the ABSENCE-FIRST guard this one is NOT admissible: the two
+    rows genuinely DISAGREE — at subject [∀_. α] and counterpart [∀_. 1] the
+    ForallR route collects [≼TC 1] and the ForallL route [≼TC ∀_. 1].  That
+    was cex/cex_looksub_not_det.v, which this guard RETRACTS.
+    docs/PAPER-GAPS.md. *)
+
+Definition forall_r_off (m : mode) (P' : pskl) : Prop :=
+  forall B, P' = pskl_all_syn B -> m = mode_tc ->
+    ~ pskl_ghost_free (pskl_all_syn B).
+
+(** The three ways a site discharges it, and between them they cover every
+    construction site in the tree. *)
+
+Lemma forall_r_off_nontc : forall m P',               (* any mode but check *)
+  m <> mode_tc -> forall_r_off m P'.
+Proof. intros m P' Hne B _ Hm; exfalso; exact (Hne Hm). Qed.
+
+Lemma forall_r_off_nonall : forall m P',             (* not a ∀ counterpart *)
+  (forall B, P' <> pskl_all_syn B) -> forall_r_off m P'.
+Proof. intros m P' Hne B Heq; exfalso; apply (Hne B); exact Heq. Qed.
+
+Lemma forall_r_off_ghosty : forall m B,              (* a GHOSTY ∀ counterpart *)
+  ~ pskl_ghost_free (pskl_all_syn B) -> forall_r_off m (pskl_all_syn B).
+Proof.
+  intros m B Hg B0 Heq _. injection Heq as Heq0; subst B0. exact Hg.
+Qed.
+
 (* Constructor hints for the small structural shape / guardedness / mode
    predicates: they are dispatched trivially in metatheory proofs, so
    [eauto with frost] can discharge those cases directly.  A DEDICATED [frost]

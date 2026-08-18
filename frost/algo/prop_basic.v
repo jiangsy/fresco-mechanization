@@ -1515,6 +1515,22 @@ Qed.
 (** An OPENING at a variable other than the looked-for one cannot produce the
     looked-for one — the [≠ α] half of the ◇-dispatch guard, transported
     through a binder peel. *)
+(** …and its INVERSION, which is what spares the reorder a decidable equality
+    on skeletons: an opening that lands on the looked-for variable can only
+    have come from that variable itself. *)
+Lemma open_var_eq_var_inv : forall Q β α,
+  open_pskl_wrt_pskl Q (pskl_var_f β) = pskl_var_f α -> β <> α ->
+  Q = pskl_var_f α.
+Proof.
+  intros Q β α Heq Hne. unfold open_pskl_wrt_pskl in Heq.
+  destruct Q; simpl in Heq; try discriminate Heq.
+  - destruct (lt_eq_lt_dec n 0) as [ [ _ | _ ] | _ ]; simpl in Heq;
+      [ discriminate Heq
+      | injection Heq as Heq0; exfalso; apply Hne; exact Heq0
+      | discriminate Heq ].
+  - exact Heq.
+Qed.
+
 Lemma open_var_neq_var : forall P γ α,
   P <> pskl_var_f α -> γ <> α ->
   open_pskl_wrt_pskl P (pskl_var_f γ) <> pskl_var_f α.

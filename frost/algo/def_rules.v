@@ -474,11 +474,17 @@ Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs ->
     (* [paper-gap] ABSENCE-FIRST GUARD — see [a_looksub__forall_r]. *)
     α `in` ftvar_in_pskl (pskl_all_syn P) ->
     P' <> pskl_hole ->
+    (* [paper-gap] ForallR-PRIORITY GUARD — the runner tries LS-ForallR
+       first at a ∀ counterpart in check mode ([forall_r_off],
+       frost/def_shapes.v).  ⚠️ NOT admissible: the two rows disagree. *)
+    forall_r_off m P' ->
     {{ ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β))
       ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
     {{ Θ ⊢ (pskl_all_syn P) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a
 | a_looksub__univ_ghost_l : forall Θ α m P P' Ξ C, (* LS-UnivGhostL *)
     P' <> pskl_hole ->
+    (* [paper-gap] ForallR-PRIORITY GUARD — see [a_looksub__forall_l]. *)
+    forall_r_off m P' ->
     {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
     {{ Θ ⊢ (pskl_tophole P) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a
 

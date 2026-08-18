@@ -138,6 +138,68 @@ Proof.
   - eauto.
 Qed.
 
+(** [pskl_ghost_free] is a [Fixpoint] into [Prop] built from [True], [False]
+    and conjunction, so it is decidable by structural recursion — which is what lets a
+    consumer CASE SPLIT on the ForallR-PRIORITY guard.  (The boolean [ghost_free_ck]
+    of ext_algo/def_dec.v says the same thing, but it is downstream.) *)
+(* ⚙ [sumbool …] spelled out: the tree's notation layer claims [+] at term
+   level 50, so the usual [{A} + {B}] does not parse here. *)
+Lemma pskl_ghost_free_dec : forall P,
+  sumbool (pskl_ghost_free P) (~ pskl_ghost_free P).
+Proof.
+  induction P; simpl;
+    try solve [ left; exact I | right; auto ].
+  - destruct IHP1 as [H1 | H1]; [ | right; tauto ].
+    destruct IHP2 as [H2 | H2]; [ left; split; assumption | right; tauto ].
+  - exact IHP.
+Qed.
+
+(** …and the same INVERSE for a substitution: replacing a free variable
+    cannot delete a ghost either.  ⭐ This is what carries the ForallR-PRIORITY
+    GUARD ([forall_r_off]) through the collection's structural lemmas, whose
+    ∀-rows substitute into the counterpart. *)
+Lemma pskl_ghost_free_subst_inv : forall P P' β,
+  pskl_ghost_free (subst_pskl_in_pskl P' β P) -> pskl_ghost_free P.
+Proof.
+  induction P; intros P' β Hg; simpl in *; auto.
+  - destruct Hg as [Hg1 Hg2]; split; eauto.
+  - eauto.
+Qed.
+
+(** The two structural transports of the ForallR-PRIORITY GUARD.  A [∀]
+    counterpart stays a [∀] under both, and the GHOSTY half of the guard is
+    reflected by the two [_inv] lemmas above — so the guard is stable in the
+    direction the rules need it. *)
+(** ⚠️ A VARIABLE substitute, not an arbitrary one: substituting a GHOST-FREE
+    [∀] for the counterpart's own head variable would turn the guard FALSE
+    ([P' = γ] satisfies it vacuously, [P'[∀_.1/γ]] does not).  Every
+    collection rule that moves the counterpart moves it by a RENAMING, so
+    this is the form the tree needs. *)
+Lemma forall_r_off_subst_var : forall m P' γ β,
+  forall_r_off m P' -> forall_r_off m (subst_pskl_in_pskl (pskl_var_f γ) β P').
+Proof.
+  intros m P' γ β H B Heq Hm.
+  destruct P' as [ | | γ0 | | P0 | | ]; simpl in Heq;
+    try discriminate Heq;
+    [ destruct (γ0 == β); discriminate Heq | ].
+  injection Heq as Heq0; subst B.
+  intro Hgf. apply (H P0 eq_refl Hm). simpl in Hgf |- *.
+  eapply pskl_ghost_free_subst_inv; exact Hgf.
+Qed.
+
+Lemma forall_r_off_open_var : forall m P' β,
+  forall_r_off m P' -> forall_r_off m (open_pskl_wrt_pskl P' (pskl_var_f β)).
+Proof.
+  intros m P' β H B Heq Hm.
+  destruct P' as [ | n | | | P0 | | ]; unfold open_pskl_wrt_pskl in Heq;
+    simpl in Heq; try discriminate Heq.
+  - destruct (lt_eq_lt_dec n 0) as [[? | ?] | ?]; simpl in Heq;
+      discriminate Heq.
+  - injection Heq as Heq0; subst B.
+    intro Hgf. apply (H P0 eq_refl Hm). simpl in Hgf |- *.
+    eapply pskl_ghost_free_open_rec_inv; exact Hgf.
+Qed.
+
 (** * Mode/type compatibility.
 
     ⚙ LIFTED here 2026-08-09: it was proved identically in

@@ -606,49 +606,25 @@ Proof.
     left.
     split; [ clear - Hg; fsetdec | ].
     split; reflexivity.
-  - (* LS-ForallL: recurse, exchange supplies/contexts, rebuild *)
+  - (* LS-ForallL — ⛔ IMPOSSIBLE under the ForallR-PRIORITY GUARD
+       (2026-08-18).  The counterpart here is a GHOST-FREE ∀ at check mode,
+       which is exactly the cell the guard reserves for LS-ForallR.
+       ⭐ THIS LEMMA IS WHAT THE GUARD REPLACES: the two left rows used to be
+       re-rooted by hand — recurse, exchange supplies AND contexts, rebuild —
+       and now they simply cannot be the root, so the derivation ALREADY has
+       ForallR first.  (Same collapse as [a_looksub_forall_r_first] on the
+       a-side, ext_algo/prop_run_complete.v.) *)
+    exfalso.
     match goal with
-    | Hfr : β `notin` S0, Hp : e_looksub (add β S0) _ _ _ _ _ _ _ _ |- _ =>
-        rename Hfr into Hγfr; rename Hp into Hprem; rename β into γ
+    | Hf : forall_r_off _ _ , Hg : pskl_ghost_free _ |- _ =>
+        exact (Hf _ eq_refl eq_refl Hg)
     end.
-    assert (Hαo : α `in`
-              ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f γ))).
-    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P (pskl_var_f γ)) as Hlo.
-      simpl in Hα. clear - Hα Hlo. fsetdec. }
-    destruct (IHe_looksub eq_refl _ Hgft eq_refl Hαo)
-      as (β1 & S1' & Ξ' & C' & Hβ1 & HS1' & Hd & Hdisj).
-    destruct ((proj1 e_looksub_lookeq_supply_respect)
-                _ _ _ _ _ _ _ _ _ Hd (add γ (add β1 S0))
-                ltac:(clear; fsetdec))
-      as [S1'' [HS1'' Hd']].
-    pose proof ((proj1 e_looksub_lookeq_ctx_any) _ _ _ _ _ _ _ _ _ Hd'
-                  ((γ ~ abind_tvar) ++ (β1 ~ abind_tvar) ++ Θ)) as Hd''.
-    exists β1, S1'', Ξ', C'.
-    split; [ clear - Hβ1; fsetdec | ].
-    split; [ rewrite HS1''; exact HS1' | ].
-    split.
-    { apply e_looksub__forall_l with (β := γ);
-        [ clear - Hγfr Hβ1; fsetdec | exact Hα
-        | apply ghost_free_open_var_neq_hole; exact Hgft
-        | exact Hd'' ]. }
-    destruct Hdisj as [ (HinS & -> & ->) | (HL & -> & -> & -> & ->) ].
-    + left. split; [ assumption | ]. split; reflexivity.
-    + right. split; [ assumption | ].
-      repeat (split; [ reflexivity | ]); reflexivity.
-  - (* LS-UnivGhostL: recurse and rebuild *)
-    simpl in Hα.
-    destruct (IHe_looksub eq_refl _ Hgft eq_refl Hα)
-      as (β1 & S1' & Ξ' & C' & Hβ1 & HS1' & Hd & Hdisj).
-    exists β1, S1', Ξ', C'.
-    split; [ assumption | ].
-    split; [ assumption | ].
-    split;
-      [ apply e_looksub__univ_ghost_l;
-          [ apply ghost_free_open_var_neq_hole; exact Hgft | exact Hd ] | ].
-    destruct Hdisj as [ (HinS & -> & ->) | (HL & -> & -> & -> & ->) ].
-    + left. split; [ assumption | ]. split; reflexivity.
-    + right. split; [ assumption | ].
-      repeat (split; [ reflexivity | ]); reflexivity.
+  - (* LS-UnivGhostL — likewise *)
+    exfalso.
+    match goal with
+    | Hf : forall_r_off _ _ , Hg : pskl_ghost_free _ |- _ =>
+        exact (Hf _ eq_refl eq_refl Hg)
+    end.
 Qed.
 
 (* ===================================================================== *)

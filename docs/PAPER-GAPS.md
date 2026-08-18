@@ -309,6 +309,43 @@ both fire.
 
 ## MISSING SIDE CONDITION (2026-08-15, machine-checked) — `LS-ForallL` lacks the `guarded` guard that `SI-ForallL` carries "to avoid overlapping with ForallR", so the COLLECTION is not deterministic — and its two answers differ in SHAPE, not just in names
 
+> **✅ FIXED IN THE MECH ON BOTH ENCODINGS (2026-08-18).**  `LS-ForallL` and
+> `LS-UnivGhostL` — and their `e_` twins — carry `forall_r_off m P'`
+> (`frost/def_shapes.v`), *"`LS-ForallR` does not apply at this counterpart
+> and mode"*.  `make coq` rc=0, `README.v` 32/32.  **The finding below stands
+> unchanged for the PAPER**: the figure still owes the exclusion premise.
+>
+> ⭐⭐ **AND THE GUARD REMOVES WORK RATHER THAN COSTING IT** — the result worth
+> passing to the authors alongside the gap.  THREE mechanized lemmas existed
+> only to repair the missing priority, and all three collapse:
+>
+> | lemma | what it did | now |
+> |---|---|---|
+> | `a_looksub_open_target_at_size` (`deco_algo/prop_decorate_sub.v`) | re-freshened a colliding binder inside the re-rooting — and that branch was the ONLY reason it was an induction on the SOURCE'S SIZE | two `exfalso`s |
+> | `a_looksub_forall_r_first` (`ext_algo/prop_run_complete.v`) | the re-rooting itself: four rebindings + two context exchanges | two `exfalso`s |
+> | `e_looksub_open_forall_l_first` (`ext_algo/prop_look_pair.v`) | the same, e-side, with a SUPPLY exchange as well | two `exfalso`s |
+>
+> ⛔ **What it did cost** is Lemma E.17's own proof, and in FIVE places, not
+> the one this entry predicted: the `Sub-ForallR` α-stack step, and — not
+> anticipated — both `Sub-ForallL` rows and both `Sub-UnivGhostL` rows, where
+> the counterpart is the lemma's own parameter.  ⚠️ `SI-ForallL`'s published
+> `guarded{P_0} or P_0 = □` does NOT discharge those four: it constrains the
+> TOP-LEVEL collection call, while the induction descends under `Sub-ForallR`
+> where the counterpart IS a `∀`.  Anyone writing this proof on paper meets
+> the same four cases.
+>
+> ⭐ **The repair, in one line**: where `LS-ForallL` is blocked, PEEL THE
+> COUNTERPART FIRST and carry the solve across the peel.  The collected
+> constraints move in exactly ONE cell — the α-STACK leaf, where `LS-Var`
+> deposits the counterpart itself — and there the two peels must agree on ONE
+> opener.  They can: the solve's opener is forced (`SS-ForallR` hands its own
+> binder back) but it can be SWAPPED, because it dodges both the block and the
+> context and the output is scoped by those.
+>
+> ⛔ **`cex/cex_looksub_not_det.v` is RETRACTED by the guard** — its exhibit is
+> precisely the overlap removed.  Its proof text is preserved in git at
+> `remech`'s parent of the guard commit; see "WHERE THE RETRACTED FILES WENT".
+
 **What the paper says.**  `SI-ForallL` (`full-algo-spec.tex:835-838`) carries
 the premise
 
@@ -1063,6 +1100,13 @@ repaired.  Both proof texts are preserved in git at commit **`eabf308`**.
 |---|---|---|
 | `cex/probe_extract_supply_drift.v` | `e_extract_det_false` — `e_extract` is not deterministic up to a renaming, because at an α-FREE subject against a `∀` counterpart both `LS-Absent` (spends nothing) and `LS-ForallR` (draws an opener) fire and both emit the empty collection | the absence-first guard landed on `e_looksub`/`e_lookeq`'s five leaking rows, so the second derivation cannot be built.  ⭐ Its POSITIVE replacement is `e_looksub_lookeq_absent_pins` (`ext_algo/prop_look.v` §2c): at an α-free subject the collection returns `Ξ = ·`, `𝒞 = ·` AND the supply unchanged, hypothesis-free — which is precisely the conjunct this file refuted |
 | `cex/probe_sub_supply_drift.v` | `e_sub_det_false` — the same drift REACHES SUBTYPING through `SI-ForallL`, so level 6's motive is false at its supply conjunct.  ⭐ It closed the one step of the §8c.13 diagnosis that had been argued by INSPECTION | same guard.  It was written as the GATE for the repair — the whole plan rested on the inspection step, so it was machine-checked first and the repair only then begun.  Having done its job it is retracted with the file it was checking |
+
+⚙ **AND A THIRD WENT THE SAME WAY (2026-08-18)** — same reason again: it
+refutes a rule set, and the rule set was repaired.
+
+| deleted file | what it proved | why it is retracted |
+|---|---|---|
+| `cex/cex_looksub_not_det.v` | `cex_looksub_not_det` — the COLLECTION is not deterministic: at subject `∀_. α`, counterpart `∀_. 1`, mode `TC`, `LS-ForallL` first collects `[≼TC ∀_.1]` and `LS-ForallR` first collects `[≼TC 1]`, and both lists are CLOSED, so no renaming absorbs the difference | the ForallR-PRIORITY guard landed on `LS-ForallL` / `LS-UnivGhostL` and their `e_` twins (`forall_r_off`, frost/def_shapes.v), so the ForallL-first derivation cannot be built.  ⭐ Its POSITIVE replacements are `a_looksub_open_target` (under the guard, only Var / Absent / ForallR can root a collection at a ghost-free `∀` counterpart in check mode, so one peel is an INVERSION) and its solve-side mirror `a_solve_sub_open_target` |
 
 ⛔ **What this does NOT settle.**  The mech's `sub_shield` premise was
 invented as the repair of the second of these, and P6-Sv / P6-Ss / P6-L

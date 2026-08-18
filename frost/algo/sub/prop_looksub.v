@@ -549,15 +549,20 @@ Proof.
     apply a_looksub__absent; exact Hni.
 Qed.
 
+(** ⚠️ [forall_r_off] is a REAL premise here, not an admissible one: the
+    ForallR-PRIORITY guard changes WHICH RULE fires, so unlike the
+    absence-first guard it cannot be reinstated by a case split.  Only the
+    [α ∈ ftv] conjunct is discharged below. *)
 Lemma a_looksub_forall_l_adm : forall Θ α m P P' Ξ C β,
   P' <> pskl_hole ->
+  forall_r_off m P' ->
   β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
                      `union` ftvar_in_pskl P') ->
   {{ ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β))
      ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
   {{ Θ ⊢ (pskl_all_syn P) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a.
 Proof.
-  intros Θ α m P P' Ξ C β Hnh Hβ Hp.
+  intros Θ α m P P' Ξ C β Hnh Hfr Hβ Hp.
   destruct (AtomSetProperties.In_dec α (ftvar_in_pskl (pskl_all_syn P)))
     as [Hin | Hni].
   - apply a_looksub__forall_l with (β := β); assumption.
@@ -624,6 +629,97 @@ Proof.
     apply a_lookeq__absent; exact Hni.
 Qed.
 
+
+(* ===================================================================== *)
+(*  §2c  ⭐⭐ THE TARGET PEEL — what the ForallR-PRIORITY GUARD buys        *)
+(*                                                                        *)
+(*  Under the guard, a collection at a GHOST-FREE ∀ counterpart in CHECK   *)
+(*  mode has only THREE possible roots: LS-Var, LS-Absent and LS-ForallR.  *)
+(*  LS-Check wants a [guarded] counterpart and a ∀ is not guarded,         *)
+(*  LS-Vacuous wants a ghost one, LS-Arrow an arrow — and LS-ForallL /     *)
+(*  LS-UnivGhostL are exactly what the guard forbids there.  So such a     *)
+(*  derivation ALREADY peels the counterpart, and one peel is an           *)
+(*  INVERSION.                                                             *)
+(* ===================================================================== *)
+
+(** ⭐ AT THE LOOKED-FOR VARIABLE ITSELF ONLY LS-Var FIRES — and it is the
+    ◇-DISPATCH GUARD that makes this true, since LS-Vacuous, LS-Check and
+    LS-ForallR all carry [_ <> pskl_var_f α].  The collection at the leaf is
+    therefore PINNED, which is what lets the α-stack cell be rebuilt at a
+    counterpart the run has moved. *)
+Lemma a_looksub_var_subject_inv : forall Θ α m P' Ξ 𝒞,
+  {{ Θ ⊢ (pskl_var_f α) ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
+  Ξ = nil /\ 𝒞 = a_cstr_sub m P' :: nil.
+Proof.
+  intros Θ α m P' Ξ 𝒞 H.
+  remember (pskl_var_f α) as S eqn:HS.
+  destruct H; try discriminate HS.
+  - (* LS-Var *) split; reflexivity.
+  - (* LS-Absent — the subject IS the looked-for variable *)
+    exfalso. subst P. simpl in H. clear - H. fsetdec.
+  - (* LS-Vacuous — ◇-dispatch guard *) exfalso. congruence.
+  - (* LS-Check — ◇-dispatch guard *) exfalso. congruence.
+  - (* LS-ForallR — ◇-dispatch guard *) exfalso. congruence.
+Qed.
+
+(** ⭐⭐ ONE PEEL OF THE COUNTERPART, and the block and the collected
+    constraints come through UNTOUCHED.
+
+    ⚠️ The opener is EXISTENTIAL, and deliberately so: [LS-ForallR] LEAKS its
+    binder into 𝒞, so re-picking it would replace 𝒞 by a substitution
+    instance.  Handing the rule's OWN binder back keeps the outputs on the
+    nose, which is what the P6-Ss consumer needs (its other conjuncts are
+    stated about that very 𝒞).
+
+    ⚠️ ONE cell escapes: at the looked-for variable itself LS-Var fires and the
+    deposited constraint NAMES the counterpart, so it moves with it.  That is
+    the α-STACK leaf, and the statement RETURNS it as the left disjunct rather
+    than excluding it — which spares every consumer a decidable equality on
+    skeletons. *)
+Lemma a_looksub_open_target : forall Θ α P B Ξ 𝒞,
+  {{ Θ ⊢ P ≼[ α , mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ 𝒞 }}a ->
+  pskl_ghost_free (pskl_all_syn B) ->
+  (P = pskl_var_f α /\ Ξ = nil
+     /\ 𝒞 = a_cstr_sub mode_tc (pskl_all_syn B) :: nil)
+  \/ (exists β,
+        β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
+                           `union` ftvar_in_pskl B)
+        /\ {{ ((β ~ abind_tvar) ++ Θ) ⊢ P ≼[ α , mode_tc ]
+              (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ 𝒞 }}a).
+Proof.
+  intros Θ α P B Ξ 𝒞 H Hgf.
+  remember (pskl_all_syn B) as T eqn:HT.
+  remember mode_tc as m0 eqn:Hm0.
+  destruct H as
+    [ Θ0 α0 m1 Q                                       (* LS-Var *)
+    | Θ0 α0 m1 Q Q' Hnf                                (* LS-Absent *)
+    | Θ0 α0 m1 Q Hnv0                                  (* LS-Vacuous *)
+    | Θ0 α0 A0 B0 Ξ0 C0 Hgf0 Hne0 Hg1 Hg2 Hp           (* LS-Check *)
+    | Θ0 α0 A0 B0 Ξ0 C0 b Hgf0 Hfr0 Hocc0 Hnv0 Hp      (* LS-ForallR *)
+    | Θ0 α0 m1 P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 Hp2       (* LS-Arrow *)
+    | Θ0 α0 m1 Q Q' Ξ0 C0 b Hfr0 Hocc0 Hnh0 Hfr3 Hp    (* LS-ForallL *)
+    | Θ0 α0 m1 Q Q' Ξ0 C0 Hnh0 Hfr3 Hp ];              (* LS-UnivGhostL *)
+    try discriminate HT; try discriminate Hm0.
+  - (* LS-Var — THE α-STACK LEAF: the deposited constraint names the
+       counterpart, so it moves with the peel *)
+    left. rewrite HT. split; [ reflexivity | split; reflexivity ].
+  - (* LS-Absent — the subject stays α-free, so any opener serves *)
+    right.
+    pick fresh β for
+      (add α0 (ftvar_in_aenv Θ0 `union` ftvar_in_pskl Q
+                 `union` ftvar_in_pskl B)).
+    exists β. split; [ clear - Fr; solve_notin | ].
+    apply a_looksub__absent; exact Hnf.
+  - (* LS-Check — a ∀ counterpart is never [guarded] *)
+    exfalso. rewrite HT in Hg2. inversion Hg2.
+  - (* LS-ForallR — THE ROW: hand its own binder back *)
+    right. injection HT as HTB; subst B0.
+    exists b. split; [ exact Hfr0 | exact Hp ].
+  - (* LS-ForallL — ⛔ blocked by the ForallR-PRIORITY GUARD *)
+    exfalso. rewrite HT in Hgf. exact (Hfr3 B HT Hm0 Hgf).
+  - (* LS-UnivGhostL — likewise *)
+    exfalso. rewrite HT in Hgf. exact (Hfr3 B HT Hm0 Hgf).
+Qed.
 
 (* ===================================================================== *)
 (*  §4 / §4b — THE PAPER'S LEMMA E.8, "Stability of constraint collection" *)
@@ -778,13 +874,15 @@ Proof.
           change (ftvar_in_pskl (pskl_all_syn (subst_pskl_in_pskl P0 β0 P)))
             with (ftvar_in_pskl (subst_pskl_in_pskl P0 β0 (pskl_all_syn P)));
           apply ftvar_in_pskl_subst_keep; assumption
-        | (* the COUNTERPART is carried verbatim *) assumption | ].
+        | (* the COUNTERPART is carried verbatim *) assumption
+        | (* …so the ForallR-priority guard rides through too *) assumption
+        | ].
       rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
         [ | auto | assumption ].
       apply H; auto. match goal with Hsc : ftvar_in_pskl P0 [<=] _ |- _ =>
       clear - Hsc; cbn; fsetdec end.
   - (* LS-UnivGhostL *)
-    apply a_looksub__univ_ghost_l; [ assumption | auto ].
+    apply a_looksub__univ_ghost_l; [ assumption | assumption | auto ].
   - (* LE-Var *)
     destruct_if; [ exfalso; congruence | apply a_lookeq__var ].
   - (* LE-Absent *)
@@ -1027,14 +1125,14 @@ Proof.
       * apply (IH1 Pa βg Pg); solve [ assumption | reflexivity ].
       * apply (IH2 Pb βg Pg); solve [ assumption | reflexivity ].
   - (* LS-ForallL *)
-    intros Θ α m P P' Ξ C β Hsc Hocc Hnh Hpre IH Pu βg Pg Heq Hβ Hβin Hα HlcPg HlcPu.
+    intros Θ α m P P' Ξ C β Hsc Hocc Hnh Hfr Hpre IH Pu βg Pg Heq Hβ Hβin Hα HlcPg HlcPu.
     destruct Pu as [ | n | β' | Pa Pb | Pb | | Pb ]; cbn in Heq;
       try discriminate Heq.
     + destruct (β' == βg) as [-> | Hne']; [ | discriminate Heq ].
       subst Pg.
       eapply a_looksub_subst_var;
         [ apply a_looksub__forall_l with (β := β);
-            [ exact Hsc | exact Hocc | exact Hnh | exact Hpre ]
+            [ exact Hsc | exact Hocc | exact Hnh | exact Hfr | exact Hpre ]
         | assumption | assumption ].
     + inversion HlcPu as [ | | | ? Hopen | | ]; subst.
       injection Heq as Heq0. subst P.
@@ -1043,24 +1141,24 @@ Proof.
         [ pose proof (ftvar_in_pskl_subst_pskl_in_pskl_lower Pb Pg βg) as Hlow;
           clear - Hsc Hlow Hne1; fsetdec
         | eapply ftvar_in_pskl_subst_reflect; [ exact Hα | exact Hocc ]
-        | exact Hnh | ].
+        | exact Hnh | exact Hfr | ].
       apply (IH (open_pskl_wrt_pskl Pb (pskl_var_f β)) βg Pg);
         [ apply subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
             [ exact Hne1 | assumption ]
         | assumption | clear - Hβin; cbn; fsetdec
         | assumption | assumption | apply Hopen ].
   - (* LS-UnivGhostL *)
-    intros Θ α m P P' Ξ C Hnh Hpre IH Pu βg Pg Heq Hβ Hβin Hα HlcPg HlcPu.
+    intros Θ α m P P' Ξ C Hnh Hfr Hpre IH Pu βg Pg Heq Hβ Hβin Hα HlcPg HlcPu.
     destruct Pu as [ | n | β' | Pa Pb | Pb | | Pb ]; cbn in Heq;
       try discriminate Heq.
     + destruct (β' == βg) as [-> | Hne']; [ | discriminate Heq ].
       subst Pg.
       eapply a_looksub_subst_var;
-        [ apply a_looksub__univ_ghost_l; [ exact Hnh | exact Hpre ]
+        [ apply a_looksub__univ_ghost_l; [ exact Hnh | exact Hfr | exact Hpre ]
         | assumption | assumption ].
     + inversion HlcPu as [ | | | | | ? HlcPb ]; subst.
       injection Heq as Heq0. subst P.
-      apply a_looksub__univ_ghost_l; [ exact Hnh | ].
+      apply a_looksub__univ_ghost_l; [ exact Hnh | exact Hfr | ].
       apply (IH Pb βg Pg); solve [ assumption | reflexivity ].
   - (* LE-Var *)
     intros Θ α P Pu βg Pg Heq Hβ Hβin Hα HlcPg HlcPu.
@@ -1367,12 +1465,13 @@ Proof.
       | apply IH; apply Hcons; exact Hm ].
   - (* LS-Arrow *) intros Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 IH1 Hp2 IH2 Θ' Hm.
     apply a_looksub__arrow; [ apply IH1 | apply IH2 ]; exact Hm.
-  - (* LS-ForallL *) intros Θ α m P P' Ξ C β Hfr Hocc Hnh Hp IH Θ' Hm.
+  - (* LS-ForallL *) intros Θ α m P P' Ξ C β Hfr Hocc Hnh Hfr3 Hp IH Θ' Hm.
     apply a_looksub__forall_l with (β := β);
-      [ clear - Hfr Hm; fsetdec | exact Hocc | exact Hnh
+      [ clear - Hfr Hm; fsetdec | exact Hocc | exact Hnh | exact Hfr3
       | apply IH; apply Hcons; exact Hm ].
-  - (* LS-UnivGhostL *) intros Θ α m P P' Ξ C Hnh Hp IH Θ' Hm.
-    apply a_looksub__univ_ghost_l; [ exact Hnh | apply IH; exact Hm ].
+  - (* LS-UnivGhostL *) intros Θ α m P P' Ξ C Hnh Hfr3 Hp IH Θ' Hm.
+    apply a_looksub__univ_ghost_l;
+      [ exact Hnh | exact Hfr3 | apply IH; exact Hm ].
   - (* LE-Var *) intros. apply a_lookeq__var.
   - (* LE-Absent *) intros Θ α P P' Hnf Θ' Hm.
     apply a_lookeq__absent; exact Hnf.
@@ -1452,9 +1551,10 @@ Proof.
   - (* LS-Arrow *) intros Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 IH1 Hp2 IH2 γ Hγ.
     rewrite dom_app.
     pose proof (IH1 γ Hγ); pose proof (IH2 γ Hγ). fsetdec.
-  - (* LS-ForallL *) intros Θ α m P P' Ξ C β Hfr Hocc Hnh Hp IH γ Hγ.
+  - (* LS-ForallL *) intros Θ α m P P' Ξ C β Hfr Hocc Hnh Hfr3 Hp IH γ Hγ.
     apply IH; apply Hgrow; exact Hγ.
-  - (* LS-UnivGhostL *) intros Θ α m P P' Ξ C Hnh Hp IH γ Hγ. exact (IH γ Hγ).
+  - (* LS-UnivGhostL *) intros Θ α m P P' Ξ C Hnh Hfr3 Hp IH γ Hγ.
+    exact (IH γ Hγ).
   - (* LE-Var *) intros; simpl; fsetdec.
   - (* LE-Absent *) intros; simpl; fsetdec.
   - (* LE-Vacuous *) intros; simpl; fsetdec.
@@ -1753,8 +1853,8 @@ Proof.
       | Θ α A B Ξ0 C0 Hgf0 Hne Hg Hg0 Hp          (* LS-Check *)
       | Θ α A B Ξ0 C0 b Hgf0 Hfr0 Hocc0 Hnv0 Hp   (* LS-ForallR *)
       | Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 Hp2   (* LS-Arrow *)
-      | Θ α m Q Q' Ξ0 C0 b Hfr0 Hocc0 Hnh0 Hp     (* LS-ForallL *)
-      | Θ α m Q Q' Ξ0 C0 Hp ];                    (* LS-UnivGhostL *)
+      | Θ α m Q Q' Ξ0 C0 b Hfr0 Hocc0 Hnh0 Hfr3 Hp (* LS-ForallL *)
+      | Θ α m Q Q' Ξ0 C0 Hnh0 Hfr3 Hp ];          (* LS-UnivGhostL *)
       cbn in Hn, Hα'P |- *.
     - (* LS-Var *)
       destruct_if as [_ | Hne]; [ | exfalso; congruence ].
@@ -1855,7 +1955,7 @@ Proof.
           by exact HbQ.
         apply a_looksub__forall_l with (β := δ);
           [ look_fresh | apply ftv_subst_var_in; exact Hocc0
-          | assumption | ].
+          | assumption | assumption | ].
         rewrite (subst_pskl_in_pskl_open_pskl_wrt_pskl_var Q (pskl_var_f b))
           by (solve [ congruence | constructor ]).
         apply IHs;
@@ -1863,14 +1963,14 @@ Proof.
           | exact H1 | look_fresh | exact Hα'Ξ | exact Hα'C ].
       + apply a_looksub__forall_l with (β := b);
           [ look_fresh | apply ftv_subst_var_in; exact Hocc0
-          | assumption | ].
+          | assumption | assumption | ].
         rewrite (subst_pskl_in_pskl_open_pskl_wrt_pskl_var Q (pskl_var_f α'))
           by (solve [ congruence | constructor ]).
         apply IHs;
           [ rewrite size_pskl_open_pskl_wrt_pskl_var; lia
           | exact Hp | look_fresh | exact Hα'Ξ | exact Hα'C ].
     - (* LS-UnivGhostL *)
-      apply a_looksub__univ_ghost_l; [ assumption | ]; apply IHs;
+      apply a_looksub__univ_ghost_l; [ assumption | assumption | ]; apply IHs;
         solve [ lia | assumption ]. }
   (* ==================== the [a_lookeq] half ==================== *)
   { intros Θ α P P' Ξ 𝒞 Hn Hd α' Hα'P Hα'Ξ Hα'C.

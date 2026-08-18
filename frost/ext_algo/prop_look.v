@@ -261,10 +261,10 @@ Proof.
     split; [ reflexivity | ]. split; [ reflexivity | ].
     clear - HS1 HS2. fsetdec.
   - (* LS-ForallL — ⭐ GUARDED *)
-    intros S0 S1 Θ α m P P' Ξ C β Hβ Hocc Hnh He IH Habs.
+    intros S0 S1 Θ α m P P' Ξ C β Hβ Hocc Hnh Hfr He IH Habs.
     exfalso. clear - Hocc Habs. fsetdec.
   - (* LS-UnivGhostL *)
-    intros S0 S1 Θ α m P P' Ξ C Hnh He IH Habs.
+    intros S0 S1 Θ α m P P' Ξ C Hnh Hfr He IH Habs.
     apply IH. simpl in Habs. exact Habs.
 
   - (* LE-Var — the subject IS α *)
@@ -368,18 +368,20 @@ Proof.
     + apply IH1. clear - Hcov. fsetdec.
     + apply IH2. clear - Hcov Hgrow. fsetdec.
   - (* LS-ForallL *)
-    intros S0 S1 Θ α m P P' Ξ C β Hβ Hocc Hnh Hl IH Hcov.
+    intros S0 S1 Θ α m P P' Ξ C β Hβ Hocc Hnh Hfr Hl IH Hcov.
     apply a_looksub__forall_l with (β := β).
     + simpl in Hcov. clear - Hβ Hcov. fsetdec.
     + exact Hocc.
     + exact Hnh.
+    + exact Hfr.
     + apply IH.
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f β)) as Hup.
       simpl in Hup, Hcov |- *.
       clear - Hup Hcov. fsetdec.
   - (* LS-UnivGhostL *)
-    intros S0 S1 Θ α m P P' Ξ C Hnh Hl IH Hcov.
-    apply a_looksub__univ_ghost_l; [ exact Hnh | ]. apply IH. simpl in Hcov.
+    intros S0 S1 Θ α m P P' Ξ C Hnh Hfr Hl IH Hcov.
+    apply a_looksub__univ_ghost_l; [ exact Hnh | exact Hfr | ].
+    apply IH. simpl in Hcov.
     clear - Hcov. fsetdec.
 
   - (* LE-Var *) intros. apply a_lookeq__var.
@@ -538,17 +540,18 @@ Proof.
     exists S2'. split; [ exact Heq2 | ].
     eapply e_looksub__arrow; [ exact Hd1' | exact Hd2' ].
   - (* LS-ForallL *)
-    intros * Hβ Hocc Hnh Hd IH S0' Heq.
+    intros * Hβ Hocc Hnh Hfr Hd IH S0' Heq.
     destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
       as [S1' [Heq1 Hd']].
     exists S1'. split; [ exact Heq1 | ].
     apply e_looksub__forall_l with (β := β);
-      [ rewrite Heq; assumption | exact Hocc | exact Hnh | exact Hd' ].
+      [ rewrite Heq; assumption | exact Hocc | exact Hnh | exact Hfr
+      | exact Hd' ].
   - (* LS-UnivGhostL *)
-    intros * Hnh Hd IH S0' Heq.
+    intros * Hnh Hfr Hd IH S0' Heq.
     destruct (IH S0' Heq) as [S1' [Heq1 Hd']].
     exists S1'. split; [ exact Heq1 | ].
-    apply e_looksub__univ_ghost_l; [ exact Hnh | exact Hd' ].
+    apply e_looksub__univ_ghost_l; [ exact Hnh | exact Hfr | exact Hd' ].
   - (* LE-Var *)
     intros * Heq. eexists. split; [ exact Heq | ].
     apply e_lookeq__var.
@@ -694,22 +697,24 @@ Proof.
     rewrite swap_aenv_app, swap_cstrs_app.
     eapply e_looksub__arrow; eassumption.
   - (* LS-ForallL — LEAKS *)
-    intros S0 S1 Θ α m P P' Ξ C β Hβ Hocc Hnh Hl IH S0' Heq. simpl.
+    intros S0 S1 Θ α m P P' Ξ C β Hβ Hocc Hnh Hfr Hl IH S0' Heq. simpl.
     destruct (IH (add (swap_atom a b β) S0')) as [S1' [HS1 Hd]];
       [ apply eq_swap_atoms_add; exact Heq | ].
     exists S1'. split; [ exact HS1 | ].
     apply e_looksub__forall_l with (β := swap_atom a b β);
       [ eapply swap_notin_eq; eassumption
       | apply swap_pskl_ftv_in; exact Hocc
-      | apply swap_pskl_neq_hole; exact Hnh | ].
+      | apply swap_pskl_neq_hole; exact Hnh
+      | apply forall_r_off_swap; exact Hfr | ].
     rewrite swap_pskl_open_var in Hd. exact Hd.
   - (* LS-UnivGhostL *)
-    intros S0 S1 Θ α m P P' Ξ C Hnh Hl IH S0' Heq. simpl.
+    intros S0 S1 Θ α m P P' Ξ C Hnh Hfr Hl IH S0' Heq. simpl.
     destruct (IH _ Heq) as [S1' [HS1 Hd]].
     exists S1'. split;
       [ exact HS1
       | apply e_looksub__univ_ghost_l;
-          [ apply swap_pskl_neq_hole; exact Hnh | exact Hd ] ].
+          [ apply swap_pskl_neq_hole; exact Hnh
+          | apply forall_r_off_swap; exact Hfr | exact Hd ] ].
 
   (* ------------------------- e_lookeq -------------------------- *)
   - (* LE-Var *)

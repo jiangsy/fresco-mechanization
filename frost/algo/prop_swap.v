@@ -900,6 +900,21 @@ Proof.
   rewrite <- (swap_pskl_invol a b P), He. reflexivity.
 Qed.
 
+(** …and its ForallR sibling, for the ForallR-PRIORITY GUARD: a swap is
+    structural, so it maps a [∀] to a [∀] and preserves ghost-freeness in
+    both directions ([pskl_ghost_free_swap] + [swap_pskl_invol]). *)
+Lemma forall_r_off_swap : forall a b m P',
+  forall_r_off m P' -> forall_r_off m (swap_pskl a b P').
+Proof.
+  intros a b m P' H B Heq Hm.
+  destruct P' as [ | | | | P0 | | ]; simpl in Heq; try discriminate.
+  injection Heq as Heq0; subst B.
+  intro Hgf. apply (H P0 eq_refl Hm).
+  simpl in Hgf |- *.
+  apply (pskl_ghost_free_swap a b) in Hgf.
+  rewrite swap_pskl_invol in Hgf. exact Hgf.
+Qed.
+
 Local Lemma notin_add_split : forall (x y : atom) (S : atoms),
   x `notin` add y S -> x <> y /\ x `notin` S.
 Proof. intros; split; fsetdec. Qed.
@@ -975,11 +990,13 @@ Proof.
       [ swap_freshness
       | apply swap_pskl_ftv_in; assumption
       | apply swap_pskl_neq_hole; assumption
+      | apply forall_r_off_swap; assumption
       |].
     rewrite swap_pskl_open_var in H. exact H.
   - (* univ_ghost_l *)
     apply a_looksub__univ_ghost_l;
-      [ apply swap_pskl_neq_hole; assumption | auto ].
+      [ apply swap_pskl_neq_hole; assumption
+      | apply forall_r_off_swap; assumption | auto ].
   (* -------- a_lookeq -------- *)
   - (* var *) apply a_lookeq__var.
   - (* absent *) apply a_lookeq__absent. auto using swap_pskl_ftv_notin.

@@ -258,6 +258,27 @@ Proof.
   apply andb_prop in Hck; destruct Hck; split; auto.
 Qed.
 
+(** ⚙ MOVED here from prop_dec.v (2026-08-18): the runner's own dispatch
+    needs the CONVERSE direction while proving its ForallL / UnivGhostL
+    obligations, and prop_dec.v is downstream of def_look_impl.v. *)
+Lemma ghost_free_ck_complete : forall P,
+  pskl_ghost_free P -> ghost_free_ck P = true.
+Proof.
+  induction P; simpl; intros Hgf;
+    try reflexivity; try contradiction; try solve [ apply IHP; exact Hgf ].
+  destruct Hgf as [H1 H2]. apply andb_true_intro; split; auto.
+Qed.
+
+(** ⭐ The ForallR-PRIORITY GUARD read straight off the runner's failed
+    ghost-freeness test — this is what makes the two guarded rows'
+    obligations discharge from the dispatch itself. *)
+Lemma forall_r_off_ck : forall m B,
+  ghost_free_ck (pskl_all_syn B) = false -> forall_r_off m (pskl_all_syn B).
+Proof.
+  intros m B Hck. apply forall_r_off_ghosty. intro Hgf.
+  rewrite (ghost_free_ck_complete _ Hgf) in Hck. discriminate Hck.
+Qed.
+
 Fixpoint mono_ck (A : ptyp) : bool :=
   match A with
   | ptyp_unit => true
