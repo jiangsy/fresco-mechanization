@@ -1379,7 +1379,13 @@ error names the level-75 alternatives rather than the missing notation.
     `eauto` chain them.  Rows like AT-Anno / AT-Freeze / AT-App thread
     `Θ0 → Θ1 → Θ2` through two or three premises and only the FIRST link's
     input is a hypothesis; the guarded form silently matches nothing.
-  - ⛔ **STILL OPEN in (2b)**, and ⭐ **the route is cheaper than this list
+  - ✅ **CLOSED 2026-08-18 — see §8c.22.**  The route taken is the SECOND
+    one below (a direct invariant, not the bridge composition), and it cost
+    one context hypothesis instead of soundness' four premises.  The text
+    that follows is kept because its analysis of the alternative, and its
+    ⚙/⚠️ notes, are still the record of why.
+  - ⛔ **STILL OPEN in (2b)** *(as of 2026-08-14; closed 2026-08-18)*, and
+    ⭐ **the route is cheaper than this list
     assumed**: lc for the `e_pat` / `e_typing` OUTPUTS, and the
     relation-side SHAPE facts (a ForallR run's output context really is
     `Ξ ++ (α~tvar) ++ Θ1`, the abs rows' output splits at the binder marker,
@@ -4936,3 +4942,75 @@ takes its two halves as supply-threaded e-derivations, and a FOLD analog of
 transport 5 does not exist — at level 6 the halves came free because
 `SI-ForallL` already carries an `e_extract` derivation to invert, which is
 not something a raw a-side construction can supply.
+
+
+### 8c.22 ✅ §8c.2's (2b) IS CLOSED — the run preserves `lc_aenv`, and every runner's output is locally closed (2026-08-18)
+
+✅ **`make coq` rc=0, `README.v` 32/32, zero `Admitted`/`Axiom`.**
+`frost/ext_algo/prop_run_invariants.v` §4, plus one new coercion fact.
+
+**The fork (2b) left to the next session was decided as the DIRECT
+invariant** (user's call: *"(2b) is a minor problem, choose whichever is
+simpler to prove"*).  The alternative — compose the bridge with
+`a_pat_sound` / `a_typing_sound`, which already return output
+well-formedness — drags soundness' four premises (`{{ ⊢ Θ0 }}a`,
+`a_wf_pskl`, mode compatibility, `{{ Θ0 ⊢ᵉ e }}a`) into every completeness
+motive above, and each has to be re-established at every recursive call.
+The direct invariant costs ONE context hypothesis, `lc_aenv Θ0`, beside the
+`aenv_defs_mono Θ0` the tree already threads.
+
+⭐ **And it is cheap for a reason worth recording**: `lc_abind`
+(algo/prop_inc.v) sends `tvar`, `flex_mono` AND `flex_mono_def` to `True`,
+so every block the algorithm generates is `lc_aenv` outright and only the
+rows that push a TERM VARIABLE have anything to discharge.  ⚙ The predicate
+is not new — it is what `a_wf_aenv_lc_aenv` projects a well-formed context
+to; what is new is that the RUN preserves it.
+
+| § | what |
+|---|---|
+| §4 kit | `lc_abind_*`, `all_flex_mono_lc_aenv`, `a_suffix_lc_aenv`, `lc_aenv_binds` |
+| §4a | `e_assign_unify_consis_env_lc` / `e_consis_env_lc`; `e_sub_sub_flex_env_lc` / `e_sub_env_lc` |
+| §4b | `e_split_lc`, `e_split_env_lc` |
+| §4c | `e_pat_lc_env` (+ `e_pat_lc` / `e_pat_env_lc`) |
+| §4d | `e_typing_lc_env` (+ `e_typing_lc` / `e_typing_env_lc`) |
+
+#### ⭐ The one thing the typing half needed, and it did not exist
+
+`ptyp_to_pskl_lc_inv` (prop_coercions.v): local closure comes BACK through
+the painting.  The typing rules pin their subtyping and splitting premises
+to `⌈A⌉`, so what those rows hand the caller is `lc_pskl ⌈A⌉` while what the
+caller owes is `lc_ptyp A`; only the forward direction was in the tree.
+
+⚠️ **Neither induction works directly.**  On `A`, the `∀` row's IH is about
+the BODY while the goal is about its OPENING; on the `lc_pskl` derivation,
+the index is the IMAGE, so inverting it never exposes `A`'s own
+constructor.  Go through `degree`, which is indexed by binder depth and
+therefore structural: `degree_ptyp_to_pskl_inv`, then lngen's
+`lc_ptyp_of_degree` / `degree_pskl_wrt_pskl_of_lc_pskl`.
+
+#### ⚙ Two traps
+
+- ⚠️⚠️ **`eauto` indexes hints by the head symbol of their CONCLUSION.**
+  These scripts run with `lc_aenv` UNFOLDED (the `Forall` surgery needs it),
+  so a hint concluding `lc_aenv …` is never even tried — hence the
+  `all_flex_mono_lc_forall` / `a_suffix_lc_forall` restatements, whose head
+  is `Forall`.  The same reason the `Forall_cons` leaves need
+  `lc_abind_tvar` &c. in the `using` list: the residual goal is
+  `lc_abind abind_tvar`, not `True`.
+- ⚠️ **`ltac:(assumption)` as a lemma argument runs against the lemma's own
+  evar.**  `ptyp_to_pskl_lc ltac:(assumption)` fails (the index is still
+  `?A`) where `ltac:(apply ptyp_to_pskl_lc; assumption)` succeeds, because
+  the latter runs at a goal the consumer's argument type has already fixed.
+  Same species as prop_extract_det.v's "derivation before the size premise".
+- ⚙ `binds`, `lc_aenv` and `lc_abind` are all DEFINITIONS, so none of
+  `lc_aenv_binds`' three indexes is a strict implicit; the prefix is pinned
+  with `Arguments` rather than counted.
+
+#### ⛔ What (2b) still leaves for levels 7/8
+
+The SHAPE facts are NOT proved as standing invariants, and level 6 says they
+should not be: `SI-ForallR` got `split_at_tvar`'s decomposition from the
+RULE (transported along the chain), not from an invariant about outputs.
+Expect the same at `AT-AbsCheck`'s `split_at_tvar` and at the
+`pskl_readback` positions — the rule pins them.  What genuinely needed an
+invariant was local closure, and that is what §4 is.
