@@ -3963,10 +3963,34 @@ across the peel.**
   occurs only under `open_pskl_wrt_pskl`), so a positional application of the
   reorder lemmas fails.  Drive them with `edestruct` + a bracket list.
 
-#### G. What is next
+#### G. What is next — `e_extract_det`, and what it actually costs
 
-The level-6 chain is unblocked at its first step.  In order:
-`e_extract_det` (statement in git at `eabf308`, `cex/probe_extract_supply_drift.v`
-§2 — with the collection syntax-directed it is a direct induction), then §6/§7
-of `frost/ext_algo/prop_sub_complete.v` (§8c.13's recipe; §1/§3/§4 are already
-Qed), then §8's three headlines.
+The level-6 chain is unblocked: with the collection syntax-directed,
+`e_extract_det` is TRUE.  ⚠️ But "a direct induction" (the estimate in §8c.14)
+is optimistic — `e_extract` is one rule composing look → solve → guess
+(`ext_algo/def_extract.v`), so its determinism needs the three factors, and
+**only two of them exist**:
+
+| factor | where | status |
+|---|---|---|
+| `a_guess_mono_det` | `ext_algo/prop_solve_det.v` §3 | ✅ Qed |
+| `a_solve_eq_det` | `ext_algo/prop_solve_det.v` §4 | ✅ Qed |
+| `a_solve_sub_det` / `a_solve_cstr_det` | — | ⛔ MISSING |
+| `a_looksub_lookeq_det` | — | ⛔ MISSING, and it is what the guard just made TRUE |
+
+`prop_solve_det.v`'s §3/§4 are the template: `_det_n` on a size, then the
+`_det` wrapper, with `swaps_*` chains and the `flex_pairs` kit that is already
+there.  ⭐ The collection's own case analysis is now SINGLE-RULE at every cell
+— that is exactly what guard 1 (absence-first), guard 2 (◇-dispatch) and guard
+3 (ForallR-priority) between them bought — so its `_det` should follow the
+same shape with no overlap reasoning at all; `prop_sub_complete.v` §4's
+sixteen root inversions are the audit that says so.
+
+The statement to lift is preserved in git at **`eabf308`**,
+`cex/probe_extract_supply_drift.v` §2 (`Definition e_extract_det : Prop`).
+⚙ It is stated on the `e_` (supply-threaded) judgement, so the `a_`-level
+determinism above has to be composed with `e_extract_supply_respect` and
+`e_extract_swap` (`ext_algo/prop_extract.v`), both already Qed.
+
+After that: §6/§7 of `frost/ext_algo/prop_sub_complete.v` (§8c.13's recipe;
+§1/§3/§4 are already Qed), then §8's three headlines.
