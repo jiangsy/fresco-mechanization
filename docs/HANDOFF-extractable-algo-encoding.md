@@ -4139,17 +4139,41 @@ drives it with `@`.
 
 ⛔ **THE TWO SITES THAT REMAIN**, and they are the whole of what is left:
 
-1. **`algo/sub/look/prop_eq_cstr.v:4712`** — the ⫯-subject grid's
-   `P0 = pskl_var_f β0` row builds `LE-UnivGhost2`.  Under (B) it must SPLIT
-   on β0's hattedness: RIGID keeps the row (`flex_r_off_rigid`), FLEXIBLE must
-   be re-derived through `LE-FlexR`.  ⭐ The mirror to copy is the ARROW
-   grid's own flex-P0 block (`:2398-2530`), which already splits
-   `a_binds_tvar β0` and kills its RIGID half as refinement-absurd — here BOTH
-   halves are live, so the block is COPIED rather than moved.  It is
-   self-contained: `𝒞 := [≐ γ̂]`, `Ξc := γ̂ ~ flex_mono`, and a Pi-grid for the
-   solve (`:2701-2810`: `SE-FlexR` at the guess / `SE-GhostL` at `◇` /
-   `SE-GhostGuarded` at `∀◇`).  ⚙ Its two neighbours (`P0 = unit` at `:4688`,
-   `P0 = arrow` at `:4737`) need only `flex_r_off_nonvar`.
+1. **`algo/sub/look/prop_eq_cstr.v:4737`** — ⭐ **now ONE LEAF, not a case**
+   (third pass, `remech-guard4b-wip` `244971e`).  A new lemma does the work:
+
+   ```coq
+   (* algo/sub/prop_looksub.v §2c *)
+   Lemma a_lookeq_tophole_flex_counterpart : forall Θ α P β Ξ 𝒞,
+     {{ Θ ⊢ P ∼[ α ] (pskl_var_f β) ⤳ Ξ ⨾ 𝒞 }}a ->
+     a_flex_tvar Θ β -> P <> pskl_var_f α ->
+     {{ Θ ⊢ (pskl_tophole P) ∼[ α ] (pskl_var_f β) ⤳ Ξ ⨾ 𝒞 }}a.
+   ```
+
+   ⭐⭐ **At a FLEXIBLE counterpart a ⫯ on the subject is INVISIBLE.**  At a
+   variable counterpart only four rows can root a collection — `LE-Var` (the
+   excluded leaf), `LE-UnivGhost2` (⛔ barred — that IS the guard), and
+   `LE-Absent` / `LE-FlexR`, both of which read the subject ONLY through
+   `ftv` and `≠ α`, neither of which a ⫯ changes.  The outputs therefore come
+   through ON THE NOSE and the completeness chain does not re-derive the
+   cell.  The row becomes a two-line split: RIGID β0 keeps `LE-UnivGhost2`
+   (`flex_r_off_rigid` + `binds_unique`), FLEXIBLE β0 hands the IH's own run
+   to the lemma.  Its two neighbours (`P0 = unit`, `P0 = arrow`) take
+   `flex_r_off_nonvar`.
+
+   ⛔ **THE RESIDUAL OBLIGATION IS `⌊R0⌋ˢ <> pskl_var_f α`** — the sub-case
+   where the ⫯-headed subject is `⫯α` itself.  ⚠️ It is NOT derivable from the
+   context (checked: `HscopeS`, `HαR`, `HαΘ0` and `Hrhobody` all admit
+   `R0 = α`), and it is exactly the leaf where the two rows genuinely
+   disagree: the stripped run is `LE-Var` and collects the RAW counterpart
+   `[≐ β̂]` where the ⫯-headed one must INVENT `[≐ γ̂]`.  That branch has to
+   build the FlexR answer itself, mirroring the ARROW grid's flex-P0 block
+   (`:2398-2860`) — `𝒞 := [≐ γ̂]`, `Ξc := γ̂ ~ flex_mono`, then either the
+   ρ-VARIABLE arm (`:2467-2536`) or the CLEAN arm's Pi-grid (`:2537-2810`).
+   ⚙ Everything that block needs is already in scope at the leaf; the block is
+   subject-generic apart from its freshness unions and its
+   `ad_pat_consis_rsubst_psia_mono` call, **so the cheapest route is to FACTOR
+   it out of the arrow grid and call it from both**.
 2. **`deco_algo/prop_soundness_sub.v:296`** — shrinks the run's context to
    `·`, to make an opener's `ftvar_in_aenv` freshness vacuous.  The scoped
    condition asks only `~ a_flex_tvar Θl β` for β in the counterpart, and
