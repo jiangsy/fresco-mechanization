@@ -3827,3 +3827,172 @@ target and repair E.17's `Sub-ForallR` branch; (2) land `P' ≠ ◇` on
 encodings; (3) land the ForallR-priority split; (4) `e_extract_det` is then a
 direct induction and level 6 is level 5's shape verbatim (§8c.13's plan, §6/§7
 of `prop_sub_complete.v`, whose §1/§3/§4 are already Qed).
+
+### 8c.15 ⚙ GUARD 3, THE ForallR-PRIORITY SPLIT — landed and green on 14 of 15 files; P6-Ss is the one owed, and its price is FIVE MEASURED OBLIGATIONS, not one (2026-08-18)
+
+**Where the work is.**  Branch **`remech-guard3-wip`**, commit **`d78d8f6`**,
+marked `[WIP — DOES NOT BUILD]`.  `remech` itself is untouched and GREEN
+(`make coq` rc=0, README 32/32).  The branch carries the rule change, the
+whole kit, and the fourteen repaired files; `frost/algo/sub/look/prop_sub_cstr.v`
+(P6-Ss) is reverted there to its pre-guard state and is the single file owed.
+Cherry-pick the branch onto `remech` when §D below is written.
+
+#### A. The guard, and what it is stated on
+
+```coq
+(* frost/def_shapes.v *)
+Definition forall_r_off (m : mode) (P' : pskl) : Prop :=
+  forall B, P' = pskl_all_syn B -> m = mode_tc ->
+    ~ pskl_ghost_free (pskl_all_syn B).
+```
+
+"`LS-ForallR` does not apply at this counterpart and mode" — the row fires
+exactly at a GHOST-FREE `∀` counterpart in CHECK mode, and
+`constr_collect_sub` commits it at type.ml:663 before `ForallL` (:680) and
+`UnivGhostL` (:690).  It sits on **`a_looksub__forall_l`**,
+**`a_looksub__univ_ghost_l`** and their `e_` twins — four rule sites, two
+encodings — and on nothing else.
+
+⭐ **`a_lookeq` owes NOTHING**, and that is checked, not assumed:
+`e_lookeq_impl`'s dispatch (`def_look_impl.v:180-320`) is already
+syntax-directed on the (subject, counterpart) SHAPE PAIR, and the two rows
+that look like overlaps are excluded by their own guards — `LE-UnivGhost2` and
+`LE-UnivGhostR` both demand a `guarded` side, and `guarded_pskl` is
+`unit | var | arrow`, so neither meets a `∀`.
+
+⚠️ **NOT admissible**, unlike the absence-first guard: the two rows genuinely
+disagree (`[≼TC B[β]]` against `[≼TC ∀B]`), which is exactly what
+`cex/cex_looksub_not_det.v` exhibits.  That file is therefore RETRACTED BY
+THIS GUARD and must be deleted when the guard lands; it is still present on
+`remech` because the guard is not yet there.
+
+#### B. ⭐ IT PAYS FOR ITSELF TWICE — two lemmas collapse to `exfalso`
+
+Both existed only to REPAIR the priority the rules did not state, and both
+lose their hard branch outright:
+
+| lemma | what dies |
+|---|---|
+| `a_looksub_open_target_at_size` (`deco_algo/prop_decorate_sub.v:2620`) | its `LS-ForallL` branch re-freshened a colliding binder, and that branch was the ONLY reason the lemma had to be an induction on the SOURCE'S SIZE |
+| `a_looksub_forall_r_first` (`ext_algo/prop_run_complete.v:503`) | the reorder itself — four rebindings (`a_looksub_rebind_l/_r`) and two `a_looksub_ctx_exchange` steps — replaced by the observation that the left rules can no longer be the root |
+
+Read forwards: **the guard is the statement those two lemmas were proving.**
+
+#### C. The kit (all on the branch; do not rebuild)
+
+| where | what |
+|---|---|
+| `frost/def_shapes.v` | `forall_r_off`, and its three discharge lemmas `_nontc` / `_nonall` / `_ghosty` — between them exactly the three ways a ForallL / UnivGhostL branch is reached |
+| `frost/prop_basic.v` | `pskl_ghost_free_subst_inv` (the substitution twin of `pskl_ghost_free_open_rec_inv`); `forall_r_off_subst_var`, `forall_r_off_open_var` |
+| `frost/algo/prop_swap.v` | `forall_r_off_swap` |
+| `frost/ext_algo/def_dec.v` | `forall_r_off_ck`, plus `ghost_free_ck_complete` MOVED here from `prop_dec.v` — the runner's own obligations need it and `prop_dec.v` is DOWNSTREAM of `def_look_impl.v` |
+| `frost/ext_algo/prop_solve_rel.v` | `rel_pskl_all_syn_r_inv`, `rel_pskl_forall_r_off` |
+| `frost/algo/sub/prop_looksub.v` | `a_looksub_forall_l_adm` gains `forall_r_off m P'` as a REAL premise (only the `α ∈ ftv` conjunct stays admissible) |
+
+⛔ **`forall_r_off_subst` for an ARBITRARY substitute is FALSE** — `P' = γ`
+satisfies the guard vacuously and `P'[∀_.1/γ]` does not.  Only the VARIABLE
+form is true, and it is the only one the tree needs: every collection rule
+that moves the counterpart moves it by a renaming.
+
+#### D. ⛔ WHAT IS OWED: P6-Ss, and the price is FIVE sites, not one
+
+§8c.14 predicted ONE obstruction — `alpha_stack_looksub` and Lemma E.17's
+`Sub-ForallR` stack branch.  Measured by shelving every guard goal in
+`a_looksub_solve_complete_gen` and reading the survivors off one run, it is
+**five**, and four of them are somewhere else:
+
+| # | site | goal | status |
+|---|---|---|---|
+| 1 | `alpha_stack_looksub` (`prop_sub_cstr.v:379`) | — | takes `forall_r_off m P0` as a hypothesis; TRIVIAL |
+| 2 | E.17 `Sub-ForallR`, α-stack branch (`:1367`) | `forall_r_off mode_tc (∀⌈A0⌉)` | **FALSE** — `⌈A0⌉` is ghost-free by construction (`ptyp_to_pskl_ghost_free`) |
+| 3,4 | `Sub-ForallL` rows, tagged and untagged (`:2551`, `:3084`) | `forall_r_off M P0` | not derivable — `P0` is the lemma's own target parameter |
+| 5,6 | `Sub-UnivGhostL` rows, `⫯` and `∀◈` (`:3330`, `:3462`) | `forall_r_off M P0` | same |
+
+**Why 3–6 cannot simply be assumed.**  Adding `forall_r_off M P0` as a
+premise of `a_looksub_solve_complete_gen` dies at the `Sub-ForallR` row, which
+recurses at target `open A0 β` — itself possibly a ghost-free `∀`.
+
+**And the paper's own `SI-ForallL` guard does not reach them.**
+`guarded{P_0} ∨ P_0 = ◇` constrains the TOP-LEVEL collection call only (the
+one `SI-ForallL` makes through `extract`); the P6-Ss induction goes UNDER
+`Sub-ForallR`, where the target IS a `∀`.  Checked on the declarative side
+too: `ad_pat_sub_fuel__forall_l_{tagged,untagged}` carry only `M ≠ TI`
+(`algo_decl/def_subtyping.v:293-308`) — no guard on the target at all.
+
+#### E. The design that closes it (worked out, NOT written)
+
+**(1) `a_looksub_open_target` — the ONE-STEP TARGET PEEL**, in
+`algo/sub/prop_looksub.v`.  Under the guard, a collection at a ghost-free `∀`
+target at `TC` has only THREE possible roots — `LS-Var`, `LS-Absent`,
+`LS-ForallR` — because `LS-Check` needs a `guarded` target, `LS-Vacuous` a
+ghost one, and `LS-ForallL`/`LS-UnivGhostL` are precisely what the guard
+forbids there.  So one peel is an INVERSION plus a rename.
+
+⚠️ **The rename is not free, and this is the trap to plan for.**
+`LS-ForallR` LEAKS its binder into `𝒞`, so peeling at a CALLER-CHOSEN `β`
+replaces `𝒞` by `subst_cstrs β b 𝒞`; `Ξ` survives untouched
+(`a_looksub_binder_not_generated`).  ⭐ The tree already contains this exact
+lemma and shows how to live with it: `a_looksub_open_target_at`
+(`deco_algo/prop_decorate_sub.v`) does not relate `𝒞` to `𝒞'` syntactically at
+all — it carries a SEMANTIC invariant across the peel
+(`{{ 𝒞' ⊩ ψa ⤳ Ψa }}da`).  **P6-Ss should do the same with the SOLVE**, i.e.
+thread `{{ Θ ⊩ 𝒞' ⨾ Pi ⤳ Ξs ⨾ Pa }}a` through the peel instead of a syntactic
+relation.  ⚠️ Note that lemma is DOWNSTREAM of `prop_sub_cstr.v`, so the
+peel has to be re-proved (three cases) rather than imported.
+
+**(2) `a_solve_sub_open_target` — the SOLVE-side mirror.**  At `(Pi, ∀B, TC)`
+with `B` ghost-free the only rules are `SS-Var`, `SS-ForallL`,
+`SS-UnivGhostL`, `SS-ForallR` (`SS-Check` and `SS-GhostL` need a guarded
+target, `SS-Vacuous` a ghost one, `SS-Arrow`/`SS-GhostLF` an arrow).
+`SS-ForallR` renames; `SS-ForallL` / `SS-UnivGhostL` recurse and need a
+CONTEXT EXCHANGE — check `a_solve_sub_eq_ctx_change` before writing one.
+
+**(3) `a_looksub_solve_forall_l` — the ITERATED reorder**, by induction on
+`size_pskl P'`: if `forall_r_off M P'` holds, fire `LS-ForallL` directly
+(today's proof); otherwise peel with (1)+(2) and rebuild with `LS-ForallR` on
+top.  ⚠️ One peel is NOT enough — the peeled target can be a ghost-free `∀`
+again, which is why this is an induction and not a lemma application.  Sites
+3–6 call this.
+
+**(4) The α-stack cell (site 2).**  `alpha_stack_looksub` gains the guard, and
+its consumer splits on `Hstk`:
+- `P = pskl_var_f α`: `LS-Var` still answers at the UNPEELED target, and it
+  MUST — `LS-ForallR` is barred at a bare-variable subject by guard 2's
+  `A ≠ α`.  So `𝒞 = [≼TC ∀⌈A0⌉]` and the solve is built by `SS-ForallR` from
+  `Hss`, i.e. TODAY'S PROOF, verbatim.
+- `P` `∀`- or `⫯`-headed: `LS-ForallR` peels, the IH's `𝒞` is KEPT, and the
+  branch becomes the LEFT branch's own moves — `a_solve_cstr_strip_tvar_mid`
+  for the solve and precision (`ad_partial_precise_src_ftv_avoid`) for
+  `β ∉ ftv Pa`.  ⭐ So this half gets SHORTER, and `alpha_stack_looksub` is
+  not called at all.  It needs `alpha_stack α P -> α ∈ ftvar_in_pskl P` (new,
+  three lines) for `LS-ForallR`'s absence-first premise.
+
+**(5) The `alpha_stack` DISJUNCT must weaken.**  Its right arm currently pins
+`𝒞 = a_cstr_sub M P0 :: nil` at the row's own target; after (4) the ∀/⫯-headed
+half carries the PEELED target instead.  Construction sites `:1421`, `:2632`,
+`:3165`, `:3335`, `:3467` and the leaf; destruction sites `:1231`, `:2627`,
+`:3160`, `:3332`, `:3464`.  The weakest form that still serves its consumers
+is "`𝒞` is a SINGLETON sub-constraint" plus, at the var leaf, the pin.
+
+#### F. ⛔ Cheaper routes, refuted — do not retry
+
+- **A one-sided guard** (e-side only): settled already, `cb067e8` §4 —
+  `rel_a_cstrs` is a `Forall2` and the lists differ in LENGTH.
+- **`forall_r_off M P0` as a premise of P6-Ss**: dies at `Sub-ForallR` (§D).
+- **Reading it off `SI-ForallL`'s own `guarded{P_0} ∨ P_0 = ◇`**: top-level
+  call only (§D).
+- **`forall_r_off_subst` at an arbitrary substitute**: FALSE (§C).
+
+#### G. ⚠️⚠️ TWO TRAPS PAID
+
+- **An Equations obligation the tactic cannot close is DEFERRED, not
+  reported.**  The command prints nothing, defines nothing, and the only
+  symptom is `The reference e_looksub_impl was not found` at the NEXT
+  command.  To see it, truncate the file right after the `Equations` block —
+  Coq then says `Unsolved obligations when closing file`, and
+  `Next Obligation. Show. Abort.` prints the goal.  This cost ~40 minutes.
+- **The guard must be discharged BEFORE `look_impl_tac`'s `intros`.**
+  `forall_r_off` is a `Definition` that unfolds to a product, so `intros`
+  strips it to `~ pskl_ghost_free …` and destroys the shape the three
+  discharge lemmas match on.  The runner's tactic therefore opens with
+  `try forall_r_off_tac`.

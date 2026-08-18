@@ -403,8 +403,39 @@ nothing the implementation accepts or rejects turns on the choice; what
 turns on it is any statement that speaks of *the* collected constraints
 as a function of the inputs.
 
-⛔ **Open in the mechanization.**  The fork, with the measured evidence
-for each side, is in
+⚙ **MEASURED IN FULL (2026-08-18), and the finding for the PAPER is
+unchanged.**  The guard was carried through the mechanization as
+`forall_r_off m P'` (`frost/def_shapes.v`) on `LS-ForallL` and
+`LS-UnivGhostL`, both encodings.  It is GREEN on fourteen of the fifteen
+files it touches; the fifteenth is Lemma E.17's own proof
+(`algo/sub/look/prop_sub_cstr.v`), exactly as predicted above.  The work is
+preserved on branch `remech-guard3-wip` (`d78d8f6`) and the full design,
+measurement and remaining obligations are in
+[`HANDOFF-extractable-algo-encoding.md`](HANDOFF-extractable-algo-encoding.md)
+§8c.15.
+
+⭐ **Two things the measurement adds for the authors.**
+
+1. **The guard is not merely affordable, it is REDUNDANT WORK REMOVED.**  Two
+   mechanized lemmas exist only to repair the missing priority — one
+   re-freshens a binder inside the reordering (and is a size induction solely
+   for that branch), the other IS the reordering.  Both collapse to `exfalso`
+   under the guard.  So the metatheory currently PAYS for the ambiguity, and
+   the premise is where that payment belongs.
+
+2. **The price is larger than the entry above estimated, and it is not the
+   α-stack step alone.**  Five sites in Lemma E.17 need the premise: the
+   `Sub-ForallR` α-stack branch (where it is outright FALSE, the target being
+   a ghost-free `∀`), and — the ones not anticipated — both `Sub-ForallL` rows
+   and both `Sub-UnivGhostL` rows, where the target is the lemma's own
+   parameter and nothing bounds it.  ⚠️ In particular `SI-ForallL`'s own
+   published guard `guarded{P_0} or P_0 = □` does NOT discharge them: it
+   constrains the top-level collection call, while the lemma's induction
+   descends under `Sub-ForallR`, where the target is a `∀`.  Anyone writing
+   this proof on paper will meet the same four cases.
+
+⛔ **Still open in the mechanization.**  The fork's other side, with the
+measured evidence, is in
 [`HANDOFF-extractable-algo-encoding.md`](HANDOFF-extractable-algo-encoding.md) §8c.7;
 it is a USER decision.
 
