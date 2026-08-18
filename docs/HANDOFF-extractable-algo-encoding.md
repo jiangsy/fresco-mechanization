@@ -4662,3 +4662,141 @@ the two leaves.  ⚠️ And raising `eauto 6` to `eauto 8` there does not fix it
 **Resume: §6–§9 of `prop_extract_det.v`** — `e_solve_sub_rel` is now TRUE
 (its two drifting cells are gone and the (∀,∀) / (⫯,∀) commutations are
 single-rule), then `e_solve_cstr_rel`, `e_guess_rel`, `e_extract_rel`.
+
+### 8c.20 ✅ STEP 2 IS CLOSED — `e_extract_det` IS Qed — and §6 of level 6 is in (2026-08-18)
+
+✅ **`make coq` rc=0, `README.v` 32/32, zero `Admitted`.**
+
+#### What closed
+
+`frost/ext_algo/prop_extract_det.v`, all Qed and assumptions-closed:
+
+| § | content |
+|---|---|
+| §1 | the seven `_swaps` CHAIN iterations §D found missing (look ×2, solve ×3, guess, extract) |
+| §2 | fourteen collection ROOT INVERSIONS — §E's overlap table |
+| §3 / §4 | `e_lookeq_rel` / `e_looksub_rel` |
+| §5 | `e_solve_eq_rel` |
+| §6 | `e_guess_rel` |
+| §7 | `e_solve_sub_rel` + nine root inversions |
+| §8 | `e_solve_cstr_rel` |
+| §9 | ⭐⭐⭐ `e_extract_rel` / `e_extract_det` |
+
+⭐ **THE HEADLINE WAS REFUTED THREE TIMES ON THE WAY**, each time by a missing
+dispatch guard one layer further down, and each refutation is retracted by the
+guard that answers it — `probe_extract_supply_drift.v` (absence-first),
+`probe_extract_flexr_ug2_drift.v` (FlexR-priority),
+`probe_solve_sub_forall_r_drift.v` (solve-dispatch).  **That is the level's
+lesson in one line: when a supply conjunct is false, look for a rule that the
+implementation's MATCH ORDER excludes and the relation does not.**
+
+⚙ Two conventions that paid throughout and are worth keeping: put the
+DERIVATION before the size and coverage premises in a `_rel_stmt`, so
+`IH _ … _ D ltac:(lia) …` elaborates the `ltac:` after `D` has fixed every
+underscore; and take names off `match type of D1`, never off `inversion`'s
+generated ones (they clash — `inversion` already binds `β` at a binder row).
+
+#### `prop_sub_complete.v` §6 — the motive — is in, and the header is fixed
+
+`sub_call_complete`, with §8c.13's predicted simplification: BOTH call tags
+carry an output skeleton, so the output conjunct is a plain EQUALITY.
+
+#### ⛔ WHAT IS LEFT: §7 and §8, and here is the plan, validated as far as it goes
+
+**⭐ SPLIT §7 AT §1's TWO HYPOTHESES.**  Do NOT write one monolithic
+induction.  State two standalone lemmas whose statements are *literally*
+§1's `Hsub` and `Hflex` with `Qc` replaced by `sub_call_complete`:
+
+```coq
+  Lemma sub_call_complete_sub  : forall S0 NM M P0 Θ0 P,   … (Hsub's premises) …
+    -> sub_call_complete S0 NM M P0 Θ0 (sub_call_sub P).
+  Lemma sub_call_complete_flex : forall S0 NM M P0 Θ0 Ξ α, … (Hflex's premises) …
+    -> sub_call_complete S0 NM M P0 Θ0 (sub_call_flex Ξ α).
+```
+
+then §7c is three lines:
+
+```coq
+  Lemma e_sub_call_impl_complete : forall S0 NM M P0 Θ0 c
+      (H0 : e_sub_call_order S0 NM M P0 Θ0 c),
+      sub_call_complete S0 NM M P0 Θ0 c.
+  Proof.
+    intros. apply (e_sub_call_order_sind sub_call_complete);
+      [ exact sub_call_complete_sub | exact sub_call_complete_flex | exact H0 ].
+  Qed.
+```
+
+⚙ Extract the two statements MECHANICALLY from §1 (they are ~120 lines of
+premises between them and must match to the character, or the `apply` fails):
+read the `Hypothesis Hsub`/`Hflex` blocks out of the file and substitute
+`Qc ` → `sub_call_complete `.  ✅ The FLEX statement was extracted that way
+and type-checks, together with its opening —
+
+```coq
+  intros S0 NM M P0 Θ0 Ξ α hsl Hsl hag Hag hdp Hdp hrg Hrg htv Htv hts Hts.
+  unfold sub_call_complete.
+  intros HP HP0 HD Hord Hu Hcov Sd Θd Qd Hd.
+  cbn [sub_call_uniq sub_call_cover sub_call_run] in *.
+  destruct Θ0 as [ | [γ b] Θ0' ]; [ destruct (e_sub_flex_inv_nil Hd) | ].
+  destruct b as [ | A | Qp | | τ ].
+```
+
+— so the five head shapes come out in `abind`'s declaration order:
+`tvar`, `var_typ`, `var_skl`, `flex_mono`, `flex_mono_def`.
+
+**THE FLEX HALF, case by case.**  Each row is: invert the derivation with its
+§4 lemma, walk the runner's own tests, recurse through the motive premise,
+and re-wrap the head.
+
+| head | §4 inversion | the runner's tests (def_sub_impl.v:759-856) | motive premise |
+|---|---|---|---|
+| `γ ~ tvar` | `e_sub_flex_inv_tvar` | `γ == α` → right (from the inversion's `α <> γ`), then `mem γ (ftv P0)` → right | `Hrg γ Θ0' eq_refl` |
+| `x ~ var_typ A` | `e_sub_flex_inv_var_typ` | none | `Htv x A Θ0' eq_refl` |
+| `x ~ var_skl Q` | `e_sub_flex_inv_var_skl` | none | `Hts x Q Θ0' eq_refl` |
+| `γ ~ flex_mono`, `γ = α` | `e_sub_flex_inv_self` | `γ == α` → left | `Hsl Θ0' eq_refl` — ⭐ the PRE-SWAP row, below |
+| `γ ~ flex_mono`, `γ ≠ α` | `e_sub_flex_inv_other_flex` | `γ == α` → right, then `mem γ (ftv P0)`: **left** = Depend (accumulate into `Ξ`), **right** = Skip (re-wrap the head) | `Hdp γ Θ0' eq_refl`, whose two conjuncts are exactly those two branches |
+| `γ ~ flex_mono_def τ` | `e_sub_flex_inv_def` | none | `Hag γ τ Θ0' eq_refl` — note the call tag flips to `sub_call_sub` and the mode to `mode_fn M` |
+
+⭐ **THE ONE NON-ROUTINE ROW IS `SI-Flex-Solve`** and §8c.13 pinned its chain:
+the derivation draws `ad`, `bd` (`e_sub_flex_inv_self` gives `ad ∉ S0`,
+`bd ∉ add ad S0`) where the runner draws `a1 := supply_fresh S0` and
+`b1 := supply_fresh (add a1 S0)`.  Pre-swap with
+
+```coq
+  bd' := swap_atom ad a1 bd        ps0 := (ad, a1) :: (bd', b1) :: nil
+```
+
+and the ONE obligation that is not `solve_notin` is `a1 <> bd'`.  Move the
+derivation with `e_sub_swaps ps0` before handing it to `Hsl`.
+
+⚙ **THE RECURSION TACTIC** is level 5's `kill_ccall`
+(prop_consis_complete.v §7) with the extra `NM`/`M`/`P0` arguments:
+
+```coq
+  Local Ltac kill_scall Hmot Hu Hcov Hder r Hr ps Hav HS HT HQ :=
+    match goal with
+    | |- context [ e_sub_call_impl ?c ?S ?nm ?m ?p0 ?T ?hp ?hp0 ?hd ?h ] =>
+        let Hx := fresh in let Hcl := fresh in let rr := fresh in
+        destruct (Hmot hp hp0 hd h Hu Hcov _ _ _ Hder)
+          as [r [ps [Hx [Hav [HS [HT HQ]]]]]];
+        destruct (e_sub_call_impl c S nm m p0 T hp hp0 hd h)
+          as [ [rr Hr] | ] eqn:Hcl;
+        try rewrite Hcl in Hx; cbn [sub_call_answer] in Hx;
+        [ inversion Hx; subst; clear Hx Hcl; cbv beta iota | discriminate ]
+    end.
+```
+
+and the head re-wrap is level 5's `head_fresh` verbatim (the head atom is in
+`sub_call_cover`, hence in `S0`, which every chain pair dodges).
+
+**THE SUB HALF** dispatches as the runner does and every cell has its §4
+inversion by name in §8c.13's table.  ⭐ Its one genuinely new row is
+`SI-ForallL`, and it is the row all five guards were landed for: it runs
+`e_extract_impl` and then recurses at
+`(ex_supply rx, ex_block rx ++ Θ0, open Q (ex_out rx))`, so the derivation's
+extraction must be moved onto the runner's rails — which is exactly
+`e_extract_det` (`prop_extract_det.v` §9), now available.
+
+**Then §8**: `e_sub_impl_complete`, `e_sub_flex_impl_complete` and
+`e_sub_run_complete`, exactly as prop_consis_complete.v §8 does for
+consistency.
