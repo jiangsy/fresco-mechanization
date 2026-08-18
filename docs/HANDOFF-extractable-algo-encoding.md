@@ -4800,3 +4800,137 @@ extraction must be moved onto the runner's rails — which is exactly
 **Then §8**: `e_sub_impl_complete`, `e_sub_flex_impl_complete` and
 `e_sub_run_complete`, exactly as prop_consis_complete.v §8 does for
 consistency.
+
+### 8c.21 ⭐⭐⭐ LEVEL 6 IS CLOSED — the SUBTYPING runner is COMPLETE, §7 and §8 (2026-08-18)
+
+✅ **`make coq` rc=0, `README.v` 32/32, zero `Admitted`/`Axiom` in
+`frost/`, `cex/`, `test/`.**  `frost/ext_algo/prop_sub_complete.v` is Qed
+end to end, and its three headlines are assumptions-closed:
+
+| lemma | what it says |
+|---|---|
+| `e_sub_impl_complete` | a derivation of `{{ S0 ↝ Sd ⊨ Θ0 ⊢[NM\|M\|P0] P ⩽ Qd ⊣ Θd }}e` makes `e_sub_impl` answer `Some r`, with a chain `ps` (each pair dodging `S0`) sending `Sd`/`Θd`/`Qd` to `r`'s three components |
+| `e_sub_flex_impl_complete` | the same for the flexible WALK |
+| ⭐ `e_sub_run_complete` | the same over the argument-free `e_sub_run` — the twin of `e_sub_run_sound` |
+
+Side conditions: `uniq Θ0` and `ftvar Θ0 ∪ ftv P0 ∪ ftv P ⊆ S0`
+(prop_sub.v §4's, verbatim).  ⭐ **Nothing is restricted**: level 5's
+hole-free rung was lifted in §8c.10c/§8c.17, so ghost-carrying skeletons
+are in scope.
+
+#### The shape §8c.20 predicted, and it held
+
+§7 splits at §1's two hypotheses — `sub_call_complete_flex` and
+`sub_call_complete_sub`, statements extracted mechanically from `Hflex` /
+`Hsub` with `Qc := sub_call_complete` — and §7c is the three-line
+`e_sub_call_order_sind` application.  The flex half is §8c.20's table
+verbatim; the sub half dispatches as `e_sub_call_impl_equation_1` does
+(mode, then `NM`, then the shape column that arm keys on).
+
+**Three rows carry the level; the rest is dispatch.**
+
+1. ⭐ **`SI-Flex-Solve`** — §5, `e_sub_flex_solve_realign`.  The row invents
+   TWO names at once and §8c.20's chain is right, but the reason is worth
+   keeping: the second pair's LEFT column is `swap_atom ad a1 bd`, not
+   `bd`, because the first transposition may already have moved `bd` —
+   namely when `bd = a1`, where it lands on `ad`.  `remember` that atom and
+   the rest is `swaps_atoms_add` twice plus `swaps_atoms_notin`.
+2. ⭐ **`SI-ForallR`** — pre-swap the derivation's opener onto
+   `supply_fresh S0`, recurse, then read the junk block back off the
+   runner's own answer.  That last step is a new decomposition lemma,
+   `split_at_tvar_complete` (§5b, prop_dec.v §6's shape): on the context
+   the rule produces, `split_at_tvar` SUCCEEDS and returns the rule's own
+   two pieces.  ⚠️ It needs `uniq` of the runner's OUTPUT context, which
+   comes from `e_sub_sub_flex_sound`'s second conjunct applied to the
+   recursive answer — the scan stops at the FIRST marker, so without
+   uniqueness it could split somewhere else.
+3. ⭐⭐ **`SI-ForallL`** — pre-swap the opener, then `e_extract_det`
+   (prop_extract_det.v §9) moves everything the extraction invented.  The
+   `e_extract_impl` call is killed with prop_run_complete.v §5c's `kill_*`
+   recipe off level 4's `e_extract_impl_complete`, whose two supply-threaded
+   halves come free from `e_extract_inv` (`e_extract` has ONE rule).
+
+#### ⛔⛔ AND LEVEL 4's HEADLINE HAD A PREMISE THAT IS FALSE AT ITS ONLY CONSUMER
+
+`e_extract_impl_complete` (prop_look_pair.v §4) carried
+
+```coq
+  add α (ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] ftvar_in_aenv Θ0
+```
+
+("scoping", §8c.9's fourth pass).  ⛔ At `SI-ForallL` the extraction's `α`
+IS the rule's own FRESH opener — `a_sub__forall_l` states
+`α ∉ ftvar_in_aenv Θ0 ∪ ftv P ∪ ftv P0` — so `α ∈ ftvar_in_aenv Θ0` is not
+merely unproved, it is FALSE, and `e_extract_*_complete` was unusable at
+the only place that calls it.  The level's own note ("what the level owes
+upward") listed the two e-derivation halves and treated the scoping
+premise as free; it is not.
+
+✅ **The repair is local to that one proof and RETIRES the premise.**  The
+premise existed only to put `V := add α (ftvar Θ0 ∪ ftv P ∪ ftv P')` inside
+`ftvar_in_aenv Θf1` / `Θf2`, which the b-core's two scoping premises
+demand.  So cut the RIGID ENRICHMENT at the CONTEXT instead of at the input
+supply:
+
+```coq
+  set (Δr1 := rigids (Sh1 ∖ ftvar_in_aenv Θ0)) in *.        (* was Sh1 ∖ Sh0 *)
+  set (Δr2 := rigids (lk_supply r1 ∖ ftvar_in_aenv Θ0)) in *. (* was ∖ S0 *)
+```
+
+Now each side's WHOLE supply is visible in that side's enriched context, so
+`V ⊆ Sh0 ⊆ Sh1 ⊆ ftvar Θf1` and the scoping premises are immediate.  ⭐ The
+one proof step that had to change is `flex_agree_rel nil V Θf1 Θf2`: the
+old script peeled both rigid prefixes by FRESHNESS (`x ∉ dom Δr`), which
+now fails for exactly the names the enrichment was widened to cover — peel
+them by RIGIDITY instead (`a_flex_tvar_rigid_prefix_iff`, which holds
+unconditionally), and only the two BLOCK prefixes still need `x ∉ dom Ξ`
+(free: `V ⊆ Sh0` and the blocks are fresh for `Sh0`).  Everything else is
+set arithmetic through two new named facts, `Sh1 [<=] ftvar Θf1` and
+`lk_supply r1 [<=] ftvar Θf2`.
+
+⚙ This is a mech-internal weakening of a lemma statement — no rule changed,
+so there is no `PAPER-GAPS` entry.  `e_extract_run_complete` drops the
+premise too.  ⚠️ Both lemmas had NO consumers before today, which is why
+the premise survived the level's own closure.
+
+#### ⚙ Traps paid in §7, none of them in §8c.20's list
+
+- ⚠️⚠️ **An `Ltac` body resolves a bare identifier at DEFINITION time.**  A
+  tactic that factors a row cannot mention `S0`, `Θ0`, `P0`, `Qd` … — they
+  must be parameters — and it cannot mention a name its OWN `destruct as`
+  pattern introduces.  The `(ty, TC)` arm's `SI-ForallL` branch therefore
+  reads its `Q` off the goal with a `lazymatch` on the `e_extract_impl`
+  call.  ⚠️ And `ltac:(…)` in a tactic-ARGUMENT position becomes a
+  tacvalue, not a term ("should be bound to a term but is bound to a
+  tacvalue") — pass a real term, or make the tactic prove the thing itself
+  (`ck_true` / the `SI-ForallL` guard's three-way `solve`).
+- ⚠️⚠️ **`apply andb_true_intro` unifies up to delta.**  On
+  `ghost_free_ck (P → Q) = true` it happily UNFOLDS the fixpoint and splits
+  a goal the `_ck_complete` lemma answers whole, so
+  `repeat (apply andb_true_intro; split); solve […]` fails at every arrow
+  column.  Try the LEAF first: `repeat (ck_leaf || (apply andb_true_intro;
+  split))`.
+- ⚠️ **Do not `rewrite` the runner's own output into a decomposed form.**
+  `SI-ForallR`'s answer carries an Equations obligation whose TYPE mentions
+  `sb_ctx r`; rewriting `sb_ctx r` in the goal retypes the obligation and
+  the `Some (exist _ p Hp)` branch no longer typechecks.  State the
+  decomposition lemma with the equation as a PREMISE
+  (`Θ = Ξ ++ (α ~ tvar) ++ Θ'` → `split_at_tvar α Θ = Some r ∧ …`) so its
+  conclusion is about the runner's own term.
+- ⚠️ `Set Implicit Arguments` leaves a context that occurs only under `++`
+  EXPLICIT (non-strict position), so a caller would have to count
+  underscores — pin the prefix with `Arguments` instead
+  (`e_sub_flex_solve_realign`, `split_at_tvar_complete`).
+
+#### ⛔ WHAT IS LEFT
+
+Levels 1–6 are closed — look, both solve layers, the cstr fold, extract,
+the consistency trio and now subtyping.  Above subtyping the campaign has
+never numbered its rungs: what is left is the `e_pat` and `e_typing`
+runners, whose remaining prerequisites are §8c.2's (2b) checklist (output
+lc for `e_pat`/`e_typing`, and the relation-side shape facts).  ⚠️ §8c.9's
+closing note still stands for whoever writes them: `e_extract_*_complete`
+takes its two halves as supply-threaded e-derivations, and a FOLD analog of
+transport 5 does not exist — at level 6 the halves came free because
+`SI-ForallL` already carries an `e_extract` derivation to invert, which is
+not something a raw a-side construction can supply.
