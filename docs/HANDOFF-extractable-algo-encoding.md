@@ -4147,23 +4147,43 @@ drives it with `@`.
 | `prop_sub_cstr.v` | the same block-drop repair as `prop_eq_cstr.v`'s `LS-Arrow` row |
 | `prop_look_pair.v` §1a | ⚠️ **the e-look's context is NO LONGER INERT** — two eq rows read it for hattedness — so `e_looksub_lookeq_ctx_any` gains a flex-agreement side condition, discharged FREE at both consumers (`flex_rigid_iff`) |
 
-⛔ **WHAT IS LEFT — ONE SITE, AND IT IS A THIRD LAYER.**
-`ext_algo/prop_look_pair.v:1386`, the b-CORE's `LE-FlexR` cell.  The runner's
-new `flex_bound_ck Θr β` test must be shown TRUE, and the b-core has NO
-relation between the DERIVATION's look context `Θd` and the RUNNER's `Θr` —
-its `flex_agree_rel ρ V Θf1 Θf2` is about the FOLD contexts.  The fix:
+⛔ **WHAT IS LEFT — ONE SITE, AND IT IS A THIRD LAYER: the b-CORE**
+(`ext_algo/prop_look_pair.v`).  ⭐ Fifth pass (`remech-guard4b-wip`
+`b1d973a`) took it most of the way:
 
-1. add `flex_agree_rel ρ V Θd Θr` to `bcore_eq_stmt` / `bcore_sub_stmt`;
-2. thread it through the **35** `IHn` applications — one appended argument
-   each: `Hagrdr` at the structural rows, `flex_agree_rel_push_look`
-   (prop_solve_rel.v) at the binder rows;
-3. ⚠️ that push wants `β ∉ dom Θd` and `β2 ∉ dom Θr`, so the b-core also needs
-   Θd/Θr SCOPING hypotheses — today it has them only for `Θf1` / `Θf2`.
+**LANDED.**  `bcore_eq_stmt` / `bcore_sub_stmt` gain three premises —
 
-⭐ It is TRUE and dischargeable at the one call site: `e_extract_impl_complete`
-runs the runner at the SAME `Θ0` the derivation uses, so the top-level
-agreement is reflexivity, and every recursion adds RIGID openers on both
-sides.
+```coq
+  flex_agree_rel ρ V Θd Θr      (* the two LOOK contexts agree *)
+  ftvar_in_aenv Θd [<=] Sa0
+  ftvar_in_aenv Θr [<=] Sb0
+```
+
+— threaded through all **32** `IHn` applications (one appended triple each,
+discharged by the `bcore_dr` / `bcore_scp` tactics), and ⭐ **the CELL itself
+is closed**: the runner's `flex_bound_ck Θr β` test is destructed and its
+`false` arm killed by carrying side 1's `a_flex_tvar Θd β1` across
+`rel_atom ρ V β1 β2`.  ⚙ One edit upstream: the `LE-FlexR` case used to
+`clear` the counterpart's ρ-link; it now `rename`s it, because under the guard
+that link is exactly what transports hattedness.
+
+⛔ **THE REMAINING OBSTACLE IS A DESIGN POINT, NOT AN APPEND:
+`flex_agree_rel ρ V Θd Θr` is not preserved when ρ GROWS.**  The `LE-Arrow`
+row's second IH runs at `ρea ++ ρna ++ ρ`, so the agreement must hold at the
+NEW pairs too.
+
+| new pairs | verdict |
+|---|---|
+| `ρea` (the look's own extension) | ✅ free — `Hρea` gives `a ∈ Sa1 ∖ Sa0` and `b ∈ lk_supply ∖ Sb0`, which with the two new scopings makes BOTH sides non-flexible, so the iff is `False <-> False` |
+| `ρna` (the FOLD's pairing, `Ξs1 = flex_pairs_l ρn`) | ⛔ no handle — the fold is on the `a_` side and its generated names are known fresh only for `ftvar_in_aenv Θf1` and `L`, never for `Sa0` / `Sb0` |
+
+⇒ **THE NEXT STEP** is one more b-core invariant tying the fold contexts to the
+supplies — e.g. `Sa0 [<=] ftvar_in_aenv Θf1` and `Sb0 [<=] ftvar_in_aenv Θf2`.
+They are plausible (the fold context is the block over the derivation's own
+context, and the supply covers that context) and would make `ρna`'s columns
+dodge the supplies via `a_solve_cstr_generated_fresh_set`.  ⚙ **Check them at
+`e_extract_impl_complete` first** — it is the only call site, and there
+`Θd = Θr = Θ0`, so the top-level agreement is reflexivity.
 
 ⚙ **HISTORICAL — the two sites this replaces:**
 
