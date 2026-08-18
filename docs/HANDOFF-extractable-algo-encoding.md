@@ -4076,7 +4076,7 @@ argues at length that the narrow reading is the unfaithful one.  The two rows
 are mirror images and only one of them was made faithful.  `docs/PAPER-GAPS.md`
 has the paper-facing half.
 
-#### C. ⚙ WHAT (B) COSTS — measured where it could be, named where it could not
+#### C. ⚙ WHAT (B) COSTS — NOW MEASURED IN FULL (2026-08-18, branch `remech-guard4b-wip` `c1d3c70`)
 
 | site | what it needs | status |
 |---|---|---|
@@ -4087,13 +4087,48 @@ has the paper-facing half.
 | the intros / destruct patterns | one extra binder per mutual induction over the collection | ⚙ MEASURED under (A): six sites — `ext_algo/prop_look.v` ×3, `algo/sub/prop_looksub.v` ×3 (incl. two `destruct … as` lists), `deco_algo/prop_decorate_sub.v` ×2, `ext_algo/prop_solve_rel.v` ×1 |
 | the transports | `flex_r_off_swap` (`algo/prop_swap.v`), `rel_pskl_flex_r_off` (`ext_algo/prop_solve_rel.v`) | ⚙ both WRITTEN under (A) and reusable verbatim once the predicate gains its `Θ` |
 
-⛔ **THE ONE OBSTRUCTION (B) HAS AND (A) DID NOT**, and it is the analogue of
-guard 3's `alpha_stack_looksub`: the collection's CONTEXT-WEAKENING lemma
-(`prop_looksub.v` §, the one whose hypothesis is
-`ftvar_in_aenv Θ' [<=] ftvar_in_aenv Θ`) does NOT preserve flexibility, so
-under (B) `LE-FlexR`'s new premise cannot be transported across it.  That
-lemma must gain a flex-agreement hypothesis and every consumer must supply it.
-**Scope that before anything else** — it is where the cost lives.
+⭐⭐ **(B) WAS CARRIED THROUGH AND IS GREEN ON EVERYTHING BUT TWO SITES**
+(branch `remech-guard4b-wip`, `c1d3c70`, marked [WIP — DOES NOT BUILD]).  What
+landed, beyond the table above:
+
+| where | what |
+|---|---|
+| `frost/algo/def_rules.v` | `flex_r_off Θ P'` + `flex_r_off_nonvar` / `_rigid` |
+| `frost/ext_algo/def_look_impl.v` | ⭐ THE RUNNER — `flex_bound_ck Θ β` at the three (subject, `var`) clauses; arrow and ∀ gain a `None` arm, **⫯ gains the LE-UnivGhost2 RECURSION**, and the two `lookdec` Hint Externs that let the obligation tactic see through the guard |
+| `frost/algo/prop_swap.v` | `flex_r_off_swap` — needs the REVERSE of `a_flex_tvar_swap`, which involutivity supplies |
+| `frost/ext_algo/prop_solve_rel.v` | ⭐ `a_flex_tvar_cons_tvar_any` — *a RIGID entry is invisible to `a_flex_tvar` at EVERY atom, its own included*, because `binds` is membership — and `flex_agree_rel_push_look`, WEAKER than `flex_agree_rel_push_tvar_pair`, whose `cols` / `V` conditions are NOT available at the collection's binder rows and (by the lemma above) are not needed |
+| `frost/ext_algo/prop_run_complete.v` | `flex_test_absurd` — the derivation's own premise forces the runner's new test, in both directions — plus the three cells |
+| `frost/algo/sub/prop_looksub.v` | `a_looksub_lookeq_ctx_ftv_mono` gains the flex-agreement side condition; `a_looksub_ctx_exchange` discharges it FREE (two RIGID entries) |
+| `frost/ext_algo/prop_solve_rel.v` | `a_looksub_lookeq_rel_e` gains `flex_agree_rel ρ V Θ1 Θ2`, threaded by `flex_agree_rel_push_look`; its LE-FlexR and LE-UnivGhost2 rows move the guard across `rel_atom`'s two constructors |
+
+⛔ **THE TWO SITES LEFT, AND THEY ARE ONE OBSTRUCTION** — a context move that
+DROPS FLEXIBLES, which a GLOBAL flex-agreement cannot survive:
+
+1. `algo/sub/look/prop_eq_cstr.v:3212` — the `LE-Arrow` row drops the
+   all-`flex_mono` blocks `Ξs1 ++ Ξc1` down to `Θ0`.
+2. `deco_algo/prop_soundness_sub.v:296` — shrinks the run's own context to
+   `nil`, to make an opener's `ftvar_in_aenv` freshness vacuous.
+
+⭐ **THE FIX THAT IS INDICATED, and it is a STATEMENT change, not a proof
+one**: the side condition should be agreement on the COUNTERPART's free
+variables, not a global iff —
+
+```coq
+  forall β, β `in` ftvar_in_pskl P' ->
+    (a_flex_tvar Θ β <-> a_flex_tvar Θ' β)
+```
+
+— which is exactly what the collection reads, and which the induction
+PRESERVES: `LE-Arrow` shrinks `ftv P'`, and every binder row adds an opener
+that is RIGID on both sides (`a_flex_tvar_cons_tvar_any`).  Site 1 then
+follows from the block-disjointness facts it already proves (`HΞ2Pi` and its
+neighbours); site 2 needs either the run's counterpart apart from `Θl`'s
+flexibles, or — cleaner — `a_looksub_avoid_atom` restated to conclude at
+`rename_aenv δ β Θ`, which drops its `β ∉ ftvar_in_aenv Θ` premise and makes
+the context shrink unnecessary altogether (`Θl` is universally quantified
+INSIDE `a_subtag_decoration`'s induction, so the IH accepts any context).
+
+**Resume there.**
 
 ⭐ **AND ONE THING (B) BUYS BACK.**  Under (A), `prop_decorate_sub.v`'s "FlexR
 assignment of the ∀◇-headed subject to the flexible input" branch collapsed to
