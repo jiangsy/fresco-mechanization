@@ -3980,11 +3980,16 @@ is optimistic — `e_extract` is one rule composing look → solve → guess
 
 `prop_solve_det.v`'s §3/§4 are the template: `_det_n` on a size, then the
 `_det` wrapper, with `swaps_*` chains and the `flex_pairs` kit that is already
-there.  ⭐ The collection's own case analysis is now SINGLE-RULE at every cell
-— that is exactly what guard 1 (absence-first), guard 2 (◇-dispatch) and guard
-3 (ForallR-priority) between them bought — so its `_det` should follow the
-same shape with no overlap reasoning at all; `prop_sub_complete.v` §4's
-sixteen root inversions are the audit that says so.
+there.  ⚠️ **AND BE PRECISE ABOUT WHAT THE GUARDS BOUGHT.**  They do NOT make the
+collection literally single-rule at every cell — they remove the overlaps whose
+two rows DISAGREE.  One family of overlaps survives and is harmless: at an
+α-FREE subject, `LS-Absent` still races the rows that do not carry guard 1
+(`LS-Arrow`, `LS-Check`, `LS-UnivGhostL`), and there the two answers COINCIDE,
+because the premises of those rows are α-free too and collect nothing
+(`a_looksub_lookeq_absent_nil`, `algo/sub/prop_looksub.v`).  So `_det`'s case
+analysis is: single-rule wherever the answer could differ, and
+`a_looksub_lookeq_absent_nil` at the α-free races.  `prop_sub_complete.v` §4's
+sixteen root inversions are the audit of the first half.
 
 The statement to lift is preserved in git at **`eabf308`**,
 `cex/probe_extract_supply_drift.v` §2 (`Definition e_extract_det : Prop`).
