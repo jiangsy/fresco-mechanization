@@ -540,6 +540,29 @@ Proof.
   rewrite <- ptyp_to_pskl_open. auto.
 Qed.
 
+(** ⭐ THE CONVERSE (2026-08-18).  [ptyp_to_pskl] is a CONSTRUCTOR
+    RELABELLING, so local closure comes BACK through it — which is what a
+    typing runner needs: its rules pin a subtyping premise's counterpart to
+    [⌈A⌉], and what the caller owes is [lc_ptyp A].
+
+    ⚠️ Neither induction on [A] nor on the [lc_pskl] derivation works
+    directly: the [∀] row's IH would be about [A]'s body while the goal is
+    about its OPENING, and [lc_pskl]'s index is the image, so inverting it
+    never exposes [A]'s own constructor.  Go through [degree], which is
+    indexed by the binder depth and therefore structural. *)
+Lemma degree_ptyp_to_pskl_inv : forall A k,
+  degree_pskl_wrt_pskl k (ptyp_to_pskl A) -> degree_ptyp_wrt_ptyp k A.
+Proof.
+  induction A; cbn; intros k H; inversion H; subst;
+    solve [ constructor | constructor; auto ].
+Qed.
+
+Lemma ptyp_to_pskl_lc_inv : forall A, lc_pskl (ptyp_to_pskl A) -> lc_ptyp A.
+Proof.
+  intros A H. apply lc_ptyp_of_degree, degree_ptyp_to_pskl_inv,
+    degree_pskl_wrt_pskl_of_lc_pskl, H.
+Qed.
+
 (** …and for a monotype it needs no ∀ case at all. *)
 Lemma mono_ptyp_to_pskl_lc : forall τ, mono_ptyp τ -> lc_pskl (ptyp_to_pskl τ).
 Proof. induction 1; simpl; auto using lc_pskl. Qed.

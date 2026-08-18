@@ -645,13 +645,15 @@ Local Ltac open_exp_lc x :=
       exact (Hx x)
   end.
 
-(** The abs rows discard the binder AND the junk suffix: the premise's output
-    is [Ξ ++ (x ~ b) ++ Θ], the conclusion's is [Ξ ++ Θ]. *)
+(** The abs rows discard the binder: the premise's output is
+    [Ξ ++ (x ~ b) ++ Θ] and the conclusion's is [Ξ ++ Θ] — except at the two
+    ∀-peeling CHECK rows of [e_typing], which discard the junk suffix too and
+    conclude at [Θ] alone.  Both shapes, one tactic. *)
 Local Ltac drop_binder H :=
   unfold lc_aenv in *; simpl in H;
   apply Forall_app in H; destruct H as [? H];
   inversion H; subst;
-  apply Forall_app; split; assumption.
+  solve [ apply Forall_app; split; assumption | assumption ].
 
 (** The two conjuncts are proved TOGETHER: the abs rows recurse under a term
     variable whose payload comes from the SPLIT's output, so the output-lc
@@ -746,3 +748,167 @@ Corollary e_pat_env_lc : forall S0 m Θ0 P0 e Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ1 }}e ->
   lc_pskl P0 -> lc_exp e -> lc_aenv Θ0 -> aenv_defs_mono Θ0 -> lc_aenv Θ1.
 Proof. intros. eapply e_pat_lc_env; eassumption. Qed.
+
+(* --- §4d  TYPE INFERENCE — the output type and the context ------------- *)
+
+(** ⭐ Every row whose subtyping or splitting premise is PINNED to a
+    painting [⌈A⌉] hands its caller [lc_pskl ⌈A⌉]; what the caller owes is
+    [lc_ptyp A], and that is [ptyp_to_pskl_lc_inv] (prop_coercions.v). *)
+Local Ltac paint_lc :=
+  repeat match goal with
+  | H : lc_pskl (ptyp_to_pskl ?A) |- _ =>
+      lazymatch goal with
+      | _ : lc_ptyp A |- _ => clear H
+      | _ => apply ptyp_to_pskl_lc_inv in H
+      end
+  end.
+
+(** The two ∀-peeling CHECK rows recurse at the OPENED pattern: peel the
+    painting, invert the (cofinite) [lc_ptyp] of the [∀], instantiate. *)
+Local Ltac open_all_lc :=
+  apply ptyp_to_pskl_lc;
+  match goal with
+  | H : lc_ptyp (ptyp_all _) |- _ => inversion H; subst
+  end;
+  match goal with
+  | Hx : forall _ : _, lc_ptyp (open_ptyp_wrt_ptyp _ (ptyp_var_f _)) |- _ =>
+      apply Hx
+  end.
+
+Local Ltac push_var HΘ Hdm Hlc :=
+  split;
+  [ unfold lc_aenv in *; simpl; constructor; [ simpl; exact Hlc | exact HΘ ]
+  | simpl; constructor; [ exact I | exact Hdm ] ].
+
+Lemma e_typing_lc_env : forall S0 m Θ0 P0 e B S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}e ->
+  lc_pskl P0 -> lc_exp e -> lc_aenv Θ0 -> aenv_defs_mono Θ0 ->
+  lc_ptyp B /\ lc_aenv Θ1.
+Proof.
+  intros S0 m Θ0 P0 e B S1 Θ1 H.
+  induction H; intros HP0 He HΘ Hdm.
+  - (* AT-Unit *)
+    pose proof (e_sub_lc H lc_pskl_unit HP0 Hdm) as Hout. paint_lc.
+    split; [ assumption | eapply e_sub_env_lc; eassumption ].
+  - (* AT-Var *)
+    assert (HA : lc_ptyp A) by (exact (lc_aenv_binds HΘ H)).
+    pose proof (e_sub_lc H0 (ptyp_to_pskl_lc HA) HP0 Hdm) as Hout. paint_lc.
+    split; [ assumption | eapply e_sub_env_lc; eassumption ].
+  - (* AT-Anno *)
+    inversion He; subst.
+    destruct (IHe_typing ltac:(apply ptyp_to_pskl_lc; assumption)
+                ltac:(assumption) HΘ Hdm) as [HAlc HΘ1].
+    pose proof (e_typing_defs_mono H Hdm) as Hdm1.
+    pose proof (e_sub_lc H0 (ptyp_to_pskl_lc HAlc) HP0 Hdm1) as Hout.
+    paint_lc.
+    split; [ assumption | eapply e_sub_env_lc; eassumption ].
+  - (* AT-Freeze *)
+    inversion He; subst. paint_lc.
+    destruct H0 as [Qm Hc].
+    destruct (IHe_typing lc_pskl_hole ltac:(assumption) HΘ Hdm)
+      as [HBlc HΘ1].
+    pose proof (e_typing_defs_mono H Hdm) as Hdm1.
+    split; [ assumption | eapply e_consis_env_lc; eassumption ].
+  - (* AT-Abs *)
+    inversion He; subst.
+    destruct (e_split_lc H0 HP0) as [HPlc HQlc].
+    pose proof (e_split_env_lc H0 HΘ) as HΘ1.
+    pose proof (e_split_defs_mono H0 Hdm) as Hdm1.
+    pose proof (e_guess_mono_lc H1) as HAlc.
+    pose proof (e_guess_mono_block_flex H1) as Hflex.
+    destruct (IHe_typing HQlc ltac:(open_exp_lc x)
+                ltac:(unfold lc_aenv in *; simpl; constructor;
+                      [ simpl; exact HAlc
+                      | apply Forall_app; split;
+                        [ apply all_flex_mono_lc_forall; exact Hflex
+                        | exact HΘ1 ] ])
+                ltac:(simpl; constructor;
+                      [ exact I
+                      | apply Forall_app; split;
+                        [ apply all_flex_mono_defs_mono; exact Hflex
+                        | exact Hdm1 ] ])) as [HBlc HΘout].
+    split; [ apply lc_ptyp_arrow; assumption | drop_binder HΘout ].
+  - (* AT-AbsAnno *)
+    inversion He; subst.
+    destruct (e_split_lc H0 HP0) as [HPlc HQlc].
+    pose proof (e_split_env_lc H0 HΘ) as HΘ1.
+    pose proof (e_split_defs_mono H0 Hdm) as Hdm1.
+    destruct H1 as [Qm Hc].
+    pose proof (e_consis_env_lc Hc HΘ1) as HΘ2.
+    pose proof (e_consis_defs_mono Hc Hdm1) as Hdm2.
+    destruct (IHe_typing HQlc ltac:(open_exp_lc x)
+                ltac:(unfold lc_aenv in *; simpl; constructor;
+                      [ simpl; assumption | exact HΘ2 ])
+                ltac:(simpl; constructor; [ exact I | exact Hdm2 ]))
+      as [HBlc HΘout].
+    split; [ apply lc_ptyp_arrow; assumption | drop_binder HΘout ].
+  - (* AT-AbsCheck, the ∀-peeling step *)
+    paint_lc.
+    destruct (IHe_typing
+                ltac:(open_all_lc)
+                ltac:(assumption)
+                ltac:(unfold lc_aenv in *; simpl; constructor;
+                      [ exact I | exact HΘ ])
+                ltac:(simpl; constructor; [ exact I | exact Hdm ]))
+      as [HAlc HΘout].
+    split; [ apply (lc_ptyp_all_exists α); exact HAlc | drop_binder HΘout ].
+  - (* AT-AbsCheck, the base *)
+    inversion He; subst. paint_lc.
+    destruct (e_split_lc H (ptyp_to_pskl_lc HP0)) as [HAlc HBlc]. paint_lc.
+    pose proof (e_split_env_lc H HΘ) as HΘ1.
+    pose proof (e_split_defs_mono H Hdm) as Hdm1.
+    destruct (IHe_typing ltac:(apply ptyp_to_pskl_lc; assumption)
+                ltac:(open_exp_lc x)
+                ltac:(unfold lc_aenv in *; simpl; constructor;
+                      [ simpl; assumption | exact HΘ1 ])
+                ltac:(simpl; constructor; [ exact I | exact Hdm1 ]))
+      as [HB1lc HΘout].
+    split; [ apply lc_ptyp_arrow; assumption | drop_binder HΘout ].
+  - (* AT-AbsAnnoCheck, the ∀-peeling step *)
+    paint_lc.
+    destruct (IHe_typing
+                ltac:(open_all_lc)
+                ltac:(assumption)
+                ltac:(unfold lc_aenv in *; simpl; constructor;
+                      [ exact I | exact HΘ ])
+                ltac:(simpl; constructor; [ exact I | exact Hdm ]))
+      as [HAlc HΘout].
+    split; [ apply (lc_ptyp_all_exists α); exact HAlc | drop_binder HΘout ].
+  - (* AT-AbsAnnoCheck, the base *)
+    inversion He; subst. paint_lc.
+    destruct (e_split_lc H (ptyp_to_pskl_lc HP0)) as [HA'lc HBlc]. paint_lc.
+    pose proof (e_split_env_lc H HΘ) as HΘ1.
+    pose proof (e_split_defs_mono H Hdm) as Hdm1.
+    destruct H0 as [Qm Hc].
+    pose proof (e_consis_env_lc Hc HΘ1) as HΘ2.
+    pose proof (e_consis_defs_mono Hc Hdm1) as Hdm2.
+    destruct (IHe_typing ltac:(apply ptyp_to_pskl_lc; assumption)
+                ltac:(open_exp_lc x)
+                ltac:(unfold lc_aenv in *; simpl; constructor;
+                      [ simpl; assumption | exact HΘ2 ])
+                ltac:(simpl; constructor; [ exact I | exact Hdm2 ]))
+      as [HB1lc HΘout].
+    split; [ apply lc_ptyp_arrow; assumption | drop_binder HΘout ].
+  - (* AT-App *)
+    inversion He; subst.
+    pose proof (e_pat_lc H lc_pskl_hole ltac:(assumption) HΘ Hdm) as HPlc.
+    pose proof (e_pat_env_lc H lc_pskl_hole ltac:(assumption) HΘ Hdm) as HΘ1.
+    pose proof (e_pat_defs_mono H Hdm) as Hdm1.
+    destruct (IHe_typing1 ltac:(apply lc_pskl_arrow; assumption)
+                ltac:(assumption) HΘ1 Hdm1) as [HABlc HΘ2].
+    pose proof (e_typing_defs_mono H0 Hdm1) as Hdm2.
+    inversion HABlc; subst.
+    destruct (IHe_typing2 ltac:(apply ptyp_to_pskl_lc; assumption)
+                ltac:(assumption) HΘ2 Hdm2) as [HA'lc HΘ3].
+    split; [ assumption | exact HΘ3 ].
+Qed.
+
+Corollary e_typing_lc : forall S0 m Θ0 P0 e B S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}e ->
+  lc_pskl P0 -> lc_exp e -> lc_aenv Θ0 -> aenv_defs_mono Θ0 -> lc_ptyp B.
+Proof. intros. eapply e_typing_lc_env; eassumption. Qed.
+
+Corollary e_typing_env_lc : forall S0 m Θ0 P0 e B S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}e ->
+  lc_pskl P0 -> lc_exp e -> lc_aenv Θ0 -> aenv_defs_mono Θ0 -> lc_aenv Θ1.
+Proof. intros. eapply e_typing_lc_env; eassumption. Qed.
