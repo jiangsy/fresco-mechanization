@@ -4470,3 +4470,110 @@ yield); it consumes `bcore_eq`'s at its `LS-Arrow` row, and at three
 
 **Resume: §D's four lemmas** (§8c.16 §D), then §6/§7 of
 `prop_sub_complete.v`, then §8's three headlines.
+
+### 8c.18 ⛔⛔ A FIFTH DISPATCH GUARD IS OWED — `e_extract_det` IS STILL FALSE, AND THE DRIFT IS IN THE SOLVE LAYER (2026-08-18)
+
+**⛔ THE PREMISE OF §8c.16 §D IS REFUTED.**  With all four dispatch guards
+landed, `e_extract_det` is still false, and this time the ambiguity is one
+layer BELOW the collection: `cex/probe_solve_sub_forall_r_drift.v`
+(`e_extract_det_false`, Qed, assumptions-closed).
+
+#### The cell
+
+At subject `γ` — a VARIABLE — against counterpart `∀_. 0` (ghost-free) in
+CHECK mode, two rows fire:
+
+| row | Ξ | yield | supply |
+|---|---|---|---|
+| `SS-Var` | `·` | `γ` | `S ↝ S` |
+| `SS-ForallR` ∘ `SS-Var` | `·` | `γ` | `S ↝ add β S` |
+
+The block and the yield AGREE; the supplies differ by ONE ATOM.  Exactly the
+species of `cex/probe_extract_supply_drift.v` (retracted by the absence-first
+guard) and `cex/probe_extract_flexr_ug2_drift.v` (retracted by the
+FlexR-priority guard).
+
+⚙ **THE LIFT TO `e_extract` IS ONE ARROW**, and it is in the probe: at
+`NM = SK`, `m = FN(TC)`, `Θ0 = ·`, subject `α → α`, counterpart `γ → ∀_.0`,
+`LS-Arrow` hands its first half to `LE-Var` (collecting `≐ γ`) and its second
+to `LS-Var` (collecting `≼TC ∀_.0`); the fold solves `◇ ∼ γ ⤳ γ` and hands
+the accumulated `γ` to the cell above.  ⭐ The BLOCK conjunct is not needed —
+the SUPPLY conjunct alone refutes the statement.
+
+#### ⭐ AND THE REFERENCE IMPLEMENTATION ALREADY DISAGREES WITH THE RELATION
+
+`solve_sub` (`paper/artifact/implementation/lib/type.ml:494`) matches
+
+```
+| _, (TVar _ as alpha)              -> SolS-Var          (* FIRST, any mode *)
+| m, TForA (k, p)                   -> SolS-ForallL
+| m, TMod (mu, p)                   -> SolS-ModL
+| m, UGhost p                       -> SolS-UnivGhostL
+| (Infer | Check Ghost), p          -> SolS-Vacuous
+| Check (TForA (_, b)), a when is_type a -> SolS-ForallR
+…
+```
+
+so a VARIABLE subject takes `SolS-Var` in every mode and never reaches
+`SolS-ForallR`.  This tree's runner renders the same order
+(`ext_algo/def_solve_impl.v:316`).  A relational encoding has no match order,
+so the exclusion must be a PREMISE — the argument that landed guards 1–4,
+verbatim.
+
+#### ⭐ TWO PREMISES ARE OWED, NOT ONE — the second cell is machine-checked too
+
+`SS-Vacuous` races `SS-ForallL` at a `∀` SUBJECT against a `◇` counterpart
+(`vacuous_route` / `forall_l_route` in the same probe, both Qed): `SS-Vacuous`
+answers `∀P` spending nothing, `SS-ForallL` draws an opener and answers
+`∀(close β (open P β))`, which IS `∀P`.  Same drift, and the implementation
+again takes the earlier clause (`SolS-ForallL` precedes `SolS-Vacuous`).
+
+#### ⚙ THE OVERLAP AUDIT FOR `e_solve_sub` — done, and only these two DRIFT
+
+Checked row by row against the runner's clause order.  Every other overlap
+either COINCIDES (same block, same yield, same supply) or is a COMMUTATION
+that spends the same atoms on both routes:
+
+| cell | rows | verdict |
+|---|---|---|
+| (var, ∀ gf, TC) | `SS-Var` / `SS-ForallR` | ⛔ **DRIFT** — one atom |
+| (∀, ◇) | `SS-Vacuous` / `SS-ForallL` | ⛔ **DRIFT** — one atom |
+| (var, ◇) | `SS-Var` / `SS-Vacuous` | ✅ coincide |
+| (⫯P, ◇) | `SS-UnivGhostL` / `SS-Vacuous` | ✅ coincide |
+| (var, guarded gf, TC) | `SS-Var` / `SS-Check` | ✅ coincide — `SS-Check`'s premise is the EQ layer, and a variable subject answers itself there (`e_solve_eq_var_subject`) |
+| (∀, ∀ gf, TC) | `SS-ForallL` / `SS-ForallR` | ⚙ COMMUTATION — both routes draw TWO openers, so a chain relates them; this is the "peel" §8c.16 §D already budgeted |
+| (⫯, ∀ gf, TC) | `SS-UnivGhostL` / `SS-ForallR` | ⚙ COMMUTATION — one opener each |
+| (◇, ∀ gf, TC) | `SS-ForallR` alone | ✅ `SS-GhostL` / `SS-Check` want a GUARDED counterpart |
+| everything else | — | ✅ single-rule by shape or mode |
+
+#### ⛔ THE FORK — and it is the USER's call, because it is a RULE CHANGE
+
+| | premises on the two rows | cost |
+|---|---|---|
+| (i) MINIMAL | `SS-ForallR` gains "the subject is not a variable"; `SS-Vacuous` gains "the subject is not a `∀`" | two one-line premises, but the (∀,∀) and (⫯,∀) COMMUTATIONS survive and still need the peel |
+| (ii) RUNNER-MIRRORING | `SS-ForallR` additionally excludes `∀` and `⫯` subjects; `SS-Vacuous` additionally excludes `⫯` | dispatch becomes SINGLE-RULE and the peel EVAPORATES — §8c.15's lesson ("a dispatch guard can REMOVE work") one more time — but it is a bigger rule change and every `SS-ForallR` construction site must be re-checked |
+
+⚙ **A THIRD, INDEPENDENT OBSERVATION worth a `[paper-gap]` line either way**:
+the implementation's `SolS-ForallR` carries `when is_type a` — the SUBJECT
+must be GHOST-FREE (`is_type` is exactly "no `Ghost` / `UGhost`",
+type.ml:`is_type`) — and neither `a_solve_sub__forall_r` nor
+`e_solve_sub__forall_r` carries it.
+
+#### ✅ WHAT LANDED ANYWAY — STEP 2's first three lemmas do not depend on the fork
+
+`frost/ext_algo/prop_extract_det.v`, all Qed:
+
+| § | content |
+|---|---|
+| §1 | the `_swaps` CHAIN iterations §8c.16 §D found missing — look (both layers), solve (sub / eq / cstr), guess, extract |
+| §2 | fourteen ROOT INVERSIONS for the collection — §8c.16 §E's table, machine-checked |
+| §3 | ⭐ `e_lookeq_rel` — the eq collection is deterministic up to a fresh renaming, SUPPLY INCLUDED |
+| §4 | ⭐ `e_looksub_rel` — the sub collection, same |
+| §5 | ⭐ `e_solve_eq_rel` — the SOLVE layer's EQ half, same.  ⚙ Its `a_`-level twin `a_solve_eq_det` (prop_solve_det.v §4) transfers row for row; the binder rows get SIMPLER (pair the two openers with ONE transposition instead of rebinding both to a globally fresh third atom — the supply already says each opener is fresh for `S0`) |
+
+⛔ `e_solve_sub_rel` is what the fork blocks; `e_solve_cstr_rel`,
+`e_guess_rel` and `e_extract_rel` are downstream of it.
+
+**Resume: take the fork, land guard 5 on both encodings + the runner
+(`[paper-gap]` comment + `docs/PAPER-GAPS.md` entry), then §6–§9 of
+`prop_extract_det.v`.**

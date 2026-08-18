@@ -307,6 +307,55 @@ the five candidate pairs — including `SI-Ghost` against `SI-UnivGhostR` at
 `□ ⩽ □`, whose results would have DIFFERED (`P_0` versus `⫯P`) — cannot
 both fire.
 
+## MISSING SIDE CONDITIONS (2026-08-18, machine-checked) — `SolS-ForallR` and `SolS-Vacuous` lack the exclusions the implementation's MATCH ORDER supplies, so the SOLVE layer answers the same query with two different amounts of fresh supply
+
+> ⛔ **NOT YET FIXED IN THE MECH** — the design fork is open
+> (`docs/HANDOFF-extractable-algo-encoding.md` §8c.18).  The refutation is
+> `cex/probe_solve_sub_forall_r_drift.v`, Qed and assumptions-closed.
+
+**What the paper says.**  `SolS-Var` answers a VARIABLE subject with itself in
+any mode; `SolS-ForallR` peels a ghost-free `∀` counterpart in check mode at
+an arbitrary subject; `SolS-Vacuous` answers a `◇` counterpart with the
+subject, again at an arbitrary subject; `SolS-ForallL` peels a `∀` subject.
+Neither `SolS-ForallR` nor `SolS-Vacuous` excludes the earlier rows' subjects.
+
+**Why that is a gap.**  Two cells admit two derivations that agree on
+everything the paper writes down and disagree on how many fresh names were
+drawn:
+
+| cell | the two rows | difference |
+|---|---|---|
+| subject `γ`, counterpart `∀_. 0`, mode `TC` | `SolS-Var` / `SolS-ForallR` then `SolS-Var` | ONE opener |
+| subject `∀P`, counterpart `◇` | `SolS-Vacuous` / `SolS-ForallL` then `SolS-Vacuous` | ONE opener (`close β (open P β)` is `P`) |
+
+Both answer with the same block (`·`) and the same skeleton, so on the paper's
+own statement of the rules the two derivations are indistinguishable — which
+is exactly why the gap is invisible until freshness is made explicit.
+
+**The implementation does not have the ambiguity**, because `solve_sub`
+(`lib/type.ml:494`) matches `SolS-Var` FIRST, then `SolS-ForallL`,
+`SolS-ModL`, `SolS-UnivGhostL`, and only then `SolS-Vacuous` and
+`SolS-ForallR`.  A relational presentation has no match order, so the
+exclusions have to be premises.  This is the same species as the four
+guards already filed (absence-first, ◇-dispatch, ForallR-priority,
+FlexR-priority) — one layer further down.
+
+**Suggested repair.**  `SolS-ForallR` gains *"the subject is not a variable"*
+and `SolS-Vacuous` gains *"the subject is not a `∀`"* — or, mirroring the
+match order exactly, both additionally exclude `⫯` subjects, which makes the
+solve layer's dispatch single-rule.
+
+**⚙ A third, independent observation.**  The implementation's `SolS-ForallR`
+carries `when is_type a` — the SUBJECT must be ghost-free (`is_type` is
+"contains no `Ghost` / `UGhost`") — and neither the paper's rule nor either of
+the mech's encodings carries it.
+
+**What is NOT affected.**  Soundness is untouched: it quantifies over the
+derivations that exist.  What the gap blocks is the statement that the
+algorithm is a FUNCTION of its inputs up to a renaming of the names it
+invents, which is what a decidability corollary and any completeness proof of
+the runner against the rules need.
+
 ## MISSING SIDE CONDITION (2026-08-18, machine-checked) — `LE-UnivGhost2` lacks the exclusion that would keep `LE-FlexR` off a FLEXIBLE counterpart, so the COLLECTION is still ambiguous at a ⫯ subject — and the two answers differ in KIND, not in names
 
 > **✅ FIXED IN THE MECH ON BOTH ENCODINGS (2026-08-18).**  `LE-UnivGhost2` —

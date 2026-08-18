@@ -1,10 +1,15 @@
 (** ext_algo — §8c.16 §D, campaign level 6, STEP 2:
-    ⭐ EXTRACTION IS DETERMINISTIC UP TO A FRESH RENAMING.
+    ⭐ THE COLLECTION AND THE EQ-SOLVE ARE DETERMINISTIC UP TO A FRESH
+    RENAMING — SUPPLY INCLUDED.
 
     §1  equivariance along a CHAIN, for the collection, the solve layer,
         [guess] and [extract] — the [_swaps] iterations §8c.16 §D found
         missing (the SINGLE-swap versions are prop_look.v §6,
-        prop_solve.v §7, prop_guess.v §10 and prop_extract.v §3)
+        prop_solve.v §5, prop_guess.v and prop_extract.v)
+    §2  the collection's ROOT INVERSIONS — §8c.16 §E's overlap table
+    §3  [e_lookeq_rel]     — the eq collection
+    §4  [e_looksub_rel]    — the sub collection
+    §5  [e_solve_eq_rel]   — the solve layer's EQ half
 
     ⭐ WHY A CHAIN AND NOT A PAIRING.  The statement STEP 2 has to hit is
 
@@ -24,9 +29,28 @@
     one (the arrow rows thread, so the second halves sit at DIFFERENT input
     supplies and a derivation-indexed IH would be pinned to one).
 
-    ⛔ NONE OF THIS IS REACHABLE BEFORE THE FOUR DISPATCH GUARDS.  Until
-    guard 4 (the FlexR-PRIORITY split, §8c.16) the statement above was
-    machine-checked FALSE. *)
+    ⚙ TWO CONVENTIONS THIS FILE KEEPS THROUGHOUT.  (1) Every [_rel_stmt]
+    puts the DERIVATION before its size and coverage premises, so that
+    [IH _ … _ D ltac:(lia) …] elaborates the [ltac:] AFTER [D] has fixed
+    every underscore — in front of [D] the same [ltac:] runs against evars.
+    (2) Names are taken off [match type of D1], never off [inversion]'s
+    generated ones.
+
+    ⛔⛔ WHAT IS *NOT* HERE, AND WHY — [e_solve_sub_rel], and with it
+    [e_solve_cstr_rel] / [e_guess_rel] / [e_extract_rel].  §8c.16 §D's
+    premise ("[e_extract_det] is TRUE now that the four dispatch guards are
+    landed") is REFUTED: a FIFTH guard is owed, on the SOLVE layer, and the
+    witness is [cex/probe_solve_sub_forall_r_drift.v] (Qed,
+    assumptions-closed).  At a VARIABLE subject against a ghost-free [∀]
+    counterpart in check mode, [SS-Var] and [SS-ForallR] both fire and agree
+    on the block and the yield, differing ONLY in supply, by one atom; and
+    [SS-Vacuous] races [SS-ForallL] the same way at a [∀] subject against a
+    [◇] counterpart.  The reference implementation has neither ambiguity —
+    [solve_sub] matches [SolS-Var] first and [SolS-ForallL] before
+    [SolS-Vacuous] (type.ml:494) — so the exclusions have to be PREMISES,
+    exactly as for guards 1-4.  docs/HANDOFF-extractable-algo-encoding.md
+    §8c.18 has the overlap audit and the design fork; docs/PAPER-GAPS.md has
+    the paper-facing half. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -56,6 +80,7 @@ Require Import src.frost.ext_algo.prop_solve.
 Require Import src.frost.ext_algo.def_extract.
 Require Import src.frost.ext_algo.prop_extract.
 Require Import src.frost.ext_algo.prop_solve_det.
+Require Import src.frost.ext_algo.prop_consis_complete.
 
 Set Implicit Arguments.
 
@@ -1176,4 +1201,482 @@ Corollary e_looksub_rel : forall S0 Θ α m P P' S1 Ξ C S1' Ξ' C',
 Proof.
   intros * D1 D2 Hcov.
   exact (e_looksub_rel_n D1 (le_n _) Hcov D2).
+Qed.
+
+(* ===================================================================== *)
+(*  §5  ROOT INVERSIONS AND DETERMINISM FOR THE SOLVE LAYER, eq half      *)
+(*                                                                        *)
+(*  ⚙ The [a_]-level twin (prop_solve_det.v §4, [a_solve_eq_det]) is Qed   *)
+(*  and HYPOTHESIS-FREE, and its case skeleton transfers row for row.     *)
+(*  Two differences, both simplifications: the binder rows pair the two    *)
+(*  openers with ONE transposition instead of rebinding both to a         *)
+(*  globally fresh third atom (the supply already says each opener is     *)
+(*  fresh for [S0]); and the overlap crosses that the [a_] version closes  *)
+(*  with [det_nil_refl] close with the EMPTY CHAIN here, which is         *)
+(*  strictly more informative — it pins the supply too.                   *)
+(* ===================================================================== *)
+
+Lemma swaps_pskl_ptyp_to_pskl : forall ps A,
+  swaps_pskl ps (ptyp_to_pskl A) = ptyp_to_pskl (swaps_ptyp ps A).
+Proof.
+  induction ps as [ | [a b] ps IH ]; intros; simpl; auto.
+  rewrite swap_pskl_ptyp_to_pskl. apply IH.
+Qed.
+
+(** ⭐ A VARIABLE SUBJECT ANSWERS ITSELF, spends nothing and generates
+    nothing — whatever route the derivation took ([SE-Var],
+    [SE-FlexR]-at-a-variable, [SE-VacuousR], [SE-GuardedGhost] all agree).
+    This is what makes every var-row overlap trivial.  ⚙ The supply
+    conjunct is new here; the [a_] twin cannot state it. *)
+Lemma e_solve_eq_var_subject : forall S0 Θ α Q S1 Ξ Y,
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₑ (pskl_var_f α) ∼ Q ⤳ Ξ ⨾ Y }}e ->
+  S1 = S0 /\ Ξ = nil /\ Y = pskl_var_f α.
+Proof.
+  intros S0 Θ α Q S1 Ξ Y HD.
+  remember (pskl_var_f α) as Ps eqn:HP.
+  revert α HP.
+  induction HD; intros α0 HP; try discriminate.
+  - (* SE-Var *) inversion HP; subst. repeat split; reflexivity.
+  - (* SE-FlexR — the guess at a variable IS the variable *)
+    subst.
+    match goal with
+    | G : e_guess_mono _ (pskl_var_f _) _ _ _ |- _ =>
+        destruct (e_guess_mono_inv_var G) as [-> [-> ->]]
+    end.
+    repeat split; reflexivity.
+  - (* SE-VacuousR *) subst. repeat split; reflexivity.
+  - (* SE-GuardedGhost *) exact (IHHD α0 HP).
+Qed.
+
+Local Ltac se_kill :=
+  try solve
+    [ assumption
+    | exfalso;
+      match goal with
+      | Hg : nonghost_pskl (pskl_tophole _) |- _ => inversion Hg
+      | Hg : nonghost_pskl pskl_hole |- _ => inversion Hg
+      | Hg : guarded_pskl (pskl_all_syn _) |- _ => inversion Hg
+      | Hg : guarded_pskl (pskl_tophole _) |- _ => inversion Hg
+      | Hg : guarded_pskl pskl_hole |- _ => inversion Hg
+      end ].
+
+Lemma e_solve_eq_inv_arrow : forall S0 Θ P1 P2 Q1 Q2 S1 Ξ Y,
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₑ (pskl_arrow P1 P2) ∼ (pskl_arrow Q1 Q2)
+     ⤳ Ξ ⨾ Y }}e ->
+  exists Sm Ξ1 Ξ2 Y1 Y2,
+    Ξ = Ξ2 ++ Ξ1 /\ Y = pskl_arrow Y1 Y2 /\
+    {{ S0 ↝ Sm ⊨ Θ ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ Y1 }}e /\
+    {{ Sm ↝ S1 ⊨ (Ξ1 ++ Θ) ⊢ₑ P2 ∼ Q2 ⤳ Ξ2 ⨾ Y2 }}e.
+Proof.
+  intros * H; inversion H; subst; se_kill.
+  match goal with
+  | Ha : e_solve_eq S0 _ P1 Q1 ?sm ?x1 ?y1,
+    Hb : e_solve_eq ?sm _ P2 Q2 S1 ?x2 ?y2 |- _ =>
+      exists sm, x1, x2, y1, y2
+  end.
+  repeat split; assumption.
+Qed.
+
+Lemma e_solve_eq_inv_forall : forall S0 Θ P Q S1 Ξ Y,
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_all_syn Q) ⤳ Ξ ⨾ Y }}e ->
+  exists β Y0, β `notin` S0
+    /\ Y = pskl_all_syn (close_pskl_wrt_pskl β Y0)
+    /\ {{ (add β S0) ↝ S1 ⊨ ((β ~ abind_tvar) ++ Θ)
+          ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f β))
+          ∼ (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ Ξ ⨾ Y0 }}e.
+Proof.
+  intros * H; inversion H; subst; se_kill.
+  match goal with
+  | Hfr : ?b `notin` S0, Hp : e_solve_eq _ _ _ _ _ _ ?y |- _ =>
+      exists b, y
+  end.
+  repeat split; assumption.
+Qed.
+
+Lemma e_solve_eq_inv_univ_ghost : forall S0 Θ P Q S1 Ξ Y,
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₑ (pskl_tophole P) ∼ (pskl_tophole Q) ⤳ Ξ ⨾ Y }}e ->
+  exists Y0, Y = pskl_tophole Y0
+    /\ {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ Y0 }}e.
+Proof.
+  intros * H; inversion H; subst; se_kill.
+  match goal with
+  | Hp : e_solve_eq S0 _ P Q S1 Ξ ?y |- _ => exists y
+  end.
+  split; [ reflexivity | assumption ].
+Qed.
+
+Lemma e_solve_eq_inv_ghost_forall : forall S0 Θ P Q S1 Ξ Y,
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₑ (pskl_tophole P) ∼ (pskl_all_syn Q) ⤳ Ξ ⨾ Y }}e ->
+  exists β Y0, β `notin` S0
+    /\ Y = pskl_all_syn (close_pskl_wrt_pskl β Y0)
+    /\ {{ (add β S0) ↝ S1 ⊨ ((β ~ abind_tvar) ++ Θ) ⊢ₑ (pskl_tophole P)
+          ∼ (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ Ξ ⨾ Y0 }}e.
+Proof.
+  intros * H; inversion H; subst; se_kill.
+  match goal with
+  | Hfr : ?b `notin` S0, Hp : e_solve_eq _ _ _ _ _ _ ?y |- _ =>
+      exists b, y
+  end.
+  repeat split; assumption.
+Qed.
+
+Lemma e_solve_eq_inv_forall_ghost : forall S0 Θ P Q S1 Ξ Y,
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_tophole Q) ⤳ Ξ ⨾ Y }}e ->
+  exists β Y0, β `notin` S0
+    /\ Y = pskl_all_syn (close_pskl_wrt_pskl β Y0)
+    /\ {{ (add β S0) ↝ S1 ⊨ ((β ~ abind_tvar) ++ Θ)
+          ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f β))
+          ∼ (pskl_tophole Q) ⤳ Ξ ⨾ Y0 }}e.
+Proof.
+  intros * H; inversion H; subst; se_kill.
+  match goal with
+  | Hfr : ?b `notin` S0, Hp : e_solve_eq _ _ _ _ _ _ ?y |- _ =>
+      exists b, y
+  end.
+  repeat split; assumption.
+Qed.
+
+(** the subject's [⫯] is stripped at a GUARDED counterpart — [SE-FlexR] is
+    barred by its own [nonghost_pskl] premise, everything else by the shape
+    of the counterpart. *)
+Lemma e_solve_eq_inv_ghost_guarded : forall S0 Θ P Q S1 Ξ Y,
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₑ (pskl_tophole P) ∼ Q ⤳ Ξ ⨾ Y }}e ->
+  guarded_pskl Q ->
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ Y }}e.
+Proof.
+  intros * H Hg; inversion H; subst; se_kill.
+Qed.
+
+(** and the counterpart's [⫯] at a non-variable guarded subject.  ⚠️ A
+    VARIABLE subject is genuinely a second route ([SE-Var] fires there too),
+    which is why the two shape-specific forms are stated instead of one
+    [guarded_pskl] form; the variable cell is closed by
+    [e_solve_eq_var_subject] on both sides. *)
+Lemma e_solve_eq_inv_guarded_ghost_unit : forall S0 Θ Q S1 Ξ Y,
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₑ pskl_unit ∼ (pskl_tophole Q) ⤳ Ξ ⨾ Y }}e ->
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₑ pskl_unit ∼ Q ⤳ Ξ ⨾ Y }}e.
+Proof.
+  intros * H; inversion H; subst; se_kill.
+Qed.
+
+Lemma e_solve_eq_inv_guarded_ghost_arrow : forall S0 Θ P1 P2 Q S1 Ξ Y,
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₑ (pskl_arrow P1 P2) ∼ (pskl_tophole Q) ⤳ Ξ ⨾ Y }}e ->
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₑ (pskl_arrow P1 P2) ∼ Q ⤳ Ξ ⨾ Y }}e.
+Proof.
+  intros * H; inversion H; subst; se_kill.
+Qed.
+
+Local Ltac rel_nil :=
+  exists (@nil (atom * atom)); rel4;
+  solve [ intros ? ? [] | simpl; reflexivity ].
+
+Definition solve_eq_rel_stmt (n : nat) : Prop :=
+  forall S0 Θ P Q S1 Ξ Y,
+    {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ Y }}e ->
+    size_pskl P + size_pskl Q <= n ->
+    ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] S0 ->
+    forall S1' Ξ' Y',
+      {{ S0 ↝ S1' ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ' ⨾ Y' }}e ->
+      exists ps,
+        (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0) /\
+        swaps_atoms ps S1 [=] S1' /\
+        swaps_aenv ps Ξ = Ξ' /\
+        swaps_pskl ps Y = Y'.
+
+Lemma e_solve_eq_rel_n : forall n, solve_eq_rel_stmt n.
+Proof.
+  induction n as [ | n IH ]; unfold solve_eq_rel_stmt in *.
+  { intros S0 Θ P Q S1 Ξ Y D1 Hsz; exfalso; destruct P; simpl in Hsz; lia. }
+  intros S0 Θ P Q S1 Ξ Y D1 Hsz Hcov S1' Ξ' Y' D2.
+  inversion D1; subst.
+
+  - (* SE-Unit *)
+    inversion D2; subst; se_kill; rel_nil.
+
+  - (* SE-Var / SE-FlexL *)
+    destruct (e_solve_eq_var_subject D2) as [-> [-> ->]]. rel_nil.
+
+  - (* SE-FlexR — the layer's ONE generating row *)
+    match goal with
+    | G : e_guess_mono S0 _ S1 Ξ _ |- _ => rename G into G1
+    end.
+    inversion D2; subst; se_kill.
+    + (* the subject is a variable: side 1's guess answers it verbatim *)
+      destruct (e_guess_mono_inv_var G1) as [-> [-> ->]]. rel_nil.
+    + (* flex_r × flex_r — [guess^TY]'s own determinism *)
+      match goal with
+      | G : e_guess_mono S0 _ S1' Ξ' _ |- _ => rename G into G2
+      end.
+      destruct (e_guess_mono_rel G1 G2 ltac:(clear - Hcov; fsetdec))
+        as [ps [Hav [HS [HX HA]]]].
+      exists ps. rel4; [ exact Hav | exact HS | exact HX | ].
+      rewrite swaps_pskl_ptyp_to_pskl, HA. reflexivity.
+
+  - (* SE-GhostL — a ◇ subject answers with the counterpart *)
+    inversion D2; subst; se_kill; rel_nil.
+
+  - (* SE-VacuousR — a ◇ counterpart answers with the subject *)
+    inversion D2; subst; se_kill; rel_nil.
+
+  - (* SE-Arrow — the THREADING row (supply AND context) *)
+    match type of D1 with
+    | e_solve_eq _ _ (pskl_arrow ?p1 ?p2) (pskl_arrow ?q1 ?q2) _ _ _ =>
+        rename p1 into Pa; rename p2 into Pb;
+        rename q1 into Qa; rename q2 into Qb
+    end.
+    destruct (e_solve_eq_inv_arrow D1)
+      as (Sm & X1 & X2 & Y1 & Y2 & -> & -> & D1a & D1b).
+    destruct (e_solve_eq_inv_arrow D2)
+      as (Sm' & X1' & X2' & Y1' & Y2' & -> & -> & D2a & D2b).
+    simpl in Hsz, Hcov.
+    destruct (IH _ _ _ _ _ _ _ D1a ltac:(simpl; lia)
+                 ltac:(clear - Hcov; fsetdec) _ _ _ D2a)
+      as [ps1 [Hav1 [HS1 [HX1 HY1]]]].
+    assert (HΘ1 : swaps_aenv ps1 Θ = Θ)
+      by (apply swaps_aenv_fresh_id; intros a0 b0 Hin;
+          destruct (Hav1 a0 b0 Hin) as [Ha0 Hb0]; split;
+          clear - Ha0 Hb0 Hcov; fsetdec).
+    assert (HPb : swaps_pskl ps1 Pb = Pb)
+      by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
+          destruct (Hav1 a0 b0 Hin) as [Ha0 Hb0]; split;
+          clear - Ha0 Hb0 Hcov; fsetdec).
+    assert (HQb : swaps_pskl ps1 Qb = Qb)
+      by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
+          destruct (Hav1 a0 b0 Hin) as [Ha0 Hb0]; split;
+          clear - Ha0 Hb0 Hcov; fsetdec).
+    assert (Heq2 : Sm' [=] swaps_atoms ps1 Sm) by (symmetry; exact HS1).
+    destruct (e_solve_eq_swaps ps1 D1b Heq2) as [S2t [HS2t D1bt]].
+    rewrite swaps_aenv_app_dist, HX1, HΘ1, HPb, HQb in D1bt.
+    pose proof (e_solve_eq_supply_grows D2a) as Hgr1'.
+    pose proof (e_solve_eq_block_in_supply D2a) as Hdom1'.
+    pose proof (e_solve_eq_block_ftvar D2a) as Hftv1'.
+    pose proof (e_solve_eq_out_ftvar D2a ltac:(clear - Hcov; fsetdec))
+      as Hout1'.
+    destruct (IH _ _ _ _ _ _ _ D1bt ltac:(simpl; lia)
+                 ltac:(rewrite ftvar_in_aenv_app;
+                       clear - Hcov Hgr1' Hdom1' Hftv1'; fsetdec)
+                 _ _ _ D2b)
+      as [ps2 [Hav2 [HS2 [HX2 HY2]]]].
+    assert (HX1' : swaps_aenv ps2 X1' = X1')
+      by (apply swaps_aenv_fresh_id; intros a0 b0 Hin;
+          destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0]; split;
+          clear - Ha0 Hb0 Hdom1' Hftv1'; fsetdec).
+    assert (HY1' : swaps_pskl ps2 Y1' = Y1')
+      by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
+          destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0]; split;
+          clear - Ha0 Hb0 Hout1'; fsetdec).
+    exists (ps1 ++ ps2). rel4.
+    + intros a0 b0 Hin. apply in_app_or in Hin. destruct Hin as [Hin | Hin].
+      * exact (Hav1 a0 b0 Hin).
+      * destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
+        split; clear - Ha0 Hb0 Hgr1'; fsetdec.
+    + rewrite swaps_atoms_app. rewrite <- HS2.
+      apply swaps_atoms_cong. symmetry. exact HS2t.
+    + rewrite swaps_aenv_app, !swaps_aenv_app_dist, HX1, HX2, HX1'.
+      reflexivity.
+    + rewrite swaps_pskl_app, !swaps_pskl_arrow, HY1, HY2, HY1'.
+      reflexivity.
+
+  - (* SE-Forall — both sides open; ONE transposition pairs the openers *)
+    match type of D1 with
+    | e_solve_eq _ _ (pskl_all_syn ?p) (pskl_all_syn ?q) _ _ _ =>
+        rename p into P0; rename q into Q0
+    end.
+    destruct (e_solve_eq_inv_forall D1) as (β1 & Y1 & Hβ1 & -> & Dp).
+    destruct (e_solve_eq_inv_forall D2) as (β2 & Y2 & Hβ2 & -> & Dp').
+    simpl in Hsz, Hcov.
+    assert (Heqs : add β2 S0 [=] swap_atoms β1 β2 (add β1 S0)).
+    { rewrite swap_atoms_add. rewrite (swap_atoms_notin β1 β2 S0 Hβ1 Hβ2).
+      unfold swap_atom. destruct (β1 == β1); [ | congruence ]. reflexivity. }
+    destruct (e_solve_eq_swap Dp Heqs) as [S1t [HS1t Dpt]].
+    rewrite swap_aenv_app, swap_aenv_one_tvar in Dpt.
+    rewrite (@swap_aenv_fresh_id β1 β2 Θ) in Dpt
+      by (clear - Hcov Hβ1 Hβ2; fsetdec).
+    rewrite ! swap_pskl_open_var in Dpt.
+    rewrite (@swap_pskl_fresh_id β1 β2 P0) in Dpt
+      by (clear - Hcov Hβ1 Hβ2; fsetdec).
+    rewrite (@swap_pskl_fresh_id β1 β2 Q0) in Dpt
+      by (clear - Hcov Hβ1 Hβ2; fsetdec).
+    replace (swap_atom β1 β2 β1) with β2 in Dpt
+      by (unfold swap_atom; destruct (β1 == β1); congruence).
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f β2))
+      as Hu1.
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q0 (pskl_var_f β2))
+      as Hu2.
+    destruct (IH _ _ _ _ _ _ _ Dpt
+                 ltac:(rewrite ! size_pskl_open_pskl_wrt_pskl_var; lia)
+                 ltac:(rewrite ftvar_in_aenv_cons_tvar;
+                       clear - Hcov Hu1 Hu2; simpl in *; fsetdec)
+                 _ _ _ Dp')
+      as [ps' [Hav' [HS' [HX' HY']]]].
+    exists ((β1, β2) :: ps'). rel4.
+    + intros a0 b0 [Heqp | Hin];
+        [ inversion Heqp; subst; split; assumption | ].
+      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
+      split; clear - Ha0 Hb0; fsetdec.
+    + cbn [swaps_atoms]. rewrite <- HS'.
+      apply swaps_atoms_cong. symmetry. exact HS1t.
+    + cbn [swaps_aenv]. exact HX'.
+    + cbn [swaps_pskl swap_pskl]. rewrite swap_pskl_close.
+      replace (swap_atom β1 β2 β1) with β2
+        by (unfold swap_atom; destruct (β1 == β1); congruence).
+      rewrite swaps_pskl_all_syn, swaps_pskl_close, HY'.
+      f_equal. f_equal.
+      apply swaps_atom_notin. intros a0 b0 Hin.
+      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
+      split; [ clear - Ha0 | clear - Hb0 ]; fsetdec.
+
+  - (* SE-UnivGhost — both ⫯s vanish and reappear on the output *)
+    match type of D1 with
+    | e_solve_eq _ _ (pskl_tophole ?p) (pskl_tophole ?q) _ _ _ =>
+        rename p into P0; rename q into Q0
+    end.
+    destruct (e_solve_eq_inv_univ_ghost D1) as (Y1 & -> & Dp).
+    destruct (e_solve_eq_inv_univ_ghost D2) as (Y2 & -> & Dp').
+    simpl in Hsz, Hcov.
+    destruct (IH _ _ _ _ _ _ _ Dp ltac:(simpl; lia)
+                 ltac:(clear - Hcov; simpl in *; fsetdec) _ _ _ Dp')
+      as [ps' [Hav' [HS' [HX' HY']]]].
+    exists ps'. rel4; [ exact Hav' | exact HS' | exact HX' | ].
+    rewrite swaps_pskl_tophole, HY'. reflexivity.
+
+  - (* SE-GhostForall — the COUNTERPART opens *)
+    match type of D1 with
+    | e_solve_eq _ _ (pskl_tophole ?p) (pskl_all_syn ?q) _ _ _ =>
+        rename p into P0; rename q into Q0
+    end.
+    destruct (e_solve_eq_inv_ghost_forall D1) as (β1 & Y1 & Hβ1 & -> & Dp).
+    destruct (e_solve_eq_inv_ghost_forall D2) as (β2 & Y2 & Hβ2 & -> & Dp').
+    simpl in Hsz, Hcov.
+    assert (Heqs : add β2 S0 [=] swap_atoms β1 β2 (add β1 S0)).
+    { rewrite swap_atoms_add. rewrite (swap_atoms_notin β1 β2 S0 Hβ1 Hβ2).
+      unfold swap_atom. destruct (β1 == β1); [ | congruence ]. reflexivity. }
+    destruct (e_solve_eq_swap Dp Heqs) as [S1t [HS1t Dpt]].
+    rewrite swap_aenv_app, swap_aenv_one_tvar in Dpt.
+    rewrite (@swap_aenv_fresh_id β1 β2 Θ) in Dpt
+      by (clear - Hcov Hβ1 Hβ2; fsetdec).
+    rewrite swap_pskl_open_var in Dpt.
+    rewrite (@swap_pskl_fresh_id β1 β2 (pskl_tophole P0)) in Dpt
+      by (clear - Hcov Hβ1 Hβ2; simpl in *; fsetdec).
+    rewrite (@swap_pskl_fresh_id β1 β2 Q0) in Dpt
+      by (clear - Hcov Hβ1 Hβ2; fsetdec).
+    replace (swap_atom β1 β2 β1) with β2 in Dpt
+      by (unfold swap_atom; destruct (β1 == β1); congruence).
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q0 (pskl_var_f β2))
+      as Hu2.
+    destruct (IH _ _ _ _ _ _ _ Dpt
+                 ltac:(rewrite size_pskl_open_pskl_wrt_pskl_var; simpl; lia)
+                 ltac:(rewrite ftvar_in_aenv_cons_tvar;
+                       clear - Hcov Hu2; simpl in *; fsetdec)
+                 _ _ _ Dp')
+      as [ps' [Hav' [HS' [HX' HY']]]].
+    exists ((β1, β2) :: ps'). rel4.
+    + intros a0 b0 [Heqp | Hin];
+        [ inversion Heqp; subst; split; assumption | ].
+      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
+      split; clear - Ha0 Hb0; fsetdec.
+    + cbn [swaps_atoms]. rewrite <- HS'.
+      apply swaps_atoms_cong. symmetry. exact HS1t.
+    + cbn [swaps_aenv]. exact HX'.
+    + cbn [swaps_pskl swap_pskl]. rewrite swap_pskl_close.
+      replace (swap_atom β1 β2 β1) with β2
+        by (unfold swap_atom; destruct (β1 == β1); congruence).
+      rewrite swaps_pskl_all_syn, swaps_pskl_close, HY'.
+      f_equal. f_equal.
+      apply swaps_atom_notin. intros a0 b0 Hin.
+      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
+      split; [ clear - Ha0 | clear - Hb0 ]; fsetdec.
+
+  - (* SE-GhostGuarded — the subject's ⫯ is stripped, the yield passes *)
+    match goal with
+    | Hg : guarded_pskl _ |- _ => rename Hg into Hgd
+    end.
+    pose proof (e_solve_eq_inv_ghost_guarded D1 Hgd) as Dp.
+    pose proof (e_solve_eq_inv_ghost_guarded D2 Hgd) as Dp'.
+    simpl in Hsz, Hcov.
+    exact (IH _ _ _ _ _ _ _ Dp ltac:(simpl; lia)
+              ltac:(clear - Hcov; simpl in *; fsetdec) _ _ _ Dp').
+
+  - (* SE-ForallGhost — the SUBJECT opens *)
+    match type of D1 with
+    | e_solve_eq _ _ (pskl_all_syn ?p) (pskl_tophole ?q) _ _ _ =>
+        rename p into P0; rename q into Q0
+    end.
+    destruct (e_solve_eq_inv_forall_ghost D1) as (β1 & Y1 & Hβ1 & -> & Dp).
+    destruct (e_solve_eq_inv_forall_ghost D2) as (β2 & Y2 & Hβ2 & -> & Dp').
+    simpl in Hsz, Hcov.
+    assert (Heqs : add β2 S0 [=] swap_atoms β1 β2 (add β1 S0)).
+    { rewrite swap_atoms_add. rewrite (swap_atoms_notin β1 β2 S0 Hβ1 Hβ2).
+      unfold swap_atom. destruct (β1 == β1); [ | congruence ]. reflexivity. }
+    destruct (e_solve_eq_swap Dp Heqs) as [S1t [HS1t Dpt]].
+    rewrite swap_aenv_app, swap_aenv_one_tvar in Dpt.
+    rewrite (@swap_aenv_fresh_id β1 β2 Θ) in Dpt
+      by (clear - Hcov Hβ1 Hβ2; fsetdec).
+    rewrite swap_pskl_open_var in Dpt.
+    rewrite (@swap_pskl_fresh_id β1 β2 P0) in Dpt
+      by (clear - Hcov Hβ1 Hβ2; fsetdec).
+    rewrite (@swap_pskl_fresh_id β1 β2 (pskl_tophole Q0)) in Dpt
+      by (clear - Hcov Hβ1 Hβ2; simpl in *; fsetdec).
+    replace (swap_atom β1 β2 β1) with β2 in Dpt
+      by (unfold swap_atom; destruct (β1 == β1); congruence).
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f β2))
+      as Hu1.
+    destruct (IH _ _ _ _ _ _ _ Dpt
+                 ltac:(rewrite size_pskl_open_pskl_wrt_pskl_var; simpl; lia)
+                 ltac:(rewrite ftvar_in_aenv_cons_tvar;
+                       clear - Hcov Hu1; simpl in *; fsetdec)
+                 _ _ _ Dp')
+      as [ps' [Hav' [HS' [HX' HY']]]].
+    exists ((β1, β2) :: ps'). rel4.
+    + intros a0 b0 [Heqp | Hin];
+        [ inversion Heqp; subst; split; assumption | ].
+      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
+      split; clear - Ha0 Hb0; fsetdec.
+    + cbn [swaps_atoms]. rewrite <- HS'.
+      apply swaps_atoms_cong. symmetry. exact HS1t.
+    + cbn [swaps_aenv]. exact HX'.
+    + cbn [swaps_pskl swap_pskl]. rewrite swap_pskl_close.
+      replace (swap_atom β1 β2 β1) with β2
+        by (unfold swap_atom; destruct (β1 == β1); congruence).
+      rewrite swaps_pskl_all_syn, swaps_pskl_close, HY'.
+      f_equal. f_equal.
+      apply swaps_atom_notin. intros a0 b0 Hin.
+      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
+      split; [ clear - Ha0 | clear - Hb0 ]; fsetdec.
+
+  - (* SE-GuardedGhost — ⚠️ a VARIABLE subject is a second route *)
+    match goal with
+    | Hg : guarded_pskl _ |- _ => rename Hg into Hgd
+    end.
+    inversion Hgd; subst.
+    + (* unit subject *)
+      pose proof (e_solve_eq_inv_guarded_ghost_unit D1) as Dp.
+      pose proof (e_solve_eq_inv_guarded_ghost_unit D2) as Dp'.
+      simpl in Hsz, Hcov.
+      exact (IH _ _ _ _ _ _ _ Dp ltac:(simpl; lia)
+                ltac:(clear - Hcov; simpl in *; fsetdec) _ _ _ Dp').
+    + (* VARIABLE subject — both sides answer the variable, whatever route *)
+      destruct (e_solve_eq_var_subject D1) as [-> [-> ->]].
+      destruct (e_solve_eq_var_subject D2) as [-> [-> ->]].
+      rel_nil.
+    + (* arrow subject *)
+      pose proof (e_solve_eq_inv_guarded_ghost_arrow D1) as Dp.
+      pose proof (e_solve_eq_inv_guarded_ghost_arrow D2) as Dp'.
+      simpl in Hsz, Hcov.
+      exact (IH _ _ _ _ _ _ _ Dp ltac:(simpl; lia)
+                ltac:(clear - Hcov; simpl in *; fsetdec) _ _ _ Dp').
+Qed.
+
+Corollary e_solve_eq_rel : forall S0 Θ P Q S1 Ξ Y S1' Ξ' Y',
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ Y }}e ->
+  {{ S0 ↝ S1' ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ' ⨾ Y' }}e ->
+  ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] S0 ->
+  exists ps,
+    (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0) /\
+    swaps_atoms ps S1 [=] S1' /\
+    swaps_aenv ps Ξ = Ξ' /\
+    swaps_pskl ps Y = Y'.
+Proof.
+  intros * D1 D2 Hcov.
+  exact (e_solve_eq_rel_n D1 (le_n _) Hcov D2).
 Qed.
