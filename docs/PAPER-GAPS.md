@@ -309,9 +309,20 @@ both fire.
 
 ## MISSING SIDE CONDITIONS (2026-08-18, machine-checked) — `SolS-ForallR` and `SolS-Vacuous` lack the exclusions the implementation's MATCH ORDER supplies, so the SOLVE layer answers the same query with two different amounts of fresh supply
 
-> ⛔ **NOT YET FIXED IN THE MECH** — the design fork is open
-> (`docs/HANDOFF-extractable-algo-encoding.md` §8c.18).  The refutation is
-> `cex/probe_solve_sub_forall_r_drift.v`, Qed and assumptions-closed.
+> **✅ FIXED IN THE MECH ON BOTH ENCODINGS (2026-08-18).**  `SolS-Vacuous`
+> carries `peel_l_off P` (*"the subject is neither a `∀` nor a `⫯`"*) and
+> `SolS-ForallR` carries `solve_l_off P` (*"…and not a variable either"*),
+> which is `solve_sub`'s own match order.  `make coq` rc=0, `README.v` 32/32.
+> **The finding below stands unchanged for the PAPER**: the figure still owes
+> the two exclusion premises.
+>
+> ⚙ The refutation `cex/probe_solve_sub_forall_r_drift.v` is RETRACTED by the
+> repair and deleted; its text is at commit `5e2384f`.  What the repair cost,
+> and the one place where it MOVED work rather than removing it (the
+> ForallL/ForallR commutation, now paid once in
+> `a_solve_sub_forall_r_gen`), is in
+> [`HANDOFF-extractable-algo-encoding.md`](HANDOFF-extractable-algo-encoding.md)
+> §8c.18–§8c.19.
 
 **What the paper says.**  `SolS-Var` answers a VARIABLE subject with itself in
 any mode; `SolS-ForallR` peels a ghost-free `∀` counterpart in check mode at
