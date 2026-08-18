@@ -2474,6 +2474,39 @@ Proof.
   split; [ exact Hav | ]. split; [ exact HS | exact HT ].
 Qed.
 
+(** ⚙ The same over [e_consis_impl], i.e. at an ARBITRARY order proof rather
+    than at [e_consis_order_total]'s.  Levels 7/8 need this form and not the
+    runner's: [e_split_impl]'s flexible clause calls [e_consis_impl] with the
+    obligation proofs [Equations] generated, and a completeness statement
+    that fixes the domain argument does not apply to them. *)
+Corollary e_consis_impl_complete : forall Δ1 Δ2 S0 Θ P0 P
+    (HP0 : lc_pskl P0) (HP : lc_pskl P) (HD : aenv_defs_mono Θ)
+    (H : e_consis_order Δ1 Δ2 S0 Θ P0 P) Sd Θd Qd,
+  {{ S0 ↝ Sd ⊨ Θ ⊢[ Δ1 | Δ2 | P0 ] P ∼ Qd ⊣ Θd }}e ->
+  uniq Θ ->
+  ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P ∪ Δ1 ∪ Δ2 [<=] S0 ->
+  exists r ps,
+    e_consis_impl Δ1 Δ2 S0 Θ P0 P HP0 HP HD H = Some r
+    /\ (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0)
+    /\ swaps_atoms ps Sd [=] cs_supply (proj1_sig r)
+    /\ swaps_aenv ps Θd = cs_ctx (proj1_sig r)
+    /\ swaps_pskl ps Qd = cs_out (proj1_sig r).
+Proof.
+  intros * Hd Hu Hcov.
+  set (Ho := e_consis_order_to_call _ _ _ _ _ _ H).
+  destruct (e_consis_call_impl_complete Ho (conj HP0 HP) HD Ho Hu Hcov
+              Sd Θd Qd Hd) as [r0 [ps [Heq [Hav [HS [HT HQ]]]]]].
+  unfold e_consis_impl. fold Ho.
+  destruct (e_consis_call_impl (consis_call_consis Δ1 Δ2 P0 P) S0 Θ
+              (conj HP0 HP) HD Ho) as [ [rr Hrr] | ] eqn:Hcl;
+    try rewrite Hcl in Heq; cbn [consis_call_answer proj1_sig] in Heq;
+    [ inversion Heq; subst | discriminate ].
+  eexists; exists ps.
+  split; [ reflexivity | ].
+  split; [ exact Hav | ]. split; [ exact HS | ].
+  split; [ exact HT | exact HQ ].
+Qed.
+
 (** ⭐ The consistency headline, over the argument-free runner of
     def_consis_impl.v §4 — the twin of [e_consis_run_sound]. *)
 Theorem e_consis_run_complete : forall Δ1 Δ2 S0 Θ P0 P

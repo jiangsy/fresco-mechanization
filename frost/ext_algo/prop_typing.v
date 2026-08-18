@@ -23,11 +23,13 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
 Require Import src.frost.prop_coercions.
+Require Import src.frost.prop_tag.
 Require Import src.frost.def_shapes.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.prop_basic.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
 Require Import src.frost.ext_algo.def_guess.
@@ -435,4 +437,236 @@ Proof.
   destruct (e_typing_sound He ltac:(apply uniq_nil) ltac:(simpl; fsetdec))
     as [Ha _].
   exact Ha.
+Qed.
+
+(* ##################################################################### *)
+(*  §3  EQUIVARIANCE — the SUPPLY-RESPECT and TRANSPOSITION halves        *)
+(*                                                                       *)
+(*  algo/prop_swap.v §16's [a_typing_swap] in the ∃-form the supply       *)
+(*  forces, and prop_pat.v §4's twin for the judgement above it.          *)
+(*                                                                       *)
+(*  ⭐ WHY LEVEL 8 NEEDS IT.  The runner opens the four abs rows' TERM     *)
+(*  binder and the two check-STEP rows' TYPE binder at [supply_fresh],    *)
+(*  while a derivation opens at any atom fresh for the supply; the        *)
+(*  induction's hypothesis is stated at the runner's inputs, so the       *)
+(*  derivation is transposed onto them first.                            *)
+(* ##################################################################### *)
+
+Lemma e_typing_supply_respect : forall S0 m Θ0 P0 e B S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\
+    {{ S0' ↝ S1' ⊨ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}e.
+Proof.
+  intros S0 m Θ0 P0 e B S1 Θ1 H; induction H; intros S0' Heq.
+
+  - (* AT-Unit *)
+    destruct (e_sub_supply_respect H Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_typing__unit; exact Hd ].
+  - (* AT-Var *)
+    destruct (e_sub_supply_respect H0 Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | eapply e_typing__var; eassumption ].
+  - (* AT-Anno *)
+    destruct (IHe_typing _ Heq) as [S1' [HS1 Hd1]].
+    destruct (e_sub_supply_respect H0 HS1) as [S2' [HS2 Hd2]].
+    exists S2'. split; [ exact HS2 | eapply e_typing__anno; eassumption ].
+  - (* AT-Freeze *)
+    destruct (IHe_typing _ Heq) as [S1' [HS1 Hd1]].
+    destruct H0 as [Qc Hc].
+    destruct (e_consis_supply_respect Hc HS1) as [S2' [HS2 Hc']].
+    exists S2'. split; [ exact HS2 | ].
+    eapply e_typing__freeze; [ exact Hd1 | exists Qc; exact Hc' ].
+  - (* AT-Abs *)
+    destruct (e_split_supply_respect H0 Heq) as [S1' [HS1 Hsp]].
+    destruct (e_guess_mono_supply_respect H1 HS1) as [S2' [HS2 Hg]].
+    destruct (IHe_typing (add x S2') ltac:(rewrite HS2; reflexivity))
+      as [S3' [HS3 Hd]].
+    exists S3'. split; [ exact HS3 | ].
+    apply e_typing__abs with (x := x) (S1 := S1') (S2 := S2') (Θ1 := Θ1)
+      (Θ2 := Θ2) (P := P) (Q := Q) (αs := αs) (A := A);
+      [ assumption | exact Hsp | exact Hg | assumption
+      | rewrite HS2; assumption | exact Hd ].
+  - (* AT-AbsAnno *)
+    destruct (e_split_supply_respect H0 Heq) as [S1' [HS1 Hsp]].
+    destruct H1 as [Qc Hc].
+    destruct (e_consis_supply_respect Hc HS1) as [S2' [HS2 Hc']].
+    destruct (IHe_typing (add x S2') ltac:(rewrite HS2; reflexivity))
+      as [S3' [HS3 Hd]].
+    exists S3'. split; [ exact HS3 | ].
+    apply e_typing__abs_anno with (x := x) (S1 := S1') (S2 := S2')
+      (Θ1 := Θ1) (Θ2 := Θ2) (P := P) (Q := Q) (A := A);
+      [ assumption | exact Hsp | exists Qc; exact Hc' | assumption
+      | rewrite HS2; assumption | exact Hd ].
+  - (* AT-AbsCheck STEP *)
+    destruct (IHe_typing (add α S0') ltac:(rewrite Heq; reflexivity))
+      as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_typing__abs_check_step with (α := α) (Ξ := Ξ) (A0 := A0);
+      [ assumption | assumption | assumption | assumption
+      | rewrite Heq; assumption | exact Hd ].
+  - (* AT-AbsCheck BASE *)
+    destruct (e_split_supply_respect H Heq) as [S1' [HS1 Hsp]].
+    destruct (IHe_typing (add x S1') ltac:(rewrite HS1; reflexivity))
+      as [S2' [HS2 Hd]].
+    exists S2'. split; [ exact HS2 | ].
+    apply e_typing__abs_check_base with (x := x) (S1 := S1') (Θ1 := Θ1)
+      (A := A) (B := B) (Ξ := Ξ);
+      [ exact Hsp | assumption | assumption | assumption
+      | rewrite HS1; assumption | exact Hd ].
+  - (* AT-AbsAnnoCheck STEP *)
+    destruct (IHe_typing (add α S0') ltac:(rewrite Heq; reflexivity))
+      as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_typing__abs_anno_check_step with (α := α) (Ξ := Ξ) (A0 := A0);
+      [ assumption | assumption | assumption | assumption
+      | rewrite Heq; assumption | exact Hd ].
+  - (* AT-AbsAnnoCheck BASE *)
+    destruct (e_split_supply_respect H Heq) as [S1' [HS1 Hsp]].
+    destruct H0 as [Qc Hc].
+    destruct (e_consis_supply_respect Hc HS1) as [S2' [HS2 Hc']].
+    destruct (IHe_typing (add x S2') ltac:(rewrite HS2; reflexivity))
+      as [S3' [HS3 Hd]].
+    exists S3'. split; [ exact HS3 | ].
+    apply e_typing__abs_anno_check_base with (x := x) (S1 := S1') (S2 := S2')
+      (Θ1 := Θ1) (Θ2 := Θ2) (A0 := A0) (A' := A') (B := B) (Ξ := Ξ);
+      [ exact Hsp | exists Qc; exact Hc' | assumption | assumption
+      | assumption | rewrite HS2; assumption | exact Hd ].
+  - (* AT-App *)
+    destruct (e_pat_supply_respect H Heq) as [S1' [HS1 Hp]].
+    destruct (IHe_typing1 _ HS1) as [S2' [HS2 Hd1]].
+    destruct (IHe_typing2 _ HS2) as [S3' [HS3 Hd2]].
+    exists S3'. split; [ exact HS3 | ].
+    eapply e_typing__app; eassumption.
+Qed.
+
+Lemma e_typing_swap : forall a b S0 m Θ0 P0 e B S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}e ->
+  forall S0', S0' [=] swap_atoms a b S0 ->
+  exists S1', S1' [=] swap_atoms a b S1 /\
+    {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊢[ m ; (swap_pskl a b P0) ]
+       (swap_exp a b e) ⦂ (swap_ptyp a b B) ⊣ (swap_aenv a b Θ1) }}e.
+Proof.
+  intros a b S0 m Θ0 P0 e B S1 Θ1 H; induction H; intros S0' Heq; simpl;
+    try (rewrite ?swap_aenv_app in *;
+         rewrite ?swap_pskl_ptyp_to_pskl in *;
+         rewrite ?swap_ptyp_open in * ).
+
+  - (* AT-Unit *)
+    destruct (e_sub_swap (a := a) (b := b) H Heq) as [S1' [HS1 Hd]].
+    rewrite ?swap_pskl_ptyp_to_pskl in Hd.
+    exists S1'. split; [ exact HS1 | apply e_typing__unit; exact Hd ].
+  - (* AT-Var *)
+    destruct (e_sub_swap (a := a) (b := b) H0 Heq) as [S1' [HS1 Hd]].
+    rewrite ?swap_pskl_ptyp_to_pskl in Hd.
+    exists S1'. split; [ exact HS1 | ].
+    apply e_typing__var with (A := swap_ptyp a b A);
+      [ exact (swap_aenv_binds a b _ _ _ H) | exact Hd ].
+  - (* AT-Anno *)
+    destruct (IHe_typing _ Heq) as [S1' [HS1 Hd1]].
+    rewrite ?swap_pskl_ptyp_to_pskl in Hd1.
+    destruct (e_sub_swap (a := a) (b := b) H0 HS1) as [S2' [HS2 Hd2]].
+    rewrite ?swap_pskl_ptyp_to_pskl in Hd2.
+    exists S2'. split; [ exact HS2 | eapply e_typing__anno; eassumption ].
+  - (* AT-Freeze *)
+    destruct (IHe_typing _ Heq) as [S1' [HS1 Hd1]].
+    destruct (e_consis_chk_swap (a := a) (b := b) H0 HS1)
+      as [S2' [HS2 Hc']].
+    rewrite ?swap_pskl_ptyp_to_pskl in Hc'.
+    exists S2'. split; [ exact HS2 | ].
+    eapply e_typing__freeze; [ exact Hd1 | exact Hc' ].
+  - (* AT-Abs — the drawn TERM binder and the guess block ride the swap *)
+    destruct (e_split_swap (a := a) (b := b) H0 Heq) as [S1' [HS1 Hsp]].
+    destruct (e_guess_mono_swap (a := a) (b := b) H1 HS1) as [S2' [HS2 Hg]].
+    destruct (IHe_typing (add (swap_atom a b x) S2'))
+      as [S3' [HS3 Hd]]; [ apply eq_swap_atoms_add; exact HS2 | ].
+    exists S3'. split; [ exact HS3 | ].
+    apply e_typing__abs with (x := swap_atom a b x) (S1 := S1') (S2 := S2')
+      (Θ1 := swap_aenv a b Θ1) (Θ2 := swap_aenv a b Θ2)
+      (P := swap_pskl a b P) (Q := swap_pskl a b Q)
+      (αs := swap_aenv a b αs) (A := swap_ptyp a b A);
+      [ assumption | exact Hsp | exact Hg | apply a_suffix_swap; assumption
+      | eapply swap_notin_eq; eassumption | ].
+    rewrite <- swap_exp_open_var. rewrite ?swap_aenv_app in Hd. exact Hd.
+  - (* AT-AbsAnno *)
+    destruct (e_split_swap (a := a) (b := b) H0 Heq) as [S1' [HS1 Hsp]].
+    destruct (e_consis_chk_swap (a := a) (b := b) H1 HS1)
+      as [S2' [HS2 Hc']].
+    rewrite ?swap_pskl_ptyp_to_pskl in Hc'.
+    destruct (IHe_typing (add (swap_atom a b x) S2'))
+      as [S3' [HS3 Hd]]; [ apply eq_swap_atoms_add; exact HS2 | ].
+    exists S3'. split; [ exact HS3 | ].
+    apply e_typing__abs_anno with (x := swap_atom a b x) (S1 := S1')
+      (S2 := S2') (Θ1 := swap_aenv a b Θ1) (Θ2 := swap_aenv a b Θ2)
+      (P := swap_pskl a b P) (Q := swap_pskl a b Q)
+      (A := swap_ptyp a b A);
+      [ assumption | exact Hsp | exact Hc' | apply a_suffix_swap; assumption
+      | eapply swap_notin_eq; eassumption | ].
+    rewrite <- swap_exp_open_var. rewrite ?swap_aenv_app in Hd. exact Hd.
+  - (* AT-AbsCheck STEP — a TYPE binder, drawn from the supply *)
+    destruct (IHe_typing (add (swap_atom a b α) S0'))
+      as [S1' [HS1 Hd]]; [ apply eq_swap_atoms_add; exact Heq | ].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_typing__abs_check_step with (α := swap_atom a b α)
+      (Ξ := swap_aenv a b Ξ) (A0 := swap_ptyp a b A0);
+      [ apply a_suffix_swap; assumption
+      | rewrite <- swap_aenv_app; auto using swap_aenv_uniq
+      | apply swap_block_ftv_filter; assumption
+      | apply swap_ptyp_ftv_notin; assumption
+      | eapply swap_notin_eq; eassumption | ].
+    rewrite ?swap_aenv_app in Hd. rewrite ?swap_ptyp_open in Hd. exact Hd.
+  - (* AT-AbsCheck BASE *)
+    destruct (e_split_swap (a := a) (b := b) H Heq) as [S1' [HS1 Hsp]].
+    rewrite ?swap_pskl_ptyp_to_pskl in Hsp.
+    destruct (IHe_typing (add (swap_atom a b x) S1'))
+      as [S2' [HS2 Hd]]; [ apply eq_swap_atoms_add; exact HS1 | ].
+    exists S2'. split; [ exact HS2 | ].
+    apply e_typing__abs_check_base with (x := swap_atom a b x) (S1 := S1')
+      (Θ1 := swap_aenv a b Θ1) (A0 := swap_ptyp a b A0)
+      (A := swap_ptyp a b A) (B := swap_ptyp a b B) (Ξ := swap_aenv a b Ξ);
+      [ exact Hsp | apply a_suffix_swap; assumption
+      | rewrite <- swap_aenv_app; auto using swap_aenv_uniq
+      | apply swap_block_ftv_filter; assumption
+      | eapply swap_notin_eq; eassumption | ].
+    rewrite <- swap_exp_open_var. rewrite ?swap_aenv_app in Hd.
+    rewrite ?swap_pskl_ptyp_to_pskl in Hd. exact Hd.
+  - (* AT-AbsAnnoCheck STEP *)
+    destruct (IHe_typing (add (swap_atom a b α) S0'))
+      as [S1' [HS1 Hd]]; [ apply eq_swap_atoms_add; exact Heq | ].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_typing__abs_anno_check_step with (α := swap_atom a b α)
+      (Ξ := swap_aenv a b Ξ) (A0 := swap_ptyp a b A0);
+      [ apply a_suffix_swap; assumption
+      | rewrite <- swap_aenv_app; auto using swap_aenv_uniq
+      | apply swap_block_ftv_filter; assumption
+      | apply swap_ptyp_ftv_notin; assumption
+      | eapply swap_notin_eq; eassumption | ].
+    rewrite ?swap_aenv_app in Hd. rewrite ?swap_ptyp_open in Hd. exact Hd.
+  - (* AT-AbsAnnoCheck BASE *)
+    destruct (e_split_swap (a := a) (b := b) H Heq) as [S1' [HS1 Hsp]].
+    rewrite ?swap_pskl_ptyp_to_pskl in Hsp.
+    destruct (e_consis_chk_swap (a := a) (b := b) H0 HS1)
+      as [S2' [HS2 Hc']].
+    rewrite ?swap_pskl_ptyp_to_pskl in Hc'.
+    destruct (IHe_typing (add (swap_atom a b x) S2'))
+      as [S3' [HS3 Hd]]; [ apply eq_swap_atoms_add; exact HS2 | ].
+    exists S3'. split; [ exact HS3 | ].
+    apply e_typing__abs_anno_check_base with (x := swap_atom a b x)
+      (S1 := S1') (S2 := S2') (Θ1 := swap_aenv a b Θ1)
+      (Θ2 := swap_aenv a b Θ2) (A0 := swap_ptyp a b A0)
+      (A' := swap_ptyp a b A') (B := swap_ptyp a b B)
+      (Ξ := swap_aenv a b Ξ);
+      [ exact Hsp | exact Hc' | apply a_suffix_swap; assumption
+      | rewrite <- swap_aenv_app; auto using swap_aenv_uniq
+      | apply swap_block_ftv_filter; assumption
+      | eapply swap_notin_eq; eassumption | ].
+    rewrite <- swap_exp_open_var. rewrite ?swap_aenv_app in Hd.
+    rewrite ?swap_pskl_ptyp_to_pskl in Hd. exact Hd.
+  - (* AT-App — the argument runs TWICE, the second time at the domain *)
+    destruct (e_pat_swap (a := a) (b := b) H Heq) as [S1' [HS1 Hp]].
+    destruct (IHe_typing1 _ HS1) as [S2' [HS2 Hd1]].
+    destruct (IHe_typing2 _ HS2) as [S3' [HS3 Hd2]].
+    rewrite ?swap_pskl_ptyp_to_pskl in Hd2.
+    exists S3'. split; [ exact HS3 | ].
+    eapply e_typing__app; [ exact Hp | | exact Hd2 ].
+    simpl in Hd1. exact Hd1.
 Qed.

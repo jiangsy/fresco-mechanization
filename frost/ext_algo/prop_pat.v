@@ -26,11 +26,13 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
 Require Import src.frost.prop_coercions.
+Require Import src.frost.prop_tag.
 Require Import src.frost.def_shapes.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.prop_basic.
+Require Import src.frost.algo.prop_swap.
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
 Require Import src.frost.ext_algo.def_guess.
@@ -365,4 +367,214 @@ Proof.
     + exact Hu2.
     + exact Hcv2.
     + clear - Hq2. simpl in Hq2. fsetdec.
+Qed.
+
+(* ##################################################################### *)
+(*  §4  EQUIVARIANCE — the SUPPLY-RESPECT and TRANSPOSITION halves        *)
+(*                                                                       *)
+(*  algo/prop_swap.v §16's [a_split_swap] / [a_pat_swap] in the ∃-form    *)
+(*  the supply forces (prop_sub.v §5's reason, one level up).             *)
+(*                                                                       *)
+(*  ⭐ WHY LEVELS 7/8 NEED IT.  The runner opens EVERY binder — the term  *)
+(*  binder of the four abs rows included — at [supply_fresh], while a     *)
+(*  derivation opens at any atom fresh for the supply.  So a derivation   *)
+(*  must be moved onto the runner's rails before an induction hypothesis  *)
+(*  stated at the runner's inputs can apply, and a transposition is the   *)
+(*  move (USER DIRECTIVE, swap kit).                                     *)
+(*                                                                       *)
+(*  ⚠️ THE SUBJECT RIDES ALONG.  These rows bind a TERM variable, so the   *)
+(*  transposition acts on the term too ([swap_exp], algo/prop_swap.v      *)
+(*  §16.1) — a statement holding the term fixed would need [a <> x] and   *)
+(*  [b <> x] for a binder the ROW chooses.  Read §16's header for why     *)
+(*  this is NOT a resurrection of the retired [a_pat_rename_tm].          *)
+(* ##################################################################### *)
+
+(** SUPPLY RESPECT.  A supply is a SET, so a caller that assembled one by a
+    different route holds an [=]-variant rather than the term — and the
+    judgement takes it as an INDEX, which no [rewrite] can move under.  This
+    is what the completeness level's chain needs at length zero. *)
+Lemma e_split_supply_respect : forall S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}e.
+Proof.
+  intros S0 Θ0 P0 P Q S1 Θ1 H; destruct H as
+    [ S Θ0 P Q | S Θ0 | S0 S1 Θ0 Θ1 α β α1 Q Hβ Hα1 Hc ]; intros S0' Heq.
+  - exists S0'. split; [ exact Heq | apply e_split__arrow ].
+  - exists S0'. split; [ exact Heq | apply e_split__hole ].
+  - destruct (e_consis_supply_respect Hc (S0' := add α1 (add β S0')))
+      as [S1' [HS1 Hc']];
+      [ rewrite Heq; reflexivity | ].
+    exists S1'. split; [ exact HS1 | ].
+    eapply e_split__flex; [ rewrite Heq; exact Hβ | rewrite Heq; exact Hα1
+                          | exact Hc' ].
+Qed.
+
+Lemma e_pat_supply_respect : forall S0 m Θ0 P0 e Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ1 }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\
+    {{ S0' ↝ S1' ⊨ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ1 }}e.
+Proof.
+  intros S0 m Θ0 P0 e Q S1 Θ1 H; induction H; intros S0' Heq.
+
+  - (* AP-Unit *)
+    destruct (e_sub_supply_respect H Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_pat__unit; exact Hd ].
+  - (* AP-Var, type payload *)
+    destruct (e_sub_supply_respect H0 Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | eapply e_pat__var; eassumption ].
+  - (* AP-Var, skeleton payload *)
+    destruct (e_sub_supply_respect H0 Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | eapply e_pat__var_skl; eassumption ].
+  - (* AP-Anno *)
+    destruct (e_sub_supply_respect H Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_pat__anno; exact Hd ].
+  - (* AP-Freeze *)
+    destruct (IHe_pat _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_pat__freeze; exact Hd ].
+  - (* AP-Abs *)
+    destruct (e_split_supply_respect H0 Heq) as [S1' [HS1 Hsp]].
+    destruct (IHe_pat (add x S1') ltac:(rewrite HS1; reflexivity))
+      as [S2' [HS2 Hd]].
+    exists S2'. split; [ exact HS2 | ].
+    apply e_pat__abs with (x := x) (S1 := S1') (Θ1 := Θ1) (P := P)
+      (Q0 := Q0);
+      [ assumption | exact Hsp | assumption | rewrite HS1; assumption
+      | exact Hd ].
+  - (* AP-AbsAnno *)
+    destruct (e_split_supply_respect H0 Heq) as [S1' [HS1 Hsp]].
+    destruct H1 as [Qc Hc].
+    destruct (e_consis_supply_respect Hc HS1) as [S2' [HS2 Hc']].
+    destruct (IHe_pat (add x S2') ltac:(rewrite HS2; reflexivity))
+      as [S3' [HS3 Hd]].
+    exists S3'. split; [ exact HS3 | ].
+    apply e_pat__abs_anno with (x := x) (S1 := S1') (S2 := S2')
+      (Θ1 := Θ1) (Θ2 := Θ2) (P := P) (Q0 := Q0) (A := A);
+      [ assumption | exact Hsp | exists Qc; exact Hc' | assumption
+      | rewrite HS2; assumption | exact Hd ].
+  - (* AP-AbsCheck *)
+    destruct (IHe_pat (add x S0') ltac:(rewrite Heq; reflexivity))
+      as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    eapply e_pat__abs_check; try eassumption; rewrite Heq; assumption.
+  - (* AP-AbsAnnoCheck *)
+    destruct (IHe_pat (add x S0') ltac:(rewrite Heq; reflexivity))
+      as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    eapply e_pat__abs_anno_check; try eassumption; rewrite Heq; assumption.
+  - (* AP-App *)
+    destruct (IHe_pat1 _ Heq) as [S1' [HS1 Hd1]].
+    destruct (IHe_pat2 _ HS1) as [S2' [HS2 Hd2]].
+    exists S2'. split; [ exact HS2 | eapply e_pat__app; eassumption ].
+Qed.
+
+(** THE TRANSPOSITION.  ⚙ Every [Δ-drop] premise the a-side has to
+    re-establish under the swap is GONE here (prop_sub.v §5's note); what
+    replaces it is one [swap_notin_eq] per drawn atom and one
+    [eq_swap_atoms_add] per premise supply. *)
+Lemma e_split_swap : forall a b S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}e ->
+  forall S0', S0' [=] swap_atoms a b S0 ->
+  exists S1', S1' [=] swap_atoms a b S1 /\
+    {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊲ (swap_pskl a b P0)
+       ▹ (swap_pskl a b P) ⇢ (swap_pskl a b Q) ⊣ (swap_aenv a b Θ1) }}e.
+Proof.
+  intros a b S0 Θ0 P0 P Q S1 Θ1 H; destruct H as
+    [ S Θ0 P Q | S Θ0 | S0 S1 Θ0 Θ1 α β α1 Q Hβ Hα1 Hc ]; intros S0' Heq;
+    simpl.
+  - exists S0'. split; [ exact Heq | apply e_split__arrow ].
+  - exists S0'. split; [ exact Heq | apply e_split__hole ].
+  - (* the invented pair rides the swap, drawn in the same sequence *)
+    destruct (e_consis_swap (a := a) (b := b) Hc (Δ1' := empty) (Δ2' := empty)
+                (S0' := add (swap_atom a b α1) (add (swap_atom a b β) S0')))
+      as [S1' [HS1 Hc']];
+      [ apply empty_eq_swap_atoms_empty | apply empty_eq_swap_atoms_empty
+      | apply eq_swap_atoms_add; apply eq_swap_atoms_add; exact Heq | ].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_split__flex with (β := swap_atom a b β)
+      (α1 := swap_atom a b α1) (Q := swap_pskl a b Q).
+    + eapply swap_notin_eq; eassumption.
+    + eapply swap_notin_eq;
+        [ apply eq_swap_atoms_add; exact Heq | exact Hα1 ].
+    + simpl in Hc'. exact Hc'.
+Qed.
+
+Lemma e_pat_swap : forall a b S0 m Θ0 P0 e Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ1 }}e ->
+  forall S0', S0' [=] swap_atoms a b S0 ->
+  exists S1', S1' [=] swap_atoms a b S1 /\
+    {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊢ˢ[ m ; (swap_pskl a b P0) ]
+       (swap_exp a b e) ⦂ (swap_pskl a b Q) ⊣ (swap_aenv a b Θ1) }}e.
+Proof.
+  intros a b S0 m Θ0 P0 e Q S1 Θ1 H; induction H; intros S0' Heq; simpl;
+    try (rewrite ?swap_aenv_app in *; rewrite ?swap_pskl_ptyp_to_pskl in * ).
+
+  - (* AP-Unit *)
+    destruct (e_sub_swap (a := a) (b := b) H Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_pat__unit; exact Hd ].
+  - (* AP-Var, type payload *)
+    destruct (e_sub_swap (a := a) (b := b) H0 Heq) as [S1' [HS1 Hd]].
+    rewrite ?swap_pskl_ptyp_to_pskl in Hd.
+    exists S1'. split; [ exact HS1 | ].
+    apply e_pat__var with (A := swap_ptyp a b A);
+      [ exact (swap_aenv_binds a b _ _ _ H) | exact Hd ].
+  - (* AP-Var, skeleton payload *)
+    destruct (e_sub_swap (a := a) (b := b) H0 Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_pat__var_skl with (P := swap_pskl a b P);
+      [ exact (swap_aenv_binds a b _ _ _ H) | exact Hd ].
+  - (* AP-Anno *)
+    destruct (e_sub_swap (a := a) (b := b) H Heq) as [S1' [HS1 Hd]].
+    rewrite ?swap_pskl_ptyp_to_pskl in Hd.
+    exists S1'. split; [ exact HS1 | apply e_pat__anno; exact Hd ].
+  - (* AP-Freeze *)
+    destruct (IHe_pat _ Heq) as [S1' [HS1 Hd]].
+    exists S1'. split; [ exact HS1 | apply e_pat__freeze; exact Hd ].
+  - (* AP-Abs — the drawn TERM binder rides the swap *)
+    destruct (e_split_swap (a := a) (b := b) H0 Heq) as [S1' [HS1 Hsp]].
+    destruct (IHe_pat (add (swap_atom a b x) S1'))
+      as [S2' [HS2 Hd]]; [ apply eq_swap_atoms_add; exact HS1 | ].
+    exists S2'. split; [ exact HS2 | ].
+    eapply e_pat__abs with (x := swap_atom a b x)
+      (Θ1 := swap_aenv a b Θ1) (P := swap_pskl a b P)
+      (Q0 := swap_pskl a b Q0);
+      [ assumption | exact Hsp | apply a_suffix_swap; assumption
+      | eapply swap_notin_eq; eassumption | ].
+    rewrite <- swap_exp_open_var. rewrite ?swap_aenv_app in Hd. exact Hd.
+  - (* AP-AbsAnno *)
+    destruct (e_split_swap (a := a) (b := b) H0 Heq) as [S1' [HS1 Hsp]].
+    destruct (e_consis_chk_swap (a := a) (b := b) H1 HS1) as [S2' [HS2 Hc']].
+    rewrite ?swap_pskl_ptyp_to_pskl in Hc'.
+    destruct (IHe_pat (add (swap_atom a b x) S2'))
+      as [S3' [HS3 Hd]]; [ apply eq_swap_atoms_add; exact HS2 | ].
+    exists S3'. split; [ exact HS3 | ].
+    eapply e_pat__abs_anno with (x := swap_atom a b x)
+      (Θ1 := swap_aenv a b Θ1) (Θ2 := swap_aenv a b Θ2)
+      (P := swap_pskl a b P) (Q0 := swap_pskl a b Q0);
+      [ assumption | exact Hsp | exact Hc' | apply a_suffix_swap; assumption
+      | eapply swap_notin_eq; eassumption | ].
+    rewrite <- swap_exp_open_var. rewrite ?swap_aenv_app in Hd. exact Hd.
+  - (* AP-AbsCheck *)
+    destruct (IHe_pat (add (swap_atom a b x) S0'))
+      as [S1' [HS1 Hd]]; [ apply eq_swap_atoms_add; exact Heq | ].
+    exists S1'. split; [ exact HS1 | ].
+    eapply e_pat__abs_check with (x := swap_atom a b x)
+      (Θ1 := swap_aenv a b Θ1);
+      [ apply a_suffix_swap; assumption
+      | eapply swap_notin_eq; eassumption | ].
+    rewrite <- swap_exp_open_var. rewrite ?swap_aenv_app in Hd. exact Hd.
+  - (* AP-AbsAnnoCheck *)
+    destruct (IHe_pat (add (swap_atom a b x) S0'))
+      as [S1' [HS1 Hd]]; [ apply eq_swap_atoms_add; exact Heq | ].
+    exists S1'. split; [ exact HS1 | ].
+    eapply e_pat__abs_anno_check with (x := swap_atom a b x)
+      (Θ1 := swap_aenv a b Θ1) (A := swap_ptyp a b A);
+      [ apply a_suffix_swap; assumption
+      | eapply swap_notin_eq; eassumption | ].
+    rewrite <- swap_exp_open_var. rewrite ?swap_aenv_app in Hd. exact Hd.
+  - (* AP-App *)
+    destruct (IHe_pat1 _ Heq) as [S1' [HS1 Hd1]].
+    destruct (IHe_pat2 _ HS1) as [S2' [HS2 Hd2]].
+    exists S2'. split; [ exact HS2 | eapply e_pat__app; eassumption ].
 Qed.
