@@ -4207,9 +4207,11 @@ derivation opens its binder wherever it likes and the threaded rules open at
 the SUPPLY, so a structural induction on the `a_*` derivation needs its own
 IH at a TRANSPOSED sub-derivation, which is not a subterm.  It is exactly the
 obstruction that made the campaign quantify over `e_*` throughout
-(docs/HANDOFF-extractable-algo-encoding.md §8c.3), and closing it would be
-one more order-induction — the a-side equivariance it needs
-(`a_pat_swap` / `a_typing_swap`, algo/prop_swap.v §16) already exists.
+(docs/HANDOFF-extractable-algo-encoding.md §8c.3).  ⚙ It is now DESIGNED and
+costed (§8c.24): induct on the e-side ORDER so the `a_*` derivation stays a
+transposable hypothesis, and carry the `a_`-side blocks' freshness as a
+premise the consumer discharges by pre-freshening.  120 rows across sixteen
+judgements — its own campaign, not a corollary.
 ⚙ Nothing else is missing on the declarative side: `a_typing_complete` and
 its closed-program corollaries are closed (README.v §III).
 

@@ -5164,3 +5164,159 @@ exists.  ⚙ Nothing else is missing on the declarative side:
   prefix, so Coq's own `sumbool` notation does not parse — §4's statements
   are written in APPLICATION form (`sumbool A B`), the same trap
   def_guess_impl.v's header records for `sig`.
+
+
+### 8c.24 ⛔ THE LIFT, `a_*` ⟹ `e_*` — the campaign's LAST DEBT, SCOUTED AND DESIGNED (2026-08-19)
+
+⛔ **NOT STARTED IN THE TREE.**  This section is a design, not a closure:
+one file was written, compiled as far as the scout, and DELETED rather than
+committed half-built.  What follows is what the scout established, so the
+next session types rather than re-derives.
+
+#### Why it is the last debt
+
+§8c.23's decidability corollary refutes a derivation of the SUPPLY-THREADED
+`e_typing`, because that is the relation every rung of the ladder is stated
+over.  The chain that would make the extracted program SOUND AND COMPLETE
+for the paper's DECLARATIVE system is
+
+| link | status |
+|---|---|
+| `d_` ⟹ `a_typing` | ✅ `a_typing_complete_decl_infer` / `_check` (README §III) |
+| `a_typing` ⟹ `e_typing` | ⛔ **THIS** |
+| `e_typing` ⟹ `run = Some` | ✅ `e_typing_run_complete` (level 8) |
+
+and the soundness direction is already closed end to end
+(`e_typing_run_sound_infer` / `_check`).
+
+#### ⭐⭐ THE TECHNIQUE — settled, and both halves of it are affordable now
+
+A structural induction on the `a_*` derivation FAILS at every row that
+invents a name: the `a_` rule chose its atom freely, the `e_` rule must
+choose one fresh for the SUPPLY, so the IH is wanted at a TRANSPOSED
+sub-derivation, which is not a subterm.  That is §8c.3's obstruction, and it
+is why the campaign quantified over `e_*` in the first place.  Two repairs
+work:
+
+- ⭐ **Induct on the e-side ORDER** (§8c.3's own recommendation).  The orders
+  are total and unconditional, so the `a_*` derivation stays an ordinary
+  HYPOTHESIS — and a hypothesis may be transposed freely with
+  algo/prop_swap.v's single-swap equivariance, which covers all fourteen
+  judgements (`a_looksub_lookeq_swap`, `a_solve_sub_eq_swap`,
+  `a_solve_cstr_swap`, `a_extract_swap`, `a_assign_unify_consis_swap`,
+  `a_sub_sub_flex_swap`, `a_split_swap`, `a_pat_swap`, `a_typing_swap`,
+  `a_guess_mono_swap`).  Use this for look / solve / cstr / extract / consis
+  / sub / pat / typing.
+- ⭐ **A plain syntactic measure** where one exists — `size_pskl` of the
+  subject for `guess^TY` (the ∀ row opens at a variable, which preserves
+  size, and the `pskl_all_syn` node pays the `S`).
+
+⚙ Either way the conclusion is EXISTENTIAL up to a CHAIN, exactly as the
+levels' motives are: the `e_` derivation's outputs are `swaps_*` images of
+the `a_` derivation's.
+
+#### ⛔⛔ THE TWO REAL OBSTRUCTIONS THE SCOUT FOUND — read these first
+
+**(1) `a_guess_mono__arrow` does NOT thread.**  Both halves run at the SAME
+`Θ`, so the two blocks may COLLIDE — which is exactly why `AT-Abs` carries
+`uniq (αs ++ Θ1)` (docs/REPORT-postclosure-audit.md §1.3) — while
+`e_guess_mono` threads and its block is `uniq` outright.  NO single chain
+sends a colliding block to a `uniq` one.  ⇒ The guess lift must take
+`uniq Ξ` as a premise.  It is available at the only consumer: `AT-Abs`
+already carries it.
+
+**(2) THE `a_`-SIDE BLOCKS ARE NOT FRESH FOR THE SUPPLY.**  `a_guess_mono`'s
+invented atoms avoid `ftvar_in_aenv Θ` and nothing else; the `e_` side needs
+them off `S0`.  Every "this premise's chain fixes that premise's data" step
+in the arrow row turns on it, and without it the row does not close.
+⇒ The lift must take `dom Ξ ∩ (S0 ∪ L) [=] empty` as a premise, and the
+CONSUMER discharges it by PRE-FRESHENING.  ⭐ That is affordable precisely
+because the consumer inducts on the ORDER: the guess sub-derivation and the
+BODY sub-derivation are both plain hypotheses, so one application of
+`a_guess_mono_swap` and one of `a_typing_swap` — along the SAME chain — move
+`(αs, A)` and the body's context together, and the chain fixes `Θ1` because
+`a_guess_mono_generated_fresh` puts `dom αs` off `ftvar_in_aenv Θ1`.
+
+#### ⚙ The motive the scout converged on (for `guess^TY`; the others mirror it)
+
+```coq
+Lemma e_guess_mono_lift_n : forall n P, size_pskl P <= n ->
+  forall Θ Ξ A, a_guess_mono Θ P Ξ A -> uniq Ξ ->
+  forall S0 (L : atoms),
+    ftvar_in_pskl P [<=] S0 ->
+    S0 ∩ L [=] empty ->                       (* (2), at the top *)
+    dom Ξ ∩ (S0 ∪ L) [=] empty ->             (* (2), on the block *)
+  exists S1 ps,
+    e_guess_mono S0 P S1 (swaps_aenv ps Ξ) (swaps_ptyp ps A)
+    /\ (forall a b, In (a, b) ps -> a `in` dom Ξ /\ b `notin` L)
+    /\ (forall a b, In (a, b) ps -> b `in` dom (swaps_aenv ps Ξ))
+    /\ S1 ∩ L [=] empty.
+```
+
+- the SOURCE column ranges over `dom Ξ` and the TARGET column dodges `L`:
+  that pair is what makes every "the other premise's data is fixed by this
+  premise's chain" step a one-liner;
+- the third conjunct (targets land INSIDE the image block) is what the ∀ row
+  needs to know its own witness is not moved by the recursive chain — the
+  image block is fresh for the input supply, which contains that witness;
+- the fourth is what the arrow row's SECOND call needs to know the right
+  block is still off the threaded supply.
+
+⭐ **THE ∀ ROW IS SHORTER THAN IT LOOKS.**  `close` does not remember which
+atom it abstracted, so the transposition that moves the `a_` rule's witness
+onto a supply-fresh one does NOT appear in the conclusion's chain at all.
+The fact, and its proof route (four lines, no hand induction — a swap at a
+fresh target IS a substitution, a substitution IS an `open` of a `close`, and
+`close` of that `open` is the identity):
+
+```coq
+Lemma close_ptyp_wrt_ptyp_rename : forall A β β',
+  β' `notin` ftvar_in_ptyp A ->
+  close_ptyp_wrt_ptyp β' (swap_ptyp β β' A) = close_ptyp_wrt_ptyp β A.
+Proof.
+  intros A β β' Hβ'.
+  rewrite (swap_ptyp_as_subst β β' A Hβ').        (* algo/prop_swap.v:693 *)
+  rewrite subst_ptyp_in_ptyp_spec.                (* prop_ln.v            *)
+  apply close_ptyp_wrt_ptyp_open_ptyp_wrt_ptyp.
+  rewrite ftvar_in_ptyp_close_ptyp_wrt_ptyp. clear - Hβ'. fsetdec.
+Qed.
+```
+
+⚙ Everything else the arrow row needs comes off the E-SIDE invariants of the
+first call's answer, not off the `a_` side: `e_guess_mono_generated_ftvar`,
+`_generated_in_supply`, `_block_fresh`, `_ftv`, `_supply_grows`.
+
+#### ⛔ THE SIZE OF THE JOB — do not underestimate it
+
+Sixteen judgements, 120 `a_*` rows:
+
+| block | rows |
+|---|---|
+| `a_guess_mono` / `a_guess` | 6 + 2 |
+| `a_lookeq` / `a_looksub` | 11 + 8 |
+| `a_solve_eq` / `a_solve_sub` / `a_solve_cstr` | 12 + 9 + 3 |
+| `a_extract` | 1 |
+| `a_assign` / `a_unify` / `a_consis` | 8 + 6 + 14 |
+| `a_sub` / `a_sub_flex` | 9 + 7 |
+| `a_split` / `a_pat` / `a_typing` | 3 + 10 + 11 |
+
+Each row is SHORTER than its completeness counterpart — there is no runner,
+no `Equations` obligation, no boolean test, no decomposer, and above all NO
+DETERMINISM: the lift CHOOSES the `e_` rule (the one the `a_` derivation
+used), so none of `e_extract_det`, `e_guess_mono_det` or the five dispatch
+guards is needed.  What replaces them is the freshness algebra above, and it
+has to be got right ONCE PER BLOCK.  Budget it like levels 6–8, i.e. as its
+own campaign, and do it bottom-up: guess, look, solve, cstr, extract, consis,
+sub, split, pat, typing.
+
+#### ✅ What the composition looks like once the lift lands
+
+```coq
+Corollary e_typing_run_complete_decl_infer : forall e B,
+  {{ nil ⊢[ mode_ti ] e ⦂ B }}d ->
+  exists r, e_typing_run (… entry supply …) mode_ti nil pskl_hole e = Some r.
+```
+by `a_typing_complete_decl_infer` → `e_typing_lift` → `e_typing_run_complete`,
+and the decidability corollary's NEGATIVE branch then refutes the DECLARATIVE
+judgement rather than the threaded one.  That is the statement README.v §VI
+should carry when it lands.

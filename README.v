@@ -593,6 +593,8 @@ Print Assumptions mono_lambda_anno_redundant.
 
    ⚠️ SCOPE, and it is part of the claim: [None] refutes a derivation of the
    THREADED relation, which is what every rung of the ladder is stated over.
+   ⛔ The LIFT that would carry it to the paper's own judgement is DESIGNED
+   and NOT BUILT — docs/HANDOFF-extractable-algo-encoding.md §8c.24.
    The POSITIVE branch composes all the way down to the paper's declarative
    judgement ([e_typing_run_sound_infer] / [_check], prop_run_corollaries.v
    §1/§2); the NEGATIVE branch stops at [e_typing], because the converse of
