@@ -1536,6 +1536,135 @@ Proof.
   - apply IH. clear - Ha. fsetdec.
 Qed.
 
+(* --------------------------------------------------------------------- *)
+(*  ⭐⭐ THE PAIR RESTRICTION — dropping every pair a BINDER row would      *)
+(*  conflate with, not just the head (2026-08-19).                        *)
+(*                                                                        *)
+(*  A ∀ row closes at side 1's opener [β1] and side 2's [β2], and          *)
+(*  [rel_pskl_close_pair] asks for [β1 ∉ cols_l ρ].  Side 2 buys that from *)
+(*  the SUPPLY; side 1 has no supply, and the only way to buy it there was *)
+(*  the scoping premise [cols_l ρ [<=] ftvar_in_aenv Θ1] — which the       *)
+(*  EXTRACT rung cannot satisfy, because ρ carries the collection's LEAKED *)
+(*  OPENERS and those are bound nowhere.                                  *)
+(*                                                                        *)
+(*  ⭐ So the offending pairs are REMOVED instead of dodged.  That is      *)
+(*  sound because a binder row restricts BEFORE it opens, where both sides *)
+(*  are still fresh for their opener — and a pair whose left atom does not *)
+(*  occur on side 1 (or whose right atom does not occur on side 2) is      *)
+(*  never consulted.  ⚙ Same idea as [rel_pskl_drop_head] one step up:     *)
+(*  that one deletes ONE head pair, this one every pair at two atoms.      *)
+(* --------------------------------------------------------------------- *)
+
+Definition restrict_pairs (β1 β2 : atom) (ρ : list (atom * atom))
+  : list (atom * atom) :=
+  List.filter (fun p => if (fst p == β1) then false
+                        else if (snd p == β2) then false else true) ρ.
+
+(* ⚙ [simpl] must not tear the filter open: every later [fsetdec] matches
+   the [cols_*] facts below against the FOLDED name. *)
+Arguments restrict_pairs : simpl never.
+
+Lemma restrict_pairs_incl : forall β1 β2 ρ a b,
+  In (a, b) (restrict_pairs β1 β2 ρ) -> In (a, b) ρ.
+Proof.
+  intros * Hin. apply List.filter_In in Hin. tauto.
+Qed.
+
+Lemma restrict_pairs_notin_l : forall β1 β2 ρ,
+  β1 `notin` cols_l (restrict_pairs β1 β2 ρ).
+Proof.
+  intros. apply cols_l_fresh. intros a b Hin.
+  apply List.filter_In in Hin. destruct Hin as [_ Hf]. simpl in Hf.
+  destruct (a == β1) as [ | Hne ]; [ discriminate | exact Hne ].
+Qed.
+
+Lemma restrict_pairs_notin_r : forall β1 β2 ρ,
+  β2 `notin` cols_r (restrict_pairs β1 β2 ρ).
+Proof.
+  intros. apply cols_r_fresh. intros a b Hin.
+  apply List.filter_In in Hin. destruct Hin as [_ Hf]. simpl in Hf.
+  destruct (a == β1); [ discriminate | ].
+  destruct (b == β2) as [ | Hne ]; [ discriminate | exact Hne ].
+Qed.
+
+Lemma cols_l_restrict_pairs : forall β1 β2 ρ,
+  cols_l (restrict_pairs β1 β2 ρ) [<=] cols_l ρ.
+Proof.
+  intros β1 β2 ρ. induction ρ as [ | [a b] ρ IH ];
+    unfold restrict_pairs in *; simpl; [ clear; fsetdec | ].
+  destruct (a == β1); simpl; [ clear - IH; fsetdec | ].
+  destruct (b == β2); simpl; [ clear - IH; fsetdec | ].
+  clear - IH. fsetdec.
+Qed.
+
+Lemma cols_r_restrict_pairs : forall β1 β2 ρ,
+  cols_r (restrict_pairs β1 β2 ρ) [<=] cols_r ρ.
+Proof.
+  intros β1 β2 ρ. induction ρ as [ | [a b] ρ IH ];
+    unfold restrict_pairs in *; simpl; [ clear; fsetdec | ].
+  destruct (a == β1); simpl; [ clear - IH; fsetdec | ].
+  destruct (b == β2); simpl; [ clear - IH; fsetdec | ].
+  clear - IH. fsetdec.
+Qed.
+
+(** The restriction is invisible to a relation whose two sides are already
+    fresh for the two atoms — which is exactly a binder row's input. *)
+Lemma rel_pskl_restrict : forall ρ V P1 P2 β1 β2,
+  rel_pskl ρ V P1 P2 ->
+  β1 `notin` ftvar_in_pskl P1 ->
+  β2 `notin` ftvar_in_pskl P2 ->
+  rel_pskl (restrict_pairs β1 β2 ρ) V P1 P2.
+Proof.
+  intros ρ V P1 P2 β1 β2 H; induction H; intros H1 H2; simpl in H1, H2;
+    constructor;
+    try (apply IHrel_pskl || (apply IHrel_pskl1 + apply IHrel_pskl2));
+    try (clear - H1; fsetdec); try (clear - H2; fsetdec).
+  match goal with
+  | Ha : rel_atom _ _ _ _ |- _ => inversion Ha; subst
+  end.
+  - apply rel_atom__pair. apply List.filter_In. split; [ assumption | ].
+    simpl.
+    destruct (α == β1) as [ -> | ];
+      [ exfalso; clear - H1; fsetdec | ].
+    destruct (β == β2) as [ -> | ];
+      [ exfalso; clear - H2; fsetdec | ].
+    reflexivity.
+  - apply rel_atom__id. assumption.
+Qed.
+
+(** ⭐ THE MOVE A ∀ ROW MAKES, packaged: the IH's answer, related along
+    [ρa ++ (β1,β2) :: restrict_pairs β1 β2 ρ], closes at the two openers
+    and lands on ANY list containing [ρa] and [ρ].  ⚙ The two [cols]
+    obligations are about [ρa] ALONE — the row's own generated block — and
+    the restriction pays for the rest. *)
+Lemma rel_pskl_close_pair_restrict : forall ρ ρ' V P1 P2 β1 β2 ρa,
+  rel_pskl (ρa ++ (β1, β2) :: restrict_pairs β1 β2 ρ) V P1 P2 ->
+  β1 `notin` V -> β1 `notin` cols_l ρa ->
+  β2 `notin` V -> β2 `notin` cols_r ρa ->
+  (forall a b, In (a, b) ρa -> In (a, b) ρ') ->
+  (forall a b, In (a, b) ρ -> In (a, b) ρ') ->
+  rel_pskl ρ' V (close_pskl_wrt_pskl β1 P1) (close_pskl_wrt_pskl β2 P2).
+Proof.
+  intros ρ ρ' V P1 P2 β1 β2 ρa Hrel Hb1V Hb1a Hb2V Hb2a Hia Hir.
+  assert (Hcl : rel_pskl (ρa ++ restrict_pairs β1 β2 ρ) V
+                  (close_pskl_wrt_pskl β1 P1) (close_pskl_wrt_pskl β2 P2)).
+  { apply rel_pskl_close_pair.
+    - apply rel_pskl_bubble_pair. exact Hrel.
+    - exact Hb1V.
+    - rewrite cols_l_app.
+      assert (Hnl : β1 `notin` cols_l (restrict_pairs β1 β2 ρ))
+        by apply restrict_pairs_notin_l.
+      clear - Hb1a Hnl. fsetdec.
+    - exact Hb2V.
+    - rewrite cols_r_app.
+      assert (Hnr : β2 `notin` cols_r (restrict_pairs β1 β2 ρ))
+        by apply restrict_pairs_notin_r.
+      clear - Hb2a Hnr. fsetdec. }
+  eapply rel_pskl_mono; [ exact Hcl | | intros x Hx; exact Hx ].
+  intros a b Hin. apply in_app_or in Hin. destruct Hin as [Hin | Hin];
+    [ exact (Hia _ _ Hin) | apply Hir; eapply restrict_pairs_incl; exact Hin ].
+Qed.
+
 Lemma rel_a_cstrs_mono : forall ρ ρ' V V' C1 C2,
   rel_a_cstrs ρ V C1 C2 ->
   (forall a b, In (a, b) ρ -> In (a, b) ρ') ->
