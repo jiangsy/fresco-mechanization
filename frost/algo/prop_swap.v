@@ -643,6 +643,45 @@ Lemma swap_cstrs_cons : forall a b c (C : a_cstrs),
   swap_cstrs a b (c :: C) = swap_cstr a b c :: swap_cstrs a b C.
 Proof. reflexivity. Qed.
 
+(** ⭐ THE CROSS-HALF GUARD TRAVELS ALONG A TRANSPOSITION.  A swap is a
+    BIJECTION on atoms, so a disjointness between a constraint list's free
+    variables and a block's domain survives it — which is exactly what the
+    two collection ARROW rows now owe in the equivariance proof below. *)
+Lemma swap_cstrs_ftv_notin : forall a b (C : a_cstrs) x,
+  x `notin` ftvar_in_a_cstrs C ->
+  swap_atom a b x `notin` ftvar_in_a_cstrs (swap_cstrs a b C).
+Proof.
+  induction C as [ | c C IH ]; intros x Hx; simpl in *; [ fsetdec | ].
+  pose proof (IH x ltac:(clear - Hx; fsetdec)) as Hc.
+  destruct c as [m P | P]; simpl in *;
+    pose proof (swap_pskl_ftv_notin a b P x ltac:(clear - Hx; fsetdec)) as Hp;
+    clear - Hc Hp; fsetdec.
+Qed.
+
+Lemma swap_look_guard : forall a b (C : a_cstrs) (Ξ : aenv),
+  ftvar_in_a_cstrs C ∩ dom Ξ [=] empty ->
+  ftvar_in_a_cstrs (swap_cstrs a b C) ∩ dom (swap_aenv a b Ξ) [=] empty.
+Proof.
+  intros a b C Ξ H.
+  assert (Hkey : forall x, x `in` ftvar_in_a_cstrs (swap_cstrs a b C) ->
+                           x `in` dom (swap_aenv a b Ξ) -> False).
+  { intros x Hc Hd.
+    assert (Hc' : swap_atom a b x `in` ftvar_in_a_cstrs C).
+    { destruct (AtomSetProperties.In_dec (swap_atom a b x)
+                  (ftvar_in_a_cstrs C)) as [Hy | Hn]; [ exact Hy | ].
+      pose proof (swap_cstrs_ftv_notin a b C (swap_atom a b x) Hn) as Hno.
+      rewrite swap_atom_invol in Hno. contradiction. }
+    assert (Hd' : swap_atom a b x `in` dom Ξ).
+    { destruct (AtomSetProperties.In_dec (swap_atom a b x) (dom Ξ))
+        as [Hy | Hn]; [ exact Hy | ].
+      pose proof (swap_aenv_dom_notin a b Ξ (swap_atom a b x) Hn) as Hno.
+      rewrite swap_atom_invol in Hno. contradiction. }
+    clear - H Hc' Hd'. fsetdec. }
+  intros x; split; intros Hin;
+    [ exfalso; apply (Hkey x); clear - Hin; fsetdec
+    | clear - Hin; fsetdec ].
+Qed.
+
 Lemma swap_cstrs_app : forall a b (C1 C2 : a_cstrs),
   swap_cstrs a b (C1 ++ C2) = swap_cstrs a b C1 ++ swap_cstrs a b C2.
 Proof. intros. unfold swap_cstrs. apply List.map_app. Qed.
@@ -1019,7 +1058,7 @@ Proof.
     rewrite swap_pskl_open_var in H. exact H.
   - (* arrow *)
     rewrite swap_aenv_app, swap_cstrs_app.
-    apply a_looksub__arrow; auto.
+    apply a_looksub__arrow; auto using swap_look_guard.
   - (* forall_l *)
     apply a_looksub__forall_l with (β := swap_atom a b β);
       [ swap_freshness
@@ -1045,7 +1084,7 @@ Proof.
       | auto using swap_pskl_ftv_in ].
   - (* arrow *)
     rewrite swap_aenv_app, swap_cstrs_app.
-    apply a_lookeq__arrow; auto.
+    apply a_lookeq__arrow; auto using swap_look_guard.
   - (* forall_inh *)
     apply a_lookeq__forall_inh with (β := swap_atom a b β);
       [ swap_freshness

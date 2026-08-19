@@ -251,7 +251,7 @@ Proof.
                    premise — a binder that ESCAPED into [Ξc ⨾ 𝒞] cannot be
                    renamed onto, so the new looked-for variable must differ
                    from every name the run produced *)
-                `union` dom Ξc `union` ftvar_in_cstrs C)) as [αv' Hαv'].
+                `union` dom Ξc `union` ftvar_in_a_cstrs C)) as [αv' Hαv'].
     assert (HeqT' : R = subst_uskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa))
                           αv' (subst_uskl_in_uskl (uskl_var_f αv') αv R0)).
     { rewrite subst_uskl_in_uskl_rename_compose;
@@ -322,7 +322,7 @@ Proof.
                 `union` ftvar_in_pskl
                     ⌊ subst_uskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
                 `union` ftvar_in_pskl B `union` dom Ξc
-                `union` ftvar_in_cstrs C)) as [δ Hδ].
+                `union` ftvar_in_a_cstrs C)) as [δ Hδ].
     (* every side condition is ASSERTED and passed BY NAME: an [ltac:] inside a
        partially-applied lemma is elaborated while [β]/[δ] are still evars *)
     assert (Hδαv' : δ <> αv') by (intros ->; clear - Hδ; fsetdec).
@@ -338,7 +338,7 @@ Proof.
                      `union` ftvar_in_pskl
                          ⌊ subst_uskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
                      `union` ftvar_in_pskl (pskl_all_syn B)
-                     `union` dom Ξc `union` ftvar_in_cstrs C)
+                     `union` dom Ξc `union` ftvar_in_a_cstrs C)
       by (cbn in HΘlr |- *; clear - Hδ HΘlr; fsetdec).
     destruct (a_looksub_avoid_atom HD1 Hst Hααv' Hδαv' Hδα Hβin Hδin)
       as (Ξf & Cf & HDf & Hstf & Hαf).
@@ -347,7 +347,7 @@ Proof.
                       `union` ftvar_in_pskl
                           ⌊ subst_uskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
                       `union` ftvar_in_pskl B
-                      `union` dom Ξf `union` ftvar_in_cstrs Cf)
+                      `union` dom Ξf `union` ftvar_in_a_cstrs Cf)
       by (cbn in HαB, HΘlr |- *; clear - HαP HαB Hαf HΘlr; fsetdec).
     destruct (a_looksub_open_target_at ltac:(eassumption) HDf Hstf Hααv' Hopen)
       as [C' [HD2 Hst2]].
@@ -596,7 +596,7 @@ Proof.
                     `union` ftvar_in_pskl P0
                     `union` ftvar_in_pskl P1
                     `union` singleton b `union` dom Ξc
-                    `union` ftvar_in_cstrs C)) as [αt Hαt];
+                    `union` ftvar_in_a_cstrs C)) as [αt Hαt];
         assert (Hbne : b <> αt) by (intros ->; clear - Hαt; fsetdec);
         assert (Hαvb : αv <> b) by (intros ->; clear - Hbfr; fsetdec);
         assert (HbR0 : b `notin` ftvar_in_pskl ⌊ R0 ⌋ˢ)
@@ -896,7 +896,7 @@ Proof.
                     `union` ftvar_in_pskl P0
                     `union` ftvar_in_pskl P1
                     `union` singleton b `union` dom Ξc
-                    `union` ftvar_in_cstrs C)) as [αt Hαt];
+                    `union` ftvar_in_a_cstrs C)) as [αt Hαt];
         assert (Hbne : b <> αt) by (intros ->; clear - Hαt; fsetdec);
         assert (Hαvb : αv <> b) by (intros ->; clear - Hbfr; fsetdec);
         assert (HbR0 : b `notin` ftvar_in_pskl ⌊ R0 ⌋ˢ)

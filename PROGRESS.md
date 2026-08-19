@@ -240,7 +240,53 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-19 (latest) — ⭐⭐ **THE LIFT `a_*` ⟹ `e_*`: THE WHOLE SOLVE LAYER LANDS, THE LOOK RUNG TURNS OUT TO HAVE BEEN PROVED ALREADY, AND THE CHAIN CURRENCY IS RETIRED ABOVE THE GUESS**
+## 2026-08-19 (latest) — ✅✅ **THE COLLECTION'S CROSS-HALF FRESHNESS GUARD IS LANDED** — the conflation the lift refuted is excluded, and the extract rung is unblocked
+
+`make coq` rc=0, `README.v` 33/33, zero `Admitted`/`Axiom`.  Both arrow rows
+of the constraint collection (`frost/algo/def_rules.v`) now carry
+
+    ftvar_in_a_cstrs 𝒞₁ ∩ dom Ξ₂ [=] empty
+    ftvar_in_a_cstrs 𝒞₂ ∩ dom Ξ₁ [=] empty
+
+`cex/probe_extract_conflated_opener.v` is the justification (five lemmas,
+all Qed): the unguarded rule let ONE atom be a leaked ∀ opener of one half
+and an invented flexible of the other, and the constraint fold's answer then
+DEPENDED on the collision — it fires `SolE-FlexR` where a run with a fresh
+counter is stuck.  Filed for the authors in docs/PAPER-GAPS.md; the design
+record is hand-off §8c.25.
+
+⭐ **IT COSTS COMPLETENESS NOTHING, AND THAT IS NOW A THEOREM.**
+`prop_look.v` gains `e_looksub_lookeq_cstr_old` — *a constraint variable
+already in the INPUT supply came from the INPUTS* — which is what lets
+`e_looksub_sound` discharge BOTH conjuncts.  §2's coarse bound can only do
+the first: it allows the whole output supply, and the left block lives
+there.
+
+⭐ **AND THE TWO P6 COMPLETENESS LEMMAS ALREADY HAD BOTH FACTS.**
+`look/prop_eq_cstr.v` / `look/prop_sub_cstr.v` needed ~20 lines each: the
+right run's block dodges the left run's constraints by its own ftv-𝒞 bound
+(already present in ∀-form as `HΞ2C1`), and the right run's constraints
+dodge the left run's block by `a_looksub_lookeq_ftv`'s DISJUNCTIVE bound.
+⚠️ The coarse bound makes it LOOK false; the sharp lemma settles it.
+
+⭐⭐ **The one piece of design was `a_looksub_lookeq_subst_gen_size`**
+(prop_decorate_sub.v): its conclusion is existential in the outputs and its
+binder rows re-pick, so it needed an avoid-set parameter `L` and the
+conclusion **`dom Ξ' ∩ L [=] empty`** — the produced block ENTIRELY fresh
+for the caller's set.  ⚙ Choosing that over the weaker `[<=] dom Ξ` is what
+keeps the change out of subtyping soundness: it needs NO hypothesis about
+the substituted skeleton, so `a_looksub_subst_gen` keeps its signature and
+`prop_soundness_sub.v` is untouched.  The price is that every row goes
+through the induction — the three ∀-VACUOUS shortcuts are deleted (every ∀
+row re-picks, as `LS-ForallR` always did) and `LS-Check`/`LE-UnivGhostR`'s
+unit/var subcases route through the IH.
+
+⚙ Also: `ftvar_in_a_cstr(s)` moved to `frost/algo/def_rules.v` and the
+tree's TWO identical copies collapsed into it (118 sites) — `def_look.v`'s
+header had asked for exactly that move.
+
+
+## 2026-08-19 — ⭐⭐ **THE LIFT `a_*` ⟹ `e_*`: THE WHOLE SOLVE LAYER LANDS, THE LOOK RUNG TURNS OUT TO HAVE BEEN PROVED ALREADY, AND THE CHAIN CURRENCY IS RETIRED ABOVE THE GUESS**
 
 `frost/ext_algo/prop_lift.v` 377 → ~1570 lines (21.6 s), seven new
 headlines, all Qed and `Closed under the global context`; `make coq` rc=0,

@@ -415,6 +415,33 @@ Inductive a_cstr : Set :=
 | a_cstr_eq : pskl -> a_cstr.
 Definition a_cstrs : Set := list a_cstr.
 
+(** The free variables of a constraint list.  ⭐ It lives HERE, above the
+    rules, because two of them now READ it: the collection's arrow rows
+    carry the CROSS-HALF freshness guard (see [a_lookeq__arrow]).  Until
+    2026-08-19 there were two identical copies of this function, one in
+    algo/sub/prop_looksub.v ([ftvar_in_cstrs]) and one in
+    ext_algo/def_look.v ([ftvar_in_a_cstrs], whose header said to move it
+    here as soon as a [frost/algo] consumer appeared).  It has appeared. *)
+Definition ftvar_in_a_cstr (c : a_cstr) : atoms :=
+  match c with
+  | a_cstr_sub _ P => ftvar_in_pskl P
+  | a_cstr_eq P    => ftvar_in_pskl P
+  end.
+
+Fixpoint ftvar_in_a_cstrs (C : a_cstrs) : atoms :=
+  match C with
+  | nil      => empty
+  | c :: C'  => ftvar_in_a_cstr c `union` ftvar_in_a_cstrs C'
+  end.
+
+Lemma ftvar_in_a_cstrs_app : forall C1 C2,
+  ftvar_in_a_cstrs (C1 ++ C2)
+  [=] ftvar_in_a_cstrs C1 `union` ftvar_in_a_cstrs C2.
+Proof.
+  induction C1 as [ | c C1' IH ]; intros; simpl; [ fsetdec | ].
+  rewrite IH. fsetdec.
+Qed.
+
 Reserved Notation "{{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a"
   (at level 0, P at level 74, α at level 0, m at level 0, P' at level 74, Ξ at level 74, C at level 74,
    format "'{{'  Θ  ⊢  P  ≼[  α  ,  m  ]  P'  ⤳  Ξ  ⨾  C  '}}a'").
@@ -496,6 +523,35 @@ Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs ->
       (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ C }}a ->
     {{ Θ ⊢ A ≼[ α , mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ C }}a
 | a_looksub__arrow : forall Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2, (* LS-Arrow *)
+    (* ⭐⭐ [paper-gap] THE CROSS-HALF FRESHNESS GUARD (2026-08-19).  Both
+       premises run at the SAME [Θ] and the collection has NO SUPPLY, so an
+       atom one half LEAKS as a ∀ opener and the other half INVENTS as a
+       flexible may be THE SAME ATOM: [LE-ForallInh]'s side condition reads
+       [β ∉ add α (ftvar Θ ∪ ftvar P ∪ ftvar P')] and [LE-FlexR]'s reads
+       [γ̂ ∉ add α (add β̂ (ftvar Θ ∪ ftvar P))], and neither excludes the
+       other.  Machine-checked, together with the fact that the collision is
+       LOAD-BEARING — the solver reads the leaked opener as HATTED, because
+       the sibling put it in [Ξ], and fires [SolE-FlexR] on it where a run
+       with a fresh-name counter is stuck:
+       [cex/probe_extract_conflated_opener.v].
+
+       ⭐ IT COSTS COMPLETENESS NOTHING.  It is a THEOREM of the
+       supply-threaded encoding ([e_looksub_lookeq_cstr_ftvar] bounds
+       [ftvar 𝒞₁] by the intermediate supply, which the right half's block
+       is drawn outside of, and symmetrically), so the reference
+       implementation — one global counter, never reused — cannot violate
+       it; [e_looksub_sound] discharges both conjuncts.  It is the fourth
+       freshness prose-completion this encoding needs, after [AT-Abs]'s
+       [uniq (αs ++ Θ1)], [a_sub__forall_l]'s [uniq (Ξ ++ Θ0)] and
+       [a_guess_mono]'s.  docs/PAPER-GAPS.md.
+
+       ⚠️ THREADING THE CONTEXT IS NOT ENOUGH, which is why this is a
+       premise and not a shape change: running the second half at
+       [Ξ1 ++ Θ] (what [SolS-Arrow] does) kills only the MIRROR direction —
+       a LEFT-half opener is invisible to the right half whatever the
+       context carries. *)
+    ftvar_in_a_cstrs C1 ∩ dom Ξ2 [=] empty ->
+    ftvar_in_a_cstrs C2 ∩ dom Ξ1 [=] empty ->
     {{ Θ ⊢ P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 }}a ->
     {{ Θ ⊢ P2 ≼[ α , m ] P2' ⤳ Ξ2 ⨾ C2 }}a ->
     {{ Θ ⊢ (pskl_arrow P1 P2) ≼[ α , (mode_fn m) ] (pskl_arrow P1' P2')
@@ -547,6 +603,9 @@ with a_lookeq : aenv -> atom -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
     {{ Θ ⊢ P ∼[ α ] (pskl_var_f β) ⤳ ((α1 ~ abind_flex_mono) ++ nil)
         ⨾ (a_cstr_eq (pskl_var_f α1) :: nil) }}a
 | a_lookeq__arrow : forall Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2,    (* LE-Arrow *)
+    (* [paper-gap] CROSS-HALF FRESHNESS GUARD — see [a_looksub__arrow]. *)
+    ftvar_in_a_cstrs C1 ∩ dom Ξ2 [=] empty ->
+    ftvar_in_a_cstrs C2 ∩ dom Ξ1 [=] empty ->
     {{ Θ ⊢ P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 }}a ->
     {{ Θ ⊢ P2 ∼[ α ] P2' ⤳ Ξ2 ⨾ C2 }}a ->
     {{ Θ ⊢ (pskl_arrow P1 P2) ∼[ α ] (pskl_arrow P1' P2')

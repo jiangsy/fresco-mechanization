@@ -39,15 +39,15 @@ recently P6-Sv at the end of this file)}.
 
 ## MISSING SIDE CONDITION (2026-08-19, machine-checked) — `LE-Arrow` / `LS-Arrow` run both halves at ONE context, so a ∀ OPENER leaked by one half and a FLEXIBLE invented by the other can be THE SAME ATOM — and the constraint solver's answer then depends on the collision
 
-> **Status: OPEN in the mech.**  The refutation is
-> `cex/probe_extract_conflated_opener.v` (four lemmas, all Qed and
-> assumptions-closed).  The repair is proposed below and not yet landed —
-> it is a rule change, so it is the authors' / user's call.  ⚙ It WAS
-> attempted and costed on 2026-08-19: everything carries except
-> `a_looksub_lookeq_subst_gen_size` (the decoration path, inside subtyping
-> soundness), whose conclusion is existential in the outputs and which
-> therefore needs an avoid-set parameter of its own.  Measurement and the
-> kept patch: docs/HANDOFF-extractable-algo-encoding.md §8c.25.
+> **✅ FIXED IN THE MECH (2026-08-19).**  The refutation is
+> `cex/probe_extract_conflated_opener.v` (five lemmas, all Qed and
+> assumptions-closed), and the repair below is LANDED on both collection
+> arrow rows (frost/algo/def_rules.v); `make coq` rc=0, README.v 33/33.
+> ⚙ What it cost inside the mech — an avoid-set parameter and a
+> total-freshness conclusion for `a_looksub_lookeq_subst_gen_size`, and two
+> short guard derivations in the P6 completeness lemmas — is recorded in
+> docs/HANDOFF-extractable-algo-encoding.md §8c.25.  The paper-facing
+> content is unchanged and is what follows.
 
 **Where.**  `fig:poly-info-extraction`, the two arrow rows of the
 constraint collection.  Both premises run at the SAME `Θ`:

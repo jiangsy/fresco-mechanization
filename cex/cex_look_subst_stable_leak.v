@@ -78,7 +78,8 @@ Proof.
                  ⤳ (nil ++ nil)
                  ⨾ ((a_cstr_eq (pskl_var_f β0) :: nil) ++ nil) }}a)
     by (apply a_lookeq__arrow;
-        [ apply a_lookeq__var
+        [ cbn; clear; fsetdec | cbn; clear; fsetdec
+        | apply a_lookeq__var
         | apply a_lookeq__absent; cbn; clear - Hαβ; fsetdec ]).
   cbn in Harr. exact Harr.
 Qed.

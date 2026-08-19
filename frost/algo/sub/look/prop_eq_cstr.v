@@ -363,7 +363,7 @@ Lemma a_solve_cstr_weaken_mid_flex : forall Ξl Ξm Θ0 𝒞 P Ξ P',
   all_flex_mono Ξm ->
   (forall x, x `in` dom Ξm -> x `notin` dom (Ξl ++ Θ0)) ->
   (forall x, x `in` dom Ξm -> x `notin` ftvar_in_pskl P) ->
-  (forall x, x `in` dom Ξm -> x `notin` ftvar_in_cstrs 𝒞) ->
+  (forall x, x `in` dom Ξm -> x `notin` ftvar_in_a_cstrs 𝒞) ->
   (forall x, x `in` dom Ξm -> x `notin` ftvar_in_pskl P') ->
   (* ⭐ NEW (2026-08-04): the inserted block must also dodge the block the
      SOLVE ITSELF generates — SolE-FlexR invents names, and an inserted key
@@ -2228,7 +2228,7 @@ Lemma a_lookeq_flex_p0_complete :
               ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
     Forall (fun p : atom * ptyp =>
               ftvar_in_ptyp (snd p) ∩ Δρ [=] empty) κc /\
-    ftvar_in_cstrs 𝒞
+    ftvar_in_a_cstrs 𝒞
       [<=] ftvar_in_uskl ψa `union` dom Ξc `union` dom κ `union` def_ftv Θ /\
     (κs ++ κc ++ κ) ∷ (Ξs ++ Ξc ++ Θ0) ⊑ Θ /\
     a_inc_equiv Θ0 κ κ Θ /\
@@ -2831,7 +2831,7 @@ Theorem a_lookeq_solve_complete_gen :
        definitions — never a fresh ∀-binder.  This is what makes LE-ForallInh /
        LE-UnivGhost1 (which open the TARGET under the binder) applicable with a
        single 𝒞.  [dom Θs], NOT [dom Θ]: see the header. *)
-    ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa
+    ftvar_in_a_cstrs 𝒞 [<=] ftvar_in_uskl ψa
                           `union` dom Ξc `union` dom κ
                           `union` def_ftv Θ /\
     (κs ++ κc ++ κ) ∷ (Ξs ++ Ξc ++ Θ0) ⊑ Θ /\   (* κa : Θ0,Ξc,Ξs ⊑ Θ *)
@@ -3309,7 +3309,7 @@ Proof.
             as Hs1.
           pose proof (HΔρftv α0 Hα0) as Hd0. cbn [ftvar_in_pskl] in Hd0.
           pose proof (HΔρΞc1 α0 Hα0) as HΞ.
-          assert (Hc1 : α0 `notin` ftvar_in_cstrs C1).
+          assert (Hc1 : α0 `notin` ftvar_in_a_cstrs C1).
           { eapply a_lookeq_ftv_ctx;
               [ exact HLK1 | clear - HΔρΘ0 Hα0; fsetdec
               | clear - Hd0; fsetdec | exact HΞ ]. }
@@ -3477,8 +3477,43 @@ Proof.
               run's blocks); the rule wants both halves at [Θ0], and dropping
               declarations only SHRINKS the avoid-set, which is the direction
               [a_lookeq_ctx_ftv_mono] goes. *)
+           (* ⭐ THE CROSS-HALF FRESHNESS GUARD (2026-08-19).  Both conjuncts
+              are already facts of this configuration, in the two shapes the
+              proof has anyway: the RIGHT run's block dodges the LEFT run's
+              constraints (its own ftv-𝒞 bound, as [HΞ2C1] below repeats),
+              and the RIGHT run's constraints dodge the LEFT run's block
+              (the look's DISJUNCTIVE ftv bound — the second disjunct is
+              impossible because [Ξc1] is IN the right run's context, and
+              the first lands in [P02] or [Ξc2], both apart from it). *)
+           assert (Hgc1 : ftvar_in_a_cstrs C1 ∩ dom Ξc2 [=] empty).
+           { intros x; split; intros Hx; [ | clear - Hx; fsetdec ].
+             exfalso.
+             assert (Hx1 : x `in` ftvar_in_a_cstrs C1) by (clear - Hx; fsetdec).
+             assert (Hx2 : x `in` dom Ξc2) by (clear - Hx; fsetdec).
+             rewrite <- Hd2 in Hx2.
+             pose proof (Hκf2 x Hx2) as Hf. repeat rewrite dom_app in Hf.
+             assert (Hxκ : x `notin` dom κ).
+             { intro Hc. destruct (a_inc_dom_flex Hκ Hc) as [Hb | [τ0 Hb]];
+                 apply binds_In in Hb; clear - Hf Hb; fsetdec. }
+             pose proof (def_ftv_dom HwfΘ) as Hdf.
+             clear - HftvC1 Hf Hxκ Hdf Hx1; fsetdec. }
+           assert (Hgc2 : ftvar_in_a_cstrs C2 ∩ dom Ξc1 [=] empty).
+           { intros x; split; intros Hx; [ | clear - Hx; fsetdec ].
+             exfalso.
+             assert (Hx1 : x `in` ftvar_in_a_cstrs C2) by (clear - Hx; fsetdec).
+             assert (Hx2 : x `in` dom Ξc1) by (clear - Hx; fsetdec).
+             assert (Hxin : x `in` ftvar_in_aenv (Ξs1 ++ Ξc1 ++ Θ0)).
+             { pose proof (dom_subset_ftvar_in_aenv (Ξs1 ++ Ξc1 ++ Θ0)) as Hds.
+               repeat rewrite dom_app in Hds. clear - Hds Hx2; fsetdec. }
+             destruct ((proj2 a_looksub_lookeq_ftv) _ _ _ _ _ _ HLK2 x Hx1)
+               as [Hlft | Hrgt]; [ | clear - Hrgt Hxin; contradiction ].
+             assert (HxΞ2 : x `notin` dom Ξc2).
+             { intro Hc. rewrite <- Hd2 in Hc. rewrite <- Hd1' in Hx2.
+               exact (Hdisj12 x Hx2 Hc). }
+             clear - Hlft HxΞ2 HfrP02Ξ Hx2; fsetdec. }
            apply a_lookeq__arrow;
-             [ exact HLK1
+             [ exact Hgc1 | exact Hgc2
+             | exact HLK1
              | eapply a_lookeq_ctx_ftv_mono;
                  [ exact HLK2
                  | repeat rewrite ftvar_in_aenv_app; clear; fsetdec
@@ -3505,7 +3540,7 @@ Proof.
              pose proof (HΞ2Ξc1Θ0 x Hx) as Hf; rewrite dom_app in Hf;
              simpl in Hfd; clear - Hfd Hf; fsetdec. }
            assert (HΞ2C1 : forall x, x `in` dom Ξc2 ->
-                     x `notin` ftvar_in_cstrs C1).
+                     x `notin` ftvar_in_a_cstrs C1).
            { (* [a_looksub_lookeq_ftv]'s EXACT bound is gone (the ∀ rules
                 leak), and x is a name the RIGHT run invented, so the ctx
                 corollary does not apply either.  What does apply is the
@@ -3589,7 +3624,7 @@ Proof.
               is Θ0-scoped) and it misses Ξc2, so [a_lookeq_ftv_ctx] says it is
               not in C2 at all. *)
            assert (HC2s1 : forall x, x `in` dom Ξs1 ->
-                     x `notin` ftvar_in_cstrs C2).
+                     x `notin` ftvar_in_a_cstrs C2).
            { intros x Hx. eapply a_lookeq_ftv_ctx;
                [ exact HLK2
                | repeat rewrite dom_app; clear - Hx; fsetdec
@@ -3599,12 +3634,12 @@ Proof.
                | intro Hc; rewrite <- Hd2 in Hc;
                  pose proof (Hκf2 x Hc) as Hf2;
                  repeat rewrite dom_app in Hf2; clear - Hf2 Hx; fsetdec ]. }
-           assert (HC2s1' : ftvar_in_cstrs C2 ∩ dom Ξs1 [<=] empty).
+           assert (HC2s1' : ftvar_in_a_cstrs C2 ∩ dom Ξs1 [<=] empty).
            { intros x Hx.
              assert (Hx1 : x `in` dom Ξs1) by (clear - Hx; fsetdec).
-             assert (Hx2 : x `in` ftvar_in_cstrs C2) by (clear - Hx; fsetdec).
+             assert (Hx2 : x `in` ftvar_in_a_cstrs C2) by (clear - Hx; fsetdec).
              exfalso; apply (HC2s1 x Hx1); exact Hx2. }
-           rewrite ftvar_in_cstrs_app. rewrite dom_app.
+           rewrite ftvar_in_a_cstrs_app. rewrite dom_app.
            repeat rewrite dom_app in HftvC2.
            rewrite Hd1' in HftvC2. rewrite Hd_s1 in HftvC2.
            clear - HftvC1 HftvC2 HC2s1'; fsetdec.
@@ -3919,7 +3954,7 @@ Proof.
           by (intro Hc; pose proof (Hfrs β Hc) as Hf; clear - Hf; fsetdec).
         assert (Hβψa : β `notin` ftvar_in_uskl ψa) by auto.
         assert (Hβdef : β `notin` def_ftv Θ) by auto.
-        assert (HβC : β `notin` ftvar_in_cstrs 𝒞).
+        assert (HβC : β `notin` ftvar_in_a_cstrs 𝒞).
         { cbn [def_ftv] in HftvC.
           clear - HftvC HβΞc Hβκ Hβψa Hβdef HβΘs; fsetdec. }
         assert (HβPa : β `notin` ftvar_in_pskl Pa).
@@ -4192,7 +4227,7 @@ Proof.
              apply Hκfresh. simpl; clear; fsetdec. }
            assert (HβΞs : β `notin` dom Ξs)
              by (intro Hc; pose proof (Hfrs β Hc) as Hf; clear - Hf; fsetdec).
-           assert (HβC : β `notin` ftvar_in_cstrs 𝒞).
+           assert (HβC : β `notin` ftvar_in_a_cstrs 𝒞).
            { (* β is a rigid of the PREMISE's context, hence not a name the
                 run can have invented — [a_lookeq_ftv_ctx] restores the exact
                 bound for exactly such variables *)
@@ -4524,7 +4559,7 @@ Proof.
           by (intro Hc; pose proof (Hfrs β Hc) as Hf; clear - Hf; fsetdec).
         assert (Hβψa : β `notin` ftvar_in_uskl ψa) by auto.
         assert (Hβdef : β `notin` def_ftv Θ) by auto.
-        assert (HβC : β `notin` ftvar_in_cstrs 𝒞).
+        assert (HβC : β `notin` ftvar_in_a_cstrs 𝒞).
         { cbn [def_ftv] in HftvC.
           clear - HftvC HβΞc Hβκ Hβψa Hβdef HβΘs; fsetdec. }
         assert (HβPa : β `notin` ftvar_in_pskl Pa).
@@ -4827,7 +4862,7 @@ Proof.
              apply Hκfresh. simpl; clear; fsetdec. }
            assert (HβΞs : β `notin` dom Ξs)
              by (intro Hc; pose proof (Hfrs β Hc) as Hf; clear - Hf; fsetdec).
-           assert (HβC : β `notin` ftvar_in_cstrs 𝒞).
+           assert (HβC : β `notin` ftvar_in_a_cstrs 𝒞).
            { (* β is a rigid of the PREMISE's context, hence not a name the
                 run can have invented — [a_lookeq_ftv_ctx] restores the exact
                 bound for exactly such variables *)
@@ -5188,7 +5223,7 @@ Proof.
            assert (HβΞc : β `notin` dom Ξc).
            { intro Hc. rewrite <- Hdκ in Hc. specialize (Hκfresh β Hc).
              apply Hκfresh. simpl; clear; fsetdec. }
-           assert (HβC : β `notin` ftvar_in_cstrs 𝒞).
+           assert (HβC : β `notin` ftvar_in_a_cstrs 𝒞).
            { cbn [def_ftv] in HftvC.
              clear - HftvC HβΞc Hβκ Hβψa Hβdef HβΘs; fsetdec. }
            assert (HβPa : β `notin` ftvar_in_pskl Pa).
@@ -5544,7 +5579,7 @@ Theorem a_lookeq_solve_complete :
     α `notin` dom Ξc /\
     keys κc = keys Ξc /\
     Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
-    ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc `union` dom κ
+    ftvar_in_a_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc `union` dom κ
                           `union` def_ftv Θ /\
     (κs ++ κc ++ κ) ∷ (Ξs ++ Ξc ++ Θ0) ⊑ Θ /\
     a_inc_equiv Θ0 κ κ Θ /\

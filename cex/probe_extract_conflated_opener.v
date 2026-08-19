@@ -1,28 +1,28 @@
-(** PROBE (2026-08-19): ⚠️ THE LIFT [a_extract] ⟹ [e_extract] IS **FALSE**,
-    and this file is the configuration.  It is the obstruction
-    docs/HANDOFF-extractable-algo-encoding.md §8c.25 predicted from the
-    rules; here it is machine-checked.
+(** PROBE (2026-08-19): ⚠️ THE CONFIGURATION THE COLLECTION'S **CROSS-HALF
+    FRESHNESS GUARD** EXCLUDES — and the record of why that guard had to be
+    added (frost/algo/def_rules.v, [a_looksub__arrow] / [a_lookeq__arrow];
+    docs/PAPER-GAPS.md; hand-off §8c.25).
 
-    ⚠️ WHAT GOES WRONG.  [LE-Arrow] runs BOTH halves at the SAME [Θ], and
-    the collection has no supply, so an atom the LEFT half leaks as a ∀
-    OPENER and an atom the RIGHT half INVENTS as a flexible may be THE SAME
-    ATOM: the two side conditions are
+    ⚠️ WHAT THE UNGUARDED RULE ADMITTED.  [LE-Arrow] runs BOTH halves at the
+    SAME [Θ], and the collection has no supply, so an atom the LEFT half
+    leaks as a ∀ OPENER and an atom the RIGHT half INVENTS as a flexible may
+    be THE SAME ATOM: the two side conditions are
 
       LE-ForallInh   β ∉ add α (ftvar Θ ∪ ftvar P ∪ ftvar P')
-      LE-FlexR       γ ∉ add α (add β̂ (ftvar Θ ∪ ftvar P))
+      LE-FlexR       γ̂ ∉ add α (add β̂ (ftvar Θ ∪ ftvar P))
 
-    and at the terms below BOTH read [∉ {α, β̂}].  Nothing separates them.
+    and at the terms below BOTH read [∉ {α, β̂}].  Nothing separated them.
     The supply-threaded encoding always does separate them — the opener is
     drawn at [S0] and the flexible at [S1 ⊇ add opener S0] — so where the
-    a-side has ONE atom the e-side has TWO.
+    a-side had ONE atom the e-side has TWO.
 
-    ⚠️ AND THE CONFLATION IS LOAD-BEARING, not cosmetic.  §1's collection
-    returns block [γ̂] and constraints [≐1, ≐γ, ≐γ], where the FIRST [γ] is
-    the invented flexible and the SECOND is the leaked opener.  §2 then
-    shows the two folds disagree:
+    ⚠️ AND THE COLLISION WAS LOAD-BEARING, not cosmetic.  §1's two halves
+    return block [γ̂] and constraints [≐1, ≐γ] on the left and [≐γ] on the
+    right, where the left [γ] is the invented flexible and the right one is
+    the leaked opener.  §2 shows the two folds then disagree:
 
       §2a  at the conflated names the fold RUNS — the leaked [γ] is
-           flexible, because the sibling put it in [Ξ], so SolE-FlexR fires;
+           flexible, because the SIBLING put it in [Ξ], so SolE-FlexR fires;
       §2b  de-conflate the opener to any [δ] the context does not bind —
            which is exactly what threading does — and the fold is STUCK:
            [1 ∼ δ] matches NO [a_solve_eq] row.  Not SolE-Unit (the target
@@ -30,30 +30,23 @@
            SolE-FlexR ([δ] is not hatted), not SolE-GhostL / SolE-VacuousR
            (neither side is [◇]), and no ⫯ / ∀ / → row.
 
-    ⇒ There is no [flex_agree_rel] between the a-side's [Ξ ++ Θ0] and the
+    ⇒ There was no [flex_agree_rel] between the a-side's [Ξ ++ Θ0] and the
     e-side's [Ξ2 ++ Θ2], which is precisely the premise the fold transport
-    ([prop_lift.v] §7) needs.  The extract row cannot be lifted as stated.
+    (ext_algo/prop_lift.v §7) needs — so [a_extract] ⟹ [e_extract] was FALSE
+    as a lift.
 
-    ⭐ WHAT IT PINS.  The fact the lift is missing is exactly
+    ✅ **WHAT THE GUARD DOES.**  §1c is the point of the file: at these two
+    halves the guard's second conjunct
 
-        a leaked opener that OCCURS IN 𝒞 is not one of the collection's
-        own block names
+        ftvar_in_a_cstrs 𝒞₂ ∩ dom Ξ₁ [=] empty
 
-    — §1 realizes its negation.  ⚙ Note the "occurs in 𝒞" qualifier is not
-    slack: [rel_a_cstrs] never consults a pair whose left atom is absent
-    from [ftvar_in_a_cstrs 𝒞], so a leaked opener that never surfaces in a
-    constraint is harmless and the guard need not exclude it.
-
-    ⭐ THE REPAIR the probe therefore supports is a side condition on the
-    collection's TWO ARROW ROWS, in the shape the tree has already used for
-    the five dispatch guards and the three [uniq] prose-completions:
-
-        ftvar_in_a_cstrs C1 ∩ dom Ξ2 [=] empty
-
-    It is a THEOREM of the threaded encoding ([e_looksub_lookeq_cstr_ftvar]
-    bounds [ftvar C1 ⊆ S1] under coverage, and [dom Ξ2 ∩ S1 = ∅]), so the
-    reference implementation — one global counter, never reused — cannot
-    violate it and completeness costs nothing.  docs/PAPER-GAPS.md. *)
+    is FALSE — both sides are [{γ}] — so [LE-Arrow] no longer combines them.
+    ⭐ The guard costs completeness NOTHING: it is a THEOREM of the
+    supply-threaded encoding ([e_looksub_lookeq_cstr_old], prop_look.v §2c),
+    so the reference implementation — one global counter, never reused —
+    cannot violate it, and [e_looksub_sound] discharges both conjuncts.  §3
+    is that fact made concrete: the threaded collection at the SAME inputs
+    returns two distinct atoms. *)
 
 From Coq Require Import Lists.List.
 From Metalib Require Import Metatheory.
@@ -73,58 +66,73 @@ Open Scope frost_a_scope.
 Open Scope frost_e_scope.
 
 (* ===================================================================== *)
-(*  §1  THE COLLECTION CONFLATES — one atom, two roles                    *)
+(*  §1  THE TWO HALVES, AND THE GUARD THAT NOW KEEPS THEM APART           *)
 (*                                                                        *)
 (*  Θ0 = β̂                                                                *)
-(*  subject   (α → (α → α))  →  ∀. α                                      *)
-(*  target    (1 → β̂)        →  ∀. 0                                      *)
-(*                                                                        *)
-(*  LEFT half  (LE-Arrow):   LE-Var emits [≐1]; LE-FlexR INVENTS γ̂,       *)
-(*                           emitting [≐γ] and the block [γ̂].             *)
-(*  RIGHT half (LE-ForallInh): opens BOTH sides at γ — the SAME atom —     *)
-(*                           and LE-Var emits [≐γ], the LEAK.             *)
+(*  LEFT   (α → (α → α))  ∼[α]  (1 → β̂)   ⤳ γ̂  ⨾ [≐1, ≐γ]                *)
+(*         LE-Var emits [≐1]; LE-FlexR INVENTS γ̂, emitting [≐γ].          *)
+(*  RIGHT  ∀. α          ∼[α]  ∀. 0       ⤳ ·  ⨾ [≐γ]                    *)
+(*         LE-ForallInh opens BOTH sides at γ — the SAME atom — and        *)
+(*         LE-Var emits [≐γ], the LEAK.                                    *)
 (* ===================================================================== *)
 
-Lemma probe_collection_conflates : forall (α β γ : atom),
+Definition Θconf (β : atom) : aenv := (β ~ abind_flex_mono) ++ nil.
+
+Lemma probe_half_left : forall (α β γ : atom),
   α <> β -> α <> γ -> β <> γ ->
-  {{ ((β ~ abind_flex_mono) ++ nil)
-     ⊢ (pskl_arrow
-          (pskl_arrow (pskl_var_f α)
-                      (pskl_arrow (pskl_var_f α) (pskl_var_f α)))
-          (pskl_all_syn (pskl_var_f α)))
+  {{ (Θconf β)
+     ⊢ (pskl_arrow (pskl_var_f α)
+                   (pskl_arrow (pskl_var_f α) (pskl_var_f α)))
        ∼[ α ]
-       (pskl_arrow
-          (pskl_arrow pskl_unit (pskl_var_f β))
-          (pskl_all_syn (pskl_var_b 0)))
-     ⤳ ((γ ~ abind_flex_mono) ++ nil)
-     ⨾ (a_cstr_eq pskl_unit
-        :: a_cstr_eq (pskl_var_f γ)
-        :: a_cstr_eq (pskl_var_f γ) :: nil) }}a.
+       (pskl_arrow pskl_unit (pskl_var_f β))
+     ⤳ (nil ++ ((γ ~ abind_flex_mono) ++ nil))
+     ⨾ ((a_cstr_eq pskl_unit :: nil)
+        ++ (a_cstr_eq (pskl_var_f γ) :: nil)) }}a.
 Proof.
-  intros α β γ Hαβ Hαγ Hβγ.
-  apply a_lookeq__arrow with
-    (Ξ1 := nil ++ ((γ ~ abind_flex_mono) ++ nil)) (Ξ2 := nil)
-    (C1 := (a_cstr_eq pskl_unit :: nil)
-           ++ (a_cstr_eq (pskl_var_f γ) :: nil))
-    (C2 := a_cstr_eq (pskl_var_f γ) :: nil).
-  - (* the LEFT half: LE-Var, then LE-FlexR — which invents γ̂ *)
-    apply a_lookeq__arrow.
-    + apply a_lookeq__var.
-    + apply a_lookeq__flex_r with (β := β).
-      * simpl. solve_notin_auto.
-      * left. simpl. auto.
-      * intros Heq. inversion Heq.
-      * simpl. fsetdec.
-  - (* the RIGHT half: LE-ForallInh opens at γ — the SAME atom — and the
-       opener LEAKS into the constraint LE-Var emits *)
-    apply a_lookeq__forall_inh with (β := γ).
+  intros α β γ Hαβ Hαγ Hβγ. unfold Θconf.
+  apply a_lookeq__arrow.
+  - (* the guard, LEFT conjunct: [≐1] mentions no atom at all *)
+    simpl. clear. fsetdec.
+  - (* the guard, RIGHT conjunct: the LEFT half here generates nothing *)
+    simpl. clear. fsetdec.
+  - apply a_lookeq__var.
+  - apply a_lookeq__flex_r with (β := β).
     + simpl. solve_notin_auto.
+    + left. simpl. auto.
+    + intros Heq. inversion Heq.
     + simpl. fsetdec.
-    + simpl. apply a_lookeq__var.
+Qed.
+
+Lemma probe_half_right : forall (α β γ : atom),
+  α <> β -> α <> γ -> β <> γ ->
+  {{ (Θconf β)
+     ⊢ (pskl_all_syn (pskl_var_f α)) ∼[ α ] (pskl_all_syn (pskl_var_b 0))
+     ⤳ nil ⨾ (a_cstr_eq (pskl_var_f γ) :: nil) }}a.
+Proof.
+  intros α β γ Hαβ Hαγ Hβγ. unfold Θconf.
+  apply a_lookeq__forall_inh with (β := γ).
+  - simpl. solve_notin_auto.
+  - simpl. fsetdec.
+  - simpl. apply a_lookeq__var.
+Qed.
+
+(** ⭐ §1c — THE GUARD IS EXACTLY THE EXCLUSION.  [LE-Arrow] would combine
+    the two halves above into a single collection returning block [γ̂] and
+    constraints [≐1, ≐γ, ≐γ] — one atom in two roles.  Its second conjunct
+    forbids that, and nothing weaker does: the offending atom is a LEAKED
+    OPENER, so it is not in either block and no [uniq Ξ] condition can see
+    it. *)
+Lemma probe_cross_half_guard_excludes_it : forall (γ : atom),
+  ~ (ftvar_in_a_cstrs (a_cstr_eq (pskl_var_f γ) :: nil)
+     ∩ dom (nil ++ ((γ ~ abind_flex_mono) ++ nil)) [=] empty).
+Proof.
+  intros γ Heq. simpl in Heq.
+  assert (Hin : γ `in` empty) by (rewrite <- Heq; clear; fsetdec).
+  clear - Hin. fsetdec.
 Qed.
 
 (* ===================================================================== *)
-(*  §2  THE FOLD DEPENDS ON THE CONFLATION                                *)
+(*  §2  WHY IT HAD TO BE EXCLUDED — the fold DEPENDS on the collision     *)
 (* ===================================================================== *)
 
 (** §2a — at the conflated names the fold RUNS.  The leaked [γ] is
@@ -200,14 +208,16 @@ Qed.
 (*                                                                        *)
 (*  Same [Θ0], same subject, same target.  The supply draws the flexible  *)
 (*  at [S0] and the opener at [add γ1 S0], so the answer's third          *)
-(*  constraint names an atom the block does NOT contain.                  *)
+(*  constraint names an atom the block does NOT contain.  ⭐ This is why   *)
+(*  the guard costs nothing: the implementation could not have produced   *)
+(*  the excluded configuration in the first place.                        *)
 (* ===================================================================== *)
 
 Lemma probe_threaded_collection_separates :
   forall (α β γ1 γ2 : atom) (S0 : supply),
   γ1 `notin` S0 -> γ2 `notin` add γ1 S0 -> β `in` S0 ->
   {{ S0 ↝ (add γ2 (add γ1 S0))
-     ⊨ ((β ~ abind_flex_mono) ++ nil)
+     ⊨ (Θconf β)
      ⊢ (pskl_arrow
           (pskl_arrow (pskl_var_f α)
                       (pskl_arrow (pskl_var_f α) (pskl_var_f α)))
@@ -221,7 +231,7 @@ Lemma probe_threaded_collection_separates :
         :: a_cstr_eq (pskl_var_f γ1)
         :: a_cstr_eq (pskl_var_f γ2) :: nil) }}e.
 Proof.
-  intros α β γ1 γ2 S0 Hγ1 Hγ2 Hβ.
+  intros α β γ1 γ2 S0 Hγ1 Hγ2 Hβ. unfold Θconf.
   apply e_lookeq__arrow with (S1 := add γ1 S0)
     (Ξ1 := nil ++ ((γ1 ~ abind_flex_mono) ++ nil)) (Ξ2 := nil)
     (C1 := (a_cstr_eq pskl_unit :: nil)
@@ -241,35 +251,35 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §4  ⚠️ THE CONCLUSION — the a-side extract's fold RUNS and the         *)
-(*      threaded one CANNOT, at one and the same configuration            *)
-(*                                                                        *)
-(*  ⚙ The threaded fold is refuted through [e_solve_cstr_sound]: a        *)
-(*  threaded fold would give an unthreaded one at the same context and    *)
-(*  constraints, and §2b says there is none.  Its coverage side condition *)
-(*  is discharged from the supply hypotheses.                             *)
+(*  §4  ⭐ THE CONCLUSION — the guard is NECESSARY, and it is FREE         *)
 (* ===================================================================== *)
 
-Theorem probe_extract_lift_false :
+Theorem probe_cross_half_guard_is_necessary :
   forall (α β γ γ1 γ2 : atom) (S0 : supply),
   α <> β -> α <> γ -> β <> γ ->
   γ1 `notin` S0 -> γ2 `notin` add γ1 S0 -> β `in` S0 ->
-  (* the collection derives on BOTH sides, and the threaded answer's third
-     constraint names an atom its block does not contain *)
-  {{ ((β ~ abind_flex_mono) ++ nil)
-     ⊢ (pskl_arrow
-          (pskl_arrow (pskl_var_f α)
-                      (pskl_arrow (pskl_var_f α) (pskl_var_f α)))
-          (pskl_all_syn (pskl_var_f α)))
-       ∼[ α ]
-       (pskl_arrow
-          (pskl_arrow pskl_unit (pskl_var_f β))
-          (pskl_all_syn (pskl_var_b 0)))
-     ⤳ ((γ ~ abind_flex_mono) ++ nil)
-     ⨾ (a_cstr_eq pskl_unit :: a_cstr_eq (pskl_var_f γ)
-        :: a_cstr_eq (pskl_var_f γ) :: nil) }}a
+  (* the two halves derive … *)
+  {{ (Θconf β)
+     ⊢ (pskl_arrow (pskl_var_f α)
+                   (pskl_arrow (pskl_var_f α) (pskl_var_f α)))
+       ∼[ α ] (pskl_arrow pskl_unit (pskl_var_f β))
+     ⤳ (nil ++ ((γ ~ abind_flex_mono) ++ nil))
+     ⨾ ((a_cstr_eq pskl_unit :: nil)
+        ++ (a_cstr_eq (pskl_var_f γ) :: nil)) }}a
+  /\ {{ (Θconf β)
+        ⊢ (pskl_all_syn (pskl_var_f α)) ∼[ α ] (pskl_all_syn (pskl_var_b 0))
+        ⤳ nil ⨾ (a_cstr_eq (pskl_var_f γ) :: nil) }}a
+  (* … and ONLY the CROSS-HALF GUARD stops [LE-Arrow] combining them *)
+  /\ ~ (ftvar_in_a_cstrs (a_cstr_eq (pskl_var_f γ) :: nil)
+        ∩ dom (nil ++ ((γ ~ abind_flex_mono) ++ nil)) [=] empty)
+  (* had it combined them, the fold on the answer would RUN … *)
+  /\ (exists Ξs Q,
+        {{ (((γ ~ abind_flex_mono) ++ nil) ++ ((β ~ abind_flex_mono) ++ nil))
+           ⊩ (a_cstr_eq pskl_unit :: a_cstr_eq (pskl_var_f γ)
+              :: a_cstr_eq (pskl_var_f γ) :: nil) ⨾ pskl_hole ⤳ Ξs ⨾ Q }}a)
+  (* … while the THREADED collection separates the two atoms … *)
   /\ {{ S0 ↝ (add γ2 (add γ1 S0))
-        ⊨ ((β ~ abind_flex_mono) ++ nil)
+        ⊨ (Θconf β)
         ⊢ (pskl_arrow
              (pskl_arrow (pskl_var_f α)
                          (pskl_arrow (pskl_var_f α) (pskl_var_f α)))
@@ -281,12 +291,7 @@ Theorem probe_extract_lift_false :
         ⤳ ((γ1 ~ abind_flex_mono) ++ nil)
         ⨾ (a_cstr_eq pskl_unit :: a_cstr_eq (pskl_var_f γ1)
            :: a_cstr_eq (pskl_var_f γ2) :: nil) }}e
-  (* the a-side fold on the a-side answer RUNS … *)
-  /\ (exists Ξs Q,
-        {{ (((γ ~ abind_flex_mono) ++ nil) ++ ((β ~ abind_flex_mono) ++ nil))
-           ⊩ (a_cstr_eq pskl_unit :: a_cstr_eq (pskl_var_f γ)
-              :: a_cstr_eq (pskl_var_f γ) :: nil) ⨾ pskl_hole ⤳ Ξs ⨾ Q }}a)
-  (* … and the threaded fold on the threaded answer CANNOT *)
+  (* … and on THAT answer the threaded fold cannot run at all *)
   /\ ~ (exists S1 Ξs Q,
           {{ (add γ2 (add γ1 S0)) ↝ S1
              ⊨ (((γ1 ~ abind_flex_mono) ++ nil)
@@ -298,9 +303,11 @@ Proof.
   intros α β γ γ1 γ2 S0 Hαβ Hαγ Hβγ Hγ1 Hγ2 Hβ.
   assert (Hγ12 : γ2 <> γ1) by (clear - Hγ2; fsetdec).
   assert (Hγ2β : γ2 <> β) by (clear - Hγ2 Hβ; fsetdec).
-  split; [ apply probe_collection_conflates; assumption | ].
-  split; [ apply probe_threaded_collection_separates; assumption | ].
+  split; [ apply probe_half_left; assumption | ].
+  split; [ apply probe_half_right; assumption | ].
+  split; [ apply probe_cross_half_guard_excludes_it | ].
   split; [ apply probe_fold_runs_conflated; clear - Hβγ; auto | ].
+  split; [ apply probe_threaded_collection_separates; assumption | ].
   intros [S1 [Ξs [Q He]]].
   apply (probe_fold_stuck_deconflated β γ1 γ2 Hγ2β Hγ12).
   exists Ξs, Q.

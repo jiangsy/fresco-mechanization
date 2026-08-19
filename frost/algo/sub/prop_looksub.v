@@ -111,25 +111,14 @@ Qed.
 (*  (LE-FlexR).  Needed for freshness bookkeeping when re-attaching Ξ.     *)
 (* ===================================================================== *)
 
-Definition ftvar_in_cstr (c : a_cstr) : atoms :=
-  match c with
-  | a_cstr_sub _ P => ftvar_in_pskl P
-  | a_cstr_eq P     => ftvar_in_pskl P
-  end.
-
-Fixpoint ftvar_in_cstrs (C : a_cstrs) : atoms :=
-  match C with
-  | nil     => empty
-  | c :: C' => ftvar_in_cstr c `union` ftvar_in_cstrs C'
-  end.
-
-Lemma ftvar_in_cstrs_app : forall C1 C2,
-  ftvar_in_cstrs (C1 ++ C2) [=] ftvar_in_cstrs C1 `union` ftvar_in_cstrs C2.
-Proof. induction C1; intros; simpl; [ fsetdec | rewrite IHC1; fsetdec ]. Qed.
+(* ⚙ [ftvar_in_a_cstr] / [ftvar_in_a_cstrs] / [ftvar_in_a_cstrs_app] MOVED
+   to frost/algo/def_rules.v (2026-08-19): the collection's arrow rows now
+   read the function, so it has to sit above them.  This file's copy was
+   spelled [ftvar_in_cstrs]; the two were identical. *)
 
 Lemma swap_cstr_fresh_id : forall a b c,
-  a `notin` ftvar_in_cstr c ->
-  b `notin` ftvar_in_cstr c ->
+  a `notin` ftvar_in_a_cstr c ->
+  b `notin` ftvar_in_a_cstr c ->
   swap_cstr a b c = c.
 Proof.
   intros * Ha Hb.
@@ -138,8 +127,8 @@ Proof.
 Qed.
 
 Lemma swap_cstrs_fresh_id : forall a b C,
-  a `notin` ftvar_in_cstrs C ->
-  b `notin` ftvar_in_cstrs C ->
+  a `notin` ftvar_in_a_cstrs C ->
+  b `notin` ftvar_in_a_cstrs C ->
   swap_cstrs a b C = C.
 Proof.
   intros a b C; induction C as [ | c C' IH ]; intros Ha Hb;
@@ -167,7 +156,7 @@ Fixpoint subst_cstrs (γ β : atom) (C : a_cstrs) : a_cstrs :=
   end.
 
 Lemma subst_cstrs_fresh_eq : forall γ β C,
-  β `notin` ftvar_in_cstrs C -> subst_cstrs γ β C = C.
+  β `notin` ftvar_in_a_cstrs C -> subst_cstrs γ β C = C.
 Proof.
   induction C as [ | c C' IH ]; intros Hβ; simpl in *; [ reflexivity | ].
   rewrite IH by (clear - Hβ; fsetdec).
@@ -175,9 +164,9 @@ Proof.
     by (clear - Hβ; simpl in Hβ; fsetdec); reflexivity.
 Qed.
 
-Lemma ftvar_in_cstrs_subst_upper : forall γ β C,
-  ftvar_in_cstrs (subst_cstrs γ β C)
-    [<=] singleton γ `union` remove β (ftvar_in_cstrs C).
+Lemma ftvar_in_a_cstrs_subst_upper : forall γ β C,
+  ftvar_in_a_cstrs (subst_cstrs γ β C)
+    [<=] singleton γ `union` remove β (ftvar_in_a_cstrs C).
 Proof.
   induction C as [ | c C' IH ]; simpl; [ fsetdec | ].
   destruct c; simpl;
@@ -192,7 +181,7 @@ Qed.
 
      Θ ⊢ ∀b. α  ∼[α]  ∀b. b  ⤳ ·  ⨾  [ b0 ≐ ]        (LE-ForallInh, LE-Var)
 
-   has [ftvar_in_cstrs 𝒞 = {b0}] while [ftv (∀b.b) ∪ dom · = ∅].  The exact
+   has [ftvar_in_a_cstrs 𝒞 = {b0}] while [ftv (∀b.b) ∪ dom · = ∅].  The exact
    bound is therefore FALSE and the repair is the same one cluster 2 made
    for [a_solve_sub_eq_ftv] / [a_solve_cstr_ftv]: an escaping variable is
    one the RUN INVENTED, and the avoid-input [Θ] is what lets us say so.
@@ -201,21 +190,21 @@ Qed.
    paper's lemma:look-output-fresh, subtyping-proofs:522 — loses its proof.) *)
 Lemma a_looksub_lookeq_ftv :
   (forall Θ α m P P' Ξ 𝒞, {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
-     forall α0, α0 `in` ftvar_in_cstrs 𝒞 ->
+     forall α0, α0 `in` ftvar_in_a_cstrs 𝒞 ->
        α0 `in` (ftvar_in_pskl P' `union` dom Ξ) \/
        α0 `notin` ftvar_in_aenv Θ) /\
   (forall Θ α P P' Ξ 𝒞, {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
-     forall α0, α0 `in` ftvar_in_cstrs 𝒞 ->
+     forall α0, α0 `in` ftvar_in_a_cstrs 𝒞 ->
        α0 `in` (ftvar_in_pskl P' `union` dom Ξ) \/
        α0 `notin` ftvar_in_aenv Θ).
 Proof.
   apply (a_looksub_lookeq_mutind
            (fun Θ α m P P' Ξ 𝒞 _ =>
-              forall α0, α0 `in` ftvar_in_cstrs 𝒞 ->
+              forall α0, α0 `in` ftvar_in_a_cstrs 𝒞 ->
                 α0 `in` (ftvar_in_pskl P' `union` dom Ξ) \/
                 α0 `notin` ftvar_in_aenv Θ)
            (fun Θ α P P' Ξ 𝒞 _ =>
-              forall α0, α0 `in` ftvar_in_cstrs 𝒞 ->
+              forall α0, α0 `in` ftvar_in_a_cstrs 𝒞 ->
                 α0 `in` (ftvar_in_pskl P' `union` dom Ξ) \/
                 α0 `notin` ftvar_in_aenv Θ));
     intros; simpl in *;
@@ -227,8 +216,8 @@ Proof.
      those are exactly where a leaked binder can show up in 𝒞. *)
   all: try solve [ exact (H α0 H0) ].
   all: try solve [ (* the arrows: split the constraint list *)
-         rewrite ftvar_in_cstrs_app in H1; rewrite dom_app;
-         destruct (AtomSetProperties.In_dec α0 (ftvar_in_cstrs C1))
+         rewrite ftvar_in_a_cstrs_app in H1; rewrite dom_app;
+         destruct (AtomSetProperties.In_dec α0 (ftvar_in_a_cstrs C1))
            as [Hin | Hin];
          [ destruct (H α0 Hin) as [Hd | Hd]
          | destruct (H0 α0 ltac:(clear - H1 Hin; solve_notin_auto)) as [Hd | Hd] ];
@@ -272,7 +261,7 @@ Qed.
 
 Lemma a_looksub_ftv : forall Θ α m P P' Ξ 𝒞,
   {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
-  forall α0, α0 `in` ftvar_in_cstrs 𝒞 ->
+  forall α0, α0 `in` ftvar_in_a_cstrs 𝒞 ->
     α0 `in` (ftvar_in_pskl P' `union` dom Ξ) \/ α0 `notin` ftvar_in_aenv Θ.
 Proof. intros * H; eapply (proj1 a_looksub_lookeq_ftv); eauto. Qed.
 
@@ -288,7 +277,7 @@ Lemma a_looksub_ftv_ctx : forall Θ α m P P' Ξ 𝒞 α0,
   α0 `in` dom Θ ->
   α0 `notin` ftvar_in_pskl P' ->
   α0 `notin` dom Ξ ->
-  α0 `notin` ftvar_in_cstrs 𝒞.
+  α0 `notin` ftvar_in_a_cstrs 𝒞.
 Proof.
   intros * H Hdom HP' HΞ Hin.
   pose proof (dom_subset_ftvar_in_aenv Θ) as Hdf.
@@ -301,7 +290,7 @@ Lemma a_lookeq_ftv_ctx : forall Θ α P P' Ξ 𝒞 α0,
   α0 `in` dom Θ ->
   α0 `notin` ftvar_in_pskl P' ->
   α0 `notin` dom Ξ ->
-  α0 `notin` ftvar_in_cstrs 𝒞.
+  α0 `notin` ftvar_in_a_cstrs 𝒞.
 Proof.
   intros * H Hdom HP' HΞ Hin.
   pose proof (dom_subset_ftvar_in_aenv Θ) as Hdf.
@@ -327,7 +316,7 @@ Qed.
 Lemma a_solve_cstr_ftv : forall Θ 𝒞 P Ξ P',
   {{ Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' }}a ->
   forall α, α `in` ftvar_in_pskl P' ->
-    α `in` (ftvar_in_pskl P `union` ftvar_in_cstrs 𝒞) \/ α `notin` dom Θ.
+    α `in` (ftvar_in_pskl P `union` ftvar_in_a_cstrs 𝒞) \/ α `notin` dom Θ.
 Proof.
   intros Θ 𝒞 P Ξ P' H; induction H; simpl; intros α0 Hα0.
   - left; fsetdec.
@@ -347,7 +336,7 @@ Lemma a_solve_cstr_ftv_eq : forall Θ 𝒞 P Ξ P',
   {{ Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' }}a ->
   Forall (fun c => exists Q, c = a_cstr_eq Q) 𝒞 ->
   ftvar_in_pskl P' [<=]
-    ftvar_in_pskl P `union` ftvar_in_cstrs 𝒞 `union` dom Ξ.
+    ftvar_in_pskl P `union` ftvar_in_a_cstrs 𝒞 `union` dom Ξ.
 Proof.
   intros Θ 𝒞 P Ξ P' H; induction H; simpl; intros Hall.
   - clear; fsetdec.
@@ -734,7 +723,7 @@ Proof.
     | Θ0 α0 m1 Q Hnv0                                  (* LS-Vacuous *)
     | Θ0 α0 A0 B0 Ξ0 C0 Hgf0 Hne0 Hg1 Hg2 Hp           (* LS-Check *)
     | Θ0 α0 A0 B0 Ξ0 C0 b Hgf0 Hfr0 Hocc0 Hnv0 Hp      (* LS-ForallR *)
-    | Θ0 α0 m1 P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 Hp2       (* LS-Arrow *)
+    | Θ0 α0 m1 P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hg1 Hg2 Hp1 Hp2       (* LS-Arrow *)
     | Θ0 α0 m1 Q Q' Ξ0 C0 b Hfr0 Hocc0 Hnh0 Hfr3 Hp    (* LS-ForallL *)
     | Θ0 α0 m1 Q Q' Ξ0 C0 Hnh0 Hfr3 Hp ];              (* LS-UnivGhostL *)
     try discriminate HT; try discriminate Hm0.
@@ -1151,7 +1140,7 @@ Proof.
     apply (IH Pu βg Pg);
       solve [ assumption | reflexivity | clear - Hβin; cbn; fsetdec ].
   - (* LS-Arrow *)
-    intros Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hlk1 IH1 Hlk2 IH2
+    intros Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hg1 Hg2 Hlk1 IH1 Hlk2 IH2
            Pu βg Pg Heq Hβ Hβin Hα HlcPg HlcPu.
     destruct Pu as [ | n | β' | Pa Pb | Pb | | Pb ]; cbn in Heq;
       try discriminate Heq.
@@ -1161,7 +1150,9 @@ Proof.
         [ apply a_looksub__arrow; eassumption | assumption | assumption ].
     + inversion HlcPu as [ | | ? ? HlcPa HlcPb | | | ]; subst.
       injection Heq as Heq1 Heq2. subst P1. subst P2.
-      apply a_looksub__arrow.
+      (* ⚙ the CROSS-HALF GUARD rides through: this lemma rebuilds the SUBJECT
+         and leaves [Ξ] and [𝒞] alone *)
+      apply a_looksub__arrow; [ exact Hg1 | exact Hg2 | | ].
       * apply (IH1 Pa βg Pg); solve [ assumption | reflexivity ].
       * apply (IH2 Pb βg Pg); solve [ assumption | reflexivity ].
   - (* LS-ForallL *)
@@ -1233,7 +1224,7 @@ Proof.
     + pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Pu Pg βg) as Hup.
       clear - Hin Hα Hup. fsetdec.
   - (* LE-Arrow *)
-    intros Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hlk1 IH1 Hlk2 IH2
+    intros Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hg1 Hg2 Hlk1 IH1 Hlk2 IH2
            Pu βg Pg Heq Hβ Hβin Hα HlcPg HlcPu.
     destruct Pu as [ | n | β' | Pa Pb | Pb | | Pb ]; cbn in Heq;
       try discriminate Heq.
@@ -1243,7 +1234,7 @@ Proof.
         [ apply a_lookeq__arrow; eassumption | assumption | assumption ].
     + inversion HlcPu as [ | | ? ? HlcPa HlcPb | | | ]; subst.
       injection Heq as Heq1 Heq2. subst P1. subst P2.
-      apply a_lookeq__arrow.
+      apply a_lookeq__arrow; [ exact Hg1 | exact Hg2 | | ].
       * apply (IH1 Pa βg Pg); solve [ assumption | reflexivity ].
       * apply (IH2 Pb βg Pg); solve [ assumption | reflexivity ].
   - (* LE-ForallInh *)
@@ -1428,19 +1419,19 @@ Qed.
 
 (** A variable SUBSTITUTED AWAY in a constraint list is gone from it — the
     shape a consumer that moved a leaked binder needs. *)
-Lemma notin_ftvar_in_cstrs_subst_away : forall γ δ 𝒞,
-  γ <> δ -> γ `notin` ftvar_in_cstrs (subst_cstrs δ γ 𝒞).
+Lemma notin_ftvar_in_a_cstrs_subst_away : forall γ δ 𝒞,
+  γ <> δ -> γ `notin` ftvar_in_a_cstrs (subst_cstrs δ γ 𝒞).
 Proof.
   intros γ δ 𝒞 Hne.
-  pose proof (ftvar_in_cstrs_subst_upper δ γ 𝒞) as H. fsetdec.
+  pose proof (ftvar_in_a_cstrs_subst_upper δ γ 𝒞) as H. fsetdec.
 Qed.
 
-Lemma notin_ftvar_in_cstrs_subst : forall γ δ β 𝒞,
-  γ <> δ -> γ `notin` ftvar_in_cstrs 𝒞 ->
-  γ `notin` ftvar_in_cstrs (subst_cstrs δ β 𝒞).
+Lemma notin_ftvar_in_a_cstrs_subst : forall γ δ β 𝒞,
+  γ <> δ -> γ `notin` ftvar_in_a_cstrs 𝒞 ->
+  γ `notin` ftvar_in_a_cstrs (subst_cstrs δ β 𝒞).
 Proof.
   intros γ δ β 𝒞 Hne H𝒞.
-  pose proof (ftvar_in_cstrs_subst_upper δ β 𝒞) as H. fsetdec.
+  pose proof (ftvar_in_a_cstrs_subst_upper δ β 𝒞) as H. fsetdec.
 Qed.
 
 Ltac look_fresh_leaf :=
@@ -1462,8 +1453,8 @@ Ltac look_fresh :=
     | apply notin_ftvar_in_aenv_cons_tvar
     | apply notin_ftvar_in_aenv_rename
     | apply notin_ftvar_open_pskl_var
-    | apply notin_ftvar_in_cstrs_subst_away
-    | apply notin_ftvar_in_cstrs_subst
+    | apply notin_ftvar_in_a_cstrs_subst_away
+    | apply notin_ftvar_in_a_cstrs_subst
     | apply notin_ftvar_subst_var ].
 
 (** The look judgment reads its context ONLY through the avoid-inputs of its
@@ -1552,9 +1543,9 @@ Proof.
         | apply Hfopen;
           [ exact Hm | clear - Hfr; fsetdec | exact Hf ] ] ].
   - (* LS-Arrow *)
-    intros Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 IH1 Hp2 IH2 Θ' Hm Hf.
+    intros Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hg1 Hg2 Hp1 IH1 Hp2 IH2 Θ' Hm Hf.
     apply a_looksub__arrow;
-      [ apply IH1 | apply IH2 ]; solve
+      [ exact Hg1 | exact Hg2 | apply IH1 | apply IH2 ]; solve
       [ exact Hm | intros β0 Hβ0; apply Hf; simpl; clear - Hβ0; fsetdec ].
   - (* LS-ForallL *) intros Θ α m P P' Ξ C β Hfr Hocc Hnh Hfr3 Hp IH Θ' Hm Hf.
     apply a_looksub__forall_l with (β := β);
@@ -1577,9 +1568,9 @@ Proof.
       | apply (proj1 (Hf β ltac:(simpl; clear; fsetdec))); exact Hflx
       | exact Hne | exact Hin ].
   - (* LE-Arrow *)
-    intros Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 IH1 Hp2 IH2 Θ' Hm Hf.
+    intros Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hg1 Hg2 Hp1 IH1 Hp2 IH2 Θ' Hm Hf.
     apply a_lookeq__arrow;
-      [ apply IH1 | apply IH2 ]; solve
+      [ exact Hg1 | exact Hg2 | apply IH1 | apply IH2 ]; solve
       [ exact Hm | intros β0 Hβ0; apply Hf; simpl; clear - Hβ0; fsetdec ].
   - (* LE-ForallInh *) intros Θ α P P' Ξ C β Hfr Hocc Hp IH Θ' Hm Hf.
     apply a_lookeq__forall_inh with (β := β);
@@ -1672,7 +1663,7 @@ Proof.
   - (* LS-Check *) intros Θ α A B Ξ C Hgf Hne Hg Hg0 Hp IH γ Hγ. exact (IH γ Hγ).
   - (* LS-ForallR *) intros Θ α A B Ξ C β Hgf Hfr Hocc Hnv Hp IH γ Hγ.
     apply IH; apply Hgrow; exact Hγ.
-  - (* LS-Arrow *) intros Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 IH1 Hp2 IH2 γ Hγ.
+  - (* LS-Arrow *) intros Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hg1 Hg2 Hp1 IH1 Hp2 IH2 γ Hγ.
     rewrite dom_app.
     pose proof (IH1 γ Hγ); pose proof (IH2 γ Hγ). fsetdec.
   - (* LS-ForallL *) intros Θ α m P P' Ξ C β Hfr Hocc Hnh Hfr3 Hp IH γ Hγ.
@@ -1685,7 +1676,7 @@ Proof.
   - (* LE-FlexR — the single generative rule *)
     intros Θ α P β α1 Hfr Hflx Hne Hin γ Hγ.
     simpl. clear - Hfr Hγ. fsetdec.
-  - (* LE-Arrow *) intros Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 IH1 Hp2 IH2 γ Hγ.
+  - (* LE-Arrow *) intros Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hg1 Hg2 Hp1 IH1 Hp2 IH2 γ Hγ.
     rewrite dom_app.
     pose proof (IH1 γ Hγ); pose proof (IH2 γ Hγ). fsetdec.
   - (* LE-ForallInh *) intros Θ α P P' Ξ C β Hfr Hocc Hp IH γ Hγ.
@@ -1748,7 +1739,7 @@ Qed.
     constraint-list half of the bridge (the syntactic halves are in
     prop_swap.v; [subst_cstrs] is defined here, so this one is too). *)
 Lemma swap_cstrs_as_subst : forall β γ (C : a_cstrs),
-  γ `notin` ftvar_in_cstrs C ->
+  γ `notin` ftvar_in_a_cstrs C ->
   swap_cstrs β γ C = subst_cstrs γ β C.
 Proof.
   induction C as [| c C' IH]; intros Hγ; [reflexivity |].
@@ -1761,7 +1752,7 @@ Lemma a_looksub_rename_tvar : forall Θ α m P P' Ξ 𝒞 β α1,
   {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
   β <> α -> α1 <> α ->
   α1 `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union`
-             ftvar_in_pskl P' `union` dom Ξ `union` ftvar_in_cstrs 𝒞 ->
+             ftvar_in_pskl P' `union` dom Ξ `union` ftvar_in_a_cstrs 𝒞 ->
   {{ (rename_aenv α1 β Θ) ⊢ (subst_pskl_in_pskl (pskl_var_f α1) β P) ≼[ α , m ]
     (subst_pskl_in_pskl (pskl_var_f α1) β P')
     ⤳ (rename_aenv α1 β Ξ) ⨾ (subst_cstrs α1 β 𝒞) }}a.
@@ -1782,7 +1773,7 @@ Lemma a_lookeq_rename_tvar : forall Θ α P P' Ξ 𝒞 β α1,
   {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
   β <> α -> α1 <> α ->
   α1 `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union`
-             ftvar_in_pskl P' `union` dom Ξ `union` ftvar_in_cstrs 𝒞 ->
+             ftvar_in_pskl P' `union` dom Ξ `union` ftvar_in_a_cstrs 𝒞 ->
   {{ (rename_aenv α1 β Θ) ⊢ (subst_pskl_in_pskl (pskl_var_f α1) β P) ∼[ α ]
     (subst_pskl_in_pskl (pskl_var_f α1) β P')
     ⤳ (rename_aenv α1 β Ξ) ⨾ (subst_cstrs α1 β 𝒞) }}a.
@@ -1824,7 +1815,7 @@ Lemma a_lookeq_forall_move : forall Θ α P P' Ξ 𝒞 b β,
   β `notin` ftvar_in_aenv Θ
             `union` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f b))
             `union` ftvar_in_pskl (open_pskl_wrt_pskl P' (pskl_var_f b))
-            `union` dom Ξ `union` ftvar_in_cstrs 𝒞 ->
+            `union` dom Ξ `union` ftvar_in_a_cstrs 𝒞 ->
   {{ ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ]
     (open_pskl_wrt_pskl P' (pskl_var_f β)) ⤳ Ξ ⨾ (subst_cstrs β b 𝒞) }}a.
 Proof.
@@ -1853,7 +1844,7 @@ Lemma a_lookeq_forall_move_l : forall Θ α P Pt Ξ 𝒞 b β,
   β <> α ->
   β `notin` ftvar_in_aenv Θ
             `union` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f b))
-            `union` ftvar_in_pskl Pt `union` dom Ξ `union` ftvar_in_cstrs 𝒞 ->
+            `union` ftvar_in_pskl Pt `union` dom Ξ `union` ftvar_in_a_cstrs 𝒞 ->
   {{ ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ] Pt
     ⤳ Ξ ⨾ (subst_cstrs β b 𝒞) }}a.
 Proof.
@@ -1881,7 +1872,7 @@ Lemma a_lookeq_forall_move_r : forall Θ α Ps P' Ξ 𝒞 b β,
   β <> α ->
   β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl Ps
             `union` ftvar_in_pskl (open_pskl_wrt_pskl P' (pskl_var_f b))
-            `union` dom Ξ `union` ftvar_in_cstrs 𝒞 ->
+            `union` dom Ξ `union` ftvar_in_a_cstrs 𝒞 ->
   {{ ((β ~ abind_tvar) ++ Θ) ⊢ Ps ∼[ α ] (open_pskl_wrt_pskl P' (pskl_var_f β))
     ⤳ Ξ ⨾ (subst_cstrs β b 𝒞) }}a.
 Proof.
@@ -1953,13 +1944,13 @@ Lemma a_looksub_lookeq_rename_var_size : forall n,
      2 * (size_pskl P + size_pskl P') + 1 <= n ->
      {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
      forall α', α' `notin` ftvar_in_pskl P ->
-     α' `notin` dom Ξ -> α' `notin` ftvar_in_cstrs 𝒞 ->
+     α' `notin` dom Ξ -> α' `notin` ftvar_in_a_cstrs 𝒞 ->
      {{ Θ ⊢ (subst_pskl_in_pskl (pskl_var_f α') α P) ≼[ α' , m ] P' ⤳ Ξ ⨾ 𝒞 }}a) /\
   (forall Θ α P P' Ξ 𝒞,
      2 * (size_pskl P + size_pskl P') <= n ->
      {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
      forall α', α' `notin` ftvar_in_pskl P ->
-     α' `notin` dom Ξ -> α' `notin` ftvar_in_cstrs 𝒞 ->
+     α' `notin` dom Ξ -> α' `notin` ftvar_in_a_cstrs 𝒞 ->
      {{ Θ ⊢ (subst_pskl_in_pskl (pskl_var_f α') α P) ∼[ α' ] P' ⤳ Ξ ⨾ 𝒞 }}a).
 Proof.
   induction n as [ | n IHn ].
@@ -1976,7 +1967,7 @@ Proof.
       | Θ α m Q                                   (* LS-Vacuous *)
       | Θ α A B Ξ0 C0 Hgf0 Hne Hg Hg0 Hp          (* LS-Check *)
       | Θ α A B Ξ0 C0 b Hgf0 Hfr0 Hocc0 Hnv0 Hp   (* LS-ForallR *)
-      | Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 Hp2   (* LS-Arrow *)
+      | Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hg1 Hg2 Hp1 Hp2 (* LS-Arrow *)
       | Θ α m Q Q' Ξ0 C0 b Hfr0 Hocc0 Hnh0 Hfr3 Hp (* LS-ForallL *)
       | Θ α m Q Q' Ξ0 C0 Hnh0 Hfr3 Hp ];          (* LS-UnivGhostL *)
       cbn in Hn, Hα'P |- *.
@@ -2009,14 +2000,14 @@ Proof.
         pick fresh δ for
           (add α (add b (ftvar_in_aenv Θ `union` ftvar_in_pskl A
              `union` ftvar_in_pskl B `union` dom Ξ0
-             `union` ftvar_in_cstrs C0))).
+             `union` ftvar_in_a_cstrs C0))).
         assert (Hδα : δ <> α) by (clear - Fr; fsetdec).
         assert (Hδb : δ <> b) by (clear - Fr; fsetdec).
         assert (HδΘ : δ `notin` ftvar_in_aenv Θ) by (clear - Fr; fsetdec).
         assert (HδA : δ `notin` ftvar_in_pskl A) by (clear - Fr; fsetdec).
         assert (HδB : δ `notin` ftvar_in_pskl B) by (clear - Fr; fsetdec).
         assert (HδΞ : δ `notin` dom Ξ0) by (clear - Fr; fsetdec).
-        assert (HδC : δ `notin` ftvar_in_cstrs C0) by (clear - Fr; fsetdec).
+        assert (HδC : δ `notin` ftvar_in_a_cstrs C0) by (clear - Fr; fsetdec).
         clear Fr.
         pose proof (a_looksub_rename_tvar Hp Hbα Hδα ltac:(look_fresh)) as H1.
         rewrite rename_aenv_cons_tvar_eq in H1.
@@ -2042,9 +2033,10 @@ Proof.
           [ rewrite size_pskl_open_pskl_wrt_pskl_var; lia
           | exact Hp | exact Hα'P | exact Hα'Ξ | exact Hα'C ].
     - (* LS-Arrow *)
-      rewrite dom_app in Hα'Ξ. rewrite ftvar_in_cstrs_app in Hα'C.
+      rewrite dom_app in Hα'Ξ. rewrite ftvar_in_a_cstrs_app in Hα'C.
+      (* ⚙ the CROSS-HALF GUARD rides through: only the SUBJECT is renamed *)
       apply a_looksub__arrow;
-        [ apply IHe | apply IHs ];
+        [ exact Hg1 | exact Hg2 | apply IHe | apply IHs ];
         solve [ lia | assumption
               | clear - Hα'P; fsetdec | clear - Hα'Ξ; fsetdec
               | clear - Hα'C; fsetdec ].
@@ -2060,14 +2052,14 @@ Proof.
         pick fresh δ for
           (add α (add b (ftvar_in_aenv Θ `union` ftvar_in_pskl Q
              `union` ftvar_in_pskl Q' `union` dom Ξ0
-             `union` ftvar_in_cstrs C0))).
+             `union` ftvar_in_a_cstrs C0))).
         assert (Hδα : δ <> α) by (clear - Fr; fsetdec).
         assert (Hδb : δ <> b) by (clear - Fr; fsetdec).
         assert (HδΘ : δ `notin` ftvar_in_aenv Θ) by (clear - Fr; fsetdec).
         assert (HδQ : δ `notin` ftvar_in_pskl Q) by (clear - Fr; fsetdec).
         assert (HδQ' : δ `notin` ftvar_in_pskl Q') by (clear - Fr; fsetdec).
         assert (HδΞ : δ `notin` dom Ξ0) by (clear - Fr; fsetdec).
-        assert (HδC : δ `notin` ftvar_in_cstrs C0) by (clear - Fr; fsetdec).
+        assert (HδC : δ `notin` ftvar_in_a_cstrs C0) by (clear - Fr; fsetdec).
         clear Fr.
         pose proof (a_looksub_rename_tvar Hp Hbα Hδα ltac:(look_fresh)) as H1.
         rewrite rename_aenv_cons_tvar_eq in H1.
@@ -2103,7 +2095,7 @@ Proof.
       | Θ α Q Q' Hnf                              (* LE-Absent *)
       | Θ α Q                                     (* LE-Vacuous *)
       | Θ α Q b γ Hfr0 Hflx Hne Hin               (* LE-FlexR *)
-      | Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 Hp2     (* LE-Arrow *)
+      | Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hg1 Hg2 Hp1 Hp2 (* LE-Arrow *)
       | Θ α Q Q' Ξ0 C0 b Hfr0 Hocc0 Hp            (* LE-ForallInh *)
       | Θ α Q Q' Ξ0 C0 b Hfr0 Hocc0 Hp            (* LE-ForallSyn *)
       | Θ α Q Q' Ξ0 C0 Hp                         (* LE-UnivGhost *)
@@ -2128,8 +2120,9 @@ Proof.
         | apply subst_var_neq_new; assumption
         | apply ftv_subst_var_in; exact Hin ].
     - (* LE-Arrow *)
-      rewrite dom_app in Hα'Ξ. rewrite ftvar_in_cstrs_app in Hα'C.
-      apply a_lookeq__arrow; apply IHe;
+      rewrite dom_app in Hα'Ξ. rewrite ftvar_in_a_cstrs_app in Hα'C.
+      apply a_lookeq__arrow;
+        [ exact Hg1 | exact Hg2 | apply IHe | apply IHe ];
         solve [ lia | assumption
               | clear - Hα'P; fsetdec | clear - Hα'Ξ; fsetdec
               | clear - Hα'C; fsetdec ].
@@ -2145,14 +2138,14 @@ Proof.
         pick fresh δ for
           (add α (add b (ftvar_in_aenv Θ `union` ftvar_in_pskl Q
              `union` ftvar_in_pskl Q' `union` dom Ξ0
-             `union` ftvar_in_cstrs C0))).
+             `union` ftvar_in_a_cstrs C0))).
         assert (Hδα : δ <> α) by (clear - Fr; fsetdec).
         assert (Hδb : δ <> b) by (clear - Fr; fsetdec).
         assert (HδΘ : δ `notin` ftvar_in_aenv Θ) by (clear - Fr; fsetdec).
         assert (HδQ : δ `notin` ftvar_in_pskl Q) by (clear - Fr; fsetdec).
         assert (HδQ' : δ `notin` ftvar_in_pskl Q') by (clear - Fr; fsetdec).
         assert (HδΞ : δ `notin` dom Ξ0) by (clear - Fr; fsetdec).
-        assert (HδC : δ `notin` ftvar_in_cstrs C0) by (clear - Fr; fsetdec).
+        assert (HδC : δ `notin` ftvar_in_a_cstrs C0) by (clear - Fr; fsetdec).
         clear Fr.
         pose proof (a_lookeq_rename_tvar Hp Hbα Hδα ltac:(look_fresh)) as H1.
         rewrite rename_aenv_cons_tvar_eq in H1.
@@ -2189,14 +2182,14 @@ Proof.
         pick fresh δ for
           (add α (add b (ftvar_in_aenv Θ `union` ftvar_in_pskl Q
              `union` ftvar_in_pskl Q' `union` dom Ξ0
-             `union` ftvar_in_cstrs C0))).
+             `union` ftvar_in_a_cstrs C0))).
         assert (Hδα : δ <> α) by (clear - Fr; fsetdec).
         assert (Hδb : δ <> b) by (clear - Fr; fsetdec).
         assert (HδΘ : δ `notin` ftvar_in_aenv Θ) by (clear - Fr; fsetdec).
         assert (HδQ : δ `notin` ftvar_in_pskl Q) by (clear - Fr; fsetdec).
         assert (HδQ' : δ `notin` ftvar_in_pskl Q') by (clear - Fr; fsetdec).
         assert (HδΞ : δ `notin` dom Ξ0) by (clear - Fr; fsetdec).
-        assert (HδC : δ `notin` ftvar_in_cstrs C0) by (clear - Fr; fsetdec).
+        assert (HδC : δ `notin` ftvar_in_a_cstrs C0) by (clear - Fr; fsetdec).
         clear Fr.
         pose proof (a_lookeq_rename_tvar Hp Hbα Hδα ltac:(look_fresh)) as H1.
         rewrite rename_aenv_cons_tvar_eq in H1.
@@ -2235,14 +2228,14 @@ Proof.
         pick fresh δ for
           (add α (add b (ftvar_in_aenv Θ `union` ftvar_in_pskl Q
              `union` ftvar_in_pskl Q' `union` dom Ξ0
-             `union` ftvar_in_cstrs C0))).
+             `union` ftvar_in_a_cstrs C0))).
         assert (Hδα : δ <> α) by (clear - Fr; fsetdec).
         assert (Hδb : δ <> b) by (clear - Fr; fsetdec).
         assert (HδΘ : δ `notin` ftvar_in_aenv Θ) by (clear - Fr; fsetdec).
         assert (HδQ : δ `notin` ftvar_in_pskl Q) by (clear - Fr; fsetdec).
         assert (HδQ' : δ `notin` ftvar_in_pskl Q') by (clear - Fr; fsetdec).
         assert (HδΞ : δ `notin` dom Ξ0) by (clear - Fr; fsetdec).
-        assert (HδC : δ `notin` ftvar_in_cstrs C0) by (clear - Fr; fsetdec).
+        assert (HδC : δ `notin` ftvar_in_a_cstrs C0) by (clear - Fr; fsetdec).
         clear Fr.
         pose proof (a_lookeq_rename_tvar Hp Hbα Hδα ltac:(look_fresh)) as H1.
         rewrite rename_aenv_cons_tvar_eq in H1.
@@ -2276,7 +2269,7 @@ Qed.
 Lemma a_looksub_rename_var : forall Θ α m P P' Ξ 𝒞 α',
   {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
   α' `notin` ftvar_in_pskl P ->
-  α' `notin` dom Ξ -> α' `notin` ftvar_in_cstrs 𝒞 ->
+  α' `notin` dom Ξ -> α' `notin` ftvar_in_a_cstrs 𝒞 ->
   {{ Θ ⊢ (subst_pskl_in_pskl (pskl_var_f α') α P) ≼[ α' , m ] P' ⤳ Ξ ⨾ 𝒞 }}a.
 Proof.
   intros. eapply (proj1 (a_looksub_lookeq_rename_var_size
@@ -2313,7 +2306,7 @@ Proof.
      the renamed look over the SAME solve and guess. *)
   inversion Hex as [ Θ0' NM' α'' m' Ps Ps' Ξl Ξs Ξg 𝒞l Q Q' Hlk Hsol Hgu
                      HeqΘ HeqNM Heqα Heqm HeqP HeqP0 ]; subst.
-  exists (dom Ξl `union` ftvar_in_cstrs 𝒞l).
+  exists (dom Ξl `union` ftvar_in_a_cstrs 𝒞l).
   intros α' Hα'.
   eapply a_extract__solve; [ | eassumption | eassumption ].
   assert (Hα'P : α' `notin`

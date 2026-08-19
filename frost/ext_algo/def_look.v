@@ -83,34 +83,11 @@ Set Implicit Arguments.
 
 Open Scope frost_e_scope.
 
-(** The free variables of a constraint list.  ⚙ A fact about [frost]'s
-    [a_cstrs] living in [ext_algo] only because this line of work leaves
-    [frost/] alone; if a [frost]-side consumer ever appears, move it to
-    [frost/def_shapes.v] beside the other cross-system meta-functions.
-
-    It is needed because the collection's output [C] is fed to the SOLVING
-    layer at a later supply ([a_extract]), so the bridge has to say what [C]
-    can mention — and unlike the block [Ξ], that is not a statement about
-    [dom]. *)
-Definition ftvar_in_a_cstr (c : a_cstr) : atoms :=
-  match c with
-  | a_cstr_sub _ P => ftvar_in_pskl P
-  | a_cstr_eq P    => ftvar_in_pskl P
-  end.
-
-Fixpoint ftvar_in_a_cstrs (C : a_cstrs) : atoms :=
-  match C with
-  | nil      => empty
-  | c :: C'  => ftvar_in_a_cstr c `union` ftvar_in_a_cstrs C'
-  end.
-
-Lemma ftvar_in_a_cstrs_app : forall C1 C2,
-  ftvar_in_a_cstrs (C1 ++ C2)
-  [=] ftvar_in_a_cstrs C1 `union` ftvar_in_a_cstrs C2.
-Proof.
-  induction C1 as [ | c C1' IH ]; intros; simpl; [ fsetdec | ].
-  rewrite IH. fsetdec.
-Qed.
+(* ⚙ [ftvar_in_a_cstr] / [ftvar_in_a_cstrs] / [ftvar_in_a_cstrs_app] MOVED
+   to frost/algo/def_rules.v (2026-08-19).  This file's header said to move
+   them as soon as a [frost/algo] consumer appeared; one has — the
+   collection's arrow rows read the function in their CROSS-HALF freshness
+   guard. *)
 
 Reserved Notation "{{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e"
   (at level 0, S1 at level 0, P at level 74, α at level 0, m at level 0,

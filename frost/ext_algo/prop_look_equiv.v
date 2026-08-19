@@ -323,7 +323,7 @@ Lemma a_looksub_open_forall_l_first_n : forall n Θ α m P0 P' Ξ C γ,
   size_pskl P' < n ->
   {{ Θ ⊢ (pskl_all_syn P0) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
   γ `notin` add α (ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P'
-      ∪ ftvar_in_aenv Ξ ∪ ftvar_in_cstrs C) ->
+      ∪ ftvar_in_aenv Ξ ∪ ftvar_in_a_cstrs C) ->
   {{ ((γ ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P0 (pskl_var_f γ))
       ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a.
 Proof.
@@ -352,14 +352,14 @@ Proof.
     end.
     destruct (atom_fresh (add α (add β1 (add γ
                 (ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl B
-                 ∪ ftvar_in_aenv Ξ ∪ ftvar_in_cstrs C))))) as [γ'' Hγ''].
+                 ∪ ftvar_in_aenv Ξ ∪ ftvar_in_a_cstrs C))))) as [γ'' Hγ''].
     assert (Hszp : size_pskl (open_pskl_wrt_pskl B (pskl_var_f β1)) < n)
       by (rewrite size_pskl_open_pskl_wrt_pskl_var;
           clear - Hsz; simpl in *; lia).
     assert (Hγ''p : γ'' `notin` add α (ftvar_in_aenv ((β1 ~ abind_tvar) ++ Θ)
               ∪ ftvar_in_pskl P0
               ∪ ftvar_in_pskl (open_pskl_wrt_pskl B (pskl_var_f β1))
-              ∪ ftvar_in_aenv Ξ ∪ ftvar_in_cstrs C)).
+              ∪ ftvar_in_aenv Ξ ∪ ftvar_in_a_cstrs C)).
     { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f β1))
         as Hup.
       clear - Hγ'' Hup. simpl in *. fsetdec. }
@@ -418,7 +418,7 @@ Proof.
     { pose proof (a_looksub_decls Hprem) as Hdc.
       pose proof (a_decls_no_ftvar Hdc) as Hsub.
       clear - Hd1 Hsub. fsetdec. }
-    assert (HC1 : γ1 `notin` ftvar_in_cstrs C).
+    assert (HC1 : γ1 `notin` ftvar_in_a_cstrs C).
     { intros Hin.
       destruct ((proj1 a_looksub_lookeq_ftv) _ _ _ _ _ _ _ Hprem _ Hin)
         as [Hio | Hno].
@@ -451,7 +451,7 @@ Lemma a_looksub_open_forall_l_first : forall Θ α m P0 P' Ξ C γ,
   P0 <> pskl_var_f α ->
   {{ Θ ⊢ (pskl_all_syn P0) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
   γ `notin` add α (ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P'
-      ∪ ftvar_in_aenv Ξ ∪ ftvar_in_cstrs C) ->
+      ∪ ftvar_in_aenv Ξ ∪ ftvar_in_a_cstrs C) ->
   {{ ((γ ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P0 (pskl_var_f γ))
       ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a.
 Proof.

@@ -326,7 +326,7 @@ Proof.
       apply a_lookeq__arrow with (Ξ1 := nil) (Ξ2 := nil)
         (C1 := a_cstr_eq (pskl_var_f α) :: nil)
         (C2 := a_cstr_eq (pskl_var_f α) :: nil);
-        apply a_lookeq__var.
+        [ simpl; clear; fsetdec | simpl; clear; fsetdec | apply a_lookeq__var | apply a_lookeq__var ].
     + eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
       { apply a_solve_eq__hole_l. }
       eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
@@ -413,7 +413,8 @@ Proof.
       * simpl_open.
         apply a_looksub__arrow with (Ξ1 := nil) (Ξ2 := nil)
           (C1 := a_cstr_eq (pskl_tophole (ptyp_to_pskl σ_auto)) :: nil)
-          (C2 := a_cstr_sub mode_ti pskl_hole :: nil).
+          (C2 := a_cstr_sub mode_ti pskl_hole :: nil);
+          [ simpl; clear; fsetdec | simpl; clear; fsetdec | | ].
         { apply a_lookeq__var. }
         { (* ⭐ UNDER THE ◇-DISPATCH GUARD this cell is LS-Var, not
              LS-Vacuous: the runner dispatches on the SUBJECT, and here the
@@ -556,7 +557,8 @@ Proof.
       * simpl_open.
         apply a_looksub__arrow with (Ξ1 := nil) (Ξ2 := nil)
           (C1 := a_cstr_eq (pskl_tophole (pskl_arrow pskl_hole pskl_hole)) :: nil)
-          (C2 := nil).
+          (C2 := nil);
+          [ simpl; clear; fsetdec | simpl; clear; fsetdec | | ].
         { apply a_lookeq__var. }
         { apply a_looksub__vacuous.
           (* the codomain is the looked-for variable's SIBLING, not itself *)
@@ -603,7 +605,7 @@ Proof.
         { apply a_lookeq__arrow with (Ξ1 := nil) (Ξ2 := nil)
             (C1 := a_cstr_eq (pskl_var_f fa) :: nil)
             (C2 := a_cstr_eq (pskl_var_f fb) :: nil);
-            apply a_lookeq__var. }
+            [ simpl; clear; fsetdec | simpl; clear; fsetdec | apply a_lookeq__var | apply a_lookeq__var ]. }
       * eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
         { apply a_solve_eq__hole_l. }
         { eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
@@ -673,7 +675,8 @@ Proof.
         { simpl_open.
           apply a_looksub__arrow with (Ξ1 := nil) (Ξ2 := nil)
             (C1 := a_cstr_eq (pskl_tophole (pskl_arrow pskl_hole pskl_hole)) :: nil)
-            (C2 := a_cstr_sub mode_ti pskl_hole :: nil).
+            (C2 := a_cstr_sub mode_ti pskl_hole :: nil);
+            [ simpl; clear; fsetdec | simpl; clear; fsetdec | | ].
           - apply a_lookeq__var.
           - (* ◇-dispatch guard: the subject IS the looked-for variable, so
                this cell is LS-Var and collects one more constraint *)
@@ -724,7 +727,7 @@ Proof.
           - apply a_lookeq__arrow with (Ξ1 := nil) (Ξ2 := nil)
               (C1 := a_cstr_eq (pskl_var_f fa) :: nil)
               (C2 := a_cstr_eq (pskl_var_f fb) :: nil);
-              apply a_lookeq__var. }
+              [ simpl; clear; fsetdec | simpl; clear; fsetdec | apply a_lookeq__var | apply a_lookeq__var ]. }
         { eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
           - apply a_solve_eq__hole_l.
           - eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
@@ -934,12 +937,15 @@ Proof.
               [ simpl; intuition | discriminate | crush_lc | crush_lc | ].
             apply a_lookeq__arrow with (Ξ1 := nil) (Ξ2 := nil)
               (C1 := a_cstr_eq (pskl_var_f α) :: nil)
-              (C2 := a_cstr_eq (pskl_var_f α) :: nil).
+              (C2 := a_cstr_eq (pskl_var_f α) :: nil);
+              [ simpl; clear; fsetdec | simpl; clear; fsetdec | | ].
             + apply a_lookeq__arrow with (Ξ1 := nil) (Ξ2 := nil)
-                (C1 := nil) (C2 := a_cstr_eq (pskl_var_f α) :: nil).
+                (C1 := nil) (C2 := a_cstr_eq (pskl_var_f α) :: nil);
+                [ simpl; clear; fsetdec | simpl; clear; fsetdec | | ].
               * apply a_lookeq__absent. forall_l_absent Hβ.
               * apply a_lookeq__arrow with (Ξ1 := nil) (Ξ2 := nil)
-                  (C1 := nil) (C2 := a_cstr_eq (pskl_var_f α) :: nil).
+                  (C1 := nil) (C2 := a_cstr_eq (pskl_var_f α) :: nil);
+                  [ simpl; clear; fsetdec | simpl; clear; fsetdec | | ].
                 { apply a_lookeq__absent. forall_l_absent Hβ. }
                 { apply a_lookeq__var. }
             + apply a_lookeq__var.
@@ -990,7 +996,7 @@ Proof.
             apply a_lookeq__arrow with (Ξ1 := nil) (Ξ2 := nil)
               (C1 := a_cstr_eq (pskl_var_f α) :: nil)
               (C2 := a_cstr_eq (pskl_var_f α) :: nil);
-              apply a_lookeq__var.
+              [ simpl; clear; fsetdec | simpl; clear; fsetdec | apply a_lookeq__var | apply a_lookeq__var ].
           - eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
             { apply a_solve_eq__hole_l. }
             eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).

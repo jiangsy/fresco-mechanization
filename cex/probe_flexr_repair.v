@@ -123,7 +123,9 @@ Lemma new_looksub : forall α,
       ⤳ nil ⨾ (a_cstr_eq Pallr :: a_cstr_sub mode_tc (pskl_var_f f) :: nil) }}a.
 Proof.
   intros α. unfold P0r, Pallr.
-  exact (a_looksub__arrow (a_lookeq__var _ _ _) (a_looksub__var _ _ mode_tc _)).
+  refine (a_looksub__arrow _ _ (a_lookeq__var _ _ _)
+            (a_looksub__var _ _ mode_tc _));
+    simpl; clear; fsetdec.
 Qed.
 
 (* ------------------------------------------------------------------ *)

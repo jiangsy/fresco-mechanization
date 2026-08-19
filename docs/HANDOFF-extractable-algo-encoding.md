@@ -5498,6 +5498,103 @@ none does and where the a-side is genuinely larger than the e-side
 (`a_extract` above, and — expect the same question — `a_sub__forall_l`,
 which is the same block's consumer).
 
+#### ✅✅ THE REPAIR IS LANDED (2026-08-19) — the guard is on both arrow rows and the tree is GREEN
+
+`make coq` rc=0, `README.v` 33/33, zero `Admitted`/`Axiom`.  Both collection
+arrow rows now carry
+
+    ftvar_in_a_cstrs 𝒞₁ ∩ dom Ξ₂ [=] empty
+    ftvar_in_a_cstrs 𝒞₂ ∩ dom Ξ₁ [=] empty
+
+(frost/algo/def_rules.v, `a_looksub__arrow` / `a_lookeq__arrow`), and
+`cex/probe_extract_conflated_opener.v` is the record of why: its §1c shows
+the second conjunct is exactly what excludes the conflating configuration,
+and §3 shows the threaded encoding could not have produced it anyway.
+
+**What it cost, file by file — and the surprises are worth reading.**
+
+- ⚙ `ftvar_in_a_cstr` / `_cstrs` / `_app` MOVED to `frost/algo/def_rules.v`
+  above the rules, and the tree's TWO identical copies collapsed into it
+  (`algo/sub/prop_looksub.v`'s `ftvar_in_cstrs` and `ext_algo/def_look.v`'s
+  `ftvar_in_a_cstrs`, 118 sites).  `def_look.v`'s header had asked for
+  exactly this move.
+- `prop_swap.v` gains `swap_cstrs_ftv_notin` / `swap_look_guard` — a
+  transposition is a bijection, so the guard travels.
+- `prop_look.v` gains **`e_looksub_lookeq_cstr_old`**: *a constraint
+  variable already in the INPUT supply came from the INPUTS*.  That is what
+  lets `e_looksub_sound` discharge BOTH conjuncts — §2's coarse bound can
+  only do the first, because it allows the whole output supply and the left
+  block lives there.  ⇒ the guard costs the threaded encoding nothing, and
+  that is now a theorem rather than an argument.
+- `prop_looksub.v` (9 sites): every one is `assumption` — its lemmas rebuild
+  the SUBJECT and leave `Ξ`/`𝒞` alone.
+- ⭐ `a_looksub_lookeq_subst_gen_size` (prop_decorate_sub.v) is the only
+  lemma that needed design.  See below.
+- ⭐ The two P6 completeness lemmas (`look/prop_eq_cstr.v`,
+  `look/prop_sub_cstr.v`) each needed a ~20-line derivation of the two
+  conjuncts — and **both were already facts of the configuration**: the
+  right run's block dodges the left run's constraints by its own ftv-𝒞
+  bound (the proofs already had it in ∀-form as `HΞ2C1`), and the right
+  run's constraints dodge the left run's block by
+  `a_looksub_lookeq_ftv`'s DISJUNCTIVE bound — the "outside the context"
+  disjunct is impossible because `Ξc1` IS in the right run's context, and
+  the other lands in `P02` or `Ξc2`, both already apart.
+- `test_examples.v` (10 sites, all `nil` blocks) and two `cex/` files.
+
+**⭐⭐ THE ONE PIECE OF DESIGN: `a_looksub_lookeq_subst_gen_size`.**  Its
+conclusion is EXISTENTIAL in the outputs and its binder rows RE-PICK the
+rule's opener away from `P0`, so the arrow case must prove the guard for
+outputs it has just invented.  Two shapes were tried:
+
+- ⛔ `dom Ξ' ∩ L [<=] dom Ξ` plus `ftvar 𝒞' ∩ L [<=] ftvar 𝒞 ∪ ftvar P0`.
+  It works inside the lemma, but it needs `ftvar P0 [<=] ftvar_in_aenv Θ`,
+  and that CANNOT be discharged at the consumer: `a_subtag_decoration`
+  quantifies the run's context `Θl` INSIDE the induction (deliberately —
+  its header explains the ForallL rows need a different one), with no link
+  to the node's guess `P1`, whose only wf sits at `Ξ ++ Θ0`.
+- ✅ **`dom Ξ' ∩ L [=] empty`** — the produced block is ENTIRELY fresh for
+  the caller's avoid-set.  Then the arrow row runs the RIGHT half first
+  with `L2 := L ∪ ftvar 𝒞1 ∪ ftvar P0` and the LEFT half with
+  `L1 := L ∪ ftvar 𝒞2' ∪ dom Ξ2'`, both guards are one `fsetdec` each, and
+  **nothing about `P0` is hypothesised** — so `a_looksub_subst_gen` keeps
+  its signature and `prop_soundness_sub.v` is untouched.
+
+⚙ THE PRICE of the second shape, and it is the lesson: **every row must now
+go through the induction.**  The rows that used to hand the premise back
+VERBATIM would hand back its ORIGINAL block — so `LS-Check`'s unit/var
+subcases and `LE-UnivGhostR`'s route through the IH (the substitution is
+vacuous there, `cbn` or `subst_pskl_in_pskl_fresh_eq` removes it), and the
+three ∀-VACUOUS shortcuts (`β = b`, the rule's own binder) are DELETED:
+every ∀ row re-picks, exactly as `LS-ForallR` always did.  ⚠️ Also
+`dom Ξ' [=] dom Ξ` is FALSE — `LE-FlexR` re-picks its generated flexible
+away from `P0`.
+
+⚠️⚠️ **AND ONE FALSE START WORTH RECORDING.**  The symmetric guard looks
+like it must break look COMPLETENESS, because at the P6 arrow the right
+half genuinely runs at `Ξs1 ++ Ξc1 ++ Θ0` and its constraints are bounded
+by a set containing `dom κc1`.  It does not: that is only a coarse bound.
+`a_looksub_lookeq_ftv` gives the sharp statement, and the right half's
+constraints really do miss the left half's block.
+
+⚙ Traps paid: `remember` the arrow rows' avoid-sets (written out, every
+later `fsetdec` faces SEVEN set variables); the size fact handed to the
+size-indexed lemma must be a NAMED hypothesis (inside an `ltac:` argument
+the skeletons are still evars and `lia` has nothing to work on); and a
+`python`-side regex over `IH _ _ _ _ _ _` must allow BOTH the six- and
+seven-underscore arities.
+
+#### ⚙ COST, AND WHAT IT SAYS ABOUT THE REMAINING BUDGET
+
+`prop_lift.v` is 21.6 s for ~1570 lines.  §8c.24's three performance rules
+were followed from the first draft (named hypotheses for every recursive
+call's side conditions, no `fsetdec` past five set variables, openers
+consumed by `destruct_notin`) and **no row needed a second attempt** —
+§§4-7 each compiled the first time they were written.  ⇒ the remaining
+blocks are cheap IF a template exists; the expensive ones are the two where
+none does and where the a-side is genuinely larger than the e-side
+(`a_extract` above, and — expect the same question — `a_sub__forall_l`,
+which is the same block's consumer).
+
 #### ⚙ THE REPAIR WAS ATTEMPTED AND COSTED (2026-08-19, same day) — one lemma blocks it, and it is NOT one of the 31 construction sites
 
 The guard was written and carried through most of the tree before being

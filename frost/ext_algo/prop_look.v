@@ -205,6 +205,77 @@ Proof.
   apply (proj1 e_looksub_lookeq_cstr_ftvar) in H. clear - H Hcov Hgrow. fsetdec.
 Qed.
 
+(** ⭐⭐ …AND THE SHARPER HALF: a constraint variable that was ALREADY IN THE
+    INPUT SUPPLY came from the INPUTS.  Everything else the collection puts
+    in [𝒞] — a leaked opener, an LE-FlexR flexible — is drawn strictly
+    inside the interval the run spent.
+
+    ⚙ WHO NEEDS IT.  The a-side collection's arrow rows carry the CROSS-HALF
+    FRESHNESS GUARD (frost/algo/def_rules.v, [a_looksub__arrow]), and
+    [e_looksub_sound] has to discharge BOTH of its conjuncts.  The first is
+    §2's coarse bound; the second — the RIGHT half's constraints miss the
+    LEFT half's block — cannot be, because the coarse bound allows the whole
+    of the output supply and the left block lives there.  This one pins it:
+    the right half ran at [S1], its block-free constraint variables are
+    inputs, and inputs are covered by [S0], which the left block misses. *)
+Lemma e_looksub_lookeq_cstr_old :
+  (forall S0 Θ α m P P' S1 Ξ C,
+     {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
+     ftvar_in_a_cstrs C ∩ S0 [<=] ftvar_in_pskl P ∪ ftvar_in_pskl P') /\
+  (forall S0 Θ α P P' S1 Ξ C,
+     {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
+     ftvar_in_a_cstrs C ∩ S0 [<=] ftvar_in_pskl P ∪ ftvar_in_pskl P').
+Proof.
+  apply (e_looksub_lookeq_mutind
+           (fun S0 Θ α m P P' S1 Ξ C _ =>
+              ftvar_in_a_cstrs C ∩ S0
+                [<=] ftvar_in_pskl P ∪ ftvar_in_pskl P')
+           (fun S0 Θ α P P' S1 Ξ C _ =>
+              ftvar_in_a_cstrs C ∩ S0
+                [<=] ftvar_in_pskl P ∪ ftvar_in_pskl P'));
+    intros; look_grow_facts; open_upper_facts;
+    repeat rewrite ftvar_in_a_cstrs_app in *;
+    simpl in *; fsetdec.
+Qed.
+
+Corollary e_looksub_cstr_old : forall S0 Θ α m P P' S1 Ξ C,
+  {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
+  ftvar_in_a_cstrs C ∩ S0 [<=] ftvar_in_pskl P ∪ ftvar_in_pskl P'.
+Proof. apply e_looksub_lookeq_cstr_old. Qed.
+
+Corollary e_lookeq_cstr_old : forall S0 Θ α P P' S1 Ξ C,
+  {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
+  ftvar_in_a_cstrs C ∩ S0 [<=] ftvar_in_pskl P ∪ ftvar_in_pskl P'.
+Proof. apply e_looksub_lookeq_cstr_old. Qed.
+
+(** The two conjuncts of the a-side CROSS-HALF GUARD, packaged for the two
+    arrow rows of [e_looksub_sound] — which are the only consumers, and
+    which face them at exactly this shape. *)
+Lemma e_look_cross_half_guard :
+  forall S0 S1 Θ α P1 P1' Ξ1 C1 (Ξ2 : aenv) (C2 : a_cstrs),
+  {{ S0 ↝ S1 ⊨ Θ ⊢ P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 }}e ->
+  ftvar_in_pskl P1 ∪ ftvar_in_pskl P1' [<=] S0 ->
+  dom Ξ2 ∩ S1 [=] empty ->
+  ftvar_in_a_cstrs C2 ∩ S1 [<=] S0 ->
+  ftvar_in_a_cstrs C1 ∩ dom Ξ2 [=] empty
+  /\ ftvar_in_a_cstrs C2 ∩ dom Ξ1 [=] empty.
+Proof.
+  intros * He HcovA Hd2 Hold2.
+  pose proof (e_lookeq_supply_grows He) as Hgrow.
+  assert (Hc1 : ftvar_in_a_cstrs C1 [<=] S1).
+  { pose proof ((proj2 e_looksub_lookeq_cstr_ftvar) _ _ _ _ _ _ _ _ He) as H1.
+    clear - H1 HcovA Hgrow. fsetdec. }
+  assert (Hb1in : dom Ξ1 [<=] S1)
+    by (exact (e_lookeq_generated_in_supply He)).
+  assert (Hb1fr : dom Ξ1 ∩ S0 [=] empty).
+  { pose proof He as He'.
+    apply (proj2 e_looksub_lookeq_block) in He'. tauto. }
+  split; [ clear - Hc1 Hd2; fsetdec | ].
+  assert (Hx : ftvar_in_a_cstrs C2 ∩ dom Ξ1 [<=] ftvar_in_a_cstrs C2 ∩ S1)
+    by (clear - Hb1in; fsetdec).
+  clear - Hx Hold2 Hb1fr. fsetdec.
+Qed.
+
 (* ===================================================================== *)
 (*  §2c  ⭐⭐ WHAT THE ABSENCE-FIRST GUARD BUYS — an α-free subject pins    *)
 (*  the WHOLE answer, SUPPLY INCLUDED                                     *)
@@ -360,11 +431,24 @@ Proof.
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f β)) as Hup.
       simpl in Hup, Hcov |- *.
       clear - Hup Hcov. fsetdec.
-  - (* LS-Arrow — the right half runs at [S1], so coverage travels by §1 *)
+  - (* LS-Arrow — the right half runs at [S1], so coverage travels by §1,
+       and the a-side's CROSS-HALF GUARD comes off §2b + §2c *)
     intros S0 S1 S2 Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 He IH1 Hs IH2 Hcov.
     simpl in Hcov.
     pose proof (e_lookeq_supply_grows He) as Hgrow.
-    apply a_looksub__arrow.
+    assert (HcovA : ftvar_in_pskl P1 ∪ ftvar_in_pskl P1' [<=] S0)
+      by (clear - Hcov; fsetdec).
+    assert (HcovB : ftvar_in_pskl P2 ∪ ftvar_in_pskl P2' [<=] S0)
+      by (clear - Hcov; fsetdec).
+    assert (Hd2 : dom Ξ2 ∩ S1 [=] empty).
+    { pose proof Hs as Hs'.
+      apply (proj1 e_looksub_lookeq_block) in Hs'. tauto. }
+    assert (Hold2 : ftvar_in_a_cstrs C2 ∩ S1 [<=] S0)
+      by (pose proof (e_looksub_cstr_old Hs) as Ho;
+          clear - Ho HcovB; fsetdec).
+    destruct (e_look_cross_half_guard Ξ2 C2 He HcovA Hd2 Hold2)
+      as [Hg1 Hg2].
+    apply a_looksub__arrow; [ exact Hg1 | exact Hg2 | | ].
     + apply IH1. clear - Hcov. fsetdec.
     + apply IH2. clear - Hcov Hgrow. fsetdec.
   - (* LS-ForallL *)
@@ -392,11 +476,23 @@ Proof.
     intros S Θ α P β α1 Hα1 Hflx Hne Hin Hcov.
     apply a_lookeq__flex_r; auto.
     simpl in Hcov. clear - Hα1 Hcov. fsetdec.
-  - (* LE-Arrow *)
+  - (* LE-Arrow — same, with the right half an eq call *)
     intros S0 S1 S2 Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 He1 IH1 He2 IH2 Hcov.
     simpl in Hcov.
     pose proof (e_lookeq_supply_grows He1) as Hgrow.
-    apply a_lookeq__arrow.
+    assert (HcovA : ftvar_in_pskl P1 ∪ ftvar_in_pskl P1' [<=] S0)
+      by (clear - Hcov; fsetdec).
+    assert (HcovB : ftvar_in_pskl P2 ∪ ftvar_in_pskl P2' [<=] S0)
+      by (clear - Hcov; fsetdec).
+    assert (Hd2 : dom Ξ2 ∩ S1 [=] empty).
+    { pose proof He2 as He2'.
+      apply (proj2 e_looksub_lookeq_block) in He2'. tauto. }
+    assert (Hold2 : ftvar_in_a_cstrs C2 ∩ S1 [<=] S0)
+      by (pose proof (e_lookeq_cstr_old He2) as Ho;
+          clear - Ho HcovB; fsetdec).
+    destruct (e_look_cross_half_guard Ξ2 C2 He1 HcovA Hd2 Hold2)
+      as [Hg1 Hg2].
+    apply a_lookeq__arrow; [ exact Hg1 | exact Hg2 | | ].
     + apply IH1. clear - Hcov. fsetdec.
     + apply IH2. clear - Hcov Hgrow. fsetdec.
   - (* LE-ForallInh *)

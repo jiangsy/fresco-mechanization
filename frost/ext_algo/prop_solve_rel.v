@@ -1842,7 +1842,7 @@ Proof.
     { simpl. clear - Hxb Hd2. fsetdec. }
     cstrs_perm Hrel'.
   - (* LS-Arrow *)
-    intros Θ1 α m P1 P2q P1' P2q' Ξ1 Ξ2q C1 C2q Hle IHe Hls IHs
+    intros Θ1 α m P1 P2q P1' P2q' Ξ1 Ξ2q C1 C2q Hg1 Hg2 Hle IHe Hls IHs
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hag Hcov.
     inversion HrelP; subst. inversion HrelP'; subst.
     match goal with
@@ -2069,7 +2069,7 @@ Proof.
     simpl. constructor; [ | constructor ].
     constructor. constructor. apply rel_atom__pair. left. reflexivity.
   - (* LE-Arrow *)
-    intros Θ1 α P1 P2q P1' P2q' Ξ1 Ξ2q C1 C2q Hle1 IH1 Hle2 IH2
+    intros Θ1 α P1 P2q P1' P2q' Ξ1 Ξ2q C1 C2q Hg1 Hg2 Hle1 IH1 Hle2 IH2
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hag Hcov.
     inversion HrelP; subst. inversion HrelP'; subst.
     match goal with

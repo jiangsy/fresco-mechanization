@@ -476,7 +476,7 @@ Lemma a_looksub_solve_complete_leaf :
     keys κc = keys Ξc /\
     Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
     Forall (fun p => (ftvar_in_ptyp (snd p)) ∩ Δρ [=] empty) κc /\
-    (* NB no [ftvar_in_cstrs] conjunct: the STRUCTURAL bound
+    (* NB no [ftvar_in_a_cstrs] conjunct: the STRUCTURAL bound
        [ftv 𝒞 ⊆ ftv P0 ∪ dom Ξc] is already available to every consumer as
        [a_looksub_ftv] (prop_looksub.v).  P6-Cs carries a ψa-RELATIVE bound
        instead, because its ∀ rows need the collected constraints to avoid a
@@ -501,7 +501,7 @@ Lemma a_looksub_solve_complete_leaf :
        [ad_pat_sub_fuel__forall_l_tagged] — cex/cex_p6ss_sub_target_ftv.v.
        docs/DESIGN-completeness-subtyping.md §8 (h). *)
     (M = mode_tc ->
-       ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
+       ftvar_in_a_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                              `union` dom κ `union` def_ftv Θ
        \/ (alpha_stack α P /\ Ξc = nil /\ κc = nil
            /\ exists T, 𝒞 = a_cstr_sub M T :: nil)).
@@ -750,7 +750,7 @@ Theorem a_looksub_solve_complete_gen :
        runs at [Pi := Pa1] under [κc1 ++ κ] and must re-establish the
        ρ-freshness of its new Pi. *)
     Forall (fun p => (ftvar_in_ptyp (snd p)) ∩ Δρ [=] empty) κc /\
-    (* NB no [ftvar_in_cstrs] conjunct: the STRUCTURAL bound
+    (* NB no [ftvar_in_a_cstrs] conjunct: the STRUCTURAL bound
        [ftv 𝒞 ⊆ ftv P0 ∪ dom Ξc] is already available to every consumer as
        [a_looksub_ftv] (prop_looksub.v).  P6-Cs carries a ψa-RELATIVE bound
        instead, because its ∀ rows need the collected constraints to avoid a
@@ -775,7 +775,7 @@ Theorem a_looksub_solve_complete_gen :
        [ad_pat_sub_fuel__forall_l_tagged] — cex/cex_p6ss_sub_target_ftv.v.
        docs/DESIGN-completeness-subtyping.md §8 (h). *)
     (M = mode_tc ->
-       ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
+       ftvar_in_a_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                              `union` dom κ `union` def_ftv Θ
        \/ (alpha_stack α P /\ Ξc = nil /\ κc = nil
            /\ exists T, 𝒞 = a_cstr_sub M T :: nil)).
@@ -1233,7 +1233,7 @@ Proof.
              sees it.  From there the row is the Sub-ForallL rows with the
              renamed side swapped: there the SUBJECT moves and the target
              is fixed, here the TARGET moves and the subject is fixed. ---- *)
-        assert (HβC : β `notin` ftvar_in_cstrs 𝒞).
+        assert (HβC : β `notin` ftvar_in_a_cstrs 𝒞).
         { cbn [def_ftv] in Hleft. pose proof (def_ftv_dom HwfΘ) as Hdf.
           clear - Hleft HβΞc Hβκ Hβψa HβΘ Hdf; fsetdec. }
         assert (HβPa : β `notin` ftvar_in_pskl Pa).
@@ -1327,7 +1327,7 @@ Proof.
              supplies the solve, at the descended target; lifting it over
              the ∀ is P6-Sv's strengthen-then-rename recipe
              (sub/look/prop_sub_var.v:2036). ---- *)
-        cbn [ftvar_in_cstrs] in *.
+        cbn [ftvar_in_a_cstrs] in *.
         (* β ∉ ftv Pa comes from PRECISION, not from the solve's ftv bound:
            the target here legitimately mentions β (that is the whole point of
            this branch), so [a_solve_sub_ftv] is useless.  Precision bounds the
@@ -1826,7 +1826,7 @@ Proof.
       pose proof (HΔρΞc1 α0 Hα0) as HΞ.
       pose proof (HΔρΞs1 α0 Hα0) as HΞs.
       assert (Hα0Θ0 : α0 `in` dom Θ0) by (apply HΔρΘ0; exact Hα0).
-      assert (Hc1 : α0 `notin` ftvar_in_cstrs C1)
+      assert (Hc1 : α0 `notin` ftvar_in_a_cstrs C1)
         by (eapply a_lookeq_ftv_ctx;
               [ exact HLK1 | exact Hα0Θ0 | clear - Hd0; fsetdec | exact HΞ ]).
       clear - Hs1 Hc1 Hd0 HΞ HΞs; fsetdec. }
@@ -1895,7 +1895,7 @@ Proof.
       {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl (κs ++ κc ++ (κs1 ++ κc1 ++ κ)) Pa)
         ⊑ᵖ[ (Ψi `union` (Ψ1 ∩ Ψ')) `union` (Ψ2 ∩ Ψ') ] ψa }}ad /\
       (M = mode_tc ->
-         ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
+         ftvar_in_a_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom (κs1 ++ κc1 ++ κ) `union` def_ftv Θ
          \/ (alpha_stack α ⌊ Rb ⌋ˢ /\ Ξc = nil /\ κc = nil
              /\ exists T, 𝒞 = a_cstr_sub M T :: nil))).
@@ -1994,8 +1994,42 @@ Proof.
     -- (* a_looksub : LS-Arrow.  The RIGHT branch ran at the GROWN
           [Ξs1 ++ Ξc1 ++ Θ0]; dropping declarations only SHRINKS the
           avoid-set, which is the direction [a_looksub_ctx_ftv_mono] goes. *)
+        (* ⭐ THE CROSS-HALF FRESHNESS GUARD (2026-08-19) — both conjuncts are
+           facts this configuration already has: the RIGHT run's block dodges
+           the LEFT run's constraints (its own ftv-𝒞 bound, as [HΞ2C1] below
+           repeats), and the RIGHT run's constraints dodge the LEFT run's
+           block (the look's DISJUNCTIVE ftv bound: the "outside the context"
+           disjunct is impossible because [Ξc1] IS in the right run's
+           context, and the other lands in [P02] or [Ξc2]). *)
+        assert (Hgc1 : ftvar_in_a_cstrs C1 ∩ dom Ξc2 [=] empty).
+        { intros x; split; intros Hx; [ | clear - Hx; fsetdec ].
+          exfalso.
+          assert (Hx1 : x `in` ftvar_in_a_cstrs C1) by (clear - Hx; fsetdec).
+          assert (Hx2 : x `in` dom Ξc2) by (clear - Hx; fsetdec).
+          rewrite <- Hd2 in Hx2.
+          pose proof (Hκf2 x Hx2) as Hf. repeat rewrite dom_app in Hf.
+          assert (Hxκ : x `notin` dom κ).
+          { intro Hc. destruct (a_inc_dom_flex Hκ Hc) as [Hb | [τ0 Hb]];
+              apply binds_In in Hb; clear - Hf Hb; fsetdec. }
+          pose proof (def_ftv_dom HwfΘ) as Hdf.
+          clear - HftvC1 Hf Hxκ Hdf Hx1; fsetdec. }
+        assert (Hgc2 : ftvar_in_a_cstrs C2 ∩ dom Ξc1 [=] empty).
+        { intros x; split; intros Hx; [ | clear - Hx; fsetdec ].
+          exfalso.
+          assert (Hx1 : x `in` ftvar_in_a_cstrs C2) by (clear - Hx; fsetdec).
+          assert (Hx2 : x `in` dom Ξc1) by (clear - Hx; fsetdec).
+          assert (Hxin : x `in` ftvar_in_aenv (Ξs1 ++ Ξc1 ++ Θ0)).
+          { pose proof (dom_subset_ftvar_in_aenv (Ξs1 ++ Ξc1 ++ Θ0)) as Hds.
+            repeat rewrite dom_app in Hds. clear - Hds Hx2; fsetdec. }
+          destruct ((proj1 a_looksub_lookeq_ftv) _ _ _ _ _ _ _ HLK2 x Hx1)
+            as [Hlft | Hrgt]; [ | clear - Hrgt Hxin; contradiction ].
+          assert (HxΞ2 : x `notin` dom Ξc2).
+          { intro Hc. pose proof (HΞ2Ξc1Θ0 x Hc) as Hn.
+            rewrite dom_app in Hn. clear - Hn Hx2; fsetdec. }
+          clear - Hlft HxΞ2 HfrΞ1 Hx2; fsetdec. }
         rewrite <- HeraseR. apply a_looksub__arrow;
-          [ exact HLK1
+          [ exact Hgc1 | exact Hgc2
+          | exact HLK1
           | eapply a_looksub_ctx_ftv_mono with (Θ := (Ξs1 ++ Ξc1 ++ Θ0));
               [ exact HLK2
               | repeat rewrite ftvar_in_aenv_app; clear; fsetdec
@@ -2016,7 +2050,7 @@ Proof.
          pose proof (HΞ2Ξc1Θ0 x Hx) as Hf; rewrite dom_app in Hf;
          simpl in Hfd; clear - Hfd Hf; fsetdec. }
        assert (HΞ2C1 : forall x, x `in` dom Ξc2 ->
-                 x `notin` ftvar_in_cstrs C1).
+                 x `notin` ftvar_in_a_cstrs C1).
        { (* the exact bound is gone (the ∀ rules leak) and x is a name the
             RIGHT run INVENTED, so the ctx corollary does not apply either;
             what does is P6-Cs's OWN ftv-𝒞 bound *)
@@ -2507,7 +2541,7 @@ Proof.
       {{ ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
         ⊢ˢ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa }}ad /\
       (M = mode_tc ->
-         ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
+         ftvar_in_a_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom κ
                                `union` def_ftv ((β ~ abind_tvar) ++ Θ)
          \/ (alpha_stack α ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ
@@ -2571,7 +2605,7 @@ Proof.
     assert (HβΞc : β `notin` dom Ξc).
     { intro Hc. rewrite <- Hdκ in Hc. specialize (Hκfresh β Hc).
       apply Hκfresh. simpl; clear; fsetdec. }
-    assert (HβC : β `notin` ftvar_in_cstrs 𝒞).
+    assert (HβC : β `notin` ftvar_in_a_cstrs 𝒞).
     { (* β is a rigid of the PREMISE's context, hence not a name the run can
          have invented — [a_looksub_ftv_ctx] restores the exact bound *)
       pose proof (a_wf_pskl_ftv_dom HwfP0) as Hpf.
@@ -3075,7 +3109,7 @@ Proof.
       {{ ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
         ⊢ˢ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa }}ad /\
       (M = mode_tc ->
-         ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
+         ftvar_in_a_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom κ
                                `union` def_ftv ((β ~ abind_tvar) ++ Θ)
          \/ (alpha_stack α ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ
@@ -3139,7 +3173,7 @@ Proof.
     assert (HβΞc : β `notin` dom Ξc).
     { intro Hc. rewrite <- Hdκ in Hc. specialize (Hκfresh β Hc).
       apply Hκfresh. simpl; clear; fsetdec. }
-    assert (HβC : β `notin` ftvar_in_cstrs 𝒞).
+    assert (HβC : β `notin` ftvar_in_a_cstrs 𝒞).
     { (* β is a rigid of the PREMISE's context, hence not a name the run can
          have invented — [a_looksub_ftv_ctx] restores the exact bound *)
       pose proof (a_wf_pskl_ftv_dom HwfP0) as Hpf.
@@ -3444,7 +3478,7 @@ Proof.
        α0 `notin` add α (dom Θ0 `union` dom Θ `union` ftvar_in_uskl ψa)) /\
       {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa }}ad /\
       (M = mode_tc ->
-         ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
+         ftvar_in_a_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom κ `union` def_ftv Θ
          \/ (alpha_stack α ⌊ R0 ⌋ˢ /\ Ξc = nil /\ κc = nil
              /\ exists T, 𝒞 = a_cstr_sub M T :: nil))).
@@ -3599,7 +3633,7 @@ Proof.
        α0 `notin` add α (dom Θ0 `union` dom Θ `union` ftvar_in_uskl ψa)) /\
       {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa }}ad /\
       (M = mode_tc ->
-         ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
+         ftvar_in_a_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom κ `union` def_ftv Θ
          \/ (alpha_stack α ⌊ R0 ⌋ˢ /\ Ξc = nil /\ κc = nil
              /\ exists T, 𝒞 = a_cstr_sub M T :: nil))).
@@ -3840,7 +3874,7 @@ Theorem a_looksub_solve_complete :
        [ad_pat_sub_fuel__forall_l_tagged] — cex/cex_p6ss_sub_target_ftv.v.
        docs/DESIGN-completeness-subtyping.md §8 (h). *)
     (M = mode_tc ->
-       ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
+       ftvar_in_a_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                              `union` dom κ `union` def_ftv Θ
        \/ (alpha_stack α P /\ Ξc = nil /\ κc = nil
            /\ exists T, 𝒞 = a_cstr_sub M T :: nil)).
