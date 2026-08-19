@@ -5463,11 +5463,16 @@ is the live statement.  In brief:
 - ⇒ no `flex_agree_rel` between `Ξ ++ Θ0` and `Ξ2 ++ Θ2` exists, and that
   is precisely §7's premise.
 
-⚙ **CHECKED vs INFERRED**: the side conditions and the non-applicability
-are read off the definitions; the configuration is NOT yet built in Coq.
-**Build it as a `cex/probe_*` first** — the campaign's precedent
-(`probe_extract_supply_drift.v`) is that these are cheap and that they pin
-the repair.
+✅ **MACHINE-CHECKED (2026-08-19): `cex/probe_extract_conflated_opener.v`**,
+four lemmas, all Qed and assumptions-closed.  §1 builds the conflating
+collection (`Ξ = γ̂`, `𝒞 = [≐1, ≐γ, ≐γ]`, first `γ` invented by LE-FlexR,
+second leaked by LE-ForallInh — **and both rows' side conditions read
+`γ ∉ {α, β̂}`, so nothing separates them**); §2a runs the a-side fold on it;
+§2b shows that fold is STUCK once the opener is any atom the context does
+not bind; §3 builds the THREADED collection at the same inputs and it
+returns `[≐1, ≐γ1, ≐γ2]` with `γ2 ∉ dom Ξ2`; §4 composes — the a-side fold
+runs and the threaded one cannot, at one configuration.  ⚙ The threaded
+fold is refuted through `e_solve_cstr_sound`, so §2b does both jobs.
 
 ⭐ **The repair has to be a PREMISE that the collection's leaked openers
 are apart from its own block** — the fourth instance of a prose-completion

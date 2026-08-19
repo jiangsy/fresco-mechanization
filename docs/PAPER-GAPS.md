@@ -37,6 +37,78 @@ recently P6-Sv at the end of this file)}.
 > Several judgments looked broken until that condition was restored.  **Check
 > that file before concluding a lemma is unprovable.**
 
+## MISSING SIDE CONDITION (2026-08-19, machine-checked) — `LE-Arrow` / `LS-Arrow` run both halves at ONE context, so a ∀ OPENER leaked by one half and a FLEXIBLE invented by the other can be THE SAME ATOM — and the constraint solver's answer then depends on the collision
+
+> **Status: OPEN in the mech.**  The refutation is
+> `cex/probe_extract_conflated_opener.v` (four lemmas, all Qed and
+> assumptions-closed).  The repair is proposed below and not yet landed —
+> it is a rule change, so it is the authors' / user's call.
+
+**Where.**  `fig:poly-info-extraction`, the two arrow rows of the
+constraint collection.  Both premises run at the SAME `Θ`:
+
+    Θ ⊢ P₁ ∼[α] P₁' ⤳ Ξ₁ ⨾ 𝒞₁      Θ ⊢ P₂ ∼[α] P₂' ⤳ Ξ₂ ⨾ 𝒞₂
+    ----------------------------------------------------------- LE-Arrow
+    Θ ⊢ P₁→P₂ ∼[α] P₁'→P₂' ⤳ Ξ₁,Ξ₂ ⨾ 𝒞₁,𝒞₂
+
+**The finding.**  All five of the collection's ∀ rows LEAK their opener —
+the reference implementation unbinds and discards the name
+(`type.ml:579-613`, `:668-688`), so the opener may occur in `𝒞`.  A leaked
+opener is *not* in `Ξ`, so no `uniq Ξ` condition can see it.  And the two
+freshness side conditions
+
+    LE-ForallInh   β ∉ {α} ∪ ftv(Θ) ∪ ftv(P) ∪ ftv(P')
+    LE-FlexR       γ̂ ∉ {α} ∪ {β̂} ∪ ftv(Θ) ∪ ftv(P)
+
+do not exclude each other.  At
+
+    Θ₀ = β̂ ,   subject (α → (α→α)) → ∀. α ,   target (1 → β̂) → ∀. 0
+
+both read `∉ {α, β̂}`, and the collection derives
+
+    Θ₀ ⊢ subject ∼[α] target ⤳ γ̂ ⨾ [≐1, ≐γ, ≐γ]
+
+where the FIRST `γ` is the flexible LE-FlexR invented in the left half and
+the SECOND is the opener LE-ForallInh leaked in the right half.  **One
+atom, two roles.**
+
+**Why it matters — the collision is LOAD-BEARING.**  `look` hands `𝒞` to
+the solver at `Ξ, Θ₀`.  There the leaked `γ` *is* hatted, because the
+sibling half put it in `Ξ`, so `SolE-FlexR` fires on it.  Give the opener
+any name the context does not bind — which is exactly what a run with a
+global fresh counter does, since it draws the opener and the flexible at
+different counter values — and the fold is STUCK: `1 ∼ δ` matches no
+constraint-solving rule at all (not `SolE-Unit`: the target is not `1`; not
+`SolE-Var`: the subject is not a variable; not `SolE-FlexR`: `δ` is not
+hatted; not `SolE-GhostL` / `SolE-VacuousR`: neither side is `◇`; and no
+`⫯` / `∀` / `→` row).  So the relation as written derives an extraction
+**no run of the algorithm can produce**.
+
+**Consequence for the mech.**  This is what blocks the last link of the
+extractable-encoding chain: `a_extract ⟹ e_extract` is FALSE as stated
+(docs/HANDOFF-extractable-algo-encoding.md §8c.25), and with it the
+converse bridge the decidability corollary's NEGATIVE branch would need to
+reach the paper's declarative judgement.
+
+**Proposed repair — one side condition per arrow row:**
+
+    ftv(𝒞₁) ∩ dom(Ξ₂) = ∅
+
+It costs completeness NOTHING: it is a THEOREM of any run threaded through
+a fresh-name supply (`ftv 𝒞₁ ⊆ S₁` under input coverage, and `dom Ξ₂` is
+drawn outside `S₁`), so the reference implementation — one global counter,
+never reused — cannot violate it.  ⚙ It is the same move the paper's own
+`SolS-Arrow` already makes by threading its second premise at `Ξ₁, Θ`, and
+the fourth instance of the freshness prose-completion this mechanization
+has had to supply (`AT-Abs`'s `uniq (αs, Θ₁)`, `SI-ForallL`'s
+`uniq (Ξ, Θ₀)`, and `guess^TY`'s `uniq Ξ`).  ⚠️ Threading the arrow rows'
+CONTEXT — running the second half at `Ξ₁, Θ`, as the solve layer does —
+fixes only the mirror direction (a right-half opener colliding with a
+left-half flexible); the direction above survives it, because a left-half
+opener is invisible to the right half no matter what the context carries.
+
+---
+
 ## MISSING SIDE CONDITION (2026-08-17, machine-checked) — the COLLECTION rules lack the `α ∈ ftv(subject)` guard that renders the implementation's absence-first dispatch, so a collection call can spend a fresh name it never needed
 
 > **✅ FIXED IN THE MECH ON BOTH ENCODINGS (2026-08-17/18).**  The five LEAKING
