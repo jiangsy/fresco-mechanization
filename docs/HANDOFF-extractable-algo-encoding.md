@@ -5536,6 +5536,56 @@ rows gain ~20 lines each (the split) and the two arrow rows ~20 each.  After
 that §8 (the extract lift itself) is one row: look, fold, guess, with the
 blocks read off as `flex_pairs_l (ρnL ++ ρnF ++ ρnG)` by `flex_pairs_l_app`.
 
+#### ⛔⛔ AND THE EXTRACT RUNG HITS A SECOND CONFLATION, ONE LAYER UP (2026-08-19)
+
+✅ Transport 5 IS strengthened (both conjuncts, `90f7076`), so the fold's
+`flex_agree_rel` at the ρx pairs now goes through on BOTH sides.  ⛔ But the
+composition still does not close, and the obstruction is a DIFFERENT
+conflation of the same species — worth writing down before anyone re-derives
+it.
+
+**WHERE.**  Step 2 calls `a_solve_cstr_rel_e` at
+`ρ' := ρxL ++ ρnL ++ ρ` over `Ξ ++ Θ1` and `ΞL2 ++ Θ2`.  That transport
+carries the hypothesis `V ∪ cols_l ρ [<=] ftvar_in_aenv Θ1`, and at this
+call `cols_l ρ' ⊇ cols_l ρxL` — the COLLECTION's leaked openers — which are
+NOT in `ftvar_in_aenv (Ξ ++ Θ1)`.  The hypothesis is unsatisfiable there.
+
+**WHY THE HYPOTHESIS CANNOT SIMPLY GO.**  It has two uses in the solve
+transports' ∀ rows:
+
+- `flex_agree_rel_push_tvar_pair`'s `β ∉ dom Θ1 ∪ V ∪ cols_l ρ`.  ⭐ THIS
+  ONE IS FREE TO DROP: `flex_agree_rel_push_look` (prop_solve_rel.v §2,
+  added for the collection's binder rows) proves the same push from
+  `β ∉ dom Θ1` and `β2 ∉ dom Θ2` alone.  Switching §5/§6's five binder rows
+  to it removes that use.
+- ⛔ `rel_pskl_close_pair`'s `β1 ∉ V` and **`β1 ∉ cols_l ρ`**.  That one is
+  genuine: closing at `β1` on side 1 must correspond to closing at `β2` on
+  side 2, and a `β1` that is already a LEFT COLUMN would misalign the other
+  occurrences.
+
+⇒ The extract row needs **the SOLVE layer's ∀-binders to avoid the
+COLLECTION's leaked openers**.  Both are only "fresh for the ambient
+context" (`β ∉ ftvar_in_aenv Θ` on each side), so nothing separates them —
+the same species as the conflation the cross-half guard just fixed, one
+layer up (collection-opener vs SOLVE-binder rather than collection-opener vs
+collection-flexible), and again INVISIBLE at `a_extract`'s conclusion.
+
+**⚙ ROUTES, and the two cheap-looking ones are closed:**
+
+- ⛔ Weaken side 1's context by the openers as rigid tvars, so
+  `cols_l ρxL ⊆ ftvar_in_aenv (Ξo ++ Ξ ++ Θ1)`.  A rigid-tvar weakening for
+  the solve layer was DELETED in 2026-08-04 and its RESTART NOTE
+  (sub/look/prop_rsubst.v:617) says the SUB twin is **FALSE** — `SS-ForallR`
+  pins its leaked witness — and the eq half needs `β ∉ dom Ξ`.
+- ⛔ Put the openers in `V` instead of `ρx`: only legal when the two sides
+  pick the SAME atom, and the e-side opener must be supply-fresh.
+- 🟡 Pre-freshen the collection's openers away from the solve's binders.
+  The machinery exists in one direction (`a_looksub_rename_tvar` moves a
+  leaked binder and substitutes `𝒞`), but doing it for ALL openers at once
+  is transport 5 again, now on the a-side.
+- 🟡 A guard on `a_extract__solve`.  Same shape as the one just landed, and
+  the same obstacle: the solve's binders are internal to its derivation.
+
 #### ⚙ COST, AND WHAT IT SAYS ABOUT THE REMAINING BUDGET
 
 `prop_lift.v` is 21.6 s for ~1570 lines.  §8c.24's three performance rules
