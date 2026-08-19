@@ -5548,6 +5548,60 @@ its two consumers inside `a_sub_sound` must discharge.
 ⭐ That is a campaign of its own, the same size as guards 3/4/5 — not a
 mechanical follow-on.  ⚙ And note where it is: the obligation lands in the
 DECORATION path (`}}a ⇒ }}da ⇒ }}ad ⇒ }}d`), i.e. in subtyping SOUNDNESS,
-which is a closed flagship theorem — so the alternative (R2: leave the
-rules alone, carry the hygiene as a lift premise and discharge it where the
-`a_` derivation is BUILT) is worth re-costing against it before starting.
+which is a closed flagship theorem.
+
+#### ⚙⚙ SECOND ATTEMPT, SAME DAY — the blocking lemma WAS strengthened, and the obstruction moved ONE LEVEL UP
+
+The strengthening was written and **`prop_decorate_sub.v` compiles with the
+guard in place** (patch kept as `cross-half-guard-wip2.patch`, ~2500 lines,
+applies to `4f1dc9c`).  What `a_looksub_lookeq_subst_gen_size` needed, and
+it is exactly what was predicted:
+
+- an **avoid-set parameter `L`**, threaded through all 19 rows and added to
+  every `pick fresh` set (the re-picked opener must dodge it);
+- two bookkeeping conjuncts — `dom Ξ' ∩ L [<=] dom Ξ` and
+  `ftvar_in_a_cstrs 𝒞' ∩ L [<=] ftvar_in_a_cstrs 𝒞 ∪ ftvar_in_pskl P0`
+  ("inside the caller's avoid-set, nothing new");
+- ⚠️ `dom Ξ' [=] dom Ξ` is **FALSE** — `LE-FlexR` re-picks its generated
+  flexible away from `P0`, so the domain genuinely moves.  That is why the
+  conjunct is `∩ L [<=]` and not `[=]`;
+- the two ARROW rows run the **RIGHT half first** (so its answer is
+  concrete when the left half names the set it must dodge) with
+  `L2 := L ∪ dom Ξ1 ∪ ftvar 𝒞1` and
+  `L1 := L ∪ dom Ξ2' ∪ ftvar 𝒞2' ∪ ftvar 𝒞2`;
+- ⚙ the avoid-sets are `remember`ed: written out, every later `fsetdec`
+  would face SEVEN set variables, which is §8c.23's cliff.  Every `fsetdec`
+  in the row is scoped to five.
+- one new hypothesis, `ftvar_in_pskl P0 [<=] ftvar_in_aenv Θ` — the guard
+  also needs the SUBSTITUTED skeleton to miss the block, which is
+  `a_looksub_lookeq_generated_fresh` once `P0` is scoped in `Θ`.
+
+⛔ **AND THAT LAST HYPOTHESIS IS WHERE IT STOPS.**  Its consumer is
+`a_looksub_subst_gen`, called twice inside `a_subtag_decoration`
+(prop_soundness_sub.v:~616, :~914) — and that lemma quantifies the run's own
+context `Θl` **INSIDE** the induction (deliberately: its header explains the
+ForallL rows need a different one), with no scoping link to the node's guess
+`P1`, whose only well-formedness in scope is `{{ Ξ ++ Θ0 ⨟ empty ⊢ₚₛ P1 }}a`
+at a DIFFERENT context.  So `ftvar P1 [<=] ftvar_in_aenv Θl` is simply not
+available, and supplying it means adding a scoping hypothesis to
+`a_subtag_decoration` itself — where `P1` is existential in the `}}da`
+premise, so the hypothesis would have to relate `Θl` to `Θ0`.  Another
+design decision, one level further up a closed flagship proof.
+
+⭐⭐ **THE CANDIDATE THAT REMOVES THE HYPOTHESIS ALTOGETHER** — worth trying
+before the `Θl`-vs-`Θ0` route.  Strengthen the conclusion instead to
+
+    dom Ξ' ∩ L [=] empty
+
+("the produced block is ENTIRELY fresh for the caller's avoid-set").  Then
+the two arrow guards fall out with `L1 := L ∪ ftvar 𝒞2 ∪ ftvar P0` and
+`L2 := L ∪ ftvar 𝒞1' ∪ dom Ξ1'`, and **no hypothesis on `P0` is needed at
+all** — so `a_looksub_subst_gen` keeps its signature and
+`prop_soundness_sub.v` is untouched.  ⚙ THE PRICE: the rows that hand back
+the ORIGINAL subtree verbatim (`LS-Check`'s unit/var subcases, the
+∀-VACUOUS branches) must instead RE-PICK their block names, which wants a
+BLOCK-FRESHENING lemma for `a_looksub`/`a_lookeq`.  ⭐ One exists in
+substance: `a_looksub_lookeq_rel_e` (prop_solve_rel.v §7) composed with
+`e_looksub_sound` rederives any collection with a supply-fresh block — what
+has to be added is transporting the `{{ 𝒞 ⊩ ψa ⤳ Ψa }}da` solvetag
+obligation across `rel_a_cstrs`.
