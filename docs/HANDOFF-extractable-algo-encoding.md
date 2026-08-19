@@ -6016,3 +6016,91 @@ consis, sub, split, pat, typing.  ⚠️ `a_extract_rel_e`'s conclusion carries 
 continues upward.  §8c.25's prediction that it EASES above the extract
 (those judgements THREAD an output context, so siblings do see each other's
 inventions) is still unverified.
+
+### 8c.28 ⚙ THE CONSIS RUNG, SCOPED — the CONTEXT RELATION is landed, and the four things the trio still owes (2026-08-20)
+
+✅ **`make coq` rc=0, `README.v` 33/33, zero `Admitted`/`Axiom`.**
+`prop_solve_rel.v` §8 is new and is pure currency — no rung uses it yet.
+
+#### ⭐ WHY THE CURRENCY HAS TO GROW HERE
+
+Everything up to and including `a_extract` outputs SKELETONS, so
+`rel_pskl` + `flex_agree_rel` was the whole interface.  The consis trio
+(`a_assign` / `a_unify` / `a_consis`) outputs a **CONTEXT**, and its rows
+READ the payloads — `Assign-Assign` and `Flex-Flex-Assign` SUBSTITUTE the
+definition they find — so the two sides' contexts must be related entry by
+entry.  §8 adds
+
+    rel_ptyp   ρ V A1 A2   :=  rel_pskl ρ V ⌈A1⌉ ⌈A2⌉   (the painting is injective)
+    rel_abind  ρ V b1 b2                                (five rows, one per binder shape)
+    rel_aenv   ρ V Θ1 Θ2                                (POSITIONAL: same shape, entries pairwise)
+
+with `rel_aenv_mono` / `_widen` / `_app` / `_refl`, `rel_aenv_binds_l` /
+`_binds_r` (how a row reads a definition off the context) and
+`rel_aenv_flex_pairs` (what `Assign-SolveM`'s `guess^TY` hands back).
+
+⭐ **POSITIONAL is the right choice** and the algorithm licenses it: every
+rule that grows a context grows it on BOTH sides at once, and the
+`Assign-*` walk is driven by the SHAPE of `Θ0`, which `rel_aenv` makes
+common.  So `Assign-Depend`/`Skip`/`SkipRigid`/`SkipTmVar` are one
+`inversion` each, and `Assign-Depend`'s `Ξ ++ (β ~ ⌢)` is `rel_aenv_app`.
+
+⚠️⚠️ **`rel_aenv` DOES NOT SUBSUME `flex_agree_rel`, and the two must be
+carried together.**  A left atom may have two right images (§8c.25's
+Finding 1), so "entry `i` of `Θ1` is flexible at `a`" says nothing about an
+ARBITRARY pair `(a,b) ∈ ρ` — only about the pair entry `i` itself carries.
+Making `rel_aenv` imply the agreement would need ρ to be a FUNCTION on
+`dom Θ1`, which is exactly the currency §8c.25 retired.
+
+⚙ Also landed: `rel_pskl_ftv_corr_l` / `_corr_r` — *every free variable of
+one side is RELATED to one of the other*, sharper than `rel_pskl_ftv_l/_r`
+(which only bound the two sets by `V ∪ cols`).  It is what transports a
+DISJOINTNESS across the relation, which is what the consis rows' `Δ` guards
+are.
+
+#### ⛔ WHAT THE TRIO STILL OWES — four things, in order of risk
+
+1. ✅ **A relation for `Δ1` / `Δ2` — LANDED, and it is the piece that
+   validated the design.**  They are atom SETS of bound variables, grown by
+   the three ∀ rows — which pick `α` on side 1 and a supply-fresh `α2` on
+   side 2, so the two sets DIFFER.  The rows that read them are `Ghost`
+   (`Δ2 ∩ ftvar P0 [=] empty`) and `GhostR` (`Δ1 ∩ ftvar P [=] empty`).
+
+       rel_atoms ρ V D1 D2 := forall a b, rel_atom ρ V a b -> (a ∈ D1 <-> b ∈ D2)
+
+   (`flex_agree_rel`'s shape), with `rel_atoms_disjoint` — the guard
+   transports, through `rel_pskl_ftv_corr_r` — and `rel_atoms_push` for the
+   ∀ rows.
+
+   ⭐⭐ **AND THE PUSH NEEDS `β1 ∉ cols_l ρ` / `β2 ∉ cols_r ρ` — i.e. THE
+   PAIR RESTRICTION AGAIN.**  Without it a left atom already paired
+   elsewhere lands in `add α Δ1` while its partner misses `add α2 Δ2`.
+   Side 2 buys it from the supply; side 1 uses `restrict_pairs` (§6),
+   exactly as the solve layer's ∀ rows do.  That the same move is forced at
+   a completely different judgement is the strongest evidence so far that
+   the currency is the right one.
+
+   ⚙ Also new: `rel_atom_cons_inv`, `rel_atom_l_in`, `rel_atom_r_in` — the
+   three shape facts about `rel_atom` that had never been needed.
+
+2. **The ∀ rows' DROP.**  `e_consis__forall_inh` runs its premise at
+   `(α ~ ⌢) ++ Θ0` and outputs `(α ~ ⌢) ++ Θ1`, but the CONCLUSION outputs
+   `Θ1` — so the pair `(α, α2)` must leave ρ at the conclusion.  That is
+   `rel_*_drop_head` (prop_solve_rel.v §6) generalized to `rel_aenv`, and it
+   needs `α ∉` the surviving context — i.e. the openers must not escape into
+   `Θ1`'s payloads.  ⚙ The rules' own `Δ`-guards are what should give it;
+   worth checking against `cex/` before assuming.
+
+3. **`flex_agree_rel` ON THE OUTPUTS.**  Plausible and cheap: solving does
+   not change flex-ness (`a_flex_tvar` holds for `flex_mono_def` too), and
+   `Assign-SolveM`'s two new blocks are `flex_pairs_l/r` of one pair list.
+   ⚙ UNVERIFIED.
+
+4. **The rows themselves** — 9 (`a_assign`) + 6 (`a_unify`) + 14
+   (`a_consis`), one mutual induction.  The templates are §5-§7's.
+
+#### ⚙ AND THE RUNG ORDER ABOVE
+
+consis → sub (which is `a_extract`'s consumer, `a_sub__forall_l`) → split →
+pat → typing.  ⚠️ `a_extract_rel_e` hands back a ρx column, so `a_sub` meets
+the leaked-opener currency immediately.

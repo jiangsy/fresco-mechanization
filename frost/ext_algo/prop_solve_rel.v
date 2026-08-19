@@ -2831,3 +2831,327 @@ Proof.
     split; [ exact Hoc2 | ]. split; [ exact Hcl2 | ].
     exact Hrel'.
 Qed.
+
+(* ===================================================================== *)
+(*  §8  ⭐⭐ THE CONTEXT RELATION — what every rung ABOVE the extract needs *)
+(*                                                                        *)
+(*  [a_extract] and everything below it outputs SKELETONS, so [rel_pskl]   *)
+(*  plus [flex_agree_rel] was the whole interface.  [a_consis] and its two *)
+(*  companions output a CONTEXT, and the rows READ the payloads —          *)
+(*  [Assign-Assign] and [Flex-Flex-Assign] SUBSTITUTE the definition they   *)
+(*  find — so the two sides' contexts must be related entry by entry.      *)
+(*                                                                        *)
+(*  ⭐ [rel_aenv] IS POSITIONAL: the two contexts have the same SHAPE and   *)
+(*  their entries correspond pairwise.  That is exactly what the           *)
+(*  algorithm's own discipline gives — every rule that grows a context     *)
+(*  grows it on both sides at once — and it is what makes the walk rows    *)
+(*  ([Assign-Skip] and friends), which peel ONE entry, one [inversion].    *)
+(*                                                                        *)
+(*  ⚠️ IT DOES NOT SUBSUME [flex_agree_rel], and the two must be CARRIED    *)
+(*  TOGETHER.  A left atom may have two right images (§8c.25's Finding 1), *)
+(*  so from "entry [i] of [Θ1] is flexible at [a]" one cannot conclude     *)
+(*  that [b] is flexible in [Θ2] for an ARBITRARY pair [(a,b)] — only for  *)
+(*  the pair that entry [i] itself carries.  Making [rel_aenv] imply the   *)
+(*  agreement would need ρ to be a FUNCTION on [dom Θ1], which is the      *)
+(*  currency the campaign already retired.                                 *)
+(* ===================================================================== *)
+
+(** A [ptyp] is related through its PAINTING — [ptyp_to_pskl] is injective
+    ([ptyp_to_pskl_inj]), so nothing is lost, and every [rel_pskl] lemma
+    applies without a second inductive. *)
+Definition rel_ptyp (ρ : list (atom * atom)) (V : atoms) (A1 A2 : ptyp)
+  : Prop := rel_pskl ρ V (ptyp_to_pskl A1) (ptyp_to_pskl A2).
+
+Inductive rel_abind (ρ : list (atom * atom)) (V : atoms) : abind -> abind -> Prop :=
+| rel_abind__tvar : rel_abind ρ V abind_tvar abind_tvar
+| rel_abind__flex : rel_abind ρ V abind_flex_mono abind_flex_mono
+| rel_abind__flex_def : forall τ1 τ2,
+    rel_ptyp ρ V τ1 τ2 ->
+    rel_abind ρ V (abind_flex_mono_def τ1) (abind_flex_mono_def τ2)
+| rel_abind__var_typ : forall A1 A2,
+    rel_ptyp ρ V A1 A2 ->
+    rel_abind ρ V (abind_var_typ A1) (abind_var_typ A2)
+| rel_abind__var_skl : forall Q1 Q2,
+    rel_pskl ρ V Q1 Q2 ->
+    rel_abind ρ V (abind_var_skl Q1) (abind_var_skl Q2).
+
+Inductive rel_aenv (ρ : list (atom * atom)) (V : atoms) : aenv -> aenv -> Prop :=
+| rel_aenv__nil : rel_aenv ρ V nil nil
+| rel_aenv__cons : forall a b b1 b2 Θ1 Θ2,
+    rel_atom ρ V a b ->
+    rel_abind ρ V b1 b2 ->
+    rel_aenv ρ V Θ1 Θ2 ->
+    rel_aenv ρ V ((a ~ b1) ++ Θ1) ((b ~ b2) ++ Θ2).
+
+#[export] Hint Constructors rel_abind rel_aenv : core.
+
+(** Monotonicity, mirroring [rel_pskl_mono]. *)
+Lemma rel_ptyp_mono : forall ρ ρ' V V' A1 A2,
+  rel_ptyp ρ V A1 A2 ->
+  (forall α β, In (α, β) ρ -> In (α, β) ρ') ->
+  V [<=] V' ->
+  rel_ptyp ρ' V' A1 A2.
+Proof. intros * H Hi Hs; eapply rel_pskl_mono; eauto. Qed.
+
+Lemma rel_abind_mono : forall ρ ρ' V V' b1 b2,
+  rel_abind ρ V b1 b2 ->
+  (forall α β, In (α, β) ρ -> In (α, β) ρ') ->
+  V [<=] V' ->
+  rel_abind ρ' V' b1 b2.
+Proof.
+  intros * H Hi Hs; inversion H; subst; constructor;
+    solve [ eapply rel_ptyp_mono; eauto | eapply rel_pskl_mono; eauto ].
+Qed.
+
+Lemma rel_aenv_mono : forall ρ ρ' V V' Θ1 Θ2,
+  rel_aenv ρ V Θ1 Θ2 ->
+  (forall α β, In (α, β) ρ -> In (α, β) ρ') ->
+  V [<=] V' ->
+  rel_aenv ρ' V' Θ1 Θ2.
+Proof.
+  intros * H; induction H; intros Hi Hs; constructor; auto.
+  - match goal with
+    | Ha : rel_atom _ _ _ _ |- _ =>
+        inversion Ha; subst;
+        [ apply rel_atom__pair; auto | apply rel_atom__id; fsetdec ]
+    end.
+  - eapply rel_abind_mono; eauto.
+Qed.
+
+Lemma rel_aenv_widen : forall ρn ρ V Θ1 Θ2,
+  rel_aenv ρ V Θ1 Θ2 -> rel_aenv (ρn ++ ρ) V Θ1 Θ2.
+Proof.
+  intros * H. eapply rel_aenv_mono;
+    [ exact H | intros a b Hin; apply in_or_app; right; exact Hin
+    | intros x Hx; exact Hx ].
+Qed.
+
+(** The two contexts have the same SHAPE, so an append splits on both
+    sides at the same place. *)
+Lemma rel_aenv_app : forall ρ V Θ1a Θ1b Θ2a Θ2b,
+  rel_aenv ρ V Θ1a Θ2a -> rel_aenv ρ V Θ1b Θ2b ->
+  rel_aenv ρ V (Θ1a ++ Θ1b) (Θ2a ++ Θ2b).
+Proof.
+  intros * Ha Hb; induction Ha; simpl; [ exact Hb | ].
+  change (((a, b1) :: Θ1) ++ Θ1b) with ((a ~ b1) ++ (Θ1 ++ Θ1b)).
+  change (((b, b2) :: Θ2) ++ Θ2b) with ((b ~ b2) ++ (Θ2 ++ Θ2b)).
+  constructor; auto.
+Qed.
+
+(** ⭐ THE BLOCK PUSH: the two [flex_pairs] blocks of one pair list are
+    related along it — what [Assign-SolveM]'s [guess^TY] hands back. *)
+Lemma rel_aenv_flex_pairs : forall ρn ρ V,
+  rel_aenv (ρn ++ ρ) V (flex_pairs_l ρn) (flex_pairs_r ρn).
+Proof.
+  intros ρn. induction ρn as [ | [a b] ρn IH ]; intros ρ V; simpl;
+    [ constructor | ].
+  change ((a, abind_flex_mono) :: flex_pairs_l ρn)
+    with ((a ~ abind_flex_mono) ++ flex_pairs_l ρn).
+  change ((b, abind_flex_mono) :: flex_pairs_r ρn)
+    with ((b ~ abind_flex_mono) ++ flex_pairs_r ρn).
+  apply rel_aenv__cons;
+    [ apply rel_atom__pair; left; reflexivity
+    | apply rel_abind__flex
+    | eapply rel_aenv_mono;
+        [ apply (IH ρ V)
+        | intros x y Hin; right; exact Hin
+        | intros x Hx; exact Hx ] ].
+Qed.
+
+(** A [binds] on either side finds a partner on the other, at the SAME
+    position — this is how the rows read a definition off the context. *)
+Lemma rel_aenv_binds_l : forall ρ V Θ1 Θ2 a b1,
+  rel_aenv ρ V Θ1 Θ2 ->
+  binds a b1 Θ1 ->
+  exists b b2, rel_atom ρ V a b /\ rel_abind ρ V b1 b2 /\ binds b b2 Θ2.
+Proof.
+  intros * H; induction H; intros Hb; [ inversion Hb | ].
+  unfold binds in Hb; simpl in Hb; destruct Hb as [Heq | Hb].
+  - inversion Heq; subst. exists b, b2. repeat split; try assumption.
+    unfold binds; simpl; left; reflexivity.
+  - destruct (IHrel_aenv Hb) as (b' & b2' & Hat & Hab & Hbd).
+    exists b', b2'. repeat split; try assumption.
+    unfold binds in Hbd |- *; simpl; right; exact Hbd.
+Qed.
+
+Lemma rel_aenv_binds_r : forall ρ V Θ1 Θ2 b b2,
+  rel_aenv ρ V Θ1 Θ2 ->
+  binds b b2 Θ2 ->
+  exists a b1, rel_atom ρ V a b /\ rel_abind ρ V b1 b2 /\ binds a b1 Θ1.
+Proof.
+  intros * H; induction H; intros Hb; [ inversion Hb | ].
+  unfold binds in Hb; simpl in Hb; destruct Hb as [Heq | Hb].
+  - inversion Heq; subst. exists a, b1. repeat split; try assumption.
+    unfold binds; simpl; left; reflexivity.
+  - destruct (IHrel_aenv Hb) as (a' & b1' & Hat & Hab & Hbd).
+    exists a', b1'. repeat split; try assumption.
+    unfold binds in Hbd |- *; simpl; right; exact Hbd.
+Qed.
+
+(** Reflexivity on the identity support — the lift's TOP, where the two
+    sides are the same context. *)
+Lemma rel_ptyp_refl : forall ρ V A,
+  ftvar_in_ptyp A [<=] V -> rel_ptyp ρ V A A.
+Proof.
+  intros ρ V A H. unfold rel_ptyp. apply rel_pskl_refl.
+  rewrite ftvar_ptyp_to_pskl. exact H.
+Qed.
+
+Lemma rel_aenv_refl : forall ρ V Θ,
+  ftvar_in_aenv Θ [<=] V -> dom Θ [<=] V -> rel_aenv ρ V Θ Θ.
+Proof.
+  intros ρ V Θ. induction Θ as [ | [x b] Θ IH ]; intros Hf Hd;
+    [ constructor | ].
+  simpl in Hf, Hd.
+  change ((x, b) :: Θ) with ((x ~ b) ++ Θ).
+  constructor;
+    [ apply rel_atom__id; clear - Hd; fsetdec
+    | | apply IH; [ clear - Hf; fsetdec | clear - Hd; fsetdec ] ].
+  destruct b; simpl in Hf; constructor;
+    solve [ apply rel_ptyp_refl; clear - Hf; fsetdec
+          | apply rel_pskl_refl; clear - Hf; fsetdec ].
+Qed.
+
+(** ⭐ THE CORRESPONDENCE ON FREE VARIABLES — sharper than [rel_pskl_ftv_l] /
+    [_ftv_r], which only bound the two ftvar sets by [V ∪ cols].  Every free
+    variable of one side is RELATED to one of the other, which is what
+    transports a DISJOINTNESS (the consis rows' [Δ ∩ ftvar P [=] empty]
+    guards) across the relation. *)
+Lemma rel_pskl_ftv_corr_r : forall ρ V P1 P2,
+  rel_pskl ρ V P1 P2 ->
+  forall b, b `in` ftvar_in_pskl P2 ->
+  exists a, a `in` ftvar_in_pskl P1 /\ rel_atom ρ V a b.
+Proof.
+  intros ρ V P1 P2 H; induction H; intros c Hc; simpl in Hc;
+    try solve [ exfalso; clear - Hc; fsetdec ].
+  - exists α. simpl. split; [ clear; fsetdec | ].
+    assert (c = β) by (clear - Hc; fsetdec). subst c. assumption.
+  - destruct (AtomSetProperties.In_dec c (ftvar_in_pskl Q1)) as [Hin | Hni].
+    + destruct (IHrel_pskl1 c Hin) as (a & Ha & Hat).
+      exists a. simpl. split; [ clear - Ha; fsetdec | exact Hat ].
+    + destruct (IHrel_pskl2 c ltac:(clear - Hc Hni; fsetdec)) as (a & Ha & Hat).
+      exists a. simpl. split; [ clear - Ha; fsetdec | exact Hat ].
+  - destruct (IHrel_pskl c Hc) as (a & Ha & Hat).
+    exists a. simpl. split; [ exact Ha | exact Hat ].
+  - destruct (IHrel_pskl c Hc) as (a & Ha & Hat).
+    exists a. simpl. split; [ exact Ha | exact Hat ].
+Qed.
+
+Lemma rel_pskl_ftv_corr_l : forall ρ V P1 P2,
+  rel_pskl ρ V P1 P2 ->
+  forall a, a `in` ftvar_in_pskl P1 ->
+  exists b, b `in` ftvar_in_pskl P2 /\ rel_atom ρ V a b.
+Proof.
+  intros ρ V P1 P2 H; induction H; intros c Hc; simpl in Hc;
+    try solve [ exfalso; clear - Hc; fsetdec ].
+  - exists β. simpl. split; [ clear; fsetdec | ].
+    assert (c = α) by (clear - Hc; fsetdec). subst c. assumption.
+  - destruct (AtomSetProperties.In_dec c (ftvar_in_pskl P1)) as [Hin | Hni].
+    + destruct (IHrel_pskl1 c Hin) as (b & Hb & Hat).
+      exists b. simpl. split; [ clear - Hb; fsetdec | exact Hat ].
+    + destruct (IHrel_pskl2 c ltac:(clear - Hc Hni; fsetdec)) as (b & Hb & Hat).
+      exists b. simpl. split; [ clear - Hb; fsetdec | exact Hat ].
+  - destruct (IHrel_pskl c Hc) as (b & Hb & Hat).
+    exists b. simpl. split; [ exact Hb | exact Hat ].
+  - destruct (IHrel_pskl c Hc) as (b & Hb & Hat).
+    exists b. simpl. split; [ exact Hb | exact Hat ].
+Qed.
+
+(** ⭐⭐ THE Δ RELATION — the consis rows carry two atom SETS of bound
+    variables ([Δ1], [Δ2]) and read them ONLY through a disjointness
+    ([Ghost]'s [Δ2 ∩ ftvar P0 [=] empty], [GhostR]'s
+    [Δ1 ∩ ftvar P [=] empty]).  The three ∀ rows GROW them, with the side-1
+    opener on one side and the supply-fresh side-2 opener on the other, so
+    the two sets DIFFER and have to be related.  Shape copied from
+    [flex_agree_rel]: agreement along the relation. *)
+Definition rel_atoms (ρ : list (atom * atom)) (V : atoms) (D1 D2 : atoms)
+  : Prop := forall a b, rel_atom ρ V a b -> (a `in` D1 <-> b `in` D2).
+
+Lemma rel_atoms_weaken : forall ρ ρ' V V' D1 D2,
+  rel_atoms ρ V D1 D2 ->
+  (forall a b, In (a, b) ρ' -> In (a, b) ρ) ->
+  V' [<=] V ->
+  rel_atoms ρ' V' D1 D2.
+Proof.
+  intros * H Hincl Hsub a b Hat. apply H.
+  inversion Hat; subst;
+    [ apply rel_atom__pair; auto | apply rel_atom__id; fsetdec ].
+Qed.
+
+(** ⭐ THE TRANSPORT: a disjointness from [Δ] moves across the relation.
+    This is what [rel_pskl_ftv_corr_r] exists for. *)
+Lemma rel_atoms_disjoint : forall ρ V D1 D2 P1 P2,
+  rel_atoms ρ V D1 D2 ->
+  rel_pskl ρ V P1 P2 ->
+  D1 ∩ ftvar_in_pskl P1 [=] empty ->
+  D2 ∩ ftvar_in_pskl P2 [=] empty.
+Proof.
+  intros * Hd Hr Hdisj.
+  apply AtomSetProperties.empty_is_empty_1.
+  intros x Hx. apply AtomSetFacts.inter_iff in Hx. destruct Hx as [HxD HxP].
+  destruct (rel_pskl_ftv_corr_r Hr HxP) as (a & Ha & Hat).
+  assert (HaD : a `in` D1) by (apply (Hd a x Hat); exact HxD).
+  clear - Hdisj Ha HaD. fsetdec.
+Qed.
+
+(** ⭐ AND THE ∀ ROWS' PUSH.  ⚠️ It needs the two openers OFF the pair
+    columns — which is exactly the PAIR RESTRICTION's job (§6), the same
+    move the solve layer's ∀ rows make.  Without it a left atom already
+    paired elsewhere would land in [add α D1] without its partner landing
+    in [add α2 D2]. *)
+(** ⚙ Two shape facts about [rel_atom] the push needs, and neither existed:
+    peeling one head pair, and locating a related atom in [V ∪ cols]. *)
+Lemma rel_atom_cons_inv : forall β1 β2 ρ V a b,
+  rel_atom ((β1, β2) :: ρ) V a b ->
+  (a = β1 /\ b = β2) \/ rel_atom ρ V a b.
+Proof.
+  intros * H. inversion H; subst.
+  - match goal with
+    | Hin : In _ _ |- _ =>
+        destruct Hin as [Heq | Hin];
+          [ left; inversion Heq; split; reflexivity
+          | right; apply rel_atom__pair; exact Hin ]
+    end.
+  - right. apply rel_atom__id. assumption.
+Qed.
+
+Lemma rel_atom_l_in : forall ρ V a b,
+  rel_atom ρ V a b -> a `in` V ∪ cols_l ρ.
+Proof.
+  intros ρ V a b H; inversion H; subst.
+  - match goal with
+    | Hin : In _ _ |- _ => apply cols_l_in in Hin
+    end. fsetdec.
+  - fsetdec.
+Qed.
+
+Lemma rel_atom_r_in : forall ρ V a b,
+  rel_atom ρ V a b -> b `in` V ∪ cols_r ρ.
+Proof.
+  intros ρ V a b H; inversion H; subst.
+  - match goal with
+    | Hin : In _ _ |- _ => apply cols_r_in in Hin
+    end. fsetdec.
+  - fsetdec.
+Qed.
+
+Lemma rel_atoms_push : forall ρ V D1 D2 β1 β2,
+  rel_atoms ρ V D1 D2 ->
+  β1 `notin` V -> β1 `notin` cols_l ρ ->
+  β2 `notin` V -> β2 `notin` cols_r ρ ->
+  rel_atoms ((β1, β2) :: ρ) V (add β1 D1) (add β2 D2).
+Proof.
+  intros * Hd Hb1V Hb1c Hb2V Hb2c a b Hat.
+  destruct (rel_atom_cons_inv Hat) as [[-> ->] | Hat'].
+  - split; intros _; clear; fsetdec.
+  - pose proof (rel_atom_l_in Hat') as Hal.
+    pose proof (rel_atom_r_in Hat') as Har.
+    assert (Hne1 : a <> β1) by (clear - Hal Hb1V Hb1c; fsetdec).
+    assert (Hne2 : b <> β2) by (clear - Har Hb2V Hb2c; fsetdec).
+    destruct (Hd a b Hat') as [Hf Hg].
+    split; intros Hin2.
+    + assert (Ha1 : a `in` D1) by (clear - Hin2 Hne1; fsetdec).
+      pose proof (Hf Ha1) as Hb2. clear - Hb2. fsetdec.
+    + assert (Hb1 : b `in` D2) by (clear - Hin2 Hne2; fsetdec).
+      pose proof (Hg Hb1) as Ha2. clear - Ha2. fsetdec.
+Qed.
