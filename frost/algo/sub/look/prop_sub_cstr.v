@@ -504,7 +504,15 @@ Lemma a_looksub_solve_complete_leaf :
        ftvar_in_a_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                              `union` dom κ `union` def_ftv Θ
        \/ (alpha_stack α P /\ Ξc = nil /\ κc = nil
-           /\ exists T, 𝒞 = a_cstr_sub M T :: nil)).
+           /\ exists T, 𝒞 = a_cstr_sub M T :: nil)) /\
+    (* ⭐⭐ THE SOLVE'S BLOCK IS APART FROM THE COLLECTED CONSTRAINTS
+       (2026-08-20) — what [a_extract__solve]'s CROSS-LAYER GUARD needs, and
+       the ONLY conjunct here that is unconditional in [M].  P6-L cannot
+       derive it: the escaping variables of [𝒞] are the ∀ rows' LEAKED
+       OPENERS, bound nowhere, and [L] is fixed before [𝒞] exists.  ⚙ The ∀
+       FORM, not [∩ … [=] empty]: [repeat split] dismantles an [Equal]
+       through its [iff]. *)
+    (forall α0, α0 `in` dom Ξs -> α0 `notin` ftvar_in_a_cstrs 𝒞).
 Proof.
   intros n NM M Θ0 Θs Θ Θw κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' Rsub α.
   intros HwfΘ HwfΘ0 HwfΘw Hmon Hnr Hκw Hψaw HΔρw
@@ -549,7 +557,9 @@ Proof.
       - simpl. eapply ad_partial_precise_psi_cong;
           [ exact Hpre | clear - HΨa0; fsetdec ].
       - (* ftv 𝒞 : LS-Absent collects nothing *)
-        intros _; left; simpl; clear; fsetdec. }
+        intros _; left; simpl; clear; fsetdec.
+      - (* the SOLVE's block is EMPTY *)
+        intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec. }
   - (* P = α : LS-Var, then P6-Sv at ρ = IDENTITY.  NB not [subst P]: the
        erase-tie [⌊R'⌋ˢ = P] is also an equation on P, and [subst] would
        orient it the wrong way and discard it. *)
@@ -633,7 +643,14 @@ Proof.
          ForallL can guess a variable ψa does not mention.) *)
       intros _; right;
         repeat split; try reflexivity;
-        [ apply ast_var | exists P0; reflexivity ]. }
+        [ apply ast_var | exists P0; reflexivity ].
+    - (* the SOLVE's block vs the ONE constraint [sub M P0]: P0 is Θ0-scoped
+         and the block dodges [L ⊇ ftvar_in_aenv Θ0] *)
+      intros α0 Hα0. simpl.
+      pose proof (a_wf_pskl_ftv_dom HwfP0) as Hfd. simpl in Hfd.
+      pose proof (dom_subset_ftvar_in_aenv Θ0) as Hds.
+      pose proof (Hfrs α0 Hα0) as Hf.
+      clear - Hfd Hds HL Hf. fsetdec. }
 Qed.
 
 (* ===================================================================== *)
@@ -778,7 +795,15 @@ Theorem a_looksub_solve_complete_gen :
        ftvar_in_a_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                              `union` dom κ `union` def_ftv Θ
        \/ (alpha_stack α P /\ Ξc = nil /\ κc = nil
-           /\ exists T, 𝒞 = a_cstr_sub M T :: nil)).
+           /\ exists T, 𝒞 = a_cstr_sub M T :: nil)) /\
+    (* ⭐⭐ THE SOLVE'S BLOCK IS APART FROM THE COLLECTED CONSTRAINTS
+       (2026-08-20) — what [a_extract__solve]'s CROSS-LAYER GUARD needs, and
+       the ONLY conjunct here that is unconditional in [M].  P6-L cannot
+       derive it: the escaping variables of [𝒞] are the ∀ rows' LEAKED
+       OPENERS, bound nowhere, and [L] is fixed before [𝒞] exists.  ⚙ The ∀
+       FORM, not [∩ … [=] empty]: [repeat split] dismantles an [Equal]
+       through its [iff]. *)
+    (forall α0, α0 `in` dom Ξs -> α0 `notin` ftvar_in_a_cstrs 𝒞).
 Proof.
   intros n NM M Θ0 Θs Θ Θw κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' Rsub α.
   intros HwfΘ HwfΘ0 HwfΘw Hmon Hnr Hκw Hψaw HΔρw
@@ -894,6 +919,8 @@ Proof.
                          by (clear - HΨs2 H; fsetdec);
           clear - HΨae; fsetdec ].
     + (* ftv 𝒞 : no constraints *) intros _; left; simpl; clear; fsetdec.
+    + (* the SOLVE's block is EMPTY *)
+      intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec.
   - (* Check : delegates WHOLE to P6-Cs ([a_lookeq_solve_complete]) on the
        consistency premise, then re-wraps with LS-Check.  LS-Check's side
        conditions: P ≠ α (HPnα) and P, P0 guarded. *)
@@ -956,7 +983,7 @@ Proof.
       as (𝒞 & Ξc & Ξs & Pa & κc & κs
           & Hlook & Hsolve & Hfms & Hus & Hks & Hfrs & HFs
           & HwfPa & HwfΞ & HαΞ & Hkeys
-          & HFor & HForΔ & Hftv & Hinc & Heqv & Hκcfresh0 & Hprec);
+          & HFor & HForΔ & Hftv & Hinc & Heqv & Hκcfresh0 & Hprec & Hapart0);
       [ exact (le_n _) | exact HwfΘ | exact HwfΘ0
       | exact HwfΘw | exact Hmon | exact Hnr
       | exact HwfP0 | exact HwfPi | exact Hκ | exact Hκw | exact Hψaw
@@ -1204,7 +1231,7 @@ Proof.
             & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
             & HwfPa & HwfΞ & HαΞ
             & Hmapfst & Himg & HimgΔ & Hinc & Hinceq & Hκfresh
-            & Hprec & HftvC).
+            & Hprec & HftvC & HapartR).
       assert (HβΞs : β `notin` dom Ξs)
         by (intro Hc; pose proof (Hfrs β Hc) as Hf; clear - Hf; fsetdec).
       assert (Hβκs : Forall (fun p => β `notin` ftvar_in_ptyp (snd p)) κs).
@@ -1319,6 +1346,8 @@ Proof.
              | exact Hβψa ].
         -- (* ftv 𝒞 : still the LEFT disjunct — [def_ftv] ignores the rigid β *)
            intros _; left. cbn [def_ftv] in Hleft. exact Hleft.
+        -- (* the SOLVE's block vs the constraints: both pass through *)
+           exact HapartR.
       * (* ---- RIGHT: the lookup subject is an α-STACK.  Such a run never
              descends the target ([alpha_stack_looksub]), so LS-ForallR is
              not used at all and the binder is never introduced — which is
@@ -1428,6 +1457,15 @@ Proof.
            ++ (* ftv 𝒞 : the RIGHT disjunct, at the UNDESCENDED target *)
               intros _; right; repeat split; try reflexivity;
               [ apply ast_var | eexists; reflexivity ].
+           ++ (* the SOLVE's block vs the UNDESCENDED constraint.  The IH's
+                 bound is at the OPENED target, which mentions STRICTLY MORE
+                 ([ftvar_in_pskl_open_pskl_wrt_pskl_lower]). *)
+              intros α0 Hα0.
+              pose proof (HapartR α0 Hα0) as Hf.
+              pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower
+                            (ptyp_to_pskl A0) (pskl_var_f β)) as Hlo.
+              cbn [ftvar_in_a_cstrs ftvar_in_a_cstr ftvar_in_pskl] in Hf |- *.
+              clear - Hf Hlo. fsetdec.
         -- (* ---- a ∀-headed stack: LS-ForallR is the only row ---- *)
            exists (a_cstr_sub mode_tc Tc :: nil),
                   nil, Ξs, Pa, (@nil (atom * ptyp)), κs.
@@ -1488,6 +1526,9 @@ Proof.
               intros _; right; repeat split; try reflexivity;
               [ apply ast_all with (L := Lst); exact Hstf
               | eexists; reflexivity ].
+           ++ (* the SOLVE's block vs the constraints: LS-ForallR lifts the
+                 IH's collection VERBATIM *)
+              exact HapartR.
         -- (* ---- a ⫯-headed stack: identical ---- *)
            exists (a_cstr_sub mode_tc Tc :: nil),
                   nil, Ξs, Pa, (@nil (atom * ptyp)), κs.
@@ -1546,6 +1587,8 @@ Proof.
            ++ (* ftv 𝒞 : the RIGHT disjunct *)
               intros _; right; repeat split; try reflexivity;
               [ apply ast_tophole; exact Hstt | eexists; reflexivity ].
+           ++ (* the SOLVE's block vs the constraints: kept VERBATIM *)
+              exact HapartR.
   - (* UnivGhostR : NM = SK at M = TC, so [skmod] forces P0 = □ again and
        the case closes exactly like Infer. *)
     assert (HP0 : P0 = pskl_hole)
@@ -1573,6 +1616,8 @@ Proof.
                          by (clear - HΨs2 H; fsetdec);
           clear - HΨae; fsetdec ].
     + (* ftv 𝒞 : no constraints *) intros _; left; simpl; clear; fsetdec.
+    + (* the SOLVE's block is EMPTY *)
+      intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec.
   - (* Arrow : [skmod] forces P0 = P01→P02 and the refinement splits.  The
        LEFT premise is a consistency judgment and goes to P6-Cs; the RIGHT
        one is the IH, with [sss_arrow_r] + [sub_shield_step].  The two
@@ -1664,7 +1709,8 @@ Proof.
       as (C1 & Ξc1 & Ξs1 & Pa1 & κc1 & κs1
           & HLK1 & HSolve1 & Hfms1 & Hus1 & Hks1 & Hfrs1 & HFs1
           & HwfPa1 & HwfΞ1 & HαΞ1
-          & Hmap1 & Himg1 & HimgΔ1 & HftvC1 & Hinc1 & Hinceq1 & Hκf1 & Hpre1);
+          & Hmap1 & Himg1 & HimgΔ1 & HftvC1 & Hinc1 & Hinceq1 & Hκf1 & Hpre1
+          & Hapart1);
       [ exact (le_n _) | exact HwfΘ | exact HwfΘ0
       | exact HwfΘw | exact Hmon | exact Hnr
       | exact HwfP01 | exact HwfPi
@@ -1863,8 +1909,14 @@ Proof.
       - apply in_app_or in Hp; destruct Hp as [Hp | Hp].
         + pose proof (HimgΔ1F p Hp) as Hi. clear - Hi Hα0; fsetdec.
         + apply Hκim; exact Hp. }
+    (* ⭐ …AND THE LEFT RUN'S CONSTRAINTS JOIN THE AVOID-SET (2026-08-20):
+       [dom Ξs2 ∩ ftv 𝒞1] is one of the four cases of the new
+       block-vs-constraints conjunct, and it is the one no invariant
+       supplies — 𝒞1's escapees are LEAKED OPENERS.  Free here: 𝒞1 is
+       CONCRETE by the time the right recursion runs. *)
     assert (HLavR : ftvar_in_aenv (Ξs1 ++ Ξc1 ++ Θ0)
-              [<=] add α (union Lav (union (dom Ξs1) (dom Ξc1)))).
+              [<=] add α (union (union Lav (union (dom Ξs1) (dom Ξc1)))
+                                (ftvar_in_a_cstrs C1))).
     { repeat rewrite ftvar_in_aenv_app.
       pose proof (all_flex_mono_ftvar_in_aenv Hfms1) as Hs1f.
       pose proof (all_flex_mono_ftvar_in_aenv
@@ -1879,7 +1931,8 @@ Proof.
       uniq Ξs /\
       keys κs = keys Ξs /\
       (forall α0, α0 `in` dom Ξs ->
-         α0 `notin` add α (union Lav (union (dom Ξs1) (dom Ξc1)))) /\
+         α0 `notin` add α (union (union Lav (union (dom Ξs1) (dom Ξc1)))
+                                 (ftvar_in_a_cstrs C1))) /\
       Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs /\
       {{ (Ξs ++ Ξc ++ (Ξs1 ++ Ξc1 ++ Θ0)) ⨟ empty ⊢ₚₛ Pa }}a /\
       {{ ⊢ (Ξc ++ (Ξs1 ++ Ξc1 ++ Θ0)) }}a /\
@@ -1898,7 +1951,8 @@ Proof.
          ftvar_in_a_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom (κs1 ++ κc1 ++ κ) `union` def_ftv Θ
          \/ (alpha_stack α ⌊ Rb ⌋ˢ /\ Ξc = nil /\ κc = nil
-             /\ exists T, 𝒞 = a_cstr_sub M T :: nil))).
+             /\ exists T, 𝒞 = a_cstr_sub M T :: nil)) /\
+      (forall α0, α0 `in` dom Ξs -> α0 `notin` ftvar_in_a_cstrs 𝒞)).
     { destruct (AtomSetProperties.In_dec α (ftvar_in_pskl ⌊ Rb ⌋ˢ))
         as [Hin0 | Hnin0].
       - destruct (pskl_eq_var_dec ⌊ Rb ⌋ˢ α) as [Heq0 | Hne0].
@@ -1928,7 +1982,8 @@ Proof.
                     HmodSK2 HmodTY2 HαΘ HsubR HΨs1R HΨs2R Hdfresh HapartR
                     Hpre1 Href2' Hrhob HΨρ2e HrfrR HΔρΔ HΔρftvR HΔρPa1 Hext
                     Hne0 Hin0 HαRb HwfSubjB Hψaap
-                    (add α (union Lav (union (dom Ξs1) (dom Ξc1)))) HLavR).
+                    (add α (union (union Lav (union (dom Ξs1) (dom Ξc1)))
+                                  (ftvar_in_a_cstrs C1))) HLavR).
       - (* leaf, absent *)
         eapply (@a_looksub_solve_complete_leaf n NM M
                   (Ξs1 ++ Ξc1 ++ Θ0) Θsm Θ Θw
@@ -1946,7 +2001,7 @@ Proof.
                      & HLK2 & HSolve2 & Hfms2 & Hus2 & Hks2 & Hfrs2 & HFs2
                      & HwfPa2 & HwfΞ2
                      & HαΞ2 & Hmap2 & Himg2 & HimgΔ2 & Hinc2 & Hinceq2
-                     & Hκf2 & Hpre2 & HftvC2).
+                     & Hκf2 & Hpre2 & HftvC2 & Hapart2).
     (* --- ASSEMBLY.  LS-Arrow pairs [Ξc1,Ξc2] with [C1++C2]; the two solves
        compose because C1 (a LOOKEQ's output) holds no subtyping constraint,
        and their BLOCKS stack the other way round, [Ξs2 ++ Ξs1].  Line for line
@@ -2169,6 +2224,31 @@ Proof.
           while the right branch may give the RIGHT one, and no bound could
           concatenate the two. *)
        intros Habs; discriminate Habs.
+    -- (* ⭐⭐ THE SOLVE BLOCKS vs THE COLLECTED CONSTRAINTS — four cases.
+          Two are the halves' own; [dom Ξs2 ∩ ftv 𝒞1] is bought by the RIGHT
+          recursion's enlarged avoid-set; and [dom Ξs1 ∩ ftv 𝒞2] holds
+          because the RIGHT look ran at a context CONTAINING [Ξs1], so
+          [a_looksub_ftv_ctx] applies to it. *)
+       assert (HC2s1 : forall x, x `in` dom Ξs1 ->
+                 x `notin` ftvar_in_a_cstrs C2).
+       { intros x Hx. eapply a_looksub_ftv_ctx;
+           [ exact HLK2
+           | repeat rewrite dom_app; clear - Hx; fsetdec
+           | pose proof (a_wf_pskl_ftv_dom HwfP02) as Hfd;
+             pose proof (HΞs1L x Hx) as Hf;
+             clear - Hfd Hf Hdf0 HLav; fsetdec
+           | intro Hc; pose proof (HΞ2disj x Hc) as Hf2;
+             repeat rewrite dom_app in Hf2; clear - Hf2 Hx; fsetdec ]. }
+       intros α0 Hα0. rewrite dom_app in Hα0.
+       rewrite ftvar_in_a_cstrs_app.
+       destruct (AtomSetProperties.In_dec α0 (dom Ξs2)) as [Hin2 | Hnin2].
+       { pose proof (Hapart2 α0 Hin2) as Ha2.
+         pose proof (Hfrs2 α0 Hin2) as Hf2.
+         clear - Ha2 Hf2. fsetdec. }
+       assert (Hin1 : α0 `in` dom Ξs1) by (clear - Hα0 Hnin2; fsetdec).
+       pose proof (Hapart1 α0 Hin1) as Ha1.
+       pose proof (HC2s1 α0 Hin1) as Hc2.
+       clear - Ha1 Hc2. fsetdec.
   - (* ForallL, tagged : the subject's ∀ is instantiated, so the IH must run
        at [open R' ψb] — this is why the induction is on the DERIVATION and
        not on P6-Cs's measure.
@@ -2545,7 +2625,8 @@ Proof.
                                `union` dom κ
                                `union` def_ftv ((β ~ abind_tvar) ++ Θ)
          \/ (alpha_stack α ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ
-             /\ Ξc = nil /\ κc = nil /\ exists T, 𝒞 = a_cstr_sub M T :: nil))).
+             /\ Ξc = nil /\ κc = nil /\ exists T, 𝒞 = a_cstr_sub M T :: nil)) /\
+      (forall α0, α0 `in` dom Ξs -> α0 `notin` ftvar_in_a_cstrs 𝒞)).
     { destruct (AtomSetProperties.In_dec α
                   (ftvar_in_pskl ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ))
         as [Hin0 | Hnin0].
@@ -2599,7 +2680,7 @@ Proof.
                      & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
                      & HwfPa & HwfΞ & HαΞ
                      & Hmapfst & Himg & HimgΔ & Hinc & Hinceq & Hκfresh
-                     & Hprec & HftvC).
+                     & Hprec & HftvC & HapartR).
     (* --- β-freeness of every output, then STRIP it --- *)
     pose proof (@keys_eq_dom _ _ κc Ξc Hmapfst) as Hdκ.
     assert (HβΞc : β `notin` dom Ξc).
@@ -2713,7 +2794,9 @@ Proof.
              pose proof (a_wf_ptyp_ftv_dom
                            (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb)) as Hd;
              clear - Hd HβΘ; fsetdec ].
-      -- (* ftv 𝒞 : no constraints *) intros _; left; simpl; clear; fsetdec. }
+      -- (* ftv 𝒞 : no constraints *) intros _; left; simpl; clear; fsetdec.
+      -- (* the SOLVE's block is EMPTY *)
+         intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec. }
     (* ⭐⭐ THE ForallR-PRIORITY GUARD.  LS-ForallL is BLOCKED at a ghost-free
        ∀ counterpart in check mode — there the runner commits to LS-ForallR —
        so the row hands the whole rebuild to [a_looksub_solve_forall_l_mode],
@@ -2734,9 +2817,10 @@ Proof.
       rewrite ! dom_app in Hd. simpl in Hd.
       clear - Hd Hdc Hd0 HβPa; fsetdec. }
     edestruct a_looksub_solve_forall_l_mode
-      as [𝒞r [HLKr [HSolver Hd𝒞]]];
+      as [𝒞r [HLKr [HSolver [Hd𝒞 Hapr]]]];
       [ exact HLK | exact HSolve0 | exact HP0nh
-      | clear - Fr; solve_notin | exact Hfms | exact HPaSc | ].
+      | clear - Fr; solve_notin | exact Hfms | exact HPaSc
+      | exact HapartR | ].
     exists 𝒞r, Ξc, Ξs, Pa, κc, κs.
     repeat split.
     -- (* a_looksub : the REORDERED derivation *)
@@ -2838,6 +2922,9 @@ Proof.
              destruct κc as [ | pc κc' ];
                [ reflexivity | cbn in Hmapfst; discriminate Hmapfst ].
           ** exists T'; exact HT'.
+    -- (* the SOLVE's block vs the REORDERED constraints — the reorder
+          lemma carries the invariant through its opener move *)
+       exact Hapr.
   - (* ForallL, untagged : identical to the tagged row; the mech splits the
        paper's single rule by the subject's POTENTIAL tag.  The only textual
        difference is the ρ-inversion ([uskl_rsubst_all_syn_r_inv]) and the
@@ -3113,7 +3200,8 @@ Proof.
                                `union` dom κ
                                `union` def_ftv ((β ~ abind_tvar) ++ Θ)
          \/ (alpha_stack α ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ
-             /\ Ξc = nil /\ κc = nil /\ exists T, 𝒞 = a_cstr_sub M T :: nil))).
+             /\ Ξc = nil /\ κc = nil /\ exists T, 𝒞 = a_cstr_sub M T :: nil)) /\
+      (forall α0, α0 `in` dom Ξs -> α0 `notin` ftvar_in_a_cstrs 𝒞)).
     { destruct (AtomSetProperties.In_dec α
                   (ftvar_in_pskl ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ))
         as [Hin0 | Hnin0].
@@ -3167,7 +3255,7 @@ Proof.
                      & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
                      & HwfPa & HwfΞ & HαΞ
                      & Hmapfst & Himg & HimgΔ & Hinc & Hinceq & Hκfresh
-                     & Hprec & HftvC).
+                     & Hprec & HftvC & HapartR).
     (* --- β-freeness of every output, then STRIP it --- *)
     pose proof (@keys_eq_dom _ _ κc Ξc Hmapfst) as Hdκ.
     assert (HβΞc : β `notin` dom Ξc).
@@ -3281,7 +3369,9 @@ Proof.
              pose proof (a_wf_ptyp_ftv_dom
                            (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb)) as Hd;
              clear - Hd HβΘ; fsetdec ].
-      -- (* ftv 𝒞 : no constraints *) intros _; left; simpl; clear; fsetdec. }
+      -- (* ftv 𝒞 : no constraints *) intros _; left; simpl; clear; fsetdec.
+      -- (* the SOLVE's block is EMPTY *)
+         intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec. }
     (* ⭐⭐ THE ForallR-PRIORITY GUARD.  LS-ForallL is BLOCKED at a ghost-free
        ∀ counterpart in check mode — there the runner commits to LS-ForallR —
        so the row hands the whole rebuild to [a_looksub_solve_forall_l_mode],
@@ -3302,9 +3392,10 @@ Proof.
       rewrite ! dom_app in Hd. simpl in Hd.
       clear - Hd Hdc Hd0 HβPa; fsetdec. }
     edestruct a_looksub_solve_forall_l_mode
-      as [𝒞r [HLKr [HSolver Hd𝒞]]];
+      as [𝒞r [HLKr [HSolver [Hd𝒞 Hapr]]]];
       [ exact HLK | exact HSolve0 | exact HP0nh
-      | clear - Fr; solve_notin | exact Hfms | exact HPaSc | ].
+      | clear - Fr; solve_notin | exact Hfms | exact HPaSc
+      | exact HapartR | ].
     exists 𝒞r, Ξc, Ξs, Pa, κc, κs.
     repeat split.
     -- (* a_looksub : the REORDERED derivation *)
@@ -3406,6 +3497,8 @@ Proof.
              destruct κc as [ | pc κc' ];
                [ reflexivity | cbn in Hmapfst; discriminate Hmapfst ].
           ** exists T'; exact HT'.
+    -- (* the SOLVE's block vs the REORDERED constraints *)
+       exact Hapr.
 
   - (* Ghost : IMPOSSIBLE — the subject is [uskl_hole], so R' is □ and has
        no free variables, contradicting α ∈ ftv R'. *)
@@ -3481,7 +3574,8 @@ Proof.
          ftvar_in_a_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom κ `union` def_ftv Θ
          \/ (alpha_stack α ⌊ R0 ⌋ˢ /\ Ξc = nil /\ κc = nil
-             /\ exists T, 𝒞 = a_cstr_sub M T :: nil))).
+             /\ exists T, 𝒞 = a_cstr_sub M T :: nil)) /\
+      (forall α0, α0 `in` dom Ξs -> α0 `notin` ftvar_in_a_cstrs 𝒞)).
     { assert (HlcR0 : lc_uskl R0) by (inversion HlcR; assumption).
       (* the wf premise is on the IMAGE now, so it strips directly *)
       assert (HwfSubj0 : {{ Θ ⨟ empty ⊢ₚₛ (uskl_to_pskl R) }}a)
@@ -3528,7 +3622,7 @@ Proof.
                      & Hlook & Hsolve0 & Hfms0 & Hus0 & Hks0 & Hfrs0 & HFs0
                      & HwfPa0 & HwfΞ0
                      & HαΞ0 & Hkeys0 & Himg0 & HimgΔ0 & Hinc0 & Hinceq0
-                     & Hκf0 & Hprec0 & HftvC0).
+                     & Hκf0 & Hprec0 & HftvC0 & HapartR).
     (* ⭐⭐ ◇-DISPATCH.  At a ghost target the runner answers LS-Vacuous before
        it looks at the subject's ⫯, so the ANSWER is forced to the identity —
        collection empty ([a_looksub_hole_target]; its one emitting row pins the
@@ -3574,9 +3668,9 @@ Proof.
       rewrite ! dom_app in Hd.
       clear - Hd Hdc Hd0; fsetdec. }
     edestruct a_looksub_solve_univ_ghost_l_mode
-      as [𝒞r [Hlookr [Hsolver Hd𝒞]]];
+      as [𝒞r [Hlookr [Hsolver [Hd𝒞 Hapr]]]];
       [ exact Hlook | exact Hsolve0 | exact HP0nh
-      | exact Hfms0 | exact HPaSc | ].
+      | exact Hfms0 | exact HPaSc | exact HapartR | ].
     exists 𝒞r, Ξc, Ξs, Pa, κc, κs.
     (* everything but the three ends passes through untouched; the ftv
        conjunct's RIGHT disjunct gains the ghost wrapper ([ast_tophole]),
@@ -3636,7 +3730,8 @@ Proof.
          ftvar_in_a_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom κ `union` def_ftv Θ
          \/ (alpha_stack α ⌊ R0 ⌋ˢ /\ Ξc = nil /\ κc = nil
-             /\ exists T, 𝒞 = a_cstr_sub M T :: nil))).
+             /\ exists T, 𝒞 = a_cstr_sub M T :: nil)) /\
+      (forall α0, α0 `in` dom Ξs -> α0 `notin` ftvar_in_a_cstrs 𝒞)).
     { assert (HlcR0 : lc_uskl R0) by (inversion HlcR; assumption).
       (* the wf premise is on the IMAGE now, so it strips directly *)
       assert (HwfSubj0 : {{ Θ ⨟ empty ⊢ₚₛ (uskl_to_pskl R) }}a)
@@ -3683,7 +3778,7 @@ Proof.
                      & Hlook & Hsolve0 & Hfms0 & Hus0 & Hks0 & Hfrs0 & HFs0
                      & HwfPa0 & HwfΞ0
                      & HαΞ0 & Hkeys0 & Himg0 & HimgΔ0 & Hinc0 & Hinceq0
-                     & Hκf0 & Hprec0 & HftvC0).
+                     & Hκf0 & Hprec0 & HftvC0 & HapartR).
     (* ⭐⭐ ◇-DISPATCH.  At a ghost target the runner answers LS-Vacuous before
        it looks at the subject's ⫯, so the ANSWER is forced to the identity —
        collection empty ([a_looksub_hole_target]; its one emitting row pins the
@@ -3729,9 +3824,9 @@ Proof.
       rewrite ! dom_app in Hd.
       clear - Hd Hdc Hd0; fsetdec. }
     edestruct a_looksub_solve_univ_ghost_l_mode
-      as [𝒞r [Hlookr [Hsolver Hd𝒞]]];
+      as [𝒞r [Hlookr [Hsolver [Hd𝒞 Hapr]]]];
       [ exact Hlook | exact Hsolve0 | exact HP0nh
-      | exact Hfms0 | exact HPaSc | ].
+      | exact Hfms0 | exact HPaSc | exact HapartR | ].
     exists 𝒞r, Ξc, Ξs, Pa, κc, κs.
     (* everything but the three ends passes through untouched; the ftv
        conjunct's RIGHT disjunct gains the ghost wrapper ([ast_tophole]),
@@ -3877,7 +3972,15 @@ Theorem a_looksub_solve_complete :
        ftvar_in_a_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                              `union` dom κ `union` def_ftv Θ
        \/ (alpha_stack α P /\ Ξc = nil /\ κc = nil
-           /\ exists T, 𝒞 = a_cstr_sub M T :: nil)).
+           /\ exists T, 𝒞 = a_cstr_sub M T :: nil)) /\
+    (* ⭐⭐ THE SOLVE'S BLOCK IS APART FROM THE COLLECTED CONSTRAINTS
+       (2026-08-20) — what [a_extract__solve]'s CROSS-LAYER GUARD needs, and
+       the ONLY conjunct here that is unconditional in [M].  P6-L cannot
+       derive it: the escaping variables of [𝒞] are the ∀ rows' LEAKED
+       OPENERS, bound nowhere, and [L] is fixed before [𝒞] exists.  ⚙ The ∀
+       FORM, not [∩ … [=] empty]: [repeat split] dismantles an [Equal]
+       through its [iff]. *)
+    (forall α0, α0 `in` dom Ξs -> α0 `notin` ftvar_in_a_cstrs 𝒞).
 Proof.
   intros n NM M Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α.
   intros HwfΘ HwfΘ0 HwfP0 HwfPi HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR
@@ -3895,7 +3998,7 @@ Proof.
     as (𝒞 & Ξc & Ξs & Pa & κc & κs
         & Hlook & Hsolve & Hfms & Hus & Hks & Hfrs & HFs
         & HwfPa & HwfΞ & HαΞ & Hkeys
-        & HFor & _ & Hinc & Heqv & Hκcfresh & Hprec & HftvC);
+        & HFor & _ & Hinc & Heqv & Hκcfresh & Hprec & HftvC & HapartC);
     [ exact HwfΘ | exact HwfΘ0
     | exact HwfΘ | intros x b Hb; exact Hb | intros x b Hb; left; exact Hb
     | intros α0 Hf; eapply a_inc_lookup_flex_ftv_dom; [ exact Hκ | exact Hf ]
