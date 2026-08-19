@@ -42,7 +42,12 @@ recently P6-Sv at the end of this file)}.
 > **Status: OPEN in the mech.**  The refutation is
 > `cex/probe_extract_conflated_opener.v` (four lemmas, all Qed and
 > assumptions-closed).  The repair is proposed below and not yet landed —
-> it is a rule change, so it is the authors' / user's call.
+> it is a rule change, so it is the authors' / user's call.  ⚙ It WAS
+> attempted and costed on 2026-08-19: everything carries except
+> `a_looksub_lookeq_subst_gen_size` (the decoration path, inside subtyping
+> soundness), whose conclusion is existential in the outputs and which
+> therefore needs an avoid-set parameter of its own.  Measurement and the
+> kept patch: docs/HANDOFF-extractable-algo-encoding.md §8c.25.
 
 **Where.**  `fig:poly-info-extraction`, the two arrow rows of the
 constraint collection.  Both premises run at the SAME `Θ`:

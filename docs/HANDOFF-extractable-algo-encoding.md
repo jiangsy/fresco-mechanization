@@ -5497,3 +5497,57 @@ blocks are cheap IF a template exists; the expensive ones are the two where
 none does and where the a-side is genuinely larger than the e-side
 (`a_extract` above, and — expect the same question — `a_sub__forall_l`,
 which is the same block's consumer).
+
+#### ⚙ THE REPAIR WAS ATTEMPTED AND COSTED (2026-08-19, same day) — one lemma blocks it, and it is NOT one of the 31 construction sites
+
+The guard was written and carried through most of the tree before being
+**reverted** (a half-landed rule change is not committable).  What the
+attempt measured, so the next session does not re-measure it:
+
+**What landed cleanly** (patch kept at
+`<session scratchpad>/cross-half-guard-wip.patch`, ~1900 lines, applies to
+`4f1dc9c`):
+
+- `ftvar_in_a_cstr` / `_cstrs` / `_app` MOVED to `frost/algo/def_rules.v`
+  above the rules — and the tree's TWO identical copies collapsed into it
+  (`algo/sub/prop_looksub.v`'s `ftvar_in_cstrs` and `ext_algo/def_look.v`'s
+  `ftvar_in_a_cstrs`; 118 call sites renamed to the surviving name).
+  ⭐ Worth doing on its own: `def_look.v`'s header had asked for exactly
+  this move.
+- Both guard conjuncts on both arrow rows, and `def_rules.v` compiles.
+- ✅ `prop_swap.v` (two new kit lemmas, `swap_cstrs_ftv_notin` /
+  `swap_look_guard` — a transposition is a bijection, so the guard
+  travels), `prop_looksub.v` (9 sites; every one is `assumption`, because
+  its lemmas rebuild the SUBJECT and leave `Ξ`/`𝒞` alone),
+  `look/prop_eq_cstr.v`, `look/prop_sub_cstr.v` (the P6 completeness
+  lemmas — **they compiled untouched**, which was the biggest risk retired),
+  `prop_solve_rel.v` §7, `test/test_examples.v` (10 sites, all `nil`
+  blocks), two `cex/` files.
+- ✅ **`e_looksub_sound` DISCHARGES BOTH CONJUNCTS**, which is the
+  faithfulness claim made good.  It needed one new e-side lemma —
+  `e_looksub_lookeq_cstr_old`: *a constraint variable already in the INPUT
+  supply came from the INPUTS*.  §2's coarse bound cannot do the second
+  conjunct (it allows the whole output supply, where the left block lives).
+
+**⛔ WHAT BLOCKS IT — `a_looksub_lookeq_subst_gen_size`**
+(`deco_algo/prop_decorate_sub.v:2866-3352`, ~490 lines, 6 `pick fresh`
+rows), consumed by `a_looksub_subst_gen` and thence twice inside
+**subtyping soundness** (`deco_algo/prop_soundness_sub.v:616, :914`).
+
+Unlike every other site, this lemma's conclusion is EXISTENTIAL in the
+outputs (`exists Ξ' 𝒞', …`): its binder rows RE-PICK the opener, so `𝒞'`
+carries a name `𝒞` never had.  The arrow case must then prove the guard for
+outputs it has just invented, and the two facts that would give it —
+`dom Ξ' [=] dom Ξ` and a bound on `ftvar 𝒞'` — are **not enough on their
+own**: the re-picked opener `δ` is drawn fresh for the local block only, so
+nothing stops `δ ∈ dom Ξ2'`, the SIBLING's block.  ⇒ the lemma needs an
+**avoid-set parameter** `L` threaded through all 19 rows, plus the two
+output invariants, plus a new hypothesis (`ftvar P0` misses the block) that
+its two consumers inside `a_sub_sound` must discharge.
+
+⭐ That is a campaign of its own, the same size as guards 3/4/5 — not a
+mechanical follow-on.  ⚙ And note where it is: the obligation lands in the
+DECORATION path (`}}a ⇒ }}da ⇒ }}ad ⇒ }}d`), i.e. in subtyping SOUNDNESS,
+which is a closed flagship theorem — so the alternative (R2: leave the
+rules alone, carry the hygiene as a lift premise and discharge it where the
+`a_` derivation is BUILT) is worth re-costing against it before starting.
