@@ -240,7 +240,50 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-19 (latest) — ⭐⭐⭐ **THE COMPLETENESS CAMPAIGN IS FINISHED: levels 7 and 8 are closed, and with (2e) TYPE INFERENCE IS DECIDABLE — the paper's own undischarged decidability argument, discharged**
+## 2026-08-19 (latest) — ⭐⭐ **THE LIFT `a_*` ⟹ `e_*`: THE WHOLE SOLVE LAYER LANDS, THE LOOK RUNG TURNS OUT TO HAVE BEEN PROVED ALREADY, AND THE CHAIN CURRENCY IS RETIRED ABOVE THE GUESS**
+
+`frost/ext_algo/prop_lift.v` 377 → ~1570 lines (21.6 s), seven new
+headlines, all Qed and `Closed under the global context`; `make coq` rc=0,
+`README.v` 33/33.  Details and the design record: hand-off §8c.25.
+
+- §3 `e_looksub_lift` / `e_lookeq_lift` — the COLLECTION, 19 rows.  ⭐⭐⭐
+  **Thirty lines, because the rung was already proved**:
+  `a_looksub_lookeq_rel_e` (prop_solve_rel.v §7, campaign §8c.9's
+  "transport 5") is stated a → e already, and at `ρ = nil` it IS the lift.
+- §4 `a_guess_mono_rel_e` / `a_guess_rel_e` — `guess^TY` in the REL
+  currency, which is what the solve layer calls.
+- §5 `a_solve_eq_rel_e` (12 rows), §6 `a_solve_sub_rel_e` (9 rows),
+  §7 `a_solve_cstr_rel_e` (3 rows) — copied row for row from
+  prop_solve_rel.v §4/§5/§6, whose side 2 is `a_` where these want `e_`.
+
+⛔⛔ **§8c.24's CHAIN motive is retired above `guess^TY`.**  A chain is a
+FUNCTION on atoms; `rel_pskl` is deliberately a RELATION.  §2 could use a
+chain only because `a_guess_mono` leaks nothing — its ∀ row closes the
+witness away, so every invented atom is in `dom Ξ` and `uniq Ξ` separates
+the columns.  All five collection ∀ rows leak into `𝒞`, and `SS-ForallR`
+leaks into the solve's yield by design; `LE-Arrow` runs both halves at the
+same `Θ`, so ONE left atom can be a leaked opener in one half and an
+invented flexible in the other, needing TWO right images.  No chain gives
+them.
+
+⚙ **What the a → a template costs to copy**: the avoid-set `L` and its
+`uniq Ξ2` / `dom Ξ2 ∩ L` conclusions DELETE (both are e-side theorems once
+threaded), every invented atom is drawn at `S0`, and ONE premise appears —
+`dom Θ2 [<=] S0`, which is what `flex_agree_rel_push_tvar_pair` needs and
+the supply cannot give.  No row needed a second attempt.
+
+⛔⛔ **The next row, `a_extract`, is FALSE as a lift** — not a missing
+proof.  The collection can return `𝒞 = [eq 1 ; eq γ ; eq γ]` with
+`Ξ = (γ ~ ⌢)` where one `γ` is a leaked opener of one arrow half and the
+block's `γ` is the other half's flexible; side 1's fold then fires
+`SE-FlexR` on the opener, while side 2's opener is bound nowhere and no
+`e_solve_eq` row applies.  The configuration, the four rows that fail and
+the shape the repair must take are in `prop_lift.v`'s closing box; it is
+INFERRED from the definitions and wants a `cex/probe_*` before the repair
+is designed.
+
+
+## 2026-08-19 — ⭐⭐⭐ **THE COMPLETENESS CAMPAIGN IS FINISHED: levels 7 and 8 are closed, and with (2e) TYPE INFERENCE IS DECIDABLE — the paper's own undischarged decidability argument, discharged**
 
 `README.v` is 33/33 and its new §VI is the claim: `e_typing_dec_init` —
 at a locally-closed input skeleton and a locally-closed program, typability

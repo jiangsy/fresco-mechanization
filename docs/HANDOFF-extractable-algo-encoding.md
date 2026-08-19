@@ -5168,6 +5168,14 @@ exists.  ⚙ Nothing else is missing on the declarative side:
 
 ### 8c.24 ⛔ THE LIFT, `a_*` ⟹ `e_*` — the campaign's LAST DEBT, SCOUTED AND DESIGNED (2026-08-19)
 
+⛔⛔ **SUPERSEDED IN ITS PLAN BY §8c.25 (2026-08-19) — READ THAT FIRST.**
+The MOTIVE below is right for `guess^TY` and WRONG for every block above
+it (a chain is a function; the rules above the guess leak binders into
+their outputs), the LOOK rung listed below as "next" was already proved in
+§8c.9, and the whole solve layer has since landed relationally.  What stays
+valid here: the technique (induct so the `a_` derivation is a hypothesis),
+the two premises `guess^TY` needs, and the three performance rules.
+
 🟡 **THE SCOUT HAS LANDED; TEN BLOCKS REMAIN.**
 `frost/ext_algo/prop_lift.v` §2 is Qed and `Closed under the global context`:
 `e_guess_mono_lift` and `e_guess_lift`, plus §1's `close` rename fact.  That
@@ -5349,3 +5357,138 @@ binder row above.
 
 ⚙ Write the next block with those three rules from the start; they are not
 optimisations, they are the difference between 10 s and not returning.
+
+### 8c.25 ⭐⭐⭐ THE LIFT, SECOND PASS — THE LOOK RUNG WAS ALREADY CLOSED, THE CHAIN CURRENCY DIES ABOVE THE GUESS, AND THE WHOLE SOLVE LAYER NOW LIFTS (2026-08-19)
+
+✅ **`make coq` rc=0, `README.v` 33/33, zero `Admitted`/`Axiom`.**
+`frost/ext_algo/prop_lift.v` grows from 377 to ~1570 lines (21.6 s), and
+every one of its seven new headlines is `Closed under the global context`:
+
+| § | headline | what it lifts |
+|---|---|---|
+| §3 | `e_looksub_lift` / `e_lookeq_lift` | the COLLECTION, 19 rows — **by instantiating an existing lemma** |
+| §4 | `a_guess_mono_rel_e` / `a_guess_rel_e` | `guess^TY` again, in the REL currency |
+| §5 | `a_solve_eq_rel_e` | the eq-solve, 12 rows |
+| §6 | `a_solve_sub_rel_e` | the sub-solve, 9 rows |
+| §7 | `a_solve_cstr_rel_e` | the constraint fold, 3 rows |
+
+So §8c.24's costed plan is discharged through `cstr`: guess, look, solve,
+cstr are done and 46 of the 120 rows are behind us.
+
+#### ⛔⛔ FINDING 1 — §8c.24's CHAIN CURRENCY CANNOT REACH ANY BLOCK ABOVE THE GUESS
+
+§8c.24 proposed one motive for the whole campaign: the `e_` outputs are
+`swaps_*` IMAGES of the `a_` outputs, along a chain `ps`.  ⛔ **That is
+available at `a_guess_mono` and nowhere above it**, and the reason is
+structural, not a proof difficulty:
+
+- A chain is a **FUNCTION** on atoms.  `rel_pskl` (prop_solve_det.v §1) is
+  deliberately a **RELATION**, and its header already says why for the
+  guess: `a_guess_mono__arrow` runs both halves at the same `Θ`, so one
+  derivation may guess the SAME flexible for two holes.
+- §2 could still use a chain because **`a_guess_mono` LEAKS NOTHING**: its
+  ∀ row closes its witness away, so every atom the derivation invents lands
+  in `dom Ξ`, and `uniq Ξ` — one premise, available at the only consumer —
+  makes the columns distinct.
+- ⚠️ **ALL FIVE of the collection's ∀ rows LEAK their binder into `𝒞`**
+  (def_look.v's header; `a_looksub_lookeq_ftv`'s three target-opening
+  rows), and `SS-ForallR` leaks its opener into the solve's YIELD **by
+  design** (def_rules.v:625-638).  A leaked binder is NOT in `dom Ξ`, so no
+  strengthening of `uniq Ξ` can see it — and `LE-Arrow`'s two halves run at
+  the SAME `Θ`, so ONE left atom can be a leaked opener in one half and a
+  generated flexible in the other.  The e-side keeps those apart (opener
+  drawn at `S0`, flexible at `S1 ⊇ add opener S0`), so that one left atom
+  needs TWO right images.  **No chain, at any premise, supplies them.**
+
+⇒ Everything from the collection up is stated over `rel_pskl` /
+`rel_a_cstrs` at a pair list ρ that GROWS, with the blocks read off as
+`flex_pairs_l ρn` / `flex_pairs_r ρn`.  §2's chain form is kept: it is
+what a consumer holding `uniq Ξ` wants (`AT-Abs`), and §4 is the same fact
+in the currency the solve layer needs.
+
+#### ⭐⭐⭐ FINDING 2 — THE LOOK RUNG WAS ALREADY PROVED, IN §8c.9, AND NOTHING NOTICED
+
+`prop_solve_rel.v` §7's **`a_looksub_lookeq_rel_e`** — campaign §8c.9's
+"transport 5, the hygienic rederivation" — is stated **a → e** already: an
+`a_looksub`/`a_lookeq` derivation transports to an `e_looksub`/`e_lookeq`
+derivation over any supply covering side 2.  At `ρ = nil` (where
+`rel_pskl_refl` makes both sides the same skeleton and `flex_agree_rel` is
+two `reflexivity`s) it **IS** the lift, and §3 is thirty lines of
+instantiation for the pair.
+
+⚙ The other four transports of that file (§3-§6, guess / eq-solve /
+sub-solve / fold) are a → **a**, which is why §4-§7 above had to be
+written — but they are the exact templates, row for row, and each took one
+compile to land.  ⚠️ **The user's own standing rule caught this** ("grep
+the completeness files for existing transports before mirroring to a new
+level"); it is worth one grep per block for the six blocks that remain.
+
+#### ⚙ WHAT CHANGES BETWEEN THE a → a TEMPLATE AND THE a → e COPY
+
+Three edits, mechanical once seen:
+
+1. **The avoid-set `L` and its two conclusions DISAPPEAR.**  On the a-side
+   the caller had to be told `uniq Ξ2` and `dom Ξ2 ∩ L [=] empty`;
+   threaded, both are theorems of the e-side derivation alone
+   (`e_solve_sub_eq_block`, `e_guess_mono_block_fresh`), so the arrow rows'
+   bookkeeping collapses to "the supply grew".
+2. **Every invented atom is drawn against the SUPPLY** — `atom_fresh S0`
+   in place of `atom_fresh (ftvar_in_aenv Θ2 ∪ …)`.
+3. ⭐ **ONE new premise, `dom Θ2 [<=] S0`.**  Side 2's openers need `∉ S0`
+   for the rule and `∉ dom Θ2` for `flex_agree_rel_push_tvar_pair`; the
+   supply cannot supply the second without it.  ⚙ `dom`, NOT
+   `ftvar_in_aenv`: `dom` is the version the arrow rows can re-establish
+   for `Ξ2a ++ Θ2` out of the e-side block facts alone.
+
+⚠️ And the coverage is **three separate premises**
+(`dom Θ2 [<=] S0`, `V ∪ cols_r ρ [<=] S0`,
+`ftvar P2 ∪ ftvar Q2 [<=] S0`), never one union — written as a union every
+later `fsetdec` would face six set variables, which is §8c.23's cliff.
+
+#### ⛔⛔ FINDING 3 — THE NEXT ROW, `a_extract`, IS **FALSE** AS A LIFT
+
+`a_extract` has ONE rule and it composes §3, §7 and §4, so it looks like
+three `destruct`s.  It is not.  The full configuration, the four solve rows
+that fail to apply, and what the repair has to be are written at the end of
+`prop_lift.v` (the `⛔⛔ WHAT THE NEXT BLOCK OWES` box) — read it there, it
+is the live statement.  In brief:
+
+- `LE-Arrow` can hand back `𝒞 = [eq 1 ; eq γ ; eq γ]` with `Ξ = (γ ~ ⌢)`,
+  where one `γ` is a LEAKED OPENER of one half and the block's `γ` is the
+  OTHER half's invented flexible.
+- Side 1's fold sees that leaked `γ` as FLEXIBLE (it is in `Ξ`) and fires
+  `SE-FlexR`; side 2's `γ1` is bound nowhere — `e_looksub` discards its
+  openers, exactly as `type.ml` does — and `1 ∼ γ1` matches NO `e_solve_eq`
+  row.  The threaded fold is STUCK where the unthreaded one runs.
+- ⇒ no `flex_agree_rel` between `Ξ ++ Θ0` and `Ξ2 ++ Θ2` exists, and that
+  is precisely §7's premise.
+
+⚙ **CHECKED vs INFERRED**: the side conditions and the non-applicability
+are read off the definitions; the configuration is NOT yet built in Coq.
+**Build it as a `cex/probe_*` first** — the campaign's precedent
+(`probe_extract_supply_drift.v`) is that these are cheap and that they pin
+the repair.
+
+⭐ **The repair has to be a PREMISE that the collection's leaked openers
+are apart from its own block** — the fourth instance of a prose-completion
+this tree has already made three times (`AT-Abs`'s `uniq (αs ++ Θ1)`,
+`a_sub__forall_l`'s `uniq (Ξ ++ Θ0)`, §2's `uniq Ξ`).  ⚠️ `uniq Ξ` does
+NOT suffice and no strengthening of it can — a leaked opener is not a block
+member.  ⛔ Nor does a scoping hypothesis on the look's inputs: both side
+conditions already dodge `ftvar_in_aenv Θ` and that is all scoping buys.
+So the premise is about the DERIVATION, and WHERE it is discharged
+(`a_sub__forall_l` is the extract's only consumer) is the design question
+the next session opens on.  It belongs in docs/PAPER-GAPS.md once
+machine-checked.
+
+#### ⚙ COST, AND WHAT IT SAYS ABOUT THE REMAINING BUDGET
+
+`prop_lift.v` is 21.6 s for ~1570 lines.  §8c.24's three performance rules
+were followed from the first draft (named hypotheses for every recursive
+call's side conditions, no `fsetdec` past five set variables, openers
+consumed by `destruct_notin`) and **no row needed a second attempt** —
+§§4-7 each compiled the first time they were written.  ⇒ the remaining
+blocks are cheap IF a template exists; the expensive ones are the two where
+none does and where the a-side is genuinely larger than the e-side
+(`a_extract` above, and — expect the same question — `a_sub__forall_l`,
+which is the same block's consumer).
