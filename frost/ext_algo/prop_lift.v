@@ -454,6 +454,8 @@ Lemma e_looksub_lift : forall Θ α m P P' Ξ C,
     /\ (forall a b, In (a, b) (ρx ++ ρn) ->
           a `notin` add α (ftvar_in_aenv Θ) /\ b `in` S1 /\ b `notin` S0)
     /\ cols_r ρx ∩ dom Ξ' [=] empty
+    /\ (forall a b, In (a, b) ρx -> a `in` ftvar_in_a_cstrs C)
+    /\ cols_l ρx ∩ dom Ξ [=] empty
     /\ rel_a_cstrs (ρx ++ ρn) V C C'.
 Proof.
   intros Θ α m P P' Ξ C H S0 V HV HS.
@@ -473,11 +475,13 @@ Proof.
     by (simpl; clear - HV HS; fsetdec).
   destruct ((proj1 a_looksub_lookeq_rel_e) _ _ _ _ _ _ _ H S0 Θ P P' nil V
               HrP HrP' HαV Hαl Hαr Hag Hcov)
-    as (S1 & ρx & ρn & Ξ' & C' & He & E1 & E2 & Hfr & Hdis & Hrel).
+    as (S1 & ρx & ρn & Ξ' & C' & He & E1 & E2 & Hfr & Hdis & Hoc & Hcl
+        & Hrel).
   exists S1, ρx, ρn, Ξ', C'.
   rewrite app_nil_r in Hrel.
   split; [ exact He | ]. split; [ exact E1 | ]. split; [ exact E2 | ].
-  split; [ exact Hfr | ]. split; [ exact Hdis | ]. exact Hrel.
+  split; [ exact Hfr | ]. split; [ exact Hdis | ].
+  split; [ exact Hoc | ]. split; [ exact Hcl | ]. exact Hrel.
 Qed.
 
 Lemma e_lookeq_lift : forall Θ α P P' Ξ C,
@@ -491,6 +495,8 @@ Lemma e_lookeq_lift : forall Θ α P P' Ξ C,
     /\ (forall a b, In (a, b) (ρx ++ ρn) ->
           a `notin` add α (ftvar_in_aenv Θ) /\ b `in` S1 /\ b `notin` S0)
     /\ cols_r ρx ∩ dom Ξ' [=] empty
+    /\ (forall a b, In (a, b) ρx -> a `in` ftvar_in_a_cstrs C)
+    /\ cols_l ρx ∩ dom Ξ [=] empty
     /\ rel_a_cstrs (ρx ++ ρn) V C C'.
 Proof.
   intros Θ α P P' Ξ C H S0 V HV HS.
@@ -510,11 +516,13 @@ Proof.
     by (simpl; clear - HV HS; fsetdec).
   destruct ((proj2 a_looksub_lookeq_rel_e) _ _ _ _ _ _ H S0 Θ P P' nil V
               HrP HrP' HαV Hαl Hαr Hag Hcov)
-    as (S1 & ρx & ρn & Ξ' & C' & He & E1 & E2 & Hfr & Hdis & Hrel).
+    as (S1 & ρx & ρn & Ξ' & C' & He & E1 & E2 & Hfr & Hdis & Hoc & Hcl
+        & Hrel).
   exists S1, ρx, ρn, Ξ', C'.
   rewrite app_nil_r in Hrel.
   split; [ exact He | ]. split; [ exact E1 | ]. split; [ exact E2 | ].
-  split; [ exact Hfr | ]. split; [ exact Hdis | ]. exact Hrel.
+  split; [ exact Hfr | ]. split; [ exact Hdis | ].
+  split; [ exact Hoc | ]. split; [ exact Hcl | ]. exact Hrel.
 Qed.
 
 (* ===================================================================== *)

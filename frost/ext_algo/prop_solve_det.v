@@ -112,6 +112,17 @@ Proof.
   pose proof (IH _ _ Hin). fsetdec.
 Qed.
 
+Lemma cols_l_in_inv : forall ρ a,
+  a `in` cols_l ρ -> exists b, In (a, b) ρ.
+Proof.
+  induction ρ as [ | [x y] ρ IH ]; intros a Ha; simpl in *.
+  - exfalso. clear - Ha. fsetdec.
+  - destruct (a == x) as [-> | Hne].
+    + exists y. left. reflexivity.
+    + assert (Ha' : a `in` cols_l ρ) by (clear - Ha Hne; fsetdec).
+      destruct (IH _ Ha') as [b Hin]. exists b. right. exact Hin.
+Qed.
+
 Lemma cols_r_in_inv : forall ρ b,
   b `in` cols_r ρ -> exists a, In (a, b) ρ.
 Proof.
