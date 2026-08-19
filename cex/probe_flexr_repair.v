@@ -211,6 +211,8 @@ Proof.
   - apply new_looksub.
   - apply new_solve. unfold Θ0r, binds; simpl; auto.
   - apply new_guess.
+  - (* the cross-layer guard: the fold generates nothing here *)
+    simpl. clear. fsetdec.
 Qed.
 
 (* ------------------------------------------------------------------ *)
@@ -280,7 +282,9 @@ Proof.
       eapply a_solve_cstr__eq;
         [ apply a_solve_eq__hole_l | apply a_solve_cstr__empty ]. }
     { apply a_guess__ty with (A := ptyp_var_f α1).
-      apply a_guess_mono__var. } }
+      apply a_guess_mono__var. }
+    { (* the cross-layer guard: the fold generates nothing *)
+      simpl. clear. fsetdec. } }
   { simpl. solve_uniq. }
   { apply a_wf_pskl__var. right. right. left. unfold binds; simpl; auto. }
   (* CONTINUATION: [α̂1 → α̂1 ⩽[TC] f̂] — Check, FlexR, Depend, SolveM *)

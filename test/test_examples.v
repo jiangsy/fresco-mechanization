@@ -258,6 +258,8 @@ Proof.
     + simpl_open. apply a_looksub__vacuous; discriminate.
     + apply a_solve_cstr__empty.
     + apply a_guess__sk.
+    + (* the cross-layer guard: the fold generates nothing *)
+      simpl. clear. fsetdec.
   - crush_uniq.
   - apply a_wf_pskl__hole.
   - simpl_open. apply a_sub__univ_ghost_r. crush_lc.
@@ -334,6 +336,8 @@ Proof.
       apply a_solve_cstr__empty.
     + apply (a_guess__ty (A := ptyp_var_f α)).
       apply a_guess_mono__var.
+    + (* the cross-layer guard: the fold generates nothing *)
+      simpl. clear. fsetdec.
   - crush_uniq.
   - crush_wf.
   - simpl_open.
@@ -442,6 +446,8 @@ Proof.
           simpl_open;
           apply a_guess_mono__arrow with (Ξ1 := nil) (Ξ2 := nil);
           apply a_guess_mono__var.
+      * (* the cross-layer guard: the fold generates nothing *)
+        simpl. clear. fsetdec.
     + crush_uniq.
     + unfold σ_auto, σ_id; simpl. crush_wf.
     + simpl_open.
@@ -575,6 +581,8 @@ Proof.
           with (Ξ1 := (fa ~ abind_flex_mono) ++ nil)
                (Ξ2 := (fb ~ abind_flex_mono) ++ nil);
           apply a_guess_mono__hole; crush_guess_fresh.
+      * (* the cross-layer guard: the fold generates nothing *)
+        simpl. clear. fsetdec.
     + crush_uniq.
     + crush_wf.
     + simpl_open.
@@ -613,6 +621,8 @@ Proof.
           { apply a_solve_cstr__empty. } }
       * apply (a_guess__ty (A := ptyp_var_f fa)).
         apply a_guess_mono__var.
+      * (* the cross-layer guard: the fold generates nothing *)
+        simpl. clear. fsetdec.
     + crush_uniq.
     + crush_wf.
     + simpl_open.
@@ -696,6 +706,8 @@ Proof.
             with (Ξ1 := (fa ~ abind_flex_mono) ++ nil)
                  (Ξ2 := (fb ~ abind_flex_mono) ++ nil);
             apply a_guess_mono__hole; crush_guess_fresh. }
+        { (* the cross-layer guard: the fold generates nothing *)
+          simpl. clear. fsetdec. }
       * crush_uniq.
       * crush_wf.
       * simpl_open.
@@ -735,6 +747,8 @@ Proof.
             + apply a_solve_cstr__empty. }
         { apply (a_guess__ty (A := ptyp_var_f fa)).
           apply a_guess_mono__var. }
+        { (* the cross-layer guard: the fold generates nothing *)
+          simpl. clear. fsetdec. }
       * crush_uniq.
       * crush_wf.
       * simpl_open.
@@ -955,7 +969,9 @@ Proof.
             { apply a_solve_eq__var. }
             apply a_solve_cstr__empty.
           - apply (a_guess__ty (A := ptyp_var_f α)).
-            apply a_guess_mono__var. }
+            apply a_guess_mono__var.
+          - (* the cross-layer guard: the fold generates nothing *)
+            simpl. clear. fsetdec. }
         { crush_uniq. }
         { clear Hβ; crush_wf. }   (* ⚙ the ForallL opener's 3-way
                                      union makes [fsetdec] crawl *)
@@ -1003,7 +1019,9 @@ Proof.
             { apply a_solve_eq__var. }
             apply a_solve_cstr__empty.
           - apply (a_guess__ty (A := ptyp_var_f α)).
-            apply a_guess_mono__var. }
+            apply a_guess_mono__var.
+          - (* the cross-layer guard: the fold generates nothing *)
+            simpl. clear. fsetdec. }
         { crush_uniq. }
         { clear Hβ; crush_wf. }   (* ⚙ the ForallL opener's 3-way
                                      union makes [fsetdec] crawl *)

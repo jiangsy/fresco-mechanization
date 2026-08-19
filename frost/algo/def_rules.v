@@ -965,6 +965,32 @@ Inductive a_extract : aenv -> a_sub_mode -> atom -> mode -> pskl -> pskl -> aenv
        avoid-input is the whole [Ξs ++ Ξ ++ Θ0] — this is what makes the
        three halves of the output block [Ξ ++ Ξs ++ Ξ'] disjoint *)
     a_guess (Ξs ++ Ξ ++ Θ0) NM Q Ξ' Q' ->
+    (* ⭐⭐ [paper-gap] THE CROSS-LAYER FRESHNESS GUARD (2026-08-20): the
+       FOLD's generated flexibles are fresh for the CONSTRAINTS it is
+       solving.  docs/PAPER-GAPS.md.
+
+       ⛔ WHY IT IS OWED, and it is the same species as [a_looksub__arrow]'s
+       CROSS-HALF guard one layer down.  The collection LEAKS openers into
+       [C] — all five of its ∀ rows do — and a leaked opener is bound
+       NOWHERE: not in [Θ0], not in [Ξ].  The fold then runs at [Ξ ++ Θ0]
+       and [SE-FlexR]'s guess draws its flexibles fresh for
+       [ftvar_in_aenv (Ξ ++ Θ0)] ONLY, so it MAY DRAW ONE.  The two roles
+       then collapse onto one atom: a later [eq γ] constraint reads γ as
+       FLEXIBLE (it is in [Ξs]) where the reference implementation — which
+       never reuses a name — reads a rigid free atom and takes a different
+       rule.  ⇒ the run is not the implementation's.
+
+       ✅ IT COSTS THE THREADED ENCODING NOTHING, and that is a THEOREM
+       ([e_extract_solve_guard], ext_algo/prop_lift.v): [e_looksub]'s
+       constraints live in the supply it has already SPENT and
+       [e_solve_cstr]'s block is drawn STRICTLY ABOVE it, so
+       [e_extract_sound] discharges the guard from facts its proof already
+       computes.  Same shape as [e_looksub_lookeq_cstr_old] for the
+       cross-half guard.
+
+       ⚙ LAST, not after the solve premise, so every consumer's positional
+       tactic list grows at its END. *)
+    ftvar_in_a_cstrs C ∩ dom Ξs [=] empty ->
     {{ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ (Ξ ++ Ξs ++ Ξ') ↪ Q' }}a
 where "{{ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q }}a" := (a_extract Θ0 NM α m P P' Ξ Q) : frost_a_scope.
 

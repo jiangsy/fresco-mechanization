@@ -1038,7 +1038,7 @@ Proof.
     as (𝒞 & Ξc & Ξs & Pa & κc & κs
         & Hlook & Hsolve & Hfms & Hus & Hks & Hfrs & HFs
         & HwfPa & HwfΞc & HαΞc & Hkeysc
-        & HForc & Hincc & Heqv & Hκcfresh & Hprec & _).
+        & HForc & Hincc & Heqv & Hκcfresh & Hprec & _ & Hapart).
   (* ---- (g) : P5b-i upgrades ⊑ᵖ[Ψa] to plain ⊑ ⌊ψa⌋ˢ ---- *)
   assert (Hpre : {{ Θ ⨟ Δ ⊢ₚᵣ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ ⌊ ψa ⌋ˢ }}ad).
   { eapply ad_partial_precise_complete;
@@ -1124,7 +1124,11 @@ Proof.
     split.
     { eapply a_extract__solve;
         [ exact Hlook | exact Hsolve
-        | apply a_guess__ty; apply Hgu; clear; fsetdec ]. }
+        | apply a_guess__ty; apply Hgu; clear; fsetdec
+        (* ⭐ THE CROSS-LAYER GUARD, and it is exactly what P6-Ss's new
+           conjunct reports: no scoping fact could give it, because the
+           escaping constraint variables are LEAKED OPENERS. *)
+        | apply inter_dom_empty_of_forall; exact Hapart ]. }
     split.
     { (* [Ξ' ++ Ξs ++ Ξc ++ Θ0] → [Ξc ++ Ξs ++ Ξ' ++ Θ0]: all three blocks are
          undefined flexibles, so any reordering is binds-preserving *)
@@ -1175,7 +1179,8 @@ Proof.
     exists (Ξc ++ Ξs ++ nil), Pa, (κc ++ κs ++ nil).
     split.
     { eapply a_extract__solve;
-        [ exact Hlook | exact Hsolve | apply a_guess__sk ]. }
+        [ exact Hlook | exact Hsolve | apply a_guess__sk
+        | apply inter_dom_empty_of_forall; exact Hapart ]. }
     (* only NOW may the empty guess block be absorbed — [a_extract__solve]'s
        conclusion is [Ξ ++ Ξs ++ Ξ'], which no longer unifies once it is gone *)
     rewrite ! app_nil_r.

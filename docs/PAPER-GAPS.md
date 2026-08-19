@@ -4347,3 +4347,112 @@ system (`a_consis_sound`, `a_consis_complete` / `complete_mu`) are
 unaffected: they quantify over the derivations that exist, and the
 optimality package is stated up to `⊑` precisely because the
 algorithm's answers are only determined up to generality.
+
+## ⭐⭐⭐ TWO MISSING FRESHNESS SIDE CONDITIONS ON POLYMORPHIC-INFORMATION EXTRACTION — a LEAKED ∀-OPENER can be re-drawn as a flexible, and the rules never say it may not (2026-08-19 / 2026-08-20)
+
+Mechanized as guards on `a_looksub__arrow` / `a_lookeq__arrow` and on
+`a_extract__solve` (`frost/algo/def_rules.v`, both tagged `[paper-gap]`).
+
+### The finding
+
+`fig:poly-info-extraction`'s collection judgement `look` descends a ∀ by
+OPENING it at a fresh binder, and **five of its rules let that binder ESCAPE
+into the collected constraint list `𝒞`** (the mech's `LS-ForallR`,
+`LE-ForallInh`, `LE-UnivGhost1`, `LE-UnivGhost2`, `LE-UnivGhostR`; the
+implementation does the same — it opens with `Bindlib.unbind` and discards
+the name).  A leaked opener is bound NOWHERE: it is not in `Θ0`, and it is
+not in the collection's own block `Ξ`.
+
+Every rule that INVENTS a name — the collection's `LE-FlexR`, the solving
+layer's `SolE-FlexR` guess — draws it fresh for `ftvar_in_aenv Θ` of ITS OWN
+context and for nothing else.  So nothing in the figures stops an invented
+flexible from being **the same atom as a leaked opener**, and the two roles
+are then indistinguishable.  On paper this is invisible, because a leaked
+opener is not a name at all there; in any implementation with one global
+name supply it cannot happen, because a fresh counter never repeats.
+
+Two instances, at two layers:
+
+1. **CROSS-HALF** (`look`'s arrow rows).  `LS-Arrow` / `LE-Arrow` run both
+   halves at the SAME `Θ`, so half 1's leaked opener and half 2's invented
+   flexible may coincide.  Machine-checked configuration:
+   `cex/probe_extract_conflated_opener.v` builds
+   `Θ ⊢ (∀α)→(α→α) ∼[α] (∀0)→β̂ ⤳ (γ ~ ⌢) ⨾ [≐1, ≐γ, ≐γ]` where the first
+   `γ` is half 1's leaked opener and the second is half 2's fresh flexible,
+   **and both rows' side conditions read `γ ∉ {α, β̂}`, so nothing separates
+   them.**  Downstream, the constraint fold reads that `γ` as flexible (it
+   is in `Ξ`) and fires `SolE-FlexR`, where the implementation reads a rigid
+   free atom and no rule applies at all.
+
+2. **CROSS-LAYER** (`look`'s own rule).  The fold runs at `Ξ ++ Θ0`, and its
+   `SolE-FlexR` guess draws fresh for `ftvar_in_aenv (Ξ ++ Θ0)` — which does
+   not mention the leaked openers either.  Same collapse, one layer up:
+   `Ξs` may contain an atom that already occurs free in `𝒞`.
+
+### The repair
+
+    a_looksub__arrow / a_lookeq__arrow:
+        ftvar_in_a_cstrs 𝒞₁ ∩ dom Ξ₂ [=] empty
+        ftvar_in_a_cstrs 𝒞₂ ∩ dom Ξ₁ [=] empty
+
+    a_extract__solve:
+        ftvar_in_a_cstrs 𝒞  ∩ dom Ξs [=] empty
+
+Prose form: *the names a collection or a solving run INVENTS are fresh for
+the constraints its sibling — or its own collection — has already
+collected.*  It is the same prose completion the mechanization has had to
+make three times before (`AT-Abs`'s `uniq (αs ++ Θ1)`, `a_sub__forall_l`'s
+`uniq (Ξ ++ Θ0)`, `a_guess_mono`'s `uniq Ξ`), and it is the sentence a
+global fresh-name supply makes true for free.
+
+⚠️ `uniq Ξ` does NOT suffice and no strengthening of it can: a leaked opener
+is not a block member, so `uniq` cannot see it.  ⚠️ Nor does a scoping
+hypothesis on the inputs: the rules' own side conditions already dodge
+`ftvar_in_aenv Θ`, and that is all a scoping premise buys.  The condition is
+about the DERIVATION.
+
+### Both guards cost the implementation NOTHING, and that is a theorem
+
+The mechanization carries a second, SUPPLY-THREADED encoding of the same
+algorithm (`frost/ext_algo/`) in which every invented name is drawn from a
+threaded supply, exactly as the reference implementation's counter does.
+Both guards are DERIVABLE there:
+
+- cross-half: `e_looksub_lookeq_cstr_old` (a constraint variable already in
+  the INPUT supply came from the INPUTS), used inside `e_looksub_sound`;
+- cross-layer: `e_extract_solve_guard` (the collection's constraints live in
+  the supply already spent, the fold's block is drawn strictly above it),
+  used inside `e_extract_sound` in two lines.
+
+So no run of the implementation is excluded by either guard.
+
+### What it cost inside the mechanization, and why that is the interesting part
+
+Completeness is where the guards bite, and the CROSS-LAYER one could not be
+discharged at its consumer.  P6-L (`a_extract_complete_gen`) gets its
+collection and its fold from ONE call to P6-Ss
+(`a_looksub_solve_complete_gen`), whose avoid-set parameter `L` is chosen
+BEFORE `𝒞` exists — so `L` cannot be made to contain `ftvar_in_a_cstrs 𝒞`.
+⇒ P6-Cs and P6-Ss had to gain a new OUTPUT conjunct,
+
+    forall α0, α0 `in` dom Ξs -> α0 `notin` ftvar_in_a_cstrs 𝒞
+
+proved inside their inductions.  ⚙ It is nearly free: the arrow rows already
+have both cross facts (the right recursion's avoid-set takes the left's
+constraints, which are concrete by then; and the right look runs at a
+context CONTAINING the left solve's block, so `a_looksub_ftv_ctx` applies).
+The one place that needed design is the ForallL/UnivGhostL REORDER, which
+re-derives the solve at a fresh opener and must therefore CARRY the
+invariant rather than re-derive it.
+
+⚠️ The bound `a_looksub_ftv` cannot be used instead: it is DISJUNCTIVE
+precisely because the ∀ rules leak, and a leaked opener lands in the
+disjunct that says nothing about `dom Ξs`.
+
+### What is NOT affected
+
+Soundness is untouched — `a_extract_decls` and the decoration path read the
+blocks, not the constraints, and the collection's arrow guards are
+`assumption` at every site inside `prop_looksub.v`.  Both guards travel
+across equivariance (`swap_look_guard`), so every renaming lemma is
+unchanged.

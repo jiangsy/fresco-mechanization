@@ -5934,3 +5934,85 @@ wrapper is one `inversion`.  ⚠️ And note the conclusion carries a ρx column
 `a_sub` will meet the same currency; §8c.25's prediction that it EASES above
 the extract (those judgements THREAD an output context, so siblings do see
 each other's inventions) is still unverified.
+
+### 8c.27 ⭐⭐⭐ THE EXTRACT RUNG IS CLOSED — the CROSS-LAYER GUARD IS LANDED, and `a_extract` LIFTS (2026-08-20)
+
+✅ **`make coq` rc=0, `README.v` 33/33, zero `Admitted`/`Axiom`.**
+`a_extract_rel_e` (prop_lift.v §8) is `Closed under the global context`:
+an `a_extract` derivation transports to an `e_extract` derivation.  §8c.26's
+one remaining side condition is now a premise of the rule.
+
+#### THE RULE CHANGE
+
+`a_extract__solve` (frost/algo/def_rules.v) gains, `[paper-gap]`-tagged and
+filed in docs/PAPER-GAPS.md together with the CROSS-HALF guard (which had
+never been filed):
+
+    ftvar_in_a_cstrs 𝒞 ∩ dom Ξs [=] empty
+
+⚙ Placed LAST, after the guess premise, so every consumer's positional
+tactic list grows at its END.
+
+#### THE DISCHARGE — 20 sites, and the costing in §8c.26 was right
+
+| site | count | what it took |
+|---|---|---|
+| `test/test_examples.v` | 9 | `simpl. clear. fsetdec.` (all `Ξs = nil`) |
+| `cex/probe_flexr_repair.v` | 2 | same |
+| `ext_algo/prop_extract.v` (`e_extract_sound`) | 1 | ⭐ ONE LINE, `clear - Hcs Hfr2; fsetdec` — both facts were already `pose proof`ed there.  The faithfulness claim, made good in practice |
+| `algo/prop_swap.v` | 1 | `apply swap_look_guard` (already existed) |
+| `algo/sub/prop_looksub.v` | 1 | `eassumption` — `a_looksub_rename_var` moves the SUBJECT and the marker and leaves `Ξ`/`𝒞` alone |
+| `algo/sub/look/prop_extract.v` (**P6-L**) | 2 | the campaign |
+
+#### ⭐⭐ THE CAMPAIGN, AND WHY IT WAS NOT A MISSING `fsetdec`
+
+P6-L gets its collection AND its fold from ONE call to P6-Ss, whose
+avoid-set parameter `L` is chosen **before `𝒞` exists**.  So P6-Cs
+(`a_lookeq_solve_complete_gen`, `a_lookeq_flex_p0_complete`) and P6-Ss
+(`a_looksub_solve_complete_leaf` / `_gen` / `a_looksub_solve_complete`) each
+gained an OUTPUT conjunct, proved inside their inductions:
+
+    forall α0, α0 `in` dom Ξs -> α0 `notin` ftvar_in_a_cstrs 𝒞
+
+⚙ **It was nearly free**, and for a reason worth keeping: both ARROW rows
+already had the two cross facts in the shapes they need.
+`dom Ξs2 ∩ ftv 𝒞1` is bought by putting `ftvar_in_a_cstrs C1` into the RIGHT
+recursion's avoid-set — legal because `𝒞1` is CONCRETE by then — and
+`dom Ξs1 ∩ ftv 𝒞2` holds because the RIGHT look runs at a context
+**containing `Ξs1`**, so `a_looksub_ftv_ctx` / `a_lookeq_ftv_ctx` apply.
+P6-Cs was already making that exact derivation for its ftv-𝒞 bound.  Every
+other row is a pass-through or an empty block.
+
+⭐ **The one place that needed design** is the ForallL / UnivGhostL REORDER
+(`a_looksub_solve_forall_l` / `_univ_ghost_l` + their `_mode` wrappers): its
+α-stack leaf RE-DERIVES the solve at a fresh opener γ and puts γ into the
+new constraint, so the invariant is CARRIED (a new premise) rather than
+re-derived — and γ misses `dom Ξs` by the re-derived solve's own freshness
+at `γ,Θ2`.  ⇒ those four lemmas gained the premise and the conjunct too.
+
+⚠️ **`a_looksub_ftv` cannot substitute for it.**  prop_sub_cstr.v:750's
+comment calls it "the STRUCTURAL bound `ftv 𝒞 ⊆ ftv P0 ∪ dom Ξc`"; that is
+loose prose.  The lemma is DISJUNCTIVE precisely because the five ∀ rules
+leak, and a leaked opener lands in the disjunct that says nothing about
+`dom Ξs`.
+
+#### ⚙ TRAPS PAID
+
+- ⚠️⚠️ **`repeat split` DISMANTLES an `[=]` through its `iff`.**  A conjunct
+  written `X ∩ Y [=] empty` costs every row TWO goals; the ∀ form
+  (`forall α0, α0 ∈ dom Ξs -> α0 ∉ …`) is one, and matches the neighbouring
+  avoid-set conjunct's shape.  (`[<=]` is safe — it is a bare `forall`.)
+- ⚠️ A destructuring pattern that is one component SHORT does not fail: the
+  last name silently binds the remaining CONJUNCTION, and the error surfaces
+  much later as "No product even after head-reduction" or a bullet
+  complaint.  Check the `as (…)` arity first when a row breaks oddly.
+- ⚙ `inter_dom_empty_of_avoid` / `inter_dom_empty_of_forall`
+  (prop_eq_cstr.v) convert between the ∀ form and the rule's set form.
+
+#### ⛔ WHAT IS LEFT OF THE LIFT
+
+consis, sub, split, pat, typing.  ⚠️ `a_extract_rel_e`'s conclusion carries a
+ρx column — `SS-ForallR`'s leak survives the extract — so the same currency
+continues upward.  §8c.25's prediction that it EASES above the extract
+(those judgements THREAD an output context, so siblings do see each other's
+inventions) is still unverified.

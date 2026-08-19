@@ -1985,6 +1985,40 @@ Proof.
   rel_perm HrQ'.
 Qed.
 
+(** ⭐⭐⭐ THE WRAPPER — and it is one [destruct], now that
+    [a_extract__solve] CARRIES the guard (2026-08-20, algo/def_rules.v).
+    The rung is CLOSED: [a_extract] lifts to [e_extract]. *)
+Lemma a_extract_rel_e : forall Θ1 NM α m P1 P1' Ξ1 Q1',
+  {{ Θ1 ⊢ P1 ⊳[ NM , α , m ] P1' ⤳ Ξ1 ↪ Q1' }}a ->
+  forall S0 Θ2 P2 P2' ρ V,
+  rel_pskl ρ V P1 P2 ->
+  rel_pskl ρ V P1' P2' ->
+  α `in` V ->
+  α `notin` cols_l ρ ->
+  α `notin` cols_r ρ ->
+  flex_agree_rel ρ V Θ1 Θ2 ->
+  V ∪ cols_l ρ [<=] ftvar_in_aenv Θ1 ->
+  dom Θ2 [<=] S0 ->
+  V ∪ cols_r ρ [<=] S0 ->
+  ftvar_in_pskl P2 ∪ ftvar_in_pskl P2' [<=] S0 ->
+  exists S1 ρx ρn Ξ2 Q2',
+    {{ S0 ↝ S1 ⊨ Θ2 ⊢ P2 ⊳[ NM , α , m ] P2' ⤳ Ξ2 ↪ Q2' }}e
+    /\ Ξ1 = flex_pairs_l ρn
+    /\ Ξ2 = flex_pairs_r ρn
+    /\ (forall a b, In (a, b) ρx ->
+          a `notin` ftvar_in_aenv Θ1 /\ b `notin` S0)
+    /\ rel_pskl (ρx ++ ρn ++ ρ) V Q1' Q2'.
+Proof.
+  intros Θ1 NM α m P1 P1' Ξ1 Q1' HD.
+  destruct HD as
+    [ Θ0 NM0 α0 m0 Ps Ps' ΞL ΞF ΞG C0 Q0 Q0' HL HF HG Hgd ].
+  intros S0 Θ2 P2 P2' ρ V HrP HrP' HαV Hαl Hαr Hagr Hscp1 HdΘ Hscp2 Hcov.
+  eapply a_extract_rel_e_gen;
+    [ exact HL | exact HF | exact HG | exact Hgd
+    | exact HrP | exact HrP' | exact HαV | exact Hαl | exact Hαr
+    | exact Hagr | exact Hscp1 | exact HdΘ | exact Hscp2 | exact Hcov ].
+Qed.
+
 (* ===================================================================== *)
 (*  ✅ WHAT THE NEXT BLOCK OWED — AND THE GUARD THAT NOW PAYS IT          *)
 (*                                                                        *)

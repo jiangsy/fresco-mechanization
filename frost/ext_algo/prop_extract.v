@@ -121,7 +121,7 @@ Proof.
   assert (HctxF : ftvar_in_aenv (Ξ ++ Θ0) [<=] S1)
     by (rewrite ftvar_in_aenv_app; clear - Hcov Hg1 Hin1 Hft1; fsetdec).
   (* the fold's block and output pay for the guess's context *)
-  pose proof (e_solve_cstr_block Hc) as [Hin2 [_ [_ Hft2]]].
+  pose proof (e_solve_cstr_block Hc) as [Hin2 [Hfr2 [_ Hft2]]].
   pose proof (e_solve_cstr_out_ftvar Hc) as Hq. simpl in Hq.
   assert (HctxG : ftvar_in_aenv (Ξs ++ Ξ ++ Θ0) [<=] S2).
   { repeat rewrite ftvar_in_aenv_app.
@@ -132,6 +132,12 @@ Proof.
     simpl. clear - HctxF Hcs. fsetdec.
   - eapply e_guess_sound;
       [ exact Hg | exact HctxG | clear - Hq Hcs Hg2; fsetdec ].
+  - (* ⭐ THE CROSS-LAYER FRESHNESS GUARD, and it is FREE here — which is the
+       faithfulness claim made good: the collection's constraints live in the
+       supply it has already SPENT ([Hcs]) and the fold's block is drawn
+       STRICTLY ABOVE that supply ([Hfr2]).  See [e_extract_solve_guard],
+       ext_algo/prop_lift.v, for the stand-alone statement. *)
+    clear - Hcs Hfr2. fsetdec.
 Qed.
 
 (** SUPPLY RESPECT — the three clusters' own, composed.  What the chain

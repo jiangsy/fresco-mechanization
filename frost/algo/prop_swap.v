@@ -1220,6 +1220,8 @@ Proof.
   - rewrite <- swap_aenv_app.
     pose proof (a_solve_cstr_swap a b _ _ _ _ _ H0) as h. exact h.
   - rewrite <- ! swap_aenv_app. apply a_guess_swap; auto.
+  - (* the CROSS-LAYER guard travels: a transposition is a bijection *)
+    apply swap_look_guard; assumption.
 Qed.
 
 (* ===================================================================== *)

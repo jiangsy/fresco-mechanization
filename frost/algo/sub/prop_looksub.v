@@ -2305,10 +2305,12 @@ Proof.
      the guess never see the looked-for variable — so the family is still
      the renamed look over the SAME solve and guess. *)
   inversion Hex as [ Θ0' NM' α'' m' Ps Ps' Ξl Ξs Ξg 𝒞l Q Q' Hlk Hsol Hgu
-                     HeqΘ HeqNM Heqα Heqm HeqP HeqP0 ]; subst.
+                     Hgd HeqΘ HeqNM Heqα Heqm HeqP HeqP0 ]; subst.
   exists (dom Ξl `union` ftvar_in_a_cstrs 𝒞l).
   intros α' Hα'.
-  eapply a_extract__solve; [ | eassumption | eassumption ].
+  (* ⚙ the CROSS-LAYER guard rides through untouched: [a_looksub_rename_var]
+     moves the SUBJECT and the marker and leaves [Ξl]/[𝒞l] alone. *)
+  eapply a_extract__solve; [ | eassumption | eassumption | eassumption ].
   assert (Hα'P : α' `notin`
                    ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α))).
   { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper

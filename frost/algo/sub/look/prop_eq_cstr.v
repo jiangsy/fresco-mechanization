@@ -208,6 +208,17 @@ Proof.
   exact (Hfr x H2 (Hsub x H1)).
 Qed.
 
+(** ⚙ …and its ∀-form input, which is how P6-Cs / P6-Ss report the fact. *)
+Lemma inter_dom_empty_of_forall : forall (S : atoms) (Ξ : aenv),
+  (forall α0, α0 `in` dom Ξ -> α0 `notin` S) ->
+  S ∩ dom Ξ [=] empty.
+Proof.
+  intros S Ξ Hfr.
+  apply AtomSetProperties.empty_is_empty_1.
+  intros x Hx. apply AtomSetFacts.inter_iff in Hx. destruct Hx as [H1 H2].
+  exact (Hfr x H2 H1).
+Qed.
+
 Lemma a_lookeq_all_flex_mono : forall Θ α P P0 Ξ 𝒞,
   {{ Θ ⊢ P ∼[ α ] P0 ⤳ Ξ ⨾ 𝒞 }}a -> all_flex_mono Ξ.
 Proof.
