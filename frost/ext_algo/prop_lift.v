@@ -73,7 +73,9 @@ Require Import src.frost.ext_algo.def_guess.
 Require Import src.frost.ext_algo.prop_guess.
 Require Import src.frost.ext_algo.prop_termination.
 Require Import src.frost.ext_algo.def_look.
+Require Import src.frost.ext_algo.prop_look.
 Require Import src.frost.ext_algo.def_solve.
+Require Import src.frost.ext_algo.def_extract.
 Require Import src.frost.ext_algo.prop_solve.
 Require Import src.frost.ext_algo.prop_solve_det.
 Require Import src.frost.ext_algo.prop_solve_rel.
@@ -567,7 +569,11 @@ Lemma a_guess_mono_rel_e : forall Θ1 P1 Ξ1 A1,
   forall S0 P2 ρ V,
   rel_pskl ρ V P1 P2 ->
   V [<=] ftvar_in_aenv Θ1 ->
-  V ∪ cols_r ρ ∪ ftvar_in_pskl P2 [<=] S0 ->
+  (* ⚙ [cols_r ρ] is GONE from the coverage too (2026-08-19): its only use
+     was [β2 ∉ cols_r ρ] at the ∀ row, which the PAIR RESTRICTION now buys.
+     The extract rung needs the weaker form — its ρ carries the fold's own
+     leaked openers, which no single supply covers. *)
+  V ∪ ftvar_in_pskl P2 [<=] S0 ->
   exists S1 ρn Ξ2 A2,
     e_guess_mono S0 P2 S1 Ξ2 A2
     /\ Ξ1 = flex_pairs_l ρn /\ Ξ2 = flex_pairs_r ρn
@@ -589,7 +595,7 @@ Proof.
     match goal with
     | Hb : rel_pskl ρ V P ?X |- _ => rename Hb into Hbody; rename X into Q0
     end.
-    assert (Hcov : V ∪ cols_r ρ ∪ ftvar_in_pskl Q0 [<=] S0)
+    assert (Hcov : V ∪ ftvar_in_pskl Q0 [<=] S0)
       by (clear - Hscp2; simpl in *; fsetdec).
     destruct (IHHG S0 Q0 ρ V Hbody Hscp1 Hcov)
       as (S1 & ρn & Ξ2 & A2 & HG2 & E1 & E2 & Hrel').
@@ -618,12 +624,12 @@ Proof.
         rename Ha into HrelA; rename Hb into HrelB;
         rename X into Q0a; rename Y into Q0b
     end.
-    assert (HcovA : V ∪ cols_r ρ ∪ ftvar_in_pskl Q0a [<=] S0)
+    assert (HcovA : V ∪ ftvar_in_pskl Q0a [<=] S0)
       by (clear - Hscp2; simpl in *; fsetdec).
     destruct (IHHG1 S0 Q0a ρ V HrelA Hscp1 HcovA)
       as (S1 & ρnA & Ξ2a & A2a & HG2a & E1a & E2a & HrelA').
     pose proof (e_guess_mono_supply_grows HG2a) as Hgr1.
-    assert (HcovB : V ∪ cols_r ρ ∪ ftvar_in_pskl Q0b [<=] S1)
+    assert (HcovB : V ∪ ftvar_in_pskl Q0b [<=] S1)
       by (clear - Hscp2 Hgr1; simpl in *; fsetdec).
     destruct (IHHG2 S1 Q0b ρ V HrelB Hscp1 HcovB)
       as (S2 & ρnB & Ξ2b & B2b & HG2b & E1b & E2b & HrelB').
@@ -673,10 +679,9 @@ Proof.
       by (apply ftvar_in_pskl_open_pskl_wrt_pskl_upper).
     assert (Hcr0 : cols_r (restrict_pairs β β2 ρ) [<=] cols_r ρ)
       by apply cols_r_restrict_pairs.
-    assert (Hscp2' : V ∪ cols_r ((β, β2) :: restrict_pairs β β2 ρ)
-                     ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q0 (pskl_var_f β2))
+    assert (Hscp2' : V ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q0 (pskl_var_f β2))
                        [<=] add β2 S0)
-      by (simpl in *; clear - Hscp2 Hup Hcr0; fsetdec).
+      by (simpl in *; clear - Hscp2 Hup; fsetdec).
     destruct (IHHG (add β2 S0) (open_pskl_wrt_pskl Q0 (pskl_var_f β2))
                 ((β, β2) :: restrict_pairs β β2 ρ) V Hrelo Hscp1' Hscp2')
       as (S1 & ρn & Ξ2 & A2 & HG2 & E1 & E2 & Hrel').
@@ -713,7 +718,7 @@ Lemma a_guess_rel_e : forall Θ1 NM Q1 Ξ1 Q1',
   forall S0 Q2 ρ V,
   rel_pskl ρ V Q1 Q2 ->
   V [<=] ftvar_in_aenv Θ1 ->
-  V ∪ cols_r ρ ∪ ftvar_in_pskl Q2 [<=] S0 ->
+  V ∪ ftvar_in_pskl Q2 [<=] S0 ->
   exists S1 ρn Ξ2 Q2',
     e_guess S0 NM Q2 S1 Ξ2 Q2'
     /\ Ξ1 = flex_pairs_l ρn /\ Ξ2 = flex_pairs_r ρn
@@ -814,7 +819,7 @@ Proof.
     match goal with
     | HG : a_guess_mono Θ P Ξ ?AA |- _ => rename HG into Hguess
     end.
-    assert (HcovG : V ∪ cols_r ρ ∪ ftvar_in_pskl P3 [<=] S0)
+    assert (HcovG : V ∪ ftvar_in_pskl P3 [<=] S0)
       by (clear - Hscp2 Hcov; fsetdec).
     destruct (a_guess_mono_rel_e Hguess HrelP Hscp1 HcovG)
       as (S1 & ρn & Ξ2g & A2 & HG2 & E1 & E2 & Hrel').
@@ -1780,6 +1785,183 @@ Proof.
       rewrite ftvar_in_aenv_app in Ha.
       split; [ clear - Ha; fsetdec | clear - Hb Hgr1; fsetdec ]. }
     rel_perm HrelB'.
+Qed.
+
+(* ===================================================================== *)
+(*  §8  ⭐⭐ THE EXTRACT ROW — look, fold, guess, COMPOSED                  *)
+(*                                                                        *)
+(*  [a_extract] has ONE rule and it is §3 → §7 → §4.  Every premise of the *)
+(*  three transports is now available at the composition EXCEPT one, and   *)
+(*  that one is carried here as an explicit hypothesis:                    *)
+(*                                                                        *)
+(*      ftvar_in_a_cstrs 𝒞 ∩ dom Ξs [=] empty                             *)
+(*                                                                        *)
+(*  — the FOLD's generated flexibles are fresh for the constraints it is  *)
+(*  solving.  ⛔ WHY IT IS OWED, and it is the SAME species as the         *)
+(*  cross-half guard one layer down.  The collection LEAKS openers into    *)
+(*  [𝒞] (all five ∀ rows do), and those openers are bound NOWHERE — not in *)
+(*  [Θ0], not in [Ξ].  The fold then runs at [Ξ ++ Θ0] and [SE-FlexR]'s    *)
+(*  guess draws its flexibles fresh for [ftvar_in_aenv (Ξ ++ Θ0)] ONLY, so *)
+(*  it may draw a leaked opener.  Side 1 then reads that atom as FLEXIBLE  *)
+(*  (it is in [Ξs]) where side 2 reads its counterpart as a rigid free     *)
+(*  atom — no [flex_agree_rel] between the two contexts exists, which is   *)
+(*  precisely §7's premise, and it is the configuration                    *)
+(*  cex/probe_extract_conflated_opener.v refutes one level down.           *)
+(*                                                                        *)
+(*  ⭐ UNLIKE the solve layer's ∀-binders, this one IS expressible at the   *)
+(*  rule: [𝒞] and [Ξs] are both named in [a_extract__solve]'s premises.    *)
+(*  Transport 5's [∀ (a,b) ∈ ρx, a ∈ ftvar_in_a_cstrs 𝒞₁] is what connects *)
+(*  the guard to the pair columns.  ⇒ landing it is a RULE CHANGE          *)
+(*  ([paper-gap] + docs/PAPER-GAPS.md), and this lemma is the proof that   *)
+(*  it is exactly what the rung needs — nothing weaker, nothing more.      *)
+(* ===================================================================== *)
+
+Lemma a_extract_rel_e_gen :
+  forall Θ1 α m NM P1 P1' Ξ1L C1 Ξ1F Q1 Ξ1G Q1',
+  {{ Θ1 ⊢ P1 ≼[ α , m ] P1' ⤳ Ξ1L ⨾ C1 }}a ->
+  {{ (Ξ1L ++ Θ1) ⊩ C1 ⨾ pskl_hole ⤳ Ξ1F ⨾ Q1 }}a ->
+  a_guess (Ξ1F ++ Ξ1L ++ Θ1) NM Q1 Ξ1G Q1' ->
+  (* ⛔ THE GUARD THE ROW OWES — see the box above. *)
+  ftvar_in_a_cstrs C1 ∩ dom Ξ1F [=] empty ->
+  forall S0 Θ2 P2 P2' ρ V,
+  rel_pskl ρ V P1 P2 ->
+  rel_pskl ρ V P1' P2' ->
+  α `in` V ->
+  α `notin` cols_l ρ ->
+  α `notin` cols_r ρ ->
+  flex_agree_rel ρ V Θ1 Θ2 ->
+  V ∪ cols_l ρ [<=] ftvar_in_aenv Θ1 ->
+  dom Θ2 [<=] S0 ->
+  V ∪ cols_r ρ [<=] S0 ->
+  ftvar_in_pskl P2 ∪ ftvar_in_pskl P2' [<=] S0 ->
+  exists S1 ρx ρn Ξ2 Q2',
+    {{ S0 ↝ S1 ⊨ Θ2 ⊢ P2 ⊳[ NM , α , m ] P2' ⤳ Ξ2 ↪ Q2' }}e
+    /\ (Ξ1L ++ Ξ1F ++ Ξ1G) = flex_pairs_l ρn
+    /\ Ξ2 = flex_pairs_r ρn
+    /\ (forall a b, In (a, b) ρx ->
+          a `notin` ftvar_in_aenv Θ1 /\ b `notin` S0)
+    /\ rel_pskl (ρx ++ ρn ++ ρ) V Q1' Q2'.
+Proof.
+  intros Θ1 α m NM P1 P1' Ξ1L C1 Ξ1F Q1 Ξ1G Q1' HL HF HG Hguard.
+  intros S0 Θ2 P2 P2' ρ V HrP HrP' HαV Hαl Hαr Hagr Hscp1 HdΘ Hscp2 Hcov.
+
+  (* ---- STEP 1: the collection, transport 5 (prop_solve_rel.v §7) ---- *)
+  assert (HcovL : V ∪ cols_r ρ ∪ ftvar_in_pskl P2 ∪ ftvar_in_pskl P2' [<=] S0)
+    by (clear - Hscp2 Hcov; fsetdec).
+  pose proof (proj1 a_looksub_lookeq_rel_e) as HTL.
+  destruct (HTL _ _ _ _ _ _ _ HL S0 Θ2 P2 P2' ρ V
+              HrP HrP' HαV Hαl Hαr Hagr HcovL)
+    as (S1 & ρxL & ρnL & Ξ2L & C2 & DL & E1L & E2L
+        & HρL & HxrL & HxaL & HxlL & HrC).
+  pose proof (e_looksub_supply_grows DL) as HgL.
+  pose proof (e_looksub_generated_in_supply DL) as HiL.
+  pose proof (dom_flex_pairs_l ρnL) as HdflL. rewrite <- E1L in HdflL.
+  pose proof (dom_flex_pairs_r ρnL) as HdfrL. rewrite <- E2L in HdfrL.
+
+  (* the two columns of ρnL are the two blocks, and both are apart from
+     everything the caller knows *)
+  assert (HnLl : cols_l ρnL ∩ (V ∪ cols_l ρ) [=] empty).
+  { assert (Hd : cols_l ρnL ∩ ftvar_in_aenv Θ1 [=] empty).
+    { intros x. split; intros Hx; [ | clear - Hx; fsetdec ].
+      exfalso.
+      assert (Hxl : x `in` cols_l ρnL) by (clear - Hx; fsetdec).
+      destruct (cols_l_in_inv _ _ Hxl) as [b Hin].
+      assert (Hin' : In (x, b) (ρxL ++ ρnL))
+        by (apply in_or_app; right; exact Hin).
+      destruct (HρL _ _ Hin') as [Ha _]. clear - Ha Hx. fsetdec. }
+    clear - Hd Hscp1. fsetdec. }
+  assert (HnLr : cols_r ρnL ∩ (V ∪ cols_r ρ) [=] empty).
+  { assert (Hd : cols_r ρnL ∩ S0 [=] empty).
+    { intros x. split; intros Hx; [ | clear - Hx; fsetdec ].
+      exfalso.
+      assert (Hxr : x `in` cols_r ρnL) by (clear - Hx; fsetdec).
+      destruct (cols_r_in_inv _ _ Hxr) as [a Hin].
+      assert (Hin' : In (a, x) (ρxL ++ ρnL))
+        by (apply in_or_app; right; exact Hin).
+      destruct (HρL _ _ Hin') as [_ [_ Hb]]. clear - Hb Hx. fsetdec. }
+    clear - Hd Hscp2. fsetdec. }
+
+  (* ---- STEP 2: the fold, §7, at the two extended contexts ---- *)
+  assert (HagrN : flex_agree_rel (ρnL ++ ρ) V (Ξ1L ++ Θ1) (Ξ2L ++ Θ2)).
+  { rewrite E1L, E2L. apply flex_agree_rel_push_pairs;
+      [ exact Hagr | exact HnLl | exact HnLr ]. }
+  assert (HagrF : flex_agree_rel (ρxL ++ ρnL ++ ρ) V (Ξ1L ++ Θ1) (Ξ2L ++ Θ2)).
+  { apply flex_agree_rel_extend_nonflex; [ exact HagrN | ].
+    intros a b Hin.
+    assert (Hin' : In (a, b) (ρxL ++ ρnL))
+      by (apply in_or_app; left; exact Hin).
+    destruct (HρL _ _ Hin') as [Ha [_ Hb]].
+    assert (Hal : a `in` cols_l ρxL) by (eapply cols_l_in; exact Hin).
+    assert (Har : b `in` cols_r ρxL) by (eapply cols_r_in; exact Hin).
+    pose proof (dom_subset_ftvar_in_aenv Θ1) as Hd1.
+    split; intros Hfl; apply a_flex_tvar_in_dom in Hfl;
+      rewrite dom_app in Hfl.
+    - clear - Hfl Ha Hal HxlL Hd1. fsetdec.
+    - clear - Hfl Hb Har HxrL HdΘ. fsetdec. }
+  assert (Hscp1F : V [<=] ftvar_in_aenv (Ξ1L ++ Θ1))
+    by (rewrite ftvar_in_aenv_app; clear - Hscp1; fsetdec).
+  pose proof (a_solve_cstr_block_fresh_set HF) as HgfF.
+  rewrite ftvar_in_aenv_app in HgfF.
+  assert (HxsubL : cols_l ρxL [<=] ftvar_in_a_cstrs C1).
+  { intros x Hx. destruct (cols_l_in_inv _ _ Hx) as [b Hin].
+    exact (HxaL _ _ Hin). }
+  assert (HbFx : dom Ξ1F ∩ cols_l ρxL [=] empty)
+    by (clear - Hguard HxsubL; fsetdec).
+  assert (HbFn : dom Ξ1F ∩ cols_l ρnL [=] empty).
+  { pose proof (dom_subset_ftvar_in_aenv Ξ1L) as Hds.
+    clear - HgfF Hds HdflL. fsetdec. }
+  assert (HbFr : dom Ξ1F ∩ cols_l ρ [=] empty)
+    by (clear - HgfF Hscp1; fsetdec).
+  assert (HblkF : dom Ξ1F ∩ cols_l (ρxL ++ ρnL ++ ρ) [=] empty)
+    by (rewrite ! cols_l_app; clear - HbFx HbFn HbFr; fsetdec).
+  assert (HdΘF : dom (Ξ2L ++ Θ2) [<=] S1)
+    by (rewrite dom_app; clear - HiL HdΘ HgL; fsetdec).
+  assert (HxrS : cols_r ρxL [<=] S1).
+  { intros x Hx. destruct (cols_r_in_inv _ _ Hx) as [a Hin].
+    assert (Hin' : In (a, x) (ρxL ++ ρnL))
+      by (apply in_or_app; left; exact Hin).
+    destruct (HρL _ _ Hin') as [_ [Hb _]]. exact Hb. }
+  assert (HnrS : cols_r ρnL [<=] S1)
+    by (clear - HdfrL HiL; fsetdec).
+  assert (Hscp2F : V ∪ cols_r (ρxL ++ ρnL ++ ρ) [<=] S1)
+    by (rewrite ! cols_r_app; clear - Hscp2 HgL HxrS HnrS; fsetdec).
+  assert (HcovF : ftvar_in_pskl pskl_hole ∪ ftvar_in_a_cstrs C2 [<=] S1).
+  { assert (HcC : ftvar_in_a_cstrs C2 [<=] S1)
+      by (eapply e_looksub_cstr_ftvar; [ exact DL | clear - Hcov; fsetdec ]).
+    simpl. clear - HcC. fsetdec. }
+  destruct (a_solve_cstr_rel_e HF (rel_pskl__hole (ρxL ++ ρnL ++ ρ) V) HrC
+              HagrF Hscp1F HblkF HdΘF Hscp2F HcovF)
+    as (S2 & ρxF & ρnF & Ξ2F & Q2 & DF & E1F & E2F & HρF & HrQ).
+  pose proof (e_solve_cstr_supply_grows DF) as HgF.
+
+  (* ---- STEP 3: the guess, §4, at the three-block context ---- *)
+  assert (HrQ'' : rel_pskl (ρxF ++ ρnF ++ ρxL ++ ρnL ++ ρ) V Q1 Q2)
+    by rel_perm HrQ.
+  assert (Hscp1G : V [<=] ftvar_in_aenv (Ξ1F ++ Ξ1L ++ Θ1))
+    by (rewrite ! ftvar_in_aenv_app; clear - Hscp1; fsetdec).
+  assert (HcovG : V ∪ ftvar_in_pskl Q2 [<=] S2).
+  { pose proof (e_solve_cstr_out_ftvar DF) as Hout. simpl in Hout.
+    clear - Hout Hscp2 HgL HgF HcovF. fsetdec. }
+  destruct (a_guess_rel_e HG HrQ'' Hscp1G HcovG)
+    as (S3 & ρnG & Ξ2G & Q2' & DG & E1G & E2G & HrQ').
+
+  (* ---- the answer ---- *)
+  exists S3, (ρxF ++ ρxL), (ρnL ++ ρnF ++ ρnG), (Ξ2L ++ Ξ2F ++ Ξ2G), Q2'.
+  split; [ eapply e_extract__solve; [ exact DL | exact DF | exact DG ] | ].
+  split;
+    [ rewrite ! flex_pairs_l_app; rewrite <- E1L, <- E1F, <- E1G; reflexivity | ].
+  split;
+    [ rewrite ! flex_pairs_r_app; rewrite <- E2L, <- E2F, <- E2G; reflexivity | ].
+  split.
+  { intros a b Hin. apply in_app_or in Hin. destruct Hin as [Hin | Hin].
+    - destruct (HρF _ _ Hin) as [Ha Hb].
+      rewrite ftvar_in_aenv_app in Ha.
+      split; [ clear - Ha; fsetdec | clear - Hb HgL; fsetdec ].
+    - assert (Hin' : In (a, b) (ρxL ++ ρnL))
+        by (apply in_or_app; left; exact Hin).
+      destruct (HρL _ _ Hin') as [Ha [_ Hb]].
+      split; [ clear - Ha; fsetdec | exact Hb ]. }
+  rel_perm HrQ'.
 Qed.
 
 (* ===================================================================== *)
