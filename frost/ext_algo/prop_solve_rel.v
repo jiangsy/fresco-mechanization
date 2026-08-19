@@ -1483,6 +1483,59 @@ Proof.
     eapply rel_pskl_mono; eauto.
 Qed.
 
+(** ⭐ DROPPING AN UNUSED PAIR.  [rel_a_cstrs] only ever consults a pair at
+    an OCCURRENCE of its left atom, so a pair whose left atom is absent from
+    the constraint list is inert and can be deleted.  ⚙ Transport 5's ∀ rows
+    need it: they leak an opener into ρx whether or not it surfaces in 𝒞,
+    and the ones that do not surface are exactly the ones no later consumer
+    can say anything about. *)
+Lemma rel_atom_drop_head : forall a b ρ V x y,
+  rel_atom ((a, b) :: ρ) V x y -> x <> a -> rel_atom ρ V x y.
+Proof.
+  intros a b ρ V x y H Hne.
+  inversion H; subst.
+  - match goal with
+    | Hin : In _ ((a, b) :: ρ) |- _ =>
+        destruct Hin as [E | Hin'];
+          [ inversion E; subst; congruence
+          | apply rel_atom__pair; exact Hin' ]
+    end.
+  - apply rel_atom__id; assumption.
+Qed.
+
+Lemma rel_pskl_drop_head : forall a b ρ V P1 P2,
+  rel_pskl ((a, b) :: ρ) V P1 P2 ->
+  a `notin` ftvar_in_pskl P1 ->
+  rel_pskl ρ V P1 P2.
+Proof.
+  intros a b ρ V P1 P2 H; induction H; intros Ha; simpl in Ha;
+    constructor; try (apply IHrel_pskl || (apply IHrel_pskl1 + apply IHrel_pskl2));
+    try (clear - Ha; fsetdec).
+  eapply rel_atom_drop_head; [ eassumption | clear - Ha; fsetdec ].
+Qed.
+
+Lemma rel_a_cstr_drop_head : forall a b ρ V c1 c2,
+  rel_a_cstr ((a, b) :: ρ) V c1 c2 ->
+  a `notin` ftvar_in_a_cstr c1 ->
+  rel_a_cstr ρ V c1 c2.
+Proof.
+  intros a b ρ V c1 c2 H Ha; inversion H; subst; simpl in Ha.
+  - constructor. eapply rel_pskl_drop_head; [ eassumption | exact Ha ].
+  - constructor. eapply rel_pskl_drop_head; [ eassumption | exact Ha ].
+Qed.
+
+Lemma rel_a_cstrs_drop_head : forall a b ρ V C1 C2,
+  rel_a_cstrs ((a, b) :: ρ) V C1 C2 ->
+  a `notin` ftvar_in_a_cstrs C1 ->
+  rel_a_cstrs ρ V C1 C2.
+Proof.
+  intros a b ρ V C1 C2 H; induction H as [ | c1 c2 C1' C2' Hc HC IH ];
+    intros Ha; [ constructor | ].
+  simpl in Ha. constructor.
+  - eapply rel_a_cstr_drop_head; [ exact Hc | clear - Ha; fsetdec ].
+  - apply IH. clear - Ha. fsetdec.
+Qed.
+
 Lemma rel_a_cstrs_mono : forall ρ ρ' V V' C1 C2,
   rel_a_cstrs ρ V C1 C2 ->
   (forall a b, In (a, b) ρ -> In (a, b) ρ') ->

@@ -5486,6 +5486,56 @@ So the premise is about the DERIVATION, and WHERE it is discharged
 the next session opens on.  It belongs in docs/PAPER-GAPS.md once
 machine-checked.
 
+#### ⭐ THE EXTRACT RUNG, FULLY SCOPED — what the guard still owes transport 5
+
+With the guard landed, `a_extract`'s lift is the composition
+
+    §3 (look, transport 5)  →  §7 (fold)  →  §4 (guess)
+
+and each step's premises are available EXCEPT one, which is worth writing
+down because deriving it took a full pass.
+
+**THE FOLD'S `flex_agree_rel` NEEDS ρx TO BE NON-FLEX ON SIDE 1.**  Step 2
+calls `a_solve_cstr_rel_e` at `ρ' := ρxL ++ ρnL ++ ρ` over the contexts
+`Ξ ++ Θ1` and `ΞL2 ++ Θ2`.  For the ρn pairs `flex_agree_rel_push_pairs`
+does it, for ρ it is inherited, and for the ρx pairs (the collection's
+LEAKED OPENERS) `flex_agree_rel_extend_nonflex` wants `¬ a_flex_tvar` on
+both sides.  Side 2 is already a conclusion of transport 5
+(`cols_r ρx ∩ dom Ξ2 [=] empty`, plus `b ∉ S0 ⊇ dom Θ2`).  **Side 1 is
+not**: nothing says a leaked opener misses `dom Ξ1`.
+
+**⚠️ AND THE GUARD ALONE DOES NOT GIVE IT.**  The guard is about
+`ftvar_in_a_cstrs`, and transport 5 puts an opener into ρx whether or not
+it SURFACES in 𝒞.  An opener that surfaces nowhere is invisible to any
+conclusion-level side condition — so the arrow row's four-case analysis has
+a hole exactly at "half 1's opener never occurs in `𝒞₁` and equals half 2's
+flexible".
+
+**⇒ TRANSPORT 5 MUST DROP THE UNUSED OPENERS.**  Its five ∀ rows case-split
+on `β ∈ ftvar_in_a_cstrs 𝒞`: if it surfaces, keep the pair as now; if not,
+hand back `ρx` unchanged and drop `(β, β2)` from the relation.  ✅ **The kit
+for that is landed** — `rel_atom_drop_head` / `rel_pskl_drop_head` /
+`rel_a_cstr(s)_drop_head` (prop_solve_rel.v §6): a pair whose left atom is
+absent from the constraint list is INERT and deletable.
+
+Then transport 5's conclusion gains two conjuncts, and both go through:
+
+    (A)  forall a b, In (a,b) ρx -> a `in` ftvar_in_a_cstrs 𝒞₁
+    (B)  cols_l ρx ∩ dom Ξ₁ [=] empty
+
+- (A) is immediate in the ∀ rows (that is what the case split buys) and
+  monotone in the arrow rows (`ftvar 𝒞₁ₐ ⊆ ftvar (𝒞₁ₐ ++ 𝒞₁_b)`).
+- (B): ρx = · rows are trivial; the ∀ rows add `β`, and
+  `a_looksub_binder_not_generated` puts it off `dom Ξ`; the ARROW rows are
+  the four-case analysis, and (A) is what makes the two cross cases land on
+  the guard's two conjuncts — `ftvar 𝒞₁ₐ ∩ dom Ξ₁_b` and
+  `ftvar 𝒞₁_b ∩ dom Ξ₁ₐ` — with the within-half cases coming from the IHs.
+
+⚙ Budget: 14 of the 19 rows inherit both conjuncts verbatim; the five ∀
+rows gain ~20 lines each (the split) and the two arrow rows ~20 each.  After
+that §8 (the extract lift itself) is one row: look, fold, guess, with the
+blocks read off as `flex_pairs_l (ρnL ++ ρnF ++ ρnG)` by `flex_pairs_l_app`.
+
 #### ⚙ COST, AND WHAT IT SAYS ABOUT THE REMAINING BUDGET
 
 `prop_lift.v` is 21.6 s for ~1570 lines.  §8c.24's three performance rules
