@@ -1816,6 +1816,27 @@ Qed.
 (*  it is exactly what the rung needs — nothing weaker, nothing more.      *)
 (* ===================================================================== *)
 
+(** ⭐ AND THE GUARD COSTS THE THREADED ENCODING NOTHING — a THEOREM, not an
+    argument, exactly as [e_looksub_lookeq_cstr_old] is for the CROSS-HALF
+    guard one layer down.  The collection's constraints live in the supply it
+    has already spent, and the fold's block is drawn STRICTLY ABOVE that
+    supply; the two cannot meet.  ⇒ if [a_extract__solve] takes the guard as
+    a premise, [e_extract_sound] discharges it from facts its proof already
+    computes ([e_looksub_cstr_ftvar] and [e_solve_cstr_block] are both
+    already [pose proof]ed there), so the rule change is faithful to the
+    implementation by construction. *)
+Lemma e_extract_solve_guard : forall S0 S1 S2 Θ0 α m P P' Ξ C Ξs Q,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
+  {{ S1 ↝ S2 ⊨ (Ξ ++ Θ0) ⊩ C ⨾ pskl_hole ⤳ Ξs ⨾ Q }}e ->
+  ftvar_in_pskl P ∪ ftvar_in_pskl P' [<=] S0 ->
+  ftvar_in_a_cstrs C ∩ dom Ξs [=] empty.
+Proof.
+  intros * Hl Hc Hcov.
+  pose proof (e_looksub_cstr_ftvar Hl Hcov) as Hcs.
+  pose proof (e_solve_cstr_block Hc) as [_ [Hfr _]].
+  clear - Hcs Hfr. fsetdec.
+Qed.
+
 Lemma a_extract_rel_e_gen :
   forall Θ1 α m NM P1 P1' Ξ1L C1 Ξ1F Q1 Ξ1G Q1',
   {{ Θ1 ⊢ P1 ≼[ α , m ] P1' ⤳ Ξ1L ⨾ C1 }}a ->

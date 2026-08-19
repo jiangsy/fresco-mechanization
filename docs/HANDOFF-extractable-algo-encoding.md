@@ -5802,3 +5802,135 @@ substance: `a_looksub_lookeq_rel_e` (prop_solve_rel.v §7) composed with
 `e_looksub_sound` rederives any collection with a supply-fresh block — what
 has to be added is transporting the `{{ 𝒞 ⊩ ψa ⤳ Ψa }}da` solvetag
 obligation across `rel_a_cstrs`.
+
+### 8c.26 ⭐⭐⭐ THE EXTRACT RUNG COMPOSES — one obstruction RETIRED, the other REDUCED TO A NAMED SIDE CONDITION (2026-08-19)
+
+✅ **`make coq` rc=0, `README.v` 33/33, zero `Admitted`/`Axiom`.**  Two
+commits, `89555ab` and `e0c3809`.
+
+§8c.25's last box named TWO obstructions on the extract rung.  The first is
+GONE; the second is now a single, named, machine-checked side condition, and
+`prop_lift.v` §8 (`a_extract_rel_e_gen`, `Closed under the global context`)
+is the proof that it is EXACTLY what the rung needs — nothing weaker,
+nothing more.
+
+#### ✅ OBSTRUCTION 1 IS RETIRED — the scoping premise SPLITS, and the PAIR RESTRICTION pays for the half that could not be satisfied
+
+The solve transports carried one premise, `V ∪ cols_l ρ [<=] ftvar_in_aenv
+Θ1`, and it is unsatisfiable at the extract (ρ carries the collection's
+leaked openers, bound nowhere).  ⭐ **It had TWO jobs and they separate:**
+
+| job | row | new premise |
+|---|---|---|
+| `β ∉ V` | the five ∀ rows | `V [<=] ftvar_in_aenv Θ1` |
+| `β ∉ cols_l ρ` | the five ∀ rows | — **the PAIR RESTRICTION** |
+| the new block dodges the pair columns | the four ARROW rows | `dom Ξ1 ∩ cols_l ρ [=] empty` |
+
+⭐⭐ **THE PAIR RESTRICTION** (prop_solve_rel.v §6, new).  `restrict_pairs
+β1 β2 ρ` DELETES every pair whose LEFT atom is `β1` or whose RIGHT atom is
+`β2`, and `rel_pskl_restrict` says that is invisible to a relation whose two
+sides are already fresh for the two atoms — which is exactly a binder row's
+input, **BEFORE it opens**.  So `rel_pskl_close_pair`'s `β1 ∉ cols_l ρ` is
+bought BY CONSTRUCTION instead of by a scoping premise side 1 has no supply
+to satisfy.  `rel_pskl_close_pair_restrict` packages the whole ∀-row move
+(restrict → open → IH → bubble → close → widen back by `rel_pskl_mono`), and
+all six binder rows go through it in one line each.
+
+⚙ With that, `flex_agree_rel_push_tvar_pair` has no user left at a binder
+row: the WEAK `flex_agree_rel_push_look` (only `β ∉ dom Θ1` / `β2 ∉ dom Θ2`)
+does every one.  §8c.25 predicted this half was free; it is.
+
+⚙ Third premise deleted, not added: §4's coverage loses `cols_r ρ` — its
+only use was `β2 ∉ cols_r ρ`, which the restriction also buys.
+
+⚙ New in prop_lift.v: `a_solve_cstr_block_fresh_set` (the SET form of
+`a_solve_cstr_generated_fresh`; prop_look_pair.v has one, but that file is a
+heavy dependency for a single fact) and the `in_incl` tactic.
+
+#### ⛔ OBSTRUCTION 2 IS NOW ONE NAMED SIDE CONDITION, AND IT IS A RULE CHANGE
+
+    ftvar_in_a_cstrs 𝒞 ∩ dom Ξs [=] empty        on [a_extract__solve]
+
+*the FOLD's generated flexibles are fresh for the constraints it is
+solving.*  ⛔ **WHY IT IS OWED** — the same species as the CROSS-HALF guard,
+one layer up.  The collection LEAKS openers into `𝒞` (all five ∀ rows do)
+and they are bound NOWHERE — not in `Θ0`, not in `Ξ`.  The fold then runs at
+`Ξ ++ Θ0` and `SE-FlexR`'s guess draws its flexibles fresh for
+`ftvar_in_aenv (Ξ ++ Θ0)` ONLY, so it may draw one.  Side 1 then reads that
+atom as FLEXIBLE (it is in `Ξs`) where side 2 reads its counterpart as a
+rigid free atom — `SE-FlexR` fires on one side and no rule matches on the
+other.  ⇒ no `flex_agree_rel` between the two contexts exists, which is
+precisely §7's premise, and it is exactly the configuration
+`cex/probe_extract_conflated_opener.v` refutes one level down.
+
+⭐ **UNLIKE the solve layer's ∀-binders, this one IS expressible at the
+rule**: `𝒞` and `Ξs` are both named in `a_extract__solve`'s premises.
+Transport 5's `∀ (a,b) ∈ ρx, a ∈ ftvar_in_a_cstrs 𝒞₁` (landed `90f7076`) is
+what connects the guard to the pair columns.
+
+✅ **AND IT COSTS THE THREADED ENCODING NOTHING — a THEOREM**,
+`e_extract_solve_guard` (prop_lift.v §8, five lines): the collection's
+constraints live in the supply it has already spent
+(`e_looksub_cstr_ftvar`) and the fold's block is drawn STRICTLY ABOVE that
+supply (`e_solve_cstr_block`).  Both facts are ALREADY `pose proof`ed inside
+`e_extract_sound`, so that site's discharge is two lines.
+
+#### ⚙ THE COSTING OF THE RULE CHANGE — 20 sites, 19 cheap, ONE that is a campaign
+
+`a_extract__solve` has far fewer construction sites than `a_looksub__arrow`
+did (20 vs 31+):
+
+| site | count | cost |
+|---|---|---|
+| `test/test_examples.v` | 9 | concrete `𝒞`/`Ξs` — `fsetdec` |
+| `cex/probe_flexr_repair.v` | 2 | concrete |
+| `ext_algo/prop_extract.v` (`e_extract_sound`) | 1 | ✅ `e_extract_solve_guard`, two lines |
+| `algo/prop_swap.v` | 1 | ✅ a transposition is a bijection — `swap_cstrs_ftv_notin` already exists (it was added for the cross-half guard) |
+| `algo/sub/prop_looksub.v` (`a_extract_family_of_instance`) | 1 | 🟡 the collection is RENAMED there, so `L` grows by `dom Ξs`; small |
+| `algo/sub/look/prop_extract.v` (**P6-L**) | 2 | ⛔ **the campaign** |
+
+⛔ **WHY P6-L IS THE CAMPAIGN, and it is NOT a missing `fsetdec`.**  Both of
+its sites get `𝒞`, `Ξc`, `Ξs` from ONE call to
+`a_looksub_solve_complete_gen` (prop_sub_cstr.v:670).  That theorem already
+has an AVOID-SET PARAMETER `L` with the output conjunct
+`∀ α0 ∈ dom Ξs, α0 ∉ L` — but **`L` is chosen BEFORE `𝒞` exists** (`𝒞` is
+existential in the same conclusion), so it cannot absorb
+`ftvar_in_a_cstrs 𝒞`.  ⇒ the guard has to become an OUTPUT CONJUNCT proved
+INSIDE that induction, and its arrow rows will then face a cross-half
+obligation of exactly the shape the landed guard has (half 1's constraints
+vs half 2's solve block).
+
+⛔ **AND IT IS NOT DERIVABLE FROM THE EXISTING BOUND.**
+prop_sub_cstr.v:750's comment says "the STRUCTURAL bound
+`ftv 𝒞 ⊆ ftv P0 ∪ dom Ξc` is already available as `a_looksub_ftv`" — that is
+loose prose.  `a_looksub_ftv` is **DISJUNCTIVE** (`α0 ∈ ftv P' ∪ dom Ξ` OR
+`α0 ∉ ftvar_in_aenv Θ`), and its own header says why: the five ∀ rules leak,
+so the exact bound is FALSE.  A leaked opener lands in the SECOND disjunct,
+which says nothing about `dom Ξs`.
+
+⚙ A cheaper PLACEMENT was considered and is not cheaper: putting the guard
+on `a_solve_cstr__eq` (the head's block dodges the whole constraint list)
+needs the tail row to see the constraints ALREADY CONSUMED, so it wants an
+extra index — and the discharge still lands on P6-Ss, which builds the fold.
+
+#### ⭐⭐ THE DIAGNOSTIC, FOURTH CONFIRMATION
+
+Every obstruction on this campaign has had ONE shape: two sibling premises
+invent names independently, each avoids only `ftvar_in_aenv Θ`, and `Θ` does
+not record what the sibling did.  Here the siblings are the COLLECTION (which
+leaks) and the FOLD (which generates), and `a_extract__solve`'s own comment —
+"the guess runs AFTER the collection AND the solving, so its avoid-input is
+the whole `Ξs ++ Ξ ++ Θ0`" — shows the authors' threading argument covers the
+GUESS against the two blocks but says nothing about the fold against the
+collection's LEAKS, because on paper a leaked opener is not a name at all.
+
+#### ⛔ WHAT §8 STILL OWES ABOVE ITSELF
+
+`a_extract_rel_e_gen` takes the three sub-derivations directly rather than an
+`a_extract` derivation, because the guard cannot be stated about an
+`a_extract` whose `𝒞`/`Ξs` are existential.  Once the rule carries it, the
+wrapper is one `inversion`.  ⚠️ And note the conclusion carries a ρx column
+(`ρxL ++ ρxF`) — `SS-ForallR`'s leak survives the extract, so `a_consis` /
+`a_sub` will meet the same currency; §8c.25's prediction that it EASES above
+the extract (those judgements THREAD an output context, so siblings do see
+each other's inventions) is still unverified.
