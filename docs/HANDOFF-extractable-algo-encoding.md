@@ -6602,3 +6602,74 @@ preservation and the run turns `α̂` into `α̂ ≔ τ`);
 twin already existed); and the two REL facts the arrow and binder rows
 need — `rel_atoms_app` / `rel_ext_app` (both ANTITONE predicates re-proved
 at a WIDER pair list from the new pairs' spec) and `rel_aenv_ftv_corr_r`.
+
+### 8c.33 ⚙ IS THE `a_` LAYER'S EXISTS-FRESH DISCIPLINE A DETOUR? — the structural question, answered (2026-08-20)
+
+Raised by the user while §8c.32 was landing.  The answer is *no for the
+layer, yes for one rendering choice, and the choice does not generalize*.
+
+#### ⭐ WHERE THE COST ACTUALLY IS
+
+`a_*` is the PAPER's algorithm and carries all four theorems, the whole
+completeness ladder, and every `[paper-gap]`; `e_*` exists for EXTRACTION
+and DECIDABILITY.  Neither is removable.  What the lift pays for is ONE
+difference between them: **the `a_` binder rows pick a LOCALLY fresh atom
+(fresh for what that node can see) while `e_` draws from a supply that only
+grows.**  Every piece of §§8-12's currency follows from that single fact:
+
+- the two runs invent DIFFERENT atoms ⇒ nothing can be stated by equality,
+  hence the pair list ρ;
+- the correspondence is not even a FUNCTION — two `a_` nodes in different
+  subtrees may reuse an atom where the supply cannot (§8c.25's Finding 1)
+  ⇒ `rel_fun` is local to the context's domain (§8c.29);
+- an `a_`-invented name may COLLIDE with an atom both sides agree on
+  ⇒ `V [<=] ftvar_in_aenv Θ0`, hence the V-SHRINK along the assign walk.
+
+#### ⭐⭐ AND COFINITE WOULD REMOVE IT — WHERE THE RULE CLOSES
+
+A COFINITE rule hands its induction principle a **cofinitely quantified
+IH**.  At a ∀ row the lift could then instantiate the IH at side 2's own
+supply-fresh `α2`, and BOTH SIDES OPEN AT THE SAME ATOM: no pushed pair, no
+`restrict_pairs`, no drop, and no antitone `flex_agree_rel` gap — i.e.
+exactly the one fact §8c.32 says the three ∀ rows still owe.
+
+⚙ And for `a_consis`'s three ∀ rows the cofinite rendering IS equivalent —
+machine-checked, `a_consis_forall_{inh,syn}_cofinite`
+(prop_consis_rename.v:1369, :1392), in the standard LN shape (the yield is
+`open Q α` and the conclusion `pskl_all_syn Q`).  The de-cofinite conversion
+was DESIGN.md §4.3's freshness campaign, for one discipline per layer, not
+because cofinite was wrong there.
+
+⚠️ **The renaming lemma is NOT a substitute.**
+`a_assign_unify_consis_rename_tvar` (L9) moves a derivation's rigid opener
+to any fresh atom — but it produces a NEW derivation term, and an induction
+on the ORIGINAL derivation has no IH for it.  Only a cofinite RULE, or a
+motive quantified over a swap, gives the IH at the atom one wants.
+
+#### ⛔ BUT IT DOES NOT GENERALIZE — and that is why the currency is not wasted
+
+Cofinite is degenerate exactly where a rule **LEAKS its binder into an
+output that the whole family would have to share**:
+
+- `a_sub__forall_r` — "the junk suffix `Ξ` may legitimately MENTION `α`, so
+  a COFINITE premise sharing `Ξ` across the family is unsatisfiable in
+  reachable configurations" (algo/def_rules.v, encoding fix 2026-07-31);
+- the look / solve / guess clusters — all five collection ∀ rows leak
+  (§8c.25's Finding 1), which is what killed the CHAIN currency.
+
+`a_sub` is the NEXT rung.  So the pair/restriction/`rel_fun` machinery is
+needed there no matter what, and switching `a_consis` to cofinite would be a
+LOCAL saving on three rows, not a redesign.
+
+#### ⚙ THE COSTING, AND THE CALL
+
+| option | cost | buys |
+|---|---|---|
+| (A) finish the current path | ONE 28-row induction, one or two lines per row (§8c.32's owed fact), then 3 ∀ rows + 7 easy consis rows | the rung |
+| (B) re-cut `a_consis`'s three ∀ rows as cofinite | 3 rules + 3 `e_` mirrors + every consumer that INVERTS them (soundness, completeness, `prop_consis_inc`, `prop_consis_rename`, the runner `def_consis_impl.v`, the decorated mirrors) | 3 of the remaining 10 rows |
+
+⇒ **(A).**  Revisit (B) only if the ∀ rows resist after the owed fact is in
+hand — and if they do, prefer the SWAP-QUANTIFIED MOTIVE (levels 1-2's
+"rebind-by-ONE-swap") over changing the rules, since the swap only has to
+move ONE atom and `algo/prop_swap.v` already has equivariance for all
+fourteen judgements.
