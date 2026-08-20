@@ -251,6 +251,202 @@ Qed.
 
 Definition auc_dom_mono_consis := proj2 (proj2 a_assign_unify_consis_dom_mono).
 
+(* ===================================================================== *)
+(*  §1b  ⭐⭐ THE CONVERSE OF [a_assign_unify_consis_flex_preserve], ON THE  *)
+(*  OLD ATOMS — a run never makes an atom it already had FLEXIBLE.         *)
+(*                                                                        *)
+(*  What spends it: the ∀ rows of the trio's LIFT (ext_algo/prop_lift.v    *)
+(*  §9) restrict their pair list, and [flex_agree_rel] is ANTITONE, so the *)
+(*  conclusion still owes an answer at every pair [restrict_pairs] threw   *)
+(*  away.  There the opener is fresh, so the input agreement says the      *)
+(*  partner is NOT flexible upstream — and this lemma carries that         *)
+(*  downstream.  It is applied on the THREADED side, through               *)
+(*  [e_consis_sound]'s [a_consis] image.                                   *)
+(*                                                                        *)
+(*  ⭐ It needs NO premise — not [uniq], not well-formedness.  Every rule   *)
+(*  either keeps an entry, turns [α̂] into [α̂ ≔ τ] (flexible either way),    *)
+(*  or re-attaches one whose Barendregt premise puts it OUT of the         *)
+(*  premise's output; the rigid-head rows read that premise directly.      *)
+(* ===================================================================== *)
+
+Lemma in_dom_mid_other : forall (Xi Th : aenv) (c : atom) (bd : abind) al,
+  al `in` dom (Xi ++ (c ~ bd) ++ Th) -> al <> c -> al `in` dom (Xi ++ Th).
+Proof. intros Xi Th c bd al Hin Hne. simpl_env in *. clear - Hin Hne. fsetdec. Qed.
+
+Lemma in_dom_cons_other : forall (Th : aenv) (c : atom) (bd : abind) al,
+  al `in` dom ((c ~ bd) ++ Th) -> al <> c -> al `in` dom Th.
+Proof. intros Th c bd al Hin Hne. simpl_env in *. clear - Hin Hne. fsetdec. Qed.
+
+Lemma a_assign_unify_consis_flex_rev :
+  (forall Θ0 Ξ α P Θ1,
+     {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a ->
+     forall α1, α1 `in` dom (Ξ ++ Θ0) -> a_flex_tvar Θ1 α1 ->
+                a_flex_tvar (Ξ ++ Θ0) α1) /\
+  (forall Θ0 α β Θ1,
+     {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a ->
+     forall α1, α1 `in` dom Θ0 -> a_flex_tvar Θ1 α1 -> a_flex_tvar Θ0 α1) /\
+  (forall Δ1 Δ2 Θ0 P0 P P' Θ1,
+     {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 }}a ->
+     forall α1, α1 `in` dom Θ0 -> a_flex_tvar Θ1 α1 -> a_flex_tvar Θ0 α1).
+Proof.
+  apply (a_assign_unify_consis_mutind
+           (fun Θ0 Ξ α P Θ1 _ =>
+              forall α1, α1 `in` dom (Ξ ++ Θ0) -> a_flex_tvar Θ1 α1 ->
+                         a_flex_tvar (Ξ ++ Θ0) α1)
+           (fun Θ0 α β Θ1 _ =>
+              forall α1, α1 `in` dom Θ0 -> a_flex_tvar Θ1 α1 ->
+                         a_flex_tvar Θ0 α1)
+           (fun Δ1 Δ2 Θ0 P0 P P' Θ1 _ =>
+              forall α1, α1 `in` dom Θ0 -> a_flex_tvar Θ1 α1 ->
+                         a_flex_tvar Θ0 α1)).
+  (* ---------- a_assign ---------- *)
+  - (* univ_ghost_id : output = input *)
+    intros Θ0 α α1 Hd Hfl. simpl_env in *. exact Hfl.
+  - (* solve_m : the head keeps α̂, the guessed block β̄ is FRESH *)
+    intros Θ0 Ξ α P βs τ Hαn Hg Hm Huβ Hfrβ α1 Hd Hfl.
+    destruct (α1 == α) as [-> | Hne].
+    + left. unfold binds. apply in_or_app; right; left; reflexivity.
+    + apply (proj1 (a_flex_tvar_cons_other _ _ Hne)) in Hfl.
+      assert (Hnβ : α1 `notin` dom βs).
+      { intros Hin. pose proof (Hfrβ α1 Hin) as Hno.
+        simpl_env in *. clear - Hd Hno. fsetdec. }
+      apply (proj1 (a_flex_tvar_app_notin βs (Ξ ++ Θ0) Hnβ)) in Hfl.
+      apply (@a_flex_tvar_weaken_mid Ξ (α ~ abind_flex_mono) Θ0). exact Hfl.
+  - (* assign : the consumed definition β̂ ≔ τ is re-attached at the head *)
+    intros Θ0 Θ1 Ξ α β τ P Q Hfα Hβd Hc IH α1 Hd Hfl.
+    destruct (α1 == β) as [-> | Hne].
+    + right. exists τ. unfold binds. apply in_or_app; right; left; reflexivity.
+    + apply (proj1 (a_flex_tvar_cons_other _ _ Hne)) in Hfl.
+      apply (@a_flex_tvar_weaken_mid Ξ (β ~ abind_flex_mono_def τ) Θ0).
+      apply IH; [ | exact Hfl ].
+      eapply in_dom_mid_other; [ exact Hd | exact Hne ].
+  - (* depend : the entry moves into the pending suffix *)
+    intros Θ0 Θ1 Ξ α β P Hne Hβ Ha IH α1 Hd Hfl.
+    simpl_env in *. apply IH; [ | exact Hfl ].
+    clear - Hd. simpl_env. fsetdec.
+  - (* skip : flexible head, re-attached *)
+    intros Θ0 Θ1 Ξ α β P Hne0 Hβn Hβd Ha IH α1 Hd Hfl.
+    destruct (α1 == β) as [-> | Hne].
+    + left. unfold binds. apply in_or_app; right; left; reflexivity.
+    + apply (proj1 (a_flex_tvar_cons_other _ _ Hne)) in Hfl.
+      apply (@a_flex_tvar_weaken_mid Ξ (β ~ abind_flex_mono) Θ0).
+      apply IH; [ | exact Hfl ].
+      eapply in_dom_mid_other; [ exact Hd | exact Hne ].
+  - (* skip_rigid : a rigid head is rigid downstream too *)
+    intros Θ0 Θ1 Ξ α β P Hβn Hβd Ha IH α1 Hd Hfl.
+    apply (proj1 (a_flex_tvar_cons_tvar_any β Θ1 α1)) in Hfl.
+    destruct (α1 == β) as [-> | Hne].
+    + exfalso. apply Hβd. apply a_flex_tvar_in_dom. exact Hfl.
+    + apply (@a_flex_tvar_weaken_mid Ξ (β ~ abind_tvar) Θ0).
+      apply IH; [ | exact Hfl ].
+      eapply in_dom_mid_other; [ exact Hd | exact Hne ].
+  - (* skip_tm_var *)
+    intros Θ0 Θ1 Ξ α x A P Hxd Ha IH α1 Hd Hfl.
+    destruct (α1 == x) as [-> | Hne].
+    + (* the head is a TERM entry, so the witness is in the tail — which
+         the row's Barendregt premise forbids *)
+      exfalso. apply Hxd. apply a_flex_tvar_in_dom.
+      destruct Hfl as [Hb | [τ Hb]];
+        apply binds_cons_1 in Hb as [[_ Heq] | Hb]; try discriminate;
+        solve [ left; exact Hb | right; exists τ; exact Hb ].
+    + apply (proj1 (a_flex_tvar_cons_other _ _ Hne)) in Hfl.
+      apply (@a_flex_tvar_weaken_mid Ξ (x ~ abind_var_typ A) Θ0).
+      apply IH; [ | exact Hfl ].
+      eapply in_dom_mid_other; [ exact Hd | exact Hne ].
+  - (* skip_tm_skl *)
+    intros Θ0 Θ1 Ξ α x Q P Hxd Ha IH α1 Hd Hfl.
+    destruct (α1 == x) as [-> | Hne].
+    + exfalso. apply Hxd. apply a_flex_tvar_in_dom.
+      destruct Hfl as [Hb | [τ Hb]];
+        apply binds_cons_1 in Hb as [[_ Heq] | Hb]; try discriminate;
+        solve [ left; exact Hb | right; exists τ; exact Hb ].
+    + apply (proj1 (a_flex_tvar_cons_other _ _ Hne)) in Hfl.
+      apply (@a_flex_tvar_weaken_mid Ξ (x ~ abind_var_skl Q) Θ0).
+      apply IH; [ | exact Hfl ].
+      eapply in_dom_mid_other; [ exact Hd | exact Hne ].
+  (* ---------- a_unify ---------- *)
+  - (* flex_id : output = input *)
+    intros Θ0 α Hfα α1 Hd Hfl. exact Hfl.
+  - (* flex_l : the head gains a DEFINITION — still flexible *)
+    intros Θ0 α β Hne0 Hfβ α1 Hd Hfl.
+    destruct (α1 == α) as [-> | Hne].
+    + left. unfold binds; left; reflexivity.
+    + apply (proj1 (a_flex_tvar_cons_other _ _ Hne)) in Hfl.
+      apply a_flex_tvar_weaken_app. exact Hfl.
+  - (* flex_r : symmetric *)
+    intros Θ0 α β Hne0 Hfα α1 Hd Hfl.
+    destruct (α1 == β) as [-> | Hne].
+    + left. unfold binds; left; reflexivity.
+    + apply (proj1 (a_flex_tvar_cons_other _ _ Hne)) in Hfl.
+      apply a_flex_tvar_weaken_app. exact Hfl.
+  - (* flex_assign : the definition is re-attached *)
+    intros Θ0 Θ1 α10 τ α β Q Hfα Hfβ Hα1d Hc IH α1 Hd Hfl.
+    destruct (α1 == α10) as [-> | Hne].
+    + right. exists τ. unfold binds; left; reflexivity.
+    + apply (proj1 (a_flex_tvar_cons_other _ _ Hne)) in Hfl.
+      apply a_flex_tvar_weaken_app. apply IH; [ | exact Hfl ].
+      eapply in_dom_cons_other; [ exact Hd | exact Hne ].
+  - (* flex_skip : flexible head, re-attached *)
+    intros Θ0 Θ1 α10 α β Hα1α Hα1β Hα1d Hu IH α1 Hd Hfl.
+    destruct (α1 == α10) as [-> | Hne].
+    + left. unfold binds; left; reflexivity.
+    + apply (proj1 (a_flex_tvar_cons_other _ _ Hne)) in Hfl.
+      apply a_flex_tvar_weaken_app. apply IH; [ | exact Hfl ].
+      eapply in_dom_cons_other; [ exact Hd | exact Hne ].
+  - (* skip_other : the head is NON-flexible on both sides *)
+    intros Θ0 Θ1 c b α β Hbshape Hcd Hu IH α1 Hd Hfl.
+    destruct (α1 == c) as [-> | Hne].
+    + exfalso. apply Hcd. apply a_flex_tvar_in_dom.
+      destruct Hbshape as [-> | [[Q1 ->] | [Q1 ->]]];
+        (destruct Hfl as [Hb | [τ Hb]];
+         apply binds_cons_1 in Hb as [[_ Heq] | Hb]; try discriminate;
+         solve [ left; exact Hb | right; exists τ; exact Hb ]).
+    + apply (proj1 (a_flex_tvar_cons_other _ _ Hne)) in Hfl.
+      apply a_flex_tvar_weaken_app. apply IH; [ | exact Hfl ].
+      eapply in_dom_cons_other; [ exact Hd | exact Hne ].
+  (* ---------- a_consis ---------- *)
+  - (* ghost : identity *) intros; assumption.
+  - (* unit : identity *) intros; assumption.
+  - (* rigid : identity *) intros; assumption.
+  - (* arrow : the two IHs, with the domain growing along the walk *)
+    intros Δ1 Δ2 Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hc1 IH1 Hc2 IH2 α1 Hd Hfl.
+    apply IH1; [ exact Hd | ].
+    apply IH2; [ | exact Hfl ].
+    pose proof (proj2 (proj2 a_assign_unify_consis_dom_mono) _ _ _ _ _ _ _ Hc1)
+      as Hdm. clear - Hd Hdm. fsetdec.
+  - (* forall_inh : the opener is RIGID on both sides *)
+    intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hc IH α1 Hd Hfl.
+    apply (proj1 (a_flex_tvar_cons_tvar_any α Θ0 α1)).
+    apply IH; [ simpl_env; clear - Hd; fsetdec | ].
+    apply (proj2 (a_flex_tvar_cons_tvar_any α Θ1 α1)). exact Hfl.
+  - (* forall_syn *)
+    intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hc IH α1 Hd Hfl.
+    apply (proj1 (a_flex_tvar_cons_tvar_any α Θ0 α1)).
+    apply IH; [ simpl_env; clear - Hd; fsetdec | ].
+    apply (proj2 (a_flex_tvar_cons_tvar_any α Θ1 α1)). exact Hfl.
+  - (* univ_ghost : direct IH *)
+    intros Δ1 Δ2 Θ0 Θ1 P0 P Q Hc IH α1 Hd Hfl. apply IH; assumption.
+  - (* univ_ghost1 *)
+    intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hc IH α1 Hd Hfl.
+    apply (proj1 (a_flex_tvar_cons_tvar_any α Θ0 α1)).
+    apply IH; [ simpl_env; clear - Hd; fsetdec | ].
+    apply (proj2 (a_flex_tvar_cons_tvar_any α Θ1 α1)). exact Hfl.
+  - (* univ_ghost2 : direct IH *)
+    intros Δ1 Δ2 Θ0 Θ1 P0 P Q Hg Hnf Hc IH α1 Hd Hfl. apply IH; assumption.
+  - (* flex : unify IH *)
+    intros Δ1 Δ2 Θ0 Θ1 α β Hu IH α1 Hd Hfl. apply IH; assumption.
+  - (* flex_l : assign IH at Ξ = nil *)
+    intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hnhole Ha IH α1 Hd Hfl.
+    simpl_env in *. apply IH; assumption.
+  - (* flex_r : assign IH at Ξ = nil *)
+    intros Δ1 Δ2 Θ0 Θ1 α P Hnf Hnhole Ha IH α1 Hd Hfl.
+    simpl_env in *. apply IH; assumption.
+  - (* ghost_r : identity *) intros; assumption.
+  - (* univ_ghost_r : direct IH *)
+    intros Δ1 Δ2 Θ0 Θ1 P0 P Q Hg Hnf Hc IH α1 Hd Hfl. apply IH; assumption.
+Qed.
+
+
 (** [Δ1]/[Δ2] are read only through set predicates, so they transport along
     [=].  This USED to be a three-way [F]-swapping lemma: the used-name set
     was an index of all three judgments, and consumers needed to move a

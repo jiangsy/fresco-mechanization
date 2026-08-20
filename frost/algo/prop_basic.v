@@ -1567,6 +1567,16 @@ Proof.
     [ left | right; exists τ ]; apply binds_weaken_inner; exact Hb.
 Qed.
 
+(** …and hence PEELING one head entry the atom is not the subject of.
+    ⚙ MOVED here from ext_algo/prop_solve_rel.v §10 (2026-08-20): the consis
+    rung's [a_assign_unify_consis_flex_rev] lives in [algo/] and needs it. *)
+Lemma a_flex_tvar_cons_other : forall (c : atom) (bd : abind) (Θ : aenv) x,
+  x <> c -> (a_flex_tvar ((c ~ bd) ++ Θ) x <-> a_flex_tvar Θ x).
+Proof.
+  intros c bd Θ x Hne. apply a_flex_tvar_app_notin.
+  simpl_env. clear - Hne. fsetdec.
+Qed.
+
 (** The [Ghost]/[GhostR] side condition transports through the rename:
     if [Δ] avoids [ftv P] then the renamed [Δ] avoids the renamed [ftv]. *)
 (** [ftvar_in_pskl_open_pskl_wrt_pskl_upper] is stated as a [<=]; the

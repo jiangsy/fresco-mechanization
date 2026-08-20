@@ -3632,7 +3632,9 @@ Qed.
 (*    [a_flex_tvar_app_iff]      flexibility distributes over [++]         *)
 (*    [a_flex_tvar_one_*]        …at a SINGLETON, which is where the       *)
 (*                               binder shapes are read                    *)
-(*    [a_flex_tvar_cons_other]   …and hence peeling one entry              *)
+(*    [a_flex_tvar_cons_other]   …and hence peeling one entry (MOVED to     *)
+(*                               algo/prop_basic.v 2026-08-20, where the    *)
+(*                               consis rung's flex-rev needs it)           *)
 (*    [a_flex_tvar_mid_other]    …anywhere under a pending suffix          *)
 (*    [a_flex_tvar_solve_m]      [Assign-SolveM]'s surgery, in one line    *)
 (*                                                                        *)
@@ -3871,14 +3873,6 @@ Lemma a_flex_tvar_one_other : forall (c : atom) (bd : abind) x,
 Proof.
   intros c bd x Hne [Hb | [t Hb]]; unfold binds in Hb; simpl in Hb;
     destruct Hb as [E | E]; try contradiction; inversion E; congruence.
-Qed.
-
-Lemma a_flex_tvar_cons_other : forall (c : atom) (bd : abind) (Θ : aenv) x,
-  x <> c -> (a_flex_tvar ((c ~ bd) ++ Θ) x <-> a_flex_tvar Θ x).
-Proof.
-  intros c bd Θ x Hne.
-  pose proof (@a_flex_tvar_one_other c bd x Hne) as Hno.
-  rewrite a_flex_tvar_app_iff. tauto.
 Qed.
 
 Lemma a_flex_tvar_mid_other : forall (Ξ : aenv) (c : atom) (bd : abind)
@@ -4450,3 +4444,47 @@ Proof.
       exists x. split; [ clear - Hx; fsetdec | exact Hat ].
 Qed.
 
+
+(* ===================================================================== *)
+(*  §13  WHAT THE CONSIS RUNG'S ∀ ROWS ADDED                              *)
+(*                                                                        *)
+(*  Three small facts the binder rows of [a_consis]'s lift needed and §9   *)
+(*  did not have: membership in a RESTRICTED pair list, a pair pushed at   *)
+(*  two atoms neither Δ contains, and the two set moves that keep the      *)
+(*  [flex_above_free] obligation out of a six-atom [fsetdec].              *)
+(* ===================================================================== *)
+
+Lemma restrict_pairs_in : forall b1 b2 rho a b,
+  In (a, b) rho -> a <> b1 -> b <> b2 -> In (a, b) (restrict_pairs b1 b2 rho).
+Proof.
+  intros b1 b2 rho a b Hin H1 H2. unfold restrict_pairs.
+  apply List.filter_In. split; [ exact Hin | ]. simpl.
+  match goal with |- context [ if ?X then _ else _ ] => destruct X end;
+    [ contradiction | ].
+  match goal with |- context [ if ?X then _ else _ ] => destruct X end;
+    [ contradiction | reflexivity ].
+Qed.
+
+Lemma rel_atoms_push_absent : forall ρ V D1 D2 β1 β2,
+  rel_atoms ρ V D1 D2 ->
+  β1 `notin` V -> β1 `notin` cols_l ρ ->
+  β2 `notin` V -> β2 `notin` cols_r ρ ->
+  β1 `notin` D1 -> β2 `notin` D2 ->
+  rel_atoms ((β1, β2) :: ρ) V D1 D2.
+Proof.
+  intros ρ V D1 D2 β1 β2 Hd Hb1V Hb1c Hb2V Hb2c Hb1D Hb2D a b Hat.
+  destruct (rel_atom_cons_inv Hat) as [[-> ->] | Hat'].
+  - split; intros Hin; exfalso; [ exact (Hb1D Hin) | exact (Hb2D Hin) ].
+  - exact (Hd a b Hat').
+Qed.
+
+(* ⚠️ PERF: the ∀ rows' [flex_above_free] obligation is
+   [(add α Δ1 ∪ add α Δ2) ∩ (add γ (dom Θb)) [=] empty] — six set atoms, and
+   a direct [fsetdec] there costs 40 s PER ROW.  Split at the [add]. *)
+Lemma inter_empty_add : forall D X (a : atom),
+  D ∩ X [=] empty -> a `notin` X -> (add a D) ∩ X [=] empty.
+Proof. intros D X a H Ha. fsetdec. Qed.
+
+Lemma inter_empty_cong_l : forall D D' X,
+  D [=] D' -> D ∩ X [=] empty -> D' ∩ X [=] empty.
+Proof. intros D D' X Heq H. fsetdec. Qed.

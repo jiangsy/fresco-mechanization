@@ -6673,3 +6673,228 @@ hand — and if they do, prefer the SWAP-QUANTIFIED MOTIVE (levels 1-2's
 "rebind-by-ONE-swap") over changing the rules, since the swap only has to
 move ONE atom and `algo/prop_swap.v` already has equivariance for all
 fourteen judgements.
+
+### 8c.34 ⚙ THE SAME COSTING ONE RUNG UP — what `a_sub` will need, and the ONE interface decision to take before its motive is written (2026-08-20)
+
+Requested by the user before any `a_sub` row is written, because §8c.24's
+CHAIN currency was retired one rung too late.  The three questions, answered
+against the rules as they stand (`algo/def_rules.v:1385` for
+`a_sub__forall_r`, `ext_algo/def_sub.v:74` for its mirror).
+
+#### (i) WHICH OF §8–§12's CURRENCY `a_sub__forall_r` ACTUALLY NEEDS
+
+Its shape is the consis ∀ rows' shape with ONE difference: both sides'
+premise output is `Ξ ++ (α ~ ⌢) ++ Θ1`, not `(α ~ ⌢) ++ Θ1` — the junk
+suffix sits ABOVE the opener and may legitimately mention it (that is the
+2026-07-31 encoding fix, and it is why the row is exists-fresh).  So:
+
+| needed | source | status |
+|---|---|---|
+| `restrict_pairs` + `cols_*_restrict_pairs` + `rel_{aenv,pskl,ptyp,abind}_restrict` | §9 | ⭐ verbatim |
+| the opener PUSH (`rel_aenv__cons`, `flex_agree_rel_push_look`, `rel_inj_push`, `rel_fun_push`) | §9/§10 | ⭐ verbatim |
+| the YIELD's close, un-restricting (`rel_pskl_close_pair_restrict`) | §9 | ⭐ verbatim |
+| `rel_inj_app` / `rel_fun_app` from the premise's `rel_ext` | §9 | ⭐ verbatim |
+| the PEEL — ⭐ **already stated at `a_sub`'s shape**: `flex_agree_peel` is `Ξ ++ (β ~ bd) ++ Θ0` vs `Ξ' ++ (b ~ bd') ++ Θ0''` (prop_solve_rel.v:3917); the consis rung only ever used its `Ξ = nil` corollary `flex_agree_peel_cons` | §10/§11 | ⭐ verbatim |
+| ⛔ a `rel_aenv` APP-INVERSION — `rel_aenv ρ V (Ξ ++ Θ) Θ2 -> exists Ξ2 Θ2', Θ2 = Ξ2 ++ Θ2' /\ rel_aenv ρ V Ξ Ξ2 /\ rel_aenv ρ V Θ Θ2'` | NEW | ~15 lines, positional, no new idea |
+| ⛔ the DELETED-PAIR obligation (`flex_agree_rel` is ANTITONE) | see (iii) | the ONE real cost |
+
+⚙ `flex_agree_peel`'s two side conditions are already ON the rules:
+`α ∉ dom (Ξ ++ Θ0) ∪ dom Θ1` is `a_sub__forall_r`'s own premise (and `Ξ`
+there IS the output junk), and `α2 ∉ dom (Ξ2 ++ Θ1')` follows on the `e_`
+side from the supply discipline (`α2 ∉ S0`, `Ξ2`'s names drawn above
+`add α2 S0`).  ⇒ nothing new is owed there.
+
+#### (ii) DOES `a_extract_rel_e`'s ρx COLUMN MAKE `rel_fun` UNAVAILABLE?
+
+**No — but its INTERFACE does, and the fix is one conjunct.**
+
+`a_extract_rel_e` (prop_lift.v:2033) hands its caller a yield at
+`ρx ++ ρn ++ ρ`, where ρx is the LEAKED OPENERS: `a ∉ ftvar_in_aenv Θ1` and
+`b ∉ S0`.  `rel_fun`/`rel_inj` are ANTITONE in ρ, so the caller
+(`a_sub__forall_l`, the only consumer) has to REBUILD them at the wider
+list — and `rel_inj_app` / `rel_fun_app` do exactly that, from a `rel_ext`.
+`rel_fun_app` wants `D0 [<=] W` with `D0 = dom Θ0` and `W` the avoid set;
+`dom Θ0 [<=] ftvar_in_aenv Θ0` holds by construction
+(`dom_subset_ftvar_in_aenv`), so the ρx column is NOT an obstruction.
+
+⛔ What IS an obstruction: `a_extract_rel_e` returns ρx's spec as a bare
+pair of freshness facts, with **no injectivity conjuncts** — so it is not a
+`rel_ext` and `rel_inj_app` / `rel_fun_app` do not apply.  ⇒ **strengthen
+`a_extract_rel_e`'s conclusion to `rel_ext ρx (ftvar_in_aenv Θ1) S0`**
+before writing `a_sub__forall_l`.  It is true and cheap: ρx's right column
+is drawn from the SUPPLY (distinct by construction) and its left column is
+`e_looksub`'s openers, which the CROSS-HALF FRESHNESS GUARD already keeps
+apart (§8c.25).  Doing it later means re-opening a 300-line lemma, which is
+precisely the §8c.24 mistake.
+
+#### (iii) ⭐⭐ THE ONE INTERFACE DECISION — take it BEFORE the `a_sub` motive
+
+The deleted-pair obligation is the same at every binder row: for
+`(α, b) ∈ ρ` thrown away by `restrict_pairs`, the conclusion still owes
+`a_flex_tvar Θ1 α <-> a_flex_tvar Θ1' b`, and side 2's half needs
+
+    a_flex_tvar Θ1' b -> b `in` dom Θ0' -> a_flex_tvar Θ0' b
+
+(`b ∈ dom Θ0'` comes from `e_*_dom_upper` plus `cols_r ρ [<=] S0`).  There
+are exactly TWO ways to get it, and they trade the same cost differently:
+
+| route | what it costs | what it buys |
+|---|---|---|
+| (A) a per-family mutual induction — `a_assign_unify_consis_flex_rev`, what this rung used | ~180 lines ONCE per family; **no premise at all** (not `uniq`, not wf, not lc) | side 2 stays wf-free |
+| (B) ⭐ the GENERIC `a_isub_flex_rev` : `Θ ⊴ Θ' -> uniq Θ' -> α ∈ dom Θ -> a_flex_tvar Θ' α -> a_flex_tvar Θ α` | ~40 lines ONCE for ALL families, but each rung must supply `Θ0' ⊴ Θ1'` on SIDE 2 | the rung's motive must carry side 2's wf package |
+
+For the consis rung (B) was unavailable: `a_assign_unify_consis_isub` wants
+`lc_aenv Θ0'` + `aenv_defs_lc Θ0'`, and §8c.32's finding is that side 2
+carries only `uniq Θ0'` + `ftvar_in_aenv Θ0' [<=] S0`.  ⇒ (A), and it is
+done.
+
+⛔⛔ **CORRECTION (same day, on the user's challenge).**  An earlier draft of
+this section said "one rung up the trade FLIPS, because `a_sub`'s soundness
+gives `Θ0 ⊴ Θ1 /\ {{ ⊢ Θ1 }}a` for free".  That reason is WRONG, and the
+question it answers — *do the layers expose inconsistent interfaces?* — has
+the answer **no**:
+
+| rung | the ⊴ fact, and what it costs |
+|---|---|
+| `a_consis` | `a_consis_isub_wf` (consis/prop_consis_inc.v:492): `{{ Θ0 ⊢[…] }}a -> {{ ⊢ Θ0 }}a -> Θ0 ⊴ Θ1`; and `consis_sound_post` returns `Θ0 ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\ …` under the same `{{ ⊢ Θ0 }}a` |
+| `a_sub` | `subtag_sound_concl` (sub/prop_soundness_subtag.v:1832): `{{ ⊢ Θ0 }}a -> … -> Θ0 ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\ …` |
+
+Identical shape, identical premise.  ⚙ If anything `a_consis` is the STRONGER
+of the two — it ALSO has the lc-only `a_assign_unify_consis_isub`, which
+`a_sub` has no analogue of.  ⇒ **nothing to fix in the `a_` layer.**
+
+⭐⭐ **WHERE THE ASYMMETRY ACTUALLY LIVES: the LIFT's own motive, which is
+ours to choose.**  §8c.32 chose side 2 to carry `uniq Θ0'` +
+`ftvar_in_aenv Θ0' [<=] S0` and NO well-formedness — that is what made
+`C-Arrow` tractable, and under it no ⊴ is reachable on side 2, so route (A)
+was forced.  It paid: `a_assign_unify_consis_flex_rev` needs no premise at
+all.  The same two options are open at `a_sub`; the `a_` layer does not
+prefer either.
+
+⇒ **REVISED CALL: keep side 2 WF-FREE at `a_sub` too, and take route (A)
+there as well.**  The argument is composition, not cost-per-lemma:
+
+- `a_sub`'s rows CALL the consis lift (`a_sub__check` through
+  `a_consis_chk`, which is a bare existential wrapper on `a_consis`,
+  def_rules.v:1353; `a_sub__arrow`; `a_split__flex`).  A wf-free side-2
+  package is WEAKER, so `a_sub` can always supply it — that direction is
+  free.
+- But a `a_sub` motive that carried `{{ ⊢ Θ0' }}a` on side 2 would have to
+  RE-ESTABLISH it after every one of those calls, and the only route is
+  `e_consis_sound` then `consis_sound_concl` — whose SIX premises at side 2
+  are exactly the package §8c.32 removed.  ⇒ carrying wf on side 2 at
+  `a_sub` re-imports the cost the consis rung just shed.
+- And route (A) at `a_sub` is smaller than it looked: `a_sub` + `a_sub_flex`
+  is **16 rows**, and the callees are already covered — `a_consis` /
+  `a_consis_chk` by `a_assign_unify_consis_flex_rev`, `a_extract` because it
+  has no output context to change.
+
+⇒ **`a_isub_flex_rev` should NOT be built.**  One discipline for every rung:
+side 2 carries `uniq` + the supply bound, and each family gets its own
+premise-free flex-reflect.
+
+⚙ Two smaller notes for the same motive:
+- the consis CLOSER never consumes `rel_fun` after the IH — only `rel_inj`.
+  `rel_fun` is spent solely by the ASSIGN WALK (it is what forces side 2's
+  head to be side 2's subject).  `a_sub` has no walk of its own, so its
+  motive carries `rel_fun` only to hand it down to the `a_consis` calls;
+  do not look for a use of it in `a_sub`'s own rows.
+- the V-shrink stays as it is: `a_sub__forall_r` opens at a name fresh for
+  `ftvar A ∪ ftvar B` as well as the context, so `V [<=] ftvar_in_aenv Θ0`
+  survives the push unchanged.
+
+### 8c.35 ⭐⭐⭐ THE CONSIS RUNG IS CLOSED — all 28 rows, and the owed fact was NOT the induction it looked like (2026-08-20)
+
+`a_assign_unify_consis_rel_e` is **Qed** (ext_algo/prop_lift.v §9): one
+mutual induction, 28 rows, zero `Admitted`.  §8c.32's 18 rows plus the three
+∀ rows and the seven remaining `a_consis` rows.  ⇒ the lift now reaches
+`a_consis`; **`a_sub` is the next rung** (its costing is §8c.34, written
+BEFORE any of its rows, as the user asked).
+
+#### ⭐⭐ THE OWED FACT — smaller than §8c.32 predicted, and PREMISE-FREE
+
+    a_assign_unify_consis_flex_rev   (algo/consis/prop_consis_rename.v §1b)
+      a_flex_tvar Θ1 α1 -> α1 ∈ dom (Ξ ++ Θ0) -> a_flex_tvar (Ξ ++ Θ0) α1
+
+28 rows, **no premise at all** — not `uniq`, not `{{ ⊢ Θ0 }}a`, not
+`lc_aenv`.  §8c.32 guessed "one or two lines each" and that held: every
+re-attaching row reads its OWN Barendregt premise (`β ∉ dom Θ1`) to kill the
+head case, the rigid-head rows do the same, `Assign-SolveM` reads its block
+freshness, and `C-Arrow` chains the two IHs through
+`a_assign_unify_consis_dom_mono`.
+
+⚙ **A route that was tried and rejected, and why it is still worth knowing.**
+The fact also follows generically from the ⊴ order:
+
+    a_isub_flex_rev :  Θ ⊴ Θ' -> uniq Θ' -> α ∈ dom Θ ->
+                       a_flex_tvar Θ' α -> a_flex_tvar Θ α
+
+(40 lines: `a_inc_binds_tvar` already existed, and the two term-entry KIND
+transports are 6-row inductions — ⚠️ not the SYNTACTIC payload transports
+deleted at prop_inc_strengthen.v:391, the payload here is existential).
+⛔ It is unusable at THIS rung because `a_assign_unify_consis_isub` wants
+`lc_aenv Θ0` + `aenv_defs_lc Θ0` and §8c.32's side 2 carries neither.  ⭐ But
+at `a_sub` the trade flips — see §8c.34 (iii).  The lemma is NOT in the tree;
+re-derive it there.
+
+#### ⭐ WHERE THE FACT IS SPENT, and the shape of the three ∀ rows
+
+`lift_consis_forall_close` (prop_lift.v §9) is the three rows' SHARED closer
+— everything after the IH is rule-independent, so it is written once and the
+three rows differ only in their premise package (~110 lines each, mechanical:
+which Δ gains the opener, whether `P0`/`P` is `∀` or `⫯`).
+
+The closer's one non-bookkeeping step is the DELETED PAIR.  `restrict_pairs α α2 ρ`
+throws away every `(α, b) ∈ ρ`, and `flex_agree_rel` is ANTITONE, so the
+conclusion still owes `a_flex_tvar Θ1 α <-> a_flex_tvar Θ1' b` there.  Both
+halves are FALSE:
+
+- side 1: `α ∉ ftvar_in_aenv Θ1` — from `{{ ⊢ (α ~ ⌢) ++ Θ1 }}a`, which is
+  `a_assign_unify_consis_sound` applied to the premise;
+- side 2: `b ∈ cols_r ρ [<=] S0`, so `e_assign_unify_consis_dom_upper` puts
+  `b ∈ dom Θ0'` (the run's new names come from `S1 ∖ S0`); then
+  `e_consis_sound` gives the `a_consis` image and **flex_rev** carries the
+  input agreement's `¬ a_flex_tvar Θ0' b` down to `Θ1'`.
+
+⚙ The pairs deleted on the RIGHT cannot occur (`α2 ∉ S0 ⊇ cols_r ρ`), exactly
+as §8c.32 predicted.  ⚙ `α2 ∉ ftvar_in_aenv Θ1'` — needed to drop the pair
+from `rel_aenv` — is **not** a freshness side condition but a consequence:
+`rel_aenv_ftv_corr_r` produces a side-1 partner and `rel_inj` forces it to be
+`α`, which side 1 has just shown absent.
+
+⭐ **`flex_agree_peel` was already stated at the shape a_sub needs.**  The
+consis rows use only its `Ξ = nil` corollary `flex_agree_peel_cons` — §8c.34
+(i) records that the general form is what `a_sub__forall_r` will want.
+
+#### ⚙ THE SEVEN REMAINING `a_consis` ROWS, and what each cost
+
+`C-UnivGhost` / `C-UnivGhost2` / `C-UnivGhostR` strip a `⫯` off one, two or
+three positions: one `inversion` on `rel_pskl`, one `a_wf_pskl` inversion for
+the premise's skeleton wf, and `rel_pskl_guarded` / `rel_pskl_non_flex` for
+the e-side rule's two dispatch premises.  `C-Flex` / `C-FlexL` / `C-FlexR`
+hand to the unify / assign IHs — their `a_flex_tvar` obligation is
+`a_assign_unify_subject_flex`, and the assign ones run at `Ξ = nil` (every
+context premise needs a `simpl_env` first, which is why they are `assert`ed
+rather than passed inline).  `C-GhostR` is an identity row whose only content
+is `rel_atoms_disjoint`.
+
+#### ⚠️⚠️ PERF — ONE `fsetdec` WAS 90 % OF THE FILE
+
+The ∀ rows' `flex_above_free` obligation is
+`(add α Δ1 ∪ add α Δ2) ∩ (add γ (dom Θb)) [=] empty` — six set atoms, and a
+direct `fsetdec` costs **40 s PER ROW** (135 s for the three).  Splitting it
+at the `add` (`inter_empty_add` + `inter_empty_cong_l`, prop_solve_rel §13)
+takes the three rows to **7.4 s total**.  ⇒ the memory's "2 s at 5 atoms,
+>120 s at 6" is confirmed once more, and the fix is always the same: extract
+the ONE inclusion, then combine.
+
+#### ⚙ WHERE THE NEW MATERIAL LANDED
+
+- `algo/prop_basic.v` — `a_flex_tvar_cons_other` MOVED here from
+  prop_solve_rel §10 (the consis rung's flex-rev lives in `algo/`).
+- `algo/consis/prop_consis_rename.v` §1b — `in_dom_{mid,cons}_other`,
+  `a_assign_unify_consis_flex_rev`.
+- `ext_algo/prop_solve_rel.v` §13 — `restrict_pairs_in`,
+  `rel_atoms_push_absent`, `inter_empty_add`, `inter_empty_cong_l`.
+- `ext_algo/prop_lift.v` §9 — the three motives,
+  `lift_consis_forall_close`, the three ∀ row lemmas, and the theorem.
