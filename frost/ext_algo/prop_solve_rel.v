@@ -3635,7 +3635,8 @@ Qed.
 (*    [a_flex_tvar_cons_other]   …and hence peeling one entry (MOVED to     *)
 (*                               algo/prop_basic.v 2026-08-20, where the    *)
 (*                               consis rung's flex-rev needs it)           *)
-(*    [a_flex_tvar_mid_other]    …anywhere under a pending suffix          *)
+(*    [a_flex_tvar_mid_other]    …anywhere under a pending suffix (MOVED   *)
+(*                               to algo/prop_basic.v 2026-08-20 too)      *)
 (*    [a_flex_tvar_solve_m]      [Assign-SolveM]'s surgery, in one line    *)
 (*                                                                        *)
 (*  ⭐⭐ AND THE TWO MOVES EVERY WALK ROW MAKES, factored:                  *)
@@ -3875,15 +3876,6 @@ Proof.
     destruct Hb as [E | E]; try contradiction; inversion E; congruence.
 Qed.
 
-Lemma a_flex_tvar_mid_other : forall (Ξ : aenv) (c : atom) (bd : abind)
-    (Θ : aenv) x,
-  x <> c ->
-  (a_flex_tvar (Ξ ++ (c ~ bd) ++ Θ) x <-> a_flex_tvar (Ξ ++ Θ) x).
-Proof.
-  intros Ξ c bd Θ x Hne.
-  pose proof (@a_flex_tvar_one_other c bd x Hne) as Hno.
-  rewrite ! a_flex_tvar_app_iff. tauto.
-Qed.
 
 Lemma a_flex_tvar_head_flexish : forall (c : atom) (bd : abind) (Θ : aenv),
   (bd = abind_flex_mono \/ exists t, bd = abind_flex_mono_def t) ->

@@ -6717,15 +6717,46 @@ list — and `rel_inj_app` / `rel_fun_app` do exactly that, from a `rel_ext`.
 `dom Θ0 [<=] ftvar_in_aenv Θ0` holds by construction
 (`dom_subset_ftvar_in_aenv`), so the ρx column is NOT an obstruction.
 
-⛔ What IS an obstruction: `a_extract_rel_e` returns ρx's spec as a bare
-pair of freshness facts, with **no injectivity conjuncts** — so it is not a
-`rel_ext` and `rel_inj_app` / `rel_fun_app` do not apply.  ⇒ **strengthen
-`a_extract_rel_e`'s conclusion to `rel_ext ρx (ftvar_in_aenv Θ1) S0`**
-before writing `a_sub__forall_l`.  It is true and cheap: ρx's right column
-is drawn from the SUPPLY (distinct by construction) and its left column is
-`e_looksub`'s openers, which the CROSS-HALF FRESHNESS GUARD already keeps
-apart (§8c.25).  Doing it later means re-opening a 300-line lemma, which is
-precisely the §8c.24 mistake.
+⛔⛔ **AND THE FIX THIS SECTION FIRST PROPOSED IS REFUTED — by §8c.29, which
+was already written.**  The proposal was "return `rel_ext ρx (ftvar_in_aenv Θ1) S0`
+from `a_extract_rel_e`".  `rel_ext` has THREE conjuncts, and the third is
+LEFT-FUNCTIONALITY (`In (a,b1) ρe -> In (a,b2) ρe -> b1 = b2`) — which is
+exactly what §8c.29 records as FALSE on this column:
+
+> `rel_fun` is **LOCAL, on `D`**, and ⚠️ it CANNOT be global — §8c.25's
+> Finding 1 IS a left atom with two right images, and that configuration is
+> REACHABLE above the extract (`a_extract_rel_e` hands back a ρx column of
+> leaked openers).
+
+⇒ **do not strengthen `a_extract_rel_e` to a `rel_ext`.**  ⚙ Checked, not
+inferred: `a_looksub_lookeq_rel_e` (prop_solve_rel.v §7) is where ρx is born,
+and its spec is four conjuncts — `a ∉ add α (ftvar_in_aenv Θ1) /\ b ∈ S1 /\
+b ∉ S0`, `cols_r ρx ∩ dom Ξ2 [=] empty`, `a ∈ ftvar_in_a_cstrs C1`,
+`cols_l ρx ∩ dom Ξ1 [=] empty` — none of them an injectivity, so the
+strengthening would have to be pushed down a whole layer even if it were true.
+
+⭐ **WHAT ACTUALLY PAYS, and why nothing is owed for `rel_fun`.**  Read
+`rel_fun_app`'s proof: the left-functionality of ρe is consumed in ONE branch
+only, `a ∈ D1 \ D0`.  And ρx's left atoms are outside the context's domain
+altogether — `a ∉ ftvar_in_aenv Θ1 ⊇ dom Θ1` and `cols_l ρx ∩ dom Ξ1 [=] empty`
+— which is precisely §8c.29's "a leaked opener is bound NOWHERE".  So at
+`D = dom (Ξ ++ Θ0)` that branch is vacuous, and what the row needs is a
+weaker-premise variant
+
+    rel_fun_app_off : rel_fun ρ V D ->
+                      (forall a b, In (a, b) ρe -> a `notin` D) ->
+                      rel_fun (ρe ++ ρ) V D
+
+(~8 lines, and `a_extract_rel_e` already returns everything it needs).
+
+⛔ **THE ONE THING THAT MAY STILL BE OWED IS `rel_inj`, NOT `rel_fun`.**
+`rel_inj_app` wants ρe RIGHT-injective (`In (a1,b) -> In (a2,b) -> a1 = a2`).
+That is plausible — ρx's right atoms are supply draws, and §8c.29 calls
+`rel_inj` "GLOBAL and true by construction: every right atom is drawn ONCE"
+— but it is NOT among the four conjuncts above, so it would have to be added
+at the LOOK layer.  ⚙ Whether the `a_sub__forall_l` row needs `rel_inj` at
+the widened list at all is not yet known; settle it when the row is written,
+and do not pre-emptively re-open `a_looksub_lookeq_rel_e`.
 
 #### (iii) ⭐⭐ THE ONE INTERFACE DECISION — take it BEFORE the `a_sub` motive
 
@@ -6898,3 +6929,35 @@ the ONE inclusion, then combine.
   `rel_atoms_push_absent`, `inter_empty_add`, `inter_empty_cong_l`.
 - `ext_algo/prop_lift.v` §9 — the three motives,
   `lift_consis_forall_close`, the three ∀ row lemmas, and the theorem.
+
+### 8c.36 ⭐⭐ THE `a_sub` RUNG OPENS — its flex-reflect is landed, premise-free, 16 rows (2026-08-20)
+
+`a_sub_sub_flex_flex_rev` is **Qed** (algo/prop_wf_preservation.v §5):
+
+    a_sub:       a_flex_tvar Θ1 α1 -> α1 ∈ dom Θ0 -> a_flex_tvar Θ0 α1
+    a_sub_flex:  a_flex_tvar Θ1 α1 -> α1 ∈ dom (Ξ ++ Θ0) ->
+                 a_flex_tvar (Ξ ++ Θ0) α1
+
+16 rows, **no premise** — the same discipline as the consis rung, and the
+first concrete consequence of §8c.34 (iii)'s corrected call (side 2 stays
+wf-free everywhere, so `a_isub_flex_rev` is not built).
+
+⚙ What each interesting row reads:
+
+| row | what pays |
+|---|---|
+| `Check` | the consis flex-rev, through `a_consis_chk`'s existential |
+| `Arrow` | the consis flex-rev, then the IH, with `auc_dom_mono_consis` moving `α1` from `dom Θ0` into `dom Θ1` |
+| `ForallR` | the junk suffix AND the opener both leave the output — weaken twice into `Ξ ++ (α ~ ⌢) ++ Θ1`, apply the IH, peel the opener (`α ∉ dom Θ0` from the rule's own freshness) |
+| `ForallL` | the collection's block is PENDING, not an output: apply the IH at `Ξ ++ Θ0`, then `uniq (Ξ ++ Θ0)` puts an OLD atom off `dom Ξ` |
+| `Flex-Solve` | the only row that peels THREE mid entries (`α̂0 ≔ α̂→β̂`, `β̂`, `α̂`) — `α̂0`'s case is answered by the conclusion's own head, and `α̂`/`β̂` cannot be old atoms because the rule's freshness dodges `add α0 (dom (Ξ ++ Θ0))` |
+
+⚙ It needed one move `algo/` did not have: `a_flex_tvar_mid_other` (peel one
+entry under a pending suffix), MOVED down from ext_algo/prop_solve_rel.v §10
+next to `a_flex_tvar_cons_other`, which moved for the same reason yesterday.
+
+⚠️ **TRAP PAID: a dangling EVAR reads as "incomplete proof term" at `Qed`
+with no goals left.**  `eapply in_dom_mid_other; [ simpl_env; exact Hd | … ]`
+lets `simpl_env` destroy the `(?c ~ ?bd)` shape before `exact Hd` unifies, so
+`?bd` is never determined — and the row APPEARS to close.  Drop the
+`simpl_env` and let `exact Hd` see the folded context.

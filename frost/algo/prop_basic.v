@@ -1577,6 +1577,24 @@ Proof.
   simpl_env. clear - Hne. fsetdec.
 Qed.
 
+(** …and anywhere under a PENDING SUFFIX.  ⚙ MOVED here from
+    ext_algo/prop_solve_rel.v §10 with its cons-instance above (2026-08-20):
+    the `a_sub` rung's [a_sub_sub_flex_flex_rev] lives in [algo/] and its
+    Flex-Solve row peels THREE mid entries at once. *)
+Lemma a_flex_tvar_mid_other : forall (Ξ : aenv) (c : atom) (bd : abind)
+    (Θ : aenv) x,
+  x <> c ->
+  (a_flex_tvar (Ξ ++ (c ~ bd) ++ Θ) x <-> a_flex_tvar (Ξ ++ Θ) x).
+Proof.
+  intros Ξ c bd Θ x Hne; split; [ | apply a_flex_tvar_weaken_mid ].
+  intros [Hb | [τ Hb]]; [ left | right; exists τ ];
+    (unfold binds in *; apply in_app_or in Hb; destruct Hb as [H | H];
+     [ apply in_or_app; left; exact H
+     | destruct H as [E | H];
+       [ exfalso; inversion E; subst; apply Hne; reflexivity
+       | apply in_or_app; right; exact H ] ]).
+Qed.
+
 (** The [Ghost]/[GhostR] side condition transports through the rename:
     if [Δ] avoids [ftv P] then the renamed [Δ] avoids the renamed [ftv]. *)
 (** [ftvar_in_pskl_open_pskl_wrt_pskl_upper] is stated as a [<=]; the
