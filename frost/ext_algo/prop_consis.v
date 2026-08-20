@@ -181,6 +181,180 @@ Qed.
     are [binds] facts, so this is [binds_In] twice; it is stated because
     [Flex-Flex-Assign] substitutes its two subjects and therefore needs them
     inside the supply, which is a statement about [dom]. *)
+#[local] Ltac sgf_ctx :=
+  repeat match goal with
+  | H : e_assign ?S0 _ _ _ _ ?S1 _ |- _ =>
+      lazymatch goal with
+      | _ : S0 [<=] S1 |- _ => fail
+      | _ => pose proof (e_assign_supply_grows H)
+      end
+  | H : e_unify ?S0 _ _ _ ?S1 _ |- _ =>
+      lazymatch goal with
+      | _ : S0 [<=] S1 |- _ => fail
+      | _ => pose proof (e_unify_supply_grows H)
+      end
+  | H : e_consis _ _ ?S0 _ _ _ _ ?S1 _ |- _ =>
+      lazymatch goal with
+      | _ : S0 [<=] S1 |- _ => fail
+      | _ => pose proof (e_consis_supply_grows H)
+      end
+  | H : e_guess_mono ?S0 _ ?S1 _ _ |- _ =>
+      lazymatch goal with
+      | _ : S0 [<=] S1 |- _ => fail
+      | _ => pose proof (e_guess_mono_supply_grows H)
+      end
+  end.
+
+(** ⭐⭐ THE OUTPUT CONTEXT LIVES IN THE OUTPUT SUPPLY — the CONTEXT twin of
+    [e_assign_unify_consis_dom_upper], and what [a_consis__arrow] needs to
+    hand its second premise: everything the motive says about side 2's
+    context has to be re-established at the FIRST premise's output, and
+    "[ftvar_in_aenv] is covered" is the half [dom_upper] does not give. *)
+Lemma e_assign_unify_consis_ctx_ftvar :
+  (forall S0 Θ0 Ξ α P S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e ->
+     ftvar_in_aenv (Ξ ++ Θ0) ∪ ftvar_in_pskl P [<=] S0 ->
+     ftvar_in_aenv Θ1 [<=] S1) /\
+  (forall S0 Θ0 α β S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e ->
+     ftvar_in_aenv Θ0 [<=] S0 ->
+     ftvar_in_aenv Θ1 [<=] S1) /\
+  (forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+     ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P [<=] S0 ->
+     ftvar_in_aenv Θ1 [<=] S1).
+Proof.
+  apply (e_assign_unify_consis_mutind
+           (fun S0 Θ0 Ξ α P S1 Θ1 _ =>
+              ftvar_in_aenv (Ξ ++ Θ0) ∪ ftvar_in_pskl P [<=] S0 ->
+              ftvar_in_aenv Θ1 [<=] S1)
+           (fun S0 Θ0 α β S1 Θ1 _ =>
+              ftvar_in_aenv Θ0 [<=] S0 -> ftvar_in_aenv Θ1 [<=] S1)
+           (fun Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1 _ =>
+              ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P [<=] S0 ->
+              ftvar_in_aenv Θ1 [<=] S1));
+    intros; sgf_ctx;
+    repeat rewrite ftvar_in_aenv_app in *; simpl in *;
+    try solve [ clear - H; fsetdec ]; try solve [ fsetdec ].
+  (* the RE-ATTACHING rows: the IH covers the tail, the head is an input *)
+  all: try (match goal with
+            | IH : _ -> ftvar_in_aenv ?Θ [<=] ?S |- _ =>
+                let Hih := fresh "Hih" in
+                assert (Hih : ftvar_in_aenv Θ [<=] S)
+                  by (apply IH; repeat rewrite ftvar_in_aenv_app; simpl;
+                      fsetdec)
+            end; fsetdec).
+  (* ⭐ [Assign-SolveM]: the guessed block and the guessed payload *)
+  { match goal with
+    | Hg : e_guess_mono _ _ _ _ _ |- _ =>
+        pose proof (e_guess_mono_ftv Hg) as Hgf;
+        pose proof (e_guess_mono_generated_in_supply Hg) as Hgd;
+        pose proof (e_guess_mono_generated_ftvar Hg) as Hgv
+    end.
+    fsetdec. }
+  (* ⭐ [Assign-Assign]: the premise's skeletons are SUBSTITUTED *)
+  { match goal with | Hc : _ [<=] S0 |- _ => rename Hc into Hcov0 end.
+    assert (Hτ : ftvar_in_ptyp τ [<=] S0) by (clear - Hcov0; fsetdec).
+    assert (HP : ftvar_in_pskl P [<=] S0) by (clear - Hcov0; fsetdec).
+    assert (Hα : singleton α [<=] S0).
+    { match goal with
+      | Hf : a_flex_tvar ?Θ α |- _ =>
+          pose proof (a_flex_tvar_in_dom Hf) as Hd;
+          pose proof (dom_subset_ftvar_in_aenv Θ) as Hds
+      end. simpl in *. clear - Hcov0 Hd Hds. fsetdec. }
+    assert (HΘ : ftvar_in_aenv Ξ ∪ ftvar_in_aenv Θ0 [<=] S0)
+      by (clear - Hcov0; fsetdec).
+    match goal with
+    | IH : _ -> ftvar_in_aenv ?Θ [<=] ?S |- _ =>
+        assert (Hih : ftvar_in_aenv Θ [<=] S)
+    end.
+    { match goal with
+      | IH : _ -> ftvar_in_aenv _ [<=] _ |- _ => apply IH
+      end.
+      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P (ptyp_to_pskl τ) β)
+        as Hu1.
+      rewrite ftvar_ptyp_to_pskl in Hu1.
+      assert (Hs1 : ftvar_in_pskl (subst_pskl_in_pskl (ptyp_to_pskl τ) β P)
+                    [<=] S0) by (clear - Hu1 HP Hτ; fsetdec).
+      match goal with
+      | |- context [ if ?X then _ else _ ] => destruct X
+      end.
+      - rewrite ftvar_ptyp_to_pskl. clear - HΘ Hs1 Hτ. fsetdec.
+      - simpl. clear - HΘ Hs1 Hα. fsetdec. }
+    assert (Hhd : add β (ftvar_in_ptyp τ) [<=] S0) by (clear - Hcov0; fsetdec).
+    match goal with | Hg : S0 [<=] S1 |- _ => rename Hg into Hgr end.
+    clear - Hih Hhd Hgr. fsetdec. }
+  (* [Flex-Flex-L] / [Flex-Flex-R]: the payload is a context variable *)
+  { match goal with | Hc : _ [<=] ?S |- _ [<=] ?S => rename Hc into Hcov0 end.
+    match goal with
+    | Hf : a_flex_tvar ?Θ ?y |- _ =>
+        pose proof (a_flex_tvar_in_dom Hf) as Hd;
+        pose proof (dom_subset_ftvar_in_aenv Θ) as Hds
+    end. clear - Hcov0 Hd Hds. fsetdec. }
+  { match goal with | Hc : _ [<=] ?S |- _ [<=] ?S => rename Hc into Hcov0 end.
+    match goal with
+    | Hf : a_flex_tvar ?Θ ?y |- _ =>
+        pose proof (a_flex_tvar_in_dom Hf) as Hd;
+        pose proof (dom_subset_ftvar_in_aenv Θ) as Hds
+    end. clear - Hcov0 Hd Hds. fsetdec. }
+  (* ⭐ [Flex-Flex-Assign] *)
+  { match goal with | Hc : _ [<=] S0 |- _ => rename Hc into Hcov0 end.
+    assert (Hτ : ftvar_in_ptyp τ [<=] S0) by (clear - Hcov0; fsetdec).
+    assert (HΘ : ftvar_in_aenv Θ0 [<=] S0) by (clear - Hcov0; fsetdec).
+    assert (Hd0 : add α1 (dom Θ0) [<=] S0).
+    { pose proof (dom_subset_ftvar_in_aenv Θ0) as Hds.
+      clear - Hcov0 Hds. fsetdec. }
+    assert (Hab : singleton α ∪ singleton β [<=] S0).
+    { match goal with
+      | Hfa : a_flex_tvar ?Θ α, Hfb : a_flex_tvar ?Θ β |- _ =>
+          pose proof (a_flex_tvar_in_dom Hfa) as Hda;
+          pose proof (a_flex_tvar_in_dom Hfb) as Hdb
+      end. simpl in Hda, Hdb. clear - Hd0 Hda Hdb. fsetdec. }
+    match goal with
+    | IH : _ -> ftvar_in_aenv ?Θ [<=] ?S |- _ =>
+        assert (Hih : ftvar_in_aenv Θ [<=] S)
+    end.
+    { match goal with
+      | IH : _ -> ftvar_in_aenv _ [<=] _ |- _ => apply IH
+      end.
+      repeat rewrite ftvar_ptyp_to_pskl.
+      repeat match goal with
+      | |- context [ if ?X then _ else _ ] => destruct X
+      end; simpl; clear - HΘ Hτ Hab; fsetdec. }
+    assert (Hhd : add α1 (ftvar_in_ptyp τ) [<=] S0) by (clear - Hcov0; fsetdec).
+    match goal with | Hg : S0 [<=] S1 |- _ => rename Hg into Hgr end.
+    clear - Hih Hhd Hgr. fsetdec. }
+  (* ⭐ [U-Arrow]: the second half runs at the first half's OUTPUT *)
+  { match goal with
+    | IH1 : _ -> ftvar_in_aenv ?Θa [<=] ?Sa,
+      IH2 : _ -> ftvar_in_aenv ?Θb [<=] ?Sb |- _ =>
+        let H1 := fresh "Hih1" in
+        assert (H1 : ftvar_in_aenv Θa [<=] Sa) by (apply IH1; fsetdec);
+        apply IH2; fsetdec
+    end. }
+  (* the three ∀ rows: the opener joins the supply and the context *)
+  all: match goal with
+       | IH : ?A -> ?C |- _ =>
+           let Hih := fresh "Hih" in
+           assert (Hih : C);
+           [ apply IH;
+             repeat match goal with
+             | |- context [ open_pskl_wrt_pskl ?B (pskl_var_f ?a) ] =>
+                 lazymatch goal with
+                 | _ : ftvar_in_pskl (open_pskl_wrt_pskl B (pskl_var_f a))
+                       [<=] _ |- _ => fail
+                 | _ => pose proof
+                          (ftvar_in_pskl_open_pskl_wrt_pskl_upper B
+                             (pskl_var_f a))
+                 end
+             end;
+             simpl in *; fsetdec
+           | clear - Hih; simpl in Hih; fsetdec ]
+       end.
+Qed.
+
+
+
 Lemma a_flex_tvar_in_dom : forall Θ α,
   a_flex_tvar Θ α -> α `in` dom Θ.
 Proof.

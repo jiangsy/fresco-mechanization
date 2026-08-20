@@ -33,13 +33,16 @@ Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
+Require Import src.frost.ltac_utils.
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
 Require Import src.frost.prop_coercions.
 Require Import src.frost.prop_ln.
 Require Import src.frost.def_shapes.
 Require Import src.frost.algo.def_rules.
+Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_basic.
+Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.sub.prop_looksub.
 Require Import src.frost.algo.sub.prop_solve_sub.
 Require Import src.frost.algo.consis.prop_soundness_consis.
@@ -4261,5 +4264,189 @@ Proof.
   - pose proof (a_wf_pskl_ftv_dom ltac:(eassumption)) as Hs.
     clear - Hs. fsetdec.
   - apply a_wf_ptyp_ftv_dom; assumption.
+Qed.
+
+
+(* ===================================================================== *)
+(*  §12  ⭐ THE CONSIS RUNG's PREREQUISITES — the facts the trio's rows    *)
+(*       consume that are neither about the RELATION nor about the WALK   *)
+(*                                                                        *)
+(*  ⚙ Three groups, and their natural homes are noted because they are    *)
+(*  general facts that happened to be missing:                            *)
+(*                                                                        *)
+(*  - [a_wf_pskl_ftv_tvarish] / [a_binds_tvar_not_var_{typ,skl}]          *)
+(*    (algo/prop_basic.v's neighbourhood): every free variable of a       *)
+(*    [Δ]-wf skeleton is [Δ]-bound or TVAR-ISH, so a TERM entry cannot    *)
+(*    occur in it — what [Assign-SkipTmVar] needs and its rule does not   *)
+(*    state.                                                              *)
+(*  - [a_wf_pskl_weaken_tvarish] / [a_isub_wf_pskl] (algo/prop_inc.v's):  *)
+(*    the information increase carries tvar-ishness, so a skeleton        *)
+(*    well-formed in the input is well-formed in the OUTPUT — what        *)
+(*    [C-Arrow]'s second premise needs of the first premise's context.    *)
+(*    ⚙ [a_wf_pskl_weaken] itself is too strong: it asks for [binds]      *)
+(*    preservation, and the run turns [α̂] into [α̂ ≔ τ].                   *)
+(*  - [a_wf_aenv_mid_var_{typ,skl}_inv] / [a_wf_aenv_cons_payload_ftv]:   *)
+(*    a context entry's payload is scoped in its OWN TAIL — the [_def]    *)
+(*    twin already existed ([a_wf_aenv_mid_def_inv]).                     *)
+(*                                                                        *)
+(*  ⭐⭐ And the two REL facts the rung's binder and arrow rows need:       *)
+(*  [rel_atoms_app] / [rel_ext_app] (both ANTITONE predicates re-proved   *)
+(*  at a WIDER pair list, from the new pairs' spec) and                    *)
+(*  [rel_aenv_ftv_corr_r] — [rel_pskl_ftv_corr_r] one layer up, which is  *)
+(*  how a ∀ row learns that side 2's opener did not escape into side 2's  *)
+(*  output context.                                                       *)
+(* ===================================================================== *)
+
+(** ⭐ Every free variable of a [Δ]-wf skeleton is [Δ]-bound or TVAR-ISH in
+    the context.  This is what tells [Assign-SkipTmVar] that the term entry
+    it is peeling cannot occur in the assigned skeleton. *)
+Lemma a_wf_pskl_ftv_tvarish : forall Θ Δ P,
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
+  forall γ, γ `in` ftvar_in_pskl P -> γ `in` Δ \/ a_binds_tvar γ Θ.
+Proof.
+  intros Θ Δ P H; induction H; simpl; intros γ Hγ;
+    try solve [ exfalso; clear - Hγ; fsetdec ].
+  - assert (Eγ : γ = α) by (clear - Hγ; fsetdec). subst γ. exact H.
+  - destruct (AtomSetProperties.In_dec γ (ftvar_in_pskl P1)) as [Hin | Hni];
+      [ exact (IHa_wf_pskl1 γ Hin)
+      | exact (IHa_wf_pskl2 γ ltac:(clear - Hγ Hni; fsetdec)) ].
+  - pick fresh β for (L `union` ftvar_in_pskl P `union` Δ
+                        `union` singleton γ `union` dom Θ).
+    assert (Hin : γ `in` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f β))).
+    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P (pskl_var_f β))
+        as Hl. clear - Hγ Hl. fsetdec. }
+    destruct (H0 β ltac:(clear - Fr; solve_notin_auto) γ Hin) as [HΔ | Htv];
+      [ left; clear - HΔ Fr; fsetdec | right; exact Htv ].
+  - destruct (IHa_wf_pskl γ Hγ) as [HΔ | Htv];
+      [ exfalso; clear - HΔ; fsetdec | right; exact Htv ].
+Qed.
+
+Lemma a_binds_tvar_not_var_typ : forall (Θ : aenv) x A,
+  uniq Θ -> binds x (abind_var_typ A) Θ -> ~ a_binds_tvar x Θ.
+Proof.
+  intros Θ x A Hu Hb [Hb2 | [Hb2 | [t Hb2]]];
+    pose proof (binds_unique _ _ _ _ _ Hb Hb2 Hu) as E; discriminate.
+Qed.
+
+Lemma a_binds_tvar_not_var_skl : forall (Θ : aenv) x Q,
+  uniq Θ -> binds x (abind_var_skl Q) Θ -> ~ a_binds_tvar x Θ.
+Proof.
+  intros Θ x Q Hu Hb [Hb2 | [Hb2 | [t Hb2]]];
+    pose proof (binds_unique _ _ _ _ _ Hb Hb2 Hu) as E; discriminate.
+Qed.
+
+
+Lemma rel_atoms_app : forall ρe ρ V D1 D2 W S,
+  rel_atoms ρ V D1 D2 ->
+  rel_ext ρe W S ->
+  D1 [<=] W -> D2 [<=] S ->
+  rel_atoms (ρe ++ ρ) V D1 D2.
+Proof.
+  intros ρe ρ V D1 D2 W S Hd [Hfr _] H1 H2 a b Hat.
+  destruct (rel_atom_app_inv ρe ρ Hat) as [Hin | Hat'].
+  - destruct (Hfr _ _ Hin) as [Ha Hb].
+    split; intros Hc; exfalso; [ clear - Ha H1 Hc | clear - Hb H2 Hc ];
+      fsetdec.
+  - exact (Hd a b Hat').
+Qed.
+
+Lemma a_wf_pskl_weaken_tvarish : forall Θ Θ' Δ P,
+  (forall α, a_binds_tvar α Θ -> a_binds_tvar α Θ') ->
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
+  {{ Θ' ⨟ Δ ⊢ₚₛ P }}a.
+Proof.
+  intros Θ Θ' Δ P Hmon Hwf; revert Θ' Hmon; induction Hwf; intros Θ' Hmon;
+    eauto using a_wf_pskl.
+  apply a_wf_pskl__var. destruct H as [HΔ | Htv];
+    [ left; exact HΔ | right; exact (Hmon α Htv) ].
+Qed.
+
+(** ⭐ The information increase carries TVAR-ISHNESS, so a skeleton
+    well-formed in the input is well-formed in the output — what
+    [a_consis__arrow]'s second premise needs of the FIRST premise's
+    output context. *)
+Lemma a_isub_wf_pskl : forall Θ Θ' Δ P,
+  a_isub Θ Θ' -> {{ Θ ⨟ Δ ⊢ₚₛ P }}a -> {{ Θ' ⨟ Δ ⊢ₚₛ P }}a.
+Proof.
+  intros Θ Θ' Δ P [[κ [Hid Hinc]] _] Hwf.
+  eapply a_wf_pskl_weaken_tvarish; [ | exact Hwf ].
+  intros α Htv. eapply a_inc_binds_tvarish; eassumption.
+Qed.
+
+
+Lemma rel_ext_app : forall ρe2 ρe1 W1 W2 S1 S2,
+  rel_ext ρe1 W1 S1 ->
+  rel_ext ρe2 W2 S2 ->
+  W1 [<=] W2 -> S1 [<=] S2 ->
+  (forall a b, In (a, b) ρe1 -> a `in` W2 /\ b `in` S2) ->
+  rel_ext (ρe2 ++ ρe1) W1 S1.
+Proof.
+  intros ρe2 ρe1 W1 W2 S1 S2 [Hfr1 [Hri1 Hlf1]] [Hfr2 [Hri2 Hlf2]] HW HS Hin1.
+  unfold rel_ext. split; [ | split ].
+  - intros a b Hin. apply in_app_or in Hin. destruct Hin as [Hin | Hin].
+    + destruct (Hfr2 _ _ Hin) as [Ha Hb].
+      split; [ clear - Ha HW; fsetdec | clear - Hb HS; fsetdec ].
+    + exact (Hfr1 _ _ Hin).
+  - intros a1 a2 b Hi1 Hi2. apply in_app_or in Hi1. apply in_app_or in Hi2.
+    destruct Hi1 as [Hi1 | Hi1]; destruct Hi2 as [Hi2 | Hi2].
+    + exact (Hri2 _ _ _ Hi1 Hi2).
+    + exfalso. destruct (Hfr2 _ _ Hi1) as [_ Hb].
+      destruct (Hin1 _ _ Hi2) as [_ Hb2]. contradiction.
+    + exfalso. destruct (Hfr2 _ _ Hi2) as [_ Hb].
+      destruct (Hin1 _ _ Hi1) as [_ Hb2]. contradiction.
+    + exact (Hri1 _ _ _ Hi1 Hi2).
+  - intros a b1 b2 Hi1 Hi2. apply in_app_or in Hi1. apply in_app_or in Hi2.
+    destruct Hi1 as [Hi1 | Hi1]; destruct Hi2 as [Hi2 | Hi2].
+    + exact (Hlf2 _ _ _ Hi1 Hi2).
+    + exfalso. destruct (Hfr2 _ _ Hi1) as [Ha _].
+      destruct (Hin1 _ _ Hi2) as [Ha2 _]. contradiction.
+    + exfalso. destruct (Hfr2 _ _ Hi2) as [Ha _].
+      destruct (Hin1 _ _ Hi1) as [Ha2 _]. contradiction.
+    + exact (Hlf1 _ _ _ Hi1 Hi2).
+Qed.
+
+
+(** ⭐ THE CORRESPONDENCE ON A CONTEXT's FREE VARIABLES — [rel_pskl_ftv_corr_r]
+    one layer up.  It is what tells a ∀ row that side 2's opener cannot have
+    escaped into side 2's output context: if it had, [rel_inj] would put side
+    1's opener into side 1's, which well-formedness forbids. *)
+Lemma rel_ptyp_ftv_corr_r : forall ρ V A1 A2,
+  rel_ptyp ρ V A1 A2 ->
+  forall b, b `in` ftvar_in_ptyp A2 ->
+  exists a, a `in` ftvar_in_ptyp A1 /\ rel_atom ρ V a b.
+Proof.
+  intros ρ V A1 A2 H b Hb. unfold rel_ptyp in H.
+  rewrite <- ftvar_ptyp_to_pskl in Hb.
+  destruct (rel_pskl_ftv_corr_r H Hb) as (a & Ha & Hat).
+  exists a. rewrite ftvar_ptyp_to_pskl in Ha. split; assumption.
+Qed.
+
+Lemma rel_abind_ftv_corr_r : forall ρ V b1 b2,
+  rel_abind ρ V b1 b2 ->
+  forall b, b `in` ftvar_in_abind b2 ->
+  exists a, a `in` ftvar_in_abind b1 /\ rel_atom ρ V a b.
+Proof.
+  intros ρ V b1 b2 H b Hb; inversion H; subst; simpl in Hb |- *;
+    try solve [ exfalso; clear - Hb; fsetdec ];
+    solve [ eapply rel_ptyp_ftv_corr_r; eassumption
+          | eapply rel_pskl_ftv_corr_r; eassumption ].
+Qed.
+
+Lemma rel_aenv_ftv_corr_r : forall ρ V Θ1 Θ2,
+  rel_aenv ρ V Θ1 Θ2 ->
+  forall b, b `in` ftvar_in_aenv Θ2 ->
+  exists a, a `in` ftvar_in_aenv Θ1 /\ rel_atom ρ V a b.
+Proof.
+  intros ρ V Θ1 Θ2 H; induction H; intros y Hy; simpl in Hy;
+    [ exfalso; clear - Hy; fsetdec | ].
+  simpl.
+  destruct (y == b) as [-> | Hne].
+  - exists a. split; [ clear; fsetdec | assumption ].
+  - destruct (AtomSetProperties.In_dec y (ftvar_in_abind b2)) as [Hin | Hni].
+    + destruct (rel_abind_ftv_corr_r H0 Hin) as (x & Hx & Hat).
+      exists x. split; [ clear - Hx; fsetdec | exact Hat ].
+    + destruct (IHrel_aenv y ltac:(clear - Hy Hne Hni; fsetdec))
+        as (x & Hx & Hat).
+      exists x. split; [ clear - Hx; fsetdec | exact Hat ].
 Qed.
 

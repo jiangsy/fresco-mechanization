@@ -6515,3 +6515,90 @@ two tm-var rows SHRINK because the identity-pair branch disappears).
 ⚠️ Budget honestly: threading a seven-premise package through a 28-row
 mutual induction is the bulk of the remaining work, not the consis rows
 themselves — ten of those are one `inversion` and a `rel_pskl` constructor.
+
+### 8c.32 ⭐⭐ 18 OF THE 28 ROWS — the whole WALK plus four of `a_consis`, and the ONE fact the ∀ rows still owe (2026-08-20)
+
+✅ **`make coq` rc=0, `README.v` 33/33, zero `Admitted`/`Axiom`.**
+`prop_consis.v` gains `e_assign_unify_consis_ctx_ftvar`; `prop_solve_rel.v`
+gains §12.  Written and compiled against the motive: **all 8 `a_assign`
+rows, all 6 `a_unify` rows, and `C-Ghost` / `C-Unit` / `C-Rigid` /
+`C-Arrow`** — 18 of 28.  Still all-or-nothing, so none is in the tree.
+
+#### ✅ THE PREMISE PACKAGE §8c.31 PREDICTED IS LANDED, AND SIDE 2 DOES NOT NEED IT
+
+The consis motive now carries `consis_sound_concl`'s six premises plus
+`Δ1 ∪ Δ2 [<=] ftvar_in_aenv Θ0`, and `C-Arrow` re-establishes them at `Θ1`
+by applying `a_assign_unify_consis_sound` to its FIRST premise — conjunct 1
+(`Θ0 ⊴ Θ1`), conjunct 2 (`{{ ⊢ Θ1 }}a`) and conjunct 4 (the Δ transport) are
+exactly what the second premise wants.
+
+⭐⭐ **AND SIDE 2's HALF OF THE PACKAGE IS NOT NEEDED AT ALL** — which is the
+finding that made the row tractable.  Side 2's context is used for four
+things only (`uniq`, the mid-strip, the payload's supply bound, the head's
+freshness), and all four follow from
+
+    uniq Θ0'   and   ftvar_in_aenv Θ0' [<=] S0
+
+so those two REPLACE `{{ ⊢ Θ0' }}a` in all three motives.  ⭐ Both are then
+re-established at `Θ1'`: `uniq` through `e_consis_sound` +
+`a_assign_unify_consis_uniq`, and the coverage through the new
+
+    e_assign_unify_consis_ctx_ftvar  (prop_consis.v, 28 rows, Qed)
+      ftvar_in_aenv Θ0 ∪ ftvar P0 ∪ ftvar P [<=] S0 -> ftvar_in_aenv Θ1 [<=] S1
+
+— the CONTEXT twin of `_dom_upper`, and the half `dom_upper` does not give.
+⚙ Its 28 rows are 16 one-liners after the growth facts; the work is in
+`Assign-SolveM` (`e_guess_mono_ftv` + the two block lemmas), the two
+substitution rows and the three ∀ rows.
+
+#### ⭐ AND §8c.31's OTHER PREDICTION HELD: the tm-var rows STOP needing §11's identity pair
+
+With `{{ (Ξ ++ Θ0) ⨟ ∅ ⊢ₚₛ P }}a` in the assign motive, `x ∉ ftvar P` is a
+theorem (`a_wf_pskl_ftv_tvarish` + `a_binds_tvar_not_var_typ`), so
+`a_wf_pskl_strip_mid` re-establishes the premise and the `x ∈ V` branch is
+dead weight.  ⚙ §11's identity-pair kit is kept: it is what the rows were
+first proved with, and it is the only route that needs NO skeleton
+well-formedness at all.
+
+#### ⛔ WHAT THE THREE ∀ ROWS STILL OWE — one fact, precisely
+
+The ∀ rows restrict ρ (`restrict_pairs α α2 ρ`, as the solve layer's do),
+push the opener pair, run the premise, and close.  Three of the four
+obligations are discharged:
+
+| obligation | source |
+|---|---|
+| side 1's opener off `V` and off `cols_l` | the rule's own `α ∉ ftvar_in_aenv Θ0` + `V [<=] ftvar_in_aenv Θ0`, and `restrict_pairs` |
+| the premise's wf / Δ package at `(α ~ ⌢) ++ Θ0` | `a_wf_pskl_all_syn_open_tvar`, and the Δ invariants by hand (~25 lines, written and compiled) |
+| the YIELD's close | `rel_pskl_close_pair_restrict` — it UN-restricts, so the yield lands at the caller's ρ |
+| ⛔ the CONTEXT's conclusion at the caller's ρ | see below |
+
+⛔ **The gap.** `rel_aenv` is monotone in ρ, so widening back is free once
+the opener PAIR is deleted — and deleting it needs only
+`α ∉ ftvar_in_aenv Θ1`, which wf of the premise's output gives.  ⚠️ But
+`flex_agree_rel` is ANTITONE, so the conclusion must also cover the pairs
+`restrict_pairs` DELETED — the pairs `(α, b) ∈ ρ` — and for those it must
+show `¬ a_flex_tvar Θ1' b`.  It is TRUE and the argument is short:
+`α ∉ dom Θ0` makes the INPUT agreement give `¬ a_flex_tvar Θ0' b`, and the
+run never makes an OLD atom flexible.  ⇒ what is owed is exactly
+
+    a_assign / a_unify / a_consis:  a_flex_tvar Θ1 b -> b ∈ dom Θ0 ->
+                                    a_flex_tvar Θ0 b
+
+the CONVERSE of `a_assign_unify_consis_flex_preserve`
+(algo/prop_inc_strengthen.v:119) restricted to old atoms — a 28-row mutual
+induction whose rows are one or two lines each (every rule either keeps an
+entry, turns `α̂` into `α̂ ≔ τ`, or adds a FRESH one).  ⚙ The pairs
+`restrict_pairs` deletes on the RIGHT cannot occur: `α2 ∉ S0` while
+`cols_r ρ [<=] S0`.
+
+#### ⚙ §12 — the rung's prerequisites, and their natural homes
+
+`a_wf_pskl_ftv_tvarish`, `a_binds_tvar_not_var_{typ,skl}` (prop_basic's
+neighbourhood); `a_wf_pskl_weaken_tvarish`, `a_isub_wf_pskl` (prop_inc's —
+⚙ `a_wf_pskl_weaken` itself is too strong, it asks for `binds`
+preservation and the run turns `α̂` into `α̂ ≔ τ`);
+`a_wf_aenv_mid_var_{typ,skl}_inv`, `a_wf_aenv_cons_payload_ftv` (the `_def`
+twin already existed); and the two REL facts the arrow and binder rows
+need — `rel_atoms_app` / `rel_ext_app` (both ANTITONE predicates re-proved
+at a WIDER pair list from the new pairs' spec) and `rel_aenv_ftv_corr_r`.
