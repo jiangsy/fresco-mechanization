@@ -6424,3 +6424,94 @@ CONTEXT — `rel_aenv_restrict` (§9) is what returns the conclusion to the
 caller's list, and the opener's absence from `Θ1` / `Θ1'` comes from
 `a_assign_unify_consis_sound` conjunct 2 (`{{ ⊢ Θ1 }}a`) plus
 `a_wf_aenv_ftv_dom`, with `e_consis_sound` supplying the same on side 2.
+
+### 8c.31 ⭐⭐ THE ASSIGN AND UNIFY BLOCKS LIFT — 14 of the 28 rows, and what the CONSIS block still needs (2026-08-20)
+
+✅ **`make coq` rc=0, `README.v` 33/33, zero `Admitted`/`Axiom`.**
+`prop_solve_rel.v` §11 is new.  **All eight `a_assign` rows and all six
+`a_unify` rows were written against §8c.30's motive and compiled** — the
+whole walk lifts.  The 14 `a_consis` rows are not written and the reason is
+identified below; a mutual induction is all-or-nothing, so none of the 28 is
+in the tree yet.
+
+#### ✅ THE TM-VAR BLOCKER OF §8c.30 IS RESOLVED — and NOT by the `a_wf_pskl` route
+
+`Assign-SkipTmVar` (both sorts) peels an entry with no
+`x ∉ ftvar_in_pskl P` premise, so the V-shrink cannot re-establish
+`rel_pskl ρ V' P P'` by freshness.  ⭐ The repair is the DELETE-don't-
+strengthen move once more, run BACKWARDS: **`V` keeps `x` as an IDENTITY
+PAIR while the premise runs, and the pair is deleted again at the
+conclusion, where it is redundant.**  It is legal exactly because `rel_fun`
+forces side 2's head to be `x` as well whenever `x ∈ V` — and when `x ∉ V`
+there is nothing to shrink at all, which is the row's other branch.
+⇒ no skeleton-well-formedness premise anywhere in the assign/unify blocks.
+
+§11 lands the kit: `rel_pskl_shrink_V_id`, `rel_{atom,pskl,ptyp,abind,aenv}_drop_id`,
+`flex_agree_rel_push_id_absent`, `rel_inj_push_id`, `rel_fun_push_absent`,
+plus the binder-shape algebra the skip rows read —
+`a_flex_tvar_one_nonflex` / `_cons_absent` / `_mid_nonflex_absurd` (what
+gives `α <> β` at the rows carrying no such premise),
+`a_flex_tvar_head_swap_flexish` and `flex_agree_rel_head_swap`
+(`Flex-Flex-L/R`'s whole output move), `flex_agree_peel_cons`,
+`a_wf_aenv_mid_var_typ_inv` / `_var_skl_inv`, `a_wf_aenv_cons_payload_ftv`.
+
+⚠️ **CORRECTION to §8c.30**: `a_assign_unify_subject_flex` is NOT new — it
+already exists at `algo/consis/prop_consis_rename.v:334`, beside
+`a_assign_unify_consis_uniq` (:408).  §10's duplicate has been deleted and
+replaced by a pointer.  Both had no consumer before; the V-shrink is one.
+
+#### ⛔ WHAT THE CONSIS BLOCK NEEDS, and it is ONE premise package
+
+`a_consis__arrow` runs its second premise at `Θ1`, the FIRST premise's
+OUTPUT.  Everything the motive says about the context therefore has to be
+re-established there, and `{{ ⊢ Θ0 }}a` is the one piece that does not come
+free:
+
+| needed at `Θ1` | source |
+|---|---|
+| `uniq Θ1` | ✅ `a_assign_unify_consis_uniq` (prop_consis_rename.v:408) |
+| `V [<=] ftvar_in_aenv Θ1` | ✅ `V ⊆ ftvar_in_aenv Θ0 ⊆ dom Θ0 ⊆ dom Θ1` (`a_wf_aenv_ftv_dom` + `a_assign_unify_consis_dom_mono`) |
+| `rel_fun … (dom Θ1)` | ✅ `rel_fun_app` (§9), with `Hblk` for the new atoms |
+| ⛔ `{{ ⊢ Θ1 }}a` | `a_assign_unify_consis_sound` conjunct 2 — and its consis component wants SIX premises |
+
+⇒ the consis motive has to carry `consis_sound_concl`'s package:
+`{{ Θ0 ⨟ ∅ ⊢ₚₛ P0 }}a`, `{{ Θ0 ⨟ ∅ ⊢ₚₛ P }}a`,
+`∀α ∈ Δ1∪Δ2, binds α abind_tvar Θ0`, `no_flex_dep (Δ1∪Δ2) Θ0`,
+`flex_above_free (Δ1∪Δ2) Θ0` — and the assign motive
+`{{ (Ξ ++ Θ0) ⨟ ∅ ⊢ₚₛ P }}a`.  ⭐ It is NOT extra invariant-maintenance
+work: soundness' conjunct 4 re-establishes the Δ package at `Θ1`, and its
+two output-relative side conditions (`Δ ∩ dom Θ1 [<=] dom Θ0` and
+"a Δ-name outside `dom Θ0` misses the skeletons") are DISCHARGED by the
+seventh premise below.
+
+⭐ **AND THE PACKAGE PAYS FOR TWO MORE THINGS AT ONCE**, which is why it is
+the right design rather than a tax:
+- the two tm-var skip rows would no longer need §11's identity pair
+  (`a_wf_pskl` at `Δ = ∅` makes every free variable `a_binds_tvar`, which a
+  `var_typ` entry is not, so `x ∉ ftvar P` is a theorem);
+- ⭐⭐ **the three ∀ rows' DROP** (§8c.28 item 2) becomes free: the premise's
+  output is `(α ~ ⌢) ++ Θ1` and wf of it gives `α ∉ dom Θ1`, whence
+  `a_wf_aenv_ftv_dom` gives `α ∉ ftvar_in_aenv Θ1` — exactly what
+  `rel_aenv_restrict` (§9) needs to return the conclusion to the caller's
+  pair list.  ⛔ Without it the opener pair would have to STAY in `ρe`, and
+  then `a_consis__arrow`'s second premise — whose generated names avoid only
+  `dom Θ1`, which the stripped opener is not in — could reinvent that
+  opener and give one left atom TWO right images, which is precisely the
+  configuration `rel_fun` exists to exclude.
+
+⚙ **A SEVENTH premise, `Δ1 ∪ Δ2 [<=] ftvar_in_aenv Θ0`, is owed for a
+different reason**: `rel_atoms` is ANTITONE in ρ (it quantifies over
+related pairs), so `a_consis__arrow`'s second premise, which runs at the
+WIDER `ρe1 ++ ρ`, must discharge the new pairs — and it does, because
+`ρe1`'s left atoms miss `ftvar_in_aenv Θ0 ⊇ Δ1` and its right atoms miss
+`S0 ⊇ Δ1'`.  ⚙ It is maintained: the ∀ rows add `α` to `Δ` and to the
+context at once, and `Arrow` inherits it through `dom Θ0 [<=] dom Θ1`.
+
+#### ⛔ WHAT IS LEFT
+
+The 14 `a_consis` rows, once the package above is threaded through the 14
+that exist (mechanical: the skip rows gain `a_wf_pskl_strip_mid`, and the
+two tm-var rows SHRINK because the identity-pair branch disappears).
+⚠️ Budget honestly: threading a seven-premise package through a 28-row
+mutual induction is the bulk of the remaining work, not the consis rows
+themselves — ten of those are one `inversion` and a `rel_pskl` constructor.

@@ -42,6 +42,7 @@ Require Import src.frost.algo.def_rules.
 Require Import src.frost.algo.prop_basic.
 Require Import src.frost.algo.sub.prop_looksub.
 Require Import src.frost.algo.sub.prop_solve_sub.
+Require Import src.frost.algo.consis.prop_soundness_consis.
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
 Require Import src.frost.ext_algo.def_look.
@@ -3638,12 +3639,11 @@ Qed.
 (*  puts the entry back on both sides.  Between them they are what the     *)
 (*  four skip rows, [Assign-Assign] and [Flex-Flex-Assign] all do.         *)
 (*                                                                        *)
-(*  ⭐ [a_assign_unify_subject_flex] IS A NEW INVARIANT OF THE a-SIDE and   *)
-(*  the reason it is here: the V-SHRINK needs [α <> β] at                  *)
-(*  [Assign-SkipRigid] / [Assign-SkipTmVar], which carry no such premise   *)
-(*  (they do not need one on the a-side).  What supplies it is that the    *)
-(*  walk's SUBJECT is flexible in its own context, so it cannot be the     *)
-(*  rigid or term-variable entry the row is peeling.                       *)
+(*  ⚙ What the V-SHRINK needs beyond this — the walk's SUBJECT is          *)
+(*  flexible in its own context, so it cannot be the rigid or              *)
+(*  term-variable entry a skip row is peeling — ALREADY EXISTS as          *)
+(*  [a_assign_unify_subject_flex] (algo/consis/prop_consis_rename.v:334),  *)
+(*  next to [a_assign_unify_consis_uniq] (:408).  Neither had a consumer.  *)
 (* ===================================================================== *)
 
 Lemma rel_pskl_notin_r_inj : forall ρ V P1 P2 a b,
@@ -3799,54 +3799,13 @@ Lemma a_flex_tvar_prepend : forall (Ξ Θ : aenv) α,
   a_flex_tvar Θ α -> a_flex_tvar (Ξ ++ Θ) α.
 Proof. intros Ξ Θ α H. rewrite a_flex_tvar_app_iff. right. exact H. Qed.
 
-(** ⭐ THE WALK'S SUBJECT IS FLEXIBLE IN ITS OWN CONTEXT — what tells the
-    skip rows that the entry they are peeling is NOT the subject.
-    [Assign-SkipRigid] / [Assign-SkipTmVar] carry no [α <> β] premise (they
-    do not need one on the a-side), but the V-SHRINK does: an [α] that
-    dropped out of [V] with the entry could no longer be [rel_atom]-related. *)
-Lemma a_assign_unify_subject_flex :
-  (forall Θ0 Ξ α P Θ1, {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a ->
-     a_flex_tvar (Ξ ++ Θ0) α)
-  /\ (forall Θ0 α β Θ1, {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a ->
-     a_flex_tvar Θ0 α /\ a_flex_tvar Θ0 β)
-  /\ (forall Δ1 Δ2 Θ0 P0 P Q Θ1,
-     {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}a -> True).
-Proof.
-  apply (a_assign_unify_consis_mutind
-           (fun Θ0 Ξ α P Θ1 _ => a_flex_tvar (Ξ ++ Θ0) α)
-           (fun Θ0 α β Θ1 _ => a_flex_tvar Θ0 α /\ a_flex_tvar Θ0 β)
-           (fun Δ1 Δ2 Θ0 P0 P Q Θ1 _ => True));
-    try (intros; exact I).
-  (* ---- a_assign ---- *)
-  - intros Θ0 α. simpl. left. unfold binds; simpl; left; reflexivity.
-  - intros Θ0 Ξ α P βs τ Hα Hg Hm Hu Hf.
-    apply a_flex_tvar_prepend. left. unfold binds; simpl; left; reflexivity.
-  - intros Θ0 Θ1 Ξ α β τ P Q Hflex Hβ HD IH.
-    apply a_flex_tvar_prepend. exact Hflex.
-  - intros Θ0 Θ1 Ξ α β P Hne Hin HD IH.
-    simpl_env in IH. simpl_env. exact IH.
-  - intros Θ0 Θ1 Ξ α β P Hne Hβ Hd HD IH.
-    apply (a_flex_tvar_insert Ξ ((β ~ abind_flex_mono) ++ nil)). simpl_env. exact IH.
-  - intros Θ0 Θ1 Ξ α β P Hβ Hd HD IH.
-    apply (a_flex_tvar_insert Ξ ((β ~ abind_tvar) ++ nil)). simpl_env. exact IH.
-  - intros Θ0 Θ1 Ξ α x A P Hd HD IH.
-    apply (a_flex_tvar_insert Ξ ((x ~ abind_var_typ A) ++ nil)). simpl_env. exact IH.
-  - intros Θ0 Θ1 Ξ α x Q P Hd HD IH.
-    apply (a_flex_tvar_insert Ξ ((x ~ abind_var_skl Q) ++ nil)). simpl_env. exact IH.
-  (* ---- a_unify ---- *)
-  - intros Θ0 α Hf. split; exact Hf.
-  - intros Θ0 α β Hne Hf. split;
-      [ left; unfold binds; simpl; left; reflexivity
-      | apply a_flex_tvar_prepend; exact Hf ].
-  - intros Θ0 α β Hne Hf. split;
-      [ apply a_flex_tvar_prepend; exact Hf
-      | left; unfold binds; simpl; left; reflexivity ].
-  - intros Θ0 Θ1 α1 τ α β Q Hfa Hfb Hd HD IH. split; assumption.
-  - intros Θ0 Θ1 α1 α β Hne1 Hne2 Hd HD [IH1 IH2].
-    split; apply a_flex_tvar_prepend; assumption.
-  - intros Θ0 Θ1 c b α β Hb Hd HD [IH1 IH2].
-    split; apply a_flex_tvar_prepend; assumption.
-Qed.
+(** ⚙ [a_assign_unify_subject_flex] — the walk's SUBJECT is flexible in its
+    own context, which is what tells [Assign-SkipRigid] / [Assign-SkipTmVar]
+    that the entry they are peeling is NOT the subject — is NOT here: it
+    already exists as `algo/consis/prop_consis_rename.v`'s L-block
+    ([a_assign_unify_subject_flex], :334), together with
+    [a_assign_unify_consis_uniq] (:408).  Both are what the V-SHRINK needs
+    and neither had a consumer before. *)
 
 Lemma rel_aenv_dom_r_inv : forall ρ V Θ1 Θ2 b,
   rel_aenv ρ V Θ1 Θ2 -> b `in` dom Θ2 ->
@@ -4024,5 +3983,283 @@ Proof.
       rewrite (@a_flex_tvar_cons_other β bd Θ1 x Hnb).
       rewrite (@a_flex_tvar_cons_other b bd' Θ1' y Hnb2).
       exact (proj2 Hagr x y Hin).
+Qed.
+
+
+(* ===================================================================== *)
+(*  §11  ⭐⭐ THE WALK'S TWO REMAINING MOVES — the IDENTITY PAIR, and the   *)
+(*       binder-shape algebra the skip rows read                          *)
+(*                                                                        *)
+(*  ⛔ [Assign-SkipTmVar] (both sorts) peels an entry with NO              *)
+(*  [x ∉ ftvar_in_pskl P] premise — unlike [Assign-Skip] and              *)
+(*  [Assign-SkipRigid], which have one — so the V-SHRINK cannot            *)
+(*  re-establish [rel_pskl ρ V' P P'] by freshness there.                  *)
+(*                                                                        *)
+(*  ⭐ THE REPAIR, and it is the same DELETE-don't-strengthen move one     *)
+(*  more time, run backwards: [V] keeps [x] as an IDENTITY PAIR while the  *)
+(*  premise runs, and the pair is deleted again at the conclusion, where   *)
+(*  it is redundant.  It is legal exactly because [rel_fun] forces side    *)
+(*  2's head to be [x] as well whenever [x ∈ V] — and when [x ∉ V] there   *)
+(*  is nothing to shrink at all, which is the row's other branch.          *)
+(*                                                                        *)
+(*  ⚙ The rest is the binder-shape algebra: a NON-flexish singleton is     *)
+(*  flexible at nothing ([_one_nonflex], [_cons_absent]), a rigid mid      *)
+(*  entry is not flexible at itself ([_mid_nonflex_absurd] — what gives    *)
+(*  [α <> β] at the rows that carry no such premise), and swapping a       *)
+(*  flexish head for another is invisible to the agreement                 *)
+(*  ([_head_swap_flexish], [flex_agree_rel_head_swap] — [Flex-Flex-L/R]'s  *)
+(*  whole output move).                                                    *)
+(* ===================================================================== *)
+
+Lemma rel_pskl_shrink_V_id : forall ρ V V' P1 P2 x,
+  rel_pskl ρ V P1 P2 ->
+  (forall a, a `in` V -> a `in` ftvar_in_pskl P1 -> a = x \/ a `in` V') ->
+  rel_pskl ((x, x) :: ρ) V' P1 P2.
+Proof.
+  intros ρ V V' P1 P2 x H; induction H; intros Hu; simpl in Hu;
+    constructor;
+    try (apply IHrel_pskl || (apply IHrel_pskl1 + apply IHrel_pskl2));
+    try (intros a Ha Hf; apply Hu; [ exact Ha | simpl; clear - Hf; fsetdec ]).
+  match goal with
+  | Ha : rel_atom _ _ _ _ |- _ => inversion Ha; subst
+  end.
+  - apply rel_atom__pair. right. assumption.
+  - match goal with
+    | Hv : ?a `in` V |- _ =>
+        destruct (Hu a Hv ltac:(simpl; clear; fsetdec)) as [Ex | HV']
+    end.
+    + subst. apply rel_atom__pair. left. reflexivity.
+    + apply rel_atom__id. exact HV'.
+Qed.
+
+(** …and the pair leaves again: at an atom of [V] an identity pair says
+    nothing [rel_atom__id] does not already say. *)
+Lemma rel_atom_drop_id : forall ρa ρb V x a b,
+  rel_atom (ρa ++ (x, x) :: ρb) V a b ->
+  x `in` V ->
+  rel_atom (ρa ++ ρb) V a b.
+Proof.
+  intros ρa ρb V x a b H Hx.
+  inversion H as [x0 y0 Hin | x0 Hv]; subst.
+  - apply in_app_or in Hin. destruct Hin as [Hin | Hin].
+    + apply rel_atom__pair. apply in_or_app. left. exact Hin.
+    + destruct Hin as [E | Hin].
+      * inversion E; subst. apply rel_atom__id. exact Hx.
+      * apply rel_atom__pair. apply in_or_app. right. exact Hin.
+  - apply rel_atom__id. assumption.
+Qed.
+
+Lemma rel_pskl_drop_id : forall ρa ρb V x P1 P2,
+  rel_pskl (ρa ++ (x, x) :: ρb) V P1 P2 ->
+  x `in` V ->
+  rel_pskl (ρa ++ ρb) V P1 P2.
+Proof.
+  intros ρa ρb V x P1 P2 H Hx.
+  remember (ρa ++ (x, x) :: ρb) as ρ eqn:Eρ.
+  induction H; subst; constructor; auto.
+  eapply rel_atom_drop_id; [ eassumption | exact Hx ].
+Qed.
+
+Lemma rel_ptyp_drop_id : forall ρa ρb V x A1 A2,
+  rel_ptyp (ρa ++ (x, x) :: ρb) V A1 A2 ->
+  x `in` V ->
+  rel_ptyp (ρa ++ ρb) V A1 A2.
+Proof.
+  intros * H Hx. unfold rel_ptyp in *. eapply rel_pskl_drop_id; eauto.
+Qed.
+
+Lemma rel_abind_drop_id : forall ρa ρb V x b1 b2,
+  rel_abind (ρa ++ (x, x) :: ρb) V b1 b2 ->
+  x `in` V ->
+  rel_abind (ρa ++ ρb) V b1 b2.
+Proof.
+  intros * H Hx; inversion H; subst; constructor;
+    solve [ eapply rel_ptyp_drop_id; eauto | eapply rel_pskl_drop_id; eauto ].
+Qed.
+
+Lemma rel_aenv_drop_id : forall ρa ρb V x Θ1 Θ2,
+  rel_aenv (ρa ++ (x, x) :: ρb) V Θ1 Θ2 ->
+  x `in` V ->
+  rel_aenv (ρa ++ ρb) V Θ1 Θ2.
+Proof.
+  intros ρa ρb V x Θ1 Θ2 H Hx.
+  remember (ρa ++ (x, x) :: ρb) as ρ eqn:Eρ.
+  induction H; subst; constructor; auto.
+  - eapply rel_atom_drop_id; [ eassumption | exact Hx ].
+  - eapply rel_abind_drop_id; [ eassumption | exact Hx ].
+Qed.
+
+Lemma a_flex_tvar_one_nonflex : forall (c : atom) (bd : abind) x,
+  bd <> abind_flex_mono ->
+  (forall t, bd <> abind_flex_mono_def t) ->
+  ~ a_flex_tvar (c ~ bd) x.
+Proof.
+  intros c bd x H1 H2 [Hb | [t Hb]]; unfold binds in Hb; simpl in Hb;
+    destruct Hb as [E | E]; try contradiction; inversion E; subst.
+  - apply H1; reflexivity.
+  - apply (H2 t); reflexivity.
+Qed.
+
+Lemma a_flex_tvar_cons_absent : forall (c : atom) (bd : abind) (Θ : aenv) x,
+  bd <> abind_flex_mono ->
+  (forall t, bd <> abind_flex_mono_def t) ->
+  x `notin` dom Θ ->
+  ~ a_flex_tvar ((c ~ bd) ++ Θ) x.
+Proof.
+  intros c bd Θ x H1 H2 Hx Hf. rewrite a_flex_tvar_app_iff in Hf.
+  destruct Hf as [Hf | Hf];
+    [ exact (@a_flex_tvar_one_nonflex c bd x H1 H2 Hf)
+    | exact (a_flex_tvar_notin_dom Hx Hf) ].
+Qed.
+
+Lemma flex_agree_rel_push_id_absent : forall ρ V x Θ1 Θ2,
+  flex_agree_rel ρ V Θ1 Θ2 ->
+  x `notin` dom Θ1 -> x `notin` dom Θ2 ->
+  flex_agree_rel ((x, x) :: ρ) V Θ1 Θ2.
+Proof.
+  intros ρ V x Θ1 Θ2 [HV Hp] H1 H2. split; [ exact HV | ].
+  intros a b Hin. destruct Hin as [E | Hin].
+  - inversion E; subst. split; intros Hf; exfalso;
+      [ exact (a_flex_tvar_notin_dom H1 Hf)
+      | exact (a_flex_tvar_notin_dom H2 Hf) ].
+  - exact (Hp a b Hin).
+Qed.
+
+Lemma rel_inj_push_id : forall ρ V V' x,
+  rel_inj ρ V -> x `in` V -> V' [<=] V -> rel_inj ((x, x) :: ρ) V'.
+Proof.
+  intros ρ V V' x Hinj Hx HV a1 a2 b H1 H2.
+  destruct (rel_atom_cons_inv H1) as [[E1a E1b] | H1'];
+    destruct (rel_atom_cons_inv H2) as [[E2a E2b] | H2']; subst.
+  - reflexivity.
+  - symmetry. exact (Hinj a2 x x (rel_atom_mono_V H2' HV)
+                       (@rel_atom__id ρ V x Hx)).
+  - exact (Hinj a1 x x (rel_atom_mono_V H1' HV) (@rel_atom__id ρ V x Hx)).
+  - exact (Hinj a1 a2 b (rel_atom_mono_V H1' HV) (rel_atom_mono_V H2' HV)).
+Qed.
+
+Lemma rel_fun_push_absent : forall ρ V V' D x,
+  rel_fun ρ V D -> V' [<=] V -> x `notin` D -> rel_fun ((x, x) :: ρ) V' D.
+Proof.
+  intros ρ V V' D x Hfun HV Hx a b1 b2 Ha H1 H2.
+  destruct (rel_atom_cons_inv H1) as [[E1a E1b] | H1'];
+    destruct (rel_atom_cons_inv H2) as [[E2a E2b] | H2']; subst;
+    try (exfalso; contradiction).
+  exact (Hfun a b1 b2 Ha (rel_atom_mono_V H1' HV) (rel_atom_mono_V H2' HV)).
+Qed.
+
+
+Lemma a_flex_tvar_mid_nonflex_absurd : forall Ξ (c : atom) (bd : abind) Θ,
+  uniq (Ξ ++ (c ~ bd) ++ Θ) ->
+  bd <> abind_flex_mono ->
+  (forall t, bd <> abind_flex_mono_def t) ->
+  ~ a_flex_tvar (Ξ ++ (c ~ bd) ++ Θ) c.
+Proof.
+  intros Ξ c bd Θ Huq H1 H2 Hf.
+  assert (HcΞ : c `notin` dom Ξ).
+  { assert (Hd : disjoint Ξ ((c ~ bd) ++ Θ)) by (clear - Huq; solve_uniq).
+    unfold disjoint in Hd. repeat rewrite dom_app in Hd. simpl in Hd.
+    clear - Hd. fsetdec. }
+  assert (HcΘ : c `notin` dom Θ).
+  { assert (Hd : uniq ((c ~ bd) ++ Θ)) by (clear - Huq; solve_uniq).
+    clear - Hd. destruct_uniq. fsetdec. }
+  rewrite ! a_flex_tvar_app_iff in Hf.
+  destruct Hf as [Hf | [Hf | Hf]].
+  - exact (a_flex_tvar_notin_dom HcΞ Hf).
+  - exact (@a_flex_tvar_one_nonflex c bd c H1 H2 Hf).
+  - exact (a_flex_tvar_notin_dom HcΘ Hf).
+Qed.
+
+
+Lemma a_wf_aenv_mid_var_typ_inv : forall Ξ x A Θ,
+  a_decls Ξ ->
+  {{ ⊢ (Ξ ++ (x ~ abind_var_typ A) ++ Θ) }}a ->
+  a_wf_ptyp Θ A.
+Proof.
+  intros Ξ x A Θ Hdecl; revert x A Θ; induction Hdecl; intros * Hwf;
+    simpl_env in *.
+  - inversion Hwf; subst. assumption.
+  - inversion Hwf; subst.
+    match goal with
+    | Hw : {{ ⊢ _ }}a |- _ => eapply IHHdecl; exact Hw
+    end.
+Qed.
+
+Lemma a_wf_aenv_mid_var_skl_inv : forall Ξ x Q Θ,
+  a_decls Ξ ->
+  {{ ⊢ (Ξ ++ (x ~ abind_var_skl Q) ++ Θ) }}a ->
+  {{ Θ ⨟ empty ⊢ₚₛ Q }}a.
+Proof.
+  intros Ξ x Q Θ Hdecl; revert x Q Θ; induction Hdecl; intros * Hwf;
+    simpl_env in *.
+  - inversion Hwf; subst. assumption.
+  - inversion Hwf; subst.
+    match goal with
+    | Hw : {{ ⊢ _ }}a |- _ => eapply IHHdecl; exact Hw
+    end.
+Qed.
+
+
+Lemma a_flex_tvar_head_swap_flexish : forall (c : atom) bd bd2 (Θ : aenv) y,
+  (bd = abind_flex_mono \/ exists t, bd = abind_flex_mono_def t) ->
+  (bd2 = abind_flex_mono \/ exists t, bd2 = abind_flex_mono_def t) ->
+  (a_flex_tvar ((c ~ bd) ++ Θ) y <-> a_flex_tvar ((c ~ bd2) ++ Θ) y).
+Proof.
+  intros c bd bd2 Θ y H1 H2.
+  rewrite ! a_flex_tvar_app_iff.
+  rewrite (@a_flex_tvar_one_flex c bd y H1).
+  rewrite (@a_flex_tvar_one_flex c bd2 y H2).
+  tauto.
+Qed.
+
+Lemma flex_agree_peel_cons : forall ρ V V' Θ0 Θ0'' (β b : atom) bd bd',
+  flex_agree_rel ρ V ((β ~ bd) ++ Θ0) ((b ~ bd') ++ Θ0'') ->
+  rel_atom ρ V β b ->
+  rel_inj ρ V ->
+  (forall y, rel_atom ρ V β y -> y = b) ->
+  β `notin` dom Θ0 ->
+  b `notin` dom Θ0'' ->
+  V' [<=] V ->
+  (forall y, y `in` V' -> y <> β) ->
+  flex_agree_rel ρ V' Θ0 Θ0''.
+Proof.
+  intros ρ V V' Θ0 Θ0'' β b bd bd' Hagr Hab Hinj Hfun Hβn Hbn HV Hne.
+  eapply (@flex_agree_peel ρ V V' nil nil Θ0 Θ0'' β b bd bd');
+    simpl_env; eassumption.
+Qed.
+
+
+Lemma flex_agree_rel_head_swap : forall ρ V (c d : atom) bd bd' bd2 bd2' Θ1 Θ2,
+  flex_agree_rel ρ V ((c ~ bd) ++ Θ1) ((d ~ bd') ++ Θ2) ->
+  (bd = abind_flex_mono \/ exists t, bd = abind_flex_mono_def t) ->
+  (bd2 = abind_flex_mono \/ exists t, bd2 = abind_flex_mono_def t) ->
+  (bd' = abind_flex_mono \/ exists t, bd' = abind_flex_mono_def t) ->
+  (bd2' = abind_flex_mono \/ exists t, bd2' = abind_flex_mono_def t) ->
+  flex_agree_rel ρ V ((c ~ bd2) ++ Θ1) ((d ~ bd2') ++ Θ2).
+Proof.
+  intros ρ V c d bd bd' bd2 bd2' Θ1 Θ2 [HV Hp] F1 F2 F3 F4. split.
+  - intros y Hy.
+    rewrite <- (@a_flex_tvar_head_swap_flexish c bd bd2 Θ1 y F1 F2).
+    rewrite <- (@a_flex_tvar_head_swap_flexish d bd' bd2' Θ2 y F3 F4).
+    exact (HV y Hy).
+  - intros a b0 Hin.
+    rewrite <- (@a_flex_tvar_head_swap_flexish c bd bd2 Θ1 a F1 F2).
+    rewrite <- (@a_flex_tvar_head_swap_flexish d bd' bd2' Θ2 b0 F3 F4).
+    exact (Hp a b0 Hin).
+Qed.
+
+
+(** A well-formed context's HEAD payload is scoped in its tail — one
+    statement for all five binder shapes, which is what lets the walk rows
+    be written once instead of per shape. *)
+Lemma a_wf_aenv_cons_payload_ftv : forall (c : atom) bd (Θ : aenv),
+  {{ ⊢ ((c ~ bd) ++ Θ) }}a -> ftvar_in_abind bd [<=] dom Θ.
+Proof.
+  intros c bd Θ H; inversion H; subst; simpl;
+    try solve [ clear; fsetdec ].
+  - apply a_wf_ptyp_ftv_dom; assumption.
+  - pose proof (a_wf_pskl_ftv_dom ltac:(eassumption)) as Hs.
+    clear - Hs. fsetdec.
+  - apply a_wf_ptyp_ftv_dom; assumption.
 Qed.
 
