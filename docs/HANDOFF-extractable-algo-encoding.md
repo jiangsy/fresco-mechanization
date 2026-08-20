@@ -7039,11 +7039,11 @@ move `a_sub_output_wf_bundle`'s FlexMono row makes (prop_wf_preservation.v:619).
    (§8c.34 (i)); `ForallL` is where the ρx question of §8c.34 (ii) gets
    settled.
 
-### 8c.38 ⭐⭐ THE WALK'S SHARED PEEL — 11 of the 16 `a_sub` rows (2026-08-20)
+### 8c.38 ⭐⭐ THE WALK'S SHARED PEEL, AND `S-Arrow` — 12 of the 16 `a_sub` rows (2026-08-20)
 
-Draft (rc=0, 5 admits):
+Draft (rc=0, 4 admits):
 
-    …/scratchpad/work/tmp_lift_sub_v2.v.bak
+    …/scratchpad/work/tmp_lift_sub_v3.v.bak
 
 ⭐⭐ **ONE LEMMA COVERS FOUR ROWS.**  `lift_sub_flex_peel` does the whole
 V-SHRINK / IH / re-attach for `W-Skip`, `W-SkipRigid`, `W-SkipTmVar` and
@@ -7079,13 +7079,26 @@ version removes that detour AND the `prop_completeness_sub_gen` import.
 suffix and the opener, and what strips them is the rule's own
 `uniq (Ξ ++ Θ0)` plus the opener's freshness.
 
-#### ⛔ THE FIVE THAT REMAIN
+#### ✅ `S-Arrow` — COMPILED FIRST TRY, and that is the point
 
-`S-Arrow` (now unblocked — the C-Arrow template plus `lift_consis_nil` and
-`a_sub_sub_flex_dom_mono`), `W-Assign` (⚠️ its premise is an `a_sub` at
-SUBSTITUTED skeletons, so it needs `rel_pskl_subst`), `W-Solve` (three fresh
-entries at once), then `S-ForallR` and `S-ForallL` — the rung's real work,
-scoped in §8c.34 (i) and (ii).
+The consis `U-Arrow` template transferred verbatim once the Δ machinery was
+dropped: `lift_consis_nil` for the first premise, `a_sub_sub_flex_dom_mono`
+for both `dom` inclusions, and `a_consis_isub_wf_nil` +  `a_isub_wf_pskl` to
+move side 1's skeleton wf to the first half's output.  Side 2's package at
+`Θ1'` is the consis rung's own trio (`e_assign_unify_consis_dom_upper`,
+`_ctx_ftvar`, `e_consis_sound` + `a_assign_unify_consis_uniq`).  ⚙ The one
+new step is the last `dom` conjunct: `e_sub_sound` then
+`a_sub_sub_flex_dom_mono` — which is why the bare version had to exist, since
+side 2 has no wf to feed `a_sub_output_wf_bundle`.
+
+#### ⛔ THE FOUR THAT REMAIN
+
+`W-Assign` — the walk's only descent, and ⚠️ its premise is an `a_sub` at
+SUBSTITUTED skeletons.  Template: the consis `Assign-Assign`
+(prop_lift.v:3212, 251 lines), which is the same shape one judgement over;
+it will want `rel_pskl_subst` (§9) and `a_wf_aenv_mid_def_inv`.
+`W-Solve` (three fresh entries at once), then `S-ForallR` and `S-ForallL` —
+the rung's real work, scoped in §8c.34 (i) and (ii).
 
 ⚠️⚠️ **TRAP PAID TWICE THIS PASS.**  `simpl_env in H |- *` does NOT parse
 (use `simpl_env in H; simpl_env`), and `simpl dom` over-unfolds `dom` into a
