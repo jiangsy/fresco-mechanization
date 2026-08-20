@@ -6099,6 +6099,41 @@ are.
 4. **The rows themselves** — 9 (`a_assign`) + 6 (`a_unify`) + 14
    (`a_consis`), one mutual induction.  The templates are §5-§7's.
 
+5. ✅ **THE IDENTITY SUPPORT HAS TO SHRINK WITH THE WALK — found by
+   designing the motive, and the piece for it is LANDED.**  This is the
+   trio's real first obstruction and it is worth stating carefully.
+
+   The consis ∀ rows need their side-1 opener OFF `V`, and the only source
+   is the rule's own `α ∉ ftvar_in_aenv Θ0` — so the transport must carry
+   `V [<=] dom Θ0`.  ⛔ **But the ASSIGN WALK SHRINKS the context.**
+   `Assign-Skip` runs its premise at the TAIL with `β` gone, so a `V` tied
+   to the caller's context is too big there — and `Assign-Assign` hands that
+   smaller context to a CONSISTENCY derivation, whose ∀ rows may then
+   legitimately pick the dropped `β` as their opener.  If `β ∈ V` the close
+   is asymmetric (side 2's opener is supply-fresh, hence `≠ β`) and
+   `rel_pskl_close_pair` is unavailable.
+
+   ⭐ The repair is to shrink `V` alongside the context, which is FREE
+   exactly when the dropped atom does not occur — and `Assign-Skip`'s own
+   premise is `β ∉ ftvar_in_pskl P`.  `rel_pskl_shrink_V` / `rel_ptyp_` /
+   `rel_abind_` / `rel_aenv_shrink_V` (prop_solve_rel.v §8), stated with an
+   arbitrary `V'` and a USED-PART condition rather than with `remove`, so
+   one lemma covers every row.  ⚙ `flex_agree_rel` needs nothing —
+   `flex_agree_rel_weaken` already shrinks `V`.
+
+   ⭐⭐ **THAT IS THE THIRD INDEPENDENT APPEARANCE OF ONE IDEA**: the
+   PAIR RESTRICTION (§6, the solve layer's ∀ rows), `rel_atoms_push`'s
+   `β1 ∉ cols_l ρ`, and now the V-shrink.  All three say the same thing —
+   *a binder row must not be handed a relation that already speaks about its
+   own opener* — and all three are discharged by DELETING the offending part
+   of the relation rather than by strengthening a rule.
+
+   ⚙ AND THE ONE THING IT NEEDS FROM WELL-FORMEDNESS: at `Assign-Skip` the
+   TAIL's payloads must not mention `β` either (for `rel_aenv_shrink_V`).
+   That is ordinary scoping (`Θ0` is older than `β`), but it is a premise
+   the transport will have to carry — `a_wf_aenv` is the obvious source and
+   has NOT been checked.
+
 #### ⚙ AND THE RUNG ORDER ABOVE
 
 consis → sub (which is `a_extract`'s consumer, `a_sub__forall_l`) → split →

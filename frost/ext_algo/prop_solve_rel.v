@@ -3155,3 +3155,76 @@ Proof.
     + assert (Hb1 : b `in` D2) by (clear - Hin2 Hne2; fsetdec).
       pose proof (Hg Hb1) as Ha2. clear - Ha2. fsetdec.
 Qed.
+
+(** ⭐⭐ SHRINKING THE IDENTITY SUPPORT — the ASSIGN WALK's move, and the
+    third instance of the same idea as [restrict_pairs] (§6) and
+    [rel_atoms_push]'s side conditions.
+
+    ⛔ WHY IT IS FORCED.  The consis ∀ rows need their side-1 opener OFF
+    [V], and the only source for that is the rule's own
+    [α ∉ ftvar_in_aenv Θ0] — so the transport must carry [V [<=] dom Θ0].
+    But the ASSIGN WALK SHRINKS the context: [Assign-Skip] runs its premise
+    at the TAIL, with [β] gone, so a [V] tied to the caller's context is too
+    big there — and [Assign-Assign] hands that smaller context to a
+    CONSISTENCY derivation, whose ∀ rows may then legitimately pick the
+    dropped [β] as their opener.
+
+    ⭐ The repair is not to weaken the ∀ rows but to shrink [V] alongside
+    the context, which is free exactly when the dropped atom does not occur
+    — and [Assign-Skip]'s own premise is [β ∉ ftvar_in_pskl P].  ⚙ Stated
+    with an arbitrary [V'] and a USED-PART condition rather than with
+    [remove], so one lemma covers every row. *)
+Lemma rel_pskl_shrink_V : forall ρ V V' P1 P2,
+  rel_pskl ρ V P1 P2 ->
+  (forall a, a `in` V -> a `in` ftvar_in_pskl P1 -> a `in` V') ->
+  rel_pskl ρ V' P1 P2.
+Proof.
+  intros ρ V V' P1 P2 H; induction H; intros Hu; simpl in Hu;
+    constructor;
+    try (apply IHrel_pskl || (apply IHrel_pskl1 + apply IHrel_pskl2));
+    try (intros a Ha Hf; apply Hu; [ exact Ha | simpl; clear - Hf; fsetdec ]).
+  match goal with
+  | Ha : rel_atom _ _ _ _ |- _ => inversion Ha; subst
+  end.
+  - apply rel_atom__pair; assumption.
+  - apply rel_atom__id. apply Hu; [ assumption | simpl; clear; fsetdec ].
+Qed.
+
+Lemma rel_ptyp_shrink_V : forall ρ V V' A1 A2,
+  rel_ptyp ρ V A1 A2 ->
+  (forall a, a `in` V -> a `in` ftvar_in_ptyp A1 -> a `in` V') ->
+  rel_ptyp ρ V' A1 A2.
+Proof.
+  intros * H Hu. unfold rel_ptyp in *.
+  eapply rel_pskl_shrink_V; [ exact H | ].
+  intros a Ha Hf. apply Hu; [ exact Ha | ].
+  rewrite ftvar_ptyp_to_pskl in Hf. exact Hf.
+Qed.
+
+Lemma rel_abind_shrink_V : forall ρ V V' b1 b2,
+  rel_abind ρ V b1 b2 ->
+  (forall a, a `in` V -> a `in` ftvar_in_abind b1 -> a `in` V') ->
+  rel_abind ρ V' b1 b2.
+Proof.
+  intros * H Hu; inversion H; subst; constructor;
+    solve [ eapply rel_ptyp_shrink_V; [ eassumption | exact Hu ]
+          | eapply rel_pskl_shrink_V; [ eassumption | exact Hu ] ].
+Qed.
+
+Lemma rel_aenv_shrink_V : forall ρ V V' Θ1 Θ2,
+  rel_aenv ρ V Θ1 Θ2 ->
+  (forall a, a `in` V -> a `in` dom Θ1 ∪ ftvar_in_aenv Θ1 -> a `in` V') ->
+  rel_aenv ρ V' Θ1 Θ2.
+Proof.
+  intros ρ V V' Θ1 Θ2 H; induction H; intros Hu; [ constructor | ].
+  simpl in Hu. constructor.
+  - match goal with
+    | Ha : rel_atom _ _ _ _ |- _ => inversion Ha; subst
+    end.
+    + apply rel_atom__pair; assumption.
+    + apply rel_atom__id. apply Hu; [ assumption | simpl; clear; fsetdec ].
+  - eapply rel_abind_shrink_V; [ eassumption | ].
+    intros x Hx Hf. apply Hu; [ exact Hx | simpl; clear - Hf; fsetdec ].
+  - apply IHrel_aenv.
+    intros x Hx Hf. apply Hu; [ exact Hx | simpl; clear - Hf; fsetdec ].
+Qed.
