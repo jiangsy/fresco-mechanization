@@ -6293,3 +6293,134 @@ restriction + close.  ⚠️ Budget honestly: the four skip rows each need
 ~30 lines of `flex_agree_rel` surgery on their own (the V-shrink's `{β}`
 has to be re-added by hand, using `rel_fun` to force side 2's head to be
 `β` as well), and `Assign-SolveM` composes `a_guess_mono_rel_e`.
+
+### 8c.30 ⚙ THE TRIO'S WALK KIT, AND FOUR OF THE 28 ROWS MACHINE-CHECKED — the motive is VALIDATED (2026-08-20)
+
+✅ **`make coq` rc=0, `README.v` 33/33, zero `Admitted`/`Axiom`.**
+`prop_solve_rel.v` §10 is new (28 lemmas, all Qed) and `a_guess_mono_rel_e`
+(prop_lift.v §4) is GENERALIZED.  The 28 rows are still not in the tree —
+a mutual induction is all-or-nothing — but **four of them were written and
+compiled against the motive**, which is what §8c.29's design needed.
+
+#### ⭐⭐ WHAT WAS PROVED (in a scratch file, then harvested)
+
+| row | what it took | the point |
+|---|---|---|
+| `Assign-UnivGhost-Id` | `rel_aenv_cons_inv_l`, then `rel_fun` to force `α' = b` | the shortest witness that §8c.29's `rel_fun` is the right premise |
+| ⭐⭐ `Assign-SolveM` | the guess (below), `rel_pskl_notin_r_inj`, `rel_ptyp_mono_ptyp`, `nodup_{fst,snd}_*`, `a_flex_tvar_solve_m` | **the hardest assign row, and it lands** — `rel_fun` gives the head/subject identification, `rel_inj` transports `α ∉ ftv P`, `rel_ext` is discharged from `uniq βs` + `e_guess_mono_uniq` |
+| ⭐⭐ `Assign-Assign` | `rel_pskl_subst` (§9), `flex_agree_peel`, `a_wf_aenv_{strip_mid,mid_def_inv}`, `e_..._dom_upper` | the SUBSTITUTION row — and the V-SHRINK's first real use |
+| `Assign-Depend` | `simpl_env` throughout, `rel_pskl_ftv_corr_l` + `rel_fun` for `β ∈ ftv P ⟹ b ∈ ftv P'` | the post transfers verbatim; the row is app-associativity |
+
+#### ⭐ THE GUESS TRANSPORT HAD TO BE WIDENED, and the reason is exactly `Assign-SolveM`
+
+`a_guess_mono_rel_e`'s scoping premise was `V [<=] ftvar_in_aenv Θ1`.  It is
+**unsatisfiable at `Assign-SolveM`**: the guess runs at the walk's TAIL
+`Θ0`, while `V` is bounded by the whole `Ξ ++ (α ~ ⌢) ++ Θ0` — and every
+`Ξ` atom is in `ftvar_in_pskl P` by `Assign-Depend`'s own premise, so no
+shrink of `V` to `ftvar_in_aenv Θ0` can keep `rel_pskl ρ V P P'`.  The
+premise is now
+
+    V [<=] ftvar_in_aenv Θ1 ∪ ftvar_in_pskl P1
+
+which is what the ∀ row's OWN side condition
+(`β ∉ ftvar_in_aenv Θ ∪ ftvar_in_pskl P`) always licensed.  ⚙ Strictly
+weaker, so both existing consumers widen by one `fsetdec`.  The ARROW row
+pays for it with a V-SHRINK, and that is free **because this lemma's only
+conclusion about `V` is a `rel_pskl`, which is MONOTONE in `V`** — the
+contrast with §8c.29's antitone trio is the thing to remember.
+
+#### ⚙ §10 — THE WALK KIT
+
+§8/§9 are about the RELATION; the walk rows also reason about the CONTEXT
+SURGERY, and every such step is a statement about `a_flex_tvar`, which had
+no algebra at all.  §10 gives it one — `a_flex_tvar_app_iff`,
+`_one_flex` / `_one_other`, `_cons_other`, `_mid_other`, `_decls`,
+`_notin_dom`, `_insert`, `_prepend`, `_head_flexish`, and
+`a_flex_tvar_solve_m` (SolveM's whole surgery in one rewrite) — plus
+`a_decls_{app,one,flex_pairs_l,flex_pairs_r}`, `rel_aenv_dom_{l,r}_inv`,
+`rel_atom_mono_V`, `rel_{inj,fun}_weaken_V`, `flex_agree_rel_use`,
+`rel_pskl_notin_r_inj`, `rel_ptyp_mono_ptyp`, `nodup_{fst_fun,snd_inj}`.
+
+⭐⭐ **And the two moves EVERY walk row makes are factored**:
+`flex_agree_peel` takes the agreement down to the tails (with `V` shrunk so
+the peeled atom is out of it) and `flex_agree_reattach` puts the entry back
+on both sides.  Between them they are what the four skip rows,
+`Assign-Assign` and `Flex-Flex-Assign` all do; writing `Assign-Assign`
+first and factoring afterwards was the right order.
+
+#### ⭐ A NEW a-SIDE INVARIANT: `a_assign_unify_subject_flex`
+
+    a_assign Θ0 Ξ α P Θ1 -> a_flex_tvar (Ξ ++ Θ0) α
+    a_unify  Θ0 α β Θ1   -> a_flex_tvar Θ0 α /\ a_flex_tvar Θ0 β
+
+⛔ WHY IT IS OWED: the V-SHRINK needs `α <> β` at `Assign-SkipRigid` and
+the two `Assign-SkipTmVar` rows — an `α` that dropped out of `V` with the
+peeled entry is no longer `rel_atom`-related — and those rows carry no such
+premise (they do not need one on the a-side).  What supplies it is that the
+walk's SUBJECT is flexible in its own context, so it cannot BE the rigid or
+term-variable entry the row is peeling.  ⚙ Six of the fourteen rows are
+`a_flex_tvar_prepend`; `Assign-Depend` is `simpl_env`.
+
+#### ⛔ THE ONE DESIGN QUESTION LEFT OPEN, and it is at the TWO tm-var skip rows
+
+`Assign-SkipTmVar` (both sorts) peels `(x ~ A)` / `(x ~ Q)` with **no
+`x ∉ ftvar_in_pskl P` premise** — unlike `Assign-Skip` and
+`Assign-SkipRigid`, which have one.  So the V-shrink cannot re-establish
+`rel_pskl ρ V' P P'` there.  Two routes, and the first is the one the
+soundness proof already takes:
+
+1. ⭐ **Carry `{{ (Ξ ++ Θ0) ⨟ ∅ ⊢ₚₛ P }}a` in the assign motive**, exactly as
+   `assign_sound_concl` does (prop_soundness_consis.v).  Then `x ∉ ftv P`
+   because `a_wf_pskl__var` at `Δ = ∅` makes every free variable
+   `a_binds_tvar`, which a `var_typ` entry is not; and
+   `a_wf_pskl_strip_mid` (algo/prop_basic.v:1082) re-establishes the
+   premise for the smaller context — it wants precisely that freshness.
+   ⚙ The missing step is a lemma "the ftv of a `Δ = ∅`-wf skeleton are all
+   `a_binds_tvar`"; the SHAPE is already a hypothesis at prop_basic.v:592
+   and :673, so it may only need extracting.
+2. ⛔ **Adding the slack `∪ ftvar_in_pskl P` to the scoping premise does NOT
+   work**, and the refutation is worth keeping: it makes the four skip rows
+   free, but the consis motive would then need
+   `V [<=] ftvar_in_aenv Θ0 ∪ ftvar P0 ∪ ftvar P ∪ Δ1 ∪ Δ2` (the ∀ rows'
+   own side condition, so that part is fine) — and **`Arrow` breaks**: its
+   two premises see only HALF the skeletons each, so `V` must shrink, and
+   the row then needs `flex_agree_rel` back at the larger `V`, which is
+   ANTITONE (§8c.29).  ⇒ the consis motive must stay at the no-slack
+   `V [<=] ftvar_in_aenv Θ0`, and `Assign-Assign` must hand it
+   `V ∩ ftvar_in_aenv (Ξ ++ Θ0)` — which is what the proved row does.
+
+#### ⚙ THE MOTIVE AS IT NOW STANDS (assign; the two others follow it)
+
+Changed from §8c.29 in three places: side 2's `uniq` became
+`{{ ⊢ (Ξ' ++ Θ0') }}a` (the `Assign-Assign` row needs
+`ftvar_in_ptyp τ2 [<=] S0`, and only wf gives it), `a_decls Ξ'` joined
+`a_decls Ξ`, and `a_flex_tvar (Ξ ++ Θ0) α` was added.
+
+    rel_aenv ρ V Θ0 Θ0' -> rel_aenv ρ V Ξ Ξ' -> rel_atom ρ V α α' ->
+    rel_pskl ρ V P P' -> flex_agree_rel ρ V (Ξ ++ Θ0) (Ξ' ++ Θ0') ->
+    rel_inj ρ V -> rel_fun ρ V (dom (Ξ ++ Θ0)) ->
+    a_flex_tvar (Ξ ++ Θ0) α ->
+    {{ ⊢ (Ξ ++ Θ0) }}a -> a_decls Ξ -> a_decls Ξ' -> {{ ⊢ (Ξ' ++ Θ0') }}a ->
+    V [<=] ftvar_in_aenv (Ξ ++ Θ0) ->
+    (forall a, a ∈ dom Θ1 -> a ∉ dom (Ξ ++ Θ0) -> a ∉ cols_l ρ) ->
+    dom (Ξ' ++ Θ0') [<=] S0 -> V ∪ cols_r ρ [<=] S0 ->
+    ftvar_in_pskl P' [<=] S0 ->
+    exists S1 ρe Θ1', e_assign … /\ rel_aenv (ρe ++ ρ) V Θ1 Θ1'
+      /\ flex_agree_rel (ρe ++ ρ) V Θ1 Θ1'
+      /\ rel_ext ρe (ftvar_in_aenv (Ξ ++ Θ0)) S0
+      /\ (forall a b, In (a, b) ρe -> a ∈ dom Θ1 /\ b ∈ dom Θ1')
+
+⚙ **`b ∉ dom Θ1'` — side 2 lost the Barendregt premise, and the row needs it
+back.**  `e_assign_unify_consis_dom_upper` + `uniq` + `dom (Ξ' ++ Θ0') [<=] S0`
+give it in three lines; that is the pattern for every re-attaching row.
+
+#### ⛔ WHAT IS LEFT
+
+24 rows: the four skips (blocked only on the `a_wf_pskl` premise above),
+six `a_unify` (the same shapes, without `Ξ`), fourteen `a_consis`.  ⚠️ The
+three ∀ rows of `a_consis` are the ones NOT yet validated: they must
+`restrict_pairs`, push, and then DROP the opener pair off the output
+CONTEXT — `rel_aenv_restrict` (§9) is what returns the conclusion to the
+caller's list, and the opener's absence from `Θ1` / `Θ1'` comes from
+`a_assign_unify_consis_sound` conjunct 2 (`{{ ⊢ Θ1 }}a`) plus
+`a_wf_aenv_ftv_dom`, with `e_consis_sound` supplying the same on side 2.

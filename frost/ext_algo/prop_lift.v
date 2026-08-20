@@ -568,7 +568,17 @@ Lemma a_guess_mono_rel_e : forall Θ1 P1 Ξ1 A1,
   a_guess_mono Θ1 P1 Ξ1 A1 ->
   forall S0 P2 ρ V,
   rel_pskl ρ V P1 P2 ->
-  V [<=] ftvar_in_aenv Θ1 ->
+  (* ⭐ THE SCOPING PREMISE NAMES THE SUBJECT TOO (2026-08-20).  Its ONLY
+     job is the ∀ row's [β ∉ V], and that row's side condition is
+     [β ∉ ftvar_in_aenv Θ ∪ ftvar_in_pskl P] — BOTH halves.  The narrow
+     form is unsatisfiable at [Assign-SolveM] (the trio's rung): there the
+     guess runs at the walk's TAIL [Θ0] while [V] is bounded by the whole
+     [Ξ ++ (α ~ ⌢) ++ Θ0], and every [Ξ] atom is in [ftvar_in_pskl P] by
+     [Assign-Depend]'s own premise.  ⚙ Strictly WEAKER, so every existing
+     consumer widens by one [fsetdec].  The ARROW row pays for it with a
+     V-SHRINK, which is free because this lemma's only conclusion about
+     [V] is a [rel_pskl] — MONOTONE in [V]. *)
+  V [<=] ftvar_in_aenv Θ1 ∪ ftvar_in_pskl P1 ->
   (* ⚙ [cols_r ρ] is GONE from the coverage too (2026-08-19): its only use
      was [β2 ∉ cols_r ρ] at the ∀ row, which the PAIR RESTRICTION now buys.
      The extract rung needs the weaker form — its ρ carries the fold's own
@@ -624,15 +634,39 @@ Proof.
         rename Ha into HrelA; rename Hb into HrelB;
         rename X into Q0a; rename Y into Q0b
     end.
-    assert (HcovA : V ∪ ftvar_in_pskl Q0a [<=] S0)
-      by (clear - Hscp2; simpl in *; fsetdec).
-    destruct (IHHG1 S0 Q0a ρ V HrelA Hscp1 HcovA)
-      as (S1 & ρnA & Ξ2a & A2a & HG2a & E1a & E2a & HrelA').
+    (* ⭐ THE V-SHRINK.  Both halves run at the SAME [Θ], but each may only
+       claim its OWN subject, so [V] is cut to what the half can see.  Free:
+       the conclusion is a [rel_pskl], monotone in [V]. *)
+    remember (V ∩ (ftvar_in_aenv Θ ∪ ftvar_in_pskl P)) as VA eqn:EVA.
+    remember (V ∩ (ftvar_in_aenv Θ ∪ ftvar_in_pskl Q)) as VB eqn:EVB.
+    assert (HsA : VA [<=] V) by (subst VA; clear; fsetdec).
+    assert (HsB : VB [<=] V) by (subst VB; clear; fsetdec).
+    assert (HrelA0 : rel_pskl ρ VA P Q0a).
+    { eapply rel_pskl_shrink_V; [ exact HrelA | ].
+      intros a Ha Hf. subst VA. clear - Ha Hf. fsetdec. }
+    assert (HrelB0 : rel_pskl ρ VB Q Q0b).
+    { eapply rel_pskl_shrink_V; [ exact HrelB | ].
+      intros a Ha Hf. subst VB. clear - Ha Hf. fsetdec. }
+    assert (Hscp1A : VA [<=] ftvar_in_aenv Θ ∪ ftvar_in_pskl P)
+      by (subst VA; clear; fsetdec).
+    assert (Hscp1B : VB [<=] ftvar_in_aenv Θ ∪ ftvar_in_pskl Q)
+      by (subst VB; clear; fsetdec).
+    assert (HcovA : VA ∪ ftvar_in_pskl Q0a [<=] S0)
+      by (clear - Hscp2 HsA; simpl in *; fsetdec).
+    destruct (IHHG1 S0 Q0a ρ VA HrelA0 Hscp1A HcovA)
+      as (S1 & ρnA & Ξ2a & A2a & HG2a & E1a & E2a & HrelA0').
     pose proof (e_guess_mono_supply_grows HG2a) as Hgr1.
-    assert (HcovB : V ∪ ftvar_in_pskl Q0b [<=] S1)
-      by (clear - Hscp2 Hgr1; simpl in *; fsetdec).
-    destruct (IHHG2 S1 Q0b ρ V HrelB Hscp1 HcovB)
-      as (S2 & ρnB & Ξ2b & B2b & HG2b & E1b & E2b & HrelB').
+    assert (HcovB : VB ∪ ftvar_in_pskl Q0b [<=] S1)
+      by (clear - Hscp2 Hgr1 HsB; simpl in *; fsetdec).
+    destruct (IHHG2 S1 Q0b ρ VB HrelB0 Hscp1B HcovB)
+      as (S2 & ρnB & Ξ2b & B2b & HG2b & E1b & E2b & HrelB0').
+    assert (HrelA' : rel_pskl (ρnA ++ ρ) V (ptyp_to_pskl A) (ptyp_to_pskl A2a))
+      by (eapply rel_pskl_mono; [ exact HrelA0' | intros x y Hx; exact Hx
+                                | exact HsA ]).
+    assert (HrelB' : rel_pskl (ρnB ++ ρ) V (ptyp_to_pskl B) (ptyp_to_pskl B2b))
+      by (eapply rel_pskl_mono; [ exact HrelB0' | intros x y Hx; exact Hx
+                                | exact HsB ]).
+    clear HrelA0' HrelB0'.
     exists S2, (ρnA ++ ρnB), (Ξ2a ++ Ξ2b), (ptyp_arrow A2a B2b).
     split; [ eapply e_guess_mono__arrow; eassumption | ].
     split;
@@ -672,8 +706,12 @@ Proof.
                       (open_pskl_wrt_pskl P (pskl_var_f β))
                       (open_pskl_wrt_pskl Q0 (pskl_var_f β2)))
       by (apply rel_pskl_open_pair; exact Hbody0).
-    assert (Hscp1' : V [<=] ftvar_in_aenv ((β ~ abind_tvar) ++ Θ))
-      by (simpl; clear - Hscp1; fsetdec).
+    assert (Hlow : ftvar_in_pskl P
+                   [<=] ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f β)))
+      by (apply ftvar_in_pskl_open_pskl_wrt_pskl_lower).
+    assert (Hscp1' : V [<=] ftvar_in_aenv ((β ~ abind_tvar) ++ Θ)
+                       ∪ ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f β)))
+      by (simpl; simpl in Hscp1; clear - Hscp1 Hlow; fsetdec).
     assert (Hup : ftvar_in_pskl (open_pskl_wrt_pskl Q0 (pskl_var_f β2))
                   [<=] ftvar_in_pskl (pskl_var_f β2) ∪ ftvar_in_pskl Q0)
       by (apply ftvar_in_pskl_open_pskl_wrt_pskl_upper).
@@ -729,7 +767,9 @@ Proof.
   - exists S0, nil, nil, Q2.
     split; [ apply e_guess__sk | ].
     split; [ reflexivity | split; [ reflexivity | simpl; exact Hrel ] ].
-  - destruct (a_guess_mono_rel_e Hgm Hrel Hscp1 Hscp2)
+  - assert (Hscp1' : V [<=] ftvar_in_aenv Θ0 ∪ ftvar_in_pskl Q0)
+      by (clear - Hscp1; fsetdec).
+    destruct (a_guess_mono_rel_e Hgm Hrel Hscp1' Hscp2)
       as (S1 & ρn & Ξ2 & A2 & HG2 & E1 & E2 & Hrel').
     exists S1, ρn, Ξ2, (ptyp_to_pskl A2).
     split; [ apply e_guess__ty; exact HG2 | ].
@@ -821,7 +861,9 @@ Proof.
     end.
     assert (HcovG : V ∪ ftvar_in_pskl P3 [<=] S0)
       by (clear - Hscp2 Hcov; fsetdec).
-    destruct (a_guess_mono_rel_e Hguess HrelP Hscp1 HcovG)
+    assert (Hscp1G : V [<=] ftvar_in_aenv Θ ∪ ftvar_in_pskl P)
+      by (clear - Hscp1; fsetdec).
+    destruct (a_guess_mono_rel_e Hguess HrelP Hscp1G HcovG)
       as (S1 & ρn & Ξ2g & A2 & HG2 & E1 & E2 & Hrel').
     exists S1, ρn, Ξ2g, (ptyp_to_pskl A2).
     split.
