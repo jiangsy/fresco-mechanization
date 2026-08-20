@@ -7107,15 +7107,38 @@ subject's wf comes straight from the flex motive's `a_binds_tvar α`
 
 #### ⛔ THE THREE THAT REMAIN
 
-`W-Solve` — the walk's GENERATIVE row: it invents `α̂, β̂` fresh for the
-context and pushes THREE entries (`α̂0 ≔ α̂→β̂`, `β̂`, `α̂`), so the row builds
-its own two-pair `ρn` by hand rather than receiving one from a guess.  ⚙ No
-V-shrink is needed (both invented atoms are fresh for the context, hence off
-`V`); what it needs instead is the pair PUSH, `rel_ext` for `ρn` (its
-injectivity is `α <> β` and the two supply draws being distinct), and the
-`dom`-spec through `e_sub_sound` + `a_sub_sub_flex_dom_mono` as `S-Arrow`
-does.  Then `S-ForallR` and `S-ForallL` — the rung's real work, scoped in
-§8c.34 (i) and (ii).
+⛔⛔ **`W-Solve` IS NOT A WALK ROW — it is a BINDER row, and all three that
+remain share one shape.**  Checked, not inferred:
+
+- `a_sub_flex__solve` picks its two invented atoms fresh for
+  `add α0 (dom (Ξ ++ Θ0))` — the CONTEXT's domain, and nothing more;
+- pushing `(α, a2)` onto ρ needs `rel_fun_push`, whose premise is
+  `α ∉ V ∪ cols_l ρ` (prop_solve_rel.v:3330);
+- and `lift_sub_flex_concl` puts NO bound on `cols_l ρ` — only
+  `V ∪ cols_r ρ [<=] S0` and the conditional `Hblk`.
+
+⇒ the invented atom CAN collide with ρ's left column, so `W-Solve` needs
+`restrict_pairs` exactly as the ∀ rows do — and with it comes the ANTITONE
+`flex_agree_rel` gap and the DELETED-PAIR obligation, discharged by
+`a_sub_sub_flex_flex_rev` (already in the tree) plus
+`e_sub_sub_flex_dom_upper`.
+
+⭐ **So write ONE shared closer for the three, not three rows.**  It is the
+consis rung's `lift_consis_forall_close` one judgement over: restrict, push,
+run, then answer the deleted pairs.  The three differ only in what they push
+— `W-Solve` pushes TWO flexible pairs and swaps `α̂0`'s head binding from
+`α̂` to `α̂ ≔ α̂→β̂`; `S-ForallR` pushes ONE rigid pair and must also strip the
+junk suffix (`rel_aenv_app_inv_l`, §8c.37); `S-ForallL` pushes its opener
+through `a_extract_rel_e`, where §8c.34 (ii)'s ρx question gets settled.
+
+⚙ `W-Solve`'s own bookkeeping, once the closer exists: `rel_ext` for its
+two-pair `ρn` (injectivity is `α <> β` on the left and the two supply draws
+being distinct on the right); no V-shrink (both invented atoms are off `V`);
+and the `dom`-spec through `e_sub_sound` + `a_sub_sub_flex_dom_mono`, as
+`S-Arrow` does.  ⚠️ The consis `Assign-SolveM`'s `a_flex_tvar_solve_m` does
+NOT apply — that row moves the definition to the FRONT, while `W-Solve`
+leaves it under `Ξ`; peel the two new entries with `a_flex_tvar_mid_other`
+and case-split on `x = α̂0` instead.
 
 ⚠️⚠️ **TRAP PAID TWICE THIS PASS.**  `simpl_env in H |- *` does NOT parse
 (use `simpl_env in H; simpl_env`), and `simpl dom` over-unfolds `dom` into a
