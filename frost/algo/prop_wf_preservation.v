@@ -1037,6 +1037,56 @@ Qed.
 (*  §5  ⭐⭐ A RUN NEVER MAKES AN ATOM IT ALREADY HAD FLEXIBLE              *)
 (* ===================================================================== *)
 
+(** ⭐ The subtyping twin of [a_assign_unify_consis_dom_mono] — premise-free.
+    ⚙ [ForallR] is the one row that is not immediate: its premise's output
+    carries the junk suffix and the opener, and what strips them is the
+    rule's own [uniq (Ξ ++ Θ0)] together with the opener's freshness. *)
+Lemma a_sub_sub_flex_dom_mono :
+  (forall NM M P0 Θ0 P Q Θ1, a_sub NM M P0 Θ0 P Q Θ1 ->
+     dom Θ0 [<=] dom Θ1) /\
+  (forall NM M P0 Θ0 Ξ α Q Θ1, a_sub_flex NM M P0 Θ0 Ξ α Q Θ1 ->
+     dom (Ξ ++ Θ0) [<=] dom Θ1).
+Proof.
+  apply (a_sub_sub_flex_tm_mutind
+           (fun NM M P0 Θ0 P Q Θ1 _ => dom Θ0 [<=] dom Θ1)
+           (fun NM M P0 Θ0 Ξ α Q Θ1 _ => dom (Ξ ++ Θ0) [<=] dom Θ1)).
+  - (* Infer *) intros; clear; fsetdec.
+  - (* Check *) intros Θ0 Θ1 A B Hgfa Hgfb Hga Hgb [Qc Hc].
+    exact (auc_dom_mono_consis Hc).
+  - (* ForallR *)
+    intros α Θ0 Θ1 Ξ A B Hgf Hsuf Huq Hfr Hprem IHprem.
+    assert (Hdisj : disjoint Ξ Θ0) by solve_uniq.
+    unfold disjoint in Hdisj.
+    rewrite dom_app in Hfr.
+    simpl_env in IHprem; simpl_env.
+    clear - IHprem Hdisj Hfr. fsetdec.
+  - (* UnivGhostR *) intros; clear; fsetdec.
+  - (* FlexMono *) intros NM M P0 Θ0 Θ1 α Q Hf IHf.
+    simpl_env in IHf. exact IHf.
+  - (* Arrow *) intros NM M Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hc Hs IHs.
+    pose proof (auc_dom_mono_consis Hc) as Hd. clear - Hd IHs. fsetdec.
+  - (* ForallL *) intros α NM M P0 Θ0 Θ1 P Q Ξ P1 Hne Hgd Hfr Hex Huq Hwfp Hprem IHs.
+    simpl_env in IHs. clear - IHs. fsetdec.
+  - (* Ghost *) intros; clear; fsetdec.
+  - (* UnivGhostL *) intros; assumption.
+  (* ---------- a_sub_flex ---------- *)
+  - (* Flex-Solve *) intros NM M P0 Θ0 Θ1 Ξ α0 α β Q Hne Hαf Hβf Hprem IHs.
+    simpl_env in IHs; simpl_env. clear - IHs. fsetdec.
+  - (* Flex-Assign *) intros NM M P0 Θ0 Θ1 Ξ α β τ Q Hβ1 Hprem IHs.
+    simpl_env in IHs; simpl_env. clear - IHs. fsetdec.
+  - (* Flex-Depend *) intros NM M P0 Θ0 Θ1 Ξ α β Q Hne Hin Hprem IHs.
+    simpl_env in IHs; simpl_env. clear - IHs. fsetdec.
+  - (* Flex-Skip *) intros NM M P0 Θ0 Θ1 Ξ α β Q Hne Hni Hβ1 Hprem IHs.
+    simpl_env in IHs; simpl_env. clear - IHs. fsetdec.
+  - (* Flex-SkipRigid *) intros NM M P0 Θ0 Θ1 Ξ α β Q Hne Hni Hβ1 Hprem IHs.
+    simpl_env in IHs; simpl_env. clear - IHs. fsetdec.
+  - (* Flex-SkipTmVar *) intros NM M P0 Θ0 Θ1 Ξ α x Apay Q Hxout Hprem IHs.
+    simpl_env in IHs; simpl_env. clear - IHs. fsetdec.
+  - (* Flex-SkipTmSkl *) intros NM M P0 Θ0 Θ1 Ξ α x Qpay Q Hxout Hprem IHs.
+    simpl_env in IHs; simpl_env. clear - IHs. fsetdec.
+Qed.
+
+
 (*  ⭐⭐ A RUN NEVER MAKES AN ATOM IT ALREADY HAD FLEXIBLE                   *)
 (*                                                                        *)
 (*  The subtyping twin of [a_assign_unify_consis_flex_rev]                 *)

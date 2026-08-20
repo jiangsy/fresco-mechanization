@@ -7038,3 +7038,58 @@ move `a_sub_output_wf_bundle`'s FlexMono row makes (prop_wf_preservation.v:619).
 4. `S-ForallR` and `S-ForallL` last — `ForallR` is the rung's real work
    (§8c.34 (i)); `ForallL` is where the ρx question of §8c.34 (ii) gets
    settled.
+
+### 8c.38 ⭐⭐ THE WALK'S SHARED PEEL — 11 of the 16 `a_sub` rows (2026-08-20)
+
+Draft (rc=0, 5 admits):
+
+    …/scratchpad/work/tmp_lift_sub_v2.v.bak
+
+⭐⭐ **ONE LEMMA COVERS FOUR ROWS.**  `lift_sub_flex_peel` does the whole
+V-SHRINK / IH / re-attach for `W-Skip`, `W-SkipRigid`, `W-SkipTmVar` and
+`W-SkipTmSkl`, parameterised by the stepped-over binding `bd`, with
+`rel_abind ρ V bd bd2` recovering side 2's.  Each row is then ~10 lines: call
+the lemma, `inversion` the `rel_abind`, apply its own `e_sub_flex`
+constructor.  ⚙ Two deltas from the consis `Assign-Skip` it is templated on:
+
+- the walk carries a YIELD, and `rel_pskl` is MONOTONE in `V`, so widening
+  the IH's `VS` back to `V` is one `rel_pskl_mono`;
+- ⚠️ the general `bd` has a PAYLOAD the flex-only template did not: the
+  `rel_ext` conjunct needs `a0 ∉ ftvar_in_abind bd`, which is
+  `a_wf_aenv_cons_payload_ftv` (after `a_wf_aenv_strip_prefix`) plus
+  `dom Θ0 [<=] ftvar_in_aenv Θ0`.  ⚠️ State that bound at `Θ0`, NOT at
+  `Ξ ++ Θ0` — `fsetdec` will not connect a folded `ftvar_in_aenv (Ξ ++ Θ0)`
+  to the `ftvar_in_aenv_app`-split form the rest of the goal is in.
+
+⭐ **AND THE TWO SIDE CONDITIONS THE TERM-ENTRY ROWS DO NOT STATE ARE
+THEOREMS.**  `W-SkipTmVar`'s rule carries only `x ∉ dom Θ1`, but the peel
+wants `α <> x` and `x ∉ ftvar_in_pskl P0`.  Both come from "a term entry is
+not tvar-ish": `a_binds_tvar_not_var_{typ,skl}` for the first, and
+`a_wf_pskl_ftv_tvarish` + the same for the second (all §12).
+
+#### ✅ ALSO LANDED IN THE TREE
+
+`a_sub_sub_flex_dom_mono` (prop_wf_preservation.v §5) — `dom Θ0 [<=] dom Θ1`
+across `a_sub`, and `dom (Ξ ++ Θ0) [<=] dom Θ1` across the walk.  Premise-free,
+16 rows, mostly one line each.  ⛔ It did not exist, and ⚠️ `a_isub` alone
+cannot give it (`a_inc__flex` solves a flexible away, so only the IDENTITY
+witness forces the atom to survive — `is_id_inc_dom_mono`).  Having the bare
+version removes that detour AND the `prop_completeness_sub_gen` import.
+⚙ `ForallR` is its one non-trivial row: the premise's output carries the junk
+suffix and the opener, and what strips them is the rule's own
+`uniq (Ξ ++ Θ0)` plus the opener's freshness.
+
+#### ⛔ THE FIVE THAT REMAIN
+
+`S-Arrow` (now unblocked — the C-Arrow template plus `lift_consis_nil` and
+`a_sub_sub_flex_dom_mono`), `W-Assign` (⚠️ its premise is an `a_sub` at
+SUBSTITUTED skeletons, so it needs `rel_pskl_subst`), `W-Solve` (three fresh
+entries at once), then `S-ForallR` and `S-ForallL` — the rung's real work,
+scoped in §8c.34 (i) and (ii).
+
+⚠️⚠️ **TRAP PAID TWICE THIS PASS.**  `simpl_env in H |- *` does NOT parse
+(use `simpl_env in H; simpl_env`), and `simpl dom` over-unfolds `dom` into a
+`fold_right` that `fsetdec` cannot read — `simpl_env` is the one to reach for.
+And in a `Combined Scheme` case the DERIVATION binder comes before the IH:
+an `intros` that forgets it silently names the derivation `IH` and the row
+fails much later.
