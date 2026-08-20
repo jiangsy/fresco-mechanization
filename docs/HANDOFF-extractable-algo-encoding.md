@@ -6961,3 +6961,80 @@ with no goals left.**  `eapply in_dom_mid_other; [ simpl_env; exact Hd | … ]`
 lets `simpl_env` destroy the `(?c ~ ?bd)` shape before `exact Hd` unifies, so
 `?bd` is never determined — and the row APPEARS to close.  Drop the
 `simpl_env` and let `exact Hd` see the folded context.
+
+### 8c.37 ⚙ THE `a_sub` LIFT — currency, motives and 6 of the 16 rows, compiling in scratch (2026-08-20)
+
+Not in the tree (a mutual induction is all-or-nothing).  The draft is at
+
+    /private/tmp/claude-501/-Users-jiangsy-Documents-HKU-Research-impredicative/
+      864ad100-d0b3-41d3-a590-996eb0eca36c/scratchpad/work/tmp_lift_sub_v1.v.bak
+
+— `coqc` rc=0 with 10 `admit`s.  ⚠️ CHECK IT EXISTS FIRST; if it is gone,
+everything below is enough to rebuild it.
+
+#### ✅ THE NEW CURRENCY, and the ONE that §8c.34 (ii) got wrong
+
+- `rel_aenv_app_inv_l` — `rel_aenv ρ V (Ξ ++ Θ1) Θ2 -> exists Ξ2 Θ2', Θ2 = Ξ2 ++ Θ2' /\ …`.
+  Checked absent (prop_solve_rel has `rel_aenv_cons_inv_l` and no app form);
+  15 lines by induction on `Ξ`.  `a_sub__forall_r` needs it to split the
+  correspondence at the junk suffix before it can peel the opener.
+- `rel_fun_app_off` — `rel_fun ρ V D -> (forall a b, In (a,b) ρe -> a ∉ D) -> rel_fun (ρe ++ ρ) V D`.
+  ⭐ This is what pays for the extract's ρx column, NOT the `rel_ext`
+  strengthening §8c.34 (ii) first proposed (refuted there).
+
+#### ✅ THE MOTIVES, AND THE ONE THING THAT VALIDATED THEM
+
+`lift_sub_{post,concl}` and `lift_sub_flex_{post,concl}`, in the §8c.32
+discipline: side 1 carries what `subtag_sound_concl` wants, side 2 carries
+ONLY `uniq Θ0'` + `ftvar_in_aenv Θ0' [<=] S0`.
+
+⭐ **Cheaper than at consis**: `e_sub_sub_flex_sound` (ext_algo/prop_sub.v:226)
+returns `{{ … }}a /\ uniq Θ1 /\ ftvar_in_aenv Θ1 [<=] S1 /\ ftvar_in_pskl Q [<=] S1`
+— side 2's WHOLE package from one lemma, where the consis rung had to
+compose `e_consis_sound` + `a_assign_unify_consis_uniq` +
+`e_assign_unify_consis_ctx_ftvar`.
+
+⭐⭐ **AND THE MOTIVE IS VALIDATED BY `lift_consis_nil`.**  `a_sub__check`
+(through `a_consis_chk`) and `a_sub__arrow` call consistency at Δ1 = Δ2 = ∅,
+where every Δ-side premise of `lift_consis_concl` is vacuous.  The wrapper
+
+    lift_consis_nil : {{ Θ0 ⊢[ P0 ] P ∼ Q ⊣ Θ1 }}a -> … ->
+                      lift_consis_post Θ0 Q Θ1 S0 Θ0' empty empty P0' P' ρ V
+
+has EXACTLY `lift_sub_concl`'s hypothesis list, and its proof discharges the
+non-Δ premises with a single `try assumption` — i.e. the two rungs' motives
+line up with nothing to convert.  That is the strongest evidence the
+discipline is right.
+
+#### ✅ SIX ROWS WRITTEN AND COMPILED
+
+`S-Infer`, `S-Check`, `S-UnivGhostR`, `S-FlexMono`, `S-Ghost`, `S-UnivGhostL`.
+⚙ `S-FlexMono` owes the walk `a_binds_tvar α Θ0`, and it comes from
+INVERTING the subject's wf `{{ Θ0 ⨟ ∅ ⊢ₚₛ (pskl_var_f α) }}a` — the same
+move `a_sub_output_wf_bundle`'s FlexMono row makes (prop_wf_preservation.v:619).
+
+#### ⛔ THE TEN THAT REMAIN, in the order to take them
+
+1. **The four PEEL rows** (`W-Skip`, `W-SkipRigid`, `W-SkipTmVar`,
+   `W-SkipTmSkl`) — write ONE shared lemma, not four rows.  They differ only
+   in the binding, so parameterise by `bd`/`bd2` with a `rel_abind` premise
+   and let each row pass its own e-side constructor as a function.  ⭐ The
+   template is the consis rung's `Assign-Skip` (prop_lift.v §9, 149 lines):
+   V-SHRINK, `flex_agree_peel`, IH at the shrunk `VS`, then
+   `flex_agree_reattach`.  Two deltas from that template: (i) the walk also
+   carries a YIELD `Q`, and `rel_pskl` is MONOTONE in `V`, so widening the
+   IH's `VS` back to `V` is free (`rel_pskl_mono`); (ii) the e-side peel
+   rules have NO Barendregt premise (`def_sub.v:152-175`) — the supply
+   accounts for it — so side 2 is strictly easier than at consis.
+2. `W-Depend` (reassociate), then `W-Assign` (the consis `Assign-Assign`
+   template), then `W-Solve` (three fresh entries at once).
+3. `S-Arrow` — the consis `C-Arrow` template verbatim, with `lift_consis_nil`
+   for the first premise.  ⚙ It will want `dom Θ1 [<=] dom Θ2` across an
+   `a_sub` premise: `a_sub_output_wf_bundle` gives `Θ1 ⊴ Θ2` and
+   `is_id_inc_dom_mono` (sub/prop_completeness_sub_gen.v:1642) turns that
+   into the inclusion — ⚠️ `a_isub` alone does NOT give domain monotonicity
+   (`a_inc__flex` solves a flexible away); the identity witness is what
+   forces the atom to survive.
+4. `S-ForallR` and `S-ForallL` last — `ForallR` is the rung's real work
+   (§8c.34 (i)); `ForallL` is where the ρx question of §8c.34 (ii) gets
+   settled.
