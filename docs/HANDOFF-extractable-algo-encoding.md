@@ -7177,3 +7177,82 @@ and case-split on `x = α̂0` instead.
 And in a `Combined Scheme` case the DERIVATION binder comes before the IH:
 an `intros` that forgets it silently names the derivation `IH` and the row
 fails much later.
+
+### 8c.39 ⛔⛔ THE `a_sub` RUNG'S FIFTH OBSTRUCTION — the JUNK SUFFIX breaks the motive's block premise, and the fix is a LEFT-SET restriction (2026-08-20)
+
+Found by writing `S-ForallR` and letting it fail, then localizing.  ⭐ It is
+FIXED; the currency is in the tree (prop_solve_rel.v §13b).
+
+#### ⛔ THE OBSTRUCTION, machine-localized
+
+`a_sub__forall_r`'s premise hands back its output as `Ξ ++ (α ~ ⌢) ++ Θ1`.
+The lift's IH therefore wants
+
+    Hblk' : forall a, a ∈ dom (Ξ ++ (α ~ ⌢) ++ Θ1) ->
+                      a ∉ dom ((α ~ ⌢) ++ Θ0) -> a ∉ cols_l ρ'
+
+and at `a ∈ dom Ξ` that is UNDERIVABLE.  The motive's `Hblk` speaks about
+`dom Θ1`, and a junk atom is in NEITHER `dom Θ0` nor `dom Θ1`; the rule
+freshens `Ξ` only against the context (`uniq (Ξ ++ Θ0)`), never against ρ.
+⚙ A probe with every other premise proved and `Hblk'` alone admitted
+compiles — so the obstruction is exactly one premise wide, and this is the
+first row where the junk suffix §8c.33 flagged actually bites.
+
+#### ⭐ THE FIX — `restrict_l`, and it is CHEAPER than `restrict_pairs`
+
+    restrict_l (D : atoms) (ρ : …) := filter (fun p => negb (mem (fst p) D)) ρ
+
+with `rel_{atom,pskl,ptyp,abind,aenv}_restrict_l`, the two `cols_*` bounds,
+`restrict_l_in` and `restrict_l_notin`.  Only the LEFT column is filtered,
+and the side condition is one set-disjointness (`D ∩ ftvar_in_aenv Θ1 [=] empty`)
+rather than `restrict_pairs`' two freshness facts — because a pair is
+consulted by `rel_aenv` only at an atom the context binds or a payload
+mentions.
+
+The row then runs at `restrict_pairs α α2 (restrict_l (dom Ξ) ρ)`:
+
+- `dom Ξ ∩ ftvar_in_aenv Θ0 [=] empty` from `uniq (Ξ ++ Θ0)` + `ftvar ⊆ dom`;
+- `dom Ξ ∩ ftvar_in_pskl {A, B} [=] empty` from `a_wf_pskl_ftv_tvarish` —
+  every free variable of a wf skeleton is Δ-bound or tvar-ish, hence in
+  `dom Θ0`, which `Ξ` avoids;
+- and `Hblk'` splits: junk atoms are off `cols_l` by `restrict_l_notin`, the
+  rest by the motive's own `Hblk`.
+
+✅ **Machine-checked**: with this, the WHOLE `S-ForallR` premise-side package
+compiles (`…/scratchpad/work/tmp_lift_sub_v5.v.bak`, rc=0) — only the row's
+closing half is still `admit`.
+
+#### ⚙ AND THE DELETED PAIRS COST NOTHING NEW
+
+`restrict_l (dom Ξ)` deletes pairs `(a, b)` with `a ∈ dom Ξ`, so the
+conclusion owes them — and it is the ∀ rows' own argument verbatim: `a ∈ dom Ξ`
+gives `a ∉ dom Θ0` (`uniq`), so the INPUT agreement makes `b` rigid on side 2,
+and `a_sub_sub_flex_flex_rev` + `e_sub_sub_flex_dom_upper` carry that to the
+output; on side 1, `a ∉ dom Θ1` (uniq of the premise's output) kills the other
+half.  ⇒ ONE deleted-pair argument covers both the opener and the junk.
+
+#### ⛔ WHAT `S-ForallR`'s CLOSING HALF STILL OWES
+
+Splitting the premise's output with `rel_aenv_app_inv_l` (§8c.37) gives
+`Θ1out = Ξ2 ++ (α2 ~ ⌢) ++ Θ1'`, and then `e_sub__forall_r` wants two things
+about side 2's junk that side 1's rule states about its own:
+
+1. `a_suffix Ξ2` — a transport along `rel_aenv` (`rel_abind` preserves the
+   flexible kinds), ~8 lines, does not exist yet;
+2. `uniq (Ξ2 ++ Θ0')`.  ⚠️ INFERRED, not yet machine-checked — but the
+   route does not need a domain LOWER bound on the threaded side, which is
+   where a first pass got stuck.  `uniq Ξ2` and `uniq Θ0'` are immediate
+   (`e_sub_sub_flex_sound`, and the motive); for `disjoint Ξ2 Θ0'`, take
+   `a ∈ dom Ξ2` and run the CORRESPONDENCE backwards with
+   `rel_aenv_dom_r_inv` on `rel_aenv ρ1e V Ξ Ξ2`.  Its witness `a'` lies in
+   `dom Ξ`, and `rel_atom ρ1e V a' a` leaves only three cases:
+
+   - `(a', a) ∈ ρe` — then `rel_ext ρe`'s freshness gives `a ∉ add α2 S0 ⊇ dom Θ0'`;
+   - `a' = α` — excluded, `α ∉ dom Ξ` by the rule's own freshness;
+   - the identity `a' = a ∈ V` — then `a ∈ dom Θ0` and `a ∈ dom Ξ`, which
+     `uniq (Ξ ++ Θ0)` forbids;
+   - and `(a', a) ∈ restrict_pairs α α2 ρ0` is impossible because
+     `restrict_l` has already taken `dom Ξ` off `cols_l ρ0` — ⭐ the same
+     restriction that fixed `Hblk'` pays for this too.
+
+   ⇒ write the `a_suffix` transport, then this, then the closer.

@@ -4480,3 +4480,119 @@ Proof. intros D X a H Ha. fsetdec. Qed.
 Lemma inter_empty_cong_l : forall D D' X,
   D [=] D' -> D ∩ X [=] empty -> D' ∩ X [=] empty.
 Proof. intros D D' X Heq H. fsetdec. Qed.
+
+(* --------------------------------------------------------------------- *)
+(*  ⭐⭐ §13b  THE LEFT-SET RESTRICTION — what `a_sub__forall_r` needs and    *)
+(*  `restrict_pairs` cannot give                                          *)
+(*                                                                        *)
+(*  That row's premise hands back its output as `Ξ ++ (α ~ ⌢) ++ Θ1`, and  *)
+(*  the rule freshens the junk suffix `Ξ` only against the CONTEXT         *)
+(*  (`uniq (Ξ ++ Θ0)`) — never against ρ.  So a junk name CAN sit in ρ's   *)
+(*  left column, and the lift's motive premise "the run's new atoms are    *)
+(*  off `cols_l ρ`" is then underivable at exactly those atoms.            *)
+(*                                                                        *)
+(*  ⭐ The fix is the same move `restrict_pairs` makes, at a SET rather     *)
+(*  than one atom — and it is cheaper, because only the LEFT column has to *)
+(*  be filtered: a pair is consulted by `rel_aenv` only at an atom the     *)
+(*  context binds or a payload mentions, i.e. inside `ftvar_in_aenv Θ1`.   *)
+(*  ⚙ The deleted pairs are answered by the SAME argument the ∀ rows use   *)
+(*  for their opener — a deleted left atom is off `dom Θ0`, so the input   *)
+(*  agreement makes its partner rigid, and `a_sub_sub_flex_flex_rev`       *)
+(*  carries that to the output.                                           *)
+(* --------------------------------------------------------------------- *)
+
+(* ⭐ THE LEFT-SET RESTRICTION.  [restrict_pairs] deletes the pairs at ONE
+   left atom; [a_sub__forall_r] needs them deleted at a whole SET — its
+   premise's output carries a junk suffix whose names the rule freshens
+   only against the CONTEXT, so they can collide with ρ's left column. *)
+Definition restrict_l (D : atoms) (ρ : list (atom * atom))
+  : list (atom * atom) :=
+  List.filter (fun p => negb (AtomSetImpl.mem (fst p) D)) ρ.
+
+Arguments restrict_l : simpl never.
+
+Lemma restrict_l_incl : forall D ρ a b,
+  In (a, b) (restrict_l D ρ) -> In (a, b) ρ.
+Proof. intros * Hin. apply List.filter_In in Hin. tauto. Qed.
+
+Lemma restrict_l_in : forall D ρ a b,
+  In (a, b) ρ -> a `notin` D -> In (a, b) (restrict_l D ρ).
+Proof.
+  intros D ρ a b Hin Hn. unfold restrict_l. apply List.filter_In.
+  split; [ exact Hin | ]. simpl.
+  destruct (AtomSetImpl.mem a D) eqn:E; [ | reflexivity ].
+  exfalso. apply Hn. apply AtomSetFacts.mem_iff. exact E.
+Qed.
+
+Lemma restrict_l_notin : forall D ρ a,
+  a `in` D -> a `notin` cols_l (restrict_l D ρ).
+Proof.
+  intros D ρ a Ha. apply cols_l_fresh. intros x y Hin Ex. subst x.
+  apply List.filter_In in Hin. destruct Hin as [_ Hb]. simpl in Hb.
+  destruct (AtomSetImpl.mem a D) eqn:E; [ discriminate | ].
+  rewrite <- AtomSetFacts.not_mem_iff in E. contradiction.
+Qed.
+
+Lemma cols_l_restrict_l : forall D ρ, cols_l (restrict_l D ρ) [<=] cols_l ρ.
+Proof.
+  intros D ρ x Hx. destruct (cols_l_in_inv _ _ Hx) as [y Hin].
+  eapply cols_l_in. eapply restrict_l_incl. exact Hin.
+Qed.
+
+Lemma cols_r_restrict_l : forall D ρ, cols_r (restrict_l D ρ) [<=] cols_r ρ.
+Proof.
+  intros D ρ x Hx. destruct (cols_r_in_inv _ _ Hx) as [y Hin].
+  eapply cols_r_in. eapply restrict_l_incl. exact Hin.
+Qed.
+
+(** Deleting pairs whose LEFT atom the relation never consults. *)
+Lemma rel_atom_restrict_l : forall D ρ V a b,
+  rel_atom ρ V a b -> a `notin` D -> rel_atom (restrict_l D ρ) V a b.
+Proof.
+  intros D ρ V a b Hat Hn. inversion Hat; subst;
+    [ apply rel_atom__pair; apply restrict_l_in; assumption
+    | apply rel_atom__id; assumption ].
+Qed.
+
+Lemma rel_pskl_restrict_l : forall D ρ V P1 P2,
+  rel_pskl ρ V P1 P2 -> D ∩ ftvar_in_pskl P1 [=] empty ->
+  rel_pskl (restrict_l D ρ) V P1 P2.
+Proof.
+  intros D ρ V P1 P2 H; induction H; intros Hd; simpl in Hd;
+    try solve [ constructor ].
+  - apply rel_pskl__var_f. apply rel_atom_restrict_l;
+      [ assumption | clear - Hd; fsetdec ].
+  - constructor; [ apply IHrel_pskl1 | apply IHrel_pskl2 ];
+      clear - Hd; fsetdec.
+  - constructor; apply IHrel_pskl; clear - Hd; fsetdec.
+  - constructor; apply IHrel_pskl; clear - Hd; fsetdec.
+Qed.
+
+Lemma rel_ptyp_restrict_l : forall D ρ V A1 A2,
+  rel_ptyp ρ V A1 A2 -> D ∩ ftvar_in_ptyp A1 [=] empty ->
+  rel_ptyp (restrict_l D ρ) V A1 A2.
+Proof.
+  intros D ρ V A1 A2 H Hd. unfold rel_ptyp in H |- *.
+  apply rel_pskl_restrict_l; [ exact H | ].
+  rewrite ftvar_ptyp_to_pskl. exact Hd.
+Qed.
+
+Lemma rel_abind_restrict_l : forall D ρ V b1 b2,
+  rel_abind ρ V b1 b2 -> D ∩ ftvar_in_abind b1 [=] empty ->
+  rel_abind (restrict_l D ρ) V b1 b2.
+Proof.
+  intros D ρ V b1 b2 H Hd; inversion H; subst; simpl in Hd; constructor;
+    solve [ apply rel_ptyp_restrict_l; assumption
+          | apply rel_pskl_restrict_l; assumption ].
+Qed.
+
+Lemma rel_aenv_restrict_l : forall D ρ V Θ1 Θ2,
+  rel_aenv ρ V Θ1 Θ2 -> D ∩ ftvar_in_aenv Θ1 [=] empty ->
+  rel_aenv (restrict_l D ρ) V Θ1 Θ2.
+Proof.
+  intros D ρ V Θ1 Θ2 H; induction H; intros Hd; [ constructor | ].
+  simpl in Hd. constructor.
+  - apply rel_atom_restrict_l; [ assumption | clear - Hd; fsetdec ].
+  - apply rel_abind_restrict_l; [ assumption | clear - Hd; fsetdec ].
+  - apply IHrel_aenv. clear - Hd. fsetdec.
+Qed.
