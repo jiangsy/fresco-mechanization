@@ -3228,3 +3228,389 @@ Proof.
   - apply IHrel_aenv.
     intros x Hx Hf. apply Hu; [ exact Hx | simpl; clear - Hf; fsetdec ].
 Qed.
+
+(* ===================================================================== *)
+(*  §9  ⭐⭐ THE TWO SHAPE CONDITIONS ON ρ — the TRIO's fourth obstruction *)
+(*                                                                        *)
+(*  ⛔ THE SOLVE LAYER NEVER READ AN ATOM'S IMAGE BACK.  Everything up to  *)
+(*  [a_extract] dispatches on the SHAPE of a skeleton, so an arbitrary    *)
+(*  [rel_atom] was all its rows ever asked of a variable.  The trio       *)
+(*  dispatches on atom EQUALITY — [Assign-SolveM] and                     *)
+(*  [Assign-UnivGhost-Id] fire only when the context HEAD *is* the        *)
+(*  subject, [Assign-Skip] only when it is NOT — and both                 *)
+(*  [Assign-Assign] and [Flex-Flex-Assign] SUBSTITUTE at the head's atom. *)
+(*  A relation alone cannot answer those: with [α] related to two         *)
+(*  different right atoms, side 2's head and side 2's subject need not    *)
+(*  coincide, and the walk would take a DIFFERENT rule.                   *)
+(*                                                                        *)
+(*  ⭐ SO ρ NEEDS TWO SHAPE CONDITIONS, and they are of different          *)
+(*  strengths on purpose:                                                 *)
+(*                                                                        *)
+(*    [rel_inj ρ V]     — GLOBAL.  Two left atoms never share a right     *)
+(*      image.  True by construction: every right atom is drawn ONCE,     *)
+(*      from a supply that only grows, so no two invention events can     *)
+(*      produce it.  ⚙ It subsumes [V ∩ cols_r ρ [=] empty], which is the *)
+(*      same statement for the identity pairs.                            *)
+(*                                                                        *)
+(*    [rel_fun ρ V D]   — LOCAL, on a set [D].  A left atom in [D] has    *)
+(*      ONE image.  ⚠️ It CANNOT be global: §8c.25's Finding 1 is exactly  *)
+(*      a left atom with two right images, and that configuration is      *)
+(*      REACHABLE above the extract ([a_extract_rel_e] hands back a ρx    *)
+(*      column of leaked openers).  What saves the trio is that a leaked  *)
+(*      opener is bound NOWHERE — not in [Θ0], not in [Ξ] — so [D] is     *)
+(*      taken to be the CONTEXT's domain, where every pair was created by *)
+(*      a row that pushed an entry on BOTH sides at once.                 *)
+(* ===================================================================== *)
+
+Definition rel_inj (ρ : list (atom * atom)) (V : atoms) : Prop :=
+  forall a1 a2 b, rel_atom ρ V a1 b -> rel_atom ρ V a2 b -> a1 = a2.
+
+Definition rel_fun (ρ : list (atom * atom)) (V : atoms) (D : atoms) : Prop :=
+  forall a b1 b2, a `in` D -> rel_atom ρ V a b1 -> rel_atom ρ V a b2 -> b1 = b2.
+
+(** Both are ANTITONE in the pair list — deleting pairs (which is what
+    [restrict_pairs] does) can only help — and [rel_fun] is antitone in
+    [D] as well. *)
+(** ⚙ One inclusion move for [rel_atom], which the two antitonicities and
+    every later restriction step share. *)
+Lemma rel_atom_incl : forall ρ ρ' V a b,
+  rel_atom ρ' V a b ->
+  (forall x y, In (x, y) ρ' -> In (x, y) ρ) ->
+  rel_atom ρ V a b.
+Proof.
+  intros ρ ρ' V a b H Hincl. inversion H; subst;
+    [ apply rel_atom__pair; apply Hincl; assumption
+    | apply rel_atom__id; assumption ].
+Qed.
+
+Lemma rel_inj_sub : forall ρ ρ' V,
+  rel_inj ρ V ->
+  (forall a b, In (a, b) ρ' -> In (a, b) ρ) ->
+  rel_inj ρ' V.
+Proof.
+  intros ρ ρ' V H Hincl a1 a2 b H1 H2.
+  exact (H a1 a2 b (rel_atom_incl ρ H1 Hincl) (rel_atom_incl ρ H2 Hincl)).
+Qed.
+
+Lemma rel_fun_weaken : forall ρ ρ' V D D',
+  rel_fun ρ V D ->
+  (forall a b, In (a, b) ρ' -> In (a, b) ρ) ->
+  D' [<=] D ->
+  rel_fun ρ' V D'.
+Proof.
+  intros ρ ρ' V D D' H Hincl Hsub a b1 b2 Ha H1 H2.
+  exact (H a b1 b2 ltac:(clear - Ha Hsub; fsetdec)
+           (rel_atom_incl ρ H1 Hincl) (rel_atom_incl ρ H2 Hincl)).
+Qed.
+
+(** ⭐ THE BINDER ROWS' PUSH — and it is the SAME pair of side conditions
+    [rel_atoms_push] already asks for, on the same two columns.  Side 2's
+    opener misses [V ∪ cols_r ρ] because it is drawn from the supply;
+    side 1's misses [V ∪ cols_l ρ] by the rule's freshness together with
+    the PAIR RESTRICTION.  ⚙ The fourth appearance of the one idea. *)
+Lemma rel_inj_push : forall β1 β2 ρ V,
+  rel_inj ρ V ->
+  β2 `notin` V ->
+  β2 `notin` cols_r ρ ->
+  rel_inj ((β1, β2) :: ρ) V.
+Proof.
+  intros β1 β2 ρ V H Hb2V Hb2c a1 a2 b H1 H2.
+  destruct (rel_atom_cons_inv H1) as [[Ea1 Eb1] | H1'];
+    destruct (rel_atom_cons_inv H2) as [[Ea2 Eb2] | H2']; subst.
+  - reflexivity.
+  - exfalso. pose proof (rel_atom_r_in H2') as Hr. clear - Hr Hb2V Hb2c. fsetdec.
+  - exfalso. pose proof (rel_atom_r_in H1') as Hr. clear - Hr Hb2V Hb2c. fsetdec.
+  - exact (H _ _ _ H1' H2').
+Qed.
+
+Lemma rel_fun_push : forall β1 β2 ρ V D,
+  rel_fun ρ V D ->
+  β1 `notin` V ->
+  β1 `notin` cols_l ρ ->
+  rel_fun ((β1, β2) :: ρ) V (add β1 D).
+Proof.
+  intros β1 β2 ρ V D H Hb1V Hb1c a b1 b2 Ha H1 H2.
+  destruct (rel_atom_cons_inv H1) as [[Ea Eb] | H1'];
+    destruct (rel_atom_cons_inv H2) as [[Ea2 Eb2] | H2']; subst.
+  - reflexivity.
+  - exfalso. pose proof (rel_atom_l_in H2') as Hl. clear - Hl Hb1V Hb1c. fsetdec.
+  - exfalso. pose proof (rel_atom_l_in H1') as Hl. clear - Hl Hb1V Hb1c. fsetdec.
+  - assert (Hne : a <> β1).
+    { intros Heq. subst a. pose proof (rel_atom_l_in H1') as Hl.
+      clear - Hl Hb1V Hb1c. fsetdec. }
+    assert (Ha' : a `in` D) by (clear - Ha Hne; fsetdec).
+    exact (H a b1 b2 Ha' H1' H2').
+Qed.
+
+(** [rel_inj] is what makes an atom's ABSENCE travel backwards: side 2's
+    atom is [β2] only if side 1's was [β1]. *)
+Lemma rel_atom_inj_eq_r : forall ρ V β1 β2 a,
+  rel_inj ρ V ->
+  rel_atom ρ V β1 β2 ->
+  rel_atom ρ V a β2 ->
+  a = β1.
+Proof. intros * Hinj H1 H2. exact (Hinj _ _ _ H2 H1). Qed.
+
+(** ⭐⭐ THE SUBSTITUTION TRANSPORT — [Assign-Assign] and
+    [Flex-Flex-Assign] both rewrite BOTH of their skeleton slots by the
+    definition they found, and the two sides must rewrite at CORRESPONDING
+    atoms.  That is precisely "[a = β1] iff [b = β2]" for every related
+    pair, i.e. the two conditions above, and it is why they exist. *)
+Lemma rel_pskl_subst : forall ρ V P1 P2 T1 T2 β1 β2,
+  rel_pskl ρ V P1 P2 ->
+  rel_pskl ρ V T1 T2 ->
+  rel_atom ρ V β1 β2 ->
+  rel_inj ρ V ->
+  (forall b, rel_atom ρ V β1 b -> b = β2) ->
+  rel_pskl ρ V (subst_pskl_in_pskl T1 β1 P1) (subst_pskl_in_pskl T2 β2 P2).
+Proof.
+  intros ρ V P1 P2 T1 T2 β1 β2 H HT Hβ Hinj Hfun.
+  induction H as [ | n | a b Hat | Pa Pb Qa Qb Ha IHa Hb IHb
+                 | Pa Qa Ha IHa | | Pa Qa Ha IHa ]; simpl;
+    try solve [ constructor; auto ].
+  (* ⚠️ [destruct (a == β1)] does NOT abstract the goal here: [subst_pskl_
+     in_pskl] elaborates its [eq_var] at [psklvar], a DEFINITION, so the
+     instance term differs from the one [atom] elaborates to — convertible,
+     not syntactically equal.  Match the goal instead. *)
+  match goal with
+  | |- context [ if ?X then _ else _ ] => destruct X as [Heq1 | Hne1]
+  end;
+  match goal with
+  | |- context [ if ?X then _ else _ ] => destruct X as [Heq2 | Hne2]
+  end.
+  - exact HT.
+  - exfalso. subst a. apply Hne2. exact (Hfun _ Hat).
+  - exfalso. subst b. apply Hne1. exact (rel_atom_inj_eq_r Hinj Hβ Hat).
+  - constructor. exact Hat.
+Qed.
+
+(** …and its [ptyp] twin, through the painting. *)
+Lemma rel_ptyp_subst : forall ρ V A1 A2 τ1 τ2 β1 β2,
+  rel_ptyp ρ V A1 A2 ->
+  rel_ptyp ρ V τ1 τ2 ->
+  rel_atom ρ V β1 β2 ->
+  rel_inj ρ V ->
+  (forall b, rel_atom ρ V β1 b -> b = β2) ->
+  rel_ptyp ρ V (subst_ptyp_in_ptyp τ1 β1 A1) (subst_ptyp_in_ptyp τ2 β2 A2).
+Proof.
+  intros ρ V A1 A2 τ1 τ2 β1 β2 H HT Hβ Hinj Hfun. unfold rel_ptyp in *.
+  rewrite <- 2 subst_ptyp_to_pskl_comm.
+  apply rel_pskl_subst; assumption.
+Qed.
+
+(** ⚙ THE WALK'S INVERSION.  Every [Assign-*] / [Flex-Flex-*] row peels ONE
+    head off side 1's context; [rel_aenv] is positional, so side 2's context
+    peels in lockstep and the row is one [destruct]. *)
+Lemma rel_aenv_cons_inv_l : forall ρ V a b1 Θ1 Θ2,
+  rel_aenv ρ V ((a ~ b1) ++ Θ1) Θ2 ->
+  exists b b2 Θ2',
+    Θ2 = (b ~ b2) ++ Θ2'
+    /\ rel_atom ρ V a b /\ rel_abind ρ V b1 b2 /\ rel_aenv ρ V Θ1 Θ2'.
+Proof.
+  intros ρ V a b1 Θ1 Θ2 H. inversion H; subst.
+  do 3 eexists.
+  split; [ reflexivity | ].
+  split; [ eassumption | ].
+  split; eassumption.
+Qed.
+
+(** …and the head pair LEAVES again when the entry it was created for does
+    ([rel_pskl_drop_head] one layer up).  ⚙ The ∀ rows of the trio close
+    their opener away and STRIP it off the output context, so this is what
+    returns the conclusion to the caller's pair list. *)
+Lemma rel_ptyp_drop_head : forall a b ρ V A1 A2,
+  rel_ptyp ((a, b) :: ρ) V A1 A2 ->
+  a `notin` ftvar_in_ptyp A1 ->
+  rel_ptyp ρ V A1 A2.
+Proof.
+  intros a b ρ V A1 A2 H Ha. unfold rel_ptyp in *.
+  eapply rel_pskl_drop_head; [ exact H | ].
+  rewrite ftvar_ptyp_to_pskl. exact Ha.
+Qed.
+
+Lemma rel_abind_drop_head : forall a b ρ V b1 b2,
+  rel_abind ((a, b) :: ρ) V b1 b2 ->
+  a `notin` ftvar_in_abind b1 ->
+  rel_abind ρ V b1 b2.
+Proof.
+  intros a b ρ V b1 b2 H Ha; inversion H; subst; simpl in Ha; constructor;
+    solve [ eapply rel_ptyp_drop_head; [ eassumption | exact Ha ]
+          | eapply rel_pskl_drop_head; [ eassumption | exact Ha ] ].
+Qed.
+
+Lemma rel_aenv_drop_head : forall a b ρ V Θ1 Θ2,
+  rel_aenv ((a, b) :: ρ) V Θ1 Θ2 ->
+  a `notin` ftvar_in_aenv Θ1 ->
+  rel_aenv ρ V Θ1 Θ2.
+Proof.
+  intros a b ρ V Θ1 Θ2 H; induction H; intros Ha; [ constructor | ].
+  simpl in Ha. constructor.
+  - eapply rel_atom_drop_head; [ eassumption | clear - Ha; fsetdec ].
+  - eapply rel_abind_drop_head; [ eassumption | clear - Ha; fsetdec ].
+  - apply IHrel_aenv. clear - Ha. fsetdec.
+Qed.
+
+(** ⭐ WHAT [rel_fun] BUYS AT A CONTEXT ATOM: an atom of [V] that the
+    context binds is related to ITSELF and to nothing else.  This is the
+    fact every walk row uses to line side 2's head up with side 2's
+    subject. *)
+Lemma rel_atom_id_of_fun : forall ρ V D a b,
+  rel_fun ρ V D ->
+  a `in` D ->
+  a `in` V ->
+  rel_atom ρ V a b ->
+  b = a.
+Proof.
+  intros ρ V D a b Hfun HaD HaV Hat.
+  symmetry. exact (Hfun a a b HaD (@rel_atom__id ρ V a HaV) Hat).
+Qed.
+
+(* --------------------------------------------------------------------- *)
+(*  ⚙ THE PAIR RESTRICTION, ON A CONTEXT.  A ∀ row of the trio STRIPS its  *)
+(*  opener off the output context, so the conclusion must hand the caller  *)
+(*  a relation that no longer speaks about it — and [rel_aenv_drop_head]   *)
+(*  is not enough, because by then the row's own generated pairs sit in    *)
+(*  FRONT of the opener's.  [restrict_pairs] deletes it wherever it is.    *)
+(* --------------------------------------------------------------------- *)
+
+Lemma restrict_pairs_app : forall β1 β2 ρa ρb,
+  restrict_pairs β1 β2 (ρa ++ ρb)
+    = restrict_pairs β1 β2 ρa ++ restrict_pairs β1 β2 ρb.
+Proof.
+  intros β1 β2 ρa ρb. unfold restrict_pairs. apply List.filter_app.
+Qed.
+
+Lemma rel_ptyp_restrict : forall ρ V A1 A2 β1 β2,
+  rel_ptyp ρ V A1 A2 ->
+  β1 `notin` ftvar_in_ptyp A1 ->
+  β2 `notin` ftvar_in_ptyp A2 ->
+  rel_ptyp (restrict_pairs β1 β2 ρ) V A1 A2.
+Proof.
+  intros ρ V A1 A2 β1 β2 H H1 H2. unfold rel_ptyp in *.
+  apply rel_pskl_restrict;
+    [ exact H
+    | rewrite ftvar_ptyp_to_pskl; exact H1
+    | rewrite ftvar_ptyp_to_pskl; exact H2 ].
+Qed.
+
+Lemma rel_abind_restrict : forall ρ V b1 b2 β1 β2,
+  rel_abind ρ V b1 b2 ->
+  β1 `notin` ftvar_in_abind b1 ->
+  β2 `notin` ftvar_in_abind b2 ->
+  rel_abind (restrict_pairs β1 β2 ρ) V b1 b2.
+Proof.
+  intros ρ V b1 b2 β1 β2 H Hf1 Hf2; inversion H; subst; simpl in Hf1, Hf2;
+    constructor;
+    solve [ apply rel_ptyp_restrict; assumption
+          | apply rel_pskl_restrict; assumption ].
+Qed.
+
+Lemma rel_aenv_restrict : forall ρ V Θ1 Θ2 β1 β2,
+  rel_aenv ρ V Θ1 Θ2 ->
+  β1 `notin` ftvar_in_aenv Θ1 ->
+  β2 `notin` ftvar_in_aenv Θ2 ->
+  rel_aenv (restrict_pairs β1 β2 ρ) V Θ1 Θ2.
+Proof.
+  intros ρ V Θ1 Θ2 β1 β2 H; induction H; intros Hf1 Hf2; [ constructor | ].
+  simpl in Hf1, Hf2. constructor.
+  - match goal with
+    | Ha : rel_atom _ _ _ _ |- _ => inversion Ha; subst
+    end.
+    + apply rel_atom__pair. apply List.filter_In. split; [ assumption | ].
+      simpl.
+      match goal with
+      | |- context [ if ?X then _ else _ ] => destruct X as [Heq | Hne]
+      end; [ exfalso; subst; clear - Hf1; fsetdec | ].
+      match goal with
+      | |- context [ if ?X then _ else _ ] => destruct X as [Heq' | Hne']
+      end; [ exfalso; subst; clear - Hf2; fsetdec | ].
+      reflexivity.
+    + apply rel_atom__id. assumption.
+  - apply rel_abind_restrict; [ assumption | clear - Hf1; fsetdec
+                              | clear - Hf2; fsetdec ].
+  - apply IHrel_aenv; [ clear - Hf1; fsetdec | clear - Hf2; fsetdec ].
+Qed.
+
+(* --------------------------------------------------------------------- *)
+(*  ⭐⭐ WHAT A ROW HANDS BACK: the pair list it ADDED, and the spec that   *)
+(*  lets its caller re-derive [rel_inj] / [rel_fun] at the BIGGER list.    *)
+(*                                                                        *)
+(*  ⚠️ Neither predicate can simply be carried through as an output        *)
+(*  conjunct: both put [rel_atom] in a HYPOTHESIS position, so both are    *)
+(*  ANTITONE in ρ and in [V] — a premise that ran at a smaller [V] (the    *)
+(*  assign walk's V-shrink) or at a restricted ρ cannot hand them back at  *)
+(*  the caller's.  What DOES travel is a statement about the new pairs     *)
+(*  alone, and the two derivations below rebuild the predicates from it.   *)
+(* --------------------------------------------------------------------- *)
+
+Definition rel_ext (ρe : list (atom * atom)) (W S : atoms) : Prop :=
+  (forall a b, In (a, b) ρe -> a `notin` W /\ b `notin` S)
+  /\ (forall a1 a2 b, In (a1, b) ρe -> In (a2, b) ρe -> a1 = a2)
+  /\ (forall a b1 b2, In (a, b1) ρe -> In (a, b2) ρe -> b1 = b2).
+
+Lemma rel_atom_app_inv : forall ρe ρ V a b,
+  rel_atom (ρe ++ ρ) V a b -> In (a, b) ρe \/ rel_atom ρ V a b.
+Proof.
+  intros ρe ρ V a b H. inversion H; subst.
+  - match goal with
+    | Hin : In _ (ρe ++ ρ) |- _ =>
+        apply in_app_or in Hin; destruct Hin as [Hin | Hin];
+          [ left; exact Hin | right; apply rel_atom__pair; exact Hin ]
+    end.
+  - right. apply rel_atom__id. assumption.
+Qed.
+
+Lemma rel_inj_app : forall ρe ρ V W S,
+  rel_inj ρ V ->
+  rel_ext ρe W S ->
+  V ∪ cols_r ρ [<=] S ->
+  rel_inj (ρe ++ ρ) V.
+Proof.
+  intros ρe ρ V W S Hinj [Hfr [Hri _]] Hcov a1 a2 b H1 H2.
+  destruct (rel_atom_app_inv ρe ρ H1) as [Hin1 | Hat1];
+    destruct (rel_atom_app_inv ρe ρ H2) as [Hin2 | Hat2].
+  - exact (Hri _ _ _ Hin1 Hin2).
+  - exfalso. destruct (Hfr _ _ Hin1) as [_ Hb].
+    pose proof (rel_atom_r_in Hat2) as Hr. clear - Hb Hr Hcov. fsetdec.
+  - exfalso. destruct (Hfr _ _ Hin2) as [_ Hb].
+    pose proof (rel_atom_r_in Hat1) as Hr. clear - Hb Hr Hcov. fsetdec.
+  - exact (Hinj _ _ _ Hat1 Hat2).
+Qed.
+
+(** An atom off BOTH the left column and [V] is related to nothing. *)
+Lemma rel_atom_off_l : forall ρ V a,
+  a `notin` cols_l ρ -> a `notin` V -> forall b, ~ rel_atom ρ V a b.
+Proof.
+  intros ρ V a Hc Hv b Hat.
+  pose proof (rel_atom_l_in Hat) as Hin. clear - Hin Hc Hv. fsetdec.
+Qed.
+
+Lemma rel_fun_app : forall ρe ρ V D0 D1 W S,
+  rel_fun ρ V D0 ->
+  rel_ext ρe W S ->
+  D0 [<=] W ->
+  (forall a, a `in` D1 -> a `notin` D0 -> a `notin` cols_l ρ) ->
+  (forall a, a `in` D1 -> a `notin` D0 -> a `notin` V) ->
+  rel_fun (ρe ++ ρ) V D1.
+Proof.
+  intros ρe ρ V D0 D1 W S Hfun [Hfr [_ Hlf]] Hsub Hnc Hnv a b1 b2 Ha H1 H2.
+  destruct (AtomSetProperties.In_dec a D0) as [HaD | HaD].
+  - assert (Hnl : a `notin` cols_l ρe).
+    { intros Hc. destruct (cols_l_in_inv _ _ Hc) as [y Hin].
+      destruct (Hfr _ _ Hin) as [Hna _]. clear - Hna HaD Hsub. fsetdec. }
+    assert (Hr1 : rel_atom ρ V a b1).
+    { destruct (rel_atom_app_inv ρe ρ H1) as [Hin | Hat]; [ | exact Hat ].
+      exfalso. apply Hnl. eapply cols_l_in; exact Hin. }
+    assert (Hr2 : rel_atom ρ V a b2).
+    { destruct (rel_atom_app_inv ρe ρ H2) as [Hin | Hat]; [ | exact Hat ].
+      exfalso. apply Hnl. eapply cols_l_in; exact Hin. }
+    exact (Hfun a b1 b2 HaD Hr1 Hr2).
+  - pose proof (rel_atom_off_l (Hnc a Ha HaD) (Hnv a Ha HaD)) as Hoff.
+    assert (Hin1 : In (a, b1) ρe).
+    { destruct (rel_atom_app_inv ρe ρ H1) as [Hin | Hat]; [ exact Hin | ].
+      exfalso. exact (Hoff b1 Hat). }
+    assert (Hin2 : In (a, b2) ρe).
+    { destruct (rel_atom_app_inv ρe ρ H2) as [Hin | Hat]; [ exact Hin | ].
+      exfalso. exact (Hoff b2 Hat). }
+    exact (Hlf _ _ _ Hin1 Hin2).
+Qed.

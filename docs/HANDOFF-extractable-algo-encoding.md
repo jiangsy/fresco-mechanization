@@ -6139,3 +6139,157 @@ are.
 consis → sub (which is `a_extract`'s consumer, `a_sub__forall_l`) → split →
 pat → typing.  ⚠️ `a_extract_rel_e` hands back a ρx column, so `a_sub` meets
 the leaked-opener currency immediately.
+
+### 8c.29 ⛔ THE TRIO'S FOURTH OBSTRUCTION — the rows dispatch on atom EQUALITY, so ρ needs a SHAPE, and the currency for it is landed (2026-08-20)
+
+✅ **`make coq` rc=0, `README.v` 33/33, zero `Admitted`/`Axiom`.**
+`prop_solve_rel.v` §9 is new and is pure currency — no rung uses it yet.
+The motive below is DESIGNED and its every premise traced to a checked
+source, but the 29 rows are NOT written.
+
+#### ⛔⛔ THE FINDING — `rel_atom` alone cannot drive the walk
+
+Everything up to and including `a_extract` dispatches on the **SHAPE** of a
+skeleton, so an arbitrary `rel_atom ρ V α α'` was all any row ever asked of
+a variable.  **The trio dispatches on atom EQUALITY**, in four places:
+
+| row | what it needs of side 2 |
+|---|---|
+| `Assign-SolveM`, `Assign-UnivGhost-Id` | the context HEAD **is** the subject |
+| `Assign-Skip` (and `Flex-Flex-Skip`) | the head is **not** the subject |
+| `Assign-Assign`, `Flex-Flex-Assign` | SUBSTITUTE at the head's atom, on BOTH slots |
+| `Rigid`, `Flex`, `FlexL`, `FlexR` | `binds` / `a_flex_tvar` at the subject's IMAGE |
+
+⛔ None of these is available from a relation.  Concretely at
+`Assign-SolveM`: side 1 is `(α ~ ⌢) ++ Θ0 ⊲[Ξ] α ≔ P`, side 2 is
+`(b ~ ⌢) ++ Θ0'` with subject `α'`, and `rel_aenv` gives `rel_atom ρ V α b`
+while the caller gives `rel_atom ρ V α α'`.  **With `α` related to two right
+atoms, `b ≠ α'` and side 2 must take a DIFFERENT rule** — the walk would
+skip past the head it was supposed to solve.  ⇒ the transport is false
+without a further hypothesis on ρ.
+
+#### ⭐ THE REPAIR — TWO shape conditions, of DIFFERENT strengths on purpose
+
+    rel_inj ρ V     := forall a1 a2 b, rel_atom ρ V a1 b -> rel_atom ρ V a2 b -> a1 = a2
+    rel_fun ρ V D   := forall a b1 b2, a ∈ D -> rel_atom ρ V a b1 -> rel_atom ρ V a b2 -> b1 = b2
+
+- `rel_inj` is **GLOBAL** and true by construction: every right atom is
+  drawn ONCE, from a supply that only grows, so no two invention events can
+  produce it.  ⚙ It subsumes `V ∩ cols_r ρ [=] empty`.
+- `rel_fun` is **LOCAL, on `D`**, and ⚠️ it CANNOT be global — §8c.25's
+  Finding 1 IS a left atom with two right images, and that configuration is
+  REACHABLE above the extract (`a_extract_rel_e` hands back a ρx column of
+  leaked openers).  What saves the trio is that **a leaked opener is bound
+  NOWHERE** — not in `Θ0`, not in `Ξ` — so `D` is taken to be the CONTEXT's
+  DOMAIN, where every pair was created by a row that pushed an entry on
+  BOTH sides at once.
+
+⭐⭐ **AND THE BINDER ROWS PAY FOR THEM WITH THE SAME MOVE AS EVERY OTHER
+RUNG.**  `rel_inj_push` wants `β2 ∉ V ∪ cols_r ρ` and `rel_fun_push` wants
+`β1 ∉ V ∪ cols_l ρ` — *the pair restriction, a fifth time*, on the same two
+columns `rel_atoms_push` already asks about.  Side 2 buys its half from the
+supply; side 1 uses `restrict_pairs`.
+
+#### ⚙ WHAT §9 LANDS (prop_solve_rel.v, all Qed)
+
+    rel_inj / rel_fun               + _sub / _weaken / _push / _app
+    rel_atom_incl / _app_inv / _off_l / _l_in / _r_in
+    rel_atom_id_of_fun              (an atom of V the context binds is related to ITSELF)
+    rel_atom_inj_eq_r
+    rel_pskl_subst / rel_ptyp_subst ⭐⭐ the Assign-Assign / Flex-Flex-Assign
+                                    transport: "a = β1 iff b = β2" for every
+                                    related pair, which is EXACTLY the two
+                                    conditions above — it is why they exist
+    rel_aenv_cons_inv_l             the walk's one-line inversion
+    rel_ptyp/abind/aenv_drop_head   the head pair leaves with its entry
+    restrict_pairs_app,
+    rel_ptyp/abind/aenv_restrict    the ∀ rows strip their opener off the
+                                    OUTPUT context, and by then the row's own
+                                    generated pairs sit in FRONT of the
+                                    opener's — so drop_head is not enough
+    rel_ext ρe W S                  the spec of the pairs a row ADDS
+    rel_inj_app / rel_fun_app       rebuild the two predicates at the BIGGER list
+
+⚠️⚠️ **NEITHER `rel_inj` NOR `rel_fun` NOR `flex_agree_rel` CAN BE AN OUTPUT
+CONJUNCT.**  All three put `rel_atom` in a HYPOTHESIS position, so all three
+are ANTITONE in ρ and in `V` — a premise that ran at a smaller `V` (the
+assign walk's V-shrink, §8c.28 item 5) or at a restricted ρ cannot hand them
+back at the caller's.  What travels is `rel_ext ρe`, a statement about the
+NEW pairs alone, and `rel_inj_app` / `rel_fun_app` rebuild the predicates
+from it.  ⇒ every row re-establishes them from its OWN input plus the row's
+surgery; only the inner part comes from the IH.
+
+#### ✅ §8c.28's "ONE UNCHECKED SCOPING FACT" — CHECKED, AND IT MOVES
+
+§8c.28 predicted `Assign-Skip` would need "the TAIL's payloads must not
+mention `β`", with `a_wf_aenv` the likely source.
+
+- ✅ The lemma EXISTS: `a_wf_aenv_ftv_dom` (algo/prop_basic.v:1373),
+  `{{ ⊢ Θ }}a -> ftvar_in_aenv Θ [<=] dom Θ`.
+- ⭐ But at `Assign-Skip` it is **not needed**, if the shrink is taken as
+  `V' := V ∩ ftvar_in_aenv (Ξ ++ Θ0)` rather than as `remove β V`.  Then
+  `rel_aenv_shrink_V`'s and `rel_pskl_shrink_V`'s used-part conditions are
+  DISCHARGED BY CONSTRUCTION, and the only rule premise consumed is
+  `Assign-Skip`'s own `β ∉ ftvar_in_pskl P` (with
+  `V [<=] ftvar_in_aenv (Ξ ++ (β ~ ⌢) ++ Θ0)` giving `V \ V' ⊆ {β}`).
+- ⛔ **Where self-scoping IS needed is `rel_fun_app`**, at a NEWLY generated
+  context atom: `a ∈ dom Θ1 \ dom (Ξ ++ Θ0)` must miss `V`, and `V` is only
+  bounded by `ftvar_in_aenv (Ξ ++ Θ0)`.  So the premise the transport has to
+  carry is `{{ ⊢ (Ξ ++ Θ0) }}a` — which is also what the two tm-var skip
+  rows need (their dropped entry has a PAYLOAD, unlike the flex/rigid ones,
+  and nothing in the rule says the payload misses `ftvar_in_pskl P`).
+- ✅ And it is INDUCTIVE where the naive `ftvar_in_aenv Θ [<=] dom Θ` is
+  not: `a_wf_aenv` scopes each payload in **its own tail**, so it survives
+  dropping a middle entry, whereas self-scoping of the whole context does
+  not.  Outputs are covered by `a_assign_unify_consis_sound`'s conjunct 2
+  (`{{ ⊢ Θ1 }}a`), which `Arrow`'s second premise needs.
+
+#### ⭐ THE MOTIVE, AS DESIGNED (assign shown; unify/consis are the same minus `Ξ` / plus `Δ`)
+
+    forall S0 Θ0' Ξ' α' P' ρ V,
+      rel_aenv ρ V Θ0 Θ0' ->  rel_aenv ρ V Ξ Ξ' ->
+      rel_atom ρ V α α' ->    rel_pskl ρ V P P' ->
+      flex_agree_rel ρ V (Ξ ++ Θ0) (Ξ' ++ Θ0') ->
+      rel_inj ρ V ->  rel_fun ρ V (dom (Ξ ++ Θ0)) ->
+      {{ ⊢ (Ξ ++ Θ0) }}a ->  a_decls Ξ ->  uniq (Ξ' ++ Θ0') ->
+      V [<=] ftvar_in_aenv (Ξ ++ Θ0) ->
+      (forall a, a ∈ dom Θ1 -> a ∉ dom (Ξ ++ Θ0) -> a ∉ cols_l ρ) ->
+      dom (Ξ' ++ Θ0') [<=] S0 ->  V ∪ cols_r ρ [<=] S0 ->
+      ftvar_in_pskl P' [<=] S0 ->
+      exists S1 ρe Θ1',
+        {{ S0 ↝ S1 ⊨ Θ0' ⊲[ Ξ' ] α' ≔ P' ⊣ Θ1' }}e
+        /\ rel_aenv (ρe ++ ρ) V Θ1 Θ1'
+        /\ flex_agree_rel (ρe ++ ρ) V Θ1 Θ1'
+        /\ rel_ext ρe (ftvar_in_aenv (Ξ ++ Θ0)) S0
+        /\ (forall a b, In (a, b) ρe -> a ∈ dom Θ1 /\ b ∈ dom Θ1')
+
+⚙ **The last conjunct is load-bearing three times over**: it re-establishes
+the `cols_l` dodge for a SIBLING premise (`Arrow`'s second half — a newly
+bound atom of `Θ2` cannot be in `cols_l ρe1`, because `ρe1`'s left atoms are
+in `dom Θ1`), it feeds `rel_fun_app`, and it is what makes the ∀ rows'
+`restrict_pairs α α2 ρe` still satisfy the spec (its members have left
+atom ≠ α, hence lie in `dom Θ1` after the opener is stripped).
+
+⚙ **`S0 [<=] S1` and `dom Θ1' [<=] S1` are NOT conjuncts** — both are
+theorems of the e-derivation alone (`e_assign_unify_consis_supply_grows`,
+`_dom_upper`), which is the same collapse §8c.25's edit 1 describes.
+
+⚙ Coverage stays THREE separate premises (§8c.23's fsetdec cliff).
+
+#### ⚙ THE ROUTES THE ROWS WILL TAKE — all four checked to EXIST
+
+| need | source |
+|---|---|
+| side 2's `b ∉ dom Θ1'` (the e-side DROPPED the Barendregt premise) | `e_assign_unify_consis_dom_upper` + `uniq` + `dom (Ξ'++Θ0') [<=] S0` |
+| side 1's opener ∉ `ftvar_in_aenv Θ1` (∀ rows' drop) | `a_assign_unify_consis_sound` conjunct 2, then `a_wf_aenv_ftv_dom` |
+| side 2's opener ∉ `ftvar_in_aenv Θ1'` | `e_consis_sound` (⇒ the a-side fact), same two steps |
+| the rigid-prefix SHAPE `(α ~ ⌢) ++ Θ1` | `a_assign_unify_consis_tvar_prefix` (L8) |
+
+#### ⛔ WHAT IS LEFT
+
+The 29 rows.  ⚙ Templates: §5-§7 for the ∀ / arrow shapes, and
+`a_solve_eq_rel_e`'s `SE-Forall` case is the exact model for the pair
+restriction + close.  ⚠️ Budget honestly: the four skip rows each need
+~30 lines of `flex_agree_rel` surgery on their own (the V-shrink's `{β}`
+has to be re-added by hand, using `rel_fun` to force side 2's head to be
+`β` as well), and `Assign-SolveM` composes `a_guess_mono_rel_e`.
