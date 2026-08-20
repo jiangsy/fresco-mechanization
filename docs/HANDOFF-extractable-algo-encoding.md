@@ -7123,13 +7123,44 @@ remain share one shape.**  Checked, not inferred:
 `a_sub_sub_flex_flex_rev` (already in the tree) plus
 `e_sub_sub_flex_dom_upper`.
 
-⭐ **So write ONE shared closer for the three, not three rows.**  It is the
-consis rung's `lift_consis_forall_close` one judgement over: restrict, push,
-run, then answer the deleted pairs.  The three differ only in what they push
-— `W-Solve` pushes TWO flexible pairs and swaps `α̂0`'s head binding from
-`α̂` to `α̂ ≔ α̂→β̂`; `S-ForallR` pushes ONE rigid pair and must also strip the
-junk suffix (`rel_aenv_app_inv_l`, §8c.37); `S-ForallL` pushes its opener
-through `a_extract_rel_e`, where §8c.34 (ii)'s ρx question gets settled.
+⭐ **So `W-Solve` and `S-ForallR` share a closer** — the consis rung's
+`lift_consis_forall_close` one judgement over: restrict, push, run, then
+answer the deleted pairs.  They differ only in what they push: `W-Solve`
+pushes TWO flexible pairs and swaps `α̂0`'s head binding from `α̂` to
+`α̂ ≔ α̂→β̂`; `S-ForallR` pushes ONE rigid pair and must also strip the junk
+suffix (`rel_aenv_app_inv_l`, §8c.37).
+
+⛔ **BUT `S-ForallL` IS A THIRD SHAPE — and a CHEAPER one.**  ⚠️ An earlier
+draft of this section lumped it with the other two; that was wrong, and the
+reason is worth keeping.  Its opener never enters the subtyping premise's
+CONTEXT at all — it is consumed by the `a_extract` premise, which leaves
+`Θ0` alone and hands back a block `Ξ` and an instantiation `P1`.  So there
+is no pair to push and nothing to strip.  What `a_extract_rel_e` wants
+instead is a COMMON opener, `α ∈ V`:
+
+- ⭐ side 1's opener is MOVABLE, because the extract premise is **not part
+  of the mutual induction** — `a_extract_family_of_instance`
+  (sub/prop_looksub.v:2295) re-instantiates it at any sufficiently fresh
+  `α'` with the SAME `Ξ` and `P1`;
+- side 2's is ours to pick, subject only to `α' ∉ S0`;
+- so choose ONE `α'` off `S0 ∪ cols_l ρ ∪ cols_r ρ ∪ {α} ∪ ftvar P ∪ L` and
+  run both sides at it.  ⚙ `cols_l ρ` is a finite set, so here it can simply
+  be AVOIDED — no `restrict_pairs` needed, which is what makes this row
+  cheaper than the other two.
+
+⇒ what `S-ForallL` needs is a **V-EXTENSION** to `add α' V`, not a pair
+push.  `rel_pskl` / `rel_aenv` are monotone in `V` so those ride for free;
+⚠️ `flex_agree_rel` is ANTITONE in `V`, so the row owes the agreement at the
+new atom — and both halves are FALSE, `α'` being fresh for both contexts.
+
+⭐⭐ **THE GENERAL LESSON, and it is the one §8c.33 half-stated.**  The
+renaming route is available exactly at a premise that is NOT part of the
+mutual induction.  §8c.33 ruled it out for `a_consis`'s ∀ rows because
+"an induction on the ORIGINAL derivation has no IH for [the renamed one]" —
+true there, and true at `a_sub__forall_r`.  But `a_sub__forall_l`'s extract
+is a SIBLING judgement with its own metatheory, so renaming it costs
+nothing.  Check which premises are inductive before reaching for the pair
+machinery.
 
 ⚙ `W-Solve`'s own bookkeeping, once the closer exists: `rel_ext` for its
 two-pair `ρn` (injectivity is `α <> β` on the left and the two supply draws
