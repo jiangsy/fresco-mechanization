@@ -7039,11 +7039,11 @@ move `a_sub_output_wf_bundle`'s FlexMono row makes (prop_wf_preservation.v:619).
    (§8c.34 (i)); `ForallL` is where the ρx question of §8c.34 (ii) gets
    settled.
 
-### 8c.38 ⭐⭐ THE WALK'S SHARED PEEL, AND `S-Arrow` — 12 of the 16 `a_sub` rows (2026-08-20)
+### 8c.38 ⭐⭐ THE WALK'S SHARED PEEL, `S-Arrow` AND `W-Assign` — 13 of the 16 `a_sub` rows (2026-08-20)
 
-Draft (rc=0, 4 admits):
+Draft (rc=0, 3 admits):
 
-    …/scratchpad/work/tmp_lift_sub_v3.v.bak
+    …/scratchpad/work/tmp_lift_sub_v4.v.bak
 
 ⭐⭐ **ONE LEMMA COVERS FOUR ROWS.**  `lift_sub_flex_peel` does the whole
 V-SHRINK / IH / re-attach for `W-Skip`, `W-SkipRigid`, `W-SkipTmVar` and
@@ -7091,14 +7091,31 @@ new step is the last `dom` conjunct: `e_sub_sound` then
 `a_sub_sub_flex_dom_mono` — which is why the bare version had to exist, since
 side 2 has no wf to feed `a_sub_output_wf_bundle`.
 
-#### ⛔ THE FOUR THAT REMAIN
+#### ✅ `W-Assign` — ALSO FIRST TRY, and SIMPLER than its consis twin
 
-`W-Assign` — the walk's only descent, and ⚠️ its premise is an `a_sub` at
-SUBSTITUTED skeletons.  Template: the consis `Assign-Assign`
-(prop_lift.v:3212, 251 lines), which is the same shape one judgement over;
-it will want `rel_pskl_subst` (§9) and `a_wf_aenv_mid_def_inv`.
-`W-Solve` (three fresh entries at once), then `S-ForallR` and `S-ForallL` —
-the rung's real work, scoped in §8c.34 (i) and (ii).
+The walk's only descent, its premise at SUBSTITUTED skeletons.  The consis
+`Assign-Assign` (prop_lift.v:3212) transferred with its whole apparatus —
+the V-shrink at `VC = V ∩ ftvar_in_aenv (Ξ ++ Θ0)`, `rel_pskl_subst` for the
+two substituted skeletons, `Hshr` for the shrink ACROSS a substitution,
+`a_wf_pskl_mono_subst` + `a_wf_pskl_strip_mid` for the premise's wf.
+
+⭐ And it is SHORTER than the consis row: `e_sub_flex__assign` carries NO
+side condition (def_sub.v:140), so all of that row's `a_flex_tvar` plumbing
+for the subject — `HαΞ`, `Hα'Ξ`, `Hfa2` — simply is not needed.  ⚙ The
+subject's wf comes straight from the flex motive's `a_binds_tvar α`
+(`a_wf_pskl__var; right`), where the consis row had to rebuild it.
+
+#### ⛔ THE THREE THAT REMAIN
+
+`W-Solve` — the walk's GENERATIVE row: it invents `α̂, β̂` fresh for the
+context and pushes THREE entries (`α̂0 ≔ α̂→β̂`, `β̂`, `α̂`), so the row builds
+its own two-pair `ρn` by hand rather than receiving one from a guess.  ⚙ No
+V-shrink is needed (both invented atoms are fresh for the context, hence off
+`V`); what it needs instead is the pair PUSH, `rel_ext` for `ρn` (its
+injectivity is `α <> β` and the two supply draws being distinct), and the
+`dom`-spec through `e_sub_sound` + `a_sub_sub_flex_dom_mono` as `S-Arrow`
+does.  Then `S-ForallR` and `S-ForallL` — the rung's real work, scoped in
+§8c.34 (i) and (ii).
 
 ⚠️⚠️ **TRAP PAID TWICE THIS PASS.**  `simpl_env in H |- *` does NOT parse
 (use `simpl_env in H; simpl_env`), and `simpl dom` over-unfolds `dom` into a
