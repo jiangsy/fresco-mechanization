@@ -7791,13 +7791,27 @@ premise shape `Ξ2 ++ (x2 ~ bd') ++ Θc2'` be met exactly.
 
 ### 8c.46 ⚙ THE `a_typing` RUNG — the LAST one — OPEN at 5 OF 11 ROWS (2026-08-22)
 
-Draft: `…/96ab7586-…/scratchpad/work/tmp_lift_typing_v1.v.bak` (= `work/typing.v`),
-`coqc` rc=0 with SIX `admit`s — the six BINDER rows.  ✅ COMPILING:
+Draft: `…/96ab7586-…/scratchpad/work/tmp_lift_typing_v3.v.bak` (= `work/typing.v`),
+`coqc` rc=0 with FOUR `admit`s — the four `_check` rows.  ✅ COMPILING:
 `rel_pskl_ptyp_image_r`, `rel_pskl_fun_dom`, `rel_ptyp_arrow_inv`,
-`a_typing_dom_mono` (premise-free, 11 rows), the motive, `lift_typing_sub`,
-and the rows **unit, var, anno, freeze, app** — `AT-App` is the three-call
-thread (pat → typing → typing) and it CONSUMES `a_pat_rel_e`.
-Remaining: abs, abs_anno, abs_check_{step,base}, abs_anno_check_{step,base}.
+`a_typing_dom_mono`, `a_typing_flex_rev`, `e_typing_dom_upper` (the
+route-(A) pair for this family, all premise-free / premise-light),
+`lift_typing_abs_core` (the pat core cloned — result-wf via
+`a_typing_sound`'s own `a_wf_ptyp` conjunct), the motive, and SEVEN rows:
+**unit, var, anno, freeze, app, abs, abs_anno**.
+
+⭐ `AT-Abs`/`AT-AbsAnno` turned out CHEAP: `a_split_ty_shape` needs `m ≠ TC`
+— which both rows CARRY — so their split is CONTEXT-IDENTITY exactly as at
+pat, and the flex-split case is confined to the `_check_base` rows.
+`AT-Abs`'s guess is `a_guess_mono_rel_e` + the W-Solve block pattern
+(`rel_ext_flex_pairs`, `flex_agree_rel_push_pairs`; the block REACHES the
+output via the body's dom-mono, so no restriction); its side-1 wf mirrors
+`a_typing_sound`'s own abs case verbatim (`a_guess_mono_decls`/`_wf`,
+`a_wf_aenv_decls_app`, `a_binds_tvar_weaken_cons`,
+`aenv_tbinds_le_of_binds_le` + `aenv_binds_le_weaken_l` from
+algo_decl/prop_ctx_mono.v).
+
+Remaining: abs_check_{step,base}, abs_anno_check_{step,base}.
 
 #### ⭐ THE MOTIVE
 
@@ -7855,12 +7869,26 @@ the ladder's.
   is shared; the core itself is `a_pat`-typed, so either generalize it over
   the judgement or clone ~380 lines).
 - abs_anno: chk prelude + the same core shape.
-- ⛔ the four `_check` rows are the NEW work: they DISCARD their junk `Ξ`
-  (unlike pat's rows) ⇒ `restrict_l (dom Ξ)` + the deleted-junk-pair
-  argument — `S-ForallR`'s §8c.39 machinery at the typing level, paid by
-  `a_typing_flex_rev` + `e_typing_dom_upper` (to build, the route-(A) pair
-  for this family — both are 11-row chains over the pat/sub/consis versions
-  just landed).  The `_step` rows additionally open TYPES at a rigid pair —
-  `rel_pskl_open_pair` through the coercion (`⌈open A α⌉ = open ⌈A⌉ α`,
-  prop_coercions has the commuting lemma family).
-- app: three threaded calls (pat, typing, typing) — AP-App twice.
+- ⛔ the four `_check` rows are what remains: they DISCARD their junk `Ξ`
+  (unlike pat's rows) ⇒ `restrict_l (dom Ξ)` + `restrict_pairs α α2` — the
+  landed `S-ForallR` row (prop_lift.v §10, from `remember (restrict_l …)`
+  through the `Hdel`/`Hagrfin` blocks) is the LINE-FOR-LINE template; the
+  route-(A) pair (`a_typing_flex_rev` + `e_typing_dom_upper`) is BUILT.
+  The `_step` rows open TYPES at the rigid pair — `ptyp_to_pskl_open`
+  (prop_coercions:287) commutes the coercion.  Side 2's own rule premises
+  (`uniq (Ξ2 ++ Θ1')`, the `γ`-filter on the result, `α2 ∉ ftvar A2`) come
+  from the §8c.39 correspondence arguments (`rel_aenv_dom_r_inv` +
+  injectivity; `rel_pskl_ftv_corr_r` through the coercion + side-1's own
+  filter).
+  ⛔⛔ **ONE NEW LEMMA IS FORCED, and it is the row's real finding**: the
+  restriction deletes pairs of ρ, and `rel_exp_restrict` demands the deleted
+  atoms unused by the EXPRESSION — but `a_wf_exp` says NOTHING about term
+  variables (its var rule is premise-free), and the rule's freshness only
+  covers `ftvar`.  What holds is a consequence of the DERIVATION:
+  `a_typing_fvar_binds : {{Θ0 ⊢[m;P0] e ⦂ B ⊣ Θ1}}a → ∀ x ∈ fvar_in_exp e,
+  ∃ bd, binds x bd Θ0 ∧ abind_is_tm bd` (+ the `a_pat` twin, consumed at
+  `AT-App`'s premise) — then a dom-Ξ atom or the opener CANNOT be a free
+  term variable (`uniq` / the binding KIND rules it out).  Pointwise, ~80
+  lines each, the abs rows via `fvar_in_exp_open_exp_wrt_exp_lower` and the
+  rule's own `x ∉ fvar e`.
+- app ✅ (three threaded calls — AP-App twice, done).
