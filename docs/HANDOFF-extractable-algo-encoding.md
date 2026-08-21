@@ -7347,6 +7347,10 @@ where `α ∈ V` and the scoping bound meet.
 
 ### 8c.41 ⭐⭐⭐ THE `a_extract_rel_e` BLOCKER IS REPAIRED, AND `S-ForallL` IS WRITTEN — down to ONE owed fact (2026-08-21)
 
+> ⚙ The "ONE owed fact" below was closed the same day — see §8c.42.  This
+> section is kept for the IDENTITY-PAIR SHIFT and the two obstructions it
+> records; its final subsection is superseded.
+
 Draft: `…/96ab7586-d719-4eb8-93db-a2eeeb3f96d4/scratchpad/work/tmp_lift_sub_v8.v.bak`
 (= `work/sub.v`), `coqc` rc=0 with ONE `admit`, at `Hdrop`.
 ✅ `make coq` rc=0, README.v 33/33 — the tree carries the repair.
@@ -7502,3 +7506,107 @@ after which `rel_pskl_morph` at the atoms of `P1 ⊆ dom (Ξ ++ Θ0)` drops ρx.
   relaxing that cascades into `prop_solve_rel` §7.
 - ⚠️ `rel_aenv_binds_l` and `a_extract_family_of_instance` do NOT have their
   arguments implicit — use `@` / `eapply` (the `Set Implicit Arguments` trap).
+
+### 8c.42 ⭐⭐⭐ THE `a_sub` RUNG IS CLOSED — all 16 rows, and the last one cost a THIRD cross-layer guard (2026-08-21)
+
+`a_sub_sub_flex_rel_e` is **Qed**, in the tree (`ext_algo/prop_lift.v` §10).
+`make coq` rc=0, README.v 33/33, zero `Admitted`/`Axiom`.
+
+#### ⛔⛔ THE GUARD — instance 3 of the 2026-08-19/20 finding, which it literally is
+
+On `a_extract__solve` (`algo/def_rules.v`, `[paper-gap]`, filed in
+docs/PAPER-GAPS.md under the existing entry, now retitled THREE):
+
+    (ftvar_in_a_cstrs C ∪ ftvar_in_pskl Q) ∩ dom Ξ' [=] empty
+
+**WHY.**  `a_guess_mono`'s hole row draws its flexible fresh for
+`ftvar_in_aenv Θ` of its OWN context and nothing else — ⚙ CHECKED:
+`a_guess_mono_generated_fresh` is context-only, NOT subject-aware.  A leaked
+∀-opener is bound NOWHERE, so the extract's FINAL GUESS may draw one, and
+the two roles collapse onto one atom exactly as they could at the FOLD
+before its own guard.  ⚠️ Guard 2 does NOT cover it: that one speaks about
+`Ξs`, and `Ξ'` is a different block.  ⚠️ `∩ dom (Ξs ++ Ξ')` would be FALSE —
+`Q` legitimately mentions `dom Ξs`.
+
+✅ **IT COSTS THE THREADED ENCODING NOTHING** — two lines in
+`e_extract_sound`, from `e_guess_block_fresh` plus the two supply bounds its
+proof already `pose proof`s.
+
+⭐ **AND THE CONSUMERS WERE CHEAP — the reason is the interesting part.**
+The completeness site takes the guess's block from `a_guess_ty_witness`,
+whose **L-BOUNDED family** lets the caller name the avoid-set AFTER `𝒞` and
+`Q` exist ⇒ two more sets in an `L` that was already there.  Guard 2 had to
+add a whole OUTPUT conjunct to P6-Cs/P6-Ss because ITS avoid-set was fixed
+BEFORE `𝒞` existed.  ⇒ when a guard is owed, look first at whether its
+consumer's freshness is L-bounded.  ⚙ Equivariance needed one new lemma
+(`swap_guess_guard`); the other 14 sites are one extra bullet each.  The
+whole rule change went green on the FIRST full rebuild.
+
+#### ⭐ THE CHAIN IT COMPLETES — `cols_l ρx ∩ dom Ξ1 [=] empty`
+
+Six facts, one per (ρx column, block) pair:
+
+| | `dom Ξ1L` | `dom Ξ1F` | `dom Ξ1G` |
+|---|---|---|---|
+| `cols_l ρxL` | the look's 4th conjunct | guard 2 + `cols_l ρxL ⊆ 𝒞₁` | **guard 3** + the same |
+| `cols_l ρxF` | `a ∉ ftvar_in_aenv (Ξ1L ++ Θ1)` | the fold's BLOCK conjunct | **guard 3** + the fold's TRIM |
+
+The bottom row needed two new solve-layer conjuncts, both on
+`a_solve_sub_rel_e` and `a_solve_cstr_rel_e`:
+
+- `a ∉ ftvar_in_aenv Θ1 ∪ dom Ξ1` — the ρx column dodges the derivation's
+  OWN block.  FREE: `SS-ForallR` already derived `β ∉ dom Ξ` (`Hd1p`) for
+  the recursive call's block premise.
+- `cols_l ρx [<=] ftvar_in_pskl P1'` — **the TRIM**, and it is one case
+  split.  `SolS-ForallR` PERMITS its opener to escape into the output and
+  does NOT force it (the rule's own comment says so), so an unescaped
+  opener would leave a pair naming an atom that is nowhere in the output.
+  The row now carries the leaked pair only when it is USED
+  (`AtomSetProperties.In_dec`; `rel_pskl_morph_ftv` deletes it otherwise).
+
+⛔ **WHY ρx CANNOT SIMPLY BE KEPT** (checked three ways, do not re-litigate):
+the IH's `Hblk` would owe `a ∉ cols_l ρx` for atoms the SUBTYPING premise
+invents; `rel_fun_app_off` owes `cols_l ρx ∩ dom (Ξ ++ Θ0) [=] empty`; and
+`flex_agree_rel` is ANTITONE, so each ρx pair owes an agreement.
+⚙ `rel_aenv` is NOT a problem — it is POSITIONAL, hence MONOTONE in ρ.
+
+#### ⭐⭐ THE TWO PIECES OF CURRENCY THE ROW ADDED — both will serve later rungs
+
+1. `rel_ext_flex_pairs` — **a whole BLOCK pair list is a `rel_ext`** (the two
+   `uniq`s give the two injectivities, via `nodup_fst_fun` /
+   `nodup_snd_inj`).  This is how a row that hands an ENTIRE BLOCK to its IH
+   rebuilds `rel_inj` / `rel_fun` at the widened list.  `a_split` and
+   `a_pat` will both want it.
+2. `a_wf_pskl_rel` — **THE SCOPING TRANSPORT, and a second obstruction the
+   costing had missed entirely.**  `e_sub__forall_l` is the ONE e-side rule
+   carrying an `a_wf_pskl` premise (`ext_algo/def_sub.v:111`) — it is the
+   scoping FILTER `SolS-ForallR` leans on — while side 2 of the lift is
+   WF-FREE by §8c.34 (iii).  So the row must BUILD it from side 1's.
+   ⭐ Two things make it go: `rel_abind` relates only bindings of the SAME
+   KIND (so tvar-ish stays tvar-ish — `a_binds_tvar_rel`, whose image atom
+   is pinned by `rel_fun` on `dom Θ1`), and the Δ slot is a set of atoms
+   SHARED by both sides, which is sound because the ∀ case opens BOTH sides
+   at the SAME atom — legal under the invariant `Δ ∩ cols_l ρ [=] empty`
+   (Δ is `empty` at the call).
+
+#### ⚙ WHERE THE NEW MATERIAL LANDED
+
+- `algo/prop_basic.v` — `a_flex_tvar_solve_shape`, `a_flex_tvar_head_tail`.
+- `ext_algo/prop_solve_rel.v` §13c — `rel_aenv_app_inv_l`,
+  `rel_aenv_suffix`, `rel_fun_app_off`, `rel_pskl_open_{rec_,}skl`,
+  `nodup_fst_fun`, `nodup_snd_inj`, `rel_ext_flex_pairs`,
+  `rel_atom_shrink_add`, `rel_fun_add_fresh`, `a_binds_tvar_rel`,
+  `a_wf_pskl_rel`.
+- `ext_algo/prop_lift.v` §8b — the IDENTITY-PAIR SHIFT (`rel_pskl_morph`,
+  `rel_a_cstrs_morph`, `flex_agree_rel_id_to_pair`) and
+  `rel_pskl_morph_ftv`; §10 — `e_sub_tc_yield`, the four motives,
+  `lift_consis_nil`, `lift_sub_flex_peel`, and the theorem.
+
+#### ⇒ THE NEXT RUNG
+
+`a_split` (3 rows), `a_pat` (10), `a_typing` (11) — 24 rows, and they are
+the last of the 120.  ⭐ `a_sub__check` / `a_sub__arrow` showed the pattern
+for calling a LOWER rung's lift: `lift_consis_nil` is the consis lift
+specialised to the Δ = ∅ call, with the caller's hypothesis list verbatim.
+Expect `a_split` and `a_pat` to want the same wrapper around
+`a_sub_sub_flex_rel_e`.

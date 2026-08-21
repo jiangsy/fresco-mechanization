@@ -1779,3 +1779,53 @@ Qed.
 Lemma a_solve_sub_vacuous_gen : forall Θ m P,
   {{ Θ ⊢ₛ P ≼[ m ] pskl_hole ⤳ nil ⨾ P }}a.
 Proof. intros. exact (a_solve_sub_vacuous_gen_n Θ m P (le_n _)). Qed.
+
+(* ===================================================================== *)
+(*  §  ⭐ TWO [a_flex_tvar] SHAPES THE a_sub LIFT NEEDS (2026-08-21)       *)
+(*                                                                        *)
+(*  Both are about what a WALK row does to the context's flexibility       *)
+(*  picture; they sit here beside [a_flex_tvar_{cons,mid}_other] for the   *)
+(*  same reason the consis rung's flex-reflect does.                       *)
+(* ===================================================================== *)
+
+
+(** ⭐ [Flex-Solve]'s CONTEXT SURGERY, as one flexibility equivalence: the
+    head goes from undefined to defined and TWO fresh flexibles appear under
+    it, and neither move changes any OTHER atom's flex status.  ⚙ The consis
+    rung's [a_flex_tvar_solve_m] does NOT serve here — that row moves the
+    definition to the FRONT, this one leaves it under [Ξ]. *)
+Lemma a_flex_tvar_solve_shape : forall (Ξ : aenv) (c : atom) (t : ptyp)
+    (β α : atom) (Θ : aenv) x,
+  x <> α -> x <> β ->
+  (a_flex_tvar (Ξ ++ (c ~ abind_flex_mono_def t) ++ (β ~ abind_flex_mono)
+                  ++ (α ~ abind_flex_mono) ++ Θ) x
+   <-> a_flex_tvar (Ξ ++ (c ~ abind_flex_mono) ++ Θ) x).
+Proof.
+  intros Ξ c t β α Θ x Hnα Hnβ.
+  destruct (x == c) as [-> | Hnc].
+  - split; intros _;
+      [ left | right; exists t ];
+      unfold binds; apply in_or_app; right; left; reflexivity.
+  - rewrite (a_flex_tvar_mid_other Ξ (abind_flex_mono_def t) _ Hnc).
+    rewrite (a_flex_tvar_mid_other Ξ abind_flex_mono _ Hnβ).
+    rewrite (a_flex_tvar_mid_other Ξ abind_flex_mono Θ Hnα).
+    rewrite (a_flex_tvar_mid_other Ξ abind_flex_mono Θ Hnc).
+    reflexivity.
+Qed.
+
+
+(** ⚙ A RIGID or TERM head is not the flexible witness, so the witness is in
+    the tail — which the Barendregt premises of the walk forbid. *)
+Lemma a_flex_tvar_head_tail : forall (c : atom) (bd : abind) Θ,
+  a_flex_tvar ((c ~ bd) ++ Θ) c ->
+  bd <> abind_flex_mono ->
+  (forall τ, bd <> abind_flex_mono_def τ) ->
+  a_flex_tvar Θ c.
+Proof.
+  intros c bd Θ [Hb | [τ Hb]] Hn1 Hn2;
+    apply binds_cons_1 in Hb as [[_ Heq] | Hb];
+    solve [ exfalso; apply Hn1; symmetry; exact Heq
+          | exfalso; apply (Hn2 τ); symmetry; exact Heq
+          | left; exact Hb | right; exists τ; exact Hb ].
+Qed.
+

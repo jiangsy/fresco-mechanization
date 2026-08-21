@@ -4596,3 +4596,224 @@ Proof.
   - apply rel_abind_restrict_l; [ assumption | clear - Hd; fsetdec ].
   - apply IHrel_aenv. clear - Hd. fsetdec.
 Qed.
+
+(* ===================================================================== *)
+(*  §13c  ⭐ THE a_sub RUNG'S REL CURRENCY (2026-08-20 / 2026-08-21)       *)
+(* ===================================================================== *)
+
+(* ===================================================================== *)
+(*  NEW CURRENCY for the a_sub rung (§8c.34 (i) and (ii))                 *)
+(* ===================================================================== *)
+
+(** ⭐ The APP-INVERSION [rel_aenv] did not have: [a_sub__forall_r]'s premise
+    hands back its output as [Ξ ++ (α ~ ⌢) ++ Θ1], so the row must SPLIT the
+    correspondence at the junk suffix before it can peel the opener. *)
+Lemma rel_aenv_app_inv_l : forall Ξ ρ V Θ1 Θ2,
+  rel_aenv ρ V (Ξ ++ Θ1) Θ2 ->
+  exists Ξ2 Θ2', Θ2 = Ξ2 ++ Θ2'
+    /\ rel_aenv ρ V Ξ Ξ2 /\ rel_aenv ρ V Θ1 Θ2'.
+Proof.
+  induction Ξ as [ | [c bd] Ξ IH ]; intros ρ V Θ1 Θ2 H.
+  - exists (@nil (atom * abind)), Θ2. simpl_env.
+    split; [ reflexivity | split; [ constructor | exact H ] ].
+  - simpl_env in H.
+    destruct (rel_aenv_cons_inv_l H) as (b & b2 & Θ2b & E & Hab & Hbd & Hrest).
+    subst Θ2.
+    destruct (IH _ _ _ _ Hrest) as (Ξ2 & Θ2' & E2 & HΞ & HΘ).
+    subst Θ2b.
+    exists ((b ~ b2) ++ Ξ2), Θ2'. simpl_env.
+    split; [ reflexivity
+           | split; [ apply rel_aenv__cons; assumption | exact HΘ ] ].
+Qed.
+
+(** ⭐ A pending SUFFIX stays a suffix across the correspondence:
+    [rel_abind] relates only bindings of the SAME kind. *)
+Lemma rel_aenv_suffix : forall ρ V Ξ Ξ2,
+  rel_aenv ρ V Ξ Ξ2 -> a_suffix Ξ -> a_suffix Ξ2.
+Proof.
+  intros ρ V Ξ Ξ2 H; induction H; intros Hs; [ constructor | ].
+  inversion Hs; subst.
+  apply a_suffix__cons; [ apply IHrel_aenv; assumption | ].
+  match goal with Hsb : a_suffix_binding _ |- _ => inversion Hsb; subst end;
+    match goal with Hb : rel_abind _ _ _ _ |- _ => inversion Hb; subst end;
+    constructor.
+Qed.
+
+(** ⭐ And the [rel_fun] rebuild the extract's ρx column actually admits.
+    ⚠️ NOT [rel_fun_app] with a [rel_ext]: §8c.29 records ρx's
+    LEFT-FUNCTIONALITY as FALSE (a leaked opener can have two right images).
+    What is true, and all the consumer needs, is that a leaked opener is
+    bound NOWHERE — so it never meets the local domain [D] at all. *)
+Lemma rel_fun_app_off : forall ρe ρ V D,
+  rel_fun ρ V D ->
+  (forall a b, In (a, b) ρe -> a `notin` D) ->
+  rel_fun (ρe ++ ρ) V D.
+Proof.
+  intros ρe ρ V D Hfun Hoff a b1 b2 Ha H1 H2.
+  assert (Hr : forall b, rel_atom (ρe ++ ρ) V a b -> rel_atom ρ V a b).
+  { intros b Hat. destruct (rel_atom_app_inv ρe ρ Hat) as [Hin | Hat'];
+      [ exfalso; exact (Hoff _ _ Hin Ha) | exact Hat' ]. }
+  exact (Hfun a b1 b2 Ha (Hr _ H1) (Hr _ H2)).
+Qed.
+
+(* ===================================================================== *)
+(*  ⚙ ROW CURRENCY FOR [S-ForallL] — three small facts nothing above      *)
+(*  needed.                                                              *)
+(* ===================================================================== *)
+
+(** Opening at RELATED SKELETONS (the tree has only the atom forms,
+    [rel_pskl_open_pair] and [rel_pskl_open_var]).  [S-ForallL] substitutes
+    the extract's INSTANTIATION, not an opener. *)
+Lemma rel_pskl_open_rec_skl : forall ρ V P1 P2 Q1 Q2 k,
+  rel_pskl ρ V P1 P2 ->
+  rel_pskl ρ V Q1 Q2 ->
+  rel_pskl ρ V (open_pskl_wrt_pskl_rec k Q1 P1)
+               (open_pskl_wrt_pskl_rec k Q2 P2).
+Proof.
+  intros ρ V P1 P2 Q1 Q2 k Hrel HQ; revert k;
+    induction Hrel; intros k; simpl; try (constructor; auto; fail).
+  destruct (lt_eq_lt_dec n k) as [[Hlt | Heq] | Hgt];
+    [ constructor | exact HQ | constructor ].
+Qed.
+
+Lemma rel_pskl_open_skl : forall ρ V P1 P2 Q1 Q2,
+  rel_pskl ρ V P1 P2 ->
+  rel_pskl ρ V Q1 Q2 ->
+  rel_pskl ρ V (open_pskl_wrt_pskl P1 Q1) (open_pskl_wrt_pskl P2 Q2).
+Proof.
+  intros. unfold open_pskl_wrt_pskl. apply rel_pskl_open_rec_skl; assumption.
+Qed.
+
+(** ⭐ A BLOCK PAIR LIST IS A [rel_ext]: the two [uniq]s give the two
+    injectivities, and the two column bounds give the freshness.  This is
+    what lets a row that hands a whole BLOCK to its IH rebuild [rel_inj]
+    and [rel_fun] at the widened list ([rel_inj_app] / [rel_fun_app]). *)
+Lemma rel_ext_flex_pairs : forall ρn W S,
+  uniq (flex_pairs_l ρn) ->
+  uniq (flex_pairs_r ρn) ->
+  cols_l ρn ∩ W [=] empty ->
+  cols_r ρn ∩ S [=] empty ->
+  rel_ext ρn W S.
+Proof.
+  intros ρn W S Hul Hur Hcl Hcr. unfold rel_ext. split; [ | split ].
+  - intros a b Hin.
+    assert (Hal : a `in` cols_l ρn) by (eapply cols_l_in; exact Hin).
+    assert (Har : b `in` cols_r ρn) by (eapply cols_r_in; exact Hin).
+    split; [ clear - Hal Hcl; fsetdec | clear - Har Hcr; fsetdec ].
+  - intros a1 a2 b H1 H2.
+    exact (nodup_snd_inj _ _ _ _ (uniq_flex_pairs_r_nodup _ Hur) H1 H2).
+  - intros a b1 b2 H1 H2.
+    exact (nodup_fst_fun _ _ _ _ (uniq_flex_pairs_l_nodup _ Hul) H1 H2).
+Qed.
+
+(* ===================================================================== *)
+(*  ⭐⭐ THE SCOPING TRANSPORT — [a_wf_pskl] ALONG THE CORRESPONDENCE      *)
+(*                                                                        *)
+(*  ⛔ [e_sub__forall_l] is the ONE e-side rule that carries an            *)
+(*  [a_wf_pskl] premise (ext_algo/def_sub.v:111) — it is the SCOPING       *)
+(*  FILTER the solve layer's ForallR row leans on — its own comment says   *)
+(*  ill-scoped results are filtered downstream.  Side 2 of the lift is     *)
+(*  otherwise WF-FREE (§8c.32/§8c.34 (iii)), so the row has to BUILD that  *)
+(*  premise, and the only source is side 1's own.                          *)
+(*                                                                        *)
+(*  ⚙ Two things make the transport go: [rel_abind] relates only bindings *)
+(*  of the SAME KIND, so tvar-ish stays tvar-ish; and the Δ slot is a set  *)
+(*  of atoms shared by both sides, which is sound because the ∀ case opens *)
+(*  BOTH sides at the SAME atom — legal once that atom is off [cols_l ρ],  *)
+(*  which the [Δ ∩ cols_l ρ [=] empty] invariant maintains (at the call    *)
+(*  site Δ is [empty]).                                                    *)
+(* ===================================================================== *)
+
+Lemma rel_atom_shrink_add : forall ρ V a0 a b,
+  rel_atom ρ (add a0 V) a b -> a <> a0 -> rel_atom ρ V a b.
+Proof.
+  intros ρ V a0 a b H Hne. inversion H; subst;
+    [ apply rel_atom__pair; assumption | ].
+  apply rel_atom__id.
+  match goal with
+  | Hin : _ `in` add a0 V |- _ => clear - Hin Hne; fsetdec
+  end.
+Qed.
+
+Lemma rel_fun_add_fresh : forall ρ V D a0,
+  rel_fun ρ V D -> a0 `notin` D -> rel_fun ρ (add a0 V) D.
+Proof.
+  intros ρ V D a0 Hfun Ha0 a b1 b2 Ha Hr1 Hr2.
+  assert (Hne : a <> a0) by (intros Ex; rewrite Ex in Ha; contradiction).
+  apply (Hfun a b1 b2 Ha);
+    (eapply rel_atom_shrink_add; [ eassumption | exact Hne ]).
+Qed.
+
+(** A tvar-ish binding transports: [rel_abind] preserves the KIND, and
+    [rel_fun] on the context's domain is what pins the image atom. *)
+Lemma a_binds_tvar_rel : forall ρ V Θ1 Θ2 a b,
+  rel_aenv ρ V Θ1 Θ2 ->
+  rel_fun ρ V (dom Θ1) ->
+  a_binds_tvar a Θ1 ->
+  rel_atom ρ V a b ->
+  a_binds_tvar b Θ2.
+Proof.
+  intros ρ V Θ1 Θ2 a b Hrel Hfun Hbt Hat.
+  assert (Had : a `in` dom Θ1) by (apply a_binds_tvar_in_dom; exact Hbt).
+  assert (Hstep : forall bd, binds a bd Θ1 ->
+            exists bd2, rel_abind ρ V bd bd2 /\ binds b bd2 Θ2).
+  { intros bd Hb.
+    destruct (@rel_aenv_binds_l ρ V Θ1 Θ2 a bd Hrel Hb)
+      as (b' & bd2 & Hat' & Habd & Hb2).
+    assert (Eb : b' = b) by (exact (Hfun a b' b Had Hat' Hat)).
+    subst b'. exists bd2. split; [ exact Habd | exact Hb2 ]. }
+  destruct Hbt as [Hb | [Hb | [τ Hb]]];
+    destruct (Hstep _ Hb) as (bd2 & Habd & Hb2);
+    inversion Habd; subst.
+  - left. exact Hb2.
+  - right. left. exact Hb2.
+  - right. right. eexists. exact Hb2.
+Qed.
+
+Lemma a_wf_pskl_rel : forall Θ1 Δ P1,
+  {{ Θ1 ⨟ Δ ⊢ₚₛ P1 }}a ->
+  forall ρ V Θ2 P2,
+  rel_aenv ρ V Θ1 Θ2 ->
+  rel_fun ρ V (dom Θ1) ->
+  Δ ∩ cols_l ρ [=] empty ->
+  rel_pskl ρ V P1 P2 ->
+  {{ Θ2 ⨟ Δ ⊢ₚₛ P2 }}a.
+Proof.
+  intros Θ1 Δ P1 Hwf.
+  induction Hwf as [ Θ Δ | Θ Δ a0 Hd | Θ Δ Pa Pb Hwfa IHa Hwfb IHb
+                   | L Θ Δ Pa Hbody IHbody | Θ Δ | Θ Δ Pa Hg Hwfa IHa ];
+    intros ρ V Θ2 P2 Hrel Hfun HΔ Hp.
+  - (* unit *) inversion Hp; subst. apply a_wf_pskl__unit.
+  - (* var *)
+    inversion Hp as [ | | x y Hat | | | | ]; subst.
+    apply a_wf_pskl__var.
+    destruct Hd as [HΔin | Hbt].
+    + left. inversion Hat as [ x1 y1 Hin | x1 Hin ]; subst;
+        [ exfalso; apply cols_l_in in Hin; clear - Hin HΔin HΔ; fsetdec
+        | exact HΔin ].
+    + right. eapply a_binds_tvar_rel;
+        [ exact Hrel | exact Hfun | exact Hbt | exact Hat ].
+  - (* arrow *)
+    inversion Hp as [ | | | Q1 Q2 Q3 Q4 Hpa Hpb | | | ]; subst.
+    apply a_wf_pskl__arrow;
+      [ eapply IHa; [ exact Hrel | exact Hfun | exact HΔ | exact Hpa ]
+      | eapply IHb; [ exact Hrel | exact Hfun | exact HΔ | exact Hpb ] ].
+  - (* all *)
+    inversion Hp as [ | | | | Q1 Q2 Hpb | | ]; subst.
+    apply a_wf_pskl__all with (L := L ∪ dom Θ ∪ cols_l ρ).
+    intros a0 Ha0.
+    eapply IHbody with (ρ := ρ) (V := add a0 V);
+      [ clear - Ha0; solve_notin_auto
+      | eapply rel_aenv_mono;
+          [ exact Hrel | intros x y Hx; exact Hx | clear; fsetdec ]
+      | apply rel_fun_add_fresh; [ exact Hfun | clear - Ha0; solve_notin_auto ]
+      | clear - HΔ Ha0; fsetdec
+      | apply rel_pskl_open_var; exact Hpb ].
+  - (* hole *) inversion Hp; subst. apply a_wf_pskl__hole.
+  - (* tophole *)
+    inversion Hp as [ | | | | | | Q1 Q2 Hpb ]; subst.
+    apply a_wf_pskl__tophole;
+      [ eapply rel_pskl_guarded; [ exact Hpb | exact Hg ]
+      | eapply IHa; [ exact Hrel | exact Hfun | clear; fsetdec | exact Hpb ] ].
+Qed.
+
