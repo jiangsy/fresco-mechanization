@@ -7812,6 +7812,16 @@ output via the body's dom-mono, so no restriction); its side-1 wf mirrors
 algo_decl/prop_ctx_mono.v).
 
 Remaining: abs_check_{step,base}, abs_anno_check_{step,base}.
+✅ SINCE v3 (= `tmp_lift_typing_v4.v.bak`): the forced lemma is LANDED —
+`a_typing_fvar_binds` (with `a_decls_binds_flex`), 11 rows, Qed.
+⚠️ Its `a_pat` TWIN IS FALSE — `AP-Anno` never descends the annotated body,
+so the skeleton pass constrains nothing about `e`'s term variables; the
+typing version does not need it (`AT-App`'s `e2` is ALSO typed by the third
+premise, pulled back through `a_pat_tm_ge` + `a_typing_tm_ge`).  ⭐ The
+lemma is SHARP at the `_check` rows: the body types `(abs e)` at
+`((α~tvar)++Θ0)` and a term binding is never a tvar, so
+`fvar_in_exp (abs e) ⊆ dom Θ0` — both the junk atoms (uniq) and the opener
+(∉ dom Θ0) are excluded from the expression's used pairs.
 
 #### ⭐ THE MOTIVE
 
@@ -7880,15 +7890,26 @@ the ladder's.
   from the §8c.39 correspondence arguments (`rel_aenv_dom_r_inv` +
   injectivity; `rel_pskl_ftv_corr_r` through the coercion + side-1's own
   filter).
-  ⛔⛔ **ONE NEW LEMMA IS FORCED, and it is the row's real finding**: the
-  restriction deletes pairs of ρ, and `rel_exp_restrict` demands the deleted
-  atoms unused by the EXPRESSION — but `a_wf_exp` says NOTHING about term
-  variables (its var rule is premise-free), and the rule's freshness only
-  covers `ftvar`.  What holds is a consequence of the DERIVATION:
-  `a_typing_fvar_binds : {{Θ0 ⊢[m;P0] e ⦂ B ⊣ Θ1}}a → ∀ x ∈ fvar_in_exp e,
-  ∃ bd, binds x bd Θ0 ∧ abind_is_tm bd` (+ the `a_pat` twin, consumed at
-  `AT-App`'s premise) — then a dom-Ξ atom or the opener CANNOT be a free
-  term variable (`uniq` / the binding KIND rules it out).  Pointwise, ~80
-  lines each, the abs rows via `fvar_in_exp_open_exp_wrt_exp_lower` and the
-  rule's own `x ∉ fvar e`.
+  ⛔⛔ **THE FORCED LEMMA — landed, see above**: `a_typing_fvar_binds`.
+  ⚙ THE REMAINING PIECES for the four rows, all identified:
+  - `rel_exp_restrict_l` (does not exist): `rel_exp ρ V e1 e2 →
+    D ∩ (fvar_in_exp e1 ∪ ftvar_in_exp e1) [=] empty →
+    rel_exp (restrict_l D ρ) V e1 e2` — ~35 lines mirroring
+    `rel_exp_restrict`.
+  - `rel_ptyp_all_inv` (mirror of `rel_ptyp_arrow_inv`, drafted in v3).
+  - coercion-close commuting: `⌈close_ptyp α A⌉ = close_pskl α ⌈A⌉` — a
+    5-line induction beside `ptyp_to_pskl_open` (prop_coercions:287).
+  - **the RESULT CLOSE**: the step rows' e-rule pins its body result to
+    `open A2 α2`; take `A2 := close_ptyp α2 A2'` (cancellation via lngen's
+    `open_…_close_…` under lc, lc from the e-side soundness), and the
+    conclusion's `∀`-rel comes from `rel_pskl_close_pair_restrict`
+    (prop_solve_rel:1644) — EXACTLY its shape, the §8c.34 table said so.
+  - side 2's own rule premises (`uniq (Ξ2++Θ1')`, the `γ`-filter,
+    `α2 ∉ ftvar A2`) — the §8c.39 correspondence arguments; the γ-filter
+    corr goes through `rel_pskl_ftv_corr_r` + side-1's own filter +
+    `ftvar_in_pskl_close_pskl_wrt_pskl` (= remove α2 ·).
+  - the base rows: a REAL split-lift (`a_split_rel_e` — at TC the flex
+    split CAN run) [+ chk-lift], then the term-core, then the junk strip.
+  Each row ≈ the landed `S-ForallR` (prop_lift.v §10) in size; that row is
+  the line-for-line template for the restrict/peel/deleted-pair blocks.
 - app ✅ (three threaded calls — AP-App twice, done).
