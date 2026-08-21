@@ -991,6 +991,28 @@ Inductive a_extract : aenv -> a_sub_mode -> atom -> mode -> pskl -> pskl -> aenv
        ⚙ LAST, not after the solve premise, so every consumer's positional
        tactic list grows at its END. *)
     ftvar_in_a_cstrs C ∩ dom Ξs [=] empty ->
+    (* ⭐⭐ [paper-gap] THE GUESS'S HALF OF THE SAME GUARD (2026-08-21).
+       docs/PAPER-GAPS.md.
+
+       ⛔ WHY IT IS OWED, and it is the SAME SPECIES as the premise above.
+       The collection leaks openers into [C] and the FOLD leaks its own into
+       [Q]; a leaked opener is bound NOWHERE — not in [Θ0], not in [Ξ], not
+       in [Ξs] — and [a_guess_mono]'s hole row draws its flexible fresh for
+       [ftvar_in_aenv] of its CONTEXT only ([a_guess_mono_generated_fresh]
+       is context-only, NOT subject-aware).  ⇒ THE FINAL GUESS MAY DRAW A
+       LEAKED OPENER, and the two roles then collapse onto one atom exactly
+       as they could at the fold before its own guard: one name is at once a
+       rigid ∀-witness and a generated flexible, and the reference
+       implementation — one global counter, never reused — makes no such run.
+
+       ✅ IT COSTS THE THREADED ENCODING NOTHING, and that is a THEOREM
+       ([e_extract_sound], ext_algo/prop_extract.v): [e_guess]'s block is
+       drawn STRICTLY ABOVE the supply that already holds both [C]'s and
+       [Q]'s atoms ([e_guess_block_fresh]), so soundness discharges it from
+       facts its proof already computes.
+
+       ⚙ LAST, so every consumer's positional tactic list grows at its END. *)
+    (ftvar_in_a_cstrs C ∪ ftvar_in_pskl Q) ∩ dom Ξ' [=] empty ->
     {{ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ (Ξ ++ Ξs ++ Ξ') ↪ Q' }}a
 where "{{ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q }}a" := (a_extract Θ0 NM α m P P' Ξ Q) : frost_a_scope.
 

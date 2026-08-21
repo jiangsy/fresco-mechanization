@@ -4348,7 +4348,7 @@ unaffected: they quantify over the derivations that exist, and the
 optimality package is stated up to `⊑` precisely because the
 algorithm's answers are only determined up to generality.
 
-## ⭐⭐⭐ TWO MISSING FRESHNESS SIDE CONDITIONS ON POLYMORPHIC-INFORMATION EXTRACTION — a LEAKED ∀-OPENER can be re-drawn as a flexible, and the rules never say it may not (2026-08-19 / 2026-08-20)
+## ⭐⭐⭐ THREE MISSING FRESHNESS SIDE CONDITIONS ON POLYMORPHIC-INFORMATION EXTRACTION — a LEAKED ∀-OPENER can be re-drawn as a flexible, and the rules never say it may not (2026-08-19 / 2026-08-20 / 2026-08-21)
 
 Mechanized as guards on `a_looksub__arrow` / `a_lookeq__arrow` and on
 `a_extract__solve` (`frost/algo/def_rules.v`, both tagged `[paper-gap]`).
@@ -4389,6 +4389,15 @@ Two instances, at two layers:
    not mention the leaked openers either.  Same collapse, one layer up:
    `Ξs` may contain an atom that already occurs free in `𝒞`.
 
+3. **CROSS-LAYER, THE FINAL GUESS** (2026-08-21).  The same hole one step
+   further: `extract` closes with `guess^{NM}` at `Ξs ++ Ξ ++ Θ0`, and
+   `a_guess_mono`'s hole row draws its flexible fresh for
+   `ftvar_in_aenv Θ` of THAT context alone — `a_guess_mono_generated_fresh`
+   is context-only, not subject-aware.  So the FINAL guess may draw a leaked
+   opener too, and it may draw one leaked by the FOLD (into `Q`) as well as
+   one leaked by the COLLECTION (into `𝒞`).  ⚠️ Guard 2 does not cover it:
+   it speaks about `Ξs`, and `Ξ'` is a different block.
+
 ### The repair
 
     a_looksub__arrow / a_lookeq__arrow:
@@ -4397,6 +4406,7 @@ Two instances, at two layers:
 
     a_extract__solve:
         ftvar_in_a_cstrs 𝒞  ∩ dom Ξs [=] empty
+        (ftvar_in_a_cstrs 𝒞 ∪ ftvar_in_pskl Q) ∩ dom Ξ' [=] empty
 
 Prose form: *the names a collection or a solving run INVENTS are fresh for
 the constraints its sibling — or its own collection — has already
@@ -4422,9 +4432,13 @@ Both guards are DERIVABLE there:
   the INPUT supply came from the INPUTS), used inside `e_looksub_sound`;
 - cross-layer: `e_extract_solve_guard` (the collection's constraints live in
   the supply already spent, the fold's block is drawn strictly above it),
-  used inside `e_extract_sound` in two lines.
+  used inside `e_extract_sound` in two lines;
+- the FINAL GUESS's half: `e_guess_block_fresh` (the guess's block is
+  disjoint from the supply it starts at) together with
+  `e_looksub_cstr_ftvar` and `e_solve_cstr_out_ftvar` (which put `𝒞`'s and
+  `Q`'s atoms inside that supply), also two lines inside `e_extract_sound`.
 
-So no run of the implementation is excluded by either guard.
+So no run of the implementation is excluded by any of the three guards.
 
 ### What it cost inside the mechanization, and why that is the interesting part
 
@@ -4449,10 +4463,20 @@ invariant rather than re-derive it.
 precisely because the ∀ rules leak, and a leaked opener lands in the
 disjunct that says nothing about `dom Ξs`.
 
+The THIRD guard (2026-08-21) cost less, and for a reason worth recording:
+its consumer obtains the guess's block from `a_guess_ty_witness`, whose
+`L`-BOUNDED family lets the caller name the avoid-set AFTER `𝒞` and `Q`
+exist — so the guard is discharged by adding two sets to an `L` that was
+already there.  ⚙ What it did need on the way is the SOLVE layer's TRIM
+(`cols_l ρx [<=] ftvar_in_pskl P'` in `a_solve_sub_rel_e`): to make
+`ftvar_in_pskl Q` cover the FOLD's leaked openers, `SolS-ForallR` must carry
+its leaked pair only when the opener actually ESCAPES into the output — the
+rule permits the escape but does not force it.
+
 ### What is NOT affected
 
 Soundness is untouched — `a_extract_decls` and the decoration path read the
 blocks, not the constraints, and the collection's arrow guards are
-`assumption` at every site inside `prop_looksub.v`.  Both guards travel
-across equivariance (`swap_look_guard`), so every renaming lemma is
-unchanged.
+`assumption` at every site inside `prop_looksub.v`.  All three guards travel
+across equivariance (`swap_look_guard`, `swap_guess_guard`), so every
+renaming lemma is unchanged.

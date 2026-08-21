@@ -2057,8 +2057,10 @@ Lemma a_extract_rel_e_gen :
   {{ Θ1 ⊢ P1 ≼[ α , m ] P1' ⤳ Ξ1L ⨾ C1 }}a ->
   {{ (Ξ1L ++ Θ1) ⊩ C1 ⨾ pskl_hole ⤳ Ξ1F ⨾ Q1 }}a ->
   a_guess (Ξ1F ++ Ξ1L ++ Θ1) NM Q1 Ξ1G Q1' ->
-  (* ⛔ THE GUARD THE ROW OWES — see the box above. *)
+  (* ⛔ THE TWO GUARDS THE ROW OWES — see the box above.  The second is the
+     GUESS's half (2026-08-21, §8c.41). *)
   ftvar_in_a_cstrs C1 ∩ dom Ξ1F [=] empty ->
+  (ftvar_in_a_cstrs C1 ∪ ftvar_in_pskl Q1) ∩ dom Ξ1G [=] empty ->
   forall S0 Θ2 P2 P2' ρ V,
   rel_pskl ρ V P1 P2 ->
   rel_pskl ρ V P1' P2' ->
@@ -2094,9 +2096,15 @@ Lemma a_extract_rel_e_gen :
     /\ Ξ2 = flex_pairs_r ρn
     /\ (forall a b, In (a, b) ρx ->
           a `notin` ftvar_in_aenv Θ1 /\ b `notin` S0)
+    (* ⭐⭐ AND THE LEFT COLUMN DODGES THE WHOLE OUTPUT BLOCK (§8c.41).
+       This is what [a_sub__forall_l] needs to DROP the ρx column at the
+       atoms of a skeleton wf over [Ξ1 ++ Θ1]: a leaked opener is bound
+       nowhere, so the motive's block premise cannot keep it out of
+       [dom Θ1] and [rel_aenv] would owe a binding for each. *)
+    /\ cols_l ρx ∩ dom (Ξ1L ++ Ξ1F ++ Ξ1G) [=] empty
     /\ rel_pskl (ρx ++ ρn ++ ρ) V Q1' Q2'.
 Proof.
-  intros Θ1 α m NM P1 P1' Ξ1L C1 Ξ1F Q1 Ξ1G Q1' HL HF HG Hguard.
+  intros Θ1 α m NM P1 P1' Ξ1L C1 Ξ1F Q1 Ξ1G Q1' HL HF HG Hguard Hguard2.
   intros S0 Θ2 P2 P2' ρ V HrP HrP' HαV Hαl Hαr Hagr Hscp1 Hblkρ HαΞ
     HdΘ Hscp2 Hcov.
   rewrite ! dom_app in Hblkρ, HαΞ.
@@ -2259,6 +2267,27 @@ Proof.
         by (apply in_or_app; left; exact Hin).
       destruct (HρL _ _ Hin') as [Ha [_ Hb]].
       split; [ clear - Ha; fsetdec | exact Hb ]. }
+  (* ⭐⭐ THE ρx COLUMN DODGES THE WHOLE BLOCK — six facts, one per
+     (column, block) pair.  Four are the layers' own; the two against the
+     GUESS's block are the new guard's, through [cols_l ρxL ⊆ 𝒞₁] (the
+     look's) and [cols_l ρxF ⊆ ftvar_in_pskl Q1] (the fold's TRIM). *)
+  split.
+  { assert (H1 : cols_l ρxL ∩ dom Ξ1L [=] empty) by (clear - HxlL; fsetdec).
+    assert (H2 : cols_l ρxL ∩ dom Ξ1F [=] empty) by (clear - HbFx; fsetdec).
+    assert (H3 : cols_l ρxL ∩ dom Ξ1G [=] empty)
+      by (clear - Hguard2 HxsubL; fsetdec).
+    assert (H4 : cols_l ρxF ∩ (dom Ξ1L ∪ dom Ξ1F) [=] empty).
+    { intros x. split; intros Hx; [ | clear - Hx; fsetdec ]. exfalso.
+      assert (Hxl : x `in` cols_l ρxF) by (clear - Hx; fsetdec).
+      destruct (cols_l_in_inv _ _ Hxl) as [b Hin].
+      destruct (HρF _ _ Hin) as [Ha _].
+      rewrite ftvar_in_aenv_app in Ha.
+      pose proof (dom_subset_ftvar_in_aenv Ξ1L) as Hds.
+      clear - Ha Hds Hx. fsetdec. }
+    assert (H5 : cols_l ρxF ∩ dom Ξ1G [=] empty)
+      by (clear - Hguard2 HtrF; fsetdec).
+    rewrite ! dom_app. rewrite cols_l_app.
+    clear - H1 H2 H3 H4 H5. fsetdec. }
   (* ⭐ THE SHIFT BACK: the pair [(α, α)] is spent, and [α] is in [V]. *)
   eapply rel_pskl_morph; [ exact HrQ' | | ].
   - intros a b Hin.
@@ -2301,15 +2330,16 @@ Lemma a_extract_rel_e : forall Θ1 NM α m P1 P1' Ξ1 Q1',
     /\ Ξ2 = flex_pairs_r ρn
     /\ (forall a b, In (a, b) ρx ->
           a `notin` ftvar_in_aenv Θ1 /\ b `notin` S0)
+    /\ cols_l ρx ∩ dom Ξ1 [=] empty
     /\ rel_pskl (ρx ++ ρn ++ ρ) V Q1' Q2'.
 Proof.
   intros Θ1 NM α m P1 P1' Ξ1 Q1' HD.
   destruct HD as
-    [ Θ0 NM0 α0 m0 Ps Ps' ΞL ΞF ΞG C0 Q0 Q0' HL HF HG Hgd ].
+    [ Θ0 NM0 α0 m0 Ps Ps' ΞL ΞF ΞG C0 Q0 Q0' HL HF HG Hgd Hgd2 ].
   intros S0 Θ2 P2 P2' ρ V HrP HrP' HαV Hαl Hαr Hagr Hscp1 Hblkρ HαΞ
     HdΘ Hscp2 Hcov.
   eapply a_extract_rel_e_gen;
-    [ exact HL | exact HF | exact HG | exact Hgd
+    [ exact HL | exact HF | exact HG | exact Hgd | exact Hgd2
     | exact HrP | exact HrP' | exact HαV | exact Hαl | exact Hαr
     | exact Hagr | exact Hscp1 | exact Hblkρ | exact HαΞ
     | exact HdΘ | exact Hscp2 | exact Hcov ].

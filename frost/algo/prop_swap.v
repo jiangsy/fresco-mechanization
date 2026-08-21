@@ -682,6 +682,40 @@ Proof.
     | clear - Hin; fsetdec ].
 Qed.
 
+(** ⭐ The GUESS's half of the cross-layer guard travels too (2026-08-21). *)
+Lemma swap_guess_guard : forall a b (C : a_cstrs) (Q : pskl) (Ξ : aenv),
+  (ftvar_in_a_cstrs C ∪ ftvar_in_pskl Q) ∩ dom Ξ [=] empty ->
+  (ftvar_in_a_cstrs (swap_cstrs a b C) ∪ ftvar_in_pskl (swap_pskl a b Q))
+    ∩ dom (swap_aenv a b Ξ) [=] empty.
+Proof.
+  intros a b C Q Ξ H.
+  assert (Hkey : forall x,
+            x `in` (ftvar_in_a_cstrs (swap_cstrs a b C)
+                    ∪ ftvar_in_pskl (swap_pskl a b Q)) ->
+            x `in` dom (swap_aenv a b Ξ) -> False).
+  { intros x Hc Hd.
+    assert (Hc' : swap_atom a b x
+                  `in` (ftvar_in_a_cstrs C ∪ ftvar_in_pskl Q)).
+    { destruct (AtomSetProperties.In_dec (swap_atom a b x)
+                  (ftvar_in_a_cstrs C ∪ ftvar_in_pskl Q)) as [Hy | Hn];
+        [ exact Hy | exfalso ].
+      pose proof (swap_cstrs_ftv_notin a b C (swap_atom a b x)
+                    ltac:(clear - Hn; fsetdec)) as Hno1.
+      pose proof (swap_pskl_ftv_notin a b Q (swap_atom a b x)
+                    ltac:(clear - Hn; fsetdec)) as Hno2.
+      rewrite swap_atom_invol in Hno1. rewrite swap_atom_invol in Hno2.
+      clear - Hc Hno1 Hno2. fsetdec. }
+    assert (Hd' : swap_atom a b x `in` dom Ξ).
+    { destruct (AtomSetProperties.In_dec (swap_atom a b x) (dom Ξ))
+        as [Hy | Hn]; [ exact Hy | ].
+      pose proof (swap_aenv_dom_notin a b Ξ (swap_atom a b x) Hn) as Hno.
+      rewrite swap_atom_invol in Hno. contradiction. }
+    clear - H Hc' Hd'. fsetdec. }
+  intros x; split; intros Hin;
+    [ exfalso; apply (Hkey x); clear - Hin; fsetdec
+    | clear - Hin; fsetdec ].
+Qed.
+
 Lemma swap_cstrs_app : forall a b (C1 C2 : a_cstrs),
   swap_cstrs a b (C1 ++ C2) = swap_cstrs a b C1 ++ swap_cstrs a b C2.
 Proof. intros. unfold swap_cstrs. apply List.map_app. Qed.
@@ -1222,6 +1256,8 @@ Proof.
   - rewrite <- ! swap_aenv_app. apply a_guess_swap; auto.
   - (* the CROSS-LAYER guard travels: a transposition is a bijection *)
     apply swap_look_guard; assumption.
+  - (* and so does the GUESS's half *)
+    apply swap_guess_guard; assumption.
 Qed.
 
 (* ===================================================================== *)

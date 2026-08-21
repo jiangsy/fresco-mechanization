@@ -138,6 +138,11 @@ Proof.
        STRICTLY ABOVE that supply ([Hfr2]).  See [e_extract_solve_guard],
        ext_algo/prop_lift.v, for the stand-alone statement. *)
     clear - Hcs Hfr2. fsetdec.
+  - (* ⭐ THE GUESS'S HALF, and it is FREE for exactly the same reason: the
+       fold's output lives in the supply the guess starts from, and the
+       guess's block is drawn STRICTLY ABOVE that supply. *)
+    pose proof (e_guess_block_fresh Hg) as Hfr3.
+    clear - Hcs Hq Hg2 Hfr3. fsetdec.
 Qed.
 
 (** SUPPLY RESPECT — the three clusters' own, composed.  What the chain

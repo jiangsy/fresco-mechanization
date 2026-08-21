@@ -1098,9 +1098,14 @@ Proof.
                 (* the guess runs at [Ξs ++ Ξc ++ Θ0] ([a_extract__solve]), so
                    the L-bound must cover that context's PAYLOADS too, not just
                    its domain — cluster 3's avoid-input is [ftvar_in_aenv] *)
+                (* ⭐ AND THE GUESS'S HALF OF THE CROSS-LAYER GUARD
+                   (2026-08-21): the L-BOUNDED family makes it free — just
+                   name the two sets the new premise talks about. *)
                 (add α (ftvar_in_aenv (Ξs ++ Ξc ++ Θ0) `union` dom Θ
                           `union` dom Θ0 `union` dom Ξc `union` dom Ξs
-                          `union` dom κ)))
+                          `union` dom κ
+                          `union` ftvar_in_a_cstrs 𝒞
+                          `union` ftvar_in_pskl Pa)))
       as (Ξ' & A & κ' & Hgu & HfmΞ' & HuqΞ' & Hkeys' & Hfr' & HF' & Hwf'
           & Hpr').
     assert (HdomΞ' : dom κ' [=] dom Ξ') by (apply keys_eq_dom; exact Hkeys').
@@ -1128,7 +1133,10 @@ Proof.
         (* ⭐ THE CROSS-LAYER GUARD, and it is exactly what P6-Ss's new
            conjunct reports: no scoping fact could give it, because the
            escaping constraint variables are LEAKED OPENERS. *)
-        | apply inter_dom_empty_of_forall; exact Hapart ]. }
+        | apply inter_dom_empty_of_forall; exact Hapart
+        (* ⭐ the GUESS's half — the L-bound above names both sets *)
+        | apply inter_dom_empty_of_forall;
+          intros x Hx; specialize (Hfr' x Hx); clear - Hfr'; fsetdec ]. }
     split.
     { (* [Ξ' ++ Ξs ++ Ξc ++ Θ0] → [Ξc ++ Ξs ++ Ξ' ++ Θ0]: all three blocks are
          undefined flexibles, so any reordering is binds-preserving *)
@@ -1180,7 +1188,9 @@ Proof.
     split.
     { eapply a_extract__solve;
         [ exact Hlook | exact Hsolve | apply a_guess__sk
-        | apply inter_dom_empty_of_forall; exact Hapart ]. }
+        | apply inter_dom_empty_of_forall; exact Hapart
+        (* the SK guess generates nothing *)
+        | simpl; clear; fsetdec ]. }
     (* only NOW may the empty guess block be absorbed — [a_extract__solve]'s
        conclusion is [Ξ ++ Ξs ++ Ξ'], which no longer unifies once it is gone *)
     rewrite ! app_nil_r.
