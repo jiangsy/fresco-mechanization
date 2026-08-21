@@ -7610,3 +7610,43 @@ for calling a LOWER rung's lift: `lift_consis_nil` is the consis lift
 specialised to the Δ = ∅ call, with the caller's hypothesis list verbatim.
 Expect `a_split` and `a_pat` to want the same wrapper around
 `a_sub_sub_flex_rel_e`.
+
+### 8c.43 ⭐⭐ THE `a_split` RUNG IS CLOSED — 3 rows, and it is [W-Solve] at a smaller scale (2026-08-21)
+
+`a_split_rel_e` is Qed (`ext_algo/prop_lift.v` §11).  ⭐ Written and closed in
+one pass — no new obstruction, no new currency.
+
+- `Split-Arrow` / `Split-Hole` invent nothing and move nothing: the whole row
+  is an `inversion` of the input's `rel_pskl` and a `nil` extension.
+- `Split-Flex` is `W-Solve`'s shape: TWO invented flexibles, TWO pushed
+  pairs, and then CONSISTENCY at Δ = ∅ — so `lift_consis_nil` is its entire
+  content.  ⭐ **NO restriction is needed**, and the reason is §8c.40's
+  discriminator: the two invented atoms SURVIVE into the output
+  (`auc_dom_mono_consis`), so the motive's own block premise already puts
+  them off ρ's left column.  Side 2's two atoms reach `dom Θ1'` by
+  `e_consis_sound` + the same dom-mono, exactly as `S-Arrow` does.
+
+⚙ TRAPS PAID (all documented, all hit again): `dom ⊆ ftvar_in_aenv` is
+`dom_subset_ftvar_in_aenv` — `a_wf_aenv_ftv_dom` is the OTHER direction;
+`rewrite app_assoc`, NOT `<-`; `lift_consis_nil`'s `S0 Θ0' P0' P' ρ V` are
+IMPLICIT; and ⚠️ `injection E as -> ->` FAILS when the two pairs share a
+component (it drops the reflexive equation) — use `inversion E1; inversion
+E2; subst; solve [ reflexivity | exfalso; congruence ]` in the two
+injectivity conjuncts of a hand-built `rel_ext`.
+
+#### ⇒ WHAT IS LEFT: `a_pat` (10 rows) and `a_typing` (11)
+
+⚙ SCOUTED, not yet written.  `a_pat`'s shape:
+
+- FOUR rows (`AP-Unit`, `AP-Var` ×2, `AP-Anno`) are a single `a_sub` call ⇒
+  `proj1 a_sub_sub_flex_rel_e` directly;
+- `AP-Freeze` passes through; `AP-App` is two recursive calls threaded;
+- ⭐ the FOUR abs rows (`AP-Abs`, `AP-AbsAnno`, `AP-AbsCheck`,
+  `AP-AbsAnnoCheck`) share ONE shape and should share ONE lemma, as the four
+  walk-peel rows did (`lift_sub_flex_peel`).  ⛔ They are the work: each
+  introduces a TERM variable `x` fresh only for the CONTEXT, runs at the
+  extended context, and hands back `Ξ ++ (x ~ …) ++ Θ`, from which the row
+  STRIPS the x-entry — i.e. BOTH the junk-suffix pattern of `S-ForallR`
+  (`rel_aenv_app_inv_l` + `restrict_l`, because `Ξ` is freshened only against
+  the context) AND a pair push for `x`, which does NOT reach the output and
+  therefore DOES need `restrict_pairs`.
