@@ -1311,8 +1311,15 @@ Lemma a_solve_sub_rel_e : forall Θ1 m P1 Q1 Ξ1 P1',
   exists S1 ρx ρn Ξ2 P3',
     {{ S0 ↝ S1 ⊨ Θ2 ⊢ₛ P3 ≼[ m ] Q3 ⤳ Ξ2 ⨾ P3' }}e
     /\ Ξ1 = flex_pairs_l ρn /\ Ξ2 = flex_pairs_r ρn
+    (* ⭐ THE LEFT COLUMN ALSO DODGES THE DERIVATION'S OWN BLOCK
+       (2026-08-21, §8c.41).  A leaked opener is bound NOWHERE, so nothing
+       stops it colliding with a generated flexible NAME — and the extract
+       rung's consumer ([a_sub__forall_l]) must drop the ρx column at the
+       atoms of a skeleton wf over [Ξ1 ++ Θ1], which is exactly this.
+       ⚙ Free at [SS-ForallR], the only row that creates a pair: its proof
+       already derives [β ∉ dom Ξ] for the recursive call's block premise. *)
     /\ (forall a b, In (a, b) ρx ->
-          a `notin` ftvar_in_aenv Θ1 /\ b `notin` S0)
+          a `notin` ftvar_in_aenv Θ1 ∪ dom Ξ1 /\ b `notin` S0)
     /\ rel_pskl (ρx ++ ρn ++ ρ) V P1' P3'.
 Proof.
   intros Θ1 m P1 Q1 Ξ1 P1' HD.
@@ -1540,7 +1547,8 @@ Proof.
       - destruct (Hρx a b Hin) as [Ha Hb]. simpl in Ha.
         split; [ clear - Ha; fsetdec | clear - Hb; fsetdec ].
       - destruct Hin as [E | Hin]; [ inversion E; subst | inversion Hin ].
-        split; [ clear - Hβ1; fsetdec | exact Hβ2 ]. }
+        simpl in Hd1p.
+        split; [ clear - Hβ1 Hd1p; fsetdec | exact Hβ2 ]. }
     (* ⚙ the restriction must be UNDONE here: the leaked pair moves into ρx
        and the deleted pairs go back into ρ. *)
     eapply rel_pskl_mono; [ exact Hrel' | | intros x0 Hx0; exact Hx0 ].
@@ -1615,8 +1623,9 @@ Proof.
       [ rewrite flex_pairs_r_app; rewrite <- E2a, <- E2b; reflexivity | ].
     split.
     { intros a b Hin. destruct (Hρx a b Hin) as [Ha Hb].
-      rewrite ftvar_in_aenv_app in Ha.
-      split; [ clear - Ha; fsetdec | clear - Hb Hgr1; fsetdec ]. }
+      rewrite ftvar_in_aenv_app in Ha. rewrite dom_app.
+      pose proof (dom_subset_ftvar_in_aenv Ξ1) as Hds1.
+      split; [ clear - Ha Hds1; fsetdec | clear - Hb Hgr1; fsetdec ]. }
     constructor.
     + rel_perm HrelA'.
     + rel_perm HrelB'.
@@ -1681,8 +1690,9 @@ Proof.
       [ rewrite flex_pairs_r_app; rewrite <- E2a, <- E2b; reflexivity | ].
     split.
     { intros a b Hin. destruct (Hρx a b Hin) as [Ha Hb].
-      rewrite ftvar_in_aenv_app in Ha.
-      split; [ clear - Ha; fsetdec | clear - Hb Hgr1; fsetdec ]. }
+      rewrite ftvar_in_aenv_app in Ha. rewrite dom_app.
+      pose proof (dom_subset_ftvar_in_aenv Ξ1) as Hds1.
+      split; [ clear - Ha Hds1; fsetdec | clear - Hb Hgr1; fsetdec ]. }
     constructor. constructor.
     + rel_perm HrelA'.
     + rel_perm HrelB'.
@@ -1733,8 +1743,9 @@ Lemma a_solve_cstr_rel_e : forall Θ1 C1 P1 Ξ1 P1',
   exists S1 ρx ρn Ξ2 P3',
     {{ S0 ↝ S1 ⊨ Θ2 ⊩ C2 ⨾ P3 ⤳ Ξ2 ⨾ P3' }}e
     /\ Ξ1 = flex_pairs_l ρn /\ Ξ2 = flex_pairs_r ρn
+    (* ⭐ the block conjunct of §8c.41 — see [a_solve_sub_rel_e] *)
     /\ (forall a b, In (a, b) ρx ->
-          a `notin` ftvar_in_aenv Θ1 /\ b `notin` S0)
+          a `notin` ftvar_in_aenv Θ1 ∪ dom Ξ1 /\ b `notin` S0)
     /\ rel_pskl (ρx ++ ρn ++ ρ) V P1' P3'.
 Proof.
   intros Θ1 C1 P1 Ξ1 P1' HD.
@@ -1832,8 +1843,9 @@ Proof.
       [ rewrite flex_pairs_r_app; rewrite <- E2a, <- E2b; reflexivity | ].
     split.
     { intros a b Hin. destruct (Hρx a b Hin) as [Ha Hb].
-      rewrite ftvar_in_aenv_app in Ha.
-      split; [ clear - Ha; fsetdec | clear - Hb Hgr1; fsetdec ]. }
+      rewrite ftvar_in_aenv_app in Ha. rewrite dom_app.
+      pose proof (dom_subset_ftvar_in_aenv Ξ1) as Hds1.
+      split; [ clear - Ha Hds1; fsetdec | clear - Hb Hgr1; fsetdec ]. }
     rel_perm HrelB'.
 Qed.
 

@@ -7455,13 +7455,17 @@ after which `rel_pskl_morph` at the atoms of `P1 ⊆ dom (Ξ ++ Θ0)` drops ρx.
 | | `dom Ξ1L` | `dom Ξ1F` | `dom Ξ1G` |
 |---|---|---|---|
 | `cols_l ρxL` | ✅ the look's 4th conjunct | ✅ the 2026-08-20 guard + `cols_l ρxL ⊆ ftvar_in_a_cstrs C1` | ⛔ |
-| `cols_l ρxF` | ✅ `a ∉ ftvar_in_aenv (Ξ1L ++ Θ1)` | ⛔ | ⛔ |
+| `cols_l ρxF` | ✅ `a ∉ ftvar_in_aenv (Ξ1L ++ Θ1)` | ✅ **LANDED** (below) | ⛔ |
 
-- `ρxF` vs `Ξ1F` — strengthen `a_solve_sub_rel_e` and `a_solve_cstr_rel_e`
-  with `cols_l ρx ∩ dom Ξ1 [=] empty`.  ⭐ Should be nearly FREE: the only
-  row that creates a pair is `SS-ForallR`, and its proof ALREADY derives
-  `β ∉ dom Ξ` (`Hd1p`, via `a_solve_sub_eq_generated_fresh_set`) to satisfy
-  the recursive call's own block premise.  No rule change.
+- ✅ `ρxF` vs `Ξ1F` — **DONE, and it WAS nearly free.**
+  `a_solve_sub_rel_e` and `a_solve_cstr_rel_e` now return
+  `a ∉ ftvar_in_aenv Θ1 ∪ dom Ξ1` (one widened conjunct, not a new one, so
+  no consumer's `split` chain moved).  Four of the nine `SS-` rows have
+  `ρx = nil`; two pass the IH's through unchanged; `SS-ForallR`'s new atom
+  is covered by `Hd1p` (`β ∉ dom Ξ`), which its proof already derived for
+  the recursive call's own block premise; and `SS-Arrow` / `SS-GhostLF` /
+  `SC-EqCons` need only `dom_subset_ftvar_in_aenv` on the FIRST half's block,
+  because the second half runs at `Ξ1 ++ Θ`.
 - both vs `Ξ1G` — ⛔⛔ **A THIRD CROSS-LAYER GUARD IS OWED, and it is the
   SAME SPECIES as the 2026-08-20 one.**  `a_guess_mono__hole` draws its
   flexible fresh for `ftvar_in_aenv Θ` ONLY (`a_guess_mono_generated_fresh`
@@ -7477,9 +7481,13 @@ after which `rel_pskl_morph` at the atoms of `P1 ⊆ dom (Ξ ++ Θ0)` drops ρx.
   needs a CASE SPLIT on `β ∈ ftvar_in_pskl P'` — the rule's own comment says
   β "may legitimately ESCAPE into P'", so when it does not, the pair is
   simply not added (`rel_pskl_restrict_l` removes it).
-  ⚙ Like its predecessor the guard should cost the threaded encoding
-  nothing: `e_guess`'s block is drawn STRICTLY ABOVE the supply that holds
-  both `C`'s and `Q`'s atoms, so `e_extract_solve_guard` extends.
+  ✅ **THE e-SIDE DISCHARGE IS VERIFIED** (the feasibility crux): the guess
+  in `e_extract__solve` runs at the supply `S2` that the look and the fold
+  have already spent, `e_guess_block_fresh` gives `dom Ξ' ∩ S2 [=] empty`,
+  and `e_looksub_cstr_ftvar` / `e_solve_cstr_out_ftvar` put `ftvar_in_a_cstrs C`
+  and `ftvar_in_pskl Q` inside `S2`.  ⇒ the guard costs the threaded
+  encoding NOTHING, exactly as `e_extract_solve_guard` does for its
+  predecessor — it is a THEOREM there, not an obligation.
   ⚠️ COST: this is a change to `algo/def_rules.v` — a FULL rebuild
   (≈3400 s of proof time), ~14 real construction sites plus `test/`.
 
