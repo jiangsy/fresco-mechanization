@@ -7344,3 +7344,153 @@ i.e. the target is allowed to be the ONE atom outside the context — which is
 what an exists-fresh binder row hands it.  ⚠️ Until that is done, do not
 write the row: the premise package will look derivable right up to the point
 where `α ∈ V` and the scoping bound meet.
+
+### 8c.41 ⭐⭐⭐ THE `a_extract_rel_e` BLOCKER IS REPAIRED, AND `S-ForallL` IS WRITTEN — down to ONE owed fact (2026-08-21)
+
+Draft: `…/96ab7586-d719-4eb8-93db-a2eeeb3f96d4/scratchpad/work/tmp_lift_sub_v8.v.bak`
+(= `work/sub.v`), `coqc` rc=0 with ONE `admit`, at `Hdrop`.
+✅ `make coq` rc=0, README.v 33/33 — the tree carries the repair.
+
+#### ✅ THE REPAIR — and it is a V/ρ SHIFT, not a weakening cascade
+
+§8c.40 proposed `V ∪ cols_l ρ [<=] add α (ftvar_in_aenv Θ1)`.  That shape is
+right for `V`, but ⛔ **the `add α` cannot be pushed down**: `a_solve_cstr_rel_e`
+and `a_guess_rel_e` spend their `V [<=] ftvar_in_aenv Θ` at the ∀ rows'
+`β ∉ V`, where `β` is an EXISTS-FRESH opener of the given derivation.  Nothing
+forces `β ≠ α`, so a weakened `V` bound is underivable one layer down.
+
+⭐⭐ **WHAT WORKS INSTEAD — THE IDENTITY-PAIR SHIFT (prop_lift.v §8b).**
+`rel_atom` is a plain disjunction of a PAIR clause and an IDENTITY clause, so
+for an atom already related to ITSELF the pair `(α, α)` and the membership
+`α ∈ V` relate *exactly the same atoms*.  The looked-for variable therefore
+moves from `V` to ρ **between the look and the fold**:
+
+- the LOOK keeps `α ∈ V` and `α` outside both columns — it dispatches on α's
+  ABSENCE from a skeleton (`rel_pskl_notin_r`), and ⚙ CHECKED: it has NO
+  `V [<=] ftvar_in_aenv Θ` premise at all, only the SUPPLY bound;
+- the FOLD and the GUESS run at `VS := V ∩ ftvar_in_aenv Θ1` with
+  `(α, α) :: …` — their context-shaped scoping premise is then satisfied
+  verbatim and NOTHING below changes;
+- the shift back is the same lemma in the other direction.
+
+⇒ the new premises of `a_extract_rel_e` are
+
+    V [<=] add α (ftvar_in_aenv Θ1) ->
+    dom Ξ1 ∩ cols_l ρ [=] empty ->
+    α `notin` dom Ξ1 ->
+
+replacing `V ∪ cols_l ρ [<=] ftvar_in_aenv Θ1`.  ⭐ The middle one is the
+SAME SPLIT the fold took on 2026-08-19, one layer up: `cols_l ρ`'s two jobs
+were both "the derivation's own output block dodges the pair column", and
+`a_sub__forall_l` reads that off the lift motive's `Hblk` — `dom Ξ ⊆ dom Θ1`
+(`a_sub_sub_flex_dom_mono`) and `dom Ξ ∩ dom Θ0 = ∅` (`uniq (Ξ ++ Θ0)`).
+The last one the row satisfies by choosing its opener off `dom Ξ`, which is
+legal because `a_extract_family_of_instance` keeps `Ξ` FIXED across the family.
+
+⚙ New currency in prop_lift.v §8b: `rel_pskl_morph`, `rel_a_cstrs_morph`
+(the universal morphisms — `rel_pskl_mono` is their pair-inclusion instance),
+`flex_agree_rel_id_to_pair`.  ⚠️ `rel_pskl_shrink_V_id` already existed and
+does the V→pair direction for skeletons; the morphisms are what the
+CONSTRAINTS and the shift BACK needed.
+
+#### ✅ THE ROW — everything but one line
+
+`S-ForallL` is written and compiles.  ⭐ The plan of §8c.38 held: ONE common
+opener `α'` chosen off
+`S0 ∪ cols_l ρ ∪ ftvar_in_aenv Θ0 ∪ dom Θ0 ∪ dom Ξ ∪ ftvar P ∪ ftvar P0 ∪ {α} ∪ L`,
+side 1 re-instantiated with `a_extract_family_of_instance`, side 2 drawing the
+same atom (`e_sub__forall_l` needs only `α' ∉ S0`, and it runs the extract at
+`add α' S0` — which is why `V ∪ cols_r ρ [<=] S0` survives the V-extension).
+No `restrict_pairs`, no `restrict_l`, no junk suffix.
+
+⭐ NEW CURRENCY THE ROW NEEDED (all in the draft, all `Qed`):
+
+1. `rel_pskl_open_skl` / `_open_rec_skl` — opening at RELATED SKELETONS; the
+   tree had only the atom forms.  `S-ForallL` substitutes the extract's
+   INSTANTIATION, not an opener.
+2. `nodup_fst_fun`, `nodup_snd_inj`, **`rel_ext_flex_pairs`** — a whole BLOCK
+   pair list is a `rel_ext` (the two `uniq`s give the two injectivities).
+   ⭐ This is what lets a row that hands an entire block to its IH rebuild
+   `rel_inj` / `rel_fun` at the widened list, and it will serve every later
+   block-handing row.
+3. ⛔⛔ **`a_wf_pskl_rel` — A SECOND OBSTRUCTION §8c.34 MISSED ENTIRELY.**
+   `e_sub__forall_l` is the ONE e-side rule that carries an `a_wf_pskl`
+   premise (`ext_algo/def_sub.v:111`) — it is the SCOPING FILTER the solve
+   layer's `SolS-ForallR` leans on ("ill-scoped results are filtered
+   downstream", `algo/def_rules.v`).  Side 2 of the lift is WF-FREE by
+   §8c.34 (iii), so the row must BUILD it, and the only source is side 1's.
+   ⭐ Two things make the transport go: `rel_abind` relates only bindings of
+   the SAME KIND (so tvar-ish stays tvar-ish — `a_binds_tvar_rel`, whose
+   image atom is pinned by `rel_fun` on `dom Θ1`); and the Δ slot is a set of
+   atoms SHARED by both sides, which is sound because the ∀ case opens BOTH
+   sides at the SAME atom — legal once that atom is off `cols_l ρ`, which the
+   invariant `Δ ∩ cols_l ρ [=] empty` maintains (Δ is `empty` at the call).
+   ⚙ Also new: `rel_atom_shrink_add`, `rel_fun_add_fresh`.
+
+#### ⛔⛔ THE ONE THING LEFT — `Hdrop`, and it is a THIRD cross-layer guard
+
+    Hdrop : rel_pskl (ρn ++ ρ) V P1 P1'      (* from rel_pskl (ρx ++ ρn ++ ρ) (add α' V) P1 P1' *)
+
+⭐ The `add α' V` half is free (`rel_pskl_shrink_V`, and `α' ∉ ftvar P1`
+because `P1` is wf over `Ξ ++ Θ0`).  **The ρx half is the obstruction.**
+
+⛔ **ρx CANNOT BE KEPT.**  Checked, three ways: `Hblk` for the IH would owe
+`a ∉ cols_l ρx` for atoms `a ∈ dom Θ1 \ dom (Ξ ++ Θ0)` that the SUBTYPING
+premise invents (a leaked opener can collide with one); `rel_fun_app_off`
+owes `cols_l ρx ∩ dom (Ξ ++ Θ0) [=] empty`; and `flex_agree_rel` is ANTITONE
+so each ρx pair owes an agreement.  ⚙ `rel_aenv` is NOT a problem — it is
+POSITIONAL and hence MONOTONE in ρ (`rel_aenv_mono`).
+
+⇒ what is owed is exactly
+
+    cols_l ρx ∩ dom Ξ1 [=] empty          (* on a_extract_rel_e's output *)
+
+("the extract's leaked openers are not among the flexibles it hands back"),
+after which `rel_pskl_morph` at the atoms of `P1 ⊆ dom (Ξ ++ Θ0)` drops ρx.
+⚙ The RIGHT-hand analogue is free — side 2's blocks are supply draws and
+ρx's right atoms live in the spent supply.
+
+**THE SIX SUB-GAPS, and which are open** (ρx = ρxF ++ ρxL, Ξ1 = Ξ1L ++ Ξ1F ++ Ξ1G):
+
+| | `dom Ξ1L` | `dom Ξ1F` | `dom Ξ1G` |
+|---|---|---|---|
+| `cols_l ρxL` | ✅ the look's 4th conjunct | ✅ the 2026-08-20 guard + `cols_l ρxL ⊆ ftvar_in_a_cstrs C1` | ⛔ |
+| `cols_l ρxF` | ✅ `a ∉ ftvar_in_aenv (Ξ1L ++ Θ1)` | ⛔ | ⛔ |
+
+- `ρxF` vs `Ξ1F` — strengthen `a_solve_sub_rel_e` and `a_solve_cstr_rel_e`
+  with `cols_l ρx ∩ dom Ξ1 [=] empty`.  ⭐ Should be nearly FREE: the only
+  row that creates a pair is `SS-ForallR`, and its proof ALREADY derives
+  `β ∉ dom Ξ` (`Hd1p`, via `a_solve_sub_eq_generated_fresh_set`) to satisfy
+  the recursive call's own block premise.  No rule change.
+- both vs `Ξ1G` — ⛔⛔ **A THIRD CROSS-LAYER GUARD IS OWED, and it is the
+  SAME SPECIES as the 2026-08-20 one.**  `a_guess_mono__hole` draws its
+  flexible fresh for `ftvar_in_aenv Θ` ONLY (`a_guess_mono_generated_fresh`
+  is context-only — checked, NOT `ftvar_in_pskl P`), and a leaked opener is
+  bound NOWHERE, so the FINAL GUESS may draw one, exactly as the FOLD could
+  before its guard.  The shape to add to `a_extract__solve`:
+
+      (ftvar_in_a_cstrs C ∪ ftvar_in_pskl Q) ∩ dom Ξ' [=] empty
+
+  ⚠️ NOT `∩ dom (Ξs ++ Ξ')` — `Q` legitimately mentions `dom Ξs`.
+  To make the `ftvar_in_pskl Q` half cover `ρxF`, `a_solve_cstr_rel_e` also
+  owes `cols_l ρx [<=] ftvar_in_pskl <its output>`; ⚙ at `SS-ForallR` that
+  needs a CASE SPLIT on `β ∈ ftvar_in_pskl P'` — the rule's own comment says
+  β "may legitimately ESCAPE into P'", so when it does not, the pair is
+  simply not added (`rel_pskl_restrict_l` removes it).
+  ⚙ Like its predecessor the guard should cost the threaded encoding
+  nothing: `e_guess`'s block is drawn STRICTLY ABOVE the supply that holds
+  both `C`'s and `Q`'s atoms, so `e_extract_solve_guard` extends.
+  ⚠️ COST: this is a change to `algo/def_rules.v` — a FULL rebuild
+  (≈3400 s of proof time), ~14 real construction sites plus `test/`.
+
+#### ⚙ FOR THE RECORD
+
+- ⭐ `e_sub__forall_l` draws its opener and runs the extract at `add α S0`,
+  which is why a COMMON opener can be in `V` and still satisfy
+  `V ∪ cols_r ρ [<=] S0`.  The V-extension is paid on the supply side by the
+  rule itself.
+- ⛔ Do NOT try to carry the opener as a PAIR instead of in `V`: the look
+  layer needs `α ∈ V` AND `α` off both columns (it reads α's ABSENCE), and
+  relaxing that cascades into `prop_solve_rel` §7.
+- ⚠️ `rel_aenv_binds_l` and `a_extract_family_of_instance` do NOT have their
+  arguments implicit — use `@` / `eapply` (the `Set Implicit Arguments` trap).

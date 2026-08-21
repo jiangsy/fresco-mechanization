@@ -1887,6 +1887,69 @@ Proof.
   clear - Hcs Hfr. fsetdec.
 Qed.
 
+(* ===================================================================== *)
+(*  §8b  ⭐⭐ THE IDENTITY-PAIR SHIFT — one atom, between [V] and ρ        *)
+(*                                                                        *)
+(*  [rel_atom] is a plain disjunction of a PAIR clause and an IDENTITY    *)
+(*  clause, so for an atom already related to ITSELF the two clauses       *)
+(*  two carry the same information: [(α, α) ∈ ρ] and [α `in` V] relate     *)
+(*  exactly the same atoms.                                               *)
+(*                                                                        *)
+(*  ⭐ That is what lets [a_extract_rel_e] accept a looked-for variable    *)
+(*  its own context does NOT bind — [a_sub__forall_l]'s opener, which is   *)
+(*  fresh for [Θ0] by the rule's own side condition.  The LOOK needs α in  *)
+(*  [V] and outside both columns (it dispatches on α's ABSENCE from a      *)
+(*  skeleton, [rel_pskl_notin_r]); the FOLD and the GUESS carry the        *)
+(*  scoping premise [V ⊆ ftvar_in_aenv Θ], which the opener escapes.       *)
+(*  ⇒ shift α from [V] to the pair list BETWEEN the two layers; neither    *)
+(*  layer changes.                                                        *)
+(* ===================================================================== *)
+
+(** The universal morphism: [rel_pskl_mono] is its pair-inclusion instance,
+    and the shift in EITHER direction is another. *)
+Lemma rel_pskl_morph : forall ρ ρ' V V' P Q,
+  rel_pskl ρ V P Q ->
+  (forall a b, In (a, b) ρ -> rel_atom ρ' V' a b) ->
+  (forall a, a `in` V -> rel_atom ρ' V' a a) ->
+  rel_pskl ρ' V' P Q.
+Proof.
+  intros ρ ρ' V V' P Q Hrel Hp Hv.
+  induction Hrel; constructor; auto.
+  match goal with
+  | Ha : rel_atom _ _ _ _ |- _ =>
+      inversion Ha; subst; [ apply Hp | apply Hv ]; assumption
+  end.
+Qed.
+
+Lemma rel_a_cstrs_morph : forall ρ ρ' V V' C1 C2,
+  rel_a_cstrs ρ V C1 C2 ->
+  (forall a b, In (a, b) ρ -> rel_atom ρ' V' a b) ->
+  (forall a, a `in` V -> rel_atom ρ' V' a a) ->
+  rel_a_cstrs ρ' V' C1 C2.
+Proof.
+  intros ρ ρ' V V' C1 C2 Hrel Hp Hv.
+  induction Hrel as [ | c1 c2 C1' C2' Hc Hrel' IH ].
+  - constructor.
+  - constructor; [ | exact IH ].
+    inversion Hc; subst; constructor;
+      (eapply rel_pskl_morph; [ eassumption | exact Hp | exact Hv ]).
+Qed.
+
+(** ⚙ [flex_agree_rel] is INVARIANT under the shift — the two clauses relate
+    the same atoms — so only the direction the extract spends is stated. *)
+Lemma flex_agree_rel_id_to_pair : forall ρ V VS α Θ1 Θ2,
+  flex_agree_rel ρ V Θ1 Θ2 ->
+  α `in` V ->
+  VS [<=] V ->
+  flex_agree_rel ((α, α) :: ρ) VS Θ1 Θ2.
+Proof.
+  intros ρ V VS α Θ1 Θ2 [HagV Hagp] HαV Hsub. split.
+  - intros x Hx. apply HagV. clear - Hx Hsub. fsetdec.
+  - intros a b Hin. destruct Hin as [E | Hin].
+    + inversion E; subst. apply HagV. exact HαV.
+    + apply Hagp. exact Hin.
+Qed.
+
 Lemma a_extract_rel_e_gen :
   forall Θ1 α m NM P1 P1' Ξ1L C1 Ξ1F Q1 Ξ1G Q1',
   {{ Θ1 ⊢ P1 ≼[ α , m ] P1' ⤳ Ξ1L ⨾ C1 }}a ->
@@ -1901,7 +1964,25 @@ Lemma a_extract_rel_e_gen :
   α `notin` cols_l ρ ->
   α `notin` cols_r ρ ->
   flex_agree_rel ρ V Θ1 Θ2 ->
-  V ∪ cols_l ρ [<=] ftvar_in_aenv Θ1 ->
+  (* ⭐⭐ THE SCOPING PREMISE SPLIT IN THREE, AND WEAKENED BY EXACTLY ONE
+     ATOM (2026-08-21, §8c.41).  The old single
+     [V ∪ cols_l ρ [<=] ftvar_in_aenv Θ1] is UNSATISFIABLE BY THIS LEMMA'S
+     ONLY CONSUMER: [a_sub__forall_l] picks its opener OFF
+     [ftvar_in_aenv Θ0] (algo/def_rules.v), and that opener is the [α]
+     here — so [α `in` V] and the old bound cannot both hold.  ⇒ the same
+     split the fold took on 2026-08-19, one layer up:
+
+     - [V] is still bounded by the CONTEXT, plus the looked-for variable —
+       the one atom an exists-fresh binder row hands down.  §8b shifts it
+       out of [V] again before the fold and the guess, whose own scoping
+       premise the opener escapes;
+     - the two jobs [cols_l ρ] had were both "the derivation's OWN output
+       block dodges the pair column", which is a statement every consumer
+       can see — and [a_sub__forall_l]'s consumer reads it off the lift
+       motive's block premise, since [dom Ξ1 ⊆ dom Θ1 \ dom Θ0]. *)
+  V [<=] add α (ftvar_in_aenv Θ1) ->
+  dom (Ξ1L ++ Ξ1F ++ Ξ1G) ∩ cols_l ρ [=] empty ->
+  α `notin` dom (Ξ1L ++ Ξ1F ++ Ξ1G) ->
   dom Θ2 [<=] S0 ->
   V ∪ cols_r ρ [<=] S0 ->
   ftvar_in_pskl P2 ∪ ftvar_in_pskl P2' [<=] S0 ->
@@ -1914,7 +1995,13 @@ Lemma a_extract_rel_e_gen :
     /\ rel_pskl (ρx ++ ρn ++ ρ) V Q1' Q2'.
 Proof.
   intros Θ1 α m NM P1 P1' Ξ1L C1 Ξ1F Q1 Ξ1G Q1' HL HF HG Hguard.
-  intros S0 Θ2 P2 P2' ρ V HrP HrP' HαV Hαl Hαr Hagr Hscp1 HdΘ Hscp2 Hcov.
+  intros S0 Θ2 P2 P2' ρ V HrP HrP' HαV Hαl Hαr Hagr Hscp1 Hblkρ HαΞ
+    HdΘ Hscp2 Hcov.
+  rewrite ! dom_app in Hblkρ, HαΞ.
+  assert (HblkL : dom Ξ1L ∩ cols_l ρ [=] empty) by (clear - Hblkρ; fsetdec).
+  assert (HblkF0 : dom Ξ1F ∩ cols_l ρ [=] empty) by (clear - Hblkρ; fsetdec).
+  assert (HαF : α `notin` dom Ξ1F) by (clear - HαΞ; fsetdec).
+  assert (HαS0 : α `in` S0) by (clear - HαV Hscp2; fsetdec).
 
   (* ---- STEP 1: the collection, transport 5 (prop_solve_rel.v §7) ---- *)
   assert (HcovL : V ∪ cols_r ρ ∪ ftvar_in_pskl P2 ∪ ftvar_in_pskl P2' [<=] S0)
@@ -1930,9 +2017,11 @@ Proof.
   pose proof (dom_flex_pairs_r ρnL) as HdfrL. rewrite <- E2L in HdfrL.
 
   (* the two columns of ρnL are the two blocks, and both are apart from
-     everything the caller knows *)
+     everything the caller knows.  ⚙ On the left the look's OWN spec already
+     excludes the looked-for variable ([a ∉ add α (ftvar_in_aenv Θ1)]), so
+     the weakened [V] bound costs nothing here. *)
   assert (HnLl : cols_l ρnL ∩ (V ∪ cols_l ρ) [=] empty).
-  { assert (Hd : cols_l ρnL ∩ ftvar_in_aenv Θ1 [=] empty).
+  { assert (Hd : cols_l ρnL ∩ add α (ftvar_in_aenv Θ1) [=] empty).
     { intros x. split; intros Hx; [ | clear - Hx; fsetdec ].
       exfalso.
       assert (Hxl : x `in` cols_l ρnL) by (clear - Hx; fsetdec).
@@ -1940,7 +2029,10 @@ Proof.
       assert (Hin' : In (x, b) (ρxL ++ ρnL))
         by (apply in_or_app; right; exact Hin).
       destruct (HρL _ _ Hin') as [Ha _]. clear - Ha Hx. fsetdec. }
-    clear - Hd Hscp1. fsetdec. }
+    assert (HdV : cols_l ρnL ∩ V [=] empty) by (clear - Hd Hscp1; fsetdec).
+    assert (Hdρ : cols_l ρnL ∩ cols_l ρ [=] empty)
+      by (clear - HblkL HdflL; fsetdec).
+    clear - HdV Hdρ. fsetdec. }
   assert (HnLr : cols_r ρnL ∩ (V ∪ cols_r ρ) [=] empty).
   { assert (Hd : cols_r ρnL ∩ S0 [=] empty).
     { intros x. split; intros Hx; [ | clear - Hx; fsetdec ].
@@ -1969,8 +2061,19 @@ Proof.
       rewrite dom_app in Hfl.
     - clear - Hfl Ha Hal HxlL Hd1. fsetdec.
     - clear - Hfl Hb Har HxrL HdΘ. fsetdec. }
-  assert (Hscp1F : V [<=] ftvar_in_aenv (Ξ1L ++ Θ1))
-    by (rewrite ftvar_in_aenv_app; clear - Hscp1; fsetdec).
+
+  (* ---- ⭐⭐ THE IDENTITY-PAIR SHIFT (§8b) ----------------------------
+     [α] leaves [V] and becomes the pair [(α, α)].  Below this line the
+     identity support is [V ∩ ftvar_in_aenv Θ1], which the fold's and the
+     guess's context-shaped scoping premises accept, and every fact about
+     the looked-for variable travels as a pair instead. *)
+  assert (HVSsub : V ∩ ftvar_in_aenv Θ1 [<=] V) by (clear; fsetdec).
+  assert (HVSadd : V [<=] add α (V ∩ ftvar_in_aenv Θ1))
+    by (clear - Hscp1; fsetdec).
+  assert (HαS1 : α `in` S1) by (clear - HαS0 HgL; fsetdec).
+
+  assert (Hscp1F : V ∩ ftvar_in_aenv Θ1 [<=] ftvar_in_aenv (Ξ1L ++ Θ1))
+    by (rewrite ftvar_in_aenv_app; clear; fsetdec).
   pose proof (a_solve_cstr_block_fresh_set HF) as HgfF.
   rewrite ftvar_in_aenv_app in HgfF.
   assert (HxsubL : cols_l ρxL [<=] ftvar_in_a_cstrs C1).
@@ -1981,10 +2084,10 @@ Proof.
   assert (HbFn : dom Ξ1F ∩ cols_l ρnL [=] empty).
   { pose proof (dom_subset_ftvar_in_aenv Ξ1L) as Hds.
     clear - HgfF Hds HdflL. fsetdec. }
-  assert (HbFr : dom Ξ1F ∩ cols_l ρ [=] empty)
-    by (clear - HgfF Hscp1; fsetdec).
-  assert (HblkF : dom Ξ1F ∩ cols_l (ρxL ++ ρnL ++ ρ) [=] empty)
-    by (rewrite ! cols_l_app; clear - HbFx HbFn HbFr; fsetdec).
+  assert (Hclx : cols_l (ρxL ++ ρnL ++ ρ) ∩ dom Ξ1F [=] empty)
+    by (rewrite ! cols_l_app; clear - HbFx HbFn HblkF0; fsetdec).
+  assert (HblkF : dom Ξ1F ∩ cols_l ((α, α) :: ρxL ++ ρnL ++ ρ) [=] empty)
+    by (cbn [cols_l fst]; clear - Hclx HαF; fsetdec).
   assert (HdΘF : dom (Ξ2L ++ Θ2) [<=] S1)
     by (rewrite dom_app; clear - HiL HdΘ HgL; fsetdec).
   assert (HxrS : cols_r ρxL [<=] S1).
@@ -1994,25 +2097,47 @@ Proof.
     destruct (HρL _ _ Hin') as [_ [Hb _]]. exact Hb. }
   assert (HnrS : cols_r ρnL [<=] S1)
     by (clear - HdfrL HiL; fsetdec).
-  assert (Hscp2F : V ∪ cols_r (ρxL ++ ρnL ++ ρ) [<=] S1)
+  assert (HVS1 : V ∩ ftvar_in_aenv Θ1 [<=] S1)
+    by (clear - Hscp2 HgL; fsetdec).
+  assert (Hcr1 : cols_r (ρxL ++ ρnL ++ ρ) [<=] S1)
     by (rewrite ! cols_r_app; clear - Hscp2 HgL HxrS HnrS; fsetdec).
+  assert (Hscp2F : (V ∩ ftvar_in_aenv Θ1)
+                     ∪ cols_r ((α, α) :: ρxL ++ ρnL ++ ρ) [<=] S1)
+    by (cbn [cols_r snd]; clear - HVS1 Hcr1 HαS1; fsetdec).
   assert (HcovF : ftvar_in_pskl pskl_hole ∪ ftvar_in_a_cstrs C2 [<=] S1).
   { assert (HcC : ftvar_in_a_cstrs C2 [<=] S1)
       by (eapply e_looksub_cstr_ftvar; [ exact DL | clear - Hcov; fsetdec ]).
     simpl. clear - HcC. fsetdec. }
-  destruct (a_solve_cstr_rel_e HF (rel_pskl__hole (ρxL ++ ρnL ++ ρ) V) HrC
-              HagrF Hscp1F HblkF HdΘF Hscp2F HcovF)
+  assert (HagrS : flex_agree_rel ((α, α) :: ρxL ++ ρnL ++ ρ)
+                    (V ∩ ftvar_in_aenv Θ1) (Ξ1L ++ Θ1) (Ξ2L ++ Θ2))
+    by (eapply flex_agree_rel_id_to_pair;
+        [ exact HagrF | exact HαV | exact HVSsub ]).
+  assert (HrCS : rel_a_cstrs ((α, α) :: ρxL ++ ρnL ++ ρ)
+                   (V ∩ ftvar_in_aenv Θ1) C1 C2).
+  { eapply rel_a_cstrs_morph; [ exact HrC | | ].
+    - intros a b Hin. apply rel_atom__pair. right. exact Hin.
+    - intros a Ha. destruct (a == α) as [-> | Hne].
+      + apply rel_atom__pair. left. reflexivity.
+      + apply rel_atom__id. clear - Ha Hne HVSadd. fsetdec. }
+  destruct (a_solve_cstr_rel_e HF
+              (rel_pskl__hole ((α, α) :: ρxL ++ ρnL ++ ρ)
+                 (V ∩ ftvar_in_aenv Θ1)) HrCS
+              HagrS Hscp1F HblkF HdΘF Hscp2F HcovF)
     as (S2 & ρxF & ρnF & Ξ2F & Q2 & DF & E1F & E2F & HρF & HrQ).
   pose proof (e_solve_cstr_supply_grows DF) as HgF.
 
   (* ---- STEP 3: the guess, §4, at the three-block context ---- *)
-  assert (HrQ'' : rel_pskl (ρxF ++ ρnF ++ ρxL ++ ρnL ++ ρ) V Q1 Q2)
+  assert (HrQ'' : rel_pskl ((α, α) :: ρxF ++ ρnF ++ ρxL ++ ρnL ++ ρ)
+                    (V ∩ ftvar_in_aenv Θ1) Q1 Q2)
     by rel_perm HrQ.
-  assert (Hscp1G : V [<=] ftvar_in_aenv (Ξ1F ++ Ξ1L ++ Θ1))
-    by (rewrite ! ftvar_in_aenv_app; clear - Hscp1; fsetdec).
-  assert (HcovG : V ∪ ftvar_in_pskl Q2 [<=] S2).
+  assert (Hscp1G : V ∩ ftvar_in_aenv Θ1
+                   [<=] ftvar_in_aenv (Ξ1F ++ Ξ1L ++ Θ1))
+    by (rewrite ! ftvar_in_aenv_app; clear; fsetdec).
+  assert (HcovG0 : V ∪ ftvar_in_pskl Q2 [<=] S2).
   { pose proof (e_solve_cstr_out_ftvar DF) as Hout. simpl in Hout.
     clear - Hout Hscp2 HgL HgF HcovF. fsetdec. }
+  assert (HcovG : (V ∩ ftvar_in_aenv Θ1) ∪ ftvar_in_pskl Q2 [<=] S2)
+    by (clear - HcovG0; fsetdec).
   destruct (a_guess_rel_e HG HrQ'' Hscp1G HcovG)
     as (S3 & ρnG & Ξ2G & Q2' & DG & E1G & E2G & HrQ').
 
@@ -2032,7 +2157,19 @@ Proof.
         by (apply in_or_app; left; exact Hin).
       destruct (HρL _ _ Hin') as [Ha [_ Hb]].
       split; [ clear - Ha; fsetdec | exact Hb ]. }
-  rel_perm HrQ'.
+  (* ⭐ THE SHIFT BACK: the pair [(α, α)] is spent, and [α] is in [V]. *)
+  eapply rel_pskl_morph; [ exact HrQ' | | ].
+  - intros a b Hin.
+    rewrite ? in_app_iff in Hin; simpl in Hin; rewrite ? in_app_iff in Hin.
+    repeat match goal with
+           | H : _ \/ _ |- _ => destruct H as [H | H]
+           end;
+      try (match goal with
+           | H : (α, α) = (a, b) |- _ =>
+               inversion H; subst; apply rel_atom__id; exact HαV
+           end);
+      apply rel_atom__pair; rewrite ? in_app_iff; tauto.
+  - intros a Ha. apply rel_atom__id. clear - Ha. fsetdec.
 Qed.
 
 (** ⭐⭐⭐ THE WRAPPER — and it is one [destruct], now that
@@ -2047,7 +2184,12 @@ Lemma a_extract_rel_e : forall Θ1 NM α m P1 P1' Ξ1 Q1',
   α `notin` cols_l ρ ->
   α `notin` cols_r ρ ->
   flex_agree_rel ρ V Θ1 Θ2 ->
-  V ∪ cols_l ρ [<=] ftvar_in_aenv Θ1 ->
+  (* ⭐⭐ the three scoping premises of §8c.41 — see [a_extract_rel_e_gen].
+     ⚙ [a_sub__forall_l] reads the middle one off the lift motive's block
+     premise and the last off its own choice of opener. *)
+  V [<=] add α (ftvar_in_aenv Θ1) ->
+  dom Ξ1 ∩ cols_l ρ [=] empty ->
+  α `notin` dom Ξ1 ->
   dom Θ2 [<=] S0 ->
   V ∪ cols_r ρ [<=] S0 ->
   ftvar_in_pskl P2 ∪ ftvar_in_pskl P2' [<=] S0 ->
@@ -2062,11 +2204,13 @@ Proof.
   intros Θ1 NM α m P1 P1' Ξ1 Q1' HD.
   destruct HD as
     [ Θ0 NM0 α0 m0 Ps Ps' ΞL ΞF ΞG C0 Q0 Q0' HL HF HG Hgd ].
-  intros S0 Θ2 P2 P2' ρ V HrP HrP' HαV Hαl Hαr Hagr Hscp1 HdΘ Hscp2 Hcov.
+  intros S0 Θ2 P2 P2' ρ V HrP HrP' HαV Hαl Hαr Hagr Hscp1 Hblkρ HαΞ
+    HdΘ Hscp2 Hcov.
   eapply a_extract_rel_e_gen;
     [ exact HL | exact HF | exact HG | exact Hgd
     | exact HrP | exact HrP' | exact HαV | exact Hαl | exact Hαr
-    | exact Hagr | exact Hscp1 | exact HdΘ | exact Hscp2 | exact Hcov ].
+    | exact Hagr | exact Hscp1 | exact Hblkρ | exact HαΞ
+    | exact HdΘ | exact Hscp2 | exact Hcov ].
 Qed.
 
 (* ===================================================================== *)
