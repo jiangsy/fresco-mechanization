@@ -7231,7 +7231,27 @@ and `a_sub_sub_flex_flex_rev` + `e_sub_sub_flex_dom_upper` carry that to the
 output; on side 1, `a ∉ dom Θ1` (uniq of the premise's output) kills the other
 half.  ⇒ ONE deleted-pair argument covers both the opener and the junk.
 
-#### ⛔ WHAT `S-ForallR`'s CLOSING HALF STILL OWES
+#### ✅ `S-ForallR` IS DONE — 14 of the 16 rows
+
+Both side conditions the closing half owed are discharged, and the row is
+`Qed` in the draft (`…/scratchpad/work/tmp_lift_sub_v6.v.bak`, rc=0, 2
+admits).  ⭐ THREE things it needed that nothing before it did:
+
+1. `rel_aenv_suffix` — `a_suffix` transports along the correspondence
+   (`rel_abind` relates only bindings of the same KIND).  8 lines.
+2. `e_sub_tc_yield` — ⚠️ `e_sub__forall_r` PINS its premise's yield to the
+   check-against, while the motive only RELATES it.  At `ty`/`tc` the yield
+   IS the check-against (`Check` and `ForallR` return it, `ForallL` passes it
+   through, every other row is at another sort or mode), so the IH's `Q'` is
+   forced.  9 short rows.
+3. the `uniq (Ξ2 ++ Θ0')` argument sketched below — ✅ now machine-checked,
+   and it went exactly as inferred.
+
+⚙ And the yield conjunct is FREE here: `a_sub__forall_r`'s yield IS its
+check-against, so it just widens — no `close_pskl` step, unlike the consis
+∀ rows.
+
+#### ⚙ THE TWO SIDE CONDITIONS, for the record
 
 Splitting the premise's output with `rel_aenv_app_inv_l` (§8c.37) gives
 `Θ1out = Ξ2 ++ (α2 ~ ⌢) ++ Θ1'`, and then `e_sub__forall_r` wants two things
@@ -7256,3 +7276,71 @@ about side 2's junk that side 1's rule states about its own:
      restriction that fixed `Hblk'` pays for this too.
 
    ⇒ write the `a_suffix` transport, then this, then the closer.
+
+### 8c.40 ⭐⭐⭐ 15 OF THE 16 `a_sub` ROWS — and the LAST one hits a lemma whose premise its ONLY consumer cannot satisfy (2026-08-21)
+
+Draft: `…/scratchpad/work/tmp_lift_sub_v7.v.bak`, rc=0, ONE `admit`.
+
+#### ✅ `W-Solve` — and it is CHEAPER than §8c.38 predicted
+
+⛔ §8c.38 said `W-Solve` needs `restrict_pairs` because its invented atoms
+are fresh only for the context.  ⭐ **That was wrong, and the reason is worth
+keeping**: the two invented atoms **survive into the output**, so
+`a_sub_sub_flex_dom_mono` puts them in `dom Θ1`, and the motive's OWN block
+premise then puts them off `cols_l ρ`.  No restriction, no deleted pairs.
+
+⇒ the discriminator between the two shapes is not "does the row invent an
+atom" but **"does the invented atom reach the output"**.  `S-ForallR`'s junk
+suffix does NOT (it is discarded), which is why it needs `restrict_l`;
+`W-Solve`'s `α̂, β̂` DO.
+
+⚙ What `W-Solve` did need: `a_flex_tvar_solve_shape` (the head goes
+undefined → defined and two flexibles appear under it, and no OTHER atom's
+flex status moves — ⚠️ the consis `a_flex_tvar_solve_m` does NOT serve, that
+row moves the definition to the FRONT); the wf package off
+`a_sub_output_wf_bundle`'s own `Flex-Solve` recipe; `uniq_insert_mid` twice
+for side 2's context; and `rel_ext_app` with a hand-built two-pair
+`rel_ext`.  ⭐ Its output pair list is `ρe ++ [(α,a2); (β,b2)]`, which
+`rewrite app_assoc` makes DEFINITIONALLY the list the IH ran at — so the
+three relational conjuncts are `exact`s.
+
+#### ⛔⛔ `S-ForallL`: `a_extract_rel_e` CANNOT BE APPLIED BY ITS ONLY CONSUMER
+
+    a_extract_rel_e … ->  α `in` V ->  …
+                          V ∪ cols_l ρ [<=] ftvar_in_aenv Θ1 -> …
+
+Those two together force `α ∈ ftvar_in_aenv Θ1` — the extract's target must
+be a free variable of its own context.  But `a_sub__forall_l` picks its
+opener with
+
+    α `notin` ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P0
+                                                (algo/def_rules.v:1439)
+
+⇒ **the rule's opener can never satisfy the lemma's premise**, and
+`a_sub__forall_l` is the lemma's ONLY consumer (the rule's own header says
+so).  ⚙ Nor does §8c.38's renaming route help: `a_extract_family_of_instance`
+moves the opener to any FRESH `α'`, and fresh is exactly what the premise
+forbids.
+
+⭐⭐ **THIS IS [[remech-level6-closed]]'s LESSON, AGAIN AND ONE RUNG UP**: *a
+lemma proved for a consumer that does not exist yet can carry a premise the
+consumer cannot satisfy.*  `a_extract_rel_e` (§8 of prop_lift.v) was closed
+before any consumer existed, and its scoping premise was inherited from the
+collection transports below it, where the target IS a context variable.
+
+#### ⛔ WHAT TO DO — and what NOT to do
+
+Do NOT weaken the motive by adding `cols_l ρ [<=] ftvar_in_aenv Θ0`: §8c.34
+(ii) already establishes that this is FALSE above the extract, since ρx's
+leaked openers are bound nowhere.
+
+⇒ the repair belongs in `a_extract_rel_e` itself.  Read
+`a_extract_rel_e_gen`'s proof and find what the scoping premise actually
+buys; the shape to aim for is
+
+    V ∪ cols_l ρ [<=] add α (ftvar_in_aenv Θ1)
+
+i.e. the target is allowed to be the ONE atom outside the context — which is
+what an exists-fresh binder row hands it.  ⚠️ Until that is done, do not
+write the row: the premise package will look derivable right up to the point
+where `α ∈ V` and the scoping bound meet.
