@@ -578,3 +578,111 @@ Proof.
     destruct (IHe_pat2 _ HS1) as [S2' [HS2 Hd2]].
     exists S2'. split; [ exact HS2 | eapply e_pat__app; eassumption ].
 Qed.
+
+(* ===================================================================== *)
+(*  §  ⚙ THE DOM-UPPER BOUNDS (2026-08-22): an S0-atom in the output       *)
+(*  context was already in the input — the deleted-pair obligation's       *)
+(*  side-2 half, paired with [a_pat_flex_rev].                             *)
+(* ===================================================================== *)
+
+(* ===================================================================== *)
+(*  ⚙ SIDE-2 CURRENCY — the [dom]-upper bounds: an S0-atom in the output   *)
+(*  context was already in the input.  What the deleted-pair obligation    *)
+(*  pairs with the flex-reflect above (§8c.34 (iii)).                      *)
+(* ===================================================================== *)
+
+Lemma e_split_dom_upper : forall S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}e ->
+  dom Θ1 [<=] dom Θ0 ∪ (S1 ∖ S0).
+Proof.
+  intros S0 Θ0 P0 P Q S1 Θ1 H;
+    destruct H as [ Sa Θa Pa Qa | Sa Θa
+                  | Sa Sb Θa Θb α β α1 Qc Hβ Hα1 Hc ];
+    try (clear; fsetdec).
+  pose proof ((proj2 (proj2 e_assign_unify_consis_dom_upper))
+                _ _ _ _ _ _ _ _ _ Hc) as Hd.
+  pose proof ((proj2 (proj2 e_assign_unify_consis_supply_grows))
+                _ _ _ _ _ _ _ _ _ Hc) as Hg.
+  simpl_env in Hd. clear - Hd Hg Hβ Hα1. fsetdec.
+Qed.
+
+Lemma e_consis_chk_dom_upper : forall S0 Θ0 P P0 S1 Θ1,
+  e_consis_chk S0 Θ0 P P0 S1 Θ1 ->
+  dom Θ1 [<=] dom Θ0 ∪ (S1 ∖ S0).
+Proof.
+  intros S0 Θ0 P P0 S1 Θ1 [Qc Hc].
+  exact ((proj2 (proj2 e_assign_unify_consis_dom_upper))
+           _ _ _ _ _ _ _ _ _ Hc).
+Qed.
+
+Lemma e_consis_chk_supply_grows : forall S0 Θ0 P P0 S1 Θ1,
+  e_consis_chk S0 Θ0 P P0 S1 Θ1 -> S0 [<=] S1.
+Proof.
+  intros S0 Θ0 P P0 S1 Θ1 [Qc Hc].
+  exact ((proj2 (proj2 e_assign_unify_consis_supply_grows))
+           _ _ _ _ _ _ _ _ _ Hc).
+Qed.
+
+Lemma e_pat_dom_upper : forall S0 m Θ0 P0 e Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ1 }}e ->
+  dom Θ1 [<=] dom Θ0 ∪ (S1 ∖ S0).
+Proof.
+  intros S0 m Θ0 P0 e Q S1 Θ1 H; induction H as
+    [ Sa Sb m0 Θa Θb P0a Pa Hsub
+    | Sa Sb m0 Θa Θb P0a x A Qa Hb Hsub
+    | Sa Sb m0 Θa Θb P0a x Ps Qa Hb Hsub
+    | Sa Sb m0 Θa Θb P0a ea A Qa Hsub
+    | Sa Sb Θa ea Qa Θb Hp IHp
+    | x Sa Sb Sc m0 Θa Θb Θc P0a Pa Q0 ea Qa Ξ Hne Hsp Hsuf Hxf Hp IHp
+    | x Sa Sb Sc Sd m0 Θa Θb Θc Θd P0a Pa Q0 A ea Qa Ξ
+        Hne Hsp Hchk Hsuf Hxf Hp IHp
+    | x Sa Sb Θa Θb ea Qa Ξ Hsuf Hxf Hp IHp
+    | x Sa Sb Θa Θb A ea Qa Ξ Hsuf Hxf Hp IHp
+    | Sa Sb Sc m0 Θa Θb Θc P0a Q0 Pa Qa e1 e2 Hp2 IHp2 Hp1 IHp1 ];
+    try (exact ((proj1 e_sub_sub_flex_dom_upper) _ _ _ _ _ _ _ _ _ Hsub));
+    try exact IHp.
+  - (* abs *)
+    pose proof (e_split_dom_upper Hsp) as Hd1.
+    pose proof (e_split_supply_grows Hsp) as Hg1.
+    pose proof (e_pat_supply_grows Hp) as Hg2.
+    simpl_env in IHp. simpl_env.
+    clear - Hd1 Hg1 Hg2 IHp Hxf. fsetdec.
+  - (* abs_anno.  ⚠️ ONE fsetdec here was 28 s — split at ≤5 set vars. *)
+    pose proof (e_split_dom_upper Hsp) as Hd1.
+    pose proof (e_split_supply_grows Hsp) as Hg1.
+    pose proof (e_consis_chk_dom_upper Hchk) as Hd2.
+    pose proof (e_consis_chk_supply_grows Hchk) as Hg2.
+    pose proof (e_pat_supply_grows Hp) as Hg3.
+    simpl_env in IHp. simpl_env.
+    assert (HD : Sd ∖ add x Sc [<=] Sd ∖ Sa)
+      by (clear - Hg1 Hg2; fsetdec).
+    assert (HB : dom Ξ ∪ dom Θd
+                 [<=] union (singleton x) (dom Θc) ∪ (Sd ∖ Sa))
+      by (clear - IHp HD; fsetdec).
+    assert (HxS : singleton x [<=] Sd ∖ Sa).
+    { assert (HxSd : x `in` Sd) by (clear - Hg3; fsetdec).
+      assert (HxSa : x `notin` Sa) by (clear - Hxf Hg1 Hg2; fsetdec).
+      clear - HxSd HxSa. fsetdec. }
+    assert (HdΘc : dom Θc [<=] dom Θa ∪ (Sd ∖ Sa)).
+    { assert (H1 : Sb ∖ Sa [<=] Sd ∖ Sa)
+        by (clear - Hg2 Hg3; fsetdec).
+      assert (H2 : Sc ∖ Sb [<=] Sd ∖ Sa)
+        by (clear - Hg1 Hg3; fsetdec).
+      assert (H3 : dom Θb [<=] dom Θa ∪ (Sd ∖ Sa))
+        by (clear - Hd1 H1; fsetdec).
+      clear - Hd2 H2 H3. fsetdec. }
+    clear - HB HxS HdΘc. fsetdec.
+  - (* abs_check *)
+    pose proof (e_pat_supply_grows Hp) as Hg1.
+    simpl_env in IHp. simpl_env.
+    clear - Hg1 IHp Hxf. fsetdec.
+  - (* abs_anno_check *)
+    pose proof (e_pat_supply_grows Hp) as Hg1.
+    simpl_env in IHp. simpl_env.
+    clear - Hg1 IHp Hxf. fsetdec.
+  - (* app *)
+    pose proof (e_pat_supply_grows Hp2) as Hg1.
+    pose proof (e_pat_supply_grows Hp1) as Hg2.
+    clear - IHp1 IHp2 Hg1 Hg2. fsetdec.
+Qed.
+

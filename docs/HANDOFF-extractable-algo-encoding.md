@@ -7711,3 +7711,137 @@ coverage for a bound entry's payload comes from `rel_pskl_ftv_r`
   `rel_aenv_app_inv_l` and peel — i.e. `S-ForallR`'s junk-suffix machinery
   (`restrict_l`, because `Ξ` is freshened only against the context) plus a
   term-entry peel.
+
+### 8c.45 ⭐⭐⭐ THE `a_pat` RUNG IS CLOSED — all 10 rows, and the abs rows cost ONE core lemma (2026-08-22)
+
+`a_pat_rel_e` is Qed (`ext_algo/prop_lift.v` §12).  The ladder now reads
+guess ✅ look ✅ solve ✅ cstr ✅ extract ✅ consis ✅ sub ✅ split ✅ pat ✅ —
+**only `a_typing` (11 rows) remains.**
+
+#### ⭐⭐ THE TWO MOTIVE ADDITIONS §8c.44 DID NOT PREDICT
+
+1. **`a_sk_mode_compat m P0` rides in the motive** — and it PAYS TWICE.
+   `a_pat_sound` / `a_pat_output_wf` need it (the abs rows must produce
+   side-1 wf packages for their premise), and ⭐ **`a_split_sk_shape` turns
+   it into `Θ1 = Θ0`** — at the SK sort the split NEVER runs its Flex row,
+   so `AP-Abs`'s split is CONTEXT-IDENTITY and contributes no pairs: the
+   e-split is a bare constructor and no `a_split_rel_e` composition is
+   needed.  Threading: `AP-Freeze`/`AP-App`-arg at `(TC, ◇)` are
+   constructors; `AP-App`-fn gets `__fn` from the conclusion's own; the abs
+   rows shape-split with `hole_inv` / `arrow_inv`, exactly as
+   `a_pat_sound`'s own abs case does.
+2. `{{ Θ0 ⊢ᵉ e }}a` (already in §8c.44) — and its `_pick` lemmas
+   (`a_wf_exp_abs_pick`, `a_wf_exp_abs_anno_pick`) are what open the wf at
+   the row's OWN exists-fresh binder.
+
+#### ⭐⭐ THE SHARED ABS CORE — `lift_pat_abs_core`, restrict-push-run-peel
+
+ONE lemma serves all four abs rows (as `lift_sub_flex_peel` served the four
+walk rows): `restrict_pairs x x2 ρ`, push `(x, x2)`, run the body's IH at
+the extended contexts, then **PEEL the term entry from both outputs** with
+`flex_agree_peel` — which was ALREADY STATED at exactly this shape
+(`Ξ ++ (β ~ bd) ++ Θ0`, §8c.34's table said so).  The discriminators, both
+§8c.40's: the TERM VARIABLE does not reach the output ⇒ `restrict_pairs`;
+the junk suffix `Ξ` DOES survive into the output ⇒ NO `restrict_l`.
+
+⭐ The deleted pairs are exactly `{(x, b) ∈ ρ}` (no pair has right `x2`,
+since `cols_r ρ ⊆ S0 ∌ x2` — and none of ρe's have left `x` or right `x2`,
+by `rel_ext`'s own freshness).  Their agreement obligation is paid by
+`a_pat_flex_rev` + `e_pat_dom_upper` — the route-(A) pair, built this pass.
+
+⭐ The e-side term entry is PRESERVED VERBATIM (`a_pat_tm_le` on the
+side-2 a-image + `binds_unique`), which is what lets the e-rule's pinned
+premise shape `Ξ2 ++ (x2 ~ bd') ++ Θc2'` be met exactly.
+
+#### ⚙ NEW CURRENCY AND WHERE IT LANDED
+
+- `algo/prop_basic.v` — `a_flex_tvar_app_iff` (MOVED up from
+  prop_solve_rel; `insert_mid` needs it), `a_flex_tvar_insert_mid`,
+  `abind_nonflex`, `abind_is_tm_nonflex`, `a_flex_tvar_cons_nonflex`.
+- `algo/pat/prop_soundness_pat.v` — `a_split_dom_mono`,
+  `a_consis_chk_dom_mono`, `a_pat_dom_mono`, `a_split_flex_rev`,
+  `a_consis_chk_flex_rev`, `a_pat_flex_rev` (all premise-free).
+- `ext_algo/prop_pat.v` — `e_split_dom_upper`, `e_consis_chk_dom_upper`,
+  `e_consis_chk_supply_grows`, `e_pat_dom_upper`.
+- `ext_algo/prop_solve_rel.v` §13d — `rel_exp` + kit (`rel_exp_mono`,
+  `rel_exp_open_{rec_,}pair`, `rel_exp_restrict`), `rel_aenv_binds_pin`,
+  `flex_agree_rel_push_tm`.
+- `ext_algo/prop_lift.v` §12 — the motive, `lift_pat_sub`,
+  `lift_pat_abs_core`, `a_pat_rel_e`.
+
+#### ⚠️ TRAPS PAID THIS PASS
+
+- ⚠️⚠️ **A fully-underscored `@`-application of a large lemma DIVERGES in
+  unification** (>2.5 min, killed): `@lift_pat_abs_core _ … _ Hp …` with 9
+  leading and 7 mid underscores.  Give EVERY argument explicitly — the
+  leading env args are NOT implicit anyway, because `++`/`open_…` are
+  Definitions and do not make their arguments rigid (the documented
+  Set-Implicit-Arguments trap, from the other side).
+- ⚠️ `a_wf_exp_ftv_dom` ALREADY EXISTED (`algo/typing/prop_soundness_typing.v`)
+  — the pre-split name grep caught it this time; prop_lift now imports that
+  file instead.
+- ⚠️ An e-rule's premise list can differ from the a-rule's — `e_pat__abs_anno`
+  DOES carry `m ≠ TC` (a partial def_pat.v dump suggested otherwise); trust
+  the error, not the skim.
+- ⚠️ `fsetdec` inside a bracketed `eapply` goal whose set mentions an EVAR
+  fails with "beyond the scope" — pre-assert the fact, then `exact` it.
+- ⚠️ `simpl_env in H1, H2` does not parse (same family as `in H |- *`).
+- ⚠️ One 28 s `fsetdec` (8 set vars, the abs_anno case of `e_pat_dom_upper`)
+  split at ≤5 vars → sub-second each.
+
+### 8c.46 ⚙ THE `a_typing` RUNG — the LAST one — scouted, with its two NEW pieces of currency (2026-08-22)
+
+Scratch prologue at `…/96ab7586-…/scratchpad/work/typing.v` (image lemma +
+motive + `lift_typing_sub`, not yet compiled against the split tree).
+11 rows: unit, var, anno, freeze, abs, abs_anno, abs_check_{step,base},
+abs_anno_check_{step,base}, app.
+
+#### ⭐ THE MOTIVE
+
+`lift_pat_concl` with a TYPE result (`rel_ptyp (ρe ++ ρ) V B B'`) and
+`a_ty_mode_compat m P0` in place of the SK compat.  `e_typing_sound` gives
+side 2's package in one lemma, as at pat.  `AT-App`'s first premise is an
+`a_pat` call ⇒ this rung CONSUMES `a_pat_rel_e` — the layering is exactly
+the ladder's.
+
+#### ⭐⭐ TWO NEW pieces of currency, both READ off scouting the anno row
+
+1. **The COERCION IMAGE** (`rel_pskl_ptyp_image_r`, drafted): a skeleton
+   related to `⌈A⌉` is itself `⌈A'⌉` with `rel_ptyp A A'`.  Every row needs
+   it to read its premise's yield back as a TYPE.
+2. **RIGHT-FUNCTIONALITY OF `rel_pskl` ON A DOMAIN** (`rel_pskl_fun`, to
+   write): `rel_pskl ρ V P Q1 → rel_pskl ρ V P Q2 → rel_fun ρ V D →
+   ftvar_in_pskl P ⊆ D → Q1 = Q2`.  ⛔ WHY IT IS FORCED: `AT-Anno`'s first
+   premise PINS its result to the annotation (`⊢[tc;⌈A⌉] e ⦂ A`), and the
+   e-rule pins the same — but the IH returns SOME `B''` with only
+   `rel A B''`.  ⚠️ A tc-pin lemma ("result = check-against at TC") is
+   FALSE on both sides — `abs_check_base` at a FLEX check-against splits
+   `α̂` into `β̂→α̂₁` and concludes the arrow, not `α̂` — so the equality
+   must come from the RELATION's functionality at `dom Θ0` (where wf puts
+   `⌈A⌉`'s atoms), not from determinism.
+
+#### ⚙ THE ROWS, mapped
+
+- unit/var: `lift_typing_sub` (the TY-sorted `a_sub_sub_flex_rel_e`
+  wrapper, drafted) + the image lemma.  var pins its entry with
+  `rel_aenv_binds_pin`.
+- anno: IH at `(tc, ⌈A2⌉)`, then `rel_pskl_fun` to pin the result to `A2`,
+  then the sub at the output (AP-App's second-call block).
+- freeze: IH then the chk lift (`lift_consis_nil`) — AP-AbsAnno's prelude
+  without the binder.
+- abs: the ONE row with `a_guess_mono` — `a_guess_mono_rel_e` (§4) provides
+  the lift; its block `αs` REACHES the output (W-Solve's discriminator:
+  no restriction) and `rel_ext_flex_pairs` rebuilds inj/fun at it; then the
+  term push via a typing clone of `lift_pat_abs_core` (the peel machinery
+  is shared; the core itself is `a_pat`-typed, so either generalize it over
+  the judgement or clone ~380 lines).
+- abs_anno: chk prelude + the same core shape.
+- ⛔ the four `_check` rows are the NEW work: they DISCARD their junk `Ξ`
+  (unlike pat's rows) ⇒ `restrict_l (dom Ξ)` + the deleted-junk-pair
+  argument — `S-ForallR`'s §8c.39 machinery at the typing level, paid by
+  `a_typing_flex_rev` + `e_typing_dom_upper` (to build, the route-(A) pair
+  for this family — both are 11-row chains over the pat/sub/consis versions
+  just landed).  The `_step` rows additionally open TYPES at a rigid pair —
+  `rel_pskl_open_pair` through the coercion (`⌈open A α⌉ = open ⌈A⌉ α`,
+  prop_coercions has the commuting lemma family).
+- app: three threaded calls (pat, typing, typing) — AP-App twice.

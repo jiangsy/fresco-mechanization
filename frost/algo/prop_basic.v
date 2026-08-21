@@ -1829,3 +1829,66 @@ Proof.
           | left; exact Hb | right; exists τ; exact Hb ].
 Qed.
 
+(* ===================================================================== *)
+(*  §  ⚙ TERM ENTRIES ARE INERT FOR THE FLEXIBILITY PICTURE (2026-08-22,   *)
+(*  the a_pat rung) — inserting or stripping one changes nothing.          *)
+(* ===================================================================== *)
+
+Lemma a_flex_tvar_app_iff : forall (Ξ Θ : aenv) x,
+  a_flex_tvar (Ξ ++ Θ) x <-> (a_flex_tvar Ξ x \/ a_flex_tvar Θ x).
+Proof.
+  intros Ξ Θ x. unfold a_flex_tvar, binds. split.
+  - intros [Hb | [t Hb]]; apply in_app_or in Hb; destruct Hb as [Hb | Hb].
+    + left; left; exact Hb.
+    + right; left; exact Hb.
+    + left; right; exists t; exact Hb.
+    + right; right; exists t; exact Hb.
+  - intros [[Hb | [t Hb]] | [Hb | [t Hb]]].
+    + left; apply in_or_app; left; exact Hb.
+    + right; exists t; apply in_or_app; left; exact Hb.
+    + left; apply in_or_app; right; exact Hb.
+    + right; exists t; apply in_or_app; right; exact Hb.
+Qed.
+
+
+
+(** ⚙ The two term-entry moves the abs rows make on the flexibility
+    picture: a term entry never carries a flex binding, so INSERTING or
+    STRIPPING one changes nothing (with the atom apart). *)
+Lemma a_flex_tvar_insert_mid : forall (Ξ Θ : aenv) x (bd : abind) a,
+  a <> x ->
+  (a_flex_tvar (Ξ ++ (x ~ bd) ++ Θ) a <-> a_flex_tvar (Ξ ++ Θ) a).
+Proof.
+  intros Ξ Θ x bd a Hne.
+  rewrite ! a_flex_tvar_app_iff.
+  assert (Hone : ~ a_flex_tvar (x ~ bd) a).
+  { intros [Hb | [t Hb]]; unfold binds in Hb; simpl in Hb;
+      destruct Hb as [E | []]; inversion E; subst; apply Hne; reflexivity. }
+  tauto.
+Qed.
+
+Definition abind_nonflex (bd : abind) : Prop :=
+  bd <> abind_flex_mono /\ forall τ, bd <> abind_flex_mono_def τ.
+
+Lemma abind_is_tm_nonflex : forall bd, abind_is_tm bd -> abind_nonflex bd.
+Proof.
+  intros bd Htm; destruct bd; simpl in Htm; try contradiction;
+    split; intros; discriminate.
+Qed.
+
+(** A NON-FLEX cons is invisible to [a_flex_tvar] — at EVERY atom, the
+    entry's own included (it carries no flex binding, and with the atom
+    off the tail's domain nothing hides behind it). *)
+Lemma a_flex_tvar_cons_nonflex : forall x (bd : abind) Θ a,
+  abind_nonflex bd ->
+  (a_flex_tvar ((x ~ bd) ++ Θ) a <-> a_flex_tvar Θ a).
+Proof.
+  intros x bd Θ a [Hn1 Hn2].
+  destruct (a == x) as [-> | Hne];
+    [ | apply a_flex_tvar_cons_other; exact Hne ].
+  split; intros Hf.
+  - eapply a_flex_tvar_head_tail; [ exact Hf | exact Hn1 | exact Hn2 ].
+  - destruct Hf as [Hb | [τ Hb]]; [ left | right; exists τ ];
+      unfold binds in *; simpl; right; assumption.
+Qed.
+

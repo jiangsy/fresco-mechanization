@@ -59,6 +59,7 @@ Require Import src.frost.algo.prop_basic.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.consis.prop_soundness_consis.
+Require Import src.frost.algo.consis.prop_consis_rename.
 Require Import src.frost.algo.sub.prop_soundness_subtag.
 Require Import src.frost.algo.consis.prop_completeness_consis.
 Require Import src.frost.algo.sub.prop_completeness_sub_gen.
@@ -2467,3 +2468,183 @@ Proof.
       | exact HrefA
       | exact Hpat2 ].
 Qed.
+
+(* ===================================================================== *)
+(*  §  ⚙ DOM-MONOTONICITY AND THE PREMISE-FREE FLEX-REFLECT (2026-08-22,   *)
+(*  route (A) of §8c.34 (iii), for the a_pat rung of the lift).            *)
+(* ===================================================================== *)
+
+(* ===================================================================== *)
+(*  ⚙ SIDE-1 CURRENCY — dom-monotonicity and the PREMISE-FREE flex-reflect *)
+(*  for [a_split] / [a_consis_chk] / [a_pat] (route (A), §8c.34 (iii):     *)
+(*  side 2 stays wf-free, so each family gets its own).                    *)
+(* ===================================================================== *)
+
+Lemma a_split_dom_mono : forall Θ0 P0 P Q Θ1,
+  {{ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}a -> dom Θ0 [<=] dom Θ1.
+Proof.
+  intros Θ0 P0 P Q Θ1 H;
+    destruct H as [ Θa Pa Qa | Θa | Θa Θb α β α1 Qc Hβ Hα1 Hc ];
+    try reflexivity.
+  pose proof (auc_dom_mono_consis Hc) as Hd.
+  simpl_env in Hd. clear - Hd. fsetdec.
+Qed.
+
+Lemma a_consis_chk_dom_mono : forall Θ0 P P0 Θ1,
+  a_consis_chk Θ0 P P0 Θ1 -> dom Θ0 [<=] dom Θ1.
+Proof. intros Θ0 P P0 Θ1 [Qc Hc]. exact (auc_dom_mono_consis Hc). Qed.
+
+Lemma a_pat_dom_mono : forall m Θ0 P0 e Q Θ1,
+  {{ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ1 }}a -> dom Θ0 [<=] dom Θ1.
+Proof.
+  intros m Θ0 P0 e Q Θ1 H; induction H as
+    [ m0 Θa Θb P0a Pa Hsub
+    | m0 Θa Θb P0a x A Qa Hb Hsub
+    | m0 Θa Θb P0a x Ps Qa Hb Hsub
+    | m0 Θa Θb P0a ea A Qa Hsub
+    | Θa ea Qa Θb Hp IHp
+    | x m0 Θa Θb Θc P0a Pa Q0 ea Qa Ξ Hne Hsp Hsuf Hxf Hp IHp
+    | x m0 Θa Θb Θc Θd P0a Pa Q0 A ea Qa Ξ Hne Hsp Hchk Hsuf Hxf Hp IHp
+    | x Θa Θb ea Qa Ξ Hsuf Hxf Hp IHp
+    | x Θa Θb A ea Qa Ξ Hsuf Hxf Hp IHp
+    | m0 Θa Θb Θc P0a Q0 Pa Qa e1 e2 Hp2 IHp2 Hp1 IHp1 ];
+    try (exact ((proj1 a_sub_sub_flex_dom_mono) _ _ _ _ _ _ _ Hsub));
+    try exact IHp.
+  - (* abs *)
+    pose proof (a_split_dom_mono Hsp) as Hd1.
+    simpl_env in Hxf. simpl_env in IHp. simpl_env.
+    intros a Ha.
+    assert (Ha1 : a `in` dom Θb) by (clear - Ha Hd1; fsetdec).
+    assert (Hax : a <> x) by (intros ->; clear - Ha1 Hxf; fsetdec).
+    assert (Ha2 : a `in` union (singleton x) (dom Θb))
+      by (clear - Ha1; fsetdec).
+    apply IHp in Ha2. clear - Ha2 Hax. fsetdec.
+  - (* abs_anno *)
+    pose proof (a_split_dom_mono Hsp) as Hd1.
+    pose proof (a_consis_chk_dom_mono Hchk) as Hd2.
+    simpl_env in Hxf. simpl_env in IHp. simpl_env.
+    intros a Ha.
+    assert (Ha1 : a `in` dom Θc) by (clear - Ha Hd1 Hd2; fsetdec).
+    assert (Hax : a <> x) by (intros ->; clear - Ha1 Hxf; fsetdec).
+    assert (Ha2 : a `in` union (singleton x) (dom Θc))
+      by (clear - Ha1; fsetdec).
+    apply IHp in Ha2. clear - Ha2 Hax. fsetdec.
+  - (* abs_check *)
+    simpl_env in Hxf. simpl_env in IHp. simpl_env.
+    intros a Ha.
+    assert (Hax : a <> x) by (intros ->; clear - Ha Hxf; fsetdec).
+    assert (Ha2 : a `in` union (singleton x) (dom Θa))
+      by (clear - Ha; fsetdec).
+    apply IHp in Ha2. clear - Ha2 Hax. fsetdec.
+  - (* abs_anno_check *)
+    simpl_env in Hxf. simpl_env in IHp. simpl_env.
+    intros a Ha.
+    assert (Hax : a <> x) by (intros ->; clear - Ha Hxf; fsetdec).
+    assert (Ha2 : a `in` union (singleton x) (dom Θa))
+      by (clear - Ha; fsetdec).
+    apply IHp in Ha2. clear - Ha2 Hax. fsetdec.
+  - (* app *)
+    clear - IHp1 IHp2. fsetdec.
+Qed.
+
+Lemma a_split_flex_rev : forall Θ0 P0 P Q Θ1,
+  {{ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}a ->
+  forall a, a `in` dom Θ0 -> a_flex_tvar Θ1 a -> a_flex_tvar Θ0 a.
+Proof.
+  intros Θ0 P0 P Q Θ1 H;
+    destruct H as [ Θa Pa Qa | Θa | Θa Θb α β α1 Qc Hβ Hα1 Hc ];
+    intros a Ha Hf; try exact Hf.
+  pose proof (dom_subset_ftvar_in_aenv Θa) as Hds.
+  assert (Hnα1 : a <> α1) by (intros ->; clear - Ha Hα1 Hds; fsetdec).
+  assert (Hnβ : a <> β) by (intros ->; clear - Ha Hβ Hds; fsetdec).
+  assert (Ha' : a `in` dom ((α1 ~ abind_flex_mono)
+                            ++ (β ~ abind_flex_mono) ++ Θa))
+    by (simpl_env; clear - Ha; fsetdec).
+  pose proof ((proj2 (proj2 a_assign_unify_consis_flex_rev))
+                _ _ _ _ _ _ _ Hc a Ha' Hf) as Hf'.
+  rewrite ! a_flex_tvar_cons_other in Hf' by assumption.
+  exact Hf'.
+Qed.
+
+Lemma a_consis_chk_flex_rev : forall Θ0 P P0 Θ1,
+  a_consis_chk Θ0 P P0 Θ1 ->
+  forall a, a `in` dom Θ0 -> a_flex_tvar Θ1 a -> a_flex_tvar Θ0 a.
+Proof.
+  intros Θ0 P P0 Θ1 [Qc Hc] a Ha Hf.
+  exact ((proj2 (proj2 a_assign_unify_consis_flex_rev))
+           _ _ _ _ _ _ _ Hc a Ha Hf).
+Qed.
+
+
+Lemma a_pat_flex_rev : forall m Θ0 P0 e Q Θ1,
+  {{ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ1 }}a ->
+  forall a, a `in` dom Θ0 -> a_flex_tvar Θ1 a -> a_flex_tvar Θ0 a.
+Proof.
+  intros m Θ0 P0 e Q Θ1 H; induction H as
+    [ m0 Θa Θb P0a Pa Hsub
+    | m0 Θa Θb P0a x A Qa Hb Hsub
+    | m0 Θa Θb P0a x Ps Qa Hb Hsub
+    | m0 Θa Θb P0a ea A Qa Hsub
+    | Θa ea Qa Θb Hp IHp
+    | x m0 Θa Θb Θc P0a Pa Q0 ea Qa Ξ Hne Hsp Hsuf Hxf Hp IHp
+    | x m0 Θa Θb Θc Θd P0a Pa Q0 A ea Qa Ξ Hne Hsp Hchk Hsuf Hxf Hp IHp
+    | x Θa Θb ea Qa Ξ Hsuf Hxf Hp IHp
+    | x Θa Θb A ea Qa Ξ Hsuf Hxf Hp IHp
+    | m0 Θa Θb Θc P0a Q0 Pa Qa e1 e2 Hp2 IHp2 Hp1 IHp1 ];
+    intros a Ha Hf;
+    try (exact ((proj1 a_sub_sub_flex_flex_rev)
+                  _ _ _ _ _ _ _ Hsub a Ha Hf));
+    try (exact (IHp a Ha Hf)).
+  - (* abs *)
+    pose proof (a_split_dom_mono Hsp) as Hd1.
+    assert (Ha1 : a `in` dom Θb) by (clear - Ha Hd1; fsetdec).
+    simpl_env in Hxf.
+    assert (Hax : a <> x) by (intros ->; clear - Ha1 Hxf; fsetdec).
+    assert (Hf1 : a_flex_tvar (Ξ ++ (x ~ abind_var_skl Pa) ++ Θc) a)
+      by (rewrite a_flex_tvar_insert_mid by exact Hax; exact Hf).
+    assert (Ha2 : a `in` dom ((x ~ abind_var_skl Pa) ++ Θb))
+      by (simpl_env; clear - Ha1; fsetdec).
+    pose proof (IHp a Ha2 Hf1) as Hf2.
+    rewrite a_flex_tvar_cons_other in Hf2 by exact Hax.
+    exact (a_split_flex_rev Hsp Ha Hf2).
+  - (* abs_anno *)
+    pose proof (a_split_dom_mono Hsp) as Hd1.
+    pose proof (a_consis_chk_dom_mono Hchk) as Hd2.
+    assert (Ha1 : a `in` dom Θc) by (clear - Ha Hd1 Hd2; fsetdec).
+    simpl_env in Hxf.
+    assert (Hax : a <> x) by (intros ->; clear - Ha1 Hxf; fsetdec).
+    assert (Hf1 : a_flex_tvar (Ξ ++ (x ~ abind_var_typ A) ++ Θd) a)
+      by (rewrite a_flex_tvar_insert_mid by exact Hax; exact Hf).
+    assert (Ha2 : a `in` dom ((x ~ abind_var_typ A) ++ Θc))
+      by (simpl_env; clear - Ha1; fsetdec).
+    pose proof (IHp a Ha2 Hf1) as Hf2.
+    rewrite a_flex_tvar_cons_other in Hf2 by exact Hax.
+    assert (Hab : a `in` dom Θb) by (clear - Ha Hd1; fsetdec).
+    exact (a_split_flex_rev Hsp Ha (a_consis_chk_flex_rev Hchk Hab Hf2)).
+  - (* abs_check *)
+    simpl_env in Hxf.
+    assert (Hax : a <> x) by (intros ->; clear - Ha Hxf; fsetdec).
+    assert (Hf1 : a_flex_tvar (Ξ ++ (x ~ abind_var_skl pskl_hole) ++ Θb) a)
+      by (rewrite a_flex_tvar_insert_mid by exact Hax; exact Hf).
+    assert (Ha2 : a `in` dom ((x ~ abind_var_skl pskl_hole) ++ Θa))
+      by (simpl_env; clear - Ha; fsetdec).
+    pose proof (IHp a Ha2 Hf1) as Hf2.
+    rewrite a_flex_tvar_cons_other in Hf2 by exact Hax.
+    exact Hf2.
+  - (* abs_anno_check *)
+    simpl_env in Hxf.
+    assert (Hax : a <> x) by (intros ->; clear - Ha Hxf; fsetdec).
+    assert (Hf1 : a_flex_tvar (Ξ ++ (x ~ abind_var_typ A) ++ Θb) a)
+      by (rewrite a_flex_tvar_insert_mid by exact Hax; exact Hf).
+    assert (Ha2 : a `in` dom ((x ~ abind_var_typ A) ++ Θa))
+      by (simpl_env; clear - Ha; fsetdec).
+    pose proof (IHp a Ha2 Hf1) as Hf2.
+    rewrite a_flex_tvar_cons_other in Hf2 by exact Hax.
+    exact Hf2.
+  - (* app *)
+    pose proof (a_pat_dom_mono Hp2) as Hd2.
+    apply (IHp2 a Ha).
+    apply (IHp1 a ltac:(clear - Ha Hd2; fsetdec)).
+    exact Hf.
+Qed.
+

@@ -3707,21 +3707,8 @@ Proof.
   - exact (IH _ _ _ Hnd' H1 H2).
 Qed.
 
-Lemma a_flex_tvar_app_iff : forall (Ξ Θ : aenv) x,
-  a_flex_tvar (Ξ ++ Θ) x <-> (a_flex_tvar Ξ x \/ a_flex_tvar Θ x).
-Proof.
-  intros Ξ Θ x. unfold a_flex_tvar, binds. split.
-  - intros [Hb | [t Hb]]; apply in_app_or in Hb; destruct Hb as [Hb | Hb].
-    + left; left; exact Hb.
-    + right; left; exact Hb.
-    + left; right; exists t; exact Hb.
-    + right; right; exists t; exact Hb.
-  - intros [[Hb | [t Hb]] | [Hb | [t Hb]]].
-    + left; apply in_or_app; left; exact Hb.
-    + right; exists t; apply in_or_app; left; exact Hb.
-    + left; apply in_or_app; right; exact Hb.
-    + right; exists t; apply in_or_app; right; exact Hb.
-Qed.
+(* [a_flex_tvar_app_iff] MOVED to algo/prop_basic.v (2026-08-22, the
+   a_pat rung — [a_flex_tvar_insert_mid] there needs it). *)
 
 (** An entry list of UNDEFINED flexibles is flexible exactly on its domain. *)
 Lemma a_flex_tvar_decls : forall Ξ x,
@@ -4815,5 +4802,171 @@ Proof.
     apply a_wf_pskl__tophole;
       [ eapply rel_pskl_guarded; [ exact Hpb | exact Hg ]
       | eapply IHa; [ exact Hrel | exact Hfun | clear; fsetdec | exact Hpb ] ].
+Qed.
+
+(* ===================================================================== *)
+(*  §13d  ⭐⭐ THE RELATION ON EXPRESSIONS (2026-08-22, the a_pat rung)      *)
+(* ===================================================================== *)
+
+(* ===================================================================== *)
+(*  ⭐⭐ THE RELATION ON EXPRESSIONS                                        *)
+(*                                                                        *)
+(*  [a_pat]'s four abs rows OPEN the body at a TERM variable that is fresh *)
+(*  only for the CONTEXT, while [e_pat]'s draw theirs from the SUPPLY — so *)
+(*  the two sides' premises are at DIFFERENT expressions and the motive    *)
+(*  must relate them.  ⚙ Term and type variables share one atom space, so  *)
+(*  this rides on the SAME ρ / V: [exp_var_f] goes through [rel_atom] and  *)
+(*  the annotations through [rel_ptyp].                                   *)
+(* ===================================================================== *)
+
+Inductive rel_exp (ρ : list (atom * atom)) (V : atoms) : exp -> exp -> Prop :=
+| rel_exp__unit : rel_exp ρ V exp_unit exp_unit
+| rel_exp__var_b : forall n, rel_exp ρ V (exp_var_b n) (exp_var_b n)
+| rel_exp__var_f : forall x y,
+    rel_atom ρ V x y -> rel_exp ρ V (exp_var_f x) (exp_var_f y)
+| rel_exp__abs : forall e1 e2,
+    rel_exp ρ V e1 e2 -> rel_exp ρ V (exp_abs e1) (exp_abs e2)
+| rel_exp__abs_anno : forall A1 A2 e1 e2,
+    rel_ptyp ρ V A1 A2 -> rel_exp ρ V e1 e2 ->
+    rel_exp ρ V (exp_abs_anno A1 e1) (exp_abs_anno A2 e2)
+| rel_exp__app : forall a1 a2 b1 b2,
+    rel_exp ρ V a1 b1 -> rel_exp ρ V a2 b2 ->
+    rel_exp ρ V (exp_app a1 a2) (exp_app b1 b2)
+| rel_exp__anno : forall e1 e2 A1 A2,
+    rel_exp ρ V e1 e2 -> rel_ptyp ρ V A1 A2 ->
+    rel_exp ρ V (exp_anno e1 A1) (exp_anno e2 A2)
+| rel_exp__freeze : forall e1 e2,
+    rel_exp ρ V e1 e2 -> rel_exp ρ V (exp_freeze e1) (exp_freeze e2).
+
+#[export] Hint Constructors rel_exp : core.
+
+Lemma rel_exp_mono : forall ρ ρ' V V' e1 e2,
+  rel_exp ρ V e1 e2 ->
+  (forall a b, In (a, b) ρ -> In (a, b) ρ') ->
+  V [<=] V' ->
+  rel_exp ρ' V' e1 e2.
+Proof.
+  intros ρ ρ' V V' e1 e2 H Hin Hs; induction H; constructor; auto;
+    try (unfold rel_ptyp in *; eapply rel_pskl_mono; eauto; fail).
+  match goal with
+  | Ha : rel_atom _ _ _ _ |- _ =>
+      inversion Ha; subst;
+        [ apply rel_atom__pair; auto | apply rel_atom__id; fsetdec ]
+  end.
+Qed.
+
+(** Opening at a TERM-variable PAIR — [rel_pskl_open_pair] one syntax over. *)
+Lemma rel_exp_open_rec_pair : forall ρ V e1 e2 x y k,
+  rel_exp ρ V e1 e2 ->
+  rel_exp ((x, y) :: ρ) V
+    (open_exp_wrt_exp_rec k (exp_var_f x) e1)
+    (open_exp_wrt_exp_rec k (exp_var_f y) e2).
+Proof.
+  intros ρ V e1 e2 x y k H; revert k; induction H; intros k; simpl;
+    try (constructor; auto;
+         (unfold rel_ptyp in *; eapply rel_pskl_mono;
+          [ eassumption | intros ?a ?b Hi; right; exact Hi
+          | intros ?z Hz; exact Hz ]); fail).
+  - (* var_b *)
+    destruct (lt_eq_lt_dec n k) as [[Hlt | Heq] | Hgt];
+      [ constructor | | constructor ].
+    apply rel_exp__var_f. apply rel_atom__pair. left. reflexivity.
+  - (* var_f *)
+    apply rel_exp__var_f.
+    match goal with
+    | Ha : rel_atom _ _ _ _ |- _ =>
+        inversion Ha; subst;
+          [ apply rel_atom__pair; right; assumption
+          | apply rel_atom__id; assumption ]
+    end.
+Qed.
+
+Lemma rel_exp_open_pair : forall ρ V e1 e2 x y,
+  rel_exp ρ V e1 e2 ->
+  rel_exp ((x, y) :: ρ) V
+    (open_exp_wrt_exp e1 (exp_var_f x)) (open_exp_wrt_exp e2 (exp_var_f y)).
+Proof.
+  intros. unfold open_exp_wrt_exp. apply rel_exp_open_rec_pair. assumption.
+Qed.
+
+Lemma rel_exp_restrict : forall x y ρ V e1 e2,
+  rel_exp ρ V e1 e2 ->
+  x `notin` fvar_in_exp e1 ∪ ftvar_in_exp e1 ->
+  y `notin` fvar_in_exp e2 ∪ ftvar_in_exp e2 ->
+  rel_exp (restrict_pairs x y ρ) V e1 e2.
+Proof.
+  intros x y ρ V e1 e2 H; induction H; intros Hx Hy; simpl in Hx, Hy.
+  - apply rel_exp__unit.
+  - apply rel_exp__var_b.
+  - apply rel_exp__var_f.
+    match goal with
+    | Ha : rel_atom _ _ _ _ |- _ =>
+        inversion Ha; subst;
+          [ apply rel_atom__pair; apply restrict_pairs_in;
+              [ assumption | clear - Hx; fsetdec | clear - Hy; fsetdec ]
+          | apply rel_atom__id; assumption ]
+    end.
+  - apply rel_exp__abs. apply IHrel_exp;
+      [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
+  - apply rel_exp__abs_anno.
+    + unfold rel_ptyp in *. apply rel_pskl_restrict;
+        [ assumption
+        | rewrite ftvar_ptyp_to_pskl; clear - Hx; fsetdec
+        | rewrite ftvar_ptyp_to_pskl; clear - Hy; fsetdec ].
+    + apply IHrel_exp; [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
+  - apply rel_exp__app;
+      [ apply IHrel_exp1 | apply IHrel_exp2 ];
+      solve [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
+  - apply rel_exp__anno.
+    + apply IHrel_exp; [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
+    + unfold rel_ptyp in *. apply rel_pskl_restrict;
+        [ assumption
+        | rewrite ftvar_ptyp_to_pskl; clear - Hx; fsetdec
+        | rewrite ftvar_ptyp_to_pskl; clear - Hy; fsetdec ].
+  - apply rel_exp__freeze. apply IHrel_exp;
+      [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
+Qed.
+
+(** ⭐ Pinning the IMAGE of a bound atom: [rel_aenv_binds_l] hands back SOME
+    image, and [rel_fun] on the context's domain says it is the one the
+    caller already has.  ⚙ This is [a_binds_tvar_rel]'s inner step, made
+    first-class — [AP-Var] needs it at a TERM entry. *)
+Lemma rel_aenv_binds_pin : forall ρ V Θ1 Θ2 a b bd,
+  rel_aenv ρ V Θ1 Θ2 ->
+  rel_fun ρ V (dom Θ1) ->
+  binds a bd Θ1 ->
+  rel_atom ρ V a b ->
+  exists bd2, rel_abind ρ V bd bd2 /\ binds b bd2 Θ2.
+Proof.
+  intros ρ V Θ1 Θ2 a b bd Hrel Hfun Hb Hat.
+  assert (Had : a `in` dom Θ1) by (eapply binds_In; exact Hb).
+  destruct (@rel_aenv_binds_l ρ V Θ1 Θ2 a bd Hrel Hb)
+    as (b' & bd2 & Hat' & Habd & Hb2).
+  assert (Eb : b' = b) by (exact (Hfun a b' b Had Hat' Hat)).
+  subst b'. exists bd2. split; [ exact Habd | exact Hb2 ].
+Qed.
+
+Lemma flex_agree_rel_push_tm : forall ρ V Θ1 Θ2 x x2 (bd bd' : abind),
+  flex_agree_rel ρ V Θ1 Θ2 ->
+  abind_nonflex bd ->
+  abind_nonflex bd' ->
+  x `notin` dom Θ1 ->
+  x2 `notin` dom Θ2 ->
+  flex_agree_rel ((x, x2) :: ρ) V ((x ~ bd) ++ Θ1) ((x2 ~ bd') ++ Θ2).
+Proof.
+  intros ρ V Θ1 Θ2 x x2 bd bd' [HagV Hagp] Hnf1 Hnf2 Hx1 Hx2.
+  split.
+  - intros v Hv.
+    rewrite (a_flex_tvar_cons_nonflex _ _ _ Hnf1).
+    rewrite (a_flex_tvar_cons_nonflex _ _ _ Hnf2).
+    exact (HagV v Hv).
+  - intros a b Hin.
+    rewrite (a_flex_tvar_cons_nonflex _ _ _ Hnf1).
+    rewrite (a_flex_tvar_cons_nonflex _ _ _ Hnf2).
+    destruct Hin as [E | Hin].
+    + injection E as -> ->.
+      split; intros Hf; exfalso;
+        [ apply Hx1 | apply Hx2 ]; apply a_flex_tvar_in_dom; exact Hf.
+    + exact (Hagp a b Hin).
 Qed.
 
