@@ -7650,3 +7650,64 @@ injectivity conjuncts of a hand-built `rel_ext`.
   (`rel_aenv_app_inv_l` + `restrict_l`, because `Ξ` is freshened only against
   the context) AND a pair push for `x`, which does NOT reach the output and
   therefore DOES need `restrict_pairs`.
+
+### 8c.44 ⚙ THE `a_pat` RUNG OPENS — `rel_exp`, the motive, and 5 of the 10 rows compiling in scratch (2026-08-21)
+
+Draft: `…/96ab7586-…/scratchpad/work/tmp_lift_pat_v1.v.bak` (= `work/pat.v`),
+`coqc` rc=0 with FIVE `admit`s (the four abs rows and `AP-App`).
+⚠️ NOT in the tree — nothing of this section is committed.
+
+#### ⭐⭐ THE NEW RELATION — and WHY the motive must relate EXPRESSIONS
+
+`a_pat`'s four abs rows open the body at a TERM variable that is fresh only
+for the CONTEXT; `e_pat`'s draw theirs from the SUPPLY.  ⇒ the two sides'
+premises are at DIFFERENT expressions, so `lift_pat_concl` cannot carry ONE
+`e`: it takes `e'` with `rel_exp ρ V e e'`.
+
+⛔ **The renaming route is closed here** — the premise IS part of the
+induction (§8c.33), so a renamed derivation has no IH.  That is the same
+wall `a_sub__forall_r` hit and `a_sub__forall_l` escaped; `a_pat`'s abs rows
+are on the `forall_r` side of it.
+
+⚙ Term and type variables share ONE atom space, so `rel_exp` rides on the
+SAME ρ / V: `exp_var_f` goes through `rel_atom`, the annotations through
+`rel_ptyp`.  Kit written and Qed: `rel_exp_mono`,
+`rel_exp_open_{rec_,}pair`, `rel_exp_restrict` (whose side condition names
+BOTH `fvar_in_exp` and `ftvar_in_exp` — the restriction deletes pairs by
+ATOM, and an annotation's type variables live in the same space).
+
+⭐ Also new and first-class: `rel_aenv_binds_pin` — `rel_aenv_binds_l` hands
+back SOME image and `rel_fun` says it is the one the caller already has.
+This is `a_binds_tvar_rel`'s inner step; `AP-Var` needs it at a TERM entry,
+so it should be extracted when this lands.
+
+#### ✅ THE MOTIVE, AND THE FIVE ROWS IT ALREADY CARRIES
+
+`lift_pat_{post,concl}` is §8c.32's discipline plus two premises: the
+related expression, and `{{ Θ0 ⊢ᵉ e }}a` (`a_wf_exp`,
+`algo/pat/prop_soundness_pat.v`) — the latter is what puts an ANNOTATION's
+type variables in the context, which is exactly what the `a_sub`-calling
+rows need to satisfy `lift_sub_concl`'s subject-wf.  The coverage premise
+gains `ftvar_in_exp e' ∪ fvar_in_exp e' [<=] S0`.
+
+`AP-Unit`, `AP-Var` (both), `AP-Anno` and `AP-Freeze` are done, and four of
+them go through ONE wrapper, `lift_pat_sub` — the `a_sub` rung's theorem at
+`a_sub_mode_sk`, the exact analogue of `lift_consis_nil`.  ⭐ Side 2's
+coverage for a bound entry's payload comes from `rel_pskl_ftv_r`
+(`⊆ V ∪ cols_r ρ ⊆ S0`), NOT from a wf of `Θ0'` — side 2 stays WF-FREE.
+
+#### ⛔ THE FIVE THAT REMAIN
+
+- `AP-App` — two threaded recursive calls, `S-Arrow`'s shape: `rel_inj_app`
+  / `rel_fun_app` off the first call's `rel_ext`, and the second call's
+  input package at `Θ1`.  ⚙ It will want `a_pat`'s own output wf (`{{ ⊢ Θ1 }}a`,
+  the output skeleton's wf, and `{{ Θ1 ⊢ᵉ e1 }}a` by weakening along
+  `Θ0 ⊴ Θ1`) — check `a_pat_sound`'s premises before writing it.
+- the FOUR abs rows — the rung's real work, and they should share ONE lemma
+  as `lift_sub_flex_peel` did.  Each: `restrict_pairs x x2 ρ` (the term
+  variable does NOT reach the output, so §8c.40's discriminator says it
+  needs the restriction), push `(x, x2)`, run the IH at the extended
+  context, then split the output `Ξ ++ (x ~ …) ++ Θ` with
+  `rel_aenv_app_inv_l` and peel — i.e. `S-ForallR`'s junk-suffix machinery
+  (`restrict_l`, because `Ξ` is freshened only against the context) plus a
+  term-entry peel.
