@@ -1287,6 +1287,39 @@ Qed.
     | let x0 := fresh "x0" in let Hx0 := fresh "Hx0" in
       intros x0 Hx0; exact Hx0 ].
 
+(** ⭐ THE THIN MORPHISM — only the pairs at the LEFT skeleton's own free
+    variables have to survive.  ⚙ [S-ForallR]'s TRIM uses it to DELETE a
+    leaked pair whose opener never reached the output. *)
+Lemma rel_pskl_morph_ftv : forall ρ ρ' V V' P Q,
+  rel_pskl ρ V P Q ->
+  (forall a b, a `in` ftvar_in_pskl P -> In (a, b) ρ -> rel_atom ρ' V' a b) ->
+  (forall a, a `in` ftvar_in_pskl P -> a `in` V -> rel_atom ρ' V' a a) ->
+  rel_pskl ρ' V' P Q.
+Proof.
+  intros ρ ρ' V V' P Q Hrel; induction Hrel; intros Hp Hv.
+  - apply rel_pskl__unit.
+  - apply rel_pskl__var_b.
+  - apply rel_pskl__var_f.
+    match goal with
+    | Ha : rel_atom _ _ _ _ |- _ => inversion Ha; subst
+    end;
+      [ apply Hp | apply Hv ]; solve [ simpl; clear; fsetdec | assumption ].
+  - apply rel_pskl__arrow.
+    + apply IHHrel1;
+        [ intros a b Ha Hin; apply Hp;
+            [ simpl; clear - Ha; fsetdec | exact Hin ]
+        | intros a Ha Hin; apply Hv;
+            [ simpl; clear - Ha; fsetdec | exact Hin ] ].
+    + apply IHHrel2;
+        [ intros a b Ha Hin; apply Hp;
+            [ simpl; clear - Ha; fsetdec | exact Hin ]
+        | intros a Ha Hin; apply Hv;
+            [ simpl; clear - Ha; fsetdec | exact Hin ] ].
+  - apply rel_pskl__all_syn. apply IHHrel; assumption.
+  - apply rel_pskl__hole.
+  - apply rel_pskl__tophole. apply IHHrel; assumption.
+Qed.
+
 Lemma a_solve_sub_rel_e : forall Θ1 m P1 Q1 Ξ1 P1',
   {{ Θ1 ⊢ₛ P1 ≼[ m ] Q1 ⤳ Ξ1 ⨾ P1' }}a ->
   forall S0 Θ2 P3 Q3 ρ V,
@@ -1320,6 +1353,11 @@ Lemma a_solve_sub_rel_e : forall Θ1 m P1 Q1 Ξ1 P1',
        already derives [β ∉ dom Ξ] for the recursive call's block premise. *)
     /\ (forall a b, In (a, b) ρx ->
           a `notin` ftvar_in_aenv Θ1 ∪ dom Ξ1 /\ b `notin` S0)
+    (* ⭐ AND THE LEFT COLUMN LIVES IN THE OUTPUT (2026-08-21, §8c.41): the
+       ∀ rows carry a leaked pair only when the opener actually ESCAPES.
+       This is what keeps the extract rung's FINAL GUESS off the ρx column —
+       that guess avoids [ftvar_in_pskl Q], hence everything ρx names. *)
+    /\ cols_l ρx [<=] ftvar_in_pskl P1'
     /\ rel_pskl (ρx ++ ρn ++ ρ) V P1' P3'.
 Proof.
   intros Θ1 m P1 Q1 Ξ1 P1' HD.
@@ -1334,6 +1372,7 @@ Proof.
     split; [ apply e_solve_sub__var | ].
     split; [ reflexivity | split; [ reflexivity | ] ].
     split; [ intros a b Hin; inversion Hin | ].
+    split; [ simpl; clear; fsetdec | ].
     simpl. constructor. exact Hat.
   - (* SS-ForallL: the subject opens; openers PAIR; the yield re-closes *)
     inversion HrelP; subst.
@@ -1398,7 +1437,7 @@ Proof.
                 ltac:(apply rel_pskl_open_pair; exact HrP0r)
                 ltac:(apply rel_pskl_extend_pair; exact HrelQr)
                 Hagr' Hscp1' Hblk' HdΘ' Hscp2' Hcov')
-      as (S1 & ρx & ρn & Ξ2 & Y2 & D2p & E1 & E2 & Hρx & Hrel').
+      as (S1 & ρx & ρn & Ξ2 & Y2 & D2p & E1 & E2 & Hρx & Htr & Hrel').
     assert (Hd2p : dom Ξ2 ∩ add β2 S0 [=] empty)
       by (apply (proj1 e_solve_sub_eq_block) in D2p; tauto).
     pose proof (dom_flex_pairs_l ρn) as Hdfl. rewrite <- E1 in Hdfl.
@@ -1418,6 +1457,12 @@ Proof.
     split.
     { intros a b Hin. destruct (Hρx a b Hin) as [Ha Hb].
       simpl in Ha. split; [ clear - Ha; fsetdec | clear - Hb; fsetdec ]. }
+    split.
+    { assert (Hβx : β `notin` cols_l ρx).
+      { intros Hin. destruct (cols_l_in_inv _ _ Hin) as [b Hin'].
+        destruct (Hρx _ _ Hin') as [Ha _]. simpl in Ha. clear - Ha. fsetdec. }
+      simpl. rewrite ftvar_in_pskl_close_pskl_wrt_pskl.
+      clear - Htr Hβx. fsetdec. }
     constructor.
     rewrite <- app_assoc in Hrel'.
     eapply rel_pskl_close_pair_restrict.
@@ -1438,11 +1483,12 @@ Proof.
     assert (Hcov' : ftvar_in_pskl P3b ∪ ftvar_in_pskl Q3 [<=] S0)
       by (clear - Hcov; simpl in *; fsetdec).
     destruct (IHHD S0 Θ2 P3b Q3 ρ V HrP0 HrelQ Hagr Hscp1 Hblk HdΘ Hscp2 Hcov')
-      as (S1 & ρx & ρn & Ξ2 & Y2 & D2p & E1 & E2 & Hρx & Hrel').
+      as (S1 & ρx & ρn & Ξ2 & Y2 & D2p & E1 & E2 & Hρx & Htr & Hrel').
     exists S1, ρx, ρn, Ξ2, (pskl_tophole Y2).
     split; [ apply e_solve_sub__univ_ghost_l; exact D2p | ].
     split; [ exact E1 | split; [ exact E2 | ] ].
     split; [ exact Hρx | ].
+    split; [ simpl; exact Htr | ].
     constructor. exact Hrel'.
   - (* SS-Vacuous *)
     inversion HrelQ; subst.
@@ -1452,6 +1498,7 @@ Proof.
         eapply rel_pskl_peel_l_off; [ exact HrelP | assumption ] | ].
     split; [ reflexivity | split; [ reflexivity | ] ].
     split; [ intros a b Hin; inversion Hin | ].
+    split; [ simpl; clear; fsetdec | ].
     simpl. exact HrelP.
   - (* SS-Check: drops into §5 *)
     match goal with
@@ -1468,6 +1515,7 @@ Proof.
       - exact D2p. }
     split; [ exact E1 | split; [ exact E2 | ] ].
     split; [ intros a b Hin; inversion Hin | ].
+    split; [ simpl; clear; fsetdec | ].
     simpl. exact Hrel'.
   - (* ⭐ SS-ForallR: the TARGET opens and the pair LEAKS into ρx *)
     inversion HrelQ; subst.
@@ -1533,8 +1581,55 @@ Proof.
                 ltac:(apply rel_pskl_extend_pair; exact HrelPr)
                 ltac:(apply rel_pskl_open_pair; exact HrB0r)
                 Hagr' Hscp1' Hblk' HdΘ' Hscp2' Hcov')
-      as (S1 & ρx & ρn & Ξ2 & Y2 & D2p & E1 & E2 & Hρx & Hrel').
-    exists S1, (ρx ++ (β, β2) :: nil), ρn, Ξ2, Y2.
+      as (S1 & ρx & ρn & Ξ2 & Y2 & D2p & E1 & E2 & Hρx & Htr & Hrel').
+    (* ⭐⭐ THE TRIM (2026-08-21, §8c.41).  The rule PERMITS β to escape into
+       [P'] and does NOT force it — see its own comment.  A pair whose atom
+       is nowhere in the output would break [cols_l ρx ⊆ ftvar_in_pskl P1'],
+       which is what keeps the extract rung's FINAL GUESS off the ρx column.
+       ⇒ carry the leaked pair only when it is USED. *)
+    assert (Hbase : forall a b, In (a, b) ρx ->
+              a `notin` ftvar_in_aenv Θ ∪ dom Ξ /\ b `notin` S0).
+    { intros a b Hin. destruct (Hρx a b Hin) as [Ha Hb]. simpl in Ha.
+      split; [ clear - Ha; fsetdec | clear - Hb; fsetdec ]. }
+    assert (Htrim : exists ρxN,
+              (forall a b, In (a, b) ρxN ->
+                 a `notin` ftvar_in_aenv Θ ∪ dom Ξ /\ b `notin` S0)
+              /\ cols_l ρxN [<=] ftvar_in_pskl P'
+              /\ rel_pskl (ρxN ++ ρn ++ ρ) V P' Y2).
+    { destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P'))
+        as [Hβin | Hβni].
+      - exists (ρx ++ (β, β2) :: nil). split; [ | split ].
+        + intros a b Hin. apply in_app_or in Hin. destruct Hin as [Hin | Hin].
+          * exact (Hbase a b Hin).
+          * destruct Hin as [E | Hin]; [ inversion E; subst | inversion Hin ].
+            simpl in Hd1p.
+            split; [ clear - Hβ1 Hd1p; fsetdec | exact Hβ2 ].
+        + rewrite cols_l_app. simpl. clear - Htr Hβin. fsetdec.
+        + (* ⚙ the restriction is UNDONE here: the leaked pair moves into ρx
+             and the deleted pairs go back into ρ. *)
+          eapply rel_pskl_mono; [ exact Hrel' | | intros x0 Hx0; exact Hx0 ].
+          intros a0 b0 Hin0. apply in_app_or in Hin0. apply in_or_app.
+          destruct Hin0 as [Hin0 | Hin0].
+          { left. apply in_or_app. left. exact Hin0. }
+          apply in_app_or in Hin0. destruct Hin0 as [Hin0 | Hin0].
+          { right. apply in_or_app. left. exact Hin0. }
+          destruct Hin0 as [E0 | Hin0].
+          { left. apply in_or_app. right. left. exact E0. }
+          right. apply in_or_app. right. eapply restrict_pairs_incl; exact Hin0.
+      - exists ρx. split; [ exact Hbase | split; [ exact Htr | ] ].
+        eapply rel_pskl_morph_ftv; [ exact Hrel' | | ].
+        + intros a0 b0 Ha0 Hin0. apply rel_atom__pair.
+          apply in_app_or in Hin0. apply in_or_app.
+          destruct Hin0 as [Hin0 | Hin0].
+          { left. exact Hin0. }
+          apply in_app_or in Hin0. destruct Hin0 as [Hin0 | Hin0].
+          { right. apply in_or_app. left. exact Hin0. }
+          destruct Hin0 as [E0 | Hin0].
+          { exfalso. inversion E0; subst. apply Hβni. exact Ha0. }
+          right. apply in_or_app. right. eapply restrict_pairs_incl; exact Hin0.
+        + intros a0 Ha0 Hv0. apply rel_atom__id. exact Hv0. }
+    destruct Htrim as (ρxN & HρxN & HtrN & HrelN).
+    exists S1, ρxN, ρn, Ξ2, Y2.
     split.
     { apply e_solve_sub__forall_r with (β := β2).
       - eapply rel_pskl_ghost_free; [ exact HrelQ | assumption ].
@@ -1542,24 +1637,9 @@ Proof.
       - exact Hβ2.
       - exact D2p. }
     split; [ exact E1 | split; [ exact E2 | ] ].
-    split.
-    { intros a b Hin. apply in_app_or in Hin. destruct Hin as [Hin | Hin].
-      - destruct (Hρx a b Hin) as [Ha Hb]. simpl in Ha.
-        split; [ clear - Ha; fsetdec | clear - Hb; fsetdec ].
-      - destruct Hin as [E | Hin]; [ inversion E; subst | inversion Hin ].
-        simpl in Hd1p.
-        split; [ clear - Hβ1 Hd1p; fsetdec | exact Hβ2 ]. }
-    (* ⚙ the restriction must be UNDONE here: the leaked pair moves into ρx
-       and the deleted pairs go back into ρ. *)
-    eapply rel_pskl_mono; [ exact Hrel' | | intros x0 Hx0; exact Hx0 ].
-    intros a0 b0 Hin0. apply in_app_or in Hin0. apply in_or_app.
-    destruct Hin0 as [Hin0 | Hin0].
-    { left. apply in_or_app. left. exact Hin0. }
-    apply in_app_or in Hin0. destruct Hin0 as [Hin0 | Hin0].
-    { right. apply in_or_app. left. exact Hin0. }
-    destruct Hin0 as [E0 | Hin0].
-    { left. apply in_or_app. right. left. exact E0. }
-    right. apply in_or_app. right. eapply restrict_pairs_incl; exact Hin0.
+    split; [ exact HρxN | ].
+    split; [ exact HtrN | ].
+    exact HrelN.
   - (* ⭐ SS-Arrow: §5's eq half feeds the threaded sub half *)
     inversion HrelP; subst. inversion HrelQ; subst.
     match goal with
@@ -1614,7 +1694,7 @@ Proof.
                 ltac:(apply rel_pskl_widen; exact HrPb)
                 ltac:(apply rel_pskl_widen; exact HrQb)
                 Hagr' Hscp1' Hblk2 HdΘ' Hscp2' HcovB)
-      as (S2 & ρx & ρnB & Ξ2b & P2b' & D2b & E1b & E2b & Hρx & HrelB').
+      as (S2 & ρx & ρnB & Ξ2b & P2b' & D2b & E1b & E2b & Hρx & Htr & HrelB').
     exists S2, ρx, (ρnB ++ ρnA), (Ξ2b ++ Ξ2a), (pskl_arrow P2a' P2b').
     split; [ eapply e_solve_sub__arrow; [ exact D2a | exact D2b ] | ].
     split;
@@ -1626,6 +1706,7 @@ Proof.
       rewrite ftvar_in_aenv_app in Ha. rewrite dom_app.
       pose proof (dom_subset_ftvar_in_aenv Ξ1) as Hds1.
       split; [ clear - Ha Hds1; fsetdec | clear - Hb Hgr1; fsetdec ]. }
+    split; [ simpl; clear - Htr; fsetdec | ].
     constructor.
     + rel_perm HrelA'.
     + rel_perm HrelB'.
@@ -1680,7 +1761,7 @@ Proof.
                 (rel_pskl__hole (ρnA ++ ρ) V)
                 ltac:(apply rel_pskl_widen; exact HrQb)
                 Hagr' Hscp1' Hblk2 HdΘ' Hscp2' HcovB)
-      as (S2 & ρx & ρnB & Ξ2b & P2b' & D2b & E1b & E2b & Hρx & HrelB').
+      as (S2 & ρx & ρnB & Ξ2b & P2b' & D2b & E1b & E2b & Hρx & Htr & HrelB').
     exists S2, ρx, (ρnB ++ ρnA), (Ξ2b ++ Ξ2a),
       (pskl_tophole (pskl_arrow P2a' P2b')).
     split; [ eapply e_solve_sub__ghost_l_fn; [ exact D2a | exact D2b ] | ].
@@ -1693,6 +1774,7 @@ Proof.
       rewrite ftvar_in_aenv_app in Ha. rewrite dom_app.
       pose proof (dom_subset_ftvar_in_aenv Ξ1) as Hds1.
       split; [ clear - Ha Hds1; fsetdec | clear - Hb Hgr1; fsetdec ]. }
+    split; [ simpl; clear - Htr; fsetdec | ].
     constructor. constructor.
     + rel_perm HrelA'.
     + rel_perm HrelB'.
@@ -1705,6 +1787,7 @@ Proof.
       - eapply rel_pskl_guarded; [ exact HrelQ | assumption ]. }
     split; [ reflexivity | split; [ reflexivity | ] ].
     split; [ intros a b Hin; inversion Hin | ].
+    split; [ simpl; clear; fsetdec | ].
     simpl. constructor. exact HrelQ.
 Qed.
 
@@ -1746,6 +1829,11 @@ Lemma a_solve_cstr_rel_e : forall Θ1 C1 P1 Ξ1 P1',
     (* ⭐ the block conjunct of §8c.41 — see [a_solve_sub_rel_e] *)
     /\ (forall a b, In (a, b) ρx ->
           a `notin` ftvar_in_aenv Θ1 ∪ dom Ξ1 /\ b `notin` S0)
+    (* ⭐ AND THE LEFT COLUMN LIVES IN THE OUTPUT (2026-08-21, §8c.41): the
+       ∀ rows carry a leaked pair only when the opener actually ESCAPES.
+       This is what keeps the extract rung's FINAL GUESS off the ρx column —
+       that guess avoids [ftvar_in_pskl Q], hence everything ρx names. *)
+    /\ cols_l ρx [<=] ftvar_in_pskl P1'
     /\ rel_pskl (ρx ++ ρn ++ ρ) V P1' P3'.
 Proof.
   intros Θ1 C1 P1 Ξ1 P1' HD.
@@ -1757,6 +1845,7 @@ Proof.
     split; [ apply e_solve_cstr__empty | ].
     split; [ reflexivity | split; [ reflexivity | ] ].
     split; [ intros a b Hin; inversion Hin | ].
+    split; [ simpl; clear; fsetdec | ].
     simpl. exact HrelP.
   - (* SC-Sub: the terminal singleton, §6 *)
     inversion HrelC; subst.
@@ -1774,11 +1863,11 @@ Proof.
     assert (HcovS : ftvar_in_pskl P3 ∪ ftvar_in_pskl Q2c [<=] S0)
       by (clear - Hcov; simpl in *; fsetdec).
     destruct (a_solve_sub_rel_e HDsub HrelP HrelQ Hagr Hscp1 Hblk HdΘ Hscp2 HcovS)
-      as (S1 & ρx & ρn & Ξ2 & Y2 & D2s & E1 & E2 & Hρx & Hrel').
+      as (S1 & ρx & ρn & Ξ2 & Y2 & D2s & E1 & E2 & Hρx & Htr & Hrel').
     exists S1, ρx, ρn, Ξ2, Y2.
     split; [ apply e_solve_cstr__sub; exact D2s | ].
     split; [ exact E1 | split; [ exact E2 | ] ].
-    split; [ exact Hρx | exact Hrel' ].
+    split; [ exact Hρx | split; [ exact Htr | exact Hrel' ] ].
   - (* ⭐ SC-Eq: head via §5, tail via the IH at the head's OUTPUT supply *)
     inversion HrelC; subst.
     match goal with
@@ -1834,7 +1923,7 @@ Proof.
                 HrelM
                 ltac:(apply rel_a_cstrs_widen; exact HrelC')
                 Hagr' Hscp1' Hblk2 HdΘ' Hscp2' HcovT)
-      as (S2 & ρx & ρnB & Ξ2b & P3' & D2b & E1b & E2b & Hρx & HrelB').
+      as (S2 & ρx & ρnB & Ξ2b & P3' & D2b & E1b & E2b & Hρx & Htr & HrelB').
     exists S2, ρx, (ρnB ++ ρnA), (Ξ2b ++ Ξ2a), P3'.
     split; [ eapply e_solve_cstr__eq; [ exact D2a | exact D2b ] | ].
     split;
@@ -1846,6 +1935,7 @@ Proof.
       rewrite ftvar_in_aenv_app in Ha. rewrite dom_app.
       pose proof (dom_subset_ftvar_in_aenv Ξ1) as Hds1.
       split; [ clear - Ha Hds1; fsetdec | clear - Hb Hgr1; fsetdec ]. }
+    split; [ exact Htr | ].
     rel_perm HrelB'.
 Qed.
 
@@ -2135,7 +2225,7 @@ Proof.
               (rel_pskl__hole ((α, α) :: ρxL ++ ρnL ++ ρ)
                  (V ∩ ftvar_in_aenv Θ1)) HrCS
               HagrS Hscp1F HblkF HdΘF Hscp2F HcovF)
-    as (S2 & ρxF & ρnF & Ξ2F & Q2 & DF & E1F & E2F & HρF & HrQ).
+    as (S2 & ρxF & ρnF & Ξ2F & Q2 & DF & E1F & E2F & HρF & HtrF & HrQ).
   pose proof (e_solve_cstr_supply_grows DF) as HgF.
 
   (* ---- STEP 3: the guess, §4, at the three-block context ---- *)
