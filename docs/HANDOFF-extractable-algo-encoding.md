@@ -7789,12 +7789,15 @@ premise shape `Ξ2 ++ (x2 ~ bd') ++ Θc2'` be met exactly.
 - ⚠️ One 28 s `fsetdec` (8 set vars, the abs_anno case of `e_pat_dom_upper`)
   split at ≤5 vars → sub-second each.
 
-### 8c.46 ⚙ THE `a_typing` RUNG — the LAST one — scouted, with its two NEW pieces of currency (2026-08-22)
+### 8c.46 ⚙ THE `a_typing` RUNG — the LAST one — OPEN at 5 OF 11 ROWS (2026-08-22)
 
-Scratch prologue at `…/96ab7586-…/scratchpad/work/typing.v` (image lemma +
-motive + `lift_typing_sub`, not yet compiled against the split tree).
-11 rows: unit, var, anno, freeze, abs, abs_anno, abs_check_{step,base},
-abs_anno_check_{step,base}, app.
+Draft: `…/96ab7586-…/scratchpad/work/tmp_lift_typing_v1.v.bak` (= `work/typing.v`),
+`coqc` rc=0 with SIX `admit`s — the six BINDER rows.  ✅ COMPILING:
+`rel_pskl_ptyp_image_r`, `rel_pskl_fun_dom`, `rel_ptyp_arrow_inv`,
+`a_typing_dom_mono` (premise-free, 11 rows), the motive, `lift_typing_sub`,
+and the rows **unit, var, anno, freeze, app** — `AT-App` is the three-call
+thread (pat → typing → typing) and it CONSUMES `a_pat_rel_e`.
+Remaining: abs, abs_anno, abs_check_{step,base}, abs_anno_check_{step,base}.
 
 #### ⭐ THE MOTIVE
 
@@ -7820,7 +7823,23 @@ the ladder's.
    must come from the RELATION's functionality at `dom Θ0` (where wf puts
    `⌈A⌉`'s atoms), not from determinism.
 
-#### ⚙ THE ROWS, mapped
+#### ⚙ WHAT THE FIVE CLOSED ROWS CONFIRMED
+
+- The PIN works as designed: `AT-Anno` recovers `B'' = A2` by
+  `rel_pskl_fun_dom` at `dom Θb` + `ptyp_to_pskl_inj`
+  (algo/prop_inc_strengthen.v — it exists, don't rewrite it).
+- `a_typing_sound` returns `a_wf_ptyp Θ1 A` for the RESULT — that is where
+  the next call's subject-wf comes from (`AT-App`'s stage 3 via
+  `a_wf_ptyp_arrow_inv`).
+- ⚠️ `e_typing_sound`/`e_pat_sound` return `ftvar_in_ptyp B [<=] S1` at the
+  TYPE level — no `⌈·⌉` to rewrite with `ftvar_ptyp_to_pskl`; two rows died
+  on that before compiling.
+- ⚠️ `a_pat_rel_e`'s mid ∀-block (S0…V) IS implicit (the args appear
+  rigidly in the rel hypotheses) — pass hypotheses only; but
+  `lift_pat_abs_core`'s is NOT (its env args appear only under `++`).
+  Same file, both behaviours.
+
+#### ⚙ THE SIX BINDER ROWS, mapped
 
 - unit/var: `lift_typing_sub` (the TY-sorted `a_sub_sub_flex_rel_e`
   wrapper, drafted) + the image lemma.  var pins its entry with
