@@ -107,17 +107,25 @@ mechanization.)  Corrected 2026-08-09.
   the tree 970 s → 608 s serial; `algo/prop_basic.v` alone went 133 s → 4.4 s, and
   BOTH culprits were `fsetdec` calls that `grep` would have called innocent
   (one already had a `clear -`, just too wide).
-  - ⭐ **MEASURED 2026-08-22 — the build is CRITICAL-PATH-bound, not
-    CPU-bound**, so `NJOBS` past ~4 buys almost nothing: total proof time is
-    944 s, but the chain to `README.v` is 37 files deep and carries ~450 s by
-    itself.  A FULL `make NJOBS=10 coq` is **~8–9 min**; if you have read a
-    larger figure anywhere, it was folklore.  ⛔ And do not assume a spurious
-    `Require` on the chain is a speed-up: removing the most suspicious one in
-    the tree (`pat/prop_soundness_pat.v` → `sub/prop_completeness_sub_gen.v`,
-    78 s, unused by name) SIMULATES TO ZERO, because a parallel chain of the
-    same length runs beside it.  Simulate against `.CoqMakefile.d` first;
-    the method and the numbers are in
-    [`docs/REPORT-interface-proofpath-audit.md`](docs/REPORT-interface-proofpath-audit.md)
+  - ⚠️⚠️ **`.aux` TIMES ARE WALL-CLOCK, SO THEY INFLATE UNDER `-j`** —
+    measured 2026-08-22 and it invalidated a whole afternoon's numbers:
+    `ext_algo/prop_lift.v` records **42–64 s compiled ALONE** and **916 s**
+    when the same file is built inside `make NJOBS=10` beside the other
+    heavy tail files.  ⛔ So NEVER compare `.aux` figures across runs of
+    different parallelism, and never build a cost model out of a mix of
+    them.  Re-measure the file ALONE before believing any number.
+  - ⚙ **The build is CRITICAL-PATH-bound in STRUCTURE** — the chain to
+    `README.v` is ~38 files deep and contains most of the heavy files, so a
+    full rebuild cannot be parallelised away and `NJOBS` past a handful buys
+    little.  ⚠️ A reliable full-gate WALL figure has NOT been established:
+    two runs on the same machine gave ~9 min (120 files) and ~38 min
+    (49 files, all of them the heavy tail).  Time your own run before
+    quoting one.  ⛔ And do not assume a spurious `Require` on the chain is
+    a speed-up: removing the most suspicious one in the tree
+    (`pat/prop_soundness_pat.v` → `sub/prop_completeness_sub_gen.v`, unused
+    by name) SIMULATES TO ZERO, because a parallel chain of the same length
+    runs beside it.  Simulate against `.CoqMakefile.d` first; the method is
+    in [`docs/REPORT-interface-proofpath-audit.md`](docs/REPORT-interface-proofpath-audit.md)
     Part 3.
   - ⚠️⚠️ **`fsetdec` is NOT MONOTONE in its hypothesis set** (measured
     2026-08-22): narrowing one call's `clear -` list from 6 hypotheses to 5

@@ -321,3 +321,37 @@ only remaining thing that would move the full gate meaningfully.
 **Recommendation: stop here.**  The full gate is ~8–9 min, the
 incremental cost of the file under active development was cut 82%, and
 the remaining per-proof work is genuinely distributed.
+
+### B7. ⛔⛔ CORRECTION — §B1's absolute numbers are UNSOUND (same day)
+
+⚠️⚠️ **`.aux` `proof_build_time` is WALL-CLOCK, so it inflates under
+`-j` contention.**  Measured: `ext_algo/prop_lift.v` records **42–64 s
+compiled alone** and **916 s** for the same file inside
+`make NJOBS=10` next to the other heavy-tail files; tree-wide the same
+`.aux` scan read 944 s before such a run and **3902 s** after one.
+
+What that costs the analysis above:
+
+- ⛔ **§B1's "944 s total / ~450 s critical path / ~8–9 min full gate"
+  is WITHDRAWN.**  It was computed from a MIX of `.aux` entries — some
+  written by uncontended single-file compiles I had just run, some by
+  earlier parallel builds — which is exactly the comparison this
+  finding forbids.  Two honest wall observations on the same machine:
+  ~9 min for a 120-file rebuild, ~38 min for a 49-file one whose files
+  were all the heavy tail.  **No reliable full-gate figure is
+  established; time your own run.**
+- ✅ **What SURVIVES**, because each was measured within one run or
+  between two comparable single-file compiles: the split's benefit
+  (monolith 45–64 s vs §13 alone 9.9 s), fsetdec's non-monotonicity
+  (25.1 s vs 31.4 s, both single-file), the profiler's ~3× inflation
+  (13.8 s profiled vs 4.75 s under `time`, same run), `Require` costing
+  0.3 s of a 40 s file (same run), and every LINE count.
+- ✅ The **structural** claim also survives, since it does not depend on
+  absolute times: the chain to `README.v` is ~38 files deep and holds
+  most of the heavy files, so the gate cannot be parallelised away —
+  and the ⛔ zero-gain edge-cut simulation stands (it compares two
+  paths under one weighting).
+
+⚙ **The lesson is the deliverable here.**  A perf model assembled from
+`.aux` files is only valid if every entry came from a run with the same
+parallelism.  Re-measure a file ALONE before believing its number.

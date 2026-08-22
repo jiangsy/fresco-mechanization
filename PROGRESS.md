@@ -258,9 +258,14 @@ below was grep- or clock-measured first
   the typing rung now costs **9.9 s instead of ≈55 s (−82%)**.  The boundary
   was verified clean first — §13 exports one name (`a_typing_rel_e`) and one
   file requires `prop_lift` at all.
-- ⭐ **Build time, measured**: a full `make NJOBS=10 coq` is **~8–9 min**, not
-  the ~35 min folklore; the build is CRITICAL-PATH-bound (944 s of proof time
-  but a 37-file chain carrying ~450 s), so more cores buy nothing.  ⛔ The
+- ⚠️⚠️ **Build time — and a CORRECTION**: `.aux` `proof_build_time` is
+  WALL-CLOCK, so it inflates under `-j` (prop_lift.v: 42–64 s alone, **916 s**
+  inside `make NJOBS=10`).  A cost model must not mix runs of different
+  parallelism — mine did, so the "~8–9 min full gate" figure is WITHDRAWN and
+  no reliable one is established (~9 min for a 120-file rebuild vs ~38 min for
+  a 49-file heavy-tail one).  What survives is STRUCTURAL: the chain to
+  README.v is ~38 files deep and holds most of the heavy files, so the gate
+  cannot be parallelised away.  ⛔ The
   most suspicious `Require` on that chain (`prop_soundness_pat` →
   `prop_completeness_sub_gen`, 78 s, unused by name) SIMULATES TO ZERO
   saving — a parallel chain of equal length runs beside it.  CLAUDE.md's
