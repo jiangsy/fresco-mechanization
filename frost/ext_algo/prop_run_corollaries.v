@@ -80,6 +80,7 @@ Require Import src.frost.algo.prop_basic.
 Require Import src.frost.algo.typing.prop_soundness_typing.
 Require Import src.frost.ext_algo.prop_solve_rel.
 Require Import src.frost.ext_algo.prop_lift.
+Require Import src.frost.ext_algo.prop_lift_typing.  (* §13, [a_typing_rel_e] *)
 Require Import src.frost.algo.prop_precise.   (* [a_wf_ptyp_to_wf_pskl] *)
 
 Open Scope frost_e_scope.

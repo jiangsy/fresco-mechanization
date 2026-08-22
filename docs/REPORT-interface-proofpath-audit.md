@@ -160,6 +160,22 @@ the dependency DAG linear: `…decl_infer` → `frost_infer` →
 `d_wf_exp`, `frost_infer`, and the decidability composition have no
 PROGRESS.md Part 1 rows yet; `a_wf_exp_to_d` needs its keep-note (I4).
 
+## STATUS (updated 2026-08-22, after execution)
+
+| item | verdict | outcome |
+|---|---|---|
+| I1 README 4 → 2 entries | **DONE** | `ab916f3`; 36 → 34 entries, −22 lines |
+| I2 name the entry supply | **DONE** | `ab916f3`; 19 sites → `entry_supply`, and the extracted OCaml reads better for it |
+| P5 derive `d_typing_infer_dec` | **DONE** | `ab916f3`; §6/§7 swapped, 3 lines off `frost_infer` |
+| P1 `ptyp_to_pskl_close` duplicate | **DONE** | `ab916f3`; moved to `prop_coercions.v`, both copies gone |
+| P4 split `prop_lift.v` | **DONE** | §13 → `prop_lift_typing.v`; see B4 |
+| I3 §1/§2 hypothesis uniformity | OPEN (OPT) | not done — statement churn on two landed corollaries |
+| I6 §VI prose compression | DONE-ish | folded into I1 |
+| P2a restrict-prelude factoring | **DROPPED** | measured at −69 lines (0.5%); see B5 |
+| P2b row-core merge | OPEN (OPT) | ~450 lines; the only part of P2 whose size justifies the risk |
+| P3 drop the derivable conjunct | OPEN (OPT-small) | bundle with any future §13 touch |
+| P7 documentation debt | OPEN | PROGRESS.md Part 1 rows for `d_wf_exp` / `frost_infer` |
+
 ## Suggested batches
 
 - **Batch A** (interface, one commit, cheap): I2 + I1 + P5 (+I6).
@@ -217,12 +233,17 @@ worth removing on hygiene grounds, but do not sell it as a speed-up.
 
 ### B4. What would actually help, in value order
 
-1. **Split `prop_lift.v` (12,814 lines) at §13** — measured: §1–§12 is
-   9,105 lines, §13 is 3,708 (29%).  This does NOT shorten the full
-   gate (the parts stay in sequence), but it cuts the INCREMENTAL cost
-   of editing the typing rung by ~70%, which is what a developer
-   actually pays.  A clean prefix boundary; no cycle (§13 depends on
-   §1–12 only, never back).
+1. ✅ **DONE — split `prop_lift.v` (12,814 lines) at §13.**  Measured
+   after the split: `prop_lift.v` (§1–§12, 9,113 lines) **45.4 s**,
+   `prop_lift_typing.v` (§13, 3,787 lines) **9.9 s**.  So editing the
+   typing rung went from recompiling the monolith (≈55 s, the two
+   summed) to **9.9 s — an 82% cut** on the iteration a developer
+   actually pays for.  It does NOT shorten the full gate (the parts
+   stay in sequence).  The boundary was verified clean BEFORE the move:
+   §13 exports exactly one name to the outside (`a_typing_rel_e`), and
+   exactly one file requires `prop_lift` at all
+   (`prop_run_corollaries.v`) — so there is no cycle and no consumer
+   churn beyond one added `Require`.
 2. **Profile the four heaviest single proofs** —
    `a_sub_flex_complete_skip` 19.9 s, `consis_complete_core` 17.3 s,
    `a_assign_unify_consis_sound` 15.9 s, `a_lookeq_solve_complete_gen`

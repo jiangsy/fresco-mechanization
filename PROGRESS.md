@@ -240,7 +240,36 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-22 (latest) — ⭐⭐⭐ **THE a_typing RUNG IS CLOSED — THE WHOLE a_ ⟹ e_ LIFT IS DONE**, and decidability now speaks the paper's own judgement
+## 2026-08-22 (latest) — ⚙ **POST-CAMPAIGN CLEANING** — audit executed: interface, one duplicate, and the lift file split
+
+`make coq` rc=0, `README.v` 34/34, zero `Admitted`/`Axiom`.  Every item
+below was grep- or clock-measured first
+(`docs/REPORT-interface-proofpath-audit.md`).
+
+- **Interface**: `entry_supply P0 e` (ext_algo/prop_typing.v §2) replaces the
+  union spelled out 19× — the extracted OCaml gained a readable one-liner
+  too.  README §VI went 4 decidability entries → 2 (`e_typing_dec_init` at
+  the threaded relation, `frost_infer` at the paper's); `d_typing_infer_dec`
+  is now DERIVED from `frost_infer` in three lines.  36 → 34 entries.
+- **Duplicate**: `ptyp_to_pskl_close{,_rec}` existed in TWO files; moved to
+  `frost/prop_coercions.v` beside `ptyp_to_pskl_open`, where
+  prop_solve_det's own header had been asking for it.
+- ⭐ **`prop_lift.v` split at §13** (12,814 lines → 9,113 + 3,787): editing
+  the typing rung now costs **9.9 s instead of ≈55 s (−82%)**.  The boundary
+  was verified clean first — §13 exports one name (`a_typing_rel_e`) and one
+  file requires `prop_lift` at all.
+- ⭐ **Build time, measured**: a full `make NJOBS=10 coq` is **~8–9 min**, not
+  the ~35 min folklore; the build is CRITICAL-PATH-bound (944 s of proof time
+  but a 37-file chain carrying ~450 s), so more cores buy nothing.  ⛔ The
+  most suspicious `Require` on that chain (`prop_soundness_pat` →
+  `prop_completeness_sub_gen`, 78 s, unused by name) SIMULATES TO ZERO
+  saving — a parallel chain of equal length runs beside it.  CLAUDE.md's
+  performance bullet now carries these numbers.
+- ⚠️ One audit estimate was CORRECTED by measurement and the item DROPPED:
+  the restrict-prelude factoring is worth −69 lines (0.5%), not the −250
+  estimated, so ten closed proofs were left alone.
+
+## 2026-08-22 — ⭐⭐⭐ **THE a_typing RUNG IS CLOSED — THE WHOLE a_ ⟹ e_ LIFT IS DONE**, and decidability now speaks the paper's own judgement
 
 `make coq` rc=0, `README.v` 35/35, zero `Admitted`/`Axiom`.
 
