@@ -330,6 +330,68 @@ condition to be re-imposed at five separate rules.
 and `type.ml` both leak today.  It belongs in a design discussion, not a
 cleanup pass.  The cost of *not* doing it is now measured: items 5–7 above.
 
+## 4d  ⭐⭐⭐⭐⭐ "Can we just keep `e_` and delete `a_`?"
+
+**Soundly?  Yes — and the tree already contains the proof.**  The two layers are
+proved interderivable in *both* directions:
+
+| direction | where | count |
+|---|---|---|
+| `a_` → `e_` | the lift's `*_rel_e` rungs (campaign closed 2026-08-22) | 12 |
+| `e_` → `a_` | `e_*_sound` | 32 |
+
+So **`a_` adds no expressive power.**  It is a presentational layer: it lets the
+flagship theorems be stated in the paper's vocabulary, without a supply index.
+
+### The clean form of the change (not "delete" — "demote")
+
+- `e_` becomes the only **`Inductive`**.
+- `a_X … := exists S0 S1, e_X S0 … S1 …` becomes a **`Definition`**, so the
+  README's statements stay supply-free and still read like the paper.
+- The paper's 154 rule shapes become **admissibility lemmas** — each cheap
+  (apply the `e_` rule, thread the supply).
+- `algo/`'s inductions move onto `e_`'s induction principle.
+
+**Deleted:** `prop_swap.v` (3,050) and the 43 `*_swap` lemmas; the lift
+(12,898); the ρ tower (12,322); and the six freshness `[paper-gap]` guards,
+which become derivable.  **≈ 28,000 lines.**
+
+**Paid:** `algo/`'s **95,698** lines restated and re-proved over the indexed
+judgement — **750 `induction` sites, 2,874 `inversion` sites, 12 mutual
+schemes**, and every statement grows an `S0`/`S1` pair with monotonicity
+bookkeeping.
+
+### ⛔ Verdict: right design, wrong move
+
+**As a migration it is a bad trade** — touch 95,698 lines to delete 28,000, with
+the build red for the duration.  **As the design for a system being built now it
+is clearly correct**, and worth writing down for the next calculus.
+
+⚙ One subtlety that decides *why* it would be simpler, and it is not "fewer
+judgements".  Defining `a_X` as *"there exists a supply run"* is only faithful
+to the paper if the judgement does not depend on **which** supply — i.e. it
+needs supply-independence, which is equivariance again.  The reason the
+`e_`-only design still wins is sharper: **you never have to move between two
+runs.**  Soundness works from *any* run, completeness produces *some* run, and
+nothing ever relates two.  ρ exists in the current design precisely because the
+lift must relate a run to a non-run.
+
+### ⭐ …but this is a symptom, and §4c is the disease
+
+The `a_`/`e_` split is not itself the redundancy — **the leak is.**  Close the ∀
+rows' binder and cofinite returns, equivariance is free, the chain currency
+works, and ρ disappears **while both layers stay**.  Same ~15–25k saved, against
+a design change at one point instead of a 95k-line migration.
+
+**Ordering, then:**
+
+| | change | saves | disruption |
+|---|---|---|---|
+| 1 | **close the ∀ rows' binder** (§4c) | ~15–25k | one design change at the root |
+| 2 | finish the guard program (§4b design A) | ~12k | incremental, staged |
+| 3 | demote `a_` to a `Definition` over `e_` | ~28k | **95,698 lines re-proved** |
+| 4 | status quo | — | — |
+
 ## 5  Smaller structural observations
 
 - **`deco_algo/` (8,010) is on the critical path**, not a side branch: the
