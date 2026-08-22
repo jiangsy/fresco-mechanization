@@ -2336,7 +2336,7 @@ Qed.
     hypotheses of the ftv-survival inductions below. *)
 Local Ltac ftv_rev_extend α Fr β Θ Hwf HbX Hdefs HwfY HbXY HdefsY :=
   assert (HwfY : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-    by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]);
+    by (apply a_wf_aenv__tvar; [ clear - Fr; solve_notin_auto | exact Hwf ]);
   assert (HbXY : binds α abind_tvar ((β ~ abind_tvar) ++ Θ))
     by (apply binds_cons_3; exact HbX);
   (* β0, not β: β is this tactic's FORMAL PARAMETER (the caller's fresh
@@ -2544,7 +2544,7 @@ Proof.
     pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
                         `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
     assert (HwfY : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-      by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
+      by (apply a_wf_aenv__tvar; [ clear - Fr; solve_notin_auto | exact Hwf ]).
     assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
       by (apply binds_cons_3; exact HbX).
     assert (HdefsY' : forall α1 τ,
@@ -2572,7 +2572,7 @@ Proof.
     pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
                         `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
     assert (HwfY : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-      by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
+      by (apply a_wf_aenv__tvar; [ clear - Fr; solve_notin_auto | exact Hwf ]).
     assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
       by (apply binds_cons_3; exact HbX).
     assert (HdefsY' : forall α1 τ,
@@ -2600,7 +2600,7 @@ Proof.
     pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
                         `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
     assert (HwfY : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-      by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
+      by (apply a_wf_aenv__tvar; [ clear - Fr; solve_notin_auto | exact Hwf ]).
     assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
       by (apply binds_cons_3; exact HbX).
     assert (HdefsY' : forall α1 τ,
@@ -2628,7 +2628,7 @@ Proof.
     pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
                         `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
     assert (HwfY : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-      by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
+      by (apply a_wf_aenv__tvar; [ clear - Fr; solve_notin_auto | exact Hwf ]).
     assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
       by (apply binds_cons_3; exact HbX).
     assert (HdefsY' : forall α1 τ,
@@ -2660,7 +2660,7 @@ Proof.
     pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
                         `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
     assert (HwfY : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-      by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
+      by (apply a_wf_aenv__tvar; [ clear - Fr; solve_notin_auto | exact Hwf ]).
     assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
       by (apply binds_cons_3; exact HbX).
     assert (HdefsY' : forall α1 τ,
@@ -2841,7 +2841,7 @@ Proof.
     assert (HgP : guarded_pskl P) by (inversion HwfA; assumption).
     pick fresh α for (L `union` dom Θ).
     assert (HlcQX : lc_pskl (open_pskl_wrt_pskl Q (pskl_var_f α)))
-      by (eapply ad_refine_pskl_f_lc_r; apply H; clear - Fr; fsetdec).
+      by (eapply ad_refine_pskl_f_lc_r; apply H; clear - Fr; solve_notin_auto).
     assert (HlcQ : lc_bskl (pskl_to_bskl_syn (pskl_all_syn Q))).
     { apply lc_pskl_to_bskl_syn.
       apply (lc_pskl_all_syn_exists α). exact HlcQX. }
@@ -6992,9 +6992,9 @@ Proof.
                         `union` ftvar_in_bskl Q)
     end end.
     assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hinc).
-    assert (Hακ : α `notin` dom κ) by (clear - Fr; fsetdec).
-    assert (HαΘ : α `notin` dom Θ) by (clear - Fr; fsetdec).
-    assert (HαΘ0 : α `notin` dom Θ0) by (clear - Fr; fsetdec).
+    assert (Hακ : α `notin` dom κ) by (clear - Fr; solve_notin_auto).
+    assert (HαΘ : α `notin` dom Θ) by (clear - Fr; solve_notin_auto).
+    assert (HαΘ0 : α `notin` dom Θ0) by (clear - Fr; solve_notin_auto).
     (* the measure strictly drops *)
     assert (HVeq : forall Pz, Vpskl ((α ~ abind_tvar) ++ Θ) κ Pz
                             = Vpskl Θ κ Pz)
@@ -7018,11 +7018,11 @@ Proof.
     assert (HwfP0α : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
                        (open_pskl_wrt_pskl P0b (pskl_var_f α)) }}a).
     { eapply a_wf_pskl_delta_to_tvar;
-        [ apply Hwfb0; clear - Fr; fsetdec | clear; fsetdec ]. }
+        [ apply Hwfb0; clear - Fr; solve_notin_auto | clear; fsetdec ]. }
     assert (HwfPα : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
                       (open_pskl_wrt_pskl PPb (pskl_var_f α)) }}a).
     { eapply a_wf_pskl_delta_to_tvar;
-        [ apply Hwfb; clear - Fr; fsetdec | clear; fsetdec ]. }
+        [ apply Hwfb; clear - Fr; solve_notin_auto | clear; fsetdec ]. }
     assert (Hrig' : forall α2, α2 `in` (add α Δ1 `union` add α Δ2) ->
               binds α2 abind_tvar ((α ~ abind_tvar) ++ Θ0)).
     { intros α2 Hα2. destruct (α2 == α) as [-> | Hne];
@@ -7069,7 +7069,7 @@ Proof.
       eapply ad_refine_syn_f_weaken_ctx;
         [ | intros x b Hb; apply binds_cons_3; exact Hb ].
       eapply ad_refine_syn_f_fextend_dom;
-        [ apply Hrs1; clear - Fr; fsetdec | ].
+        [ apply Hrs1; clear - Fr; solve_notin_auto | ].
       intros α1 Hα1. destruct (α1 == α) as [-> | Hne];
         [ right; exact HαΘ | left; clear - Hα1 Hne; fsetdec ]. }
     assert (Hrpα : ad_refine_pskl_f (add α Δ2) ((α ~ abind_tvar) ++ Θ)
@@ -7081,7 +7081,7 @@ Proof.
       eapply ad_refine_pskl_f_weaken_ctx;
         [ | intros x b Hb; apply binds_cons_3; exact Hb ].
       eapply ad_refine_pskl_f_fextend_dom;
-        [ apply Hrp1; clear - Fr; fsetdec | ].
+        [ apply Hrp1; clear - Fr; solve_notin_auto | ].
       intros α1 Hα1. destruct (α1 == α) as [-> | Hne];
         [ right; exact HαΘ | left; clear - Hα1 Hne; fsetdec ]. }
     destruct (HcIH N (add α Δ1) (add α Δ2) ((α ~ abind_tvar) ++ Θ0)
@@ -7099,15 +7099,15 @@ Proof.
     (* assemble the exists-fresh node at the run's OWN α *)
     assert (Huq0 : uniq ((α ~ abind_tvar) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact Hwf0').
-    assert (HαΔ1 : α `notin` Δ1) by (clear - Fr; fsetdec).
-    assert (HαΔ2 : α `notin` Δ2) by (clear - Fr; fsetdec).
+    assert (HαΔ1 : α `notin` Δ1) by (clear - Fr; solve_notin_auto).
+    assert (HαΔ2 : α `notin` Δ2) by (clear - Fr; solve_notin_auto).
     exists (pskl_all_syn (close_pskl_wrt_pskl α P1)), Θ1.
     split.
     { (* EXISTS-FRESH (campaign cluster 4): the run's OWN α is the
          rule's binder, so the node is one constructor application —
          no family to rebuild, hence no rename. *)
       apply a_consis__forall_inh with (α := α);
-        [ clear - Fr; fsetdec | exact Hc ]. }
+        [ clear - Fr; solve_notin_auto | exact Hc ]. }
     (* the avoid set survives the truncation: [α] is the run's OWN binder,
        so it cannot occur in the tail the node hands back *)
     split.
@@ -7193,7 +7193,7 @@ Proof.
     assert (HoQ : open_bskl_wrt_bskl Q (bskl_var_f α0)
                 = subst_bskl_in_bskl (bskl_var_f α0) α
                     (open_bskl_wrt_bskl Q (bskl_var_f α)))
-      by (apply subst_bskl_in_bskl_intro; clear - Fr; fsetdec).
+      by (apply subst_bskl_in_bskl_intro; clear - Fr; solve_notin_auto).
     rewrite <- HoQ in Hp2.
     eapply ad_refine_syn_f_fmono;
       [ | eapply ad_refine_syn_f_delta_mono; [ exact Hp2 | ] ].
@@ -7298,9 +7298,9 @@ Proof.
                         `union` ftvar_in_bskl Q)
     end end.
     assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hinc).
-    assert (Hακ : α `notin` dom κ) by (clear - Fr; fsetdec).
-    assert (HαΘ : α `notin` dom Θ) by (clear - Fr; fsetdec).
-    assert (HαΘ0 : α `notin` dom Θ0) by (clear - Fr; fsetdec).
+    assert (Hακ : α `notin` dom κ) by (clear - Fr; solve_notin_auto).
+    assert (HαΘ : α `notin` dom Θ) by (clear - Fr; solve_notin_auto).
+    assert (HαΘ0 : α `notin` dom Θ0) by (clear - Fr; solve_notin_auto).
     assert (HVeq : forall Pz, Vpskl ((α ~ abind_tvar) ++ Θ) κ Pz
                             = Vpskl Θ κ Pz)
       by (intro Pz; unfold Vpskl; rewrite aenv_msubst_tvar; reflexivity).
@@ -7324,7 +7324,7 @@ Proof.
     assert (HwfPα : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
                       (open_pskl_wrt_pskl PPb (pskl_var_f α)) }}a).
     { eapply a_wf_pskl_delta_to_tvar;
-        [ apply Hwfb; clear - Fr; fsetdec | clear; fsetdec ]. }
+        [ apply Hwfb; clear - Fr; solve_notin_auto | clear; fsetdec ]. }
     assert (Hrig' : forall α2, α2 `in` (Δ1 `union` add α Δ2) ->
               binds α2 abind_tvar ((α ~ abind_tvar) ++ Θ0)).
     { intros α2 Hα2. destruct (α2 == α) as [-> | Hne];
@@ -7374,7 +7374,7 @@ Proof.
       eapply ad_refine_pskl_f_weaken_ctx;
         [ | intros x b Hb; apply binds_cons_3; exact Hb ].
       eapply ad_refine_pskl_f_fextend_dom;
-        [ apply Hrp1; clear - Fr; fsetdec | ].
+        [ apply Hrp1; clear - Fr; solve_notin_auto | ].
       intros α1 Hα1. destruct (α1 == α) as [-> | Hne];
         [ right; exact HαΘ | left; clear - Hα1 Hne; fsetdec ]. }
     destruct (HcIH N Δ1 (add α Δ2) ((α ~ abind_tvar) ++ Θ0)
@@ -7391,15 +7391,15 @@ Proof.
     (* assemble the exists-fresh node at the run's OWN α *)
     assert (Huq0 : uniq ((α ~ abind_tvar) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact Hwf0').
-    assert (HαΔ1 : α `notin` Δ1) by (clear - Fr; fsetdec).
-    assert (HαΔ2 : α `notin` Δ2) by (clear - Fr; fsetdec).
+    assert (HαΔ1 : α `notin` Δ1) by (clear - Fr; solve_notin_auto).
+    assert (HαΔ2 : α `notin` Δ2) by (clear - Fr; solve_notin_auto).
     exists (pskl_all_syn (close_pskl_wrt_pskl α P1)), Θ1.
     split.
     { (* EXISTS-FRESH (campaign cluster 4): the run's OWN α is the
          rule's binder, so the node is one constructor application —
          no family to rebuild, hence no rename. *)
       apply a_consis__forall_syn with (α := α);
-        [ clear - Fr; fsetdec | exact Hc ]. }
+        [ clear - Fr; solve_notin_auto | exact Hc ]. }
     (* the avoid set survives the truncation: [α] is the run's OWN binder,
        so it cannot occur in the tail the node hands back *)
     split.
@@ -7483,7 +7483,7 @@ Proof.
     assert (HoQ : open_bskl_wrt_bskl Q (bskl_var_f α0)
                 = subst_bskl_in_bskl (bskl_var_f α0) α
                     (open_bskl_wrt_bskl Q (bskl_var_f α)))
-      by (apply subst_bskl_in_bskl_intro; clear - Fr; fsetdec).
+      by (apply subst_bskl_in_bskl_intro; clear - Fr; solve_notin_auto).
     rewrite <- HoQ in Hp2.
     eapply ad_refine_syn_f_fmono;
       [ | eapply ad_refine_syn_f_delta_mono; [ exact Hp2 | ] ].
@@ -7803,9 +7803,9 @@ Proof.
                         `union` ftvar_in_bskl Q)
     end end.
     assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hinc).
-    assert (Hακ : α `notin` dom κ) by (clear - Fr; fsetdec).
-    assert (HαΘ : α `notin` dom Θ) by (clear - Fr; fsetdec).
-    assert (HαΘ0 : α `notin` dom Θ0) by (clear - Fr; fsetdec).
+    assert (Hακ : α `notin` dom κ) by (clear - Fr; solve_notin_auto).
+    assert (HαΘ : α `notin` dom Θ) by (clear - Fr; solve_notin_auto).
+    assert (HαΘ0 : α `notin` dom Θ0) by (clear - Fr; solve_notin_auto).
     assert (HVeq : forall Pz, Vpskl ((α ~ abind_tvar) ++ Θ) κ Pz
                             = Vpskl Θ κ Pz)
       by (intro Pz; unfold Vpskl; rewrite aenv_msubst_tvar; reflexivity).
@@ -7825,7 +7825,7 @@ Proof.
     assert (HwfP0α : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
                        (open_pskl_wrt_pskl P0b (pskl_var_f α)) }}a).
     { eapply a_wf_pskl_delta_to_tvar;
-        [ apply Hwfb0; clear - Fr; fsetdec | clear; fsetdec ]. }
+        [ apply Hwfb0; clear - Fr; solve_notin_auto | clear; fsetdec ]. }
     assert (HwfPα : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
                       (pskl_tophole PPt) }}a).
     { eapply a_wf_pskl_weaken; [ | exact HwfP ].
@@ -7872,7 +7872,7 @@ Proof.
       eapply ad_refine_syn_f_weaken_ctx;
         [ | intros x b Hb; apply binds_cons_3; exact Hb ].
       eapply ad_refine_syn_f_fextend_dom;
-        [ apply Hrs1; clear - Fr; fsetdec | ].
+        [ apply Hrs1; clear - Fr; solve_notin_auto | ].
       intros α1 Hα1. destruct (α1 == α) as [-> | Hne];
         [ right; exact HαΘ | left; clear - Hα1 Hne; fsetdec ]. }
     assert (Hrpα : ad_refine_pskl_f Δ2 ((α ~ abind_tvar) ++ Θ) Δ2
@@ -7894,15 +7894,15 @@ Proof.
     (* assemble the exists-fresh node at the run's OWN α *)
     assert (Huq0 : uniq ((α ~ abind_tvar) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact Hwf0').
-    assert (HαΔ1 : α `notin` Δ1) by (clear - Fr; fsetdec).
-    assert (HαΔ2 : α `notin` Δ2) by (clear - Fr; fsetdec).
+    assert (HαΔ1 : α `notin` Δ1) by (clear - Fr; solve_notin_auto).
+    assert (HαΔ2 : α `notin` Δ2) by (clear - Fr; solve_notin_auto).
     exists (pskl_all_syn (close_pskl_wrt_pskl α P1)), Θ1.
     split.
     { (* EXISTS-FRESH (campaign cluster 4): the run's OWN α is the
          rule's binder, so the node is one constructor application —
          no family to rebuild, hence no rename. *)
       apply a_consis__univ_ghost1 with (α := α);
-        [ clear - Fr; fsetdec | exact Hc ]. }
+        [ clear - Fr; solve_notin_auto | exact Hc ]. }
     (* the avoid set survives the truncation: [α] is the run's OWN binder,
        so it cannot occur in the tail the node hands back *)
     split.
@@ -7985,7 +7985,7 @@ Proof.
     assert (HoQ : open_bskl_wrt_bskl Q (bskl_var_f α0)
                 = subst_bskl_in_bskl (bskl_var_f α0) α
                     (open_bskl_wrt_bskl Q (bskl_var_f α)))
-      by (apply subst_bskl_in_bskl_intro; clear - Fr; fsetdec).
+      by (apply subst_bskl_in_bskl_intro; clear - Fr; solve_notin_auto).
     rewrite <- HoQ in Hp2.
     eapply ad_refine_syn_f_fmono;
       [ | eapply ad_refine_syn_f_delta_mono; [ exact Hp2 | ] ].

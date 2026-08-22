@@ -1443,7 +1443,7 @@ Proof.
   - (* all *)
     pick fresh α for (L `union` ftvar_in_pskl P `union` Δ
                         `union` dom Θ).
-    assert (HXL : α `notin` L) by (clear - Fr; fsetdec).
+    assert (HXL : α `notin` L) by (clear - Fr; solve_notin_auto).
     pose proof (H0 α HXL) as Hsub.
     intros α2 Hα2.
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower
@@ -3475,13 +3475,13 @@ Proof.
     + exists (bskl_all_inh (close_bskl_wrt_bskl α Qtα)). split.
       { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.
         rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
-          [ reflexivity | clear - Fr; fsetdec ]. }
+          [ reflexivity | clear - Fr; solve_notin_auto ]. }
       split.
       * simpl. apply ad_pat_consis__forall_inh_untagged
           with (L := dom Θ1 `union` singleton α `union` ftvar_in_pskl P).
         intros α0 Hα0.
         rewrite (subst_uskl_in_uskl_intro α (pskl_to_uskl P) (uskl_var_f α0));
-          [ | rewrite ftvar_in_uskl_pskl; clear - Fr; fsetdec ].
+          [ | rewrite ftvar_in_uskl_pskl; clear - Fr; solve_notin_auto ].
         rewrite (subst_bskl_in_bskl_intro α (close_bskl_wrt_bskl α Qtα)
                    (bskl_var_f α0));
           [ | rewrite ftvar_in_bskl_close_bskl_wrt_bskl; clear; fsetdec ].
@@ -3501,7 +3501,7 @@ Proof.
                    (bskl_var_f α0));
           [ | rewrite ftvar_in_bskl_close_bskl_wrt_bskl; clear; fsetdec ].
         rewrite open_bskl_wrt_bskl_close_bskl_wrt_bskl.
-        assert (Hfr0 : α `notin` ftvar_in_pskl P0) by (clear - Fr; fsetdec).
+        assert (Hfr0 : α `notin` ftvar_in_pskl P0) by (clear - Fr; solve_notin_auto).
         rewrite (subst_pskl_in_pskl_intro α P0 (pskl_var_f α0) Hfr0).
         rewrite <- subst_var_bskl_inh.
         eapply ad_refine_syn_f_fmono with (F' := add α Δ1);
@@ -3518,9 +3518,9 @@ Proof.
                    `union` ftvar_in_pskl P `union` ftvar_in_pskl P3).
       intros α0 Hα0.
       rewrite (subst_pskl_in_pskl_intro α P (pskl_var_f α0));
-        [ | clear - Fr; fsetdec ].
+        [ | clear - Fr; solve_notin_auto ].
       rewrite (subst_pskl_in_pskl_intro α P3 (pskl_var_f α0));
-        [ | clear - Fr; fsetdec ].
+        [ | clear - Fr; solve_notin_auto ].
       eapply ad_refine_pskl_f_fmono with (F' := add α Δ2);
         [ clear; fsetdec | ].
       eapply ad_refine_pskl_f_delta_mono;
@@ -3630,13 +3630,13 @@ Proof.
     + exists (bskl_all_syn (close_bskl_wrt_bskl α Qtα)). split.
       { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.
         rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
-          [ reflexivity | clear - Fr; fsetdec ]. }
+          [ reflexivity | clear - Fr; solve_notin_auto ]. }
       split.
       * simpl. apply ad_pat_consis__forall_syn
           with (L := dom Θ1 `union` singleton α `union` ftvar_in_pskl P).
         intros α0 Hα0.
         rewrite (subst_uskl_in_uskl_intro α (pskl_to_uskl P) (uskl_var_f α0));
-          [ | rewrite ftvar_in_uskl_pskl; clear - Fr; fsetdec ].
+          [ | rewrite ftvar_in_uskl_pskl; clear - Fr; solve_notin_auto ].
         rewrite (subst_bskl_in_bskl_intro α (close_bskl_wrt_bskl α Qtα)
                    (bskl_var_f α0));
           [ | rewrite ftvar_in_bskl_close_bskl_wrt_bskl; clear; fsetdec ].
@@ -3661,20 +3661,20 @@ Proof.
                   (bskl_tophole (pskl_to_bskl_inh P0)))
           by (simpl; rewrite subst_var_bskl_inh;
               rewrite subst_pskl_in_pskl_fresh_eq;
-              [ reflexivity | clear - Fr; fsetdec ]).
+              [ reflexivity | clear - Fr; solve_notin_auto ]).
         eapply ad_refine_syn_f_rename_ctx with (Θ1 := nil);
           [ change (nil ++ (α ~ abind_tvar) ++ Θ1)
               with ((α ~ abind_tvar) ++ Θ1); exact Hrsα
-          | simpl; exact Hα1 | clear - Fr; fsetdec | clear - Hα0; fsetdec
+          | simpl; exact Hα1 | clear - Fr; solve_notin_auto | clear - Hα0; fsetdec
           | exact Hdefsα ].
     + simpl. apply ad_refine_pskl_f__all
         with (L := dom Θ1 `union` singleton α
                    `union` ftvar_in_pskl P `union` ftvar_in_pskl P3).
       intros α0 Hα0.
       rewrite (subst_pskl_in_pskl_intro α P (pskl_var_f α0));
-        [ | clear - Fr; fsetdec ].
+        [ | clear - Fr; solve_notin_auto ].
       rewrite (subst_pskl_in_pskl_intro α P3 (pskl_var_f α0));
-        [ | clear - Fr; fsetdec ].
+        [ | clear - Fr; solve_notin_auto ].
       eapply ad_refine_pskl_f_fmono with (F' := add α Δ2);
         [ clear; fsetdec | ].
       eapply ad_refine_pskl_f_delta_mono;
@@ -3808,7 +3808,7 @@ Proof.
     + exists (bskl_all_inh (close_bskl_wrt_bskl α Qtα)). split.
       { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.
         rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
-          [ reflexivity | clear - Fr; fsetdec ]. }
+          [ reflexivity | clear - Fr; solve_notin_auto ]. }
       split.
       * simpl. apply ad_pat_consis__tophole_inh
           with (L := dom Θ1 `union` singleton α `union` ftvar_in_pskl P).
@@ -3822,7 +3822,7 @@ Proof.
                   (uskl_tophole (pskl_to_uskl P)))
           by (simpl; rewrite subst_uskl_in_uskl_fresh_eq;
               [ reflexivity
-              | rewrite ftvar_in_uskl_pskl; clear - Fr; fsetdec ]).
+              | rewrite ftvar_in_uskl_pskl; clear - Fr; solve_notin_auto ]).
         change ((α0 ~ abind_tvar) ++ Θ1)
           with (nil ++ (α0 ~ abind_tvar) ++ Θ1).
         eapply ad_pat_consis_rename_tvar;
@@ -3838,7 +3838,7 @@ Proof.
                    (bskl_var_f α0));
           [ | rewrite ftvar_in_bskl_close_bskl_wrt_bskl; clear; fsetdec ].
         rewrite open_bskl_wrt_bskl_close_bskl_wrt_bskl.
-        assert (Hfr0 : α `notin` ftvar_in_pskl P0) by (clear - Fr; fsetdec).
+        assert (Hfr0 : α `notin` ftvar_in_pskl P0) by (clear - Fr; solve_notin_auto).
         rewrite (subst_pskl_in_pskl_intro α P0 (pskl_var_f α0) Hfr0).
         rewrite <- subst_var_bskl_inh.
         eapply ad_refine_syn_f_fmono with (F' := add α Δ1);
@@ -3856,15 +3856,15 @@ Proof.
                    `union` Δ1 `union` Δ2).
       intros α0 Hα0.
       rewrite (subst_pskl_in_pskl_intro α P3 (pskl_var_f α0));
-        [ | clear - Fr; fsetdec ].
+        [ | clear - Fr; solve_notin_auto ].
       replace (pskl_tophole P)
         with (subst_pskl_in_pskl (pskl_var_f α0) α (pskl_tophole P))
         by (simpl; rewrite subst_pskl_in_pskl_fresh_eq;
-            [ reflexivity | clear - Fr; fsetdec ]).
+            [ reflexivity | clear - Fr; solve_notin_auto ]).
       eapply ad_refine_pskl_f_rename_ctx with (Θ1 := nil);
         [ change (nil ++ (α ~ abind_tvar) ++ Θ1)
             with ((α ~ abind_tvar) ++ Θ1); exact Hrpα
-        | simpl; exact Hα1 | clear - Fr; fsetdec | clear - Hα0; fsetdec
+        | simpl; exact Hα1 | clear - Fr; solve_notin_auto | clear - Hα0; fsetdec
         | exact Hdefsα ].
   - (* C-UnivGhost2 *)
     intros Δ1 Δ2 Θ0 Θ1 P0 P P3 Hg Hnf Hc IHc Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
@@ -4491,7 +4491,7 @@ Proof.
     + exists (bskl_all_inh (close_bskl_wrt_bskl α Qtα)). split.
       { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.
         rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
-          [ reflexivity | clear - Fr; fsetdec ]. }
+          [ reflexivity | clear - Fr; solve_notin_auto ]. }
       split.
       * simpl. apply ad_pat_consis__forall_inh_tagged
           with (Ψ0 := Ψ0) (ε := ε)
@@ -4499,7 +4499,7 @@ Proof.
           [ | exact H1 ].
         intros α0 Hα0.
         rewrite (subst_uskl_in_uskl_intro α R (uskl_var_f α0));
-          [ | clear - Fr; fsetdec ].
+          [ | clear - Fr; solve_notin_auto ].
         rewrite (subst_bskl_in_bskl_intro α (close_bskl_wrt_bskl α Qtα)
                    (bskl_var_f α0));
           [ | rewrite ftvar_in_bskl_close_bskl_wrt_bskl; clear; fsetdec ].
@@ -4518,7 +4518,7 @@ Proof.
                    (bskl_var_f α0));
           [ | rewrite ftvar_in_bskl_close_bskl_wrt_bskl; clear; fsetdec ].
         rewrite open_bskl_wrt_bskl_close_bskl_wrt_bskl.
-        assert (Hfr0 : α `notin` ftvar_in_pskl P0) by (clear - Fr; fsetdec).
+        assert (Hfr0 : α `notin` ftvar_in_pskl P0) by (clear - Fr; solve_notin_auto).
         rewrite (subst_pskl_in_pskl_intro α P0 (pskl_var_f α0) Hfr0).
         rewrite <- subst_var_bskl_inh.
         eapply ad_refine_syn_f_fmono with (F' := add α Δ1);
@@ -4539,9 +4539,9 @@ Proof.
                           (pskl_var_f α)) (open_pskl_wrt_pskl Q (pskl_var_f α))).
       { rewrite <- uskl_to_pskl_open. exact Hrpα. }
       rewrite (subst_pskl_in_pskl_intro α (uskl_to_pskl R) (pskl_var_f α0));
-        [ | rewrite ftvar_in_pskl_uskl_to_pskl; clear - Fr; fsetdec ].
+        [ | rewrite ftvar_in_pskl_uskl_to_pskl; clear - Fr; solve_notin_auto ].
       rewrite (subst_pskl_in_pskl_intro α Q (pskl_var_f α0));
-        [ | clear - Fr; fsetdec ].
+        [ | clear - Fr; solve_notin_auto ].
       eapply ad_refine_pskl_f_fmono with (F' := add α Δ2);
         [ clear; fsetdec | ].
       eapply ad_refine_pskl_f_delta_mono;
@@ -4614,13 +4614,13 @@ Proof.
     + exists (bskl_all_inh (close_bskl_wrt_bskl α Qtα)). split.
       { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.
         rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
-          [ reflexivity | clear - Fr; fsetdec ]. }
+          [ reflexivity | clear - Fr; solve_notin_auto ]. }
       split.
       * simpl. apply ad_pat_consis__forall_inh_untagged
           with (L := dom Θ1 `union` singleton α `union` ftvar_in_uskl R).
         intros α0 Hα0.
         rewrite (subst_uskl_in_uskl_intro α R (uskl_var_f α0));
-          [ | clear - Fr; fsetdec ].
+          [ | clear - Fr; solve_notin_auto ].
         rewrite (subst_bskl_in_bskl_intro α (close_bskl_wrt_bskl α Qtα)
                    (bskl_var_f α0));
           [ | rewrite ftvar_in_bskl_close_bskl_wrt_bskl; clear; fsetdec ].
@@ -4639,7 +4639,7 @@ Proof.
                    (bskl_var_f α0));
           [ | rewrite ftvar_in_bskl_close_bskl_wrt_bskl; clear; fsetdec ].
         rewrite open_bskl_wrt_bskl_close_bskl_wrt_bskl.
-        assert (Hfr0 : α `notin` ftvar_in_pskl P0) by (clear - Fr; fsetdec).
+        assert (Hfr0 : α `notin` ftvar_in_pskl P0) by (clear - Fr; solve_notin_auto).
         rewrite (subst_pskl_in_pskl_intro α P0 (pskl_var_f α0) Hfr0).
         rewrite <- subst_var_bskl_inh.
         eapply ad_refine_syn_f_fmono with (F' := add α Δ1);
@@ -4660,9 +4660,9 @@ Proof.
                           (pskl_var_f α)) (open_pskl_wrt_pskl Q (pskl_var_f α))).
       { rewrite <- uskl_to_pskl_open. exact Hrpα. }
       rewrite (subst_pskl_in_pskl_intro α (uskl_to_pskl R) (pskl_var_f α0));
-        [ | rewrite ftvar_in_pskl_uskl_to_pskl; clear - Fr; fsetdec ].
+        [ | rewrite ftvar_in_pskl_uskl_to_pskl; clear - Fr; solve_notin_auto ].
       rewrite (subst_pskl_in_pskl_intro α Q (pskl_var_f α0));
-        [ | clear - Fr; fsetdec ].
+        [ | clear - Fr; solve_notin_auto ].
       eapply ad_refine_pskl_f_fmono with (F' := add α Δ2);
         [ clear; fsetdec | ].
       eapply ad_refine_pskl_f_delta_mono;
@@ -4735,13 +4735,13 @@ Proof.
     + exists (bskl_all_syn (close_bskl_wrt_bskl α Qtα)). split.
       { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.
         rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
-          [ reflexivity | clear - Fr; fsetdec ]. }
+          [ reflexivity | clear - Fr; solve_notin_auto ]. }
       split.
       * simpl. apply ad_pat_consis__forall_syn_tagged
           with (ε := ε) (L := dom Θ1 `union` singleton α `union` ftvar_in_uskl R).
         intros α0 Hα0.
         rewrite (subst_uskl_in_uskl_intro α R (uskl_var_f α0));
-          [ | clear - Fr; fsetdec ].
+          [ | clear - Fr; solve_notin_auto ].
         rewrite (subst_bskl_in_bskl_intro α (close_bskl_wrt_bskl α Qtα)
                    (bskl_var_f α0));
           [ | rewrite ftvar_in_bskl_close_bskl_wrt_bskl; clear; fsetdec ].
@@ -4765,11 +4765,11 @@ Proof.
                   (bskl_tophole (pskl_to_bskl_inh P0)))
           by (simpl; rewrite subst_var_bskl_inh;
               rewrite subst_pskl_in_pskl_fresh_eq;
-              [ reflexivity | clear - Fr; fsetdec ]).
+              [ reflexivity | clear - Fr; solve_notin_auto ]).
         eapply ad_refine_syn_f_rename_ctx with (Θ1 := nil);
           [ change (nil ++ (α ~ abind_tvar) ++ Θ1)
               with ((α ~ abind_tvar) ++ Θ1); exact Hrsα
-          | simpl; exact Hα1 | clear - Fr; fsetdec | clear - Hα0; fsetdec
+          | simpl; exact Hα1 | clear - Fr; solve_notin_auto | clear - Hα0; fsetdec
           | exact Hdefsα ].
     + simpl. apply ad_refine_pskl_f__all
         with (L := dom Θ1 `union` singleton α
@@ -4780,9 +4780,9 @@ Proof.
                           (pskl_var_f α)) (open_pskl_wrt_pskl Q (pskl_var_f α))).
       { rewrite <- uskl_to_pskl_open. exact Hrpα. }
       rewrite (subst_pskl_in_pskl_intro α (uskl_to_pskl R) (pskl_var_f α0));
-        [ | rewrite ftvar_in_pskl_uskl_to_pskl; clear - Fr; fsetdec ].
+        [ | rewrite ftvar_in_pskl_uskl_to_pskl; clear - Fr; solve_notin_auto ].
       rewrite (subst_pskl_in_pskl_intro α Q (pskl_var_f α0));
-        [ | clear - Fr; fsetdec ].
+        [ | clear - Fr; solve_notin_auto ].
       eapply ad_refine_pskl_f_fmono with (F' := add α Δ2);
         [ clear; fsetdec | ].
       eapply ad_refine_pskl_f_delta_mono;
@@ -4855,13 +4855,13 @@ Proof.
     + exists (bskl_all_syn (close_bskl_wrt_bskl α Qtα)). split.
       { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.
         rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
-          [ reflexivity | clear - Fr; fsetdec ]. }
+          [ reflexivity | clear - Fr; solve_notin_auto ]. }
       split.
       * simpl. apply ad_pat_consis__forall_syn
           with (L := dom Θ1 `union` singleton α `union` ftvar_in_uskl R).
         intros α0 Hα0.
         rewrite (subst_uskl_in_uskl_intro α R (uskl_var_f α0));
-          [ | clear - Fr; fsetdec ].
+          [ | clear - Fr; solve_notin_auto ].
         rewrite (subst_bskl_in_bskl_intro α (close_bskl_wrt_bskl α Qtα)
                    (bskl_var_f α0));
           [ | rewrite ftvar_in_bskl_close_bskl_wrt_bskl; clear; fsetdec ].
@@ -4885,11 +4885,11 @@ Proof.
                   (bskl_tophole (pskl_to_bskl_inh P0)))
           by (simpl; rewrite subst_var_bskl_inh;
               rewrite subst_pskl_in_pskl_fresh_eq;
-              [ reflexivity | clear - Fr; fsetdec ]).
+              [ reflexivity | clear - Fr; solve_notin_auto ]).
         eapply ad_refine_syn_f_rename_ctx with (Θ1 := nil);
           [ change (nil ++ (α ~ abind_tvar) ++ Θ1)
               with ((α ~ abind_tvar) ++ Θ1); exact Hrsα
-          | simpl; exact Hα1 | clear - Fr; fsetdec | clear - Hα0; fsetdec
+          | simpl; exact Hα1 | clear - Fr; solve_notin_auto | clear - Hα0; fsetdec
           | exact Hdefsα ].
     + simpl. apply ad_refine_pskl_f__all
         with (L := dom Θ1 `union` singleton α
@@ -4900,9 +4900,9 @@ Proof.
                           (pskl_var_f α)) (open_pskl_wrt_pskl Q (pskl_var_f α))).
       { rewrite <- uskl_to_pskl_open. exact Hrpα. }
       rewrite (subst_pskl_in_pskl_intro α (uskl_to_pskl R) (pskl_var_f α0));
-        [ | rewrite ftvar_in_pskl_uskl_to_pskl; clear - Fr; fsetdec ].
+        [ | rewrite ftvar_in_pskl_uskl_to_pskl; clear - Fr; solve_notin_auto ].
       rewrite (subst_pskl_in_pskl_intro α Q (pskl_var_f α0));
-        [ | clear - Fr; fsetdec ].
+        [ | clear - Fr; solve_notin_auto ].
       eapply ad_refine_pskl_f_fmono with (F' := add α Δ2);
         [ clear; fsetdec | ].
       eapply ad_refine_pskl_f_delta_mono;
@@ -5008,7 +5008,7 @@ Proof.
     + exists (bskl_all_inh (close_bskl_wrt_bskl α Qtα)). split.
       { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.
         rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
-          [ reflexivity | clear - Fr; fsetdec ]. }
+          [ reflexivity | clear - Fr; solve_notin_auto ]. }
       split.
       * simpl. apply ad_pat_consis__tophole_inh
           with (L := dom Θ1 `union` singleton α `union` ftvar_in_uskl R).
@@ -5020,7 +5020,7 @@ Proof.
         replace (uskl_tophole R)
           with (subst_uskl_in_uskl (uskl_var_f α0) α (uskl_tophole R))
           by (simpl; rewrite subst_uskl_in_uskl_fresh_eq;
-              [ reflexivity | clear - Fr; fsetdec ]).
+              [ reflexivity | clear - Fr; solve_notin_auto ]).
         change ((α0 ~ abind_tvar) ++ Θ1)
           with (nil ++ (α0 ~ abind_tvar) ++ Θ1).
         eapply ad_pat_consis_rename_tvar;
@@ -5035,7 +5035,7 @@ Proof.
                    (bskl_var_f α0));
           [ | rewrite ftvar_in_bskl_close_bskl_wrt_bskl; clear; fsetdec ].
         rewrite open_bskl_wrt_bskl_close_bskl_wrt_bskl.
-        assert (Hfr0 : α `notin` ftvar_in_pskl P0) by (clear - Fr; fsetdec).
+        assert (Hfr0 : α `notin` ftvar_in_pskl P0) by (clear - Fr; solve_notin_auto).
         rewrite (subst_pskl_in_pskl_intro α P0 (pskl_var_f α0) Hfr0).
         rewrite <- subst_var_bskl_inh.
         eapply ad_refine_syn_f_fmono with (F' := add α Δ1);
@@ -5058,17 +5058,17 @@ Proof.
                    `union` Δ1 `union` Δ2).
       intros α0 Hα0.
       rewrite (subst_pskl_in_pskl_intro α Q (pskl_var_f α0));
-        [ | clear - Fr; fsetdec ].
+        [ | clear - Fr; solve_notin_auto ].
       replace (pskl_tophole (uskl_to_pskl R))
         with (subst_pskl_in_pskl (pskl_var_f α0) α
                 (pskl_tophole (uskl_to_pskl R)))
         by (simpl; rewrite subst_pskl_in_pskl_fresh_eq;
             [ reflexivity
-            | rewrite ftvar_in_pskl_uskl_to_pskl; clear - Fr; fsetdec ]).
+            | rewrite ftvar_in_pskl_uskl_to_pskl; clear - Fr; solve_notin_auto ]).
       eapply ad_refine_pskl_f_rename_ctx with (Θ1 := nil);
         [ change (nil ++ (α ~ abind_tvar) ++ Θ1)
             with ((α ~ abind_tvar) ++ Θ1); exact Hrpα'
-        | simpl; exact Hα1 | clear - Fr; fsetdec | clear - Hα0; fsetdec
+        | simpl; exact Hα1 | clear - Fr; solve_notin_auto | clear - Hα0; fsetdec
         | exact Hdefsα ].
   - (* UnivGhost2 *)
     simpl in HwfS. inversion HlcS; subst.

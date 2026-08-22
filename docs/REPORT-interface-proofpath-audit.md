@@ -374,7 +374,19 @@ ALONE with `-time` produced a completely different picture.
 | `algo/sub/prop_completeness_sub_gen.v` | **108.6 s** | **40.8 s** | **−62%** |
 | `ext_algo/prop_lift.v` | 64 s | — | (next) |
 | `frost/prop_ln.v` | 60 s | — | lngen-GENERATED |
+| `algo/consis/prop_soundness_consis.v` | 47.1 s | 44.7 s | −5% |
+| `algo/consis/prop_completeness_consis.v` | 35.8 s | 33.1 s | −8% |
 | `algo/typing/prop_completeness_typing.v` | 23.0 s | — | |
+
+**Measured total across the four: 309.3 s → 132.5 s (−177 s, −57%).**
+⚙ The two consis files gained only ~5%: the ∉-KIT substitution helps in
+proportion to how big that proof's `Fr` union is, and theirs are far
+smaller than `sub_gen`'s ten-set one.  ⚠️ Their residual 4.5–5.5 s calls
+were NOT located: `coqc -time`'s `Chars` offsets did not align with
+either byte- or character-indexing of the source in that file, so the
+attribution was abandoned rather than guessed at.  To pursue them, tag
+the calls (`time "F<n>" fsetdec`) and read the names back — do not trust
+the offsets.
 
 Both fixes are **−172 s of proof time**, on the two heaviest files, and
 both were four-to-ten instances of ONE shape.
