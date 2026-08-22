@@ -141,9 +141,12 @@ Lemma cap_no_join : forall NM Θ,
   ~ ({{ empty ⨟ Θ ⊢ˢ[ NM | mode_ti ] capR ⩽ capQ }}ad).
 Proof.
   intros NM Θ H. inversion H; subst; try congruence.
-  (* the only row concluding at [mode_ti] is [__infer]; its leaf datum is
-     exactly the refinement refuted above *)
-  eapply cap_no_refine; eassumption.
+  (* the only row concluding at [mode_ti] is [__infer]; the refinement half of
+     its JOIN is exactly the refinement refuted above *)
+  match goal with
+  | Hj : {{ _ ⨟ _ ⊢ˢ _ ∼ᵣ _ }}ad |- _ => destruct Hj as [_ Hr]
+  end.
+  eapply cap_no_refine; exact Hr.
 Qed.
 
 (* ===================================================================== *)

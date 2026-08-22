@@ -108,6 +108,41 @@ structural lemmas mirroring `d_refine_syn`'s (`_weakening`, `_subst_unit`,
 `_same_tvar`) plus the ⇄ bridge in `prop_conserv.v` §5. Full statement, in the
 paper's notation: [`ghost-capture.tex`](ghost-capture.tex).
 
+⭐ **THE TWO ARE NOW ONE RELATION (2026-08-22).** Carrying the presupposition
+as a *separate* premise made it possible, in principle, to insert one without
+the other. It is now a single judgement — **the JOIN** —
+
+```coq
+Definition d_consis_join Ψ Γ R Q :=            (* {{ Ψ ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d  *)
+  {{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d /\ {{ Γ ⨟ nil ⊢ᵣₚ ⌊R⌋ˢ ⊳ ⌊Q⌋ }}d.
+Definition ad_consis_join Ψ Θ R Q :=           (* {{ Ψ ⨟ Θ ⊢ˢ R ∼ᵣ Q }}ad *)
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad /\ {{ Θ ⨟ empty ⊢ᵣₚ ⌊R⌋ˢ ⊳ ⌊Q⌋ }}ad.
+```
+
+(`decl/def_rules.v`, `algo_decl/def_consis_refine.v`) — and it is what all
+eleven consistency-leaf rows take: `d_pat_sub`'s `Infer` / `UnivGhostR` /
+`Arrow`-domain, and `ad_pat_sub` / `ad_pat_sub_fuel`'s `Infer` / `Check` /
+`UnivGhostR` / `Arrow`-domain. The coupling is therefore **structural**, not a
+discipline.
+
+⚙ **WHAT THE MERGE FOUND.** At the SKELETON sort every join insertion is
+coupled with a consistency, as hoped. At the TYPE sort there is nothing to
+couple: `d_consis` (utyp ∼ btyp) carries **no** refinement datum, because there
+are no ghosts at the type sort and refinement there is reflexivity. The single
+place a join is *manufactured* out of a bare consistency is therefore the
+type-sort bridge `d_consis_join_ty` (`algo_decl/prop_conserv.v` §13), whose
+refinement half is `d_consis_refine_ty` — reflexivity, given scope.
+
+⚙ Transport kit for the join (each is its two halves' transports, plus the two
+erasure commutations where the substitution moves): `_weakening`,
+`_subst_unit`, `_same_tvar` (decl); `_mono`, `_isub`, `_weaken`, `_psi_cong`,
+`_subst_mid`, `_subst_flex`, `_subst_flex_def`, `_rename_tvar`,
+`_tyequiv_subject`, `_unfold_def_subject`, `_paint_transport` (algo); and the
+⇄ bridge `ad_consis_join_to_d` / `d_consis_join_to_ad`. The TY rows'
+counterpart is a painting, and `⌊inh B⌋ = B` is a RETRACTION rather than a
+conversion, so those rows go through `ad_consis_join_inh` /
+`ad_consis_join_inh_intro` / `ad_consis_join_inh_refine`.
+
 ⚠️ **Scope: the SKELETON sort only.** Type consistency ranges over types, which
 have no ghosts, so the condition is free there — which is why the TY half of the
 `d` ⇄ `ad` bridge is closed and the SK half is not.

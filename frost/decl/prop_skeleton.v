@@ -282,6 +282,20 @@ Proof.
   - simpl. apply d_pat_consis__tophole_drop. eapply IHd_pat_consis; eauto.
 Qed.
 
+(** The JOIN transports: both halves do, and the two erasures commute with
+    the substitution. *)
+Lemma d_consis_join_subst_unit : forall Δ Γ R Q,
+    {{ Δ ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d ->
+    forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
+    {{ Δ ⨟ (Γ1 ++ Γ2) ⊢ˢ
+      (subst_uskl_in_uskl uskl_unit α R) ∼ᵣ (subst_bskl_in_bskl bskl_unit α Q) }}d.
+Proof.
+  intros Δ Γ R Q [Hc Hr] Γ1 α Γ2 Heq. split.
+  - eapply d_pat_consis_subst_unit; eauto.
+  - rewrite uskl_to_pskl_subst_unit, bskl_to_pskl_subst_unit.
+    eapply d_refine_pskl_subst_unit; eauto.
+Qed.
+
 Lemma d_pat_sub_subst_unit : forall Δ Γ m R Q,
     {{ Δ ⨟ Γ ⊢ˢ[ m ] R ⩽ Q }}d ->
     forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
@@ -290,23 +304,16 @@ Lemma d_pat_sub_subst_unit : forall Δ Γ m R Q,
 Proof.
   intros Δ Γ m R Q H. induction H; intros Γ1 α0 Γ2 Heq; subst.
   - apply d_pat_sub__infer;
-      [ (assumption || fsetdec) | eapply d_pat_consis_subst_unit; eauto
-      | apply is_sskl_subst_unit; assumption
-      | (* the presupposition: the two erasures commute with the substitution *)
-        rewrite uskl_to_pskl_subst_unit, bskl_to_pskl_subst_unit;
-        eapply d_refine_pskl_subst_unit; eauto ].
+      [ (assumption || fsetdec) | eapply d_consis_join_subst_unit; eauto
+      | apply is_sskl_subst_unit; assumption ].
   - simpl. apply d_pat_sub__univ_ghost_r;
       [ (assumption || fsetdec)
       | apply guarded_uskl_subst_unit; assumption
       | apply guarded_bskl_subst_unit; assumption
       | apply is_sskl_subst_unit; assumption
-      | eapply d_pat_consis_subst_unit; eauto
-      | rewrite uskl_to_pskl_subst_unit, bskl_to_pskl_subst_unit;
-        eapply d_refine_pskl_subst_unit; eauto ].
+      | eapply d_consis_join_subst_unit; eauto ].
   - simpl. eapply d_pat_sub__arg;
-      [ eapply d_pat_consis_subst_unit; eauto
-      | rewrite uskl_to_pskl_subst_unit, bskl_to_pskl_subst_unit;
-        eapply d_refine_pskl_subst_unit; eauto
+      [ eapply d_consis_join_subst_unit; eauto
       | eapply IHd_pat_sub; eauto | (eassumption || fsetdec) ].
   - simpl. eapply d_pat_sub__forall_l_tagged with
       (psi := subst_uskl_in_uskl uskl_unit α0 psi);

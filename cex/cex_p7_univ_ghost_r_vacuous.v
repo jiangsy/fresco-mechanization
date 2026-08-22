@@ -149,7 +149,8 @@ Proof.
   - apply guarded_uskl__unit.
   - apply guarded_bskl__unit.
   - apply is_sskl__unit.
-  - apply ad_pat_consis__unit; reflexivity.
-  - cbn. apply ad_refine_pskl__unit.
+  - split.
+    + apply ad_pat_consis__unit; reflexivity.
+    + cbn. apply ad_refine_pskl__unit.
 Qed.
 

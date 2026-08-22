@@ -105,9 +105,11 @@ Section FlexSubjectAtCheck.
   Proof.
     cbn. apply ad_pat_sub__univ_ghost_r;
       [ reflexivity | apply guarded_uskl__unit | apply guarded_bskl__unit
-      | apply is_sskl__unit | apply ad_pat_consis__unit; reflexivity
-      | (* the leaf presupposition, on the rule since 2026-08-12 *)
-        cbn; apply ad_refine_pskl__unit ].
+      | apply is_sskl__unit
+      | split;
+        [ apply ad_pat_consis__unit; reflexivity
+        | (* the leaf presupposition, carried by the join *)
+          cbn; apply ad_refine_pskl__unit ] ].
   Qed.
 
   (** ⭐ … and the [P']-side one EXISTS after all: UnivGhostR takes any
@@ -119,7 +121,8 @@ Section FlexSubjectAtCheck.
   Proof.
     cbn. apply ad_pat_sub__univ_ghost_r;
       [ reflexivity | apply guarded_uskl__var | apply guarded_bskl__unit
-      | apply is_sskl__unit | | ].
+      | apply is_sskl__unit | ].
+    split.
     - apply ad_pat_consis__flex_l with (τ := ptyp_unit);
         [ unfold psTh; eauto | cbn; apply ad_pat_consis__unit; reflexivity ].
     - (* the leaf presupposition: the flexible is reached by refinement's own

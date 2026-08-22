@@ -95,7 +95,8 @@ Proof.
   - cbn [open_uskl_wrt_uskl open_uskl_wrt_uskl_rec].
     change (bskl_var_f β) with (pskl_to_bskl_inh (pskl_var_f β)).
     apply ad_pat_sub_fuel__check;
-      [ apply guarded_uskl__var | apply guarded_pskl__var | | ].
+      [ apply guarded_uskl__var | apply guarded_pskl__var | ].
+    apply ad_consis_join_inh_intro.
     + cbn. apply ad_pat_consis__var; [ clear; fsetdec | left; simpl; auto ].
     + (* the leaf presupposition: subject and counterpart are the SAME rigid *)
       cbn. apply ad_refine_pskl__var. right. unfold a_binds_tvar. eauto.

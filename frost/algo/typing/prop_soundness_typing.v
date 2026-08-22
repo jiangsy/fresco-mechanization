@@ -66,6 +66,16 @@ Require Import src.frost.deco_algo.prop_soundness_sub.
 
 Set Implicit Arguments.
 
+(* ⚙ The four consistency-leaf rows of [ad_pat_sub] carry ONE premise, the
+   JOIN; unpack it where a script consumes the two halves separately. *)
+Local Ltac destr_join :=
+  repeat match goal with
+         | Hj : ad_consis_join _ _ _ _ |- _ =>
+             let Hc := fresh "Hjc" in let Hr := fresh "Hjr" in
+             destruct Hj as [Hc Hr];
+             try rewrite bskl_to_pskl_pskl_to_bskl_inh in Hr
+         end.
+
 (* ===================================================================== *)
 (*  §1  Coercion identities for the INHERITED painting                    *)
 (* ===================================================================== *)
@@ -692,7 +702,7 @@ Proof.
      [ForallR]'s own binder. *)
   intros M Ψ Θ R Q H.
   remember a_sub_mode_ty as NM eqn:HNM.
-  induction H; subst; try discriminate; intros Bt HeqB.
+  induction H; subst; try discriminate; destr_join; intros Bt HeqB.
   - (* infer *)
     apply mod_comp_ty__ti. eapply is_styp_of_btyp_to_bskl; eassumption.
   - (* check *)

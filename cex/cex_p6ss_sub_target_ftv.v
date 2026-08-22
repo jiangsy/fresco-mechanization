@@ -145,12 +145,13 @@ Proof.
     apply ad_pat_sub_fuel__check.
     + apply guarded_uskl__var.
     + apply guarded_pskl__var.
-    + cbn. apply ad_pat_consis__var;
-        [ clear; fsetdec
-        | left; simpl; auto ].
-    + (* the leaf presupposition: subject and counterpart are the SAME rigid,
-         so the refinement is its variable row *)
-      cbn. apply ad_refine_pskl__var. right. unfold a_binds_tvar. eauto.
+    + apply ad_consis_join_inh_intro.
+      * cbn. apply ad_pat_consis__var;
+          [ clear; fsetdec
+          | left; simpl; auto ].
+      * (* the leaf presupposition: subject and counterpart are the SAME rigid,
+           so the refinement is its variable row *)
+        cbn. apply ad_refine_pskl__var. right. unfold a_binds_tvar. eauto.
 Qed.
 
 (** …and the bound the plan wanted is violated. *)

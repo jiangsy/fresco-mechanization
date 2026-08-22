@@ -64,21 +64,13 @@ Inductive ad_pat_sub :
   a_sub_mode -> mode -> atoms -> aenv -> uskl -> bskl -> Prop :=
 | ad_pat_sub__infer : forall NM Ψ Θ R Q,                      (* Infer *)
     Ψ [=] empty ->
-    {{ empty ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
+    {{ empty ⨟ Θ ⊢ˢ R ∼ᵣ Q }}ad ->
     is_sskl Q ->
-    (* ⭐ [paper-gap] THE PRESUPPOSITION OF SKELETON CONSISTENCY at this leaf
-       (declarative.tex:2074), the same premise [d_pat_sub] carries.  Added
-       2026-08-12: until then only the mirror [ad_pat_sub_fuel] had it, so the
-       plain relation and its declarative twin disagreed and the bridge had to
-       run through the mirror.  It is NOT derivable from the consistency
-       premise (cex/cex_ad_pat_join_not_leaf_valid.v). *)
-    {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) }}ad ->
     {{ Ψ ⨟ Θ ⊢ˢ[ NM | mode_ti ] R ⩽ Q }}ad
 | ad_pat_sub__check : forall Ψ Θ T B,                         (* Check (TY) *)
     guarded_uskl T ->
     guarded_pskl B ->
-    {{ Ψ ⨟ Θ ⊢ˢ T ∼ (pskl_to_bskl_inh B) }}ad ->
-    {{ Θ ⨟ empty ⊢ᵣₚ ⌊ T ⌋ˢ ⊳ B }}ad ->
+    {{ Ψ ⨟ Θ ⊢ˢ T ∼ᵣ (pskl_to_bskl_inh B) }}ad ->
     {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_ty | mode_tc ] T ⩽ (pskl_to_bskl_inh B) }}ad
 | ad_pat_sub__forall_r : forall L Ψ Θ T B,                    (* ForallR (TY) *)
     (forall α, α `notin` L ->
@@ -90,13 +82,11 @@ Inductive ad_pat_sub :
     guarded_uskl R ->
     guarded_bskl Q ->
     is_sskl Q ->
-    {{ empty ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
-    {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) }}ad ->
+    {{ empty ⨟ Θ ⊢ˢ R ∼ᵣ Q }}ad ->
     {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_sk | mode_tc ] R ⩽ (bskl_tophole Q) }}ad
 | ad_pat_sub__arrow : forall NM Ψ Ψ1 Ψ2 Θ M R1 R2 Q1 Q2,      (* Arrow *)
-    {{ Ψ1 ⨟ Θ ⊢ˢ R1 ∼ Q1 }}ad ->
-    (* the DOMAIN premise is itself a consistency leaf *)
-    {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R1 ⌋ˢ ⊳ (bskl_to_pskl Q1) }}ad ->
+    (* the DOMAIN premise is itself a consistency leaf, hence a join *)
+    {{ Ψ1 ⨟ Θ ⊢ˢ R1 ∼ᵣ Q1 }}ad ->
     {{ Ψ2 ⨟ Θ ⊢ˢ[ NM | M ] R2 ⩽ Q2 }}ad ->
     Ψ [=] Ψ1 `union` Ψ2 ->
     {{ Ψ ⨟ Θ ⊢ˢ[ NM | mode_fn M ] (uskl_arrow R1 R2) ⩽ (bskl_arrow Q1 Q2) }}ad
@@ -258,15 +248,13 @@ Inductive ad_pat_sub_fuel :
   nat -> a_sub_mode -> mode -> atoms -> aenv -> uskl -> bskl -> Prop :=
 | ad_pat_sub_fuel__infer : forall n NM Ψ Θ R Q,                 (* Infer *)
     Ψ [=] empty ->
-    {{ empty ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
+    {{ empty ⨟ Θ ⊢ˢ R ∼ᵣ Q }}ad ->
     is_sskl Q ->
-    {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) }}ad ->
     ad_pat_sub_fuel n NM mode_ti Ψ Θ R Q
 | ad_pat_sub_fuel__check : forall n Ψ Θ T B,                    (* Check (TY) *)
     guarded_uskl T ->
     guarded_pskl B ->
-    {{ Ψ ⨟ Θ ⊢ˢ T ∼ (pskl_to_bskl_inh B) }}ad ->
-    {{ Θ ⨟ empty ⊢ᵣₚ ⌊ T ⌋ˢ ⊳ B }}ad ->
+    {{ Ψ ⨟ Θ ⊢ˢ T ∼ᵣ (pskl_to_bskl_inh B) }}ad ->
     ad_pat_sub_fuel n a_sub_mode_ty mode_tc Ψ Θ T (pskl_to_bskl_inh B)
 | ad_pat_sub_fuel__forall_r : forall n L Ψ Θ T B,              (* ForallR (TY) *)
     (forall α, α `notin` L ->
@@ -278,15 +266,13 @@ Inductive ad_pat_sub_fuel :
     guarded_uskl R ->
     guarded_bskl Q ->
     is_sskl Q ->
-    {{ empty ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
-    {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) }}ad ->
+    {{ empty ⨟ Θ ⊢ˢ R ∼ᵣ Q }}ad ->
     ad_pat_sub_fuel n a_sub_mode_sk mode_tc Ψ Θ R (bskl_tophole Q)
 | ad_pat_sub_fuel__arrow : forall n NM Ψ Ψ1 Ψ2 Θ M R1 R2 Q1 Q2, (* Arrow *)
-    {{ Ψ1 ⨟ Θ ⊢ˢ R1 ∼ Q1 }}ad ->
     (* the DOMAIN premise is itself a consistency leaf — Sub-Arrow invokes
        thm:complete-consistency on it (:3334), so it carries the same
        subject-refinement data as [__infer] *)
-    {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R1 ⌋ˢ ⊳ (bskl_to_pskl Q1) }}ad ->
+    {{ Ψ1 ⨟ Θ ⊢ˢ R1 ∼ᵣ Q1 }}ad ->
     ad_pat_sub_fuel n NM M Ψ2 Θ R2 Q2 ->
     Ψ [=] Ψ1 `union` Ψ2 ->
     ad_pat_sub_fuel (S n) NM (mode_fn M) Ψ Θ (uskl_arrow R1 R2) (bskl_arrow Q1 Q2)

@@ -597,20 +597,27 @@ Proof.
       [ assumption | apply IHd_refine_pskl; assumption ].
 Qed.
 
+(** The JOIN travels because both of its halves do. *)
+Lemma d_consis_join_same_tvar : forall Ψ Γ R Q,
+    {{ Ψ ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d -> forall Γ', same_tvar Γ Γ' ->
+    {{ Ψ ⨟ Γ' ⊢ˢ R ∼ᵣ Q }}d.
+Proof.
+  intros Ψ Γ R Q [Hc Hr] Γ' Hst. split.
+  - eapply d_pat_consis_same_tvar; eassumption.
+  - eapply d_refine_pskl_same_tvar; eassumption.
+Qed.
+
 Lemma d_pat_sub_same_tvar : forall m Δ Γ R Q,
     {{ Δ ⨟ Γ ⊢ˢ[ m ] R ⩽ Q }}d -> forall Γ', same_tvar Γ Γ' -> {{ Δ ⨟ Γ' ⊢ˢ[ m ] R ⩽ Q }}d.
 Proof.
   intros m Δ Γ R Q H. induction H; intros Γ' Hst.
   - apply d_pat_sub__infer;
-      [ assumption | eapply d_pat_consis_same_tvar; eassumption | assumption
-      | eapply d_refine_pskl_same_tvar; eassumption ].
+      [ assumption | eapply d_consis_join_same_tvar; eassumption | assumption ].
   - apply d_pat_sub__univ_ghost_r;
       [ assumption | assumption | assumption | assumption
-      | eapply d_pat_consis_same_tvar; eassumption
-      | eapply d_refine_pskl_same_tvar; eassumption ].
+      | eapply d_consis_join_same_tvar; eassumption ].
   - eapply d_pat_sub__arg;
-      [ eapply d_pat_consis_same_tvar; eassumption
-      | eapply d_refine_pskl_same_tvar; eassumption
+      [ eapply d_consis_join_same_tvar; eassumption
       | apply IHd_pat_sub; eassumption | eassumption ].
   - eapply d_pat_sub__forall_l_tagged;
       [ eassumption | eassumption | eassumption | eassumption

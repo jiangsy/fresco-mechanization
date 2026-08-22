@@ -106,8 +106,8 @@ Proof.
   subst d0. simpl in Hd. inversion Hd; subst.
   (* at [TI] only [Infer] concludes; its presupposition is the refuted one *)
   inversion Hjoin; subst; try congruence.
-  match goal with Hr : d_refine_pskl _ _ _ _ |- _ =>
-    apply d_refine_pskl_to_ad_closed in Hr end.
+  match goal with Hj : d_consis_join _ _ _ _ |- _ => destruct Hj as [_ Hr] end.
+  apply d_refine_pskl_to_ad_closed in Hr.
   eapply cap_no_refine. rewrite <- cap_erase. eassumption.
 Qed.
 

@@ -138,6 +138,17 @@ Proof.
   - eapply ad_refine_pskl__flex_r; eauto using a_isub_binds_flex_def.
 Qed.
 
+(** The JOIN is stable because both of its halves are. *)
+Lemma ad_consis_join_isub : forall Ψ Θ R Q,
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ᵣ Q }}ad ->
+  forall Θ', Θ ⊴ Θ' ->
+  {{ Ψ ⨟ Θ' ⊢ˢ R ∼ᵣ Q }}ad.
+Proof.
+  intros Ψ Θ R Q [Hc Hr] Θ' Hle. split.
+  - eapply ad_pat_consis_isub; eassumption.
+  - eapply ad_refine_pskl_isub; eassumption.
+Qed.
+
 (* ===================================================================== *)
 (*  §  Term entries survive every run VERBATIM                            *)
 (*                                                                        *)

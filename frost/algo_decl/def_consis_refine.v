@@ -18,6 +18,7 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
+Require Import src.frost.prop_coercions.
 Require Import src.frost.def_shapes.
 Require Import src.frost.decl.def_rules.
 Require Import src.frost.algo.def_rules.
@@ -39,6 +40,12 @@ Reserved Notation "{{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad"
 Reserved Notation "{{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad"
   (at level 0, Δ at level 74, P at level 74, Q at level 74,
    format "'{{'  Θ  ⨟  Δ  ⊢ᵣₚ  P  ⊳  Q  '}}ad'").
+(* ⚙ THE JOIN: consistency AND its refinement presupposition, as one
+   relation.  [ᵣ] is the refinement subscript, as in [⊢ᵣₚ] — the twin of
+   [{{ Ψ ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d] (decl/def_rules.v). *)
+Reserved Notation "{{ Ψ ⨟ Θ ⊢ˢ R ∼ᵣ Q }}ad"
+  (at level 0, Θ at level 74, R at level 74, Q at level 74,
+   format "'{{'  Ψ  ⨟  Θ  ⊢ˢ  R  ∼ᵣ  Q  '}}ad'").
 
 (** Monotype embeddings used by the definition-lookup rules. *)
 Definition ptyp_to_bskl_syn (A : ptyp) : bskl :=
@@ -216,3 +223,73 @@ Inductive ad_refine_pskl : aenv -> atoms -> pskl -> pskl -> Prop :=
     {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ (ptyp_to_pskl τ) }}ad ->
     {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ (pskl_var_f α) }}ad
 where "{{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad" := (ad_refine_pskl Θ Δ P Q) : frost_ad_scope.
+
+(* ===================================================================== *)
+(*  THE JOIN  [{{ Ψ ⨟ Θ ⊢ˢ R ∼ᵣ Q }}ad]                                   *)
+(*                                                                        *)
+(*  Consistency TOGETHER WITH its refinement presupposition — the [ad]    *)
+(*  twin of [d_consis_join] (decl/def_rules.v).  The two never travel     *)
+(*  apart: every consistency premise of [ad_pat_sub] / [ad_pat_sub_fuel]  *)
+(*  is a JOIN, i.e. it also asserts that the subject refines to the       *)
+(*  counterpart it is consistent with.                                    *)
+(*                                                                        *)
+(*  ⭐ [paper-gap] The refinement half is the paper's PRESUPPOSITION of    *)
+(*  skeleton consistency (declarative.tex:2074) and, at a subtyping       *)
+(*  LEAF, the third solution condition of the augmented                   *)
+(*  thm:complete-consistency (consistency-proofs.tex:2230-2242).  It is   *)
+(*  NOT derivable from the consistency half — the capture configuration   *)
+(*  [∀X.◇ ∼ ∀ˢX.X] satisfies one and refutes the other                    *)
+(*  (cex/cex_ad_pat_join_not_leaf_valid.v).                               *)
+(*                                                                        *)
+(*  ⚙ Δ is [empty] BY CONSTRUCTION: the presupposition is always stated   *)
+(*  at the empty ∀-scope, so the combined relation does not expose it.    *)
+(* ===================================================================== *)
+
+Definition ad_consis_join (Ψ : atoms) (Θ : aenv) (R : uskl) (Q : bskl) : Prop :=
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad /\
+  {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) }}ad.
+
+Notation "{{ Ψ ⨟ Θ ⊢ˢ R ∼ᵣ Q }}ad" := (ad_consis_join Ψ Θ R Q) : frost_ad_scope.
+
+(** The two projections and the pairing, so consumers never unfold. *)
+Lemma ad_consis_join_consis : forall Ψ Θ R Q,
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ᵣ Q }}ad -> {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad.
+Proof. intros * [H _]; exact H. Qed.
+
+Lemma ad_consis_join_refine : forall Ψ Θ R Q,
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ᵣ Q }}ad ->
+  {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) }}ad.
+Proof. intros * [_ H]; exact H. Qed.
+
+Lemma ad_consis_join_intro : forall Ψ Θ R Q,
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
+  {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) }}ad ->
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ᵣ Q }}ad.
+Proof. intros; split; assumption. Qed.
+
+(** ⚙ THE [inh] FORM, for the TY rows (Check), whose counterpart is a
+    painted [inh{B}]: [⌊inh{B}⌋ = B] is a RETRACTION, not a conversion, so
+    the refinement half needs one rewrite.  Both directions, so a Check row
+    can be built from and destructed to the [B]-shaped premise. *)
+Lemma ad_consis_join_inh : forall Ψ Θ R B,
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ᵣ (pskl_to_bskl_inh B) }}ad <->
+  ({{ Ψ ⨟ Θ ⊢ˢ R ∼ (pskl_to_bskl_inh B) }}ad /\
+   {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R ⌋ˢ ⊳ B }}ad).
+Proof.
+  intros. unfold ad_consis_join.
+  rewrite bskl_to_pskl_pskl_to_bskl_inh. reflexivity.
+Qed.
+
+Lemma ad_consis_join_inh_intro : forall Ψ Θ R B,
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ (pskl_to_bskl_inh B) }}ad ->
+  {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R ⌋ˢ ⊳ B }}ad ->
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ᵣ (pskl_to_bskl_inh B) }}ad.
+Proof. intros. apply ad_consis_join_inh. split; assumption. Qed.
+
+Lemma ad_consis_join_inh_refine : forall Ψ Θ R B,
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ᵣ (pskl_to_bskl_inh B) }}ad ->
+  {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R ⌋ˢ ⊳ B }}ad.
+Proof. intros * H. apply ad_consis_join_inh in H. destruct H; assumption. Qed.
+
+#[export] Hint Resolve ad_consis_join_intro ad_consis_join_inh_intro : frost.
+#[export] Hint Unfold ad_consis_join : frost.

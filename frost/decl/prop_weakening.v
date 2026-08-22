@@ -188,6 +188,16 @@ Proof.
   - apply d_pat_consis__tophole_drop. eapply IHd_pat_consis; reflexivity.
 Qed.
 
+(** The JOIN weakens because both of its halves do. *)
+Lemma d_consis_join_weakening : forall Γ1 Γ2 Γ3 Δ R Q,
+    {{ Δ ⨟ (Γ1 ++ Γ3) ⊢ˢ R ∼ᵣ Q }}d ->
+    {{ Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ˢ R ∼ᵣ Q }}d.
+Proof.
+  intros * [Hc Hr]. split.
+  - apply d_pat_consis_weakening; assumption.
+  - apply d_refine_pskl_weakening; assumption.
+Qed.
+
 Lemma d_pat_sub_weakening : forall Γ1 Γ2 Γ3 m Δ R Q,
     {{ Δ ⨟ (Γ1 ++ Γ3) ⊢ˢ[ m ] R ⩽ Q }}d ->
     {{ Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ˢ[ m ] R ⩽ Q }}d.
@@ -196,14 +206,11 @@ Proof.
   remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.
   induction H; intros Γ1 Γ3 Heq; subst Γ.
   - apply d_pat_sub__infer;
-      [ assumption | apply d_pat_consis_weakening; assumption | assumption
-      | apply d_refine_pskl_weakening; assumption ].
+      [ assumption | apply d_consis_join_weakening; assumption | assumption ].
   - apply d_pat_sub__univ_ghost_r; try assumption;
-      [ apply d_pat_consis_weakening; assumption
-      | apply d_refine_pskl_weakening; assumption ].
+      apply d_consis_join_weakening; assumption.
   - eapply d_pat_sub__arg;
-      [ apply d_pat_consis_weakening; eassumption
-      | apply d_refine_pskl_weakening; eassumption
+      [ apply d_consis_join_weakening; eassumption
       | eapply IHd_pat_sub; reflexivity
       | eassumption ].
   - eapply d_pat_sub__forall_l_tagged.

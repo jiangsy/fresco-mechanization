@@ -950,11 +950,11 @@ Lemma sub_complete_assemble : forall n NM M Ψ Θ R' Q,
 Proof.
   intros n NM M Ψ Θ R' Q HD.
   induction HD as
-    [ n0 NM0 Ψ0 Θa Ra Qa HΨ Hc Hss Hr
-    | n0 Ψ0 Θa Ta Ba HgT HgB Hc Hr
+    [ n0 NM0 Ψ0 Θa Ra Qa HΨ Hj Hss
+    | n0 Ψ0 Θa Ta Ba HgT HgB Hj
     | n0 La Ψ0 Θa Ta Ba Hfam IHfam
-    | n0 Ψ0 Θa Ra Qa HΨ HgR HgQ Hss Hc Hr
-    | n0 NM0 Ψ0 Ψ1 Ψ2 Θa Ma R1 R2 Q1 Q2 Hc1 Hr1 Hsub2 IH2 HΨ
+    | n0 Ψ0 Θa Ra Qa HΨ HgR HgQ Hss Hj
+    | n0 NM0 Ψ0 Ψ1 Ψ2 Θa Ma R1 R2 Q1 Q2 Hj1 Hsub2 IH2 HΨ
     | n0 NM0 Ψ0 Ψ' Θa Ma εa Rj ψj Qa HM HΨ1 HΨ2 Htg Hwfψ Hsub IHsub
     | n0 NM0 Ψ0 Ψ' Θa Ma Rj ψj Qa HM HΨ1 HΨ2 Htg Hwfψ Hsub IHsub
     | n0 Ψ0 Θa Ma Pa HΨ HwfPa Hmodg
@@ -975,7 +975,7 @@ Proof.
           [ exact Hinc | exact HwfP0 | apply Hmodty; reflexivity
           | exact HgB | exact Hrs ]).
     exact (@a_sub_complete_check n0 Θ0 P0 P R Ta Ψ0 Θa κ Ba
-             HgT HgB Hc Hr HgP0 HwfB
+             HgT HgB Hj HgP0 HwfB
              Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
              HwfQ Hgf).
   - (* __forall_r : the fuel IH plus the row's cofinite family *)
@@ -983,7 +983,7 @@ Proof.
              (Hfuel n0 ltac:(lia)) Hfam).
   - (* __univ_ghost_r *)
     exact (@a_sub_complete_univ_ghost_r n0 Θ0 P0 P R Ra Ψ0 Θa κ Qa
-             HgR HgQ Hc Hr).
+             HgR HgQ Hj).
   - (* __arrow : the ONE row where [R]'s shape is not forced — an arrow, or a
        bare variable whose IMAGE is the arrow (the entry into P7a) *)
     intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ

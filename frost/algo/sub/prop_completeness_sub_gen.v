@@ -97,6 +97,18 @@ Require Import src.frost.algo.prop_swap.                  (* THE SWAP KIT — P7
 
 Set Implicit Arguments.
 
+(* ⚙ The four consistency-leaf rows carry ONE premise, the JOIN; unpack it
+   where a script consumes the two halves separately. *)
+Local Ltac destr_join :=
+  repeat match goal with
+         | Hj : ad_consis_join _ _ _ _ |- _ =>
+             let Hc := fresh "Hjc" in let Hr := fresh "Hjr" in
+             destruct Hj as [Hc Hr];
+             (* the TY rows' counterpart is a painting: [⌊inh B⌋ = B] is a
+                RETRACTION, so normalize it away *)
+             try rewrite bskl_to_pskl_pskl_to_bskl_inh in Hr
+         end.
+
 (** ⚙️ P6-L's guess-scope premise, read off the guess's own
     well-formedness.  A named lemma rather than an inline [rewrite … in …]:
     at one of the two call sites the [⌊·⌋ˢ] is already reduced and the
@@ -323,8 +335,9 @@ Lemma ad_pat_sub_fuel_ti_refine : forall n NM Ψ Θ R Q,
   {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) }}ad.
 Proof.
   intros n NM Ψ Θ R Q H; inversion H; subst; try congruence.
-  (* __infer is closed by [congruence] (the goal IS the rule's premise);
-     the two ghost subjects remain. *)
+  - (* __infer : the refinement half of the row's JOIN *)
+    match goal with Hj : ad_consis_join _ _ _ _ |- _ =>
+      exact (ad_consis_join_refine Hj) end.
   - (* __ghost *)
     cbn. rewrite bskl_to_pskl_pskl_to_bskl_inh.
     apply ad_refine_pskl__hole. assumption.
@@ -351,7 +364,7 @@ Lemma ad_pat_sub_fuel_hole_target_inh : forall n M Ψ Θ Q,
   ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ uskl_hole Q ->
   pskl_to_bskl_inh (bskl_to_pskl Q) = Q.
 Proof.
-  intros n M Ψ Θ Q H; inversion H; subst.
+  intros n M Ψ Θ Q H; inversion H; subst; destr_join.
   - (* __infer *) eapply consis_hole_target_inh; eassumption.
   - (* __univ_ghost_r : [guarded_uskl ◇] is impossible *)
     match goal with Hg : guarded_uskl uskl_hole |- _ => inversion Hg end.
@@ -441,7 +454,7 @@ Lemma ad_pat_sub_fuel_holeg_target_inh : forall n M Ψ Θ Q,
   ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ uskl_holeg Q ->
   pskl_to_bskl_inh (bskl_to_pskl Q) = Q.
 Proof.
-  intros n M Ψ Θ Q H; inversion H; subst.
+  intros n M Ψ Θ Q H; inversion H; subst; destr_join.
   - (* __infer *) eapply ad_pat_consis_holeg_target_inh; eassumption.
   - (* __univ_ghost_r : [guarded_uskl ◈] is impossible *)
     match goal with Hg : guarded_uskl uskl_holeg |- _ => inversion Hg end.
@@ -1019,7 +1032,7 @@ Lemma ad_pat_sub_fuel_ti_consis : forall n NM Ψ Θ R Q,
   ad_pat_sub_fuel n NM mode_ti Ψ Θ R Q ->
   {{ empty ⨟ Θ ⊢ˢ R ∼ Q }}ad.
 Proof.
-  intros n NM Ψ Θ R Q H; inversion H; subst; try congruence;
+  intros n NM Ψ Θ R Q H; inversion H; subst; try congruence; destr_join;
     try assumption;                                       (* __infer *)
     try (apply ad_pat_consis__hole; [ reflexivity | assumption ]);  (* __ghost *)
     try (apply ad_pat_consis__ghostg; reflexivity).                 (* __ghostg *)
@@ -1160,11 +1173,11 @@ Qed.
 Lemma a_sub_complete_univ_ghost_r : forall n Θ0 P0 P R R' Ψ Θ κ Q,
   guarded_uskl R' ->                                            (* row premise *)
   guarded_bskl Q ->                                            (* row premise *)
-  {{ empty ⨟ Θ ⊢ˢ R' ∼ Q }}ad ->                                       (* row premise *)
-  {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R' ⌋ˢ ⊳ (bskl_to_pskl Q) }}ad ->                  (* leaf refinement *)
+  {{ empty ⨟ Θ ⊢ˢ R' ∼ᵣ Q }}ad ->                        (* the row's JOIN *)
   sub_complete_concl n a_sub_mode_sk mode_tc Θ0 P0 P R R' Ψ Θ κ (bskl_tophole Q).
 Proof.
-  intros n Θ0 P0 P R R' Ψ Θ κ Q HgT HgQ Hrow Hrfn.
+  intros n Θ0 P0 P R R' Ψ Θ κ Q HgT HgQ Hj.
+  destruct Hj as [Hrow Hrfn].
   unfold sub_complete_concl.
   intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ Hgf.
   (* the ≡ᵘ slack, erased at the algorithm's input *)
@@ -1248,13 +1261,14 @@ Qed.
 Lemma a_sub_complete_check : forall n Θ0 P0 P R R' Ψ Θ κ B,
   guarded_uskl R' ->                                           (* row premise *)
   guarded_pskl B ->                                           (* row premise *)
-  {{ Ψ ⨟ Θ ⊢ˢ R' ∼ (pskl_to_bskl_inh B) }}ad ->                       (* row premise *)
-  {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R' ⌋ˢ ⊳ B }}ad ->                                (* leaf refinement *)
+  {{ Ψ ⨟ Θ ⊢ˢ R' ∼ᵣ (pskl_to_bskl_inh B) }}ad ->          (* the row's JOIN *)
   guarded_pskl P0 ->                    (* the algorithm's Check/ForallR split *)
   {{ Θ ⨟ empty ⊢ₚₛ B }}a ->                   (* external wf of the counterpart *)
   sub_complete_concl n a_sub_mode_ty mode_tc Θ0 P0 P R R' Ψ Θ κ (pskl_to_bskl_inh B).
 Proof.
-  intros n Θ0 P0 P R R' Ψ Θ κ B HgT HgB Hrow Hrfn HgP0 HwfB.
+  intros n Θ0 P0 P R R' Ψ Θ κ B HgT HgB Hj HgP0 HwfB.
+  pose proof (ad_consis_join_consis Hj) as Hrow.
+  pose proof (ad_consis_join_inh_refine _ Hj) as Hrfn.
   unfold sub_complete_concl.
   intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ Hgf.
   (* the ≡ᵘ slack, erased at the algorithm's input *)
@@ -1415,10 +1429,9 @@ Proof.
   (* the join's last rule is [__arrow]; read its fields off *)
   inversion Hsub; subst.
   match goal with
-  | Hj : {{ _ ⨟ Θ ⊢ˢ R1' ∼ Q1 }}ad,
-    Hlf : {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R1' ⌋ˢ ⊳ _ }}ad,
+  | Hj : {{ _ ⨟ Θ ⊢ˢ R1' ∼ᵣ Q1 }}ad,
     Hs2 : ad_pat_sub_fuel _ _ _ _ Θ R2' Q2 |- _ =>
-      rename Hj into Hj1; rename Hlf into Hrfn1; rename Hs2 into Hsub2
+      rename Hs2 into Hsub2; destruct Hj as [Hj1 Hrfn1]
   end.
   (* P0 is an arrow, and the codomain keeps its mode-compatibility *)
   assert (Hsplit : exists P0a P0b, P0 = pskl_arrow P0a P0b /\
@@ -3085,7 +3098,7 @@ Lemma ad_pat_sub_target_wf : forall NM M Ψ Θ R Qt,
   {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Qt }}ad ->
   a_scope_pskl Θ (bskl_to_pskl Qt).
 Proof.
-  intros NM M Ψ Θ R Qt H; induction H.
+  intros NM M Ψ Θ R Qt H; induction H; destr_join.
   - (* infer *) eapply ad_pat_consis_target_wf; eassumption.
   - (* check *)
     assert (Hc : a_scope_pskl Θ (bskl_to_pskl (pskl_to_bskl_inh B)))
@@ -4955,27 +4968,30 @@ Lemma sub_gv_downarrow_mono : forall n NM M Ψ Θ R Q,
   forall A, R = ptyp_to_uskl_syn A -> mono_ptyp A -> a_wf_ptyp Θ A ->
   ad_pat_sub_fuel n NM M Ψ Θ (ptyp_to_uskl_syn (⇓ᵗ[ Θ ] A)) (⇓ᵇ[ Θ ] Q).
 Proof.
-  intros n NM M Ψ Θ R Q H; induction H; intros Hwf A0 HeqR HmA HwfA.
+  intros n NM M Ψ Θ R Q H; induction H; destr_join;
+    intros Hwf A0 HeqR HmA HwfA.
   - (* infer *)
     assert (Hmd : mono_ptyp (⇓ᵗ[ Θ ] A0))
       by (apply mono_downarrow; [ exact Hwf | exact HwfA | exact HmA ]).
     apply ad_pat_sub_fuel__infer;
       [ assumption
-      | eapply consis_downarrow_mono;
-          [ eassumption | exact Hwf | exact HeqR | exact HmA | exact HwfA ]
+      |
       | apply is_sskl_msubst_bskl;
           [ apply aenv_msubst_lc; exact Hwf
           | intros; apply aenv_msubst_image_mono; exact Hwf
           | assumption ]
-      | ].
-    rewrite uskl_to_pskl_ptyp_to_uskl_syn.
-    rewrite bskl_to_pskl_msubst_bskl.
-    rewrite <- msubst_pskl_embed_ptyp.
-    eapply refine_pskl_downarrow_mono;
-      [ | exact Hwf | | exact HmA | exact HwfA ];
-      [ rewrite <- uskl_to_pskl_ptyp_to_uskl_syn; rewrite <- HeqR;
-        eassumption
-      | reflexivity ].
+      ].
+    split.
+    + eapply consis_downarrow_mono;
+        [ eassumption | exact Hwf | exact HeqR | exact HmA | exact HwfA ].
+    + rewrite uskl_to_pskl_ptyp_to_uskl_syn.
+      rewrite bskl_to_pskl_msubst_bskl.
+      rewrite <- msubst_pskl_embed_ptyp.
+      eapply refine_pskl_downarrow_mono;
+        [ | exact Hwf | | exact HmA | exact HwfA ];
+        [ rewrite <- uskl_to_pskl_ptyp_to_uskl_syn; rewrite <- HeqR;
+          eassumption
+        | reflexivity ].
   - (* check *)
     assert (Hmd : mono_ptyp (⇓ᵗ[ Θ ] A0))
       by (apply mono_downarrow; [ exact Hwf | exact HwfA | exact HmA ]).
@@ -4987,7 +5003,8 @@ Proof.
           [ apply aenv_msubst_lc; exact Hwf
           | intros; apply aenv_msubst_image_mono; exact Hwf
           | assumption ]
-      | | ].
+      |].
+    apply ad_consis_join_inh_intro.
     + rewrite <- (msubst_bskl_pskl_to_bskl_inh (aenv_msubst Θ) B
                     ltac:(intros; apply aenv_msubst_image_mono; exact Hwf)).
       eapply consis_downarrow_mono;
@@ -5032,17 +5049,18 @@ Proof.
           [ apply aenv_msubst_lc; exact Hwf
           | intros; apply aenv_msubst_image_mono; exact Hwf
           | assumption ]
-      | eapply consis_downarrow_mono;
-          [ eassumption | exact Hwf | exact HeqR | exact HmA | exact HwfA ]
       | ].
-    rewrite uskl_to_pskl_ptyp_to_uskl_syn.
-    rewrite bskl_to_pskl_msubst_bskl.
-    rewrite <- msubst_pskl_embed_ptyp.
-    eapply refine_pskl_downarrow_mono;
-      [ | exact Hwf | | exact HmA | exact HwfA ];
-      [ rewrite <- uskl_to_pskl_ptyp_to_uskl_syn; rewrite <- HeqR;
-        eassumption
-      | reflexivity ].
+    split.
+    + eapply consis_downarrow_mono;
+        [ eassumption | exact Hwf | exact HeqR | exact HmA | exact HwfA ].
+    + rewrite uskl_to_pskl_ptyp_to_uskl_syn.
+      rewrite bskl_to_pskl_msubst_bskl.
+      rewrite <- msubst_pskl_embed_ptyp.
+      eapply refine_pskl_downarrow_mono;
+        [ | exact Hwf | | exact HmA | exact HwfA ];
+        [ rewrite <- uskl_to_pskl_ptyp_to_uskl_syn; rewrite <- HeqR;
+          eassumption
+        | reflexivity ].
   - (* arrow.  The two components' equations are read off the FOLDED painting
        ([ptyp_to_uskl_syn_arrow]); [cbn]/[simpl] would unfold it and the
        erasure rewrites below would stop matching. *)
@@ -5059,7 +5077,8 @@ Proof.
     change (⇓ᵇ[ Θ ] (bskl_arrow Q1 Q2))
       with (bskl_arrow (⇓ᵇ[ Θ ] Q1) (⇓ᵇ[ Θ ] Q2)).
     apply ad_pat_sub_fuel__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
-      [ | | | assumption ].
+      [| | assumption ].
+    split.
     + eapply consis_downarrow_mono;
         [ eassumption | exact Hwf | reflexivity | assumption | assumption ].
     + rewrite uskl_to_pskl_ptyp_to_uskl_syn.
@@ -5107,7 +5126,8 @@ Lemma sub_gv_bskl_downarrow_mono_scoped : forall n NM M Ψ Θ R Q,
     ftvar_in_ptyp (⇓ᵗ[ Θ ] A) [<=] D ->
     ftvar_in_bskl (⇓ᵇ[ Θ ] Q) [<=] D.
 Proof.
-  intros n NM M Ψ Θ R Q H; induction H; intros Hwf A0 D HeqR HmA HAD.
+  intros n NM M Ψ Θ R Q H; induction H; destr_join;
+    intros Hwf A0 D HeqR HmA HAD.
   - (* infer : the consistency premise pins Q *)
     eapply consis_bskl_downarrow_mono_scoped;
       [ eassumption | exact Hwf | exact HeqR | exact HmA | exact HAD ].
@@ -5143,7 +5163,7 @@ Proof.
     destruct Hγ as [h | h].
     + assert (h1 : ftvar_in_bskl (⇓ᵇ[ Θ ] Q1) [<=] D).
       { eapply consis_bskl_downarrow_mono_scoped with (A := A1);
-          [ exact H | exact Hwf | reflexivity | assumption
+          [ eassumption | exact Hwf | reflexivity | assumption
           | clear - HAD; fsetdec ]. }
       clear - h1 h; fsetdec.
     + refine (IHad_pat_sub_fuel Hwf A2 D eq_refl _ _ γ h);
@@ -5341,12 +5361,13 @@ Lemma ad_pat_sub_fuel_mono_strengthen : forall n NM M Ψ Θ R Q,
   (forall γ, γ `in` ftvar_in_bskl Q -> γ `in` dom Θ') ->
   ad_pat_sub_fuel n NM M Ψ Θ' R Q.
 Proof.
-  intros n NM M Ψ Θ R Q H; induction H;
+  intros n NM M Ψ Θ R Q H; induction H; destr_join;
     intros τ0 HeqR Hm Θ' Hu Hwf' Hsub HscR HscQ;
     pose proof (ftvar_ptyp_to_uskl_syn τ0) as HftvR;
     rewrite <- HeqR in HftvR.
   - (* infer *)
     apply ad_pat_sub_fuel__infer; try assumption.
+    split.
     + eapply ad_pat_consis_strengthen; try eassumption;
         intros γ Hγ;
         solve [ apply HscR; clear - Hγ HftvR; fsetdec
@@ -5361,6 +5382,7 @@ Proof.
                 clear - Hγ; fsetdec ].
   - (* check *)
     apply ad_pat_sub_fuel__check; try assumption.
+    apply ad_consis_join_inh_intro.
     + eapply ad_pat_consis_strengthen; try eassumption;
         intros γ Hγ;
         solve [ apply HscR; clear - Hγ HftvR; fsetdec
@@ -5391,6 +5413,7 @@ Proof.
     clear - h; fsetdec.
   - (* univ_ghost_r *)
     apply ad_pat_sub_fuel__univ_ghost_r; try assumption.
+    split.
     + eapply ad_pat_consis_strengthen; try eassumption;
         intros γ Hγ;
         solve [ apply HscR; clear - Hγ HftvR; fsetdec
@@ -5407,19 +5430,20 @@ Proof.
   - (* arrow *)
     destruct τ0; cbn in HeqR; try discriminate HeqR.
     inversion HeqR; subst. inversion Hm; subst.
-    eapply ad_pat_sub_fuel__arrow; [ | | | eassumption ].
-    + eapply ad_pat_consis_strengthen; try eassumption.
-      * intros γ Hγ. apply HscR. simpl. simpl in HftvR.
-        clear - Hγ HftvR. fsetdec.
-      * intros γ Hγ. apply HscQ. simpl. clear - Hγ. fsetdec.
-    + eapply ad_refine_pskl_strengthen;
-        [ eassumption | exact Hu | exact Hwf' | exact Hsub
-        | intros x Hx; exfalso; clear - Hx; fsetdec | | ].
-      * intros γ Hγ. right. apply HscR. simpl.
-        rewrite ftvar_in_pskl_uskl_to_pskl in Hγ.
-        simpl in HftvR. clear - Hγ HftvR. fsetdec.
-      * intros γ Hγ. right. apply HscQ. simpl.
-        rewrite ftvar_bskl_to_pskl in Hγ. clear - Hγ. fsetdec.
+    eapply ad_pat_sub_fuel__arrow; [ | | eassumption ].
+    + split.
+      * eapply ad_pat_consis_strengthen; try eassumption.
+        -- intros γ Hγ. apply HscR. simpl. simpl in HftvR.
+           clear - Hγ HftvR. fsetdec.
+        -- intros γ Hγ. apply HscQ. simpl. clear - Hγ. fsetdec.
+      * eapply ad_refine_pskl_strengthen;
+          [ eassumption | exact Hu | exact Hwf' | exact Hsub
+          | intros x Hx; exfalso; clear - Hx; fsetdec | | ].
+        -- intros γ Hγ. right. apply HscR. simpl.
+           rewrite ftvar_in_pskl_uskl_to_pskl in Hγ.
+           simpl in HftvR. clear - Hγ HftvR. fsetdec.
+        -- intros γ Hγ. right. apply HscQ. simpl.
+           rewrite ftvar_bskl_to_pskl in Hγ. clear - Hγ. fsetdec.
     + eapply IHad_pat_sub_fuel;
         [ reflexivity | assumption | exact Hu | exact Hwf' | exact Hsub | | ].
       * intros γ Hγ. apply HscR. simpl. simpl in HftvR.

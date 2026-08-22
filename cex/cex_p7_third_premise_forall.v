@@ -169,8 +169,9 @@ Proof.
     apply ad_pat_sub_fuel__check.
     + apply guarded_uskl__unit.
     + apply guarded_pskl__unit.
-    + cbn. apply ad_pat_consis__unit. clear; fsetdec.
-    + cbn. apply ad_refine_pskl__unit.
+    + apply ad_consis_join_inh_intro.
+      * cbn. apply ad_pat_consis__unit. clear; fsetdec.
+      * cbn. apply ad_refine_pskl__unit.
 Qed.
 
 Lemma cexR_join_fuel : forall n,
@@ -184,7 +185,8 @@ Proof.
   apply ad_pat_sub_fuel__check.
   - apply guarded_uskl__unit.
   - apply guarded_pskl__unit.
-  - cbn. apply ad_pat_consis__unit. clear; fsetdec.
-  - cbn. apply ad_refine_pskl__unit.
+  - apply ad_consis_join_inh_intro.
+    + cbn. apply ad_pat_consis__unit. clear; fsetdec.
+    + cbn. apply ad_refine_pskl__unit.
 Qed.
 

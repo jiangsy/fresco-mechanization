@@ -634,6 +634,23 @@ Proof.
   intros Γ P Q H. exact (d_refine_pskl_to_ad Γ nil P Q H empty delta_agree_nil).
 Qed.
 
+(** The JOIN crosses in both directions, because both of its halves do. *)
+Lemma ad_consis_join_to_d : forall Ψ Θ R Q,
+  ad_consis_join Ψ Θ R Q -> forall Γ, Θ = denv_to_aenv Γ -> d_consis_join Ψ Γ R Q.
+Proof.
+  intros Ψ Θ R Q [Hc Hr] Γ0 HΘ; subst. split.
+  - exact (ad_pat_consis_to_d Ψ (denv_to_aenv Γ0) R Q Hc Γ0 eq_refl).
+  - apply ad_refine_pskl_to_d_closed; assumption.
+Qed.
+
+Lemma d_consis_join_to_ad : forall Ψ Γ R Q,
+  d_consis_join Ψ Γ R Q -> ad_consis_join Ψ (denv_to_aenv Γ) R Q.
+Proof.
+  intros Ψ Γ R Q [Hc Hr]. split.
+  - apply d_pat_consis_to_ad; assumption.
+  - apply d_refine_pskl_to_ad_closed; assumption.
+Qed.
+
 (* ===================================================================== *)
 (*  §6  THE ForallL INSTANTIATION.  Both systems require the instantiated *)
 (*  ψ to be well-scoped and tagged, but they say it in different sorts:   *)
@@ -803,16 +820,13 @@ Proof.
     try discriminate HNM; subst.
   - (* Infer *) apply d_pat_sub__infer;
       [ assumption
-      | exact (ad_pat_consis_to_d empty (denv_to_aenv Γ0) R Q H0 Γ0 eq_refl)
-      | assumption
-      | apply ad_refine_pskl_to_d_closed; assumption ].
+      | eapply ad_consis_join_to_d; [ exact H0 | reflexivity ]
+      | assumption ].
   - (* UnivGhostR *) apply d_pat_sub__univ_ghost_r;
       [ assumption | assumption | assumption | assumption
-      | exact (ad_pat_consis_to_d empty (denv_to_aenv Γ0) R Q H3 Γ0 eq_refl)
-      | apply ad_refine_pskl_to_d_closed; assumption ].
+      | eapply ad_consis_join_to_d; [ exact H3 | reflexivity ] ].
   - (* Arrow *) apply d_pat_sub__arg with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
-      [ exact (ad_pat_consis_to_d Ψ1 (denv_to_aenv Γ0) R1 Q1 H Γ0 eq_refl)
-      | apply ad_refine_pskl_to_d_closed; assumption
+      [ eapply ad_consis_join_to_d; [ exact H | reflexivity ]
       | exact (IHad_pat_sub eq_refl Γ0 eq_refl) | assumption ].
   - (* ForallL, tagged *) inversion H2; subst.
     apply d_pat_sub__forall_l_tagged with (Ψ' := Ψ') (psi := ψ);
@@ -858,15 +872,12 @@ Lemma d_pat_sub_to_ad : forall M Ψ Γ R Q,
 Proof.
   intros M Ψ Γ R Q H; induction H.
   - apply ad_pat_sub__infer;
-      [ assumption | apply d_pat_consis_to_ad; assumption | assumption
-      | apply d_refine_pskl_to_ad_closed; assumption ].
+      [ assumption | apply d_consis_join_to_ad; assumption | assumption ].
   - apply ad_pat_sub__univ_ghost_r;
       [ assumption | assumption | assumption | assumption
-      | apply d_pat_consis_to_ad; assumption
-      | apply d_refine_pskl_to_ad_closed; assumption ].
+      | apply d_consis_join_to_ad; assumption ].
   - apply ad_pat_sub__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
-      [ apply d_pat_consis_to_ad; assumption
-      | apply d_refine_pskl_to_ad_closed; assumption
+      [ apply d_consis_join_to_ad; assumption
       | assumption | assumption ].
   - apply ad_pat_sub__forall_l_tagged with (Ψ' := Ψ') (ψ := psi);
       [ assumption | assumption | assumption
@@ -995,7 +1006,8 @@ Proof.
     try discriminate HNM; subst.
   - (* Infer *) apply d_sub__infer;
       [ exact (ad_pat_consis_ty_to_d empty (denv_to_aenv Γ0) (utyp_to_uskl C0)
-                 (btyp_to_bskl B0) H0 Γ0 eq_refl C0 B0 eq_refl eq_refl)
+                 (btyp_to_bskl B0) (ad_consis_join_consis H0)
+                 Γ0 eq_refl C0 B0 eq_refl eq_refl)
       | exact (is_styp_of_btyp_to_bskl (btyp_to_bskl B0) H1 B0 eq_refl)
       | assumption ].
   - (* Check *)
@@ -1004,8 +1016,9 @@ Proof.
       [ apply guarded_utyp_of_guarded_uskl_incl; exact H
       | exact Hgb
       | exact (ad_pat_consis_ty_to_d Ψ (denv_to_aenv Γ0) (utyp_to_uskl C0)
-                 (btyp_to_bskl B0) ltac:(rewrite <- HQ; exact H1) Γ0 eq_refl
-                 C0 B0 eq_refl eq_refl)
+                 (btyp_to_bskl B0)
+                 ltac:(rewrite <- HQ; exact (ad_consis_join_consis H1))
+                 Γ0 eq_refl C0 B0 eq_refl eq_refl)
       | exact Hi ].
   - (* ForallR *) destruct B0; simpl in HQ; try discriminate HQ.
     inversion HQ; subst.
@@ -1024,7 +1037,8 @@ Proof.
     inversion HR; inversion HQ; subst.
     apply d_sub__arg with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
       [ exact (ad_pat_consis_ty_to_d Ψ1 (denv_to_aenv Γ0) (utyp_to_uskl C0_1)
-                 (btyp_to_bskl B0_1) H Γ0 eq_refl C0_1 B0_1 eq_refl eq_refl)
+                 (btyp_to_bskl B0_1) (ad_consis_join_consis H)
+                 Γ0 eq_refl C0_1 B0_1 eq_refl eq_refl)
       | exact (IHad_pat_sub eq_refl Γ0 eq_refl C0_2 B0_2 eq_refl eq_refl)
       | assumption ].
   - (* ForallL, tagged *)
@@ -1666,6 +1680,23 @@ Proof.
            (d_wf_uskl_incl Γ C H) empty delta_agree_nil).
 Qed.
 
+(** ⭐ THE TYPE SORT HAS NO DECLARATIVE JOIN OF ITS OWN: [d_consis] carries no
+    refinement datum (there are no holes at the type sort, so there is nothing
+    for refinement to fill).  The bridge MANUFACTURES the [ad] half — the
+    refinement is REFLEXIVE at a type, given scope — so the join is
+    [d_consis_to_ad] paired with [d_consis_refine_ty].  This is the one place
+    in the tree where a join is built from a consistency that did not come
+    with one. *)
+Lemma d_consis_join_ty : forall Ψ Γ C B,
+  {{ Ψ ⨟ Γ ⊢ C ∼ B }}d ->
+  {{ (denv_to_aenv Γ) ⨟ empty ⊢ₚₛ (uskl_to_pskl (utyp_to_uskl C)) }}a ->
+  {{ Ψ ⨟ (denv_to_aenv Γ) ⊢ˢ (utyp_to_uskl C) ∼ᵣ (btyp_to_bskl B) }}ad.
+Proof.
+  intros Ψ Γ C B Hc Hwf. split.
+  - apply d_consis_to_ad; assumption.
+  - eapply d_consis_refine_ty; eassumption.
+Qed.
+
 (** ⚙ The [d_wf_utyp] premise is new with the leaf presupposition
     (2026-08-12): §14's leaf rows now owe the refinement, and
     [d_consis_refine_ty] discharges it by reflexivity given SCOPE.  It is the
@@ -1679,10 +1710,10 @@ Lemma d_sub_to_ad : forall M Ψ Γ C B,
 Proof.
   intros M Ψ Γ C B H; induction H; intros Hwf; simpl.
   - (* infer *) apply ad_pat_sub__infer;
-      [ assumption | apply d_consis_to_ad; assumption
-      | apply is_sskl_of_is_styp; assumption
-      | eapply d_consis_refine_ty;
-          [ eassumption | apply a_wf_pskl_of_d_wf_utyp; assumption ] ].
+      [ assumption
+      | eapply d_consis_join_ty;
+          [ eassumption | apply a_wf_pskl_of_d_wf_utyp; assumption ]
+      | apply is_sskl_of_is_styp; assumption ].
   - (* check *)
     destruct (guarded_ityp_inh_paint B ltac:(assumption) ltac:(assumption))
       as [ Heq Hgp ].
@@ -1690,7 +1721,8 @@ Proof.
        ALSO what [d_consis_refine_ty] concludes over — so the leaf premise is
        that lemma verbatim, with no retraction step. *)
     rewrite Heq. apply ad_pat_sub__check;
-      [ apply guarded_uskl_incl; assumption | exact Hgp | | ].
+      [ apply guarded_uskl_incl; assumption | exact Hgp | ].
+    apply ad_consis_join_inh_intro.
     + rewrite <- Heq. apply d_consis_to_ad; assumption.
     + eapply d_consis_refine_ty;
         [ eassumption | apply a_wf_pskl_of_d_wf_utyp; assumption ].
@@ -1703,8 +1735,7 @@ Proof.
   - (* arg *)
     inversion Hwf; subst.
     apply ad_pat_sub__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
-      [ apply d_consis_to_ad; assumption
-      | eapply d_consis_refine_ty;
+      [ eapply d_consis_join_ty;
           [ eassumption | apply a_wf_pskl_of_d_wf_utyp; assumption ]
       | apply IHd_sub; assumption
       | assumption ].

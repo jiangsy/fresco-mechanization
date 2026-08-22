@@ -1548,6 +1548,10 @@ Proof.
   all: match goal with
        | Hx : forall x b, binds x b ?S -> binds x b _ |- _ =>
          repeat match goal with
+         | H : {{ _ ⨟ S ⊢ˢ _ ∼ᵣ _ }}ad |- _ =>
+             let H' := fresh "Hw" in
+             pose proof (ad_consis_join_weaken H _ Hx) as H';
+             clear H; rename H' into H
          | H : {{ _ ⨟ S ⊢ˢ _ ∼ _ }}ad |- _ =>
              let H' := fresh "Hw" in
              pose proof (ad_pat_consis_weaken H _ Hx) as H';
@@ -1619,7 +1623,7 @@ Proof.
                 Ψi Ψa Ψ T ψa (pskl_to_bskl_inh B) Pi P0
                 HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfPi HwfP0 Hκ Hκw Hrho Htags
                 ltac:(clear - Htageq; solve_notin_auto) Hinter Hrhof Hdelta Hapart
-                Hdfresh Hpre HΨs1 HΨs2 H1
+                Hdfresh Hpre HΨs1 HΨs2 (ad_consis_join_consis H1)
                 Hrefine Lav HLav)
       as (Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hp).
     (* the paper's [Θ0 ⊢ P_a] for this row — at [Ξ ++ Θ0] now, since the
@@ -1962,7 +1966,8 @@ Proof.
        IH.  Tags split by [arrow_tag_split]; the per-branch flow facts are
        P6-Cv's own arrow recipe ([ad_pat_sub_fuel_ftag_sub] /
        [ad_pat_consis_ftag_sub] + [uskl_rsubst_ftag_sub] + [d_tags_skl_ftag]). *)
-    match goal with Hc : {{ _ ⨟ Θ ⊢ˢ R1 ∼ Q1 }}ad |- _ => rename Hc into Hcons end.
+    match goal with Hj : {{ _ ⨟ Θ ⊢ˢ R1 ∼ᵣ Q1 }}ad |- _ =>
+      pose proof (ad_consis_join_consis Hj) as Hcons end.
     match goal with Hu : Ψ [=] _ `union` _ |- _ => rename Hu into Hun end.
     assert (HP0 : exists P01 P02, P0 = pskl_arrow P01 P02 /\
                     (NM = a_sub_mode_sk -> a_sk_mode_compat M P02) /\

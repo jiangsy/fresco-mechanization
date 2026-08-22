@@ -56,6 +56,12 @@ Reserved Notation "{{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}d"
 Reserved Notation "{{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d"
   (at level 0, Γ at level 74, R at level 74, Q at level 74,
    format "'{{'  Ψ  ⨟  Γ  ⊢ˢ  R  ∼  Q  '}}d'").
+(* ⚙ THE JOIN: consistency AND its refinement presupposition, as one
+   relation.  [ᵣ] is the refinement subscript, as in [⊢ᵣₚ] — cf. the same
+   pair under [}}ad] *)
+Reserved Notation "{{ Ψ ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d"
+  (at level 0, Γ at level 74, R at level 74, Q at level 74,
+   format "'{{'  Ψ  ⨟  Γ  ⊢ˢ  R  ∼ᵣ  Q  '}}d'").
 Reserved Notation "{{ Ψ ⨟ Γ ⊢ˢ[ M ] R ⩽ Q }}d"
   (at level 0, Γ at level 74, M at level 0, R at level 74, Q at level 74,
    format "'{{'  Ψ  ⨟  Γ  ⊢ˢ[  M  ]  R  ⩽  Q  '}}d'").
@@ -564,23 +570,63 @@ Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
     {{ Ψ ⨟ Γ ⊢ˢ (uskl_tophole R) ∼ Q }}d
 where "{{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d" := (d_pat_consis Ψ Γ R Q) : frost_d_scope.
 
+(* ===================================================================== *)
+(*  THE JOIN  [{{ Ψ ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d]                                    *)
+(*                                                                        *)
+(*  Consistency TOGETHER WITH its refinement presupposition.  The two     *)
+(*  never travel apart: every consistency premise in the system below is  *)
+(*  a JOIN, i.e. it also asserts that the subject refines to the          *)
+(*  counterpart it is consistent with.                                    *)
+(*                                                                        *)
+(*  ⭐ [paper-gap] THE PRESUPPOSITION OF SKELETON CONSISTENCY,             *)
+(*  transcribed.  declarative.tex:2074 says, in prose, that skeleton      *)
+(*  consistency requires well-formedness of syn{S} and bid{P} under Γ AS  *)
+(*  WELL AS the refinement judgement Γ ⊢ ⌊S⌋ ⊳ P.                         *)
+(*  It is NOT derivable from the                                          *)
+(*  consistency rules: they put a ∀-bound rigid into Γ, refinement puts   *)
+(*  it into Δ and forbids a ghost's fill to mention Δ, so the rules alone *)
+(*  admit the CAPTURE ∀X.◇ ∼ ∀ˢX.X that refinement rejects                *)
+(*  (cex/cex_ad_pat_join_not_leaf_valid.v).  The [ad] side has carried it *)
+(*  since 2026-08-07 ([ad_pat_sub_fuel]); this is the declarative twin,   *)
+(*  and until it was added the two systems disagreed                      *)
+(*  (cex/cex_d_pat_bridges_false.v).  docs/ghost-capture.tex.             *)
+(*                                                                        *)
+(*  ⚙ Δ is [nil] BY CONSTRUCTION — the presupposition is always stated at *)
+(*  the empty ∀-scope, so the combined relation does not expose it.       *)
+(* ===================================================================== *)
+
+Definition d_consis_join (Ψ : atoms) (Γ : list (atom * dbind))
+                         (R : uskl) (Q : bskl) : Prop :=
+  {{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d /\
+  {{ Γ ⨟ nil ⊢ᵣₚ (uskl_to_pskl R) ⊳ (bskl_to_pskl Q) }}d.
+
+Notation "{{ Ψ ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d" := (d_consis_join Ψ Γ R Q) : frost_d_scope.
+
+(** The two projections and the pairing, so consumers never unfold. *)
+Lemma d_consis_join_consis : forall Ψ Γ R Q,
+  {{ Ψ ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d -> {{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d.
+Proof. intros * [H _]; exact H. Qed.
+
+Lemma d_consis_join_refine : forall Ψ Γ R Q,
+  {{ Ψ ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d ->
+  {{ Γ ⨟ nil ⊢ᵣₚ (uskl_to_pskl R) ⊳ (bskl_to_pskl Q) }}d.
+Proof. intros * [_ H]; exact H. Qed.
+
+Lemma d_consis_join_intro : forall Ψ Γ R Q,
+  {{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d ->
+  {{ Γ ⨟ nil ⊢ᵣₚ (uskl_to_pskl R) ⊳ (bskl_to_pskl Q) }}d ->
+  {{ Ψ ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d.
+Proof. intros; split; assumption. Qed.
+
+#[export] Hint Resolve d_consis_join_intro : frost.
+#[export] Hint Unfold d_consis_join : frost.
+
 Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
 | d_pat_sub__infer : forall Ψ Γ R Q,
     (* Paper [Infer]: synthesise by consistency, dropping tags. *)
     Ψ [=] empty ->
-    {{ empty ⨟ Γ ⊢ˢ R ∼ Q }}d ->
+    {{ empty ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d ->
     is_sskl Q ->
-    (* ⭐ [paper-gap] THE PRESUPPOSITION OF SKELETON CONSISTENCY, transcribed.
-       declarative.tex:2074 — *"skeleton consistency requires well-formedness of
-       syn{S} and bid{P} under Γ AS WELL AS the refinement judgement
-       Γ ⊢ ⌊S⌋ ⊳ P"*.  It is NOT derivable from the consistency rules: they put
-       a ∀-bound rigid into Γ, refinement puts it into Δ and forbids a ghost's
-       fill to mention Δ, so the rules alone admit the CAPTURE ∀X.◇ ∼ ∀ˢX.X
-       that refinement rejects (cex/cex_ad_pat_join_not_leaf_valid.v).  The
-       [ad] side has carried it since 2026-08-07 ([ad_pat_sub_fuel]); this is the
-       declarative twin, and until it was added the two systems disagreed
-       (cex/cex_d_pat_bridges_false.v).  docs/ghost-capture.tex. *)
-    {{ Γ ⨟ nil ⊢ᵣₚ (uskl_to_pskl R) ⊳ (bskl_to_pskl Q) }}d ->
     {{ Ψ ⨟ Γ ⊢ˢ[ mode_ti ] R ⩽ Q }}d
 | d_pat_sub__univ_ghost_r : forall Γ R Q,
     (* Paper [UnivGhostR] (replaces the out-of-sync [check]; WT review):
@@ -593,17 +639,14 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     guarded_uskl R ->
     guarded_bskl Q ->
     is_sskl Q ->
-    {{ empty ⨟ Γ ⊢ˢ R ∼ Q }}d ->
-    (* the presupposition, at the STRIPPED counterpart [Q] — the [∀◇] the rule
-       adds is the conclusion's, not the consistency premise's *)
-    {{ Γ ⨟ nil ⊢ᵣₚ (uskl_to_pskl R) ⊳ (bskl_to_pskl Q) }}d ->
+    (* the join is at the STRIPPED counterpart [Q] — the [∀◇] the rule adds is
+       the conclusion's, not the consistency premise's *)
+    {{ empty ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d ->
     {{ Ψ ⨟ Γ ⊢ˢ[ mode_tc ] R ⩽ (bskl_tophole Q) }}d
 | d_pat_sub__arg : forall Ψ Ψ1 Ψ2 Γ m R1 R2 Q1 Q2,
-    (* Paper [Arrow]: set-union tag context. *)
-    {{ Ψ1 ⨟ Γ ⊢ˢ R1 ∼ Q1 }}d ->
-    (* the DOMAIN premise is a consistency judgement, so it carries the
-       presupposition too *)
-    {{ Γ ⨟ nil ⊢ᵣₚ (uskl_to_pskl R1) ⊳ (bskl_to_pskl Q1) }}d ->
+    (* Paper [Arrow]: set-union tag context.  The DOMAIN premise is a
+       consistency judgement, hence a join. *)
+    {{ Ψ1 ⨟ Γ ⊢ˢ R1 ∼ᵣ Q1 }}d ->
     {{ Ψ2 ⨟ Γ ⊢ˢ[ m ] R2 ⩽ Q2 }}d ->
     Ψ [=] Ψ1 `union` Ψ2 ->
     {{ Ψ ⨟ Γ ⊢ˢ[ mode_fn m ] (uskl_arrow R1 R2) ⩽ (bskl_arrow Q1 Q2) }}d

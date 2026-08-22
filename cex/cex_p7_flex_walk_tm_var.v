@@ -231,13 +231,15 @@ Lemma tm_var_join :
 Proof.
   unfold R'w, Qw.
   eapply ad_pat_sub_fuel__arrow with (Ψ1 := empty) (Ψ2 := empty);
-    [ apply ad_pat_consis__unit; clear; fsetdec
-    | simpl; apply ad_refine_pskl__unit
+    [ split;
+        [ apply ad_pat_consis__unit; clear; fsetdec
+        | simpl; apply ad_refine_pskl__unit ]
     | apply ad_pat_sub_fuel__infer;
         [ clear; fsetdec
-        | apply ad_pat_consis__unit; clear; fsetdec
-        | apply is_sskl__unit
-        | simpl; apply ad_refine_pskl__unit ]
+        | split;
+            [ apply ad_pat_consis__unit; clear; fsetdec
+            | simpl; apply ad_refine_pskl__unit ]
+        | apply is_sskl__unit ]
     | clear; fsetdec ].
 Qed.
 

@@ -917,6 +917,26 @@ Proof.
   intros α Hα. apply Hfv. simpl. clear - Hα; fsetdec.
 Qed.
 
+(** The JOIN transports: both halves do, and the two erasures commute with
+    the (monotype) substitution. *)
+Lemma ad_consis_join_subst_mid : forall Ψ Θ R Q,
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ᵣ Q }}ad ->
+  forall τs α0 (b : abind) Θa Θ0,
+  Θ = Θa ++ (α0 ~ b) ++ Θ0 ->
+  solves_flex τs α0 b Θ0 ->
+  uniq (Θa ++ (α0 ~ b) ++ Θ0) ->
+  {{ Ψ ⨟ (subst_aenv τs α0 (Θa ++ Θ0))
+    ⊢ˢ (subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0 R)
+      ∼ᵣ (subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 Q) }}ad.
+Proof.
+  intros Ψ Θ R Q [Hc Hr] τs α0 b Θa Θ0 Heq Hs Hu. split.
+  - eapply ad_pat_consis_subst_mid;
+      [ exact Hc | exact Heq | exact Hs | exact Hu ].
+  - rewrite uskl_to_pskl_subst_mono, bskl_to_pskl_subst_mono.
+    eapply ad_refine_pskl_subst_mid;
+      [ exact Hr | exact Heq | exact Hs | exact Hu | clear; fsetdec ].
+Qed.
+
 (* ===================================================================== *)
 (*  §8  All-in-one subtyping, in the SUBSTITUTED-CONTEXT form            *)
 (* ===================================================================== *)
@@ -937,13 +957,9 @@ Proof.
   - (* infer *)
     apply ad_pat_sub__infer;
       [ assumption
-      | eapply ad_pat_consis_subst_mid; [ eassumption | reflexivity | .. ];
+      | eapply ad_consis_join_subst_mid; [ eassumption | reflexivity | .. ];
         eassumption
-      | apply is_sskl_subst_mono; assumption
-      | rewrite uskl_to_pskl_subst_mono, bskl_to_pskl_subst_mono;
-        eapply ad_refine_pskl_subst_mid;
-          [ eassumption | reflexivity | exact Hs | exact Hu
-          | clear; fsetdec ] ].
+      | apply is_sskl_subst_mono; assumption ].
   - (* check (TY) *)
     rewrite pskl_to_bskl_inh_subst_mono; [ | assumption ].
     apply ad_pat_sub__check;
@@ -952,12 +968,8 @@ Proof.
           [ assumption | apply mono_ptyp_to_pskl_guarded; assumption
           | apply ptyp_to_pskl_lc; apply mono_ptyp_lc; assumption ]
       | rewrite <- pskl_to_bskl_inh_subst_mono; [ | assumption ];
-        eapply ad_pat_consis_subst_mid; [ eassumption | reflexivity | .. ];
-        eassumption
-      | rewrite uskl_to_pskl_subst_mono;
-        eapply ad_refine_pskl_subst_mid;
-          [ eassumption | reflexivity | exact Hs | exact Hu
-          | clear; fsetdec ] ].
+        eapply ad_consis_join_subst_mid; [ eassumption | reflexivity | .. ];
+        eassumption ].
   - (* forall_r (TY) : the witness joins the PREFIX *)
     apply ad_pat_sub__forall_r
       with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
@@ -972,22 +984,12 @@ Proof.
       | apply guarded_uskl_subst_mono; assumption
       | apply guarded_bskl_subst_mono; assumption
       | apply is_sskl_subst_mono; assumption
-      | eapply ad_pat_consis_subst_mid; [ eassumption | reflexivity | .. ];
-        eassumption
-      |
-        rewrite uskl_to_pskl_subst_mono, bskl_to_pskl_subst_mono;
-        eapply ad_refine_pskl_subst_mid;
-          [ eassumption | reflexivity | exact Hs | exact Hu
-          | clear; fsetdec ] ].
+      | eapply ad_consis_join_subst_mid; [ eassumption | reflexivity | .. ];
+        eassumption ].
   - (* arrow *)
     eapply ad_pat_sub__arrow;
-      [ eapply ad_pat_consis_subst_mid; [ eassumption | reflexivity | .. ];
+      [ eapply ad_consis_join_subst_mid; [ eassumption | reflexivity | .. ];
         eassumption
-      |
-        rewrite uskl_to_pskl_subst_mono, bskl_to_pskl_subst_mono;
-        eapply ad_refine_pskl_subst_mid;
-          [ eassumption | reflexivity | exact Hs | exact Hu
-          | clear; fsetdec ]
       | eauto | assumption ].
   - (* forall_l_tagged : ⭐ THE ROW.  The instantiation is substituted too *)
     match goal with

@@ -871,6 +871,10 @@ Proof.
   all: match goal with
        | Hx : forall x b, binds x b ?S -> binds x b _ |- _ =>
          repeat match goal with
+         | H : {{ _ ⨟ S ⊢ˢ _ ∼ᵣ _ }}ad |- _ =>
+             let H' := fresh "Hw" in
+             pose proof (ad_consis_join_weaken H _ Hx) as H';
+             clear H; rename H' into H
          | H : {{ _ ⨟ S ⊢ˢ _ ∼ _ }}ad |- _ =>
              let H' := fresh "Hw" in
              pose proof (ad_pat_consis_weaken H _ Hx) as H';
@@ -990,7 +994,7 @@ Proof.
       | exact HαΘ | exact HαΘ0 | exact HeraseR
       | exact HscopeR | exact HlcR | exact Htags | exact Hdisj
       | exact Hsub' | exact Hdfresh | exact Hpre | exact HΨs1
-      | exact HΨs2 | exact H1 | exact HwfSubj
+      | exact HΨs2 | exact (ad_consis_join_consis H1) | exact HwfSubj
       | exact Hrefine
       | exact Hrho | intros x b Hb; exact Hb | exact HΨρ | exact Hrfr
       | exact HΔρΔ | exact HΔρw | exact HΔρftv | exact HΔρPi | exact Hfawp0
@@ -1662,11 +1666,11 @@ Proof.
     (* --- tag algebra: Ψa = (Ψ1∩Ψ') ∪ (Ψ2∩Ψ') --- *)
     pose proof (d_tags_skl_ftag (a_tags_sort_d_tags Htags)) as Hψatag.
     assert (HΨa : Ψa [=] union (Ψ1 ∩ Ψ') (Ψ2 ∩ Ψ'))
-      by (clear - HΨs1 HΨs2 Hsub H1 Hdisj HΨρ; fsetdec).
+      by (clear - HΨs1 HΨs2 Hsub H0 Hdisj HΨρ; fsetdec).
     (* under ρ the per-component bounds read off the ρ-IMAGES, so each picks up
        its own slice of Ψρ ([uskl_rsubst_ftag_sub]) *)
     assert (HΨ1sub : Ψ1 [<=] union (ftag_in_uskl Ra) (union Ψρ1 Ψ')).
-    { pose proof (ad_pat_consis_ftag_sub H) as Hf1.
+    { pose proof (ad_pat_consis_ftag_sub (ad_consis_join_consis H)) as Hf1.
       pose proof (uskl_rsubst_ftag_sub Hrhoa) as Hr1.
       pose proof (ftag_in_uskl_subst_uskl_in_uskl ψa α
                     (msubst_uskl_syn κ Ra)) as Hb1.
@@ -1719,7 +1723,7 @@ Proof.
       | exact HlcRa | exact Htags
       | clear - Hdisj; cbn in Hdisj; fsetdec
       | exact HsubL | exact Hdfresh | exact Hpre | exact HΨs1L | exact HΨs2L
-      | exact H | exact HwfSubjA | exact Href1
+      | exact (ad_consis_join_consis H) | exact HwfSubjA | exact Href1
       | exact Hrhoa | intros x b Hb; exact Hb | exact HΨρ1e | exact Hrfr
       | exact HΔρΔ | exact HΔρw | exact HΔρftvL | exact HΔρPi | exact Hfawa
       | exact Hψaap

@@ -33,6 +33,7 @@ files were `Admitted` scaffolding subsumed by the current algo development.
 | Skeleton wf / refinement (§3.5) | `d_wf_pskl/uskl`, `d_refine_syn` | 🟢 |
 | Skeleton inference (fig:decl-skeleton-inference) | `d_pat` | 🟢 restructured to embedded-subtyping base rules |
 | Skeleton subtyping/consistency (fig:decl-skeleton-subtyping-consistency) | `d_pat_sub`, `d_pat_consis` | 🟢 |
+| THE JOIN — consistency + its refinement presupposition, as ONE relation (declarative.tex:2074) | `d_consis_join` (`decl/def_rules.v`), `ad_consis_join` (`algo_decl/def_consis_refine.v`), notation `∼ᵣ` | 🟢 all eleven consistency-leaf rows take it |
 | Algorithmic contexts/suffixes (§5.1) | `algo/def_rules.v` `aenv/abind/a_suffix` | 🟢 rewritten |
 | `skmod[TY]/[SK]` on input skeletons | `a_ty_mode_compat`, `a_sk_mode_compat` | 🟢 |
 | guess^TY / guess^N (LaTeX `\guessMono`/`\guess`) | `a_guess_mono`, `a_guess` | 🟢 |
