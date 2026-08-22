@@ -4855,6 +4855,27 @@ Proof.
   end.
 Qed.
 
+(** Reflexivity on anything the support covers — [rel_pskl_refl] one
+    syntax over.  At [V = ∅] it is what relates a CLOSED program to
+    itself, which is how the lift composes with the closed-program
+    corollaries. *)
+Lemma rel_exp_refl : forall ρ V e,
+  fvar_in_exp e ∪ ftvar_in_exp e [<=] V ->
+  rel_exp ρ V e e.
+Proof.
+  intros ρ V e; induction e; intros Hsub; simpl in Hsub;
+    constructor;
+    try (apply rel_atom__id; clear - Hsub; fsetdec);
+    try (unfold rel_ptyp; apply rel_pskl_refl;
+         match goal with
+         | |- ftvar_in_pskl (ptyp_to_pskl ?A0) [<=] _ =>
+             pose proof (ftvar_ptyp_to_pskl A0) as He
+         end; clear - Hsub He; fsetdec);
+    try (match goal with
+         | IH : _ -> rel_exp _ _ ?x ?x |- rel_exp _ _ ?x ?x => apply IH
+         end; clear - Hsub; fsetdec).
+Qed.
+
 (** Opening at a TERM-variable PAIR — [rel_pskl_open_pair] one syntax over. *)
 Lemma rel_exp_open_rec_pair : forall ρ V e1 e2 x y k,
   rel_exp ρ V e1 e2 ->

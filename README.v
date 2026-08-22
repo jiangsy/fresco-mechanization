@@ -591,17 +591,17 @@ Print Assumptions mono_lambda_anno_redundant.
                                                    levels 1-8, and the reason
                                                    [None] means anything
 
-   ⚠️ SCOPE, and it is part of the claim: [None] refutes a derivation of the
-   THREADED relation, which is what every rung of the ladder is stated over.
-   ⛔ The LIFT that would carry it to the paper's own judgement is DESIGNED
-   and NOT BUILT — docs/HANDOFF-extractable-algo-encoding.md §8c.24.
-   The POSITIVE branch composes all the way down to the paper's declarative
-   judgement ([e_typing_run_sound_infer] / [_check], prop_run_corollaries.v
-   §1/§2); the NEGATIVE branch stops at [e_typing], because the converse of
-   the bridge ([a_typing] ⟹ [e_typing] at a covering supply) is not proved —
-   a derivation opens its binder wherever it likes and the threaded rules open
-   at the SUPPLY, which is the obstruction that made the campaign quantify
-   over [e_*] throughout (docs/HANDOFF-extractable-algo-encoding.md §8c.3).
+   ⭐⭐⭐ SCOPE — DISCHARGED (2026-08-22).  The claim used to stop at the
+   THREADED relation: [None] refuted an [e_typing] derivation, and the LIFT
+   that carries an [a_typing] derivation onto the runner's rails was designed
+   and not built.  The lift is now Qed ([a_typing_rel_e], ext_algo/prop_lift.v
+   §13 — the last rung of a ten-rung ladder over every judgement of the
+   algorithm), so BOTH branches reach the paper's own declarative judgement:
+   the POSITIVE branch by [e_typing_run_sound_infer] / [_check]
+   (prop_run_corollaries.v §1/§2), the NEGATIVE by
+   [e_typing_run_complete_decl_infer] / [_check] (§5) — a declaratively-typed
+   closed program HAS a run, so [None] refutes the declarative judgement
+   itself.  The two entries below carry the composition.
    ⚙ The two hypotheses are INPUTS, not obligations: a dangling de Bruijn
    index is not a program. *)
 Check e_typing_dec_init :
@@ -612,3 +612,28 @@ Check e_typing_dec_init :
     (~ e_typable (ftvar_in_pskl P0 ∪ fvar_in_exp e ∪ ftvar_in_exp e)
          m nil P0 e).
 Print Assumptions e_typing_dec_init.
+
+(* ⭐⭐⭐ THE NEGATIVE BRANCH AT THE PAPER'S JUDGEMENT — the lift's composition
+   ([a_typing_complete_decl_infer] → [a_typing_rel_e] →
+   [e_typing_run_complete]): a closed program the paper's declarative system
+   types at TI makes the EXTRACTED FUNCTION answer [Some]. *)
+Check e_typing_run_complete_decl_infer :
+  forall e (B : btyp),
+  lc_exp e ->
+  {{ nil ⊢ᵉ e }}a ->
+  {{ nil ⊢[ mode_ti ] e ⦂ B }}d ->
+  exists r,
+    e_typing_run (ftvar_in_pskl pskl_hole ∪ fvar_in_exp e ∪ ftvar_in_exp e)
+      mode_ti nil pskl_hole e = Some r.
+Print Assumptions e_typing_run_complete_decl_infer.
+
+(* ⭐⭐⭐ DECIDABILITY OF THE PAPER'S TYPE INFERENCE — the headline the two
+   branches compose into: for a closed program, "does SOME declarative type
+   exist at TI?" is decided by the extracted runner's own answer. *)
+Check d_typing_infer_dec :
+  forall e,
+  lc_exp e ->
+  {{ nil ⊢ᵉ e }}a ->
+  sumbool (exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d)
+          (~ exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d).
+Print Assumptions d_typing_infer_dec.

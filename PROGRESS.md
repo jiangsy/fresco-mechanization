@@ -240,7 +240,41 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-19 (latest) — ✅✅ **THE COLLECTION'S CROSS-HALF FRESHNESS GUARD IS LANDED** — the conflation the lift refuted is excluded, and the extract rung is unblocked
+## 2026-08-22 (latest) — ⭐⭐⭐ **THE a_typing RUNG IS CLOSED — THE WHOLE a_ ⟹ e_ LIFT IS DONE**, and decidability now speaks the paper's own judgement
+
+`make coq` rc=0, `README.v` 35/35, zero `Admitted`/`Axiom`.
+
+`a_typing_rel_e` (`ext_algo/prop_lift.v` §13) closes the last rung of the
+ten-rung ladder: every judgement of `frost/algo/` now transports onto the
+supply-threaded runner's rails.  The four suffix-DISCARDING `_check` rows
+are the landed S-ForallR row line for line — restrict at the junk suffix's
+domain, push the opener pair, run, peel — plus the RESULT CLOSE
+(`A' := close α2 B''`, cancellation premise-free), whose ∀-relation is
+exactly `rel_pskl_close_pair_restrict`.  The base rows compose a real
+`a_split_rel_e` call [+ `lift_consis_nil`] with the shared abs core, then
+inline the junk strip on the core's output (the core now also returns the
+SPLIT halves of its correspondence).
+
+⭐⭐ **THE COMPOSITION** (`ext_algo/prop_run_corollaries.v` §5/§6):
+`e_typing_run_complete_decl_infer` / `_check` — a declaratively-typed
+closed program makes the extracted runner answer `Some` — and
+`d_typing_infer_dec`: for a closed program, *"does SOME declarative type
+exist at TI?"* is decided by the runner's own answer.  README §VI's scope
+caveat (the negative branch stopped at the threaded relation) is
+DISCHARGED; both entries are in `README.v`.
+
+New currency: `a_typing_dom_mono` / `a_typing_flex_rev` /
+`a_typing_fvar_binds` (algo/typing/prop_soundness_typing.v),
+`e_typing_dom_upper` (ext_algo/prop_typing.v), `rel_exp_restrict_l` +
+`rel_exp_refl` (prop_solve_rel §13d), the coercion image
+`rel_pskl_ptyp_image_r` and `rel_pskl_fun_dom` (AT-Anno's pin —
+functionality of the RELATION, not determinism of the runner), the motive,
+`lift_typing_sub`, `lift_typing_abs_core` (prop_lift §13).  ⚠️ The
+pre-split name grep caught three shadows, including `ptyp_to_pskl_close`
+existing in BOTH prop_solve_det.v and prop_completeness_typing.v — a
+pre-existing one-fact-two-files duplicate, flagged in hand-off §8c.47.
+
+## 2026-08-19 — ✅✅ **THE COLLECTION'S CROSS-HALF FRESHNESS GUARD IS LANDED** — the conflation the lift refuted is excluded, and the extract rung is unblocked
 
 `make coq` rc=0, `README.v` 33/33, zero `Admitted`/`Axiom`.  Both arrow rows
 of the constraint collection (`frost/algo/def_rules.v`) now carry

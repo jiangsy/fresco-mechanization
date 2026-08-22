@@ -39,17 +39,21 @@
     that — the completeness ladder (campaign levels 1–8) is finished — and §4
     is the two-line consequence.
 
-    ⚠️⚠️ READ §4's SCOPE BEFORE CITING IT.  What [None] refutes is a
-    derivation of the THREADED relation [e_typing], which is the relation
-    every rung of the ladder is stated over.  Turning that into a refutation
-    of [algo/]'s own [a_typing] needs the converse of the bridge
-    ([a_typing] ⟹ [e_typing] at a covering supply), and the campaign does NOT
-    have it: §8c.3's obstruction — a derivation opens its binder wherever it
-    likes and the threaded rules open at the SUPPLY — is what made every level
-    quantify over [e_*] in the first place.  The two directions of §4 are
-    therefore not symmetric in reach: the POSITIVE branch composes with
-    §1/§2 all the way down to the paper's declarative judgement, the NEGATIVE
-    branch stops at [e_typing]. *)
+    ⚠️ §4's SCOPE NOTE, KEPT FOR HISTORY AND NOW DISCHARGED (2026-08-22).
+    What §4's [None] refutes is a derivation of the THREADED relation
+    [e_typing], which is the relation every rung of the ladder is stated
+    over.  Turning that into a refutation of the paper's own judgement
+    needed the converse of the bridge ([a_typing] ⟹ [e_typing] at a
+    covering supply) — §8c.3's obstruction.  THE LIFT IS NOW BUILT
+    ([a_typing_rel_e], prop_lift.v §13), and §5 composes it with the
+    closed-program completeness corollaries: a declaratively-typed closed
+    program makes the runner answer [Some], so [None] refutes the
+    DECLARATIVE judgement itself.  §6 is the headline consequence —
+    decidability of the paper's own type inference, decided by the
+    extracted function's answer.
+
+    §5  ⭐⭐⭐ completeness at the paper's judgement (the lift, composed)
+    §6  ⭐⭐⭐ decidability of the paper's type inference *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -74,6 +78,12 @@ Require Import src.frost.algo.prop_inc.            (* [lc_aenv] *)
 Require Import src.frost.ext_algo.prop_termination. (* [aenv_defs_mono] *)
 Require Import src.frost.ext_algo.prop_solve_det.   (* the [swaps_*] family *)
 Require Import src.frost.ext_algo.prop_typing_complete.
+Require Import src.frost.prop_basic.
+Require Import src.frost.algo.prop_basic.
+Require Import src.frost.algo.typing.prop_soundness_typing.
+Require Import src.frost.ext_algo.prop_solve_rel.
+Require Import src.frost.ext_algo.prop_lift.
+Require Import src.frost.algo.prop_precise.   (* [a_wf_ptyp_to_wf_pskl] *)
 
 Open Scope frost_e_scope.
 
@@ -221,4 +231,201 @@ Proof.
   apply e_typing_dec; try assumption;
     [ apply lc_aenv_nil | apply (List.Forall_nil _) | apply (uniq_nil _)
     | simpl; fsetdec ].
+Qed.
+
+(* ===================================================================== *)
+(*  §5  ⭐⭐⭐ THE NEGATIVE BRANCH REACHES THE PAPER'S OWN JUDGEMENT         *)
+(*                                                                        *)
+(*  The lift ([a_typing_rel_e], prop_lift.v §13) composed with the        *)
+(*  closed-program completeness corollaries: a declaratively-typed        *)
+(*  closed program HAS a threaded run, so [e_typing_run]'s [None] now     *)
+(*  refutes the paper's own declarative judgement — README §VI's scope    *)
+(*  caveat is discharged.  At a CLOSED program the lift's relation is     *)
+(*  instantiated at the EMPTY pair list and support: reflexivity on       *)
+(*  anything the support covers ([rel_exp_refl] / [rel_pskl_refl]), and   *)
+(*  every side condition is either [nil]-trivial or the emptiness of the  *)
+(*  program's free variables — term variables by [a_typing_fvar_binds]    *)
+(*  on the completeness run, type variables by [a_wf_exp_ftv_dom].        *)
+(* ===================================================================== *)
+
+(** ⚙ The relation's three vacuous side conditions, at the empty instance. *)
+Lemma lift_typing_nil_instance :
+  rel_inj (@nil (atom * atom)%type) empty /\
+  rel_fun (@nil (atom * atom)%type) empty (dom (@nil (atom * abind)%type)) /\
+  flex_agree_rel (@nil (atom * atom)%type) empty
+    (@nil (atom * abind)%type) (@nil (atom * abind)%type).
+Proof.
+  split; [ | split ].
+  - intros a1 a2 b H1 H2.
+    inversion H1 as [ u1 v1 Hp | u1 Hv ]; subst; [ inversion Hp | ].
+    inversion H2 as [ u2 v2 Hp2 | u2 Hv2 ]; subst;
+      [ inversion Hp2 | reflexivity ].
+  - intros a b1 b2 Hd0 H1 H2.
+    inversion H1 as [ u1 v1 Hp | u1 Hv ]; subst; [ inversion Hp | ].
+    inversion H2 as [ u2 v2 Hp2 | u2 Hv2 ]; subst;
+      [ inversion Hp2 | reflexivity ].
+  - split;
+      [ intros v Hv; exfalso; clear - Hv; fsetdec
+      | intros a b Hin; inversion Hin ].
+Qed.
+
+Corollary e_typing_run_complete_decl_infer : forall e (B : btyp),
+  lc_exp e ->
+  {{ nil ⊢ᵉ e }}a ->
+  {{ nil ⊢[ mode_ti ] e ⦂ B }}d ->
+  exists r,
+    e_typing_run (ftvar_in_pskl pskl_hole ∪ fvar_in_exp e ∪ ftvar_in_exp e)
+      mode_ti nil pskl_hole e = Some r.
+Proof.
+  intros e B Hlc Hwfe Hd.
+  destruct (a_typing_complete_decl_infer Hwfe Hd) as (A1 & Θ1 & Ha & _).
+  destruct lift_typing_nil_instance as (Hinj & Hfun & Hagr).
+  assert (Hfv : fvar_in_exp e [<=] empty).
+  { intros z Hz. destruct (a_typing_fvar_binds Ha Hz) as (bd & Hb & _).
+    inversion Hb. }
+  assert (Hftv : ftvar_in_exp e [<=] empty).
+  { pose proof (a_wf_exp_ftv_dom Hwfe) as Hb. simpl in Hb. exact Hb. }
+  (* ⚠️ the theorem's mid ∀-block (S0 … V) is IMPLICIT (the §8c.46 trap):
+     pass hypotheses only, each pre-asserted with an EXPLICIT type so the
+     block is pinned and no fsetdec meets an evar. *)
+  assert (H1 : rel_aenv (@nil (atom * atom)%type) empty
+                 (@nil (atom * abind)%type) (@nil (atom * abind)%type))
+    by apply rel_aenv__nil.
+  assert (H2 : rel_pskl (@nil (atom * atom)%type) empty
+                 pskl_hole pskl_hole)
+    by apply rel_pskl__hole.
+  assert (H3 : rel_exp (@nil (atom * atom)%type) empty e e)
+    by (apply rel_exp_refl; clear - Hfv Hftv; fsetdec).
+  assert (H7 : {{ ⊢ (@nil (atom * abind)%type) }}a) by apply a_wf_aenv__nil.
+  assert (H8 : uniq (@nil (atom * abind)%type)) by apply uniq_nil.
+  assert (H9 : ftvar_in_aenv (@nil (atom * abind)%type)
+               [<=] ftvar_in_pskl pskl_hole ∪ fvar_in_exp e
+                    ∪ ftvar_in_exp e)
+    by (simpl; clear; fsetdec).
+  assert (H10 : empty [<=] ftvar_in_aenv (@nil (atom * abind)%type))
+    by (clear; fsetdec).
+  assert (H11 : forall a, a `in` dom Θ1 ->
+                a `notin` dom (@nil (atom * abind)%type) ->
+                a `notin` cols_l (@nil (atom * atom)%type))
+    by (intros a Hx Hy Hc; simpl in Hc; clear - Hc; fsetdec).
+  assert (H12 : dom (@nil (atom * abind)%type)
+                [<=] ftvar_in_pskl pskl_hole ∪ fvar_in_exp e
+                     ∪ ftvar_in_exp e)
+    by (simpl; clear; fsetdec).
+  assert (H13 : empty ∪ cols_r (@nil (atom * atom)%type)
+                [<=] ftvar_in_pskl pskl_hole ∪ fvar_in_exp e
+                     ∪ ftvar_in_exp e)
+    by (simpl; clear; fsetdec).
+  assert (H14 : ftvar_in_pskl pskl_hole ∪ ftvar_in_exp e ∪ fvar_in_exp e
+                [<=] ftvar_in_pskl pskl_hole ∪ fvar_in_exp e
+                     ∪ ftvar_in_exp e)
+    by (clear; fsetdec).
+  assert (H15 : {{ (@nil (atom * abind)%type) ⨟ empty ⊢ₚₛ pskl_hole }}a)
+    by apply a_wf_pskl__hole.
+  destruct (a_typing_rel_e Ha H1 H2 H3 Hagr Hinj Hfun H7 H8 H9 H10 H11
+              H12 H13 H14 H15 Hwfe a_ty_mode_compat__ti)
+    as (S1 & ρe & Θ1e & Be & De & _).
+  eapply e_typing_run_complete_init;
+    [ exact De | exact lc_pskl_hole | exact Hlc ].
+Qed.
+
+(** The CHECK twin, against a closed well-formed [B].  The extra
+    hypothesis mirrors [e_typing_run_sound_check]'s. *)
+Corollary e_typing_run_complete_decl_check : forall e (B : btyp),
+  lc_exp e ->
+  {{ nil ⊢ᵉ e }}a ->
+  a_wf_ptyp nil (btyp_to_ptyp B) ->
+  {{ nil ⊢[ mode_tc ] e ⦂ B }}d ->
+  exists r,
+    e_typing_run (ftvar_in_pskl (ptyp_to_pskl (btyp_to_ptyp B))
+                  ∪ fvar_in_exp e ∪ ftvar_in_exp e)
+      mode_tc nil (ptyp_to_pskl (btyp_to_ptyp B)) e = Some r.
+Proof.
+  intros e B Hlc Hwfe HwfB Hd.
+  destruct (a_typing_complete_decl_check Hwfe Hd) as (A1 & Θ1 & Ha & _).
+  destruct lift_typing_nil_instance as (Hinj & Hfun & Hagr).
+  assert (Hfv : fvar_in_exp e [<=] empty).
+  { intros z Hz. destruct (a_typing_fvar_binds Ha Hz) as (bd & Hb & _).
+    inversion Hb. }
+  assert (Hftv : ftvar_in_exp e [<=] empty).
+  { pose proof (a_wf_exp_ftv_dom Hwfe) as Hb. simpl in Hb. exact Hb. }
+  assert (HftB : ftvar_in_pskl (ptyp_to_pskl (btyp_to_ptyp B)) [<=] empty).
+  { pose proof (ftvar_ptyp_to_pskl (btyp_to_ptyp B)) as He.
+    pose proof (a_wf_ptyp_ftv_dom HwfB) as Hb. simpl in Hb.
+    clear - He Hb. fsetdec. }
+  assert (H1 : rel_aenv (@nil (atom * atom)%type) empty
+                 (@nil (atom * abind)%type) (@nil (atom * abind)%type))
+    by apply rel_aenv__nil.
+  assert (H2 : rel_pskl (@nil (atom * atom)%type) empty
+                 (ptyp_to_pskl (btyp_to_ptyp B))
+                 (ptyp_to_pskl (btyp_to_ptyp B)))
+    by (apply rel_pskl_refl; clear - HftB; fsetdec).
+  assert (H3 : rel_exp (@nil (atom * atom)%type) empty e e)
+    by (apply rel_exp_refl; clear - Hfv Hftv; fsetdec).
+  assert (H7 : {{ ⊢ (@nil (atom * abind)%type) }}a) by apply a_wf_aenv__nil.
+  assert (H8 : uniq (@nil (atom * abind)%type)) by apply uniq_nil.
+  assert (H9 : ftvar_in_aenv (@nil (atom * abind)%type)
+               [<=] ftvar_in_pskl (ptyp_to_pskl (btyp_to_ptyp B))
+                    ∪ fvar_in_exp e ∪ ftvar_in_exp e)
+    by (simpl; clear; fsetdec).
+  assert (H10 : empty [<=] ftvar_in_aenv (@nil (atom * abind)%type))
+    by (clear; fsetdec).
+  assert (H11 : forall a, a `in` dom Θ1 ->
+                a `notin` dom (@nil (atom * abind)%type) ->
+                a `notin` cols_l (@nil (atom * atom)%type))
+    by (intros a Hx Hy Hc; simpl in Hc; clear - Hc; fsetdec).
+  assert (H12 : dom (@nil (atom * abind)%type)
+                [<=] ftvar_in_pskl (ptyp_to_pskl (btyp_to_ptyp B))
+                     ∪ fvar_in_exp e ∪ ftvar_in_exp e)
+    by (simpl; clear; fsetdec).
+  assert (H13 : empty ∪ cols_r (@nil (atom * atom)%type)
+                [<=] ftvar_in_pskl (ptyp_to_pskl (btyp_to_ptyp B))
+                     ∪ fvar_in_exp e ∪ ftvar_in_exp e)
+    by (simpl; clear; fsetdec).
+  assert (H14 : ftvar_in_pskl (ptyp_to_pskl (btyp_to_ptyp B))
+                ∪ ftvar_in_exp e ∪ fvar_in_exp e
+                [<=] ftvar_in_pskl (ptyp_to_pskl (btyp_to_ptyp B))
+                     ∪ fvar_in_exp e ∪ ftvar_in_exp e)
+    by (clear; fsetdec).
+  assert (H15 : {{ (@nil (atom * abind)%type) ⨟ empty ⊢ₚₛ
+                  (ptyp_to_pskl (btyp_to_ptyp B)) }}a)
+    by (apply a_wf_ptyp_to_wf_pskl; exact HwfB).
+  destruct (a_typing_rel_e Ha H1 H2 H3 Hagr Hinj Hfun H7 H8 H9 H10 H11
+              H12 H13 H14 H15 Hwfe
+              (a_ty_mode_compat__tc (btyp_to_ptyp B)))
+    as (S1 & ρe & Θ1e & Be & De & _).
+  eapply e_typing_run_complete_init;
+    [ exact De
+    | apply ptyp_to_pskl_lc; eapply a_wf_ptyp_lc; exact HwfB
+    | exact Hlc ].
+Qed.
+
+(* ===================================================================== *)
+(*  §6  ⭐⭐⭐ DECIDABILITY OF THE PAPER'S TYPE INFERENCE                    *)
+(*                                                                        *)
+(*  The headline: for a closed program, "does SOME declarative type       *)
+(*  exist at TI?" is decided by the extracted runner itself.  [Some r]    *)
+(*  is a declarative derivation by §1's soundness; [None] refutes one by  *)
+(*  §5's completeness.  This is the claim the paper's "never guess        *)
+(*  polytypes out of thin air" principle promises (README §VI); with the  *)
+(*  lift closed it is now stated over the paper's OWN judgement, not the  *)
+(*  threaded mirror.                                                      *)
+(* ===================================================================== *)
+
+Corollary d_typing_infer_dec : forall e,
+  lc_exp e ->
+  {{ nil ⊢ᵉ e }}a ->
+  sumbool (exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d)
+          (~ exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d).
+Proof.
+  intros e Hlc Hwfe.
+  destruct (e_typing_run (ftvar_in_pskl pskl_hole ∪ fvar_in_exp e
+              ∪ ftvar_in_exp e) mode_ti nil pskl_hole e) as [ r | ] eqn:Hrun.
+  - left.
+    destruct (e_typing_run_sound_infer _ _ Hwfe Hrun)
+      as (_ & _ & _ & _ & ζ & _ & _ & Hdd).
+    eexists. exact Hdd.
+  - right. intros [B Hd].
+    destruct (e_typing_run_complete_decl_infer _ _ Hlc Hwfe Hd) as [r Hr].
+    rewrite Hrun in Hr. discriminate.
 Qed.

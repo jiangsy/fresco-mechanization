@@ -7913,3 +7913,99 @@ the ladder's.
   Each row ≈ the landed `S-ForallR` (prop_lift.v §10) in size; that row is
   the line-for-line template for the restrict/peel/deleted-pair blocks.
 - app ✅ (three threaded calls — AP-App twice, done).
+
+### 8c.47 ⭐⭐⭐ THE `a_typing` RUNG IS CLOSED — THE LIFT IS DONE, AND THE NEGATIVE BRANCH REACHES THE PAPER (2026-08-22)
+
+`a_typing_rel_e` is Qed (`ext_algo/prop_lift.v` §13), all 11 rows.  The
+ladder reads guess ✅ look ✅ solve ✅ cstr ✅ extract ✅ consis ✅ sub ✅
+split ✅ pat ✅ **typing ✅ — the whole `a_*` ⟹ `e_*` lift is complete**,
+and §8c.24's debt is paid.  Composed with the closed-program corollaries
+it discharges README §VI's scope caveat: `e_typing_run`'s `None` now
+refutes the PAPER's own declarative judgement, and "does SOME declarative
+type exist at TI?" is decided by the extracted runner's own answer.
+
+#### ⭐ THE FOUR `_check` ROWS — as §8c.46 predicted, with two findings
+
+The `_step` rows are the landed `S-ForallR` row (§10) LINE FOR LINE —
+`restrict_l (dom Ξ)`, `restrict_pairs α α2`, push with
+`flex_agree_rel_push_look`, IH at `add α2 S0`, split with
+`rel_aenv_app_inv_l`/`_cons_inv_l`, pin with the `Hαonly` pattern — plus
+the one step S-ForallR did not have, the RESULT CLOSE:
+`A' := close_ptyp α2 B''`, and the cancellation
+`open (close α2 B'') α2 = B''` is **PREMISE-FREE** (lngen's
+`open_ptyp_wrt_ptyp_close_ptyp_wrt_ptyp` has no lc hypothesis — the
+predicted lc obligation never materialized).  The conclusion's ∀-rel is
+exactly `rel_pskl_close_pair_restrict` applied at the FULL inner list
+`(ρe ++ ρ0)` and then `restrict_l`-cut to `(ρeo ++ ρ)` — the cut is paid
+by the rule's own γ-filter (premise (2) IS `dom Ξ ∩ ftvar A = ∅`).
+
+⭐ **The upfront `restrict_l (dom Ξ) ρ` is forced in ALL FOUR rows**, the
+base rows included: the `uniq (Ξ2 ++ Θ')` correspondence classifies a
+`dom Ξ2` atom by its left partner, and a ρ-pair whose left column sits in
+`dom Ξ` is unrefutable without the restriction (§8c.39's finding, one
+rung up).  The base rows compose `a_split_rel_e` [+ `lift_consis_nil`]
+with the shared core, then run the S-ForallR CLOSING half on the core's
+output — inlined, as costed; the core's existential gained two conjuncts
+(`rel_aenv (ρe++ρ) V Ξ Ξ2` and `… Θc Θc2'`, the SPLIT halves of its
+correspondence) because the strip needs the suffix correspondence ALONE
+and a length argument to re-split the joined one does not exist.
+
+#### ⚙ WHERE IT LANDED (the §8c.45 split, repeated)
+
+- `algo/typing/prop_soundness_typing.v` — `a_typing_dom_mono`,
+  `a_typing_flex_rev` (route (A)), `a_typing_fvar_binds`.
+- `ext_algo/prop_typing.v` — `e_typing_dom_upper`.
+- `ext_algo/prop_solve_rel.v` §13d — `rel_exp_restrict_l`,
+  `rel_exp_refl` (the closed-program instance's reflexivity).
+- `ext_algo/prop_lift.v` §13 — `rel_pskl_ptyp_image_r`,
+  `rel_pskl_fun_dom`, `rel_ptyp_{arrow,all}_inv`, the motive,
+  `lift_typing_sub`, `lift_typing_abs_core`, `a_typing_rel_e`.
+- `ext_algo/prop_run_corollaries.v` §5/§6 — the COMPOSITION:
+  `e_typing_run_complete_decl_infer` / `_check`
+  (`a_typing_complete_decl_*` → `a_typing_rel_e` at the EMPTY pair list
+  and support → `e_typing_run_complete_init`), and
+  `d_typing_infer_dec` (⭐ the headline: `Some r` is a declarative
+  derivation by §1, `None` refutes one by §5).  README §VI carries both.
+
+At a CLOSED program the lift instantiates at `ρ = nil`, `V = ∅`:
+`rel_exp_refl`/`rel_pskl_refl` relate the program to itself, and the
+emptiness of its free variables is `a_typing_fvar_binds` (term vars, off
+the completeness run) + `a_wf_exp_ftv_dom` (type vars).
+
+#### ⚠️ TRAPS PAID THIS PASS
+
+- ⚠️⚠️ The pre-split name grep caught THREE shadows:
+  `ptyp_to_pskl_close{,_rec}` already exist in BOTH
+  `ext_algo/prop_solve_det.v` AND `algo/typing/prop_completeness_typing.v`
+  (⛔ a PRE-EXISTING duplicate, violating one-fact-one-name — flagged, not
+  fixed, not added to), and `a_decls_binds_flex` already lives in
+  prop_soundness_typing.v.  The scratch copies were dropped.
+- ⚠️ After `inversion Hat'; subst` on a `rel_aenv_dom_r_inv` witness, the
+  ID branch substitutes the CORRESPONDENT variable away in favour of the
+  tested atom — a term that names the correspondent fails with "variable
+  not found".  Use the tested atom in the branch's terms (the pair
+  branches keep both).
+- ⚠️ `a_typing_sound` applied to the BODY premise needs the check-against
+  wf at the EXTENDED context — weaken with `a_wf_pskl_weaken` first.
+- ⚠️ For an `exp_abs_anno` subject, `simpl in HcovP` splits the
+  annotation's ftvars but the fsetdec GOAL stays unreduced — `simpl` the
+  goal too (the `exp_abs` twin passed without it).
+- ⚠️ `a_typing_flex_rev`'s atom is implicit (Set Implicit Arguments):
+  two-argument application, like the core's `a_typing_flex_rev HaDe Hb0X`.
+
+#### ⚙ ADDENDUM — the composition pass's own traps (2026-08-22)
+
+- ⚠️ `a_typing_rel_e`'s mid ∀-block (S0…V) IS implicit, like
+  `a_pat_rel_e`'s (§8c.46's trap, now bitten from the CONSUMER side):
+  apply it to HYPOTHESES ONLY, each PRE-ASSERTED with a fully explicit
+  statement so the block is pinned and no `fsetdec` meets an evar.  The
+  §5 corollaries are the worked example.
+- ⚠️ In prop_run_corollaries.v the scope stack parses `atom * atom` as
+  nat multiplication — every `@nil (atom * atom)` needs `%type` there
+  (prop_lift/the scratch drafts did this already; the error is the
+  baffling "has type Prop, expected nat" at the surrounding conjunct).
+- ⚠️ prop_run_corollaries.v has NO `Set Implicit Arguments`: its own
+  §1–§4 corollaries take their leading (e r / e B) EXPLICITLY —
+  underscore them when composing (`e_typing_run_sound_infer _ _ Hwfe
+  Hrun`), and `e_typing_run_complete_init` takes all six leading indices
+  (use `eapply`).
