@@ -200,8 +200,10 @@ accident rather than by plan.**
 
 ### The residual gap is narrow: name INVENTION, not binding
 
-Binder rows are already fine — `a_`'s cofinite `forall β ∉ L` is equivariant by
-construction, and 43 `*_swap` lemmas witness it.  The gap is the rows that
+⚠️ **CORRECTED — see §4c.**  `a_` is **not** cofinite: only 3 of its 154 rules
+are, and all three are well-formedness rules.  The algorithmic layer is
+exists-fresh throughout, which is why equivariance had to be *proved* (43
+`*_swap` lemmas) rather than come free.  The gap is the rows that
 **invent a name into an output**: `a_lookeq__flex_r` emits
 `Ξ = (α1 ~ abind_flex_mono)`, `a_guess_mono` likewise, and the five ∀ rows of
 the collection leak their opener into `𝒞`.  `a_` chooses these existentially;
@@ -257,6 +259,76 @@ by making it part of the judgement.
 
 ⚙ `e_looksub_lift` / `e_lookeq_lift` (80 lines) are the "lift proper at ρ = nil"
 corollaries — written, proved, and **never used**.  They are in the dead list.
+
+## 4c  ⭐⭐⭐⭐⭐ THE ROOT: the ∀ rows LEAK their binder, so cofinite was given up
+
+**Why does `a_` still use cofinite quantification?  It does not.**  Only **3 of
+154** rules in `algo/def_rules.v` are cofinite — `a_wf_pskl__all`,
+`a_wf_ptyp__all`, `a_scope_pskl__all`, all *well-formedness* rules.  Every
+algorithmic rule is **exists-fresh**: one named witness plus a `notin` on the
+INPUTS.  The rules were cofinite once and were deliberately moved off.  The
+reason is on the record, in `def_rules.v`'s header for the collection:
+
+> *"ALL FIVE ∀ rules **LEAK** their binder — the reference implementation
+> unbinds and DISCARDS the name in every one of them (`constr_collect_eq`:
+> LE-ForallInh type.ml:579-583, LE-ForallSyn :595-598, LE-UnivGhost1 :610-613;
+> `constr_collect_sub`: LS-ForallR :668-672, LS-ForallL :685-688), and neither
+> function ever calls `bind_var`.  So the outputs `Ξ` and `𝒞` may mention the
+> binder, **which is precisely what the old cofinite rendering forbade:
+> sharing one `𝒞` across the whole family silently restricted the rules to
+> vacuous binders.**"*
+
+### The whole tower descends from that one fact
+
+1. `type.ml` **unbinds a ∀ and discards the name** — it never re-binds.
+2. ⇒ the outputs `Ξ` / `𝒞` may mention the opener: **the five ∀ rows leak**.
+3. ⇒ **cofinite is unavailable** — a cofinite premise shares ONE `𝒞` across the
+   whole family of `β`, which silently forces the binder to be vacuous.
+4. ⇒ the rules become **exists-fresh**, one named witness each.
+5. ⇒ equivariance stops being free and must be *proved*:
+   `algo/prop_swap.v`, **3,050 lines**, 43 `*_swap` lemmas.
+6. ⇒ two derivations that chose different witnesses can be related only by a
+   **correspondence, not a function** — a leaked opener is bound *nowhere*, so
+   one left atom can need two right images: **ρ, 12,322 lines**.
+7. ⇒ and the freshness cofinite would have given structurally has to be
+   re-imposed by hand, rule by rule, as `[paper-gap]` guards (cross-half ×2,
+   cross-layer ×2, `uniq (Ξ ++ Θ0)`, `uniq (αs ++ Θ1)`).
+
+### ⭐ The control experiment is already in the tree
+
+`a_guess_mono` is the one judgement whose ∀ row **closes its witness away** —
+its outputs do not mention `β`.  And it is exactly the one rung where the cheap
+currency works.  `prop_lift.v`'s own header says so:
+
+> *"§2 could use a chain only because `a_guess_mono` leaks NOTHING: its ∀ row
+> closes its witness away, so every atom the derivation invents lands in
+> `dom Ξ`."*
+
+| | leaks? | currency | rung cost | infrastructure |
+|---|---|---|---|---|
+| `a_guess_mono` | **no** | chain (`swaps_*`) | 212 | **none** |
+| the collection, solve, … | **yes** | relational ρ | 451–3129 | 12,322 |
+
+**The disease and the cure sit side by side in the same file.**
+
+### ⇒ The real question is not about ρ.  It is: must the binder leak?
+
+If the ∀ rows **closed** their opener — returning `𝒞` abstracted over it, the
+`bind_var` the implementation never calls — then cofinite comes back, and with
+it free equivariance, a functional chain, and no ρ.  That is one design change
+at the *root* of the causal chain above, against ~15–25k lines of consequence.
+
+⚙ The leak is not obviously essential.  The implementation *unbinds and
+discards*, i.e. treats the name as irrelevant afterwards; and the information
+the leak actually carries — "this constraint arose under a binder, so its
+solution may not mention it" — is exactly what a **bound index plus a scope
+check in the solve** would carry, and arguably carries it better: a scope
+violation becomes a structural impossibility rather than a freshness side
+condition to be re-imposed at five separate rules.
+
+⛔ But it is a change to the ALGORITHM, not to its encoding — the paper's rules
+and `type.ml` both leak today.  It belongs in a design discussion, not a
+cleanup pass.  The cost of *not* doing it is now measured: items 5–7 above.
 
 ## 5  Smaller structural observations
 
