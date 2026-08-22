@@ -81,15 +81,15 @@ A representative rung shows what ρ costs in the *statement* alone
 `algo/prop_wf_preservation.v` and `algo/consis/prop_consis_rename.v` mention it.
 It is lift infrastructure, not shared metatheory.
 
-## 4  ⭐⭐⭐⭐ THE FINDING — the refutation that killed the cheap route is **stale**
+## 4  ⭐⭐⭐ The cheap route: HALF the obstruction is gone, half is live
+
+⚠️ **CORRECTION (2026-08-23).**  The first version of this section claimed the
+refutation of the functional currency was simply stale.  That was too strong.
+The truth is sharper and more useful.
 
 Both encodings carry a **complete equivariance kit**: `algo/prop_swap.v` is
-3,050 lines and there are **43 `*_swap` lemmas** (21 on `a_`, 22 on `e_` —
-`a_typing_swap`/`e_typing_swap`, `a_looksub_lookeq_swap`/`e_looksub_lookeq_swap`,
-and so on for every judgement).  A user directive on record calls equivariance
-"THE renaming primitive".
-
-**The lift barely uses it.**  Measured `_swap` mentions vs ρ mentions:
+3,050 lines and there are **43 `*_swap` lemmas** (21 `a_`, 22 `e_`) — one per
+judgement on both sides.  The lift barely uses it:
 
 | file | `_swap` | ρ |
 |---|---|---|
@@ -98,57 +98,165 @@ and so on for every judgement).  A user directive on record calls equivariance
 | `prop_solve_rel.v` | 2 | 624 |
 | `prop_look_pair.v` | 0 | 416 |
 
-The functional route (a *swap chain*, ρ as a function, ideally identity) was
-tried and **explicitly refuted** in `prop_lift.v`'s header (§2/§3):
+There are **two** obstructions to a functional ρ, in two different files, and
+they are not the same obstruction.
 
-> ⛔⛔ *"A chain is a FUNCTION on atoms … ALL FIVE of the collection's ∀ rows
-> LEAK their binder into `𝒞` … So a LEFT atom can be a binder in one premise
-> and a generated flexible in its SIBLING — **`LE-Arrow` runs both halves at
-> the SAME `Θ`, and the two side conditions … do not exclude each other.** …
-> ONE left atom needs TWO right images and no chain can supply them."*
+**(a) `prop_lift.v`'s header — opener vs. sibling FLEXIBLE.  This one is dead.**
+It argues a left atom can be *"a binder in one premise and a generated flexible
+in its SIBLING — LE-Arrow runs both halves at the SAME Θ, and the two side
+conditions do not exclude each other."*  Three facts retire it: it self-flags
+*"⚙ INFERRED … not machine-checked"*; it landed in `5528fd1` and the
+CROSS-HALF FRESHNESS GUARD landed in `0b08fac` **after** it
+(`git merge-base --is-ancestor` confirms the order); and that guard sits on
+`a_lookeq__arrow` itself as `ftvar_in_a_cstrs C1 ∩ dom Ξ2 [=] empty` (+ mirror).
+`LE-FlexR` emits its fresh atom **into the block** (`Ξ = α1 ~ abind_flex_mono`),
+so `dom Ξ2 = {α1}`, and the leaked opener sits in `ftvar_in_a_cstrs C1` — the
+guard forces them apart.  **This conflation can no longer happen.**
 
-**Three facts put that refutation in doubt:**
+**(b) `prop_solve_rel.v` §9 — opener vs. sibling OPENER.  This one is LIVE.**
 
-1. It **flags its own status**: *"⚙ INFERRED from the two rules' side
-   conditions, **not machine-checked**; what IS machine-checked is that the
-   relational form goes through."*  It is an argument, not a counterexample.
-2. It is **stale by one commit**.  The refutation landed in `5528fd1`
-   (2026-08-19); the **CROSS-HALF FRESHNESS GUARD** landed in `0b08fac`
-   *after* it (`git merge-base --is-ancestor` ⇒ refutation first).
-3. The guard forbids **precisely the conflation the refutation relies on**, and
-   it is on `LE-Arrow` itself — the very rule cited:
+> *"⚠️ It CANNOT be global: §8c.25's Finding 1 is exactly a left atom with two
+> right images, and that configuration is REACHABLE above the extract
+> (`a_extract_rel_e` hands back a ρx column of leaked openers).  What saves the
+> trio is that **a leaked opener is bound NOWHERE** — not in `Θ0`, not in `Ξ` —
+> so `D` is taken to be the CONTEXT's DOMAIN."*
+
+`rel_inj` / `rel_fun` already exist and are already maintained — but `rel_fun`
+is **local, on `D` = the context's domain**, precisely because a leaked opener
+is bound nowhere.  And the guard does **not** close this: it constrains
+`C1` against `dom Ξ2`, never `C1` against `C2`.  Two sibling halves may each
+leak a ∀ opener and **pick the same atom** — each ∀ row only requires
+`β ∉ add α (ftvar Θ ∪ ftvar P ∪ ftvar P')`, which both halves satisfy at the
+same `Θ`.  The supply keeps them apart on the right.  One left atom, two right
+images.  **Live.**
+
+### ⭐⭐ The missing guard is free on the e-side
+
+The natural closure is a **third cross-half condition, opener vs. opener** —
+and it would cost nothing to discharge, by exactly the argument that discharges
+the existing two.  The e-side arrow row threads the supply **consecutively**:
 
 ```coq
-| a_lookeq__arrow : forall Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2,    (* LE-Arrow *)
-    (* [paper-gap] CROSS-HALF FRESHNESS GUARD — see [a_looksub__arrow]. *)
-    ftvar_in_a_cstrs C1 ∩ dom Ξ2 [=] empty ->
-    ftvar_in_a_cstrs C2 ∩ dom Ξ1 [=] empty ->
+| e_looksub__arrow : forall S0 S1 S2 Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2,
+    {{ S0 ↝ S1 ⊨ Θ ⊢ P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 }}e ->
+    {{ S1 ↝ S2 ⊨ Θ ⊢ P2 ≼[ α , m ] P2' ⤳ Ξ2 ⨾ C2 }}e -> …
 ```
 
-The leaked opener of half 1 lives in `C1`; the sibling's generated flexible
-lives in `dom Ξ2`.  The guard makes them disjoint — so the "one left atom, two
-right images" situation is **excluded by the rules as they now stand**.  The
-guard's own comment notes it "COSTS COMPLETENESS NOTHING" and is a theorem of
-the supply-threaded encoding, so it is not a restriction that would have to be
-paid for elsewhere.
+and `e_looksub_lookeq_cstr_ftvar_tight` (already proved) bounds
+`ftvar_in_a_cstrs C ⊆ (S1 ∖ S0) ∪ ftvar P ∪ ftvar P'`.  The two generated
+intervals `S1∖S0` and `S2∖S1` are **disjoint**, so the *generated* parts of `C1`
+and `C2` are automatically apart.  A guard of the shape
 
-⚠️ This is a **hypothesis**, not a result.  The refutation may still hold for a
-reason other than the one it gives (the ∀ rows of the *solve* layer,
-`SS-ForallR`, also leak by design, and the guard does not speak about them).
-But it is the largest structural question open in the tree, and it is cheap to
-settle.
+```coq
+(ftvar_in_a_cstrs C1 ∖ (ftvar_in_pskl P1 ∪ ftvar_in_pskl P1'))
+  ∩ (ftvar_in_a_cstrs C2 ∖ (ftvar_in_pskl P2 ∪ ftvar_in_pskl P2')) [=] empty
+```
 
-**Recommended next step — one probe, not a refactor.**  In the codebase's own
-`cex/probe_*.v` idiom, attempt to build the two-right-images configuration
-*under the current rules*, i.e. a derivation where one `a_` atom must map to two
-distinct `e_` atoms with both cross-half guards in force.  Half a day.
-- If it **cannot** be built, the chain/identity currency is back on the table
-  and the prize is most of the 12,322 lines of ρ machinery plus the ρ premises
-  in all 12 lift rungs.
-- If it **can**, the probe becomes the machine-checked counterexample the
-  header admits it never had, and the ρ design is vindicated on the record.
+is therefore a **theorem of the supply-threaded encoding**, like its two
+siblings — "costs completeness nothing" in the same sense.
 
-Either outcome is worth having; only one of them is worth 12k lines.
+### ⛔ …but do NOT add it yet
+
+Adding it now would put a premise on the rules **with no consumer**, and this
+codebase has been burned by that twice on the record — `a_extract_rel_e`
+carried a premise its only consumer could not satisfy, and the standing lesson
+is *"a lemma proved for a consumer that does not exist yet can carry a premise
+the consumer cannot satisfy."*  The guard is only worth adding **together with**
+the `rel_fun`-goes-global work that consumes it, since the completeness proofs
+(`a_looksub_solve_complete_gen`'s Arrow row, and its `eq` twin) would then have
+to establish it.
+
+**Sequence, if this is taken up:** (1) probe that (b) is the *only* remaining
+source of two-right-images above the extract; (2) add the opener-vs-opener
+guard and discharge it on the e-side from `e_looksub_lookeq_cstr_ftvar_tight`;
+(3) strengthen `rel_fun` from local-on-`D` to global; (4) collapse `rel_pskl`
+toward equality-under-a-renaming, rung by rung.  Only step 4 returns lines —
+on the order of the 12,322 dedicated to ρ.
+
+## 4b  ⭐⭐⭐⭐⭐ CAN `a_` AND `e_` BE ONE LAYER?  Yes — and they are already 2/3 merged
+
+The two layers differ in exactly one thing: **how much global freshness they
+impose.**  `e_` imposes total discipline (one counter, never reused).  `a_`
+imposes only local discipline (each binder avoids its own context).  The lift
+(12,898) plus the ρ tower (12,322) is the price of that gap — **~25k lines to
+bridge two freshness conventions.**
+
+### `a_` is NOT the paper's rules — it is the paper's rules plus a partial copy of `e_`
+
+`algo/def_rules.v` carries **25 `[paper-gap]` side conditions**.  Classified:
+
+| kind | count | what it encodes |
+|---|---|---|
+| **DISPATCH / PRIORITY** — ◇-dispatch ×2, absence-first ×5, ForallR-priority ×2, FlexR-priority ×1, solve-dispatch ×2 | **11** | the runner's **rule-selection order** |
+| **FRESHNESS / UNIQUENESS** — cross-half ×2, cross-layer ×2, `uniq (Ξ ++ Θ0)`, `uniq (αs ++ Θ1)` | **~6** | the runner's **name discipline** |
+| sort / encoding corrections (THE HAT, the split's `A'`, …) | ~8 | genuine mechanization gaps |
+
+**Seventeen of the twenty-five exist only to make `a_` behave like `e_`.**  Each
+was added when a proof demanded it, and each was justified the same way — *"IT
+COSTS COMPLETENESS NOTHING.  It is a THEOREM of the supply-threaded encoding …
+so the reference implementation — one global counter, never reused — cannot
+violate it."*  The two layers have been converging **one guard at a time, by
+accident rather than by plan.**
+
+### The residual gap is narrow: name INVENTION, not binding
+
+Binder rows are already fine — `a_`'s cofinite `forall β ∉ L` is equivariant by
+construction, and 43 `*_swap` lemmas witness it.  The gap is the rows that
+**invent a name into an output**: `a_lookeq__flex_r` emits
+`Ξ = (α1 ~ abind_flex_mono)`, `a_guess_mono` likewise, and the five ∀ rows of
+the collection leak their opener into `𝒞`.  `a_` chooses these existentially;
+`e_` chooses them deterministically.  **That residue is the whole of what ρ pays
+for.**
+
+### ⭐ Controlled evidence: the guess rung exists in BOTH currencies
+
+`prop_lift.v` §2 proved the guess rung in **chain** currency and §4 proved it
+again in **relational** currency.  Same rung, two designs:
+
+| | lines | statement | infrastructure needed |
+|---|---|---|---|
+| `e_guess_mono_lift_n` (chain, §2) | 212 | `exists S1 ps, e_guess_mono S0 P S1 (swaps_aenv ps Ξ) (swaps_ptyp ps A) /\ …` — **no ρ, no `rel_pskl`, no `cols_l/r`** | **none** |
+| `a_guess_mono_rel_e` (rel, §4) | 183 | carries `rel_pskl ρ V` + the scoping premise | **the full 12,322-line ρ tower** |
+
+**Per rung the two cost the same.  One of them needs 12k lines of scaffolding
+and the other needs none.**  That is the clearest single measurement in this
+report.
+
+⚙ The chain currency was abandoned above the guess because *"a chain is a
+FUNCTION on atoms"* and one left atom can need two right images (§4).  Half of
+that obstruction is now dead (opener-vs-flexible, killed by the cross-half
+guard); half is live (opener-vs-opener, which no guard yet forbids).
+
+### Three single-layer designs
+
+**A — finish the guard program (incremental, recommended).**  Keep adding
+freshness guards to `a_` until *"every name a derivation invents is globally
+distinct"* is a theorem of `a_` rather than only of `e_`.  Then ρ collapses to
+the identity, `rel_pskl` degenerates to equality, and the lift becomes
+**erasure of the supply index**.  The next concrete step is the
+**opener-vs-opener guard** (§4), which discharges for free on the e-side from
+`e_looksub_lookeq_cstr_ftvar_tight` plus the disjointness of consecutive supply
+intervals.  Cost: the completeness proofs must establish each new guard.
+Return: most of the 12,322-line ρ tower and the ρ premises in all twelve rungs.
+
+**B — supply-index `a_` itself (the from-scratch design).**  One judgement:
+define `a_X … := exists S0 S1, e_X S0 … S1 …` and prove the paper's rule shapes
+admissible.  This is what one would build knowing what is known now.  ⛔ It is
+**not reachable incrementally** — `algo/`'s 95,698 lines induct on `a_`
+derivations, and every statement would grow a supply pair.
+
+**C — status quo.**  Keep two conventions and pay ~25k to bridge them.
+
+⚠️ One tempting shortcut does **not** work: normalising an `a_` derivation to
+the supply's names *after the fact*.  The rebuilt derivation has different
+outputs (`Ξ`, `𝒞` change with the invented names), so relating it to the
+original needs exactly the renaming one was trying to avoid.  The win only
+comes if the derivation is **built normalised in the first place** — which is
+what design A achieves by making the discipline part of the rules, and design B
+by making it part of the judgement.
+
+⚙ `e_looksub_lift` / `e_lookeq_lift` (80 lines) are the "lift proper at ρ = nil"
+corollaries — written, proved, and **never used**.  They are in the dead list.
 
 ## 5  Smaller structural observations
 
@@ -169,8 +277,8 @@ Either outcome is worth having; only one of them is worth 12k lines.
 
 | # | item | est. saving | risk | build green throughout |
 |---|---|---|---|---|
-| 1 | **§4 probe: is the ρ-relation still forced?** | *decides* ~12k | none (a probe) | yes |
-| 2 | §4 if the probe clears it — collapse ρ to a chain/identity | 8–12k | high, but staged rung-by-rung | yes, rung at a time |
+| 1 | **§4 probe: is opener-vs-opener the ONLY live source of two right images?** | *decides* ~12k | none (a probe) | yes |
+| 2 | §4 steps 2–4: opener-vs-opener guard, `rel_fun` global, collapse `rel_pskl` | 8–12k | high, staged rung-by-rung | yes, rung at a time |
 | 3 | §A3 name the hypothesis pack + one `_weaken_tvar` transport | 900–1200 | low | yes, file at a time |
 | 4 | §A6 delete the genuine-leftover third of the dead list | ~400 | very low | yes |
 | 5 | §A4 merge the runner's seven binder clauses | ~560 | medium | yes |
@@ -178,6 +286,42 @@ Either outcome is worth having; only one of them is worth 12k lines.
 
 Item 1 is half a day and gates the largest saving in the development.  Do it
 before anything in Part II.
+
+## 7  ✅ Landed 2026-08-23 — the binder-opening fact, named
+
+`looksub_gen_open_tvar` (`prop_sub_cstr.v`, just above the theorem): *the
+context-relative half of the invariant survives opening a fresh rigid binder.*
+Nine facts — the two `binds` weakenings, `⊢ Θ` and `⊢ Θ0`, `α ∉ dom` on both,
+`κ ∷ Θ0 ⊑ Θ`, and `a_wf_pskl` on `P0` and `Pi` — all at `(β ~ abind_tvar) ++ ·`.
+
+It replaces hand-written blocks at **all three binder rows** of
+`a_looksub_solve_complete_gen`: LS-ForallR and LS-ForallL at both tags.
+(ForallR takes 8 of the 9 — it descends the *target*, so its `HwfP0β` is about
+`open (ptyp_to_pskl A0) β` and stays local.)
+
+⚙ **It is LOC-neutral** — 4031 lines before, 4031 after; the ~40-line lemma
+exactly cancels what the three sites gave back.  The gain is structural: the
+three ∀ rows now *say* "the invariant is stable under opening a binder" instead
+of reproving nine side conditions each, and a fourth binder row would now cost
+three lines instead of twenty.  Recorded honestly because it is the shape of
+every remaining cleanup at this altitude — **the tractable structural moves in
+this development are LOC-neutral; the LOC is locked behind the three projects
+in §6.**
+
+⚠️ `Set Implicit Arguments` is on in this file (line 69), so the lemma's type
+arguments must be left to inference — passing them positionally fails with a
+misleading "expected type `?κ ∷ ?Θ0 ⊑ ?Θ`".
+
+### ⭐ New feasibility fact for §A2's 466-line duplicate
+
+The tagged and untagged LS-ForallL rows share a **466-line byte-identical tail**
+(only a comment differs).  Ltac cannot factor it (§A4).  But the tail
+**calls the induction hypothesis exactly once** (`eapply (IHHsubty …)`, one
+site).  So it *is* extractable as an ordinary lemma taking the IH's instance as
+a hypothesis — the obstacle is only the ~50-hypothesis interface, not a
+structural entanglement.  That converts §A2's local fix from "delicate, unknown"
+to "tractable, one afternoon", and it does not need the whole-tree `uskl`
+constructor merge.
 
 ---
 

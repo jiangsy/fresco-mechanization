@@ -684,6 +684,47 @@ Qed.
       · P6-Cs's [Θs] (the ρ-images' fixed scope, for its ftv-𝒞 conclusion) is
         NOT taken here: this statement has no ftv-𝒞 conjunct.  That is Phase B,
         and it is what Sub-ForallR needs. *)
+(* ⭐ THE PACK SURVIVES OPENING A FRESH RIGID BINDER (2026-08-23).  Every ∀
+   row of the induction below — LS-ForallR, and LS-ForallL at BOTH tags —
+   reopens the CONTEXT-RELATIVE half of the invariant at [(β ~ tvar) ++ ·].
+   That is ONE fact about the pack, and it stood written out three times.
+   Naming it is what makes a binder row read as "the invariant is stable
+   under opening a binder" instead of nine reproved side conditions. *)
+Lemma looksub_gen_open_tvar : forall Θ0 Θ κ α β P0 Pi,
+  {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a -> {{ Θ0 ⨟ empty ⊢ₚₛ Pi }}a ->
+  κ ∷ Θ0 ⊑ Θ ->
+  α `notin` dom Θ -> α `notin` dom Θ0 ->
+  β <> α -> β `notin` dom Θ -> β `notin` dom Θ0 ->
+  (forall (x : atom) (b : abind),
+     binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
+  /\ (forall (x : atom) (b : abind),
+        binds x b Θ -> binds x b ((β ~ abind_tvar) ++ Θ))
+  /\ {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a
+  /\ {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a
+  /\ α `notin` dom ((β ~ abind_tvar) ++ Θ)
+  /\ α `notin` dom ((β ~ abind_tvar) ++ Θ0)
+  /\ κ ∷ ((β ~ abind_tvar) ++ Θ0) ⊑ ((β ~ abind_tvar) ++ Θ)
+  /\ {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a
+  /\ {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ Pi }}a.
+Proof.
+  intros Θ0 Θ κ α β P0 Pi HwfΘ HwfΘ0 HwfP0 HwfPi Hκ HαΘ HαΘ0 Hβα HβΘ HβΘ0.
+  assert (Hweak0 : forall (x : atom) (b : abind),
+            binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
+    by (intros x b Hb; apply binds_app_3; exact Hb).
+  assert (Hweak : forall (x : atom) (b : abind),
+            binds x b Θ -> binds x b ((β ~ abind_tvar) ++ Θ))
+    by (intros x b Hb; apply binds_app_3; exact Hb).
+  repeat split; try assumption.
+  - apply a_wf_aenv__tvar; assumption.
+  - apply a_wf_aenv__tvar; assumption.
+  - simpl; clear - HαΘ Hβα; fsetdec.
+  - simpl; clear - HαΘ0 Hβα; fsetdec.
+  - apply a_inc_cons_tvar; exact Hκ.
+  - eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfP0 ].
+  - eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfPi ].
+Qed.
+
 Theorem a_looksub_solve_complete_gen :
   forall n NM M Θ0 Θs Θ Θw κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' Rsub α,
   {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
@@ -1123,16 +1164,12 @@ Proof.
       assert (Hβψa : β `notin` ftvar_in_uskl ψa) by (clear - Fr; solve_notin).
       assert (Hβα : β <> α) by (clear - Fr; solve_notin).
       assert (HβΔρ : β `notin` Δρ) by (clear - Fr; solve_notin).
-      assert (Hwfβ : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-        by (apply a_wf_aenv__tvar; assumption).
-      assert (Hwfβ0 : {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a)
-        by (apply a_wf_aenv__tvar; assumption).
-      assert (Hweak0 : forall (x : atom) (b : abind),
-                binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
-        by (intros x b Hb; apply binds_app_3; exact Hb).
-      assert (Hweak : forall (x : atom) (b : abind),
-                binds x b Θ -> binds x b ((β ~ abind_tvar) ++ Θ))
-        by (intros x b Hb; apply binds_app_3; exact Hb).
+      (* ⭐ the context-relative pack, in one move.  ⚠️ [HwfP0β] is DROPPED
+         here — Sub-ForallR descends the TARGET, so its own is about
+         [open (ptyp_to_pskl A0) β] and is proved just below. *)
+      destruct (looksub_gen_open_tvar
+                  HwfΘ HwfΘ0 HwfP0 HwfPi Hκ HαΘ HαΘ0 Hβα HβΘ HβΘ0)
+        as (Hweak0 & Hweak & Hwfβ & Hwfβ0 & HαΘβ & HαΘ0β & Hκβ & _ & HwfPiβ).
       (* --- the target descends; the subject R' does not --- *)
       assert (HwfP0β : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty
                 ⊢ₚₛ (open_pskl_wrt_pskl (ptyp_to_pskl A0) (pskl_var_f β)) }}a).
@@ -1140,10 +1177,6 @@ Proof.
           with (α1 := β) (Θ1 := nil) (Θ2 := Θ0) (Δ' := empty);
           [ apply (Hw0body β ltac:(clear - Fr; solve_notin))
           | reflexivity | clear; fsetdec ]. }
-      assert (HwfPiβ : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ Pi }}a)
-        by (eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfPi ]).
-      assert (Hκβ : κ ∷ ((β ~ abind_tvar) ++ Θ0) ⊑ ((β ~ abind_tvar) ++ Θ))
-        by (apply a_inc_cons_tvar; exact Hκ).
       assert (Hdfreshβ : delta_def_fresh Δ ((β ~ abind_tvar) ++ Θ)).
       { intros β0 α0 τ0 Hβ0 Hb. eapply Hdfresh; [ exact Hβ0 | ].
         destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
@@ -1195,10 +1228,6 @@ Proof.
       { intros x b Hb.
         destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> ->] | Hb'];
           [ simpl; auto | apply binds_app_3; apply Hext; exact Hb' ]. }
-      assert (HαΘβ : α `notin` dom ((β ~ abind_tvar) ++ Θ))
-        by (simpl; clear - HαΘ Hβα; fsetdec).
-      assert (HαΘ0β : α `notin` dom ((β ~ abind_tvar) ++ Θ0))
-        by (simpl; clear - HαΘ0 Hβα; fsetdec).
       (* the Θw pack under the binder — [Θw] does NOT move; keeping it fixed
          is what lets β be stripped out of the increase.  Δρ does not grow on
          this row, so [HΔρw] rides through unchanged. *)
@@ -2415,22 +2444,11 @@ Proof.
     rewrite <- (@subst_msubst_uskl_syn_open Θ0 κ Θ ψa α R0 β Hκ Hακdom Hβκ Hβα Hlcψa)
       in Hrho'.
     (* --- the recursive call's premises at Θ0,β / Θ,β / add β Δ / add β Δρ --- *)
-    assert (Hweak0 : forall (x : atom) (b : abind),
-              binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
-      by (intros x b Hb; apply binds_app_3; exact Hb).
-    assert (Hweak : forall (x : atom) (b : abind),
-              binds x b Θ -> binds x b ((β ~ abind_tvar) ++ Θ))
-      by (intros x b Hb; apply binds_app_3; exact Hb).
-    assert (Hwfβ : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-      by (apply a_wf_aenv__tvar; assumption).
-    assert (Hwfβ0 : {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a)
-      by (apply a_wf_aenv__tvar; assumption).
-    assert (HαΘβ : α `notin` dom ((β ~ abind_tvar) ++ Θ))
-      by (simpl; clear - HαΘ Hβα; fsetdec).
-    assert (HαΘ0β : α `notin` dom ((β ~ abind_tvar) ++ Θ0))
-      by (simpl; clear - HαΘ0 Hβα; fsetdec).
-    assert (Hκβ : κ ∷ ((β ~ abind_tvar) ++ Θ0) ⊑ ((β ~ abind_tvar) ++ Θ))
-      by (apply a_inc_cons_tvar; exact Hκ).
+    (* ⭐ the whole context-relative pack, in one move *)
+    destruct (looksub_gen_open_tvar
+                HwfΘ HwfΘ0 HwfP0 HwfPi Hκ HαΘ HαΘ0 Hβα HβΘ HβΘ0)
+      as (Hweak0 & Hweak & Hwfβ & Hwfβ0 & HαΘβ & HαΘ0β & Hκβ
+          & HwfP0β & HwfPiβ).
     assert (HeraseRβ : ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ
               = open_pskl_wrt_pskl (uskl_to_pskl R0) (pskl_var_f β))
       by (apply uskl_to_pskl_open).
@@ -2447,10 +2465,6 @@ Proof.
               ∩ Ψ' [=] empty).
     { rewrite ftag_in_uskl_open_var.
       cbn [ftag_in_uskl] in Hdisj. clear - Hdisj; fsetdec. }
-    assert (HwfP0β : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
-      by (eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfP0 ]).
-    assert (HwfPiβ : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ Pi }}a)
-      by (eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfPi ]).
     assert (HΨs1β : (Ψ `union` Ψ'0)
               [<=] union (ftag_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β)))
                      (union Ψρ' Ψa)).
@@ -2991,22 +3005,11 @@ Proof.
     rewrite <- (@subst_msubst_uskl_syn_open Θ0 κ Θ ψa α R0 β Hκ Hακdom Hβκ Hβα Hlcψa)
       in Hrho'.
     (* --- the recursive call's premises at Θ0,β / Θ,β / add β Δ / add β Δρ --- *)
-    assert (Hweak0 : forall (x : atom) (b : abind),
-              binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
-      by (intros x b Hb; apply binds_app_3; exact Hb).
-    assert (Hweak : forall (x : atom) (b : abind),
-              binds x b Θ -> binds x b ((β ~ abind_tvar) ++ Θ))
-      by (intros x b Hb; apply binds_app_3; exact Hb).
-    assert (Hwfβ : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-      by (apply a_wf_aenv__tvar; assumption).
-    assert (Hwfβ0 : {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a)
-      by (apply a_wf_aenv__tvar; assumption).
-    assert (HαΘβ : α `notin` dom ((β ~ abind_tvar) ++ Θ))
-      by (simpl; clear - HαΘ Hβα; fsetdec).
-    assert (HαΘ0β : α `notin` dom ((β ~ abind_tvar) ++ Θ0))
-      by (simpl; clear - HαΘ0 Hβα; fsetdec).
-    assert (Hκβ : κ ∷ ((β ~ abind_tvar) ++ Θ0) ⊑ ((β ~ abind_tvar) ++ Θ))
-      by (apply a_inc_cons_tvar; exact Hκ).
+    (* ⭐ the whole context-relative pack, in one move *)
+    destruct (looksub_gen_open_tvar
+                HwfΘ HwfΘ0 HwfP0 HwfPi Hκ HαΘ HαΘ0 Hβα HβΘ HβΘ0)
+      as (Hweak0 & Hweak & Hwfβ & Hwfβ0 & HαΘβ & HαΘ0β & Hκβ
+          & HwfP0β & HwfPiβ).
     assert (HeraseRβ : ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ
               = open_pskl_wrt_pskl (uskl_to_pskl R0) (pskl_var_f β))
       by (apply uskl_to_pskl_open).
@@ -3023,10 +3026,6 @@ Proof.
               ∩ Ψ' [=] empty).
     { rewrite ftag_in_uskl_open_var.
       cbn [ftag_in_uskl] in Hdisj. clear - Hdisj; fsetdec. }
-    assert (HwfP0β : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
-      by (eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfP0 ]).
-    assert (HwfPiβ : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ Pi }}a)
-      by (eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfPi ]).
     assert (HΨs1β : (Ψ `union` Ψ'0)
               [<=] union (ftag_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β)))
                      (union Ψρ' Ψa)).
