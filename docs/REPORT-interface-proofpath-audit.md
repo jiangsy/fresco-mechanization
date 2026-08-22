@@ -267,3 +267,57 @@ lemma to reach ~100 lines total.  **Recommendation: SKIP P2a** — 0.5%
 of a file, against touching ten closed proofs.  P2b (the row-core
 merge, ~450 lines) is the only part of P2 whose size justifies the
 risk, and even it is optional now that the campaign is closed.
+
+### B6. ⛔ THE PER-PROOF WELL IS DRY — profiled, not guessed (2026-08-22)
+
+After the split, the sensitivity analysis says exactly where cutting a
+file's proof time would move the path (**if this file were free, the
+path drops by**):
+
+| file | proof time | path gain if free |
+|---|---|---|
+| `frost/prop_ln.v` | 59.6 s | **59.6 s** — but lngen-GENERATED |
+| `ext_algo/prop_lift.v` | 42.4 s | 31.2 s |
+| `consis/prop_soundness_consis.v` | 33.1 s | **33.1 s** |
+| `sub/look/prop_eq_var.v` | 28.5 s | **28.5 s** |
+| `consis/prop_completeness_consis.v` | 27.7 s | **27.7 s** |
+| `sub/prop_completeness_sub_gen.v` | 75.6 s | only 23.3 s (a parallel chain caps it) |
+
+Two of the full-gain files were then `Set Ltac Profiling`-ed.  **Both
+say the same thing: `fsetdec` is 97–98% of the proof, spread over 124
+(consis) / 259 (eq_var) calls that are ALREADY tightly `clear -`-scoped,
+with exactly ONE ~5 s outlier each.**  62% of fsetdec's own time is
+Coq's `Tauto.simplif` preprocessing, not the set reasoning.
+
+⚠️ **And the outlier is not a scoping mistake.**  `prop_eq_var.v`'s
+(`Hsubeq1b`, measured at **4.75 s** with `time` — the Ltac profiler
+inflates it to 13.8 s, ~3×, so profile numbers are for RANKING only,
+never for costing) survived three attempts:
+
+- scoped 6 → 3 hypotheses: **fails** (the bridge is not where the goal's
+  shape suggests — `Htags0`'s tag set is not `Ψa`);
+- scoped 6 → 5: compiles, and the proof got **SLOWER, 25.1 s → 31.4 s**.
+  ⭐ `fsetdec` is NOT monotone in its hypothesis set: a hypothesis can
+  prune the search as easily as widen it.  Never "optimise" a
+  `clear -` list without measuring;
+- split at the bridge (the §8c documented cure): the first half is
+  **not derivable**, so the split is unsound as drawn.
+
+⚙ Also ruled out by measurement: `Require Import` costs **0.3 s** in a
+40 s file, so import trimming is not a build-time lever here.
+
+**What is left, sized honestly.**  87 `fsetdec` calls on the critical
+path are scoped to ≥6 hypotheses (of 10,537 tree-wide, 181 of them
+wide) — but per the middle bullet above, "wide" does not imply "slow",
+so this is a list to MEASURE, not a list to fix.  The one lever with
+real headroom is structural rather than local: since 62% of the cost is
+`Tauto`'s preprocessing, a lighter decision tactic for the common goal
+shapes would cut the DISTRIBUTED cost, which is where the time actually
+is.  The tree already did exactly this once, for `x ∉ S`
+(`solve_notin_auto`, the 2026-08-09 ∉-KIT); extending that treatment to
+`[<=]` / `[=]` goals is a project-sized piece of work, and it is the
+only remaining thing that would move the full gate meaningfully.
+
+**Recommendation: stop here.**  The full gate is ~8–9 min, the
+incremental cost of the file under active development was cut 82%, and
+the remaining per-proof work is genuinely distributed.
