@@ -8021,3 +8021,55 @@ type hypothesis is `d_wf_ptyp` likewise.  So `d_typing_infer_dec` and
 the two run-completeness corollaries have NO algorithmic hypothesis
 left.  ⚠️ prop_conserv.v has no `Set Implicit Arguments` — its bridges
 take Γ/e explicitly (underscore them at call sites).
+
+### 8c.48 ⭐⭐ THE CERTIFIED ENTRY POINT — McTT's idiom on the stdlib's PLAIN UNION (2026-08-22)
+
+`prop_run_corollaries.v` §7 + the export in `extraction/Extract.v`:
+
+    frost_infer : forall e, {{ nil ⊢ᵉ e }}d ->
+      sumor (sig (fun r => e_typing_run …entry… = Some r /\
+                    exists ζ, ζ ∷ ty_ctx r ⊑ nil /\
+                      {{ nil ⊢[TI] e ⦂ syn-painting (msubst ζ (ty_out r)) }}d))
+            (~ exists B, {{ nil ⊢[TI] e ⦂ B }}d)
+
+The idiom is McTT's (`Entrypoint.v` / `type_check_closed`, whose
+`PseudoMonadic.v` the tree already borrows): the RESULT TYPE carries the
+theorems, the proofs erase at extraction, and the constructor choice is
+the certificate.  Per the user's direction it is the STDLIB's plain
+union, not a bespoke wrapper: `ExtrOcamlBasic` maps `sig` to its carrier
+and `sumor` to `option`, so the extracted OCaml
+(`extracted/frost_guess.ml`, ocamlc-checked) reads
+
+    val frost_infer : exp -> typing_result option
+
+— literally an η-wrapper of `e_typing_run` at the entry supply, with the
+paper's reading certified on `Some`/`None`.  The wf hypothesis is Prop
+and vanishes.  `frost_infer_complete` (typable ⇒ answers `inleft`) is
+McTT's `type_check_closed_complete` verbatim.  README §VI carries the
+entry (36/36).
+
+⚠️ TRAPS PAID:
+- The `{ r | … } + { … }` NOTATIONS do not parse in this tree — the
+  meta-substitution notations claim the `{ term …` prefix
+  (def_guess_impl.v's documented trap) — write `sumor (sig …) (…)` in
+  application form, as `e_typing_dec` already spells `sumbool`.
+- After `destruct (e_typing_run …) eqn:Hrun`, the GOAL's occurrence of
+  the call is rewritten to `Some r`, so the sig's recorded equation is
+  proved by `eq_refl` there while `Hrun` still names the honest equation
+  for the soundness call.
+- (From the discarded first draft, a bespoke `Variant infer_result` with
+  the atom `e` as parameter: Coq 8.20 counted the PARAMETER in `match`
+  patterns — `Inferred _ _ _ _` where the term side writes
+  `Inferred e r Heq Hfact`.  Kept as a lesson; the Variant itself is
+  gone.)
+
+⚙ NO check-mode twin: the positive branch's declarative type is the
+run's OUTPUT painting, never the given `B` (the AbsCheck result-domain
+paper-gap), so a left-tag named "checked at B" would certify a different
+claim than its name says.
+
+WHAT WOULD FINISH TODO.md's "frontend (mctt like)": a parser (McTT uses
+coq-menhirlib with a fuelled `Parser.prog`), an elaborator from concrete
+syntax with an `elaborator_gives_user_exp`-style wf guarantee (ours
+would produce `{{ nil ⊢ᵉ e }}d`), and an OCaml driver (`driver/Main.ml`)
+that pattern-matches `frost_infer`'s answer.

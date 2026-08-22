@@ -266,6 +266,14 @@ exist at TI?"* is decided by the runner's own answer.  README §VI's scope
 caveat (the negative branch stopped at the threaded relation) is
 DISCHARGED; both entries are in `README.v`.
 
+⭐⭐ **THE CERTIFIED ENTRY POINT** (`prop_run_corollaries.v` §7, hand-off
+§8c.48): `frost_infer` — McTT's `main_result` idiom — wraps the runner in
+the stdlib's plain union (`sumor` of a `sig` — left: the run's answer
+with the declarative typing it implies; right: the refutation);
+`ExtrOcamlBasic` maps it so `frost_guess.ml` reads
+`val frost_infer : exp -> typing_result option`, ocamlc-checked.
+README §VI carries it (36/36).
+
 New currency: `a_typing_dom_mono` / `a_typing_flex_rev` /
 `a_typing_fvar_binds` (algo/typing/prop_soundness_typing.v),
 `e_typing_dom_upper` (ext_algo/prop_typing.v), `rel_exp_restrict_l` +

@@ -45,6 +45,7 @@ Require Import src.frost.ext_algo.def_sub_impl.
 Require Import src.frost.ext_algo.def_pat_impl.
 Require Import src.frost.ext_algo.def_typing_impl.
 Require Import src.frost.ext_algo.extraction.PseudoMonadic.
+Require Import src.frost.ext_algo.prop_run_corollaries.  (* [frost_infer], §7 *)
 
 Extraction Language OCaml.
 
@@ -71,4 +72,10 @@ Extraction "frost_guess.ml"
   e_consis_run
   e_sub_run
   e_pat_run
-  e_typing_run.
+  e_typing_run
+  (* ⭐ the CERTIFIED ENTRY POINT (prop_run_corollaries.v §7, McTT's
+     [main_result] idiom): same data as [e_typing_run], but the
+     constructor TAG carries the paper-level reading — [Inferred] is a
+     declarative typing, [Untypable] a proof that none exists.  The wf
+     hypothesis is [Prop] and vanishes: OCaml sees [exp -> infer_result]. *)
+  frost_infer.

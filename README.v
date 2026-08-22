@@ -641,3 +641,30 @@ Check d_typing_infer_dec :
   sumbool (exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d)
           (~ exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d).
 Print Assumptions d_typing_infer_dec.
+
+(* ⭐⭐⭐ THE CERTIFIED ENTRY POINT (McTT's idiom, on the stdlib's plain
+   union) — the same decision, EXTRACTED: [frost_infer] answers in a
+   [sumor] of a [sig], so the proofs erase but the constructor choice is
+   the certificate.  LEFT holds the runner's answer [r] packaged with the
+   run equation and the declarative typing it implies; RIGHT holds the
+   proof that no declarative type exists.  [ExtrOcamlBasic] maps [sig] to
+   its carrier and [sumor] to [option], so the OCaml side
+   (extraction/extracted/frost_guess.ml) sees
+   [val frost_infer : exp -> typing_result option] — the SAME type the
+   runner's answer has, with the paper's reading certified on both
+   constructors; the wf hypothesis is [Prop] and vanishes.
+   [frost_infer_complete] is the left-completeness guarantee, McTT's
+   [type_check_closed_complete] verbatim.  ⚠️ Application form ([sumor]/
+   [sig]): the meta-substitution notations claim the [{ term …] prefix. *)
+Check frost_infer :
+  forall e, {{ nil ⊢ᵉ e }}d ->
+  sumor
+    (sig (fun r : typing_result =>
+       e_typing_run (ftvar_in_pskl pskl_hole ∪ fvar_in_exp e
+                     ∪ ftvar_in_exp e)
+         mode_ti nil pskl_hole e = Some r /\
+       exists ζ, ζ ∷ (ty_ctx r) ⊑ nil /\
+         {{ nil ⊢[ mode_ti ]
+            e ⦂ (ptyp_to_btyp_syn (msubst_ptyp ζ (ty_out r))) }}d))
+    (~ exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d).
+Print Assumptions frost_infer.

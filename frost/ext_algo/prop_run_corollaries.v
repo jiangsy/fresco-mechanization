@@ -435,3 +435,72 @@ Proof.
     destruct (e_typing_run_complete_decl_infer _ _ Hwfd Hd) as [r Hr].
     rewrite Hrun in Hr. discriminate.
 Qed.
+
+(* ===================================================================== *)
+(*  §7  ⭐⭐⭐ THE CERTIFIED ENTRY POINT — McTT's idiom, on the stdlib's     *)
+(*  PLAIN UNION                                                           *)
+(*                                                                        *)
+(*  McTT's [type_check_closed] answers in [{ P } + { ~ P }]; Frost's      *)
+(*  inference also PRODUCES data, so the entry point answers in the       *)
+(*  stdlib's [sumor] of a [sig]: LEFT is the runner's answer [r] packaged *)
+(*  with its meaning — the run equation, and the declarative typing it    *)
+(*  implies — RIGHT is the proof that NO declarative type exists.  The    *)
+(*  proofs erase at extraction and [ExtrOcamlBasic] maps [sig] to its     *)
+(*  carrier and [sumor] to [option], so the OCaml side sees               *)
+(*                                                                        *)
+(*      val frost_infer : exp -> typing_result option                     *)
+(*                                                                        *)
+(*  — the SAME type [e_typing_run]'s answer has, but with the paper's     *)
+(*  reading certified on both constructors.  The wf hypothesis is [Prop]  *)
+(*  and vanishes, exactly like McTT's [user_exp] hypotheses.              *)
+(*                                                                        *)
+(*  ⚠️ Written in APPLICATION form ([sumor]/[sig], not [{ _ | _ } + …]):   *)
+(*  the tree's meta-level substitution notations claim the [{ term …]     *)
+(*  prefix (def_guess_impl.v's header records the trap; [e_typing_dec]    *)
+(*  spells [sumbool] for the same reason).                                *)
+(*                                                                        *)
+(*  ⚙ [e_typing_run] itself stays exported unchanged — the §8 bar (diff   *)
+(*  against type.ml) is its job; [frost_infer] sits BESIDE it.            *)
+(* ===================================================================== *)
+
+Definition frost_infer (e : exp) (Hwf : {{ nil ⊢ᵉ e }}d) :
+  sumor
+    (sig (fun r : typing_result =>
+       e_typing_run (ftvar_in_pskl pskl_hole ∪ fvar_in_exp e
+                     ∪ ftvar_in_exp e)
+         mode_ti nil pskl_hole e = Some r /\
+       exists ζ, ζ ∷ (ty_ctx r) ⊑ nil /\
+         {{ nil ⊢[ mode_ti ]
+            e ⦂ (ptyp_to_btyp_syn (msubst_ptyp ζ (ty_out r))) }}d))
+    (~ exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d).
+Proof.
+  destruct (e_typing_run
+              (ftvar_in_pskl pskl_hole ∪ fvar_in_exp e ∪ ftvar_in_exp e)
+              mode_ti nil pskl_hole e) as [ r | ] eqn:Hrun.
+  - (* the runner answered — §1's soundness stamps the certificate *)
+    apply inleft.
+    (* the [eqn:] destruct rewrote the goal's runner call to [Some r],
+       so the recorded equation is [eq_refl] there; [Hrun] still names
+       the honest equation for the soundness call below *)
+    refine (exist _ r (conj eq_refl _)).
+    pose proof (d_wf_exp_to_a _ _ Hwf) as Hwfe. simpl in Hwfe.
+    destruct (e_typing_run_sound_infer _ _ Hwfe Hrun)
+      as (_ & _ & _ & _ & ζ & Hinc & _ & Hdd).
+    exact (ex_intro _ ζ (conj Hinc Hdd)).
+  - (* the runner rejected — §5's completeness stamps the certificate *)
+    apply inright.
+    intros [B Hd].
+    destruct (e_typing_run_complete_decl_infer _ _ Hwf Hd) as [r Hr].
+    rewrite Hrun in Hr. discriminate.
+Defined.
+
+(** McTT's [type_check_closed_complete], verbatim shape: a typable
+    program always lands on the LEFT. *)
+Lemma frost_infer_complete : forall e (Hwf : {{ nil ⊢ᵉ e }}d) (B : btyp),
+  {{ nil ⊢[ mode_ti ] e ⦂ B }}d ->
+  exists H', frost_infer e Hwf = inleft H'.
+Proof.
+  intros e Hwf B Hd.
+  destruct (frost_infer e Hwf) as [ H' | Hno ];
+    [ exists H'; reflexivity | exfalso; exact (Hno (ex_intro _ B Hd)) ].
+Qed.
