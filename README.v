@@ -100,6 +100,7 @@ Require Import src.frost.algo.prop_precise_sub.
 Require Import src.frost.algo.pat.prop_completeness_pat.
 Require Import src.frost.algo.typing.prop_completeness_typing.
 Require Import src.frost.algo.typing.prop_closed.
+Require Import src.frost.algo_decl.prop_conserv.  (* [d_wf_exp], {{ Γ ⊢ᵉ e }}d *)
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
 Require Import src.frost.ext_algo.def_typing.
@@ -616,11 +617,14 @@ Print Assumptions e_typing_dec_init.
 (* ⭐⭐⭐ THE NEGATIVE BRANCH AT THE PAPER'S JUDGEMENT — the lift's composition
    ([a_typing_complete_decl_infer] → [a_typing_rel_e] →
    [e_typing_run_complete]): a closed program the paper's declarative system
-   types at TI makes the EXTRACTED FUNCTION answer [Some]. *)
+   types at TI makes the EXTRACTED FUNCTION answer [Some].  The one
+   hypothesis beside the judgement is DECLARATIVE too: [{{ nil ⊢ᵉ e }}d] is
+   the problem definition's "M wf" stated over the paper's own system
+   (algo_decl/prop_conserv.v §2), interchangeable with [{{ nil ⊢ᵉ e }}a] by
+   the nil bridges, and local closure is derived from it. *)
 Check e_typing_run_complete_decl_infer :
   forall e (B : btyp),
-  lc_exp e ->
-  {{ nil ⊢ᵉ e }}a ->
+  {{ nil ⊢ᵉ e }}d ->
   {{ nil ⊢[ mode_ti ] e ⦂ B }}d ->
   exists r,
     e_typing_run (ftvar_in_pskl pskl_hole ∪ fvar_in_exp e ∪ ftvar_in_exp e)
@@ -628,12 +632,12 @@ Check e_typing_run_complete_decl_infer :
 Print Assumptions e_typing_run_complete_decl_infer.
 
 (* ⭐⭐⭐ DECIDABILITY OF THE PAPER'S TYPE INFERENCE — the headline the two
-   branches compose into: for a closed program, "does SOME declarative type
-   exist at TI?" is decided by the extracted runner's own answer. *)
+   branches compose into: for a closed, declaratively well-formed program,
+   "does SOME declarative type exist at TI?" is decided by the extracted
+   runner's own answer. *)
 Check d_typing_infer_dec :
   forall e,
-  lc_exp e ->
-  {{ nil ⊢ᵉ e }}a ->
+  {{ nil ⊢ᵉ e }}d ->
   sumbool (exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d)
           (~ exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d).
 Print Assumptions d_typing_infer_dec.

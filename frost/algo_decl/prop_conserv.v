@@ -248,6 +248,77 @@ Proof.
   - apply a_wf_ptyp__all with (L := L). intros α Hα. exact (H0 α Hα).
 Qed.
 
+(** ⭐ The DECLARATIVE side of the problem definition's "M wf" — the
+    [a_wf_exp] judgement (algo/pat/prop_soundness_pat.v §1) verbatim, with
+    [d_wf_ptyp] reading the annotations.  It exists so the paper-facing
+    corollaries (prop_run_corollaries.v §5/§6) can state their subject
+    hypothesis in the DECLARATIVE system; the two bridges below make it
+    interchangeable with [{{ denv_to_aenv Γ ⊢ᵉ e }}a] — at the closed
+    entry point, with [{{ nil ⊢ᵉ e }}a]. *)
+
+Reserved Notation "{{ Γ ⊢ᵉ e }}d"
+  (at level 0, e at level 74, format "'{{'  Γ  ⊢ᵉ  e  '}}d'").
+
+Inductive d_wf_exp : denv -> exp -> Prop :=
+| d_wf_exp__unit : forall Γ,
+    {{ Γ ⊢ᵉ exp_unit }}d
+| d_wf_exp__var : forall Γ x,
+    {{ Γ ⊢ᵉ (exp_var_f x) }}d
+| d_wf_exp__anno : forall Γ e A,
+    d_wf_ptyp Γ A ->
+    {{ Γ ⊢ᵉ e }}d ->
+    {{ Γ ⊢ᵉ (exp_anno e A) }}d
+| d_wf_exp__freeze : forall Γ e,
+    {{ Γ ⊢ᵉ e }}d ->
+    {{ Γ ⊢ᵉ (exp_freeze e) }}d
+| d_wf_exp__abs : forall L Γ e,
+    (forall x, x `notin` L ->
+       {{ Γ ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}d) ->
+    {{ Γ ⊢ᵉ (exp_abs e) }}d
+| d_wf_exp__abs_anno : forall L Γ A e,
+    d_wf_ptyp Γ A ->
+    (forall x, x `notin` L ->
+       {{ Γ ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}d) ->
+    {{ Γ ⊢ᵉ (exp_abs_anno A e) }}d
+| d_wf_exp__app : forall Γ e1 e2,
+    {{ Γ ⊢ᵉ e1 }}d ->
+    {{ Γ ⊢ᵉ e2 }}d ->
+    {{ Γ ⊢ᵉ (exp_app e1 e2) }}d
+where "{{ Γ ⊢ᵉ e }}d" := (d_wf_exp Γ e) : frost_d_scope.
+
+Lemma d_wf_exp_to_a : forall Γ e,
+  {{ Γ ⊢ᵉ e }}d -> {{ (denv_to_aenv Γ) ⊢ᵉ e }}a.
+Proof.
+  intros Γ e H; induction H.
+  - apply a_wf_exp__unit.
+  - apply a_wf_exp__var.
+  - apply a_wf_exp__anno; [ apply d_wf_ptyp_to_a; assumption | assumption ].
+  - apply a_wf_exp__freeze; assumption.
+  - apply a_wf_exp__abs with (L := L); assumption.
+  - apply a_wf_exp__abs_anno with (L := L);
+      [ apply d_wf_ptyp_to_a; assumption | assumption ].
+  - apply a_wf_exp__app; assumption.
+Qed.
+
+Lemma a_wf_exp_to_d : forall Θ e,
+  {{ Θ ⊢ᵉ e }}a -> forall Γ, Θ = denv_to_aenv Γ -> {{ Γ ⊢ᵉ e }}d.
+Proof.
+  intros Θ e H; induction H; intros Γ0 HΘ; subst.
+  - apply d_wf_exp__unit.
+  - apply d_wf_exp__var.
+  - apply d_wf_exp__anno;
+      [ eapply a_wf_ptyp_to_d; [ eassumption | reflexivity ]
+      | exact (IHa_wf_exp Γ0 eq_refl) ].
+  - apply d_wf_exp__freeze. exact (IHa_wf_exp Γ0 eq_refl).
+  - apply d_wf_exp__abs with (L := L).
+    intros x Hx. exact (H0 x Hx Γ0 eq_refl).
+  - apply d_wf_exp__abs_anno with (L := L);
+      [ eapply a_wf_ptyp_to_d; [ eassumption | reflexivity ]
+      | intros x Hx; exact (H1 x Hx Γ0 eq_refl) ].
+  - apply d_wf_exp__app;
+      [ exact (IHa_wf_exp1 Γ0 eq_refl) | exact (IHa_wf_exp2 Γ0 eq_refl) ].
+Qed.
+
 Lemma a_wf_pskl_to_d : forall Θ Δa P,
   a_wf_pskl Θ Δa P ->
   forall Γ Δd, Θ = denv_to_aenv Γ -> delta_agree Δa Δd -> d_wf_pskl Γ Δd P.

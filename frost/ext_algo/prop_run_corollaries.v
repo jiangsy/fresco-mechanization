@@ -69,6 +69,7 @@ Require Import src.frost.algo_decl.def_typing.
 (* [a_wf_exp] and its [{{ Θ ⊢ᵉ e }}a] notation live here, not in def_rules.v. *)
 Require Import src.frost.algo.pat.prop_soundness_pat.
 Require Import src.frost.algo.typing.prop_closed.
+Require Import src.frost.algo_decl.prop_conserv.  (* [d_wf_exp] + the nil bridges *)
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
 Require Import src.frost.ext_algo.def_typing.
@@ -270,14 +271,17 @@ Proof.
 Qed.
 
 Corollary e_typing_run_complete_decl_infer : forall e (B : btyp),
-  lc_exp e ->
-  {{ nil ⊢ᵉ e }}a ->
+  {{ nil ⊢ᵉ e }}d ->
   {{ nil ⊢[ mode_ti ] e ⦂ B }}d ->
   exists r,
     e_typing_run (ftvar_in_pskl pskl_hole ∪ fvar_in_exp e ∪ ftvar_in_exp e)
       mode_ti nil pskl_hole e = Some r.
 Proof.
-  intros e B Hlc Hwfe Hd.
+  intros e B Hwfd Hd.
+  (* the subject's algorithmic wf and local closure are DERIVED, not
+     hypotheses: the nil bridge, then [a_wf_exp_lc] *)
+  pose proof (d_wf_exp_to_a _ _ Hwfd) as Hwfe. simpl in Hwfe.
+  pose proof (a_wf_exp_lc Hwfe) as Hlc.
   destruct (a_typing_complete_decl_infer Hwfe Hd) as (A1 & Θ1 & Ha & _).
   destruct lift_typing_nil_instance as (Hinj & Hfun & Hagr).
   assert (Hfv : fvar_in_exp e [<=] empty).
@@ -332,16 +336,18 @@ Qed.
 (** The CHECK twin, against a closed well-formed [B].  The extra
     hypothesis mirrors [e_typing_run_sound_check]'s. *)
 Corollary e_typing_run_complete_decl_check : forall e (B : btyp),
-  lc_exp e ->
-  {{ nil ⊢ᵉ e }}a ->
-  a_wf_ptyp nil (btyp_to_ptyp B) ->
+  {{ nil ⊢ᵉ e }}d ->
+  d_wf_ptyp nil (btyp_to_ptyp B) ->
   {{ nil ⊢[ mode_tc ] e ⦂ B }}d ->
   exists r,
     e_typing_run (ftvar_in_pskl (ptyp_to_pskl (btyp_to_ptyp B))
                   ∪ fvar_in_exp e ∪ ftvar_in_exp e)
       mode_tc nil (ptyp_to_pskl (btyp_to_ptyp B)) e = Some r.
 Proof.
-  intros e B Hlc Hwfe HwfB Hd.
+  intros e B Hwfd HwfBd Hd.
+  pose proof (d_wf_exp_to_a _ _ Hwfd) as Hwfe. simpl in Hwfe.
+  pose proof (a_wf_exp_lc Hwfe) as Hlc.
+  pose proof (d_wf_ptyp_to_a _ _ HwfBd) as HwfB. simpl in HwfB.
   destruct (a_typing_complete_decl_check Hwfe Hd) as (A1 & Θ1 & Ha & _).
   destruct lift_typing_nil_instance as (Hinj & Hfun & Hagr).
   assert (Hfv : fvar_in_exp e [<=] empty).
@@ -413,12 +419,12 @@ Qed.
 (* ===================================================================== *)
 
 Corollary d_typing_infer_dec : forall e,
-  lc_exp e ->
-  {{ nil ⊢ᵉ e }}a ->
+  {{ nil ⊢ᵉ e }}d ->
   sumbool (exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d)
           (~ exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d).
 Proof.
-  intros e Hlc Hwfe.
+  intros e Hwfd.
+  pose proof (d_wf_exp_to_a _ _ Hwfd) as Hwfe. simpl in Hwfe.
   destruct (e_typing_run (ftvar_in_pskl pskl_hole ∪ fvar_in_exp e
               ∪ ftvar_in_exp e) mode_ti nil pskl_hole e) as [ r | ] eqn:Hrun.
   - left.
@@ -426,6 +432,6 @@ Proof.
       as (_ & _ & _ & _ & ζ & _ & _ & Hdd).
     eexists. exact Hdd.
   - right. intros [B Hd].
-    destruct (e_typing_run_complete_decl_infer _ _ Hlc Hwfe Hd) as [r Hr].
+    destruct (e_typing_run_complete_decl_infer _ _ Hwfd Hd) as [r Hr].
     rewrite Hrun in Hr. discriminate.
 Qed.

@@ -255,7 +255,10 @@ exactly `rel_pskl_close_pair_restrict`.  The base rows compose a real
 inline the junk strip on the core's output (the core now also returns the
 SPLIT halves of its correspondence).
 
-⭐⭐ **THE COMPOSITION** (`ext_algo/prop_run_corollaries.v` §5/§6):
+⭐⭐ **THE COMPOSITION** (`ext_algo/prop_run_corollaries.v` §5/§6, with
+NO algorithmic hypothesis: the subject's wf is the new DECLARATIVE
+`d_wf_exp` — prop_conserv.v §2, bridged to `a_wf_exp` at nil — and
+local closure is derived):
 `e_typing_run_complete_decl_infer` / `_check` — a declaratively-typed
 closed program makes the extracted runner answer `Some` — and
 `d_typing_infer_dec`: for a closed program, *"does SOME declarative type

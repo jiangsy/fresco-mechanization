@@ -8009,3 +8009,15 @@ the completeness run) + `a_wf_exp_ftv_dom` (type vars).
   underscore them when composing (`e_typing_run_sound_infer _ _ Hwfe
   Hrun`), and `e_typing_run_complete_init` takes all six leading indices
   (use `eapply`).
+
+#### ⚙ REFINEMENT (2026-08-22, user-directed): paper-side hypotheses
+
+The §5/§6 corollaries now take `{{ nil ⊢ᵉ e }}d` — a new DECLARATIVE
+`d_wf_exp` (algo_decl/prop_conserv.v §2, `a_wf_exp` verbatim with
+`d_wf_ptyp` on the annotations) with BOTH nil bridges
+(`d_wf_exp_to_a`/`a_wf_exp_to_d`, via `denv_to_aenv`) — and `lc_exp e`
+is GONE (derived through the bridge + `a_wf_exp_lc`); the check twin's
+type hypothesis is `d_wf_ptyp` likewise.  So `d_typing_infer_dec` and
+the two run-completeness corollaries have NO algorithmic hypothesis
+left.  ⚠️ prop_conserv.v has no `Set Implicit Arguments` — its bridges
+take Γ/e explicitly (underscore them at call sites).
