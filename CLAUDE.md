@@ -119,6 +119,20 @@ mechanization.)  Corrected 2026-08-09.
     the method and the numbers are in
     [`docs/REPORT-interface-proofpath-audit.md`](docs/REPORT-interface-proofpath-audit.md)
     Part 3.
+  - ⚠️⚠️ **`fsetdec` is NOT MONOTONE in its hypothesis set** (measured
+    2026-08-22): narrowing one call's `clear -` list from 6 hypotheses to 5
+    made its proof go 25.1 s → **31.4 s**.  A hypothesis can PRUNE the search
+    as easily as widen it, so a wide `clear -` is a candidate to MEASURE,
+    never a bug to fix on sight.
+  - ⚠️ **The Ltac profiler inflates ~3×** — the same call read 13.8 s under
+    `Set Ltac Profiling` and **4.75 s** under `time "TAG" tac`.  Profile to
+    RANK tactics; `time` to COST them.
+  - ⚙ Two of the three highest-sensitivity files are now profiled and the
+    per-proof well is DRY: `fsetdec` is 97–98% of each, spread over 124–259
+    ALREADY tightly-scoped calls, and 62% of that is Coq's `Tauto.simplif`
+    preprocessing.  The remaining lever is a lighter decision tactic for the
+    common `[<=]` / `[=]` shapes — what the 2026-08-09 ∉-KIT
+    (`solve_notin_auto`) already did for `x ∉ S` — not more scope-tuning.
 
 - **Read these three docs before touching code**: `CLAUDE.md` (this
   file, ground rules), `DESIGN.md` (calculus + encoding design),
