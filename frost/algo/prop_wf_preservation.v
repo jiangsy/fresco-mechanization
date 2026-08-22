@@ -218,7 +218,27 @@ Proof.
       simpl in Hup.
       pose proof (a_wf_pskl_all_shielded_open (α := α) HwfP0
                     ltac:(clear - HαΘ0 HαP0; solve_notin_auto)) as Hdo.
-      clear - Hup Hdo Hsh0 HαΘ0 HαΔ. fsetdec. }
+      (* ⚠️ PERF: as ONE [fsetdec] over five hypotheses this cost 30 s —
+         a quarter of this file.  SPLIT AT THE [add]: the opener α is
+         excluded by [Hdo]+[HαΘ0], everything else by [Hup]+[Hsh0]+[HαΔ],
+         and each half sees ~4 set variables instead of ~7. *)
+      assert (HαS : α `notin`
+                pskl_shielded_ftv (open_pskl_wrt_pskl P0 (pskl_var_f α)))
+        by (clear - Hdo HαΘ0; fsetdec).
+      assert (HrestS : (Δ1 `union` Δ2) ∩
+                pskl_shielded_ftv (open_pskl_wrt_pskl P0 (pskl_var_f α))
+                [=] empty).
+      { intros z; split; intros Hz; [ exfalso | clear - Hz; fsetdec ].
+        assert (HzΔ : z `in` (Δ1 `union` Δ2)) by (clear - Hz; fsetdec).
+        assert (HzS : z `in` pskl_shielded_ftv
+                        (open_pskl_wrt_pskl P0 (pskl_var_f α)))
+          by (clear - Hz; fsetdec).
+        apply Hup in HzS.
+        assert (Hzα : z <> α) by (intros ->; clear - HzΔ HαΔ; fsetdec).
+        assert (HzP0 : z `in` pskl_shielded_ftv P0)
+          by (clear - HzS Hzα; fsetdec).
+        clear - HzΔ HzP0 Hsh0. fsetdec. }
+      clear - HαS HrestS. fsetdec. }
     assert (Hshx : (add α Δ1 `union` add α Δ2) ∩
                    pskl_shielded_ftv (open_pskl_wrt_pskl P (pskl_var_f α))
                    [=] empty).
@@ -226,7 +246,21 @@ Proof.
       simpl in Hup.
       pose proof (a_wf_pskl_all_shielded_open (α := α) HwfP
                     ltac:(clear - HαΘ0 HαP; solve_notin_auto)) as Hdo.
-      clear - Hup Hdo Hsh HαΘ0 HαΔ. fsetdec. }
+      (* ⚠️ PERF: as ONE [fsetdec] this cost 24-30 s.  Elementwise, every
+         call below sees at most three set variables. *)
+      assert (HαS : α `notin`
+                pskl_shielded_ftv (open_pskl_wrt_pskl P (pskl_var_f α)))
+        by (clear - Hdo HαΘ0; fsetdec).
+      intros z; split; intros Hz; [ exfalso | clear - Hz; fsetdec ].
+      assert (HzS : z `in` pskl_shielded_ftv
+                      (open_pskl_wrt_pskl P (pskl_var_f α)))
+        by (clear - Hz; fsetdec).
+      assert (Hzα : z <> α) by (intros ->; clear - HzS HαS; fsetdec).
+      assert (HzΔ : z `in` (Δ1 `union` Δ2)) by (clear - Hz Hzα; fsetdec).
+      apply Hup in HzS.
+      assert (HzP : z `in` pskl_shielded_ftv P)
+        by (clear - HzS Hzα; fsetdec).
+      clear - HzΔ HzP Hsh. fsetdec. }
     destruct (IHHc Hwfx HwfP0o HwfPo Hcovx Hnfdx Hfafx Hsh0x Hshx)
       as [HwfQ [HshQ [HprovQ _]]].
     assert (HαshQ : α `notin` pskl_shielded_ftv Q)
@@ -301,7 +335,21 @@ Proof.
       simpl in Hup.
       pose proof (a_wf_pskl_all_shielded_open (α := α) HwfP
                     ltac:(clear - HαΘ0 HαP; solve_notin_auto)) as Hdo.
-      clear - Hup Hdo Hsh HαΘ0 HαΔ. fsetdec. }
+      (* ⚠️ PERF: as ONE [fsetdec] this cost 24-30 s.  Elementwise, every
+         call below sees at most three set variables. *)
+      assert (HαS : α `notin`
+                pskl_shielded_ftv (open_pskl_wrt_pskl P (pskl_var_f α)))
+        by (clear - Hdo HαΘ0; fsetdec).
+      intros z; split; intros Hz; [ exfalso | clear - Hz; fsetdec ].
+      assert (HzS : z `in` pskl_shielded_ftv
+                      (open_pskl_wrt_pskl P (pskl_var_f α)))
+        by (clear - Hz; fsetdec).
+      assert (Hzα : z <> α) by (intros ->; clear - HzS HαS; fsetdec).
+      assert (HzΔ : z `in` (Δ1 `union` Δ2)) by (clear - Hz Hzα; fsetdec).
+      apply Hup in HzS.
+      assert (HzP : z `in` pskl_shielded_ftv P)
+        by (clear - HzS Hzα; fsetdec).
+      clear - HzΔ HzP Hsh. fsetdec. }
     destruct (IHHc Hwfx HwfP0x HwfPo Hcovx Hnfdx Hfafx Hsh0x Hshx)
       as [HwfQ [HshQ [HprovQ _]]].
     assert (HαshQ : α `notin` pskl_shielded_ftv Q)
@@ -396,7 +444,21 @@ Proof.
       simpl in Hup.
       pose proof (a_wf_pskl_all_shielded_open (α := α) HwfP0
                     ltac:(clear - HαΘ0 HαP0; solve_notin_auto)) as Hdo.
-      clear - Hup Hdo Hsh0 HαΘ0 HαΔ. fsetdec. }
+      (* ⚠️ PERF: as ONE [fsetdec] this cost 24-30 s.  Elementwise, every
+         call below sees at most three set variables. *)
+      assert (HαS : α `notin`
+                pskl_shielded_ftv (open_pskl_wrt_pskl P0 (pskl_var_f α)))
+        by (clear - Hdo HαΘ0; fsetdec).
+      intros z; split; intros Hz; [ exfalso | clear - Hz; fsetdec ].
+      assert (HzS : z `in` pskl_shielded_ftv
+                      (open_pskl_wrt_pskl P0 (pskl_var_f α)))
+        by (clear - Hz; fsetdec).
+      assert (Hzα : z <> α) by (intros ->; clear - HzS HαS; fsetdec).
+      assert (HzΔ : z `in` (Δ1 `union` Δ2)) by (clear - Hz Hzα; fsetdec).
+      apply Hup in HzS.
+      assert (HzP : z `in` pskl_shielded_ftv P0)
+        by (clear - HzS Hzα; fsetdec).
+      clear - HzΔ HzP Hsh0. fsetdec. }
     assert (Hshx : (add α Δ1 `union` Δ2) ∩
                    pskl_shielded_ftv (pskl_tophole P) [=] empty)
       by (simpl; clear - Hsh HαP; fsetdec).

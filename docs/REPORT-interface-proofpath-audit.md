@@ -355,3 +355,70 @@ What that costs the analysis above:
 ⚙ **The lesson is the deliverable here.**  A perf model assembled from
 `.aux` files is only valid if every entry came from a run with the same
 parallelism.  Re-measure a file ALONE before believing its number.
+
+### B8. ⭐⭐⭐ THE REAL HOTSPOTS, FOUND WITH `coqc -time`, AND FIXED
+
+§B6's "the well is dry" was WRONG, and it was wrong for a methodological
+reason worth stating: it ranked with `.aux` (per-PROOF, contaminated by
+`-j`) and profiled with `Set Ltac Profiling` (3× inflation).  ⭐ The right
+instrument is **`coqc -time`**: it prints one line per VERNAC COMMAND —
+which inside a proof means **per tactic** — with no profiler overhead, in
+a run whose conditions you control.  Re-measuring every candidate file
+ALONE with `-time` produced a completely different picture.
+
+**TRUE RANKING (uncontended, `coqc -time`, sum of commands):**
+
+| file | before | after | cut |
+|---|---|---|---|
+| `algo/prop_wf_preservation.v` | **117.8 s** | **13.9 s** | **−88%** |
+| `algo/sub/prop_completeness_sub_gen.v` | **108.6 s** | **40.8 s** | **−62%** |
+| `ext_algo/prop_lift.v` | 64 s | — | (next) |
+| `frost/prop_ln.v` | 60 s | — | lngen-GENERATED |
+| `algo/typing/prop_completeness_typing.v` | 23.0 s | — | |
+
+Both fixes are **−172 s of proof time**, on the two heaviest files, and
+both were four-to-ten instances of ONE shape.
+
+#### FIX 1 — `prop_wf_preservation.v`: four `fsetdec`s of 24–30 s each
+
+`a_consis_output_wf`'s ∀ rows each prove
+`(add α Δ1 ∪ add α Δ2) ∩ pskl_shielded_ftv (open P α) [=] empty` from five
+hypotheses in ONE `fsetdec` — ~7 set variables, i.e. far past the
+documented cliff.  Replaced by the ELEMENTWISE argument (take `z` in the
+intersection, derive `z ≠ α` from `Hdo`+`HαΘ0`, push through `Hup`, and
+contradict `Hsh`), so every `fsetdec` sees at most three sets.  Four
+sites, one shape.
+
+#### FIX 2 — `prop_completeness_sub_gen.v`: a TEN-SET `Fr`
+
+⭐ **The cost driver is the size of the avoid-set union**, not the
+`clear -` list.  This file's `destruct (atom_fresh (…)) as [β1 Fr]` builds
+
+    Fr : β1 ∉ dom Θ1 ∪ ftvar_in_aenv Θ1 ∪ ftvar_in_pskl P1 ∪ dom Ξ
+              ∪ dom Θ0 ∪ ftvar_in_aenv Θ0 ∪ ftvar_in_aenv Ξ
+              ∪ ftvar_in_pskl P0 ∪ {α} ∪ {β}
+
+— ten sets — and every `clear - … Fr …; fsetdec` made `fsetdec` decompose
+all ten.  The cure was already in the tree: **`solve_notin_auto`** (the
+2026-08-09 ∉-KIT) leads with `destruct_notin`, which SPLITS that union
+before the set reasoning starts.  57 sites changed `fsetdec` →
+`solve_notin_auto`; it is a safe superset (its last branch *is*
+`fsetdec`).
+
+⚠️ **One shortcut failed and is worth recording**: at the single 11.59 s
+site the goal is `α ∉ dom Ξj ∪ dom Θ1` and the context already holds
+`HαΞj : α ∉ dom Ξj` and `HαΘ1 : α ∉ dom Θ1` — so dropping `Fr` looked
+obviously right.  `fsetdec` then FAILED.  Eyeballing what an `fsetdec`
+needs is unreliable (cf. §B6's non-monotonicity finding); route it
+through the kit instead of narrowing it.
+
+#### THE RULE THIS GIVES
+
+1. Rank files with `coqc -time`, one file at a time, never `.aux` across
+   a `-j` run.
+2. In the hot file, the top few COMMANDS are usually one repeated shape.
+3. If the shape is `fsetdec` over a `pick fresh`/`atom_fresh` hypothesis,
+   reach for `solve_notin_auto` FIRST — splitting the union is what
+   helps, not trimming the hypothesis list.
+4. If the goal is an intersection-emptiness with ~6+ sets, go
+   elementwise; each residual call then sees two or three.

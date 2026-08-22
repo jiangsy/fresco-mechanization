@@ -132,15 +132,31 @@ mechanization.)  Corrected 2026-08-09.
     made its proof go 25.1 s → **31.4 s**.  A hypothesis can PRUNE the search
     as easily as widen it, so a wide `clear -` is a candidate to MEASURE,
     never a bug to fix on sight.
-  - ⚠️ **The Ltac profiler inflates ~3×** — the same call read 13.8 s under
-    `Set Ltac Profiling` and **4.75 s** under `time "TAG" tac`.  Profile to
-    RANK tactics; `time` to COST them.
-  - ⚙ Two of the three highest-sensitivity files are now profiled and the
-    per-proof well is DRY: `fsetdec` is 97–98% of each, spread over 124–259
-    ALREADY tightly-scoped calls, and 62% of that is Coq's `Tauto.simplif`
-    preprocessing.  The remaining lever is a lighter decision tactic for the
-    common `[<=]` / `[=]` shapes — what the 2026-08-09 ∉-KIT
-    (`solve_notin_auto`) already did for `x ∉ S` — not more scope-tuning.
+  - ⭐⭐⭐ **USE `coqc -time`, NOT the profiler and NOT `.aux`.**  It prints one
+    line per VERNAC COMMAND — inside a proof that means **per tactic** — with
+    no profiler overhead, in a run whose conditions you control.  `.aux` is
+    per-PROOF and contaminated by `-j`; `Set Ltac Profiling` inflates ~3×
+    (13.8 s profiled vs 4.75 s under `time "TAG" tac`).  Ranking the tree
+    with `.aux` and profiling with Ltac once led this file to claim the
+    per-proof well was DRY; re-measuring every candidate ALONE with
+    `coqc -time` found **226 s in two files** and fixed 172 s of it
+    (2026-08-22).
+  - ⭐⭐ **THE COST DRIVER IS THE AVOID-SET UNION, not the `clear -` list.**
+    A `pick fresh`/`atom_fresh` hypothesis like
+    `Fr : β1 ∉ A ∪ B ∪ … ∪ J` (ten sets) makes EVERY `clear - … Fr …;
+    fsetdec` decompose all ten — that was 4.6–11.6 s per call, ~57 calls in
+    `sub/prop_completeness_sub_gen.v` alone.  ⭐ The cure is already in the
+    tree: **`solve_notin_auto`** (the 2026-08-09 ∉-KIT) leads with
+    `destruct_notin`, which SPLITS the union first; it is a safe superset of
+    `fsetdec` (its last branch *is* `fsetdec`).  That one substitution took
+    the file 108.6 s → 40.8 s.
+  - ⭐⭐ **An intersection-emptiness goal over ~6+ sets wants an ELEMENTWISE
+    proof**, not a bigger `fsetdec`: take `z` in the intersection and derive
+    the contradiction in steps, so each residual call sees two or three sets.
+    Four such calls (24–30 s each!) took `algo/prop_wf_preservation.v` from
+    117.8 s to **13.9 s**.  Worked examples of both cures:
+    [`docs/REPORT-interface-proofpath-audit.md`](docs/REPORT-interface-proofpath-audit.md)
+    §B8.
 
 - **Read these three docs before touching code**: `CLAUDE.md` (this
   file, ground rules), `DESIGN.md` (calculus + encoding design),
