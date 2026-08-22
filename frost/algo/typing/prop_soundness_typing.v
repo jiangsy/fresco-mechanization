@@ -2349,3 +2349,338 @@ Proof.
         | exact Hda ].
     + eapply ad_refine_syn_isub; [ exact HrefB | exact Hle3 ].
 Qed.
+
+(* ===================================================================== *)
+(*  ⚙ PREMISE-FREE STRUCTURAL FACTS FOR THE a_ ⟹ e_ LIFT (2026-08-22)     *)
+(*                                                                        *)
+(*  [a_typing_dom_mono] / [a_typing_flex_rev] are the route-(A) pair the  *)
+(*  lift's binder rows read (side 2 stays wf-free at every rung);         *)
+(*  [a_typing_fvar_binds] is what lets the suffix-DISCARDING [_check]     *)
+(*  rows restrict the expression's pairs: a free TERM variable of the     *)
+(*  subject is term-BOUND in the input context — a consequence of the     *)
+(*  DERIVATION, not of well-formedness ([a_wf_exp]'s var rule is          *)
+(*  premise-free).  ⚠️ Its [a_pat] twin is FALSE: [AP-Anno] never          *)
+(*  descends the annotated body.                                          *)
+(* ===================================================================== *)
+
+Lemma a_typing_dom_mono : forall m Θ0 P0 e B Θ1,
+  {{ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}a -> dom Θ0 [<=] dom Θ1.
+Proof.
+  intros m Θ0 P0 e B Θ1 H; induction H as
+    [ m0 Θa P0a A Θb Hsub
+    | m0 Θa P0a x A B0 Θb Hb Hsub
+    | m0 Θa P0a ea A B0 Θb Θc Ht IHt Hsub
+    | Θa ea A B0 Θb Θc Ht IHt Hchk
+    | x m0 Θa Θb Θc P0a Pa Q0 αs A ea B0 Ξ Hne Hsp Hgm Huq Hsuf Hxf Ht IHt
+    | x m0 Θa Θb Θc Θd P0a Pa Q0 A ea B0 Ξ Hne Hsp Hchk Hsuf Hxf Ht IHt
+    | α Θa Θb A0 ea A Ξ Hsuf Huq Hgam Hαf Ht IHt
+    | x Θa Θb Θc A0 A B0 B1 ea Ξ Hsp Hsuf Huq Hgam Hxf Ht IHt
+    | α Θa Θb A0 Aan ea A Ξ Hsuf Huq Hgam Hαf Ht IHt
+    | x Θa Θb Θc Θd A0 A' A B0 B1 ea Ξ Hsp Hchk Hsuf Huq Hgam Hxf Ht IHt
+    | m0 Θa Θb Θc Θd Pa Q0 A A' B0 e1 e2 Hp2 Ht1 IHt1 Ht2 IHt2 ];
+    try (exact ((proj1 a_sub_sub_flex_dom_mono) _ _ _ _ _ _ _ Hsub)).
+  - (* anno *)
+    pose proof ((proj1 a_sub_sub_flex_dom_mono) _ _ _ _ _ _ _ Hsub) as Hd.
+    clear - IHt Hd. fsetdec.
+  - (* freeze *)
+    pose proof (a_consis_chk_dom_mono Hchk) as Hd.
+    clear - IHt Hd. fsetdec.
+  - (* abs *)
+    pose proof (a_split_dom_mono Hsp) as Hd1.
+    simpl_env in Hxf. simpl_env in IHt. simpl_env.
+    intros a Ha.
+    assert (Ha1 : a `in` dom Θb) by (clear - Ha Hd1; fsetdec).
+    assert (Hax : a <> x) by (intros ->; clear - Ha1 Hxf; fsetdec).
+    assert (Ha2 : a `in` union (singleton x) (union (dom αs) (dom Θb)))
+      by (clear - Ha1; fsetdec).
+    apply IHt in Ha2. clear - Ha2 Hax. fsetdec.
+  - (* abs_anno *)
+    pose proof (a_split_dom_mono Hsp) as Hd1.
+    pose proof (a_consis_chk_dom_mono Hchk) as Hd2.
+    simpl_env in Hxf. simpl_env in IHt. simpl_env.
+    intros a Ha.
+    assert (Ha1 : a `in` dom Θc) by (clear - Ha Hd1 Hd2; fsetdec).
+    assert (Hax : a <> x) by (intros ->; clear - Ha1 Hxf; fsetdec).
+    assert (Ha2 : a `in` union (singleton x) (dom Θc))
+      by (clear - Ha1; fsetdec).
+    apply IHt in Ha2. clear - Ha2 Hax. fsetdec.
+  - (* abs_check_step *)
+    simpl_env in Hαf. simpl_env in IHt. simpl_env.
+    assert (Hdisj : disjoint Ξ Θa) by (clear - Huq; solve_uniq).
+    unfold disjoint in Hdisj.
+    intros a Ha.
+    assert (Hax : a <> α) by (intros ->; clear - Ha Hαf; fsetdec).
+    assert (Ha2 : a `in` union (singleton α) (dom Θa))
+      by (clear - Ha; fsetdec).
+    apply IHt in Ha2. clear - Ha2 Hax Ha Hdisj. fsetdec.
+  - (* abs_check_base *)
+    pose proof (a_split_dom_mono Hsp) as Hd1.
+    simpl_env in Hxf. simpl_env in IHt. simpl_env.
+    assert (Hdisj : disjoint Ξ Θb) by (clear - Huq; solve_uniq).
+    unfold disjoint in Hdisj.
+    intros a Ha.
+    assert (Ha1 : a `in` dom Θb) by (clear - Ha Hd1; fsetdec).
+    assert (Hax : a <> x) by (intros ->; clear - Ha1 Hxf; fsetdec).
+    assert (Ha2 : a `in` union (singleton x) (dom Θb))
+      by (clear - Ha1; fsetdec).
+    apply IHt in Ha2. clear - Ha2 Hax Ha1 Hdisj. fsetdec.
+  - (* abs_anno_check_step *)
+    simpl_env in Hαf. simpl_env in IHt. simpl_env.
+    assert (Hdisj : disjoint Ξ Θa) by (clear - Huq; solve_uniq).
+    unfold disjoint in Hdisj.
+    intros a Ha.
+    assert (Hax : a <> α) by (intros ->; clear - Ha Hαf; fsetdec).
+    assert (Ha2 : a `in` union (singleton α) (dom Θa))
+      by (clear - Ha; fsetdec).
+    apply IHt in Ha2. clear - Ha2 Hax Ha Hdisj. fsetdec.
+  - (* abs_anno_check_base *)
+    pose proof (a_split_dom_mono Hsp) as Hd1.
+    pose proof (a_consis_chk_dom_mono Hchk) as Hd2.
+    simpl_env in Hxf. simpl_env in IHt. simpl_env.
+    assert (Hdisj : disjoint Ξ Θc) by (clear - Huq; solve_uniq).
+    unfold disjoint in Hdisj.
+    intros a Ha.
+    assert (Ha1 : a `in` dom Θc) by (clear - Ha Hd1 Hd2; fsetdec).
+    assert (Hax : a <> x) by (intros ->; clear - Ha1 Hxf; fsetdec).
+    assert (Ha2 : a `in` union (singleton x) (dom Θc))
+      by (clear - Ha1; fsetdec).
+    apply IHt in Ha2. clear - Ha2 Hax Ha1 Hdisj. fsetdec.
+  - (* app *)
+    pose proof (a_pat_dom_mono Hp2) as Hd1.
+    clear - Hd1 IHt1 IHt2. fsetdec.
+Qed.
+
+(** The [dom]-upper bound for [e_typing] — the deleted-pair obligation's
+    side-2 half, paired with [a_typing_flex_rev]. *)
+
+Lemma a_typing_fvar_binds : forall m Θ0 P0 e B Θ1,
+  {{ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}a ->
+  forall x, x `in` fvar_in_exp e ->
+  exists bd, binds x bd Θ0 /\ abind_is_tm bd.
+Proof.
+  intros m Θ0 P0 e B Θ1 H; induction H as
+    [ m0 Θa P0a A Θb Hsub
+    | m0 Θa P0a x0 A B0 Θb Hb Hsub
+    | m0 Θa P0a ea A B0 Θb Θc Ht IHt Hsub
+    | Θa ea A B0 Θb Θc Ht IHt Hchk
+    | x0 m0 Θa Θb Θc P0a Pa Q0 αs A ea B0 Ξ Hne Hsp Hgm Huq Hsuf Hxf Ht IHt
+    | x0 m0 Θa Θb Θc Θd P0a Pa Q0 A ea B0 Ξ Hne Hsp Hchk Hsuf Hxf Ht IHt
+    | α Θa Θb A0 ea A Ξ Hsuf Huq Hgam Hαf Ht IHt
+    | x0 Θa Θb Θc A0 A B0 B1 ea Ξ Hsp Hsuf Huq Hgam Hxf Ht IHt
+    | α Θa Θb A0 Aan ea A Ξ Hsuf Huq Hgam Hαf Ht IHt
+    | x0 Θa Θb Θc Θd A0 A' A B0 B1 ea Ξ Hsp Hchk Hsuf Huq Hgam Hxf Ht IHt
+    | m0 Θa Θb Θc Θd Pa Q0 A A' B0 e1 e2 Hp2 Ht1 IHt1 Ht2 IHt2 ];
+    intros x Hx; simpl in Hx;
+    try (exfalso; clear - Hx; fsetdec).
+  - (* var *)
+    assert (E : x = x0) by (clear - Hx; fsetdec). subst x0.
+    exists (abind_var_typ A). split; [ exact Hb | exact I ].
+  - (* anno *) apply IHt. exact Hx.
+  - (* freeze *) apply IHt. exact Hx.
+  - (* abs — the [αs] block carries no TERM entry *)
+    simpl_env in Hxf.
+    assert (Hne0 : x <> x0) by (intros ->; clear - Hx Hxf; fsetdec).
+    assert (Hx' : x `in` fvar_in_exp (open_exp_wrt_exp ea (exp_var_f x0))).
+    { pose proof (fvar_in_exp_open_exp_wrt_exp_lower ea (exp_var_f x0)) as Hl.
+      clear - Hx Hl. fsetdec. }
+    destruct (IHt x Hx') as (bd & Hb & Htm).
+    apply binds_cons_1 in Hb. destruct Hb as [[E _] | Hb];
+      [ exfalso; apply Hne0; exact E | ].
+    apply binds_app_1 in Hb. destruct Hb as [Hb | Hb].
+    { exfalso.
+      assert (Hdecls : a_decls αs) by (eapply a_guess_mono_decls; exact Hgm).
+      pose proof (@a_decls_binds_flex αs x bd Hdecls Hb) as E.
+      subst bd. simpl in Htm. exact Htm. }
+    exists bd. split; [ | exact Htm ].
+    apply (a_split_tm_ge Hsp); [ exact Htm | exact Hb ].
+  - (* abs_anno *)
+    simpl_env in Hxf.
+    assert (Hne0 : x <> x0) by (intros ->; clear - Hx Hxf; fsetdec).
+    assert (Hx' : x `in` fvar_in_exp (open_exp_wrt_exp ea (exp_var_f x0))).
+    { pose proof (fvar_in_exp_open_exp_wrt_exp_lower ea (exp_var_f x0)) as Hl.
+      clear - Hx Hl. fsetdec. }
+    destruct (IHt x Hx') as (bd & Hb & Htm).
+    apply binds_cons_1 in Hb. destruct Hb as [[E _] | Hb];
+      [ exfalso; apply Hne0; exact E | ].
+    exists bd. split; [ | exact Htm ].
+    apply (a_split_tm_ge Hsp); [ exact Htm | ].
+    apply (a_consis_chk_tm_ge Hchk); [ exact Htm | exact Hb ].
+  - (* abs_check_step — the subject does not change; the opener's entry is
+       a TVAR, which no term binding matches *)
+    destruct (IHt x Hx) as (bd & Hb & Htm).
+    apply binds_cons_1 in Hb. destruct Hb as [[E Ebd] | Hb];
+      [ exfalso; subst bd; simpl in Htm; exact Htm | ].
+    exists bd. split; [ exact Hb | exact Htm ].
+  - (* abs_check_base *)
+    simpl_env in Hxf.
+    assert (Hne0 : x <> x0) by (intros ->; clear - Hx Hxf; fsetdec).
+    assert (Hx' : x `in` fvar_in_exp (open_exp_wrt_exp ea (exp_var_f x0))).
+    { pose proof (fvar_in_exp_open_exp_wrt_exp_lower ea (exp_var_f x0)) as Hl.
+      clear - Hx Hl. fsetdec. }
+    destruct (IHt x Hx') as (bd & Hb & Htm).
+    apply binds_cons_1 in Hb. destruct Hb as [[E _] | Hb];
+      [ exfalso; apply Hne0; exact E | ].
+    exists bd. split; [ | exact Htm ].
+    apply (a_split_tm_ge Hsp); [ exact Htm | exact Hb ].
+  - (* abs_anno_check_step *)
+    destruct (IHt x Hx) as (bd & Hb & Htm).
+    apply binds_cons_1 in Hb. destruct Hb as [[E Ebd] | Hb];
+      [ exfalso; subst bd; simpl in Htm; exact Htm | ].
+    exists bd. split; [ exact Hb | exact Htm ].
+  - (* abs_anno_check_base *)
+    simpl_env in Hxf.
+    assert (Hne0 : x <> x0) by (intros ->; clear - Hx Hxf; fsetdec).
+    assert (Hx' : x `in` fvar_in_exp (open_exp_wrt_exp ea (exp_var_f x0))).
+    { pose proof (fvar_in_exp_open_exp_wrt_exp_lower ea (exp_var_f x0)) as Hl.
+      clear - Hx Hl. fsetdec. }
+    destruct (IHt x Hx') as (bd & Hb & Htm).
+    apply binds_cons_1 in Hb. destruct Hb as [[E _] | Hb];
+      [ exfalso; apply Hne0; exact E | ].
+    exists bd. split; [ | exact Htm ].
+    apply (a_split_tm_ge Hsp); [ exact Htm | ].
+    apply (a_consis_chk_tm_ge Hchk); [ exact Htm | exact Hb ].
+  - (* app — [e2]'s fvars via its TYPE pass (the third premise), pulled
+       back through the first two runs' term-entry preservation *)
+    destruct (AtomSetProperties.In_dec x (fvar_in_exp e2)) as [Hx2 | Hx2].
+    + destruct (IHt2 x Hx2) as (bd & Hb & Htm).
+      exists bd. split; [ | exact Htm ].
+      apply (a_pat_tm_ge Hp2); [ exact Htm | ].
+      apply (a_typing_tm_ge Ht1); [ exact Htm | exact Hb ].
+    + assert (Hx1 : x `in` fvar_in_exp e1) by (clear - Hx Hx2; fsetdec).
+      destruct (IHt1 x Hx1) as (bd & Hb & Htm).
+      exists bd. split; [ | exact Htm ].
+      apply (a_pat_tm_ge Hp2); [ exact Htm | exact Hb ].
+Qed.
+
+(** The premise-free flex-reflect for [a_typing] — route (A), the pair of
+    [a_typing_dom_mono] above.  What the binder rows' deleted-pair
+    obligations read. *)
+Lemma a_typing_flex_rev : forall m Θ0 P0 e B Θ1,
+  {{ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}a ->
+  forall a, a `in` dom Θ0 -> a_flex_tvar Θ1 a -> a_flex_tvar Θ0 a.
+Proof.
+  intros m Θ0 P0 e B Θ1 H; induction H as
+    [ m0 Θa P0a A Θb Hsub
+    | m0 Θa P0a x A B0 Θb Hb Hsub
+    | m0 Θa P0a ea A B0 Θb Θc Ht IHt Hsub
+    | Θa ea A B0 Θb Θc Ht IHt Hchk
+    | x m0 Θa Θb Θc P0a Pa Q0 αs A ea B0 Ξ Hne Hsp Hgm Huq Hsuf Hxf Ht IHt
+    | x m0 Θa Θb Θc Θd P0a Pa Q0 A ea B0 Ξ Hne Hsp Hchk Hsuf Hxf Ht IHt
+    | α Θa Θb A0 ea A Ξ Hsuf Huq Hgam Hαf Ht IHt
+    | x Θa Θb Θc A0 A B0 B1 ea Ξ Hsp Hsuf Huq Hgam Hxf Ht IHt
+    | α Θa Θb A0 Aan ea A Ξ Hsuf Huq Hgam Hαf Ht IHt
+    | x Θa Θb Θc Θd A0 A' A B0 B1 ea Ξ Hsp Hchk Hsuf Huq Hgam Hxf Ht IHt
+    | m0 Θa Θb Θc Θd Pa Q0 A A' B0 e1 e2 Hp2 Ht1 IHt1 Ht2 IHt2 ];
+    intros a Ha Hf;
+    try (exact ((proj1 a_sub_sub_flex_flex_rev)
+                  _ _ _ _ _ _ _ Hsub a Ha Hf)).
+  - (* anno *)
+    pose proof (a_typing_dom_mono Ht) as Hd0.
+    assert (Hab : a `in` dom Θb) by (clear - Ha Hd0; fsetdec).
+    apply (IHt a Ha).
+    exact ((proj1 a_sub_sub_flex_flex_rev) _ _ _ _ _ _ _ Hsub a Hab Hf).
+  - (* freeze *)
+    pose proof (a_typing_dom_mono Ht) as Hd0.
+    assert (Hab : a `in` dom Θb) by (clear - Ha Hd0; fsetdec).
+    apply (IHt a Ha).
+    exact (a_consis_chk_flex_rev Hchk Hab Hf).
+  - (* abs *)
+    pose proof (a_split_dom_mono Hsp) as Hd1.
+    assert (Ha1 : a `in` dom Θb) by (clear - Ha Hd1; fsetdec).
+    simpl_env in Hxf.
+    assert (Hax : a <> x) by (intros ->; clear - Ha1 Hxf; fsetdec).
+    assert (Hf1 : a_flex_tvar (Ξ ++ (x ~ abind_var_typ A) ++ Θc) a)
+      by (rewrite a_flex_tvar_insert_mid by exact Hax; exact Hf).
+    assert (Ha2 : a `in` dom ((x ~ abind_var_typ A) ++ αs ++ Θb))
+      by (simpl_env; clear - Ha1; fsetdec).
+    pose proof (IHt a Ha2 Hf1) as Hf2.
+    rewrite a_flex_tvar_cons_nonflex in Hf2
+      by (split; intros; discriminate).
+    apply a_flex_tvar_app_iff in Hf2. destruct Hf2 as [Hf2 | Hf2].
+    + exfalso.
+      apply a_flex_tvar_in_dom in Hf2.
+      assert (Hd : disjoint αs Θb) by (clear - Huq; solve_uniq).
+      unfold disjoint in Hd. clear - Hd Hf2 Ha1. fsetdec.
+    + exact (a_split_flex_rev Hsp Ha Hf2).
+  - (* abs_anno *)
+    pose proof (a_split_dom_mono Hsp) as Hd1.
+    pose proof (a_consis_chk_dom_mono Hchk) as Hd2.
+    assert (Ha1 : a `in` dom Θc) by (clear - Ha Hd1 Hd2; fsetdec).
+    simpl_env in Hxf.
+    assert (Hax : a <> x) by (intros ->; clear - Ha1 Hxf; fsetdec).
+    assert (Hf1 : a_flex_tvar (Ξ ++ (x ~ abind_var_typ A) ++ Θd) a)
+      by (rewrite a_flex_tvar_insert_mid by exact Hax; exact Hf).
+    assert (Ha2 : a `in` dom ((x ~ abind_var_typ A) ++ Θc))
+      by (simpl_env; clear - Ha1; fsetdec).
+    pose proof (IHt a Ha2 Hf1) as Hf2.
+    rewrite a_flex_tvar_cons_nonflex in Hf2
+      by (split; intros; discriminate).
+    assert (Hab : a `in` dom Θb) by (clear - Ha Hd1; fsetdec).
+    exact (a_split_flex_rev Hsp Ha (a_consis_chk_flex_rev Hchk Hab Hf2)).
+  - (* abs_check_step *)
+    simpl_env in Hαf.
+    assert (Haα : a <> α) by (intros ->; clear - Ha Hαf; fsetdec).
+    assert (HaΞ : a `notin` dom Ξ).
+    { assert (Hd : disjoint Ξ Θa) by (clear - Huq; solve_uniq).
+      unfold disjoint in Hd. clear - Hd Ha. fsetdec. }
+    assert (Hf1 : a_flex_tvar (Ξ ++ (α ~ abind_tvar) ++ Θb) a).
+    { apply a_flex_tvar_app_iff. right.
+      rewrite a_flex_tvar_cons_other by exact Haα. exact Hf. }
+    assert (Ha2 : a `in` dom ((α ~ abind_tvar) ++ Θa))
+      by (simpl_env; clear - Ha; fsetdec).
+    pose proof (IHt a Ha2 Hf1) as Hf2.
+    rewrite a_flex_tvar_cons_other in Hf2 by exact Haα.
+    exact Hf2.
+  - (* abs_check_base *)
+    pose proof (a_split_dom_mono Hsp) as Hd1.
+    assert (Ha1 : a `in` dom Θb) by (clear - Ha Hd1; fsetdec).
+    simpl_env in Hxf.
+    assert (Hax : a <> x) by (intros ->; clear - Ha1 Hxf; fsetdec).
+    assert (HaΞ : a `notin` dom Ξ).
+    { assert (Hd : disjoint Ξ Θb) by (clear - Huq; solve_uniq).
+      unfold disjoint in Hd. clear - Hd Ha1. fsetdec. }
+    (* ⚠️ the conclusion's output DROPS the junk: [Hf] is at [Θc] already *)
+    assert (Hf1 : a_flex_tvar (Ξ ++ (x ~ abind_var_typ A) ++ Θc) a).
+    { apply a_flex_tvar_app_iff. right.
+      rewrite a_flex_tvar_cons_other by exact Hax. exact Hf. }
+    assert (Ha2 : a `in` dom ((x ~ abind_var_typ A) ++ Θb))
+      by (simpl_env; clear - Ha1; fsetdec).
+    pose proof (IHt a Ha2 Hf1) as Hf2.
+    rewrite a_flex_tvar_cons_other in Hf2 by exact Hax.
+    exact (a_split_flex_rev Hsp Ha Hf2).
+  - (* abs_anno_check_step *)
+    simpl_env in Hαf.
+    assert (Haα : a <> α) by (intros ->; clear - Ha Hαf; fsetdec).
+    assert (Hf1 : a_flex_tvar (Ξ ++ (α ~ abind_tvar) ++ Θb) a).
+    { apply a_flex_tvar_app_iff. right.
+      rewrite a_flex_tvar_cons_other by exact Haα. exact Hf. }
+    assert (Ha2 : a `in` dom ((α ~ abind_tvar) ++ Θa))
+      by (simpl_env; clear - Ha; fsetdec).
+    pose proof (IHt a Ha2 Hf1) as Hf2.
+    rewrite a_flex_tvar_cons_other in Hf2 by exact Haα.
+    exact Hf2.
+  - (* abs_anno_check_base *)
+    pose proof (a_split_dom_mono Hsp) as Hd1.
+    pose proof (a_consis_chk_dom_mono Hchk) as Hd2.
+    assert (Ha1 : a `in` dom Θc) by (clear - Ha Hd1 Hd2; fsetdec).
+    simpl_env in Hxf.
+    assert (Hax : a <> x) by (intros ->; clear - Ha1 Hxf; fsetdec).
+    assert (Hf1 : a_flex_tvar (Ξ ++ (x ~ abind_var_typ A) ++ Θd) a).
+    { apply a_flex_tvar_app_iff. right.
+      rewrite a_flex_tvar_cons_other by exact Hax. exact Hf. }
+    assert (Ha2 : a `in` dom ((x ~ abind_var_typ A) ++ Θc))
+      by (simpl_env; clear - Ha1; fsetdec).
+    pose proof (IHt a Ha2 Hf1) as Hf2.
+    rewrite a_flex_tvar_cons_other in Hf2 by exact Hax.
+    assert (Hab : a `in` dom Θb) by (clear - Ha Hd1; fsetdec).
+    exact (a_split_flex_rev Hsp Ha (a_consis_chk_flex_rev Hchk Hab Hf2)).
+  - (* app *)
+    pose proof (a_pat_dom_mono Hp2) as Hd1.
+    pose proof (a_typing_dom_mono Ht1) as Hd2.
+    assert (Hab : a `in` dom Θb) by (clear - Ha Hd1; fsetdec).
+    assert (Hac : a `in` dom Θc) by (clear - Hab Hd2; fsetdec).
+    apply (a_pat_flex_rev Hp2 Ha).
+    apply (IHt1 a Hab).
+    apply (IHt2 a Hac).
+    exact Hf.
+Qed.

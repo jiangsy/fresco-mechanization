@@ -4927,6 +4927,38 @@ Proof.
       [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
 Qed.
 
+(** ⭐ [rel_exp] survives a LEFT-SET restriction — [rel_pskl_restrict_l]
+    one syntax over (prop_solve_rel §13d).  The [_check] rows restrict at
+    the junk suffix's domain, and [a_typing_fvar_binds] +
+    [a_wf_exp_ftv_dom] are what pay the disjointness premise. *)
+Lemma rel_exp_restrict_l : forall D ρ V e1 e2,
+  rel_exp ρ V e1 e2 ->
+  D ∩ (fvar_in_exp e1 ∪ ftvar_in_exp e1) [=] empty ->
+  rel_exp (restrict_l D ρ) V e1 e2.
+Proof.
+  intros D ρ V e1 e2 H; induction H; intros Hd; simpl in Hd.
+  - apply rel_exp__unit.
+  - apply rel_exp__var_b.
+  - apply rel_exp__var_f.
+    match goal with
+    | Ha : rel_atom _ _ _ _ |- _ =>
+        inversion Ha; subst;
+          [ apply rel_atom__pair; apply restrict_l_in;
+              [ assumption | clear - Hd; fsetdec ]
+          | apply rel_atom__id; assumption ]
+    end.
+  - apply rel_exp__abs. apply IHrel_exp. clear - Hd. fsetdec.
+  - apply rel_exp__abs_anno.
+    + apply rel_ptyp_restrict_l; [ assumption | clear - Hd; fsetdec ].
+    + apply IHrel_exp. clear - Hd. fsetdec.
+  - apply rel_exp__app;
+      [ apply IHrel_exp1 | apply IHrel_exp2 ]; clear - Hd; fsetdec.
+  - apply rel_exp__anno.
+    + apply IHrel_exp. clear - Hd. fsetdec.
+    + apply rel_ptyp_restrict_l; [ assumption | clear - Hd; fsetdec ].
+  - apply rel_exp__freeze. apply IHrel_exp. clear - Hd. fsetdec.
+Qed.
+
 (** ⭐ Pinning the IMAGE of a bound atom: [rel_aenv_binds_l] hands back SOME
     image, and [rel_fun] on the context's domain says it is the one the
     caller already has.  ⚙ This is [a_binds_tvar_rel]'s inner step, made
