@@ -1003,24 +1003,10 @@ Qed.
 (* ===================================================================== *)
 (*  §3  Determinism of guess^TY up to fresh renaming                      *)
 (*                                                                        *)
-(*  ⚙ [ptyp_to_pskl_close] is a conversion fact that belongs in           *)
-(*  frost/prop_coercions.v; it sits here only because this campaign       *)
-(*  leaves frost/ alone (the §2b precedent in prop_run_complete.v).       *)
+(*  ⚙ [ptyp_to_pskl_close{,_rec}] used to be re-proved here; they are     *)
+(*  conversion facts and moved to frost/prop_coercions.v (2026-08-22),    *)
+(*  which is where this header already said they belong.                  *)
 (* ===================================================================== *)
-
-Lemma ptyp_to_pskl_close_rec : forall A x k,
-  ptyp_to_pskl (close_ptyp_wrt_ptyp_rec k x A)
-  = close_pskl_wrt_pskl_rec k x (ptyp_to_pskl A).
-Proof.
-  induction A; intros; simpl; f_equal; auto.
-  - destruct (lt_ge_dec n k); reflexivity.
-  - destruct (x == α); reflexivity.
-Qed.
-
-Lemma ptyp_to_pskl_close : forall A x,
-  ptyp_to_pskl (close_ptyp_wrt_ptyp x A)
-  = close_pskl_wrt_pskl x (ptyp_to_pskl A).
-Proof. intros. apply ptyp_to_pskl_close_rec. Qed.
 
 (** A guess block binds nothing but undefined flexibles, so its support
     is its domain. *)

@@ -292,6 +292,29 @@ Proof.
   apply (ptyp_to_pskl_open_rec A (ptyp_var_f α) 0).
 Qed.
 
+(** The CLOSE twin of the two above.  ⚙ Moved here 2026-08-22: it existed
+    in TWO copies (ext_algo/prop_solve_det.v §3 and
+    algo/typing/prop_completeness_typing.v), and prop_solve_det's own
+    header already said it belongs in this file. *)
+Lemma ptyp_to_pskl_close_rec : forall A α k,
+    ptyp_to_pskl (close_ptyp_wrt_ptyp_rec k α A) =
+    close_pskl_wrt_pskl_rec k α (ptyp_to_pskl A).
+Proof.
+  induction A; intros; simpl; f_equal; auto;
+    repeat match goal with
+    | |- context [ if ?t then _ else _ ] => destruct t
+    | |- context [ lt_ge_dec ?a ?b ] => destruct (lt_ge_dec a b)
+    end; reflexivity.
+Qed.
+
+Lemma ptyp_to_pskl_close : forall A α,
+    ptyp_to_pskl (close_ptyp_wrt_ptyp α A) =
+    close_pskl_wrt_pskl α (ptyp_to_pskl A).
+Proof.
+  intros. unfold close_ptyp_wrt_ptyp, close_pskl_wrt_pskl.
+  apply (ptyp_to_pskl_close_rec A α 0).
+Qed.
+
 (** ** pskl -> bskl, both colours *)
 
 Lemma pskl_to_bskl_inh_open_rec : forall P P' k,

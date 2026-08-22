@@ -104,6 +104,7 @@ Require Import src.frost.algo_decl.prop_conserv.  (* [d_wf_exp], {{ Γ ⊢ᵉ e 
 Require Import src.frost.ext_algo.notations.
 Require Import src.frost.ext_algo.def_supply.
 Require Import src.frost.ext_algo.def_typing.
+Require Import src.frost.ext_algo.prop_typing.       (* [entry_supply] *)
 Require Import src.frost.ext_algo.def_typing_impl.
 Require Import src.frost.ext_algo.prop_run_corollaries.
 
@@ -594,75 +595,53 @@ Print Assumptions mono_lambda_anno_redundant.
 
    ⭐⭐⭐ SCOPE — DISCHARGED (2026-08-22).  The claim used to stop at the
    THREADED relation: [None] refuted an [e_typing] derivation, and the LIFT
-   that carries an [a_typing] derivation onto the runner's rails was designed
-   and not built.  The lift is now Qed ([a_typing_rel_e], ext_algo/prop_lift.v
+   carrying an [a_typing] derivation onto the runner's rails was designed and
+   not built.  The lift is now Qed ([a_typing_rel_e], ext_algo/prop_lift.v
    §13 — the last rung of a ten-rung ladder over every judgement of the
    algorithm), so BOTH branches reach the paper's own declarative judgement:
-   the POSITIVE branch by [e_typing_run_sound_infer] / [_check]
+   the POSITIVE by [e_typing_run_sound_infer] / [_check]
    (prop_run_corollaries.v §1/§2), the NEGATIVE by
-   [e_typing_run_complete_decl_infer] / [_check] (§5) — a declaratively-typed
-   closed program HAS a run, so [None] refutes the declarative judgement
-   itself.  The two entries below carry the composition.
-   ⚙ The two hypotheses are INPUTS, not obligations: a dangling de Bruijn
-   index is not a program. *)
+   [e_typing_run_complete_decl_infer] / [_check] (§5).  The design record is
+   hand-off §8c.24 (the obstruction) and §8c.47 (the discharge).
+
+   TWO entries carry it below: this one at the THREADED relation — general in
+   the mode and the input skeleton — and [frost_infer] at the PAPER's, which
+   is also the extracted artifact.  ⚙ [entry_supply P0 e] (prop_typing.v §2)
+   is the supply the driver starts at: the atoms the inputs already mention.
+   ⚙ The hypotheses are INPUTS, not obligations: a dangling de Bruijn index
+   is not a program. *)
 Check e_typing_dec_init :
   forall m P0 e,
   lc_pskl P0 -> lc_exp e ->
-  sumbool
-    (e_typable (ftvar_in_pskl P0 ∪ fvar_in_exp e ∪ ftvar_in_exp e) m nil P0 e)
-    (~ e_typable (ftvar_in_pskl P0 ∪ fvar_in_exp e ∪ ftvar_in_exp e)
-         m nil P0 e).
+  sumbool (e_typable (entry_supply P0 e) m nil P0 e)
+          (~ e_typable (entry_supply P0 e) m nil P0 e).
 Print Assumptions e_typing_dec_init.
 
-(* ⭐⭐⭐ THE NEGATIVE BRANCH AT THE PAPER'S JUDGEMENT — the lift's composition
-   ([a_typing_complete_decl_infer] → [a_typing_rel_e] →
-   [e_typing_run_complete]): a closed program the paper's declarative system
-   types at TI makes the EXTRACTED FUNCTION answer [Some].  The one
-   hypothesis beside the judgement is DECLARATIVE too: [{{ nil ⊢ᵉ e }}d] is
-   the problem definition's "M wf" stated over the paper's own system
-   (algo_decl/prop_conserv.v §2), interchangeable with [{{ nil ⊢ᵉ e }}a] by
-   the nil bridges, and local closure is derived from it. *)
-Check e_typing_run_complete_decl_infer :
-  forall e (B : btyp),
-  {{ nil ⊢ᵉ e }}d ->
-  {{ nil ⊢[ mode_ti ] e ⦂ B }}d ->
-  exists r,
-    e_typing_run (ftvar_in_pskl pskl_hole ∪ fvar_in_exp e ∪ ftvar_in_exp e)
-      mode_ti nil pskl_hole e = Some r.
-Print Assumptions e_typing_run_complete_decl_infer.
-
-(* ⭐⭐⭐ DECIDABILITY OF THE PAPER'S TYPE INFERENCE — the headline the two
-   branches compose into: for a closed, declaratively well-formed program,
-   "does SOME declarative type exist at TI?" is decided by the extracted
-   runner's own answer. *)
-Check d_typing_infer_dec :
-  forall e,
-  {{ nil ⊢ᵉ e }}d ->
-  sumbool (exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d)
-          (~ exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d).
-Print Assumptions d_typing_infer_dec.
-
-(* ⭐⭐⭐ THE CERTIFIED ENTRY POINT (McTT's idiom, on the stdlib's plain
-   union) — the same decision, EXTRACTED: [frost_infer] answers in a
-   [sumor] of a [sig], so the proofs erase but the constructor choice is
-   the certificate.  LEFT holds the runner's answer [r] packaged with the
-   run equation and the declarative typing it implies; RIGHT holds the
-   proof that no declarative type exists.  [ExtrOcamlBasic] maps [sig] to
-   its carrier and [sumor] to [option], so the OCaml side
-   (extraction/extracted/frost_guess.ml) sees
+(* ⭐⭐⭐ THE CERTIFIED ENTRY POINT, AND WITH IT DECIDABILITY OF THE PAPER'S
+   OWN TYPE INFERENCE — McTT's idiom on the stdlib's plain union
+   (prop_run_corollaries.v §6): [frost_infer] answers in a [sumor] of a
+   [sig], so the proofs erase but the CONSTRUCTOR CHOICE is the certificate.
+   LEFT holds the runner's answer [r] with the run equation and the
+   DECLARATIVE typing it implies; RIGHT holds the proof that no declarative
+   type exists.  [ExtrOcamlBasic] maps [sig] to its carrier and [sumor] to
+   [option], so the OCaml side (extraction/extracted/frost_guess.ml) reads
    [val frost_infer : exp -> typing_result option] — the SAME type the
-   runner's answer has, with the paper's reading certified on both
+   runner's own answer has, now with the paper's reading certified on both
    constructors; the wf hypothesis is [Prop] and vanishes.
-   [frost_infer_complete] is the left-completeness guarantee, McTT's
-   [type_check_closed_complete] verbatim.  ⚠️ Application form ([sumor]/
-   [sig]): the meta-substitution notations claim the [{ term …] prefix. *)
+
+   ⚙ Its two projections stay in the tree rather than here: §7's
+   [d_typing_infer_dec] is this statement with the payload forgotten (the
+   plain "typable or not" disjunction, three lines off [frost_infer]), and
+   §5's [e_typing_run_complete_decl_infer] is its RIGHT branch's engine.
+   [frost_infer_complete] (typable ⇒ answers [inleft]) is McTT's
+   [type_check_closed_complete].  ⚠️ Application form ([sumor]/[sig]): the
+   meta-substitution notations claim the [{ term …] prefix. *)
 Check frost_infer :
   forall e, {{ nil ⊢ᵉ e }}d ->
   sumor
     (sig (fun r : typing_result =>
-       e_typing_run (ftvar_in_pskl pskl_hole ∪ fvar_in_exp e
-                     ∪ ftvar_in_exp e)
-         mode_ti nil pskl_hole e = Some r /\
+       e_typing_run (entry_supply pskl_hole e) mode_ti nil pskl_hole e
+         = Some r /\
        exists ζ, ζ ∷ (ty_ctx r) ⊑ nil /\
          {{ nil ⊢[ mode_ti ]
             e ⦂ (ptyp_to_btyp_syn (msubst_ptyp ζ (ty_out r))) }}d))

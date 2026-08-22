@@ -107,6 +107,18 @@ mechanization.)  Corrected 2026-08-09.
   the tree 970 s → 608 s serial; `algo/prop_basic.v` alone went 133 s → 4.4 s, and
   BOTH culprits were `fsetdec` calls that `grep` would have called innocent
   (one already had a `clear -`, just too wide).
+  - ⭐ **MEASURED 2026-08-22 — the build is CRITICAL-PATH-bound, not
+    CPU-bound**, so `NJOBS` past ~4 buys almost nothing: total proof time is
+    944 s, but the chain to `README.v` is 37 files deep and carries ~450 s by
+    itself.  A FULL `make NJOBS=10 coq` is **~8–9 min**; if you have read a
+    larger figure anywhere, it was folklore.  ⛔ And do not assume a spurious
+    `Require` on the chain is a speed-up: removing the most suspicious one in
+    the tree (`pat/prop_soundness_pat.v` → `sub/prop_completeness_sub_gen.v`,
+    78 s, unused by name) SIMULATES TO ZERO, because a parallel chain of the
+    same length runs beside it.  Simulate against `.CoqMakefile.d` first;
+    the method and the numbers are in
+    [`docs/REPORT-interface-proofpath-audit.md`](docs/REPORT-interface-proofpath-audit.md)
+    Part 3.
 
 - **Read these three docs before touching code**: `CLAUDE.md` (this
   file, ground rules), `DESIGN.md` (calculus + encoding design),

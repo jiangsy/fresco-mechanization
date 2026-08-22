@@ -423,17 +423,30 @@ Proof.
     + simpl in Hq2. clear - Hq2 Hg3. fsetdec.
 Qed.
 
+(** ⭐ THE ENTRY SUPPLY, NAMED.  Every entry-point statement — the two
+    soundness corollaries, the completeness twin, decidability, and the
+    certified entry point (prop_run_corollaries.v §1-§7) — is stated at
+    THIS supply and no other: the atoms the inputs already mention, which
+    is the least set that can cover them.  It is what [type.ml] starts its
+    counter at, and naming it is what keeps those statements to a line.
+    ⚙ A transparent [Definition], so a caller holding the spelled-out
+    union still unifies. *)
+Definition entry_supply (P0 : pskl) (e : exp) : supply :=
+  ftvar_in_pskl P0 ∪ fvar_in_exp e ∪ ftvar_in_exp e.
+
 (** ⭐ AND AT THE ENTRY POINT THE PREMISES COST NOTHING.  A closed program is
     run at the empty context, and the driver CHOOSES the supply — so both
     conditions are [reflexivity], and the second encoding's type inference is
     [frost/algo]'s, with no residue.  (prop_consis.v §6 makes the general
     argument; this is its instance at the top of the algorithm.) *)
 Corollary e_typing_sound_init : forall m P0 e B S1 Θ1,
-  {{ (ftvar_in_pskl P0 ∪ fvar_in_exp e ∪ ftvar_in_exp e) ↝ S1
-     ⊨ nil ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}e ->
+  {{ (entry_supply P0 e) ↝ S1 ⊨ nil ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}e ->
   {{ nil ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}a.
 Proof.
   intros * He.
+  (* ⚙ [fsetdec] does not see through a [Definition] — unfold the name
+     before the coverage obligation, which is then [reflexivity]-shaped. *)
+  unfold entry_supply in He.
   destruct (e_typing_sound He ltac:(apply uniq_nil) ltac:(simpl; fsetdec))
     as [Ha _].
   exact Ha.

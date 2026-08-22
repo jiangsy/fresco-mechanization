@@ -21,18 +21,21 @@
                                                    decl-in-algo layer IS the
                                                    plain declarative system
 
-    §1  inference mode — input the ghost [□]
-    §2  checking mode — input a closed type [A0]
+    §1  inference mode — input the ghost [□]           SOUNDNESS
+    §2  checking mode — input a closed type [A0]       SOUNDNESS
+    §3  the COMPLETENESS half, at the same entry point (2026-08-19)
+    §4  DECIDABILITY of the THREADED relation
+    §5  ⭐⭐⭐ COMPLETENESS AT THE PAPER'S JUDGEMENT — the lift, composed
+    §6  ⭐⭐⭐ THE CERTIFIED ENTRY POINT ([frost_infer], extracted)
+    §7  ⭐⭐⭐ DECIDABILITY OF THE PAPER'S TYPE INFERENCE
 
-    ⚙ THE ENTRY SUPPLY IS NOT A PARAMETER OF THE CLAIM.  Both corollaries fix
-    it at [ftvar_in_pskl P0 ∪ fvar_in_exp e ∪ ftvar_in_exp e], which is the
-    supply [e_typing_sound_init] chooses and the reason that corollary is
-    hypothesis-free: coverage becomes [reflexivity] and the context is [nil],
-    so [uniq] is [uniq_nil].  It is also what [type.ml] does at its own entry
-    point — start the counter, start the context empty.
-
-    §3  ⭐ the COMPLETENESS half, at the same entry point (2026-08-19)
-    §4  ⭐⭐ DECIDABILITY — the corollary §5 of the hand-off predicted
+    ⚙ THE ENTRY SUPPLY IS NOT A PARAMETER OF THE CLAIM.  Every entry-point
+    statement fixes it at [entry_supply P0 e] (prop_typing.v §2) — the atoms
+    the inputs already mention, which is the supply [e_typing_sound_init]
+    chooses and the reason that corollary is hypothesis-free: coverage
+    becomes [reflexivity] and the context is [nil], so [uniq] is [uniq_nil].
+    It is also what [type.ml] does at its own entry point — start the
+    counter, start the context empty.
 
     ⚙ §1/§2 were SOUNDNESS ONLY when they were written: [None] meant "no rule
     applied" and was justified by nothing (§8b.7's result shape).  §3 closes
@@ -41,19 +44,12 @@
 
     ⚠️ §4's SCOPE NOTE, KEPT FOR HISTORY AND NOW DISCHARGED (2026-08-22).
     What §4's [None] refutes is a derivation of the THREADED relation
-    [e_typing], which is the relation every rung of the ladder is stated
-    over.  Turning that into a refutation of the paper's own judgement
-    needed the converse of the bridge ([a_typing] ⟹ [e_typing] at a
-    covering supply) — §8c.3's obstruction.  THE LIFT IS NOW BUILT
-    ([a_typing_rel_e], prop_lift.v §13), and §5 composes it with the
-    closed-program completeness corollaries: a declaratively-typed closed
-    program makes the runner answer [Some], so [None] refutes the
-    DECLARATIVE judgement itself.  §6 is the headline consequence —
-    decidability of the paper's own type inference, decided by the
-    extracted function's answer.
-
-    §5  ⭐⭐⭐ completeness at the paper's judgement (the lift, composed)
-    §6  ⭐⭐⭐ decidability of the paper's type inference *)
+    [e_typing]; turning that into a refutation of the paper's own judgement
+    needed the converse of the bridge ([a_typing] ⟹ [e_typing] at a covering
+    supply) — §8c.3's obstruction, now built ([a_typing_rel_e], prop_lift.v
+    §13).  §5 composes it with the closed-program completeness corollaries,
+    §6 packages the pair as the extracted entry point, and §7 is the
+    headline: decidability of the paper's own type inference. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -105,7 +101,7 @@ Open Scope frost_e_scope.
     term typable. *)
 Corollary e_typing_run_sound_infer : forall e r,
   {{ nil ⊢ᵉ e }}a ->
-  e_typing_run (ftvar_in_pskl pskl_hole ∪ fvar_in_exp e ∪ ftvar_in_exp e)
+  e_typing_run (entry_supply pskl_hole e)
     mode_ti nil pskl_hole e = Some r ->
   nil ⊴ (ty_ctx r) /\ {{ ⊢ (ty_ctx r) }}a /\ a_wf_ptyp (ty_ctx r) (ty_out r) /\
   ({{ (ty_ctx r) ⨟ empty ⊢ᵣ bskl_hole
@@ -133,8 +129,7 @@ Qed.
 Corollary e_typing_run_sound_check : forall e A0 r,
   {{ nil ⊢ᵉ e }}a ->
   a_wf_ptyp nil A0 ->
-  e_typing_run (ftvar_in_pskl (ptyp_to_pskl A0) ∪ fvar_in_exp e
-                ∪ ftvar_in_exp e)
+  e_typing_run (entry_supply (ptyp_to_pskl A0) e)
     mode_tc nil (ptyp_to_pskl A0) e = Some r ->
   nil ⊴ (ty_ctx r) /\ {{ ⊢ (ty_ctx r) }}a /\ a_wf_ptyp (ty_ctx r) (ty_out r) /\
   ({{ (ty_ctx r) ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (ptyp_to_pskl A0))
@@ -162,14 +157,17 @@ Qed.
 (* ===================================================================== *)
 
 Corollary e_typing_run_complete_init : forall m P0 e Sd Θd Bd,
-  {{ (ftvar_in_pskl P0 ∪ fvar_in_exp e ∪ ftvar_in_exp e) ↝ Sd
+  {{ (entry_supply P0 e) ↝ Sd
      ⊨ nil ⊢[ m ; P0 ] e ⦂ Bd ⊣ Θd }}e ->
   lc_pskl P0 -> lc_exp e ->
   exists r,
-    e_typing_run (ftvar_in_pskl P0 ∪ fvar_in_exp e ∪ ftvar_in_exp e)
+    e_typing_run (entry_supply P0 e)
       m nil P0 e = Some r.
 Proof.
   intros * Hd HP0 He.
+  (* ⚙ [fsetdec] does not see through a [Definition]; the coverage
+     obligation is [reflexivity]-shaped once the name is unfolded. *)
+  unfold entry_supply in Hd |- *.
   destruct (e_typing_run_complete Hd HP0 He lc_aenv_nil
               (List.Forall_nil _) (uniq_nil _)
               ltac:(simpl; fsetdec)) as [r [ps [Heq _]]].
@@ -223,12 +221,11 @@ Qed.
     inputs, not obligations: a dangling de Bruijn index is not a program. *)
 Corollary e_typing_dec_init : forall m P0 e,
   lc_pskl P0 -> lc_exp e ->
-  sumbool
-    (e_typable (ftvar_in_pskl P0 ∪ fvar_in_exp e ∪ ftvar_in_exp e) m nil P0 e)
-    (~ e_typable (ftvar_in_pskl P0 ∪ fvar_in_exp e ∪ ftvar_in_exp e)
-         m nil P0 e).
+  sumbool (e_typable (entry_supply P0 e) m nil P0 e)
+          (~ e_typable (entry_supply P0 e) m nil P0 e).
 Proof.
   intros m P0 e HP0 He.
+  unfold entry_supply.
   apply e_typing_dec; try assumption;
     [ apply lc_aenv_nil | apply (List.Forall_nil _) | apply (uniq_nil _)
     | simpl; fsetdec ].
@@ -274,7 +271,7 @@ Corollary e_typing_run_complete_decl_infer : forall e (B : btyp),
   {{ nil ⊢ᵉ e }}d ->
   {{ nil ⊢[ mode_ti ] e ⦂ B }}d ->
   exists r,
-    e_typing_run (ftvar_in_pskl pskl_hole ∪ fvar_in_exp e ∪ ftvar_in_exp e)
+    e_typing_run (entry_supply pskl_hole e)
       mode_ti nil pskl_hole e = Some r.
 Proof.
   intros e B Hwfd Hd.
@@ -340,8 +337,7 @@ Corollary e_typing_run_complete_decl_check : forall e (B : btyp),
   d_wf_ptyp nil (btyp_to_ptyp B) ->
   {{ nil ⊢[ mode_tc ] e ⦂ B }}d ->
   exists r,
-    e_typing_run (ftvar_in_pskl (ptyp_to_pskl (btyp_to_ptyp B))
-                  ∪ fvar_in_exp e ∪ ftvar_in_exp e)
+    e_typing_run (entry_supply (ptyp_to_pskl (btyp_to_ptyp B)) e)
       mode_tc nil (ptyp_to_pskl (btyp_to_ptyp B)) e = Some r.
 Proof.
   intros e B Hwfd HwfBd Hd.
@@ -407,37 +403,7 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §6  ⭐⭐⭐ DECIDABILITY OF THE PAPER'S TYPE INFERENCE                    *)
-(*                                                                        *)
-(*  The headline: for a closed program, "does SOME declarative type       *)
-(*  exist at TI?" is decided by the extracted runner itself.  [Some r]    *)
-(*  is a declarative derivation by §1's soundness; [None] refutes one by  *)
-(*  §5's completeness.  This is the claim the paper's "never guess        *)
-(*  polytypes out of thin air" principle promises (README §VI); with the  *)
-(*  lift closed it is now stated over the paper's OWN judgement, not the  *)
-(*  threaded mirror.                                                      *)
-(* ===================================================================== *)
-
-Corollary d_typing_infer_dec : forall e,
-  {{ nil ⊢ᵉ e }}d ->
-  sumbool (exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d)
-          (~ exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d).
-Proof.
-  intros e Hwfd.
-  pose proof (d_wf_exp_to_a _ _ Hwfd) as Hwfe. simpl in Hwfe.
-  destruct (e_typing_run (ftvar_in_pskl pskl_hole ∪ fvar_in_exp e
-              ∪ ftvar_in_exp e) mode_ti nil pskl_hole e) as [ r | ] eqn:Hrun.
-  - left.
-    destruct (e_typing_run_sound_infer _ _ Hwfe Hrun)
-      as (_ & _ & _ & _ & ζ & _ & _ & Hdd).
-    eexists. exact Hdd.
-  - right. intros [B Hd].
-    destruct (e_typing_run_complete_decl_infer _ _ Hwfd Hd) as [r Hr].
-    rewrite Hrun in Hr. discriminate.
-Qed.
-
-(* ===================================================================== *)
-(*  §7  ⭐⭐⭐ THE CERTIFIED ENTRY POINT — McTT's idiom, on the stdlib's     *)
+(*  §6  ⭐⭐⭐ THE CERTIFIED ENTRY POINT — McTT's idiom, on the stdlib's     *)
 (*  PLAIN UNION                                                           *)
 (*                                                                        *)
 (*  McTT's [type_check_closed] answers in [{ P } + { ~ P }]; Frost's      *)
@@ -466,8 +432,7 @@ Qed.
 Definition frost_infer (e : exp) (Hwf : {{ nil ⊢ᵉ e }}d) :
   sumor
     (sig (fun r : typing_result =>
-       e_typing_run (ftvar_in_pskl pskl_hole ∪ fvar_in_exp e
-                     ∪ ftvar_in_exp e)
+       e_typing_run (entry_supply pskl_hole e)
          mode_ti nil pskl_hole e = Some r /\
        exists ζ, ζ ∷ (ty_ctx r) ⊑ nil /\
          {{ nil ⊢[ mode_ti ]
@@ -475,7 +440,7 @@ Definition frost_infer (e : exp) (Hwf : {{ nil ⊢ᵉ e }}d) :
     (~ exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d).
 Proof.
   destruct (e_typing_run
-              (ftvar_in_pskl pskl_hole ∪ fvar_in_exp e ∪ ftvar_in_exp e)
+              (entry_supply pskl_hole e)
               mode_ti nil pskl_hole e) as [ r | ] eqn:Hrun.
   - (* the runner answered — §1's soundness stamps the certificate *)
     apply inleft.
@@ -503,4 +468,30 @@ Proof.
   intros e Hwf B Hd.
   destruct (frost_infer e Hwf) as [ H' | Hno ];
     [ exists H'; reflexivity | exfalso; exact (Hno (ex_intro _ B Hd)) ].
+Qed.
+
+(* ===================================================================== *)
+(*  §7  ⭐⭐⭐ DECIDABILITY OF THE PAPER'S TYPE INFERENCE                    *)
+(*                                                                        *)
+(*  The headline, and now a THREE-LINE consequence of §6: forget the      *)
+(*  entry point's payload and keep the disjunction.  For a closed,        *)
+(*  declaratively well-formed program, "does SOME declarative type exist  *)
+(*  at TI?" is decided by the extracted runner itself.  This is the claim *)
+(*  the paper's "never guess polytypes out of thin air" principle         *)
+(*  promises (README §VI); with the lift closed it is stated over the     *)
+(*  paper's OWN judgement, not the threaded mirror.                       *)
+(* ===================================================================== *)
+
+Corollary d_typing_infer_dec : forall e,
+  {{ nil ⊢ᵉ e }}d ->
+  sumbool (exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d)
+          (~ exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d).
+Proof.
+  intros e Hwf.
+  (* ⚙ the branch CHOICE first: [sumbool] is in [Set], so the [Prop]
+     payload may only be opened once the goal is a [Prop] again. *)
+  destruct (frost_infer e Hwf) as [ [r Hfact] | Hno ];
+    [ left | right; exact Hno ].
+  destruct Hfact as [_ [ζ [_ Hdd]]].
+  exists (ptyp_to_btyp_syn (msubst_ptyp ζ (ty_out r))). exact Hdd.
 Qed.
