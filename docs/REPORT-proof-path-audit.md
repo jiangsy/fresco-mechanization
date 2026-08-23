@@ -409,6 +409,57 @@ the guard excludes another; "every 𝒞-leak is stuck-or-excluded" is the theore
 to check, and it is a bounded probe — the same shape as the one already in
 `cex/`.
 
+### ⭐ What the no-leak design actually simplifies — measured, in four tiers
+
+⚠️ **First, a correction.**  Earlier sections costed ρ at **12,322 lines** by
+summing the four ρ-*carrying files*.  That over-attributes: those files contain
+much that is not ρ (the look-pair fold is runner-completeness and is needed
+regardless).  The measured figures below replace it.
+
+**Tier 1 — deleted outright: 141 lemmas, 1,968 lines.**  The ρ vocabulary exists
+*only* to support the relational currency, and goes with it:
+
+| | where | lines |
+|---|---|---|
+| `rel_pskl` `rel_atom` `cols_l` `cols_r` `flex_pairs_l/r` | `prop_solve_det.v` | 331 |
+| `flex_agree_rel` `restrict_pairs` `rel_inj` `rel_fun` `rel_a_cstrs` `rel_aenv` `rel_exp` + transports | `prop_solve_rel.v` | 1,442 |
+| scattered | `prop_look_pair.v`, `prop_lift{,_typing}.v` | 195 |
+
+**Tier 2 — statements stop carrying ρ: ~4,521 mention sites.**
+1,808 in `prop_lift.v`, 1,270 in `prop_solve_rel.v`, 748 in `prop_lift_typing.v`,
+471 in `prop_look_pair.v`, 224 in `prop_solve_det.v`; `ρx` alone appears **117**
+times in `prop_lift.v`.  These do not delete lemmas, they *shorten* them.  The
+controlled comparison of §4c measures the effect: the chain rung
+`e_guess_mono_lift_n` states in **11 lines with no ρ at all**, against
+`a_guess_mono_rel_e`'s `rel_pskl ρ V` + scoping premise + the tower behind it.
+⭐ And qualitatively this is the big one — **`rel_pskl ρ V P1 P2` becomes
+`P2 = swaps_pskl ps P1`.  A four-place inductive relation becomes an equation**,
+so what were transport lemmas become rewrites.
+
+**Tier 3 — four `[paper-gap]` guards become derivable.**  The cross-half pair and
+the cross-layer pair exist to keep leaked openers apart.  With no opener in `𝒞`,
+`ftvar_in_a_cstrs C1 ⊆ inputs ∪ dom Ξ1`, so `C1 ∩ dom Ξ2 = ∅` follows from
+`uniq (Ξ1 ++ Ξ2)` instead of being assumed — and every consumer's discharge
+proof goes too.
+
+**Tier 4 — three ftv lemmas stop being DISJUNCTIVE, at 27 consumer sites.**
+`a_looksub_lookeq_ftv` (11 uses), `a_solve_cstr_ftv` (9), `a_solve_sub_ftv` (7)
+each currently conclude *"…is an input variable **or** avoids `dom Θ`"* — the
+second disjunct existing solely to describe a leaked name.  Every consumer pays
+a case split for it; all 27 lose it.
+
+### ⚙ Honest total
+
+**~2,000 lines deleted outright**, plus a shrinkage across ~4,500 premise sites,
+four retired guards and 27 de-disjunctified consumers — realistically **4,000–
+6,000 lines**, not the 12,322 quoted earlier.  The twelve rungs still have to be
+proved; they get *shorter statements and shallower proofs*, not deletion.
+
+The larger gain is not the line count.  It is that **the lift stops being a
+correspondence and becomes a renaming**: one derivation, one chain of swaps, an
+equation instead of a relation — which is exactly the shape the guess rung
+already has, and the only rung anyone has called readable.
+
 ### ⛔⛔ …but this does NOT collapse the two layers.  Nothing can.
 
 **Determinism requires threaded state — a short argument.**  For `a_`'s invented
@@ -572,7 +623,7 @@ a design change at one point instead of a 95k-line migration.
 
 | | change | saves | disruption |
 |---|---|---|---|
-| 1 | **close the READ outputs** (`𝒞`, the solve's `P'`) — exists-fresh, NOT cofinite, and NOT `Ξ` | ~12k (the ρ tower) | one design change at the root |
+| 1 | **close the READ outputs** (`𝒞`, the solve's `P'`) — exists-fresh, NOT cofinite, and NOT `Ξ` | ~2k deleted + 4–6k net | one design change at the root |
 | 2 | finish the guard program (§4b design A) | ~12k | incremental, staged |
 | 3 | demote `a_` to a `Definition` over `e_` | ~28k | **95,698 lines re-proved** |
 | 4 | status quo | — | — |
