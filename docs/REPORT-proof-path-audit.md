@@ -349,6 +349,62 @@ failure above is precisely about `Ξ`: closing it would re-break what the
 de-cofinite fix repaired.  `𝒞` and the solve's `P'` *are* read, and are the
 candidates.
 
+### ⛔⛔⛔ PROBE RESULT (2026-08-23): THE NO-LEAK DESIGN IS **DEAD**
+
+`cex/probe_leaked_opener_folds.v` — written, compiled, Qed.  **It refutes
+everything in the two subsections below**, which are kept only as the record of
+what was tried.
+
+The hypothesis was: a `𝒞`-leaked opener never contributes to a *successful* run
+(`probe_extract_conflated_opener.v` §2b shows the fold stuck at `1 ∼ δ`), so the
+collection could reject at emission — the standard skolem-escape check — and
+lose nothing.  That would delete `ρx`, make `rel_fun` global, and collapse the
+relational currency to a functional one.
+
+**It is false, and the counterexample is one rule.**  `SE-GhostL`
+(`a_solve_eq__hole_l`) is
+
+```coq
+| a_solve_eq__hole_l : forall Θ Q,               (* SE-GhostL *)
+    {{ Θ ⊢ₑ pskl_hole ∼ Q ⤳ nil ⨾ Q }}a
+```
+
+— **no side condition on `Q` whatsoever.**  At a *ghost* accumulator the fold
+accepts an arbitrary target and returns it.  So a constraint carrying an opener
+bound nowhere in the fold's context is not stuck: it succeeds, and the opener
+propagates into the fold's **result**.  The probe's §2 and §3 machine-check
+exactly that, with `β` universally quantified and constrained only by
+`β ∉ dom Θ`:
+
+```coq
+Lemma leaked_opener_folds : forall Θ (β : atom),
+  β `notin` dom Θ ->
+  {{ Θ ⊩ (a_cstr_eq (pskl_var_f β) :: nil) ⨾ pskl_hole
+       ⤳ nil ⨾ (pskl_var_f β) }}a.
+```
+
+§2b's stuckness was an artefact of its **unit** accumulator, not a property of
+leaked openers.
+
+⇒ **The leak is load-bearing.**  Rejecting at emission would reject runs that
+today succeed and are filtered — correctly, and later — by
+`a_sub__forall_l`'s wf side condition, exactly as `a_solve_sub__forall_r`'s
+header always said: *"the leak is BY DESIGN; ill-scoped results are filtered
+downstream by wf side conditions, NOT by narrowing this rule."*
+
+⇒ **`ρx` stays.  `rel_fun` stays local.  The relational ρ is forced, not an
+accident of lazy design.**  Tiers 1–4 below are void: nothing in them is
+available.
+
+⭐ **What this settles.**  The two-layer structure and its ~25k bridge are
+**not** redundancy that a better encoding removes.  They are the price of an
+algorithm whose collection legitimately emits constraints mentioning a rigid it
+has already left — and the mechanization has been right about this since
+`60816a9`.  The remaining opportunities are the line-level ones in Part II, and
+§4b design B (supply-index `a_`) if the 95,698-line migration is ever worth it.
+
+---
+
 ### ⭐⭐⭐⭐⭐ THERE ARE **TWO** LEAKS.  One is forced and free; the other is chosen and costs 12k
 
 This is the answer to *"I thought we have to go with the leaked one."*  You do —
@@ -623,7 +679,7 @@ a design change at one point instead of a 95k-line migration.
 
 | | change | saves | disruption |
 |---|---|---|---|
-| 1 | **close the READ outputs** (`𝒞`, the solve's `P'`) — exists-fresh, NOT cofinite, and NOT `Ξ` | ~2k deleted + 4–6k net | one design change at the root |
+| ~~1~~ | ~~close the READ outputs~~ — ⛔ **REFUTED** by `cex/probe_leaked_opener_folds.v`: `SE-GhostL` accepts any target, so a leaked opener folds and reaches the result | — | — |
 | 2 | finish the guard program (§4b design A) | ~12k | incremental, staged |
 | 3 | demote `a_` to a `Definition` over `e_` | ~28k | **95,698 lines re-proved** |
 | 4 | status quo | — | — |
@@ -647,7 +703,7 @@ a design change at one point instead of a 95k-line migration.
 
 | # | item | est. saving | risk | build green throughout |
 |---|---|---|---|---|
-| 1 | **§4 probe: is opener-vs-opener the ONLY live source of two right images?** | *decides* ~12k | none (a probe) | yes |
+| ~~1~~ | ~~§4 probe~~ — ⛔ **DONE, and the answer kills the route** (`cex/probe_leaked_opener_folds.v`) | — | — |
 | 2 | §4 steps 2–4: opener-vs-opener guard, `rel_fun` global, collapse `rel_pskl` | 8–12k | high, staged rung-by-rung | yes, rung at a time |
 | 3 | §A3 name the hypothesis pack + one `_weaken_tvar` transport | 900–1200 | low | yes, file at a time |
 | 4 | §A6 delete the genuine-leftover third of the dead list | ~400 | very low | yes |
