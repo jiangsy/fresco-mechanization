@@ -260,7 +260,7 @@ by making it part of the judgement.
 ⚙ `e_looksub_lift` / `e_lookeq_lift` (80 lines) are the "lift proper at ρ = nil"
 corollaries — written, proved, and **never used**.  They are in the dead list.
 
-## 4c  ⭐⭐⭐⭐⭐ THE ROOT: the ∀ rows LEAK their binder, so cofinite was given up
+## 4c  ⭐⭐⭐⭐ THE ROOT: the ∀ rows LEAK their binder — diagnosis kept, PRESCRIPTION RETRACTED
 
 **Why does `a_` still use cofinite quantification?  It does not.**  Only **3 of
 154** rules in `algo/def_rules.v` are cofinite — `a_wf_pskl__all`,
@@ -310,6 +310,69 @@ currency works.  `prop_lift.v`'s own header says so:
 | the collection, solve, … | **yes** | relational ρ | 451–3129 | 12,322 |
 
 **The disease and the cure sit side by side in the same file.**
+
+### ⛔⛔ RETRACTION (2026-08-23): "go back to cofinite" is WRONG
+
+The causal chain below is a correct *description*.  The prescription first drawn
+from it — restore cofinite — is **wrong, and was already settled against.**
+
+There is a **standing user directive**: *"drop cofinite encoding from the WHOLE
+algo layer (decl stays cofinite) as a standing campaign"* (2026-07-31,
+`60816a9`).  It is not a preference.  Cofinite **broke completeness**:
+
+> `a_sub__forall_r` / `a_subtag__forall_r` used to quantify the DISCARDED junk
+> suffix `Ξ` OUTSIDE their cofinite family — one `Ξ` for every fresh α.  That is
+> not the paper's rule, and it breaks COMPLETENESS: **junk may lawfully mention
+> the binder** (an `a_lookeq__flex_r` guess eq-constrained against it can be
+> solved above it).
+
+Two richer encodings were tried and rejected as well: a function-valued
+`Ξf : atom -> aenv` inside the cofinite family (*exotic-name danger*), and a
+binder-opened template suffix (*still α-dependent junk*).  The design space here
+is explored; do not re-propose it.
+
+### ⭐ What survives the retraction — and it is the useful half
+
+**Closing an output is INDEPENDENT of cofinite.**  The two were conflated.  One
+can close while staying exists-fresh:
+
+```coq
+    {{ Θ ⊢ₛ P ≼[ mode_tc ] (pskl_all_syn B)
+       ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P')) }}a
+```
+
+— one named witness, as the directive requires, but the *result* is β-free.
+
+⚠️ And it must be applied **only to outputs that are READ**.  `Ξ` is discarded
+junk ("anything in `Ξ` is not mentioned in the result"), and the completeness
+failure above is precisely about `Ξ`: closing it would re-break what the
+de-cofinite fix repaired.  `𝒞` and the solve's `P'` *are* read, and are the
+candidates.
+
+### ⛔⛔ …but this does NOT collapse the two layers.  Nothing can.
+
+**Determinism requires threaded state — a short argument.**  For `a_`'s invented
+names to be determined (so that two derivations cannot disagree and ρ becomes
+trivial), the choice must be a function of something.  At `LS-Arrow` **both
+halves run at the same `Θ` with the same inputs in scope.**  A choice function
+of the inputs therefore returns the *same* atom in both halves — a collision.
+So the choice must depend on something that differs between the siblings, i.e.
+**state threaded through the derivation.**  Threaded state *is* the supply.  That
+is `e_`.
+
+⇒ The design space has exactly **two** points, not three:
+
+| | | cost |
+|---|---|---|
+| **(i)** `a_` nondeterministic + `e_` deterministic + a lift | today | swap kit + ρ + lift ≈ 28k |
+| **(ii)** one judgement, supply threaded everywhere | §4d design B | supplies in every `algo/` statement, 95,698 lines |
+
+Closing the read outputs does not create a third point.  What it does is make
+**(i) cheaper**: it removes the leaked-opener class, which is what forces ρ to be
+*relational* rather than functional (§4).  With no leaked openers, `rel_fun`
+could go global, the chain currency would reach above the guess, and the ρ tower
+(12,322) shrinks toward `e_guess_mono_lift_n`'s shape — zero shared
+infrastructure.  **That is the real prize, and it is orthogonal to cofinite.**
 
 ### What "close the binder" means, concretely
 
@@ -449,7 +512,7 @@ a design change at one point instead of a 95k-line migration.
 
 | | change | saves | disruption |
 |---|---|---|---|
-| 1 | **close the ∀ rows' binder** (§4c) | ~15–25k | one design change at the root |
+| 1 | **close the READ outputs** (`𝒞`, the solve's `P'`) — exists-fresh, NOT cofinite, and NOT `Ξ` | ~12k (the ρ tower) | one design change at the root |
 | 2 | finish the guard program (§4b design A) | ~12k | incremental, staged |
 | 3 | demote `a_` to a `Definition` over `e_` | ~28k | **95,698 lines re-proved** |
 | 4 | status quo | — | — |
