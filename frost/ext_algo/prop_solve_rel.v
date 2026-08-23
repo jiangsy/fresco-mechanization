@@ -227,18 +227,7 @@ Qed.
 (*  it; one fact, one name, one file).                                    *)
 (* ===================================================================== *)
 
-Lemma a_flex_tvar_notin_app : forall (Ξ Θ : aenv) α,
-  α `notin` dom Ξ ->
-  (a_flex_tvar (Ξ ++ Θ) α <-> a_flex_tvar Θ α).
-Proof.
-  intros * Hn. split.
-  - intros [Hb | [τ Hb]]; unfold binds in *;
-      apply in_app_or in Hb; destruct Hb as [Hb | Hb];
-      try solve [ exfalso; apply Hn; eapply binds_In; exact Hb ];
-      [ left; exact Hb | right; eexists; exact Hb ].
-  - intros [Hb | [τ Hb]]; unfold binds in *;
-      [ left | right; eexists ]; apply in_or_app; right; eassumption.
-Qed.
+(* ⚙ [a_flex_tvar_app_notin] was a DUPLICATE of [a_flex_tvar_app_notin]; imported, not reproved (2026-08-23). *)
 
 Lemma a_flex_tvar_cons_tvar_other : forall β (Θ : aenv) α,
   α <> β ->
@@ -441,9 +430,9 @@ Lemma flex_agree_rel_push_pairs : forall ρn ρ V Θ1 Θ2,
 Proof.
   intros * [HagV Hagp] Hdl Hdr. split.
   - intros α Hα.
-    rewrite (a_flex_tvar_notin_app (flex_pairs_l ρn))
+    rewrite (a_flex_tvar_app_notin (flex_pairs_l ρn))
       by (rewrite dom_flex_pairs_l; clear - Hdl Hα; fsetdec).
-    rewrite (a_flex_tvar_notin_app (flex_pairs_r ρn))
+    rewrite (a_flex_tvar_app_notin (flex_pairs_r ρn))
       by (rewrite dom_flex_pairs_r; clear - Hdr Hα; fsetdec).
     apply HagV; exact Hα.
   - intros a b Hin. apply in_app_or in Hin. destruct Hin as [Hin | Hin].
@@ -453,9 +442,9 @@ Proof.
         unfold binds in *; apply in_or_app; left; exact Hb.
     + pose proof (cols_l_in _ _ _ Hin) as Hcl.
       pose proof (cols_r_in _ _ _ Hin) as Hcr.
-      rewrite (a_flex_tvar_notin_app (flex_pairs_l ρn))
+      rewrite (a_flex_tvar_app_notin (flex_pairs_l ρn))
         by (rewrite dom_flex_pairs_l; clear - Hdl Hcl; fsetdec).
-      rewrite (a_flex_tvar_notin_app (flex_pairs_r ρn))
+      rewrite (a_flex_tvar_app_notin (flex_pairs_r ρn))
         by (rewrite dom_flex_pairs_r; clear - Hdr Hcr; fsetdec).
       apply Hagp. exact Hin.
 Qed.
@@ -3804,13 +3793,7 @@ Proof.
     [ left | right; exists t ]; unfold binds; simpl; left; reflexivity.
 Qed.
 
-Lemma a_decls_app : forall Ξ1 Ξ2,
-  a_decls Ξ1 -> a_decls Ξ2 -> a_decls (Ξ1 ++ Ξ2).
-Proof.
-  intros Ξ1 Ξ2 H1; induction H1 as [ | α1 Ξ H IH ]; intros H2; simpl;
-    [ exact H2 | ].
-  simpl_env. constructor. apply IH. exact H2.
-Qed.
+(* ⚙ [a_decls_app] was a DUPLICATE of [a_decls_app]; imported, not reproved (2026-08-23). *)
 
 Lemma a_decls_one : forall (α : atom), a_decls (α ~ abind_flex_mono).
 Proof. intros α. simpl_env. constructor. constructor. Qed.

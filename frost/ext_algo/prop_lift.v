@@ -3556,7 +3556,7 @@ Proof.
     { assert (Hbig : a_flex_tvar (Ξ ++ (β ~ abind_flex_mono_def τ) ++ Θ0) α)
         by (apply a_flex_tvar_prepend; exact Hfa).
       apply (proj1 (flex_agree_rel_use Hagr Hrα)) in Hbig.
-      apply (proj1 (a_flex_tvar_notin_app _ _ Hα'Ξ)). exact Hbig. }
+      apply (proj1 (a_flex_tvar_app_notin _ _ Hα'Ξ)). exact Hbig. }
     remember (V ∩ ftvar_in_aenv (Ξ ++ Θ0)) as VC eqn:EVC.
     assert (HVC : VC [<=] V) by (subst VC; clear; fsetdec).
     assert (HVCsplit : forall x, x `in` V -> x <> β -> x `in` VC).

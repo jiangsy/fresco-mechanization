@@ -2830,17 +2830,7 @@ Qed.
 (** A substitution cannot manufacture the looked-for variable: the only way
     [subst P0 β P] could BE [α] is [P = α] (excluded by the rule) or
     [P = β] with [P0 = α] (excluded by [α ∉ ftv P0]). *)
-Lemma subst_pskl_in_pskl_neq_var : forall P P0 β α,
-  P <> pskl_var_f α ->
-  α `notin` ftvar_in_pskl P0 ->
-  subst_pskl_in_pskl P0 β P <> pskl_var_f α.
-Proof.
-  intros P P0 β α Hne HαP0 Hc.
-  destruct P; cbn in Hc; try discriminate Hc.
-  match type of Hc with context [if ?e then _ else _] => destruct e end.
-  - subst. cbn in HαP0. clear - HαP0; fsetdec.
-  - apply Hne; exact Hc.
-Qed.
+(* ⚙ [subst_neq_var_keep] was a DUPLICATE of [subst_neq_var_keep]; imported, not reproved (2026-08-23). *)
 
 (** The converse of [a_solvetag_split], for the arrow rows.  It needs the
     LEFT list to be all-eq — [a_solvetag__sub] fires only on a SINGLETON, so
@@ -2868,7 +2858,6 @@ Qed.
     avoid-set the new constraints mention nothing the old ones did not. *)
 Local Ltac subst_gen_nil := split; simpl; clear; fsetdec.
 Local Ltac subst_gen_ih := split; [ assumption | split; assumption ].
-
 
 (** ⭐⭐ THE AVOID-SET [L] AND THE TWO BOOKKEEPING CONJUNCTS (2026-08-19) are
     what the collection's CROSS-HALF FRESHNESS GUARD costs this lemma, and
@@ -3207,7 +3196,7 @@ Proof.
         * clear - Hγ'α Hγ'bt Hγ'Θ Hγ'sub; look_fresh.
          * (* the COUNTERPART is untouched, so its hattedness rides through *)
            exact Hflxb.
-        * apply subst_pskl_in_pskl_neq_var; [ exact Hne | exact HαP0 ].
+        * apply subst_neq_var_keep; [ exact Hne | exact HαP0 ].
         * pose proof (ftvar_in_pskl_subst_pskl_in_pskl_lower Q P0 β) as Hlo.
           clear - Hlo Hin Hβα; fsetdec.
       + split.

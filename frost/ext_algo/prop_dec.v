@@ -89,12 +89,7 @@ Qed.
 
 (** ⚙ Off the NEGATIVE scan, not a second induction: def_dec.v §2 already
     proved [false] refutes, so [true] follows by case analysis on the bool. *)
-Lemma flex_bound_ck_complete : forall Θ α,
-  a_flex_tvar Θ α -> flex_bound_ck Θ α = true.
-Proof.
-  intros Θ α Hf. destruct (flex_bound_ck Θ α) eqn:Hck; [ reflexivity | ].
-  exfalso. exact (flex_bound_ck_not_flex_tvar Θ α Hck Hf).
-Qed.
+(* ⚙ [flex_tvar_flex_bound_ck] was a DUPLICATE of [flex_tvar_flex_bound_ck]; imported, not reproved (2026-08-23). *)
 
 Lemma non_flex_ck_complete : forall Θ P,
   a_non_flex Θ P -> non_flex_ck Θ P = true.
@@ -106,15 +101,7 @@ Proof.
     [ apply a_flex__var | eapply a_flex__var_def ]; eassumption.
 Qed.
 
-Lemma rigid_bound_ck_complete : forall Θ α,
-  binds α abind_tvar Θ -> rigid_bound_ck Θ α = true.
-Proof.
-  induction Θ as [ | [β b] Θ' IH ]; simpl; intros α Hb; [ inversion Hb | ].
-  destruct Hb as [Heq | Hin].
-  - inversion Heq; subst. destruct (α == α); congruence.
-  - destruct b; try solve [ apply IH; exact Hin ].
-    destruct (α == β); [ reflexivity | apply IH; exact Hin ].
-Qed.
+(* ⚙ [rigid_bound_ck_complete] was a DUPLICATE of [rigid_bound_ck_complete]; imported, not reproved (2026-08-23). *)
 
 Lemma tvarish_ck_complete : forall Θ α,
   a_binds_tvar α Θ -> tvarish_ck Θ α = true.
@@ -122,8 +109,8 @@ Proof.
   intros Θ α Hb. unfold tvarish_ck. apply orb_true_intro.
   destruct Hb as [Hr | [Hf | [τ Hf]]];
     [ left; apply rigid_bound_ck_complete; exact Hr
-    | right; apply flex_bound_ck_complete; left; exact Hf
-    | right; apply flex_bound_ck_complete; right; exists τ; exact Hf ].
+    | right; apply flex_tvar_flex_bound_ck; left; exact Hf
+    | right; apply flex_tvar_flex_bound_ck; right; exists τ; exact Hf ].
 Qed.
 
 (* ===================================================================== *)
@@ -142,11 +129,7 @@ Proof. intros P H; inversion H; subst; reflexivity. Qed.
    ForallL / UnivGhostL obligations need it, and this file is downstream of
    def_look_impl.v.  It is still in scope here, through def_dec.v. *)
 
-Lemma mono_ck_complete : forall A, mono_ptyp A -> mono_ck A = true.
-Proof.
-  induction A; simpl; intros Hm; try reflexivity; try solve [ inversion Hm ].
-  inversion Hm; subst. apply andb_true_intro; split; auto.
-Qed.
+(* ⚙ [mono_ck_complete] was a DUPLICATE of [mono_ck_complete]; imported, not reproved (2026-08-23). *)
 
 Lemma nonghost_ck_complete : forall P,
   nonghost_pskl P -> nonghost_ck P = true.

@@ -575,7 +575,7 @@ Local Ltac case_test :=
 Local Ltac flex_test_absurd :=
   solve [ match goal with
           | Hm : flex_bound_ck ?T ?b = false, Hf : a_flex_tvar ?T ?b |- _ =>
-              exfalso; rewrite (flex_bound_ck_complete _ _ Hf) in Hm;
+              exfalso; rewrite (flex_tvar_flex_bound_ck _ _ Hf) in Hm;
               discriminate
           end
         | match goal with
@@ -1490,7 +1490,7 @@ Proof.
     | clear - Hnb Hα; fsetdec ].
 Qed.
 
-(* ⚙ [a_flex_tvar_notin_app] MOVED to ext_algo/prop_solve_rel.v §2
+(* ⚙ [a_flex_tvar_app_notin] MOVED to ext_algo/prop_solve_rel.v §2
    (2026-08-16, with the rel-transport kit that also consumes it). *)
 
 Lemma flex_agree_push_blocks : forall V Ξ1 Ξ2 Θ1 Θ2,
@@ -1500,8 +1500,8 @@ Lemma flex_agree_push_blocks : forall V Ξ1 Ξ2 Θ1 Θ2,
   flex_agree V (Ξ1 ++ Θ1) (Ξ2 ++ Θ2).
 Proof.
   intros * H1 H2 Hag α Hα.
-  rewrite (a_flex_tvar_notin_app Ξ1) by (clear - H1 Hα; fsetdec).
-  rewrite (a_flex_tvar_notin_app Ξ2) by (clear - H2 Hα; fsetdec).
+  rewrite (a_flex_tvar_app_notin Ξ1) by (clear - H1 Hα; fsetdec).
+  rewrite (a_flex_tvar_app_notin Ξ2) by (clear - H2 Hα; fsetdec).
   apply Hag; exact Hα.
 Qed.
 
@@ -1807,7 +1807,7 @@ Proof.
             assert (Hfr : a_flex_tvar Θ bv)
               by (apply (proj1 (Hagr bv ltac:(simpl; clear; fsetdec)));
                   exact Hfx);
-            apply flex_bound_ck_complete in Hfr;
+            apply flex_tvar_flex_bound_ck in Hfr;
             rewrite Hfr in Htest; simpl in Htest; discriminate
         end.
     + (* arrow — no rule *) inversion Hd.
@@ -1852,7 +1852,7 @@ Proof.
             assert (Hfr : a_flex_tvar Θ bv)
               by (apply (proj1 (Hagr bv ltac:(simpl; clear; fsetdec)));
                   exact Hfx);
-            apply flex_bound_ck_complete in Hfr;
+            apply flex_tvar_flex_bound_ck in Hfr;
             rewrite Hfr in Htest; simpl in Htest; discriminate
         end.
     + (* arrow — SE-Arrow: the context-threading case *)
@@ -1940,7 +1940,7 @@ Proof.
             assert (Hfr : a_flex_tvar Θ bv)
               by (apply (proj1 (Hagr bv ltac:(simpl; clear; fsetdec)));
                   exact Hfx);
-            apply flex_bound_ck_complete in Hfr;
+            apply flex_tvar_flex_bound_ck in Hfr;
             rewrite Hfr in Htest; simpl in Htest; discriminate
         end.
     + (* arrow — no rule *) inversion Hd.
