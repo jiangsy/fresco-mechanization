@@ -349,6 +349,66 @@ failure above is precisely about `Ξ`: closing it would re-break what the
 de-cofinite fix repaired.  `𝒞` and the solve's `P'` *are* read, and are the
 candidates.
 
+### ⭐⭐⭐⭐⭐ THERE ARE **TWO** LEAKS.  One is forced and free; the other is chosen and costs 12k
+
+This is the answer to *"I thought we have to go with the leaked one."*  You do —
+but only for the leak that does not cost anything.
+
+**Leak 1 — into `Ξ` (the discarded junk suffix).  FORCED.**  Closing it is what
+broke completeness in the cofinite era: *"junk may lawfully mention the binder."*
+⭐ But an atom in `Ξ` is in `dom Ξ` — it **is** bound — so `rel_fun` handles it
+without complaint.  **This leak is free.**
+
+**Leak 2 — into `𝒞` (the collected constraints, which are READ).  CHOSEN.**  It
+mirrors `type.ml`'s unbind-and-discard; nothing in the algorithm demands it.
+And it is *exactly* the `ρx` column.  From `prop_lift.v`'s own rung statements:
+
+```coq
+    /\ (forall a b, In (a, b) ρx -> a `in` ftvar_in_a_cstrs C)
+    /\ cols_l ρx ∩ dom Ξ [=] empty
+```
+
+— an atom leaked into `𝒞` and **not** in `dom Ξ`.  That is verbatim the
+"bound NOWHERE" class that `prop_solve_rel.v` names as the sole reason
+`rel_fun` cannot be global:
+
+> *"`rel_inj ρ V` — **GLOBAL**.  True by construction: every right atom is drawn
+> ONCE, from a supply that only grows … `rel_fun ρ V D` — **LOCAL**, on a set
+> `D`.  ⚠️ It CANNOT be global: Finding 1 is exactly a left atom with two right
+> images … What saves the trio is that a leaked opener is bound NOWHERE — not in
+> `Θ0`, not in `Ξ` — so `D` is taken to be the CONTEXT's domain."*
+
+**Injectivity is already global and free.  Only functionality fails, and only
+because of leak 2.**  That single class is what forces ρ to be a *relation*
+instead of a *function*, and the relational currency is the 12,322 lines.
+
+### ⚙ And leak 2 has no semantics anyway — the probe says so
+
+`cex/probe_extract_conflated_opener.v` §2b: de-conflate the opener to a genuinely
+fresh rigid `δ` — *"which is exactly what threading does"* — and
+
+> *"the fold is **STUCK**: `1 ∼ δ` matches NO `a_solve_eq` row.  Not SolE-Unit
+> (the target is not `1`), not SolE-Var (the subject is not a variable), not
+> SolE-FlexR (`δ` is not hatted), not SolE-GhostL / SolE-VacuousR … and no ⫯ / ∀
+> / → row."*
+
+A constraint carrying a genuinely rigid opener **means nothing to the solver**.
+The unguarded rules survived only by *accident* — the sibling had made the same
+atom flexible, so `SolE-FlexR` fired on it — and the cross-half guard now
+excludes that accident outright.
+
+⇒ **The no-leak design for `𝒞` is the standard skolem-escape check**: when a
+collected constraint would mention the opened rigid, reject.  That is already
+the honest semantics (stuck = failure); making it structural turns a
+freshness-guard-plus-ρ apparatus into a rule side condition, and **deletes `ρx`,
+hence the reason `rel_fun` is local, hence the relational currency.**
+
+⚠️ **What is not yet established**: that *no* reachable derivation needs a
+𝒞-leaked opener to SUCCEED.  The probe shows one such configuration is stuck and
+the guard excludes another; "every 𝒞-leak is stuck-or-excluded" is the theorem
+to check, and it is a bounded probe — the same shape as the one already in
+`cex/`.
+
 ### ⛔⛔ …but this does NOT collapse the two layers.  Nothing can.
 
 **Determinism requires threaded state — a short argument.**  For `a_`'s invented
