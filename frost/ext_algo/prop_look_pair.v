@@ -391,32 +391,6 @@ Proof.
   - apply Forall_app; split; assumption.
 Qed.
 
-(** A looksub collection is a pure-eq prefix + at most one terminal sub. *)
-Lemma e_looksub_cstrs_shape : forall S0 Θ α m P P' S1 Ξ C,
-  {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
-  exists Ce Cs, C = Ce ++ Cs /\ Forall a_cstr_is_eq Ce
-    /\ (Cs = nil \/ exists m' Q, Cs = a_cstr_sub m' Q :: nil).
-Proof.
-  intros * H.
-  induction H;
-    try solve
-      [ exists nil, nil; simpl; repeat split; [ constructor | left; reflexivity ] ];
-    try solve [ assumption ].
-  - (* LS-Var *)
-    exists nil, (a_cstr_sub m P :: nil). simpl. repeat split;
-      [ constructor | right; eauto ].
-  - (* LS-Check: pure-eq *)
-    exists C, nil. rewrite app_nil_r. repeat split;
-      [ eapply e_lookeq_cstrs_pure_eq; eassumption | left; reflexivity ].
-  - (* LS-Arrow *)
-    destruct IHe_looksub as (Ce & Cs & -> & Hpe & Hcs).
-    exists (C1 ++ Ce), Cs. repeat split.
-    + solve [ apply app_assoc | symmetry; apply app_assoc ].
-    + apply Forall_app. split;
-        [ eapply e_lookeq_cstrs_pure_eq; eassumption | exact Hpe ].
-    + exact Hcs.
-Qed.
-
 Lemma e_lookeq_subject_absent : forall S0 Θ α P P' S1 Ξ C,
   {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
   α `in` S0 ->
@@ -507,17 +481,6 @@ Proof.
   destruct IHe_looksub as [-> ->];
     [ clear - HαS Hg; fsetdec | clear - Habs; fsetdec | ].
   split; reflexivity.
-Qed.
-
-Lemma e_lookeq_hole_target : forall S0 Θ α P S1 Ξ C,
-  {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] pskl_hole ⤳ Ξ ⨾ C }}e ->
-  Ξ = nil /\ (C = nil \/ C = a_cstr_eq pskl_hole :: nil).
-Proof.
-  intros * H.
-  inversion H; subst; auto.
-  match goal with
-  | Hg : guarded_pskl pskl_hole |- _ => inversion Hg
-  end.
 Qed.
 
 Lemma e_looksub_hole_target : forall S0 Θ α m P S1 Ξ C,
@@ -702,49 +665,6 @@ Proof.
     simpl. auto.
   - (* SE-VacuousR *) auto.
   - (* SE-GuardedGhost *) apply IHa_solve_eq. reflexivity.
-Qed.
-
-Lemma a_solve_cstr_var_subject_inv : forall C Θ γ Ξ Q,
-  Forall a_cstr_is_eq C ->
-  {{ Θ ⊩ C ⨾ (pskl_var_f γ) ⤳ Ξ ⨾ Q }}a ->
-  Ξ = nil /\ Q = pskl_var_f γ.
-Proof.
-  induction C as [ | c C' IH ]; intros * Hpe Hd.
-  - inversion Hd; subst. auto.
-  - inversion Hpe as [ | ? ? [Q0 HQ0] Hpe' ]; subst.
-    apply a_solve_cstr_eq_inv in Hd as (Ξ1 & Ξ2 & Pmid & -> & Hh & Ht).
-    destruct (a_solve_eq_var_subject_inv Hh) as [-> ->].
-    destruct (IH _ _ _ _ Hpe' Ht) as [-> ->].
-    auto.
-Qed.
-
-Lemma a_solve_cstr_var_subject : forall C Θ γ,
-  Forall a_cstr_is_eq C ->
-  {{ Θ ⊩ C ⨾ (pskl_var_f γ) ⤳ nil ⨾ (pskl_var_f γ) }}a.
-Proof.
-  induction C as [ | c C' IH ]; intros * Hpe.
-  - apply a_solve_cstr__empty.
-  - inversion Hpe as [ | ? ? [Q0 HQ0] Hpe' ]; subst.
-    replace (@nil (atom * abind))
-      with (@nil (atom * abind) ++ @nil (atom * abind)) by reflexivity.
-    eapply a_solve_cstr__eq.
-    + apply a_solve_eq__var.
-    + simpl. apply IH. exact Hpe'.
-Qed.
-
-Lemma a_solve_cstr_var_subject_sub : forall C Θ γ m Q,
-  Forall a_cstr_is_eq C ->
-  {{ Θ ⊩ (C ++ (a_cstr_sub m Q :: nil)) ⨾ (pskl_var_f γ)
-     ⤳ nil ⨾ (pskl_var_f γ) }}a.
-Proof.
-  induction C as [ | c C' IH ]; intros * Hpe; simpl.
-  - apply a_solve_cstr__sub. apply a_solve_sub__var.
-  - inversion Hpe as [ | ? ? [Q0 HQ0] Hpe' ]; subst.
-    replace (@nil (atom * abind))
-      with (@nil (atom * abind) ++ @nil (atom * abind)) by reflexivity.
-    eapply a_solve_cstr__eq.
-    + apply a_solve_eq__var.
-    + simpl. apply IH. exact Hpe'.
 Qed.
 
 (* ===================================================================== *)

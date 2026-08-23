@@ -236,11 +236,3 @@ Proof.
   intros P α HP. apply pskl_no_hole_open_rec; simpl; auto.
 Qed.
 
-Lemma pskl_no_hole_subst : forall Q β P,
-  pskl_no_hole Q -> pskl_no_hole P ->
-  pskl_no_hole (subst_pskl_in_pskl Q β P).
-Proof.
-  induction P; simpl; intros HQ HP; auto.
-  - destruct (α == β); [ exact HQ | simpl; exact I ].
-  - destruct HP; split; auto.
-Qed.

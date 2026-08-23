@@ -670,7 +670,6 @@ Proof.
   rewrite Hs. apply IH. intros a' b' Hin. apply Hav. right. exact Hin.
 Qed.
 
-
 (** The chain: (a,z) outermost, (z,b) innermost, one z per pair. *)
 Fixpoint chain (ρ : list (atom * atom)) (zs : list atom)
     : list (atom * atom) :=
@@ -810,13 +809,6 @@ Proof.
 Qed.
 
 Lemma dom_flex_pairs_r : forall ρ, dom (flex_pairs_r ρ) [=] cols_r ρ.
-Proof.
-  induction ρ as [ | [a b] ρ IH ]; simpl; [ fsetdec | ].
-  rewrite IH. fsetdec.
-Qed.
-
-Lemma ftvar_in_aenv_flex_pairs_l : forall ρ,
-  ftvar_in_aenv (flex_pairs_l ρ) [=] cols_l ρ.
 Proof.
   induction ρ as [ | [a b] ρ IH ]; simpl; [ fsetdec | ].
   rewrite IH. fsetdec.

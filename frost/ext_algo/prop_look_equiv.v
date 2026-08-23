@@ -144,17 +144,6 @@ Qed.
     generated — so the side that emitted them and the side that did not
     fold to the SAME state.  (The BUILD direction is one constructor,
     SE-VacuousR / SS-Vacuous; these are the INVERSIONS.) *)
-Lemma a_solve_eq_hole_target_inv : forall Θ P Ξ P',
-  {{ Θ ⊢ₑ P ∼ pskl_hole ⤳ Ξ ⨾ P' }}a ->
-  Ξ = nil /\ P' = P.
-Proof.
-  intros * H.
-  inversion H; subst; auto.
-  (* SE-GhostGuarded: guarded ◇ has no constructor *)
-  match goal with
-  | Hg : guarded_pskl pskl_hole |- _ => inversion Hg
-  end.
-Qed.
 
 (* ===================================================================== *)
 (*  §4  The fold's head inversions and the pure-eq append decomposition   *)

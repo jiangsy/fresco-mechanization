@@ -427,42 +427,6 @@ Qed.
     counterpart the shape does the work [guarded_pskl] does in the general
     lemma, so no local-closure obligation arises — which matters, because the
     [_rel] induction has no [lc_pskl] to hand. *)
-Lemma e_lookeq_inv_ug2_unit : forall S0 Θ α Q S1 Ξ C,
-  {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_tophole Q) ∼[ α ] pskl_unit ⤳ Ξ ⨾ C }}e ->
-  α `in` ftvar_in_pskl Q ->
-  {{ S0 ↝ S1 ⊨ Θ ⊢ Q ∼[ α ] pskl_unit ⤳ Ξ ⨾ C }}e.
-Proof.
-  intros * H Hα; inversion H; subst; le_kill.
-Qed.
-
-Lemma e_lookeq_inv_ug2_arrow : forall S0 Θ α Q P1' P2' S1 Ξ C,
-  {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_tophole Q) ∼[ α ] (pskl_arrow P1' P2')
-     ⤳ Ξ ⨾ C }}e ->
-  α `in` ftvar_in_pskl Q ->
-  {{ S0 ↝ S1 ⊨ Θ ⊢ Q ∼[ α ] (pskl_arrow P1' P2') ⤳ Ξ ⨾ C }}e.
-Proof.
-  intros * H Hα; inversion H; subst; le_kill.
-Qed.
-
-Lemma e_lookeq_inv_ug2_var : forall S0 Θ α Q β S1 Ξ C,
-  {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_tophole Q) ∼[ α ] (pskl_var_f β) ⤳ Ξ ⨾ C }}e ->
-  ~ a_flex_tvar Θ β ->
-  α `in` ftvar_in_pskl Q ->
-  {{ S0 ↝ S1 ⊨ Θ ⊢ Q ∼[ α ] (pskl_var_f β) ⤳ Ξ ⨾ C }}e.
-Proof.
-  intros * H Hrig Hα; inversion H; subst;
-    try solve [ assumption
-              | exfalso;
-                match goal with
-                | Hn : ?a `notin` ftvar_in_pskl _,
-                  Hi : ?a `in` ftvar_in_pskl _ |- _ =>
-                    simpl in Hn, Hi; clear - Hn Hi; fsetdec
-                end
-              | exfalso;
-                match goal with
-                | Hf : a_flex_tvar _ _ |- _ => exact (Hrig Hf)
-                end ].
-Qed.
 
 (* ===================================================================== *)
 (*  §3  ⭐ THE COLLECTION'S EQ LAYER IS DETERMINISTIC UP TO A FRESH       *)

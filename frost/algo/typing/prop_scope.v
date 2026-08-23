@@ -110,27 +110,6 @@ Proof.
   destruct (y == m) as [-> | Hne]; clear - IH; fsetdec.
 Qed.
 
-(* ===================================================================== *)
-(*  ⭐ AT TC, [a_sub] RETURNS ITS INPUT VERBATIM.                          *)
-(*  Only Check / ForallR / ForallL can fire at [mode_tc] (Infer is TI;    *)
-(*  FlexMono and Arrow conclude at [mode_fn]; the ghost rows are SK), and *)
-(*  each of the three returns [P0] — the first two syntactically, the     *)
-(*  third by recursion at the same [P0].  No rigidity needed: this is the *)
-(*  reason the check rows' results drift from their inputs ONLY through   *)
-(*  the split and the binder rows.                                        *)
-(* ===================================================================== *)
-Lemma a_sub_ty_tc_verbatim : forall NM M P0 Θ0 P Q Θ1,
-  a_sub NM M P0 Θ0 P Q Θ1 ->
-  NM = a_sub_mode_ty ->
-  M = mode_tc ->
-  Q = P0.
-Proof.
-  intros NM M P0 Θ0 P Q Θ1 H; induction H; intros HNM HM;
-    try discriminate HM; try discriminate HNM; try reflexivity.
-  - (* ForallL : recurses at the SAME [P0], sort and mode *)
-    apply IHa_sub; assumption.
-Qed.
-
 (** A MARKER is an entry kind every information increase (and every
     context-walking rule of the algorithm) keeps IN PLACE: rigid type
     variables and the two term-variable entries.  Flexibles are not

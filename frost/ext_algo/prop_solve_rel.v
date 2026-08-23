@@ -407,30 +407,6 @@ Qed.
 
 (** Pushing one COMMON rigid entry, growing the support — kept for
     consumers that open both sides at one name. *)
-Lemma flex_agree_rel_push_tvar : forall ρ V Θ1 Θ2 c,
-  flex_agree_rel ρ V Θ1 Θ2 ->
-  c `notin` dom Θ1 ∪ dom Θ2 ∪ cols_l ρ ∪ cols_r ρ ->
-  flex_agree_rel ρ (add c V)
-    ((c ~ abind_tvar) ++ Θ1) ((c ~ abind_tvar) ++ Θ2).
-Proof.
-  intros * [HagV Hagp] Hc. split.
-  - intros α Hα.
-    destruct (α == c) as [-> | Hne].
-    + split; intros Hf; exfalso;
-        eapply a_flex_tvar_cons_tvar_self; try exact Hf;
-        clear - Hc; fsetdec.
-    + rewrite (a_flex_tvar_cons_tvar_other Θ1 Hne).
-      rewrite (a_flex_tvar_cons_tvar_other Θ2 Hne).
-      apply HagV. clear - Hα Hne. fsetdec.
-  - intros a b Hin.
-    pose proof (cols_l_in _ _ _ Hin) as Hcl.
-    pose proof (cols_r_in _ _ _ Hin) as Hcr.
-    assert (Hne1 : a <> c) by (clear - Hc Hcl; fsetdec).
-    assert (Hne2 : b <> c) by (clear - Hc Hcr; fsetdec).
-    rewrite (a_flex_tvar_cons_tvar_other Θ1 Hne1).
-    rewrite (a_flex_tvar_cons_tvar_other Θ2 Hne2).
-    apply Hagp. exact Hin.
-Qed.
 
 Lemma binds_flex_pairs_l : forall ρ a b,
   In (a, b) ρ -> binds a abind_flex_mono (flex_pairs_l ρ).
@@ -2978,20 +2954,6 @@ Proof.
     unfold binds in Hbd |- *; simpl; right; exact Hbd.
 Qed.
 
-Lemma rel_aenv_binds_r : forall ρ V Θ1 Θ2 b b2,
-  rel_aenv ρ V Θ1 Θ2 ->
-  binds b b2 Θ2 ->
-  exists a b1, rel_atom ρ V a b /\ rel_abind ρ V b1 b2 /\ binds a b1 Θ1.
-Proof.
-  intros * H; induction H; intros Hb; [ inversion Hb | ].
-  unfold binds in Hb; simpl in Hb; destruct Hb as [Heq | Hb].
-  - inversion Heq; subst. exists a, b1. repeat split; try assumption.
-    unfold binds; simpl; left; reflexivity.
-  - destruct (IHrel_aenv Hb) as (a' & b1' & Hat & Hab & Hbd).
-    exists a', b1'. repeat split; try assumption.
-    unfold binds in Hbd |- *; simpl; right; exact Hbd.
-Qed.
-
 (** Reflexivity on the identity support — the lift's TOP, where the two
     sides are the same context. *)
 Lemma rel_ptyp_refl : forall ρ V A,
@@ -2999,21 +2961,6 @@ Lemma rel_ptyp_refl : forall ρ V A,
 Proof.
   intros ρ V A H. unfold rel_ptyp. apply rel_pskl_refl.
   rewrite ftvar_ptyp_to_pskl. exact H.
-Qed.
-
-Lemma rel_aenv_refl : forall ρ V Θ,
-  ftvar_in_aenv Θ [<=] V -> dom Θ [<=] V -> rel_aenv ρ V Θ Θ.
-Proof.
-  intros ρ V Θ. induction Θ as [ | [x b] Θ IH ]; intros Hf Hd;
-    [ constructor | ].
-  simpl in Hf, Hd.
-  change ((x, b) :: Θ) with ((x ~ b) ++ Θ).
-  constructor;
-    [ apply rel_atom__id; clear - Hd; fsetdec
-    | | apply IH; [ clear - Hf; fsetdec | clear - Hd; fsetdec ] ].
-  destruct b; simpl in Hf; constructor;
-    solve [ apply rel_ptyp_refl; clear - Hf; fsetdec
-          | apply rel_pskl_refl; clear - Hf; fsetdec ].
 Qed.
 
 (** ⭐ THE CORRESPONDENCE ON FREE VARIABLES — sharper than [rel_pskl_ftv_l] /
@@ -3781,13 +3728,6 @@ Proof.
   constructor. exact IH.
 Qed.
 
-Lemma a_flex_tvar_insert : forall (Ξ Ξ2 Θ : aenv) α,
-  a_flex_tvar (Ξ ++ Θ) α -> a_flex_tvar (Ξ ++ Ξ2 ++ Θ) α.
-Proof.
-  intros Ξ Ξ2 Θ α H. rewrite a_flex_tvar_app_iff in H.
-  rewrite ! a_flex_tvar_app_iff. tauto.
-Qed.
-
 Lemma a_flex_tvar_prepend : forall (Ξ Θ : aenv) α,
   a_flex_tvar Θ α -> a_flex_tvar (Ξ ++ Θ) α.
 Proof. intros Ξ Θ α H. rewrite a_flex_tvar_app_iff. right. exact H. Qed.
@@ -3855,14 +3795,6 @@ Proof.
   - exact (Hp _ _ Hin).
   - exact (HV _ Hv).
 Qed.
-
-Lemma a_flex_tvar_one_other : forall (c : atom) (bd : abind) x,
-  x <> c -> ~ a_flex_tvar (c ~ bd) x.
-Proof.
-  intros c bd x Hne [Hb | [t Hb]]; unfold binds in Hb; simpl in Hb;
-    destruct Hb as [E | E]; try contradiction; inversion E; congruence.
-Qed.
-
 
 Lemma a_flex_tvar_head_flexish : forall (c : atom) (bd : abind) (Θ : aenv),
   (bd = abind_flex_mono \/ exists t, bd = abind_flex_mono_def t) ->
@@ -3960,7 +3892,6 @@ Proof.
       rewrite (@a_flex_tvar_cons_other b bd' Θ1' y Hnb2).
       exact (proj2 Hagr x y Hin).
 Qed.
-
 
 (* ===================================================================== *)
 (*  §11  ⭐⭐ THE WALK'S TWO REMAINING MOVES — the IDENTITY PAIR, and the   *)
@@ -4124,7 +4055,6 @@ Proof.
   exact (Hfun a b1 b2 Ha (rel_atom_mono_V H1' HV) (rel_atom_mono_V H2' HV)).
 Qed.
 
-
 Lemma a_flex_tvar_mid_nonflex_absurd : forall Ξ (c : atom) (bd : abind) Θ,
   uniq (Ξ ++ (c ~ bd) ++ Θ) ->
   bd <> abind_flex_mono ->
@@ -4145,7 +4075,6 @@ Proof.
   - exact (@a_flex_tvar_one_nonflex c bd c H1 H2 Hf).
   - exact (a_flex_tvar_notin_dom HcΘ Hf).
 Qed.
-
 
 Lemma a_wf_aenv_mid_var_typ_inv : forall Ξ x A Θ,
   a_decls Ξ ->
@@ -4175,7 +4104,6 @@ Proof.
     end.
 Qed.
 
-
 Lemma a_flex_tvar_head_swap_flexish : forall (c : atom) bd bd2 (Θ : aenv) y,
   (bd = abind_flex_mono \/ exists t, bd = abind_flex_mono_def t) ->
   (bd2 = abind_flex_mono \/ exists t, bd2 = abind_flex_mono_def t) ->
@@ -4204,7 +4132,6 @@ Proof.
     simpl_env; eassumption.
 Qed.
 
-
 Lemma flex_agree_rel_head_swap : forall ρ V (c d : atom) bd bd' bd2 bd2' Θ1 Θ2,
   flex_agree_rel ρ V ((c ~ bd) ++ Θ1) ((d ~ bd') ++ Θ2) ->
   (bd = abind_flex_mono \/ exists t, bd = abind_flex_mono_def t) ->
@@ -4224,7 +4151,6 @@ Proof.
     exact (Hp a b0 Hin).
 Qed.
 
-
 (** A well-formed context's HEAD payload is scoped in its tail — one
     statement for all five binder shapes, which is what lets the walk rows
     be written once instead of per shape. *)
@@ -4238,7 +4164,6 @@ Proof.
     clear - Hs. fsetdec.
   - apply a_wf_ptyp_ftv_dom; assumption.
 Qed.
-
 
 (* ===================================================================== *)
 (*  §12  ⭐ THE CONSIS RUNG's PREREQUISITES — the facts the trio's rows    *)
@@ -4308,7 +4233,6 @@ Proof.
     pose proof (binds_unique _ _ _ _ _ Hb Hb2 Hu) as E; discriminate.
 Qed.
 
-
 Lemma rel_atoms_app : forall ρe ρ V D1 D2 W S,
   rel_atoms ρ V D1 D2 ->
   rel_ext ρe W S ->
@@ -4346,7 +4270,6 @@ Proof.
   intros α Htv. eapply a_inc_binds_tvarish; eassumption.
 Qed.
 
-
 Lemma rel_ext_app : forall ρe2 ρe1 W1 W2 S1 S2,
   rel_ext ρe1 W1 S1 ->
   rel_ext ρe2 W2 S2 ->
@@ -4377,7 +4300,6 @@ Proof.
       destruct (Hin1 _ _ Hi1) as [Ha2 _]. contradiction.
     + exact (Hlf1 _ _ _ Hi1 Hi2).
 Qed.
-
 
 (** ⭐ THE CORRESPONDENCE ON A CONTEXT's FREE VARIABLES — [rel_pskl_ftv_corr_r]
     one layer up.  It is what tells a ∀ row that side 2's opener cannot have
@@ -4422,7 +4344,6 @@ Proof.
         as (x & Hx & Hat).
       exists x. split; [ clear - Hx; fsetdec | exact Hat ].
 Qed.
-
 
 (* ===================================================================== *)
 (*  §13  WHAT THE CONSIS RUNG'S ∀ ROWS ADDED                              *)

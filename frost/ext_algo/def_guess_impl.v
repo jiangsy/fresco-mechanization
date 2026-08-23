@@ -299,14 +299,3 @@ Qed.
     performs, up to the names the relation was free to choose.  ⚙ Stated as
     "the runner does not fail" because [e_guess_mono_run] is total — which is
     the whole point of §4; there is no [None] to rule out. *)
-Corollary e_guess_mono_run_total : forall S0 P Q Ξ A,
-  e_guess_mono S0 P Q Ξ A ->
-  exists (H : lc_pskl P), guess_spec S0 P (e_guess_mono_run S0 P H).
-Proof.
-  intros * Hg.
-  assert (Hlc : lc_pskl P).
-  { clear - Hg; induction Hg;
-      try solve [ constructor; assumption ];
-      [ apply (lc_pskl_all_syn_exists β); assumption ]. }
-  exists Hlc. apply e_guess_mono_run_sound.
-Qed.

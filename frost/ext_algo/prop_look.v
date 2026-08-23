@@ -130,14 +130,6 @@ Proof.
   destruct H as [_ [Hd _]]. clear - Hd Hγ. fsetdec.
 Qed.
 
-Corollary e_lookeq_generated_fresh : forall S0 Θ α P P' S1 Ξ C,
-  {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
-  forall γ, γ `in` dom Ξ -> γ `notin` S0.
-Proof.
-  intros * H γ Hγ. apply (proj2 e_looksub_lookeq_block) in H.
-  destruct H as [_ [Hd _]]. clear - Hd Hγ. fsetdec.
-Qed.
-
 (** ⭐ THE BLOCK IS DUPLICATE-FREE — the fact the collection cannot supply
     unthreaded, and half of what [a_sub__forall_l]'s prose-completed premise
     [uniq (Ξ ++ Θ0)] asks for (§4). *)
@@ -705,7 +697,6 @@ Proof.
     exists S1'. split; [ exact Heq1 | ].
     apply e_lookeq__univ_ghost_r; [ assumption | assumption | exact Hd' ].
 Qed.
-
 
 (* ===================================================================== *)
 (*  §6  EQUIVARIANCE                                                      *)

@@ -390,17 +390,6 @@ Proof.
     [ exfalso; apply Hβ; symmetry; exact Heqa | reflexivity ].
 Qed.
 
-Lemma open_neq_var_keep : forall P Q α,
-  (forall β, P <> pskl_var_b β) ->
-  P <> pskl_var_f α ->
-  open_pskl_wrt_pskl P Q <> pskl_var_f α.
-Proof.
-  intros P Q α Hnb Hne. unfold open_pskl_wrt_pskl.
-  destruct P; simpl; try discriminate; try (intro Hc; discriminate Hc).
-  - exfalso. exact (Hnb n eq_refl).
-  - exact Hne.
-Qed.
-
 Lemma a_looksub_lookeq_absent_nil :
   (forall Θ α m P P' Ξ 𝒞, {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
      α `notin` ftvar_in_pskl P -> Ξ = nil /\ 𝒞 = nil) /\
@@ -617,7 +606,6 @@ Proof.
       as [-> ->].
     apply a_lookeq__absent; exact Hni.
 Qed.
-
 
 (* ===================================================================== *)
 (*  §2c  ⭐⭐ THE TARGET PEEL — what the ForallR-PRIORITY GUARD buys        *)

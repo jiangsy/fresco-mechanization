@@ -237,11 +237,6 @@ Qed.
     because an instantiation with no ∀ makes the subject's ∀-count strictly
     DROP across the row — the outer quantifier is consumed and nothing
     replaces it. *)
-Corollary e_guess_mono_nall_free : forall S0 P S1 Ξ A,
-  e_guess_mono S0 P S1 Ξ A -> nall_pskl P = 0 -> nall_ptyp A = 0.
-Proof.
-  intros * H Hz. pose proof (e_guess_mono_nall H). lia.
-Qed.
 
 (* ===================================================================== *)
 (*  §3  Counting ∀s in a constraint list                                  *)
@@ -1114,18 +1109,6 @@ Qed.
 Lemma nall_pskl_subst_nallfree : forall P Q β,
   nall_pskl Q = 0 ->
   nall_pskl (subst_pskl_in_pskl Q β P) = nall_pskl P.
-Proof.
-  induction P; intros * Hz; simpl;
-    try (match goal with |- context [ if ?c then _ else _ ] => destruct c end);
-    repeat match goal with
-    | IH : context [ subst_pskl_in_pskl ] |- _ => rewrite IH by assumption
-    end;
-    simpl; lia.
-Qed.
-
-Lemma hnall_pskl_subst_hnallfree : forall P Q β,
-  hnall_pskl Q = 0 ->
-  hnall_pskl (subst_pskl_in_pskl Q β P) = hnall_pskl P.
 Proof.
   induction P; intros * Hz; simpl;
     try (match goal with |- context [ if ?c then _ else _ ] => destruct c end);
