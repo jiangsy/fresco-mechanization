@@ -4032,25 +4032,6 @@ Qed.
 (*  single-hypothesis [fsetdec] each.  152s → 0.09s.                       *)
 (* ===================================================================== *)
 
-(** [a_wf_pskl] reads Θ ONLY through [a_binds_tvar] (its context never grows —
-    the binder rule extends Δ), so it weakens along any TVAR-ISH monotone map.
-    [a_wf_pskl_weaken]'s [binds]-monotone form is too strong here: Flex-Solve
-    turns [α̂0]'s DECLARATION into a DEFINITION. *)
-Lemma a_wf_pskl_weaken_tvarish : forall Θ Δ P,
-  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
-  forall Θ', (forall α, a_binds_tvar α Θ -> a_binds_tvar α Θ') ->
-  {{ Θ' ⨟ Δ ⊢ₚₛ P }}a.
-Proof.
-  intros Θ Δ P H; induction H; intros Θ' Hmon.
-  - apply a_wf_pskl__unit.
-  - apply a_wf_pskl__var. destruct H as [HΔ | Ht];
-      [ left; exact HΔ | right; apply Hmon; exact Ht ].
-  - apply a_wf_pskl__arrow; auto.
-  - apply a_wf_pskl__all with (L := L). intros α Hα. apply H0; auto.
-  - apply a_wf_pskl__hole.
-  - apply a_wf_pskl__tophole; [ exact H | auto ].
-Qed.
-
 (** The companion of the strip lemmas: RE-ATTACHING a declaration-only prefix
     over a DIFFERENT tail.  (The prefix's per-entry obligations are wf/mono of
     its images in the TARGET, which the strip's own increase already carries.) *)
@@ -4324,7 +4305,7 @@ Proof.
                                   (ptyp_arrow (ptyp_var_f α) (ptyp_var_f β)))
                         ++ (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono)
                         ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
-    by (eapply a_wf_pskl_weaken_tvarish; [ exact HwfP0 | exact Hmoveb ]).
+    by (eapply a_wf_pskl_weaken_tvarish; [ exact Hmoveb | exact HwfP0 ]).
 
   assert (HwfSsrc : {{ (Ξ ++ (α0 ~ abind_flex_mono_def
                                  (ptyp_arrow (ptyp_var_f α) (ptyp_var_f β)))

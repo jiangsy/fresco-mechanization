@@ -299,19 +299,6 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  Pointwise inversion of substitution agreement (converse of              *)
-(*  [msubst_ptyp_agree] / [msubst_pskl_agree]).                             *)
-(* ===================================================================== *)
-
-(** [ptyp_to_pskl] is injective (structural embedding). *)
-Lemma ptyp_to_pskl_inj : forall A B,
-  ptyp_to_pskl A = ptyp_to_pskl B -> A = B.
-Proof.
-  induction A; destruct B; simpl; intros Heq; try discriminate;
-    try reflexivity; injection Heq; intros; f_equal; auto.
-Qed.
-
-(* ===================================================================== *)
 (*  ftv of a bound entry lives in the context's domain.                    *)
 (* ===================================================================== *)
 

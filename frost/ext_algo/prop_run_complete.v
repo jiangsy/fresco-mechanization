@@ -2410,32 +2410,6 @@ Proof.
 Qed.
 Arguments a_solve_sub_rebind_r_ctx {Θ m Ps Q Ξ P' b β}.
 
-(** Exchange of two rigid tvar conses — an [a_solve_sub_eq_ctx_change]
-    instance (the judgement reads its context only through the freshness
-    avoid-sets and the flex tests, and both are order-blind). *)
-Lemma a_solve_sub_ctx_exchange : forall β1 β2 (Θ : aenv) m P Q Ξ P',
-  {{ ((β1 ~ abind_tvar) ++ (β2 ~ abind_tvar) ++ Θ) ⊢ₛ P ≼[ m ] Q
-     ⤳ Ξ ⨾ P' }}a ->
-  {{ ((β2 ~ abind_tvar) ++ (β1 ~ abind_tvar) ++ Θ) ⊢ₛ P ≼[ m ] Q
-     ⤳ Ξ ⨾ P' }}a.
-Proof.
-  intros * H.
-  eapply (proj1 a_solve_sub_eq_ctx_change); [ exact H | | | ].
-  - simpl. fsetdec.
-  - intros α0 Hf. unfold a_flex_tvar, binds in *; simpl in *.
-    destruct Hf as [Hb | [τ Hb]]; [ left | right; exists τ ]; tauto.
-  - intros P0 Hf. inversion Hf; subst;
-      match goal with
-      | Hb : binds _ _ _ |- _ =>
-          unfold binds in Hb; simpl in Hb;
-          destruct Hb as [E | [E | HbIn]];
-          [ discriminate E | discriminate E | ]
-      end;
-      [ apply a_flex__var | eapply a_flex__var_def ];
-      unfold binds; simpl; right; right; exact HbIn.
-Qed.
-Arguments a_solve_sub_ctx_exchange {β1 β2 Θ m P Q Ξ P'}.
-
 (* --------------------------------------------------------------------- *)
 (*  §4b  The two reorder lemmas                                           *)
 (* --------------------------------------------------------------------- *)
@@ -3744,22 +3718,6 @@ Qed.
 (*  it either way, and the freshness avoid-sets only shrink.             *)
 (* --------------------------------------------------------------------- *)
 
-Lemma a_flex_tvar_strip_tvar : forall β (Θ : aenv) α,
-  β `notin` dom Θ ->
-  a_flex_tvar ((β ~ abind_tvar) ++ Θ) α ->
-  a_flex_tvar Θ α.
-Proof.
-  intros * Hfr Hf.
-  unfold a_flex_tvar in *.
-  destruct Hf as [Hb | [τ Hb]].
-  - apply binds_cons_1 in Hb.
-    destruct Hb as [[Heqx Heqa] | Hb']; [ discriminate | ].
-    left; exact Hb'.
-  - apply binds_cons_1 in Hb.
-    destruct Hb as [[Heqx Heqa] | Hb']; [ discriminate | ].
-    right; exists τ; exact Hb'.
-Qed.
-
 Lemma a_flex_weaken_cons : forall (e : atom * abind) (Θ : aenv) P,
   a_flex Θ P ->
   a_flex (e :: Θ) P.
@@ -3848,9 +3806,7 @@ Proof.
     + exact Hp'.
     + clear - Hβ. simpl. fsetdec.
     + intros α0 Hf0.
-      eapply a_flex_tvar_strip_tvar; [ | exact Hf0 ].
-      pose proof (dom_subset_ftvar_in_aenv Θ) as Hds.
-      clear - Hβ Hds. fsetdec.
+      eapply a_flex_tvar_strip_tvar; exact Hf0.
     + intros P0 Hf0. apply a_flex_weaken_cons. exact Hf0.
   - (* SS-GhostL: guarded ∀ has no constructor *)
     match goal with

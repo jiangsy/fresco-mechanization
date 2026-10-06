@@ -483,10 +483,6 @@ Lemma a_suffix_lc_forall : forall Ξ,
   a_suffix Ξ -> Forall (fun e : atom * abind => lc_abind (snd e)) Ξ.
 Proof. exact a_suffix_lc_aenv. Qed.
 
-Lemma lc_aenv_app_intro : forall Ξ Θ,
-  lc_aenv Ξ -> lc_aenv Θ -> lc_aenv (Ξ ++ Θ).
-Proof. intros. apply Forall_app; split; assumption. Qed.
-
 Lemma lc_aenv_binds : forall (x : atom) b (Θ : aenv),
   lc_aenv Θ -> binds x b Θ -> lc_abind b.
 Proof.

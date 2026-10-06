@@ -92,16 +92,6 @@ Open Scope frost_e_scope.
 (*  §1  THE KIT THIS LEVEL ADDS                                           *)
 (* ===================================================================== *)
 
-(** The painting commutes with a chain — [AT-AbsCheck]'s BASE row reads its
-    domain and codomain back out of a SPLIT's outputs, which the chain has
-    already moved. *)
-Lemma swaps_pskl_ptyp_to_pskl : forall ps A,
-  swaps_pskl ps (ptyp_to_pskl A) = ptyp_to_pskl (swaps_ptyp ps A).
-Proof.
-  induction ps as [ | [a b] ps IH ]; intros; simpl; [ reflexivity | ].
-  rewrite swap_pskl_ptyp_to_pskl. apply IH.
-Qed.
-
 (** A name a type does not mention is not mentioned by its image either —
     what the check-mode STEP rows need of their [close]. *)
 Lemma swaps_ptyp_ftv_notin : forall ps A x,
@@ -123,22 +113,6 @@ Proof.
   apply IH. apply swap_block_ftv_filter. exact Hf.
 Qed.
 
-Lemma e_guess_mono_swaps : forall ps S0 P S1 Ξ A,
-  e_guess_mono S0 P S1 Ξ A ->
-  forall S0', S0' [=] swaps_atoms ps S0 ->
-  exists S1', S1' [=] swaps_atoms ps S1 /\
-    e_guess_mono S0' (swaps_pskl ps P) S1' (swaps_aenv ps Ξ)
-      (swaps_ptyp ps A).
-Proof.
-  induction ps as [ | [a b] ps IH ]; intros * Hd S0' Heq; simpl in *.
-  - exact (e_guess_mono_supply_respect Hd Heq).
-  - assert (Hr : swap_atoms a b S0 [=] swap_atoms a b S0) by reflexivity.
-    destruct (e_guess_mono_swap (a := a) (b := b) Hd Hr) as [S1a [HS1a Hda]].
-    destruct (IH _ _ _ _ _ Hda _ Heq) as [S1' [HS1' Hd']].
-    exists S1'. split; [ | exact Hd' ].
-    rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
-Qed.
-
 Lemma e_typing_swaps : forall ps S0 m Θ0 P0 e B S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}e ->
   forall S0', S0' [=] swaps_atoms ps S0 ->
@@ -155,17 +129,7 @@ Proof.
     rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
 Qed.
 
-(** The painting is INJECTIVE — a constructor relabelling.  ⭐ It is what
-    identifies the [∀]-body the runner read back with the one the STEP rule
-    names: both are [P0]'s, and the rule's is existentially quantified. *)
-Lemma ptyp_to_pskl_inj : forall A B,
-  ptyp_to_pskl A = ptyp_to_pskl B -> A = B.
-Proof.
-  induction A; intros B Heq; destruct B; simpl in Heq;
-    try discriminate; try reflexivity;
-    inversion Heq; subst; f_equal; auto.
-Qed.
-
+(* Use the shared embedding's injectivity with the equation explicit. *)
 Arguments ptyp_to_pskl_inj {A B} _.
 
 Lemma swaps_aenv_one_tvar : forall ps x,
@@ -219,21 +183,22 @@ Qed.
 
 (** [guess^TY]'s block holds BARE flexibles, so both context invariants
     §8c.22 threads are immediate on it. *)
-Lemma e_guess_mono_block_flex : forall S0 P S1 Ξ A,
+Lemma e_guess_mono_block_binding : forall S0 P S1 Ξ A,
   e_guess_mono S0 P S1 Ξ A ->
   forall x b, In (x, b) Ξ -> b = abind_flex_mono.
 Proof.
-  intros * Hg; induction Hg; intros y b Hin; simpl in *;
-    try contradiction; eauto.
-  - destruct Hin as [Heq | []]. inversion Heq; subst. reflexivity.
-  - apply in_app_or in Hin. destruct Hin; eauto.
+  intros * Hg x b Hin.
+  pose proof (e_guess_mono_block_flex Hg) as Hflex.
+  unfold src.frost.algo.prop_metasubst.all_flex_mono in Hflex.
+  rewrite Forall_forall in Hflex.
+  exact (Hflex (x, b) Hin).
 Qed.
 
 Lemma e_guess_mono_block_lc : forall S0 P S1 Ξ A,
   e_guess_mono S0 P S1 Ξ A -> lc_aenv Ξ.
 Proof.
   intros * Hg. unfold lc_aenv. apply Forall_forall.
-  intros [y b] Hin. rewrite (e_guess_mono_block_flex Hg y b Hin).
+  intros [y b] Hin. rewrite (e_guess_mono_block_binding Hg y b Hin).
   exact I.
 Qed.
 
@@ -241,7 +206,7 @@ Lemma e_guess_mono_block_defs_mono : forall S0 P S1 Ξ A,
   e_guess_mono S0 P S1 Ξ A -> aenv_defs_mono Ξ.
 Proof.
   intros * Hg. apply Forall_forall.
-  intros [y b] Hin. rewrite (e_guess_mono_block_flex Hg y b Hin).
+  intros [y b] Hin. rewrite (e_guess_mono_block_binding Hg y b Hin).
   apply entry_def_mono_flex.
 Qed.
 

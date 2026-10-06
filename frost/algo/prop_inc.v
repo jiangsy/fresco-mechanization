@@ -578,3 +578,6 @@ Proof.
   - auto.
 Qed.
 
+Lemma lc_aenv_app_intro : forall Θ1 Θ2,
+  lc_aenv Θ1 -> lc_aenv Θ2 -> lc_aenv (Θ1 ++ Θ2).
+Proof. intros * H1 H2; unfold lc_aenv in *; apply Forall_app; auto. Qed.

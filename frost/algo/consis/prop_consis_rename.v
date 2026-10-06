@@ -914,21 +914,6 @@ Proof.
   destruct Hf as [Hb | [τ Hb]]; apply binds_In in Hb; contradiction.
 Qed.
 
-(** Guardedness survives variable-for-variable substitution
-    (local copy of prop_consis_sound's [guarded_pskl_subst_var], kept
-    here to avoid importing the soundness file). *)
-Lemma guarded_pskl_subst_var' : forall β α P,
-  guarded_pskl P ->
-  guarded_pskl (subst_pskl_in_pskl (pskl_var_f β) α P).
-Proof.
-  intros * H; inversion H; subst; simpl.
-  - constructor.
-  - destruct_if;
-      constructor.
-  - constructor; apply subst_pskl_in_pskl_lc_pskl;
-      auto using lc_pskl_var_f.
-Qed.
-
 (** Vacuous rename cases: a non-rigid head against the all-rigid split. *)
 Ltac rn_vacuous :=
   match goal with
@@ -1463,7 +1448,7 @@ Proof.
       as [Θt [HeqO Hren]].
     exists Θt. split; [ exact HeqO | ].
     simpl. apply a_consis__univ_ghost2.
-    + apply guarded_pskl_subst_var'. exact Hg.
+    + apply guarded_pskl_subst_var. exact Hg.
     + subst Θ0. apply a_non_flex_rename;
         [ | exact Hnf ].
       rewrite dom_app in *. simpl dom in HYi. clear - HYi. fsetdec.
@@ -1539,7 +1524,7 @@ Proof.
       as [Θt [HeqO Hren]].
     exists Θt. split; [ exact HeqO | ].
     simpl. apply a_consis__univ_ghost_r.
-    + apply guarded_pskl_subst_var'. exact Hg.
+    + apply guarded_pskl_subst_var. exact Hg.
     + subst Θ0. apply a_non_flex_rename; [ | exact Hnf ].
       rewrite dom_app in *. simpl dom in HYi. clear - HYi. fsetdec.
     + exact Hren.

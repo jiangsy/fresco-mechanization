@@ -241,6 +241,48 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-06 — Correct the ghost-first generality rationale
+
+Addressed review item 1 only. The fresh-alias example admits information
+increases in both directions, so it does not show that ghost-first
+consistency is strictly more general or that the alternative is
+non-optimal. Corrected the rule comment, `docs/PAPER-GAPS.md` and the
+corresponding passage in `docs/HANDOFF-extractable-algo-encoding.md`.
+The guards continue to specify the implementation's exact dispatch;
+no inference rule or existing theorem statement changed.
+
+Extended `cex/probe_inc_more_general.v` with `probe_inc_alias_to_runner`
+and `probe_inc_alias_round_trip`. Together with the existing forward
+witness, all three are kernel-checked and assumptions-closed. These
+concrete witnesses do not establish a transport theorem for arbitrary
+unguarded derivations. Other review findings remain unchanged.
+
+Validation: full `make coq` passes. All 34 headline assumption reports
+and the three probe reports are closed under the global context.
+
+## 2026-10-06 — Shared lemmas and ForallL binder discharge
+
+Addressed review item 3 (duplication). Removed all 14 exact lemma-name
+collisions under `frost/`: reused existing stronger facts, moved common
+facts into existing shared dependencies, and named the distinct context
+congruence and block-membership corollaries explicitly. Also removed the
+separate `a_flex_tvar_app_or` proof and the primed guarded-renaming proof;
+guarded renaming now follows from monotype substitution. No imports were
+added.
+
+In `algo/sub/look/prop_sub_cstr.v`, `looksub_solve_forall_l_close` shares
+the binder-discharge proof between the tagged and untagged ForallL cases,
+including the ghost-target and constraint-reordering branches.
+`looksub_solve_result` names their common recursive output package. Both
+public completeness statements and all inference rules are unchanged.
+
+Validation: full `make coq` passes, with all 34 headline assumption reports
+closed under the global context. Separate assumption checks for the new
+binder helper, both completeness theorems and three shared foundational
+facts are also closed. All modified `.v` files match their checked build
+artefacts; the exact-name scan finds no duplicate lemma/theorem/corollary
+names under `frost/`. The final `prop_lift.v` compilation took 47.8 seconds.
+
 ## 2026-08-22 (latest) — ⚙ **POST-CAMPAIGN CLEANING** — audit executed: interface, one duplicate, and the lift file split
 
 `make coq` rc=0, `README.v` 34/34, zero `Admitted`/`Axiom`.  Every item

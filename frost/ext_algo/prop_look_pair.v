@@ -647,27 +647,6 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §2d  the fold at a VAR pattern — a fixed point                        *)
-(* ===================================================================== *)
-
-Lemma a_solve_eq_var_subject_inv : forall Θ γ Q Ξ P',
-  {{ Θ ⊢ₑ (pskl_var_f γ) ∼ Q ⤳ Ξ ⨾ P' }}a ->
-  Ξ = nil /\ P' = pskl_var_f γ.
-Proof.
-  intros * H.
-  remember (pskl_var_f γ) as S eqn:HS.
-  induction H; inversion HS; subst.
-  - (* SE-Var *) auto.
-  - (* SE-FlexR: guess of a var is the var *)
-    match goal with
-    | HG : a_guess_mono _ (pskl_var_f γ) _ _ |- _ => inversion HG; subst
-    end.
-    simpl. auto.
-  - (* SE-VacuousR *) auto.
-  - (* SE-GuardedGhost *) apply IHa_solve_eq. reflexivity.
-Qed.
-
-(* ===================================================================== *)
 (*  §2e  fold structure facts                                             *)
 (* ===================================================================== *)
 
@@ -830,7 +809,7 @@ Proof.
                     (pskl_var_f γ')) as Hup.
       clear - Hβ Hγ' Hup. simpl in *. fsetdec. }
     destruct (IH _ _ _ _ _ β Hsz' Hp' Hβ') as [Ξ3 [P3 Hpeel]].
-    apply a_solve_sub_ctx_exchange in Hpeel.
+    apply src.frost.algo.sub.look.prop_rsubst.a_solve_sub_ctx_exchange in Hpeel.
     do 2 eexists.
     apply a_solve_sub__forall_l with (β := γ').
     + pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B
@@ -885,24 +864,13 @@ Qed.
 (*  §2h  e-solve context equivalence (rigid entries are invisible)        *)
 (* ===================================================================== *)
 
-Lemma a_flex_tvar_app_or : forall (Ξ Θ : aenv) α,
-  a_flex_tvar (Ξ ++ Θ) α <-> (a_flex_tvar Ξ α \/ a_flex_tvar Θ α).
-Proof.
-  unfold a_flex_tvar, binds. intros. split.
-  - intros [Hb | [τ Hb]]; apply in_app_or in Hb; destruct Hb as [Hb | Hb];
-      eauto 6.
-  - intros [[Hb | [τ Hb]] | [Hb | [τ Hb]]];
-      [ left | right; eexists | left | right; eexists ];
-      apply in_or_app; eauto.
-Qed.
-
-Lemma a_flex_tvar_app_iff : forall (Ξ Θ Θ' : aenv),
+Lemma a_flex_tvar_app_congr : forall (Ξ Θ Θ' : aenv),
   (forall α, a_flex_tvar Θ α <-> a_flex_tvar Θ' α) ->
   forall α, a_flex_tvar (Ξ ++ Θ) α <-> a_flex_tvar (Ξ ++ Θ') α.
 Proof.
   intros * Hiff α.
-  pose proof (a_flex_tvar_app_or Ξ Θ α).
-  pose proof (a_flex_tvar_app_or Ξ Θ' α).
+  pose proof (a_flex_tvar_app_iff Ξ Θ α).
+  pose proof (a_flex_tvar_app_iff Ξ Θ' α).
   pose proof (Hiff α).
   tauto.
 Qed.
@@ -929,11 +897,11 @@ Local Ltac ctx_equiv_ih :=
   | IH : forall _, _ -> e_solve_sub _ _ _ _ _ _ _ _
     |- e_solve_sub _ _ _ _ _ _ _ _ =>
       apply IH;
-      first [ assumption | apply a_flex_tvar_app_iff; assumption ]
+      first [ assumption | apply a_flex_tvar_app_congr; assumption ]
   | IH : forall _, _ -> e_solve_eq _ _ _ _ _ _ _
     |- e_solve_eq _ _ _ _ _ _ _ =>
       apply IH;
-      first [ assumption | apply a_flex_tvar_app_iff; assumption ]
+      first [ assumption | apply a_flex_tvar_app_congr; assumption ]
   end.
 
 Lemma e_solve_sub_eq_ctx_equiv :
@@ -1014,7 +982,7 @@ Proof.
     eapply (proj1 e_solve_sub_eq_ctx_equiv); eassumption.
   - eapply e_solve_cstr__eq.
     + eapply (proj2 e_solve_sub_eq_ctx_equiv); eassumption.
-    + apply IHe_solve_cstr. apply a_flex_tvar_app_iff. exact Hiff.
+    + apply IHe_solve_cstr. apply a_flex_tvar_app_congr. exact Hiff.
 Qed.
 
 Lemma a_flex_tvar_rigid_prefix_iff : forall (Δr Θ : aenv) α,
@@ -1022,7 +990,7 @@ Lemma a_flex_tvar_rigid_prefix_iff : forall (Δr Θ : aenv) α,
   (a_flex_tvar (Δr ++ Θ) α <-> a_flex_tvar Θ α).
 Proof.
   intros * Hr.
-  pose proof (a_flex_tvar_app_or Δr Θ α) as Hor.
+  pose proof (a_flex_tvar_app_iff Δr Θ α) as Hor.
   assert (Hnf : ~ a_flex_tvar Δr α).
   { intros [Hb | [τ Hb]]; pose proof (Hr _ _ Hb); discriminate. }
   tauto.
@@ -1702,7 +1670,7 @@ Proof.
       { assert (hxf : x `in` ftvar_in_aenv Θf1)
           by (apply Henr1; clear - h1 hx0; fsetdec).
         clear - Hfsa hxf. fsetdec. }
-      apply (proj1 (a_flex_tvar_app_or Ξsa Θf1 x)) in Hf.
+      apply (proj1 (a_flex_tvar_app_iff Ξsa Θf1 x)) in Hf.
       destruct Hf as [ Hf | Hf ];
         [ apply hxsa; eapply a_flex_tvar_in_dom; exact Hf
         | exact (Hnf Hf) ]. }
@@ -1721,7 +1689,7 @@ Proof.
       { assert (hxf : x `in` ftvar_in_aenv Θf2)
           by (apply Henr2; clear - h1 hx0; fsetdec).
         clear - Hfs2a hxf. fsetdec. }
-      apply (proj1 (a_flex_tvar_app_or Ξ2a Θf2 x)) in Hf.
+      apply (proj1 (a_flex_tvar_app_iff Ξ2a Θf2 x)) in Hf.
       destruct Hf as [ Hf | Hf ];
         [ apply hx2a; eapply a_flex_tvar_in_dom; exact Hf
         | exact (Hnf Hf) ]. }
@@ -3473,7 +3441,7 @@ Proof.
       { assert (hxf : x `in` ftvar_in_aenv Θf1)
           by (apply Henr1; clear - h1 hx0; fsetdec).
         clear - Hfsa hxf. fsetdec. }
-      apply (proj1 (a_flex_tvar_app_or Ξsa Θf1 x)) in Hf.
+      apply (proj1 (a_flex_tvar_app_iff Ξsa Θf1 x)) in Hf.
       destruct Hf as [ Hf | Hf ];
         [ apply hxsa; eapply a_flex_tvar_in_dom; exact Hf
         | exact (Hnf Hf) ]. }
@@ -3492,7 +3460,7 @@ Proof.
       { assert (hxf : x `in` ftvar_in_aenv Θf2)
           by (apply Henr2; clear - h1 hx0; fsetdec).
         clear - Hfs2a hxf. fsetdec. }
-      apply (proj1 (a_flex_tvar_app_or Ξ2a Θf2 x)) in Hf.
+      apply (proj1 (a_flex_tvar_app_iff Ξ2a Θf2 x)) in Hf.
       destruct Hf as [ Hf | Hf ];
         [ apply hx2a; eapply a_flex_tvar_in_dom; exact Hf
         | exact (Hnf Hf) ]. }
@@ -5062,11 +5030,11 @@ Proof.
   assert (Hop1 : forall x, x `in` Sh1 -> x `notin` Sh0 ->
             x `notin` dom Ξl -> ~ a_flex_tvar Θf1 x).
   { intros x h1 h2 h3 Hf. unfold Θf1 in Hf.
-    apply (proj1 (a_flex_tvar_app_or Δr1 (Ξl ++ Θ0) x)) in Hf.
+    apply (proj1 (a_flex_tvar_app_iff Δr1 (Ξl ++ Θ0) x)) in Hf.
     destruct Hf as [ Hf | Hf ].
     - destruct Hf as [ Hb | [τ Hb] ];
         pose proof (Hrig1 _ _ Hb); discriminate.
-    - apply (proj1 (a_flex_tvar_app_or Ξl Θ0 x)) in Hf.
+    - apply (proj1 (a_flex_tvar_app_iff Ξl Θ0 x)) in Hf.
       destruct Hf as [ Hf | Hf ].
       + apply h3. eapply a_flex_tvar_in_dom. exact Hf.
       + assert (Hxd : x `in` dom Θ0) by (eapply a_flex_tvar_in_dom; exact Hf).
@@ -5074,11 +5042,11 @@ Proof.
   assert (Hop2 : forall x, x `in` lk_supply r1 -> x `notin` S0 ->
             x `notin` dom (lk_block r1) -> ~ a_flex_tvar Θf2 x).
   { intros x h1 h2 h3 Hf. unfold Θf2 in Hf.
-    apply (proj1 (a_flex_tvar_app_or Δr2 (lk_block r1 ++ Θ0) x)) in Hf.
+    apply (proj1 (a_flex_tvar_app_iff Δr2 (lk_block r1 ++ Θ0) x)) in Hf.
     destruct Hf as [ Hf | Hf ].
     - destruct Hf as [ Hb | [τ Hb] ];
         pose proof (Hrig2 _ _ Hb); discriminate.
-    - apply (proj1 (a_flex_tvar_app_or (lk_block r1) Θ0 x)) in Hf.
+    - apply (proj1 (a_flex_tvar_app_iff (lk_block r1) Θ0 x)) in Hf.
       destruct Hf as [ Hf | Hf ].
       + apply h3. eapply a_flex_tvar_in_dom. exact Hf.
       + assert (Hxd : x `in` dom Θ0) by (eapply a_flex_tvar_in_dom; exact Hf).

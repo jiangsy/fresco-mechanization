@@ -452,14 +452,6 @@ Proof.
     [ left | right; exists τ ]; unfold binds; simpl; right; assumption.
 Qed.
 
-Lemma a_flex_tvar_strip_tvar : forall b Θ α,
-  a_flex_tvar ((b ~ abind_tvar) ++ Θ) α -> a_flex_tvar Θ α.
-Proof.
-  intros b Θ α [Hb | [τ Hb]];
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq Habs] | Hb'];
-    solve [ discriminate Habs | left; exact Hb' | right; exists τ; exact Hb' ].
-Qed.
-
 (** The same, over an arbitrary PREFIX — what the threading rows need, their
     second premise running at [Ξ1 ++ Θ]. *)
 Lemma a_flex_tvar_app_mono : forall Ξ Θ Θ' α,
@@ -3030,3 +3022,30 @@ Qed.
    [a_wf_ptyp Θ τ] is a new premise; it is what the witness needs to close
    its ◇ case (docs/WF-SIDE-CONDITIONS.md — the paper requires the
    counterpart well-formed in prose). *)
+
+(** Exchange of two rigid tvar conses — an [a_solve_sub_eq_ctx_change]
+    instance (the judgement reads its context only through the freshness
+    avoid-sets and the flex tests, and both are order-blind). *)
+Lemma a_solve_sub_ctx_exchange : forall β1 β2 (Θ : aenv) m P Q Ξ P',
+  {{ ((β1 ~ abind_tvar) ++ (β2 ~ abind_tvar) ++ Θ) ⊢ₛ P ≼[ m ] Q
+     ⤳ Ξ ⨾ P' }}a ->
+  {{ ((β2 ~ abind_tvar) ++ (β1 ~ abind_tvar) ++ Θ) ⊢ₛ P ≼[ m ] Q
+     ⤳ Ξ ⨾ P' }}a.
+Proof.
+  intros * H.
+  eapply (proj1 a_solve_sub_eq_ctx_change); [ exact H | | | ].
+  - simpl. fsetdec.
+  - intros α0 Hf. unfold a_flex_tvar, binds in *; simpl in *.
+    destruct Hf as [Hb | [τ Hb]]; [ left | right; exists τ ]; tauto.
+  - intros P0 Hf. inversion Hf; subst;
+      match goal with
+      | Hb : binds _ _ _ |- _ =>
+          unfold binds in Hb; simpl in Hb;
+          destruct Hb as [E | [E | HbIn]];
+          [ discriminate E | discriminate E | ]
+      end;
+      [ apply a_flex__var | eapply a_flex__var_def ];
+      unfold binds; simpl; right; right; exact HbIn.
+Qed.
+
+Arguments a_solve_sub_ctx_exchange {β1 β2 Θ m P Q Ξ P'}.

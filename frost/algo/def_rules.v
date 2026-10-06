@@ -1321,12 +1321,14 @@ with a_consis : atoms -> atoms -> aenv -> pskl -> pskl -> pskl -> aenv -> Prop :
    premise — and [a_non_flex] does NOT supply it ("nonflex{P0} rules out a
    flexible VARIABLE, not a hole", cex/probe_consis_ghost_flex.v).
 
-   ⚙ WHAT THE GUARDS BUY, and why they cost completeness nothing: at a [◇]
-   pattern [C-GhostR] fires and is STRICTLY MORE GENERAL — it leaves the
-   flexible unsolved, where FlexL would commit it to [guess^TY(◇)], a fresh
-   unconstrained variable — and the mirror holds at a [◇] subject with
-   [C-Ghost].  Without them the rules admit BOTH, at different output
-   contexts, which is the divergence
+   The guards select the ghost-first output.  At a [◇] pattern,
+   [C-GhostR] leaves the flexible unsolved, whereas FlexL introduces a
+   fresh unconstrained alias; the mirror holds with [C-Ghost].  These
+   concrete answers are EQUIGENERAL: cex/probe_inc_more_general.v checks
+   information increases in both directions.  Their different contexts
+   do not demonstrate a loss of optimality.  Completeness with the guards
+   is proved separately by [a_consis_complete].  Without the guards the
+   rules admit BOTH outputs, which is the divergence
    docs/HANDOFF-close-consis-unrestricted.md was written about: five
    candidate relations between those two outputs are machine-checked
    refuted (cex/probe_consis_ghost_flex.v, probe_isub_too_strong.v,

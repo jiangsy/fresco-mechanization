@@ -323,18 +323,6 @@ Proof.
   destruct (eq_var α α0); reflexivity.
 Qed.
 
-(** Guardedness survives variable renaming. *)
-Lemma guarded_pskl_subst_var : forall P α β,
-  guarded_pskl P ->
-  guarded_pskl (subst_pskl_in_pskl (pskl_var_f β) α P).
-Proof.
-  intros * H; inversion H; subst; simpl.
-  - constructor.
-  - destruct_if;
-      constructor.
-  - constructor; apply subst_pskl_in_pskl_lc_pskl; auto.
-Qed.
-
 (** Renaming a rigid context entry in skeleton well-formedness. *)
 Lemma a_wf_pskl_rename_tvar : forall Θ1 α Θ0 Δ P β,
   a_wf_pskl (Θ1 ++ (α ~ abind_tvar) ++ Θ0) Δ P ->

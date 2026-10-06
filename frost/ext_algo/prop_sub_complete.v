@@ -801,18 +801,6 @@ Qed.
    inconsistent slots, and the caller would have to count underscores. *)
 Arguments split_at_tvar_complete {α Θ Ξ Θ'} _ _.
 
-(** [e_extract] has ONE rule, so its inversion is a destructuring — and it
-    is what hands [e_extract_impl_complete] the two supply-threaded halves
-    it takes (the level owes them upward; §8c.9's closing note). *)
-Lemma e_extract_inv : forall S0 Θ0 NM α m P P' S1 Ξ Q,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q }}e ->
-  exists S1a S2a Ξl 𝒞l Ξs Qs Ξg,
-    {{ S0 ↝ S1a ⊨ Θ0 ⊢ P ≼[ α , m ] P' ⤳ Ξl ⨾ 𝒞l }}e
-    /\ {{ S1a ↝ S2a ⊨ (Ξl ++ Θ0) ⊩ 𝒞l ⨾ pskl_hole ⤳ Ξs ⨾ Qs }}e
-    /\ e_guess S2a NM Qs S1 Ξg Q
-    /\ Ξ = Ξl ++ Ξs ++ Ξg.
-Proof. intros * H. inversion H; subst. eauto 15. Qed.
-
 (* ===================================================================== *)
 (*  §6  THE MOTIVE                                                        *)
 (*                                                                        *)
@@ -1404,8 +1392,8 @@ Local Ltac do_forall_l Hd Hu Hcov pmot s0 t0 p0 q :=
              ∪ ftvar_in_pskl p0) [<=] add (supply_fresh s0) s0)
     by (clear - Hcov Hop; simpl in *; fsetdec);
   (* the RUNNER's extraction answers — level 4's headline *)
-  destruct (e_extract_inv Dx1) as [Sa1 [Sa2 [Xl [Cl [Xs [Qs [Xg
-              [Hlk [Hfd [Hgs Hxeq]]]]]]]]]];
+  destruct (e_extract_inv Dx1) as [Sa1 [Sa2 [Xl [Xs [Xg [Cl [Qs
+              [Hxeq [Hlk [Hfd Hgs]]]]]]]]]];
   let rx := fresh "rx" in let Hrx := fresh "Hrx" in
   let Hne := fresh "Hne" in let Hxc := fresh "Hxc" in
   match goal with

@@ -1057,19 +1057,6 @@ Proof. intros x b β1 β2 Θ H. analyze_binds H. Qed.
 
 (** The solve reads its context only for FLEXIBILITY and for freshness, and
     two rigid entries commute in both. *)
-Lemma a_solve_sub_ctx_exchange : forall Θ m P Q Ξ P' β1 β2,
-  {{ ((β1 ~ abind_tvar) ++ (β2 ~ abind_tvar) ++ Θ) ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}a ->
-  {{ ((β2 ~ abind_tvar) ++ (β1 ~ abind_tvar) ++ Θ) ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}a.
-Proof.
-  intros Θ m P Q Ξ P' β1 β2 H.
-  eapply (proj1 a_solve_sub_eq_ctx_change); [ exact H | | | ].
-  - rewrite ! ftvar_in_aenv_cons_tvar. clear; fsetdec.
-  - intros α Hft; destruct Hft as [Hb | [τ Hb]];
-      [ left | right; exists τ ]; apply binds_tvar_exchange; exact Hb.
-  - intros P0 Hf; inversion Hf; subst;
-      [ eapply a_flex__var | eapply a_flex__var_def ];
-      apply binds_tvar_exchange; eassumption.
-Qed.
 
 (** ⭐⭐ SS-ForallR, GENERALIZED PAST THE SOLVE-DISPATCH GUARD (2026-08-18).
 

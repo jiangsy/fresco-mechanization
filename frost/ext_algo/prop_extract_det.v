@@ -1179,13 +1179,6 @@ Qed.
 (*  strictly more informative — it pins the supply too.                   *)
 (* ===================================================================== *)
 
-Lemma swaps_pskl_ptyp_to_pskl : forall ps A,
-  swaps_pskl ps (ptyp_to_pskl A) = ptyp_to_pskl (swaps_ptyp ps A).
-Proof.
-  induction ps as [ | [a b] ps IH ]; intros; simpl; auto.
-  rewrite swap_pskl_ptyp_to_pskl. apply IH.
-Qed.
-
 (** ⭐ A VARIABLE SUBJECT ANSWERS ITSELF, spends nothing and generates
     nothing — whatever route the derivation took ([SE-Var],
     [SE-FlexR]-at-a-variable, [SE-VacuousR], [SE-GuardedGhost] all agree).

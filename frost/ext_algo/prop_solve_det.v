@@ -1554,3 +1554,10 @@ Proof.
   eapply a_solve_eq_det_n
     with (n := S (size_pskl P + size_pskl Q)); eauto.
 Qed.
+
+Lemma swaps_pskl_ptyp_to_pskl : forall ps A,
+  swaps_pskl ps (ptyp_to_pskl A) = ptyp_to_pskl (swaps_ptyp ps A).
+Proof.
+  induction ps as [ | [a b] ps IH ]; intros; simpl; auto.
+  rewrite swap_pskl_ptyp_to_pskl. apply IH.
+Qed.

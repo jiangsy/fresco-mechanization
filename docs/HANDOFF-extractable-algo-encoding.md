@@ -2978,11 +2978,13 @@ but the CONSUMER is Arrow alone.)  So what the level owes is:
     given premise 2 derivable at the DERIVATION's Θd1,
     derive it at the RUNNER's Θr1.
 
-The divergence is INFORMATION-FREE (α̂ solved to a fresh unconstrained
-flexible, so the runner's context is strictly MORE GENERAL and can
-never fail where the derivation succeeds), but it is **not a
-renaming**: Θd1 has one entry more than Θr1 and binds α̂ where the
-runner leaves it free.
+The fresh-alias example is information-free: its two contexts admit
+information increases in both directions, checked in
+`cex/probe_inc_more_general.v` (reverse direction added 2026-10-06).
+They are equigeneral, but **not related by a bijective renaming**:
+Θd1 has one entry more than Θr1.  These concrete witnesses alone do not
+prove that a subsequent run succeeds at one context whenever it
+succeeds at the other; that requires the transport argument below.
 
 **⛔ AND A SYNTACTIC ALIAS RELATION IS NOT CLOSED** (INFERRED — worth
 a probe before anyone builds on it).  The obvious repair is a context
@@ -3294,7 +3296,10 @@ the ⊑-more-general one:
     runner      (U-GhostR)   α̂                 (untouched)
     derivation  (U-FlexL)    α̂ := β̂, β̂        (α̂ SOLVED)
 
-and `[β̂/α̂] ∷ (α̂) ⊑ (α̂ := β̂, β̂)` holds in `a_inc` outright.  ⭐ Note the
+and `[β̂/α̂] ∷ (α̂) ⊑ (α̂ := β̂, β̂)` holds in `a_inc` outright.
+The reverse direction also holds for `α ≠ β`, witnessed by
+`[α/α, α/β]` (checked 2026-10-06 in the same probe), so "more general"
+here is non-strict: these concrete answers are equigeneral.  ⭐ Note the
 two routes' output SKELETONS already AGREE (both `α̂` —
 `cex/probe_consis_ghost_flex.v`), so only the CONTEXT slot of the motive has
 to weaken; the payload slot can stay as it is.

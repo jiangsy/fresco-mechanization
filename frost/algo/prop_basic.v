@@ -1892,3 +1892,34 @@ Proof.
       unfold binds in *; simpl; right; assumption.
 Qed.
 
+Lemma a_flex_tvar_strip_tvar : forall b Θ α,
+  a_flex_tvar ((b ~ abind_tvar) ++ Θ) α -> a_flex_tvar Θ α.
+Proof.
+  intros b Θ α [Hb | [τ Hb]];
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq Habs] | Hb'];
+    solve [ discriminate Habs | left; exact Hb' | right; exists τ; exact Hb' ].
+Qed.
+
+(** [a_wf_pskl] reads Θ ONLY through [a_binds_tvar] (its context never grows —
+    the binder rule extends Δ), so it weakens along any TVAR-ISH monotone map.
+    [a_wf_pskl_weaken]'s [binds]-monotone form is too strong here: Flex-Solve
+    turns [α̂0]'s DECLARATION into a DEFINITION. *)
+Lemma a_wf_pskl_weaken_tvarish : forall Θ Θ' Δ P,
+  (forall α, a_binds_tvar α Θ -> a_binds_tvar α Θ') ->
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
+  {{ Θ' ⨟ Δ ⊢ₚₛ P }}a.
+Proof.
+  intros Θ Θ' Δ P Hmon Hwf; revert Θ' Hmon; induction Hwf; intros Θ' Hmon;
+    eauto using a_wf_pskl.
+  apply a_wf_pskl__var. destruct H as [HΔ | Htv];
+    [ left; exact HΔ | right; exact (Hmon α Htv) ].
+Qed.
+
+(** Variable renaming is the variable instance of monotype substitution. *)
+Lemma guarded_pskl_subst_var : forall P α β,
+  guarded_pskl P ->
+  guarded_pskl (subst_pskl_in_pskl (pskl_var_f β) α P).
+Proof.
+  intros P α β H.
+  exact (@guarded_pskl_mono_subst P (ptyp_var_f β) α H (mono_ptyp__var β)).
+Qed.

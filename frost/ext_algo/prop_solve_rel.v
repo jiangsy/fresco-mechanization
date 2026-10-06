@@ -4178,30 +4178,6 @@ Qed.
 (*  output context.                                                       *)
 (* ===================================================================== *)
 
-(** ⭐ Every free variable of a [Δ]-wf skeleton is [Δ]-bound or TVAR-ISH in
-    the context.  This is what tells [Assign-SkipTmVar] that the term entry
-    it is peeling cannot occur in the assigned skeleton. *)
-Lemma a_wf_pskl_ftv_tvarish : forall Θ Δ P,
-  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
-  forall γ, γ `in` ftvar_in_pskl P -> γ `in` Δ \/ a_binds_tvar γ Θ.
-Proof.
-  intros Θ Δ P H; induction H; simpl; intros γ Hγ;
-    try solve [ exfalso; clear - Hγ; fsetdec ].
-  - assert (Eγ : γ = α) by (clear - Hγ; fsetdec). subst γ. exact H.
-  - destruct (AtomSetProperties.In_dec γ (ftvar_in_pskl P1)) as [Hin | Hni];
-      [ exact (IHa_wf_pskl1 γ Hin)
-      | exact (IHa_wf_pskl2 γ ltac:(clear - Hγ Hni; fsetdec)) ].
-  - pick fresh β for (L `union` ftvar_in_pskl P `union` Δ
-                        `union` singleton γ `union` dom Θ).
-    assert (Hin : γ `in` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f β))).
-    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P (pskl_var_f β))
-        as Hl. clear - Hγ Hl. fsetdec. }
-    destruct (H0 β ltac:(clear - Fr; solve_notin_auto) γ Hin) as [HΔ | Htv];
-      [ left; clear - HΔ Fr; fsetdec | right; exact Htv ].
-  - destruct (IHa_wf_pskl γ Hγ) as [HΔ | Htv];
-      [ exfalso; clear - HΔ; fsetdec | right; exact Htv ].
-Qed.
-
 Lemma a_binds_tvar_not_var_typ : forall (Θ : aenv) x A,
   uniq Θ -> binds x (abind_var_typ A) Θ -> ~ a_binds_tvar x Θ.
 Proof.
@@ -4228,17 +4204,6 @@ Proof.
     split; intros Hc; exfalso; [ clear - Ha H1 Hc | clear - Hb H2 Hc ];
       fsetdec.
   - exact (Hd a b Hat').
-Qed.
-
-Lemma a_wf_pskl_weaken_tvarish : forall Θ Θ' Δ P,
-  (forall α, a_binds_tvar α Θ -> a_binds_tvar α Θ') ->
-  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
-  {{ Θ' ⨟ Δ ⊢ₚₛ P }}a.
-Proof.
-  intros Θ Θ' Δ P Hmon Hwf; revert Θ' Hmon; induction Hwf; intros Θ' Hmon;
-    eauto using a_wf_pskl.
-  apply a_wf_pskl__var. destruct H as [HΔ | Htv];
-    [ left; exact HΔ | right; exact (Hmon α Htv) ].
 Qed.
 
 (** ⭐ The information increase carries TVAR-ISHNESS, so a skeleton

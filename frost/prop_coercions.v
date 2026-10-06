@@ -790,3 +790,9 @@ Lemma ftag_utyp_to_uskl : forall C,
   ftag_in_uskl (utyp_to_uskl C) [=] ftag_in_utyp C.
 Proof. induction C; simpl; fsetdec. Qed.
 
+Lemma ptyp_to_pskl_inj : forall A B,
+  ptyp_to_pskl A = ptyp_to_pskl B -> A = B.
+Proof.
+  induction A; destruct B; simpl; intros Heq; try discriminate;
+    try reflexivity; injection Heq; intros; f_equal; auto.
+Qed.

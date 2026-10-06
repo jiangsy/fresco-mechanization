@@ -226,24 +226,6 @@ Proof.
   end.
 Qed.
 
-Lemma a_looksub_hole_target : forall Θ α m P Ξ C,
-  {{ Θ ⊢ P ≼[ α , m ] pskl_hole ⤳ Ξ ⨾ C }}a ->
-  Ξ = nil /\ (C = nil \/ C = a_cstr_sub m pskl_hole :: nil).
-Proof.
-  intros Θ α m P Ξ C H.
-  remember pskl_hole as T eqn:HT.
-  induction H; inversion HT; subst.
-  - (* LS-Var *) split; [ reflexivity | right; reflexivity ].
-  - (* LS-Absent *) auto.
-  - (* LS-Vacuous *) auto.
-  - (* LS-Check: guarded ◇ has no constructor *)
-    match goal with
-    | Hg : guarded_pskl pskl_hole |- _ => inversion Hg
-    end.
-  - (* LS-ForallL *) apply IHa_looksub. reflexivity.
-  - (* LS-UnivGhostL *) apply IHa_looksub. reflexivity.
-Qed.
-
 (* ===================================================================== *)
 (*  §6  The COLLECTION-PRESERVING re-rootings (§8c.9's R′/R″)             *)
 (*                                                                        *)

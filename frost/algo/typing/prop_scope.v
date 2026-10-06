@@ -1146,7 +1146,7 @@ Proof.
     inversion Hs; subst.
     repeat match goal with
     | Heq : ptyp_to_pskl _ = ptyp_to_pskl _ |- _ =>
-        apply prop_inc_strengthen.ptyp_to_pskl_inj in Heq
+        apply prop_coercions.ptyp_to_pskl_inj in Heq
     end.
     subst.
     split; intros γ Hγ Hab; apply Hcr;

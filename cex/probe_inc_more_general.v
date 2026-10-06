@@ -1,6 +1,8 @@
 (** PROBE (2026-08-17): FEASIBILITY of §8c.12 route (B) — at the exact
     configuration that refuted §8c.10's first scoping, the RUNNER's answer
-    is the ⊑-MORE-GENERAL one, in the tree's EXISTING [a_inc].
+    is ⊑-below the alias answer in the tree's EXISTING [a_inc].
+    The reverse witness below (2026-10-06) shows that this comparison is
+    NON-STRICT: the two concrete answers are equigeneral.
     (docs/HANDOFF-extractable-algo-encoding.md §8c.12.)
 
     §8c.10b refuted the renaming-shaped output relation with
@@ -14,8 +16,10 @@
     — so the divergence is information-free but is NOT a renaming, and the
     note recorded that lifting the level off [pskl_no_hole] needs a
     generalization argument.  This probe pins the direction of that
-    argument: the runner's context is the more general one, and the witness
-    is the metasubstitution [β̂/α̂].
+    argument with the metasubstitution [β̂/α̂].  For fresh β, the reverse
+    witness [α̂/α̂, α̂/β̂] also exists, and the round trip fixes α.
+    This is a fact about these concrete contexts, not a general transport
+    theorem for subsequent consistency derivations.
 
     ⭐⭐ AND NO NEW RELATION IS OWED.  [ext_algo] shares [aenv] with [algo/],
     so [a_inc] (algo/def_meta.v:213, the paper's fig:information-increase)
@@ -65,3 +69,36 @@ Proof.
     apply a_wf_ptyp__var. right. left. simpl. auto.
   - apply mono_ptyp__var.
 Qed.
+
+(** The alias can be eliminated without adding information.  Freshness
+    ensures that substituting for β does not first match the α entry. *)
+Lemma probe_inc_alias_to_runner : forall α β, α <> β ->
+  ((α, ptyp_var_f α) :: (β, ptyp_var_f α) :: nil)
+    ∷ gf_ctx_solved α β ⊑ gf_ctx α.
+Proof.
+  intros α β Hneq. unfold gf_ctx_solved, gf_ctx.
+  apply a_inc__flex_def.
+  - apply a_inc__flex.
+    + apply a_inc__empty. apply a_suffix__cons; constructor.
+    + apply a_wf_ptyp__var. right. left. unfold binds; simpl; auto.
+    + constructor.
+  - apply a_wf_ptyp__var. right. left. unfold binds; simpl; auto.
+  - constructor.
+  - simpl. destruct (β == β); [ | contradiction ].
+    apply a_tyequiv__refl. constructor.
+Qed.
+
+(** The forward and reverse witnesses preserve the original variable. *)
+Lemma probe_inc_alias_round_trip : forall α β, α <> β ->
+  msubst_ptyp ((α, ptyp_var_f α) :: (β, ptyp_var_f α) :: nil)
+    (msubst_ptyp ((α, ptyp_var_f β) :: nil) (ptyp_var_f α)) = ptyp_var_f α.
+Proof.
+  intros α β Hneq. cbv [msubst_ptyp msubst_lookup].
+  repeat match goal with
+  | |- context [if ?d then _ else _] => destruct d; try congruence
+  end.
+Qed.
+
+Print Assumptions probe_inc_runner_more_general.
+Print Assumptions probe_inc_alias_to_runner.
+Print Assumptions probe_inc_alias_round_trip.

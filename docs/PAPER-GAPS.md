@@ -227,7 +227,7 @@ Budget a day, not a research risk.
 stating to the authors directly: **wherever the reference implementation
 dispatches by match order, the figure owes an exclusion premise.**
 
-## MISSING SIDE CONDITION (2026-08-17, machine-checked) — `U-FlexL` / `U-FlexR` lack the `≠ ◇` guard that renders the implementation's ghost-first dispatch, so consistency is AMBIGUOUS at two cells and derives a strictly less general answer than the algorithm computes
+## DISPATCH REFINEMENT (2026-08-17; rationale corrected 2026-10-06) — ghost-first guards select between different but equigeneral output contexts
 
 `U-FlexL` (`algorithmic.tex:757`) and `U-FlexR` (`:764`) carry only
 `nonflex{P_0}` / `nonflex{P}`.  That predicate rules out a flexible
@@ -254,13 +254,24 @@ subject, so a `◇` pattern always answers by `GhostR`; the mirror arm bars
 the note in this file's `SolE-FlexR` entries): **a relational encoding has
 no match order, so a dispatch exclusion must be a premise.**
 
-⚙ **The ghost route is also the RIGHT one**, independently of the
-implementation: it leaves the flexible unsolved, where `FlexL` commits it
-to a fresh unconstrained variable, so `GhostR`/`Ghost` is strictly more
-general.  The rules as published therefore admit a derivation that is not
-optimal, at a configuration that is REACHED — `(λf. f (λy. f y)) (λz. z)`
-gets there through `AT-Abs`'s guess, `AP-AbsCheck`'s skeleton-`◇` binder
-and `AP-Var`+`Arrow` (`cex/probe_pat_presents_hole_flex.v`).
+**The two answers are equigeneral, not strictly ordered.**  In the
+minimal example, let `Θr = (α̂)` and `Θd = (α̂ := β̂, β̂)`, with
+`α ≠ β`.  The existing information-increase relation admits both
+`[β/α] ∷ Θr ⊑ Θd` and `[α/α, α/β] ∷ Θd ⊑ Θr`.
+Their composition fixes the original variable `α`.
+These witnesses are checked in `cex/probe_inc_more_general.v`.
+The extra binding introduces an unconstrained alias; this example does
+not refute optimality.  It does distinguish literal output contexts and
+cannot be explained by a bijective renaming, because their lengths
+differ.  The configuration is reachable
+(`cex/probe_pat_presents_hole_flex.v`).
+
+The guards enforce the implementation's ghost-first dispatch.  The
+minimal example justifies a distinction between exact outputs and
+outputs up to information increase; it does not establish that the
+guards are necessary for semantic soundness or completeness.  Nor do
+the two concrete witnesses prove a general transport theorem for
+unguarded consistency derivations.
 
 **What the mechanization does**: `a_consis__flex_l` carries
 `P0 <> pskl_hole` and `a_consis__flex_r` carries `P <> pskl_hole`
@@ -4324,11 +4335,12 @@ context has an entry the other does not.
 
 1. **`type.ml`'s clause order is load-bearing and unstated.**  The
    reference implementation matches the hole rows FIRST (`join_sk`,
-   :143-262), so it always takes `U-GhostR` / `U-Ghost` and returns the
-   more general answer.  The figure gives no priority, so a reader
-   implementing the rules as written may solve the flexible instead and
-   compute a strictly less general context.  Worth one sentence in the
-   rule figure, or a `nonghost` side condition on `U-FlexL`/`U-FlexR`.
+   :143-262), so it takes `U-GhostR` / `U-Ghost` and leaves the context
+   unchanged.  Without priority, a reader may instead introduce a fresh
+   alias.  That context differs syntactically but is equigeneral in this
+   example, as checked in `cex/probe_inc_more_general.v`.  A priority
+   convention or exclusion premise specifies the implementation's exact
+   dispatch; this example does not demonstrate a loss of optimality.
 
 2. **It costs any "the implementation realizes the rules" proof a whole
    layer.**  `U-Arrow` runs its second premise at the first's OUTPUT

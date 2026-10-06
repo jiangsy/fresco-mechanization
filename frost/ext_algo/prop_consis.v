@@ -355,12 +355,6 @@ Qed.
 
 
 
-Lemma a_flex_tvar_in_dom : forall Θ α,
-  a_flex_tvar Θ α -> α `in` dom Θ.
-Proof.
-  intros Θ α [Hb | [τ Hb]]; eauto using binds_In.
-Qed.
-
 (** [dom] and [ftvar_in_aenv] normalisation, in the one direction every case
     below wants: everything spelled out over [++] and a cons. *)
 #[local] Ltac env_simp :=
