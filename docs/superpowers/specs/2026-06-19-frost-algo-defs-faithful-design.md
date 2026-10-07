@@ -1,4 +1,4 @@
-# Frost algorithmic system — faithful-definitions sync (design)
+# Fresco algorithmic system — faithful-definitions sync (design)
 
 **Date:** 2026-06-19
 **Branch:** `mech-refine-three-ctx` (algorithmic work; declarative side already synced)
@@ -6,7 +6,7 @@
 
 ## Goal and boundary
 
-Replace every **deferred stub** and **placeholder** in `frost/algo/` with a
+Replace every **deferred stub** and **placeholder** in `fresco/algo/` with a
 faithful transcription of the *current* paper algorithmic rules
 (`paper/sections/algorithmic.tex`, `proofs.tex`, `full-alg-spec.tex`).
 
@@ -29,7 +29,7 @@ a dated `PROGRESS.md` note, and a `[mech]` commit. No new `Axiom`; new
 
 ## Baseline (2026-06-19)
 
-Build is 🟢 green. `frost/algo/` audit:
+Build is 🟢 green. `fresco/algo/` audit:
 
 **Already faithful (keep):** `a_guess_mono`, `a_refresh`, `a_looksub`,
 `a_lookeq`, `a_solve_sub`, `a_solve_eq`, `a_solve_cstr`, `a_extract`,

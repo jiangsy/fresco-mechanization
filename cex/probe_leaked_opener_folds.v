@@ -35,11 +35,11 @@
 From Coq Require Import Lists.List.
 From Metalib Require Import Metatheory.
 
-From src Require Import frost.notations.
-From src Require Import frost.def_shapes.
-From src Require Import frost.algo.def_rules.
+From src Require Import fresco.notations.
+From src Require Import fresco.def_shapes.
+From src Require Import fresco.algo.def_rules.
 
-Open Scope frost_a_scope.
+Open Scope fresco_a_scope.
 
 (** §1  The one rule that does it: [SE-GhostL] accepts ANY target. *)
 Lemma se_ghostl_accepts_anything : forall Θ Q,

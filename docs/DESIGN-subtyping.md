@@ -380,7 +380,7 @@ requires the fuel-indexed statement.
 
 ### 4.4 External wf side conditions
 Several paper statements will look false without the prose wf conditions
-(memory [[frost-wf-external-side-conditions]], docs/WF-SIDE-CONDITIONS.md).
+(memory [[fresco-wf-external-side-conditions]], docs/WF-SIDE-CONDITIONS.md).
 E.g. `subtyping-decoration`'s tag accounting silently assumes tag-uniqueness
 from wf of ψ; ForallR's fill-inversion needs `P0`'s wf.  Registry discipline:
 put transportable conditions on rules, the rest in statements; update the

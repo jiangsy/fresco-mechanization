@@ -1,6 +1,6 @@
 # REPORT — proof-path audit (2026-08-22)
 
-Scope: `mechanization/frost/**.v` minus the two generated files.  Build green
+Scope: `mechanization/fresco/**.v` minus the two generated files.  Build green
 before and after; the only tree change this pass is the `bcore` →
 `look_pair_fold` rename (§6).
 
@@ -912,7 +912,7 @@ Needs a human pass; the first group alone is ~400 lines of free saving.
 
 ## A7  Small findings
 
-- `frost/algo/def_rules.v:319` cites `cex/probe_bcore_ug2_flexr.v`, **which
+- `fresco/algo/def_rules.v:319` cites `cex/probe_bcore_ug2_flexr.v`, **which
   does not exist** — a stale reference (the only `bcore` mention left in the
   tree after §6; deliberately not renamed, since the file it names is gone
   either way).

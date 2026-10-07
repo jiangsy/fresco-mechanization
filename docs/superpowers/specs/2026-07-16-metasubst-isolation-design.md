@@ -4,7 +4,7 @@ Date: 2026-07-16. Branch: `re-mech`.
 
 ## Problem
 
-`frost/algo/prop_consis_complete.v` has grown to ~3.6k lines and 89 top-level
+`fresco/algo/prop_consis_complete.v` has grown to ~3.6k lines and 89 top-level
 lemmas, of which **58 are pure metasubstitution / `a_inc` / `a_inc_equiv` / `≡ᵗ` /
 downarrow lemmas** with no dependency on consistency. They accreted there because
 the optimality development (the GMM ⇓-normalizing factoring) was written inline.
@@ -24,7 +24,7 @@ normalization exist for. So the deep metasubst theory is *completeness-side only
 ## Goal
 
 Extract the completeness-side metasubst theory into a single new module
-`frost/algo/prop_metasubst.v`, sibling to `prop_consis_sound` and directly below
+`fresco/algo/prop_metasubst.v`, sibling to `prop_consis_sound` and directly below
 `prop_consis_complete`, so:
 
 ```

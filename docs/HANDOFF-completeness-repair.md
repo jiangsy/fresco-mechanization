@@ -79,7 +79,7 @@ every probe so far confirms UNREACHABILITY.  Work from here.
 
 The text below is the ORIGINAL plan, still current apart from the above.
 
-Handover — Frost mechanization: REPAIR thm:complete-subtyping's payload
+Handover — Fresco mechanization: REPAIR thm:complete-subtyping's payload
 over-quantification and CLOSE subtyping completeness.  Supersedes
 HANDOFF-p7c-finish.md (its Step A landed; its Step B resolved into the
 finding below).  THREE tasks, in strict order.
@@ -87,7 +87,7 @@ finding below).  THREE tasks, in strict order.
 READ FIRST: mechanization/CLAUDE.md; memory `remech-flex-shield-dead`
 (the whole arc of 2026-08-03, INCLUDING its retraction sections — the
 wrong turns are documented so you do not repeat them);
-frost/algo/cex/probe_double_occ_run.v HEADER (the resolved trace — THE
+fresco/algo/cex/probe_double_occ_run.v HEADER (the resolved trace — THE
 central document); cex/cex_p7_shield_double_occ.v; docs/PAPER-GAPS.md's
 retraction note; DESIGN-completeness-subtyping.md §14.5–§14.6.
 
@@ -162,7 +162,7 @@ TASK 2 — find the typing's ACTUAL payload invariant
 ================================================================
 The repair hinges on the right side condition.  Do NOT guess it — read it
 off the producers:
- (a) grep a_typing / a_pat (frost/algo/def_rules.v) for every a_sub call
+ (a) grep a_typing / a_pat (fresco/algo/def_rules.v) for every a_sub call
      site; characterize the P0 each rule passes (paints of source types?
      holes? spine-collected skeletons with ghosts?).
  (b) Cross-check against the implementation's spine collection

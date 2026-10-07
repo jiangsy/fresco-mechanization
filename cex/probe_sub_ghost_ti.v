@@ -64,14 +64,14 @@ From Coq Require Import Lists.List.
 From Metalib Require Import Metatheory.
 From Equations Require Import Equations.
 
-From src Require Import frost.notations.
-From src Require Import frost.algo.def_rules.
-From src Require Import frost.ext_algo.notations.
-From src Require Import frost.ext_algo.def_consis.
-From src Require Import frost.ext_algo.def_sub.
-From src Require Import frost.ext_algo.def_sub_impl.
+From src Require Import fresco.notations.
+From src Require Import fresco.algo.def_rules.
+From src Require Import fresco.ext_algo.notations.
+From src Require Import fresco.ext_algo.def_consis.
+From src Require Import fresco.ext_algo.def_sub.
+From src Require Import fresco.ext_algo.def_sub_impl.
 
-Open Scope frost_e_scope.
+Open Scope fresco_e_scope.
 
 (* ===================================================================== *)
 (*  1.  ⭐ RESOLVED (2026-08-17): the RELATION NO LONGER ACCEPTS.          *)

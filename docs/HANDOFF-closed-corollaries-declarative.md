@@ -1,11 +1,11 @@
-Handover — Frost mechanization: state the CLOSED-PROGRAM COROLLARIES against
+Handover — Fresco mechanization: state the CLOSED-PROGRAM COROLLARIES against
 the PURELY DECLARATIVE system (`d_sd_typing` / `d_typing`), in BOTH
 directions.
 
 ## STATE (2026-08-11, third pass)
 
 ⭐ **SOUNDNESS IS DONE.**  `a_typing_sound_infer` / `a_typing_sound_check`
-(`frost/algo/typing/prop_closed.v`) now read the paper's own §declarative
+(`fresco/algo/typing/prop_closed.v`) now read the paper's own §declarative
 system on the declarative side — `· ⊢ˢ[M] e ⦂ B` AND `· ⊢[M] e ⦂ B` — over a
 declarative context.  `make coq` exit 0, admit-free, axiom-free, README.v
 24/24 `Print Assumptions` closed.
@@ -90,7 +90,7 @@ one trap (`_gv__arrow`'s extra premise is not last) in `PROGRESS.md`.
 
 ## WHAT LANDED
 
-**`frost/algo_decl/prop_conserv.v`** (new, ~1300 lines) — the conservativity
+**`fresco/algo_decl/prop_conserv.v`** (new, ~1300 lines) — the conservativity
 bridge the paper asserts and never states (`app:decl-in-algo-context`: *"it is
 easy to extend them to algorithmic contexts Θ"*).  Registered in
 `docs/PAPER-GAPS.md`.
@@ -109,9 +109,9 @@ easy to extend them to algorithmic contexts Θ"*).  Registered in
 | 11 | ⭐ CLOSING the run's output context: `ad_sd_typing_close_suffix` |
 | 12 | the completeness direction: how far it reaches and where it stops |
 
-Two conversions were added to `frost/coercions.v` (`utyp_to_uskl` — the sort
+Two conversions were added to `fresco/coercions.v` (`utyp_to_uskl` — the sort
 inclusion — and its retraction `uskl_to_utyp`), with their facts in
-`frost/prop_coercions.v`.  The `msubst_btyp` facts §11 needs are in
+`fresco/prop_coercions.v`.  The `msubst_btyp` facts §11 needs are in
 prop_conserv.v: `msubst_btyp` was DEFINED in `algo/def_meta.v` and used by no
 proof anywhere, so that section is its only home.
 
@@ -216,7 +216,7 @@ the tag context splits into `Ψ₁ ∪ Ψ₂` and the subject keeps all its tags
   subject, takes `Ψ' := ∅`, or substitutes a type variable — and a substitution
   by a TAG-FREE term cannot change a tag.  Stated once, in its strongest form,
   as `ftag_in_utyp_subst_tagfree` / `ftag_in_uskl_subst_tagfree`
-  (`frost/prop_etag.v` §0).
+  (`fresco/prop_etag.v` §0).
 - **One place that was not: `d_consis_sub_trans_mid`** (CST, paper B.3,
   `decl/prop_general_subsumption.v`), whose ForallL case transports along
   `utyp_tag_refines`, where the subject **GAINS** tags.  Repaired by the
@@ -230,7 +230,7 @@ the tag context splits into `Ψ₁ ∪ Ψ₂` and the subject keeps all its tags
 
 ### ⭐ HOW CST WAS REPAIRED — the general shape, worth reusing
 
-`frost/prop_etag.v` + `frost/decl/prop_etag_swap.v` (~1000 lines, green):
+`fresco/prop_etag.v` + `fresco/decl/prop_etag_swap.v` (~1000 lines, green):
 
 1. **§1–§2 EQUIVARIANCE, with no freshness side condition**, for `d_tags`,
    `d_tags_skl`, `d_wf_utyp`, `d_wf_uskl`, `d_consis`, `d_pat_consis`, `d_sub`

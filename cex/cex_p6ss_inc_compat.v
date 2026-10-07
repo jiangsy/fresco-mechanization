@@ -30,11 +30,11 @@
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
-Require Import src.frost.notations.
-Require Import src.frost.def_shapes.
-Require Import src.frost.decl.def_rules.
-Require Import src.frost.algo.def_rules.
-Require Import src.frost.algo.def_meta.
+Require Import src.fresco.notations.
+Require Import src.fresco.def_shapes.
+Require Import src.fresco.decl.def_rules.
+Require Import src.fresco.algo.def_rules.
+Require Import src.fresco.algo.def_meta.
 
 (** 1: at the identity metasubstitution, dom θ ⊆ dom Θ. *)
 Example id_inc_dom_overlap : forall α,

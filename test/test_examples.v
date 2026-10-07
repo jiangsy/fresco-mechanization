@@ -2,7 +2,7 @@
     (fig:comparison-table-QL / fig:comparison-table-new, appendix
     "Comparison of Type Systems for FCP"), run against the algorithmic
     rules — an ENCODING CHECK that the mechanized rules accept the
-    programs the paper claims Frost accepts.
+    programs the paper claims Fresco accepts.
 
     Encoding conventions (the calculus has only [1], [→], [∀]):
     - [Int]/[Bool] are RIGID type variables bound [abind_tvar] in the
@@ -37,16 +37,16 @@
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
-Require Import src.frost.notations.
-Require Import src.frost.coercions.
-Require Import src.frost.def_shapes.
-Require Import src.frost.ltac_utils.
-Require Import src.frost.decl.def_rules.
-Require Import src.frost.algo.def_rules.
-Require Import src.frost.algo.prop_basic.   (* the guess freshness kit *)
+Require Import src.fresco.notations.
+Require Import src.fresco.coercions.
+Require Import src.fresco.def_shapes.
+Require Import src.fresco.ltac_utils.
+Require Import src.fresco.decl.def_rules.
+Require Import src.fresco.algo.def_rules.
+Require Import src.fresco.algo.prop_basic.   (* the guess freshness kit *)
 (* cluster 4: the ∀ rows are exists-fresh + close now, so these concrete
    examples go through the cofinite ADMISSIBILITY lemmas (§9) *)
-Require Import src.frost.algo.consis.prop_consis_rename.
+Require Import src.fresco.algo.consis.prop_consis_rename.
 
 (* ===================================================================== *)
 (*  Tactic kit                                                            *)
@@ -217,7 +217,7 @@ Hypothesis HΘlib_uniq : uniq Θlib.
 
    See docs/REPORT-remech-cleanup-audit.md §PERF. *)
 (* ⚙ [keep_only_subject] and [solve_notin_auto] were promoted to
-   frost/ltac_utils.v on 2026-08-09 — this file's local copy is gone; see the
+   fresco/ltac_utils.v on 2026-08-09 — this file's local copy is gone; see the
    ∉-kit comment there for why [fsetdec] is the wrong default on a [∉] goal. *)
 
 Ltac crush_uniq :=

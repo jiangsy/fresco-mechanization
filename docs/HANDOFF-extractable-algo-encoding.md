@@ -10,7 +10,7 @@ Two technical TODOs, recorded 2026-08-13.
 
 ## ⭐ STATUS 2026-08-13 — **TODO (1) IS COMPLETE**; TODO (2) is spiked, not scaled
 
-`frost/ext_algo/` (~5500 lines).  **Every algorithmic judgement is threaded
+`fresco/ext_algo/` (~5500 lines).  **Every algorithmic judgement is threaded
 and bridged** — `guess^TY`, `assign`/`unifyvar`/`consistency`, the constraint
 COLLECTION, the SOLVING layer, `extract`, `a_sub`/`a_sub_flex`, `a_split`,
 `a_pat` and `a_typing`.  `make coq` green, `README.v`'s 32 assumption reports
@@ -30,7 +30,7 @@ residue, axiom-free.  Nothing else has a runner yet.
 
 ## 0. Why this is worth doing
 
-`frost/algo/def_rules.v` states the operational judgements EXISTS-FRESH: a rule
+`fresco/algo/def_rules.v` states the operational judgements EXISTS-FRESH: a rule
 names the atom it opens a binder at and constrains it.  For most rows that
 constraint mentions only inputs, which is unobjectionable.  But **eleven rows
 constrain their own OUTPUT** — `β ∉ dom Θ1`, where `Θ1` is what the premise
@@ -57,7 +57,7 @@ follow:
 
 ## 1. ⭐ (1) IS HALF DONE ALREADY — and this is the main thing to read first
 
-`frost/algo/prop_swap.v` §13b proves exactly the intended statement, for three
+`fresco/algo/prop_swap.v` §13b proves exactly the intended statement, for three
 rule groups, as the eleven `*_no_loss` lemmas (`a_sub_flex_*_no_loss`,
 `a_assign_*_no_loss`, `a_unify_*_no_loss`).  Their argument IS the design the
 TODO asks for:
@@ -150,7 +150,7 @@ POINTWISE) — copy that discipline.
   measure BEFORE writing rules — see §5, where it is the TERMINATION question
   and the paper turns out to give no help at all.
 - ⚠️ ~~**`a_pat`'s four binder rows are still COFINITE**~~ — ⛔ **OVERTAKEN
-  2026-08-13**: they were CONVERTED, in `frost/` itself, at the user's
+  2026-08-13**: they were CONVERTED, in `fresco/` itself, at the user's
   direction.  See §7.13 for the decision and §7.15 for what it cost (net −250
   lines, all four flagships re-closed).  The asymmetry this bullet asks about
   no longer exists.
@@ -180,7 +180,7 @@ POINTWISE) — copy that discipline.
 ⛔ **The paper never argues that its algorithm terminates.**  Checked
 2026-08-13: `terminat*` / `decidab*` appear in `paper/sections/` only as
 background on the undecidability of full System F inference
-(`introduction.tex:460,463`, `overview.tex:79`), never about Frost's own
+(`introduction.tex:460,463`, `overview.tex:79`), never about Fresco's own
 algorithm; and `algorithmic.tex`, `implementation.tex` and
 `full-algo-spec.tex` contain no measure, no well-founded order, no size
 induction.  So termination is **not** an obligation the mechanization skipped
@@ -299,7 +299,7 @@ strategy exhaustive.
 ⛔ **Not started.**  No branch, no code.  §1 is the only part that exists, and
 it exists as metatheory, not as an encoding.
 
-⚙ Superseded 2026-08-13: `frost/ext_algo/def_supply.v` exists (M0).  See §7.6.
+⚙ Superseded 2026-08-13: `fresco/ext_algo/def_supply.v` exists (M0).  See §7.6.
 
 ---
 
@@ -394,7 +394,7 @@ and the design principle offered in answer is `declarative.tex:856-860`:
 
 So the paper's argument is: *the general problem is undecidable, therefore we
 restrict guessing to what the skeleton determines.*  That is an argument that
-Frost **is** decidable, and it is nowhere discharged.  The gap is therefore
+Fresco **is** decidable, and it is nowhere discharged.  The gap is therefore
 not hygiene — **the payoff of the paper's central design decision is
 unproved**, and a reader who reaches `thm:complete-type-inference` having read
 `overview.tex:79` will read decidability into it.  Completeness does not give
@@ -436,16 +436,16 @@ pointer.  Its result is `a_wl_red_ss_sn : ⊢ᵃʷ Γ -> Acc a_wl_red_ss_lt Γ`,
   of it: the component it was missing is **split depth**.
 - ⚠️ `exp_size` there is an inductive RELATION, not a function, because that
   tree's binders are cofinite; totality comes from wf (`exp_size_wl_total`).
-  Frost's `a_typing` is exists-fresh, so a plain `size_exp` function may do —
+  Fresco's `a_typing` is exists-fresh, so a plain `size_exp` function may do —
   check before copying the relational form, it is a large tax.
 - ⛔ **The SHAPE does not transfer.**  That algorithm is a WORKLIST: one state,
   one small-step relation, so termination is strong normalization and `Acc` is
-  the natural formulation.  Frost's is fourteen big-step mutually recursive
+  the natural formulation.  Fresco's is fourteen big-step mutually recursive
   judgements with no single state — there is no step relation to be `Acc` on.
-  A second, independent reason BC (7.1) fits Frost where `by wf` does not.
+  A second, independent reason BC (7.1) fits Fresco where `by wf` does not.
 - ⚠️ Its hard case is a forewarning: four etvar-split rules INCREASE
   `num_etvar`, repaired by a "2-step" argument (the reduct has a forced next
-  step that drops a higher-priority component).  Frost's `a_split` rows will
+  step that drops a higher-priority component).  Fresco's `a_split` rows will
   want the same trick.
 
 ### 7.5 ⚙ TYPE INFERENCE LOGICS — read; mostly NOT adoptable, two things kept
@@ -455,7 +455,7 @@ Carnier, Pottier & Keuchel, OOPSLA 2024 (paper only; no local development).
 - ⛔ Its central device is **intrinsic scoping**: types are indexed by a
   `World` (the live existentials), so freshness is a typing property and the
   side conditions disappear ("we leave corresponding freshness side-conditions
-  implicit", §3.1).  **Not adoptable**: Frost is locally-nameless with named
+  implicit", §3.1).  **Not adoptable**: Fresco is locally-nameless with named
   atoms in `Θ`, and re-indexing every sort is a whole-tree rewrite.
   ⚙ Its weakening `w ⊑ w'` with transport `_[_]` is precisely this tree's
   existing `a_inc` / `κ ∷ Θ0 ⊑ Θ` — the abstraction is already here under
@@ -494,11 +494,11 @@ Carnier, Pottier & Keuchel, OOPSLA 2024 (paper only; no local development).
 - ⚙ Its correctness statement is a single iff via a weakest-precondition
   semantics (`WP (synth Γ e) Q ↔ ∃…`), replacing separate soundness and
   completeness.  Elegant, but it presupposes the free-monad formulation; for
-  Frost the two-statement form of §5 stays.
+  Fresco the two-statement form of §5 stays.
 
 ### 7.6 The revised milestone order
 
-- **M0 ✅ DONE** — `frost/ext_algo/def_supply.v`.  Records two findings of its own:
+- **M0 ✅ DONE** — `fresco/ext_algo/def_supply.v`.  Records two findings of its own:
   a `nat` counter is *impossible* over sealed metalib atoms (`nat_of` is
   exported, no injection back), and `supply_fresh` does not reduce inside Coq
   (every metalib generator is behind the same opaque ascription) though it
@@ -508,15 +508,15 @@ Carnier, Pottier & Keuchel, OOPSLA 2024 (paper only; no local development).
 - **M1.5 — DOWNGRADED, no longer a gate.**  Record the measure candidate from
   7.3 + 7.4; do not spend a session on it.  It is now owed only by the
   totality theorem, which can follow the runner.
-- **M1.7 ✅ DONE** — `frost/ext_algo/def_guess_impl.v`.  The BC spike passed on every
+- **M1.7 ✅ DONE** — `fresco/ext_algo/def_guess_impl.v`.  The BC spike passed on every
   count; see §7.7.
-- **M2 ✅ DONE** — `frost/ext_algo/notations.v` (the `}}e` scope),
-  `frost/ext_algo/def_consis.v` (all 28 rules of the
-  `assign`/`unifyvar`/`consistency` block, threaded), `frost/ext_algo/prop_consis.v`
+- **M2 ✅ DONE** — `fresco/ext_algo/notations.v` (the `}}e` scope),
+  `fresco/ext_algo/def_consis.v` (all 28 rules of the
+  `assign`/`unifyvar`/`consistency` block, threaded), `fresco/ext_algo/prop_consis.v`
   (§1 supply growth, §2 the domain upper bound, §3 helpers, §4 the bridge, §5
   its projections).  **Ten premises retired; the bridge is closed and
   axiom-free.**  See §7.8.
-- **M3a ✅ DONE** — `frost/ext_algo/def_look.v` + `frost/ext_algo/prop_look.v`: the
+- **M3a ✅ DONE** — `fresco/ext_algo/def_look.v` + `fresco/ext_algo/prop_look.v`: the
   CONSTRAINT-COLLECTION cluster (`a_looksub` / `a_lookeq`, 19 rows), threaded,
   with growth / block / bridge and ⭐ the `a_sub__forall_l` payoff.  See §7.9.
 - **M3b — PIPELINE ✅ DONE, `a_sub` BRIDGE OPEN.**  `def_solve.v` /
@@ -529,19 +529,19 @@ Carnier, Pottier & Keuchel, OOPSLA 2024 (paper only; no local development).
   output-constraining rows are now stated without the premise.
   ⛔ **OPEN: the `a_sub` bridge.**  Its shape is settled and written at the
   top of `prop_sub.v`; see §7.10 and §7.12.
-- **M4 ✅ DONE** — `frost/ext_algo/def_pat.v` (`e_split` 3 rows + `e_pat` 10),
-  `frost/ext_algo/def_typing.v` (`e_typing` 13), with `prop_pat.v` and
+- **M4 ✅ DONE** — `fresco/ext_algo/def_pat.v` (`e_split` 3 rows + `e_pat` 10),
+  `fresco/ext_algo/def_typing.v` (`e_typing` 13), with `prop_pat.v` and
   `prop_typing.v`.  ⭐ **TODO (1) IS COMPLETE: every algorithmic judgement is
   now threaded, and every one of them is bridged.**  See §7.14.
 
-⚙ **LOCATION (user, 2026-08-13): the directory is `frost/ext_algo/` and the
-namespace `src.frost.ext_algo.*`** — it sits beside `algo/`, `algo_decl/` and
+⚙ **LOCATION (user, 2026-08-13): the directory is `fresco/ext_algo/` and the
+namespace `src.fresco.ext_algo.*`** — it sits beside `algo/`, `algo_decl/` and
 `deco_algo/`, which is what it is: another rendering of the same system, not a
-development parallel to `frost/`.
+development parallel to `fresco/`.
 
 ### 7.7 ✅ M1.7 RESULT — the spike passed, and it found one more thing
 
-`frost/ext_algo/def_guess_impl.v`: `e_guess_mono_order` (the call graph, `Prop`),
+`fresco/ext_algo/def_guess_impl.v`: `e_guess_mono_order` (the call graph, `Prop`),
 `e_guess_mono_impl` by `struct` on it, `e_guess_mono_order_total`, and the
 argument-free `e_guess_mono_run` with its soundness.  The extracted OCaml is
 in the file's header verbatim.  Three results:
@@ -570,7 +570,7 @@ in the file's header verbatim.  Three results:
 ⚠️ **Four traps the spike paid for, all of which will recur at every later
 judgement:**
 
-- The tree's substitution notations (`{ A' ᵗ/ₜ α } A`, `frost/notations.v:215`)
+- The tree's substitution notations (`{ A' ᵗ/ₜ α } A`, `fresco/notations.v:215`)
   **shadow Coq's `sig` notation**, so `{ r | spec r }` — the return type the
   whole BC pattern is built on — does not parse, and the error names the
   substitution glyphs and nothing else.  Write `sig (spec …)`.
@@ -588,11 +588,11 @@ judgement:**
 
 ### 7.8 ✅ M2 RESULT — ten premises retired, bridge closed
 
-**Ten premises gone in one file.**  `frost/ext_algo/def_consis.v` states the block
+**Ten premises gone in one file.**  `fresco/ext_algo/def_consis.v` states the block
 without any of: the eight `β ∉ dom Θ1` rows (`def_rules.v:936,956,962,967,972,
 1030,1039,1046`), and `Assign-SolveM`'s `uniq βs` and generated-name filter
 (`:896-898`) — the last two because `e_guess_mono`'s M1 invariants prove them.
-Every rule is in the same order as its `frost/algo` twin and tagged with which
+Every rule is in the same order as its `fresco/algo` twin and tagged with which
 of four differences it carries (`Δ-thread` / `Δ-drop` / `Δ-supply` /
 `Δ-guess`), so the two files diff line by line.
 
@@ -608,7 +608,7 @@ the paper does not have") is answered by §7.7: `type.ml` does have it.
 
 **What the bridge says** (`e_assign_sound` / `e_unify_sound` /
 `e_consis_sound`, all `Closed under the global context`): a threaded run is a
-run of `frost/algo`'s encoding, over the SAME contexts — inputs fixed
+run of `fresco/algo`'s encoding, over the SAME contexts — inputs fixed
 pointwise, `Θ1` carried across unchanged.  ⭐ So the second encoding is a
 front end to the existing metatheory, not a parallel development: composed
 with the bridge, every theorem over `a_*` applies verbatim.
@@ -642,7 +642,7 @@ BELOW, already exists as `a_assign_unify_consis_dom_mono`
 
 ### 7.9 ✅ M3a RESULT — the collection cluster, and the second `uniq` payoff
 
-`frost/ext_algo/def_look.v` (19 rows) + `frost/ext_algo/prop_look.v`.  Taken before
+`fresco/ext_algo/def_look.v` (19 rows) + `fresco/ext_algo/prop_look.v`.  Taken before
 `a_sub`/`a_sub_flex` because the collection is CLOSED — `a_looksub` and
 `a_lookeq` call only each other — while `a_sub__forall_l` consumes a
 collection's output block `Ξ`, so threading the subtyping walk first would
@@ -683,13 +683,13 @@ the terminator then falls inside.  Keep quoted prose out of boxed comments.
 
 ### 7.10 ✅ M3b step 1 — the solve layer, and what the tree already knew
 
-`frost/ext_algo/def_solve.v` + `frost/ext_algo/prop_solve.v`.  Both compiled first try,
+`fresco/ext_algo/def_solve.v` + `fresco/ext_algo/prop_solve.v`.  Both compiled first try,
 which is the recipe from §7.9 paying off: state the block's freshness as set
 arithmetic, put growth / in-supply / `uniq` / `ftvar ⊆ dom` in ONE conjunctive
 motive, and close 24 rows with one tactic.
 
 ⭐⭐ **THE TREE HAD ALREADY MADE M1'S ARGUMENT HERE, FOR M1'S REASON.**
-`a_solve_sub__arrow`'s comment (`frost/algo/def_rules.v:683-693`):
+`a_solve_sub__arrow`'s comment (`fresco/algo/def_rules.v:683-693`):
 
 > "THE SIBLING PREMISE THREADS, `Ξ2 ++ Ξ1`.  Both halves may now GENERATE
 > names, and a guess avoids only what its own context mentions — run both at
@@ -739,7 +739,7 @@ has to read as an ordinary OCaml program that can be diffed against
 `type.ml` — no `Acc_rect` / `Fix_sub` / `FixWf` wrappers, no `sumbool` / `sig`
 scaffolding, no `Obj.magic`, no residue of the termination argument.  This is
 why 7.1 and 7.2 are load-bearing rather than stylistic, and it is already
-recorded at the definition it most constrains (`frost/ext_algo/def_supply.v`'s
+recorded at the definition it most constrains (`fresco/ext_algo/def_supply.v`'s
 header, on `supply_fresh`).
 
 See also: [`REPORT-postclosure-audit.md`](REPORT-postclosure-audit.md) §1.3,
@@ -811,7 +811,7 @@ context, needs the local `uniq_env` variant that unfolds first.
 §4 left this open ("decide explicitly").  Decision (user, 2026-08-13):
 **`e_pat` is exists-fresh, uniformly with `a_typing`'s six converted rows.**
 
-The reason the tree never converted `frost/`'s own `a_pat` is cost, not
+The reason the tree never converted `fresco/`'s own `a_pat` is cost, not
 principle — `algo/def_rules.v:1380-1393` and
 `docs/REPORT-remech-cleanup-audit.md` §3 both call it "the one real violation"
 and recommend converting.  What stops them is that it re-opens `a_pat_sound`
@@ -819,14 +819,14 @@ and recommend converting.  What stops them is that it re-opens `a_pat_sound`
 so theorems 2 and 4 feel it too: four flagships in play.
 
 ⭐ **The second encoding does not have to pay that.**  It states `e_pat`
-exists-fresh and bridges; `frost/`'s `a_pat` is untouched and its four
+exists-fresh and bridges; `fresco/`'s `a_pat` is untouched and its four
 theorems never move.
 
 ⚠️ **But note which direction pays.**  Cofinite is cheap to USE and expensive
 to BUILD.  Our composable direction is `e → a`, i.e. exists-fresh → cofinite,
 so the bridge must REGENERATE the whole cofinite family from the one instance
 `e_pat` gives it.  That is exactly what `a_pat_rename_tm`
-(`algo/prop_swap.v:2521`) exists for — today its only consumer is `frost/`'s
+(`algo/prop_swap.v:2521`) exists for — today its only consumer is `fresco/`'s
 own completeness proof.  So the M4 bridge is a citation, not a new proof, and
 `a_pat_rename_tm` gains a second consumer.  ⚙ Same pattern as M2: the eleven
 `*_no_loss` lemmas were reader-facing justification and became the bridge's
@@ -834,14 +834,14 @@ proof obligations.
 
 ### 7.14 ✅ M4 RESULT — TODO (1) IS COMPLETE
 
-`frost/ext_algo/def_pat.v` (`e_split` 3 rows, `e_pat` 10) and
+`fresco/ext_algo/def_pat.v` (`e_split` 3 rows, `e_pat` 10) and
 `def_typing.v` (`e_typing` 13), with `prop_pat.v` and `prop_typing.v`.
 `make coq` green, `README.v`'s 32 assumption reports still all
 "Closed under the global context", and `e_split_sound` / `e_pat_sound` /
 `e_typing_sound` / `e_typing_sound_init` axiom-free.
 
 ⭐ **EVERY ALGORITHMIC JUDGEMENT IS NOW THREADED AND BRIDGED.**  Composed with
-the bridges, a threaded run of the whole algorithm is a run of `frost/algo`'s
+the bridges, a threaded run of the whole algorithm is a run of `fresco/algo`'s
 encoding over the SAME contexts — so the four flagship theorems apply to it
 verbatim, which is what the second encoding was for.
 
@@ -854,7 +854,7 @@ and declined — is `e_guess_mono_uniq_app`, a two-line corollary, and
 blocks, now theorems.
 
 ⭐ **AND THE BINDER ROWS' SIDE CONDITION COLLAPSES TO `x ∉ S`.**  Since the
-2026-08-13 exists-fresh conversion (§7.13, and see below) `frost/`'s own
+2026-08-13 exists-fresh conversion (§7.13, and see below) `fresco/`'s own
 `a_pat` rows read
 
     x ∉ dom (Ξ ++ Θ1) ∪ dom Θ2 ∪ fvar_in_exp e
@@ -888,8 +888,8 @@ subject's free term variables are bound in `Θ0`, and `dom Θ0 ⊆ ftvar_in_aenv
 ### 7.15 ✅ `a_pat` IS EXISTS-FRESH — the decision of §7.13, taken further
 
 §7.13 decided that **`ext_algo`** would state `e_pat` exists-fresh and bridge,
-leaving `frost/`'s `a_pat` cofinite.  The user then asked for the stronger
-thing: **convert `frost/`'s own `a_pat`, re-opening finished proofs.**  Done
+leaving `fresco/`'s `a_pat` cofinite.  The user then asked for the stronger
+thing: **convert `fresco/`'s own `a_pat`, re-opening finished proofs.**  Done
 2026-08-13; `make coq` green, all four flagships re-closed.  Consequences:
 
 - ⭐ **§7.13's warning about the expensive direction is VOID.**  It said the
@@ -900,7 +900,7 @@ thing: **convert `frost/`'s own `a_pat`, re-opening finished proofs.**  Done
 - ⛔ **`a_pat_rename_tm` IS GONE, and cannot come back**: over exists-fresh
   rows it needs `b <> x` for an `x` the statement cannot constrain.  The ⛔
   note at the end of `algo/prop_swap.v` §6 records the argument.
-- ⚙ **Net −250 lines in `frost/`** (`prop_completeness_pat.v` −102,
+- ⚙ **Net −250 lines in `fresco/`** (`prop_completeness_pat.v` −102,
   `prop_swap.v` −155).  `REPORT-remech-cleanup-audit.md` §3 has the full
   accounting and the corrections to its own estimate.
 
@@ -911,20 +911,20 @@ the paper's shipped `type.ml` was related to the mechanization only by our
 reading of it.  That is closed for the part of the algorithm that has a
 runner:
 
-- `frost/ext_algo/extraction/PseudoMonadic.v` — McTT's failable-bind
+- `fresco/ext_algo/extraction/PseudoMonadic.v` — McTT's failable-bind
   combinators, **copied verbatim** as §7.2 says to.  ⚠️ Its own header records
   why it cannot be a type class (Coq #19452: no extractable polymorphism
   across `Prop` and `Set`), which is the trap one hits while trying to tidy
   it.  ⚙ Landed BEFORE its consumer on purpose: M1.7's runner is total and
   never fails, but `assign`/`unifyvar`/`consistency` and `a_sub` do, and
   their runners will return `sumor`s.
-- `frost/ext_algo/def_guess_impl_sk.v` — `guess^N`, the sort wrapper.  Two
+- `fresco/ext_algo/def_guess_impl_sk.v` — `guess^N`, the sort wrapper.  Two
   rows, both decided by the mode, so no domain predicate of its own; it is
   what makes `a_extract`'s LAST stage runnable rather than merely specified.
-- `frost/ext_algo/extraction/Extract.v` — the driver.  `ExtrOcamlNatInt`
+- `fresco/ext_algo/extraction/Extract.v` — the driver.  `ExtrOcamlNatInt`
   (⚠️ without it metalib atoms extract as unary `nat` and the output is
   useless for a differential test), `Extraction Inline proj1_sig`, output to
-  `extraction/extracted/frost_guess.ml`.
+  `extraction/extracted/fresco_guess.ml`.
 
 ⭐ **AND THE STANDING BAR (§8) IS MET, MEASURED NOT ASSERTED.**  The emitted
 `e_guess_mono_impl` is an ordinary OCaml `let rec` over the skeleton — no
@@ -932,7 +932,7 @@ runner:
 `Obj.magic`, no residue of the domain predicate.  The one non-obvious line is
 `| Pskl_var_b _ -> assert false (* absurd case *)`, which is what a
 hand-written implementation writes for an unreachable input.  ⭐ And it
-**compiles**: `ocamlc -c frost_guess.mli frost_guess.ml` is clean, so the
+**compiles**: `ocamlc -c fresco_guess.mli fresco_guess.ml` is clean, so the
 artifact is a type-correct OCaml program and not merely a printed term.
 
 ⚙ The Makefile creates the output directory (`Set Extraction Output Directory`
@@ -1010,7 +1010,7 @@ source facts above.
 
 ### 8b.3 ✅ PHASE 1 — the first half is a theorem now
 
-`frost/ext_algo/prop_termination.v`, axiom-free:
+`fresco/ext_algo/prop_termination.v`, axiom-free:
 
     e_guess_mono_nall : e_guess_mono S0 P S1 Ξ A -> nall_ptyp A <= nall_pskl P
     e_guess_mono_size : e_guess_mono S0 P S1 Ξ A -> size_ptyp A <= size_pskl P
@@ -1183,7 +1183,7 @@ walk plus its whole call graph (consistency, collection, solving,
 extraction, guessing) — is a closed, axiom-free theorem.  ⚙ The §7.4
 prediction that the worklist's `num_etvar`/`split_depth` machinery would
 be needed was PESSIMISTIC: holes-as-fuel replaces split-depth entirely,
-because Frost's guess consumes the whole pattern shape at once instead
+because Fresco's guess consumes the whole pattern shape at once instead
 of splitting incrementally.
 
 ⛔ ~~**WHAT REMAINS OF TODO (2) — phase 4 only**: the runners (`Equations
@@ -1269,7 +1269,7 @@ application in prop_termination.v §17 moved with it; nothing else.
 ⚙ extraction/Extract.v grew its export list to all runners (plus
 `Extraction Inline Sumbool.sumbool_of_bool`, in the service of the same
 §8 bar as the two existing inlines); the output keeps its M1.7 name
-`frost_guess.ml` though it now holds the whole algorithm.
+`fresco_guess.ml` though it now holds the whole algorithm.
 
 
 ## 8c. ⭐ THE COMPLETENESS CAMPAIGN — from a sound runner to DECIDABILITY
@@ -1289,7 +1289,7 @@ decidability argument (§7.3), discharged end to end.**
 
 ### 8c.1 ✅ STEP (1) — the composed SOUNDNESS corollary (2026-08-14)
 
-`frost/ext_algo/prop_run_corollaries.v`, axiom-free, two corollaries:
+`fresco/ext_algo/prop_run_corollaries.v`, axiom-free, two corollaries:
 
     e_typing_run_sound_infer :
       {{ nil ⊢ᵉ e }}a ->
@@ -1324,7 +1324,7 @@ error names the level-75 alternatives rather than the missing notation.
 
 ### 8c.2 ⛔ OPEN — the remaining steps, in dependency order
 
-- ✅ **(2a) DONE (2026-08-14)** — `frost/ext_algo/prop_dec.v`, 24 lemmas, all
+- ✅ **(2a) DONE (2026-08-14)** — `fresco/ext_algo/prop_dec.v`, 24 lemmas, all
   `Closed under the global context`.  The whole inventory of `def_dec.v` and
   `def_pat_impl.v` §1 now has its converse `<the guard> -> … _ck = true`.
   ⭐ All but one are the same induction read backwards, which is what the
@@ -1568,7 +1568,7 @@ Three things to carry into the next session:
   turn out to be inverted.  ⚠️ Verify `Print Assumptions` after every one;
   the bar is unchanged.
 
-✅ **LANDED (2026-08-14)**: `frost/ext_algo/def_uip.v` (the four lines, with
+✅ **LANDED (2026-08-14)**: `fresco/ext_algo/def_uip.v` (the four lines, with
 the reasoning) and `def_guess_impl.v` flipped to `equations=yes`.
 `make coq` green, README 32/32, and `Print Assumptions` on
 `e_guess_mono_impl`, `e_guess_mono_run`, `e_guess_mono_run_sound` AND
@@ -1585,7 +1585,7 @@ against `def_uip.v`'s Hedberg UIP, with no extra instances and no tactic
 changes.  `make coq` green, README 32/32, spot-checked `Print Assumptions`
 (including on `e_typing_impl_equation_1` and `e_pat_impl_equation_1`) all
 "Closed under the global context".  ⭐ And the STANDING BAR is untouched:
-the emitted `frost_guess.ml` is the same 3,873 lines, still passes
+the emitted `fresco_guess.ml` is the same 3,873 lines, still passes
 `ocamlc -c`, and still contains no `Obj.magic` / `Acc_rect` / `Fix_sub` /
 `FixWf` — the derivation is proof-side only and does not reach extraction.
 
@@ -1610,7 +1610,7 @@ mutual one does.
 
 1. ⛔ ~~Establish whether equation derivation for mutual `with` blocks is
    supported at all~~ — **SETTLED, and the answer is no.**  It reproduces
-   in thirty lines with nothing of Frost in it, so this is an `Equations`
+   in thirty lines with nothing of Fresco in it, so this is an `Equations`
    limitation and not something about our rules:
 
 ```coq
@@ -1734,7 +1734,7 @@ first: a walk parameterized by a continuation that re-enters subtyping
 fails `Recursive definition is ill-formed` — the checker does not thread
 subterm specs through the walk's own inner fix, so the continuation's
 domain-proof argument is never recognised as a subterm.  Thirty-line
-Frost-free reproduction, same style as the one above; no shape of option
+Fresco-free reproduction, same style as the one above; no shape of option
 (2) can work.  What landed:
 
 - **The tag.**  `sub_call : Set := sub_call_sub P | sub_call_flex Ξ α`;
@@ -1771,7 +1771,7 @@ Frost-free reproduction, same style as the one above; no shape of option
   `nil` + all five `abind` heads, no catch-all, so it never expanded.
   Extraction is unchanged in shape: the convoy equality is a Prop and
   erases, leaving the same plain nested matches.  Measured:
-  `frost_guess.ml` went 3,873 → 3,783 lines (the two mutual functions
+  `fresco_guess.ml` went 3,873 → 3,783 lines (the two mutual functions
   merge into one tagged `e_sub_call_impl` plus two thin wrappers),
   `ocamlc -c` clean, and still no `Obj.magic` / `Acc_rect` / `Fix_sub`
   / `FixWf`.
@@ -1810,7 +1810,7 @@ functions as wrappers.  Two consis-specific notes:
 SI-Check into the consistency block's U-Unit row
 (`simp e_consis_call_impl`).  It is the end-to-end witness that all
 twelve runner blocks are computationally analysable.  Extraction after
-both flips: `frost_guess.ml` 3,873 → **3,460 lines** (each mutual family
+both flips: `fresco_guess.ml` 3,873 → **3,460 lines** (each mutual family
 merged into one tagged function), `ocamlc -c` clean, no forbidden
 constructs.
 
@@ -1861,7 +1861,7 @@ agreement is an INTERNAL obligation of the induction (the ForallR and abs
 output tests), not part of what decidability consumes.
 
 ✅ **THE ENTRY-POINT EXHIBIT IS QED (2026-08-15)** —
-`frost/ext_algo/prop_run_complete.v` §1, the campaign's new file:
+`fresco/ext_algo/prop_run_complete.v` §1, the campaign's new file:
 
     e_typing_run_complete_unit_infer : forall S0,
       e_typing_run S0 mode_ti nil pskl_hole exp_unit
@@ -2057,7 +2057,7 @@ proof ADDED to it, and what the next levels should copy or watch:
 
 - ⭐⭐ **The YIELD-MISMATCH design fork is RESOLVED — option (a),
   determinism-up-to-fresh-renaming (2026-08-15, USER DECISION), and its
-  metatheory is LANDED** (`frost/ext_algo/prop_solve_det.v`, 1,177
+  metatheory is LANDED** (`fresco/ext_algo/prop_solve_det.v`, 1,177
   lines, ~15 s, axiom-free): `a_solve_eq_det` / `a_guess_mono_det` —
   two derivations on the same inputs, at ANY two contexts, produce the
   same block and yield up to an aligned fresh-pair renaming.  Design
@@ -2187,7 +2187,7 @@ output, and this exhibit is what that existential was hiding.
 ⛔ **THE FORK — a USER decision, exactly parallel to §8c.6's:**
 
 (a) **Restore the guard.**  Give `LS-ForallL` its counterpart's premise
-    (`guarded{P'} ∨ P' = □` on the target) in `frost/algo/def_rules.v`,
+    (`guarded{P'} ∨ P' = □` on the target) in `fresco/algo/def_rules.v`,
     and audit `LE-ForallSyn` / `LE-UnivGhost1` for the same.  Then the
     scouted plan works verbatim: look-det up to renaming becomes
     provable (the crossing is gone), `rel_cstrs` + the ρ split (flex zip
@@ -2506,7 +2506,7 @@ the fused motive replaces the plan of strengthening it).
 
 **Landed 2026-08-16, all Qed and axiom-free:**
 
-- `frost/ext_algo/prop_look_equiv.v` (new file, below the runner
+- `fresco/ext_algo/prop_look_equiv.v` (new file, below the runner
   stack): `a_lookeq_cstrs_pure_eq`, `a_looksub_subject_absent` /
   `a_lookeq_subject_absent` (crossing 4), the ◇-target identity
   inversions on both solve layers (crossing 3), and
@@ -2598,7 +2598,7 @@ transports' binder rows), each with its `_rec` engine mirroring
 `rel_pskl_close_rec`.
 
 ⭐⭐ **ALL FIVE REL-TRANSPORTS ARE Qed (2026-08-16, `d64d164` +
-`5999406`)** — new file `frost/ext_algo/prop_solve_rel.v` (between
+`5999406`)** — new file `fresco/ext_algo/prop_solve_rel.v` (between
 prop_solve_det and prop_run_complete, which now imports it):
 
 - §2 `flex_agree_rel ρ V Θ1 Θ2` (id-agreement on V + pairwise on ρ's
@@ -2672,7 +2672,7 @@ fused fold hypothesis riding as designed; each side's freshness facts
 read off its own supply thread; same-root binder pairs still pair
 openers with NO rebinds.
 
-⭐ **THE e-SIDE LOOK KIT IS LANDED** (`frost/ext_algo/prop_look_pair.v`
+⭐ **THE e-SIDE LOOK KIT IS LANDED** (`fresco/ext_algo/prop_look_pair.v`
 §1, Qed, axiom-free, 2026-08-16) — and it came out SMALLER than
 planned, because the e-look's CONTEXT IS INERT (every freshness
 condition reads the supply; the context only mirrors the a-shape):
@@ -2938,7 +2938,7 @@ diverges identically, `U-Ghost` against `U-FlexR`.
 ⚠️ This is the PAPER's system, not an encoding artefact: `U-FlexL` /
 `U-FlexR` carry only `\nonflex{P_0}` / `\nonflex{P}`
 (algorithmic.tex:757, :764) and `U-GhostR` only `Δ1 ∩ ftv(P) = ∅`
-(:782); `frost/algo`'s twin is identical (def_rules.v:1127-1137).
+(:782); `fresco/algo`'s twin is identical (def_rules.v:1127-1137).
 Filed in PAPER-GAPS.
 
 **⭐ THE CASE BACKBONE IS SETTLED** (INSPECTED, rule-by-rule against
@@ -3139,7 +3139,7 @@ takes.  Sources: `ext_algo/def_sub.v` (nine `e_sub` rows + seven
 dispatch, which is the case list).
 
 **⭐ THE AUDIT'S GOOD NEWS: `guarded_pskl` collapses almost everything.**
-It is `unit | var | arrow` and NOTHING else (`frost/def_shapes.v:182`), so
+It is `unit | var | arrow` and NOTHING else (`fresco/def_shapes.v:182`), so
 `∀`, `◇` and `⫯` are all UNGUARDED, and five candidate overlaps that look
 real on the rule list are vacuous:
 
@@ -3337,7 +3337,7 @@ contexts, so the motive will have to carry it or derive it from
 ### 8c.12a ⚙ §8c.12 IN PROGRESS — the scoping is DONE and much smaller than feared; the support induction is NOT finished (2026-08-17)
 
 ⛔ **Nothing from this section is committed to the tree.**  The work in
-progress is `~/frost-level6-scratch/isub-increase-wip.v`, which compiles
+progress is `~/fresco-level6-scratch/isub-increase-wip.v`, which compiles
 (`timeout 900 coqc -R . src <file>` from `mechanization/`) with `Admitted`
 on the two inductions below.  ⚠️ Do not land it until both are Qed.
 
@@ -3384,7 +3384,7 @@ proves the divergence's instance with a NON-identity `κ`; the identity one
 works too and is what to use.
 
 **WHERE TO BUILD IT.**  At the `a_` layer, in a NEW file
-`frost/algo/consis/prop_consis_inc.v` (no cycle: it imports
+`fresco/algo/consis/prop_consis_inc.v` (no cycle: it imports
 `prop_soundness_consis` for `a_isub_strip_tvar`, `prop_stability` for
 `a_isub_cons_tvar`, `prop_inc_strengthen` for
 `a_assign_unify_consis_flex_preserve`; none imports it).  The `e_` side then
@@ -3392,7 +3392,7 @@ comes from `e_assign_unify_consis_sound` (prop_consis.v §4), whose `uniq` and
 coverage hypotheses **the level-5 motive already carries**
 (`consis_call_uniq` / `consis_call_cover`), so they are free at the use site.
 
-**⭐ BOTH INDUCTIONS ARE NOW Qed** — `frost/algo/consis/prop_consis_inc.v`
+**⭐ BOTH INDUCTIONS ARE NOW Qed** — `fresco/algo/consis/prop_consis_inc.v`
 (commit `faadc87`, assumptions-closed, tree green 32/32, the file costs
 18 s).  Three results:
 
@@ -3434,7 +3434,7 @@ prints every surviving goal, so ONE run gives the exact open-row list.  It
 took the increase from 28 rows to a tracked list that shrank 22 → 13 → 11
 → 9 → 8 → 5 → 1 → 0.
 
-⭐ **(a) AND (b) ARE NOW DONE TOO** — `frost/ext_algo/prop_consis_inc.v`
+⭐ **(a) AND (b) ARE NOW DONE TOO** — `fresco/ext_algo/prop_consis_inc.v`
 (commit `970f423`, assumptions-closed, tree green 32/32).
 
 §2 gives the three `e_`-level increases (`e_assign_isub`, `e_unify_isub`,
@@ -3718,7 +3718,7 @@ every `intros` pattern in every induction over the collection, and P6's
 `look/` chain is the tree's biggest consumer.  Both encodings need it, plus a
 `[paper-gap]` comment and a `docs/PAPER-GAPS.md` entry.
 
-**WHAT LANDED ANYWAY, and it is motive-independent** — `frost/ext_algo/prop_sub_complete.v`:
+**WHAT LANDED ANYWAY, and it is motive-independent** — `fresco/ext_algo/prop_sub_complete.v`:
 
 | § | content |
 |---|---|
@@ -3848,7 +3848,7 @@ both encodings, P6-Ss included, and `cex/cex_looksub_not_det.v` is deleted
 #### A. The guard
 
 ```coq
-(* frost/def_shapes.v *)
+(* fresco/def_shapes.v *)
 Definition forall_r_off (m : mode) (P' : pskl) : Prop :=
   forall B, P' = pskl_all_syn B -> m = mode_tc ->
     ~ pskl_ghost_free (pskl_all_syn B).
@@ -3887,14 +3887,14 @@ in.
 
 | where | what |
 |---|---|
-| `frost/def_shapes.v` | `forall_r_off` + `_nontc` / `_nonall` / `_ghosty` — the three ways a ForallL / UnivGhostL branch is reached |
-| `frost/prop_basic.v` | `pskl_ghost_free_dec`, `pskl_ghost_free_subst_inv`, `forall_r_off_subst_var`, `forall_r_off_open_var` |
-| `frost/algo/prop_basic.v` | `open_var_eq_var_inv` |
-| `frost/algo/prop_swap.v` | `forall_r_off_swap` |
-| `frost/ext_algo/def_dec.v` | `forall_r_off_ck`; `ghost_free_ck_complete` MOVED here from `prop_dec.v`, which is DOWNSTREAM of `def_look_impl.v` |
-| `frost/ext_algo/prop_solve_rel.v` | `rel_pskl_all_syn_r_inv`, `rel_pskl_forall_r_off` |
-| `frost/algo/sub/prop_looksub.v` §2c | ⭐ `a_looksub_var_subject_inv`, `a_looksub_open_target` |
-| `frost/algo/sub/look/prop_eq_cstr.v` | ⭐ `a_solve_sub_open_target`(`_avoid`), `a_solve_sub_ctx_exchange`, `a_solve_cstr_sub_single_inv`, `binds_tvar_exchange`, and THE REORDER — `a_looksub_solve_forall_l` / `_univ_ghost_l` and their `_mode` wrappers |
+| `fresco/def_shapes.v` | `forall_r_off` + `_nontc` / `_nonall` / `_ghosty` — the three ways a ForallL / UnivGhostL branch is reached |
+| `fresco/prop_basic.v` | `pskl_ghost_free_dec`, `pskl_ghost_free_subst_inv`, `forall_r_off_subst_var`, `forall_r_off_open_var` |
+| `fresco/algo/prop_basic.v` | `open_var_eq_var_inv` |
+| `fresco/algo/prop_swap.v` | `forall_r_off_swap` |
+| `fresco/ext_algo/def_dec.v` | `forall_r_off_ck`; `ghost_free_ck_complete` MOVED here from `prop_dec.v`, which is DOWNSTREAM of `def_look_impl.v` |
+| `fresco/ext_algo/prop_solve_rel.v` | `rel_pskl_all_syn_r_inv`, `rel_pskl_forall_r_off` |
+| `fresco/algo/sub/prop_looksub.v` §2c | ⭐ `a_looksub_var_subject_inv`, `a_looksub_open_target` |
+| `fresco/algo/sub/look/prop_eq_cstr.v` | ⭐ `a_solve_sub_open_target`(`_avoid`), `a_solve_sub_ctx_exchange`, `a_solve_cstr_sub_single_inv`, `binds_tvar_exchange`, and THE REORDER — `a_looksub_solve_forall_l` / `_univ_ghost_l` and their `_mode` wrappers |
 
 ⛔ `forall_r_off_subst` at an ARBITRARY substitute is FALSE (`P' = γ` satisfies
 the guard vacuously, `P'[∀_.1/γ]` does not).  Only the VARIABLE form is true,
@@ -4008,7 +4008,7 @@ The statement to lift is preserved in git at **`eabf308`**,
 determinism above has to be composed with `e_extract_supply_respect` and
 `e_extract_swap` (`ext_algo/prop_extract.v`), both already Qed.
 
-After that: §6/§7 of `frost/ext_algo/prop_sub_complete.v` (§8c.13's recipe;
+After that: §6/§7 of `fresco/ext_algo/prop_sub_complete.v` (§8c.13's recipe;
 §1/§3/§4 are already Qed), then §8's three headlines.
 
 ### 8c.16 ✅ GUARD 4, THE FlexR-PRIORITY SPLIT — LANDED, AND THE TREE IS GREEN (2026-08-18)
@@ -4037,7 +4037,7 @@ COLLECTION is still ambiguous at one cell.
 
 #### A. The cell, and it is `probe_bcore_ug2_flexr.v`'s, one level up
 
-`guarded_pskl` is `unit | var | arrow` (frost/def_shapes.v), so a VARIABLE is
+`guarded_pskl` is `unit | var | arrow` (fresco/def_shapes.v), so a VARIABLE is
 guarded.  At
 
     ⫯Q   ∼[α]   β          (α ∈ ftv Q,  the subject is not α)
@@ -4120,13 +4120,13 @@ landed, beyond the table above:
 
 | where | what |
 |---|---|
-| `frost/algo/def_rules.v` | `flex_r_off Θ P'` + `flex_r_off_nonvar` / `_rigid` |
-| `frost/ext_algo/def_look_impl.v` | ⭐ THE RUNNER — `flex_bound_ck Θ β` at the three (subject, `var`) clauses; arrow and ∀ gain a `None` arm, **⫯ gains the LE-UnivGhost2 RECURSION**, and the two `lookdec` Hint Externs that let the obligation tactic see through the guard |
-| `frost/algo/prop_swap.v` | `flex_r_off_swap` — needs the REVERSE of `a_flex_tvar_swap`, which involutivity supplies |
-| `frost/ext_algo/prop_solve_rel.v` | ⭐ `a_flex_tvar_cons_tvar_any` — *a RIGID entry is invisible to `a_flex_tvar` at EVERY atom, its own included*, because `binds` is membership — and `flex_agree_rel_push_look`, WEAKER than `flex_agree_rel_push_tvar_pair`, whose `cols` / `V` conditions are NOT available at the collection's binder rows and (by the lemma above) are not needed |
-| `frost/ext_algo/prop_run_complete.v` | `flex_test_absurd` — the derivation's own premise forces the runner's new test, in both directions — plus the three cells |
-| `frost/algo/sub/prop_looksub.v` | `a_looksub_lookeq_ctx_ftv_mono` gains the flex-agreement side condition; `a_looksub_ctx_exchange` discharges it FREE (two RIGID entries) |
-| `frost/ext_algo/prop_solve_rel.v` | `a_looksub_lookeq_rel_e` gains `flex_agree_rel ρ V Θ1 Θ2`, threaded by `flex_agree_rel_push_look`; its LE-FlexR and LE-UnivGhost2 rows move the guard across `rel_atom`'s two constructors |
+| `fresco/algo/def_rules.v` | `flex_r_off Θ P'` + `flex_r_off_nonvar` / `_rigid` |
+| `fresco/ext_algo/def_look_impl.v` | ⭐ THE RUNNER — `flex_bound_ck Θ β` at the three (subject, `var`) clauses; arrow and ∀ gain a `None` arm, **⫯ gains the LE-UnivGhost2 RECURSION**, and the two `lookdec` Hint Externs that let the obligation tactic see through the guard |
+| `fresco/algo/prop_swap.v` | `flex_r_off_swap` — needs the REVERSE of `a_flex_tvar_swap`, which involutivity supplies |
+| `fresco/ext_algo/prop_solve_rel.v` | ⭐ `a_flex_tvar_cons_tvar_any` — *a RIGID entry is invisible to `a_flex_tvar` at EVERY atom, its own included*, because `binds` is membership — and `flex_agree_rel_push_look`, WEAKER than `flex_agree_rel_push_tvar_pair`, whose `cols` / `V` conditions are NOT available at the collection's binder rows and (by the lemma above) are not needed |
+| `fresco/ext_algo/prop_run_complete.v` | `flex_test_absurd` — the derivation's own premise forces the runner's new test, in both directions — plus the three cells |
+| `fresco/algo/sub/prop_looksub.v` | `a_looksub_lookeq_ctx_ftv_mono` gains the flex-agreement side condition; `a_looksub_ctx_exchange` discharges it FREE (two RIGID entries) |
+| `fresco/ext_algo/prop_solve_rel.v` | `a_looksub_lookeq_rel_e` gains `flex_agree_rel ρ V Θ1 Θ2`, threaded by `flex_agree_rel_push_look`; its LE-FlexR and LE-UnivGhost2 rows move the guard across `rel_atom`'s two constructors |
 
 ⛔ **THE TWO SITES LEFT, AND THEY ARE ONE OBSTRUCTION** — a context move that
 DROPS FLEXIBLES, which a GLOBAL flex-agreement cannot survive:
@@ -4148,7 +4148,7 @@ variables, not a global iff —
 
 — which is exactly what the collection reads, and which the induction
 PRESERVES: `LE-Arrow` SHRINKS `ftv P'`, and every binder row adds an opener
-that is RIGID on both sides.  Its kit is in `frost/algo/prop_basic.v`, where
+that is RIGID on both sides.  Its kit is in `fresco/algo/prop_basic.v`, where
 both encodings can see it:
 
 | lemma | content |
@@ -4170,7 +4170,7 @@ drives it with `@`.
 | site | how it closed |
 |---|---|
 | `prop_eq_cstr.v` | ⭐⭐ **`a_lookeq_flex_p0_complete`** — the ARROW grid's flex-P0 case, 454 lines, LIFTED OUT OF THE INDUCTION into a standalone Qed lemma.  It works because **the block never looked at the subject's shape** (only `≠ α`, `α ∈ ftv`, and its freshness unions) and uses NO induction hypothesis.  Factoring was a RENAMING of SIX spots.  Both grids call it; the ⫯ grid's var-P0 row becomes a rigid/flexible split.  ⚠️ `Set Implicit Arguments` makes ALL its binders implicit, so the calls use `@` + a positional list; and `apply a_lookeq__flex_r`'s subgoal ORDER is not the premise order, so its bullets must be `solve [ … ]`. |
-| `prop_soundness_sub.v` | ⭐ **`flex_restrict`** (`frost/algo/prop_basic.v`) — keep exactly the flexibles the COUNTERPART mentions, payloads dropped.  Enough for the guard (scoped to `ftv P'`) and it still lands `ftvar_in_aenv` inside `ftv (∀B)`, which is what the shrink to `·` was for. |
+| `prop_soundness_sub.v` | ⭐ **`flex_restrict`** (`fresco/algo/prop_basic.v`) — keep exactly the flexibles the COUNTERPART mentions, payloads dropped.  Enough for the guard (scoped to `ftv P'`) and it still lands `ftvar_in_aenv` inside `ftv (∀B)`, which is what the shrink to `·` was for. |
 | `prop_sub_cstr.v` | the same block-drop repair as `prop_eq_cstr.v`'s `LS-Arrow` row |
 | `prop_look_pair.v` §1a | ⚠️ **the e-look's context is NO LONGER INERT** — two eq rows read it for hattedness — so `e_looksub_lookeq_ctx_any` gains a flex-agreement side condition, discharged FREE at both consumers (`flex_rigid_iff`) |
 
@@ -4429,7 +4429,7 @@ unchanged).  Where the marker DOES occur:
    recipe — its header still says the level is blocked on the ABSENCE guard,
    which is stale; the blocker is now this one), then §8's three headlines.
 
-⚠️ `frost/ext_algo/prop_sub_complete.v`'s file header (lines 19-46) is STALE:
+⚠️ `fresco/ext_algo/prop_sub_complete.v`'s file header (lines 19-46) is STALE:
 it names the absence-first guard as what is owed.  Update it when (B) lands.
 
 ### 8c.17 ✅ THE HATCH IS DELETED — the b-core's yield is a clean `rel_pskl` (2026-08-18)
@@ -4572,7 +4572,7 @@ type.ml:`is_type`) — and neither `a_solve_sub__forall_r` nor
 
 #### ✅ WHAT LANDED ANYWAY — STEP 2's first three lemmas do not depend on the fork
 
-`frost/ext_algo/prop_extract_det.v`, all Qed:
+`fresco/ext_algo/prop_extract_det.v`, all Qed:
 
 | § | content |
 |---|---|
@@ -4595,7 +4595,7 @@ type.ml:`is_type`) — and neither `a_solve_sub__forall_r` nor
 taken as **(ii), MIRROR THE RUNNER** (user's call).  On both encodings:
 
 ```coq
-  (* frost/def_shapes.v *)
+  (* fresco/def_shapes.v *)
   Definition peel_l_off (P : pskl) : Prop :=        (* SS-ForallL / SS-UnivGhostL *)
     (forall Q, P <> pskl_all_syn Q) /\ (forall Q, P <> pskl_tophole Q).
   Definition solve_l_off (P : pskl) : Prop :=       (* … and SS-Var as well *)
@@ -4650,14 +4650,14 @@ instead, verbatim.
 
 | file | what |
 |---|---|
-| `frost/def_shapes.v` | `peel_l_off` / `solve_l_off` + nine discharge lemmas + `frost` hints |
-| `frost/algo/def_rules.v`, `frost/ext_algo/def_solve.v` | the two premises, `[paper-gap]`-commented |
-| `frost/algo/prop_swap.v` | `peel_l_off_swap` / `solve_l_off_swap` — pure shape predicates, so a swap moves them for free |
-| `frost/algo/prop_basic.v` | ⭐ `a_solve_sub_vacuous_gen` |
-| `frost/algo/sub/look/prop_eq_cstr.v` | ⭐⭐ `a_solve_sub_forall_r_gen` + its three inversions |
-| `frost/ext_algo/prop_solve_rel.v` | `rel_pskl_peel_l_off` / `rel_pskl_solve_l_off` — the guards transport along `rel_pskl` (a variable relates only to a variable, so even the var-exclusion survives) |
-| `frost/ext_algo/def_solve_impl.v` | the runner: guard hints in `solvedec`, and ⚠️ TWO `Next Obligation`s spelled out — the obligation tactic does not reach the `SS-Vacuous` leaves at `var_b` / `arrow` |
-| `frost/ext_algo/prop_run_complete.v` | the two reorder lemmas collapse |
+| `fresco/def_shapes.v` | `peel_l_off` / `solve_l_off` + nine discharge lemmas + `fresco` hints |
+| `fresco/algo/def_rules.v`, `fresco/ext_algo/def_solve.v` | the two premises, `[paper-gap]`-commented |
+| `fresco/algo/prop_swap.v` | `peel_l_off_swap` / `solve_l_off_swap` — pure shape predicates, so a swap moves them for free |
+| `fresco/algo/prop_basic.v` | ⭐ `a_solve_sub_vacuous_gen` |
+| `fresco/algo/sub/look/prop_eq_cstr.v` | ⭐⭐ `a_solve_sub_forall_r_gen` + its three inversions |
+| `fresco/ext_algo/prop_solve_rel.v` | `rel_pskl_peel_l_off` / `rel_pskl_solve_l_off` — the guards transport along `rel_pskl` (a variable relates only to a variable, so even the var-exclusion survives) |
+| `fresco/ext_algo/def_solve_impl.v` | the runner: guard hints in `solvedec`, and ⚠️ TWO `Next Obligation`s spelled out — the obligation tactic does not reach the `SS-Vacuous` leaves at `var_b` / `arrow` |
+| `fresco/ext_algo/prop_run_complete.v` | the two reorder lemmas collapse |
 | the rest | intros / `destruct … as` patterns shifted by one, at `prop_rsubst.v`, `prop_solve_ext.v`, `prop_soundness_sub.v`, `prop_look_pair.v`, `prop_solve.v`, `test_examples.v`, `cex_solve_sub_wf_leak.v` |
 
 ⚠️ **THE DECORATED SYSTEM NEEDED NOTHING.**  Decoration CONSUMES an
@@ -4680,7 +4680,7 @@ single-rule), then `e_solve_cstr_rel`, `e_guess_rel`, `e_extract_rel`.
 
 #### What closed
 
-`frost/ext_algo/prop_extract_det.v`, all Qed and assumptions-closed:
+`fresco/ext_algo/prop_extract_det.v`, all Qed and assumptions-closed:
 
 | § | content |
 |---|---|
@@ -4815,7 +4815,7 @@ consistency.
 ### 8c.21 ⭐⭐⭐ LEVEL 6 IS CLOSED — the SUBTYPING runner is COMPLETE, §7 and §8 (2026-08-18)
 
 ✅ **`make coq` rc=0, `README.v` 32/32, zero `Admitted`/`Axiom` in
-`frost/`, `cex/`, `test/`.**  `frost/ext_algo/prop_sub_complete.v` is Qed
+`fresco/`, `cex/`, `test/`.**  `fresco/ext_algo/prop_sub_complete.v` is Qed
 end to end, and its three headlines are assumptions-closed:
 
 | lemma | what it says |
@@ -4952,7 +4952,7 @@ not something a raw a-side construction can supply.
 ### 8c.22 ✅ §8c.2's (2b) IS CLOSED — the run preserves `lc_aenv`, and every runner's output is locally closed (2026-08-18)
 
 ✅ **`make coq` rc=0, `README.v` 32/32, zero `Admitted`/`Axiom`.**
-`frost/ext_algo/prop_run_invariants.v` §4, plus one new coercion fact.
+`fresco/ext_algo/prop_run_invariants.v` §4, plus one new coercion fact.
 
 **The fork (2b) left to the next session was decided as the DIRECT
 invariant** (user's call: *"(2b) is a minor problem, choose whichever is
@@ -5023,7 +5023,7 @@ invariant was local closure, and that is what §4 is.
 ### 8c.23 ⭐⭐⭐ LEVELS 7 AND 8 ARE CLOSED, AND SO IS (2e) — THE CAMPAIGN IS FINISHED (2026-08-19)
 
 ✅ **`make coq` rc=0, `README.v` 33/33 (the new entry is §VI, DECIDABILITY),
-zero `Admitted`/`Axiom` in `frost/`, `cex/`, `test/`.**  Three new files'
+zero `Admitted`/`Axiom` in `fresco/`, `cex/`, `test/`.**  Three new files'
 worth of work, all Qed and `Closed under the global context`:
 
 | headline | file | what it says |
@@ -5182,7 +5182,7 @@ valid here: the technique (induct so the `a_` derivation is a hypothesis),
 the two premises `guess^TY` needs, and the three performance rules.
 
 🟡 **THE SCOUT HAS LANDED; TEN BLOCKS REMAIN.**
-`frost/ext_algo/prop_lift.v` §2 is Qed and `Closed under the global context`:
+`fresco/ext_algo/prop_lift.v` §2 is Qed and `Closed under the global context`:
 `e_guess_mono_lift` and `e_guess_lift`, plus §1's `close` rename fact.  That
 is `guess^TY` — the block with all three hard shapes — so the MOTIVE below is
 no longer a proposal but a validated one.  What is left is look, solve, cstr,
@@ -5366,7 +5366,7 @@ optimisations, they are the difference between 10 s and not returning.
 ### 8c.25 ⭐⭐⭐ THE LIFT, SECOND PASS — THE LOOK RUNG WAS ALREADY CLOSED, THE CHAIN CURRENCY DIES ABOVE THE GUESS, AND THE WHOLE SOLVE LAYER NOW LIFTS (2026-08-19)
 
 ✅ **`make coq` rc=0, `README.v` 33/33, zero `Admitted`/`Axiom`.**
-`frost/ext_algo/prop_lift.v` grows from 377 to ~1570 lines (21.6 s), and
+`fresco/ext_algo/prop_lift.v` grows from 377 to ~1570 lines (21.6 s), and
 every one of its seven new headlines is `Closed under the global context`:
 
 | § | headline | what it lifts |
@@ -5611,14 +5611,14 @@ arrow rows now carry
     ftvar_in_a_cstrs 𝒞₁ ∩ dom Ξ₂ [=] empty
     ftvar_in_a_cstrs 𝒞₂ ∩ dom Ξ₁ [=] empty
 
-(frost/algo/def_rules.v, `a_looksub__arrow` / `a_lookeq__arrow`), and
+(fresco/algo/def_rules.v, `a_looksub__arrow` / `a_lookeq__arrow`), and
 `cex/probe_extract_conflated_opener.v` is the record of why: its §1c shows
 the second conjunct is exactly what excludes the conflating configuration,
 and §3 shows the threaded encoding could not have produced it anyway.
 
 **What it cost, file by file — and the surprises are worth reading.**
 
-- ⚙ `ftvar_in_a_cstr` / `_cstrs` / `_app` MOVED to `frost/algo/def_rules.v`
+- ⚙ `ftvar_in_a_cstr` / `_cstrs` / `_app` MOVED to `fresco/algo/def_rules.v`
   above the rules, and the tree's TWO identical copies collapsed into it
   (`algo/sub/prop_looksub.v`'s `ftvar_in_cstrs` and `ext_algo/def_look.v`'s
   `ftvar_in_a_cstrs`, 118 sites).  `def_look.v`'s header had asked for
@@ -5710,7 +5710,7 @@ attempt measured, so the next session does not re-measure it:
 `<session scratchpad>/cross-half-guard-wip.patch`, ~1900 lines, applies to
 `4f1dc9c`):
 
-- `ftvar_in_a_cstr` / `_cstrs` / `_app` MOVED to `frost/algo/def_rules.v`
+- `ftvar_in_a_cstr` / `_cstrs` / `_app` MOVED to `fresco/algo/def_rules.v`
   above the rules — and the tree's TWO identical copies collapsed into it
   (`algo/sub/prop_looksub.v`'s `ftvar_in_cstrs` and `ext_algo/def_look.v`'s
   `ftvar_in_a_cstrs`; 118 call sites renamed to the surviving name).
@@ -5949,7 +5949,7 @@ one remaining side condition is now a premise of the rule.
 
 #### THE RULE CHANGE
 
-`a_extract__solve` (frost/algo/def_rules.v) gains, `[paper-gap]`-tagged and
+`a_extract__solve` (fresco/algo/def_rules.v) gains, `[paper-gap]`-tagged and
 filed in docs/PAPER-GAPS.md together with the CROSS-HALF guard (which had
 never been filed):
 
@@ -8031,7 +8031,7 @@ take Γ/e explicitly (underscore them at call sites).
 
 `prop_run_corollaries.v` §7 + the export in `extraction/Extract.v`:
 
-    frost_infer : forall e, {{ nil ⊢ᵉ e }}d ->
+    fresco_infer : forall e, {{ nil ⊢ᵉ e }}d ->
       sumor (sig (fun r => e_typing_run …entry… = Some r /\
                     exists ζ, ζ ∷ ty_ctx r ⊑ nil /\
                       {{ nil ⊢[TI] e ⦂ syn-painting (msubst ζ (ty_out r)) }}d))
@@ -8043,13 +8043,13 @@ theorems, the proofs erase at extraction, and the constructor choice is
 the certificate.  Per the user's direction it is the STDLIB's plain
 union, not a bespoke wrapper: `ExtrOcamlBasic` maps `sig` to its carrier
 and `sumor` to `option`, so the extracted OCaml
-(`extracted/frost_guess.ml`, ocamlc-checked) reads
+(`extracted/fresco_guess.ml`, ocamlc-checked) reads
 
-    val frost_infer : exp -> typing_result option
+    val fresco_infer : exp -> typing_result option
 
 — literally an η-wrapper of `e_typing_run` at the entry supply, with the
 paper's reading certified on `Some`/`None`.  The wf hypothesis is Prop
-and vanishes.  `frost_infer_complete` (typable ⇒ answers `inleft`) is
+and vanishes.  `fresco_infer_complete` (typable ⇒ answers `inleft`) is
 McTT's `type_check_closed_complete` verbatim.  README §VI carries the
 entry (36/36).
 
@@ -8077,4 +8077,4 @@ WHAT WOULD FINISH TODO.md's "frontend (mctt like)": a parser (McTT uses
 coq-menhirlib with a fuelled `Parser.prog`), an elaborator from concrete
 syntax with an `elaborator_gives_user_exp`-style wf guarantee (ours
 would produce `{{ nil ⊢ᵉ e }}d`), and an OCaml driver (`driver/Main.ml`)
-that pattern-matches `frost_infer`'s answer.
+that pattern-matches `fresco_infer`'s answer.

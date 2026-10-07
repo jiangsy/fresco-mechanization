@@ -41,7 +41,7 @@ Close the 16 new admits introduced by the δ-encoding refactor (commit `0bf2815`
 
 **Architecture.** The refactor added 5 new rule constructors (`d_sub__forall_l_untagged`, `d_consis__forall_inh_untagged`, `d_pat_sub__forall_l_untagged`, `d_pat_consis__forall_inh_untagged`, `d_pat_consis__forall_syn_untagged`) plus 2 predicate-grammar entries (`is_utyp__pall`, `is_uskel__pall`). Each case-splitting lemma needs a new bullet; six lemmas become provably false unless their precondition is strengthened; three lemmas were wholesale-admitted with their original body in `(* ... *)` comments awaiting restoration. Pre-existing 17 admits (research-grade Phase 2.D / 2.E / paper-flagged) are OUT OF SCOPE.
 
-**Tech stack.** Coq + ott + lngen. Build via `make coq` from `mechanization/` (uses `tree`-derived FILE_LIST). Hammer / sauto available via `frost/ltac_utils.v`. Notations: `Δ ⨟ Γ ⊨ T ≈ A` (`d_consis`), `Γ ⊢[ M ; Δ ] T ⊑ A` (`d_sub`). Skill methodology: read DESIGN.md §6 "colour/mode discipline" before patching any provably-false lemma — the strengthening pattern almost always surfaces a call-site contract already present implicitly.
+**Tech stack.** Coq + ott + lngen. Build via `make coq` from `mechanization/` (uses `tree`-derived FILE_LIST). Hammer / sauto available via `fresco/ltac_utils.v`. Notations: `Δ ⨟ Γ ⊨ T ≈ A` (`d_consis`), `Γ ⊢[ M ; Δ ] T ⊑ A` (`d_sub`). Skill methodology: read DESIGN.md §6 "colour/mode discipline" before patching any provably-false lemma — the strengthening pattern almost always surfaces a call-site contract already present implicitly.
 
 ---
 
@@ -79,7 +79,7 @@ The build halts at `prop_subsumption_aux.v:395` with `Wrong bullet +: Expecting 
 ### Task 0.1: Repair the `d_sub_gen_trans` bullet structure
 
 **Files:**
-- Modify: `frost/decl/typing/prop_subsumption_aux.v:393-395`
+- Modify: `fresco/decl/typing/prop_subsumption_aux.v:393-395`
 
 - [ ] **Step 1: Inspect the inversion context**
 
@@ -134,7 +134,7 @@ Expected: no `Error:` lines; build completes. Admits remain (and will be the nex
 - [ ] **Step 6: Commit**
 
 ```bash
-git add -u frost/decl/
+git add -u fresco/decl/
 git commit -m "$(cat <<'EOF'
 mech: δ-cascade Phase 0 — add missing bullets to restore green build
 
@@ -159,8 +159,8 @@ Each lemma has a precondition strong enough that the troublesome new constructor
 ### Task 1.1: `d_consis_LHS_mono_wf` + `d_consis_LHS_is_typ_mono` strengthening
 
 **Files:**
-- Modify: `frost/decl/subtyping/prop_consis_trans.v:295-340` (`d_consis_LHS_mono_wf`)
-- Modify: `frost/decl/subtyping/prop_consis_trans.v:345-384` (`d_consis_LHS_is_typ_mono`)
+- Modify: `fresco/decl/subtyping/prop_consis_trans.v:295-340` (`d_consis_LHS_mono_wf`)
+- Modify: `fresco/decl/subtyping/prop_consis_trans.v:345-384` (`d_consis_LHS_is_typ_mono`)
 - Modify (call-sites, surface via `git grep`): expect 2-4 sites each, mostly in the same file or `prop_consis_sub_trans.v` / `typing/def_gen.v`.
 
 - [ ] **Step 1: Read both lemmas and their immediate context**
@@ -191,8 +191,8 @@ The new `__forall_inh_untagged` and `__forall_syn` cases close by `inversion H_i
 - [ ] **Step 4: Patch each call-site**
 
 ```bash
-git grep -n "d_consis_LHS_mono_wf\b" frost/decl/
-git grep -n "d_consis_LHS_is_typ_mono\b" frost/decl/
+git grep -n "d_consis_LHS_mono_wf\b" fresco/decl/
+git grep -n "d_consis_LHS_is_typ_mono\b" fresco/decl/
 ```
 
 For each site, add the new argument. If a site can't supply it, follow the colour-discipline lens: check whether the surrounding lemma also needs strengthening (often the chain propagates up cleanly).
@@ -208,7 +208,7 @@ Repeat until clean.
 - [ ] **Step 6: Verify the two admits at line 331/333 (and 376/378) are gone**
 
 ```bash
-grep -n "admit\." frost/decl/subtyping/prop_consis_trans.v
+grep -n "admit\." fresco/decl/subtyping/prop_consis_trans.v
 ```
 
 Expected: lines 331, 333, 376, 378 admits removed.
@@ -216,7 +216,7 @@ Expected: lines 331, 333, 376, 378 admits removed.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add -u frost/decl/
+git add -u fresco/decl/
 git commit -m "$(cat <<'EOF'
 mech: δ-cascade Phase 1.1 — strengthen d_consis_LHS_mono_wf / _is_typ_mono
 
@@ -232,9 +232,9 @@ EOF
 ### Task 1.2: `d_sub_mono_RHS_eq` strengthening
 
 **Files:**
-- Modify: `frost/decl/typing/prop_subsumption_aux.v:99-129` (`d_sub_mono_RHS_eq`)
-- Modify: `frost/decl/typing/prop_subsumption_aux.v:131-157` (`d_sub_gen_mono_RHS_eq` — mirrors `d_sub_mono_RHS_eq` and likely needs the same fix)
-- Modify (call-sites): `git grep -n "d_sub_mono_RHS_eq\b" frost/decl/`
+- Modify: `fresco/decl/typing/prop_subsumption_aux.v:99-129` (`d_sub_mono_RHS_eq`)
+- Modify: `fresco/decl/typing/prop_subsumption_aux.v:131-157` (`d_sub_gen_mono_RHS_eq` — mirrors `d_sub_mono_RHS_eq` and likely needs the same fix)
+- Modify (call-sites): `git grep -n "d_sub_mono_RHS_eq\b" fresco/decl/`
 
 - [ ] **Step 1: Read the current statement**
 
@@ -269,7 +269,7 @@ The gen variant's `__embed` case delegates to `d_sub_mono_RHS_eq`, so it needs t
 - [ ] **Step 4: Patch all call-sites**
 
 ```bash
-git grep -n "d_sub_mono_RHS_eq\b\|d_sub_gen_mono_RHS_eq\b" frost/decl/
+git grep -n "d_sub_mono_RHS_eq\b\|d_sub_gen_mono_RHS_eq\b" fresco/decl/
 ```
 
 Expected sites: 1-3, mostly in `prop_subsumption_aux.v` itself and possibly `prop_general_subsumption.v` (D12's SPLIT helpers).
@@ -285,8 +285,8 @@ Commit message: `mech: δ-cascade Phase 1.2 — strengthen d_sub_mono_RHS_eq wit
 ### Task 1.3: `d_consis_gen_lhs_syn_eq` strengthening
 
 **Files:**
-- Modify: `frost/decl/typing/def_gen.v:240-247` (and surrounding)
-- Modify (call-sites): `git grep -n "d_consis_gen_lhs_syn_eq\b" frost/decl/`
+- Modify: `fresco/decl/typing/def_gen.v:240-247` (and surrounding)
+- Modify (call-sites): `git grep -n "d_consis_gen_lhs_syn_eq\b" fresco/decl/`
 
 The `__forall_inh_untagged` case: LHS `typ_all_col colour_syn T`, RHS `typ_all_col colour_inh A`. Conclusion `T = A` fails (colour mismatch).
 
@@ -305,8 +305,8 @@ Same pattern as Task 1.2.
 ### Task 1.4: `d_consis_empty_eq` strengthening
 
 **Files:**
-- Modify: `frost/decl/subtyping/prop_sub_sound.v:55-89`
-- Modify (call-sites): `git grep -n "d_consis_empty_eq\b" frost/decl/`
+- Modify: `fresco/decl/subtyping/prop_sub_sound.v:55-89`
+- Modify (call-sites): `git grep -n "d_consis_empty_eq\b" fresco/decl/`
 
 The `__forall_inh_untagged` case: T = `typ_all_col colour_syn _`, A = `typ_all_col colour_inh _`, conclusion `T = A` fails.
 
@@ -323,7 +323,7 @@ If the call-sites can survive with `erase T = erase A`, prefer that. Otherwise a
 ### Task 1.5: `d_sub_sound` `__forall_l_untagged` case
 
 **Files:**
-- Modify: `frost/decl/subtyping/prop_sub_sound.v:121` (admit) + surrounding `Lemma d_sub_sound`
+- Modify: `fresco/decl/subtyping/prop_sub_sound.v:121` (admit) + surrounding `Lemma d_sub_sound`
 
 **The shape of the gap:**
 
@@ -350,12 +350,12 @@ Three lemmas have their original body preserved as `(* ... *)` comments. Restore
 ### Task 2.1: `d_consis_compose` restoration
 
 **Files:**
-- Modify: `frost/decl/subtyping/prop_consis_trans.v:95-290` (the wholesale-admitted lemma)
+- Modify: `fresco/decl/subtyping/prop_consis_trans.v:95-290` (the wholesale-admitted lemma)
 
 - [ ] **Step 1: Read the entire lemma + comment-buried body**
 
 ```bash
-sed -n '80,290p' frost/decl/subtyping/prop_consis_trans.v
+sed -n '80,290p' fresco/decl/subtyping/prop_consis_trans.v
 ```
 
 The original body is in `(* ... *)` between line 95 (`admit.`) and line 290 (`Admitted.`).
@@ -384,7 +384,7 @@ For cross-colour cases (e.g. `__forall_syn` LHS × `__forall_inh_untagged` RHS):
 - [ ] **Step 5: Verify `Qed.`**
 
 ```bash
-grep -n "Qed\.\|Admitted\." frost/decl/subtyping/prop_consis_trans.v | head -10
+grep -n "Qed\.\|Admitted\." fresco/decl/subtyping/prop_consis_trans.v | head -10
 ```
 
 `d_consis_compose` should now read `Qed.`. Sub-case admits at 158, 195, 262, 671, 678 should also be closed (they were sub-cases of `d_consis_compose`'s body).
@@ -396,7 +396,7 @@ grep -n "Qed\.\|Admitted\." frost/decl/subtyping/prop_consis_trans.v | head -10
 ### Task 2.2: `d_consis_gen_trans` restoration
 
 **Files:**
-- Modify: `frost/decl/typing/def_gen.v:750-790`
+- Modify: `fresco/decl/typing/def_gen.v:750-790`
 
 Same pattern as Task 2.1. The gen variant of `d_consis_compose`; same new cases apply at the gen layer.
 
@@ -411,8 +411,8 @@ Same pattern as Task 2.1. The gen variant of `d_consis_compose`; same new cases 
 ### Task 2.3: `d_consis_extends_d_consis_gen` restoration
 
 **Files:**
-- Modify: `frost/decl/typing/def_gen.v:1090-1265`
-- Modify: `frost/decl/typing/prop_subsumption_aux.v:555-562` (a sub-case admit that mirrors the same lemma)
+- Modify: `fresco/decl/typing/def_gen.v:1090-1265`
+- Modify: `fresco/decl/typing/prop_subsumption_aux.v:555-562` (a sub-case admit that mirrors the same lemma)
 
 Same pattern. This lemma is the bridge from `d_consis` to `d_consis_gen` — needs a new `__forall_inh_untagged` case (lift the untagged rule to the gen relation).
 
@@ -430,14 +430,14 @@ Eight sub-case admits across five lemmas. Each is a parallel-rule pattern: copy 
 ### Task 3.1: `prop_wellformed.v` — 3 sub-case admits
 
 **Files:**
-- Modify: `frost/decl/prop_wellformed.v:1023` (`d_pat_consis_preserves_wf` — `__forall_syn_untagged` case)
-- Modify: `frost/decl/prop_wellformed.v:1078` (`d_pat_sub_preserves_wf` — `__forall_l_untagged`)
-- Modify: `frost/decl/prop_wellformed.v:1116` (`d_pat_sub_implies_is_syn_skel` — `__forall_l_untagged`)
+- Modify: `fresco/decl/prop_wellformed.v:1023` (`d_pat_consis_preserves_wf` — `__forall_syn_untagged` case)
+- Modify: `fresco/decl/prop_wellformed.v:1078` (`d_pat_sub_preserves_wf` — `__forall_l_untagged`)
+- Modify: `fresco/decl/prop_wellformed.v:1116` (`d_pat_sub_implies_is_syn_skel` — `__forall_l_untagged`)
 
 - [ ] **Step 1: For each, read the parallel `_tagged` case's proof**
 
 ```bash
-sed -n '990,1130p' frost/decl/prop_wellformed.v
+sed -n '990,1130p' fresco/decl/prop_wellformed.v
 ```
 
 - [ ] **Step 2: Adapt and close**
@@ -451,7 +451,7 @@ Each new case is structurally parallel to its `_tagged` sibling but without the 
 ### Task 3.2: `prop_subsumption_aux.v` — `d_consis_gen_extends_d_sub_nil` sub-case
 
 **Files:**
-- Modify: `frost/decl/typing/prop_subsumption_aux.v:217` (the admit in `__forall_l_untagged` case)
+- Modify: `fresco/decl/typing/prop_subsumption_aux.v:217` (the admit in `__forall_l_untagged` case)
 
 Parallel to the `__forall_l_tagged` case (line ~213). Copy its tactic, drop the `ε`-related bookkeeping.
 
@@ -461,7 +461,7 @@ Parallel to the `__forall_l_tagged` case (line ~213). Copy its tactic, drop the 
 ### Task 3.3: `prop_consis_sub_trans.v` — `d_consis_sub_trans` sub-case
 
 **Files:**
-- Modify: `frost/decl/subtyping/prop_consis_sub_trans.v:208` (the admit)
+- Modify: `fresco/decl/subtyping/prop_consis_sub_trans.v:208` (the admit)
 
 The `__forall_l_untagged` case of `d_sub` requires the composition `d_consis ... typ_all_col colour_syn T0 → d_sub __forall_l_untagged → d_consis ... B`. Compose by inverting the `d_consis` (it must be `__forall_syn` or `__forall_syn_tagged`), then use the IH on the opened body.
 
@@ -491,7 +491,7 @@ By induction on the `d_consis` derivation; each case re-applies the same `d_cons
 ### Task 4.1: Re-verify `Print Assumptions`
 
 **Files:**
-- Inspect: `frost/decl/typing/prop_general_subsumption.v` (D1 and D12 sites)
+- Inspect: `fresco/decl/typing/prop_general_subsumption.v` (D1 and D12 sites)
 
 - [ ] **Step 1: Run README.v**
 
@@ -502,7 +502,7 @@ make coq 2>&1 | grep -A 2 "Print Assumptions"
 Or directly:
 
 ```bash
-coqc -R . src frost/decl/typing/prop_general_subsumption.v 2>&1 | tail -30
+coqc -R . src fresco/decl/typing/prop_general_subsumption.v 2>&1 | tail -30
 ```
 
 - [ ] **Step 2: Confirm both are "Closed under the global context"**

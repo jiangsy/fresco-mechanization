@@ -94,7 +94,7 @@ Lemma a_sub_complete_gen : forall n,          (* fuel; strong induction *)
                    Θ ⨟ empty ⊢ₚᵣᵃᵈ (msubst_pskl ζ P1) ⊑ (bskl_to_pskl Q)).
 ```
 
-✅ **LOCKED 2026-07-30 — `frost/algo/prop_sub_complete_thm.v`** carries the two
+✅ **LOCKED 2026-07-30 — `fresco/algo/prop_sub_complete_thm.v`** carries the two
 motives as `sub_complete_concl` / `sub_flex_complete_concl` (+ the bundle
 statement `a_sub_complete_bundle`, named after `a_sub_decorate_bundle`), and
 they typecheck.  ⚠️ The unresolved subject is spelled `R`, not the paper's `S`:
@@ -549,9 +549,9 @@ in the subject/derivation.  Consequences:
 - The consistency level is safe with a SYNTACTIC premise
   `inter Ψ' (ftag_in_uskl S) = ∅` — consistency has no ForallL, so no new
   tags appear inside a derivation.  (`ftag_in_uskl` = hand-written
-  syntactic tag collector, `frost/def_shapes.v` — a LEAF module over the
+  syntactic tag collector, `fresco/def_shapes.v` — a LEAF module over the
   generated syntax, so it can be used by def-files without a rebuild
-  cascade.  It lived in its own `frost/def_tags.v` until 2026-08-06.)  This is how step (2) is stated and proved.
+  cascade.  It lived in its own `fresco/def_tags.v` until 2026-08-06.)  This is how step (2) is stated and proved.
 - The subtyping level ALSO introduces tags inside the derivation
   (ForallL's `ψ''`), whose freshness from `Ψ'` no premise about `S`/`ψa`
   can supply ⇒ step (3) must run over a **TAG-HYGIENIC fuel mirror**
@@ -805,7 +805,7 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   R; against a decorated subject they are vacuous, discharged by `is_tskl`
   on all three `uskl_rho` disjuncts (refl / ρ-leaf image / congruence).
 
-- 2026-07-28 (z2): **REPAIR BUILT — `frost/algo/prop_look_complete_sub_var.v`
+- 2026-07-28 (z2): **REPAIR BUILT — `fresco/algo/prop_look_complete_sub_var.v`
   (new): `flex_shield` + its full descent kit, ALL Qed and axiom-free (0
   admits); the P6-Sv statement is restated with it and type-checks (main
   induction `Admitted`, case map in the file).**  Two corrections to (z)
@@ -975,7 +975,7 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 - 2026-07-28 (x): **⛔ P6-Sv IS BLOCKED — the paper's
   `lemma:complete-constraint-collection-solving-var` (subtyping-proofs.tex
   :1696) is FALSE as an isolated statement, machine-checked in
-  `frost/algo/cex/cex_p6sv_forall_flex.v`
+  `fresco/algo/cex/cex_p6sv_forall_flex.v`
   (`p6sv_with_p6cv_premises_is_false`, Qed, axiom-free).**  Work on P6-Sv is
   STOPPED pending an authors' decision; P5 / P6-Cv / P6-Cs are unaffected
   (no ForallL ⇒ ρ never grows there).
@@ -1042,7 +1042,7 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 - 2026-07-27 (u): **P6-Cv CLOSED — `a_solve_eq_complete_var` is axiom-free
   ("Closed under the global context"), zero admits.**  The three ForallSyn
   Pi-rows all landed; `a_solve_eq_complete_var_gen` is `Qed`.  Home:
-  `frost/algo/prop_look_complete_var.v` (renamed from the cex scratch).
+  `fresco/algo/prop_look_complete_var.v` (renamed from the cex scratch).
   The kit that closed it:
   - **`ad_partial_precise_rename_tvar`** (aenv-tvar Z↦W rename for
     `ad_partial_precise`, ~60-line induction; flex cases need `Z,W∉ftv τ`,
@@ -1995,8 +1995,8 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   `d_tags_skl_ftag`, `ad_pat_consis_ftag_sub` (ctx ⊆ subject tags),
   `ad_pat_consis_precise_var_case` (the packaged crux)); moved there
   from `prop_sub_complete.v`, which now holds only P5a + P5b-i (+ P5b-ii
-  step (3) to come).  New leaf module `frost/def_tags.v`
-  (`ftag_in_uskl`; folded into `frost/def_shapes.v` 2026-08-06).  `make coq` green; `Print Assumptions` on
+  step (3) to come).  New leaf module `fresco/def_tags.v`
+  (`ftag_in_uskl`; folded into `fresco/def_shapes.v` 2026-08-06).  `make coq` green; `Print Assumptions` on
   `ad_pat_consis_precise_subst` / `ad_partial_precise_complete` /
   `ad_pat_sub_to_n` = Closed under the global context.  §5.4 written:
   step (3) needs the tag-HYGIENIC mirror `ad_pat_sub_g` (paper's
@@ -2012,7 +2012,7 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 - 2026-07-22: doc written.  Soundness done.  Completeness = greenfield
   (inventory: no `a_sub_complete*`, no `ad_pat_sub_n`, no
   `precision_subst`; `a_consis_complete` Qed; build green, 0 admits
-  in `frost/algo/`).
+  in `fresco/algo/`).
 - 2026-07-22: **P5b-i DONE** — `ad_partial_precise_complete` **Qed, axiom-free**
   (`Print Assumptions` = Closed under the global context; `make coq` green).
   Target confirmed COLOURED `ad_precise`; needs `a_wf_aenv Θ` + `a_tags_sort`
@@ -2316,7 +2316,7 @@ pskl` and no separate `S` currently exist.  Two candidate encodings:
   add a solve-output wf-preservation lemma (`a_solve_cstr`/`a_solve_eq`
   preserve `Θ0,Ξc ⊢ₚₛᵃ`) when the conclusion requires it.
 - STATUS (2026-07-27, updated): encoding LOCKED to (a-lite) — see §7.2;
-  statement DRAFTED + type-checks in `frost/algo/cex/p6cs_dev_tmp.v`; the THREE
+  statement DRAFTED + type-checks in `fresco/algo/cex/p6cs_dev_tmp.v`; the THREE
   special cases (P0=□, P=α via the P6-Cv corollary, α∉ftv P) are PROVEN, plus
   the reusable helpers `ad_partial_precise_psi_cong` (Qed, migrate to
   prop_precise.v) and `pskl_hole_dec`/`pskl_var_dec`; `a_solve_eq_wf` (existing)
@@ -2403,10 +2403,10 @@ convention).  So:
    at the front).  Degenerate at the P=α leaf: Ξc = [] ⇒ `Θ0 ⊩ eq(P0) :: · ⨾
    Pi ⤳ Pa` unfolds to `a_solve_eq Θ0 Pi P0 Pa` = the P6-Cv corollary output.
 
-Scratch: `frost/algo/cex/p6cs_dev_tmp.v`.
+Scratch: `fresco/algo/cex/p6cs_dev_tmp.v`.
 
 - **STATUS (2026-07-28): CLOSED.**  `a_lookeq_solve_complete` is `Qed` and
-  axiom-free in `frost/algo/prop_look_complete_cstr.v` (0 admits); the scratch
+  axiom-free in `fresco/algo/prop_look_complete_cstr.v` (0 admits); the scratch
   `cex/p6cs_dev_tmp.v` is gone.  Two deviations from the plan above are worth
   recording:
   1. the main induction is on `size_uskl S + size_pskl P0`, NOT on the
@@ -2425,7 +2425,7 @@ Scratch: `frost/algo/cex/p6cs_dev_tmp.v`.
 
 `lemma:complete-constraint-collection-solving` (subtyping-proofs.tex:2202),
 the subtyping twin of the CLOSED P6-Cs (`a_lookeq_solve_complete`).  Target
-file `frost/algo/prop_look_complete_sub_cstr.v`.
+file `fresco/algo/prop_look_complete_sub_cstr.v`.
 
 ### (a) The paper's P6-Ss INHERITS P6-Sv's falsity — same witness
 
@@ -2528,7 +2528,7 @@ and the mode/`skmod` premises are added.
   is deleted; `prop_looksub.v`'s `a_looksub_lookeq_absent_nil` is the one.
 
 **ForallL repair DECIDED (see docs/PAPER-GAPS.md, last entry — reclassified
-as a PROOF-STEP gap; evidence `frost/algo/cex/cex_p6ss_inc_compat.v`).**
+as a PROOF-STEP gap; evidence `fresco/algo/cex/cex_p6ss_inc_compat.v`).**
 The paper's ForallL IH instance needs `θψ_b = ψ_b`, and NO side condition
 on θ rescues that step: Barendregt disjointness is unsatisfiable at ι
 (`id_inc_dom_overlap`); syntactic survivor-compat excludes the legitimate
@@ -2896,7 +2896,7 @@ move to the general leaf).
 
 ⚠️ **The plan in (f) had a hole, and it was in P6-Cs, not P6-Ss.**  P6-Cs's ρ
 premise `forall α0 ∈ Δρ, α0 ∉ dom Θ0` makes the ρ-generalization VACUOUS —
-machine-checked, `frost/algo/cex/cex_p6cs_rsubst_delta_vacuous.v`.  Beside
+machine-checked, `fresco/algo/cex/cex_p6cs_rsubst_delta_vacuous.v`.  Beside
 `κ ∷ Θ0 ⊑ Θ` and `rho_fresh Δρ Θ κ` it forces `Δρ = ∅`, because **an increase
 never invents a rigid**: `a_suffix` admits only flexible entries, so every rigid
 of the target is a rigid of the source (`a_inc_binds_tvar_rev`, the converse of
@@ -2967,7 +2967,7 @@ premise's fixed context needs a THIRD context parameter here (`Θρ`), since
 `make coq` green; the mechanization's ONLY admit is still P6-Ss's **Sub-ForallR**.
 
 ⚠️ **Phase B's prerequisite is FALSE, and `is_tskl` does not repair it.**
-Machine-checked: `frost/algo/cex/cex_p6ss_sub_target_ftv.v`
+Machine-checked: `fresco/algo/cex/cex_p6ss_sub_target_ftv.v`
 (`p6ss_sub_target_ftv_is_false`, axiom-free, plus a non-vacuity witness).
 The sub-side analogue of `ad_pat_consis_target_ftv`,
 
@@ -3262,7 +3262,7 @@ scope-free.  There the narrow choice turned out to be provable (via the
 ### 7.5 P6-L CLOSED (2026-07-30) — **P6 IS COMPLETE**
 
 `a_extract_complete_gen` is `Qed` and axiom-free in
-`frost/algo/prop_look_complete_extract.v`; `make coq` green from clean, 35
+`fresco/algo/prop_look_complete_extract.v`; `make coq` green from clean, 35
 `Print Assumptions` all closed, zero admits.  All five P6 lemmas are done:
 `P6-Cv → P6-Cs → P6-Sv → P6-Ss → P6-L`.  **P7 is now the front.**
 
@@ -3433,7 +3433,7 @@ premise, positionally.
 ✅ **ITS LEAF IS PROVED (2026-07-30), so the wall is NOT a blocker after all —
 the earlier "P7 is blocked" reading was wrong.**  What the leaf needs is TAG
 ACCOUNTING, not a shape bound, and that is `ad_pat_sub_g_monoish_tag_free` in
-`frost/algo/prop_sub_shield_supply.v` (Qed, axiom-free):
+`fresco/algo/prop_sub_shield_supply.v` (Qed, axiom-free):
 
     ad_pat_sub_g n NM M Ψ Θ ψ Q  →  a_wf_aenv Θ  →  is_tskl ψ
       →  bskl_monoish Q  →  Ψ [=] ∅
@@ -3677,7 +3677,7 @@ obligation for both cases is
 witness exploits.
 
 ✅ **AND THE CONSISTENCY HALF OF (†) IS NOW PROVED** —
-`frost/algo/prop_sub_concrete_rhs.v`, all Qed and axiom-free.  The right
+`fresco/algo/prop_sub_concrete_rhs.v`, all Qed and axiom-free.  The right
 relation was already in the development: `a_pskl_tyequiv` (`≡ˢ`,
 def_meta.v:172) is "the `a_tyequiv` equational theory lifted to skeletons:
 definitions of flexible variables unfold, ghosts are inert", introduced for
@@ -5010,7 +5010,7 @@ system deliberately rejects.  Same species as the MODE confusion of
 
 ### ⭐⭐ §12.2 LANDED (2026-08-03): all three layers, and the two obstacles that remain
 
-`frost/algo/prop_sub_complete_dispatch.v` is now §1–§10, 1093 lines, every
+`fresco/algo/prop_sub_complete_dispatch.v` is now §1–§10, 1093 lines, every
 lemma `Qed` and axiom-free, <1 s to compile.  §12.1's layering is in the tree:
 
 | layer | lemma | how it terminates |
@@ -5260,7 +5260,7 @@ fourth shield re-indexing.
 
 ### ⭕ §14.10 TASK A (reachability), the POSITIVE half machine-checked (2026-08-04): the refuting payload needs a FROZEN argument
 
-`frost/algo/cex/probe_payload_reachability.v`, all `Qed`, three
+`fresco/algo/cex/probe_payload_reachability.v`, all `Qed`, three
 `Print Assumptions` closed.  §14.9 left reachability open and sharply stated;
 this settles one of its two conjuncts at the RULE level and pins the search.
 

@@ -19,18 +19,18 @@
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
-Require Import src.frost.notations.
-Require Import src.frost.coercions.
-Require Import src.frost.def_shapes.
-Require Import src.frost.decl.def_rules.
-Require Import src.frost.algo.def_rules.
-Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo_decl.def_consis_refine.
-Require Import src.frost.algo.prop_inc.
-Require Import src.frost.algo.prop_stability.
-Require Import src.frost.algo.prop_basic.
-Require Import src.frost.algo.prop_refine.
-Require Import src.frost.algo.consis.prop_soundness_consis.
+Require Import src.fresco.notations.
+Require Import src.fresco.coercions.
+Require Import src.fresco.def_shapes.
+Require Import src.fresco.decl.def_rules.
+Require Import src.fresco.algo.def_rules.
+Require Import src.fresco.algo.def_meta.
+Require Import src.fresco.algo_decl.def_consis_refine.
+Require Import src.fresco.algo.prop_inc.
+Require Import src.fresco.algo.prop_stability.
+Require Import src.fresco.algo.prop_basic.
+Require Import src.fresco.algo.prop_refine.
+Require Import src.fresco.algo.consis.prop_soundness_consis.
 
 (** A flexible variable defined to an ARROW — a perfectly ordinary state: it is
     exactly what [Assign-SolveM] produces via [guess^TY]. *)

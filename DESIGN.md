@@ -1,9 +1,9 @@
-# Frost — High-Level Design Notes
+# Fresco — High-Level Design Notes
 
 A single-page mental model for the mechanization. Two parts:
 
-- **[Part 1 — Frost calculus design](#part-1--frost-calculus-design)** — the
-  paper-level design: what problem Frost solves, the four mechanisms,
+- **[Part 1 — Fresco calculus design](#part-1--fresco-calculus-design)** — the
+  paper-level design: what problem Fresco solves, the four mechanisms,
   the judgment families. Read this if you want to understand the
   *calculus*.
 - **[Part 2 — Mechanization design](#part-2--mechanization-design)** — the
@@ -17,15 +17,15 @@ NOT duplicated here.
 
 ---
 
-# Part 1 — Frost calculus design
+# Part 1 — Fresco calculus design
 
-## 1. What problem does Frost solve?
+## 1. What problem does Fresco solve?
 
 Type inference for **first-class polymorphism (FCP)** with both
 directions of information flow between functions and arguments,
 without backtracking and without ad-hoc heuristics.
 
-Concretely, Frost wants all four of the following in one system:
+Concretely, Fresco wants all four of the following in one system:
 
 1. *Function → argument* — `poly (λx. x)` where `poly : (∀a. a→a) → Int`
    propagates `∀a. a→a` inward to type-check `λx. x`.
@@ -39,7 +39,7 @@ Concretely, Frost wants all four of the following in one system:
    information*.
 
 Bidirectional typing alone handles (1). Local type inference handles
-parts of (2). Frost handles all four uniformly via **skeletons +
+parts of (2). Fresco handles all four uniformly via **skeletons +
 colours + tags + modes**, with a term-level **freezing** operator as
 an escape hatch.
 
@@ -96,7 +96,7 @@ So the type's colour profile is determined by the mode it sits under.
 ### 2.3 Tags (`epsvar`, `eps`; ranges via `dD : tagctx`)
 
 Tags `ε` are atoms tracking provenance during instantiation. When
-subtyping `∀ε α. T ≤ A` triggers via `sub__forall_l`, Frost picks a
+subtyping `∀ε α. T ≤ A` triggers via `sub__forall_l`, Fresco picks a
 **tagged** instantiation `φ` (a synthesised type whose every ∀ carries
 a fresh tag). The tag context `Δ` collects every tag the derivation
 binds. This is how "no guessing out of thin air" gets enforced: every
@@ -158,7 +158,7 @@ type. Used to disambiguate `single id` (returns `∀a. a→a List`) vs
 
 ## 3. The judgment families
 
-### 3.1 Declarative judgments (in `frost/decl/def_rules.v`)
+### 3.1 Declarative judgments (in `fresco/decl/def_rules.v`)
 
 Roughly the dependency DAG:
 
@@ -198,7 +198,7 @@ The mutual `d_typing ⇄ d_pat` block exists because:
 
 So neither can be defined alone.
 
-### 3.2 Algorithmic judgments (in `frost/algo/def_rules.v`)
+### 3.2 Algorithmic judgments (in `fresco/algo/def_rules.v`)
 
 The current algorithmic files are **split-syntax placeholders**, not a
 faithful mechanization of the algorithmic rules in
@@ -248,7 +248,7 @@ This is the canonical encoding going forward.  Do not add aliases such
 as `typ := ...` or old compatibility constructors; rule statements
 should be rewritten against the split categories directly.  Where the
 paper writes a painted occurrence of a plain type or skeleton, the
-mechanization uses explicit conversions from `frost/coercions.v`:
+mechanization uses explicit conversions from `fresco/coercions.v`:
 
 - `ptyp_to_btyp_syn`, `ptyp_to_btyp_inh`
 - `ptyp_to_utyp_syn`
@@ -306,8 +306,8 @@ is ONE freshness discipline per layer:**
 
 | layer | discipline |
 |---|---|
-| `frost/decl/` (declarative judgments, incl. the `decl_algo` mirrors) | **cofinite** — `forall α, α ∉ L → …` |
-| `frost/algo/def_decorated.v` (the DECORATED mirrors — a proof device) | **cofinite** — see "the line is *is it the algorithm?*" below |
+| `fresco/decl/` (declarative judgments, incl. the `decl_algo` mirrors) | **cofinite** — `forall α, α ∉ L → …` |
+| `fresco/algo/def_decorated.v` (the DECORATED mirrors — a proof device) | **cofinite** — see "the line is *is it the algorithm?*" below |
 | the ALGORITHM's own judgments (`a_sub`, `a_sub_flex`, `a_consis`, `a_assign`, `a_unify`, `a_look*`, `a_solve*`, `a_guess*`, `a_extract`, `a_pat`, `a_typing`) | **exists-fresh** — one binder α + explicit freshness side conditions |
 
 #### The line is "is it the algorithm?", not the directory (decided 2026-08-02)
@@ -1063,14 +1063,14 @@ soundness / completeness) has scaffolding with HEADLINE admits.
 ## 6. Proof debugging methodology — read through the colour/mode lens
 
 A general lesson from successive admit-closures: **when a metatheory
-lemma in Frost looks "almost-but-not-quite true" structurally, the
+lemma in Fresco looks "almost-but-not-quite true" structurally, the
 right question is rarely "how do I patch the wf rules" and almost
 always "which call-site predicate, induced by the calculus's
 colour/mode discipline, makes the bad case unreachable?"**
 
 ### The discipline, restated
 
-Frost factors "what polymorphic type information can flow where" along
+Fresco factors "what polymorphic type information can flow where" along
 two orthogonal axes:
 
 - **Mode** (TI / TC / Fn m) — *direction* of type-info flow. Standard
@@ -1087,7 +1087,7 @@ Together these encode the **decidability frontier** of impredicative
 polymorphism: checked-against quantifiers are fixed, synthesised ones
 are open. Bidirectional information flow is then not just "left ↔
 right" but tracks *which* polymorphic types are already-decided vs.
-still-open. Frost decides more programs than naive bidirectional
+still-open. Fresco decides more programs than naive bidirectional
 systems because it has finer-grained info per ∀.
 
 ### Concretely, how this shows up in proof script gaps

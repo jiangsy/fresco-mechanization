@@ -31,15 +31,15 @@
 From Coq Require Import Lists.List.
 From Metalib Require Import Metatheory.
 
-From src Require Import frost.notations.
-From src Require Import frost.def_shapes.
-From src Require Import frost.algo.def_rules.
-From src Require Import frost.ext_algo.notations.
-From src Require Import frost.ext_algo.def_supply.
-From src Require Import frost.ext_algo.def_guess.
-From src Require Import frost.ext_algo.def_consis.
+From src Require Import fresco.notations.
+From src Require Import fresco.def_shapes.
+From src Require Import fresco.algo.def_rules.
+From src Require Import fresco.ext_algo.notations.
+From src Require Import fresco.ext_algo.def_supply.
+From src Require Import fresco.ext_algo.def_guess.
+From src Require Import fresco.ext_algo.def_consis.
 
-Open Scope frost_e_scope.
+Open Scope fresco_e_scope.
 
 (** [β̂] starts ABOVE [α̂] and ends BELOW it. *)
 Lemma probe_assign_migrates : forall S (α β : atom), α <> β ->

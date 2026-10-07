@@ -4,7 +4,7 @@
 > single `typ` grammar, with a parallel colourless `ctyp`.  **Both `typ` and
 > `ctyp` are gone.**  The Phase-A type-hierarchy refactor replaced them with
 > six sorts — `ptyp` / `btyp` / `utyp` / `pskl` / `bskl` / `uskl` — and
-> `grep -rn 'typ_all_plain\|\bctyp\b' frost/` now returns nothing.  The
+> `grep -rn 'typ_all_plain\|\bctyp\b' fresco/` now returns nothing.  The
 > "Build RED" status below refers to a tree that no longer exists.
 >
 > Kept because it records *why* the plain ∀ had to leave the decorated
@@ -25,13 +25,13 @@
    identical to `typvar`. Without this, `eq_dec` picks distinct
    typeclass instances and `destruct (eq_var X Y); reflexivity.` fails
    to discharge both sides of equations. Verified working.
-3. **frost/def_ott.v** + **frost/prop_ln.v** — regenerated via
+3. **fresco/def_ott.v** + **fresco/prop_ln.v** — regenerated via
    `make ott lngen`. ctyp gets full lngen instrumentation.
-4. **frost/def_shapes.v** — `is_utyp__pall` and `is_uskel__pall`
+4. **fresco/def_shapes.v** — `is_utyp__pall` and `is_uskel__pall`
    dropped (typ_all_plain shapes gone).
-5. **frost/ltac_utils.v** — `discharge_category` Ltac: dropped
+5. **fresco/ltac_utils.v** — `discharge_category` Ltac: dropped
    `H : is_X (typ_all_plain _) |- _ => inversion H` patterns.
-6. **frost/decl/def_rules.v** — major rule-definition surgery:
+6. **fresco/decl/def_rules.v** — major rule-definition surgery:
    - Hand-written ctyp infra removed (now ott-generated).
    - `erase` Fixpoint: dropped `typ_all_plain` case.
    - WF predicates (`d_wf_skel`, `d_wf_utyp`, `d_wf_uskel`): dropped
@@ -50,7 +50,7 @@
      `__forall_syn_untagged`.
    - `d_pat_sub`: dropped `__forall_l_untagged`; dropped the
      `SS <> typ_all_plain _` guard in `__univ_ghost_r`.
-7. **frost/decl/prop_basic.v** — fully repaired:
+7. **fresco/decl/prop_basic.v** — fully repaired:
    - Deleted vacuous `is_*_inv_plain` inversion lemmas (6 of them).
    - Deleted `syn_color_not_plain` / `inh_color_not_plain`.
    - `syn_color_t` / `inh_color_t` Fixpoint defs: dropped typ_all_plain
@@ -62,7 +62,7 @@
 
 ## What's left (~6+ hours of focused editing)
 
-### frost/decl/prop_wellformed.v (in-progress, partial)
+### fresco/decl/prop_wellformed.v (in-progress, partial)
 22 references to fix. Pattern: drop bullets for `__pall` / `*_plain`
 cases in `induction H`, where `H` is now over a smaller relation.
 Started — first two `d_wf_*_weakening` and `d_wf_utyp_tvar_morph` done.
@@ -70,12 +70,12 @@ Remaining: 15+ similar bullet drops, plus the `d_refine`-wf proof at
 lines 767+ which now produces `typ_all_col colour_syn` outputs (apply
 `d_wf_skel__all_col colour_syn` instead of `d_wf_skel__all_plain`).
 
-### frost/decl/prop_subtyping.v
+### fresco/decl/prop_subtyping.v
 17 references. Many proofs case-split on `d_consis` / `d_sub` (which
 lost rules). Drop those bullets. Comments mentioning typ_all_plain can
 be left or updated.
 
-### frost/decl/prop_typing.v (5000 lines, largest)
+### fresco/decl/prop_typing.v (5000 lines, largest)
 24 direct references plus indirect cascade. Key targets:
 - `d_consis_gen` Inductive (around line 944): drop
   `__forall_inh_untagged`, `__forall_syn_untagged`; ADD `__forall_syn`
@@ -85,19 +85,19 @@ be left or updated.
 - Hundreds of bullet drops in proofs that case-split on
   `d_consis` / `d_sub` / `d_consis_gen`.
 
-### frost/decl/prop_skeleton.v
+### fresco/decl/prop_skeleton.v
 5 references. `d_refine_*_split` lemmas: signatures change from
 `d_refine ... (typ_all_plain P) Q` to
 `d_refine ... (typ_all_col colour_syn P) Q`, similarly for outputs.
 
-### frost/algo/def_rules.v
+### fresco/algo/def_rules.v
 19 references. Same surgery applied to algo rules:
 `a_wf_typ`, `a_non_flex`, `a_non_flex_poly`, `a_guess_mono`,
 `a_pre_sub`, `a_pre_join`, `a_unify`, `a_consis` untagged variants,
 `a_broom`. Drop typ_all_plain shapes; for genuinely-needed
 "untagged-syn polytype" role, replace with `typ_all_col colour_syn`.
 
-### frost/algo/prop_soundness.v + prop_completeness.v
+### fresco/algo/prop_soundness.v + prop_completeness.v
 Cascade from algo def_extra.
 
 ### Final: close D12 admits

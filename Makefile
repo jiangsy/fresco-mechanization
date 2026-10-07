@@ -3,7 +3,7 @@ COQ_MAKEFILE := CoqMakefile
 
 OTT_FLAGS := -coq_lngen true -signal_parse_errors true
 
-SYSTEMS := frost
+SYSTEMS := fresco
 IGNORE_DIRS := ""
 OTT_OUTS   := $(addsuffix /def_ott.v,${SYSTEMS})
 LNGEN_OUTS := $(addsuffix /prop_ln.v,${SYSTEMS})
@@ -81,11 +81,11 @@ FORCE:
 ${COQ_MAKEFILE} : ${COQ_PROJECT} .FILE_LIST ${LNGEN_OUTS}
 	tree . -if -I ${IGNORE_DIRS} | grep -E "v$$" | cut -c3- | xargs coq_makefile -o $@ -f ${COQ_PROJECT}
 
-# The extraction driver (frost/ext_algo/extraction/Extract.v) writes its OCaml
+# The extraction driver (fresco/ext_algo/extraction/Extract.v) writes its OCaml
 # into a fixed directory, and `Set Extraction Output Directory` does NOT create
 # it — a fresh clone would fail there.  Make it unconditionally; it is one
 # mkdir and it keeps the build self-contained.
-EXTRACT_DIR := frost/ext_algo/extraction/extracted
+EXTRACT_DIR := fresco/ext_algo/extraction/extracted
 
 coq : ${COQ_MAKEFILE}
 	mkdir -p ${EXTRACT_DIR}

@@ -1,4 +1,4 @@
-Handover — Frost mechanization: what still stands between the tree and an
+Handover — Fresco mechanization: what still stands between the tree and an
 UNCONDITIONAL thm:complete-subtyping.  ONE obligation, and it is a P6-TOWER
 CAMPAIGN, not an assembly step: the FOURTH re-indexing of `sub_shield`.
 
@@ -14,7 +14,7 @@ STATE.  Branch `freshness-campaign-cluster3-wip`; `make coq` green,
 admit-free, axiom-free; every flagship `Print Assumptions`-clean.  P5 done;
 P6 complete; P7a/P7b all rows Qed; P7c assembled
 (`a_sub_complete_bundle_holds` + `a_sub_complete`,
-frost/algo/prop_sub_complete_dispatch.v §12) under ONE hypothesis
+fresco/algo/prop_sub_complete_dispatch.v §12) under ONE hypothesis
 `forall n, main_forall n`.
 
 WHAT JUST HAPPENED (2026-08-03, this session):

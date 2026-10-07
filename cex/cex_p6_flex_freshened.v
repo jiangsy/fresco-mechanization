@@ -58,14 +58,14 @@
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
-Require Import src.frost.notations.
-Require Import src.frost.coercions.
-Require Import src.frost.def_shapes.
-Require Import src.frost.decl.def_rules.
-Require Import src.frost.algo.def_rules.
-Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo_decl.def_consis_refine.
-Require Import src.frost.deco_algo.def_decorated.
+Require Import src.fresco.notations.
+Require Import src.fresco.coercions.
+Require Import src.fresco.def_shapes.
+Require Import src.fresco.decl.def_rules.
+Require Import src.fresco.algo.def_rules.
+Require Import src.fresco.algo.def_meta.
+Require Import src.fresco.algo_decl.def_consis_refine.
+Require Import src.fresco.deco_algo.def_decorated.
 
 Set Implicit Arguments.
 

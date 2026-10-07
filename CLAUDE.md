@@ -11,7 +11,7 @@ mechanization.)  Corrected 2026-08-09.
 
 ## TL;DR
 
-- Rocq mechanization of the **Frost** calculus from the paper
+- Rocq mechanization of the **Fresco** calculus from the paper
   *Haunting Bidirectional Typing* (`paper/frost.tex`, rendered as
   `paper/frost.pdf`).
 - Coq namespace: `src` (`-R . src` in `_CoqProject`).
@@ -94,7 +94,7 @@ mechanization.)  Corrected 2026-08-09.
 - **Sort discipline (2026-08-06)**: the algorithmic judgements range over one
   category (`pskl`), but the paper's rules are sorted BY METAVARIABLE — `A`/`B`
   mark TYPE positions, `P`/`Q` skeleton ones.  The rules now carry that as a
-  `pskl_ghost_free` premise (frost/def_shapes.v; kit in `frost/prop_basic.v`).
+  `pskl_ghost_free` premise (fresco/def_shapes.v; kit in `fresco/prop_basic.v`).
   ⚠️ Three positions where the paper sorts a slot but the mech deliberately
   does NOT — each argued in [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md): the two
   figures disagree on `SI-ForallR`'s subject, `SolS-ForallR`'s LHS `A` is a
@@ -167,7 +167,7 @@ mechanization.)  Corrected 2026-08-09.
 | File | Purpose |
 |---|---|
 | [`CLAUDE.md`](CLAUDE.md) | (this file) ground rules, dirs, tooling, conventions |
-| [`DESIGN.md`](DESIGN.md) | **Two parts**: Part 1 — Frost calculus design (modes, colours, tags, skeletons, freezing); Part 2 — mechanization design (encoding choices, ctyp / `syn_color` / `inh_color`, proof-debugging methodology, gap rationales) |
+| [`DESIGN.md`](DESIGN.md) | **Two parts**: Part 1 — Fresco calculus design (modes, colours, tags, skeletons, freezing); Part 2 — mechanization design (encoding choices, ctyp / `syn_color` / `inh_color`, proof-debugging methodology, gap rationales) |
 | [`PROGRESS.md`](PROGRESS.md) | **Two parts**: Part 1 — paper → Coq mapping (every paper Lemma / Theorem with status, statement, location); Part 2 — daily progress log |
 | [`README.v`](README.v) | **The compilable paper→Coq HEADLINE index — 32 entries.** Deliberately NOT a catalogue: a paper label is not a reason to appear (the exhaustive map is PROGRESS.md Part 1). Each entry is: the paper's Lemma/Theorem name + label, the statement in the PAPER'S OWN NOTATION (unicode), then `Check` and `Print Assumptions` **together**. So the build tail prints one assumption report per claim and every one must read "Closed under the global context". Adding a claim means adding all three parts. Run via `make coq`. |
 | [`Makefile`](Makefile) | ott + lngen + coq pipeline; `coq` / `quick` / `clean` / `sync-paper-refs` targets |
@@ -177,7 +177,7 @@ mechanization.)  Corrected 2026-08-09.
 | [`docs/refutations.tex`](docs/refutations.tex) | **Author-facing note, in the paper's own notation**: the two machine-checked refutations (Lemma E.17 Look completeness; Theorem 4.6 Completeness of subtyping), the shared configuration, the diagnosis (`SolE-FlexR` discards the accumulated pattern) and the suggested repair. Build: `make -f Makefile.refutations` from `docs/`, or `TEXINPUTS=../../paper: pdflatex refutations.tex` |
 | [`docs/WF-SIDE-CONDITIONS.md`](docs/WF-SIDE-CONDITIONS.md) | **Read before mechanizing any refinement / consistency / subtyping / skeleton-inference lemma.** The paper states well-formedness (and sometimes a further judgment) as an EXTERNAL requirement in prose, and its rules then omit the side conditions it would supply. Several judgments look FALSE until that condition is restored. |
 | [`docs/HANDOFF-closed-corollaries-declarative.md`](docs/HANDOFF-closed-corollaries-declarative.md) | **ACTIVE hand-off**: state the closed-program corollaries against `d_sd_typing` / `d_typing` instead of `ad_sd_typing`. ⭐ SOUNDNESS LANDED 2026-08-10 via the conservativity bridge `algo_decl/prop_conserv.v`. ⭐ 2026-08-11 the TAG-HYGIENE blocker is CLOSED — all four subtyping judgements now read the paper's `fresh Ψ'` the same, GLOBAL way. ⛔ COMPLETENESS still open, blocked by ONE thing: the leaf-valid datum at a ghosty subject (`cex/cex_ad_pat_join_not_leaf_valid.v`) |
-| [`docs/HANDOFF-extractable-algo-encoding.md`](docs/HANDOFF-extractable-algo-encoding.md) | **ACTIVE hand-off. ⭐ TODO (1) IS COMPLETE (2026-08-13)** — `frost/ext_algo/` is a SECOND algorithmic encoding in which no rule's freshness constrains its own output, because a fresh-name SUPPLY is threaded through every component (which is what `type.ml`'s `counter` does). All fourteen judgements are threaded AND bridged to `frost/algo`'s encoding over the SAME contexts, so the four flagship theorems apply to a threaded run verbatim. ⭐ Two prose-completions became theorems on the way (`AT-Abs`'s and `a_sub__forall_l`'s `uniq` filters on generated blocks). ⭐ **TODO (2) — EXTRACTION — IS COMPLETE (2026-08-14)**: the termination campaign closed (`e_sub_order_total` and `e_consis_order_total`, unconditional, §8b.5–§8b.6), and phase 4 landed a Bove–Capretta runner for EVERY judgement (§8b.7) — `option (sig …)`-shaped, soundness-only, dispatching in the reference implementation's order — so the whole algorithm extracts to clean OCaml. ⚠️ TERMINATION was the paper's own undischarged decidability argument; §7.3 sharpens that into a finding worth sending the authors (filed in PAPER-GAPS) |
+| [`docs/HANDOFF-extractable-algo-encoding.md`](docs/HANDOFF-extractable-algo-encoding.md) | **ACTIVE hand-off. ⭐ TODO (1) IS COMPLETE (2026-08-13)** — `fresco/ext_algo/` is a SECOND algorithmic encoding in which no rule's freshness constrains its own output, because a fresh-name SUPPLY is threaded through every component (which is what `type.ml`'s `counter` does). All fourteen judgements are threaded AND bridged to `fresco/algo`'s encoding over the SAME contexts, so the four flagship theorems apply to a threaded run verbatim. ⭐ Two prose-completions became theorems on the way (`AT-Abs`'s and `a_sub__forall_l`'s `uniq` filters on generated blocks). ⭐ **TODO (2) — EXTRACTION — IS COMPLETE (2026-08-14)**: the termination campaign closed (`e_sub_order_total` and `e_consis_order_total`, unconditional, §8b.5–§8b.6), and phase 4 landed a Bove–Capretta runner for EVERY judgement (§8b.7) — `option (sig …)`-shaped, soundness-only, dispatching in the reference implementation's order — so the whole algorithm extracts to clean OCaml. ⚠️ TERMINATION was the paper's own undischarged decidability argument; §7.3 sharpens that into a finding worth sending the authors (filed in PAPER-GAPS) |
 | [`docs/HANDOFF-close-consis-unrestricted.md`](docs/HANDOFF-close-consis-unrestricted.md) | **✅ CLOSED 2026-08-17 — HISTORY**: `consis_call_no_hole` is deleted and the three consistency-runner headlines (`e_assign_impl_complete`, `e_unify_impl_complete`, `e_consis_run_complete`) hold on GHOST-CARRYING skeletons, which is what makes the flagship path reachable. ⭐ It closed by removing the AMBIGUITY rather than solving the two-context problem: `U-FlexL`/`U-FlexR` gained `P0 <> ◇`/`P <> ◇` (the `SE-FlexR` prose-completion again — see PAPER-GAPS), so every ghost cell admits exactly ONE rule; `a_consis_complete` was re-proved by dispatching in the implementation's order (hoist `C-GhostR`, add the mirror `C-Ghost` at a flexible input). ⛔ The file KEEPS its five machine-checked refutations and constraints C1–C6 as the record of why the guard is right — do not restart them |
 | [`docs/HANDOFF-close-subtyping-completeness.md`](docs/HANDOFF-close-subtyping-completeness.md) | **ACTIVE hand-off**: close subtyping completeness — decide reachability (TASK A), state+prove the payload invariant (B), make the shield supply total or kill it (C), land it on the motive and discharge `main_forall` (D) |
 | [`docs/HANDOFF-p7c-finish.md`](docs/HANDOFF-p7c-finish.md) | **ACTIVE hand-off**: TASKS 1, 2a and 3 are DONE (2026-08-03); what is left is TASK 2b — TASK 0's `sub_shield` for a `P0` with a ∀ below its head, the bundle's one hypothesis |
@@ -190,7 +190,7 @@ mechanization.)  Corrected 2026-08-09.
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Syntactic / judgment **definitions** for the declarative system; algorithmic placeholder. | 🟢 **done** |
-| 2 | Declarative metatheory (subsumption, subtyping soundness, refinement preserves wf, skeleton validity/safety, stability lemmas). | 🟢 **admit-free** — D1 / D12 and the restored chain are all Qed; `frost/decl/` has no `admit`/`Admitted` left. See [PROGRESS.md Part 1](PROGRESS.md#part-1-paper--mechanization-mapping). |
+| 2 | Declarative metatheory (subsumption, subtyping soundness, refinement preserves wf, skeleton validity/safety, stability lemmas). | 🟢 **admit-free** — D1 / D12 and the restored chain are all Qed; `fresco/decl/` has no `admit`/`Admitted` left. See [PROGRESS.md Part 1](PROGRESS.md#part-1-paper--mechanization-mapping). |
 | 3 | Algorithmic system definitions and soundness/completeness vs. declarative. | 🟢 **admit-free and axiom-free; both directions of subtyping CLOSED**.  Consistency soundness AND completeness/optimality closed; subtyping soundness (`a_sub_sound`) closed; ⭐⭐⭐ subtyping COMPLETENESS closed and UNCONDITIONAL (`a_sub_complete` in `README.v`, off the generalized bundle `a_sub_complete_bundle_holds`) — P5, all five P6 lemmas and P7a/b/c green.  The remaining work is the PAPER, not the mechanization (hand-off §6 Step 4). |
 
 ## Directory map
@@ -207,7 +207,7 @@ mechanization/
 │   └── sync_paper_refs.py  (paper.aux → .v / .md sync)
 ├── docs/
 │   └── HANDOFF-typ-all-plain-refactor.md
-├── frost/
+├── fresco/
 │   ├── language.ott      (PURE SYNTAX — types, terms, modes, skeletons,
 │   │                      tagged types/skeletons, contexts, formulas)
 │   ├── def_ott.v         (generated by ott — DO NOT EDIT)
@@ -273,7 +273,7 @@ mechanization/
 │   │   │                  `d`eclarative, the paper's app:decl-in-algo-context.
 │   │   │                  Same rules as decl/, Θ in place of Γ.  ⚠️ NOT the
 │   │   │                  same thing as deco_algo/ below — see the legend in
-│   │   │                  frost/notations.v; the two were ONE directory named
+│   │   │                  fresco/notations.v; the two were ONE directory named
 │   │   │                  `decorated_algo/` until 2026-08-11, which is exactly
 │   │   │                  what made them easy to confuse)
 │   │   ├── def_{consis_refine,subtyping,typing}.v     (consistency, refinement, subtyping, precision,
@@ -309,7 +309,7 @@ mechanization/
 │   │                             ⚙ the third file, prop_decorate.v, was
 │   │                             deleted 2026-08-11: it held nothing but six
 │   │                             `pskl_to_uskl` conversion facts, which belong
-│   │                             in frost/prop_coercions.v and now live there —
+│   │                             in fresco/prop_coercions.v and now live there —
 │   │                             the conversion itself moved to coercions.v)
 │   ├── ext_algo/        (⭐ `{{ … }}e` — THE STATE-THREADED SECOND ENCODING of
 │   │                     the SAME algorithm as algo/: every rule carries a
@@ -332,7 +332,7 @@ mechanization/
 │       │                         ⊴, msubst_{ptyp,btyp,pskl,uskl_syn})
 │       ├── prop_inc*.v / prop_metasubst.v / prop_compose.v   (θ-algebra)
 │       ├── prop_basic.v          (⭐ THE ALGO BASICS — the per-layer sibling of
-│       │                         frost/prop_basic.v and decl/prop_basic.v: the
+│       │                         fresco/prop_basic.v and decl/prop_basic.v: the
 │       │                         a_wf_ptyp / a_wf_pskl / a_wf_aenv facts, binds
 │       │                         and ftvar_in_aenv plumbing, a_decls, a_isub
 │       │                         reflexivity, rename_aenv and a_guess_mono.
@@ -348,7 +348,7 @@ mechanization/
 │       ├── prop_precise*.v      (precision)
 │       ├── prop_swap.v          (EQUIVARIANCE — the one renaming primitive
 │       │                         for TYPE variables.  ⚙ its §1 atom layer is
-│       │                         `frost/prop_tag.v` §1, imported not copied)
+│       │                         `fresco/prop_tag.v` §1, imported not copied)
 │       ├── prop_pat_sub.v / prop_refine.v / prop_stability.v
 │       ├── prop_suffix_erase.v / prop_rename_decl.v
 │       ├── prop_wf_preservation.v  (a run's OUTPUT context is well-formed —
@@ -455,7 +455,7 @@ their topic names.
   own name, unabbreviated: `ftvar_ptyp_to_pskl`, `btyp_to_ptyp_open`,
   `lc_bskl_to_pskl`.  ⚠️ NOT `ftvar_in_<target>_<conversion>` and NOT
   `ftvar_in_<conversion>`: the tree accumulated all three and ended up with
-  **four names for one fact**.  All such lemmas live in `frost/prop_coercions.v`.
+  **four names for one fact**.  All such lemmas live in `fresco/prop_coercions.v`.
 - ⚠️ **A `_<qualifier>` sibling is usually a LAYER, not a size accident.**
   `prop_inc_strengthen.v`, `prop_precise_sub.v`, `prop_precise_recover.v` look
   like small files that want folding into their topical base.  They do not:
@@ -485,7 +485,7 @@ before changing any of them.
   file declares only grammars, substitutions, freevars, and formulas.
   All `Inductive` rules go in the matching `def_rules.v` (`decl/` for
   declarative, `algo/` for algorithmic); the cross-system meta-functions and
-  shape predicates go in `frost/def_shapes.v`.  ⚙ All three were called
+  shape predicates go in `fresco/def_shapes.v`.  ⚙ All three were called
   `def_extra.v` until 2026-08-12, which named nothing and made "which
   `def_extra.v`?" a routine question.
 - **Single `typ` AST with multiple colour / tag flavours of ∀.** Three
@@ -631,10 +631,10 @@ before changing any of them.
   a `where`-clause and its rules written in that notation; lemma statements
   use the notations too. Only relations with no paper counterpart may use
   application form.
-  - ⭐ **THE JUDGMENT LEGEND IS IN [`frost/notations.v`](frost/notations.v)** —
+  - ⭐ **THE JUDGMENT LEGEND IS IN [`fresco/notations.v`](fresco/notations.v)** —
     read it before adding or changing any judgment notation. **The SYSTEM is
     the DELIMITER**, and each delimiter is its own notation scope:
-    `{{ … }}d` declarative (`frost_d_scope`), `{{ … }}ad` declarative-over-Θ,
+    `{{ … }}d` declarative (`fresco_d_scope`), `{{ … }}ad` declarative-over-Θ,
     `{{ … }}a` algorithmic, `{{ … }}da` the DECORATED algorithmic system. That frees the turnstile,
     so **SUPERSCRIPT = which copy** (bare types, `⊢ˢ` skeletons, `⊢ˢᵈ`
     syntax-directed) and **SUBSCRIPT = which relation** (`⊢ᵣ`/`⊢ᵣₚ`
@@ -648,7 +648,7 @@ before changing any of them.
     `Open Scope` is NOT transitive through `Require Import`, and a scope that
     is closed makes Coq report the notation as simply not existing
     ("Unknown interpretation"). Declaring and opening therefore travel
-    together — see the note in `frost/notations.v`.
+    together — see the note in `fresco/notations.v`.
   - ⚠️ **The first slot of a `{{ … }}X` notation carries NO level
     annotation.** Metalib's atom-set singleton is `{{ x }}` (Metatheory.v:41),
     so every `{{`-prefixed rule shares its prefix; camlp5 can only factor them
@@ -668,7 +668,7 @@ before changing any of them.
     the sort subscript carrying what the arrow used to hint at. The paper
     writes its own mode-generic typing with a plain colon for the same
     reason (`\typp`, `paper/macro.tex:1087`).
-- **Atom sets never name a module.** `frost/notations.v` completes what
+- **Atom sets never name a module.** `fresco/notations.v` completes what
   `Metalib.Metatheory` abbreviates only partly: it adds `inter` / `diff` /
   `mem` and the `AtomSetImpl` lemma names we use (`union_1`, `inter_3`,
   `singleton_1`, …), plus the infix `S1 ∪ S2` (65) / `S1 ∩ S2` (63) /
@@ -759,7 +759,7 @@ before changing any of them.
   `algorithmic.tex`, `proofs.tex` directly when in doubt — they are
   the authoritative specs. PDF is fine for human reading; LaTeX is
   fine for grep.
-- Keep `mechanization/frost/language.ott` minimal. Resist the
+- Keep `mechanization/fresco/language.ott` minimal. Resist the
   temptation to put rules into ott just because ott has `defns`
   syntax; we want the rules in Coq where they can be edited /
   debugged interactively.
@@ -782,14 +782,14 @@ before changing any of them.
 
 | Need to … | Edit … |
 |---|---|
-| Add a new syntactic constructor / sort | `frost/language.ott` |
-| Add a meta-function shared by decl + algo | `frost/def_shapes.v` |
-| Add a predicate / well-formedness used by both | `frost/def_shapes.v` |
-| Add a declarative typing/subtyping rule | `frost/decl/def_rules.v` |
-| Prove a declarative metatheorem | `frost/decl/prop_*.v` (flat; pick the matching file by topic) |
-| Add an algorithmic rule | `frost/algo/def_rules.v` |
-| Add a global notation | `frost/notations.v` (scopes + the judgement legend); a JUDGEMENT's own notation goes on its `Inductive`, via a `where` clause in the matching `def_rules.v` |
-| Add a tactic | `frost/ltac_utils.v` |
+| Add a new syntactic constructor / sort | `fresco/language.ott` |
+| Add a meta-function shared by decl + algo | `fresco/def_shapes.v` |
+| Add a predicate / well-formedness used by both | `fresco/def_shapes.v` |
+| Add a declarative typing/subtyping rule | `fresco/decl/def_rules.v` |
+| Prove a declarative metatheorem | `fresco/decl/prop_*.v` (flat; pick the matching file by topic) |
+| Add an algorithmic rule | `fresco/algo/def_rules.v` |
+| Add a global notation | `fresco/notations.v` (scopes + the judgement legend); a JUDGEMENT's own notation goes on its `Inductive`, via a `where` clause in the matching `def_rules.v` |
+| Add a tactic | `fresco/ltac_utils.v` |
 | Update the paper → Coq map | `PROGRESS.md` Part 1 (then `make sync-paper-refs-md` if labels moved) |
 | Log a closure / refactor / discovery | `PROGRESS.md` Part 2 (dated entry) |
 | Explain an encoding choice or methodology | `DESIGN.md` Part 2 |
@@ -802,6 +802,6 @@ before changing any of them.
 - Reference repo for file-organization patterns:
   <https://github.com/jiangsy/proof_worklist_remechnization>
   (different calculus — copy the structure, not the rules).
-- ⚙ The two original design specs (`docs/superpowers/specs/2026-05-09-frost-
-  mechanization-design.md`, `…-05-10-frost-phase23-design.md`) no longer exist
+- ⚙ The two original design specs (`docs/superpowers/specs/2026-05-09-fresco-
+  mechanization-design.md`, `…-05-10-fresco-phase23-design.md`) no longer exist
   in the tree; what survived of them is [`DESIGN.md`](DESIGN.md) Part 2.

@@ -5,7 +5,7 @@ possible, (3) use custom scopes to reduce collisions.
 
 Status: **big-judgment relation symbols DONE and merged** (see §1/§5); the
 **system/sort axes DONE 2026-08-09** (see §5 — that pass is the one that made
-`a/d/ad` legible, and the canonical legend now lives in `frost/notations.v`);
+`a/d/ad` legible, and the canonical legend now lives in `fresco/notations.v`);
 small operations (§4) catalogued for later, no rush.
 
 ⚠️ **This file keeps its ORIGINAL glyphs on purpose** — the "Mech now" columns
@@ -127,19 +127,19 @@ Currently **nothing uses a custom scope** — every notation is in `type_scope`
 or global. Recommend introducing scopes to (a) contain the dense algorithmic
 overloads and (b) let the paper glyphs coexist:
 
-- `Declare Scope frost_scope` (delimiter `%frost`), `Open Scope frost_scope`
+- `Declare Scope fresco_scope` (delimiter `%fresco`), `Open Scope fresco_scope`
   in a central prelude. Move the **global** notations that currently leak
   (`∉`, `⌊ ⌋ˢ`, the `F=∅` overloads, `a_pat`/`a_typing`/`a_sub` where-clauses)
   into it, so they stop polluting the default scope.
 - Keep the split judgment worlds legible by *convention* (decl at level 75,
   algo worklist at level 70) rather than separate scopes — separate scopes for
   decl vs algo would force `%`-annotations at every mixed use (soundness lemmas
-  mention both), which is worse. One `frost_scope` for everything Frost-specific
+  mention both), which is worse. One `fresco_scope` for everything Fresco-specific
   is the pragmatic choice.
 
 **Low-risk immediate win:** move the four global leaks (`∉`, `⌊ ⌋ˢ`, `F=∅`
 overloads, and the three where-clause turnstiles that omit `: type_scope`) into
-`type_scope` / `frost_scope` so nothing sits in the truly-global namespace.
+`type_scope` / `fresco_scope` so nothing sits in the truly-global namespace.
 
 ---
 
@@ -184,7 +184,7 @@ DECORATIONS, and those had drifted into two genuine defects:
 Resolved by giving each axis one device — **superscript = system, subscript =
 sort** — and stating the sort exactly once (subscript where the system has one
 relation per sort, bracket index `N`/`NM` where one relation covers both).
-The canonical legend is the header of [`frost/notations.v`](../frost/notations.v);
+The canonical legend is the header of [`fresco/notations.v`](../fresco/notations.v);
 `CLAUDE.md`'s style section points at it. What moved:
 
 | relation | before | after |

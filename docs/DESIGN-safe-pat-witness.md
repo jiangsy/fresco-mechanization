@@ -2,7 +2,7 @@
 >
 > The `d_pat` safety / totality development this note plans **was never
 > built in the re-mechanization**: there is no `d_pat_safety`, no
-> `safe_fn_skel` and no `d_pat_total` in `frost/`.  What survives are the
+> `safe_fn_skel` and no `d_pat_total` in `fresco/`.  What survives are the
 > supporting lemmas in `decl/prop_skeleton.v` (consistency reflexivity, the
 > tvar-strengthening cascade), which still cite `d_pat_total` in their
 > comments as the motivation they were built for.
@@ -22,7 +22,7 @@ design to build.
 
 ## 0. Where this lives
 
-- `frost/decl/prop_safety.v`
+- `fresco/decl/prop_safety.v`
   - `gpat m Γ e B` — the per-mode safety property (`Definition`, ~L1840):
     `tc` case = `exists Q, Γ ⊢tc e ⦂ Q /\ FILL(Q,Γ)` where
     `FILL(Q,Γ) := forall Γext Γt A0, ctx_weaken Γ Γext -> ctx_refines Γext Γt ->

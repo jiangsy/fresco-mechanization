@@ -1,4 +1,4 @@
-Zero-reference top-level names in frost/ — nothing in frost/, README.v, cex/ or
+Zero-reference top-level names in fresco/ — nothing in fresco/, README.v, cex/ or
 test/ mentions them outside their own declaration line, and none is Hint-
 registered.  Generated files (def_ott.v, prop_ln.v) excluded.
 
@@ -29,17 +29,17 @@ from a regenerated list, check docs/PAPER-GAPS.md and PROGRESS.md Part 1 too.
 === ZERO-REFERENCE NAMES: 19  (all deliberate)
 
 --- [E] encoding justification: the exists-fresh encoding loses nothing (11)
-  frost/algo/prop_swap.v:1652  Lemma a_sub_flex_skip_no_loss
-  frost/algo/prop_swap.v:1674  Lemma a_sub_flex_skip_rigid_no_loss
-  frost/algo/prop_swap.v:1700  Lemma a_sub_flex_assign_no_loss
-  frost/algo/prop_swap.v:1756  Lemma a_assign_skip_no_loss
-  frost/algo/prop_swap.v:1778  Lemma a_assign_skip_rigid_no_loss
-  frost/algo/prop_swap.v:1799  Lemma a_assign_skip_tm_var_no_loss
-  frost/algo/prop_swap.v:1819  Lemma a_assign_skip_tm_skl_no_loss
-  frost/algo/prop_swap.v:1843  Lemma a_assign_assign_no_loss
-  frost/algo/prop_swap.v:1884  Lemma a_unify_flex_skip_no_loss
-  frost/algo/prop_swap.v:1905  Lemma a_unify_skip_other_no_loss
-  frost/algo/prop_swap.v:1932  Lemma a_unify_flex_assign_no_loss
+  fresco/algo/prop_swap.v:1652  Lemma a_sub_flex_skip_no_loss
+  fresco/algo/prop_swap.v:1674  Lemma a_sub_flex_skip_rigid_no_loss
+  fresco/algo/prop_swap.v:1700  Lemma a_sub_flex_assign_no_loss
+  fresco/algo/prop_swap.v:1756  Lemma a_assign_skip_no_loss
+  fresco/algo/prop_swap.v:1778  Lemma a_assign_skip_rigid_no_loss
+  fresco/algo/prop_swap.v:1799  Lemma a_assign_skip_tm_var_no_loss
+  fresco/algo/prop_swap.v:1819  Lemma a_assign_skip_tm_skl_no_loss
+  fresco/algo/prop_swap.v:1843  Lemma a_assign_assign_no_loss
+  fresco/algo/prop_swap.v:1884  Lemma a_unify_flex_skip_no_loss
+  fresco/algo/prop_swap.v:1905  Lemma a_unify_skip_other_no_loss
+  fresco/algo/prop_swap.v:1932  Lemma a_unify_flex_assign_no_loss
 
 --- [P] the paper's Lemma E.8, an IFF the paper uses in BOTH directions
         (forward: subtyping-proofs.tex:890; reverse: :2632).  The mech's
@@ -47,39 +47,39 @@ from a regenerated list, check docs/PAPER-GAPS.md and PROGRESS.md Part 1 too.
         each half lost (or never had) a consumer, and why both are kept —
         is the §4 banner in algo/sub/prop_looksub.v.  See also
         docs/PAPER-GAPS.md:2257 and :2567.
-  frost/algo/sub/prop_looksub.v:406  Lemma a_looksub_lookeq_subst_stable
-  frost/algo/sub/prop_looksub.v:632  Lemma a_looksub_lookeq_subst_stable_rev
+  fresco/algo/sub/prop_looksub.v:406  Lemma a_looksub_lookeq_subst_stable
+  fresco/algo/sub/prop_looksub.v:632  Lemma a_looksub_lookeq_subst_stable_rev
 
 --- [G] cited as machine-checked at docs/PAPER-GAPS.md:196
-  frost/algo_decl/prop_conserv.v:1347  Lemma d_pat_consis_subject_refine_ghost_free
+  fresco/algo_decl/prop_conserv.v:1347  Lemma d_pat_consis_subject_refine_ghost_free
 
 --- [T] terminal negative result, README.v §V
-  frost/decl/prop_annotation.v:72  Lemma freeze_no_infer
+  fresco/decl/prop_annotation.v:72  Lemma freeze_no_infer
 
 --- [K] kept by an earlier pass (see the report's §2.1b)
-  frost/algo/prop_suffix_erase.v:240  Lemma solves_flex_self
-  frost/algo/prop_suffix_erase.v:1524  Lemma ad_pat_strip_suffix
-  frost/algo/typing/prop_completeness_typing.v:1279  Lemma a_guess_mono_complete_ghost_free
-  frost/algo/typing/prop_scope.v:122  Lemma a_sub_ty_tc_verbatim
+  fresco/algo/prop_suffix_erase.v:240  Lemma solves_flex_self
+  fresco/algo/prop_suffix_erase.v:1524  Lemma ad_pat_strip_suffix
+  fresco/algo/typing/prop_completeness_typing.v:1279  Lemma a_guess_mono_complete_ghost_free
+  fresco/algo/typing/prop_scope.v:122  Lemma a_sub_ty_tc_verbatim
 
 === ZERO-TEXTUAL-REF BUT HINT-REGISTERED: 0
 
 === DUPLICATE TOP-LEVEL NAMES: 2
   default_auto:
-      frost/prop_ln.v:816 (Ltac)
-      frost/prop_ln.v:1823 (Ltac)
-      frost/prop_ln.v:3601 (Ltac)
-      frost/prop_ln.v:4896 (Ltac)
-      frost/prop_ln.v:6434 (Ltac)
-      frost/prop_ln.v:7089 (Ltac)
-      frost/prop_ln.v:9018 (Ltac)
-      frost/prop_ln.v:12171 (Ltac)
+      fresco/prop_ln.v:816 (Ltac)
+      fresco/prop_ln.v:1823 (Ltac)
+      fresco/prop_ln.v:3601 (Ltac)
+      fresco/prop_ln.v:4896 (Ltac)
+      fresco/prop_ln.v:6434 (Ltac)
+      fresco/prop_ln.v:7089 (Ltac)
+      fresco/prop_ln.v:9018 (Ltac)
+      fresco/prop_ln.v:12171 (Ltac)
   default_autorewrite:
-      frost/prop_ln.v:817 (Ltac)
-      frost/prop_ln.v:1824 (Ltac)
-      frost/prop_ln.v:3602 (Ltac)
-      frost/prop_ln.v:4897 (Ltac)
-      frost/prop_ln.v:6435 (Ltac)
-      frost/prop_ln.v:7090 (Ltac)
-      frost/prop_ln.v:9019 (Ltac)
-      frost/prop_ln.v:12172 (Ltac)
+      fresco/prop_ln.v:817 (Ltac)
+      fresco/prop_ln.v:1824 (Ltac)
+      fresco/prop_ln.v:3602 (Ltac)
+      fresco/prop_ln.v:4897 (Ltac)
+      fresco/prop_ln.v:6435 (Ltac)
+      fresco/prop_ln.v:7090 (Ltac)
+      fresco/prop_ln.v:9019 (Ltac)
+      fresco/prop_ln.v:12172 (Ltac)

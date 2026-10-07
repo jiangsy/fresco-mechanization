@@ -78,7 +78,7 @@ side. It does **not** strip `∀`s. Those fresh flexibles are the `Ξ`.
 
 ---
 
-## 2. The definitional change (DONE — `frost/algo/def_rules.v`)
+## 2. The definitional change (DONE — `fresco/algo/def_rules.v`)
 
 - `a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop`
   — `Θ ⊢ₛ P ≼[m] Q ⤳ Ξ ⨾ P'`
@@ -220,7 +220,7 @@ side condition: `a_wf_pskl_top_guarded` derives it from the paper's own
    never takes that branch — `solve_eq` is a **match**, and both ghost rows
    (`Ghost, q` at `type.ml:412`; `UGhost p, q when is_guarded q` at `:457`,
    and `is_guarded (MFlex _) = true`) precede FlexR at `:466`. Rendered as
-   the premise `nonghost_pskl P` (`frost/def_shapes.v`). It costs
+   the premise `nonghost_pskl P` (`fresco/def_shapes.v`). It costs
    completeness nothing and it keeps `a_solve_eq_hole_subject_inv` — the
    fact the paper uses silently in every `P_i = □` subcase — TRUE.
 3. **The binder rows need `ftvar(Θ)`, and the sibling rows must thread** —
@@ -408,7 +408,7 @@ what P6-Sv's Check row wants.
 **`prop_look_complete_cstr.v` (P6-Cs)** all compile, `Qed`, `Closed under the
 global context`. `a_sub_sound` and the whole soundness chain are unchanged
 and still green
-(`make -j10 -f CoqMakefile frost/algo/prop_soundness_sub.vo`, ~15 s warm).
+(`make -j10 -f CoqMakefile fresco/algo/prop_soundness_sub.vo`, ~15 s warm).
 
 #### ⭐⭐ HOW THE ∀-ROW PAYLOAD-SCOPE OBLIGATION WAS CLOSED — read this first
 
@@ -647,7 +647,7 @@ syntactically so).
 κ-extension kit (`keys`, `keys_eq_dom`, `all_flex_mono`, `all_flex_mono_app`,
 `msubst_pskl_mid_skip`, `msubst_lookup_mid_skip`,
 `msubst_pskl_lookup_congr_ftv`) was **moved upstream** to
-`frost/algo/prop_metasubst.v` — both its old homes sat *below* the file that
+`fresco/algo/prop_metasubst.v` — both its old homes sat *below* the file that
 now needs it.
 
 **In progress**: `a_solve_eq_cv_mono` is restated (`cv_mono_concl` names the
@@ -911,8 +911,8 @@ with `nonghost`), the `Ξ` suffix on all three solving judgements
   `prop_looksub` → `prop_sub_sound` → `prop_decorate_sub` →
   `prop_soundness_sub` before the file you are working on, or you get
   "makes inconsistent assumptions over library". `make -j10 -f CoqMakefile
-  frost/algo/prop_soundness_sub.vo` does the whole chain in ~110 s.
-- ⚙️ Iterate with `coqc -R . src -w -deprecated-hint-without-locality,-omega-is-deprecated frost/algo/<file>.v`
+  fresco/algo/prop_soundness_sub.vo` does the whole chain in ~110 s.
+- ⚙️ Iterate with `coqc -R . src -w -deprecated-hint-without-locality,-omega-is-deprecated fresco/algo/<file>.v`
   on the single file; `make NJOBS=10 -k coq` only for the whole-tree picture.
 - ⚙️ To see what a blanket tactic left open:
   `all: match goal with |- ?g => idtac "LEFT>>>" g end.` before the bullets,

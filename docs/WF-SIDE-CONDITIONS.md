@@ -453,7 +453,7 @@ proof consumes is the GUARDED ghost body of `a_wf_pskl__tophole`, which
 matches the declarative `d_wf_uskl__tophole`.
 
 ⚠️ **Without it the lemma is FALSE — machine-checked** in
-`frost/algo/cex/cex_p6cs_subject_wf.v`:
+`fresco/algo/cex/cex_p6cs_subject_wf.v`:
 `p6cs_without_subject_wf_is_false` refutes the lemma carrying EVERY premise
 except this one (with the conclusion weakened to its three essential
 conjuncts, which only strengthens the refutation), and
@@ -488,7 +488,7 @@ was removed; the proof is unchanged otherwise.
 
 **`Θ ⨟ ∅ ⊢ₚₛᵃ ⌊Q⌋`**, i.e. the solution's counterpart is well formed where
 the solution lives.  Registered 2026-07-30 with `a_sub_complete_check`
-(`frost/algo/prop_sub_complete_thm.v`), which takes it as a hypothesis; the
+(`fresco/algo/prop_sub_complete_thm.v`), which takes it as a hypothesis; the
 P7 bundle will have to carry it on the motive.
 
 **Why it is needed.** The case must move its precision from the solution's `κ`
@@ -511,7 +511,7 @@ is `ForallR`, not `Check`.  That is the paper's own case split.
 
 ## TY ghost-freeness of the SUBJECT (registered 2026-08-03; ⭐ ON THE MOTIVE since the same day)
 
-The P7b motive `sub_complete_concl` (`frost/algo/prop_sub_complete_thm.v`)
+The P7b motive `sub_complete_concl` (`fresco/algo/prop_sub_complete_thm.v`)
 carries
 
     NM = a_sub_mode_ty  ->  uskl_ghost_free R'
@@ -523,7 +523,7 @@ the paper's own reflexive instance `R' := κ⌈P⌉ᵘ` it is ghost-freeness of 
 input `P`.  It is not decoration: it is the last premise of
 `ad_pat_sub_precise_upre_gv`, i.e. P5's precision-substitution transport, and
 P5 threads the very same predicate through
-`frost/algo/prop_sub_complete.v` as a hypothesis of every lemma in the pack.
+`fresco/algo/prop_sub_complete.v` as a hypothesis of every lemma in the pack.
 It is what makes the SWAPPED subject `open Rj ⌈κPa⌉ᵘ` ghost-free, given that a
 TY guess is a TYPE (`pskl_to_uskl_paint_ghost_free`).
 

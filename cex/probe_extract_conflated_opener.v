@@ -1,6 +1,6 @@
 (** PROBE (2026-08-19): ⚠️ THE CONFIGURATION THE COLLECTION'S **CROSS-HALF
     FRESHNESS GUARD** EXCLUDES — and the record of why that guard had to be
-    added (frost/algo/def_rules.v, [a_looksub__arrow] / [a_lookeq__arrow];
+    added (fresco/algo/def_rules.v, [a_looksub__arrow] / [a_lookeq__arrow];
     docs/PAPER-GAPS.md; hand-off §8c.25).
 
     ⚠️ WHAT THE UNGUARDED RULE ADMITTED.  [LE-Arrow] runs BOTH halves at the
@@ -51,19 +51,19 @@
 From Coq Require Import Lists.List.
 From Metalib Require Import Metatheory.
 
-From src Require Import frost.notations.
-From src Require Import frost.ltac_utils.
-From src Require Import frost.coercions.
-From src Require Import frost.def_shapes.
-From src Require Import frost.algo.def_rules.
-From src Require Import frost.ext_algo.notations.
-From src Require Import frost.ext_algo.def_supply.
-From src Require Import frost.ext_algo.def_look.
-From src Require Import frost.ext_algo.def_solve.
-From src Require Import frost.ext_algo.prop_solve.
+From src Require Import fresco.notations.
+From src Require Import fresco.ltac_utils.
+From src Require Import fresco.coercions.
+From src Require Import fresco.def_shapes.
+From src Require Import fresco.algo.def_rules.
+From src Require Import fresco.ext_algo.notations.
+From src Require Import fresco.ext_algo.def_supply.
+From src Require Import fresco.ext_algo.def_look.
+From src Require Import fresco.ext_algo.def_solve.
+From src Require Import fresco.ext_algo.prop_solve.
 
-Open Scope frost_a_scope.
-Open Scope frost_e_scope.
+Open Scope fresco_a_scope.
+Open Scope fresco_e_scope.
 
 (* ===================================================================== *)
 (*  §1  THE TWO HALVES, AND THE GUARD THAT NOW KEEPS THEM APART           *)

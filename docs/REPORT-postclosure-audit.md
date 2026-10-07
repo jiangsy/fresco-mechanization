@@ -45,7 +45,7 @@ Steps 2 and 3 of the suggested order below, plus the README indexing:
   targets directly.  The one live fact in its comment (why refinement's
   turnstile carries `ᵣ`) moved next to the relation in `decl/def_rules.v`.
 - **§3.3** — the three `def_extra.v` files are renamed for what they hold:
-  `frost/def_shapes.v`, `frost/decl/def_rules.v`, `frost/algo/def_rules.v`.
+  `fresco/def_shapes.v`, `fresco/decl/def_rules.v`, `fresco/algo/def_rules.v`.
   120 files carried a reference.  ⚙ The historical `docs/DESIGN-*.md` and
   `docs/REPORT-remech-*.md` keep the old names on purpose — they are dated
   records with line-number citations, not current pointers.
@@ -59,13 +59,13 @@ Steps 2 and 3 of the suggested order below, plus the README indexing:
   with it.  ⚠️ NOT by adding a `_aux` file (that names a role, not a topic, and
   is the `prop_kit.v` mistake again): each lemma went to the file whose subject
   it is.
-  - `frost/algo/prop_flex.v` → **`frost/algo/prop_basic.v`**, the per-layer
-    sibling of `frost/prop_basic.v` and `decl/prop_basic.v`.  Its header
+  - `fresco/algo/prop_flex.v` → **`fresco/algo/prop_basic.v`**, the per-layer
+    sibling of `fresco/prop_basic.v` and `decl/prop_basic.v`.  Its header
     described "soundness of the flexible-variable machinery"; the file holds 77
     lemmas — `a_wf_*`, binds/ftvar plumbing, `a_decls`, `a_isub` reflexivity,
     `rename_aenv`, `a_guess_mono`.  It had become the algo basics file without
     saying so, which is why wf lemmas kept landing in it.
-  - new **`frost/algo/prop_mod_compat.v`** — mode compatibility at BOTH sorts:
+  - new **`fresco/algo/prop_mod_compat.v`** — mode compatibility at BOTH sorts:
     14 lemmas that were spread over FIVE files (the `skmod{SK}` inversions in
     `pat/prop_soundness_pat.v`, the `skmod{TY}` ones in
     `typing/prop_soundness_typing.v`, the monotype-substitution halves in
@@ -73,16 +73,16 @@ Steps 2 and 3 of the suggested order below, plus the README indexing:
     `mod_comp_sk` bridge in `deco_algo/prop_soundness_sub.v`), so half the
     answers came with a theorem attached and the TY question was answered in a
     different file from its SK twin.  ⚙ `mod_comp_ty_tc_inv` stays in
-    `frost/prop_basic.v` (the declarative layer uses it) and the
+    `fresco/prop_basic.v` (the declarative layer uses it) and the
     `mod_comp_*_subst_mono` pair stays with the `is_*_subst_mono` shape lemmas
     it is built from.
   - ⚠️ **An eleventh duplicate, which the name-based scan could not see**:
     `pskl_ghost_free_ptyp` (`sub/prop_soundness_subtag.v`) and
-    `pskl_ghost_free_to_ptyp` (`frost/prop_basic.v`) are the same statement
+    `pskl_ghost_free_to_ptyp` (`fresco/prop_basic.v`) are the same statement
     under two names.  Deleted the former.  §2.3's "one fact, one name" check has
     to be run on STATEMENTS, not names — this one was found only by reading the
     mode-compat cluster.  Also relocated: `subst_ptyp_to_pskl_comm` →
-    `frost/prop_coercions.v`, which is the file that owns conversion identities.
+    `fresco/prop_coercions.v`, which is the file that owns conversion identities.
   - `a_split_wf` → `algo/prop_wf_preservation.v` (it *is* an output-wf lemma);
     `a_split_ty_shape` → beside its SK twin `a_split_sk_shape`;
     `a_isub_strip_var_typ_mid` → beside `uniq_mid_eq`.
@@ -313,7 +313,7 @@ derivable from its own `{{ Θ ⊢ˢᵈ[M] e ⦂ B }}ad` premise, via
 
 ### 2.1 203 zero-reference top-level names ≈ 3900 lines
 
-Nothing in `frost/`, `README.v`, `cex/` or `test/` mentions them outside their
+Nothing in `fresco/`, `README.v`, `cex/` or `test/` mentions them outside their
 own declaration, and none is `Hint`-registered.  Full triaged list:
 [`AUDIT-dead-names.txt`](AUDIT-dead-names.txt).  Distribution (top files):
 
@@ -446,7 +446,7 @@ back.
 Per `CLAUDE.md`'s own rule this is a correctness hazard, not untidiness — one
 added `Require Import` silently changes which one an unqualified `apply` means,
 which has broken this build twice.  Three are clear merges into
-`frost/prop_coercions.v` (`bskl_to_pskl_btyp_to_bskl`,
+`fresco/prop_coercions.v` (`bskl_to_pskl_btyp_to_bskl`,
 `bskl_to_pskl_subst_unit`, `uskl_to_pskl_subst_unit` — all four sites are the
 coercion facts that file was created to own).  Note the tally is now **10**, not
 the 39 recorded in `CLAUDE.md:352`.
@@ -468,7 +468,7 @@ dependency graph; survivor *name* = its own unless another was strictly better
 (retiring four more empty suffixes).  Where the survivor was not visible to its
 users the lemma got a **topical home** rather than an import that inverts the
 layering — which dragged nine further scattered coercion facts down into
-`frost/prop_coercions.v`, none of which could be stated where their dependents
+`fresco/prop_coercions.v`, none of which could be stated where their dependents
 lived.
 
 **Five traps, for whoever runs this again.**
@@ -525,13 +525,13 @@ encoding is admissible.  Suggest a short second index — `README.v` §V
 37 lines, **zero** `Notation` declarations — its own header says every notation
 moved inline to `decl/def_rules.v`.  What remains is two `Require Export`s and
 four empty section headings.  Either delete it (and point its consumers at
-`frost/notations.v` + `decl/def_rules.v`) or rename it to what it now is
+`fresco/notations.v` + `decl/def_rules.v`) or rename it to what it now is
 (a re-export module).  It is currently the only reason a reader looks in two
 places for declarative notations.
 
 ### 3.3 `def_extra.v` names three different things
 
-`frost/def_shapes.v` (shape predicates), `decl/def_rules.v` (908 lines — *the
+`fresco/def_shapes.v` (shape predicates), `decl/def_rules.v` (908 lines — *the
 declarative rules*), `algo/def_rules.v` (1606 lines — *the algorithmic rules*).
 The name is a leftover of the ott convention (`def_ott.v` + hand-written extra)
 and now describes none of them.  `algo_decl/` was already fixed in this spirit at
@@ -544,7 +544,7 @@ Applying the same treatment finishes the job:
 - `algo/def_rules.v` → `algo/def_rules.v` (a split is less attractive: the
   `a_assign`/`a_unify`/`a_consis` and `a_sub`/`a_sub_flex` mutual blocks and the
   `where`-clause notations pin large groups together);
-- `frost/def_shapes.v` → `frost/def_shapes.v` (all 16 `Inductive`s there are
+- `fresco/def_shapes.v` → `fresco/def_shapes.v` (all 16 `Inductive`s there are
   shape/mode predicates).
 
 Mechanical, `make quick`-checkable, and it removes the tree's worst
@@ -555,7 +555,7 @@ has 18 consumers, the `decl/` one none.
 ### 3.4 Notations: the scheme is sound; the docs describe the previous one
 
 The delimiter scheme (`}}d` / `}}ad` / `}}a` / `}}da`, four scopes declared and
-opened together in `frost/notations.v:133–147`) is consistent in the code, and
+opened together in `fresco/notations.v:133–147`) is consistent in the code, and
 the traps are correctly recorded.  No change recommended to the scheme itself.
 But the retired `}}t` spelling still appears in `CLAUDE.md:503` and
 `PROGRESS.md:531,538` (renamed to `}}da` at `93c3624`), so a reader following the
@@ -567,10 +567,10 @@ Paths cited in `CLAUDE.md` / `README.v` / `docs/PAPER-GAPS.md` that do not exist
 Most are historical (retracted `cex/` files), but four are cited as *current
 locations*:
 
-- `frost/prop_etag.v` → `frost/prop_tag.v`  (PAPER-GAPS `:75`, `:99`)
-- `frost/decl/prop_etag_swap.v` → `frost/decl/prop_tag_swap.v`  (`:99`, `:106`, `:112`)
-- `frost/algo/prop_soundness_pat.v` → `frost/algo/pat/prop_soundness_pat.v`
-- `frost/algo/prop_soundness_typing.v` → `frost/algo/typing/prop_soundness_typing.v`
+- `fresco/prop_etag.v` → `fresco/prop_tag.v`  (PAPER-GAPS `:75`, `:99`)
+- `fresco/decl/prop_etag_swap.v` → `fresco/decl/prop_tag_swap.v`  (`:99`, `:106`, `:112`)
+- `fresco/algo/prop_soundness_pat.v` → `fresco/algo/pat/prop_soundness_pat.v`
+- `fresco/algo/prop_soundness_typing.v` → `fresco/algo/typing/prop_soundness_typing.v`
 
 Also: `CLAUDE.md`'s doc-index table links `AGENTS.md`, which the same file's
 header says does not exist; and the References section points at two

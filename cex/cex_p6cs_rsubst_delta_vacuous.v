@@ -31,12 +31,12 @@
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
-Require Import src.frost.notations.
-Require Import src.frost.ltac_utils.
-Require Import src.frost.algo.def_rules.
-Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo.prop_inc.
-Require Import src.frost.algo.sub.look.prop_rsubst.
+Require Import src.fresco.notations.
+Require Import src.fresco.ltac_utils.
+Require Import src.fresco.algo.def_rules.
+Require Import src.fresco.algo.def_meta.
+Require Import src.fresco.algo.prop_inc.
+Require Import src.fresco.algo.sub.look.prop_rsubst.
 
 Set Implicit Arguments.
 

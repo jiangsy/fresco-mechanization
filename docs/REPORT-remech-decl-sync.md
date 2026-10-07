@@ -1,6 +1,6 @@
 # Re-mechanization: decl ↔ paper sync report (2026-07-10)
 
-Scope: `mechanization/frost/{def_ott.v, def_extra.v, predicates.v, decl/def_rules.v}`
+Scope: `mechanization/fresco/{def_ott.v, def_extra.v, predicates.v, decl/def_rules.v}`
 checked judgment-by-judgment against the **finalized** paper
 (`sections/declarative.tex`, `appendices/full-decl-spec.tex`, merge `8dfafca`).
 Policy: the paper is never changed; the mechanization is corrected to match.
@@ -10,7 +10,7 @@ Policy: the paper is never changed; the mechanization is corrected to match.
 **A1. `is_tskl` admitted untagged quantifiers.**
 Paper decorated skeletons (declarative.tex:1796) are
 `ψ ::= 1 | α | ψ→ψ | ∀^ε α.ψ | HoleG | TopHoleG.ψ` — *every* quantifier is
-tagged.  The mech's `is_tskl` (frost/def_shapes.v) had an extra
+tagged.  The mech's `is_tskl` (fresco/def_shapes.v) had an extra
 `is_tskl__all_syn` case accepting the untagged `uskl_all_syn`.  Consequence:
 `d_pat_sub`'s ForallL could instantiate with a ψ containing untagged
 quantifiers whose tags are never recorded in Ψ′ — i.e. guessing a polytype not
@@ -37,7 +37,7 @@ plus a `d_pat__sub` rule gated on `is_base_term`.  Extensionally equivalent
 
 ## B. Algorithmic system (restart, step 2) — gaps found vs finalized paper
 
-The old `frost/algo/def_rules.v` (and the newer `mech-algo-props` variant)
+The old `fresco/algo/def_rules.v` (and the newer `mech-algo-props` variant)
 were both out of sync with the finalized `appendices/full-algo-spec.tex`:
 
 **B1. `Δ₁ ∣ Δ₂` missing from algorithmic consistency.**  The finalized paper
@@ -129,5 +129,5 @@ Order (leaf → root), strictly following the paper's own proofs:
 
 Legacy proof files that depended on the pre-sync definitions were moved to
 `*.v.legacy` (git-tracked, out of the build) pending their bottom-up redo:
-all old `frost/algo/*.v` except the new `def_extra.v`, plus the decl prop
+all old `fresco/algo/*.v` except the new `def_extra.v`, plus the decl prop
 files that reference the removed `d_pat__sub`/`is_base_term`/`is_tskl__all_syn`.

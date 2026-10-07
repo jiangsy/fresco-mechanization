@@ -44,14 +44,14 @@
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
-Require Import src.frost.notations.
-Require Import src.frost.coercions.
-Require Import src.frost.def_shapes.
-Require Import src.frost.prop_basic.
-Require Import src.frost.decl.def_rules.
-Require Import src.frost.algo.def_rules.
-Require Import src.frost.algo.def_meta.
-Require Import src.frost.algo_decl.def_consis_refine.
+Require Import src.fresco.notations.
+Require Import src.fresco.coercions.
+Require Import src.fresco.def_shapes.
+Require Import src.fresco.prop_basic.
+Require Import src.fresco.decl.def_rules.
+Require Import src.fresco.algo.def_rules.
+Require Import src.fresco.algo.def_meta.
+Require Import src.fresco.algo_decl.def_consis_refine.
 
 (* The fill: ∀◇(□ → □).  Well-formed at the empty Δ: the tophole's body
    is an arrow (hence guarded), and the arrow's components are holes. *)

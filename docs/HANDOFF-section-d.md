@@ -519,7 +519,7 @@ and that FINAL `_` **is** `ad_pat_sub_gv`'s leaf premise
 (`ad_refine_pskl_f Δ2 Θ1 Δ2 ⌊R⌋ˢ P'`, plain at `Δ2 = ∅` via
 `ad_refine_pskl_f_forget`).  It is being dropped, not missing.
 
-**Row-by-row plan** (`frost/algo/prop_soundness_subtag.v`, the ~820-line
+**Row-by-row plan** (`fresco/algo/prop_soundness_subtag.v`, the ~820-line
 bundle at :466–:1286):
 
 | row | change |
@@ -639,13 +639,13 @@ two per head plus the driver:
 adds `bskl_to_pskl_subst_mono` and ⭐ `ftag_in_uskl_subst_mono` (a MONOTYPE's
 painting is tag-free, so substituting it cannot add tags — the `ForallL`
 hygiene premise for the third time).  ⚠️ `guarded_pskl_subst` had to be
-written FULLY QUALIFIED (`src.frost.algo.prop_pat_sub.guarded_pskl_subst`):
+written FULLY QUALIFIED (`src.fresco.algo.prop_pat_sub.guarded_pskl_subst`):
 the bare name resolves to prop_looksub.v's homonym here.
 
 ⚙ Also landed in §1g: `bskl_to_pskl_subst_unit` and ⭐
 `ftag_in_uskl_subst_unit` (substituting `1` cannot change TAGS either — the
 `ForallL` hygiene premise again).  ⚠️ §1g forced
-`Require Import src.frost.decl.prop_skeleton` into this file (for
+`Require Import src.fresco.decl.prop_skeleton` into this file (for
 `guarded_pskl_subst_unit`); it is placed EARLY on purpose, so the later
 imports keep winning the homonym races §1e ran into.
 
@@ -824,7 +824,7 @@ Do that between 2 and 3.
 
 ## 7. thm:sound-skeleton-inference — ✅ CLOSED (2026-08-06, fifth pass)
 
-`a_pat_sound` (`frost/algo/prop_soundness_pat.v` §5) is **Qed** and *Closed
+`a_pat_sound` (`fresco/algo/prop_soundness_pat.v` §5) is **Qed** and *Closed
 under the global context*; `make coq` clean; `Check`ed and audited in
 `README.v`.  §7.3 records how its last piece — AbsAnno's refinement-target
 transport — was closed.
@@ -985,7 +985,7 @@ this transport rather than rebuilding it.**
 
 ### 7.5 thm:sound-type-inference — ✅ CLOSED (2026-08-06, eighth pass)
 
-`a_typing_sound` (`frost/algo/prop_soundness_typing.v` §13) is **Qed and
+`a_typing_sound` (`fresco/algo/prop_soundness_typing.v` §13) is **Qed and
 axiom-free**, `Check`ed and `Print Assumptions`-audited in `README.v` beside
 `a_pat_sound`.  The statement is §7.5's target plus ONE conjunct:
 
@@ -1033,7 +1033,7 @@ theorems.**
 
 ### 7.5-history What was next — thm:sound-type-inference (STARTED)
 
-`frost/algo/prop_soundness_typing.v` (NEW) holds the kit so far, all Qed and
+`fresco/algo/prop_soundness_typing.v` (NEW) holds the kit so far, all Qed and
 axiom-free.  The statement to aim at is theorem 1's mirror, one layer up
 (paper: "our goal is to show `typp[M]{Θ1}{M}{bid A}` where
 `Θ1 ⊢ inh{P} ⊳ bid{A}` and `inc{Θ0}{Θ1}`"):

@@ -29,7 +29,7 @@
     ⚠️ This is the paper's own system, not an encoding artefact:
     [U-FlexL] / [U-FlexR] carry only [nonflex{P_0}] / [nonflex{P}]
     (algorithmic.tex:757, :764) and [U-GhostR] only
-    [Δ1 ∩ ftv(P) = ∅] (:782).  [frost/algo]'s twin is identical
+    [Δ1 ∩ ftv(P) = ∅] (:782).  [fresco/algo]'s twin is identical
     (def_rules.v:1127-1137).
 
     WHY IT BREAKS THE SCOPED DESIGN.  The divergence is
@@ -71,20 +71,20 @@ Require Import Coq.Bool.Sumbool.
 Require Import Metalib.Metatheory.
 From Equations Require Import Equations.
 
-Require Import src.frost.notations.
-Require Import src.frost.coercions.
-Require Import src.frost.def_shapes.
-Require Import src.frost.algo.def_rules.
-Require Import src.frost.ext_algo.notations.
-Require Import src.frost.ext_algo.def_supply.
-Require Import src.frost.ext_algo.def_guess.
-Require Import src.frost.ext_algo.def_consis.
-Require Import src.frost.ext_algo.def_order.
-Require Import src.frost.ext_algo.prop_termination.
-Require Import src.frost.ext_algo.def_consis_impl.
+Require Import src.fresco.notations.
+Require Import src.fresco.coercions.
+Require Import src.fresco.def_shapes.
+Require Import src.fresco.algo.def_rules.
+Require Import src.fresco.ext_algo.notations.
+Require Import src.fresco.ext_algo.def_supply.
+Require Import src.fresco.ext_algo.def_guess.
+Require Import src.fresco.ext_algo.def_consis.
+Require Import src.fresco.ext_algo.def_order.
+Require Import src.fresco.ext_algo.prop_termination.
+Require Import src.fresco.ext_algo.def_consis_impl.
 
-Open Scope frost_a_scope.
-Open Scope frost_e_scope.
+Open Scope fresco_a_scope.
+Open Scope fresco_e_scope.
 
 (** The context: one UNDEFINED flexible, which is all the divergence
     needs.  [aenv_defs_mono] holds of it, so the runner's precondition

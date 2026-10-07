@@ -45,20 +45,20 @@
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
-Require Import src.frost.notations.
-Require Import src.frost.ltac_utils.
-Require Import src.frost.def_shapes.
-Require Import src.frost.coercions.
-Require Import src.frost.prop_coercions.
-Require Import src.frost.decl.def_rules.
-Require Import src.frost.decl.prop_wellformed.
-Require Import src.frost.algo.def_rules.
-Require Import src.frost.algo_decl.def_consis_refine.
-Require Import src.frost.deco_algo.def_decorated.
-Require Import src.frost.algo_decl.def_subtyping.
-Require Import src.frost.algo_decl.def_typing.
-Require Import src.frost.algo.pat.prop_soundness_pat.   (* a_wf_exp *)
-Require Import src.frost.algo_decl.prop_conserv.
+Require Import src.fresco.notations.
+Require Import src.fresco.ltac_utils.
+Require Import src.fresco.def_shapes.
+Require Import src.fresco.coercions.
+Require Import src.fresco.prop_coercions.
+Require Import src.fresco.decl.def_rules.
+Require Import src.fresco.decl.prop_wellformed.
+Require Import src.fresco.algo.def_rules.
+Require Import src.fresco.algo_decl.def_consis_refine.
+Require Import src.fresco.deco_algo.def_decorated.
+Require Import src.fresco.algo_decl.def_subtyping.
+Require Import src.fresco.algo_decl.def_typing.
+Require Import src.fresco.algo.pat.prop_soundness_pat.   (* a_wf_exp *)
+Require Import src.fresco.algo_decl.prop_conserv.
 Require Import src.cex.cex_ad_pat_join_not_leaf_valid.
 
 (** ⚙ NO [Set Implicit Arguments] — prop_conserv.v is compiled without it

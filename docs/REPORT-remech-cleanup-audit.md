@@ -2,7 +2,7 @@
 
 **Date** 2026-08-08 · **Tree state** `8ec2af7`, 39/39 axiom-free, zero
 `Admitted`, zero `Axiom` (verified: `grep -rn "^Admitted\|^Abort\|Axiom "
-frost/` is empty; the two `Admitted` hits in comments are HISTORY notes about
+fresco/` is empty; the two `Admitted` hits in comments are HISTORY notes about
 removed developments).
 
 > ## ✅ PHASE 1 IS DONE (2026-08-09) — build green, 39/39 `Closed under the global context`
@@ -78,7 +78,7 @@ removed developments).
 > | | |
 > |---|---|
 > | deleted | **17** duplicate declarations — 6 exact, 9 alpha-variants, 2 (`a_inc_dom_flex`, `a_inc_lookup_mono`) after adding an explicit `prop_compose` import |
-> | moved | `is_sskl_pskl_to_bskl_syn` → `frost/prop_basic.v` (it was proved in two files that don't import each other, so it could not be deduped in place) |
+> | moved | `is_sskl_pskl_to_bskl_syn` → `fresco/prop_basic.v` (it was proved in two files that don't import each other, so it could not be deduped in place) |
 > | renamed | **11** — the 10 where the two lemmas genuinely differ, plus `a_wf_aenv_def_ftv_dom` → `a_wf_aenv_def_ftv_dom_in` (below) |
 > | result | `algo/prop_completeness_look.v`'s ⚠️⚠️ blocker is cleared; its header now records that flipping consumers onto the facade is safe. **The flip itself (§8.1d) is NOT done** — see Remaining. |
 >
@@ -236,7 +236,7 @@ removed developments).
 > So `solve_notin_auto` **dispatches on the shape** — it tests whether the
 > context holds two freshness hypotheses about atoms other than the goal's
 > subject — and then applies the matching order.  It equals hand-picking at
-> every site.  Promoted to `frost/ltac_utils.v` and swept across **934**
+> every site.  Promoted to `fresco/ltac_utils.v` and swept across **934**
 > `ltac:(…fsetdec)` side conditions in 35 files.
 >
 > ### Result
@@ -260,7 +260,7 @@ removed developments).
 >
 > | | |
 > |---|---|
-> | §5.4 | **`frost/prop_coercions.v` created** (409 lines, 38 lemmas) — the conversion property layer, gathered from ELEVEN files.  `coercions.v` is now definitions-only; `prop_basic.v` is the predicate layer and `Require Export`s the new file, so its ~99 consumers needed no change |
+> | §5.4 | **`fresco/prop_coercions.v` created** (409 lines, 38 lemmas) — the conversion property layer, gathered from ELEVEN files.  `coercions.v` is now definitions-only; `prop_basic.v` is the predicate layer and `Require Export`s the new file, so its ~99 consumers needed no change |
 > | naming | the `_thm` suffix retired from all 5 names that carried it |
 > | litter | 77 orphaned artifacts removed; **`make tidy`** added; `make clean`'s depth bug fixed |
 > | dedupe | 53 → **39** duplicated names |
@@ -413,7 +413,7 @@ removed developments).
 >    reports only that no clause matched.  Read the error as "pattern matched
 >    but body failed" before doubting the pattern.
 > 3. **A stale `.vo` let a dead import resolve.**  Three `cex/` files still
->    imported `prop_kit` (I had grepped `frost/` only), and the leftover
+>    imported `prop_kit` (I had grepped `fresco/` only), and the leftover
 >    `prop_kit.vo` meant they *resolved* instead of failing cleanly — surfacing
 >    much later as "makes inconsistent assumptions over library".  `make tidy`
 >    removes exactly this; run it after ANY rename.
@@ -486,7 +486,7 @@ removed developments).
 >
 > | fact | resolution |
 > |---|---|
-> | `mod_comp_ty_tc_inv` | lifted to `frost/prop_basic.v` (its predicate is declared in `frost/def_shapes.v`) |
+> | `mod_comp_ty_tc_inv` | lifted to `fresco/prop_basic.v` (its predicate is declared in `fresco/def_shapes.v`) |
 > | `a_wf_ptyp_ftv_dom`, `a_binds_tvar_in_dom`, `a_scope_pskl_ftv_dom` | lifted to `algo/prop_flex.v`, joining `a_wf_ptyp_ftv_tvarish` — they are ONE "wf/scope ⟹ ftvar ⊆ dom" family that had been split across four mutually-invisible files |
 > | `ad_pat_sub_gv_psi_cong` | **could not be lifted** — see below; deduped by IMPORT instead |
 > | `a_wf_aenv_uniq_local` ×2 | a THIRD copy of `prop_flex.v`'s `a_wf_aenv_uniq`, byte-identical, under a different name.  Deleted; 11 files repointed |
@@ -666,7 +666,7 @@ also removes 20 lines of *definition* from a file that should hold rules.
 
 `prop_swap.v` (2392 lines) is the type-variable equivariance kit.  The
 **term**-variable half was built later and lives inside
-[prop_completeness_pat.v:996-1330](../frost/algo/prop_completeness_pat.v#L996-L1330)
+[prop_completeness_pat.v:996-1330](../fresco/algo/prop_completeness_pat.v#L996-L1330)
 under a `K6` banner — nine lemmas that are pure kit material:
 
 ```
@@ -806,7 +806,7 @@ binder, uniformly with the check rows below" — a uniformity `a_pat` never got.
 
 The cost of the asymmetry is already paid and visible: because `a_pat` is
 cofinite while the IH delivers one instance,
-[prop_completeness_pat.v:961-976](../frost/algo/prop_completeness_pat.v#L961-L976)
+[prop_completeness_pat.v:961-976](../fresco/algo/prop_completeness_pat.v#L961-L976)
 records a ⛔ block explaining that the four rows "need a kit piece that does not
 exist yet" — the K6 rename kit (§1.2) exists *only* to rebuild the cofinite
 family from an instance.  Going exists-fresh deletes that need on the
@@ -881,7 +881,7 @@ subject first; every algorithmic counterpart puts the mode first.  Same concept,
 opposite convention, 106 combined call sites.  Naming is inconsistent too:
 `mod_comp_ty` / `mod_comp_sk` vs `a_ty_mode_compat` / `a_sk_mode_compat` — the
 words are in the other order *and* the decl pair has no `d_` prefix while
-living in the shared `frost/def_shapes.v`.
+living in the shared `fresco/def_shapes.v`.
 
 **(b) `fn_arrow_shape` and `fn_arrow_shape_pskl` are the same relation.**
 `fn_arrow_shape_of_pskl` (`prop_ty_core.v:1233`) proves one direction; the
@@ -931,7 +931,7 @@ changes shape.  Real payoff, real cost — schedule it, don't slip it in.
 
 ### 5.1 The conversion functions are not all in `coercions.v`
 
-`frost/coercions.v` defines 14 conversions + `dbind_to_pskl` and declares 4
+`fresco/coercions.v` defines 14 conversions + `dbind_to_pskl` and declares 4
 `Coercion`s (`utyp>->btyp`, `btyp>->ptyp`, `bskl>->pskl`, `uskl>->bskl`).  But:
 
 | function | defined in | note |
@@ -940,8 +940,8 @@ changes shape.  Real payoff, real cost — schedule it, don't slip it in.
 | `ptyp_to_uskl_syn` | `algo_decl/def_consis_refine.v:40` | `= bskl_to_uskl ∘ ptyp_to_bskl_syn` |
 | `pskl_to_uskl`, `uskl_to_pskl` | `algo_decl/` + `deco_algo/` | ~20 lemmas about them there |
 
-So the canonical chain is split across `frost/coercions.v` and
-`frost/algo_decl/def_consis_refine.v`, and a reader looking for "how do I get
+So the canonical chain is split across `fresco/coercions.v` and
+`fresco/algo_decl/def_consis_refine.v`, and a reader looking for "how do I get
 from `ptyp` to `uskl`" finds two of the three answers in the wrong file.
 
 ### 5.2 Two conversions are dead
@@ -974,12 +974,12 @@ equal, and the tree proves it — but the `syn` case lives at
 `algo/prop_soundness_pat.v:900` and the `inh` case at
 `algo/prop_soundness_typing.v:72`, two files that have no reason to own a
 commuting square.  The retractions (`bskl_to_pskl_pskl_to_bskl_{syn,inh}`,
-`btyp_to_ptyp_ptyp_to_btyp_{syn,inh}`) are in `frost/prop_basic.v`; the
+`btyp_to_ptyp_ptyp_to_btyp_{syn,inh}`) are in `fresco/prop_basic.v`; the
 `_open`/`_open_rec` squares are split between `coercions.v` and `prop_basic.v`;
 `uskl_to_pskl_pskl_to_uskl` is in `deco_algo/prop_decorate.v:50`.
 
 **Recommendation (A/B).  This is the single best cleanup in the report.**
-Create `frost/prop_coercions.v` holding, for the six sorts, exactly:
+Create `fresco/prop_coercions.v` holding, for the six sorts, exactly:
 retractions, `open`/`open_rec` commutations, `subst` commutations, `lc`
 transport, `ftvar` transport, and the composite squares.  Then `coercions.v` is
 definitions only and `prop_basic.v` is predicates only.  It also fixes five of
@@ -990,7 +990,7 @@ the duplicated names in §8 at the same time (`bskl_to_pskl_open{,_rec}`,
 
 ### 5.5 The predicate layer
 
-`frost/def_shapes.v` holds 6 `guarded_*` (one per sort), 5 `is_*` colour
+`fresco/def_shapes.v` holds 6 `guarded_*` (one per sort), 5 `is_*` colour
 predicates, `mono_ptyp`, `nonghost_pskl`, `is_value`, and 2 `*_ghost_free`
 `Fixpoint`s.  This is well organised.  Two notes:
 
@@ -1052,7 +1052,7 @@ named correctly (`subst_ptyp_in_ptyp`, `subst_btyp_in_btyp`, …).
 
 **Cost:** 661 occurrences tree-wide, 540 of them in hand-written files.  But the
 name is unique, so it is a one-line ott edit + `make ott lngen` +
-`sed -i 's/subst_uskl_in_uskl/subst_uskl_in_uskl/g'` over `frost/`.  Grade **B**
+`sed -i 's/subst_uskl_in_uskl/subst_uskl_in_uskl/g'` over `fresco/`.  Grade **B**
 — wide but the compiler verifies it completely.
 
 Also in that block: `single e Xpt :: subst_typ_in` is **inert** — ott takes the
@@ -1107,7 +1107,7 @@ resolve to a *different* `foo` depending on import order.  The full list is
 reproducible with:
 
 ```sh
-find frost -name '*.v' ! -name 'prop_ln.v' ! -name 'def_ott.v' -exec \
+find fresco -name '*.v' ! -name 'prop_ln.v' ! -name 'def_ott.v' -exec \
   grep -HnE "^(Lemma|Theorem|Corollary|Definition|Fixpoint|Inductive) " {} + \
 | sed -E 's/^([^:]+):([0-9]+):[A-Za-z ]+ +([A-Za-z_0-9'"'"']+).*/\3\t\1:\2/' \
 | sort | awk -F'\t' '{c[$1]++; l[$1]=l[$1]" "$2} END{for(n in c) if(c[n]>1) print n, l[n]}'
@@ -1126,7 +1126,7 @@ because lemmas proved about one copy do not `apply` to the other:
 
 **28 of the 82 involve the `completeness_look/` cluster**, and this is exactly
 what blocks the facade that is already written.
-[algo/prop_completeness_look.v](../frost/algo/prop_completeness_look.v) says so
+[algo/prop_completeness_look.v](../fresco/algo/prop_completeness_look.v) says so
 in its own header:
 
 > ⚠️⚠️ **DO NOT point an existing consumer at this file yet.** … the algo layer
@@ -1164,10 +1164,10 @@ app_mid_inv, app_mid_uniq_split, in_dom_app_r, atoms_inter_empty_pointwise,
 notin_add_atom, notin_union_both, notin_ftvar_* (×6), dom_* (×4), …
 ```
 
-`frost/ltac_utils.v` is 83 lines and holds only tactics; there is no
-`frost/prop_aenv.v`.
+`fresco/ltac_utils.v` is 83 lines and holds only tactics; there is no
+`fresco/prop_aenv.v`.
 
-**Recommendation (B).**  Create `frost/prop_aenv.v` (or extend `prop_basic.v`)
+**Recommendation (B).**  Create `fresco/prop_aenv.v` (or extend `prop_basic.v`)
 directly above the algo layer and move the sort-agnostic ones there.  This kills
 3 more duplicated names and stops the next campaign from re-deriving
 `binds_insert_mid` for the third time.
@@ -1224,8 +1224,8 @@ serves — that is the information needed to eventually break it up.
 **Phase 2 — mechanical, compiler-verified (grade B, ~2-3 days).**
 8. **§8.1 the 28 `completeness_look/` duplicates**, then flip
    `prop_completeness_sub_gen.v` to the facade.  Highest value.
-9. §5.4 create `frost/prop_coercions.v`; this closes ~8 more duplicates.
-10. §8.2 create `frost/prop_aenv.v`; closes 3 more.
+9. §5.4 create `fresco/prop_coercions.v`; this closes ~8 more duplicates.
+10. §8.2 create `fresco/prop_aenv.v`; closes 3 more.
 11. §5.3 name the composite chains, sweep the ~90 inline uses.
 12. §7.1 `subst_uskl_in_uskl` → `subst_uskl_in_uskl` (ott + sed, 540 sites).
 13. §4(a) collapse `fn_arrow_shape` onto `fn_arrow_shape_pskl`.

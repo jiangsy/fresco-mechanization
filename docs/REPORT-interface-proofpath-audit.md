@@ -3,7 +3,7 @@
 Scope: the campaign's DISPLAYED SURFACE (README §VI, the extraction
 exports, the headline statement shapes) and the PROOF PATH behind it
 (`ext_algo/prop_lift.v` §13, `ext_algo/prop_run_corollaries.v`, the
-conservativity bridge).  Method: consumer-count greps over `frost/` +
+conservativity bridge).  Method: consumer-count greps over `fresco/` +
 `README.v`, per-copy duplicate scan, row-size measurement (`awk` over
 §13's case markers), `.aux` proof timings.  Every claim below was
 CHECKED, not recalled; the commands are one grep away.
@@ -18,15 +18,15 @@ user's call) / **KEEP** (audited and deliberately left alone).
 | entry | reach | subsumed by |
 |---|---|---|
 | `e_typing_dec_init` | threaded relation, ALL modes and `P0` | nothing — keep |
-| `e_typing_run_complete_decl_infer` | paper judgement, TI at ◇ | `frost_infer`'s left component + `frost_infer_complete` |
-| `d_typing_infer_dec` | paper judgement, TI at ◇ | the `sumbool` projection of `frost_infer` |
-| `frost_infer` | paper judgement + extracted artifact | — |
+| `e_typing_run_complete_decl_infer` | paper judgement, TI at ◇ | `fresco_infer`'s left component + `fresco_infer_complete` |
+| `d_typing_infer_dec` | paper judgement, TI at ◇ | the `sumbool` projection of `fresco_infer` |
+| `fresco_infer` | paper judgement + extracted artifact | — |
 
 Shrink the README to TWO entries: `e_typing_dec_init` (the general,
-threaded claim) and `frost_infer` (the paper-facing, extracted claim).
+threaded claim) and `fresco_infer` (the paper-facing, extracted claim).
 The two demoted corollaries STAY in the tree — `…decl_infer` is
-`frost_infer`'s workhorse; `d_typing_infer_dec` should then be
-re-derived FROM `frost_infer` (see P5).  Saves 2 entries ≈ 35 lines of
+`fresco_infer`'s workhorse; `d_typing_infer_dec` should then be
+re-derived FROM `fresco_infer` (see P5).  Saves 2 entries ≈ 35 lines of
 the file a reader is asked to read in one sitting.  Cost: README-only.
 
 ### I2. **DO** — name the entry supply
@@ -47,14 +47,14 @@ the displayed surface.
 `{{ nil ⊢ᵉ e }}d` (+ `d_wf_ptyp`).  Switching §1/§2 to the d-side is a
 3-line prelude each (the nil bridges) and makes the file's interface
 uniform.  Cost: statement churn on two landed corollaries; no ripple
-(`frost_infer` derives its own a-side wf).  Not displayed in README
+(`fresco_infer` derives its own a-side wf).  Not displayed in README
 (prose-cited only), hence OPT not DO.
 
 ### I4. **KEEP** (with one note) — the undisplayed and the unconsumed
 
 - `e_typing_run_complete_decl_check`: 0 consumers, prose-cited in
   README.  It is the check-mode RECORD of §5; fine as tree-level.
-- `frost_infer_complete`: prose-cited; the left-completeness guarantee
+- `fresco_infer_complete`: prose-cited; the left-completeness guarantee
   is reader-facing (McTT keeps its analogue undisplayed too).
 - ⚠️ `a_wf_exp_to_d` (prop_conserv.v): ZERO consumers anywhere.  It is
   the conservativity CONVERSE, there because §2 of that file proves
@@ -62,7 +62,7 @@ uniform.  Cost: statement churn on two landed corollaries; no ripple
   the `*_no_loss` sense (its consumer is the reader).  Add the
   standing one-line "do not orphan-sweep" note; do not delete.
 
-### I5. **KEEP** — `frost_infer`'s run-equation field
+### I5. **KEEP** — `fresco_infer`'s run-equation field
 
 Costs ~4 display lines; buys provenance (the answer IS the runner's)
 and composability (any theorem about `e_typing_run` applies to the
@@ -93,7 +93,7 @@ false shrink.
 One fact, TWO files: `ext_algo/prop_solve_det.v` AND
 `algo/typing/prop_completeness_typing.v` — the tree's own comment at
 prop_solve_det.v:1006 already says it belongs in
-`frost/prop_coercions.v` (the designated home, beside
+`fresco/prop_coercions.v` (the designated home, beside
 `ptyp_to_pskl_open`).  Consumers today: prop_lift ×3, prop_solve_rel
 ×1, plus in-file uses.  Action: move to prop_coercions.v, delete both
 copies; names are identical so no consumer edits.  Cost: ⚠️
@@ -139,11 +139,11 @@ rule before splitting (the ⚠️ DO-NOT-MERGE doctrine, run in reverse).
 Matches TODO.md's "build time optimization"; measure first — 161 s is
 mid-pack, not the tree's tail.
 
-### P5. **DO** (bundle with I1) — derive `d_typing_infer_dec` from `frost_infer`
+### P5. **DO** (bundle with I1) — derive `d_typing_infer_dec` from `fresco_infer`
 
-Its current proof re-runs `frost_infer`'s case analysis (destruct the
-runner, re-derive both branches).  Three lines via `frost_infer` make
-the dependency DAG linear: `…decl_infer` → `frost_infer` →
+Its current proof re-runs `fresco_infer`'s case analysis (destruct the
+runner, re-derive both branches).  Three lines via `fresco_infer` make
+the dependency DAG linear: `…decl_infer` → `fresco_infer` →
 `d_typing_infer_dec`.
 
 ### P6. **KEEP** — audited and load-bearing, do not "clean"
@@ -157,7 +157,7 @@ the dependency DAG linear: `…decl_infer` → `frost_infer` →
 
 ### P7. Documentation debt (no code)
 
-`d_wf_exp`, `frost_infer`, and the decidability composition have no
+`d_wf_exp`, `fresco_infer`, and the decidability composition have no
 PROGRESS.md Part 1 rows yet; `a_wf_exp_to_d` needs its keep-note (I4).
 
 ## STATUS (updated 2026-08-22, after execution)
@@ -166,7 +166,7 @@ PROGRESS.md Part 1 rows yet; `a_wf_exp_to_d` needs its keep-note (I4).
 |---|---|---|
 | I1 README 4 → 2 entries | **DONE** | `ab916f3`; 36 → 34 entries, −22 lines |
 | I2 name the entry supply | **DONE** | `ab916f3`; 19 sites → `entry_supply`, and the extracted OCaml reads better for it |
-| P5 derive `d_typing_infer_dec` | **DONE** | `ab916f3`; §6/§7 swapped, 3 lines off `frost_infer` |
+| P5 derive `d_typing_infer_dec` | **DONE** | `ab916f3`; §6/§7 swapped, 3 lines off `fresco_infer` |
 | P1 `ptyp_to_pskl_close` duplicate | **DONE** | `ab916f3`; moved to `prop_coercions.v`, both copies gone |
 | P4 split `prop_lift.v` | **DONE** | §13 → `prop_lift_typing.v`; see B4 |
 | I3 §1/§2 hypothesis uniformity | OPEN (OPT) | not done — statement churn on two landed corollaries |
@@ -174,7 +174,7 @@ PROGRESS.md Part 1 rows yet; `a_wf_exp_to_d` needs its keep-note (I4).
 | P2a restrict-prelude factoring | **DROPPED** | measured at −69 lines (0.5%); see B5 |
 | P2b row-core merge | OPEN (OPT) | ~450 lines; the only part of P2 whose size justifies the risk |
 | P3 drop the derivable conjunct | OPEN (OPT-small) | bundle with any future §13 touch |
-| P7 documentation debt | OPEN | PROGRESS.md Part 1 rows for `d_wf_exp` / `frost_infer` |
+| P7 documentation debt | OPEN | PROGRESS.md Part 1 rows for `d_wf_exp` / `fresco_infer` |
 
 ## Suggested batches
 
@@ -276,7 +276,7 @@ path drops by**):
 
 | file | proof time | path gain if free |
 |---|---|---|
-| `frost/prop_ln.v` | 59.6 s | **59.6 s** — but lngen-GENERATED |
+| `fresco/prop_ln.v` | 59.6 s | **59.6 s** — but lngen-GENERATED |
 | `ext_algo/prop_lift.v` | 42.4 s | 31.2 s |
 | `consis/prop_soundness_consis.v` | 33.1 s | **33.1 s** |
 | `sub/look/prop_eq_var.v` | 28.5 s | **28.5 s** |
@@ -373,7 +373,7 @@ ALONE with `-time` produced a completely different picture.
 | `algo/prop_wf_preservation.v` | **117.8 s** | **13.9 s** | **−88%** |
 | `algo/sub/prop_completeness_sub_gen.v` | **108.6 s** | **40.8 s** | **−62%** |
 | `ext_algo/prop_lift.v` | 64 s | — | (next) |
-| `frost/prop_ln.v` | 60 s | — | lngen-GENERATED |
+| `fresco/prop_ln.v` | 60 s | — | lngen-GENERATED |
 | `algo/consis/prop_soundness_consis.v` | 47.1 s | 44.7 s | −5% |
 | `algo/consis/prop_completeness_consis.v` | 35.8 s | 33.1 s | −8% |
 | `algo/typing/prop_completeness_typing.v` | 23.0 s | — | |

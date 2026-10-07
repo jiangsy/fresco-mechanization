@@ -1,10 +1,10 @@
-Handover — Frost mechanization: CLOSE subtyping completeness.  Supersedes
+Handover — Fresco mechanization: CLOSE subtyping completeness.  Supersedes
 HANDOFF-completeness-repair.md (its TASK 1 landed; its TASK 2 verdict was
 retracted; its TASK 3 is still the endgame).  FOUR tasks, in strict order.
 
 READ FIRST: mechanization/CLAUDE.md; memory `remech-reachable-incompleteness`
 (this is the current front — read its RETRACTION and LESSON sections, they
-are the two wrong turns already paid for); `frost/algo/cex/probe_double_occ_run.v`
+are the two wrong turns already paid for); `fresco/algo/cex/probe_double_occ_run.v`
 HEADER + `p6l_look_completeness_fails` (the central document);
 docs/PAPER-GAPS.md's two 2026-08-03 entries (the `lemma:complete-look`
 falsity, and the retraction below it); DESIGN-completeness-subtyping.md
@@ -57,7 +57,7 @@ REPAIR + DOCUMENT (CLAUDE.md's rule), not to transcribe.
 TASK A — DECIDE REACHABILITY.  This gates everything else.
 ⭕ PARTIALLY SETTLED 2026-08-04 — read this box first
 ================================================================
-`frost/algo/cex/probe_payload_reachability.v` (Qed, axiom-free; DESIGN
+`fresco/algo/cex/probe_payload_reachability.v` (Qed, axiom-free; DESIGN
 §14.10) settles conjunct (2) below and PINS THE SEARCH:
 
  · `a_sub_sk_no_spine_all` — at the SK sort, with a mode-compatible

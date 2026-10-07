@@ -55,24 +55,24 @@
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
-Require Import src.frost.notations.
-Require Import src.frost.coercions.
-Require Import src.frost.def_shapes.
-Require Import src.frost.algo.def_rules.
-Require Import src.frost.algo.prop_swap.
-Require Import src.frost.ext_algo.notations.
-Require Import src.frost.ext_algo.def_supply.
-Require Import src.frost.ext_algo.def_guess.
-Require Import src.frost.ext_algo.def_consis.
-Require Import src.frost.ext_algo.def_look.
-Require Import src.frost.ext_algo.def_solve.
-Require Import src.frost.ext_algo.def_extract.
-Require Import src.frost.ext_algo.def_sub.
-Require Import src.frost.ext_algo.def_pat.
-Require Import src.frost.ext_algo.prop_solve_det.
+Require Import src.fresco.notations.
+Require Import src.fresco.coercions.
+Require Import src.fresco.def_shapes.
+Require Import src.fresco.algo.def_rules.
+Require Import src.fresco.algo.prop_swap.
+Require Import src.fresco.ext_algo.notations.
+Require Import src.fresco.ext_algo.def_supply.
+Require Import src.fresco.ext_algo.def_guess.
+Require Import src.fresco.ext_algo.def_consis.
+Require Import src.fresco.ext_algo.def_look.
+Require Import src.fresco.ext_algo.def_solve.
+Require Import src.fresco.ext_algo.def_extract.
+Require Import src.fresco.ext_algo.def_sub.
+Require Import src.fresco.ext_algo.def_pat.
+Require Import src.fresco.ext_algo.prop_solve_det.
 
-Open Scope frost_a_scope.
-Open Scope frost_e_scope.
+Open Scope fresco_a_scope.
+Open Scope fresco_e_scope.
 
 (** The context after (1)–(2): y at skeleton ◇ (the argument's own binder),
     f at the guessed arrow type, then the guess's two deposited flexibles. *)

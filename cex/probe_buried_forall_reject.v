@@ -56,12 +56,12 @@
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
-Require Import src.frost.notations.
-Require Import src.frost.def_shapes.
-Require Import src.frost.algo.def_rules.
-Require Import src.frost.algo.prop_basic.
+Require Import src.fresco.notations.
+Require Import src.fresco.def_shapes.
+Require Import src.fresco.algo.def_rules.
+Require Import src.fresco.algo.prop_basic.
 
-Open Scope frost_a_scope.
+Open Scope fresco_a_scope.
 
 (** ⌈∀a.∀d.(1 → ∀e.a)⌉ — the subject, closed. *)
 Definition probe_root : pskl :=

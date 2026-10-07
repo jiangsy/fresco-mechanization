@@ -5,7 +5,7 @@ optimality of consistency*, `paper/sections/appendices/full-algo-spec.tex:1541-1
 Paper proof: `paper/sections/appendices/consistency-proofs.tex:2225-3167`
 ("Completeness of Consistency"), read in full, all three parts, every case.
 
-Judgments: `mechanization/frost/algo/def_rules.v:514-806` — one mutual block,
+Judgments: `mechanization/fresco/algo/def_rules.v:514-806` — one mutual block,
 `a_assign` (8 rules), `a_unify` (6), `a_consis` (14).
 
 ---

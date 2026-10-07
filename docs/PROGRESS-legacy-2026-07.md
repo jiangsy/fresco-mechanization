@@ -1,11 +1,11 @@
-# Frost Mechanization — Progress
+# Fresco Mechanization — Progress
 
 Coordination file for the Phase 2 + Phase 3 push. Two sections:
 
 - **[Part 1: Paper → Mechanization mapping](#part-1-paper--mechanization-mapping)** — per-lemma status, statements, locations.
 - **[Part 2: Daily progress](#part-2-daily-progress)** — session-by-session closure log.
 
-**Spec:** [`docs/superpowers/specs/2026-05-10-frost-phase23-design.md`](../docs/superpowers/specs/2026-05-10-frost-phase23-design.md)
+**Spec:** [`docs/superpowers/specs/2026-05-10-fresco-phase23-design.md`](../docs/superpowers/specs/2026-05-10-fresco-phase23-design.md)
 
 ## Status (current — 2026-07-10 **"Removed base terms" paper rework mechanized**)
 
@@ -49,7 +49,7 @@ Paper rework (commits `a2a5d96` "Removed base terms" + `8b3b2aa`
   were CLOSED via the paint-consistency pin (`d_consis_paint_syn_eq` +
   `ptyp_to_btyp_syn_inj`).
 - **Artifact synced**: `paper/artifact/fresco` regenerated from
-  `mechanization/frost` (subset; `src.frost` → `src.fresco`), README.v/.md
+  `mechanization/fresco` (subset; `src.fresco` → `src.fresco`), README.v/.md
   updated to the sd-side headline statements.
 
 ## Status (2026-06-14 **D1 General Subsumption FULLY CLOSED**)
@@ -59,7 +59,7 @@ Paper rework (commits `a2a5d96` "Removed base terms" + `8b3b2aa`
 `d_typing_general_subsumption` (paper Lemma 3.1) and its generalised driver
 `d_typing_general_subsumption_spine` (paper Lemma B.5, the `FN^n` form) are both
 `Qed`, on branch `mech-type-refactor`, file
-[`prop_general_subsumption.v`](frost/decl/prop_general_subsumption.v).
+[`prop_general_subsumption.v`](fresco/decl/prop_general_subsumption.v).
 
 ### Proof architecture (how D1 closes)
 
@@ -142,7 +142,7 @@ than faithful paper mechanizations**.
 | Algorithmic subtyping soundness/completeness/minimality | If a solution exists, `a_sub` returns the minimal solution | `a_sub_sound`, `a_sub_complete` | 🔴 **not faithful**. Current `a_sub` is reflexive-only, while `a_sub_sound`/`a_sub_complete` use simplified declarative shadows and omit the paper's question/solution/minimality structure. |
 | Algorithmic skeleton inference soundness/completeness | Algorithmic skeleton inference returns a safe/most informative solution | `a_pat_sound`, `a_pat_complete` | 🔴 **not faithful** for the same reason: permissive placeholder rules and no solution/minimality relation. |
 
-**Current admit count:** 36 total under `frost/`.  This is not a
+**Current admit count:** 36 total under `fresco/`.  This is not a
 proof-completeness audit; it is a statement faithfulness audit.
 
 **Next faithful-statement work:**
@@ -262,7 +262,7 @@ several Pattern-B-adjacent uses.
 
 **Pre-refactor flagship status (commit `8701b4a`)**: both Qed and "Closed under the global context", zero axioms.
 
-**Admit counts (frost/decl/):** 15 base admits (pre-refactor) + **18 new
+**Admit counts (fresco/decl/):** 15 base admits (pre-refactor) + **18 new
 admits from the δ-encoding refactor** (commits `0bf2815` + δ-cascade
 Phase 0). Of the 18 new:
 - **8 are PROVABLY FALSE post-refactor** (lemma's conclusion now
@@ -294,7 +294,7 @@ and the 2026-05-17 (δ-refactor) entry in Part 2 below.
 - Paper-flagged (D3) + colour-tag translation (`d_sub_complete_mono`) — 2 admits in `prop_sub_sound.v`
 - `d_typing_gen_lift_mono` __app — 1 admit (was no longer reachable pre-refactor; broken via `Hbody_at_tc` refactor). The non-gen sibling `d_typing_lift_mono_mut` / `d_typing_lift_mono` was deleted 2026-05-17 (zero callers).
 
-**Admit counts (frost/algo/):** 6 admits — all Phase 3.B/C HEADLINE soundness/completeness theorems.
+**Admit counts (fresco/algo/):** 6 admits — all Phase 3.B/C HEADLINE soundness/completeness theorems.
 
 ## TODOs (δ-cascade closure — next-session priorities)
 
@@ -363,25 +363,25 @@ Counts against paper-stated signatures only. A `d_wf_denv Γ` precondition that 
 
 ## Declarative metatheory (`paper/sections/declarative.tex`, `paper/sections/syntax-directed.tex`)
 
-Mech statements use the notations from [`frost/decl/notations.v`](frost/decl/notations.v):
+Mech statements use the notations from [`fresco/decl/notations.v`](fresco/decl/notations.v):
 `Γ ⊢[ M ] e ⦂ A` for `d_typing`, `Γ ⊢ₛ[ M ] e ⦂ P` for `d_pat`, `Δ ⨟ Γ ⊢[ M ] T ⊑ A` for `d_sub`, `Δ ⨟ Γ ⊨ T ≈ A` for `d_consis`, `Γ ⊢ A ≤ B` for `d_shallow_sub`, `Ψ ⨟ Γ ⊢ₚₛ P` for `d_wf_pskl` (and `Ψ ⨟ Γ ⊢ᵤₛ P` for `d_wf_uskl`), `Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P` for `d_refine_syn` (three contexts: Γ = existing tvars, Δs = synthesised-∀ tvars, Δi = inherited-∀ tvars). The "gen" relations (`d_typing_gen`, `d_consis_gen`, `d_sub_gen`) and `d_wf_typ` have no dedicated notation — application form used.
 
 Paper labels resolved to file:line in the auto-managed block at end of file (regenerate with `python3 scripts/sync_paper_refs.py --md`). Lemmas without a `\label{...}` in the paper source carry a plain `paper:LINE` ref + a `(no label)` marker.
 
 | # | Paper lemma | Mech & paper statement | Status |
 |---|---|---|---|
-| D1 | [Lemma 3.1: General subsumption][lemma:general-subsumption] | **Mech:** `d_typing_general_subsumption` [`prop_general_subsumption.v`](frost/decl/prop_general_subsumption.v):<br>`d_wf_denv Γ → Γ ⊢[ mode_ti ] e ⦂ ptyp_to_btyp_syn A → empty ⨟ Γ ⊢[ m ] ptyp_to_utyp_syn A ⊑ B → Γ ⊢[ m ] e ⦂ B`<br>**Paper:** `If Γ ⊢_TI M ⇒ syn{A} and Γ ⊢_M syn{A} ≤ bid{B}, then Γ ⊢_M M ⇒ bid{B}` (LaTeX: `\typp[\TI]{\Gamma}{M}{\syn{A}}`, `\typsub[\M]{\Gamma}{\syn{A}}{\bid{B}}`, `\typp[\M]{\Gamma}{M}{\bid{B}}`) | 🟢 **`Qed`, "Closed under the global context"** (`Print Assumptions`, `README.v` L36). The `n=0` corollary of `d_typing_general_subsumption_spine` (paper Lemma B.5). See the 2026-06-14 status block for the proof architecture. |
-| D2 | Soundness of subtyping (paper [declarative.tex:1101](../paper/sections/declarative.tex#L1101), no `\label`) | **Mech:** `d_sub_sound` [`prop_sub_sound.v`](frost/decl/subtyping/prop_sub_sound.v):<br>`is_typ A → nil ⨟ Γ ⊢[ mode_tc ] A ⊑ B → Γ ⊢ A ≤ B`<br>**Paper:** for `mode_tc` subtyping, the conclusion is shallow-subtypeable. | 🟡 narrowed with `is_typ A` so LHS is `typ_all_col` flavour (matches `d_shallow_sub` shape) |
-| D3 | No guessing of polytypes (paper [declarative.tex:1108](../paper/sections/declarative.tex#L1108), no `\label`) | **Mech:** `d_sub_no_guess_uniqueness` [`prop_sub_sound.v:215`](frost/decl/subtyping/prop_sub_sound.v#L215):<br>two instantiations `ph1`, `ph2` of same `d_sub` derivation imply `ph1 = ph2`<br>**Paper:** intuition that the polytype guessing `ph` in `d_sub__forall_l_tagged` is uniquely determined. | ⚠️ paper-flagged — counter-example inlined (`ph` can absorb into nested `forall_l_tagged` chains); paper revision suggested |
-| D4 | Refinement preserves wf (paper [declarative.tex:1386](../paper/sections/declarative.tex#L1386), no `\label`) | **Mech:** `d_refine_preserves_wf` [`prop_skeleton.v`](frost/decl/prop_skeleton.v):<br>`Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P → (Δs ++ Δi) ⨟ Γ ⊢ₚₛ (bskl_to_pskl P)` | 🟢 **`Qed`, "Closed under the global context"** |
-| D5 | Preservation of skeleton wf (paper [declarative.tex:1976](../paper/sections/declarative.tex#L1976), no `\label`) | **Mech:** `d_pat_preserves_skel_wf` [`prop_skeleton.v:128`](frost/decl/prop_skeleton.v#L128):<br>`Γ ⊢ₛ[ mode_tc ] e ⦂ P → d_wf_denv Γ → nil ⨟ Γ ⊢ₚₛ P` | 🟢 narrowed via `d_pat_*_preserves_wf` with `is_syn_skel P` side hypothesis |
+| D1 | [Lemma 3.1: General subsumption][lemma:general-subsumption] | **Mech:** `d_typing_general_subsumption` [`prop_general_subsumption.v`](fresco/decl/prop_general_subsumption.v):<br>`d_wf_denv Γ → Γ ⊢[ mode_ti ] e ⦂ ptyp_to_btyp_syn A → empty ⨟ Γ ⊢[ m ] ptyp_to_utyp_syn A ⊑ B → Γ ⊢[ m ] e ⦂ B`<br>**Paper:** `If Γ ⊢_TI M ⇒ syn{A} and Γ ⊢_M syn{A} ≤ bid{B}, then Γ ⊢_M M ⇒ bid{B}` (LaTeX: `\typp[\TI]{\Gamma}{M}{\syn{A}}`, `\typsub[\M]{\Gamma}{\syn{A}}{\bid{B}}`, `\typp[\M]{\Gamma}{M}{\bid{B}}`) | 🟢 **`Qed`, "Closed under the global context"** (`Print Assumptions`, `README.v` L36). The `n=0` corollary of `d_typing_general_subsumption_spine` (paper Lemma B.5). See the 2026-06-14 status block for the proof architecture. |
+| D2 | Soundness of subtyping (paper [declarative.tex:1101](../paper/sections/declarative.tex#L1101), no `\label`) | **Mech:** `d_sub_sound` [`prop_sub_sound.v`](fresco/decl/subtyping/prop_sub_sound.v):<br>`is_typ A → nil ⨟ Γ ⊢[ mode_tc ] A ⊑ B → Γ ⊢ A ≤ B`<br>**Paper:** for `mode_tc` subtyping, the conclusion is shallow-subtypeable. | 🟡 narrowed with `is_typ A` so LHS is `typ_all_col` flavour (matches `d_shallow_sub` shape) |
+| D3 | No guessing of polytypes (paper [declarative.tex:1108](../paper/sections/declarative.tex#L1108), no `\label`) | **Mech:** `d_sub_no_guess_uniqueness` [`prop_sub_sound.v:215`](fresco/decl/subtyping/prop_sub_sound.v#L215):<br>two instantiations `ph1`, `ph2` of same `d_sub` derivation imply `ph1 = ph2`<br>**Paper:** intuition that the polytype guessing `ph` in `d_sub__forall_l_tagged` is uniquely determined. | ⚠️ paper-flagged — counter-example inlined (`ph` can absorb into nested `forall_l_tagged` chains); paper revision suggested |
+| D4 | Refinement preserves wf (paper [declarative.tex:1386](../paper/sections/declarative.tex#L1386), no `\label`) | **Mech:** `d_refine_preserves_wf` [`prop_skeleton.v`](fresco/decl/prop_skeleton.v):<br>`Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P → (Δs ++ Δi) ⨟ Γ ⊢ₚₛ (bskl_to_pskl P)` | 🟢 **`Qed`, "Closed under the global context"** |
+| D5 | Preservation of skeleton wf (paper [declarative.tex:1976](../paper/sections/declarative.tex#L1976), no `\label`) | **Mech:** `d_pat_preserves_skel_wf` [`prop_skeleton.v:128`](fresco/decl/prop_skeleton.v#L128):<br>`Γ ⊢ₛ[ mode_tc ] e ⦂ P → d_wf_denv Γ → nil ⨟ Γ ⊢ₚₛ P` | 🟢 narrowed via `d_pat_*_preserves_wf` with `is_syn_skel P` side hypothesis |
 | D6 | Validity of skeleton inference | **REMOVED** — the paper's Valid-Skeleton definition is now commented out (declarative.tex), so `d_pat_validity` was deleted. (It was also a non-theorem for the current rules: the `freeze (λx.(x:unit))` counterexample.) | ⬜ n/a |
-| D7 | Safety of skeleton inference (paper [declarative.tex:1992](../paper/sections/declarative.tex#L1992), no `\label`) | **Mech:** `d_pat_safety` [`prop_skeleton.v:180`](frost/decl/prop_skeleton.v#L180):<br>`(∃ A, Γ ⊢[ m ] e ⦂ A) → d_wf_denv Γ → ∃ P, Γ ⊢ₛ[ m ] e ⦂ P ∧ (∀ B, Γ ⊢[ m ] e ⦂ B → nil ⨟ Γ ⊢ᵣ P ▸ B)` | 🟠 universal "refines every type" — needs principal-skeleton construction (join under refinement) |
+| D7 | Safety of skeleton inference (paper [declarative.tex:1992](../paper/sections/declarative.tex#L1992), no `\label`) | **Mech:** `d_pat_safety` [`prop_skeleton.v:180`](fresco/decl/prop_skeleton.v#L180):<br>`(∃ A, Γ ⊢[ m ] e ⦂ A) → d_wf_denv Γ → ∃ P, Γ ⊢ₛ[ m ] e ⦂ P ∧ (∀ B, Γ ⊢[ m ] e ⦂ B → nil ⨟ Γ ⊢ᵣ P ▸ B)` | 🟠 universal "refines every type" — needs principal-skeleton construction (join under refinement) |
 | D8 | General Subsumption (syntax-directed, paper [syntax-directed.tex:3](../paper/sections/syntax-directed.tex#L3), no `\label`) | (same as D1) | n/a — duplicate of D1; mech has one declarative system |
-| D9 | [Lemma B.2: Consistency Transitivity][thm:consist-transitivity] | **Mech:** `d_consis_compose` [`prop_consis_trans.v`](frost/decl/subtyping/prop_consis_trans.v):<br>`Δa ⨟ Γ ⊨ C ≈ ptyp_to_btyp_syn A → Δb ⨟ Γ ⊨ ptyp_to_utyp_syn A ≈ B → list_disjoint Δa Δb → ∃ Δc, Permutation Δc (Δa ++ Δb) ∧ Δc ⨟ Γ ⊨ C ≈ B`<br>**Paper:** `If ⊨[Δ₁] Γ T ≈ T' and ⊨[Δ₂] Γ T' ≈ A, then ⊨[Δ₁,Δ₂] Γ T ≈ A` (LaTeX: `\typconsis[\Delta_1]{\Gamma}{\bid{T}}{\bid{T'}}`, `\typconsis[\Delta_2]{\Gamma}{\bid{T'}}{\bid{A}}`, `\typconsis[\Delta_1, \Delta_2]{\Gamma}{\bid{T}}{\bid{A}}`) | 🟡 Native split-syntax scaffold for synthesized middle `A : ptyp`; proof currently `Admitted`. It no longer erases/repaints an arbitrary `btyp`. |
-| D10 | [Lemma B.3: Consistency-Subtyping Transitivity][thm:consist-subtyping-transitivity] | **Mech:** `d_consis_sub_trans` [`prop_consis_sub_trans.v`](frost/decl/subtyping/prop_consis_sub_trans.v):<br>`Δ ⨟ Γ ⊨ C ≈ ptyp_to_btyp_syn A → Δ' ⨟ Γ ⊢[ M ] ptyp_to_utyp_syn A ⊑ B → list_disjoint Δ Δ' → ∃ Δc, Permutation Δc (Δ ++ Δ') ∧ Δc ⨟ Γ ⊢[ M ] C ⊑ B`<br>**Paper:** `If ⊨[Δ₁] Γ T ≈ T' and ⊢[M;Δ₂] Γ T' ⊑ A, then ⊢[M; Δ₁,Δ₂] Γ T ⊑ A`. | 🟡 Native split-syntax scaffold for synthesized middle type; proof currently `Admitted`. It no longer erases/repaints an arbitrary middle `btyp`. |
-| D11 | [Lemma B.4: Subtyping Transitivity][thm:subtyping-transitivity] | **Mech support:** `d_sub_gen_trans` [`prop_subsumption_aux.v`](frost/decl/typing/prop_subsumption_aux.v):<br>`nil ⨟ Γ ⊢ᵍ[ m1 ] G1 ⊑ B2 → nil ⨟ Γ ⊢ᵍ[ mode_fn_n_subst m1 m2 ] btyp_to_gutyp B2 ⊑ B3 → nil ⨟ Γ ⊢ᵍ[ mode_fn_n_subst m1 m2 ] G1 ⊑ B3` | 🟠 proof currently `Admitted`; after fixing top-level generalized LHS shapes, the remaining work is generalized composition through `Arg` arrow components. |
-| D12 | Generalised General Subsumption (paper Lemma B.5, [syntax-directed.tex:343](../paper/sections/syntax-directed.tex#L343), no `\label`) | **Mech:** `d_typing_general_subsumption_gen` [`prop_general_subsumption.v`](frost/decl/prop_general_subsumption.v):<br>`d_typing_gen m_orig Γ e B1 → is_fn_n_ti m_orig → d_wf_denv Γ → d_sub_gen (mode_fn_n_subst m_orig m_new) nil Γ (btyp_to_gutyp B1) B2 → d_typing_gen (mode_fn_n_subst m_orig m_new) Γ e B2`<br>**Paper:** `If ⊢_FN[n] TI Γ M ⇒ bid{A}, ⊢_TY (FN[n] TI) bid{A}, and ⊢_FN[n] M Γ bid{A} ⊑ bid{B}, then ⊢_FN[n] M Γ M ⇒ bid{B}` (LaTeX: `\typp[\FN[n]~\TI]{\Gamma}{M}{\bid{A}}`, `\skmod[\TY]{{\FN[n]}~\TI}{\bid{A}}`, `\typsub[\FN[n]\M]{\Gamma}{\bid{A}}{\bid{B}}`, `\typp[\FN[n]\M]{\Gamma}{M}{\bid{B}}`) | 🟡 Close statement shape, proof currently `Admitted`. Missing explicit counterpart of `skmod[TY] (FN^n TI) bid{A}`; depends on `d_sub_gen_trans`. |
+| D9 | [Lemma B.2: Consistency Transitivity][thm:consist-transitivity] | **Mech:** `d_consis_compose` [`prop_consis_trans.v`](fresco/decl/subtyping/prop_consis_trans.v):<br>`Δa ⨟ Γ ⊨ C ≈ ptyp_to_btyp_syn A → Δb ⨟ Γ ⊨ ptyp_to_utyp_syn A ≈ B → list_disjoint Δa Δb → ∃ Δc, Permutation Δc (Δa ++ Δb) ∧ Δc ⨟ Γ ⊨ C ≈ B`<br>**Paper:** `If ⊨[Δ₁] Γ T ≈ T' and ⊨[Δ₂] Γ T' ≈ A, then ⊨[Δ₁,Δ₂] Γ T ≈ A` (LaTeX: `\typconsis[\Delta_1]{\Gamma}{\bid{T}}{\bid{T'}}`, `\typconsis[\Delta_2]{\Gamma}{\bid{T'}}{\bid{A}}`, `\typconsis[\Delta_1, \Delta_2]{\Gamma}{\bid{T}}{\bid{A}}`) | 🟡 Native split-syntax scaffold for synthesized middle `A : ptyp`; proof currently `Admitted`. It no longer erases/repaints an arbitrary `btyp`. |
+| D10 | [Lemma B.3: Consistency-Subtyping Transitivity][thm:consist-subtyping-transitivity] | **Mech:** `d_consis_sub_trans` [`prop_consis_sub_trans.v`](fresco/decl/subtyping/prop_consis_sub_trans.v):<br>`Δ ⨟ Γ ⊨ C ≈ ptyp_to_btyp_syn A → Δ' ⨟ Γ ⊢[ M ] ptyp_to_utyp_syn A ⊑ B → list_disjoint Δ Δ' → ∃ Δc, Permutation Δc (Δ ++ Δ') ∧ Δc ⨟ Γ ⊢[ M ] C ⊑ B`<br>**Paper:** `If ⊨[Δ₁] Γ T ≈ T' and ⊢[M;Δ₂] Γ T' ⊑ A, then ⊢[M; Δ₁,Δ₂] Γ T ⊑ A`. | 🟡 Native split-syntax scaffold for synthesized middle type; proof currently `Admitted`. It no longer erases/repaints an arbitrary middle `btyp`. |
+| D11 | [Lemma B.4: Subtyping Transitivity][thm:subtyping-transitivity] | **Mech support:** `d_sub_gen_trans` [`prop_subsumption_aux.v`](fresco/decl/typing/prop_subsumption_aux.v):<br>`nil ⨟ Γ ⊢ᵍ[ m1 ] G1 ⊑ B2 → nil ⨟ Γ ⊢ᵍ[ mode_fn_n_subst m1 m2 ] btyp_to_gutyp B2 ⊑ B3 → nil ⨟ Γ ⊢ᵍ[ mode_fn_n_subst m1 m2 ] G1 ⊑ B3` | 🟠 proof currently `Admitted`; after fixing top-level generalized LHS shapes, the remaining work is generalized composition through `Arg` arrow components. |
+| D12 | Generalised General Subsumption (paper Lemma B.5, [syntax-directed.tex:343](../paper/sections/syntax-directed.tex#L343), no `\label`) | **Mech:** `d_typing_general_subsumption_gen` [`prop_general_subsumption.v`](fresco/decl/prop_general_subsumption.v):<br>`d_typing_gen m_orig Γ e B1 → is_fn_n_ti m_orig → d_wf_denv Γ → d_sub_gen (mode_fn_n_subst m_orig m_new) nil Γ (btyp_to_gutyp B1) B2 → d_typing_gen (mode_fn_n_subst m_orig m_new) Γ e B2`<br>**Paper:** `If ⊢_FN[n] TI Γ M ⇒ bid{A}, ⊢_TY (FN[n] TI) bid{A}, and ⊢_FN[n] M Γ bid{A} ⊑ bid{B}, then ⊢_FN[n] M Γ M ⇒ bid{B}` (LaTeX: `\typp[\FN[n]~\TI]{\Gamma}{M}{\bid{A}}`, `\skmod[\TY]{{\FN[n]}~\TI}{\bid{A}}`, `\typsub[\FN[n]\M]{\Gamma}{\bid{A}}{\bid{B}}`, `\typp[\FN[n]\M]{\Gamma}{M}{\bid{B}}`) | 🟡 Close statement shape, proof currently `Admitted`. Missing explicit counterpart of `skmod[TY] (FN^n TI) bid{A}`; depends on `d_sub_gen_trans`. |
 | D13 | [Lemma B.6: Soundness of Syntax-directed Rule][thm:typing-syn-soundness] | — | n/a — mech only has the bidirectional declarative system |
 | D14 | [Lemma B.7: Completeness of Syntax-directed Rule][thm:typing-syn-completeness] | — | n/a |
 
@@ -389,19 +389,19 @@ Paper labels resolved to file:line in the auto-managed block at end of file (reg
 
 | # | Paper lemma | Mech & paper statement | Status |
 |---|---|---|---|
-| A1 | [Lemma D.2: Stability][lemma:stability] | **Mech:** `stability_d_typing` [`prop_soundness.v:620`](frost/algo/prop_soundness.v#L620) + 7 siblings:<br>`aenv_extends Θ0 Θ1 → a_transfers Θ0 Γ0 → a_transfers Θ1 Γ1 → Γ0 ⊢[ m ] e ⦂ A → Γ1 ⊢[ m ] e ⦂ A` (same shape for `_d_wf_typ`, `_d_consis`, `_d_sub`, `_d_pat_consis`, `_d_pat_sub`, `_d_refine_syn`, `_d_pat`)<br>**Paper:** "All statements in this paper are stable" — for every judgment `J` and `Θ₀ ≤ Θ₁`, `Θ₀ ⊢ J ⇒ Θ₁ ⊢ J`. | 🟢 8 of 8 |
-| A2 | [Lemma D.3: Structural rules][lemma:structural] | **Mech:** `d_typing_suffix_moving_singleton` [`prop_typing.v`](frost/decl/prop_typing.v) + `d_pat_suffix_moving_singleton`:<br>`Γ1 ++ y~b ++ Γ2 ⊢[ m ] e ⦂ A → y ∉ dom Γ1 → Γ1 ++ Γ2 ++ y~b ⊢[ m ] e ⦂ A`<br>**Paper:** SuffixMoving rule — moving a binding past a suffix preserves typing. | 🟢 narrowed to single-binding move; full n-binding form needs free-vars-of-context machinery |
-| A3 | [Lemma D.4: Splitting refines][lemma:split-refine] | **Mech:** `d_refine_arrow_split` [`prop_skeleton.v:25`](frost/decl/prop_skeleton.v#L25) + 7 siblings (`_all_plain_split`, `_hole_split`, `_tophole_split`, syn-painted variants):<br>`Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ typ_arrow P1 P2 → ∃ Q1 Q2, Q = typ_arrow Q1 Q2 ∧ Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q1 ⊳ P1 ∧ Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q2 ⊳ P2`<br>**Paper:** `If Θ₀ ⊢ split[P₀][P₁] ⇒ Θ₁, then Θ₁ ⊢ inh{P₀} fillsyn inh{P₁}` (LaTeX: `\mov{\Theta_0}{\split[P_0][P_1]{}}{\Theta_1}`, `\Theta_1\vdash\inh{P_0}\fillsyn\inh{P_1}`) | 🟢 8 of 8 |
+| A1 | [Lemma D.2: Stability][lemma:stability] | **Mech:** `stability_d_typing` [`prop_soundness.v:620`](fresco/algo/prop_soundness.v#L620) + 7 siblings:<br>`aenv_extends Θ0 Θ1 → a_transfers Θ0 Γ0 → a_transfers Θ1 Γ1 → Γ0 ⊢[ m ] e ⦂ A → Γ1 ⊢[ m ] e ⦂ A` (same shape for `_d_wf_typ`, `_d_consis`, `_d_sub`, `_d_pat_consis`, `_d_pat_sub`, `_d_refine_syn`, `_d_pat`)<br>**Paper:** "All statements in this paper are stable" — for every judgment `J` and `Θ₀ ≤ Θ₁`, `Θ₀ ⊢ J ⇒ Θ₁ ⊢ J`. | 🟢 8 of 8 |
+| A2 | [Lemma D.3: Structural rules][lemma:structural] | **Mech:** `d_typing_suffix_moving_singleton` [`prop_typing.v`](fresco/decl/prop_typing.v) + `d_pat_suffix_moving_singleton`:<br>`Γ1 ++ y~b ++ Γ2 ⊢[ m ] e ⦂ A → y ∉ dom Γ1 → Γ1 ++ Γ2 ++ y~b ⊢[ m ] e ⦂ A`<br>**Paper:** SuffixMoving rule — moving a binding past a suffix preserves typing. | 🟢 narrowed to single-binding move; full n-binding form needs free-vars-of-context machinery |
+| A3 | [Lemma D.4: Splitting refines][lemma:split-refine] | **Mech:** `d_refine_arrow_split` [`prop_skeleton.v:25`](fresco/decl/prop_skeleton.v#L25) + 7 siblings (`_all_plain_split`, `_hole_split`, `_tophole_split`, syn-painted variants):<br>`Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ typ_arrow P1 P2 → ∃ Q1 Q2, Q = typ_arrow Q1 Q2 ∧ Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q1 ⊳ P1 ∧ Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q2 ⊳ P2`<br>**Paper:** `If Θ₀ ⊢ split[P₀][P₁] ⇒ Θ₁, then Θ₁ ⊢ inh{P₀} fillsyn inh{P₁}` (LaTeX: `\mov{\Theta_0}{\split[P_0][P_1]{}}{\Theta_1}`, `\Theta_1\vdash\inh{P_0}\fillsyn\inh{P_1}`) | 🟢 8 of 8 |
 | A4 | [Lemma D.5: Consistency extends subtyping][lemma:consis-sub] | — (NOT mechanized; distinct from D10/B.3) | 🔴 D.5 is stated over algorithmic `allsub` / `consistent`, distinct from D10/B.3 (declarative `d_consis` + `d_sub`). `d_consis_sub_trans` (D10) is NOT a mechanization of D.5; earlier docs conflated the two. Paper: `If Θ ⊢ consistent(P, P') and ⊢_{N,M} Θ P ⊑ Q, then ⊢_{N,M} Θ P' ⊑ Q`. |
 | A5 | [Lemma D.6: Substitution preserves safety][lemma:safety-preservation] | — | 🔴 paper proof is "obvious — θ monotype only"; corollary of typ-subst preservation (itself admitted) |
 | A6 | [Lemma D.7: Substitution preserves informativeness][lemma:informativeness-preservation] | — | 🔴 same |
 | A7 | [Lemma D.8: More information does not harm][lemma:more-informative-skeletons] | — | 🔴 redundant with D1 (general subsumption) — not stated separately. Paper: `If ⊢[M] Θ M ⇒ bid{A} and bid{A'} ≼ bid{A}, then ⊢[M] Θ M ⇒ bid{A'}` (LaTeX: `\typp[\M]{\Theta}{M}{\bid{A}}`, `\bid{A'}\morepoly\bid{A}`). |
-| A8 | [Theorem E.4: Soundness of type inference][thm:sound-type-inference] | **Mech:** `a_typing_sound` [`prop_soundness.v:748`](frost/algo/prop_soundness.v#L748):<br>`a_typing m Θ0 P0 e A Θ1 → a_transfers Θ0 Γ0 → a_transfers Θ1 Γ1 → Γ1 ⊢[ m ] e ⦂ A`<br>**Paper:** Given a type inference question `(Θ₀; M; P; M)`, if `⊢_{M;P} Θ₀ M ⇒ A ⇒ Θ₁`, then `(Θ₀ ≤ Θ₁; A)` is a solution. | 🟠 HEADLINE — depends on `a_consis_sound`, `a_unify_sound`, `a_assign_sound`, `a_pre_sub_sound`, `a_split_sound`, `a_guess_mono_sound` (not yet stated) |
-| A9 | [Theorem E.5: Completeness and minimality of type inference][thm:complete-type-inference] | **Mech:** `a_typing_complete` [`prop_completeness.v:327`](frost/algo/prop_completeness.v#L327):<br>`Γ ⊢[ m ] e ⦂ A → ∀ Θ0 P0, a_transfers Θ0 Γ → a_wf_typ Θ0 P0 → ∃ Θ1, a_typing m Θ0 P0 e A Θ1 ∧ a_transfers Θ1 Γ`<br>**Paper:** dual to A8 — given a solution `(Θ₀ ≤[θ] Θ; B)`, the algorithm finds a minimal one. | 🟠 HEADLINE — dual to A8; same auxiliary family |
+| A8 | [Theorem E.4: Soundness of type inference][thm:sound-type-inference] | **Mech:** `a_typing_sound` [`prop_soundness.v:748`](fresco/algo/prop_soundness.v#L748):<br>`a_typing m Θ0 P0 e A Θ1 → a_transfers Θ0 Γ0 → a_transfers Θ1 Γ1 → Γ1 ⊢[ m ] e ⦂ A`<br>**Paper:** Given a type inference question `(Θ₀; M; P; M)`, if `⊢_{M;P} Θ₀ M ⇒ A ⇒ Θ₁`, then `(Θ₀ ≤ Θ₁; A)` is a solution. | 🟠 HEADLINE — depends on `a_consis_sound`, `a_unify_sound`, `a_assign_sound`, `a_pre_sub_sound`, `a_split_sound`, `a_guess_mono_sound` (not yet stated) |
+| A9 | [Theorem E.5: Completeness and minimality of type inference][thm:complete-type-inference] | **Mech:** `a_typing_complete` [`prop_completeness.v:327`](fresco/algo/prop_completeness.v#L327):<br>`Γ ⊢[ m ] e ⦂ A → ∀ Θ0 P0, a_transfers Θ0 Γ → a_wf_typ Θ0 P0 → ∃ Θ1, a_typing m Θ0 P0 e A Θ1 ∧ a_transfers Θ1 Γ`<br>**Paper:** dual to A8 — given a solution `(Θ₀ ≤[θ] Θ; B)`, the algorithm finds a minimal one. | 🟠 HEADLINE — dual to A8; same auxiliary family |
 | A10 | [Lemma 4.13: Connection of informativeness][lemma:connection-informativeness] | — | 🔴 not attempted; depends on a precise `morepoly` definition. Paper: for `P` and `Q` safe skeletons of `M`, if `P ≼ Q` then every `inh{Q} fillsyn bid{B}` with `Θ ⊢_M M ⇒ bid{B}` lifts to an `inh{P} fillsyn bid{A}`. |
-| A11 | [Theorem 4.15: Soundness of skeleton inference][thm:sound-skeleton-inference] | **Mech:** `a_pat_sound` [`prop_soundness.v:716`](frost/algo/prop_soundness.v#L716):<br>`a_pat m Θ0 P0 e P Θ1 → a_transfers Θ0 Γ0 → a_transfers Θ1 Γ1 → Γ1 ⊢ₛ[ m ] e ⦂ P` | 🟠 HEADLINE — mutual with A8 |
-| A12 | [Theorem 4.16: Completeness of skeleton inference][thm:complete-skeleton-inference] | **Mech:** `a_pat_complete` [`prop_completeness.v:209`](frost/algo/prop_completeness.v#L209):<br>`Γ ⊢ₛ[ m ] e ⦂ P → ∀ Θ0 P0, a_transfers Θ0 Γ → a_wf_typ Θ0 P0 → ∃ Θ1 Q, a_pat m Θ0 P0 e Q Θ1 ∧ a_transfers Θ1 Γ` | 🟠 HEADLINE — mutual with A9 |
-| A13 | [Theorem 4.19: Soundness/Completeness/Minimality of subtyping][thm:sound-subtyping] | **Mech:** `a_sub_sound` [`prop_soundness.v:661`](frost/algo/prop_soundness.v#L661) + `a_sub_complete` [`prop_completeness.v:135`](frost/algo/prop_completeness.v#L135) | 🟠 HEADLINE — five auxiliary completeness/soundness lemmas blocked. `a_sub_decidable_existential` is Qed in vacuous-disjunct form (documents the obligation without fabricating a proof). |
+| A11 | [Theorem 4.15: Soundness of skeleton inference][thm:sound-skeleton-inference] | **Mech:** `a_pat_sound` [`prop_soundness.v:716`](fresco/algo/prop_soundness.v#L716):<br>`a_pat m Θ0 P0 e P Θ1 → a_transfers Θ0 Γ0 → a_transfers Θ1 Γ1 → Γ1 ⊢ₛ[ m ] e ⦂ P` | 🟠 HEADLINE — mutual with A8 |
+| A12 | [Theorem 4.16: Completeness of skeleton inference][thm:complete-skeleton-inference] | **Mech:** `a_pat_complete` [`prop_completeness.v:209`](fresco/algo/prop_completeness.v#L209):<br>`Γ ⊢ₛ[ m ] e ⦂ P → ∀ Θ0 P0, a_transfers Θ0 Γ → a_wf_typ Θ0 P0 → ∃ Θ1 Q, a_pat m Θ0 P0 e Q Θ1 ∧ a_transfers Θ1 Γ` | 🟠 HEADLINE — mutual with A9 |
+| A13 | [Theorem 4.19: Soundness/Completeness/Minimality of subtyping][thm:sound-subtyping] | **Mech:** `a_sub_sound` [`prop_soundness.v:661`](fresco/algo/prop_soundness.v#L661) + `a_sub_complete` [`prop_completeness.v:135`](fresco/algo/prop_completeness.v#L135) | 🟠 HEADLINE — five auxiliary completeness/soundness lemmas blocked. `a_sub_decidable_existential` is Qed in vacuous-disjunct form (documents the obligation without fabricating a proof). |
 | A14 | [Lemma 4.21: Soundness and completeness and minimality of unification][thm:sound-unification] | — | 🔴 `a_unify` defined in `algo/def_rules.v`; no standalone soundness lemma stated (consumed via A13 / A8 chains) |
 
 ## Mechanization-only support lemmas
@@ -410,26 +410,26 @@ These don't appear as separate paper lemmas but are load-bearing for the mech. L
 
 | Mech lemma | Status | File:line | Purpose |
 |---|---|---|---|
-| `d_typing_embed_gen` | 🟢 | [`def_gen.v`](frost/decl/typing/def_gen.v) | `d_typing → d_typing_gen` embedding (structural induction) |
-| `d_typing_gen_collapse` | 🟠 | [`def_gen.v`](frost/decl/typing/def_gen.v) | `d_typing_gen → d_typing`; current statement remains admitted and cannot rely on the false "all gen-sub LHS embed into utyp" bridge |
-| `d_sub_gen_top_inherited_lhs_impossible` | 🟢 | [`def_gen.v`](frost/decl/typing/def_gen.v) | checks the repaired generalized subtyping rules: inherited forall cannot be a top-level LHS; the earlier counterexample was a translation bug in the scaffold |
-| `d_sub_gen_weakening` / `_head` | 🟢 | [`prop_subsumption_aux.v`](frost/decl/typing/prop_subsumption_aux.v) | weakening for the generalized subtyping scaffold |
-| `d_consis_gen_weakening` / `_head` | 🟢 | [`prop_subsumption_aux.v`](frost/decl/typing/prop_subsumption_aux.v) | weakening for generalized consistency |
-| `d_sub_gen_trans` | 🟠 | [`prop_subsumption_aux.v`](frost/decl/typing/prop_subsumption_aux.v) | generalized transitivity; still admitted, now blocked on generalized consistency/subtyping composition for `Arg` |
-| `d_typing_pat_weakening` / `_ctx_morph` | 🟢 | [`prop_weakening.v`](frost/decl/prop_weakening.v) | full 18-case weakening + context morphism (mutual) |
-| `d_typing_pat_preserves_wf` | 🟢 | [`prop_wellformed.v`](frost/decl/prop_wellformed.v) | full 18-case wf preservation (mutual) |
-| `d_typing_sub_compose` | 🟢 | [`prop_subtyping.v`](frost/decl/prop_subtyping.v) | helper for D1's `__sub` case; proof closes using D10's nil corollary |
-| `d_typing_pat_subst_typ_mut` | 🟠 | [`prop_weakening.v:644`](frost/decl/prop_weakening.v#L644) | mutual type subst; blocked on `d_sub_subst` / `d_refine_syn_subst` / `d_pat_*_subst` (not yet stated) |
-| `d_typing_narrowing` | 🟠 | [`prop_weakening.v:668`](frost/decl/prop_weakening.v#L668) | reduces to D1; gated on `d_typing_general_subsumption` non-base cases |
-| `d_typing_narrow_consis` / `_gen_narrow_consis` | 🟠 | [`prop_weakening.v:713`](frost/decl/prop_weakening.v#L713), [`def_gen.v:1083`](frost/decl/typing/def_gen.v#L1083) | post-ctyp re-encoding: `__var` returns raw bound type; old `syn_color_t`-equality insufficient |
-| `d_typing_swap_mono` / `_app_restructure` / `_order_irrel_adj` | 🟠 | [`prop_typing.v:77,107,153`](frost/decl/prop_typing.v) | Stability S1/S2 + order-irrelevance; need `d_typing`-inversion through `d_pat` (research-grade) |
-| `E1_intro` / `E1_elim` / `E1_roundtrip` | 🟠 | [`prop_typing.v:218,237,247`](frost/decl/prop_typing.v) | Expressiveness benchmark (Church-encoded existentials); gated on `d_typing_pat_subst_typ_mut` |
-| `d_sub_complete_mono` | 🟠 | [`prop_sub_sound.v:173`](frost/decl/subtyping/prop_sub_sound.v#L173) | reviewer-suggested completeness vs monotype-only shallow subtyping; forall_r/forall_l colour-flavour mismatch |
+| `d_typing_embed_gen` | 🟢 | [`def_gen.v`](fresco/decl/typing/def_gen.v) | `d_typing → d_typing_gen` embedding (structural induction) |
+| `d_typing_gen_collapse` | 🟠 | [`def_gen.v`](fresco/decl/typing/def_gen.v) | `d_typing_gen → d_typing`; current statement remains admitted and cannot rely on the false "all gen-sub LHS embed into utyp" bridge |
+| `d_sub_gen_top_inherited_lhs_impossible` | 🟢 | [`def_gen.v`](fresco/decl/typing/def_gen.v) | checks the repaired generalized subtyping rules: inherited forall cannot be a top-level LHS; the earlier counterexample was a translation bug in the scaffold |
+| `d_sub_gen_weakening` / `_head` | 🟢 | [`prop_subsumption_aux.v`](fresco/decl/typing/prop_subsumption_aux.v) | weakening for the generalized subtyping scaffold |
+| `d_consis_gen_weakening` / `_head` | 🟢 | [`prop_subsumption_aux.v`](fresco/decl/typing/prop_subsumption_aux.v) | weakening for generalized consistency |
+| `d_sub_gen_trans` | 🟠 | [`prop_subsumption_aux.v`](fresco/decl/typing/prop_subsumption_aux.v) | generalized transitivity; still admitted, now blocked on generalized consistency/subtyping composition for `Arg` |
+| `d_typing_pat_weakening` / `_ctx_morph` | 🟢 | [`prop_weakening.v`](fresco/decl/prop_weakening.v) | full 18-case weakening + context morphism (mutual) |
+| `d_typing_pat_preserves_wf` | 🟢 | [`prop_wellformed.v`](fresco/decl/prop_wellformed.v) | full 18-case wf preservation (mutual) |
+| `d_typing_sub_compose` | 🟢 | [`prop_subtyping.v`](fresco/decl/prop_subtyping.v) | helper for D1's `__sub` case; proof closes using D10's nil corollary |
+| `d_typing_pat_subst_typ_mut` | 🟠 | [`prop_weakening.v:644`](fresco/decl/prop_weakening.v#L644) | mutual type subst; blocked on `d_sub_subst` / `d_refine_syn_subst` / `d_pat_*_subst` (not yet stated) |
+| `d_typing_narrowing` | 🟠 | [`prop_weakening.v:668`](fresco/decl/prop_weakening.v#L668) | reduces to D1; gated on `d_typing_general_subsumption` non-base cases |
+| `d_typing_narrow_consis` / `_gen_narrow_consis` | 🟠 | [`prop_weakening.v:713`](fresco/decl/prop_weakening.v#L713), [`def_gen.v:1083`](fresco/decl/typing/def_gen.v#L1083) | post-ctyp re-encoding: `__var` returns raw bound type; old `syn_color_t`-equality insufficient |
+| `d_typing_swap_mono` / `_app_restructure` / `_order_irrel_adj` | 🟠 | [`prop_typing.v:77,107,153`](fresco/decl/prop_typing.v) | Stability S1/S2 + order-irrelevance; need `d_typing`-inversion through `d_pat` (research-grade) |
+| `E1_intro` / `E1_elim` / `E1_roundtrip` | 🟠 | [`prop_typing.v:218,237,247`](fresco/decl/prop_typing.v) | Expressiveness benchmark (Church-encoded existentials); gated on `d_typing_pat_subst_typ_mut` |
+| `d_sub_complete_mono` | 🟠 | [`prop_sub_sound.v:173`](fresco/decl/subtyping/prop_sub_sound.v#L173) | reviewer-suggested completeness vs monotype-only shallow subtyping; forall_r/forall_l colour-flavour mismatch |
 | ~~`d_consis_lhs_is_inh_for_typ` / `d_consis_gen_LHS_syn_color_mono` / `d_consis_LHS_is_utyp_when_RHS_syn_color` / `d_sub_not_lhs_typ_all_col`~~ | — | (deleted 2026-05-17) | All four were post-refactor FALSE under the new `__forall_syn` rule. Removed along with their dead caller chain (the two `d_typing_abs[_anno]_value_to_subsumption` umbrellas + the two `_d_sub` helpers + `is_inh_typ_syn_color_mono`) — none of those had callers outside `prop_subsumption_aux.v`. |
 
 ## Per-file admit summary
 
-`frost/decl/` admit counts in this table are historical outside the
+`fresco/decl/` admit counts in this table are historical outside the
 currently touched split-syntax files.  The current D1/D12 path now
 centres on `def_gen.v`, `prop_subsumption_aux.v`,
 `prop_general_subsumption.v`, and the two consistency-transitivity
@@ -448,7 +448,7 @@ files:
 | `subtyping/prop_sub_sound.v` | 2 | `d_sub_complete_mono`, `d_sub_no_guess_uniqueness` (paper-flagged) |
 | `prop_skeleton.v` | 3 | `d_pat_safety`, `ghost_of_fill` (stub), `ghost_of_fill_gen` (forall_l obstacle + P=box + forall_r-box PROVED; 2 admits: __check, forall_r-tophole). `ghost_of_fill` now Qed corollary |
 
-`frost/algo/` (26 admits — faithful question/solution/optimality scaffolding):
+`fresco/algo/` (26 admits — faithful question/solution/optimality scaffolding):
 
 | File | Count | Admitted lemmas |
 |---|---|---|
@@ -483,7 +483,7 @@ Paper finalized (merge `8dfafca`); clean restart per the three-step plan:
 `is_tskl` untagged-∀ case removed (ψ requires every quantifier tagged),
 `d_tags_skl` restricted to ψ's grammar, `d_pat` restructured to the paper's
 embedded-subtyping P-Unit/P-Var/P-Anno (no `d_pat__sub` / `is_base_term`).
-(2) `frost/algo/def_rules.v` REWRITTEN from `full-algo-spec.tex`: new
+(2) `fresco/algo/def_rules.v` REWRITTEN from `full-algo-spec.tex`: new
 `Δ₁∣Δ₂` tracking in `a_consis`, no `refresh`, `□`-RHS Vacuous rules,
 GhostLF/GhostL solve rules with `∀◇` outputs, `∀ᾱ.A₀`-input
 AbsCheck/AbsAnnoCheck (step/base), Freeze with type input, `a_guess` =
@@ -504,7 +504,7 @@ NEXT: `algo/def_decorated.v` (decorated-algosub.tex: `a_subtag`,
 
 Goal: make every algorithmic *definition* paper-faithful (proofs stay
 admitted). Spec:
-[`docs/superpowers/specs/2026-06-19-frost-algo-defs-faithful-design.md`](docs/superpowers/specs/2026-06-19-frost-algo-defs-faithful-design.md).
+[`docs/superpowers/specs/2026-06-19-fresco-algo-defs-faithful-design.md`](docs/superpowers/specs/2026-06-19-fresco-algo-defs-faithful-design.md).
 On an isolated worktree branch (the declarative "safety brick" work was
 committing concurrently on `mech-refine-three-ctx`). `make coq` green after
 every unit; **zero new admits / axioms** from the definition work.
@@ -541,7 +541,7 @@ every unit; **zero new admits / axioms** from the definition work.
 - `d_refine_syn` refactored to three contexts (`Γ ⨟ Δs ⨟ Δi`): Γ =
   existing tvars, Δs = synthesised-∀ tvars, Δi = inherited-∀ tvars.
 - `d_refine_preserves_wf` (D4) closed — `Qed`, "Closed under the global
-  context" — in [`prop_skeleton.v`](frost/decl/prop_skeleton.v), now
+  context" — in [`prop_skeleton.v`](fresco/decl/prop_skeleton.v), now
   stated `Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P → (Δs ++ Δi) ⨟ Γ ⊢ₚₛ (bskl_to_pskl P)`.
   Helper lemmas added: `d_wf_pskl_Psi_mono`, `guarded_bskl_to_pskl`,
   `lc_bskl_to_pskl`.
@@ -589,17 +589,17 @@ paper's now-fleshed-out algorithmic proofs (Wenhao's recent
 
 **New files (all compile under `make coq`, EXIT 0):**
 
-- [`frost/algo/def_meta.v`](frost/algo/def_meta.v) — metasubstitutions
+- [`fresco/algo/def_meta.v`](fresco/algo/def_meta.v) — metasubstitutions
   `θ` (`metasubst`), application `msubst_{ptyp,pskl,btyp,bskl}`, the
   information-increase relation `a_inc Θ θ Θ'` (paper
   fig:information-increase, Gundry-style — **not** a worklist transfer),
   its identity specialisation `a_isub`, equivalence `a_inc_equiv`, and the
   deterministic projection `aenv_to_denv`/`denv_of` (replaces the trivial
   `a_transfers`).
-- [`frost/algo/def_question.v`](frost/algo/def_question.v) —
+- [`fresco/algo/def_question.v`](fresco/algo/def_question.v) —
   `a_{consis,sub,pat,typing}_solution` / `_solution_ex` / `_optimal`
   encoding the four *Questions of …* definitions + optimality cofactor.
-- [`frost/algo/prop_lemmas.v`](frost/algo/prop_lemmas.v) — the 11
+- [`fresco/algo/prop_lemmas.v`](fresco/algo/prop_lemmas.v) — the 11
   proofs.tex §Lemmas (16 admits).
 
 **Rewritten:** `prop_soundness.v` (4 admits) and `prop_completeness.v`
@@ -615,7 +615,7 @@ nuance for the skeleton-inference var case are noted in `def_meta.v` /
 
 ## 2026-06-15 — Order irrelevance (`d_typing_order_irrel`) — FULLY PROVED (Closed under the global context)
 
-**File:** [`frost/decl/prop_stability.v`](frost/decl/prop_stability.v) (was the
+**File:** [`fresco/decl/prop_stability.v`](fresco/decl/prop_stability.v) (was the
 `Admitted` n-ary stub). Full `make coq` green;
 `Print Assumptions d_typing_order_irrel` → **Closed under the global context**
 (no axioms, no admits). A concrete worked `Example order_irrel_x_y` instantiates
@@ -852,23 +852,23 @@ always `touch` + full `make coq`.
 Sync pass against the latest paper on `origin/main` (declarative.tex
 +700 / algorithmic.tex +454 vs the branch merge-base). This entry covers
 part A; refinement consolidation (B) and presub/prejoin (C) follow in
-later commits. Spec: `docs/superpowers/specs/2026-05-26-frost-paper-sync-design.md`.
+later commits. Spec: `docs/superpowers/specs/2026-05-26-fresco-paper-sync-design.md`.
 
 **A. New tag relation `tags{Δ}{φ}` (paper notation `φ # Δ`).** The paper
 factors the old combined premise `Δ | Γ ⊢ φ` into a pure tag-counting
 relation plus standard well-scopedness. Mechanized as:
 
 - `d_tags : list atom -> utyp -> Prop` and `d_tags_skl : list atom ->
-  uskl -> Prop` in [`decl/def_rules.v`](frost/decl/def_rules.v), with the
+  uskl -> Prop` in [`decl/def_rules.v`](fresco/decl/def_rules.v), with the
   paper's rules (`⊎` modelled by `list_disjoint` / `~ In`; skeleton
   version adds `□ → ·` and `⫯ψ → Δ`).
 - Wired the new premise into `d_sub__forall_l_*` and
   `d_pat_sub__forall_l_*` (non-gen) and `d_sub_gen__forall_l_*` (gen,
-  [`def_gen.v`](frost/decl/typing/def_gen.v)). `d_wf_utyp` / `d_wf_uskl`
+  [`def_gen.v`](fresco/decl/typing/def_gen.v)). `d_wf_utyp` / `d_wf_uskl`
   are retained for the well-scopedness half (encoding decision: add
   `d_tags`, keep `d_wf_utyp`), so their other ~28 uses are unaffected.
 - Bridges `d_wf_utyp_d_tags` / `d_wf_uskl_d_tags_skl` in
-  [`prop_wellformed.v`](frost/decl/prop_wellformed.v) (Qed) discharge the
+  [`prop_wellformed.v`](fresco/decl/prop_wellformed.v) (Qed) discharge the
   new premise at construction sites from the `d_wf_*` + `is_t*` facts
   already in scope.
 
@@ -1411,13 +1411,13 @@ the n-quantifier version: with `typ_all_col` bindings, `d_sub` at `mode_fn _`
 has no instantiation rule, so the typing antecedent is vacuous.
 
 **What changed.**
-- **5 new rule constructors** (mechanization/frost/decl/def_rules.v):
+- **5 new rule constructors** (mechanization/fresco/decl/def_rules.v):
   - `d_sub__forall_l_untagged` (LHS `typ_all_col colour_syn`)
   - `d_consis__forall_inh_untagged`
   - `d_pat_sub__forall_l_untagged`
   - `d_pat_consis__forall_inh_untagged`
   - `d_pat_consis__forall_syn_untagged`
-- **2 predicate-grammar gaps fixed** (frost/def_shapes.v): `is_utyp__pall`
+- **2 predicate-grammar gaps fixed** (fresco/def_shapes.v): `is_utyp__pall`
   and `is_uskel__pall` add the `typ_all_col colour_syn` case (paper's
   utyp grammar `T ::= unit | α | T → T | syn{∀^δα.T}` covers both
   `δ = ε ↦ typ_all_etag` and `δ = · ↦ typ_all_col colour_syn`).
@@ -1518,7 +1518,7 @@ The re-encoding pass introduced bulk admits (~14 new during rewrite); subsequent
 ## Earlier retrospective: Lemma 3.7 (`d_pat_preserves_skel_wf`) — worked example of the colour-discipline closure pattern
 
 **Status: Qed-closed** at the paper-faithful signature
-([`d_pat_preserves_skel_wf`](frost/decl/prop_skeleton.v):
+([`d_pat_preserves_skel_wf`](fresco/decl/prop_skeleton.v):
 `d_pat mode_tc Γ e P → d_wf_denv Γ → d_wf_skel nil Γ P` — no extra
 premises). Closure took several iterations and bottomed out at a
 *methodological* insight rather than a structural patch — see
@@ -1588,19 +1588,19 @@ guarded, hence wf. **No paper inconsistency.**
 
 ## Phase 1 (definitions only)
 
-🟢 Complete (commit `6b5f7c3`, 2026-05-10). Every paper rule from `paper/sections/declarative.tex` has a corresponding `Inductive` constructor in `mechanization/frost/decl/def_rules.v`; full clean build; no `Admitted`. Bug audit performed and 9 fixes applied. Mutual block reduced to just `d_typing` ↔ `d_pat`.
+🟢 Complete (commit `6b5f7c3`, 2026-05-10). Every paper rule from `paper/sections/declarative.tex` has a corresponding `Inductive` constructor in `mechanization/fresco/decl/def_rules.v`; full clean build; no `Admitted`. Bug audit performed and 9 fixes applied. Mutual block reduced to just `d_typing` ↔ `d_pat`.
 
 ## Phase 3 status (post 2026-05-17)
 
-**3.A Algorithmic defs** (`frost/algo/def_rules.v`): 🟢 done. ~140 constructors across 16 inductives.
+**3.A Algorithmic defs** (`fresco/algo/def_rules.v`): 🟢 done. ~140 constructors across 16 inductives.
 
-**3.A′ Metasubstitution / questions / solutions** (`frost/algo/def_meta.v`, `def_question.v`): 🟢 done (definitions). Replaces the trivial `a_transfers` with the paper's information-increase relation `a_inc`/`a_isub` (fig:information-increase), the `denv_of` projection, and the `*_solution`/`*_optimal` question layer for all four properties.
+**3.A′ Metasubstitution / questions / solutions** (`fresco/algo/def_meta.v`, `def_question.v`): 🟢 done (definitions). Replaces the trivial `a_transfers` with the paper's information-increase relation `a_inc`/`a_isub` (fig:information-increase), the `denv_of` projection, and the `*_solution`/`*_optimal` question layer for all four properties.
 
-**3.B Algo soundness** (`frost/algo/prop_soundness.v`): 🟡 scaffolding only, now **faithful**. 4 admits: `a_consis_sound`, `a_sub_sound`, `a_pat_sound`, `a_typing_sound`, each concluding the relevant `*_solution`.
+**3.B Algo soundness** (`fresco/algo/prop_soundness.v`): 🟡 scaffolding only, now **faithful**. 4 admits: `a_consis_sound`, `a_sub_sound`, `a_pat_sound`, `a_typing_sound`, each concluding the relevant `*_solution`.
 
-**3.C Algo completeness** (`frost/algo/prop_completeness.v`): 🟡 scaffolding only, now **faithful**. 4 admits: `a_consis_complete`, `a_sub_complete`, `a_pat_complete`, `a_typing_complete`, each producing the `*_optimal` solution from `*_solution_ex`.
+**3.C Algo completeness** (`fresco/algo/prop_completeness.v`): 🟡 scaffolding only, now **faithful**. 4 admits: `a_consis_complete`, `a_sub_complete`, `a_pat_complete`, `a_typing_complete`, each producing the `*_optimal` solution from `*_solution_ex`.
 
-**3.D Auxiliary lemmas** (`frost/algo/prop_lemmas.v`): 🟡 scaffolding. 16 admits covering proofs.tex §Lemmas (Stability, Structural rules, Suffix erasure, Splitting refines, Consistency-extends-sub, Precision-extends-sub, Inherited-refinement-precision, Context-precision, Substitution-preserves-safety/informativeness, More-information-no-harm).
+**3.D Auxiliary lemmas** (`fresco/algo/prop_lemmas.v`): 🟡 scaffolding. 16 admits covering proofs.tex §Lemmas (Stability, Structural rules, Suffix erasure, Splitting refines, Consistency-extends-sub, Precision-extends-sub, Inherited-refinement-precision, Context-precision, Substitution-preserves-safety/informativeness, More-information-no-harm).
 
 <!-- BEGIN paper-refs (auto-generated by scripts/sync_paper_refs.py) -->
 [thm:sound-type-inference]: ../paper/sections/algorithmic.tex#L686 "Theorem E.4: Soundness of type inference"

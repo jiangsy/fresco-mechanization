@@ -42,7 +42,7 @@ recently P6-Sv at the end of this file)}.
 > **✅ FIXED IN THE MECH (2026-08-19).**  The refutation is
 > `cex/probe_extract_conflated_opener.v` (five lemmas, all Qed and
 > assumptions-closed), and the repair below is LANDED on both collection
-> arrow rows (frost/algo/def_rules.v); `make coq` rc=0, README.v 33/33.
+> arrow rows (fresco/algo/def_rules.v); `make coq` rc=0, README.v 33/33.
 > ⚙ What it cost inside the mech — an avoid-set parameter and a
 > total-freshness conclusion for `a_looksub_lookeq_subst_gen_size`, and two
 > short guard derivations in the P6 completeness lemmas — is recorded in
@@ -117,7 +117,7 @@ opener is invisible to the right half no matter what the context carries.
 ## MISSING SIDE CONDITION (2026-08-17, machine-checked) — the COLLECTION rules lack the `α ∈ ftv(subject)` guard that renders the implementation's absence-first dispatch, so a collection call can spend a fresh name it never needed
 
 > **✅ FIXED IN THE MECH ON BOTH ENCODINGS (2026-08-17/18).**  The five LEAKING
-> rows of `frost/algo/def_rules.v` AND `frost/ext_algo/def_look.v` —
+> rows of `fresco/algo/def_rules.v` AND `fresco/ext_algo/def_look.v` —
 > `LS-ForallR`, `LS-ForallL`, `LE-ForallInh`, `LE-ForallSyn`, `LE-UnivGhost1` —
 > now carry `α ∈ ftvar_in_pskl <subject>` (`LE-FlexR` already did).
 > `make coq` rc=0, `README.v` 32/32.  **The finding below stands unchanged for
@@ -161,8 +161,8 @@ opener is invisible to the right half no matter what the context carries.
 
 **Where.**  `LS-ForallR`, `LS-Arrow`, `LS-ForallL`, `LS-UnivGhostL`, `LS-Check`
 and their `LE-*` twins (`full-algo-spec.tex`'s collection figure;
-`frost/algo/def_rules.v:418-528` and its threaded copy
-`frost/ext_algo/def_look.v`).  `LS-Absent` fires whenever the looked-for
+`fresco/algo/def_rules.v:418-528` and its threaded copy
+`fresco/ext_algo/def_look.v`).  `LS-Absent` fires whenever the looked-for
 variable `α` does not occur in the SUBJECT, and it is stated with no exclusion
 against any of them.  The same holds for `LS-Vacuous` (counterpart `◇`).
 
@@ -170,7 +170,7 @@ against any of them.  The same holds for `LS-Vacuous` (counterpart `◇`).
 `constr_collect_sub` (:649-701) and `constr_collect_eq` (:542-626) — and this
 tree's runner faithfully renders that: every non-Absent clause of
 `e_looksub_impl` / `e_lookeq_impl` sits behind `mem α (ftvar_in_pskl P)`
-(`frost/ext_algo/def_look_impl.v:360, 377, 393, 406, …`), with the Vacuous test
+(`fresco/ext_algo/def_look_impl.v:360, 377, 393, 406, …`), with the Vacuous test
 second.  A relational encoding has no match order, so the exclusion has to be a
 PREMISE.
 
@@ -275,7 +275,7 @@ unguarded consistency derivations.
 
 **What the mechanization does**: `a_consis__flex_l` carries
 `P0 <> pskl_hole` and `a_consis__flex_r` carries `P <> pskl_hole`
-(`frost/algo/def_rules.v`), with the `ext_algo` twins identical.
+(`fresco/algo/def_rules.v`), with the `ext_algo` twins identical.
 Completeness is UNAFFECTED — `a_consis_complete` is re-proved with the
 guards, by trying `C-GhostR` BEFORE the two flexible layers (the
 implementation's own order) and adding the mirror `C-Ghost` node at a
@@ -293,7 +293,7 @@ the problem at its source instead.
 ## MISSING SIDE CONDITION (2026-08-17, machine-checked) — `SI-Ghost` lacks the `M ≠ TI` guard that its NEIGHBOUR `SI-UnivGhostL` carries, so the relation derives inference-mode judgements against a counterpart the implementation never accepts
 
 > **✅ FIXED IN THE MECH (2026-08-17).**  `a_sub__ghost` now carries
-> `M <> mode_ti` (`frost/algo/def_rules.v`; `e_sub__ghost` likewise), which
+> `M <> mode_ti` (`fresco/algo/def_rules.v`; `e_sub__ghost` likewise), which
 > makes `SI-Infer` the ONLY rule at `TI` — every other row fixes the mode to
 > `TC` or `FN _`, and `SI-ForallL` / `SI-UnivGhostL` already carried this
 > very premise.  ⭐ The guard had to go ON THE RULE rather than onto a
@@ -458,7 +458,7 @@ the runner against the rules need.
 ## MISSING SIDE CONDITION (2026-08-18, machine-checked) — `LE-UnivGhost2` lacks the exclusion that would keep `LE-FlexR` off a FLEXIBLE counterpart, so the COLLECTION is still ambiguous at a ⫯ subject — and the two answers differ in KIND, not in names
 
 > **✅ FIXED IN THE MECH ON BOTH ENCODINGS (2026-08-18).**  `LE-UnivGhost2` —
-> and its `e_` twin — carries `flex_r_off Θ P'` (`frost/algo/def_rules.v`),
+> and its `e_` twin — carries `flex_r_off Θ P'` (`fresco/algo/def_rules.v`),
 > *"`LE-FlexR` does not apply at this counterpart"*, and `LE-FlexR` gains the
 > HAT it was missing, `a_flex_tvar Θ β`.  `make coq` rc=0, `README.v` 32/32.
 > **The finding below stands unchanged for the PAPER**: the figure still owes
@@ -561,8 +561,8 @@ BUILDS `LE-UnivGhost2` there, and under (A) that row is barred.  Parked on
 branch `remech-guard4-wip` (`40f900c`) with the full measurement.
 
 ⭐ **AND THE MECH HAS ITS OWN BUG HERE, which (B) fixes.**
-`a_lookeq__flex_r` / `e_lookeq__flex_r` (`frost/algo/def_rules.v`,
-`frost/ext_algo/def_look.v`) fire at ANY `pskl_var_f β` — no `a_flex_tvar Θ β`
+`a_lookeq__flex_r` / `e_lookeq__flex_r` (`fresco/algo/def_rules.v`,
+`fresco/ext_algo/def_look.v`) fire at ANY `pskl_var_f β` — no `a_flex_tvar Θ β`
 premise — where the paper's conclusion is at `β̂`.  Contrast the SOLVE layer's
 twin `a_solve_eq__flex_r`, which DOES carry `a_flex_tvar Θ α` and documents at
 length why the exclusion matters.  The two rows are mirror images and only one
@@ -578,7 +578,7 @@ function of its inputs up to renaming.
 
 > **✅ FIXED IN THE MECH ON BOTH ENCODINGS (2026-08-18).**  `LS-ForallL` and
 > `LS-UnivGhostL` — and their `e_` twins — carry `forall_r_off m P'`
-> (`frost/def_shapes.v`), *"`LS-ForallR` does not apply at this counterpart
+> (`fresco/def_shapes.v`), *"`LS-ForallR` does not apply at this counterpart
 > and mode"*.  `make coq` rc=0, `README.v` 32/32.  **The finding below stands
 > unchanged for the PAPER**: the figure still owes the exclusion premise.
 >
@@ -680,7 +680,7 @@ look-completeness argument:
 > put, and `LS-Var` fires at the leaf.
 
 Mechanized as `alpha_stack_looksub`
-(`frost/algo/sub/look/prop_sub_cstr.v:373`), whose comment records the
+(`fresco/algo/sub/look/prop_sub_cstr.v:373`), whose comment records the
 consequence the proof relies on: *"Sub-ForallR's stack branch never
 invokes `LS-ForallR`, and the β it would have had to strip is simply
 never introduced."*  With the guard that is false exactly at `M = TC`
@@ -709,7 +709,7 @@ as a function of the inputs.
 
 ⚙ **MEASURED IN FULL (2026-08-18), and the finding for the PAPER is
 unchanged.**  The guard was carried through the mechanization as
-`forall_r_off m P'` (`frost/def_shapes.v`) on `LS-ForallL` and
+`forall_r_off m P'` (`fresco/def_shapes.v`) on `LS-ForallL` and
 `LS-UnivGhostL`, both encodings.  It is GREEN on fourteen of the fifteen
 files it touches; the fifteenth is Lemma E.17's own proof
 (`algo/sub/look/prop_sub_cstr.v`), exactly as predicted above.  The work is
@@ -778,7 +778,7 @@ carry the strong reading**, as one extra premise per `ForallL` row:
 sites are mechanical: every transport either keeps the subject, takes `Ψ' := ∅`,
 or substitutes a type variable — and a substitution by a TAG-FREE term cannot
 change a tag (`ftag_in_utyp_subst_tagfree` / `ftag_in_uskl_subst_tagfree`,
-`frost/prop_tag.v` §0).  Two places are genuine obstructions, and one of them
+`fresco/prop_tag.v` §0).  Two places are genuine obstructions, and one of them
 is deep:
 
 > **`d_consis_sub_trans_mid`** — CST, paper B.3, `decl/prop_general_subsumption.v`,
@@ -802,7 +802,7 @@ is deep:
 
 **The repair for CST, and it is a general technique.**  Stop freshening node by node.
 
-1. `frost/prop_tag.v` + `frost/decl/prop_tag_swap.v` §1–§2 — ε-tag
+1. `fresco/prop_tag.v` + `fresco/decl/prop_tag_swap.v` §1–§2 — ε-tag
    EQUIVARIANCE.  `fresh` is a statement about NAMES, so the primitive is a
    TRANSPOSITION of two tags, which is an automorphism of `d_tags`,
    `d_tags_skl`, `d_wf_utyp`, `d_wf_uskl`, `d_consis`, `d_pat_consis`, `d_sub`
@@ -1298,7 +1298,7 @@ SYNTHESISED painting on the right).  The same step is used again, in the
 further gives `Θ2 ⊢ B ≡ A`").
 
 **Status in the mech: SUPPLIED AND PROVED** (2026-08-06).
-`a_consis_chk_annot_refine` (`frost/algo/prop_soundness_pat.v` §4) is Qed and
+`a_consis_chk_annot_refine` (`fresco/algo/prop_soundness_pat.v` §4) is Qed and
 axiom-free, so `thm:sound-skeleton-inference` (`a_pat_sound`) is now *Closed
 under the global context*.  What the proof needed, and what the authors would
 have to write down:
@@ -1373,7 +1373,7 @@ refutes a rule set, and the rule set was repaired.
 
 | deleted file | what it proved | why it is retracted |
 |---|---|---|
-| `cex/cex_looksub_not_det.v` | `cex_looksub_not_det` — the COLLECTION is not deterministic: at subject `∀_. α`, counterpart `∀_. 1`, mode `TC`, `LS-ForallL` first collects `[≼TC ∀_.1]` and `LS-ForallR` first collects `[≼TC 1]`, and both lists are CLOSED, so no renaming absorbs the difference | the ForallR-PRIORITY guard landed on `LS-ForallL` / `LS-UnivGhostL` and their `e_` twins (`forall_r_off`, frost/def_shapes.v), so the ForallL-first derivation cannot be built.  ⭐ Its POSITIVE replacements are `a_looksub_open_target` (under the guard, only Var / Absent / ForallR can root a collection at a ghost-free `∀` counterpart in check mode, so one peel is an INVERSION) and its solve-side mirror `a_solve_sub_open_target` |
+| `cex/cex_looksub_not_det.v` | `cex_looksub_not_det` — the COLLECTION is not deterministic: at subject `∀_. α`, counterpart `∀_. 1`, mode `TC`, `LS-ForallL` first collects `[≼TC ∀_.1]` and `LS-ForallR` first collects `[≼TC 1]`, and both lists are CLOSED, so no renaming absorbs the difference | the ForallR-PRIORITY guard landed on `LS-ForallL` / `LS-UnivGhostL` and their `e_` twins (`forall_r_off`, fresco/def_shapes.v), so the ForallL-first derivation cannot be built.  ⭐ Its POSITIVE replacements are `a_looksub_open_target` (under the guard, only Var / Absent / ForallR can root a collection at a ghost-free `∀` counterpart in check mode, so one peel is an INVERSION) and its solve-side mirror `a_solve_sub_open_target` |
 
 ⛔ **What this does NOT settle.**  The mech's `sub_shield` premise was
 invented as the repair of the second of these, and P6-Sv / P6-Ss / P6-L
@@ -1408,7 +1408,7 @@ rule written with `P` / `Q` admits a full skeleton.  `\silab{Check}`
 
 Nothing in the *rule* forces `A`, `B` to be ghost-free; the sort is carried
 entirely by the choice of letter, and a Coq `Inductive` has no such notion.
-The mechanization therefore states it: `pskl_ghost_free` (frost/def_shapes.v)
+The mechanization therefore states it: `pskl_ghost_free` (fresco/def_shapes.v)
 holds exactly of the ghost-free skeletons, i.e. of the painted `ptyp`s
 (`pskl_ghost_free_to_ptyp`).
 
@@ -1514,7 +1514,7 @@ directions of subtyping stay closed and unconditional.
   machine-checked at the time (`a_unify_stuck_on_arrow_definition`, Qed,
   axiom-free): with `Θ₀ = (α̂ ≔ unit → unit), β̂` it could not unify α̂ with β̂,
   though a solution plainly exists.  That instance is now the SUCCESS
-  regression test `frost/algo/test_unify_regression.v`
+  regression test `fresco/algo/test_unify_regression.v`
   (`a_unify_succeeds_on_arrow_definition`).  A definition CAN be an arrow — that is what `Assign-SolveM`
   produces via `guess^TY`.
 - NB `a_unify_var_inv` ("every derivable `a_unify` has VARIABLE subjects",
@@ -1711,7 +1711,7 @@ TWO REASONS IT STALLED, both worth knowing before anyone retries:
    just pick one.  The archived attempt reached for a 960-line atom-swapping /
    equivariance library to get around this.  **That is not how this codebase
    solves it.**  The precedent is `d_consis_compose` (see
-   [[frost-compose-tags-witness]]): it dissolved exactly this
+   [[fresco-compose-tags-witness]]): it dissolved exactly this
    "different witness per fresh variable" blocker by making the output an
    EXPLICIT WITNESS FUNCTION of the inputs — invariant under opening a variable
    — instead of an existential.  Retry that way; it should be a fraction of the
@@ -2471,7 +2471,7 @@ on the freshening so a raw Θ0-flex opposite a ρ-rigid-var cannot occur.
 - Where: subtyping-proofs.tex:1696 (`lemma:complete-constraint-collection-
   solving-var`, the SUBTYPING twin of the consistency lemma at
   consistency-proofs.tex:1181).  Mech: the counterexample is
-  `frost/algo/cex/cex_p6sv_forall_flex.v`
+  `fresco/algo/cex/cex_p6sv_forall_flex.v`
   (`p6sv_with_p6cv_premises_is_false`, Qed, axiom-free).
 - **Status: FALSE as an isolated statement, and — unlike the 2026-07-25
   entry above — the standing reachability argument does NOT cover it.**
@@ -2483,7 +2483,7 @@ on the freshening so a raw Θ0-flex opposite a ρ-rigid-var cannot occur.
   Ψ'-tag-free — with an explicit row keeping it from being too strong, see
   `fsh_rsubst_var`), plus `flex_apart_walk` (P6-Cv's own premise at every state
   the descents can reach).  `a_solve_sub_complete_var` is now **Qed and
-  axiom-free** in `frost/algo/prop_look_complete_sub_var.v`, and
+  axiom-free** in `fresco/algo/prop_look_complete_sub_var.v`, and
   `flex_shield_excludes_cex` is the machine-checked regression test that the
   premise rules out the witness below.  What the authors must decide is
   whether the PAPER adopts this side condition (or an equivalent one) —
@@ -2734,7 +2734,7 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
 
 - Where: subtyping-proofs.tex:2196, case `UnivGhostLG` of
   `lemma:complete-constraint-collection-solving-var`.  Mech: the `□` row of
-  the `univ_ghost_lg` case in `frost/algo/prop_look_complete_sub_var.v`
+  the `univ_ghost_lg` case in `fresco/algo/prop_look_complete_sub_var.v`
   (now proved).
 - The paper writes "We know that `P_i` must have a top-level `∀◇`", reading
   the precision premise `Δ|Θ ⊢ᵃᵈ precise[Ψi]{θP_i}{∀◈ψ'}` as if only
@@ -2887,7 +2887,7 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
 - Mech status: **P6-Ss is CLOSED** (2026-07-30) —
   `a_looksub_solve_complete_gen` and the paper's premise-free
   `a_looksub_solve_complete` are `Qed` and axiom-free in
-  `frost/algo/prop_look_complete_sub_cstr.v`; all twelve rows and both
+  `fresco/algo/prop_look_complete_sub_cstr.v`; all twelve rows and both
   special cases are proved.
 
 ## GAP (proof-step, 2026-07-29) — `lemma:complete-constraint-collection-solving` (P6-Ss), ForallL case: the IH instance needs `θψ_b = ψ_b`, which fails even for legitimate θ; no side condition on θ repairs the step — the statement is believed TRUE via a ρ-generalized induction
@@ -2994,7 +2994,7 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
 
 ## ⚠️ REPAIR-PREMISE GAP (authors' call) — `flex_apart` is missing `fsh_rsubst_var`'s mirror, and without it P6-L's side condition is UNSATISFIABLE at an arrow (2026-07-30)
 
-**Machine-checked:** `frost/algo/cex/cex_p7_shield_arrow.v`
+**Machine-checked:** `fresco/algo/cex/cex_p7_shield_arrow.v`
 (`p7_shield_arrow_flexfree_is_unsatisfiable`,
 `p7_shield_arrow_poly_is_unsatisfiable`; both Qed, axiom-free).
 
@@ -3090,7 +3090,7 @@ to the authors: drop the TODO, or restate it as the equivalence
     θ_1(RHS) = θ_1 P_0
 
 which is what the mechanization proves, for BOTH judgments
-(`frost/algo/prop_sub_concrete_rhs.v`, Qed + axiom-free):
+(`fresco/algo/prop_sub_concrete_rhs.v`, Qed + axiom-free):
 `a_consis_concrete_output_equiv` and `a_sub_concrete_output_equiv` each give
 `Θ_1 ⊢ P_0 ≡ˢ P'_0` for a ghost-free (concrete) `P_0`, in the OUTPUT context —
 which is where the definition the equivalence uses was recorded.
@@ -3835,7 +3835,7 @@ order, so the exclusion has to be a premise:
 ```
 
 `nonghost(P)` = P's head is neither `◇` nor `∀◇` (mech `nonghost_pskl`,
-frost/def_shapes.v).  It costs completeness NOTHING — at `◇`, `SolE-GhostL`
+fresco/def_shapes.v).  It costs completeness NOTHING — at `◇`, `SolE-GhostL`
 is strictly *more* informative, and at `∀◇P₀`, `SolE-GhostGuarded` peels to
 the same place — and it keeps TRUE the fact the paper uses silently in every
 `P_i = □` subcase of the -var lemmas: *solving with the ghost subject
@@ -3892,7 +3892,7 @@ configuration refuted.
 
 ## ⭐⭐ RULE-LEVEL SIDE CONDITIONS `thm:sound-type-inference` NEEDS (2026-08-06)
 
-Closing theorem 2 (`a_typing_sound`, `frost/algo/prop_soundness_typing.v` §13,
+Closing theorem 2 (`a_typing_sound`, `fresco/algo/prop_soundness_typing.v` §13,
 Qed and axiom-free) forced **three** additions to `fig:alg-type-inference` and
 **one** correction.  All four are one-line, INVERSION-only for every existing
 consumer, and cleanly revertible; the benchmark derivations (`test/`) discharge
@@ -4017,7 +4017,7 @@ well-formed" convention silently assumes this result.
 
 Found while proving `thm:complete-type-inference`.  Three related repairs to
 the four suffix-discarding check rows (and, for uniformity, the two `AT-Abs`
-rows), all now in `frost/algo/def_rules.v` with the mech following the
+rows), all now in `fresco/algo/def_rules.v` with the mech following the
 IMPLEMENTATION and the paper's own PROOF where they diverge from the figure.
 
 ### 1. The body premise's result must be FREE, and the conclusion's codomain is the BODY's result
@@ -4218,10 +4218,10 @@ derivation EXISTING is not a search TERMINATING.  A reader who reaches
 `thm:complete-type-inference` having read `overview.tex:79` will read
 decidability into it; nothing in the paper supports that reading.
 
-### Mechanized status (frost/ext_algo/, 2026-08-13/14) — the argument, made and checked
+### Mechanized status (fresco/ext_algo/, 2026-08-13/14) — the argument, made and checked
 
 The principle itself is now a theorem, in the exact currency the
-termination argument needs (`frost/ext_algo/prop_termination.v`; all
+termination argument needs (`fresco/ext_algo/prop_termination.v`; all
 axiom-free):
 
 - `guess^TY` copies quantifiers and never invents one
@@ -4267,11 +4267,11 @@ the flexible walks consume the context.
 
 Termination was only two thirds of the argument; the third is that the
 runner's `None` MEANS something.  The completeness ladder is now finished —
-campaign levels 1–8, every runner of `frost/ext_algo/` — and the corollary
+campaign levels 1–8, every runner of `fresco/ext_algo/` — and the corollary
 is the two lines §5 of the hand-off predicted:
 
 - `e_typing_dec` / `e_typing_dec_init`
-  (`frost/ext_algo/prop_run_corollaries.v` §4, `Closed under the global
+  (`fresco/ext_algo/prop_run_corollaries.v` §4, `Closed under the global
   context`, `README.v` §VI): at a locally-closed input skeleton and a
   locally-closed program, typability is DECIDED, and the decision procedure
   is the extracted function itself.
@@ -4363,7 +4363,7 @@ algorithm's answers are only determined up to generality.
 ## ⭐⭐⭐ THREE MISSING FRESHNESS SIDE CONDITIONS ON POLYMORPHIC-INFORMATION EXTRACTION — a LEAKED ∀-OPENER can be re-drawn as a flexible, and the rules never say it may not (2026-08-19 / 2026-08-20 / 2026-08-21)
 
 Mechanized as guards on `a_looksub__arrow` / `a_lookeq__arrow` and on
-`a_extract__solve` (`frost/algo/def_rules.v`, both tagged `[paper-gap]`).
+`a_extract__solve` (`fresco/algo/def_rules.v`, both tagged `[paper-gap]`).
 
 ### The finding
 
@@ -4436,7 +4436,7 @@ about the DERIVATION.
 ### Both guards cost the implementation NOTHING, and that is a theorem
 
 The mechanization carries a second, SUPPLY-THREADED encoding of the same
-algorithm (`frost/ext_algo/`) in which every invented name is drawn from a
+algorithm (`fresco/ext_algo/`) in which every invented name is drawn from a
 threaded supply, exactly as the reference implementation's counter does.
 Both guards are DERIVABLE there:
 

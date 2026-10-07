@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sync paper Lemma/Theorem numbers from frost.aux into Rocq + Markdown.
+"""Sync paper Lemma/Theorem numbers from fresco.aux into Rocq + Markdown.
 
 Two responsibilities:
 
@@ -28,9 +28,9 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-PAPER_AUX = REPO_ROOT / "paper" / "frost.aux"
+PAPER_AUX = REPO_ROOT / "paper" / "fresco.aux"
 PAPER_SECTIONS = REPO_ROOT / "paper" / "sections"
-ROCQ_ROOT = REPO_ROOT / "mechanization" / "frost"
+ROCQ_ROOT = REPO_ROOT / "mechanization" / "fresco"
 MECH_ROOT = REPO_ROOT / "mechanization"
 
 # Markdown files whose paper-refs block should be regenerated.
@@ -168,7 +168,7 @@ def build_markdown_block(label_lines, label_map):
     Each line is a markdown reference-link definition:
         [lemma:foo]: ../paper/sections/bar.tex#L52 "Lemma 3.2: Foo"
 
-    Labels present in .tex sources but missing from frost.aux still get a
+    Labels present in .tex sources but missing from fresco.aux still get a
     link with the file:line; the title falls back to the label itself.
     """
     lines = []

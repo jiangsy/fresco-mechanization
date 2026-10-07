@@ -1,4 +1,4 @@
-(** Frost re-mechanization — the compilable paper-to-Coq theorem index.
+(** Fresco re-mechanization — the compilable paper-to-Coq theorem index.
 
     THIS FILE IS A HEADLINE INDEX, NOT A CATALOGUE.  It lists the results a
     reader of the paper would come looking for: the flagship theorems, the
@@ -43,7 +43,7 @@
       ⊑ (bare) is information increase, above   ⪯ᶜᵗˣ ctx precision
 
     JUDGEMENT DELIMITERS — the SYSTEM is the brace pair, and each pair is its
-    own notation scope (legend: frost/notations.v).
+    own notation scope (legend: fresco/notations.v).
       [{{ … }}d]  declarative ([d_*], over Γ)
       [{{ … }}ad] declarative over algorithmic contexts ([ad_*], over Θ)
       [{{ … }}a]  algorithmic ([a_*], with [⊣ Θ'])
@@ -68,45 +68,45 @@ Require Import Coq.Lists.List.
 Require Import Coq.Sorting.Permutation.
 Require Import Metalib.Metatheory.
 
-Require Import src.frost.notations.
-Require Import src.frost.deco_algo.def_decorated.
-Require Import src.frost.def_shapes.
-Require Import src.frost.coercions.
-Require Import src.frost.decl.def_rules.
-Require Import src.frost.algo.def_rules.          (* the algorithmic judgement notations *)
-Require Import src.frost.algo.def_meta.            (* κ ∷ Θ ⊑ Θ', Θ ⊴ Θ' *)
-Require Import src.frost.algo_decl.def_consis_refine.
-Require Import src.frost.algo_decl.def_subtyping.
-Require Import src.frost.algo_decl.def_typing.
-Require Import src.frost.decl.prop_wellformed.
-Require Import src.frost.decl.prop_syntax_directed.
-Require Import src.frost.decl.prop_general_subsumption.
-Require Import src.frost.decl.prop_stability.       (* order irrelevance *)
-Require Import src.frost.decl.prop_shallow.         (* the two expressiveness results *)
-Require Import src.frost.algo.consis.prop_soundness_consis.
-Require Import src.frost.algo.consis.prop_completeness_consis.
-Require Import src.frost.deco_algo.prop_soundness_sub.
-Require Import src.frost.algo.sub.prop_completeness_sub_precise.
-Require Import src.frost.algo.sub.look.prop_eq_var.
-Require Import src.frost.algo.sub.look.prop_eq_cstr.
-Require Import src.frost.algo.sub.look.prop_sub_var.
-Require Import src.frost.algo.sub.look.prop_sub_cstr.
-Require Import src.frost.algo.sub.look.prop_extract.
-Require Import src.frost.algo.sub.prop_completeness_sub.
-Require Import src.frost.algo.pat.prop_soundness_pat.
-Require Import src.frost.algo.typing.prop_soundness_typing.
-Require Import src.frost.algo.prop_precise.      (* the {{ _ ⨟ _ ⊢ₚᵣ _ ⊑ _ }}ad notation *)
-Require Import src.frost.algo.prop_precise_sub.
-Require Import src.frost.algo.pat.prop_completeness_pat.
-Require Import src.frost.algo.typing.prop_completeness_typing.
-Require Import src.frost.algo.typing.prop_closed.
-Require Import src.frost.algo_decl.prop_conserv.  (* [d_wf_exp], {{ Γ ⊢ᵉ e }}d *)
-Require Import src.frost.ext_algo.notations.
-Require Import src.frost.ext_algo.def_supply.
-Require Import src.frost.ext_algo.def_typing.
-Require Import src.frost.ext_algo.prop_typing.       (* [entry_supply] *)
-Require Import src.frost.ext_algo.def_typing_impl.
-Require Import src.frost.ext_algo.prop_run_corollaries.
+Require Import src.fresco.notations.
+Require Import src.fresco.deco_algo.def_decorated.
+Require Import src.fresco.def_shapes.
+Require Import src.fresco.coercions.
+Require Import src.fresco.decl.def_rules.
+Require Import src.fresco.algo.def_rules.          (* the algorithmic judgement notations *)
+Require Import src.fresco.algo.def_meta.            (* κ ∷ Θ ⊑ Θ', Θ ⊴ Θ' *)
+Require Import src.fresco.algo_decl.def_consis_refine.
+Require Import src.fresco.algo_decl.def_subtyping.
+Require Import src.fresco.algo_decl.def_typing.
+Require Import src.fresco.decl.prop_wellformed.
+Require Import src.fresco.decl.prop_syntax_directed.
+Require Import src.fresco.decl.prop_general_subsumption.
+Require Import src.fresco.decl.prop_stability.       (* order irrelevance *)
+Require Import src.fresco.decl.prop_shallow.         (* the two expressiveness results *)
+Require Import src.fresco.algo.consis.prop_soundness_consis.
+Require Import src.fresco.algo.consis.prop_completeness_consis.
+Require Import src.fresco.deco_algo.prop_soundness_sub.
+Require Import src.fresco.algo.sub.prop_completeness_sub_precise.
+Require Import src.fresco.algo.sub.look.prop_eq_var.
+Require Import src.fresco.algo.sub.look.prop_eq_cstr.
+Require Import src.fresco.algo.sub.look.prop_sub_var.
+Require Import src.fresco.algo.sub.look.prop_sub_cstr.
+Require Import src.fresco.algo.sub.look.prop_extract.
+Require Import src.fresco.algo.sub.prop_completeness_sub.
+Require Import src.fresco.algo.pat.prop_soundness_pat.
+Require Import src.fresco.algo.typing.prop_soundness_typing.
+Require Import src.fresco.algo.prop_precise.      (* the {{ _ ⨟ _ ⊢ₚᵣ _ ⊑ _ }}ad notation *)
+Require Import src.fresco.algo.prop_precise_sub.
+Require Import src.fresco.algo.pat.prop_completeness_pat.
+Require Import src.fresco.algo.typing.prop_completeness_typing.
+Require Import src.fresco.algo.typing.prop_closed.
+Require Import src.fresco.algo_decl.prop_conserv.  (* [d_wf_exp], {{ Γ ⊢ᵉ e }}d *)
+Require Import src.fresco.ext_algo.notations.
+Require Import src.fresco.ext_algo.def_supply.
+Require Import src.fresco.ext_algo.def_typing.
+Require Import src.fresco.ext_algo.prop_typing.       (* [entry_supply] *)
+Require Import src.fresco.ext_algo.def_typing_impl.
+Require Import src.fresco.ext_algo.prop_run_corollaries.
 
 
 (* ##################################################################### *)
@@ -575,12 +575,12 @@ Print Assumptions mono_lambda_anno_redundant.
    air" (declarative.tex:856-860) — is offered in answer to the undecidability
    of impredicative polymorphic subtyping, which it cites twice
    (overview.tex:79, introduction.tex:463).  Read against those citations the
-   principle is an argument that Frost's algorithm IS decidable, and the paper
+   principle is an argument that Fresco's algorithm IS decidable, and the paper
    never discharges it: a derivation EXISTING is not a search TERMINATING.
    The gap is filed in docs/PAPER-GAPS.md; this entry is the discharge.
 
    Three closed results compose into it, all over the SUPPLY-THREADED encoding
-   of frost/ext_algo/ (which prop_typing.v §2 shows is frost/algo/'s own
+   of fresco/ext_algo/ (which prop_typing.v §2 shows is fresco/algo/'s own
    [a_typing] at the entry supply, over the same contexts):
 
      e_typing_order_total  (def_typing_impl.v §2)  the search TERMINATES, so
@@ -605,7 +605,7 @@ Print Assumptions mono_lambda_anno_redundant.
    hand-off §8c.24 (the obstruction) and §8c.47 (the discharge).
 
    TWO entries carry it below: this one at the THREADED relation — general in
-   the mode and the input skeleton — and [frost_infer] at the PAPER's, which
+   the mode and the input skeleton — and [fresco_infer] at the PAPER's, which
    is also the extracted artifact.  ⚙ [entry_supply P0 e] (prop_typing.v §2)
    is the supply the driver starts at: the atoms the inputs already mention.
    ⚙ The hypotheses are INPUTS, not obligations: a dangling de Bruijn index
@@ -619,24 +619,24 @@ Print Assumptions e_typing_dec_init.
 
 (* ⭐⭐⭐ THE CERTIFIED ENTRY POINT, AND WITH IT DECIDABILITY OF THE PAPER'S
    OWN TYPE INFERENCE — McTT's idiom on the stdlib's plain union
-   (prop_run_corollaries.v §6): [frost_infer] answers in a [sumor] of a
+   (prop_run_corollaries.v §6): [fresco_infer] answers in a [sumor] of a
    [sig], so the proofs erase but the CONSTRUCTOR CHOICE is the certificate.
    LEFT holds the runner's answer [r] with the run equation and the
    DECLARATIVE typing it implies; RIGHT holds the proof that no declarative
    type exists.  [ExtrOcamlBasic] maps [sig] to its carrier and [sumor] to
-   [option], so the OCaml side (extraction/extracted/frost_guess.ml) reads
-   [val frost_infer : exp -> typing_result option] — the SAME type the
+   [option], so the OCaml side (extraction/extracted/fresco_guess.ml) reads
+   [val fresco_infer : exp -> typing_result option] — the SAME type the
    runner's own answer has, now with the paper's reading certified on both
    constructors; the wf hypothesis is [Prop] and vanishes.
 
    ⚙ Its two projections stay in the tree rather than here: §7's
    [d_typing_infer_dec] is this statement with the payload forgotten (the
-   plain "typable or not" disjunction, three lines off [frost_infer]), and
+   plain "typable or not" disjunction, three lines off [fresco_infer]), and
    §5's [e_typing_run_complete_decl_infer] is its RIGHT branch's engine.
-   [frost_infer_complete] (typable ⇒ answers [inleft]) is McTT's
+   [fresco_infer_complete] (typable ⇒ answers [inleft]) is McTT's
    [type_check_closed_complete].  ⚠️ Application form ([sumor]/[sig]): the
    meta-substitution notations claim the [{ term …] prefix. *)
-Check frost_infer :
+Check fresco_infer :
   forall e, {{ nil ⊢ᵉ e }}d ->
   sumor
     (sig (fun r : typing_result =>
@@ -646,4 +646,4 @@ Check frost_infer :
          {{ nil ⊢[ mode_ti ]
             e ⦂ (ptyp_to_btyp_syn (msubst_ptyp ζ (ty_out r))) }}d))
     (~ exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d).
-Print Assumptions frost_infer.
+Print Assumptions fresco_infer.

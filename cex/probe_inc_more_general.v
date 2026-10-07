@@ -42,12 +42,12 @@
 From Coq Require Import Lists.List.
 From Metalib Require Import Metatheory.
 
-From src Require Import frost.notations.
-From src Require Import frost.def_shapes.
-From src Require Import frost.algo.def_rules.
-From src Require Import frost.algo.def_meta.
+From src Require Import fresco.notations.
+From src Require Import fresco.def_shapes.
+From src Require Import fresco.algo.def_rules.
+From src Require Import fresco.algo.def_meta.
 
-Open Scope frost_a_scope.
+Open Scope fresco_a_scope.
 
 (** The two contexts of `cex/probe_consis_ghost_flex.v`, verbatim. *)
 Definition gf_ctx (α : atom) : aenv := (α ~ abind_flex_mono) ++ nil.

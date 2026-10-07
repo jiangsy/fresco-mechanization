@@ -12,7 +12,7 @@ RELATE the runner's context to the derivation's.  Five candidate
 relations are machine-checked refuted (§4), and the fragment escape too
 (§5's R2).  The resolution was to remove the AMBIGUITY instead:
 `U-FlexL` / `U-FlexR` now carry `P0 <> ◇` / `P <> ◇`
-(`frost/algo/def_rules.v`), which renders the reference implementation's
+(`fresco/algo/def_rules.v`), which renders the reference implementation's
 ghost-first dispatch — the same prose-completion the tree already makes
 for `SE-FlexR` via `nonghost_pskl`.  Then
 
@@ -43,7 +43,7 @@ self-contained.
 
 ## 1. The goal, exactly
 
-`frost/ext_algo/prop_consis_complete.v` proves
+`fresco/ext_algo/prop_consis_complete.v` proves
 
 ```coq
 Lemma e_consis_call_impl_complete : forall S0 Θ c, consis_call_complete S0 Θ c.
@@ -69,7 +69,7 @@ Hnh0.` / `destruct Hnh1.`).
 
 ## 2. What is already Qed — do not rebuild any of it
 
-### `frost/algo/consis/prop_consis_inc.v`
+### `fresco/algo/consis/prop_consis_inc.v`
 
 | lemma | statement |
 |---|---|
@@ -82,7 +82,7 @@ Helpers added there: `a_isub_solve_head`, `a_isub_weaken_suffix2`,
 `a_isub_strengthen_suffix_src`, `a_wf_aenv_defs_lc`, and the
 `lc_aenv` / `aenv_defs_lc` plumbing.
 
-### `frost/ext_algo/prop_consis_inc.v`
+### `fresco/ext_algo/prop_consis_inc.v`
 
 `e_assign_isub`, `e_unify_isub`, `e_consis_isub`, `e_assign_nil_isub` (the
 `e_` faces, by composition with prop_consis.v §4's bridge), plus §3's four
@@ -224,7 +224,7 @@ motive unusable.
 
 ### (R1) BUILD STATE (2026-08-17, session 2) — steps 1–2 LANDED
 
-`frost/ext_algo/prop_consis_alias.v`, Qed and assumptions-closed:
+`fresco/ext_algo/prop_consis_alias.v`, Qed and assumptions-closed:
 
 - **Step 1, `e_assign_hole_out`** (+ the mutual
   `e_assign_unify_consis_hole_walk`): the `◇`-payload walk's output is
