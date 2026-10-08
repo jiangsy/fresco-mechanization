@@ -1415,21 +1415,23 @@ Proof.
     + (* ⟨⟩ : guarded *)
       exfalso;
         assert (Hbad : guarded_bskl (bskl_all_inh B));
-        [ eapply ad_refine_syn_guarded_r;
+        [ eapply ad_refine_syn_guarded_r_all;
             [ exact HwfΘ | exact Hrefine
             | apply guarded_pskl_to_bskl_inh;
               eapply guarded_pskl_msubst_inc;
-                [ exact Hκ | apply guarded_pskl__unit ] ]
+                [ exact Hκ | apply guarded_pskl__unit ]
+            | eexists; left; reflexivity ]
         | inversion Hbad ].
     + (* a bound variable is not well-formed *) inversion HwfP0.
     + (* a variable : guarded *)
       exfalso;
         assert (Hbad : guarded_bskl (bskl_all_inh B));
-        [ eapply ad_refine_syn_guarded_r;
+        [ eapply ad_refine_syn_guarded_r_all;
             [ exact HwfΘ | exact Hrefine
             | apply guarded_pskl_to_bskl_inh;
               eapply guarded_pskl_msubst_inc;
-                [ exact Hκ | apply guarded_pskl__var ] ]
+                [ exact Hκ | apply guarded_pskl__var ]
+            | eexists; left; reflexivity ]
         | inversion Hbad ].
     + (* an arrow : guarded *)
       exfalso.
@@ -1438,10 +1440,11 @@ Proof.
       { pose proof (a_wf_pskl_lc HwfP0) as Hlc; inversion Hlc; subst.
         apply guarded_pskl__arrow; assumption. }
       assert (Hbad : guarded_bskl (bskl_all_inh B));
-        [ eapply ad_refine_syn_guarded_r;
+        [ eapply ad_refine_syn_guarded_r_all;
             [ exact HwfΘ | exact Hrefine
             | apply guarded_pskl_to_bskl_inh;
-              eapply guarded_pskl_msubst_inc; [ exact Hκ | exact Hg ] ]
+              eapply guarded_pskl_msubst_inc; [ exact Hκ | exact Hg ]
+            | eexists; left; reflexivity ]
         | inversion Hbad ].
     + (* P0 = ∀.P0' : the real row *)
       cbn [msubst_pskl pskl_to_bskl_inh] in Hrefine.
@@ -1477,10 +1480,9 @@ Proof.
       (* --- the target descends; the subject R' does not --- *)
       assert (HwfP0β : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty
                 ⊢ₚₛ (open_pskl_wrt_pskl (ptyp_to_pskl A0) (pskl_var_f β)) }}a).
-      { eapply a_wf_pskl_delta_to_tvar_mid
-          with (α1 := β) (Θ1 := nil) (Θ2 := Θ0) (Δ' := empty);
+      { eapply a_wf_pskl_delta_mono;
           [ apply (Hw0body β ltac:(clear - Fr; solve_notin))
-          | reflexivity | clear; fsetdec ]. }
+          | intros ? _ Hine; clear - Hine; fsetdec ]. }
       assert (Hdfreshβ : delta_def_fresh Δ ((β ~ abind_tvar) ++ Θ)).
       { intros β0 α0 τ0 Hβ0 Hb. eapply Hdfresh; [ exact Hβ0 | ].
         destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
@@ -1497,10 +1499,9 @@ Proof.
                 ⊳ (open_bskl_wrt_bskl B (bskl_var_f β)) }}ad).
       { rewrite (@msubst_pskl_open Θ0 κ Θ (ptyp_to_pskl A0) β Hκ Hβκ).
         rewrite pskl_to_bskl_inh_open.
-        eapply ad_refine_syn_delta_to_tvar_mid
-          with (α1 := β) (Θ1 := nil) (Θ0 := Θ) (Δr' := empty);
+        eapply ad_refine_syn_delta_mono;
           [ apply (Hrbody β ltac:(clear - Fr; solve_notin))
-          | reflexivity | clear; fsetdec ]. }
+          | clear; fsetdec ]. }
       (* Sub-ForallR OPENS P0, which is a [p0_step]; then weaken to Θ0,β *)
       assert (Hapartβ : flex_apart_deep ((β ~ abind_tvar) ++ Θ0) Δρ
                 (open_pskl_wrt_pskl (ptyp_to_pskl A0) (pskl_var_f β)) ψa).
@@ -2887,7 +2888,7 @@ Proof.
     assert (HwfSubjβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ empty
               ⊢ₚₛ ⌊ open_uskl_wrt_uskl R ψ ⌋ˢ }}a).
     { assert (Hexs : exists Lb, forall α0, α0 `notin` Lb ->
-                {{ Θ ⨟ (add α0 empty)
+                {{ ((α0 ~ abind_tvar) ++ Θ) ⨟ (add α0 empty)
                   ⊢ₚₛ (open_pskl_wrt_pskl ⌊ R ⌋ˢ (pskl_var_f α0)) }}a).
       { cbn [uskl_to_pskl] in HwfSubj; inversion HwfSubj; subst;
         eexists; eassumption. }
@@ -3175,7 +3176,7 @@ Proof.
     assert (HwfSubjβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ empty
               ⊢ₚₛ ⌊ open_uskl_wrt_uskl R ψ ⌋ˢ }}a).
     { assert (Hexs : exists Lb, forall α0, α0 `notin` Lb ->
-                {{ Θ ⨟ (add α0 empty)
+                {{ ((α0 ~ abind_tvar) ++ Θ) ⨟ (add α0 empty)
                   ⊢ₚₛ (open_pskl_wrt_pskl ⌊ R ⌋ˢ (pskl_var_f α0)) }}a).
       { cbn [uskl_to_pskl] in HwfSubj; inversion HwfSubj; subst;
         eexists; eassumption. }

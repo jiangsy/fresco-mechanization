@@ -604,7 +604,7 @@ Proof.
       with (pskl_to_bskl_inh (pskl_var_f α)) by reflexivity.
     replace (pskl_to_uskl pskl_hole) with uskl_hole by reflexivity.
     apply ad_pat_consis__hole; [ fsetdec | ].
-    apply a_wf_pskl__var. right. apply Hβs.
+    apply a_wf_pskl__var. apply Hβs.
     unfold binds; left; reflexivity.
   - (* ∀◇P : the universal ghost is dropped *)
     replace (pskl_to_uskl (pskl_tophole P))
@@ -853,7 +853,11 @@ Qed.
 Lemma a_wf_pskl_tophole_inv : forall Θ Δ P,
   {{ Θ ⨟ Δ ⊢ₚₛ (pskl_tophole P) }}a ->
   guarded_pskl P /\ ({{ Θ ⨟ empty ⊢ₚₛ P }}a).
-Proof. intros * H; inversion H; subst; auto. Qed.
+Proof.
+  intros * H; inversion H; subst. split; [ assumption | ].
+  eapply a_wf_pskl_tvar_mono; [ eassumption | ].
+  intros α Hα. apply a_binds_tvar_aenv_minus in Hα. apply Hα.
+Qed.
 
 (** Removing a whole prefix preserves well-formedness of the tail. *)
 Lemma a_wf_aenv_strip_prefix : forall Ξ Θ,
@@ -987,12 +991,8 @@ Lemma a_wf_pskl_weaken : forall Θ Θ' Δ P,
   {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
   {{ Θ' ⨟ Δ ⊢ₚₛ P }}a.
 Proof.
-  intros * Hmon Hwf; revert Θ' Hmon; induction Hwf; intros Θ' Hmon;
-    eauto using a_wf_pskl;
-    try (apply a_wf_pskl__var;
-         destruct H as [HΔ | [Hb | [Hb | [τ Hb]]]];
-         [ left | right; left | right; right; left
-         | right; right; right; exists τ ]; auto).
+  intros * Hmon Hwf. eapply a_wf_pskl_tvar_mono; [ exact Hwf | ].
+  intros α [Hb | [Hb | [τ Hb]]]; unfold a_binds_tvar; eauto.
 Qed.
 
 Lemma ad_pat_consis_weaken : forall Ψ Θ R Q,
@@ -1076,6 +1076,33 @@ Qed.
 (*  Assign folds a definition into the assigned skeleton).                *)
 (* ===================================================================== *)
 
+(** [a_wf_pskl_tvar_mono] restricted to the skeleton's FREE variables: only
+    their [a_binds_tvar] lookups need to survive the context change. *)
+Lemma a_wf_pskl_tvar_mono_ftv : forall Θ Δ P,
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
+  forall Θ', (forall α, α `in` ftvar_in_pskl P ->
+                        a_binds_tvar α Θ -> a_binds_tvar α Θ') ->
+  {{ Θ' ⨟ Δ ⊢ₚₛ P }}a.
+Proof.
+  intros Θ Δ P H; induction H; intros Θ' Hincl; simpl in Hincl.
+  - constructor.
+  - constructor. apply Hincl; [ clear; fsetdec | assumption ].
+  - constructor; [ apply IHa_wf_pskl1 | apply IHa_wf_pskl2 ];
+      intros β Hβ Hb; apply Hincl; solve [ clear - Hβ; fsetdec | exact Hb ].
+  - apply a_wf_pskl__all with (L := L). intros α Hα.
+    apply H0; [ exact Hα | ].
+    intros β Hβ Hb. apply a_binds_tvar_cons_tvar.
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
+                  P (pskl_var_f α)) as Hup; simpl in Hup.
+    destruct (eq_var β α) as [-> | Hne]; [ left; reflexivity | right ].
+    destruct (a_binds_tvar_cons_tvar_inv Hb) as [-> | Hb']; [ congruence | ].
+    apply Hincl; [ clear - Hup Hβ Hne; fsetdec | exact Hb' ].
+  - constructor.
+  - constructor; [ assumption | ]. apply IHa_wf_pskl.
+    intros β Hβ Hb. apply a_binds_tvar_aenv_minus in Hb. destruct Hb as [Hb Hn].
+    apply a_binds_tvar_aenv_minus. split; [ apply Hincl; assumption | exact Hn ].
+Qed.
+
 (** Skeleton wf survives removing ANY entry the skeleton avoids.
     Generalises [a_wf_pskl_strip_tvar] (which only drops [abind_tvar]);
     [a_assign__skip] drops a *flex* binding. *)
@@ -1084,26 +1111,12 @@ Lemma a_wf_pskl_strip_mid : forall Θ1 c b Θ2 Δ P,
   c `notin` ftvar_in_pskl P ->
   {{ (Θ1 ++ Θ2) ⨟ Δ ⊢ₚₛ P }}a.
 Proof.
-  intros * H.
-  remember (Θ1 ++ (c ~ b) ++ Θ2) as Θfull eqn:HeqΘ.
-  revert Θ1 HeqΘ.
-  induction H; intros Θ1 ->; intros Hfr; simpl in Hfr.
-  - apply a_wf_pskl__unit.
-  - apply a_wf_pskl__var.
-    destruct H as [HΔ | Htv]; [ left; auto | right ].
-    assert (Hne : α <> c) by (clear - Hfr; fsetdec).
-    eapply a_binds_tvar_strip_mid; eauto;
-      try (intro Hc; inversion Hc; subst; congruence);
-      try (intros τ0 Hc; inversion Hc; subst; congruence).
-  - apply a_wf_pskl__arrow; [ apply IHa_wf_pskl1 | apply IHa_wf_pskl2 ];
-      auto.
-  - apply a_wf_pskl__all with (L := L `union` singleton c).
-    intros α Hα. apply H0; auto.
-    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
-                  P (pskl_var_f α)) as Hup.
-    simpl in Hup. clear - Hup Hfr Hα. fsetdec.
-  - apply a_wf_pskl__hole.
-  - apply a_wf_pskl__tophole; auto.
+  intros * H Hfr. eapply a_wf_pskl_tvar_mono_ftv; [ exact H | ].
+  intros α Hα Htv.
+  assert (Hne : α <> c) by (clear - Hfr Hα; fsetdec).
+  eapply a_binds_tvar_strip_mid; eauto;
+    try (intro Hc; inversion Hc; subst; congruence);
+    try (intros τ0 Hc; inversion Hc; subst; congruence).
 Qed.
 
 (** A monotype's skeleton is guarded / locally closed.  (Duplicated from
@@ -1141,7 +1154,7 @@ Proof.
   intros Θ Δ τ Hm; revert Δ; induction Hm; intros Δ Hwf; simpl;
     inversion Hwf; subst.
   - apply a_wf_pskl__unit.
-  - apply a_wf_pskl__var. right; auto.
+  - apply a_wf_pskl__var; auto.
   - apply a_wf_pskl__arrow; auto.
 Qed.
 
@@ -1180,34 +1193,87 @@ Proof.
     [ intros y b0 Hb0; unfold binds; simpl; right; exact Hb0 | auto ].
 Qed.
 
-(** FORWARD monotype substitution: folding a defined flexible variable's
-    definition INTO a well-formed skeleton keeps it well-formed.  (The BACK
-    direction is [a_wf_pskl_mono_subst_back] in [prop_consis_sound].) *)
-Lemma a_wf_pskl_mono_subst : forall Θ β τ Δ P,
-  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
-  {{ ⊢ Θ }}a ->
-  binds β (abind_flex_mono_def τ) Θ ->
+(** A monotype whose variables are all [a_binds_tvar] in Θ paints to a
+    well-formed skeleton, in any [Δ]. *)
+Lemma a_wf_pskl_mono_ptyp_ftv : forall Θ Δ τ,
   mono_ptyp τ ->
+  (forall α, α `in` ftvar_in_ptyp τ -> a_binds_tvar α Θ) ->
+  {{ Θ ⨟ Δ ⊢ₚₛ (ptyp_to_pskl τ) }}a.
+Proof.
+  intros Θ Δ τ Hm; induction Hm; intros Hv; simpl in *.
+  - apply a_wf_pskl__unit.
+  - apply a_wf_pskl__var. apply Hv. clear; fsetdec.
+  - apply a_wf_pskl__arrow;
+      [ apply IHHm1 | apply IHHm2 ]; intros α Hα; apply Hv; clear - Hα; fsetdec.
+Qed.
+
+(** A well-formed monotype's variables are [a_binds_tvar]. *)
+Lemma a_wf_ptyp_mono_ftv : forall Θ τ,
+  mono_ptyp τ -> a_wf_ptyp Θ τ ->
+  forall α, α `in` ftvar_in_ptyp τ -> a_binds_tvar α Θ.
+Proof.
+  intros Θ τ Hm; induction Hm; intros Hwf α0 Hα0; inversion Hwf; subst;
+    simpl in Hα0.
+  - fsetdec.
+  - assert (α0 = α) by (clear - Hα0; fsetdec). subst. assumption.
+  - apply union_iff in Hα0. destruct Hα0; auto.
+Qed.
+
+(** The general form of [a_wf_pskl_mono_subst]: substituting ANY variable by
+    a monotype whose variables are bound in Θ and OUTSIDE [Δ].  The [∖Δ]
+    side condition is what the [∀◇] rule needs: its premise is read at
+    [Θ∖Δ], where a variable of [Δ] is no longer bound. *)
+Lemma a_wf_pskl_mono_subst_gen : forall Θ Δ P,
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
+  forall β τ, mono_ptyp τ ->
+  (forall α, α `in` ftvar_in_ptyp τ -> a_binds_tvar α Θ /\ α `notin` Δ) ->
   {{ Θ ⨟ Δ ⊢ₚₛ (subst_pskl_in_pskl (ptyp_to_pskl τ) β P) }}a.
 Proof.
-  intros Θ β τ Δ P H; induction H; intros Hwfenv Hb Hm; simpl.
+  intros Θ Δ P H; induction H; intros β τ Hm Hτ; simpl.
   - apply a_wf_pskl__unit.
   - (* NB: the scrutinee of [subst_pskl_in_pskl] lives at [ptypvar], so the
        [eq_dec] instance must be given at that type for [destruct] to
        abstract the [if] in the goal. *)
     destruct (@eq_dec ptypvar EqDec_eq_of_X α β) as [Heq | Hne].
-    + subst. apply a_wf_pskl_mono_ptyp; auto.
-      eapply a_wf_aenv_binds_def_wf; eauto.
+    + subst. apply a_wf_pskl_mono_ptyp_ftv; [ exact Hm | ].
+      intros α Hα. apply Hτ; exact Hα.
     + apply a_wf_pskl__var; auto.
   - apply a_wf_pskl__arrow; auto.
-  - apply a_wf_pskl__all with (L := L `union` singleton β).
+  - apply a_wf_pskl__all with (L := L `union` singleton β `union` ftvar_in_ptyp τ).
     intros α Hα.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
       [ | clear - Hα; fsetdec | apply mono_ptyp_to_pskl_lc; auto ].
-    apply H0; auto.
+    apply H0; [ clear - Hα; fsetdec | exact Hm | ].
+    intros α' Hα'. destruct (Hτ α' Hα') as [Hb Hn]. split.
+    + apply a_binds_tvar_cons_tvar. right; exact Hb.
+    + assert (α' <> α) by (intro; subst; clear - Hα Hα'; fsetdec).
+      clear - Hn H1. fsetdec.
   - apply a_wf_pskl__hole.
   - apply a_wf_pskl__tophole;
-      [ apply guarded_pskl_mono_subst; auto | auto ].
+      [ apply guarded_pskl_mono_subst; auto | ].
+    apply IHa_wf_pskl; [ exact Hm | ].
+    intros α Hα. destruct (Hτ α Hα) as [Hb Hn]. split.
+    + apply a_binds_tvar_aenv_minus. auto.
+    + clear; fsetdec.
+Qed.
+
+(** FORWARD monotype substitution: folding a defined flexible variable's
+    definition INTO a well-formed skeleton keeps it well-formed.  (The BACK
+    direction is [a_wf_pskl_mono_subst_back] in [prop_consis_sound].)
+    Stated at the EMPTY tag scope: at a nonempty [Δ] it is false, since a
+    [∀◇] body is read at [Θ∖Δ] and the definition may mention [Δ]. *)
+Lemma a_wf_pskl_mono_subst : forall Θ β τ P,
+  {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
+  {{ ⊢ Θ }}a ->
+  binds β (abind_flex_mono_def τ) Θ ->
+  mono_ptyp τ ->
+  {{ Θ ⨟ empty ⊢ₚₛ (subst_pskl_in_pskl (ptyp_to_pskl τ) β P) }}a.
+Proof.
+  intros Θ β τ P H Hwfenv Hb Hm.
+  apply a_wf_pskl_mono_subst_gen; [ exact H | exact Hm | ].
+  intros α Hα. split; [ | clear; fsetdec ].
+  eapply a_wf_ptyp_mono_ftv; [ exact Hm | | exact Hα ].
+  eapply a_wf_aenv_binds_def_wf; eauto.
 Qed.
 
 (* ===================================================================== *)
@@ -1231,10 +1297,10 @@ Qed.
 (*  a_wf_ptyp / a_guess_mono / a_decls plumbing                           *)
 (* ===================================================================== *)
 
-(** The converse of [a_wf_ptyp_to_wf_pskl] on a painting.  The two
-    judgements agree row by row except at [∀], where [a_wf_pskl] puts the
-    binder in [Δ] and [a_wf_ptyp] in [Θ] — so the statement quantifies the
-    target context and asks the caller to relate the two. *)
+(** The converse of [a_wf_ptyp_to_wf_pskl] on a painting.  Both judgements
+    push a [∀] binder into Θ ([a_wf_pskl] also records it in [Δ]); the
+    statement quantifies the target context and asks the caller to relate
+    the two. *)
 Lemma a_wf_ptyp_of_wf_pskl : forall Θ Δ P,
   {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
   forall A Θ', P = ptyp_to_pskl A ->
@@ -1246,8 +1312,7 @@ Proof.
     destruct A0; simpl in Heq; try discriminate.
   - (* unit *) apply a_wf_ptyp__unit.
   - (* var *)
-    inversion Heq; subst. apply a_wf_ptyp__var.
-    destruct H as [Hd | Ht]; [ apply HΔ | apply HΘ ]; assumption.
+    inversion Heq; subst. apply a_wf_ptyp__var. apply HΘ; assumption.
   - (* arrow *)
     inversion Heq; subst.
     apply a_wf_ptyp__arrow;
@@ -1264,7 +1329,9 @@ Proof.
             unfold binds; simpl; left; reflexivity
           | apply a_binds_tvar_weaken_cons; apply HΔ;
             clear - Hβ Hne; fsetdec ]
-      | intros β Hβ; apply a_binds_tvar_weaken_cons; apply HΘ; exact Hβ ].
+      | intros β Hβ; apply a_binds_tvar_cons_tvar;
+        destruct (a_binds_tvar_cons_tvar_inv Hβ) as [-> | Hβ'];
+          [ left; reflexivity | right; apply HΘ; exact Hβ' ] ].
 Qed.
 
 Corollary a_wf_ptyp_of_wf_pskl_empty : forall Θ A,
@@ -1864,8 +1931,8 @@ Proof.
     solve [ discriminate Habs | left; exact Hb' | right; exists τ; exact Hb' ].
 Qed.
 
-(** [a_wf_pskl] reads Θ ONLY through [a_binds_tvar] (its context never grows —
-    the binder rule extends Δ), so it weakens along any TVAR-ISH monotone map.
+(** [a_wf_pskl] reads Θ ONLY through [a_binds_tvar], so it weakens along any
+    TVAR-ISH monotone map (an alias of [a_wf_pskl_tvar_mono]).
     [a_wf_pskl_weaken]'s [binds]-monotone form is too strong here: Flex-Solve
     turns [α̂0]'s DECLARATION into a DEFINITION. *)
 Lemma a_wf_pskl_weaken_tvarish : forall Θ Θ' Δ P,
@@ -1873,10 +1940,7 @@ Lemma a_wf_pskl_weaken_tvarish : forall Θ Θ' Δ P,
   {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
   {{ Θ' ⨟ Δ ⊢ₚₛ P }}a.
 Proof.
-  intros Θ Θ' Δ P Hmon Hwf; revert Θ' Hmon; induction Hwf; intros Θ' Hmon;
-    eauto using a_wf_pskl.
-  apply a_wf_pskl__var. destruct H as [HΔ | Htv];
-    [ left; exact HΔ | right; exact (Hmon α Htv) ].
+  intros Θ Θ' Δ P Hmon Hwf. eapply a_wf_pskl_tvar_mono; eassumption.
 Qed.
 
 (** Variable renaming is the variable instance of monotype substitution. *)

@@ -33,9 +33,9 @@
     already exports [{{ Θ1 ⨟ ∅ ⊢ᵣ inh{P0} ⊳ Qt }}ad] with [⌊Qt⌋ = P'] — the output
     REFINES FROM the input skeleton — so all that is left is: refinement out of
     a GHOST-FREE source only ever unfolds definitions.  That is one induction
-    with no context threading at all, because refinement keeps its context
-    fixed (the one row that extends it, [__tophole_fill], needs a ghost on the
-    left and is excluded). *)
+    with no context threading beyond plain extension: [__tophole_fill], which
+    adds a flexible, needs a ghost on the left and is excluded, and [__all]
+    pushes only a rigid [α ~ abind_tvar], which ≡ˢ cannot see. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -61,11 +61,8 @@ Set Implicit Arguments.
 (* ===================================================================== *)
 
 (** A TYPE has no ghosts, whatever it is — no monotype side condition, unlike
-    [mono_ptyp_to_bskl_syn_ghost_free] (prop_pat_sub.v). *)
-Lemma pskl_to_bskl_syn_ghost_free : forall P,
-  pskl_ghost_free P -> bskl_ghost_free (pskl_to_bskl_syn P).
-Proof. intros P; induction P; cbn; tauto. Qed.
-
+    [mono_ptyp_to_bskl_syn_ghost_free] (prop_pat_sub.v).  The [pskl] form,
+    [pskl_to_bskl_syn_ghost_free], is in fresco/prop_basic.v. *)
 Lemma ptyp_to_bskl_syn_ghost_free : forall A,
   bskl_ghost_free (ptyp_to_bskl_syn A).
 Proof.
@@ -83,6 +80,27 @@ Qed.
 (*  verbatim, one on each side.                                           *)
 (* ===================================================================== *)
 
+(** PLAIN CONTEXT EXTENSION: ≡ˢ reads only DEFINED flexibles.  Needed here by
+    refinement's ∀ row, whose premise pushes [α ~ abind_tvar] (a binding
+    with no definition); later by anything that re-attaches a head entry
+    (every walk row of [a_sub_flex] does). *)
+Lemma a_pskl_tyequiv_weaken : forall Θ P Q,
+  {{ Θ ⊢ P ≡ˢ Q }}a ->
+  forall Θ', (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
+                          binds α (abind_flex_mono_def τ) Θ') ->
+  {{ Θ' ⊢ P ≡ˢ Q }}a.
+Proof.
+  intros Θ P Q H; induction H; intros Θ' Hdef.
+  - apply a_pskl_tyequiv__refl; assumption.
+  - apply a_pskl_tyequiv__sym; auto.
+  - eapply a_pskl_tyequiv__trans; eauto.
+  - apply a_pskl_tyequiv__flex_def; eapply Hdef; eassumption.
+  - apply a_pskl_tyequiv__arrow; auto.
+  - apply a_pskl_tyequiv__all with (L := L); auto.
+  - apply a_pskl_tyequiv__tophole; auto.
+Qed.
+
+
 Lemma ad_refine_syn_ghost_free_equiv : forall Θ Δ Q' Q,
   {{ Θ ⨟ Δ ⊢ᵣ Q' ⊳ Q }}ad ->
   bskl_ghost_free Q' ->
@@ -98,7 +116,11 @@ Proof.
   - (* all : both sides are inherited ∀s, which ⌊·⌋ paints the same *)
     apply a_pskl_tyequiv__all with (L := L); intros α Hα.
     rewrite <- 2 bskl_to_pskl_open.
-    apply H0; [ exact Hα | apply bskl_ghost_free_open_rec; exact Hgf ].
+    (* the premise sits at [α ~ abind_tvar ++ Θ], which defines nothing new *)
+    eapply a_pskl_tyequiv_weaken;
+      [ apply H0; [ exact Hα | apply bskl_ghost_free_open_rec; exact Hgf ] | ].
+    intros β τ Hb; apply binds_app_iff in Hb as [Hb | Hb]; [ | exact Hb ].
+    apply binds_one_iff in Hb as [_ Heq]; discriminate.
   - (* hole : a GHOST on the left *) tauto.
   - (* tophole_remove *) tauto.
   - (* tophole_fill *) tauto.
@@ -171,23 +193,8 @@ Proof.
   - apply a_pskl_tyequiv__tophole; auto.
 Qed.
 
-(** …and the plain context extension, for anything that re-attaches a head
-    entry (every walk row of [a_sub_flex] does). *)
-Lemma a_pskl_tyequiv_weaken : forall Θ P Q,
-  {{ Θ ⊢ P ≡ˢ Q }}a ->
-  forall Θ', (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
-                          binds α (abind_flex_mono_def τ) Θ') ->
-  {{ Θ' ⊢ P ≡ˢ Q }}a.
-Proof.
-  intros Θ P Q H; induction H; intros Θ' Hdef.
-  - apply a_pskl_tyequiv__refl; assumption.
-  - apply a_pskl_tyequiv__sym; auto.
-  - eapply a_pskl_tyequiv__trans; eauto.
-  - apply a_pskl_tyequiv__flex_def; eapply Hdef; eassumption.
-  - apply a_pskl_tyequiv__arrow; auto.
-  - apply a_pskl_tyequiv__all with (L := L); auto.
-  - apply a_pskl_tyequiv__tophole; auto.
-Qed.
+(** …and the plain context extension ([a_pskl_tyequiv_weaken], stated in §2
+    above, where the ∀ row of refinement already needs it). *)
 
 (** (b) SUBSTITUTING A DEFINITION IS INVISIBLE TO ≡ˢ.  [a_sub_flex__assign]
     runs its premise at [P0[τ/β̂]] while its conclusion is about [P0], and the

@@ -50,41 +50,27 @@ Set Implicit Arguments.
    consistency judgment. *)
 
 (** [MECH-ONLY kit] Moving a Δ-entry of skeleton well-formedness into the
-    aenv as a rigid tvar (mid-insertion general; the ∀◇-body stays at
-    empty Δ and only needs binds-weakening).  No paper counterpart: the
-    paper writes every descent binder as "Θ,β" and never distinguishes
-    the aenv from the skeleton-scope Δ, so these transports are implicit
-    there. *)
+    aenv as a rigid tvar (mid-insertion general).  The agreement premise
+    says the target Δ' adds no free variable of P to Δ (a ∀◇-body is
+    checked at Θ∖Δ, so growing Δ on a free variable would hide its
+    binding).  No paper counterpart: the paper writes every descent binder
+    as "Θ,β" and never distinguishes the aenv from the skeleton-scope Δ,
+    so these transports are implicit there. *)
 Lemma a_wf_pskl_delta_to_tvar_mid : forall Θfull Δ P,
   {{ Θfull ⨟ Δ ⊢ₚₛ P }}a ->
   forall α1 Θ1 Θ2 Δ', Θfull = Θ1 ++ Θ2 ->
   Δ [<=] add α1 Δ' ->
+  (forall β, β `in` ftvar_in_pskl P -> β `in` Δ' -> β `in` Δ) ->
   {{ (Θ1 ++ (α1 ~ abind_tvar) ++ Θ2) ⨟ Δ' ⊢ₚₛ P }}a.
 Proof.
-  intros Θfull Δ P H; induction H; intros α1 Θ1 Θ2 Δ' HeqΘ Hsub; subst.
-  - apply a_wf_pskl__unit.
-  - apply a_wf_pskl__var.
-    match goal with Hor : _ \/ a_binds_tvar ?α0 _ |- _ =>
-      destruct Hor as [HΔ | Hbt];
-      [ destruct (α0 == α1) as [-> | Hne];
-        [ right; left; unfold binds;
-          apply in_or_app; right; left; reflexivity
-        | left; clear - HΔ Hsub Hne; fsetdec ]
-      | right;
-        destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-        [ left; apply binds_weaken; exact Hb
-        | right; left; apply binds_weaken; exact Hb
-        | right; right; exists τ0; apply binds_weaken; exact Hb ] ]
-    end.
-  - apply a_wf_pskl__arrow; eauto.
-  - apply a_wf_pskl__all with (L := L).
-    intros α Hα.
-    apply (H0 α Hα α1 Θ1 Θ2 (add α Δ') eq_refl).
-    clear - Hsub; fsetdec.
-  - apply a_wf_pskl__hole.
-  - apply a_wf_pskl__tophole; [ assumption | ].
-    eapply a_wf_pskl_weaken;
-      [ intros x b Hb; apply binds_weaken; exact Hb | eassumption ].
+  intros Θfull Δ P H α1 Θ1 Θ2 Δ' HeqΘ _ Hag; subst.
+  eapply a_wf_pskl_delta_mono; [ | exact Hag ].
+  eapply a_wf_pskl_tvar_mono; [ exact H | ].
+  intros γ Hbt.
+  destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
+    [ left; apply binds_weaken; exact Hb
+    | right; left; apply binds_weaken; exact Hb
+    | right; right; exists τ0; apply binds_weaken; exact Hb ].
 Qed.
 
 (** a_inc images are Θ-scoped (the prose wf side-condition, pointwise). *)
@@ -115,8 +101,8 @@ Qed.
 (*  form).  Θ splits as a binds-level BAG [aenv_split Θ Θtv Θr] (Θtv =    *)
 (*  the ForallInh descent binders, all rigid; Θr = the original context   *)
 (*  PLUS the refinement-visible ForallSyn binders); the refinement        *)
-(*  premise lives at (Θr, Δr) with Δr [=] dom Θtv, so □-fills stay wf     *)
-(*  away from the Θtv binders; the conclusion returns a fresh-extension   *)
+(*  premise lives at (Θr, Δr) with Δr [=] dom Θtv, so □-fills avoid the   *)
+(*  Θtv binders; the conclusion returns a fresh-extension                 *)
 (*  FAMILY of precisions, which is what lets the ForallInh/ForallSyn □-   *)
 (*  and ∀◇-fill-rows fold their bodies at (add α Δ).  The paper's         *)
 (*  statement is the Θtv := [] / R := ∅ corollary.                        *)
@@ -400,6 +386,84 @@ Proof.
   pose proof (Htvs _ _ Hb) as Hc; discriminate Hc.
 Qed.
 
+(** Local closure of a consistency's target — the premise
+    [ad_refine_syn_hole_sskl] now asks for.  Same statement as
+    [ad_pat_consis_lc_r] (algo/typing/prop_soundness_typing.v), which sits
+    downstream of this file and cannot be imported here. *)
+Lemma ad_pat_consis_target_lc : forall Ψ Θ R Q,
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad -> lc_bskl Q.
+Proof.
+  intros Ψ Θ R Q H; induction H.
+  - apply lc_bskl_unit.
+  - apply lc_bskl_var_f.
+  - apply lc_bskl_arrow; assumption.
+  - destruct (atom_fresh L) as [α Hα].
+    apply lc_bskl_all_inh_exists with (α1 := α); auto.
+  - destruct (atom_fresh L) as [α Hα].
+    apply lc_bskl_all_inh_exists with (α1 := α); auto.
+  - destruct (atom_fresh L) as [α Hα].
+    apply lc_bskl_all_syn_exists with (α1 := α); auto.
+  - destruct (atom_fresh L) as [α Hα].
+    apply lc_bskl_all_syn_exists with (α1 := α); auto.
+  - apply lc_bskl_hole.
+  - apply lc_bskl_tophole; assumption.
+  - apply lc_pskl_to_bskl_inh. eapply a_wf_pskl_lc; eassumption.
+  - apply lc_bskl_tophole; assumption.
+  - destruct (atom_fresh L) as [α Hα].
+    apply lc_bskl_all_inh_exists with (α1 := α); auto.
+  - assumption.
+  - assumption.
+  - apply lc_bskl_var_f.
+Qed.
+
+(** Refinement reads the context only through its flexible definitions
+    (the plain-relation mirror of [ad_refine_syn_f_ctx_mono]); in
+    particular a rigid entry can be dropped. *)
+Lemma ad_refine_syn_defs_mono : forall Θ Δ Q Q',
+  {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
+  forall Θ', (forall β τ, binds β (abind_flex_mono_def τ) Θ ->
+                binds β (abind_flex_mono_def τ) Θ') ->
+  {{ Θ' ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad.
+Proof.
+  intros * H; induction H; intros Θ' Hm;
+    eauto 6 using ad_refine_syn, flex_defs_cons_tvar.
+Qed.
+
+(** A refinement out of ◇ fills it with a Δ-avoiding skeleton (the ghost
+    rule's side condition), possibly behind defined-flexible lookups, so
+    every Δ-variable of the target is bound in the context. *)
+Lemma ad_refine_syn_hole_target_delta_dom : forall Θ Δ Qh Q,
+  {{ Θ ⨟ Δ ⊢ᵣ Qh ⊳ Q }}ad ->
+  Qh = bskl_hole ->
+  forall x, x `in` ftvar_in_bskl Q -> x `in` Δ -> x `in` dom Θ.
+Proof.
+  intros Θ Δ Qh Q H; induction H; intros Heq x Hx HxΔ; try discriminate Heq.
+  - (* hole: the fill avoids Δ *)
+    exfalso. rewrite ftvar_pskl_to_bskl_syn in Hx.
+    clear - H Hx HxΔ; fsetdec.
+  - (* flex_r: the target variable is bound *)
+    simpl in Hx. apply AtomSetImpl.singleton_1 in Hx; subst x.
+    eapply binds_In; eassumption.
+Qed.
+
+(** The bag-split reading: a ◇-refinement target whose variables are all
+    bound in the full context lives in the Θr side ([Δr] = the Θtv side). *)
+Lemma hole_refine_target_ftv_dom_r : forall Θ Θtv Θr Δr Q,
+  aenv_split Θ Θtv Θr ->
+  Δr [=] dom Θtv ->
+  {{ Θr ⨟ Δr ⊢ᵣ bskl_hole ⊳ Q }}ad ->
+  (forall γ, γ `in` ftvar_in_bskl Q -> a_binds_tvar γ Θ) ->
+  ftvar_in_bskl Q [<=] dom Θr.
+Proof.
+  intros Θ Θtv Θr Δr Q (_ & Hdom & _) HΔr Hr Hbt x Hx.
+  assert (Hd : x `in` dom Θ)
+    by (destruct (Hbt x Hx) as [Hb | [Hb | (τx & Hb)]];
+        eapply binds_In; exact Hb).
+  destruct (AtomSetProperties.In_dec x Δr) as [HxΔ | HxΔ].
+  - exact (ad_refine_syn_hole_target_delta_dom Hr eq_refl Hx HxΔ).
+  - clear - Hd Hdom HΔr HxΔ; fsetdec.
+Qed.
+
 (** [refine_primary_to_plain], bag-split form: weaken Θr into the full
     context and absorb Δr (= dom Θtv, all rigid there). *)
 Lemma refine_primary_to_plain_split : forall Θf Θtv Θr Δr Q' Q,
@@ -418,6 +482,7 @@ Proof.
     apply binds_In_inv in HZd; destruct HZd as [b Hb].
     pose proof (Htvs _ _ Hb) as Heqb; subst b.
     destruct Hsp as (Hbs & _ & _). apply Hbs. left; exact Hb.
+  - clear; fsetdec.
 Qed.
 
 (** [consis_subject_ftv_split_bound], bag-split form (Θr's defs are
@@ -640,10 +705,19 @@ Proof.
       * (* binder-side: the primary refinement forces a hole-free P0
            (the □-fill would have to BE the Δr-binder variable, which is
            not Θr-wf), and solve preserves it — precision is Δ-monotone *)
+        assert (HαΔr : α `in` Δr).
+        { assert (Hdα : α `in` dom Θ)
+            by (match goal with Hb : a_binds_tvar α Θ |- _ =>
+                  destruct Hb as [Hb | [Hb | (τx & Hb)]];
+                  eapply binds_In; exact Hb
+                end).
+          pose proof (proj1 (proj2 HspΘ)) as HdomΘ.
+          clear - Hdα HdomΘ HninR HΔrd; fsetdec. }
         assert (HnhP0d : pskl_no_hole P0).
         { eapply msubst_pskl_no_hole_inv with (κ := κ).
           eapply ad_refine_inh_deltar_var_rhs_no_hole;
-            [ exact Hrefine | reflexivity | reflexivity | exact HninR ]. }
+            [ exact Hrefine | reflexivity | reflexivity | exact HninR
+            | exact HαΔr ]. }
         assert (HnhPa : pskl_no_hole Pa)
           by (eapply a_solve_eq_no_hole_p0; [ exact Hsolve | exact HnhP0d ]).
         eapply ad_partial_precise_psi_cong;
@@ -715,7 +789,10 @@ Proof.
       assert (VACR : {{ Θr ⨟ Δr ⊢ᵣ bskl_hole ⊳ (bskl_arrow Q1 Q2) }}ad ->
                      Ψa [=] empty).
       { intros Hrh.
-        pose proof (ad_refine_syn_hole_sskl Hrh eq_refl) as Hss.
+        pose proof (ad_refine_syn_hole_sskl Hrh eq_refl
+                      (lc_bskl_arrow _ _ (ad_pat_consis_target_lc Hconsis1)
+                                     (ad_pat_consis_target_lc Hconsis2)))
+          as Hss.
         assert (HskQ1 : is_sskl Q1) by (inversion Hss; subst; assumption).
         assert (HskQ2 : is_sskl Q2) by (inversion Hss; subst; assumption).
         assert (HΨ1e : Ψ1 [=] empty)
@@ -986,9 +1063,8 @@ Proof.
           + (* P0 = var_b *) inversion HwfP00.
           + (* P0 = var β: rigid absurd / flexible = the repaired subcase *)
             inversion HwfP00; subst;
-            match goal with Hor : _ \/ a_binds_tvar β _ |- _ =>
-              destruct Hor as [Hemp | Habt] end;
-              [ clear - Hemp; fsetdec | ].
+            match goal with Hb : a_binds_tvar β _ |- _ =>
+              rename Hb into Habt end.
             destruct Habt as [Hrig | Hflx].
             * (* rigid: no refinement into an arrow *)
               exfalso.
@@ -1200,8 +1276,12 @@ Proof.
             simpl in Hrefine1.
             assert (HΨae : Ψa [=] empty) by (apply VACR; exact Hrefine1).
             assert (HQB : ftvar_in_bskl (bskl_arrow Q1 Q2) [<=] dom Θr).
-            { assert (Ht := ad_refine_syn_ftv_rhs_bound HwfΘr Hrefine1).
-              simpl in Ht. simpl. clear - Ht; fsetdec. }
+            { eapply hole_refine_target_ftv_dom_r;
+                [ exact HspΘ | exact HΔrd | exact Hrefine1 | ].
+              intros γ Hγ; simpl in Hγ.
+              destruct (AtomSetImpl.union_1 Hγ) as [Hγ1 | Hγ2];
+                [ exact (ad_pat_consis_target_binds Hconsis1 Hγ1)
+                | exact (ad_pat_consis_target_binds Hconsis2 Hγ2) ]. }
             eapply solve_ext_nil with (Pa := (pskl_arrow Pi1 Pi2));
               [ apply a_solve_eq__hole_r | ].
             intros Δ' HS1 HS2 HS3.
@@ -1214,7 +1294,7 @@ Proof.
               | clear - HΨae; fsetdec ].
           + (* P0 = ∀◇.P0': GuardedGhost-right + same-node recursion *)
             assert (HwfP0' : {{ Θ0 ⨟ empty ⊢ₚₛ P0' }}a)
-              by (inversion HwfP00; assumption).
+              by (apply a_wf_pskl_tophole_body; exact HwfP00).
             simpl in Hrefine1.
             inversion Hrefine1; subst.
             match goal with
@@ -1246,9 +1326,8 @@ Proof.
           + (* P0 = var_b *) inversion HwfP00.
           + (* P0 = var β: rigid absurd / flexible via SE-GhostL + FLEX *)
             inversion HwfP00; subst;
-            match goal with Hor : _ \/ a_binds_tvar β _ |- _ =>
-              destruct Hor as [Hemp | Habt] end;
-              [ clear - Hemp; fsetdec | ].
+            match goal with Hb : a_binds_tvar β _ |- _ =>
+              rename Hb into Habt end.
             destruct Habt as [Hrig | Hflx].
             * exfalso.
               assert (Hmid : msubst_pskl κ (pskl_var_f β) = pskl_var_f β)
@@ -1338,8 +1417,12 @@ Proof.
             simpl in Hrefine1.
             assert (HΨae : Ψa [=] empty) by (apply VACR; exact Hrefine1).
             assert (HQB : ftvar_in_bskl (bskl_arrow Q1 Q2) [<=] dom Θr).
-            { assert (Ht := ad_refine_syn_ftv_rhs_bound HwfΘr Hrefine1).
-              simpl in Ht. simpl. clear - Ht; fsetdec. }
+            { eapply hole_refine_target_ftv_dom_r;
+                [ exact HspΘ | exact HΔrd | exact Hrefine1 | ].
+              intros γ Hγ; simpl in Hγ.
+              destruct (AtomSetImpl.union_1 Hγ) as [Hγ1 | Hγ2];
+                [ exact (ad_pat_consis_target_binds Hconsis1 Hγ1)
+                | exact (ad_pat_consis_target_binds Hconsis2 Hγ2) ]. }
             eapply solve_ext_nil with (Pa := pskl_hole); [ apply a_solve_eq__hole_r | ].
             intros Δ' HS1 HS2 HS3.
             eapply ad_partial_precise_psi_cong;
@@ -1351,7 +1434,7 @@ Proof.
               | clear - HΨae; fsetdec ].
           + (* P0 = ∀◇.P0': SE-GhostL + same-node recursion at (□, P0') *)
             assert (HwfP0' : {{ Θ0 ⨟ empty ⊢ₚₛ P0' }}a)
-              by (inversion HwfP00; assumption).
+              by (apply a_wf_pskl_tophole_body; exact HwfP00).
             simpl in Hrefine1.
             inversion Hrefine1; subst.
             match goal with
@@ -1377,7 +1460,7 @@ Proof.
           assert (HgPi' : guarded_pskl Pi')
             by (inversion HwfPi0; assumption).
           assert (HwfPi' : {{ Θ0 ⨟ empty ⊢ₚₛ Pi' }}a)
-            by (inversion HwfPi0; assumption).
+            by (apply a_wf_pskl_tophole_body; exact HwfPi0).
           simpl in Hpre1.
           inversion Hpre1; subst.
           match goal with
@@ -1426,8 +1509,12 @@ Proof.
             simpl in Hrefine1.
             assert (HΨae : Ψa [=] empty) by (apply VACR; exact Hrefine1).
             assert (HQB : ftvar_in_bskl (bskl_arrow Q1 Q2) [<=] dom Θr).
-            { assert (Ht := ad_refine_syn_ftv_rhs_bound HwfΘr Hrefine1).
-              simpl in Ht. simpl. clear - Ht; fsetdec. }
+            { eapply hole_refine_target_ftv_dom_r;
+                [ exact HspΘ | exact HΔrd | exact Hrefine1 | ].
+              intros γ Hγ; simpl in Hγ.
+              destruct (AtomSetImpl.union_1 Hγ) as [Hγ1 | Hγ2];
+                [ exact (ad_pat_consis_target_binds Hconsis1 Hγ1)
+                | exact (ad_pat_consis_target_binds Hconsis2 Hγ2) ]. }
             eapply solve_ext_nil with (Pa := (pskl_tophole Pi'));
               [ apply a_solve_eq__hole_r | ].
             intros Δ' HS1 HS2 HS3.
@@ -1440,7 +1527,7 @@ Proof.
               | clear - HΨae; fsetdec ].
           + (* P0 = ∀◇.P0': SE-UnivGhost *)
             assert (HwfP0' : {{ Θ0 ⨟ empty ⊢ₚₛ P0' }}a)
-              by (inversion HwfP00; assumption).
+              by (apply a_wf_pskl_tophole_body; exact HwfP00).
             simpl in Hrefine1.
             inversion Hrefine1; subst.
             match goal with
@@ -1527,9 +1614,8 @@ Proof.
       - (* var_b *) inversion HwfP0.
       - (* var β: rigid / flexible both die against all_inh *)
         exfalso.
-        assert (Hor : β `in` empty \/ a_binds_tvar β Θ0)
+        assert (Habt : a_binds_tvar β Θ0)
           by (inversion HwfP0; subst; assumption).
-        destruct Hor as [Hemp | Habt]; [ clear - Hemp; fsetdec | ].
         destruct Habt as [Hrig | Hflx].
         + assert (Hmid : msubst_pskl κ (pskl_var_f β) = pskl_var_f β)
             by (eapply msubst_pskl_tvar_id;
@@ -1555,13 +1641,13 @@ Proof.
                   {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
                   (open_pskl_wrt_pskl P0b (pskl_var_f α)) }}a).
         { assert (Hi : exists Lw0, forall α0, α0 `notin` Lw0 ->
-                    {{ Θ0 ⨟ (add α0 empty) ⊢ₚₛ
+                    {{ ((α0 ~ abind_tvar) ++ Θ0) ⨟ (add α0 empty) ⊢ₚₛ
                     (open_pskl_wrt_pskl P0b (pskl_var_f α0)) }}a)
             by (inversion HwfP0; subst; eexists; eassumption).
           destruct Hi as (Lw0 & Hi).
           exists Lw0; intros α0 Hα0.
-          eapply a_wf_pskl_delta_to_tvar;
-            [ apply Hi; exact Hα0 | clear; fsetdec ]. }
+          eapply a_wf_pskl_delta_mono;
+            [ apply Hi; exact Hα0 | intros β _ Hβ; clear - Hβ; fsetdec ]. }
         destruct HwfP0f as (Lw0 & HwfP0f).
         assert (Hreff : exists Lq, forall α, α `notin` Lq ->
           {{ Θr ⨟ (add α Δr) ⊢ᵣ
@@ -1576,7 +1662,13 @@ Proof.
             rewrite msubst_pskl_open_lc;
               [ | exact Hlcκ | clear - Hα0; fsetdec ];
             rewrite pskl_to_bskl_inh_open;
-            apply Hf; clear - Hα0; fsetdec
+            (* the ∀ premise also pushes the binder as a rigid of Θr;
+               refinement never reads a rigid, so it is dropped *)
+            eapply ad_refine_syn_defs_mono;
+              [ apply Hf; clear - Hα0; fsetdec
+              | intros β τ Hb;
+                destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+                [ discriminate | exact Hb' ] ]
           end. }
         destruct Hreff as (Lq & Hreff).
         (* the shared body-IH invocation *)
@@ -1797,13 +1889,13 @@ Proof.
                     {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
                     (open_pskl_wrt_pskl Pib (pskl_var_f α)) }}a).
           { assert (Hi : exists Lwi, forall α0, α0 `notin` Lwi ->
-                      {{ Θ0 ⨟ (add α0 empty) ⊢ₚₛ
+                      {{ ((α0 ~ abind_tvar) ++ Θ0) ⨟ (add α0 empty) ⊢ₚₛ
                       (open_pskl_wrt_pskl Pib (pskl_var_f α0)) }}a)
               by (inversion HwfPi; subst; eexists; eassumption).
             destruct Hi as (Lwi & Hi).
             exists Lwi; intros α0 Hα0.
-            eapply a_wf_pskl_delta_to_tvar;
-              [ apply Hi; exact Hα0 | clear; fsetdec ]. }
+            eapply a_wf_pskl_delta_mono;
+              [ apply Hi; exact Hα0 | intros β _ Hβ; clear - Hβ; fsetdec ]. }
           destruct HwfPif as (Lwi & HwfPif).
           assert (HpreF : exists Lp Ψi',
             (forall α, α `notin` Lp ->
@@ -2008,7 +2100,7 @@ Proof.
         + (* Pi = ∀◇.Pi' — the remove-branch dies (guarded body);
              the fill branch is ROW C (SE-GhostForall) *)
           assert (Hg : guarded_pskl Pi' /\ ({{ Θ0 ⨟ empty ⊢ₚₛ Pi' }}a))
-            by (inversion HwfPi; subst; split; assumption).
+            by (split; [ inversion HwfPi; assumption | apply a_wf_pskl_tophole_body; exact HwfPi ]).
           destruct Hg as [HgPi' HwfPi'].
           assert (Hdisj :
             ({{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi') ⊑ᵖ[ Ψi ]
@@ -2136,7 +2228,8 @@ Proof.
       - (* P0 = ∀◇.P0': the guarded body dies against all_inh *)
         exfalso.
         assert (Hg : guarded_pskl P0' /\ ({{ Θ0 ⨟ empty ⊢ₚₛ P0' }}a)).
-        { inversion HwfP0; subst; split; assumption. }
+        { split; [ inversion HwfP0; assumption
+                 | apply a_wf_pskl_tophole_body; exact HwfP0 ]. }
         destruct Hg as [HgP0' HwfP0'].
         simpl in Hrefine.
         inversion Hrefine; subst.
@@ -2150,9 +2243,8 @@ Proof.
           | Hwv : {{ _ ⨟ _ ⊢ₚₛ pskl_var_f ?v }}a,
             Hin : {{ _ ⨟ _ ⊢ᵣ
               pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f ?v)) ⊳ _ }}ad |- _ =>
-            assert (Hor : v `in` empty \/ a_binds_tvar v Θ0)
+            assert (Habt : a_binds_tvar v Θ0)
               by (inversion Hwv; subst; assumption);
-            destruct Hor as [Hemp | Habt]; [ clear - Hemp; fsetdec | ];
             destruct Habt as [Hrig | Hflx];
             [ let Hmid := fresh in
               assert (Hmid : msubst_pskl κ (pskl_var_f v) = pskl_var_f v)
@@ -2267,9 +2359,8 @@ Proof.
       - (* var_b *) inversion HwfP0.
       - (* var β: rigid absurd / flex → mono paint vs all_syn absurd *)
         exfalso.
-        assert (Hor : β `in` empty \/ a_binds_tvar β Θ0)
+        assert (Habt : a_binds_tvar β Θ0)
           by (inversion HwfP0; subst; assumption).
-        destruct Hor as [Hemp | Habt]; [ clear - Hemp; fsetdec | ].
         destruct Habt as [Hrig | Hflx].
         + assert (Hmid : msubst_pskl κ (pskl_var_f β) = pskl_var_f β)
             by (eapply msubst_pskl_tvar_id;
@@ -2294,15 +2385,23 @@ Proof.
         exfalso. simpl in Hrefine. inversion Hrefine.
       - (* P0 = □: VacuousR.  Q = all_syn synthesised ⇒ Ψ = ∅ ⇒ Ψa = ∅ *)
         simpl in Hrefine.
-        pose proof (ad_refine_syn_hole_sskl Hrefine eq_refl) as Hss.
+        pose proof (ad_refine_syn_hole_sskl Hrefine eq_refl
+                      ltac:(eapply ad_pat_consis_target_lc;
+                            eapply ad_pat_consis__forall_syn_tagged
+                              with (ε := ε); exact H))
+          as Hss.
         assert (HΨe : Ψ [=] empty).
         { eapply ad_pat_consis_sskl_tags;
             [ eapply ad_pat_consis__forall_syn_tagged; exact H
             | exact HwfΘ | exact Hss ]. }
         assert (HΨae : Ψa [=] empty) by (clear - Hsubeq2 HΨe; fsetdec).
         assert (HQB : ftvar_in_bskl Q [<=] dom Θr).
-        { assert (Ht := ad_refine_syn_ftv_rhs_bound HwfΘr Hrefine).
-          simpl in Ht. clear - Ht; fsetdec. }
+        { assert (Ht : ftvar_in_bskl (bskl_all_syn Q) [<=] dom Θr).
+          { eapply hole_refine_target_ftv_dom_r;
+              [ exact HspΘ | exact HΔrd | exact Hrefine | ].
+            eapply ad_pat_consis_target_binds.
+            eapply ad_pat_consis__forall_syn_tagged with (ε := ε); exact H. }
+          simpl in Ht; exact Ht. }
         eapply solve_ext_nil with (Pa := Pi); [ apply a_solve_eq__hole_r | ].
         intros Δ' HS1 HS2 HS3.
         eapply ad_partial_precise_psi_cong;
@@ -2318,7 +2417,7 @@ Proof.
            which is the IH's refinement premise VERBATIM. *)
         assert (HgP0' : guarded_pskl P0') by (inversion HwfP0; assumption).
         assert (HwfP0'0 : {{ Θ0 ⨟ empty ⊢ₚₛ P0' }}a)
-          by (inversion HwfP0; assumption).
+          by (apply a_wf_pskl_tophole_body; exact HwfP0).
         (* invert the tophole_fill refinement: the fill body sits at
            (α~tvar)++Θr ⨟ Δr — exactly the IH's refinement premise *)
         simpl in Hrefine.
@@ -2574,13 +2673,13 @@ Proof.
                     {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
                     (open_pskl_wrt_pskl Pib (pskl_var_f α)) }}a).
           { assert (Hi : exists Lwi, forall α0, α0 `notin` Lwi ->
-                      {{ Θ0 ⨟ (add α0 empty) ⊢ₚₛ
+                      {{ ((α0 ~ abind_tvar) ++ Θ0) ⨟ (add α0 empty) ⊢ₚₛ
                       (open_pskl_wrt_pskl Pib (pskl_var_f α0)) }}a)
               by (inversion HwfPi; subst; eexists; eassumption).
             destruct Hi as (Lwi & Hi).
             exists Lwi; intros α0 Hα0.
-            eapply a_wf_pskl_delta_to_tvar;
-              [ apply Hi; exact Hα0 | clear; fsetdec ]. }
+            eapply a_wf_pskl_delta_mono;
+              [ apply Hi; exact Hα0 | intros β _ Hβ; clear - Hβ; fsetdec ]. }
           destruct HwfPif as (Lwi & HwfPif).
           assert (HpreF : exists Lp Ψi',
             (forall α, α `notin` Lp ->
@@ -2796,7 +2895,7 @@ Proof.
              ad_ppre__tophole_fill (subject ∀◇.P', keeps Ψ, no ε), family
              built by ad_partial_precise_rename_tvar (aenv-tvar rename). *)
           assert (HgPi'w : guarded_pskl Pi' /\ ({{ Θ0 ⨟ empty ⊢ₚₛ Pi' }}a))
-            by (inversion HwfPi; subst; split; assumption).
+            by (split; [ inversion HwfPi; assumption | apply a_wf_pskl_tophole_body; exact HwfPi ]).
           destruct HgPi'w as [HgPi' HwfPi'].
           assert (Hdisj :
             ({{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi') ⊑ᵖ[ Ψi ] (uskl_all_tag ε ψR) }}ad) \/
@@ -3077,12 +3176,16 @@ Proof.
         + (* P0 = all_syn *) simpl in Hrefine. inversion Hrefine.
         + (* P0 = □: SE-VacuousR; Q synthesized ⇒ Ψa = ∅ *)
           simpl in Hrefine.
-          pose proof (ad_refine_syn_hole_sskl Hrefine eq_refl) as Hss.
+          pose proof (ad_refine_syn_hole_sskl Hrefine eq_refl
+                        (lc_bskl_tophole _ (ad_pat_consis_target_lc Hconsis))) as Hss.
           assert (HskQ : is_sskl Q) by (inversion Hss; subst; assumption).
           pose proof (ad_pat_consis_sskl_tags Hconsis HwfΘ HskQ) as HΨe.
           assert (HQB : ftvar_in_bskl Q [<=] dom Θr).
-          { assert (Ht := ad_refine_syn_ftv_rhs_bound HwfΘr Hrefine).
-            simpl in Ht. clear - Ht; fsetdec. }
+          { assert (Ht : ftvar_in_bskl (bskl_tophole Q) [<=] dom Θr).
+            { eapply hole_refine_target_ftv_dom_r;
+                [ exact HspΘ | exact HΔrd | exact Hrefine | ].
+              exact (ad_pat_consis_target_binds Hconsis). }
+            simpl in Ht; exact Ht. }
           eapply solve_ext_nil with (Pa := pskl_hole); [ apply a_solve_eq__hole_r | ].
           intros Δ' HS1 HS2 HS3.
           eapply ad_partial_precise_psi_cong;
@@ -3095,7 +3198,7 @@ Proof.
             | clear - HΨe Hsubeq2; fsetdec ].
         + (* P0 = ∀◇.P0': Pa := P0; body precision via the main IH at □ *)
           assert (HwfP0' : {{ Θ0 ⨟ empty ⊢ₚₛ P0' }}a)
-            by (inversion HwfP0; assumption).
+            by (apply a_wf_pskl_tophole_body; exact HwfP0).
           assert (HgP0' : guarded_pskl P0')
             by (inversion HwfP0; assumption).
           simpl in Hrefine.
@@ -3162,7 +3265,7 @@ Proof.
             exact (Hq' Δ' HS1 HS2 HS3).
       - (* Pi = ∀◇.Pi' *)
         assert (HgPi' : guarded_pskl Pi') by (inversion HwfPi; assumption).
-        assert (HwfPi' : {{ Θ0 ⨟ empty ⊢ₚₛ Pi' }}a) by (inversion HwfPi; assumption).
+        assert (HwfPi' : {{ Θ0 ⨟ empty ⊢ₚₛ Pi' }}a) by (apply a_wf_pskl_tophole_body; exact HwfPi).
         simpl in Hpre0. inversion Hpre0; subst.
         + (* tophole_remove: the guarded body dies against ∀◈ *)
           exfalso. inversion HgPi'; subst.
@@ -3207,12 +3310,16 @@ Proof.
           * (* P0 = all_syn *) simpl in Hrefine. inversion Hrefine.
           * (* P0 = □: SE-VacuousR *)
             simpl in Hrefine.
-            pose proof (ad_refine_syn_hole_sskl Hrefine eq_refl) as Hss.
+            pose proof (ad_refine_syn_hole_sskl Hrefine eq_refl
+                        (lc_bskl_tophole _ (ad_pat_consis_target_lc Hconsis))) as Hss.
             assert (HskQ : is_sskl Q) by (inversion Hss; subst; assumption).
             pose proof (ad_pat_consis_sskl_tags Hconsis HwfΘ HskQ) as HΨe.
             assert (HQB : ftvar_in_bskl Q [<=] dom Θr).
-            { assert (Ht := ad_refine_syn_ftv_rhs_bound HwfΘr Hrefine).
-              simpl in Ht. clear - Ht; fsetdec. }
+            { assert (Ht : ftvar_in_bskl (bskl_tophole Q) [<=] dom Θr).
+              { eapply hole_refine_target_ftv_dom_r;
+                  [ exact HspΘ | exact HΔrd | exact Hrefine | ].
+                exact (ad_pat_consis_target_binds Hconsis). }
+              simpl in Ht; exact Ht. }
             eapply solve_ext_nil with (Pa := (pskl_tophole Pi'));
               [ apply a_solve_eq__hole_r | ].
             intros Δ' HS1 HS2 HS3.
@@ -3226,7 +3333,7 @@ Proof.
               | clear - HΨe Hsubeq2; fsetdec ].
           * (* P0 = ∀◇.P0': SE-UnivGhost via the main IH *)
             assert (HwfP0' : {{ Θ0 ⨟ empty ⊢ₚₛ P0' }}a)
-              by (inversion HwfP0; assumption).
+              by (apply a_wf_pskl_tophole_body; exact HwfP0).
             assert (HgP0' : guarded_pskl P0')
               by (inversion HwfP0; assumption).
             simpl in Hrefine.
@@ -3380,8 +3487,14 @@ Proof.
     { eapply aenv_split_binds_def_r;
         [ exact HspΘ | exact Htvs | eassumption ]. }
     eapply IHHconsis; try eassumption.
+    assert (HdfΘr : delta_def_fresh Δr Θr).
+    { intros β α0 τ0 Hβ Hb Hin.
+      assert (HβR : β `in` dom Θr)
+        by (eapply a_wf_aenv_def_ftv_dom_in; [ exact HwfΘr | exact Hb | exact Hin ]).
+      pose proof (proj2 (proj2 HspΘ)) as Hdisj.
+      clear - Hβ HβR HΔrd Hdisj; fsetdec. }
     eapply ad_refine_flexdef_target_unfold;
-      [ exact HwfΘr | exact Hrefine | reflexivity | exact Hbdef ].
+      [ exact HwfΘr | exact HdfΘr | exact Hrefine | reflexivity | exact Hbdef ].
 Qed.
 
 (* ===================================================================== *)

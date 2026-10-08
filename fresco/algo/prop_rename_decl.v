@@ -228,7 +228,7 @@ Lemma a_wf_pskl_rename_paint : forall Θ1 α Θ0 P β',
 Proof.
   intros * H Hdefs.
   eapply a_wf_pskl_mono;
-    [ apply a_wf_pskl_rename_tvar; [ exact H | clear; fsetdec ]
+    [ apply a_wf_pskl_rename_tvar; [ exact H | clear; fsetdec | clear; fsetdec ]
     | apply tbinds_le_subst_mid; exact Hdefs ].
 Qed.
 
@@ -273,7 +273,8 @@ Proof.
   eapply ad_refine_syn_mono;
     [ eapply ad_refine_syn_f_forget, ad_refine_syn_f_rename_ctx;
         [ apply ad_refine_syn_f_of_plain; exact H
-        | exact Hdom | clear; fsetdec | clear; fsetdec | exact Hdefs ]
+        | exact Hdom | clear; fsetdec | clear; fsetdec | exact Hdefs
+        | clear; fsetdec ]
     | apply tbinds_le_subst_mid; exact Hdefs ].
 Qed.
 

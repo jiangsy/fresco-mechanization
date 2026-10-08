@@ -569,6 +569,8 @@ Proof.
   - (* univ_ghost2 : subject ⫯R; recurse on the inner R (same var input) *)
     constructor.
     simpl in HwfS. inversion HwfS; subst.
+    match goal with H : {{ (aenv_minus _ _) ⨟ _ ⊢ₚₛ _ }}a |- _ =>
+      rewrite aenv_minus_empty in H end.
     eapply IHa_consistag;
       [ first [ eassumption | reflexivity ] | exact Hwf | eassumption ].
 Qed.
@@ -695,16 +697,16 @@ Proof.
         apply HlcSbody
       | (* wf of opened input *)
         eapply a_wf_pskl_delta_mono;
-          [ apply (a_wf_pskl_reassoc (Hbody0 β ltac:(clear - Hβ; solve_notin_auto)) β)
-          | clear; fsetdec ]
+          [ exact (Hbody0 β ltac:(clear - Hβ; solve_notin_auto))
+          | let Hx := fresh in intros ? _ Hx; clear - Hx; fsetdec ]
       | (* wf of opened subject-erasure *)
         rewrite strip_uskl_open;
         rewrite (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
                    Hlcρ Hβρ Hβf);
         rewrite uskl_to_pskl_open;
         eapply a_wf_pskl_delta_mono;
-          [ apply (a_wf_pskl_reassoc (HbodyS β ltac:(clear - Hβ; solve_notin_auto)) β)
-          | clear; fsetdec ]
+          [ exact (HbodyS β ltac:(clear - Hβ; solve_notin_auto))
+          | let Hx := fresh in intros ? _ Hx; clear - Hx; fsetdec ]
       | (* Hrig *)
         intros α Hα; destruct (α == β) as [ -> | Hne ];
           [ unfold binds; left; reflexivity
@@ -776,14 +778,15 @@ Proof.
         apply HlcSbody
       | (* input ∀◇ is unchanged: reassociate its wf under the fresh rigid *)
         eapply a_wf_pskl_delta_mono;
-          [ apply (a_wf_pskl_reassoc HwfP0 β) | clear; fsetdec ]
+          [ apply (a_wf_pskl_reassoc HwfP0 β)
+          | let Hx := fresh in intros ? _ Hx; clear - Hx; fsetdec ]
       | rewrite strip_uskl_open;
         rewrite (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
                    Hlcρ Hβρ Hβf);
         rewrite uskl_to_pskl_open;
         eapply a_wf_pskl_delta_mono;
-          [ apply (a_wf_pskl_reassoc (HbodyS β ltac:(clear - Hβ; solve_notin_auto)) β)
-          | clear; fsetdec ]
+          [ exact (HbodyS β ltac:(clear - Hβ; solve_notin_auto))
+          | let Hx := fresh in intros ? _ Hx; clear - Hx; fsetdec ]
       | intros α Hα; destruct (α == β) as [ -> | Hne ];
           [ unfold binds; left; reflexivity
           | unfold binds; right; apply Hrig; clear - Hα Hne; fsetdec ]
@@ -1479,8 +1482,11 @@ Proof.
           | Hbody : forall α, α `notin` ?L0 -> {{ _ ⨟ _ ⊢ₚₛ _ }}a |- _ =>
               apply a_wf_pskl_open with (L := L0);
                 [ intros α Hα;
-                  eapply a_wf_pskl_weaken;
-                    [ exact Hmono | apply Hbody; auto ]
+                  apply a_wf_pskl_weaken with (Θ := (α ~ abind_tvar) ++ Θ0);
+                    [ intros x b Hb; unfold binds in Hb |- *; simpl in Hb |- *;
+                      destruct Hb as [Hb | Hb];
+                        [ left; exact Hb | right; apply Hmono; exact Hb ]
+                    | apply Hbody; auto ]
                 | assumption ]
           end. }
         (* the family IH at (Ψg,ψg), source (ψf^β), substitution ρ[β↦ψg];
@@ -2064,16 +2070,14 @@ Proof.
               | apply a_wf_aenv__tvar;
                   [ clear - Hβ; fsetdec | exact Hwf ]
               | eapply a_wf_pskl_delta_mono;
-                  [ apply (a_wf_pskl_reassoc
-                             (HbodyP β ltac:(clear - Hβ; solve_notin_auto)) β)
-                  | clear; fsetdec ]
+                  [ exact (HbodyP β ltac:(clear - Hβ; solve_notin_auto))
+                  | let Hx := fresh in intros ? _ Hx; clear - Hx; fsetdec ]
               | rewrite <- subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
                   [ | clear - Hβ; fsetdec | exact Hlcstrip ];
                 rewrite uskl_to_pskl_open;
                 eapply a_wf_pskl_delta_mono;
-                  [ apply (a_wf_pskl_reassoc
-                             (HbodyS β ltac:(clear - Hβ; solve_notin_auto)) β)
-                  | clear; fsetdec ]
+                  [ exact (HbodyS β ltac:(clear - Hβ; solve_notin_auto))
+                  | let Hx := fresh in intros ? _ Hx; clear - Hx; fsetdec ]
               | intros α0 Hα0; destruct (α0 == β) as [ -> | Hne ];
                   [ unfold binds; left; reflexivity
                   | unfold binds; right; apply Hrig;
@@ -2142,16 +2146,14 @@ Proof.
               | apply a_wf_aenv__tvar;
                   [ clear - Hβ; fsetdec | exact Hwf ]
               | eapply a_wf_pskl_delta_mono;
-                  [ apply (a_wf_pskl_reassoc
-                             (HbodyP β ltac:(clear - Hβ; solve_notin_auto)) β)
-                  | clear; fsetdec ]
+                  [ exact (HbodyP β ltac:(clear - Hβ; solve_notin_auto))
+                  | let Hx := fresh in intros ? _ Hx; clear - Hx; fsetdec ]
               | rewrite <- subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
                   [ | clear - Hβ; fsetdec | exact Hlcstrip ];
                 rewrite uskl_to_pskl_open;
                 eapply a_wf_pskl_delta_mono;
-                  [ apply (a_wf_pskl_reassoc
-                             (HbodyS β ltac:(clear - Hβ; solve_notin_auto)) β)
-                  | clear; fsetdec ]
+                  [ exact (HbodyS β ltac:(clear - Hβ; solve_notin_auto))
+                  | let Hx := fresh in intros ? _ Hx; clear - Hx; fsetdec ]
               | intros α0 Hα0; destruct (α0 == β) as [ -> | Hne ];
                   [ unfold binds; left; reflexivity
                   | unfold binds; right; apply Hrig;
@@ -2223,14 +2225,14 @@ Proof.
               | apply a_wf_aenv__tvar;
                   [ clear - Hβ; fsetdec | exact Hwf ]
               | eapply a_wf_pskl_delta_mono;
-                  [ apply (a_wf_pskl_reassoc HwfP0 β) | clear; fsetdec ]
+                  [ apply (a_wf_pskl_reassoc HwfP0 β)
+          | let Hx := fresh in intros ? _ Hx; clear - Hx; fsetdec ]
               | rewrite <- subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
                   [ | clear - Hβ; fsetdec | exact Hlcstrip ];
                 rewrite uskl_to_pskl_open;
                 eapply a_wf_pskl_delta_mono;
-                  [ apply (a_wf_pskl_reassoc
-                             (HbodyS β ltac:(clear - Hβ; solve_notin_auto)) β)
-                  | clear; fsetdec ]
+                  [ exact (HbodyS β ltac:(clear - Hβ; solve_notin_auto))
+                  | let Hx := fresh in intros ? _ Hx; clear - Hx; fsetdec ]
               | intros α0 Hα0; destruct (α0 == β) as [ -> | Hne ];
                   [ unfold binds; left; reflexivity
                   | unfold binds; right; apply Hrig;
@@ -2295,14 +2297,14 @@ Proof.
               | apply a_wf_aenv__tvar;
                   [ clear - Hβ; fsetdec | exact Hwf ]
               | eapply a_wf_pskl_delta_mono;
-                  [ apply (a_wf_pskl_reassoc HwfP0 β) | clear; fsetdec ]
+                  [ apply (a_wf_pskl_reassoc HwfP0 β)
+          | let Hx := fresh in intros ? _ Hx; clear - Hx; fsetdec ]
               | rewrite <- subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
                   [ | clear - Hβ; fsetdec | exact Hlcstrip ];
                 rewrite uskl_to_pskl_open;
                 eapply a_wf_pskl_delta_mono;
-                  [ apply (a_wf_pskl_reassoc
-                             (HbodyS β ltac:(clear - Hβ; solve_notin_auto)) β)
-                  | clear; fsetdec ]
+                  [ exact (HbodyS β ltac:(clear - Hβ; solve_notin_auto))
+                  | let Hx := fresh in intros ? _ Hx; clear - Hx; fsetdec ]
               | intros α0 Hα0; destruct (α0 == β) as [ -> | Hne ];
                   [ unfold binds; left; reflexivity
                   | unfold binds; right; apply Hrig;
@@ -2410,9 +2412,8 @@ Proof.
       { exact HcI. }
       { apply a_wf_aenv__tvar; [ clear - Hβ; fsetdec | exact Hwf ]. }
       { eapply a_wf_pskl_delta_mono;
-          [ apply (a_wf_pskl_reassoc
-                     (HbodyP β ltac:(clear - Hβ; solve_notin_auto)) β)
-          | clear; fsetdec ]. }
+          [ exact (HbodyP β ltac:(clear - Hβ; solve_notin_auto))
+          | let Hx := fresh in intros ? _ Hx; clear - Hx; fsetdec ]. }
       { eapply a_wf_pskl_weaken;
           [ intros x b0 Hb0; unfold binds; simpl; right; exact Hb0
           | exact HwfSub ]. }

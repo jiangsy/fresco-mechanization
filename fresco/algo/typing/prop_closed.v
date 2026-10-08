@@ -224,9 +224,9 @@ Qed.
 (** ⭐ Completeness + optimality at a closed program, INFERENCE mode
     (thm:complete-type-inference).  ⭐ The general statement's refinement
     premise is GONE here too: at [P0 = □] it says only that the declarative
-    result is a SYNTHESISED painting of a well-formed type, and both halves
-    are read off the derivation itself ([ad_sd_typing_mod_comp_ty] +
-    [ad_sd_typing_target_wf]).  So the derivation is the ONLY premise. *)
+    result is a SYNTHESISED painting (the ghost rule then only asks it to
+    avoid the empty Δ), and that is read off the derivation itself
+    ([ad_sd_typing_mod_comp_ty]).  So the derivation is the ONLY premise. *)
 Corollary a_typing_complete_infer : forall e (B : btyp),
   {{ nil ⊢ˢᵈ[ mode_ti ] e ⦂ B }}ad ->
   exists A1 Θ1,
@@ -236,13 +236,12 @@ Proof.
   intros e B Hd.
   eapply a_typing_complete_nil;
     [ apply a_wf_pskl__hole | apply a_ty_mode_compat__ti | exact Hd | ].
-  (* the ghost refines into ANY well-formed synthesised painting *)
+  (* the ghost refines into ANY synthesised painting avoiding the empty Δ *)
   assert (HB : B = ptyp_to_btyp_syn (btyp_to_ptyp B)).
   { apply btyp_syn_colouring_inv. apply mod_comp_ty_ti_inv.
     eapply ad_sd_typing_mod_comp_ty; [ exact Hd | apply a_wf_aenv__nil ]. }
   rewrite HB, btyp_to_bskl_ptyp_to_btyp_syn. cbn [pskl_to_bskl_inh].
-  apply ad_refine_syn__hole. apply a_wf_ptyp_to_wf_pskl.
-  eapply ad_sd_typing_target_wf; [ exact Hd | apply a_wf_aenv__nil ].
+  apply ad_refine_syn__hole. clear. fsetdec.
 Qed.
 
 (** ⭐ Completeness + optimality at a closed program, CHECKING mode.  ⭐ The

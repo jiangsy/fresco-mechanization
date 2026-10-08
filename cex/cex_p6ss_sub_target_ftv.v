@@ -123,7 +123,7 @@ Qed.
 
 Lemma guess_wf : {{ Θcex ⨟ empty ⊢ₚₛ ⌊ uskl_var_f β ⌋ˢ }}a.
 Proof.
-  cbn. apply a_wf_pskl__var. right. left. simpl; auto.
+  cbn. apply a_wf_pskl__var. left. simpl; auto.
 Qed.
 
 (** The derivation.  ForallL (tagged) instantiates with [β]; the premise is
@@ -151,7 +151,7 @@ Proof.
           | left; simpl; auto ].
       * (* the leaf presupposition: subject and counterpart are the SAME rigid,
            so the refinement is its variable row *)
-        cbn. apply ad_refine_pskl__var. right. unfold a_binds_tvar. eauto.
+        cbn. apply ad_refine_pskl__var.
 Qed.
 
 (** …and the bound the plan wanted is violated. *)

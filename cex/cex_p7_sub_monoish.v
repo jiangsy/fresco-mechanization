@@ -77,7 +77,7 @@ Proof.
 Qed.
 
 Lemma guess_wf : {{ Θw ⨟ empty ⊢ₚₛ ⌊ uskl_var_f β ⌋ˢ }}a.
-Proof. cbn. apply a_wf_pskl__var. right. left. simpl; auto. Qed.
+Proof. cbn. apply a_wf_pskl__var. left. simpl; auto. Qed.
 
 (** The derivation: ForallL (tagged) instantiates with β, and the premise is
     the Check leaf, whose consistency is the plain variable rule. *)
@@ -99,7 +99,7 @@ Proof.
     apply ad_consis_join_inh_intro.
     + cbn. apply ad_pat_consis__var; [ clear; fsetdec | left; simpl; auto ].
     + (* the leaf presupposition: subject and counterpart are the SAME rigid *)
-      cbn. apply ad_refine_pskl__var. right. unfold a_binds_tvar. eauto.
+      cbn. apply ad_refine_pskl__var.
 Qed.
 
 (** A [uskl_all_tag] is never a monotype's painting — mono paints are

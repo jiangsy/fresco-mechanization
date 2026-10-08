@@ -26,7 +26,7 @@ succeeding.
 
 ---
 
-## 1. Refinement — wf of BOTH sides. **[load-bearing; resolved via (B)]**
+## 1. Refinement — wf of BOTH sides. **[load-bearing; resolved via (B); rules verbatim since 2026-10-08]**
 
 > declarative.tex:1427 — "We require well-formedness of **both** `inh{P}` and
 > `bid{Q}` under Γ as well-formedness conditions of the refinement judgement."
@@ -36,44 +36,101 @@ well-formed too. This is what the GhostForall rule's inline comment
 (declarative.tex:1501, "It's fine to keep Δ since we already required
 well-formedness separately") is pointing back at.
 
-**Why it matters.** Without it the judgment is genuinely broken: GhostForall binds
-its variable in Γ but keeps Δ, while the Ghost rule's side condition only tests Δ
-— so a ghost nested under a GhostForall can be filled with the very variable
-GhostForall binds:
+**The rules are now the paper's, rule for rule (2026-10-08, commit
+`51122ada`).** All four refinement relations (`d_refine_syn`,
+`d_refine_pskl`, `ad_refine_syn`, `ad_refine_pskl`) and all three skeleton-wf
+relations (`d_wf_pskl`, `d_wf_uskl`, `a_wf_pskl`) follow declarative.tex
+("Well-formedness of skeletons", "Skeleton refinement") and its
+algorithmic-context reading:
 
-    □ ⊳ syn(∀◇(□→□))            (Ghost — the fill is well-formed)
+- **wf:** the variable rule reads only the context (`Γ ∋ α` / `a_binds_tvar`);
+  a quantifier binds its variable in BOTH the context and Δ; a ∀◇ body is
+  checked guarded at `Γ∖Δ | ·` (`denv_minus` / `aenv_minus`).
+- **refinement:** the variable rule has no premise; the ∀ rule extends the
+  context AND Δ; the Ghost rule asks only `Δ ∩ ftv(fill) = ∅` — it no longer
+  checks the fill's well-formedness; keeping a ∀◇ no longer re-checks
+  guardedness; GhostForall is unchanged (binds in Γ, keeps Δ).
+
+The presupposition — wf of both sides — is therefore not a premise of any
+rule; it is carried as a hypothesis by the lemmas that need it (route **B**).
+
+**Why it matters.** The rules alone derive ill-formed outputs. GhostForall
+binds its variable in Γ but keeps Δ, while the Ghost rule's side condition only
+tests Δ — so a ghost nested under a GhostForall can be filled with the very
+variable GhostForall binds:
+
     ∀◇(□→□) ⊳ ∀α. ∀◇(α→α)       (GhostForall, then two Ghost fills at α)
-    but NOT  □ ⊳ ∀α. ∀◇(α→α)
 
-Refinement is therefore **not transitive** — machine-checked in
-`algo/cex/cex_refine_not_transitive.v` (`ad_refine_syn_not_transitive`, Qed,
-axiom-free) — which kills `lemma:precision-preserves-refinement`
-(full-algo-spec.tex:716) and with it completeness.
+The source is well-formed; the output is well-formed in **no** context
+(`Pres_not_wf`): the ∀ puts α into Δ, and the ∀◇ body is checked at `Γ∖Δ`,
+where α is no longer bound. Machine-checked as `ad_refine_syn_output_not_wf`
+(`cex/cex_refine_not_transitive.v`, Qed, axiom-free). So "refinement preserves
+well-formedness" cannot be read off the rules; it needs the presupposition.
 
-The external wf condition is exactly the escape: `∀α. ∀◇(α→α)` is well-formed in
-**no** context at all (`Pres_not_wf`) — skeleton wf binds a quantifier's variable
-in Δ, while a ∀◇-ghost's body must be well-formed at the EMPTY Δ. So that
-derivation was never in the judgment's domain.
+⚠️ **RETRACTED 2026-10-08 — refinement is NOT shown non-transitive.** This
+entry used to say that refinement is not transitive (`ad_refine_syn_not_transitive`,
+via `□ ⊳ syn(∀◇(□→□))` then the step above, but NOT `□ ⊳ ∀α. ∀◇(α→α)`), and
+that this killed `lemma:precision-preserves-refinement` (full-algo-spec.tex:716)
+without the wf condition. The refutation rested on the mech's OLD Ghost rule,
+which demanded a well-formed fill (`Θ ⨟ ∅ ⊢ P`) — something the paper's rule
+never did. Under the paper's Ghost rule the composite is derivable in one step
+(`hole_to_Bres`: the fill is closed, so it avoids Δ), and the refutation is
+gone. The file keeps its name; it now proves only the ill-formed-output fact
+above. Transitivity is PROVED under the presupposition (`ad_refine_syn_trans`,
+below); whether it holds outright has not been established either way.
 
-**(A) was tried and REJECTED.** Adding the output's wf as a premise of
-`*__tophole_fill` works through weakening / strengthening / Δ-monotonicity /
-⊴-stability / subst / same_tvar (all five decl+algo files were fixed cleanly),
-but it **does not survive `ad_refine_*_f_strip`**: that lemma removes a context
-rigid `α` (with `α ∈ F`, `α ∈ Δ`), and a ∀◇-ghost body inside the output may
-legitimately mention `α` justified *by that very context binding* — `α ∈ Δ`
-cannot rescue it, because ∀◇-ghost bodies are checked at the EMPTY Δ. So the
-premise is not transportable and the soundness proof's ∀-cases break.
+⚙ **(A) was tried and REJECTED** (2026-07, under the OLD rules, kept as the
+worked example the preamble promises). Adding the output's wf as a premise of
+`*__tophole_fill` survived weakening / strengthening / Δ-monotonicity /
+⊴-stability / subst / same_tvar, but **not `ad_refine_*_f_strip`**: that lemma
+removes a context rigid `α`, and a ∀◇-ghost body inside the output may
+legitimately mention `α` justified by that very context binding.
 
-**(B) is what we do.** Rules verbatim; wf carried in the statements. Mechanized in
-`algo/prop_precise.v` (all Qed, axiom-free):
+**(B) is what we do.** What the development actually uses now
+(`algo/prop_precise.v` unless noted; all Qed, axiom-free):
 
 | lemma | content |
 |---|---|
 | `ad_refine_syn_syn_l` | a syn-headed refinement lands in a syn painting — **shape only**; no wf is derivable and none is needed |
-| `a_wf_pskl_delta_shrink` | Δ-variables the skeleton does not mention may be dropped |
-| `a_wf_pskl_empty_delta_free` | wf at the empty Δ ⇒ Δ-free (Δ is fresh for Θ) |
-| `ad_refine_syn_syn_delta_free` | a syn LHS never fires the `all` rule, so Δ never grows and Δ-freeness propagates |
-| `ad_refine_syn_syn_l_wf` | **the crux**: *assuming* the result is well-formed, it is a syn painting of a skeleton well-formed at the EMPTY Δ — precisely what re-applying the Ghost rule needs |
+| `ad_refine_syn_syn_delta_free_gen` | a syn LHS never fires the `all` rule, so Δ never grows and Δ-freeness of the fill propagates — given that no flexible is a Δ-variable and no flexible definition mentions one |
+| `ad_refine_syn_hole_l_gen` | **the crux**: whatever a Δ-free syn painting refines to, `◇` refines to as well — one Ghost step, **no wf needed** (the Ghost rule only asks Δ-freeness) |
+| `ad_refine_syn_trans` / `_trans_gen` | transitivity, **assuming the result is well-formed** (`Θ ⨟ Δ ⊢ₚₛ ⌊Qr⌋`, the presupposition); every ghost-left case goes through `ad_refine_syn_hole_l_gen` |
+| `ad_precise_preserves_refine` | `lemma:precision-preserves-refinement`, a corollary of transitivity (precision IS refinement between inherited paintings) |
+| `ad_refine_syn_hole_l_target_wf` (`sub/prop_completeness_sub_gen.v`) | a refinement OUT OF `◇` moves the target's wf from `Δ = ∅` to any `Δ`; the `Δ = ∅` wf is now a HYPOTHESIS — the Ghost rule used to supply it, the paper presupposes it |
+| `a_wf_pskl_empty_delta_free` | wf at the empty Δ ⇒ Δ-free, when Δ is fresh for Θ (used by `consis/prop_consis_precise.v`) |
+
+⚙ Retained but no longer used by anything: `ad_refine_syn_syn_l_wf` (the old
+crux, which recovered a skeleton wf at the EMPTY Δ from wf of the result),
+`ad_refine_syn_hole_l`, `ad_refine_syn_syn_delta_free`,
+`a_wf_pskl_delta_shrink`.
+
+⚠️ **Δ-monotonicity now SHRINKS Δ.** Under the paper's Ghost rule a larger Δ is
+harder (a fill may mention an added variable), and under the paper's ∀◇ wf rule
+too (`∀◇.α` is wf at `Θ = α, Δ = ∅` but not at `Δ = {α}`). So
+`ad_refine_syn_delta_mono` / `ad_refine_pskl_delta_mono` take `Δ [<=] Δ0`, and
+`a_wf_pskl_delta_mono` takes the agreement form (every free variable of `P` in
+the new Δ was in the old one). A caller that GROWS Δ must show the added
+variables are not free in the skeleton — usually from an existing
+`Δ ∩ ftv … [=] empty` side condition or the presupposition.
+
+## 1a. Precision target — wf of the TARGET on `lemma:precision-sub`. **[registered 2026-10-08; via (B)]**
+
+> algorithmic.tex:535 — "This is exactly what `Θ ⊢ inh{P} ⊳ inh{Q}` means."
+
+Precision `Θ ⊢ P ⊑ Q` is DEFINED as refinement between the two inherited
+paintings, so §1's presupposition applies to it: the precision target `Q` is
+well-formed.
+
+`ad_precise_extends_pat_sub` (`lemma:precision-sub`,
+`algo/sub/prop_completeness_sub_precise.v`, `Check`ed in `README.v`) now carries
+it as `{{ Θ ⨟ Δ ⊢ₚₛ P }}a` for its precision target `P` (in `P' ⊑ P`). This is
+the ONE `README.v` statement that changed in the 2026-10-08 rewrite. Why: the
+lemma converts the precision to `⊑ᵤ` (`uskl_precise_of_ad_precise`), whose
+`upre__hole` row needs its fill well-formed — which the refinement used to
+supply through the old Ghost rule's wf check and no longer does. Its one caller
+(`ad_ctx_precise_pat`'s Var row, `algo/prop_precise_sub.v`) supplies it from the
+context entry's stored wf (`a_wf_aenv_binds_var_{typ,skl}_wf`), so nothing
+propagates.
 
 ---
 
@@ -154,9 +211,16 @@ have no ghosts, so the condition is free there — which is why the TY half of t
 > declarative.tex:1911 — "well-formedness implicitly guarantees that `P` is
 > guarded"
 
-Here the mechanization took route **(A)**: `*__tophole_keep` carries
-`guarded_bskl P` explicitly. Keep it that way — it transports fine, and it is far
-cheaper than re-deriving guardedness from wf at every use.
+~~Here the mechanization took route **(A)**: `*__tophole_keep` carries
+`guarded_bskl P` explicitly.~~ **Changed 2026-10-08 — now route (B), as the
+paper has it.** `*__tophole_keep` no longer carries a `guarded_*` premise (the
+paper's rule has none). Guardedness of a kept ∀◇ body is read off the
+well-formedness of the refinement's TARGET (§1's presupposition): the ∀◇ wf
+rule demands a guarded body. Lemmas that need it take the target's wf (or, for
+the syntactic forms, `lc`) as a hypothesis — e.g. `ad_refine_syn_guarded_r`
+(+ `lc_bskl Q'`; `ad_refine_syn_guarded_r_all` for a ∀ target), and
+`ad_refine_*_f_guarded_r` in `consis/prop_soundness_consis.v`; to rule out a
+∀◇ target with no side condition at all, `ad_refine_*_f_not_tophole_r`.
 
 ---
 
@@ -261,9 +325,10 @@ that makes the bad derivation impossible usually lives *outside* the rule.
 The algo layer has TWO skeleton judgments, both in algo/def_rules.v:
 
 - **`a_wf_pskl` (`Θ ⨟ Δ ⊢ₚₛᵃ P`) — THE paper's skeleton wf** (ex-`ad_wf_pskl`,
-  moved up from def_consis_refine.v).  Two contexts: ∀ binds its variable in Δ,
-  and a `∀◇`-body must be guarded and well-formed at the EMPTY Δ.  This is the
-  ∀◇-discipline that rescued the refine-non-transitivity counterexample (§1):
+  moved up from def_consis_refine.v).  Two contexts: ∀ binds its variable in
+  BOTH Θ and Δ (since 2026-10-08; before, in Δ only), the variable rule reads
+  only Θ, and a `∀◇`-body must be guarded and well-formed at `Θ∖Δ ⨟ ∅`
+  (`aenv_minus`).  This is the ∀◇-discipline behind §1's capture example:
   `∀α.∀◇.(α→α)` is well-formed in NO context.  Whenever the paper writes
   skeleton wf, it means this judgment — the paper has no weak variant.
 
@@ -492,17 +557,21 @@ the solution lives.  Registered 2026-07-30 with `a_sub_complete_check`
 P7 bundle will have to carry it on the motive.
 
 **Why it is needed.** The case must move its precision from the solution's `κ`
-to the package's `ζ`, and the composition step is `ad_refine_syn_trans`.
-Refinement is NOT transitive outright (`cex/cex_refine_not_transitive.v`); it
-is transitive under exactly this external well-formedness, which
-`declarative.tex:1427` requires of every refinement judgment anyway.
+to the package's `ζ`, and the composition step is `ad_refine_syn_trans`, which
+is proved under exactly this external well-formedness — `declarative.tex:1427`
+requires it of every refinement judgment anyway.  (This paragraph used to add
+"refinement is NOT transitive outright (`cex/cex_refine_not_transitive.v`)";
+that refutation was RETRACTED 2026-10-08 — see §1.)
 
-**Why the two `P0 = □` rows do not need it.** At `P0 = □` the motive's own
-P0-fill premise is a refinement OUT OF the ghost, and only two rows have a
-ghost source — `__hole`, which carries the fill's well-formedness on the rule,
+**The two `P0 = □` rows.** At `P0 = □` the motive's own P0-fill premise is a
+refinement OUT OF the ghost, and only two rows have a ghost source — `__hole`
 and `__flex_r`, whose target is a defined flexible and so is `a_binds_tvar`.
-That is `ad_refine_syn_hole_l_target_wf` (same file, Qed).  At `Sub-Check`
-the source is guarded and no such reading exists.
+That is `ad_refine_syn_hole_l_target_wf` (same file, Qed).  ⚠️ Until
+2026-10-08 the `__hole` row carried the fill's well-formedness on the rule, so
+these rows got the counterpart's wf for free; the paper's Ghost rule does not,
+so `ad_refine_syn_hole_l_target_wf` now takes the `Δ = ∅` wf of the target as a
+hypothesis and the callers supply it (from the motive, the run's output wf, or
+the declarative derivation).
 
 **Not a well-formedness condition, but registered with it** —
 `a_sub_complete_check` also takes `guarded_pskl P0`.  The DECLARATIVE `Check`

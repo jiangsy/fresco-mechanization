@@ -1269,11 +1269,7 @@ Proof.
   - (* FlexMono : hand over to the flex walk at [Ξ = nil] *)
     intros NM M P0 Θ0 Θ1 α Q Hf IH Heq Hwf HwfP0 HwfP C Hcore.
     assert (Hbα : a_binds_tvar α (nil ++ Θ0)).
-    { simpl_env. inversion HwfP; subst.
-      match goal with
-      | Hor : _ `in` empty \/ a_binds_tvar _ _ |- _ =>
-          destruct Hor as [Hc | Hb]; [ clear - Hc; fsetdec | exact Hb ]
-      end. }
+    { simpl_env. inversion HwfP; subst. assumption. }
     assert (Hres : exists C',
                pskl_ty_core (mode_fn M) Q C' /\
                (forall m (b : abind),
@@ -1328,7 +1324,10 @@ Proof.
     { inversion HwfP as [ | | | Lb Θb Δb Pb Hbody | | ]; subst.
       apply a_wf_pskl_open with (L := Lb);
         [ intros α0 Hα0;
-          eapply a_wf_pskl_weaken; [ exact Hmono | apply Hbody; auto ]
+          eapply a_wf_pskl_weaken; [ | apply Hbody; auto ];
+          intros x c Hb; apply binds_app_iff in Hb as [Hb | Hb];
+          [ apply binds_app_iff; left; exact Hb
+          | apply binds_app_iff; right; exact (Hmono _ _ Hb) ]
         | exact HwfP1 ]. }
     destruct (IH Heq HwfΞΘ HwfP0' HwfSo C Hcore) as [C' [Hcore' Hsc']].
     exists C'. split; [ exact Hcore' | ].
@@ -1421,7 +1420,7 @@ Proof.
     destruct (IH Heq HwfΘ'
                 ltac:(eapply a_wf_pskl_isub; [ exact HwfP0 | exact Hlift ])
                 ltac:(apply a_wf_pskl__arrow; apply a_wf_pskl__var;
-                        right; right; left;
+                        right; left;
                         (unfold Θ'; unfold binds; apply in_or_app; right;
                          simpl; right; auto))
                 C Hcore)
@@ -1459,7 +1458,7 @@ Proof.
     assert (Hwfpaint : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ ptyp_to_pskl τ }}a).
     { apply a_scope_pskl_of_ptyp_vis;
         [ apply mono_ptyp_lc; exact Hm | ].
-      intros α1 Hα1. right.
+      intros α1 Hα1.
       pose proof (a_wf_ptyp_ftv_tvarish Hwfτ Hα1) as Ht.
       destruct Ht as [Hb | [Hb | [τ1 Hb]]];
         [ left | right; left | right; right; exists τ1 ];
@@ -1468,13 +1467,15 @@ Proof.
               subst_pskl_in_pskl (ptyp_to_pskl τ) β P0 }}a).
     { eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ);
         [ exact HwfP0 | reflexivity | exact HβΞΘ0 | clear; fsetdec
-        | apply mono_ptyp_to_pskl_guarded; exact Hm | exact Hwfpaint ]. }
+        | apply mono_ptyp_to_pskl_guarded; exact Hm | exact Hwfpaint
+        | clear; fsetdec ]. }
     assert (Hwfvarsub : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ
               subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α) }}a).
     { eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ);
-        [ apply a_wf_pskl__var; right; exact Hbα
+        [ apply a_wf_pskl__var; exact Hbα
         | reflexivity | exact HβΞΘ0 | clear; fsetdec
-        | apply mono_ptyp_to_pskl_guarded; exact Hm | exact Hwfpaint ]. }
+        | apply mono_ptyp_to_pskl_guarded; exact Hm | exact Hwfpaint
+        | clear; fsetdec ]. }
     destruct (IH eq_refl HwfΞΘ0 HwfP0' Hwfvarsub
                 (subst_ptyp_in_ptyp τ β C)
                 (pskl_ty_core_subst_gen τ β Hcore))
@@ -2256,7 +2257,7 @@ Proof.
     destruct (ad_refine_syn_syn_l Href1 pskl_hole eq_refl) as [P' HQt1].
     subst Qt1. rewrite bskl_to_pskl_pskl_to_bskl_syn in HeQt1. subst P.
     assert (HwfPin : {{ Θ1 ⨟ empty ⊢ₚₛ P' }}a)
-      by (pose proof (ad_refine_syn_hole_l_target_wf Href1) as Hw;
+      by (pose proof (ad_pat_target_wf Hpat1 Hwf1) as Hw;
           rewrite bskl_to_pskl_pskl_to_bskl_syn in Hw; exact Hw).
     assert (HwfArr : {{ Θ1 ⨟ empty ⊢ₚₛ (pskl_arrow P' Q) }}a)
       by (apply a_wf_pskl__arrow;

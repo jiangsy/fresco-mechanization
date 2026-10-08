@@ -1742,6 +1742,18 @@ follow the paper.  It only upgrades our verdict on someone else's code.
   Only the two `_id` lemmas needed re-proving; `make coq` green, zero admits.
 
 ## GAP — `lemma:precision-preserves-refinement` is stated with NO PROOF, and is FALSE without the external wf condition
+> ⚠️ **RETRACTED IN PART 2026-10-08.**  The non-transitivity counterexample
+> this entry cites (`cex/cex_refine_not_transitive.v`) rested on the MECH's old
+> Ghost rule, which demanded a well-formed fill (`Θ ⨟ ∅ ⊢ P`) — the paper's
+> Ghost rule never did; it only asks `Δ ∩ ftv(fill) = ∅`.  Since the refinement
+> rules were made faithful to the paper (commit `51122ada`) the composite is
+> derivable (`hole_to_Bres`) and the refutation is gone.  What stands: the rules
+> alone derive an ILL-FORMED output from a well-formed input
+> (`ad_refine_syn_output_not_wf`, same file), and transitivity — hence this
+> lemma — is PROVED under the wf presupposition.  Whether the lemma holds
+> without it is no longer refuted, and has not been settled.  The text below is
+> kept as written.
+
 - Where: full-algo-spec.tex:716-721.  The lemma is asserted bare — `\begin{lemma}
   … \end{lemma}` followed straight by the next `\begin{definition}`.  There is no
   `\begin{proof}`, here or anywhere else in the appendices.
@@ -1774,12 +1786,27 @@ follow the paper.  It only upgrades our verdict on someone else's code.
   to handle `tophole_fill` rather than rule it out.
 
 ## RESOLVED (was FALSE) — refinement does not preserve wf; wf is carried by the STATEMENTS
+> ⚠️ **NON-TRANSITIVITY HALF RETRACTED 2026-10-08.**  The witness below shows
+> two things.  (1) The rules alone produce an ill-formed output
+> (`∀◇(□→□) ⊳ ∀α. ∀◇(α→α)`): this STANDS, now machine-checked as
+> `ad_refine_syn_output_not_wf`.  (2) `□ ⊳ ∀α. ∀◇(α→α)` is NOT derivable, so
+> refinement is not transitive: this is RETRACTED.  The step "the Ghost rule
+> may only produce a WELL-FORMED skeleton" described the MECH's old Ghost rule,
+> which checked the fill's wf; the paper's Ghost rule only asks the fill to
+> avoid Δ, and `∀α. ∀◇(α→α)` is closed, so the last step IS derivable
+> (`hole_to_Bres`).  The mech rules now follow the paper verbatim (commit
+> `51122ada`), including the "minor discrepancy" noted below (`__all` now
+> extends both Δ and the context).  The MECHANIZED list below names lemmas as
+> they then stood; the current kit is in WF-SIDE-CONDITIONS.md §1.
+
 - Where: fig. of refinement, `declarative.tex:1505-1510` (the GhostForall
   rule); the consequence hits `lemma:precision-preserves-refinement`
   (full-algo-spec.tex:716) and hence the whole completeness/optimality
   development, which rests on it.
 - Machine-checked artifact: `cex/cex_refine_not_transitive.v` —
-  `ad_refine_syn_not_transitive` is Qed and axiom-free.
+  `ad_refine_syn_not_transitive` was Qed and axiom-free under the old Ghost
+  rule (⚠️ retracted 2026-10-08, see the note above; the file now proves
+  `ad_refine_syn_output_not_wf`).
 - The GhostForall rule binds `α` in `Γ` but deliberately KEEPS `Δ`
   (the paper's own inline comment: "It's fine to keep Δ since we already
   required well-formedness separately").  But `Δ` is exactly what the Ghost
@@ -3272,11 +3299,14 @@ they need the leaf refinement of (c) at each invocation, which the paper's
 
 Registered also in [WF-SIDE-CONDITIONS.md](WF-SIDE-CONDITIONS.md).  The
 `Sub-Check` case moves its precision from `θ` to the package's `ζ`, and the
-composition step is `ad_refine_syn_trans` — which refinement only admits under
-the paper's external well-formedness of the RESULT (refinement is not
-transitive outright; `cex_refine_not_transitive.v`).  At `P_0 = □` that
-well-formedness is free (`ad_refine_syn_hole_l_target_wf`: only `__hole` and
-`__flex_r` have a ghost source, and both carry it).  At `Sub-Check` it is not,
+composition step is `ad_refine_syn_trans` — which is proved under the paper's
+external well-formedness of the RESULT (the claim "refinement is not
+transitive outright; `cex_refine_not_transitive.v`" was RETRACTED 2026-10-08:
+the counterexample relied on the mech's old Ghost rule demanding a wf fill).
+At `P_0 = □` that well-formedness was free (`ad_refine_syn_hole_l_target_wf`:
+only `__hole` and `__flex_r` have a ghost source, and both carried it) — ⚠️ no
+longer since 2026-10-08: the paper's Ghost rule does not check its fill, so
+that lemma now takes the target's wf as a hypothesis.  At `Sub-Check` it is not,
 so `a_sub_complete_check` takes `Θ ⨟ ∅ ⊢ P_B` as a hypothesis.  It is the
 paper's usual "all inputs are well-formed", and the P7 bundle will have to
 carry it on the motive.
@@ -3955,8 +3985,12 @@ Its consistency is oriented `A' ∼ A` — **subject the split's domain, input t
 annotation** — the reverse of `AT-AbsAnno`'s `A ∼ P`.  The two cannot both
 stand with the result `A → B`: soundness then owes `inh⌈A'⌉ ⊳ ⌈A⌉`, while a
 consistency run transports the OTHER way (`inh⌈A⌉ ⊳` a colouring of `A'`), and
-refinement is neither symmetric nor transitive
-(`cex/cex_refine_not_transitive.v`).
+refinement is not symmetric, and transitive only under the wf presupposition
+(`ad_refine_syn_trans`).  (⚠️ This used to say "neither symmetric nor
+transitive (`cex/cex_refine_not_transitive.v`)"; the non-transitivity
+counterexample was RETRACTED 2026-10-08 — it relied on the mech's old Ghost
+rule demanding a wf fill.  The argument does not depend on it: the direction
+mismatch remains.)
 
 `A' → B` resolves it, and is independently the right answer:
 
@@ -3990,7 +4024,8 @@ rules supplies it:
 - `ad_pat_sub_target_wf` gives only SCOPE — the leaf-valid join does not pin
   wf either (its leaf datum is a refinement, and refinement does not preserve
   wf: the capture configuration of `cex/cex_refine_not_transitive.v` has a
-  wf source);
+  wf source — `ad_refine_syn_output_not_wf`; this half of that file survives
+  the 2026-10-08 retraction of its non-transitivity claim);
 - it cannot be carried as a hypothesis of the lemma and propagated top-down:
   the descent dies at `P-App`, whose premise skeleton `P` and refined domain
   `Q1` are EXISTENTIAL in the rule — a first repair attempt put
@@ -4010,7 +4045,8 @@ where the content is: the run's `Δ1`/`Δ2` rigid-trackers and the Ghost /
 GhostR rules' `Δ ∩ ftv` side conditions are PRECISELY what makes it go
 through — the close-rows re-bind an opened rigid, which is sound only
 because ghost fills avoid the tracked variables (the same asymmetry that
-makes refinement non-transitive).  The paper's global "all types are
+lets refinement's rules derive an ill-formed output; this used to say
+"that makes refinement non-transitive", a claim RETRACTED 2026-10-08).  The paper's global "all types are
 well-formed" convention silently assumes this result.
 
 ## ⭐⭐⭐ RULE REPAIRS on the four check rows of `TI-AbsCheck`/`TI-AbsAnnoCheck` — the figure's pinned body result is UNSATISFIABLE, and cofinite binder families break completeness (2026-08-08)

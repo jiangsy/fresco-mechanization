@@ -115,10 +115,7 @@ Proof.
   cbn. unfold cex_Q.
   change (bskl_tophole bskl_unit)
     with (pskl_to_bskl_syn (pskl_tophole pskl_unit)).
-  apply ad_refine_syn_f__hole.
-  - cbn. clear; fsetdec.
-  - apply a_wf_pskl__tophole;
-      [ apply guarded_pskl__unit | apply a_wf_pskl__unit ].
+  apply ad_refine_syn_f__hole; cbn; clear; fsetdec.
 Qed.
 
 (** (c) the increase is the identity on the empty context *)

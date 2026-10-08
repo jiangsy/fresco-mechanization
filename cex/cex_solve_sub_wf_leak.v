@@ -101,7 +101,7 @@ Lemma cex_wf_target : forall Θ,
 Proof.
   intros Θ. apply a_wf_pskl__all with (L := empty). intros α Hα.
   unfold open_pskl_wrt_pskl; cbn.
-  apply a_wf_pskl__var. left. clear; fsetdec.
+  apply a_wf_pskl__var. left. unfold binds. simpl. left. reflexivity.
 Qed.
 
 (* ===================================================================== *)
@@ -114,11 +114,10 @@ Lemma cex_output_not_wf : forall Θ b,
 Proof.
   intros Θ b Hb Hwf.
   inversion Hwf as [ | | | | | ? ? ? Hg Hbody ]; subst.
-  inversion Hbody as [ | ? ? ? Hin | | | | ]; subst.
-  destruct Hin as [Habs | Hbt].
-  - clear - Habs; fsetdec.
-  - destruct Hbt as [Hbd | [Hbd | [τ Hbd]]];
-      apply binds_In in Hbd; contradiction.
+  inversion Hbody as [ | ? ? ? Hbt | | | | ]; subst.
+  apply a_binds_tvar_aenv_minus in Hbt. destruct Hbt as [Hbt _].
+  destruct Hbt as [Hbd | [Hbd | [τ Hbd]]];
+    apply binds_In in Hbd; contradiction.
 Qed.
 
 (** THE REFUTATION.  Instantiated at [Ξ := nil] and [Δ := ∅] — the very

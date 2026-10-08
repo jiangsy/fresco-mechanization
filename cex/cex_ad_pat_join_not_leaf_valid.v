@@ -79,7 +79,7 @@ Proof.
   intros Θ. apply ad_pat_consis__forall_syn with (L := empty).
   intros α Hα. cbn.
   apply (ad_pat_consis__hole (P := pskl_var_f α)); [ reflexivity | ].
-  apply a_wf_pskl__var. right. unfold a_binds_tvar. eauto.
+  apply a_wf_pskl__var. unfold a_binds_tvar. eauto.
 Qed.
 
 (** ⚠️ RETRACTED 2026-08-12 — AND THAT IS THE POINT.  Until then this section
@@ -102,23 +102,21 @@ Qed.
 (*  §2  NO leaf-valid join exists                                         *)
 (* ===================================================================== *)
 
-(** ⭐ Refinement's ∀-row puts the rigid into **Δ**, and
-    [ad_refine_pskl__hole]'s fill must be well-scoped in Θ ALONE — so ANY Θ
-    that does not already contain the rigid refutes the fill. *)
+(** ⭐ Refinement's ∀-row puts the rigid into **Δ** (as well as Θ), and
+    [ad_refine_pskl__hole]'s fill must avoid Δ — so the ghost can never be
+    filled with the rigid itself.  The only other row with a ghost on the left
+    is the flexible lookup, which needs the rigid to be a defined flexible. *)
 Lemma cap_hole_no_fill : forall Θ α,
-  α `notin` dom Θ ->
+  ~ (exists τ, binds α (abind_flex_mono_def τ) Θ) ->
   ~ ({{ Θ ⨟ (add α empty) ⊢ᵣₚ pskl_hole ⊳ (pskl_var_f α) }}ad).
 Proof.
   intros Θ α Hα H. inversion H; subst.
-  - (* __hole : the fill would have to be well-scoped in Θ alone *)
-    match goal with Hw : {{ _ ⨟ _ ⊢ₚₛ _ }}a |- _ => inversion Hw; subst end.
-    match goal with Hd : _ \/ _ |- _ => destruct Hd as [Hin | Hb] end.
-    + clear - Hin; fsetdec.
-    + destruct Hb as [Hb | [Hb | [? Hb]]]; apply binds_In in Hb;
-        clear - Hb Hα; fsetdec.
-  - (* __flex_r : [α] would have to be a flexible of Θ *)
-    match goal with Hb : binds _ _ _ |- _ =>
-      apply binds_In in Hb; clear - Hb Hα; fsetdec end.
+  - (* __hole : the fill would mention the Δ-variable [α] *)
+    clear Hα H. simpl in *.
+    match goal with Hd : _ |- False =>
+      assert (Hin : α `in` empty) by (apply Hd; fsetdec); fsetdec end.
+  - (* __flex_r : [α] would have to be a defined flexible of Θ *)
+    apply Hα. eauto.
 Qed.
 
 Lemma cap_no_refine : forall Θ,
@@ -131,7 +129,10 @@ Proof.
       pick fresh β for (L `union` dom Θ);
       pose proof (Hf β ltac:(clear - Fr; fsetdec)) as Hβ; cbn in Hβ
   end.
-  eapply cap_hole_no_fill; [ | exact Hβ ]. clear - Fr; fsetdec.
+  eapply cap_hole_no_fill; [ | exact Hβ ].
+  intros [τ Hb].
+  destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb']; [ discriminate | ].
+  apply binds_In in Hb'. clear - Hb' Fr; fsetdec.
 Qed.
 
 (** ⚙ Stated over the PLAIN relation since 2026-08-12: [ad_pat_sub] carries

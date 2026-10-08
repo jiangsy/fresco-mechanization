@@ -24,18 +24,34 @@ Set Implicit Arguments.
 (*  Δ-monotonicity and painting transport                                 *)
 (* ===================================================================== *)
 
-(** Δ-monotonicity: enlarging the ∀-scope set preserves well-formedness
-    (occurrences only ever TEST membership positively). *)
+(** Changing the ∀-scope set preserves well-formedness as long as no free
+    variable of the skeleton newly enters it.  Membership in [Δ] only matters
+    at a [∀◇], whose body is read at [Θ∖Δ], so what has to be kept is
+    exactly "[Δ] removes no free variable that [Δ0] kept".  In particular
+    [Δ] may shrink freely, and may grow by variables [P] does not mention. *)
 Lemma a_wf_pskl_delta_mono : forall Θ Δ0 P,
   {{ Θ ⨟ Δ0 ⊢ₚₛ P }}a ->
-  forall Δ, Δ0 [<=] Δ ->
+  forall Δ, (forall α, α `in` ftvar_in_pskl P -> α `in` Δ -> α `in` Δ0) ->
   {{ Θ ⨟ Δ ⊢ₚₛ P }}a.
 Proof.
-  intros Θ Δ0 P H; induction H; intros Δ' Hsub; eauto using a_wf_pskl.
-  - apply a_wf_pskl__var.
-    destruct H as [HΔ | Htv]; [ left; fsetdec | auto ].
-  - apply a_wf_pskl__all with (L := L).
-    intros α Hα. apply H0; auto. fsetdec.
+  intros Θ Δ0 P H; induction H; intros Δ' Hagree; simpl in Hagree.
+  - constructor.
+  - constructor. assumption.
+  - constructor; [ apply IHa_wf_pskl1 | apply IHa_wf_pskl2 ];
+      intros β Hβ; apply Hagree; fsetdec.
+  - apply a_wf_pskl__all with (L := L `union` ftvar_in_pskl P).
+    intros α Hα. apply H0; [ fsetdec | ].
+    intros β Hβ Hβin.
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f α)) as Hup.
+    simpl in Hup.
+    destruct (β == α) as [-> | Hne]; [ fsetdec | ].
+    assert (β `in` Δ) by (apply Hagree; fsetdec). fsetdec.
+  - constructor.
+  - constructor; [ assumption | ].
+    apply (a_wf_pskl_tvar_mono_ftv H0).
+    intros β Hβ Hb. apply a_binds_tvar_aenv_minus in Hb.
+    apply a_binds_tvar_aenv_minus. destruct Hb as [Hb Hn]. split; [ exact Hb | ].
+    intro Hin. apply Hn. apply Hagree; assumption.
 Qed.
 
 Lemma lc_pskl_to_bskl_inh : forall P,
@@ -66,13 +82,14 @@ Proof.
   intros Θ Δ Q Q' H; induction H; intros Θ' Hmon.
   - apply ad_refine_syn__unit.
   - apply ad_refine_syn__var.
-    destruct H as [HΔ | [Hb | [Hb | [τ Hb]]]];
-      [ left | right; left | right; right; left
-      | right; right; right; exists τ ]; auto.
   - apply ad_refine_syn__arrow; auto.
-  - eapply ad_refine_syn__all with (L := L); eauto.
-  - apply ad_refine_syn__hole.
-    eapply a_wf_pskl_weaken; eauto.
+  - eapply ad_refine_syn__all with (L := L).
+    intros α Hα. apply H0; auto.
+    intros x b Hb.
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
+      [ unfold binds; left; reflexivity
+      | unfold binds; right; apply Hmon; auto ].
+  - apply ad_refine_syn__hole; assumption.
   - apply ad_refine_syn__tophole_remove; auto.
   - eapply ad_refine_syn__tophole_fill with (L := L).
     intros α Hα. apply H0; auto.
@@ -94,13 +111,14 @@ Proof.
   intros Θ Δ P P' H; induction H; intros Θ' Hmon.
   - apply ad_refine_pskl__unit.
   - apply ad_refine_pskl__var.
-    destruct H as [HΔ | [Hb | [Hb | [τ Hb]]]];
-      [ left | right; left | right; right; left
-      | right; right; right; exists τ ]; auto.
   - apply ad_refine_pskl__arrow; auto.
-  - eapply ad_refine_pskl__all with (L := L); eauto.
-  - apply ad_refine_pskl__hole.
-    eapply a_wf_pskl_weaken; eauto.
+  - eapply ad_refine_pskl__all with (L := L).
+    intros α Hα. apply H0; auto.
+    intros x b Hb.
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
+      [ unfold binds; left; reflexivity
+      | unfold binds; right; apply Hmon; auto ].
+  - apply ad_refine_pskl__hole; assumption.
   - apply ad_refine_pskl__tophole_remove; auto.
   - eapply ad_refine_pskl__tophole_fill with (L := L).
     intros α Hα. apply H0; auto.
@@ -114,69 +132,81 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  Reflexivity of refinement                                             *)
+(*  Δ-antitonicity and reflexivity of refinement                          *)
 (* ===================================================================== *)
 
-(** Helper: refinement from an empty Δ holds at any Δ (occurrences only
-    test Δ-membership positively). *)
+(** Refinement survives SHRINKING the ∀-scope set: [Δ] is only read by the
+    [__hole] row, as [Δ ∩ ftv(fill) = ∅].  Growing [Δ] is not sound in
+    general — the fill may mention the added variable. *)
 Lemma ad_refine_syn_delta_mono : forall Θ Δ0 Q Q',
   {{ Θ ⨟ Δ0 ⊢ᵣ Q ⊳ Q' }}ad ->
-  forall Δ, Δ0 [<=] Δ ->
+  forall Δ, Δ [<=] Δ0 ->
   {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad.
 Proof.
   intros Θ Δ0 Q Q' H; induction H; intros Δ' Hsub;
     eauto using ad_refine_syn.
-  - apply ad_refine_syn__var.
-    destruct H as [HΔ | Htv]; [ left; fsetdec | auto ].
   - apply ad_refine_syn__all with (L := L).
     intros α Hα. apply H0; auto. fsetdec.
+  - apply ad_refine_syn__hole. fsetdec.
 Qed.
 
 Lemma ad_refine_pskl_delta_mono : forall Θ Δ0 P P',
   {{ Θ ⨟ Δ0 ⊢ᵣₚ P ⊳ P' }}ad ->
-  forall Δ, Δ0 [<=] Δ ->
+  forall Δ, Δ [<=] Δ0 ->
   {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad.
 Proof.
   intros Θ Δ0 P P' H; induction H; intros Δ' Hsub;
     eauto using ad_refine_pskl.
-  - apply ad_refine_pskl__var.
-    destruct H as [HΔ | Htv]; [ left; fsetdec | auto ].
   - apply ad_refine_pskl__all with (L := L).
     intros α Hα. apply H0; auto. fsetdec.
+  - apply ad_refine_pskl__hole. fsetdec.
 Qed.
 
-Lemma ad_refine_syn_refl_inh : forall Θ Δ P,
+(** Reflexivity needs no scoping at all: the reflexive derivation fills
+    every [◇] with [◇] (so [__hole]'s side condition is vacuous) and the
+    remaining rows carry no premise.  Hence the general form, at an
+    arbitrary [Θ'] and [Δ']; the wf hypothesis only supplies local
+    closure. *)
+Lemma ad_refine_syn_refl_inh_gen : forall Θ Δ P,
   {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
-  {{ Θ ⨟ Δ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh P) }}ad.
+  forall Θ' Δ',
+  {{ Θ' ⨟ Δ' ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh P) }}ad.
 Proof.
-  intros Θ Δ P H; induction H; simpl.
+  intros Θ Δ P H; induction H; intros Θ' Δ'; simpl.
   - apply ad_refine_syn__unit.
-  - apply ad_refine_syn__var; auto.
+  - apply ad_refine_syn__var.
   - apply ad_refine_syn__arrow; auto.
   - apply ad_refine_syn__all with (L := L).
     intros α Hα.
     repeat rewrite <- pskl_to_bskl_inh_open. auto.
   - replace (pskl_to_bskl_inh pskl_hole)
       with (pskl_to_bskl_syn pskl_hole) at 2 by reflexivity.
-    apply ad_refine_syn__hole. apply a_wf_pskl__hole.
-  - apply ad_refine_syn__tophole_keep;
-      auto using guarded_pskl_to_bskl_inh.
-    eapply ad_refine_syn_delta_mono; eauto. fsetdec.
+    apply ad_refine_syn__hole. simpl. fsetdec.
+  - apply ad_refine_syn__tophole_keep. auto.
+Qed.
+
+Lemma ad_refine_syn_refl_inh : forall Θ Δ P,
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
+  {{ Θ ⨟ Δ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh P) }}ad.
+Proof. intros. eapply ad_refine_syn_refl_inh_gen; eauto. Qed.
+
+Lemma ad_refine_pskl_refl_gen : forall Θ Δ P,
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
+  forall Θ' Δ', {{ Θ' ⨟ Δ' ⊢ᵣₚ P ⊳ P }}ad.
+Proof.
+  intros Θ Δ P H; induction H; intros Θ' Δ'; simpl.
+  - apply ad_refine_pskl__unit.
+  - apply ad_refine_pskl__var.
+  - apply ad_refine_pskl__arrow; auto.
+  - apply ad_refine_pskl__all with (L := L). auto.
+  - apply ad_refine_pskl__hole. simpl. fsetdec.
+  - apply ad_refine_pskl__tophole_keep. auto.
 Qed.
 
 Lemma ad_refine_pskl_refl : forall Θ Δ P,
   {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
   {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ P }}ad.
-Proof.
-  intros Θ Δ P H; induction H; simpl.
-  - apply ad_refine_pskl__unit.
-  - apply ad_refine_pskl__var; auto.
-  - apply ad_refine_pskl__arrow; auto.
-  - apply ad_refine_pskl__all with (L := L). auto.
-  - apply ad_refine_pskl__hole. apply a_wf_pskl__hole.
-  - apply ad_refine_pskl__tophole_keep; auto.
-    eapply ad_refine_pskl_delta_mono; eauto. fsetdec.
-Qed.
+Proof. intros. eapply ad_refine_pskl_refl_gen; eauto. Qed.
 
 (* ===================================================================== *)
 (*  Consistency reflexivity along the erasure (the GhostR subsidiary       *)

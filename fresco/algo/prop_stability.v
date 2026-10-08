@@ -63,11 +63,8 @@ Lemma a_wf_pskl_isub : forall Θ Δ P,
   forall Θ', Θ ⊴ Θ' ->
   {{ Θ' ⨟ Δ ⊢ₚₛ P }}a.
 Proof.
-  intros Θ Δ P H; induction H; intros Θ' Hle;
-    eauto using a_wf_pskl.
-  - (* var *)
-    apply a_wf_pskl__var.
-    destruct H as [HΔ | Htv]; eauto using a_isub_binds_tvarish.
+  intros Θ Δ P H Θ' Hle.
+  apply (a_wf_pskl_tvar_mono H). eauto using a_isub_binds_tvarish.
 Qed.
 
 Lemma ad_pat_consis_isub : forall Ψ Θ R Q,
@@ -106,10 +103,10 @@ Proof.
   intros Θ Δ Q Q' H; induction H; intros Θ' Hle.
   - apply ad_refine_syn__unit.
   - apply ad_refine_syn__var.
-    destruct H as [HΔ | Htv]; eauto using a_isub_binds_tvarish.
   - apply ad_refine_syn__arrow; auto.
-  - eapply ad_refine_syn__all with (L := L); eauto.
-  - apply ad_refine_syn__hole; eauto using a_wf_pskl_isub.
+  - eapply ad_refine_syn__all with (L := L).
+    intros α Hα. eauto using a_isub_cons_tvar.
+  - apply ad_refine_syn__hole; auto.
   - apply ad_refine_syn__tophole_remove; auto.
   - eapply ad_refine_syn__tophole_fill with (L := L).
     intros α Hα. eauto using a_isub_cons_tvar.
@@ -126,10 +123,10 @@ Proof.
   intros Θ Δ P P' H; induction H; intros Θ' Hle.
   - apply ad_refine_pskl__unit.
   - apply ad_refine_pskl__var.
-    destruct H as [HΔ | Htv]; eauto using a_isub_binds_tvarish.
   - apply ad_refine_pskl__arrow; auto.
-  - eapply ad_refine_pskl__all with (L := L); eauto.
-  - apply ad_refine_pskl__hole; eauto using a_wf_pskl_isub.
+  - eapply ad_refine_pskl__all with (L := L).
+    intros α Hα. eauto using a_isub_cons_tvar.
+  - apply ad_refine_pskl__hole; auto.
   - apply ad_refine_pskl__tophole_remove; auto.
   - eapply ad_refine_pskl__tophole_fill with (L := L).
     intros α Hα. eauto using a_isub_cons_tvar.

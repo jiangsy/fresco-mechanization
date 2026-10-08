@@ -1005,9 +1005,7 @@ Proof.
     + (* a bare variable: RIGID ⟹ refuted (§4); FLEXIBLE ⟹ into P7a *)
       cbn in HeqR. subst P.
       assert (Hbt : a_binds_tvar γ Θ0)
-        by (inversion HwfP as [ | ? ? ? Hor | | | | ]; subst;
-            destruct Hor as [Hemp | Hb];
-            [ exfalso; clear - Hemp; fsetdec | exact Hb ]).
+        by (inversion HwfP as [ | ? ? ? Hb | | | | ]; subst; exact Hb).
       destruct Hbt as [Hrig | Hfl].
       * exfalso.
         eapply slack_arrow_rigid_absurd;
@@ -1106,7 +1104,8 @@ Proof.
     subst R. cbn in HeqR. subst P.
     rewrite <- HmX in Hslack0.
     assert (HwfP' : {{ Θ0 ⨟ empty ⊢ₚₛ ⌊ R00 ⌋ˢ }}a)
-      by (inversion HwfP; subst; assumption).
+      by (inversion HwfP; subst; rewrite <- (aenv_minus_empty Θ0);
+          assumption).
     (* the row is SK-only, so the motive's TY ghost-freeness is VACUOUS *)
     assert (Hgf0 : a_sub_mode_sk = a_sub_mode_ty -> uskl_ghost_free Rg)
       by (intro Habs; discriminate Habs).
@@ -1126,7 +1125,8 @@ Proof.
     subst R. cbn in HeqR. subst P.
     rewrite <- HmX in Hslack0.
     assert (HwfP' : {{ Θ0 ⨟ empty ⊢ₚₛ ⌊ R00 ⌋ˢ }}a)
-      by (inversion HwfP; subst; assumption).
+      by (inversion HwfP; subst; rewrite <- (aenv_minus_empty Θ0);
+          assumption).
     (* SK-only, as above *)
     assert (Hgf0 : a_sub_mode_sk = a_sub_mode_ty -> uskl_ghost_free Rg)
       by (intro Habs; discriminate Habs).

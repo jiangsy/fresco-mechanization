@@ -161,7 +161,9 @@ Proof. destruct d; reflexivity. Qed.
 (*  §0b  THE ∀-SCOPE CONTEXT Δ.  It is an [atoms] on the [ad] side and a  *)
 (*  [list atom] on the [d] side, so the two are related by MEMBERSHIP     *)
 (*  rather than converted; every rule that touches Δ only ever ADDS one   *)
-(*  atom or CLEARS it, and both operations respect the relation.          *)
+(*  atom (∀) or CLEARS it (∀◇, whose body is read at Γ∖Δ — the embedding  *)
+(*  commutes with that, [denv_to_aenv_minus]), and all of these respect   *)
+(*  the relation.                                                         *)
 (* ===================================================================== *)
 
 Definition delta_agree (Δa : atoms) (Δd : list atom) : Prop :=
@@ -182,9 +184,44 @@ Qed.
 
 #[local] Hint Resolve delta_agree_nil : core.
 
-(** The Δ-vars as an ordinary tvar context — what the TYPE-sorted
-    well-formedness [d_wf_utyp] wants, since its ∀ rule extends Γ where the
-    skeleton-sorted one extends Δ. *)
+(** The ghost rule's [Δ ∩ ftv(Q) = ∅]: a set equation on the [ad] side, an
+    elementwise statement over the list on the [d] side. *)
+Lemma delta_agree_disj_to_d : forall Δa Δd S,
+  delta_agree Δa Δd -> Δa ∩ S [=] empty ->
+  forall α, List.In α Δd -> α `notin` S.
+Proof.
+  intros Δa Δd S HΔ Hdisj α Hin HS. apply HΔ in Hin.
+  clear - Hin HS Hdisj; fsetdec.
+Qed.
+
+Lemma delta_agree_disj_to_a : forall Δa Δd S,
+  delta_agree Δa Δd -> (forall α, List.In α Δd -> α `notin` S) ->
+  Δa ∩ S [=] empty.
+Proof.
+  intros Δa Δd S HΔ Hdisj α. split; [ | intros H; clear - H; fsetdec ].
+  intros Hin. apply inter_iff in Hin. destruct Hin as [HΔα HS].
+  exfalso. exact (Hdisj α (proj1 (HΔ α) HΔα) HS).
+Qed.
+
+(** The paper's [Γ∖Δ] commutes with the embedding: removing the Δ-vars
+    before or after translating the context gives the same [aenv]. *)
+Lemma denv_to_aenv_minus : forall Γ Δa Δd,
+  delta_agree Δa Δd ->
+  denv_to_aenv (denv_minus Γ Δd) = aenv_minus (denv_to_aenv Γ) Δa.
+Proof.
+  intros Γ Δa Δd HΔ. induction Γ as [ | [x d] Γ' IH ]; [ reflexivity | ].
+  unfold denv_minus, aenv_minus in *. simpl.
+  destruct (List.in_dec eq_dec x Δd) as [ Hin | Hnin ];
+    destruct (AtomSetImpl.mem x Δa) eqn:Hm; simpl.
+  - exact IH.
+  - apply not_mem_iff in Hm. exfalso. apply Hm, HΔ, Hin.
+  - apply mem_iff in Hm. exfalso. apply Hnin, HΔ, Hm.
+  - f_equal. exact IH.
+Qed.
+
+(** The Δ-vars as an ordinary tvar context.  Both ∀ rules now extend Γ,
+    so a Δ-var is already a Γ-var; this survives only in the statement of
+    [d_wf_utyp_of_d_wf_uskl], where it is plain weakening. *)
 Fixpoint tvars_denv (Δ : list atom) : denv :=
   match Δ with
   | nil => nil
@@ -306,17 +343,18 @@ Lemma a_wf_pskl_to_d : forall Θ Δa P,
 Proof.
   intros Θ Δa P H; induction H; intros Γ0 Δd HΘ HΔ; subst.
   - apply d_wf_pskl__unit.
-  - apply d_wf_pskl__var. destruct H as [ HΔα | Hb ];
-      [ left; apply HΔ; exact HΔα
-      | right; apply a_binds_tvar_denv_to_aenv; exact Hb ].
+  - apply d_wf_pskl__var. apply a_binds_tvar_denv_to_aenv; exact H.
   - apply d_wf_pskl__arrow;
       [ exact (IHa_wf_pskl1 Γ0 Δd eq_refl HΔ)
       | exact (IHa_wf_pskl2 Γ0 Δd eq_refl HΔ) ].
   - apply d_wf_pskl__all with (L := L). intros α Hα.
-    exact (H0 α Hα Γ0 (α :: Δd) eq_refl (delta_agree_cons _ _ α HΔ)).
+    exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) (α :: Δd) eq_refl
+             (delta_agree_cons _ _ α HΔ)).
   - apply d_wf_pskl__hole.
   - apply d_wf_pskl__tophole;
-      [ exact H | exact (IHa_wf_pskl Γ0 nil eq_refl delta_agree_nil) ].
+      [ exact H
+      | exact (IHa_wf_pskl (denv_minus Γ0 Δd) nil
+                 (eq_sym (denv_to_aenv_minus Γ0 Δ Δd HΔ)) delta_agree_nil) ].
 Qed.
 
 Lemma d_wf_pskl_to_a : forall Γ Δd P,
@@ -325,14 +363,14 @@ Lemma d_wf_pskl_to_a : forall Γ Δd P,
 Proof.
   intros Γ Δd P H; induction H; intros Δa HΔ.
   - apply a_wf_pskl__unit.
-  - apply a_wf_pskl__var. destruct H as [ HΔα | Hb ];
-      [ left; apply HΔ; exact HΔα | right; apply a_binds_tvar_of_denv; exact Hb ].
+  - apply a_wf_pskl__var. apply a_binds_tvar_of_denv; exact H.
   - apply a_wf_pskl__arrow; auto.
   - apply a_wf_pskl__all with (L := L). intros α Hα.
     exact (H0 α Hα (add α Δa) (delta_agree_cons _ _ α HΔ)).
   - apply a_wf_pskl__hole.
-  - apply a_wf_pskl__tophole;
-      [ exact H | exact (IHd_wf_pskl empty delta_agree_nil) ].
+  - apply a_wf_pskl__tophole; [ exact H | ].
+    rewrite <- (denv_to_aenv_minus Γ Δa Δ HΔ).
+    exact (IHd_wf_pskl empty delta_agree_nil).
 Qed.
 
 (* ===================================================================== *)
@@ -510,23 +548,19 @@ Lemma ad_refine_syn_to_d : forall Θ Δa Q P,
 Proof.
   intros Θ Δa Q P H; induction H; intros Γ0 Δd HΘ HΔ; subst.
   - apply d_refine_syn__unit.
-  - apply d_refine_syn__var. destruct H as [ HΔα | Hb ];
-      [ left; apply HΔ; exact HΔα
-      | right; apply a_binds_tvar_denv_to_aenv; exact Hb ].
+  - apply d_refine_syn__var.
   - apply d_refine_syn__arrow;
       [ exact (IHad_refine_syn1 Γ0 Δd eq_refl HΔ)
       | exact (IHad_refine_syn2 Γ0 Δd eq_refl HΔ) ].
   - apply d_refine_syn__all with (L := L). intros α Hα.
-    exact (H0 α Hα Γ0 (α :: Δd) eq_refl (delta_agree_cons _ _ α HΔ)).
-  - apply d_refine_syn__hole.
-    exact (a_wf_pskl_to_d (denv_to_aenv Γ0) empty P H Γ0 nil eq_refl
-             delta_agree_nil).
+    exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) (α :: Δd) eq_refl
+             (delta_agree_cons _ _ α HΔ)).
+  - apply d_refine_syn__hole. exact (delta_agree_disj_to_d _ _ _ HΔ H).
   - apply d_refine_syn__tophole_remove.
     exact (IHad_refine_syn Γ0 Δd eq_refl HΔ).
   - apply d_refine_syn__tophole_fill with (L := L). intros α Hα.
     exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) Δd eq_refl HΔ).
-  - apply d_refine_syn__tophole_keep;
-      [ assumption | exact (IHad_refine_syn Γ0 Δd eq_refl HΔ) ].
+  - apply d_refine_syn__tophole_keep. exact (IHad_refine_syn Γ0 Δd eq_refl HΔ).
   - exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
   - exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
 Qed.
@@ -537,13 +571,11 @@ Lemma d_refine_syn_to_ad : forall Γ Δd Q P,
 Proof.
   intros Γ Δd Q P H; induction H; intros Δa HΔ.
   - apply ad_refine_syn__unit.
-  - apply ad_refine_syn__var. destruct H as [ HΔα | Hb ];
-      [ left; apply HΔ; exact HΔα | right; apply a_binds_tvar_of_denv; exact Hb ].
+  - apply ad_refine_syn__var.
   - apply ad_refine_syn__arrow; auto.
   - apply ad_refine_syn__all with (L := L). intros α Hα.
     exact (H0 α Hα (add α Δa) (delta_agree_cons _ _ α HΔ)).
-  - apply ad_refine_syn__hole.
-    exact (d_wf_pskl_to_a Γ nil P H empty delta_agree_nil).
+  - apply ad_refine_syn__hole. exact (delta_agree_disj_to_a _ _ _ HΔ H).
   - apply ad_refine_syn__tophole_remove; auto.
   - apply ad_refine_syn__tophole_fill with (L := L). intros α Hα.
     exact (H0 α Hα Δa HΔ).
@@ -560,23 +592,19 @@ Lemma ad_refine_pskl_to_d : forall Θ Δa P Q,
 Proof.
   intros Θ Δa P Q H; induction H; intros Γ0 Δd HΘ HΔ; subst.
   - apply d_refine_pskl__unit.
-  - apply d_refine_pskl__var. destruct H as [ HΔα | Hb ];
-      [ left; apply HΔ; exact HΔα
-      | right; apply a_binds_tvar_denv_to_aenv; exact Hb ].
+  - apply d_refine_pskl__var.
   - apply d_refine_pskl__arrow;
       [ exact (IHad_refine_pskl1 Γ0 Δd eq_refl HΔ)
       | exact (IHad_refine_pskl2 Γ0 Δd eq_refl HΔ) ].
   - apply d_refine_pskl__all with (L := L). intros α Hα.
-    exact (H0 α Hα Γ0 (α :: Δd) eq_refl (delta_agree_cons _ _ α HΔ)).
-  - apply d_refine_pskl__hole.
-    exact (a_wf_pskl_to_d (denv_to_aenv Γ0) empty Q H Γ0 nil eq_refl
-             delta_agree_nil).
+    exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) (α :: Δd) eq_refl
+             (delta_agree_cons _ _ α HΔ)).
+  - apply d_refine_pskl__hole. exact (delta_agree_disj_to_d _ _ _ HΔ H).
   - apply d_refine_pskl__tophole_remove.
     exact (IHad_refine_pskl Γ0 Δd eq_refl HΔ).
   - apply d_refine_pskl__tophole_fill with (L := L). intros α Hα.
     exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) Δd eq_refl HΔ).
-  - apply d_refine_pskl__tophole_keep;
-      [ assumption | exact (IHad_refine_pskl Γ0 Δd eq_refl HΔ) ].
+  - apply d_refine_pskl__tophole_keep. exact (IHad_refine_pskl Γ0 Δd eq_refl HΔ).
   - exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
   - exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
 Qed.
@@ -587,13 +615,11 @@ Lemma d_refine_pskl_to_ad : forall Γ Δd P Q,
 Proof.
   intros Γ Δd P Q H; induction H; intros Δa HΔ.
   - apply ad_refine_pskl__unit.
-  - apply ad_refine_pskl__var. destruct H as [ HΔα | Hb ];
-      [ left; apply HΔ; exact HΔα | right; apply a_binds_tvar_of_denv; exact Hb ].
+  - apply ad_refine_pskl__var.
   - apply ad_refine_pskl__arrow; auto.
   - apply ad_refine_pskl__all with (L := L). intros α Hα.
     exact (H0 α Hα (add α Δa) (delta_agree_cons _ _ α HΔ)).
-  - apply ad_refine_pskl__hole.
-    exact (d_wf_pskl_to_a Γ nil Q H empty delta_agree_nil).
+  - apply ad_refine_pskl__hole. exact (delta_agree_disj_to_a _ _ _ HΔ H).
   - apply ad_refine_pskl__tophole_remove; auto.
   - apply ad_refine_pskl__tophole_fill with (L := L). intros α Hα.
     exact (H0 α Hα Δa HΔ).
@@ -651,29 +677,31 @@ Proof.
     destruct ψ; simpl in Hψ; try discriminate Hψ.
   - apply d_wf_uskl__unit.
   - inversion Hψ; subst. apply d_wf_uskl__var.
-    destruct H as [ HΔα | Hb ];
-      [ left; apply HΔ; exact HΔα
-      | right; apply a_binds_tvar_denv_to_aenv; exact Hb ].
+    apply a_binds_tvar_denv_to_aenv; exact H.
   - inversion Hψ; subst. apply d_wf_uskl__arrow;
       [ exact (IHa_wf_pskl1 _ eq_refl Γ0 Δd eq_refl HΔ)
       | exact (IHa_wf_pskl2 _ eq_refl Γ0 Δd eq_refl HΔ) ].
   - inversion Hψ; subst. apply d_wf_uskl__all_syn with (L := L). intros α Hα.
     exact (H0 α Hα (open_uskl_wrt_uskl ψ (uskl_var_f α))
              ltac:(symmetry; apply uskl_to_pskl_open)
-             Γ0 (α :: Δd) eq_refl (delta_agree_cons _ _ α HΔ)).
+             ((α ~ dbind_tvar) ++ Γ0) (α :: Δd) eq_refl
+             (delta_agree_cons _ _ α HΔ)).
   - inversion Hψ; subst. apply d_wf_uskl__all_tag with (L := L) (ε := ε).
     intros α Hα.
     exact (H0 α Hα (open_uskl_wrt_uskl ψ (uskl_var_f α))
              ltac:(symmetry; apply uskl_to_pskl_open)
-             Γ0 (α :: Δd) eq_refl (delta_agree_cons _ _ α HΔ)).
+             ((α ~ dbind_tvar) ++ Γ0) (α :: Δd) eq_refl
+             (delta_agree_cons _ _ α HΔ)).
   - apply d_wf_uskl__hole.
   - apply d_wf_uskl__holeg.
   - inversion Hψ; subst. apply d_wf_uskl__tophole;
       [ apply guarded_uskl_of_uskl_to_pskl; exact H
-      | exact (IHa_wf_pskl _ eq_refl Γ0 nil eq_refl delta_agree_nil) ].
+      | exact (IHa_wf_pskl _ eq_refl (denv_minus Γ0 Δd) nil
+                 (eq_sym (denv_to_aenv_minus Γ0 Δ Δd HΔ)) delta_agree_nil) ].
   - inversion Hψ; subst. apply d_wf_uskl__topholeg;
       [ apply guarded_uskl_of_uskl_to_pskl; exact H
-      | exact (IHa_wf_pskl _ eq_refl Γ0 nil eq_refl delta_agree_nil) ].
+      | exact (IHa_wf_pskl _ eq_refl (denv_minus Γ0 Δd) nil
+                 (eq_sym (denv_to_aenv_minus Γ0 Δ Δd HΔ)) delta_agree_nil) ].
 Qed.
 
 Lemma a_wf_pskl_of_d_wf_uskl : forall Γ Δd ψ,
@@ -683,8 +711,7 @@ Lemma a_wf_pskl_of_d_wf_uskl : forall Γ Δd ψ,
 Proof.
   intros Γ Δd ψ H; induction H; intros Δa HΔ; simpl.
   - apply a_wf_pskl__unit.
-  - apply a_wf_pskl__var. destruct H as [ HΔα | Hb ];
-      [ left; apply HΔ; exact HΔα | right; apply a_binds_tvar_of_denv; exact Hb ].
+  - apply a_wf_pskl__var. apply a_binds_tvar_of_denv; exact H.
   - apply a_wf_pskl__arrow; auto.
   - apply a_wf_pskl__all with (L := L). intros α Hα.
     pose proof (H0 α Hα (add α Δa) (delta_agree_cons _ _ α HΔ)) as Hx.
@@ -695,11 +722,13 @@ Proof.
   - apply a_wf_pskl__hole.
   - apply a_wf_pskl__tophole.
     + apply guarded_pskl_uskl_to_pskl; assumption.
-    + exact (IHd_wf_uskl empty delta_agree_nil).
+    + rewrite <- (denv_to_aenv_minus Γ Δa Δ HΔ).
+      exact (IHd_wf_uskl empty delta_agree_nil).
   - apply a_wf_pskl__hole.
   - apply a_wf_pskl__tophole.
     + apply guarded_pskl_uskl_to_pskl; assumption.
-    + exact (IHd_wf_uskl empty delta_agree_nil).
+    + rewrite <- (denv_to_aenv_minus Γ Δa Δ HΔ).
+      exact (IHd_wf_uskl empty delta_agree_nil).
 Qed.
 
 (** The ghost-free part of [uskl] IS [utyp]: the retraction is a section
@@ -756,15 +785,14 @@ Proof.
   - inversion Hgf.
 Qed.
 
-Lemma d_wf_utyp_of_d_wf_uskl : forall Γ Δd ψ,
-  d_wf_uskl Γ Δd ψ -> uskl_ghost_free ψ ->
-  d_wf_utyp (tvars_denv Δd ++ Γ) (uskl_to_utyp ψ).
+(** A ∀ binds its variable in Γ as well as Δ, so the retraction is already
+    well-formed over Γ alone. *)
+Lemma d_wf_utyp_of_d_wf_uskl_gen : forall Γ Δd ψ,
+  d_wf_uskl Γ Δd ψ -> uskl_ghost_free ψ -> d_wf_utyp Γ (uskl_to_utyp ψ).
 Proof.
   intros Γ Δd ψ H; induction H; intros Hgf; simpl.
   - apply d_wf_utyp__unit.
-  - apply d_wf_utyp__var. destruct H as [ HΔ | Hb ];
-      [ apply binds_app_2; apply binds_tvars_denv; exact HΔ
-      | apply binds_app_3; exact Hb ].
+  - apply d_wf_utyp__var. exact H.
   - inversion Hgf; subst. apply d_wf_utyp__arrow; auto.
   - inversion Hgf as [ | | | | L0 R0 Hgf0 ]; subst.
     apply d_wf_utyp__all_syn with (L := L `union` L0). intros α Hα.
@@ -780,6 +808,14 @@ Proof.
   - inversion Hgf.
   - inversion Hgf.
   - inversion Hgf.
+Qed.
+
+Lemma d_wf_utyp_of_d_wf_uskl : forall Γ Δd ψ,
+  d_wf_uskl Γ Δd ψ -> uskl_ghost_free ψ ->
+  d_wf_utyp (tvars_denv Δd ++ Γ) (uskl_to_utyp ψ).
+Proof.
+  intros Γ Δd ψ H Hgf. apply d_wf_utyp_weakening_head.
+  exact (d_wf_utyp_of_d_wf_uskl_gen Γ Δd ψ H Hgf).
 Qed.
 
 (* ===================================================================== *)
@@ -1466,16 +1502,14 @@ Proof.
     intros α Hα. rewrite <- utyp_to_uskl_open_var. auto.
 Qed.
 
-(** ⚠️ The two well-scopedness judgements do NOT track a ∀-bound variable in
-    the same place: [d_wf_utyp]'s ∀ rows push it into Γ, [d_wf_uskl]'s into Δ.
-    So the transport threads a VISIBILITY condition — every tvar of the source
-    context is visible on the target side, in Δ or in Γ' — exactly as
-    [d_pat_consis_subject_refine_ghost_free] threads [delta_agree]. *)
+(** Both well-scopedness judgements push a ∀-bound variable into Γ (the
+    skeleton one ALSO into Δ, which only the ∀◇ rule reads, and the
+    inclusion of a [utyp] has no ∀◇), so the transport only needs every tvar
+    of the source context to be a tvar of the target, at any Δ. *)
 Lemma d_wf_uskl_incl_gen : forall Γ C,
   d_wf_utyp Γ C ->
   forall Γ' Δ,
-    (forall α, binds α dbind_tvar Γ ->
-       List.In α Δ \/ binds α dbind_tvar Γ') ->
+    (forall α, binds α dbind_tvar Γ -> binds α dbind_tvar Γ') ->
     d_wf_uskl Γ' Δ (utyp_to_uskl C).
 Proof.
   intros Γ C H; induction H; intros Γ' Δ0 Hvis; simpl.
@@ -1485,24 +1519,21 @@ Proof.
       [ apply IHd_wf_utyp1 | apply IHd_wf_utyp2 ]; exact Hvis.
   - apply d_wf_uskl__all_syn with (L := L). intros α Hα.
     rewrite <- utyp_to_uskl_open_var. apply (H0 α Hα).
-    intros β Hb. destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [ [ Heq _ ] | Hb' ];
-      [ subst; left; simpl; left; reflexivity | ].
-    destruct (Hvis β Hb') as [ HΔ | HΓ ];
-      [ left; simpl; right; exact HΔ | right; exact HΓ ].
+    intros β Hb. apply binds_app_iff in Hb. apply binds_app_iff.
+    destruct Hb as [ Hb | Hb ]; [ left; exact Hb | right; apply Hvis, Hb ].
   - apply d_wf_uskl__all_tag with (L := L) (ε := ε). intros α Hα.
     rewrite <- utyp_to_uskl_open_var. apply (H0 α Hα).
-    intros β Hb. destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [ [ Heq _ ] | Hb' ];
-      [ subst; left; simpl; left; reflexivity | ].
-    destruct (Hvis β Hb') as [ HΔ | HΓ ];
-      [ left; simpl; right; exact HΔ | right; exact HΓ ].
+    intros β Hb. apply binds_app_iff in Hb. apply binds_app_iff.
+    destruct Hb as [ Hb | Hb ]; [ left; exact Hb | right; apply Hvis, Hb ].
 Qed.
 
 Lemma d_wf_uskl_incl : forall Γ C,
   d_wf_utyp Γ C -> d_wf_uskl Γ nil (utyp_to_uskl C).
 Proof.
   intros Γ C H. apply (d_wf_uskl_incl_gen Γ C H Γ nil).
-  intros α Hb. right; exact Hb.
+  intros α Hb. exact Hb.
 Qed.
+
 
 Lemma lc_pskl_of_lc_btyp : forall B,
   lc_btyp B -> lc_pskl (bskl_to_pskl (btyp_to_bskl B)).
@@ -1571,8 +1602,9 @@ Qed.
     skeleton and [ad_refine_pskl_refl] closes it.
 
     ⚙ Its scope premise is the paper's usual EXTERNAL well-formedness
-    (docs/WF-SIDE-CONDITIONS.md): refinement's var row needs the variable
-    bound, and [d_sub] states no well-formedness of its own. *)
+    (docs/WF-SIDE-CONDITIONS.md): [ad_refine_pskl_refl] is stated under the
+    paper's presupposition that the refined skeleton is well-formed, and
+    [d_sub] states no well-formedness of its own. *)
 Lemma d_consis_refine_ty : forall Ψ Γ C B,
   {{ Ψ ⨟ Γ ⊢ C ∼ B }}d ->
   {{ (denv_to_aenv Γ) ⨟ empty ⊢ₚₛ (uskl_to_pskl (utyp_to_uskl C)) }}a ->

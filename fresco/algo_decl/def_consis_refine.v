@@ -136,11 +136,16 @@ where "{{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad" := (ad_pat_consis Ψ Θ R Q) : fresco_ad
 (*  Skeleton refinement over Θ, coloured  (decl [{{ Γ ⨟ Δ ⊢ᵣ Q ⊳ P }}d] + flex) *)
 (* ===================================================================== *)
 
+(* The declarative refinement rules read over Θ (full-algo-spec.tex,
+   fig:declarative-in-algo-context), plus the two flexible lookups.  Like the
+   declarative copy, it carries no scoping premises: well-formedness of both
+   sides is the paper's presupposition, carried as a hypothesis by the lemmas
+   that need it. *)
+
 Inductive ad_refine_syn : aenv -> atoms -> bskl -> bskl -> Prop :=
 | ad_refine_syn__unit : forall Θ Δ,
     {{ Θ ⨟ Δ ⊢ᵣ bskl_unit ⊳ bskl_unit }}ad
 | ad_refine_syn__var : forall Θ Δ α,
-    α `in` Δ \/ a_binds_tvar α Θ ->
     {{ Θ ⨟ Δ ⊢ᵣ (bskl_var_f α) ⊳ (bskl_var_f α) }}ad
 | ad_refine_syn__arrow : forall Θ Δ Q1 Q2 P1 P2,
     {{ Θ ⨟ Δ ⊢ᵣ Q1 ⊳ P1 }}ad ->
@@ -148,12 +153,12 @@ Inductive ad_refine_syn : aenv -> atoms -> bskl -> bskl -> Prop :=
     {{ Θ ⨟ Δ ⊢ᵣ (bskl_arrow Q1 Q2) ⊳ (bskl_arrow P1 P2) }}ad
 | ad_refine_syn__all : forall L Θ Δ Q P,
     (forall α, α `notin` L ->
-       {{ Θ ⨟ (add α Δ) ⊢ᵣ
+       {{ ((α ~ abind_tvar) ++ Θ) ⨟ (add α Δ) ⊢ᵣ
          (open_bskl_wrt_bskl Q (bskl_var_f α)) ⊳
          (open_bskl_wrt_bskl P (bskl_var_f α)) }}ad) ->
     {{ Θ ⨟ Δ ⊢ᵣ (bskl_all_inh Q) ⊳ (bskl_all_inh P) }}ad
 | ad_refine_syn__hole : forall Θ Δ P,
-    {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
+    Δ ∩ ftvar_in_pskl P [=] empty ->
     {{ Θ ⨟ Δ ⊢ᵣ bskl_hole ⊳ (pskl_to_bskl_syn P) }}ad
 | ad_refine_syn__tophole_remove : forall Θ Δ Q P,
     {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad ->
@@ -164,7 +169,6 @@ Inductive ad_refine_syn : aenv -> atoms -> bskl -> bskl -> Prop :=
          (bskl_tophole Q) ⊳ (open_bskl_wrt_bskl P (bskl_var_f α)) }}ad) ->
     {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_all_syn P) }}ad
 | ad_refine_syn__tophole_keep : forall Θ Δ Q P,
-    guarded_bskl P ->
     {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad ->
     {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_tophole P) }}ad
 (* — new lookup rules (paper fig:declarative-in-algo-context, refinement) — *)
@@ -187,7 +191,6 @@ Inductive ad_refine_pskl : aenv -> atoms -> pskl -> pskl -> Prop :=
 | ad_refine_pskl__unit : forall Θ Δ,
     {{ Θ ⨟ Δ ⊢ᵣₚ pskl_unit ⊳ pskl_unit }}ad
 | ad_refine_pskl__var : forall Θ Δ α,
-    α `in` Δ \/ a_binds_tvar α Θ ->
     {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_var_f α) ⊳ (pskl_var_f α) }}ad
 | ad_refine_pskl__arrow : forall Θ Δ P1 P2 Q1 Q2,
     {{ Θ ⨟ Δ ⊢ᵣₚ P1 ⊳ Q1 }}ad ->
@@ -195,12 +198,12 @@ Inductive ad_refine_pskl : aenv -> atoms -> pskl -> pskl -> Prop :=
     {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_arrow P1 P2) ⊳ (pskl_arrow Q1 Q2) }}ad
 | ad_refine_pskl__all : forall L Θ Δ P Q,
     (forall α, α `notin` L ->
-       {{ Θ ⨟ (add α Δ) ⊢ᵣₚ
+       {{ ((α ~ abind_tvar) ++ Θ) ⨟ (add α Δ) ⊢ᵣₚ
          (open_pskl_wrt_pskl P (pskl_var_f α)) ⊳
          (open_pskl_wrt_pskl Q (pskl_var_f α)) }}ad) ->
     {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_all_syn P) ⊳ (pskl_all_syn Q) }}ad
 | ad_refine_pskl__hole : forall Θ Δ Q,
-    {{ Θ ⨟ empty ⊢ₚₛ Q }}a ->
+    Δ ∩ ftvar_in_pskl Q [=] empty ->
     {{ Θ ⨟ Δ ⊢ᵣₚ pskl_hole ⊳ Q }}ad
 | ad_refine_pskl__tophole_remove : forall Θ Δ P Q,
     {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad ->
@@ -211,7 +214,6 @@ Inductive ad_refine_pskl : aenv -> atoms -> pskl -> pskl -> Prop :=
          (pskl_tophole P) ⊳ (open_pskl_wrt_pskl Q (pskl_var_f α)) }}ad) ->
     {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_all_syn Q) }}ad
 | ad_refine_pskl__tophole_keep : forall Θ Δ P Q,
-    guarded_pskl Q ->
     {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad ->
     {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_tophole Q) }}ad
 | ad_refine_pskl__flex_l : forall Θ Δ α τ Q,

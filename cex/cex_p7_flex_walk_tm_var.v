@@ -183,7 +183,7 @@ Proof.
       | apply a_wf_ptyp__unit
       | apply a_wf_aenv__flex; [ simpl; clear; fsetdec | apply a_wf_aenv__nil ] ].
   - apply a_wf_pskl__arrow; apply a_wf_pskl__hole.
-  - apply a_wf_pskl__var. right. right. left.
+  - apply a_wf_pskl__var. right. left.
     unfold binds; simpl; right; left; reflexivity.
   - apply a_sk_mode_compat__fn. apply a_sk_mode_compat__ti.
 Qed.
@@ -253,7 +253,7 @@ Proof.
     apply ad_refine_syn_f__arrow;
       (change bskl_unit with (pskl_to_bskl_syn pskl_unit);
        apply ad_refine_syn_f__hole;
-         [ clear; fsetdec | apply a_wf_pskl__unit ]).
+         [ clear; fsetdec | clear; fsetdec ]).
 Qed.
 
 (* --------------------------------------------------------------------- *)

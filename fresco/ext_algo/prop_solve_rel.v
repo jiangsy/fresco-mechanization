@@ -4383,9 +4383,9 @@ Qed.
 (*  ⚙ Two things make the transport go: [rel_abind] relates only bindings *)
 (*  of the SAME KIND, so tvar-ish stays tvar-ish; and the Δ slot is a set  *)
 (*  of atoms shared by both sides, which is sound because the ∀ case opens *)
-(*  BOTH sides at the SAME atom — legal once that atom is off [cols_l ρ],  *)
-(*  which the [Δ ∩ cols_l ρ [=] empty] invariant maintains (at the call    *)
-(*  site Δ is [empty]).                                                    *)
+(*  BOTH sides at the SAME atom (chosen off [cols_l ρ]) and the ∀◇ case's  *)
+(*  [aenv_minus Θ Δ] only needs no image of ρ in Δ — the                   *)
+(*  [Δ ∩ cols_r ρ [=] empty] invariant (at the call site Δ is [empty]).    *)
 (* ===================================================================== *)
 
 Lemma rel_atom_shrink_add : forall ρ V a0 a b,
@@ -4434,51 +4434,73 @@ Proof.
   - right. right. eexists. exact Hb2.
 Qed.
 
-Lemma a_wf_pskl_rel : forall Θ1 Δ P1,
+(** The core transport: all it needs from the two contexts is that a
+    tvar-ish binding on side 1 has a tvar-ish image on side 2.  The ∀ case
+    opens BOTH sides at the SAME atom (legal once it is off [cols_l ρ]) and
+    pushes it into BOTH contexts; the ∀◇ case strips Δ from both sides,
+    which is sound because no image of [ρ] lies in Δ. *)
+Lemma a_wf_pskl_rel_gen : forall Θ1 Δ P1,
   {{ Θ1 ⨟ Δ ⊢ₚₛ P1 }}a ->
   forall ρ V Θ2 P2,
-  rel_aenv ρ V Θ1 Θ2 ->
-  rel_fun ρ V (dom Θ1) ->
-  Δ ∩ cols_l ρ [=] empty ->
+  (forall a b, a_binds_tvar a Θ1 -> rel_atom ρ V a b -> a_binds_tvar b Θ2) ->
+  Δ ∩ cols_r ρ [=] empty ->
   rel_pskl ρ V P1 P2 ->
   {{ Θ2 ⨟ Δ ⊢ₚₛ P2 }}a.
 Proof.
   intros Θ1 Δ P1 Hwf.
   induction Hwf as [ Θ Δ | Θ Δ a0 Hd | Θ Δ Pa Pb Hwfa IHa Hwfb IHb
                    | L Θ Δ Pa Hbody IHbody | Θ Δ | Θ Δ Pa Hg Hwfa IHa ];
-    intros ρ V Θ2 P2 Hrel Hfun HΔ Hp.
+    intros ρ V Θ2 P2 Htv HΔ Hp.
   - (* unit *) inversion Hp; subst. apply a_wf_pskl__unit.
   - (* var *)
     inversion Hp as [ | | x y Hat | | | | ]; subst.
-    apply a_wf_pskl__var.
-    destruct Hd as [HΔin | Hbt].
-    + left. inversion Hat as [ x1 y1 Hin | x1 Hin ]; subst;
-        [ exfalso; apply cols_l_in in Hin; clear - Hin HΔin HΔ; fsetdec
-        | exact HΔin ].
-    + right. eapply a_binds_tvar_rel;
-        [ exact Hrel | exact Hfun | exact Hbt | exact Hat ].
+    apply a_wf_pskl__var. exact (Htv _ _ Hd Hat).
   - (* arrow *)
     inversion Hp as [ | | | Q1 Q2 Q3 Q4 Hpa Hpb | | | ]; subst.
     apply a_wf_pskl__arrow;
-      [ eapply IHa; [ exact Hrel | exact Hfun | exact HΔ | exact Hpa ]
-      | eapply IHb; [ exact Hrel | exact Hfun | exact HΔ | exact Hpb ] ].
+      [ eapply IHa; [ exact Htv | exact HΔ | exact Hpa ]
+      | eapply IHb; [ exact Htv | exact HΔ | exact Hpb ] ].
   - (* all *)
     inversion Hp as [ | | | | Q1 Q2 Hpb | | ]; subst.
-    apply a_wf_pskl__all with (L := L ∪ dom Θ ∪ cols_l ρ).
+    apply a_wf_pskl__all with (L := L ∪ cols_l ρ ∪ cols_r ρ).
     intros a0 Ha0.
     eapply IHbody with (ρ := ρ) (V := add a0 V);
       [ clear - Ha0; solve_notin_auto
-      | eapply rel_aenv_mono;
-          [ exact Hrel | intros x y Hx; exact Hx | clear; fsetdec ]
-      | apply rel_fun_add_fresh; [ exact Hfun | clear - Ha0; solve_notin_auto ]
-      | clear - HΔ Ha0; fsetdec
+      | | clear - HΔ Ha0; fsetdec
       | apply rel_pskl_open_var; exact Hpb ].
+    intros a b Ha Hab. apply a_binds_tvar_cons_tvar.
+    destruct (a == a0) as [-> | Hne].
+    + left. inversion Hab as [ x1 y1 Hin | x1 Hin ]; subst; [ | reflexivity ].
+      exfalso. apply cols_l_in in Hin. clear - Hin Ha0. solve_notin_auto.
+    + right. destruct (a_binds_tvar_cons_tvar_inv Ha) as [E | Ha'];
+        [ contradiction | ].
+      eapply Htv; [ exact Ha' | eapply rel_atom_shrink_add; eassumption ].
   - (* hole *) inversion Hp; subst. apply a_wf_pskl__hole.
   - (* tophole *)
     inversion Hp as [ | | | | | | Q1 Q2 Hpb ]; subst.
     apply a_wf_pskl__tophole;
       [ eapply rel_pskl_guarded; [ exact Hpb | exact Hg ]
-      | eapply IHa; [ exact Hrel | exact Hfun | clear; fsetdec | exact Hpb ] ].
+      | eapply IHa; [ | clear; fsetdec | exact Hpb ] ].
+    intros a b Ha Hab.
+    apply a_binds_tvar_aenv_minus in Ha. destruct Ha as [Ha HaΔ].
+    apply a_binds_tvar_aenv_minus. split; [ exact (Htv _ _ Ha Hab) | ].
+    inversion Hab as [ x1 y1 Hin | x1 Hin ]; subst; [ | exact HaΔ ].
+    apply cols_r_in in Hin. clear - Hin HΔ. fsetdec.
+Qed.
+
+Lemma a_wf_pskl_rel : forall Θ1 Δ P1,
+  {{ Θ1 ⨟ Δ ⊢ₚₛ P1 }}a ->
+  forall ρ V Θ2 P2,
+  rel_aenv ρ V Θ1 Θ2 ->
+  rel_fun ρ V (dom Θ1) ->
+  Δ ∩ cols_r ρ [=] empty ->
+  rel_pskl ρ V P1 P2 ->
+  {{ Θ2 ⨟ Δ ⊢ₚₛ P2 }}a.
+Proof.
+  intros Θ1 Δ P1 Hwf ρ V Θ2 P2 Hrel Hfun HΔ Hp.
+  eapply a_wf_pskl_rel_gen; [ exact Hwf | | exact HΔ | exact Hp ].
+  intros a b Hbt Hat.
+  eapply a_binds_tvar_rel; [ exact Hrel | exact Hfun | exact Hbt | exact Hat ].
 Qed.
 
 (* ===================================================================== *)

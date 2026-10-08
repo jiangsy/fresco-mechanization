@@ -1,11 +1,15 @@
-(** COUNTEREXAMPLE: algorithmic refinement [ad_refine_syn] is NOT transitive.
+(** THE CAPTURE CONFIGURATION: refinement's rules alone do not preserve
+    well-formedness, so the paper's presupposition (both sides well-formed,
+    declarative.tex "Skeleton refinement") is load-bearing.
 
-    Consequence: [lemma:precision-preserves-refinement]
-    (full-algo-spec.tex:716) — "if Θ ⊢ P ⊑ Q and Θ ⊢ inh{Q} ⊳ A then
-    Θ ⊢ inh{P} ⊳ A" — is not provable as stated, and with it the
-    completeness/optimality development that rests on it.
+    ⚠️ RETRACTED 2026-10-08: this file used to prove that [ad_refine_syn] is
+    NOT TRANSITIVE.  That rested on the mechanised Ghost rule demanding a
+    WELL-FORMED fill.  The paper's Ghost rule only asks that the fill avoid
+    Δ, and since the refinement rules were made faithful to the paper the
+    composite below is derivable ([hole_to_Bres]), so the refutation is gone.
 
-    ROOT CAUSE (paper, declarative.tex:1505-1510).  The GhostForall rule
+    ROOT CAUSE of the capture (paper, declarative.tex, refinement).  The
+    GhostForall rule
 
         Δ ⨟ Γ,α ⊢ ∀◇inh{P} ⊳ Q
         ----------------------------------
@@ -20,25 +24,15 @@
         Δ ⨟ Γ ⊢ □ ⊳ syn{Q}
 
     So a ghost NESTED under a GhostForall may be filled with the very α that
-    the GhostForall binds — α is in Γ, not in Δ, so the side condition does
-    not forbid it.  The result captures α:
+    the GhostForall binds.  The result captures α:
 
         ∀◇(□→□)  ⊳  ∀α. ∀◇(α→α)
 
     and the right-hand side is NOT a well-formed skeleton: skeleton
-    well-formedness binds a quantifier's variable in Δ, while a ∀◇-ghost's
-    body must be well-formed at the EMPTY Δ.  Since the Ghost rule can only
-    produce WELL-FORMED fills, □ cannot refine to it — transitivity fails.
-
-    LIKELY FIX (for the authors): GhostForall should extend Δ as well as Γ
-    (i.e. [Δ,α ⨟ Γ,α]), exactly as the ∀-rule does.  Then the Ghost rule's
-    side condition forbids the capture and [step2] below is underivable.
-
-    NB the mechanised [ad_refine_syn__tophole_fill] is FAITHFUL to the paper
-    here (α into the context, Δ untouched), so this is a paper-level issue,
-    not an encoding slip.  (Separately, the mech's [ad_refine_syn__all] adds
-    the variable only to Δ where the paper adds it to both Δ and Γ; that
-    discrepancy is unrelated to this counterexample.)
+    well-formedness binds a quantifier's variable in Δ, and a ∀◇-ghost's
+    body is checked under Γ∖Δ, where that variable is no longer bound
+    ([ad_refine_syn_output_not_wf]).  The paper excludes it by presupposing
+    well-formedness of both sides; nothing in the rules does.
 
     Everything below is Qed and axiom-free. *)
 
@@ -64,10 +58,10 @@ Proof.
   - apply a_wf_pskl__arrow; apply a_wf_pskl__hole.
 Qed.
 
-(* Step 1: □ ⊳ syn(∀◇(□→□))   by the ghost rule. *)
+(* Step 1: □ ⊳ syn(∀◇(□→□))   by the ghost rule (the fill is closed). *)
 Lemma step1 : forall Θ Δ,
   {{ Θ ⨟ Δ ⊢ᵣ bskl_hole ⊳ (pskl_to_bskl_syn Pfill) }}ad.
-Proof. intros. apply ad_refine_syn__hole. apply Pfill_wf. Qed.
+Proof. intros. apply ad_refine_syn__hole. simpl. clear. fsetdec. Qed.
 
 (* Step 2: syn(∀◇(□→□)) ⊳ ∀α. ∀◇(α→α)   by tophole_fill, filling both
    ghosts with the fresh CONTEXT rigid α introduced by the rule. *)
@@ -77,14 +71,12 @@ Definition Bres : bskl :=
 Lemma step2 : forall Θ Δ,
   {{ Θ ⨟ Δ ⊢ᵣ (pskl_to_bskl_syn Pfill) ⊳ Bres }}ad.
 Proof.
-  intros. simpl. apply ad_refine_syn__tophole_fill with (L := dom Θ).
+  intros. simpl. apply ad_refine_syn__tophole_fill with (L := dom Θ `union` Δ).
   intros α Hα. simpl.
   apply ad_refine_syn__tophole_keep.
-  - apply guarded_bskl__arrow; constructor.
-  - apply ad_refine_syn__arrow;
-      (replace (bskl_var_f α) with (pskl_to_bskl_syn (pskl_var_f α)) by reflexivity;
-       apply ad_refine_syn__hole;
-       apply a_wf_pskl__var; right; left; unfold binds; left; reflexivity).
+  apply ad_refine_syn__arrow;
+    (replace (bskl_var_f α) with (pskl_to_bskl_syn (pskl_var_f α)) by reflexivity;
+     apply ad_refine_syn__hole; simpl; clear - Hα; fsetdec).
 Qed.
 
 (* Bres IS a syn painting -- of Pres. *)
@@ -95,7 +87,8 @@ Lemma Bres_is_syn : Bres = pskl_to_bskl_syn Pres.
 Proof. reflexivity. Qed.
 
 (* ...but Pres is NOT well-formed: the all-rule puts the bound variable in
-   Δ, while the tophole-rule demands its body be well-formed at EMPTY Δ. *)
+   Δ, and the tophole-rule checks its body under [Θ∖Δ], where the variable
+   is no longer bound. *)
 Lemma Pres_not_wf : forall Θ Δ, ~ ({{ Θ ⨟ Δ ⊢ₚₛ Pres }}a).
 Proof.
   intros Θ Δ Hwf. unfold Pres in Hwf.
@@ -104,58 +97,36 @@ Proof.
   specialize (Hbody α ltac:(auto)). simpl in Hbody.
   inversion Hbody as [ | | | | | Θb Δb Pb Hg Hwfb ]; subst.
   inversion Hwfb as [ | | Θc Δc P1 P2 Hw1 Hw2 | | | ]; subst.
-  inversion Hw1 as [ | Θd Δd Xd Hin | | | | ]; subst.
-  destruct Hin as [Hemp | Htv].
-  - clear - Hemp. fsetdec.
-  - clear - Htv Fr.
-    destruct Htv as [Hb | [Hb | [t Hb]]];
-      apply binds_In in Hb; clear - Hb Fr; fsetdec.
+  inversion Hw1 as [ | Θd Δd Xd Htv | | | | ]; subst.
+  apply a_binds_tvar_aenv_minus in Htv. destruct Htv as [_ Hn].
+  clear - Hn. fsetdec.
 Qed.
 
-(* The ghost rule is the ONLY rule that can put □ on the left (flex_r only
-   fires with a variable on the right, and a variable is itself a syn
-   painting).  So anything □ refines to is a syn painting of a WELL-FORMED
-   skeleton. *)
-Lemma hole_inv : forall Θ Δ Q',
-  {{ Θ ⨟ Δ ⊢ᵣ bskl_hole ⊳ Q' }}ad ->
-  exists P, Q' = pskl_to_bskl_syn P /\ {{ Θ ⨟ empty ⊢ₚₛ P }}a.
+(* ⚠️ RETRACTED 2026-10-08: the NON-TRANSITIVITY this file was named for.
+   It rested on the mechanised ghost rule demanding a WELL-FORMED fill, which
+   the paper's rule never did: the paper's ghost rule only asks that the fill
+   avoid [Δ].  Now that [ad_refine_syn__hole] follows the paper, □ refines to
+   the very output of [step2] in one step — [Bres] is closed — so the
+   composite of [step1] and [step2] is derivable after all.  What survives is
+   the point the paper's presupposition rests on: [step2] derives an output
+   that is NOT well-formed ([Pres_not_wf]), so "refinement preserves
+   well-formedness" needs the presupposition, and cannot be read off the
+   rules. *)
+Lemma hole_to_Bres : forall Θ Δ, {{ Θ ⨟ Δ ⊢ᵣ bskl_hole ⊳ Bres }}ad.
 Proof.
-  intros Θ Δ Q' H. remember bskl_hole as Q eqn:HQ.
-  induction H; try discriminate.
-  - exists P. split; [ reflexivity | assumption ].
-  - exists (pskl_var_f α). split; [ reflexivity | ].
-    apply a_wf_pskl__var. right. right. right. exists τ. exact H.
+  intros. rewrite Bres_is_syn. apply ad_refine_syn__hole.
+  simpl. clear. fsetdec.
 Qed.
 
-Lemma no_hole_to_Bres : forall Θ Δ, ~ ({{ Θ ⨟ Δ ⊢ᵣ bskl_hole ⊳ Bres }}ad).
+(** The refinement rules alone derive an ill-formed output from a
+    well-formed input: [Pfill] is well-formed, [step2] refines it to [Bres],
+    and [Bres] paints [Pres], which is well-formed in no context. *)
+Theorem ad_refine_syn_output_not_wf :
+  ({{ nil ⨟ empty ⊢ₚₛ Pfill }}a) /\
+  ({{ nil ⨟ empty ⊢ᵣ (pskl_to_bskl_syn Pfill) ⊳ (pskl_to_bskl_syn Pres) }}ad) /\
+  ~ ({{ nil ⨟ empty ⊢ₚₛ Pres }}a).
 Proof.
-  intros Θ Δ H.
-  destruct (hole_inv _ _ _ H) as [P [Heq HwfP]].
-  (* Bres = pskl_to_bskl_syn P forces P = Pres, which is not well-formed *)
-  destruct P as [ | | | | Pb | | ]; simpl in Heq; try discriminate.
-  destruct Pb as [ | | | | | | Pt ]; simpl in Heq; try discriminate.
-  destruct Pt as [ | | | Pt1 Pt2 | | | ]; simpl in Heq; try discriminate.
-  destruct Pt1 as [ | n1 | | | | | ]; simpl in Heq; try discriminate.
-  destruct Pt2 as [ | n2 | | | | | ]; simpl in Heq; try discriminate.
-  inversion Heq; subst.
-  eapply Pres_not_wf. exact HwfP.
-Qed.
-
-(* CONSEQUENCE: [ad_refine_syn] is NOT transitive.
-     □ ⊳ syn(∀◇(□→□))            (step1, the ghost rule)
-     syn(∀◇(□→□)) ⊳ ∀α.∀◇(α→α)   (step2, tophole_fill + two ghost fills
-                                   with the CONTEXT rigid α the rule binds)
-   but NOT
-     □ ⊳ ∀α.∀◇(α→α)              (no_hole_to_Bres)
-   because the ghost rule can only produce a WELL-FORMED skeleton, and
-   ∀α.∀◇(α→α) is not one: [a_wf_pskl__all] binds α in Δ, whereas
-   [a_wf_pskl__tophole] requires its body to be well-formed at the EMPTY Δ.
-   Refinement's [tophole_fill], by contrast, binds α in the CONTEXT. *)
-Theorem ad_refine_syn_not_transitive :
-  ~ (forall Θ Δ Q1 Q2 Q3,
-       {{ Θ ⨟ Δ ⊢ᵣ Q1 ⊳ Q2 }}ad -> {{ Θ ⨟ Δ ⊢ᵣ Q2 ⊳ Q3 }}ad -> {{ Θ ⨟ Δ ⊢ᵣ Q1 ⊳ Q3 }}ad).
-Proof.
-  intros Htrans.
-  eapply (no_hole_to_Bres nil empty).
-  eapply Htrans; [ apply step1 | apply step2 ].
+  split; [ apply Pfill_wf | split ].
+  - rewrite <- Bres_is_syn. apply step2.
+  - apply Pres_not_wf.
 Qed.

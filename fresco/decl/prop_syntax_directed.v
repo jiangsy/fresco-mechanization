@@ -334,8 +334,7 @@ Proof.
   - apply d_refine_syn__unit.
   - destruct_if.
     + apply d_refine_syn__unit.
-    + apply d_refine_syn__var. destruct H as [HI | Hb];
-        [ left; assumption | right; analyze_binds Hb ].
+    + apply d_refine_syn__var.
   - apply d_refine_syn__arrow;
       [ eapply IHd_refine_syn1 | eapply IHd_refine_syn2 ]; reflexivity.
   - apply d_refine_syn__all with (L := L `union` dom (Γ1 ++ Γ2) `union` {{α0}}).
@@ -344,9 +343,12 @@ Proof.
       by (first [ apply lc_bskl_unit | fsetdec ]).
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var
       by (first [ apply lc_bskl_unit | fsetdec ]).
-    eapply (H0 α2); [ fsetdec | reflexivity ].
+    eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2);
+      simpl_env; reflexivity.
   - rewrite pskl_to_bskl_syn_subst_unit. apply d_refine_syn__hole.
-    eapply d_wf_pskl_subst_unit; [ eassumption | reflexivity ].
+    intros β Hβ Hin.
+    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P pskl_unit α0) as Hup.
+    simpl in Hup. apply (H β Hβ). clear - Hin Hup. fsetdec.
   - apply d_refine_syn__tophole_remove. eapply IHd_refine_syn; reflexivity.
   - apply d_refine_syn__tophole_fill with (L := L `union` dom (Γ1 ++ Γ2) `union` {{α0}}).
     intros α2 Hα2.
@@ -354,8 +356,7 @@ Proof.
       by (first [ apply lc_bskl_unit | fsetdec ]).
     eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2);
       simpl_env; reflexivity.
-  - apply d_refine_syn__tophole_keep;
-      [ apply guarded_bskl_subst_unit; assumption | eapply IHd_refine_syn; reflexivity ].
+  - apply d_refine_syn__tophole_keep. eapply IHd_refine_syn; reflexivity.
 Qed.
 
 (* ===================================================================== *)
@@ -492,31 +493,13 @@ Qed.
 Lemma d_wf_pskl_same_tvar : forall Ψ Γ P,
     {{ Γ ⨟ Ψ ⊢ₚₛ P }}d -> forall Γ', same_tvar Γ Γ' -> {{ Γ' ⨟ Ψ ⊢ₚₛ P }}d.
 Proof.
-  intros Ψ Γ P H. induction H; intros Γ' Hst.
-  - apply d_wf_pskl__unit.
-  - apply d_wf_pskl__var. destruct H as [HΨ | Hb]; [ left; assumption | right; apply Hst; assumption ].
-  - apply d_wf_pskl__arrow; [ apply IHd_wf_pskl1 | apply IHd_wf_pskl2 ]; assumption.
-  - apply d_wf_pskl__all with (L := L). intros α Hα.
-    apply H0; assumption.
-  - apply d_wf_pskl__hole.
-  - apply d_wf_pskl__tophole; [ assumption | apply IHd_wf_pskl; assumption ].
+  intros Ψ Γ P H Γ' Hst. apply (d_wf_pskl_tvar_mono H). apply Hst.
 Qed.
 
 Lemma d_wf_uskl_same_tvar : forall Ψ Γ R,
     {{ Γ ⨟ Ψ ⊢ᵤₛ R }}d -> forall Γ', same_tvar Γ Γ' -> {{ Γ' ⨟ Ψ ⊢ᵤₛ R }}d.
 Proof.
-  intros Ψ Γ R H. induction H; intros Γ' Hst.
-  - apply d_wf_uskl__unit.
-  - apply d_wf_uskl__var. destruct H as [HΨ | Hb]; [ left; assumption | right; apply Hst; assumption ].
-  - apply d_wf_uskl__arrow; [ apply IHd_wf_uskl1 | apply IHd_wf_uskl2 ]; assumption.
-  - apply d_wf_uskl__all_syn with (L := L). intros α Hα.
-    apply H0; assumption.
-  - apply d_wf_uskl__all_tag with (L := L). intros α Hα.
-    apply H0; assumption.
-  - apply d_wf_uskl__hole.
-  - apply d_wf_uskl__tophole; [ assumption | apply IHd_wf_uskl; assumption ].
-  - apply d_wf_uskl__holeg.
-  - apply d_wf_uskl__topholeg; [ assumption | apply IHd_wf_uskl; assumption ].
+  intros Ψ Γ R H Γ' Hst. apply (d_wf_uskl_tvar_mono H). apply Hst.
 Qed.
 
 Lemma d_consis_same_tvar : forall Ψ Γ C B,
@@ -584,17 +567,16 @@ Lemma d_refine_pskl_same_tvar : forall Γ Δi P Q,
 Proof.
   intros Γ Δi P Q H. induction H; intros Γ' Hst.
   - apply d_refine_pskl__unit.
-  - apply d_refine_pskl__var. destruct H as [HI | Hb];
-      [ left; assumption | right; apply Hst; assumption ].
+  - apply d_refine_pskl__var.
   - apply d_refine_pskl__arrow;
       [ apply IHd_refine_pskl1 | apply IHd_refine_pskl2 ]; assumption.
-  - apply d_refine_pskl__all with (L := L). intros α Hα. apply H0; assumption.
-  - apply d_refine_pskl__hole. eapply d_wf_pskl_same_tvar; eassumption.
+  - apply d_refine_pskl__all with (L := L). intros α Hα.
+    apply H0; [ assumption | apply same_tvar_cons; assumption ].
+  - apply d_refine_pskl__hole. assumption.
   - apply d_refine_pskl__tophole_remove. apply IHd_refine_pskl; assumption.
   - apply d_refine_pskl__tophole_fill with (L := L). intros α Hα.
     apply (H0 α Hα ((α ~ dbind_tvar) ++ Γ')). apply same_tvar_cons. assumption.
-  - apply d_refine_pskl__tophole_keep;
-      [ assumption | apply IHd_refine_pskl; assumption ].
+  - apply d_refine_pskl__tophole_keep. apply IHd_refine_pskl; assumption.
 Qed.
 
 (** The JOIN travels because both of its halves do. *)
@@ -636,15 +618,15 @@ Lemma d_refine_syn_same_tvar : forall Γ Δi Q Q',
 Proof.
   intros Γ Δi Q Q' H. induction H; intros Γ' Hst.
   - apply d_refine_syn__unit.
-  - apply d_refine_syn__var. destruct H as [HI | Hb];
-      [ left; assumption | right; apply Hst; assumption ].
+  - apply d_refine_syn__var.
   - apply d_refine_syn__arrow; [ apply IHd_refine_syn1 | apply IHd_refine_syn2 ]; assumption.
-  - apply d_refine_syn__all with (L := L). intros α Hα. apply H0; assumption.
-  - apply d_refine_syn__hole. eapply d_wf_pskl_same_tvar; eassumption.
+  - apply d_refine_syn__all with (L := L). intros α Hα.
+    apply H0; [ assumption | apply same_tvar_cons; assumption ].
+  - apply d_refine_syn__hole. assumption.
   - apply d_refine_syn__tophole_remove. apply IHd_refine_syn; assumption.
   - apply d_refine_syn__tophole_fill with (L := L). intros α Hα.
     apply (H0 α Hα ((α ~ dbind_tvar) ++ Γ')). apply same_tvar_cons. assumption.
-  - apply d_refine_syn__tophole_keep; [ assumption | apply IHd_refine_syn; assumption ].
+  - apply d_refine_syn__tophole_keep. apply IHd_refine_syn; assumption.
 Qed.
 
 (* ===================================================================== *)

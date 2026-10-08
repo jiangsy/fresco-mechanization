@@ -24,10 +24,12 @@
     Consistency relates them: its ∀ rule opens BOTH sides at a fresh α and puts
     that α into Θ, after which the [__hole] row fills the ghost with α — legal,
     because α IS in the context there.  Precision cannot: refinement opens a ∀
-    into Δ, not Θ ([ad_refine_syn__all] descends at [add α Δ] with Θ FIXED), and
-    its ghost-fill row requires the fill well formed at [Θ ⨟ ∅] — where a
-    Δ-variable is not in scope.  So [◇ ⊑ α] is underivable, and with it the
-    whole precision.
+    into Δ as well as Θ ([ad_refine_syn__all] descends at
+    [(α ~ tvar) ++ Θ ⨟ add α Δ]), and its ghost-fill row requires the fill to
+    avoid Δ ([Δ ∩ ftv fill [=] ∅]) — which a Δ-variable does not.  So
+    [◇ ⊑ α] is underivable, and with it the whole precision.  (Re-checked
+    2026-10-08 under the paper-faithful refinement rules: the claim stands;
+    only the reason moved from "α not in scope" to "α ∈ Δ".)
 
     That asymmetry is not an encoding artefact: it is the same Θ-versus-Δ
     asymmetry that forces the F-indexed mirror [ad_refine_syn_f] to exist at all
@@ -74,7 +76,7 @@ Lemma Qw_erase_wf : forall Δ, {{ nil ⨟ Δ ⊢ₚₛ (bskl_to_pskl Qw) }}a.
 Proof.
   intros Δ; cbn.
   apply a_wf_pskl__all with (L := empty); intros α _; cbn.
-  apply a_wf_pskl__var; left; clear; fsetdec.
+  apply a_wf_pskl__var; left; simpl; auto.
 Qed.
 
 (** Consistency DOES relate them: its ∀ rule puts the fresh binder into Θ, and
@@ -86,49 +88,50 @@ Proof.
   change (bskl_var_f α) with (pskl_to_bskl_inh (pskl_var_f α)).
   apply ad_pat_consis__hole;
     [ clear; fsetdec
-    | apply a_wf_pskl__var; right; left; simpl; auto ].
+    | apply a_wf_pskl__var; left; simpl; auto ].
 Qed.
 
 (* ===================================================================== *)
 (*  …and precision does not: the ∀-body obligation is [◇ ⊑ α] with α in Δ  *)
 (*                                                                        *)
 (*  Both directions below are the SAME two-row inversion — [__hole], whose *)
-(*  fill is checked at [Θ ⨟ ∅], and [__flex_r], which needs a definition   *)
-(*  in Θ.  Either way the variable must be bound in the CONTEXT, which a   *)
-(*  Δ-binder is not.                                                      *)
+(*  fill must avoid Δ, and [__flex_r], which needs a flexible definition   *)
+(*  in Θ.  A ∀-binder is in Δ and bound as a plain tvar, so neither fires. *)
 (* ===================================================================== *)
 
 Lemma refine_syn_hole_var : forall Θ Δ Qs Qt,
   {{ Θ ⨟ Δ ⊢ᵣ Qs ⊳ Qt }}ad ->
   Qs = bskl_hole ->
   forall α, Qt = bskl_var_f α ->
-  a_binds_tvar α Θ.
+  α `notin` Δ \/ exists τ, binds α (abind_flex_mono_def τ) Θ.
 Proof.
   intros Θ Δ Qs Qt H; induction H; intros Heqs α0 Heqt;
     try discriminate Heqs; try discriminate Heqt.
-  - (* __hole : the fill IS the variable, and it is checked at [Θ ⨟ ∅] *)
+  - (* __hole : the fill IS the variable, and it must avoid Δ *)
     destruct P; cbn in Heqt; try discriminate Heqt.
-    inversion Heqt; subst.
-    inversion H as [ | Θv Δv αv Hd | | | | ]; subst.
-    destruct Hd as [HΔ | Htv]; [ clear - HΔ; fsetdec | exact Htv ].
+    inversion Heqt; subst. left; intros Hin.
+    assert (Hx : α0 `in` (Δ ∩ ftvar_in_pskl (pskl_var_f α0)))
+      by (cbn; clear - Hin; fsetdec).
+    rewrite H in Hx; clear - Hx; fsetdec.
   - (* __flex_r : a DEFINITION in Θ *)
-    inversion Heqt; subst. right; right; exists τ; assumption.
+    inversion Heqt; subst. right; exists τ; assumption.
 Qed.
 
 Lemma refine_pskl_f_hole_var : forall F Θ Δ Ps Pt,
   ad_refine_pskl_f F Θ Δ Ps Pt ->
   Ps = pskl_hole ->
   forall α, Pt = pskl_var_f α ->
-  a_binds_tvar α Θ.
+  α `notin` Δ \/ exists τ, binds α (abind_flex_mono_def τ) Θ.
 Proof.
   intros F Θ Δ Ps Pt H; induction H; intros Heqs α0 Heqt;
     try discriminate Heqs; try discriminate Heqt.
-  - (* __hole *)
-    subst.
-    inversion H0 as [ | Θv Δv αv Hd | | | | ]; subst.
-    destruct Hd as [HΔ | Htv]; [ clear - HΔ; fsetdec | exact Htv ].
+  - (* __hole : the fill must avoid Δ *)
+    subst. left; intros Hin.
+    assert (Hx : α0 `in` (Δ ∩ ftvar_in_pskl (pskl_var_f α0)))
+      by (cbn; clear - Hin; fsetdec).
+    rewrite H0 in Hx; clear - Hx; fsetdec.
   - (* __flex_r *)
-    inversion Heqt; subst. right; right; exists τ; assumption.
+    inversion Heqt; subst. right; exists τ; assumption.
 Qed.
 
 Lemma cex_not_precise : forall Δ,
@@ -139,7 +142,10 @@ Proof.
   pick fresh α for L.
   specialize (Hfam α ltac:(clear - Fr; fsetdec)); cbn in Hfam.
   pose proof (@refine_syn_hole_var _ _ _ _ Hfam eq_refl α eq_refl) as Hb.
-  destruct Hb as [Hb | [Hb | [τ Hb]]]; inversion Hb.
+  destruct Hb as [Hb | [τ Hb]];
+    [ apply Hb; clear; fsetdec
+    | apply binds_cons_1 in Hb; destruct Hb as [[_ Hb] | Hb];
+      [ discriminate Hb | inversion Hb ] ].
 Qed.
 
 (* ===================================================================== *)
@@ -169,7 +175,7 @@ Qed.
 (** The mechanization's third premise (DESIGN §1, "lesson 1") asks the SUBJECT
     to refine to the counterpart's erasure.  On this witness it cannot: the
     obligation is again [◇ ⊳ α] with the binder in Δ, and refinement's ghost
-    fill is checked at [Θ ⨟ ∅].  So the configuration never reaches Sub-Infer
+    fill must avoid Δ.  So the configuration never reaches Sub-Infer
     or Sub-UnivGhostR at all. *)
 Theorem cex_excluded_by_subject_refinement : forall F Δ,
   ~ ad_refine_pskl_f F nil Δ (uskl_to_pskl Rw) (bskl_to_pskl Qw).
@@ -179,6 +185,9 @@ Proof.
   pick fresh α for L.
   specialize (Hfam α ltac:(clear - Fr; fsetdec)); cbn in Hfam.
   pose proof (@refine_pskl_f_hole_var _ _ _ _ _ Hfam eq_refl α eq_refl) as Hb.
-  destruct Hb as [Hb | [Hb | [τ Hb]]]; inversion Hb.
+  destruct Hb as [Hb | [τ Hb]];
+    [ apply Hb; clear; fsetdec
+    | apply binds_cons_1 in Hb; destruct Hb as [[_ Hb] | Hb];
+      [ discriminate Hb | inversion Hb ] ].
 Qed.
 

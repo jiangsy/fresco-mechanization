@@ -37,6 +37,7 @@ Require Import src.fresco.algo_decl.def_subtyping.
 Require Import src.fresco.algo_decl.def_typing.
 Require Import src.fresco.algo_decl.prop_ctx_mono.
 Require Import src.fresco.algo.prop_stability.
+Require Import src.fresco.algo.prop_inc_strengthen.
 Require Import src.fresco.algo.prop_basic.
 Require Import src.fresco.algo.prop_refine.
 Require Import src.fresco.algo.prop_precise.
@@ -166,6 +167,14 @@ Proof.
       as [b' [P' [Hb' [HP' Hprec]]]].
     assert (HwfQ' : {{ Θ' ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a)
       by (eapply a_wf_pskl_mono; eauto).
+    (* the bound skeleton is wf in the context, hence in Θ' *)
+    assert (HwfP : {{ Θ ⨟ empty ⊢ₚₛ P }}a).
+    { destruct b; simpl in H0; try discriminate; inversion H0; subst.
+      - apply a_wf_ptyp_to_wf_pskl.
+        eapply a_wf_aenv_binds_var_typ_wf; eassumption.
+      - eapply a_wf_aenv_binds_var_skl_wf; eassumption. }
+    assert (HwfP' : {{ Θ' ⨟ empty ⊢ₚₛ P }}a)
+      by (eapply a_wf_pskl_mono; eauto).
     eapply ad_pat__var with (b := b');
       [ exact Hb' | exact HP' | exact HwfQ' | ].
     rewrite pskl_to_uskl_via_bskl_syn.
@@ -174,6 +183,7 @@ Proof.
       | rewrite <- pskl_to_uskl_via_bskl_syn;
         eapply ad_pat_sub_mono; eauto
       | exact HwfΘ'
+      | exact HwfP'
       | exact HwfQ'
       | intros Hd; discriminate ].
   - (* anno *)

@@ -110,19 +110,30 @@ Qed.
 
 (** [lemma:partial-precision-complete] (subtyping-proofs.tex:1639).  Under
     wf of [ψ] and the tag-sort premise, partial precision at the FULL tag set
-    [Ψ] upgrades to plain (coloured) precision against [⌊ψ⌋].  See §5.1. *)
-Lemma ad_partial_precise_complete : forall NM Θ Δ Ψ P ψ,
+    [Ψ] upgrades to plain (coloured) precision against [⌊ψ⌋].  See §5.1.
+
+    ⚙ The [_gen] form lands the precision at any [Θ'] that keeps [Θ]'s tvar
+    and flexible-definition bindings: partial precision's ∀ row puts the
+    binder into [Δ] only, while refinement's ∀ row (paper: [Γ,α | Δ,α])
+    pushes it into the context too, so the ∀ case needs the IH at
+    [(α ~ abind_tvar) ++ Θ']. *)
+Lemma ad_partial_precise_complete_gen : forall NM Θ Δ Ψ P ψ,
   {{ ⊢ Θ }}a ->
-  a_tags_sort NM Ψ ψ ->
-  {{ Θ ⨟ Δ ⊢ₚₛ ⌊ ψ ⌋ˢ }}a ->
   {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
-  {{ Θ ⨟ Δ ⊢ₚᵣ P ⊑ ⌊ ψ ⌋ˢ }}ad.
+  forall Θ',
+  {{ ⊢ Θ' }}a ->
+  (forall α, a_binds_tvar α Θ -> a_binds_tvar α Θ') ->
+  (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
+     binds α (abind_flex_mono_def τ) Θ') ->
+  a_tags_sort NM Ψ ψ ->
+  {{ Θ' ⨟ Δ ⊢ₚₛ ⌊ ψ ⌋ˢ }}a ->
+  {{ Θ' ⨟ Δ ⊢ₚᵣ P ⊑ ⌊ ψ ⌋ˢ }}ad.
 Proof.
-  intros NM Θ Δ Ψ P ψ Hwf Htags Hwfp H.
-  revert Hwf Htags Hwfp. induction H; intros Hwf Htags Hwfp;
+  intros NM Θ Δ Ψ P ψ Hwf H.
+  revert Hwf NM. induction H; intros Hwf NM Θ' Hwf' Htv Hfl Htags Hwfp;
     unfold ad_precise in *; simpl in *.
   - (* unit *) apply ad_refine_syn__unit.
-  - (* var *) apply ad_refine_syn__var. assumption.
+  - (* var *) apply ad_refine_syn__var.
   - (* arrow *)
     apply a_tags_sort_arrow_inv in Htags as [Ψa [Ψb [Hta [Htb [Hdisj Hun]]]]].
     inversion Hwfp; subst.
@@ -131,18 +142,18 @@ Proof.
     assert (Hs2 : Ψ2 [<=] Ψb) by
       (eapply (ad_partial_precise_tags_sub Hwf H0); exact (a_tags_sort_d_tags Htb)).
     apply ad_refine_syn__arrow.
-    + apply IHad_partial_precise1;
-        [ exact Hwf
+    + eapply IHad_partial_precise1;
+        [ exact Hwf | exact Hwf' | exact Htv | exact Hfl
         | eapply a_tags_sort_psi_cong; [ exact Hta | clear - H1 Hun Hdisj Hs1 Hs2; fsetdec ]
         | assumption ].
-    + apply IHad_partial_precise2;
-        [ exact Hwf
+    + eapply IHad_partial_precise2;
+        [ exact Hwf | exact Hwf' | exact Htv | exact Hfl
         | eapply a_tags_sort_psi_cong; [ exact Htb | clear - H1 Hun Hdisj Hs1 Hs2; fsetdec ]
         | assumption ].
-  - (* forall: ψ = all_tag ε ψ0, P = all_syn P0 *)
+  - (* forall: ψ = all_tag ε ψ0, P = all_syn P0; the binder enters [Θ'] *)
     apply a_tags_sort_all_tag_inv in Htags as [Lt [Ψt [Hta [Hεt Hun]]]].
     apply a_wf_pskl_all_inv in Hwfp as [Lw Hwbody].
-    apply ad_refine_syn__all with (L := L `union` Lt `union` Lw `union` dom Θ
+    apply ad_refine_syn__all with (L := L `union` Lt `union` Lw `union` dom Θ'
        `union` ftvar_in_pskl P `union` ftvar_in_uskl ψ).
     intros α0 Hα0.
     assert (Hs0 : Ψ0 [<=] Ψt) by
@@ -152,50 +163,61 @@ Proof.
     rewrite <- pskl_to_bskl_inh_open.
     rewrite <- pskl_to_bskl_inh_open.
     rewrite <- (uskl_to_pskl_open ψ).
-    apply H0; [ fsetdec | exact Hwf | | ].
-    + eapply a_tags_sort_psi_cong; [ apply Hta; fsetdec | clear - Heq0; fsetdec ].
-    + rewrite uskl_to_pskl_open. apply Hwbody. fsetdec.
-  - (* hole: ψ ∀-free (empty tags) ⇒ inh = syn, wf-strip supplies the fill *)
+    eapply H0; [ solve_notin_auto | exact Hwf | | | | | ].
+    + apply a_wf_aenv__tvar; [ solve_notin_auto | exact Hwf' ].
+    + intros β Hβ. apply a_binds_tvar_cons_tvar. right. auto.
+    + intros β τ Hβ. apply binds_app_iff. right. auto.
+    + eapply a_tags_sort_psi_cong;
+        [ apply Hta; solve_notin_auto | clear - Heq0; fsetdec ].
+    + rewrite uskl_to_pskl_open. apply Hwbody. solve_notin_auto.
+  - (* hole: ψ ∀-free (empty tags) ⇒ inh = syn; the ghost premise is the
+       partial-precision row's own disjointness *)
     assert (Hnf : pskl_no_forall (uskl_to_pskl ψ)) by
       (eapply d_tags_empty_no_forall;
         [ exact (a_tags_sort_d_tags Htags) | assumption ]).
     rewrite (pskl_no_forall_inh_eq_syn _ Hnf).
     apply ad_refine_syn__hole.
-    eapply a_wf_pskl_delta_strip; [ exact Hwfp | ].
     rewrite ftvar_in_pskl_uskl_to_pskl. assumption.
   - (* tophole_remove *)
     apply ad_refine_syn__tophole_remove.
-    apply IHad_partial_precise; [ exact Hwf | exact Htags | exact Hwfp ].
+    eapply IHad_partial_precise; eauto.
   - (* tophole_fill: VACUOUS via tags_sub — ε is solved but the premise drops it *)
     exfalso.
     apply a_tags_sort_all_tag_inv in Htags as [Lt [Ψt [Hta [Hεt Hun]]]].
     pick fresh α for (L `union` Lt `union` dom Θ).
-    assert (Hwf' : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
+    assert (Hwfa : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
       by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
     assert (Hsub : Ψ [<=] Ψt) by
-      (eapply (ad_partial_precise_tags_sub Hwf' (H α ltac:(solve_notin_auto)));
+      (eapply (ad_partial_precise_tags_sub Hwfa (H α ltac:(solve_notin_auto)));
         exact (a_tags_sort_d_tags (Hta α ltac:(solve_notin_auto)))).
     clear - Hun Hεt Hsub. fsetdec.
-  - (* tophole_keep: ψ = topholeg ψ0 (SK-only; TY gf excludes it) *)
-    apply a_wf_pskl_tophole_inv in Hwfp as [Hg Hw0].
+  - (* tophole_keep: ψ = topholeg ψ0 (SK-only; TY gf excludes it).  The body
+       is wf at [Θ'∖Δ], so none of its free variables is in [Δ]. *)
+    inversion Hwfp; subst.
     apply ad_refine_syn__tophole_keep.
-    + apply guarded_pskl_to_bskl_inh. exact Hg.
-    + apply IHad_partial_precise; [ exact Hwf | | ].
-      * inversion Htags; subst;
-          match goal with Hit : is_tskl (uskl_topholeg _) |- _ =>
-            inversion Hit; subst end.
-        -- match goal with Hd : d_tags_skl _ (uskl_topholeg _) |- _ =>
-             apply d_tags_skl_topholeg_inv in Hd end.
-           apply a_tags_sort__sk; auto.
-        -- match goal with Hg0 : uskl_ghost_free (uskl_topholeg _) |- _ =>
-             inversion Hg0 end.
-      * eapply a_wf_pskl_delta_mono; [ exact Hw0 | clear; fsetdec ].
+    eapply IHad_partial_precise; [ exact Hwf | exact Hwf' | exact Htv | exact Hfl | | ].
+    + inversion Htags; subst;
+        match goal with Hit : is_tskl (uskl_topholeg _) |- _ =>
+          inversion Hit; subst end.
+      * match goal with Hd : d_tags_skl _ (uskl_topholeg _) |- _ =>
+          apply d_tags_skl_topholeg_inv in Hd end.
+        apply a_tags_sort__sk; auto.
+      * match goal with Hg0 : uskl_ghost_free (uskl_topholeg _) |- _ =>
+          inversion Hg0 end.
+    + match goal with Hw0 : {{ aenv_minus Θ' Δ ⨟ empty ⊢ₚₛ _ }}a |- _ =>
+        eapply a_wf_pskl_delta_mono;
+        [ eapply a_wf_pskl_tvar_mono;
+            [ exact Hw0 | intros β Hβ; apply a_binds_tvar_aenv_minus in Hβ; apply Hβ ]
+        | intros β Hβ HβΔ;
+          pose proof (a_wf_pskl_ftv_binds Hw0 Hβ) as Hb;
+          apply a_binds_tvar_aenv_minus in Hb; destruct Hb as [_ Hb];
+          exfalso; exact (Hb HβΔ) ] end.
   - (* flex_l: subject α unfolds to its mono def; ψ unchanged *)
     assert (Hmono : mono_ptyp τ)
       by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact H ]).
-    eapply ad_refine_syn__flex_l; [ exact H | ].
+    eapply ad_refine_syn__flex_l; [ exact (Hfl _ _ H) | ].
     rewrite <- (ptyp_to_bskl_inh_syn_eq Hmono).
-    apply IHad_partial_precise; [ exact Hwf | exact Htags | exact Hwfp ].
+    eapply IHad_partial_precise; eauto.
   - (* flex_r: target α unfolds to its mono def (tag-free, wf since flex-free) *)
     assert (Hmono : mono_ptyp τ)
       by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact H ]).
@@ -203,12 +225,11 @@ Proof.
       by (eapply a_wf_aenv_binds_def_wf; [ exact Hwf | exact H ]).
     assert (HΨ : Ψ [=] empty)
       by exact (d_tags_skl_var_inv (a_tags_sort_d_tags Htags)).
-    eapply ad_refine_syn__flex_r; [ exact H | ].
+    eapply ad_refine_syn__flex_r; [ exact (Hfl _ _ H) | ].
     rewrite <- (ptyp_to_bskl_inh_syn_eq Hmono).
     replace (ptyp_to_pskl τ) with (uskl_to_pskl (ptyp_to_uskl_syn τ))
       by (apply uskl_to_pskl_ptyp_to_uskl_syn).
-    apply IHad_partial_precise.
-    + exact Hwf.
+    eapply IHad_partial_precise; [ exact Hwf | exact Hwf' | exact Htv | exact Hfl | | ].
     + (* build at concrete [empty] FIRST (no evar), then re-tag to Ψ [=] empty
          — psi_cong with an evar source would make [fsetdec] hang. *)
       assert (Htagpaint : a_tags_sort NM empty (ptyp_to_uskl_syn τ)).
@@ -224,8 +245,19 @@ Proof.
     + rewrite uskl_to_pskl_ptyp_to_uskl_syn.
       apply a_scope_pskl_of_ptyp_vis.
       * eapply a_wf_ptyp_lc; exact Hwfτ.
-      * intros α0 Hα0. right.
+      * intros α0 Hα0. apply Htv.
         eapply a_wf_ptyp_ftv_tvarish; [ exact Hwfτ | exact Hα0 ].
+Qed.
+
+Lemma ad_partial_precise_complete : forall NM Θ Δ Ψ P ψ,
+  {{ ⊢ Θ }}a ->
+  a_tags_sort NM Ψ ψ ->
+  {{ Θ ⨟ Δ ⊢ₚₛ ⌊ ψ ⌋ˢ }}a ->
+  {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
+  {{ Θ ⨟ Δ ⊢ₚᵣ P ⊑ ⌊ ψ ⌋ˢ }}ad.
+Proof.
+  intros NM Θ Δ Ψ P ψ Hwf Htags Hwfp H.
+  eapply ad_partial_precise_complete_gen; eauto.
 Qed.
 
 (* ===================================================================== *)
@@ -472,9 +504,10 @@ Qed.
 (*  congruences delegate to the helpers below.                            *)
 (*                                                                        *)
 (*  ⚙ WHY THE CONTEXT IS GENERALIZED to any [Θ] the equivalence's own [Θ0] *)
-(*  embeds into: [ad_refine_pskl__tophole_fill] runs its premise at        *)
-(*  [(α ~ tvar) ++ Θ], so the tophole case needs its transporter at a      *)
-(*  context EXTENSION.  The other two congruences never move [Θ].         *)
+(*  embeds into: [ad_refine_pskl__tophole_fill] and [ad_refine_pskl__all]  *)
+(*  run their premises at [(α ~ tvar) ++ Θ], so the tophole and ∀ cases    *)
+(*  need their transporters at a context EXTENSION.  The arrow congruence  *)
+(*  never moves [Θ].                                                       *)
 (* ===================================================================== *)
 
 (** Each helper is an induction on the REFINEMENT rather than on the
@@ -502,8 +535,8 @@ Lemma refine_source_all : forall Θ Δ S Pt,
   {{ Θ ⨟ Δ ⊢ᵣₚ S ⊳ Pt }}ad ->
   forall Lq Rq Rp, S = pskl_all_syn Rq ->
   (forall α, α `notin` Lq -> forall Δ' Pt',
-     {{ Θ ⨟ Δ' ⊢ᵣₚ (open_pskl_wrt_pskl Rq (pskl_var_f α)) ⊳ Pt' }}ad ->
-     {{ Θ ⨟ Δ' ⊢ᵣₚ (open_pskl_wrt_pskl Rp (pskl_var_f α)) ⊳ Pt' }}ad) ->
+     {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ' ⊢ᵣₚ (open_pskl_wrt_pskl Rq (pskl_var_f α)) ⊳ Pt' }}ad ->
+     {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ' ⊢ᵣₚ (open_pskl_wrt_pskl Rp (pskl_var_f α)) ⊳ Pt' }}ad) ->
   {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_all_syn Rp) ⊳ Pt }}ad.
 Proof.
   intros Θ Δ S Pt H; induction H; intros Lq Rq Rp HeqS T;
@@ -548,8 +581,8 @@ Proof.
       [ intros x b Hb; apply Hle; apply binds_app_3; exact Hb
       | exact Hwf' | exact Href ].
   - (* __tophole_keep *) inversion HeqS; subst.
-    apply ad_refine_pskl__tophole_keep;
-      [ assumption | apply T with (Θ' := Θ); [ auto | exact Hwf | assumption ] ].
+    apply ad_refine_pskl__tophole_keep.
+    apply T with (Θ' := Θ); [ auto | exact Hwf | assumption ].
   - (* __flex_r *)
     eapply ad_refine_pskl__flex_r;
       [ eassumption
@@ -588,10 +621,20 @@ Proof.
         | intros Pt'; apply (proj2 (IHa_pskl_tyequiv1 Θ' Δ Pt' Hle Hwf))
         | intros Pt'; apply (proj2 (IHa_pskl_tyequiv2 Θ' Δ Pt' Hle Hwf)) ].
   - (* all *) split.
-    + intros Href. eapply refine_source_all; [ exact Href | reflexivity | ].
-      intros α Hα Δ' Pt'. apply (proj1 (H0 α Hα Θ' Δ' Pt' Hle Hwf)).
-    + intros Href. eapply refine_source_all; [ exact Href | reflexivity | ].
-      intros α Hα Δ' Pt'. apply (proj2 (H0 α Hα Θ' Δ' Pt' Hle Hwf)).
+    + intros Href.
+      eapply refine_source_all with (Lq := L `union` dom Θ');
+        [ exact Href | reflexivity | ].
+      intros α Hα Δ' Pt'. apply (proj1 (H0 α ltac:(solve_notin_auto)
+        ((α ~ abind_tvar) ++ Θ') Δ' Pt'
+        (fun x b Hb => binds_app_3 _ _ _ _ _ (Hle x b Hb))
+        ltac:(apply a_wf_aenv__tvar; [ solve_notin_auto | exact Hwf ]))).
+    + intros Href.
+      eapply refine_source_all with (Lq := L `union` dom Θ');
+        [ exact Href | reflexivity | ].
+      intros α Hα Δ' Pt'. apply (proj2 (H0 α ltac:(solve_notin_auto)
+        ((α ~ abind_tvar) ++ Θ') Δ' Pt'
+        (fun x b Hb => binds_app_3 _ _ _ _ _ (Hle x b Hb))
+        ltac:(apply a_wf_aenv__tvar; [ solve_notin_auto | exact Hwf ]))).
   - (* tophole *) split.
     + intros Href. eapply refine_source_tophole;
         [ exact Href | reflexivity | exact Hwf | ].
@@ -645,7 +688,7 @@ Proof.
            apply ad_pat_consis__hole; [ clear; fsetdec | assumption ].
         -- simpl. rewrite bskl_to_pskl_pskl_to_bskl_inh.
            apply ad_refine_pskl__tophole_remove.
-           apply ad_refine_pskl__hole. assumption.
+           apply ad_refine_pskl__hole. clear; fsetdec.
       * match goal with Hmc : mod_comp_sk _ mode_ti |- _ =>
           inversion Hmc; subst; assumption end.
     + (* ghostg *)
@@ -654,7 +697,7 @@ Proof.
         -- apply ad_pat_consis__tophole_drop.
            apply ad_pat_consis__ghostg; clear; fsetdec.
         -- simpl. apply ad_refine_pskl__tophole_remove.
-           apply ad_refine_pskl__hole. apply a_wf_pskl__hole.
+           apply ad_refine_pskl__hole. clear; fsetdec.
       * match goal with Hmc : mod_comp_sk _ mode_ti |- _ =>
           inversion Hmc; subst; assumption end.
   - (* tc *)
@@ -830,7 +873,7 @@ Proof.
     eapply ad_pat_sub_fuel_hole_intro with (Ψfull := Ψn);
       [ exact Hnode | reflexivity | exact Hwf | exact H0
       | simpl; apply a_wf_pskl__tophole;
-          [ apply guarded_bskl_to_pskl; exact HgQ | exact Hwfq ]
+          [ apply guarded_bskl_to_pskl; exact HgQ | rewrite aenv_minus_empty; exact Hwfq ]
       | clear; fsetdec ].
   - (* tophole_remove: peel via UnivGhostL (same fuel) *)
     apply ad_pat_sub_fuel_wrap_tophole.
@@ -1751,16 +1794,25 @@ Qed.
     ([tophole_fill] is dead: an inh painting is never [bskl_all_syn]); the
     [__hole] row supplies [upre__hole]'s ∀-freeness by
     [inh_eq_syn_no_forall] — the fill being a SYN painting is exactly what
-    confines the ghost's counterpart. *)
-Lemma uskl_precise_of_ad_precise : forall Θ Δ Qs Qt,
+    confines the ghost's counterpart.  The refinement's ∀ row pushes its
+    binder into BOTH the context and [Δ], so the ⊑ᵤ context [Θb] is held
+    FIXED and related to the growing [Θ] by two maps (as in
+    [uskl_precise_of_precise_gen], prop_consis_precise.v). *)
+Lemma uskl_precise_of_ad_precise_gen : forall Θ Δ Qs Qt,
   {{ Θ ⨟ Δ ⊢ᵣ Qs ⊳ Qt }}ad ->
   {{ ⊢ Θ }}a ->
+  {{ Θ ⨟ Δ ⊢ₚₛ bskl_to_pskl Qt }}a ->
+  forall Θb,
+  (forall α, a_binds_tvar α Θ -> α `notin` Δ -> a_binds_tvar α Θb) ->
+  (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
+     binds α (abind_flex_mono_def τ) Θb) ->
   forall P' P,
   Qs = pskl_to_bskl_inh P' ->
   Qt = pskl_to_bskl_inh P ->
-  uskl_precise Θ empty (pskl_to_uskl P') (pskl_to_uskl P).
+  uskl_precise Θb empty (pskl_to_uskl P') (pskl_to_uskl P).
 Proof.
-  intros Θ Δ Qs Qt H; induction H; intros Hwf F' F HeqS HeqT.
+  intros Θ Δ Qs Qt H; induction H;
+    intros Hwf Hwft Θb Hmtv Hmfl F' F HeqS HeqT.
   - (* unit *)
     destruct F' as [ | | | | | | ]; simpl in HeqS; try discriminate.
     destruct F as [ | | | | | | ]; simpl in HeqT; try discriminate.
@@ -1774,63 +1826,117 @@ Proof.
     destruct F' as [ | | | Fa' Fb' | | | ]; simpl in HeqS; try discriminate.
     destruct F as [ | | | Fa Fb | | | ]; simpl in HeqT; try discriminate.
     inversion HeqS; inversion HeqT; subst. simpl.
+    simpl in Hwft. rewrite !bskl_to_pskl_pskl_to_bskl_inh in Hwft.
+    inversion Hwft; subst.
     eapply upre__arrow;
-      [ apply IHad_refine_syn1; solve [ exact Hwf | reflexivity ]
-      | apply IHad_refine_syn2; solve [ exact Hwf | reflexivity ]
+      [ eapply IHad_refine_syn1; try reflexivity; try eassumption;
+        rewrite bskl_to_pskl_pskl_to_bskl_inh; assumption
+      | eapply IHad_refine_syn2; try reflexivity; try eassumption;
+        rewrite bskl_to_pskl_pskl_to_bskl_inh; assumption
       | clear; fsetdec ].
-  - (* all : both sides are ∀ⁱ paintings of ∀ˢ skeletons *)
+  - (* all : both sides are ∀ⁱ paintings of ∀ˢ skeletons; the binder goes
+       into the refinement's context and [Δ], while ⊑ᵤ's [Θb] stays put *)
     destruct F' as [ | | | | F0' | | ]; simpl in HeqS; try discriminate.
     destruct F as [ | | | | F0 | | ]; simpl in HeqT; try discriminate.
     inversion HeqS; inversion HeqT; subst. simpl.
-    apply upre__all_syn with (L := L).
+    simpl in Hwft. rewrite bskl_to_pskl_pskl_to_bskl_inh in Hwft.
+    destruct (a_wf_pskl_all_inv Hwft) as [Lw Hwbody].
+    apply upre__all_syn with (L := L `union` Lw `union` dom Θ).
     intros α Hα.
     rewrite <- !pskl_to_uskl_open_var.
-    apply (H0 α Hα Hwf);
-      [ symmetry; apply pskl_to_bskl_inh_open
+    eapply H0 with (α := α);
+      [ solve_notin_auto
+      | apply a_wf_aenv__tvar; [ solve_notin_auto | exact Hwf ]
+      | rewrite <- pskl_to_bskl_inh_open, bskl_to_pskl_pskl_to_bskl_inh;
+        apply Hwbody; solve_notin_auto
+      | intros β Hβ HβΔ;
+        apply a_binds_tvar_cons_tvar_inv in Hβ as [-> | Hβ];
+        [ exfalso; clear - HβΔ; fsetdec
+        | apply Hmtv; [ exact Hβ | clear - HβΔ; fsetdec ] ]
+      | intros β τ Hb; apply Hmfl; eapply binds_flex_def_cons_tvar_inv; exact Hb
+      | symmetry; apply pskl_to_bskl_inh_open
       | symmetry; apply pskl_to_bskl_inh_open ].
-  - (* hole : the counterpart is a syn painting, hence ∀-free and wf *)
+  - (* hole : the counterpart is a syn painting, hence ∀-free; it is wf by
+       the target presupposition and Δ-free by the rule's premise *)
     destruct F' as [ | | | | | | ]; simpl in HeqS; try discriminate.
+    assert (Hnf : pskl_no_forall F)
+      by (eapply inh_eq_syn_no_forall; symmetry; exact HeqT).
+    assert (HeqP : P = F).
+    { apply pskl_to_bskl_syn_inj. rewrite HeqT.
+      apply pskl_no_forall_inh_eq_syn. exact Hnf. }
+    subst P.
     simpl. apply upre__hole;
       [ clear; fsetdec
-      | rewrite uskl_to_pskl_pskl_to_uskl;
-        eapply inh_eq_syn_no_forall; symmetry; exact HeqT
+      | rewrite uskl_to_pskl_pskl_to_uskl; exact Hnf
       | ].
     rewrite uskl_to_pskl_pskl_to_uskl.
-    replace F with (bskl_to_pskl (pskl_to_bskl_syn P));
-      [ | rewrite HeqT; apply bskl_to_pskl_pskl_to_bskl_inh ].
-    rewrite bskl_to_pskl_pskl_to_bskl_syn. exact H.
+    rewrite bskl_to_pskl_pskl_to_bskl_syn in Hwft.
+    assert (Hwf0 : {{ Θ ⨟ empty ⊢ₚₛ F }}a)
+      by (eapply a_wf_pskl_delta_mono;
+          [ exact Hwft | intros β _ Hβ; clear - Hβ; fsetdec ]).
+    eapply a_wf_pskl_tvar_mono_ftv; [ exact Hwf0 | ].
+    intros β HβP Hβ. apply Hmtv; [ exact Hβ | ].
+    intro HβΔ.
+    assert (Hin : β `in` Δ ∩ ftvar_in_pskl F) by (apply inter_3; auto).
+    rewrite H in Hin. clear - Hin. fsetdec.
   - (* tophole_remove *)
     destruct F' as [ | | | | | | F0' ]; simpl in HeqS; try discriminate.
     inversion HeqS; subst. simpl.
-    apply upre__tophole_remove. apply IHad_refine_syn; auto.
+    apply upre__tophole_remove. eapply IHad_refine_syn; eauto.
   - (* tophole_fill : an inh painting is never [bskl_all_syn] — dead *)
     destruct F as [ | | | | F0 | | ]; simpl in HeqT; discriminate.
   - (* tophole_keep *)
     destruct F' as [ | | | | | | F0' ]; simpl in HeqS; try discriminate.
     destruct F as [ | | | | | | F0 ]; simpl in HeqT; try discriminate.
     inversion HeqS; inversion HeqT; subst. simpl.
+    simpl in Hwft. rewrite bskl_to_pskl_pskl_to_bskl_inh in Hwft.
+    apply a_wf_pskl_tophole_body in Hwft.
     apply upre__tophole.
-    apply IHad_refine_syn; [ exact Hwf | reflexivity | reflexivity ].
+    eapply IHad_refine_syn; try reflexivity; try eassumption.
+    rewrite bskl_to_pskl_pskl_to_bskl_inh; exact Hwft.
   - (* flex_l : a definition is a MONOTYPE, so its two paintings agree *)
     destruct F' as [ | | α0 | | | | ]; simpl in HeqS; try discriminate.
     inversion HeqS; subst.
     assert (Hm : mono_ptyp τ)
       by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | eassumption ]).
-    simpl. eapply upre__flex_l; [ eassumption | ].
+    simpl. eapply upre__flex_l; [ apply Hmfl; eassumption | ].
     rewrite <- pskl_to_uskl_ptyp.
-    apply IHad_refine_syn;
-      first [ exact Hwf | reflexivity
-            | symmetry; apply ptyp_to_bskl_inh_syn_eq; exact Hm ].
+    eapply IHad_refine_syn;
+      [ exact Hwf | exact Hwft | exact Hmtv | exact Hmfl
+      | symmetry; apply ptyp_to_bskl_inh_syn_eq; exact Hm | first [ exact HeqT | reflexivity ] ].
   - (* flex_r *)
     destruct F as [ | | α0 | | | | ]; simpl in HeqT; try discriminate.
     inversion HeqT; subst.
     assert (Hm : mono_ptyp τ)
       by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | eassumption ]).
-    simpl. eapply upre__flex_r; [ eassumption | ].
+    simpl. eapply upre__flex_r; [ apply Hmfl; eassumption | ].
     rewrite <- pskl_to_uskl_ptyp.
-    apply IHad_refine_syn;
-      first [ exact Hwf | reflexivity
-            | symmetry; apply ptyp_to_bskl_inh_syn_eq; exact Hm ].
+    eapply IHad_refine_syn;
+      [ exact Hwf
+      | unfold ptyp_to_bskl_syn; rewrite bskl_to_pskl_pskl_to_bskl_syn;
+        apply a_wf_ptyp_to_wf_pskl;
+        eapply a_wf_aenv_binds_def_wf; [ exact Hwf | eassumption ]
+      | exact Hmtv | exact Hmfl | first [ exact HeqS | reflexivity ]
+      | symmetry; apply ptyp_to_bskl_inh_syn_eq; exact Hm ].
+Qed.
+
+(** The single-context form.  [Hwft] is the paper's well-formedness
+    presupposition on the precision's TARGET: the refinement's ghost rule
+    no longer checks its fill, so [upre__hole]'s [Θ ⨟ ∅ ⊢ fill] comes from
+    here. *)
+Lemma uskl_precise_of_ad_precise : forall Θ Δ Qs Qt,
+  {{ Θ ⨟ Δ ⊢ᵣ Qs ⊳ Qt }}ad ->
+  {{ ⊢ Θ }}a ->
+  {{ Θ ⨟ Δ ⊢ₚₛ bskl_to_pskl Qt }}a ->
+  forall P' P,
+  Qs = pskl_to_bskl_inh P' ->
+  Qt = pskl_to_bskl_inh P ->
+  uskl_precise Θ empty (pskl_to_uskl P') (pskl_to_uskl P).
+Proof.
+  intros Θ Δ Qs Qt H Hwf Hwft.
+  eapply uskl_precise_of_ad_precise_gen;
+    [ exact H | exact Hwf | exact Hwft
+    | intros α Hα _; exact Hα | intros α τ Hb; exact Hb ].
 Qed.
 
 (** ⭐⭐ lemma:precision-sub (proofs.tex, "Precision extends skeleton
@@ -1838,7 +1944,9 @@ Qed.
     [ad_pat_sub_precise_upre_fuel] at [Ψrep = Ψsup = Ψna = ∅].  The wf of the
     counterpart's erasure is the paper's EXTERNAL wf side condition
     (WF-SIDE-CONDITIONS.md); the TY ghost-freeness is the motive's usual
-    external condition, automatic for a painting of a TYPE.
+    external condition, automatic for a painting of a TYPE.  [HwfP] is the
+    paper's presupposition that a refinement's target is well-formed: the
+    ghost rule no longer checks its fill, and ⊑ᵤ's [upre__hole] needs it.
 
     ⚙ WHY THE FUEL IS COLLECTED AND DROPPED INSIDE.  Precision-substitution
     must be fuel-PRESERVING — the completeness ForallL case applies its IH to
@@ -1851,18 +1959,21 @@ Lemma ad_precise_extends_pat_sub : forall NM M Ψ Θ Δ P' P Q,
   {{ Θ ⨟ Δ ⊢ₚᵣ P' ⊑ P }}ad ->
   {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] (pskl_to_uskl P) ⩽ Q }}ad ->
   {{ ⊢ Θ }}a ->
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
   {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
   (NM = a_sub_mode_ty -> uskl_ghost_free (pskl_to_uskl P')) ->
   {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] (pskl_to_uskl P') ⩽ Q }}ad.
 Proof.
-  intros NM M Ψ Θ Δ P' P Q Hprec HD Hwf HwfQ Hgf.
+  intros NM M Ψ Θ Δ P' P Q Hprec HD Hwf HwfP HwfQ Hgf.
   destruct (ad_pat_sub_to_fuel HD) as [ n Hn ].
   eapply ad_pat_sub_of_fuel.
   eapply ad_pat_sub_precise_upre_fuel with
     (Θb := Θ) (Ψr := empty) (Ψsup := empty) (Ψna := empty);
     [ exact Hn
     | eapply uskl_precise_of_ad_precise;
-        [ exact Hprec | exact Hwf | reflexivity | reflexivity ]
+        [ exact Hprec | exact Hwf
+        | rewrite bskl_to_pskl_pskl_to_bskl_inh; exact HwfP
+        | reflexivity | reflexivity ]
     | exact Hwf
     | clear; fsetdec
     | intros x b Hb; exact Hb

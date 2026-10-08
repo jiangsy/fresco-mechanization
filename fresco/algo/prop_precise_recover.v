@@ -92,6 +92,26 @@ Set Implicit Arguments.
 (*  the consistency→refinement mono lemma [ad_pat_consis_refine_syn_f_mono].*)
 (* ===================================================================== *)
 
+(** A refinement whose LEFT side is ghost-free never uses the ◇ rule, the
+    only rule that reads [Δ]; so it holds at every [Δ].  (The ◇ rule's
+    premise [Δ ∩ ftv P [=] empty] is why the mono bridge below is stated at
+    [Δ = empty] first.) *)
+Lemma ad_refine_syn_ghost_free_delta : forall Θ Δ0 Q P,
+  {{ Θ ⨟ Δ0 ⊢ᵣ Q ⊳ P }}ad ->
+  bskl_ghost_free Q ->
+  forall Δ, {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad.
+Proof.
+  intros Θ Δ0 Q P H; induction H; intros Hg Δ'; simpl in Hg;
+    try contradiction; eauto using ad_refine_syn.
+  - destruct Hg; eauto using ad_refine_syn.
+  - apply ad_refine_syn__all with (L := L). intros α Hα.
+    apply H0; auto. apply bskl_ghost_free_open_rec; exact Hg.
+  - eapply ad_refine_syn__flex_l; [ exact H | ].
+    apply IHad_refine_syn; auto.
+    unfold ptyp_to_bskl_syn. apply pskl_to_bskl_syn_ghost_free.
+    apply ptyp_to_pskl_ghost_free.
+Qed.
+
 Lemma tyequiv_mono_refine_syn : forall Θ Δ A A',
   {{ ⊢ Θ }}a ->
   mono_ptyp A -> mono_ptyp A' ->
@@ -102,12 +122,17 @@ Proof.
   intros Θ Δ A A' Hwf HmA HmB Heq Hvis.
   assert (Hc : {{ empty ⨟ Θ ⊢ˢ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A') }}ad)
     by (apply tyequiv_mono_consis; auto).
+  apply ad_refine_syn_ghost_free_delta with (Δ0 := empty).
+  2:{ unfold ptyp_to_bskl_syn. apply pskl_to_bskl_syn_ghost_free.
+      apply ptyp_to_pskl_ghost_free. }
   eapply (ad_refine_syn_f_forget (F := empty)).
   replace (ptyp_to_bskl_syn A)
     with (pskl_to_bskl_inh (uskl_to_pskl (ptyp_to_uskl_syn A))).
   2:{ rewrite uskl_to_pskl_ptyp. apply ptyp_to_bskl_inh_syn_eq; auto. }
   eapply ad_pat_consis_refine_syn_f_mono;
-    [ exact Hc | exact Hwf | apply mono_ptyp_to_bskl_syn; auto | | ].
+    [ exact Hc | exact Hwf | apply mono_ptyp_to_bskl_syn; auto | | | | ].
+  - clear. fsetdec.
+  - intros β τ Hb. clear. fsetdec.
   - clear. fsetdec.
   - intros β τ Hb. clear. fsetdec.
 Qed.

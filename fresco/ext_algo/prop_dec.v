@@ -222,7 +222,8 @@ Qed.
 (** ⭐ [size_pskl P] fuel is ENOUGH, and any larger amount is too.  The two
     non-structural descents are the ones the header names: the ∀ row opens a
     binder, which [size_pskl_open_pskl_wrt_pskl_var] shows costs nothing, and
-    the ⫯ row drops [Δ] to [empty], which the size does not see.
+    the ⫯ row moves to [aenv_minus Θ Δ] and [empty], which the size does
+    not see.
 
     ⚠️ Stated with the fuel as an INEQUALITY, not at [size_pskl P] exactly.
     The recursive calls are at [n'] with strictly smaller subjects, so an
@@ -241,9 +242,7 @@ Proof.
 
   - (* free variable *)
     inversion Hwf as [ | ? ? ? Hin | | | | ]; subst.
-    apply orb_true_intro. destruct Hin as [HΔ | HΘ];
-      [ left; apply in_mem_true; exact HΔ
-      | right; apply tvarish_ck_complete; exact HΘ ].
+    apply tvarish_ck_complete; exact Hin.
 
   - (* arrow *)
     inversion Hwf as [ | | ? ? ? ? H1 H2 | | | ]; subst.
@@ -261,7 +260,7 @@ Proof.
   - (* ◇ *) reflexivity.
 
   - (* ⫯ — the guard is tested beside the recursive call, and the wf rule
-       runs its premise at [empty] rather than at [Δ] *)
+       runs its premise at [aenv_minus Θ Δ] and [empty], as the checker does *)
     inversion Hwf as [ | | | | | ? ? ? Hg Hp ]; subst.
     apply andb_true_intro; split;
       [ apply guarded_shape_ck_complete; exact Hg

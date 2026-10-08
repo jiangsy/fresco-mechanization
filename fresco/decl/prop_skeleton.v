@@ -70,16 +70,30 @@ Proof.
   - apply d_wf_pskl__unit.
   - simpl. destruct_if.
     + apply d_wf_pskl__unit.
-    + apply d_wf_pskl__var. destruct H as [HΨ | Hb]; [ left; assumption | right ].
-      analyze_binds Hb; auto.
+    + apply d_wf_pskl__var. analyze_binds H; auto.
   - simpl. apply d_wf_pskl__arrow; [ eapply IHd_wf_pskl1 | eapply IHd_wf_pskl2 ]; eauto.
   - simpl. apply d_wf_pskl__all with (L := L `union` {{α0}}).
     intros β Hβ. rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
       try (apply lc_pskl_unit); try fsetdec.
-    eapply (H0 β ltac:(auto) Γ1 α0 Γ2); reflexivity.
+    rewrite_env (((β ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 β ltac:(auto) ((β ~ dbind_tvar) ++ Γ1) α0 Γ2); reflexivity.
   - apply d_wf_pskl__hole.
   - simpl. apply d_wf_pskl__tophole;
-      [ apply guarded_pskl_subst_unit; assumption | eapply IHd_wf_pskl; eauto ].
+      [ apply guarded_pskl_subst_unit; assumption | ].
+    destruct (List.in_dec eq_dec α0 Δ) as [Hin | Hnin].
+    + (* [α0 ∈ Δ]: [Γ∖Δ] has no entry for [α0], so [P] does not mention it *)
+      assert (Heqm : denv_minus (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) Δ
+                     = denv_minus (Γ1 ++ Γ2) Δ)
+        by (rewrite (denv_minus_app Γ1 ((α0 ~ dbind_tvar) ++ Γ2)),
+              denv_minus_cons_in, denv_minus_app; auto).
+      rewrite Heqm in H0.
+      rewrite subst_pskl_in_pskl_fresh_eq; [ exact H0 | ].
+      intro Hα. apply (d_wf_pskl_ftv H0) in Hα.
+      apply binds_denv_minus in Hα. tauto.
+    + rewrite denv_minus_app. eapply IHd_wf_pskl.
+      rewrite (denv_minus_app Γ1 ((α0 ~ dbind_tvar) ++ Γ2)),
+        denv_minus_cons_notin by exact Hnin.
+      reflexivity.
 Qed.
 
 Lemma d_wf_uskl_subst_unit : forall Ψ Γ R,
@@ -91,23 +105,50 @@ Proof.
   - apply d_wf_uskl__unit.
   - simpl. destruct_if.
     + apply d_wf_uskl__unit.
-    + apply d_wf_uskl__var. destruct H as [HΨ | Hb]; [ left; assumption | right ].
-      analyze_binds Hb; auto.
+    + apply d_wf_uskl__var. analyze_binds H; auto.
   - simpl. apply d_wf_uskl__arrow; [ eapply IHd_wf_uskl1 | eapply IHd_wf_uskl2 ]; eauto.
   - simpl. apply d_wf_uskl__all_syn with (L := L `union` {{α0}}).
     intros β Hβ. rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       try (apply lc_uskl_unit); try fsetdec.
-    eapply (H0 β ltac:(auto) Γ1 α0 Γ2); reflexivity.
+    rewrite_env (((β ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 β ltac:(auto) ((β ~ dbind_tvar) ++ Γ1) α0 Γ2); reflexivity.
   - simpl. apply d_wf_uskl__all_tag with (L := L `union` {{α0}}).
     intros β Hβ. rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       try (apply lc_uskl_unit); try fsetdec.
-    eapply (H0 β ltac:(auto) Γ1 α0 Γ2); reflexivity.
+    rewrite_env (((β ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 β ltac:(auto) ((β ~ dbind_tvar) ++ Γ1) α0 Γ2); reflexivity.
   - apply d_wf_uskl__hole.
   - simpl. apply d_wf_uskl__tophole;
-      [ apply guarded_uskl_subst_unit; assumption | eapply IHd_wf_uskl; eauto ].
+      [ apply guarded_uskl_subst_unit; assumption | ].
+    destruct (List.in_dec eq_dec α0 Δ) as [Hin | Hnin].
+    + assert (Heqm : denv_minus (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) Δ
+                     = denv_minus (Γ1 ++ Γ2) Δ)
+        by (rewrite (denv_minus_app Γ1 ((α0 ~ dbind_tvar) ++ Γ2)),
+              denv_minus_cons_in, denv_minus_app; auto).
+      rewrite Heqm in H0.
+      rewrite subst_uskl_in_uskl_fresh_eq; [ exact H0 | ].
+      intro Hα. apply (d_wf_uskl_ftv H0) in Hα.
+      apply binds_denv_minus in Hα. tauto.
+    + rewrite denv_minus_app. eapply IHd_wf_uskl.
+      rewrite (denv_minus_app Γ1 ((α0 ~ dbind_tvar) ++ Γ2)),
+        denv_minus_cons_notin by exact Hnin.
+      reflexivity.
   - apply d_wf_uskl__holeg.
   - simpl. apply d_wf_uskl__topholeg;
-      [ apply guarded_uskl_subst_unit; assumption | eapply IHd_wf_uskl; eauto ].
+      [ apply guarded_uskl_subst_unit; assumption | ].
+    destruct (List.in_dec eq_dec α0 Δ) as [Hin | Hnin].
+    + assert (Heqm : denv_minus (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) Δ
+                     = denv_minus (Γ1 ++ Γ2) Δ)
+        by (rewrite (denv_minus_app Γ1 ((α0 ~ dbind_tvar) ++ Γ2)),
+              denv_minus_cons_in, denv_minus_app; auto).
+      rewrite Heqm in H0.
+      rewrite subst_uskl_in_uskl_fresh_eq; [ exact H0 | ].
+      intro Hα. apply (d_wf_uskl_ftv H0) in Hα.
+      apply binds_denv_minus in Hα. tauto.
+    + rewrite denv_minus_app. eapply IHd_wf_uskl.
+      rewrite (denv_minus_app Γ1 ((α0 ~ dbind_tvar) ++ Γ2)),
+        denv_minus_cons_notin by exact Hnin.
+      reflexivity.
 Qed.
 
 (** [pskl_to_bskl_inh] commutes with the tvar→unit substitution. *)
@@ -211,8 +252,7 @@ Proof.
   - apply d_refine_pskl__unit.
   - destruct_if.
     + apply d_refine_pskl__unit.
-    + apply d_refine_pskl__var. destruct H as [HI | Hb];
-        [ left; assumption | right; analyze_binds Hb ].
+    + apply d_refine_pskl__var.
   - apply d_refine_pskl__arrow;
       [ eapply IHd_refine_pskl1 | eapply IHd_refine_pskl2 ]; reflexivity.
   - apply d_refine_pskl__all with (L := L `union` dom (Γ1 ++ Γ2) `union` {{α0}}).
@@ -221,9 +261,11 @@ Proof.
       by (first [ apply lc_pskl_unit | fsetdec ]).
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var
       by (first [ apply lc_pskl_unit | fsetdec ]).
-    eapply (H0 α2); [ fsetdec | reflexivity ].
-  - apply d_refine_pskl__hole.
-    eapply d_wf_pskl_subst_unit; [ eassumption | reflexivity ].
+    eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2);
+      simpl_env; reflexivity.
+  - apply d_refine_pskl__hole. intros β Hβ Hin.
+    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Q pskl_unit α0) as Hup.
+    simpl in Hup. apply (H β Hβ). clear - Hin Hup. fsetdec.
   - apply d_refine_pskl__tophole_remove. eapply IHd_refine_pskl; reflexivity.
   - apply d_refine_pskl__tophole_fill
       with (L := L `union` dom (Γ1 ++ Γ2) `union` {{α0}}).
@@ -232,9 +274,7 @@ Proof.
       by (first [ apply lc_pskl_unit | fsetdec ]).
     eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2);
       simpl_env; reflexivity.
-  - apply d_refine_pskl__tophole_keep;
-      [ apply guarded_pskl_subst_unit; assumption
-      | eapply IHd_refine_pskl; reflexivity ].
+  - apply d_refine_pskl__tophole_keep. eapply IHd_refine_pskl; reflexivity.
 Qed.
 
 Lemma d_pat_consis_subst_unit : forall Δ Γ R Q,

@@ -189,11 +189,92 @@ Reserved Notation "{{ Θ ⨟ Δ ⊢ₚₛ P }}a"
 (*  Skeleton well-formedness over Θ  (decl [{{ Γ ⨟ Δ ⊢ₚₛ P }}d])         *)
 (* ===================================================================== *)
 
+(** The paper's [Θ∖Δ]: [Θ] with the entries for the variables in [Δ]
+    removed (the [denv_minus] of decl/def_rules.v, over [aenv]). *)
+Definition aenv_minus (Θ : aenv) (Δ : atoms) : aenv :=
+  List.filter (fun b => negb (AtomSetImpl.mem (fst b) Δ)) Θ.
+
+Lemma aenv_minus_app : forall Θ1 Θ2 Δ,
+    aenv_minus (Θ1 ++ Θ2) Δ = aenv_minus Θ1 Δ ++ aenv_minus Θ2 Δ.
+Proof. intros. unfold aenv_minus. apply filter_app. Qed.
+
+Lemma aenv_minus_empty : forall Θ, aenv_minus Θ empty = Θ.
+Proof.
+  induction Θ as [|[a b] Θ IH]; simpl; [ reflexivity | ].
+  unfold aenv_minus in *. simpl.
+  replace (AtomSetImpl.mem a empty) with false
+    by (symmetry; apply not_mem_iff; fsetdec).
+  simpl. f_equal. assumption.
+Qed.
+
+Lemma aenv_minus_cons_in : forall α b Θ Δ,
+    α `in` Δ -> aenv_minus ((α ~ b) ++ Θ) Δ = aenv_minus Θ Δ.
+Proof.
+  intros. unfold aenv_minus. simpl.
+  replace (AtomSetImpl.mem α Δ) with true by (symmetry; apply mem_iff; assumption).
+  reflexivity.
+Qed.
+
+Lemma aenv_minus_cons_notin : forall α b Θ Δ,
+    α `notin` Δ -> aenv_minus ((α ~ b) ++ Θ) Δ = (α ~ b) ++ aenv_minus Θ Δ.
+Proof.
+  intros. unfold aenv_minus. simpl.
+  replace (AtomSetImpl.mem α Δ) with false
+    by (symmetry; apply not_mem_iff; assumption).
+  reflexivity.
+Qed.
+
+Lemma aenv_minus_eq : forall Θ Δ1 Δ2,
+    Δ1 [=] Δ2 -> aenv_minus Θ Δ1 = aenv_minus Θ Δ2.
+Proof.
+  intros Θ Δ1 Δ2 HΔ. unfold aenv_minus. apply List.filter_ext.
+  intros [x b]. simpl. f_equal.
+  destruct (AtomSetImpl.mem x Δ1) eqn:H1; destruct (AtomSetImpl.mem x Δ2) eqn:H2;
+    try reflexivity.
+  - rewrite <- mem_iff in H1. rewrite <- not_mem_iff in H2. fsetdec.
+  - rewrite <- not_mem_iff in H1. rewrite <- mem_iff in H2. fsetdec.
+Qed.
+
+Lemma binds_aenv_minus : forall α b Θ Δ,
+    binds α b (aenv_minus Θ Δ) <-> binds α b Θ /\ α `notin` Δ.
+Proof.
+  intros α b Θ Δ. unfold binds, aenv_minus. rewrite filter_In. simpl.
+  rewrite negb_true_iff, <- not_mem_iff. reflexivity.
+Qed.
+
+Lemma a_binds_tvar_aenv_minus : forall α Θ Δ,
+    a_binds_tvar α (aenv_minus Θ Δ) <-> a_binds_tvar α Θ /\ α `notin` Δ.
+Proof.
+  intros α Θ Δ. unfold a_binds_tvar. split.
+  - intros [H | [H | [τ H]]]; apply binds_aenv_minus in H; destruct H;
+      split; eauto.
+  - intros [[H | [H | [τ H]]] Hn].
+    + left. apply binds_aenv_minus; auto.
+    + right; left. apply binds_aenv_minus; auto.
+    + right; right. exists τ. apply binds_aenv_minus; auto.
+Qed.
+
+Lemma dom_aenv_minus : forall α Θ Δ,
+    α `in` dom (aenv_minus Θ Δ) -> α `in` dom Θ /\ α `notin` Δ.
+Proof.
+  intros α Θ Δ. induction Θ as [|[a b] Θ IH]; simpl; intro H.
+  - fsetdec.
+  - unfold aenv_minus in H. simpl in H.
+    destruct (AtomSetImpl.mem a Δ) eqn:Hm; simpl in H.
+    + destruct (IH H). split; [ fsetdec | assumption ].
+    + apply add_iff in H. destruct H as [<- | H].
+      * split; [ fsetdec | apply not_mem_iff; assumption ].
+      * destruct (IH H). split; [ fsetdec | assumption ].
+Qed.
+
+(* The paper's [Θ∣Δ ⊢ P], rule for rule (declarative.tex, "Well-formedness of
+   skeletons", read over an algorithmic context as full-algo-spec.tex says:
+   a flexible variable is looked up like a rigid one). *)
 Inductive a_wf_pskl : aenv -> atoms -> pskl -> Prop :=
 | a_wf_pskl__unit : forall Θ Δ,
     {{ Θ ⨟ Δ ⊢ₚₛ pskl_unit }}a
 | a_wf_pskl__var : forall Θ Δ α,
-    α `in` Δ \/ a_binds_tvar α Θ ->
+    a_binds_tvar α Θ ->
     {{ Θ ⨟ Δ ⊢ₚₛ (pskl_var_f α) }}a
 | a_wf_pskl__arrow : forall Θ Δ P1 P2,
     {{ Θ ⨟ Δ ⊢ₚₛ P1 }}a ->
@@ -201,15 +282,58 @@ Inductive a_wf_pskl : aenv -> atoms -> pskl -> Prop :=
     {{ Θ ⨟ Δ ⊢ₚₛ (pskl_arrow P1 P2) }}a
 | a_wf_pskl__all : forall L Θ Δ P,
     (forall α, α `notin` L ->
-       {{ Θ ⨟ (add α Δ) ⊢ₚₛ (open_pskl_wrt_pskl P (pskl_var_f α)) }}a) ->
+       {{ ((α ~ abind_tvar) ++ Θ) ⨟ (add α Δ) ⊢ₚₛ
+         (open_pskl_wrt_pskl P (pskl_var_f α)) }}a) ->
     {{ Θ ⨟ Δ ⊢ₚₛ (pskl_all_syn P) }}a
 | a_wf_pskl__hole : forall Θ Δ,
     {{ Θ ⨟ Δ ⊢ₚₛ pskl_hole }}a
 | a_wf_pskl__tophole : forall Θ Δ P,
     guarded_pskl P ->
-    {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
+    {{ (aenv_minus Θ Δ) ⨟ empty ⊢ₚₛ P }}a ->
     {{ Θ ⨟ Δ ⊢ₚₛ (pskl_tophole P) }}a
 where "{{ Θ ⨟ Δ ⊢ₚₛ P }}a" := (a_wf_pskl Θ Δ P) : fresco_a_scope.
+
+Lemma a_binds_tvar_cons_tvar_inv : forall α β Θ,
+    a_binds_tvar β ((α ~ abind_tvar) ++ Θ) -> β = α \/ a_binds_tvar β Θ.
+Proof.
+  intros α β Θ [Hb | [Hb | [τ Hb]]]; apply binds_app_iff in Hb;
+    destruct Hb as [Hb | Hb]; try (apply binds_one_iff in Hb; destruct Hb as [? Hb]);
+    try discriminate; unfold a_binds_tvar; eauto.
+Qed.
+
+Lemma a_binds_tvar_cons_tvar : forall α β Θ,
+    β = α \/ a_binds_tvar β Θ -> a_binds_tvar β ((α ~ abind_tvar) ++ Θ).
+Proof.
+  intros α β Θ [-> | [Hb | [Hb | [τ Hb]]]]; unfold a_binds_tvar.
+  - left. apply binds_app_iff. left. apply binds_one_iff. auto.
+  - left. apply binds_app_iff. auto.
+  - right; left. apply binds_app_iff. auto.
+  - right; right. exists τ. apply binds_app_iff. auto.
+Qed.
+
+(** Well-formedness only reads the context's TYPE variables, so it is
+    monotone along any map that keeps them.  This one fact covers every
+    context change the tree transports [a_wf_pskl] along — weakening, ⊴,
+    renaming the term entries — including through the [∀◇] rule, whose
+    premise is read at [Θ∖Δ]. *)
+Lemma a_wf_pskl_tvar_mono : forall Θ Δ P,
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
+  forall Θ', (forall α, a_binds_tvar α Θ -> a_binds_tvar α Θ') ->
+  {{ Θ' ⨟ Δ ⊢ₚₛ P }}a.
+Proof.
+  intros Θ Δ P H; induction H; intros Θ' Hincl.
+  - constructor.
+  - constructor. auto.
+  - constructor; auto.
+  - apply a_wf_pskl__all with (L := L). intros α Hα.
+    apply H0; [ exact Hα | ].
+    intros β Hb. apply a_binds_tvar_cons_tvar.
+    destruct (a_binds_tvar_cons_tvar_inv Hb); auto.
+  - constructor.
+  - constructor; [ assumption | ]. apply IHa_wf_pskl.
+    intros β Hb. apply a_binds_tvar_aenv_minus in Hb. destruct Hb as [Hb Hn].
+    apply a_binds_tvar_aenv_minus. auto.
+Qed.
 
 Reserved Notation "{{ ⊢ Θ }}a"
   (at level 0, format "'{{'  ⊢  Θ  '}}a'").

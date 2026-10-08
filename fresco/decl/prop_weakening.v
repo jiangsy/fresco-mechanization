@@ -112,17 +112,15 @@ Proof.
   induction H; intros Γ1 Γ3 Heq; subst Γ.
   - apply d_refine_syn__unit.
   - apply d_refine_syn__var.
-    match goal with H : _ \/ _ |- _ => destruct H as [HI | Hb] end;
-      [ left; assumption | right; analyze_binds Hb ].
   - apply d_refine_syn__arrow; auto.
   - apply d_refine_syn__all with (L := L `union` dom (Γ1 ++ Γ3)). intros α Hα.
-    eapply (H0 α ltac:(solve_notin_auto) Γ1 Γ3). reflexivity.
-  - apply d_refine_syn__hole. apply d_wf_pskl_weakening. assumption.
+    eapply (H0 α ltac:(solve_notin_auto) ((α ~ dbind_tvar) ++ Γ1) Γ3). simpl_env. reflexivity.
+  - apply d_refine_syn__hole. assumption.
   - apply d_refine_syn__tophole_remove; auto.
   - (* [tophole_fill] now PREPENDS the bound var to [Γ]; weaken at [α::Γ1]. *)
     apply d_refine_syn__tophole_fill with (L := L `union` dom (Γ1 ++ Γ3)). intros α Hα.
     eapply (H0 α ltac:(solve_notin_auto) ((α ~ dbind_tvar) ++ Γ1) Γ3). simpl_env. reflexivity.
-  - apply d_refine_syn__tophole_keep; [ assumption | auto ].
+  - apply d_refine_syn__tophole_keep. auto.
 Qed.
 
 (** ⭐ The UNCOLOURED twin.  Same eight rows, same proof — the colours the
@@ -138,18 +136,16 @@ Proof.
   induction H; intros Γ1 Γ3 Heq; subst Γ.
   - apply d_refine_pskl__unit.
   - apply d_refine_pskl__var.
-    match goal with H : _ \/ _ |- _ => destruct H as [HI | Hb] end;
-      [ left; assumption | right; analyze_binds Hb ].
   - apply d_refine_pskl__arrow; auto.
   - apply d_refine_pskl__all with (L := L `union` dom (Γ1 ++ Γ3)). intros α Hα.
-    eapply (H0 α ltac:(solve_notin_auto) Γ1 Γ3). reflexivity.
-  - apply d_refine_pskl__hole. apply d_wf_pskl_weakening. assumption.
+    eapply (H0 α ltac:(solve_notin_auto) ((α ~ dbind_tvar) ++ Γ1) Γ3). simpl_env. reflexivity.
+  - apply d_refine_pskl__hole. assumption.
   - apply d_refine_pskl__tophole_remove; auto.
   - apply d_refine_pskl__tophole_fill with (L := L `union` dom (Γ1 ++ Γ3)).
     intros α Hα.
     eapply (H0 α ltac:(solve_notin_auto) ((α ~ dbind_tvar) ++ Γ1) Γ3).
     simpl_env. reflexivity.
-  - apply d_refine_pskl__tophole_keep; [ assumption | auto ].
+  - apply d_refine_pskl__tophole_keep. auto.
 Qed.
 
 Lemma d_pat_consis_weakening : forall Γ1 Γ2 Γ3 Δ R Q,

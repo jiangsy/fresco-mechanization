@@ -181,16 +181,8 @@ Lemma a_wf_pskl_mono : forall Θ Δ P,
   a_wf_pskl Θ Δ P ->
   forall Θ', aenv_tbinds_le Θ Θ' -> a_wf_pskl Θ' Δ P.
 Proof.
-  intros Θ Δ P H; induction H; intros Θ' Hle.
-  - apply a_wf_pskl__unit.
-  - apply a_wf_pskl__var.
-    destruct H as [HΔ | Htv]; [ left; exact HΔ | right ].
-    eapply a_binds_tvar_mono; eauto.
-  - apply a_wf_pskl__arrow; auto.
-  - (* ∀ : the binder goes into Δ, NOT into Θ *)
-    apply a_wf_pskl__all with (L := L). intros α Hα. apply H0; auto.
-  - apply a_wf_pskl__hole.
-  - apply a_wf_pskl__tophole; auto.
+  intros Θ Δ P H Θ' Hle. apply (a_wf_pskl_tvar_mono H).
+  intros α. apply a_binds_tvar_mono. exact Hle.
 Qed.
 
 Lemma a_tyequiv_ctx_mono : forall Θ A B,
@@ -248,12 +240,11 @@ Proof.
   intros Θ Δ Q P H; induction H; intros Θ' Hle.
   - apply ad_refine_syn__unit.
   - apply ad_refine_syn__var.
-    destruct H as [HΔ | Htv]; [ left; exact HΔ | right ].
-    eapply a_binds_tvar_mono; eauto.
   - apply ad_refine_syn__arrow; auto.
-  - (* ∀ : binds into Δ *)
-    apply ad_refine_syn__all with (L := L). intros α Hα. apply H0; auto.
-  - apply ad_refine_syn__hole. eapply a_wf_pskl_mono; eauto.
+  - (* ∀ : binds into both Θ and Δ *)
+    apply ad_refine_syn__all with (L := L). intros α Hα.
+    apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
+  - apply ad_refine_syn__hole. assumption.
   - apply ad_refine_syn__tophole_remove; auto.
   - (* tophole_fill : binds into Θ *)
     apply ad_refine_syn__tophole_fill with (L := L). intros α Hα.
@@ -272,11 +263,10 @@ Proof.
   intros Θ Δ P Q H; induction H; intros Θ' Hle.
   - apply ad_refine_pskl__unit.
   - apply ad_refine_pskl__var.
-    destruct H as [HΔ | Htv]; [ left; exact HΔ | right ].
-    eapply a_binds_tvar_mono; eauto.
   - apply ad_refine_pskl__arrow; auto.
-  - apply ad_refine_pskl__all with (L := L). intros α Hα. apply H0; auto.
-  - apply ad_refine_pskl__hole. eapply a_wf_pskl_mono; eauto.
+  - apply ad_refine_pskl__all with (L := L). intros α Hα.
+    apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
+  - apply ad_refine_pskl__hole. assumption.
   - apply ad_refine_pskl__tophole_remove; auto.
   - apply ad_refine_pskl__tophole_fill with (L := L). intros α Hα.
     apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].

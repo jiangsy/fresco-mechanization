@@ -9,9 +9,10 @@
     prop_completeness_sub_precise.v).  That wf can come only from the RULE
     ([ad_pat]'s base rows), and soundness must then SUPPLY it from the run —
     i.e. the algorithm's own outputs must be well-formed.  Neither the
-    declarative join nor refinement gives this (refinement does NOT preserve
-    wf — cex/cex_refine_not_transitive.v's capture configuration is
-    derivable declaratively); it is a property of the ALGORITHM, proved here.
+    declarative join nor refinement gives this (the refinement rules alone
+    do NOT preserve wf — [ad_refine_syn_output_not_wf],
+    cex/cex_refine_not_transitive.v; the paper presupposes it instead); it
+    is a property of the ALGORITHM, proved here.
 
     ⭐⭐ THE CONSISTENCY INDUCTION'S MOTIVE ([a_consis_output_wf]).  The run's
     Δ1/Δ2 rigid-trackers exist precisely to guard ghost fills (the Ghost /
@@ -19,7 +20,7 @@
     besides wf itself the motive carries (i) the output's SHIELDED variables
     (those under a tophole, [pskl_shielded_ftv] — the P6 kit's gadget) avoid
     Δ1 ∪ Δ2, which is what lets the three close-rows re-bind their opened
-    rigid ([a_wf_pskl_tvar_to_delta] + [a_wf_pskl_all_of_one]); (ii) an ftv
+    rigid ([a_wf_pskl_tvar_to_delta] + [a_wf_pskl_all_of_one_at]); (ii) an ftv
     PROVENANCE bound (a Δ-variable in the output comes from an input), which
     is what survives a [⊤ ∼ ⊤] merge whose result must be wf at the EMPTY Δ;
     and (iii) head-guardedness propagation for the ⊤-rebuild.  The wf
@@ -86,8 +87,8 @@ Proof.
 Qed.
 
 (** ⭐ A well-formed ∀-body keeps its binder OUT of every tophole (the
-    tophole rule re-checks its body at the empty Δ), so opening with a
-    fresh variable adds nothing to the shielded set. *)
+    binder enters Δ, and the tophole rule re-checks its body at Θ∖Δ), so
+    opening with a fresh variable adds nothing to the shielded set. *)
 Lemma a_wf_pskl_all_shielded_open : forall Θ Δ P α,
   {{ Θ ⨟ Δ ⊢ₚₛ (pskl_all_syn P) }}a ->
   α `notin` dom Θ `union` ftvar_in_pskl P ->
@@ -97,10 +98,13 @@ Proof.
   inversion Hwf as [ | | | L Θz Δz Pz Hbody Heq | | ]; subst.
   destruct (atom_fresh (L `union` dom Θ `union` ftvar_in_pskl P
                           `union` singleton α)) as [β Hβ].
-  pose proof (a_wf_pskl_shielded_dom (Hbody β ltac:(solve_notin_auto))) as Hdom.
+  pose proof (Hbody β ltac:(solve_notin_auto)) as Hb.
+  pose proof (a_wf_pskl_shielded_dom Hb) as Hdom.
+  pose proof (@a_wf_pskl_shielded_delta _ _ _ Hb β ltac:(clear; fsetdec)) as Hsh.
+  simpl in Hdom.
   rewrite (subst_pskl_in_pskl_intro β P (pskl_var_f α) ltac:(solve_notin_auto)).
-  rewrite pskl_shielded_ftv_subst_var_notin; [ exact Hdom | ].
-  clear - Hdom Hβ. fsetdec.
+  rewrite pskl_shielded_ftv_subst_var_notin; [ clear - Hdom Hsh; fsetdec | ].
+  exact Hsh.
 Qed.
 
 (* ===================================================================== *)
@@ -136,7 +140,7 @@ Proof.
     split; [ intros α Hα Hft; simpl in Hft; clear - Hft; fsetdec | ].
     intros _ _; apply guarded_pskl__unit.
   - (* C-Rigid *)
-    split; [ apply a_wf_pskl__var; right; left; exact H | ].
+    split; [ apply a_wf_pskl__var; left; exact H | ].
     split; [ simpl; clear; fsetdec | ].
     split; [ intros α0 Hα0 Hft; simpl in *; clear - Hft; fsetdec | ].
     intros _ _; apply guarded_pskl__var.
@@ -265,18 +269,12 @@ Proof.
       as [HwfQ [HshQ [HprovQ _]]].
     assert (HαshQ : α `notin` pskl_shielded_ftv Q)
       by (clear - HshQ; fsetdec).
-    assert (Hwfstr : {{ Θ1 ⨟ (add α empty) ⊢ₚₛ Q }}a).
+    assert (Hwfstr : {{ ((α ~ abind_tvar) ++ Θ1) ⨟ (add α empty) ⊢ₚₛ Q }}a).
     { apply (@a_wf_pskl_tvar_to_delta nil α Θ1 empty Q);
         [ exact HwfQ | exact HαshQ ]. }
-    assert (Hα1 : α `notin` dom Θ1).
-    { pose proof (a_assign_unify_consis_uniq) as [_ [_ Hu]].
-      pose proof (Hu _ _ _ _ _ _ _ Hc
-                    ltac:(apply a_wf_aenv_uniq; exact Hwfx)) as Hux.
-      inversion Hux; subst; auto. }
     split.
-    { apply a_wf_pskl_all_of_one with (β := α);
+    { apply a_wf_pskl_all_of_one_at with (β := α);
         [ rewrite open_pskl_wrt_pskl_close_pskl_wrt_pskl; exact Hwfstr
-        | exact Hα1
         | rewrite ftvar_in_pskl_close_pskl_wrt_pskl; clear; fsetdec ]. }
     split.
     { simpl.
@@ -354,18 +352,12 @@ Proof.
       as [HwfQ [HshQ [HprovQ _]]].
     assert (HαshQ : α `notin` pskl_shielded_ftv Q)
       by (clear - HshQ; fsetdec).
-    assert (Hwfstr : {{ Θ1 ⨟ (add α empty) ⊢ₚₛ Q }}a).
+    assert (Hwfstr : {{ ((α ~ abind_tvar) ++ Θ1) ⨟ (add α empty) ⊢ₚₛ Q }}a).
     { apply (@a_wf_pskl_tvar_to_delta nil α Θ1 empty Q);
         [ exact HwfQ | exact HαshQ ]. }
-    assert (Hα1 : α `notin` dom Θ1).
-    { pose proof (a_assign_unify_consis_uniq) as [_ [_ Hu]].
-      pose proof (Hu _ _ _ _ _ _ _ Hc
-                    ltac:(apply a_wf_aenv_uniq; exact Hwfx)) as Hux.
-      inversion Hux; subst; auto. }
     split.
-    { apply a_wf_pskl_all_of_one with (β := α);
+    { apply a_wf_pskl_all_of_one_at with (β := α);
         [ rewrite open_pskl_wrt_pskl_close_pskl_wrt_pskl; exact Hwfstr
-        | exact Hα1
         | rewrite ftvar_in_pskl_close_pskl_wrt_pskl; clear; fsetdec ]. }
     split.
     { simpl.
@@ -385,6 +377,7 @@ Proof.
   - (* C-UnivGhost : ⊤P ∼ ⊤P0 → ⊤Q *)
     inversion HwfP0 as [ | | | | | Θz Δz P0z Hg0 Hwb0 ]; subst.
     inversion HwfP as [ | | | | | Θz Δz Pz Hgs Hwbs ]; subst.
+    rewrite aenv_minus_empty in Hwb0, Hwbs.
     simpl in Hsh0, Hsh.
     assert (Hsh0b : (Δ1 `union` Δ2) ∩ pskl_shielded_ftv P0 [=] empty)
       by (pose proof (pskl_shielded_ftv_sub_ftv P0) as Hsf;
@@ -395,7 +388,8 @@ Proof.
     destruct (IHHc Hwf Hwb0 Hwbs Hcov Hnfd Hfaf Hsh0b Hshb)
       as [HwfQ [HshQ [HprovQ HgQ]]].
     split.
-    { apply a_wf_pskl__tophole; [ apply HgQ; assumption | exact HwfQ ]. }
+    { apply a_wf_pskl__tophole;
+        [ apply HgQ; assumption | rewrite aenv_minus_empty; exact HwfQ ]. }
     split.
     { simpl. intros β. split; [ | clear; fsetdec ].
       intros Hβ.
@@ -466,18 +460,12 @@ Proof.
       as [HwfQ [HshQ [HprovQ _]]].
     assert (HαshQ : α `notin` pskl_shielded_ftv Q)
       by (clear - HshQ; fsetdec).
-    assert (Hwfstr : {{ Θ1 ⨟ (add α empty) ⊢ₚₛ Q }}a).
+    assert (Hwfstr : {{ ((α ~ abind_tvar) ++ Θ1) ⨟ (add α empty) ⊢ₚₛ Q }}a).
     { apply (@a_wf_pskl_tvar_to_delta nil α Θ1 empty Q);
         [ exact HwfQ | exact HαshQ ]. }
-    assert (Hα1 : α `notin` dom Θ1).
-    { pose proof (a_assign_unify_consis_uniq) as [_ [_ Hu]].
-      pose proof (Hu _ _ _ _ _ _ _ Hc
-                    ltac:(apply a_wf_aenv_uniq; exact Hwfx)) as Hux.
-      inversion Hux; subst; auto. }
     split.
-    { apply a_wf_pskl_all_of_one with (β := α);
+    { apply a_wf_pskl_all_of_one_at with (β := α);
         [ rewrite open_pskl_wrt_pskl_close_pskl_wrt_pskl; exact Hwfstr
-        | exact Hα1
         | rewrite ftvar_in_pskl_close_pskl_wrt_pskl; clear; fsetdec ]. }
     split.
     { simpl.
@@ -496,6 +484,7 @@ Proof.
     intros Hg _; inversion Hg.
   - (* C-UnivGhost2 : subject's ⊤ stripped against a guarded P0 *)
     inversion HwfP as [ | | | | | Θz Δz Pz Hgs Hwbs ]; subst.
+    rewrite aenv_minus_empty in Hwbs.
     simpl in Hsh.
     assert (Hshb : (Δ1 `union` Δ2) ∩ pskl_shielded_ftv P [=] empty)
       by (pose proof (pskl_shielded_ftv_sub_ftv P) as Hsf;
@@ -510,20 +499,18 @@ Proof.
     intros _ Hg; inversion Hg.
   - (* C-Flex : unify, output the subject variable *)
     assert (Hbα : a_binds_tvar α Θ0).
-    { inversion HwfP as [ | Θz Δz αz Hd | | | | ]; subst.
-      destruct Hd as [Hd | Hd]; [ clear - Hd; fsetdec | exact Hd ]. }
+    { inversion HwfP as [ | Θz Δz αz Hd | | | | ]; subst; exact Hd. }
     pose proof a_assign_unify_consis_sound as [_ [Hus _]].
     destruct (Hus _ _ _ _ H Hwf) as [Hle [Hwf1 _]].
     split.
-    { apply a_wf_pskl__var. right.
+    { apply a_wf_pskl__var.
       eapply a_isub_binds_tvarish; [ exact Hle | exact Hbα ]. }
     split; [ simpl; clear; fsetdec | ].
     split; [ intros α0 Hα0 Hft; simpl in Hft; simpl; clear - Hft; fsetdec | ].
     intros _ _; apply guarded_pskl__var.
   - (* C-FlexL : assign, output the subject variable *)
     assert (Hbα : a_binds_tvar α Θ0).
-    { inversion HwfP as [ | Θz Δz αz Hd | | | | ]; subst.
-      destruct Hd as [Hd | Hd]; [ clear - Hd; fsetdec | exact Hd ]. }
+    { inversion HwfP as [ | Θz Δz αz Hd | | | | ]; subst; exact Hd. }
     pose proof a_assign_unify_consis_sound as [Has _].
     match goal with
     | Ha : {{ _ ⊲[ _ ] _ ≔ _ ⊣ _ }}a |- _ =>
@@ -531,15 +518,14 @@ Proof.
           as [Hle [Hwf1 _]]
     end.
     split.
-    { apply a_wf_pskl__var. right.
+    { apply a_wf_pskl__var.
       eapply a_isub_binds_tvarish; [ exact Hle | exact Hbα ]. }
     split; [ simpl; clear; fsetdec | ].
     split; [ intros α0 Hα0 Hft; simpl in Hft; simpl; clear - Hft; fsetdec | ].
     intros _ _; apply guarded_pskl__var.
   - (* C-FlexR : assign the counterpart's variable *)
     assert (Hbα : a_binds_tvar α Θ0).
-    { inversion HwfP0 as [ | Θz Δz αz Hd | | | | ]; subst.
-      destruct Hd as [Hd | Hd]; [ clear - Hd; fsetdec | exact Hd ]. }
+    { inversion HwfP0 as [ | Θz Δz αz Hd | | | | ]; subst; exact Hd. }
     pose proof a_assign_unify_consis_sound as [Has _].
     match goal with
     | Ha : {{ _ ⊲[ _ ] _ ≔ _ ⊣ _ }}a |- _ =>
@@ -547,7 +533,7 @@ Proof.
           as [Hle [Hwf1 _]]
     end.
     split.
-    { apply a_wf_pskl__var. right.
+    { apply a_wf_pskl__var.
       eapply a_isub_binds_tvarish; [ exact Hle | exact Hbα ]. }
     split; [ simpl; clear; fsetdec | ].
     split; [ intros α0 Hα0 Hft; simpl in Hft; simpl; clear - Hft; fsetdec | ].
@@ -559,6 +545,7 @@ Proof.
     intros Hg _; inversion Hg.
   - (* C-UnivGhostR : counterpart's ⊤ stripped against a guarded subject *)
     inversion HwfP0 as [ | | | | | Θz Δz P0z Hg0 Hwb0 ]; subst.
+    rewrite aenv_minus_empty in Hwb0.
     simpl in Hsh0.
     assert (Hsh0b : (Δ1 `union` Δ2) ∩ pskl_shielded_ftv P0 [=] empty)
       by (pose proof (pskl_shielded_ftv_sub_ftv P0) as Hsf;
@@ -676,12 +663,12 @@ Proof.
     intros Θ0 P Hg Hwf HwfP0 HwfP.
     split; [ apply a_isub_refl; exact Hwf | ].
     split; [ exact Hwf | ].
-    apply a_wf_pskl__tophole; [ exact Hg | exact HwfP ].
+    apply a_wf_pskl__tophole;
+      [ exact Hg | rewrite aenv_minus_empty; exact HwfP ].
   - (* FlexMono : hand to the walk at the empty pending suffix *)
     intros NM M P0 Θ0 Θ1 α Q Hf IHf Hwf HwfP0 HwfP.
     assert (Hbα : a_binds_tvar α Θ0).
-    { inversion HwfP as [ | Θz Δz αz Hd | | | | ]; subst.
-      destruct Hd as [Hd | Hd]; [ exfalso; clear - Hd; fsetdec | exact Hd ]. }
+    { inversion HwfP as [ | Θz Δz αz Hd | | | | ]; subst; exact Hd. }
     destruct (IHf ltac:(simpl_env; exact Hwf) a_decls__nil
                 ltac:(simpl_env; exact HwfP0)
                 ltac:(simpl_env; exact Hbα))
@@ -717,11 +704,10 @@ Proof.
     assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
       by (eapply a_wf_pskl_weaken; [ exact Hmono | exact HwfP0 ]).
     assert (HwfSo : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ (open_pskl_wrt_pskl P P1) }}a).
-    { inversion HwfP as [ | | | Lb Θb Δb Pb Hbody | | ]; subst.
-      apply a_wf_pskl_open with (L := Lb);
-        [ intros α0 Hα0;
-          eapply a_wf_pskl_weaken; [ exact Hmono | apply Hbody; auto ]
-        | exact HwfP1 ]. }
+    { assert (HwfP' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ (pskl_all_syn P) }}a)
+        by (eapply a_wf_pskl_weaken; [ exact Hmono | exact HwfP ]).
+      inversion HwfP' as [ | | | Lb Θb Δb Pb Hbody | | ]; subst.
+      apply a_wf_pskl_open with (L := Lb); [ exact Hbody | exact HwfP1 ]. }
     destruct (IHs HwfΞΘ HwfP0' HwfSo) as [Hle [Hwf1 HwfQ]].
     split; [ eapply a_isub_strengthen_decls_src; eauto | ].
     split; [ exact Hwf1 | exact HwfQ ].
@@ -732,6 +718,7 @@ Proof.
   - (* UnivGhostL (SK) : strip the subject's ⊤ *)
     intros M Θ0 Θ1 P0 P Q Hne Hs IHs Hwf HwfP0 HwfP.
     inversion HwfP as [ | | | | | Θz Δz Pz Hgs Hwbs ]; subst.
+    rewrite aenv_minus_empty in Hwbs.
     exact (IHs Hwf HwfP0 Hwbs).
   - (* Flex-Solve : deposit α̂0 ≔ α̂→β̂ and recurse on the arrow *)
     intros NM M P0 Θ0 Θ1 Ξ α0 α β Q Hne Hαf Hβf Hprem IH Hwf Hdecl HwfP0 Hαb.
@@ -795,7 +782,7 @@ Proof.
     destruct (IH HwfΘ'
                 ltac:(eapply a_wf_pskl_isub; [ exact HwfP0 | exact Hlift ])
                 ltac:(apply a_wf_pskl__arrow; apply a_wf_pskl__var;
-                        right; right; left;
+                        right; left;
                         (unfold Θ'; unfold binds; apply in_or_app; right;
                          simpl; right; auto)))
       as [Hle [Hwf1 HwfQ]].
@@ -816,7 +803,7 @@ Proof.
     assert (Hwfpaint : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ ptyp_to_pskl τ }}a).
     { apply a_scope_pskl_of_ptyp_vis;
         [ apply mono_ptyp_lc; exact Hm | ].
-      intros α1 Hα1. right.
+      intros α1 Hα1.
       pose proof (a_wf_ptyp_ftv_tvarish Hwfτ Hα1) as Ht.
       destruct Ht as [Hb | [Hb | [τ1 Hb]]];
         [ left | right; left | right; right; exists τ1 ];
@@ -825,13 +812,15 @@ Proof.
               subst_pskl_in_pskl (ptyp_to_pskl τ) β P0 }}a).
     { eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ);
         [ exact HwfP0 | reflexivity | exact HβΞΘ0 | clear; fsetdec
-        | apply mono_ptyp_to_pskl_guarded; exact Hm | exact Hwfpaint ]. }
+        | apply mono_ptyp_to_pskl_guarded; exact Hm | exact Hwfpaint
+        | clear; fsetdec ]. }
     assert (Hwfvarsub : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ
               subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α) }}a).
     { eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ);
-        [ apply a_wf_pskl__var; right; exact Hαb
+        [ apply a_wf_pskl__var; exact Hαb
         | reflexivity | exact HβΞΘ0 | clear; fsetdec
-        | apply mono_ptyp_to_pskl_guarded; exact Hm | exact Hwfpaint ]. }
+        | apply mono_ptyp_to_pskl_guarded; exact Hm | exact Hwfpaint
+        | clear; fsetdec ]. }
     destruct (IH HwfΞΘ0 HwfP0' Hwfvarsub) as [Hle [Hwf1 HwfQ]].
     assert (Hle0 : Θ0 ⊴ Θ1)
       by (eapply a_isub_strengthen_decls_src; eauto).
@@ -1061,7 +1050,7 @@ Proof.
     assert (HwfArr : {{ ((α1 ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θ0)
                        ⨟ empty ⊢ₚₛ (pskl_arrow (pskl_var_f β)
                                                 (pskl_var_f α1)) }}a).
-    { apply a_wf_pskl__arrow; apply a_wf_pskl__var; right; right; left;
+    { apply a_wf_pskl__arrow; apply a_wf_pskl__var; right; left;
         [ unfold binds; simpl; right; left; reflexivity
         | unfold binds; simpl; left; reflexivity ]. }
     match goal with
@@ -1088,9 +1077,9 @@ Proof.
             [ apply a_suffix__nil | apply a_suffix_binding__flex_mono ] ]. }
     split; [ eapply a_isub_trans; [ exact HleX0 | exact HleX ] | ].
     split; [ exact Hwf1 | ]. split;
-      [ apply a_wf_pskl__var; right; eapply a_isub_binds_flex;
+      [ apply a_wf_pskl__var; eapply a_isub_binds_flex;
           [ exact HleX | unfold binds; simpl; right; left; reflexivity ]
-      | apply a_wf_pskl__var; right; eapply a_isub_binds_flex;
+      | apply a_wf_pskl__var; eapply a_isub_binds_flex;
           [ exact HleX | unfold binds; simpl; left; reflexivity ] ].
 Qed.
 

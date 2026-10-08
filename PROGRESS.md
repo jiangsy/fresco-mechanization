@@ -135,11 +135,19 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
   the CONVERSE of `refine_mono_join` (prop_mono_bridge.v).  ⛔ Do not prove
   the converse by induction on `≡ᵗ` — `sym`/`trans` would need refinement
   symmetry and TRANSITIVITY, and transitivity is false
-  (`cex/cex_refine_not_transitive.v`); go through `prop_normal.v`'s
+  (`cex/cex_refine_not_transitive.v`) [⚠️ RETRACTED 2026-10-08: that
+  counterexample relied on the mech's old Ghost rule demanding a wf fill;
+  transitivity is proved under the wf presupposition, `ad_refine_syn_trans`,
+  and not refuted without it]; go through `prop_normal.v`'s
   `a_tyequiv_downarrow` normal form, as `a_tyequiv_arrow_inv` does
-- ⬜ Precision extends skeleton subtyping — ⚠️ SCOUT FIRST: `P' ⊑ P` admits
-  `P' = □`, where the only applicable row is `ad_pat_sub__ghost` (inherited
-  painting + `mod_comp_sk`), so the statement may need a side condition
+- ✅ Precision extends skeleton subtyping — `ad_precise_extends_pat_sub`
+  (`algo/sub/prop_completeness_sub_precise.v`), Qed, audited in `README.v`.
+  Since 2026-10-08 it also assumes the precision target `P` is well-formed
+  (`{{ Θ ⨟ Δ ⊢ₚₛ P }}a`) — the paper's presupposition, since precision is
+  refinement (algorithmic.tex:535); registered in
+  `docs/WF-SIDE-CONDITIONS.md` §1a.  (The pre-closure note read: "⚠️ SCOUT
+  FIRST: `P' ⊑ P` admits `P' = □`, where the only applicable row is
+  `ad_pat_sub__ghost` …, so the statement may need a side condition".)
 - ✅ Precision preserves refinement — `ad_precise_preserves_refine`
   (`algo/prop_precise.v:585`), Qed, audited in `README.v`
 - ⬜ Context precision (+ preserves skeleton inference) — new `⪯ctx` inductive
@@ -240,6 +248,59 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 - Restored chain: `prop_weakening` (d_pat base cases repaired for embedded subtyping), `prop_renaming` + `prop_general_subsumption` (compiled unchanged), `prop_skeleton` (lean extraction: the 18-block dependency closure the equivalence needs; the pre-restart skeleton-safety machinery — incl. the now-false `pskl_to_tskl_is_tskl`, a casualty of the `is_tskl` sync fix A1 — stays in `prop_skeleton.v.legacy` for the later paper-faithful redo), `prop_syntax_directed` (base cases of `d_pat_subst_unit` repaired; obsolete `is_base_term` helper dropped)
 
 # Part 2: Progress log (most recent first)
+
+## 2026-10-08 — Skeleton well-formedness and refinement follow the paper rule for rule
+
+Commit `51122ada`.  The six relations `d_wf_pskl` / `d_wf_uskl` /
+`a_wf_pskl` and `d_refine_syn` / `d_refine_pskl` / `ad_refine_syn` /
+`ad_refine_pskl` now match declarative.tex ("Well-formedness of skeletons",
+"Skeleton refinement") and its algorithmic-context reading:
+
+- **wf:** a quantifier binds its variable in BOTH the context and Δ (was:
+  Δ only); the variable rule reads only the context (was: `α ∈ Δ ∨ Γ ∋ α`);
+  a ∀◇ body is checked at `Γ∖Δ | ·` (new `denv_minus` / `aenv_minus`; was
+  `Γ | ·`).
+- **refinement:** the variable rule has no premise; the ∀ rule extends the
+  context and Δ; the Ghost rule asks only `Δ ∩ ftv(fill) = ∅` (it no longer
+  checks the fill's well-formedness); keeping a ∀◇ no longer re-checks
+  guardedness.  Well-formedness of both sides is the paper's
+  presupposition, carried as a hypothesis by the lemmas that need it
+  (`docs/WF-SIDE-CONDITIONS.md` §1).
+
+Internal lemmas that became false gained minimal hypotheses (mostly
+disjointness or the presupposition).  Growing Δ no longer preserves wf or
+refinement, so the Δ-monotonicity lemmas now SHRINK Δ
+(`ad_refine_*_delta_mono`; `a_wf_pskl_delta_mono` takes an agreement
+form).  New workhorse: `a_wf_pskl_tvar_mono` (wf transports along any
+context map that keeps tvar bindings).
+
+**README statement change (one).**  `ad_precise_extends_pat_sub`
+(lemma:precision-sub) now also assumes the precision target `P` is
+well-formed — the paper's presupposition, since precision is refinement
+(algorithmic.tex:535).  Registered as `docs/WF-SIDE-CONDITIONS.md` §1a.
+Its one caller supplies it from the context entry's stored wf.
+
+**Retraction.**  "Refinement is not transitive"
+(`cex/cex_refine_not_transitive.v`, `ad_refine_syn_not_transitive`) is
+RETRACTED: it rested on the mech's old Ghost rule demanding a well-formed
+fill, which the paper's rule never did.  Under the paper's rule the
+composite is derivable (`hole_to_Bres`).  The file now proves
+`ad_refine_syn_output_not_wf`: the rules alone derive an ill-formed output
+from a well-formed input, so the presupposition is load-bearing.
+Transitivity remains proved under the presupposition
+(`ad_refine_syn_trans`); whether it holds outright is open.  Marked in
+CLAUDE.md, PAPER-GAPS.md, this file and the source comments.
+
+Documentation and tidy-up pass, same day: WF-SIDE-CONDITIONS.md §1 / §1a /
+§3 rewritten for the new rules; DESIGN.md's description of the skeleton
+contexts corrected; three duplicates resolved
+(`pskl_to_bskl_syn_ghost_free` now lives once, in `fresco/prop_basic.v`;
+the probe-local `pskl_inh_eq_syn` and the local `binds_cons_tvar_mono`
+replaced by `pskl_inh_eq_syn_inv` and `binds_sub_cons`).
+
+Validation: full `make coq` passes; all 34 `README.v` claims are closed
+under the global context; no `Admitted` / `admit` / `Axiom` under
+`fresco/` or `cex/`.
 
 ## 2026-10-06 — Correct the ghost-first generality rationale
 
@@ -3116,7 +3177,10 @@ completeness theorems.
   lookups), and everything that distinguishes them is unreachable.
   ⛔ This deliberately replaces the previously-scouted `≡ᵗ ⟹ ⊳` bridge,
   which would have needed refinement symmetry AND TRANSITIVITY — and
-  transitivity is FALSE (`cex/cex_refine_not_transitive.v`).
+  transitivity is FALSE (`cex/cex_refine_not_transitive.v`).  [⚠️ RETRACTED
+  2026-10-08: the counterexample relied on the mech's old Ghost rule
+  demanding a wf fill; transitivity is proved under the wf presupposition
+  and not refuted without it.]
   `consis_mono_sym` supplies the direction change instead.
   ⚠️ Carries a FRESHNESS side condition: `a_split__flex` invents two
   flexibles and the mech's rule records no freshness for them.
@@ -7704,10 +7768,13 @@ guess^N(P_s)"*:
   flexible into an arrow — so `ad_precise_arrow_l_inv` /
   `ad_precise_tophole_l_inv` chase it and return a REPLAY function that
   re-applies the chased steps.  (One-step re-application, NOT transitivity of
-  refinement, which is false: `cex/cex_refine_not_transitive.v`.)  The chase
+  refinement, which is false: `cex/cex_refine_not_transitive.v`.  [⚠️
+  RETRACTED 2026-10-08: that counterexample relied on the mech's old Ghost
+  rule demanding a wf fill; transitivity holds under the wf presupposition.])  The chase
   terminates on the DERIVATION, so those are inductions on it, not on a size.
 - **Why the θ-extension is well-defined at all:** `ad_refine_syn__hole`'s fill
-  premise is `Θ ⨟ empty ⊢ₚₛᵃ P` — CLOSED — so a hole under a binder is never
+  premise is `Θ ⨟ empty ⊢ₚₛᵃ P` — CLOSED — [⚙ the OLD rule; since 2026-10-08
+  the fill only avoids Δ, as in the paper] so a hole under a binder is never
   filled with the bound variable, and κ′'s images stay Θ-well-formed however
   deep the ∀-nesting goes.  That is what makes them legal metasubstitution
   images, and it removes the obvious ∀-case worry.

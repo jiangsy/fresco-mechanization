@@ -71,44 +71,71 @@ Proof.
     apply H0; auto.
 Qed.
 
+(** Every free variable of a well-formed skeleton is a type variable of the
+    context: a quantifier binds its variable in [Γ] as well as [Δ]. *)
+Lemma d_wf_pskl_ftv : forall Γ Δ P,
+    {{ Γ ⨟ Δ ⊢ₚₛ P }}d ->
+    forall α, α `in` ftvar_in_pskl P -> binds α dbind_tvar Γ.
+Proof.
+  intros Γ Δ P H; induction H; intros β Hβ; simpl in Hβ.
+  - fsetdec.
+  - assert (β = α) by fsetdec. subst. assumption.
+  - destruct (union_1 Hβ); auto.
+  - pick fresh α2 for (L `union` ftvar_in_pskl P `union` {{β}}).
+    assert (HY' : β `in` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α2))).
+    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P (pskl_var_f α2)).
+      fsetdec. }
+    specialize (H0 α2 ltac:(fsetdec) β HY').
+    apply binds_app_iff in H0. destruct H0 as [Hb | Hb]; [ | exact Hb ].
+    apply binds_one_iff in Hb. destruct Hb as [-> _]. exfalso. fsetdec.
+  - fsetdec.
+  - pose proof (IHd_wf_pskl β Hβ) as Hb. apply binds_denv_minus in Hb. tauto.
+Qed.
+
+Lemma d_wf_uskl_ftv : forall Γ Δ R,
+    {{ Γ ⨟ Δ ⊢ᵤₛ R }}d ->
+    forall α, α `in` ftvar_in_uskl R -> binds α dbind_tvar Γ.
+Proof.
+  intros Γ Δ R H; induction H; intros β Hβ; simpl in Hβ;
+    try fsetdec.
+  - assert (β = α) by fsetdec. subst. assumption.
+  - destruct (union_1 Hβ); auto.
+  - pick fresh α2 for (L `union` ftvar_in_uskl R `union` {{β}}).
+    assert (HY' : β `in` ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f α2))).
+    { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f α2)).
+      fsetdec. }
+    specialize (H0 α2 ltac:(fsetdec) β HY').
+    apply binds_app_iff in H0. destruct H0 as [Hb | Hb]; [ | exact Hb ].
+    apply binds_one_iff in Hb. destruct Hb as [-> _]. exfalso. fsetdec.
+  - pick fresh α2 for (L `union` ftvar_in_uskl R `union` {{β}}).
+    assert (HY' : β `in` ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f α2))).
+    { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f α2)).
+      fsetdec. }
+    specialize (H0 α2 ltac:(fsetdec) β HY').
+    apply binds_app_iff in H0. destruct H0 as [Hb | Hb]; [ | exact Hb ].
+    apply binds_one_iff in Hb. destruct Hb as [-> _]. exfalso. fsetdec.
+  - pose proof (IHd_wf_uskl β Hβ) as Hb. apply binds_denv_minus in Hb. tauto.
+  - pose proof (IHd_wf_uskl β Hβ) as Hb. apply binds_denv_minus in Hb. tauto.
+Qed.
+
 Lemma d_wf_pskl_weakening : forall Γ1 Γ2 Γ3 Ψ P,
     {{ (Γ1 ++ Γ3) ⨟ Ψ ⊢ₚₛ P }}d ->
     {{ (Γ1 ++ Γ2 ++ Γ3) ⨟ Ψ ⊢ₚₛ P }}d.
 Proof.
-  intros Γ1 Γ2 Γ3 Ψ P H. dependent induction H.
-  - constructor.
-  - constructor. destruct H as [Hin | Hin].
-    + left; auto.
-    + right. apply binds_app_iff in Hin. destruct Hin as [Hin | Hin].
-      * apply binds_app_iff; auto.
-      * apply binds_app_iff. right. apply binds_app_iff; auto.
-  - constructor; auto.
-  - inst_cofinites_for d_wf_pskl__all.
-    intros α Hα. apply H0; auto.
-  - constructor.
-  - constructor; auto.
+  intros Γ1 Γ2 Γ3 Ψ P H. apply (d_wf_pskl_tvar_mono H).
+  intros α Hb. apply binds_app_iff in Hb. destruct Hb as [Hb | Hb].
+  - apply binds_app_iff; auto.
+  - apply binds_app_iff. right. apply binds_app_iff; auto.
 Qed.
 
 Lemma d_wf_uskl_weakening : forall Γ1 Γ2 Γ3 Ψ R,
     {{ (Γ1 ++ Γ3) ⨟ Ψ ⊢ᵤₛ R }}d ->
     {{ (Γ1 ++ Γ2 ++ Γ3) ⨟ Ψ ⊢ᵤₛ R }}d.
 Proof.
-  intros Γ1 Γ2 Γ3 Ψ R H. dependent induction H.
-  - constructor.
-  - constructor. destruct H as [Hin | Hin].
-    + left; auto.
-    + right. apply binds_app_iff in Hin. destruct Hin as [Hin | Hin].
-      * apply binds_app_iff; auto.
-      * apply binds_app_iff. right. apply binds_app_iff; auto.
-  - constructor; auto.
-  - inst_cofinites_for d_wf_uskl__all_syn.
-    intros α Hα. apply H0; auto.
-  - inst_cofinites_for d_wf_uskl__all_tag.
-    intros α Hα. apply H0; auto.
-  - constructor.
-  - constructor; auto.
-  - constructor.         (* holeg, as hole *)
-  - constructor; auto.   (* topholeg, as tophole *)
+  intros Γ1 Γ2 Γ3 Ψ R H. apply (d_wf_uskl_tvar_mono H).
+  intros α Hb. apply binds_app_iff in Hb. destruct Hb as [Hb | Hb].
+  - apply binds_app_iff; auto.
+  - apply binds_app_iff. right. apply binds_app_iff; auto.
 Qed.
 
 (** * Tag-relation under renaming.

@@ -80,11 +80,16 @@ Proof.
     assert (HY' : β `in` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α2))).
     { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P (pskl_var_f α2)).
       fsetdec. }
+    assert (Hne : β <> α2) by fsetdec.
     destruct (H0 α2 HZL β HY') as [HΔ | Htv].
-    + left. assert (β <> α2) by fsetdec. clear - HΔ H1. fsetdec.
-    + auto.
+    + left. clear - HΔ Hne. fsetdec.
+    + right. destruct Htv as [Hb | [Hb | [τ Hb]]];
+        apply binds_cons_1 in Hb; destruct Hb as [[? ?] | Hb];
+        try (subst; contradiction);
+        [ left | right; left | right; right; exists τ ]; exact Hb.
   - fsetdec.
-  - destruct (IHa_wf_pskl β Hβ) as [HΔ | Htv]; [ fsetdec | auto ].
+  - destruct (IHa_wf_pskl β Hβ) as [HΔ | Htv]; [ fsetdec | ].
+    right. apply a_binds_tvar_aenv_minus in Htv. apply Htv.
 Qed.
 
 (** The disciplined judgement implies the scoping-only one — the EASY
@@ -103,8 +108,7 @@ Proof.
   intros Θ Δ P Hwfd; induction Hwfd; intros Θa Hincl HΔ.
   - apply a_scope_pskl__unit.
   - apply a_scope_pskl__var.
-    destruct H as [HαΔ | Hbt]; [ apply HΔ; exact HαΔ | ].
-    destruct Hbt as [Hb | [Hb | [τ Hb]]];
+    destruct H as [Hb | [Hb | [τ Hb]]];
       [ left | right; left | right; right; exists τ ];
       apply Hincl; exact Hb.
   - apply a_scope_pskl__arrow;
@@ -112,7 +116,8 @@ Proof.
   - apply a_scope_pskl__all with (L := L).
     intros α Hα.
     apply H0; [ exact Hα | | ].
-    + intros x b Hb. apply binds_cons_3. apply Hincl; exact Hb.
+    + intros x b Hb. apply binds_app_iff in Hb. apply binds_app_iff.
+      destruct Hb as [Hb | Hb]; [ left; exact Hb | right; apply Hincl; exact Hb ].
     + intros β Hβ. destruct (β == α) as [-> | Hne].
       * left. unfold binds. left. reflexivity.
       * destruct (HΔ β ltac:(clear - Hβ Hne; solve_notin_auto))
@@ -121,8 +126,9 @@ Proof.
           apply binds_cons_3; exact Hb.
   - apply a_scope_pskl__hole.
   - apply a_scope_pskl__tophole.
-    apply IHHwfd; [ exact Hincl | ].
-    intros β Hβ. exfalso. clear - Hβ. fsetdec.
+    apply IHHwfd.
+    + intros x b Hb. apply binds_aenv_minus in Hb. apply Hincl, Hb.
+    + intros β Hβ. exfalso. clear - Hβ. fsetdec.
 Qed.
 
 (** The same conversion at the shape a context entry actually has: [Δ = ∅] and
@@ -920,6 +926,22 @@ Proof.
   destruct H0; simpl; constructor.
 Qed.
 
+Lemma swap_aenv_minus : forall a b (Θ : aenv) Δ,
+  swap_aenv a b (aenv_minus Θ Δ) = aenv_minus (swap_aenv a b Θ) (swap_atoms a b Δ).
+Proof.
+  intros a b Θ Δ. induction Θ as [| [x bd] Θ IH]; [ reflexivity | ].
+  rewrite swap_aenv_cons. unfold aenv_minus in *. simpl.
+  destruct (AtomSetImpl.mem x Δ) eqn:Hm;
+    destruct (AtomSetImpl.mem (swap_atom a b x) (swap_atoms a b Δ)) eqn:Hm';
+    simpl; try exact IH; try (f_equal; exact IH).
+  all: exfalso.
+  - apply AtomSetFacts.mem_iff in Hm. apply AtomSetFacts.not_mem_iff in Hm'.
+    apply Hm'. apply swap_atoms_in. exact Hm.
+  - apply AtomSetFacts.not_mem_iff in Hm. apply AtomSetFacts.mem_iff in Hm'.
+    apply (proj1 (swap_atoms_spec a b Δ _)) in Hm'. rewrite swap_atom_invol in Hm'.
+    contradiction.
+Qed.
+
 Lemma a_wf_pskl_swap : forall a b (Θ : aenv) (Δ : atoms) P,
   a_wf_pskl Θ Δ P ->
   forall Δ', Δ' [=] swap_atoms a b Δ ->
@@ -927,10 +949,7 @@ Lemma a_wf_pskl_swap : forall a b (Θ : aenv) (Δ : atoms) P,
 Proof.
   intros a b Θ Δ P H; induction H; intros Δ' HΔ; simpl.
   - constructor.
-  - constructor.
-    destruct H as [h | h].
-    + left. pose proof (swap_atoms_in a b Δ α h). fsetdec.
-    + right. auto using a_binds_tvar_swap.
+  - constructor. auto using a_binds_tvar_swap.
   - constructor; auto.
   - apply a_wf_pskl__all with (L := swap_atoms a b L).
     intros α0 Hα0.
@@ -943,6 +962,7 @@ Proof.
     rewrite swap_atom_invol in H0. exact H0.
   - constructor.
   - constructor; [auto using guarded_pskl_swap |].
+    rewrite (aenv_minus_eq _ HΔ), <- swap_aenv_minus.
     apply IHa_wf_pskl. rewrite swap_atoms_empty. fsetdec.
 Qed.
 

@@ -945,6 +945,9 @@ Proof.
     | exact H ].
 Qed.
 
+Lemma delta_def_fresh_empty : forall Θ, delta_def_fresh empty Θ.
+Proof. intros Θ β α τ Hin; clear - Hin; fsetdec. Qed.
+
 Lemma a_solve_eq_mono : forall n Θ0 Θ Θw κ Δ Ψi τ Pi P0,
   size_pskl Pi + size_pskl P0 <= n ->
   {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
@@ -976,7 +979,8 @@ Proof.
     simpl in Hpre.
     destruct (ad_ppre_unit_subject_chain_inv HwfΘ Hpre eq_refl eq_refl Hmτ)
       as [Hc HΨi].
-    pose proof (ad_refine_chain_unfold Hc HwfΘ Hrefine) as Href'.
+    pose proof (ad_refine_chain_unfold Hc HwfΘ Hrefine (delta_def_fresh_empty Θ))
+      as Href'.
     simpl in Href'.
     assert (Hpre_u : {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ pskl_unit) ⊑ᵖ[ Ψi ] uskl_unit }}ad)
       by (simpl; apply ad_ppre__unit; exact HΨi).
@@ -1001,15 +1005,15 @@ Proof.
       exfalso. subst τ.
       pose proof (a_def_chain_rigid_var_inv Hc HwfΘ Hrig0) as Hcc.
       discriminate Hcc. }
-    pose proof (ad_refine_chain_unfold Hc HwfΘ Hrefine) as Href'.
+    pose proof (ad_refine_chain_unfold Hc HwfΘ Hrefine (delta_def_fresh_empty Θ))
+      as Href'.
     destruct P0 as [ | nb0 | β | P01 P02 | P0b | | P0' ].
     + (* P0 = unit: refinement absurd *)
       simpl in Href'. inversion Href'.
     + (* P0 = var_b: not wf *) inversion HwfP0.
     + (* P0 = var β: rigid absurd / flexible SE-FlexR + Bridge A *)
       inversion HwfP0; subst;
-      match goal with H : _ \/ a_binds_tvar β _ |- _ =>
-        destruct H as [Hemp | Habt] end; [ clear - Hemp; fsetdec | ].
+      match goal with H : a_binds_tvar β _ |- _ => rename H into Habt end.
       destruct Habt as [Hrig | Hflx].
       * (* rigid: no refinement into an arrow *)
         exfalso.
@@ -1185,7 +1189,8 @@ Proof.
     + (* P0 = hole: SE-VacuousR *)
       eapply solve_eq_mono_nil; [ apply a_solve_eq__hole_r | exact Hpre ].
     + (* P0 = tophole P0': GuardedGhost-right, recurse at the resolved arrow *)
-      assert (HwfP0' : {{ Θ0 ⨟ empty ⊢ₚₛ P0' }}a) by (inversion HwfP0; assumption).
+      assert (HwfP0' : {{ Θ0 ⨟ empty ⊢ₚₛ P0' }}a)
+        by (inversion HwfP0; subst; rewrite aenv_minus_empty in *; assumption).
       assert (Hwfar : a_wf_ptyp Θw (ptyp_arrow τ1 τ2))
         by (eapply a_def_chain_wf_at;
               [ exact Hc | exact HwfΘw | exact Hdefs | exact Hwfτ' ]).
@@ -1221,12 +1226,17 @@ Proof.
     eapply solve_eq_mono_nil; [ apply a_solve_eq__hole_l | ].
     eapply ad_refine_inh_hole_ppre with (Δr := empty);
       [ exact HwfΘ | clear; fsetdec | exact Hrefine | reflexivity | reflexivity
-      | exact Hmτ | exact Hdf | exact Hpre ].
+      | exact Hmτ
+      | destruct Hwfτ as [Hw | (α0 & -> & Hrig0)];
+          [ eapply a_wf_ptyp_weaken; [ exact Hmon | exact Hw ]
+          | apply a_wf_ptyp__var; left; exact Hrig0 ]
+      | exact Hdf | exact Hpre ].
   - (* Pi = ∀◇.Pi' — every row here is a PASS-THROUGH, which is what
        [solve_eq_mono_wrap] is for: the block, the extension and the freshness are
        the premise's, and only the solve step and the target move. *)
     assert (HgPi' : guarded_pskl Pi') by (inversion HwfPi; assumption).
-    assert (HwfPi' : {{ Θ0 ⨟ empty ⊢ₚₛ Pi' }}a) by (inversion HwfPi; assumption).
+    assert (HwfPi' : {{ Θ0 ⨟ empty ⊢ₚₛ Pi' }}a)
+      by (inversion HwfPi; subst; rewrite aenv_minus_empty in *; assumption).
     simpl in Hpre.
     destruct (ad_ppre_tophole_subject_chain_inv HwfΘ Hpre eq_refl eq_refl Hmτ)
       as (τe & Hc & Hme & Hp').
@@ -1235,7 +1245,8 @@ Proof.
                    (exists α0, τe = ptyp_var_f α0 /\ binds α0 abind_tvar Θ))
       by (eapply a_def_chain_wf_or_rigid;
             [ exact Hc | exact HwfΘ | exact HwfΘw | exact Hdefs | exact Hwfτ ]).
-    pose proof (ad_refine_chain_unfold Hc HwfΘ Hrefine) as Href'.
+    pose proof (ad_refine_chain_unfold Hc HwfΘ Hrefine (delta_def_fresh_empty Θ))
+      as Href'.
     destruct P0 as [ | nb0 | β | P01 P02 | P0b | | P0' ].
     + (* P0 = unit: GhostGuarded *)
       assert (Hcv : solve_eq_mono_concl Θ0 Θ Θw κ Δ Ψi τe Pi' pskl_unit L)
@@ -1281,7 +1292,8 @@ Proof.
          NOT a [solve_eq_mono_wrap]: this row RE-WRAPS its premise's output in a
          [∀◇], so the package has to be rebuilt by hand — but the block and
          the extension still pass through untouched. *)
-      assert (HwfP0' : {{ Θ0 ⨟ empty ⊢ₚₛ P0' }}a) by (inversion HwfP0; assumption).
+      assert (HwfP0' : {{ Θ0 ⨟ empty ⊢ₚₛ P0' }}a)
+        by (inversion HwfP0; subst; rewrite aenv_minus_empty in *; assumption).
       simpl in Href'.
       destruct (ad_refine_tophole_lhs_chain_inv HwfΘ Href' eq_refl eq_refl Hme)
         as (τf & Hc2 & Hmf & Hin).

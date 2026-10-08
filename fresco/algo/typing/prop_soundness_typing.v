@@ -105,8 +105,8 @@ Qed.
 (** ⭐ Refinement's whole job is to FILL ghosts; between two paintings of
     plain types there is nothing to fill, so the only rows that can fire
     are the structural ones and the two flexible lookups — which is exactly
-    the generating set of [≡ᵗ].  (Δ plays no part: [a_tyequiv__all] binds
-    nothing in Θ, so the ∀ row goes straight through.) *)
+    the generating set of [≡ᵗ].  (Δ plays no part; the ∀ row's tvar entry
+    in Θ is strengthened away, since [a_tyequiv__all] binds nothing.) *)
 Lemma ad_refine_syn_inh_tyequiv : forall Θ Δ Qs Qt,
   {{ Θ ⨟ Δ ⊢ᵣ Qs ⊳ Qt }}ad ->
   {{ ⊢ Θ }}a ->
@@ -135,14 +135,19 @@ Proof.
     apply a_tyequiv__arrow;
       [ apply IHad_refine_syn1 | apply IHad_refine_syn2 ];
       solve [ exact Hwf | reflexivity ].
-  - (* all : the binder enters Δ, which [≡ᵗ] does not have *)
+  - (* all : the binder enters Θ (as a tvar) and Δ; [≡ᵗ]'s ∀ row binds
+       nothing in Θ, so the extra tvar entry is strengthened away *)
     destruct A as [ | n | α1 | A1 A2 | A0 ]; simpl in HeqS; try discriminate.
     destruct B as [ | n | α2 | B1 B2 | B0 | B0 ]; simpl in HeqT;
       try discriminate.
     inversion HeqS; inversion HeqT; subst.
-    apply a_tyequiv__all with (L := L). intros α Hα.
+    apply a_tyequiv__all with (L := L `union` dom Θ). intros α Hα.
     rewrite <- btyp_to_ptyp_open_var.
-    apply (H0 α Hα Hwf (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))
+    assert (HαL : α `notin` L) by solve_notin.
+    assert (HαΘ : α `notin` dom Θ) by solve_notin.
+    eapply prop_metasubst.a_tyequiv_strengthen_tvar_cons; [ | reflexivity ].
+    apply (H0 α HαL (a_wf_aenv__tvar HαΘ Hwf)
+             (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))
              (open_btyp_wrt_btyp B0 (btyp_var_f α)));
       [ rewrite ptyp_to_pskl_open, pskl_to_bskl_inh_open; reflexivity
       | rewrite btyp_to_bskl_open; reflexivity ].
@@ -613,40 +618,7 @@ Qed.
 
 (* --- §8a  local closure of a consistency's target -------------------- *)
 
-(** Every row builds its target from locally-closed pieces; the only row
-    that is not immediate is [__hole], whose fill carries the skeleton
-    well-formedness that supplies it. *)
-Lemma ad_pat_consis_lc_r : forall Ψ Θ R Q,
-  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad -> lc_bskl Q.
-Proof.
-  intros Ψ Θ R Q H; induction H.
-  - (* unit *) apply lc_bskl_unit.
-  - (* var *) apply lc_bskl_var_f.
-  - (* arrow *) apply lc_bskl_arrow; assumption.
-  - (* forall_inh_tagged *)
-    destruct (atom_fresh L) as [α Hα].
-    apply lc_bskl_all_inh_exists with (α1 := α); auto.
-  - (* forall_inh_untagged *)
-    destruct (atom_fresh L) as [α Hα].
-    apply lc_bskl_all_inh_exists with (α1 := α); auto.
-  - (* forall_syn_tagged *)
-    destruct (atom_fresh L) as [α Hα].
-    apply lc_bskl_all_syn_exists with (α1 := α); auto.
-  - (* forall_syn *)
-    destruct (atom_fresh L) as [α Hα].
-    apply lc_bskl_all_syn_exists with (α1 := α); auto.
-  - (* ghostg *) apply lc_bskl_hole.
-  - (* topholeg *) apply lc_bskl_tophole; assumption.
-  - (* hole : the fill's well-formedness is the local closure *)
-    apply lc_pskl_to_bskl_inh. eapply a_wf_pskl_lc; eassumption.
-  - (* tophole *) apply lc_bskl_tophole; assumption.
-  - (* tophole_inh *)
-    destruct (atom_fresh L) as [α Hα].
-    apply lc_bskl_all_inh_exists with (α1 := α); auto.
-  - (* tophole_drop *) assumption.
-  - (* flex_l *) assumption.
-  - (* flex_r *) apply lc_bskl_var_f.
-Qed.
+(** [prop_eq_var.ad_pat_consis_target_lc] (algo/sub/look/prop_eq_var.v). *)
 
 (* --- §8b  the two [btyp] / [bskl] shape bridges ---------------------- *)
 
@@ -709,7 +681,7 @@ Proof.
     apply mod_comp_ty__tc.
     eapply is_ityp_of_erase_inh; [ | symmetry; exact HeqB ].
     apply lc_btyp_of_lc_bskl_erase. rewrite <- HeqB.
-    eapply ad_pat_consis_lc_r; eassumption.
+    eapply prop_eq_var.ad_pat_consis_target_lc; eassumption.
   - (* forall_r *)
     destruct Bt as [ | n | α | B1 B2 | B0 | B0 ]; simpl in HeqB;
       try discriminate.
@@ -805,8 +777,8 @@ Qed.
     ([a_guess_mono_consis]) but no refinement one — see docs/PAPER-GAPS.md.
 
     The content is that filling a ghost with a fresh flexible IS a
-    refinement step: [ad_refine_syn__hole]'s fill may be any well-formed
-    skeleton, and a bare flexible is one.  Universal ghosts are dropped by
+    refinement step: [ad_refine_syn__hole]'s fill may be any skeleton
+    disjoint from [Δ], and a fresh flexible is one.  Universal ghosts are dropped by
     [__tophole_remove], and the concrete rows are congruences.
 
     ⚙ SIZE INDUCTION, not derivation induction — for the same reason
@@ -815,18 +787,18 @@ Qed.
     row turns ONE guess instance into a family through
     [a_guess_mono_open_at], whose output is no sub-derivation.
 
-    ⭐ Note the ∀ row puts its witness in [Δ], not in [Θ1] — which is why
-    the statement carries a [Δ] at all.  The two contexts must be
-    DECOUPLED here exactly as in [ad_refine_syn_target_transport]
-    (prop_soundness_pat.v §4f): [ad_refine_syn__hole]'s fill is Δ-free BY
-    RULE, and here it is — the fills are the generated flexibles, which
-    live in [Θ1]. *)
+    ⭐ Note the ∀ row puts its witness in [Δ] (and in [Θ1] as a tvar) —
+    which is why the statement carries a [Δ] at all.
+    [ad_refine_syn__hole]'s fill is Δ-free BY RULE, and here it is — the
+    fills are the generated flexibles, which live in [Θ1] and stay out of
+    [Δ] (the last hypothesis; the ∀ witnesses are fresh for [Ξ]). *)
 Lemma a_guess_mono_refine_size : forall n Θ P Ξ A,
   size_pskl P <= n ->
   a_guess_mono Θ P Ξ A ->
   forall Θ1 Δ,
   (forall α, α `in` ftvar_in_pskl P -> α `in` Δ \/ a_binds_tvar α Θ1) ->
   (forall α1, binds α1 abind_flex_mono Ξ -> a_binds_tvar α1 Θ1) ->
+  (forall α1, binds α1 abind_flex_mono Ξ -> α1 `notin` Δ) ->
   {{ Θ1 ⨟ Δ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)) }}ad.
 Proof.
   induction n as [| n IHn]; intros Θ P Ξ A Hsz H;
@@ -834,26 +806,27 @@ Proof.
   destruct H as [ Θ α Hα | Θ P Ξ A Hg | Θ α | Θ
                 | Θ P Q Ξ1 Ξ2 A B Hg1 Hg2
                 | Θ P Ξ A β Hfr Hg ];
-    cbn in Hsz; intros Θ1 Δ Hvars HΞ.
+    cbn in Hsz; intros Θ1 Δ Hvars HΞ HΞΔ.
   - (* hole ↦ fresh flexible : the FILL of [__hole], Δ-free by construction *)
     replace (pskl_to_bskl_inh (ptyp_to_pskl (ptyp_var_f α)))
       with (pskl_to_bskl_syn (pskl_var_f α)) by reflexivity.
     apply ad_refine_syn__hole.
-    apply a_wf_pskl__var. right. apply HΞ.
-    unfold binds; left; reflexivity.
+    assert (Hn : α `notin` Δ)
+      by (apply HΞΔ; unfold binds; left; reflexivity).
+    simpl. clear - Hn; fsetdec.
   - (* ∀◇P : the universal ghost is DROPPED, so the row is [tophole_remove] *)
     apply ad_refine_syn__tophole_remove.
-    eapply IHn; [ lia | exact Hg | exact Hvars | exact HΞ ].
+    eapply IHn; [ lia | exact Hg | exact Hvars | exact HΞ | exact HΞΔ ].
   - (* variable *)
-    apply ad_refine_syn__var. apply Hvars. simpl. fsetdec.
+    apply ad_refine_syn__var.
   - (* unit *) apply ad_refine_syn__unit.
   - (* arrow *)
     apply ad_refine_syn__arrow;
       [ eapply IHn with (P := P) | eapply IHn with (P := Q) ];
       solve [ lia | eassumption
             | intros α Hα; apply Hvars; simpl; clear - Hα; fsetdec
-            | intros α1 Hb; apply HΞ; unfold binds in *;
-              apply in_or_app; auto ].
+            | intros α1 Hb; first [ apply HΞ | apply HΞΔ ];
+              unfold binds in *; apply in_or_app; auto ].
   - (* ∀ : exists-fresh source, cofinite target *)
     apply ad_refine_syn__all
       with (L := dom Ξ `union` dom Θ1 `union` Δ `union` ftvar_in_aenv Θ
@@ -864,7 +837,7 @@ Proof.
     rewrite <- ptyp_to_pskl_open.
     eapply IHn with (P := open_pskl_wrt_pskl P (pskl_var_f α))
                     (Θ := (α ~ abind_tvar) ++ Θ);
-      [ rewrite size_pskl_open_pskl_wrt_pskl_var; lia | | | ].
+      [ rewrite size_pskl_open_pskl_wrt_pskl_var; lia | | | | ].
     + apply a_guess_mono_open_at;
         [ apply a_guess_mono__forall with (β := β); [ exact Hfr | exact Hg ]
         | clear - Hα; fsetdec ].
@@ -874,8 +847,13 @@ Proof.
       destruct (union_1 Hβ0) as [HY' | HY'].
       * apply singleton_1 in HY'; subst. left. clear; fsetdec.
       * destruct (Hvars _ HY') as [HΔ | Htv];
-          [ left; clear - HΔ; fsetdec | right; exact Htv ].
-    + exact HΞ.
+          [ left; clear - HΔ; fsetdec
+          | right; apply a_binds_tvar_cons_tvar; right; exact Htv ].
+    + intros α1 Hb. apply a_binds_tvar_cons_tvar. right. apply HΞ, Hb.
+    + intros α1 Hb.
+      assert (Hne : α1 <> α)
+        by (intros ->; apply binds_In in Hb; clear - Hα Hb; fsetdec).
+      specialize (HΞΔ α1 Hb). clear - Hne HΞΔ; fsetdec.
 Qed.
 
 (** The paper's inline step, in the shape [AT-Abs] consumes it. *)
@@ -883,6 +861,7 @@ Corollary a_guess_mono_refine : forall Θ P Ξ A Θ1 Δ,
   a_guess_mono Θ P Ξ A ->
   (forall α, α `in` ftvar_in_pskl P -> α `in` Δ \/ a_binds_tvar α Θ1) ->
   (forall α1, binds α1 abind_flex_mono Ξ -> a_binds_tvar α1 Θ1) ->
+  (forall α1, binds α1 abind_flex_mono Ξ -> α1 `notin` Δ) ->
   {{ Θ1 ⨟ Δ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)) }}ad.
 Proof. intros. eapply a_guess_mono_refine_size; eauto. Qed.
 
@@ -899,10 +878,11 @@ Proof. intros. eapply a_guess_mono_refine_size; eauto. Qed.
     This is the fact `lemma:split-refine`'s flexible row needs, and it is
     the one the hand-off flagged as genuinely new.  ⛔ Note it is NOT
     proved by induction on `≡ᵗ`: that route would need refinement's
-    symmetry and TRANSITIVITY, and transitivity is FALSE in the mech
-    (cex/cex_refine_not_transitive.v).  Going through the CONSISTENCY
-    instead needs neither — `consis_mono_sym` (prop_mono_bridge.v) supplies
-    the direction change. *)
+    symmetry and TRANSITIVITY, and transitivity is available only under
+    the wf presupposition ([ad_refine_syn_trans]; the old refutation of it,
+    cex/cex_refine_not_transitive.v, was retracted 2026-10-08).  Going
+    through the CONSISTENCY instead needs neither — `consis_mono_sym`
+    (prop_mono_bridge.v) supplies the direction change. *)
 Lemma ad_pat_consis_mono_to_refine : forall Ψ Θ R Qt,
   {{ Ψ ⨟ Θ ⊢ˢ R ∼ Qt }}ad ->
   {{ ⊢ Θ }}a ->
@@ -916,7 +896,7 @@ Proof.
     simpl. apply ad_refine_syn__unit.
   - (* var *)
     destruct HmA0 as [ | α0 | ]; simpl in HeqS; try discriminate.
-    inversion HeqS; subst. simpl. apply ad_refine_syn__var. right; assumption.
+    inversion HeqS; subst. simpl. apply ad_refine_syn__var.
   - (* arrow *)
     destruct HmA0 as [ | | A1 A2 Hm1 Hm2 ]; simpl in HeqS; try discriminate.
     inversion HeqS; subst.
@@ -1010,7 +990,7 @@ Proof.
     assert (HwfArr : {{ ((α1 ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θ0)
                        ⨟ empty ⊢ₚₛ (pskl_arrow (pskl_var_f β)
                                                 (pskl_var_f α1)) }}a).
-    { apply a_wf_pskl__arrow; apply a_wf_pskl__var; right; right; left;
+    { apply a_wf_pskl__arrow; apply a_wf_pskl__var; right; left;
         [ unfold binds; simpl; right; left; reflexivity
         | unfold binds; simpl; left; reflexivity ]. }
     match goal with
@@ -1078,11 +1058,7 @@ Proof.
               ⊳ (bskl_arrow (pskl_to_bskl_inh (pskl_var_f β)) Qb) }}ad).
     { simpl.
       apply ad_refine_syn__arrow; [ | exact HQb ].
-      apply ad_refine_syn__var. right.
-      eapply a_isub_binds_tvarish; [ exact Hle | ].
-      eapply a_isub_binds_tvarish; [ exact Hle1 | ].
-      right; left.
-      unfold binds; simpl; right; left; reflexivity. }
+      apply ad_refine_syn__var. }
     pose proof (proj2 (skl_tyequiv_refine_syn_f_transport Hskleq Hwf'
                          (fun x b h => h))
                   empty empty _ (ad_refine_syn_f_of_plain Harr)) as Hτ0.
@@ -1587,22 +1563,12 @@ Proof.
     { destruct Hshape as [[HP0 [HP HQ]] | HP0]; subst; simpl.
       - (* ◇ : both halves are synthesised paintings, so [__hole] fires *)
         destruct (ad_refine_syn_syn_l Hrefb pskl_hole eq_refl) as [P' HQt].
-        assert (HwfP' : {{ (Ξ ++ Θ2) ⨟ empty ⊢ₚₛ P' }}a).
-        { pose proof (ad_refine_syn_hole_l_target_wf Hrefb) as Hw.
-          rewrite HQt, bskl_to_pskl_pskl_to_bskl_syn in Hw.
-          eapply a_wf_pskl_mono;
-            [ exact Hw | apply aenv_tbinds_le_strip_tm; intros [] ]. }
         inversion H1; subst.
         rewrite HQt.
         change (bskl_arrow (pskl_to_bskl_inh (ptyp_to_pskl (ptyp_var_f α)))
                            (pskl_to_bskl_syn P'))
           with (pskl_to_bskl_syn (pskl_arrow (pskl_var_f α) P')).
-        apply ad_refine_syn__hole.
-        apply a_wf_pskl__arrow; [ | exact HwfP' ].
-        apply a_wf_pskl__var. right.
-        eapply a_isub_binds_flex;
-          [ exact Hisubαs
-          | unfold binds; apply in_or_app; left; simpl; left; reflexivity ].
+        apply ad_refine_syn__hole. clear; fsetdec.
       - apply ad_refine_syn__arrow;
           [ eapply a_guess_mono_refine;
               [ exact H1
@@ -1614,7 +1580,8 @@ Proof.
                   [ exfalso; clear - HΔ; fsetdec | exact Ht ]
               | intros α1 Hb; eapply a_isub_binds_flex;
                   [ exact Hisubαs
-                  | unfold binds; apply in_or_app; left; exact Hb ] ]
+                  | unfold binds; apply in_or_app; left; exact Hb ]
+              | intros α1 _; clear; fsetdec ]
           | eapply ad_refine_syn_strip_tm_typ; exact Hrefb ]. }
     split; [ exact Hisub | ]. split; [ exact Hwf2 | ].
     split; [ apply a_wf_ptyp__arrow; assumption | ].
@@ -1686,11 +1653,6 @@ Proof.
       subst P0 P Q.
       pose proof (a_ty_mode_compat_hole_inv Hmod) as Hm; subst m.
       destruct (ad_refine_syn_syn_l Hrefb pskl_hole eq_refl) as [P' HQt].
-      assert (HwfP' : {{ (Ξ ++ Θ3) ⨟ empty ⊢ₚₛ P' }}a).
-      { pose proof (ad_refine_syn_hole_l_target_wf Hrefb) as Hw.
-        rewrite HQt, bskl_to_pskl_pskl_to_bskl_syn in Hw.
-        eapply a_wf_pskl_mono;
-          [ exact Hw | apply aenv_tbinds_le_strip_tm; intros [] ]. }
       exists (btyp_arrow (ptyp_to_btyp_syn A) Bt).
       split.
       { simpl. rewrite btyp_to_ptyp_ptyp_to_btyp_syn, HeBt. reflexivity. }
@@ -1707,8 +1669,7 @@ Proof.
         change (bskl_arrow (pskl_to_bskl_syn (ptyp_to_pskl A))
                            (pskl_to_bskl_syn P'))
           with (pskl_to_bskl_syn (pskl_arrow (ptyp_to_pskl A) P')).
-        apply ad_refine_syn__hole. apply a_wf_pskl__arrow;
-          [ apply a_wf_ptyp_to_wf_pskl; exact HwfA3 | exact HwfP' ].
+        apply ad_refine_syn__hole. clear; fsetdec.
     + (* P0 = P → Q : the colouring is the consistency run's transport *)
       subst P0.
       destruct (a_consis_chk_annot_refine H1 Hwf HwfA HwfPP)
@@ -1892,6 +1853,8 @@ Proof.
       rewrite <- (Hsub A0 ltac:(clear - Hα; solve_notin_auto)).
       rewrite <- (Hsub A ltac:(clear - Hα; solve_notin_auto)).
       eapply ad_refine_syn_f_forget.
+      eapply ad_refine_syn_f_ctx_mono with (Θ := Θ1);
+        [ | intros ? ? Hb; apply binds_app_iff; right; exact Hb ].
       eapply ad_refine_syn_f_delta_mono;
         [ eapply ad_refine_syn_f_ghost_free_strip_rename;
             [ apply ad_refine_syn_f_of_plain; exact Hrefα
@@ -2167,6 +2130,8 @@ Proof.
       rewrite <- (Hsub A0 ltac:(clear - Hα; solve_notin_auto)).
       rewrite <- (Hsub A ltac:(clear - Hα; solve_notin_auto)).
       eapply ad_refine_syn_f_forget.
+      eapply ad_refine_syn_f_ctx_mono with (Θ := Θ1);
+        [ | intros ? ? Hb; apply binds_app_iff; right; exact Hb ].
       eapply ad_refine_syn_f_delta_mono;
         [ eapply ad_refine_syn_f_ghost_free_strip_rename;
             [ apply ad_refine_syn_f_of_plain; exact Hrefα
@@ -2309,7 +2274,7 @@ Proof.
     destruct (ad_refine_syn_syn_l Href1 pskl_hole eq_refl) as [P' HQt1].
     subst Qt1. rewrite bskl_to_pskl_pskl_to_bskl_syn in HeQt1. subst P.
     assert (HwfPin : {{ Θ1 ⨟ empty ⊢ₚₛ P' }}a)
-      by (pose proof (ad_refine_syn_hole_l_target_wf Href1) as Hw;
+      by (pose proof (ad_pat_target_wf Hpat1 Hwf1) as Hw;
           rewrite bskl_to_pskl_pskl_to_bskl_syn in Hw; exact Hw).
     destruct (IHa_typing1 Hwf1
                 ltac:(apply a_wf_pskl__arrow;

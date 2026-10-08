@@ -97,7 +97,8 @@ Inductive ad_pat : mode -> aenv -> exp -> bskl -> Prop :=
        WF-SIDE-CONDITIONS.md), and [Q] is otherwise unconstrained here —
        [ad_pat_sub_target_wf] gives only scope, and the wf cannot propagate
        top-down (it dies at [ad_pat__app]'s existential premise skeleton, and
-       refinement does not preserve wf: cex/cex_refine_not_transitive.v).
+       the refinement rules alone do not preserve wf:
+       [ad_refine_syn_output_not_wf], cex/cex_refine_not_transitive.v).
        lemma:context-precision's Var case and thm:complete-skeleton-
        inference's Sub case both consume exactly this premise; soundness
        supplies it from the run by [a_sub_output_wf] (algo/prop_wf_preservation.v

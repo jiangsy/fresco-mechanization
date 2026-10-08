@@ -1011,7 +1011,8 @@ Proof.
                   [ apply guarded_pskl__arrow;
                       [ eapply a_wf_pskl_lc; exact Hw1
                       | eapply a_wf_pskl_lc; exact Hw2 ]
-                  | apply a_wf_pskl__arrow; [ exact Hw1 | exact Hw2 ] ] ]
+                  | rewrite aenv_minus_empty;
+                    apply a_wf_pskl__arrow; [ exact Hw1 | exact Hw2 ] ] ]
       | ]).
     cbn [msubst_pskl] in Hp |- *.
     apply ad_ppre__tophole_remove; exact Hp.
@@ -1043,7 +1044,7 @@ Proof.
                           [ eapply a_wf_pskl_lc; exact HwfP01
                           | eapply a_wf_pskl_lc; exact HwfP02 ]
                       | inversion HwfPi; assumption ]
-                  | exact Hw ] ]
+                  | rewrite aenv_minus_empty; exact Hw ] ]
       | ]).
     cbn [msubst_pskl]. apply ad_ppre__tophole_remove; exact Hp.
 Qed.
@@ -1123,10 +1124,9 @@ Qed.
     [a_solve_sub_ftv]'s escape disjunct is closed off by [β ∈ dom Θ]:
     SS-ForallR's leaked binder is fresh for the context, so it is never β.
 
-    This is what the Sub-ForallL row needs in order to move its binder out of
-    the context and into Δ ([a_wf_pskl_tvar_to_delta] below): the mech types
-    a ∀◇ body at the EMPTY Δ, so only an UNSHIELDED variable may make that
-    move — an asymmetry the paper's single-context [Θ ⊢ P] does not have. *)
+    This is what the Sub-ForallL row needs in order to add its binder to Δ
+    ([a_wf_pskl_tvar_to_delta] below), as the ∀ wf rule demands: a ∀◇ body
+    is typed at [Θ∖Δ], so only an UNSHIELDED variable may be added. *)
 (* ⭐ The five binder rows now avoid [ftvar_in_aenv Θ], not [dom Θ] (the
    SolE-FlexR repair, hand-off §2(3): a flexible's PAYLOAD may mention the
    witness).  So "a variable of the context is not this row's binder" needs
@@ -1375,41 +1375,75 @@ Proof.
     end.
 Qed.
 
-(** Converse of [a_wf_pskl_delta_to_tvar], under the condition the mech's
-    ∀◇ rule forces: its body is typed at the EMPTY Δ, so a rigid CONTEXT
-    entry may be re-read as a Δ-variable only when it is UNSHIELDED. *)
-Lemma a_wf_pskl_tvar_to_delta : forall Θ1 β Θ2 Δ P,
-  {{ (Θ1 ++ (β ~ abind_tvar) ++ Θ2) ⨟ Δ ⊢ₚₛ P }}a ->
-  β `notin` pskl_shielded_ftv P ->
-  {{ (Θ1 ++ Θ2) ⨟ (add β Δ) ⊢ₚₛ P }}a.
+(** A Δ-variable is never SHIELDED: a ∀◇ body is typed at [Θ∖Δ], and a ∀
+    pushes its binder into Δ, so no Δ-variable reaches a ∀◇ body. *)
+Lemma a_wf_pskl_shielded_delta : forall Θ Δ P,
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
+  forall α, α `in` Δ -> α `notin` pskl_shielded_ftv P.
 Proof.
-  intros Θ1 β Θ2 Δ P H.
-  remember (Θ1 ++ (β ~ abind_tvar) ++ Θ2) as Θfull eqn:HeqΘ.
-  revert Θ1 Θ2 HeqΘ; induction H; intros Θ1 Θ2 HeqΘ Hsh; subst;
-    cbn [pskl_shielded_ftv] in Hsh.
+  intros Θ Δ P H; induction H; intros α0 Hα0; cbn [pskl_shielded_ftv];
+    try solve [ clear; fsetdec ].
+  - pose proof (IHa_wf_pskl1 α0 Hα0); pose proof (IHa_wf_pskl2 α0 Hα0).
+    clear - H1 H2; fsetdec.
+  - pick fresh β for (L `union` singleton α0).
+    pose proof (H0 β ltac:(clear - Fr; solve_notin_auto) α0
+                  ltac:(clear - Hα0; fsetdec)) as Hb.
+    pose proof (pskl_shielded_ftv_open_lower P (pskl_var_f β)) as Hlo.
+    clear - Hb Hlo; fsetdec.
+  - intro Hin.
+    pose proof (a_wf_pskl_ftv_dom H0) as Hd.
+    assert (Hγd : α0 `in` dom (aenv_minus Θ Δ)) by (clear - Hd Hin; fsetdec).
+    destruct (@dom_aenv_minus α0 Θ Δ Hγd) as [_ Hn]. contradiction.
+Qed.
+
+(** A bound variable of the context may be added to Δ when it is
+    UNSHIELDED: the ∀◇ rule types its body at [Θ∖Δ], so the only thing
+    adding β to Δ can break is a ∀◇ body that mentions β. *)
+Lemma a_wf_pskl_tvar_to_delta_gen : forall Θ Δ P β,
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
+  β `notin` pskl_shielded_ftv P ->
+  {{ Θ ⨟ (add β Δ) ⊢ₚₛ P }}a.
+Proof.
+  intros Θ Δ P β H; induction H; intros Hsh; cbn [pskl_shielded_ftv] in Hsh.
   - apply a_wf_pskl__unit.
-  - apply a_wf_pskl__var.
-    destruct H as [HΔ | Hbt]; [ left; clear - HΔ; fsetdec | ].
-    destruct (α == β) as [-> | Hne]; [ left; clear; fsetdec | ].
-    right; destruct Hbt as [Hb | [Hb | [τ Hb]]];
-      [ left | right; left | right; right; exists τ ];
-      eapply binds_remove_mid; solve [ exact Hb | auto ].
+  - apply a_wf_pskl__var; exact H.
   - apply a_wf_pskl__arrow;
-      [ apply IHa_wf_pskl1; solve [ reflexivity | clear - Hsh; fsetdec ]
-      | apply IHa_wf_pskl2; solve [ reflexivity | clear - Hsh; fsetdec ] ].
+      [ apply IHa_wf_pskl1; clear - Hsh; fsetdec
+      | apply IHa_wf_pskl2; clear - Hsh; fsetdec ].
   - apply a_wf_pskl__all with (L := L `union` singleton β).
     intros α Hα.
     eapply a_wf_pskl_delta_mono;
-      [ apply H0; [ clear - Hα; fsetdec | reflexivity
+      [ apply H0; [ clear - Hα; fsetdec
                   | pose proof (pskl_shielded_ftv_open_upper P (pskl_var_f α))
                       as Hop; cbn [ftvar_in_pskl] in Hop;
                     clear - Hsh Hop Hα; fsetdec ]
-      | clear; fsetdec ].
+      | intros; clear - H2; fsetdec ].
   - apply a_wf_pskl__hole.
-  - (* ∀◇ : the body is β-FREE (that is what unshielded says), so the entry
-       is simply STRIPPED instead of moved *)
+  - (* ∀◇ : the body is β-FREE (that is what unshielded says), so removing
+       β from its context changes nothing *)
     apply a_wf_pskl__tophole; [ exact H | ].
-    eapply (@a_wf_pskl_strip_tvar Θ1 β Θ2); [ exact H0 | exact Hsh ].
+    eapply a_wf_pskl_tvar_mono_ftv; [ exact H0 | ].
+    intros α Hα Hb.
+    apply a_binds_tvar_aenv_minus in Hb; destruct Hb as [Hb Hn].
+    apply a_binds_tvar_aenv_minus; split; [ exact Hb | ].
+    clear - Hα Hn Hsh; fsetdec.
+Qed.
+
+(** Converse of [a_wf_pskl_delta_to_tvar], under the condition the ∀◇ rule
+    forces: its body is typed at [Θ∖Δ], so a rigid CONTEXT entry may be
+    re-read as a Δ-variable only when it is UNSHIELDED.  The entry moves to
+    the FRONT of the context, where the ∀ rule pushes its binder. *)
+Lemma a_wf_pskl_tvar_to_delta : forall Θ1 β Θ2 Δ P,
+  {{ (Θ1 ++ (β ~ abind_tvar) ++ Θ2) ⨟ Δ ⊢ₚₛ P }}a ->
+  β `notin` pskl_shielded_ftv P ->
+  {{ ((β ~ abind_tvar) ++ Θ1 ++ Θ2) ⨟ (add β Δ) ⊢ₚₛ P }}a.
+Proof.
+  intros Θ1 β Θ2 Δ P H Hsh.
+  apply a_wf_pskl_tvar_to_delta_gen; [ | exact Hsh ].
+  eapply a_wf_pskl_tvar_mono; [ exact H | ].
+  intros α [Hb | [Hb | [τ Hb]]]; unfold a_binds_tvar;
+    [ left | right; left | right; right; exists τ ];
+    apply binds_mid_to_front; exact Hb.
 Qed.
 
 (* ⭐⭐ P6-Sv UNDER THE SolE-FlexR REPAIR — GREEN (2026-08-05).
@@ -1688,7 +1722,8 @@ Proof.
       subst κ'. cbn [app] in Hp.
       eapply solve_sub_ext_nil with (Pa := pskl_tophole P0);
         [ apply a_solve_sub__ghost_l; [ exact HgfP0 | exact HgP0 ]
-        | apply a_wf_pskl__tophole; [ exact HgP0 | exact HwfP0 ]
+        | apply a_wf_pskl__tophole;
+            [ exact HgP0 | rewrite aenv_minus_empty; exact HwfP0 ]
         | cbn [app msubst_pskl]; apply ad_ppre__tophole_remove; exact Hp ].
     + (* ∀◇Pi' : strip the ghost, solve the body, wrap the output.
 
@@ -1725,7 +1760,7 @@ Proof.
                           | eapply a_wf_pskl_lc; exact HwfPi'
                           | eapply a_wf_pskl_lc; exact HwfP0
                           | exact HgPi' ]
-                      | exact HwfPa ] ] | ])
+                      | rewrite aenv_minus_empty; exact HwfPa ] ] | ])
       end.
       cbn [msubst_pskl]. apply ad_ppre__tophole_remove. exact Hp.
   - (* ForallR (TY/TC).  [skmod{TY}] makes P0 a TYPE, so the refinement's
@@ -1740,21 +1775,23 @@ Proof.
     + (* ⟨⟩ : guarded *)
       exfalso;
         assert (Hbad : guarded_bskl (bskl_all_inh B));
-        [ eapply ad_refine_syn_guarded_r;
+        [ eapply ad_refine_syn_guarded_r_all;
             [ exact HwfΘ | exact Hrefine
             | apply guarded_pskl_to_bskl_inh;
               eapply guarded_pskl_msubst_inc;
-                [ exact Hκ | apply guarded_pskl__unit ] ]
+                [ exact Hκ | apply guarded_pskl__unit ]
+            | eexists; left; reflexivity ]
         | inversion Hbad ].
     + (* a bound variable is not well-formed *) inversion HwfP0.
     + (* a variable : guarded *)
       exfalso;
         assert (Hbad : guarded_bskl (bskl_all_inh B));
-        [ eapply ad_refine_syn_guarded_r;
+        [ eapply ad_refine_syn_guarded_r_all;
             [ exact HwfΘ | exact Hrefine
             | apply guarded_pskl_to_bskl_inh;
               eapply guarded_pskl_msubst_inc;
-                [ exact Hκ | apply guarded_pskl__var ] ]
+                [ exact Hκ | apply guarded_pskl__var ]
+            | eexists; left; reflexivity ]
         | inversion Hbad ].
     + (* an arrow : guarded *)
       exfalso.
@@ -1762,10 +1799,11 @@ Proof.
       { pose proof (a_wf_pskl_lc HwfP0) as Hlc; inversion Hlc; subst.
         apply guarded_pskl__arrow; assumption. }
       assert (Hbad : guarded_bskl (bskl_all_inh B));
-        [ eapply ad_refine_syn_guarded_r;
+        [ eapply ad_refine_syn_guarded_r_all;
             [ exact HwfΘ | exact Hrefine
             | apply guarded_pskl_to_bskl_inh;
-              eapply guarded_pskl_msubst_inc; [ exact Hκ | exact Hg ] ]
+              eapply guarded_pskl_msubst_inc; [ exact Hκ | exact Hg ]
+            | eexists; left; reflexivity ]
         | inversion Hbad ].
     + (* P0 = ∀.P0' : the real row *)
       cbn [msubst_pskl pskl_to_bskl_inh] in Hrefine.
@@ -1818,10 +1856,9 @@ Proof.
         by (rewrite ftvar_in_aenv_cons_tvar; clear - HLav; fsetdec).
       assert (HwfP0β : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty
                 ⊢ₚₛ (open_pskl_wrt_pskl (ptyp_to_pskl A0) (pskl_var_f β)) }}a).
-      { eapply a_wf_pskl_delta_to_tvar_mid
-          with (α1 := β) (Θ1 := nil) (Θ2 := Θ0) (Δ' := empty);
+      { eapply a_wf_pskl_delta_mono;
           [ apply (Hw0body β ltac:(clear - Fr; solve_notin))
-          | reflexivity | clear; fsetdec ]. }
+          | intros γ _ Hγ; clear - Hγ; fsetdec ]. }
       assert (HwfPiβ : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ Pi }}a)
         by (eapply a_wf_pskl_weaken; [ exact Hweak | exact HwfPi ]).
       assert (Hκβ : κ ∷ ((β ~ abind_tvar) ++ Θ0) ⊑ ((β ~ abind_tvar) ++ Θ))
@@ -1848,10 +1885,9 @@ Proof.
                 ⊳ (open_bskl_wrt_bskl B (bskl_var_f β)) }}ad).
       { rewrite (@msubst_pskl_open Θ0 κ Θ (ptyp_to_pskl A0) β Hκ Hβκ).
         rewrite pskl_to_bskl_inh_open.
-        eapply ad_refine_syn_delta_to_tvar_mid
-          with (α1 := β) (Θ1 := nil) (Θ0 := Θ) (Δr' := empty);
+        eapply ad_refine_syn_delta_mono;
           [ apply (Hrbody β ltac:(clear - Fr; solve_notin))
-          | reflexivity | clear; fsetdec ]. }
+          | clear; fsetdec ]. }
       edestruct (H0 β ltac:(clear - Fr; solve_notin)
                    ((β ~ abind_tvar) ++ Θ)
                    ((β ~ abind_tvar) ++ Θ0) κ Δ Δρ Ψρ Ψt Ψi Ψa ψa Pi
@@ -2312,7 +2348,7 @@ Proof.
         destruct Hex as (Lp & Ψi0 & Hpbody & HΨieq).
         assert (Hexw : exists Lw,
                   forall α, α `notin` Lw ->
-                    {{ Θ0 ⨟ (add α empty)
+                    {{ ((α ~ abind_tvar) ++ Θ0) ⨟ (add α empty)
                       ⊢ₚₛ (open_pskl_wrt_pskl Pi0 (pskl_var_f α)) }}a).
         { inversion HwfPi; subst; eexists; eassumption. }
         destruct Hexw as (Lw & Hwbody).
@@ -2372,10 +2408,9 @@ Proof.
           by (intros x b Hb; apply binds_app_3; exact Hb).
         assert (HwfPiβ : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty
                   ⊢ₚₛ (open_pskl_wrt_pskl Pi0 (pskl_var_f β)) }}a).
-        { eapply a_wf_pskl_delta_to_tvar_mid
-            with (α1 := β) (Θ1 := nil) (Θ2 := Θ0) (Δ' := empty);
+        { eapply a_wf_pskl_delta_mono;
             [ apply (Hwbody β ltac:(clear - Fr; solve_notin))
-            | reflexivity | clear; fsetdec ]. }
+            | intros γ _ Hγ; clear - Hγ; fsetdec ]. }
         assert (HwfP0β : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
           by (eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfP0 ]).
         assert (Hκβ : κ ∷ ((β ~ abind_tvar) ++ Θ0) ⊑ ((β ~ abind_tvar) ++ Θ))
@@ -2390,7 +2425,7 @@ Proof.
         assert (HwfSubβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ empty
                   ⊢ₚₛ ⌊ open_uskl_wrt_uskl R ψ ⌋ˢ }}a).
         { assert (Hexs : exists Lb, forall α, α `notin` Lb ->
-                    {{ Θ ⨟ (add α empty) ⊢ₚₛ
+                    {{ ((α ~ abind_tvar) ++ Θ) ⨟ (add α empty) ⊢ₚₛ
                       (open_pskl_wrt_pskl ⌊ R ⌋ˢ (pskl_var_f α)) }}a).
           { cbn [uskl_to_pskl] in HwfSub;
             inversion HwfSub; subst; eexists; eassumption. }
@@ -2444,16 +2479,16 @@ Proof.
             assert (Hne : α0 <> β) by (clear - Hin HβΔρ; fsetdec).
             clear - Hs Hup Hne; fsetdec.
           - (* the ∀◇-body discipline: a well-formed skeleton's SHIELDED
-               variables all live in the aenv, never in Δ — so the freshly
-               opened binder is not one of them (DESIGN §7) *)
+               variables are never in Δ — so the freshly opened binder,
+               which the ∀ rule puts into Δ, is not one of them *)
             assert (Heqβ : α0 = β) by (clear - Hα0 Hni; fsetdec); subst α0.
             apply msubst_pskl_shielded_avoid.
             + intros pp Hpp.
               pose proof (a_inc_image_ftv_dom Hκ pp Hpp) as Hb.
               clear - Hb HβΘ; fsetdec.
-            + pose proof (a_wf_pskl_shielded_dom
-                            (Hwbody β ltac:(clear - Fr; solve_notin))) as Hd.
-              clear - Hd HβΘ0; fsetdec. }
+            + apply (a_wf_pskl_shielded_delta
+                       (Hwbody β ltac:(clear - Fr; solve_notin)));
+              clear; fsetdec. }
         assert (Hdfreshβ : delta_def_fresh (add β Δ) ((β ~ abind_tvar) ++ Θ)).
         { intros β0 α3 τ3 Hβ0 Hb.
           assert (Hb' : binds α3 (abind_flex_mono_def τ3) Θ)
@@ -2535,17 +2570,17 @@ Proof.
                 | pose proof (a_inc_image_ftv_dom Hκ pp Hpp) as Hb;
                   clear - Hb HβΘ; fsetdec ]
             | exact HβPb ]. }
-        (* --- the paper's [Θ0,β ⊢ P_a] ⟹ [Θ0 ⊢ ∀β.P_b].  The mech's Δ makes
-           this a real step rather than the ∀ wf rule: a ∀◇ body is typed at
-           the EMPTY Δ, so β may only move from the CONTEXT into Δ when the
+        (* --- the paper's [Θ0,β ⊢ P_a] ⟹ [Θ0 ⊢ ∀β.P_b].  The ∀ wf rule puts
+           β into BOTH the context and Δ, and a ∀◇ body is typed at [Θ∖Δ],
+           so β may only be added to Δ when the
            run left it UNSHIELDED — which it did, because the SUBJECT does
-           ([a_wf_pskl_shielded_dom] on the Δ-form) and solving preserves it
+           ([a_wf_pskl_shielded_delta] on the ∀ body) and solving preserves it
            ([a_solve_sub_eq_unshielded]). --- *)
         assert (HshPiβ : β `notin` pskl_shielded_ftv
                            (open_pskl_wrt_pskl Pi0 (pskl_var_f β))).
-        { pose proof (a_wf_pskl_shielded_dom
-                        (Hwbody β ltac:(clear - Fr; solve_notin))) as Hsd.
-          clear - Hsd HβΘ0; fsetdec. }
+        { apply (a_wf_pskl_shielded_delta
+                   (Hwbody β ltac:(clear - Fr; solve_notin)));
+          clear; fsetdec. }
         assert (HshPa : β `notin` pskl_shielded_ftv Pa).
         { eapply (proj1 a_solve_sub_eq_unshielded);
             [ exact Hs
@@ -2553,7 +2588,7 @@ Proof.
             | exact HshPiβ
             | pose proof (a_wf_pskl_ftv_dom HwfP0) as Hfd;
               clear - Hfd HβΘ0; fsetdec ]. }
-        assert (HwfPaΔ : {{ (Ξ ++ Θ0) ⨟ (add β empty) ⊢ₚₛ Pa }}a)
+        assert (HwfPaΔ : {{ ((β ~ abind_tvar) ++ Ξ ++ Θ0) ⨟ (add β empty) ⊢ₚₛ Pa }}a)
           by (eapply (@a_wf_pskl_tvar_to_delta Ξ β Θ0);
                 [ exact HwfPaβ | exact HshPa ]).
         exists Ξ, (pskl_all_syn Pb), κ'.
@@ -2571,9 +2606,8 @@ Proof.
         + (* the block dodges the caller's avoid-set a fortiori *)
           intros α0 Hα0; pose proof (Hfr α0 Hα0) as Hf; clear - Hf; fsetdec.
         + (* wf: re-bind the Δ-form at the rule's own binder *)
-          apply (@a_wf_pskl_all_of_one (Ξ ++ Θ0) empty Pb β);
-            [ rewrite HopenPb; exact HwfPaΔ
-            | rewrite dom_app; clear - HβΘ0 HβΞ; fsetdec | exact HβPb ].
+          apply (@a_wf_pskl_all_of_one_at (Ξ ++ Θ0) empty Pb β);
+            [ rewrite HopenPb; exact HwfPaΔ | exact HβPb ].
         + (* precision: β lives in Δ, so it can leave the aenv
              ([ad_partial_precise_tvar_to_delta_mid]); then rename it into
              P-Forall's family *)
@@ -2863,7 +2897,7 @@ Proof.
                         [ eapply (proj1 a_solve_sub_eq_guarded);
                             [ exact Hs' | eapply a_wf_pskl_lc; exact HwfPi'
                             | eapply a_wf_pskl_lc; exact HwfP0 | exact HgPi' ]
-                        | exact Hw' ] ] | ]).
+                        | rewrite aenv_minus_empty; exact Hw' ] ] | ]).
           cbn [msubst_pskl]; apply ad_ppre__tophole_keep; exact Hp'. }
     destruct (uskl_rsubst_topholeg_l_inv Hrho) as [[Heq HΨρe] | [Hleaf | Hcong]].
     + (* refl: ρ is the identity here, so ψ0 := R *)

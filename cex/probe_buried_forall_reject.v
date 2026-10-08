@@ -388,13 +388,11 @@ Proof.
   | Hwf : a_wf_pskl _ _ (pskl_var_f _) |- _ =>
       simpl in Hwf; inversion Hwf; subst;
       match goal with
-      | Hd : _ \/ a_binds_tvar _ _ |- _ =>
-          destruct Hd as [Hin | Hb];
-          [ clear - Hin; fsetdec
-          | pose proof (dom_subset_ftvar_in_aenv Θ0) as Hsub;
-            assert (β `in` dom Θ0) as Hdom
-              by (destruct Hb as [Hb | [Hb | [τ Hb]]]; eauto using binds_In);
-            clear - Hsub Hdom Hβ; fsetdec ]
+      | Hb : a_binds_tvar _ _ |- _ =>
+          pose proof (dom_subset_ftvar_in_aenv Θ0) as Hsub;
+          assert (β `in` dom Θ0) as Hdom
+            by (destruct Hb as [Hb | [Hb | [τ Hb]]]; eauto using binds_In);
+          clear - Hsub Hdom Hβ; fsetdec
       end
   end.
 Qed.

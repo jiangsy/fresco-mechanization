@@ -744,7 +744,7 @@ Proof.
               apply a_wf_pskl_open with (L := L0);
                 [ intros α Hα;
                   eapply a_wf_pskl_weaken;
-                    [ exact Hmono | apply Hbody; auto ]
+                    [ exact (@binds_sub_cons _ _ _ Hmono) | apply Hbody; auto ]
                 | assumption ]
           end. }
         rewrite <- Hresult.
@@ -1038,7 +1038,7 @@ Proof.
               apply a_wf_pskl_open with (L := L0);
                 [ intros α Hα;
                   eapply a_wf_pskl_weaken;
-                    [ exact Hmono | apply Hbody; auto ]
+                    [ exact (@binds_sub_cons _ _ _ Hmono) | apply Hbody; auto ]
                 | assumption ]
           end. }
         rewrite <- Hresult.
@@ -3601,7 +3601,7 @@ Proof.
     { inversion HwfP as [ | | | LP ΘP ΔP PP HbodyP HeqP | | ]; subst.
       eapply a_wf_pskl_open with (L := LP);
         [ intros α2 Hα2; eapply a_wf_pskl_weaken;
-          [ exact Hmono | apply HbodyP; auto ]
+          [ exact (@binds_sub_cons _ _ _ Hmono) | apply HbodyP; auto ]
         | exact HwfP1 ]. }
     rewrite <- Hresult.
     eapply a_subtag_psi_cong;
@@ -3709,7 +3709,7 @@ Proof.
     assert (Hwfarr : {{ Θ' ⨟ empty ⊢ₚₛ
                        pskl_arrow (pskl_var_f α) (pskl_var_f β) }}a).
     { apply a_wf_pskl__arrow; apply a_wf_pskl__var;
-        right; right; left;
+        right; left;
         (unfold Θ'; unfold binds; apply in_or_app; right; simpl;
          right; auto). }
     eapply a_subtag_flex__solve;
@@ -3731,7 +3731,7 @@ Proof.
     assert (Hwfpaint : {{ (Ξw ++ Θ0) ⨟ empty ⊢ₚₛ ptyp_to_pskl τ }}a).
     { apply a_scope_pskl_of_ptyp_vis;
         [ apply mono_ptyp_lc; exact Hm | ].
-      intros α0 Hα0. right.
+      intros α0 Hα0.
       pose proof (a_wf_ptyp_ftv_tvarish Hwfτ Hα0) as Ht.
       destruct Ht as [Hb | [Hb | [τ1 Hb]]];
         [ left | right; left | right; right; exists τ1 ];
@@ -3740,13 +3740,15 @@ Proof.
               subst_pskl_in_pskl (ptyp_to_pskl τ) β P0 }}a).
     { eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ);
         [ exact HwfP0 | reflexivity | exact HβΞΘ0 | clear; fsetdec
-        | apply mono_ptyp_to_pskl_guarded; exact Hm | exact Hwfpaint ]. }
+        | apply mono_ptyp_to_pskl_guarded; exact Hm | exact Hwfpaint
+        | clear; fsetdec ]. }
     assert (Hwfvarsub : {{ (Ξw ++ Θ0) ⨟ empty ⊢ₚₛ
               subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α) }}a).
     { eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ);
-        [ apply a_wf_pskl__var; right; exact Hαb
+        [ apply a_wf_pskl__var; exact Hαb
         | reflexivity | exact HβΞΘ0 | clear; fsetdec
-        | apply mono_ptyp_to_pskl_guarded; exact Hm | exact Hwfpaint ]. }
+        | apply mono_ptyp_to_pskl_guarded; exact Hm | exact Hwfpaint
+        | clear; fsetdec ]. }
     apply a_subtag_flex__assign; [ exact Hβ1 | ].
     apply (IH HwfΞΘ0 HwfP0' Hwfvarsub);
       [ intro HSK; specialize (Hmod HSK);

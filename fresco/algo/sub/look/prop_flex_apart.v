@@ -512,12 +512,13 @@ Proof.
     symmetry in HeqS; apply ptyp_to_uskl_syn_unit_inv in HeqS; subst.
     eapply ad_refine_mono_paint_lhs_ppre with (τ := ptyp_unit);
       [ exact HwfΘ | exact HΔr | exact Hrefine | reflexivity | reflexivity
-      | exact Hmb | apply mono_ptyp__unit ].
+      | exact Hmb | apply mono_ptyp__unit | apply a_wf_ptyp__unit ].
   - (* var *)
     symmetry in HeqS; apply ptyp_to_uskl_syn_var_inv in HeqS; subst.
     eapply ad_refine_mono_paint_lhs_ppre with (τ := ptyp_var_f α);
       [ exact HwfΘ | exact HΔr | exact Hrefine | reflexivity | reflexivity
-      | exact Hmb | apply mono_ptyp__var ].
+      | exact Hmb | apply mono_ptyp__var
+      | apply a_wf_ptyp__var; assumption ].
   - (* arrow *)
     symmetry in HeqS.
     destruct (ptyp_to_uskl_syn_arrow_inv _ HeqS)
@@ -749,40 +750,30 @@ Proof.
 Qed.
 
 (** Moving a Δr-entry of the refinement into the aenv as a rigid tvar
-    (mid-insertion general, for the fill rule's context growth). *)
+    (mid-insertion general, for the fill rule's context growth).  The
+    refinement reads Θ only through flexible-definition lookups and Δr
+    only through the □-rule's disjointness, which is antitone; so any
+    Δr' ⊆ Δr will do. *)
 Lemma ad_refine_syn_delta_to_tvar_mid : forall Θfull Δr Q' Q,
   {{ Θfull ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
   forall α1 Θ1 Θ0 Δr', Θfull = Θ1 ++ Θ0 ->
-  Δr [<=] add α1 Δr' ->
+  Δr' [<=] Δr ->
   {{ (Θ1 ++ (α1 ~ abind_tvar) ++ Θ0) ⨟ Δr' ⊢ᵣ Q' ⊳ Q }}ad.
 Proof.
   intros Θfull Δr Q' Q H; induction H;
     intros α2 Θ1 Θt Δr' HeqΘ Hsub; subst.
   - apply ad_refine_syn__unit.
-  - (* var *)
-    apply ad_refine_syn__var.
-    match goal with Hor : _ \/ a_binds_tvar ?α _ |- _ =>
-      destruct Hor as [HΔ | Hbt];
-      [ destruct (α == α2) as [-> | Hne];
-        [ right; left; unfold binds;
-          apply in_or_app; right; left; reflexivity
-        | left; clear - HΔ Hsub Hne; fsetdec ]
-      | right;
-        destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-        [ left; apply binds_weaken; exact Hb
-        | right; left; apply binds_weaken; exact Hb
-        | right; right; exists τ0; apply binds_weaken; exact Hb ] ]
-    end.
+  - apply ad_refine_syn__var.
   - apply ad_refine_syn__arrow; eauto.
   - (* all *)
     apply ad_refine_syn__all with (L := L).
     intros α Hα.
-    apply (H0 α Hα α2 Θ1 Θt (add α Δr') eq_refl).
+    apply (H0 α Hα α2 ((α ~ abind_tvar) ++ Θ1) Θt (add α Δr') eq_refl).
     clear - Hsub; fsetdec.
   - (* hole *)
     apply ad_refine_syn__hole.
-    eapply a_wf_pskl_weaken;
-      [ intros x b Hb; apply binds_weaken; exact Hb | eassumption ].
+    match goal with Hint : _ ∩ _ [=] empty |- _ =>
+      clear - Hint Hsub; fsetdec end.
   - apply ad_refine_syn__tophole_remove; auto.
   - (* tophole_fill: the aenv grows on the left *)
     apply ad_refine_syn__tophole_fill with (L := L).
@@ -1229,38 +1220,18 @@ Proof. intros Θ0 Δρ P0 ψa Hc P0' _; apply fa_clean; exact Hc. Qed.
     which the guess-OPENING step [fastep_all_r] does not. *)
 
 (** Absorb Δr-entries that are rigid tvars of the aenv (the Δr-refinement
-    → statement-form transfer, given Δr ⊆ dom Θtv and Θ ⊇ Θtv). *)
+    → statement-form transfer, given Δr ⊆ dom Θtv and Θ ⊇ Θtv).  Under the
+    paper's rules the refinement no longer reads Δr at variables, only at
+    the □-rule's (antitone) disjointness, so the transfer needs
+    [Δr' ⊆ Δr] and [Habs] is no longer used. *)
 Lemma ad_refine_syn_delta_absorb : forall Θ Δr Q' Q,
   {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
   forall Δr', (forall α2, α2 `in` Δr -> α2 `in` Δr' \/ binds α2 abind_tvar Θ) ->
+  Δr' [<=] Δr ->
   {{ Θ ⨟ Δr' ⊢ᵣ Q' ⊳ Q }}ad.
 Proof.
-  intros Θ Δr Q' Q H; induction H; intros Δr' Habs.
-  - apply ad_refine_syn__unit.
-  - apply ad_refine_syn__var.
-    match goal with Hor : _ \/ a_binds_tvar ?α _ |- _ =>
-      destruct Hor as [HΔ | Hbt];
-      [ destruct (Habs _ HΔ) as [HΔ' | Hb];
-        [ left; exact HΔ' | right; left; exact Hb ]
-      | right; exact Hbt ] end.
-  - apply ad_refine_syn__arrow; auto.
-  - apply ad_refine_syn__all with (L := L).
-    intros α Hα. apply (H0 α Hα (add α Δr')).
-    intros α2 Hα2.
-    destruct (AtomSetProperties.In_dec α2 (add α Δr')) as [Hin | Hnin];
-      [ left; exact Hin | ].
-    destruct (Habs α2 ltac:(clear - Hα2 Hnin; solve_notin_auto)) as [HΔ' | Hb];
-      [ left; clear - HΔ' Hnin; fsetdec | right; exact Hb ].
-  - apply ad_refine_syn__hole; assumption.
-  - apply ad_refine_syn__tophole_remove; auto.
-  - apply ad_refine_syn__tophole_fill with (L := L).
-    intros α Hα. apply (H0 α Hα Δr').
-    intros α2 Hα2.
-    destruct (Habs α2 Hα2) as [HΔ' | Hb];
-      [ left; exact HΔ' | right; apply binds_cons_3; exact Hb ].
-  - apply ad_refine_syn__tophole_keep; auto.
-  - eapply ad_refine_syn__flex_l; eauto.
-  - eapply ad_refine_syn__flex_r; eauto.
+  intros Θ Δr Q' Q H Δr' _ Hsub.
+  eapply ad_refine_syn_delta_mono; eassumption.
 Qed.
 
 (* ⚙ [pskl_no_hole] (hole-free skeletons — for them partial precision is fully
@@ -1304,59 +1275,20 @@ Proof.
   - eapply ad_ppre__flex_r; [ eassumption | ]. auto.
 Qed.
 
-(** Refinement's target free variables are source variables or Θ-scoped
-    (fills are wf at empty Δ; definitions are Θ-scoped). *)
+(** Refinement's target free variables are source variables or Θ-scoped.
+    The □-rule no longer checks its fill, so this needs the paper's
+    presupposition that the target is well-formed — from which the bound
+    is immediate (the target's free variables are already in [dom Θ]). *)
 Lemma ad_refine_syn_ftv_rhs_bound : forall Θ Δr Qh Q,
   {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δr ⊢ᵣ Qh ⊳ Q }}ad ->
+  {{ Θ ⨟ Δr ⊢ₚₛ bskl_to_pskl Q }}a ->
   ftvar_in_bskl Q [<=] ftvar_in_bskl Qh `union` dom Θ.
 Proof.
-  intros Θ Δr Qh Q HwfΘ H; induction H; simpl; try (clear; fsetdec).
-  - (* arrow *)
-    clear - IHad_refine_syn1 IHad_refine_syn2 HwfΘ.
-    specialize (IHad_refine_syn1 HwfΘ).
-    specialize (IHad_refine_syn2 HwfΘ).
-    fsetdec.
-  - (* all *)
-    pick fresh α for
-      (L `union` ftvar_in_bskl Q `union` ftvar_in_bskl P
-         `union` dom Θ).
-    pose proof (H0 α ltac:(clear - Fr; solve_notin_auto) HwfΘ) as Hα.
-    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_lower P (bskl_var_f α))
-      as Hlow.
-    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f α))
-      as Hup.
-    simpl in *. clear - Hα Hlow Hup Fr. fsetdec.
-  - (* hole: the fill is wf at empty Δ *)
-    pose proof (a_wf_pskl_ftv_dom H) as Hd.
-    rewrite ftvar_pskl_to_bskl_syn.
-    clear - Hd; fsetdec.
-  - (* tophole_remove *)
-    specialize (IHad_refine_syn HwfΘ). clear - IHad_refine_syn; fsetdec.
-  - (* tophole_fill *)
-    pick fresh α for
-      (L `union` ftvar_in_bskl P `union` ftvar_in_bskl Q
-         `union` dom Θ).
-    assert (HwfΘ' : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
-      by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact HwfΘ ]).
-    pose proof (H0 α ltac:(clear - Fr; solve_notin_auto) HwfΘ') as Hα.
-    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_lower P (bskl_var_f α))
-      as Hlow.
-    simpl in *. clear - Hα Hlow Fr. fsetdec.
-  - (* tophole_keep *)
-    specialize (IHad_refine_syn HwfΘ). clear - IHad_refine_syn; fsetdec.
-  - (* flex_l: the definition image is Θ-scoped *)
-    specialize (IHad_refine_syn HwfΘ).
-    assert (Hd : ftvar_in_ptyp τ [<=] dom Θ)
-      by (eapply a_wf_aenv_def_ftv_dom; eauto).
-    unfold ptyp_to_bskl_syn in IHad_refine_syn.
-    rewrite ftvar_pskl_to_bskl_syn in IHad_refine_syn.
-    pose proof (ftvar_ptyp_to_pskl τ) as Hp.
-    clear - IHad_refine_syn Hd Hp; fsetdec.
-  - (* flex_r *)
-    match goal with Hb : binds _ _ _ |- _ =>
-      pose proof (binds_In _ _ _ _ Hb) as Hdom end.
-    clear - Hdom; fsetdec.
+  intros Θ Δr Qh Q _ _ HwfQ x Hx.
+  rewrite <- ftvar_bskl_to_pskl in Hx.
+  destruct (a_wf_pskl_ftv_binds HwfQ Hx) as [Hb | [Hb | [τ0 Hb]]];
+    apply binds_In in Hb; clear - Hb; fsetdec.
 Qed.
 
 (* ===================================================================== *)
@@ -1427,32 +1359,28 @@ Proof.
     apply IHa_solve_eq; exact Hnh.
 Qed.
 
-(** A refinement into a Δr-binder variable (α0 outside the refinement's
-    aenv) forces a hole-free source: the □-fill would have to BE that
-    variable, which is not Θr-wf; flex hops never reach it. *)
+(** A refinement into a Δr-binder variable (α0 ∈ Δr, outside the
+    refinement's aenv) forces a hole-free source: the □-fill would have to
+    BE that variable, which the □-rule's Δr-disjointness forbids; flex hops
+    never reach it. *)
 Lemma ad_refine_inh_deltar_var_rhs_no_hole : forall Θr Δr Q' Q,
   {{ Θr ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
   forall α0 P', Q = bskl_var_f α0 -> Q' = pskl_to_bskl_inh P' ->
   α0 `notin` dom Θr ->
+  α0 `in` Δr ->
   pskl_no_hole P'.
 Proof.
-  intros Θr Δr Q' Q H; induction H; intros α0 P' HeqQ HeqL HX0;
+  intros Θr Δr Q' Q H; induction H; intros α0 P' HeqQ HeqL HX0 HΔ0;
     try discriminate HeqQ.
   - (* var *)
     destruct P'; simpl in HeqL; try discriminate HeqL.
     simpl; exact I.
-  - (* hole: the fill would be the binder variable — not Θr-wf *)
+  - (* hole: the fill would be the binder variable — not Δr-disjoint *)
     exfalso.
     destruct P; simpl in HeqQ; try discriminate HeqQ.
     inversion HeqQ; subst.
-    match goal with Hwf : {{ _ ⨟ _ ⊢ₚₛ pskl_var_f _ }}a |- _ =>
-      inversion Hwf; subst end.
-    match goal with Hor : _ \/ a_binds_tvar _ _ |- _ =>
-      destruct Hor as [Hin | [Hb | [Hb | [τ0 Hb]]]];
-      [ clear - Hin; fsetdec
-      | apply HX0; eapply binds_In; exact Hb
-      | apply HX0; eapply binds_In; exact Hb
-      | apply HX0; eapply binds_In; exact Hb ] end.
+    match goal with Hint : _ ∩ _ [=] empty |- _ =>
+      simpl in Hint; clear - Hint HΔ0; fsetdec end.
   - (* tophole_remove *)
     destruct P'; simpl in HeqL; try discriminate HeqL.
     inversion HeqL; subst.
@@ -1712,7 +1640,8 @@ Qed.
 (** ⭐ Refining a MONO PAINT introduces no variable the source and the
     context's DEFINITIONS do not already have.  The [dom Θ] of
     [ad_refine_syn_ftv_rhs_bound] is over-generous by exactly the hole rule
-    — whose fill is only [Θ]-scoped — and a mono paint has no hole. *)
+    — whose fill is only [Θ]-scoped (by the target's wf) — and a mono paint
+    has no hole. *)
 Lemma ad_refine_mono_paint_ftv_bound : forall Θ Δr Q' Q,
   {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->

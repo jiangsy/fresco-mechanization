@@ -82,8 +82,12 @@ mechanization.)  Corrected 2026-08-09.
     repair tower along with four of our counterexamples.  Also still
     live: the paper's `:3243` TODO property is FALSE
     (`cex/cex_p7_concrete_rhs.v`); the paper's 2-condition
-    `thm:complete-consistency` is FALSE as literally stated; refinement
-    is NOT transitive (`cex/cex_refine_not_transitive.v`).
+    `thm:complete-consistency` is FALSE as literally stated.  (⚙ The
+    claim that refinement is NOT transitive is RETRACTED 2026-10-08: its
+    counterexample, `cex/cex_refine_not_transitive.v`, rested on the
+    mech's old Ghost rule demanding a well-formed fill, which the paper's
+    never did; the file now proves only that the rules alone derive an
+    ill-formed output, `ad_refine_syn_output_not_wf`.)
   - ⛔ **NOT yet done**: the paper itself.  `paper/` has not been touched
     — see [`docs/HANDOFF-solve-flexr-repair.md`](docs/HANDOFF-solve-flexr-repair.md)
     §0 (standing user directive) and §6 Step 4 for what the repair owes
@@ -501,11 +505,18 @@ before changing any of them.
   and writes `syn_color C` / `inh_color C` for the two paintings.
   Round-trips: `erase (syn_color C) = C = erase (inh_color C)`. See
   [`DESIGN.md` Part 2 — colour-encoding principle](DESIGN.md).
-- **Tag context `Δ`** is `list atom`. Disjoint append: `list_disjoint
-  Δ Δ'` premise + plain `++`. Multiset would simplify the `mod
-  Permutation` arrow case of `d_consis_compose` — deferred.
-- **Skeleton-scope context `Ψ`** is `list atom`, distinct from the
-  term-context `Γ`. Used in skeleton well-formedness and refinement.
+- **Tag context `Ψ`** (declarative) is `list atom`. Disjoint append:
+  `list_disjoint Ψ Ψ'` premise + plain `++`. Multiset would simplify the
+  `mod Permutation` arrow case of `d_consis_compose` — deferred.
+- **Skeleton ∀-scope context `Δ`** (`list atom` in `decl/`, an atom set in
+  `algo_decl/` / `algo/`), written after the term context: `Γ ⨟ Δ` /
+  `Θ ⨟ Δ`. Used in skeleton well-formedness and refinement, which follow
+  the paper rule for rule (2026-10-08): a ∀ binds its variable in BOTH the
+  context and Δ, the variable rule reads only the context, a ∀◇ body is
+  checked at `Γ∖Δ` (`denv_minus` / `aenv_minus`), and the refinement Ghost
+  rule asks only `Δ ∩ ftv(fill) = ∅`. Well-formedness of both sides of a
+  refinement is the paper's presupposition, carried as a hypothesis — see
+  `docs/WF-SIDE-CONDITIONS.md` §1.
 - **Locally-nameless via lngen**, including for ε tag variables.
   Imports go through `Metalib.Metatheory`.
 - **Binder rules: COFINITE in the declarative layers, EXISTS-FRESH in the

@@ -1,16 +1,13 @@
 (** COMPLETENESS OF SKELETON INFERENCE (section D, thm:complete-skeleton-
     inference) — the landing file for theorem 3 and its kit.
 
-    This file holds, so far, the two wf anchors the theorem's induction
-    leans on (plan: memory `remech-theorem3-plan`):
+    It leans on two wf anchors (plan: memory `remech-theorem3-plan`):
 
-    - [ad_pat_target_wf] (K1): a declarative skeleton-inference derivation's
-      target erasure is well-formed — BOTTOM-UP, anchored by the
-      counterpart-wf premise the three base rows carry (hand-off §5) and
-      rebuilt by every composite row.  This is what replaces any top-down
-      wf hypothesis on the completeness statement: theorem 3 derives the wf
-      of ANY sub-derivation's solution target on demand (the App case's
-      [inh ◇ ⊳ syn P] side conditions, the Sub case's counterpart wf).
+    - [ad_pat_target_wf] (K1, in pat/prop_soundness_pat.v): a declarative
+      skeleton-inference derivation's target erasure is well-formed.  This
+      is what replaces any top-down wf hypothesis on the completeness
+      statement: theorem 3 derives the wf of ANY sub-derivation's solution
+      target on demand.
 
     - [a_pat_output_wf] (K7): the ALGORITHM's run has a well-formed output
       — a corollary of theorem 1 + K1 (the App case feeds the function
@@ -56,100 +53,6 @@ Require Import src.fresco.algo.prop_suffix_erase.
 Require Import src.fresco.algo.prop_precise_sub.
 
 Set Implicit Arguments.
-
-(* ===================================================================== *)
-(*  K1 — a declarative skeleton-inference derivation's target is wf       *)
-(*  (bottom-up: the base rows carry it, every composite row rebuilds it)  *)
-(* ===================================================================== *)
-
-Lemma ad_pat_target_wf : forall M Θ e Q,
-  {{ Θ ⊢ˢ[ M ] e ⦂ Q }}ad ->
-  {{ ⊢ Θ }}a ->
-  {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a.
-Proof.
-  intros M Θ e Q H; induction H; intros Hwf.
-  - (* unit : on the rule *) exact H.
-  - (* var : on the rule *) exact H1.
-  - (* anno : on the rule *) exact H0.
-  - (* freeze *) apply IHad_pat; exact Hwf.
-  - (* abs : arrow of the rule's wf P and the body's target *)
-    destruct (atom_fresh (L `union` dom Θ)) as [x Hx].
-    assert (Hwfx : {{ ⊢ ((x ~ abind_var_skl P) ++ Θ) }}a).
-    { apply a_wf_aenv__var;
-        [ clear - Hx; fsetdec
-        | exact H0
-        | exact Hwf ]. }
-    pose proof (H3 x ltac:(clear - Hx; solve_notin_auto) Hwfx) as HwfQ.
-    simpl. apply a_wf_pskl__arrow.
-    + rewrite bskl_to_pskl_pskl_to_bskl_inh. exact H0.
-    + eapply a_wf_pskl_mono;
-        [ exact HwfQ
-        | apply (@aenv_tbinds_le_strip_tm nil x (abind_var_skl P) Θ);
-          intros [] ].
-  - (* abs_anno *)
-    destruct (atom_fresh (L `union` dom Θ)) as [x Hx].
-    assert (Hwfx : {{ ⊢ ((x ~ abind_var_typ A) ++ Θ) }}a).
-    { apply a_wf_aenv__var_typ;
-        [ clear - Hx; fsetdec | exact H0 | exact Hwf ]. }
-    pose proof (H4 x ltac:(clear - Hx; solve_notin_auto) Hwfx) as HwfQ.
-    simpl. apply a_wf_pskl__arrow.
-    + rewrite bskl_to_pskl_btyp_to_bskl. rewrite H1.
-      apply a_wf_ptyp_to_wf_pskl. exact H0.
-    + eapply a_wf_pskl_mono;
-        [ exact HwfQ
-        | apply (@aenv_tbinds_le_strip_tm nil x (abind_var_typ A) Θ);
-          intros [] ].
-  - (* app : invert the function target's arrow *)
-    pose proof (IHad_pat2 Hwf) as Hwfarr.
-    simpl in Hwfarr.
-    inversion Hwfarr as [ | | Θz Δz Pa Pb Hwa Hwb | | | ]; subst.
-    exact Hwb.
-  - (* abs_check : rebuild ⊤(◇ → body) *)
-    destruct (atom_fresh (L `union` dom Θ)) as [x Hx].
-    assert (Hwfx : {{ ⊢ ((x ~ abind_var_skl pskl_hole) ++ Θ) }}a).
-    { apply a_wf_aenv__var;
-        [ clear - Hx; fsetdec | apply a_wf_pskl__hole | exact Hwf ]. }
-    pose proof (H0 x ltac:(clear - Hx; solve_notin_auto) Hwfx) as HwfQ.
-    assert (HwfQ' : {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl (pskl_to_bskl_syn P)) }}a)
-      by (eapply a_wf_pskl_mono;
-          [ exact HwfQ
-          | apply (@aenv_tbinds_le_strip_tm nil x (abind_var_skl pskl_hole) Θ);
-            intros [] ]).
-    rewrite bskl_to_pskl_pskl_to_bskl_syn in HwfQ'.
-    simpl. apply a_wf_pskl__tophole.
-    + apply guarded_pskl__arrow;
-        [ apply lc_pskl_hole | ].
-      rewrite bskl_to_pskl_pskl_to_bskl_syn.
-      eapply a_wf_pskl_lc; exact HwfQ'.
-    + apply a_wf_pskl__arrow;
-        [ apply a_wf_pskl__hole | ].
-      rewrite bskl_to_pskl_pskl_to_bskl_syn. exact HwfQ'.
-  - (* abs_anno_check *)
-    destruct (atom_fresh (L `union` dom Θ)) as [x Hx].
-    assert (Hwfx : {{ ⊢ ((x ~ abind_var_typ A) ++ Θ) }}a).
-    { apply a_wf_aenv__var_typ;
-        [ clear - Hx; fsetdec | exact H | exact Hwf ]. }
-    pose proof (H1 x ltac:(clear - Hx; solve_notin_auto) Hwfx) as HwfQ.
-    assert (HwfQ' : {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl (pskl_to_bskl_syn P)) }}a)
-      by (eapply a_wf_pskl_mono;
-          [ exact HwfQ
-          | apply (@aenv_tbinds_le_strip_tm nil x (abind_var_typ A) Θ);
-            intros [] ]).
-    rewrite bskl_to_pskl_pskl_to_bskl_syn in HwfQ'.
-    assert (HwfpA : {{ Θ ⨟ empty ⊢ₚₛ (ptyp_to_pskl A) }}a)
-      by (apply a_wf_ptyp_to_wf_pskl; exact H).
-    simpl. apply a_wf_pskl__tophole.
-    + apply guarded_pskl__arrow;
-        [ eapply a_wf_pskl_lc;
-          rewrite btyp_to_bskl_ptyp_to_btyp_syn,
-                  bskl_to_pskl_pskl_to_bskl_syn; exact HwfpA
-        | rewrite bskl_to_pskl_pskl_to_bskl_syn;
-          eapply a_wf_pskl_lc; exact HwfQ' ].
-    + apply a_wf_pskl__arrow;
-        [ rewrite btyp_to_bskl_ptyp_to_btyp_syn,
-                  bskl_to_pskl_pskl_to_bskl_syn; exact HwfpA
-        | rewrite bskl_to_pskl_pskl_to_bskl_syn; exact HwfQ' ].
-Qed.
 
 (* ===================================================================== *)
 (*  K7 — the ALGORITHM's skeleton-inference output is wf: a corollary of  *)
@@ -1182,7 +1085,7 @@ Proof.
               ltac:(apply a_sk_mode_compat__tc)
               Hincx Hrigx Hlcbody
               (Hbody x ltac:(clear - Hx; solve_notin_auto))
-              ltac:(apply ad_refine_syn__hole; exact HwfP))
+              ltac:(apply ad_refine_syn__hole; clear; fsetdec))
     as [Q' [Θ1' [Hrun Hopt]]].
   (* ---- 3. the run's identity increase shapes the output ---- *)
   assert (Hexpx : {{ ((x ~ bx) ++ Θ0) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a).
@@ -1258,12 +1161,9 @@ Proof.
     cbn [msubst_pskl bskl_to_pskl pskl_to_bskl_inh].
     rewrite bskl_to_pskl_pskl_to_bskl_syn.
     apply ad_refine_syn__tophole_keep.
-    { apply guarded_bskl__arrow;
-        [ apply lc_bskl_hole
-        | apply lc_pskl_to_bskl_inh; eapply a_wf_pskl_lc; exact HwfP ]. }
     apply ad_refine_syn__arrow.
     - apply (@ad_refine_syn__hole Θ empty pskl_hole).
-      apply a_wf_pskl__hole.
+      clear; fsetdec.
     - eapply ad_refine_syn_mono;
         [ exact Hprec
         | apply (@aenv_tbinds_le_strip_tm nil x bx Θ); intros h; exact h ]. }
@@ -1354,7 +1254,7 @@ Proof.
               ltac:(apply a_sk_mode_compat__tc)
               Hincx Hrigx Hlcbody
               (Hbody x ltac:(clear - Hx; solve_notin_auto))
-              ltac:(apply ad_refine_syn__hole; exact HwfP))
+              ltac:(apply ad_refine_syn__hole; clear; fsetdec))
     as [Q' [Θ1' [Hrun Hopt]]].
   (* ---- 3. the run's identity increase shapes the output ---- *)
   assert (Hexpx : {{ ((x ~ bx) ++ Θ0) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a).
@@ -1441,9 +1341,6 @@ Proof.
             [ exact Hincid' | apply HrigA; exact Hα ] ]. }
     rewrite HmsAζ.
     apply ad_refine_syn__tophole_keep.
-    { apply guarded_bskl__arrow;
-        [ apply lc_pskl_to_bskl_inh; apply ptyp_to_pskl_lc; exact HlcA
-        | apply lc_pskl_to_bskl_inh; eapply a_wf_pskl_lc; exact HwfP ]. }
     apply ad_refine_syn__arrow.
     - apply ad_precise_refl.
       apply a_wf_ptyp_to_wf_pskl. exact HwfA.
@@ -1536,9 +1433,9 @@ Proof.
       cbn [msubst_pskl pskl_to_bskl_inh] in Href.
       inversion Href; subst.
       match goal with
-      | Hp : pskl_to_bskl_syn ?PF = _, Hw : {{ _ ⨟ empty ⊢ₚₛ ?PF }}a |- _ =>
+      | Hp : pskl_to_bskl_syn ?PF = _ |- _ =>
           destruct PF; simpl in Hp; try discriminate;
-          inversion Hp; subst; inversion Hw; subst
+          inversion Hp; subst
       end.
       repeat split.
       + unfold ad_precise. cbn [msubst_pskl pskl_to_bskl_inh].
@@ -1546,9 +1443,9 @@ Proof.
         | Hpa : pskl_to_bskl_syn ?Pa = pskl_to_bskl_inh P |- _ =>
             rewrite <- Hpa
         end.
-        apply ad_refine_syn__hole. assumption.
+        apply ad_refine_syn__hole. clear; fsetdec.
       + cbn [msubst_pskl pskl_to_bskl_inh].
-        apply ad_refine_syn__hole. assumption.
+        apply ad_refine_syn__hole. clear; fsetdec.
       + apply a_wf_pskl__hole.
       + apply a_wf_pskl__hole.
     - (* the arrow shape : structural inversion *)
@@ -1560,7 +1457,8 @@ Proof.
   assert (HwfP1κ : {{ Θ ⨟ empty ⊢ₚₛ (msubst_pskl κ P1) }}a)
     by (eapply a_wf_pskl_msubst_inc;
         [ exact Hinc | exact Hwf0 | exact HwfP1
-        | intros α Hα; clear - Hα; fsetdec ]).
+        | intros α Hα; clear - Hα; fsetdec
+        | intros β γ _ _ _; clear; fsetdec ]).
   (* ---- 3. one fresh binder ---- *)
   destruct (atom_fresh (L `union` dom Θ0 `union` ftvar_in_aenv Θ0
                           `union` dom Θ `union` ftvar_in_aenv Θ
@@ -1854,22 +1752,22 @@ Proof.
     - cbn [msubst_pskl pskl_to_bskl_inh] in Href.
       inversion Href; subst.
       match goal with
-      | Hp : pskl_to_bskl_syn ?PF = _, Hw : {{ _ ⨟ empty ⊢ₚₛ ?PF }}a |- _ =>
+      | Hp : pskl_to_bskl_syn ?PF = _ |- _ =>
           destruct PF; simpl in Hp; try discriminate;
-          inversion Hp; subst; inversion Hw; subst
+          inversion Hp; subst
       end.
       repeat split.
       + cbn [msubst_pskl pskl_to_bskl_inh].
         first
-          [ apply ad_refine_syn__hole; assumption
+          [ apply ad_refine_syn__hole; clear; fsetdec
           | match goal with
             | Hpa : pskl_to_bskl_syn _ = btyp_to_bskl _ |- _ =>
-                rewrite <- Hpa; apply ad_refine_syn__hole; assumption
+                rewrite <- Hpa; apply ad_refine_syn__hole; clear; fsetdec
             | Hpa : btyp_to_bskl _ = pskl_to_bskl_syn _ |- _ =>
-                rewrite Hpa; apply ad_refine_syn__hole; assumption
+                rewrite Hpa; apply ad_refine_syn__hole; clear; fsetdec
             end ].
       + cbn [msubst_pskl pskl_to_bskl_inh].
-        apply ad_refine_syn__hole. assumption.
+        apply ad_refine_syn__hole. clear; fsetdec.
       + apply a_wf_pskl__hole.
       + apply a_wf_pskl__hole.
     - cbn [msubst_pskl pskl_to_bskl_inh] in Href.
@@ -1970,7 +1868,8 @@ Proof.
       [ exact Hincc | apply Hrig; clear - Hα Hup; fsetdec ]. }
   assert (HwfQ1mid : {{ Θmid ⨟ empty ⊢ₚₛ Q1 }}a).
   { pose proof (a_wf_pskl_msubst_inc Hincc Hwf0 HwfQ1
-                  ltac:(intros α Hα; clear - Hα; solve_notin_auto)) as Hw.
+                  ltac:(intros α Hα; clear - Hα; solve_notin_auto)
+                  ltac:(intros β γ _ _ _; clear; fsetdec)) as Hw.
     rewrite (msubst_pskl_id Q1 Hidc) in Hw. exact Hw. }
   destruct (IH x (decr_mode M) ((x ~ bA) ++ Θmid) Q1 ζc0 ((x ~ bA) ++ Θ) Q0
               Hwf0x HwfΘx
@@ -2297,7 +2196,7 @@ Proof.
               ltac:(apply a_sk_mode_compat__tc)
               Hinc Hrig2 Hlc2 Hd2
               ltac:(cbn [msubst_pskl pskl_to_bskl_inh];
-                    apply ad_refine_syn__hole; exact HwfPn))
+                    apply ad_refine_syn__hole; clear; fsetdec))
     as [P1 [Θ1 [Hrun2 Hopt2]]].
   (* its own identity increase *)
   assert (Hexp2 : {{ Θ0 ⊢ᵉ e2 }}a).
@@ -2343,7 +2242,8 @@ Proof.
         | apply a_wf_pskl__hole | apply a_sk_mode_compat__tc | exact Hexp2 ]).
   assert (HwfP0mid : {{ Θ1 ⨟ empty ⊢ₚₛ P0 }}a).
   { pose proof (a_wf_pskl_msubst_inc Hinca Hwf0 HwfP0
-                  ltac:(intros α Hα; clear - Hα; solve_notin_auto)) as Hw.
+                  ltac:(intros α Hα; clear - Hα; solve_notin_auto)
+                  ltac:(intros β γ _ _ _; clear; fsetdec)) as Hw.
     rewrite (msubst_pskl_id P0 Hida) in Hw. exact Hw. }
   assert (Hrig1mid : forall α, α `in` ftvar_in_exp e1 ->
              binds α abind_tvar Θ1)

@@ -140,9 +140,13 @@ modulo unknown top-level quantifiers. The pattern of `ids` is
 top-level quantification.
 
 Skeleton **refinement** `P ⟶ Q` fills ghosts in `P` to get `Q`. The
-two-level context `Ψ | Γ` tracks variables: `Ψ` is the scope inside
-the *current* `TopHole`-block; `Γ` is the outer term context. `TopHole`
-clears `Ψ` (universal-ghost contents cannot mention `Ψ`-vars).
+two-level context `Γ | Δ` tracks variables: `Γ` is the context, and `Δ`
+records the quantifiers bound inside the skeleton (a ∀ binds its variable
+in BOTH). A ∀◇ body is checked at `Γ∖Δ` (universal-ghost contents cannot
+mention `Δ`-vars), and a ghost fill must avoid `Δ`. Both sides of a
+refinement are presupposed well-formed (the mechanization follows the
+paper's rules verbatim since 2026-10-08; see
+`docs/WF-SIDE-CONDITIONS.md` §1).
 
 **Coloured refinement** `inh{P} ⟶ bid{Q}` fills inherited skeletons
 with synthesised continuations — the bridge from skeleton inference's
@@ -179,16 +183,19 @@ d_wf_typ ⊆ {d_wf_ttyp, d_wf_utyp} ⊆ d_wf_pskl ⊆ {d_wf_tskel, d_wf_uskel}
 ```
 
 Modes appear in `d_sub`, `d_pat_sub`, `d_refine_syn`, `d_typing`, `d_pat`.
-Tag contexts `Δ` thread through `d_consis`, `d_sub`, `d_pat_consis`,
+Tag contexts `Ψ` thread through `d_consis`, `d_sub`, `d_pat_consis`,
 `d_pat_sub` (in a "linear use" discipline — disjoint at arrows,
 singleton at tagged ∀, empty at unit/var).
 
-The two-context split `Ψ ⨟ Γ` shows up in the skeleton well-formedness
-judgments (`d_wf_pskl`, `d_wf_uskl`); `d_refine_syn` is now
-**three-context** (`Γ ⨟ Δs ⨟ Δi`). Term-typing
-judgments use only `Γ`. `Ψ` tracks variables bound *inside* the
-current skeleton; arrow rules thread `Ψ` to both branches; `TopHole`
-rules **clear** `Ψ`.
+The two-context split `Γ ⨟ Δ` shows up in the skeleton well-formedness
+judgments (`d_wf_pskl`, `d_wf_uskl`) and in refinement (`d_refine_syn`,
+`d_refine_pskl`). Term-typing judgments use only `Γ`. `Δ` tracks
+variables bound *inside* the current skeleton; a ∀ binds its variable in
+both `Γ` and `Δ`; arrow rules thread both to both branches; the ∀◇ wf
+rule checks its body at `Γ∖Δ` with an empty `Δ`, and the refinement
+Ghost rule asks `Δ ∩ ftv(fill) = ∅`. (Paper rule for rule since
+2026-10-08; the earlier encoding put a ∀'s variable in `Δ` only and
+checked the ghost fill's well-formedness.)
 
 The mutual `d_typing ⇄ d_pat` block exists because:
 
@@ -262,8 +269,9 @@ Metavariable convention in comments and statements: `A` for `ptyp`,
 
 ### 4.2 Predicative contexts (`list atom`)
 
-Tag contexts `Δ` and skeleton-scope contexts `Ψ` are plain `list
-atom`. Disjoint-union `Δ₁ ⊎ Δ₂` is encoded as `list_disjoint Δ₁ Δ₂`
+Tag contexts `Ψ` and skeleton ∀-scope contexts `Δ` are plain `list
+atom` in the declarative layer (`Δ` is an atom set in `algo_decl/` /
+`algo/`). Disjoint-union `Ψ₁ ⊎ Ψ₂` is encoded as `list_disjoint Ψ₁ Ψ₂`
 plus `++`. Avoids the multiset machinery the paper's prose hints at.
 
 The cost: arrow cases of transitivity-style lemmas like
@@ -458,8 +466,8 @@ it as `Θ₀,β ⊢ P_a` through the SolS-ForallR row and discharging β there
 from `β ∉ ftv ψ_a` plus the PRECISION conclusion (:1897-1900).
 `a_solve_sub_complete_var` now does the same.  Two mech-only steps the
 paper's single-context `Θ ⊢ P` does not need, both in
-prop_look_complete_sub_var.v: the mech types a ∀◇ body at the EMPTY Δ,
-so moving a binder out of the context and into Δ (SolS-ForallL's row)
+prop_look_complete_sub_var.v: the mech checks a ∀◇ body at `Θ∖Δ` (the
+paper's two-context rule), so adding a binder to Δ (SolS-ForallL's row)
 is legal only for an UNSHIELDED variable — hence
 `a_wf_pskl_tvar_to_delta` and `a_solve_sub_eq_unshielded` ("solving does
 not shield a context variable the subject leaves unshielded"; the escape
@@ -1031,7 +1039,7 @@ the paper theorem without qualification**:
   separate regularity lemma if needed).
 - **Wf premises on intro rules.** `d_typing__abs` / `_abs_anno` /
   `d_pat__anno` / `d_pat__abs` carry explicit `d_wf_typ Γ A` /
-  `d_wf_pskl nil Γ P`. The paper does not state these — they're
+  `d_wf_pskl Γ nil P`. The paper does not state these — they're
   regularity strengthenings the mechanization needs to close
   `d_typing_pat_preserves_wf`. Worth a paper footnote. (After the
   2026-05-15 re-encoding, `d_typing__abs` / `_abs_anno` wf premise is
@@ -1151,8 +1159,9 @@ at the call site.
 
 - **Validity / Safety of skeleton inference (D6 / D7)** — the
   refinement reflexivity on *guarded* skeletons is exactly the kind
-  of side-condition that the colour discipline supplies; look at the
-  `d_refine_syn` rules' guardedness premises.
+  of side-condition that the colour discipline supplies.  (The
+  `d_refine_syn` rules no longer carry guardedness premises — since
+  2026-10-08 it comes from the presupposed well-formedness.)
 - **Algorithmic stability lemma chain** — colours and modes survive
   algorithmically; many "obvious" stability claims should reduce to
   the same morph + discipline trick.

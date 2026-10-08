@@ -28,7 +28,7 @@
       at every use site.
     - [a_wf_pskl]'s ∀ row is COFINITE, so the checker opens the body at ONE
       name ([supply_fresh] over everything in scope) and soundness
-      regenerates the cofinite family by renaming ([a_wf_pskl_rename_delta],
+      regenerates the cofinite family by renaming ([a_wf_pskl_rename_bound],
       the same kit [a_wf_pskl_all_inv_at] uses in the other direction).
       ⚙ The checker carries a FUEL argument to be structurally recursive —
       opening a binder is no structural descent.  This does NOT contradict
@@ -50,7 +50,7 @@ Require Import src.fresco.algo.def_rules.
 Require Import src.fresco.algo.prop_refine.               (* a_wf_pskl_delta_mono *)
 Require Import src.fresco.algo.sub.prop_solve_sub.        (* lc_pskl_*_inv *)
 Require Import src.fresco.algo.consis.prop_soundness_consis.
-                     (* a_wf_pskl_lc, a_wf_pskl_rename_delta *)
+                     (* a_wf_pskl_lc, a_wf_pskl_rename_bound *)
 Require Import src.fresco.ext_algo.def_supply.
 
 (* ⚠️ NO [Set Implicit Arguments] — this file's definitions are consumed by
@@ -438,23 +438,35 @@ Proof. intros; subst; apply split_tvar_head_hit. Qed.
 
 (** ONE cofinite instance at a name fresh for everything in scope is enough
     to regenerate the whole family — the introduction twin of
-    [a_wf_pskl_all_inv_at] (prop_soundness_consis.v), off the same renaming
-    kit. *)
+    [a_wf_pskl_all_inv_at] (prop_soundness_consis.v), off the bound-renaming
+    kit [a_wf_pskl_rename_bound]: the ∀ binder sits in BOTH the context
+    (as a rigid marker) and [Δ], and the renaming moves it in both. *)
 Lemma a_wf_pskl_all_intro_at : forall Θ Δ P β,
   β `notin` dom Θ `union` ftvar_in_pskl P `union` Δ ->
-  {{ Θ ⨟ (add β Δ) ⊢ₚₛ (open_pskl_wrt_pskl P (pskl_var_f β)) }}a ->
+  {{ ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ) ⊢ₚₛ
+     (open_pskl_wrt_pskl P (pskl_var_f β)) }}a ->
   {{ Θ ⨟ Δ ⊢ₚₛ (pskl_all_syn P) }}a.
 Proof.
   intros * Hβ Hone.
   apply a_wf_pskl__all
     with (L := dom Θ `union` ftvar_in_pskl P `union` Δ `union` singleton β).
   intros α Hα.
-  pose proof (@a_wf_pskl_rename_delta Θ (add β Δ)
-                (open_pskl_wrt_pskl P (pskl_var_f β)) β α Hone
-                ltac:(clear - Hβ; fsetdec)) as Hr.
+  assert (Hαo : α `notin` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f β))).
+  { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f β))
+      as Hup. simpl in Hup. clear - Hup Hα. fsetdec. }
+  pose proof (@a_wf_pskl_rename_bound _ _ _ Hone
+                ((α ~ abind_tvar) ++ Θ) β α
+                ltac:(intros γ Hγ Hne;
+                      apply a_binds_tvar_cons_tvar_inv in Hγ;
+                      destruct Hγ as [ -> | Hγ ]; [ congruence | ];
+                      apply a_binds_tvar_cons_tvar; right; exact Hγ)
+                ltac:(apply a_binds_tvar_cons_tvar; left; reflexivity)
+                ltac:(clear; fsetdec)
+                Hαo) as Hr.
   rewrite <- (subst_pskl_in_pskl_intro β P (pskl_var_f α)
                 ltac:(clear - Hβ; fsetdec)) in Hr.
-  eapply a_wf_pskl_delta_mono; [ exact Hr | clear -Hβ; fsetdec ].
+  eapply a_wf_pskl_delta_mono; [ exact Hr | ].
+  intros γ _ Hγ. clear - Hβ Hγ. fsetdec.
 Qed.
 
 (** The fuel only bounds the depth (see the header); call at [size_pskl P]. *)
@@ -466,13 +478,15 @@ Fixpoint wf_pskl_ck (n : nat) (Θ : aenv) (Δ : atoms) (P : pskl)
       match P with
       | pskl_unit => true
       | pskl_var_b _ => false
-      | pskl_var_f α => mem α Δ || tvarish_ck Θ α
+      | pskl_var_f α => tvarish_ck Θ α
       | pskl_arrow P1 P2 => wf_pskl_ck n' Θ Δ P1 && wf_pskl_ck n' Θ Δ P2
       | pskl_all_syn P1 =>
           let β := supply_fresh (dom Θ `union` Δ `union` ftvar_in_pskl P1) in
-          wf_pskl_ck n' Θ (add β Δ) (open_pskl_wrt_pskl P1 (pskl_var_f β))
+          wf_pskl_ck n' ((β ~ abind_tvar) ++ Θ) (add β Δ)
+                     (open_pskl_wrt_pskl P1 (pskl_var_f β))
       | pskl_hole => true
-      | pskl_tophole P1 => guarded_shape_ck P1 && wf_pskl_ck n' Θ empty P1
+      | pskl_tophole P1 =>
+          guarded_shape_ck P1 && wf_pskl_ck n' (aenv_minus Θ Δ) empty P1
       end
   end.
 
@@ -483,10 +497,7 @@ Proof.
   destruct P.
   - apply a_wf_pskl__unit.
   - discriminate.
-  - apply a_wf_pskl__var. apply orb_prop in Hck.
-    destruct Hck as [Hm | Ht];
-      [ left; apply mem_true_in; exact Hm
-      | right; apply tvarish_ck_binds; exact Ht ].
+  - apply a_wf_pskl__var. apply tvarish_ck_binds; exact Hck.
   - apply andb_prop in Hck; destruct Hck.
     apply a_wf_pskl__arrow; apply IH; assumption.
   - apply a_wf_pskl_all_intro_at

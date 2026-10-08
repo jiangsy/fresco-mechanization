@@ -290,7 +290,7 @@ Proof.
     { (* and the guess's half *)
       simpl. clear. fsetdec. } }
   { simpl. solve_uniq. }
-  { apply a_wf_pskl__var. right. right. left. unfold binds; simpl; auto. }
+  { apply a_wf_pskl__var. right. left. unfold binds; simpl; auto. }
   (* CONTINUATION: [α̂1 → α̂1 ⩽[TC] f̂] — Check, FlexR, Depend, SolveM *)
   unfold open_pskl_wrt_pskl; simpl.
   eapply a_sub__check.

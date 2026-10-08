@@ -3287,7 +3287,7 @@ Proof.
                            (pskl_var_f α)) }}a).
     { apply a_wf_pskl_mono_subst;
         [ | exact Hwf | exact Hbβ | exact Hτmono ].
-      apply a_wf_pskl__var. right. destruct Hfa as [Hb | [t Hb]];
+      apply a_wf_pskl__var. destruct Hfa as [Hb | [t Hb]];
         [ right; left | right; right; exists t ];
         unfold binds in *; apply in_or_app; right; exact Hb. }
     assert (Hstrip : forall R, β `notin` ftvar_in_ptyp τ ->
@@ -4499,7 +4499,7 @@ Proof.
       | |- context [ if ?X then _ else _ ] => destruct X as [Eyα | Hne0]
       end.
       - apply a_wf_pskl_mono_ptyp; [ exact Hτmono | exact Hτwf ].
-      - apply a_wf_pskl__var. right. exact (Hbt y Hy Hne0). }
+      - apply a_wf_pskl__var. exact (Hbt y Hy Hne0). }
     assert (HΔtv : forall γ, γ `in` (empty ∪ empty) ->
                    binds γ abind_tvar Θ0)
       by (intros γ Hγ; exfalso; clear - Hγ; fsetdec).
@@ -5076,9 +5076,9 @@ Proof.
     assert (HcovP1 : ftvar_in_pskl P0b2 ∪ ftvar_in_pskl P12 [<=] S0)
       by (simpl in HcovP; clear - HcovP; fsetdec).
     assert (Hwfp01 : {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a)
-      by (inversion Hwfp0; subst; assumption).
+      by (inversion Hwfp0; subst; rewrite aenv_minus_empty in *; assumption).
     assert (Hwfp1 : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a)
-      by (inversion Hwfp; subst; assumption).
+      by (inversion Hwfp; subst; rewrite aenv_minus_empty in *; assumption).
     destruct (IH S0 Θ0' Δ1' Δ2' P0b2 P12 ρ V
                 HrΘ HrP0b HrPb Hrd1 Hrd2 Hagr Hinj Hfun Hwf Huq2p Hftv2 Hscp Hblk HdΘ Hcov
                 HcovP1 HcovΔ Hwfp01 Hwfp1 HΔtv Hnfd Hfaf HΔsc)
@@ -5102,7 +5102,7 @@ Proof.
     assert (HcovP1 : ftvar_in_pskl P0' ∪ ftvar_in_pskl P12 [<=] S0)
       by (simpl in HcovP; clear - HcovP; fsetdec).
     assert (Hwfp1 : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a)
-      by (inversion Hwfp; subst; assumption).
+      by (inversion Hwfp; subst; rewrite aenv_minus_empty in *; assumption).
     destruct (IH S0 Θ0' Δ1' Δ2' P0' P12 ρ V
                 HrΘ HrP0 HrPb Hrd1 Hrd2 Hagr Hinj Hfun Hwf Huq2p Hftv2 Hscp Hblk HdΘ Hcov
                 HcovP1 HcovΔ Hwfp0 Hwfp1 HΔtv Hnfd Hfaf HΔsc)
@@ -5250,7 +5250,7 @@ Proof.
     assert (HcovP1 : ftvar_in_pskl P0b2 ∪ ftvar_in_pskl P' [<=] S0)
       by (simpl in HcovP; clear - HcovP; fsetdec).
     assert (Hwfp01 : {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a)
-      by (inversion Hwfp0; subst; assumption).
+      by (inversion Hwfp0; subst; rewrite aenv_minus_empty in *; assumption).
     destruct (IH S0 Θ0' Δ1' Δ2' P0b2 P' ρ V
                 HrΘ HrP0b HrP Hrd1 Hrd2 Hagr Hinj Hfun Hwf Huq2p Hftv2 Hscp Hblk HdΘ Hcov
                 HcovP1 HcovΔ Hwfp01 Hwfp HΔtv Hnfd Hfaf HΔsc)
@@ -6174,8 +6174,7 @@ Proof.
     assert (HcovP0 : ftvar_in_pskl P0' [<=] S0)
       by (simpl in HcovP; clear - HcovP; fsetdec).
     assert (Hbα : a_binds_tvar α Θ0).
-    { inversion Hwfp as [ | Θz Δz αz Hd | | | | ]; subst.
-      destruct Hd as [Hd | Hd]; [ exfalso; clear - Hd; fsetdec | exact Hd ]. }
+    { inversion Hwfp as [ | Θz Δz αz Hd | | | | ]; subst. exact Hd. }
     destruct (IHf S0 Θ0' nil α2 P0' ρ V HrΘ (@rel_aenv__nil ρ V) Hatα HrP0
                 ltac:(simpl_env; exact Hagr) Hinj
                 ltac:(simpl_env; exact Hfun)
@@ -6515,7 +6514,10 @@ Proof.
       | Hb : forall a, a `notin` ?L0 -> _ |- _ =>
           eapply a_wf_pskl_open with (L := L0); [ | exact Hwf1 ];
           intros a0 Ha0; eapply a_wf_pskl_weaken;
-            [ intros x b Hbd; apply binds_app_3; exact Hbd
+            [ intros x b Hbd; apply binds_app_1 in Hbd;
+              destruct Hbd as [Hbd | Hbd];
+              [ apply binds_app_2; exact Hbd
+              | apply binds_app_3; apply binds_app_3; exact Hbd ]
             | apply Hb; exact Ha0 ]
       end. }
     destruct (IHs S1e (Ξ2 ++ Θ0') P0'
@@ -6595,7 +6597,7 @@ Proof.
     assert (HcovP1 : ftvar_in_pskl P0' ∪ ftvar_in_pskl P12 [<=] S0)
       by (simpl in HcovP; clear - HcovP; fsetdec).
     assert (Hwfp1 : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a)
-      by (inversion Hwfp; subst; assumption).
+      by (inversion Hwfp; subst; rewrite aenv_minus_empty in *; assumption).
     destruct (IHs S0 Θ0' P0' P12 ρ V HrΘ HrP0 HrPb Hagr Hinj Hfun Hwf Huq2p
                 Hftv2 Hscp Hblk HdΘ Hcov HcovP1 Hwfp0 Hwfp1)
       as (S1 & ρe & Θ1' & Q' & De & HrΘ1 & Hagr1 & HrQ & Hext & Hdom1).
@@ -6815,7 +6817,7 @@ Proof.
                 (ptyp_arrow (ptyp_var_f α) (ptyp_var_f β)))
            ++ (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono) ++ Θ0) ⨟ empty ⊢ₚₛ
                        (pskl_arrow (pskl_var_f α) (pskl_var_f β)) }}a).
-    { apply a_wf_pskl__arrow; apply a_wf_pskl__var; right;
+    { apply a_wf_pskl__arrow; apply a_wf_pskl__var;
         [ right; left | right; left ]; unfold binds; apply in_or_app; right;
         simpl; [ right; right; left; reflexivity
                | right; left; reflexivity ]. }
@@ -7125,7 +7127,7 @@ Proof.
                            (pskl_var_f α)) }}a).
     { apply a_wf_pskl_mono_subst;
         [ | exact Hwf | exact HbβM | exact Hτmono ].
-      apply a_wf_pskl__var. right. exact HbαM. }
+      apply a_wf_pskl__var. exact HbαM. }
     assert (Hstrip : forall R,
               β `notin` ftvar_in_pskl (subst_pskl_in_pskl (ptyp_to_pskl τ) β R)).
     { intros R.
@@ -7565,7 +7567,7 @@ Proof.
                         ++ Θa) ⨟ empty ⊢ₚₛ
                        (pskl_arrow (pskl_var_f β) (pskl_var_f α1)) }}a).
     { apply a_wf_pskl__arrow;
-        apply a_wf_pskl__var; right; right; left; unfold binds; simpl;
+        apply a_wf_pskl__var; right; left; unfold binds; simpl;
         solve [ left; reflexivity | right; left; reflexivity ]. }
     assert (Hwfp1s : {{ ((α1 ~ abind_flex_mono) ++ (β ~ abind_flex_mono)
                          ++ Θa) ⨟ empty ⊢ₚₛ (pskl_var_f α) }}a)
