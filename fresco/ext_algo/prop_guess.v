@@ -83,8 +83,8 @@ Proof.
                    | S0 S1 S2 P Q Ξ1 Ξ2 A B H1 IH1 H2 IH2
                    | S0 S1 P Ξ A β Hβ H IH ];
     intros α0 Hα0; simpl in *.
-  - (* hole *) assert (α0 = α) by (clear - Hα0; fsetdec). subst. assumption.
-  - (* tophole *) auto.
+  - (* ghost *) assert (α0 = α) by (clear - Hα0; fsetdec). subst. assumption.
+  - (* univ_ghost *) auto.
   - (* var *) clear - Hα0; fsetdec.
   - (* unit *) clear - Hα0; fsetdec.
   - (* arrow *)
@@ -260,7 +260,7 @@ Qed.
 (*  The single hypothesis is the SUPPLY INVARIANT: [S0] covers everything  *)
 (*  the ambient context and the subject mention.  It replaces both of      *)
 (*  [a_guess_mono]'s side conditions at once — [α ∉ ftvar_in_aenv Θ] on    *)
-(*  the hole row, and [β ∉ ftvar_in_aenv Θ ∪ ftvar_in_pskl P] on the ∀     *)
+(*  the ghost row, and [β ∉ ftvar_in_aenv Θ ∪ ftvar_in_pskl P] on the ∀     *)
 (*  row — because a supply, unlike a context, holds the subject's          *)
 (*  variables too.                                                         *)
 (* ===================================================================== *)
@@ -277,9 +277,9 @@ Proof.
                    | S0 S1 S2 P Q Ξ1 Ξ2 A B H1 IH1 H2 IH2
                    | S0 S1 P Ξ A β Hβ H IH ];
     intros Θ HΘ HP; simpl in HP.
-  - (* hole *)
-    apply a_guess_mono__hole. clear - Hα HΘ. fsetdec.
-  - (* tophole *) apply a_guess_mono__tophole. auto.
+  - (* ghost *)
+    apply a_guess_mono__ghost. clear - Hα HΘ. fsetdec.
+  - (* univ_ghost *) apply a_guess_mono__univ_ghost. auto.
   - (* var *) apply a_guess_mono__var.
   - (* unit *) apply a_guess_mono__unit.
   - (* arrow: the right half runs at [S1], so [Θ] travels by 1.1 *)
@@ -315,18 +315,18 @@ Qed.
 (* ===================================================================== *)
 
 Example a_guess_mono_admits_repeated_block : forall α,
-  a_guess_mono nil (pskl_arrow pskl_hole pskl_hole)
+  a_guess_mono nil (pskl_arrow pskl_ghost pskl_ghost)
     ((α ~ abind_flex_mono) ++ (α ~ abind_flex_mono))
     (ptyp_arrow (ptyp_var_f α) (ptyp_var_f α)).
 Proof.
   intros α.
   apply a_guess_mono__arrow with
     (Ξ1 := (α ~ abind_flex_mono) ++ nil) (Ξ2 := (α ~ abind_flex_mono) ++ nil);
-    apply a_guess_mono__hole; simpl; solve_notin_auto.
+    apply a_guess_mono__ghost; simpl; solve_notin_auto.
 Qed.
 
 Example e_guess_mono_refuses_repeated_block : forall α S0 S1,
-  ~ e_guess_mono S0 (pskl_arrow pskl_hole pskl_hole) S1
+  ~ e_guess_mono S0 (pskl_arrow pskl_ghost pskl_ghost) S1
       ((α ~ abind_flex_mono) ++ (α ~ abind_flex_mono))
       (ptyp_arrow (ptyp_var_f α) (ptyp_var_f α)).
 Proof.
@@ -366,12 +366,12 @@ Lemma e_guess_mono_supply_respect : forall S0 P S1 Ξ A,
   exists S1', S1' [=] S1 /\ e_guess_mono S0' P S1' Ξ A.
 Proof.
   induction 1; intros S0' Heq.
-  - (* hole — the one row that INVENTS *)
+  - (* ghost — the one row that INVENTS *)
     exists (add α S0'). split; [ clear - Heq; fsetdec | ].
-    apply e_guess_mono__hole. clear - H Heq. fsetdec.
-  - (* tophole *)
+    apply e_guess_mono__ghost. clear - H Heq. fsetdec.
+  - (* univ_ghost *)
     destruct (IHe_guess_mono _ Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_guess_mono__tophole; exact Hd ].
+    exists S1'. split; [ exact HS1 | apply e_guess_mono__univ_ghost; exact Hd ].
   - (* var *)
     exists S0'. split; [ exact Heq | apply e_guess_mono__var ].
   - (* unit *)
@@ -420,13 +420,13 @@ Lemma e_guess_mono_swap : forall a b S0 P S1 Ξ τ,
       (swap_ptyp a b τ).
 Proof.
   intros a b S0 P S1 Ξ τ H. induction H; intros S0' Heq; simpl.
-  - (* hole — the row that INVENTS; its witness rides the swap *)
+  - (* ghost — the row that INVENTS; its witness rides the swap *)
     exists (add (swap_atom a b α) S0'). split;
       [ apply eq_swap_atoms_add; exact Heq | ].
-    apply e_guess_mono__hole. eapply swap_notin_eq; eassumption.
-  - (* tophole *)
+    apply e_guess_mono__ghost. eapply swap_notin_eq; eassumption.
+  - (* univ_ghost *)
     destruct (IHe_guess_mono _ Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_guess_mono__tophole; exact Hd ].
+    exists S1'. split; [ exact HS1 | apply e_guess_mono__univ_ghost; exact Hd ].
   - (* var *) exists S0'. split; [ exact Heq | apply e_guess_mono__var ].
   - (* unit *) exists S0'. split; [ exact Heq | apply e_guess_mono__unit ].
   - (* arrow — threaded, so the two ∃-witnesses chain *)
@@ -472,8 +472,8 @@ Qed.
 (*  so every one of them is unconditional.                                *)
 (* ===================================================================== *)
 
-Lemma e_guess_mono_inv_hole : forall S0 S1 Ξ A,
-  e_guess_mono S0 pskl_hole S1 Ξ A ->
+Lemma e_guess_mono_inv_ghost : forall S0 S1 Ξ A,
+  e_guess_mono S0 pskl_ghost S1 Ξ A ->
   exists α, α `notin` S0 /\ S1 = add α S0 /\
     Ξ = (α ~ abind_flex_mono) ++ nil /\ A = ptyp_var_f α.
 Proof. intros * Hd. inversion Hd; subst; eauto 10. Qed.
@@ -500,8 +500,8 @@ Lemma e_guess_mono_inv_all_syn : forall S0 P S1 Ξ A,
     e_guess_mono (add β S0) (open_pskl_wrt_pskl P (pskl_var_f β)) S1 Ξ A0.
 Proof. intros * Hd. inversion Hd; subst; eauto 10. Qed.
 
-Lemma e_guess_mono_inv_tophole : forall S0 P S1 Ξ A,
-  e_guess_mono S0 (pskl_tophole P) S1 Ξ A -> e_guess_mono S0 P S1 Ξ A.
+Lemma e_guess_mono_inv_univ_ghost : forall S0 P S1 Ξ A,
+  e_guess_mono S0 (pskl_univ_ghost P) S1 Ξ A -> e_guess_mono S0 P S1 Ξ A.
 Proof. intros * Hd. inversion Hd; subst; auto. Qed.
 
 (** A dangling index is not a skeleton any run can be given — the same

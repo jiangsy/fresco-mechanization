@@ -240,15 +240,15 @@ Proof.
     intros x Hx.
     apply H0;
       [ clear - Hx; fsetdec
-      | apply ad_ctx_precise__tm with (P' := pskl_hole) (P := pskl_hole);
+      | apply ad_ctx_precise__tm with (P' := pskl_ghost) (P := pskl_ghost);
           [ reflexivity | reflexivity
-          | apply ad_precise_refl; apply a_wf_pskl__hole | exact Hctx ]
+          | apply ad_precise_refl; apply a_wf_pskl__ghost | exact Hctx ]
       | apply a_wf_aenv__var;
           [ pose proof (ad_ctx_precise_dom Hctx) as Hd;
             clear - Hx Hd; fsetdec
-          | apply a_wf_pskl__hole | exact HwfΘ ]
+          | apply a_wf_pskl__ghost | exact HwfΘ ]
       | apply a_wf_aenv__var;
-          [ clear - Hx; fsetdec | apply a_wf_pskl__hole | exact HwfΘ' ] ].
+          [ clear - Hx; fsetdec | apply a_wf_pskl__ghost | exact HwfΘ' ] ].
   - (* abs_anno_check *)
     assert (HwfA' : a_wf_ptyp Θ' A)
       by (eapply a_wf_ptyp_mono; eauto).

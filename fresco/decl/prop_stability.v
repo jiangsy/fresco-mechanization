@@ -349,7 +349,7 @@ Lemma d_sub_fn_all_syn_inv : forall Δ Γ m C B,
     exists Ψ' C',
       Ψ' ∩ Δ [=] empty /\
       Ψ' ∩ (ftag_in_utyp (utyp_all_syn C)) [=] empty /\
-      d_tags Ψ' C' /\ {{ Γ ⊢ᵤ C' }}d /\ is_ttyp C' /\
+      d_tags Ψ' C' /\ {{ Γ ⊢ᵤ C' }}d /\ is_dtyp C' /\
       {{ (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn m ] (open_utyp_wrt_utyp C C') ⩽ B }}d.
 Proof.
   intros Δ Γ m C B Hsub.
@@ -367,7 +367,7 @@ Lemma d_sub_fnn_all_syn_inv : forall n m Δ Γ C B,
     exists Ψ' C',
       Ψ' ∩ Δ [=] empty /\
       Ψ' ∩ (ftag_in_utyp (utyp_all_syn C)) [=] empty /\
-      d_tags Ψ' C' /\ {{ Γ ⊢ᵤ C' }}d /\ is_ttyp C' /\
+      d_tags Ψ' C' /\ {{ Γ ⊢ᵤ C' }}d /\ is_dtyp C' /\
       {{ (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn_n n m ] (open_utyp_wrt_utyp C C') ⩽ B }}d.
 Proof.
   intros n m Δ Γ C B Hpos Hsub.

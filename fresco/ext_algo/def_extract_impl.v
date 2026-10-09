@@ -89,7 +89,7 @@ Equations e_extract_impl (S0 : supply) (Θ0 : aenv) (NM : a_sub_mode)
     | None => None
     | Some (exist _ r1 Hr1) =>
         match e_solve_cstr_impl (lk_supply r1) (lk_block r1 ++ Θ0)
-                (lk_cstrs r1) pskl_hole _ _ _ with
+                (lk_cstrs r1) pskl_ghost _ _ _ with
         | None => None
         | Some (exist _ r2 Hr2) =>
             let r3 := e_guess_run (sv_supply r2) NM (sv_out r2) _ in

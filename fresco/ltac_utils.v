@@ -78,9 +78,9 @@ Tactic Notation "destruct_if" "as" simple_intropattern(pat) :=
 Ltac fsetdec_empty :=
   match goal with H : _ [=] empty |- _ => clear - H; fsetdec end.
 
-(* Discharge an absurd [guarded_pskl pskl_hole] hypothesis. *)
-Ltac inv_guarded_hole :=
-  match goal with H : guarded_pskl pskl_hole |- _ => inversion H end.
+(* Discharge an absurd [guarded_pskl pskl_ghost] hypothesis. *)
+Ltac inv_guarded_ghost :=
+  match goal with H : guarded_pskl pskl_ghost |- _ => inversion H end.
 
 (* ===================================================================== *)
 (*  ⭐ THE [∉] KIT — use these instead of a bare or `clear -`-scoped       *)

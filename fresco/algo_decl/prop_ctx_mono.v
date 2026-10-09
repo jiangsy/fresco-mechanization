@@ -221,12 +221,12 @@ Proof.
   - eapply ad_pat_consis__forall_syn with (L := L).
     intros α Hα; apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
   - apply ad_pat_consis__ghostg; assumption.
-  - apply ad_pat_consis__topholeg; auto.
-  - apply ad_pat_consis__hole; [ assumption | eapply a_wf_pskl_mono; eauto ].
-  - apply ad_pat_consis__tophole; auto.
-  - eapply ad_pat_consis__tophole_inh with (L := L).
+  - apply ad_pat_consis__dot_univ_ghost; auto.
+  - apply ad_pat_consis__ghost; [ assumption | eapply a_wf_pskl_mono; eauto ].
+  - apply ad_pat_consis__univ_ghost; auto.
+  - eapply ad_pat_consis__univ_ghost_inh with (L := L).
     intros α Hα; apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
-  - apply ad_pat_consis__tophole_drop; auto.
+  - apply ad_pat_consis__univ_ghost_drop; auto.
   - eapply ad_pat_consis__flex_l;
       [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
   - eapply ad_pat_consis__flex_r;
@@ -244,13 +244,13 @@ Proof.
   - (* ∀ : binds into both Θ and Δ *)
     apply ad_refine_syn__all with (L := L); [ assumption | ]. intros α Hα.
     apply H1; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
-  - apply ad_refine_syn__hole. assumption.
-  - apply ad_refine_syn__tophole_remove; auto.
-  - (* tophole_fill : binds into Θ *)
-    apply ad_refine_syn__tophole_fill with (L := L); [ assumption | ].
+  - apply ad_refine_syn__ghost. assumption.
+  - apply ad_refine_syn__univ_ghost_remove; auto.
+  - (* univ_ghost_fill : binds into Θ *)
+    apply ad_refine_syn__univ_ghost_fill with (L := L); [ assumption | ].
     intros α Hα.
     apply H1; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
-  - apply ad_refine_syn__tophole_keep; auto.
+  - apply ad_refine_syn__univ_ghost_keep; auto.
   - eapply ad_refine_syn__flex_l;
       [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
   - eapply ad_refine_syn__flex_r;
@@ -267,11 +267,11 @@ Proof.
   - apply ad_refine_pskl__arrow; auto.
   - apply ad_refine_pskl__all with (L := L). intros α Hα.
     apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
-  - apply ad_refine_pskl__hole. assumption.
-  - apply ad_refine_pskl__tophole_remove; auto.
-  - apply ad_refine_pskl__tophole_fill with (L := L). intros α Hα.
+  - apply ad_refine_pskl__ghost. assumption.
+  - apply ad_refine_pskl__univ_ghost_remove; auto.
+  - apply ad_refine_pskl__univ_ghost_fill with (L := L). intros α Hα.
     apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
-  - apply ad_refine_pskl__tophole_keep; auto.
+  - apply ad_refine_pskl__univ_ghost_keep; auto.
   - eapply ad_refine_pskl__flex_l;
       [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
   - eapply ad_refine_pskl__flex_r;

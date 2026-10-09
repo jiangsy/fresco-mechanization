@@ -48,7 +48,7 @@ Inductive e_extract : supply -> aenv -> a_sub_mode -> atom -> mode
        ([Ξ ++ Θ0], then [Ξs ++ Ξ ++ Θ0]) is kept verbatim — the solving layer
        reads flexibles out of it — and the supply is threaded alongside. *)
     {{ S0 ↝ S1 ⊨ Θ0 ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
-    {{ S1 ↝ S2 ⊨ (Ξ ++ Θ0) ⊩ C ⨾ pskl_hole ⤳ Ξs ⨾ Q }}e ->
+    {{ S1 ↝ S2 ⊨ (Ξ ++ Θ0) ⊩ C ⨾ pskl_ghost ⤳ Ξs ⨾ Q }}e ->
     e_guess S2 NM Q S3 Ξ' Q' ->
     {{ S0 ↝ S3 ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ (Ξ ++ Ξs ++ Ξ') ↪ Q' }}e
 where "{{ S0 ↝ S1 ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q }}e" :=

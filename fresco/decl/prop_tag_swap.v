@@ -198,7 +198,7 @@ Inductive d_sub_tagsin :
     Ψ' [<=] U ->                     (* ⭐ the ONE premise [d_sub] does not have *)
     d_tags Ψ' ph ->
     {{ Γ ⊢ᵤ ph }}d ->
-    is_ttyp ph ->
+    is_dtyp ph ->
     d_sub_tagsin U m (Ψ `union` Ψ') Γ (open_utyp_wrt_utyp C ph) B ->
     d_sub_tagsin U m Ψ Γ (utyp_all_tag ε C) B
 | d_sub_tagsin__forall_l_untagged : forall U Ψ Ψ' Γ m C ph B,
@@ -208,7 +208,7 @@ Inductive d_sub_tagsin :
     Ψ' [<=] U ->
     d_tags Ψ' ph ->
     {{ Γ ⊢ᵤ ph }}d ->
-    is_ttyp ph ->
+    is_dtyp ph ->
     d_sub_tagsin U m (Ψ `union` Ψ') Γ (open_utyp_wrt_utyp C ph) B ->
     d_sub_tagsin U m Ψ Γ (utyp_all_syn C) B.
 
@@ -295,7 +295,7 @@ Proof.
     + rewrite HU. apply swap_atoms_subset_of; assumption.
     + eapply d_tags_swap_tag; [ eassumption | reflexivity ].
     + apply d_wf_utyp_swap_tag; assumption.
-    + apply is_ttyp_swap_tag; assumption.
+    + apply is_dtyp_swap_tag; assumption.
     + rewrite <- swap_tag_in_utyp_open. apply IHd_sub_tagsin;
         [ exact HU | rewrite Heq; symmetry; apply swap_atoms_union ].
   - apply d_sub_tagsin__forall_l_untagged
@@ -307,7 +307,7 @@ Proof.
     + rewrite HU. apply swap_atoms_subset_of; assumption.
     + eapply d_tags_swap_tag; [ eassumption | reflexivity ].
     + apply d_wf_utyp_swap_tag; assumption.
-    + apply is_ttyp_swap_tag; assumption.
+    + apply is_dtyp_swap_tag; assumption.
     + rewrite <- swap_tag_in_utyp_open. apply IHd_sub_tagsin;
         [ exact HU | rewrite Heq; symmetry; apply swap_atoms_union ].
 Qed.

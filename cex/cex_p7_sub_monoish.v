@@ -3,7 +3,7 @@
 
     On the CONSISTENCY side,
 
-        {{ Ψs ⨟ Θ ⊢ˢ ψ ∼ Q }}ad  →  is_tskl ψ  →  bskl_monoish Q
+        {{ Ψs ⨟ Θ ⊢ˢ ψ ∼ Q }}ad  →  is_dskl ψ  →  bskl_monoish Q
           →  Ψs }}ad = ∅  ∧  ψ is a mono PAINT      ([ad_pat_consis_monoish_counterpart])
 
     holds, and it is load-bearing — it is how P6-Cv reads the counterpart
@@ -14,7 +14,7 @@
     rules all require the COUNTERPART to be a quantifier too, so a mono-ish
     counterpart forces the subject mono there.  Subtyping's ForallL does not —
     it INSTANTIATES, so a tagged-∀ subject can face a mono-ish counterpart
-    directly.  Below, [∀^ε α. α] — which IS [is_tskl] and ghost-free, hence
+    directly.  Below, [∀^ε α. α] — which IS [is_dskl] and ghost-free, hence
     legal at [a_sub_mode_ty] — is instantiated with the context's rigid [β]
     and lands on the target [β], which is [bskl_monoish] by [bmi_var].  The
     subject is not a mono paint (a mono paint is unit / var / arrow, never a
@@ -57,10 +57,10 @@ Definition Qw : bskl := bskl_var_f β.
 Lemma Θw_wf : {{ ⊢ Θw }}a.
 Proof. apply a_wf_aenv__tvar; [ simpl; auto | apply a_wf_aenv__nil ]. Qed.
 
-Lemma Rw_tskl : is_tskl Rw.
+Lemma Rw_dskl : is_dskl Rw.
 Proof.
-  apply is_tskl__all_tag with (L := empty); intros α _; cbn.
-  apply is_tskl__var.
+  apply is_dskl__all_tag with (L := empty); intros α _; cbn.
+  apply is_dskl__var.
 Qed.
 
 Lemma Qw_monoish : bskl_monoish Qw.
@@ -71,7 +71,7 @@ Proof. apply bmi_var. Qed.
 Lemma guess_tags_sort : a_tags_sort a_sub_mode_ty empty (uskl_var_f β).
 Proof.
   apply a_tags_sort__ty;
-    [ apply is_tskl__var
+    [ apply is_dskl__var
     | apply d_tags_skl__var; clear; fsetdec
     | apply uskl_ghost_free__var ].
 Qed.
@@ -117,14 +117,14 @@ End CexP7SubMonoish.
 (*  The refutation                                                        *)
 (* ===================================================================== *)
 
-(** THE SUB-SIDE MONOISH-COUNTERPART LEMMA IS FALSE, even with [is_tskl] on
+(** THE SUB-SIDE MONOISH-COUNTERPART LEMMA IS FALSE, even with [is_dskl] on
     the subject and [a_wf_aenv] on the context — so P7's TASK 0 needs the
     flex-mono wall stated directly, not this route. *)
 Theorem p7_sub_monoish_counterpart_is_false :
   ~ (forall n NM M Ψ Θ ψ Q,
        ad_pat_sub_fuel n NM M Ψ Θ ψ Q ->
        {{ ⊢ Θ }}a ->
-       is_tskl ψ ->
+       is_dskl ψ ->
        bskl_monoish Q ->
        Ψ [=] empty /\ exists τ, mono_ptyp τ /\ ψ = ptyp_to_uskl_syn τ).
 Proof.
@@ -135,7 +135,7 @@ Proof.
      Θw / Qw depend on β alone, Rw on ε alone. *)
   apply (@cex_not_a_mono_paint ε).
   refine (proj2 (Hall _ _ _ _ _ _ _ (cex_derivation β ε) (Θw_wf β)
-                   (Rw_tskl ε) (Qw_monoish β))).
+                   (Rw_dskl ε) (Qw_monoish β))).
 Qed.
 
 (** ⚠️ READ THIS BEFORE CONCLUDING ANYTHING FROM THE ABOVE.  Only the

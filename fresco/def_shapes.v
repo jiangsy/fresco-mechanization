@@ -63,10 +63,10 @@ Fixpoint ftag_in_uskl (R : uskl) : atoms :=
   | uskl_arrow R1 R2 => ftag_in_uskl R1 `union` ftag_in_uskl R2
   | uskl_all_syn R0 => ftag_in_uskl R0
   | uskl_all_tag ε R0 => add ε (ftag_in_uskl R0)
-  | uskl_hole => {}
-  | uskl_tophole R0 => ftag_in_uskl R0
-  | uskl_holeg => {}
-  | uskl_topholeg R0 => ftag_in_uskl R0
+  | uskl_ghost => {}
+  | uskl_univ_ghost R0 => ftag_in_uskl R0
+  | uskl_dot_ghost => {}
+  | uskl_dot_univ_ghost R0 => ftag_in_uskl R0
   end.
 
 (* ===================================================================== *)
@@ -83,38 +83,38 @@ Inductive mono_ptyp : ptyp -> Prop :=
 (*  Tagged-category predicates                                            *)
 (* ===================================================================== *)
 
-(** Tagged types: only forall@ε; no other quantifiers, no holes. *)
-Inductive is_ttyp : utyp -> Prop :=
-| is_ttyp__unit  : is_ttyp utyp_unit
-| is_ttyp__var   : forall α, is_ttyp (utyp_var_f α)
-| is_ttyp__arrow : forall C1 C2,
-    is_ttyp C1 -> is_ttyp C2 -> is_ttyp (utyp_arrow C1 C2)
-| is_ttyp__all_tag   : forall L ε C,
+(** Tagged types: only forall@ε; no other quantifiers, no ghosts. *)
+Inductive is_dtyp : utyp -> Prop :=
+| is_dtyp__unit  : is_dtyp utyp_unit
+| is_dtyp__var   : forall α, is_dtyp (utyp_var_f α)
+| is_dtyp__arrow : forall C1 C2,
+    is_dtyp C1 -> is_dtyp C2 -> is_dtyp (utyp_arrow C1 C2)
+| is_dtyp__all_tag   : forall L ε C,
     (forall α, α `notin` L ->
-       is_ttyp (open_utyp_wrt_utyp C (utyp_var_f α))) ->
-    is_ttyp (utyp_all_tag ε C).
+       is_dtyp (open_utyp_wrt_utyp C (utyp_var_f α))) ->
+    is_dtyp (utyp_all_tag ε C).
 
-(** Tagged skletons: is_ttyp + holes + topholes. *)
-Inductive is_tskl : uskl -> Prop :=
-| is_tskl__unit    : is_tskl uskl_unit
-| is_tskl__var     : forall α, is_tskl (uskl_var_f α)
-| is_tskl__arrow   : forall R1 R2,
-    is_tskl R1 -> is_tskl R2 -> is_tskl (uskl_arrow R1 R2)
+(** Tagged skletons: is_dtyp + ghosts + univ_ghosts. *)
+Inductive is_dskl : uskl -> Prop :=
+| is_dskl__unit    : is_dskl uskl_unit
+| is_dskl__var     : forall α, is_dskl (uskl_var_f α)
+| is_dskl__arrow   : forall R1 R2,
+    is_dskl R1 -> is_dskl R2 -> is_dskl (uskl_arrow R1 R2)
 (* Paper decorated skeleton ψ (declarative.tex:1796): EVERY quantifier carries
    a tag ε — the grammar has only [∀^ε α.ψ].  The tag-elided [all_syn] form is
    NOT a decorated-skeleton forall (admitting it would let ForallL instantiate
    with quantifiers no inherited information determines, breaking the paper's
    no-guessing invariant). *)
-| is_tskl__all_tag     : forall L ε R,
+| is_dskl__all_tag     : forall L ε R,
     (forall α, α `notin` L ->
-       is_tskl (open_uskl_wrt_uskl R (uskl_var_f α))) ->
-    is_tskl (uskl_all_tag ε R)
+       is_dskl (open_uskl_wrt_uskl R (uskl_var_f α))) ->
+    is_dskl (uskl_all_tag ε R)
 (* Paper decorated skeleton ψ (declarative.tex, grammar fig) carries the
    DOTTED GHOSTS [HoleG] / [TopHoleG], NOT plain [Hole] / [TopHole] (those
-   live only in the unresolved skeleton R / the bid RHS).  So [is_tskl]
-   admits the dotted ghost holes; the dotted universal ghost is UNTAGGED. *)
-| is_tskl__holeg    : is_tskl uskl_holeg
-| is_tskl__topholeg : forall R, is_tskl R -> is_tskl (uskl_topholeg R).
+   live only in the unresolved skeleton R / the bid RHS).  So [is_dskl]
+   admits the dotted ghosts; the dotted universal ghost is UNTAGGED. *)
+| is_dskl__dot_ghost    : is_dskl uskl_dot_ghost
+| is_dskl__dot_univ_ghost : forall R, is_dskl R -> is_dskl (uskl_dot_univ_ghost R).
 
 (* ===================================================================== *)
 (*  Colour-discipline predicates                                          *)
@@ -152,8 +152,8 @@ Inductive is_sskl : bskl -> Prop :=
     (forall α, α `notin` L ->
        is_sskl (open_bskl_wrt_bskl A (bskl_var_f α))) ->
     is_sskl (bskl_all_syn A)
-| is_sskl__hole    : is_sskl bskl_hole
-| is_sskl__tophole : forall A, is_sskl A -> is_sskl (bskl_tophole A).
+| is_sskl__ghost    : is_sskl bskl_ghost
+| is_sskl__univ_ghost : forall A, is_sskl A -> is_sskl (bskl_univ_ghost A).
 
 Inductive is_iskl : bskl -> Prop :=
 | is_iskl__unit    : is_iskl bskl_unit
@@ -164,14 +164,14 @@ Inductive is_iskl : bskl -> Prop :=
     (forall α, α `notin` L ->
        is_iskl (open_bskl_wrt_bskl A (bskl_var_f α))) ->
     is_iskl (bskl_all_inh A)
-| is_iskl__hole    : is_iskl bskl_hole
-| is_iskl__tophole : forall A, is_iskl A -> is_iskl (bskl_tophole A).
+| is_iskl__ghost    : is_iskl bskl_ghost
+| is_iskl__univ_ghost : forall A, is_iskl A -> is_iskl (bskl_univ_ghost A).
 
 (* ===================================================================== *)
 (*  Guarded and value predicates                                          *)
 (* ===================================================================== *)
 
-(** Guarded: no top-level forall (any flavour) or hole/tophole.
+(** Guarded: no top-level forall (any flavour) or ghost/univ_ghost.
 
     ⚙ There is deliberately NO [guarded_ptyp].  Guardedness is a premise of
     the SUBTYPING and CONSISTENCY rules, which range over the coloured /
@@ -226,15 +226,15 @@ Inductive nonghost_pskl : pskl -> Prop :=
 | nonghost_pskl__arrow : forall P1 P2, nonghost_pskl (pskl_arrow P1 P2)
 | nonghost_pskl__all   : forall P, nonghost_pskl (pskl_all_syn P).
 
-Fixpoint pskl_no_hole (P : pskl) : Prop :=
+Fixpoint pskl_no_ghost (P : pskl) : Prop :=
   match P with
   | pskl_unit => True
   | pskl_var_b _ => True
   | pskl_var_f _ => True
-  | pskl_arrow P1 P2 => pskl_no_hole P1 /\ pskl_no_hole P2
-  | pskl_all_syn P0 => pskl_no_hole P0
-  | pskl_hole => False
-  | pskl_tophole P0 => pskl_no_hole P0
+  | pskl_arrow P1 P2 => pskl_no_ghost P1 /\ pskl_no_ghost P2
+  | pskl_all_syn P0 => pskl_no_ghost P0
+  | pskl_ghost => False
+  | pskl_univ_ghost P0 => pskl_no_ghost P0
   end.
 
 (** Value restriction: terms that may be generalised in checking mode. *)
@@ -311,8 +311,8 @@ Fixpoint pskl_ghost_free (P : pskl) : Prop :=
   | pskl_var_f _ => True
   | pskl_arrow P1 P2 => pskl_ghost_free P1 /\ pskl_ghost_free P2
   | pskl_all_syn P0 => pskl_ghost_free P0
-  | pskl_hole => False
-  | pskl_tophole _ => False
+  | pskl_ghost => False
+  | pskl_univ_ghost _ => False
   end.
 
 Fixpoint bskl_ghost_free (Q : bskl) : Prop :=
@@ -323,8 +323,8 @@ Fixpoint bskl_ghost_free (Q : bskl) : Prop :=
   | bskl_arrow Q1 Q2 => bskl_ghost_free Q1 /\ bskl_ghost_free Q2
   | bskl_all_syn Q0 => bskl_ghost_free Q0
   | bskl_all_inh Q0 => bskl_ghost_free Q0
-  | bskl_hole => False
-  | bskl_tophole _ => False
+  | bskl_ghost => False
+  | bskl_univ_ghost _ => False
   end.
 
 (** ⭐ THE ForallR-PRIORITY GUARD (2026-08-18).  [forall_r_off m P'] says the
@@ -391,7 +391,7 @@ Qed.
     to the four guards above.  docs/PAPER-GAPS.md. *)
 
 Definition peel_l_off (P : pskl) : Prop :=      (* SS-ForallL / SS-UnivGhostL *)
-  (forall Q, P <> pskl_all_syn Q) /\ (forall Q, P <> pskl_tophole Q).
+  (forall Q, P <> pskl_all_syn Q) /\ (forall Q, P <> pskl_univ_ghost Q).
 
 Definition solve_l_off (P : pskl) : Prop :=     (* … and SS-Var as well *)
   (forall α, P <> pskl_var_f α) /\ peel_l_off P.
@@ -414,7 +414,7 @@ Proof. intros; split; intros; discriminate. Qed.
 Lemma peel_l_off_arrow : forall P Q, peel_l_off (pskl_arrow P Q).
 Proof. intros; split; intros; discriminate. Qed.
 
-Lemma peel_l_off_hole : peel_l_off pskl_hole.
+Lemma peel_l_off_ghost : peel_l_off pskl_ghost.
 Proof. split; intros; discriminate. Qed.
 
 Lemma solve_l_off_unit : solve_l_off pskl_unit.
@@ -426,12 +426,12 @@ Proof. intros; split; [ intros; discriminate | apply peel_l_off_var_b ]. Qed.
 Lemma solve_l_off_arrow : forall P Q, solve_l_off (pskl_arrow P Q).
 Proof. intros; split; [ intros; discriminate | apply peel_l_off_arrow ]. Qed.
 
-Lemma solve_l_off_hole : solve_l_off pskl_hole.
-Proof. split; [ intros; discriminate | apply peel_l_off_hole ]. Qed.
+Lemma solve_l_off_ghost : solve_l_off pskl_ghost.
+Proof. split; [ intros; discriminate | apply peel_l_off_ghost ]. Qed.
 
 #[export] Hint Resolve peel_l_off_unit peel_l_off_var_b peel_l_off_var
-  peel_l_off_arrow peel_l_off_hole solve_l_off_unit solve_l_off_var_b
-  solve_l_off_arrow solve_l_off_hole solve_l_off_peel : fresco.
+  peel_l_off_arrow peel_l_off_ghost solve_l_off_unit solve_l_off_var_b
+  solve_l_off_arrow solve_l_off_ghost solve_l_off_peel : fresco.
 
 (* Constructor hints for the small structural shape / guardedness / mode
    predicates: they are dispatched trivially in metatheory proofs, so
@@ -439,6 +439,6 @@ Proof. split; [ intros; discriminate | apply peel_l_off_hole ]. Qed.
    hint database (not [core]) keeps existing [auto] proofs unperturbed; the
    large relational judgments are deliberately NOT hinted (they would make
    [eauto] explode). *)
-#[export] Hint Constructors mono_ptyp is_ttyp is_tskl is_styp is_ityp is_sskl
+#[export] Hint Constructors mono_ptyp is_dtyp is_dskl is_styp is_ityp is_sskl
   is_iskl guarded_pskl guarded_btyp guarded_utyp guarded_bskl
   guarded_uskl mod_comp_ty mod_comp_sk : fresco.

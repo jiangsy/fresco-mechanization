@@ -127,8 +127,8 @@ Fixpoint close_pskl_wrt_pskl_rec (n1 : nat) (α1 : psklvar) (P1 : pskl) {struct 
     | pskl_var_b n2 => if (lt_ge_dec n2 n1) then (pskl_var_b n2) else (pskl_var_b (S n2))
     | pskl_arrow P2 P3 => pskl_arrow (close_pskl_wrt_pskl_rec n1 α1 P2) (close_pskl_wrt_pskl_rec n1 α1 P3)
     | pskl_all_syn P2 => pskl_all_syn (close_pskl_wrt_pskl_rec (S n1) α1 P2)
-    | pskl_hole => pskl_hole
-    | pskl_tophole P2 => pskl_tophole (close_pskl_wrt_pskl_rec n1 α1 P2)
+    | pskl_ghost => pskl_ghost
+    | pskl_univ_ghost P2 => pskl_univ_ghost (close_pskl_wrt_pskl_rec n1 α1 P2)
   end.
 
 Definition close_pskl_wrt_pskl α1 P1 := close_pskl_wrt_pskl_rec 0 α1 P1.
@@ -141,8 +141,8 @@ Fixpoint close_bskl_wrt_bskl_rec (n1 : nat) (α1 : bsklvar) (Q1 : bskl) {struct 
     | bskl_arrow Q2 Q3 => bskl_arrow (close_bskl_wrt_bskl_rec n1 α1 Q2) (close_bskl_wrt_bskl_rec n1 α1 Q3)
     | bskl_all_syn Q2 => bskl_all_syn (close_bskl_wrt_bskl_rec (S n1) α1 Q2)
     | bskl_all_inh Q2 => bskl_all_inh (close_bskl_wrt_bskl_rec (S n1) α1 Q2)
-    | bskl_hole => bskl_hole
-    | bskl_tophole Q2 => bskl_tophole (close_bskl_wrt_bskl_rec n1 α1 Q2)
+    | bskl_ghost => bskl_ghost
+    | bskl_univ_ghost Q2 => bskl_univ_ghost (close_bskl_wrt_bskl_rec n1 α1 Q2)
   end.
 
 Definition close_bskl_wrt_bskl α1 Q1 := close_bskl_wrt_bskl_rec 0 α1 Q1.
@@ -155,10 +155,10 @@ Fixpoint close_uskl_wrt_uskl_rec (n1 : nat) (α1 : usklvar) (R1 : uskl) {struct 
     | uskl_arrow R2 R3 => uskl_arrow (close_uskl_wrt_uskl_rec n1 α1 R2) (close_uskl_wrt_uskl_rec n1 α1 R3)
     | uskl_all_syn R2 => uskl_all_syn (close_uskl_wrt_uskl_rec (S n1) α1 R2)
     | uskl_all_tag ε1 R2 => uskl_all_tag ε1 (close_uskl_wrt_uskl_rec (S n1) α1 R2)
-    | uskl_hole => uskl_hole
-    | uskl_tophole R2 => uskl_tophole (close_uskl_wrt_uskl_rec n1 α1 R2)
-    | uskl_holeg => uskl_holeg
-    | uskl_topholeg R2 => uskl_topholeg (close_uskl_wrt_uskl_rec n1 α1 R2)
+    | uskl_ghost => uskl_ghost
+    | uskl_univ_ghost R2 => uskl_univ_ghost (close_uskl_wrt_uskl_rec n1 α1 R2)
+    | uskl_dot_ghost => uskl_dot_ghost
+    | uskl_dot_univ_ghost R2 => uskl_dot_univ_ghost (close_uskl_wrt_uskl_rec n1 α1 R2)
   end.
 
 Definition close_uskl_wrt_uskl α1 R1 := close_uskl_wrt_uskl_rec 0 α1 R1.
@@ -231,8 +231,8 @@ Fixpoint size_pskl (P1 : pskl) {struct P1} : nat :=
     | pskl_var_b n1 => 1
     | pskl_arrow P2 P3 => 1 + (size_pskl P2) + (size_pskl P3)
     | pskl_all_syn P2 => 1 + (size_pskl P2)
-    | pskl_hole => 1
-    | pskl_tophole P2 => 1 + (size_pskl P2)
+    | pskl_ghost => 1
+    | pskl_univ_ghost P2 => 1 + (size_pskl P2)
   end.
 
 Fixpoint size_bskl (Q1 : bskl) {struct Q1} : nat :=
@@ -243,8 +243,8 @@ Fixpoint size_bskl (Q1 : bskl) {struct Q1} : nat :=
     | bskl_arrow Q2 Q3 => 1 + (size_bskl Q2) + (size_bskl Q3)
     | bskl_all_syn Q2 => 1 + (size_bskl Q2)
     | bskl_all_inh Q2 => 1 + (size_bskl Q2)
-    | bskl_hole => 1
-    | bskl_tophole Q2 => 1 + (size_bskl Q2)
+    | bskl_ghost => 1
+    | bskl_univ_ghost Q2 => 1 + (size_bskl Q2)
   end.
 
 Fixpoint size_uskl (R1 : uskl) {struct R1} : nat :=
@@ -255,10 +255,10 @@ Fixpoint size_uskl (R1 : uskl) {struct R1} : nat :=
     | uskl_arrow R2 R3 => 1 + (size_uskl R2) + (size_uskl R3)
     | uskl_all_syn R2 => 1 + (size_uskl R2)
     | uskl_all_tag ε1 R2 => 1 + (size_uskl R2)
-    | uskl_hole => 1
-    | uskl_tophole R2 => 1 + (size_uskl R2)
-    | uskl_holeg => 1
-    | uskl_topholeg R2 => 1 + (size_uskl R2)
+    | uskl_ghost => 1
+    | uskl_univ_ghost R2 => 1 + (size_uskl R2)
+    | uskl_dot_ghost => 1
+    | uskl_dot_univ_ghost R2 => 1 + (size_uskl R2)
   end.
 
 Fixpoint size_exp (e1 : exp) {struct e1} : nat :=
@@ -373,11 +373,11 @@ Inductive degree_pskl_wrt_pskl : nat -> pskl -> Prop :=
   | degree_wrt_pskl_pskl_all_syn : forall n1 P1,
     degree_pskl_wrt_pskl (S n1) P1 ->
     degree_pskl_wrt_pskl n1 (pskl_all_syn P1)
-  | degree_wrt_pskl_pskl_hole : forall n1,
-    degree_pskl_wrt_pskl n1 (pskl_hole)
-  | degree_wrt_pskl_pskl_tophole : forall n1 P1,
+  | degree_wrt_pskl_pskl_ghost : forall n1,
+    degree_pskl_wrt_pskl n1 (pskl_ghost)
+  | degree_wrt_pskl_pskl_univ_ghost : forall n1 P1,
     degree_pskl_wrt_pskl n1 P1 ->
-    degree_pskl_wrt_pskl n1 (pskl_tophole P1).
+    degree_pskl_wrt_pskl n1 (pskl_univ_ghost P1).
 
 Scheme degree_pskl_wrt_pskl_ind' := Induction for degree_pskl_wrt_pskl Sort Prop.
 
@@ -403,11 +403,11 @@ Inductive degree_bskl_wrt_bskl : nat -> bskl -> Prop :=
   | degree_wrt_bskl_bskl_all_inh : forall n1 Q1,
     degree_bskl_wrt_bskl (S n1) Q1 ->
     degree_bskl_wrt_bskl n1 (bskl_all_inh Q1)
-  | degree_wrt_bskl_bskl_hole : forall n1,
-    degree_bskl_wrt_bskl n1 (bskl_hole)
-  | degree_wrt_bskl_bskl_tophole : forall n1 Q1,
+  | degree_wrt_bskl_bskl_ghost : forall n1,
+    degree_bskl_wrt_bskl n1 (bskl_ghost)
+  | degree_wrt_bskl_bskl_univ_ghost : forall n1 Q1,
     degree_bskl_wrt_bskl n1 Q1 ->
-    degree_bskl_wrt_bskl n1 (bskl_tophole Q1).
+    degree_bskl_wrt_bskl n1 (bskl_univ_ghost Q1).
 
 Scheme degree_bskl_wrt_bskl_ind' := Induction for degree_bskl_wrt_bskl Sort Prop.
 
@@ -433,16 +433,16 @@ Inductive degree_uskl_wrt_uskl : nat -> uskl -> Prop :=
   | degree_wrt_uskl_uskl_all_tag : forall n1 ε1 R1,
     degree_uskl_wrt_uskl (S n1) R1 ->
     degree_uskl_wrt_uskl n1 (uskl_all_tag ε1 R1)
-  | degree_wrt_uskl_uskl_hole : forall n1,
-    degree_uskl_wrt_uskl n1 (uskl_hole)
-  | degree_wrt_uskl_uskl_tophole : forall n1 R1,
+  | degree_wrt_uskl_uskl_ghost : forall n1,
+    degree_uskl_wrt_uskl n1 (uskl_ghost)
+  | degree_wrt_uskl_uskl_univ_ghost : forall n1 R1,
     degree_uskl_wrt_uskl n1 R1 ->
-    degree_uskl_wrt_uskl n1 (uskl_tophole R1)
-  | degree_wrt_uskl_uskl_holeg : forall n1,
-    degree_uskl_wrt_uskl n1 (uskl_holeg)
-  | degree_wrt_uskl_uskl_topholeg : forall n1 R1,
+    degree_uskl_wrt_uskl n1 (uskl_univ_ghost R1)
+  | degree_wrt_uskl_uskl_dot_ghost : forall n1,
+    degree_uskl_wrt_uskl n1 (uskl_dot_ghost)
+  | degree_wrt_uskl_uskl_dot_univ_ghost : forall n1 R1,
     degree_uskl_wrt_uskl n1 R1 ->
-    degree_uskl_wrt_uskl n1 (uskl_topholeg R1).
+    degree_uskl_wrt_uskl n1 (uskl_dot_univ_ghost R1).
 
 Scheme degree_uskl_wrt_uskl_ind' := Induction for degree_uskl_wrt_uskl Sort Prop.
 
@@ -619,11 +619,11 @@ Inductive lc_set_pskl : pskl -> Set :=
   | lc_set_pskl_all_syn : forall P1,
     (forall α1 : psklvar, lc_set_pskl (open_pskl_wrt_pskl P1 (pskl_var_f α1))) ->
     lc_set_pskl (pskl_all_syn P1)
-  | lc_set_pskl_hole :
-    lc_set_pskl (pskl_hole)
-  | lc_set_pskl_tophole : forall P1,
+  | lc_set_pskl_ghost :
+    lc_set_pskl (pskl_ghost)
+  | lc_set_pskl_univ_ghost : forall P1,
     lc_set_pskl P1 ->
-    lc_set_pskl (pskl_tophole P1).
+    lc_set_pskl (pskl_univ_ghost P1).
 Scheme lc_pskl_ind' := Induction for lc_pskl Sort Prop.
 
 Combined Scheme lc_pskl_mutind from lc_pskl_ind'.
@@ -655,11 +655,11 @@ Inductive lc_set_bskl : bskl -> Set :=
   | lc_set_bskl_all_inh : forall Q1,
     (forall α1 : bsklvar, lc_set_bskl (open_bskl_wrt_bskl Q1 (bskl_var_f α1))) ->
     lc_set_bskl (bskl_all_inh Q1)
-  | lc_set_bskl_hole :
-    lc_set_bskl (bskl_hole)
-  | lc_set_bskl_tophole : forall Q1,
+  | lc_set_bskl_ghost :
+    lc_set_bskl (bskl_ghost)
+  | lc_set_bskl_univ_ghost : forall Q1,
     lc_set_bskl Q1 ->
-    lc_set_bskl (bskl_tophole Q1).
+    lc_set_bskl (bskl_univ_ghost Q1).
 Scheme lc_bskl_ind' := Induction for lc_bskl Sort Prop.
 
 Combined Scheme lc_bskl_mutind from lc_bskl_ind'.
@@ -691,16 +691,16 @@ Inductive lc_set_uskl : uskl -> Set :=
   | lc_set_uskl_all_tag : forall ε1 R1,
     (forall α1 : usklvar, lc_set_uskl (open_uskl_wrt_uskl R1 (uskl_var_f α1))) ->
     lc_set_uskl (uskl_all_tag ε1 R1)
-  | lc_set_uskl_hole :
-    lc_set_uskl (uskl_hole)
-  | lc_set_uskl_tophole : forall R1,
+  | lc_set_uskl_ghost :
+    lc_set_uskl (uskl_ghost)
+  | lc_set_uskl_univ_ghost : forall R1,
     lc_set_uskl R1 ->
-    lc_set_uskl (uskl_tophole R1)
-  | lc_set_uskl_holeg :
-    lc_set_uskl (uskl_holeg)
-  | lc_set_uskl_topholeg : forall R1,
+    lc_set_uskl (uskl_univ_ghost R1)
+  | lc_set_uskl_dot_ghost :
+    lc_set_uskl (uskl_dot_ghost)
+  | lc_set_uskl_dot_univ_ghost : forall R1,
     lc_set_uskl R1 ->
-    lc_set_uskl (uskl_topholeg R1).
+    lc_set_uskl (uskl_dot_univ_ghost R1).
 Scheme lc_uskl_ind' := Induction for lc_uskl Sort Prop.
 
 Combined Scheme lc_uskl_mutind from lc_uskl_ind'.

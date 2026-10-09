@@ -1,5 +1,5 @@
 (** ⚠️ THE SUB-SIDE ANALOGUE OF [ad_pat_consis_target_ftv] IS FALSE, AND
-    [is_tskl] DOES NOT REPAIR IT — [ad_pat_sub_fuel__forall_l_tagged] IS THE
+    [is_dskl] DOES NOT REPAIR IT — [ad_pat_sub_fuel__forall_l_tagged] IS THE
     CULPRIT.
 
     P6-Ss Phase B (docs/DESIGN-completeness-subtyping.md §8 (g)) planned to
@@ -17,19 +17,19 @@
     whose MIDDLE link is "a decorated subject's counterpart only mentions the
     subject's own variables and the context's DEFINITIONS":
 
-        {{ Ψ ⨟ Θ ⊢ˢ ψ ∼ Q }}ad  →  is_tskl ψ  →  ftv Q ⊆ ftv ψ ∪ def_ftv Θ.
+        {{ Ψ ⨟ Θ ⊢ˢ ψ ∼ Q }}ad  →  is_dskl ψ  →  ftv Q ⊆ ftv ψ ∪ def_ftv Θ.
 
     The sub-side needs the same statement over [ad_pat_sub_fuel].  It was known
     to fail for [ad_pat_sub_fuel__ghost] (subject ◇, target an ARBITRARY
-    Θ-scoped P), and [is_tskl] does exclude that row — [is_tskl] admits the
-    DOTTED ghost ◈ ([uskl_holeg]) but not the plain ◇ ([uskl_hole]).  It also
+    Θ-scoped P), and [is_dskl] does exclude that row — [is_dskl] admits the
+    DOTTED ghost ◈ ([uskl_dot_ghost]) but not the plain ◇ ([uskl_ghost]).  It also
     excludes [__ghostg], [__univ_ghost_l], [__forall_l_untagged] (whose
     subject is the tag-elided [uskl_all_syn]), and — via [__forall_r]'s
     [a_sub_mode_ty], which no [a_sub_mode_sk] rule can sit under — every
     other ghost row that matters for Sub-ForallR.
 
     IT DOES NOT EXCLUDE [__forall_l_tagged], and THAT row breaks the bound on
-    its own: the subject [∀^ε α. α] IS [is_tskl], ForallL instantiates it
+    its own: the subject [∀^ε α. α] IS [is_dskl], ForallL instantiates it
     with a guess ψ constrained only by [{{ Θ ⨟ empty ⊢ₚₛ ⌊ψ⌋ˢ }}a] — i.e. by
     [dom Θ], not [def_ftv Θ] — and the leaf then reads the target straight
     off that guess.  Below: Θ = β, subject [∀^ε α. α], target [β].
@@ -94,7 +94,7 @@ Variables β ε : atom.
 
 Definition Θcex : aenv := (β ~ abind_tvar) ++ nil.
 
-(** Subject: the decorated identity quantifier [∀^ε α. α] — [is_tskl], and
+(** Subject: the decorated identity quantifier [∀^ε α. α] — [is_dskl], and
     for [a_sub_mode_ty] also ghost-free. *)
 Definition Rcex : uskl := uskl_all_tag ε (uskl_var_b 0).
 
@@ -104,10 +104,10 @@ Definition Qcex : bskl := bskl_var_f β.
 Lemma Θcex_wf : {{ ⊢ Θcex }}a.
 Proof. apply a_wf_aenv__tvar; [ simpl; auto | apply a_wf_aenv__nil ]. Qed.
 
-Lemma Rcex_tskl : is_tskl Rcex.
+Lemma Rcex_dskl : is_dskl Rcex.
 Proof.
-  apply is_tskl__all_tag with (L := empty); intros α _; cbn.
-  apply is_tskl__var.
+  apply is_dskl__all_tag with (L := empty); intros α _; cbn.
+  apply is_dskl__var.
 Qed.
 
 (** The guess ForallL instantiates with: the rigid [β] itself.  It is a
@@ -116,7 +116,7 @@ Qed.
 Lemma guess_tags_sort : a_tags_sort a_sub_mode_ty empty (uskl_var_f β).
 Proof.
   apply a_tags_sort__ty;
-    [ apply is_tskl__var
+    [ apply is_dskl__var
     | apply d_tags_skl__var; clear; fsetdec
     | apply uskl_ghost_free__var ].
 Qed.
@@ -169,13 +169,13 @@ End CexSubTargetFtv.
 (*  The refutation                                                        *)
 (* ===================================================================== *)
 
-(** THE SUB-SIDE [target_ftv] LEMMA IS FALSE even with [is_tskl] on the
+(** THE SUB-SIDE [target_ftv] LEMMA IS FALSE even with [is_dskl] on the
     subject and [a_wf_aenv] on the context. *)
 Theorem p6ss_sub_target_ftv_is_false :
   ~ (forall n NM M Ψ Θ R Q,
        ad_pat_sub_fuel n NM M Ψ Θ R Q ->
        {{ ⊢ Θ }}a ->
-       is_tskl R ->
+       is_dskl R ->
        ftvar_in_bskl Q [<=] ftvar_in_uskl R `union` def_ftv Θ).
 Proof.
   intro Hall.
@@ -183,7 +183,7 @@ Proof.
   pick fresh β. pick fresh ε.
   apply (@cex_bound_violated β ε).
   eapply Hall;
-    [ apply (@cex_derivation β ε) | apply (@Θcex_wf β) | apply Rcex_tskl ].
+    [ apply (@cex_derivation β ε) | apply (@Θcex_wf β) | apply Rcex_dskl ].
 Qed.
 
 (** NON-VACUITY: the witness derivation really is a derivation, and its
@@ -191,10 +191,10 @@ Qed.
 Theorem p6ss_sub_target_ftv_cex_nonvacuous :
   exists β ε, ad_pat_sub_fuel 1 a_sub_mode_ty mode_tc empty (Θcex β)
                 (Rcex ε) (Qcex β)
-              /\ is_tskl (Rcex ε)
+              /\ is_dskl (Rcex ε)
               /\ {{ ⊢ (Θcex β) }}a.
 Proof.
   pick fresh β. pick fresh ε.
   exists β, ε; repeat split;
-    [ apply cex_derivation | apply Rcex_tskl | apply Θcex_wf ].
+    [ apply cex_derivation | apply Rcex_dskl | apply Θcex_wf ].
 Qed.

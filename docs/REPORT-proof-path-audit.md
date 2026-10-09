@@ -362,11 +362,11 @@ lose nothing.  That would delete `ρx`, make `rel_fun` global, and collapse the
 relational currency to a functional one.
 
 **It is false, and the counterexample is one rule.**  `SE-GhostL`
-(`a_solve_eq__hole_l`) is
+(`a_solve_eq__ghost_l`) is
 
 ```coq
-| a_solve_eq__hole_l : forall Θ Q,               (* SE-GhostL *)
-    {{ Θ ⊢ₑ pskl_hole ∼ Q ⤳ nil ⨾ Q }}a
+| a_solve_eq__ghost_l : forall Θ Q,               (* SE-GhostL *)
+    {{ Θ ⊢ₑ pskl_ghost ∼ Q ⤳ nil ⨾ Q }}a
 ```
 
 — **no side condition on `Q` whatsoever.**  At a *ghost* accumulator the fold
@@ -379,7 +379,7 @@ exactly that, with `β` universally quantified and constrained only by
 ```coq
 Lemma leaked_opener_folds : forall Θ (β : atom),
   β `notin` dom Θ ->
-  {{ Θ ⊩ (a_cstr_eq (pskl_var_f β) :: nil) ⨾ pskl_hole
+  {{ Θ ⊩ (a_cstr_eq (pskl_var_f β) :: nil) ⨾ pskl_ghost
        ⤳ nil ⨾ (pskl_var_f β) }}a.
 ```
 
@@ -784,8 +784,8 @@ paper-level notions are each split in two:
 | paper notion | `uskl` constructors |
 |---|---|
 | ∀ | `uskl_all_syn` / `uskl_all_tag ε` |
-| ◇ | `uskl_hole` / `uskl_holeg` |
-| ∀◇ | `uskl_tophole` / `uskl_topholeg` |
+| ◇ | `uskl_ghost` / `uskl_dot_ghost` |
+| ∀◇ | `uskl_univ_ghost` / `uskl_dot_univ_ghost` |
 
 The erasure `⌊·⌋ˢ : uskl → pskl` collapses all three pairs — so **every ∀
 case and every ghost case of every induction over `uskl` is written twice**,
@@ -830,7 +830,7 @@ precisely what the 453-line duplicate in §A2 *is*.
 Definition solve_eq_complete_var_concl (Θ0 Θ Θw Θr : aenv) … : Prop :=
   solve_ext Θ0 Θw Pi P0 L (solve_eq_complete_var_post Θ Θr κ Δ Ψi Ψa ψa).
 
-Lemma solve_eq_complete_var_tophole_both : …   (* 8-line proof *)
+Lemma solve_eq_complete_var_univ_ghost_both : …   (* 8-line proof *)
 Lemma solve_eq_complete_var_step          : …   (* 4-line proof *)
 ```
 

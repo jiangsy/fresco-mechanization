@@ -79,11 +79,11 @@ Inductive e_solve_sub : supply -> aenv -> mode -> pskl -> pskl
        ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P')) }}e
 | e_solve_sub__univ_ghost_l : forall S0 S1 Θ m P Q Ξ P', (* SS-UnivGhostL *)
     {{ S0 ↝ S1 ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e ->
-    {{ S0 ↝ S1 ⊨ Θ ⊢ₛ (pskl_tophole P) ≼[ m ] Q ⤳ Ξ ⨾ (pskl_tophole P') }}e
+    {{ S0 ↝ S1 ⊨ Θ ⊢ₛ (pskl_univ_ghost P) ≼[ m ] Q ⤳ Ξ ⨾ (pskl_univ_ghost P') }}e
 | e_solve_sub__vacuous : forall S Θ m P,                (* SS-Vacuous *)
     (* [paper-gap] SOLVE-DISPATCH GUARD — see [a_solve_sub__vacuous]. *)
     peel_l_off P ->
-    {{ S ↝ S ⊨ Θ ⊢ₛ P ≼[ m ] pskl_hole ⤳ nil ⨾ P }}e
+    {{ S ↝ S ⊨ Θ ⊢ₛ P ≼[ m ] pskl_ghost ⤳ nil ⨾ P }}e
 | e_solve_sub__check : forall S0 S1 Θ P Q Ξ P',         (* SS-Check *)
     pskl_ghost_free Q ->
     guarded_pskl P ->
@@ -108,14 +108,14 @@ Inductive e_solve_sub : supply -> aenv -> mode -> pskl -> pskl
     {{ S0 ↝ S2 ⊨ Θ ⊢ₛ (pskl_arrow P1 P2) ≼[ (mode_fn m) ] (pskl_arrow Q1 Q2)
        ⤳ (Ξ2 ++ Ξ1) ⨾ (pskl_arrow P1' P2') }}e
 | e_solve_sub__ghost_l_fn : forall S0 S1 S2 Θ m Q1 Q2 Ξ1 Ξ2 P1' P2', (* SS-GhostLF *)
-    {{ S0 ↝ S1 ⊨ Θ ⊢ₑ pskl_hole ∼ Q1 ⤳ Ξ1 ⨾ P1' }}e ->
-    {{ S1 ↝ S2 ⊨ (Ξ1 ++ Θ) ⊢ₛ pskl_hole ≼[ m ] Q2 ⤳ Ξ2 ⨾ P2' }}e ->
-    {{ S0 ↝ S2 ⊨ Θ ⊢ₛ pskl_hole ≼[ (mode_fn m) ] (pskl_arrow Q1 Q2)
-       ⤳ (Ξ2 ++ Ξ1) ⨾ (pskl_tophole (pskl_arrow P1' P2')) }}e
+    {{ S0 ↝ S1 ⊨ Θ ⊢ₑ pskl_ghost ∼ Q1 ⤳ Ξ1 ⨾ P1' }}e ->
+    {{ S1 ↝ S2 ⊨ (Ξ1 ++ Θ) ⊢ₛ pskl_ghost ≼[ m ] Q2 ⤳ Ξ2 ⨾ P2' }}e ->
+    {{ S0 ↝ S2 ⊨ Θ ⊢ₛ pskl_ghost ≼[ (mode_fn m) ] (pskl_arrow Q1 Q2)
+       ⤳ (Ξ2 ++ Ξ1) ⨾ (pskl_univ_ghost (pskl_arrow P1' P2')) }}e
 | e_solve_sub__ghost_l : forall S Θ B,                  (* SS-GhostL *)
     pskl_ghost_free B ->
     guarded_pskl B ->
-    {{ S ↝ S ⊨ Θ ⊢ₛ pskl_hole ≼[ mode_tc ] B ⤳ nil ⨾ (pskl_tophole B) }}e
+    {{ S ↝ S ⊨ Θ ⊢ₛ pskl_ghost ≼[ mode_tc ] B ⤳ nil ⨾ (pskl_univ_ghost B) }}e
 
 with e_solve_eq : supply -> aenv -> pskl -> pskl -> supply -> aenv -> pskl -> Prop :=
 | e_solve_eq__unit : forall S Θ,                        (* SE-Unit *)
@@ -131,10 +131,10 @@ with e_solve_eq : supply -> aenv -> pskl -> pskl -> supply -> aenv -> pskl -> Pr
     nonghost_pskl P ->
     e_guess_mono S0 P S1 Ξ A ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ (pskl_var_f α) ⤳ Ξ ⨾ (ptyp_to_pskl A) }}e
-| e_solve_eq__hole_l : forall S Θ Q,                    (* SE-GhostL *)
-    {{ S ↝ S ⊨ Θ ⊢ₑ pskl_hole ∼ Q ⤳ nil ⨾ Q }}e
-| e_solve_eq__hole_r : forall S Θ P,                    (* SE-VacuousR *)
-    {{ S ↝ S ⊨ Θ ⊢ₑ P ∼ pskl_hole ⤳ nil ⨾ P }}e
+| e_solve_eq__ghost_l : forall S Θ Q,                    (* SE-GhostL *)
+    {{ S ↝ S ⊨ Θ ⊢ₑ pskl_ghost ∼ Q ⤳ nil ⨾ Q }}e
+| e_solve_eq__ghost_r : forall S Θ P,                    (* SE-VacuousR *)
+    {{ S ↝ S ⊨ Θ ⊢ₑ P ∼ pskl_ghost ⤳ nil ⨾ P }}e
 | e_solve_eq__arrow : forall S0 S1 S2 Θ P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2', (* SE-Arrow *)
     (* Δ-thread *)
     {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' }}e ->
@@ -148,31 +148,31 @@ with e_solve_eq : supply -> aenv -> pskl -> pskl -> supply -> aenv -> pskl -> Pr
        ∼ (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ Ξ ⨾ P' }}e ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_all_syn Q)
        ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P')) }}e
-| e_solve_eq__tophole_both : forall S0 S1 Θ P Q Ξ P',   (* SE-UnivGhost *)
+| e_solve_eq__univ_ghost_both : forall S0 S1 Θ P Q Ξ P',   (* SE-UnivGhost *)
     {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e ->
-    {{ S0 ↝ S1 ⊨ Θ ⊢ₑ (pskl_tophole P) ∼ (pskl_tophole Q)
-       ⤳ Ξ ⨾ (pskl_tophole P') }}e
-| e_solve_eq__tophole_l_all : forall S0 S1 Θ P Q Ξ P' β, (* SE-GhostForall *)
+    {{ S0 ↝ S1 ⊨ Θ ⊢ₑ (pskl_univ_ghost P) ∼ (pskl_univ_ghost Q)
+       ⤳ Ξ ⨾ (pskl_univ_ghost P') }}e
+| e_solve_eq__univ_ghost_l_all : forall S0 S1 Θ P Q Ξ P' β, (* SE-GhostForall *)
     β `notin` S0 ->
-    {{ (add β S0) ↝ S1 ⊨ ((β ~ abind_tvar) ++ Θ) ⊢ₑ (pskl_tophole P)
+    {{ (add β S0) ↝ S1 ⊨ ((β ~ abind_tvar) ++ Θ) ⊢ₑ (pskl_univ_ghost P)
        ∼ (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ Ξ ⨾ P' }}e ->
-    {{ S0 ↝ S1 ⊨ Θ ⊢ₑ (pskl_tophole P) ∼ (pskl_all_syn Q)
+    {{ S0 ↝ S1 ⊨ Θ ⊢ₑ (pskl_univ_ghost P) ∼ (pskl_all_syn Q)
        ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P')) }}e
-| e_solve_eq__tophole_l_guarded : forall S0 S1 Θ P Q Ξ P', (* SE-GhostGuarded *)
+| e_solve_eq__univ_ghost_l_guarded : forall S0 S1 Θ P Q Ξ P', (* SE-GhostGuarded *)
     guarded_pskl Q ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e ->
-    {{ S0 ↝ S1 ⊨ Θ ⊢ₑ (pskl_tophole P) ∼ Q ⤳ Ξ ⨾ P' }}e
-| e_solve_eq__all_l_tophole : forall S0 S1 Θ P Q Ξ P' β, (* SE-ForallGhost *)
+    {{ S0 ↝ S1 ⊨ Θ ⊢ₑ (pskl_univ_ghost P) ∼ Q ⤳ Ξ ⨾ P' }}e
+| e_solve_eq__all_l_univ_ghost : forall S0 S1 Θ P Q Ξ P' β, (* SE-ForallGhost *)
     β `notin` S0 ->
     {{ (add β S0) ↝ S1 ⊨ ((β ~ abind_tvar) ++ Θ)
        ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f β))
-       ∼ (pskl_tophole Q) ⤳ Ξ ⨾ P' }}e ->
-    {{ S0 ↝ S1 ⊨ Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_tophole Q)
+       ∼ (pskl_univ_ghost Q) ⤳ Ξ ⨾ P' }}e ->
+    {{ S0 ↝ S1 ⊨ Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_univ_ghost Q)
        ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P')) }}e
-| e_solve_eq__tophole_r_guarded : forall S0 S1 Θ P Q Ξ P', (* SE-GuardedGhost *)
+| e_solve_eq__univ_ghost_r_guarded : forall S0 S1 Θ P Q Ξ P', (* SE-GuardedGhost *)
     guarded_pskl P ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e ->
-    {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ (pskl_tophole Q) ⤳ Ξ ⨾ P' }}e
+    {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ (pskl_univ_ghost Q) ⤳ Ξ ⨾ P' }}e
 where "{{ S0 ↝ S1 ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e" :=
   (e_solve_sub S0 Θ m P Q S1 Ξ P') : fresco_e_scope
 and "{{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e" :=

@@ -1,9 +1,9 @@
 (** THE GHOST-ROW INVERSIONS of the threaded consistency trio — the cells
-    where a hole meets a pattern or a subject, as prop_consis_complete.v
+    where a ghost meets a pattern or a subject, as prop_consis_complete.v
     consumes them.
 
-    At a hole SUBJECT only [U-Ghost] can fire unless the pattern is a
-    variable, and at a hole PATTERN only [U-GhostR] can unless the subject
+    At a ghost SUBJECT only [U-Ghost] can fire unless the pattern is a
+    variable, and at a ghost PATTERN only [U-GhostR] can unless the subject
     is.  ⚙ [U-UnivGhostR] is excluded everywhere here because it demands a
     GUARDED subject and [◇] is not guarded ([guarded_pskl] is
     [1 | α | A → B] and nothing else).  The two variable cells are mirror
@@ -40,9 +40,9 @@ Local Ltac ghost_close :=
   repeat split;
   first [ assumption | reflexivity | (simpl in *; fsetdec) ].
 
-(** A hole SUBJECT against a non-variable pattern: only [U-Ghost]. *)
-Lemma e_consis_inv_hole_subject : forall Δ1 Δ2 S0 Θ0 P0 Q S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] pskl_hole ∼ Q ⊣ Θ1 }}e ->
+(** A ghost SUBJECT against a non-variable pattern: only [U-Ghost]. *)
+Lemma e_consis_inv_ghost_subject : forall Δ1 Δ2 S0 Θ0 P0 Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] pskl_ghost ∼ Q ⊣ Θ1 }}e ->
   (forall β, P0 <> pskl_var_f β) ->
   S1 = S0 /\ Θ1 = Θ0 /\ Q = P0 /\ Δ2 ∩ ftvar_in_pskl P0 [=] empty.
 Proof.
@@ -50,18 +50,18 @@ Proof.
     try solve [ congruence
               | exfalso; eapply Hnv; reflexivity
               | match goal with
-                | H : guarded_pskl pskl_hole |- _ => inversion H
+                | H : guarded_pskl pskl_ghost |- _ => inversion H
                 end ].
   all: ghost_close.
 Qed.
 
-(** A hole PATTERN against a non-variable subject: only [U-GhostR].
+(** A ghost PATTERN against a non-variable subject: only [U-GhostR].
     ⚙ The subject may itself be [◇]: there [U-Ghost] fires too, but it
     returns the SAME triple, so the cell needs no uniqueness argument —
     the level-5 analogue of [U-Rigid] versus [U-Flex], which [e_unify_refl]
     settled the same way. *)
-Lemma e_consis_inv_hole_pattern : forall Δ1 Δ2 S0 Θ0 P Q S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | pskl_hole ] P ∼ Q ⊣ Θ1 }}e ->
+Lemma e_consis_inv_ghost_pattern : forall Δ1 Δ2 S0 Θ0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | pskl_ghost ] P ∼ Q ⊣ Θ1 }}e ->
   (forall β, P <> pskl_var_f β) ->
   S1 = S0 /\ Θ1 = Θ0 /\ Q = P /\ Δ1 ∩ ftvar_in_pskl P [=] empty.
 Proof.
@@ -69,12 +69,12 @@ Proof.
     try solve [ congruence
               | exfalso; eapply Hnv; reflexivity
               | match goal with
-                | H : guarded_pskl pskl_hole |- _ => inversion H
+                | H : guarded_pskl pskl_ghost |- _ => inversion H
                 end ].
   all: ghost_close.
 Qed.
 
-(** ⭐ FORMERLY DIVERGENT CELL 1 — a hole subject against a FLEXIBLE
+(** ⭐ FORMERLY DIVERGENT CELL 1 — a ghost subject against a FLEXIBLE
     pattern.  [U-Ghost] leaves the context alone; [U-FlexR] would have
     assigned, and the runner takes the first
     (def_consis_impl.v:807-813).  Since the [<> ◇] dispatch guards landed
@@ -82,33 +82,33 @@ Qed.
     so this cell now admits exactly ONE rule and the inversion is no
     longer a disjunction — which is what retires the two-context problem
     docs/HANDOFF-close-consis-unrestricted.md was written about. *)
-Lemma e_consis_inv_hole_flex_pattern : forall Δ1 Δ2 S0 Θ0 β Q S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f β) ] pskl_hole ∼ Q ⊣ Θ1 }}e ->
+Lemma e_consis_inv_ghost_flex_pattern : forall Δ1 Δ2 S0 Θ0 β Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f β) ] pskl_ghost ∼ Q ⊣ Θ1 }}e ->
   S1 = S0 /\ Θ1 = Θ0 /\ Q = pskl_var_f β
     /\ Δ2 ∩ ftvar_in_pskl (pskl_var_f β) [=] empty.
 Proof.
   intros * Hd. inversion Hd; subst;
     try solve [ congruence
               | match goal with
-                | H : guarded_pskl pskl_hole |- _ => inversion H
+                | H : guarded_pskl pskl_ghost |- _ => inversion H
                 end ].
   ghost_close.
 Qed.
 
 (** ⭐ FORMERLY DIVERGENT CELL 2 — the mirror: a FLEXIBLE subject against
-    a hole pattern.  [U-GhostR] versus [U-FlexL], the runner takes GhostR
-    (def_consis_impl.v:759-763, whose hole-pattern arm is unconditional in
+    a ghost pattern.  [U-GhostR] versus [U-FlexL], the runner takes GhostR
+    (def_consis_impl.v:759-763, whose ghost-pattern arm is unconditional in
     the subject), and the [<> ◇] guard now bars [U-FlexL] here, so this
     cell too admits exactly one rule. *)
-Lemma e_consis_inv_flex_subject_hole : forall Δ1 Δ2 S0 Θ0 α Q S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | pskl_hole ] (pskl_var_f α) ∼ Q ⊣ Θ1 }}e ->
+Lemma e_consis_inv_flex_subject_ghost : forall Δ1 Δ2 S0 Θ0 α Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | pskl_ghost ] (pskl_var_f α) ∼ Q ⊣ Θ1 }}e ->
   S1 = S0 /\ Θ1 = Θ0 /\ Q = pskl_var_f α
     /\ Δ1 ∩ ftvar_in_pskl (pskl_var_f α) [=] empty.
 Proof.
   intros * Hd. inversion Hd; subst;
     try solve [ congruence
               | match goal with
-                | H : guarded_pskl pskl_hole |- _ => inversion H
+                | H : guarded_pskl pskl_ghost |- _ => inversion H
                 end ].
   ghost_close.
 Qed.

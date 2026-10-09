@@ -27,10 +27,10 @@
       mech settled there for the paper's external wf side conditions
       (docs/WF-SIDE-CONDITIONS.md): the var rule carries the
       [Δ ∨ a_binds_tvar] visibility disjunction, the ∀-rule extends only Δ
-      (the rigid binder is picked cofinitely), tophole_fill extends Θ.
+      (the rigid binder is picked cofinitely), univ_ghost_fill extends Θ.
       Targets ψ are decorated skeletons, so their quantifiers are always
-      tagged ([uskl_all_tag]; [is_tskl] has no [all_syn] constructor) and
-      their ghosts dotted — the subject-hole rule is the only rule matching
+      tagged ([uskl_all_tag]; [is_dskl] has no [all_syn] constructor) and
+      their ghosts dotted — the subject-ghost rule is the only rule matching
       a dotted ghost. *)
 
 Require Import Coq.Lists.List.
@@ -83,7 +83,7 @@ Inductive ad_pat_sub :
     guarded_bskl Q ->
     is_sskl Q ->
     {{ empty ⨟ Θ ⊢ˢ R ∼ᵣ Q }}ad ->
-    {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_sk | mode_tc ] R ⩽ (bskl_tophole Q) }}ad
+    {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_sk | mode_tc ] R ⩽ (bskl_univ_ghost Q) }}ad
 | ad_pat_sub__arrow : forall NM Ψ Ψ1 Ψ2 Θ M R1 R2 Q1 Q2,      (* Arrow *)
     (* the DOMAIN premise is itself a consistency leaf, hence a join *)
     {{ Ψ1 ⨟ Θ ⊢ˢ R1 ∼ᵣ Q1 }}ad ->
@@ -110,19 +110,19 @@ Inductive ad_pat_sub :
     Ψ [=] empty ->
     {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
     mod_comp_sk (pskl_to_bskl_inh P) M ->
-    {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_sk | M ] uskl_hole ⩽ (pskl_to_bskl_inh P) }}ad
+    {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_sk | M ] uskl_ghost ⩽ (pskl_to_bskl_inh P) }}ad
 | ad_pat_sub__ghostg : forall Ψ Θ M,                          (* GhostG (SK) *)
     Ψ [=] empty ->
-    mod_comp_sk bskl_hole M ->
-    {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_sk | M ] uskl_holeg ⩽ bskl_hole }}ad
+    mod_comp_sk bskl_ghost M ->
+    {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_sk | M ] uskl_dot_ghost ⩽ bskl_ghost }}ad
 | ad_pat_sub__univ_ghost_l : forall Ψ Θ M R Q,                (* UnivGhostL (SK) *)
     M <> mode_ti ->
     {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_sk | M ] R ⩽ Q }}ad ->
-    {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_sk | M ] (uskl_tophole R) ⩽ Q }}ad
+    {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_sk | M ] (uskl_univ_ghost R) ⩽ Q }}ad
 | ad_pat_sub__univ_ghost_lg : forall Ψ Θ M R Q,               (* UnivGhostLG (SK) *)
     M <> mode_ti ->
     {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_sk | M ] R ⩽ Q }}ad ->
-    {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_sk | M ] (uskl_topholeg R) ⩽ Q }}ad
+    {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_sk | M ] (uskl_dot_univ_ghost R) ⩽ Q }}ad
 (* — the algorithmic-context lookup rule (fig:declarative-in-algo-context) — *)
 | ad_pat_sub__flex_mono : forall NM Ψ Θ M α τ Q,              (* FlexMono *)
     binds α (abind_flex_mono_def τ) Θ ->
@@ -267,7 +267,7 @@ Inductive ad_pat_sub_fuel :
     guarded_bskl Q ->
     is_sskl Q ->
     {{ empty ⨟ Θ ⊢ˢ R ∼ᵣ Q }}ad ->
-    ad_pat_sub_fuel n a_sub_mode_sk mode_tc Ψ Θ R (bskl_tophole Q)
+    ad_pat_sub_fuel n a_sub_mode_sk mode_tc Ψ Θ R (bskl_univ_ghost Q)
 | ad_pat_sub_fuel__arrow : forall n NM Ψ Ψ1 Ψ2 Θ M R1 R2 Q1 Q2, (* Arrow *)
     (* the DOMAIN premise is itself a consistency leaf — Sub-Arrow invokes
        thm:complete-consistency on it (:3334), so it carries the same
@@ -296,19 +296,19 @@ Inductive ad_pat_sub_fuel :
     Ψ [=] empty ->
     {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
     mod_comp_sk (pskl_to_bskl_inh P) M ->
-    ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ uskl_hole (pskl_to_bskl_inh P)
+    ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ uskl_ghost (pskl_to_bskl_inh P)
 | ad_pat_sub_fuel__ghostg : forall n Ψ Θ M,                     (* GhostG (SK) *)
     Ψ [=] empty ->
-    mod_comp_sk bskl_hole M ->
-    ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ uskl_holeg bskl_hole
+    mod_comp_sk bskl_ghost M ->
+    ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ uskl_dot_ghost bskl_ghost
 | ad_pat_sub_fuel__univ_ghost_l : forall n Ψ Θ M R Q,          (* UnivGhostL (SK) *)
     M <> mode_ti ->
     ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ R Q ->
-    ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ (uskl_tophole R) Q
+    ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ (uskl_univ_ghost R) Q
 | ad_pat_sub_fuel__univ_ghost_lg : forall n Ψ Θ M R Q,         (* UnivGhostLG (SK) *)
     M <> mode_ti ->
     ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ R Q ->
-    ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ (uskl_topholeg R) Q
+    ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ (uskl_dot_univ_ghost R) Q
 | ad_pat_sub_fuel__flex_mono : forall n NM Ψ Θ M α τ Q,         (* FlexMono *)
     binds α (abind_flex_mono_def τ) Θ ->
     ad_pat_sub_fuel n NM (mode_fn M) Ψ Θ (ptyp_to_uskl_syn τ) Q ->
@@ -360,22 +360,22 @@ Inductive ad_partial_precise :
          ⊑ᵖ[ Ψ0 ] (open_uskl_wrt_uskl ψ (uskl_var_f α)) }}ad) ->
     Ψ [=] add ε Ψ0 ->
     {{ Θ ⨟ Δ ⊢ˢ (pskl_all_syn P) ⊑ᵖ[ Ψ ] (uskl_all_tag ε ψ) }}ad
-| ad_ppre__hole : forall Θ Δ Ψ ψ,
+| ad_ppre__ghost : forall Θ Δ Ψ ψ,
     Ψ [=] empty ->
     Δ ∩ ftvar_in_uskl ψ [=] empty ->
-    {{ Θ ⨟ Δ ⊢ˢ pskl_hole ⊑ᵖ[ Ψ ] ψ }}ad
-| ad_ppre__tophole_remove : forall Θ Δ Ψ P ψ,
+    {{ Θ ⨟ Δ ⊢ˢ pskl_ghost ⊑ᵖ[ Ψ ] ψ }}ad
+| ad_ppre__univ_ghost_remove : forall Θ Δ Ψ P ψ,
     {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
-    {{ Θ ⨟ Δ ⊢ˢ (pskl_tophole P) ⊑ᵖ[ Ψ ] ψ }}ad
-| ad_ppre__tophole_fill : forall L Θ Δ Ψ P ψ,
+    {{ Θ ⨟ Δ ⊢ˢ (pskl_univ_ghost P) ⊑ᵖ[ Ψ ] ψ }}ad
+| ad_ppre__univ_ghost_fill : forall L Θ Δ Ψ P ψ,
     (forall α, α `notin` L ->
-       {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ˢ (pskl_tophole P)
+       {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ˢ (pskl_univ_ghost P)
          ⊑ᵖ[ Ψ ] (open_uskl_wrt_uskl ψ (uskl_var_f α)) }}ad) ->
     forall ε,
-    {{ Θ ⨟ Δ ⊢ˢ (pskl_tophole P) ⊑ᵖ[ Ψ ] (uskl_all_tag ε ψ) }}ad
-| ad_ppre__tophole_keep : forall Θ Δ Ψ P ψ,
+    {{ Θ ⨟ Δ ⊢ˢ (pskl_univ_ghost P) ⊑ᵖ[ Ψ ] (uskl_all_tag ε ψ) }}ad
+| ad_ppre__univ_ghost_keep : forall Θ Δ Ψ P ψ,
     {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
-    {{ Θ ⨟ Δ ⊢ˢ (pskl_tophole P) ⊑ᵖ[ Ψ ] (uskl_topholeg ψ) }}ad
+    {{ Θ ⨟ Δ ⊢ˢ (pskl_univ_ghost P) ⊑ᵖ[ Ψ ] (uskl_dot_univ_ghost ψ) }}ad
 (* — flexible-variable lookups (fig:declarative-in-algo-context style) — *)
 | ad_ppre__flex_l : forall Θ Δ Ψ α τ ψ,
     binds α (abind_flex_mono_def τ) Θ ->

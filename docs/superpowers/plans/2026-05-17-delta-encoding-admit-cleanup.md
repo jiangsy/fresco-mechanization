@@ -327,7 +327,7 @@ If the call-sites can survive with `erase T = erase A`, prefer that. Otherwise a
 
 **The shape of the gap:**
 
-The existing `d_sub__forall_l_tagged` case routes through `d_shallow_sub__forall_l` with `d_wf_typ Γ ph` from the `d_wf_ttyp` premise (with `Δ' = nil` discharged). The new `__forall_l_untagged` case: same shape but LHS is `typ_all_col colour_syn`, which `d_shallow_sub` DOES accept (it has a general `forall_l` rule for `typ_all_col c`).
+The existing `d_sub__forall_l_tagged` case routes through `d_shallow_sub__forall_l` with `d_wf_typ Γ ph` from the `d_wf_dtyp` premise (with `Δ' = nil` discharged). The new `__forall_l_untagged` case: same shape but LHS is `typ_all_col colour_syn`, which `d_shallow_sub` DOES accept (it has a general `forall_l` rule for `typ_all_col c`).
 
 - [ ] **Step 1: Try the parallel route**
 
@@ -465,12 +465,12 @@ Parallel to the `__forall_l_tagged` case (line ~213). Copy its tactic, drop the 
 
 The `__forall_l_untagged` case of `d_sub` requires the composition `d_consis ... typ_all_col colour_syn T0 → d_sub __forall_l_untagged → d_consis ... B`. Compose by inverting the `d_consis` (it must be `__forall_syn` or `__forall_syn_tagged`), then use the IH on the opened body.
 
-May need a new helper: `d_consis_subst_ttyp` (substitute a `d_wf_ttyp` term, not just a mono term — the existing `d_consis_subst_mono` only handles mono). If so:
+May need a new helper: `d_consis_subst_dtyp` (substitute a `d_wf_dtyp` term, not just a mono term — the existing `d_consis_subst_mono` only handles mono). If so:
 
-- [ ] **Step 1: State and prove `d_consis_subst_ttyp`**
+- [ ] **Step 1: State and prove `d_consis_subst_dtyp`**
 
 ```coq
-Lemma d_consis_subst_ttyp : forall Δ Δ' Γ X T A ph,
+Lemma d_consis_subst_dtyp : forall Δ Δ' Γ X T A ph,
     Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ T ≈ A ->
     Δ' ⨟ Γ ⊢ₜₜ ph ->
     list_disjoint Δ Δ' ->

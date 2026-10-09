@@ -97,10 +97,10 @@ Definition solve_cstr_spec (S0 : supply) (Θ : aenv) (C : a_cstrs) (P : pskl)
    now demand that the earlier, SUBJECT-dispatching clauses do not apply —
    which is exactly the information Equations' own splitting leaves in the
    goal, since by the time control reaches those clauses the subject has
-   been split away from [var_f] / [all_syn] / [tophole]. *)
+   been split away from [var_f] / [all_syn] / [univ_ghost]. *)
 #[local] Hint Resolve peel_l_off_unit peel_l_off_var_b peel_l_off_var
-  peel_l_off_arrow peel_l_off_hole solve_l_off_unit solve_l_off_var_b
-  solve_l_off_arrow solve_l_off_hole : solvedec.
+  peel_l_off_arrow peel_l_off_ghost solve_l_off_unit solve_l_off_var_b
+  solve_l_off_arrow solve_l_off_ghost : solvedec.
 
 #[local] Ltac select_shape_premises :=
   repeat match goal with
@@ -134,11 +134,11 @@ Definition solve_cstr_spec (S0 : supply) (Θ : aenv) (C : a_cstrs) (P : pskl)
                     assert (Hx := Hlc); apply lc_pskl_arrow_inv in Hx;
                     destruct Hx
              end
-         | Hlc : lc_pskl (pskl_tophole ?a) |- _ =>
+         | Hlc : lc_pskl (pskl_univ_ghost ?a) |- _ =>
              lazymatch goal with
              | _ : lc_pskl a |- _ => fail
              | _ => let Hx := fresh "Hlc0" in
-                    assert (Hx := Hlc); apply lc_pskl_tophole_inv in Hx
+                    assert (Hx := Hlc); apply lc_pskl_univ_ghost_inv in Hx
              end
          end.
 
@@ -177,13 +177,13 @@ Equations e_solve_eq_impl (S0 : supply) (Θ : aenv) (P Q : pskl)
 
 | S0, Θ, pskl_var_f α, Q, HP, HQ, H =>                    (* SE-Var/FlexL *)
     Some (exist _ (mk_solve_result S0 nil (pskl_var_f α)) _)
-| S0, Θ, pskl_hole, Q, HP, HQ, H =>                       (* SE-GhostL *)
+| S0, Θ, pskl_ghost, Q, HP, HQ, H =>                       (* SE-GhostL *)
     Some (exist _ (mk_solve_result S0 nil Q) _)
 
 (* ---- unit subject ---- *)
 | S0, Θ, pskl_unit, pskl_unit, HP, HQ, H =>               (* SE-Unit *)
     Some (exist _ (mk_solve_result S0 nil pskl_unit) _)
-| S0, Θ, pskl_unit, pskl_hole, HP, HQ, H =>               (* SE-VacuousR *)
+| S0, Θ, pskl_unit, pskl_ghost, HP, HQ, H =>               (* SE-VacuousR *)
     Some (exist _ (mk_solve_result S0 nil pskl_unit) _)
 | S0, Θ, pskl_unit, pskl_var_f β, HP, HQ, H =>            (* SE-FlexR *)
     match sumbool_of_bool (flex_bound_ck Θ β && nonghost_ck pskl_unit
@@ -194,7 +194,7 @@ Equations e_solve_eq_impl (S0 : supply) (Θ : aenv) (P Q : pskl)
         Some (exist _ (mk_solve_result (gr_supply r) (gr_block r)
                 (ptyp_to_pskl (gr_type r))) _)
     end
-| S0, Θ, pskl_unit, pskl_tophole Q1, HP, HQ, H =>         (* SE-GuardedGhost *)
+| S0, Θ, pskl_unit, pskl_univ_ghost Q1, HP, HQ, H =>         (* SE-GuardedGhost *)
     match e_solve_eq_impl S0 Θ pskl_unit Q1 _ _ _ with
     | None => None
     | Some (exist _ r Hr) => Some (exist _ r _)
@@ -215,7 +215,7 @@ Equations e_solve_eq_impl (S0 : supply) (Θ : aenv) (P Q : pskl)
                     (pskl_arrow (sv_out r1) (sv_out r2))) _)
         end
     end
-| S0, Θ, pskl_arrow P1 P2, pskl_hole, HP, HQ, H =>        (* SE-VacuousR *)
+| S0, Θ, pskl_arrow P1 P2, pskl_ghost, HP, HQ, H =>        (* SE-VacuousR *)
     Some (exist _ (mk_solve_result S0 nil (pskl_arrow P1 P2)) _)
 | S0, Θ, pskl_arrow P1 P2, pskl_var_f β, HP, HQ, H =>     (* SE-FlexR *)
     match sumbool_of_bool (flex_bound_ck Θ β
@@ -227,7 +227,7 @@ Equations e_solve_eq_impl (S0 : supply) (Θ : aenv) (P Q : pskl)
         Some (exist _ (mk_solve_result (gr_supply r) (gr_block r)
                 (ptyp_to_pskl (gr_type r))) _)
     end
-| S0, Θ, pskl_arrow P1 P2, pskl_tophole Q1, HP, HQ, H =>  (* SE-GuardedGhost *)
+| S0, Θ, pskl_arrow P1 P2, pskl_univ_ghost Q1, HP, HQ, H =>  (* SE-GuardedGhost *)
     match e_solve_eq_impl S0 Θ (pskl_arrow P1 P2) Q1 _ _ _ with
     | None => None
     | Some (exist _ r Hr) => Some (exist _ r _)
@@ -247,7 +247,7 @@ Equations e_solve_eq_impl (S0 : supply) (Θ : aenv) (P Q : pskl)
                 (pskl_all_syn
                    (close_pskl_wrt_pskl (supply_fresh S0) (sv_out r)))) _)
     end
-| S0, Θ, pskl_all_syn P1, pskl_hole, HP, HQ, H =>         (* SE-VacuousR *)
+| S0, Θ, pskl_all_syn P1, pskl_ghost, HP, HQ, H =>         (* SE-VacuousR *)
     Some (exist _ (mk_solve_result S0 nil (pskl_all_syn P1)) _)
 | S0, Θ, pskl_all_syn P1, pskl_var_f β, HP, HQ, H =>      (* SE-FlexR *)
     match sumbool_of_bool (flex_bound_ck Θ β
@@ -259,11 +259,11 @@ Equations e_solve_eq_impl (S0 : supply) (Θ : aenv) (P Q : pskl)
         Some (exist _ (mk_solve_result (gr_supply r) (gr_block r)
                 (ptyp_to_pskl (gr_type r))) _)
     end
-| S0, Θ, pskl_all_syn P1, pskl_tophole Q1, HP, HQ, H =>   (* SE-ForallGhost *)
+| S0, Θ, pskl_all_syn P1, pskl_univ_ghost Q1, HP, HQ, H =>   (* SE-ForallGhost *)
     match e_solve_eq_impl (add (supply_fresh S0) S0)
             ((supply_fresh S0 ~ abind_tvar) ++ Θ)
             (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0)))
-            (pskl_tophole Q1) _ _ _ with
+            (pskl_univ_ghost Q1) _ _ _ with
     | None => None
     | Some (exist _ r Hr) =>
         Some (exist _ (mk_solve_result (sv_supply r) (sv_block r)
@@ -273,19 +273,19 @@ Equations e_solve_eq_impl (S0 : supply) (Θ : aenv) (P Q : pskl)
 | S0, Θ, pskl_all_syn P1, Q, HP, HQ, H => None
 
 (* ---- ⫯ subject ---- *)
-| S0, Θ, pskl_tophole P1, pskl_tophole Q1, HP, HQ, H =>   (* SE-UnivGhost *)
+| S0, Θ, pskl_univ_ghost P1, pskl_univ_ghost Q1, HP, HQ, H =>   (* SE-UnivGhost *)
     match e_solve_eq_impl S0 Θ P1 Q1 _ _ _ with
     | None => None
     | Some (exist _ r Hr) =>
         Some (exist _ (mk_solve_result (sv_supply r) (sv_block r)
-                (pskl_tophole (sv_out r))) _)
+                (pskl_univ_ghost (sv_out r))) _)
     end
-| S0, Θ, pskl_tophole P1, pskl_hole, HP, HQ, H =>         (* SE-VacuousR *)
-    Some (exist _ (mk_solve_result S0 nil (pskl_tophole P1)) _)
-| S0, Θ, pskl_tophole P1, pskl_all_syn Q1, HP, HQ, H =>   (* SE-GhostForall *)
+| S0, Θ, pskl_univ_ghost P1, pskl_ghost, HP, HQ, H =>         (* SE-VacuousR *)
+    Some (exist _ (mk_solve_result S0 nil (pskl_univ_ghost P1)) _)
+| S0, Θ, pskl_univ_ghost P1, pskl_all_syn Q1, HP, HQ, H =>   (* SE-GhostForall *)
     match e_solve_eq_impl (add (supply_fresh S0) S0)
             ((supply_fresh S0 ~ abind_tvar) ++ Θ)
-            (pskl_tophole P1)
+            (pskl_univ_ghost P1)
             (open_pskl_wrt_pskl Q1 (pskl_var_f (supply_fresh S0)))
             _ _ _ with
     | None => None
@@ -294,25 +294,25 @@ Equations e_solve_eq_impl (S0 : supply) (Θ : aenv) (P Q : pskl)
                 (pskl_all_syn
                    (close_pskl_wrt_pskl (supply_fresh S0) (sv_out r)))) _)
     end
-| S0, Θ, pskl_tophole P1, pskl_unit, HP, HQ, H =>         (* SE-GhostGuarded *)
+| S0, Θ, pskl_univ_ghost P1, pskl_unit, HP, HQ, H =>         (* SE-GhostGuarded *)
     match e_solve_eq_impl S0 Θ P1 pskl_unit _ _ _ with
     | None => None
     | Some (exist _ r Hr) => Some (exist _ r _)
     end
-| S0, Θ, pskl_tophole P1, pskl_var_f β, HP, HQ, H =>      (* SE-GhostGuarded *)
+| S0, Θ, pskl_univ_ghost P1, pskl_var_f β, HP, HQ, H =>      (* SE-GhostGuarded *)
     match e_solve_eq_impl S0 Θ P1 (pskl_var_f β) _ _ _ with
     | None => None
     | Some (exist _ r Hr) => Some (exist _ r _)
     end
-| S0, Θ, pskl_tophole P1, pskl_arrow Q1 Q2, HP, HQ, H =>  (* SE-GhostGuarded *)
+| S0, Θ, pskl_univ_ghost P1, pskl_arrow Q1 Q2, HP, HQ, H =>  (* SE-GhostGuarded *)
     match e_solve_eq_impl S0 Θ P1 (pskl_arrow Q1 Q2) _ _ _ with
     | None => None
     | Some (exist _ r Hr) => Some (exist _ r _)
     end
-| S0, Θ, pskl_tophole P1, pskl_var_b n, HP, HQ, H => None
+| S0, Θ, pskl_univ_ghost P1, pskl_var_b n, HP, HQ, H => None
 
 (* ---- dangling index subject ---- *)
-| S0, Θ, pskl_var_b n, pskl_hole, HP, HQ, H =>            (* SE-VacuousR *)
+| S0, Θ, pskl_var_b n, pskl_ghost, HP, HQ, H =>            (* SE-VacuousR *)
     Some (exist _ (mk_solve_result S0 nil (pskl_var_b n)) _)
 | S0, Θ, pskl_var_b n, Q, HP, HQ, H => None.
 
@@ -339,14 +339,14 @@ Equations e_solve_sub_impl (S0 : supply) (Θ : aenv) (m : mode) (P Q : pskl)
                 (pskl_all_syn
                    (close_pskl_wrt_pskl (supply_fresh S0) (sv_out r)))) _)
     end
-| S0, Θ, m, pskl_tophole P1, Q, HP, HQ, H =>              (* SS-UnivGhostL *)
+| S0, Θ, m, pskl_univ_ghost P1, Q, HP, HQ, H =>              (* SS-UnivGhostL *)
     match e_solve_sub_impl S0 Θ m P1 Q _ _ _ with
     | None => None
     | Some (exist _ r Hr) =>
         Some (exist _ (mk_solve_result (sv_supply r) (sv_block r)
-                (pskl_tophole (sv_out r))) _)
+                (pskl_univ_ghost (sv_out r))) _)
     end
-| S0, Θ, m, P, pskl_hole, HP, HQ, H =>                    (* SS-Vacuous *)
+| S0, Θ, m, P, pskl_ghost, HP, HQ, H =>                    (* SS-Vacuous *)
     Some (exist _ (mk_solve_result S0 nil P) _)
 | S0, Θ, mode_tc, P, pskl_all_syn B, HP, HQ, H =>         (* SS-ForallR *)
     match sumbool_of_bool (ghost_free_ck (pskl_all_syn B)) with
@@ -360,10 +360,10 @@ Equations e_solve_sub_impl (S0 : supply) (Θ : aenv) (m : mode) (P Q : pskl)
         | Some (exist _ r Hr) => Some (exist _ r _)
         end
     end
-| S0, Θ, mode_tc, pskl_hole, Q, HP, HQ, H =>              (* SS-GhostL *)
+| S0, Θ, mode_tc, pskl_ghost, Q, HP, HQ, H =>              (* SS-GhostL *)
     match sumbool_of_bool (guarded_shape_ck Q && ghost_free_ck Q) with
     | right _ => None
-    | left _ => Some (exist _ (mk_solve_result S0 nil (pskl_tophole Q)) _)
+    | left _ => Some (exist _ (mk_solve_result S0 nil (pskl_univ_ghost Q)) _)
     end
 | S0, Θ, mode_tc, P, Q, HP, HQ, H =>                      (* SS-Check *)
     match sumbool_of_bool (guarded_shape_ck P && guarded_shape_ck Q
@@ -389,18 +389,18 @@ Equations e_solve_sub_impl (S0 : supply) (Θ : aenv) (m : mode) (P Q : pskl)
                     (pskl_arrow (sv_out r1) (sv_out r2))) _)
         end
     end
-| S0, Θ, mode_fn m', pskl_hole, pskl_arrow Q1 Q2, HP, HQ, H =>
+| S0, Θ, mode_fn m', pskl_ghost, pskl_arrow Q1 Q2, HP, HQ, H =>
     (* SS-GhostLF *)
-    match e_solve_eq_impl S0 Θ pskl_hole Q1 _ _ _ with
+    match e_solve_eq_impl S0 Θ pskl_ghost Q1 _ _ _ with
     | None => None
     | Some (exist _ r1 Hr1) =>
         match e_solve_sub_impl (sv_supply r1) (sv_block r1 ++ Θ) m'
-                pskl_hole Q2 _ _ _ with
+                pskl_ghost Q2 _ _ _ with
         | None => None
         | Some (exist _ r2 Hr2) =>
             Some (exist _ (mk_solve_result (sv_supply r2)
                     (sv_block r2 ++ sv_block r1)
-                    (pskl_tophole
+                    (pskl_univ_ghost
                        (pskl_arrow (sv_out r1) (sv_out r2)))) _)
         end
     end

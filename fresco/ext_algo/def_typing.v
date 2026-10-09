@@ -77,7 +77,7 @@ Inductive e_typing : supply -> mode -> aenv -> pskl -> exp -> ptyp -> supply
        (ptyp_to_pskl A) ⩽ (ptyp_to_pskl B) ⊣ Θ2 }}e ->
     {{ S0 ↝ S2 ⊨ Θ0 ⊢[ m ; P0 ] (exp_anno e A) ⦂ B ⊣ Θ2 }}e
 | e_typing__freeze : forall S0 S1 S2 Θ0 e A B Θ1 Θ2,         (* AT-Freeze *)
-    {{ S0 ↝ S1 ⊨ Θ0 ⊢[ mode_ti ; pskl_hole ] e ⦂ B ⊣ Θ1 }}e ->
+    {{ S0 ↝ S1 ⊨ Θ0 ⊢[ mode_ti ; pskl_ghost ] e ⦂ B ⊣ Θ1 }}e ->
     e_consis_chk S1 Θ1 (ptyp_to_pskl B) (ptyp_to_pskl A) S2 Θ2 ->
     {{ S0 ↝ S2 ⊨ Θ0 ⊢[ mode_tc ; (ptyp_to_pskl A) ]
        (exp_freeze e) ⦂ A ⊣ Θ2 }}e
@@ -167,7 +167,7 @@ Inductive e_typing : supply -> mode -> aenv -> pskl -> exp -> ptyp -> supply
     {{ S0 ↝ S3 ⊨ Θ0 ⊢[ mode_tc ; (ptyp_to_pskl A0) ] (exp_abs_anno A e)
        ⦂ (ptyp_arrow A' B1) ⊣ Θ3 }}e
 | e_typing__app : forall S0 S1 S2 S3 m Θ0 Θ1 Θ2 Θ3 P Q A A' B e1 e2,
-    {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] e2 ⦂ P ⊣ Θ1 }}e ->
+    {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_tc ; pskl_ghost ] e2 ⦂ P ⊣ Θ1 }}e ->
     {{ S1 ↝ S2 ⊨ Θ1 ⊢[ (mode_fn m) ; (pskl_arrow P Q) ] e1
        ⦂ (ptyp_arrow A B) ⊣ Θ2 }}e ->
     {{ S2 ↝ S3 ⊨ Θ2 ⊢[ mode_tc ; (ptyp_to_pskl A) ] e2 ⦂ A' ⊣ Θ3 }}e ->

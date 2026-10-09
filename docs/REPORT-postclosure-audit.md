@@ -25,7 +25,7 @@ Steps 2 and 3 of the suggested order below, plus the README indexing:
   Five were exact duplicates (deleted the copy in the file that already imported
   the other), five were different lemmas colliding (renamed).  Two facts turned
   out to exist **three** times: `a_wf_aenv_strip_prefix` (a `_local` copy, an
-  `a_decls`-restricted one and a general one) and `a_wf_pskl_tophole_inv` (a
+  `a_decls`-restricted one and a general one) and `a_wf_pskl_univ_ghost_inv` (a
   strong form, a wf-only weak form, and an `_x` copy that existed only to escape
   the shadow).  Both now live once, in `algo/prop_basic.v`, which every user
   imports.
@@ -438,7 +438,7 @@ back.
 ### 2.3 Ten duplicate top-level names
 
 `a_inc_equiv_lookup`, `a_wf_aenv_binds_def_mono`, `a_wf_aenv_strip_prefix`,
-`a_wf_pskl_tophole_inv`, `ad_pat_sub_fuel_weaken`, `bskl_to_pskl_btyp_to_bskl`,
+`a_wf_pskl_univ_ghost_inv`, `ad_pat_sub_fuel_weaken`, `bskl_to_pskl_btyp_to_bskl`,
 `bskl_to_pskl_subst_unit`, `guarded_pskl_subst`, `guarded_pskl_subst_var`,
 `uskl_to_pskl_subst_unit`.  (Plus lngen's own `default_auto` /
 `default_autorewrite`, which are generated and harmless.)

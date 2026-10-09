@@ -1,10 +1,10 @@
 (** PROBE (2026-08-17): SKELETON INFERENCE PRESENTS THE DIVERGENT CELL, so
     the fragment direction — (R2) of docs/HANDOFF-close-consis-unrestricted.md
-    §5, "weaken [pskl_no_hole] to a predicate that excludes just the two
+    §5, "weaken [pskl_no_ghost] to a predicate that excludes just the two
     divergent shapes" — CANNOT reach the flagship: the shapes are REACHED.
 
     The handover's own first question was whether subtyping and typing ever
-    actually PRESENT a hole opposite a flexible variable.  They do, and not
+    actually PRESENT a ghost opposite a flexible variable.  They do, and not
     in a corner.  The source program
 
         (λf. f (λy. f y)) (λz. z)
@@ -24,7 +24,7 @@
           subject with the pattern).  So the body run for [f y] types f at
           the NAKED arrow pattern ◇ → ◇.
       (3) [AP-Var] + [Arrow] pair that pattern componentwise against f's
-          type: consis(pattern ◇, subject δ̂1) — a hole opposite an
+          type: consis(pattern ◇, subject δ̂1) — a ghost opposite an
           undefined flexible, the exact cell at which the consistency
           rules and their runner diverge (cex/probe_consis_ghost_flex.v:
           [U-GhostR] answers with the context UNCHANGED, [U-FlexL] SOLVES
@@ -77,13 +77,13 @@ Open Scope fresco_e_scope.
 (** The context after (1)–(2): y at skeleton ◇ (the argument's own binder),
     f at the guessed arrow type, then the guess's two deposited flexibles. *)
 Definition probe_pf_ctx (y f δ1 δ2 : atom) : aenv :=
-  (y ~ abind_var_skl pskl_hole)
+  (y ~ abind_var_skl pskl_ghost)
   ++ (f ~ abind_var_typ (ptyp_arrow (ptyp_var_f δ1) (ptyp_var_f δ2)))
   ++ (δ1 ~ abind_flex_mono) ++ (δ2 ~ abind_flex_mono) ++ nil.
 
 (** Route B's output: δ̂1 solved to the flexible [guess^TY(◇)] invents. *)
 Definition probe_pf_ctx_solved (y f δ1 δ2 ε : atom) : aenv :=
-  (y ~ abind_var_skl pskl_hole)
+  (y ~ abind_var_skl pskl_ghost)
   ++ (f ~ abind_var_typ (ptyp_arrow (ptyp_var_f δ1) (ptyp_var_f δ2)))
   ++ (δ1 ~ abind_flex_mono_def (ptyp_var_f ε))
   ++ (ε ~ abind_flex_mono) ++ (δ2 ~ abind_flex_mono) ++ nil.
@@ -96,15 +96,15 @@ Definition probe_pf_body (y f : atom) : exp :=
 (* --------------------------------------------------------------------- *)
 
 Lemma probe_pat_ghostr_route : forall S y f δ1 δ2,
-  {{ S ↝ S ⊨ (probe_pf_ctx y f δ1 δ2) ⊢ˢ[ mode_tc ; pskl_hole ]
-     (probe_pf_body y f) ⦂ (pskl_tophole (pskl_var_f δ2))
+  {{ S ↝ S ⊨ (probe_pf_ctx y f δ1 δ2) ⊢ˢ[ mode_tc ; pskl_ghost ]
+     (probe_pf_body y f) ⦂ (pskl_univ_ghost (pskl_var_f δ2))
      ⊣ (probe_pf_ctx y f δ1 δ2) }}e.
 Proof.
   intros. unfold probe_pf_body.
   apply e_pat__app with (S1 := S) (Θ1 := probe_pf_ctx y f δ1 δ2)
-    (P0 := pskl_hole) (P := pskl_var_f δ1).
+    (P0 := pskl_ghost) (P := pskl_var_f δ1).
   - (* pat y at (tc, ◇): the skeleton-◇ binder echoes ◇ (Ghost). *)
-    apply e_pat__var_skl with (P := pskl_hole).
+    apply e_pat__var_skl with (P := pskl_ghost).
     + unfold probe_pf_ctx, binds. simpl. auto.
     + (* mode TC, so SI-Ghost's [M <> TI] guard is immediate *)
       apply e_sub__ghost; discriminate.
@@ -128,7 +128,7 @@ Qed.
     second derivation: [U-FlexL] assigned [δ̂1 ≔ guess^TY(◇)], deposited a
     fresh [ε̂], and answered at a context ONE ENTRY LONGER — so the pat
     call had two derivations whose outputs no swap chain could relate,
-    and no restriction weaker than hole-freeness could exclude the cell
+    and no restriction weaker than ghost-freeness could exclude the cell
     while still holding at the calls skeleton inference makes.
 
     The guards remove that second derivation, because they render the

@@ -102,25 +102,25 @@ Inductive ad_pat_consis : atoms -> aenv -> uskl -> bskl -> Prop :=
     {{ Ψ ⨟ Θ ⊢ˢ (uskl_all_syn R) ∼ (bskl_all_syn Q) }}ad
 | ad_pat_consis__ghostg : forall Ψ Θ,
     Ψ [=] empty ->
-    {{ Ψ ⨟ Θ ⊢ˢ uskl_holeg ∼ bskl_hole }}ad
-| ad_pat_consis__topholeg : forall Ψ Θ R Q,
+    {{ Ψ ⨟ Θ ⊢ˢ uskl_dot_ghost ∼ bskl_ghost }}ad
+| ad_pat_consis__dot_univ_ghost : forall Ψ Θ R Q,
     {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
-    {{ Ψ ⨟ Θ ⊢ˢ (uskl_topholeg R) ∼ (bskl_tophole Q) }}ad
-| ad_pat_consis__hole : forall Ψ Θ P,
+    {{ Ψ ⨟ Θ ⊢ˢ (uskl_dot_univ_ghost R) ∼ (bskl_univ_ghost Q) }}ad
+| ad_pat_consis__ghost : forall Ψ Θ P,
     Ψ [=] empty ->
     {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
-    {{ Ψ ⨟ Θ ⊢ˢ uskl_hole ∼ (pskl_to_bskl_inh P) }}ad
-| ad_pat_consis__tophole : forall Ψ Θ R Q,
+    {{ Ψ ⨟ Θ ⊢ˢ uskl_ghost ∼ (pskl_to_bskl_inh P) }}ad
+| ad_pat_consis__univ_ghost : forall Ψ Θ R Q,
     {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
-    {{ Ψ ⨟ Θ ⊢ˢ (uskl_tophole R) ∼ (bskl_tophole Q) }}ad
-| ad_pat_consis__tophole_inh : forall L Ψ Θ R Q,
+    {{ Ψ ⨟ Θ ⊢ˢ (uskl_univ_ghost R) ∼ (bskl_univ_ghost Q) }}ad
+| ad_pat_consis__univ_ghost_inh : forall L Ψ Θ R Q,
     (forall α, α `notin` L ->
        {{ Ψ ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ˢ
-         (uskl_tophole R) ∼ (open_bskl_wrt_bskl Q (bskl_var_f α)) }}ad) ->
-    {{ Ψ ⨟ Θ ⊢ˢ (uskl_tophole R) ∼ (bskl_all_inh Q) }}ad
-| ad_pat_consis__tophole_drop : forall Ψ Θ R Q,
+         (uskl_univ_ghost R) ∼ (open_bskl_wrt_bskl Q (bskl_var_f α)) }}ad) ->
+    {{ Ψ ⨟ Θ ⊢ˢ (uskl_univ_ghost R) ∼ (bskl_all_inh Q) }}ad
+| ad_pat_consis__univ_ghost_drop : forall Ψ Θ R Q,
     {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
-    {{ Ψ ⨟ Θ ⊢ˢ (uskl_tophole R) ∼ Q }}ad
+    {{ Ψ ⨟ Θ ⊢ˢ (uskl_univ_ghost R) ∼ Q }}ad
 (* — new lookup rules (paper eqlab FlexL / FlexR) — *)
 | ad_pat_consis__flex_l : forall Ψ Θ α τ Q,
     binds α (abind_flex_mono_def τ) Θ ->
@@ -159,23 +159,23 @@ Inductive ad_refine_syn : aenv -> atoms -> bskl -> bskl -> Prop :=
          (open_bskl_wrt_bskl Q (bskl_var_f α)) ⊳
          (open_bskl_wrt_bskl Q' (bskl_var_f α)) }}ad) ->
     {{ Θ ⨟ Δ ⊢ᵣ (bskl_all_inh Q) ⊳ (bskl_all_inh Q') }}ad
-| ad_refine_syn__hole : forall Θ Δ P,
+| ad_refine_syn__ghost : forall Θ Δ P,
     Δ ∩ ftvar_in_pskl P [=] empty ->
-    {{ Θ ⨟ Δ ⊢ᵣ bskl_hole ⊳ (pskl_to_bskl_syn P) }}ad
-| ad_refine_syn__tophole_remove : forall Θ Δ Q Q',
-    is_iskl (bskl_tophole Q) ->
+    {{ Θ ⨟ Δ ⊢ᵣ bskl_ghost ⊳ (pskl_to_bskl_syn P) }}ad
+| ad_refine_syn__univ_ghost_remove : forall Θ Δ Q Q',
+    is_iskl (bskl_univ_ghost Q) ->
     {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
-    {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ Q' }}ad
-| ad_refine_syn__tophole_fill : forall L Θ Δ Q Q',
-    is_iskl (bskl_tophole Q) ->
+    {{ Θ ⨟ Δ ⊢ᵣ (bskl_univ_ghost Q) ⊳ Q' }}ad
+| ad_refine_syn__univ_ghost_fill : forall L Θ Δ Q Q',
+    is_iskl (bskl_univ_ghost Q) ->
     (forall α, α `notin` L ->
        {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ᵣ
-         (bskl_tophole Q) ⊳ (open_bskl_wrt_bskl Q' (bskl_var_f α)) }}ad) ->
-    {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_all_syn Q') }}ad
-| ad_refine_syn__tophole_keep : forall Θ Δ Q Q',
-    is_iskl (bskl_tophole Q) ->
+         (bskl_univ_ghost Q) ⊳ (open_bskl_wrt_bskl Q' (bskl_var_f α)) }}ad) ->
+    {{ Θ ⨟ Δ ⊢ᵣ (bskl_univ_ghost Q) ⊳ (bskl_all_syn Q') }}ad
+| ad_refine_syn__univ_ghost_keep : forall Θ Δ Q Q',
+    is_iskl (bskl_univ_ghost Q) ->
     {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
-    {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_tophole Q') }}ad
+    {{ Θ ⨟ Δ ⊢ᵣ (bskl_univ_ghost Q) ⊳ (bskl_univ_ghost Q') }}ad
 (* — new lookup rules (paper fig:declarative-in-algo-context, refinement) — *)
 | ad_refine_syn__flex_l : forall Θ Δ α τ Q',
     binds α (abind_flex_mono_def τ) Θ ->
@@ -207,20 +207,20 @@ Inductive ad_refine_pskl : aenv -> atoms -> pskl -> pskl -> Prop :=
          (open_pskl_wrt_pskl P (pskl_var_f α)) ⊳
          (open_pskl_wrt_pskl P' (pskl_var_f α)) }}ad) ->
     {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_all_syn P) ⊳ (pskl_all_syn P') }}ad
-| ad_refine_pskl__hole : forall Θ Δ P',
+| ad_refine_pskl__ghost : forall Θ Δ P',
     Δ ∩ ftvar_in_pskl P' [=] empty ->
-    {{ Θ ⨟ Δ ⊢ᵣₚ pskl_hole ⊳ P' }}ad
-| ad_refine_pskl__tophole_remove : forall Θ Δ P P',
+    {{ Θ ⨟ Δ ⊢ᵣₚ pskl_ghost ⊳ P' }}ad
+| ad_refine_pskl__univ_ghost_remove : forall Θ Δ P P',
     {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad ->
-    {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ P' }}ad
-| ad_refine_pskl__tophole_fill : forall L Θ Δ P P',
+    {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_univ_ghost P) ⊳ P' }}ad
+| ad_refine_pskl__univ_ghost_fill : forall L Θ Δ P P',
     (forall α, α `notin` L ->
        {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ᵣₚ
-         (pskl_tophole P) ⊳ (open_pskl_wrt_pskl P' (pskl_var_f α)) }}ad) ->
-    {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_all_syn P') }}ad
-| ad_refine_pskl__tophole_keep : forall Θ Δ P P',
+         (pskl_univ_ghost P) ⊳ (open_pskl_wrt_pskl P' (pskl_var_f α)) }}ad) ->
+    {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_univ_ghost P) ⊳ (pskl_all_syn P') }}ad
+| ad_refine_pskl__univ_ghost_keep : forall Θ Δ P P',
     {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad ->
-    {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_tophole P') }}ad
+    {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_univ_ghost P) ⊳ (pskl_univ_ghost P') }}ad
 | ad_refine_pskl__flex_l : forall Θ Δ α τ P',
     binds α (abind_flex_mono_def τ) Θ ->
     {{ Θ ⨟ Δ ⊢ᵣₚ (ptyp_to_pskl τ) ⊳ P' }}ad ->

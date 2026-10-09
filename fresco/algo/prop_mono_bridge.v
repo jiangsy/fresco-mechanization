@@ -102,11 +102,11 @@ Proof.
   - (* forall_syn_tagged *) destruct HmA0; simpl in HeqS; discriminate.
   - (* forall_syn *) destruct HmA0; simpl in HeqS; discriminate.
   - (* ghostg *) destruct HmA0; simpl in HeqS; discriminate.
-  - (* topholeg *) destruct HmA0; simpl in HeqS; discriminate.
-  - (* hole *) destruct HmA0; simpl in HeqS; discriminate.
-  - (* tophole *) destruct HmA0; simpl in HeqS; discriminate.
-  - (* tophole_inh *) destruct HmA0; simpl in HeqS; discriminate.
-  - (* tophole_drop *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* dot_univ_ghost *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* ghost *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* univ_ghost *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* univ_ghost_inh *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* univ_ghost_drop *) destruct HmA0; simpl in HeqS; discriminate.
   - (* flex_l : the SUBJECT is a defined flexible; unfold it *)
     destruct HmA0 as [ | α0 | ]; simpl in HeqS; try discriminate.
     inversion HeqS; subst.
@@ -169,11 +169,11 @@ Proof.
     split; [ simpl; rewrite HeqQ1, HeqQ2; reflexivity | ].
     apply a_tyequiv__arrow; auto.
   - (* all *) destruct HmB0; simpl in HeqB; discriminate.
-  - (* hole : a monotype has no ghosts *)
+  - (* ghost : a monotype has no ghosts *)
     destruct HmB0; simpl in HeqB; discriminate.
-  - (* tophole_remove *) destruct HmB0; simpl in HeqB; discriminate.
-  - (* tophole_fill *) destruct HmB0; simpl in HeqB; discriminate.
-  - (* tophole_keep *) destruct HmB0; simpl in HeqB; discriminate.
+  - (* univ_ghost_remove *) destruct HmB0; simpl in HeqB; discriminate.
+  - (* univ_ghost_fill *) destruct HmB0; simpl in HeqB; discriminate.
+  - (* univ_ghost_keep *) destruct HmB0; simpl in HeqB; discriminate.
   - (* flex_l : the LEFT side is a defined flexible; unfold it *)
     destruct HmB0 as [ | α0 | B1 B2 Hm1 Hm2 ]; simpl in HeqB; try discriminate.
     inversion HeqB; subst.
@@ -274,11 +274,11 @@ Proof.
   - (* forall_syn_tagged *) destruct HmA0; simpl in HeqS; discriminate.
   - (* forall_syn *) destruct HmA0; simpl in HeqS; discriminate.
   - (* ghostg *) destruct HmA0; simpl in HeqS; discriminate.
-  - (* topholeg *) destruct HmA0; simpl in HeqS; discriminate.
-  - (* hole *) destruct HmA0; simpl in HeqS; discriminate.
-  - (* tophole *) destruct HmA0; simpl in HeqS; discriminate.
-  - (* tophole_inh *) destruct HmA0; simpl in HeqS; discriminate.
-  - (* tophole_drop *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* dot_univ_ghost *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* ghost *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* univ_ghost *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* univ_ghost_inh *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* univ_ghost_drop *) destruct HmA0; simpl in HeqS; discriminate.
   - (* flex_l : a definition unfolded on the LEFT becomes one on the RIGHT *)
     destruct HmA0 as [ | α0 | ]; simpl in HeqS; try discriminate.
     inversion HeqS; subst.

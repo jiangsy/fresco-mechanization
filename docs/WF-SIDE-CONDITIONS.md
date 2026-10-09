@@ -74,14 +74,14 @@ that this killed `lemma:precision-preserves-refinement` (full-algo-spec.tex:716)
 without the wf condition. The refutation rested on the mech's OLD Ghost rule,
 which demanded a well-formed fill (`Θ ⨟ ∅ ⊢ P`) — something the paper's rule
 never did. Under the paper's Ghost rule the composite is derivable in one step
-(`hole_to_Bres`: the fill is closed, so it avoids Δ), and the refutation is
+(`ghost_to_Bres`: the fill is closed, so it avoids Δ), and the refutation is
 gone. The file keeps its name; it now proves only the ill-formed-output fact
 above. Transitivity is PROVED under the presupposition (`ad_refine_syn_trans`,
 below); whether it holds outright has not been established either way.
 
 ⚙ **(A) was tried and REJECTED** (2026-07, under the OLD rules, kept as the
 worked example the preamble promises). Adding the output's wf as a premise of
-`*__tophole_fill` survived weakening / strengthening / Δ-monotonicity /
+`*__univ_ghost_fill` survived weakening / strengthening / Δ-monotonicity /
 ⊴-stability / subst / same_tvar, but **not `ad_refine_*_f_strip`**: that lemma
 removes a context rigid `α`, and a ∀◇-ghost body inside the output may
 legitimately mention `α` justified by that very context binding.
@@ -93,17 +93,17 @@ legitimately mention `α` justified by that very context binding.
 |---|---|
 | `ad_refine_syn_syn_l` | a syn-headed refinement lands in a syn painting — **shape only**; no wf is derivable and none is needed |
 | `ad_refine_syn_syn_delta_free` | a syn LHS never fires the `all` rule, so Δ never grows and Δ-freeness of the fill propagates — given that no flexible is a Δ-variable and no flexible definition mentions one |
-| `ad_refine_syn_hole_l` | **the crux**: whatever a Δ-free syn painting refines to, `◇` refines to as well — one Ghost step, **no wf needed** (the Ghost rule only asks Δ-freeness) |
-| `ad_refine_syn_trans` / `_trans_gen` | transitivity, **assuming the result is well-formed** (`Θ ⨟ Δ ⊢ₚₛ ⌊Qr⌋`, the presupposition); every ghost-left case goes through `ad_refine_syn_hole_l` |
+| `ad_refine_syn_ghost_l` | **the crux**: whatever a Δ-free syn painting refines to, `◇` refines to as well — one Ghost step, **no wf needed** (the Ghost rule only asks Δ-freeness) |
+| `ad_refine_syn_trans` / `_trans_gen` | transitivity, **assuming the result is well-formed** (`Θ ⨟ Δ ⊢ₚₛ ⌊Qr⌋`, the presupposition); every ghost-left case goes through `ad_refine_syn_ghost_l` |
 | `ad_precise_preserves_refine` | `lemma:precision-preserves-refinement`, a corollary of transitivity (precision IS refinement between inherited paintings) |
 | `a_wf_pskl_empty_delta_free` | wf at the empty Δ ⇒ Δ-free, when Δ is fresh for Θ (used by `consis/prop_consis_precise.v`) |
 
 ⚙ Deleted in the 2026-10-09 cleanup as unused: `ad_refine_syn_syn_l_wf` (the
 old crux, which recovered a skeleton wf at the EMPTY Δ from wf of the result),
-`a_wf_pskl_delta_shrink` and `ad_refine_syn_hole_l_target_wf` (a refinement
+`a_wf_pskl_delta_shrink` and `ad_refine_syn_ghost_l_target_wf` (a refinement
 out of `◇` moving the target's wf from `Δ = ∅` to any `Δ` — an instance of
 `a_wf_pskl_delta_mono`).  The `_gen` forms took the plain names
-`ad_refine_syn_hole_l` / `ad_refine_syn_syn_delta_free`.
+`ad_refine_syn_ghost_l` / `ad_refine_syn_syn_delta_free`.
 
 ⚠️ **Δ-monotonicity now SHRINKS Δ.** Under the paper's Ghost rule a larger Δ is
 harder (a fill may mention an added variable), and under the paper's ∀◇ wf rule
@@ -127,7 +127,7 @@ well-formed.
 it as `{{ Θ ⨟ Δ ⊢ₚₛ P }}a` for its precision target `P` (in `P' ⊑ P`). This is
 the ONE `README.v` statement that changed in the 2026-10-08 rewrite. Why: the
 lemma converts the precision to `⊑ᵤ` (`uskl_precise_of_ad_precise`), whose
-`upre__hole` row needs its fill well-formed — which the refinement used to
+`upre__ghost` row needs its fill well-formed — which the refinement used to
 supply through the old Ghost rule's wf check and no longer does. Its one caller
 (`ad_ctx_precise_pat`'s Var row, `algo/prop_precise_sub.v`) supplies it from the
 context entry's stored wf (`a_wf_aenv_binds_var_{typ,skl}_wf`), so nothing
@@ -212,16 +212,16 @@ have no ghosts, so the condition is free there — which is why the TY half of t
 > declarative.tex:1911 — "well-formedness implicitly guarantees that `P` is
 > guarded"
 
-~~Here the mechanization took route **(A)**: `*__tophole_keep` carries
+~~Here the mechanization took route **(A)**: `*__univ_ghost_keep` carries
 `guarded_bskl P` explicitly.~~ **Changed 2026-10-08 — now route (B), as the
-paper has it.** `*__tophole_keep` no longer carries a `guarded_*` premise (the
+paper has it.** `*__univ_ghost_keep` no longer carries a `guarded_*` premise (the
 paper's rule has none). Guardedness of a kept ∀◇ body is read off the
 well-formedness of the refinement's TARGET (§1's presupposition): the ∀◇ wf
 rule demands a guarded body. Lemmas that need it take the target's wf (or, for
 the syntactic forms, `lc`) as a hypothesis — e.g. `ad_refine_syn_guarded_r`
 (+ `lc_bskl Q'`, `consis/prop_soundness_consis.v`; `ad_refine_syn_guarded_r_all`
 for a ∀ target); to rule out a ∀◇ target with no side condition at all,
-`ad_refine_*_not_tophole_r` (same file).  (Their `_f` twins went with the `_f`
+`ad_refine_*_not_univ_ghost_r` (same file).  (Their `_f` twins went with the `_f`
 relations, 2026-10-09.)
 
 ---
@@ -288,7 +288,7 @@ which requires `a_wf_aenv Θ`. Without the side condition the case is stuck.
 **The condition.** `delta_def_fresh Δ Θ`: every `Y ∈ Δ` avoids
 `ftvar_in_ptyp τ` for every `binds α (abind_flex_mono_def τ) Θ`
 (`algo/prop_look_complete.v`). Carried on the statements (route **B**) of
-`a_solve_eq_complete_var` and its helpers (`ad_refine_inh_hole_ppre`,
+`a_solve_eq_complete_var` and its helpers (`ad_refine_inh_ghost_ppre`,
 `ad_ppre_flexdef_target_unfold`, the chain transports).
 
 **Machine-checked necessity (P6-Cv, Var case).** With `X` a defined flexible
@@ -335,7 +335,7 @@ The algo layer has TWO skeleton judgments, both in algo/def_rules.v:
   skeleton wf, it means this judgment — the paper has no weak variant.
 
 - **`a_scope_pskl` (algo/def_rules.v:113) — scoping only.**  Single context Θ,
-  ∀ binds a plain `abind_tvar` into Θ, `pskl_tophole` merely recurses (no
+  ∀ binds a plain `abind_tvar` into Θ, `pskl_univ_ghost` merely recurses (no
   guardedness, no Δ-clearing).  `∀α.∀◇.(α→α)` PASSES it.  The reference
   implementation's `is_wf_` takes the same weak reading.
 
@@ -362,7 +362,7 @@ The algo layer has TWO skeleton judgments, both in algo/def_rules.v:
     there**: `a_split_wf` (typing/prop_soundness_typing.v) yields
     `Θ1 ⨟ ∅ ⊢ₚₛᵃ P` for the split's left output — exactly what `a_pat__abs`
     pushes — and `a_pat__abs_check` pushes `□`, discharged by
-    `a_wf_pskl__hole`.  `ad_pat__abs` already carried the premise on the rule.
+    `a_wf_pskl__ghost`.  `ad_pat__abs` already carried the premise on the rule.
     No new pack was needed.
   - ⚙ **The real obstruction was ORDERING, and it was shallow**: `a_wf_pskl`
     was declared AFTER `a_wf_aenv` in algo/def_rules.v, so naming it in the
@@ -396,7 +396,7 @@ hypothesis instead — the `strip` lemmas are what kill the rule route (§1).
 
 The paper's `Θ ⊢^N tags{Ψ}{ψ}` (full-decl-spec.tex:105-118) carries a context
 and scope-wf of ψ.  `a_tags_sort` (algo/def_decorated.v:96) drops the context:
-purely syntactic (`is_tskl` + `d_tags_skl`, ghost-freeness at TY); the scope
+purely syntactic (`is_dskl` + `d_tags_skl`, ghost-freeness at TY); the scope
 half is restored at each call site ON THE ERASURE (`(Ξ++Θ0) ⨟ ∅ ⊢ₚₛᵃ P1` in
 the decorated ForallL; `Θ ⨟ ∅ ⊢ₚₛᵃ ⌊ψ⌋` in `ad_pat_sub`'s ForallL).  This is
 the D3 decision of DESIGN-subtyping.md §1.2, now registered: statements
@@ -420,11 +420,11 @@ mode discipline forecloses at every real call site (`inh` paints `all_inh`,
 by `pskl_to_bskl_inh_subst_mono` + `mod_comp_sk_subst_mono`), so per §1's
 rule of thumb it must live in the statements.
 
-## `pskl_no_hole P0` on P6-Cv completeness — **REMOVED 2026-07-27** (registered 2026-07-27; historical)
+## `pskl_no_ghost P0` on P6-Cv completeness — **REMOVED 2026-07-27** (registered 2026-07-27; historical)
 
 **RESOLVED — the premise no longer exists.**  `a_solve_eq_complete_var` /
 `_gen` (algo/prop_look_complete_var.v) are now PREMISE-FAITHFUL to the
-paper: the mech-only `pskl_no_hole P0` side condition was removed by
+paper: the mech-only `pskl_no_ghost P0` side condition was removed by
 reworking the Θtv/Θr context split from the LIST equation `Θ = Θtv ++ Θr`
 to a binds-level BAG (`aenv_split`: binds-iff + dom-eq + disjointness,
 with `a_wf_aenv Θr` carried explicitly).  The premise had been an artifact
@@ -432,17 +432,17 @@ of the list representation: the consistency rule PREPENDS the ForallSyn
 binder to Θ, so a list split could only place it in Θtv, forcing the
 aenv→Δr refinement transport (`ad_refine_syn_aenv_to_delta`) — false for
 □-sources whose fill mentions the binder.  With the bag split the binder
-joins Θr (`Θr_ih := (X~tvar)++Θr`), the tophole_fill body IS the IH's
-refinement premise verbatim, and holey `P0` flows through the recursion
+joins Θr (`Θr_ih := (X~tvar)++Θr`), the univ_ghost_fill body IS the IH's
+refinement premise verbatim, and ghosty `P0` flows through the recursion
 to the per-row SolE-VacuousR columns — exactly the paper's per-node
 "P0 = Hole" dispatch.  Consequently:
 
-1. **P6-Cs (`a_lookeq_solve_complete`) needs NO `P0 = □ ∨ pskl_no_hole`
+1. **P6-Cs (`a_lookeq_solve_complete`) needs NO `P0 = □ ∨ pskl_no_ghost`
    disjunct** — its statement can mirror the paper's directly, with its
    own `P0 = □` special case via LE-Vacuous as the paper does.  Same for
    P6-Sv/Ss/L.
 2. **The accumulated-skeleton invariant below is NO LONGER REQUIRED** for
-   the completeness chain.  Its file `algo/prop_accum_no_hole.v` (Task A)
+   the completeness chain.  Its file `algo/prop_accum_no_ghost.v` (Task A)
    was **DELETED 2026-07-27** — with the premise gone nothing consumes it,
    and it was pure supporting kit.  The description below is retained only
    as the historical record of what was proved.
@@ -451,40 +451,40 @@ The rest of this entry is kept as the record of the (now-deleted) invariant
 proof and of the original analysis.
 
 The invariant *"every accumulated flexible-variable skeleton is `□` or
-hole-free"*:  **INVARIANT PROVED
-   (2026-07-27), axiom-free, in the since-deleted `algo/prop_accum_no_hole.v`.**
+ghost-free"*:  **INVARIANT PROVED
+   (2026-07-27), axiom-free, in the since-deleted `algo/prop_accum_no_ghost.v`.**
    Deep-mixed
    `P0` (□ strictly below a constructor) is NOT reachable.  Four algo-level
    results (`Print Assumptions` = Closed under the global context):
    - **A1 `a_guess_hnh`** — `guess^TY` returns a paint (`ptyp_to_pskl`, no
-     □-image ⇒ hole-free); `guess^SK` is the identity (preserves the
+     □-image ⇒ ghost-free); `guess^SK` is the identity (preserves the
      disjunct).
-   - **A2 `a_look_payload_hnh`** — `a_lookeq`/`a_looksub` emit □-or-hole-free
+   - **A2 `a_look_payload_hnh`** — `a_lookeq`/`a_looksub` emit □-or-ghost-free
      constraint payloads whenever the counterpart is (mutual; a □-counterpart
      handled by LE/LS-Var emits the payload `eq(□)`, the left disjunct — it
      need NOT go through the Vacuous rules).
-   - **A3 `a_solve_cstr_hnh`** (+ `a_solve_cstr_hole_start_hnh`, the `□`-start
-     form `a_extract` uses) — solving a constraint list from a □-or-hole-free
-     accumulator against □-or-hole-free payloads stays □-or-hole-free;
-     generalises `a_solve_eq_no_hole_p0` to the mutual sub/eq/cstr block
-     (`a_solve_{sub,eq}_hnh`, `a_solve_sub_no_hole_q`, the two `_from_subj`
+   - **A3 `a_solve_cstr_hnh`** (+ `a_solve_cstr_ghost_start_hnh`, the `□`-start
+     form `a_extract` uses) — solving a constraint list from a □-or-ghost-free
+     accumulator against □-or-ghost-free payloads stays □-or-ghost-free;
+     generalises `a_solve_eq_no_ghost_p0` to the mutual sub/eq/cstr block
+     (`a_solve_{sub,eq}_hnh`, `a_solve_sub_no_ghost_q`, the two `_from_subj`
      strict halves).
-   - **A4 `a_sub_a_sub_flex_no_hole_p0`** — `a_sub`/`a_sub_flex` outputs are
-     hole-free when the counterpart `P0` is.  KEY: this is **subject-free** —
-     output holes come ONLY from the counterpart, so `a_sub__forall_l` merely
+   - **A4 `a_sub_a_sub_flex_no_ghost_p0`** — `a_sub`/`a_sub_flex` outputs are
+     ghost-free when the counterpart `P0` is.  KEY: this is **subject-free** —
+     output ghosts come ONLY from the counterpart, so `a_sub__forall_l` merely
      threads `P0` (the ∀-body instantiation `open P P1` is irrelevant to the
      output even when `P1 = □` deep-mixes it), and `Infer`/`UnivGhostR`
-     (`P0 = □`) are excluded by `pskl_no_hole P0`.  (An earlier worry that
+     (`P0 = □`) are excluded by `pskl_no_ghost P0`.  (An earlier worry that
      ForallL blocks a subject-carrying induction was an artifact of a
      needless subject premise; the counterpart-only formulation closes
-     cleanly.)  Support: `a_consis_out_no_hole` / `a_consis_out_no_hole_q`.
-   Predicate: `pskl_hnh P := P = pskl_hole \/ pskl_no_hole P`.
+     cleanly.)  Support: `a_consis_out_no_ghost` / `a_consis_out_no_ghost_q`.
+   Predicate: `pskl_hnh P := P = pskl_ghost \/ pskl_no_ghost P`.
 
-Historical note: in the premise-carrying closure, hole-freeness was
+Historical note: in the premise-carrying closure, ghost-freeness was
 derivable from the other premises in some subcases (the Var-case binder
 side still derives it locally, via
-`ad_refine_inh_deltar_var_rhs_no_hole`) but not in general — a
-guarded-but-holey ForallSyn body satisfies every other premise; only the
+`ad_refine_inh_deltar_var_rhs_no_ghost`) but not in general — a
+guarded-but-ghosty ForallSyn body satisfies every other premise; only the
 split rework, not a derivation, could remove it.
 
 ## P6-Cs (`a_lookeq_solve_complete`) — the IDEAL GUESS is Θ-scoped
@@ -517,8 +517,8 @@ threads through the induction without touching the rules:
 **`Θ ⨟ ∅ ⊢ₚₛᵃ ⌊ (κS)[ψa/α] ⌋ˢ`** — well-formedness of the CONSISTENCY
 SUBJECT.  Stated on the erasure so the existing `a_wf_pskl` expresses it
 (⌊·⌋ˢ maps the dotted ghosts onto the plain ones); the only content the
-proof consumes is the GUARDED ghost body of `a_wf_pskl__tophole`, which
-matches the declarative `d_wf_uskl__tophole`.
+proof consumes is the GUARDED ghost body of `a_wf_pskl__univ_ghost`, which
+matches the declarative `d_wf_uskl__univ_ghost`.
 
 ⚠️ **Without it the lemma is FALSE — machine-checked** in
 `fresco/algo/cex/cex_p6cs_subject_wf.v`:
@@ -535,15 +535,15 @@ P-UnivGhostKeep — but the algorithm is FORCED: LE-UnivGhost is the only
 applicable collection rule, so `𝒞 = [α ≐ ⟨⟩]`, and SE-GhostGuarded is
 the only solving rule, so `Pa = ⟨⟩`; the resulting precision goal
 `⟨⟩ ⊑ᵖ ∀◈⟨⟩` has no rule.  The offending subject is `∀◇(∀◈⟨⟩)` — a
-ghost over a ghost — which both `a_wf_pskl__tophole` and
-`d_wf_uskl__tophole` forbid.  So this is not a convenience premise: it
+ghost over a ghost — which both `a_wf_pskl__univ_ghost` and
+`d_wf_uskl__univ_ghost` forbid.  So this is not a convenience premise: it
 is what makes the paper's statement true.
 
 **A wf premise on the SOURCE skeleton P is NOT needed.**  An earlier
 closure carried `((α ~ abind_tvar) ++ Θ0) ⨟ ∅ ⊢ₚₛᵃ P` — the paper's
 explicit "by well-formedness of P … Q is guarded" in C-UnivGhost2, with
 the looked-up rigid α as a context entry because a Δ-reading is
-unsatisfiable (`a_wf_pskl__tophole` resets Δ to ∅, so an α under a ghost
+unsatisfiable (`a_wf_pskl__univ_ghost` resets Δ to ∅, so an α under a ghost
 could never be justified).  Once the subject-wf premise is in, that one
 is dead weight: it was only ever fed back to its own IHs, and every
 guardedness fact the proof needs comes from the subject side (the
@@ -567,9 +567,9 @@ requires it of every refinement judgment anyway.  (This paragraph used to add
 that refutation was RETRACTED 2026-10-08 — see §1.)
 
 **The two `P0 = □` rows.** At `P0 = □` the motive's own P0-fill premise is a
-refinement OUT OF the ghost, and only two rows have a ghost source — `__hole`
+refinement OUT OF the ghost, and only two rows have a ghost source — `__ghost`
 and `__flex_r`, whose target is a defined flexible and so is `a_binds_tvar`.
-That was `ad_refine_syn_hole_l_target_wf`.  ⚠️ Until 2026-10-08 the `__hole`
+That was `ad_refine_syn_ghost_l_target_wf`.  ⚠️ Until 2026-10-08 the `__ghost`
 row carried the fill's well-formedness on the rule, so these rows got the
 counterpart's wf for free; the paper's Ghost rule does not, so the `Δ = ∅` wf of
 the target became a hypothesis that the callers supply (from the motive, the
@@ -623,7 +623,7 @@ The remaining `main_forall n` hypothesis of `a_sub_complete_bundle_holds` now
 carries ONLY TASK 0's `sub_shield` component.
 
 **Related:** the ForallL rows' third premise, the WLOG
-`guarded_pskl P0 \/ P0 = pskl_hole`, USED to be part of the same residual and
+`guarded_pskl P0 \/ P0 = pskl_ghost`, USED to be part of the same residual and
 is now discharged inside the dispatch (`p0_wlog_trichotomy` +
 `sub_complete_all_inh_counterpart`, §8b) — it is a case split, not a side condition.
 

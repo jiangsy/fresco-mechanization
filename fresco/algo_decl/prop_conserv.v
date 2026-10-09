@@ -287,8 +287,8 @@ Proof.
       [ exact (IHa_wf_pskl1 Γ0 eq_refl) | exact (IHa_wf_pskl2 Γ0 eq_refl) ].
   - apply d_wf_pskl__all with (L := L). intros α Hα.
     exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
-  - apply d_wf_pskl__hole.
-  - apply d_wf_pskl__tophole;
+  - apply d_wf_pskl__ghost.
+  - apply d_wf_pskl__univ_ghost;
       [ exact H
       | exact (IHa_wf_pskl (denv_minus Γ0 Δ)
                  (eq_sym (denv_to_aenv_minus Γ0 Δ))) ].
@@ -302,8 +302,8 @@ Proof.
   - apply a_wf_pskl__var. apply a_binds_tvar_of_denv; exact H.
   - apply a_wf_pskl__arrow; auto.
   - apply a_wf_pskl__all with (L := L). intros α Hα. exact (H0 α Hα).
-  - apply a_wf_pskl__hole.
-  - apply a_wf_pskl__tophole; [ exact H | ].
+  - apply a_wf_pskl__ghost.
+  - apply a_wf_pskl__univ_ghost; [ exact H | ].
     rewrite <- (denv_to_aenv_minus Γ Δ). exact IHd_wf_pskl.
 Qed.
 
@@ -332,14 +332,14 @@ Proof.
   - apply d_pat_consis__forall_syn with (L := L).
     intros α Hα. exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
   - apply d_pat_consis__ghostg; assumption.
-  - apply d_pat_consis__topholeg. exact (IHad_pat_consis Γ0 eq_refl).
-  - apply d_pat_consis__hole;
+  - apply d_pat_consis__dot_univ_ghost. exact (IHad_pat_consis Γ0 eq_refl).
+  - apply d_pat_consis__ghost;
       [ assumption
       | exact (a_wf_pskl_to_d (denv_to_aenv Γ0) empty P H0 Γ0 eq_refl) ].
-  - apply d_pat_consis__tophole. exact (IHad_pat_consis Γ0 eq_refl).
-  - apply d_pat_consis__tophole_inh with (L := L).
+  - apply d_pat_consis__univ_ghost. exact (IHad_pat_consis Γ0 eq_refl).
+  - apply d_pat_consis__univ_ghost_inh with (L := L).
     intros α Hα. exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
-  - apply d_pat_consis__tophole_drop. exact (IHad_pat_consis Γ0 eq_refl).
+  - apply d_pat_consis__univ_ghost_drop. exact (IHad_pat_consis Γ0 eq_refl).
   - exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
   - exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
 Qed.
@@ -357,12 +357,12 @@ Proof.
   - apply ad_pat_consis__forall_syn_tagged with (L := L); assumption.
   - apply ad_pat_consis__forall_syn with (L := L); assumption.
   - apply ad_pat_consis__ghostg; assumption.
-  - apply ad_pat_consis__topholeg; assumption.
-  - apply ad_pat_consis__hole;
+  - apply ad_pat_consis__dot_univ_ghost; assumption.
+  - apply ad_pat_consis__ghost;
       [ assumption | exact (d_wf_pskl_to_a Γ empty P H0) ].
-  - apply ad_pat_consis__tophole; assumption.
-  - apply ad_pat_consis__tophole_inh with (L := L); assumption.
-  - apply ad_pat_consis__tophole_drop; assumption.
+  - apply ad_pat_consis__univ_ghost; assumption.
+  - apply ad_pat_consis__univ_ghost_inh with (L := L); assumption.
+  - apply ad_pat_consis__univ_ghost_drop; assumption.
 Qed.
 
 (* ===================================================================== *)
@@ -487,12 +487,12 @@ Proof.
       | exact (IHad_refine_syn2 Γ0 eq_refl) ].
   - apply d_refine_syn__all with (L := L); [ exact H | ]. intros α Hα.
     exact (H1 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
-  - apply d_refine_syn__hole. exact H.
-  - apply d_refine_syn__tophole_remove;
+  - apply d_refine_syn__ghost. exact H.
+  - apply d_refine_syn__univ_ghost_remove;
       [ exact H | exact (IHad_refine_syn Γ0 eq_refl) ].
-  - apply d_refine_syn__tophole_fill with (L := L); [ exact H | ]. intros α Hα.
+  - apply d_refine_syn__univ_ghost_fill with (L := L); [ exact H | ]. intros α Hα.
     exact (H1 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
-  - apply d_refine_syn__tophole_keep;
+  - apply d_refine_syn__univ_ghost_keep;
       [ exact H | exact (IHad_refine_syn Γ0 eq_refl) ].
   - exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
   - exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
@@ -507,11 +507,11 @@ Proof.
   - apply ad_refine_syn__arrow; assumption.
   - apply ad_refine_syn__all with (L := L); [ exact H | ]. intros α Hα.
     exact (H1 α Hα).
-  - apply ad_refine_syn__hole. exact H.
-  - apply ad_refine_syn__tophole_remove; assumption.
-  - apply ad_refine_syn__tophole_fill with (L := L); [ exact H | ]. intros α Hα.
+  - apply ad_refine_syn__ghost. exact H.
+  - apply ad_refine_syn__univ_ghost_remove; assumption.
+  - apply ad_refine_syn__univ_ghost_fill with (L := L); [ exact H | ]. intros α Hα.
     exact (H1 α Hα).
-  - apply ad_refine_syn__tophole_keep; assumption.
+  - apply ad_refine_syn__univ_ghost_keep; assumption.
 Qed.
 
 (** ⭐ THE UNCOLOURED TWINS.  Same eight rows; needed because the paper's
@@ -530,12 +530,12 @@ Proof.
       | exact (IHad_refine_pskl2 Γ0 eq_refl) ].
   - apply d_refine_pskl__all with (L := L). intros α Hα.
     exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
-  - apply d_refine_pskl__hole. exact H.
-  - apply d_refine_pskl__tophole_remove.
+  - apply d_refine_pskl__ghost. exact H.
+  - apply d_refine_pskl__univ_ghost_remove.
     exact (IHad_refine_pskl Γ0 eq_refl).
-  - apply d_refine_pskl__tophole_fill with (L := L). intros α Hα.
+  - apply d_refine_pskl__univ_ghost_fill with (L := L). intros α Hα.
     exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
-  - apply d_refine_pskl__tophole_keep. exact (IHad_refine_pskl Γ0 eq_refl).
+  - apply d_refine_pskl__univ_ghost_keep. exact (IHad_refine_pskl Γ0 eq_refl).
   - exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
   - exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
 Qed.
@@ -548,11 +548,11 @@ Proof.
   - apply ad_refine_pskl__var.
   - apply ad_refine_pskl__arrow; auto.
   - apply ad_refine_pskl__all with (L := L). intros α Hα. exact (H0 α Hα).
-  - apply ad_refine_pskl__hole. exact H.
-  - apply ad_refine_pskl__tophole_remove; auto.
-  - apply ad_refine_pskl__tophole_fill with (L := L). intros α Hα.
+  - apply ad_refine_pskl__ghost. exact H.
+  - apply ad_refine_pskl__univ_ghost_remove; auto.
+  - apply ad_refine_pskl__univ_ghost_fill with (L := L). intros α Hα.
     exact (H0 α Hα).
-  - apply ad_refine_pskl__tophole_keep; auto.
+  - apply ad_refine_pskl__univ_ghost_keep; auto.
 Qed.
 
 (** the two shapes the subtyping rows actually use: Δ empty on both sides *)
@@ -618,13 +618,13 @@ Proof.
     exact (H0 α Hα (open_uskl_wrt_uskl ψ (uskl_var_f α))
              ltac:(symmetry; apply uskl_to_pskl_open)
              ((α ~ dbind_tvar) ++ Γ0) eq_refl).
-  - apply d_wf_uskl__hole.
-  - apply d_wf_uskl__holeg.
-  - inversion Hψ; subst. apply d_wf_uskl__tophole;
+  - apply d_wf_uskl__ghost.
+  - apply d_wf_uskl__dot_ghost.
+  - inversion Hψ; subst. apply d_wf_uskl__univ_ghost;
       [ apply guarded_uskl_of_uskl_to_pskl; exact H
       | exact (IHa_wf_pskl _ eq_refl (denv_minus Γ0 Δ)
                  (eq_sym (denv_to_aenv_minus Γ0 Δ))) ].
-  - inversion Hψ; subst. apply d_wf_uskl__topholeg;
+  - inversion Hψ; subst. apply d_wf_uskl__dot_univ_ghost;
       [ apply guarded_uskl_of_uskl_to_pskl; exact H
       | exact (IHa_wf_pskl _ eq_refl (denv_minus Γ0 Δ)
                  (eq_sym (denv_to_aenv_minus Γ0 Δ))) ].
@@ -644,12 +644,12 @@ Proof.
   - apply a_wf_pskl__all with (L := L). intros α Hα.
     pose proof (H0 α Hα) as Hx.
     rewrite uskl_to_pskl_open in Hx. exact Hx.
-  - apply a_wf_pskl__hole.
-  - apply a_wf_pskl__tophole.
+  - apply a_wf_pskl__ghost.
+  - apply a_wf_pskl__univ_ghost.
     + apply guarded_pskl_uskl_to_pskl; assumption.
     + rewrite <- (denv_to_aenv_minus Γ Δ). exact IHd_wf_uskl.
-  - apply a_wf_pskl__hole.
-  - apply a_wf_pskl__tophole.
+  - apply a_wf_pskl__ghost.
+  - apply a_wf_pskl__univ_ghost.
     + apply guarded_pskl_uskl_to_pskl; assumption.
     + rewrite <- (denv_to_aenv_minus Γ Δ). exact IHd_wf_uskl.
 Qed.
@@ -677,15 +677,15 @@ Proof.
     exact (H0 α ltac:(clear - Fr; fsetdec)).
 Qed.
 
-Lemma is_ttyp_uskl_to_utyp : forall ψ,
-  is_tskl ψ -> uskl_ghost_free ψ -> is_ttyp (uskl_to_utyp ψ).
+Lemma is_dtyp_uskl_to_utyp : forall ψ,
+  is_dskl ψ -> uskl_ghost_free ψ -> is_dtyp (uskl_to_utyp ψ).
 Proof.
   intros ψ H; induction H; intros Hgf; simpl.
-  - apply is_ttyp__unit.
-  - apply is_ttyp__var.
-  - inversion Hgf; subst. apply is_ttyp__arrow; auto.
+  - apply is_dtyp__unit.
+  - apply is_dtyp__var.
+  - inversion Hgf; subst. apply is_dtyp__arrow; auto.
   - inversion Hgf as [ | | | L0 ε0 R0 Hgf0 | ]; subst.
-    apply is_ttyp__all_tag with (L := L `union` L0). intros α Hα.
+    apply is_dtyp__all_tag with (L := L `union` L0). intros α Hα.
     rewrite <- uskl_to_utyp_open_var.
     apply H0; [ clear - Hα; fsetdec | apply Hgf0; clear - Hα; fsetdec ].
   - inversion Hgf.
@@ -977,7 +977,7 @@ Proof.
       | exact (d_wf_utyp_of_d_wf_uskl Γ0 empty ψ
                  (d_wf_uskl_of_a_wf_pskl (denv_to_aenv Γ0) empty
                     (uskl_to_pskl ψ) H3 ψ eq_refl Γ0 eq_refl) H7)
-      | apply is_ttyp_uskl_to_utyp; assumption
+      | apply is_dtyp_uskl_to_utyp; assumption
       | exact (IHad_pat_sub eq_refl Γ0 eq_refl
                  (open_utyp_wrt_utyp C0 (uskl_to_utyp ψ)) B0
                  ltac:(rewrite utyp_to_uskl_open;
@@ -997,7 +997,7 @@ Proof.
       | exact (d_wf_utyp_of_d_wf_uskl Γ0 empty ψ
                  (d_wf_uskl_of_a_wf_pskl (denv_to_aenv Γ0) empty
                     (uskl_to_pskl ψ) H3 ψ eq_refl Γ0 eq_refl) H7)
-      | apply is_ttyp_uskl_to_utyp; assumption
+      | apply is_dtyp_uskl_to_utyp; assumption
       | exact (IHad_pat_sub eq_refl Γ0 eq_refl
                  (open_utyp_wrt_utyp C0 (uskl_to_utyp ψ)) B0
                  ltac:(rewrite utyp_to_uskl_open;
@@ -1050,7 +1050,7 @@ Proof.
                  (pskl_to_bskl_inh P) Q1 H0 Γ0 eq_refl)
       | exact (IHad_pat2 Γ0 eq_refl) ].
   - (* P-AbsCheck *) apply d_pat__abs_check with (L := L). intros x Hx.
-    exact (H0 x Hx ((x ~ dbind_skl pskl_hole) ++ Γ0) eq_refl).
+    exact (H0 x Hx ((x ~ dbind_skl pskl_ghost) ++ Γ0) eq_refl).
   - (* P-AbsAnnoCheck *) apply d_pat__abs_anno_check with (L := L);
       [ exact (a_wf_ptyp_to_d (denv_to_aenv Γ0) A H Γ0 eq_refl)
       | intros x Hx; exact (H1 x Hx ((x ~ dbind_typ A) ++ Γ0) eq_refl) ].
@@ -1490,7 +1490,7 @@ Qed.
 (** ⭐ THE TY-SORT BRIDGE, [d] -> [ad].  Every premise the algorithmic rule
     adds is the declarative one pushed along [utyp_to_uskl]: the hygiene by
     [ftag_utyp_to_uskl] (the inclusion keeps every tag), the ForallL
-    instantiation's sort data by [is_tskl_utyp_to_uskl] / [d_tags_skl_incl] /
+    instantiation's sort data by [is_dskl_utyp_to_uskl] / [d_tags_skl_incl] /
     [uskl_ghost_free_incl] — the last of which is what [a_tags_sort__ty]
     demands and what makes this sort easy. *)
 (** ⭐ THE LEAF PRESUPPOSITION AT THE TY SORT IS REFLEXIVITY.  [ad_pat_sub]
@@ -1530,7 +1530,7 @@ Proof.
 Qed.
 
 (** ⭐ THE TYPE SORT HAS NO DECLARATIVE JOIN OF ITS OWN: [d_consis] carries no
-    refinement datum (there are no holes at the type sort, so there is nothing
+    refinement datum (there are no ghosts at the type sort, so there is nothing
     for refinement to fill).  The bridge MANUFACTURES the [ad] half — the
     refinement is REFLEXIVE at a type, given scope — so the join is
     [d_consis_to_ad] paired with [d_consis_refine_ty].  This is the one place
@@ -1595,7 +1595,7 @@ Proof.
       | (* the hygiene crosses the sorts: the inclusion keeps every tag *)
         rewrite (ftag_utyp_to_uskl (utyp_all_tag ε C)); assumption
       | apply a_tags_sort__ty;
-          [ apply is_tskl_utyp_to_uskl; assumption
+          [ apply is_dskl_utyp_to_uskl; assumption
           | apply d_tags_skl_incl; assumption
           | apply uskl_ghost_free_incl; eapply d_wf_utyp_lc; eassumption ]
       | exact (a_wf_pskl_of_d_wf_uskl Γ empty (utyp_to_uskl ph)
@@ -1608,7 +1608,7 @@ Proof.
       [ assumption | assumption
       | rewrite (ftag_utyp_to_uskl (utyp_all_syn C)); assumption
       | apply a_tags_sort__ty;
-          [ apply is_tskl_utyp_to_uskl; assumption
+          [ apply is_dskl_utyp_to_uskl; assumption
           | apply d_tags_skl_incl; assumption
           | apply uskl_ghost_free_incl; eapply d_wf_utyp_lc; eassumption ]
       | exact (a_wf_pskl_of_d_wf_uskl Γ empty (utyp_to_uskl ph)
@@ -1805,7 +1805,7 @@ Proof.
              ltac:(apply (a_wf_exp_mono
                             (Hbody x ltac:(clear - Hx; solve_notin_auto)));
                    apply aenv_tbinds_le_weaken_cons)).
-  - (* sd-App: ⚠️ the ONE hole — its skeleton-inference premise *)
+  - (* sd-App: ⚠️ the ONE ghost — its skeleton-inference premise *)
     inversion Hwfe as [ | | | | | | Θ0 e10 e20 Hwf1 Hwf2 ]; subst.
     apply ad_sd_typing__app with (P := P) (A2 := btyp_to_ptyp B1) (B1 := B1);
       [ exact (d_pat_to_ad mode_tc Γ e2 (pskl_to_bskl_syn P) H)

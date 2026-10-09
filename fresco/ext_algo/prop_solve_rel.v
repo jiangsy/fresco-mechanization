@@ -168,10 +168,10 @@ Qed.
 
 (** …and the [≠ ◇] half, which is easier: [rel_pskl] is structural, so a
     non-ghost on side 1 has a non-ghost image. *)
-Lemma rel_pskl_neq_hole : forall ρ V P1 P2,
+Lemma rel_pskl_neq_ghost : forall ρ V P1 P2,
   rel_pskl ρ V P1 P2 ->
-  P1 <> pskl_hole ->
-  P2 <> pskl_hole.
+  P1 <> pskl_ghost ->
+  P2 <> pskl_ghost.
 Proof.
   intros * Hrel; induction Hrel; intros Hne; try discriminate.
   exact Hne.
@@ -525,18 +525,18 @@ Lemma a_guess_mono_rel : forall Θ1 P1 Ξ1 A1,
 Proof.
   intros Θ1 P1 Ξ1 A1 HG.
   induction HG; intros Θ2 L P2 ρ V Hrel Hscp1 Hscp2.
-  - (* hole ↦ a fresh flexible on each side, PAIRED *)
+  - (* ghost ↦ a fresh flexible on each side, PAIRED *)
     inversion Hrel; subst.
     destruct (atom_fresh (ftvar_in_aenv Θ2 ∪ L)) as [α2 Hα2].
     exists ((α, α2) :: nil), ((α2 ~ abind_flex_mono) ++ nil),
       (ptyp_var_f α2).
-    split; [ apply a_guess_mono__hole; clear - Hα2; fsetdec | ].
+    split; [ apply a_guess_mono__ghost; clear - Hα2; fsetdec | ].
     split; [ reflexivity | ].
     split; [ reflexivity | ].
     split; [ solve_uniq | ].
     split; [ simpl; clear - Hα2; fsetdec | ].
     simpl. constructor. apply rel_atom__pair. left. reflexivity.
-  - (* tophole: pass-through *)
+  - (* univ_ghost: pass-through *)
     inversion Hrel; subst.
     match goal with
     | Hb : rel_pskl ρ V P ?X |- _ => rename Hb into Hbody; rename X into Q0
@@ -544,7 +544,7 @@ Proof.
     destruct (IHHG Θ2 L Q0 ρ V Hbody Hscp1 Hscp2)
       as (ρn & Ξ2 & A2 & HG2 & E1 & E2 & Hu & HL & Hrel').
     exists ρn, Ξ2, A2.
-    split; [ apply a_guess_mono__tophole; exact HG2 | ].
+    split; [ apply a_guess_mono__univ_ghost; exact HG2 | ].
     split; [ assumption | ].
     split; [ assumption | ].
     split; [ assumption | ].
@@ -775,14 +775,14 @@ Proof.
   - (* SE-GhostL: ghost subject answers the target *)
     inversion HrelP; subst.
     exists nil, nil, Q3.
-    split; [ apply a_solve_eq__hole_l | ].
+    split; [ apply a_solve_eq__ghost_l | ].
     split; [ reflexivity | ]. split; [ reflexivity | ].
     split; [ solve_uniq | ]. split; [ simpl; clear; fsetdec | ].
     simpl. exact HrelQ.
   - (* SE-VacuousR: ghost target answers the subject *)
     inversion HrelQ; subst.
     exists nil, nil, P3.
-    split; [ apply a_solve_eq__hole_r | ].
+    split; [ apply a_solve_eq__ghost_r | ].
     split; [ reflexivity | ]. split; [ reflexivity | ].
     split; [ solve_uniq | ]. split; [ simpl; clear; fsetdec | ].
     simpl. exact HrelP.
@@ -904,8 +904,8 @@ Proof.
     end.
     destruct (IHHD Θ2 L P2b Q2b ρ V HrP0 HrQ0 Hagr Hscp1 Hscp2)
       as (ρn & Ξ2 & Y2 & D2p & E1 & E2 & Hu & HL & Hrel').
-    exists ρn, Ξ2, (pskl_tophole Y2).
-    split; [ apply a_solve_eq__tophole_both; exact D2p | ].
+    exists ρn, Ξ2, (pskl_univ_ghost Y2).
+    split; [ apply a_solve_eq__univ_ghost_both; exact D2p | ].
     split; [ exact E1 | ]. split; [ exact E2 | ].
     split; [ exact Hu | ]. split; [ exact HL | ].
     constructor. exact Hrel'.
@@ -935,7 +935,7 @@ Proof.
                        [<=] ftvar_in_aenv ((β2 ~ abind_tvar) ++ Θ2))
       by (simpl; clear - Hscp2; fsetdec).
     destruct (IHHD ((β2 ~ abind_tvar) ++ Θ2) L
-                (pskl_tophole P2b)
+                (pskl_univ_ghost P2b)
                 (open_pskl_wrt_pskl Q2b (pskl_var_f β2))
                 ((β, β2) :: ρ) V
                 ltac:(apply rel_pskl_extend_pair; constructor; exact HrP0)
@@ -951,7 +951,7 @@ Proof.
     pose proof (dom_flex_pairs_r ρn) as Hdfr. rewrite <- E2 in Hdfr.
     exists ρn, Ξ2, (pskl_all_syn (close_pskl_wrt_pskl β2 Y2)).
     split.
-    { apply a_solve_eq__tophole_l_all with (β := β2);
+    { apply a_solve_eq__univ_ghost_l_all with (β := β2);
         [ clear - Hβ2; fsetdec | exact D2p ]. }
     split; [ exact E1 | ]. split; [ exact E2 | ].
     split; [ exact Hu | ]. split; [ exact HL | ].
@@ -974,7 +974,7 @@ Proof.
       as (ρn & Ξ2 & Y2 & D2p & E1 & E2 & Hu & HL & Hrel').
     exists ρn, Ξ2, Y2.
     split.
-    { apply a_solve_eq__tophole_l_guarded;
+    { apply a_solve_eq__univ_ghost_l_guarded;
         [ eapply rel_pskl_guarded; [ exact HrelQ | assumption ]
         | exact D2p ]. }
     split; [ exact E1 | ]. split; [ exact E2 | ].
@@ -1007,7 +1007,7 @@ Proof.
       by (simpl; clear - Hscp2; fsetdec).
     destruct (IHHD ((β2 ~ abind_tvar) ++ Θ2) L
                 (open_pskl_wrt_pskl P2b (pskl_var_f β2))
-                (pskl_tophole Q2b)
+                (pskl_univ_ghost Q2b)
                 ((β, β2) :: ρ) V
                 ltac:(apply rel_pskl_open_pair; exact HrP0)
                 ltac:(apply rel_pskl_extend_pair; constructor; exact HrQ0)
@@ -1022,7 +1022,7 @@ Proof.
     pose proof (dom_flex_pairs_r ρn) as Hdfr. rewrite <- E2 in Hdfr.
     exists ρn, Ξ2, (pskl_all_syn (close_pskl_wrt_pskl β2 Y2)).
     split.
-    { apply a_solve_eq__all_l_tophole with (β := β2);
+    { apply a_solve_eq__all_l_univ_ghost with (β := β2);
         [ clear - Hβ2; fsetdec | exact D2p ]. }
     split; [ exact E1 | ]. split; [ exact E2 | ].
     split; [ exact Hu | ]. split; [ exact HL | ].
@@ -1045,7 +1045,7 @@ Proof.
       as (ρn & Ξ2 & Y2 & D2p & E1 & E2 & Hu & HL & Hrel').
     exists ρn, Ξ2, Y2.
     split.
-    { apply a_solve_eq__tophole_r_guarded;
+    { apply a_solve_eq__univ_ghost_r_guarded;
         [ eapply rel_pskl_guarded; [ exact HrelP | assumption ]
         | exact D2p ]. }
     split; [ exact E1 | ]. split; [ exact E2 | ].
@@ -1199,7 +1199,7 @@ Proof.
     end.
     destruct (IHHD Θ2 L P3b Q3 ρ V HrP0 HrelQ Hagr Hscp1 Hscp2)
       as (ρx & ρn & Ξ2 & Y2 & D2p & E1 & E2 & Hu & HL & Hρx & Hrel').
-    exists ρx, ρn, Ξ2, (pskl_tophole Y2).
+    exists ρx, ρn, Ξ2, (pskl_univ_ghost Y2).
     split; [ apply a_solve_sub__univ_ghost_l; exact D2p | ].
     split; [ exact E1 | ]. split; [ exact E2 | ].
     split; [ exact Hu | ]. split; [ exact HL | ].
@@ -1345,10 +1345,10 @@ Proof.
         rename xc into Q3a; rename xd into Q3b
     end.
     match goal with
-    | He : a_solve_eq Θ pskl_hole Q1 ?x ?y |- _ => rename He into HDeq
+    | He : a_solve_eq Θ pskl_ghost Q1 ?x ?y |- _ => rename He into HDeq
     end.
     destruct (a_solve_eq_rel HDeq L
-                (rel_pskl__hole ρ V) HrQa Hagr Hscp1 Hscp2)
+                (rel_pskl__ghost ρ V) HrQa Hagr Hscp1 Hscp2)
       as (ρnA & Ξ2a & P2a' & D2a & E1a & E2a & Hua & HLa & HrelA').
     assert (Hd1a : dom Ξ1 ∩ ftvar_in_aenv Θ [=] empty)
       by (exact ((proj2 a_solve_sub_eq_generated_fresh_set) _ _ _ _ _ HDeq)).
@@ -1371,13 +1371,13 @@ Proof.
     { rewrite cols_r_app. rewrite ftvar_in_aenv_app.
       pose proof (dom_subset_ftvar_in_aenv Ξ2a) as Hds.
       clear - Hscp2 Hdfr Hds. fsetdec. }
-    destruct (IHHD (Ξ2a ++ Θ2) (L ∪ dom Ξ2a) pskl_hole Q3b (ρnA ++ ρ) V
-                (rel_pskl__hole (ρnA ++ ρ) V)
+    destruct (IHHD (Ξ2a ++ Θ2) (L ∪ dom Ξ2a) pskl_ghost Q3b (ρnA ++ ρ) V
+                (rel_pskl__ghost (ρnA ++ ρ) V)
                 ltac:(apply rel_pskl_widen; exact HrQb)
                 Hagr' Hscp1' Hscp2')
       as (ρx & ρnB & Ξ2b & P2b' & D2b & E1b & E2b & Hub & HLb & Hρx & HrelB').
     exists ρx, (ρnB ++ ρnA), (Ξ2b ++ Ξ2a),
-      (pskl_tophole (pskl_arrow P2a' P2b')).
+      (pskl_univ_ghost (pskl_arrow P2a' P2b')).
     split; [ apply a_solve_sub__ghost_l_fn; [ exact D2a | exact D2b ] | ].
     split;
       [ rewrite flex_pairs_l_app; rewrite <- E1a, <- E1b; reflexivity | ].
@@ -1396,7 +1396,7 @@ Proof.
     + rel_perm HrelB'.
   - (* SS-GhostL: no premise; the target passes as the pattern *)
     inversion HrelP; subst.
-    exists nil, nil, nil, (pskl_tophole Q3).
+    exists nil, nil, nil, (pskl_univ_ghost Q3).
     split.
     { apply a_solve_sub__ghost_l.
       - eapply rel_pskl_ghost_free; [ exact HrelQ | assumption ].
@@ -2085,7 +2085,7 @@ Proof.
       { apply e_looksub__forall_l with (β := β2);
           [ clear - Hβ2; fsetdec
           | eapply rel_pskl_in_id; [ exact HrelP | exact Hocc | exact Hαl ]
-          | eapply rel_pskl_neq_hole; [ exact HrelP' | exact Hnh ]
+          | eapply rel_pskl_neq_ghost; [ exact HrelP' | exact Hnh ]
           | eapply rel_pskl_forall_r_off; [ exact HrelP' | exact Hfr3 ]
           | exact D2 ]. }
       split; [ exact E1 | ]. split; [ exact E2 | ].
@@ -2109,7 +2109,7 @@ Proof.
       { apply e_looksub__forall_l with (β := β2);
           [ clear - Hβ2; fsetdec
           | eapply rel_pskl_in_id; [ exact HrelP | exact Hocc | exact Hαl ]
-          | eapply rel_pskl_neq_hole; [ exact HrelP' | exact Hnh ]
+          | eapply rel_pskl_neq_ghost; [ exact HrelP' | exact Hnh ]
           | eapply rel_pskl_forall_r_off; [ exact HrelP' | exact Hfr3 ]
           | exact D2 ]. }
       split; [ exact E1 | ]. split; [ exact E2 | ].
@@ -2140,7 +2140,7 @@ Proof.
     exists S1, ρx, ρn, Ξ2, C2.
     split;
       [ apply e_looksub__univ_ghost_l;
-          [ eapply rel_pskl_neq_hole; [ exact HrelP' | exact Hnh ]
+          [ eapply rel_pskl_neq_ghost; [ exact HrelP' | exact Hnh ]
           | eapply rel_pskl_forall_r_off; [ exact HrelP' | exact Hfr3 ]
           | exact D2 ] | ].
     split; [ exact E1 | ]. split; [ exact E2 | ].
@@ -2438,7 +2438,7 @@ Proof.
                       (open_pskl_wrt_pskl P2b (pskl_var_f β2)))
       by (apply rel_pskl_open_pair; exact HrP0).
     assert (Hrelo2 : rel_pskl ((β, β2) :: ρ) V
-                      (pskl_tophole Pb') (pskl_tophole Q2b))
+                      (pskl_univ_ghost Pb') (pskl_univ_ghost Q2b))
       by (apply rel_pskl_extend_pair; constructor; exact HrQ0).
     assert (Hαl' : α `notin` cols_l ((β, β2) :: ρ))
       by (simpl; clear - Hαl Hβ1; fsetdec).
@@ -2447,14 +2447,14 @@ Proof.
           clear - Hαr Hβ2 HαS0; fsetdec).
     assert (Hcov' : V ∪ cols_r ((β, β2) :: ρ)
                       ∪ ftvar_in_pskl (open_pskl_wrt_pskl P2b (pskl_var_f β2))
-                      ∪ ftvar_in_pskl (pskl_tophole Q2b)
+                      ∪ ftvar_in_pskl (pskl_univ_ghost Q2b)
                       [<=] add β2 S0).
     { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P2b
                     (pskl_var_f β2)) as Hup1.
       simpl in *. clear - Hcov Hup1. fsetdec. }
     destruct (IH (add β2 S0) ((β2 ~ abind_tvar) ++ Θ2)
                 (open_pskl_wrt_pskl P2b (pskl_var_f β2))
-                (pskl_tophole Q2b)
+                (pskl_univ_ghost Q2b)
                 ((β, β2) :: ρ) V Hrelo1 Hrelo2 HαV Hαl' Hαr' Hag' Hcov')
       as (S1 & ρx & ρn & Ξ2 & C2 & D2 & E1 & E2 & Hpairs & Hxb & Hoc2 & Hcl2 & Hrel').
     pose proof (e_lookeq_supply_grows D2) as Hgrow.
@@ -2551,7 +2551,7 @@ Proof.
             clear - Hβ1 Hdsub; fsetdec
           | clear - Hβ2; fsetdec ]).
     assert (Hrelo1 : rel_pskl ((β, β2) :: ρ) V
-                      (pskl_tophole Pb) (pskl_tophole P2b))
+                      (pskl_univ_ghost Pb) (pskl_univ_ghost P2b))
       by (apply rel_pskl_extend_pair; constructor; exact HrP0).
     assert (Hrelo2 : rel_pskl ((β, β2) :: ρ) V
                       (open_pskl_wrt_pskl Pb' (pskl_var_f β))
@@ -2563,14 +2563,14 @@ Proof.
       by (simpl; assert (HαS0 : α `in` S0) by (clear - HαV Hcov; fsetdec);
           clear - Hαr Hβ2 HαS0; fsetdec).
     assert (Hcov' : V ∪ cols_r ((β, β2) :: ρ)
-                      ∪ ftvar_in_pskl (pskl_tophole P2b)
+                      ∪ ftvar_in_pskl (pskl_univ_ghost P2b)
                       ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q2b (pskl_var_f β2))
                       [<=] add β2 S0).
     { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q2b
                     (pskl_var_f β2)) as Hup2.
       simpl in *. clear - Hcov Hup2. fsetdec. }
     destruct (IH (add β2 S0) ((β2 ~ abind_tvar) ++ Θ2)
-                (pskl_tophole P2b)
+                (pskl_univ_ghost P2b)
                 (open_pskl_wrt_pskl Q2b (pskl_var_f β2))
                 ((β, β2) :: ρ) V Hrelo1 Hrelo2 HαV Hαl' Hαr' Hag' Hcov')
       as (S1 & ρx & ρn & Ξ2 & C2 & D2 & E1 & E2 & Hpairs & Hxb & Hoc2 & Hcl2 & Hrel').
@@ -4467,10 +4467,10 @@ Proof.
     + right. destruct (a_binds_tvar_cons_tvar_inv Ha) as [E | Ha'];
         [ contradiction | ].
       eapply Htv; [ exact Ha' | eapply rel_atom_shrink_add; eassumption ].
-  - (* hole *) inversion Hp; subst. apply a_wf_pskl__hole.
-  - (* tophole *)
+  - (* ghost *) inversion Hp; subst. apply a_wf_pskl__ghost.
+  - (* univ_ghost *)
     inversion Hp as [ | | | | | | Q1 Q2 Hpb ]; subst.
-    apply a_wf_pskl__tophole;
+    apply a_wf_pskl__univ_ghost;
       [ eapply rel_pskl_guarded; [ exact Hpb | exact Hg ]
       | eapply IHa; [ | clear; fsetdec | exact Hpb ] ].
     intros a b Ha Hab.

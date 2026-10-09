@@ -108,16 +108,16 @@ syntax categories rather than predicates over one AST:
 
 | Paper | Coq category | Allowed ∀'s / ghosts |
 |-------|--------------|----------------------|
-| `A`   | `ptyp`       | plain `∀`; no holes |
-| `B`   | `btyp`       | bidirectional `∀^S` / `∀^I`; no holes |
+| `A`   | `ptyp`       | plain `∀`; no ghosts |
+| `B`   | `btyp`       | bidirectional `∀^S` / `∀^I`; no ghosts |
 | `C`   | `utyp`       | unresolved `∀^S` / `∀^ε`; no inherited ∀ |
 | `G`   | `gutyp`      | generalized unresolved `∀^S` / `∀^I` / `∀^ε` |
-| `P`   | `pskl`       | plain skeletons with holes / topholes |
+| `P`   | `pskl`       | plain skeletons with ghosts / univ_ghosts |
 | `Q`   | `bskl`       | bidirectional skeletons |
 | `R`   | `uskl`       | unresolved skeletons |
 
 The rule statements use these categories directly.  Predicates such as
-`is_styp`, `is_ityp`, `is_ttyp`, `mono_ptyp`, and the guarded predicates
+`is_styp`, `is_ityp`, `is_dtyp`, `mono_ptyp`, and the guarded predicates
 are now refinements of already-split categories, not substitutes for the
 categories themselves.
 
@@ -169,7 +169,7 @@ type. Used to disambiguate `single id` (returns `∀a. a→a List`) vs
 Roughly the dependency DAG:
 
 ```text
-d_wf_typ ⊆ {d_wf_ttyp, d_wf_utyp} ⊆ d_wf_pskl ⊆ {d_wf_tskel, d_wf_uskel}
+d_wf_typ ⊆ {d_wf_dtyp, d_wf_utyp} ⊆ d_wf_pskl ⊆ {d_wf_tskel, d_wf_uskel}
                       │
                       ▼
                  d_consis  ── d_sub  ── d_shallow_sub
@@ -485,7 +485,7 @@ unusable in inversions.  Exists-fresh is the decided replacement.
 #### The avoid-input principle (settled by cluster 1, 2026-08-01)
 
 Input-only conditions alone admit **junk derivations**: with
-scope-insensitive generators, a hole below a `∀` can generate the `∀`'s
+scope-insensitive generators, a ghost below a `∀` can generate the `∀`'s
 own recorded witness (`Ξ ∋ b0`), and the opening/renaming kit is FALSE on
 such derivations — no freshness demanded of a lemma's own variables can
 fix a collision between two names *inside* a derivation.  The resolution,
@@ -948,7 +948,7 @@ appended-last. This makes the audit "does Coq cover the paper's δ
 spread for rule X?" a one-glance check.
 
 **Rule-body notation.** Notations for the 7 main judgments
-(`d_wf_pskl`, `d_wf_ttyp`, `d_wf_tskel`, `d_consis`, `d_sub`,
+(`d_wf_pskl`, `d_wf_dtyp`, `d_wf_tskel`, `d_consis`, `d_sub`,
 `d_pat_consis`, `d_pat_sub`) are declared as `Reserved Notation` at
 the top of `decl/def_rules.v` and bound via `where` clauses on each
 `Inductive`. Rule bodies use the notations directly — same reason:

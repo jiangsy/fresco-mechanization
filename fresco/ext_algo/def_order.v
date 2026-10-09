@@ -107,29 +107,29 @@ Inductive e_lookeq_order : supply -> aenv -> atom -> pskl -> pskl -> Prop :=
          (open_pskl_wrt_pskl Q' (pskl_var_f (supply_fresh S0)))) ->
     (* LE-ForallSyn *)
     (forall Q Q',
-       P = pskl_all_syn Q -> P' = pskl_tophole Q' ->
+       P = pskl_all_syn Q -> P' = pskl_univ_ghost Q' ->
        e_lookeq_order (add (supply_fresh S0) S0)
          ((supply_fresh S0 ~ abind_tvar) ++ Θ) α
          (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0)))
-         (pskl_tophole Q')) ->
+         (pskl_univ_ghost Q')) ->
     (* LE-UnivGhost *)
     (forall Q Q',
-       P = pskl_tophole Q -> P' = pskl_tophole Q' ->
+       P = pskl_univ_ghost Q -> P' = pskl_univ_ghost Q' ->
        e_lookeq_order S0 Θ α Q Q') ->
     (* LE-UnivGhost1 *)
     (forall Q Q',
-       P = pskl_tophole Q -> P' = pskl_all_syn Q' ->
+       P = pskl_univ_ghost Q -> P' = pskl_all_syn Q' ->
        e_lookeq_order (add (supply_fresh S0) S0)
          ((supply_fresh S0 ~ abind_tvar) ++ Θ) α
-         (pskl_tophole Q)
+         (pskl_univ_ghost Q)
          (open_pskl_wrt_pskl Q' (pskl_var_f (supply_fresh S0)))) ->
     (* LE-UnivGhost2 — strip the subject's ⫯ *)
     (forall Q,
-       P = pskl_tophole Q ->
+       P = pskl_univ_ghost Q ->
        e_lookeq_order S0 Θ α Q P') ->
     (* LE-UnivGhostR — strip the counterpart's ⫯ *)
     (forall Q',
-       P' = pskl_tophole Q' ->
+       P' = pskl_univ_ghost Q' ->
        e_lookeq_order S0 Θ α P Q') ->
     e_lookeq_order S0 Θ α P P'.
 
@@ -159,7 +159,7 @@ Inductive e_looksub_order : supply -> aenv -> atom -> mode -> pskl -> pskl
          (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0))) P') ->
     (* LS-UnivGhostL *)
     (forall Q,
-       P = pskl_tophole Q ->
+       P = pskl_univ_ghost Q ->
        e_looksub_order S0 Θ α m Q P') ->
     e_looksub_order S0 Θ α m P P'.
 
@@ -190,29 +190,29 @@ Inductive e_solve_eq_order : supply -> aenv -> pskl -> pskl -> Prop :=
          (open_pskl_wrt_pskl Q1 (pskl_var_f (supply_fresh S0)))) ->
     (* SE-UnivGhost *)
     (forall P1 Q1,
-       P = pskl_tophole P1 -> Q = pskl_tophole Q1 ->
+       P = pskl_univ_ghost P1 -> Q = pskl_univ_ghost Q1 ->
        e_solve_eq_order S0 Θ P1 Q1) ->
     (* SE-GhostForall *)
     (forall P1 Q1,
-       P = pskl_tophole P1 -> Q = pskl_all_syn Q1 ->
+       P = pskl_univ_ghost P1 -> Q = pskl_all_syn Q1 ->
        e_solve_eq_order (add (supply_fresh S0) S0)
          ((supply_fresh S0 ~ abind_tvar) ++ Θ)
-         (pskl_tophole P1)
+         (pskl_univ_ghost P1)
          (open_pskl_wrt_pskl Q1 (pskl_var_f (supply_fresh S0)))) ->
     (* SE-GhostGuarded — strip the subject's ⫯ *)
     (forall P1,
-       P = pskl_tophole P1 ->
+       P = pskl_univ_ghost P1 ->
        e_solve_eq_order S0 Θ P1 Q) ->
     (* SE-ForallGhost *)
     (forall P1 Q1,
-       P = pskl_all_syn P1 -> Q = pskl_tophole Q1 ->
+       P = pskl_all_syn P1 -> Q = pskl_univ_ghost Q1 ->
        e_solve_eq_order (add (supply_fresh S0) S0)
          ((supply_fresh S0 ~ abind_tvar) ++ Θ)
          (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0)))
-         (pskl_tophole Q1)) ->
+         (pskl_univ_ghost Q1)) ->
     (* SE-GuardedGhost — strip the constraint's ⫯ *)
     (forall Q1,
-       Q = pskl_tophole Q1 ->
+       Q = pskl_univ_ghost Q1 ->
        e_solve_eq_order S0 Θ P Q1) ->
     e_solve_eq_order S0 Θ P Q.
 
@@ -226,7 +226,7 @@ Inductive e_solve_sub_order : supply -> aenv -> mode -> pskl -> pskl -> Prop :=
          (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0))) Q) ->
     (* SS-UnivGhostL *)
     (forall P1,
-       P = pskl_tophole P1 ->
+       P = pskl_univ_ghost P1 ->
        e_solve_sub_order S0 Θ m P1 Q) ->
     (* SS-Check — the drop into the eq layer *)
     (m = mode_tc -> e_solve_eq_order S0 Θ P Q) ->
@@ -245,11 +245,11 @@ Inductive e_solve_sub_order : supply -> aenv -> mode -> pskl -> pskl -> Prop :=
              e_solve_sub_order S1 (Ξ1 ++ Θ) m' P2 Q2)) ->
     (* SS-GhostLF — the ◇ expands along the counterpart's arrow *)
     (forall m' Q1 Q2,
-       m = mode_fn m' -> P = pskl_hole -> Q = pskl_arrow Q1 Q2 ->
-       e_solve_eq_order S0 Θ pskl_hole Q1
+       m = mode_fn m' -> P = pskl_ghost -> Q = pskl_arrow Q1 Q2 ->
+       e_solve_eq_order S0 Θ pskl_ghost Q1
        /\ (forall S1 Ξ1 P1',
-             {{ S0 ↝ S1 ⊨ Θ ⊢ₑ pskl_hole ∼ Q1 ⤳ Ξ1 ⨾ P1' }}e ->
-             e_solve_sub_order S1 (Ξ1 ++ Θ) m' pskl_hole Q2)) ->
+             {{ S0 ↝ S1 ⊨ Θ ⊢ₑ pskl_ghost ∼ Q1 ⤳ Ξ1 ⨾ P1' }}e ->
+             e_solve_sub_order S1 (Ξ1 ++ Θ) m' pskl_ghost Q2)) ->
     e_solve_sub_order S0 Θ m P Q.
 
 (** The constraint fold — structural on the list, with the context and the
@@ -277,10 +277,10 @@ Inductive e_extract_order : supply -> aenv -> a_sub_mode -> atom -> mode
     e_looksub_order S0 Θ0 α m P P' ->
     (forall S1 Ξ C,
        {{ S0 ↝ S1 ⊨ Θ0 ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
-       e_solve_cstr_order S1 (Ξ ++ Θ0) C pskl_hole) ->
+       e_solve_cstr_order S1 (Ξ ++ Θ0) C pskl_ghost) ->
     (forall S1 Ξ C S2 Ξs Q,
        {{ S0 ↝ S1 ⊨ Θ0 ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
-       {{ S1 ↝ S2 ⊨ (Ξ ++ Θ0) ⊩ C ⨾ pskl_hole ⤳ Ξs ⨾ Q }}e ->
+       {{ S1 ↝ S2 ⊨ (Ξ ++ Θ0) ⊩ C ⨾ pskl_ghost ⤳ Ξs ⨾ Q }}e ->
        e_guess_order S2 NM Q) ->
     e_extract_order S0 Θ0 NM α m P P'.
 
@@ -370,31 +370,31 @@ with e_consis_order : atoms -> atoms -> supply -> aenv -> pskl -> pskl
          (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0)))) ->
     (* ForallSyn *)
     (forall P0' P1,
-       P0 = pskl_tophole P0' -> P = pskl_all_syn P1 ->
+       P0 = pskl_univ_ghost P0' -> P = pskl_all_syn P1 ->
        e_consis_order Δ1 (add (supply_fresh S0) Δ2)
          (add (supply_fresh S0) S0)
          ((supply_fresh S0 ~ abind_tvar) ++ Θ)
-         (pskl_tophole P0')
+         (pskl_univ_ghost P0')
          (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0)))) ->
     (* UnivGhost *)
     (forall P0' P1,
-       P0 = pskl_tophole P0' -> P = pskl_tophole P1 ->
+       P0 = pskl_univ_ghost P0' -> P = pskl_univ_ghost P1 ->
        e_consis_order Δ1 Δ2 S0 Θ P0' P1) ->
     (* UnivGhost1 *)
     (forall P0' P1,
-       P0 = pskl_all_syn P0' -> P = pskl_tophole P1 ->
+       P0 = pskl_all_syn P0' -> P = pskl_univ_ghost P1 ->
        e_consis_order (add (supply_fresh S0) Δ1) Δ2
          (add (supply_fresh S0) S0)
          ((supply_fresh S0 ~ abind_tvar) ++ Θ)
          (open_pskl_wrt_pskl P0' (pskl_var_f (supply_fresh S0)))
-         (pskl_tophole P1)) ->
+         (pskl_univ_ghost P1)) ->
     (* UnivGhost2 — strip the subject's ⫯ against a guarded pattern *)
     (forall P1,
-       P = pskl_tophole P1 ->
+       P = pskl_univ_ghost P1 ->
        e_consis_order Δ1 Δ2 S0 Θ P0 P1) ->
     (* UnivGhostR — strip the pattern's ⫯ *)
     (forall P0',
-       P0 = pskl_tophole P0' ->
+       P0 = pskl_univ_ghost P0' ->
        e_consis_order Δ1 Δ2 S0 Θ P0' P) ->
     (* Flex — both sides the same flexible, pattern a variable *)
     (forall α β,
@@ -454,7 +454,7 @@ Inductive e_sub_order : supply -> a_sub_mode -> mode -> pskl -> aenv -> pskl
        RUNNER did (its extract call must satisfy this premise AND the rule). *)
     (forall Q,
        P = pskl_all_syn Q -> M <> mode_ti ->
-       (guarded_pskl P0 \/ P0 = pskl_hole) ->
+       (guarded_pskl P0 \/ P0 = pskl_ghost) ->
        e_extract_order (add (supply_fresh S0) S0) Θ0 NM (supply_fresh S0) M
          (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0))) P0
        /\ (forall S1 Ξ P1,
@@ -465,7 +465,7 @@ Inductive e_sub_order : supply -> a_sub_mode -> mode -> pskl -> aenv -> pskl
              e_sub_order S1 NM M P0 (Ξ ++ Θ0) (open_pskl_wrt_pskl Q P1))) ->
     (* UnivGhostL — strip the subject's ⫯ *)
     (forall Q,
-       P = pskl_tophole Q -> M <> mode_ti ->
+       P = pskl_univ_ghost Q -> M <> mode_ti ->
        e_sub_order S0 NM M P0 Θ0 Q) ->
     e_sub_order S0 NM M P0 Θ0 P
 

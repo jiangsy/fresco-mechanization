@@ -79,7 +79,7 @@ Definition probe_tgt : pskl := pskl_all_syn (pskl_var_b 0).
 (** ⫯1 → ⌈∀b.b⌉ — the pattern at [f]: the argument [u]'s skeleton, then the
     rigid codomain. *)
 Definition probe_pat : pskl :=
-  pskl_arrow (pskl_tophole pskl_unit) probe_tgt.
+  pskl_arrow (pskl_univ_ghost pskl_unit) probe_tgt.
 
 (* ===================================================================== *)
 (*  §1  The COLLECTION, inverted layer by layer.                          *)
@@ -88,7 +88,7 @@ Definition probe_pat : pskl :=
 (** The arrow's eq half collects nothing: [1 ∼[α] ⫯1] has no occurrence of
     α on either side. *)
 Lemma probe_lookeq_unit : forall Θ α Ξ C,
-  {{ Θ ⊢ pskl_unit ∼[ α ] (pskl_tophole pskl_unit) ⤳ Ξ ⨾ C }}a ->
+  {{ Θ ⊢ pskl_unit ∼[ α ] (pskl_univ_ghost pskl_unit) ⤳ Ξ ⨾ C }}a ->
   Ξ = nil /\ C = nil.
 Proof.
   intros * H.
@@ -260,39 +260,39 @@ Qed.
 (* ===================================================================== *)
 
 (** [◇ ≼TC β]: only SS-GhostL fits, and it guards the variable. *)
-Lemma probe_solve_hole_var : forall Θ β Ξ P',
-  {{ Θ ⊢ₛ pskl_hole ≼[ mode_tc ] (pskl_var_f β) ⤳ Ξ ⨾ P' }}a ->
-  Ξ = nil /\ P' = pskl_tophole (pskl_var_f β).
+Lemma probe_solve_ghost_var : forall Θ β Ξ P',
+  {{ Θ ⊢ₛ pskl_ghost ≼[ mode_tc ] (pskl_var_f β) ⤳ Ξ ⨾ P' }}a ->
+  Ξ = nil /\ P' = pskl_univ_ghost (pskl_var_f β).
 Proof.
   intros * H.
   inversion H; subst; auto.
   (* SS-Check: guarded ◇ has no constructor *)
   match goal with
-  | Hg : guarded_pskl pskl_hole |- _ => inversion Hg
+  | Hg : guarded_pskl pskl_ghost |- _ => inversion Hg
   end.
 Qed.
 
 (** [◇ ≼TC ∀b.b]: only SS-ForallR fits (∀ is not guarded, so SS-GhostL and
     SS-Check are out), it opens the target at a fresh β and does NOT close —
     the yield mentions the leaked β. *)
-Lemma probe_solve_hole_tgt : forall Θ Ξ P',
-  {{ Θ ⊢ₛ pskl_hole ≼[ mode_tc ] probe_tgt ⤳ Ξ ⨾ P' }}a ->
+Lemma probe_solve_ghost_tgt : forall Θ Ξ P',
+  {{ Θ ⊢ₛ pskl_ghost ≼[ mode_tc ] probe_tgt ⤳ Ξ ⨾ P' }}a ->
   Ξ = nil /\
-  exists β, P' = pskl_tophole (pskl_var_f β) /\ β `notin` ftvar_in_aenv Θ.
+  exists β, P' = pskl_univ_ghost (pskl_var_f β) /\ β `notin` ftvar_in_aenv Θ.
 Proof.
   intros * H.
   unfold probe_tgt in *.
   inversion H; subst.
   - (* SS-Check: guarded ◇ *)
     match goal with
-    | Hg : guarded_pskl pskl_hole |- _ => inversion Hg
+    | Hg : guarded_pskl pskl_ghost |- _ => inversion Hg
     end.
   - (* SS-ForallR *)
     match goal with
     | Hf : ?b `notin` _ ,
       Hr : a_solve_sub ((?b ~ abind_tvar) ++ _) _ _ _ _ _ |- _ =>
         unfold open_pskl_wrt_pskl in Hr; simpl in Hr;
-        apply probe_solve_hole_var in Hr as [HΞ HP]; subst;
+        apply probe_solve_ghost_var in Hr as [HΞ HP]; subst;
         split; [ reflexivity | exists b ];
         split; [ reflexivity | clear - Hf; fsetdec ]
     end.
@@ -304,22 +304,22 @@ Qed.
 
 (** A singleton sub-constraint folds by exactly its solve step. *)
 Lemma probe_fold_sub : forall Θ T Ξs Q,
-  {{ Θ ⊩ (a_cstr_sub mode_tc T :: nil) ⨾ pskl_hole ⤳ Ξs ⨾ Q }}a ->
-  {{ Θ ⊢ₛ pskl_hole ≼[ mode_tc ] T ⤳ Ξs ⨾ Q }}a.
+  {{ Θ ⊩ (a_cstr_sub mode_tc T :: nil) ⨾ pskl_ghost ⤳ Ξs ⨾ Q }}a ->
+  {{ Θ ⊢ₛ pskl_ghost ≼[ mode_tc ] T ⤳ Ξs ⨾ Q }}a.
 Proof.
   intros * H.
   inversion H; subst; auto.
 Qed.
 
 (** [guess^TY] strips the guard and returns the bare leaked variable. *)
-Lemma probe_guess_tophole_var : forall Θ β Ξ Q,
-  a_guess Θ a_sub_mode_ty (pskl_tophole (pskl_var_f β)) Ξ Q ->
+Lemma probe_guess_univ_ghost_var : forall Θ β Ξ Q,
+  a_guess Θ a_sub_mode_ty (pskl_univ_ghost (pskl_var_f β)) Ξ Q ->
   Ξ = nil /\ Q = pskl_var_f β.
 Proof.
   intros * H.
   inversion H; subst.
   match goal with
-  | Hm : a_guess_mono _ (pskl_tophole _) _ _ |- _ =>
+  | Hm : a_guess_mono _ (pskl_univ_ghost _) _ _ |- _ =>
       inversion Hm; subst
   end.
   match goal with
@@ -354,15 +354,15 @@ Proof.
   apply probe_look_top in Hlook as [HΞ [HC | (β & HC & Hβ)]]; subst;
     simpl in Hfold; apply probe_fold_sub in Hfold.
   - (* closed collection [ ≼TC ∀b.b ]: the SOLVE leaks *)
-    apply probe_solve_hole_tgt in Hfold as [HΞs (β & HQ & Hβ)]; subst.
+    apply probe_solve_ghost_tgt in Hfold as [HΞs (β & HQ & Hβ)]; subst.
     simpl in Hguess.
-    apply probe_guess_tophole_var in Hguess as [HΞ' HQ']; subst.
+    apply probe_guess_univ_ghost_var in Hguess as [HΞ' HQ']; subst.
     split; [ reflexivity | exists β ].
     split; [ reflexivity | exact Hβ ].
   - (* leaked collection [ ≼TC β ]: the solve guards the same β *)
-    apply probe_solve_hole_var in Hfold as [HΞs HQ]; subst.
+    apply probe_solve_ghost_var in Hfold as [HΞs HQ]; subst.
     simpl in Hguess.
-    apply probe_guess_tophole_var in Hguess as [HΞ' HQ']; subst.
+    apply probe_guess_univ_ghost_var in Hguess as [HΞ' HQ']; subst.
     split; [ reflexivity | exists β ].
     split; [ reflexivity | exact Hβ ].
 Qed.

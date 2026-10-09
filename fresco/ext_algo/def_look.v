@@ -4,7 +4,7 @@
     [a_sub]/[a_sub_flex] because the collection is CLOSED — [a_looksub] and
     [a_lookeq] call only each other — while [a_sub__forall_l] consumes a
     collection's output block [Ξ], so threading the subtyping walk first would
-    leave a hole in the supply exactly where the collection deposits names.
+    leave a ghost in the supply exactly where the collection deposits names.
 
     ⚙ NOTE THE SHAPE DIFFERENCE FROM M2.  The collection has NO OUTPUT
     CONTEXT: [Θ] goes in and nothing comes back, and the generated names leave
@@ -16,7 +16,7 @@
     ⭐ THE PAYOFF, and it is the same one M1 bought at [AT-Abs].
     [a_sub__forall_l] carries [uniq (Ξ ++ Θ0)] (fresco/algo/def_rules.v:1256),
     flagged there as a prose-completion of the paper's "fresh" Ξ and needed
-    because [a_lookeq]'s LE-FlexR and [a_guess_mono]'s hole rule "pick
+    because [a_lookeq]'s LE-FlexR and [a_guess_mono]'s ghost rule "pick
     arbitrary names, so re-attaching Ξ needs the freshness stated".  Threaded,
     [uniq Ξ] and the block's freshness for the ambient context are theorems
     (both in [e_looksub_lookeq_block]) — so the premise becomes derivable,
@@ -116,7 +116,7 @@ Inductive e_looksub : supply -> aenv -> atom -> mode -> pskl -> pskl
     {{ S ↝ S ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ nil ⨾ nil }}e
 | e_looksub__vacuous : forall S Θ α m P,                (* LS-Vacuous *)
     P <> pskl_var_f α ->
-    {{ S ↝ S ⊨ Θ ⊢ P ≼[ α , m ] pskl_hole ⤳ nil ⨾ nil }}e
+    {{ S ↝ S ⊨ Θ ⊢ P ≼[ α , m ] pskl_ghost ⤳ nil ⨾ nil }}e
 | e_looksub__check : forall S0 S1 Θ α A B Ξ C,          (* LS-Check *)
     pskl_ghost_free B ->
     A <> pskl_var_f α ->
@@ -145,18 +145,18 @@ Inductive e_looksub : supply -> aenv -> atom -> mode -> pskl -> pskl
     (* [paper-gap] ABSENCE-FIRST GUARD — see the header. *)
     β `notin` S0 ->
     α `in` ftvar_in_pskl (pskl_all_syn P) ->
-    P' <> pskl_hole ->
+    P' <> pskl_ghost ->
     (* [paper-gap] ForallR-PRIORITY GUARD — see [a_looksub__forall_l]. *)
     forall_r_off m P' ->
     {{ (add β S0) ↝ S1 ⊨ ((β ~ abind_tvar) ++ Θ)
        ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_all_syn P) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e
 | e_looksub__univ_ghost_l : forall S0 S1 Θ α m P P' Ξ C, (* LS-UnivGhostL *)
-    P' <> pskl_hole ->
+    P' <> pskl_ghost ->
     (* [paper-gap] ForallR-PRIORITY GUARD — see [a_looksub__forall_l]. *)
     forall_r_off m P' ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
-    {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_tophole P) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e
+    {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_univ_ghost P) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e
 
 with e_lookeq : supply -> aenv -> atom -> pskl -> pskl
                 -> supply -> aenv -> a_cstrs -> Prop :=
@@ -168,7 +168,7 @@ with e_lookeq : supply -> aenv -> atom -> pskl -> pskl
     {{ S ↝ S ⊨ Θ ⊢ P ∼[ α ] P' ⤳ nil ⨾ nil }}e
 | e_lookeq__vacuous : forall S Θ α P,                   (* LE-Vacuous *)
     P <> pskl_var_f α ->
-    {{ S ↝ S ⊨ Θ ⊢ P ∼[ α ] pskl_hole ⤳ nil ⨾ nil }}e
+    {{ S ↝ S ⊨ Θ ⊢ P ∼[ α ] pskl_ghost ⤳ nil ⨾ nil }}e
 | e_lookeq__flex_r : forall S Θ α P β α1,               (* LE-FlexR *)
     (* Δ-supply.  ⭐ THE ONLY GENERATING ROW of the cluster — the paper's
        "fresh γ̂" (algorithmic.tex:1204).  Everything the old side condition
@@ -201,30 +201,30 @@ with e_lookeq : supply -> aenv -> atom -> pskl -> pskl
     α `in` ftvar_in_pskl (pskl_all_syn P) ->
     {{ (add β S0) ↝ S1 ⊨ ((β ~ abind_tvar) ++ Θ)
        ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ]
-       (pskl_tophole P') ⤳ Ξ ⨾ C }}e ->
-    {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_all_syn P) ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C }}e
+       (pskl_univ_ghost P') ⤳ Ξ ⨾ C }}e ->
+    {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_all_syn P) ∼[ α ] (pskl_univ_ghost P') ⤳ Ξ ⨾ C }}e
 | e_lookeq__univ_ghost : forall S0 S1 Θ α P P' Ξ C,     (* LE-UnivGhost *)
     {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
-    {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_tophole P) ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C }}e
+    {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_univ_ghost P) ∼[ α ] (pskl_univ_ghost P') ⤳ Ξ ⨾ C }}e
 | e_lookeq__univ_ghost1 : forall S0 S1 Θ α P P' Ξ C β,  (* LE-UnivGhost1 *)
     (* [paper-gap] ABSENCE-FIRST GUARD — see the header. *)
     β `notin` S0 ->
-    α `in` ftvar_in_pskl (pskl_tophole P) ->
+    α `in` ftvar_in_pskl (pskl_univ_ghost P) ->
     {{ (add β S0) ↝ S1 ⊨ ((β ~ abind_tvar) ++ Θ)
-       ⊢ (pskl_tophole P) ∼[ α ]
+       ⊢ (pskl_univ_ghost P) ∼[ α ]
        (open_pskl_wrt_pskl P' (pskl_var_f β)) ⤳ Ξ ⨾ C }}e ->
-    {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_tophole P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C }}e
+    {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_univ_ghost P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C }}e
 | e_lookeq__univ_ghost2 : forall S0 S1 Θ α P P' Ξ C,    (* LE-UnivGhost2 *)
     guarded_pskl P' ->
     (* [paper-gap] FlexR-PRIORITY GUARD — see [a_lookeq__univ_ghost2]. *)
     flex_r_off Θ P' ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
-    {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_tophole P) ∼[ α ] P' ⤳ Ξ ⨾ C }}e
+    {{ S0 ↝ S1 ⊨ Θ ⊢ (pskl_univ_ghost P) ∼[ α ] P' ⤳ Ξ ⨾ C }}e
 | e_lookeq__univ_ghost_r : forall S0 S1 Θ α P P' Ξ C,   (* LE-UnivGhostR *)
     P <> pskl_var_f α ->
     guarded_pskl P ->
     {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
-    {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C }}e
+    {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] (pskl_univ_ghost P') ⤳ Ξ ⨾ C }}e
 where "{{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e" :=
   (e_looksub S0 Θ α m P P' S1 Ξ C) : fresco_e_scope
 and "{{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e" :=

@@ -71,8 +71,8 @@ Headlines discovered while building it:
   or HOLE row — `a_sk_mode_compat` has no rule for a flexible input, so the
   flex row (§2's hard case) is reachable only from TYPE inference.  At the
   arrow shape the composed refinement is one `__arrow` of a reflexivity and
-  the IH; at the hole shape one `__hole` over the IH's syn-painting inversion
-  (`ad_refine_syn_syn_l` at `P := pskl_hole` + `ad_refine_syn_hole_l_target_wf`).
+  the IH; at the ghost shape one `__ghost` over the IH's syn-painting inversion
+  (`ad_refine_syn_syn_l` at `P := pskl_ghost` + `ad_refine_syn_ghost_l_target_wf`).
 - ⭐ **The paper's "stability" is not free, and the repair is the
   TM-VERBATIM invariant**: `⊴` preserves a term entry only up to `≡ᵗ`
   (`a_inc__var`), so `ad_pat` does not transport along `⊴` alone.  What the
@@ -144,7 +144,7 @@ induction".
 1. **The obstruction is `ad_pat_sub`'s `ForallL` row.**  It instantiates
    with a decorated skeleton `ψ` the rule chooses freely — the only
    conditions are `a_tags_sort NM Ψ' ψ` and `Θ ⨟ ∅ ⊢ₚₛᵃ ⌊ψ⌋ˢ`, and
-   `is_tskl__var` admits a `ψ` that mentions `Ξ`.  The recursive premise is
+   `is_dskl__var` admits a `ψ` that mentions `Ξ`.  The recursive premise is
    then at `open R ψ`, which is NOT Ξ-fresh, so the IH does not apply even
    though the conclusion is.  Reachable: with `α̂ ∈ Ξ` DEFINED (its
    definition is a monotype scoped in Θ by wf), `∀a. a → 1 ⩽ Q` goes
@@ -156,7 +156,7 @@ induction".
    `ad_pat_sub`, and `ad_pat_sub_subst_flex`'s header says why in one line:
    "the ForallL witnesses are rewritten too, which is exactly why this is
    provable where naive strengthening is not".  ⭐ **REUSE IT**, and reuse
-   its whole `_subst_mono` closure family (`is_tskl_subst_mono`,
+   its whole `_subst_mono` closure family (`is_dskl_subst_mono`,
    `a_tags_sort_subst_mono`, `uskl_ghost_free_subst_mono`,
    `mod_comp_sk_subst_mono`, `guarded_*_subst_mono`, `is_sskl_subst_mono`,
    `uskl_to_pskl_subst_mono`, `pskl_to_bskl_inh_subst_mono`).
@@ -169,7 +169,7 @@ induction".
 
    and the paper's form follows because the substitution is the identity on
    Ξ-free types.  At `ForallL` the instantiation becomes `[τ/α̂]ψ`, still
-   `is_tskl` + ghost-free + same tags, because τ is a monotype.
+   `is_dskl` + ghost-free + same tags, because τ is a monotype.
    ⭐⭐ TWO DESIGN POINTS that make the rows COLLAPSE instead of needing
    transports: (a) `solves_flex` demands τ to BE the definition, not merely
    be equivalent to it — then the FlexL/FlexR/flex_def rows' subject and
@@ -219,8 +219,8 @@ Two of the three rows are easy; the third is a genuine proof.
   (prop_refine.v:177), whose premise `Θ ⨟ Δ ⊢ₚₛᵃ P` is why the statement needs
   the EXTERNAL wf side condition above.  That is the documented pattern, see
   `docs/WF-SIDE-CONDITIONS.md`; the paper supplies it in prose.
-- `a_split__hole` (`□ ▹ □ ⇢ □`) — `ad_refine_pskl__hole` + `a_wf_pskl__arrow`
-  of two `a_wf_pskl__hole`s.
+- `a_split__ghost` (`□ ▹ □ ⇢ □`) — `ad_refine_pskl__ghost` + `a_wf_pskl__arrow`
+  of two `a_wf_pskl__ghost`s.
 - ⛔ `a_split__flex` — the row's premise is a **full `a_consis` run**, not a
   syntactic step.  (The paper writes it `unify{α̂}{β̂ → α1̂}`, but that `∼` is
   CONSISTENCY, not `unifyvar`: `unifyvar`'s subjects are hatted variables and
@@ -281,12 +281,12 @@ route is to put `Θ ⨟ empty ⊢ₚₛᵃ P` ON `ad_pat__app`; take that rule c
 deliberately, §6.2-style.  History below.
 
 ✅ **The transitivity engine landed** (`1a31643`, prop_precise.v tail, Qed +
-axiom-free): `ad_refine_pskl_trans_gen` / `_trans`, `ad_refine_pskl_hole_l`,
+axiom-free): `ad_refine_pskl_trans_gen` / `_trans`, `ad_refine_pskl_ghost_l`,
 `ad_refine_pskl_ftv_delta_free`, `ad_refine_pskl_of_inh_paintings`, and the
 composition `ad_precise_preserves_refine_pskl` — the uncoloured
 precision-preserves-refinement that transports the `_gv` LEAF datum.
 ⭐⭐ NOT a row-for-row mirror of `ad_refine_syn_trans`: the pskl `__all` row
-fires (syn's dies on painting shape) and its inner `__tophole_fill`
+fires (syn's dies on painting shape) and its inner `__univ_ghost_fill`
 composite needs the IH at a REASSOCIATED context (∀-witness moved Δ→Θ) —
 solved by generalizing the statement over a context map (Hmap/Hsplit), NOT
 by a fuel mirror.
@@ -315,14 +315,14 @@ memory `remech-pskl-trans-kit`.
 
 ⭐ **`P' = □` is not the problem — `□ ⊑ P` hands back exactly the Ghost row's
 fill.**  `ad_precise P Q` is `inh{P} ⊳ inh{Q}`, so at `P' = □` the subject is
-`◇` and only two refinement rows apply: `__hole`, whose fill is a
+`◇` and only two refinement rows apply: `__ghost`, whose fill is a
 **SYNTHESISED** painting, and `__flex_r`.  Since `pskl_to_bskl_inh` paints ∀
 as `bskl_all_inh` while `pskl_to_bskl_syn` paints it `bskl_all_syn`, the two
 images meet exactly on the `pskl_all_syn`-free skeletons.  Hence
 
-- `ad_precise_hole_inv` : `□ ⊑ P` ⟹ ∃ `P1`, `inh P = syn P1` and
+- `ad_precise_ghost_inv` : `□ ⊑ P` ⟹ ∃ `P1`, `inh P = syn P1` and
   `Θ ⨟ ∅ ⊢ₚₛᵃ P1` — which IS `ad_pat_sub__ghost`'s target-and-wf obligation;
-- `ad_precise_hole_all_absurd` : `□ ⊑ ∀X.P` is **FALSE**, so the Ghost row
+- `ad_precise_ghost_all_absurd` : `□ ⊑ ∀X.P` is **FALSE**, so the Ghost row
   never faces a quantified counterpart.
 
 ⚠️ **A second candidate counterexample, also refuted** (recorded so it is not
@@ -598,7 +598,7 @@ at a time and built all but one:
 ⛔ The last one is where it stopped: its leaf needs
 **`ad_refine_pskl_subst_mid`, which does not exist**.  prop_suffix_erase.v has
 only the `bskl` form `ad_refine_syn_subst_mid` (:499, ~105 lines), and the two
-judgements' `__hole` rows differ (the `bskl` one's fill is a SYNTHESISED
+judgements' `__ghost` rows differ (the `bskl` one's fill is a SYNTHESISED
 painting), so there is no bridge.  Budget: ~105 lines for the refinement
 lemma + ~100 for the `_gv` mirror, and then the rule change lands.
 
@@ -679,7 +679,7 @@ replaces both: the ghost branch of each transport helper rebuilds its fill
 from §1b at `Δ = ∅`, and the visibility premise turns out to have no consumer
 on the refinement side at all.  ⚙ `refine_transport_all`'s per-binder
 hypothesis is quantified over BOTH a Θ-extension and a Δ, because its two
-∀-ish rows (`__all`, `__tophole_fill`) extend different contexts.
+∀-ish rows (`__all`, `__univ_ghost_fill`) extend different contexts.
 
 ⚠️ **Three traps this cost time to** (all already in §7.4's spirit):
 
@@ -762,7 +762,7 @@ gap is not bookkeeping — the CAPTURE configuration of DESIGN-subtyping.md
 has a plain join (`cap_plain`), has NO leaf-valid one (`cap_no_gv`), and is
 REACHABLE from `ad_pat` as `P-Var` at an entry `x : ∀X.◇` (`cap_reachable`).
 ⭐ The mechanism: **consistency's ∀-rows push the rigid into `Θ`, refinement's
-push it into `Δ`, and `ad_refine_pskl__hole`'s fill is Δ-free BY RULE** — so
+push it into `Δ`, and `ad_refine_pskl__ghost`'s fill is Δ-free BY RULE** — so
 the ghost may be filled with the bound variable in the consistency and never
 in the refinement.
 
@@ -909,7 +909,7 @@ one context, so only the target is wrong:
 by a NESTED induction — outer on the consistency, inner (with `remember` on
 the target) on the refinement, in the four rows whose target does not pin the
 refinement's last rule.  Eight consistency rows are dead on the subject's
-shape: a `ptyp` painting is never `uskl_hole` / `uskl_topholeg` /
+shape: a `ptyp` painting is never `uskl_ghost` / `uskl_dot_univ_ghost` /
 `uskl_all_etag`.
 
 #### ⭐⭐ The three things that made it go through
@@ -917,19 +917,19 @@ shape: a `ptyp` painting is never `uskl_hole` / `uskl_topholeg` /
 1. **The two contexts must be DECOUPLED.**  With one shared Θ the `__all` row
    cannot be closed in either direction: the consistency premise lives at
    `(α~tvar),Θ` and the refinement premise at `Θ ⨟ α,Δ`, and moving the
-   CONSTRUCTED output back (Θ → Δ) is unsound — `ad_refine_syn__hole`'s fill
+   CONSTRUCTED output back (Θ → Δ) is unsound — `ad_refine_syn__ghost`'s fill
    is Δ-free BY RULE, while the transport's fills are `ptyp_to_pskl A` for the
    sub-annotations, which do mention α.  Decoupled, **both ∀ rows land exactly
    where their own rule puts the binder and no context move is needed
    anywhere**: `__all` recurses at `Θc' = (α~tvar),Θc`, `Θr' = Θr`,
-   `Δ' = α,Δ`; `__tophole_fill` at `Θc' = (α~tvar),Θc`, `Θr' = (α~tvar),Θr`,
+   `Δ' = α,Δ`; `__univ_ghost_fill` at `Θc' = (α~tvar),Θc`, `Θr' = (α~tvar),Θr`,
    `Δ' = Δ`.
-2. **The `__hole` row needs an OCCURRENCE lemma**
+2. **The `__ghost` row needs an OCCURRENCE lemma**
    (`ad_pat_consis_subject_ftv`, §4d): a free variable of a type-painting
    subject either survives into the consistency's target, or is a flexible, or
    escapes into a definition's body.  The rule wants its fill well-formed at
    EMPTY Δ — A must be Δ-free — while `Hvis` only gives "in Δ or a tvar of
-   Θr"; at `__hole` the target is a synthesised painting well-formed at empty
+   Θr"; at `__ghost` the target is a synthesised painting well-formed at empty
    Δ, so all three disjuncts land in `dom Θr` and a Δ-bound ∀ witness (fresh
    for Θr) is excluded.
 3. **The two flexible rows are sound because a definition is a MONOTYPE**,
@@ -945,8 +945,8 @@ shape: a `ptyp` painting is never `uskl_hole` / `uskl_topholeg` /
 | §4b | `a_wf_pskl_delta_to_ctx` — the Δ→Θ move for skeleton wf (safe direction; the refinement analogue is NOT sound) |
 | §4c | ⭐ `ad_refine_syn_rename_delta` — renaming a Δ-member; supplies `__all`'s cofinite family from its one witness |
 | §4d | ⭐ `ad_pat_consis_subject_ftv` — the occurrence lemma |
-| §4e | ⭐ `ad_refine_syn_rename_tvar` (+ `a_wf_pskl_rename_tvar`, `a_tvar_block`, `binds_swap_mid_tvar`, `a_wf_aenv_strip_prefix`) — renaming a rigid Θ-variable, in MID-CONTEXT form because the rule stacks binders on Θ; supplies `__tophole_fill`'s family |
-| §4f | `transport_hole_answer`, `ad_refine_syn_target_transport`, `a_consis_chk_annot_refine` |
+| §4e | ⭐ `ad_refine_syn_rename_tvar` (+ `a_wf_pskl_rename_tvar`, `a_tvar_block`, `binds_swap_mid_tvar`, `a_wf_aenv_strip_prefix`) — renaming a rigid Θ-variable, in MID-CONTEXT form because the rule stacks binders on Θ; supplies `__univ_ghost_fill`'s family |
+| §4f | `transport_ghost_answer`, `ad_refine_syn_target_transport`, `a_consis_chk_annot_refine` |
 
 ⚙ Read as consis-to-`≡ᵗ`, the same fact is what thm:sound-type-inference's
 `Freeze` case needs ("which further gives `Θ2 ⊢ B ≡ A`").  **Derive it from
@@ -1024,7 +1024,7 @@ revertible; the benchmark derivations discharge each at `Ξ = ·`):
 
 ⚙ The §12 kit that closed it: `a_wf_ptyp_of_wf_pskl` / `_of_scope_pskl`,
 `a_wf_exp_ftv_dom`, `btyp_of_erased_ptyp` (a ghost-free `bskl` IS a colouring
-— the sort bridge the SK layer did not need), `a_ty_mode_compat_{hole,arrow}_inv`
+— the sort bridge the SK layer did not need), `a_ty_mode_compat_{ghost,arrow}_inv`
 + `a_split_ty_shape`, `a_split_wf`, `a_guess_mono_wf`, `a_wf_aenv_decls_app`,
 `a_isub_strip_var_typ_mid`, `a_wf_ptyp_strip_mid`.
 
@@ -1084,7 +1084,7 @@ The CHECK bridge needs local closure because `btyp_to_bskl (btyp_var_b n)`
 and `pskl_to_bskl_inh (pskl_var_b n)` agree while a BOUND variable is not
 `is_ityp`.  It is supplied from the `Check` row's own consistency premise —
 hence `ad_pat_consis_lc_r` (a consistency's target is locally closed; the
-only non-immediate row is `__hole`, whose fill carries the skeleton wf) and
+only non-immediate row is `__ghost`, whose fill carries the skeleton wf) and
 `lc_btyp_of_lc_bskl_erase` (erasure to the skeleton reflects lc, via
 degree).
 
@@ -1106,12 +1106,12 @@ its goal from its own premises, and `App` recurses at the SAME context.
       Θ1 ⨟ Δ ⊢ᵣᵃᵈ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A))
 
 Filling a ghost with a fresh flexible IS a refinement step; a universal
-ghost is DROPPED, so `⫯.P` is `__tophole_remove`, not `__tophole_keep`.
+ghost is DROPPED, so `⫯.P` is `__univ_ghost_remove`, not `__univ_ghost_keep`.
 ⚙ SIZE induction, exactly like `a_guess_mono_consis_size` (algo/prop_basic.v):
 the source is exists-fresh, the target cofinite, so the ∀ row turns ONE
 guess instance into a family via `a_guess_mono_open_at`.  ⭐ The ∀ row puts
 its witness in **Δ**, not Θ — the §7.3 decoupling — and that is sound here
-for the reason it was unsound there: `__hole`'s fill is Δ-free BY RULE, and
+for the reason it was unsound there: `__ghost`'s fill is Δ-free BY RULE, and
 guess^TY's fills are the generated flexibles, which live in Θ1.
 
 ⭐ **§7 removes an item this hand-off previously listed.**  The two ∀-peeling

@@ -73,8 +73,8 @@ Inductive e_split : supply -> aenv -> pskl -> pskl -> pskl -> supply -> aenv
                     -> Prop :=
 | e_split__arrow : forall S Θ0 P Q,
     {{ S ↝ S ⊨ Θ0 ⊲ (pskl_arrow P Q) ▹ P ⇢ Q ⊣ Θ0 }}e
-| e_split__hole : forall S Θ0,
-    {{ S ↝ S ⊨ Θ0 ⊲ pskl_hole ▹ pskl_hole ⇢ pskl_hole ⊣ Θ0 }}e
+| e_split__ghost : forall S Θ0,
+    {{ S ↝ S ⊨ Θ0 ⊲ pskl_ghost ▹ pskl_ghost ⇢ pskl_ghost ⊣ Θ0 }}e
 | e_split__flex : forall S0 S1 Θ0 Θ1 α β α1 Q,          (* split[α̂] = β̂→α1̂ *)
     (* ⭐ Δ-supply ×2.  [fresco/algo]'s two premises state the invented pair
        fresh against [ftvar_in_aenv Θ0] — INPUT-only, so not part of TODO
@@ -120,8 +120,8 @@ Inductive e_pat : supply -> mode -> aenv -> pskl -> exp -> pskl -> supply
        (ptyp_to_pskl A) ⩽ Q ⊣ Θ1 }}e ->
     {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ m ; P0 ] (exp_anno e A) ⦂ Q ⊣ Θ1 }}e
 | e_pat__freeze : forall S0 S1 Θ0 e Q Θ1,                     (* AP-Freeze *)
-    {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_ti ; pskl_hole ] e ⦂ Q ⊣ Θ1 }}e ->
-    {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] (exp_freeze e) ⦂ Q ⊣ Θ1 }}e
+    {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_ti ; pskl_ghost ] e ⦂ Q ⊣ Θ1 }}e ->
+    {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_tc ; pskl_ghost ] (exp_freeze e) ⦂ Q ⊣ Θ1 }}e
 | e_pat__abs : forall x S0 S1 S2 m Θ0 Θ1 Θ2 P0 P Q0 e Q Ξ,    (* AP-Abs *)
     (* Δ-drop ×2 and Δ-supply, in one line — see the header. *)
     m <> mode_tc ->
@@ -147,21 +147,21 @@ Inductive e_pat : supply -> mode -> aenv -> pskl -> exp -> pskl -> supply
 | e_pat__abs_check : forall x S0 S1 Θ0 Θ1 e Q Ξ,           (* AP-AbsCheck *)
     a_suffix Ξ ->
     x `notin` S0 ->
-    {{ (add x S0) ↝ S1 ⊨ ((x ~ abind_var_skl pskl_hole) ++ Θ0)
-       ⊢ˢ[ mode_tc ; pskl_hole ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q
-       ⊣ (Ξ ++ (x ~ abind_var_skl pskl_hole) ++ Θ1) }}e ->
-    {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] (exp_abs e)
-       ⦂ (pskl_tophole (pskl_arrow pskl_hole Q)) ⊣ (Ξ ++ Θ1) }}e
+    {{ (add x S0) ↝ S1 ⊨ ((x ~ abind_var_skl pskl_ghost) ++ Θ0)
+       ⊢ˢ[ mode_tc ; pskl_ghost ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q
+       ⊣ (Ξ ++ (x ~ abind_var_skl pskl_ghost) ++ Θ1) }}e ->
+    {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_tc ; pskl_ghost ] (exp_abs e)
+       ⦂ (pskl_univ_ghost (pskl_arrow pskl_ghost Q)) ⊣ (Ξ ++ Θ1) }}e
 | e_pat__abs_anno_check : forall x S0 S1 Θ0 Θ1 A e Q Ξ, (* AP-AbsAnnoCheck *)
     a_suffix Ξ ->
     x `notin` S0 ->
     {{ (add x S0) ↝ S1 ⊨ ((x ~ abind_var_typ A) ++ Θ0)
-       ⊢ˢ[ mode_tc ; pskl_hole ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q
+       ⊢ˢ[ mode_tc ; pskl_ghost ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q
        ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ1) }}e ->
-    {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] (exp_abs_anno A e)
-       ⦂ (pskl_tophole (pskl_arrow (ptyp_to_pskl A) Q)) ⊣ (Ξ ++ Θ1) }}e
+    {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_tc ; pskl_ghost ] (exp_abs_anno A e)
+       ⦂ (pskl_univ_ghost (pskl_arrow (ptyp_to_pskl A) Q)) ⊣ (Ξ ++ Θ1) }}e
 | e_pat__app : forall S0 S1 S2 m Θ0 Θ1 Θ2 P0 Q0 P Q e1 e2,     (* AP-App *)
-    {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] e2 ⦂ P0 ⊣ Θ1 }}e ->
+    {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_tc ; pskl_ghost ] e2 ⦂ P0 ⊣ Θ1 }}e ->
     {{ S1 ↝ S2 ⊨ Θ1 ⊢ˢ[ (mode_fn m) ; (pskl_arrow P0 Q0) ] e1
        ⦂ (pskl_arrow P Q) ⊣ Θ2 }}e ->
     {{ S0 ↝ S2 ⊨ Θ0 ⊢ˢ[ m ; Q0 ] (exp_app e1 e2) ⦂ Q ⊣ Θ2 }}e

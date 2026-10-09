@@ -5,7 +5,7 @@
     That is only half of what completeness needs: the other half is that the
     guard DOES hold on everything a run hands to the next test.  A runner
     threads its own output into the next call's precondition, so a test that
-    the relation cannot guarantee would be a hole in the argument no amount
+    the relation cannot guarantee would be a ghost in the argument no amount
     of decider completeness could fill.
 
     §1  ⭐ def-payload discipline through the SUBTYPING walk — the missing
@@ -198,11 +198,11 @@ Proof.
     repeat match goal with
     | H : lc_pskl (pskl_arrow _ _) |- _ =>
         destruct (lc_pskl_arrow_inv H); clear H
-    | H : lc_pskl (pskl_tophole _) |- _ =>
-        pose proof (lc_pskl_tophole_inv H); clear H
+    | H : lc_pskl (pskl_univ_ghost _) |- _ =>
+        pose proof (lc_pskl_univ_ghost_inv H); clear H
     end;
     eauto using lc_pskl_all_syn_close, lc_pskl_all_syn_inv,
-      lc_pskl_var_f, lc_pskl_unit, lc_pskl_arrow, lc_pskl_tophole.
+      lc_pskl_var_f, lc_pskl_unit, lc_pskl_arrow, lc_pskl_univ_ghost.
 Qed.
 
 (** ⚠️ [aenv_defs_mono Θ0] is not decoration here: [Flex-Assign] substitutes
@@ -236,8 +236,8 @@ Proof.
     repeat match goal with
     | H : lc_pskl (pskl_arrow _ _) |- _ =>
         destruct (lc_pskl_arrow_inv H); clear H
-    | H : lc_pskl (pskl_tophole _) |- _ =>
-        pose proof (lc_pskl_tophole_inv H); clear H
+    | H : lc_pskl (pskl_univ_ghost _) |- _ =>
+        pose proof (lc_pskl_univ_ghost_inv H); clear H
     end;
     (* ⭐ Arrow's first premise is a consistency run, and it owes the second
        premise BOTH facts: its output skeleton is lc (§2) and its output
@@ -271,7 +271,7 @@ Proof.
         destruct (a == b); subst
     end;
     eauto 12 using lc_pskl_var_f, lc_pskl_unit, lc_pskl_arrow,
-      lc_pskl_tophole, lc_pskl_open_graft, lc_pskl_all_syn_inv,
+      lc_pskl_univ_ghost, lc_pskl_open_graft, lc_pskl_all_syn_inv,
       subst_pskl_in_pskl_lc_pskl, mono_ptyp_to_pskl_lc,
       Forall_app_intro, Forall_cons, Forall_nil,
       entry_def_mono_flex, entry_def_mono_tvar, entry_def_mono_def,
@@ -695,27 +695,27 @@ Proof.
     drop_binder HΘout.
   - (* AP-AbsCheck *)
     inversion He; subst.
-    destruct (IHe_pat (lc_pskl_hole) ltac:(open_exp_lc x)
+    destruct (IHe_pat (lc_pskl_ghost) ltac:(open_exp_lc x)
                 ltac:(unfold lc_aenv in *; simpl;
-                      constructor; [ simpl; exact lc_pskl_hole | exact HΘ ])
+                      constructor; [ simpl; exact lc_pskl_ghost | exact HΘ ])
                 ltac:(simpl; constructor; [ exact I | exact Hdm ]))
       as [HQlc HΘout].
-    split; [ apply lc_pskl_tophole; apply lc_pskl_arrow;
-             [ exact lc_pskl_hole | exact HQlc ] | ].
+    split; [ apply lc_pskl_univ_ghost; apply lc_pskl_arrow;
+             [ exact lc_pskl_ghost | exact HQlc ] | ].
     drop_binder HΘout.
   - (* AP-AbsAnnoCheck *)
     inversion He; subst.
-    destruct (IHe_pat (lc_pskl_hole) ltac:(open_exp_lc x)
+    destruct (IHe_pat (lc_pskl_ghost) ltac:(open_exp_lc x)
                 ltac:(unfold lc_aenv in *; simpl;
                       constructor; [ simpl; assumption | exact HΘ ])
                 ltac:(simpl; constructor; [ exact I | exact Hdm ]))
       as [HQlc HΘout].
-    split; [ apply lc_pskl_tophole; apply lc_pskl_arrow;
+    split; [ apply lc_pskl_univ_ghost; apply lc_pskl_arrow;
              [ apply ptyp_to_pskl_lc; assumption | exact HQlc ] | ].
     drop_binder HΘout.
   - (* AP-App *)
     inversion He; subst.
-    destruct (IHe_pat1 lc_pskl_hole ltac:(assumption) HΘ Hdm)
+    destruct (IHe_pat1 lc_pskl_ghost ltac:(assumption) HΘ Hdm)
       as [HP0lc HΘ1].
     pose proof (e_pat_defs_mono H Hdm) as Hdm1.
     destruct (IHe_pat2 ltac:(apply lc_pskl_arrow; assumption)
@@ -784,7 +784,7 @@ Proof.
   - (* AT-Freeze *)
     inversion He; subst. paint_lc.
     destruct H0 as [Qm Hc].
-    destruct (IHe_typing lc_pskl_hole ltac:(assumption) HΘ Hdm)
+    destruct (IHe_typing lc_pskl_ghost ltac:(assumption) HΘ Hdm)
       as [HBlc HΘ1].
     pose proof (e_typing_defs_mono H Hdm) as Hdm1.
     split; [ assumption | eapply e_consis_env_lc; eassumption ].
@@ -870,8 +870,8 @@ Proof.
     split; [ apply lc_ptyp_arrow; assumption | drop_binder HΘout ].
   - (* AT-App *)
     inversion He; subst.
-    pose proof (e_pat_lc H lc_pskl_hole ltac:(assumption) HΘ Hdm) as HPlc.
-    pose proof (e_pat_env_lc H lc_pskl_hole ltac:(assumption) HΘ Hdm) as HΘ1.
+    pose proof (e_pat_lc H lc_pskl_ghost ltac:(assumption) HΘ Hdm) as HPlc.
+    pose proof (e_pat_env_lc H lc_pskl_ghost ltac:(assumption) HΘ Hdm) as HΘ1.
     pose proof (e_pat_defs_mono H Hdm) as Hdm1.
     destruct (IHe_typing1 ltac:(apply lc_pskl_arrow; assumption)
                 ltac:(assumption) HΘ1 Hdm1) as [HABlc HΘ2].

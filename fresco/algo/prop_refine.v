@@ -70,7 +70,7 @@ Proof.
 Qed.
 
 (** The LHS of a coloured refinement is an inherited skeleton: the rows
-    that do not carry [is_iskl] as a premise have a unit / variable / hole
+    that do not carry [is_iskl] as a premise have a unit / variable / ghost
     LHS, or ([__flex_r]) inherit it from their sub-derivation. *)
 Lemma ad_refine_syn_is_iskl : forall Θ Δ Q Q',
   {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
@@ -102,29 +102,29 @@ Proof.
   eapply ad_refine_syn_is_iskl; eauto.
 Qed.
 
-Lemma ad_refine_syn_tophole_remove_intro : forall Θ Δ Q Q',
+Lemma ad_refine_syn_univ_ghost_remove_intro : forall Θ Δ Q Q',
   {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
-  {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ Q' }}ad.
+  {{ Θ ⨟ Δ ⊢ᵣ (bskl_univ_ghost Q) ⊳ Q' }}ad.
 Proof.
-  intros * H. apply ad_refine_syn__tophole_remove; auto.
+  intros * H. apply ad_refine_syn__univ_ghost_remove; auto.
   constructor; eapply ad_refine_syn_is_iskl; eassumption.
 Qed.
 
-Lemma ad_refine_syn_tophole_fill_intro : forall L Θ Δ Q Q',
+Lemma ad_refine_syn_univ_ghost_fill_intro : forall L Θ Δ Q Q',
   (forall α, α `notin` L ->
      {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ᵣ
-       (bskl_tophole Q) ⊳ (open_bskl_wrt_bskl Q' (bskl_var_f α)) }}ad) ->
-  {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_all_syn Q') }}ad.
+       (bskl_univ_ghost Q) ⊳ (open_bskl_wrt_bskl Q' (bskl_var_f α)) }}ad) ->
+  {{ Θ ⨟ Δ ⊢ᵣ (bskl_univ_ghost Q) ⊳ (bskl_all_syn Q') }}ad.
 Proof.
-  intros * H. apply ad_refine_syn__tophole_fill with (L := L); auto.
+  intros * H. apply ad_refine_syn__univ_ghost_fill with (L := L); auto.
   pick fresh α for L. eapply ad_refine_syn_is_iskl; eauto.
 Qed.
 
-Lemma ad_refine_syn_tophole_keep_intro : forall Θ Δ Q Q',
+Lemma ad_refine_syn_univ_ghost_keep_intro : forall Θ Δ Q Q',
   {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
-  {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_tophole Q') }}ad.
+  {{ Θ ⨟ Δ ⊢ᵣ (bskl_univ_ghost Q) ⊳ (bskl_univ_ghost Q') }}ad.
 Proof.
-  intros * H. apply ad_refine_syn__tophole_keep; auto.
+  intros * H. apply ad_refine_syn__univ_ghost_keep; auto.
   constructor; eapply ad_refine_syn_is_iskl; eassumption.
 Qed.
 
@@ -148,15 +148,15 @@ Proof.
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
       [ unfold binds; left; reflexivity
       | unfold binds; right; apply Hmon; auto ].
-  - apply ad_refine_syn__hole; assumption.
-  - apply ad_refine_syn__tophole_remove; auto.
-  - eapply ad_refine_syn__tophole_fill with (L := L); [ assumption | ].
+  - apply ad_refine_syn__ghost; assumption.
+  - apply ad_refine_syn__univ_ghost_remove; auto.
+  - eapply ad_refine_syn__univ_ghost_fill with (L := L); [ assumption | ].
     intros α Hα. apply H1; auto.
     intros x b Hb.
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
       [ unfold binds; left; reflexivity
       | unfold binds; right; apply Hmon; auto ].
-  - apply ad_refine_syn__tophole_keep; auto.
+  - apply ad_refine_syn__univ_ghost_keep; auto.
   - eapply ad_refine_syn__flex_l; eauto.
   - eapply ad_refine_syn__flex_r; eauto.
 Qed.
@@ -177,15 +177,15 @@ Proof.
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
       [ unfold binds; left; reflexivity
       | unfold binds; right; apply Hmon; auto ].
-  - apply ad_refine_pskl__hole; assumption.
-  - apply ad_refine_pskl__tophole_remove; auto.
-  - eapply ad_refine_pskl__tophole_fill with (L := L).
+  - apply ad_refine_pskl__ghost; assumption.
+  - apply ad_refine_pskl__univ_ghost_remove; auto.
+  - eapply ad_refine_pskl__univ_ghost_fill with (L := L).
     intros α Hα. apply H0; auto.
     intros x b Hb.
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
       [ unfold binds; left; reflexivity
       | unfold binds; right; apply Hmon; auto ].
-  - apply ad_refine_pskl__tophole_keep; auto.
+  - apply ad_refine_pskl__univ_ghost_keep; auto.
   - eapply ad_refine_pskl__flex_l; eauto.
   - eapply ad_refine_pskl__flex_r; eauto.
 Qed.
@@ -195,7 +195,7 @@ Qed.
 (* ===================================================================== *)
 
 (** Refinement survives SHRINKING the ∀-scope set: [Δ] is only read by the
-    [__hole] row, as [Δ ∩ ftv(fill) = ∅].  Growing [Δ] is not sound in
+    [__ghost] row, as [Δ ∩ ftv(fill) = ∅].  Growing [Δ] is not sound in
     general — the fill may mention the added variable. *)
 Lemma ad_refine_syn_delta_mono : forall Θ Δ0 Q Q',
   {{ Θ ⨟ Δ0 ⊢ᵣ Q ⊳ Q' }}ad ->
@@ -206,7 +206,7 @@ Proof.
     eauto using ad_refine_syn.
   - apply ad_refine_syn__all with (L := L); [ assumption | ].
     intros α Hα. apply H1; auto. fsetdec.
-  - apply ad_refine_syn__hole. fsetdec.
+  - apply ad_refine_syn__ghost. fsetdec.
 Qed.
 
 (** A refinement whose LEFT side is ghost-free never uses the ◇ rule, the
@@ -256,9 +256,9 @@ Proof.
         as Hup; simpl in Hup. clear - Hs Hup Hβ; fsetdec.
     + pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q' (bskl_var_f β))
         as Hup; simpl in Hup. clear - Ht Hup Hβ; fsetdec.
-  - apply ad_refine_syn__hole; assumption.
-  - apply ad_refine_syn_tophole_remove_intro; eauto.
-  - apply ad_refine_syn_tophole_fill_intro with (L := L `union` S). intros β Hβ.
+  - apply ad_refine_syn__ghost; assumption.
+  - apply ad_refine_syn_univ_ghost_remove_intro; eauto.
+  - apply ad_refine_syn_univ_ghost_fill_intro with (L := L `union` S). intros β Hβ.
     apply (H1 β ltac:(clear - Hβ; fsetdec) S); [ | simpl; exact Hs | ].
     + intros γ τ Hb Hγ. apply binds_app_1 in Hb as [Hb | Hb];
         [ apply binds_one_iff in Hb as [_ Hb]; discriminate | ].
@@ -266,7 +266,7 @@ Proof.
       split; [ apply binds_app_3; exact Hb' | exact Hd ].
     + pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q' (bskl_var_f β))
         as Hup; simpl in Hup. clear - Ht Hup Hβ; fsetdec.
-  - apply ad_refine_syn_tophole_keep_intro; eauto.
+  - apply ad_refine_syn_univ_ghost_keep_intro; eauto.
   - assert (Hα : α `notin` S)
       by (intros Hin; assert (Hx : α `in` S ∩ singleton α)
             by (clear - Hin; fsetdec);
@@ -294,11 +294,11 @@ Proof.
     eauto using ad_refine_pskl.
   - apply ad_refine_pskl__all with (L := L).
     intros α Hα. apply H0; auto. fsetdec.
-  - apply ad_refine_pskl__hole. fsetdec.
+  - apply ad_refine_pskl__ghost. fsetdec.
 Qed.
 
 (** Reflexivity needs no scoping at all: the reflexive derivation fills
-    every [◇] with [◇] (so [__hole]'s side condition is vacuous) and the
+    every [◇] with [◇] (so [__ghost]'s side condition is vacuous) and the
     remaining rows carry no premise beyond the LHS being inherited, which
     an inherited painting is.  Hence the general form, at an arbitrary
     [Θ'] and [Δ']; the wf hypothesis only supplies local closure, so the
@@ -320,10 +320,10 @@ Proof.
   - apply ad_refine_syn__all with (L := {}); [ exact Hi | ].
     intros α _.
     repeat rewrite <- pskl_to_bskl_inh_open. auto.
-  - replace (pskl_to_bskl_inh pskl_hole)
-      with (pskl_to_bskl_syn pskl_hole) at 2 by reflexivity.
-    apply ad_refine_syn__hole. simpl. fsetdec.
-  - apply ad_refine_syn__tophole_keep; auto.
+  - replace (pskl_to_bskl_inh pskl_ghost)
+      with (pskl_to_bskl_syn pskl_ghost) at 2 by reflexivity.
+    apply ad_refine_syn__ghost. simpl. fsetdec.
+  - apply ad_refine_syn__univ_ghost_keep; auto.
 Qed.
 
 Lemma ad_refine_syn_refl_inh : forall Θ Δ P,
@@ -340,8 +340,8 @@ Proof.
   - apply ad_refine_pskl__var.
   - apply ad_refine_pskl__arrow; auto.
   - apply ad_refine_pskl__all with (L := L). auto.
-  - apply ad_refine_pskl__hole. simpl. fsetdec.
-  - apply ad_refine_pskl__tophole_keep. auto.
+  - apply ad_refine_pskl__ghost. simpl. fsetdec.
+  - apply ad_refine_pskl__univ_ghost_keep. auto.
 Qed.
 
 Lemma ad_refine_pskl_refl : forall Θ Δ P,
@@ -417,13 +417,13 @@ Proof.
     + apply singleton_1 in HYX; subst.
       left. unfold binds; left; reflexivity.
     + apply a_binds_tvar_weaken_cons; auto.
-  - (* hole ↦ □ : the RHS is the inherited painting of □ *)
-    replace bskl_hole with (pskl_to_bskl_inh pskl_hole) by reflexivity.
-    apply ad_pat_consis__hole; [ fsetdec | apply a_wf_pskl__hole ].
-  - (* tophole ↦ ∀◇ *)
-    apply ad_pat_consis__tophole. auto.
-  - (* holeg ↦ □ *)
+  - (* ghost ↦ □ : the RHS is the inherited painting of □ *)
+    replace bskl_ghost with (pskl_to_bskl_inh pskl_ghost) by reflexivity.
+    apply ad_pat_consis__ghost; [ fsetdec | apply a_wf_pskl__ghost ].
+  - (* univ_ghost ↦ ∀◇ *)
+    apply ad_pat_consis__univ_ghost. auto.
+  - (* dot_ghost ↦ □ *)
     apply ad_pat_consis__ghostg. fsetdec.
-  - (* topholeg ↦ ∀◈ *)
-    apply ad_pat_consis__topholeg. auto.
+  - (* dot_univ_ghost ↦ ∀◈ *)
+    apply ad_pat_consis__dot_univ_ghost. auto.
 Qed.

@@ -16,7 +16,7 @@ removed developments).
 > | docs | `HANDOFF-typ-all-plain-refactor.md`, `PROPOSAL-ln-idiomatic-tags.md`, `DESIGN-safe-pat-witness.md` banner-marked SUPERSEDED / NOT ADOPTED / STALE |
 > | §1.4 | `prop_completeness_typing.v`'s pre-closure header rewritten (it advertised a phantom `a_typing_rename_tm` and an "⛔ Still owed" list for a closed theorem) |
 > | §7.1 | inert `single e Xpt :: subst_typ_in` line removed from `language.ott` |
-> | §5.2 | dead `pskl_to_tskl` + 2 lemmas deleted (RESTART NOTE left) |
+> | §5.2 | dead `pskl_to_dskl` + 2 lemmas deleted (RESTART NOTE left) |
 > | §5.5 | dead `guarded_ptyp` deleted; **and its "3 remaining uses" turned out to be a verbatim duplicate lemma** — see correction (a) |
 > | §6 | `fn_arrow_shape*` split out of the rigidity file |
 > | §1.2 | the K6 block (**ten** items, not nine) moved into `prop_swap.v` as §6 |
@@ -286,7 +286,7 @@ removed developments).
 > | `ftvar_in_pskl (ptyp_to_pskl A) [=] ftvar_in_ptyp A` | **4** | `ftvar_in_pskl_ptyp_to_pskl`, `ftvar_in_ptyp_to_pskl`, `ftvar_ptyp_to_pskl`, `ftvar_in_pskl_ptyp_to_pskl_local` |
 > | `ftvar_in_btyp (ptyp_to_btyp_syn A) = ftvar_in_ptyp A` | **3** | twice as `ftvar_ptyp_to_btyp_syn` (once weakened to `[<=]`), once as `ftvar_paint_btyp_syn_eq` |
 > | `ftvar_in_ptyp (btyp_to_ptyp B) = ftvar_in_btyp B` | **3** | `ftvar_btyp_to_ptyp` ×2 (`=` and `[<=]`), `ftvar_in_ptyp_btyp_to_ptyp` (`[=]`) |
-> | `mono_ptyp_to_pskl_lc` / `mono_ptyp_lc` / `ptyp_to_pskl_lc` / `is_tskl_lc` | 3/3/2/2 | one name each |
+> | `mono_ptyp_to_pskl_lc` / `mono_ptyp_lc` / `ptyp_to_pskl_lc` / `is_dskl_lc` | 3/3/2/2 | one name each |
 >
 > ⚠️ **The tree contained written proof that this is a correctness hazard.**
 > `decl/prop_syntax_directed.v`'s `ftvar_paint_btyp_syn_eq` existed for no
@@ -733,9 +733,9 @@ The lemma families are duplicated to match.  **25 names appear in both an
 
 ```
 arrow_transport  flex_mono_transport  fold_flex  forall_l_tagged_transport
-forall_l_untagged_transport  ghost_transport  ghostg_transport  hole_intro
+forall_l_untagged_transport  ghost_transport  ghostg_transport  ghost_intro
 psi_cong  refl_transport  ughost_l_transport  ughost_lg_transport
-ughost_r_transport  wrap_tophole
+ughost_r_transport  wrap_univ_ghost
 ```
 
 `_g`-only: 10 (`of`, `ti_consis`, `concrete_target`, `ftag_sub`, …).
@@ -946,7 +946,7 @@ from `ptyp` to `uskl`" finds two of the three answers in the wrong file.
 
 ### 5.2 Two conversions are dead
 
-- **`pskl_to_tskl`** (`coercions.v:295`) — **zero** uses outside `coercions.v`,
+- **`pskl_to_dskl`** (`coercions.v:295`) — **zero** uses outside `coercions.v`,
   yet it carries two proved lemmas (`_open_rec`, `_open`).  Its docstring says
   it is "used to instantiate a poly source ∀ at the argument pattern"; whatever
   used it is gone.  (A) Delete, or say in the comment what it is being kept for.
@@ -1002,7 +1002,7 @@ predicates, `mono_ptyp`, `nonghost_pskl`, `is_value`, and 2 `*_ghost_free`
   has nothing to do with the predicate.  (A) Delete `guarded_ptyp`, and rename
   that lemma to `ptyp_to_uskl_syn_guarded` — the current name reads as a fact
   *about* `guarded_ptyp`, which is exactly backwards.
-- `pskl_no_hole` is defined **twice** and neither copy is in `def_extra.v` where
+- `pskl_no_ghost` is defined **twice** and neither copy is in `def_extra.v` where
   the other ghost predicates live — see §8.1.
 
 ---
@@ -1116,10 +1116,10 @@ find fresco -name '*.v' ! -name 'prop_ln.v' ! -name 'def_ott.v' -exec \
 Two are **duplicated definitions**, not just lemmas — the more serious case,
 because lemmas proved about one copy do not `apply` to the other:
 
-- **`pskl_no_hole`** — the identical 9-line `Fixpoint` at
+- **`pskl_no_ghost`** — the identical 9-line `Fixpoint` at
   `algo/prop_completeness_consis.v:1047` **and**
   `algo/sub/look/prop_kit.v:6381`, each with its own satellite lemmas
-  (`ptyp_to_pskl_no_hole` is duplicated too).  `prop_kit.v` **imports**
+  (`ptyp_to_pskl_no_ghost` is duplicated too).  `prop_kit.v` **imports**
   `prop_completeness_consis.v`, so the second shadows the first.
 - **`msubst_lc`** — `deco_algo/prop_decorate_sub.v:173` and
   `algo/prop_normal.v:143`.
@@ -1137,7 +1137,7 @@ in its own header:
 
 My scan finds 28 rather than 20, and the header already names the five divergent
 ones (`msubst_pskl_subst_var`, `a_wf_pskl_all_of_one`,
-`pskl_to_bskl_inh_tophole_inv`, `binds_weaken_mid`, `a_non_flex_rename`).
+`pskl_to_bskl_inh_univ_ghost_inv`, `binds_weaken_mid`, `a_non_flex_rename`).
 
 **Recommendation (B, highest value in this report).**  Work the 28.  For each:
 identical → delete the later copy and import; alpha-variant → keep the stronger
@@ -1215,7 +1215,7 @@ serves — that is the information needed to eventually break it up.
 **Phase 1 — free (grade A, no proof risk, ~half a day).**
 1. §8.4 litter + `make clean` + mark 3 stale docs SUPERSEDED.
 2. §1.4 delete the `a_typing_rename_tm` phantom from the header.
-3. §5.2 delete `pskl_to_tskl` (+2 lemmas); check `guarded_ptyp`'s 3 uses.
+3. §5.2 delete `pskl_to_dskl` (+2 lemmas); check `guarded_ptyp`'s 3 uses.
 4. §7.1 delete the inert `subst_typ_in` ott line.
 5. §6 move `fn_arrow_shape*` and `a_assign_flex_tvar` out of `prop_ty_core.v`.
 6. §1.2 move the nine K6 swap lemmas into `prop_swap.v`.

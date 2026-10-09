@@ -175,7 +175,7 @@ definitions `τ`.
 `Arrow` (C7a) on the left component: `Θ₀ ⊢[◇→unit] α̂ ≈ ? ⊣ Θ₁`.  The subject is
 a flexible variable and the input is not, so `FlexL` fires → `assign(Θ₀; ·; α̂;
 ◇→unit)`.  The head *is* `α̂`, so `Assign-SolveM` fires with
-`guess^TY(◇→unit) = (β̂ ; β̂→unit)` (`a_guess_mono__hole`, `def_extra.v:223`), and
+`guess^TY(◇→unit) = (β̂ ; β̂→unit)` (`a_guess_mono__ghost`, `def_extra.v:223`), and
 
     Θ₁ = (α̂ ≔ β̂ → unit) , (β̂ : flex_mono)      W(Θ₁) = (1 + 3) + 1 = 5
 
@@ -306,7 +306,7 @@ by the second bullet of §4.1, and opening with a free variable preserves
 ## 5. PER-EDGE VERIFICATION — every one of the 21 edges
 
 `⟦X⟧ := size (⇓[Θ] (κ X))`.  `⟦·⟧` is a homomorphism for `arrow`, `all_syn`,
-`tophole`, `hole` (it is a substitution followed by a substitution), and
+`univ_ghost`, `ghost` (it is a substitution followed by a substitution), and
 `⟦P^α⟧ = ⟦P⟧` for a rigid `α` (opening preserves size).
 
 ### 5.1 Consistency-internal edges — `V` strictly decreases (`n`, `t`, `k` irrelevant)

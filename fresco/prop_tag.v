@@ -37,7 +37,7 @@
 
     ⚙ RESTART NOTE (2026-08-11) — §2's [uskl] HALF WAS DELETED
     ([swap_tag_in_uskl] and its nine transport lemmas: [_open_rec] / [_open] /
-    [_open_var], [ftvar_], [lc_], [ftag_], [_fresh_eq], [is_tskl_swap_tag],
+    [_open_var], [ftvar_], [lc_], [ftag_], [_fresh_eq], [is_dskl_swap_tag],
     [guarded_uskl_swap_tag]).  Its only consumer was
     [d_pat_sub_swap_tag] (decl/prop_tag_swap.v), which was itself
     consumer-less symmetry: the CST repair the whole file exists for runs at
@@ -305,11 +305,11 @@ Qed.
 
 (** ** The tagged-sort predicates transport. *)
 
-Lemma is_ttyp_swap_tag : forall ε1 ε2 C,
-  is_ttyp C -> is_ttyp (swap_tag_in_utyp ε1 ε2 C).
+Lemma is_dtyp_swap_tag : forall ε1 ε2 C,
+  is_dtyp C -> is_dtyp (swap_tag_in_utyp ε1 ε2 C).
 Proof.
   intros ε1 ε2 C H; induction H; simpl; try solve [ constructor; auto ].
-  apply is_ttyp__all_tag with (L := L). intros α Hα.
+  apply is_dtyp__all_tag with (L := L). intros α Hα.
   rewrite <- swap_tag_in_utyp_open_var. auto.
 Qed.
 

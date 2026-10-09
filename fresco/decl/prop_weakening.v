@@ -116,13 +116,13 @@ Proof.
   - apply d_refine_syn__all with (L := L `union` dom (Γ1 ++ Γ3)); [ assumption | ].
     intros α Hα.
     eapply (H1 α ltac:(solve_notin_auto) ((α ~ dbind_tvar) ++ Γ1) Γ3). simpl_env. reflexivity.
-  - apply d_refine_syn__hole. assumption.
-  - apply d_refine_syn__tophole_remove; auto.
-  - (* [tophole_fill] now PREPENDS the bound var to [Γ]; weaken at [α::Γ1]. *)
-    apply d_refine_syn__tophole_fill with (L := L `union` dom (Γ1 ++ Γ3)); [ assumption | ].
+  - apply d_refine_syn__ghost. assumption.
+  - apply d_refine_syn__univ_ghost_remove; auto.
+  - (* [univ_ghost_fill] now PREPENDS the bound var to [Γ]; weaken at [α::Γ1]. *)
+    apply d_refine_syn__univ_ghost_fill with (L := L `union` dom (Γ1 ++ Γ3)); [ assumption | ].
     intros α Hα.
     eapply (H1 α ltac:(solve_notin_auto) ((α ~ dbind_tvar) ++ Γ1) Γ3). simpl_env. reflexivity.
-  - apply d_refine_syn__tophole_keep; auto.
+  - apply d_refine_syn__univ_ghost_keep; auto.
 Qed.
 
 (** ⭐ The UNCOLOURED twin.  Same eight rows, same proof — the colours the
@@ -141,13 +141,13 @@ Proof.
   - apply d_refine_pskl__arrow; auto.
   - apply d_refine_pskl__all with (L := L `union` dom (Γ1 ++ Γ3)). intros α Hα.
     eapply (H0 α ltac:(solve_notin_auto) ((α ~ dbind_tvar) ++ Γ1) Γ3). simpl_env. reflexivity.
-  - apply d_refine_pskl__hole. assumption.
-  - apply d_refine_pskl__tophole_remove; auto.
-  - apply d_refine_pskl__tophole_fill with (L := L `union` dom (Γ1 ++ Γ3)).
+  - apply d_refine_pskl__ghost. assumption.
+  - apply d_refine_pskl__univ_ghost_remove; auto.
+  - apply d_refine_pskl__univ_ghost_fill with (L := L `union` dom (Γ1 ++ Γ3)).
     intros α Hα.
     eapply (H0 α ltac:(solve_notin_auto) ((α ~ dbind_tvar) ++ Γ1) Γ3).
     simpl_env. reflexivity.
-  - apply d_refine_pskl__tophole_keep. auto.
+  - apply d_refine_pskl__univ_ghost_keep. auto.
 Qed.
 
 Lemma d_pat_consis_weakening : forall Γ1 Γ2 Γ3 Δ R Q,
@@ -177,13 +177,13 @@ Proof.
     intros α2 Hα2. rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
   - apply d_pat_consis__ghostg. assumption.
-  - apply d_pat_consis__topholeg. eapply IHd_pat_consis; reflexivity.
-  - apply d_pat_consis__hole; [ assumption | apply d_wf_pskl_weakening; assumption ].
-  - apply d_pat_consis__tophole. eapply IHd_pat_consis; reflexivity.
-  - apply d_pat_consis__tophole_inh with (L := L `union` dom (Γ1 ++ Γ3)).
+  - apply d_pat_consis__dot_univ_ghost. eapply IHd_pat_consis; reflexivity.
+  - apply d_pat_consis__ghost; [ assumption | apply d_wf_pskl_weakening; assumption ].
+  - apply d_pat_consis__univ_ghost. eapply IHd_pat_consis; reflexivity.
+  - apply d_pat_consis__univ_ghost_inh with (L := L `union` dom (Γ1 ++ Γ3)).
     intros α2 Hα2. rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
-  - apply d_pat_consis__tophole_drop. eapply IHd_pat_consis; reflexivity.
+  - apply d_pat_consis__univ_ghost_drop. eapply IHd_pat_consis; reflexivity.
 Qed.
 
 (** The JOIN weakens because both of its halves do. *)
@@ -275,7 +275,7 @@ Proof.
   - eapply d_pat__app;
       [ wk_dir e2 | apply d_refine_syn_weakening; eassumption | wk_dir e1 ].
   - apply d_pat__abs_check with (L := L `union` dom (Γ1 ++ Γ3)).
-    intros x Hx. rewrite_env (((x ~ dbind_skl pskl_hole) ++ Γ1) ++ Γ2 ++ Γ3).
+    intros x Hx. rewrite_env (((x ~ dbind_skl pskl_ghost) ++ Γ1) ++ Γ2 ++ Γ3).
     wk_cof.
   - apply d_pat__abs_anno_check with (L := L `union` dom (Γ1 ++ Γ3)) (A := A);
       [ apply d_wf_ptyp_weakening; assumption | ].

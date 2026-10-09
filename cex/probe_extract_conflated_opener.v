@@ -143,11 +143,11 @@ Lemma probe_fold_runs_conflated : forall (β γ : atom), β <> γ ->
   {{ (((γ ~ abind_flex_mono) ++ nil) ++ ((β ~ abind_flex_mono) ++ nil))
      ⊩ (a_cstr_eq pskl_unit
         :: a_cstr_eq (pskl_var_f γ)
-        :: a_cstr_eq (pskl_var_f γ) :: nil) ⨾ pskl_hole ⤳ Ξs ⨾ Q }}a.
+        :: a_cstr_eq (pskl_var_f γ) :: nil) ⨾ pskl_ghost ⤳ Ξs ⨾ Q }}a.
 Proof.
   intros β γ Hβγ.
   eexists. eexists.
-  eapply a_solve_cstr__eq; [ apply a_solve_eq__hole_l | ].
+  eapply a_solve_cstr__eq; [ apply a_solve_eq__ghost_l | ].
   eapply a_solve_cstr__eq.
   { apply a_solve_eq__flex_r with (A := ptyp_unit).
     - left. simpl. auto.
@@ -176,7 +176,7 @@ Lemma probe_fold_stuck_deconflated : forall (β γ δ : atom),
      {{ (((γ ~ abind_flex_mono) ++ nil) ++ ((β ~ abind_flex_mono) ++ nil))
         ⊩ (a_cstr_eq pskl_unit
            :: a_cstr_eq (pskl_var_f γ)
-           :: a_cstr_eq (pskl_var_f δ) :: nil) ⨾ pskl_hole ⤳ Ξs ⨾ Q }}a).
+           :: a_cstr_eq (pskl_var_f δ) :: nil) ⨾ pskl_ghost ⤳ Ξs ⨾ Q }}a).
 Proof.
   intros β γ δ Hδβ Hδγ [Ξs [Q Hd]].
   (* constraint 1, [◇ ∼ 1]: SolE-GhostL is the only row, and it yields [1] *)
@@ -276,7 +276,7 @@ Theorem probe_cross_half_guard_is_necessary :
   /\ (exists Ξs Q,
         {{ (((γ ~ abind_flex_mono) ++ nil) ++ ((β ~ abind_flex_mono) ++ nil))
            ⊩ (a_cstr_eq pskl_unit :: a_cstr_eq (pskl_var_f γ)
-              :: a_cstr_eq (pskl_var_f γ) :: nil) ⨾ pskl_hole ⤳ Ξs ⨾ Q }}a)
+              :: a_cstr_eq (pskl_var_f γ) :: nil) ⨾ pskl_ghost ⤳ Ξs ⨾ Q }}a)
   (* … while the THREADED collection separates the two atoms … *)
   /\ {{ S0 ↝ (add γ2 (add γ1 S0))
         ⊨ (Θconf β)
@@ -298,7 +298,7 @@ Theorem probe_cross_half_guard_is_necessary :
                 ++ ((β ~ abind_flex_mono) ++ nil))
              ⊩ (a_cstr_eq pskl_unit :: a_cstr_eq (pskl_var_f γ1)
                 :: a_cstr_eq (pskl_var_f γ2) :: nil)
-             ⨾ pskl_hole ⤳ Ξs ⨾ Q }}e).
+             ⨾ pskl_ghost ⤳ Ξs ⨾ Q }}e).
 Proof.
   intros α β γ γ1 γ2 S0 Hαβ Hαγ Hβγ Hγ1 Hγ2 Hβ.
   assert (Hγ12 : γ2 <> γ1) by (clear - Hγ2; fsetdec).

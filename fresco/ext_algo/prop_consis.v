@@ -755,7 +755,7 @@ Proof.
     assert (Hu' : uniq ((α ~ abind_tvar) ++ Θ0))
       by (clear - Hu Hαdom; solve_uniq).
     assert (Hcov' : ftvar_in_aenv ((α ~ abind_tvar) ++ Θ0)
-                    ∪ ftvar_in_pskl (pskl_tophole P0)
+                    ∪ ftvar_in_pskl (pskl_univ_ghost P0)
                     ∪ ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α))
                     ∪ Δ1 ∪ add α Δ2 [<=] add α S0).
     { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f α)) as H2.
@@ -781,7 +781,7 @@ Proof.
       by (clear - Hu Hαdom; solve_uniq).
     assert (Hcov' : ftvar_in_aenv ((α ~ abind_tvar) ++ Θ0)
                     ∪ ftvar_in_pskl (open_pskl_wrt_pskl P0 (pskl_var_f α))
-                    ∪ ftvar_in_pskl (pskl_tophole P)
+                    ∪ ftvar_in_pskl (pskl_univ_ghost P)
                     ∪ add α Δ1 ∪ Δ2 [<=] add α S0).
     { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f α)) as H1.
       simpl in H1 |- *. clear - H1 Hcov. env_simp. fsetdec. }
@@ -1058,7 +1058,7 @@ Qed.
 (** A flexible variable, as a [a_flex] SUBJECT — what the [FlexL]/[FlexR]
     refutations turn [e_assign_target_flex] into.
 
-    ⚙ [ptyp_to_pskl_not_tophole] used to sit here as well and was DELETED
+    ⚙ [ptyp_to_pskl_not_univ_ghost] used to sit here as well and was DELETED
     2026-08-17: it duplicated algo/sub/prop_completeness_sub_gen.v:1781
     verbatim (a duplicate top-level name is a resolution hazard, CLAUDE.md),
     and its only consumer here was the reflexivity proof that moved to
@@ -1565,14 +1565,14 @@ Proof.
     destruct (IH _ Heq) as [S1' [HS1 Hd']].
     exists S1'. split; [ exact HS1 | ].
     apply e_consis__flex_l;
-      [ auto using a_non_flex_swap | auto using swap_pskl_not_hole
+      [ auto using a_non_flex_swap | auto using swap_pskl_not_ghost
       | exact Hd' ].
   - (* FlexR *)
     intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P Hnf Hnhole Hd IH Δ1' Δ2' S0' HΔ1 HΔ2 Heq. simpl.
     destruct (IH _ Heq) as [S1' [HS1 Hd']].
     exists S1'. split; [ exact HS1 | ].
     apply e_consis__flex_r;
-      [ auto using a_non_flex_swap | auto using swap_pskl_not_hole
+      [ auto using a_non_flex_swap | auto using swap_pskl_not_ghost
       | exact Hd' ].
   - (* GhostR *)
     intros Δ1 Δ2 S Θ0 P Hemp Δ1' Δ2' S0' HΔ1 HΔ2 Heq. simpl.

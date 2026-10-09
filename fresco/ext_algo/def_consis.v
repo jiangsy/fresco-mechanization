@@ -83,7 +83,7 @@ Reserved Notation "{{ S0 ↝ S1 ⊨ Θ ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ' }}e
 Inductive e_assign : supply -> aenv -> aenv -> atom -> pskl -> supply -> aenv -> Prop :=
 | e_assign__univ_ghost_id : forall S Θ0 α,              (* Assign-UnivGhost-Id *)
     {{ S ↝ S ⊨ ((α ~ abind_flex_mono) ++ Θ0) ⊲[ nil ] α
-       ≔ (pskl_tophole (pskl_var_f α)) ⊣ ((α ~ abind_flex_mono) ++ Θ0) }}e
+       ≔ (pskl_univ_ghost (pskl_var_f α)) ⊣ ((α ~ abind_flex_mono) ++ Θ0) }}e
 | e_assign__solve_m : forall S0 S1 Θ0 Ξ α P βs τ,       (* Assign-SolveM *)
     (* Δ-guess: [uniq βs] and the "generated names avoid α and dom (Ξ ++ Θ0)"
        filter are both DERIVABLE here ([e_guess_mono_uniq],
@@ -173,7 +173,7 @@ with e_consis : atoms -> atoms -> supply -> aenv -> pskl -> pskl -> pskl
                 -> supply -> aenv -> Prop :=
 | e_consis__ghost : forall Δ1 Δ2 S Θ0 P0,                    (* Ghost *)
     Δ2 ∩ ftvar_in_pskl P0 [=] empty ->
-    {{ S ↝ S ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] pskl_hole ∼ P0 ⊣ Θ0 }}e
+    {{ S ↝ S ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] pskl_ghost ∼ P0 ⊣ Θ0 }}e
 | e_consis__unit : forall Δ1 Δ2 S Θ0,                        (* Unit *)
     {{ S ↝ S ⊨ Θ0 ⊢[ Δ1 | Δ2 | pskl_unit ] pskl_unit ∼ pskl_unit ⊣ Θ0 }}e
 | e_consis__rigid : forall Δ1 Δ2 S Θ0 α,                     (* Rigid *)
@@ -204,29 +204,29 @@ with e_consis : atoms -> atoms -> supply -> aenv -> pskl -> pskl -> pskl
 | e_consis__forall_syn : forall Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α,  (* ForallSyn *)
     α `notin` S0 ->
     {{ (add α S0) ↝ S1 ⊨ ((α ~ abind_tvar) ++ Θ0)
-       ⊢[ Δ1 | (add α Δ2) | (pskl_tophole P0) ]
+       ⊢[ Δ1 | (add α Δ2) | (pskl_univ_ghost P0) ]
        (open_pskl_wrt_pskl P (pskl_var_f α)) ∼ Q
        ⊣ ((α ~ abind_tvar) ++ Θ1) }}e ->
-    {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) ]
+    {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_univ_ghost P0) ]
        (pskl_all_syn P) ∼ (pskl_all_syn (close_pskl_wrt_pskl α Q)) ⊣ Θ1 }}e
 | e_consis__univ_ghost : forall Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q,    (* UnivGhost *)
     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
-    {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) ]
-       (pskl_tophole P) ∼ (pskl_tophole Q) ⊣ Θ1 }}e
+    {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_univ_ghost P0) ]
+       (pskl_univ_ghost P) ∼ (pskl_univ_ghost Q) ⊣ Θ1 }}e
 | e_consis__univ_ghost1 : forall Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α, (* UnivGhost1 *)
     α `notin` S0 ->
     {{ (add α S0) ↝ S1 ⊨ ((α ~ abind_tvar) ++ Θ0)
        ⊢[ (add α Δ1) | Δ2
          | (open_pskl_wrt_pskl P0 (pskl_var_f α)) ]
-       (pskl_tophole P) ∼ Q
+       (pskl_univ_ghost P) ∼ Q
        ⊣ ((α ~ abind_tvar) ++ Θ1) }}e ->
     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_all_syn P0) ]
-       (pskl_tophole P) ∼ (pskl_all_syn (close_pskl_wrt_pskl α Q)) ⊣ Θ1 }}e
+       (pskl_univ_ghost P) ∼ (pskl_all_syn (close_pskl_wrt_pskl α Q)) ⊣ Θ1 }}e
 | e_consis__univ_ghost2 : forall Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q,   (* UnivGhost2 *)
     guarded_pskl P0 ->
     a_non_flex Θ0 P0 ->
     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
-    {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] (pskl_tophole P) ∼ Q ⊣ Θ1 }}e
+    {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] (pskl_univ_ghost P) ∼ Q ⊣ Θ1 }}e
 | e_consis__flex : forall Δ1 Δ2 S0 S1 Θ0 Θ1 α β,             (* Flex *)
     {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e ->
     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f β) ]
@@ -236,23 +236,23 @@ with e_consis : atoms -> atoms -> supply -> aenv -> pskl -> pskl -> pskl
    two cells that used to diverge (algo/def_rules.v's header there). *)
 | e_consis__flex_l : forall Δ1 Δ2 S0 S1 Θ0 Θ1 α P0,          (* FlexL *)
     a_non_flex Θ0 P0 ->
-    P0 <> pskl_hole ->
+    P0 <> pskl_ghost ->
     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ nil ] α ≔ P0 ⊣ Θ1 }}e ->
     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ]
        (pskl_var_f α) ∼ (pskl_var_f α) ⊣ Θ1 }}e
 | e_consis__flex_r : forall Δ1 Δ2 S0 S1 Θ0 Θ1 α P,           (* FlexR *)
     a_non_flex Θ0 P ->
-    P <> pskl_hole ->
+    P <> pskl_ghost ->
     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ nil ] α ≔ P ⊣ Θ1 }}e ->
     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f α) ] P ∼ (pskl_var_f α) ⊣ Θ1 }}e
 | e_consis__ghost_r : forall Δ1 Δ2 S Θ0 P,                   (* GhostR *)
     Δ1 ∩ ftvar_in_pskl P [=] empty ->
-    {{ S ↝ S ⊨ Θ0 ⊢[ Δ1 | Δ2 | pskl_hole ] P ∼ P ⊣ Θ0 }}e
+    {{ S ↝ S ⊨ Θ0 ⊢[ Δ1 | Δ2 | pskl_ghost ] P ∼ P ⊣ Θ0 }}e
 | e_consis__univ_ghost_r : forall Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q,  (* UnivGhostR *)
     guarded_pskl P ->
     a_non_flex Θ0 P ->
     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
-    {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) ] P ∼ Q ⊣ Θ1 }}e
+    {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_univ_ghost P0) ] P ∼ Q ⊣ Θ1 }}e
 where "{{ S0 ↝ S1 ⊨ Θ ⊲[ Ξ ] α ≔ P ⊣ Θ' }}e" :=
   (e_assign S0 Θ Ξ α P S1 Θ') : fresco_e_scope
 and "{{ S0 ↝ S1 ⊨ Θ ⊲ α ≈ᵘ β ⊣ Θ' }}e" :=

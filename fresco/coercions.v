@@ -100,7 +100,7 @@ Fixpoint ptyp_to_pskl (A : ptyp) : pskl :=
   end.
 
 (** A term-variable binding's skeleton view: a [dbind_skl] carries its skeleton
-    directly; a [dbind_typ A] doubles as the (hole-free) skeleton [ptyp_to_pskl
+    directly; a [dbind_typ A] doubles as the (ghost-free) skeleton [ptyp_to_pskl
     A] — "a type is a skeleton".  Used by [d_pat__var] so skeleton inference can
     read either binding kind, letting one [Γ] serve both [d_typing] (reads the
     type) and [d_pat] (reads the type-as-skeleton). *)
@@ -120,8 +120,8 @@ Fixpoint pskl_to_bskl_syn (P : pskl) : bskl :=
   | pskl_var_f α => bskl_var_f α
   | pskl_arrow P1 P2 => bskl_arrow (pskl_to_bskl_syn P1) (pskl_to_bskl_syn P2)
   | pskl_all_syn P0 => bskl_all_syn (pskl_to_bskl_syn P0)
-  | pskl_hole => bskl_hole
-  | pskl_tophole P0 => bskl_tophole (pskl_to_bskl_syn P0)
+  | pskl_ghost => bskl_ghost
+  | pskl_univ_ghost P0 => bskl_univ_ghost (pskl_to_bskl_syn P0)
   end.
 
 (** Inherited painting of a (synthesised-only) skeleton: same base
@@ -136,12 +136,12 @@ Fixpoint pskl_to_bskl_inh (P : pskl) : bskl :=
   | pskl_var_f α => bskl_var_f α
   | pskl_arrow P1 P2 => bskl_arrow (pskl_to_bskl_inh P1) (pskl_to_bskl_inh P2)
   | pskl_all_syn P0 => bskl_all_inh (pskl_to_bskl_inh P0)
-  | pskl_hole => bskl_hole
-  | pskl_tophole P0 => bskl_tophole (pskl_to_bskl_inh P0)
+  | pskl_ghost => bskl_ghost
+  | pskl_univ_ghost P0 => bskl_univ_ghost (pskl_to_bskl_inh P0)
   end.
 
 (** Colour-preserving skeleton of a [btyp]: same shape and the SAME
-    synthesised/inherited colour at every quantifier (a [btyp] has no holes).
+    synthesised/inherited colour at every quantifier (a [btyp] has no ghosts).
     Used by [App] so the refinement output [inh{P} ⊳ btyp_to_bskl B1] is exactly
     the skeleton of the function domain [B1] — tying the two together. *)
 Fixpoint btyp_to_bskl (B : btyp) : bskl :=
@@ -167,10 +167,10 @@ Fixpoint uskl_to_pskl (R : uskl) : pskl :=
   | uskl_arrow R1 R2 => pskl_arrow (uskl_to_pskl R1) (uskl_to_pskl R2)
   | uskl_all_syn R0 => pskl_all_syn (uskl_to_pskl R0)
   | uskl_all_tag _ R0 => pskl_all_syn (uskl_to_pskl R0)
-  | uskl_hole => pskl_hole
-  | uskl_tophole R0 => pskl_tophole (uskl_to_pskl R0)
-  | uskl_holeg => pskl_hole
-  | uskl_topholeg R0 => pskl_tophole (uskl_to_pskl R0)
+  | uskl_ghost => pskl_ghost
+  | uskl_univ_ghost R0 => pskl_univ_ghost (uskl_to_pskl R0)
+  | uskl_dot_ghost => pskl_ghost
+  | uskl_dot_univ_ghost R0 => pskl_univ_ghost (uskl_to_pskl R0)
   end.
 
 Notation "⌊ R ⌋ˢ" := (uskl_to_pskl R) (at level 0, R at level 99).
@@ -185,8 +185,8 @@ Fixpoint pskl_to_uskl (P : pskl) : uskl :=
   | pskl_var_f α => uskl_var_f α
   | pskl_arrow P1 P2 => uskl_arrow (pskl_to_uskl P1) (pskl_to_uskl P2)
   | pskl_all_syn P0 => uskl_all_syn (pskl_to_uskl P0)
-  | pskl_hole => uskl_hole
-  | pskl_tophole P0 => uskl_tophole (pskl_to_uskl P0)
+  | pskl_ghost => uskl_ghost
+  | pskl_univ_ghost P0 => uskl_univ_ghost (pskl_to_uskl P0)
   end.
 
 Fixpoint bskl_to_pskl (Q : bskl) : pskl :=
@@ -197,8 +197,8 @@ Fixpoint bskl_to_pskl (Q : bskl) : pskl :=
   | bskl_arrow Q1 Q2 => pskl_arrow (bskl_to_pskl Q1) (bskl_to_pskl Q2)
   | bskl_all_syn Q0 => pskl_all_syn (bskl_to_pskl Q0)
   | bskl_all_inh Q0 => pskl_all_syn (bskl_to_pskl Q0)
-  | bskl_hole => pskl_hole
-  | bskl_tophole Q0 => pskl_tophole (bskl_to_pskl Q0)
+  | bskl_ghost => pskl_ghost
+  | bskl_univ_ghost Q0 => pskl_univ_ghost (bskl_to_pskl Q0)
   end.
 
 Coercion bskl_to_pskl : bskl >-> pskl.
@@ -211,8 +211,8 @@ Fixpoint bskl_to_uskl (Q : bskl) : uskl :=
   | bskl_arrow Q1 Q2 => uskl_arrow (bskl_to_uskl Q1) (bskl_to_uskl Q2)
   | bskl_all_syn Q0 => uskl_all_syn (bskl_to_uskl Q0)
   | bskl_all_inh Q0 => uskl_all_syn (bskl_to_uskl Q0)
-  | bskl_hole => uskl_hole
-  | bskl_tophole Q0 => uskl_tophole (bskl_to_uskl Q0)
+  | bskl_ghost => uskl_ghost
+  | bskl_univ_ghost Q0 => uskl_univ_ghost (bskl_to_uskl Q0)
   end.
 
 Fixpoint uskl_to_bskl (R : uskl) : bskl :=
@@ -223,12 +223,12 @@ Fixpoint uskl_to_bskl (R : uskl) : bskl :=
   | uskl_arrow R1 R2 => bskl_arrow (uskl_to_bskl R1) (uskl_to_bskl R2)
   | uskl_all_syn R0 => bskl_all_syn (uskl_to_bskl R0)
   | uskl_all_tag _ R0 => bskl_all_syn (uskl_to_bskl R0)
-  | uskl_hole => bskl_hole
-  | uskl_tophole R0 => bskl_tophole (uskl_to_bskl R0)
+  | uskl_ghost => bskl_ghost
+  | uskl_univ_ghost R0 => bskl_univ_ghost (uskl_to_bskl R0)
   (* dotted ghosts erase to their plain counterparts (HoleG ~ Hole,
      TopHoleG ~ TopHole) on the resolved/bidirectional side. *)
-  | uskl_holeg => bskl_hole
-  | uskl_topholeg R0 => bskl_tophole (uskl_to_bskl R0)
+  | uskl_dot_ghost => bskl_ghost
+  | uskl_dot_univ_ghost R0 => bskl_univ_ghost (uskl_to_bskl R0)
   end.
 
 Coercion uskl_to_bskl : uskl >-> bskl.
@@ -266,19 +266,19 @@ Fixpoint uskl_to_utyp (R : uskl) : utyp :=
   | uskl_arrow R1 R2 => utyp_arrow (uskl_to_utyp R1) (uskl_to_utyp R2)
   | uskl_all_syn R0 => utyp_all_syn (uskl_to_utyp R0)
   | uskl_all_tag ε R0 => utyp_all_tag ε (uskl_to_utyp R0)
-  | uskl_hole => utyp_unit
-  | uskl_tophole _ => utyp_unit
-  | uskl_holeg => utyp_unit
-  | uskl_topholeg _ => utyp_unit
+  | uskl_ghost => utyp_unit
+  | uskl_univ_ghost _ => utyp_unit
+  | uskl_dot_ghost => utyp_unit
+  | uskl_dot_univ_ghost _ => utyp_unit
   end.
 
-(* RESTART NOTE (deleted 2026-08-09, cleanup audit §5.2) — [pskl_to_tskl],
+(* RESTART NOTE (deleted 2026-08-09, cleanup audit §5.2) — [pskl_to_dskl],
    the DOTTED witness conversion, plus its [_open_rec] / [_open] lemmas.  It
-   sent a pskl's ghost holes to DOTTED ghosts ([holeg] / [topholeg], which are
-   [is_tskl]) and was written for the ∀-instantiation in the pattern producer.
+   sent a pskl's ghosts to DOTTED ghosts ([dot_ghost] / [dot_univ_ghost], which are
+   [is_dskl]) and was written for the ∀-instantiation in the pattern producer.
    It had ZERO uses outside this file; whatever consumed it is gone.
 
    ⚠️ It is NOT the same map as [pskl_to_uskl] (deco_algo/def_decorated.v),
-   which is live: that one sends [pskl_hole] to the PLAIN [uskl_hole] and
-   [pskl_tophole] to [uskl_tophole].  If a dotted witness is ever needed again,
+   which is live: that one sends [pskl_ghost] to the PLAIN [uskl_ghost] and
+   [pskl_univ_ghost] to [uskl_univ_ghost].  If a dotted witness is ever needed again,
    re-derive it here — the two lemmas were three-line inductions. *)

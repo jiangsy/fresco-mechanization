@@ -234,9 +234,9 @@ Lemma e_split_inv_arrow : forall S0 Θ0 P1 P2 Pd Qd Sd Θd,
   Pd = P1 /\ Qd = P2 /\ Sd = S0 /\ Θd = Θ0.
 Proof. intros * H. inversion H; subst. repeat split. Qed.
 
-Lemma e_split_inv_hole : forall S0 Θ0 Pd Qd Sd Θd,
-  {{ S0 ↝ Sd ⊨ Θ0 ⊲ pskl_hole ▹ Pd ⇢ Qd ⊣ Θd }}e ->
-  Pd = pskl_hole /\ Qd = pskl_hole /\ Sd = S0 /\ Θd = Θ0.
+Lemma e_split_inv_ghost : forall S0 Θ0 Pd Qd Sd Θd,
+  {{ S0 ↝ Sd ⊨ Θ0 ⊲ pskl_ghost ▹ Pd ⇢ Qd ⊣ Θd }}e ->
+  Pd = pskl_ghost /\ Qd = pskl_ghost /\ Sd = S0 /\ Θd = Θ0.
 Proof. intros * H. inversion H; subst. repeat split. Qed.
 
 Lemma e_split_inv_var : forall S0 Θ0 α Pd Qd Sd Θd,
@@ -262,8 +262,8 @@ Lemma e_split_inv_all_syn : forall S0 Θ0 P Pd Qd Sd Θd,
   {{ S0 ↝ Sd ⊨ Θ0 ⊲ (pskl_all_syn P) ▹ Pd ⇢ Qd ⊣ Θd }}e -> False.
 Proof. intros * H. inversion H. Qed.
 
-Lemma e_split_inv_tophole : forall S0 Θ0 P Pd Qd Sd Θd,
-  {{ S0 ↝ Sd ⊨ Θ0 ⊲ (pskl_tophole P) ▹ Pd ⇢ Qd ⊣ Θd }}e -> False.
+Lemma e_split_inv_univ_ghost : forall S0 Θ0 P Pd Qd Sd Θd,
+  {{ S0 ↝ Sd ⊨ Θ0 ⊲ (pskl_univ_ghost P) ▹ Pd ⇢ Qd ⊣ Θd }}e -> False.
 Proof. intros * H. inversion H. Qed.
 
 Lemma e_pat_inv_unit : forall S0 m Θ0 P0 Qd Sd Θd,
@@ -292,15 +292,15 @@ Proof. intros * H. inversion H; subst. assumption. Qed.
 
 Lemma e_pat_inv_freeze : forall S0 m Θ0 P0 e1 Qd Sd Θd,
   {{ S0 ↝ Sd ⊨ Θ0 ⊢ˢ[ m ; P0 ] (exp_freeze e1) ⦂ Qd ⊣ Θd }}e ->
-  m = mode_tc /\ P0 = pskl_hole
-  /\ {{ S0 ↝ Sd ⊨ Θ0 ⊢ˢ[ mode_ti ; pskl_hole ] e1 ⦂ Qd ⊣ Θd }}e.
+  m = mode_tc /\ P0 = pskl_ghost
+  /\ {{ S0 ↝ Sd ⊨ Θ0 ⊢ˢ[ mode_ti ; pskl_ghost ] e1 ⦂ Qd ⊣ Θd }}e.
 Proof. intros * H. inversion H; subst. repeat split. assumption. Qed.
 
 (** ⭐ THE TWO abs CELLS, AS ONE DISJUNCTION.  The runner splits [exp_abs]
     by MODE and the rules by [m <> mode_tc]; stating the inversion as a
     disjunction lets each mode branch kill the wrong disjunct by
     [congruence] WITHOUT first having to produce the mode inequality — and
-    the check disjunct hands back [P0 = pskl_hole], which is what makes the
+    the check disjunct hands back [P0 = pskl_ghost], which is what makes the
     [mode_tc] branch's clause reachable at all. *)
 Lemma e_pat_inv_abs_all : forall S0 m Θ0 P0 e1 Qd Sd Θd,
   {{ S0 ↝ Sd ⊨ Θ0 ⊢ˢ[ m ; P0 ] (exp_abs e1) ⦂ Qd ⊣ Θd }}e ->
@@ -313,14 +313,14 @@ Lemma e_pat_inv_abs_all : forall S0 m Θ0 P0 e1 Qd Sd Θd,
            (open_exp_wrt_exp e1 (exp_var_f x)) ⦂ Q
            ⊣ (Ξ ++ (x ~ abind_var_skl P) ++ Θ2) }}e
      /\ Qd = pskl_arrow P Q /\ Θd = Ξ ++ Θ2)
-  \/ (m = mode_tc /\ P0 = pskl_hole /\
+  \/ (m = mode_tc /\ P0 = pskl_ghost /\
       exists x Θ1 Q Ξ,
         a_suffix Ξ /\ x `notin` S0
-        /\ {{ (add x S0) ↝ Sd ⊨ ((x ~ abind_var_skl pskl_hole) ++ Θ0)
-              ⊢ˢ[ mode_tc ; pskl_hole ]
+        /\ {{ (add x S0) ↝ Sd ⊨ ((x ~ abind_var_skl pskl_ghost) ++ Θ0)
+              ⊢ˢ[ mode_tc ; pskl_ghost ]
               (open_exp_wrt_exp e1 (exp_var_f x)) ⦂ Q
-              ⊣ (Ξ ++ (x ~ abind_var_skl pskl_hole) ++ Θ1) }}e
-        /\ Qd = pskl_tophole (pskl_arrow pskl_hole Q) /\ Θd = Ξ ++ Θ1).
+              ⊣ (Ξ ++ (x ~ abind_var_skl pskl_ghost) ++ Θ1) }}e
+        /\ Qd = pskl_univ_ghost (pskl_arrow pskl_ghost Q) /\ Θd = Ξ ++ Θ1).
 Proof.
   intros * H. inversion H; subst;
     [ left; split; [ assumption | eauto 15 ]
@@ -339,14 +339,14 @@ Lemma e_pat_inv_abs_anno_all : forall S0 m Θ0 P0 A e1 Qd Sd Θd,
            (open_exp_wrt_exp e1 (exp_var_f x)) ⦂ Q
            ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ3) }}e
      /\ Qd = pskl_arrow (ptyp_to_pskl A) Q /\ Θd = Ξ ++ Θ3)
-  \/ (m = mode_tc /\ P0 = pskl_hole /\
+  \/ (m = mode_tc /\ P0 = pskl_ghost /\
       exists x Θ1 Q Ξ,
         a_suffix Ξ /\ x `notin` S0
         /\ {{ (add x S0) ↝ Sd ⊨ ((x ~ abind_var_typ A) ++ Θ0)
-              ⊢ˢ[ mode_tc ; pskl_hole ]
+              ⊢ˢ[ mode_tc ; pskl_ghost ]
               (open_exp_wrt_exp e1 (exp_var_f x)) ⦂ Q
               ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ1) }}e
-        /\ Qd = pskl_tophole (pskl_arrow (ptyp_to_pskl A) Q)
+        /\ Qd = pskl_univ_ghost (pskl_arrow (ptyp_to_pskl A) Q)
         /\ Θd = Ξ ++ Θ1).
 Proof.
   intros * H. inversion H; subst;
@@ -357,7 +357,7 @@ Qed.
 Lemma e_pat_inv_app : forall S0 m Θ0 P0 e1 e2 Qd Sd Θd,
   {{ S0 ↝ Sd ⊨ Θ0 ⊢ˢ[ m ; P0 ] (exp_app e1 e2) ⦂ Qd ⊣ Θd }}e ->
   exists S1 Θ1 P1 P,
-    {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] e2 ⦂ P1 ⊣ Θ1 }}e
+    {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_tc ; pskl_ghost ] e2 ⦂ P1 ⊣ Θ1 }}e
     /\ {{ S1 ↝ Sd ⊨ Θ1 ⊢ˢ[ (mode_fn m) ; (pskl_arrow P1 P0) ] e1
           ⦂ (pskl_arrow P Qd) ⊣ Θd }}e.
 Proof. intros * H. inversion H; subst. eauto 10. Qed.
@@ -572,13 +572,13 @@ Proof.
             | reflexivity | reflexivity ].
   - exfalso. exact (e_split_inv_all_syn Hd).
   - (* the HOLE row *)
-    destruct (e_split_inv_hole Hd) as [-> [-> [-> ->]]].
+    destruct (e_split_inv_ghost Hd) as [-> [-> [-> ->]]].
     rewrite e_split_impl_equation_6.
     eexists; exists (@nil (atom * atom)).
     split; [ reflexivity | ].
     split5; [ intros ? ? [] | reflexivity | reflexivity
             | reflexivity | reflexivity ].
-  - exfalso. exact (e_split_inv_tophole Hd).
+  - exfalso. exact (e_split_inv_univ_ghost Hd).
 Qed.
 
 (* --------------------------------------------------------------------- *)
@@ -851,29 +851,29 @@ Proof.
         rewrite (swap_atoms_notin xd (supply_fresh S0) S0)
           by (clear - Hxd Hsf; fsetdec).
         unfold swap_atom. destruct (xd == xd); [ reflexivity | congruence ]. }
-      rewrite swaps_aenv_cons_var_skl, Hsxd, swaps_pskl_hole in Db1.
+      rewrite swaps_aenv_cons_var_skl, Hsxd, swaps_pskl_ghost in Db1.
       rewrite (HfixΘ Θ0) in Db1 by (clear - Hcov; simpl in *; fsetdec).
       rewrite swaps_exp_open_var, Hsxd in Db1.
       rewrite (Hfixe e1) in Db1 by (clear - Hcov; simpl in *; fsetdec).
       rewrite swaps_aenv_app_dist, swaps_aenv_cons_var_skl, Hsxd,
-        swaps_pskl_hole in Db1.
+        swaps_pskl_ghost in Db1.
       (* the recursive call's own side conditions *)
       assert (Hsfd : supply_fresh S0 `notin` dom Θ0)
         by (clear - Hsf Hdom0 Hcov; simpl in *; fsetdec).
-      assert (Hu1 : uniq ((supply_fresh S0 ~ abind_var_skl pskl_hole) ++ Θ0))
+      assert (Hu1 : uniq ((supply_fresh S0 ~ abind_var_skl pskl_ghost) ++ Θ0))
         by (clear - Hu Hsfd; solve_uniq).
-      assert (HΘ1 : lc_aenv ((supply_fresh S0 ~ abind_var_skl pskl_hole)
+      assert (HΘ1 : lc_aenv ((supply_fresh S0 ~ abind_var_skl pskl_ghost)
                              ++ Θ0))
         by (apply lc_aenv_app_intro;
-            [ constructor; [ apply lc_abind_var_skl; apply lc_pskl_hole
+            [ constructor; [ apply lc_abind_var_skl; apply lc_pskl_ghost
                            | apply lc_aenv_nil ]
             | exact HΘ ]).
-      assert (HD1 : aenv_defs_mono ((supply_fresh S0 ~ abind_var_skl pskl_hole)
+      assert (HD1 : aenv_defs_mono ((supply_fresh S0 ~ abind_var_skl pskl_ghost)
                                     ++ Θ0))
         by (simpl; constructor; [ apply entry_def_mono_var_skl | exact HD ]).
       assert (Hcov1 : ftvar_in_aenv ((supply_fresh S0
-                                        ~ abind_var_skl pskl_hole) ++ Θ0)
-                      ∪ ftvar_in_pskl pskl_hole
+                                        ~ abind_var_skl pskl_ghost) ++ Θ0)
+                      ∪ ftvar_in_pskl pskl_ghost
                       ∪ fvar_in_exp (open_exp_wrt_exp e1
                            (exp_var_f (supply_fresh S0)))
                       ∪ ftvar_in_exp (open_exp_wrt_exp e1
@@ -884,7 +884,7 @@ Proof.
         pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e1
                       (exp_var_f (supply_fresh S0))) as Hto.
         clear - Hcov Hfo Hto. simpl in *. fsetdec. }
-      kill_pat (Habsc e1 eq_refl) lc_pskl_hole (Hbody (supply_fresh S0))
+      kill_pat (Habsc e1 eq_refl) lc_pskl_ghost (Hbody (supply_fresh S0))
         HΘ1 HD1 Hu1 Hcov1 Db1 r Hr ps2 Hav2 HS2 HT2 HQ2.
       (* the recursive answer's context, split at the runner's own marker *)
       destruct (e_pat_sound Hr Hu1 Hcov1) as [Hra [Hur [Hcvr Hqr]]].
@@ -895,11 +895,11 @@ Proof.
           rewrite <- Heq0; clear; fsetdec. }
       assert (Hctx : pt_ctx r
                 = swaps_aenv (((xd, supply_fresh S0) :: nil) ++ ps2) Ξ
-                  ++ (supply_fresh S0 ~ abind_var_skl pskl_hole)
+                  ++ (supply_fresh S0 ~ abind_var_skl pskl_ghost)
                   ++ swaps_aenv (((xd, supply_fresh S0) :: nil) ++ ps2) Θ1).
       { rewrite <- HT2. rewrite ! swaps_aenv_app.
         rewrite ! swaps_aenv_app_dist, swaps_aenv_one_var_skl.
-        rewrite Hfix2a, swaps_pskl_hole. reflexivity. }
+        rewrite Hfix2a, swaps_pskl_ghost. reflexivity. }
       kill_dec (split_at_key_skl_complete_eq Hctx Hur) t Ht.
       cbn [fst snd].
       assert (Hsufr : a_suffix
@@ -917,7 +917,7 @@ Proof.
         apply swaps_atoms_cong. symmetry. exact HSd1.
       - cbn [pt_ctx]. rewrite swaps_aenv_app_dist. reflexivity.
       - cbn [pt_skel].
-        rewrite swaps_pskl_tophole, swaps_pskl_arrow, swaps_pskl_hole.
+        rewrite swaps_pskl_univ_ghost, swaps_pskl_arrow, swaps_pskl_ghost.
         rewrite swaps_pskl_app. rewrite HQ2. reflexivity. }
 
     all: (
@@ -1143,7 +1143,7 @@ Proof.
       rewrite ! swaps_aenv_app_dist in Db1.
       rewrite ! swaps_aenv_one_var_typ in Db1.
       rewrite ! swaps_exp_open_var in Db1.
-      rewrite ! Hsxd, ! HfixΘ, ! HfixA, ! Hfixe, ! swaps_pskl_hole in Db1.
+      rewrite ! Hsxd, ! HfixΘ, ! HfixA, ! Hfixe, ! swaps_pskl_ghost in Db1.
       (* the recursive call's own side conditions *)
       assert (Hsfd : supply_fresh S0 `notin` dom Θ0)
         by (clear - Hsf Hdom0 Hcov; simpl in *; fsetdec).
@@ -1159,7 +1159,7 @@ Proof.
         by (simpl; constructor; [ apply entry_def_mono_var_typ | exact HD ]).
       assert (Hcov1 : ftvar_in_aenv ((supply_fresh S0 ~ abind_var_typ A)
                                      ++ Θ0)
-                      ∪ ftvar_in_pskl pskl_hole
+                      ∪ ftvar_in_pskl pskl_ghost
                       ∪ fvar_in_exp (open_exp_wrt_exp e1
                            (exp_var_f (supply_fresh S0)))
                       ∪ ftvar_in_exp (open_exp_wrt_exp e1
@@ -1170,7 +1170,7 @@ Proof.
         pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e1
                       (exp_var_f (supply_fresh S0))) as Hto.
         clear - Hcov Hfo Hto. simpl in *. fsetdec. }
-      kill_pat (Habsac A e1 eq_refl) lc_pskl_hole (Hbody (supply_fresh S0))
+      kill_pat (Habsac A e1 eq_refl) lc_pskl_ghost (Hbody (supply_fresh S0))
         HΘ1 HD1 Hu1 Hcov1 Db1 r Hr ps2 Hav2 HS2 HT2 HQ2.
       destruct (e_pat_sound Hr Hu1 Hcov1) as [Hra [Hur [Hcvr Hqr]]].
       assert (Hfix2a : swaps_atom ps2 (supply_fresh S0) = supply_fresh S0).
@@ -1205,7 +1205,7 @@ Proof.
         apply swaps_atoms_cong. symmetry. exact HSd1.
       - cbn [pt_ctx]. rewrite swaps_aenv_app_dist. reflexivity.
       - cbn [pt_skel].
-        rewrite swaps_pskl_tophole, swaps_pskl_arrow.
+        rewrite swaps_pskl_univ_ghost, swaps_pskl_arrow.
         rewrite (swaps_pskl_fresh_id _ (ptyp_to_pskl A));
           [ | intros a0 b0 Hin; apply in_app_or in Hin;
               destruct Hin as [Hin | Hin];
@@ -1477,17 +1477,17 @@ Proof.
   - (* ================= AP-App ================= *)
     rewrite e_pat_impl_equation_22.
     destruct (e_pat_inv_app Hd) as [S1 [Θ1 [P1 [P [D1 D2]]]]].
-    assert (Hcov1 : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl pskl_hole
+    assert (Hcov1 : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl pskl_ghost
                     ∪ fvar_in_exp e2 ∪ ftvar_in_exp e2 [<=] S0)
       by (clear - Hcov; simpl in *; fsetdec).
     assert (He2 : lc_exp e2) by (inversion He; subst; assumption).
     assert (He1 : lc_exp e1) by (inversion He; subst; assumption).
-    kill_pat (Happ1 e1 e2 eq_refl) (lc_pskl_hole) He2 HΘ HD Hu Hcov1 D1
+    kill_pat (Happ1 e1 e2 eq_refl) (lc_pskl_ghost) He2 HΘ HD Hu Hcov1 D1
       r2 Hr2 ps1 Hav1 HS1 HT1 HQ1.
     (* the FIRST answer's own invariants — level 5/6's, re-established *)
     destruct (e_pat_sound Hr2 Hu Hcov1) as [Ha2 [Hu2 [Hcv2 Hq2]]].
     pose proof (e_pat_defs_mono Hr2 HD) as HD2.
-    destruct (e_pat_lc_env Hr2 lc_pskl_hole He2 HΘ HD) as [Hlc2 HΘ2].
+    destruct (e_pat_lc_env Hr2 lc_pskl_ghost He2 HΘ HD) as [Hlc2 HΘ2].
     pose proof (e_pat_supply_grows Hr2) as Hgr2.
     (* transport the FUNCTION's derivation onto the first answer's rails *)
     assert (HfixP : forall X, ftvar_in_pskl X [<=] S0 ->
@@ -1552,10 +1552,10 @@ Proof.
     destruct (e_pat_inv_freeze Hd) as [-> [-> Db]].
     rewrite e_pat_impl_equation_30.
     assert (He1 : lc_exp e1) by (inversion He; subst; assumption).
-    assert (Hcov1 : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl pskl_hole
+    assert (Hcov1 : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl pskl_ghost
                     ∪ fvar_in_exp e1 ∪ ftvar_in_exp e1 [<=] S0)
       by (clear - Hcov; simpl in *; fsetdec).
-    kill_pat (Hfz e1 eq_refl) lc_pskl_hole He1 HΘ HD Hu Hcov1 Db
+    kill_pat (Hfz e1 eq_refl) lc_pskl_ghost He1 HΘ HD Hu Hcov1 Db
       r Hr ps Hav HS HT HQ.
     eexists; exists ps.
     split; [ cbn [pat_answer proj1_sig]; reflexivity | ].

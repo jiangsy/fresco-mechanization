@@ -340,15 +340,15 @@ Proof.
       exact (ad_consis_join_refine Hj) end.
   - (* __ghost *)
     cbn. rewrite bskl_to_pskl_pskl_to_bskl_inh.
-    apply ad_refine_pskl__hole. clear; fsetdec.
+    apply ad_refine_pskl__ghost. clear; fsetdec.
   - (* __ghostg *)
-    cbn. apply ad_refine_pskl__hole. clear; fsetdec.
+    cbn. apply ad_refine_pskl__ghost. clear; fsetdec.
 Qed.
 
 (** [κR = ◇] forces [R = ◇]: a variable's image is a monotype PAINTING, which
     is unit / var / arrow, never a ghost. *)
-Lemma msubst_uskl_syn_hole_inv : forall κ R,
-  msubst_uskl_syn κ R = uskl_hole -> R = uskl_hole.
+Lemma msubst_uskl_syn_ghost_inv : forall κ R,
+  msubst_uskl_syn κ R = uskl_ghost -> R = uskl_ghost.
 Proof.
   intros κ R; destruct R; cbn; try discriminate; [ | reflexivity ].
   unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn.
@@ -360,14 +360,14 @@ Qed.
     is an inherited painting on the rule) can fire: [__univ_ghost_r] wants
     [guarded_uskl ◇], and every other row wants another subject shape or
     [N = TY]. *)
-Lemma ad_pat_sub_fuel_hole_target_inh : forall n M Ψ Θ Q,
-  ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ uskl_hole Q ->
+Lemma ad_pat_sub_fuel_ghost_target_inh : forall n M Ψ Θ Q,
+  ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ uskl_ghost Q ->
   pskl_to_bskl_inh (bskl_to_pskl Q) = Q.
 Proof.
   intros n M Ψ Θ Q H; inversion H; subst; destr_join.
-  - (* __infer *) eapply consis_hole_target_inh; eassumption.
+  - (* __infer *) eapply consis_ghost_target_inh; eassumption.
   - (* __univ_ghost_r : [guarded_uskl ◇] is impossible *)
-    match goal with Hg : guarded_uskl uskl_hole |- _ => inversion Hg end.
+    match goal with Hg : guarded_uskl uskl_ghost |- _ => inversion Hg end.
   - (* __ghost *) rewrite bskl_to_pskl_pskl_to_bskl_inh; reflexivity.
 Qed.
 
@@ -388,21 +388,21 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_sub_complete_ghost : forall n M Θ0 P0 P R R' Ψ Θ κ Q,
-  R' = uskl_hole ->
+  R' = uskl_ghost ->
   sub_complete_concl n a_sub_mode_sk M Θ0 P0 P R R' Ψ Θ κ Q.
 Proof.
   intros n M Θ0 P0 P R R' Ψ Θ κ Q HT.
   unfold sub_complete_concl.
   intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ Hgf.
   subst R'.
-  (* a ghost is ≡ᵘ-inert, so the κ-image is the hole as well *)
-  pose proof (a_uskl_tyequiv_hole_l_inv Hrel) as Hsubj.
-  (* the subject is the hole, so the algorithm's input is [□] *)
-  pose proof (msubst_uskl_syn_hole_inv κ R Hsubj) as HR; subst R.
+  (* a ghost is ≡ᵘ-inert, so the κ-image is the ghost as well *)
+  pose proof (a_uskl_tyequiv_ghost_l_inv Hrel) as Hsubj.
+  (* the subject is the ghost, so the algorithm's input is [□] *)
+  pose proof (msubst_uskl_syn_ghost_inv κ R Hsubj) as HR; subst R.
   cbn in HeqP; subst P.
   (* the counterpart is an inherited painting — read off the derivation *)
   assert (HQ : pskl_to_bskl_inh (bskl_to_pskl Q) = Q)
-    by (eapply ad_pat_sub_fuel_hole_target_inh; exact Hsub).
+    by (eapply ad_pat_sub_fuel_ghost_target_inh; exact Hsub).
   (* the run: [Ghost], which returns the input skeleton unchanged *)
   (* ⭐ THE RUN.  Since [SI-Ghost] gained its neighbour's [M <> TI] guard
      (algo/def_rules.v), the [TI] mode is [SI-Infer]'s — and that is exactly
@@ -437,43 +437,43 @@ Qed.
 (*  the input skeleton.                                                    *)
 (* ===================================================================== *)
 
-Lemma msubst_uskl_syn_holeg_inv : forall κ R,
-  msubst_uskl_syn κ R = uskl_holeg -> R = uskl_holeg.
+Lemma msubst_uskl_syn_dot_ghost_inv : forall κ R,
+  msubst_uskl_syn κ R = uskl_dot_ghost -> R = uskl_dot_ghost.
 Proof.
   intros κ R; destruct R; cbn; try discriminate; [ | reflexivity ].
   unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn.
   destruct (msubst_lookup κ α); cbn; discriminate.
 Qed.
 
-Lemma ad_pat_consis_holeg_target_inh : forall Ψ Θ Q,
-  {{ Ψ ⨟ Θ ⊢ˢ uskl_holeg ∼ Q }}ad ->
+Lemma ad_pat_consis_dot_ghost_target_inh : forall Ψ Θ Q,
+  {{ Ψ ⨟ Θ ⊢ˢ uskl_dot_ghost ∼ Q }}ad ->
   pskl_to_bskl_inh (bskl_to_pskl Q) = Q.
 Proof. intros Ψ Θ Q H; inversion H; subst; reflexivity. Qed.
 
-Lemma ad_pat_sub_fuel_holeg_target_inh : forall n M Ψ Θ Q,
-  ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ uskl_holeg Q ->
+Lemma ad_pat_sub_fuel_dot_ghost_target_inh : forall n M Ψ Θ Q,
+  ad_pat_sub_fuel n a_sub_mode_sk M Ψ Θ uskl_dot_ghost Q ->
   pskl_to_bskl_inh (bskl_to_pskl Q) = Q.
 Proof.
   intros n M Ψ Θ Q H; inversion H; subst; destr_join.
-  - (* __infer *) eapply ad_pat_consis_holeg_target_inh; eassumption.
+  - (* __infer *) eapply ad_pat_consis_dot_ghost_target_inh; eassumption.
   - (* __univ_ghost_r : [guarded_uskl ◈] is impossible *)
-    match goal with Hg : guarded_uskl uskl_holeg |- _ => inversion Hg end.
+    match goal with Hg : guarded_uskl uskl_dot_ghost |- _ => inversion Hg end.
   - (* __ghostg : the counterpart is [◇] on the rule *) reflexivity.
 Qed.
 
 Lemma a_sub_complete_ghostg : forall n M Θ0 P0 P R R' Ψ Θ κ Q,
-  R' = uskl_holeg ->
+  R' = uskl_dot_ghost ->
   sub_complete_concl n a_sub_mode_sk M Θ0 P0 P R R' Ψ Θ κ Q.
 Proof.
   intros n M Θ0 P0 P R R' Ψ Θ κ Q HT.
   unfold sub_complete_concl.
   intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ Hgf.
   subst R'.
-  pose proof (a_uskl_tyequiv_holeg_l_inv Hrel) as Hsubj.
-  pose proof (msubst_uskl_syn_holeg_inv κ R Hsubj) as HR; subst R.
+  pose proof (a_uskl_tyequiv_dot_ghost_l_inv Hrel) as Hsubj.
+  pose proof (msubst_uskl_syn_dot_ghost_inv κ R Hsubj) as HR; subst R.
   cbn in HeqP; subst P.
   assert (HQ : pskl_to_bskl_inh (bskl_to_pskl Q) = Q)
-    by (eapply ad_pat_sub_fuel_holeg_target_inh; exact Hsub).
+    by (eapply ad_pat_sub_fuel_dot_ghost_target_inh; exact Hsub).
   (* ⭐ THE RUN.  Since [SI-Ghost] gained its neighbour's [M <> TI] guard
      (algo/def_rules.v), the [TI] mode is [SI-Infer]'s — and that is exactly
      the case this lemma's own header already described, because [skmod[SK]]
@@ -507,14 +507,14 @@ Qed.
 (*  repo already warns about:                                             *)
 (*                                                                        *)
 (*   · The ∀◇ row was said to be stuck because                             *)
-(*     [ad_refine_syn__tophole_keep] wants [guarded_bskl] of the target's  *)
+(*     [ad_refine_syn__univ_ghost_keep] wants [guarded_bskl] of the target's  *)
 (*     body, which a NESTED [∀◇] is not.  But a nested [∀◇] is not         *)
-(*     WELL-FORMED: [a_wf_pskl__tophole] carries [guarded_pskl] on the     *)
+(*     WELL-FORMED: [a_wf_pskl__univ_ghost] carries [guarded_pskl] on the     *)
 (*     body.  This is exactly docs/WF-SIDE-CONDITIONS.md's rule — check    *)
 (*     the paper's EXTERNAL wf before calling anything false.              *)
 (*   · The colour difference is REAL but it is not a mismatch: it is       *)
 (*     reconciled by [is_sskl], which forbids [bskl_all_inh].  At the      *)
-(*     [__hole] row that forces the fill ∀-FREE, where the syn and inh     *)
+(*     [__ghost] row that forces the fill ∀-FREE, where the syn and inh     *)
 (*     paintings COINCIDE; at the [__forall_syn] rows the source is a ∀    *)
 (*     too, so [ad_refine_syn__all] applies with both sides painted        *)
 (*     inherited.  No row actually disagrees.                             *)
@@ -544,9 +544,9 @@ Qed.
 (*                                                                        *)
 (*  Row-by-row the rest is mechanical: unit / var are reflexivity and      *)
 (*  [__var]; arrow is a congruence ([is_sskl] and wf both split);          *)
-(*  [forall_inh_*] are [is_sskl]-impossible; [ghostg] is [__hole] at       *)
-(*  [P := □]; [tophole] / [topholeg] are [__tophole_keep];                 *)
-(*  [tophole_drop] is [__tophole_remove]; and [flex_l] /                   *)
+(*  [forall_inh_*] are [is_sskl]-impossible; [ghostg] is [__ghost] at       *)
+(*  [P := □]; [univ_ghost] / [dot_univ_ghost] are [__univ_ghost_keep];                 *)
+(*  [univ_ghost_drop] is [__univ_ghost_remove]; and [flex_l] /                   *)
 (*  [flex_r] are the matching [__flex_*], where the definition is a        *)
 (*  MONOtype ([a_wf_aenv_binds_def_mono]) so the two paintings coincide    *)
 (*  again.                                                                 *)
@@ -555,10 +555,10 @@ Qed.
 (* ===================================================================== *)
 
 (* ===================================================================== *)
-(*  THE GHOST-ROW FACT — what the threaded induction needs at [__hole]     *)
+(*  THE GHOST-ROW FACT — what the threaded induction needs at [__ghost]     *)
 (*                                                                        *)
 (*  Precision fills a ghost with a SYNTHESISED painting                    *)
-(*  ([ad_refine_syn__hole] emits [pskl_to_bskl_syn]), so at a ghost the    *)
+(*  ([ad_refine_syn__ghost] emits [pskl_to_bskl_syn]), so at a ghost the    *)
 (*  two paintings agree only if the fill is ∀-FREE                         *)
 (*  ([pskl_no_forall_inh_eq_syn]).  Against a ghost SUBJECT that is        *)
 (*  exactly what consistency delivers: only three of its rows have such a  *)
@@ -612,20 +612,20 @@ Qed.
 (*  from [ad_pat_consis_ghost_subject_no_forall].                          *)
 (*                                                                        *)
 (*  ONE ROW IS STILL OPEN, and it is small and exactly stated.  At         *)
-(*  consistency's [__tophole] / [__topholeg] the goal is                   *)
-(*  [∀◇.⌊R0⌋ ⊑ ∀◇.⌊Q'⌋], which [ad_refine_syn__tophole_keep] reduces to    *)
+(*  consistency's [__univ_ghost] / [__dot_univ_ghost] the goal is                   *)
+(*  [∀◇.⌊R0⌋ ⊑ ∀◇.⌊Q'⌋], which [ad_refine_syn__univ_ghost_keep] reduces to    *)
 (*  the IH at [(R0, Q')] — with the guard supplied by the target's wf.     *)
 (*  The refinement premise, however, need not decompose the same way:      *)
-(*  inverting it at [(∀◇.⌊R0⌋, ∀◇.⌊Q'⌋)] gives [__tophole_keep] (which IS  *)
-(*  the premise the IH wants) OR [__tophole_remove] (which gives           *)
+(*  inverting it at [(∀◇.⌊R0⌋, ∀◇.⌊Q'⌋)] gives [__univ_ghost_keep] (which IS  *)
+(*  the premise the IH wants) OR [__univ_ghost_remove] (which gives           *)
 (*  [⌊R0⌋ ⊳ ∀◇.⌊Q'⌋] instead).  In the second case neither judgment can    *)
 (*  re-wrap: consistency has no rule adding a [∀◇] to the COUNTERPART      *)
 (*  without a matching one on the subject.  So the threading needs either  *)
-(*  a normalisation of the refinement premise at ∀◇ (prefer [__tophole_    *)
+(*  a normalisation of the refinement premise at ∀◇ (prefer [__univ_ghost_    *)
 (*  keep] where the target has one) or an IH tolerating the extra [∀◇].    *)
 (*                                                                        *)
 (*  ⚙ HISTORICAL: written under the earlier rules, where refinement's ∀    *)
-(*  put its binder in Δ only and [__hole] carried a wf check of the fill,  *)
+(*  put its binder in Δ only and [__ghost] carried a wf check of the fill,  *)
 (*  and when the refinement carried a fill-hygiene set [F].  None of this  *)
 (*  holds now (the ∀ binder goes into Θ AND Δ; the ghost fill only avoids  *)
 (*  Δ; [F] is gone).                                                      *)
@@ -649,16 +649,16 @@ Qed.
 (*  premise excludes the ghost.                                           *)
 (* ===================================================================== *)
 
-Lemma a_consis_hole_p0_output : forall Δ1 Δ2 Θ0 P0 P P' Θ1,
+Lemma a_consis_ghost_p0_output : forall Δ1 Δ2 Θ0 P0 P P' Θ1,
   a_consis Δ1 Δ2 Θ0 P0 P P' Θ1 ->
-  P0 = pskl_hole ->
+  P0 = pskl_ghost ->
   P' = P.
 Proof.
   intros Δ1 Δ2 Θ0 P0 P P' Θ1 H; induction H; intros Heq;
     try discriminate Heq.
   - (* __ghost : the subject is the ghost, the output is [P0] *) exact Heq.
   - (* __univ_ghost2 : [guarded_pskl □] is impossible *)
-    subst; match goal with Hg : guarded_pskl pskl_hole |- _ => inversion Hg end.
+    subst; match goal with Hg : guarded_pskl pskl_ghost |- _ => inversion Hg end.
   - (* __flex_l : the output is the subject variable *) reflexivity.
   - (* __ghost_r : the output IS the subject *) reflexivity.
 Qed.
@@ -678,7 +678,7 @@ Qed.
 (*      [⌊κR⌋ˢ = κ⌊R⌋ˢ = κP] by a one-line commutation;                    *)
 (*   4. [a_consis_complete] on the problem [(Θ0; □; P)] — its other    *)
 (*      two premises ARE this motive's refinement premises at [P0 = □];    *)
-(*   5. [a_consis_hole_p0_output] (above) says the run's output is [P], so *)
+(*   5. [a_consis_ghost_p0_output] (above) says the run's output is [P], so *)
 (*      the theorem's precision IS a precision about [P].                  *)
 (*                                                                        *)
 (*  STEP 5 LANDS THE PRECISION UNDER THE THEOREM'S OWN ζ, NOT UNDER κ, and *)
@@ -704,8 +704,8 @@ Qed.
 (*  general ≡ˢ but congruence over P's own structure with ≡ᵗ-MONOTYPES at  *)
 (*  the leaves — because a metasubstitution's images are monotypes.        *)
 (*                                                                        *)
-(*  Row by row that is: [unit] / [hole] are constructors; [arrow] / [all] / *)
-(*  [tophole] are congruences (the last by [__tophole_keep]); a RIGID      *)
+(*  Row by row that is: [unit] / [ghost] are constructors; [arrow] / [all] / *)
+(*  [univ_ghost] are congruences (the last by [__univ_ghost_keep]); a RIGID      *)
 (*  variable is                                                           *)
 (*  missed by both metasubstitutions ([msubst_lookup_notin]) so both sides *)
 (*  are the same variable; and a FLEXIBLE variable is the only real case — *)
@@ -825,12 +825,12 @@ Proof.
       * rewrite (@msubst_lookup_notin κ α Hακ), (@msubst_lookup_notin σ α Hασ).
         apply a_tyequiv__refl. constructor.
       * apply (@a_tyequiv_weaken_cons Θ (α ~ abind_tvar)). apply Hie; exact Hβ'.
-  - (* hole : [ad_refine_syn__hole] at the fill [□] *)
+  - (* ghost : [ad_refine_syn__ghost] at the fill [□] *)
     unfold ad_precise; cbn.
-    apply (@ad_refine_syn__hole Θ Δ pskl_hole). cbn. clear; fsetdec.
-  - (* tophole : [__tophole_keep], a congruence *)
+    apply (@ad_refine_syn__ghost Θ Δ pskl_ghost). cbn. clear; fsetdec.
+  - (* univ_ghost : [__univ_ghost_keep], a congruence *)
     unfold ad_precise; cbn [msubst_pskl pskl_to_bskl_inh].
-    apply ad_refine_syn_tophole_keep_intro.
+    apply ad_refine_syn_univ_ghost_keep_intro.
     apply (IH0 Θ0); try assumption.
     intros β Hβ. apply Hmap.
     apply a_binds_tvar_aenv_minus in Hβ. apply Hβ.
@@ -892,29 +892,29 @@ Qed.
 
 (** THE SHARED CORE.  At [P0 = □] the motive's three solution premises ARE
     thm:complete-consistency's, so its precision applies — and
-    [a_consis_hole_p0_output] says the consistency run returns the SUBJECT, so
+    [a_consis_ghost_p0_output] says the consistency run returns the SUBJECT, so
     that precision is about [P].  It arrives under the theorem's own ζ; the
     metasubstitution-stability lemma above moves it to κ, and
     [ad_refine_syn_trans] composes. *)
-Lemma a_sub_complete_hole_p0_precision : forall Θ0 P Θ κ Q,
+Lemma a_sub_complete_ghost_p0_precision : forall Θ0 P Θ κ Q,
   {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
   κ ∷ Θ0 ⊑ Θ ->
   {{ empty ⨟ Θ ⊢ˢ (pskl_to_uskl (msubst_pskl κ P)) ∼ Q }}ad ->
-  {{ Θ ⨟ empty ⊢ᵣ bskl_hole ⊳ Q }}ad ->
+  {{ Θ ⨟ empty ⊢ᵣ bskl_ghost ⊳ Q }}ad ->
   {{ Θ ⨟ empty ⊢ᵣₚ (msubst_pskl κ P) ⊳ (bskl_to_pskl Q) }}ad ->
   {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
   {{ Θ ⨟ empty ⊢ₚᵣ (msubst_pskl κ P) ⊑ (bskl_to_pskl Q) }}ad.
 Proof.
   intros Θ0 P Θ κ Q Hwf0 Hwfth HwfP Hinc Hconsis Hrs Hrp HwfQ.
   (* 1. thm:complete-consistency at [(Θ0; □; P)] *)
-  destruct (a_consis_complete Hwf0 (a_wf_pskl__hole Θ0 empty)
+  destruct (a_consis_complete Hwf0 (a_wf_pskl__ghost Θ0 empty)
               HwfP Hinc Hwfth Hconsis Hrs Hrp)
     as [P1 [Θ1 [Hrun Hopt]]].
   (* 2. at [P0 = □] the run's output IS the subject *)
-  pose proof (a_consis_hole_p0_output Hrun eq_refl) as HP1; subst P1.
+  pose proof (a_consis_ghost_p0_output Hrun eq_refl) as HP1; subst P1.
   (* 3. the run is an identity increase into a well-formed Θ1 *)
-  destruct (a_consis_sound_aux Hrun Hwf0 (a_wf_pskl__hole Θ0 empty) HwfP
+  destruct (a_consis_sound_aux Hrun Hwf0 (a_wf_pskl__ghost Θ0 empty) HwfP
               ltac:(intros α Hα; clear - Hα; solve_notin_auto)
               ltac:(intros β τ Hb; apply inter_empty_pointwise;
                     intros α Hα; clear - Hα; solve_notin_auto)
@@ -954,7 +954,7 @@ Lemma ad_pat_sub_fuel_ti_consis : forall n NM Ψ Θ R Q,
 Proof.
   intros n NM Ψ Θ R Q H; inversion H; subst; try congruence; destr_join;
     try assumption;                                       (* __infer *)
-    try (apply ad_pat_consis__hole; [ reflexivity | assumption ]);  (* __ghost *)
+    try (apply ad_pat_consis__ghost; [ reflexivity | assumption ]);  (* __ghost *)
     try (apply ad_pat_consis__ghostg; reflexivity).                 (* __ghostg *)
 Qed.
 
@@ -977,7 +977,7 @@ Proof.
               (fun x b Hb => Hb)) as [Hrpt _].
   pose proof (Hrpt _ _ Hrp0) as Hrp1.
   (* 1. [skmod] pins [P0 = □] — both mode-compatibility relations do *)
-  assert (HP0 : P0 = pskl_hole).
+  assert (HP0 : P0 = pskl_ghost).
   { destruct NM;
       [ pose proof (HmodTY eq_refl) as Hm | pose proof (HmodSK eq_refl) as Hm ];
       inversion Hm; reflexivity. }
@@ -997,7 +997,7 @@ Proof.
   destruct (skl_tyequiv_consis_transport Herase Hwfth
               (fun x b Hb => Hb)) as [Hct _].
   pose proof (Hct _ _ Hc0) as Hc.
-  exact (a_sub_complete_hole_p0_precision Hwf0 Hwfth HwfP Hinc Hc Hrs Hrp1 HwfQ).
+  exact (a_sub_complete_ghost_p0_precision Hwf0 Hwfth HwfP Hinc Hc Hrs Hrp1 HwfQ).
 Qed.
 
 (* ===================================================================== *)
@@ -1006,7 +1006,7 @@ Qed.
 (*  Under the earlier ROOT-level subject-refinement premise this row was   *)
 (*  VACUOUS: its counterpart is [∀◇.Q] and its subject GUARDED, and        *)
 (*  refinement has no rule putting a [∀◇] on the RIGHT of a guarded left   *)
-(*  ([ad_refine_pskl_tophole_r_shape] below; machine-checked coverage      *)
+(*  ([ad_refine_pskl_univ_ghost_r_shape] below; machine-checked coverage      *)
 (*  loss in cex/cex_p7_univ_ghost_r_vacuous.v and, for the ForallL/ForallR *)
 (*  analogues, cex/cex_p7_third_premise_forall.v).  The leaf-valid join    *)
 (*  carries the refinement at the STRIPPED counterpart [Q] instead — which *)
@@ -1018,16 +1018,16 @@ Qed.
 (** Whatever refines into a [∀◇] is itself a [◇] or a [∀◇].  No
     well-formedness is needed: the only recursive row, [__flex_l], unfolds a
     definition to a [ptyp] painting, and [ptyp_to_pskl] emits no ghost. *)
-Lemma ad_refine_pskl_tophole_r_shape : forall Θ Δ P Q,
-  {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ (pskl_tophole Q) }}ad ->
-  P = pskl_hole \/ exists P', P = pskl_tophole P'.
+Lemma ad_refine_pskl_univ_ghost_r_shape : forall Θ Δ P Q,
+  {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ (pskl_univ_ghost Q) }}ad ->
+  P = pskl_ghost \/ exists P', P = pskl_univ_ghost P'.
 Proof.
   intros Θ Δ P Q H.
-  remember (pskl_tophole Q) as Qt eqn:HQ. revert Q HQ.
+  remember (pskl_univ_ghost Q) as Qt eqn:HQ. revert Q HQ.
   induction H; intros Qx HQ; try discriminate HQ.
-  - (* __hole *) left; reflexivity.
-  - (* __tophole_remove *) right; eauto.
-  - (* __tophole_keep *) right; eauto.
+  - (* __ghost *) left; reflexivity.
+  - (* __univ_ghost_remove *) right; eauto.
+  - (* __univ_ghost_keep *) right; eauto.
   - (* __flex_l : the unfolded definition is a painting, hence no ghost *)
     exfalso.
     destruct (IHad_refine_pskl Qx HQ) as [Hc | [P0 Hc]];
@@ -1038,7 +1038,7 @@ Qed.
     particular to no ghost. *)
 Lemma guarded_uskl_erase_not_ghost : forall R,
   guarded_uskl R ->
-  ⌊ R ⌋ˢ <> pskl_hole /\ (forall P, ⌊ R ⌋ˢ <> pskl_tophole P).
+  ⌊ R ⌋ˢ <> pskl_ghost /\ (forall P, ⌊ R ⌋ˢ <> pskl_univ_ghost P).
 Proof.
   intros R H; inversion H; subst; cbn;
     (split; [ discriminate | intros; discriminate ]).
@@ -1062,25 +1062,25 @@ Proof.
 Qed.
 
 (** A [◇]-source fill into a [∀◇] strips to a fill into its body: the only
-    hole-source row is [__hole], whose target is a syn painting — of a
-    [pskl_tophole] here — and the painting's body inherits the Δ-avoidance
+    ghost-source row is [__ghost], whose target is a syn painting — of a
+    [pskl_univ_ghost] here — and the painting's body inherits the Δ-avoidance
     from the whole. *)
-Lemma ad_refine_syn_hole_tophole_inv : forall Θ Δ Q,
-  {{ Θ ⨟ Δ ⊢ᵣ bskl_hole ⊳ (bskl_tophole Q) }}ad ->
-  {{ Θ ⨟ Δ ⊢ᵣ bskl_hole ⊳ Q }}ad.
+Lemma ad_refine_syn_ghost_univ_ghost_inv : forall Θ Δ Q,
+  {{ Θ ⨟ Δ ⊢ᵣ bskl_ghost ⊳ (bskl_univ_ghost Q) }}ad ->
+  {{ Θ ⨟ Δ ⊢ᵣ bskl_ghost ⊳ Q }}ad.
 Proof.
   intros Θ Δ Q H; inversion H; subst.
   destruct P; cbn in *; try discriminate.
-  match goal with HQ : bskl_tophole _ = bskl_tophole _ |- _ =>
+  match goal with HQ : bskl_univ_ghost _ = bskl_univ_ghost _ |- _ =>
     inversion HQ; subst end.
-  apply ad_refine_syn__hole; assumption.
+  apply ad_refine_syn__ghost; assumption.
 Qed.
 
 Lemma a_sub_complete_univ_ghost_r : forall n Θ0 P0 P R R' Ψ Θ κ Q,
   guarded_uskl R' ->                                            (* row premise *)
   guarded_bskl Q ->                                            (* row premise *)
   {{ empty ⨟ Θ ⊢ˢ R' ∼ᵣ Q }}ad ->                        (* the row's JOIN *)
-  sub_complete_concl n a_sub_mode_sk mode_tc Θ0 P0 P R R' Ψ Θ κ (bskl_tophole Q).
+  sub_complete_concl n a_sub_mode_sk mode_tc Θ0 P0 P R R' Ψ Θ κ (bskl_univ_ghost Q).
 Proof.
   intros n Θ0 P0 P R R' Ψ Θ κ Q HgT HgQ Hj.
   destruct Hj as [Hrow Hrfn].
@@ -1090,7 +1090,7 @@ Proof.
   pose proof (a_uskl_tyequiv_erase Hrel) as Herase.
   rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in Herase.
   (* 1. [skmod[SK]] pins [P0 = □] *)
-  assert (HP0 : P0 = pskl_hole)
+  assert (HP0 : P0 = pskl_ghost)
     by (pose proof (HmodSK eq_refl) as Hm; inversion Hm; reflexivity).
   subst P0. cbn in Hrs.
   (* 2. the subject skeleton is guarded, so the run is [UnivGhostR] *)
@@ -1098,7 +1098,7 @@ Proof.
   { rewrite <- HeqP. eapply guarded_uskl_msubst_erase;
       [ eapply a_uskl_tyequiv_guarded; [ exact Hrel | exact HgT ]
       | rewrite HeqP; eapply a_wf_pskl_lc; exact HwfP ]. }
-  exists (pskl_tophole P), Θ0.
+  exists (pskl_univ_ghost P), Θ0.
   split; [ apply a_sub__univ_ghost_r; exact HgP | ].
   intros κ1 Hid Hinc1. exists κ.
   destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
@@ -1110,8 +1110,8 @@ Proof.
     destruct (skl_tyequiv_consis_transport Herase Hwfth
                 (fun x b Hb => Hb)) as [Hct _].
     exact (Hct _ _ H0). }
-  assert (Hrs' : {{ Θ ⨟ empty ⊢ᵣ bskl_hole ⊳ Q }}ad)
-    by (apply ad_refine_syn_hole_tophole_inv; exact Hrs).
+  assert (Hrs' : {{ Θ ⨟ empty ⊢ᵣ bskl_ghost ⊳ Q }}ad)
+    by (apply ad_refine_syn_ghost_univ_ghost_inv; exact Hrs).
   assert (Hrp : {{ Θ ⨟ empty ⊢ᵣₚ (msubst_pskl κ P) ⊳ (bskl_to_pskl Q) }}ad).
   { pose proof Hrfn as H0.
     destruct (skl_tyequiv_refine_pskl_transport Herase Hwfth
@@ -1120,14 +1120,14 @@ Proof.
   assert (HwfQ' : {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a).
   { cbn in HwfQ. inversion HwfQ; subst.
     rewrite aenv_minus_empty in *. assumption. }
-  pose proof (a_sub_complete_hole_p0_precision Hwf0 Hwfth HwfP Hinc Hc Hrs' Hrp
+  pose proof (a_sub_complete_ghost_p0_precision Hwf0 Hwfth HwfP Hinc Hc Hrs' Hrp
                 HwfQ') as Hcore.
   (* 4. wrap both sides' [∀◇] *)
   unfold ad_precise in Hcore |- *.
   rewrite msubst_bskl_pskl_to_bskl_syn.
   cbn [msubst_pskl bskl_to_pskl pskl_to_bskl_inh].
   rewrite bskl_to_pskl_pskl_to_bskl_syn.
-  apply ad_refine_syn_tophole_keep_intro; exact Hcore.
+  apply ad_refine_syn_univ_ghost_keep_intro; exact Hcore.
 Qed.
 
 (* ===================================================================== *)
@@ -1632,22 +1632,22 @@ Qed.
 (*                                                                        *)
 (*  The paper: “The refinement premise is [Θ ⊢ inh{θP0} ⊳ inh{∀α.Q}], by  *)
 (*  which we have P0 = ∀α.P0'” (:3208).  Mechanically: only [__all] and a  *)
-(*  [__tophole_remove] (∀◇-headed source, excluded by TY mode) reach an    *)
-(*  inh-∀ target — [__hole]'s fill is a SYN painting, and the [__flex_l]   *)
+(*  [__univ_ghost_remove] (∀◇-headed source, excluded by TY mode) reach an    *)
+(*  inh-∀ target — [__ghost]'s fill is a SYN painting, and the [__flex_l]   *)
 (*  chain bottoms out in monotype paintings.                               *)
 (* ===================================================================== *)
 
 Lemma ad_refine_syn_all_inh_r_shape : forall Θ Δ Qs B,
   {{ Θ ⨟ Δ ⊢ᵣ Qs ⊳ (bskl_all_inh B) }}ad ->
-  (exists A, Qs = bskl_all_inh A) \/ (exists Q0, Qs = bskl_tophole Q0).
+  (exists A, Qs = bskl_all_inh A) \/ (exists Q0, Qs = bskl_univ_ghost Q0).
 Proof.
   intros Θ Δ Qs B H.
   remember (bskl_all_inh B) as T eqn:HT. revert B HT.
   induction H; intros B0 HT; try discriminate HT.
   - (* all *) left; eauto.
-  - (* hole : a SYN painting is never an inh ∀ *)
+  - (* ghost : a SYN painting is never an inh ∀ *)
     destruct P; simpl in HT; discriminate HT.
-  - (* tophole_remove *) right; eauto.
+  - (* univ_ghost_remove *) right; eauto.
   - (* flex_l : the unfolded definition is a monotype painting *)
     exfalso.
     destruct (IHad_refine_syn _ HT) as [[A HA] | [Q0 HQ0]];
@@ -1662,9 +1662,9 @@ Proof.
   eexists; split; reflexivity.
 Qed.
 
-Lemma pskl_to_bskl_inh_tophole_inv : forall X Q,
-  pskl_to_bskl_inh X = bskl_tophole Q ->
-  exists X0, X = pskl_tophole X0.
+Lemma pskl_to_bskl_inh_univ_ghost_inv : forall X Q,
+  pskl_to_bskl_inh X = bskl_univ_ghost Q ->
+  exists X0, X = pskl_univ_ghost X0.
 Proof.
   intros X Q HQ; destruct X; simpl in HQ; inversion HQ; subst.
   eexists; reflexivity.
@@ -1687,10 +1687,10 @@ Proof.
   - inversion Heq; subst. eexists; split; reflexivity.
 Qed.
 
-Lemma msubst_pskl_tophole_inv : forall Θ0 κ Θ P0 X,
+Lemma msubst_pskl_univ_ghost_inv : forall Θ0 κ Θ P0 X,
   κ ∷ Θ0 ⊑ Θ ->
-  msubst_pskl κ P0 = pskl_tophole X ->
-  exists P0', P0 = pskl_tophole P0'.
+  msubst_pskl κ P0 = pskl_univ_ghost X ->
+  exists P0', P0 = pskl_univ_ghost P0'.
 Proof.
   intros Θ0 κ Θ P0 X Hinc Heq.
   destruct P0; simpl in Heq; try discriminate Heq; eauto.
@@ -1701,8 +1701,8 @@ Proof.
 Qed.
 
 (** An embedded TYPE has no ∀◇ head, and its ∀ head embeds a ∀ type. *)
-Lemma ptyp_to_pskl_not_tophole : forall A X,
-  ptyp_to_pskl A <> pskl_tophole X.
+Lemma ptyp_to_pskl_not_univ_ghost : forall A X,
+  ptyp_to_pskl A <> pskl_univ_ghost X.
 Proof. intros A X; destruct A; simpl; discriminate. Qed.
 
 Lemma ptyp_to_pskl_all_syn_inv : forall A X,
@@ -1743,14 +1743,14 @@ Proof.
   (* ---- 1. the fill pins [P0 = ∀.(ptyp_to_pskl A0)] ---- *)
   destruct (ad_refine_syn_all_inh_r_shape Hrs) as [[As HAs] | [Q0 HQ0]].
   2: { exfalso.
-       destruct (@pskl_to_bskl_inh_tophole_inv _ _ HQ0) as [X0 HX0].
-       destruct (@msubst_pskl_tophole_inv _ _ _ _ _ Hinc HX0) as [P0t HP0t].
+       destruct (@pskl_to_bskl_inh_univ_ghost_inv _ _ HQ0) as [X0 HX0].
+       destruct (@msubst_pskl_univ_ghost_inv _ _ _ _ _ Hinc HX0) as [P0t HP0t].
        subst P0. inversion Hmty.
        match goal with
-       | He : ptyp_to_pskl _ = pskl_tophole _ |- _ =>
-           eapply ptyp_to_pskl_not_tophole; exact He
-       | He : pskl_tophole _ = ptyp_to_pskl _ |- _ =>
-           eapply ptyp_to_pskl_not_tophole; symmetry; exact He
+       | He : ptyp_to_pskl _ = pskl_univ_ghost _ |- _ =>
+           eapply ptyp_to_pskl_not_univ_ghost; exact He
+       | He : pskl_univ_ghost _ = ptyp_to_pskl _ |- _ =>
+           eapply ptyp_to_pskl_not_univ_ghost; symmetry; exact He
        end. }
   destruct (@pskl_to_bskl_inh_all_inh_inv _ _ HAs) as [X [HX HAseq]].
   destruct (@msubst_pskl_all_syn_inv _ _ _ _ _ Hinc HX) as [P0' [HP0eq HXeq]].
@@ -2118,7 +2118,7 @@ Lemma a_sub_complete_forall_l_tagged :
      repaired [SolE-FlexR], [sub_shield] lost its guess-descending conjunct
      and, at Δρ = ∅, is unconditionally TRUE ([sub_shield_empty]).  P6-L
      discharges it internally and no longer takes it. *)
-  (guarded_pskl P0 \/ P0 = pskl_hole) ->
+  (guarded_pskl P0 \/ P0 = pskl_ghost) ->
   sub_complete_concl (S n) NM M Θ0 P0 P (uskl_all_tag ε Rb)
     (uskl_all_tag ε Rj) Ψ Θ κ Q.
 Proof.
@@ -2129,9 +2129,9 @@ Proof.
   cbn in HeqP. subst P.
   (* ---- 0. ambient facts ---- *)
   assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hinc).
-  assert (Htskψa : is_tskl ψa) by (inversion Htags; subst; assumption).
+  assert (Htskψa : is_dskl ψa) by (inversion Htags; subst; assumption).
   assert (Hdtags : d_tags_skl Ψa ψa) by (inversion Htags; subst; assumption).
-  assert (Hlcψa : lc_uskl ψa) by (apply is_tskl_lc; exact Htskψa).
+  assert (Hlcψa : lc_uskl ψa) by (apply is_dskl_lc; exact Htskψa).
   assert (Hlcall : lc_uskl (uskl_all_tag ε Rb))
     by (apply lc_uskl_of_pskl; eapply a_wf_pskl_lc; exact HwfP).
   assert (Hlcb : forall β, lc_uskl (open_uskl_wrt_uskl Rb (uskl_var_f β)))
@@ -2429,7 +2429,7 @@ Lemma a_sub_complete_forall_l_untagged :
      repaired [SolE-FlexR], [sub_shield] lost its guess-descending conjunct
      and, at Δρ = ∅, is unconditionally TRUE ([sub_shield_empty]).  P6-L
      discharges it internally and no longer takes it. *)
-  (guarded_pskl P0 \/ P0 = pskl_hole) ->
+  (guarded_pskl P0 \/ P0 = pskl_ghost) ->
   sub_complete_concl (S n) NM M Θ0 P0 P (uskl_all_syn Rb)
     (uskl_all_syn Rj) Ψ Θ κ Q.
 Proof.
@@ -2440,9 +2440,9 @@ Proof.
   cbn in HeqP. subst P.
   (* ---- 0. ambient facts ---- *)
   assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hinc).
-  assert (Htskψa : is_tskl ψa) by (inversion Htags; subst; assumption).
+  assert (Htskψa : is_dskl ψa) by (inversion Htags; subst; assumption).
   assert (Hdtags : d_tags_skl Ψa ψa) by (inversion Htags; subst; assumption).
-  assert (Hlcψa : lc_uskl ψa) by (apply is_tskl_lc; exact Htskψa).
+  assert (Hlcψa : lc_uskl ψa) by (apply is_dskl_lc; exact Htskψa).
   assert (Hlcall : lc_uskl (uskl_all_syn Rb))
     by (apply lc_uskl_of_pskl; eapply a_wf_pskl_lc; exact HwfP).
   assert (Hlcb : forall β, lc_uskl (open_uskl_wrt_uskl Rb (uskl_var_f β)))
@@ -2943,7 +2943,7 @@ Proof.
     simpl. apply a_scope_pskl__all with (L := L).
     intros α Hα. rewrite <- bskl_to_pskl_open. apply H0; exact Hα.
   - (* univ_ghost_r *)
-    simpl. apply a_scope_pskl__tophole.
+    simpl. apply a_scope_pskl__univ_ghost.
     eapply ad_pat_consis_target_wf; eassumption.
   - (* arrow *)
     simpl. apply a_scope_pskl__arrow;
@@ -2954,7 +2954,7 @@ Proof.
     rewrite bskl_to_pskl_pskl_to_bskl_inh.
     eapply a_wf_pskl_to_a_scope_pskl;
       [ eassumption | intros x b Hb; exact Hb | intros α Hα; clear - Hα; fsetdec ].
-  - (* ghostg *) simpl. apply a_scope_pskl__hole.
+  - (* ghostg *) simpl. apply a_scope_pskl__ghost.
   - (* univ_ghost_l *) exact IHad_pat_sub.
   - (* univ_ghost_lg *) exact IHad_pat_sub.
   - (* flex_mono *) exact IHad_pat_sub.
@@ -3298,8 +3298,8 @@ Proof.
     rewrite <- (@msubst_pskl_open Θs1 ζ Θ P1 α Hζ Hnζ).
     rewrite <- (@msubst_pskl_open Θs2 σ Θ P1 α Hσ Hnσ).
     exact (H0 α Hag).
-  - (* hole *) apply a_pskl_tyequiv__refl; constructor.
-  - (* tophole *) apply a_pskl_tyequiv__tophole; auto.
+  - (* ghost *) apply a_pskl_tyequiv__refl; constructor.
+  - (* univ_ghost *) apply a_pskl_tyequiv__univ_ghost; auto.
 Qed.
 
 (** The [ptyp] twin of [msubst_pskl_tyequiv_pointwise].  (Named
@@ -4337,7 +4337,7 @@ Qed.
     def-closed [D]: every rule either pins [Q] to the subject's variables
     ([__var]), recurses ([__arrow]), chases a definition ([__flex_l] /
     [__flex_r] — which is what ⇓ unfolds), or is excluded because a monotype
-    painting is never a ∀, a hole, or a tophole.
+    painting is never a ∀, a ghost, or a univ_ghost.
 
     ⚙ The hypothesis is stated on [⇓ᵗ[Θ] A], not on [A].  That is both more
     GENERAL (with a def-closed [D], [ftv A ⊆ D] gives it by
@@ -4384,15 +4384,15 @@ Proof.
     destruct A0; cbn in HeqR; try discriminate HeqR; inversion HmA.
   - (* ghostg : the subject is a ghost *)
     destruct A0; cbn in HeqR; try discriminate HeqR.
-  - (* topholeg *)
+  - (* dot_univ_ghost *)
     destruct A0; cbn in HeqR; try discriminate HeqR.
-  - (* hole *)
+  - (* ghost *)
     destruct A0; cbn in HeqR; try discriminate HeqR.
-  - (* tophole *)
+  - (* univ_ghost *)
     destruct A0; cbn in HeqR; try discriminate HeqR.
-  - (* tophole_inh *)
+  - (* univ_ghost_inh *)
     destruct A0; cbn in HeqR; try discriminate HeqR.
-  - (* tophole_drop *)
+  - (* univ_ghost_drop *)
     destruct A0; cbn in HeqR; try discriminate HeqR.
   - (* flex_l : the SUBJECT is a defined flexible — ⇓ has already chased it.
        [inversion] renames the rule's own variable, so the lookup fact is
@@ -4446,8 +4446,8 @@ Proof.
     clear - IHB1 IHB2; fsetdec.
   - (* all_syn *) apply (IHB B' (S k)).
   - (* all_inh *) apply (IHB B' (S k)).
-  - (* hole *) clear; fsetdec.
-  - (* tophole *) apply (IHB B' k).
+  - (* ghost *) clear; fsetdec.
+  - (* univ_ghost *) apply (IHB B' k).
 Qed.
 
 Corollary msubst_bskl_open_ftv_lower : forall κ B B',
@@ -4527,11 +4527,11 @@ Proof.
   - (* forall_syn *)
     destruct A0; cbn in HeqR; try discriminate HeqR; inversion HmA.
   - (* ghostg *) destruct A0; cbn in HeqR; try discriminate HeqR.
-  - (* topholeg *) destruct A0; cbn in HeqR; try discriminate HeqR.
-  - (* hole *) destruct A0; cbn in HeqR; try discriminate HeqR.
-  - (* tophole *) destruct A0; cbn in HeqR; try discriminate HeqR.
-  - (* tophole_inh *) destruct A0; cbn in HeqR; try discriminate HeqR.
-  - (* tophole_drop *) destruct A0; cbn in HeqR; try discriminate HeqR.
+  - (* dot_univ_ghost *) destruct A0; cbn in HeqR; try discriminate HeqR.
+  - (* ghost *) destruct A0; cbn in HeqR; try discriminate HeqR.
+  - (* univ_ghost *) destruct A0; cbn in HeqR; try discriminate HeqR.
+  - (* univ_ghost_inh *) destruct A0; cbn in HeqR; try discriminate HeqR.
+  - (* univ_ghost_drop *) destruct A0; cbn in HeqR; try discriminate HeqR.
   - (* flex_l : ⇓ has already chased the subject's definition *)
     destruct A0 as [ | nb | γ0 | A1 A2 | A0' ];
       cbn in HeqR; try discriminate HeqR.
@@ -4559,7 +4559,7 @@ Qed.
     refinement on [⌊·⌋ˢ] / [bskl_to_pskl], so ⇓ has to pass through both). *)
 (** ⇓-NORMALIZING THE REFINEMENT LEAF.  Same five reachable rows as
     [consis_downarrow_mono], for the same reason: at a monotype source the
-    ∀ / hole / tophole rows cannot fire. *)
+    ∀ / ghost / univ_ghost rows cannot fire. *)
 Lemma refine_pskl_downarrow_mono : forall Θ Δ P Q,
   {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad ->
   {{ ⊢ Θ }}a ->
@@ -4592,13 +4592,13 @@ Proof.
       | apply (IHHr2 Hwf A2 eq_refl ltac:(assumption) ltac:(assumption)) ].
   - (* all *)
     destruct A0; cbn in HeqP; try discriminate HeqP; inversion HmA.
-  - (* hole *)
+  - (* ghost *)
     destruct A0; cbn in HeqP; try discriminate HeqP.
-  - (* tophole_remove *)
+  - (* univ_ghost_remove *)
     destruct A0; cbn in HeqP; try discriminate HeqP.
-  - (* tophole_fill *)
+  - (* univ_ghost_fill *)
     destruct A0; cbn in HeqP; try discriminate HeqP.
-  - (* tophole_keep *)
+  - (* univ_ghost_keep *)
     destruct A0; cbn in HeqP; try discriminate HeqP.
   - (* flex_l : ⇓ has already chased the source's definition *)
     destruct A0 as [ | nb | γ0 | A1 A2 | A0' ];
@@ -4674,8 +4674,8 @@ Proof.
       by (apply msubst_bskl_open_lc;
           [ exact Hlc | clear - Hα; fsetdec ]).
     rewrite <- Heq. apply H0. clear - Hα; fsetdec.
-  - apply is_sskl__hole.
-  - apply is_sskl__tophole; assumption.
+  - apply is_sskl__ghost.
+  - apply is_sskl__univ_ghost; assumption.
 Qed.
 
 (** At a MONO-image metasubstitution the two paintings agree on the images,
@@ -4931,7 +4931,7 @@ Qed.
     subject admits either ties [Q] to the subject through a consistency leaf
     (Infer / Check / UnivGhostR / Arrow's domain), recurses (Arrow's codomain,
     ForallR, FlexMono), or is excluded by the subject's shape — a mono
-    painting is never a ∀, a ghost, or a tophole, which kills the two ForallL
+    painting is never a ∀, a ghost, or a univ_ghost, which kills the two ForallL
     rows, Ghost / GhostG and UnivGhostL / LG. *)
 Lemma sub_gv_bskl_downarrow_mono_scoped : forall n NM M Ψ Θ R Q,
   ad_pat_sub_fuel n NM M Ψ Θ R Q ->
@@ -4966,7 +4966,7 @@ Proof.
         [ apply aenv_msubst_image_ftv; exact Hwf
         | clear - Fr; solve_notin_auto | clear - Fr; solve_notin_auto ]. }
     clear - IH Hlow Hfr. fsetdec.
-  - (* univ_ghost_r : the tophole wrapper is ftv-transparent *)
+  - (* univ_ghost_r : the univ_ghost wrapper is ftv-transparent *)
     simpl.
     eapply consis_bskl_downarrow_mono_scoped;
       [ eassumption | exact Hwf | exact HeqR | exact HmA | exact HAD ].
@@ -5087,12 +5087,12 @@ Proof.
       destruct (γ == α) as [-> | Hne]; [ left; clear; fsetdec | ].
       destruct (HscQ γ ltac:(clear - Hγ Hup Hne; solve_notin_auto)) as [h | h];
         [ left; clear - h; fsetdec | right; simpl_env; clear - h; fsetdec ].
-  - (* hole : the rule's premise is context-free *)
-    apply ad_refine_pskl__hole. exact H.
-  - (* tophole_remove *)
-    apply ad_refine_pskl__tophole_remove. apply IHad_refine_pskl; auto.
-  - (* tophole_fill : the opener joins the CONTEXT *)
-    apply ad_refine_pskl__tophole_fill
+  - (* ghost : the rule's premise is context-free *)
+    apply ad_refine_pskl__ghost. exact H.
+  - (* univ_ghost_remove *)
+    apply ad_refine_pskl__univ_ghost_remove. apply IHad_refine_pskl; auto.
+  - (* univ_ghost_fill : the opener joins the CONTEXT *)
+    apply ad_refine_pskl__univ_ghost_fill
       with (L := L `union` dom Θ `union` dom Θ' `union` Δ).
     intros α Hα.
     apply H0; [ clear - Hα; fsetdec | | | | | | ].
@@ -5113,8 +5113,8 @@ Proof.
         [ right; simpl_env; clear; fsetdec | ].
       destruct (HscQ γ ltac:(clear - Hγ Hup Hne; solve_notin_auto)) as [h | h];
         [ left; exact h | right; simpl_env; clear - h; fsetdec ].
-  - (* tophole_keep *)
-    apply ad_refine_pskl__tophole_keep.
+  - (* univ_ghost_keep *)
+    apply ad_refine_pskl__univ_ghost_keep.
     apply IHad_refine_pskl; auto.
   - (* flex_l *)
     assert (hd : α `in` dom Θ').
@@ -5352,11 +5352,11 @@ Proof.
       destruct (γ == α) as [-> | Hne]; [ left; clear; fsetdec | ].
       destruct (HscP γ ltac:(clear - Hγ Hup Hne; solve_notin_auto)) as [h | h];
         [ left; clear - h; fsetdec | right; simpl_env; clear - h; fsetdec ].
-  - (* hole : the rule's premises are context-free *)
-    apply ad_refine_syn__hole; assumption.
-  - apply ad_refine_syn_tophole_remove_intro. apply IHad_refine_syn; auto.
-  - (* tophole_fill : the opener joins the CONTEXT *)
-    apply ad_refine_syn_tophole_fill_intro
+  - (* ghost : the rule's premises are context-free *)
+    apply ad_refine_syn__ghost; assumption.
+  - apply ad_refine_syn_univ_ghost_remove_intro. apply IHad_refine_syn; auto.
+  - (* univ_ghost_fill : the opener joins the CONTEXT *)
+    apply ad_refine_syn_univ_ghost_fill_intro
       with (L := L `union` dom Θ `union` dom Θ' `union` Δ).
     intros α Hα.
     apply H1; [ clear - Hα; fsetdec | | | | | | ].
@@ -5377,7 +5377,7 @@ Proof.
         [ right; simpl_env; clear; fsetdec | ].
       destruct (HscP γ ltac:(clear - Hγ Hup Hne; solve_notin_auto)) as [h | h];
         [ left; exact h | right; simpl_env; clear - h; fsetdec ].
-  - apply ad_refine_syn_tophole_keep_intro.
+  - apply ad_refine_syn_univ_ghost_keep_intro.
     apply IHad_refine_syn; auto.
   - (* flex_l *)
     assert (hd : α `in` dom Θ').
@@ -5481,10 +5481,10 @@ Proof.
         assert (Hne : γ <> α) by (intro Hc; subst; clear - Hα HγΘ; fsetdec).
         assert (Hn' : β `notin` Δ) by (clear - Hn; fsetdec).
         specialize (Hγn Hn'). clear - Hγn Hne. fsetdec.
-  - apply a_wf_pskl__hole.
-  - (* tophole : its body is checked at [aenv_minus Θ Δ], which the
+  - apply a_wf_pskl__ghost.
+  - (* univ_ghost : its body is checked at [aenv_minus Θ Δ], which the
        images' Δ-avoidance keeps them visible in *)
-    apply a_wf_pskl__tophole.
+    apply a_wf_pskl__univ_ghost.
     + apply guarded_pskl_msubst_mono; assumption.
     + apply IHa_wf_pskl; [ exact Hlc | exact Hmono | | ].
       * intros β Hβ. exfalso. clear - Hβ. fsetdec.
@@ -5538,7 +5538,7 @@ Qed.
 
 (** ⇓-NORMALIZING THE FILL.  Unlike the two leaf normalizations of §(L0) the
     source here is NOT a monotype ([κP0] is an arbitrary skeleton), so the
-    induction covers every row: the [__hole] fill must stay off Δ under ⇓
+    induction covers every row: the [__ghost] fill must stay off Δ under ⇓
     (the images are Θ-scoped, which Δ avoids), the two ∀
     rows need the open-commutation, and the two [__flex_*] rows are exactly
     the chases ⇓ has already performed. *)
@@ -5592,9 +5592,9 @@ Proof.
     rewrite aenv_msubst_tvar_cons.
     assert (HαΘ : α `notin` dom Θ) by (clear - Hα; fsetdec).
     exact (@downarrow_images_avoid_cons Θ Δ α Hwf HαΘ HΔ).
-  - (* hole : ⇓ of the FILL, which the images keep off Δ *)
+  - (* ghost : ⇓ of the FILL, which the images keep off Δ *)
     simpl. rewrite msubst_bskl_pskl_to_bskl_syn.
-    apply ad_refine_syn__hole.
+    apply ad_refine_syn__ghost.
     apply inter_empty_pointwise. intros γ HγΔ Hγ.
     destruct (msubst_pskl_ftv_ex _ _ Hγ) as [β [Hβ Hγβ]].
     destruct (AtomSetProperties.In_dec β (dom (aenv_msubst Θ))) as [Hin | Hn].
@@ -5602,12 +5602,12 @@ Proof.
     + rewrite (@msubst_lookup_notin _ β Hn) in Hγβ. simpl in Hγβ.
       assert (Heq : γ = β) by (clear - Hγβ; fsetdec). subst γ.
       clear - H Hβ HγΔ. fsetdec.
-  - (* tophole_remove *)
-    simpl. apply ad_refine_syn_tophole_remove_intro.
+  - (* univ_ghost_remove *)
+    simpl. apply ad_refine_syn_univ_ghost_remove_intro.
     apply IHad_refine_syn; [ exact Hwf | exact HΔ ].
-  - (* tophole_fill : the opener joins the CONTEXT, which ⇓ ignores *)
+  - (* univ_ghost_fill : the opener joins the CONTEXT, which ⇓ ignores *)
     simpl.
-    apply ad_refine_syn_tophole_fill_intro
+    apply ad_refine_syn_univ_ghost_fill_intro
       with (L := L `union` dom Θ `union` Δ `union` dom (aenv_msubst Θ)).
     intros α Hα.
     assert (Hwf' : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
@@ -5621,8 +5621,8 @@ Proof.
       by (apply msubst_bskl_open_lc;
           [ apply aenv_msubst_lc; exact Hwf | clear - Hα; fsetdec ]).
     rewrite HeqP in IH. simpl in IH. exact IH.
-  - (* tophole_keep *)
-    simpl. apply ad_refine_syn_tophole_keep_intro.
+  - (* univ_ghost_keep *)
+    simpl. apply ad_refine_syn_univ_ghost_keep_intro.
     apply IHad_refine_syn; [ exact Hwf | exact HΔ ].
   - (* flex_l : ⇓ has already chased the source's definition *)
     assert (Hlk : msubst_lookup (aenv_msubst Θ) α = ⇓ᵗ[ Θ ] τ)
@@ -5707,10 +5707,10 @@ Proof.
         [ apply aenv_msubst_image_ftv; exact Hwf
         | clear - Fr; solve_notin_auto | clear - Fr; solve_notin_auto ]. }
     clear - IH Hlow Hup Hfr. fsetdec.
-  - (* hole : the source has no free variables *) simpl. clear; fsetdec.
-  - (* tophole_remove *)
+  - (* ghost : the source has no free variables *) simpl. clear; fsetdec.
+  - (* univ_ghost_remove *)
     pose proof (IHad_refine_syn Hwf) as IH. simpl. clear - IH; fsetdec.
-  - (* tophole_fill : same as [all], with the opener joining the CONTEXT *)
+  - (* univ_ghost_fill : same as [all], with the opener joining the CONTEXT *)
     simpl.
     pick fresh α for (L `union` Δ `union` dom Θ `union` ftvar_in_bskl Q
                       `union` ftvar_in_bskl Q' `union` dom (aenv_msubst Θ)).
@@ -5733,7 +5733,7 @@ Proof.
         [ apply aenv_msubst_image_ftv; exact Hwf
         | clear - Fr; solve_notin_auto | clear - Fr; solve_notin_auto ]. }
     clear - IH Hup Hfr. fsetdec.
-  - (* tophole_keep *)
+  - (* univ_ghost_keep *)
     pose proof (IHad_refine_syn Hwf) as IH. simpl. clear - IH; fsetdec.
   - (* flex_l : under ⇓ the variable and its definition are the SAME term *)
     assert (Hlk : msubst_lookup (aenv_msubst Θ) α = ⇓ᵗ[ Θ ] τ)
@@ -5812,12 +5812,12 @@ Proof.
               | apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ] | ].
     intros β Hβ. apply a_binds_tvar_cons_tvar.
     destruct (a_binds_tvar_cons_tvar_inv Hβ) as [-> | Hβ']; auto.
-  - (* hole *)
-    replace (pskl_to_bskl_inh pskl_hole)
-      with (pskl_to_bskl_syn pskl_hole) at 2 by reflexivity.
-    apply ad_refine_syn__hole. cbn. clear; fsetdec.
-  - (* tophole : its body's wf context embeds too *)
-    apply ad_refine_syn_tophole_keep_intro.
+  - (* ghost *)
+    replace (pskl_to_bskl_inh pskl_ghost)
+      with (pskl_to_bskl_syn pskl_ghost) at 2 by reflexivity.
+    apply ad_refine_syn__ghost. cbn. clear; fsetdec.
+  - (* univ_ghost : its body's wf context embeds too *)
+    apply ad_refine_syn_univ_ghost_keep_intro.
     apply IHa_wf_pskl; [ exact Hwf | ].
     intros β Hβ. apply Hmap.
     apply a_binds_tvar_aenv_minus in Hβ. apply Hβ.

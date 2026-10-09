@@ -101,10 +101,10 @@ Open Scope fresco_e_scope.
     term typable. *)
 Corollary e_typing_run_sound_infer : forall e r,
   {{ nil ⊢ᵉ e }}a ->
-  e_typing_run (entry_supply pskl_hole e)
-    mode_ti nil pskl_hole e = Some r ->
+  e_typing_run (entry_supply pskl_ghost e)
+    mode_ti nil pskl_ghost e = Some r ->
   nil ⊴ (ty_ctx r) /\ {{ ⊢ (ty_ctx r) }}a /\ a_wf_ptyp (ty_ctx r) (ty_out r) /\
-  ({{ (ty_ctx r) ⨟ empty ⊢ᵣ bskl_hole
+  ({{ (ty_ctx r) ⨟ empty ⊢ᵣ bskl_ghost
       ⊳ (btyp_to_bskl (ptyp_to_btyp_syn (ty_out r))) }}ad) /\
   exists ζ, ζ ∷ (ty_ctx r) ⊑ nil /\
     ({{ nil ⊢ˢᵈ[ mode_ti ]
@@ -243,8 +243,8 @@ Corollary e_typing_run_complete_decl_infer : forall e (B : btyp),
   {{ nil ⊢ᵉ e }}d ->
   {{ nil ⊢[ mode_ti ] e ⦂ B }}d ->
   exists r,
-    e_typing_run (entry_supply pskl_hole e)
-      mode_ti nil pskl_hole e = Some r.
+    e_typing_run (entry_supply pskl_ghost e)
+      mode_ti nil pskl_ghost e = Some r.
 Proof.
   intros e B Hwfd Hd.
   (* the subject's algorithmic wf and local closure are DERIVED, not
@@ -265,14 +265,14 @@ Proof.
                  (@nil (atom * abind)%type) (@nil (atom * abind)%type))
     by apply rel_aenv__nil.
   assert (H2 : rel_pskl (@nil (atom * atom)%type) empty
-                 pskl_hole pskl_hole)
-    by apply rel_pskl__hole.
+                 pskl_ghost pskl_ghost)
+    by apply rel_pskl__ghost.
   assert (H3 : rel_exp (@nil (atom * atom)%type) empty e e)
     by (apply rel_exp_refl; clear - Hfv Hftv; fsetdec).
   assert (H7 : {{ ⊢ (@nil (atom * abind)%type) }}a) by apply a_wf_aenv__nil.
   assert (H8 : uniq (@nil (atom * abind)%type)) by apply uniq_nil.
   assert (H9 : ftvar_in_aenv (@nil (atom * abind)%type)
-               [<=] ftvar_in_pskl pskl_hole ∪ fvar_in_exp e
+               [<=] ftvar_in_pskl pskl_ghost ∪ fvar_in_exp e
                     ∪ ftvar_in_exp e)
     by (simpl; clear; fsetdec).
   assert (H10 : empty [<=] ftvar_in_aenv (@nil (atom * abind)%type))
@@ -282,24 +282,24 @@ Proof.
                 a `notin` cols_l (@nil (atom * atom)%type))
     by (intros a Hx Hy Hc; simpl in Hc; clear - Hc; fsetdec).
   assert (H12 : dom (@nil (atom * abind)%type)
-                [<=] ftvar_in_pskl pskl_hole ∪ fvar_in_exp e
+                [<=] ftvar_in_pskl pskl_ghost ∪ fvar_in_exp e
                      ∪ ftvar_in_exp e)
     by (simpl; clear; fsetdec).
   assert (H13 : empty ∪ cols_r (@nil (atom * atom)%type)
-                [<=] ftvar_in_pskl pskl_hole ∪ fvar_in_exp e
+                [<=] ftvar_in_pskl pskl_ghost ∪ fvar_in_exp e
                      ∪ ftvar_in_exp e)
     by (simpl; clear; fsetdec).
-  assert (H14 : ftvar_in_pskl pskl_hole ∪ ftvar_in_exp e ∪ fvar_in_exp e
-                [<=] ftvar_in_pskl pskl_hole ∪ fvar_in_exp e
+  assert (H14 : ftvar_in_pskl pskl_ghost ∪ ftvar_in_exp e ∪ fvar_in_exp e
+                [<=] ftvar_in_pskl pskl_ghost ∪ fvar_in_exp e
                      ∪ ftvar_in_exp e)
     by (clear; fsetdec).
-  assert (H15 : {{ (@nil (atom * abind)%type) ⨟ empty ⊢ₚₛ pskl_hole }}a)
-    by apply a_wf_pskl__hole.
+  assert (H15 : {{ (@nil (atom * abind)%type) ⨟ empty ⊢ₚₛ pskl_ghost }}a)
+    by apply a_wf_pskl__ghost.
   destruct (a_typing_rel_e Ha H1 H2 H3 Hagr Hinj Hfun H7 H8 H9 H10 H11
               H12 H13 H14 H15 Hwfe a_ty_mode_compat__ti)
     as (S1 & ρe & Θ1e & Be & De & _).
   eapply e_typing_run_complete_init;
-    [ exact De | exact lc_pskl_hole | exact Hlc ].
+    [ exact De | exact lc_pskl_ghost | exact Hlc ].
 Qed.
 
 (** The CHECK twin, against a closed well-formed [B]. *)
@@ -403,16 +403,16 @@ Qed.
 Definition fresco_infer (e : exp) (Hwf : {{ nil ⊢ᵉ e }}d) :
   sumor
     (sig (fun r : typing_result =>
-       e_typing_run (entry_supply pskl_hole e)
-         mode_ti nil pskl_hole e = Some r /\
+       e_typing_run (entry_supply pskl_ghost e)
+         mode_ti nil pskl_ghost e = Some r /\
        exists ζ, ζ ∷ (ty_ctx r) ⊑ nil /\
          {{ nil ⊢[ mode_ti ]
             e ⦂ (ptyp_to_btyp_syn (msubst_ptyp ζ (ty_out r))) }}d))
     (~ exists B : btyp, {{ nil ⊢[ mode_ti ] e ⦂ B }}d).
 Proof.
   destruct (e_typing_run
-              (entry_supply pskl_hole e)
-              mode_ti nil pskl_hole e) as [ r | ] eqn:Hrun.
+              (entry_supply pskl_ghost e)
+              mode_ti nil pskl_ghost e) as [ r | ] eqn:Hrun.
   - (* the runner answered — §1's soundness stamps the certificate *)
     apply inleft.
     (* the [eqn:] destruct rewrote the goal's runner call to [Some r],

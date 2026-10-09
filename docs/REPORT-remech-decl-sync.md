@@ -7,18 +7,18 @@ Policy: the paper is never changed; the mechanization is corrected to match.
 
 ## A. Genuine inconsistencies (FIXED on `re-mech`)
 
-**A1. `is_tskl` admitted untagged quantifiers.**
+**A1. `is_dskl` admitted untagged quantifiers.**
 Paper decorated skeletons (declarative.tex:1796) are
 `ψ ::= 1 | α | ψ→ψ | ∀^ε α.ψ | HoleG | TopHoleG.ψ` — *every* quantifier is
-tagged.  The mech's `is_tskl` (fresco/def_shapes.v) had an extra
-`is_tskl__all_syn` case accepting the untagged `uskl_all_syn`.  Consequence:
+tagged.  The mech's `is_dskl` (fresco/def_shapes.v) had an extra
+`is_dskl__all_syn` case accepting the untagged `uskl_all_syn`.  Consequence:
 `d_pat_sub`'s ForallL could instantiate with a ψ containing untagged
 quantifiers whose tags are never recorded in Ψ′ — i.e. guessing a polytype not
 determined by inherited information, contradicting the paper's headline
 no-guessing invariant.  **Fix**: removed the `all_syn` case.
 
 **A2. `d_tags_skl` defined beyond ψ's grammar.**
-It had cases for `uskl_all_syn`, `uskl_hole`, `uskl_tophole`, which are not in
+It had cases for `uskl_all_syn`, `uskl_ghost`, `uskl_univ_ghost`, which are not in
 the ψ grammar (the paper defines `tags{Ψ}{ψ}` only on decorated skeletons).
 Mostly latent given A1's gate, but the `all_syn` case (body's tags, no tag for
 the quantifier itself) actively co-enabled A1.  **Fix**: restricted to exactly
@@ -95,8 +95,8 @@ and other unused machinery dropped.
   clear Δ).  Equivalent since {Γ, Δ} partition the tvars.
 - **Ambient wf side-conditions as premises**: `skmod` (`mod_comp_ty/sk`),
   skeleton well-formedness, and guardedness appear as explicit premises on the
-  rules that need them (`d_pat_sub__ghost/ghostg/infer`, `d_pat_consis__hole`,
-  `d_refine_syn__tophole_keep`, `d_pat__abs/abs_anno`, `d_refine_syn__var`),
+  rules that need them (`d_pat_sub__ghost/ghostg/infer`, `d_pat_consis__ghost`,
+  `d_refine_syn__univ_ghost_keep`, `d_pat__abs/abs_anno`, `d_refine_syn__var`),
   where the paper states them once as judgment-wide well-formedness conditions.
 - **Tag contexts** are Coq `atoms` sets: plain `union` where the paper writes
   `Ψ,Ψ'`; `inter = ∅` sidecars where it writes `⊎` (in `tags{Ψ}{φ/ψ}`).
@@ -130,4 +130,4 @@ Order (leaf → root), strictly following the paper's own proofs:
 Legacy proof files that depended on the pre-sync definitions were moved to
 `*.v.legacy` (git-tracked, out of the build) pending their bottom-up redo:
 all old `fresco/algo/*.v` except the new `def_extra.v`, plus the decl prop
-files that reference the removed `d_pat__sub`/`is_base_term`/`is_tskl__all_syn`.
+files that reference the removed `d_pat__sub`/`is_base_term`/`is_dskl__all_syn`.

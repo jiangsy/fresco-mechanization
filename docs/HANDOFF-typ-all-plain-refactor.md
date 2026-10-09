@@ -19,7 +19,7 @@
 
 1. **language.ott** — `typ_all_plain` removed from `typ` grammar; `ctyp`
    inductive added (parallel to `typ` but with no decoration: ctyp_unit,
-   ctyp_var_f, ctyp_arrow, ctyp_all, ctyp_hole, ctyp_tophole).
+   ctyp_var_f, ctyp_arrow, ctyp_all, ctyp_ghost, ctyp_univ_ghost).
 2. **Makefile** — added sed pass: `Notation ctypvar := typvar.` so
    ott/lngen-generated `ctypvar` (alias of `var`) becomes definitionally
    identical to `typvar`. Without this, `eq_dec` picks distinct

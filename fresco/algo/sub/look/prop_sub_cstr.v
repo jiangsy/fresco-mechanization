@@ -114,7 +114,7 @@ Require Import src.fresco.algo.sub.look.prop_sub_var.
     (sub/look/prop_flex_apart.v): Δ can be shrunk freely.  Sub-ForallL needs
     both directions — it hands the IH the precision premise at [add β Δ]
     (β joins Δρ, and [Δρ ⊆ Δ]) and must return the IH's conclusion at
-    plain Δ.  The only row that reads Δ is [ad_ppre__hole], whose
+    plain Δ.  The only row that reads Δ is [ad_ppre__ghost], whose
     disjointness side condition is ANTITONE in Δ, so shrinking needs no
     freshness (unlike weakening). *)
 Lemma ad_partial_precise_delta_shrink : forall Θ Δf Ψ P ψ,
@@ -132,14 +132,14 @@ Proof.
   - eapply ad_ppre__forall with (L := L); [ | eassumption ].
     intros α0 Hα0.
     apply (H0 α0 Hα0 (add α0 Δ0)). clear - Hsub; fsetdec.
-  - (* hole : the side condition is antitone in Δ *)
-    apply ad_ppre__hole; [ assumption | ].
+  - (* ghost : the side condition is antitone in Δ *)
+    apply ad_ppre__ghost; [ assumption | ].
     match goal with Hint : _ ∩ _ [=] empty |- _ =>
       clear - Hint Hsub; fsetdec end.
-  - apply ad_ppre__tophole_remove. exact (IHad_partial_precise Δ0 Hsub).
-  - eapply ad_ppre__tophole_fill with (L := L).
+  - apply ad_ppre__univ_ghost_remove. exact (IHad_partial_precise Δ0 Hsub).
+  - eapply ad_ppre__univ_ghost_fill with (L := L).
     intros α0 Hα0. exact (H0 α0 Hα0 Δ0 Hsub).
-  - apply ad_ppre__tophole_keep. exact (IHad_partial_precise Δ0 Hsub).
+  - apply ad_ppre__univ_ghost_keep. exact (IHad_partial_precise Δ0 Hsub).
   - eapply ad_ppre__flex_l; [ eassumption | ].
     exact (IHad_partial_precise Δ0 Hsub).
   - eapply ad_ppre__flex_r; [ eassumption | ].
@@ -284,8 +284,8 @@ Inductive alpha_stack (α : atom) : pskl -> Prop :=
     (forall β, β `notin` L ->
        alpha_stack α (open_pskl_wrt_pskl P (pskl_var_f β))) ->
     alpha_stack α (pskl_all_syn P)
-| ast_tophole : forall P,
-    alpha_stack α P -> alpha_stack α (pskl_tophole P).
+| ast_univ_ghost : forall P,
+    alpha_stack α P -> alpha_stack α (pskl_univ_ghost P).
 
 (** The stack's leaf is α itself, so a binder ≠ α is never reached and the
     shape is renaming-stable.  This is what lifts a SINGLE β-instance to
@@ -301,7 +301,7 @@ Proof.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
       [ | clear - Hβ1; fsetdec | apply lc_pskl_var_f ].
     apply H0; [ clear - Hβ1; solve_notin | exact Hne ].
-  - apply ast_tophole; apply IHalpha_stack; exact Hne.
+  - apply ast_univ_ghost; apply IHalpha_stack; exact Hne.
 Qed.
 
 Lemma alpha_stack_all_of_one : forall α P β,
@@ -535,7 +535,7 @@ Proof.
     rewrite Hsubj in Hrho.
     cbn in HΨs1.        (* ftag_in_uskl (uskl_var_f α) = empty *)
     assert (Hlcψa : lc_uskl ψa)
-      by (apply is_tskl_lc; inversion Htags; assumption).
+      by (apply is_dskl_lc; inversion Htags; assumption).
     (* ⭕ (2026-08-05) THE GUESS-DESCENDING HALF IS GONE.  This was the ONLY
        row that consumed it — [R'] is pinned to [uskl_var_f α] here, the very
        position the guess replaces, so the positional guard was free.  P6-Sv
@@ -767,15 +767,15 @@ Proof.
     { rewrite Forall_forall. intros p Hp0.
       pose proof (forall_wf_mono_images_dom HFs p Hp0) as Hb.
       clear - Hb HβΘw; fsetdec. }
-    destruct (pskl_hole_dec P0) as [HP0h | HP0nh].
+    destruct (pskl_ghost_dec P0) as [HP0h | HP0nh].
     { (* ⭐⭐ GHOST TARGET.  [ForallL]'s guard is [guarded P0 ∨ P0 = ◇], so
          this cell is reachable — and there the runner answers LS-Vacuous
          before it looks at the subject's ∀.  The IH STILL RAN; what a ghost
          target forces is the ANSWER, and it forces it to the IDENTITY:
            - the collection's one EMITTING row at [◇] is LS-Var, which pins
-             the subject to [α] ([a_looksub_hole_target]), so [Ξc = ·];
+             the subject to [α] ([a_looksub_ghost_target]), so [Ξc = ·];
            - solving at [◇] returns the accumulator whatever was collected
-             ([a_solve_sub_hole_target_inv] — no guard is owed on the SOLVE
+             ([a_solve_sub_ghost_target_inv] — no guard is owed on the SOLVE
              layer, since SS-ForallL re-CLOSES its opener and so AGREES with
              SS-Vacuous).
          ⭐ The precision then comes from the IH's [Hprec], NOT from [Hpre]:
@@ -783,14 +783,14 @@ Proof.
          conclusion's [Ψi ∪ Ψa] is unobtainable from [Hpre]'s [Ψi] — and
          ForallL, unlike Infer/UnivGhostR, has no premise making [Ψa] empty. *)
       subst P0.
-      destruct (a_looksub_hole_target HLK) as [HΞc HC].
+      destruct (a_looksub_ghost_target HLK) as [HΞc HC].
       assert (HSid : Ξs = nil /\ Pa = Pi).
       { destruct HC as [HCn | [_ HCv]]; rewrite HCn in HSolve || rewrite HCv in HSolve;
         inversion HSolve; subst;
           [ split; reflexivity
           | match goal with
-            | Hs : {{ _ ⊢ₛ _ ≼[ _ ] pskl_hole ⤳ _ ⨾ _ }}a |- _ =>
-                destruct (a_solve_sub_hole_target_inv Hs) as [Hn1 Hn2]
+            | Hs : {{ _ ⊢ₛ _ ≼[ _ ] pskl_ghost ⤳ _ ⨾ _ }}a |- _ =>
+                destruct (a_solve_sub_ghost_target_inv Hs) as [Hn1 Hn2]
             end; split; assumption ]. }
       destruct HSid as [HΞs HPa].
       assert (Hκcn : κc = nil) by
@@ -1141,7 +1141,7 @@ Proof.
   - (* Infer : M = TI, so [skmod] forces P0 = □; LS-Vacuous collects
        nothing and the identity solve returns Pi.  The rule's Ψ = ∅ gives
        Ψa = ∅, so the conclusion's precision is the premise's. *)
-    assert (HP0 : P0 = pskl_hole).
+    assert (HP0 : P0 = pskl_ghost).
     { destruct NM;
         [ pose proof (HmodTY eq_refl) as Hm
         | pose proof (HmodSK eq_refl) as Hm ];
@@ -1726,7 +1726,7 @@ Proof.
               apply a_looksub__forall_r with (β := β);
                 [ exact (ptyp_to_pskl_ghost_free (ptyp_all A0))
                 | clear - Fr; solve_notin
-                | apply alpha_stack_ftv; apply ast_tophole; exact Hstt
+                | apply alpha_stack_ftv; apply ast_univ_ghost; exact Hstt
                 | discriminate
                 | exact HLK ].
            ++ (* solve *)
@@ -1761,12 +1761,12 @@ Proof.
               eapply ad_partial_precise_strengthen_tvar; exact Hprec.
            ++ (* ftv 𝒞 : the RIGHT disjunct *)
               intros _; right; repeat split; try reflexivity;
-              [ apply ast_tophole; exact Hstt | eexists; reflexivity ].
+              [ apply ast_univ_ghost; exact Hstt | eexists; reflexivity ].
            ++ (* the SOLVE's block vs the constraints: kept VERBATIM *)
               exact HapartR.
   - (* UnivGhostR : NM = SK at M = TC, so [skmod] forces P0 = □ again and
        the case closes exactly like Infer. *)
-    assert (HP0 : P0 = pskl_hole)
+    assert (HP0 : P0 = pskl_ghost)
       by (pose proof (HmodSK eq_refl) as Hm; inversion Hm; reflexivity).
     subst P0.
     exists nil, nil, nil, Pi, (@nil (atom * ptyp)), (@nil (atom * ptyp)).
@@ -2557,7 +2557,7 @@ Proof.
     assert (Hlcψ : lc_uskl ψ)
       by (apply lc_uskl_of_pskl; eapply a_wf_pskl_lc; exact Hwfψ).
     assert (Hlcψa : lc_uskl ψa)
-      by (apply is_tskl_lc; inversion Htags; assumption).
+      by (apply is_dskl_lc; inversion Htags; assumption).
     pick fresh β for
       (Lρ `union` dom Θ `union` dom Θ0 `union` dom κ `union` Δ `union` Δρ
          `union` def_ftv Θ `union` singleton α `union` ftvar_in_uskl R
@@ -2846,7 +2846,7 @@ Proof.
     assert (Hlcψ : lc_uskl ψ)
       by (apply lc_uskl_of_pskl; eapply a_wf_pskl_lc; exact Hwfψ).
     assert (Hlcψa : lc_uskl ψa)
-      by (apply is_tskl_lc; inversion Htags; assumption).
+      by (apply is_dskl_lc; inversion Htags; assumption).
     pick fresh β for
       (Lρ `union` dom Θ `union` dom Θ0 `union` dom κ `union` Δ `union` Δρ
          `union` def_ftv Θ `union` singleton α `union` ftvar_in_uskl R
@@ -3102,7 +3102,7 @@ Proof.
       | exact HeraseR | exact HβΘ | exact HβΘ0 | exact HβΘw | exact Hβψa
       | exact Hβα | clear - Fr; solve_notin | exact REC ].
 
-  - (* Ghost : IMPOSSIBLE — the subject is [uskl_hole], so R' is □ and has
+  - (* Ghost : IMPOSSIBLE — the subject is [uskl_ghost], so R' is □ and has
        no free variables, contradicting α ∈ ftv R'. *)
     exfalso.
     destruct R' as [ | rn | β | Ra Rb | R0 | εr R0 | | R0 | | R0 ];
@@ -3110,7 +3110,7 @@ Proof.
       solve [ contradiction (HRnv _ eq_refl)
             | clear - HαR; fsetdec
             | inversion Hrho ].
-  - (* GhostG : IMPOSSIBLE for the same reason (subject [uskl_holeg]). *)
+  - (* GhostG : IMPOSSIBLE for the same reason (subject [uskl_dot_ghost]). *)
     exfalso.
     destruct R' as [ | rn | β | Ra Rb | R0 | εr R0 | | R0 | | R0 ];
       cbn in Hrho, HαR;
@@ -3140,7 +3140,7 @@ Proof.
        with 𝒞, Ξc, Pa, κc ALL UNCHANGED — P0 does not move, so [sub_shield]
        threads as is and every other conjunct of the conclusion is
        literally the recursive one.  R''s shape comes from [HeqSub] by
-       [destruct R']: every branch but [tophole] discriminates, and the
+       [destruct R']: every branch but [univ_ghost] discriminates, and the
        variable branch is [HRnv]. *)
     destruct R' as [ | rn | β | Ra Rb | R0 | εr R0 | | R0 | | R0 ];
       cbn in Hrho, HαR, HeraseR;
@@ -3148,7 +3148,7 @@ Proof.
                 | clear - HαR; fsetdec ].
     (* the ρ-IMAGE keeps the ghost: the rule already fixes it as [∀◇R], so the
        inversion's equation is an injection and the sub-ρ is at the SAME Ψρ *)
-    destruct (uskl_rsubst_tophole_r_inv Hrho) as (Rb0 & HeqRs & Hrho0).
+    destruct (uskl_rsubst_univ_ghost_r_inv Hrho) as (Rb0 & HeqRs & Hrho0).
     injection HeqRs as HeqRs. rewrite <- HeqRs in Hrho0. clear HeqRs.
     (* the SUBJECT moves, so the shield steps with [sss_univ_ghost_l] —
        P0 stands still *)
@@ -3182,7 +3182,7 @@ Proof.
       (* the wf premise is on the IMAGE now, so it strips directly *)
       assert (HwfSubj0 : {{ Θ ⨟ empty ⊢ₚₛ (uskl_to_pskl R) }}a)
         by (cbn [uskl_to_pskl] in HwfSubj;
-            eapply a_wf_pskl_tophole_inv; exact HwfSubj).
+            eapply a_wf_pskl_univ_ghost_inv; exact HwfSubj).
       destruct (AtomSetProperties.In_dec α (ftvar_in_pskl ⌊ R0 ⌋ˢ))
         as [Hin0 | Hnin0].
       - destruct (pskl_eq_var_dec ⌊ R0 ⌋ˢ α) as [Heq0 | Hne0].
@@ -3227,20 +3227,20 @@ Proof.
                      & Hκf0 & Hprec0 & HftvC0 & HapartR).
     (* ⭐⭐ ◇-DISPATCH.  At a ghost target the runner answers LS-Vacuous before
        it looks at the subject's ⫯, so the ANSWER is forced to the identity —
-       collection empty ([a_looksub_hole_target]; its one emitting row pins the
+       collection empty ([a_looksub_ghost_target]; its one emitting row pins the
        subject to [α]) and solve the accumulator
-       ([a_solve_sub_hole_target_inv]).  Normalise, then the pack is the same
+       ([a_solve_sub_ghost_target_inv]).  Normalise, then the pack is the same
        one the non-ghost branch passes through. *)
-    destruct (pskl_hole_dec P0) as [HP0h | HP0nh].
+    destruct (pskl_ghost_dec P0) as [HP0h | HP0nh].
     { subst P0.
-      destruct (a_looksub_hole_target Hlook) as [HΞn HCn].
+      destruct (a_looksub_ghost_target Hlook) as [HΞn HCn].
       assert (HSid : Ξs = nil /\ Pa = Pi).
       { destruct HCn as [HCe | [_ HCe]]; rewrite HCe in Hsolve0;
         inversion Hsolve0; subst;
           [ split; reflexivity
           | match goal with
-            | Hs : {{ _ ⊢ₛ _ ≼[ _ ] pskl_hole ⤳ _ ⨾ _ }}a |- _ =>
-                destruct (a_solve_sub_hole_target_inv Hs) as [Hn1 Hn2]
+            | Hs : {{ _ ⊢ₛ _ ≼[ _ ] pskl_ghost ⤳ _ ⨾ _ }}a |- _ =>
+                destruct (a_solve_sub_ghost_target_inv Hs) as [Hn1 Hn2]
             end; split; assumption ]. }
       destruct HSid as [HΞs HPa].
       assert (Hκcn : κc = nil) by
@@ -3275,8 +3275,8 @@ Proof.
       | exact Hfms0 | exact HPaSc | exact HapartR | ].
     exists 𝒞r, Ξc, Ξs, Pa, κc, κs.
     (* everything but the three ends passes through untouched; the ftv
-       conjunct's RIGHT disjunct gains the ghost wrapper ([ast_tophole]),
-       since ⌊∀◇R0⌋ˢ = ⌊∀◈R0⌋ˢ = [pskl_tophole ⌊R0⌋ˢ] *)
+       conjunct's RIGHT disjunct gains the ghost wrapper ([ast_univ_ghost]),
+       since ⌊∀◇R0⌋ˢ = ⌊∀◈R0⌋ˢ = [pskl_univ_ghost ⌊R0⌋ˢ] *)
     repeat split; try assumption;
       [ rewrite <- HeraseR; exact Hlookr
       | intros HMtc;
@@ -3285,18 +3285,18 @@ Proof.
               [ left; exact Hleft
               | right; repeat split; try reflexivity;
                 [ rewrite <- HeraseR; cbn [uskl_to_pskl];
-                  apply ast_tophole; exact Hstk
+                  apply ast_univ_ghost; exact Hstk
                 | exists Tc; reflexivity ] ]
           | right; repeat split;
               [ rewrite <- HeraseR; cbn [uskl_to_pskl]; rewrite HQvar;
-                apply ast_tophole; apply ast_var
+                apply ast_univ_ghost; apply ast_var
               | exact HΞn
               | rewrite HΞn in Hkeys0;
                 destruct κc as [ | pc κc' ];
                   [ reflexivity | cbn in Hkeys0; discriminate Hkeys0 ]
               | exists T'; exact HT' ] ] ].
   - (* UnivGhostLG : identical, for the dotted ghost — both ∀◇ and ∀◈
-       ERASE to [pskl_tophole], so the very same LS-UnivGhostL rebuild
+       ERASE to [pskl_univ_ghost], so the very same LS-UnivGhostL rebuild
        applies and only the surviving [destruct R'] branch differs. *)
     destruct R' as [ | rn | β | Ra Rb | R0 | εr R0 | | R0 | | R0 ];
       cbn in Hrho, HαR, HeraseR;
@@ -3304,7 +3304,7 @@ Proof.
                 | clear - HαR; fsetdec ].
     (* the ρ-IMAGE keeps the ghost: the rule already fixes it as [∀◇R], so the
        inversion's equation is an injection and the sub-ρ is at the SAME Ψρ *)
-    destruct (uskl_rsubst_topholeg_r_inv Hrho) as (Rb0 & HeqRs & Hrho0).
+    destruct (uskl_rsubst_dot_univ_ghost_r_inv Hrho) as (Rb0 & HeqRs & Hrho0).
     injection HeqRs as HeqRs. rewrite <- HeqRs in Hrho0. clear HeqRs.
     (* the SUBJECT moves, so the shield steps with [sss_univ_ghost_lg] —
        P0 stands still *)
@@ -3338,7 +3338,7 @@ Proof.
       (* the wf premise is on the IMAGE now, so it strips directly *)
       assert (HwfSubj0 : {{ Θ ⨟ empty ⊢ₚₛ (uskl_to_pskl R) }}a)
         by (cbn [uskl_to_pskl] in HwfSubj;
-            eapply a_wf_pskl_tophole_inv; exact HwfSubj).
+            eapply a_wf_pskl_univ_ghost_inv; exact HwfSubj).
       destruct (AtomSetProperties.In_dec α (ftvar_in_pskl ⌊ R0 ⌋ˢ))
         as [Hin0 | Hnin0].
       - destruct (pskl_eq_var_dec ⌊ R0 ⌋ˢ α) as [Heq0 | Hne0].
@@ -3383,20 +3383,20 @@ Proof.
                      & Hκf0 & Hprec0 & HftvC0 & HapartR).
     (* ⭐⭐ ◇-DISPATCH.  At a ghost target the runner answers LS-Vacuous before
        it looks at the subject's ⫯, so the ANSWER is forced to the identity —
-       collection empty ([a_looksub_hole_target]; its one emitting row pins the
+       collection empty ([a_looksub_ghost_target]; its one emitting row pins the
        subject to [α]) and solve the accumulator
-       ([a_solve_sub_hole_target_inv]).  Normalise, then the pack is the same
+       ([a_solve_sub_ghost_target_inv]).  Normalise, then the pack is the same
        one the non-ghost branch passes through. *)
-    destruct (pskl_hole_dec P0) as [HP0h | HP0nh].
+    destruct (pskl_ghost_dec P0) as [HP0h | HP0nh].
     { subst P0.
-      destruct (a_looksub_hole_target Hlook) as [HΞn HCn].
+      destruct (a_looksub_ghost_target Hlook) as [HΞn HCn].
       assert (HSid : Ξs = nil /\ Pa = Pi).
       { destruct HCn as [HCe | [_ HCe]]; rewrite HCe in Hsolve0;
         inversion Hsolve0; subst;
           [ split; reflexivity
           | match goal with
-            | Hs : {{ _ ⊢ₛ _ ≼[ _ ] pskl_hole ⤳ _ ⨾ _ }}a |- _ =>
-                destruct (a_solve_sub_hole_target_inv Hs) as [Hn1 Hn2]
+            | Hs : {{ _ ⊢ₛ _ ≼[ _ ] pskl_ghost ⤳ _ ⨾ _ }}a |- _ =>
+                destruct (a_solve_sub_ghost_target_inv Hs) as [Hn1 Hn2]
             end; split; assumption ]. }
       destruct HSid as [HΞs HPa].
       assert (Hκcn : κc = nil) by
@@ -3431,8 +3431,8 @@ Proof.
       | exact Hfms0 | exact HPaSc | exact HapartR | ].
     exists 𝒞r, Ξc, Ξs, Pa, κc, κs.
     (* everything but the three ends passes through untouched; the ftv
-       conjunct's RIGHT disjunct gains the ghost wrapper ([ast_tophole]),
-       since ⌊∀◇R0⌋ˢ = ⌊∀◈R0⌋ˢ = [pskl_tophole ⌊R0⌋ˢ] *)
+       conjunct's RIGHT disjunct gains the ghost wrapper ([ast_univ_ghost]),
+       since ⌊∀◇R0⌋ˢ = ⌊∀◈R0⌋ˢ = [pskl_univ_ghost ⌊R0⌋ˢ] *)
     repeat split; try assumption;
       [ rewrite <- HeraseR; exact Hlookr
       | intros HMtc;
@@ -3441,11 +3441,11 @@ Proof.
               [ left; exact Hleft
               | right; repeat split; try reflexivity;
                 [ rewrite <- HeraseR; cbn [uskl_to_pskl];
-                  apply ast_tophole; exact Hstk
+                  apply ast_univ_ghost; exact Hstk
                 | exists Tc; reflexivity ] ]
           | right; repeat split;
               [ rewrite <- HeraseR; cbn [uskl_to_pskl]; rewrite HQvar;
-                apply ast_tophole; apply ast_var
+                apply ast_univ_ghost; apply ast_var
               | exact HΞn
               | rewrite HΞn in Hkeys0;
                 destruct κc as [ | pc κc' ];
@@ -3470,8 +3470,8 @@ Qed.
 (*  originally planned.  A ψa-relative ftv-𝒞 conclusion alone is           *)
 (*  UNREACHABLE: its leaf needs the sub-side analogue of                   *)
 (*  [ad_pat_consis_target_ftv], and that is FALSE — machine-checked,       *)
-(*  cex/cex_p6ss_sub_target_ftv.v.  [is_tskl] excludes [__ghost] but NOT   *)
-(*  [__forall_l_tagged] ([uskl_all_tag] IS [is_tskl]), whose guess is     *)
+(*  cex/cex_p6ss_sub_target_ftv.v.  [is_dskl] excludes [__ghost] but NOT   *)
+(*  [__forall_l_tagged] ([uskl_all_tag] IS [is_dskl]), whose guess is     *)
 (*  bounded only by [dom Θ], the DERIVATION's context — which              *)
 (*  [__forall_r] grows by the very β being stripped.                       *)
 (*                                                                        *)

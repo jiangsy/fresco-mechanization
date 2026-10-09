@@ -226,7 +226,7 @@ Proof.
     destruct (atom_fresh S0) as [α2 Hα2].
     exists (add α2 S0), ((α, α2) :: nil), ((α2 ~ abind_flex_mono) ++ nil),
       (ptyp_var_f α2).
-    split; [ apply e_guess_mono__hole; exact Hα2 | ].
+    split; [ apply e_guess_mono__ghost; exact Hα2 | ].
     split; [ reflexivity | ].
     split; [ reflexivity | ].
     simpl. constructor. apply rel_atom__pair. left. reflexivity.
@@ -240,7 +240,7 @@ Proof.
     destruct (IHHG S0 Q0 ρ V Hbody Hscp1 Hcov)
       as (S1 & ρn & Ξ2 & A2 & HG2 & E1 & E2 & Hrel').
     exists S1, ρn, Ξ2, A2.
-    split; [ apply e_guess_mono__tophole; exact HG2 | ].
+    split; [ apply e_guess_mono__univ_ghost; exact HG2 | ].
     split; [ exact E1 | split; [ exact E2 | exact Hrel' ] ].
   - (* a variable — nothing is invented, and the two names are ρ-related *)
     inversion Hrel; subst.
@@ -506,13 +506,13 @@ Proof.
   - (* SE-GhostL: a ghost subject answers the target *)
     inversion HrelP; subst.
     exists S0, nil, nil, Q3.
-    split; [ apply e_solve_eq__hole_l | ].
+    split; [ apply e_solve_eq__ghost_l | ].
     split; [ reflexivity | split; [ reflexivity | ] ].
     simpl. exact HrelQ.
   - (* SE-VacuousR: a ghost target answers the subject *)
     inversion HrelQ; subst.
     exists S0, nil, nil, P3.
-    split; [ apply e_solve_eq__hole_r | ].
+    split; [ apply e_solve_eq__ghost_r | ].
     split; [ reflexivity | split; [ reflexivity | ] ].
     simpl. exact HrelP.
   - (* ⭐ SE-Arrow — both sides thread, so the second half's coverage is the
@@ -676,8 +676,8 @@ Proof.
       by (clear - Hcov; simpl in *; fsetdec).
     destruct (IHHD S0 Θ2 P2b Q2b ρ V HrP0 HrQ0 Hagr Hscp1 Hblk HdΘ Hscp2 Hcov')
       as (S1 & ρn & Ξ2 & Y2 & D2p & E1 & E2 & Hrel').
-    exists S1, ρn, Ξ2, (pskl_tophole Y2).
-    split; [ apply e_solve_eq__tophole_both; exact D2p | ].
+    exists S1, ρn, Ξ2, (pskl_univ_ghost Y2).
+    split; [ apply e_solve_eq__univ_ghost_both; exact D2p | ].
     split; [ exact E1 | split; [ exact E2 | ] ].
     constructor. exact Hrel'.
   - (* SE-GhostForall: the TARGET opens; the subject stays whole *)
@@ -722,7 +722,7 @@ Proof.
     assert (HupQ : ftvar_in_pskl (open_pskl_wrt_pskl Q2b (pskl_var_f β2))
                    [<=] ftvar_in_pskl (pskl_var_f β2) ∪ ftvar_in_pskl Q2b)
       by (apply ftvar_in_pskl_open_pskl_wrt_pskl_upper).
-    assert (Hcov' : ftvar_in_pskl (pskl_tophole P2b)
+    assert (Hcov' : ftvar_in_pskl (pskl_univ_ghost P2b)
                     ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q2b (pskl_var_f β2))
                       [<=] add β2 S0)
       by (simpl in *; clear - Hcov HupQ; fsetdec).
@@ -740,7 +740,7 @@ Proof.
           [ exact HrQ0 | clear - Hβ1; fsetdec
           | clear - Hβ2 Hcov; simpl in Hcov; fsetdec ]).
     destruct (IHHD (add β2 S0) ((β2 ~ abind_tvar) ++ Θ2)
-                (pskl_tophole P2b)
+                (pskl_univ_ghost P2b)
                 (open_pskl_wrt_pskl Q2b (pskl_var_f β2))
                 ((β, β2) :: restrict_pairs β β2 ρ) V
                 ltac:(apply rel_pskl_extend_pair; constructor; exact HrP0r)
@@ -753,7 +753,7 @@ Proof.
     pose proof (dom_flex_pairs_r ρn) as Hdfr. rewrite <- E2 in Hdfr.
     exists S1, ρn, Ξ2, (pskl_all_syn (close_pskl_wrt_pskl β2 Y2)).
     split;
-      [ apply e_solve_eq__tophole_l_all with (β := β2);
+      [ apply e_solve_eq__univ_ghost_l_all with (β := β2);
         [ exact Hβ2 | exact D2p ] | ].
     split; [ exact E1 | split; [ exact E2 | ] ].
     constructor.
@@ -777,7 +777,7 @@ Proof.
       as (S1 & ρn & Ξ2 & Y2 & D2p & E1 & E2 & Hrel').
     exists S1, ρn, Ξ2, Y2.
     split.
-    { apply e_solve_eq__tophole_l_guarded;
+    { apply e_solve_eq__univ_ghost_l_guarded;
         [ eapply rel_pskl_guarded; [ exact HrelQ | assumption ]
         | exact D2p ]. }
     split; [ exact E1 | split; [ exact E2 | exact Hrel' ] ].
@@ -824,7 +824,7 @@ Proof.
                    [<=] ftvar_in_pskl (pskl_var_f β2) ∪ ftvar_in_pskl P2b)
       by (apply ftvar_in_pskl_open_pskl_wrt_pskl_upper).
     assert (Hcov' : ftvar_in_pskl (open_pskl_wrt_pskl P2b (pskl_var_f β2))
-                    ∪ ftvar_in_pskl (pskl_tophole Q2b) [<=] add β2 S0)
+                    ∪ ftvar_in_pskl (pskl_univ_ghost Q2b) [<=] add β2 S0)
       by (simpl in *; clear - Hcov HupP; fsetdec).
     assert (Hd1p : dom Ξ ∩ ftvar_in_aenv ((β ~ abind_tvar) ++ Θ) [=] empty)
       by (exact ((proj2 a_solve_sub_eq_generated_fresh_set) _ _ _ _ _ HD)).
@@ -841,7 +841,7 @@ Proof.
           | clear - Hβ2 Hcov; simpl in Hcov; fsetdec ]).
     destruct (IHHD (add β2 S0) ((β2 ~ abind_tvar) ++ Θ2)
                 (open_pskl_wrt_pskl P2b (pskl_var_f β2))
-                (pskl_tophole Q2b)
+                (pskl_univ_ghost Q2b)
                 ((β, β2) :: restrict_pairs β β2 ρ) V
                 ltac:(apply rel_pskl_open_pair; exact HrP0r)
                 ltac:(apply rel_pskl_extend_pair; constructor; exact HrQ0r)
@@ -853,7 +853,7 @@ Proof.
     pose proof (dom_flex_pairs_r ρn) as Hdfr. rewrite <- E2 in Hdfr.
     exists S1, ρn, Ξ2, (pskl_all_syn (close_pskl_wrt_pskl β2 Y2)).
     split;
-      [ apply e_solve_eq__all_l_tophole with (β := β2);
+      [ apply e_solve_eq__all_l_univ_ghost with (β := β2);
         [ exact Hβ2 | exact D2p ] | ].
     split; [ exact E1 | split; [ exact E2 | ] ].
     constructor.
@@ -877,7 +877,7 @@ Proof.
       as (S1 & ρn & Ξ2 & Y2 & D2p & E1 & E2 & Hrel').
     exists S1, ρn, Ξ2, Y2.
     split.
-    { apply e_solve_eq__tophole_r_guarded;
+    { apply e_solve_eq__univ_ghost_r_guarded;
         [ eapply rel_pskl_guarded; [ exact HrelP | assumption ]
         | exact D2p ]. }
     split; [ exact E1 | split; [ exact E2 | exact Hrel' ] ].
@@ -938,8 +938,8 @@ Proof.
         | intros a Ha Hin; apply Hv;
             [ simpl; clear - Ha; fsetdec | exact Hin ] ].
   - apply rel_pskl__all_syn. apply IHHrel; assumption.
-  - apply rel_pskl__hole.
-  - apply rel_pskl__tophole. apply IHHrel; assumption.
+  - apply rel_pskl__ghost.
+  - apply rel_pskl__univ_ghost. apply IHHrel; assumption.
 Qed.
 
 Lemma a_solve_sub_rel_e : forall Θ1 m P1 Q1 Ξ1 P1',
@@ -1106,7 +1106,7 @@ Proof.
       by (clear - Hcov; simpl in *; fsetdec).
     destruct (IHHD S0 Θ2 P3b Q3 ρ V HrP0 HrelQ Hagr Hscp1 Hblk HdΘ Hscp2 Hcov')
       as (S1 & ρx & ρn & Ξ2 & Y2 & D2p & E1 & E2 & Hρx & Htr & Hrel').
-    exists S1, ρx, ρn, Ξ2, (pskl_tophole Y2).
+    exists S1, ρx, ρn, Ξ2, (pskl_univ_ghost Y2).
     split; [ apply e_solve_sub__univ_ghost_l; exact D2p | ].
     split; [ exact E1 | split; [ exact E2 | ] ].
     split; [ exact Hρx | ].
@@ -1340,13 +1340,13 @@ Proof.
         rename xc into Q3a; rename xd into Q3b
     end.
     match goal with
-    | He : a_solve_eq Θ pskl_hole Q1 ?x ?y |- _ => rename He into HDeq
+    | He : a_solve_eq Θ pskl_ghost Q1 ?x ?y |- _ => rename He into HDeq
     end.
-    assert (HcovA : ftvar_in_pskl pskl_hole ∪ ftvar_in_pskl Q3a [<=] S0)
+    assert (HcovA : ftvar_in_pskl pskl_ghost ∪ ftvar_in_pskl Q3a [<=] S0)
       by (clear - Hcov; simpl in *; fsetdec).
     assert (Hblk1 : dom Ξ1 ∩ cols_l ρ [=] empty)
       by (rewrite dom_app in Hblk; clear - Hblk; fsetdec).
-    destruct (a_solve_eq_rel_e HDeq (rel_pskl__hole ρ V) HrQa Hagr Hscp1
+    destruct (a_solve_eq_rel_e HDeq (rel_pskl__ghost ρ V) HrQa Hagr Hscp1
                 Hblk1 HdΘ Hscp2 HcovA)
       as (S1 & ρnA & Ξ2a & P2a' & D2a & E1a & E2a & HrelA').
     pose proof (e_solve_eq_supply_grows D2a) as Hgr1.
@@ -1370,7 +1370,7 @@ Proof.
       by (rewrite dom_app; clear - Hi2a HdΘ Hgr1; fsetdec).
     assert (Hscp2' : V ∪ cols_r (ρnA ++ ρ) [<=] S1).
     { rewrite cols_r_app. clear - Hscp2 Hdfr Hi2a Hgr1. fsetdec. }
-    assert (HcovB : ftvar_in_pskl pskl_hole ∪ ftvar_in_pskl Q3b [<=] S1)
+    assert (HcovB : ftvar_in_pskl pskl_ghost ∪ ftvar_in_pskl Q3b [<=] S1)
       by (clear - Hcov Hgr1; simpl in *; fsetdec).
     assert (Hd1b : dom Ξ2 ∩ ftvar_in_aenv (Ξ1 ++ Θ) [=] empty)
       by (exact ((proj1 a_solve_sub_eq_generated_fresh_set) _ _ _ _ _ _ HD)).
@@ -1379,13 +1379,13 @@ Proof.
       pose proof (dom_subset_ftvar_in_aenv Ξ1) as Hds.
       rewrite dom_app in Hblk.
       clear - Hd1b Hds Hdfl Hblk. fsetdec. }
-    destruct (IHHD S1 (Ξ2a ++ Θ2) pskl_hole Q3b (ρnA ++ ρ) V
-                (rel_pskl__hole (ρnA ++ ρ) V)
+    destruct (IHHD S1 (Ξ2a ++ Θ2) pskl_ghost Q3b (ρnA ++ ρ) V
+                (rel_pskl__ghost (ρnA ++ ρ) V)
                 ltac:(apply rel_pskl_widen; exact HrQb)
                 Hagr' Hscp1' Hblk2 HdΘ' Hscp2' HcovB)
       as (S2 & ρx & ρnB & Ξ2b & P2b' & D2b & E1b & E2b & Hρx & Htr & HrelB').
     exists S2, ρx, (ρnB ++ ρnA), (Ξ2b ++ Ξ2a),
-      (pskl_tophole (pskl_arrow P2a' P2b')).
+      (pskl_univ_ghost (pskl_arrow P2a' P2b')).
     split; [ eapply e_solve_sub__ghost_l_fn; [ exact D2a | exact D2b ] | ].
     split;
       [ rewrite flex_pairs_l_app; rewrite <- E1a, <- E1b; reflexivity | ].
@@ -1402,7 +1402,7 @@ Proof.
     + rel_perm HrelB'.
   - (* SS-GhostL: no premise; the target passes as the pattern *)
     inversion HrelP; subst.
-    exists S0, nil, nil, nil, (pskl_tophole Q3).
+    exists S0, nil, nil, nil, (pskl_univ_ghost Q3).
     split.
     { apply e_solve_sub__ghost_l.
       - eapply rel_pskl_ghost_free; [ exact HrelQ | assumption ].
@@ -1656,7 +1656,7 @@ Qed.
 Lemma a_extract_rel_e_gen :
   forall Θ1 α m NM P1 P1' Ξ1L C1 Ξ1F Q1 Ξ1G Q1',
   {{ Θ1 ⊢ P1 ≼[ α , m ] P1' ⤳ Ξ1L ⨾ C1 }}a ->
-  {{ (Ξ1L ++ Θ1) ⊩ C1 ⨾ pskl_hole ⤳ Ξ1F ⨾ Q1 }}a ->
+  {{ (Ξ1L ++ Θ1) ⊩ C1 ⨾ pskl_ghost ⤳ Ξ1F ⨾ Q1 }}a ->
   a_guess (Ξ1F ++ Ξ1L ++ Θ1) NM Q1 Ξ1G Q1' ->
   (* ⛔ THE TWO GUARDS THE ROW OWES — see the box above.  The second is the
      GUESS's half (2026-08-21, §8c.41). *)
@@ -1815,7 +1815,7 @@ Proof.
   assert (Hscp2F : (V ∩ ftvar_in_aenv Θ1)
                      ∪ cols_r ((α, α) :: ρxL ++ ρnL ++ ρ) [<=] S1)
     by (cbn [cols_r snd]; clear - HVS1 Hcr1 HαS1; fsetdec).
-  assert (HcovF : ftvar_in_pskl pskl_hole ∪ ftvar_in_a_cstrs C2 [<=] S1).
+  assert (HcovF : ftvar_in_pskl pskl_ghost ∪ ftvar_in_a_cstrs C2 [<=] S1).
   { assert (HcC : ftvar_in_a_cstrs C2 [<=] S1)
       by (eapply e_looksub_cstr_ftvar; [ exact DL | clear - Hcov; fsetdec ]).
     simpl. clear - HcC. fsetdec. }
@@ -1831,7 +1831,7 @@ Proof.
       + apply rel_atom__pair. left. reflexivity.
       + apply rel_atom__id. clear - Ha Hne HVSadd. fsetdec. }
   destruct (a_solve_cstr_rel_e HF
-              (rel_pskl__hole ((α, α) :: ρxL ++ ρnL ++ ρ)
+              (rel_pskl__ghost ((α, α) :: ρxL ++ ρnL ++ ρ)
                  (V ∩ ftvar_in_aenv Θ1)) HrCS
               HagrS Hscp1F HblkF HdΘF Hscp2F HcovF)
     as (S2 & ρxF & ρnF & Ξ2F & Q2 & DF & E1F & E2F & HρF & HtrF & HrQ).
@@ -2517,11 +2517,11 @@ Lemma lift_consis_forall_syn_row : forall Δ1 Δ2 Θ0 Θ1 P0 P Q α,
   α `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
     `union` ftvar_in_pskl P `union` Δ1 `union` Δ2 ->
   {{ ((α ~ abind_tvar) ++ Θ0)
-     ⊢[ Δ1 | (add α Δ2) | (pskl_tophole P0) ] (open_pskl_wrt_pskl P (pskl_var_f α)) ∼ Q
+     ⊢[ Δ1 | (add α Δ2) | (pskl_univ_ghost P0) ] (open_pskl_wrt_pskl P (pskl_var_f α)) ∼ Q
      ⊣ ((α ~ abind_tvar) ++ Θ1) }}a ->
   lift_consis_concl Δ1 (add α Δ2) ((α ~ abind_tvar) ++ Θ0)
-    (pskl_tophole P0) (open_pskl_wrt_pskl P (pskl_var_f α)) Q ((α ~ abind_tvar) ++ Θ1) ->
-  lift_consis_concl Δ1 Δ2 Θ0 (pskl_tophole P0) (pskl_all_syn P)
+    (pskl_univ_ghost P0) (open_pskl_wrt_pskl P (pskl_var_f α)) Q ((α ~ abind_tvar) ++ Θ1) ->
+  lift_consis_concl Δ1 Δ2 Θ0 (pskl_univ_ghost P0) (pskl_all_syn P)
     (pskl_all_syn (close_pskl_wrt_pskl α Q)) Θ1.
 Proof.
   intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr HD IH.
@@ -2572,8 +2572,8 @@ Proof.
     by (apply rel_pskl_restrict;
         [ exact HrPb | clear - HfrP; simpl in HfrP; fsetdec
         | clear - Hα2 HcovP; simpl in HcovP; fsetdec ]).
-  assert (HrP0' : rel_pskl ((α, α2) :: restrict_pairs α α2 ρ) V (pskl_tophole P0) (pskl_tophole P0b2))
-    by (apply rel_pskl__tophole; eapply rel_pskl_mono;
+  assert (HrP0' : rel_pskl ((α, α2) :: restrict_pairs α α2 ρ) V (pskl_univ_ghost P0) (pskl_univ_ghost P0b2))
+    by (apply rel_pskl__univ_ghost; eapply rel_pskl_mono;
         [ exact HrP0r | intros x y Hx; right; exact Hx
         | intros x Hx; exact Hx ]).
   assert (HrP' : rel_pskl ((α, α2) :: restrict_pairs α α2 ρ) V (open_pskl_wrt_pskl P (pskl_var_f α)) (open_pskl_wrt_pskl P12 (pskl_var_f α2)))
@@ -2630,14 +2630,14 @@ Proof.
   assert (Hcov' : V ∪ cols_r ((α, α2) :: restrict_pairs α α2 ρ)
                   [<=] add α2 S0)
     by (simpl; clear - Hcov Hcr0; fsetdec).
-  assert (HcovP' : ftvar_in_pskl (pskl_tophole P0b2) ∪ ftvar_in_pskl (open_pskl_wrt_pskl P12 (pskl_var_f α2))
+  assert (HcovP' : ftvar_in_pskl (pskl_univ_ghost P0b2) ∪ ftvar_in_pskl (open_pskl_wrt_pskl P12 (pskl_var_f α2))
                    [<=] add α2 S0).
   { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P12
                   (pskl_var_f α2)) as Hu2.
     simpl in Hu2, HcovP |- *. clear - Hu2 HcovP. fsetdec. }
   assert (HcovΔ' : Δ1' ∪ (add α2 Δ2') [<=] add α2 S0)
     by (clear - HcovΔ; fsetdec).
-  assert (Hwfp0' : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (pskl_tophole P0) }}a)
+  assert (Hwfp0' : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (pskl_univ_ghost P0) }}a)
     by (eapply a_wf_pskl_weaken_tvarish;
         [ intros γ Hγ; apply (a_binds_tvar_weaken_mid nil (α ~ abind_tvar));
           exact Hγ
@@ -2674,7 +2674,7 @@ Proof.
                   [<=] ftvar_in_aenv ((α ~ abind_tvar) ++ Θ0))
     by (simpl; clear - HΔsc; fsetdec).
   destruct (IH (add α2 S0) ((α2 ~ abind_tvar) ++ Θ0') Δ1' (add α2 Δ2')
-              (pskl_tophole P0b2) (open_pskl_wrt_pskl P12 (pskl_var_f α2)) ((α, α2) :: restrict_pairs α α2 ρ) V
+              (pskl_univ_ghost P0b2) (open_pskl_wrt_pskl P12 (pskl_var_f α2)) ((α, α2) :: restrict_pairs α α2 ρ) V
               HrΘ' HrP0' HrP' Hrd1' Hrd2' Hagr' Hinj' Hfun' Hwf' Huq2' Hftv2'
               Hscp' Hblk' HdΘ' Hcov' HcovP' HcovΔ' Hwfp0' Hwfp' HΔtv' Hnfd'
               Hfaf' HΔsc')
@@ -2685,7 +2685,7 @@ Proof.
   destruct Hsnd as (Hinc1 & HwfΘ1α & Hdmp & HΔinv & Hrest).
   (* ---- side 2's output: the OPENER SURVIVES as a rigid prefix ---- *)
   assert (HcovS : ftvar_in_aenv ((α2 ~ abind_tvar) ++ Θ0')
-                  ∪ ftvar_in_pskl (pskl_tophole P0b2) ∪ ftvar_in_pskl (open_pskl_wrt_pskl P12 (pskl_var_f α2))
+                  ∪ ftvar_in_pskl (pskl_univ_ghost P0b2) ∪ ftvar_in_pskl (open_pskl_wrt_pskl P12 (pskl_var_f α2))
                   ∪ Δ1' ∪ (add α2 Δ2') [<=] add α2 S0).
   { repeat apply AtomSetProperties.union_subset_3;
       [ exact Hftv2'
@@ -2700,10 +2700,10 @@ Proof.
     by (exact ((proj2 (proj2 a_assign_unify_consis_uniq))
                  _ _ _ _ _ _ _ HaD Huq2')).
   (* ---- the e-side conclusion, and the shared closer ---- *)
-  assert (Dc : {{ S0 ↝ S1 ⊨ Θ0' ⊢[ Δ1' | Δ2' | (pskl_tophole P0b2) ] (pskl_all_syn P12)
+  assert (Dc : {{ S0 ↝ S1 ⊨ Θ0' ⊢[ Δ1' | Δ2' | (pskl_univ_ghost P0b2) ] (pskl_all_syn P12)
                   ∼ (pskl_all_syn (close_pskl_wrt_pskl α2 Q')) ⊣ Θ1' }}e)
     by (apply e_consis__forall_syn with (α := α2); [ exact Hα2 | exact De ]).
-  assert (HcovC : ftvar_in_aenv Θ0' ∪ ftvar_in_pskl (pskl_tophole P0b2)
+  assert (HcovC : ftvar_in_aenv Θ0' ∪ ftvar_in_pskl (pskl_univ_ghost P0b2)
                   ∪ ftvar_in_pskl (pskl_all_syn P12) ∪ Δ1' ∪ Δ2' [<=] S0).
   { repeat apply AtomSetProperties.union_subset_3;
       [ exact Hftv2
@@ -2721,11 +2721,11 @@ Lemma lift_consis_univ_ghost1_row : forall Δ1 Δ2 Θ0 Θ1 P0 P Q α,
   α `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
     `union` ftvar_in_pskl P `union` Δ1 `union` Δ2 ->
   {{ ((α ~ abind_tvar) ++ Θ0)
-     ⊢[ (add α Δ1) | Δ2 | (open_pskl_wrt_pskl P0 (pskl_var_f α)) ] (pskl_tophole P) ∼ Q
+     ⊢[ (add α Δ1) | Δ2 | (open_pskl_wrt_pskl P0 (pskl_var_f α)) ] (pskl_univ_ghost P) ∼ Q
      ⊣ ((α ~ abind_tvar) ++ Θ1) }}a ->
   lift_consis_concl (add α Δ1) Δ2 ((α ~ abind_tvar) ++ Θ0)
-    (open_pskl_wrt_pskl P0 (pskl_var_f α)) (pskl_tophole P) Q ((α ~ abind_tvar) ++ Θ1) ->
-  lift_consis_concl Δ1 Δ2 Θ0 (pskl_all_syn P0) (pskl_tophole P)
+    (open_pskl_wrt_pskl P0 (pskl_var_f α)) (pskl_univ_ghost P) Q ((α ~ abind_tvar) ++ Θ1) ->
+  lift_consis_concl Δ1 Δ2 Θ0 (pskl_all_syn P0) (pskl_univ_ghost P)
     (pskl_all_syn (close_pskl_wrt_pskl α Q)) Θ1.
 Proof.
   intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr HD IH.
@@ -2778,8 +2778,8 @@ Proof.
         | clear - Hα2 HcovP; simpl in HcovP; fsetdec ]).
   assert (HrP0' : rel_pskl ((α, α2) :: restrict_pairs α α2 ρ) V (open_pskl_wrt_pskl P0 (pskl_var_f α)) (open_pskl_wrt_pskl P0b2 (pskl_var_f α2)))
     by (apply rel_pskl_open_pair; exact HrP0r).
-  assert (HrP' : rel_pskl ((α, α2) :: restrict_pairs α α2 ρ) V (pskl_tophole P) (pskl_tophole P12))
-    by (apply rel_pskl__tophole; eapply rel_pskl_mono;
+  assert (HrP' : rel_pskl ((α, α2) :: restrict_pairs α α2 ρ) V (pskl_univ_ghost P) (pskl_univ_ghost P12))
+    by (apply rel_pskl__univ_ghost; eapply rel_pskl_mono;
         [ exact HrPr | intros x y Hx; right; exact Hx
         | intros x Hx; exact Hx ]).
   assert (Hrd1' : rel_atoms ((α, α2) :: restrict_pairs α α2 ρ) V (add α Δ1) (add α2 Δ1'))
@@ -2834,7 +2834,7 @@ Proof.
   assert (Hcov' : V ∪ cols_r ((α, α2) :: restrict_pairs α α2 ρ)
                   [<=] add α2 S0)
     by (simpl; clear - Hcov Hcr0; fsetdec).
-  assert (HcovP' : ftvar_in_pskl (open_pskl_wrt_pskl P0b2 (pskl_var_f α2)) ∪ ftvar_in_pskl (pskl_tophole P12)
+  assert (HcovP' : ftvar_in_pskl (open_pskl_wrt_pskl P0b2 (pskl_var_f α2)) ∪ ftvar_in_pskl (pskl_univ_ghost P12)
                    [<=] add α2 S0).
   { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0b2
                   (pskl_var_f α2)) as Hu1.
@@ -2844,7 +2844,7 @@ Proof.
   assert (Hwfp0' : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (open_pskl_wrt_pskl P0 (pskl_var_f α)) }}a)
     by (apply a_wf_pskl_all_syn_open_tvar;
         [ exact Hwfp0 | clear - Hαd HfrP0; fsetdec ]).
-  assert (Hwfp' : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (pskl_tophole P) }}a)
+  assert (Hwfp' : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (pskl_univ_ghost P) }}a)
     by (eapply a_wf_pskl_weaken_tvarish;
         [ intros γ Hγ; apply (a_binds_tvar_weaken_mid nil (α ~ abind_tvar));
           exact Hγ
@@ -2878,7 +2878,7 @@ Proof.
                   [<=] ftvar_in_aenv ((α ~ abind_tvar) ++ Θ0))
     by (simpl; clear - HΔsc; fsetdec).
   destruct (IH (add α2 S0) ((α2 ~ abind_tvar) ++ Θ0') (add α2 Δ1') Δ2'
-              (open_pskl_wrt_pskl P0b2 (pskl_var_f α2)) (pskl_tophole P12) ((α, α2) :: restrict_pairs α α2 ρ) V
+              (open_pskl_wrt_pskl P0b2 (pskl_var_f α2)) (pskl_univ_ghost P12) ((α, α2) :: restrict_pairs α α2 ρ) V
               HrΘ' HrP0' HrP' Hrd1' Hrd2' Hagr' Hinj' Hfun' Hwf' Huq2' Hftv2'
               Hscp' Hblk' HdΘ' Hcov' HcovP' HcovΔ' Hwfp0' Hwfp' HΔtv' Hnfd'
               Hfaf' HΔsc')
@@ -2889,7 +2889,7 @@ Proof.
   destruct Hsnd as (Hinc1 & HwfΘ1α & Hdmp & HΔinv & Hrest).
   (* ---- side 2's output: the OPENER SURVIVES as a rigid prefix ---- *)
   assert (HcovS : ftvar_in_aenv ((α2 ~ abind_tvar) ++ Θ0')
-                  ∪ ftvar_in_pskl (open_pskl_wrt_pskl P0b2 (pskl_var_f α2)) ∪ ftvar_in_pskl (pskl_tophole P12)
+                  ∪ ftvar_in_pskl (open_pskl_wrt_pskl P0b2 (pskl_var_f α2)) ∪ ftvar_in_pskl (pskl_univ_ghost P12)
                   ∪ (add α2 Δ1') ∪ Δ2' [<=] add α2 S0).
   { repeat apply AtomSetProperties.union_subset_3;
       [ exact Hftv2'
@@ -2904,11 +2904,11 @@ Proof.
     by (exact ((proj2 (proj2 a_assign_unify_consis_uniq))
                  _ _ _ _ _ _ _ HaD Huq2')).
   (* ---- the e-side conclusion, and the shared closer ---- *)
-  assert (Dc : {{ S0 ↝ S1 ⊨ Θ0' ⊢[ Δ1' | Δ2' | (pskl_all_syn P0b2) ] (pskl_tophole P12)
+  assert (Dc : {{ S0 ↝ S1 ⊨ Θ0' ⊢[ Δ1' | Δ2' | (pskl_all_syn P0b2) ] (pskl_univ_ghost P12)
                   ∼ (pskl_all_syn (close_pskl_wrt_pskl α2 Q')) ⊣ Θ1' }}e)
     by (apply e_consis__univ_ghost1 with (α := α2); [ exact Hα2 | exact De ]).
   assert (HcovC : ftvar_in_aenv Θ0' ∪ ftvar_in_pskl (pskl_all_syn P0b2)
-                  ∪ ftvar_in_pskl (pskl_tophole P12) ∪ Δ1' ∪ Δ2' [<=] S0).
+                  ∪ ftvar_in_pskl (pskl_univ_ghost P12) ∪ Δ1' ∪ Δ2' [<=] S0).
   { repeat apply AtomSetProperties.union_subset_3;
       [ exact Hftv2
       | clear - HcovP; simpl in HcovP |- *; fsetdec
@@ -5037,11 +5037,11 @@ Proof.
                 HrΘ HrP0b HrPb Hrd1 Hrd2 Hagr Hinj Hfun Hwf Huq2p Hftv2 Hscp Hblk HdΘ Hcov
                 HcovP1 HcovΔ Hwfp01 Hwfp1 HΔtv Hnfd Hfaf HΔsc)
       as (S1 & ρe & Θ1' & Q' & De & HrΘ1 & Hagr1 & HrQ & Hext & Hdom1).
-    exists S1, ρe, Θ1', (pskl_tophole Q').
+    exists S1, ρe, Θ1', (pskl_univ_ghost Q').
     split; [ apply e_consis__univ_ghost; exact De | ].
     split; [ exact HrΘ1 | ].
     split; [ exact Hagr1 | ].
-    split; [ apply rel_pskl__tophole; exact HrQ | ].
+    split; [ apply rel_pskl__univ_ghost; exact HrQ | ].
     split; [ exact Hext | ]. exact Hdom1.
   - (* ⭐⭐ C-UnivGhost1 *)
     intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr HD IH.
@@ -6106,14 +6106,14 @@ Proof.
       Hscp Hblk HdΘ Hcov HcovP Hwfp0 Hwfp.
     inversion HrP0 as [ | n0 | u0 v0 Hu0 | A1 A2 A3 A4 Hu1 Hu2 | B1 B2 Hu3
                       | | C1 C2 Hu4 ]; subst.
-    exists S0, (@nil (atom * atom)%type), Θ0', (pskl_tophole P').
+    exists S0, (@nil (atom * atom)%type), Θ0', (pskl_univ_ghost P').
     split.
     { apply e_sub__univ_ghost_r.
       eapply rel_pskl_guarded; [ exact HrP | exact Hg ]. }
     simpl.
     split; [ exact HrΘ | ].
     split; [ exact Hagr | ].
-    split; [ apply rel_pskl__tophole; exact HrP | ].
+    split; [ apply rel_pskl__univ_ghost; exact HrP | ].
     split.
     { unfold rel_ext. repeat split; intros; simpl in *; contradiction. }
     intros a b Hin. inversion Hin.
@@ -7375,12 +7375,12 @@ Proof.
     intros a b Hin. inversion Hin.
   - (* Split-Hole *)
     inversion HrP0; subst.
-    exists S0, (@nil (atom * atom)%type), Θ0', pskl_hole, pskl_hole.
-    split; [ apply e_split__hole | ]. simpl.
+    exists S0, (@nil (atom * atom)%type), Θ0', pskl_ghost, pskl_ghost.
+    split; [ apply e_split__ghost | ]. simpl.
     split; [ exact HrΘ | ].
     split; [ exact Hagr | ].
-    split; [ apply rel_pskl__hole | ].
-    split; [ apply rel_pskl__hole | ].
+    split; [ apply rel_pskl__ghost | ].
+    split; [ apply rel_pskl__ghost | ].
     split.
     { unfold rel_ext. repeat split; intros; simpl in *; contradiction. }
     intros a b Hin. inversion Hin.
@@ -8146,12 +8146,12 @@ Proof.
     inversion HrE as [ | | | | | | | eb1 eb2 HrEb ]; subst.
     inversion HrP0; subst.
     inversion Hwfe as [ | | | Θq eq Hwfeq | | | ]; subst.
-    assert (HcovE : ftvar_in_pskl pskl_hole ∪ ftvar_in_exp eb2
+    assert (HcovE : ftvar_in_pskl pskl_ghost ∪ ftvar_in_exp eb2
                     ∪ fvar_in_exp eb2 [<=] S0)
       by (simpl in HcovP |- *; clear - HcovP; fsetdec).
-    destruct (IHp S0 Θ0' pskl_hole eb2 ρ V HrΘ (rel_pskl__hole ρ V) HrEb
+    destruct (IHp S0 Θ0' pskl_ghost eb2 ρ V HrΘ (rel_pskl__ghost ρ V) HrEb
                 Hagr Hinj Hfun Hwf Huq2p Hftv2 Hscp Hblk HdΘ Hcov HcovE
-                (a_wf_pskl__hole Θa empty) Hwfeq a_sk_mode_compat__ti)
+                (a_wf_pskl__ghost Θa empty) Hwfeq a_sk_mode_compat__ti)
       as (S1 & ρe & Θ1' & Q' & De & HrΘ1 & Hagr1 & HrQ & Hext & Hdom1).
     exists S1, ρe, Θ1', Q'.
     split; [ apply e_pat__freeze; exact De | ].
@@ -8176,38 +8176,38 @@ Proof.
     + (* the ◇ shape: P0 = P = Q0 = ◇ *)
       subst P0a Pa Q0.
       inversion HrP0; subst.
-      assert (Hmodc : a_sk_mode_compat (decr_mode m0) pskl_hole).
-      { destruct (a_sk_mode_compat_hole_inv Hmod) as [-> | ->];
+      assert (Hmodc : a_sk_mode_compat (decr_mode m0) pskl_ghost).
+      { destruct (a_sk_mode_compat_ghost_inv Hmod) as [-> | ->];
           [ apply a_sk_mode_compat__ti | congruence ]. }
-      assert (HwfXc : {{ ⊢ ((x ~ abind_var_skl pskl_hole) ++ Θa) }}a)
+      assert (HwfXc : {{ ⊢ ((x ~ abind_var_skl pskl_ghost) ++ Θa) }}a)
         by (apply a_wf_aenv__var;
-            [ exact HxΘa | apply a_wf_pskl__hole | exact Hwf ]).
-      assert (HcovPc : ftvar_in_pskl pskl_hole ∪ ftvar_in_exp eb2
+            [ exact HxΘa | apply a_wf_pskl__ghost | exact Hwf ]).
+      assert (HcovPc : ftvar_in_pskl pskl_ghost ∪ ftvar_in_exp eb2
                        ∪ fvar_in_exp eb2 [<=] S0)
         by (simpl; simpl in HcovP; clear - HcovP; fsetdec).
-      assert (Hbdf0 : ftvar_in_abind (abind_var_skl pskl_hole) [<=] dom Θa)
+      assert (Hbdf0 : ftvar_in_abind (abind_var_skl pskl_ghost) [<=] dom Θa)
         by (simpl; clear; fsetdec).
-      assert (Hbdf0' : ftvar_in_abind (abind_var_skl pskl_hole) [<=] S0)
+      assert (Hbdf0' : ftvar_in_abind (abind_var_skl pskl_ghost) [<=] S0)
         by (simpl; clear; fsetdec).
-      destruct (@lift_pat_abs_core (decr_mode m0) Θa pskl_hole ea Qa Ξ Θc x
-                  (abind_var_skl pskl_hole)
+      destruct (@lift_pat_abs_core (decr_mode m0) Θa pskl_ghost ea Qa Ξ Θc x
+                  (abind_var_skl pskl_ghost)
                   Hp IHp Hsuf Hxf Hxe I Hbdf0 Hmodc
-                  S0 Θ0' pskl_hole eb2 (abind_var_skl pskl_hole) ρ V
-                  HrΘ (rel_pskl__hole ρ V) HrEb
-                  (rel_abind__var_skl (rel_pskl__hole ρ V)) I Hbdf0'
+                  S0 Θ0' pskl_ghost eb2 (abind_var_skl pskl_ghost) ρ V
+                  HrΘ (rel_pskl__ghost ρ V) HrEb
+                  (rel_abind__var_skl (rel_pskl__ghost ρ V)) I Hbdf0'
                   Hagr Hinj Hfun HwfXc
-                  (a_wf_pskl__hole Θa empty) Hwfeo Huq2p Hftv2 Hscp Hblk
+                  (a_wf_pskl__ghost Θa empty) Hwfeo Huq2p Hftv2 Hscp Hblk
                   HdΘ Hcov HcovPc)
         as (S1 & x2 & ρe & Ξ2 & Θc2' & Q' & Hx2S0 & De & HsufΞ2 & HrF
             & HagrF & HrQ' & HextF & HdomF & Hdm2).
-      exists S1, ρe, (Ξ2 ++ Θc2'), (pskl_arrow pskl_hole Q').
+      exists S1, ρe, (Ξ2 ++ Θc2'), (pskl_arrow pskl_ghost Q').
       split.
       { eapply e_pat__abs;
-          [ exact Hne | apply e_split__hole | exact HsufΞ2
+          [ exact Hne | apply e_split__ghost | exact HsufΞ2
           | exact Hx2S0 | exact De ]. }
       split; [ exact HrF | ].
       split; [ exact HagrF | ].
-      split; [ constructor; [ apply rel_pskl__hole | exact HrQ' ] | ].
+      split; [ constructor; [ apply rel_pskl__ghost | exact HrQ' ] | ].
       split; [ exact HextF | ]. exact HdomF.
     + (* the ARROW shape: P0 = P → Q0 *)
       subst P0a.
@@ -8298,16 +8298,16 @@ Proof.
         {{ S0 ↝ S0 ⊨ Θ0' ⊲ P0' ▹ Pa' ⇢ Q0' ⊣ Θ0' }}e).
     { destruct Hshape as [[EP0 [EP EQ0]] | EP0].
       - subst P0a Pa Q0. inversion HrP0; subst.
-        split; [ apply a_wf_pskl__hole | ].
-        split; [ apply a_wf_pskl__hole | ].
+        split; [ apply a_wf_pskl__ghost | ].
+        split; [ apply a_wf_pskl__ghost | ].
         split.
-        { destruct (a_sk_mode_compat_hole_inv Hmod) as [-> | ->];
+        { destruct (a_sk_mode_compat_ghost_inv Hmod) as [-> | ->];
             [ apply a_sk_mode_compat__ti | congruence ]. }
-        exists pskl_hole, pskl_hole.
-        split; [ apply rel_pskl__hole | ].
-        split; [ apply rel_pskl__hole | ].
+        exists pskl_ghost, pskl_ghost.
+        split; [ apply rel_pskl__ghost | ].
+        split; [ apply rel_pskl__ghost | ].
         split; [ simpl; clear; fsetdec | ].
-        apply e_split__hole.
+        apply e_split__ghost.
       - subst P0a.
         inversion HrP0 as [ | n0 | u0 v0 Hu0 | B1 B2 Pa' Q0c' HrPa HrQ0c
                           | B3 B4 Hu1 | | B5 B6 Hu2 ]; subst.
@@ -8462,39 +8462,39 @@ Proof.
     pose proof Hxf as Hxf2. simpl_env in Hxf2.
     assert (HxΘa : x `notin` dom Θa) by (clear - Hxf2; fsetdec).
     assert (Hxe : x `notin` ftvar_in_exp ea) by (clear - Hfe HxΘa; fsetdec).
-    assert (Hwfeo : {{ ((x ~ abind_var_skl pskl_hole) ++ Θa) ⊢ᵉ
+    assert (Hwfeo : {{ ((x ~ abind_var_skl pskl_ghost) ++ Θa) ⊢ᵉ
                        (open_exp_wrt_exp ea (exp_var_f x)) }}a)
       by (apply a_wf_exp_weaken_cons; eapply a_wf_exp_abs_pick; exact Hwfe).
-    assert (HwfXc : {{ ⊢ ((x ~ abind_var_skl pskl_hole) ++ Θa) }}a)
+    assert (HwfXc : {{ ⊢ ((x ~ abind_var_skl pskl_ghost) ++ Θa) }}a)
       by (apply a_wf_aenv__var;
-          [ exact HxΘa | apply a_wf_pskl__hole | exact Hwf ]).
-    assert (HcovPc : ftvar_in_pskl pskl_hole ∪ ftvar_in_exp eb2
+          [ exact HxΘa | apply a_wf_pskl__ghost | exact Hwf ]).
+    assert (HcovPc : ftvar_in_pskl pskl_ghost ∪ ftvar_in_exp eb2
                      ∪ fvar_in_exp eb2 [<=] S0)
       by (simpl; simpl in HcovP; clear - HcovP; fsetdec).
-    assert (Hbdf0 : ftvar_in_abind (abind_var_skl pskl_hole) [<=] dom Θa)
+    assert (Hbdf0 : ftvar_in_abind (abind_var_skl pskl_ghost) [<=] dom Θa)
       by (simpl; clear; fsetdec).
-    assert (Hbdf0' : ftvar_in_abind (abind_var_skl pskl_hole) [<=] S0)
+    assert (Hbdf0' : ftvar_in_abind (abind_var_skl pskl_ghost) [<=] S0)
       by (simpl; clear; fsetdec).
-    destruct (@lift_pat_abs_core mode_tc Θa pskl_hole ea Qa Ξ Θb x
-                (abind_var_skl pskl_hole)
+    destruct (@lift_pat_abs_core mode_tc Θa pskl_ghost ea Qa Ξ Θb x
+                (abind_var_skl pskl_ghost)
                 Hp IHp Hsuf Hxf Hxe I Hbdf0 a_sk_mode_compat__tc
-                S0 Θ0' pskl_hole eb2 (abind_var_skl pskl_hole) ρ V
-                HrΘ (rel_pskl__hole ρ V) HrEb
-                (rel_abind__var_skl (rel_pskl__hole ρ V)) I Hbdf0'
+                S0 Θ0' pskl_ghost eb2 (abind_var_skl pskl_ghost) ρ V
+                HrΘ (rel_pskl__ghost ρ V) HrEb
+                (rel_abind__var_skl (rel_pskl__ghost ρ V)) I Hbdf0'
                 Hagr Hinj Hfun HwfXc
-                (a_wf_pskl__hole Θa empty) Hwfeo Huq2p Hftv2 Hscp Hblk
+                (a_wf_pskl__ghost Θa empty) Hwfeo Huq2p Hftv2 Hscp Hblk
                 HdΘ Hcov HcovPc)
       as (S1 & x2 & ρe & Ξ2 & Θc2' & Q' & Hx2S0 & De & HsufΞ2 & HrF
           & HagrF & HrQ' & HextF & HdomF & Hdm2).
     exists S1, ρe, (Ξ2 ++ Θc2'),
-      (pskl_tophole (pskl_arrow pskl_hole Q')).
+      (pskl_univ_ghost (pskl_arrow pskl_ghost Q')).
     split.
     { eapply e_pat__abs_check;
         [ exact HsufΞ2 | exact Hx2S0 | exact De ]. }
     split; [ exact HrF | ].
     split; [ exact HagrF | ].
     split.
-    { constructor. constructor; [ apply rel_pskl__hole | exact HrQ' ]. }
+    { constructor. constructor; [ apply rel_pskl__ghost | exact HrQ' ]. }
     split; [ exact HextF | ]. exact HdomF.
   - (* ⭐ AP-AbsAnnoCheck — the annotated twin, same shape *)
     inversion HrE as [ | | x1 y1 Hat | eb1 eb2 HrEb
@@ -8522,22 +8522,22 @@ Proof.
       pose proof (@rel_pskl_ftv_r ρ V (ptyp_to_pskl A) (ptyp_to_pskl A2) HrA)
         as Hfr.
       rewrite ftvar_ptyp_to_pskl in Hfr. clear - Hfr Hcov. fsetdec. }
-    assert (HcovPc : ftvar_in_pskl pskl_hole ∪ ftvar_in_exp eb2
+    assert (HcovPc : ftvar_in_pskl pskl_ghost ∪ ftvar_in_exp eb2
                      ∪ fvar_in_exp eb2 [<=] S0)
       by (simpl; simpl in HcovP; clear - HcovP; fsetdec).
-    destruct (@lift_pat_abs_core mode_tc Θa pskl_hole ea Qa Ξ Θb x
+    destruct (@lift_pat_abs_core mode_tc Θa pskl_ghost ea Qa Ξ Θb x
                 (abind_var_typ A)
                 Hp IHp Hsuf Hxf Hxe I HbdfA a_sk_mode_compat__tc
-                S0 Θ0' pskl_hole eb2 (abind_var_typ A2) ρ V
-                HrΘ (rel_pskl__hole ρ V) HrEb
+                S0 Θ0' pskl_ghost eb2 (abind_var_typ A2) ρ V
+                HrΘ (rel_pskl__ghost ρ V) HrEb
                 (rel_abind__var_typ HrA) I Hbd'f
                 Hagr Hinj Hfun HwfXc
-                (a_wf_pskl__hole Θa empty) Hwfeo Huq2p Hftv2 Hscp Hblk
+                (a_wf_pskl__ghost Θa empty) Hwfeo Huq2p Hftv2 Hscp Hblk
                 HdΘ Hcov HcovPc)
       as (S1 & x2 & ρe & Ξ2 & Θc2' & Q' & Hx2S0 & De & HsufΞ2 & HrF
           & HagrF & HrQ' & HextF & HdomF & Hdm2).
     exists S1, ρe, (Ξ2 ++ Θc2'),
-      (pskl_tophole (pskl_arrow (ptyp_to_pskl A2) Q')).
+      (pskl_univ_ghost (pskl_arrow (ptyp_to_pskl A2) Q')).
     split.
     { eapply e_pat__abs_anno_check;
         [ exact HsufΞ2 | exact Hx2S0 | exact De ]. }
@@ -8564,16 +8564,16 @@ Proof.
     assert (Hblk1 : forall a, a `in` dom Θb -> a `notin` dom Θa ->
                     a `notin` cols_l ρ)
       by (intros a Ha Hn; apply Hblk; [ clear - Ha Hdm1; fsetdec | exact Hn ]).
-    assert (HcovP1 : ftvar_in_pskl pskl_hole ∪ ftvar_in_exp b2
+    assert (HcovP1 : ftvar_in_pskl pskl_ghost ∪ ftvar_in_exp b2
                      ∪ fvar_in_exp b2 [<=] S0)
       by (simpl in HcovP |- *; clear - HcovP; fsetdec).
-    destruct (IHp2 S0 Θ0' pskl_hole b2 ρ V HrΘ (rel_pskl__hole ρ V) HrE2
+    destruct (IHp2 S0 Θ0' pskl_ghost b2 ρ V HrΘ (rel_pskl__ghost ρ V) HrE2
                 Hagr Hinj Hfun Hwf Huq2p Hftv2 Hscp Hblk1 HdΘ Hcov HcovP1
-                (a_wf_pskl__hole Θa empty) Hwfe2 a_sk_mode_compat__tc)
+                (a_wf_pskl__ghost Θa empty) Hwfe2 a_sk_mode_compat__tc)
       as (S1 & ρe1 & Θb' & P0c' & D2e & HrΘ1 & Hagr1 & HrP0c & Hext1 & Hdom1).
     pose proof (e_pat_supply_grows D2e) as Hgr1.
     (* ---- side 2's package at the first call's output ---- *)
-    assert (HcovE : ftvar_in_aenv Θ0' ∪ ftvar_in_pskl pskl_hole
+    assert (HcovE : ftvar_in_aenv Θ0' ∪ ftvar_in_pskl pskl_ghost
                     ∪ fvar_in_exp b2 ∪ ftvar_in_exp b2 [<=] S0)
       by (simpl; simpl in HcovP; clear - Hftv2 HcovP; fsetdec).
     destruct (e_pat_sound D2e Huq2p HcovE) as (Ha2p & Huq1' & Hftv1 & HftQ1).
@@ -8581,7 +8581,7 @@ Proof.
       by (pose proof (dom_subset_ftvar_in_aenv Θb') as Hd;
           clear - Hd Hftv1; fsetdec).
     (* ---- side 1's package at the first call's output ---- *)
-    destruct (a_pat_sound Hp2 Hwf (a_wf_pskl__hole Θa empty)
+    destruct (a_pat_sound Hp2 Hwf (a_wf_pskl__ghost Θa empty)
                 a_sk_mode_compat__tc Hwfe2) as [Hle01 [HwfΘb _]].
     assert (Hd1s : dom Θb [<=] ftvar_in_aenv Θb)
       by (apply dom_subset_ftvar_in_aenv).
@@ -8589,7 +8589,7 @@ Proof.
       by (clear - Hscp Hsc0 Hdm0 Hd1s; fsetdec).
     assert (HwfP0a : {{ Θb ⨟ empty ⊢ₚₛ P0a }}a)
       by (eapply a_pat_output_wf;
-          [ exact Hp2 | exact Hwf | apply a_wf_pskl__hole
+          [ exact Hp2 | exact Hwf | apply a_wf_pskl__ghost
           | exact a_sk_mode_compat__tc | exact Hwfe2 ]).
     assert (HwfQ0b : {{ Θb ⨟ empty ⊢ₚₛ Q0 }}a)
       by (eapply a_isub_wf_pskl; [ exact Hle01 | exact Hwfp0 ]).

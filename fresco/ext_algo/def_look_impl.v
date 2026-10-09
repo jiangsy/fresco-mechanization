@@ -151,11 +151,11 @@ Definition looksub_spec (S0 : supply) (Θ : aenv) (α : atom) (m : mode)
                     assert (Hx := Hlc); apply lc_pskl_arrow_inv in Hx;
                     destruct Hx
              end
-         | Hlc : lc_pskl (pskl_tophole ?a) |- _ =>
+         | Hlc : lc_pskl (pskl_univ_ghost ?a) |- _ =>
              lazymatch goal with
              | _ : lc_pskl a |- _ => fail
              | _ => let Hx := fresh "Hlc0" in
-                    assert (Hx := Hlc); apply lc_pskl_tophole_inv in Hx
+                    assert (Hx := Hlc); apply lc_pskl_univ_ghost_inv in Hx
              end
          end.
 
@@ -213,11 +213,11 @@ Equations e_lookeq_impl (S0 : supply) (Θ : aenv) (α : atom) (P P' : pskl)
     Some (exist _ (mk_look_result S0 nil nil) _)
 | S0, Θ, α, pskl_var_b n, P', HP, HP', H =>
     Some (exist _ (mk_look_result S0 nil nil) _)
-| S0, Θ, α, pskl_hole, P', HP, HP', H =>
+| S0, Θ, α, pskl_ghost, P', HP, HP', H =>
     Some (exist _ (mk_look_result S0 nil nil) _)
 
 (* ---- arrow subject ---- *)
-| S0, Θ, α, pskl_arrow P1 P2, pskl_hole, HP, HP', H =>
+| S0, Θ, α, pskl_arrow P1 P2, pskl_ghost, HP, HP', H =>
     Some (exist _ (mk_look_result S0 nil nil) _)          (* LE-Vacuous *)
 | S0, Θ, α, pskl_arrow P1 P2, pskl_var_f β, HP, HP', H =>
     match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_arrow P1 P2))) with
@@ -249,7 +249,7 @@ Equations e_lookeq_impl (S0 : supply) (Θ : aenv) (α : atom) (P P' : pskl)
             end
         end
     end
-| S0, Θ, α, pskl_arrow P1 P2, pskl_tophole Q', HP, HP', H =>
+| S0, Θ, α, pskl_arrow P1 P2, pskl_univ_ghost Q', HP, HP', H =>
     match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_arrow P1 P2))) with
     | right _ => Some (exist _ (mk_look_result S0 nil nil) _)
     | left _ =>                                            (* LE-UnivGhostR *)
@@ -265,7 +265,7 @@ Equations e_lookeq_impl (S0 : supply) (Θ : aenv) (α : atom) (P P' : pskl)
     end
 
 (* ---- ∀ subject ---- *)
-| S0, Θ, α, pskl_all_syn Q, pskl_hole, HP, HP', H =>
+| S0, Θ, α, pskl_all_syn Q, pskl_ghost, HP, HP', H =>
     Some (exist _ (mk_look_result S0 nil nil) _)          (* LE-Vacuous *)
 | S0, Θ, α, pskl_all_syn Q, pskl_var_f β, HP, HP', H =>
     match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_all_syn Q))) with
@@ -293,14 +293,14 @@ Equations e_lookeq_impl (S0 : supply) (Θ : aenv) (α : atom) (P P' : pskl)
         | Some (exist _ r Hr) => Some (exist _ r _)
         end
     end
-| S0, Θ, α, pskl_all_syn Q, pskl_tophole Q', HP, HP', H =>
+| S0, Θ, α, pskl_all_syn Q, pskl_univ_ghost Q', HP, HP', H =>
     match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_all_syn Q))) with
     | right _ => Some (exist _ (mk_look_result S0 nil nil) _)
     | left _ =>                                            (* LE-ForallSyn *)
         match e_lookeq_impl (add (supply_fresh S0) S0)
                 ((supply_fresh S0 ~ abind_tvar) ++ Θ) α
                 (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0)))
-                (pskl_tophole Q') _ _ _ with
+                (pskl_univ_ghost Q') _ _ _ with
         | None => None
         | Some (exist _ r Hr) => Some (exist _ r _)
         end
@@ -312,10 +312,10 @@ Equations e_lookeq_impl (S0 : supply) (Θ : aenv) (α : atom) (P P' : pskl)
     end
 
 (* ---- ⫯ subject ---- *)
-| S0, Θ, α, pskl_tophole Q, pskl_hole, HP, HP', H =>
+| S0, Θ, α, pskl_univ_ghost Q, pskl_ghost, HP, HP', H =>
     Some (exist _ (mk_look_result S0 nil nil) _)          (* LE-Vacuous *)
-| S0, Θ, α, pskl_tophole Q, pskl_var_f β, HP, HP', H =>
-    match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_tophole Q))) with
+| S0, Θ, α, pskl_univ_ghost Q, pskl_var_f β, HP, HP', H =>
+    match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_univ_ghost Q))) with
     | right _ => Some (exist _ (mk_look_result S0 nil nil) _)
     | left _ =>
         (* ⭐⭐ THE CELL THE FlexR-PRIORITY GUARD IS ABOUT (2026-08-18).  At a
@@ -336,8 +336,8 @@ Equations e_lookeq_impl (S0 : supply) (Θ : aenv) (α : atom) (P P' : pskl)
             end
         end
     end
-| S0, Θ, α, pskl_tophole Q, pskl_tophole Q', HP, HP', H =>
-    match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_tophole Q))) with
+| S0, Θ, α, pskl_univ_ghost Q, pskl_univ_ghost Q', HP, HP', H =>
+    match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_univ_ghost Q))) with
     | right _ => Some (exist _ (mk_look_result S0 nil nil) _)
     | left _ =>                                            (* LE-UnivGhost *)
         match e_lookeq_impl S0 Θ α Q Q' _ _ _ with
@@ -345,21 +345,21 @@ Equations e_lookeq_impl (S0 : supply) (Θ : aenv) (α : atom) (P P' : pskl)
         | Some (exist _ r Hr) => Some (exist _ r _)
         end
     end
-| S0, Θ, α, pskl_tophole Q, pskl_all_syn Q', HP, HP', H =>
-    match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_tophole Q))) with
+| S0, Θ, α, pskl_univ_ghost Q, pskl_all_syn Q', HP, HP', H =>
+    match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_univ_ghost Q))) with
     | right _ => Some (exist _ (mk_look_result S0 nil nil) _)
     | left _ =>                                            (* LE-UnivGhost1 *)
         match e_lookeq_impl (add (supply_fresh S0) S0)
                 ((supply_fresh S0 ~ abind_tvar) ++ Θ) α
-                (pskl_tophole Q)
+                (pskl_univ_ghost Q)
                 (open_pskl_wrt_pskl Q' (pskl_var_f (supply_fresh S0)))
                 _ _ _ with
         | None => None
         | Some (exist _ r Hr) => Some (exist _ r _)
         end
     end
-| S0, Θ, α, pskl_tophole Q, pskl_unit, HP, HP', H =>
-    match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_tophole Q))) with
+| S0, Θ, α, pskl_univ_ghost Q, pskl_unit, HP, HP', H =>
+    match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_univ_ghost Q))) with
     | right _ => Some (exist _ (mk_look_result S0 nil nil) _)
     | left _ =>                                            (* LE-UnivGhost2 *)
         match e_lookeq_impl S0 Θ α Q pskl_unit _ _ _ with
@@ -367,8 +367,8 @@ Equations e_lookeq_impl (S0 : supply) (Θ : aenv) (α : atom) (P P' : pskl)
         | Some (exist _ r Hr) => Some (exist _ r _)
         end
     end
-| S0, Θ, α, pskl_tophole Q, pskl_arrow P1' P2', HP, HP', H =>
-    match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_tophole Q))) with
+| S0, Θ, α, pskl_univ_ghost Q, pskl_arrow P1' P2', HP, HP', H =>
+    match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_univ_ghost Q))) with
     | right _ => Some (exist _ (mk_look_result S0 nil nil) _)
     | left _ =>                                            (* LE-UnivGhost2 *)
         match e_lookeq_impl S0 Θ α Q (pskl_arrow P1' P2') _ _ _ with
@@ -376,8 +376,8 @@ Equations e_lookeq_impl (S0 : supply) (Θ : aenv) (α : atom) (P P' : pskl)
         | Some (exist _ r Hr) => Some (exist _ r _)
         end
     end
-| S0, Θ, α, pskl_tophole Q, pskl_var_b n, HP, HP', H =>
-    match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_tophole Q))) with
+| S0, Θ, α, pskl_univ_ghost Q, pskl_var_b n, HP, HP', H =>
+    match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_univ_ghost Q))) with
     | right _ => Some (exist _ (mk_look_result S0 nil nil) _)
     | left _ => None
     end.
@@ -407,11 +407,11 @@ Equations e_looksub_impl (S0 : supply) (Θ : aenv) (α : atom) (m : mode)
     Some (exist _ (mk_look_result S0 nil nil) _)
 | S0, Θ, α, m, pskl_var_b n, P', HP, HP', H =>
     Some (exist _ (mk_look_result S0 nil nil) _)
-| S0, Θ, α, m, pskl_hole, P', HP, HP', H =>
+| S0, Θ, α, m, pskl_ghost, P', HP, HP', H =>
     Some (exist _ (mk_look_result S0 nil nil) _)
 
 (* ---- arrow subject ---- *)
-| S0, Θ, α, m, pskl_arrow P1 P2, pskl_hole, HP, HP', H =>
+| S0, Θ, α, m, pskl_arrow P1 P2, pskl_ghost, HP, HP', H =>
     Some (exist _ (mk_look_result S0 nil nil) _)          (* LS-Vacuous *)
 | S0, Θ, α, mode_tc, pskl_arrow P1 P2, pskl_all_syn B, HP, HP', H =>
     match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_arrow P1 P2))) with
@@ -466,7 +466,7 @@ Equations e_looksub_impl (S0 : supply) (Θ : aenv) (α : atom) (m : mode)
     end
 
 (* ---- ∀ subject ---- *)
-| S0, Θ, α, m, pskl_all_syn Q, pskl_hole, HP, HP', H =>
+| S0, Θ, α, m, pskl_all_syn Q, pskl_ghost, HP, HP', H =>
     Some (exist _ (mk_look_result S0 nil nil) _)          (* LS-Vacuous *)
 | S0, Θ, α, mode_tc, pskl_all_syn Q, pskl_all_syn B, HP, HP', H =>
     match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_all_syn Q))) with
@@ -506,17 +506,17 @@ Equations e_looksub_impl (S0 : supply) (Θ : aenv) (α : atom) (m : mode)
     end
 
 (* ---- ⫯ subject ---- *)
-| S0, Θ, α, m, pskl_tophole Q, pskl_hole, HP, HP', H =>
+| S0, Θ, α, m, pskl_univ_ghost Q, pskl_ghost, HP, HP', H =>
     Some (exist _ (mk_look_result S0 nil nil) _)          (* LS-Vacuous *)
-| S0, Θ, α, mode_tc, pskl_tophole Q, pskl_all_syn B, HP, HP', H =>
-    match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_tophole Q))) with
+| S0, Θ, α, mode_tc, pskl_univ_ghost Q, pskl_all_syn B, HP, HP', H =>
+    match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_univ_ghost Q))) with
     | right _ => Some (exist _ (mk_look_result S0 nil nil) _)
     | left _ =>
         match sumbool_of_bool (ghost_free_ck (pskl_all_syn B)) with
         | left _ =>                                        (* LS-ForallR *)
             match e_looksub_impl (add (supply_fresh S0) S0)
                     ((supply_fresh S0 ~ abind_tvar) ++ Θ) α mode_tc
-                    (pskl_tophole Q)
+                    (pskl_univ_ghost Q)
                     (open_pskl_wrt_pskl B (pskl_var_f (supply_fresh S0)))
                     _ _ _ with
             | None => None
@@ -529,8 +529,8 @@ Equations e_looksub_impl (S0 : supply) (Θ : aenv) (α : atom) (m : mode)
             end
         end
     end
-| S0, Θ, α, m, pskl_tophole Q, P', HP, HP', H =>
-    match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_tophole Q))) with
+| S0, Θ, α, m, pskl_univ_ghost Q, P', HP, HP', H =>
+    match sumbool_of_bool (mem α (ftvar_in_pskl (pskl_univ_ghost Q))) with
     | right _ => Some (exist _ (mk_look_result S0 nil nil) _)
     | left _ =>                                            (* LS-UnivGhostL *)
         match e_looksub_impl S0 Θ α m Q P' _ _ _ with

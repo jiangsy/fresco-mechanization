@@ -1815,7 +1815,7 @@ Proof.
       | eapply core_ftv_dom; [ exact Hcore | exact HwfP0 ]
       | exact Hcr ].
   - (* AT-Freeze : the result IS the rule's own input type *)
-    destruct (a_typing_sound H Hwf ltac:(apply a_wf_pskl__hole)
+    destruct (a_typing_sound H Hwf ltac:(apply a_wf_pskl__ghost)
                 a_ty_mode_compat__ti (a_wf_exp_freeze_inv Hexp))
       as [Hle1 [Hwf1 [HwfB1 _]]].
     assert (HwfA0 : a_wf_ptyp Θ0 A)
@@ -1843,8 +1843,8 @@ Proof.
     assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q }}a /\
                    a_ty_mode_compat (decr_mode m) Q).
     { destruct Hshape as [[HP0 [HP HQ]] | HP0]; subst.
-      - repeat split; try apply a_wf_pskl__hole.
-        rewrite (a_ty_mode_compat_hole_inv Hmod). apply a_ty_mode_compat__ti.
+      - repeat split; try apply a_wf_pskl__ghost.
+        rewrite (a_ty_mode_compat_ghost_inv Hmod). apply a_ty_mode_compat__ti.
       - inversion HwfP0; subst.
         destruct (a_ty_mode_compat_arrow_inv Hmod H) as [m' [Hm Hm']];
           subst m. repeat split; assumption. }
@@ -1914,8 +1914,8 @@ Proof.
     assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q }}a /\
                    a_ty_mode_compat (decr_mode m) Q).
     { destruct Hshape as [[HP0 [HP HQ]] | HP0]; subst.
-      - repeat split; try apply a_wf_pskl__hole.
-        rewrite (a_ty_mode_compat_hole_inv Hmod). apply a_ty_mode_compat__ti.
+      - repeat split; try apply a_wf_pskl__ghost.
+        rewrite (a_ty_mode_compat_ghost_inv Hmod). apply a_ty_mode_compat__ti.
       - inversion HwfP0; subst.
         destruct (a_ty_mode_compat_arrow_inv Hmod H) as [m' [Hm Hm']];
           subst m. repeat split; assumption. }
@@ -2248,10 +2248,10 @@ Proof.
   - (* AT-App : the core is threaded through the FUNCTION premise; the
        argument runs only move the context *)
     destruct (a_wf_exp_app_inv Hexp) as [Hexp1 Hexp2].
-    destruct (a_pat_sound H Hwf ltac:(apply a_wf_pskl__hole)
+    destruct (a_pat_sound H Hwf ltac:(apply a_wf_pskl__ghost)
                 a_sk_mode_compat__tc Hexp2)
       as [Hle1 [Hwf1 [Qt1 [HeQt1 [Hpat1 Href1]]]]].
-    destruct (ad_refine_syn_syn_l Href1 pskl_hole eq_refl) as [P' HQt1].
+    destruct (ad_refine_syn_syn_l Href1 pskl_ghost eq_refl) as [P' HQt1].
     subst Qt1. rewrite bskl_to_pskl_pskl_to_bskl_syn in HeQt1. subst P.
     assert (HwfPin : {{ Θ1 ⨟ empty ⊢ₚₛ P' }}a)
       by (pose proof (ad_pat_target_wf Hpat1 Hwf1) as Hw;

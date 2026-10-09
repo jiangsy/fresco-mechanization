@@ -195,12 +195,12 @@ Inductive d_wf_pskl : list (atom * dbind) -> atoms -> pskl -> Prop :=
        {{ ((α ~ dbind_tvar) ++ Γ) ⨟ (add α Δ) ⊢ₚₛ
          (open_pskl_wrt_pskl P (pskl_var_f α)) }}d) ->
     {{ Γ ⨟ Δ ⊢ₚₛ (pskl_all_syn P) }}d
-| d_wf_pskl__hole : forall Γ Δ,
-    {{ Γ ⨟ Δ ⊢ₚₛ pskl_hole }}d
-| d_wf_pskl__tophole : forall Γ Δ P,
+| d_wf_pskl__ghost : forall Γ Δ,
+    {{ Γ ⨟ Δ ⊢ₚₛ pskl_ghost }}d
+| d_wf_pskl__univ_ghost : forall Γ Δ P,
     guarded_pskl P ->
     {{ (denv_minus Γ Δ) ⨟ empty ⊢ₚₛ P }}d ->
-    {{ Γ ⨟ Δ ⊢ₚₛ (pskl_tophole P) }}d
+    {{ Γ ⨟ Δ ⊢ₚₛ (pskl_univ_ghost P) }}d
 where "{{ Γ ⨟ Δ ⊢ₚₛ P }}d" := (d_wf_pskl Γ Δ P) : fresco_d_scope.
 
 (* The decorated / unresolved skeleton twin: the same rules, with the tagged
@@ -225,18 +225,18 @@ Inductive d_wf_uskl : list (atom * dbind) -> atoms -> uskl -> Prop :=
        {{ ((α ~ dbind_tvar) ++ Γ) ⨟ (add α Δ) ⊢ᵤₛ
          (open_uskl_wrt_uskl R (uskl_var_f α)) }}d) ->
     {{ Γ ⨟ Δ ⊢ᵤₛ (uskl_all_tag ε R) }}d
-| d_wf_uskl__hole : forall Γ Δ,
-    {{ Γ ⨟ Δ ⊢ᵤₛ uskl_hole }}d
-| d_wf_uskl__tophole : forall Γ Δ R,
+| d_wf_uskl__ghost : forall Γ Δ,
+    {{ Γ ⨟ Δ ⊢ᵤₛ uskl_ghost }}d
+| d_wf_uskl__univ_ghost : forall Γ Δ R,
     guarded_uskl R ->
     {{ (denv_minus Γ Δ) ⨟ empty ⊢ᵤₛ R }}d ->
-    {{ Γ ⨟ Δ ⊢ᵤₛ (uskl_tophole R) }}d
-| d_wf_uskl__holeg : forall Γ Δ,
-    {{ Γ ⨟ Δ ⊢ᵤₛ uskl_holeg }}d
-| d_wf_uskl__topholeg : forall Γ Δ R,
+    {{ Γ ⨟ Δ ⊢ᵤₛ (uskl_univ_ghost R) }}d
+| d_wf_uskl__dot_ghost : forall Γ Δ,
+    {{ Γ ⨟ Δ ⊢ᵤₛ uskl_dot_ghost }}d
+| d_wf_uskl__dot_univ_ghost : forall Γ Δ R,
     guarded_uskl R ->
     {{ (denv_minus Γ Δ) ⨟ empty ⊢ᵤₛ R }}d ->
-    {{ Γ ⨟ Δ ⊢ᵤₛ (uskl_topholeg R) }}d
+    {{ Γ ⨟ Δ ⊢ᵤₛ (uskl_dot_univ_ghost R) }}d
 where "{{ Γ ⨟ Δ ⊢ᵤₛ R }}d" := (d_wf_uskl Γ Δ R) : fresco_d_scope.
 
 (** Skeleton well-formedness only reads the context's type variables, so it
@@ -321,7 +321,7 @@ Inductive d_tags : atoms -> utyp -> Prop :=
     [ψ ::= 1 | α | ψ→ψ | ∀^ε α.ψ | HoleG | TopHoleG.ψ] (declarative.tex:1796):
     every quantifier is tagged; the only ghosts are the DOTTED ones.  A [HoleG]
     carries no tags; a dotted universal ghost [TopHoleG.ψ] carries exactly its
-    body's tags (no ε of its own — unlike [all_tag]).  Plain [hole]/[tophole]
+    body's tags (no ε of its own — unlike [all_tag]).  Plain [ghost]/[univ_ghost]
     and the untagged [all_syn] are NOT in ψ and have no case here. *)
 Inductive d_tags_skl : atoms -> uskl -> Prop :=
 | d_tags_skl__unit : forall Ψ, Ψ [=] empty -> d_tags_skl Ψ uskl_unit
@@ -338,12 +338,12 @@ Inductive d_tags_skl : atoms -> uskl -> Prop :=
     ε `notin` Ψ0 ->
     Ψ [=] add ε Ψ0 ->
     d_tags_skl Ψ (uskl_all_tag ε R)
-| d_tags_skl__holeg : forall Ψ,
+| d_tags_skl__dot_ghost : forall Ψ,
     Ψ [=] empty ->
-    d_tags_skl Ψ uskl_holeg
-| d_tags_skl__topholeg : forall Ψ R,
+    d_tags_skl Ψ uskl_dot_ghost
+| d_tags_skl__dot_univ_ghost : forall Ψ R,
     d_tags_skl Ψ R ->
-    d_tags_skl Ψ (uskl_topholeg R).
+    d_tags_skl Ψ (uskl_dot_univ_ghost R).
 
 (* Constructor hints for the tag-reading judgments (structural over the
    type / skeleton shape): [eauto] discharges their constructor-dispatch
@@ -440,7 +440,7 @@ Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :
                                 such derivations.  docs/PAPER-GAPS.md *)
     d_tags Ψ' ph ->                  (* tags{Ψ'}{φ} : Ψ' is exactly φ's tags *)
     {{ Γ ⊢ᵤ ph }}d ->                       (* Γ ⊢ φ : well-scopedness half (WT: no Ψ') *)
-    is_ttyp ph ->
+    is_dtyp ph ->
     {{ (Ψ `union` Ψ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⩽ B }}d ->
     {{ Ψ ⨟ Γ ⊢[ m ] (utyp_all_tag ε C) ⩽ B }}d
 | d_sub__forall_l_untagged : forall Ψ Ψ' Γ m C ph B,
@@ -449,7 +449,7 @@ Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :
     Ψ' ∩ (ftag_in_utyp (utyp_all_syn C)) [=] empty ->  (* GLOBAL, as above *)
     d_tags Ψ' ph ->
     {{ Γ ⊢ᵤ ph }}d ->
-    is_ttyp ph ->
+    is_dtyp ph ->
     {{ (Ψ `union` Ψ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⩽ B }}d ->
     {{ Ψ ⨟ Γ ⊢[ m ] (utyp_all_syn C) ⩽ B }}d
 where "{{ Ψ ⨟ Γ ⊢[ M ] C ⩽ B }}d" := (d_sub M Ψ Γ C B) : fresco_d_scope.
@@ -505,23 +505,23 @@ Inductive d_refine_syn : list (atom * dbind) -> atoms -> bskl -> bskl -> Prop :=
          (open_bskl_wrt_bskl Q (bskl_var_f α)) ⊳
          (open_bskl_wrt_bskl Q' (bskl_var_f α)) }}d) ->
     {{ Γ ⨟ Δ ⊢ᵣ (bskl_all_inh Q) ⊳ (bskl_all_inh Q') }}d
-| d_refine_syn__hole : forall Γ Δ P,
+| d_refine_syn__ghost : forall Γ Δ P,
     Δ ∩ ftvar_in_pskl P [=] empty ->
-    {{ Γ ⨟ Δ ⊢ᵣ bskl_hole ⊳ (pskl_to_bskl_syn P) }}d
-| d_refine_syn__tophole_remove : forall Γ Δ Q Q',
-    is_iskl (bskl_tophole Q) ->
+    {{ Γ ⨟ Δ ⊢ᵣ bskl_ghost ⊳ (pskl_to_bskl_syn P) }}d
+| d_refine_syn__univ_ghost_remove : forall Γ Δ Q Q',
+    is_iskl (bskl_univ_ghost Q) ->
     {{ Γ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}d ->
-    {{ Γ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ Q' }}d
-| d_refine_syn__tophole_fill : forall L Γ Δ Q Q',
-    is_iskl (bskl_tophole Q) ->
+    {{ Γ ⨟ Δ ⊢ᵣ (bskl_univ_ghost Q) ⊳ Q' }}d
+| d_refine_syn__univ_ghost_fill : forall L Γ Δ Q Q',
+    is_iskl (bskl_univ_ghost Q) ->
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⨟ Δ ⊢ᵣ
-         (bskl_tophole Q) ⊳ (open_bskl_wrt_bskl Q' (bskl_var_f α)) }}d) ->
-    {{ Γ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_all_syn Q') }}d
-| d_refine_syn__tophole_keep : forall Γ Δ Q Q',
-    is_iskl (bskl_tophole Q) ->
+         (bskl_univ_ghost Q) ⊳ (open_bskl_wrt_bskl Q' (bskl_var_f α)) }}d) ->
+    {{ Γ ⨟ Δ ⊢ᵣ (bskl_univ_ghost Q) ⊳ (bskl_all_syn Q') }}d
+| d_refine_syn__univ_ghost_keep : forall Γ Δ Q Q',
+    is_iskl (bskl_univ_ghost Q) ->
     {{ Γ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}d ->
-    {{ Γ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_tophole Q') }}d
+    {{ Γ ⨟ Δ ⊢ᵣ (bskl_univ_ghost Q) ⊳ (bskl_univ_ghost Q') }}d
 where "{{ Γ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}d" := (d_refine_syn Γ Δ Q Q') : fresco_d_scope.
 (* ⚙ The [ᵣ] subscript is what keeps refinement apart from [d_shallow_sub]'s
    bare [{{ Γ ⊢ A ≤ B }}d]; the [ad] layer's copy reads the same inside the
@@ -544,10 +544,10 @@ where "{{ Γ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}d" := (d_refine_syn Γ Δ Q Q') : fresco_d
     flexible-free twin, and prop_conserv.v §5 relates them.
 
     ⚠️ [Δ] tracks the type variables bound IN THE SUBJECT, and
-    [d_refine_pskl__hole] requires the fill to avoid it: that is the paper's
+    [d_refine_pskl__ghost] requires the fill to avoid it: that is the paper's
     "for every ghost in P,
     it cannot represent skeletons that use type variables bound in P"
-    (declarative.tex:1433).  [__tophole_fill] extends Γ instead — a UNIVERSAL
+    (declarative.tex:1433).  [__univ_ghost_fill] extends Γ instead — a UNIVERSAL
     ghost is allowed to capture, which is what generalisation means. *)
 Inductive d_refine_pskl :
   list (atom * dbind) -> atoms -> pskl -> pskl -> Prop :=
@@ -565,20 +565,20 @@ Inductive d_refine_pskl :
          (open_pskl_wrt_pskl P (pskl_var_f α)) ⊳
          (open_pskl_wrt_pskl P' (pskl_var_f α)) }}d) ->
     {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_all_syn P) ⊳ (pskl_all_syn P') }}d
-| d_refine_pskl__hole : forall Γ Δ P',
+| d_refine_pskl__ghost : forall Γ Δ P',
     Δ ∩ ftvar_in_pskl P' [=] empty ->
-    {{ Γ ⨟ Δ ⊢ᵣₚ pskl_hole ⊳ P' }}d
-| d_refine_pskl__tophole_remove : forall Γ Δ P P',
+    {{ Γ ⨟ Δ ⊢ᵣₚ pskl_ghost ⊳ P' }}d
+| d_refine_pskl__univ_ghost_remove : forall Γ Δ P P',
     {{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}d ->
-    {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ P' }}d
-| d_refine_pskl__tophole_fill : forall L Γ Δ P P',
+    {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_univ_ghost P) ⊳ P' }}d
+| d_refine_pskl__univ_ghost_fill : forall L Γ Δ P P',
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⨟ Δ ⊢ᵣₚ
-         (pskl_tophole P) ⊳ (open_pskl_wrt_pskl P' (pskl_var_f α)) }}d) ->
-    {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_all_syn P') }}d
-| d_refine_pskl__tophole_keep : forall Γ Δ P P',
+         (pskl_univ_ghost P) ⊳ (open_pskl_wrt_pskl P' (pskl_var_f α)) }}d) ->
+    {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_univ_ghost P) ⊳ (pskl_all_syn P') }}d
+| d_refine_pskl__univ_ghost_keep : forall Γ Δ P P',
     {{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}d ->
-    {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_tophole P') }}d
+    {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_univ_ghost P) ⊳ (pskl_univ_ghost P') }}d
 where "{{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}d" := (d_refine_pskl Γ Δ P P') : fresco_d_scope.
 
 Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
@@ -621,36 +621,36 @@ Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
     {{ Ψ ⨟ Γ ⊢ˢ (uskl_all_syn R) ∼ (bskl_all_syn Q) }}d
 | d_pat_consis__ghostg : forall Ψ Γ,
     Ψ [=] empty ->
-    (* Paper [GhostG] (declarative.tex eqlab): a ghost hole [HoleG] is
+    (* Paper [GhostG] (declarative.tex eqlab): a dotted ghost [HoleG] is
        consistent with a plain [Hole]. *)
-    {{ Ψ ⨟ Γ ⊢ˢ uskl_holeg ∼ bskl_hole }}d
-| d_pat_consis__topholeg : forall Ψ Γ R Q,
+    {{ Ψ ⨟ Γ ⊢ˢ uskl_dot_ghost ∼ bskl_ghost }}d
+| d_pat_consis__dot_univ_ghost : forall Ψ Γ R Q,
     (* Paper [UnivGhostG] (dotted): [TopHoleG.R ~ TopHole.P] from [R ~ P],
        tags UNCHANGED — [typconsis[Ψ]] from [typconsis[Ψ]] (no added tag,
        unlike the old tagged version). *)
     {{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d ->
-    {{ Ψ ⨟ Γ ⊢ˢ (uskl_topholeg R) ∼ (bskl_tophole Q) }}d
-| d_pat_consis__hole : forall Ψ Γ P,
+    {{ Ψ ⨟ Γ ⊢ˢ (uskl_dot_univ_ghost R) ∼ (bskl_univ_ghost Q) }}d
+| d_pat_consis__ghost : forall Ψ Γ P,
     Ψ [=] empty ->
     {{ Γ ⨟ empty ⊢ₚₛ P }}d ->
-    {{ Ψ ⨟ Γ ⊢ˢ uskl_hole ∼ (pskl_to_bskl_inh P) }}d
-| d_pat_consis__tophole : forall Ψ Γ R Q,
+    {{ Ψ ⨟ Γ ⊢ˢ uskl_ghost ∼ (pskl_to_bskl_inh P) }}d
+| d_pat_consis__univ_ghost : forall Ψ Γ R Q,
     (* Paper [UnivGhost]: TopHole ∼ TopHole. *)
     {{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d ->
-    {{ Ψ ⨟ Γ ⊢ˢ (uskl_tophole R) ∼ (bskl_tophole Q) }}d
-| d_pat_consis__tophole_inh : forall L Ψ Γ R Q,
+    {{ Ψ ⨟ Γ ⊢ˢ (uskl_univ_ghost R) ∼ (bskl_univ_ghost Q) }}d
+| d_pat_consis__univ_ghost_inh : forall L Ψ Γ R Q,
     (* Paper [UnivGhost1] (was missing, WT): the RHS TopHole can produce
        an inherited quantifier.  LHS [TopHole.R] is unchanged; the RHS
        body [Q] is checked under a fresh [α]. *)
     (forall α, α `notin` L ->
        {{ Ψ ⨟ ((α ~ dbind_tvar) ++ Γ) ⊢ˢ
-         (uskl_tophole R) ∼ (open_bskl_wrt_bskl Q (bskl_var_f α)) }}d) ->
-    {{ Ψ ⨟ Γ ⊢ˢ (uskl_tophole R) ∼ (bskl_all_inh Q) }}d
-| d_pat_consis__tophole_drop : forall Ψ Γ R Q,
+         (uskl_univ_ghost R) ∼ (open_bskl_wrt_bskl Q (bskl_var_f α)) }}d) ->
+    {{ Ψ ⨟ Γ ⊢ˢ (uskl_univ_ghost R) ∼ (bskl_all_inh Q) }}d
+| d_pat_consis__univ_ghost_drop : forall Ψ Γ R Q,
     (* Paper [UnivGhost2] (was missing, WT): the LHS TopHole can be
        dropped against a plain inherited RHS. *)
     {{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d ->
-    {{ Ψ ⨟ Γ ⊢ˢ (uskl_tophole R) ∼ Q }}d
+    {{ Ψ ⨟ Γ ⊢ˢ (uskl_univ_ghost R) ∼ Q }}d
 where "{{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d" := (d_pat_consis Ψ Γ R Q) : fresco_d_scope.
 
 (* ===================================================================== *)
@@ -716,7 +716,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     (* the join is at the STRIPPED counterpart [Q] — the [∀◇] the rule adds is
        the conclusion's, not the consistency premise's *)
     {{ empty ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d ->
-    {{ Ψ ⨟ Γ ⊢ˢ[ mode_tc ] R ⩽ (bskl_tophole Q) }}d
+    {{ Ψ ⨟ Γ ⊢ˢ[ mode_tc ] R ⩽ (bskl_univ_ghost Q) }}d
 | d_pat_sub__arg : forall Ψ Ψ1 Ψ2 Γ m R1 R2 Q1 Q2,
     (* Paper [Arrow]: set-union tag context.  The DOMAIN premise is a
        consistency judgement, hence a join. *)
@@ -732,7 +732,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     Ψ' ∩ (ftag_in_uskl (uskl_all_tag ε R)) [=] empty ->  (* GLOBAL freshness *)
     d_tags_skl Ψ' psi ->             (* tags{Ψ'}{ψ} : skeleton-tag relation *)
     {{ Γ ⨟ empty ⊢ᵤₛ psi }}d ->
-    is_tskl psi ->
+    is_dskl psi ->
     {{ (Ψ `union` Ψ') ⨟ Γ ⊢ˢ[ m ] (open_uskl_wrt_uskl R psi) ⩽ Q }}d ->
     {{ Ψ ⨟ Γ ⊢ˢ[ m ] (uskl_all_tag ε R) ⩽ Q }}d
 | d_pat_sub__forall_l_untagged : forall Ψ Ψ' Γ m R psi Q,
@@ -741,7 +741,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     Ψ' ∩ (ftag_in_uskl (uskl_all_syn R)) [=] empty ->     (* GLOBAL freshness *)
     d_tags_skl Ψ' psi ->
     {{ Γ ⨟ empty ⊢ᵤₛ psi }}d ->
-    is_tskl psi ->
+    is_dskl psi ->
     {{ (Ψ `union` Ψ') ⨟ Γ ⊢ˢ[ m ] (open_uskl_wrt_uskl R psi) ⩽ Q }}d ->
     {{ Ψ ⨟ Γ ⊢ˢ[ m ] (uskl_all_syn R) ⩽ Q }}d
 | d_pat_sub__ghost : forall m Γ P,
@@ -754,26 +754,26 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     forall Ψ, Ψ [=] empty ->
     {{ Γ ⨟ empty ⊢ₚₛ P }}d ->
     mod_comp_sk (pskl_to_bskl_inh P) m ->
-    {{ Ψ ⨟ Γ ⊢ˢ[ m ] uskl_hole ⩽ (pskl_to_bskl_inh P) }}d
+    {{ Ψ ⨟ Γ ⊢ˢ[ m ] uskl_ghost ⩽ (pskl_to_bskl_inh P) }}d
 | d_pat_sub__univ_ghost_l : forall m Ψ Γ R Q,
     (* Paper [UnivGhostL]: drop a [TopHole] on the LHS (any [M ≠ TI]). *)
     m <> mode_ti ->
     {{ Ψ ⨟ Γ ⊢ˢ[ m ] R ⩽ Q }}d ->
-    {{ Ψ ⨟ Γ ⊢ˢ[ m ] (uskl_tophole R) ⩽ Q }}d
+    {{ Ψ ⨟ Γ ⊢ˢ[ m ] (uskl_univ_ghost R) ⩽ Q }}d
 | d_pat_sub__ghostg : forall m Ψ Γ,
-    (* Paper [GhostG]: a ghost hole [HoleG] is below a plain [Hole].
+    (* Paper [GhostG]: a dotted ghost [HoleG] is below a plain [Hole].
        [mod_comp_sk … m] ([skmod{SK}]) excludes the ill-moded [fn] case (a
-       [bskl_hole] is not an arrow), keeping the output mode-compatible. *)
+       [bskl_ghost] is not an arrow), keeping the output mode-compatible. *)
     Ψ [=] empty ->
-    mod_comp_sk bskl_hole m ->
-    {{ Ψ ⨟ Γ ⊢ˢ[ m ] uskl_holeg ⩽ bskl_hole }}d
+    mod_comp_sk bskl_ghost m ->
+    {{ Ψ ⨟ Γ ⊢ˢ[ m ] uskl_dot_ghost ⩽ bskl_ghost }}d
 | d_pat_sub__univ_ghost_lg : forall m Ψ Γ R Q,
     (* Paper [UnivGhostLG] (dotted): drop a dotted ghost [TopHoleG] on the
        LHS (any [M ≠ TI]).  [Ψ] unchanged — [patsub[M][Ψ]] from
        [patsub[M][Ψ]] (declarative.tex UnivGhostLG). *)
     m <> mode_ti ->
     {{ Ψ ⨟ Γ ⊢ˢ[ m ] R ⩽ Q }}d ->
-    {{ Ψ ⨟ Γ ⊢ˢ[ m ] (uskl_topholeg R) ⩽ Q }}d
+    {{ Ψ ⨟ Γ ⊢ˢ[ m ] (uskl_dot_univ_ghost R) ⩽ Q }}d
 where "{{ Ψ ⨟ Γ ⊢ˢ[ M ] R ⩽ Q }}d" := (d_pat_sub M Ψ Γ R Q) : fresco_d_scope.
 
 (* ===================================================================== *)
@@ -862,15 +862,15 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
     {{ Γ ⊢ˢ[ m ] (exp_app e1 e2) ⦂ Q2 }}d
 | d_pat__abs_check : forall L Γ e P,
     (forall x, x `notin` L ->
-       {{ ((x ~ dbind_skl pskl_hole) ++ Γ) ⊢ˢ[ mode_tc ]
+       {{ ((x ~ dbind_skl pskl_ghost) ++ Γ) ⊢ˢ[ mode_tc ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ (pskl_to_bskl_syn P) }}d) ->
-    {{ Γ ⊢ˢ[ mode_tc ] (exp_abs e) ⦂ (bskl_tophole (bskl_arrow bskl_hole (pskl_to_bskl_syn P))) }}d
+    {{ Γ ⊢ˢ[ mode_tc ] (exp_abs e) ⦂ (bskl_univ_ghost (bskl_arrow bskl_ghost (pskl_to_bskl_syn P))) }}d
 | d_pat__abs_anno_check : forall L Γ e A P,
     {{ Γ ⊢ₚ A }}d ->
     (forall x, x `notin` L ->
        {{ ((x ~ dbind_typ A) ++ Γ) ⊢ˢ[ mode_tc ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ (pskl_to_bskl_syn P) }}d) ->
-    {{ Γ ⊢ˢ[ mode_tc ] (exp_abs_anno A e) ⦂ (bskl_tophole (bskl_arrow (btyp_to_bskl (ptyp_to_btyp_syn A)) (pskl_to_bskl_syn P))) }}d
+    {{ Γ ⊢ˢ[ mode_tc ] (exp_abs_anno A e) ⦂ (bskl_univ_ghost (bskl_arrow (btyp_to_bskl (ptyp_to_btyp_syn A)) (pskl_to_bskl_syn P))) }}d
 where "{{ Γ ⊢ˢ[ M ] e ⦂ P }}d" := (d_pat M Γ e P) : fresco_d_scope.
 
 (** Typing [d_typing] ([⦂]) uses [d_pat] in [App] (it infers the argument's

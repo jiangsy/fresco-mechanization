@@ -151,13 +151,13 @@ Proof.
              (open_btyp_wrt_btyp B0 (btyp_var_f α)));
       [ rewrite ptyp_to_pskl_open, pskl_to_bskl_inh_open; reflexivity
       | rewrite btyp_to_bskl_open; reflexivity ].
-  - (* hole : an inherited painting of a TYPE has no ghost *)
+  - (* ghost : an inherited painting of a TYPE has no ghost *)
     destruct A; simpl in HeqS; discriminate.
-  - (* tophole_remove *)
+  - (* univ_ghost_remove *)
     destruct A; simpl in HeqS; discriminate.
-  - (* tophole_fill *)
+  - (* univ_ghost_fill *)
     destruct A; simpl in HeqS; discriminate.
-  - (* tophole_keep *)
+  - (* univ_ghost_keep *)
     destruct A; simpl in HeqS; discriminate.
   - (* flex_l : unfold the definition on the left *)
     destruct A as [ | n | α1 | A1 A2 | A0 ]; simpl in HeqS; try discriminate.
@@ -777,9 +777,9 @@ Qed.
     ([a_guess_mono_consis]) but no refinement one — see docs/PAPER-GAPS.md.
 
     The content is that filling a ghost with a fresh flexible IS a
-    refinement step: [ad_refine_syn__hole]'s fill may be any skeleton
+    refinement step: [ad_refine_syn__ghost]'s fill may be any skeleton
     disjoint from [Δ], and a fresh flexible is one.  Universal ghosts are dropped by
-    [__tophole_remove], and the concrete rows are congruences.
+    [__univ_ghost_remove], and the concrete rows are congruences.
 
     ⚙ SIZE INDUCTION, not derivation induction — for the same reason
     [a_guess_mono_consis_size] is one: the source [a_guess_mono] is
@@ -789,7 +789,7 @@ Qed.
 
     ⭐ Note the ∀ row puts its witness in [Δ] (and in [Θ1] as a tvar) —
     which is why the statement carries a [Δ] at all.
-    [ad_refine_syn__hole]'s fill is Δ-free BY RULE, and here it is — the
+    [ad_refine_syn__ghost]'s fill is Δ-free BY RULE, and here it is — the
     fills are the generated flexibles, which live in [Θ1] and stay out of
     [Δ] (the last hypothesis; the ∀ witnesses are fresh for [Ξ]). *)
 Lemma a_guess_mono_refine_size : forall n Θ P Ξ A,
@@ -807,15 +807,15 @@ Proof.
                 | Θ P Q Ξ1 Ξ2 A B Hg1 Hg2
                 | Θ P Ξ A β Hfr Hg ];
     cbn in Hsz; intros Θ1 Δ Hvars HΞ HΞΔ.
-  - (* hole ↦ fresh flexible : the FILL of [__hole], Δ-free by construction *)
+  - (* ghost ↦ fresh flexible : the FILL of [__ghost], Δ-free by construction *)
     replace (pskl_to_bskl_inh (ptyp_to_pskl (ptyp_var_f α)))
       with (pskl_to_bskl_syn (pskl_var_f α)) by reflexivity.
-    apply ad_refine_syn__hole.
+    apply ad_refine_syn__ghost.
     assert (Hn : α `notin` Δ)
       by (apply HΞΔ; unfold binds; left; reflexivity).
     simpl. clear - Hn; fsetdec.
-  - (* ∀◇P : the universal ghost is DROPPED, so the row is [tophole_remove] *)
-    apply ad_refine_syn_tophole_remove_intro.
+  - (* ∀◇P : the universal ghost is DROPPED, so the row is [univ_ghost_remove] *)
+    apply ad_refine_syn_univ_ghost_remove_intro.
     eapply IHn; [ lia | exact Hg | exact Hvars | exact HΞ | exact HΞΔ ].
   - (* variable *)
     apply ad_refine_syn__var.
@@ -907,11 +907,11 @@ Proof.
   - (* forall_syn_tagged *) destruct HmA0; simpl in HeqS; discriminate.
   - (* forall_syn *) destruct HmA0; simpl in HeqS; discriminate.
   - (* ghostg *) destruct HmA0; simpl in HeqS; discriminate.
-  - (* topholeg *) destruct HmA0; simpl in HeqS; discriminate.
-  - (* hole *) destruct HmA0; simpl in HeqS; discriminate.
-  - (* tophole *) destruct HmA0; simpl in HeqS; discriminate.
-  - (* tophole_inh *) destruct HmA0; simpl in HeqS; discriminate.
-  - (* tophole_drop *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* dot_univ_ghost *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* ghost *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* univ_ghost *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* univ_ghost_inh *) destruct HmA0; simpl in HeqS; discriminate.
+  - (* univ_ghost_drop *) destruct HmA0; simpl in HeqS; discriminate.
   - (* flex_l : the lookup is refinement's own [flex_l] *)
     destruct HmA0 as [ | α0 | ]; simpl in HeqS; try discriminate.
     inversion HeqS; subst.
@@ -934,7 +934,7 @@ Qed.
     conclusions now pair the split's DOMAIN with the body's own result, so
     soundness needs the split refinement with an arbitrary refinement [Qb]
     of the codomain painting in place of the codomain's reflexivity.  The
-    [⌈A0⌉] restriction (a TC input is a TYPE painting) rules the hole row
+    [⌈A0⌉] restriction (a TC input is a TYPE painting) rules the ghost row
     out; at the flex row the definition the split assigned is a MONOTYPE,
     so the mono bridge turns its consistency into an equivalence and the
     subject transports along it. *)
@@ -961,9 +961,9 @@ Proof.
     apply ad_refine_syn_refl_inh.
     inversion HwfP; subst.
     eapply a_wf_pskl_isub; [ | exact Hle ]. assumption.
-  - (* hole : ⌈A0⌉ is never a hole *)
+  - (* ghost : ⌈A0⌉ is never a ghost *)
     match goal with
-    | Heq : pskl_hole = ptyp_to_pskl ?X |- _ =>
+    | Heq : pskl_ghost = ptyp_to_pskl ?X |- _ =>
         destruct X; simpl in Heq; discriminate
     end.
   - (* flex : ⌈A0⌉ = α̂; mirror [a_split_refines]'s extraction *)
@@ -1449,10 +1449,10 @@ Proof.
           [ exact Hd1 | exact Hle2 | eapply a_sub_tm_le; exact H0 ]
       | rewrite HeB, ptyp_to_uskl_syn_via_pskl; exact Hjoin ].
   - (* AT-Freeze *)
-    destruct (IHa_typing Hwf ltac:(apply a_wf_pskl__hole)
+    destruct (IHa_typing Hwf ltac:(apply a_wf_pskl__ghost)
                 a_ty_mode_compat__ti (a_wf_exp_freeze_inv Hexp))
       as [Hle1 [Hwf1 [HwfB1 [Bt [HeBt [Hd1 Href1]]]]]].
-    destruct (ad_refine_syn_syn_l Href1 pskl_hole eq_refl) as [P' HQt].
+    destruct (ad_refine_syn_syn_l Href1 pskl_ghost eq_refl) as [P' HQt].
     assert (HBt : Bt = ptyp_to_btyp_syn B)
       by (rewrite <- HeBt; eapply btyp_syn_painting_inv; exact HQt).
     assert (HwfA0 : a_wf_ptyp Θ0 A)
@@ -1483,8 +1483,8 @@ Proof.
     assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q }}a /\
                    a_ty_mode_compat (decr_mode m) Q).
     { destruct Hshape as [[HP0 [HP HQ]] | HP0]; subst.
-      - repeat split; try apply a_wf_pskl__hole.
-        rewrite (a_ty_mode_compat_hole_inv Hmod). apply a_ty_mode_compat__ti.
+      - repeat split; try apply a_wf_pskl__ghost.
+        rewrite (a_ty_mode_compat_ghost_inv Hmod). apply a_ty_mode_compat__ti.
       - inversion HwfP0; subst.
         destruct (a_ty_mode_compat_arrow_inv Hmod H) as [m' [Hm Hm']];
           subst m. repeat split; assumption. }
@@ -1540,7 +1540,7 @@ Proof.
     assert (Hmc : mod_comp_ty (btyp_arrow (ptyp_to_btyp_inh A) Bt) m).
     { pose proof (ad_sd_typing_mod_comp_ty Hdb Hwfout) as Hmq.
       destruct Hshape as [[HP0 [HP HQ]] | HP0]; subst.
-      - pose proof (a_ty_mode_compat_hole_inv Hmod) as Hm; subst m.
+      - pose proof (a_ty_mode_compat_ghost_inv Hmod) as Hm; subst m.
         inversion H1; subst.
         apply mod_comp_ty__ti. apply is_styp__arrow;
           [ simpl; apply is_styp__var | ].
@@ -1559,14 +1559,14 @@ Proof.
                       ⊳ (bskl_arrow (pskl_to_bskl_inh (ptyp_to_pskl A))
                                     (btyp_to_bskl Bt)) }}ad).
     { destruct Hshape as [[HP0 [HP HQ]] | HP0]; subst; simpl.
-      - (* ◇ : both halves are synthesised paintings, so [__hole] fires *)
-        destruct (ad_refine_syn_syn_l Hrefb pskl_hole eq_refl) as [P' HQt].
+      - (* ◇ : both halves are synthesised paintings, so [__ghost] fires *)
+        destruct (ad_refine_syn_syn_l Hrefb pskl_ghost eq_refl) as [P' HQt].
         inversion H1; subst.
         rewrite HQt.
         change (bskl_arrow (pskl_to_bskl_inh (ptyp_to_pskl (ptyp_var_f α)))
                            (pskl_to_bskl_syn P'))
           with (pskl_to_bskl_syn (pskl_arrow (pskl_var_f α) P')).
-        apply ad_refine_syn__hole. clear; fsetdec.
+        apply ad_refine_syn__ghost. clear; fsetdec.
       - apply ad_refine_syn_arrow_intro;
           [ eapply a_guess_mono_refine;
               [ exact H1
@@ -1594,8 +1594,8 @@ Proof.
     assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q }}a /\
                    a_ty_mode_compat (decr_mode m) Q).
     { destruct Hshape as [[HP0 [HP HQ]] | HP0]; subst.
-      - repeat split; try apply a_wf_pskl__hole.
-        rewrite (a_ty_mode_compat_hole_inv Hmod). apply a_ty_mode_compat__ti.
+      - repeat split; try apply a_wf_pskl__ghost.
+        rewrite (a_ty_mode_compat_ghost_inv Hmod). apply a_ty_mode_compat__ti.
       - inversion HwfP0; subst.
         destruct (a_ty_mode_compat_arrow_inv Hmod H) as [m' [Hm Hm']];
           subst m. repeat split; assumption. }
@@ -1647,8 +1647,8 @@ Proof.
     destruct Hshape as [[HP0 [HP HQ]] | HP0].
     + (* ◇ ▹ ◇ ⇢ ◇ : the annotation takes its ALL-SYNTHESISED colouring *)
       subst P0 P Q.
-      pose proof (a_ty_mode_compat_hole_inv Hmod) as Hm; subst m.
-      destruct (ad_refine_syn_syn_l Hrefb pskl_hole eq_refl) as [P' HQt].
+      pose proof (a_ty_mode_compat_ghost_inv Hmod) as Hm; subst m.
+      destruct (ad_refine_syn_syn_l Hrefb pskl_ghost eq_refl) as [P' HQt].
       exists (btyp_arrow (ptyp_to_btyp_syn A) Bt).
       split.
       { simpl. rewrite btyp_to_ptyp_ptyp_to_btyp_syn, HeBt. reflexivity. }
@@ -1665,7 +1665,7 @@ Proof.
         change (bskl_arrow (pskl_to_bskl_syn (ptyp_to_pskl A))
                            (pskl_to_bskl_syn P'))
           with (pskl_to_bskl_syn (pskl_arrow (ptyp_to_pskl A) P')).
-        apply ad_refine_syn__hole. clear; fsetdec.
+        apply ad_refine_syn__ghost. clear; fsetdec.
     + (* P0 = P → Q : the colouring is the consistency run's transport *)
       subst P0.
       destruct (a_consis_chk_annot_refine H1 Hwf HwfA HwfPP)
@@ -2260,10 +2260,10 @@ Proof.
        for sd-App's premise 2, and the appendix's FOURTH ≡ᵗ premise from
        [ad_refine_syn_inh_tyequiv] (§2) *)
     destruct (a_wf_exp_app_inv Hexp) as [Hexp1 Hexp2].
-    destruct (a_pat_sound H Hwf ltac:(apply a_wf_pskl__hole)
+    destruct (a_pat_sound H Hwf ltac:(apply a_wf_pskl__ghost)
                 a_sk_mode_compat__tc Hexp2)
       as [Hle1 [Hwf1 [Qt1 [HeQt1 [Hpat1 Href1]]]]].
-    destruct (ad_refine_syn_syn_l Href1 pskl_hole eq_refl) as [P' HQt1].
+    destruct (ad_refine_syn_syn_l Href1 pskl_ghost eq_refl) as [P' HQt1].
     subst Qt1. rewrite bskl_to_pskl_pskl_to_bskl_syn in HeQt1. subst P.
     assert (HwfPin : {{ Θ1 ⨟ empty ⊢ₚₛ P' }}a)
       by (pose proof (ad_pat_target_wf Hpat1 Hwf1) as Hw;

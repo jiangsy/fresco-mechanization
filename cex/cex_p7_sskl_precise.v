@@ -10,7 +10,7 @@
     — i.e. it invokes thm:complete-consistency, a THEOREM (mechanized as
     [a_consis_complete]), on the consistency problem (Θ0; □; P).  That route
     is sound, and all it needs besides the theorem is
-    [a_consis_hole_p0_output] (prop_sub_complete_thm.v, Qed): at [P0 = □] the
+    [a_consis_ghost_p0_output] (prop_sub_complete_thm.v, Qed): at [P0 = □] the
     algorithmic consistency OUTPUT is the SUBJECT, so the theorem's precision —
     which is about the run's output — IS a precision about [P].
 
@@ -22,7 +22,7 @@
 
     THE WITNESS.  Take [R = ∀◇.] (a ∀ whose body is the GHOST) and [Q = ∀α. α].
     Consistency relates them: its ∀ rule opens BOTH sides at a fresh α and puts
-    that α into Θ, after which the [__hole] row fills the ghost with α — legal,
+    that α into Θ, after which the [__ghost] row fills the ghost with α — legal,
     because α IS in the context there.  Precision cannot: refinement opens a ∀
     into Δ as well as Θ ([ad_refine_syn__all] descends at
     [(α ~ tvar) ++ Θ ⨟ add α Δ]), and its ghost-fill row requires the fill to
@@ -62,7 +62,7 @@ Set Implicit Arguments.
 (* ===================================================================== *)
 
 (** Subject: a ∀ whose body is the ghost. *)
-Definition Rw : uskl := uskl_all_syn uskl_hole.
+Definition Rw : uskl := uskl_all_syn uskl_ghost.
 
 (** Counterpart: the synthesised [∀α. α]. *)
 Definition Qw : bskl := bskl_all_syn (bskl_var_b 0).
@@ -86,7 +86,7 @@ Proof.
   unfold Rw, Qw.
   apply ad_pat_consis__forall_syn with (L := empty); intros α _; cbn.
   change (bskl_var_f α) with (pskl_to_bskl_inh (pskl_var_f α)).
-  apply ad_pat_consis__hole;
+  apply ad_pat_consis__ghost;
     [ clear; fsetdec
     | apply a_wf_pskl__var; left; simpl; auto ].
 Qed.
@@ -94,20 +94,20 @@ Qed.
 (* ===================================================================== *)
 (*  …and precision does not: the ∀-body obligation is [◇ ⊑ α] with α in Δ  *)
 (*                                                                        *)
-(*  Both directions below are the SAME two-row inversion — [__hole], whose *)
+(*  Both directions below are the SAME two-row inversion — [__ghost], whose *)
 (*  fill must avoid Δ, and [__flex_r], which needs a flexible definition   *)
 (*  in Θ.  A ∀-binder is in Δ and bound as a plain tvar, so neither fires. *)
 (* ===================================================================== *)
 
-Lemma refine_syn_hole_var : forall Θ Δ Qs Qt,
+Lemma refine_syn_ghost_var : forall Θ Δ Qs Qt,
   {{ Θ ⨟ Δ ⊢ᵣ Qs ⊳ Qt }}ad ->
-  Qs = bskl_hole ->
+  Qs = bskl_ghost ->
   forall α, Qt = bskl_var_f α ->
   α `notin` Δ \/ exists τ, binds α (abind_flex_mono_def τ) Θ.
 Proof.
   intros Θ Δ Qs Qt H; induction H; intros Heqs α0 Heqt;
     try discriminate Heqs; try discriminate Heqt.
-  - (* __hole : the fill IS the variable, and it must avoid Δ *)
+  - (* __ghost : the fill IS the variable, and it must avoid Δ *)
     destruct P; cbn in Heqt; try discriminate Heqt.
     inversion Heqt; subst. left; intros Hin.
     assert (Hx : α0 `in` (Δ ∩ ftvar_in_pskl (pskl_var_f α0)))
@@ -117,15 +117,15 @@ Proof.
     inversion Heqt; subst. right; exists τ; assumption.
 Qed.
 
-Lemma refine_pskl_hole_var : forall Θ Δ Ps Pt,
+Lemma refine_pskl_ghost_var : forall Θ Δ Ps Pt,
   {{ Θ ⨟ Δ ⊢ᵣₚ Ps ⊳ Pt }}ad ->
-  Ps = pskl_hole ->
+  Ps = pskl_ghost ->
   forall α, Pt = pskl_var_f α ->
   α `notin` Δ \/ exists τ, binds α (abind_flex_mono_def τ) Θ.
 Proof.
   intros Θ Δ Ps Pt H; induction H; intros Heqs α0 Heqt;
     try discriminate Heqs; try discriminate Heqt.
-  - (* __hole : the fill must avoid Δ *)
+  - (* __ghost : the fill must avoid Δ *)
     subst. left; intros Hin.
     assert (Hx : α0 `in` (Δ ∩ ftvar_in_pskl (pskl_var_f α0)))
       by (cbn; clear - Hin; fsetdec).
@@ -141,7 +141,7 @@ Proof.
   inversion H as [ | | | L Θa Δa Qa Pa Hia Hfam | | | | | | ]; subst.
   pick fresh α for L.
   specialize (Hfam α ltac:(clear - Fr; fsetdec)); cbn in Hfam.
-  pose proof (@refine_syn_hole_var _ _ _ _ Hfam eq_refl α eq_refl) as Hb.
+  pose proof (@refine_syn_ghost_var _ _ _ _ Hfam eq_refl α eq_refl) as Hb.
   destruct Hb as [Hb | [τ Hb]];
     [ apply Hb; clear; fsetdec
     | apply binds_cons_1 in Hb; destruct Hb as [[_ Hb] | Hb];
@@ -184,7 +184,7 @@ Proof.
   inversion H as [ | | | L Θa Δa Pa Qa Hfam | | | | | | ]; subst.
   pick fresh α for L.
   specialize (Hfam α ltac:(clear - Fr; fsetdec)); cbn in Hfam.
-  pose proof (@refine_pskl_hole_var _ _ _ _ Hfam eq_refl α eq_refl) as Hb.
+  pose proof (@refine_pskl_ghost_var _ _ _ _ Hfam eq_refl α eq_refl) as Hb.
   destruct Hb as [Hb | [τ Hb]];
     [ apply Hb; clear; fsetdec
     | apply binds_cons_1 in Hb; destruct Hb as [[_ Hb] | Hb];

@@ -36,7 +36,7 @@ Require Import src.fresco.algo.sub.prop_soundness_subtag.
 
 Set Implicit Arguments.
 
-(* §1-§2 (uskl_to_pskl_close, pskl_decorate_exists, is_tskl_lc) moved to
+(* §1-§2 (uskl_to_pskl_close, pskl_decorate_exists, is_dskl_lc) moved to
    prop_pat_sub.v §7 so prop_sub_sound can pick decorations when
    instantiating the cofinite ForallL tag premise. *)
 
@@ -192,7 +192,7 @@ Qed.
 
 Lemma a_subtag_vacuous_erasure : forall NM M P0 Ψ Θ0 R1' P Θ1,
   {{ Θ0 ⊢[ NM | M | P0 | Ψ ] R1' ⩽ P ⊣ Θ1 }}da ->
-  P0 = pskl_hole ->
+  P0 = pskl_ghost ->
   forall R2', lc_uskl R2' -> ⌊ R2' ⌋ˢ = ⌊ R1' ⌋ˢ ->
   {{ Θ0 ⊢[ NM | M | P0 | Ψ ] R2' ⩽ P ⊣ Θ1 }}da.
 Proof.
@@ -201,8 +201,8 @@ Proof.
   - (* Infer : output is ⌊R⌋ = ⌊R2'⌋ *)
     rewrite <- Herase. apply a_subtag__infer; assumption.
   - (* Check : P0 = B = ◇, but guarded_pskl ◇ is absurd *)
-    inv_guarded_hole.
-  - (* UnivGhostR : source guarded, output tophole ⌊R⌋ *)
+    inv_guarded_ghost.
+  - (* UnivGhostR : source guarded, output univ_ghost ⌊R⌋ *)
     (* ⌊R2'⌋ = ⌊R⌋ guarded ⇒ R2' top ∈ {unit,var,arrow} ⇒ R2' guarded *)
     assert (HgT2 : guarded_uskl R2').
     { inversion H; subst; simpl in Herase;
@@ -231,7 +231,7 @@ Proof.
         end.
         -- apply lc_body_uskl_wrt_uskl;
              [ eauto using lc_body_uskl_all_syn_1, lc_body_uskl_all_tag_2
-             | apply is_tskl_lc; inversion Hsort; assumption ].
+             | apply is_dskl_lc; inversion Hsort; assumption ].
         -- rewrite ! uskl_to_pskl_open_gen.
            match goal with Hb : ⌊ _ ⌋ˢ = ⌊ _ ⌋ˢ |- _ => rewrite Hb end.
            reflexivity.
@@ -253,7 +253,7 @@ Proof.
         end.
         -- apply lc_body_uskl_wrt_uskl;
              [ eauto using lc_body_uskl_all_syn_1, lc_body_uskl_all_tag_2
-             | apply is_tskl_lc; inversion Hsort; assumption ].
+             | apply is_dskl_lc; inversion Hsort; assumption ].
         -- rewrite ! uskl_to_pskl_open_gen.
            match goal with Hb : ⌊ _ ⌋ˢ = ⌊ _ ⌋ˢ |- _ => rewrite Hb end.
            reflexivity.
@@ -278,7 +278,7 @@ Proof.
         end.
         -- apply lc_body_uskl_wrt_uskl;
              [ eauto using lc_body_uskl_all_syn_1, lc_body_uskl_all_tag_2
-             | apply is_tskl_lc; inversion Hsort; assumption ].
+             | apply is_dskl_lc; inversion Hsort; assumption ].
         -- rewrite ! uskl_to_pskl_open_gen.
            match goal with Hb : ⌊ _ ⌋ˢ = ⌊ _ ⌋ˢ |- _ => rewrite Hb end.
            reflexivity.
@@ -300,26 +300,26 @@ Proof.
         end.
         -- apply lc_body_uskl_wrt_uskl;
              [ eauto using lc_body_uskl_all_syn_1, lc_body_uskl_all_tag_2
-             | apply is_tskl_lc; inversion Hsort; assumption ].
+             | apply is_dskl_lc; inversion Hsort; assumption ].
         -- rewrite ! uskl_to_pskl_open_gen.
            match goal with Hb : ⌊ _ ⌋ˢ = ⌊ _ ⌋ˢ |- _ => rewrite Hb end.
            reflexivity.
-  - (* Ghost : source hole, output P0=hole *)
+  - (* Ghost : source ghost, output P0=ghost *)
     destruct R2'; simpl in Herase; inversion Herase; subst.
     + apply a_subtag__ghost; assumption.
     + apply a_subtag__ghostg; assumption.
-  - (* GhostG : source holeg, output hole *)
+  - (* GhostG : source dot_ghost, output ghost *)
     destruct R2'; simpl in Herase; inversion Herase; subst.
     + apply a_subtag__ghost; [ assumption ].
     + apply a_subtag__ghostg; assumption.
-  - (* UnivGhostL : source tophole R *)
+  - (* UnivGhostL : source univ_ghost R *)
     destruct R2'; simpl in Herase; inversion Herase; subst;
       match goal with Hl : lc_uskl _ |- _ => inversion Hl; subst end.
     + apply a_subtag__univ_ghost_l; [ assumption | ].
       eapply IHa_subtag; [ reflexivity | assumption | assumption ].
     + apply a_subtag__univ_ghost_lg; [ assumption | ].
       eapply IHa_subtag; [ reflexivity | assumption | assumption ].
-  - (* UnivGhostLG : source topholeg R *)
+  - (* UnivGhostLG : source dot_univ_ghost R *)
     destruct R2'; simpl in Herase; inversion Herase; subst;
       match goal with Hl : lc_uskl _ |- _ => inversion Hl; subst end.
     + apply a_subtag__univ_ghost_l; [ assumption | ].
@@ -396,12 +396,12 @@ Lemma msubst_uskl_arrow : forall ρ R R',
   = uskl_arrow (msubst_uskl ρ R) (msubst_uskl ρ R').
 Proof. induction ρ as [|[α1 g] ρ' IH]; intros; simpl; [reflexivity|]; rewrite IH; reflexivity. Qed.
 
-Lemma msubst_uskl_tophole : forall ρ R,
-  msubst_uskl ρ (uskl_tophole R) = uskl_tophole (msubst_uskl ρ R).
+Lemma msubst_uskl_univ_ghost : forall ρ R,
+  msubst_uskl ρ (uskl_univ_ghost R) = uskl_univ_ghost (msubst_uskl ρ R).
 Proof. induction ρ as [|[α1 g] ρ' IH]; intros; simpl; [reflexivity|]; rewrite IH; reflexivity. Qed.
 
-Lemma msubst_uskl_topholeg : forall ρ R,
-  msubst_uskl ρ (uskl_topholeg R) = uskl_topholeg (msubst_uskl ρ R).
+Lemma msubst_uskl_dot_univ_ghost : forall ρ R,
+  msubst_uskl ρ (uskl_dot_univ_ghost R) = uskl_dot_univ_ghost (msubst_uskl ρ R).
 Proof. induction ρ as [|[α1 g] ρ' IH]; intros; simpl; [reflexivity|]; rewrite IH; reflexivity. Qed.
 
 Lemma msubst_uskl_all_syn : forall ρ R,
@@ -440,7 +440,7 @@ Qed.
     (analogue of a_subtag_vacuous_erasure). *)
 Lemma a_consistag_vacuous_erasure : forall Δ1 Δ2 P0 Ψ Θ0 R1 P Θ1,
   {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | Ψ ] R1 ∼ P ⊣ Θ1 }}da ->
-  P0 = pskl_hole ->
+  P0 = pskl_ghost ->
   forall T2, uskl_to_pskl T2 = uskl_to_pskl R1 ->
   {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | Ψ ] T2 ∼ P ⊣ Θ1 }}da.
 Proof.
@@ -453,12 +453,12 @@ Proof.
   - (* FlexL : R1 = var α, so T2 = var α *)
     destruct T2; simpl in Herase; inversion Herase; subst.
     eapply a_consistag__flex_l; eassumption.
-  - (* GhostG : R1 = holeg, output ◇ *)
+  - (* GhostG : R1 = dot_ghost, output ◇ *)
     destruct T2; simpl in Herase; inversion Herase; subst;
       [ apply a_consistag__ghost; [ simpl; clear; fsetdec | assumption ]
       | apply a_consistag__ghostg; assumption ].
   - (* UnivGhost2 : guarded_pskl ◇ is absurd *)
-    inv_guarded_hole.
+    inv_guarded_ghost.
   - (* GhostR : output ⌊R⌋; reconstruct with T2 (same erasure) *)
     rewrite <- Herase.
     apply a_consistag__ghost_r; [ rewrite Herase; assumption | assumption ].
@@ -482,8 +482,8 @@ Inductive no_all_syn_pskl : pskl -> Prop :=
 | nas_pskl__var_f   : forall α, no_all_syn_pskl (pskl_var_f α)
 | nas_pskl__arrow   : forall P1 P2,
     no_all_syn_pskl P1 -> no_all_syn_pskl P2 -> no_all_syn_pskl (pskl_arrow P1 P2)
-| nas_pskl__hole    : no_all_syn_pskl pskl_hole
-| nas_pskl__tophole : forall P, no_all_syn_pskl P -> no_all_syn_pskl (pskl_tophole P).
+| nas_pskl__ghost    : no_all_syn_pskl pskl_ghost
+| nas_pskl__univ_ghost : forall P, no_all_syn_pskl P -> no_all_syn_pskl (pskl_univ_ghost P).
 
 Inductive no_all_syn_uskl : uskl -> Prop :=
 | nas_uskl__unit     : no_all_syn_uskl uskl_unit
@@ -491,10 +491,10 @@ Inductive no_all_syn_uskl : uskl -> Prop :=
 | nas_uskl__var_f    : forall α, no_all_syn_uskl (uskl_var_f α)
 | nas_uskl__arrow    : forall R1 R2,
     no_all_syn_uskl R1 -> no_all_syn_uskl R2 -> no_all_syn_uskl (uskl_arrow R1 R2)
-| nas_uskl__hole     : no_all_syn_uskl uskl_hole
-| nas_uskl__holeg    : no_all_syn_uskl uskl_holeg
-| nas_uskl__tophole  : forall R, no_all_syn_uskl R -> no_all_syn_uskl (uskl_tophole R)
-| nas_uskl__topholeg : forall R, no_all_syn_uskl R -> no_all_syn_uskl (uskl_topholeg R).
+| nas_uskl__ghost     : no_all_syn_uskl uskl_ghost
+| nas_uskl__dot_ghost    : no_all_syn_uskl uskl_dot_ghost
+| nas_uskl__univ_ghost  : forall R, no_all_syn_uskl R -> no_all_syn_uskl (uskl_univ_ghost R)
+| nas_uskl__dot_univ_ghost : forall R, no_all_syn_uskl R -> no_all_syn_uskl (uskl_dot_univ_ghost R).
 
 (** A pattern-consistency run against a monotype RHS reads a quantifier-free
     subject: erasure of a flex-var assignment can only remove tags that are
@@ -511,7 +511,7 @@ Proof.
   - (* arrow *)
     inversion Hmono; subst.
     constructor; [ apply IHad_pat_consis1 | apply IHad_pat_consis2 ]; auto.
-  - (* tophole_drop *)
+  - (* univ_ghost_drop *)
     constructor. apply IHad_pat_consis; auto.
   - (* flex_r : RHS is a def variable; its def is a monotype (wf) *)
     apply IHad_pat_consis; [ exact Hwf | ].
@@ -544,7 +544,7 @@ Qed.
 
 (** A decorated-consistency run against a flexible-variable input reads a
     quantifier-free subject.  The flex-var rules that fire (rigid/flex/flexl/
-    ghost) leave a variable or hole; FlexR assigns the subject's erasure to
+    ghost) leave a variable or ghost; FlexR assigns the subject's erasure to
     α̂, so [a_assign_sound] exposes it as pattern-consistent with the monotype
     α̂ — quantifier-free by the previous lemma. *)
 Lemma a_consistag_flexvar_subject_no_all_syn : forall Δ1 Δ2 α Ψ Θ0 R P Θ1,
@@ -583,12 +583,12 @@ Lemma a_wf_pskl_arrow_inv : forall Θ Δ P1 P2,
   {{ Θ ⨟ Δ ⊢ₚₛ (pskl_arrow P1 P2) }}a -> {{ Θ ⨟ Δ ⊢ₚₛ P1 }}a /\ {{ Θ ⨟ Δ ⊢ₚₛ P2 }}a.
 Proof. intros * H; inversion H; auto. Qed.
 
-Lemma lc_uskl_tophole_inv : forall R,
-  lc_uskl (uskl_tophole R) -> lc_uskl R.
+Lemma lc_uskl_univ_ghost_inv : forall R,
+  lc_uskl (uskl_univ_ghost R) -> lc_uskl R.
 Proof. intros R H; inversion H; auto. Qed.
 
-Lemma lc_uskl_topholeg_inv : forall R,
-  lc_uskl (uskl_topholeg R) -> lc_uskl R.
+Lemma lc_uskl_dot_univ_ghost_inv : forall R,
+  lc_uskl (uskl_dot_univ_ghost R) -> lc_uskl R.
 Proof. intros R H; inversion H; auto. Qed.
 
 Lemma a_consistag_decoration_var : forall ψ P0 Ψa,
@@ -719,17 +719,17 @@ Proof.
         apply faf_cong with (Δ := add β (Δ1 `union` Δ2));
           [ clear; fsetdec | apply faf_open_tvar; [ exact Hfaf | exact HβΘ ] ] ].
   - (* SEq-UnivGhostG : invert UnivGhost, IH the inner (same context) *)
-    rewrite msubst_uskl_topholeg.
-    simpl in HlcS. rewrite msubst_uskl_tophole in HlcS.
-    apply lc_uskl_tophole_inv in HlcS.
-    simpl in HwfS. rewrite msubst_uskl_tophole in HwfS. simpl in HwfS.
-    apply a_wf_pskl_tophole_inv in HwfS as [_ HwfS].
-    apply a_wf_pskl_tophole_inv in HwfP0 as [_ HwfP0].
-    simpl in Hcons. rewrite msubst_uskl_tophole in Hcons.
+    rewrite msubst_uskl_dot_univ_ghost.
+    simpl in HlcS. rewrite msubst_uskl_univ_ghost in HlcS.
+    apply lc_uskl_univ_ghost_inv in HlcS.
+    simpl in HwfS. rewrite msubst_uskl_univ_ghost in HwfS. simpl in HwfS.
+    apply a_wf_pskl_univ_ghost_inv in HwfS as [_ HwfS].
+    apply a_wf_pskl_univ_ghost_inv in HwfP0 as [_ HwfP0].
+    simpl in Hcons. rewrite msubst_uskl_univ_ghost in Hcons.
     inversion Hcons; subst;
-      try (match goal with Hg : guarded_pskl (pskl_tophole _) |- _ =>
+      try (match goal with Hg : guarded_pskl (pskl_univ_ghost _) |- _ =>
              solve [ inversion Hg ] end);
-      try (match goal with Hg : guarded_uskl (uskl_tophole _) |- _ =>
+      try (match goal with Hg : guarded_uskl (uskl_univ_ghost _) |- _ =>
              solve [ inversion Hg ] end).
     match goal with
     | Hc : {{ _ ⊢[ _ | _ | _ | _ ]
@@ -815,7 +815,7 @@ Proof.
         by (apply msubst_uskl_lc; [ exact Hlcρ | apply lc_uskl_of_pskl; assumption ]).
       assert (Hml2 : lc_uskl (msubst_uskl ρ ψ2))
         by (apply msubst_uskl_lc; [ exact Hlcρ | apply lc_uskl_of_pskl; assumption ]).
-      apply a_wf_pskl_tophole_inv in HwfP0 as [_ HwfP0].
+      apply a_wf_pskl_univ_ghost_inv in HwfP0 as [_ HwfP0].
       rewrite msubst_uskl_arrow in Hcons.
       inversion Hcons; subst.
       apply a_consistag__univ_ghost_r.
@@ -904,7 +904,7 @@ Qed.
 (*                                                                        *)
 (*  (a) tags-origin: a solvetag run only solves tags syntactically        *)
 (*      present on its subject — so tag-free subjects solve nothing;      *)
-(*  (b) hole-target runs solve nothing (the paper: with input skeleton ◇  *)
+(*  (b) ghost-target runs solve nothing (the paper: with input skeleton ◇  *)
 (*      we can never solve tags, subtyping-proofs.tex:499-501);           *)
 (*  (c) target-variable renaming and the ∀-target opening commutation —   *)
 (*      the mechanized form of the paper's WLOG rule-reordering           *)
@@ -919,10 +919,10 @@ Fixpoint utags_uskl (R : uskl) : atoms :=
   | uskl_arrow R1 R2 => utags_uskl R1 `union` utags_uskl R2
   | uskl_all_syn R0 => utags_uskl R0
   | uskl_all_tag ε R0 => add ε (utags_uskl R0)
-  | uskl_hole => empty
-  | uskl_tophole R0 => utags_uskl R0
-  | uskl_holeg => empty
-  | uskl_topholeg R0 => utags_uskl R0
+  | uskl_ghost => empty
+  | uskl_univ_ghost R0 => utags_uskl R0
+  | uskl_dot_ghost => empty
+  | uskl_dot_univ_ghost R0 => utags_uskl R0
   end.
 
 Lemma utags_open_rec : forall R' β k,
@@ -965,27 +965,27 @@ Lemma a_solvetag_sub_tags_bound : forall ψ M P Ψ,
   {{ ψ ≼[ M ] P ⤳ Ψ }}da -> Ψ [<=] utags_uskl ψ.
 Proof. intros; eapply (proj1 a_solvetag_sub_eq_tags_bound); eauto. Qed.
 
-(** (b) A hole-target run solves nothing. *)
-Lemma a_solvetag_sub_eq_hole_empty :
-  (forall ψ M P Ψ, {{ ψ ≼[ M ] P ⤳ Ψ }}da -> P = pskl_hole -> Ψ [=] empty) /\
-  (forall ψ P Ψ, {{ ψ ∼ P ⤳ Ψ }}da -> P = pskl_hole -> Ψ [=] empty).
+(** (b) A ghost-target run solves nothing. *)
+Lemma a_solvetag_sub_eq_ghost_empty :
+  (forall ψ M P Ψ, {{ ψ ≼[ M ] P ⤳ Ψ }}da -> P = pskl_ghost -> Ψ [=] empty) /\
+  (forall ψ P Ψ, {{ ψ ∼ P ⤳ Ψ }}da -> P = pskl_ghost -> Ψ [=] empty).
 Proof.
   apply (a_solvetag_sub_eq_mutind
-           (fun ψ M P Ψ _ => P = pskl_hole -> Ψ [=] empty)
-           (fun ψ P Ψ _ => P = pskl_hole -> Ψ [=] empty));
+           (fun ψ M P Ψ _ => P = pskl_ghost -> Ψ [=] empty)
+           (fun ψ P Ψ _ => P = pskl_ghost -> Ψ [=] empty));
     intros; subst; try discriminate;
     try solve [ assumption ];
     try solve [ auto ];
-    try solve [ inv_guarded_hole ];
+    try solve [ inv_guarded_ghost ];
     try match goal with
-        | H : forall β, β `notin` ?L -> pskl_hole = pskl_hole -> _ |- _ =>
+        | H : forall β, β `notin` ?L -> pskl_ghost = pskl_ghost -> _ |- _ =>
             destruct (atom_fresh L) as [β Hβ]; exact (H β Hβ eq_refl)
         end.
 Qed.
 
-Lemma a_solvetag_sub_hole_empty : forall ψ M Ψ,
-  {{ ψ ≼[ M ] pskl_hole ⤳ Ψ }}da -> Ψ [=] empty.
-Proof. intros; eapply (proj1 a_solvetag_sub_eq_hole_empty); eauto. Qed.
+Lemma a_solvetag_sub_ghost_empty : forall ψ M Ψ,
+  {{ ψ ≼[ M ] pskl_ghost ⤳ Ψ }}da -> Ψ [=] empty.
+Proof. intros; eapply (proj1 a_solvetag_sub_eq_ghost_empty); eauto. Qed.
 
 Lemma a_solvetag_sub_eq_target_rename :
   (forall ψ M P Ψ, {{ ψ ≼[ M ] P ⤳ Ψ }}da ->
@@ -1110,10 +1110,10 @@ Qed.
 Lemma msubst_uskl_unit : forall ρ, msubst_uskl ρ uskl_unit = uskl_unit.
 Proof. induction ρ as [|[α1 g] ρ' IH]; simpl; [reflexivity|]; rewrite IH; reflexivity. Qed.
 
-Lemma msubst_uskl_hole : forall ρ, msubst_uskl ρ uskl_hole = uskl_hole.
+Lemma msubst_uskl_ghost : forall ρ, msubst_uskl ρ uskl_ghost = uskl_ghost.
 Proof. induction ρ as [|[α1 g] ρ' IH]; simpl; [reflexivity|]; rewrite IH; reflexivity. Qed.
 
-Lemma msubst_uskl_holeg : forall ρ, msubst_uskl ρ uskl_holeg = uskl_holeg.
+Lemma msubst_uskl_dot_ghost : forall ρ, msubst_uskl ρ uskl_dot_ghost = uskl_dot_ghost.
 Proof. induction ρ as [|[α1 g] ρ' IH]; simpl; [reflexivity|]; rewrite IH; reflexivity. Qed.
 
 (* ===================================================================== *)
@@ -1151,10 +1151,10 @@ Proof.
     constructor; apply msubst_uskl_lc; assumption.
   - rewrite msubst_uskl_all_syn in Hg. inversion Hg.
   - rewrite msubst_uskl_all_syn in Hg. inversion Hg.
-  - rewrite msubst_uskl_hole in Hg. inversion Hg.
-  - rewrite msubst_uskl_tophole in Hg. inversion Hg.
-  - rewrite msubst_uskl_hole in Hg. inversion Hg.
-  - rewrite msubst_uskl_tophole in Hg. inversion Hg.
+  - rewrite msubst_uskl_ghost in Hg. inversion Hg.
+  - rewrite msubst_uskl_univ_ghost in Hg. inversion Hg.
+  - rewrite msubst_uskl_ghost in Hg. inversion Hg.
+  - rewrite msubst_uskl_univ_ghost in Hg. inversion Hg.
 Qed.
 
 (** The trivial Δ-side conditions of consistency decoration at Δ = ∅. *)
@@ -1196,7 +1196,7 @@ Proof.
     intros ψf Ψa ρ HeqT Hst Hlcρ Hlcψ Hwf HlcT HwfP0 HwfT Hmod.
   - (* Infer : P0 = ◇ solves nothing; rebuild at the decorated subject *)
     assert (Hemp : Ψa [=] empty)
-      by (eapply a_solvetag_sub_hole_empty; eauto).
+      by (eapply a_solvetag_sub_ghost_empty; eauto).
     eapply a_subtag_psi_cong with (Ψ := Ψ);
       [ | clear - Hemp; fsetdec ].
     rewrite HeqT. rewrite uskl_to_pskl_msubst_strip.
@@ -1212,9 +1212,9 @@ Proof.
         rewrite msubst_uskl_all_syn in Hg; inversion Hg end.
     + (* solvetag UnivGhostLG : the stripped subject is ∀◇-headed *)
       match goal with Hg : guarded_uskl (msubst_uskl _ _) |- _ =>
-        rewrite msubst_uskl_tophole in Hg; inversion Hg end.
+        rewrite msubst_uskl_univ_ghost in Hg; inversion Hg end.
     + (* solvetag Vacuous : P0 = ◇, but the Check target is guarded *)
-      inv_guarded_hole.
+      inv_guarded_ghost.
     + (* solvetag Check : decorate the consistency premise *)
       eapply a_subtag__check.
       * assumption.
@@ -1271,7 +1271,7 @@ Proof.
     end.
   - (* UnivGhostR : P0 = ◇ solves nothing; rebuild at the decorated subject *)
     assert (Hemp : Ψa [=] empty)
-      by (eapply a_solvetag_sub_hole_empty; eauto).
+      by (eapply a_solvetag_sub_ghost_empty; eauto).
     eapply a_subtag_psi_cong with (Ψ := Ψ);
       [ | clear - Hemp; fsetdec ].
     rewrite HeqT. rewrite uskl_to_pskl_msubst_strip.
@@ -1291,7 +1291,7 @@ Proof.
     + (* solvetag ForallL : shape clash with the arrow subject *)
       simpl in HeqT. rewrite msubst_uskl_all_syn in HeqT. discriminate HeqT.
     + (* solvetag UnivGhostLG : shape clash *)
-      simpl in HeqT. rewrite msubst_uskl_tophole in HeqT. discriminate HeqT.
+      simpl in HeqT. rewrite msubst_uskl_univ_ghost in HeqT. discriminate HeqT.
     + (* solvetag Arrow : the decorated pair *)
       simpl in HeqT. rewrite msubst_uskl_arrow in HeqT.
       inversion HeqT; subst. clear HeqT.
@@ -1335,8 +1335,8 @@ Proof.
       try rewrite msubst_uskl_unit in HeqT;
       try rewrite msubst_uskl_arrow in HeqT;
       try rewrite msubst_uskl_all_syn in HeqT;
-      try rewrite msubst_uskl_hole in HeqT;
-      try rewrite msubst_uskl_tophole in HeqT;
+      try rewrite msubst_uskl_ghost in HeqT;
+      try rewrite msubst_uskl_univ_ghost in HeqT;
       try discriminate HeqT;
       try solve [ inversion Hlcψ ].
     (* ψf = var *)
@@ -1354,8 +1354,8 @@ Proof.
       try rewrite msubst_uskl_unit in HeqT;
       try rewrite msubst_uskl_arrow in HeqT;
       try rewrite msubst_uskl_all_syn in HeqT;
-      try rewrite msubst_uskl_hole in HeqT;
-      try rewrite msubst_uskl_tophole in HeqT;
+      try rewrite msubst_uskl_ghost in HeqT;
+      try rewrite msubst_uskl_univ_ghost in HeqT;
       try discriminate HeqT;
       try solve [ inversion Hlcψ ].
     + (* ψf = var : sources coincide *)
@@ -1370,7 +1370,7 @@ Proof.
     + (* ψf = all_syn ψ' : Vacuous, or dead Check/ForallR *)
       inversion Hst; subst.
       * (* Vacuous : P0 = ◇; the run is erasure-determined *)
-        assert (Hnode : {{ Θ0 ⊢[ NM | M | pskl_hole | Ψ ]
+        assert (Hnode : {{ Θ0 ⊢[ NM | M | pskl_ghost | Ψ ]
                           (uskl_all_syn R) ⩽ Q ⊣ Θ1 }}da)
           by (eapply a_subtag__forall_l_untagged
                 with (L := L) (Ξ := Ξ) (P1 := P1); eassumption).
@@ -1383,7 +1383,7 @@ Proof.
             rewrite msubst_uskl_all_syn; reflexivity ].
       * (* solvetag Check : the subject is not guarded *)
         match goal with Hg : guarded_uskl _ |- _ => inversion Hg end.
-      * (* solvetag ForallR : P0 = ∀ contradicts guarded-or-hole *)
+      * (* solvetag ForallR : P0 = ∀ contradicts guarded-or-ghost *)
         match goal with
         | Ho : guarded_pskl (pskl_all_syn _) \/ _ |- _ =>
             destruct Ho as [Hg | Hd]; [ inversion Hg | discriminate Hd ]
@@ -1413,7 +1413,7 @@ Proof.
         (* the tag family *)
         intros Ψg ψg Hfr Hsort Hera.
         assert (Hlcg : lc_uskl ψg)
-          by (apply is_tskl_lc; inversion Hsort; assumption).
+          by (apply is_dskl_lc; inversion Hsort; assumption).
         destruct (atom_fresh
                     (Lst `union` dom ρ `union` msubst_ftv ρ
                      `union` ftvar_in_uskl ψf
@@ -1509,7 +1509,7 @@ Proof.
         all: try solve [ exact HwfSψ ].
         all: solve [ exact Hmod ].
       * (* Vacuous : P0 = ◇; erasure-determined *)
-        assert (Hnode : {{ Θ0 ⊢[ NM | M | pskl_hole | Ψ ]
+        assert (Hnode : {{ Θ0 ⊢[ NM | M | pskl_ghost | Ψ ]
                           (uskl_all_syn
                              (msubst_uskl ρ (pskl_to_uskl ⌊ ψf ⌋ˢ))) ⩽ Q ⊣ Θ1 }}da)
           by (eapply a_subtag__forall_l_untagged
@@ -1523,7 +1523,7 @@ Proof.
             rewrite msubst_uskl_all_syn; reflexivity ].
       * (* solvetag Check : the subject is not guarded *)
         match goal with Hg : guarded_uskl _ |- _ => inversion Hg end.
-      * (* solvetag ForallR : P0 = ∀ contradicts guarded-or-hole *)
+      * (* solvetag ForallR : P0 = ∀ contradicts guarded-or-ghost *)
         match goal with
         | Ho : guarded_pskl (pskl_all_syn _) \/ _ |- _ =>
             destruct Ho as [Hg | Hd]; [ inversion Hg | discriminate Hd ]
@@ -1533,8 +1533,8 @@ Proof.
       try rewrite msubst_uskl_unit in HeqT;
       try rewrite msubst_uskl_arrow in HeqT;
       try rewrite msubst_uskl_all_syn in HeqT;
-      try rewrite msubst_uskl_hole in HeqT;
-      try rewrite msubst_uskl_tophole in HeqT;
+      try rewrite msubst_uskl_ghost in HeqT;
+      try rewrite msubst_uskl_univ_ghost in HeqT;
       try discriminate HeqT;
       try solve [ inversion Hlcψ ].
     + (* ψf = var : sources coincide *)
@@ -1548,19 +1548,19 @@ Proof.
       assert (Hemp : Ψa [=] empty).
       { pose proof (a_solvetag_sub_tags_bound Hst) as Hb.
         simpl in Hb. clear - Hb. fsetdec. }
-      rewrite msubst_uskl_hole.
+      rewrite msubst_uskl_ghost.
       eapply a_subtag_psi_cong with (Ψ := Ψ);
         [ apply a_subtag__ghost; assumption | clear - Hemp; fsetdec ].
     + (* ψf = ◈ : the solvetag run pins P0 (Vacuous), or a ∀-target dies
          by the SK mode discipline *)
       inversion Hst; subst.
       * (* Vacuous : P0 = ◇ — GhostG replays the node *)
-        rewrite msubst_uskl_holeg.
+        rewrite msubst_uskl_dot_ghost.
         eapply a_subtag_psi_cong with (Ψ := Ψ);
           [ apply a_subtag__ghostg; assumption
           | fsetdec_empty ].
       * (* solvetag Check : ◈ is not guarded *)
-        match goal with Hg : guarded_uskl uskl_holeg |- _ =>
+        match goal with Hg : guarded_uskl uskl_dot_ghost |- _ =>
           inversion Hg end.
       * (* ForallR : SK ∀-target at TC contradicts the mode discipline *)
         specialize (Hmod eq_refl). simpl in Hmod.
@@ -1572,8 +1572,8 @@ Proof.
       try rewrite msubst_uskl_unit in HeqT;
       try rewrite msubst_uskl_arrow in HeqT;
       try rewrite msubst_uskl_all_syn in HeqT;
-      try rewrite msubst_uskl_hole in HeqT;
-      try rewrite msubst_uskl_tophole in HeqT;
+      try rewrite msubst_uskl_ghost in HeqT;
+      try rewrite msubst_uskl_univ_ghost in HeqT;
       try discriminate HeqT;
       try solve [ inversion Hlcψ ].
     assert (Hemp : Ψa [=] empty).
@@ -1587,8 +1587,8 @@ Proof.
       try rewrite msubst_uskl_unit in HeqT;
       try rewrite msubst_uskl_arrow in HeqT;
       try rewrite msubst_uskl_all_syn in HeqT;
-      try rewrite msubst_uskl_hole in HeqT;
-      try rewrite msubst_uskl_tophole in HeqT;
+      try rewrite msubst_uskl_ghost in HeqT;
+      try rewrite msubst_uskl_univ_ghost in HeqT;
       try discriminate HeqT;
       try solve [ inversion Hlcψ ].
     + (* ψf = var : sources coincide *)
@@ -1603,8 +1603,8 @@ Proof.
       inversion Hlcψ; subst.
       inversion Hst; subst.
       * (* Vacuous : erasure-determined *)
-        assert (Hnode : {{ Θ0 ⊢[ a_sub_mode_sk | M | pskl_hole | Ψ ]
-                          (uskl_tophole
+        assert (Hnode : {{ Θ0 ⊢[ a_sub_mode_sk | M | pskl_ghost | Ψ ]
+                          (uskl_univ_ghost
                              (msubst_uskl ρ (pskl_to_uskl ⌊ ψf ⌋ˢ))) ⩽ Q ⊣ Θ1 }}da)
           by (apply a_subtag__univ_ghost_l; assumption).
         eapply a_subtag_psi_cong with (Ψ := Ψ);
@@ -1613,9 +1613,9 @@ Proof.
           [ exact Hnode | reflexivity
           | apply msubst_uskl_lc; assumption
           | apply erase_swap; simpl;
-            rewrite msubst_uskl_tophole; reflexivity ].
+            rewrite msubst_uskl_univ_ghost; reflexivity ].
       * (* solvetag Check : a ∀◇-headed subject is not guarded *)
-        match goal with Hg : guarded_uskl (uskl_tophole _) |- _ =>
+        match goal with Hg : guarded_uskl (uskl_univ_ghost _) |- _ =>
           inversion Hg end.
       * (* ForallR : SK ∀-target at TC contradicts the mode discipline *)
         specialize (Hmod eq_refl). simpl in Hmod.
@@ -1627,22 +1627,22 @@ Proof.
       inversion Hlcψ; subst.
       inversion Hst; subst.
       * (* UnivGhostLG mirror : recurse *)
-        rewrite msubst_uskl_topholeg.
+        rewrite msubst_uskl_dot_univ_ghost.
         apply a_subtag__univ_ghost_lg; [ assumption | ].
         match goal with
         | IH : forall ψ : uskl, _ |- _ =>
             eapply IH;
               [ reflexivity | eassumption | exact Hlcρ | assumption
               | exact Hwf
-              | apply lc_uskl_tophole_inv; exact HlcT
+              | apply lc_uskl_univ_ghost_inv; exact HlcT
               | exact HwfP0
-              | simpl in HwfT; apply a_wf_pskl_tophole_inv in HwfT as [_ HwfT];
+              | simpl in HwfT; apply a_wf_pskl_univ_ghost_inv in HwfT as [_ HwfT];
                 exact HwfT
               | exact Hmod ]
         end.
       * (* Vacuous : erasure-determined *)
-        assert (Hnode : {{ Θ0 ⊢[ a_sub_mode_sk | M | pskl_hole | Ψ ]
-                          (uskl_tophole
+        assert (Hnode : {{ Θ0 ⊢[ a_sub_mode_sk | M | pskl_ghost | Ψ ]
+                          (uskl_univ_ghost
                              (msubst_uskl ρ (pskl_to_uskl ⌊ ψf ⌋ˢ))) ⩽ Q ⊣ Θ1 }}da)
           by (apply a_subtag__univ_ghost_l; assumption).
         eapply a_subtag_psi_cong with (Ψ := Ψ);
@@ -1651,9 +1651,9 @@ Proof.
           [ exact Hnode | reflexivity
           | apply msubst_uskl_lc; assumption
           | apply erase_swap; simpl;
-            rewrite msubst_uskl_tophole; reflexivity ].
+            rewrite msubst_uskl_univ_ghost; reflexivity ].
       * (* solvetag Check : a ∀◇-headed subject is not guarded *)
-        match goal with Hg : guarded_uskl (uskl_topholeg _) |- _ =>
+        match goal with Hg : guarded_uskl (uskl_dot_univ_ghost _) |- _ =>
           inversion Hg end.
       * (* ForallR : mode-killed *)
         specialize (Hmod eq_refl). simpl in Hmod.
@@ -1665,8 +1665,8 @@ Proof.
       try rewrite msubst_uskl_unit in HeqT;
       try rewrite msubst_uskl_arrow in HeqT;
       try rewrite msubst_uskl_all_syn in HeqT;
-      try rewrite msubst_uskl_hole in HeqT;
-      try rewrite msubst_uskl_tophole in HeqT;
+      try rewrite msubst_uskl_ghost in HeqT;
+      try rewrite msubst_uskl_univ_ghost in HeqT;
       try discriminate HeqT;
       try solve [ inversion Hlcψ ].
     assert (Hemp : Ψa [=] empty).
@@ -1680,8 +1680,8 @@ Proof.
       try rewrite msubst_uskl_unit in HeqT;
       try rewrite msubst_uskl_arrow in HeqT;
       try rewrite msubst_uskl_all_syn in HeqT;
-      try rewrite msubst_uskl_hole in HeqT;
-      try rewrite msubst_uskl_tophole in HeqT;
+      try rewrite msubst_uskl_ghost in HeqT;
+      try rewrite msubst_uskl_univ_ghost in HeqT;
       try discriminate HeqT;
       try solve [ inversion Hlcψ ].
     assert (Hemp : Ψa [=] empty).
@@ -1731,9 +1731,9 @@ Proof.
     inversion Hnas; subst.
     destruct (union_1 Hin);
       [ eapply IHR'1 | eapply IHR'2 ]; eauto.
-  - (* tophole *)
+  - (* univ_ghost *)
     inversion Hnas; subst. eapply IHR'; eauto.
-  - (* topholeg *)
+  - (* dot_univ_ghost *)
     inversion Hnas; subst. eapply IHR'; eauto.
 Qed.
 
@@ -1814,7 +1814,7 @@ Proof.
   - (* LE-UnivGhost2 : peel the source ∀◇/∀◈ and recurse *)
     destruct R0; simpl in HeS; try discriminate HeS;
       inversion HeS; subst.
-    + (* tophole *)
+    + (* univ_ghost *)
       simpl in Hnas. inversion Hnas; subst.
       match goal with
       | Hin : no_all_syn_uskl (subst_uskl_in_uskl _ _ ?R1) |- _ =>
@@ -1822,7 +1822,7 @@ Proof.
             as [HΨ Heq]
       end.
       split; [ exact HΨ | simpl; rewrite Heq; reflexivity ].
-    + (* topholeg *)
+    + (* dot_univ_ghost *)
       simpl in Hnas. inversion Hnas; subst.
       match goal with
       | Hin : no_all_syn_uskl (subst_uskl_in_uskl _ _ ?R1) |- _ =>
@@ -2320,16 +2320,16 @@ Proof.
   - (* LE-UnivGhost : ∀◇-headed source and input; peel both *)
     destruct R; simpl in HeS; inversion HeS; subst;
       try solve [ inversion HlcS ].
-    + (* R = tophole R' *)
+    + (* R = univ_ghost R' *)
       simpl in Hcons |- *.
       inversion HlcS; subst.
       simpl in HwfSub.
-      apply a_wf_pskl_tophole_inv in HwfSub as [_ HwfSub].
-      apply a_wf_pskl_tophole_inv in HwfP0 as [_ HwfP0].
+      apply a_wf_pskl_univ_ghost_inv in HwfSub as [_ HwfSub].
+      apply a_wf_pskl_univ_ghost_inv in HwfP0 as [_ HwfP0].
       inversion Hcons; subst;
-        try (match goal with Hg : guarded_pskl (pskl_tophole _) |- _ =>
+        try (match goal with Hg : guarded_pskl (pskl_univ_ghost _) |- _ =>
                solve [ inversion Hg ] end);
-        try (match goal with Hg : guarded_uskl (uskl_tophole _) |- _ =>
+        try (match goal with Hg : guarded_uskl (uskl_univ_ghost _) |- _ =>
                solve [ inversion Hg ] end).
       apply a_consistag__univ_ghost.
       match type of Hp with
@@ -2340,15 +2340,15 @@ Proof.
         [ exact Hst | reflexivity | exact Hαψ | exact Hlcψ | assumption
         | eassumption | exact Hwf | exact HwfP0 | exact HwfSub
         | exact Hrig | exact Hnfd | exact Hfaf ].
-    + (* R = topholeg R' *)
+    + (* R = dot_univ_ghost R' *)
       simpl in Hcons |- *.
       inversion HlcS; subst.
       simpl in HwfSub.
-      apply a_wf_pskl_tophole_inv in HwfSub as [_ HwfSub].
-      apply a_wf_pskl_tophole_inv in HwfP0 as [_ HwfP0].
+      apply a_wf_pskl_univ_ghost_inv in HwfSub as [_ HwfSub].
+      apply a_wf_pskl_univ_ghost_inv in HwfP0 as [_ HwfP0].
       inversion Hcons; subst;
         try (match goal with
-             | Hg : guarded_uskl (uskl_topholeg _) |- _ =>
+             | Hg : guarded_uskl (uskl_dot_univ_ghost _) |- _ =>
                  solve [ inversion Hg ] end).
       apply a_consistag__univ_ghostg.
       match type of Hp with
@@ -2364,13 +2364,13 @@ Proof.
       by (eapply a_lookeq_binder_not_generated; exact Hp).
     destruct R; simpl in HeS; inversion HeS; subst;
       try solve [ inversion HlcS ].
-    + (* R = tophole R' *)
+    + (* R = univ_ghost R' *)
       simpl in Hcons |- *.
       inversion HlcS; subst.
       simpl in HwfSub.
       inversion HwfP0 as [ | | | LP ΘP ΔP P0b HbodyP HeqP' | | ]; subst.
       inversion Hcons; subst;
-        try (match goal with Hg : guarded_uskl (uskl_tophole _) |- _ =>
+        try (match goal with Hg : guarded_uskl (uskl_univ_ghost _) |- _ =>
                solve [ inversion Hg ] end);
         try (match goal with Hg : guarded_pskl (pskl_all_syn _) |- _ =>
                solve [ inversion Hg ] end).
@@ -2392,8 +2392,8 @@ Proof.
       end.
       intros β Hβ.
       pose proof (Hcbody β ltac:(clear - Hβ; solve_notin_auto)) as HcI.
-      change (uskl_tophole (subst_uskl_in_uskl ψa α R))
-        with (subst_uskl_in_uskl ψa α (uskl_tophole R)).
+      change (uskl_univ_ghost (subst_uskl_in_uskl ψa α R))
+        with (subst_uskl_in_uskl ψa α (uskl_univ_ghost R)).
       assert (Hβα : β <> α)
         by (apply notin_singleton_1; clear - Hβ; solve_notin).
       pose proof (@a_lookeq_forall_move_r _ _ _ _ _ _ _ _ Hp Hfr0 Hβα
@@ -2429,7 +2429,7 @@ Proof.
           [ clear; fsetdec
           | apply faf_open_tvar;
               [ exact Hfaf | clear - Hβ; fsetdec ] ]. }
-    + (* R = topholeg R' : no rule pairs ∀◈ with a ∀ input *)
+    + (* R = dot_univ_ghost R' : no rule pairs ∀◈ with a ∀ input *)
       simpl in Hcons.
       inversion Hcons.
   - (* LE-UnivGhost2 : peel the source ∀◇ against a guarded input.  The
@@ -2437,29 +2437,29 @@ Proof.
        ∀◇-headed subject is assigned and the decoration swap applies. *)
     destruct R; simpl in HeS; inversion HeS; subst;
       try solve [ inversion HlcS ].
-    + (* R = tophole R' *)
+    + (* R = univ_ghost R' *)
       simpl in Hcons |- *.
       inversion HlcS; subst.
       simpl in HwfSub.
       pose proof HwfSub as HwfSubT.
-      apply a_wf_pskl_tophole_inv in HwfSub as [_ HwfSub].
+      apply a_wf_pskl_univ_ghost_inv in HwfSub as [_ HwfSub].
       pose proof Hcons as HconsSaved.
       inversion Hcons; subst;
         try (match goal with
-             | Hg : guarded_pskl (pskl_tophole _) |- _ =>
+             | Hg : guarded_pskl (pskl_univ_ghost _) |- _ =>
                  solve [ inversion Hg ] end);
         try (match goal with
              | Hg : guarded_pskl (pskl_all_syn _) |- _ =>
                  solve [ inversion Hg ] end);
         try (match goal with
-             | Hg : guarded_pskl pskl_hole |- _ =>
+             | Hg : guarded_pskl pskl_ghost |- _ =>
                  solve [ inversion Hg ] end);
         try (match goal with
-             | Hg : guarded_uskl (uskl_tophole _) |- _ =>
+             | Hg : guarded_uskl (uskl_univ_ghost _) |- _ =>
                  solve [ inversion Hg ] end).
       * (* FlexR assignment of the ∀◇-headed subject to the flexible input *)
         assert (Hnas : no_all_syn_uskl
-                         (uskl_tophole
+                         (uskl_univ_ghost
                             (subst_uskl_in_uskl
                                (pskl_to_uskl (uskl_to_pskl ψa)) α R)))
           by (eapply a_consistag_flexvar_subject_no_all_syn;
@@ -2483,21 +2483,21 @@ Proof.
           [ exact Hst | reflexivity | exact Hαψ | exact Hlcψ | assumption
           | eassumption | exact Hwf | exact HwfP0 | exact HwfSub
           | exact Hrig | exact Hnfd | exact Hfaf ].
-    + (* R = topholeg R' : UnivGhostG pins a ∀◇ input (never guarded), and
+    + (* R = dot_univ_ghost R' : UnivGhostG pins a ∀◇ input (never guarded), and
          a FlexR assignment cannot produce a dotted ghost *)
       simpl in Hcons.
       inversion Hcons; subst;
         try (match goal with
-             | Hg : guarded_pskl (pskl_tophole _) |- _ =>
+             | Hg : guarded_pskl (pskl_univ_ghost _) |- _ =>
                  solve [ inversion Hg ] end);
         try (match goal with
              | Hg : guarded_pskl (pskl_all_syn _) |- _ =>
                  solve [ inversion Hg ] end);
         try (match goal with
-             | Hg : guarded_pskl pskl_hole |- _ =>
+             | Hg : guarded_pskl pskl_ghost |- _ =>
                  solve [ inversion Hg ] end);
         try (match goal with
-             | He : pskl_to_uskl ?Px = uskl_topholeg _ |- _ =>
+             | He : pskl_to_uskl ?Px = uskl_dot_univ_ghost _ |- _ =>
                  solve [ destruct Px; simpl in He; discriminate He ] end).
   - (* LE-UnivGhostR : guarded source, ∀◇ input peeled on the right *)
     destruct R; simpl in HeS; inversion HeS; subst;
@@ -2536,7 +2536,7 @@ Proof.
       simpl in HwfSub.
       inversion Hcons; subst;
         try (match goal with
-             | Hnf : a_non_flex _ (pskl_tophole _) |- _ =>
+             | Hnf : a_non_flex _ (pskl_univ_ghost _) |- _ =>
                  solve [ destruct Hnf as [_ Hnf]; exfalso; apply Hnf;
                          constructor ] end).
       match goal with
@@ -2555,7 +2555,7 @@ Proof.
       * change (uskl_arrow (subst_uskl_in_uskl ψa α R1)
                            (subst_uskl_in_uskl ψa α R2))
           with (subst_uskl_in_uskl ψa α (uskl_arrow R1 R2)).
-        apply a_wf_pskl_tophole_inv in HwfP0 as [_ HwfP0].
+        apply a_wf_pskl_univ_ghost_inv in HwfP0 as [_ HwfP0].
         match type of Hp with
         | {{ _ ⊢ ?Ps ∼[ _ ] ?Pt ⤳ _ ⨾ _ }}a =>
             assert (Hszb : size_pskl Ps + size_pskl Pt <= n) by (cbn in Hsz |- *; lia)
@@ -2711,16 +2711,16 @@ Qed.
 
 (** Constraints collected against ◇ solve nothing: only [sub _ ◇] and
     empty lists can be collected, and a ◇-target solvetag run is empty. *)
-Lemma a_looksub_lookeq_hole_cstrs :
-  (forall Θ α m P P' Ξ 𝒞, {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a -> P' = pskl_hole ->
+Lemma a_looksub_lookeq_ghost_cstrs :
+  (forall Θ α m P P' Ξ 𝒞, {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a -> P' = pskl_ghost ->
      forall ψa Ψa, {{ 𝒞 ⊩ ψa ⤳ Ψa }}da -> Ψa [=] empty) /\
-  (forall Θ α P P' Ξ 𝒞, {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a -> P' = pskl_hole ->
+  (forall Θ α P P' Ξ 𝒞, {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a -> P' = pskl_ghost ->
      forall ψa Ψa, {{ 𝒞 ⊩ ψa ⤳ Ψa }}da -> Ψa [=] empty).
 Proof.
   apply (a_looksub_lookeq_mutind
-           (fun Θ α m P P' Ξ 𝒞 _ => P' = pskl_hole ->
+           (fun Θ α m P P' Ξ 𝒞 _ => P' = pskl_ghost ->
               forall ψa Ψa, {{ 𝒞 ⊩ ψa ⤳ Ψa }}da -> Ψa [=] empty)
-           (fun Θ α P P' Ξ 𝒞 _ => P' = pskl_hole ->
+           (fun Θ α P P' Ξ 𝒞 _ => P' = pskl_ghost ->
               forall ψa Ψa, {{ 𝒞 ⊩ ψa ⤳ Ψa }}da -> Ψa [=] empty));
     intros; subst; try discriminate;
     (* empty collections *)
@@ -2728,22 +2728,22 @@ Proof.
                 | Hst : {{ nil ⊩ _ ⤳ _ }}da |- _ => inversion Hst; subst; assumption
                 end ];
     (* guarded ◇ side conditions *)
-    try solve [ inv_guarded_hole ];
+    try solve [ inv_guarded_ghost ];
     (* singleton sub deposit *)
     try solve [ match goal with
-                | Hst : {{ (a_cstr_sub _ pskl_hole :: nil) ⊩ _ ⤳ _ }}da |- _ =>
+                | Hst : {{ (a_cstr_sub _ pskl_ghost :: nil) ⊩ _ ⤳ _ }}da |- _ =>
                     inversion Hst; subst;
-                    eapply a_solvetag_sub_hole_empty; eassumption
+                    eapply a_solvetag_sub_ghost_empty; eassumption
                 end ];
     (* singleton eq deposit *)
     try solve [ match goal with
-                | Hst : {{ (a_cstr_eq pskl_hole :: nil) ⊩ _ ⤳ _ }}da |- _ =>
+                | Hst : {{ (a_cstr_eq pskl_ghost :: nil) ⊩ _ ⤳ _ }}da |- _ =>
                     inversion Hst; subst;
                     match goal with
-                    | Hnil : {{ nil ⊩ _ ⤳ ?B }}da, Hone : {{ _ ∼ pskl_hole ⤳ ?A }}da,
+                    | Hnil : {{ nil ⊩ _ ⤳ ?B }}da, Hone : {{ _ ∼ pskl_ghost ⤳ ?A }}da,
                       HU : _ [=] union ?A ?B |- _ =>
                         inversion Hnil; subst;
-                        pose proof ((proj2 a_solvetag_sub_eq_hole_empty)
+                        pose proof ((proj2 a_solvetag_sub_eq_ghost_empty)
                                       _ _ _ Hone eq_refl) as He1;
                         match goal with
                         | He2 : ?B0 [=] empty |- _ =>
@@ -2759,17 +2759,17 @@ Proof.
                 end ];
     (* direct recursions *)
     try solve [ match goal with
-                | IH : ?P = pskl_hole -> _ |- _ =>
+                | IH : ?P = pskl_ghost -> _ |- _ =>
                     eapply IH; [ reflexivity | eassumption ]
                 end ].
 Qed.
 
-Lemma a_looksub_hole_solvetag_empty : forall Θ α m P Ξ 𝒞 ψa Ψa,
-  {{ Θ ⊢ P ≼[ α , m ] pskl_hole ⤳ Ξ ⨾ 𝒞 }}a ->
+Lemma a_looksub_ghost_solvetag_empty : forall Θ α m P Ξ 𝒞 ψa Ψa,
+  {{ Θ ⊢ P ≼[ α , m ] pskl_ghost ⤳ Ξ ⨾ 𝒞 }}a ->
   {{ 𝒞 ⊩ ψa ⤳ Ψa }}da ->
   Ψa [=] empty.
 Proof.
-  intros; eapply (proj1 a_looksub_lookeq_hole_cstrs); eauto.
+  intros; eapply (proj1 a_looksub_lookeq_ghost_cstrs); eauto.
 Qed.
 
 (** Single-substitution analogs of the §11 helpers. *)
@@ -3355,14 +3355,14 @@ Proof.
         rewrite rename_aenv_cons_tvar_eq in H1.
         rewrite (@rename_aenv_fresh_eq Θ δ b) in H1 by exact HbΘ.
         rewrite (@rename_aenv_fresh_eq Ξ0 δ b) in H1 by exact HbΞ.
-        rewrite (subst_pskl_in_pskl_fresh_eq (pskl_tophole Q')) in H1
+        rewrite (subst_pskl_in_pskl_fresh_eq (pskl_univ_ghost Q')) in H1
           by (cbn; exact HbQ').
         rewrite <- (subst_pskl_in_pskl_intro b Q (pskl_var_f δ)) in H1
           by exact HbQ.
         assert (Hst1 : {{ (subst_cstrs δ b C0) ⊩ ψa ⤳ Ψa }}da)
           by (apply a_solvetag_subst_cstrs; exact Hst).
         assert (Hsz1 : 2 * (size_pskl (open_pskl_wrt_pskl Q (pskl_var_f δ))
-                       + size_pskl (pskl_tophole Q')) <= n)
+                       + size_pskl (pskl_univ_ghost Q')) <= n)
           by (rewrite size_pskl_open_pskl_wrt_pskl_var; cbn; lia).
         destruct (IHe _ _ _ _ _ _ Hsz1 H1 β P0 ψa Ψa L Hβα HαP0 HlcP0 Hst1)
           as (Ξ' & C' & Hlk' & Hst' & Hdm' & Hfv').
@@ -3416,13 +3416,13 @@ Proof.
       rewrite rename_aenv_cons_tvar_eq in H1.
       rewrite (@rename_aenv_fresh_eq Θ δ b) in H1 by exact HbΘ.
       rewrite (@rename_aenv_fresh_eq Ξ0 δ b) in H1 by exact HbΞ.
-      rewrite (subst_pskl_in_pskl_fresh_eq (pskl_tophole Q)) in H1
+      rewrite (subst_pskl_in_pskl_fresh_eq (pskl_univ_ghost Q)) in H1
         by (cbn; exact HbQ).
       rewrite <- (subst_pskl_in_pskl_intro b Q' (pskl_var_f δ)) in H1
         by exact HbQ'.
       assert (Hst1 : {{ (subst_cstrs δ b C0) ⊩ ψa ⤳ Ψa }}da)
         by (apply a_solvetag_subst_cstrs; exact Hst).
-      assert (Hsz1 : 2 * (size_pskl (pskl_tophole Q)
+      assert (Hsz1 : 2 * (size_pskl (pskl_univ_ghost Q)
                      + size_pskl (open_pskl_wrt_pskl Q' (pskl_var_f δ))) <= n)
         by (rewrite size_pskl_open_pskl_wrt_pskl_var; cbn; lia).
       destruct (IHe _ _ _ _ _ _ Hsz1 H1 β P0 ψa Ψa L Hβα HαP0 HlcP0 Hst1)
@@ -3438,8 +3438,8 @@ Proof.
       cbn [subst_pskl_in_pskl] in Hlk' |- *.
       apply a_lookeq__univ_ghost1 with (β := δ);
         [ clear - Hδα HδΘ Hδsub HδQ'; solve_notin
-        | change (ftvar_in_pskl (pskl_tophole (subst_pskl_in_pskl P0 β Q)))
-            with (ftvar_in_pskl (subst_pskl_in_pskl P0 β (pskl_tophole Q)));
+        | change (ftvar_in_pskl (pskl_univ_ghost (subst_pskl_in_pskl P0 β Q)))
+            with (ftvar_in_pskl (subst_pskl_in_pskl P0 β (pskl_univ_ghost Q)));
           apply ftvar_in_pskl_subst_keep; assumption
         | exact Hlk' ].
     - (* LE-UnivGhost2 : the guard is on the TARGET, untouched *)

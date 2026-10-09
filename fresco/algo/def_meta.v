@@ -62,8 +62,8 @@ Fixpoint msubst_pskl (κ : metasubst) (P : pskl) : pskl :=
   | pskl_var_f α => ptyp_to_pskl (msubst_lookup κ α)
   | pskl_arrow P1 P2 => pskl_arrow (msubst_pskl κ P1) (msubst_pskl κ P2)
   | pskl_all_syn P0 => pskl_all_syn (msubst_pskl κ P0)
-  | pskl_hole => pskl_hole
-  | pskl_tophole P0 => pskl_tophole (msubst_pskl κ P0)
+  | pskl_ghost => pskl_ghost
+  | pskl_univ_ghost P0 => pskl_univ_ghost (msubst_pskl κ P0)
   end.
 
 (** [κ R] on UNRESOLVED skeletons — the sort the decorated consistency's
@@ -82,10 +82,10 @@ Fixpoint msubst_uskl_syn (κ : metasubst) (R : uskl) : uskl :=
   | uskl_arrow R1 R2 => uskl_arrow (msubst_uskl_syn κ R1) (msubst_uskl_syn κ R2)
   | uskl_all_syn R0 => uskl_all_syn (msubst_uskl_syn κ R0)
   | uskl_all_tag ε R0 => uskl_all_tag ε (msubst_uskl_syn κ R0)
-  | uskl_hole => uskl_hole
-  | uskl_tophole R0 => uskl_tophole (msubst_uskl_syn κ R0)
-  | uskl_holeg => uskl_holeg
-  | uskl_topholeg R0 => uskl_topholeg (msubst_uskl_syn κ R0)
+  | uskl_ghost => uskl_ghost
+  | uskl_univ_ghost R0 => uskl_univ_ghost (msubst_uskl_syn κ R0)
+  | uskl_dot_ghost => uskl_dot_ghost
+  | uskl_dot_univ_ghost R0 => uskl_dot_univ_ghost (msubst_uskl_syn κ R0)
   end.
 
 Fixpoint msubst_btyp (κ : metasubst) (B : btyp) : btyp :=
@@ -106,8 +106,8 @@ Fixpoint msubst_bskl (κ : metasubst) (Q : bskl) : bskl :=
   | bskl_arrow Q1 Q2 => bskl_arrow (msubst_bskl κ Q1) (msubst_bskl κ Q2)
   | bskl_all_syn Q0 => bskl_all_syn (msubst_bskl κ Q0)
   | bskl_all_inh Q0 => bskl_all_inh (msubst_bskl κ Q0)
-  | bskl_hole => bskl_hole
-  | bskl_tophole Q0 => bskl_tophole (msubst_bskl κ Q0)
+  | bskl_ghost => bskl_ghost
+  | bskl_univ_ghost Q0 => bskl_univ_ghost (msubst_bskl κ Q0)
   end.
 
 (** Composition of metasubstitutions, [ζ ∘ κ].  A metasubstitution is a finite
@@ -199,9 +199,9 @@ Inductive a_pskl_tyequiv : aenv -> pskl -> pskl -> Prop :=
        {{ Θ ⊢ (open_pskl_wrt_pskl P (pskl_var_f α)) ≡ˢ
            (open_pskl_wrt_pskl Q (pskl_var_f α)) }}a) ->
     {{ Θ ⊢ (pskl_all_syn P) ≡ˢ (pskl_all_syn Q) }}a
-| a_pskl_tyequiv__tophole : forall Θ P Q,
+| a_pskl_tyequiv__univ_ghost : forall Θ P Q,
     {{ Θ ⊢ P ≡ˢ Q }}a ->
-    {{ Θ ⊢ (pskl_tophole P) ≡ˢ (pskl_tophole Q) }}a
+    {{ Θ ⊢ (pskl_univ_ghost P) ≡ˢ (pskl_univ_ghost Q) }}a
 where "{{ Θ ⊢ P ≡ˢ Q }}a" := (a_pskl_tyequiv Θ P Q) : fresco_a_scope.
 
 (* ===================================================================== *)

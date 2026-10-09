@@ -164,7 +164,7 @@ The repair hinges on the right side condition.  Do NOT guess it — read it
 off the producers:
  (a) grep a_typing / a_pat (fresco/algo/def_rules.v) for every a_sub call
      site; characterize the P0 each rule passes (paints of source types?
-     holes? spine-collected skeletons with ghosts?).
+     ghosts? spine-collected skeletons with ghosts?).
  (b) Cross-check against the implementation's spine collection
      (benchmark/Fresco/lib/type.ml; also
      paper/artifact/implementation/lib/type.ml) — the 👻 in the probe's

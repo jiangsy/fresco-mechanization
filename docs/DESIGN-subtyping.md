@@ -108,7 +108,7 @@ the choice in WF-SIDE-CONDITIONS.md.
 judgment (rules at subtyping-proofs.tex:1561-1637).  The paper says it
 "corresponds one to one to the definition of refinement in algorithmic
 contexts": its rules are `ad_refine_pskl`'s with (a) a tag context Ψ collected
-at tagged quantifiers, (b) hole matches any Δ-avoiding ψ, (c) tophole
+at tagged quantifiers, (b) ghost matches any Δ-avoiding ψ, (c) univ_ghost
 remove/fill/keep trio, (d) `flex_l`/`flex_r` lookup rules.  Crib the
 `ad_refine_pskl` metatheory proofs (weaken/Δ-mono/isub/rename) nearly verbatim.
 
@@ -256,10 +256,10 @@ out* in algorithmic.tex.  So `a_consis_complete` is faithful to the
 paper's proof-level statement.
 
 Deriving the third condition from the other two is **FALSE**:
-`(P0 = ∀X.X, P = ∀X.◇, Q = ∀X.X)` satisfies join + fill (the join's hole
+`(P0 = ∀X.X, P = ∀X.◇, Q = ∀X.X)` satisfies join + fill (the join's ghost
 rule checks the fill's wf over the *binder-extended* Θ, and the fill's `X`
-sits at a concrete — not hole — position of `P0`), but the subject
-refinement fails (`ad_refine_pskl`'s hole rule demands
+sits at a concrete — not ghost — position of `P0`), but the subject
+refinement fails (`ad_refine_pskl`'s ghost rule demands
 `Θ ⨟ ∅ ⊢ₚₛᵃ fill`), and the algorithm is stuck on it (`a_consis__ghost`
 carries `Δ2 ∩ ftv(fill) = ∅`, and the ∀-step puts the binder in both Δs) —
 so completeness against the 2-condition notion is genuinely false.
@@ -268,7 +268,7 @@ so completeness against the 2-condition notion is genuinely false.
 WT):** the ACTIVE subtyping-solution Definition (algorithmic.tex:1423-1437)
 has only two conditions, and the same capture transplants to it: at `TI`,
 `(P0=◇, P=∀X.◇, Q=syn ∀X.X)` passes `typsub`-Infer + the `P0`-fill, yet the
-required optimality conclusion `κ(∀X.◇) ⊑ ∀X.X` is underivable (⊑'s hole
+required optimality conclusion `κ(∀X.◇) ⊑ ∀X.X` is underivable (⊑'s ghost
 rule forbids capture) — thm:complete-subtyping as literally stated is
 false on it (hand-derivation in docs/PAPER-GAPS.md — no cex file needed:
 the mech follows the paper's proof-level statements here, so nothing rests
@@ -280,7 +280,7 @@ condition for every algorithmic output (`a_consis_sound`'s
 `⊢ᵣₚᵃᵈ` conjunct), so the pair still characterizes the algorithm exactly:
 it succeeds iff a valid solution exists and is ⊑-optimal among valid
 solutions.  A restricted derivation lemma (join ⇒ subject refinement for
-**hole-free** subjects — the TY-mode call sites) is true and avoids
+**ghost-free** subjects — the TY-mode call sites) is true and avoids
 threading at Check.
 
 ### 3.2 Kits (used pervasively; all Qed)

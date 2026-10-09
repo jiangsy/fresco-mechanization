@@ -181,25 +181,25 @@ Proof. intros B H. inversion H; subst; assumption. Qed.
 (*                                                                        *)
 (*  ⚙ The [_open] pair MOVED here 2026-08-16 from                          *)
 (*  algo/sub/look/prop_flex_apart.v, following the predicate itself        *)
-(*  (fresco/def_shapes.v): a consumer that needs hole-freeness cannot be    *)
+(*  (fresco/def_shapes.v): a consumer that needs ghost-freeness cannot be    *)
 (*  asked to import the subtyping-completeness chain.  [_subst] is new —   *)
 (*  ext_algo §8c.10 needs it for [Assign-Assign] / [Flex-Flex-Assign],     *)
 (*  whose recursion substitutes a definition PAYLOAD into the skeletons.   *)
 (* ===================================================================== *)
 
-Lemma pskl_no_hole_open_rec : forall P P' k,
-  pskl_no_hole P -> pskl_no_hole P' ->
-  pskl_no_hole (open_pskl_wrt_pskl_rec k P' P).
+Lemma pskl_no_ghost_open_rec : forall P P' k,
+  pskl_no_ghost P -> pskl_no_ghost P' ->
+  pskl_no_ghost (open_pskl_wrt_pskl_rec k P' P).
 Proof.
   induction P; intros P' k HP HV; simpl in *; auto.
   - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; auto.
   - destruct HP; split; auto.
 Qed.
 
-Lemma pskl_no_hole_open : forall P α,
-  pskl_no_hole P ->
-  pskl_no_hole (open_pskl_wrt_pskl P (pskl_var_f α)).
+Lemma pskl_no_ghost_open : forall P α,
+  pskl_no_ghost P ->
+  pskl_no_ghost (open_pskl_wrt_pskl P (pskl_var_f α)).
 Proof.
-  intros P α HP. apply pskl_no_hole_open_rec; simpl; auto.
+  intros P α HP. apply pskl_no_ghost_open_rec; simpl; auto.
 Qed.
 

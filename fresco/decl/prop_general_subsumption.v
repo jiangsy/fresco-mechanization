@@ -526,9 +526,9 @@ Qed.
     — every ε-tagged ∀ matches the syn-painted ∀ via [ForallSynTagged], which
     records no tag.  This is what makes the substitution [α ↦ ph] add no tags
     at variable occurrences. *)
-Lemma d_consis_ttyp_refl : forall Γ C,
+Lemma d_consis_dtyp_refl : forall Γ C,
     {{ Γ ⊢ᵤ C }}d ->
-    is_ttyp C ->
+    is_dtyp C ->
     {{ empty ⨟ Γ ⊢ C ∼ (utyp_to_btyp C) }}d.
 Proof.
   intros Γ C Hwf. induction Hwf; intros Htt; simpl.
@@ -536,7 +536,7 @@ Proof.
   - apply d_consis__var; [ assumption | reflexivity ].
   - inversion Htt; subst.
     eapply d_consis__arrow; [ apply IHHwf1 | apply IHHwf2 | fsetdec ]; assumption.
-  - inversion Htt.                          (* utyp_all_syn is not is_ttyp *)
+  - inversion Htt.                          (* utyp_all_syn is not is_dtyp *)
   - inversion Htt; subst.
     apply d_consis__forall_syn_tagged with (L := L `union` L0).
     intros α Hα.
@@ -544,7 +544,7 @@ Proof.
     rewrite <- utyp_to_btyp_open.
     apply H0; [ fsetdec | ].
     match goal with
-    | H : forall x, x `notin` _ -> is_ttyp _ |- _ => apply H; fsetdec
+    | H : forall x, x `notin` _ -> is_dtyp _ |- _ => apply H; fsetdec
     end.
 Qed.
 
@@ -691,7 +691,7 @@ Qed.
     tvar [α0] by a tagged type [ph] on the unresolved side, and by its
     bidirectional image [utyp_to_btyp ph] on the bidirectional side,
     preserves consistency WITHOUT adding tags — the variable occurrences
-    become [ph ∼ utyp_to_btyp ph], which is tag-free ([d_consis_ttyp_refl]).
+    become [ph ∼ utyp_to_btyp ph], which is tag-free ([d_consis_dtyp_refl]).
     Structure mirrors [d_consis_rename_tvar] (var→var); the only changes are the
     [α0]-case (use the base fact) and the [lc]/wf side-conditions for [ph]. *)
 Lemma d_consis_subst_tvar : forall Δ Γ C B,
@@ -699,7 +699,7 @@ Lemma d_consis_subst_tvar : forall Δ Γ C B,
     forall Γ1 Γ2 α0 C',
       Γ = Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2 ->
       {{ (Γ1 ++ Γ2) ⊢ᵤ C' }}d ->
-      is_ttyp C' ->
+      is_dtyp C' ->
       {{ Δ ⨟ (Γ1 ++ Γ2) ⊢ (subst_utyp_in_utyp C' α0 C)
                       ∼ (subst_btyp_in_btyp (utyp_to_btyp C') α0 B) }}d.
 Proof.
@@ -707,7 +707,7 @@ Proof.
   - apply d_consis__unit. assumption.
   - (* var: [α = α0] uses the base fact; [α <> α0] stays a variable. *)
     destruct_if.
-    + eapply d_consis_equiv; [ | apply d_consis_ttyp_refl; assumption ]. fsetdec.
+    + eapply d_consis_equiv; [ | apply d_consis_dtyp_refl; assumption ]. fsetdec.
     + apply d_consis__var; [ analyze_binds H; auto | assumption ].
   - eapply d_consis__arrow;
       [ eapply IHd_consis1; eauto | eapply IHd_consis2; eauto | assumption ].
@@ -715,9 +715,9 @@ Proof.
       (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0).
     + intros α2 Hα2.
       erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
-        by (solve [ fsetdec | apply is_ttyp_lc; assumption ]).
+        by (solve [ fsetdec | apply is_dtyp_lc; assumption ]).
       erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
-        by (solve [ fsetdec | apply utyp_to_btyp_lc; apply is_ttyp_lc; assumption ]).
+        by (solve [ fsetdec | apply utyp_to_btyp_lc; apply is_dtyp_lc; assumption ]).
       rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
       eapply (H0 α2);
         [ fsetdec | simpl; reflexivity
@@ -729,9 +729,9 @@ Proof.
       (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0).
     intros α2 Hα2.
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
-      by (solve [ fsetdec | apply is_ttyp_lc; assumption ]).
+      by (solve [ fsetdec | apply is_dtyp_lc; assumption ]).
     erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
-      by (solve [ fsetdec | apply utyp_to_btyp_lc; apply is_ttyp_lc; assumption ]).
+      by (solve [ fsetdec | apply utyp_to_btyp_lc; apply is_dtyp_lc; assumption ]).
     rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
     eapply (H0 α2);
       [ fsetdec | simpl; reflexivity
@@ -742,9 +742,9 @@ Proof.
       (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0).
     intros α2 Hα2.
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
-      by (solve [ fsetdec | apply is_ttyp_lc; assumption ]).
+      by (solve [ fsetdec | apply is_dtyp_lc; assumption ]).
     erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
-      by (solve [ fsetdec | apply utyp_to_btyp_lc; apply is_ttyp_lc; assumption ]).
+      by (solve [ fsetdec | apply utyp_to_btyp_lc; apply is_dtyp_lc; assumption ]).
     rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
     eapply (H0 α2);
       [ fsetdec | simpl; reflexivity
@@ -755,9 +755,9 @@ Proof.
       (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0).
     intros α2 Hα2.
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
-      by (solve [ fsetdec | apply is_ttyp_lc; assumption ]).
+      by (solve [ fsetdec | apply is_dtyp_lc; assumption ]).
     erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
-      by (solve [ fsetdec | apply utyp_to_btyp_lc; apply is_ttyp_lc; assumption ]).
+      by (solve [ fsetdec | apply utyp_to_btyp_lc; apply is_dtyp_lc; assumption ]).
     rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
     eapply (H0 α2);
       [ fsetdec | simpl; reflexivity
@@ -1466,7 +1466,7 @@ Qed.
     [is_ityp] target.  The guarded targets close by [d_sub__check] (which
     consumes the consistency directly); the ∀ target generalises by
     [forall_r] and then instantiates the synthesised ∀ with the bound
-    variable — an untagged [is_ttyp] witness with [d_tags ∅] — so the IH
+    variable — an untagged [is_dtyp] witness with [d_tags ∅] — so the IH
     fires without any tag-context bookkeeping (contrast CST transitivity,
     which must thread arbitrary tagged witnesses). *)
 Lemma d_consis_syn_sub_tc : forall Bn, is_ityp Bn ->
@@ -1504,7 +1504,7 @@ Proof.
           | clear; fsetdec
           | apply d_tags__var; reflexivity
           | apply d_wf_utyp__var; simpl; auto
-          | apply is_ttyp__var
+          | apply is_dtyp__var
           | specialize (Hc α ltac:(clear -Hα; solve_notin_auto));
             change (utyp_var_f α) with (btyp_to_utyp_syn (btyp_var_f α)) in Hc |- *;
             rewrite <- btyp_to_utyp_syn_open in Hc |- *;

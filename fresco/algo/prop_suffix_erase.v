@@ -37,7 +37,7 @@
     is the same treatment for the judgements ABOVE it — refinement, type
     equivalence, skeleton inference and syntax-directed typing — which is
     what this file adds.  The syntactic-predicate closure lemmas
-    ([is_tskl_subst_mono], [a_tags_sort_subst_mono], …) are reused from
+    ([is_dskl_subst_mono], [a_tags_sort_subst_mono], …) are reused from
     prop_pat_sub.v rather than rebuilt.
 
     §1 is the substitution on contexts, §2 the coercion commutations it
@@ -393,8 +393,8 @@ Proof.
              ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | clear - Hα0 Hβ; fsetdec
       | clear - Hd Hβ; fsetdec ].
-  - apply a_wf_pskl__hole.
-  - apply a_wf_pskl__tophole.
+  - apply a_wf_pskl__ghost.
+  - apply a_wf_pskl__univ_ghost.
     + apply guarded_pskl_subst;
         [ exact H
         | apply mono_ptyp_to_pskl_guarded; eapply solves_flex_mono; eassumption
@@ -505,15 +505,15 @@ Proof.
              ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ | clear - Hα0 Hβ; fsetdec
       | clear - Hd Hβ; fsetdec ].
-  - (* hole : the fill is substituted, and still avoids Δ *)
+  - (* ghost : the fill is substituted, and still avoids Δ *)
     unfold ptyp_to_bskl_syn at 1. rewrite <- pskl_to_bskl_syn_subst.
-    apply ad_refine_syn__hole.
+    apply ad_refine_syn__ghost.
     pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P (ptyp_to_pskl τs) α0)
       as Hup.
     rewrite ftvar_ptyp_to_pskl in Hup. clear - H Hd Hup; fsetdec.
-  - (* tophole_remove *) apply ad_refine_syn_tophole_remove_intro; eauto.
-  - (* tophole_fill : the witness joins the PREFIX *)
-    apply ad_refine_syn_tophole_fill_intro
+  - (* univ_ghost_remove *) apply ad_refine_syn_univ_ghost_remove_intro; eauto.
+  - (* univ_ghost_fill : the witness joins the PREFIX *)
+    apply ad_refine_syn_univ_ghost_fill_intro
       with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
     intros β Hβ.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
@@ -522,8 +522,8 @@ Proof.
           eassumption ].
     apply (H1 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ | exact Hα0 | exact Hd ].
-  - (* tophole_keep *)
-    apply ad_refine_syn_tophole_keep_intro; eauto.
+  - (* univ_ghost_keep *)
+    apply ad_refine_syn_univ_ghost_keep_intro; eauto.
   - (* flex_l *)
     destruct_if as [Heqα | Hne].
     + (* the eliminated variable: the lookup COLLAPSES into its premise *)
@@ -580,9 +580,9 @@ Proof.
 Qed.
 
 (** ⭐ The [ad_refine_pskl] MIRROR of [ad_refine_syn_subst_mid].  The two
-    judgements' [__hole] rows differ — the [bskl] one's fill is a
+    judgements' [__ghost] rows differ — the [bskl] one's fill is a
     SYNTHESISED painting while this one's is a plain wf fill — so there is
-    no bridge; the induction is mirrored.  This one's [__hole] row is in
+    no bridge; the induction is mirrored.  This one's [__ghost] row is in
     fact SIMPLER (no painting rewrite), and its [__var] row closes by
     [ad_refine_pskl_refl] on the monotype's wf painting. *)
 Lemma ad_refine_pskl_subst_mid : forall Θ Δ P Q,
@@ -619,15 +619,15 @@ Proof.
              ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ | clear - Hα0 Hβ; fsetdec
       | clear - Hd Hβ; fsetdec ].
-  - (* hole : the fill is substituted, and still avoids Δ — no painting
+  - (* ghost : the fill is substituted, and still avoids Δ — no painting
        rewrite *)
-    apply ad_refine_pskl__hole.
+    apply ad_refine_pskl__ghost.
     pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P' (ptyp_to_pskl τs) α0)
       as Hup.
     rewrite ftvar_ptyp_to_pskl in Hup. clear - H Hd Hup; fsetdec.
-  - (* tophole_remove *) apply ad_refine_pskl__tophole_remove; eauto.
-  - (* tophole_fill : the witness joins the PREFIX *)
-    apply ad_refine_pskl__tophole_fill
+  - (* univ_ghost_remove *) apply ad_refine_pskl__univ_ghost_remove; eauto.
+  - (* univ_ghost_fill : the witness joins the PREFIX *)
+    apply ad_refine_pskl__univ_ghost_fill
       with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
     intros β Hβ.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
@@ -635,8 +635,8 @@ Proof.
         | apply ptyp_to_pskl_lc; eapply solves_flex_lc; eassumption ].
     apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ | exact Hα0 | exact Hd ].
-  - (* tophole_keep *)
-    apply ad_refine_pskl__tophole_keep; eauto.
+  - (* univ_ghost_keep *)
+    apply ad_refine_pskl__univ_ghost_keep; eauto.
   - (* flex_l *)
     destruct_if as [Heqα | Hne].
     + (* the eliminated variable: the lookup COLLAPSES into its premise *)
@@ -791,16 +791,16 @@ Proof.
     apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
   - (* ghostg *) apply ad_pat_consis__ghostg; assumption.
-  - (* topholeg *) apply ad_pat_consis__topholeg; eauto.
-  - (* hole : the fill is substituted, and stays well-formed *)
+  - (* dot_univ_ghost *) apply ad_pat_consis__dot_univ_ghost; eauto.
+  - (* ghost : the fill is substituted, and stays well-formed *)
     assert (Hm : mono_ptyp τs) by (eapply solves_flex_mono; eassumption).
     rewrite (pskl_to_bskl_inh_subst_mono P α0 Hm).
-    apply ad_pat_consis__hole; [ assumption | ].
+    apply ad_pat_consis__ghost; [ assumption | ].
     eapply a_wf_pskl_subst_mid;
       [ eassumption | reflexivity | exact Hs | clear; fsetdec | clear; fsetdec ].
-  - (* tophole *) apply ad_pat_consis__tophole; eauto.
-  - (* tophole_inh : only the TARGET opens *)
-    eapply ad_pat_consis__tophole_inh
+  - (* univ_ghost *) apply ad_pat_consis__univ_ghost; eauto.
+  - (* univ_ghost_inh : only the TARGET opens *)
+    eapply ad_pat_consis__univ_ghost_inh
       with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
     intros β Hβ.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
@@ -809,7 +809,7 @@ Proof.
           eassumption ].
     apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
-  - (* tophole_drop *) apply ad_pat_consis__tophole_drop; eauto.
+  - (* univ_ghost_drop *) apply ad_pat_consis__univ_ghost_drop; eauto.
   - (* flex_l *)
     destruct_if as [Heqα | Hne].
     + (* the eliminated variable: the lookup COLLAPSES into its premise *)
@@ -1058,8 +1058,8 @@ Proof.
         apply mod_comp_sk_subst_mono; assumption ].
   - (* ghostg (SK) *)
     apply ad_pat_sub__ghostg; [ assumption | ].
-    change bskl_hole
-      with (subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 bskl_hole).
+    change bskl_ghost
+      with (subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 bskl_ghost).
     apply mod_comp_sk_subst_mono; assumption.
   - (* univ_ghost_l *) apply ad_pat_sub__univ_ghost_l; [ assumption | eauto ].
   - (* univ_ghost_lg *) apply ad_pat_sub__univ_ghost_lg; [ assumption | eauto ].
@@ -1278,7 +1278,7 @@ Proof.
     rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var.
     rewrite <- subst_pskl_to_bskl_syn_eq.
     apply (H0 x ltac:(clear - Hx; solve_notin_auto) τs α0 b0
-             ((x ~ abind_var_skl pskl_hole) ++ Θa) Θ0);
+             ((x ~ abind_var_skl pskl_ghost) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hx ].
   - (* abs_anno_check *)
     rewrite subst_pskl_to_bskl_syn_eq, subst_btyp_to_bskl_eq,

@@ -96,7 +96,7 @@ rules; at Check it must turn "some Q" into "Q = B".
 
 Nuance: under the paper's external N-sort convention (full-decl-spec.tex:29-31
 — at N = TY the metavariables range over *types*), `B` is an embedded `ptyp`,
-hence ghost/hole-free, and the join output on a ghost-free input should equal
+hence ghost/ghost-free, and the join output on a ghost-free input should equal
 the input — so within the convention's domain the two readings coincide **via a
 lemma that does not yet exist** ("consis output with ghost-free input is the
 input").  Resolution options: harmonize the twins (pin both, or ∃Q both), or
@@ -238,7 +238,7 @@ And the un-encoded N-sort syntax convention on `ad_pat_sub`
   (full-algo-spec.tex:100-112 — the paper never gives rules);
   `a_pskl_tyequiv` is mech-only, acknowledged in optimality-cex.tex.
 - **Decorated + `ad_*`**: `a_consistag` (incl. the repaired FlexR — the
-  dotted-hole counterexample rule is gone; subject is `pskl_to_uskl P`),
+  dotted-ghost counterexample rule is gone; subject is `pskl_to_uskl P`),
   `a_subtag` (modulo F1/F2), all of tag solving, `ad_pat_consis`,
   `ad_refine_syn/_pskl`, `ad_pat_sub`, `ad_partial_precise` — MATCH or
   documented (context-free `a_tags_sort`; `uskl_ghost_free` stronger than

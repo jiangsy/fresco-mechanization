@@ -1,7 +1,7 @@
 (** THE ALIAS COLLAPSE — [collapse1 γ ε Θ] drops the alias entry
     [γ ≔ ε̂] and renames [ε̂] back to [γ] everywhere (keys and payloads).
     It was built for lifting the consistency runner's completeness off its
-    hole-free restriction along the PRE-NORMALISATION route
+    ghost-free restriction along the PRE-NORMALISATION route
     (docs/HANDOFF-close-consis-unrestricted.md §5 (R1)); that route closed
     another way, and the definitions stay as the statement
     cex/probe_collapse_orientation.v refutes.  ⚙ [rename_aenv] is the

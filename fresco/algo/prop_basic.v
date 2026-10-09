@@ -388,7 +388,7 @@ Qed.
 
 (** ⭐ THE PROPERTY THAT MAKES THE KIT PROVABLE.  Every name guess^TY
     GENERATES avoids everything the ambient context mentions — DERIVED,
-    not assumed: the hole rule picks fresh for [Θ] and the ∀ rule puts its
+    not assumed: the ghost rule picks fresh for [Θ] and the ∀ rule puts its
     witness INTO [Θ], so in the ∀ case the premise's block avoids the
     witness itself.  Exactly the fact a renaming lemma needs when its
     target happens to BE that witness, and the fact the ∀-opening bridge
@@ -532,7 +532,7 @@ Qed.
     exists-fresh algorithmic premise feeds one, the single recorded
     instance must become a family.  This is the packaged binder-move that
     does it.  Junk-freeness makes it TRUE: without the witness entering the
-    premise's context, a hole below the ∀ could generate the witness
+    premise's context, a ghost below the ∀ could generate the witness
     itself, and this statement is false on that derivation.
 
     ⚙ The move is the TRANSPOSITION [b0 ⇄ α] ([a_guess_mono_swap],
@@ -599,17 +599,17 @@ Proof.
                 | Θ P Q Ξ1 Ξ2 A B Hg1 Hg2
                 | Θ P Ξ A β Hfr Hg ];
     cbn in Hsz; intros Θ1 Hvars Hβs.
-  - (* hole ↦ fresh flexible variable *)
+  - (* ghost ↦ fresh flexible variable *)
     replace (ptyp_to_bskl_syn (ptyp_var_f α))
       with (pskl_to_bskl_inh (pskl_var_f α)) by reflexivity.
-    replace (pskl_to_uskl pskl_hole) with uskl_hole by reflexivity.
-    apply ad_pat_consis__hole; [ fsetdec | ].
+    replace (pskl_to_uskl pskl_ghost) with uskl_ghost by reflexivity.
+    apply ad_pat_consis__ghost; [ fsetdec | ].
     apply a_wf_pskl__var. apply Hβs.
     unfold binds; left; reflexivity.
   - (* ∀◇P : the universal ghost is dropped *)
-    replace (pskl_to_uskl (pskl_tophole P))
-      with (uskl_tophole (pskl_to_uskl P)) by reflexivity.
-    apply ad_pat_consis__tophole_drop.
+    replace (pskl_to_uskl (pskl_univ_ghost P))
+      with (uskl_univ_ghost (pskl_to_uskl P)) by reflexivity.
+    apply ad_pat_consis__univ_ghost_drop.
     eapply IHn; [ lia | exact Hg | exact Hvars | exact Hβs ].
   - (* variable *)
     replace (pskl_to_uskl (pskl_var_f α))
@@ -767,43 +767,43 @@ Proof.
         [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
         | ]; discriminate HeqS.
     + apply ad_pat_consis__ghostg; auto.
-  - (* topholeg *)
+  - (* dot_univ_ghost *)
     destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
     + destruct (eq_var X0x β) as [->|Hne];
         [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
         | ]; discriminate HeqS.
-    + inversion HeqS; subst. apply ad_pat_consis__topholeg; auto.
-  - (* hole *)
+    + inversion HeqS; subst. apply ad_pat_consis__dot_univ_ghost; auto.
+  - (* ghost *)
     destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
     + destruct (eq_var X0x β) as [->|Hne];
         [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
         | ]; discriminate HeqS.
-    + apply ad_pat_consis__hole; auto.
-  - (* tophole *)
+    + apply ad_pat_consis__ghost; auto.
+  - (* univ_ghost *)
     destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
     + destruct (eq_var X0x β) as [->|Hne];
         [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
         | ]; discriminate HeqS.
-    + inversion HeqS; subst. apply ad_pat_consis__tophole; auto.
-  - (* tophole_inh *)
+    + inversion HeqS; subst. apply ad_pat_consis__univ_ghost; auto.
+  - (* univ_ghost_inh *)
     destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
     + destruct (eq_var X0x β) as [->|Hne];
         [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
         | ]; discriminate HeqS.
     + inversion HeqS; subst.
-      eapply ad_pat_consis__tophole_inh with (L := L);
+      eapply ad_pat_consis__univ_ghost_inh with (L := L);
         try (intros α Hα; eapply H0; auto; simpl; reflexivity).
-  - (* tophole_drop *)
+  - (* univ_ghost_drop *)
     destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
     + destruct (eq_var X0x β) as [->|Hne];
         [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
         | ]; discriminate HeqS.
-    + inversion HeqS; subst. apply ad_pat_consis__tophole_drop; auto.
+    + inversion HeqS; subst. apply ad_pat_consis__univ_ghost_drop; auto.
   - (* flex_l *)
     destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
@@ -843,15 +843,15 @@ Proof.
     unfold binds in *; apply in_or_app; auto.
 Qed.
 
-(** Inverting a well-formed tophole: the body is GUARDED and well-formed at
+(** Inverting a well-formed univ_ghost: the body is GUARDED and well-formed at
     the EMPTY tag scope.
     ⚙ ONE name for this fact (2026-08-12): it used to exist three times —
     here in its strong form (consis/prop_consis_precise.v), a wf-only weak
     form (deco_algo/prop_decorate_sub.v) that COLLIDED with it, and a copy
     named [_x] (algo/prop_precise.v) that existed only to escape the shadow.
     Weak uses read the second component. *)
-Lemma a_wf_pskl_tophole_inv : forall Θ Δ P,
-  {{ Θ ⨟ Δ ⊢ₚₛ (pskl_tophole P) }}a ->
+Lemma a_wf_pskl_univ_ghost_inv : forall Θ Δ P,
+  {{ Θ ⨟ Δ ⊢ₚₛ (pskl_univ_ghost P) }}a ->
   guarded_pskl P /\ ({{ Θ ⨟ empty ⊢ₚₛ P }}a).
 Proof.
   intros * H; inversion H; subst. split; [ assumption | ].
@@ -1032,16 +1032,16 @@ Proof.
       [ unfold binds; left; reflexivity
       | unfold binds; right; apply Hmon; auto ].
   - apply ad_pat_consis__ghostg; auto.
-  - apply ad_pat_consis__topholeg; auto.
-  - apply ad_pat_consis__hole; eauto using a_wf_pskl_weaken.
-  - apply ad_pat_consis__tophole; auto.
-  - eapply ad_pat_consis__tophole_inh with (L := L); eauto.
+  - apply ad_pat_consis__dot_univ_ghost; auto.
+  - apply ad_pat_consis__ghost; eauto using a_wf_pskl_weaken.
+  - apply ad_pat_consis__univ_ghost; auto.
+  - eapply ad_pat_consis__univ_ghost_inh with (L := L); eauto.
     intros α Hα. apply H0; auto.
     intros x b Hb.
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
       [ unfold binds; left; reflexivity
       | unfold binds; right; apply Hmon; auto ].
-  - apply ad_pat_consis__tophole_drop; auto.
+  - apply ad_pat_consis__univ_ghost_drop; auto.
   - eapply ad_pat_consis__flex_l; eauto.
   - eapply ad_pat_consis__flex_r; eauto.
 Qed.
@@ -1104,7 +1104,7 @@ Qed.
 
 (** Guardedness is a HEAD-SHAPE property, so substituting a variable by a
     MONOTYPE preserves it (a variable is guarded; a monotype is guarded).
-    This is the crux of the [tophole] case below. *)
+    This is the crux of the [univ_ghost] case below. *)
 Lemma guarded_pskl_mono_subst : forall P τ β,
   guarded_pskl P ->
   mono_ptyp τ ->
@@ -1221,8 +1221,8 @@ Proof.
     + apply a_binds_tvar_cons_tvar. right; exact Hb.
     + assert (α' <> α) by (intro; subst; clear - Hα Hα'; fsetdec).
       clear - Hn H1. fsetdec.
-  - apply a_wf_pskl__hole.
-  - apply a_wf_pskl__tophole;
+  - apply a_wf_pskl__ghost.
+  - apply a_wf_pskl__univ_ghost;
       [ apply guarded_pskl_mono_subst; auto | ].
     apply IHa_wf_pskl; [ exact Hm | ].
     intros α Hα. destruct (Hτ α Hα) as [Hb Hn]. split.
@@ -1333,7 +1333,7 @@ Proof.
                 | Θ P Q Ξ1 Ξ2 A B Hg1 Hg2
                 | Θ P Ξ A β Hfr Hg ];
     cbn in Hsz; intros Θ1 Hvars HΞ.
-  - (* hole ↦ fresh flexible *)
+  - (* ghost ↦ fresh flexible *)
     apply a_wf_ptyp__var. apply HΞ. unfold binds; left; reflexivity.
   - (* ⫯.P *)
     eapply IHn with (P := P); [ lia | exact Hg | exact Hvars | exact HΞ ].
@@ -1704,9 +1704,9 @@ Qed.
 (** A ghost-free body cannot OPEN to a ghost — the fact the ◇-dispatch guard
     needs in order to thread through [LS-ForallR], whose premise runs at the
     counterpart's opened body. *)
-Lemma ghost_free_open_var_neq_hole : forall P β,
+Lemma ghost_free_open_var_neq_ghost : forall P β,
   pskl_ghost_free P ->
-  open_pskl_wrt_pskl P (pskl_var_f β) <> pskl_hole.
+  open_pskl_wrt_pskl P (pskl_var_f β) <> pskl_ghost.
 Proof.
   intros P β Hgf. unfold open_pskl_wrt_pskl.
   destruct P; simpl in *; try contradiction; try discriminate.
@@ -1750,7 +1750,7 @@ Qed.
 
 Lemma a_solve_sub_vacuous_gen_n : forall n Θ m P,
   size_pskl P <= n ->
-  {{ Θ ⊢ₛ P ≼[ m ] pskl_hole ⤳ nil ⨾ P }}a.
+  {{ Θ ⊢ₛ P ≼[ m ] pskl_ghost ⤳ nil ⨾ P }}a.
 Proof.
   induction n as [ | n IH ]; intros Θ m P Hsz;
     [ exfalso; destruct P; simpl in Hsz; lia | ].
@@ -1758,7 +1758,7 @@ Proof.
     try solve [ apply a_solve_sub__vacuous;
                 solve [ apply peel_l_off_unit | apply peel_l_off_var_b
                       | apply peel_l_off_var | apply peel_l_off_arrow
-                      | apply peel_l_off_hole ] ].
+                      | apply peel_l_off_ghost ] ].
   - (* ∀ — peel, then RE-CLOSE over the same opener *)
     simpl in Hsz.
     destruct (atom_fresh (ftvar_in_aenv Θ ∪ ftvar_in_pskl P0)) as [β Hβ].
@@ -1777,7 +1777,7 @@ Proof.
 Qed.
 
 Lemma a_solve_sub_vacuous_gen : forall Θ m P,
-  {{ Θ ⊢ₛ P ≼[ m ] pskl_hole ⤳ nil ⨾ P }}a.
+  {{ Θ ⊢ₛ P ≼[ m ] pskl_ghost ⤳ nil ⨾ P }}a.
 Proof. intros. exact (a_solve_sub_vacuous_gen_n Θ m P (le_n _)). Qed.
 
 (* ===================================================================== *)

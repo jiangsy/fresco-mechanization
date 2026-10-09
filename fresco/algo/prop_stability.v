@@ -85,12 +85,12 @@ Proof.
   - eapply ad_pat_consis__forall_syn with (L := L); eauto.
     intros α Hα. eauto using a_isub_cons_tvar.
   - apply ad_pat_consis__ghostg; auto.
-  - apply ad_pat_consis__topholeg; auto.
-  - apply ad_pat_consis__hole; eauto using a_wf_pskl_isub.
-  - apply ad_pat_consis__tophole; auto.
-  - eapply ad_pat_consis__tophole_inh with (L := L); eauto.
+  - apply ad_pat_consis__dot_univ_ghost; auto.
+  - apply ad_pat_consis__ghost; eauto using a_wf_pskl_isub.
+  - apply ad_pat_consis__univ_ghost; auto.
+  - eapply ad_pat_consis__univ_ghost_inh with (L := L); eauto.
     intros α Hα. eauto using a_isub_cons_tvar.
-  - apply ad_pat_consis__tophole_drop; auto.
+  - apply ad_pat_consis__univ_ghost_drop; auto.
   - eapply ad_pat_consis__flex_l; eauto using a_isub_binds_flex_def.
   - eapply ad_pat_consis__flex_r; eauto using a_isub_binds_flex_def.
 Qed.
@@ -106,11 +106,11 @@ Proof.
   - apply ad_refine_syn__arrow; auto.
   - eapply ad_refine_syn__all with (L := L); [ assumption | ].
     intros α Hα. eauto using a_isub_cons_tvar.
-  - apply ad_refine_syn__hole; auto.
-  - apply ad_refine_syn__tophole_remove; auto.
-  - eapply ad_refine_syn__tophole_fill with (L := L); [ assumption | ].
+  - apply ad_refine_syn__ghost; auto.
+  - apply ad_refine_syn__univ_ghost_remove; auto.
+  - eapply ad_refine_syn__univ_ghost_fill with (L := L); [ assumption | ].
     intros α Hα. eauto using a_isub_cons_tvar.
-  - apply ad_refine_syn__tophole_keep; auto.
+  - apply ad_refine_syn__univ_ghost_keep; auto.
   - eapply ad_refine_syn__flex_l; eauto using a_isub_binds_flex_def.
   - eapply ad_refine_syn__flex_r; eauto using a_isub_binds_flex_def.
 Qed.
@@ -126,11 +126,11 @@ Proof.
   - apply ad_refine_pskl__arrow; auto.
   - eapply ad_refine_pskl__all with (L := L).
     intros α Hα. eauto using a_isub_cons_tvar.
-  - apply ad_refine_pskl__hole; auto.
-  - apply ad_refine_pskl__tophole_remove; auto.
-  - eapply ad_refine_pskl__tophole_fill with (L := L).
+  - apply ad_refine_pskl__ghost; auto.
+  - apply ad_refine_pskl__univ_ghost_remove; auto.
+  - eapply ad_refine_pskl__univ_ghost_fill with (L := L).
     intros α Hα. eauto using a_isub_cons_tvar.
-  - apply ad_refine_pskl__tophole_keep; auto.
+  - apply ad_refine_pskl__univ_ghost_keep; auto.
   - eapply ad_refine_pskl__flex_l; eauto using a_isub_binds_flex_def.
   - eapply ad_refine_pskl__flex_r; eauto using a_isub_binds_flex_def.
 Qed.

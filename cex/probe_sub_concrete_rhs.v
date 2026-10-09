@@ -33,7 +33,7 @@
     already exports [{{ Θ1 ⨟ ∅ ⊢ᵣ inh{P0} ⊳ Qt }}ad] with [⌊Qt⌋ = P'] — the output
     REFINES FROM the input skeleton — so all that is left is: refinement out of
     a GHOST-FREE source only ever unfolds definitions.  That is one induction
-    with no context threading beyond plain extension: [__tophole_fill], which
+    with no context threading beyond plain extension: [__univ_ghost_fill], which
     adds a flexible, needs a ghost on the left and is excluded, and [__all]
     pushes only a rigid [α ~ abind_tvar], which ≡ˢ cannot see. *)
 
@@ -74,7 +74,7 @@ Qed.
 (*  §2  REFINEMENT OUT OF A GHOST-FREE SOURCE ONLY UNFOLDS DEFINITIONS     *)
 (*                                                                        *)
 (*  Read the rows.  [__unit] / [__var] are identities; [__arrow] / [__all] *)
-(*  are congruences; [__hole] and the three [__tophole_*] rows all demand  *)
+(*  are congruences; [__ghost] and the three [__univ_ghost_*] rows all demand  *)
 (*  a GHOST on the left and are excluded outright.  That leaves exactly    *)
 (*  the two flexible-lookup rows — and those are [a_pskl_tyequiv__flex_def] *)
 (*  verbatim, one on each side.                                           *)
@@ -97,7 +97,7 @@ Proof.
   - apply a_pskl_tyequiv__flex_def; eapply Hdef; eassumption.
   - apply a_pskl_tyequiv__arrow; auto.
   - apply a_pskl_tyequiv__all with (L := L); auto.
-  - apply a_pskl_tyequiv__tophole; auto.
+  - apply a_pskl_tyequiv__univ_ghost; auto.
 Qed.
 
 
@@ -121,10 +121,10 @@ Proof.
       [ apply H1; [ exact Hα | apply bskl_ghost_free_open_rec; exact Hgf ] | ].
     intros β τ Hb; apply binds_app_iff in Hb as [Hb | Hb]; [ | exact Hb ].
     apply binds_one_iff in Hb as [_ Heq]; discriminate.
-  - (* hole : a GHOST on the left *) tauto.
-  - (* tophole_remove *) tauto.
-  - (* tophole_fill *) tauto.
-  - (* tophole_keep *) tauto.
+  - (* ghost : a GHOST on the left *) tauto.
+  - (* univ_ghost_remove *) tauto.
+  - (* univ_ghost_fill *) tauto.
+  - (* univ_ghost_keep *) tauto.
   - (* flex_l : the source variable unfolds to its definition *)
     eapply a_pskl_tyequiv__trans;
       [ apply a_pskl_tyequiv__flex_def; exact H | ].
@@ -190,7 +190,7 @@ Proof.
       destruct Hle as [_ Hdef]; eapply Hdef; eassumption.
   - apply a_pskl_tyequiv__arrow; auto.
   - apply a_pskl_tyequiv__all with (L := L); auto.
-  - apply a_pskl_tyequiv__tophole; auto.
+  - apply a_pskl_tyequiv__univ_ghost; auto.
 Qed.
 
 (** …and the plain context extension ([a_pskl_tyequiv_weaken], stated in §2
@@ -218,8 +218,8 @@ Proof.
       [ apply H0
       | clear - Hα; intro Heq; subst; fsetdec
       | apply mono_ptyp_to_pskl_lc; exact Hm ].
-  - (* hole *) apply a_pskl_tyequiv__refl; apply lc_pskl_hole.
-  - (* tophole *) apply a_pskl_tyequiv__tophole; assumption.
+  - (* ghost *) apply a_pskl_tyequiv__refl; apply lc_pskl_ghost.
+  - (* univ_ghost *) apply a_pskl_tyequiv__univ_ghost; assumption.
 Qed.
 
 (* ===================================================================== *)

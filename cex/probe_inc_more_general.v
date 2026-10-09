@@ -14,7 +14,7 @@
         derivation  (U-FlexL)    α̂ := β̂, β̂               (α̂ SOLVED)
 
     — so the divergence is information-free but is NOT a renaming, and the
-    note recorded that lifting the level off [pskl_no_hole] needs a
+    note recorded that lifting the level off [pskl_no_ghost] needs a
     generalization argument.  This probe pins the direction of that
     argument with the metasubstitution [β̂/α̂].  For fresh β, the reverse
     witness [α̂/α̂, α̂/β̂] also exists, and the round trip fixes α.

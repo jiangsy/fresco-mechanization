@@ -18,7 +18,7 @@
     Δ1/Δ2 rigid-trackers exist precisely to guard ghost fills (the Ghost /
     GhostR side conditions), and the output-wf induction leans on them:
     besides wf itself the motive carries (i) the output's SHIELDED variables
-    (those under a tophole, [pskl_shielded_ftv] — the P6 kit's gadget) avoid
+    (those under a univ_ghost, [pskl_shielded_ftv] — the P6 kit's gadget) avoid
     Δ1 ∪ Δ2, which is what lets the three close-rows re-bind their opened
     rigid ([a_wf_pskl_tvar_to_delta] + [a_wf_pskl_all_of_one_at]); (ii) an ftv
     PROVENANCE bound (a Δ-variable in the output comes from an input), which
@@ -69,7 +69,7 @@ Set Implicit Arguments.
 (* ===================================================================== *)
 
 (** A variable-for-variable substitution moves no skeleton in or out of a
-    tophole, so when the replaced variable is not shielded the shielded set
+    univ_ghost, so when the replaced variable is not shielded the shielded set
     is unchanged. *)
 Lemma pskl_shielded_ftv_subst_var_notin : forall P α β,
   β `notin` pskl_shielded_ftv P ->
@@ -81,13 +81,13 @@ Proof.
   - (* arrow *)
     rewrite IHP1, IHP2; [ fsetdec | fsetdec | fsetdec ].
   - (* all_syn *) apply IHP; fsetdec.
-  - (* tophole *)
+  - (* univ_ghost *)
     rewrite ftvar_in_pskl_subst_pskl_in_pskl_fresh; [ fsetdec | ].
     simpl. fsetdec.
 Qed.
 
-(** ⭐ A well-formed ∀-body keeps its binder OUT of every tophole (the
-    binder enters Δ, and the tophole rule re-checks its body at Θ∖Δ), so
+(** ⭐ A well-formed ∀-body keeps its binder OUT of every univ_ghost (the
+    binder enters Δ, and the univ_ghost rule re-checks its body at Θ∖Δ), so
     opening with a fresh variable adds nothing to the shielded set. *)
 Lemma a_wf_pskl_all_shielded_open : forall Θ Δ P α,
   {{ Θ ⨟ Δ ⊢ₚₛ (pskl_all_syn P) }}a ->
@@ -293,7 +293,7 @@ Proof.
       simpl in Hu0, Hu1. simpl.
       clear - Hp Hu0 Hu1 Hα0α. fsetdec. }
     intros Hg _; inversion Hg.
-  - (* C-ForallSyn : subject opened (α to Δ2), tophole input kept *)
+  - (* C-ForallSyn : subject opened (α to Δ2), univ_ghost input kept *)
     simpl in Hsh0, Hsh.
     assert (HαP0 : α `notin` ftvar_in_pskl P0) by (clear - H; fsetdec).
     assert (HαP : α `notin` ftvar_in_pskl P) by (clear - H; fsetdec).
@@ -302,7 +302,7 @@ Proof.
       by (pose proof (dom_subset_ftvar_in_aenv Θ0); clear - H H0; fsetdec).
     assert (Hwfx : {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a)
       by (apply a_wf_aenv__tvar; [ exact HαΘ0 | exact Hwf ]).
-    assert (HwfP0x : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (pskl_tophole P0) }}a).
+    assert (HwfP0x : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (pskl_univ_ghost P0) }}a).
     { eapply a_wf_pskl_delta_mono;
         [ apply (a_wf_pskl_reassoc HwfP0 α) | clear; fsetdec ]. }
     assert (HwfPo : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
@@ -324,7 +324,7 @@ Proof.
             [ clear; fsetdec
             | apply faf_open_tvar; auto; clear - HαΔ; fsetdec ]).
     assert (Hsh0x : (Δ1 `union` add α Δ2) ∩
-                    pskl_shielded_ftv (pskl_tophole P0) [=] empty)
+                    pskl_shielded_ftv (pskl_univ_ghost P0) [=] empty)
       by (simpl; clear - Hsh0 HαP0; fsetdec).
     assert (Hshx : (Δ1 `union` add α Δ2) ∩
                    pskl_shielded_ftv (open_pskl_wrt_pskl P (pskl_var_f α))
@@ -388,7 +388,7 @@ Proof.
     destruct (IHHc Hwf Hwb0 Hwbs Hcov Hnfd Hfaf Hsh0b Hshb)
       as [HwfQ [HshQ [HprovQ HgQ]]].
     split.
-    { apply a_wf_pskl__tophole;
+    { apply a_wf_pskl__univ_ghost;
         [ apply HgQ; assumption | rewrite aenv_minus_empty; exact HwfQ ]. }
     split.
     { simpl. intros β. split; [ | clear; fsetdec ].
@@ -414,7 +414,7 @@ Proof.
                        (open_pskl_wrt_pskl P0 (pskl_var_f α)) }}a)
       by (apply a_wf_pskl_all_syn_open_tvar;
             [ exact HwfP0 | clear - HαΘ0 HαP0; fsetdec ]).
-    assert (HwfPx : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (pskl_tophole P) }}a).
+    assert (HwfPx : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (pskl_univ_ghost P) }}a).
     { eapply a_wf_pskl_delta_mono;
         [ apply (a_wf_pskl_reassoc HwfP α) | clear; fsetdec ]. }
     assert (Hcovx : forall α0, α0 `in` (add α Δ1 `union` Δ2) ->
@@ -454,7 +454,7 @@ Proof.
         by (clear - HzS Hzα; fsetdec).
       clear - HzΔ HzP Hsh0. fsetdec. }
     assert (Hshx : (add α Δ1 `union` Δ2) ∩
-                   pskl_shielded_ftv (pskl_tophole P) [=] empty)
+                   pskl_shielded_ftv (pskl_univ_ghost P) [=] empty)
       by (simpl; clear - Hsh HαP; fsetdec).
     destruct (IHHc Hwfx HwfP0o HwfPx Hcovx Hnfdx Hfafx Hsh0x Hshx)
       as [HwfQ [HshQ [HprovQ _]]].
@@ -663,7 +663,7 @@ Proof.
     intros Θ0 P Hg Hwf HwfP0 HwfP.
     split; [ apply a_isub_refl; exact Hwf | ].
     split; [ exact Hwf | ].
-    apply a_wf_pskl__tophole;
+    apply a_wf_pskl__univ_ghost;
       [ exact Hg | rewrite aenv_minus_empty; exact HwfP ].
   - (* FlexMono : hand to the walk at the empty pending suffix *)
     intros NM M P0 Θ0 Θ1 α Q Hf IHf Hwf HwfP0 HwfP.
@@ -1027,9 +1027,9 @@ Proof.
     inversion HwfP0; subst.
     split; [ apply a_isub_refl; exact Hwf | ].
     split; [ exact Hwf | ]. split; assumption.
-  - (* hole *)
+  - (* ghost *)
     split; [ apply a_isub_refl; exact Hwf | ].
-    split; [ exact Hwf | ]. split; apply a_wf_pskl__hole.
+    split; [ exact Hwf | ]. split; apply a_wf_pskl__ghost.
   - (* flex : the row's premise is a full consistency run *)
     match goal with
     | Hf1 : β `notin` ftvar_in_aenv Θ0,

@@ -185,13 +185,13 @@ Proof.
       apply subst_utyp_in_utyp_lc_utyp; solve [ apply lc_utyp_unit | assumption ].
 Qed.
 
-Lemma is_ttyp_subst_unit : forall C α, is_ttyp C -> is_ttyp (subst_utyp_in_utyp utyp_unit α C).
+Lemma is_dtyp_subst_unit : forall C α, is_dtyp C -> is_dtyp (subst_utyp_in_utyp utyp_unit α C).
 Proof.
   intros C α H. induction H; simpl.
   - auto with fresco.
   - destruct (α0 == α); auto with fresco.
   - auto with fresco.
-  - apply is_ttyp__all_tag with (L := L `union` {{α}}). intros β Hβ.
+  - apply is_dtyp__all_tag with (L := L `union` {{α}}). intros β Hβ.
     rewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (first [ apply lc_utyp_unit | fsetdec ]). auto.
 Qed.
 
@@ -253,14 +253,14 @@ Proof.
     apply d_sub__infer; [ | apply is_styp_subst_unit; assumption | assumption ].
     change btyp_unit with (utyp_to_btyp utyp_unit).
     eapply d_consis_subst_tvar;
-      [ eassumption | reflexivity | apply d_wf_utyp__unit | apply is_ttyp__unit ].
+      [ eassumption | reflexivity | apply d_wf_utyp__unit | apply is_dtyp__unit ].
   - (* check *)
     apply d_sub__check;
       [ apply guarded_utyp_subst_unit; assumption
       | apply guarded_btyp_subst_unit; assumption
       | change btyp_unit with (utyp_to_btyp utyp_unit);
         eapply d_consis_subst_tvar;
-          [ eassumption | reflexivity | apply d_wf_utyp__unit | apply is_ttyp__unit ]
+          [ eassumption | reflexivity | apply d_wf_utyp__unit | apply is_dtyp__unit ]
       | apply is_ityp_subst_unit; assumption ].
   - (* forall_r *)
     apply d_sub__forall_r with (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0).
@@ -276,7 +276,7 @@ Proof.
     eapply d_sub__arg.
     + change btyp_unit with (utyp_to_btyp utyp_unit).
       eapply d_consis_subst_tvar;
-        [ eassumption | reflexivity | apply d_wf_utyp__unit | apply is_ttyp__unit ].
+        [ eassumption | reflexivity | apply d_wf_utyp__unit | apply is_dtyp__unit ].
     + eapply IHd_sub; reflexivity.
     + assumption.
   - (* forall_l_tagged *)
@@ -289,7 +289,7 @@ Proof.
         rewrite ftag_in_utyp_subst_tagfree by reflexivity; assumption
       | apply d_tags_subst_unit; assumption
       | eapply d_wf_utyp_subst_unit; [ eassumption | reflexivity ]
-      | apply is_ttyp_subst_unit; assumption
+      | apply is_dtyp_subst_unit; assumption
       | ].
     rewrite <- subst_utyp_in_utyp_open_utyp_wrt_utyp by (apply lc_utyp_unit).
     eapply IHd_sub; reflexivity.
@@ -303,7 +303,7 @@ Proof.
         rewrite ftag_in_utyp_subst_tagfree by reflexivity; assumption
       | apply d_tags_subst_unit; assumption
       | eapply d_wf_utyp_subst_unit; [ eassumption | reflexivity ]
-      | apply is_ttyp_subst_unit; assumption
+      | apply is_dtyp_subst_unit; assumption
       | ].
     rewrite <- subst_utyp_in_utyp_open_utyp_wrt_utyp by (apply lc_utyp_unit).
     eapply IHd_sub; reflexivity.
@@ -363,20 +363,20 @@ Proof.
       by (first [ apply lc_bskl_unit | fsetdec ]).
     eapply (H1 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2);
       simpl_env; reflexivity.
-  - rewrite pskl_to_bskl_syn_subst_unit. apply d_refine_syn__hole.
+  - rewrite pskl_to_bskl_syn_subst_unit. apply d_refine_syn__ghost.
     pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P pskl_unit α0) as Hup.
     simpl in Hup. clear - H Hup. fsetdec.
-  - apply d_refine_syn__tophole_remove;
+  - apply d_refine_syn__univ_ghost_remove;
       [ exact (@is_iskl_subst_unit _ α0 H) | ].
     eapply IHd_refine_syn; reflexivity.
-  - apply d_refine_syn__tophole_fill with (L := L `union` dom (Γ1 ++ Γ2) `union` {{α0}}).
+  - apply d_refine_syn__univ_ghost_fill with (L := L `union` dom (Γ1 ++ Γ2) `union` {{α0}}).
     { exact (@is_iskl_subst_unit _ α0 H). }
     intros α2 Hα2.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var
       by (first [ apply lc_bskl_unit | fsetdec ]).
     eapply (H1 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2);
       simpl_env; reflexivity.
-  - apply d_refine_syn__tophole_keep;
+  - apply d_refine_syn__univ_ghost_keep;
       [ exact (@is_iskl_subst_unit _ α0 H) | ].
     eapply IHd_refine_syn; reflexivity.
 Qed.
@@ -557,12 +557,12 @@ Proof.
   - apply d_pat_consis__forall_syn with (L := L). intros α Hα.
     apply H0; [ assumption | apply same_tvar_cons; assumption ].
   - apply d_pat_consis__ghostg; assumption.
-  - apply d_pat_consis__topholeg. apply IHd_pat_consis; assumption.
-  - apply d_pat_consis__hole; [ assumption | eapply d_wf_pskl_same_tvar; eassumption ].
-  - apply d_pat_consis__tophole; apply IHd_pat_consis; assumption.
-  - apply d_pat_consis__tophole_inh with (L := L). intros α Hα.
+  - apply d_pat_consis__dot_univ_ghost. apply IHd_pat_consis; assumption.
+  - apply d_pat_consis__ghost; [ assumption | eapply d_wf_pskl_same_tvar; eassumption ].
+  - apply d_pat_consis__univ_ghost; apply IHd_pat_consis; assumption.
+  - apply d_pat_consis__univ_ghost_inh with (L := L). intros α Hα.
     apply H0; [ assumption | apply same_tvar_cons; assumption ].
-  - apply d_pat_consis__tophole_drop. apply IHd_pat_consis; assumption.
+  - apply d_pat_consis__univ_ghost_drop. apply IHd_pat_consis; assumption.
 Qed.
 
 Lemma d_sub_same_tvar : forall m Ψ Γ C B,
@@ -594,11 +594,11 @@ Proof.
       [ apply IHd_refine_pskl1 | apply IHd_refine_pskl2 ]; assumption.
   - apply d_refine_pskl__all with (L := L). intros α Hα.
     apply H0; [ assumption | apply same_tvar_cons; assumption ].
-  - apply d_refine_pskl__hole. assumption.
-  - apply d_refine_pskl__tophole_remove. apply IHd_refine_pskl; assumption.
-  - apply d_refine_pskl__tophole_fill with (L := L). intros α Hα.
+  - apply d_refine_pskl__ghost. assumption.
+  - apply d_refine_pskl__univ_ghost_remove. apply IHd_refine_pskl; assumption.
+  - apply d_refine_pskl__univ_ghost_fill with (L := L). intros α Hα.
     apply (H0 α Hα ((α ~ dbind_tvar) ++ Γ')). apply same_tvar_cons. assumption.
-  - apply d_refine_pskl__tophole_keep. apply IHd_refine_pskl; assumption.
+  - apply d_refine_pskl__univ_ghost_keep. apply IHd_refine_pskl; assumption.
 Qed.
 
 (** The JOIN travels because both of its halves do. *)
@@ -645,12 +645,12 @@ Proof.
       [ assumption | apply IHd_refine_syn1 | apply IHd_refine_syn2 ]; assumption.
   - apply d_refine_syn__all with (L := L); [ assumption | ]. intros α Hα.
     apply H1; [ assumption | apply same_tvar_cons; assumption ].
-  - apply d_refine_syn__hole. assumption.
-  - apply d_refine_syn__tophole_remove; [ assumption | ].
+  - apply d_refine_syn__ghost. assumption.
+  - apply d_refine_syn__univ_ghost_remove; [ assumption | ].
     apply IHd_refine_syn; assumption.
-  - apply d_refine_syn__tophole_fill with (L := L); [ assumption | ]. intros α Hα.
+  - apply d_refine_syn__univ_ghost_fill with (L := L); [ assumption | ]. intros α Hα.
     apply (H1 α Hα ((α ~ dbind_tvar) ++ Γ')). apply same_tvar_cons. assumption.
-  - apply d_refine_syn__tophole_keep; [ assumption | ].
+  - apply d_refine_syn__univ_ghost_keep; [ assumption | ].
     apply IHd_refine_syn; assumption.
 Qed.
 
@@ -856,10 +856,10 @@ Proof.
     apply d_pat__abs_check with (L := L `union` {{α0}}) (P := subst_pskl_in_pskl pskl_unit α0 P).
     intros x Hx.
     rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_unit | fsetdec ]).
-    rewrite_env (((x ~ subst_unit_dbind α0 (dbind_skl pskl_hole)) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
+    rewrite_env (((x ~ subst_unit_dbind α0 (dbind_skl pskl_ghost)) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
     rewrite map_subst_unit_dbind_cons.
     rewrite <- pskl_to_bskl_syn_subst_unit.
-    eapply (H0 x ltac:(solve_notin_auto) ((x ~ dbind_skl pskl_hole) ++ Γ1) α0 Γ2);
+    eapply (H0 x ltac:(solve_notin_auto) ((x ~ dbind_skl pskl_ghost) ++ Γ1) α0 Γ2);
       [ simpl_env; reflexivity | assumption ].
   - (* abs_anno_check (cofinite) *)
     rewrite btyp_to_bskl_subst_unit. rewrite ptyp_to_btyp_syn_subst_unit.

@@ -7,7 +7,7 @@
         →  Θ0 ⊢ P ⊳[N,α,m] P' ⤳ (Ξ ++ Ξ') ↪ Q'
 
     Premises 1-2 are P6-Ss ([a_looksub_solve_complete]) instantiated at
-    [Pi := pskl_hole] and [Ψi := empty], so [Ψ' = Ψa]; then
+    [Pi := pskl_ghost] and [Ψi := empty], so [Ψ' = Ψa]; then
     [ad_partial_precise_complete] (P5b-i) upgrades the ⊑ᵖ[Ψa] output to plain
     ⊑ against [⌊ψa⌋ˢ], exactly as the paper does at tex:2764.
 
@@ -76,7 +76,7 @@ Set Implicit Arguments.
 (*  the θ-extension must send that flexible to the counterpart's skeleton  *)
 (*  AT THAT POSITION — so the position had better hold a monotype, since   *)
 (*  a metasubstitution's images are monotypes.  It does, and the reason is *)
-(*  purely the PAINTING: [ad_refine_syn__hole] demands a SYNTHESISED       *)
+(*  purely the PAINTING: [ad_refine_syn__ghost] demands a SYNTHESISED       *)
 (*  target, precision hands it an INHERITED one, and the two paintings     *)
 (*  agree exactly on ∀-free skeletons ([pskl_all_syn] is the ONE           *)
 (*  constructor where they differ — [bskl_all_inh] vs [bskl_all_syn]).     *)
@@ -93,8 +93,8 @@ Inductive pskl_all_free : pskl -> Prop :=
 | paf_var_f  : forall α, pskl_all_free (pskl_var_f α)
 | paf_arrow  : forall P1 P2,
     pskl_all_free P1 -> pskl_all_free P2 -> pskl_all_free (pskl_arrow P1 P2)
-| paf_hole   : pskl_all_free pskl_hole
-| paf_tophole : forall P, pskl_all_free P -> pskl_all_free (pskl_tophole P).
+| paf_ghost   : pskl_all_free pskl_ghost
+| paf_univ_ghost : forall P, pskl_all_free P -> pskl_all_free (pskl_univ_ghost P).
 
 #[export] Hint Constructors pskl_all_free : fresco.
 
@@ -114,9 +114,9 @@ Proof.
   (* NB no ∀ bullet: [bskl_all_inh] vs [bskl_all_syn] IS discriminable, so
      [try discriminate Heq] above already closed that diagonal case — that
      disagreement is exactly what this lemma is about *)
-  - split; [ reflexivity | apply paf_hole ].
+  - split; [ reflexivity | apply paf_ghost ].
   - injection Heq as Heq0. destruct (IHP _ Heq0) as [-> Hf].
-    split; [ reflexivity | apply paf_tophole; assumption ].
+    split; [ reflexivity | apply paf_univ_ghost; assumption ].
 Qed.
 
 (** …and a ∀-free, GHOST-free skeleton IS a monotype painting.  Ghost-freeness
@@ -147,12 +147,12 @@ Qed.
 (*  guess^TY sends a ◇ to a fresh flexible α̂, so κ' must send α̂ to the     *)
 (*  counterpart's skeleton at that position — and a metasubstitution's     *)
 (*  images are Θ-scoped MONOTYPES.  Both are delivered by inverting        *)
-(*  precision at a hole, and there are only two ways to derive it:         *)
+(*  precision at a ghost, and there are only two ways to derive it:         *)
 (*                                                                        *)
-(*   · [ad_refine_syn__hole] — its target is a SYNTHESISED painting while  *)
+(*   · [ad_refine_syn__ghost] — its target is a SYNTHESISED painting while  *)
 (*     precision supplies an INHERITED one, so §1 forces ∀-freeness, and   *)
 (*     ghost-freeness (from [a_tags_sort] at TY) then forces a monotype.   *)
-(*     Its fill premise is [Δ ∩ ftv P = ∅], so a hole under a ∀ can never  *)
+(*     Its fill premise is [Δ ∩ ftv P = ∅], so a ghost under a ∀ can never  *)
 (*     be filled with the bound variable; with the counterpart's own      *)
 (*     scoping (every free name outside Δ is bound in Θ) the images stay  *)
 (*     Θ-well-formed.                                                     *)
@@ -162,9 +162,9 @@ Qed.
 
 (** Inverting the refinement with the source pinned to ◇ and the TARGET still
     a variable — [inversion] then produces clean equations we control.  Only
-    two rules have a ◇ source: [__hole] and [__flex_r]. *)
-Lemma ad_refine_syn_hole_l_inv : forall Θ Δ Y,
-  {{ Θ ⨟ Δ ⊢ᵣ bskl_hole ⊳ Y }}ad ->
+    two rules have a ◇ source: [__ghost] and [__flex_r]. *)
+Lemma ad_refine_syn_ghost_l_inv : forall Θ Δ Y,
+  {{ Θ ⨟ Δ ⊢ᵣ bskl_ghost ⊳ Y }}ad ->
   (exists P, Δ ∩ ftvar_in_pskl P [=] empty /\ Y = pskl_to_bskl_syn P)
   \/ (exists α τ, binds α (abind_flex_mono_def τ) Θ /\ Y = bskl_var_f α).
 Proof.
@@ -173,15 +173,15 @@ Proof.
     | right; do 2 eexists; split; [ eassumption | reflexivity ] ].
 Qed.
 
-Lemma ad_precise_hole_inv_mono : forall Θ Δ X,
-  {{ Θ ⨟ Δ ⊢ₚᵣ pskl_hole ⊑ X }}ad ->
+Lemma ad_precise_ghost_inv_mono : forall Θ Δ X,
+  {{ Θ ⨟ Δ ⊢ₚᵣ pskl_ghost ⊑ X }}ad ->
   pskl_ghost_free X -> lc_pskl X ->
   (forall γ, γ `in` ftvar_in_pskl X -> γ `notin` Δ -> a_binds_tvar γ Θ) ->
   exists τ, ptyp_to_pskl τ = X /\ mono_ptyp τ /\ {{ Θ ⨟ empty ⊢ₚₛ X }}a.
 Proof.
   intros Θ Δ X Hp Hgf Hlc HscX. unfold ad_precise in Hp. cbn in Hp.
-  destruct (ad_refine_syn_hole_l_inv Hp) as [[P [HΔP Heq]] | [α [τ0 [Hb Heq]]]].
-  - (* __hole : the SYN/INH painting clash pins X ∀-free, hence a monotype;
+  destruct (ad_refine_syn_ghost_l_inv Hp) as [[P [HΔP Heq]] | [α [τ0 [Hb Heq]]]].
+  - (* __ghost : the SYN/INH painting clash pins X ∀-free, hence a monotype;
        the fill misses Δ, so the counterpart's scoping binds all of it *)
     destruct (@pskl_inh_eq_syn_inv _ _ Heq) as [-> Haf].
     destruct (@pskl_all_ghost_free_mono _ Haf Hgf Hlc) as [τ [Heqτ Hmτ]].
@@ -288,7 +288,7 @@ Proof.
 Qed.
 
 (** Renaming a Δ-BOUND variable of a refinement derivation, via
-    [ad_refine_syn_rename]: the renamed name is in Δ, so every hole fill
+    [ad_refine_syn_rename]: the renamed name is in Δ, so every ghost fill
     misses it.  The new name [α0] must avoid the target (a fill could
     mention it) and the context's definitions. *)
 (* ⚙ RENAMED from [ad_refine_syn_rename_delta] 2026-08-09 (cleanup audit §8.1c): it collided with a
@@ -408,10 +408,10 @@ Proof.
     rewrite Hpaint. exact (Hreplay Y1 Y2 HY1 HY2).
 Qed.
 
-Lemma ad_precise_tophole_l_inv : forall Θ Δ Src Tgt,
+Lemma ad_precise_univ_ghost_l_inv : forall Θ Δ Src Tgt,
   {{ Θ ⨟ Δ ⊢ᵣ Src ⊳ Tgt }}ad ->
   forall S0 X,
-  Src = bskl_tophole (pskl_to_bskl_inh S0) ->
+  Src = bskl_univ_ghost (pskl_to_bskl_inh S0) ->
   Tgt = pskl_to_bskl_inh X ->
   {{ ⊢ Θ }}a -> pskl_ghost_free X -> lc_pskl X ->
   (forall γ, γ `in` ftvar_in_pskl X -> γ `notin` Δ -> a_binds_tvar γ Θ) ->
@@ -424,7 +424,7 @@ Proof.
   intros Θ Δ Src Tgt H; induction H;
     intros S0 X HeqS HeqT HwfΘ Hgf Hlc HscX;
     try discriminate HeqS.
-  - (* __tophole_remove : the ghost is dropped, X is unchanged *)
+  - (* __univ_ghost_remove : the ghost is dropped, X is unchanged *)
     inversion HeqS; subst.
     exists X.
     split; [ exact Hgf | ]. split; [ exact Hlc | ]. split; [ exact HscX | ].
@@ -432,12 +432,12 @@ Proof.
        doing so, consumed HeqT — hence the guarded rewrite *)
     split; [ unfold ad_precise; try rewrite <- HeqT; assumption | ].
     intros Y HY; exact HY.
-  - (* __tophole_fill : the target is a SYNTHESISED ∀, which no inherited
+  - (* __univ_ghost_fill : the target is a SYNTHESISED ∀, which no inherited
        painting is — [pskl_all_syn] paints to [bskl_all_INH] *)
     exfalso.
     destruct X as [ | n0 | α0 | X1 X2 | X0 | | X0 ]; cbn in HeqT;
       discriminate HeqT.
-  - (* __tophole_keep : the target keeps the ghost, so X would carry a ∀◇ —
+  - (* __univ_ghost_keep : the target keeps the ghost, so X would carry a ∀◇ —
        excluded by ghost-freeness *)
     exfalso.
     destruct X as [ | n0 | α0 | X1 X2 | X0 | | X0 ]; cbn in HeqT;
@@ -510,7 +510,7 @@ Qed.
 (* ===================================================================== *)
 
 (** Precision is antitone in Δ ([ad_refine_syn_delta_mono] at the inh
-    paintings): shrinking Δ only relaxes the hole rule's disjointness side
+    paintings): shrinking Δ only relaxes the ghost rule's disjointness side
     condition. *)
 Lemma ad_precise_delta_mono : forall Θ Δ0 Δ P X,
   {{ Θ ⨟ Δ0 ⊢ₚᵣ P ⊑ X }}ad -> Δ [<=] Δ0 ->
@@ -673,9 +673,9 @@ Qed.
 (*  They are therefore independent parameters of the induction.           *)
 (*                                                                        *)
 (*  κ''s images are Θ-well-formed no matter how deep the ∀-nesting goes,   *)
-(*  which is what makes the extension legal: [ad_refine_syn__hole]'s fill  *)
+(*  which is what makes the extension legal: [ad_refine_syn__ghost]'s fill  *)
 (*  misses Δ, and the counterpart's scoping premise binds every free name  *)
-(*  outside Δ in Θ — so a hole under a binder is never filled with the     *)
+(*  outside Δ in Θ — so a ghost under a binder is never filled with the     *)
 (*  bound variable (§3).                                                   *)
 (* ===================================================================== *)
 
@@ -936,9 +936,9 @@ Proof.
                           clear - Hd HβΞ Fr; solve_notin_auto)).
       rewrite <- HopenPA. exact Hpr.
     + (* ------------------------------- ◇ -------------------------------- *)
-      assert (Hpre' : {{ Θ ⨟ Δ ⊢ₚᵣ pskl_hole ⊑ X }}ad)
+      assert (Hpre' : {{ Θ ⨟ Δ ⊢ₚᵣ pskl_ghost ⊑ X }}ad)
         by (unfold ad_precise in Hprec |- *; cbn in Hprec; exact Hprec).
-      destruct (@ad_precise_hole_inv_mono Θ Δ X Hpre' Hgf Hlc HscX)
+      destruct (@ad_precise_ghost_inv_mono Θ Δ X Hpre' Hgf Hlc HscX)
         as (τ & Heqτ & Hmτ & HwfX).
       assert (Hwfτ : a_wf_ptyp Θ τ)
         by (apply a_wf_ptyp_of_wf_pskl_mono;
@@ -946,7 +946,7 @@ Proof.
       pick fresh α1 for (L `union` dom Θ `union` dom Θ0 `union` dom κs).
       exists ((α1 ~ abind_flex_mono) ++ nil), (ptyp_var_f α1),
              ((α1, τ) :: nil).
-      split; [ intros Θg Hsub; apply a_guess_mono__hole;
+      split; [ intros Θg Hsub; apply a_guess_mono__ghost;
                clear - Hsub Fr; fsetdec | ].
       split; [ unfold all_flex_mono; repeat constructor | ].
       split; [ solve_uniq | ].
@@ -968,10 +968,10 @@ Proof.
       assert (HwfPs0 : {{ (aenv_minus Θ0 Δ0) ⨟ empty ⊢ₚₛ Ps0 }}a)
         by (inversion HwfPs; subst; assumption).
       assert (Hpre' : {{ Θ ⨟ Δ ⊢ᵣ
-                (bskl_tophole (pskl_to_bskl_inh (msubst_pskl κs Ps0)))
+                (bskl_univ_ghost (pskl_to_bskl_inh (msubst_pskl κs Ps0)))
                 ⊳ (pskl_to_bskl_inh X) }}ad)
         by (unfold ad_precise in Hprec; cbn in Hprec; exact Hprec).
-      destruct (@ad_precise_tophole_l_inv Θ Δ _ _ Hpre' (msubst_pskl κs Ps0) X
+      destruct (@ad_precise_univ_ghost_l_inv Θ Δ _ _ Hpre' (msubst_pskl κs Ps0) X
                   eq_refl eq_refl HwfΘ Hgf Hlc HscX)
         as (X' & Hg' & Hl' & Hs' & Hp' & Hreplay).
       destruct (IH (aenv_minus Θ0 Δ0) Θ κs Δ empty Ps0 X'
@@ -979,7 +979,7 @@ Proof.
                    HwfΘ HwfPs0 Hκlc Hκsc Hg' Hl' Hs' Hp' (L `union` Δ0))
         as (Ξ' & A & κ' & Hgu & Hfm & Hu & Hk & Hfr & HF & Hwf' & Hpr).
       exists Ξ', A, κ'.
-      split; [ intros Θg Hsub; apply a_guess_mono__tophole;
+      split; [ intros Θg Hsub; apply a_guess_mono__univ_ghost;
                apply Hgu; clear - Hsub; fsetdec | ].
       split; [ exact Hfm | ].
       split; [ exact Hu | ].
@@ -1008,7 +1008,7 @@ Qed.
 (*                                                                        *)
 (*   (a)-(f)  P6-Ss ([a_looksub_solve_complete]) at [Pi := □], [Ψi := ∅],  *)
 (*            so [Ψ' = Ψa]; its precision premise                          *)
-(*            [{{ Θ ⨟ Δ ⊢ˢ κ□ ⊑ᵖ[∅] ψa }}ad] IS the precision hole rule.     *)
+(*            [{{ Θ ⨟ Δ ⊢ˢ κ□ ⊑ᵖ[∅] ψa }}ad] IS the precision ghost rule.     *)
 (*   (g)      [ad_partial_precise_complete] (P5b-i) upgrades ⊑ᵖ[Ψa] to     *)
 (*            plain ⊑ against [⌊ψa⌋ˢ] — the paper's step at tex:2764.      *)
 (*   (h),(i)-(12)  the guess.  At SK it is the identity, so κ' = · and     *)
@@ -1088,12 +1088,12 @@ Proof.
      guess is run at [Ξs ++ Ξc ++ Θ0], and the three blocks are pairwise
      disjoint by construction rather than by a side condition. *)
   destruct (@a_looksub_solve_complete n NM M Θ0 Θ κ Δ Ψa empty Ψa Ψsub ψa Q
-              P P0 pskl_hole R' α
-              HwfΘ HwfΘ0 HwfP0 ltac:(apply a_wf_pskl__hole)
+              P P0 pskl_ghost R' α
+              HwfΘ HwfΘ0 HwfP0 ltac:(apply a_wf_pskl__ghost)
               HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR Htags Hdisj
               ltac:(clear; solve_notin_auto) Hψaw Hdfresh
               ltac:(cbn [msubst_pskl];
-                    apply ad_ppre__hole; [ clear; solve_notin_auto | exact HΔψ ])
+                    apply ad_ppre__ghost; [ clear; solve_notin_auto | exact HΔψ ])
               HΨsubU HΨsubL
               Hsubty HwfSubj Hrefine
               (ftvar_in_aenv Θ0) ltac:(clear; solve_notin_auto))

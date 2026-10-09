@@ -175,11 +175,11 @@ Inductive a_scope_pskl : aenv -> pskl -> Prop :=
     (forall α, α `notin` L ->
        a_scope_pskl ((α ~ abind_tvar) ++ Θ) (open_pskl_wrt_pskl P (pskl_var_f α))) ->
     a_scope_pskl Θ (pskl_all_syn P)
-| a_scope_pskl__hole : forall Θ,
-    a_scope_pskl Θ pskl_hole
-| a_scope_pskl__tophole : forall Θ P,
+| a_scope_pskl__ghost : forall Θ,
+    a_scope_pskl Θ pskl_ghost
+| a_scope_pskl__univ_ghost : forall Θ P,
     a_scope_pskl Θ P ->
-    a_scope_pskl Θ (pskl_tophole P).
+    a_scope_pskl Θ (pskl_univ_ghost P).
 
 Reserved Notation "{{ Θ ⨟ Δ ⊢ₚₛ P }}a"
   (at level 0, Δ at level 74, P at level 74,
@@ -277,12 +277,12 @@ Inductive a_wf_pskl : aenv -> atoms -> pskl -> Prop :=
        {{ ((α ~ abind_tvar) ++ Θ) ⨟ (add α Δ) ⊢ₚₛ
          (open_pskl_wrt_pskl P (pskl_var_f α)) }}a) ->
     {{ Θ ⨟ Δ ⊢ₚₛ (pskl_all_syn P) }}a
-| a_wf_pskl__hole : forall Θ Δ,
-    {{ Θ ⨟ Δ ⊢ₚₛ pskl_hole }}a
-| a_wf_pskl__tophole : forall Θ Δ P,
+| a_wf_pskl__ghost : forall Θ Δ,
+    {{ Θ ⨟ Δ ⊢ₚₛ pskl_ghost }}a
+| a_wf_pskl__univ_ghost : forall Θ Δ P,
     guarded_pskl P ->
     {{ (aenv_minus Θ Δ) ⨟ empty ⊢ₚₛ P }}a ->
-    {{ Θ ⨟ Δ ⊢ₚₛ (pskl_tophole P) }}a
+    {{ Θ ⨟ Δ ⊢ₚₛ (pskl_univ_ghost P) }}a
 where "{{ Θ ⨟ Δ ⊢ₚₛ P }}a" := (a_wf_pskl Θ Δ P) : fresco_a_scope.
 
 Lemma a_binds_tvar_cons_tvar_inv : forall α β Θ,
@@ -391,7 +391,7 @@ where "{{ ⊢ Θ }}a" := (a_wf_aenv Θ) : fresco_a_scope.
     See the ⛔ note at [mod_comp_ty] before trying to unify them. *)
 Inductive a_ty_mode_compat : mode -> pskl -> Prop :=
 | a_ty_mode_compat__ti :                                  (* skmod[TY] □ TI *)
-    a_ty_mode_compat mode_ti pskl_hole
+    a_ty_mode_compat mode_ti pskl_ghost
 | a_ty_mode_compat__tc : forall A,                        (* skmod[TY] A TC *)
     (* the TC input is a TYPE [A], embedded into [pskl] *)
     a_ty_mode_compat mode_tc (ptyp_to_pskl A)
@@ -401,9 +401,9 @@ Inductive a_ty_mode_compat : mode -> pskl -> Prop :=
 
 Inductive a_sk_mode_compat : mode -> pskl -> Prop :=
 | a_sk_mode_compat__ti :                                  (* skmod[SK] □ TI *)
-    a_sk_mode_compat mode_ti pskl_hole
+    a_sk_mode_compat mode_ti pskl_ghost
 | a_sk_mode_compat__tc :                                  (* skmod[SK] □ TC *)
-    a_sk_mode_compat mode_tc pskl_hole
+    a_sk_mode_compat mode_tc pskl_ghost
 | a_sk_mode_compat__fn : forall M P Q,                    (* skmod[SK] (P→Q) (FN M) *)
     a_sk_mode_compat M Q ->
     a_sk_mode_compat (mode_fn M) (pskl_arrow P Q).
@@ -475,7 +475,7 @@ Proof. intros Θ β H β0 Heq; injection Heq as ->; exact H. Qed.
 (* ===================================================================== *)
 
 Inductive a_guess_mono : aenv -> pskl -> aenv -> ptyp -> Prop :=
-| a_guess_mono__hole : forall Θ α,                            (* □ ↦ fresh α̂ *)
+| a_guess_mono__ghost : forall Θ α,                            (* □ ↦ fresh α̂ *)
     (* the invented flexible avoids everything the ambient context MENTIONS
        (domain + payload ftv) — INPUT-only, and the mech's rendering of the
        implementation's global counter ([incr counter; Bindlib.new_var],
@@ -484,10 +484,10 @@ Inductive a_guess_mono : aenv -> pskl -> aenv -> ptyp -> Prop :=
        DERIVABLE property ([a_guess_mono_generated_fresh], algo/prop_basic.v)
        instead of a hypothesis renaming lemmas cannot even state. *)
     α `notin` ftvar_in_aenv Θ ->
-    a_guess_mono Θ pskl_hole ((α ~ abind_flex_mono) ++ nil) (ptyp_var_f α)
-| a_guess_mono__tophole : forall Θ P Ξ A,                     (* ⫯.P ↦ guess P *)
+    a_guess_mono Θ pskl_ghost ((α ~ abind_flex_mono) ++ nil) (ptyp_var_f α)
+| a_guess_mono__univ_ghost : forall Θ P Ξ A,                     (* ⫯.P ↦ guess P *)
     a_guess_mono Θ P Ξ A ->
-    a_guess_mono Θ (pskl_tophole P) Ξ A
+    a_guess_mono Θ (pskl_univ_ghost P) Ξ A
 | a_guess_mono__var : forall Θ α,                             (* α / α̂ ↦ (·; α) *)
     a_guess_mono Θ (pskl_var_f α) nil (ptyp_var_f α)
 | a_guess_mono__unit : forall Θ,
@@ -505,10 +505,10 @@ Inductive a_guess_mono : aenv -> pskl -> aenv -> ptyp -> Prop :=
 
    THE WITNESS ENTERS THE AVOID-INPUT: under the ∀ the bound variable is a
    rigid in scope, so the premise runs at [(β~tvar) ++ Θ].  This is what
-   the hole rule's freshness bites on — every name generated below a
+   the ghost rule's freshness bites on — every name generated below a
    binder avoids the binder — and it makes the junk-free discipline
    DERIVABLE ([a_guess_mono_generated_fresh]) instead of assumed; the
-   renaming/opening kit is UNPROVABLE without it (a hole below a ∀ could
+   renaming/opening kit is UNPROVABLE without it (a ghost below a ∀ could
    otherwise generate the witness itself, and the ∀-opening bridge
    [a_guess_mono_open_at] is false on such derivations).  The paper's
    guess is context-free; [Θ] here is the relational rendering of the
@@ -618,7 +618,7 @@ Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs ->
        counterpart immediately (LS/LE-Vacuous), and dispatches on the
        SUBJECT before any counterpart test, so LS-Var wins at [α]. *)
     P <> pskl_var_f α ->
-    {{ Θ ⊢ P ≼[ α , m ] pskl_hole ⤳ nil ⨾ nil }}a
+    {{ Θ ⊢ P ≼[ α , m ] pskl_ghost ⤳ nil ⨾ nil }}a
 | a_looksub__check : forall Θ α A B Ξ C,         (* LS-Check *)
     (* SORT: [A] and [B] are TYPES in the paper (full-algo-spec.tex:1042-1049),
        matching the [a_sub__check] row this collection rule covers.  ⚠️ Only
@@ -694,7 +694,7 @@ Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs ->
                        `union` ftvar_in_pskl P') ->
     (* [paper-gap] ABSENCE-FIRST GUARD — see [a_looksub__forall_r]. *)
     α `in` ftvar_in_pskl (pskl_all_syn P) ->
-    P' <> pskl_hole ->
+    P' <> pskl_ghost ->
     (* [paper-gap] ForallR-PRIORITY GUARD — the runner tries LS-ForallR
        first at a ∀ counterpart in check mode ([forall_r_off],
        fresco/def_shapes.v).  ⚠️ NOT admissible: the two rows disagree. *)
@@ -703,11 +703,11 @@ Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs ->
       ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
     {{ Θ ⊢ (pskl_all_syn P) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a
 | a_looksub__univ_ghost_l : forall Θ α m P P' Ξ C, (* LS-UnivGhostL *)
-    P' <> pskl_hole ->
+    P' <> pskl_ghost ->
     (* [paper-gap] ForallR-PRIORITY GUARD — see [a_looksub__forall_l]. *)
     forall_r_off m P' ->
     {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
-    {{ Θ ⊢ (pskl_tophole P) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a
+    {{ Θ ⊢ (pskl_univ_ghost P) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a
 
 with a_lookeq : aenv -> atom -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
 | a_lookeq__var : forall Θ α P,                  (* LE-Var *)
@@ -720,7 +720,7 @@ with a_lookeq : aenv -> atom -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
        counterpart immediately (LS/LE-Vacuous), and dispatches on the
        SUBJECT before any counterpart test, so LS-Var wins at [α]. *)
     P <> pskl_var_f α ->
-    {{ Θ ⊢ P ∼[ α ] pskl_hole ⤳ nil ⨾ nil }}a
+    {{ Θ ⊢ P ∼[ α ] pskl_ghost ⤳ nil ⨾ nil }}a
 | a_lookeq__flex_r : forall Θ α P β α1,          (* LE-FlexR (β̂ a flex var) *)
     (* the paper's [fresh γ̂] (algorithmic.tex:1204).  [ftvar_in_aenv], not
        [dom]: a payload ([α̂ ≔ τ]) may mention the name, and it must not. *)
@@ -757,19 +757,19 @@ with a_lookeq : aenv -> atom -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
     (* [paper-gap] ABSENCE-FIRST GUARD — see [a_looksub__forall_r]. *)
     α `in` ftvar_in_pskl (pskl_all_syn P) ->
     {{ ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ]
-      (pskl_tophole P') ⤳ Ξ ⨾ C }}a ->
-    {{ Θ ⊢ (pskl_all_syn P) ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C }}a
+      (pskl_univ_ghost P') ⤳ Ξ ⨾ C }}a ->
+    {{ Θ ⊢ (pskl_all_syn P) ∼[ α ] (pskl_univ_ghost P') ⤳ Ξ ⨾ C }}a
 | a_lookeq__univ_ghost : forall Θ α P P' Ξ C,    (* LE-UnivGhost *)
     {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}a ->
-    {{ Θ ⊢ (pskl_tophole P) ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C }}a
+    {{ Θ ⊢ (pskl_univ_ghost P) ∼[ α ] (pskl_univ_ghost P') ⤳ Ξ ⨾ C }}a
 | a_lookeq__univ_ghost1 : forall Θ α P P' Ξ C β, (* LE-UnivGhost1 — LEAKS *)
     β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
                        `union` ftvar_in_pskl P') ->
     (* [paper-gap] ABSENCE-FIRST GUARD — see [a_looksub__forall_r]. *)
-    α `in` ftvar_in_pskl (pskl_tophole P) ->
-    {{ ((β ~ abind_tvar) ++ Θ) ⊢ (pskl_tophole P) ∼[ α ]
+    α `in` ftvar_in_pskl (pskl_univ_ghost P) ->
+    {{ ((β ~ abind_tvar) ++ Θ) ⊢ (pskl_univ_ghost P) ∼[ α ]
       (open_pskl_wrt_pskl P' (pskl_var_f β)) ⤳ Ξ ⨾ C }}a ->
-    {{ Θ ⊢ (pskl_tophole P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C }}a
+    {{ Θ ⊢ (pskl_univ_ghost P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C }}a
 | a_lookeq__univ_ghost2 : forall Θ α P P' Ξ C,   (* LE-UnivGhost2 *)
     guarded_pskl P' ->
     (* [paper-gap] FlexR-PRIORITY GUARD — [guarded_pskl] includes VARIABLES,
@@ -777,12 +777,12 @@ with a_lookeq : aenv -> atom -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
        test has failed ([flex_r_off], above). *)
     flex_r_off Θ P' ->
     {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}a ->
-    {{ Θ ⊢ (pskl_tophole P) ∼[ α ] P' ⤳ Ξ ⨾ C }}a
+    {{ Θ ⊢ (pskl_univ_ghost P) ∼[ α ] P' ⤳ Ξ ⨾ C }}a
 | a_lookeq__univ_ghost_r : forall Θ α P P' Ξ C,  (* LE-UnivGhostR *)
     P <> pskl_var_f α ->
     guarded_pskl P ->
     {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}a ->
-    {{ Θ ⊢ P ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C }}a
+    {{ Θ ⊢ P ∼[ α ] (pskl_univ_ghost P') ⤳ Ξ ⨾ C }}a
 where "{{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a" := (a_looksub Θ α m P P' Ξ C) : fresco_a_scope
   and "{{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}a" := (a_lookeq Θ α P P' Ξ C) : fresco_a_scope.
 
@@ -847,7 +847,7 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
        ⭐ THE WITNESS ENTERS THE CONTEXT (2026-08-04): the premise may now
        GENERATE names (SE-FlexR's guess), and this row CLOSES over β, so a
        generated β would be captured.  [ftvar_in_aenv] of the extended
-       context contains β, which is precisely what [a_guess_mono]'s hole
+       context contains β, which is precisely what [a_guess_mono]'s ghost
        row avoids — so "the block is apart from β" is DERIVABLE.
        ⭐ [ftvar_in_aenv], NOT [dom] (2026-08-04, and see the box above the
        judgment): a flexible's PAYLOAD may mention the witness. *)
@@ -858,14 +858,14 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
          ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P')) }}a
 | a_solve_sub__univ_ghost_l : forall Θ m P Q Ξ P', (* SS-UnivGhostL *)
     {{ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}a ->
-    {{ Θ ⊢ₛ (pskl_tophole P) ≼[ m ] Q ⤳ Ξ ⨾ (pskl_tophole P') }}a
+    {{ Θ ⊢ₛ (pskl_univ_ghost P) ≼[ m ] Q ⤳ Ξ ⨾ (pskl_univ_ghost P') }}a
 | a_solve_sub__vacuous : forall Θ m P,           (* SS-Vacuous: RHS is □ *)
     (* [paper-gap] SOLVE-DISPATCH GUARD — see [peel_l_off], def_shapes.v.
        [SolS-ForallL] and [SolS-UnivGhostL] are matched BEFORE this row
        (type.ml:494), and at a ∀ subject the ForallL route draws an opener
        this one does not — same answer, one more atom spent. *)
     peel_l_off P ->
-    {{ Θ ⊢ₛ P ≼[ m ] pskl_hole ⤳ nil ⨾ P }}a
+    {{ Θ ⊢ₛ P ≼[ m ] pskl_ghost ⤳ nil ⨾ P }}a
 | a_solve_sub__check : forall Θ P Q Ξ P',        (* SS-Check *)
     (* SORT: the paper writes [solvesub{P}{TC}{B}{P'}] — the LHS is the
        accumulated PATTERN (a skeleton) but the RHS is a TYPE
@@ -925,15 +925,15 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
     {{ Θ ⊢ₛ (pskl_arrow P1 P2) ≼[ (mode_fn m) ] (pskl_arrow Q1 Q2)
          ⤳ (Ξ2 ++ Ξ1) ⨾ (pskl_arrow P1' P2') }}a
 | a_solve_sub__ghost_l_fn : forall Θ m Q1 Q2 Ξ1 Ξ2 P1' P2',   (* SS-GhostLF *)
-    {{ Θ ⊢ₑ pskl_hole ∼ Q1 ⤳ Ξ1 ⨾ P1' }}a ->
-    {{ (Ξ1 ++ Θ) ⊢ₛ pskl_hole ≼[ m ] Q2 ⤳ Ξ2 ⨾ P2' }}a ->
-    {{ Θ ⊢ₛ pskl_hole ≼[ (mode_fn m) ] (pskl_arrow Q1 Q2)
-         ⤳ (Ξ2 ++ Ξ1) ⨾ (pskl_tophole (pskl_arrow P1' P2')) }}a
+    {{ Θ ⊢ₑ pskl_ghost ∼ Q1 ⤳ Ξ1 ⨾ P1' }}a ->
+    {{ (Ξ1 ++ Θ) ⊢ₛ pskl_ghost ≼[ m ] Q2 ⤳ Ξ2 ⨾ P2' }}a ->
+    {{ Θ ⊢ₛ pskl_ghost ≼[ (mode_fn m) ] (pskl_arrow Q1 Q2)
+         ⤳ (Ξ2 ++ Ξ1) ⨾ (pskl_univ_ghost (pskl_arrow P1' P2')) }}a
 | a_solve_sub__ghost_l : forall Θ B,             (* SS-GhostL *)
     (* SORT: [guarded{B}] with [B] a TYPE (full-algo-spec.tex:1283-1288). *)
     pskl_ghost_free B ->
     guarded_pskl B ->
-    {{ Θ ⊢ₛ pskl_hole ≼[ mode_tc ] B ⤳ nil ⨾ (pskl_tophole B) }}a
+    {{ Θ ⊢ₛ pskl_ghost ≼[ mode_tc ] B ⤳ nil ⨾ (pskl_univ_ghost B) }}a
 
 with a_solve_eq : aenv -> pskl -> pskl -> aenv -> pskl -> Prop :=
 | a_solve_eq__unit : forall Θ,                   (* SE-Unit *)
@@ -985,7 +985,7 @@ with a_solve_eq : aenv -> pskl -> pskl -> aenv -> pskl -> Prop :=
        because on paper the two rows agreed.  Restoring the exclusion costs
        completeness NOTHING: at [◇] SE-GhostL is strictly more informative,
        and at [∀◇P0] SE-GhostGuarded peels to the same place.  It also keeps
-       [a_solve_eq_hole_subject_inv] (sub/look/prop_rsubst.v) — "solving with
+       [a_solve_eq_ghost_subject_inv] (sub/look/prop_rsubst.v) — "solving with
        the ghost subject returns the target verbatim", which the paper uses
        silently in every [P_i = □] subcase — TRUE. *)
     a_flex_tvar Θ α ->
@@ -993,10 +993,10 @@ with a_solve_eq : aenv -> pskl -> pskl -> aenv -> pskl -> Prop :=
     nonghost_pskl P ->
     a_guess_mono Θ P Ξ A ->
     {{ Θ ⊢ₑ P ∼ (pskl_var_f α) ⤳ Ξ ⨾ (ptyp_to_pskl A) }}a
-| a_solve_eq__hole_l : forall Θ Q,               (* SE-GhostL *)
-    {{ Θ ⊢ₑ pskl_hole ∼ Q ⤳ nil ⨾ Q }}a
-| a_solve_eq__hole_r : forall Θ P,               (* SE-VacuousR *)
-    {{ Θ ⊢ₑ P ∼ pskl_hole ⤳ nil ⨾ P }}a
+| a_solve_eq__ghost_l : forall Θ Q,               (* SE-GhostL *)
+    {{ Θ ⊢ₑ pskl_ghost ∼ Q ⤳ nil ⨾ Q }}a
+| a_solve_eq__ghost_r : forall Θ P,               (* SE-VacuousR *)
+    {{ Θ ⊢ₑ P ∼ pskl_ghost ⤳ nil ⨾ P }}a
 | a_solve_eq__arrow : forall Θ P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2',    (* SE-Arrow *)
     (* threads — see [a_solve_sub__arrow] *)
     {{ Θ ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' }}a ->
@@ -1009,29 +1009,29 @@ with a_solve_eq : aenv -> pskl -> pskl -> aenv -> pskl -> Prop :=
          ∼ (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ Ξ ⨾ P' }}a ->
     {{ Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_all_syn Q)
          ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P')) }}a
-| a_solve_eq__tophole_both : forall Θ P Q Ξ P',  (* SE-UnivGhost *)
+| a_solve_eq__univ_ghost_both : forall Θ P Q Ξ P',  (* SE-UnivGhost *)
     {{ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}a ->
-    {{ Θ ⊢ₑ (pskl_tophole P) ∼ (pskl_tophole Q) ⤳ Ξ ⨾ (pskl_tophole P') }}a
-| a_solve_eq__tophole_l_all : forall Θ P Q Ξ P' β, (* SE-GhostForall *)
+    {{ Θ ⊢ₑ (pskl_univ_ghost P) ∼ (pskl_univ_ghost Q) ⤳ Ξ ⨾ (pskl_univ_ghost P') }}a
+| a_solve_eq__univ_ghost_l_all : forall Θ P Q Ξ P' β, (* SE-GhostForall *)
     β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
-    {{ ((β ~ abind_tvar) ++ Θ) ⊢ₑ (pskl_tophole P)
+    {{ ((β ~ abind_tvar) ++ Θ) ⊢ₑ (pskl_univ_ghost P)
       ∼ (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ Ξ ⨾ P' }}a ->
-    {{ Θ ⊢ₑ (pskl_tophole P) ∼ (pskl_all_syn Q)
+    {{ Θ ⊢ₑ (pskl_univ_ghost P) ∼ (pskl_all_syn Q)
          ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P')) }}a
-| a_solve_eq__tophole_l_guarded : forall Θ P Q Ξ P',         (* SE-GhostGuarded *)
+| a_solve_eq__univ_ghost_l_guarded : forall Θ P Q Ξ P',         (* SE-GhostGuarded *)
     guarded_pskl Q ->
     {{ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}a ->
-    {{ Θ ⊢ₑ (pskl_tophole P) ∼ Q ⤳ Ξ ⨾ P' }}a
-| a_solve_eq__all_l_tophole : forall Θ P Q Ξ P' β, (* SE-ForallGhost *)
+    {{ Θ ⊢ₑ (pskl_univ_ghost P) ∼ Q ⤳ Ξ ⨾ P' }}a
+| a_solve_eq__all_l_univ_ghost : forall Θ P Q Ξ P' β, (* SE-ForallGhost *)
     β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
     {{ ((β ~ abind_tvar) ++ Θ) ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f β))
-      ∼ (pskl_tophole Q) ⤳ Ξ ⨾ P' }}a ->
-    {{ Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_tophole Q)
+      ∼ (pskl_univ_ghost Q) ⤳ Ξ ⨾ P' }}a ->
+    {{ Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_univ_ghost Q)
          ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P')) }}a
-| a_solve_eq__tophole_r_guarded : forall Θ P Q Ξ P',         (* SE-GuardedGhost *)
+| a_solve_eq__univ_ghost_r_guarded : forall Θ P Q Ξ P',         (* SE-GuardedGhost *)
     guarded_pskl P ->
     {{ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}a ->
-    {{ Θ ⊢ₑ P ∼ (pskl_tophole Q) ⤳ Ξ ⨾ P' }}a
+    {{ Θ ⊢ₑ P ∼ (pskl_univ_ghost Q) ⤳ Ξ ⨾ P' }}a
 where "{{ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}a" := (a_solve_sub Θ m P Q Ξ P') : fresco_a_scope
   and "{{ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}a" := (a_solve_eq Θ P Q Ξ P') : fresco_a_scope.
 
@@ -1093,7 +1093,7 @@ Reserved Notation "{{ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q }}a"
 Inductive a_extract : aenv -> a_sub_mode -> atom -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
 | a_extract__solve : forall Θ0 NM α m P P' Ξ Ξs Ξ' C Q Q',
     {{ Θ0 ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
-    {{ (Ξ ++ Θ0) ⊩ C ⨾ pskl_hole ⤳ Ξs ⨾ Q }}a ->
+    {{ (Ξ ++ Θ0) ⊩ C ⨾ pskl_ghost ⤳ Ξs ⨾ Q }}a ->
     (* the guess runs AFTER the collection AND the solving, so its
        avoid-input is the whole [Ξs ++ Ξ ++ Θ0] — this is what makes the
        three halves of the output block [Ξ ++ Ξs ++ Ξ'] disjoint *)
@@ -1130,7 +1130,7 @@ Inductive a_extract : aenv -> a_sub_mode -> atom -> mode -> pskl -> pskl -> aenv
        ⛔ WHY IT IS OWED, and it is the SAME SPECIES as the premise above.
        The collection leaks openers into [C] and the FOLD leaks its own into
        [Q]; a leaked opener is bound NOWHERE — not in [Θ0], not in [Ξ], not
-       in [Ξs] — and [a_guess_mono]'s hole row draws its flexible fresh for
+       in [Ξs] — and [a_guess_mono]'s ghost row draws its flexible fresh for
        [ftvar_in_aenv] of its CONTEXT only ([a_guess_mono_generated_fresh]
        is context-only, NOT subject-aware).  ⇒ THE FINAL GUESS MAY DRAW A
        LEAKED OPENER, and the two roles then collapse onto one atom exactly
@@ -1202,7 +1202,7 @@ where "{{ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q }}a" := (a_extract Θ0 NM
    [add β F].  DESIGN.md §4.3. *)
 Inductive a_assign : aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
 | a_assign__univ_ghost_id : forall Θ0 α,                (* Assign-UnivGhost-Id *)
-    {{ ((α ~ abind_flex_mono) ++ Θ0) ⊲[ nil ] α ≔ (pskl_tophole (pskl_var_f α))
+    {{ ((α ~ abind_flex_mono) ++ Θ0) ⊲[ nil ] α ≔ (pskl_univ_ghost (pskl_var_f α))
       ⊣ ((α ~ abind_flex_mono) ++ Θ0) }}a
 | a_assign__solve_m : forall Θ0 Ξ α P βs τ,             (* Assign-SolveM *)
     α `notin` ftvar_in_pskl P ->
@@ -1370,7 +1370,7 @@ with a_unify : aenv -> atom -> atom -> aenv -> Prop :=
 with a_consis : atoms -> atoms -> aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
 | a_consis__ghost : forall Δ1 Δ2 Θ0 P0,                     (* Ghost *)
     Δ2 ∩ ftvar_in_pskl P0 [=] empty ->
-    {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] pskl_hole ∼ P0 ⊣ Θ0 }}a
+    {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] pskl_ghost ∼ P0 ⊣ Θ0 }}a
 | a_consis__unit : forall Δ1 Δ2 Θ0,                         (* Unit *)
     {{ Θ0 ⊢[ Δ1 | Δ2 | pskl_unit ] pskl_unit ∼ pskl_unit ⊣ Θ0 }}a
 | a_consis__rigid : forall Δ1 Δ2 Θ0 α,                      (* Rigid *)
@@ -1416,15 +1416,15 @@ with a_consis : atoms -> atoms -> aenv -> pskl -> pskl -> pskl -> aenv -> Prop :
     α `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
       `union` ftvar_in_pskl P `union` Δ1 `union` Δ2 ->
     {{ ((α ~ abind_tvar) ++ Θ0)
-      ⊢[ Δ1 | (add α Δ2) | (pskl_tophole P0) ]
+      ⊢[ Δ1 | (add α Δ2) | (pskl_univ_ghost P0) ]
       (open_pskl_wrt_pskl P (pskl_var_f α)) ∼ Q
       ⊣ ((α ~ abind_tvar) ++ Θ1) }}a ->
-    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) ]
+    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_univ_ghost P0) ]
       (pskl_all_syn P) ∼ (pskl_all_syn (close_pskl_wrt_pskl α Q)) ⊣ Θ1 }}a
 | a_consis__univ_ghost : forall Δ1 Δ2 Θ0 Θ1 P0 P Q,         (* UnivGhost *)
     {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}a ->
-    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) ]
-      (pskl_tophole P) ∼ (pskl_tophole Q) ⊣ Θ1 }}a
+    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_univ_ghost P0) ]
+      (pskl_univ_ghost P) ∼ (pskl_univ_ghost Q) ⊣ Θ1 }}a
 | a_consis__univ_ghost1 : forall Δ1 Δ2 Θ0 Θ1 P0 P Q α,      (* UnivGhost1: α to Δ1 *)
     (* exists-fresh + close, as ForallInh/ForallSyn above *)
     α `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
@@ -1432,27 +1432,27 @@ with a_consis : atoms -> atoms -> aenv -> pskl -> pskl -> pskl -> aenv -> Prop :
     {{ ((α ~ abind_tvar) ++ Θ0)
       ⊢[ (add α Δ1) | Δ2
         | (open_pskl_wrt_pskl P0 (pskl_var_f α)) ]
-      (pskl_tophole P) ∼ Q
+      (pskl_univ_ghost P) ∼ Q
       ⊣ ((α ~ abind_tvar) ++ Θ1) }}a ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_all_syn P0) ]
-      (pskl_tophole P) ∼ (pskl_all_syn (close_pskl_wrt_pskl α Q)) ⊣ Θ1 }}a
+      (pskl_univ_ghost P) ∼ (pskl_all_syn (close_pskl_wrt_pskl α Q)) ⊣ Θ1 }}a
 | a_consis__univ_ghost2 : forall Δ1 Δ2 Θ0 Θ1 P0 P Q,        (* UnivGhost2 *)
     guarded_pskl P0 ->
     a_non_flex Θ0 P0 ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}a ->
-    {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] (pskl_tophole P) ∼ Q ⊣ Θ1 }}a
+    {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] (pskl_univ_ghost P) ∼ Q ⊣ Θ1 }}a
 | a_consis__flex : forall Δ1 Δ2 Θ0 Θ1 α β,                  (* Flex *)
     {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f β) ] (pskl_var_f α) ∼ (pskl_var_f α) ⊣ Θ1 }}a
 (* ⭐ [P0 <> ◇] / [P <> ◇] on the two FlexL/FlexR rows render the reference
    implementation's DISPATCH ORDER, exactly as [nonghost_pskl] does for
    [SE-FlexR] above (:721, and see its header).  [a_consis]'s consistency
-   clause in [type.ml] matches the PATTERN first and its hole arm is
+   clause in [type.ml] matches the PATTERN first and its ghost arm is
    unconditional in the subject, so the implementation NEVER reaches FlexL
    at a [◇] pattern; the mirror arm bars FlexR at a [◇] subject.  A
    relational encoding has no match order, so each exclusion must be a
    premise — and [a_non_flex] does NOT supply it ("nonflex{P0} rules out a
-   flexible VARIABLE, not a hole", cex/probe_consis_ghost_flex.v).
+   flexible VARIABLE, not a ghost", cex/probe_consis_ghost_flex.v).
 
    The guards select the ghost-first output.  At a [◇] pattern,
    [C-GhostR] leaves the flexible unsolved, whereas FlexL introduces a
@@ -1470,22 +1470,22 @@ with a_consis : atoms -> atoms -> aenv -> pskl -> pskl -> pskl -> aenv -> Prop :
    beside SE-FlexR's. *)
 | a_consis__flex_l : forall Δ1 Δ2 Θ0 Θ1 α P0,               (* FlexL *)
     a_non_flex Θ0 P0 ->
-    P0 <> pskl_hole ->
+    P0 <> pskl_ghost ->
     {{ Θ0 ⊲[ nil ] α ≔ P0 ⊣ Θ1 }}a ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] (pskl_var_f α) ∼ (pskl_var_f α) ⊣ Θ1 }}a
 | a_consis__flex_r : forall Δ1 Δ2 Θ0 Θ1 α P,                (* FlexR *)
     a_non_flex Θ0 P ->
-    P <> pskl_hole ->
+    P <> pskl_ghost ->
     {{ Θ0 ⊲[ nil ] α ≔ P ⊣ Θ1 }}a ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f α) ] P ∼ (pskl_var_f α) ⊣ Θ1 }}a
 | a_consis__ghost_r : forall Δ1 Δ2 Θ0 P,                    (* GhostR *)
     Δ1 ∩ ftvar_in_pskl P [=] empty ->
-    {{ Θ0 ⊢[ Δ1 | Δ2 | pskl_hole ] P ∼ P ⊣ Θ0 }}a
+    {{ Θ0 ⊢[ Δ1 | Δ2 | pskl_ghost ] P ∼ P ⊣ Θ0 }}a
 | a_consis__univ_ghost_r : forall Δ1 Δ2 Θ0 Θ1 P0 P Q,       (* UnivGhostR *)
     guarded_pskl P ->
     a_non_flex Θ0 P ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}a ->
-    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) ] P ∼ Q ⊣ Θ1 }}a
+    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_univ_ghost P0) ] P ∼ Q ⊣ Θ1 }}a
 where "{{ Θ ⊲[ Ξ ] α ≔ P ⊣ Θ' }}a" := (a_assign Θ Ξ α P Θ') : fresco_a_scope
 and "{{ Θ ⊲ α ≈ᵘ β ⊣ Θ' }}a" := (a_unify Θ α β Θ') : fresco_a_scope
 and "{{ Θ ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ' }}a" :=
@@ -1518,7 +1518,7 @@ Definition a_consis_chk (Θ0 : aenv) (P P0 : pskl) (Θ1 : aenv) : Prop :=
 (* ===================================================================== *)
 Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> Prop :=
 | a_sub__infer : forall NM P Θ0,                              (* Infer *)
-    a_sub NM mode_ti pskl_hole Θ0 P P Θ0
+    a_sub NM mode_ti pskl_ghost Θ0 P P Θ0
 | a_sub__check : forall Θ0 Θ1 A B,                            (* Check *)
     (* SORT (2026-08-06).  The paper writes this rule with the metavariables
        [A] and [B] — TYPES, not skeletons (full-algo-spec.tex:799-804, and
@@ -1568,7 +1568,7 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
     a_sub a_sub_mode_ty mode_tc (pskl_all_syn B) Θ0 A (pskl_all_syn B) Θ1
 | a_sub__univ_ghost_r : forall Θ0 P,                          (* UnivGhostR *)
     guarded_pskl P ->
-    a_sub a_sub_mode_sk mode_tc pskl_hole Θ0 P (pskl_tophole P) Θ0
+    a_sub a_sub_mode_sk mode_tc pskl_ghost Θ0 P (pskl_univ_ghost P) Θ0
 | a_sub__flex_mono : forall NM M P0 Θ0 Θ1 α Q,                (* FlexMono *)
     (* NAMING: the OUTPUT is the paper's [Q] — a skeleton, not a type
        (full-algo-spec.tex:820-824), so [Q] and not [A] here and in the
@@ -1583,7 +1583,7 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
       (pskl_arrow Q1 Q2) Θ2
 | a_sub__forall_l : forall α NM M P0 Θ0 Θ1 P Q Ξ P1,          (* ForallL *)
     M <> mode_ti ->
-    (guarded_pskl P0 \/ P0 = pskl_hole) ->
+    (guarded_pskl P0 \/ P0 = pskl_ghost) ->
     (* EXISTS-FRESH (campaign cluster 5, 2026-08-02), with the canon's
        input-only side condition.  Unlike [a_sub__forall_r]'s 2026-07-31 fix
        this is a UNIFORMITY conversion, not a repair: the cofinite rendering
@@ -1597,7 +1597,7 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
       `union` ftvar_in_pskl P0 ->
     {{ Θ0 ⊢ (open_pskl_wrt_pskl P (pskl_var_f α)) ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ P1 }}a ->
     (* prose-completion (PAPER-GAPS): the paper's "fresh" Ξ — [a_lookeq]'s
-       LE-FlexR and [a_guess_mono]'s hole rule pick arbitrary names, so
+       LE-FlexR and [a_guess_mono]'s ghost rule pick arbitrary names, so
        re-attaching Ξ needs the freshness stated. *)
     uniq (Ξ ++ Θ0) ->
     (* the paper's [Θ₀,Ξ ⊢ P₁] is its DISCIPLINED skeleton wf (there is no
@@ -1630,11 +1630,11 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
    premise).  [paper-gap] filed in docs/PAPER-GAPS.md. *)
 | a_sub__ghost : forall M Θ0 P0,                              (* Ghost *)
     M <> mode_ti ->
-    a_sub a_sub_mode_sk M P0 Θ0 pskl_hole P0 Θ0
+    a_sub a_sub_mode_sk M P0 Θ0 pskl_ghost P0 Θ0
 | a_sub__univ_ghost_l : forall M Θ0 Θ1 P0 P Q,                (* UnivGhostL *)
     M <> mode_ti ->
     a_sub a_sub_mode_sk M P0 Θ0 P Q Θ1 ->
-    a_sub a_sub_mode_sk M P0 Θ0 (pskl_tophole P) Q Θ1
+    a_sub a_sub_mode_sk M P0 Θ0 (pskl_univ_ghost P) Q Θ1
 
 (* Flexible-variable subtyping [Θ | Ξ ⊢[N][FN M][P0] α̂ ⩽ Q ⊣ Θ'] (paper
    fig:alg-subtyping, second box).  [Flex-Assign] merges [Θ0,Ξ] and
@@ -1716,12 +1716,12 @@ with a_sub_flex : a_sub_mode -> mode -> pskl -> aenv -> aenv -> atom -> pskl -> 
 Inductive a_split : aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
 | a_split__arrow : forall Θ0 P Q,
     {{ Θ0 ⊲ (pskl_arrow P Q) ▹ P ⇢ Q ⊣ Θ0 }}a
-| a_split__hole : forall Θ0,
-    {{ Θ0 ⊲ pskl_hole ▹ pskl_hole ⇢ pskl_hole ⊣ Θ0 }}a
+| a_split__ghost : forall Θ0,
+    {{ Θ0 ⊲ pskl_ghost ▹ pskl_ghost ⇢ pskl_ghost ⊣ Θ0 }}a
 | a_split__flex : forall Θ0 Θ1 α β α1 Q,                 (* split[α̂] = β̂→α1̂ *)
     (* The two invented flexibles are FRESH.  The paper says so in prose
        ("fresh"); the mech makes it a rule premise, INPUT-only and against
-       [ftvar_in_aenv] rather than [dom], exactly as [a_guess_mono__hole]
+       [ftvar_in_aenv] rather than [dom], exactly as [a_guess_mono__ghost]
        does — a payload [α̂ ≔ τ] may mention them, and it must not.  Without
        this, [a_split_refines_gen] (typing/prop_soundness_typing.v) cannot reach
        [a_assign_sound], whose own premise is that the extended context is
@@ -1787,8 +1787,8 @@ Inductive a_pat : mode -> aenv -> pskl -> exp -> pskl -> aenv -> Prop :=
     {{ Θ0 ⊢[ a_sub_mode_sk | m | P0 ] (ptyp_to_pskl A) ⩽ Q ⊣ Θ1 }}a ->
     {{ Θ0 ⊢ˢ[ m ; P0 ] (exp_anno e A) ⦂ Q ⊣ Θ1 }}a
 | a_pat__freeze : forall Θ0 e Q Θ1,                         (* AP-Freeze *)
-    {{ Θ0 ⊢ˢ[ mode_ti ; pskl_hole ] e ⦂ Q ⊣ Θ1 }}a ->
-    {{ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] (exp_freeze e) ⦂ Q ⊣ Θ1 }}a
+    {{ Θ0 ⊢ˢ[ mode_ti ; pskl_ghost ] e ⦂ Q ⊣ Θ1 }}a ->
+    {{ Θ0 ⊢ˢ[ mode_tc ; pskl_ghost ] (exp_freeze e) ⦂ Q ⊣ Θ1 }}a
 | a_pat__abs : forall x m Θ0 Θ1 Θ2 P0 P Q0 e Q Ξ,           (* AP-Abs *)
     m <> mode_tc ->
     {{ Θ0 ⊲ P0 ▹ P ⇢ Q0 ⊣ Θ1 }}a ->
@@ -1809,19 +1809,19 @@ Inductive a_pat : mode -> aenv -> pskl -> exp -> pskl -> aenv -> Prop :=
 | a_pat__abs_check : forall x Θ0 Θ1 e Q Ξ,                  (* AP-AbsCheck *)
     a_suffix Ξ ->
     x `notin` dom (Ξ ++ Θ0) `union` dom Θ1 `union` fvar_in_exp e ->
-    {{ ((x ~ abind_var_skl pskl_hole) ++ Θ0) ⊢ˢ[ mode_tc ; pskl_hole ]
-      (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q ⊣ (Ξ ++ (x ~ abind_var_skl pskl_hole) ++ Θ1) }}a ->
-    {{ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] (exp_abs e)
-      ⦂ (pskl_tophole (pskl_arrow pskl_hole Q)) ⊣ (Ξ ++ Θ1) }}a
+    {{ ((x ~ abind_var_skl pskl_ghost) ++ Θ0) ⊢ˢ[ mode_tc ; pskl_ghost ]
+      (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q ⊣ (Ξ ++ (x ~ abind_var_skl pskl_ghost) ++ Θ1) }}a ->
+    {{ Θ0 ⊢ˢ[ mode_tc ; pskl_ghost ] (exp_abs e)
+      ⦂ (pskl_univ_ghost (pskl_arrow pskl_ghost Q)) ⊣ (Ξ ++ Θ1) }}a
 | a_pat__abs_anno_check : forall x Θ0 Θ1 A e Q Ξ,           (* AP-AbsAnnoCheck *)
     a_suffix Ξ ->
     x `notin` dom (Ξ ++ Θ0) `union` dom Θ1 `union` fvar_in_exp e ->
-    {{ ((x ~ abind_var_typ A) ++ Θ0) ⊢ˢ[ mode_tc ; pskl_hole ]
+    {{ ((x ~ abind_var_typ A) ++ Θ0) ⊢ˢ[ mode_tc ; pskl_ghost ]
       (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ1) }}a ->
-    {{ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] (exp_abs_anno A e)
-      ⦂ (pskl_tophole (pskl_arrow (ptyp_to_pskl A) Q)) ⊣ (Ξ ++ Θ1) }}a
+    {{ Θ0 ⊢ˢ[ mode_tc ; pskl_ghost ] (exp_abs_anno A e)
+      ⦂ (pskl_univ_ghost (pskl_arrow (ptyp_to_pskl A) Q)) ⊣ (Ξ ++ Θ1) }}a
 | a_pat__app : forall m Θ0 Θ1 Θ2 P0 Q0 P Q e1 e2,           (* AP-App *)
-    {{ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] e2 ⦂ P0 ⊣ Θ1 }}a ->
+    {{ Θ0 ⊢ˢ[ mode_tc ; pskl_ghost ] e2 ⦂ P0 ⊣ Θ1 }}a ->
     {{ Θ1 ⊢ˢ[ (mode_fn m) ; (pskl_arrow P0 Q0) ] e1 ⦂ (pskl_arrow P Q) ⊣ Θ2 }}a ->
     {{ Θ0 ⊢ˢ[ m ; Q0 ] (exp_app e1 e2) ⦂ Q ⊣ Θ2 }}a
 where "{{ Θ ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ' }}a" := (a_pat m Θ P0 e Q Θ') : fresco_a_scope.
@@ -1845,7 +1845,7 @@ Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
 | a_typing__freeze : forall Θ0 e A B Θ1 Θ2,                 (* AT-Freeze *)
     (* the TC input skeleton IS the checked type [A]; the inferred [B] is
        UNIFIED with it (consistency), no subtyping *)
-    {{ Θ0 ⊢[ mode_ti ; pskl_hole ] e ⦂ B ⊣ Θ1 }}a ->
+    {{ Θ0 ⊢[ mode_ti ; pskl_ghost ] e ⦂ B ⊣ Θ1 }}a ->
     a_consis_chk Θ1 (ptyp_to_pskl B) (ptyp_to_pskl A) Θ2 ->
     {{ Θ0 ⊢[ mode_tc ; (ptyp_to_pskl A) ] (exp_freeze e) ⦂ A ⊣ Θ2 }}a
 | a_typing__abs : forall x m Θ0 Θ1 Θ2 P0 P Q αs A e B Ξ,    (* AT-Abs *)
@@ -1985,7 +1985,7 @@ Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
     {{ Θ0 ⊢[ mode_tc ; (ptyp_to_pskl A0) ] (exp_abs_anno A e)
       ⦂ (ptyp_arrow A' B1) ⊣ Θ3 }}a
 | a_typing__app : forall m Θ0 Θ1 Θ2 Θ3 P Q A A' B e1 e2,    (* AT-App *)
-    {{ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] e2 ⦂ P ⊣ Θ1 }}a ->
+    {{ Θ0 ⊢ˢ[ mode_tc ; pskl_ghost ] e2 ⦂ P ⊣ Θ1 }}a ->
     {{ Θ1 ⊢[ (mode_fn m) ; (pskl_arrow P Q) ] e1 ⦂ (ptyp_arrow A B) ⊣ Θ2 }}a ->
     {{ Θ2 ⊢[ mode_tc ; (ptyp_to_pskl A) ] e2 ⦂ A' ⊣ Θ3 }}a ->
     {{ Θ0 ⊢[ m ; Q ] (exp_app e1 e2) ⦂ B ⊣ Θ3 }}a

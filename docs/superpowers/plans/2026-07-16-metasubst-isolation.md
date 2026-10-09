@@ -375,7 +375,7 @@ git commit -m "$(printf '%s\n' '[mech][docs] metasubst isolation complete: full 
   an artificial disjunction, not remove duplication.
 - **Task 6** — ALREADY SATISFIED. `msubst_downarrow_tyequiv` is already the single
   primitive; both `msubst_compose_downarrow_tyequiv` and its pskl mirror invoke
-  it. The ptyp/pskl split cannot collapse further — `pskl` carries holes (□) not
+  it. The ptyp/pskl split cannot collapse further — `pskl` carries ghosts (□) not
   in the image of `ptyp_to_pskl`, so the pskl induction is not derivable from the
   ptyp one.
 - **Task 7** — DONE (commit dd11f87). `a_inc_self_downarrow_bundle` proves the

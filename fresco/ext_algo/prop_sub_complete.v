@@ -169,7 +169,7 @@ Hypothesis Hsub : forall S0 NM M P0 Θ0 P,
     (* ForallL — extract an instantiation, then recurse on the opened body *)
     (forall Q,
        P = pskl_all_syn Q -> M <> mode_ti ->
-       (guarded_pskl P0 \/ P0 = pskl_hole) ->
+       (guarded_pskl P0 \/ P0 = pskl_ghost) ->
        e_extract_order (add (supply_fresh S0) S0) Θ0 NM (supply_fresh S0) M
          (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0))) P0
        /\ (forall S1 Ξ P1,
@@ -181,7 +181,7 @@ Hypothesis Hsub : forall S0 NM M P0 Θ0 P,
                (sub_call_sub (open_pskl_wrt_pskl Q P1)))) ->
     (forall Q,
        P = pskl_all_syn Q -> M <> mode_ti ->
-       (guarded_pskl P0 \/ P0 = pskl_hole) ->
+       (guarded_pskl P0 \/ P0 = pskl_ghost) ->
        forall S1 Ξ P1,
          {{ (add (supply_fresh S0) S0) ↝ S1 ⊨ Θ0
             ⊢ (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0)))
@@ -191,10 +191,10 @@ Hypothesis Hsub : forall S0 NM M P0 Θ0 P,
            (sub_call_sub (open_pskl_wrt_pskl Q P1))) ->
     (* UnivGhostL — strip the subject's ⫯ *)
     (forall Q,
-       P = pskl_tophole Q -> M <> mode_ti ->
+       P = pskl_univ_ghost Q -> M <> mode_ti ->
        e_sub_call_order S0 NM M P0 Θ0 (sub_call_sub Q)) ->
     (forall Q,
-       P = pskl_tophole Q -> M <> mode_ti ->
+       P = pskl_univ_ghost Q -> M <> mode_ti ->
        Qc S0 NM M P0 Θ0 (sub_call_sub Q)) ->
     Qc S0 NM M P0 Θ0 (sub_call_sub P).
 
@@ -373,15 +373,15 @@ Qed.
 Local Ltac kill_unguarded :=
   repeat match goal with
          | Hg : guarded_pskl (pskl_all_syn _) |- _ => solve [ inversion Hg ]
-         | Hg : guarded_pskl (pskl_tophole _) |- _ => solve [ inversion Hg ]
-         | Hg : guarded_pskl pskl_hole |- _ => solve [ inversion Hg ]
+         | Hg : guarded_pskl (pskl_univ_ghost _) |- _ => solve [ inversion Hg ]
+         | Hg : guarded_pskl pskl_ghost |- _ => solve [ inversion Hg ]
          end.
 
 (** [SI-ForallL]'s own guard, at a counterpart that is neither guarded nor
-    a hole — the shape that kills it beside [SI-ForallR]. *)
+    a ghost — the shape that kills it beside [SI-ForallR]. *)
 Local Ltac kill_forall_l_guard :=
   repeat match goal with
-         | Hg : guarded_pskl ?X \/ ?X = pskl_hole |- _ =>
+         | Hg : guarded_pskl ?X \/ ?X = pskl_ghost |- _ =>
              solve [ destruct Hg as [Hg | Hg];
                      [ inversion Hg | discriminate ] ]
          end.
@@ -390,7 +390,7 @@ Local Ltac kill_forall_l_guard :=
 
 Lemma e_sub_inv_ti : forall S0 NM P0 Θ0 P Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ NM | mode_ti | P0 ] P ⩽ Q ⊣ Θ1 }}e ->
-  P0 = pskl_hole /\ Q = P /\ S1 = S0 /\ Θ1 = Θ0.
+  P0 = pskl_ghost /\ Q = P /\ S1 = S0 /\ Θ1 = Θ0.
 Proof.
   intros * Hd. inversion Hd; subst; try congruence.
   repeat split; reflexivity.
@@ -437,7 +437,7 @@ Lemma e_sub_inv_forall_l_gen : forall S0 NM M P0 Θ0 P Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ NM | M | P0 ] (pskl_all_syn P) ⩽ Q ⊣ Θ1 }}e ->
   M <> mode_ti ->
   (NM = a_sub_mode_sk \/ M <> mode_tc \/ (forall B, P0 <> pskl_all_syn B)) ->
-  (guarded_pskl P0 \/ P0 = pskl_hole) /\
+  (guarded_pskl P0 \/ P0 = pskl_ghost) /\
   exists α Sm Ξ P1,
     α `notin` S0 /\
     {{ (add α S0) ↝ Sm ⊨ Θ0 ⊢ (open_pskl_wrt_pskl P (pskl_var_f α))
@@ -457,7 +457,7 @@ Qed.
 (* --- (sk, M ≠ TI) --- *)
 
 Lemma e_sub_inv_ghost : forall S0 M P0 Θ0 Q S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ a_sub_mode_sk | M | P0 ] pskl_hole ⩽ Q ⊣ Θ1 }}e ->
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ a_sub_mode_sk | M | P0 ] pskl_ghost ⩽ Q ⊣ Θ1 }}e ->
   M <> mode_ti ->
   Q = P0 /\ S1 = S0 /\ Θ1 = Θ0.
 Proof.
@@ -466,7 +466,7 @@ Proof.
 Qed.
 
 Lemma e_sub_inv_univ_ghost_l : forall S0 M P0 Θ0 P Q S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ a_sub_mode_sk | M | P0 ] (pskl_tophole P) ⩽ Q ⊣ Θ1 }}e ->
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ a_sub_mode_sk | M | P0 ] (pskl_univ_ghost P) ⩽ Q ⊣ Θ1 }}e ->
   M <> mode_ti ->
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ a_sub_mode_sk | M | P0 ] P ⩽ Q ⊣ Θ1 }}e.
 Proof.
@@ -478,10 +478,10 @@ Qed.
     a GUARDED subject, so at [◇ ⩽ ◇] only [SI-Ghost] fires and the two
     would-be outputs never meet. *)
 Lemma e_sub_inv_univ_ghost_r : forall S0 Θ0 P Q S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ a_sub_mode_sk | mode_tc | pskl_hole ] P ⩽ Q ⊣ Θ1 }}e ->
-  P <> pskl_hole -> (forall Pb, P <> pskl_tophole Pb) ->
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ a_sub_mode_sk | mode_tc | pskl_ghost ] P ⩽ Q ⊣ Θ1 }}e ->
+  P <> pskl_ghost -> (forall Pb, P <> pskl_univ_ghost Pb) ->
   (forall Pb, P <> pskl_all_syn Pb) ->
-  guarded_pskl P /\ Q = pskl_tophole P /\ S1 = S0 /\ Θ1 = Θ0.
+  guarded_pskl P /\ Q = pskl_univ_ghost P /\ S1 = S0 /\ Θ1 = Θ0.
 Proof.
   intros * Hd Hnh Hnt Hna. inversion Hd; subst;
     try solve [ congruence
@@ -494,8 +494,8 @@ Qed.
     non-ghost counterpart: no rule fires there either. *)
 Lemma e_sub_inv_sk_tc_none : forall S0 P0 Θ0 P Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ a_sub_mode_sk | mode_tc | P0 ] P ⩽ Q ⊣ Θ1 }}e ->
-  P <> pskl_hole -> (forall Pb, P <> pskl_tophole Pb) ->
-  (forall Pb, P <> pskl_all_syn Pb) -> P0 <> pskl_hole -> False.
+  P <> pskl_ghost -> (forall Pb, P <> pskl_univ_ghost Pb) ->
+  (forall Pb, P <> pskl_all_syn Pb) -> P0 <> pskl_ghost -> False.
 Proof.
   intros * Hd Hnh Hnt Hna Hn0. inversion Hd; subst;
     solve [ congruence
@@ -533,14 +533,14 @@ Lemma e_sub_inv_fn_unit_none : forall S0 NM M P0 Θ0 Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ NM | (mode_fn M) | P0 ] pskl_unit ⩽ Q ⊣ Θ1 }}e -> False.
 Proof. intros * Hd. inversion Hd. Qed.
 
-Lemma e_sub_inv_fn_ty_hole_none : forall S0 M P0 Θ0 Q S1 Θ1,
+Lemma e_sub_inv_fn_ty_ghost_none : forall S0 M P0 Θ0 Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ a_sub_mode_ty | (mode_fn M) | P0 ]
-     pskl_hole ⩽ Q ⊣ Θ1 }}e -> False.
+     pskl_ghost ⩽ Q ⊣ Θ1 }}e -> False.
 Proof. intros * Hd. inversion Hd. Qed.
 
-Lemma e_sub_inv_fn_ty_tophole_none : forall S0 M P0 Θ0 P Q S1 Θ1,
+Lemma e_sub_inv_fn_ty_univ_ghost_none : forall S0 M P0 Θ0 P Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ a_sub_mode_ty | (mode_fn M) | P0 ]
-     (pskl_tophole P) ⩽ Q ⊣ Θ1 }}e -> False.
+     (pskl_univ_ghost P) ⩽ Q ⊣ Θ1 }}e -> False.
 Proof. intros * Hd. inversion Hd. Qed.
 
 (* --- the WALK: one inversion per head binding shape --------------------- *)
@@ -1198,10 +1198,10 @@ Local Ltac ck_leaf :=
         | apply wf_pskl_ck_complete_at_size; assumption
         | apply orb_true_intro;
           match goal with
-          | H : guarded_pskl _ \/ _ = pskl_hole |- _ =>
+          | H : guarded_pskl _ \/ _ = pskl_ghost |- _ =>
               destruct H as [H | H];
               [ left; apply guarded_shape_ck_complete; exact H
-              | right; apply hole_ck_complete; exact H ]
+              | right; apply ghost_ck_complete; exact H ]
           end ].
 
 (** ⚠️ The LEAF is tried FIRST: [apply andb_true_intro] unifies up to delta,
@@ -1542,7 +1542,7 @@ Lemma sub_call_complete_sub : forall S0 NM M P0 Θ0 P,
     (* ForallL — extract an instantiation, then recurse on the opened body *)
     (forall Q,
        P = pskl_all_syn Q -> M <> mode_ti ->
-       (guarded_pskl P0 \/ P0 = pskl_hole) ->
+       (guarded_pskl P0 \/ P0 = pskl_ghost) ->
        e_extract_order (add (supply_fresh S0) S0) Θ0 NM (supply_fresh S0) M
          (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0))) P0
        /\ (forall S1 Ξ P1,
@@ -1554,7 +1554,7 @@ Lemma sub_call_complete_sub : forall S0 NM M P0 Θ0 P,
                (sub_call_sub (open_pskl_wrt_pskl Q P1)))) ->
     (forall Q,
        P = pskl_all_syn Q -> M <> mode_ti ->
-       (guarded_pskl P0 \/ P0 = pskl_hole) ->
+       (guarded_pskl P0 \/ P0 = pskl_ghost) ->
        forall S1 Ξ P1,
          {{ (add (supply_fresh S0) S0) ↝ S1 ⊨ Θ0
             ⊢ (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0)))
@@ -1564,10 +1564,10 @@ Lemma sub_call_complete_sub : forall S0 NM M P0 Θ0 P,
            (sub_call_sub (open_pskl_wrt_pskl Q P1))) ->
     (* UnivGhostL — strip the subject's ⫯ *)
     (forall Q,
-       P = pskl_tophole Q -> M <> mode_ti ->
+       P = pskl_univ_ghost Q -> M <> mode_ti ->
        e_sub_call_order S0 NM M P0 Θ0 (sub_call_sub Q)) ->
     (forall Q,
-       P = pskl_tophole Q -> M <> mode_ti ->
+       P = pskl_univ_ghost Q -> M <> mode_ti ->
        sub_call_complete S0 NM M P0 Θ0 (sub_call_sub Q)) ->
     sub_call_complete S0 NM M P0 Θ0 (sub_call_sub P).
 Proof.
@@ -1780,10 +1780,10 @@ Proof.
         (Hfl Q eq_refl ltac:(discriminate)) S0 Θ0 P0 Q.
     * (* SI-Ghost, at sk only *)
       destruct NM; cbv beta iota;
-        [ destruct (e_sub_inv_fn_ty_hole_none Hd) | do_ghost Hd ].
+        [ destruct (e_sub_inv_fn_ty_ghost_none Hd) | do_ghost Hd ].
     * (* SI-UnivGhostL, at sk only *)
       destruct NM; cbv beta iota;
-        [ destruct (e_sub_inv_fn_ty_tophole_none Hd)
+        [ destruct (e_sub_inv_fn_ty_univ_ghost_none Hd)
         | do_univ_ghost_l Hd Hu Hcov (Hug Pb eq_refl ltac:(discriminate)) ].
 Qed.
 
@@ -1804,7 +1804,7 @@ Qed.
 (*  §8  THE THREE HEADLINES                                               *)
 (*                                                                        *)
 (*  prop_consis_complete.v §8's shape, for the SUBTYPING runner — and      *)
-(*  UNRESTRICTED: level 5's hole-free rung was lifted (§8c.17), so         *)
+(*  UNRESTRICTED: level 5's ghost-free rung was lifted (§8c.17), so         *)
 (*  nothing here excludes a ghost-carrying skeleton.  The side conditions  *)
 (*  are prop_sub.v §4's, verbatim: the context is [uniq] and the supply    *)
 (*  covers it, the pattern and the subject.                               *)

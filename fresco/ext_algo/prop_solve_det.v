@@ -9,7 +9,7 @@
 
     §1  [rel_pskl ρ V P1 P2] — equality up to an aligned fresh-pair list
         ρ, with identity support V.  ⚠️ DELIBERATELY RELATIONAL: one
-        derivation may guess the SAME flexible for two holes
+        derivation may guess the SAME flexible for two ghosts
         ([a_guess_mono__arrow] runs both halves at Θ), so a functional
         renaming does not exist in general; column uniqueness is paid
         only at the transport.
@@ -64,7 +64,7 @@ Open Scope fresco_a_scope.
 (*  be replaced along one of ρ's PAIRS; variables outside the pairs must  *)
 (*  sit in the identity support [V].  ⚠️ DELIBERATELY RELATIONAL: the     *)
 (*  a-side rules allow one derivation to guess the SAME flexible for two  *)
-(*  holes ([a_guess_mono__arrow] runs both halves at Θ), so a functional  *)
+(*  ghosts ([a_guess_mono__arrow] runs both halves at Θ), so a functional  *)
 (*  "renaming" does not exist in general — uniqueness of the columns is   *)
 (*  paid only at the TRANSPORT (§2), where the runner-side block is       *)
 (*  [uniq] for free and the derivation side hypothesizes it.              *)
@@ -152,10 +152,10 @@ Inductive rel_pskl (ρ : list (atom * atom)) (V : atoms)
 | rel_pskl__all_syn : forall P Q,
     rel_pskl ρ V P Q ->
     rel_pskl ρ V (pskl_all_syn P) (pskl_all_syn Q)
-| rel_pskl__hole : rel_pskl ρ V pskl_hole pskl_hole
-| rel_pskl__tophole : forall P Q,
+| rel_pskl__ghost : rel_pskl ρ V pskl_ghost pskl_ghost
+| rel_pskl__univ_ghost : forall P Q,
     rel_pskl ρ V P Q ->
-    rel_pskl ρ V (pskl_tophole P) (pskl_tophole Q).
+    rel_pskl ρ V (pskl_univ_ghost P) (pskl_univ_ghost Q).
 
 (** One monotonicity lemma covers pair-append (either side) and
     V-weakening. *)
@@ -481,7 +481,7 @@ Qed.
 Lemma swaps_pskl_unit : forall ps, swaps_pskl ps pskl_unit = pskl_unit.
 Proof. induction ps as [ | [a b] ps IH ]; simpl; auto. Qed.
 
-Lemma swaps_pskl_hole : forall ps, swaps_pskl ps pskl_hole = pskl_hole.
+Lemma swaps_pskl_ghost : forall ps, swaps_pskl ps pskl_ghost = pskl_ghost.
 Proof. induction ps as [ | [a b] ps IH ]; simpl; auto. Qed.
 
 Lemma swaps_pskl_var_b : forall ps n,
@@ -501,8 +501,8 @@ Lemma swaps_pskl_all_syn : forall ps P,
   swaps_pskl ps (pskl_all_syn P) = pskl_all_syn (swaps_pskl ps P).
 Proof. induction ps as [ | [a b] ps IH ]; simpl; auto. Qed.
 
-Lemma swaps_pskl_tophole : forall ps P,
-  swaps_pskl ps (pskl_tophole P) = pskl_tophole (swaps_pskl ps P).
+Lemma swaps_pskl_univ_ghost : forall ps P,
+  swaps_pskl ps (pskl_univ_ghost P) = pskl_univ_ghost (swaps_pskl ps P).
 Proof. induction ps as [ | [a b] ps IH ]; simpl; auto. Qed.
 
 Lemma swaps_pskl_fresh_id : forall ps P,
@@ -738,8 +738,8 @@ Lemma rel_pskl_chain : forall ρ V P1 P2 zs,
 Proof.
   intros * Hrel Hnl Hnr Hnz Hlen Hdisz HdisV.
   induction Hrel;
-    try (rewrite ?swaps_pskl_unit, ?swaps_pskl_hole, ?swaps_pskl_var_b,
-           ?swaps_pskl_arrow, ?swaps_pskl_all_syn, ?swaps_pskl_tophole;
+    try (rewrite ?swaps_pskl_unit, ?swaps_pskl_ghost, ?swaps_pskl_var_b,
+           ?swaps_pskl_arrow, ?swaps_pskl_all_syn, ?swaps_pskl_univ_ghost;
          congruence).
   rewrite swaps_pskl_var_f.
   match goal with
@@ -1098,7 +1098,7 @@ Proof.
         | rewrite <- dom_flex_pairs_l; clear - Hc; fsetdec
         | rewrite <- dom_flex_pairs_r; clear - Hc; fsetdec ]
     end.
-  - (* hole *)
+  - (* ghost *)
     inversion HG1; subst. inversion HG2; subst.
     match goal with
     | Hn1 : ?a1 `notin` ftvar_in_aenv Θ1,
@@ -1107,7 +1107,7 @@ Proof.
     end.
     repeat split. intros V _. simpl.
     constructor. apply rel_atom__pair. left. reflexivity.
-  - (* tophole *)
+  - (* univ_ghost *)
     inversion HG1; subst. inversion HG2; subst.
     simpl in Hsz.
     match goal with
@@ -1163,11 +1163,11 @@ Qed.
 
 Local Ltac det_absurd :=
   solve [ match goal with
-          | Hg : nonghost_pskl (pskl_tophole _) |- _ => inversion Hg
-          | Hg : nonghost_pskl pskl_hole |- _ => inversion Hg
+          | Hg : nonghost_pskl (pskl_univ_ghost _) |- _ => inversion Hg
+          | Hg : nonghost_pskl pskl_ghost |- _ => inversion Hg
           | Hg : guarded_pskl (pskl_all_syn _) |- _ => inversion Hg
-          | Hg : guarded_pskl (pskl_tophole _) |- _ => inversion Hg
-          | Hg : guarded_pskl pskl_hole |- _ => inversion Hg
+          | Hg : guarded_pskl (pskl_univ_ghost _) |- _ => inversion Hg
+          | Hg : guarded_pskl pskl_ghost |- _ => inversion Hg
           end ].
 
 (** The uniform closer for the overlap crosses: both derivations answered
@@ -1230,9 +1230,9 @@ Proof.
       end.
       exists ρ. repeat split; [ exact El | exact Er | ].
       intros V HV. apply (Hrel V). clear - HV. fsetdec.
-  - (* SE-GhostL vs {hole_l, hole_r} *)
+  - (* SE-GhostL vs {ghost_l, ghost_r} *)
     inversion HD2; subst; try det_absurd; det_nil_refl.
-  - (* SE-VacuousR vs {var, hole_l, hole_r} *)
+  - (* SE-VacuousR vs {var, ghost_l, ghost_r} *)
     inversion HD2; subst; try det_absurd; det_nil_refl.
   - (* SE-Arrow × SE-Arrow *)
     inversion HD2; subst; try det_absurd.
@@ -1349,10 +1349,10 @@ Proof.
     simpl in Hsz.
     match goal with
     | Hf1 : ?b1 `notin` _,
-      G1 : a_solve_eq ((?b1 ~ abind_tvar) ++ Θ1) (pskl_tophole ?P0)
+      G1 : a_solve_eq ((?b1 ~ abind_tvar) ++ Θ1) (pskl_univ_ghost ?P0)
              (open_pskl_wrt_pskl ?Q0 (pskl_var_f ?b1)) Ξ1 ?Y1,
       Hf2 : ?b2 `notin` _,
-      G2 : a_solve_eq ((?b2 ~ abind_tvar) ++ Θ2) (pskl_tophole ?P0)
+      G2 : a_solve_eq ((?b2 ~ abind_tvar) ++ Θ2) (pskl_univ_ghost ?P0)
              (open_pskl_wrt_pskl ?Q0 (pskl_var_f ?b2)) Ξ2 ?Y2 |- _ =>
         destruct (atom_fresh (add b1 (add b2 (ftvar_in_pskl P0
                     ∪ ftvar_in_pskl Q0
@@ -1363,11 +1363,11 @@ Proof.
         pose proof (proj2 (a_solve_sub_eq_swap b2 c) _ _ _ _ _ G2) as G2';
         rewrite ! swap_pskl_open_var in G1', G2';
         rewrite ! swap_atom_l in G1', G2';
-        rewrite (swap_pskl_fresh_id b1 c (pskl_tophole P0)) in G1'
+        rewrite (swap_pskl_fresh_id b1 c (pskl_univ_ghost P0)) in G1'
           by (simpl; clear - Hf1 Hc; fsetdec);
         rewrite (swap_pskl_fresh_id b1 c Q0) in G1'
           by (clear - Hf1 Hc; fsetdec);
-        rewrite (swap_pskl_fresh_id b2 c (pskl_tophole P0)) in G2'
+        rewrite (swap_pskl_fresh_id b2 c (pskl_univ_ghost P0)) in G2'
           by (simpl; clear - Hf2 Hc; fsetdec);
         rewrite (swap_pskl_fresh_id b2 c Q0) in G2'
           by (clear - Hf2 Hc; fsetdec);
@@ -1393,7 +1393,7 @@ Proof.
         rewrite (swap_aenv_fresh_id b2 c Ξ2) in G2'
           by (pose proof (flex_env_ftvar _ Hbf2) as Hfe;
               clear - Hb2Ξ Hc Hfe; fsetdec);
-        destruct (IHn (pskl_tophole P0)
+        destruct (IHn (pskl_univ_ghost P0)
                       (open_pskl_wrt_pskl Q0 (pskl_var_f c))
                     ltac:(rewrite ! size_pskl_open_pskl_wrt_pskl_var;
                           simpl; lia)
@@ -1430,11 +1430,11 @@ Proof.
     | Hf1 : ?b1 `notin` _,
       G1 : a_solve_eq ((?b1 ~ abind_tvar) ++ Θ1)
              (open_pskl_wrt_pskl ?P0 (pskl_var_f ?b1))
-             (pskl_tophole ?Q0) Ξ1 ?Y1,
+             (pskl_univ_ghost ?Q0) Ξ1 ?Y1,
       Hf2 : ?b2 `notin` _,
       G2 : a_solve_eq ((?b2 ~ abind_tvar) ++ Θ2)
              (open_pskl_wrt_pskl ?P0 (pskl_var_f ?b2))
-             (pskl_tophole ?Q0) Ξ2 ?Y2 |- _ =>
+             (pskl_univ_ghost ?Q0) Ξ2 ?Y2 |- _ =>
         destruct (atom_fresh (add b1 (add b2 (ftvar_in_pskl P0
                     ∪ ftvar_in_pskl Q0
                     ∪ ftvar_in_aenv Θ1 ∪ ftvar_in_aenv Θ2
@@ -1446,11 +1446,11 @@ Proof.
         rewrite ! swap_atom_l in G1', G2';
         rewrite (swap_pskl_fresh_id b1 c P0) in G1'
           by (clear - Hf1 Hc; fsetdec);
-        rewrite (swap_pskl_fresh_id b1 c (pskl_tophole Q0)) in G1'
+        rewrite (swap_pskl_fresh_id b1 c (pskl_univ_ghost Q0)) in G1'
           by (simpl; clear - Hf1 Hc; fsetdec);
         rewrite (swap_pskl_fresh_id b2 c P0) in G2'
           by (clear - Hf2 Hc; fsetdec);
-        rewrite (swap_pskl_fresh_id b2 c (pskl_tophole Q0)) in G2'
+        rewrite (swap_pskl_fresh_id b2 c (pskl_univ_ghost Q0)) in G2'
           by (simpl; clear - Hf2 Hc; fsetdec);
         assert (Hbf1 : forall x bd, In (x, bd) Ξ1 -> bd = abind_flex_mono)
           by (intros x bd Hin;
@@ -1475,7 +1475,7 @@ Proof.
           by (pose proof (flex_env_ftvar _ Hbf2) as Hfe;
               clear - Hb2Ξ Hc Hfe; fsetdec);
         destruct (IHn (open_pskl_wrt_pskl P0 (pskl_var_f c))
-                      (pskl_tophole Q0)
+                      (pskl_univ_ghost Q0)
                     ltac:(rewrite ! size_pskl_open_pskl_wrt_pskl_var;
                           simpl; lia)
                     _ _ _ _ _ _ G1' G2')

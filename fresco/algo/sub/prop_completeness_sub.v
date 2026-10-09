@@ -108,8 +108,8 @@ Proof.
     rewrite He; discriminate.
 Qed.
 
-Lemma ptyp_to_uskl_syn_not_tophole : forall τ R,
-  ptyp_to_uskl_syn τ <> uskl_tophole R.
+Lemma ptyp_to_uskl_syn_not_univ_ghost : forall τ R,
+  ptyp_to_uskl_syn τ <> uskl_univ_ghost R.
 Proof.
   intros τ R.
   destruct (ptyp_to_uskl_syn_shape τ)
@@ -117,8 +117,8 @@ Proof.
     rewrite He; discriminate.
 Qed.
 
-Lemma ptyp_to_uskl_syn_not_topholeg : forall τ R,
-  ptyp_to_uskl_syn τ <> uskl_topholeg R.
+Lemma ptyp_to_uskl_syn_not_dot_univ_ghost : forall τ R,
+  ptyp_to_uskl_syn τ <> uskl_dot_univ_ghost R.
 Proof.
   intros τ R.
   destruct (ptyp_to_uskl_syn_shape τ)
@@ -147,21 +147,21 @@ Proof.
   - left; injection He as <-; eexists; split; reflexivity.
 Qed.
 
-Lemma msubst_uskl_syn_tophole_inv : forall κ R X,
-  msubst_uskl_syn κ R = uskl_tophole X ->
-  exists R0, R = uskl_tophole R0 /\ msubst_uskl_syn κ R0 = X.
+Lemma msubst_uskl_syn_univ_ghost_inv : forall κ R X,
+  msubst_uskl_syn κ R = uskl_univ_ghost X ->
+  exists R0, R = uskl_univ_ghost R0 /\ msubst_uskl_syn κ R0 = X.
 Proof.
   intros κ R X He; destruct R; cbn in He; try discriminate He.
-  - exfalso; eapply ptyp_to_uskl_syn_not_tophole; exact He.
+  - exfalso; eapply ptyp_to_uskl_syn_not_univ_ghost; exact He.
   - injection He as <-. eexists; split; reflexivity.
 Qed.
 
-Lemma msubst_uskl_syn_topholeg_inv : forall κ R X,
-  msubst_uskl_syn κ R = uskl_topholeg X ->
-  exists R0, R = uskl_topholeg R0 /\ msubst_uskl_syn κ R0 = X.
+Lemma msubst_uskl_syn_dot_univ_ghost_inv : forall κ R X,
+  msubst_uskl_syn κ R = uskl_dot_univ_ghost X ->
+  exists R0, R = uskl_dot_univ_ghost R0 /\ msubst_uskl_syn κ R0 = X.
 Proof.
   intros κ R X He; destruct R; cbn in He; try discriminate He.
-  - exfalso; eapply ptyp_to_uskl_syn_not_topholeg; exact He.
+  - exfalso; eapply ptyp_to_uskl_syn_not_dot_univ_ghost; exact He.
   - injection He as <-. eexists; split; reflexivity.
 Qed.
 
@@ -207,21 +207,21 @@ Proof.
   - eexists; reflexivity.
 Qed.
 
-Lemma a_uskl_tyequiv_tophole_l_inv : forall Θ R X,
-  {{ Θ ⊢ (uskl_tophole R) ≡ᵘ X }}a ->
-  exists X0, X = uskl_tophole X0 /\ {{ Θ ⊢ R ≡ᵘ X0 }}a.
+Lemma a_uskl_tyequiv_univ_ghost_l_inv : forall Θ R X,
+  {{ Θ ⊢ (uskl_univ_ghost R) ≡ᵘ X }}a ->
+  exists X0, X = uskl_univ_ghost X0 /\ {{ Θ ⊢ R ≡ᵘ X0 }}a.
 Proof.
   intros Θ R X H; inversion H; subst;
-    [ exfalso; eapply ptyp_to_uskl_syn_not_tophole; eassumption
+    [ exfalso; eapply ptyp_to_uskl_syn_not_univ_ghost; eassumption
     | eexists; split; [ reflexivity | assumption ] ].
 Qed.
 
-Lemma a_uskl_tyequiv_topholeg_l_inv : forall Θ R X,
-  {{ Θ ⊢ (uskl_topholeg R) ≡ᵘ X }}a ->
-  exists X0, X = uskl_topholeg X0 /\ {{ Θ ⊢ R ≡ᵘ X0 }}a.
+Lemma a_uskl_tyequiv_dot_univ_ghost_l_inv : forall Θ R X,
+  {{ Θ ⊢ (uskl_dot_univ_ghost R) ≡ᵘ X }}a ->
+  exists X0, X = uskl_dot_univ_ghost X0 /\ {{ Θ ⊢ R ≡ᵘ X0 }}a.
 Proof.
   intros Θ R X H; inversion H; subst;
-    [ exfalso; eapply ptyp_to_uskl_syn_not_topholeg; eassumption
+    [ exfalso; eapply ptyp_to_uskl_syn_not_dot_univ_ghost; eassumption
     | eexists; split; [ reflexivity | assumption ] ].
 Qed.
 
@@ -273,7 +273,7 @@ Qed.
 (*        never a ∀, so the variable escape cannot fire) ⟹ the two ForallL *)
 (*        rows, each of which owes TASK 0's [sub_shield].                  *)
 (*    __univ_ghost_l / __univ_ghost_lg   [R] is the same ghost ⟹ NO row    *)
-(*        lemma exists; strip [pskl_tophole] with [a_sub__univ_ghost_l]    *)
+(*        lemma exists; strip [pskl_univ_ghost] with [a_sub__univ_ghost_l]    *)
 (*        and recurse.  Both preserve the FUEL, so the fuel IH cannot      *)
 (*        serve them — they are the inner induction's real work.           *)
 (*    __flex_mono                  a pure PEEL: it chases a Θ-definition on *)
@@ -816,7 +816,7 @@ Qed.
 
 (** ⭐ A2, DISCHARGED.  Whenever the counterpart is ∀-inh the row goes
     through ForallR — WHATEVER the join's last rule and whatever [P0].  So
-    the ForallL rows' [guarded_pskl P0 \/ P0 = pskl_hole] premise costs
+    the ForallL rows' [guarded_pskl P0 \/ P0 = pskl_ghost] premise costs
     nothing: the configuration it excludes is exactly the one this lemma
     covers, and a ∀-headed [P0] forces a ∀-inh counterpart through the FILL
     ([ad_refine_syn_all_inh_l_shape], §8). *)
@@ -840,15 +840,15 @@ Proof.
 Qed.
 
 (** The WLOG's TRICHOTOMY, straight off mode compatibility.  At [NM = SK]
-    every compatible [P0] is a hole or an arrow; at [NM = TY] the only
-    non-guarded, non-hole shape a compatible [P0] can take is a ∀ — and it can
-    take it only at [M = TC], because [__ti] forces the hole and [__fn] forces
+    every compatible [P0] is a ghost or an arrow; at [NM = TY] the only
+    non-guarded, non-ghost shape a compatible [P0] can take is a ∀ — and it can
+    take it only at [M = TC], because [__ti] forces the ghost and [__fn] forces
     an arrow.  That last case is exactly what §8b covers. *)
 Lemma p0_wlog_trichotomy : forall NM M P0,
   (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->
   (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
   lc_pskl P0 ->
-  guarded_pskl P0 \/ P0 = pskl_hole \/
+  guarded_pskl P0 \/ P0 = pskl_ghost \/
   (NM = a_sub_mode_ty /\ M = mode_tc /\ exists Pb, P0 = pskl_all_syn Pb).
 Proof.
   intros NM M P0 Hsk Hty Hlc; destruct NM.
@@ -881,7 +881,7 @@ Qed.
 (*                                                                        *)
 (*  [PIH] carries the P7a escape.  It is needed only where the motive's    *)
 (*  subject is a bare VARIABLE — the [__arrow] row — but the two           *)
-(*  tophole-stripping rows can EXPOSE such a subject, so the hypothesis    *)
+(*  univ_ghost-stripping rows can EXPOSE such a subject, so the hypothesis    *)
 (*  must be closed under stripping.  Instantiating [PIH] with a constant   *)
 (*  gives the general assembly; instantiating it with "is an arrow" makes  *)
 (*  all three side conditions vacuous and yields [sub_complete_arrow] —     *)
@@ -930,7 +930,7 @@ Definition sub_flex_complete (n : nat) (Θ0 : aenv) : Prop :=
                                                       judgment is OWED
 
     and restricting it is what buys the recursion: instantiated with "is an
-    arrow", the two tophole-stripping rows can never expose a bare variable,
+    arrow", the two univ_ghost-stripping rows can never expose a bare variable,
     so the third condition is vacuous, the P7a entry into [a_sub_flex] is
     unreachable, and [sub_complete_arrow] follows from the FUEL IH alone —
     which is what breaks §12's non-decreasing cycle between the two
@@ -940,8 +940,8 @@ Lemma sub_complete_assemble : forall n NM M Ψ Θ R' Q,
   ad_pat_sub_fuel n NM M Ψ Θ R' Q ->
   (forall n', n' < n -> sub_complete n') ->
   forall Θ0 (PIH : uskl -> Prop),
-    (forall R0, PIH (uskl_tophole R0) -> PIH R0) ->
-    (forall R0, PIH (uskl_topholeg R0) -> PIH R0) ->
+    (forall R0, PIH (uskl_univ_ghost R0) -> PIH R0) ->
+    (forall R0, PIH (uskl_dot_univ_ghost R0) -> PIH R0) ->
     (forall α, PIH (uskl_var_f α) -> sub_flex_complete n Θ0) ->
     forall P0 P R κ, PIH R ->
       sub_complete_concl n NM M Θ0 P0 P R R' Ψ Θ κ Q.
@@ -1088,17 +1088,17 @@ Proof.
                Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
                HwfQ Hgf).
   - (* __ghost : the row lemma takes [R'] directly *)
-    exact (@a_sub_complete_ghost n0 Ma Θ0 P0 P R uskl_hole Ψ0 Θa κ
+    exact (@a_sub_complete_ghost n0 Ma Θ0 P0 P R uskl_ghost Ψ0 Θa κ
              (pskl_to_bskl_inh Pa) eq_refl).
   - (* __ghostg *)
-    exact (@a_sub_complete_ghostg n0 Ma Θ0 P0 P R uskl_holeg Ψ0 Θa κ
-             bskl_hole eq_refl).
+    exact (@a_sub_complete_ghostg n0 Ma Θ0 P0 P R uskl_dot_ghost Ψ0 Θa κ
+             bskl_ghost eq_refl).
   - (* __univ_ghost_l : NO row lemma — strip [∀◇] and recurse (same fuel) *)
     intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
            Hgf.
-    destruct (@a_uskl_tyequiv_tophole_l_inv Θa Rg _ Hslack)
+    destruct (@a_uskl_tyequiv_univ_ghost_l_inv Θa Rg _ Hslack)
       as [X [HX Hslack0]].
-    destruct (@msubst_uskl_syn_tophole_inv κ R X HX) as [R00 [HR HmX]].
+    destruct (@msubst_uskl_syn_univ_ghost_inv κ R X HX) as [R00 [HR HmX]].
     subst R. cbn in HeqR. subst P.
     rewrite <- HmX in Hslack0.
     assert (HwfP' : {{ Θ0 ⨟ empty ⊢ₚₛ ⌊ R00 ⌋ˢ }}a)
@@ -1117,9 +1117,9 @@ Proof.
   - (* __univ_ghost_lg : ⌊∀◈ R⌋ˢ IS ∀◇⌊R⌋ˢ, so the SAME rule applies *)
     intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
            Hgf.
-    destruct (@a_uskl_tyequiv_topholeg_l_inv Θa Rg _ Hslack)
+    destruct (@a_uskl_tyequiv_dot_univ_ghost_l_inv Θa Rg _ Hslack)
       as [X [HX Hslack0]].
-    destruct (@msubst_uskl_syn_topholeg_inv κ R X HX) as [R00 [HR HmX]].
+    destruct (@msubst_uskl_syn_dot_univ_ghost_inv κ R X HX) as [R00 [HR HmX]].
     subst R. cbn in HeqR. subst P.
     rewrite <- HmX in Hslack0.
     assert (HwfP' : {{ Θ0 ⨟ empty ⊢ₚₛ ⌊ R00 ⌋ˢ }}a)
@@ -1155,7 +1155,7 @@ Qed.
 
 (** ⭐ DESIGN §12.1's LAYER (a).  Instantiating [PIH] with "is an arrow" makes
     all three escape side conditions VACUOUS: an arrow is neither a [∀◇] nor a
-    [∀◈] nor a variable, so the two tophole-stripping rows can never expose a
+    [∀◈] nor a variable, so the two univ_ghost-stripping rows can never expose a
     variable subject and the P7a entry is unreachable.  So the main half at an
     ARROW subject follows from the FUEL IH alone — no P7a, no induction on the
     context.  That is exactly what [a_sub_flex_complete_solve] needs, and it

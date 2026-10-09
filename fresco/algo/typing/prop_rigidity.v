@@ -524,7 +524,7 @@ Proof.
         [ intros Hb; inversion Hb | exact Hr2 ]. }
     eapply a_rigid_only_strip_mid_nonrigid; [ | exact Hbig ]; discriminate.
   - (* abs_check *)
-    assert (Hbig : a_rigid_only (Ξ ++ (x ~ abind_var_skl pskl_hole) ++ Θ1) γ).
+    assert (Hbig : a_rigid_only (Ξ ++ (x ~ abind_var_skl pskl_ghost) ++ Θ1) γ).
     { apply IHa_pat.
       apply a_rigid_only_cons_nonsuffix;
         [ intros Hb; inversion Hb | exact Hr ]. }

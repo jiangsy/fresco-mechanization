@@ -231,7 +231,7 @@ Qed.
     build the FN payload [arrow(P, Q)] with [P] the argument's collection at
     [(TC, ◇)], so the cex's bare-∀ DOMAIN demands a frozen argument. *)
 Corollary app_payload_domain_all_needs_freeze : forall Θ0 e2 Q0 Θ1,
-  {{ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] e2 ⦂ (pskl_all_syn Q0) ⊣ Θ1 }}a ->
+  {{ Θ0 ⊢ˢ[ mode_tc ; pskl_ghost ] e2 ⦂ (pskl_all_syn Q0) ⊣ Θ1 }}a ->
   exp_freeze_inside e2.
 Proof.
   intros Θ0 e2 Q0 Θ1 H.
@@ -252,8 +252,8 @@ Fixpoint pskl_all_free (P : pskl) : Prop :=
   | pskl_var_f _ => True
   | pskl_arrow P1 P2 => pskl_all_free P1 /\ pskl_all_free P2
   | pskl_all_syn _ => False
-  | pskl_hole => True
-  | pskl_tophole P0 => pskl_all_free P0
+  | pskl_ghost => True
+  | pskl_univ_ghost P0 => pskl_all_free P0
   end.
 
 (** [a_assign__solve_m] is the only rule that SOLVES a flexible against an
@@ -267,7 +267,7 @@ Lemma a_guess_mono_all_free : forall Θ P Ξ A,
   a_guess_mono Θ P Ξ A -> mono_ptyp A -> pskl_all_free P.
 Proof.
   intros Θ P Ξ A H; induction H; intros Hm; cbn; try exact I.
-  - (* tophole *) apply IHa_guess_mono; exact Hm.
+  - (* univ_ghost *) apply IHa_guess_mono; exact Hm.
   - (* arrow *)
     inversion Hm; subst; split;
       [ apply IHa_guess_mono1 | apply IHa_guess_mono2 ]; assumption.

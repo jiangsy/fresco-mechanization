@@ -59,13 +59,13 @@ Set Implicit Arguments.
     not a judgement with a turnstile), and a second spelling of a
     non-judgement would only make the two encodings harder to compare. *)
 Inductive e_guess_mono : supply -> pskl -> supply -> aenv -> ptyp -> Prop :=
-| e_guess_mono__hole : forall S α,                            (* □ ↦ fresh α̂ *)
+| e_guess_mono__ghost : forall S α,                            (* □ ↦ fresh α̂ *)
     α `notin` S ->
-    e_guess_mono S pskl_hole (add α S)
+    e_guess_mono S pskl_ghost (add α S)
       ((α ~ abind_flex_mono) ++ nil) (ptyp_var_f α)
-| e_guess_mono__tophole : forall S0 S1 P Ξ A,                 (* ⫯.P ↦ guess P *)
+| e_guess_mono__univ_ghost : forall S0 S1 P Ξ A,                 (* ⫯.P ↦ guess P *)
     e_guess_mono S0 P S1 Ξ A ->
-    e_guess_mono S0 (pskl_tophole P) S1 Ξ A
+    e_guess_mono S0 (pskl_univ_ghost P) S1 Ξ A
 | e_guess_mono__var : forall S α,                             (* α / α̂ ↦ (·; α) *)
     e_guess_mono S (pskl_var_f α) S nil (ptyp_var_f α)
 | e_guess_mono__unit : forall S,

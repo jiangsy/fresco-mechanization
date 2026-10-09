@@ -78,7 +78,7 @@ Proof.
   intros x. apply d_wf_denv__skl;
     [ apply d_wf_denv__nil | simpl; fsetdec | ].
   unfold capP. apply d_wf_pskl__all with (L := empty).
-  intros α Hα. simpl. apply d_wf_pskl__hole.
+  intros α Hα. simpl. apply d_wf_pskl__ghost.
 Qed.
 
 Lemma cap_wf_exp : forall x, {{ (denv_to_aenv (capΓ x)) ⊢ᵉ (exp_var_f x) }}a.

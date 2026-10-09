@@ -35,11 +35,11 @@ Set Implicit Arguments.
 
 (** ** Paint helper lemmas. *)
 
-(* A monotype's syn-painting is a tag-free [is_ttyp]. *)
-Lemma mono_paint_is_ttyp : forall A,
-    mono_ptyp A -> is_ttyp (ptyp_to_utyp_syn A).
+(* A monotype's syn-painting is a tag-free [is_dtyp]. *)
+Lemma mono_paint_is_dtyp : forall A,
+    mono_ptyp A -> is_dtyp (ptyp_to_utyp_syn A).
 Proof.
-  intros A Hmono. induction Hmono; simpl; eauto using is_ttyp.
+  intros A Hmono. induction Hmono; simpl; eauto using is_dtyp.
 Qed.
 
 Lemma mono_paint_d_tags : forall A,
@@ -126,7 +126,7 @@ Proof.
       * clear; fsetdec.
       * apply d_tags__var; reflexivity.
       * apply d_wf_utyp__var; simpl; auto.
-      * apply is_ttyp__var.
+      * apply is_dtyp__var.
       * replace (utyp_var_f α) with (ptyp_to_utyp_syn (ptyp_var_f α)) by reflexivity.
         rewrite <- ptyp_to_utyp_syn_open.
         apply d_sub_equiv with (Δ := (@empty : atoms)); [ fsetdec | ].
@@ -147,7 +147,7 @@ Qed.
     Each reference rule maps to the matching [⩽] rule: [refl] ↦
     [d_sub_refl_paint]; [forall_r] ↦ [SubForallR] ([is_ityp] from the IH via
     [d_sub_tc_is_ityp]); [forall_l] ↦ [SubForallL] (the monotype paint is a
-    tag-free [is_ttyp]). *)
+    tag-free [is_dtyp]). *)
 Theorem d_shallow_sub_complete : forall Γ A A',
     {{ Γ ⊢ A ≤ A' }}d ->
     {{ empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn A) ⩽ (ptyp_to_btyp_inh A') }}d.
@@ -173,7 +173,7 @@ Proof.
     + clear; fsetdec.
     + apply mono_paint_d_tags. assumption.
     + apply ptyp_wf_utyp_wf. assumption.
-    + apply mono_paint_is_ttyp. assumption.
+    + apply mono_paint_is_dtyp. assumption.
     + rewrite <- ptyp_to_utyp_syn_open.
       apply d_sub_equiv with (Δ := (@empty : atoms)); [ fsetdec | ].
       assumption.

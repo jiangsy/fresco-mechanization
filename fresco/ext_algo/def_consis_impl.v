@@ -227,31 +227,31 @@ Inductive e_consis_call_order : supply -> aenv -> consis_call -> Prop :=
             (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0))))) ->
     (* ForallSyn *)
     (forall P0' P1,
-       P0 = pskl_tophole P0' -> P = pskl_all_syn P1 ->
+       P0 = pskl_univ_ghost P0' -> P = pskl_all_syn P1 ->
        e_consis_call_order (add (supply_fresh S0) S0)
          ((supply_fresh S0 ~ abind_tvar) ++ Θ)
          (consis_call_consis Δ1 (add (supply_fresh S0) Δ2)
-            (pskl_tophole P0')
+            (pskl_univ_ghost P0')
             (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0))))) ->
     (* UnivGhost *)
     (forall P0' P1,
-       P0 = pskl_tophole P0' -> P = pskl_tophole P1 ->
+       P0 = pskl_univ_ghost P0' -> P = pskl_univ_ghost P1 ->
        e_consis_call_order S0 Θ (consis_call_consis Δ1 Δ2 P0' P1)) ->
     (* UnivGhost1 *)
     (forall P0' P1,
-       P0 = pskl_all_syn P0' -> P = pskl_tophole P1 ->
+       P0 = pskl_all_syn P0' -> P = pskl_univ_ghost P1 ->
        e_consis_call_order (add (supply_fresh S0) S0)
          ((supply_fresh S0 ~ abind_tvar) ++ Θ)
          (consis_call_consis (add (supply_fresh S0) Δ1) Δ2
             (open_pskl_wrt_pskl P0' (pskl_var_f (supply_fresh S0)))
-            (pskl_tophole P1))) ->
+            (pskl_univ_ghost P1))) ->
     (* UnivGhost2 — strip the subject's ⫯ against a guarded pattern *)
     (forall P1,
-       P = pskl_tophole P1 ->
+       P = pskl_univ_ghost P1 ->
        e_consis_call_order S0 Θ (consis_call_consis Δ1 Δ2 P0 P1)) ->
     (* UnivGhostR — strip the pattern's ⫯ *)
     (forall P0',
-       P0 = pskl_tophole P0' ->
+       P0 = pskl_univ_ghost P0' ->
        e_consis_call_order S0 Θ (consis_call_consis Δ1 Δ2 P0' P)) ->
     (* Flex — both sides the same flexible, pattern a variable *)
     (forall α β,
@@ -412,11 +412,11 @@ with e_consis_order_to_call Δ1 Δ2 S0 Θ P0 P
                     assert (Hx := Hlc); apply lc_pskl_arrow_inv in Hx;
                     destruct Hx
              end
-         | Hlc : lc_pskl (pskl_tophole ?a) |- _ =>
+         | Hlc : lc_pskl (pskl_univ_ghost ?a) |- _ =>
              lazymatch goal with
              | _ : lc_pskl a |- _ => fail
              | _ => let Hx := fresh "Hlc0" in
-                    assert (Hx := Hlc); apply lc_pskl_tophole_inv in Hx
+                    assert (Hx := Hlc); apply lc_pskl_univ_ghost_inv in Hx
              end
          end.
 
@@ -491,7 +491,7 @@ Equations e_consis_call_impl (c : consis_call) (S0 : supply) (Θ : aenv)
                                   ((β0, abind_flex_mono) :: Θ0)
                                   (consis_call_assign Ξ α P)))
             with
-            | pskl_tophole (pskl_var_f γ) => fun EP =>
+            | pskl_univ_ghost (pskl_var_f γ) => fun EP =>
                 match γ == α with
                 | left _ =>                        (* Assign-UnivGhost-Id *)
                     Some (exist _ (mk_consis_result S0
@@ -748,15 +748,15 @@ Equations e_consis_call_impl (c : consis_call) (S0 : supply) (Θ : aenv)
    matches (the §8c.4 leaf-explosion trap: as clause patterns the
    catch-all rows expand per constructor pair and the derivation proves
    one equation per LEAF).  The arm order is the original clause list's
-   first-match order, [join_sk] type.ml:143-262: the hole rows first,
+   first-match order, [join_sk] type.ml:143-262: the ghost rows first,
    then per-(P0,P) pair with the flexible-variable fallbacks. *)
 | consis_call_consis Δ1 Δ2 P0 P, S0, Θ, Hlc, HD, H =>
   match P0 as P01 return P0 = P01
       -> option (sig (consis_call_spec S0 Θ
                         (consis_call_consis Δ1 Δ2 P0 P)))
   with
-  (* U-GhostR — a hole pattern answers the subject *)
-  | pskl_hole => fun EP0 =>
+  (* U-GhostR — a ghost pattern answers the subject *)
+  | pskl_ghost => fun EP0 =>
       match sumbool_of_bool (is_empty (inter Δ1 (ftvar_in_pskl P))) with
       | left _ => Some (exist _ (mk_consis_result S0 Θ P) _)
       | right _ => None
@@ -766,8 +766,8 @@ Equations e_consis_call_impl (c : consis_call) (S0 : supply) (Θ : aenv)
           -> option (sig (consis_call_spec S0 Θ
                             (consis_call_consis Δ1 Δ2 P0 P)))
       with
-      (* U-Ghost — a hole subject answers the pattern *)
-      | pskl_hole => fun EP =>
+      (* U-Ghost — a ghost subject answers the pattern *)
+      | pskl_ghost => fun EP =>
           match sumbool_of_bool (is_empty (inter Δ2 (ftvar_in_pskl P0)))
           with
           | left _ => Some (exist _ (mk_consis_result S0 Θ P0) _)
@@ -791,7 +791,7 @@ Equations e_consis_call_impl (c : consis_call) (S0 : supply) (Θ : aenv)
           | right _ => None
           end
       (* U-UnivGhost2 — strip the subject's ⫯ *)
-      | pskl_tophole P1 => fun EP =>
+      | pskl_univ_ghost P1 => fun EP =>
           match e_consis_call_impl
                   (consis_call_consis Δ1 Δ2 pskl_unit P1) S0 Θ _ _ _ with
           | None => None
@@ -805,7 +805,7 @@ Equations e_consis_call_impl (c : consis_call) (S0 : supply) (Θ : aenv)
                             (consis_call_consis Δ1 Δ2 P0 P)))
       with
       (* U-Ghost *)
-      | pskl_hole => fun EP =>
+      | pskl_ghost => fun EP =>
           match sumbool_of_bool (is_empty (inter Δ2 (ftvar_in_pskl P0)))
           with
           | left _ => Some (exist _ (mk_consis_result S0 Θ P0) _)
@@ -869,11 +869,11 @@ Equations e_consis_call_impl (c : consis_call) (S0 : supply) (Θ : aenv)
           end
       (* flexible-variable pattern against a non-variable subject —
          U-FlexR, with the ⫯-strip U-UnivGhost2 as the rigid fallback *)
-      | pskl_tophole P1 => fun EP =>
+      | pskl_univ_ghost P1 => fun EP =>
           match sumbool_of_bool (flex_bound_ck Θ β0) with
           | left _ =>                                      (* U-FlexR *)
               match e_consis_call_impl
-                      (consis_call_assign nil β0 (pskl_tophole P1))
+                      (consis_call_assign nil β0 (pskl_univ_ghost P1))
                       S0 Θ _ _ _ with
               | None => None
               | Some (exist _ r Hr) =>
@@ -935,7 +935,7 @@ Equations e_consis_call_impl (c : consis_call) (S0 : supply) (Θ : aenv)
                             (consis_call_consis Δ1 Δ2 P0 P)))
       with
       (* U-Ghost *)
-      | pskl_hole => fun EP =>
+      | pskl_ghost => fun EP =>
           match sumbool_of_bool (is_empty (inter Δ2 (ftvar_in_pskl P0)))
           with
           | left _ => Some (exist _ (mk_consis_result S0 Θ P0) _)
@@ -971,7 +971,7 @@ Equations e_consis_call_impl (c : consis_call) (S0 : supply) (Θ : aenv)
               end
           end
       (* U-UnivGhost2 *)
-      | pskl_tophole P1 => fun EP =>
+      | pskl_univ_ghost P1 => fun EP =>
           match e_consis_call_impl
                   (consis_call_consis Δ1 Δ2 (pskl_arrow P0a P0b) P1)
                   S0 Θ _ _ _ with
@@ -986,7 +986,7 @@ Equations e_consis_call_impl (c : consis_call) (S0 : supply) (Θ : aenv)
                             (consis_call_consis Δ1 Δ2 P0 P)))
       with
       (* U-Ghost *)
-      | pskl_hole => fun EP =>
+      | pskl_ghost => fun EP =>
           match sumbool_of_bool (is_empty (inter Δ2 (ftvar_in_pskl P0)))
           with
           | left _ => Some (exist _ (mk_consis_result S0 Θ P0) _)
@@ -1027,11 +1027,11 @@ Equations e_consis_call_impl (c : consis_call) (S0 : supply) (Θ : aenv)
               end
           end
       (* U-UnivGhost1 *)
-      | pskl_tophole P1 => fun EP =>
+      | pskl_univ_ghost P1 => fun EP =>
           match e_consis_call_impl
                   (consis_call_consis (add (supply_fresh S0) Δ1) Δ2
                      (open_pskl_wrt_pskl P0' (pskl_var_f (supply_fresh S0)))
-                     (pskl_tophole P1))
+                     (pskl_univ_ghost P1))
                   (add (supply_fresh S0) S0)
                   ((supply_fresh S0 ~ abind_tvar) ++ Θ) _ _ _ with
           | None => None
@@ -1047,13 +1047,13 @@ Equations e_consis_call_impl (c : consis_call) (S0 : supply) (Θ : aenv)
           end
       | _ => fun _ => None
       end eq_refl
-  | pskl_tophole P0' => fun EP0 =>
+  | pskl_univ_ghost P0' => fun EP0 =>
       match P as P1 return P = P1
           -> option (sig (consis_call_spec S0 Θ
                             (consis_call_consis Δ1 Δ2 P0 P)))
       with
       (* U-Ghost *)
-      | pskl_hole => fun EP =>
+      | pskl_ghost => fun EP =>
           match sumbool_of_bool (is_empty (inter Δ2 (ftvar_in_pskl P0)))
           with
           | left _ => Some (exist _ (mk_consis_result S0 Θ P0) _)
@@ -1065,7 +1065,7 @@ Equations e_consis_call_impl (c : consis_call) (S0 : supply) (Θ : aenv)
           match sumbool_of_bool (flex_bound_ck Θ α0) with
           | left _ =>                                      (* U-FlexL *)
               match e_consis_call_impl
-                      (consis_call_assign nil α0 (pskl_tophole P0'))
+                      (consis_call_assign nil α0 (pskl_univ_ghost P0'))
                       S0 Θ _ _ _ with
               | None => None
               | Some (exist _ r Hr) =>
@@ -1081,19 +1081,19 @@ Equations e_consis_call_impl (c : consis_call) (S0 : supply) (Θ : aenv)
               end
           end
       (* U-UnivGhost *)
-      | pskl_tophole P1 => fun EP =>
+      | pskl_univ_ghost P1 => fun EP =>
           match e_consis_call_impl (consis_call_consis Δ1 Δ2 P0' P1)
                   S0 Θ _ _ _ with
           | None => None
           | Some (exist _ r Hr) =>
               Some (exist _ (mk_consis_result (cs_supply r) (cs_ctx r)
-                      (pskl_tophole (cs_out r))) _)
+                      (pskl_univ_ghost (cs_out r))) _)
           end
       (* U-ForallSyn *)
       | pskl_all_syn P1 => fun EP =>
           match e_consis_call_impl
                   (consis_call_consis Δ1 (add (supply_fresh S0) Δ2)
-                     (pskl_tophole P0')
+                     (pskl_univ_ghost P0')
                      (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0))))
                   (add (supply_fresh S0) S0)
                   ((supply_fresh S0 ~ abind_tvar) ++ Θ) _ _ _ with
@@ -1130,8 +1130,8 @@ Equations e_consis_call_impl (c : consis_call) (S0 : supply) (Θ : aenv)
           -> option (sig (consis_call_spec S0 Θ
                             (consis_call_consis Δ1 Δ2 P0 P)))
       with
-      (* U-Ghost — a hole subject answers ANY pattern *)
-      | pskl_hole => fun EP =>
+      (* U-Ghost — a ghost subject answers ANY pattern *)
+      | pskl_ghost => fun EP =>
           match sumbool_of_bool (is_empty (inter Δ2 (ftvar_in_pskl P0)))
           with
           | left _ => Some (exist _ (mk_consis_result S0 Θ P0) _)

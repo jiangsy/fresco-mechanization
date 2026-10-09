@@ -84,7 +84,7 @@ Set Implicit Arguments.
 (*  user-facing modes — INFERENCE, whose input is the ghost [□], and      *)
 (*  CHECKING, whose input is a closed type [⌈A0⌉] — so each flagship      *)
 (*  splits into two, and three premises go with the split: [{{ ⊢ · }}a]  *)
-(*  is a constructor, [{{ · ⨟ ∅ ⊢ₚₛ P0 }}a] is [a_wf_pskl__hole] resp. the *)
+(*  is a constructor, [{{ · ⨟ ∅ ⊢ₚₛ P0 }}a] is [a_wf_pskl__ghost] resp. the *)
 (*  annotation's own wf, and [a_ty_mode_compat] is read off the shape.    *)
 (*                                                                        *)
 (*  ⭐ COMPLETENESS needs NO condition on the term at all.  Since          *)
@@ -142,15 +142,15 @@ Qed.
     the general statement's existential [Bt] is [syn{A}] and disappears. *)
 Corollary a_typing_sound_infer : forall e A Θ1,
   {{ nil ⊢ᵉ e }}a ->
-  {{ nil ⊢[ mode_ti ; pskl_hole ] e ⦂ A ⊣ Θ1 }}a ->
+  {{ nil ⊢[ mode_ti ; pskl_ghost ] e ⦂ A ⊣ Θ1 }}a ->
   nil ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\ a_wf_ptyp Θ1 A /\
-  ({{ Θ1 ⨟ empty ⊢ᵣ bskl_hole ⊳ (btyp_to_bskl (ptyp_to_btyp_syn A)) }}ad) /\
+  ({{ Θ1 ⨟ empty ⊢ᵣ bskl_ghost ⊳ (btyp_to_bskl (ptyp_to_btyp_syn A)) }}ad) /\
   exists ζ, ζ ∷ Θ1 ⊑ nil /\
     ({{ nil ⊢ˢᵈ[ mode_ti ] e ⦂ (ptyp_to_btyp_syn (msubst_ptyp ζ A)) }}d) /\
     ({{ nil ⊢[ mode_ti ] e ⦂ (ptyp_to_btyp_syn (msubst_ptyp ζ A)) }}d).
 Proof.
   intros e A Θ1 Hexp Hrun.
-  destruct (a_typing_sound_nil Hexp (a_wf_pskl__hole _ _)
+  destruct (a_typing_sound_nil Hexp (a_wf_pskl__ghost _ _)
               a_ty_mode_compat__ti Hrun)
     as [Hisub [Hwf1 [HwfA [Bt [HBt [Hmc [Href [ζ [Hinc [Hmo [Hsd Hty]]]]]]]]]]].
   (* at [TI] the answer is a SYNTHESISED painting, so [Bt = syn{A}] *)
@@ -230,18 +230,18 @@ Qed.
 Corollary a_typing_complete_infer : forall e (B : btyp),
   {{ nil ⊢ˢᵈ[ mode_ti ] e ⦂ B }}ad ->
   exists A1 Θ1,
-    {{ nil ⊢[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 }}a /\
+    {{ nil ⊢[ mode_ti ; pskl_ghost ] e ⦂ A1 ⊣ Θ1 }}a /\
     exists ζ, ζ ∷ Θ1 ⊑ nil /\ {{ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B) }}a.
 Proof.
   intros e B Hd.
   eapply a_typing_complete_nil;
-    [ apply a_wf_pskl__hole | apply a_ty_mode_compat__ti | exact Hd | ].
+    [ apply a_wf_pskl__ghost | apply a_ty_mode_compat__ti | exact Hd | ].
   (* the ghost refines into ANY synthesised painting avoiding the empty Δ *)
   assert (HB : B = ptyp_to_btyp_syn (btyp_to_ptyp B)).
   { apply btyp_syn_colouring_inv. apply mod_comp_ty_ti_inv.
     eapply ad_sd_typing_mod_comp_ty; [ exact Hd | apply a_wf_aenv__nil ]. }
   rewrite HB, btyp_to_bskl_ptyp_to_btyp_syn. cbn [pskl_to_bskl_inh].
-  apply ad_refine_syn__hole. clear. fsetdec.
+  apply ad_refine_syn__ghost. clear. fsetdec.
 Qed.
 
 (** ⭐ Completeness + optimality at a closed program, CHECKING mode.  ⭐ The
@@ -305,7 +305,7 @@ Corollary a_typing_complete_sd_infer : forall e (B : btyp),
   {{ nil ⊢ᵉ e }}a ->
   {{ nil ⊢ˢᵈ[ mode_ti ] e ⦂ B }}d ->
   exists A1 Θ1,
-    {{ nil ⊢[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 }}a /\
+    {{ nil ⊢[ mode_ti ; pskl_ghost ] e ⦂ A1 ⊣ Θ1 }}a /\
     exists ζ, ζ ∷ Θ1 ⊑ nil /\ {{ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B) }}a.
 Proof.
   intros e B Hwfe Hd.
@@ -331,7 +331,7 @@ Corollary a_typing_complete_decl_infer : forall e (B : btyp),
   {{ nil ⊢ᵉ e }}a ->
   {{ nil ⊢[ mode_ti ] e ⦂ B }}d ->
   exists A1 Θ1,
-    {{ nil ⊢[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 }}a /\
+    {{ nil ⊢[ mode_ti ; pskl_ghost ] e ⦂ A1 ⊣ Θ1 }}a /\
     exists ζ, ζ ∷ Θ1 ⊑ nil /\ {{ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B) }}a.
 Proof.
   intros e B Hwfe Hd.

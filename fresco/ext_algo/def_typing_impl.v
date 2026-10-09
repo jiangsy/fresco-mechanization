@@ -138,7 +138,7 @@ Inductive e_typing_order : supply -> mode -> aenv -> pskl -> exp -> Prop :=
        e_typing_order S0 mode_tc Θ0 (ptyp_to_pskl A) e1) ->
     (* AT-Freeze *)
     (forall e1, e = exp_freeze e1 ->
-       e_typing_order S0 mode_ti Θ0 pskl_hole e1) ->
+       e_typing_order S0 mode_ti Θ0 pskl_ghost e1) ->
     (* AT-Abs — behind the split and the guess *)
     (forall e1, e = exp_abs e1 ->
        forall S1 Θ1 P Q, {{ S0 ↝ S1 ⊨ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}e ->
@@ -182,14 +182,14 @@ Inductive e_typing_order : supply -> mode -> aenv -> pskl -> exp -> Prop :=
          (open_exp_wrt_exp e1 (exp_var_f (supply_fresh S2)))) ->
     (* AT-App — argument's skeleton, function, argument's type *)
     (forall e1 e2, e = exp_app e1 e2 ->
-       e_pat_order S0 mode_tc Θ0 pskl_hole e2) ->
+       e_pat_order S0 mode_tc Θ0 pskl_ghost e2) ->
     (forall e1 e2, e = exp_app e1 e2 ->
        forall S1 Θ1 P,
-         {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] e2 ⦂ P ⊣ Θ1 }}e ->
+         {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_tc ; pskl_ghost ] e2 ⦂ P ⊣ Θ1 }}e ->
        e_typing_order S1 (mode_fn m) Θ1 (pskl_arrow P P0) e1) ->
     (forall e1 e2, e = exp_app e1 e2 ->
        forall S1 Θ1 P,
-         {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] e2 ⦂ P ⊣ Θ1 }}e ->
+         {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_tc ; pskl_ghost ] e2 ⦂ P ⊣ Θ1 }}e ->
        forall S2 Θ2 A B,
          {{ S1 ↝ S2 ⊨ Θ1 ⊢[ (mode_fn m) ; (pskl_arrow P P0) ] e1
             ⦂ (ptyp_arrow A B) ⊣ Θ2 }}e ->
@@ -392,7 +392,7 @@ Equations e_typing_impl (S0 : supply) (m : mode) (Θ0 : aenv) (P0 : pskl)
     match pskl_readback P0 with
     | None => None
     | Some (exist _ A HA) =>
-        match e_typing_impl S0 mode_ti Θ0 pskl_hole e1 _ with
+        match e_typing_impl S0 mode_ti Θ0 pskl_ghost e1 _ with
         | None => None
         | Some (exist _ r1 Hr1) =>
             match sumbool_of_bool (degree_ptyp_ck 0 (ty_out r1)
@@ -766,7 +766,7 @@ Equations e_typing_impl (S0 : supply) (m : mode) (Θ0 : aenv) (P0 : pskl)
 
 (* AT-App *)
 | S0, m, Θ0, P0, exp_app e1 e2, H =>
-    match e_pat_impl S0 mode_tc Θ0 pskl_hole e2 _ with
+    match e_pat_impl S0 mode_tc Θ0 pskl_ghost e2 _ with
     | None => None
     | Some (exist _ r2 Hr2) =>
         match e_typing_impl (pt_supply r2) (mode_fn m) (pt_ctx r2)

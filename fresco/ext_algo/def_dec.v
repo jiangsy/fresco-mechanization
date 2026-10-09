@@ -247,8 +247,8 @@ Fixpoint ghost_free_ck (P : pskl) : bool :=
   | pskl_var_f _ => true
   | pskl_arrow P1 P2 => ghost_free_ck P1 && ghost_free_ck P2
   | pskl_all_syn P0 => ghost_free_ck P0
-  | pskl_hole => false
-  | pskl_tophole _ => false
+  | pskl_ghost => false
+  | pskl_univ_ghost _ => false
   end.
 
 Lemma ghost_free_ck_sound : forall P,
@@ -348,10 +348,10 @@ Proof.
     apply (a_suffix__cons x); auto using a_suffix_binding.
 Qed.
 
-Definition hole_ck (P : pskl) : bool :=
-  match P with pskl_hole => true | _ => false end.
+Definition ghost_ck (P : pskl) : bool :=
+  match P with pskl_ghost => true | _ => false end.
 
-Lemma hole_ck_sound : forall P, hole_ck P = true -> P = pskl_hole.
+Lemma ghost_ck_sound : forall P, ghost_ck P = true -> P = pskl_ghost.
 Proof. intros P Hck; destruct P; simpl in Hck; congruence. Qed.
 
 (** Structural equality — the ForallR runner checks its premise's output
@@ -363,8 +363,8 @@ Fixpoint pskl_eqb (P Q : pskl) : bool :=
   | pskl_var_f α, pskl_var_f β => if α == β then true else false
   | pskl_arrow P1 P2, pskl_arrow Q1 Q2 => pskl_eqb P1 Q1 && pskl_eqb P2 Q2
   | pskl_all_syn P1, pskl_all_syn Q1 => pskl_eqb P1 Q1
-  | pskl_hole, pskl_hole => true
-  | pskl_tophole P1, pskl_tophole Q1 => pskl_eqb P1 Q1
+  | pskl_ghost, pskl_ghost => true
+  | pskl_univ_ghost P1, pskl_univ_ghost Q1 => pskl_eqb P1 Q1
   | _, _ => false
   end.
 
@@ -484,8 +484,8 @@ Fixpoint wf_pskl_ck (n : nat) (Θ : aenv) (Δ : atoms) (P : pskl)
           let β := supply_fresh (dom Θ `union` Δ `union` ftvar_in_pskl P1) in
           wf_pskl_ck n' ((β ~ abind_tvar) ++ Θ) (add β Δ)
                      (open_pskl_wrt_pskl P1 (pskl_var_f β))
-      | pskl_hole => true
-      | pskl_tophole P1 =>
+      | pskl_ghost => true
+      | pskl_univ_ghost P1 =>
           guarded_shape_ck P1 && wf_pskl_ck n' (aenv_minus Θ Δ) empty P1
       end
   end.
@@ -506,10 +506,10 @@ Proof.
                       (dom Θ `union` Δ `union` ftvar_in_pskl P)) as Hfr;
         clear - Hfr; fsetdec
       | apply IH; exact Hck ].
-  - apply a_wf_pskl__hole.
+  - apply a_wf_pskl__ghost.
   - apply andb_prop in Hck; destruct Hck as [Hg Hw].
     pose proof (IH _ _ _ Hw) as Hwf.
-    apply a_wf_pskl__tophole;
+    apply a_wf_pskl__univ_ghost;
       [ apply guarded_shape_ck_sound;
         [ exact Hg | eapply a_wf_pskl_lc; exact Hwf ]
       | exact Hwf ].

@@ -41,10 +41,10 @@ Inductive uskl : Set :=
  | uskl_arrow (R1:uskl) (R2:uskl)
  | uskl_all_syn (R:uskl)
  | uskl_all_tag (ε:εvar) (R:uskl)
- | uskl_hole : uskl
- | uskl_tophole (R:uskl)
- | uskl_holeg : uskl
- | uskl_topholeg (R:uskl).
+ | uskl_ghost : uskl
+ | uskl_univ_ghost (R:uskl)
+ | uskl_dot_ghost : uskl
+ | uskl_dot_univ_ghost (R:uskl).
 
 Inductive bskl : Set := 
  | bskl_unit : bskl
@@ -53,8 +53,8 @@ Inductive bskl : Set :=
  | bskl_arrow (Q1:bskl) (Q2:bskl)
  | bskl_all_syn (Q:bskl)
  | bskl_all_inh (Q:bskl)
- | bskl_hole : bskl
- | bskl_tophole (Q:bskl).
+ | bskl_ghost : bskl
+ | bskl_univ_ghost (Q:bskl).
 
 Inductive pskl : Set := 
  | pskl_unit : pskl
@@ -62,8 +62,8 @@ Inductive pskl : Set :=
  | pskl_var_f (α:psklvar)
  | pskl_arrow (P1:pskl) (P2:pskl)
  | pskl_all_syn (P1:pskl)
- | pskl_hole : pskl
- | pskl_tophole (P:pskl).
+ | pskl_ghost : pskl
+ | pskl_univ_ghost (P:pskl).
 
 Inductive utyp : Set := 
  | utyp_unit : utyp
@@ -143,10 +143,10 @@ Fixpoint open_uskl_wrt_uskl_rec (k:nat) (R_5:uskl) (R__6:uskl) {struct R__6}: us
   | (uskl_arrow R1 R2) => uskl_arrow (open_uskl_wrt_uskl_rec k R_5 R1) (open_uskl_wrt_uskl_rec k R_5 R2)
   | (uskl_all_syn R) => uskl_all_syn (open_uskl_wrt_uskl_rec (S k) R_5 R)
   | (uskl_all_tag ε R) => uskl_all_tag ε (open_uskl_wrt_uskl_rec (S k) R_5 R)
-  | uskl_hole => uskl_hole 
-  | (uskl_tophole R) => uskl_tophole (open_uskl_wrt_uskl_rec k R_5 R)
-  | uskl_holeg => uskl_holeg 
-  | (uskl_topholeg R) => uskl_topholeg (open_uskl_wrt_uskl_rec k R_5 R)
+  | uskl_ghost => uskl_ghost 
+  | (uskl_univ_ghost R) => uskl_univ_ghost (open_uskl_wrt_uskl_rec k R_5 R)
+  | uskl_dot_ghost => uskl_dot_ghost 
+  | (uskl_dot_univ_ghost R) => uskl_dot_univ_ghost (open_uskl_wrt_uskl_rec k R_5 R)
 end.
 
 Fixpoint open_bskl_wrt_bskl_rec (k:nat) (Q_5:bskl) (Q__6:bskl) {struct Q__6}: bskl :=
@@ -162,8 +162,8 @@ Fixpoint open_bskl_wrt_bskl_rec (k:nat) (Q_5:bskl) (Q__6:bskl) {struct Q__6}: bs
   | (bskl_arrow Q1 Q2) => bskl_arrow (open_bskl_wrt_bskl_rec k Q_5 Q1) (open_bskl_wrt_bskl_rec k Q_5 Q2)
   | (bskl_all_syn Q) => bskl_all_syn (open_bskl_wrt_bskl_rec (S k) Q_5 Q)
   | (bskl_all_inh Q) => bskl_all_inh (open_bskl_wrt_bskl_rec (S k) Q_5 Q)
-  | bskl_hole => bskl_hole 
-  | (bskl_tophole Q) => bskl_tophole (open_bskl_wrt_bskl_rec k Q_5 Q)
+  | bskl_ghost => bskl_ghost 
+  | (bskl_univ_ghost Q) => bskl_univ_ghost (open_bskl_wrt_bskl_rec k Q_5 Q)
 end.
 
 Fixpoint open_pskl_wrt_pskl_rec (k:nat) (P_5:pskl) (P__6:pskl) {struct P__6}: pskl :=
@@ -178,8 +178,8 @@ Fixpoint open_pskl_wrt_pskl_rec (k:nat) (P_5:pskl) (P__6:pskl) {struct P__6}: ps
   | (pskl_var_f α) => pskl_var_f α
   | (pskl_arrow P1 P2) => pskl_arrow (open_pskl_wrt_pskl_rec k P_5 P1) (open_pskl_wrt_pskl_rec k P_5 P2)
   | (pskl_all_syn P1) => pskl_all_syn (open_pskl_wrt_pskl_rec (S k) P_5 P1)
-  | pskl_hole => pskl_hole 
-  | (pskl_tophole P) => pskl_tophole (open_pskl_wrt_pskl_rec k P_5 P)
+  | pskl_ghost => pskl_ghost 
+  | (pskl_univ_ghost P) => pskl_univ_ghost (open_pskl_wrt_pskl_rec k P_5 P)
 end.
 
 Fixpoint open_utyp_wrt_utyp_rec (k:nat) (C_5:utyp) (C__6:utyp) {struct C__6}: utyp :=
@@ -286,16 +286,16 @@ Inductive lc_uskl : uskl -> Prop :=    (* defn lc_uskl *)
  | lc_uskl_all_tag : forall (ε:εvar) (R:uskl),
       ( forall α , lc_uskl  ( open_uskl_wrt_uskl R (uskl_var_f α) )  )  ->
      (lc_uskl (uskl_all_tag ε R))
- | lc_uskl_hole : 
-     (lc_uskl uskl_hole)
- | lc_uskl_tophole : forall (R:uskl),
+ | lc_uskl_ghost : 
+     (lc_uskl uskl_ghost)
+ | lc_uskl_univ_ghost : forall (R:uskl),
      (lc_uskl R) ->
-     (lc_uskl (uskl_tophole R))
- | lc_uskl_holeg : 
-     (lc_uskl uskl_holeg)
- | lc_uskl_topholeg : forall (R:uskl),
+     (lc_uskl (uskl_univ_ghost R))
+ | lc_uskl_dot_ghost : 
+     (lc_uskl uskl_dot_ghost)
+ | lc_uskl_dot_univ_ghost : forall (R:uskl),
      (lc_uskl R) ->
-     (lc_uskl (uskl_topholeg R)).
+     (lc_uskl (uskl_dot_univ_ghost R)).
 
 (* defns LC_bskl *)
 Inductive lc_bskl : bskl -> Prop :=    (* defn lc_bskl *)
@@ -313,11 +313,11 @@ Inductive lc_bskl : bskl -> Prop :=    (* defn lc_bskl *)
  | lc_bskl_all_inh : forall (Q:bskl),
       ( forall α , lc_bskl  ( open_bskl_wrt_bskl Q (bskl_var_f α) )  )  ->
      (lc_bskl (bskl_all_inh Q))
- | lc_bskl_hole : 
-     (lc_bskl bskl_hole)
- | lc_bskl_tophole : forall (Q:bskl),
+ | lc_bskl_ghost : 
+     (lc_bskl bskl_ghost)
+ | lc_bskl_univ_ghost : forall (Q:bskl),
      (lc_bskl Q) ->
-     (lc_bskl (bskl_tophole Q)).
+     (lc_bskl (bskl_univ_ghost Q)).
 
 (* defns LC_pskl *)
 Inductive lc_pskl : pskl -> Prop :=    (* defn lc_pskl *)
@@ -332,11 +332,11 @@ Inductive lc_pskl : pskl -> Prop :=    (* defn lc_pskl *)
  | lc_pskl_all_syn : forall (P1:pskl),
       ( forall α , lc_pskl  ( open_pskl_wrt_pskl P1 (pskl_var_f α) )  )  ->
      (lc_pskl (pskl_all_syn P1))
- | lc_pskl_hole : 
-     (lc_pskl pskl_hole)
- | lc_pskl_tophole : forall (P:pskl),
+ | lc_pskl_ghost : 
+     (lc_pskl pskl_ghost)
+ | lc_pskl_univ_ghost : forall (P:pskl),
      (lc_pskl P) ->
-     (lc_pskl (pskl_tophole P)).
+     (lc_pskl (pskl_univ_ghost P)).
 
 (* defns LC_utyp *)
 Inductive lc_utyp : utyp -> Prop :=    (* defn lc_utyp *)
@@ -401,10 +401,10 @@ Fixpoint ftvar_in_uskl (R_5:uskl) : vars :=
   | (uskl_arrow R1 R2) => (ftvar_in_uskl R1) \u (ftvar_in_uskl R2)
   | (uskl_all_syn R) => (ftvar_in_uskl R)
   | (uskl_all_tag ε R) => (ftvar_in_uskl R)
-  | uskl_hole => {}
-  | (uskl_tophole R) => (ftvar_in_uskl R)
-  | uskl_holeg => {}
-  | (uskl_topholeg R) => (ftvar_in_uskl R)
+  | uskl_ghost => {}
+  | (uskl_univ_ghost R) => (ftvar_in_uskl R)
+  | uskl_dot_ghost => {}
+  | (uskl_dot_univ_ghost R) => (ftvar_in_uskl R)
 end.
 
 Fixpoint ftvar_in_bskl (Q_5:bskl) : vars :=
@@ -415,8 +415,8 @@ Fixpoint ftvar_in_bskl (Q_5:bskl) : vars :=
   | (bskl_arrow Q1 Q2) => (ftvar_in_bskl Q1) \u (ftvar_in_bskl Q2)
   | (bskl_all_syn Q) => (ftvar_in_bskl Q)
   | (bskl_all_inh Q) => (ftvar_in_bskl Q)
-  | bskl_hole => {}
-  | (bskl_tophole Q) => (ftvar_in_bskl Q)
+  | bskl_ghost => {}
+  | (bskl_univ_ghost Q) => (ftvar_in_bskl Q)
 end.
 
 Fixpoint ftvar_in_pskl (P_5:pskl) : vars :=
@@ -426,8 +426,8 @@ Fixpoint ftvar_in_pskl (P_5:pskl) : vars :=
   | (pskl_var_f α) => {{α}}
   | (pskl_arrow P1 P2) => (ftvar_in_pskl P1) \u (ftvar_in_pskl P2)
   | (pskl_all_syn P1) => (ftvar_in_pskl P1)
-  | pskl_hole => {}
-  | (pskl_tophole P) => (ftvar_in_pskl P)
+  | pskl_ghost => {}
+  | (pskl_univ_ghost P) => (ftvar_in_pskl P)
 end.
 
 Fixpoint ftvar_in_utyp (C_5:utyp) : vars :=
@@ -492,10 +492,10 @@ Fixpoint subst_uskl_in_uskl (R_5:uskl) (α5:usklvar) (R__6:uskl) {struct R__6} :
   | (uskl_arrow R1 R2) => uskl_arrow (subst_uskl_in_uskl R_5 α5 R1) (subst_uskl_in_uskl R_5 α5 R2)
   | (uskl_all_syn R) => uskl_all_syn (subst_uskl_in_uskl R_5 α5 R)
   | (uskl_all_tag ε R) => uskl_all_tag ε (subst_uskl_in_uskl R_5 α5 R)
-  | uskl_hole => uskl_hole 
-  | (uskl_tophole R) => uskl_tophole (subst_uskl_in_uskl R_5 α5 R)
-  | uskl_holeg => uskl_holeg 
-  | (uskl_topholeg R) => uskl_topholeg (subst_uskl_in_uskl R_5 α5 R)
+  | uskl_ghost => uskl_ghost 
+  | (uskl_univ_ghost R) => uskl_univ_ghost (subst_uskl_in_uskl R_5 α5 R)
+  | uskl_dot_ghost => uskl_dot_ghost 
+  | (uskl_dot_univ_ghost R) => uskl_dot_univ_ghost (subst_uskl_in_uskl R_5 α5 R)
 end.
 
 Fixpoint subst_bskl_in_bskl (Q_5:bskl) (α5:bsklvar) (Q__6:bskl) {struct Q__6} : bskl :=
@@ -506,8 +506,8 @@ Fixpoint subst_bskl_in_bskl (Q_5:bskl) (α5:bsklvar) (Q__6:bskl) {struct Q__6} :
   | (bskl_arrow Q1 Q2) => bskl_arrow (subst_bskl_in_bskl Q_5 α5 Q1) (subst_bskl_in_bskl Q_5 α5 Q2)
   | (bskl_all_syn Q) => bskl_all_syn (subst_bskl_in_bskl Q_5 α5 Q)
   | (bskl_all_inh Q) => bskl_all_inh (subst_bskl_in_bskl Q_5 α5 Q)
-  | bskl_hole => bskl_hole 
-  | (bskl_tophole Q) => bskl_tophole (subst_bskl_in_bskl Q_5 α5 Q)
+  | bskl_ghost => bskl_ghost 
+  | (bskl_univ_ghost Q) => bskl_univ_ghost (subst_bskl_in_bskl Q_5 α5 Q)
 end.
 
 Fixpoint subst_pskl_in_pskl (P_5:pskl) (α5:psklvar) (P__6:pskl) {struct P__6} : pskl :=
@@ -517,8 +517,8 @@ Fixpoint subst_pskl_in_pskl (P_5:pskl) (α5:psklvar) (P__6:pskl) {struct P__6} :
   | (pskl_var_f α) => (if eq_var α α5 then P_5 else (pskl_var_f α))
   | (pskl_arrow P1 P2) => pskl_arrow (subst_pskl_in_pskl P_5 α5 P1) (subst_pskl_in_pskl P_5 α5 P2)
   | (pskl_all_syn P1) => pskl_all_syn (subst_pskl_in_pskl P_5 α5 P1)
-  | pskl_hole => pskl_hole 
-  | (pskl_tophole P) => pskl_tophole (subst_pskl_in_pskl P_5 α5 P)
+  | pskl_ghost => pskl_ghost 
+  | (pskl_univ_ghost P) => pskl_univ_ghost (subst_pskl_in_pskl P_5 α5 P)
 end.
 
 Fixpoint subst_utyp_in_utyp (C_5:utyp) (α5:utypvar) (C__6:utyp) {struct C__6} : utyp :=

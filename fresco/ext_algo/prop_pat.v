@@ -128,8 +128,8 @@ Proof.
   - (* arrow — both halves are parts of the INPUT skeleton *)
     repeat split; [ apply a_split__arrow | assumption
                   | clear - Hcov; fsetdec | clear - Hcov; simpl in *; fsetdec ].
-  - (* hole *)
-    repeat split; [ apply a_split__hole | assumption
+  - (* ghost *)
+    repeat split; [ apply a_split__ghost | assumption
                   | clear - Hcov; fsetdec | simpl; fsetdec ].
   - (* ⭐ flexible — the two invented flexibles are drawn from the supply in
        SEQUENCE, so [fresco/algo]'s two side conditions and the [α1 <> β] they
@@ -303,10 +303,10 @@ Proof.
     simpl in Hcov.
     pose proof (dom_subset_ftvar_in_aenv Θ0) as Hd0.
     assert (Hxd : x `notin` dom Θ0) by (clear - Hd0 Hcov H0; fsetdec).
-    assert (Hu' : uniq ((x ~ abind_var_skl pskl_hole) ++ Θ0))
+    assert (Hu' : uniq ((x ~ abind_var_skl pskl_ghost) ++ Θ0))
       by (clear - Hu Hxd; solve_uniq).
-    assert (Hcov' : ftvar_in_aenv ((x ~ abind_var_skl pskl_hole) ++ Θ0)
-                      ∪ ftvar_in_pskl pskl_hole
+    assert (Hcov' : ftvar_in_aenv ((x ~ abind_var_skl pskl_ghost) ++ Θ0)
+                      ∪ ftvar_in_pskl pskl_ghost
                       ∪ fvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
                       ∪ ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
                       [<=] add x S0).
@@ -332,7 +332,7 @@ Proof.
     assert (Hu' : uniq ((x ~ abind_var_typ A) ++ Θ0))
       by (clear - Hu Hxd; solve_uniq).
     assert (Hcov' : ftvar_in_aenv ((x ~ abind_var_typ A) ++ Θ0)
-                      ∪ ftvar_in_pskl pskl_hole
+                      ∪ ftvar_in_pskl pskl_ghost
                       ∪ fvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
                       ∪ ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
                       [<=] add x S0).
@@ -401,7 +401,7 @@ Proof.
   intros S0 Θ0 P0 P Q S1 Θ1 H; destruct H as
     [ S Θ0 P Q | S Θ0 | S0 S1 Θ0 Θ1 α β α1 Q Hβ Hα1 Hc ]; intros S0' Heq.
   - exists S0'. split; [ exact Heq | apply e_split__arrow ].
-  - exists S0'. split; [ exact Heq | apply e_split__hole ].
+  - exists S0'. split; [ exact Heq | apply e_split__ghost ].
   - destruct (e_consis_supply_respect Hc (S0' := add α1 (add β S0')))
       as [S1' [HS1 Hc']];
       [ rewrite Heq; reflexivity | ].
@@ -484,7 +484,7 @@ Proof.
     [ S Θ0 P Q | S Θ0 | S0 S1 Θ0 Θ1 α β α1 Q Hβ Hα1 Hc ]; intros S0' Heq;
     simpl.
   - exists S0'. split; [ exact Heq | apply e_split__arrow ].
-  - exists S0'. split; [ exact Heq | apply e_split__hole ].
+  - exists S0'. split; [ exact Heq | apply e_split__ghost ].
   - (* the invented pair rides the swap, drawn in the same sequence *)
     destruct (e_consis_swap (a := a) (b := b) Hc (Δ1' := empty) (Δ2' := empty)
                 (S0' := add (swap_atom a b α1) (add (swap_atom a b β) S0')))

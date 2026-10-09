@@ -208,7 +208,7 @@ Proof.
       [ discriminate | exact Hb' ].
   - apply a_pskl_tyequiv__arrow; eauto.
   - apply a_pskl_tyequiv__all with (L := L); intros α Hα; eauto.
-  - apply a_pskl_tyequiv__tophole; eauto.
+  - apply a_pskl_tyequiv__univ_ghost; eauto.
 Qed.
 
 (** An [a_inc]'s images are locally closed (they are monotypes). *)
@@ -327,8 +327,8 @@ Proof.
     + apply a_inc_equiv__tvar with (Ξ := (@nil (atom * abind)));
         [ exact Hie | apply a_suffix__nil ].
     + apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ].
-  - apply a_pskl_tyequiv__refl; apply lc_pskl_hole.
-  - apply a_pskl_tyequiv__tophole; apply IH0; auto.
+  - apply a_pskl_tyequiv__refl; apply lc_pskl_ghost.
+  - apply a_pskl_tyequiv__univ_ghost; apply IH0; auto.
 Qed.
 
 (** Composing with an IDENTITY increment on the right is invisible to
@@ -1358,7 +1358,7 @@ Proof.
     rewrite <- (@msubst_pskl_open_lc κ P1 α); [ | exact Hlcκ | clear - Hα; fsetdec ].
     apply (H0 α Θpre Θt HeqΘ Huq Hwft Himg).
   - apply a_pskl_tyequiv__refl. constructor.
-  - apply a_pskl_tyequiv__tophole. apply (IHHlc Θpre Θt HeqΘ Huq Hwft Himg).
+  - apply a_pskl_tyequiv__univ_ghost. apply (IHHlc Θpre Θt HeqΘ Huq Hwft Himg).
 Qed.
 
 (* Normalize an a_inc by its own (suffix-of-Θ) target's flex_defs: the metasubst

@@ -27,7 +27,7 @@
     (§2), and it is reachable from [ad_pat] as [P-Var] at an entry
     [x : ∀X.◇] (§3).  Consistency's ∀-rows push the rigid [X] into Θ, so the
     ghost may be FILLED with it; refinement's ∀-row pushes it into Δ and
-    [ad_refine_pskl__hole]'s fill is Δ-free BY RULE — so the leaf datum fails
+    [ad_refine_pskl__ghost]'s fill is Δ-free BY RULE — so the leaf datum fails
     exactly where the paper's no-capture discipline bites.
 
     CONSEQUENCE.  For the completeness direction the embedded premise must be
@@ -52,9 +52,9 @@ Require Import src.fresco.algo_decl.def_typing.
 Set Implicit Arguments.
 
 (** the capture configuration: subject [∀X.◇], counterpart [∀ˢX.X] *)
-Definition capR : uskl := uskl_all_syn uskl_hole.
+Definition capR : uskl := uskl_all_syn uskl_ghost.
 Definition capQ : bskl := bskl_all_syn (bskl_var_b 0).
-Definition capP : pskl := pskl_all_syn pskl_hole.
+Definition capP : pskl := pskl_all_syn pskl_ghost.
 
 Lemma cap_erase : uskl_to_pskl capR = capP.
 Proof. reflexivity. Qed.
@@ -72,13 +72,13 @@ Proof.
 Qed.
 
 (** ⭐ Consistency's ∀-row puts the rigid [α] into **Θ**, so the ghost's fill
-    [ad_pat_consis__hole] — which demands the fill Θ-well-scoped — may pick
+    [ad_pat_consis__ghost] — which demands the fill Θ-well-scoped — may pick
     [α] itself.  This is the capture the refinement judgement forbids. *)
 Lemma cap_consis : forall Θ, {{ empty ⨟ Θ ⊢ˢ capR ∼ capQ }}ad.
 Proof.
   intros Θ. apply ad_pat_consis__forall_syn with (L := empty).
   intros α Hα. cbn.
-  apply (ad_pat_consis__hole (P := pskl_var_f α)); [ reflexivity | ].
+  apply (ad_pat_consis__ghost (P := pskl_var_f α)); [ reflexivity | ].
   apply a_wf_pskl__var. unfold a_binds_tvar. eauto.
 Qed.
 
@@ -103,15 +103,15 @@ Qed.
 (* ===================================================================== *)
 
 (** ⭐ Refinement's ∀-row puts the rigid into **Δ** (as well as Θ), and
-    [ad_refine_pskl__hole]'s fill must avoid Δ — so the ghost can never be
+    [ad_refine_pskl__ghost]'s fill must avoid Δ — so the ghost can never be
     filled with the rigid itself.  The only other row with a ghost on the left
     is the flexible lookup, which needs the rigid to be a defined flexible. *)
-Lemma cap_hole_no_fill : forall Θ α,
+Lemma cap_ghost_no_fill : forall Θ α,
   ~ (exists τ, binds α (abind_flex_mono_def τ) Θ) ->
-  ~ ({{ Θ ⨟ (add α empty) ⊢ᵣₚ pskl_hole ⊳ (pskl_var_f α) }}ad).
+  ~ ({{ Θ ⨟ (add α empty) ⊢ᵣₚ pskl_ghost ⊳ (pskl_var_f α) }}ad).
 Proof.
   intros Θ α Hα H. inversion H; subst.
-  - (* __hole : the fill would mention the Δ-variable [α] *)
+  - (* __ghost : the fill would mention the Δ-variable [α] *)
     clear Hα H. simpl in *.
     match goal with Hd : _ |- False =>
       assert (Hin : α `in` empty) by (apply Hd; fsetdec); fsetdec end.
@@ -129,7 +129,7 @@ Proof.
       pick fresh β for (L `union` dom Θ);
       pose proof (Hf β ltac:(clear - Fr; fsetdec)) as Hβ; cbn in Hβ
   end.
-  eapply cap_hole_no_fill; [ | exact Hβ ].
+  eapply cap_ghost_no_fill; [ | exact Hβ ].
   intros [τ Hb].
   destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb']; [ discriminate | ].
   apply binds_In in Hb'. clear - Hb' Fr; fsetdec.

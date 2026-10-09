@@ -566,7 +566,7 @@ in the file's header verbatim.  Three results:
   `uniq (αs ++ Θ1)` premise.  ⚙ Row for row the rest of the extracted function
   matches `guess` too (`l`↔`gr_block`, `incr counter`↔`supply_fresh`+`add`,
   `Bindlib.unbind`/`bind_var`↔`open`/`close`, `UGhost p -> aux l k p`↔the
-  `Pskl_tophole` row); the one remaining difference is accumulator shape
+  `Pskl_univ_ghost` row); the one remaining difference is accumulator shape
   (cons onto one list vs concatenate two).
 
 ⚠️ **Four traps the spike paid for, all of which will recur at every later
@@ -648,7 +648,7 @@ BELOW, already exists as `a_assign_unify_consis_dom_mono`
 `a_sub`/`a_sub_flex` because the collection is CLOSED — `a_looksub` and
 `a_lookeq` call only each other — while `a_sub__forall_l` consumes a
 collection's output block `Ξ`, so threading the subtyping walk first would
-leave a hole in the supply exactly where the collection deposits names.
+leave a ghost in the supply exactly where the collection deposits names.
 
 ⚙ **Different shape from M2, and worth knowing before M3b.**  The collection
 has NO OUTPUT CONTEXT: `Θ` goes in, nothing comes back, and generated names
@@ -664,7 +664,7 @@ premise directly.  What it buys is the accounting:
 ⭐ **`a_sub__forall_l`'s `uniq (Ξ ++ Θ0)` is now derivable**
 (`e_looksub_uniq_app`).  `def_rules.v:1253-1256` states that premise as a
 prose-completion of the paper's *fresh* `Ξ`, needed because LE-FlexR and
-`a_guess_mono`'s hole rule pick arbitrary names.  Threaded, both halves are
+`a_guess_mono`'s ghost rule pick arbitrary names.  Threaded, both halves are
 theorems.  This is M1's `AT-Abs` payoff at the second of the two sites that
 comment names — so between M1 and M3a, **both** of the tree's `uniq`
 prose-completions on generated blocks are now consequences.
@@ -1022,7 +1022,7 @@ so **`guess^TY` never guesses a polytype out of thin air** is no longer a
 reading of the code — the guessed type has no more `∀`s, and is no bigger,
 than the skeleton it was guessed from.  The `∀` row is where the content is:
 `e_guess_mono__forall` rebuilds the quantifier the skeleton had, and the only
-row that INVENTS anything (`__hole`) invents a flexible variable, which is
+row that INVENTS anything (`__ghost`) invents a flexible variable, which is
 `∀`-free.
 
 ✅ **PHASE 1b (2026-08-13, later): the bound is carried through the WHOLE
@@ -1041,7 +1041,7 @@ extraction — and it is SHARPER than the phase plan asked for.**
 ⭐ The plan predicted `nall C <= nall P + nall P'`; the truth is the
 COUNTERPART ALONE.  Reading the three depositing rows says why: LS-Var and
 LE-Var deposit the counterpart standing opposite the looked-up variable,
-LE-FlexR deposits a fresh VARIABLE (∀-free, like `guess^TY`'s hole row) —
+LE-FlexR deposits a fresh VARIABLE (∀-free, like `guess^TY`'s ghost row) —
 the subject is only ever WALKED.  Composed with the fold's `◇` seed, the
 instantiation `e_sub__forall_l` recurses on satisfies `nall P1 <= nall P0`
 — "we only guess polytypes that can be determined by inherited type
@@ -1073,7 +1073,7 @@ What is true is sharper, and it is now a theorem
   (`e_looksub_pure_chain_cstrs` — LS-Check needs a guarded non-α subject,
   LS-ForallR a ∀-headed counterpart, both impossible there), and the
   ◇-seeded fold then yields a guarded-or-⫯-arrow head
-  (`e_solve_sub_hole_hnall` — ⚙ a ◇ subject has NO recursive solve row:
+  (`e_solve_sub_ghost_hnall` — ⚙ a ◇ subject has NO recursive solve row:
   SS-Check demands a GUARDED subject, so the eq layer is not even
   reachable).  `guess^N` never raises the head count (`e_guess_hnall`).
 
@@ -1146,11 +1146,11 @@ axiom-free):
 
     W := nholes(pattern) + nholes(subject) + nundef(context)
 
-⭐ **W never increases, and creating a def strictly consumes it** — holes
+⭐ **W never increases, and creating a def strictly consumes it** — ghosts
 are the ONLY source of new flexibles (`e_guess_mono_block_nundef`:
-Assign-SolveM's guess block is EXACTLY the pattern's holes), monotype
-substitution creates neither a hole nor a flexible
-(`nholes_pskl_subst_holefree`, and `ptyp` has no hole constructor at
+Assign-SolveM's guess block is EXACTLY the pattern's ghosts), monotype
+substitution creates neither a ghost nor a flexible
+(`nholes_pskl_subst_ghostfree`, and `ptyp` has no ghost constructor at
 all), and the unify solutions are variables.  Stated in the addition
 form that CHAINS at the Arrow row:
 
@@ -1184,7 +1184,7 @@ and §17's hypothesis was restated in exactly that shape and DISCHARGED:
 walk plus its whole call graph (consistency, collection, solving,
 extraction, guessing) — is a closed, axiom-free theorem.  ⚙ The §7.4
 prediction that the worklist's `num_etvar`/`split_depth` machinery would
-be needed was PESSIMISTIC: holes-as-fuel replaces split-depth entirely,
+be needed was PESSIMISTIC: ghosts-as-fuel replaces split-depth entirely,
 because Fresco's guess consumes the whole pattern shape at once instead
 of splitting incrementally.
 
@@ -1262,7 +1262,7 @@ application in prop_termination.v §17 moved with it; nothing else.
   occurs in `go`'s TYPE generalizes over `go` and breaks the guard
   ("recursive call has not enough arguments") — rewrite the GOAL only.
   And a catch-all match row beside a specific-constructor row is
-  EXPANDED per constructor, orphaning holes written against the row's
+  EXPANDED per constructor, orphaning ghosts written against the row's
   binder — decide the marker with a `sumbool` helper instead.
 - `coqc … | head` lets `head`'s exit kill `coqc` mid-write (SIGPIPE) and
   the stale `.vo` then fails later Requires with "inconsistent
@@ -1661,7 +1661,7 @@ at once and was reverted):
 - ⛔ `def_consis_impl.v` is the FIRST failure: "Unsolved obligations when
   closing file".  The unsolved goals are the equation obligations of the
   mutual block's nested-match clauses (the log shows one for the
-  `pskl_tophole` / `pskl_tophole` row).  ⚙ The cause is structural, not
+  `pskl_univ_ghost` / `pskl_univ_ghost` row).  ⚙ The cause is structural, not
   deep: `#[tactic="consis_impl_tac"]` applies to EVERY obligation, and that
   tactic was written for the SOUNDNESS obligations — it opens with
   `intros; inversion <the order>`, which destroys an equation goal — so the
@@ -1866,14 +1866,14 @@ output tests), not part of what decidability consumes.
 `fresco/ext_algo/prop_run_complete.v` §1, the campaign's new file:
 
     e_typing_run_complete_unit_infer : forall S0,
-      e_typing_run S0 mode_ti nil pskl_hole exp_unit
+      e_typing_run S0 mode_ti nil pskl_ghost exp_unit
       = Some (mk_typing_result S0 nil ptyp_unit)
 
 axiom-free, and the proof is the §8c.4 machinery end to end:
 `simp e_typing_impl` (clause equation), `cbn` (the checker tests compute),
 `unfold e_sub_impl` (the wrapper), `simp e_sub_call_impl` (the tagged
 block's equation), `cbn` (the term-level dispatch reduces at
-mode_ti/pskl_hole to SI-Infer; `pskl_readback` computes), `reflexivity`.
+mode_ti/pskl_ghost to SI-Infer; `pskl_readback` computes), `reflexivity`.
 ⚙ No `vm_compute` can replace this — the runners recurse on a Qed-opaque
 totality proof, so plain reduction is stuck BY DESIGN; the equations
 quantify over the domain proof, which is the §8c.3 point in action.
@@ -1990,7 +1990,7 @@ proof ADDED to it, and what the next levels should copy or watch:
     evar and the first `fsetdec` under it HANGS (measured: >110 s vs
     0.3 s).  Build agreement bottom-up with explicit sets (weaken →
     swap_left → push_tvar → final weaken), each as its own `assert`.
-  - ⚠️ `nonghost_pskl (pskl_tophole _)` / `pskl_hole` have no
+  - ⚠️ `nonghost_pskl (pskl_univ_ghost _)` / `pskl_ghost` have no
     constructor — SE-FlexR survives inversion at a ⫯ subject until
     `look_absurd` kills the `nonghost_pskl` evidence too.
   - The FlexR branches owe NOTHING for the guess: `e_guess_mono_impl` is
@@ -2025,7 +2025,7 @@ proof ADDED to it, and what the next levels should copy or watch:
     `β ∉ dom Θd'` — what `flex_agree_push_tvar` needs — is the swap's
     own by-product).  Expect the same split at every later level whose
     runner commits a binder rule the relation leaves open.
-  - `a_solve_sub_tophole_l_first` (strip-first) is as easy as scouted:
+  - `a_solve_sub_univ_ghost_l_first` (strip-first) is as easy as scouted:
     no swaps, the ForallR case re-applies at the SAME witness (the
     freshness set only shrinks), Vacuous answers fresh, Check dies
     (guarded excludes ⫯).
@@ -2055,7 +2055,7 @@ proof ADDED to it, and what the next levels should copy or watch:
     passes — `kill_seq_call_g` (mirroring §2c's `kill_eq_call_g`)
     exists for exactly this.
   - `look_absurd` grew the sub level's two clauses: the Check clause's
-    3-conjunct test, and `guarded_pskl pskl_hole`.
+    3-conjunct test, and `guarded_pskl pskl_ghost`.
 
 - ⭐⭐ **The YIELD-MISMATCH design fork is RESOLVED — option (a),
   determinism-up-to-fresh-renaming (2026-08-15, USER DECISION), and its
@@ -2067,7 +2067,7 @@ proof ADDED to it, and what the next levels should copy or watch:
 
   - ⚠️ A FUNCTIONAL renaming does not exist in general —
     `a_guess_mono__arrow` runs both halves at the same Θ, so ONE
-    derivation may legally guess the SAME flexible for two holes
+    derivation may legally guess the SAME flexible for two ghosts
     (yield `α̂→α̂`) where another guesses two distinct ones.  So
     determinism is stated RELATIONALLY (`rel_pskl ρ V`, pairs ρ +
     identity support V), unconditionally; column UNIQUENESS is paid
@@ -2357,7 +2357,7 @@ axiom-free, 0.6 s) machine-checks the a-side:
 - **The DECLARATIVE side rejects the program too** — read off the rules
   (not machine-checked; recorded in the probe's header): a `ForallL`
   instantiation's quantifiers are forcibly TAGGED (`a_tags_sort` at
-  either sort requires `is_tskl`, which has no untagged constructor),
+  either sort requires `is_dskl`, which has no untagged constructor),
   the consistency LEAVES demand `Ψ [=] empty`, and the only Ψ-consuming
   row is `ad_pat_consis__forall_inh_tagged` — a tagged ∀ must meet an
   **inh-∀ of the target inside a consistency premise**.  In this
@@ -2545,7 +2545,7 @@ discoveries that reshape §6b, plus its one open hazard, resolved:
    emit the target, LE-FlexR a fresh name) — so re-rooting a subject
    peel to the front preserves `(Ξ, 𝒞)` EXACTLY and any fold on 𝒞
    rides for free.  Landed Qed (prop_look_equiv.v §6):
-   `a_looksub_strip_tophole_l` (R″ — no freshness owed) and
+   `a_looksub_strip_univ_ghost_l` (R″ — no freshness owed) and
    `a_looksub_open_forall_l_first` (R′ — target-only size induction;
    LS-ForallL's case is its own premise rebound by one swap, whose
    output-avoidance is `a_looksub_lookeq_generated_fresh` +
@@ -2554,7 +2554,7 @@ discoveries that reshape §6b, plus its one open hazard, resolved:
    recurses, exchanges, rebuilds, rebinds).  At a
    ForallR-vs-subject-peel diagonal, apply R′/R″ to WHICHEVER side is
    ForallR-rooted and recurse aligned.  With §5's ◇-collapse
-   (`a_looksub_hole_target` / `a_lookeq_hole_target`, also Qed) and
+   (`a_looksub_ghost_target` / `a_lookeq_ghost_target`, also Qed) and
    §2's α-free collapse, the ONLY remaining crossing is
    (Var, ForallR-ish) at a ghost-free ∀ target — and there the look
    needs nothing: the fold pays via `a_solve_sub_peel_forall_r` (§6a),
@@ -2683,7 +2683,7 @@ condition reads the supply; the context only mirrors the a-shape):
   context; replaces every a-side `ctx_exchange` surgery.
 - §1b `e_looksub_lookeq_supply_respect` — both supply indexes
   transport along `[=]` (the re-rootings re-associate `add`s).
-- §1c e-R″ `e_looksub_strip_tophole_l` (outputs AND supplies exact)
+- §1c e-R″ `e_looksub_strip_univ_ghost_l` (outputs AND supplies exact)
   and e-R′ `e_looksub_open_forall_l_first` — ⭐ stated with an
   EXISTENTIAL opener (`∃ γ ∉ S0`, derivation of the γ-opened subject
   at `add γ S0`): its ForallL case's premise IS the goal at the
@@ -2924,16 +2924,16 @@ against real goals, and the recommendation is wrong**
     pattern ◇     subject α̂        (α̂ an UNDEFINED flexible)
 
 both `U-GhostR` and `U-FlexL` fire — `nonflex{P0}` rules out a
-flexible VARIABLE, not a hole — and their output CONTEXTS differ:
+flexible VARIABLE, not a ghost — and their output CONTEXTS differ:
 
     U-GhostR    Θ0                                  (unchanged)
     U-FlexL     (α ~ def β̂) ++ (β̂ ~ flex) ++ Θ0'    (α̂ SOLVED)
 
-because `guess^TY(◇)` invents a fresh flexible (`e_guess_mono__hole`).
+because `guess^TY(◇)` invents a fresh flexible (`e_guess_mono__ghost`).
 **The RUNNER takes `U-GhostR`** — machine-checked by reducing
 `e_consis_run` itself (`probe_consis_runner_ghostr`), not merely read
 off the clause order: the consistency clause matches the PATTERN first
-and its `pskl_hole` arm is unconditional in the subject
+and its `pskl_ghost` arm is unconditional in the subject
 (def_consis_impl.v:759).  The mirror pair (pattern α̂, subject ◇)
 diverges identically, `U-Ghost` against `U-FlexR`.
 
@@ -3031,10 +3031,10 @@ multi-session; neither is the "one induction" §8c.10 scoped.
       `algo/` already has.
 
   ⚙ A THIRD, SMALLER OPTION, if the ladder wants a rung now: the
-  divergence needs a `pskl_hole` on one side, and hole-freeness is
+  divergence needs a `pskl_ghost` on one side, and ghost-freeness is
   MAINTAINED by the entire recursion (arrow halves, ∀ openings, and —
   the point — `Assign-Assign` / `Flex-Flex-Assign` substitute `ptyp`s,
-  which have no holes).  So level 5 restricted to hole-free inputs is
+  which have no ghosts).  So level 5 restricted to ghost-free inputs is
   exactly the originally-scoped design (one induction, output relation
   up to renaming).  That yields **`e_unify_run_complete` UNRESTRICTED**
   — a unify call's only consistency premise is on `ptyp_to_pskl`
@@ -3044,7 +3044,7 @@ multi-session; neither is the "one induction" §8c.10 scoped.
 
 ⚠️ Nothing above changes levels 1–4; they are Qed and untouched.
 
-### 8c.10c ⭐⭐ LEVEL 5 IS CLOSED — the hole-free rung is Qed (2026-08-17)
+### 8c.10c ⭐⭐ LEVEL 5 IS CLOSED — the ghost-free rung is Qed (2026-08-17)
 
 `e_consis_call_impl_complete` and the three headlines
 (`e_assign_impl_complete`, `e_unify_impl_complete`,
@@ -3052,8 +3052,8 @@ multi-session; neither is the "one induction" §8c.10 scoped.
 prop_consis_complete.v §6 (the motive) / §7 (the induction) / §8 (the
 headlines).  ⭐ **The unify headline is UNRESTRICTED** — a `unifyvar`
 call carries no skeleton and its one consistency premise runs on
-`ptyp_to_pskl` payloads, so the hole-free fragment contains it outright;
-assign and consistency carry `pskl_no_hole`, and §8c.10b says what
+`ptyp_to_pskl` payloads, so the ghost-free fragment contains it outright;
+assign and consistency carry `pskl_no_ghost`, and §8c.10b says what
 lifting that costs (THE FORK, still the user's call).
 
 **⭐ THE MOTIVE, and the direction is the content.**  The derivation is
@@ -3221,7 +3221,7 @@ carries no payload:
 ```coq
 Fixpoint mode_counterpart (M : mode) (P0 : pskl) : Prop :=
   match M with
-  | mode_ti    => P0 = pskl_hole
+  | mode_ti    => P0 = pskl_ghost
   | mode_tc    => True
   | mode_fn M' => exists P0a P0b,
                     P0 = pskl_arrow P0a P0b /\ mode_counterpart M' P0b
@@ -3232,8 +3232,8 @@ Fixpoint mode_counterpart (M : mode) (P0 : pskl) : Prop :=
 `SI-Flex-Assign` re-enters subtyping under `subst τ β P0`, which looked like
 it would have to RE-ESTABLISH the invariant — a substitution can turn a
 counterpart variable into an arrow.  It cannot break this one: substitution
-is structural, so it maps `pskl_arrow P0a P0b` to an arrow and `pskl_hole`
-to `pskl_hole`, and `mode_counterpart` only ever inspects those two
+is structural, so it maps `pskl_arrow P0a P0b` to an arrow and `pskl_ghost`
+to `pskl_ghost`, and `mode_counterpart` only ever inspects those two
 positions.  Every other recursive site is easier — `SI-Arrow` peels one
 layer off both indices at once, `SI-ForallL` / `SI-UnivGhostL` /
 `SI-Flex-Solve` / the four skip rows leave `(M, P0)` alone, and `SI-ForallR`
@@ -3306,7 +3306,7 @@ two routes' output SKELETONS already AGREE (both `α̂` —
 `cex/probe_consis_ghost_flex.v`), so only the CONTEXT slot of the motive has
 to weaken; the payload slot can stay as it is.
 
-**THE STATEMENT TO BUILD.**  Level 5's hole-free rung relates the
+**THE STATEMENT TO BUILD.**  Level 5's ghost-free rung relates the
 derivation's output to the runner's up to a fresh RENAMING `ps`.  The
 unrestricted rung replaces that with an increase, in the same direction (the
 derivation is still transported onto the runner's rails — §8c.10c's finding
@@ -3320,7 +3320,7 @@ stands, and for the same reason):
 
 ⭐ **Why this is the elegant form and not merely the weaker one.**  A
 renaming IS an increase in both directions, so the new statement SUBSUMES
-the hole-free rung rather than sitting beside it, and the `swaps`/`ps`
+the ghost-free rung rather than sitting beside it, and the `swaps`/`ps`
 bookkeeping of §8c.3-§8c.10 is absorbed into `κ` — `a_inc_compose` does at
 U-Arrow what the `ps1 ++ ps2` chain did, with composition already proved.
 The one thing to keep from the old shape is the SUPPLY relation, which is
@@ -3343,7 +3343,7 @@ progress is `~/fresco-level6-scratch/isub-increase-wip.v`, which compiles
 (`timeout 900 coqc -R . src <file>` from `mechanization/`) with `Admitted`
 on the two inductions below.  ⚠️ Do not land it until both are Qed.
 
-**⭐⭐ THE SCOPING RESULT, and it is the useful part.**  The hole-free
+**⭐⭐ THE SCOPING RESULT, and it is the useful part.**  The ghost-free
 restriction buys EXACTLY SIX case-kills in the level-5 induction — five
 `destruct Hnh1` and one `destruct Hnh0`
 (prop_consis_complete.v:1824, 2006, 2112, 2209, 2292, 2402).  Reading them
@@ -3363,7 +3363,7 @@ four groups are ordinary work.
 **⭐⭐ AND THE TWO CELLS COLLAPSE TO ONE FACT.**  At subject `◇` the runner
 takes `U-Ghost` in EVERY pattern clause, and at pattern `◇` it takes
 `U-GhostR` unconditionally in the subject (def_consis_impl.v:759-763 and the
-`pskl_hole` subject arm of each pattern clause, :770, :808, :938, :989,
+`pskl_ghost` subject arm of each pattern clause, :770, :808, :938, :989,
 :1056, :1134) — in both cases returning `(S0, Θ, other side)` with the
 context **UNCHANGED**.  The runner never commits at a ghost row.  So the
 whole `⊑` obligation is
@@ -3452,8 +3452,8 @@ reflexivity of `⊴` cannot do without it (`a_inc`'s term-variable rows demand
 such hypothesis — every well-formed context satisfies it.  `aenv_defs_lc` is
 FREE (`aenv_defs_mono` is already an input of every runner call).
 
-§3's four inversions confirm §8c.12a's table by machine: at a hole SUBJECT
-only `U-Ghost` fires unless the pattern is a variable; at a hole PATTERN only
+§3's four inversions confirm §8c.12a's table by machine: at a ghost SUBJECT
+only `U-Ghost` fires unless the pattern is a variable; at a ghost PATTERN only
 `U-GhostR` unless the subject is; `U-UnivGhostR` is excluded throughout
 because it demands a GUARDED subject and `◇` is not guarded.  The two
 divergent cells come out as disjunctions whose second branch is the
@@ -3801,7 +3801,7 @@ e-side rule through `rel_pskl_in_id`.
 
 The binder is VACUOUS over the looked-for variable, so the absence-first guard
 is SATISFIED; LS-Vacuous spends nothing, LS-ForallL peels at a drawn opener,
-and both answer `·  ⨾ ·`.  The runner tests VACUOUS second — every `pskl_hole`
+and both answer `·  ⨾ ·`.  The runner tests VACUOUS second — every `pskl_ghost`
 counterpart answers before the α-membership test is reached — and that test is
 still not on the rules.
 
@@ -4268,10 +4268,10 @@ argument.
 
    ```coq
    (* algo/sub/prop_looksub.v §2c *)
-   Lemma a_lookeq_tophole_flex_counterpart : forall Θ α P β Ξ 𝒞,
+   Lemma a_lookeq_univ_ghost_flex_counterpart : forall Θ α P β Ξ 𝒞,
      {{ Θ ⊢ P ∼[ α ] (pskl_var_f β) ⤳ Ξ ⨾ 𝒞 }}a ->
      a_flex_tvar Θ β -> P <> pskl_var_f α ->
-     {{ Θ ⊢ (pskl_tophole P) ∼[ α ] (pskl_var_f β) ⤳ Ξ ⨾ 𝒞 }}a.
+     {{ Θ ⊢ (pskl_univ_ghost P) ∼[ α ] (pskl_var_f β) ⤳ Ξ ⨾ 𝒞 }}a.
    ```
 
    ⭐⭐ **At a FLEXIBLE counterpart a ⫯ on the subject is INVISIBLE.**  At a
@@ -4599,7 +4599,7 @@ taken as **(ii), MIRROR THE RUNNER** (user's call).  On both encodings:
 ```coq
   (* fresco/def_shapes.v *)
   Definition peel_l_off (P : pskl) : Prop :=        (* SS-ForallL / SS-UnivGhostL *)
-    (forall Q, P <> pskl_all_syn Q) /\ (forall Q, P <> pskl_tophole Q).
+    (forall Q, P <> pskl_all_syn Q) /\ (forall Q, P <> pskl_univ_ghost Q).
   Definition solve_l_off (P : pskl) : Prop :=       (* … and SS-Var as well *)
     (forall α, P <> pskl_var_f α) /\ peel_l_off P.
 ```
@@ -4611,7 +4611,7 @@ DELETED; its text is at `5e2384f`.
 #### ⭐ WHAT THE GUARD REMOVED, AND WHAT IT MOVED — both, and it is worth knowing which
 
 **REMOVED.**  `prop_run_complete.v`'s two reorder lemmas collapse.
-`a_solve_sub_tophole_l_first`'s Vacuous and ForallR roots and
+`a_solve_sub_univ_ghost_l_first`'s Vacuous and ForallR roots and
 `a_solve_sub_forall_l_hoist`'s are now `exfalso` — three lines each — and
 with them goes the hoist's ~45-line INTERIM-OPENER DANCE (IH at a fresh δ on
 top of the premise's context, then two rebinds and two context exchanges to
@@ -4828,7 +4828,7 @@ end to end, and its three headlines are assumptions-closed:
 
 Side conditions: `uniq Θ0` and `ftvar Θ0 ∪ ftv P0 ∪ ftv P ⊆ S0`
 (prop_sub.v §4's, verbatim).  ⭐ **Nothing is restricted**: level 5's
-hole-free rung was lifted in §8c.10c/§8c.17, so ghost-carrying skeletons
+ghost-free rung was lifted in §8c.10c/§8c.17, so ghost-carrying skeletons
 are in scope.
 
 #### The shape §8c.20 predicted, and it held
@@ -5083,7 +5083,7 @@ keyed by the SUBJECT's head constructor.  The cells that are not:
 two or three lemmas with discriminating premises) is what lets each branch
 of the mode/readback dispatch kill the arms it does not want by
 `congruence`, WITHOUT first having to produce the discriminating premise —
-and the check arm hands back `P0 = pskl_hole` (resp. `P0 = ⌈∀A0⌉`), which is
+and the check arm hands back `P0 = pskl_ghost` (resp. `P0 = ⌈∀A0⌉`), which is
 what makes the runner's clause reachable at all.
 
 #### ⭐⭐ ONE PIECE OF UPSTREAM METATHEORY WAS MISSING: `e_guess_mono_det`
@@ -5338,7 +5338,7 @@ sub, split, pat, typing.
 ```coq
 Corollary e_typing_run_complete_decl_infer : forall e B,
   {{ nil ⊢[ mode_ti ] e ⦂ B }}d ->
-  exists r, e_typing_run (… entry supply …) mode_ti nil pskl_hole e = Some r.
+  exists r, e_typing_run (… entry supply …) mode_ti nil pskl_ghost e = Some r.
 ```
 by `a_typing_complete_decl_infer` → `e_typing_lift` → `e_typing_run_complete`,
 and the decidability corollary's NEGATIVE branch then refutes the DECLARATIVE
@@ -5392,7 +5392,7 @@ structural, not a proof difficulty:
 - A chain is a **FUNCTION** on atoms.  `rel_pskl` (prop_solve_det.v §1) is
   deliberately a **RELATION**, and its header already says why for the
   guess: `a_guess_mono__arrow` runs both halves at the same `Θ`, so one
-  derivation may guess the SAME flexible for two holes.
+  derivation may guess the SAME flexible for two ghosts.
 - §2 could still use a chain because **`a_guess_mono` LEAKS NOTHING**: its
   ∀ row closes its witness away, so every atom the derivation invents lands
   in `dom Ξ`, and `uniq Ξ` — one premise, available at the only consumer —
@@ -5515,7 +5515,7 @@ not**: nothing says a leaked opener misses `dom Ξ1`.
 `ftvar_in_a_cstrs`, and transport 5 puts an opener into ρx whether or not
 it SURFACES in 𝒞.  An opener that surfaces nowhere is invisible to any
 conclusion-level side condition — so the arrow row's four-case analysis has
-a hole exactly at "half 1's opener never occurs in `𝒞₁` and equals half 2's
+a ghost exactly at "half 1's opener never occurs in `𝒞₁` and equals half 2's
 flexible".
 
 **⇒ TRANSPORT 5 MUST DROP THE UNUSED OPENERS.**  Its five ∀ rows case-split
@@ -7478,7 +7478,7 @@ after which `rel_pskl_morph` at the atoms of `P1 ⊆ dom (Ξ ++ Θ0)` drops ρx.
   `SC-EqCons` need only `dom_subset_ftvar_in_aenv` on the FIRST half's block,
   because the second half runs at `Ξ1 ++ Θ`.
 - both vs `Ξ1G` — ⛔⛔ **A THIRD CROSS-LAYER GUARD IS OWED, and it is the
-  SAME SPECIES as the 2026-08-20 one.**  `a_guess_mono__hole` draws its
+  SAME SPECIES as the 2026-08-20 one.**  `a_guess_mono__ghost` draws its
   flexible fresh for `ftvar_in_aenv Θ` ONLY (`a_guess_mono_generated_fresh`
   is context-only — checked, NOT `ftvar_in_pskl P`), and a leaked opener is
   bound NOWHERE, so the FINAL GUESS may draw one, exactly as the FOLD could
@@ -7526,7 +7526,7 @@ docs/PAPER-GAPS.md under the existing entry, now retitled THREE):
 
     (ftvar_in_a_cstrs C ∪ ftvar_in_pskl Q) ∩ dom Ξ' [=] empty
 
-**WHY.**  `a_guess_mono`'s hole row draws its flexible fresh for
+**WHY.**  `a_guess_mono`'s ghost row draws its flexible fresh for
 `ftvar_in_aenv Θ` of its OWN context and nothing else — ⚙ CHECKED:
 `a_guess_mono_generated_fresh` is context-only, NOT subject-aware.  A leaked
 ∀-opener is bound NOWHERE, so the extract's FINAL GUESS may draw one, and
@@ -7735,7 +7735,7 @@ guess ✅ look ✅ solve ✅ cstr ✅ extract ✅ consis ✅ sub ✅ split ✅ p
    e-split is a bare constructor and no `a_split_rel_e` composition is
    needed.  Threading: `AP-Freeze`/`AP-App`-arg at `(TC, ◇)` are
    constructors; `AP-App`-fn gets `__fn` from the conclusion's own; the abs
-   rows shape-split with `hole_inv` / `arrow_inv`, exactly as
+   rows shape-split with `ghost_inv` / `arrow_inv`, exactly as
    `a_pat_sound`'s own abs case does.
 2. `{{ Θ0 ⊢ᵉ e }}a` (already in §8c.44) — and its `_pick` lemmas
    (`a_wf_exp_abs_pick`, `a_wf_exp_abs_anno_pick`) are what open the wf at

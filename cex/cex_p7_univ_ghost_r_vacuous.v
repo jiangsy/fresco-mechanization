@@ -35,7 +35,7 @@
 
     §1 CONTENTS.  The general fact (whatever refines into a [∀◇] is itself a
     [◇] or a [∀◇]) lives in prop_sub_complete_thm.v as
-    [ad_refine_pskl_tophole_r_shape]; §2 below is the CONCRETE witness that
+    [ad_refine_pskl_univ_ghost_r_shape]; §2 below is the CONCRETE witness that
     the excluded configuration is otherwise perfectly derivable, i.e. that the
     exclusion is a real loss of coverage and not a vacuity that was there
     anyway.
@@ -85,13 +85,13 @@ Lemma p7_univ_ghost_r_third_premise_impossible :
   forall Θ Δ κ R P Q0,
     ⌊ R ⌋ˢ = P ->
     guarded_uskl (msubst_uskl_syn κ R) ->
-    {{ Θ ⨟ Δ ⊢ᵣₚ (msubst_pskl κ P) ⊳ (bskl_to_pskl (bskl_tophole Q0)) }}ad ->
+    {{ Θ ⨟ Δ ⊢ᵣₚ (msubst_pskl κ P) ⊳ (bskl_to_pskl (bskl_univ_ghost Q0)) }}ad ->
     False.
 Proof.
   intros Θ Δ κ R P Q0 HeqP Hg Hrp. cbn in Hrp.
   destruct (guarded_uskl_erase_not_ghost Hg) as [Hnh Hnt].
   rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in Hnh, Hnt.
-  destruct (ad_refine_pskl_tophole_r_shape Hrp) as [Hc | [P' Hc]];
+  destruct (ad_refine_pskl_univ_ghost_r_shape Hrp) as [Hc | [P' Hc]];
     [ exact (Hnh Hc) | exact (Hnt P' Hc) ].
 Qed.
 
@@ -104,17 +104,17 @@ Qed.
 (* ===================================================================== *)
 
 Definition cex_R : uskl := uskl_unit.
-Definition cex_Q : bskl := bskl_tophole bskl_unit.
+Definition cex_Q : bskl := bskl_univ_ghost bskl_unit.
 
 (** (b) the P0-FILL condition, at the [P0 = □] that [skmod[SK]{P0}{TC}]
     prescribes for this row *)
 Lemma cex_p0_fill :
-  {{ nil ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl nil pskl_hole)) ⊳ cex_Q }}ad.
+  {{ nil ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl nil pskl_ghost)) ⊳ cex_Q }}ad.
 Proof.
   cbn. unfold cex_Q.
-  change (bskl_tophole bskl_unit)
-    with (pskl_to_bskl_syn (pskl_tophole pskl_unit)).
-  apply ad_refine_syn__hole; cbn; clear; fsetdec.
+  change (bskl_univ_ghost bskl_unit)
+    with (pskl_to_bskl_syn (pskl_univ_ghost pskl_unit)).
+  apply ad_refine_syn__ghost; cbn; clear; fsetdec.
 Qed.
 
 (** (c) the increase is the identity on the empty context *)

@@ -537,8 +537,8 @@ Proof.
   - apply lc_pskl_arrow; auto.
   - apply lc_pskl_all_syn. intro α. rewrite <- bskl_to_pskl_open. auto.
   - apply lc_pskl_all_syn. intro α. rewrite <- bskl_to_pskl_open. auto.
-  - apply lc_pskl_hole.
-  - apply lc_pskl_tophole; auto.
+  - apply lc_pskl_ghost.
+  - apply lc_pskl_univ_ghost; auto.
 Qed.
 
 (** The syn-painting preserves local closure. *)
@@ -550,8 +550,8 @@ Proof.
   - apply lc_bskl_var_f.
   - apply lc_bskl_arrow; auto.
   - apply lc_bskl_all_syn. intro α. rewrite <- pskl_to_bskl_syn_open. auto.
-  - apply lc_bskl_hole.
-  - apply lc_bskl_tophole; auto.
+  - apply lc_bskl_ghost.
+  - apply lc_bskl_univ_ghost; auto.
 Qed.
 
 (** The painting of a type is locally closed as a skeleton. *)
@@ -602,7 +602,7 @@ Qed.
 (** A tagged skeleton is locally closed.  ⚙ The ε-tagged ∀ is EXISTS-fresh, so
     unlike its siblings this one picks a witness out of the rule's avoid
     set. *)
-Lemma is_tskl_lc : forall ψ, is_tskl ψ -> lc_uskl ψ.
+Lemma is_dskl_lc : forall ψ, is_dskl ψ -> lc_uskl ψ.
 Proof.
   intros ψ H; induction H; try (constructor; auto; fail).
   destruct (atom_fresh L) as [α Hα].
@@ -622,10 +622,10 @@ Proof.
     rewrite <- utyp_to_uskl_open_var. auto.
 Qed.
 
-Lemma is_tskl_utyp_to_uskl : forall C, is_ttyp C -> is_tskl (utyp_to_uskl C).
+Lemma is_dskl_utyp_to_uskl : forall C, is_dtyp C -> is_dskl (utyp_to_uskl C).
 Proof.
   intros C H; induction H; simpl; try solve [ constructor; auto ].
-  apply is_tskl__all_tag with (L := L). intros α Hα.
+  apply is_dskl__all_tag with (L := L). intros α Hα.
   rewrite <- utyp_to_uskl_open_var. auto.
 Qed.
 
@@ -751,11 +751,11 @@ Lemma ftvar_btyp_to_ptyp : forall B,
     ftvar_in_ptyp (btyp_to_ptyp B) = ftvar_in_btyp B.
 Proof. induction B; simpl; try reflexivity; try (rewrite IHB1, IHB2); auto. Qed.
 
-(** A TYPE has no ghosts, so its skeleton view is hole-free.  ⚙ MOVED here
+(** A TYPE has no ghosts, so its skeleton view is ghost-free.  ⚙ MOVED here
     2026-08-16 from algo/consis/prop_completeness_consis.v: a fact about a
     conversion, named for it, so this is its documented home (CLAUDE.md's
     naming rules); the predicate itself moved to def_shapes.v. *)
-Lemma ptyp_to_pskl_no_hole : forall A, pskl_no_hole (ptyp_to_pskl A).
+Lemma ptyp_to_pskl_no_ghost : forall A, pskl_no_ghost (ptyp_to_pskl A).
 Proof. induction A; simpl; tauto. Qed.
 
 Lemma ftvar_ptyp_to_pskl : forall A,

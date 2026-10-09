@@ -84,7 +84,7 @@ induction on the typing derivation:
   `d_consis_syn_sub_tc` (consistency ⇒ checking-subtyping for a synthesised LHS
   against an `is_ityp` target): guarded targets close by `d_sub__check`; the ∀
   target generalises by `forall_r` then instantiates the synthesised ∀ with the
-  **bound variable** — an untagged `is_ttyp` witness with `d_tags ∅` — so the
+  **bound variable** — an untagged `is_dtyp` witness with `d_tags ∅` — so the
   IH fires with zero tag bookkeeping.
 - **`app`** — recurse with `is_fn_n (S n)` / `btyp_spine__arrow`.
 - **`sub`** — `e` infers `B1` at `ti`; weaken the subsumption
@@ -201,7 +201,7 @@ context" post-δ. `Print Assumptions` on
 — see Phase 1.G entry for the corrected count).
 
 **Phase 1.G summary (2026-05-17):** TODO plan to close the remaining
-axioms has fundamental blockers — Pattern A's `d_consis_subst_typ_with_ttyp`
+axioms has fundamental blockers — Pattern A's `d_consis_subst_typ_with_dtyp`
 is unsound when subst'd var has multiple occurrences (ε-tag linearity
 violation, also a paper-level gap in B.3 ForallL). Pattern B option (a)
 doesn't compose at D12 (no source of `mono_typ Bhead` for poly body types).
@@ -305,7 +305,7 @@ Tracked here so the next session has a clean hand-off without scanning the daily
 The 6 leaking axioms split into two patterns, each needing one structural fix:
 
 **Pattern A — non-mono ph in `__forall_l_untagged` (3 axioms):**
-- [ ] **Add `d_consis_subst_typ_with_ttyp`** (generalize `d_consis_subst_mono` from `mono_typ B` to `d_wf_ttyp Δ_ph Γ2 ph`; output Δ becomes `Δ_outer ++ Δ_ph` with disjointness). ~150-line induction on d_consis with ε-tag bookkeeping per constructor case. Add at the same location as `d_consis_subst_mono` in `subtyping/prop_basics.v`.
+- [ ] **Add `d_consis_subst_typ_with_dtyp`** (generalize `d_consis_subst_mono` from `mono_typ B` to `d_wf_dtyp Δ_ph Γ2 ph`; output Δ becomes `Δ_outer ++ Δ_ph` with disjointness). ~150-line induction on d_consis with ε-tag bookkeeping per constructor case. Add at the same location as `d_consis_subst_mono` in `subtyping/prop_basics.v`.
 - [ ] **Close `d_consis_sub_trans` non-mono case** (1 admit at `subtyping/prop_consis_sub_trans.v:208` `__forall_l_untagged` branch). Mechanical given the subst lemma.
 - [ ] **Close `d_sub_gen_trans_forall_l_untagged_helper` non-mono case** (1 admit at `typing/prop_subsumption_aux.v:~445`). Mechanical given the subst lemma.
 - [ ] **Close `d_consis_gen_extends_d_sub_nil` non-mono case** (1 admit at `typing/prop_subsumption_aux.v:~225` `__forall_l_untagged` branch). Mechanical given the subst lemma.
@@ -391,7 +391,7 @@ Paper labels resolved to file:line in the auto-managed block at end of file (reg
 |---|---|---|---|
 | A1 | [Lemma D.2: Stability][lemma:stability] | **Mech:** `stability_d_typing` [`prop_soundness.v:620`](fresco/algo/prop_soundness.v#L620) + 7 siblings:<br>`aenv_extends Θ0 Θ1 → a_transfers Θ0 Γ0 → a_transfers Θ1 Γ1 → Γ0 ⊢[ m ] e ⦂ A → Γ1 ⊢[ m ] e ⦂ A` (same shape for `_d_wf_typ`, `_d_consis`, `_d_sub`, `_d_pat_consis`, `_d_pat_sub`, `_d_refine_syn`, `_d_pat`)<br>**Paper:** "All statements in this paper are stable" — for every judgment `J` and `Θ₀ ≤ Θ₁`, `Θ₀ ⊢ J ⇒ Θ₁ ⊢ J`. | 🟢 8 of 8 |
 | A2 | [Lemma D.3: Structural rules][lemma:structural] | **Mech:** `d_typing_suffix_moving_singleton` [`prop_typing.v`](fresco/decl/prop_typing.v) + `d_pat_suffix_moving_singleton`:<br>`Γ1 ++ y~b ++ Γ2 ⊢[ m ] e ⦂ A → y ∉ dom Γ1 → Γ1 ++ Γ2 ++ y~b ⊢[ m ] e ⦂ A`<br>**Paper:** SuffixMoving rule — moving a binding past a suffix preserves typing. | 🟢 narrowed to single-binding move; full n-binding form needs free-vars-of-context machinery |
-| A3 | [Lemma D.4: Splitting refines][lemma:split-refine] | **Mech:** `d_refine_arrow_split` [`prop_skeleton.v:25`](fresco/decl/prop_skeleton.v#L25) + 7 siblings (`_all_plain_split`, `_hole_split`, `_tophole_split`, syn-painted variants):<br>`Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ typ_arrow P1 P2 → ∃ Q1 Q2, Q = typ_arrow Q1 Q2 ∧ Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q1 ⊳ P1 ∧ Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q2 ⊳ P2`<br>**Paper:** `If Θ₀ ⊢ split[P₀][P₁] ⇒ Θ₁, then Θ₁ ⊢ inh{P₀} fillsyn inh{P₁}` (LaTeX: `\mov{\Theta_0}{\split[P_0][P_1]{}}{\Theta_1}`, `\Theta_1\vdash\inh{P_0}\fillsyn\inh{P_1}`) | 🟢 8 of 8 |
+| A3 | [Lemma D.4: Splitting refines][lemma:split-refine] | **Mech:** `d_refine_arrow_split` [`prop_skeleton.v:25`](fresco/decl/prop_skeleton.v#L25) + 7 siblings (`_all_plain_split`, `_ghost_split`, `_univ_ghost_split`, syn-painted variants):<br>`Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ typ_arrow P1 P2 → ∃ Q1 Q2, Q = typ_arrow Q1 Q2 ∧ Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q1 ⊳ P1 ∧ Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q2 ⊳ P2`<br>**Paper:** `If Θ₀ ⊢ split[P₀][P₁] ⇒ Θ₁, then Θ₁ ⊢ inh{P₀} fillsyn inh{P₁}` (LaTeX: `\mov{\Theta_0}{\split[P_0][P_1]{}}{\Theta_1}`, `\Theta_1\vdash\inh{P_0}\fillsyn\inh{P_1}`) | 🟢 8 of 8 |
 | A4 | [Lemma D.5: Consistency extends subtyping][lemma:consis-sub] | — (NOT mechanized; distinct from D10/B.3) | 🔴 D.5 is stated over algorithmic `allsub` / `consistent`, distinct from D10/B.3 (declarative `d_consis` + `d_sub`). `d_consis_sub_trans` (D10) is NOT a mechanization of D.5; earlier docs conflated the two. Paper: `If Θ ⊢ consistent(P, P') and ⊢_{N,M} Θ P ⊑ Q, then ⊢_{N,M} Θ P' ⊑ Q`. |
 | A5 | [Lemma D.6: Substitution preserves safety][lemma:safety-preservation] | — | 🔴 paper proof is "obvious — θ monotype only"; corollary of typ-subst preservation (itself admitted) |
 | A6 | [Lemma D.7: Substitution preserves informativeness][lemma:informativeness-preservation] | — | 🔴 same |
@@ -446,7 +446,7 @@ files:
 | `subtyping/prop_consis_sub_trans.v` | 1 | `d_consis_sub_trans` |
 | `prop_subtyping.v` | 1 | `d_typing_sub_compose` |
 | `subtyping/prop_sub_sound.v` | 2 | `d_sub_complete_mono`, `d_sub_no_guess_uniqueness` (paper-flagged) |
-| `prop_skeleton.v` | 3 | `d_pat_safety`, `ghost_of_fill` (stub), `ghost_of_fill_gen` (forall_l obstacle + P=box + forall_r-box PROVED; 2 admits: __check, forall_r-tophole). `ghost_of_fill` now Qed corollary |
+| `prop_skeleton.v` | 3 | `d_pat_safety`, `ghost_of_fill` (stub), `ghost_of_fill_gen` (forall_l obstacle + P=box + forall_r-box PROVED; 2 admits: __check, forall_r-univ_ghost). `ghost_of_fill` now Qed corollary |
 
 `fresco/algo/` (26 admits — faithful question/solution/optimality scaffolding):
 
@@ -480,7 +480,7 @@ Session-by-session closure log. Most recent first.
 Paper finalized (merge `8dfafca`); clean restart per the three-step plan:
 (1) decl defs synced with the paper — inconsistencies flagged in
 [`docs/REPORT-remech-decl-sync.md`](docs/REPORT-remech-decl-sync.md); fixes:
-`is_tskl` untagged-∀ case removed (ψ requires every quantifier tagged),
+`is_dskl` untagged-∀ case removed (ψ requires every quantifier tagged),
 `d_tags_skl` restricted to ψ's grammar, `d_pat` restructured to the paper's
 embedded-subtyping P-Unit/P-Var/P-Anno (no `d_pat__sub` / `is_base_term`).
 (2) `fresco/algo/def_rules.v` REWRITTEN from `full-algo-spec.tex`: new
@@ -563,7 +563,7 @@ soundness/completeness bridge ([algo/def_question.v]).
   de-painted).  `a_sub`/`a_broom`/`a_split` over `pskl`; `a_unify` `ptyp`.
 - Real rules transcribed: `a_consis` (Ghost/Unit/Rigid/Arrow/Forall{Inh,
   Syn}/UnivGhost{,1,2,R}/GhostR) + `a_consis_chk`; `a_sub` (Infer/Check/
-  ForallR/UnivGhost{L,R}/Arrow/Ghost); `a_split` (arrow/hole);
+  ForallR/UnivGhost{L,R}/Arrow/Ghost); `a_split` (arrow/ghost);
   `a_guess_mono` (full guessMono); `skmod`/wf re-sorted.
 
 **DEFERRED (flagged in-file, the remaining algo-def work):**
@@ -578,7 +578,7 @@ soundness/completeness bridge ([algo/def_question.v]).
 **Proof scaffolding started:** `a_sub_sound` ([prop_soundness.v]) is now an
 induction over the algorithmic derivation with one documented obligation
 per rule (Infer/Check/ForallR/UnivGhostR/Arrow/Ghost/UnivGhostL).  Added
-aux lemmas `a_isub_refl` (identity increase) and `msubst_pskl_refl_hole`
+aux lemmas `a_isub_refl` (identity increase) and `msubst_pskl_refl_ghost`
 (Qed) that the base cases consume.
 
 ## 2026-06-16 — Faithful algorithmic-metatheory scaffolding (metasubstitution + questions/solutions/optimality)
@@ -912,12 +912,12 @@ for refinement). `make coq` green; `Print Assumptions` unchanged.
 
 **B2 — `⫯`/`□` rule restructure (done).** Replaced the single
 merge-base "keep" `⫯` rule with the paper's three rules:
-`d_refine_syn__tophole_remove` (`⫯.inh{P} ◁syn bid{Q}`, drop the ghost),
-`d_refine_syn__tophole_fill` (`⫯.inh{P} ◁syn syn{∀α.}bid{Q}`, fill with
+`d_refine_syn__univ_ghost_remove` (`⫯.inh{P} ◁syn bid{Q}`, drop the ghost),
+`d_refine_syn__univ_ghost_fill` (`⫯.inh{P} ◁syn syn{∀α.}bid{Q}`, fill with
 a concrete `∀α` — α joins Γ, cofinite binder), and
-`d_refine_syn__tophole_keep` (`⫯.inh{P} ◁syn ⫯.bid{Q}`, keep when the
+`d_refine_syn__univ_ghost_keep` (`⫯.inh{P} ◁syn ⫯.bid{Q}`, keep when the
 body is guarded). The `□` rule now clears `Ψ` (premise `nil ⨟ Γ ⊢ₚₛ P`).
-`d_refine_syn_hole_split` updated; the `tophole` split lemma was removed
+`d_refine_syn_ghost_split` updated; the `univ_ghost` split lemma was removed
 (a `⫯` no longer refines uniquely to a `⫯`). `make coq` green;
 `Print Assumptions` unchanged. **B2 complete:** `d_refine_syn` now
 matches the paper's coloured refinement (8 rules), output sort `bskl`.
@@ -929,7 +929,7 @@ cases).** `algo/def_rules.v`'s `a_pre_sub` / `a_pre_join` were `refl`
 full paper rule sets to `bskl` as a mutual inductive, including the
 three recently-added missing cases: `presub(□,□)=□`,
 `prejoin(□,Q)=Q`, `prejoin(P,□)=P`. Following the latest paper,
-overlapping rules are allowed, so the hole rules use a plain `guarded`
+overlapping rules are allowed, so the ghost rules use a plain `guarded`
 side condition. Nothing yet consumes these (algo soundness/completeness
 remain HEADLINE admits), so this is a definition port only.
 
@@ -1056,12 +1056,12 @@ subsumption); the bridges (`d_typing_gen_collapse` etc.) + D1.
    - `is_typ_syn_color_imp_inh_color`: is_typ is invariant under syn ↔ inh re-paint.
    - `is_typ_inh_color_imp_syn_color`: dual.
 
-4. **Added `d_consis_gen_refl_wf_ttyp`** (refl on tagged ph via new rule).
+4. **Added `d_consis_gen_refl_wf_dtyp`** (refl on tagged ph via new rule).
    KEY INSIGHT: output Δ = nil even for tagged ph because the new rule
    keeps Δ unchanged through tagged-∀ peeling. This breaks the apparent
    counting/linearity issue at variable-substitution positions.
 
-5. **Proved `d_consis_gen_subst_typ_with_ttyp`** (substitution lemma).
+5. **Proved `d_consis_gen_subst_typ_with_dtyp`** (substitution lemma).
    Substitutes tagged ph for X in d_consis_gen with output Δ unchanged
    (no `Δ ++ N × Δ_φ` multiplication). The lemma is the foundation for
    closing Pattern A.
@@ -1148,7 +1148,7 @@ ForallTagSyn), there's **no way to derive `d_consis_gen Δ Γ φ φ` for
 tagged φ** — d_consis_gen has tagged LHS rules (`__forall_inh_tagged`,
 `__forall_syn_tagged`) that pair tagged-LHS with COLOUR-painted-RHS, but
 no tagged-RHS rule. This makes the substitution lemma
-`d_consis_gen_subst_typ_with_ttyp` (the gen analogue of what Pattern A
+`d_consis_gen_subst_typ_with_dtyp` (the gen analogue of what Pattern A
 needs) impossible to prove at variable positions when ph is tagged.
 
 With the missing rule added: at a `__var X` position, substituting `X ↦ φ`
@@ -1274,14 +1274,14 @@ for follow-up).
 `__forall_l_untagged` admit:
 
 - Moved 3 helpers to `prop_wellformed.v` (shared use across subtyping/
-  and typing/): `d_wf_ttyp_nil_d_wf_typ`, `d_wf_ttyp_nil_mono_typ`,
-  `d_wf_typ_open_with_ttyp_nil`.
+  and typing/): `d_wf_dtyp_nil_d_wf_typ`, `d_wf_dtyp_nil_mono_typ`,
+  `d_wf_typ_open_with_dtyp_nil`.
 - In `prop_consis_sub_trans.v`'s `__forall_l_untagged` case: inversion
   of Hc gives `__forall_syn_tagged` (vacuous via HwfT) and `__forall_syn`
   (productive). For Δ' = nil (ph mono), uses `d_consis_subst_mono` on
   Hc's cofinite body, composes with IH on inner d_sub, re-applies
   `d_sub__forall_l_untagged` with Δ' := nil. Non-mono ph case still
-  admitted (needs d_consis substitution over `d_wf_ttyp`).
+  admitted (needs d_consis substitution over `d_wf_dtyp`).
 
 **Phase 1.E** — added foundation for SPLIT-helper refactor:
 
@@ -1424,7 +1424,7 @@ has no instantiation rule, so the typing antecedent is vacuous.
 - **Rules grouped by paper rule** (tagged + untagged adjacent), not
   appended-last. Easier manual audit per user preference.
 - **Notations inlined** via `Reserved Notation` + `where` clauses on 7
-  judgments (`d_wf_skel`, `d_wf_ttyp`, `d_wf_tskel`, `d_consis`, `d_sub`,
+  judgments (`d_wf_skel`, `d_wf_dtyp`, `d_wf_tskel`, `d_consis`, `d_sub`,
   `d_pat_consis`, `d_pat_sub`), so rule bodies are paper-faithful in
   one glance. `decl/notations.v` pared down accordingly.
 
@@ -1526,11 +1526,11 @@ premises). Closure took several iterations and bottomed out at a
 
 **What looked like the obstacle (it wasn't).** The
 `d_pat_consis__univ_ghost_inh1` rule recurses on Γ-extension while
-`d_wf_skel__all_col` recurses on Ψ-extension. At a `typ_tophole`
+`d_wf_skel__all_col` recurses on Ψ-extension. At a `typ_univ_ghost`
 boundary, Ψ gets stripped while Γ survives. So a derivation that
 introduces α into Γ during d_pat_consis can produce an output ∀α.P
 where the wf-check (which rebinds α in Ψ) fails because α is under a
-tophole. A concrete counter-example exists at the standalone-rule
+univ_ghost. A concrete counter-example exists at the standalone-rule
 level: input `TopHole.(Hole → Unit)`, output
 `∀α. TopHole.(α → Unit)` — d_pat_consis derives it, wf rejects it.
 This was diagnosed as a "paper-level Γ↔Ψ tension" needing rule
@@ -1577,13 +1577,13 @@ colour discipline the paper proof's narration was already using.
 
 **Related: "P2/P3 paper inconsistency" — RESOLVED (was a parsing
 bug).** An earlier read of paper rules at `declarative.tex:1626` and
-`:1635` interpreted them as producing `(typ_tophole typ_hole) → Q` and
-`(typ_tophole A) → Q` respectively, concluding the rules produced
+`:1635` interpreted them as producing `(typ_univ_ghost typ_ghost) → Q` and
+`(typ_univ_ghost A) → Q` respectively, concluding the rules produced
 shapes that fail wf. That was a **precedence misreading**. In math
 notation, `TopHole.X → Y` parses as `TopHole.(X → Y)` (binder
 right-associative, like `∀x. P → Q ≡ ∀x.(P → Q)`). The actual rules
-produce `typ_tophole (typ_arrow typ_hole Q)` /
-`typ_tophole (typ_arrow A Q)` — both bodies are arrows, hence
+produce `typ_univ_ghost (typ_arrow typ_ghost Q)` /
+`typ_univ_ghost (typ_arrow A Q)` — both bodies are arrows, hence
 guarded, hence wf. **No paper inconsistency.**
 
 ## Phase 1 (definitions only)

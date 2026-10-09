@@ -267,8 +267,8 @@ Proof.
     intros α Hα.
     rewrite <- !pskl_to_uskl_open_var.
     apply H0; [ exact Hα | exact Hwf ].
-  - (* tophole *)
-    simpl. apply a_uskl_tyequiv__tophole. auto.
+  - (* univ_ghost *)
+    simpl. apply a_uskl_tyequiv__univ_ghost. auto.
 Qed.
 
 (* ===================================================================== *)
@@ -750,13 +750,13 @@ Lemma a_split_complete : forall M Θ0 P0,
   exists P1 Q1,
     ({{ Θ0 ⊲ P0 ▹ P1 ⇢ Q1 ⊣ Θ0 }}a) /\
     a_sk_mode_compat (decr_mode M) Q1 /\
-    ((P0 = pskl_hole /\ P1 = pskl_hole /\ Q1 = pskl_hole)
+    ((P0 = pskl_ghost /\ P1 = pskl_ghost /\ Q1 = pskl_ghost)
      \/ P0 = pskl_arrow P1 Q1).
 Proof.
   intros M Θ0 P0 Hmod Hne; destruct Hmod.
   - (* TI at the ghost *)
-    exists pskl_hole, pskl_hole.
-    split; [ apply a_split__hole | ].
+    exists pskl_ghost, pskl_ghost.
+    split; [ apply a_split__ghost | ].
     split; [ apply a_sk_mode_compat__ti | ].
     left; repeat split; reflexivity.
   - (* TC : excluded by the rule's own [m <> TC] *)
@@ -796,11 +796,11 @@ Qed.
     IH's, and the run re-wraps by [AP-Freeze]. *)
 Lemma a_pat_complete_freeze : forall Θ0 e κ Θ Q,
   (forall Q', {{ Θ ⊢ˢ[ mode_ti ] e ⦂ Q' }}ad ->
-     {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ pskl_hole)) ⊳ Q' }}ad ->
-     pat_complete_concl mode_ti Θ0 pskl_hole e κ Θ Q') ->
+     {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ pskl_ghost)) ⊳ Q' }}ad ->
+     pat_complete_concl mode_ti Θ0 pskl_ghost e κ Θ Q') ->
   {{ Θ ⊢ˢ[ mode_tc ] (exp_freeze e) ⦂ Q }}ad ->
-  {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ pskl_hole)) ⊳ Q }}ad ->
-  pat_complete_concl mode_tc Θ0 pskl_hole (exp_freeze e) κ Θ Q.
+  {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ pskl_ghost)) ⊳ Q }}ad ->
+  pat_complete_concl mode_tc Θ0 pskl_ghost (exp_freeze e) κ Θ Q.
 Proof.
   intros Θ0 e κ Θ Q IH Hd Href.
   inversion Hd; subst.
@@ -1031,7 +1031,7 @@ Lemma a_pat_complete_abs_check : forall Θ0 e κ Θ Q,
      {{ Θ' ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ' P0')) ⊳ Q' }}ad ->
      pat_complete_concl M' Θ0' P0' (open_exp_wrt_exp e (exp_var_f x)) κ' Θ' Q') ->
   {{ Θ ⊢ˢ[ mode_tc ] (exp_abs e) ⦂ Q }}ad ->
-  pat_complete_concl mode_tc Θ0 pskl_hole (exp_abs e) κ Θ Q.
+  pat_complete_concl mode_tc Θ0 pskl_ghost (exp_abs e) κ Θ Q.
 Proof.
   intros Θ0 e κ Θ Q Hwf0 HwfΘ Hinc Hrig Hlc IH Hd.
   pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps Hwf0 Hb)
@@ -1049,17 +1049,17 @@ Proof.
                           `union` dom Θ `union` ftvar_in_aenv Θ
                           `union` fvar_in_exp e `union` ftvar_in_exp e
                           `union` ftvar_in_pskl P)) as [x Hx].
-  set (bx := abind_var_skl pskl_hole).
+  set (bx := abind_var_skl pskl_ghost).
   assert (Hwf0x : {{ ⊢ ((x ~ bx) ++ Θ0) }}a)
     by (apply a_wf_aenv__var;
-        [ clear - Hx; fsetdec | apply a_wf_pskl__hole | exact Hwf0 ]).
+        [ clear - Hx; fsetdec | apply a_wf_pskl__ghost | exact Hwf0 ]).
   assert (HwfΘx : {{ ⊢ ((x ~ bx) ++ Θ) }}a)
     by (apply a_wf_aenv__var;
-        [ clear - Hx; fsetdec | apply a_wf_pskl__hole | exact HwfΘ ]).
+        [ clear - Hx; fsetdec | apply a_wf_pskl__ghost | exact HwfΘ ]).
   assert (Hincx : κ ∷ ((x ~ bx) ++ Θ0) ⊑ ((x ~ bx) ++ Θ)).
-  { apply (@a_inc__var_skl Θ0 κ Θ nil x pskl_hole pskl_hole);
+  { apply (@a_inc__var_skl Θ0 κ Θ nil x pskl_ghost pskl_ghost);
       [ exact Hinc
-      | apply a_pskl_tyequiv__refl; apply lc_pskl_hole
+      | apply a_pskl_tyequiv__refl; apply lc_pskl_ghost
       | apply a_suffix__nil ]. }
   assert (Hlcbody : lc_exp (open_exp_wrt_exp e (exp_var_f x)))
     by (inversion Hlc; auto).
@@ -1076,21 +1076,21 @@ Proof.
       as Hw.
     rewrite bskl_to_pskl_pskl_to_bskl_syn in Hw. exact Hw. }
   (* ---- 2. the IH, once ---- *)
-  destruct (IH x mode_tc ((x ~ bx) ++ Θ0) pskl_hole κ ((x ~ bx) ++ Θ)
+  destruct (IH x mode_tc ((x ~ bx) ++ Θ0) pskl_ghost κ ((x ~ bx) ++ Θ)
               (pskl_to_bskl_syn P)
               Hwf0x HwfΘx
-              ltac:(apply a_wf_pskl__hole)
+              ltac:(apply a_wf_pskl__ghost)
               ltac:(apply a_sk_mode_compat__tc)
               Hincx Hrigx Hlcbody
               (Hbody x ltac:(clear - Hx; solve_notin_auto))
-              ltac:(apply ad_refine_syn__hole; clear; fsetdec))
+              ltac:(apply ad_refine_syn__ghost; clear; fsetdec))
     as [Q' [Θ1' [Hrun Hopt]]].
   (* ---- 3. the run's identity increase shapes the output ---- *)
   assert (Hexpx : {{ ((x ~ bx) ++ Θ0) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a).
   { apply a_wf_exp_of_tvarish; [ exact Hlcbody | ].
     intros α Hα. left. apply Hrigx. exact Hα. }
   destruct (a_pat_sound Hrun Hwf0x
-              ltac:(apply a_wf_pskl__hole)
+              ltac:(apply a_wf_pskl__ghost)
               ltac:(apply a_sk_mode_compat__tc)
               Hexpx)
     as [Hle [Hwf1' _]].
@@ -1115,12 +1115,12 @@ Proof.
   assert (HwfQ' : {{ (Ξ ++ (x ~ bx) ++ Θ2) ⨟ empty ⊢ₚₛ Q' }}a)
     by (eapply a_pat_output_wf;
         [ exact Hrun | exact Hwf0x
-        | apply a_wf_pskl__hole | apply a_sk_mode_compat__tc | exact Hexpx ]).
+        | apply a_wf_pskl__ghost | apply a_sk_mode_compat__tc | exact Hexpx ]).
   assert (HxQ' : x `notin` ftvar_in_pskl Q')
     by (eapply a_wf_pskl_notin_ftv_tm;
         [ exact HwfQ' | exact Hu1' | exact Hbx1 | exact I ]).
   (* ---- 5. the run ---- *)
-  exists (pskl_tophole (pskl_arrow pskl_hole Q')), (Ξ ++ Θ2).
+  exists (pskl_univ_ghost (pskl_arrow pskl_ghost Q')), (Ξ ++ Θ2).
   split.
   { (* ⭐ EXISTS-FRESH (2026-08-13).  What stood here was ~30 lines that
        REGENERATED the cofinite family from the one instance [Hrun] —
@@ -1139,17 +1139,17 @@ Proof.
     by (eapply a_inc_id_msubst_unique;
         [ exact Hinc1 | exact Hincid' | exact Hid1 | exact Hidκ ]).
   assert (Hinc1x : κ1 ∷ ((x ~ bx) ++ Θ0) ⊑ (Ξ ++ (x ~ bx) ++ Θ2)).
-  { apply (@a_inc__var_skl Θ0 κ1 Θ2 Ξ x pskl_hole pskl_hole);
+  { apply (@a_inc__var_skl Θ0 κ1 Θ2 Ξ x pskl_ghost pskl_ghost);
       [ rewrite Heqκ; exact Hincid'
-      | apply a_pskl_tyequiv__refl; apply lc_pskl_hole
+      | apply a_pskl_tyequiv__refl; apply lc_pskl_ghost
       | exact Hsuf ]. }
   destruct (Hopt κ1 Hid1 Hinc1x) as [ζ [Hζ [Heqv Hprec]]].
   exists ζ.
   split.
-  { exact (@a_inc_strip_tm_head Ξ x (abind_var_skl pskl_hole)
-             (abind_var_skl pskl_hole) Θ2 ζ Θ Hsuf
-             (fun h : abind_is_ty (abind_var_skl pskl_hole) => h)
-             (fun h : abind_is_ty (abind_var_skl pskl_hole) => h)
+  { exact (@a_inc_strip_tm_head Ξ x (abind_var_skl pskl_ghost)
+             (abind_var_skl pskl_ghost) Θ2 ζ Θ Hsuf
+             (fun h : abind_is_ty (abind_var_skl pskl_ghost) => h)
+             (fun h : abind_is_ty (abind_var_skl pskl_ghost) => h)
              Hwf1' HwfΘx Hζ). }
   split.
   { eapply a_inc_equiv_strip_var_skl_head; [ exact Heqv | exact I ]. }
@@ -1158,9 +1158,9 @@ Proof.
     rewrite bskl_to_pskl_pskl_to_bskl_syn in Hprec.
     cbn [msubst_pskl bskl_to_pskl pskl_to_bskl_inh].
     rewrite bskl_to_pskl_pskl_to_bskl_syn.
-    apply ad_refine_syn_tophole_keep_intro.
+    apply ad_refine_syn_univ_ghost_keep_intro.
     apply ad_refine_syn_arrow_intro.
-    - apply (@ad_refine_syn__hole Θ empty pskl_hole).
+    - apply (@ad_refine_syn__ghost Θ empty pskl_ghost).
       clear; fsetdec.
     - eapply ad_refine_syn_mono;
         [ exact Hprec
@@ -1188,7 +1188,7 @@ Lemma a_pat_complete_abs_anno_check : forall Θ0 A e κ Θ Q,
      {{ Θ' ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ' P0')) ⊳ Q' }}ad ->
      pat_complete_concl M' Θ0' P0' (open_exp_wrt_exp e (exp_var_f x)) κ' Θ' Q') ->
   {{ Θ ⊢ˢ[ mode_tc ] (exp_abs_anno A e) ⦂ Q }}ad ->
-  pat_complete_concl mode_tc Θ0 pskl_hole (exp_abs_anno A e) κ Θ Q.
+  pat_complete_concl mode_tc Θ0 pskl_ghost (exp_abs_anno A e) κ Θ Q.
 Proof.
   intros Θ0 A e κ Θ Q Hwf0 HwfΘ Hinc Hrig Hlc IH Hd.
   pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps Hwf0 Hb)
@@ -1245,21 +1245,21 @@ Proof.
       as Hw.
     rewrite bskl_to_pskl_pskl_to_bskl_syn in Hw. exact Hw. }
   (* ---- 2. the IH, once ---- *)
-  destruct (IH x mode_tc ((x ~ bx) ++ Θ0) pskl_hole κ ((x ~ bx) ++ Θ)
+  destruct (IH x mode_tc ((x ~ bx) ++ Θ0) pskl_ghost κ ((x ~ bx) ++ Θ)
               (pskl_to_bskl_syn P)
               Hwf0x HwfΘx
-              ltac:(apply a_wf_pskl__hole)
+              ltac:(apply a_wf_pskl__ghost)
               ltac:(apply a_sk_mode_compat__tc)
               Hincx Hrigx Hlcbody
               (Hbody x ltac:(clear - Hx; solve_notin_auto))
-              ltac:(apply ad_refine_syn__hole; clear; fsetdec))
+              ltac:(apply ad_refine_syn__ghost; clear; fsetdec))
     as [Q' [Θ1' [Hrun Hopt]]].
   (* ---- 3. the run's identity increase shapes the output ---- *)
   assert (Hexpx : {{ ((x ~ bx) ++ Θ0) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a).
   { apply a_wf_exp_of_tvarish; [ exact Hlcbody | ].
     intros α Hα. left. apply Hrigx. exact Hα. }
   destruct (a_pat_sound Hrun Hwf0x
-              ltac:(apply a_wf_pskl__hole)
+              ltac:(apply a_wf_pskl__ghost)
               ltac:(apply a_sk_mode_compat__tc)
               Hexpx)
     as [Hle [Hwf1' _]].
@@ -1282,12 +1282,12 @@ Proof.
   assert (HwfQ' : {{ (Ξ ++ (x ~ bx) ++ Θ2) ⨟ empty ⊢ₚₛ Q' }}a)
     by (eapply a_pat_output_wf;
         [ exact Hrun | exact Hwf0x
-        | apply a_wf_pskl__hole | apply a_sk_mode_compat__tc | exact Hexpx ]).
+        | apply a_wf_pskl__ghost | apply a_sk_mode_compat__tc | exact Hexpx ]).
   assert (HxQ' : x `notin` ftvar_in_pskl Q')
     by (eapply a_wf_pskl_notin_ftv_tm;
         [ exact HwfQ' | exact Hu1' | exact Hbx1 | exact I ]).
   (* ---- 5. the run ---- *)
-  exists (pskl_tophole (pskl_arrow (ptyp_to_pskl A) Q')), (Ξ ++ Θ2).
+  exists (pskl_univ_ghost (pskl_arrow (ptyp_to_pskl A) Q')), (Ξ ++ Θ2).
   split.
   { (* ⭐ EXISTS-FRESH (2026-08-13).  What stood here was ~30 lines that
        REGENERATED the cofinite family from the one instance [Hrun] —
@@ -1338,7 +1338,7 @@ Proof.
           eapply a_inc_binds_tvar;
             [ exact Hincid' | apply HrigA; exact Hα ] ]. }
     rewrite HmsAζ.
-    apply ad_refine_syn_tophole_keep_intro.
+    apply ad_refine_syn_univ_ghost_keep_intro.
     apply ad_refine_syn_arrow_intro.
     - apply ad_precise_refl.
       apply a_wf_ptyp_to_wf_pskl. exact HwfA.
@@ -1427,7 +1427,7 @@ Proof.
       ({{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ Q1)) ⊳ Q0 }}ad) /\
       ({{ Θ0 ⨟ empty ⊢ₚₛ P1 }}a) /\ ({{ Θ0 ⨟ empty ⊢ₚₛ Q1 }}a)).
   { destruct Hshape as [[-> [-> ->]] | ->].
-    - (* ◇ ▹ ◇ ⇢ ◇ : the solution's refinement is a hole-fill *)
+    - (* ◇ ▹ ◇ ⇢ ◇ : the solution's refinement is a ghost-fill *)
       cbn [msubst_pskl pskl_to_bskl_inh] in Href.
       inversion Href; subst.
       match goal with
@@ -1441,11 +1441,11 @@ Proof.
         | Hpa : pskl_to_bskl_syn ?Pa = pskl_to_bskl_inh P |- _ =>
             rewrite <- Hpa
         end.
-        apply ad_refine_syn__hole. clear; fsetdec.
+        apply ad_refine_syn__ghost. clear; fsetdec.
       + cbn [msubst_pskl pskl_to_bskl_inh].
-        apply ad_refine_syn__hole. clear; fsetdec.
-      + apply a_wf_pskl__hole.
-      + apply a_wf_pskl__hole.
+        apply ad_refine_syn__ghost. clear; fsetdec.
+      + apply a_wf_pskl__ghost.
+      + apply a_wf_pskl__ghost.
     - (* the arrow shape : structural inversion *)
       cbn [msubst_pskl pskl_to_bskl_inh] in Href.
       inversion Href; subst.
@@ -1756,17 +1756,17 @@ Proof.
       repeat split.
       + cbn [msubst_pskl pskl_to_bskl_inh].
         first
-          [ apply ad_refine_syn__hole; clear; fsetdec
+          [ apply ad_refine_syn__ghost; clear; fsetdec
           | match goal with
             | Hpa : pskl_to_bskl_syn _ = btyp_to_bskl _ |- _ =>
-                rewrite <- Hpa; apply ad_refine_syn__hole; clear; fsetdec
+                rewrite <- Hpa; apply ad_refine_syn__ghost; clear; fsetdec
             | Hpa : btyp_to_bskl _ = pskl_to_bskl_syn _ |- _ =>
-                rewrite Hpa; apply ad_refine_syn__hole; clear; fsetdec
+                rewrite Hpa; apply ad_refine_syn__ghost; clear; fsetdec
             end ].
       + cbn [msubst_pskl pskl_to_bskl_inh].
-        apply ad_refine_syn__hole. clear; fsetdec.
-      + apply a_wf_pskl__hole.
-      + apply a_wf_pskl__hole.
+        apply ad_refine_syn__ghost. clear; fsetdec.
+      + apply a_wf_pskl__ghost.
+      + apply a_wf_pskl__ghost.
     - cbn [msubst_pskl pskl_to_bskl_inh] in Href.
       inversion Href; subst.
       inversion HwfP0; subst.
@@ -2181,20 +2181,20 @@ Proof.
   | H : {{ Θ ⨟ empty ⊢ₚₛ bskl_to_pskl Q }}a |- _ => rename H into HwfQcod
   end.
   (* ---- 1. the argument's run (e2 at TC, ◇) ---- *)
-  destruct (IH2 mode_tc Θ0 pskl_hole κ Θ (pskl_to_bskl_syn Pn)
+  destruct (IH2 mode_tc Θ0 pskl_ghost κ Θ (pskl_to_bskl_syn Pn)
               Hwf0 HwfΘ
-              ltac:(apply a_wf_pskl__hole)
+              ltac:(apply a_wf_pskl__ghost)
               ltac:(apply a_sk_mode_compat__tc)
               Hinc Hrig2 Hlc2 Hd2
               ltac:(cbn [msubst_pskl pskl_to_bskl_inh];
-                    apply ad_refine_syn__hole; clear; fsetdec))
+                    apply ad_refine_syn__ghost; clear; fsetdec))
     as [P1 [Θ1 [Hrun2 Hopt2]]].
   (* its own identity increase *)
   assert (Hexp2 : {{ Θ0 ⊢ᵉ e2 }}a).
   { apply a_wf_exp_of_tvarish; [ exact Hlc2 | ].
     intros α Hα. left. apply Hrig2. exact Hα. }
   destruct (a_pat_sound Hrun2 Hwf0
-              ltac:(apply a_wf_pskl__hole)
+              ltac:(apply a_wf_pskl__ghost)
               ltac:(apply a_sk_mode_compat__tc)
               Hexp2)
     as [Hle2 [Hwf1 _]].
@@ -2230,7 +2230,7 @@ Proof.
   assert (HwfP1 : {{ Θ1 ⨟ empty ⊢ₚₛ P1 }}a)
     by (eapply a_pat_output_wf;
         [ exact Hrun2 | exact Hwf0
-        | apply a_wf_pskl__hole | apply a_sk_mode_compat__tc | exact Hexp2 ]).
+        | apply a_wf_pskl__ghost | apply a_sk_mode_compat__tc | exact Hexp2 ]).
   assert (HwfP0mid : {{ Θ1 ⨟ empty ⊢ₚₛ P0 }}a).
   { pose proof (a_wf_pskl_msubst_inc Hinca Hwf0 HwfP0
                   ltac:(intros α Hα; clear - Hα; solve_notin_auto)
@@ -2377,7 +2377,7 @@ Proof.
     intros Q' Hd' Href'.
     apply IHn; try assumption;
       try solve [ clear - Hsz; lia
-                | apply a_wf_pskl__hole
+                | apply a_wf_pskl__ghost
                 | apply a_sk_mode_compat__ti
                 | inversion Hlc; assumption ].
 Qed.

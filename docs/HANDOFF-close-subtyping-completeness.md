@@ -85,7 +85,7 @@ divergence inside the look/solve layer, which is now located exactly
 (DESIGN §14.10a):
 
   a_solve_eq__flex_r  (SE-FlexR)   : Θ ⊢ₑ P ∼ α̂ ⤳ α̂    -- DISCARDS P
-  a_solve_eq__hole_r  (SE-VacuousR): Θ ⊢ₑ P ∼ ◇  ⤳ P    -- KEEPS P
+  a_solve_eq__ghost_r  (SE-VacuousR): Θ ⊢ₑ P ∼ ◇  ⤳ P    -- KEEPS P
 
 A ghost and a raw flexible both carry NO information there, and the two rows
 disagree about the pattern already accumulated by the preceding eq

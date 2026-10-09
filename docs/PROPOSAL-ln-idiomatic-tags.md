@@ -22,15 +22,15 @@ and so does not interact with the standard LN rename/strengthen machinery.
 
 - `ε : εvar` is a **distinct atom kind** (alongside term vars and tvars). It is a
   **free label**, not a binder: `uskl_all_etag (ε:εvar) (R:uskl)` (and
-  `uskl_topholeg ε R`, `utyp_all_etag ε C`) carry `ε` as a plain parameter; the
+  `uskl_dot_univ_ghost ε R`, `utyp_all_etag ε C`) carry `ε` as a plain parameter; the
   *body* `R`/`C` is opened on its **tvar** binder, which IS cofinite.
 - Tag collections are **`atoms` sets** `Δ`/`Ψ`, manipulated set-theoretically:
   - `d_tags_skl : atoms -> uskl -> Prop` (def_extra.v): `__arrow` requires
     `AtomSetImpl.inter Δ1 Δ2 [=] empty` (paper `⊎`, linearity); `__all_etag`
-    requires `ε ∉ Δ0`, `Δ [=] add ε Δ0`; `__hole/__unit/__var` require `Δ [=] empty`.
+    requires `ε ∉ Δ0`, `Δ [=] add ε Δ0`; `__ghost/__unit/__var` require `Δ [=] empty`.
   - `d_consis__forall_inh_tagged` (def_extra.v): `Ψ [=] add ε Ψ0`.
   - `d_pat_sub__forall_l_{tagged,untagged}`: `AtomSetImpl.inter Δ' Δ [=] empty`,
-    `d_tags_skl Δ' psi`, `is_tskl psi`.
+    `d_tags_skl Δ' psi`, `is_dskl psi`.
 - Asymmetry: the forall's **tvar `X`** is `forall X ∉ L, …` (cofinite, renamable,
   strengthenable); the **tag `ε`** lives only in a set with `add`/`∉`/`inter`.
 

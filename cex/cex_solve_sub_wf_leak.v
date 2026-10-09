@@ -77,12 +77,12 @@ Fixpoint all_tvar (Ξ : aenv) : Prop :=
    choice is still a choice. *)
 Lemma cex_leak_run : forall Θ b,
   b `notin` ftvar_in_aenv Θ ->
-  {{ Θ ⊢ₛ pskl_hole ≼[ mode_tc ] (pskl_all_syn (pskl_var_b 0))
-     ⤳ nil ⨾ (pskl_tophole (pskl_var_f b)) }}a.
+  {{ Θ ⊢ₛ pskl_ghost ≼[ mode_tc ] (pskl_all_syn (pskl_var_b 0))
+     ⤳ nil ⨾ (pskl_univ_ghost (pskl_var_f b)) }}a.
 Proof.
   intros Θ b Hb.
   apply a_solve_sub__forall_r with (β := b);
-    [ exact I | apply solve_l_off_hole | cbn; clear - Hb; fsetdec | ].
+    [ exact I | apply solve_l_off_ghost | cbn; clear - Hb; fsetdec | ].
   (* [open (var_b 0) (var_f b) = var_f b] *)
   unfold open_pskl_wrt_pskl; cbn.
   apply a_solve_sub__ghost_l; [ exact I | apply guarded_pskl__var ].
@@ -93,8 +93,8 @@ Qed.
 (*  holds vacuously.                                                      *)
 (* ===================================================================== *)
 
-Lemma cex_wf_subject : forall Θ, {{ Θ ⨟ empty ⊢ₚₛ pskl_hole }}a.
-Proof. intros Θ. apply a_wf_pskl__hole. Qed.
+Lemma cex_wf_subject : forall Θ, {{ Θ ⨟ empty ⊢ₚₛ pskl_ghost }}a.
+Proof. intros Θ. apply a_wf_pskl__ghost. Qed.
 
 Lemma cex_wf_target : forall Θ,
   {{ Θ ⨟ empty ⊢ₚₛ (pskl_all_syn (pskl_var_b 0)) }}a.
@@ -110,7 +110,7 @@ Qed.
 
 Lemma cex_output_not_wf : forall Θ b,
   b `notin` dom Θ ->
-  ~ ({{ Θ ⨟ empty ⊢ₚₛ (pskl_tophole (pskl_var_f b)) }}a).
+  ~ ({{ Θ ⨟ empty ⊢ₚₛ (pskl_univ_ghost (pskl_var_f b)) }}a).
 Proof.
   intros Θ b Hb Hwf.
   inversion Hwf as [ | | | | | ? ? ? Hg Hbody ]; subst.
@@ -142,8 +142,8 @@ Proof.
   assert (HbΘd : b `notin` dom Θ) by (subst Θ; cbn; clear - Hb; fsetdec).
   apply (@cex_output_not_wf Θ b HbΘd).
   change Θ with (nil ++ Θ) at 1.
-  apply (Hclaim Θ mode_tc pskl_hole (pskl_all_syn (pskl_var_b 0)) nil
-                (pskl_tophole (pskl_var_f b))
+  apply (Hclaim Θ mode_tc pskl_ghost (pskl_all_syn (pskl_var_b 0)) nil
+                (pskl_univ_ghost (pskl_var_f b))
                 (@cex_leak_run Θ b HbΘ) nil empty I);
     [ apply cex_wf_subject | apply cex_wf_target | clear; fsetdec ].
 Qed.

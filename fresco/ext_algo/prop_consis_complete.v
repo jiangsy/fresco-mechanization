@@ -12,17 +12,17 @@
     owed at exactly one row, [U-Arrow].
 
     ⭐ WHAT THIS FILE PROVES INSTEAD, and why it is not a detour: the
-    divergence needs a [pskl_hole] on one side, and HOLE-FREENESS IS
+    divergence needs a [pskl_ghost] on one side, and HOLE-FREENESS IS
     MAINTAINED BY THE WHOLE RECURSION — arrow halves and ∀ openings
     inherit it, and the two rows that rewrite their skeletons
     ([Assign-Assign], [Flex-Flex-Assign]) substitute a [ptyp] payload,
-    which has no holes.  So on hole-free inputs the level IS the
+    which has no ghosts.  So on ghost-free inputs the level IS the
     originally-scoped design, and the induction skeleton built here — the
     order's strong induction principle, the dispatch kills, the case
     scripts — is what the [⊑] repair will reuse; only the ghost rows and
     [U-Arrow]'s threading step change.
 
-    ⚙ [unifyvar] is INSIDE the hole-free fragment unconditionally: its
+    ⚙ [unifyvar] is INSIDE the ghost-free fragment unconditionally: its
     only consistency premise runs on [ptyp_to_pskl] payloads.  So the
     unify headline needs no restriction. *)
 
@@ -57,7 +57,7 @@ Require Import src.fresco.ext_algo.prop_solve_det.
 Require Import src.fresco.ext_algo.def_consis_impl.
 (* ⭐ the single-rule ghost inversions: since the [<> ◇] dispatch guards
    landed (algo/def_rules.v) each ghost cell admits exactly ONE rule, which
-   is what lets the motive drop [consis_call_no_hole]. *)
+   is what lets the motive drop [consis_call_no_ghost]. *)
 Require Import src.fresco.ext_algo.prop_consis_inc.
 
 Set Implicit Arguments.
@@ -209,54 +209,54 @@ Hypothesis Hconsis : forall S0 Θ Δ1 Δ2 P0 P,
             (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0))))) ->
     (* U-ForallSyn *)
     (forall P0' P1,
-       P0 = pskl_tophole P0' -> P = pskl_all_syn P1 ->
+       P0 = pskl_univ_ghost P0' -> P = pskl_all_syn P1 ->
        e_consis_call_order (add (supply_fresh S0) S0)
          ((supply_fresh S0 ~ abind_tvar) ++ Θ)
          (consis_call_consis Δ1 (add (supply_fresh S0) Δ2)
-            (pskl_tophole P0')
+            (pskl_univ_ghost P0')
             (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0))))) ->
     (forall P0' P1,
-       P0 = pskl_tophole P0' -> P = pskl_all_syn P1 ->
+       P0 = pskl_univ_ghost P0' -> P = pskl_all_syn P1 ->
        Qc (add (supply_fresh S0) S0)
          ((supply_fresh S0 ~ abind_tvar) ++ Θ)
          (consis_call_consis Δ1 (add (supply_fresh S0) Δ2)
-            (pskl_tophole P0')
+            (pskl_univ_ghost P0')
             (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0))))) ->
     (* U-UnivGhost *)
     (forall P0' P1,
-       P0 = pskl_tophole P0' -> P = pskl_tophole P1 ->
+       P0 = pskl_univ_ghost P0' -> P = pskl_univ_ghost P1 ->
        e_consis_call_order S0 Θ (consis_call_consis Δ1 Δ2 P0' P1)) ->
     (forall P0' P1,
-       P0 = pskl_tophole P0' -> P = pskl_tophole P1 ->
+       P0 = pskl_univ_ghost P0' -> P = pskl_univ_ghost P1 ->
        Qc S0 Θ (consis_call_consis Δ1 Δ2 P0' P1)) ->
     (* U-UnivGhost1 *)
     (forall P0' P1,
-       P0 = pskl_all_syn P0' -> P = pskl_tophole P1 ->
+       P0 = pskl_all_syn P0' -> P = pskl_univ_ghost P1 ->
        e_consis_call_order (add (supply_fresh S0) S0)
          ((supply_fresh S0 ~ abind_tvar) ++ Θ)
          (consis_call_consis (add (supply_fresh S0) Δ1) Δ2
             (open_pskl_wrt_pskl P0' (pskl_var_f (supply_fresh S0)))
-            (pskl_tophole P1))) ->
+            (pskl_univ_ghost P1))) ->
     (forall P0' P1,
-       P0 = pskl_all_syn P0' -> P = pskl_tophole P1 ->
+       P0 = pskl_all_syn P0' -> P = pskl_univ_ghost P1 ->
        Qc (add (supply_fresh S0) S0)
          ((supply_fresh S0 ~ abind_tvar) ++ Θ)
          (consis_call_consis (add (supply_fresh S0) Δ1) Δ2
             (open_pskl_wrt_pskl P0' (pskl_var_f (supply_fresh S0)))
-            (pskl_tophole P1))) ->
+            (pskl_univ_ghost P1))) ->
     (* U-UnivGhost2 — strip the subject's ⫯ against a guarded pattern *)
     (forall P1,
-       P = pskl_tophole P1 ->
+       P = pskl_univ_ghost P1 ->
        e_consis_call_order S0 Θ (consis_call_consis Δ1 Δ2 P0 P1)) ->
     (forall P1,
-       P = pskl_tophole P1 ->
+       P = pskl_univ_ghost P1 ->
        Qc S0 Θ (consis_call_consis Δ1 Δ2 P0 P1)) ->
     (* U-UnivGhostR — strip the pattern's ⫯ *)
     (forall P0',
-       P0 = pskl_tophole P0' ->
+       P0 = pskl_univ_ghost P0' ->
        e_consis_call_order S0 Θ (consis_call_consis Δ1 Δ2 P0' P)) ->
     (forall P0',
-       P0 = pskl_tophole P0' ->
+       P0 = pskl_univ_ghost P0' ->
        Qc S0 Θ (consis_call_consis Δ1 Δ2 P0' P)) ->
     (* U-Flex *)
     (forall α β,
@@ -348,7 +348,7 @@ Fixpoint e_consis_call_order_sind S0 Θ c
 End e_consis_call_order_sind.
 
 (* ===================================================================== *)
-(*  §2  ⛔ RETIRED (2026-08-17) — [consis_call_no_hole] and its four        *)
+(*  §2  ⛔ RETIRED (2026-08-17) — [consis_call_no_ghost] and its four        *)
 (*  maintenance lemmas are GONE, and so is the restriction they served.    *)
 (*                                                                        *)
 (*  They existed for §8c.10b's divergence: at (pattern ◇, subject α̂) both  *)
@@ -361,7 +361,7 @@ End e_consis_call_order_sind.
 (*  discharged by [do_ghost_cell] against the single-rule inversions of    *)
 (*  ext_algo/prop_consis_inc.v §3.                                        *)
 (*                                                                        *)
-(*  ⚙ [pskl_no_hole] itself STAYS (fresco/def_shapes.v): its other consumer *)
+(*  ⚙ [pskl_no_ghost] itself STAYS (fresco/def_shapes.v): its other consumer *)
 (*  is the Δ-monotonicity of partial precision.                            *)
 (* ===================================================================== *)
 
@@ -559,9 +559,9 @@ Proof.
       f_equal. f_equal. apply swaps_atom_notin.
       intros a0 b0 Hin. destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
       split; [ clear - Ha0 | clear - Hb0 ]; fsetdec.
-  - (* hole — the row that INVENTS *)
-    destruct (e_guess_mono_inv_hole Hd) as [α [Hα [-> [-> ->]]]].
-    destruct (e_guess_mono_inv_hole Hd') as [α' [Hα' [-> [-> ->]]]].
+  - (* ghost — the row that INVENTS *)
+    destruct (e_guess_mono_inv_ghost Hd) as [α [Hα [-> [-> ->]]]].
+    destruct (e_guess_mono_inv_ghost Hd') as [α' [Hα' [-> [-> ->]]]].
     exists ((α, α') :: nil). rel4.
     + intros ? ? [Heqp | []]. inversion Heqp; subst. split; assumption.
     + cbn [swaps_atoms]. rewrite swap_atoms_add.
@@ -578,9 +578,9 @@ Proof.
       replace (swap_atom α α' α) with α'
         by (unfold swap_atom; destruct (α == α); congruence).
       reflexivity.
-  - (* tophole *)
-    pose proof (e_guess_mono_inv_tophole Hd) as Dp.
-    pose proof (e_guess_mono_inv_tophole Hd') as Dp'.
+  - (* univ_ghost *)
+    pose proof (e_guess_mono_inv_univ_ghost Hd) as Dp.
+    pose proof (e_guess_mono_inv_univ_ghost Hd') as Dp'.
     simpl in Hsz, Hcov.
     exact (IH S0 P S1 Ξ A ltac:(lia) Dp Hcov S1' Ξ' A' Dp').
 Qed.
@@ -608,9 +608,9 @@ Qed.
 (*  as lemmas: one per clause of the runner's dispatch, each turning a    *)
 (*  derivation at the clause's shape into that rule's premises.           *)
 (*                                                                        *)
-(*  ⭐ NONE of them needs hole-freeness.  [U-Ghost] demands the SUBJECT   *)
+(*  ⭐ NONE of them needs ghost-freeness.  [U-Ghost] demands the SUBJECT   *)
 (*  be literally [◇] and [U-GhostR] the PATTERN, so at any concrete       *)
-(*  shape they cannot fire at all; hole-freeness is what keeps the        *)
+(*  shape they cannot fire at all; ghost-freeness is what keeps the        *)
 (*  recursion away from the two clauses where they can (§8c.10b's         *)
 (*  divergence), not what makes these inversions unique.                  *)
 (*                                                                        *)
@@ -627,8 +627,8 @@ Qed.
 Local Ltac kill_unguarded :=
   repeat match goal with
          | Hg : guarded_pskl (pskl_all_syn _) |- _ => inversion Hg
-         | Hg : guarded_pskl (pskl_tophole _) |- _ => inversion Hg
-         | Hg : guarded_pskl pskl_hole |- _ => inversion Hg
+         | Hg : guarded_pskl (pskl_univ_ghost _) |- _ => inversion Hg
+         | Hg : guarded_pskl pskl_ghost |- _ => inversion Hg
          end.
 
 (* --- the UNAMBIGUOUS shape pairs: exactly one rule fires --- *)
@@ -660,55 +660,55 @@ Lemma e_consis_inv_forall_inh : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
 Proof. intros * Hd. inversion Hd; subst; kill_unguarded; eauto 10. Qed.
 
 Lemma e_consis_inv_forall_syn : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) ]
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_univ_ghost P0) ]
      (pskl_all_syn P) ∼ Q ⊣ Θ1 }}e ->
   exists α Qb,
     α `notin` S0 /\ Q = pskl_all_syn (close_pskl_wrt_pskl α Qb) /\
     {{ (add α S0) ↝ S1 ⊨ ((α ~ abind_tvar) ++ Θ0)
-       ⊢[ Δ1 | (add α Δ2) | (pskl_tophole P0) ]
+       ⊢[ Δ1 | (add α Δ2) | (pskl_univ_ghost P0) ]
        (open_pskl_wrt_pskl P (pskl_var_f α)) ∼ Qb
        ⊣ ((α ~ abind_tvar) ++ Θ1) }}e.
 Proof. intros * Hd. inversion Hd; subst; kill_unguarded; eauto 10. Qed.
 
 Lemma e_consis_inv_univ_ghost : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) ]
-     (pskl_tophole P) ∼ Q ⊣ Θ1 }}e ->
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_univ_ghost P0) ]
+     (pskl_univ_ghost P) ∼ Q ⊣ Θ1 }}e ->
   exists Qb,
-    Q = pskl_tophole Qb /\
+    Q = pskl_univ_ghost Qb /\
     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Qb ⊣ Θ1 }}e.
 Proof. intros * Hd. inversion Hd; subst; kill_unguarded; eauto. Qed.
 
 Lemma e_consis_inv_univ_ghost1 : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_all_syn P0) ]
-     (pskl_tophole P) ∼ Q ⊣ Θ1 }}e ->
+     (pskl_univ_ghost P) ∼ Q ⊣ Θ1 }}e ->
   exists α Qb,
     α `notin` S0 /\ Q = pskl_all_syn (close_pskl_wrt_pskl α Qb) /\
     {{ (add α S0) ↝ S1 ⊨ ((α ~ abind_tvar) ++ Θ0)
        ⊢[ (add α Δ1) | Δ2
          | (open_pskl_wrt_pskl P0 (pskl_var_f α)) ]
-       (pskl_tophole P) ∼ Qb ⊣ ((α ~ abind_tvar) ++ Θ1) }}e.
+       (pskl_univ_ghost P) ∼ Qb ⊣ ((α ~ abind_tvar) ++ Θ1) }}e.
 Proof. intros * Hd. inversion Hd; subst; kill_unguarded; eauto 10. Qed.
 
 Lemma e_consis_inv_univ_ghost2_unit : forall Δ1 Δ2 S0 Θ0 P Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | pskl_unit ]
-     (pskl_tophole P) ∼ Q ⊣ Θ1 }}e ->
+     (pskl_univ_ghost P) ∼ Q ⊣ Θ1 }}e ->
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | pskl_unit ] P ∼ Q ⊣ Θ1 }}e.
 Proof. intros * Hd. inversion Hd; subst; kill_unguarded; auto. Qed.
 
 Lemma e_consis_inv_univ_ghost2_arrow : forall Δ1 Δ2 S0 Θ0 P0a P0b P Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_arrow P0a P0b) ]
-     (pskl_tophole P) ∼ Q ⊣ Θ1 }}e ->
+     (pskl_univ_ghost P) ∼ Q ⊣ Θ1 }}e ->
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_arrow P0a P0b) ] P ∼ Q ⊣ Θ1 }}e.
 Proof. intros * Hd. inversion Hd; subst; kill_unguarded; auto. Qed.
 
 Lemma e_consis_inv_univ_ghost_r_unit : forall Δ1 Δ2 S0 Θ0 P0 Q S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) ]
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_univ_ghost P0) ]
      pskl_unit ∼ Q ⊣ Θ1 }}e ->
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] pskl_unit ∼ Q ⊣ Θ1 }}e.
 Proof. intros * Hd. inversion Hd; subst; kill_unguarded; auto. Qed.
 
 Lemma e_consis_inv_univ_ghost_r_arrow : forall Δ1 Δ2 S0 Θ0 P0 P1 P2 Q S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) ]
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_univ_ghost P0) ]
      (pskl_arrow P1 P2) ∼ Q ⊣ Θ1 }}e ->
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] (pskl_arrow P1 P2) ∼ Q ⊣ Θ1 }}e.
 Proof. intros * Hd. inversion Hd; subst; kill_unguarded; auto. Qed.
@@ -717,8 +717,8 @@ Proof. intros * Hd. inversion Hd; subst; kill_unguarded; auto. Qed.
 
 Lemma e_consis_inv_flex_r : forall Δ1 Δ2 S0 Θ0 α P Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f α) ] P ∼ Q ⊣ Θ1 }}e ->
-  (forall β, P <> pskl_var_f β) -> P <> pskl_hole ->
-  (forall Pb, P <> pskl_tophole Pb) ->
+  (forall β, P <> pskl_var_f β) -> P <> pskl_ghost ->
+  (forall Pb, P <> pskl_univ_ghost Pb) ->
   Q = pskl_var_f α /\ a_non_flex Θ0 P /\
   {{ S0 ↝ S1 ⊨ Θ0 ⊲[ nil ] α ≔ P ⊣ Θ1 }}e.
 Proof.
@@ -733,8 +733,8 @@ Qed.
 
 Lemma e_consis_inv_flex_l : forall Δ1 Δ2 S0 Θ0 α P0 Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] (pskl_var_f α) ∼ Q ⊣ Θ1 }}e ->
-  (forall β, P0 <> pskl_var_f β) -> P0 <> pskl_hole ->
-  (forall Pb, P0 <> pskl_tophole Pb) ->
+  (forall β, P0 <> pskl_var_f β) -> P0 <> pskl_ghost ->
+  (forall Pb, P0 <> pskl_univ_ghost Pb) ->
   Q = pskl_var_f α /\ a_non_flex Θ0 P0 /\
   {{ S0 ↝ S1 ⊨ Θ0 ⊲[ nil ] α ≔ P0 ⊣ Θ1 }}e.
 Proof.
@@ -747,11 +747,11 @@ Qed.
 
 (* --- the three pairs the runner resolves by a flexibility TEST --- *)
 
-Lemma e_consis_inv_var_tophole : forall Δ1 Δ2 S0 Θ0 β P1 Q S1 Θ1,
+Lemma e_consis_inv_var_univ_ghost : forall Δ1 Δ2 S0 Θ0 β P1 Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f β) ]
-     (pskl_tophole P1) ∼ Q ⊣ Θ1 }}e ->
+     (pskl_univ_ghost P1) ∼ Q ⊣ Θ1 }}e ->
   (a_flex_tvar Θ0 β /\ Q = pskl_var_f β /\
-     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ nil ] β ≔ (pskl_tophole P1) ⊣ Θ1 }}e)
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ nil ] β ≔ (pskl_univ_ghost P1) ⊣ Θ1 }}e)
   \/ (a_non_flex Θ0 (pskl_var_f β) /\
       {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f β) ] P1 ∼ Q ⊣ Θ1 }}e).
 Proof.
@@ -760,11 +760,11 @@ Proof.
   - left; repeat split; auto. eapply e_assign_target_flex; eassumption.
 Qed.
 
-Lemma e_consis_inv_tophole_var : forall Δ1 Δ2 S0 Θ0 α P0 Q S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) ]
+Lemma e_consis_inv_univ_ghost_var : forall Δ1 Δ2 S0 Θ0 α P0 Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_univ_ghost P0) ]
      (pskl_var_f α) ∼ Q ⊣ Θ1 }}e ->
   (a_flex_tvar Θ0 α /\ Q = pskl_var_f α /\
-     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ nil ] α ≔ (pskl_tophole P0) ⊣ Θ1 }}e)
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ nil ] α ≔ (pskl_univ_ghost P0) ⊣ Θ1 }}e)
   \/ (a_non_flex Θ0 (pskl_var_f α) /\
       {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] (pskl_var_f α) ∼ Q ⊣ Θ1 }}e).
 Proof.
@@ -819,7 +819,7 @@ Proof. intros * Hd. inversion Hd. Qed.
     [Assign-SolveM], and the occurs check separates them. *)
 Lemma e_assign_inv_flex_self : forall S0 Θ0 Ξ α P S1 Θ1,
   {{ S0 ↝ S1 ⊨ ((α ~ abind_flex_mono) ++ Θ0) ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e ->
-  (Ξ = nil /\ P = pskl_tophole (pskl_var_f α) /\ S1 = S0 /\
+  (Ξ = nil /\ P = pskl_univ_ghost (pskl_var_f α) /\ S1 = S0 /\
      Θ1 = (α ~ abind_flex_mono) ++ Θ0)
   \/ (α `notin` ftvar_in_pskl P /\
       exists βs τ, e_guess_mono S0 P S1 βs τ /\ mono_ptyp τ /\
@@ -1303,7 +1303,7 @@ Local Ltac do_flex_l Hmot Hd Hu Hcov :=
     Δ-disjointness test that the runner performs, and answer with the
     input.  The swap chain is EMPTY: nothing was invented.  ⚙ This is what
     used to be [destruct Hnh0.] / [destruct Hnh1.] — the six case-kills the
-    hole-free restriction bought. *)
+    ghost-free restriction bought. *)
 Local Ltac do_ghost_cell Hdis :=
   match goal with
   | |- context [ sumbool_of_bool (is_empty ?S) ] =>
@@ -1758,7 +1758,7 @@ Proof.
       * (* 1 ∼ → : no rule fires *) inversion Hd.
       * (* 1 ∼ ∀ : no rule fires *) inversion Hd.
       * (* 1 ∼ ◇ — U-Ghost, the only rule at a ◇ subject *)
-        destruct (e_consis_inv_hole_subject Hd
+        destruct (e_consis_inv_ghost_subject Hd
                     ltac:(intros ? Habs; discriminate Habs))
           as [-> [-> [-> Hdis]]].
         do_ghost_cell Hdis.
@@ -1942,14 +1942,14 @@ Proof.
       * (* β̂ ∼ ∀ — U-FlexR *) do_flex_r (Q10 β0 eq_refl) Hd Hu Hcov.
       * (* ⭐ β̂ ∼ ◇ — FORMERLY DIVERGENT: [U-FlexR] is barred by its
            [<> ◇] guard, so only [U-Ghost] fires and the runner agrees. *)
-        destruct (e_consis_inv_hole_flex_pattern Hd) as [-> [-> [-> Hdis]]].
+        destruct (e_consis_inv_ghost_flex_pattern Hd) as [-> [-> [-> Hdis]]].
         do_ghost_cell Hdis.
       * (* β̂ ∼ ⫯P — U-FlexR, with U-UnivGhost2 as the rigid fallback *)
-        destruct (e_consis_inv_var_tophole Hd)
+        destruct (e_consis_inv_var_univ_ghost Hd)
           as [ [Hft [-> Da]] | [Hnf Dc] ].
         -- flex_test_true Hft. cbv beta iota.
            assert (Hcov0 : ftvar_in_aenv (nil ++ Θ')
-                     ∪ ftvar_in_pskl (pskl_tophole Pb) [<=] S1)
+                     ∪ ftvar_in_pskl (pskl_univ_ghost Pb) [<=] S1)
              by (clear - Hcov; simpl in *; fsetdec).
            kill_ccall (Q10 β0 eq_refl) Hu Hcov0 Da pskl_unit
              r Hr ps Hav HS HT HQ.
@@ -2040,7 +2040,7 @@ Proof.
            split; clear - Ha0 Hb0 Hout1; fsetdec.
       * (* → ∼ ∀ : no rule fires *) inversion Hd.
       * (* ⭐ → ∼ ◇ — U-Ghost is the only rule at a ◇ subject *)
-        destruct (e_consis_inv_hole_subject Hd
+        destruct (e_consis_inv_ghost_subject Hd
                     ltac:(intros ? Habs; discriminate Habs))
           as [-> [-> [-> Hdis]]].
         do_ghost_cell Hdis.
@@ -2136,7 +2136,7 @@ Proof.
                  split; intro Heq; subst; clear - Ha0 Hb0; fsetdec).
            cbn [cs_out proj1_sig]. rewrite HQ. reflexivity.
       * (* ⭐ ∀ ∼ ◇ — U-Ghost is the only rule at a ◇ subject *)
-        destruct (e_consis_inv_hole_subject Hd
+        destruct (e_consis_inv_ghost_subject Hd
                     ltac:(intros ? Habs; discriminate Habs))
           as [-> [-> [-> Hdis]]].
         do_ghost_cell Hdis.
@@ -2166,7 +2166,7 @@ Proof.
         rewrite !swap_pskl_open_var in Dpt.
         rewrite (swap_pskl_fresh_id α (supply_fresh S1) P0') in Dpt
           by (clear - Hα Hz Hcov; fsetdec).
-        rewrite (swap_pskl_fresh_id α (supply_fresh S1) (pskl_tophole Pb))
+        rewrite (swap_pskl_fresh_id α (supply_fresh S1) (pskl_univ_ghost Pb))
           in Dpt by (clear - Hα Hz Hcov; simpl; fsetdec).
         replace (swap_atom α (supply_fresh S1) α) with (supply_fresh S1)
           in Dpt by (unfold swap_atom; destruct (α == α); congruence).
@@ -2180,7 +2180,7 @@ Proof.
                   ((supply_fresh S1 ~ abind_tvar) ++ Θ')
                   (consis_call_consis (add (supply_fresh S1) Δ1) Δ2
                      (open_pskl_wrt_pskl P0' (pskl_var_f (supply_fresh S1)))
-                     (pskl_tophole Pb))
+                     (pskl_univ_ghost Pb))
                   [<=] add (supply_fresh S1) S1).
         { cbn [consis_call_cover]. simpl ftvar_in_aenv.
           clear - Hcov Hup1. simpl in *. fsetdec. }
@@ -2219,33 +2219,33 @@ Proof.
     + (* ⭐ ================= pattern [◇] =================
          FORMERLY OUT OF THE FRAGMENT.  [U-GhostR] is the only rule: it
          coincides with [U-Ghost] at [(◇,◇)] (same triple), and [U-FlexL]
-         is barred by its [<> ◇] guard.  The runner's hole-pattern arm is
+         is barred by its [<> ◇] guard.  The runner's ghost-pattern arm is
          unconditional in the subject, so every sub-case reaches the same
          code — only the INVERSION differs, by whether the subject is a
          variable. *)
       destruct P as [ | n | α0 | Pa Pb | Pb | | Pb ]; cbv beta iota.
-      * destruct (e_consis_inv_hole_pattern Hd
+      * destruct (e_consis_inv_ghost_pattern Hd
                     ltac:(intros ? Habs; discriminate Habs))
           as [-> [-> [-> Hdis]]].
         do_ghost_cell Hdis.
       * inversion Hlc1.
       * (* a FLEXIBLE subject — the other formerly divergent cell *)
-        destruct (e_consis_inv_flex_subject_hole Hd) as [-> [-> [-> Hdis]]].
+        destruct (e_consis_inv_flex_subject_ghost Hd) as [-> [-> [-> Hdis]]].
         do_ghost_cell Hdis.
-      * destruct (e_consis_inv_hole_pattern Hd
+      * destruct (e_consis_inv_ghost_pattern Hd
                     ltac:(intros ? Habs; discriminate Habs))
           as [-> [-> [-> Hdis]]].
         do_ghost_cell Hdis.
-      * destruct (e_consis_inv_hole_pattern Hd
+      * destruct (e_consis_inv_ghost_pattern Hd
                     ltac:(intros ? Habs; discriminate Habs))
           as [-> [-> [-> Hdis]]].
         do_ghost_cell Hdis.
       * (* (◇, ◇) — the benign overlap: both ghost rows return this *)
-        destruct (e_consis_inv_hole_pattern Hd
+        destruct (e_consis_inv_ghost_pattern Hd
                     ltac:(intros ? Habs; discriminate Habs))
           as [-> [-> [-> Hdis]]].
         do_ghost_cell Hdis.
-      * destruct (e_consis_inv_hole_pattern Hd
+      * destruct (e_consis_inv_ghost_pattern Hd
                     ltac:(intros ? Habs; discriminate Habs))
           as [-> [-> [-> Hdis]]].
         do_ghost_cell Hdis.
@@ -2256,11 +2256,11 @@ Proof.
         do_pass (Q7 P0' eq_refl) Dc Hu Hcov Qd.
       * inversion Hlc1.
       * (* ⫯P0 ∼ α̂ — U-FlexL, with U-UnivGhostR as the rigid fallback *)
-        destruct (e_consis_inv_tophole_var Hd)
+        destruct (e_consis_inv_univ_ghost_var Hd)
           as [ [Hft [-> Da]] | [Hnf Dc] ].
         -- flex_test_true Hft. cbv beta iota.
            assert (Hcov0 : ftvar_in_aenv (nil ++ Θ')
-                     ∪ ftvar_in_pskl (pskl_tophole P0') [<=] S1)
+                     ∪ ftvar_in_pskl (pskl_univ_ghost P0') [<=] S1)
              by (clear - Hcov; simpl in *; fsetdec).
            kill_ccall (Q9 α0 eq_refl) Hu Hcov0 Da pskl_unit
              r Hr ps Hav HS HT HQ.
@@ -2301,7 +2301,7 @@ Proof.
         rewrite (swap_aenv_fresh_id α (supply_fresh S1) Θ') in Dpt
           by (clear - Hα Hz Hcov; fsetdec).
         rewrite !swap_pskl_open_var in Dpt.
-        rewrite (swap_pskl_fresh_id α (supply_fresh S1) (pskl_tophole P0'))
+        rewrite (swap_pskl_fresh_id α (supply_fresh S1) (pskl_univ_ghost P0'))
           in Dpt by (clear - Hα Hz Hcov; simpl; fsetdec).
         rewrite (swap_pskl_fresh_id α (supply_fresh S1) Pb) in Dpt
           by (clear - Hα Hz Hcov; fsetdec).
@@ -2316,7 +2316,7 @@ Proof.
         assert (Hcov' : consis_call_cover
                   ((supply_fresh S1 ~ abind_tvar) ++ Θ')
                   (consis_call_consis Δ1 (add (supply_fresh S1) Δ2)
-                     (pskl_tophole P0')
+                     (pskl_univ_ghost P0')
                      (open_pskl_wrt_pskl Pb (pskl_var_f (supply_fresh S1))))
                   [<=] add (supply_fresh S1) S1).
         { cbn [consis_call_cover]. simpl ftvar_in_aenv.
@@ -2354,7 +2354,7 @@ Proof.
                  split; intro Heq; subst; clear - Ha0 Hb0; fsetdec).
            cbn [cs_out proj1_sig]. rewrite HQ. reflexivity.
       * (* ⭐ ⫯P0 ∼ ◇ — U-Ghost is the only rule at a ◇ subject *)
-        destruct (e_consis_inv_hole_subject Hd
+        destruct (e_consis_inv_ghost_subject Hd
                     ltac:(intros ? Habs; discriminate Habs))
           as [-> [-> [-> Hdis]]].
         do_ghost_cell Hdis.
@@ -2367,11 +2367,11 @@ Proof.
         kill_ccall (Q4 P0' Pb eq_refl eq_refl) Hu Hcov0 Dc Qb
           r Hr ps Hav HS HT HQ.
         exists (mk_consis_result (cs_supply r) (cs_ctx r)
-                  (pskl_tophole (cs_out r))), ps.
+                  (pskl_univ_ghost (cs_out r))), ps.
         split; [ reflexivity | ].
         split4; [ exact Hav | cbn [cs_supply]; exact HS
                 | cbn [cs_ctx]; exact HT | ].
-        cbn [cs_out]. rewrite swaps_pskl_tophole. f_equal. exact HQ.
+        cbn [cs_out]. rewrite swaps_pskl_univ_ghost. f_equal. exact HQ.
 
 
 Qed.
@@ -2381,7 +2381,7 @@ Qed.
 (*                                                                        *)
 (*  ⭐ THE UNIFY ONE IS UNRESTRICTED.  A [unifyvar] call carries no        *)
 (*  skeleton and its one consistency premise runs on [ptyp_to_pskl]       *)
-(*  payloads, which have no holes at all — so the hole-free fragment      *)
+(*  payloads, which have no ghosts at all — so the ghost-free fragment      *)
 (*  contains it outright (§2).  The other two carry the restriction, and  *)
 (*  §8c.10b says what lifting it costs.                                   *)
 (*                                                                        *)

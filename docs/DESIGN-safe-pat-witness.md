@@ -53,7 +53,7 @@ A **weak existential witness cannot close it**, by case analysis:
    `Γext` is universally quantified, **no choice of `X0` dodges all `Γext`**.
 2. Re-instantiate the IH per-fill-instance at a fresh `X1` (fresh for `Γext`):
    gives an **independent** witness `Q1`. Inference is **non-deterministic even in
-   erasure** (`tophole_remove`/`keep`/`fill` are distinct rules that change the
+   erasure** (`univ_ghost_remove`/`keep`/`fill` are distinct rules that change the
    skeleton structure, not just colours), so `bskl_to_pskl Q1 ≠ bskl_to_pskl Q`
    in general — the goal (about `Q`) and the produced refinement (about `Q1`)
    don't match. There is no `d_pat` determinism/uniqueness lemma (only
@@ -68,7 +68,7 @@ the term-bindings of `Γ`), independent of the tvar bindings — not *chosen*. T
 same canonical construction is what `abs`/`abs_anno` need (their admits are
 "needs a principal/canonical body skeleton"); the λ-body's `abs_check` premise
 requires a concrete **syn** skeleton `pskl_to_bskl_syn P`, so the trivial
-all-holes witness does not type-check. One canonical construction closes
+all-ghosts witness does not type-check. One canonical construction closes
 forall + abs + abs_anno together.
 
 ## 2. Candidate designs
@@ -87,13 +87,13 @@ d_look : mode → denv → pskl (looking input P0) → exp → bskl (output)
  anno    : canonical (ptyp_to_pskl A ⊑ P0) ⇒ Q
  freeze  : d_look ti □ e ⇒ Q                      (⊢tc freeze e ⦂ Q)
  abs(m≠tc): split P0 = P→Q0; ∀x, d_look M⁻ Q0 (e^x) ⇒ Q ;  ⦂ arrow P Q
- abs_check: ∀x:□, d_look tc □ (e^x) ⇒ Q ;  ⦂ tophole(□→Q)
+ abs_check: ∀x:□, d_look tc □ (e^x) ⇒ Q ;  ⦂ univ_ghost(□→Q)
  abs_anno / abs_anno_check / app : analogous to a_pat (def_extra.v:655)
 ```
 
 Bridges: `d_look_sound : d_look m Γ P0 e Q → Γ ⊢ₛ[m] e ⦂ Q`; `d_look_fills :
-d_look … → FILL(Q,Γ)` (uses the proven engines `d_refine_syn_hole_fills`,
-`d_refine_syn_tophole_hole_fills`, `colour_erasure`). `d_pat_total_gen` then
+d_look … → FILL(Q,Γ)` (uses the proven engines `d_refine_syn_ghost_fills`,
+`d_refine_syn_univ_ghost_ghost_fills`, `colour_erasure`). `d_pat_total_gen` then
 produces the `d_look` witness; forall is X-independent because `d_look` recurses
 on the term and ignores tvar bindings.
 
@@ -166,10 +166,10 @@ tvar, defeating the obstruction at the cost of a weaker fill.
 
 - **The `d_pat` inference set is BOUNDED** ⇒ a `≼`-least element exists ⇒
   `d_pat_principal` is *true*. TI mode: only `d_pat_sub__infer` fires (every
-  other `d_pat_sub` rule needs `m ≠ ti` or a `hole`/`tophole`/`forall` LHS), so
+  other `d_pat_sub` rule needs `m ≠ ti` or a `ghost`/`univ_ghost`/`forall` LHS), so
   TI inference is essentially deterministic (consistency + `is_sskl`). TC/FN:
-  ghosts come from `univ_ghost_r`, which adds **exactly one** `tophole` (premise
-  is `R ≈ Q`, not recursive on the output). So `tophole_remove/keep`
+  ghosts come from `univ_ghost_r`, which adds **exactly one** `univ_ghost` (premise
+  is `R ≈ Q`, not recursive on the output). So `univ_ghost_remove/keep`
   non-determinism is bounded.
 - **But C's leastness (`∀Q', infer Q' → Q ≼ Q'`) ≈ declarative `a_pat_complete`**
   (heavy): per case it inverts the whole inference set of `e`. The forall case
@@ -184,12 +184,12 @@ tvar, defeating the obstruction at the cost of a weaker fill.
 - **The fill PRIMITIVES are in place:**
   - `gpat_syn_fill` (prop_safety.v): when `bskl_to_pskl Q = ptyp_to_pskl A0`
     (witness erasure matches the type), discharges the refinement.
-  - `d_refine_syn_hole_fills` / `d_refine_syn_tophole_hole_fills`
+  - `d_refine_syn_ghost_fills` / `d_refine_syn_univ_ghost_ghost_fills`
     (prop_skeleton.v): `□` / `⫯.□` fill *any* type (with tvar scoping).
   - **`abs_check_fill` (prop_safety.v, `Qed`)** discharges the λ fill for the
-    canonical λ witness `bskl_tophole (bskl_arrow bskl_hole Qb)` — and its OWN
+    canonical λ witness `bskl_univ_ghost (bskl_arrow bskl_ghost Qb)` — and its OWN
     induction's **forall sub-case peels a `∀`-checking-type** via
-    `d_refine_syn__tophole_fill` + `colour_open` + `d_refine_syn_move`,
+    `d_refine_syn__univ_ghost_fill` + `colour_open` + `d_refine_syn_move`,
     introducing the fresh `X` *inside* the fill (cofinitely) with plain context
     constructors (`ctx_weaken_app_front`/`ctxr_cons`/`d_wf_denv__tvar`) — **no
     renaming, no witness-side freshness clash.**
@@ -203,13 +203,13 @@ First (wrong) reading: "tc can't emit a concrete syn skeleton, so the
 principal-body-skeleton is FALSE." The *premise* is right but the *conclusion*
 was wrong — I conflated "concrete **guarded** syn" with "syn-painted `is_sskl`".
 
-- True: `d_pat_sub` at `m=tc` from a *guarded* LHS forces `bskl_tophole _`
-  (`univ_ghost_r`); a *hole* LHS gives `inh P` (`ghost`). So no **concrete
+- True: `d_pat_sub` at `m=tc` from a *guarded* LHS forces `bskl_univ_ghost _`
+  (`univ_ghost_r`); a *ghost* LHS gives `inh P` (`ghost`). So no **concrete
   guarded** syn tc output (only `freeze`).
 - BUT `d_pat__abs_check`'s body premise is `⦂ pskl_to_bskl_syn P` where `P` may
   be a **ghost**. The tc safe witness is `ghost_of P`, whose outputs are
-  `bskl_tophole(...)` / `bskl_hole` (prop_skeleton.v:332) — these **are
-  `is_sskl`** (`is_sskl` has `__hole`,`__tophole`). And
+  `bskl_univ_ghost(...)` / `bskl_ghost` (prop_skeleton.v:332) — these **are
+  `is_sskl`** (`is_sskl` has `__ghost`,`__univ_ghost`). And
   `is_sskl_syn_roundtrip : is_sskl Q → pskl_to_bskl_syn (bskl_to_pskl Q) = Q`.
   So the ghost body witness **already satisfies** the `⦂ syn P` premise with
   `P := bskl_to_pskl Q`. The principal-body-skeleton is **NOT false**.
@@ -220,7 +220,7 @@ freeze's, are already `is_sskl`). Re-prove the closed tc cases to carry it
 (easy). Then:
 - `abs`/`abs_anno`: IH gives `is_sskl Q_body` ⇒ `is_sskl_syn_roundtrip` ⇒
   `Q_body = pskl_to_bskl_syn P` ⇒ `d_pat__abs_check` gives
-  `λ ⦂ bskl_tophole(bskl_arrow bskl_hole Q_body)` (itself `is_sskl`), and
+  `λ ⦂ bskl_univ_ghost(bskl_arrow bskl_ghost Q_body)` (itself `is_sskl`), and
   `abs_check_fill` (Qed) gives the fill from the IH's body fill.
 - `forall`: the value's witness is `is_sskl` and X-independent (built from `e`);
   the ∀-checking-types are peeled inside `abs_check_fill`'s machinery.
@@ -241,10 +241,10 @@ through `d_pat_base_safe_tc_gen`/freeze/`d_pat_safety`.
 NOT closed — the **FILL** (abs `abs_check_fill` body-hyp, and forall): the obstruction
 is **`gpat`'s fill quantifying over arbitrary `Γext`/`Γt`**. The body-hyp must hold for
 universally-quantified `Γt''`; discharging it from the single-instantiation witness's
-fill `Hfillb` (tied to a fresh `x0`) needs `d_wf_denv ((x0~hole)++Γt'')`, i.e.
+fill `Hfillb` (tied to a fresh `x0`) needs `d_wf_denv ((x0~ghost)++Γt'')`, i.e.
 **`x0 ∉ dom Γt''`** — unprovable for arbitrary `Γt''` (no constraint forces `x0` out;
 `Γt''` may bind `x0` via the weakening). The asymmetry with the inference: the
-inference renames over a FIXED context (`(x0~hole)++Γ'`, `x0∉dom Γ'` holds), whereas the
+inference renames over a FIXED context (`(x0~ghost)++Γ'`, `x0∉dom Γ'` holds), whereas the
 fill renames over the fill's ARBITRARY contexts. Term-var context renames just relocate
 the obligation onto that freshness; they don't break it. Erasure-determinism (use the IH
 at the body-hyp's own `x`) also fails — `d_pat_sub__forall_l` picks `psi`
@@ -253,7 +253,7 @@ non-deterministically, so a forall-skeleton'd body can erase two ways.
 ⇒ Root cause for BOTH abs and forall fills = `gpat`'s `forall Γext, ctx_weaken Γ' Γext
 -> ...`. Resolving it is design-E territory: is the `∀Γext` generality actually needed
 beyond the contexts it is consumed at (`d_pat_safety` uses `Γext=Γ`; `abs_check_fill`
-applies the body fill at `(x~hole)++Γext0`)? A freshness side-condition on `Γext`, or a
+applies the body fill at `(x~ghost)++Γext0`)? A freshness side-condition on `Γext`, or a
 witness that is canonical-by-construction (not instantiation-tied), would break the wall.
 
 ## 3. Recommendation
@@ -279,6 +279,6 @@ Open design question for A/B: pin the **canonical subsumption / looking** rule
 - The gpat-α-rename stubs (`d_pat_strengthen_tvar`, `ctx_weaken_rename_tvar`,
   `ctx_refines_rename_tvar`) were **reverted** (dead-end route).
 - Closed safety cases: unit, var, anno, sub (ti/tc/fn), freeze.
-- Engines available: `d_refine_syn_hole_fills`, `d_refine_syn_tophole_hole_fills`,
+- Engines available: `d_refine_syn_ghost_fills`, `d_refine_syn_univ_ghost_ghost_fills`,
   `colour` + `colour_erasure`, `d_refine_syn_strengthen`, `d_pat_preserves_skel_wf`,
   `gpat_syn_fill`, `d_pat_base_safe_gen`/`_tc_gen`/`_fn_gen`.

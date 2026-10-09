@@ -1,6 +1,6 @@
-# HANDOFF — close consistency-runner completeness WITHOUT the hole-free restriction
+# HANDOFF — close consistency-runner completeness WITHOUT the ghost-free restriction
 
-**✅ CLOSED (2026-08-17).  `consis_call_no_hole` is GONE from the motive,
+**✅ CLOSED (2026-08-17).  `consis_call_no_ghost` is GONE from the motive,
 and all three headline corollaries — `e_assign_impl_complete`,
 `e_unify_impl_complete`, `e_consis_run_complete` — are unrestricted, Qed
 and assumptions-closed.**
@@ -52,7 +52,7 @@ Lemma e_consis_call_impl_complete : forall S0 Θ c, consis_call_complete S0 Θ c
 whose motive (§6 of that file) carries the restriction
 
 ```coq
-    consis_call_no_hole c ->        (* ← DELETE THIS *)
+    consis_call_no_ghost c ->        (* ← DELETE THIS *)
 ```
 
 **The task is to delete that premise** and repair the proof, which then
@@ -86,9 +86,9 @@ Helpers added there: `a_isub_solve_head`, `a_isub_weaken_suffix2`,
 
 `e_assign_isub`, `e_unify_isub`, `e_consis_isub`, `e_assign_nil_isub` (the
 `e_` faces, by composition with prop_consis.v §4's bridge), plus §3's four
-GHOST-ROW INVERSIONS: `e_consis_inv_hole_subject`,
-`e_consis_inv_hole_pattern`, `e_consis_inv_hole_flex_pattern`,
-`e_consis_inv_flex_subject_hole`.
+GHOST-ROW INVERSIONS: `e_consis_inv_ghost_subject`,
+`e_consis_inv_ghost_pattern`, `e_consis_inv_ghost_flex_pattern`,
+`e_consis_inv_flex_subject_ghost`.
 
 ⭐ **Everything above is a statement at a SINGLE context**, so it is
 independent of how the two-context question in §4 is eventually settled.
@@ -115,7 +115,7 @@ inversions in §2 already give it:
 ```
 
 At BOTH, the runner answers with its input context UNCHANGED
-(def_consis_impl.v:759-763 for the hole pattern; the `pskl_hole` subject arm
+(def_consis_impl.v:759-763 for the ghost pattern; the `pskl_ghost` subject arm
 of each pattern clause, :770, :808, :938, :989, :1056, :1134).  The
 derivation may instead run an assignment walk.  §2's increase is exactly the
 measure of that walk.
@@ -226,8 +226,8 @@ motive unusable.
 
 `fresco/ext_algo/prop_consis_alias.v`, Qed and assumptions-closed:
 
-- **Step 1, `e_assign_hole_out`** (+ the mutual
-  `e_assign_unify_consis_hole_walk`): the `◇`-payload walk's output is
+- **Step 1, `e_assign_ghost_out`** (+ the mutual
+  `e_assign_unify_consis_ghost_walk`): the `◇`-payload walk's output is
   EXACTLY `alias_insert_out` — unchanged (an inner `U-GhostR` stops it),
   or ONE undefined flexible `γ̂` replaced in place by `γ̂ ≔ ε̂, ε̂` with
   `ε̂` fresh.  ⚙ `◇` has no free variables, so `Assign-Depend` never
@@ -323,15 +323,15 @@ C5 + C6) rather than by the collapse function:
 `swaps_aenv ps Θd = cs_ctx r` to `swaps_aenv ps (collapse_chain als Θd) =
 cs_ctx r` (collapse-then-swap normal form; supply clause drops the alias
 names; out clause takes the collapse image), re-close the six kill sites
-— the two divergent cells via `e_consis_inv_flex_subject_hole` +
-`e_assign_hole_out` + `collapse1_insert`, the four unique ones unchanged
+— the two divergent cells via `e_consis_inv_flex_subject_ghost` +
+`e_assign_ghost_out` + `collapse1_insert`, the four unique ones unchanged
 — and thread `U-Arrow` by transport-then-swap.  Then re-derive the three
 headlines with the weakened (but alias-tolerant) conclusion.
 
 ### (R2) ⛔ REFUTED (2026-08-17): weaken the FRAGMENT instead of solving the general problem
 
-**Dead — `cex/probe_pat_presents_hole_flex.v`.**  The question this
-direction turned on — do subtyping and typing ever actually PRESENT a hole
+**Dead — `cex/probe_pat_presents_ghost_flex.v`.**  The question this
+direction turned on — do subtyping and typing ever actually PRESENT a ghost
 opposite a flexible? — has answer YES, and the probe machine-checks it.
 The program `(λf. f (λy. f y)) (λz. z)` composes three innocent moves:
 

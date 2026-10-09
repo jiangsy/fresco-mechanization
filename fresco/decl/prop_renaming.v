@@ -37,14 +37,14 @@ Proof.
     apply H0; fsetdec.
 Qed.
 
-Lemma is_ttyp_rename_tvar : forall C α1 β1,
-    is_ttyp C -> is_ttyp (subst_utyp_in_utyp (utyp_var_f β1) α1 C).
+Lemma is_dtyp_rename_tvar : forall C α1 β1,
+    is_dtyp C -> is_dtyp (subst_utyp_in_utyp (utyp_var_f β1) α1 C).
 Proof.
   intros C α1 β1 H. induction H; simpl.
   - constructor.
   - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
   - constructor; assumption.
-  - apply is_ttyp__all_tag with (L := L `union` singleton α1 `union` singleton β1).
+  - apply is_dtyp__all_tag with (L := L `union` singleton α1 `union` singleton β1).
     intros α Hα.
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
       by (solve [ fsetdec | apply lc_utyp_var_f ]).
@@ -212,7 +212,7 @@ Proof.
       rewrite ftag_in_utyp_subst_tagfree by reflexivity; assumption.
     + apply d_tags_subst_tvar. eassumption.
     + eapply d_wf_utyp_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
-    + apply is_ttyp_rename_tvar. assumption.
+    + apply is_dtyp_rename_tvar. assumption.
     + rewrite <- subst_utyp_in_utyp_open_utyp_wrt_utyp by apply lc_utyp_var_f.
       eapply IHd_sub; [ reflexivity | exact Hfr ].
   - (* forall_l_untagged *)
@@ -224,7 +224,7 @@ Proof.
       rewrite ftag_in_utyp_subst_tagfree by reflexivity; assumption.
     + apply d_tags_subst_tvar. eassumption.
     + eapply d_wf_utyp_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
-    + apply is_ttyp_rename_tvar. assumption.
+    + apply is_dtyp_rename_tvar. assumption.
     + rewrite <- subst_utyp_in_utyp_open_utyp_wrt_utyp by apply lc_utyp_var_f.
       eapply IHd_sub; [ reflexivity | exact Hfr ].
 Qed.

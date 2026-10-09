@@ -10,7 +10,7 @@
     The witness is
       Θ = Θ₀ = ·   κ = ·   R = ∀◇α   ψa = ∀◈⟨⟩   P₀ = Pi = ∀◇⟨⟩   Q = ∀◇⟨⟩
     so the subject is [∀◇(∀◈⟨⟩)] — a universal ghost whose body is another
-    ghost, which [a_wf_pskl__tophole] / [d_wf_uskl__tophole] forbid (a ghost
+    ghost, which [a_wf_pskl__univ_ghost] / [d_wf_uskl__univ_ghost] forbid (a ghost
     body must be GUARDED).  Every other premise holds; the algorithm is then
     forced into [𝒞 = [α ≐ ⟨⟩]] (LE-UnivGhost, then LE-Var) and [Pa = ⟨⟩]
     (SE-GhostGuarded, then SE-Unit), and the resulting precision obligation
@@ -40,16 +40,16 @@ Require Import src.fresco.algo.sub.look.prop_eq_cstr.  (* P6-Cs + [msubst_uskl_s
 (*  The witness                                                           *)
 (* ===================================================================== *)
 
-Definition cex_ψa : uskl := uskl_topholeg uskl_unit.
-Definition cex_S (α : atom) : uskl := uskl_tophole (uskl_var_f α).
-Definition cex_P (α : atom) : pskl := pskl_tophole (pskl_var_f α).
-Definition cex_P0 : pskl := pskl_tophole pskl_unit.
-Definition cex_Q : bskl := bskl_tophole bskl_unit.
+Definition cex_ψa : uskl := uskl_dot_univ_ghost uskl_unit.
+Definition cex_S (α : atom) : uskl := uskl_univ_ghost (uskl_var_f α).
+Definition cex_P (α : atom) : pskl := pskl_univ_ghost (pskl_var_f α).
+Definition cex_P0 : pskl := pskl_univ_ghost pskl_unit.
+Definition cex_Q : bskl := bskl_univ_ghost bskl_unit.
 
 (* the subject [(κR)[ψa/α]] at κ = · is [∀◇(∀◈⟨⟩)] *)
 Lemma cex_subject : forall α,
   subst_uskl_in_uskl cex_ψa α (msubst_uskl_syn nil (cex_S α))
-  = uskl_tophole cex_ψa.
+  = uskl_univ_ghost cex_ψa.
 Proof.
   intros α. cbn [cex_S msubst_uskl_syn msubst_lookup subst_uskl_in_uskl].
   unfold ptyp_to_uskl_syn; cbn.
@@ -162,37 +162,37 @@ Proof.
   - (* {{ ⊢ Θ }}a *) apply a_wf_aenv__nil.
   - (* {{ ⊢ Θ0 }}a *) apply a_wf_aenv__nil.
   - (* Θ0 ⊢ P0 *)
-    apply a_wf_pskl__tophole;
+    apply a_wf_pskl__univ_ghost;
       [ apply guarded_pskl__unit | apply a_wf_pskl__unit ].
   - (* Θ0 ⊢ Pi *)
-    apply a_wf_pskl__tophole;
+    apply a_wf_pskl__univ_ghost;
       [ apply guarded_pskl__unit | apply a_wf_pskl__unit ].
   - (* κ ∷ Θ0 ⊑ Θ *) apply a_inc__empty; apply a_suffix__nil.
   - (* α ∉ dom Θ *) simpl; clear; fsetdec.
   - (* α ∉ dom Θ0 *) simpl; clear; fsetdec.
   - (* ⌊R⌋ = P *) reflexivity.
   - (* scoping *) cbn; clear; fsetdec.
-  - (* lc R *) apply lc_uskl_tophole; apply lc_uskl_var_f.
+  - (* lc R *) apply lc_uskl_univ_ghost; apply lc_uskl_var_f.
   - (* tags-sorted ψa *)
     apply a_tags_sort__sk;
-      [ apply is_tskl__topholeg; apply is_tskl__unit
-      | apply d_tags_skl__topholeg; apply d_tags_skl__unit; clear; fsetdec ].
+      [ apply is_dskl__dot_univ_ghost; apply is_dskl__unit
+      | apply d_tags_skl__dot_univ_ghost; apply d_tags_skl__unit; clear; fsetdec ].
   - (* ftag R ⊥ Ψ' *) cbn; clear; fsetdec.
   - (* Ψi, Ψa ⊆ Ψ' *) clear; fsetdec.
   - (* delta_def_fresh *) intros β α0 τ0 Hβ Hb; inversion Hb.
   - (* precision of the INPUT: ∀◇⟨⟩ ⊑ᵖ ∀◈⟨⟩ *)
     cbn [msubst_pskl cex_P0]. unfold cex_ψa.
-    apply ad_ppre__tophole_keep. apply ad_ppre__unit; clear; fsetdec.
+    apply ad_ppre__univ_ghost_keep. apply ad_ppre__unit; clear; fsetdec.
   - (* Ψsub ⊆ ftag R ∪ Ψa *) clear; fsetdec.
   - (* Ψa ⊆ Ψsub *) clear; fsetdec.
   - (* consistency: ∀◇(∀◈⟨⟩) ∼ ∀◇⟨⟩ — C-UnivGhost2 then C-UnivGhostG *)
     rewrite cex_subject. unfold cex_ψa, cex_Q.
-    apply ad_pat_consis__tophole_drop.
-    apply ad_pat_consis__topholeg.
+    apply ad_pat_consis__univ_ghost_drop.
+    apply ad_pat_consis__dot_univ_ghost.
     apply ad_pat_consis__unit; clear; fsetdec.
   - (* refinement: ∀◇⟨⟩ ⊳ ∀◇⟨⟩ — R-UnivGhostKeep *)
     cbn [msubst_pskl pskl_to_bskl_inh cex_P0]. unfold cex_Q.
-    apply ad_refine_syn_tophole_keep_intro; apply ad_refine_syn__unit.
+    apply ad_refine_syn_univ_ghost_keep_intro; apply ad_refine_syn__unit.
   - (* … and now the conclusion is refuted *)
     destruct (@cex_lookeq_forced α Ξc 𝒞 HLK) as [-> ->].
     simpl in HSolve.
@@ -221,27 +221,27 @@ Theorem p6cs_fires_when_the_subject_is_wf : forall α,
 Proof.
   intros α.
   edestruct (@a_lookeq_solve_complete a_sub_mode_sk nil nil nil empty empty
-               empty empty empty uskl_unit (bskl_tophole bskl_unit)
+               empty empty empty uskl_unit (bskl_univ_ghost bskl_unit)
                (cex_P α) cex_P0 cex_P0 (cex_S α) α
                (a_wf_aenv__nil) (a_wf_aenv__nil)
-               ltac:(apply a_wf_pskl__tophole;
+               ltac:(apply a_wf_pskl__univ_ghost;
                        [ apply guarded_pskl__unit | apply a_wf_pskl__unit ])
-               ltac:(apply a_wf_pskl__tophole;
+               ltac:(apply a_wf_pskl__univ_ghost;
                        [ apply guarded_pskl__unit | apply a_wf_pskl__unit ])
                ltac:(apply a_inc__empty; apply a_suffix__nil)
                ltac:(simpl; clear; fsetdec)
                ltac:(simpl; clear; fsetdec)
                (eq_refl : ⌊ cex_S α ⌋ˢ = cex_P α)
                ltac:(cbn; clear; fsetdec)
-               ltac:(apply lc_uskl_tophole; apply lc_uskl_var_f)
+               ltac:(apply lc_uskl_univ_ghost; apply lc_uskl_var_f)
                ltac:(apply a_tags_sort__sk;
-                       [ apply is_tskl__unit
+                       [ apply is_dskl__unit
                        | apply d_tags_skl__unit; clear; fsetdec ])
                ltac:(cbn; clear; fsetdec)
                ltac:(clear; fsetdec)
                ltac:(intros β α0 τ0 Hβ Hb; inversion Hb)
                ltac:(cbn [msubst_pskl cex_P0];
-                     apply ad_ppre__tophole_remove;
+                     apply ad_ppre__univ_ghost_remove;
                      apply ad_ppre__unit; clear; fsetdec)
                ltac:(clear; fsetdec)
                ltac:(clear; fsetdec)
@@ -251,17 +251,17 @@ Proof.
                      unfold ptyp_to_uskl_syn; cbn;
                      match goal with |- context [if ?c then _ else _] =>
                        destruct c end; [ | contradiction ];
-                     apply ad_pat_consis__tophole;
+                     apply ad_pat_consis__univ_ghost;
                      apply ad_pat_consis__unit; clear; fsetdec)
                ltac:(cbn [cex_S msubst_uskl_syn msubst_lookup subst_uskl_in_uskl];
                      unfold ptyp_to_uskl_syn; cbn;
                      match goal with |- context [if ?c then _ else _] =>
                        destruct c end; [ | contradiction ];
                      cbn [uskl_to_pskl];
-                     apply a_wf_pskl__tophole;
+                     apply a_wf_pskl__univ_ghost;
                        [ apply guarded_pskl__unit | apply a_wf_pskl__unit ])
                ltac:(cbn [msubst_pskl pskl_to_bskl_inh cex_P0];
-                     apply ad_refine_syn_tophole_keep_intro;
+                     apply ad_refine_syn_univ_ghost_keep_intro;
                      apply ad_refine_syn__unit)
                (* the avoid-set parameter of the repaired statement *)
                empty ltac:(cbn; clear; fsetdec))

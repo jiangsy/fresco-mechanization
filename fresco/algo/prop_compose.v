@@ -691,7 +691,7 @@ Proof.
       by (eapply msubst_pskl_open; [ exact Hinc | clear - Hα; fsetdec ]).
     rewrite <- HeqP, <- HeqQ.
     apply H0; [ clear - Hα; fsetdec | exact Hwf | exact Hinc ].
-  - apply a_pskl_tyequiv__tophole; auto.
+  - apply a_pskl_tyequiv__univ_ghost; auto.
 Qed.
 
 (* ===================================================================== *)

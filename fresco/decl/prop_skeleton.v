@@ -23,9 +23,9 @@ Set Implicit Arguments.
     Only the coloured refinement relation [d_refine_syn] remains; the
     former uncoloured [d_refine] split lemmas were removed with it. *)
 
-(* No [tophole] split lemma: a universal ghost [⫯] now refines by three
+(* No [univ_ghost] split lemma: a universal ghost [⫯] now refines by three
    rules (remove / fill-with-∀α / keep), so the output is not uniquely a
-   [bskl_tophole].  Invert [d_refine_syn] directly where needed. *)
+   [bskl_univ_ghost].  Invert [d_refine_syn] directly where needed. *)
 
 (** NB the headline lemma "Refinement preserves well-formedness" (the old D4)
     was DELETED upstream (declarative.tex 0dd3488): with the single-[Δ]
@@ -41,7 +41,7 @@ Qed.
 
 (** The LHS of a consistency / subtyping judgment has no free tvars beyond the
     RHS: every concrete tvar in [R] is matched (via [__var]) to the same tvar in
-    [Q]; ghosts/holes in [R] are tvar-free.  Hence [α ∉ ftvar Q ⇒ α ∉ ftvar R],
+    [Q]; ghosts/ghosts in [R] are tvar-free.  Hence [α ∉ ftvar Q ⇒ α ∉ ftvar R],
     which is what makes [d_pat_sub]'s [forall_l] recursion strengthen. *)
 Lemma guarded_pskl_subst_unit : forall P α,
     guarded_pskl P -> guarded_pskl (subst_pskl_in_pskl pskl_unit α P).
@@ -77,8 +77,8 @@ Proof.
       try (apply lc_pskl_unit); try fsetdec.
     rewrite_env (((β ~ dbind_tvar) ++ Γ1) ++ Γ2).
     eapply (H0 β ltac:(auto) ((β ~ dbind_tvar) ++ Γ1) α0 Γ2); reflexivity.
-  - apply d_wf_pskl__hole.
-  - simpl. apply d_wf_pskl__tophole;
+  - apply d_wf_pskl__ghost.
+  - simpl. apply d_wf_pskl__univ_ghost;
       [ apply guarded_pskl_subst_unit; assumption | ].
     destruct (AtomSetProperties.In_dec α0 Δ) as [Hin | Hnin].
     + (* [α0 ∈ Δ]: [Γ∖Δ] has no entry for [α0], so [P] does not mention it *)
@@ -117,8 +117,8 @@ Proof.
       try (apply lc_uskl_unit); try fsetdec.
     rewrite_env (((β ~ dbind_tvar) ++ Γ1) ++ Γ2).
     eapply (H0 β ltac:(auto) ((β ~ dbind_tvar) ++ Γ1) α0 Γ2); reflexivity.
-  - apply d_wf_uskl__hole.
-  - simpl. apply d_wf_uskl__tophole;
+  - apply d_wf_uskl__ghost.
+  - simpl. apply d_wf_uskl__univ_ghost;
       [ apply guarded_uskl_subst_unit; assumption | ].
     destruct (AtomSetProperties.In_dec α0 Δ) as [Hin | Hnin].
     + assert (Heqm : denv_minus (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) Δ
@@ -133,8 +133,8 @@ Proof.
       rewrite (denv_minus_app Γ1 ((α0 ~ dbind_tvar) ++ Γ2)),
         denv_minus_cons_notin by exact Hnin.
       reflexivity.
-  - apply d_wf_uskl__holeg.
-  - simpl. apply d_wf_uskl__topholeg;
+  - apply d_wf_uskl__dot_ghost.
+  - simpl. apply d_wf_uskl__dot_univ_ghost;
       [ apply guarded_uskl_subst_unit; assumption | ].
     destruct (AtomSetProperties.In_dec α0 Δ) as [Hin | Hnin].
     + assert (Heqm : denv_minus (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) Δ
@@ -186,14 +186,14 @@ Proof.
   - auto with fresco.
 Qed.
 
-Lemma is_tskl_subst_unit : forall R α,
-    is_tskl R -> is_tskl (subst_uskl_in_uskl uskl_unit α R).
+Lemma is_dskl_subst_unit : forall R α,
+    is_dskl R -> is_dskl (subst_uskl_in_uskl uskl_unit α R).
 Proof.
   intros R α H. induction H; simpl.
   - auto with fresco.
   - destruct_if; auto with fresco.
   - auto with fresco.
-  - apply is_tskl__all_tag with (L := L `union` {{α}}). intros β Hβ.
+  - apply is_dskl__all_tag with (L := L `union` {{α}}). intros β Hβ.
     rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       try (apply lc_uskl_unit); try fsetdec. auto.
   - auto with fresco.
@@ -221,8 +221,8 @@ Proof.
   - apply d_tags_skl__all_tag with (L := L `union` {{α}}) (Ψ0 := Ψ0); [ | assumption | assumption ]. intros β Hβ.
     rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       try (apply lc_uskl_unit); try fsetdec. auto.
-  - apply d_tags_skl__holeg; (assumption || fsetdec).
-  - apply d_tags_skl__topholeg; assumption.
+  - apply d_tags_skl__dot_ghost; (assumption || fsetdec).
+  - apply d_tags_skl__dot_univ_ghost; assumption.
 Qed.
 
 (** ⚙ The two erasures under [α := 1], in the shape the rows below rewrite
@@ -263,18 +263,18 @@ Proof.
       by (first [ apply lc_pskl_unit | fsetdec ]).
     eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2);
       simpl_env; reflexivity.
-  - apply d_refine_pskl__hole.
+  - apply d_refine_pskl__ghost.
     pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P' pskl_unit α0) as Hup.
     simpl in Hup. clear - H Hup. fsetdec.
-  - apply d_refine_pskl__tophole_remove. eapply IHd_refine_pskl; reflexivity.
-  - apply d_refine_pskl__tophole_fill
+  - apply d_refine_pskl__univ_ghost_remove. eapply IHd_refine_pskl; reflexivity.
+  - apply d_refine_pskl__univ_ghost_fill
       with (L := L `union` dom (Γ1 ++ Γ2) `union` {{α0}}).
     intros α2 Hα2.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var
       by (first [ apply lc_pskl_unit | fsetdec ]).
     eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2);
       simpl_env; reflexivity.
-  - apply d_refine_pskl__tophole_keep. eapply IHd_refine_pskl; reflexivity.
+  - apply d_refine_pskl__univ_ghost_keep. eapply IHd_refine_pskl; reflexivity.
 Qed.
 
 Lemma d_pat_consis_subst_unit : forall Δ Γ R Q,
@@ -310,16 +310,16 @@ Proof.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_unit); try fsetdec.
     eapply (H0 α2 ltac:(auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2); simpl_env; reflexivity.
   - apply d_pat_consis__ghostg; (assumption || fsetdec).
-  - simpl. apply d_pat_consis__topholeg. eapply IHd_pat_consis; eauto.
-  - simpl. rewrite pskl_to_bskl_inh_subst_unit. apply d_pat_consis__hole; [ (assumption || fsetdec) | ]; eapply d_wf_pskl_subst_unit; eauto.
-  - simpl. apply d_pat_consis__tophole. eapply IHd_pat_consis; eauto.
-  - simpl. apply d_pat_consis__tophole_inh with (L := L `union` {{α0}}).
+  - simpl. apply d_pat_consis__dot_univ_ghost. eapply IHd_pat_consis; eauto.
+  - simpl. rewrite pskl_to_bskl_inh_subst_unit. apply d_pat_consis__ghost; [ (assumption || fsetdec) | ]; eapply d_wf_pskl_subst_unit; eauto.
+  - simpl. apply d_pat_consis__univ_ghost. eapply IHd_pat_consis; eauto.
+  - simpl. apply d_pat_consis__univ_ghost_inh with (L := L `union` {{α0}}).
     intros α2 Hα2. rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_unit); try fsetdec.
-    change (uskl_tophole (subst_uskl_in_uskl uskl_unit α0 R))
-      with (subst_uskl_in_uskl uskl_unit α0 (uskl_tophole R)).
+    change (uskl_univ_ghost (subst_uskl_in_uskl uskl_unit α0 R))
+      with (subst_uskl_in_uskl uskl_unit α0 (uskl_univ_ghost R)).
     eapply (H0 α2 ltac:(auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2); simpl_env; reflexivity.
-  - simpl. apply d_pat_consis__tophole_drop. eapply IHd_pat_consis; eauto.
+  - simpl. apply d_pat_consis__univ_ghost_drop. eapply IHd_pat_consis; eauto.
 Qed.
 
 (** The JOIN transports: both halves do, and the two erasures commute with
@@ -363,7 +363,7 @@ Proof.
           with (subst_uskl_in_uskl uskl_unit α0 (uskl_all_tag ε R));
         rewrite ftag_in_uskl_subst_tagfree by reflexivity; assumption
       | apply d_tags_skl_subst_unit; assumption
-      | eapply d_wf_uskl_subst_unit; eauto | apply is_tskl_subst_unit; assumption | ].
+      | eapply d_wf_uskl_subst_unit; eauto | apply is_dskl_subst_unit; assumption | ].
     rewrite <- subst_uskl_in_uskl_open_uskl_wrt_uskl; try (apply lc_uskl_unit).
     eapply IHd_pat_sub; eauto.
   - simpl. eapply d_pat_sub__forall_l_untagged with
@@ -373,7 +373,7 @@ Proof.
           with (subst_uskl_in_uskl uskl_unit α0 (uskl_all_syn R));
         rewrite ftag_in_uskl_subst_tagfree by reflexivity; assumption
       | apply d_tags_skl_subst_unit; assumption
-      | eapply d_wf_uskl_subst_unit; eauto | apply is_tskl_subst_unit; assumption | ].
+      | eapply d_wf_uskl_subst_unit; eauto | apply is_dskl_subst_unit; assumption | ].
     rewrite <- subst_uskl_in_uskl_open_uskl_wrt_uskl; try (apply lc_uskl_unit).
     eapply IHd_pat_sub; eauto.
   - simpl. rewrite pskl_to_bskl_inh_subst_unit. apply d_pat_sub__ghost;
@@ -388,7 +388,7 @@ Qed.
 (** Consistency reflexivity: a well-scoped synthesised skeleton is consistent with
     its own [uskl]-erasure.  Foundation of the [ti] sub case of the CONSTRUCTION
     path for [d_pat_total] (build [d_pat__sub] via [d_pat_sub__infer]).  Var case
-    needs the skeleton well-scoped; holes go via [__hole] (bskl_hole = inh □). *)
+    needs the skeleton well-scoped; ghosts go via [__ghost] (bskl_ghost = inh □). *)
 Lemma d_wf_ptyp_of_lc_ftvar : forall A Γ,
     lc_ptyp A ->
     (forall α, α `in` ftvar_in_ptyp A -> binds α dbind_tvar Γ) ->

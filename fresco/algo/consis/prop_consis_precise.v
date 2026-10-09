@@ -68,7 +68,7 @@ Fixpoint pskl_no_forall (P : pskl) : Prop :=
   match P with
   | pskl_all_syn _ => False
   | pskl_arrow P1 P2 => pskl_no_forall P1 /\ pskl_no_forall P2
-  | pskl_tophole P0 => pskl_no_forall P0
+  | pskl_univ_ghost P0 => pskl_no_forall P0
   | _ => True
   end.
 
@@ -118,8 +118,8 @@ Lemma d_tags_skl_all_tag_inv : forall Ψ ε ψ,
     /\ ε `notin` Ψ0 /\ Ψ [=] add ε Ψ0.
 Proof. intros Ψ ε ψ H. inversion H; subst. eauto 8. Qed.
 
-Lemma d_tags_skl_topholeg_inv : forall Ψ ψ,
-  d_tags_skl Ψ (uskl_topholeg ψ) -> d_tags_skl Ψ ψ.
+Lemma d_tags_skl_dot_univ_ghost_inv : forall Ψ ψ,
+  d_tags_skl Ψ (uskl_dot_univ_ghost ψ) -> d_tags_skl Ψ ψ.
 Proof. intros Ψ ψ H. inversion H; subst; auto. Qed.
 (** Recover the tag reading / re-tag under set-equality. *)
 Lemma a_tags_sort_d_tags : forall NM Ψ ψ,
@@ -142,7 +142,7 @@ Lemma a_tags_sort_arrow_inv : forall NM Ψ ψ1 ψ2,
              /\ Ψ1 ∩ Ψ2 [=] empty /\ Ψ [=] Ψ1 `union` Ψ2.
 Proof.
   intros NM Ψ ψ1 ψ2 H. inversion H; subst;
-    match goal with Ht : is_tskl _ |- _ => inversion Ht; subst end;
+    match goal with Ht : is_dskl _ |- _ => inversion Ht; subst end;
     match goal with Hd : d_tags_skl _ (uskl_arrow _ _) |- _ =>
       apply d_tags_skl_arrow_inv in Hd as [Ψa [Ψb [Hd1 [Hd2 [Hdisj Hun]]]]] end.
   - exists Ψa, Ψb. repeat apply conj; try assumption; apply a_tags_sort__sk; auto.
@@ -160,22 +160,22 @@ Lemma a_tags_sort_all_tag_inv : forall NM Ψ ε ψ,
 Proof.
   intros NM Ψ ε ψ H. inversion H; subst.
   - (* sk *)
-    match goal with Hit : is_tskl (uskl_all_tag _ _) |- _ =>
+    match goal with Hit : is_dskl (uskl_all_tag _ _) |- _ =>
       inversion Hit; subst end.
     match goal with Hd : d_tags_skl _ (uskl_all_tag _ _) |- _ =>
       apply d_tags_skl_all_tag_inv in Hd as [Ld [Ψ0 [Hd0 [Hεt Hun]]]] end.
-    match goal with Hit0 : forall α, α `notin` ?Li -> is_tskl _ |- _ =>
+    match goal with Hit0 : forall α, α `notin` ?Li -> is_dskl _ |- _ =>
       exists (Li `union` Ld), Ψ0; repeat apply conj; try assumption;
       intros α Hα; apply a_tags_sort__sk; [ apply Hit0 | apply Hd0 ]; fsetdec end.
   - (* ty *)
-    match goal with Hit : is_tskl (uskl_all_tag _ _) |- _ =>
+    match goal with Hit : is_dskl (uskl_all_tag _ _) |- _ =>
       inversion Hit; subst end.
     match goal with Hd : d_tags_skl _ (uskl_all_tag _ _) |- _ =>
       apply d_tags_skl_all_tag_inv in Hd as [Ld [Ψ0 [Hd0 [Hεt Hun]]]] end.
     match goal with Hgf : uskl_ghost_free (uskl_all_tag _ _) |- _ =>
       inversion Hgf; subst end.
     match goal with
-    | Hit0 : forall α, α `notin` ?Li -> is_tskl _,
+    | Hit0 : forall α, α `notin` ?Li -> is_dskl _,
       Hgf0 : forall α, α `notin` ?Lg -> uskl_ghost_free _ |- _ =>
       exists (Li `union` Lg `union` Ld), Ψ0; repeat apply conj; try assumption;
       intros α Hα;
@@ -212,15 +212,15 @@ Proof.
     intros α Hα. rewrite <- strip_uskl_open. exact (H0 α Hα).
   - eapply ad_pat_consis__forall_syn with (L := L).
     intros α Hα. rewrite <- strip_uskl_open. exact (H0 α Hα).
-  - change bskl_hole with (pskl_to_bskl_inh pskl_hole).
-    apply ad_pat_consis__hole; [ reflexivity | apply a_wf_pskl__hole ].
-  - (* topholeg: stripping the dotted ghost yields a plain [tophole] *)
-    apply ad_pat_consis__tophole. exact IHad_pat_consis.
-  - apply ad_pat_consis__hole; [ reflexivity | exact H0 ].
-  - apply ad_pat_consis__tophole. exact IHad_pat_consis.
-  - eapply ad_pat_consis__tophole_inh with (L := L).
+  - change bskl_ghost with (pskl_to_bskl_inh pskl_ghost).
+    apply ad_pat_consis__ghost; [ reflexivity | apply a_wf_pskl__ghost ].
+  - (* dot_univ_ghost: stripping the dotted ghost yields a plain [univ_ghost] *)
+    apply ad_pat_consis__univ_ghost. exact IHad_pat_consis.
+  - apply ad_pat_consis__ghost; [ reflexivity | exact H0 ].
+  - apply ad_pat_consis__univ_ghost. exact IHad_pat_consis.
+  - eapply ad_pat_consis__univ_ghost_inh with (L := L).
     intros α Hα. specialize (H0 α Hα). simpl in H0. exact H0.
-  - apply ad_pat_consis__tophole_drop. exact IHad_pat_consis.
+  - apply ad_pat_consis__univ_ghost_drop. exact IHad_pat_consis.
   - eapply ad_pat_consis__flex_l; [ exact H | ].
     rewrite uskl_to_pskl_ptyp_to_uskl_syn, pskl_to_uskl_ptyp in IHad_pat_consis.
     exact IHad_pat_consis.
@@ -259,13 +259,13 @@ Proof.
   - inversion H. eapply IHA; eauto.
 Qed.
 
-(** (1b) hole-case leaf (EQUATION ONLY): a CONCRETE, ∀-free subject
+(** (1b) ghost-case leaf (EQUATION ONLY): a CONCRETE, ∀-free subject
     [pskl_to_uskl P] consistent with [Q] forces [Q] to be an inh-painting of
     its own erasure — [inh (bskl_to_pskl Q) = Q] — with empty tags.  That is
-    ALL the main lemma's hole case needs: combined with a THREADED
+    ALL the main lemma's ghost case needs: combined with a THREADED
     [Θ ⊢ bskl_to_pskl Q] (well-formedness is an INPUT, not a conclusion — cf.
-    [ad_pat_consis_refine_inh_gen]'s [Bsrc] premise), [uskl_hole ∼ Q] follows
-    by [__hole] with [B := bskl_to_pskl Q].  Proving only the EQUATION avoids
+    [ad_pat_consis_refine_inh_gen]'s [Bsrc] premise), [uskl_ghost ∼ Q] follows
+    by [__ghost] with [B := bskl_to_pskl Q].  Proving only the EQUATION avoids
     reconstructing the wf of a ∀-witness under the [Θ↔Δ] tension (which is not
     a general fact — a [∀◇] body cannot reference a Δ-var). *)
 Lemma consis_concrete_target_inh : forall Ψ Θ R Q,
@@ -297,25 +297,25 @@ Proof.
       simpl in HR; try discriminate HR. simpl in Hnf; contradiction.
   - (* ghostg *)
     destruct P0 as [ | n | αv | Pl Pr | Pq | | Pt ]; simpl in HR; discriminate HR.
-  - (* topholeg *)
+  - (* dot_univ_ghost *)
     destruct P0 as [ | n | αv | Pl Pr | Pq | | Pt ]; simpl in HR; discriminate HR.
-  - (* hole *)
+  - (* ghost *)
     split; [ exact H
            | simpl; rewrite bskl_to_pskl_pskl_to_bskl_inh; reflexivity ].
-  - (* tophole: bskl_tophole Q0 *)
+  - (* univ_ghost: bskl_univ_ghost Q0 *)
     destruct P0 as [ | n | αv | Pl Pr | Pq | | Pt ];
       simpl in HR; try discriminate HR. inversion HR; subst.
     simpl in Hnf.
     destruct (IHHc Hwfa _ eq_refl Hnf) as [HΨ0 Heq0].
     split; [ exact HΨ0 | simpl; rewrite Heq0; reflexivity ].
-  - (* tophole_inh: bskl_all_inh Q0 — close the opened equation via open-inj *)
+  - (* univ_ghost_inh: bskl_all_inh Q0 — close the opened equation via open-inj *)
     destruct P0 as [ | n | αv | Pl Pr | Pq | | Pt ];
       simpl in HR; try discriminate HR. inversion HR; subst.
     simpl in Hnf.
     pick fresh α for (L `union` dom Θ `union` ftvar_in_bskl Q).
     assert (HwfX : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
       by (apply a_wf_aenv__tvar; [ fsetdec | exact Hwfa ]).
-    destruct (H0 α ltac:(solve_notin_auto) HwfX (pskl_tophole Pt) eq_refl Hnf)
+    destruct (H0 α ltac:(solve_notin_auto) HwfX (pskl_univ_ghost Pt) eq_refl Hnf)
       as [HΨα HeqX].
     split; [ exact HΨα | ].
     simpl. f_equal.
@@ -323,7 +323,7 @@ Proof.
     + rewrite ftvar_in_bskl_inh, ftvar_bskl_to_pskl. fsetdec.
     + fsetdec.
     + rewrite <- pskl_to_bskl_inh_open, <- bskl_to_pskl_open. exact HeqX.
-  - (* tophole_drop: Q arbitrary *)
+  - (* univ_ghost_drop: Q arbitrary *)
     destruct P0 as [ | n | αv | Pl Pr | Pq | | Pt ];
       simpl in HR; try discriminate HR. inversion HR; subst.
     simpl in Hnf.
@@ -415,7 +415,7 @@ Proof.
       pose proof (H0 α ltac:(solve_notin_auto)) as Hα;
       pose proof (ftag_in_uskl_open_var R α) as Hov
     end; fsetdec.
-  - (* tophole_inh: subject fixed under the target binder *)
+  - (* univ_ghost_inh: subject fixed under the target binder *)
     pick fresh α for L;
     pose proof (H0 α ltac:(solve_notin_auto)) as Hα; simpl in Hα; fsetdec.
   - (* flex_l: the unfolded def is a painted monotype — tag-free *)
@@ -462,7 +462,7 @@ Qed.
 (*  Rule design mirrors the refinement ([ad_refine_syn] on inh-paintings)  *)
 (*  re-matched against DECORATED structure, plus a REFL rule for the       *)
 (*  identical decorated fragments (previous instantiations) that           *)
-(*  substitution leaves on both sides.  [tophole_fill] has NO mirror: the  *)
+(*  substitution leaves on both sides.  [univ_ghost_fill] has NO mirror: the  *)
 (*  ⊑-target is an inh-painting, whose head is never [all_syn], so fill    *)
 (*  cannot occur in a precision derivation.                                *)
 (* ===================================================================== *)
@@ -496,23 +496,23 @@ Inductive uskl_precise (Θ : aenv) : atoms -> uskl -> uskl -> Prop :=
          (open_uskl_wrt_uskl R (uskl_var_f α))) ->
     Ψrep [=] add ε Ψ0 ->
     uskl_precise Θ Ψrep (uskl_all_syn R') (uskl_all_tag ε R)
-| upre__tophole : forall Ψrep R' R,
+| upre__univ_ghost : forall Ψrep R' R,
     uskl_precise Θ Ψrep R' R ->
-    uskl_precise Θ Ψrep (uskl_tophole R') (uskl_tophole R)
-| upre__topholeg : forall Ψrep R' R,
+    uskl_precise Θ Ψrep (uskl_univ_ghost R') (uskl_univ_ghost R)
+| upre__dot_univ_ghost : forall Ψrep R' R,
     uskl_precise Θ Ψrep R' R ->
-    uskl_precise Θ Ψrep (uskl_topholeg R') (uskl_topholeg R)
-| upre__tophole_keepg : forall Ψrep R' R,
+    uskl_precise Θ Ψrep (uskl_dot_univ_ghost R') (uskl_dot_univ_ghost R)
+| upre__univ_ghost_keepg : forall Ψrep R' R,
     uskl_precise Θ Ψrep R' R ->
-    uskl_precise Θ Ψrep (uskl_tophole R') (uskl_topholeg R)
-| upre__hole : forall Ψrep R,
+    uskl_precise Θ Ψrep (uskl_univ_ghost R') (uskl_dot_univ_ghost R)
+| upre__ghost : forall Ψrep R,
     Ψrep [=] empty ->
     pskl_no_forall (uskl_to_pskl R) ->
     {{ Θ ⨟ empty ⊢ₚₛ (uskl_to_pskl R) }}a ->
-    uskl_precise Θ Ψrep uskl_hole R
-| upre__tophole_remove : forall Ψrep R' R,
+    uskl_precise Θ Ψrep uskl_ghost R
+| upre__univ_ghost_remove : forall Ψrep R' R,
     uskl_precise Θ Ψrep R' R ->
-    uskl_precise Θ Ψrep (uskl_tophole R') R
+    uskl_precise Θ Ψrep (uskl_univ_ghost R') R
 | upre__flex_l : forall Ψrep α τ R,
     binds α (abind_flex_mono_def τ) Θ ->
     uskl_precise Θ Ψrep (ptyp_to_uskl_syn τ) R ->
@@ -535,11 +535,11 @@ Proof.
   - eapply upre__all_tag with (L := L); intros α Hα; eauto.
   - eapply upre__all_inst with (L := L) (Ψ0 := Ψ0);
       [ intros α Hα; eauto | fsetdec ].
-  - apply upre__tophole; eauto.
-  - apply upre__topholeg; eauto.
-  - apply upre__tophole_keepg; eauto.
-  - apply upre__hole; [ fsetdec | assumption | assumption ].
-  - apply upre__tophole_remove; eauto.
+  - apply upre__univ_ghost; eauto.
+  - apply upre__dot_univ_ghost; eauto.
+  - apply upre__univ_ghost_keepg; eauto.
+  - apply upre__ghost; [ fsetdec | assumption | assumption ].
+  - apply upre__univ_ghost_remove; eauto.
   - eapply upre__flex_l; eauto.
   - eapply upre__flex_r; eauto.
 Qed.
@@ -593,7 +593,7 @@ Proof.
 Qed.
 
 (** ⊑ᵤ is closed under instantiating a rigid variable by a (decorated)
-    skeleton on BOTH sides — the ForallL-crux enabler.  The hole rule
+    skeleton on BOTH sides — the ForallL-crux enabler.  The ghost rule
     survives because its target is wf in the EMPTY Δ, hence [α]-free. *)
 Lemma uskl_precise_subst : forall Θ Ψrep R' R,
   uskl_precise Θ Ψrep R' R ->
@@ -633,21 +633,21 @@ Proof.
     rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R' ψs α0 β HYX Hlc).
     rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψs α0 β HYX Hlc).
     apply H0; [ clear - Hβ; fsetdec | exact Hlc | exact Hwf | exact Hα ].
-  - (* tophole cong *)
-    apply upre__tophole; apply IHHup; assumption.
-  - (* topholeg cong *)
-    apply upre__topholeg; apply IHHup; assumption.
-  - (* tophole_keepg *)
-    apply upre__tophole_keepg; apply IHHup; assumption.
-  - (* hole *)
+  - (* univ_ghost cong *)
+    apply upre__univ_ghost; apply IHHup; assumption.
+  - (* dot_univ_ghost cong *)
+    apply upre__dot_univ_ghost; apply IHHup; assumption.
+  - (* univ_ghost_keepg *)
+    apply upre__univ_ghost_keepg; apply IHHup; assumption.
+  - (* ghost *)
     assert (Hfr : α0 `notin` ftvar_in_uskl R).
     { pose proof (a_wf_pskl_ftv_dom H1) as Hsc.
       rewrite ftvar_in_pskl_uskl_to_pskl in Hsc.
       clear - Hsc Hα. fsetdec. }
     rewrite (subst_uskl_in_uskl_fresh_eq R ψs α0 Hfr).
-    apply upre__hole; assumption.
-  - (* tophole_remove *)
-    apply upre__tophole_remove; apply IHHup; assumption.
+    apply upre__ghost; assumption.
+  - (* univ_ghost_remove *)
+    apply upre__univ_ghost_remove; apply IHHup; assumption.
   - (* flex_l *)
     assert (Hdom : α `in` dom Θ) by (eapply binds_In; exact H).
     destruct_if as [-> | Hne]; [ exfalso; clear - Hdom Hα; fsetdec | ].
@@ -680,10 +680,10 @@ Qed.
     ⊑ᵤ, with [Ψrep] = ψ's tag reading (all of ψ's decorations are replaced
     by the painting).  Induction on the refinement derivation, re-matching
     erasure structure against decorated structure ([all_syn]↔[all_tag],
-    [tophole]↔[topholeg]); [tophole_fill] cannot occur (the ⊑-target is an
+    [univ_ghost]↔[dot_univ_ghost]); [univ_ghost_fill] cannot occur (the ⊑-target is an
     inh-painting, never [all_syn]-headed).
 
-    The refinement's ghost rule no longer checks its fill, so [upre__hole]'s
+    The refinement's ghost rule no longer checks its fill, so [upre__ghost]'s
     [Θ ⨟ ∅ ⊢ fill] comes from the paper's presupposition that the TARGET is
     well-formed ([Hwft]).  The ∀ rule pushes its variable into BOTH the
     context and [Δ], so the ⊑ᵤ context [Θb] is held FIXED and related to the
@@ -701,7 +701,7 @@ Lemma uskl_precise_of_precise_gen : forall Θ Δ Qsrc Qtgt,
   forall Pa ψt Ψt,
   Qsrc = pskl_to_bskl_inh Pa ->
   Qtgt = pskl_to_bskl_inh (uskl_to_pskl ψt) ->
-  is_tskl ψt ->
+  is_dskl ψt ->
   d_tags_skl Ψt ψt ->
   uskl_precise Θb Ψt (pskl_to_uskl Pa) ψt.
 Proof.
@@ -764,7 +764,7 @@ Proof.
       | rewrite uskl_to_pskl_open; symmetry; apply pskl_to_bskl_inh_open
       | apply Ht0; clear - Hα; solve_notin_auto
       | apply Hd0; clear - Hα; solve_notin_auto ].
-  - (* hole *)
+  - (* ghost *)
     destruct Pa; simpl in HSrc; try discriminate HSrc.
     assert (Hnf : pskl_no_forall (uskl_to_pskl ψt))
       by (eapply inh_eq_syn_no_forall; symmetry; exact HTgt).
@@ -772,7 +772,7 @@ Proof.
     { apply pskl_to_bskl_syn_inj.
       rewrite HTgt.
       apply pskl_no_forall_inh_eq_syn. exact Hnf. }
-    simpl. apply upre__hole.
+    simpl. apply upre__ghost.
     + pose proof (d_tags_skl_ftag Hdt) as Htg.
       pose proof (no_forall_uskl_ftag _ Hnf) as Hfe.
       clear - Htg Hfe; fsetdec.
@@ -788,15 +788,15 @@ Proof.
       intro HβΔ.
       assert (Hin : β `in` Δ ∩ ftvar_in_pskl P) by (apply inter_3; auto).
       rewrite H in Hin. clear - Hin. fsetdec.
-  - (* tophole_remove *)
+  - (* univ_ghost_remove *)
     destruct Pa as [ | n | α0 | Pa1 Pa2 | Pa0 | | Pa0 ];
       simpl in HSrc; try discriminate HSrc.
     inversion HSrc; subst.
-    simpl. apply upre__tophole_remove.
+    simpl. apply upre__univ_ghost_remove.
     eapply IHHr; try reflexivity; try eassumption.
-  - (* tophole_fill: an inh-painting is never all_syn-headed *)
+  - (* univ_ghost_fill: an inh-painting is never all_syn-headed *)
     destruct ψt; simpl in HTgt; discriminate HTgt.
-  - (* tophole_keep: ψt = topholeg ψ0 *)
+  - (* univ_ghost_keep: ψt = dot_univ_ghost ψ0 *)
     destruct Pa as [ | n | α0 | Pa1 Pa2 | Pa0 | | Pa0 ];
       simpl in HSrc; try discriminate HSrc.
     destruct ψt as [ | n | α0 | ψ1 ψ2 | ψ0 | ε ψ0 | | ψ0 | | ψ0 ];
@@ -804,9 +804,9 @@ Proof.
       [ inversion Htsk | ].
     inversion HSrc; inversion HTgt; subst.
     inversion Htsk; subst.
-    apply d_tags_skl_topholeg_inv in Hdt.
-    simpl in Hwft. apply a_wf_pskl_tophole_body in Hwft.
-    simpl. apply upre__tophole_keepg.
+    apply d_tags_skl_dot_univ_ghost_inv in Hdt.
+    simpl in Hwft. apply a_wf_pskl_univ_ghost_body in Hwft.
+    simpl. apply upre__univ_ghost_keepg.
     eapply IHHr; try reflexivity; try eassumption.
   - (* flex_l *)
     destruct Pa as [ | n | α0 | Pa1 Pa2 | Pa0 | | Pa0 ];
@@ -838,7 +838,7 @@ Proof.
       | reflexivity
       | rewrite uskl_to_pskl_ptyp_to_uskl_syn;
         symmetry; apply (ptyp_to_bskl_inh_syn_eq Hm)
-      | apply mono_ptyp_to_uskl_syn_is_tskl; exact Hm
+      | apply mono_ptyp_to_uskl_syn_is_dskl; exact Hm
       | apply (mono_ptyp_to_uskl_syn_tags Hm); reflexivity ].
 Qed.
 
@@ -851,7 +851,7 @@ Lemma uskl_precise_of_precise : forall Θ Δ Qsrc Qtgt,
   forall Pa ψt Ψt,
   Qsrc = pskl_to_bskl_inh Pa ->
   Qtgt = pskl_to_bskl_inh (uskl_to_pskl ψt) ->
-  is_tskl ψt ->
+  is_dskl ψt ->
   d_tags_skl Ψt ψt ->
   uskl_precise Θ Ψt (pskl_to_uskl Pa) ψt.
 Proof.
@@ -868,7 +868,7 @@ Qed.
 (*  subject A transports to B, with the tag context dropping by its        *)
 (*  Ψsup-portion.  The per-shape transporters below run the inner          *)
 (*  induction on the consistency derivation (handling the subject-         *)
-(*  preserving rules [flex_r]/[tophole_inh]); the main lemma               *)
+(*  preserving rules [flex_r]/[univ_ghost_inh]); the main lemma               *)
 (*  [ad_pat_consis_precise_upre] inducts on ⊑ᵤ and packages its IHs into   *)
 (*  the functional.  [Ψsup] over-approximates the replaced tags UNIFORMLY  *)
 (*  (it is fixed across congruences), which is what makes the arrow case   *)
@@ -1078,36 +1078,36 @@ Proof.
       | eapply a_wf_aenv_binds_def_wf; eauto ].
 Qed.
 
-Lemma consis_split_transport_tophole : forall Θb Ψsup R0 R0',
+Lemma consis_split_transport_univ_ghost : forall Θb Ψsup R0 R0',
   consis_split_transport Θb Ψsup R0 R0' ->
-  consis_split_transport Θb Ψsup (uskl_tophole R0) (uskl_tophole R0').
+  consis_split_transport Θb Ψsup (uskl_univ_ghost R0) (uskl_univ_ghost R0').
 Proof.
   intros Θb Ψsup R0 R0' Ht.
   intros Θ' Ψfull Ψn Ψna Q Hc Hmon Hwf HΨf HΨa Hdisj Hwfq.
-  remember (uskl_tophole R0) as Ssub eqn:HeqS.
+  remember (uskl_univ_ghost R0) as Ssub eqn:HeqS.
   revert Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
   induction Hc; try discriminate HeqS;
     intros Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
-  - (* tophole: target ∀◇ *)
+  - (* univ_ghost: target ∀◇ *)
     inversion HeqS; subst.
-    simpl in Hwfq. destruct (a_wf_pskl_tophole_inv Hwfq) as [Hg Hwb].
-    apply ad_pat_consis__tophole.
+    simpl in Hwfq. destruct (a_wf_pskl_univ_ghost_inv Hwfq) as [Hg Hwb].
+    apply ad_pat_consis__univ_ghost.
     eapply Ht with (Ψna := Ψna);
       [ exact Hc | exact Hmon | exact Hwf
       | exact HΨf | exact HΨa | exact Hdisj | exact Hwb ].
-  - (* tophole_inh: subject fixed, target opens under an extended context *)
+  - (* univ_ghost_inh: subject fixed, target opens under an extended context *)
     inversion HeqS; subst.
     simpl in Hwfq. destruct (a_wf_pskl_all_inv Hwfq) as [Lw Hwbody].
-    eapply ad_pat_consis__tophole_inh with
+    eapply ad_pat_consis__univ_ghost_inh with
       (L := L `union` Lw `union` dom Θ).
     intros α Hα.
     eapply (H0 α ltac:(clear - Hα; solve_notin_auto) eq_refl Ψn Ψna HΨf HΨa Hdisj);
       [ intros x b Hb; unfold binds; simpl; right; apply Hmon; exact Hb
       | apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]
       | apply wf_open_of_all; apply Hwbody; clear - Hα; fsetdec ].
-  - (* tophole_drop *)
+  - (* univ_ghost_drop *)
     inversion HeqS; subst.
-    apply ad_pat_consis__tophole_drop.
+    apply ad_pat_consis__univ_ghost_drop.
     eapply Ht with (Ψna := Ψna);
       [ exact Hc | exact Hmon | exact Hwf
       | exact HΨf | exact HΨa | exact Hdisj | exact Hwfq ].
@@ -1122,22 +1122,22 @@ Proof.
       | eapply a_wf_aenv_binds_def_wf; eauto ].
 Qed.
 
-(** Both dotted (topholeg-vs-topholeg) and mixed (tophole-vs-topholeg)
+(** Both dotted (dot_univ_ghost-vs-dot_univ_ghost) and mixed (univ_ghost-vs-dot_univ_ghost)
     ∀◇-transporters; the DERIVATION's subject is the dotted one. *)
-Lemma consis_split_transport_topholeg : forall Θb Ψsup R0 R0',
+Lemma consis_split_transport_dot_univ_ghost : forall Θb Ψsup R0 R0',
   consis_split_transport Θb Ψsup R0 R0' ->
-  consis_split_transport Θb Ψsup (uskl_topholeg R0) (uskl_topholeg R0').
+  consis_split_transport Θb Ψsup (uskl_dot_univ_ghost R0) (uskl_dot_univ_ghost R0').
 Proof.
   intros Θb Ψsup R0 R0' Ht.
   intros Θ' Ψfull Ψn Ψna Q Hc Hmon Hwf HΨf HΨa Hdisj Hwfq.
-  remember (uskl_topholeg R0) as Ssub eqn:HeqS.
+  remember (uskl_dot_univ_ghost R0) as Ssub eqn:HeqS.
   revert Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
   induction Hc; try discriminate HeqS;
     intros Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
-  - (* topholeg *)
+  - (* dot_univ_ghost *)
     inversion HeqS; subst.
-    simpl in Hwfq. destruct (a_wf_pskl_tophole_inv Hwfq) as [Hg Hwb].
-    apply ad_pat_consis__topholeg.
+    simpl in Hwfq. destruct (a_wf_pskl_univ_ghost_inv Hwfq) as [Hg Hwb].
+    apply ad_pat_consis__dot_univ_ghost.
     eapply Ht with (Ψna := Ψna);
       [ exact Hc | exact Hmon | exact Hwf
       | exact HΨf | exact HΨa | exact Hdisj | exact Hwb ].
@@ -1154,18 +1154,18 @@ Qed.
 
 Lemma consis_split_transport_keepg : forall Θb Ψsup R0 R0',
   consis_split_transport Θb Ψsup R0 R0' ->
-  consis_split_transport Θb Ψsup (uskl_topholeg R0) (uskl_tophole R0').
+  consis_split_transport Θb Ψsup (uskl_dot_univ_ghost R0) (uskl_univ_ghost R0').
 Proof.
   intros Θb Ψsup R0 R0' Ht.
   intros Θ' Ψfull Ψn Ψna Q Hc Hmon Hwf HΨf HΨa Hdisj Hwfq.
-  remember (uskl_topholeg R0) as Ssub eqn:HeqS.
+  remember (uskl_dot_univ_ghost R0) as Ssub eqn:HeqS.
   revert Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
   induction Hc; try discriminate HeqS;
     intros Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
-  - (* topholeg → tophole (plain keep) *)
+  - (* dot_univ_ghost → univ_ghost (plain keep) *)
     inversion HeqS; subst.
-    simpl in Hwfq. destruct (a_wf_pskl_tophole_inv Hwfq) as [Hg Hwb].
-    apply ad_pat_consis__tophole.
+    simpl in Hwfq. destruct (a_wf_pskl_univ_ghost_inv Hwfq) as [Hg Hwb].
+    apply ad_pat_consis__univ_ghost.
     eapply Ht with (Ψna := Ψna);
       [ exact Hc | exact Hmon | exact Hwf
       | exact HΨf | exact HΨa | exact Hdisj | exact Hwb ].
@@ -1286,16 +1286,16 @@ Proof.
                (ftag_in_uskl (open_uskl_wrt_uskl ?B _)) [=] _ =>
             pose proof (ftag_in_uskl_open_var B α) as Hov
         end; clear - Hftag Hov; fsetdec ].
-  - (* tophole cong *)
-    apply consis_split_transport_tophole.
+  - (* univ_ghost cong *)
+    apply consis_split_transport_univ_ghost.
     apply IHHup; [ exact HΨsup | clear - Hftag; fsetdec ].
-  - (* topholeg cong *)
-    apply consis_split_transport_topholeg.
+  - (* dot_univ_ghost cong *)
+    apply consis_split_transport_dot_univ_ghost.
     apply IHHup; [ exact HΨsup | clear - Hftag; fsetdec ].
-  - (* tophole_keepg *)
+  - (* univ_ghost_keepg *)
     apply consis_split_transport_keepg.
     apply IHHup; [ exact HΨsup | clear - Hftag; fsetdec ].
-  - (* hole *)
+  - (* ghost *)
     intros Θ' Ψfull Ψn Ψna Q Hc Hmon Hwf HΨf HΨa Hdisj Hwfq.
     assert (HΨe : Ψn [=] empty).
     { pose proof (ad_pat_consis_ftag_sub Hc) as Hfs.
@@ -1305,10 +1305,10 @@ Proof.
     destruct (consis_concrete_target_inh Hstr Hwf (uskl_to_pskl R) eq_refl H0)
       as [_ Heqinh].
     rewrite <- Heqinh.
-    apply ad_pat_consis__hole; [ exact HΨe | exact Hwfq ].
-  - (* tophole_remove *)
+    apply ad_pat_consis__ghost; [ exact HΨe | exact Hwfq ].
+  - (* univ_ghost_remove *)
     intros Θ' Ψfull Ψn Ψna Q Hc Hmon Hwf HΨf HΨa Hdisj Hwfq.
-    apply ad_pat_consis__tophole_drop.
+    apply ad_pat_consis__univ_ghost_drop.
     assert (Hftag' : Ψsup ∩ ftag_in_uskl R' [=] empty)
       by (clear - Hftag; fsetdec).
     exact (IHHup Ψsup HΨsup Hftag' Θ' Ψfull Ψn Ψna Q
@@ -1385,11 +1385,11 @@ Proof.
     apply lc_uskl_all_tag_exists with (α1 := α). apply H0; fsetdec.
   - pick fresh α for L.
     apply lc_uskl_all_syn_exists with (α1 := α). apply H0; fsetdec.
-  - apply lc_uskl_tophole; assumption.
-  - apply lc_uskl_topholeg; assumption.
-  - apply lc_uskl_tophole; assumption.
-  - apply lc_uskl_hole.
-  - apply lc_uskl_tophole; assumption.
+  - apply lc_uskl_univ_ghost; assumption.
+  - apply lc_uskl_dot_univ_ghost; assumption.
+  - apply lc_uskl_univ_ghost; assumption.
+  - apply lc_uskl_ghost.
+  - apply lc_uskl_univ_ghost; assumption.
   - apply lc_uskl_var_f.
   - assumption.
 Qed.
@@ -1462,12 +1462,12 @@ Proof.
     pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
       as Hlo.
     clear - Hin Hlo; fsetdec.
-  - (* hole *) exfalso; clear - Hin; fsetdec.
-  - (* tophole *)
-    apply upre__tophole. apply IHHlc; assumption.
-  - (* holeg *) exfalso; clear - Hin; fsetdec.
-  - (* topholeg *)
-    apply upre__topholeg. apply IHHlc; assumption.
+  - (* ghost *) exfalso; clear - Hin; fsetdec.
+  - (* univ_ghost *)
+    apply upre__univ_ghost. apply IHHlc; assumption.
+  - (* dot_ghost *) exfalso; clear - Hin; fsetdec.
+  - (* dot_univ_ghost *)
+    apply upre__dot_univ_ghost. apply IHHlc; assumption.
 Qed.
 
 (** The packaged form: [Ψrep] if the variable occurs, [∅] if not. *)
@@ -1520,9 +1520,9 @@ Qed.
 (*  (prop_precise.v) with the left-hand refinement replaced by the        *)
 (*  precision.                                                            *)
 (*                                                                        *)
-(*  The [upre__hole] crux (concluding [□ ⊳ Qr] needs [Δ ∩ ftv Qr = ∅]) is  *)
+(*  The [upre__ghost] crux (concluding [□ ⊳ Qr] needs [Δ ∩ ftv Qr = ∅]) is  *)
 (*  the Δ-discipline of prop_precise.v: the precise side's erasure is wf  *)
-(*  at [Θb ⨟ ∅] (the [upre__hole] premise), hence Δ-free because Δ is     *)
+(*  at [Θb ⨟ ∅] (the [upre__ghost] premise), hence Δ-free because Δ is     *)
 (*  fresh for the FIXED [Θb]; and Δ-freeness propagates across a          *)
 (*  refinement ([ad_refine_pskl_ftv_policed]) as long as no flexible      *)
 (*  variable is a Δ-variable and no flexible definition mentions one.     *)
@@ -1569,11 +1569,11 @@ Proof.
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower
                   P' (pskl_var_f α)) as Hlo.
     clear - Ht Hlo. fsetdec.
-  - (* hole : the fill is Δ-free by the rule's own premise *)
+  - (* ghost : the fill is Δ-free by the rule's own premise *)
     clear - H HSΔ. fsetdec.
-  - (* tophole_remove *)
+  - (* univ_ghost_remove *)
     apply IHHref; auto.
-  - (* tophole_fill : the fresh binder is re-bound by the target ∀ *)
+  - (* univ_ghost_fill : the fresh binder is re-bound by the target ∀ *)
     pick fresh α for (L `union` S `union` ftvar_in_pskl P').
     destruct (@delta_flex_defs_cons_tvar α Θ S Hdefs Hflex) as [Hdefs' Hflex'].
     pose proof (H0 α ltac:(clear - Fr; solve_notin_auto) S HSΔ
@@ -1581,7 +1581,7 @@ Proof.
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower
                   P' (pskl_var_f α)) as Hlo.
     clear - Ht Hlo. fsetdec.
-  - (* tophole_keep *)
+  - (* univ_ghost_keep *)
     apply IHHref; auto.
   - (* flex_l : the definition is Δ-free *)
     apply IHHref; auto.
@@ -1592,18 +1592,18 @@ Proof.
     exact (Hflex α τ Hβ H).
 Qed.
 
-(** The left-hand ghost rule, in the shape the [upre__hole] rows need: a
+(** The left-hand ghost rule, in the shape the [upre__ghost] rows need: a
     ghost refines to anything a Δ-free source refines to. *)
-Lemma ad_refine_pskl_hole_l : forall Θ Δ Qm Qr,
+Lemma ad_refine_pskl_ghost_l : forall Θ Δ Qm Qr,
   {{ Θ ⨟ Δ ⊢ᵣₚ Qm ⊳ Qr }}ad ->
   (forall β τ, binds β (abind_flex_mono_def τ) Θ ->
      Δ ∩ ftvar_in_ptyp τ [=] empty) ->
   (forall β τ, β `in` Δ -> ~ binds β (abind_flex_mono_def τ) Θ) ->
   Δ ∩ ftvar_in_pskl Qm [=] empty ->
-  {{ Θ ⨟ Δ ⊢ᵣₚ pskl_hole ⊳ Qr }}ad.
+  {{ Θ ⨟ Δ ⊢ᵣₚ pskl_ghost ⊳ Qr }}ad.
 Proof.
   intros Θ Δ Qm Qr Href Hdefs Hflex Hsrc.
-  apply ad_refine_pskl__hole.
+  apply ad_refine_pskl__ghost.
   eapply ad_refine_pskl_ftv_policed;
     [ exact Href | clear; fsetdec | exact Hdefs | exact Hflex | exact Hsrc ].
 Qed.
@@ -1666,23 +1666,23 @@ Proof.
     destruct τ' as [ | n | β | τ1 τ2 | τ0 ];
       unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn in Heq;
       simpl in Heq; discriminate Heq.
-  - (* tophole cong *)
+  - (* univ_ghost cong *)
     destruct τ' as [ | n | β | τ1 τ2 | τ0 ];
       unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn in Heq;
       simpl in Heq; discriminate Heq.
-  - (* topholeg cong *)
+  - (* dot_univ_ghost cong *)
     destruct τ' as [ | n | β | τ1 τ2 | τ0 ];
       unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn in Heq;
       simpl in Heq; discriminate Heq.
-  - (* tophole_keepg *)
+  - (* univ_ghost_keepg *)
     destruct τ' as [ | n | β | τ1 τ2 | τ0 ];
       unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn in Heq;
       simpl in Heq; discriminate Heq.
-  - (* hole *)
-    simpl. apply ad_refine_pskl__hole.
+  - (* ghost *)
+    simpl. apply ad_refine_pskl__ghost.
     rewrite ftvar_ptyp_to_pskl. exact Hfree.
-  - (* tophole_remove *)
-    simpl. apply ad_refine_pskl__tophole_remove.
+  - (* univ_ghost_remove *)
+    simpl. apply ad_refine_pskl__univ_ghost_remove.
     eapply IHHp;
       [ exact Heq | exact Hm | exact Hmon | exact Hwf | exact Hwfτ
       | exact Hdefs | exact Hfree ].
@@ -1713,19 +1713,19 @@ Qed.
    [refl] is inline (rewrite the erasure equation, hand back the
    reconstituted node); the others are: *)
 
-(* [upre__hole]: the ghost helper, fed the node + the Δ-freeness of the
+(* [upre__ghost]: the ghost helper, fed the node + the Δ-freeness of the
    row's own source (wf at [Θb ⨟ ∅], and Δ is fresh for [Θb]). *)
-Local Ltac erase_refine_hole Hrr Hdefs Hflex HΔb Θb Heq :=
+Local Ltac erase_refine_ghost Hrr Hdefs Hflex HΔb Θb Heq :=
   simpl;
-  eapply ad_refine_pskl_hole_l;
+  eapply ad_refine_pskl_ghost_l;
     [ exact Hrr | exact Hdefs | exact Hflex
     | rewrite <- Heq;
       eapply a_wf_pskl_empty_delta_free with (Θ := Θb);
         [ eassumption | exact HΔb ] ].
 
-(* [upre__tophole_remove]: peel the ghostier side's ∀◇ and recurse. *)
+(* [upre__univ_ghost_remove]: peel the ghostier side's ∀◇ and recurse. *)
 Local Ltac erase_refine_remove IHHp Heq :=
-  simpl; apply ad_refine_pskl__tophole_remove; apply IHHp; exact Heq.
+  simpl; apply ad_refine_pskl__univ_ghost_remove; apply IHHp; exact Heq.
 
 (* [upre__flex_l]: unfold the ghostier side's flex definition and recurse
    (the precise side, hence the erasure equation, is unchanged). *)
@@ -1765,9 +1765,9 @@ Local Ltac erase_refine_all H0 Hfam LL L Θ Θb Δ Hwf Hdefs Hflex Hmon HΔb :=
         | apply HΔb; clear - Hβ Hne; fsetdec ]
     | apply uskl_to_pskl_open ].
 
-(* [tophole_fill]-row recursion: the binder enters Θ only. *)
+(* [univ_ghost_fill]-row recursion: the binder enters Θ only. *)
 Local Ltac erase_refine_fill H0 L Θ Θb Δ Hwf Hdefs Hflex Hmon HΔb ctor :=
-  apply ad_refine_pskl__tophole_fill
+  apply ad_refine_pskl__univ_ghost_fill
     with (L := L `union` dom Θ `union` dom Θb `union` Δ);
   let α2 := fresh "α2" in
   let Hα2 := fresh "Hα2" in
@@ -1775,8 +1775,8 @@ Local Ltac erase_refine_fill H0 L Θ Θb Δ Hwf Hdefs Hflex Hmon HΔb ctor :=
   let Hflex' := fresh "Hflex'" in
   intros α2 Hα2;
   match goal with
-  |- {{ _ ⨟ _ ⊢ᵣₚ (pskl_tophole (uskl_to_pskl ?RR)) ⊳ _ }}ad =>
-    change (pskl_tophole (uskl_to_pskl RR))
+  |- {{ _ ⨟ _ ⊢ᵣₚ (pskl_univ_ghost (uskl_to_pskl ?RR)) ⊳ _ }}ad =>
+    change (pskl_univ_ghost (uskl_to_pskl RR))
       with (uskl_to_pskl (ctor RR))
   end;
   destruct (@delta_flex_defs_cons_tvar α2 Θ Δ Hdefs Hflex)
@@ -1785,9 +1785,9 @@ Local Ltac erase_refine_fill H0 L Θ Θb Δ Hwf Hdefs Hflex Hmon HΔb ctor :=
     [ clear - Hα2; fsetdec
     | apply a_wf_aenv__tvar; [ clear - Hα2; fsetdec | exact Hwf ]
     | exact Hdefs' | exact Hflex'
-    | first [ apply upre__tophole; eassumption
-            | apply upre__topholeg; eassumption
-            | apply upre__tophole_keepg; eassumption ]
+    | first [ apply upre__univ_ghost; eassumption
+            | apply upre__dot_univ_ghost; eassumption
+            | apply upre__univ_ghost_keepg; eassumption ]
     | intros x b0 Hb0; apply binds_cons_3; apply Hmon; exact Hb0
     | exact HΔb
     | reflexivity ].
@@ -1816,7 +1816,7 @@ Proof.
       by (apply ad_refine_pskl__unit).
     revert Heq; induction Hp; intros Heq; simpl in Heq; try discriminate Heq.
     + rewrite Heq. exact Hrr.
-    + erase_refine_hole Hrr Hdefs Hflex HΔb Θb Heq.
+    + erase_refine_ghost Hrr Hdefs Hflex HΔb Θb Heq.
     + erase_refine_remove IHHp Heq.
     + erase_refine_flexl Hmon IHHp Heq.
   - (* var *)
@@ -1824,7 +1824,7 @@ Proof.
       by (apply ad_refine_pskl__var).
     revert Heq; induction Hp; intros Heq; simpl in Heq; try discriminate Heq.
     + rewrite Heq. exact Hrr.
-    + erase_refine_hole Hrr Hdefs Hflex HΔb Θb Heq.
+    + erase_refine_ghost Hrr Hdefs Hflex HΔb Θb Heq.
     + erase_refine_remove IHHp Heq.
     + erase_refine_flexl Hmon IHHp Heq.
     + (* flex_r : the precise side is a DEFINED variable — the refinement
@@ -1857,7 +1857,7 @@ Proof.
       * eapply IHHr2;
           [ exact Hwf | exact Hdefs | exact Hflex
           | eassumption | exact Hmon | exact HΔb | reflexivity ].
-    + erase_refine_hole Hrr Hdefs Hflex HΔb Θb Heq.
+    + erase_refine_ghost Hrr Hdefs Hflex HΔb Θb Heq.
     + erase_refine_remove IHHp Heq.
     + erase_refine_flexl Hmon IHHp Heq.
   - (* all *)
@@ -1886,87 +1886,87 @@ Proof.
         Hfam : forall β, β `notin` ?LL -> uskl_precise _ _ _ _ |- _ =>
         erase_refine_all H0 Hfam LL L Θ Θb Δ Hwf Hdefs Hflex Hmon HΔb
       end.
-    + erase_refine_hole Hrr Hdefs Hflex HΔb Θb Heq.
+    + erase_refine_ghost Hrr Hdefs Hflex HΔb Θb Heq.
     + erase_refine_remove IHHp Heq.
     + erase_refine_flexl Hmon IHHp Heq.
-  - (* hole *)
-    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ pskl_hole ⊳ P' }}ad)
-      by (apply ad_refine_pskl__hole; exact H).
+  - (* ghost *)
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ pskl_ghost ⊳ P' }}ad)
+      by (apply ad_refine_pskl__ghost; exact H).
     revert Heq; induction Hp; intros Heq; simpl in Heq; try discriminate Heq.
     + rewrite Heq. exact Hrr.
     + simpl. exact Hrr.
     + erase_refine_remove IHHp Heq.
     + erase_refine_flexl Hmon IHHp Heq.
-  - (* tophole_remove *)
-    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ P' }}ad)
-      by (apply ad_refine_pskl__tophole_remove; exact Hr).
+  - (* univ_ghost_remove *)
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_univ_ghost P) ⊳ P' }}ad)
+      by (apply ad_refine_pskl__univ_ghost_remove; exact Hr).
     revert Heq; induction Hp; intros Heq; simpl in Heq; try discriminate Heq.
     + rewrite Heq. exact Hrr.
-    + (* upre__tophole *)
+    + (* upre__univ_ghost *)
       inversion Heq; subst.
-      simpl. apply ad_refine_pskl__tophole_remove.
+      simpl. apply ad_refine_pskl__univ_ghost_remove.
       eapply IHHr;
         [ exact Hwf | exact Hdefs | exact Hflex
         | eassumption | exact Hmon | exact HΔb | reflexivity ].
-    + (* upre__topholeg *)
+    + (* upre__dot_univ_ghost *)
       inversion Heq; subst.
-      simpl. apply ad_refine_pskl__tophole_remove.
+      simpl. apply ad_refine_pskl__univ_ghost_remove.
       eapply IHHr;
         [ exact Hwf | exact Hdefs | exact Hflex
         | eassumption | exact Hmon | exact HΔb | reflexivity ].
-    + (* upre__tophole_keepg *)
+    + (* upre__univ_ghost_keepg *)
       inversion Heq; subst.
-      simpl. apply ad_refine_pskl__tophole_remove.
+      simpl. apply ad_refine_pskl__univ_ghost_remove.
       eapply IHHr;
         [ exact Hwf | exact Hdefs | exact Hflex
         | eassumption | exact Hmon | exact HΔb | reflexivity ].
-    + erase_refine_hole Hrr Hdefs Hflex HΔb Θb Heq.
+    + erase_refine_ghost Hrr Hdefs Hflex HΔb Θb Heq.
     + erase_refine_remove IHHp Heq.
     + erase_refine_flexl Hmon IHHp Heq.
-  - (* tophole_fill *)
-    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_all_syn P') }}ad)
-      by (apply ad_refine_pskl__tophole_fill with (L := L); exact H).
+  - (* univ_ghost_fill *)
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_univ_ghost P) ⊳ (pskl_all_syn P') }}ad)
+      by (apply ad_refine_pskl__univ_ghost_fill with (L := L); exact H).
     revert Heq; induction Hp; intros Heq; simpl in Heq; try discriminate Heq.
     + rewrite Heq. exact Hrr.
-    + (* upre__tophole *)
+    + (* upre__univ_ghost *)
       inversion Heq; subst.
       simpl.
-      erase_refine_fill H0 L Θ Θb Δ Hwf Hdefs Hflex Hmon HΔb uskl_tophole.
-    + (* upre__topholeg *)
+      erase_refine_fill H0 L Θ Θb Δ Hwf Hdefs Hflex Hmon HΔb uskl_univ_ghost.
+    + (* upre__dot_univ_ghost *)
       inversion Heq; subst.
       simpl.
-      erase_refine_fill H0 L Θ Θb Δ Hwf Hdefs Hflex Hmon HΔb uskl_topholeg.
-    + (* upre__tophole_keepg *)
+      erase_refine_fill H0 L Θ Θb Δ Hwf Hdefs Hflex Hmon HΔb uskl_dot_univ_ghost.
+    + (* upre__univ_ghost_keepg *)
       inversion Heq; subst.
       simpl.
-      erase_refine_fill H0 L Θ Θb Δ Hwf Hdefs Hflex Hmon HΔb uskl_tophole.
-    + erase_refine_hole Hrr Hdefs Hflex HΔb Θb Heq.
+      erase_refine_fill H0 L Θ Θb Δ Hwf Hdefs Hflex Hmon HΔb uskl_univ_ghost.
+    + erase_refine_ghost Hrr Hdefs Hflex HΔb Θb Heq.
     + erase_refine_remove IHHp Heq.
     + erase_refine_flexl Hmon IHHp Heq.
-  - (* tophole_keep *)
-    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_tophole P') }}ad)
-      by (apply ad_refine_pskl__tophole_keep; assumption).
+  - (* univ_ghost_keep *)
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_univ_ghost P) ⊳ (pskl_univ_ghost P') }}ad)
+      by (apply ad_refine_pskl__univ_ghost_keep; assumption).
     revert Heq; induction Hp; intros Heq; simpl in Heq; try discriminate Heq.
     + rewrite Heq. exact Hrr.
-    + (* upre__tophole *)
+    + (* upre__univ_ghost *)
       inversion Heq; subst.
-      simpl. apply ad_refine_pskl__tophole_keep.
+      simpl. apply ad_refine_pskl__univ_ghost_keep.
       eapply IHHr;
         [ exact Hwf | exact Hdefs | exact Hflex
         | eassumption | exact Hmon | exact HΔb | reflexivity ].
-    + (* upre__topholeg *)
+    + (* upre__dot_univ_ghost *)
       inversion Heq; subst.
-      simpl. apply ad_refine_pskl__tophole_keep.
+      simpl. apply ad_refine_pskl__univ_ghost_keep.
       eapply IHHr;
         [ exact Hwf | exact Hdefs | exact Hflex
         | eassumption | exact Hmon | exact HΔb | reflexivity ].
-    + (* upre__tophole_keepg *)
+    + (* upre__univ_ghost_keepg *)
       inversion Heq; subst.
-      simpl. apply ad_refine_pskl__tophole_keep.
+      simpl. apply ad_refine_pskl__univ_ghost_keep.
       eapply IHHr;
         [ exact Hwf | exact Hdefs | exact Hflex
         | eassumption | exact Hmon | exact HΔb | reflexivity ].
-    + erase_refine_hole Hrr Hdefs Hflex HΔb Θb Heq.
+    + erase_refine_ghost Hrr Hdefs Hflex HΔb Θb Heq.
     + erase_refine_remove IHHp Heq.
     + erase_refine_flexl Hmon IHHp Heq.
   - (* flex_l *)
@@ -1974,7 +1974,7 @@ Proof.
       by (eapply ad_refine_pskl__flex_l; eassumption).
     revert Heq; induction Hp; intros Heq; simpl in Heq; try discriminate Heq.
     + rewrite Heq. exact Hrr.
-    + erase_refine_hole Hrr Hdefs Hflex HΔb Θb Heq.
+    + erase_refine_ghost Hrr Hdefs Hflex HΔb Θb Heq.
     + erase_refine_remove IHHp Heq.
     + erase_refine_flexl Hmon IHHp Heq.
     + (* flex_r : the precise side unfolds the SAME definition (unique by

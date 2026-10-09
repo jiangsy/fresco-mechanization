@@ -438,7 +438,7 @@ Proof.
     rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var.
     rewrite <- subst_var_bskl_syn.
     apply (H0 x ltac:(clear - Hx; solve_notin_auto)
-             ((x ~ abind_var_skl pskl_hole) ++ Θ1));
+             ((x ~ abind_var_skl pskl_ghost) ++ Θ1));
       [ simpl_env; reflexivity
       | clear - Hdom Hx; simpl; repeat rewrite dom_app in *; fsetdec
       | clear - Hβ' Hx; simpl; repeat rewrite dom_app in *; fsetdec

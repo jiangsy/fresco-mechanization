@@ -34,10 +34,10 @@
     own augmented thm:complete-consistency (consistency-proofs.tex:2230-2242)
     carries the same subject-refinement condition, and there it is harmless:
     [ad_pat_consis] is itself a LOCKSTEP relation — every ∀-inh counterpart
-    row ([__forall_inh_tagged] / [__forall_inh_untagged] / [__tophole_inh])
+    row ([__forall_inh_tagged] / [__forall_inh_untagged] / [__univ_ghost_inh])
     requires the subject to be a ∀ or a ghost, so consistency never pairs a
     guarded subject with a ∀-headed counterpart, and the third condition only
-    adds what it was designed to add: the no-capture discipline on hole fills
+    adds what it was designed to add: the no-capture discipline on ghost fills
     (the [(P0=∀X.X, P=∀X.◇, Q=∀X.X)] cex of DESIGN-subtyping.md §3.1).
     Subtyping's ForallL / ForallR / UnivGhostR BREAK lockstep — that is their
     job — so importing consistency's condition verbatim cuts exactly the
@@ -158,7 +158,7 @@ Proof.
   - clear; fsetdec.
   - clear; fsetdec.
   - apply a_tags_sort__ty;
-      [ apply is_tskl__unit
+      [ apply is_dskl__unit
       | apply d_tags_skl__unit; reflexivity
       | apply uskl_ghost_free__unit ].
   - cbn. apply a_wf_pskl__unit.

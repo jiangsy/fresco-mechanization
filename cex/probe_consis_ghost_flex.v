@@ -11,18 +11,18 @@
 
         pattern ◇   subject α̂        (α̂ an UNDEFINED flexible)
 
-    BOTH [U-GhostR] (a hole pattern answers the subject) and [U-FlexL]
+    BOTH [U-GhostR] (a ghost pattern answers the subject) and [U-FlexL]
     (a [nonflex] pattern is ASSIGNED to the flexible subject) fire —
-    [nonflex{P0}] rules out a flexible variable, NOT a hole — and their
+    [nonflex{P0}] rules out a flexible variable, NOT a ghost — and their
     output CONTEXTS differ:
 
         U-GhostR    Θ0                                    (unchanged)
         U-FlexL     (α ~ def β̂) ++ (β̂ ~ flex) ++ Θ0'      (α̂ SOLVED)
 
     because [guess^TY(◇)] invents a fresh flexible (def_guess.v's
-    [e_guess_mono__hole]).  The runner takes [U-GhostR]: the tagged
+    [e_guess_mono__ghost]).  The runner takes [U-GhostR]: the tagged
     block's consistency clause matches the PATTERN first and its
-    [pskl_hole] arm is unconditional in the subject
+    [pskl_ghost] arm is unconditional in the subject
     (def_consis_impl.v:759).  The mirror pair (pattern α̂, subject ◇)
     diverges the same way, [U-Ghost] against [U-FlexR].
 
@@ -108,7 +108,7 @@ Qed.
 (** (1) the route the runner takes — the context is UNCHANGED. *)
 Lemma probe_consis_ghostr_route : forall Δ1 Δ2 S α,
   Δ1 ∩ ftvar_in_pskl (pskl_var_f α) [=] empty ->
-  {{ S ↝ S ⊨ (probe_gf_ctx α) ⊢[ Δ1 | Δ2 | pskl_hole ]
+  {{ S ↝ S ⊨ (probe_gf_ctx α) ⊢[ Δ1 | Δ2 | pskl_ghost ]
      (pskl_var_f α) ∼ (pskl_var_f α) ⊣ (probe_gf_ctx α) }}e.
 Proof.
   intros. apply e_consis__ghost_r. assumption.
@@ -118,7 +118,7 @@ Qed.
     [P <> ◇]. *)
 Lemma probe_consis_flexr_walk : forall S α β,
   β `notin` S ->
-  {{ S ↝ (add β S) ⊨ (probe_gf_ctx α) ⊲[ nil ] α ≔ pskl_hole
+  {{ S ↝ (add β S) ⊨ (probe_gf_ctx α) ⊲[ nil ] α ≔ pskl_ghost
      ⊣ (probe_gf_ctx_solved α β) }}e.
 Proof.
   intros * Hβ. unfold probe_gf_ctx, probe_gf_ctx_solved.
@@ -129,6 +129,6 @@ Proof.
     by reflexivity.
   apply e_assign__solve_m.
   + simpl. fsetdec.
-  + apply e_guess_mono__hole. assumption.
+  + apply e_guess_mono__ghost. assumption.
   + apply mono_ptyp__var.
 Qed.

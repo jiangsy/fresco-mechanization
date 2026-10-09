@@ -122,8 +122,8 @@ Proof.
           as [Hb | [Hb | [τ Hb]]];
           [ left | right; left | right; right; exists τ ];
           apply binds_cons_3; exact Hb.
-  - apply a_scope_pskl__hole.
-  - apply a_scope_pskl__tophole.
+  - apply a_scope_pskl__ghost.
+  - apply a_scope_pskl__univ_ghost.
     apply IHHwfd.
     + intros x b Hb. apply binds_aenv_minus in Hb. apply Hincl, Hb.
     + intros β Hβ. exfalso. clear - Hβ. fsetdec.
@@ -236,8 +236,8 @@ Fixpoint swap_pskl (a b : atom) (P : pskl) : pskl :=
   | pskl_var_f α => pskl_var_f (swap_atom a b α)
   | pskl_arrow P1 P2 => pskl_arrow (swap_pskl a b P1) (swap_pskl a b P2)
   | pskl_all_syn P0 => pskl_all_syn (swap_pskl a b P0)
-  | pskl_hole => pskl_hole
-  | pskl_tophole P0 => pskl_tophole (swap_pskl a b P0)
+  | pskl_ghost => pskl_ghost
+  | pskl_univ_ghost P0 => pskl_univ_ghost (swap_pskl a b P0)
   end.
 
 Definition swap_abind (a b : atom) (bd : abind) : abind :=
@@ -532,8 +532,8 @@ Proof.
       end; [exfalso; apply n0; exact (swap_atom_inj a b x α e1) | reflexivity].
   - (* arrow *) f_equal; auto.
   - (* all_syn *) f_equal; auto.
-  - (* hole *) reflexivity.
-  - (* tophole *) f_equal; auto.
+  - (* ghost *) reflexivity.
+  - (* univ_ghost *) f_equal; auto.
 Qed.
 
 Lemma swap_pskl_close : forall a b x P,
@@ -555,9 +555,9 @@ Lemma a_guess_mono_swap : forall a b Θ P Ξ τ,
                (swap_aenv a b Ξ) (swap_ptyp a b τ).
 Proof.
   intros * H; induction H; simpl.
-  - (* hole: the generated flexible transports with its avoid-input *)
-    apply a_guess_mono__hole. auto using swap_aenv_ftvar_notin.
-  - (* tophole *) apply a_guess_mono__tophole; auto.
+  - (* ghost: the generated flexible transports with its avoid-input *)
+    apply a_guess_mono__ghost. auto using swap_aenv_ftvar_notin.
+  - (* univ_ghost *) apply a_guess_mono__univ_ghost; auto.
   - (* var *) apply a_guess_mono__var.
   - (* unit *) apply a_guess_mono__unit.
   - (* arrow *)
@@ -865,9 +865,9 @@ Proof. intros * H; destruct H; simpl; constructor. Qed.
 
 (** The [<> ◇] guard the consistency FlexL/FlexR rows carry (def_rules.v)
     transports along a swap: a transposition is structural, so it maps a
-    hole to a hole and everything else to its own constructor. *)
-Lemma swap_pskl_not_hole : forall a b P,
-  P <> pskl_hole -> swap_pskl a b P <> pskl_hole.
+    ghost to a ghost and everything else to its own constructor. *)
+Lemma swap_pskl_not_ghost : forall a b P,
+  P <> pskl_ghost -> swap_pskl a b P <> pskl_ghost.
 Proof.
   intros * H. destruct P; simpl; try discriminate. congruence.
 Qed.
@@ -983,9 +983,9 @@ Qed.
 
 (** …and its ghost sibling, for the ◇-DISPATCH GUARD: a swap is structural,
     so it maps [◇] to [◇] and nothing else to it. *)
-Lemma swap_pskl_neq_hole : forall a b P,
-  P <> pskl_hole ->
-  swap_pskl a b P <> pskl_hole.
+Lemma swap_pskl_neq_ghost : forall a b P,
+  P <> pskl_ghost ->
+  swap_pskl a b P <> pskl_ghost.
 Proof.
   intros * Hne He. apply Hne.
   rewrite <- (swap_pskl_invol a b P), He. reflexivity.
@@ -1115,13 +1115,13 @@ Proof.
     apply a_looksub__forall_l with (β := swap_atom a b β);
       [ swap_freshness
       | apply swap_pskl_ftv_in; assumption
-      | apply swap_pskl_neq_hole; assumption
+      | apply swap_pskl_neq_ghost; assumption
       | apply forall_r_off_swap; assumption
       |].
     rewrite swap_pskl_open_var in H. exact H.
   - (* univ_ghost_l *)
     apply a_looksub__univ_ghost_l;
-      [ apply swap_pskl_neq_hole; assumption
+      [ apply swap_pskl_neq_ghost; assumption
       | apply forall_r_off_swap; assumption | auto ].
   (* -------- a_lookeq -------- *)
   - (* var *) apply a_lookeq__var.
@@ -1223,26 +1223,26 @@ Proof.
     apply a_solve_eq__flex_r;
       auto using a_flex_tvar_swap, a_non_flex_swap, nonghost_pskl_swap,
                  a_guess_mono_swap.
-  - (* hole_l *) apply a_solve_eq__hole_l.
-  - (* hole_r *) apply a_solve_eq__hole_r.
+  - (* ghost_l *) apply a_solve_eq__ghost_l.
+  - (* ghost_r *) apply a_solve_eq__ghost_r.
   - (* arrow *) apply a_solve_eq__arrow; auto.
   - (* forall *)
     rewrite swap_pskl_close.
     apply a_solve_eq__forall; [ swap_freshness |].
     rewrite !swap_pskl_open_var in H. exact H.
-  - (* tophole_both *) apply a_solve_eq__tophole_both; auto.
-  - (* tophole_l_all *)
+  - (* univ_ghost_both *) apply a_solve_eq__univ_ghost_both; auto.
+  - (* univ_ghost_l_all *)
     rewrite swap_pskl_close.
-    apply a_solve_eq__tophole_l_all; [ swap_freshness |].
+    apply a_solve_eq__univ_ghost_l_all; [ swap_freshness |].
     rewrite swap_pskl_open_var in H. exact H.
-  - (* tophole_l_guarded *)
-    apply a_solve_eq__tophole_l_guarded; auto using guarded_pskl_swap.
-  - (* all_l_tophole *)
+  - (* univ_ghost_l_guarded *)
+    apply a_solve_eq__univ_ghost_l_guarded; auto using guarded_pskl_swap.
+  - (* all_l_univ_ghost *)
     rewrite swap_pskl_close.
-    apply a_solve_eq__all_l_tophole; [ swap_freshness |].
+    apply a_solve_eq__all_l_univ_ghost; [ swap_freshness |].
     rewrite swap_pskl_open_var in H. exact H.
-  - (* tophole_r_guarded *)
-    apply a_solve_eq__tophole_r_guarded; auto using guarded_pskl_swap.
+  - (* univ_ghost_r_guarded *)
+    apply a_solve_eq__univ_ghost_r_guarded; auto using guarded_pskl_swap.
 Qed.
 
 Lemma a_solve_cstr_swap : forall a b Θ C P Ξ Q,
@@ -1505,12 +1505,12 @@ Proof.
   - (* flex_l *)
     intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hnh Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
     apply a_consis__flex_l;
-      [ auto using a_non_flex_swap | auto using swap_pskl_not_hole
+      [ auto using a_non_flex_swap | auto using swap_pskl_not_ghost
       | exact IH ].
   - (* flex_r *)
     intros Δ1 Δ2 Θ0 Θ1 α P Hnf Hnh Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
     apply a_consis__flex_r;
-      [ auto using a_non_flex_swap | auto using swap_pskl_not_hole
+      [ auto using a_non_flex_swap | auto using swap_pskl_not_ghost
       | exact IH ].
   - (* ghost_r *)
     intros Δ1 Δ2 Θ0 P Hemp Δ1' Δ2' HΔ1 HΔ2. simpl.
@@ -2299,7 +2299,7 @@ Proof.
   - (* all_syn *)
     f_equal. apply IHP; [fsetdec |].
     destruct HaP as [h | h]; [left; fsetdec | right; exact h].
-  - (* tophole *)
+  - (* univ_ghost *)
     f_equal. apply IHP; [fsetdec |].
     destruct HaP as [h | h]; [left; fsetdec | right; exact h].
 Qed.
@@ -2398,7 +2398,7 @@ Proof.
   - (* all_syn *)
     f_equal. apply IHP; [fsetdec |].
     destruct HaP as [h | h]; [left; fsetdec | right; exact h].
-  - (* tophole *)
+  - (* univ_ghost *)
     f_equal. apply IHP; [fsetdec |].
     destruct HaP as [h | h]; [left; fsetdec | right; exact h].
 Qed.

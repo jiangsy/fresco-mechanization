@@ -225,7 +225,7 @@ Proof.
       try assumption; clear - Hd; fsetdec.
   - (* all_syn *)
     f_equal. apply IHrel_pskl; assumption.
-  - (* tophole *)
+  - (* univ_ghost *)
     f_equal. apply IHrel_pskl; assumption.
 Qed.
 
@@ -842,16 +842,16 @@ Proof.
     assert (Hblk1 : forall a, a `in` dom Θb -> a `notin` dom Θa ->
                     a `notin` cols_l ρ)
       by (intros a Ha Hn; apply Hblk; [ clear - Ha Hdm1; fsetdec | exact Hn ]).
-    assert (HcovP1 : ftvar_in_pskl pskl_hole ∪ ftvar_in_exp eb2
+    assert (HcovP1 : ftvar_in_pskl pskl_ghost ∪ ftvar_in_exp eb2
                      ∪ fvar_in_exp eb2 [<=] S0)
       by (simpl; simpl in HcovP; clear - HcovP; fsetdec).
-    destruct (IHt S0 Θ0' pskl_hole eb2 ρ V HrΘ (rel_pskl__hole ρ V) HrEb
+    destruct (IHt S0 Θ0' pskl_ghost eb2 ρ V HrΘ (rel_pskl__ghost ρ V) HrEb
                 Hagr Hinj Hfun Hwf Huq2p Hftv2 Hscp Hblk1 HdΘ Hcov HcovP1
-                (a_wf_pskl__hole Θa empty) Hwfeb a_ty_mode_compat__ti)
+                (a_wf_pskl__ghost Θa empty) Hwfeb a_ty_mode_compat__ti)
       as (S1 & ρe1 & Θb' & B'' & D1e & HrΘ1 & Hagr1 & HrB'' & Hext1 & Hdom1).
     pose proof (e_typing_supply_grows D1e) as Hgr1.
     (* ---- side 2's package at the run's output ---- *)
-    assert (HcovE : ftvar_in_aenv Θ0' ∪ ftvar_in_pskl pskl_hole
+    assert (HcovE : ftvar_in_aenv Θ0' ∪ ftvar_in_pskl pskl_ghost
                     ∪ fvar_in_exp eb2 ∪ ftvar_in_exp eb2 [<=] S0)
       by (simpl; simpl in HcovP; clear - Hftv2 HcovP; fsetdec).
     destruct (e_typing_sound D1e Huq2p HcovE)
@@ -860,7 +860,7 @@ Proof.
       by (pose proof (dom_subset_ftvar_in_aenv Θb') as Hd;
           clear - Hd Hftv1; fsetdec).
     (* ---- side 1's package ---- *)
-    destruct (a_typing_sound Ht Hwf (a_wf_pskl__hole Θa empty)
+    destruct (a_typing_sound Ht Hwf (a_wf_pskl__ghost Θa empty)
                 a_ty_mode_compat__ti Hwfeb) as [Hle01 [HwfΘb [HwfBb _]]].
     assert (Hd1s : dom Θb [<=] ftvar_in_aenv Θb)
       by (apply dom_subset_ftvar_in_aenv).
@@ -991,16 +991,16 @@ Proof.
         {{ S0 ↝ S0 ⊨ Θ0' ⊲ P0' ▹ Pa' ⇢ Q0' ⊣ Θ0' }}e).
     { destruct Hshape as [[EP0 [EP EQ0]] | EP0].
       - subst P0a Pa Q0. inversion HrP0; subst.
-        split; [ apply a_wf_pskl__hole | ].
-        split; [ apply a_wf_pskl__hole | ].
+        split; [ apply a_wf_pskl__ghost | ].
+        split; [ apply a_wf_pskl__ghost | ].
         split.
-        { rewrite (a_ty_mode_compat_hole_inv Hmod).
+        { rewrite (a_ty_mode_compat_ghost_inv Hmod).
           apply a_ty_mode_compat__ti. }
-        exists pskl_hole, pskl_hole.
-        split; [ apply rel_pskl__hole | ].
-        split; [ apply rel_pskl__hole | ].
+        exists pskl_ghost, pskl_ghost.
+        split; [ apply rel_pskl__ghost | ].
+        split; [ apply rel_pskl__ghost | ].
         split; [ simpl; clear; fsetdec | ].
-        apply e_split__hole.
+        apply e_split__ghost.
       - subst P0a.
         inversion HrP0 as [ | n0 | u0 v0 Hu0 | B1 B2 Pa' Q0c' HrPa HrQ0c
                           | B3 B4 Hu1 | | B5 B6 Hu2 ]; subst.
@@ -1238,16 +1238,16 @@ Proof.
         {{ S0 ↝ S0 ⊨ Θ0' ⊲ P0' ▹ Pa' ⇢ Q0' ⊣ Θ0' }}e).
     { destruct Hshape as [[EP0 [EP EQ0]] | EP0].
       - subst P0a Pa Q0. inversion HrP0; subst.
-        split; [ apply a_wf_pskl__hole | ].
-        split; [ apply a_wf_pskl__hole | ].
+        split; [ apply a_wf_pskl__ghost | ].
+        split; [ apply a_wf_pskl__ghost | ].
         split.
-        { rewrite (a_ty_mode_compat_hole_inv Hmod).
+        { rewrite (a_ty_mode_compat_ghost_inv Hmod).
           apply a_ty_mode_compat__ti. }
-        exists pskl_hole, pskl_hole.
-        split; [ apply rel_pskl__hole | ].
-        split; [ apply rel_pskl__hole | ].
+        exists pskl_ghost, pskl_ghost.
+        split; [ apply rel_pskl__ghost | ].
+        split; [ apply rel_pskl__ghost | ].
         split; [ simpl; clear; fsetdec | ].
-        apply e_split__hole.
+        apply e_split__ghost.
       - subst P0a.
         inversion HrP0 as [ | n0 | u0 v0 Hu0 | B1 B2 Pa' Q0c' HrPa HrQ0c
                           | B3 B4 Hu1 | | B5 B6 Hu2 ]; subst.
@@ -3574,16 +3574,16 @@ Proof.
                     a `notin` cols_l ρ)
       by (intros a Ha Hn; apply Hblk;
           [ clear - Ha Hdm1 Hdm2; fsetdec | exact Hn ]).
-    assert (HcovP1 : ftvar_in_pskl pskl_hole ∪ ftvar_in_exp e2c
+    assert (HcovP1 : ftvar_in_pskl pskl_ghost ∪ ftvar_in_exp e2c
                      ∪ fvar_in_exp e2c [<=] S0)
       by (simpl; simpl in HcovP; clear - HcovP; fsetdec).
     destruct (a_pat_rel_e Hp2 HrΘ
-                (rel_pskl__hole ρ V) HrE2 Hagr Hinj Hfun Hwf Huq2p Hftv2
-                Hscp Hblk1 HdΘ Hcov HcovP1 (a_wf_pskl__hole Θa empty)
+                (rel_pskl__ghost ρ V) HrE2 Hagr Hinj Hfun Hwf Huq2p Hftv2
+                Hscp Hblk1 HdΘ Hcov HcovP1 (a_wf_pskl__ghost Θa empty)
                 Hwfe2 a_sk_mode_compat__tc)
       as (S1 & ρe1 & Θb' & Pa' & D1e & HrΘ1 & Hagr1 & HrPa' & Hext1 & Hdom1).
     pose proof (e_pat_supply_grows D1e) as Hgr1.
-    assert (HcovE1 : ftvar_in_aenv Θ0' ∪ ftvar_in_pskl pskl_hole
+    assert (HcovE1 : ftvar_in_aenv Θ0' ∪ ftvar_in_pskl pskl_ghost
                      ∪ fvar_in_exp e2c ∪ ftvar_in_exp e2c [<=] S0)
       by (simpl; simpl in HcovP; clear - Hftv2 HcovP; fsetdec).
     destruct (e_pat_sound D1e Huq2p HcovE1)
@@ -3591,7 +3591,7 @@ Proof.
     assert (HdΘ1 : dom Θb' [<=] S1)
       by (pose proof (dom_subset_ftvar_in_aenv Θb') as Hd;
           clear - Hd Hftv1; fsetdec).
-    destruct (a_pat_sound Hp2 Hwf (a_wf_pskl__hole Θa empty)
+    destruct (a_pat_sound Hp2 Hwf (a_wf_pskl__ghost Θa empty)
                 a_sk_mode_compat__tc Hwfe2) as [Hle01 [HwfΘb _]].
     assert (Hd1s : dom Θb [<=] ftvar_in_aenv Θb)
       by (apply dom_subset_ftvar_in_aenv).
@@ -3638,7 +3638,7 @@ Proof.
       clear - HfP HcovP Hcov Hc1r Hgr1. fsetdec. }
     assert (HwfPab : {{ Θb ⨟ empty ⊢ₚₛ Pa }}a)
       by (eapply a_pat_output_wf;
-          [ exact Hp2 | exact Hwf | apply a_wf_pskl__hole
+          [ exact Hp2 | exact Hwf | apply a_wf_pskl__ghost
           | exact a_sk_mode_compat__tc | exact Hwfe2 ]).
     assert (HwfQ0b : {{ Θb ⨟ empty ⊢ₚₛ Q0 }}a)
       by (eapply a_isub_wf_pskl; [ exact Hle01 | exact Hwfp0 ]).

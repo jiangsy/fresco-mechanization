@@ -83,16 +83,16 @@ Inductive a_uskl_tyequiv (Θ : aenv) : uskl -> uskl -> Prop :=
        {{ Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
            (open_uskl_wrt_uskl R' (uskl_var_f α)) }}a) ->
     {{ Θ ⊢ (uskl_all_tag ε R) ≡ᵘ (uskl_all_tag ε R') }}a
-| a_uskl_tyequiv__hole :
-    {{ Θ ⊢ uskl_hole ≡ᵘ uskl_hole }}a
-| a_uskl_tyequiv__holeg :
-    {{ Θ ⊢ uskl_holeg ≡ᵘ uskl_holeg }}a
-| a_uskl_tyequiv__tophole : forall R R',
+| a_uskl_tyequiv__ghost :
+    {{ Θ ⊢ uskl_ghost ≡ᵘ uskl_ghost }}a
+| a_uskl_tyequiv__dot_ghost :
+    {{ Θ ⊢ uskl_dot_ghost ≡ᵘ uskl_dot_ghost }}a
+| a_uskl_tyequiv__univ_ghost : forall R R',
     {{ Θ ⊢ R ≡ᵘ R' }}a ->
-    {{ Θ ⊢ (uskl_tophole R) ≡ᵘ (uskl_tophole R') }}a
-| a_uskl_tyequiv__topholeg : forall R R',
+    {{ Θ ⊢ (uskl_univ_ghost R) ≡ᵘ (uskl_univ_ghost R') }}a
+| a_uskl_tyequiv__dot_univ_ghost : forall R R',
     {{ Θ ⊢ R ≡ᵘ R' }}a ->
-    {{ Θ ⊢ (uskl_topholeg R) ≡ᵘ (uskl_topholeg R') }}a
+    {{ Θ ⊢ (uskl_dot_univ_ghost R) ≡ᵘ (uskl_dot_univ_ghost R') }}a
 where "{{ Θ ⊢ R1 ≡ᵘ R2 }}a" := (a_uskl_tyequiv Θ R1 R2) : fresco_a_scope.
 
 (* ===================================================================== *)
@@ -187,10 +187,10 @@ Proof.
     rewrite <- !uskl_to_pskl_open. auto.
   - apply a_pskl_tyequiv__all with (L := L); intros α Hα.
     rewrite <- !uskl_to_pskl_open. auto.
-  - apply a_pskl_tyequiv__refl; apply lc_pskl_hole.
-  - apply a_pskl_tyequiv__refl; apply lc_pskl_hole.
-  - apply a_pskl_tyequiv__tophole; assumption.
-  - apply a_pskl_tyequiv__tophole; assumption.
+  - apply a_pskl_tyequiv__refl; apply lc_pskl_ghost.
+  - apply a_pskl_tyequiv__refl; apply lc_pskl_ghost.
+  - apply a_pskl_tyequiv__univ_ghost; assumption.
+  - apply a_pskl_tyequiv__univ_ghost; assumption.
 Qed.
 
 (* ===================================================================== *)
@@ -274,10 +274,10 @@ Proof.
       assert (Hd : β `in` (singleton α `union` ftvar_in_uskl R)) by fsetdec.
       apply union_1 in Hd; destruct Hd as [Hd | Hd];
         [ exfalso; apply Hne; apply singleton_1 in Hd; auto | exact Hd ].
-  - (* hole *) apply a_uskl_tyequiv__hole.
-  - (* tophole *) apply a_uskl_tyequiv__tophole; eauto.
-  - (* holeg *) apply a_uskl_tyequiv__holeg.
-  - (* topholeg *) apply a_uskl_tyequiv__topholeg; eauto.
+  - (* ghost *) apply a_uskl_tyequiv__ghost.
+  - (* univ_ghost *) apply a_uskl_tyequiv__univ_ghost; eauto.
+  - (* dot_ghost *) apply a_uskl_tyequiv__dot_ghost.
+  - (* dot_univ_ghost *) apply a_uskl_tyequiv__dot_univ_ghost; eauto.
 Qed.
 
 (* ===================================================================== *)
@@ -285,17 +285,17 @@ Qed.
 (* ===================================================================== *)
 
 (** A ghost is ≡ᵘ-inert: mono paintings are never ghosts. *)
-Lemma a_uskl_tyequiv_hole_l_inv : forall Θ R',
-  {{ Θ ⊢ uskl_hole ≡ᵘ R' }}a ->
-  R' = uskl_hole.
+Lemma a_uskl_tyequiv_ghost_l_inv : forall Θ R',
+  {{ Θ ⊢ uskl_ghost ≡ᵘ R' }}a ->
+  R' = uskl_ghost.
 Proof.
   intros Θ R' H; inversion H; subst; try reflexivity.
   destruct τ1; cbn in *; discriminate.
 Qed.
 
-Lemma a_uskl_tyequiv_holeg_l_inv : forall Θ R',
-  {{ Θ ⊢ uskl_holeg ≡ᵘ R' }}a ->
-  R' = uskl_holeg.
+Lemma a_uskl_tyequiv_dot_ghost_l_inv : forall Θ R',
+  {{ Θ ⊢ uskl_dot_ghost ≡ᵘ R' }}a ->
+  R' = uskl_dot_ghost.
 Proof.
   intros Θ R' H; inversion H; subst; try reflexivity.
   destruct τ1; cbn in *; discriminate.
@@ -318,10 +318,10 @@ Proof.
   - pick fresh α. destruct (H0 α ltac:(clear - Fr; solve_notin_auto)) as [Hl Hr].
     split; [ eapply lc_uskl_all_tag_exists; exact Hl
            | eapply lc_uskl_all_tag_exists; exact Hr ].
-  - split; apply lc_uskl_hole.
-  - split; apply lc_uskl_holeg.
-  - destruct IHa_uskl_tyequiv. split; apply lc_uskl_tophole; assumption.
-  - destruct IHa_uskl_tyequiv. split; apply lc_uskl_topholeg; assumption.
+  - split; apply lc_uskl_ghost.
+  - split; apply lc_uskl_dot_ghost.
+  - destruct IHa_uskl_tyequiv. split; apply lc_uskl_univ_ghost; assumption.
+  - destruct IHa_uskl_tyequiv. split; apply lc_uskl_dot_univ_ghost; assumption.
 Qed.
 
 (** Guardedness transports along ≡ᵘ (only the head matters, and a guarded
@@ -550,13 +550,13 @@ Proof.
     inversion Hm.
   - (* __all_tag *)
     destruct τ0; cbn in HeqY; discriminate.
-  - (* __hole *)
+  - (* __ghost *)
     destruct τ0; cbn in HeqY; discriminate.
-  - (* __holeg *)
+  - (* __dot_ghost *)
     destruct τ0; cbn in HeqY; discriminate.
-  - (* __tophole *)
+  - (* __univ_ghost *)
     destruct τ0; cbn in HeqY; discriminate.
-  - (* __topholeg *)
+  - (* __dot_univ_ghost *)
     destruct τ0; cbn in HeqY; discriminate.
 Qed.
 
@@ -626,22 +626,22 @@ Proof.
           intros α Hα;
           apply H0; [ clear - Hα; fsetdec | apply Hz; clear - Hα; fsetdec ]
       end.
-  - (* __hole *) exact HYZ.
-  - (* __holeg *) exact HYZ.
-  - (* __tophole *)
+  - (* __ghost *) exact HYZ.
+  - (* __dot_ghost *) exact HYZ.
+  - (* __univ_ghost *)
     inversion HYZ; subst.
     + lazymatch goal with
-      | Hm0 : mono_ptyp ?t, He : ptyp_to_uskl_syn ?t = uskl_tophole _ |- _ =>
+      | Hm0 : mono_ptyp ?t, He : ptyp_to_uskl_syn ?t = uskl_univ_ghost _ |- _ =>
           destruct Hm0; cbn in He; discriminate He
       end.
-    + apply a_uskl_tyequiv__tophole; auto.
-  - (* __topholeg *)
+    + apply a_uskl_tyequiv__univ_ghost; auto.
+  - (* __dot_univ_ghost *)
     inversion HYZ; subst.
     + lazymatch goal with
-      | Hm0 : mono_ptyp ?t, He : ptyp_to_uskl_syn ?t = uskl_topholeg _ |- _ =>
+      | Hm0 : mono_ptyp ?t, He : ptyp_to_uskl_syn ?t = uskl_dot_univ_ghost _ |- _ =>
           destruct Hm0; cbn in He; discriminate He
       end.
-    + apply a_uskl_tyequiv__topholeg; auto.
+    + apply a_uskl_tyequiv__dot_univ_ghost; auto.
 Qed.
 
 (* ===================================================================== *)
@@ -730,10 +730,10 @@ Proof.
   - apply a_uskl_tyequiv__arrow; assumption.
   - apply a_uskl_tyequiv__all_syn with (L := L); auto.
   - apply a_uskl_tyequiv__all_tag with (L := L); auto.
-  - apply a_uskl_tyequiv__hole.
-  - apply a_uskl_tyequiv__holeg.
-  - apply a_uskl_tyequiv__tophole; assumption.
-  - apply a_uskl_tyequiv__topholeg; assumption.
+  - apply a_uskl_tyequiv__ghost.
+  - apply a_uskl_tyequiv__dot_ghost.
+  - apply a_uskl_tyequiv__univ_ghost; assumption.
+  - apply a_uskl_tyequiv__dot_univ_ghost; assumption.
 Qed.
 
 (* ===================================================================== *)
@@ -826,10 +826,10 @@ Proof.
     rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψ β γ Hne Hlcψ).
     rewrite (subst_uskl_in_uskl_open_uskl_wrt_uskl_var R' ψ β γ Hne Hlcψ).
     apply H0; [ clear - Hγ; fsetdec | exact Hlcψ | exact HβΘ ].
-  - (* __hole *) cbn. apply a_uskl_tyequiv__hole.
-  - (* __holeg *) cbn. apply a_uskl_tyequiv__holeg.
-  - (* __tophole *) cbn. apply a_uskl_tyequiv__tophole; auto.
-  - (* __topholeg *) cbn. apply a_uskl_tyequiv__topholeg; auto.
+  - (* __ghost *) cbn. apply a_uskl_tyequiv__ghost.
+  - (* __dot_ghost *) cbn. apply a_uskl_tyequiv__dot_ghost.
+  - (* __univ_ghost *) cbn. apply a_uskl_tyequiv__univ_ghost; auto.
+  - (* __dot_univ_ghost *) cbn. apply a_uskl_tyequiv__dot_univ_ghost; auto.
 Qed.
 
 (** The opening form: instantiate two ≡ᵘ ∀-bodies at a common (locally
@@ -878,8 +878,8 @@ Proof.
     pose proof (ftag_in_uskl_open_var R α) as Ho1.
     pose proof (ftag_in_uskl_open_var R' α) as Ho2.
     clear - Hb Ho1 Ho2; fsetdec.
-  - (* __hole *) clear; fsetdec.
-  - (* __holeg *) clear; fsetdec.
+  - (* __ghost *) clear; fsetdec.
+  - (* __dot_ghost *) clear; fsetdec.
 Qed.
 
 (* ===================================================================== *)
@@ -1047,34 +1047,34 @@ Proof.
   - (* __ghostg *)
     inversion Htyeq; subst.
     + lazymatch goal with
-      | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = uskl_holeg |- _ =>
+      | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = uskl_dot_ghost |- _ =>
           destruct Hm2; cbn in He2; discriminate He2
       end.
     + apply ad_pat_consis__ghostg; exact H.
-  - (* __topholeg *)
+  - (* __dot_univ_ghost *)
     inversion Htyeq; subst;
       [ lazymatch goal with
         | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = _ |- _ =>
             destruct Hm2; cbn in He2; discriminate He2
         end | ].
-    apply ad_pat_consis__topholeg.
+    apply ad_pat_consis__dot_univ_ghost.
     apply IHHc; [ exact Hwf | assumption ].
-  - (* __hole *)
+  - (* __ghost *)
     inversion Htyeq; subst.
     + lazymatch goal with
-      | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = uskl_hole |- _ =>
+      | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = uskl_ghost |- _ =>
           destruct Hm2; cbn in He2; discriminate He2
       end.
-    + apply ad_pat_consis__hole; assumption.
-  - (* __tophole *)
+    + apply ad_pat_consis__ghost; assumption.
+  - (* __univ_ghost *)
     inversion Htyeq; subst;
       [ lazymatch goal with
         | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = _ |- _ =>
             destruct Hm2; cbn in He2; discriminate He2
         end | ].
-    apply ad_pat_consis__tophole.
+    apply ad_pat_consis__univ_ghost.
     apply IHHc; [ exact Hwf | assumption ].
-  - (* __tophole_inh *)
+  - (* __univ_ghost_inh *)
     inversion Htyeq; subst;
       [ lazymatch goal with
         | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = _ |- _ =>
@@ -1082,20 +1082,20 @@ Proof.
         end | ].
     lazymatch goal with
     | Ht0 : {{ Θ ⊢ ?T0 ≡ᵘ R }}a |- _ =>
-        eapply ad_pat_consis__tophole_inh with (L := L `union` dom Θ);
+        eapply ad_pat_consis__univ_ghost_inh with (L := L `union` dom Θ);
         intros α Hα;
         eapply (H0 α ltac:(clear - Hα; solve_notin_auto));
         [ apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]
         | apply a_uskl_tyequiv_weaken_cons;
-          apply a_uskl_tyequiv__tophole; exact Ht0 ]
+          apply a_uskl_tyequiv__univ_ghost; exact Ht0 ]
     end.
-  - (* __tophole_drop *)
+  - (* __univ_ghost_drop *)
     inversion Htyeq; subst;
       [ lazymatch goal with
         | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = _ |- _ =>
             destruct Hm2; cbn in He2; discriminate He2
         end | ].
-    apply ad_pat_consis__tophole_drop.
+    apply ad_pat_consis__univ_ghost_drop.
     apply IHHc; [ exact Hwf | assumption ].
   - (* __flex_l *)
     inversion Htyeq; subst.
@@ -1581,7 +1581,7 @@ Proof.
         end | ].
     pose proof (a_uskl_tyequiv_ftag Htyeq) as Hft.
     assert (Hlcψ : lc_uskl ψ)
-      by (apply is_tskl_lc; inversion H2; subst; assumption).
+      by (apply is_dskl_lc; inversion H2; subst; assumption).
     lazymatch goal with
     | Hfam : forall α, α `notin` ?LL -> {{ _ ⊢ _ ≡ᵘ _ }}a |- _ =>
       eapply ad_pat_sub_fuel__forall_l_tagged with (Ψ' := Ψ') (ψ := ψ);
@@ -1601,7 +1601,7 @@ Proof.
         end | ].
     pose proof (a_uskl_tyequiv_ftag Htyeq) as Hft.
     assert (Hlcψ : lc_uskl ψ)
-      by (apply is_tskl_lc; inversion H2; subst; assumption).
+      by (apply is_dskl_lc; inversion H2; subst; assumption).
     lazymatch goal with
     | Hfam : forall α, α `notin` ?LL -> {{ _ ⊢ _ ≡ᵘ _ }}a |- _ =>
       eapply ad_pat_sub_fuel__forall_l_untagged with (Ψ' := Ψ') (ψ := ψ);

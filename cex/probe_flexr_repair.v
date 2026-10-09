@@ -139,12 +139,12 @@ Qed.
 Lemma new_solve : forall Θ,
   binds f abind_flex_mono Θ ->
   {{ Θ ⊩ (a_cstr_eq Pallr :: a_cstr_sub mode_tc (pskl_var_f f) :: nil)
-      ⨾ pskl_hole ⤳ nil ⨾ Pallr }}a.
+      ⨾ pskl_ghost ⤳ nil ⨾ Pallr }}a.
 Proof.
   intros Θ Hb.
   change (@nil (atom * abind))
     with (@nil (atom * abind) ++ @nil (atom * abind)).
-  eapply a_solve_cstr__eq; [ apply a_solve_eq__hole_l | ].
+  eapply a_solve_cstr__eq; [ apply a_solve_eq__ghost_l | ].
   apply a_solve_cstr__sub.
   (* the witness: fresh for everything the ambient context MENTIONS —
      [ftvar_in_aenv], not [dom] (a flexible's payload may name an atom) *)
@@ -282,7 +282,7 @@ Proof.
     { change (@nil (atom * abind))
         with (@nil (atom * abind) ++ @nil (atom * abind)).
       eapply a_solve_cstr__eq;
-        [ apply a_solve_eq__hole_l | apply a_solve_cstr__empty ]. }
+        [ apply a_solve_eq__ghost_l | apply a_solve_cstr__empty ]. }
     { apply a_guess__ty with (A := ptyp_var_f α1).
       apply a_guess_mono__var. }
     { (* the cross-layer guard: the fold generates nothing *)

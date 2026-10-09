@@ -14,7 +14,7 @@
     whose crux is that the SYNTHESISED paintings are closed under refinement:
     if [syn{P} ⊳ B] then [B] is itself a synthesised painting (of a
     well-formed skeleton).  That closure is what lets the ghost rule
-    [ad_refine_syn__hole] — whose right-hand side must be a [syn] painting —
+    [ad_refine_syn__ghost] — whose right-hand side must be a [syn] painting —
     be re-applied after a further refinement step. *)
 
 Require Import Coq.Lists.List.
@@ -156,25 +156,25 @@ Proof.
     exists (pskl_arrow Pa' Pb'). reflexivity.
   - (* all : a syn painting is never [bskl_all_inh] *)
     destruct P0; simpl in Heq; discriminate.
-  - (* hole : the fill IS a syn painting *)
+  - (* ghost : the fill IS a syn painting *)
     exists P. reflexivity.
-  - (* tophole_remove *)
+  - (* univ_ghost_remove *)
     destruct P0 as [ | | | | | | Pt ]; simpl in Heq; try discriminate.
     inversion Heq; subst. exact (IHHref _ eq_refl).
-  - (* tophole_fill : close the body over the fresh variable *)
+  - (* univ_ghost_fill : close the body over the fresh variable *)
     destruct P0 as [ | | | | | | Pt ]; simpl in Heq; try discriminate.
     inversion Heq; subst.
     pick fresh α for (L `union` dom Θ `union` ftvar_in_bskl Q').
-    destruct (H1 α ltac:(auto) (pskl_tophole Pt) eq_refl) as [RX HeqRX].
+    destruct (H1 α ltac:(auto) (pskl_univ_ghost Pt) eq_refl) as [RX HeqRX].
     exists (pskl_all_syn (close_pskl_wrt_pskl α RX)).
     simpl. rewrite pskl_to_bskl_syn_close. rewrite <- HeqRX.
     rewrite close_bskl_wrt_bskl_open_bskl_wrt_bskl;
       [ reflexivity | clear - Fr; fsetdec ].
-  - (* tophole_keep *)
+  - (* univ_ghost_keep *)
     destruct P0 as [ | | | | | | Pt ]; simpl in Heq; try discriminate.
     inversion Heq; subst.
     destruct (IHHref _ eq_refl) as [R ->].
-    exists (pskl_tophole R). reflexivity.
+    exists (pskl_univ_ghost R). reflexivity.
   - (* flex_l : [ptyp_to_bskl_syn] IS a syn painting, by definition *)
     exact (IHHref (ptyp_to_pskl τ) eq_refl).
   - (* flex_r : the result is a bare variable *)
@@ -233,7 +233,7 @@ Proof.
   - intros β τ Hβ Hb. apply (Hdisj β Hβ). apply binds_In in Hb. exact Hb.
 Qed.
 
-(** ... and survive a [tvar] head that leaves Δ alone ([tophole_fill]) ... *)
+(** ... and survive a [tvar] head that leaves Δ alone ([univ_ghost_fill]) ... *)
 Lemma delta_flex_defs_cons_tvar : forall α Θ Δ,
   (forall β τ, binds β (abind_flex_mono_def τ) Θ ->
      Δ ∩ ftvar_in_ptyp τ [=] empty) ->
@@ -308,14 +308,14 @@ Proof.
     clear - Hα Ha Hb. fsetdec.
   - (* all : impossible — a syn painting is never [bskl_all_inh] *)
     destruct F; simpl in Heq; discriminate.
-  - (* hole : Δ-freeness of the fill is the rule's own premise *)
+  - (* ghost : Δ-freeness of the fill is the rule's own premise *)
     rewrite ftvar_pskl_to_bskl_syn. exact H.
-  - (* tophole_remove *)
+  - (* univ_ghost_remove *)
     destruct F as [ | | | | | | Ft ]; simpl in Heq; try discriminate.
     inversion Heq; subst.
     eapply IHHref; [ reflexivity | exact Hdefs | exact Hflex
                    | simpl in Hfree; exact Hfree ].
-  - (* tophole_fill : the bound variable is fresh, and gets closed over *)
+  - (* univ_ghost_fill : the bound variable is fresh, and gets closed over *)
     destruct F as [ | | | | | | Ft ]; simpl in Heq; try discriminate.
     inversion Heq; subst.
     pick fresh α for (L `union` Δ `union` ftvar_in_bskl Q').
@@ -323,7 +323,7 @@ Proof.
     assert (Hsub : Δ ∩
                      (ftvar_in_bskl (open_bskl_wrt_bskl Q' (bskl_var_f α)))
                    [=] empty).
-    { eapply (H1 α ltac:(auto) (pskl_tophole Ft) eq_refl Hdefs' Hflex').
+    { eapply (H1 α ltac:(auto) (pskl_univ_ghost Ft) eq_refl Hdefs' Hflex').
       simpl in Hfree |- *. exact Hfree. }
     pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_lower Q' (bskl_var_f α))
       as Hlow.
@@ -332,7 +332,7 @@ Proof.
     assert (HYo : β `in` ftvar_in_bskl (open_bskl_wrt_bskl Q' (bskl_var_f α)))
       by (clear - HYP Hlow; fsetdec).
     clear - Hβ HYo Hsub. fsetdec.
-  - (* tophole_keep *)
+  - (* univ_ghost_keep *)
     destruct F as [ | | | | | | Ft ]; simpl in Heq; try discriminate.
     inversion Heq; subst. simpl.
     eapply IHHref; [ reflexivity | exact Hdefs | exact Hflex
@@ -361,27 +361,27 @@ Qed.
 (*  demanding a wf fill.  Whether transitivity holds outright is open.)    *)
 (*                                                                         *)
 (*  Structure: OUTER induction on the second derivation; INNER induction on *)
-(*  the first, to peel the left-hand administrative rules [tophole_remove]  *)
+(*  the first, to peel the left-hand administrative rules [univ_ghost_remove]  *)
 (*  and [flex_l] (which shrink the left skeleton while the right stands     *)
 (*  still).  Every case whose left side is a GHOST is discharged by         *)
-(*  [ad_refine_syn_hole_l].                                                *)
+(*  [ad_refine_syn_ghost_l].                                                *)
 (* ===================================================================== *)
 
 (** The left-hand administrative rules, packaged: whatever a Δ-free syn
     painting refines to, a ghost refines to as well. *)
-Lemma ad_refine_syn_hole_l : forall Θ Δ P Qr,
+Lemma ad_refine_syn_ghost_l : forall Θ Δ P Qr,
   {{ Θ ⨟ Δ ⊢ᵣ (pskl_to_bskl_syn P) ⊳ Qr }}ad ->
   (forall β τ, binds β (abind_flex_mono_def τ) Θ ->
      Δ ∩ ftvar_in_ptyp τ [=] empty) ->
   (forall β τ, β `in` Δ -> ~ binds β (abind_flex_mono_def τ) Θ) ->
   Δ ∩ ftvar_in_pskl P [=] empty ->
-  {{ Θ ⨟ Δ ⊢ᵣ bskl_hole ⊳ Qr }}ad.
+  {{ Θ ⨟ Δ ⊢ᵣ bskl_ghost ⊳ Qr }}ad.
 Proof.
   intros Θ Δ P Qr Href Hdefs Hflex HfrP.
   pose proof (ad_refine_syn_syn_delta_free Href P eq_refl Hdefs Hflex
                 ltac:(rewrite ftvar_pskl_to_bskl_syn; exact HfrP)) as Hfr.
   destruct (ad_refine_syn_syn_l Href P eq_refl) as [G ->].
-  apply ad_refine_syn__hole.
+  apply ad_refine_syn__ghost.
   rewrite ftvar_pskl_to_bskl_syn in Hfr. exact Hfr.
 Qed.
 
@@ -409,9 +409,9 @@ Proof.
     + inversion HM; subst. simpl in HwfQr.
       inversion HwfQr as [ | | Θw Δw Pw1 Pw2 Hw1 Hw2 | | | ]; subst.
       apply ad_refine_syn__arrow; [ assumption | apply IHHr1 | apply IHHr2 ]; auto.
-    + eapply ad_refine_syn_hole_l with (P := P);
+    + eapply ad_refine_syn_ghost_l with (P := P);
         [ exact Hrr | exact Hdefs | exact Hflex | eassumption ].
-    + apply ad_refine_syn__tophole_remove; [ assumption | apply IHHp; auto ].
+    + apply ad_refine_syn__univ_ghost_remove; [ assumption | apply IHHp; auto ].
     + eapply ad_refine_syn__flex_l;
         [ eassumption | ]. apply IHHp; auto.
   - (* all : ∀^inh Q ⊳ ∀^inh P *)
@@ -433,44 +433,44 @@ Proof.
         | exact Hdefs' | exact Hflex'
         | rewrite bskl_to_pskl_open; apply Hbody; clear - Hα; fsetdec
         | apply H3; clear - Hα; fsetdec ].
-    + apply ad_refine_syn__tophole_remove; [ assumption | apply IHHp; auto ].
+    + apply ad_refine_syn__univ_ghost_remove; [ assumption | apply IHHp; auto ].
     + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
-  - (* hole : Qm = □, Qr = syn P *)
+  - (* ghost : Qm = □, Qr = syn P *)
     rename P into Pf.
-    remember (@bskl_hole) as M eqn:HM. revert HM.
+    remember (@bskl_ghost) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
     + (* □ ⊳ □ : the fill of Hp must itself be a ghost *)
       destruct P; simpl in HM; try discriminate.
-      apply ad_refine_syn__hole. assumption.
-    + apply ad_refine_syn__tophole_remove; [ assumption | apply IHHp; auto ].
+      apply ad_refine_syn__ghost. assumption.
+    + apply ad_refine_syn__univ_ghost_remove; [ assumption | apply IHHp; auto ].
     + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
-  - (* tophole_remove : Qm = ∀◇Q, Qr from Q ⊳ Qr *)
+  - (* univ_ghost_remove : Qm = ∀◇Q, Qr from Q ⊳ Qr *)
     rename Q into Qb. rename Q' into Qc.
-    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Qb) ⊳ Qc }}ad)
-      by (apply ad_refine_syn__tophole_remove; assumption).
-    remember (bskl_tophole Qb) as M eqn:HM. revert HM.
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_univ_ghost Qb) ⊳ Qc }}ad)
+      by (apply ad_refine_syn__univ_ghost_remove; assumption).
+    remember (bskl_univ_ghost Qb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
-    + eapply ad_refine_syn_hole_l with (P := P);
+    + eapply ad_refine_syn_ghost_l with (P := P);
         [ exact Hrr | exact Hdefs | exact Hflex | eassumption ].
-    + apply ad_refine_syn__tophole_remove; [ assumption | apply IHHp; auto ].
-    + (* tophole_keep on the left : peel both *)
+    + apply ad_refine_syn__univ_ghost_remove; [ assumption | apply IHHp; auto ].
+    + (* univ_ghost_keep on the left : peel both *)
       inversion HM; subst.
-      apply ad_refine_syn__tophole_remove; [ assumption | apply IHHr; auto ].
+      apply ad_refine_syn__univ_ghost_remove; [ assumption | apply IHHr; auto ].
     + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
-  - (* tophole_fill : ∀◇Q ⊳ ∀^syn P *)
+  - (* univ_ghost_fill : ∀◇Q ⊳ ∀^syn P *)
     rename Q into Qb. rename Q' into Qc.
-    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Qb) ⊳ (bskl_all_syn Qc) }}ad)
-      by (eapply ad_refine_syn__tophole_fill with (L := L); assumption).
-    remember (bskl_tophole Qb) as M eqn:HM. revert HM.
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_univ_ghost Qb) ⊳ (bskl_all_syn Qc) }}ad)
+      by (eapply ad_refine_syn__univ_ghost_fill with (L := L); assumption).
+    remember (bskl_univ_ghost Qb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
-    + eapply ad_refine_syn_hole_l with (P := P);
+    + eapply ad_refine_syn_ghost_l with (P := P);
         [ exact Hrr | exact Hdefs | exact Hflex | eassumption ].
-    + apply ad_refine_syn__tophole_remove; [ assumption | apply IHHp; auto ].
-    + (* tophole_keep on the left : rebuild the ∀ *)
+    + apply ad_refine_syn__univ_ghost_remove; [ assumption | apply IHHp; auto ].
+    + (* univ_ghost_keep on the left : rebuild the ∀ *)
       inversion HM; subst.
       simpl in HwfQr.
       inversion HwfQr as [ | | | L2 Θw Δw Pw Hbody | | ]; subst.
-      apply ad_refine_syn__tophole_fill
+      apply ad_refine_syn__univ_ghost_fill
         with (L := L `union` L2 `union` dom Θ `union` Δ);
         [ assumption | intros α Hα ].
       destruct (@delta_flex_defs_cons_tvar α Θ Δ Hdefs Hflex) as [Hdefs' Hflex'].
@@ -484,22 +484,22 @@ Proof.
           [ apply (Hbody α ltac:(clear - Hα; solve_notin_auto))
           | intros β _ Hβ; clear - Hβ; fsetdec ]. }
       { eapply ad_refine_syn_weaken;
-          [ apply ad_refine_syn__tophole_keep; eassumption
+          [ apply ad_refine_syn__univ_ghost_keep; eassumption
           | intros y b Hb; unfold binds; right; exact Hb ]. }
     + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
-  - (* tophole_keep : ∀◇Q ⊳ ∀◇P *)
+  - (* univ_ghost_keep : ∀◇Q ⊳ ∀◇P *)
     rename Q into Qb. rename Q' into Qc.
-    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Qb) ⊳ (bskl_tophole Qc) }}ad)
-      by (apply ad_refine_syn__tophole_keep; assumption).
-    remember (bskl_tophole Qb) as M eqn:HM. revert HM.
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_univ_ghost Qb) ⊳ (bskl_univ_ghost Qc) }}ad)
+      by (apply ad_refine_syn__univ_ghost_keep; assumption).
+    remember (bskl_univ_ghost Qb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
-    + eapply ad_refine_syn_hole_l with (P := P);
+    + eapply ad_refine_syn_ghost_l with (P := P);
         [ exact Hrr | exact Hdefs | exact Hflex | eassumption ].
-    + apply ad_refine_syn__tophole_remove; [ assumption | apply IHHp; auto ].
+    + apply ad_refine_syn__univ_ghost_remove; [ assumption | apply IHHp; auto ].
     + inversion HM; subst.
       simpl in HwfQr.
       inversion HwfQr as [ | | | | | Θw Δw Pw Hg Hwb ]; subst.
-      apply ad_refine_syn__tophole_keep; [ assumption | ].
+      apply ad_refine_syn__univ_ghost_keep; [ assumption | ].
       apply IHHr; auto.
       (* the kept body is wf at [Θ∖Δ ⨟ ∅], hence Δ-free and wf at [Θ ⨟ Δ] *)
       eapply a_wf_pskl_delta_mono.
@@ -518,9 +518,9 @@ Proof.
     + (* var ⊳ var : rebuild the lookup *)
       inversion HM; subst.
       eapply ad_refine_syn__flex_l; eassumption.
-    + eapply ad_refine_syn_hole_l with (P := P);
+    + eapply ad_refine_syn_ghost_l with (P := P);
         [ exact Hrr | exact Hdefs | exact Hflex | eassumption ].
-    + apply ad_refine_syn__tophole_remove; [ assumption | apply IHHp; auto ].
+    + apply ad_refine_syn__univ_ghost_remove; [ assumption | apply IHHp; auto ].
     + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
     + (* flex_r on the left : the two definitions coincide *)
       inversion HM; subst.
@@ -583,7 +583,7 @@ Qed.
 (* ===================================================================== *)
 (*  The UNCOLOURED mirror of the [ad_refine_syn_trans] chain.              *)
 (*                                                                         *)
-(*  [ad_refine_pskl]'s [__hole] fill is any Δ-free skeleton (no painting  *)
+(*  [ad_refine_pskl]'s [__ghost] fill is any Δ-free skeleton (no painting  *)
 (*  shape), so the crux needs NO analogue of [ad_refine_syn_syn_l]: the     *)
 (*  ghost-left package reduces to Δ-freeness propagation alone.  ⚠️ Unlike  *)
 (*  the syn level — where a syn subject kills the [__all] row outright —    *)
@@ -607,7 +607,7 @@ Proof. intros * H; inversion H; subst; eauto. Qed.
 
 (* ===================================================================== *)
 (*  Precision DROPS to the uncoloured level: [inh P' ⊳ inh P] implies      *)
-(*  [P' ⊳ P] — the pskl [__hole] fill demands strictly less (any Δ-free    *)
+(*  [P' ⊳ P] — the pskl [__ghost] fill demands strictly less (any Δ-free    *)
 (*  skeleton vs a Δ-free synthesised painting).                            *)
 (* ===================================================================== *)
 

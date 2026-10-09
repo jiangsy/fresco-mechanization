@@ -328,8 +328,8 @@ Proof.
     apply a_solve_eq__flex_r; try assumption.
     eapply e_guess_mono_sound;
       [ exact Hg | clear - Hcov; fsetdec | clear - Hcov; fsetdec ].
-  - (* SE-GhostL *) intros. apply a_solve_eq__hole_l.
-  - (* SE-VacuousR *) intros. apply a_solve_eq__hole_r.
+  - (* SE-GhostL *) intros. apply a_solve_eq__ghost_l.
+  - (* SE-VacuousR *) intros. apply a_solve_eq__ghost_r.
   - (* SE-Arrow *)
     intros S0 S1 S2 Θ P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2' He1 IH1 He2 IH2 Hcov.
     simpl in Hcov.
@@ -353,29 +353,29 @@ Proof.
       simpl in H1, H2, Hcov |- *. clear - H1 H2 Hcov. fsetdec.
   - (* SE-UnivGhost *)
     intros S0 S1 Θ P Q Ξ P' He IH Hcov.
-    apply a_solve_eq__tophole_both. apply IH. simpl in Hcov.
+    apply a_solve_eq__univ_ghost_both. apply IH. simpl in Hcov.
     clear - Hcov. fsetdec.
   - (* SE-GhostForall *)
     intros S0 S1 Θ P Q Ξ P' β Hβ He IH Hcov.
-    apply a_solve_eq__tophole_l_all with (β := β).
+    apply a_solve_eq__univ_ghost_l_all with (β := β).
     + simpl in Hcov. clear - Hβ Hcov. fsetdec.
     + apply IH.
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q (pskl_var_f β)) as H2.
       simpl in H2, Hcov |- *. clear - H2 Hcov. fsetdec.
   - (* SE-GhostGuarded *)
     intros S0 S1 Θ P Q Ξ P' Hg He IH Hcov.
-    apply a_solve_eq__tophole_l_guarded; [ assumption | ].
+    apply a_solve_eq__univ_ghost_l_guarded; [ assumption | ].
     apply IH. simpl in Hcov. clear - Hcov. fsetdec.
   - (* SE-ForallGhost *)
     intros S0 S1 Θ P Q Ξ P' β Hβ He IH Hcov.
-    apply a_solve_eq__all_l_tophole with (β := β).
+    apply a_solve_eq__all_l_univ_ghost with (β := β).
     + simpl in Hcov. clear - Hβ Hcov. fsetdec.
     + apply IH.
       pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f β)) as H1.
       simpl in H1, Hcov |- *. clear - H1 Hcov. fsetdec.
   - (* SE-GuardedGhost *)
     intros S0 S1 Θ P Q Ξ P' Hg He IH Hcov.
-    apply a_solve_eq__tophole_r_guarded; [ assumption | ].
+    apply a_solve_eq__univ_ghost_r_guarded; [ assumption | ].
     apply IH. simpl in Hcov. clear - Hcov. fsetdec.
 Qed.
 
@@ -537,9 +537,9 @@ Proof.
     destruct (e_guess_mono_supply_respect Hg Heq) as [S1' [HS1 Hg']].
     exists S1'. split; [ exact HS1 | apply e_solve_eq__flex_r; assumption ].
   - intros S Θ Q S0' Heq.
-    exists S0'. split; [ exact Heq | apply e_solve_eq__hole_l ].
+    exists S0'. split; [ exact Heq | apply e_solve_eq__ghost_l ].
   - intros S Θ P S0' Heq.
-    exists S0'. split; [ exact Heq | apply e_solve_eq__hole_r ].
+    exists S0'. split; [ exact Heq | apply e_solve_eq__ghost_r ].
   - intros S0 S1 S2 Θ P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2' He1 IH1 He2 IH2 S0' Heq.
     destruct (IH1 _ Heq) as [S1' [HS1 Hd1]].
     destruct (IH2 _ HS1) as [S2' [HS2 Hd2]].
@@ -552,27 +552,27 @@ Proof.
       [ rewrite Heq; exact Hβ | exact Hd ].
   - intros S0 S1 Θ P Q Ξ P' He IH S0' Heq.
     destruct (IH _ Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_solve_eq__tophole_both; exact Hd ].
+    exists S1'. split; [ exact HS1 | apply e_solve_eq__univ_ghost_both; exact Hd ].
   - intros S0 S1 Θ P Q Ξ P' β Hβ He IH S0' Heq.
     destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
       as [S1' [HS1 Hd]].
     exists S1'. split; [ exact HS1 | ].
-    apply e_solve_eq__tophole_l_all with (β := β);
+    apply e_solve_eq__univ_ghost_l_all with (β := β);
       [ rewrite Heq; exact Hβ | exact Hd ].
   - intros S0 S1 Θ P Q Ξ P' Hg He IH S0' Heq.
     destruct (IH _ Heq) as [S1' [HS1 Hd]].
     exists S1'. split;
-      [ exact HS1 | apply e_solve_eq__tophole_l_guarded; assumption ].
+      [ exact HS1 | apply e_solve_eq__univ_ghost_l_guarded; assumption ].
   - intros S0 S1 Θ P Q Ξ P' β Hβ He IH S0' Heq.
     destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
       as [S1' [HS1 Hd]].
     exists S1'. split; [ exact HS1 | ].
-    apply e_solve_eq__all_l_tophole with (β := β);
+    apply e_solve_eq__all_l_univ_ghost with (β := β);
       [ rewrite Heq; exact Hβ | exact Hd ].
   - intros S0 S1 Θ P Q Ξ P' Hg He IH S0' Heq.
     destruct (IH _ Heq) as [S1' [HS1 Hd]].
     exists S1'. split;
-      [ exact HS1 | apply e_solve_eq__tophole_r_guarded; assumption ].
+      [ exact HS1 | apply e_solve_eq__univ_ghost_r_guarded; assumption ].
 Qed.
 
 Corollary e_solve_sub_supply_respect : forall S0 Θ m P Q S1 Ξ P',
@@ -717,10 +717,10 @@ Proof.
       auto using a_flex_tvar_swap, a_non_flex_swap, nonghost_pskl_swap.
   - (* SE-GhostL *)
     intros S Θ Q S0' Heq. simpl.
-    exists S0'. split; [ exact Heq | apply e_solve_eq__hole_l ].
+    exists S0'. split; [ exact Heq | apply e_solve_eq__ghost_l ].
   - (* SE-VacuousR *)
     intros S Θ P S0' Heq. simpl.
-    exists S0'. split; [ exact Heq | apply e_solve_eq__hole_r ].
+    exists S0'. split; [ exact Heq | apply e_solve_eq__ghost_r ].
   - (* SE-Arrow *)
     intros S0 S1 S2 Θ P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2' He1 IH1 He2 IH2 S0' Heq. simpl.
     destruct (IH1 _ Heq) as [S1' [HS1 Hd1]].
@@ -741,35 +741,35 @@ Proof.
   - (* SE-UnivGhost *)
     intros S0 S1 Θ P Q Ξ P' He IH S0' Heq. simpl.
     destruct (IH _ Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_solve_eq__tophole_both; exact Hd ].
+    exists S1'. split; [ exact HS1 | apply e_solve_eq__univ_ghost_both; exact Hd ].
   - (* SE-GhostForall — CLOSES *)
     intros S0 S1 Θ P Q Ξ P' β Hβ He IH S0' Heq. simpl.
     destruct (IH (add (swap_atom a b β) S0')) as [S1' [HS1 Hd]];
       [ apply eq_swap_atoms_add; exact Heq | ].
     exists S1'. split; [ exact HS1 | ].
     rewrite swap_pskl_close.
-    apply e_solve_eq__tophole_l_all with (β := swap_atom a b β);
+    apply e_solve_eq__univ_ghost_l_all with (β := swap_atom a b β);
       [ eapply swap_notin_eq; eassumption | ].
     rewrite swap_pskl_open_var in Hd.    exact Hd.
   - (* SE-GhostGuarded *)
     intros S0 S1 Θ P Q Ξ P' Hg He IH S0' Heq. simpl.
     destruct (IH _ Heq) as [S1' [HS1 Hd]].
     exists S1'. split; [ exact HS1 | ].
-    apply e_solve_eq__tophole_l_guarded; auto using guarded_pskl_swap.
+    apply e_solve_eq__univ_ghost_l_guarded; auto using guarded_pskl_swap.
   - (* SE-ForallGhost — CLOSES *)
     intros S0 S1 Θ P Q Ξ P' β Hβ He IH S0' Heq. simpl.
     destruct (IH (add (swap_atom a b β) S0')) as [S1' [HS1 Hd]];
       [ apply eq_swap_atoms_add; exact Heq | ].
     exists S1'. split; [ exact HS1 | ].
     rewrite swap_pskl_close.
-    apply e_solve_eq__all_l_tophole with (β := swap_atom a b β);
+    apply e_solve_eq__all_l_univ_ghost with (β := swap_atom a b β);
       [ eapply swap_notin_eq; eassumption | ].
     rewrite swap_pskl_open_var in Hd.    exact Hd.
   - (* SE-GuardedGhost *)
     intros S0 S1 Θ P Q Ξ P' Hg He IH S0' Heq. simpl.
     destruct (IH _ Heq) as [S1' [HS1 Hd]].
     exists S1'. split; [ exact HS1 | ].
-    apply e_solve_eq__tophole_r_guarded; auto using guarded_pskl_swap.
+    apply e_solve_eq__univ_ghost_r_guarded; auto using guarded_pskl_swap.
 Qed.
 
 Corollary e_solve_sub_swap : forall a b S0 Θ m P Q S1 Ξ P',

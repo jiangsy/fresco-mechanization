@@ -80,8 +80,8 @@ Lemma lc_pskl_arrow_inv : forall P1 P2,
   lc_pskl (pskl_arrow P1 P2) -> lc_pskl P1 /\ lc_pskl P2.
 Proof. intros P1 P2 H; inversion H; auto. Qed.
 
-Lemma lc_pskl_tophole_inv : forall P,
-  lc_pskl (pskl_tophole P) -> lc_pskl P.
+Lemma lc_pskl_univ_ghost_inv : forall P,
+  lc_pskl (pskl_univ_ghost P) -> lc_pskl P.
 Proof. intros P H; inversion H; auto. Qed.
 
 Lemma lc_pskl_all_syn_inv : forall P,
@@ -103,7 +103,7 @@ Proof.
     repeat match goal with
     | H : lc_pskl (pskl_arrow _ _) |- _ =>
         apply lc_pskl_arrow_inv in H; destruct H
-    | H : lc_pskl (pskl_tophole _) |- _ => apply lc_pskl_tophole_inv in H
+    | H : lc_pskl (pskl_univ_ghost _) |- _ => apply lc_pskl_univ_ghost_inv in H
     | H : guarded_pskl _           |- _ => apply guarded_pskl_lc in H
     end;
     (* discharge every case with a non-binder output *)
@@ -111,8 +111,8 @@ Proof.
       [ assumption
       | eauto
       | constructor; eauto
-      | apply lc_pskl_tophole; eauto
-      | apply lc_pskl_tophole; constructor; eauto ].
+      | apply lc_pskl_univ_ghost; eauto
+      | apply lc_pskl_univ_ghost; constructor; eauto ].
   (* remaining: binder cases — exists-fresh + close: the rule's OWN β
      serves; the close/open round trip exposes the premise's output. *)
   - (* SS-ForallL : ∀P ≼ Q ⤳ ∀(close β P') *)
@@ -151,7 +151,7 @@ Proof.
         rewrite open_pskl_wrt_pskl_close_pskl_wrt_pskl;
         match goal with
         | IH : lc_pskl _ -> lc_pskl _ -> lc_pskl _ |- _ =>
-            apply IH; [ apply lc_pskl_tophole; assumption
+            apply IH; [ apply lc_pskl_univ_ghost; assumption
                       | apply (lc_pskl_all_syn_inv HQ) ]
         end
     end.
@@ -164,7 +164,7 @@ Proof.
         match goal with
         | IH : lc_pskl _ -> lc_pskl _ -> lc_pskl _ |- _ =>
             apply IH; [ apply (lc_pskl_all_syn_inv HP)
-                      | apply lc_pskl_tophole; assumption ]
+                      | apply lc_pskl_univ_ghost; assumption ]
         end
     end.
 Qed.
@@ -178,8 +178,8 @@ Lemma a_solve_eq_lc : forall Θ P P0 Ξ P',
 Proof. intros; eapply (proj2 a_solve_sub_eq_lc); eauto. Qed.
 
 (** Solving a GUARDED subject yields a guarded solution: a guarded LHS only
-    matches rules whose output is again guarded (no ghost/tophole/∀ can be
-    introduced on the left).  Needed for the tophole cases of output
+    matches rules whose output is again guarded (no ghost/univ_ghost/∀ can be
+    introduced on the left).  Needed for the univ_ghost cases of output
     well-formedness. *)
 Lemma a_solve_sub_eq_guarded :
   (forall Θ m P P0 Ξ P', {{ Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' }}a ->
@@ -192,10 +192,10 @@ Proof.
     try solve [ eapply a_guess_mono_guarded; eassumption ];
     (* a non-guarded subject makes the case vacuous *)
     try solve [ match goal with H : guarded_pskl _ |- _ => inversion H end ];
-    (* peel lc of the arrow / tophole subject/rhs *)
+    (* peel lc of the arrow / univ_ghost subject/rhs *)
     repeat match goal with
     | H : lc_pskl (pskl_arrow _ _) |- _ => apply lc_pskl_arrow_inv in H; destruct H
-    | H : lc_pskl (pskl_tophole _) |- _ => apply lc_pskl_tophole_inv in H
+    | H : lc_pskl (pskl_univ_ghost _) |- _ => apply lc_pskl_univ_ghost_inv in H
     end;
     try solve
       [ assumption
@@ -426,7 +426,7 @@ Proof.
   - (* SS-UnivGhostL *)
     match goal with
     | IH : forall α, α `in` ftvar_in_pskl ?p' -> _ ,
-      Hm : ?a `in` ftvar_in_pskl (pskl_tophole ?p') |- _ =>
+      Hm : ?a `in` ftvar_in_pskl (pskl_univ_ghost ?p') |- _ =>
         cbn [ftvar_in_pskl] in Hm;
         destruct (IH a Hm) as [Hl | Hr];
           [ left; cbn [ftvar_in_pskl] in *; clear - Hl; fsetdec
@@ -485,7 +485,7 @@ Proof.
     | Hs : {{ _ ⊢ₑ _ ∼ _ ⤳ ?X1 ⨾ ?e' }}a ,
       He : ftvar_in_pskl ?e' [<=] _ ,
       IH : forall α, α `in` ftvar_in_pskl ?p2' -> _ ,
-      Hm : ?a `in` ftvar_in_pskl (pskl_tophole (pskl_arrow ?e' ?p2')) |- _ =>
+      Hm : ?a `in` ftvar_in_pskl (pskl_univ_ghost (pskl_arrow ?e' ?p2')) |- _ =>
         cbn [ftvar_in_pskl] in Hm;
         apply union_1 in Hm; destruct Hm as [Hm | Hm];
           [ destruct (AtomSetProperties.In_dec a (dom X1)) as [Hd | Hd];
@@ -559,8 +559,8 @@ Lemma a_guess_mono_ctx_shrink : forall Θ P Ξ A Θ',
   a_guess_mono Θ' P Ξ A.
 Proof.
   intros Θ P Ξ A Θ' H; revert Θ'; induction H; intros Θ' Hsub.
-  - apply a_guess_mono__hole. clear - H Hsub; fsetdec.
-  - apply a_guess_mono__tophole; auto.
+  - apply a_guess_mono__ghost. clear - H Hsub; fsetdec.
+  - apply a_guess_mono__univ_ghost; auto.
   - apply a_guess_mono__var.
   - apply a_guess_mono__unit.
   - apply a_guess_mono__arrow; auto.
@@ -648,14 +648,14 @@ Proof.
   exact Hr.
 Qed.
 
-Lemma a_solve_eq_move_binder_tophole_l : forall Θ b P Q Ξ P' α0,
-  {{ ((b ~ abind_tvar) ++ Θ) ⊢ₑ (pskl_tophole P)
+Lemma a_solve_eq_move_binder_univ_ghost_l : forall Θ b P Q Ξ P' α0,
+  {{ ((b ~ abind_tvar) ++ Θ) ⊢ₑ (pskl_univ_ghost P)
     ∼ (open_pskl_wrt_pskl Q (pskl_var_f b)) ⤳ Ξ ⨾ P' }}a ->
   b `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
   α0 `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q
       `union` ftvar_in_pskl P' ->
   {{ ((α0 ~ abind_tvar) ++ swap_aenv b α0 Θ)
-    ⊢ₑ (pskl_tophole P) ∼ (open_pskl_wrt_pskl Q (pskl_var_f α0))
+    ⊢ₑ (pskl_univ_ghost P) ∼ (open_pskl_wrt_pskl Q (pskl_var_f α0))
      ⤳ (swap_aenv b α0 Ξ) ⨾ (subst_pskl_in_pskl (pskl_var_f α0) b P') }}a.
 Proof.
   intros Θ b P Q Ξ P' α0 Hp Hb Hα0.
@@ -672,14 +672,14 @@ Proof.
   exact Hr.
 Qed.
 
-Lemma a_solve_eq_move_binder_tophole_r : forall Θ b P Q Ξ P' α0,
+Lemma a_solve_eq_move_binder_univ_ghost_r : forall Θ b P Q Ξ P' α0,
   {{ ((b ~ abind_tvar) ++ Θ) ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f b))
-    ∼ (pskl_tophole Q) ⤳ Ξ ⨾ P' }}a ->
+    ∼ (pskl_univ_ghost Q) ⤳ Ξ ⨾ P' }}a ->
   b `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
   α0 `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q
       `union` ftvar_in_pskl P' ->
   {{ ((α0 ~ abind_tvar) ++ swap_aenv b α0 Θ)
-    ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f α0)) ∼ (pskl_tophole Q)
+    ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f α0)) ∼ (pskl_univ_ghost Q)
      ⤳ (swap_aenv b α0 Ξ) ⨾ (subst_pskl_in_pskl (pskl_var_f α0) b P') }}a.
 Proof.
   intros Θ b P Q Ξ P' α0 Hp Hb Hα0.
@@ -748,12 +748,12 @@ Qed.
     ⚙ MOVED here 2026-08-18 from ext_algo/prop_look_equiv.v: P6's ForallL row
     (sub/look/prop_sub_cstr.v) consumes it, and that file is UPSTREAM of
     ext_algo — one fact, one name, one file, in the layer its consumers see. *)
-Lemma a_solve_sub_hole_target_inv : forall Θ m P Ξ P',
-  {{ Θ ⊢ₛ P ≼[ m ] pskl_hole ⤳ Ξ ⨾ P' }}a ->
+Lemma a_solve_sub_ghost_target_inv : forall Θ m P Ξ P',
+  {{ Θ ⊢ₛ P ≼[ m ] pskl_ghost ⤳ Ξ ⨾ P' }}a ->
   Ξ = nil /\ P' = P.
 Proof.
   intros Θ m P Ξ P' Hd.
-  remember pskl_hole as T eqn:HT.
+  remember pskl_ghost as T eqn:HT.
   induction Hd; inversion HT; subst.
   - (* SS-Var *) auto.
   - (* SS-ForallL: the yield re-closes to the subject *)
@@ -770,11 +770,11 @@ Proof.
   - (* SS-Vacuous *) auto.
   - (* SS-Check: guarded ◇ has no constructor *)
     match goal with
-    | Hg : guarded_pskl pskl_hole |- _ => inversion Hg
+    | Hg : guarded_pskl pskl_ghost |- _ => inversion Hg
     end.
   - (* SS-GhostL at B = ◇: ghost-free ◇ has no constructor *)
     match goal with
-    | Hg : pskl_ghost_free pskl_hole |- _ => inversion Hg
+    | Hg : pskl_ghost_free pskl_ghost |- _ => inversion Hg
     end.
 Qed.
 

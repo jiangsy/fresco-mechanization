@@ -28,7 +28,7 @@
     from, and it contains no MORE ∀s.  ⭐ Read the [∀] row of the proof and
     the principle is visible as a structural fact: [e_guess_mono__forall]
     rebuilds the [∀] the skeleton already had, and no other row produces one.
-    [e_guess_mono__hole] — the only row that INVENTS anything — invents a
+    [e_guess_mono__ghost] — the only row that INVENTS anything — invents a
     flexible VARIABLE, which is ∀-free.
 
     ⭐ §3–§6 CARRY THE BOUND THROUGH THE WHOLE EXTRACTION (phase 1b).
@@ -108,7 +108,7 @@ Fixpoint nall_pskl (P : pskl) : nat :=
   match P with
   | pskl_arrow P1 P2 => nall_pskl P1 + nall_pskl P2
   | pskl_all_syn P1  => 1 + nall_pskl P1
-  | pskl_tophole P1  => nall_pskl P1
+  | pskl_univ_ghost P1  => nall_pskl P1
   | _                => 0
   end.
 
@@ -132,7 +132,7 @@ Proof.
          | |- context [ lt_eq_lt_dec ?a ?b ] =>
              destruct (lt_eq_lt_dec a b) as [[?|?]|?]
          end; reflexivity);
-    (* ⚠️ [solve [auto]] FIRST: the pass-through row ([tophole]) has the shape
+    (* ⚠️ [solve [auto]] FIRST: the pass-through row ([univ_ghost]) has the shape
        [nall (open … P) = nall P], where a bare [f_equal] strips [nall] from
        both sides and leaves the FALSE goal [open … P = P]. *)
     first [ solve [ auto ] | f_equal; auto ].
@@ -231,7 +231,7 @@ Qed.
 (*  depositing rows and the reason is visible — LS-Var and LE-Var         *)
 (*  deposit the counterpart standing opposite the looked-up variable,     *)
 (*  and LE-FlexR deposits a fresh VARIABLE (∀-free, exactly as            *)
-(*  [guess^TY]'s hole row).  The subject is only ever WALKED.             *)
+(*  [guess^TY]'s ghost row).  The subject is only ever WALKED.             *)
 (* ===================================================================== *)
 
 Lemma e_looksub_lookeq_nall :
@@ -319,7 +319,7 @@ Fixpoint hnall_ptyp (A : ptyp) : nat :=
 Fixpoint hnall_pskl (P : pskl) : nat :=
   match P with
   | pskl_all_syn P1 => 1 + hnall_pskl P1
-  | pskl_tophole P1 => hnall_pskl P1
+  | pskl_univ_ghost P1 => hnall_pskl P1
   | _               => 0
   end.
 
@@ -358,7 +358,7 @@ Fixpoint chain_hits_pskl (k : nat) (P : pskl) : bool :=
   match P with
   | pskl_var_b j    => Nat.eqb j k
   | pskl_all_syn P1 => chain_hits_pskl (S k) P1
-  | pskl_tophole P1 => chain_hits_pskl k P1
+  | pskl_univ_ghost P1 => chain_hits_pskl k P1
   | _               => false
   end.
 
@@ -371,7 +371,7 @@ Lemma hnall_pskl_open_rec_graft : forall P Q k,
 Proof.
   induction P; intros Q k; simpl;
     try lia;
-    (* all / tophole — the chain descends *)
+    (* all / univ_ghost — the chain descends *)
     try (rewrite IHP; destruct (chain_hits_pskl _ P); lia);
     (* var_b — the graft point: the three-way comparison of the opening and
        the boolean of the chain must agree *)
@@ -401,7 +401,7 @@ Fixpoint pure_chain_to (α : atom) (P : pskl) : Prop :=
   match P with
   | pskl_var_f β    => β = α
   | pskl_all_syn P1 => pure_chain_to α P1
-  | pskl_tophole P1 => pure_chain_to α P1
+  | pskl_univ_ghost P1 => pure_chain_to α P1
   | _               => False
   end.
 
@@ -446,7 +446,7 @@ Qed.
 Lemma e_looksub_pure_chain_cstrs : forall S0 Θ α m P P' S1 Ξ C,
   {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
   pure_chain_to α P ->
-  (guarded_pskl P' \/ P' = pskl_hole) ->
+  (guarded_pskl P' \/ P' = pskl_ghost) ->
   C = (a_cstr_sub m P' :: nil) \/ C = nil.
 Proof.
   intros * H; induction H; intros Hchain Hg; simpl in *;
@@ -472,15 +472,15 @@ Qed.
     subject has NO recursive row at all: SS-Check demands a GUARDED subject,
     so not even the drop into the eq layer is reachable, and SS-ForallR's
     ∀-headed counterpart is excluded by the guarded-or-◇ hypothesis. *)
-Lemma e_solve_sub_hole_hnall : forall S0 Θ m Q S1 Ξ P',
-  {{ S0 ↝ S1 ⊨ Θ ⊢ₛ pskl_hole ≼[ m ] Q ⤳ Ξ ⨾ P' }}e ->
-  (guarded_pskl Q \/ Q = pskl_hole) ->
+Lemma e_solve_sub_ghost_hnall : forall S0 Θ m Q S1 Ξ P',
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₛ pskl_ghost ≼[ m ] Q ⤳ Ξ ⨾ P' }}e ->
+  (guarded_pskl Q \/ Q = pskl_ghost) ->
   hnall_pskl P' = 0.
 Proof.
   intros * H Hg; inversion H; subst; simpl in *; try reflexivity;
     (* SS-Check: its subject is required GUARDED, absurd at ◇ *)
     try solve [ match goal with
-                | Hga : guarded_pskl pskl_hole |- _ => inversion Hga
+                | Hga : guarded_pskl pskl_ghost |- _ => inversion Hga
                 end ];
     (* SS-ForallR: its counterpart is ∀-headed, absurd at guarded-or-◇ *)
     try solve [ exfalso; destruct Hg as [ Hg | Hg ];
@@ -492,7 +492,7 @@ Qed.
 (** Step 3 — [guess^N] never RAISES the head count: the ∀ row rebuilds the
     quantifier the input had ([close] moves the tail between [var_f] and
     [var_b], count 0 either way), the ⫯ row strips a transparent node, and
-    the hole row invents a flexible. *)
+    the ghost row invents a flexible. *)
 Lemma e_guess_mono_hnall : forall S0 P S1 Ξ A,
   e_guess_mono S0 P S1 Ξ A -> hnall_ptyp A <= hnall_pskl P.
 Proof.
@@ -513,7 +513,7 @@ Qed.
 Theorem e_extract_pure_chain_hnall : forall S0 Θ0 NM α m P P' S1 Ξ Q',
   {{ S0 ↝ S1 ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q' }}e ->
   pure_chain_to α P ->
-  (guarded_pskl P' \/ P' = pskl_hole) ->
+  (guarded_pskl P' \/ P' = pskl_ghost) ->
   hnall_pskl Q' = 0.
 Proof.
   intros * H Hchain Hg; destruct H.
@@ -528,7 +528,7 @@ Proof.
   | Hgs : e_guess _ _ ?Q _ _ _ |- _ =>
       pose proof (e_guess_hnall Hgs);
       assert (hnall_pskl Q = 0)
-        by (solve [ eapply e_solve_sub_hole_hnall; eassumption
+        by (solve [ eapply e_solve_sub_ghost_hnall; eassumption
                   | reflexivity ]);
       lia
   end.
@@ -544,7 +544,7 @@ Qed.
 Theorem e_extract_forall_l_hnall : forall S0 Θ0 NM α M P P0 S1 Ξ P1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢ (open_pskl_wrt_pskl P (pskl_var_f α))
      ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ P1 }}e ->
-  (guarded_pskl P0 \/ P0 = pskl_hole) ->
+  (guarded_pskl P0 \/ P0 = pskl_ghost) ->
   hnall_pskl (open_pskl_wrt_pskl P P1) < hnall_pskl (pskl_all_syn P).
 Proof.
   intros * Hx Hg. simpl.
@@ -608,15 +608,15 @@ Proof.
     repeat match goal with
     | H : lc_pskl (pskl_arrow _ _) |- _ =>
         apply lc_pskl_arrow_inv in H; destruct H
-    | H : lc_pskl (pskl_tophole _) |- _ => apply lc_pskl_tophole_inv in H
+    | H : lc_pskl (pskl_univ_ghost _) |- _ => apply lc_pskl_univ_ghost_inv in H
     end;
     (* deposits and empty lists *)
     try solve [ repeat (constructor; simpl; auto) ];
     (* the two arrow rows *)
     try solve [ rewrite Forall_app; split;
-                eauto using lc_pskl_all_syn_inv, lc_pskl_tophole ];
+                eauto using lc_pskl_all_syn_inv, lc_pskl_univ_ghost ];
     (* structural descents, re-wrapping what the saturation unpacked *)
-    try solve [ eauto using lc_pskl_all_syn_inv, lc_pskl_tophole ].
+    try solve [ eauto using lc_pskl_all_syn_inv, lc_pskl_univ_ghost ].
 Qed.
 
 Corollary e_looksub_cstrs_lc : forall S0 Θ α m P P' S1 Ξ C,
@@ -643,15 +643,15 @@ Proof.
     repeat match goal with
     | H : lc_pskl (pskl_arrow _ _) |- _ =>
         apply lc_pskl_arrow_inv in H; destruct H
-    | H : lc_pskl (pskl_tophole _) |- _ => apply lc_pskl_tophole_inv in H
+    | H : lc_pskl (pskl_univ_ghost _) |- _ => apply lc_pskl_univ_ghost_inv in H
     | H : guarded_pskl _           |- _ => apply guarded_pskl_lc in H
     end;
     try solve
       [ assumption
       | eauto
       | constructor; eauto
-      | apply lc_pskl_tophole; eauto
-      | apply lc_pskl_tophole; constructor; eauto ];
+      | apply lc_pskl_univ_ghost; eauto
+      | apply lc_pskl_univ_ghost; constructor; eauto ];
     (* binder rows — the rule's own witness serves via the close/open
        round trip, exactly as in the a-side proof *)
     try match goal with
@@ -662,7 +662,7 @@ Proof.
     match goal with
     | IH : lc_pskl _ -> lc_pskl _ -> lc_pskl _ |- _ =>
         apply IH;
-        eauto using lc_pskl_all_syn_inv, lc_pskl_tophole
+        eauto using lc_pskl_all_syn_inv, lc_pskl_univ_ghost
     end.
 Qed.
 
@@ -749,12 +749,12 @@ Proof.
     repeat match goal with
     | H : lc_pskl (pskl_arrow _ _) |- _ =>
         apply lc_pskl_arrow_inv in H; destruct H
-    | H : lc_pskl (pskl_tophole _) |- _ => apply lc_pskl_tophole_inv in H
+    | H : lc_pskl (pskl_univ_ghost _) |- _ => apply lc_pskl_univ_ghost_inv in H
     end;
     repeat match goal with |- _ /\ _ => split end; intros;
     (apply IHn;
      [ repeat rewrite size_pskl_open_pskl_wrt_pskl_var; simpl; lia
-     | eauto using lc_pskl_all_syn_inv, lc_pskl_tophole ]).
+     | eauto using lc_pskl_all_syn_inv, lc_pskl_univ_ghost ]).
 Qed.
 
 Theorem e_solve_eq_order_total : forall S0 Θ P Q,
@@ -774,7 +774,7 @@ Proof.
     repeat match goal with
     | H : lc_pskl (pskl_arrow _ _) |- _ =>
         apply lc_pskl_arrow_inv in H; destruct H
-    | H : lc_pskl (pskl_tophole _) |- _ => apply lc_pskl_tophole_inv in H
+    | H : lc_pskl (pskl_univ_ghost _) |- _ => apply lc_pskl_univ_ghost_inv in H
     end;
     repeat match goal with |- _ /\ _ => split end; intros;
     (* the arrow rows' eq half *)
@@ -782,7 +782,7 @@ Proof.
                 solve [ assumption | constructor ] ];
     (apply IHn;
      [ repeat rewrite size_pskl_open_pskl_wrt_pskl_var; simpl; lia
-     | eauto using lc_pskl_all_syn_inv, lc_pskl_tophole;
+     | eauto using lc_pskl_all_syn_inv, lc_pskl_univ_ghost;
        try solve [ constructor ] ]).
 Qed.
 
@@ -1087,10 +1087,10 @@ Qed.
 (*                                                                        *)
 (*      W := nholes(pattern) + nholes(subject) + nundef(context)          *)
 (*                                                                        *)
-(*  ⭐ W NEVER INCREASES, because holes are the ONLY source of new         *)
+(*  ⭐ W NEVER INCREASES, because ghosts are the ONLY source of new         *)
 (*  flexibles — Assign-SolveM's guess block is exactly the pattern's      *)
-(*  holes ([e_guess_mono_block_nundef]), monotype substitution creates    *)
-(*  neither a hole nor a flexible, and the unify solutions are            *)
+(*  ghosts ([e_guess_mono_block_nundef]), monotype substitution creates    *)
+(*  neither a ghost nor a flexible, and the unify solutions are            *)
 (*  variables.  And any run that CREATES a def must have DEFINED an       *)
 (*  undefined flexible, so W then strictly DROPS (§15's inequality) —    *)
 (*  which is what pays for the Arrow row's grown output context.  The    *)
@@ -1101,10 +1101,10 @@ Qed.
 
 Fixpoint nholes_pskl (P : pskl) : nat :=
   match P with
-  | pskl_hole        => 1
+  | pskl_ghost        => 1
   | pskl_arrow P1 P2 => nholes_pskl P1 + nholes_pskl P2
   | pskl_all_syn P1  => nholes_pskl P1
-  | pskl_tophole P1  => nholes_pskl P1
+  | pskl_univ_ghost P1  => nholes_pskl P1
   | _                => 0
   end.
 
@@ -1122,7 +1122,7 @@ Proof.
   destruct b; rewrite IH; lia.
 Qed.
 
-(** [ptyp] has no hole constructor at all, so any read-back is hole-free. *)
+(** [ptyp] has no ghost constructor at all, so any read-back is ghost-free. *)
 Lemma nholes_ptyp_to_pskl : forall A, nholes_pskl (ptyp_to_pskl A) = 0.
 Proof. induction A; simpl; lia. Qed.
 
@@ -1142,7 +1142,7 @@ Corollary nholes_pskl_open : forall P β,
   nholes_pskl (open_pskl_wrt_pskl P (pskl_var_f β)) = nholes_pskl P.
 Proof. intros. apply nholes_pskl_open_rec_var. Qed.
 
-Lemma nholes_pskl_subst_holefree : forall P Q β,
+Lemma nholes_pskl_subst_ghostfree : forall P Q β,
   nholes_pskl Q = 0 ->
   nholes_pskl (subst_pskl_in_pskl Q β P) = nholes_pskl P.
 Proof.
@@ -1154,7 +1154,7 @@ Proof.
     simpl; lia.
 Qed.
 
-(** ⭐ The guess block is EXACTLY the pattern's holes — the accounting fact
+(** ⭐ The guess block is EXACTLY the pattern's ghosts — the accounting fact
     that makes W conservative at Assign-SolveM. *)
 Lemma e_guess_mono_block_nundef : forall S0 P S1 Ξ A,
   e_guess_mono S0 P S1 Ξ A -> nundef_aenv Ξ = nholes_pskl P.
@@ -1207,8 +1207,8 @@ Qed.
 
 (** ⭐ W-PRESERVATION, in the addition form that CHAINS at the Arrow row:
     what a run leaves behind (its undefs plus its defs) is bounded by what
-    it was given plus the holes of its skeleton inputs.  Read off it: a run
-    that created a def (ndef up by d) consumed at least d undefs-or-holes —
+    it was given plus the ghosts of its skeleton inputs.  Read off it: a run
+    that created a def (ndef up by d) consumed at least d undefs-or-ghosts —
     so W strictly drops whenever the context grew. *)
 Lemma e_assign_unify_consis_wpres :
   (forall S0 Θ Ξ α P S1 Θ',
@@ -1234,7 +1234,7 @@ Proof.
               <= nundef_aenv Θ + ndef_aenv Θ
                  + nholes_pskl P0 + nholes_pskl P));
     intros; simpl in *;
-    (* Assign-SolveM: the guess block is the pattern's holes, and flex-only *)
+    (* Assign-SolveM: the guess block is the pattern's ghosts, and flex-only *)
     repeat match goal with
     | Hg : e_guess_mono _ _ _ _ _ |- _ =>
         pose proof (e_guess_mono_block_nundef Hg);
@@ -1242,13 +1242,13 @@ Proof.
         clear Hg
     end;
     (* the substitution on a VARIABLE subject has already reduced to the
-       bare comparison — resolve it so its hole count computes *)
+       bare comparison — resolve it so its ghost count computes *)
     repeat match goal with
     | H : context [ nholes_pskl (if ?c then _ else _) ] |- _ => destruct c
     | |- context [ nholes_pskl (if ?c then _ else _) ] => destruct c
     end;
-    (* the substituted skeletons keep their hole counts *)
-    repeat rewrite nholes_pskl_subst_holefree in *
+    (* the substituted skeletons keep their ghost counts *)
+    repeat rewrite nholes_pskl_subst_ghostfree in *
       by (auto using nholes_ptyp_to_pskl);
     repeat rewrite nholes_ptyp_to_pskl in *;
     repeat rewrite nholes_pskl_open in *;
@@ -1280,7 +1280,7 @@ Qed.
 (*                                                                        *)
 (*    Arrow p2         W, or size: if the domain's run created a def, W   *)
 (*                     strictly dropped (§15's inequality — creating a    *)
-(*                     def costs an undef or a hole); if it created none, *)
+(*                     def costs an undef or a ghost); if it created none, *)
 (*                     ndef ties by monotonicity and SIZE pays            *)
 (*    structural rows  size                                               *)
 (*    Flex/FlexL/R     size (a variable leaves the skeleton inputs)       *)
@@ -1328,7 +1328,7 @@ Proof.
           inversion H; subst; clear H
       end.
     - (* Flex-Flex-Assign: the crossed def is consumed — the consis
-         conjunct at ndef − 1, on two hole-free read-backs *)
+         conjunct at ndef − 1, on two ghost-free read-backs *)
       match goal with
       | He : entry_def_mono (_, abind_flex_mono_def _) |- _ =>
           unfold entry_def_mono in He; simpl in He
@@ -1374,7 +1374,7 @@ Proof.
     - (* Assign-SolveM — the guess, total at the lc pattern *)
       apply e_guess_mono_order_total; assumption.
     - (* Assign-Assign — the consis conjunct at ndef − 1; mono
-         substitution keeps the hole counts *)
+         substitution keeps the ghost counts *)
       match goal with
       | He : entry_def_mono (_, abind_flex_mono_def _) |- _ =>
           unfold entry_def_mono in He; simpl in He
@@ -1384,8 +1384,8 @@ Proof.
                          (size_pskl _ + size_pskl _));
         try apply le_n;
         try assumption;
-        (* W: hole counts survive the mono substitution *)
-        try solve [ rewrite nholes_pskl_subst_holefree
+        (* W: ghost counts survive the mono substitution *)
+        try solve [ rewrite nholes_pskl_subst_ghostfree
                       by auto using nholes_ptyp_to_pskl;
                     repeat match goal with
                     | |- context [ nholes_pskl (if ?c then _ else _) ] =>
@@ -1475,7 +1475,7 @@ Proof.
       try solve [ eauto using lc_pskl_all_syn_inv ];
       try solve [ constructor; [ apply entry_def_mono_tvar | assumption ] ].
   - (* ForallSyn *)
-    unshelve eapply (IH3 (size_pskl (pskl_tophole P0')
+    unshelve eapply (IH3 (size_pskl (pskl_univ_ghost P0')
                           + size_pskl (open_pskl_wrt_pskl P1
                                          (pskl_var_f (supply_fresh S))))
                        ltac:(simpl;
@@ -1490,11 +1490,11 @@ Proof.
     unshelve eapply (IH3 (size_pskl P0' + size_pskl P1) ltac:(simpl in *; lia));
       try apply le_n; try assumption;
       try solve [ simpl in *; lia ];
-      eauto using lc_pskl_tophole_inv.
+      eauto using lc_pskl_univ_ghost_inv.
   - (* UnivGhost1 *)
     unshelve eapply (IH3 (size_pskl (open_pskl_wrt_pskl P0'
                                        (pskl_var_f (supply_fresh S)))
-                          + size_pskl (pskl_tophole P1))
+                          + size_pskl (pskl_univ_ghost P1))
                        ltac:(simpl;
                              repeat rewrite size_pskl_open_pskl_wrt_pskl_var;
                              lia));
@@ -1507,12 +1507,12 @@ Proof.
     unshelve eapply (IH3 (size_pskl P0 + size_pskl P1) ltac:(simpl in *; lia));
       try apply le_n; try assumption;
       try solve [ simpl in *; lia ];
-      eauto using lc_pskl_tophole_inv.
+      eauto using lc_pskl_univ_ghost_inv.
   - (* UnivGhostR *)
     unshelve eapply (IH3 (size_pskl P0' + size_pskl P) ltac:(simpl in *; lia));
       try apply le_n; try assumption;
       try solve [ simpl in *; lia ];
-      eauto using lc_pskl_tophole_inv.
+      eauto using lc_pskl_univ_ghost_inv.
   - (* Flex — the unify walk *)
     apply (Huni (length Θ)); try apply le_n; try assumption; simpl in *; lia.
   - (* FlexL — assign the pattern *)
@@ -1522,7 +1522,7 @@ Proof.
 Qed.
 
 (** ⭐⭐ THE CONSISTENCY BLOCK TERMINATES — §8b.4's "not routine" campaign,
-    closed.  The measure the paper's design principle buys: holes and
+    closed.  The measure the paper's design principle buys: ghosts and
     undefined flexibles are the fuel, defined flexibles are consumed by the
     walks, and sizes referee the structural descent. *)
 Theorem e_consis_order_total : forall Δ1 Δ2 S Θ P0 P,
@@ -1761,7 +1761,7 @@ Proof.
     eapply e_consis_defs_mono; eassumption.
   - (* ForallL — §9's decrease theorem: IH3 *)
     match goal with
-    | Hg : guarded_pskl _ \/ _ = pskl_hole |- _ => idtac
+    | Hg : guarded_pskl _ \/ _ = pskl_ghost |- _ => idtac
     end.
     split.
     + apply e_extract_order_total;
@@ -1797,7 +1797,7 @@ Proof.
     unshelve eapply (IH5 (size_pskl Q) ltac:(lia));
       try apply le_n;
       try assumption.
-    eauto using lc_pskl_tophole_inv.
+    eauto using lc_pskl_univ_ghost_inv.
 Qed.
 
 (** ⭐⭐⭐ THE THEOREM — the subtyping walk terminates on every input that is

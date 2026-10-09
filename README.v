@@ -285,7 +285,7 @@ Print Assumptions a_typing_sound.
    per user-facing mode, and the DECLARATIVE side is now the paper's own
    §declarative system [{{ … }}d] over a declarative context, not [{{ … }}ad] over
    [nil : aenv].  At the EMPTY context three premises of the theorem above go:
-   [{{ ⊢ · }}a] is a constructor, [{{ · ⨟ ∅ ⊢ₚₛ P0 }}a] is [a_wf_pskl__hole] resp.
+   [{{ ⊢ · }}a] is a constructor, [{{ · ⨟ ∅ ⊢ₚₛ P0 }}a] is [a_wf_pskl__ghost] resp.
    the annotation's own wf, and [a_ty_mode_compat] is read off the mode; and
    the answer's colouring is forced by the mode, so the existential [Bt]
    collapses to [syn{A}] resp. [inh{A}].
@@ -301,9 +301,9 @@ Print Assumptions a_typing_sound.
 Check a_typing_sound_infer :
   forall e A Θ1,
   {{ nil ⊢ᵉ e }}a ->
-  {{ nil ⊢[ mode_ti ; pskl_hole ] e ⦂ A ⊣ Θ1 }}a ->
+  {{ nil ⊢[ mode_ti ; pskl_ghost ] e ⦂ A ⊣ Θ1 }}a ->
   nil ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\ a_wf_ptyp Θ1 A /\
-  ({{ Θ1 ⨟ empty ⊢ᵣ bskl_hole ⊳ (btyp_to_bskl (ptyp_to_btyp_syn A)) }}ad) /\
+  ({{ Θ1 ⨟ empty ⊢ᵣ bskl_ghost ⊳ (btyp_to_bskl (ptyp_to_btyp_syn A)) }}ad) /\
   exists ζ, ζ ∷ Θ1 ⊑ nil /\
     ({{ nil ⊢ˢᵈ[ mode_ti ] e ⦂ (ptyp_to_btyp_syn (msubst_ptyp ζ A)) }}d) /\
     ({{ nil ⊢[ mode_ti ] e ⦂ (ptyp_to_btyp_syn (msubst_ptyp ζ A)) }}d).
@@ -392,7 +392,7 @@ Check a_typing_complete_infer :
   forall e (B : btyp),
   {{ nil ⊢ˢᵈ[ mode_ti ] e ⦂ B }}ad ->
   exists A1 Θ1,
-    {{ nil ⊢[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 }}a /\
+    {{ nil ⊢[ mode_ti ; pskl_ghost ] e ⦂ A1 ⊣ Θ1 }}a /\
     exists ζ, ζ ∷ Θ1 ⊑ nil /\ {{ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B) }}a.
 Print Assumptions a_typing_complete_infer.
 
@@ -433,7 +433,7 @@ Check a_typing_complete_sd_infer :
   {{ nil ⊢ᵉ e }}a ->
   {{ nil ⊢ˢᵈ[ mode_ti ] e ⦂ B }}d ->
   exists A1 Θ1,
-    {{ nil ⊢[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 }}a /\
+    {{ nil ⊢[ mode_ti ; pskl_ghost ] e ⦂ A1 ⊣ Θ1 }}a /\
     exists ζ, ζ ∷ Θ1 ⊑ nil /\ {{ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B) }}a.
 Print Assumptions a_typing_complete_sd_infer.
 
@@ -453,7 +453,7 @@ Check a_typing_complete_decl_infer :
   {{ nil ⊢ᵉ e }}a ->
   {{ nil ⊢[ mode_ti ] e ⦂ B }}d ->
   exists A1 Θ1,
-    {{ nil ⊢[ mode_ti ; pskl_hole ] e ⦂ A1 ⊣ Θ1 }}a /\
+    {{ nil ⊢[ mode_ti ; pskl_ghost ] e ⦂ A1 ⊣ Θ1 }}a /\
     exists ζ, ζ ∷ Θ1 ⊑ nil /\ {{ nil ⊢ (msubst_ptyp ζ A1) ≡ᵗ (btyp_to_ptyp B) }}a.
 Print Assumptions a_typing_complete_decl_infer.
 
@@ -642,7 +642,7 @@ Check fresco_infer :
   forall e, {{ nil ⊢ᵉ e }}d ->
   sumor
     (sig (fun r : typing_result =>
-       e_typing_run (entry_supply pskl_hole e) mode_ti nil pskl_hole e
+       e_typing_run (entry_supply pskl_ghost e) mode_ti nil pskl_ghost e
          = Some r /\
        exists ζ, ζ ∷ (ty_ctx r) ⊑ nil /\
          {{ nil ⊢[ mode_ti ]

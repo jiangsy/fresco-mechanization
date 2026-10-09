@@ -25,7 +25,7 @@
 
     ⭐ WHAT IT COSTS LEVEL 6.  A runner-sided completeness statement
     quantified over an arbitrary [(NM, M, P0)] is FALSE, and the motive owes
-    a premise.  The obvious one — [M = mode_ti -> P0 = pskl_hole] — is what
+    a premise.  The obvious one — [M = mode_ti -> P0 = pskl_ghost] — is what
     the CALLERS satisfy ([e_typing]/[e_pat] reach [TI] only at [◇], and
     [e_typing] never calls the [SK] side at all), and under it the mode is
     settled: at [(TI, ◇)] both [SI-Infer] and [SI-Ghost] fire, and they
@@ -84,7 +84,7 @@ Open Scope fresco_e_scope.
     row fixes the mode to [TC] or [FN _], or wants a non-[◇] subject. *)
 Lemma probe_sub_ghost_ti_not_derivable : forall S0 S1 Θ0 Θ1 Q,
   ~ {{ S0 ↝ S1 ⊨ Θ0 ⊢[ a_sub_mode_sk | mode_ti | pskl_unit ]
-       pskl_hole ⩽ Q ⊣ Θ1 }}e.
+       pskl_ghost ⩽ Q ⊣ Θ1 }}e.
 Proof. intros * Hd. inversion Hd; subst; congruence. Qed.
 
 (* ===================================================================== *)
@@ -92,7 +92,7 @@ Proof. intros * Hd. inversion Hd; subst; congruence. Qed.
 (* ===================================================================== *)
 
 Lemma probe_sub_ghost_ti_runner_none : forall S0 Θ0 HP HP0 HD H,
-  e_sub_impl S0 a_sub_mode_sk mode_ti pskl_unit Θ0 pskl_hole HP HP0 HD H
+  e_sub_impl S0 a_sub_mode_sk mode_ti pskl_unit Θ0 pskl_ghost HP HP0 HD H
   = None.
 Proof.
   intros. unfold e_sub_impl. simp e_sub_call_impl. reflexivity.
@@ -108,7 +108,7 @@ Qed.
 Lemma probe_sub_ghost_ti_under_arrow_not_derivable : forall S0 S1 Θ0 Θ1 Q,
   ~ {{ S0 ↝ S1 ⊨ Θ0 ⊢[ a_sub_mode_sk | (mode_fn mode_ti)
                       | (pskl_arrow pskl_unit pskl_unit) ]
-       (pskl_arrow pskl_unit pskl_hole) ⩽ Q ⊣ Θ1 }}e.
+       (pskl_arrow pskl_unit pskl_ghost) ⩽ Q ⊣ Θ1 }}e.
 Proof.
   intros * Hd. inversion Hd; subst.
   (* the only row at an arrow subject is [SI-Arrow], and its SECOND premise

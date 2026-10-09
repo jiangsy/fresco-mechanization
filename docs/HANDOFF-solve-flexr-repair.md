@@ -96,7 +96,7 @@ side. It does **not** strip `∀`s. Those fresh flexibles are the `Ξ`.
    `(β ~ abind_tvar) ++ Θ`.** The solve used to generate no names; now a
    guess can fire below such a binder and a generated β would be captured by
    the `close`. With β in the context, `β ∈ ftvar_in_aenv` — which
-   `a_guess_mono`'s hole row already avoids — so "the block is apart from β"
+   `a_guess_mono`'s ghost row already avoids — so "the block is apart from β"
    is *derivable*.
 2. **The sibling-premise rows THREAD**: second premise at `Ξ1 ++ Θ`, output
    `Ξ2 ++ Ξ1` (`SS-Arrow`, `SS-GhostLF`, `SE-Arrow`, and `a_solve_cstr__eq`
@@ -173,7 +173,7 @@ Equivariance has no such condition (it carries the context along), and that
 is harmless because every consumer quantifies the context universally.
 
 Packaged in `prop_solve_sub.v`: `a_solve_eq_move_binder`,
-`a_solve_eq_move_binder_tophole_l` / `_tophole_r`,
+`a_solve_eq_move_binder_univ_ghost_l` / `_univ_ghost_r`,
 `a_solve_sub_move_binder_l` / `_r`. The moved premise runs at
 `(α0 ~ tvar) ++ swap_aenv b α0 Θ` — and with §2(3) that context collapses to
 `Θ`, since the rule now gives `b ∉ ftvar_in_aenv Θ`. Supporting:
@@ -221,7 +221,7 @@ side condition: `a_wf_pskl_top_guarded` derives it from the paper's own
    (`Ghost, q` at `type.ml:412`; `UGhost p, q when is_guarded q` at `:457`,
    and `is_guarded (MFlex _) = true`) precede FlexR at `:466`. Rendered as
    the premise `nonghost_pskl P` (`fresco/def_shapes.v`). It costs
-   completeness nothing and it keeps `a_solve_eq_hole_subject_inv` — the
+   completeness nothing and it keeps `a_solve_eq_ghost_subject_inv` — the
    fact the paper uses silently in every `P_i = □` subcase — TRUE.
 3. **The binder rows need `ftvar(Θ)`, and the sibling rows must thread** —
    §2(2), §2(3).
@@ -400,7 +400,7 @@ what P6-Sv's Check row wants.
 4. **A new SE-FlexR case appears in every induction over the solve** — the
    output is `guess^TY`'s PAINT. `pskl_shielded_ftv_ptyp_to_pskl` (a paint
    shields nothing) closes it in the unshielded lemma; elsewhere the paint's
-   hole-freedom is the useful fact.
+   ghost-freedom is the useful fact.
 
 #### What is green and committed
 
@@ -432,8 +432,8 @@ carries no definition, so it can never enter either bound:
 work.** "A ∀ row's binder joins Θtv, never Θr" is false: `forall_syn_tagged`
 puts its binder on the Θr side (`aenv_split_cons_r`, `prop_look_complete_var.v`
 ≈ 2250), so `dom Θr ⊆ dom Θw` is not invariant. `dom Θw` is what both bounds
-actually land in, and the middle lemma is what shuts the refinement's hole
-rule — whose fill is only `dom Θ`-scoped, and a mono paint has no hole.
+actually land in, and the middle lemma is what shuts the refinement's ghost
+rule — whose fill is only `dom Θ`-scoped, and a mono paint has no ghost.
 
 ⚠️ **And the prescribed new premise `κ ∷ Θ0 ⊑ Θw` is NOT invariant either** —
 a ∀ row's binder is rigid in the extended `Θ0` but absent from `Θw`, and
@@ -482,7 +482,7 @@ mechanical.
 
 | name | what it buys |
 |---|---|
-| `solve_ext` + `solve_ext_nil` / `_step` / `_post` / `_post_solve` | the κ-extension package as ONE definition parameterised by a post-condition. Every P6 statement is `solve_ext … Post`; the glue lemmas cover every row that is not the arrow merge or SE-FlexR itself. `_post_solve` keeps the SOLVE derivation in hand (P6-Cv's var row reads hole-freedom off it). |
+| `solve_ext` + `solve_ext_nil` / `_step` / `_post` / `_post_solve` | the κ-extension package as ONE definition parameterised by a post-condition. Every P6 statement is `solve_ext … Post`; the glue lemmas cover every row that is not the arrow merge or SE-FlexR itself. `_post_solve` keeps the SOLVE derivation in hand (P6-Cv's var row reads ghost-freedom off it). |
 | ⭐ `a_guess_mono_ctx_change` | `guess^TY` reads its context ONLY as an avoid-set, so it transports to a **growing** context too, provided the block it generated dodges what the new context mentions. `a_guess_mono_ctx_shrink` had only the shrinking half. The ∀ case re-picks by SWAP. |
 | ⭐ `a_solve_sub_eq_weaken_mid_flex_size` (+ `a_solve_eq_weaken_flex_block`) | moved up from `prop_look_complete_cstr.v` and repaired: the block threads, there is a NEW premise `dom Ξm ∩ dom Ξ = ∅`, and the six ∀ rows re-freshen by `a_solve_*_move_binder*` instead of the double rename. |
 | `a_inc_flex_prefix_split` / `_build`, `all_flex_mono_decls`, `all_flex_mono_ftvar_in_aenv`, `a_wf_aenv_prepend_flex_block` | prepend an aligned wf-mono block to an `a_inc` and to its source context. |
@@ -512,11 +512,11 @@ the merged block is `Ξ2 ++ Ξ1`, the merged extension `κb ++ κa`, and the two
 
 #### ⭐ TWO FACTS ABOUT THE REPAIR THAT KEEP RECURRING
 
-- **`guess^TY`'s output is a PAINT, hence hole-free.** So its precision is
-  Δ-MONOTONE (`ad_ppre_no_hole_subject_delta_mono`) and no Δ-freshness side
+- **`guess^TY`'s output is a PAINT, hence ghost-free.** So its precision is
+  Δ-MONOTONE (`ad_ppre_no_ghost_subject_delta_mono`) and no Δ-freshness side
   condition is needed at an SE-FlexR node. It is also why
-  `a_solve_eq_no_hole_p0` is still true — for a better reason than before.
-- **A ghost subject pins the block to `nil`** (`a_solve_eq_hole_subject_inv`,
+  `a_solve_eq_no_ghost_p0` is still true — for a better reason than before.
+- **A ghost subject pins the block to `nil`** (`a_solve_eq_ghost_subject_inv`,
   true only because of finding 2's `nonghost_pskl`). Every `Pi = □` row is
   therefore a `solve_ext_nil` row, and its extension is `nil` too — get that
   from `keys κ' = keys nil` by `destruct κ'; [ | discriminate ]`.
@@ -575,7 +575,7 @@ SE-Var; `◇` takes SE-GhostL and returns the TARGET — the sharing
 `nonghost_pskl` protects; and `∀◇P` peels by SE-GhostGuarded onto a body that
 wf forces GUARDED, hence nonghost, so one peel always lands on a
 SE-FlexR/SE-Var node.  That peel needs the precision unfolded and re-folded
-along a DEFINITION CHAIN — `ad_ppre_tophole_subject_chain_inv` one way, the
+along a DEFINITION CHAIN — `ad_ppre_univ_ghost_subject_chain_inv` one way, the
 new `ad_ppre_def_chain_fold` the other.
 
 The nine moved-up copies are deleted (one `⚙️ MOVED UP` note in their place),
@@ -680,7 +680,7 @@ a subject that can carry a ghost.  Concretely:
 * `a_solve_eq_cv_mono` — ⛔ **HERE IT BITES.**  In the `Pi = Pi1 → Pi2`,
   `P0 = β̂` branch, `SE-FlexR` is the *only* applicable rule (SE-Var needs a
   variable subject, SE-Arrow needs an arrow target), and `guess^TY` of an
-  arrow subject genuinely invents flexibles for its holes.
+  arrow subject genuinely invents flexibles for its ghosts.
 
 So write this first — everything downstream is a consumer of it:
 
@@ -699,7 +699,7 @@ precision judgment `⊑ᵖ` in place of `⊳`/`⊑`, and it should be *easier*: 
 target is a MONOTYPE, so at a `◇` the extension reads the monotype off that
 position and the obligation becomes reflexivity-at-mono
 (`ptyp_to_pskl τ0 ⊑ᵖ[∅] ptyp_to_uskl_syn τ0`) rather than a refinement
-step.  `ad_ppre__hole` (a ghost is precise into ANYTHING, at `Ψ = ∅`) is what
+step.  `ad_ppre__ghost` (a ghost is precise into ANYTHING, at `Ψ = ∅`) is what
 licenses the descent.  Copy §9's shape — the `L`-bounded context
 quantification is what makes the ∀ case provable, and the freshness output is
 what lets the arrow case merge two extensions without them colliding.
@@ -718,7 +718,7 @@ which is exactly where the freshness component earns its keep.
 
 | lemma | what changes |
 |---|---|
-| `a_solve_eq_hole_subject_inv` | ✅ DONE — now `Ξ = nil /\ P' = P`; stays true only because of finding 2 |
+| `a_solve_eq_ghost_subject_inv` | ✅ DONE — now `Ξ = nil /\ P' = P`; stays true only because of finding 2 |
 | `a_solve_eq_wf` | ⛔ statement must move to `(Ξ ++ Θ) ⨟ Δ ⊢ₚₛᵃ P'` — the output may mention the generated block. Needs a new `a_guess_mono_wf : a_guess_mono Θ P Ξ A -> Θ ⨟ Δ ⊢ₚₛᵃ P -> (Ξ ++ Θ) ⨟ Δ ⊢ₚₛᵃ (ptyp_to_pskl A)`; the ∀ case needs an `a_wf_pskl` *strengthening* that drops a rigid already present in `Δ` |
 | `p6cv_close_leaf` and the five `exists Pa, …` statements at (pre-edit) lines 1393/1574/2396/2601/2670/4662 | the κ-extension above; all six close by SE-Var, so `Ξ := nil`, `κ' := nil` — they are the CHEAP ones, do them first to fix the shape |
 
@@ -770,8 +770,8 @@ builds (`make coq` clean).
    (`uskl_rho_mono_target`: ρ is CONGRUENT at every constructor and
    non-trivial only at a bare VARIABLE, itself a monotype, so a mono-paint
    ρ-IMAGE forces a mono-paint GUESS) plus `a_guess_ty_witness_mono_gen`,
-   whose payloads are Θw-scoped POSITION-WISE (`ppre_hole_payload_wf`:
-   `guess^TY` invents only at `Pi`'s HOLES, which `ad_ppre__hole` already
+   whose payloads are Θw-scoped POSITION-WISE (`ppre_ghost_payload_wf`:
+   `guess^TY` invents only at `Pi`'s HOLES, which `ad_ppre__ghost` already
    keeps Δ-apart).  SE-GhostL gets its cleanliness from that same rule.
 2. **P6-Sv stopped needing `flex_apart_walk`** — every use was a relay into
    P6-Cv's premise.

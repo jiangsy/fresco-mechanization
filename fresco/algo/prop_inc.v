@@ -481,7 +481,7 @@ Proof.
     apply a_tyequiv_pskl. exact Heqv.
   - apply a_pskl_tyequiv__arrow; auto.
   - eapply a_pskl_tyequiv__all; eauto.
-  - apply a_pskl_tyequiv__tophole; auto.
+  - apply a_pskl_tyequiv__univ_ghost; auto.
 Qed.
 
 (* ===================================================================== *)

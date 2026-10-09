@@ -12,9 +12,9 @@
     collapse the relational currency to a functional one.
 
     ⛔ IT IS FALSE, AND THE COUNTEREXAMPLE IS ONE RULE.  [SE-GhostL]
-    ([a_solve_eq__hole_l], algo/def_rules.v) is
+    ([a_solve_eq__ghost_l], algo/def_rules.v) is
 
-        {{ Θ ⊢ₑ pskl_hole ∼ Q ⤳ nil ⨾ Q }}a
+        {{ Θ ⊢ₑ pskl_ghost ∼ Q ⤳ nil ⨾ Q }}a
 
     with NO side condition on [Q] whatsoever.  At a GHOST accumulator the fold
     accepts an arbitrary target and RETURNS IT.  So a constraint carrying an
@@ -43,8 +43,8 @@ Open Scope fresco_a_scope.
 
 (** §1  The one rule that does it: [SE-GhostL] accepts ANY target. *)
 Lemma se_ghostl_accepts_anything : forall Θ Q,
-  {{ Θ ⊢ₑ pskl_hole ∼ Q ⤳ nil ⨾ Q }}a.
-Proof. intros. apply a_solve_eq__hole_l. Qed.
+  {{ Θ ⊢ₑ pskl_ghost ∼ Q ⤳ nil ⨾ Q }}a.
+Proof. intros. apply a_solve_eq__ghost_l. Qed.
 
 (** §2  ⛔ THE REFUTATION.  A constraint whose target is an atom the fold's
     context does NOT bind — a leaked opener, in the exact sense
@@ -54,13 +54,13 @@ Proof. intros. apply a_solve_eq__hole_l. Qed.
     [β ∉ dom Θ]: the fold never looks. *)
 Lemma leaked_opener_folds : forall Θ (β : atom),
   β `notin` dom Θ ->
-  {{ Θ ⊩ (a_cstr_eq (pskl_var_f β) :: nil) ⨾ pskl_hole
+  {{ Θ ⊩ (a_cstr_eq (pskl_var_f β) :: nil) ⨾ pskl_ghost
        ⤳ nil ⨾ (pskl_var_f β) }}a.
 Proof.
   intros Θ β _.
   change (@nil (atom * abind)) with ((@nil (atom * abind)) ++ (@nil (atom * abind))).
   eapply a_solve_cstr__eq.
-  - apply a_solve_eq__hole_l.
+  - apply a_solve_eq__ghost_l.
   - simpl. apply a_solve_cstr__empty.
 Qed.
 
@@ -69,7 +69,7 @@ Qed.
 Lemma leaked_opener_reaches_the_result : forall Θ (β : atom),
   β `notin` dom Θ ->
   exists Ξ Pa,
-    {{ Θ ⊩ (a_cstr_eq (pskl_var_f β) :: nil) ⨾ pskl_hole ⤳ Ξ ⨾ Pa }}a
+    {{ Θ ⊩ (a_cstr_eq (pskl_var_f β) :: nil) ⨾ pskl_ghost ⤳ Ξ ⨾ Pa }}a
     /\ β `in` ftvar_in_pskl Pa.
 Proof.
   intros Θ β Hβ. exists nil, (pskl_var_f β).

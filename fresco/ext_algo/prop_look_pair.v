@@ -290,19 +290,19 @@ Proof.
   split; reflexivity.
 Qed.
 
-Lemma e_looksub_hole_target : forall S0 Θ α m P S1 Ξ C,
-  {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] pskl_hole ⤳ Ξ ⨾ C }}e ->
-  Ξ = nil /\ (C = nil \/ C = a_cstr_sub m pskl_hole :: nil).
+Lemma e_looksub_ghost_target : forall S0 Θ α m P S1 Ξ C,
+  {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] pskl_ghost ⤳ Ξ ⨾ C }}e ->
+  Ξ = nil /\ (C = nil \/ C = a_cstr_sub m pskl_ghost :: nil).
 Proof.
   intros * H.
-  remember pskl_hole as T eqn:HT.
+  remember pskl_ghost as T eqn:HT.
   induction H; inversion HT; subst.
   - (* LS-Var *) split; [ reflexivity | right; reflexivity ].
   - (* LS-Absent *) auto.
   - (* LS-Vacuous *) auto.
   - (* LS-Check: guarded ◇ has no constructor *)
     match goal with
-    | Hg : guarded_pskl pskl_hole |- _ => inversion Hg
+    | Hg : guarded_pskl pskl_ghost |- _ => inversion Hg
     end.
   - (* LS-ForallL *) apply IHe_looksub. reflexivity.
   - (* LS-UnivGhostL *) apply IHe_looksub. reflexivity.
@@ -525,7 +525,7 @@ Proof.
   - (* SE-GhostL: both yields are the raw targets — and they are PAIRED *)
     inversion Hrel; subst.
     exists nil, nil, (pskl_var_f t2).
-    split; [ apply a_solve_eq__hole_l | ].
+    split; [ apply a_solve_eq__ghost_l | ].
     split; [ reflexivity | ]. split; [ reflexivity | ].
     split; [ solve_uniq | ]. split; [ simpl; clear; fsetdec | ].
     simpl. apply rel_pskl__var_f. exact Hrat.
@@ -539,7 +539,7 @@ Proof.
       as (ρn & Ξh2 & mid2 & Hd2 & E1 & E2 & Hu & HL & Hyield).
     exists ρn, Ξh2, mid2.
     split.
-    { apply a_solve_eq__tophole_l_guarded;
+    { apply a_solve_eq__univ_ghost_l_guarded;
         [ apply guarded_pskl__var | exact Hd2 ]. }
     split; [ exact E1 | ]. split; [ exact E2 | ].
     split; [ exact Hu | ]. split; [ exact HL | ].
@@ -737,20 +737,20 @@ Proof.
         | assumption
         | assumption ]
     end.
-  - (* SE-GhostL *) apply e_solve_eq__hole_l.
-  - (* SE-VacuousR *) apply e_solve_eq__hole_r.
+  - (* SE-GhostL *) apply e_solve_eq__ghost_l.
+  - (* SE-VacuousR *) apply e_solve_eq__ghost_r.
   - (* SE-Arrow *) eapply e_solve_eq__arrow; ctx_equiv_ih.
   - (* SE-Forall *)
     eapply e_solve_eq__forall; [ eassumption | ctx_equiv_ih ].
-  - (* SE-UnivGhost *) apply e_solve_eq__tophole_both; ctx_equiv_ih.
+  - (* SE-UnivGhost *) apply e_solve_eq__univ_ghost_both; ctx_equiv_ih.
   - (* SE-GhostForall *)
-    eapply e_solve_eq__tophole_l_all; [ eassumption | ctx_equiv_ih ].
+    eapply e_solve_eq__univ_ghost_l_all; [ eassumption | ctx_equiv_ih ].
   - (* SE-GhostGuarded *)
-    apply e_solve_eq__tophole_l_guarded; [ assumption | ctx_equiv_ih ].
+    apply e_solve_eq__univ_ghost_l_guarded; [ assumption | ctx_equiv_ih ].
   - (* SE-ForallGhost *)
-    eapply e_solve_eq__all_l_tophole; [ eassumption | ctx_equiv_ih ].
+    eapply e_solve_eq__all_l_univ_ghost; [ eassumption | ctx_equiv_ih ].
   - (* SE-GuardedGhost *)
-    apply e_solve_eq__tophole_r_guarded; [ assumption | ctx_equiv_ih ].
+    apply e_solve_eq__univ_ghost_r_guarded; [ assumption | ctx_equiv_ih ].
 Qed.
 
 Lemma e_solve_cstr_ctx_equiv : forall S0 Θ C P S1 Ξ P',
@@ -955,7 +955,7 @@ Local Ltac look_pair_flx :=
           end ].
 
 (** ⚠️⚠️ THE ATOM IS READ OFF [Hf], NEVER LEFT AS AN EVAR: an [assert] with a
-    hole makes [fsetdec] chase it, and that is the tree's oldest performance
+    ghost makes [fsetdec] chase it, and that is the tree's oldest performance
     trap. *)
 (** ⚠️⚠️ NO SEARCH HERE.  A [match goal] version hangs: it must guess which
     scope hypothesis to use, and every wrong guess pays an exponential
@@ -1078,7 +1078,7 @@ Proof.
       do 2 eexists.
       split.
       { eapply a_solve_cstr__eq;
-          [ apply a_solve_eq__hole_r | apply a_solve_cstr__empty ]. }
+          [ apply a_solve_eq__ghost_r | apply a_solve_cstr__empty ]. }
       split; [ reflexivity | ]. split; [ reflexivity | ].
       split; [ auto | ]. split; [ simpl; clear; fsetdec | ].
       split; [ intros a b Hin; inversion Hin | ].
@@ -1790,7 +1790,7 @@ Proof.
       by (apply rel_pskl_extend_pair; exact Hrelacc).
 
     assert (Hsz' : size_pskl (open_pskl_wrt_pskl P (pskl_var_f β1n))
-                   + size_pskl (pskl_tophole P') < n)
+                   + size_pskl (pskl_univ_ghost P') < n)
       by (rewrite ! size_pskl_open_pskl_wrt_pskl_var;
           clear - Hsz; simpl in *; lia).
     assert (Hrs' : rel_pskl ((β1n, sf) :: ρ) V
@@ -1798,15 +1798,15 @@ Proof.
               (open_pskl_wrt_pskl Q2s (pskl_var_f sf)))
       by (apply rel_pskl_open_pair; exact Hrs).
     assert (Hrt' : rel_pskl ((β1n, sf) :: ρ) V
-              (pskl_tophole P') (pskl_tophole Q2t))
+              (pskl_univ_ghost P') (pskl_univ_ghost Q2t))
       by (apply rel_pskl_extend_pair; exact HrelP').
     assert (Hcov1' : V ∪ ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f β1n))
-              ∪ ftvar_in_pskl (pskl_tophole P') [<=] add β1n Sa0).
+              ∪ ftvar_in_pskl (pskl_univ_ghost P') [<=] add β1n Sa0).
     { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f β1n))
           as Hup1.
       clear - Hcov1 Hup1. simpl in *. fsetdec. }
     assert (Hcov2' : V ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q2s (pskl_var_f sf))
-              ∪ ftvar_in_pskl (pskl_tophole Q2t) [<=] add sf Sb0).
+              ∪ ftvar_in_pskl (pskl_univ_ghost Q2t) [<=] add sf Sb0).
     { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q2s (pskl_var_f sf))
           as Hup1.
       clear - Hcov2 Hup1. simpl in *. fsetdec. }
@@ -1952,24 +1952,24 @@ Proof.
     assert (Hrelacc' : rel_pskl ((β1n, sf) :: ρ) V acc1 acc2)
       by (apply rel_pskl_extend_pair; exact Hrelacc).
 
-    assert (Hsz' : size_pskl (pskl_tophole P)
+    assert (Hsz' : size_pskl (pskl_univ_ghost P)
                    + size_pskl (open_pskl_wrt_pskl P' (pskl_var_f β1n)) < n)
       by (rewrite ! size_pskl_open_pskl_wrt_pskl_var;
           clear - Hsz; simpl in *; lia).
     assert (Hrs' : rel_pskl ((β1n, sf) :: ρ) V
-              (pskl_tophole P) (pskl_tophole Q2s))
+              (pskl_univ_ghost P) (pskl_univ_ghost Q2s))
       by (apply rel_pskl_extend_pair; exact HrelP).
     assert (Hrt' : rel_pskl ((β1n, sf) :: ρ) V
               (open_pskl_wrt_pskl P' (pskl_var_f β1n))
               (open_pskl_wrt_pskl Q2t (pskl_var_f sf)))
       by (apply rel_pskl_open_pair; exact Hrt).
-    assert (Hcov1' : V ∪ ftvar_in_pskl (pskl_tophole P)
+    assert (Hcov1' : V ∪ ftvar_in_pskl (pskl_univ_ghost P)
               ∪ ftvar_in_pskl (open_pskl_wrt_pskl P' (pskl_var_f β1n))
               [<=] add β1n Sa0).
     { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P' (pskl_var_f β1n))
           as Hup1.
       clear - Hcov1 Hup1. simpl in *. fsetdec. }
-    assert (Hcov2' : V ∪ ftvar_in_pskl (pskl_tophole Q2s)
+    assert (Hcov2' : V ∪ ftvar_in_pskl (pskl_univ_ghost Q2s)
               ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q2t (pskl_var_f sf))
               [<=] add sf Sb0).
     { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q2t (pskl_var_f sf))
@@ -2142,7 +2142,7 @@ Proof.
         end
       | (* ⫯ subject: not guarded *)
         match goal with
-        | Hgd : guarded_pskl (pskl_tophole _) |- _ => inversion Hgd
+        | Hgd : guarded_pskl (pskl_univ_ghost _) |- _ => inversion Hgd
         end ].
     revert Hs. simp e_lookeq_impl.
     match goal with
@@ -2354,7 +2354,7 @@ Proof.
         end
       | (* ⫯ subject: not guarded *)
         match goal with
-        | Hgd : guarded_pskl (pskl_tophole _) |- _ => inversion Hgd
+        | Hgd : guarded_pskl (pskl_univ_ghost _) |- _ => inversion Hgd
         end ].
     assert (Hgd2 : guarded_pskl P2')
       by (eapply rel_pskl_guarded; [ exact HrelP' | assumption ]).
@@ -4126,7 +4126,7 @@ Proof.
       split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
     + (* ◇ target — the spec collapse; only the runner's outputs matter *)
       destruct s as [r Hr]. simpl in *.
-      destruct (e_looksub_hole_target Hr) as [EΞ2 EC2].
+      destruct (e_looksub_ghost_target Hr) as [EΞ2 EC2].
       destruct EC2 as [ -> | -> ].
       * exists (@nil (atom * abind)). eexists.
         split; [ apply a_solve_cstr__empty | ].
@@ -4581,7 +4581,7 @@ Proof.
                      | clear - Hcov2; simpl in *; fsetdec ].
     + (* ◇ target — the spec collapse *)
       destruct s as [r Hr]. simpl in *.
-      destruct (e_looksub_hole_target Hr) as [EΞ2 EC2].
+      destruct (e_looksub_ghost_target Hr) as [EΞ2 EC2].
       destruct EC2 as [ -> | -> ].
       * exists (@nil (atom * abind)). eexists.
         split; [ apply a_solve_cstr__empty | ].
@@ -4694,7 +4694,7 @@ Lemma e_extract_impl_complete : forall S0 Θ0 NM α m P P'
     (H : e_extract_order S0 Θ0 NM α m P P')
     Ξl 𝒞l Ξs1 Q1 Sh0 Sh1 Sf1,
   {{ Sh0 ↝ Sh1 ⊨ Θ0 ⊢ P ≼[ α , m ] P' ⤳ Ξl ⨾ 𝒞l }}e ->
-  {{ Sh1 ↝ Sf1 ⊨ (Ξl ++ Θ0) ⊩ 𝒞l ⨾ pskl_hole ⤳ Ξs1 ⨾ Q1 }}e ->
+  {{ Sh1 ↝ Sf1 ⊨ (Ξl ++ Θ0) ⊩ 𝒞l ⨾ pskl_ghost ⤳ Ξs1 ⨾ Q1 }}e ->
   add α (ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] Sh0 ->
   add α (ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] S0 ->
   e_extract_impl S0 Θ0 NM α m P P' HP HP' H <> None.
@@ -4755,14 +4755,14 @@ Proof.
   (* the HYGIENIC fold rigid-weakens to the enriched context (its
      freshness reads the supply), then projects to the a-side fold *)
   assert (Hcovf : ftvar_in_aenv Θf1 ∪ ftvar_in_a_cstrs 𝒞l
-            ∪ ftvar_in_pskl pskl_hole [<=] Sh1).
+            ∪ ftvar_in_pskl pskl_ghost [<=] Sh1).
   { unfold Θf1. rewrite ! ftvar_in_aenv_app. rewrite Hr1f. simpl.
     assert (Hx : ftvar_in_aenv Ξl [<=] Sh1) by (clear - Hbl1a Hbf1; fsetdec).
     assert (Hy : ftvar_in_a_cstrs 𝒞l [<=] Sh1)
       by (clear - Htight1 HcovH HgrH; fsetdec).
     assert (Hz : ftvar_in_aenv Θ0 [<=] Sh1) by (clear - HcovH HgrH; fsetdec).
     clear - Hx Hy Hz. fsetdec. }
-  assert (Hfold1 : {{ Θf1 ⊩ 𝒞l ⨾ pskl_hole ⤳ Ξs1 ⨾ Q1 }}a).
+  assert (Hfold1 : {{ Θf1 ⊩ 𝒞l ⨾ pskl_ghost ⤳ Ξs1 ⨾ Q1 }}a).
   { eapply e_solve_cstr_sound; [ | exact Hcovf ].
     unfold Θf1. apply e_solve_cstr_weaken_rigid; [ exact Hhf | exact Hrig1 ]. }
   (* ---- the look-pair fold: the runner-side fold ---- *)
@@ -4845,10 +4845,10 @@ Proof.
   { assert (Hx : ftvar_in_pskl P ∪ ftvar_in_pskl P' [<=] ftvar_in_aenv Θf2)
       by (clear - HVf2; unfold V in HVf2; fsetdec).
     clear - Htight2 HS1f2 Hx. fsetdec. }
-  assert (Hscp1 : V ∪ cols_l nil ∪ ftvar_in_pskl pskl_hole
+  assert (Hscp1 : V ∪ cols_l nil ∪ ftvar_in_pskl pskl_ghost
             ∪ ftvar_in_a_cstrs 𝒞l [<=] ftvar_in_aenv Θf1)
     by (simpl; clear - HVf1 Hcs1; fsetdec).
-  assert (Hscp2 : V ∪ cols_r nil ∪ ftvar_in_pskl pskl_hole
+  assert (Hscp2 : V ∪ cols_r nil ∪ ftvar_in_pskl pskl_ghost
             ∪ ftvar_in_a_cstrs (lk_cstrs r1) [<=] ftvar_in_aenv Θf2)
     by (simpl; clear - HVf2 Hcs2; fsetdec).
   pose proof (@look_pair_fold_sub (S (size_pskl P + size_pskl P'))
@@ -4859,7 +4859,7 @@ Proof.
                 ltac:(unfold V; clear; fsetdec)
                 ltac:(simpl; clear; fsetdec)
                 ltac:(simpl; clear; fsetdec)
-                Hfold1 (rel_pskl__hole nil V) Hagr
+                Hfold1 (rel_pskl__ghost nil V) Hagr
                 Hb1 Hb2 Hop1 Hop2 Henr1 Henr2 Hscp1 Hscp2
                 ltac:(clear - HcovH; unfold V; fsetdec)
                 ltac:(clear - Hcov0; unfold V; fsetdec)
@@ -4882,15 +4882,15 @@ Proof.
   simpl in Hfold2.
   (* ---- stage 2: the runner's fold answers (level 3) ---- *)
   assert (Hagr2 : flex_agree
-            (ftvar_in_pskl pskl_hole ∪ ftvar_in_a_cstrs (lk_cstrs r1))
+            (ftvar_in_pskl pskl_ghost ∪ ftvar_in_a_cstrs (lk_cstrs r1))
             Θf2 (lk_block r1 ++ Θ0)).
   { intros x _. unfold Θf2.
     apply a_flex_tvar_rigid_prefix_iff. exact Hrig2. }
-  assert (Hscpf : ftvar_in_pskl pskl_hole ∪ ftvar_in_a_cstrs (lk_cstrs r1)
+  assert (Hscpf : ftvar_in_pskl pskl_ghost ∪ ftvar_in_a_cstrs (lk_cstrs r1)
             [<=] ftvar_in_aenv Θf2)
     by (clear - Hscp2; simpl in *; fsetdec).
   assert (Hcovf2 : ftvar_in_aenv (lk_block r1 ++ Θ0)
-            ∪ ftvar_in_pskl pskl_hole ∪ ftvar_in_a_cstrs (lk_cstrs r1)
+            ∪ ftvar_in_pskl pskl_ghost ∪ ftvar_in_a_cstrs (lk_cstrs r1)
             [<=] lk_supply r1).
   { rewrite ftvar_in_aenv_app. simpl.
     assert (Hx : ftvar_in_aenv (lk_block r1) [<=] lk_supply r1)
@@ -4920,7 +4920,7 @@ Qed.
 Lemma e_extract_run_complete : forall S0 Θ0 NM α m P P' HP HP'
     Ξl 𝒞l Ξs1 Q1 Sh0 Sh1 Sf1,
   {{ Sh0 ↝ Sh1 ⊨ Θ0 ⊢ P ≼[ α , m ] P' ⤳ Ξl ⨾ 𝒞l }}e ->
-  {{ Sh1 ↝ Sf1 ⊨ (Ξl ++ Θ0) ⊩ 𝒞l ⨾ pskl_hole ⤳ Ξs1 ⨾ Q1 }}e ->
+  {{ Sh1 ↝ Sf1 ⊨ (Ξl ++ Θ0) ⊩ 𝒞l ⨾ pskl_ghost ⤳ Ξs1 ⨾ Q1 }}e ->
   add α (ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] Sh0 ->
   add α (ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] S0 ->
   e_extract_run S0 Θ0 NM α m P P' HP HP' <> None.

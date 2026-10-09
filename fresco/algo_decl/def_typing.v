@@ -147,17 +147,17 @@ Inductive ad_pat : mode -> aenv -> exp -> bskl -> Prop :=
     {{ Θ ⊢ˢ[ m ] (exp_app e1 e2) ⦂ Q2 }}ad
 | ad_pat__abs_check : forall L Θ e P,                        (* P-AbsCheck *)
     (forall x, x `notin` L ->
-       {{ ((x ~ abind_var_skl pskl_hole) ++ Θ) ⊢ˢ[ mode_tc ]
+       {{ ((x ~ abind_var_skl pskl_ghost) ++ Θ) ⊢ˢ[ mode_tc ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ (pskl_to_bskl_syn P) }}ad) ->
     {{ Θ ⊢ˢ[ mode_tc ] (exp_abs e)
-      ⦂ (bskl_tophole (bskl_arrow bskl_hole (pskl_to_bskl_syn P))) }}ad
+      ⦂ (bskl_univ_ghost (bskl_arrow bskl_ghost (pskl_to_bskl_syn P))) }}ad
 | ad_pat__abs_anno_check : forall L Θ e A P,             (* P-AbsAnnoCheck *)
     a_wf_ptyp Θ A ->
     (forall x, x `notin` L ->
        {{ ((x ~ abind_var_typ A) ++ Θ) ⊢ˢ[ mode_tc ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ (pskl_to_bskl_syn P) }}ad) ->
     {{ Θ ⊢ˢ[ mode_tc ] (exp_abs_anno A e)
-      ⦂ (bskl_tophole (bskl_arrow (btyp_to_bskl (ptyp_to_btyp_syn A))
+      ⦂ (bskl_univ_ghost (bskl_arrow (btyp_to_bskl (ptyp_to_btyp_syn A))
                                   (pskl_to_bskl_syn P))) }}ad
 where "{{ Θ ⊢ˢ[ M ] e ⦂ Q }}ad" := (ad_pat M Θ e Q) : fresco_ad_scope.
 

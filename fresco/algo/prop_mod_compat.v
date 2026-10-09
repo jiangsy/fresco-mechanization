@@ -51,8 +51,8 @@ Lemma a_sk_mode_compat_arrow_inv : forall m P Q,
   exists m', m = mode_fn m' /\ a_sk_mode_compat m' Q.
 Proof. intros * H; inversion H; subst; eauto. Qed.
 
-Lemma a_sk_mode_compat_hole_inv : forall m,
-  a_sk_mode_compat m pskl_hole -> m = mode_ti \/ m = mode_tc.
+Lemma a_sk_mode_compat_ghost_inv : forall m,
+  a_sk_mode_compat m pskl_ghost -> m = mode_ti \/ m = mode_tc.
 Proof. intros * H; inversion H; auto. Qed.
 
 Lemma mod_comp_sk_ti_inv : forall Q, mod_comp_sk Q mode_ti -> is_sskl Q.
@@ -82,8 +82,8 @@ Lemma a_sk_mode_compat_mod_comp_sk : forall M P0,
   a_sk_mode_compat M P0 -> mod_comp_sk (pskl_to_bskl_inh P0) M.
 Proof.
   intros M P0 H; induction H; simpl.
-  - apply mod_comp_sk__ti; apply is_sskl__hole.
-  - apply mod_comp_sk__tc; apply is_sskl__hole.
+  - apply mod_comp_sk__ti; apply is_sskl__ghost.
+  - apply mod_comp_sk__tc; apply is_sskl__ghost.
   - apply mod_comp_sk__fn; assumption.
 Qed.
 
@@ -95,10 +95,10 @@ Qed.
     not with type-inference soundness) because each pair is ONE fact at two
     sorts; [algo/typing/prop_scope.v] needs the TY ones without needing the
     theorem they used to travel with. *)
-Lemma a_ty_mode_compat_hole_inv : forall m,
-  a_ty_mode_compat m pskl_hole -> m = mode_ti.
+Lemma a_ty_mode_compat_ghost_inv : forall m,
+  a_ty_mode_compat m pskl_ghost -> m = mode_ti.
 Proof.
-  intros m H. remember pskl_hole as Ps eqn:HPs.
+  intros m H. remember pskl_ghost as Ps eqn:HPs.
   destruct H.
   - reflexivity.
   - destruct A; simpl in HPs; discriminate.

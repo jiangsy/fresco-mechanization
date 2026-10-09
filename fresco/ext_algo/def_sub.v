@@ -65,7 +65,7 @@ Reserved Notation "{{ S0 ↝ S1 ⊨ Θ ⊢[ N | m | P0 ] P ⩽ Q ⊣ Θ' }}e"
 Inductive e_sub : supply -> a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl
                   -> supply -> aenv -> Prop :=
 | e_sub__infer : forall S NM P Θ0,                            (* Infer *)
-    {{ S ↝ S ⊨ Θ0 ⊢[ NM | mode_ti | pskl_hole ] P ⩽ P ⊣ Θ0 }}e
+    {{ S ↝ S ⊨ Θ0 ⊢[ NM | mode_ti | pskl_ghost ] P ⩽ P ⊣ Θ0 }}e
 | e_sub__check : forall S0 S1 Θ0 Θ1 A B,                      (* Check *)
     pskl_ghost_free A -> pskl_ghost_free B ->
     guarded_pskl A -> guarded_pskl B ->
@@ -87,8 +87,8 @@ Inductive e_sub : supply -> a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl
        A ⩽ (pskl_all_syn B) ⊣ Θ1 }}e
 | e_sub__univ_ghost_r : forall S Θ0 P,                        (* UnivGhostR *)
     guarded_pskl P ->
-    {{ S ↝ S ⊨ Θ0 ⊢[ a_sub_mode_sk | mode_tc | pskl_hole ]
-       P ⩽ (pskl_tophole P) ⊣ Θ0 }}e
+    {{ S ↝ S ⊨ Θ0 ⊢[ a_sub_mode_sk | mode_tc | pskl_ghost ]
+       P ⩽ (pskl_univ_ghost P) ⊣ Θ0 }}e
 | e_sub__flex_mono : forall S0 S1 NM M P0 Θ0 Θ1 α Q,          (* FlexMono *)
     e_sub_flex S0 NM M P0 Θ0 nil α Q S1 Θ1 ->
     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ NM | (mode_fn M) | P0 ]
@@ -104,7 +104,7 @@ Inductive e_sub : supply -> a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl
        for by the supply, which is what makes [uniq (Ξ ++ Θ0)] derivable
        (ext_algo/prop_look.v §4) — it is therefore NOT a premise here. *)
     M <> mode_ti ->
-    (guarded_pskl P0 \/ P0 = pskl_hole) ->
+    (guarded_pskl P0 \/ P0 = pskl_ghost) ->
     α `notin` S0 ->
     {{ (add α S0) ↝ S1 ⊨ Θ0 ⊢ (open_pskl_wrt_pskl P (pskl_var_f α))
        ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ P1 }}e ->
@@ -115,12 +115,12 @@ Inductive e_sub : supply -> a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl
 | e_sub__ghost : forall S M Θ0 P0,                            (* Ghost *)
     (* Δ-none: the a-side's guard verbatim — see its header there. *)
     M <> mode_ti ->
-    {{ S ↝ S ⊨ Θ0 ⊢[ a_sub_mode_sk | M | P0 ] pskl_hole ⩽ P0 ⊣ Θ0 }}e
+    {{ S ↝ S ⊨ Θ0 ⊢[ a_sub_mode_sk | M | P0 ] pskl_ghost ⩽ P0 ⊣ Θ0 }}e
 | e_sub__univ_ghost_l : forall S0 S1 M Θ0 Θ1 P0 P Q,          (* UnivGhostL *)
     M <> mode_ti ->
     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ a_sub_mode_sk | M | P0 ] P ⩽ Q ⊣ Θ1 }}e ->
     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ a_sub_mode_sk | M | P0 ]
-       (pskl_tophole P) ⩽ Q ⊣ Θ1 }}e
+       (pskl_univ_ghost P) ⩽ Q ⊣ Θ1 }}e
 
 with e_sub_flex : supply -> a_sub_mode -> mode -> pskl -> aenv -> aenv -> atom
                   -> pskl -> supply -> aenv -> Prop :=

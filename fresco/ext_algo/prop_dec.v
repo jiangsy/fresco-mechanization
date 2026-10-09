@@ -139,7 +139,7 @@ Proof.
   inversion Hbd; subst; simpl; apply IH; exact Htl.
 Qed.
 
-Lemma hole_ck_complete : forall P, P = pskl_hole -> hole_ck P = true.
+Lemma ghost_ck_complete : forall P, P = pskl_ghost -> ghost_ck P = true.
 Proof. intros P ->; reflexivity. Qed.
 
 Lemma pskl_eqb_complete : forall P Q, P = Q -> pskl_eqb P Q = true.

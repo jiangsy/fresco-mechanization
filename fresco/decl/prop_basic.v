@@ -39,7 +39,7 @@ Proof.
   intros B H. induction H; eauto.
 Qed.
 
-Lemma is_ttyp_lc : forall C, is_ttyp C -> lc_utyp C.
+Lemma is_dtyp_lc : forall C, is_dtyp C -> lc_utyp C.
 Proof.
   intros C H. induction H; eauto.
 Qed.
@@ -73,6 +73,6 @@ Proof.
       [ exact H | exact H0 | exact H1 | clear - H2 Heq; fsetdec ].
   - eapply d_tags_skl__all_tag;
       [ exact H | exact H1 | clear - H2 Heq; fsetdec ].
-  - apply d_tags_skl__holeg; fsetdec.
-  - apply d_tags_skl__topholeg; apply IHd_tags_skl; exact Heq.
+  - apply d_tags_skl__dot_ghost; fsetdec.
+  - apply d_tags_skl__dot_univ_ghost; apply IHd_tags_skl; exact Heq.
 Qed.

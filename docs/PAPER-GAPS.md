@@ -231,7 +231,7 @@ dispatches by match order, the figure owes an exclusion premise.**
 
 `U-FlexL` (`algorithmic.tex:757`) and `U-FlexR` (`:764`) carry only
 `nonflex{P_0}` / `nonflex{P}`.  That predicate rules out a flexible
-VARIABLE — **it does not rule out a hole** — so at
+VARIABLE — **it does not rule out a ghost** — so at
 
 ```
     pattern ◇,  subject α̂   (α̂ an undefined flexible)
@@ -246,7 +246,7 @@ TWO rules fire, and they disagree on the OUTPUT CONTEXT:
 | `U-FlexL` / `U-FlexR`  | `α̂` SOLVED to `guess^TY(◇)`, a fresh unconstrained flexible |
 
 ⭐ **The implementation never takes the second route.**  Its consistency
-clause matches the PATTERN first and the hole arm is unconditional in the
+clause matches the PATTERN first and the ghost arm is unconditional in the
 subject, so a `◇` pattern always answers by `GhostR`; the mirror arm bars
 `FlexR` at a `◇` subject.  This is exactly the situation the paper's own
 `SolE-FlexR` is in, where the mechanization already carries
@@ -264,7 +264,7 @@ The extra binding introduces an unconstrained alias; this example does
 not refute optimality.  It does distinguish literal output contexts and
 cannot be explained by a bijective renaming, because their lengths
 differ.  The configuration is reachable
-(`cex/probe_pat_presents_hole_flex.v`).
+(`cex/probe_pat_presents_ghost_flex.v`).
 
 The guards enforce the implementation's ghost-first dispatch.  The
 minimal example justifies a distinction between exact outputs and
@@ -274,7 +274,7 @@ the two concrete witnesses prove a general transport theorem for
 unguarded consistency derivations.
 
 **What the mechanization does**: `a_consis__flex_l` carries
-`P0 <> pskl_hole` and `a_consis__flex_r` carries `P <> pskl_hole`
+`P0 <> pskl_ghost` and `a_consis__flex_r` carries `P <> pskl_ghost`
 (`fresco/algo/def_rules.v`), with the `ext_algo` twins identical.
 Completeness is UNAFFECTED — `a_consis_complete` is re-proved with the
 guards, by trying `C-GhostR` BEFORE the two flexible layers (the
@@ -1144,7 +1144,7 @@ DESIGN-subtyping.md §3.1:
 
 ⭐ The mechanism is the paper's own asymmetry: **consistency's ∀-rows put
 the rigid `X` into `Θ`, so the ghost's fill may capture it; refinement's
-∀-row puts it into `Δ` and the hole rule's fill is `Δ`-free** — which is
+∀-row puts it into `Δ` and the ghost rule's fill is `Δ`-free** — which is
 precisely the no-capture discipline the augmented consistency solution was
 introduced to enforce.
 
@@ -1278,7 +1278,7 @@ proved.
    there, namely that `guess^TY`'s fills are the generated flexibles,
    which live in Θ and are therefore Δ-free as the `□` rule requires.
    Note also that a universal ghost `⫯.P` is DROPPED by `guess^TY`, so its
-   row is refinement's `tophole_remove`, not `tophole_keep`.
+   row is refinement's `univ_ghost_remove`, not `univ_ghost_keep`.
 
 ## MISSING LEMMA — ✅ SUPPLIED BY THE MECH (2026-08-06) — `thm:sound-skeleton-inference`, AbsAnno: "preservation of refinement under type equivalence" is asserted inline and never stated
 
@@ -1747,7 +1747,7 @@ follow the paper.  It only upgrades our verdict on someone else's code.
 > Ghost rule, which demanded a well-formed fill (`Θ ⨟ ∅ ⊢ P`) — the paper's
 > Ghost rule never did; it only asks `Δ ∩ ftv(fill) = ∅`.  Since the refinement
 > rules were made faithful to the paper (commit `51122ada`) the composite is
-> derivable (`hole_to_Bres`) and the refutation is gone.  What stands: the rules
+> derivable (`ghost_to_Bres`) and the refutation is gone.  What stands: the rules
 > alone derive an ILL-FORMED output from a well-formed input
 > (`ad_refine_syn_output_not_wf`, same file), and transitivity — hence this
 > lemma — is PROVED under the wf presupposition.  Whether the lemma holds
@@ -1770,7 +1770,7 @@ follow the paper.  It only upgrades our verdict on someone else's code.
   `ad_precise_preserves_refine` (the paper's lemma, a direct corollary).
 - Proof shape, for the authors: OUTER induction on the second derivation, INNER
   induction on the first to peel the left-hand administrative rules
-  (`tophole_remove` / `flex_l`, which shrink the left skeleton while the right
+  (`univ_ghost_remove` / `flex_l`, which shrink the left skeleton while the right
   stands still).  Every case whose left side is a ghost needs the crux: *assuming
   the result is well-formed*, whatever a syn painting refines to is a syn painting
   of a skeleton well-formed at the EMPTY Δ — which is what re-applying the Ghost
@@ -1778,12 +1778,12 @@ follow the paper.  It only upgrades our verdict on someone else's code.
 - RELATED, also unproved but TRUE (algorithmic.tex:537): "Since `inh{Q}` is
   inherited, the refinement relation cannot fill Q with more quantifiers, but can
   only fill with monotypes and remove universal ghosts."  This holds because
-  `tophole_fill`'s right-hand side is `syn{∀…}` — a SYNTHESISED quantifier — so
+  `univ_ghost_fill`'s right-hand side is `syn{∀…}` — a SYNTHESISED quantifier — so
   the rule cannot fire against an INHERITED painting.  It is the exact dual of the
   fact our proof turns on (a SYN painting on the LEFT can never fire the `all`
   rule, hence Δ never grows).  The paper could cite it to shorten its own proof;
   our `ad_refine_syn_trans` is strictly stronger (general transitivity) and so has
-  to handle `tophole_fill` rather than rule it out.
+  to handle `univ_ghost_fill` rather than rule it out.
 
 ## RESOLVED (was FALSE) — refinement does not preserve wf; wf is carried by the STATEMENTS
 > ⚠️ **NON-TRANSITIVITY HALF RETRACTED 2026-10-08.**  The witness below shows
@@ -1794,7 +1794,7 @@ follow the paper.  It only upgrades our verdict on someone else's code.
 > may only produce a WELL-FORMED skeleton" described the MECH's old Ghost rule,
 > which checked the fill's wf; the paper's Ghost rule only asks the fill to
 > avoid Δ, and `∀α. ∀◇(α→α)` is closed, so the last step IS derivable
-> (`hole_to_Bres`).  The mech rules now follow the paper verbatim (commit
+> (`ghost_to_Bres`).  The mech rules now follow the paper verbatim (commit
 > `51122ada`), including the "minor discrepancy" noted below (`__all` now
 > extends both Δ and the context).  The MECHANIZED list below names lemmas as
 > they then stood; the current kit is in WF-SIDE-CONDITIONS.md §1.
@@ -1823,7 +1823,7 @@ follow the paper.  It only upgrades our verdict on someone else's code.
   quantifier's variable in `Δ`, while a `∀◇`-ghost's body must be well-formed
   at the EMPTY `Δ`.  Hence transitivity — and precision-preserves-refinement
   — fail.
-- The MECH rule is FAITHFUL here (`ad_refine_syn__tophole_fill` puts `α` in
+- The MECH rule is FAITHFUL here (`ad_refine_syn__univ_ghost_fill` puts `α` in
   the context and leaves `Δ` alone), so this is a paper-level problem, not an
   encoding slip.  (Unrelated minor discrepancy: mech's `ad_refine_syn__all`
   adds the variable only to `Δ`, where the paper adds it to both `Δ` and `Γ`.)
@@ -1870,10 +1870,10 @@ follow the paper.  It only upgrades our verdict on someone else's code.
   (`a_non_flex Θ0 ⌊S⌋ˢ`, `Θ0 ⊲[·] α ≔ ⌊S⌋ˢ ⊣ Θ1`) — strictly more
   derivations than the paper's rule.
 - The over-general rule makes the soundness lemma FALSE.  Counter-example:
-  take `S = ●` (a DOTTED hole, `uskl_holeg`).  Then `⌊S⌋ˢ = □`, which is
+  take `S = ●` (a DOTTED ghost, `uskl_dot_ghost`).  Then `⌊S⌋ˢ = □`, which is
   non-flex and assignable (`guess^TY(□)` is a fresh monovar), so the mech
   FlexR fires and yields `Θ0 ⊢ᵗ[…|α̂|·] ● ≈ α̂ ⊣ Θ1`.  Soundness would then
-  demand `· ⨟ Θ1 ⊨ ● ≈ α̂`; but the only consistency rule with a dotted hole
+  demand `· ⨟ Θ1 ⊨ ● ≈ α̂`; but the only consistency rule with a dotted ghost
   on the left (`GhostG`) forces the right-hand side to be `□` itself, while
   `α̂` is defined to a monotype — unprovable.  The paper's rule never
   produces this, because `●` is not in the image of `pskl_to_uskl`.
@@ -1933,7 +1933,7 @@ follow the paper.  It only upgrades our verdict on someone else's code.
   names can only reach the solve node through `F`, so `a_unify` and
   `a_consis` now carry the used-name set too (their skip/assign rules
   accumulate the walked head; all other rules pass `F` through).  Without
-  it, `a_guess_mono__hole` may pick a walked head's name and re-attaching
+  it, `a_guess_mono__ghost` may pick a walked head's name and re-attaching
   that head breaks context well-formedness — i.e. wf-preservation (and Δ-
   invariant preservation) would be FALSE for the mutual definitions.
   The invariant-preservation lemmas are now PROVED as conjuncts of the
@@ -2167,7 +2167,7 @@ standalone 2-condition Definition of consistency solutions is commented out
 in algorithmic.tex.  The third condition is NOT derivable from the other
 two: on `(P0 = ∀X.X, P = ∀X.◇, Q = ∀X.X)` the join and the fill hold (the
 capturing `X` sits at a concrete position of `P0`, so the fill premise never
-inspects it; the join's hole rule checks the fill's well-formedness over the
+inspects it; the join's ghost rule checks the fill's well-formedness over the
 binder-EXTENDED context), the subject refinement fails, and the algorithm is
 stuck (its Ghost rule carries `Δ2 ∩ ftv(fill) = ∅`, and the ∀-step puts the
 binder in both Δs — by design, so that soundness outputs refine both
@@ -2179,7 +2179,7 @@ The subtyping-solution Definition (algorithmic.tex:1423-1437) is ACTIVE and
 2-condition, and the same capture transplants: at `TI`,
 `(P0 = ◇, P = ∀X.◇, Q = syn ∀X.X)` passes the `typsub`-Infer premise and the
 `P0`-fill, yet the optimality conclusion demands `θ(∀X.◇) ⊑ ∀X.X`, which the
-precision rules forbid (the hole rule's `Δ ∩ ftv ψ = ∅`).  The subtyping
+precision rules forbid (the ghost rule's `Δ ∩ ftv ψ = ∅`).  The subtyping
 proofs' appeals to thm:complete-consistency ("(θ;Q) is a solution to the
 consistency problem") silently assume the augmented notion.  SUGGESTED FIX:
 add the subject-side refinement `Θ ⊢ θ⌊S⌋ ⋈ Q` to the definitions of
@@ -2191,8 +2191,8 @@ paper's PROOF-level statements here — unlike the optimality-cex case).
 
 ## Resolved definition-sync findings (step 1 of the restart)
 See [REPORT-remech-decl-sync.md](REPORT-remech-decl-sync.md) — notably the
-`is_tskl` untagged-∀ fix (A1), whose downstream effect invalidated the
-pre-restart `pskl_to_tskl` decorated witnesses (prop_safety machinery).
+`is_dskl` untagged-∀ fix (A1), whose downstream effect invalidated the
+pre-restart `pskl_to_dskl` decorated witnesses (prop_safety machinery).
 
 
 ## Soundness ForallR: the strengthening step is TRUE but needs the substitution generalization (2026-07-18)
@@ -2451,7 +2451,7 @@ on the freshening so a raw Θ0-flex opposite a ρ-rigid-var cannot occur.
 > strengthened to a fresh-extension family `∀S` so the ∀-rows can fold
 > their bodies.  The split is a binds-level BAG (`aenv_split`) — an
 > earlier LIST-equation form (`Θ = Θtv ++ Θr`) forced the ForallSyn
-> binder into Θtv and with it a mech-only `pskl_no_hole P0` premise; the
+> binder into Θtv and with it a mech-only `pskl_no_ghost P0` premise; the
 > bag form (2026-07-27) removed that premise, so the statement is
 > premise-faithful to the paper (see WF-SIDE-CONDITIONS.md, historical
 > entry).  The one genuinely-implicit paper step made explicit is the
@@ -2493,7 +2493,7 @@ on the freshening so a raw Θ0-flex opposite a ρ-rigid-var cannot occur.
   (2) a standalone `P_i = □`-column lemma by its own consistency
   induction with a Δr-indexed refinement premise + ftv-bound lemmas for
   consistency (`ftv S ⊆ ftv Q ∪ dom Θ`) and ρ (`ftv ψa ⊆ ftv ψsub ∪ Δρ`);
-  (3) a positional hole-apartness premise (flex_apart-style) — 
+  (3) a positional ghost-apartness premise (flex_apart-style) — 
   dispreferred, since call sites cannot derive it across the binder
   descent from cleanliness alone.
 
@@ -2752,8 +2752,8 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
   side rejects it too, and the mech rules show why: the skeleton of `args`
   is derived from its type by SK-checking against □, whose Check case is
   CONSISTENCY against the fill — and consistency has NO rule for a
-  ∀-subject against a hole or ∀◇ TARGET (only `ad_pat_consis__hole` with
-  the hole as SUBJECT), so the inner `∀b.b→b` survives into every
+  ∀-subject against a ghost or ∀◇ TARGET (only `ad_pat_consis__ghost` with
+  the ghost as SUBJECT), so the inner `∀b.b→b` survives into every
   derivable skeleton; `k`'s instantiation must be consistent with it, so
   `k args`'s skeleton is forced poly; and the declarative app rule's
   domain premise is consistency `τ_dom ∼ skel(arg)`, mono vs ∀ — no rule.
@@ -2771,15 +2771,15 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
   the precision premise `Δ|Θ ⊢ᵃᵈ precise[Ψi]{θP_i}{∀◈ψ'}` as if only
   `P-UnivGhostKeep` — whose subject is `∀◇P` — could target a `∀◈`.  But
   **`P-Ghost` is target-agnostic**: `□ ⊑ᵖ[·] ψ` holds for ANY `ψ` (given its
-  Δ-disjointness side condition), so a hole input skeleton is precise to a
+  Δ-disjointness side condition), so a ghost input skeleton is precise to a
   `∀◈` as well, and the subcase is real.
 - Not a statement problem: the row goes through.  Nothing is decomposed (a
   `□` input stays `□`), so the induction hypothesis's own solve is the one
   needed; only its precision must be lifted back under the ghost.  In the
-  mech that lift is `ad_ppre_lift_topholeg`, which needs (i) the shape of a
-  `□`-input solve output (`a_solve_sub_hole_output`: `□` or `∀◇B`), (ii)
+  mech that lift is `ad_ppre_lift_dot_univ_ghost`, which needs (i) the shape of a
+  `□`-input solve output (`a_solve_sub_ghost_output`: `□` or `∀◇B`), (ii)
   stripping a `∀◇` from the subject against a guarded guess
-  (`ad_ppre_tophole_strip`, whose FILL/KEEP rows die on guardedness and
+  (`ad_ppre_univ_ghost_strip`, whose FILL/KEEP rows die on guardedness and
   whose flexible-target row recurses through the definition), and (iii)
   guardedness of the guess's erasure, transported along ρ by
   `uskl_rho_guarded_erase`.
@@ -2804,12 +2804,12 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
 - To be fair to the paper's phrasing, its claim is ALMOST right: precision
   does force the input skeleton to be GHOSTLY at a `∀◈` guess — the only
   live shapes are `□` and `∀◇P_i'` (unit / var / arrow / ∀ are refuted, in
-  the mech by `ad_ppre_guarded_topholeg_absurd`).  It named one of the two
+  the mech by `ad_ppre_guarded_dot_univ_ghost_absurd`).  It named one of the two
   ghost shapes.
 - Side note on the same case: the paper also provides for a FLEXIBLE `P_i`
   ("the flexible case follows from SolEq-FlexL").  In the mech that case is
   VACUOUS — `θP_i` is then a monotype painting, and
-  `ad_ppre_mono_paint_topholeg_absurd` (already needed by P6-Cv) shows no
+  `ad_ppre_mono_paint_dot_univ_ghost_absurd` (already needed by P6-Cv) shows no
   painting is precise to a dotted ghost.  Harmless over-provision, recorded
   only so the discrepancy is not re-investigated.
 
@@ -2896,7 +2896,7 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
   would need the sub-side analogue of `ad_pat_consis_target_ftv`
   (`ftv Q ⊆ ftv R ∪ def_ftv Θ` from a subtyping derivation with a decorated
   subject), and that lemma is FALSE — machine-checked,
-  `cex/cex_p6ss_sub_target_ftv.v`.  `is_tskl` excludes the
+  `cex/cex_p6ss_sub_target_ftv.v`.  `is_dskl` excludes the
   \sublab{Ghost} row but NOT \sublab{ForallL}: a tagged `∀^ε` IS a decorated
   skeleton, and its instantiation is bounded only by `dom Θ` — the
   DERIVATION's context, which \sublab{ForallR} grows by the very β being
@@ -3067,7 +3067,7 @@ the paper must adopt; see docs/DESIGN-completeness-subtyping.md §9.0.
 ### RESOLVED (2026-07-30) — the repair LANDED
 
 `fa_rsubst_var` **and** `fa_flexfree` were added to `flex_apart`, and
-`fa_topholeg_t` was deleted (with `fa_rsubst_var` present it was the only way a
+`fa_dot_univ_ghost_t` was deleted (with `fa_rsubst_var` present it was the only way a
 guard could hold at a ∀◈ that is neither clean nor flex-free, and it produced a
 "∀◈-stack over a Δρ-variable" that no consumer can use).  Both witnesses are
 now shielded; `cex/cex_p7_shield_arrow.v` became the regression test
@@ -3157,7 +3157,7 @@ invokes **thm:complete-consistency** — a theorem, already mechanized as
 `a_consis_complete` — on the consistency problem `(Θ_0; □; P)`, and takes
 the precision from its conclusion.  That route is sound.
 
-**The only thing it needs is small and now proved** (`a_consis_hole_p0_output`,
+**The only thing it needs is small and now proved** (`a_consis_ghost_p0_output`,
 Qed): at `P_0 = □` the algorithmic consistency OUTPUT is the SUBJECT.  Of the
 fifteen consistency rules only three admit `P_0 = □` — Ghost (whose subject is
 `□`), GhostR, and FlexL — and each returns its own subject.  UnivGhost2 is the
@@ -3218,8 +3218,8 @@ outputs `∀◇.P` from the input `P`, while refinement has no rule putting a `�
 on the RIGHT of a non-ghost left-hand side.
 
 **Consequence, machine-checked** (`cex/cex_p7_univ_ghost_r_vacuous.v`,
-Qed + axiom-free, and `ad_refine_pskl_f_tophole_r_shape` in
-`prop_sub_complete_thm.v` — since 2026-10-09 `ad_refine_pskl_tophole_r_shape`,
+Qed + axiom-free, and `ad_refine_pskl_f_univ_ghost_r_shape` in
+`prop_sub_complete_thm.v` — since 2026-10-09 `ad_refine_pskl_univ_ghost_r_shape`,
 over the plain refinement, in `sub/prop_completeness_sub_gen.v`): declarative `Sub-UnivGhostR` has a GUARDED subject
 and the counterpart `∀◇.Q_0`, so the third condition reads
 `θ⌊S⌋ ⊳ ∀◇.⌊Q_0⌋` with a guarded left — underivable.  The row's case of P7b is
@@ -3249,10 +3249,10 @@ So the mechanized theorem is close to content-free on TY-mode subtyping: it
 covers only solutions whose two sides already agree at every head.  **Why
 consistency does not have this problem**: `ad_pat_consis` is itself lockstep
 (every ∀-inh-counterpart row — `__forall_inh_tagged` / `__forall_inh_untagged`
-/ `__tophole_inh` — requires a ∀ or a ghost subject), so on consistency the
+/ `__univ_ghost_inh` — requires a ∀ or a ghost subject), so on consistency the
 paper's own augmented third condition excludes nothing the join doesn't
 already exclude at the heads; its one contribution there is the no-capture
-discipline on hole fills, which is exactly what it was added for.  Subtyping's
+discipline on ghost fills, which is exactly what it was added for.  Subtyping's
 `ForallL` / `ForallR` / `UnivGhostR` break lockstep — that is their job — so
 importing consistency's condition verbatim cuts exactly the solutions those
 rules create.
@@ -3309,8 +3309,8 @@ composition step is `ad_refine_syn_trans` — which is proved under the paper's
 external well-formedness of the RESULT (the claim "refinement is not
 transitive outright; `cex_refine_not_transitive.v`" was RETRACTED 2026-10-08:
 the counterexample relied on the mech's old Ghost rule demanding a wf fill).
-At `P_0 = □` that well-formedness was free (`ad_refine_syn_hole_l_target_wf`:
-only `__hole` and `__flex_r` have a ghost source, and both carried it) — ⚠️ no
+At `P_0 = □` that well-formedness was free (`ad_refine_syn_ghost_l_target_wf`:
+only `__ghost` and `__flex_r` have a ghost source, and both carried it) — ⚠️ no
 longer since 2026-10-08: the paper's Ghost rule does not check its fill, so
 that lemma took the target's wf as a hypothesis (and, left unused, was deleted
 in the 2026-10-09 cleanup).  At `Sub-Check` it is not,
@@ -3546,7 +3546,7 @@ other head.
 
 ## ⚠️ PROOF-STEP (2026-08-03) — `thm:complete-subtyping`'s ForallL case: the "WLOG guarded `P_0`" step is a JOIN PERMUTATION, and it is the whole obligation
 
-**This is NOT an unaddressed hole — the paper handles it in one sentence.**
+**This is NOT an unaddressed ghost — the paper handles it in one sentence.**
 `thm:complete-subtyping`'s ForallL case (subtyping-proofs.tex:3385-3387) opens
 
 > Since declarative subtyping is congruent, we assume WLOG that
@@ -3660,7 +3660,7 @@ CHOOSE `∀β.β→β`, and the extract is deterministic there
 (`probe_extract_det`), forced through
 
     SE-FlexR    (`a_solve_eq__flex_r`)    : P ∼ α̂ ⤳ α̂     -- DISCARDS P
-    SE-VacuousR (`a_solve_eq__hole_r`)    : P ∼ ◇  ⤳ P     -- KEEPS P
+    SE-VacuousR (`a_solve_eq__ghost_r`)    : P ∼ ◇  ⤳ P     -- KEEPS P
     SS-Vacuous  (`a_solve_sub__vacuous`)  : P ≼[m] ◇ ⤳ P   -- KEEPS P
 
 The look collects `[eq(∀γ.γ→γ); sub_tc(f̂)]`; `a_solve_cstr__eq` threads the
@@ -3731,7 +3731,7 @@ So a polytype instantiation must be PAID FOR by an inherited ∀ at that
 position of the counterpart, and the counterpart is what the SKELETON
 supplies.  In `pipe (λg. g arg)` the argument's skeleton is `⫯(◇ → ◇)`: it
 carries no ∀ at `r`'s position, so `r := (∀c. c → c) → 1` is unpayable.
-(`is_ttyp` also excludes ghosts, so no ghost-carrying instantiation evades
+(`is_dtyp` also excludes ghosts, so no ghost-carrying instantiation evades
 this.)  The needed instantiations of `pipe`'s `r` and `g`'s `b` are mutually
 dependent, which is exactly the limitation below.
 
@@ -3877,7 +3877,7 @@ fresco/def_shapes.v).  It costs completeness NOTHING — at `◇`, `SolE-GhostL`
 is strictly *more* informative, and at `∀◇P₀`, `SolE-GhostGuarded` peels to
 the same place — and it keeps TRUE the fact the paper uses silently in every
 `P_i = □` subcase of the -var lemmas: *solving with the ghost subject
-returns the target verbatim* (mech `a_solve_eq_hole_subject_inv`).
+returns the target verbatim* (mech `a_solve_eq_ghost_subject_inv`).
 **Suggested action: state `nonflex` as excluding ghosts, or add `nonghost`,
 in `fig:constraint-solving`.**
 
@@ -4294,10 +4294,10 @@ axiom-free):
 - Assembled: `e_sub_order_total` — the subtyping walk's search terminates
   on every locally-closed input whose context keeps monotype payloads.
   UNCONDITIONAL: the consistency block's own termination
-  (`e_consis_order_total`) is proved by the measure (holes + undefined
-  flexibles, then defined flexibles, then size) — holes are the only
+  (`e_consis_order_total`) is proved by the measure (ghosts + undefined
+  flexibles, then defined flexibles, then size) — ghosts are the only
   source of new flexibles (Assign-SolveM's guess block is exactly the
-  pattern's holes), so any run that grows the context strictly consumed
+  pattern's ghosts), so any run that grows the context strictly consumed
   that fuel.  See docs/HANDOFF-extractable-algo-encoding.md §8b.
 
 The paper could state this as a theorem ("the algorithm terminates on
@@ -4362,7 +4362,7 @@ Machine-checked: `mechanization/cex/probe_consis_ghost_flex.v`
   holds — `Δ1` collects the ∀-rows' RIGID openers, never a flexible —
   and answers `α̂ ⊣ Θ`, leaving the context alone.
 - `U-FlexL` needs `\nonflex{P_0}` (:757).  `nonflex` rules out a
-  flexible VARIABLE, not a hole, so it holds of `◇`, and the rule
+  flexible VARIABLE, not a ghost, so it holds of `◇`, and the rule
   assigns `α̂ := ◇`.  Since `guess^TY(◇)` invents a fresh flexible, the
   output context is `Θ` with `α̂` SOLVED — `α̂ ↦ β̂`, `β̂` fresh.
 
@@ -4378,7 +4378,7 @@ context has an entry the other does not.
 ### Why it matters
 
 1. **`type.ml`'s clause order is load-bearing and unstated.**  The
-   reference implementation matches the hole rows FIRST (`join_sk`,
+   reference implementation matches the ghost rows FIRST (`join_sk`,
    :143-262), so it takes `U-GhostR` / `U-Ghost` and leaves the context
    unchanged.  Without priority, a reader may instead introduce a fresh
    alias.  That context differs syntactically but is equigeneral in this
@@ -4445,9 +4445,9 @@ Two instances, at two layers:
    not mention the leaked openers either.  Same collapse, one layer up:
    `Ξs` may contain an atom that already occurs free in `𝒞`.
 
-3. **CROSS-LAYER, THE FINAL GUESS** (2026-08-21).  The same hole one step
+3. **CROSS-LAYER, THE FINAL GUESS** (2026-08-21).  The same ghost one step
    further: `extract` closes with `guess^{NM}` at `Ξs ++ Ξ ++ Θ0`, and
-   `a_guess_mono`'s hole row draws its flexible fresh for
+   `a_guess_mono`'s ghost row draws its flexible fresh for
    `ftvar_in_aenv Θ` of THAT context alone — `a_guess_mono_generated_fresh`
    is context-only, not subject-aware.  So the FINAL guess may draw a leaked
    opener too, and it may draw one leaked by the FOLD (into `Q`) as well as

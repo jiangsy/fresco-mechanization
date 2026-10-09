@@ -172,7 +172,7 @@ Lemma e_guess_mono_lc_type : forall S0 P S1 Ξ A,
 Proof.
   intros * Hg; induction Hg; intros Hlc.
   - apply lc_ptyp_var_f.
-  - apply IHHg. exact (lc_pskl_tophole_inv Hlc).
+  - apply IHHg. exact (lc_pskl_univ_ghost_inv Hlc).
   - apply lc_ptyp_var_f.
   - apply lc_ptyp_unit.
   - destruct (lc_pskl_arrow_inv Hlc) as [Hl1 Hl2].
@@ -363,9 +363,9 @@ Proof.
       * rewrite swaps_aenv_app. exact HTb.
       * rewrite swaps_ptyp_all, swaps_ptyp_close, Hsβ.
         rewrite swaps_ptyp_app, HAb. reflexivity.
-    + (* hole — the row that INVENTS *)
-      destruct (e_guess_mono_inv_hole D1) as [α1 [Hα1 [-> [-> ->]]]].
-      destruct (e_guess_mono_inv_hole D2) as [α2 [Hα2 [-> [-> ->]]]].
+    + (* ghost — the row that INVENTS *)
+      destruct (e_guess_mono_inv_ghost D1) as [α1 [Hα1 [-> [-> ->]]]].
+      destruct (e_guess_mono_inv_ghost D2) as [α2 [Hα2 [-> [-> ->]]]].
       exists ((α1, α2) :: nil).
       assert (Hsα : swaps_atom ((α1, α2) :: nil) α1 = α2)
         by (cbn [swaps_atom]; unfold swap_atom;
@@ -382,8 +382,8 @@ Proof.
            reflexivity.
         -- rewrite swaps_ptyp_var_f, Hsα. reflexivity.
     + (* ⫯ *)
-      pose proof (e_guess_mono_inv_tophole D1) as D1'.
-      pose proof (e_guess_mono_inv_tophole D2) as D2'.
+      pose proof (e_guess_mono_inv_univ_ghost D1) as D1'.
+      pose proof (e_guess_mono_inv_univ_ghost D2) as D2'.
       assert (HcP1 : ftvar_in_pskl P1 [<=] S0)
         by (clear - Hcov; simpl in *; fsetdec).
       exact (IHn P1 ltac:(lia) _ _ _ _ _ _ _ HcP1 D1' D2').
@@ -439,7 +439,7 @@ Lemma e_typing_inv_freeze : forall S0 m Θ0 P0 e1 Bd Sd Θd,
   {{ S0 ↝ Sd ⊨ Θ0 ⊢[ m ; P0 ] (exp_freeze e1) ⦂ Bd ⊣ Θd }}e ->
   m = mode_tc /\ P0 = ptyp_to_pskl Bd
   /\ exists S1 Θ1 B,
-       {{ S0 ↝ S1 ⊨ Θ0 ⊢[ mode_ti ; pskl_hole ] e1 ⦂ B ⊣ Θ1 }}e
+       {{ S0 ↝ S1 ⊨ Θ0 ⊢[ mode_ti ; pskl_ghost ] e1 ⦂ B ⊣ Θ1 }}e
        /\ e_consis_chk S1 Θ1 (ptyp_to_pskl B) (ptyp_to_pskl Bd) Sd Θd.
 Proof.
   intros * H. inversion H; subst.
@@ -449,7 +449,7 @@ Qed.
 Lemma e_typing_inv_app : forall S0 m Θ0 P0 e1 e2 Bd Sd Θd,
   {{ S0 ↝ Sd ⊨ Θ0 ⊢[ m ; P0 ] (exp_app e1 e2) ⦂ Bd ⊣ Θd }}e ->
   exists S1 S2 Θ1 Θ2 P A A',
-    {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] e2 ⦂ P ⊣ Θ1 }}e
+    {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_tc ; pskl_ghost ] e2 ⦂ P ⊣ Θ1 }}e
     /\ {{ S1 ↝ S2 ⊨ Θ1 ⊢[ (mode_fn m) ; (pskl_arrow P P0) ] e1
           ⦂ (ptyp_arrow A Bd) ⊣ Θ2 }}e
     /\ {{ S2 ↝ Sd ⊨ Θ2 ⊢[ mode_tc ; (ptyp_to_pskl A) ] e2 ⦂ A' ⊣ Θd }}e.
@@ -2246,15 +2246,15 @@ Proof.
     assert (He1 : lc_exp e1) by (inversion He; subst; assumption).
     assert (He2 : lc_exp e2) by (inversion He; subst; assumption).
     (* the ARGUMENT's skeleton — level 7's headline *)
-    assert (Hcov1 : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl pskl_hole
+    assert (Hcov1 : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl pskl_ghost
                     ∪ fvar_in_exp e2 ∪ ftvar_in_exp e2 [<=] S0)
       by (clear - Hcov; simpl in *; fsetdec).
-    kill_pat_call lc_pskl_hole He2 HΘ HD Hu Hcov1 D1
+    kill_pat_call lc_pskl_ghost He2 HΘ HD Hu Hcov1 D1
       r2 Hr2 ps1 Hav1 HS1 HT1 HQ1.
     unfold pat_spec in Hr2.
     destruct (e_pat_sound Hr2 Hu Hcov1) as [Ha2 [Hu2 [Hcv2 Hq2]]].
     pose proof (e_pat_defs_mono Hr2 HD) as HD2.
-    destruct (e_pat_lc_env Hr2 lc_pskl_hole He2 HΘ HD) as [Hlc2 HΘ2].
+    destruct (e_pat_lc_env Hr2 lc_pskl_ghost He2 HΘ HD) as [Hlc2 HΘ2].
     pose proof (e_pat_supply_grows Hr2) as Hgr2.
     (* the FUNCTION, at the argument's answer *)
     assert (HfixP : forall X, ftvar_in_pskl X [<=] S0 -> swaps_pskl ps1 X = X)
@@ -2407,15 +2407,15 @@ Proof.
     pose proof (ftvar_ptyp_to_pskl Bd) as HBe.
     kill_dec (pskl_readback_complete_eq
                 (eq_refl : ptyp_to_pskl Bd = ptyp_to_pskl Bd)) A0 HA0.
-    assert (Hcov1 : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl pskl_hole
+    assert (Hcov1 : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl pskl_ghost
                     ∪ fvar_in_exp e1 ∪ ftvar_in_exp e1 [<=] S0)
       by (clear - Hcov; simpl in *; fsetdec).
-    kill_typing (Hfz e1 eq_refl) lc_pskl_hole He1 HΘ HD Hu Hcov1 D1
+    kill_typing (Hfz e1 eq_refl) lc_pskl_ghost He1 HΘ HD Hu Hcov1 D1
       r1 Hr1 ps1 Hav1 HS1 HT1 HQ1.
     unfold typing_spec in Hr1.
     destruct (e_typing_sound Hr1 Hu Hcov1) as [Ha1 [Hu1 [Hcv1 Hq1]]].
     pose proof (e_typing_defs_mono Hr1 HD) as HD1.
-    destruct (e_typing_lc_env Hr1 lc_pskl_hole He1 HΘ HD) as [Hlc1 HΘ1].
+    destruct (e_typing_lc_env Hr1 lc_pskl_ghost He1 HΘ HD) as [Hlc1 HΘ1].
     pose proof (e_typing_supply_grows Hr1) as Hgr1.
     bool_true_ty.
     destruct Dc as [Qc Dc].

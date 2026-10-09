@@ -303,7 +303,7 @@ DELETED rather than mirrored.
 **Recommendation: (R-b) for the mech, (R-a) for the paper.** (R-b) removes a
 premise instead of adding one and makes the two scoping disciplines visibly the
 same. They should agree, but ⚠️ that must be CHECKED — one known divergence: the
-mech's `*__tophole_keep` carries an explicit `guarded_bskl P` that the paper's
+mech's `*__univ_ghost_keep` carries an explicit `guarded_bskl P` that the paper's
 rule has commented out (`declarative.tex:1508`, WF-SIDE-CONDITIONS.md §3), so
 (R-b)'s derivation of the datum at `C-UnivGhostG` / `C-UnivGhost` needs that
 premise or the paper's version of the rule.

@@ -104,16 +104,16 @@ Ltac crush_btvar :=
 Ltac crush_wf :=
   repeat (first [ apply a_scope_pskl__arrow
                 | apply a_scope_pskl__unit
-                | apply a_scope_pskl__hole
-                | apply a_scope_pskl__tophole
+                | apply a_scope_pskl__ghost
+                | apply a_scope_pskl__univ_ghost
                 | apply a_scope_pskl__var; crush_btvar
                 | eapply a_scope_pskl__all with (L := {});
                   intros ? _; simpl_open
                 (* disciplined twin (ForallL's instantiation premise) *)
                 | apply a_wf_pskl__arrow
                 | apply a_wf_pskl__unit
-                | apply a_wf_pskl__hole
-                | apply a_wf_pskl__tophole; [ crush_lc | ]
+                | apply a_wf_pskl__ghost
+                | apply a_wf_pskl__univ_ghost; [ crush_lc | ]
                 | apply a_wf_pskl__var;
                   first [ left; fsetdec | right; crush_btvar ]
                 | eapply a_wf_pskl__all with (L := {});
@@ -158,7 +158,7 @@ Definition Θlib : aenv :=
 
 (* The freshness the relations now police: guessed names must avoid
    everything the ambient context MENTIONS (freshness campaign,
-   DESIGN.md §4.3 — [a_guess_mono__hole] takes [∉ ftvar_in_aenv Θ]),
+   DESIGN.md §4.3 — [a_guess_mono__ghost] takes [∉ ftvar_in_aenv Θ]),
    on top of the ForallL prose-completion's dom-avoidance. *)
 Hypothesis Hfa_lib : fa `notin` dom Θlib.
 Hypothesis Hfb_lib : fb `notin` dom Θlib.
@@ -242,19 +242,19 @@ Ltac crush_uniq :=
 Lemma pat_var_sigid : forall Θ x,
   uniq Θ ->
   binds x (abind_var_typ σ_id) Θ ->
-  {{ Θ ⊢ˢ[ mode_tc ; pskl_hole ] (exp_var_f x)
-    ⦂ (pskl_tophole (pskl_arrow pskl_hole pskl_hole)) ⊣ Θ }}a.
+  {{ Θ ⊢ˢ[ mode_tc ; pskl_ghost ] (exp_var_f x)
+    ⦂ (pskl_univ_ghost (pskl_arrow pskl_ghost pskl_ghost)) ⊣ Θ }}a.
 Proof.
   intros Θ x Hu Hb.
   eapply a_pat__var; [ exact Hb | ].
   unfold σ_id; simpl.
   pick_forall_l α Hα.
-  eapply a_sub__forall_l with (α := α) (Ξ := nil) (P1 := pskl_hole).
+  eapply a_sub__forall_l with (α := α) (Ξ := nil) (P1 := pskl_ghost).
   - discriminate.
   - right; reflexivity.
   - clear - Hα; fsetdec.
   - eapply a_extract__solve with (Ξ := nil) (Ξs := nil)
-                                 (C := nil) (Q := pskl_hole).
+                                 (C := nil) (Q := pskl_ghost).
     + simpl_open. apply a_looksub__vacuous; discriminate.
     + apply a_solve_cstr__empty.
     + apply a_guess__sk.
@@ -263,7 +263,7 @@ Proof.
     + (* and the guess's half: its block is apart from both *)
       simpl. clear. fsetdec.
   - crush_uniq.
-  - apply a_wf_pskl__hole.
+  - apply a_wf_pskl__ghost.
   - simpl_open. apply a_sub__univ_ghost_r. crush_lc.
 Qed.
 
@@ -289,8 +289,8 @@ Qed.
 
 (** [σ_id] against the guessed input skeleton [∀◇(□→□)]
     (ForallSyn, then the ghosts absorb the rigid binder). *)
-Lemma consis_sigid_tophole : forall Δ2 Θ,
-  a_consis empty Δ2 Θ (pskl_tophole (pskl_arrow pskl_hole pskl_hole))
+Lemma consis_sigid_univ_ghost : forall Δ2 Θ,
+  a_consis empty Δ2 Θ (pskl_univ_ghost (pskl_arrow pskl_ghost pskl_ghost))
     (ptyp_to_pskl σ_id) (ptyp_to_pskl σ_id) Θ.
 Proof.
   intros. unfold σ_id; simpl.
@@ -332,7 +332,7 @@ Proof.
         (C2 := a_cstr_eq (pskl_var_f α) :: nil);
         [ simpl; clear; fsetdec | simpl; clear; fsetdec | apply a_lookeq__var | apply a_lookeq__var ].
     + eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
-      { apply a_solve_eq__hole_l. }
+      { apply a_solve_eq__ghost_l. }
       eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
       { apply a_solve_eq__var. }
       apply a_solve_cstr__empty.
@@ -354,7 +354,7 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_A1 :
-  {{ Θlib ⊢[ mode_ti ; pskl_hole ]
+  {{ Θlib ⊢[ mode_ti ; pskl_ghost ]
     (exp_abs (exp_abs (exp_var_b 0)))
     ⦂ (ptyp_arrow (ptyp_var_f fa)
         (ptyp_arrow (ptyp_var_f fb) (ptyp_var_f fb)))
@@ -366,8 +366,8 @@ Proof.
     (Ξ := (fb ~ abind_flex_mono))
     (Θ2 := (fa ~ abind_flex_mono) ++ Θlib).
   - discriminate.
-  - apply a_split__hole.
-  - apply a_guess_mono__hole. crush_guess_fresh.
+  - apply a_split__ghost.
+  - apply a_guess_mono__ghost. crush_guess_fresh.
   - crush_uniq.
   - repeat constructor.
   - simpl_env; simpl fvar_in_exp; clear - Hx; fsetdec.
@@ -379,8 +379,8 @@ Proof.
              ++ (x ~ abind_var_typ (ptyp_var_f fa))
              ++ (fa ~ abind_flex_mono) ++ Θlib).
     + discriminate.
-    + apply a_split__hole.
-    + apply a_guess_mono__hole. crush_guess_fresh.
+    + apply a_split__ghost.
+    + apply a_guess_mono__ghost. crush_guess_fresh.
     + crush_uniq.
     + constructor.
     + simpl_env; simpl fvar_in_exp; clear - Hy; fsetdec.
@@ -395,12 +395,12 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_A5 :
-  {{ Θlib ⊢[ mode_ti ; pskl_hole ]
+  {{ Θlib ⊢[ mode_ti ; pskl_ghost ]
     (exp_app (exp_var_f x_id) (exp_var_f x_auto))
     ⦂ σ_auto ⊣ Θlib }}a.
 Proof.
   eapply a_typing__app with (A := σ_auto)
-    (P := pskl_tophole (ptyp_to_pskl σ_auto)) (Θ2 := Θlib).
+    (P := pskl_univ_ghost (ptyp_to_pskl σ_auto)) (Θ2 := Θlib).
   - (* auto ⦂[TC;□] ∀◇(σ_auto's skeleton) *)
     eapply a_pat__var; [ crush_binds | ].
     apply a_sub__univ_ghost_r.
@@ -415,13 +415,13 @@ Proof.
     + left. crush_lc.
     + clear - Hα; fsetdec.
     + eapply a_extract__solve with (Ξ := nil) (Ξs := nil)
-        (C := (a_cstr_eq (pskl_tophole (ptyp_to_pskl σ_auto))
-               :: a_cstr_sub mode_ti pskl_hole :: nil))
-        (Q := pskl_tophole (ptyp_to_pskl σ_auto)).
+        (C := (a_cstr_eq (pskl_univ_ghost (ptyp_to_pskl σ_auto))
+               :: a_cstr_sub mode_ti pskl_ghost :: nil))
+        (Q := pskl_univ_ghost (ptyp_to_pskl σ_auto)).
       * simpl_open.
         apply a_looksub__arrow with (Ξ1 := nil) (Ξ2 := nil)
-          (C1 := a_cstr_eq (pskl_tophole (ptyp_to_pskl σ_auto)) :: nil)
-          (C2 := a_cstr_sub mode_ti pskl_hole :: nil);
+          (C1 := a_cstr_eq (pskl_univ_ghost (ptyp_to_pskl σ_auto)) :: nil)
+          (C2 := a_cstr_sub mode_ti pskl_ghost :: nil);
           [ simpl; clear; fsetdec | simpl; clear; fsetdec | | ].
         { apply a_lookeq__var. }
         { (* ⭐ UNDER THE ◇-DISPATCH GUARD this cell is LS-Var, not
@@ -430,7 +430,7 @@ Proof.
              one more constraint — which SS-Vacuous then solves away. *)
           apply a_looksub__var. }
       * eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
-        { apply a_solve_eq__hole_l. }
+        { apply a_solve_eq__ghost_l. }
         { apply a_solve_cstr__sub.
           (* ⭐ UNDER THE SOLVE-DISPATCH GUARD the ⫯ must be STRIPPED first:
              [SS-UnivGhostL] is matched before [SS-Vacuous] (type.ml:494),
@@ -438,7 +438,7 @@ Proof.
           apply a_solve_sub__univ_ghost_l.
           apply a_solve_sub__vacuous; split; intros; discriminate. }
       * apply (a_guess__ty (Ξ := nil) (A := σ_auto)).
-        apply a_guess_mono__tophole.
+        apply a_guess_mono__univ_ghost.
         unfold σ_auto, σ_id; simpl.
         (* exists-fresh + close: enter through the OPENED form
            ([a_guess_mono_all_of_one]); the bodies are variable-only, so any
@@ -479,12 +479,12 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_A10b :
-  {{ Θlib ⊢[ mode_ti ; pskl_hole ]
+  {{ Θlib ⊢[ mode_ti ; pskl_ghost ]
     (exp_app (exp_var_f x_poly) (exp_abs (exp_var_b 0)))
     ⦂ σ_prodIB ⊣ Θlib }}a.
 Proof.
   eapply a_typing__app with (A := σ_id)
-    (P := pskl_tophole (pskl_arrow pskl_hole pskl_hole)) (Θ2 := Θlib).
+    (P := pskl_univ_ghost (pskl_arrow pskl_ghost pskl_ghost)) (Θ2 := Θlib).
   - (* λx.x ⦂[TC;□] ∀◇(□→□) — EXISTS-FRESH since 2026-08-13, so the binder is
        named here rather than avoided cofinitely *)
     destruct (atom_fresh (dom Θlib)) as [xb Hxb].
@@ -499,7 +499,7 @@ Proof.
     eapply a_typing__var; [ crush_binds | ].
     unfold σ_poly at 1; simpl ptyp_to_pskl.
     apply a_sub__arrow with (Θ1 := Θlib).
-    + apply consis_sigid_tophole.
+    + apply consis_sigid_univ_ghost.
     + apply a_sub__infer.
   - (* λx.x ⦂[TC; skel σ_id]  σ_id *)
     destruct (atom_fresh (dom Θlib `union` singleton fa `union` singleton fb))
@@ -540,7 +540,7 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_A2 :
-  {{ Θlib ⊢[ mode_ti ; pskl_hole ]
+  {{ Θlib ⊢[ mode_ti ; pskl_ghost ]
     (exp_app (exp_var_f x_choose) (exp_var_f x_id))
     ⦂ (ptyp_arrow (ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb))
                   (ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb)))
@@ -549,7 +549,7 @@ Example ex_A2 :
 Proof.
   eapply a_typing__app
     with (A := ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb))
-         (P := pskl_tophole (pskl_arrow pskl_hole pskl_hole))
+         (P := pskl_univ_ghost (pskl_arrow pskl_ghost pskl_ghost))
          (Θ2 := (fa ~ abind_flex_mono) ++ (fb ~ abind_flex_mono) ++ Θlib).
   - (* id ⦂[TC;□] ∀◇(□→□) *)
     apply pat_var_sigid; [ crush_uniq | crush_binds ].
@@ -564,11 +564,11 @@ Proof.
     + left. crush_lc.
     + clear - Hα; fsetdec.
     + eapply a_extract__solve with (Ξ := nil) (Ξs := nil)
-        (C := a_cstr_eq (pskl_tophole (pskl_arrow pskl_hole pskl_hole)) :: nil)
-        (Q := pskl_tophole (pskl_arrow pskl_hole pskl_hole)).
+        (C := a_cstr_eq (pskl_univ_ghost (pskl_arrow pskl_ghost pskl_ghost)) :: nil)
+        (Q := pskl_univ_ghost (pskl_arrow pskl_ghost pskl_ghost)).
       * simpl_open.
         apply a_looksub__arrow with (Ξ1 := nil) (Ξ2 := nil)
-          (C1 := a_cstr_eq (pskl_tophole (pskl_arrow pskl_hole pskl_hole)) :: nil)
+          (C1 := a_cstr_eq (pskl_univ_ghost (pskl_arrow pskl_ghost pskl_ghost)) :: nil)
           (C2 := nil);
           [ simpl; clear; fsetdec | simpl; clear; fsetdec | | ].
         { apply a_lookeq__var. }
@@ -578,15 +578,15 @@ Proof.
             solve [ intros Hc; inversion Hc; subst; clear - Hα; fsetdec
                   | intros Hc; inversion Hc ]. }
       * eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
-        { apply a_solve_eq__hole_l. }
+        { apply a_solve_eq__ghost_l. }
         { apply a_solve_cstr__empty. }
       * apply (a_guess__ty
                  (A := ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb))).
-        apply a_guess_mono__tophole.
+        apply a_guess_mono__univ_ghost.
         apply a_guess_mono__arrow
           with (Ξ1 := (fa ~ abind_flex_mono) ++ nil)
                (Ξ2 := (fb ~ abind_flex_mono) ++ nil);
-          apply a_guess_mono__hole; crush_guess_fresh.
+          apply a_guess_mono__ghost; crush_guess_fresh.
       * (* the cross-layer guard: the fold generates nothing *)
         simpl. clear. fsetdec.
       * (* and the guess's half: its block is apart from both *)
@@ -623,7 +623,7 @@ Proof.
             (C2 := a_cstr_eq (pskl_var_f fb) :: nil);
             [ simpl; clear; fsetdec | simpl; clear; fsetdec | apply a_lookeq__var | apply a_lookeq__var ]. }
       * eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
-        { apply a_solve_eq__hole_l. }
+        { apply a_solve_eq__ghost_l. }
         { eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
           { apply a_solve_eq__var. }
           { apply a_solve_cstr__empty. } }
@@ -652,7 +652,7 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_A4 :
-  {{ Θlib ⊢[ mode_ti ; pskl_hole ]
+  {{ Θlib ⊢[ mode_ti ; pskl_ghost ]
     (exp_abs_anno σ_id (exp_app (exp_var_b 0) (exp_var_b 0)))
     ⦂ (ptyp_arrow σ_id (ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb)))
     ⊣ ((fa ~ abind_flex_mono_def (ptyp_var_f fb))
@@ -663,17 +663,17 @@ Proof.
   eapply a_typing__abs_anno with (x := x)
     (Ξ := (fa ~ abind_flex_mono_def (ptyp_var_f fb))
           ++ (fb ~ abind_flex_mono))
-    (P := pskl_hole) (Q := pskl_hole)
+    (P := pskl_ghost) (Q := pskl_ghost)
     (Θ1 := Θlib) (Θ2 := Θlib) (Θ3 := Θlib).
   - discriminate.
-  - apply a_split__hole.
+  - apply a_split__ghost.
   - eexists. apply a_consis__ghost_r. fsetdec.
   - repeat constructor.
   - simpl_env; simpl fvar_in_exp; clear - Hx; fsetdec.
   - simpl_open. cbn [decr_mode].
     eapply a_typing__app
       with (A := ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb))
-           (P := pskl_tophole (pskl_arrow pskl_hole pskl_hole))
+           (P := pskl_univ_ghost (pskl_arrow pskl_ghost pskl_ghost))
            (Θ2 := (fa ~ abind_flex_mono) ++ (fb ~ abind_flex_mono)
                   ++ (x ~ abind_var_typ σ_id) ++ Θlib).
     + (* x ⦂[TC;□] ∀◇(□→□) *)
@@ -689,20 +689,20 @@ Proof.
       * left. crush_lc.
       * clear - Hα; fsetdec.
       * eapply a_extract__solve with (Ξ := nil) (Ξs := nil)
-          (C := a_cstr_eq (pskl_tophole (pskl_arrow pskl_hole pskl_hole))
-                :: a_cstr_sub mode_ti pskl_hole :: nil)
-          (Q := pskl_tophole (pskl_arrow pskl_hole pskl_hole)).
+          (C := a_cstr_eq (pskl_univ_ghost (pskl_arrow pskl_ghost pskl_ghost))
+                :: a_cstr_sub mode_ti pskl_ghost :: nil)
+          (Q := pskl_univ_ghost (pskl_arrow pskl_ghost pskl_ghost)).
         { simpl_open.
           apply a_looksub__arrow with (Ξ1 := nil) (Ξ2 := nil)
-            (C1 := a_cstr_eq (pskl_tophole (pskl_arrow pskl_hole pskl_hole)) :: nil)
-            (C2 := a_cstr_sub mode_ti pskl_hole :: nil);
+            (C1 := a_cstr_eq (pskl_univ_ghost (pskl_arrow pskl_ghost pskl_ghost)) :: nil)
+            (C2 := a_cstr_sub mode_ti pskl_ghost :: nil);
             [ simpl; clear; fsetdec | simpl; clear; fsetdec | | ].
           - apply a_lookeq__var.
           - (* ◇-dispatch guard: the subject IS the looked-for variable, so
                this cell is LS-Var and collects one more constraint *)
             apply a_looksub__var. }
         { eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
-          - apply a_solve_eq__hole_l.
+          - apply a_solve_eq__ghost_l.
           - apply a_solve_cstr__sub.
           (* ⭐ UNDER THE SOLVE-DISPATCH GUARD the ⫯ must be STRIPPED first:
              [SS-UnivGhostL] is matched before [SS-Vacuous] (type.ml:494),
@@ -711,11 +711,11 @@ Proof.
           apply a_solve_sub__vacuous; split; intros; discriminate. }
         { apply (a_guess__ty
                    (A := ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb))).
-          apply a_guess_mono__tophole.
+          apply a_guess_mono__univ_ghost.
           apply a_guess_mono__arrow
             with (Ξ1 := (fa ~ abind_flex_mono) ++ nil)
                  (Ξ2 := (fb ~ abind_flex_mono) ++ nil);
-            apply a_guess_mono__hole; crush_guess_fresh. }
+            apply a_guess_mono__ghost; crush_guess_fresh. }
         { (* the cross-layer guard: the fold generates nothing *)
           simpl. clear. fsetdec. }
         { (* and the guess's half: its block is apart from both *)
@@ -753,7 +753,7 @@ Proof.
               (C2 := a_cstr_eq (pskl_var_f fb) :: nil);
               [ simpl; clear; fsetdec | simpl; clear; fsetdec | apply a_lookeq__var | apply a_lookeq__var ]. }
         { eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
-          - apply a_solve_eq__hole_l.
+          - apply a_solve_eq__ghost_l.
           - eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
             + apply a_solve_eq__var.
             + apply a_solve_cstr__empty. }
@@ -783,19 +783,19 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_A10a :
-  {{ Θlib ⊢[ mode_ti ; pskl_hole ]
+  {{ Θlib ⊢[ mode_ti ; pskl_ghost ]
     (exp_app (exp_var_f x_poly) (exp_var_f x_id))
     ⦂ σ_prodIB ⊣ Θlib }}a.
 Proof.
   eapply a_typing__app with (A := σ_id)
-    (P := pskl_tophole (pskl_arrow pskl_hole pskl_hole)) (Θ2 := Θlib).
+    (P := pskl_univ_ghost (pskl_arrow pskl_ghost pskl_ghost)) (Θ2 := Θlib).
   - (* id ⦂[TC;□] ∀◇(□→□) *)
     apply pat_var_sigid; [ crush_uniq | crush_binds ].
   - (* poly ⦂[FN TI; ∀◇(□→□) → □]  σ_id → σ_prodIB *)
     eapply a_typing__var; [ crush_binds | ].
     unfold σ_poly; simpl ptyp_to_pskl.
     apply a_sub__arrow with (Θ1 := Θlib).
-    + apply consis_sigid_tophole.
+    + apply consis_sigid_univ_ghost.
     + apply a_sub__infer.
   - (* id ⦂[TC; skel σ_id]  σ_id *)
     eapply a_typing__var with (B := σ_id); [ crush_binds | ].
@@ -808,14 +808,14 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_C2 :
-  {{ Θlib ⊢[ mode_ti ; pskl_hole ]
+  {{ Θlib ⊢[ mode_ti ; pskl_ghost ]
     (exp_app (exp_var_f x_r) (exp_abs (exp_abs (exp_var_b 0))))
     ⦂ tInt ⊣ Θlib }}a.
 Proof.
   eapply a_typing__app
     with (A := ptyp_all (ptyp_arrow b0 (ptyp_all (ptyp_arrow b0 b0))))
-         (P := pskl_tophole (pskl_arrow pskl_hole
-                 (pskl_tophole (pskl_arrow pskl_hole pskl_hole))))
+         (P := pskl_univ_ghost (pskl_arrow pskl_ghost
+                 (pskl_univ_ghost (pskl_arrow pskl_ghost pskl_ghost))))
          (Θ2 := Θlib).
   - (* λx.λy.y ⦂[TC;□] ∀◇(□ → ∀◇(□→□)) *)
     destruct (atom_fresh (dom Θlib)) as [xb Hxb].
@@ -825,7 +825,7 @@ Proof.
     + simpl_env; simpl fvar_in_exp; clear - Hxb; fsetdec.
     + simpl_open.
       eapply a_pat__abs_check with (x := yb) (Ξ := nil)
-        (Θ1 := (xb ~ abind_var_skl pskl_hole) ++ Θlib).
+        (Θ1 := (xb ~ abind_var_skl pskl_ghost) ++ Θlib).
       * constructor.
       * simpl_env; simpl fvar_in_exp; clear - Hyb; fsetdec.
       * simpl_open.
@@ -910,7 +910,7 @@ Qed.
 (* ===================================================================== *)
 
 Example ex_E2b :
-  {{ Θlib ⊢[ mode_ti ; pskl_hole ]
+  {{ Θlib ⊢[ mode_ti ; pskl_ghost ]
     (exp_anno (exp_abs (exp_app (exp_var_f x_poly) (exp_var_b 0)))
               (ptyp_arrow σ_id σ_prodIB))
     ⦂ (ptyp_arrow σ_id σ_prodIB) ⊣ Θlib }}a.
@@ -930,7 +930,7 @@ Proof.
     + simpl_open.
       eapply a_typing__app
         with (A := σ_id)
-             (P := pskl_tophole (pskl_arrow pskl_hole pskl_hole))
+             (P := pskl_univ_ghost (pskl_arrow pskl_ghost pskl_ghost))
              (Θ2 := (x ~ abind_var_typ σ_id) ++ Θlib).
       * (* x ⦂[TC;□] ∀◇(□→□) *)
         apply pat_var_sigid; [ crush_uniq | crush_binds ].
@@ -938,7 +938,7 @@ Proof.
         eapply a_typing__var; [ crush_binds | ].
         unfold σ_poly; simpl ptyp_to_pskl.
         apply a_sub__arrow with (Θ1 := (x ~ abind_var_typ σ_id) ++ Θlib).
-        { apply consis_sigid_tophole. }
+        { apply consis_sigid_univ_ghost. }
         (* codomain: skel σ_prodIB ⩽[TC; skel σ_prodIB] itself *)
         destruct (atom_fresh (dom Θlib `union` singleton aInt
                     `union` singleton aBool `union` singleton fa
@@ -978,7 +978,7 @@ Proof.
                 { apply a_lookeq__var. }
             + apply a_lookeq__var.
           - eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
-            { apply a_solve_eq__hole_l. }
+            { apply a_solve_eq__ghost_l. }
             eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
             { apply a_solve_eq__var. }
             apply a_solve_cstr__empty.
@@ -1030,7 +1030,7 @@ Proof.
               (C2 := a_cstr_eq (pskl_var_f α) :: nil);
               [ simpl; clear; fsetdec | simpl; clear; fsetdec | apply a_lookeq__var | apply a_lookeq__var ].
           - eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
-            { apply a_solve_eq__hole_l. }
+            { apply a_solve_eq__ghost_l. }
             eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
             { apply a_solve_eq__var. }
             apply a_solve_cstr__empty.

@@ -44,7 +44,7 @@ Reserved Notation "{{ C ⊩ ψ ⤳ Ψ }}da"
 
 (** Ghost-free unresolved skeletons: no ghosts of any kind.  Used for (i) the
     [N = TY] instantiation candidates (decorated TYPES φ, once combined with
-    [is_tskl]) and (ii) the dotted-ghost-freeness side condition of the
+    [is_dskl]) and (ii) the dotted-ghost-freeness side condition of the
     tag-solving FlexR rule (on decorated ψ, ghost-free ≡ dotted-ghost-free). *)
 Inductive uskl_ghost_free : uskl -> Prop :=
 | uskl_ghost_free__unit : uskl_ghost_free uskl_unit
@@ -66,15 +66,15 @@ Inductive uskl_ghost_free : uskl -> Prop :=
 #[export] Hint Constructors uskl_ghost_free : fresco.
 
 (** [Θ ⊢^N tags{Ψg}{ψg}] (decorated ForallL premise, decorated-algosub:93):
-    for [SK], ψg is a decorated skeleton ([is_tskl] + [tags{Ψg}]); for [TY],
+    for [SK], ψg is a decorated skeleton ([is_dskl] + [tags{Ψg}]); for [TY],
     ψg is a decorated TYPE — additionally ghost-free. *)
 Inductive a_tags_sort : a_sub_mode -> atoms -> uskl -> Prop :=
 | a_tags_sort__sk : forall Ψ ψ,
-    is_tskl ψ ->
+    is_dskl ψ ->
     d_tags_skl Ψ ψ ->
     a_tags_sort a_sub_mode_sk Ψ ψ
 | a_tags_sort__ty : forall Ψ ψ,
-    is_tskl ψ ->
+    is_dskl ψ ->
     d_tags_skl Ψ ψ ->
     uskl_ghost_free ψ ->
     a_tags_sort a_sub_mode_ty Ψ ψ.
@@ -91,7 +91,7 @@ Inductive a_consistag :
 | a_consistag__ghost : forall Δ1 Δ2 Ψ Θ0 P0,                  (* Ghost *)
     Δ2 ∩ ftvar_in_pskl P0 [=] empty ->
     Ψ [=] empty ->
-    {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | Ψ ] uskl_hole ∼ P0 ⊣ Θ0 }}da
+    {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | Ψ ] uskl_ghost ∼ P0 ⊣ Θ0 }}da
 | a_consistag__unit : forall Δ1 Δ2 Ψ Θ0,                      (* Unit *)
     Ψ [=] empty ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | pskl_unit | Ψ ] uskl_unit ∼ pskl_unit ⊣ Θ0 }}da
@@ -116,7 +116,7 @@ Inductive a_consistag :
 (* — decorated rules (fig:decorated-alg-consistency) — *)
 | a_consistag__ghostg : forall Δ1 Δ2 Ψ Θ0,                    (* GhostG *)
     Ψ [=] empty ->
-    {{ Θ0 ⊢[ Δ1 | Δ2 | pskl_hole | Ψ ] uskl_holeg ∼ pskl_hole ⊣ Θ0 }}da
+    {{ Θ0 ⊢[ Δ1 | Δ2 | pskl_ghost | Ψ ] uskl_dot_ghost ∼ pskl_ghost ⊣ Θ0 }}da
 | a_consistag__arrow : forall Δ1 Δ2 Ψ Ψ1 Ψ2 Θ0 Θ1 Θ2 P0a P0b R1 R2 Q1 Q2,
     {{ Θ0 ⊢[ Δ1 | Δ2 | P0a | Ψ1 ] R1 ∼ Q1 ⊣ Θ1 }}da ->                (* Arrow *)
     {{ Θ1 ⊢[ Δ1 | Δ2 | P0b | Ψ2 ] R2 ∼ Q2 ⊣ Θ2 }}da ->
@@ -147,52 +147,52 @@ Inductive a_consistag :
 | a_consistag__forall_syn_tagged : forall L Δ1 Δ2 Ψ Θ0 Θ1 ε P0 R Q,
     (forall α, α `notin` L ->                                 (* ForallSyn, β1=ε *)
        {{ ((α ~ abind_tvar) ++ Θ0)
-         ⊢[ Δ1 | (add α Δ2) | (pskl_tophole P0) | Ψ ]
+         ⊢[ Δ1 | (add α Δ2) | (pskl_univ_ghost P0) | Ψ ]
          (open_uskl_wrt_uskl R (uskl_var_f α)) ∼
          (open_pskl_wrt_pskl Q (pskl_var_f α))
          ⊣ ((α ~ abind_tvar) ++ Θ1) }}da) ->
-    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) | Ψ ]
+    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_univ_ghost P0) | Ψ ]
       (uskl_all_tag ε R) ∼ (pskl_all_syn Q) ⊣ Θ1 }}da
 | a_consistag__forall_syn_untagged : forall L Δ1 Δ2 Ψ Θ0 Θ1 P0 R Q,
     (forall α, α `notin` L ->                                 (* ForallSyn, β1=· *)
        {{ ((α ~ abind_tvar) ++ Θ0)
-         ⊢[ Δ1 | (add α Δ2) | (pskl_tophole P0) | Ψ ]
+         ⊢[ Δ1 | (add α Δ2) | (pskl_univ_ghost P0) | Ψ ]
          (open_uskl_wrt_uskl R (uskl_var_f α)) ∼
          (open_pskl_wrt_pskl Q (pskl_var_f α))
          ⊣ ((α ~ abind_tvar) ++ Θ1) }}da) ->
-    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) | Ψ ]
+    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_univ_ghost P0) | Ψ ]
       (uskl_all_syn R) ∼ (pskl_all_syn Q) ⊣ Θ1 }}da
 | a_consistag__univ_ghost : forall Δ1 Δ2 Ψ Θ0 Θ1 P0 R Q,      (* UnivGhost *)
     {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | Ψ ] R ∼ Q ⊣ Θ1 }}da ->
-    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) | Ψ ]
-      (uskl_tophole R) ∼ (pskl_tophole Q) ⊣ Θ1 }}da
+    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_univ_ghost P0) | Ψ ]
+      (uskl_univ_ghost R) ∼ (pskl_univ_ghost Q) ⊣ Θ1 }}da
 | a_consistag__univ_ghostg : forall Δ1 Δ2 Ψ Θ0 Θ1 P0 R Q,     (* UnivGhostG *)
     {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | Ψ ] R ∼ Q ⊣ Θ1 }}da ->
-    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) | Ψ ]
-      (uskl_topholeg R) ∼ (pskl_tophole Q) ⊣ Θ1 }}da
+    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_univ_ghost P0) | Ψ ]
+      (uskl_dot_univ_ghost R) ∼ (pskl_univ_ghost Q) ⊣ Θ1 }}da
 | a_consistag__univ_ghost1 : forall L Δ1 Δ2 Ψ Θ0 Θ1 P0 R Q,   (* UnivGhost1 *)
     (forall α, α `notin` L ->
        {{ ((α ~ abind_tvar) ++ Θ0)
          ⊢[ (add α Δ1) | Δ2
            | (open_pskl_wrt_pskl P0 (pskl_var_f α)) | Ψ ]
-         (uskl_tophole R) ∼ (open_pskl_wrt_pskl Q (pskl_var_f α))
+         (uskl_univ_ghost R) ∼ (open_pskl_wrt_pskl Q (pskl_var_f α))
          ⊣ ((α ~ abind_tvar) ++ Θ1) }}da) ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_all_syn P0) | Ψ ]
-      (uskl_tophole R) ∼ (pskl_all_syn Q) ⊣ Θ1 }}da
+      (uskl_univ_ghost R) ∼ (pskl_all_syn Q) ⊣ Θ1 }}da
 | a_consistag__univ_ghost2 : forall Δ1 Δ2 Ψ Θ0 Θ1 P0 R Q,     (* UnivGhost2 *)
     guarded_pskl P0 ->
     a_non_flex Θ0 P0 ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | Ψ ] R ∼ Q ⊣ Θ1 }}da ->
-    {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | Ψ ] (uskl_tophole R) ∼ Q ⊣ Θ1 }}da
+    {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | Ψ ] (uskl_univ_ghost R) ∼ Q ⊣ Θ1 }}da
 | a_consistag__ghost_r : forall Δ1 Δ2 Ψ Θ0 R,                 (* GhostR *)
     Δ1 ∩ (ftvar_in_pskl ⌊ R ⌋ˢ) [=] empty ->
     Ψ [=] empty ->
-    {{ Θ0 ⊢[ Δ1 | Δ2 | pskl_hole | Ψ ] R ∼ ⌊ R ⌋ˢ ⊣ Θ0 }}da
+    {{ Θ0 ⊢[ Δ1 | Δ2 | pskl_ghost | Ψ ] R ∼ ⌊ R ⌋ˢ ⊣ Θ0 }}da
 | a_consistag__univ_ghost_r : forall Δ1 Δ2 Ψ Θ0 Θ1 P0 R Q,    (* UnivGhostR *)
     guarded_uskl R ->
     a_non_flex Θ0 ⌊ R ⌋ˢ ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | Ψ ] R ∼ Q ⊣ Θ1 }}da ->
-    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) | Ψ ] R ∼ Q ⊣ Θ1 }}da
+    {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_univ_ghost P0) | Ψ ] R ∼ Q ⊣ Θ1 }}da
 where "{{ Θ ⊢[ Δ1 | Δ2 | P0 | Ψ ] R ∼ Q ⊣ Θ' }}da" :=
   (a_consistag Δ1 Δ2 P0 Ψ Θ R Q Θ') : fresco_da_scope.
 
@@ -205,7 +205,7 @@ Inductive a_subtag :
   a_sub_mode -> mode -> pskl -> atoms -> aenv -> uskl -> pskl -> aenv -> Prop :=
 | a_subtag__infer : forall NM Ψ Θ0 R,                         (* Infer *)
     Ψ [=] empty ->
-    {{ Θ0 ⊢[ NM | mode_ti | pskl_hole | Ψ ] R ⩽ ⌊ R ⌋ˢ ⊣ Θ0 }}da
+    {{ Θ0 ⊢[ NM | mode_ti | pskl_ghost | Ψ ] R ⩽ ⌊ R ⌋ˢ ⊣ Θ0 }}da
 | a_subtag__check : forall Ψ Θ0 Θ1 T B Q,                     (* Check *)
     (* SORT, mirroring [a_sub__check]: the paper's [guarded{T,B}]
        (decorated-algosub.tex:57) names an unresolved TYPE [T] and a type [B].
@@ -250,8 +250,8 @@ Inductive a_subtag :
 | a_subtag__univ_ghost_r : forall Ψ Θ0 R,                     (* UnivGhostR *)
     guarded_uskl R ->
     Ψ [=] empty ->
-    {{ Θ0 ⊢[ a_sub_mode_sk | mode_tc | pskl_hole | Ψ ]
-      R ⩽ (pskl_tophole ⌊ R ⌋ˢ) ⊣ Θ0 }}da
+    {{ Θ0 ⊢[ a_sub_mode_sk | mode_tc | pskl_ghost | Ψ ]
+      R ⩽ (pskl_univ_ghost ⌊ R ⌋ˢ) ⊣ Θ0 }}da
 | a_subtag__arrow : forall NM M Ψ Ψ1 Ψ2 Θ0 Θ1 Θ2 P0a P0b R1 R2 Q1 Q2,
     {{ Θ0 ⊢[ empty | empty | P0a | Ψ1 ] R1 ∼ Q1 ⊣ Θ1 }}da ->          (* Arrow *)
     {{ Θ1 ⊢[ NM | M | P0b | Ψ2 ] R2 ⩽ Q2 ⊣ Θ2 }}da ->
@@ -271,7 +271,7 @@ Inductive a_subtag :
    ([pskl_decorate_exists]). *)
 | a_subtag__forall_l_tagged : forall L NM M P0 Ψ Θ0 Θ1 ε R Q Ξ P1,
     M <> mode_ti ->                                           (* ForallL, β1=ε *)
-    (guarded_pskl P0 \/ P0 = pskl_hole) ->
+    (guarded_pskl P0 \/ P0 = pskl_ghost) ->
     (forall α, α `notin` L ->
        a_extract Θ0 NM α M ⌊ open_uskl_wrt_uskl R (uskl_var_f α) ⌋ˢ P0 Ξ P1) ->
     uniq (Ξ ++ Θ0) ->                                         (* fresh Ξ (prose-completion) *)
@@ -285,7 +285,7 @@ Inductive a_subtag :
     {{ Θ0 ⊢[ NM | M | P0 | Ψ ] (uskl_all_tag ε R) ⩽ Q ⊣ Θ1 }}da
 | a_subtag__forall_l_untagged : forall L NM M P0 Ψ Θ0 Θ1 R Q Ξ P1,
     M <> mode_ti ->                                           (* ForallL, β1=· *)
-    (guarded_pskl P0 \/ P0 = pskl_hole) ->
+    (guarded_pskl P0 \/ P0 = pskl_ghost) ->
     (forall α, α `notin` L ->
        a_extract Θ0 NM α M ⌊ open_uskl_wrt_uskl R (uskl_var_f α) ⌋ˢ P0 Ξ P1) ->
     uniq (Ξ ++ Θ0) ->                                         (* fresh Ξ (prose-completion) *)
@@ -299,18 +299,18 @@ Inductive a_subtag :
     {{ Θ0 ⊢[ NM | M | P0 | Ψ ] (uskl_all_syn R) ⩽ Q ⊣ Θ1 }}da
 | a_subtag__ghost : forall M Ψ Θ0 P0,                         (* Ghost (unchanged) *)
     Ψ [=] empty ->
-    {{ Θ0 ⊢[ a_sub_mode_sk | M | P0 | Ψ ] uskl_hole ⩽ P0 ⊣ Θ0 }}da
+    {{ Θ0 ⊢[ a_sub_mode_sk | M | P0 | Ψ ] uskl_ghost ⩽ P0 ⊣ Θ0 }}da
 | a_subtag__ghostg : forall M Ψ Θ0,                           (* GhostG *)
     Ψ [=] empty ->
-    {{ Θ0 ⊢[ a_sub_mode_sk | M | pskl_hole | Ψ ] uskl_holeg ⩽ pskl_hole ⊣ Θ0 }}da
+    {{ Θ0 ⊢[ a_sub_mode_sk | M | pskl_ghost | Ψ ] uskl_dot_ghost ⩽ pskl_ghost ⊣ Θ0 }}da
 | a_subtag__univ_ghost_l : forall M Ψ Θ0 Θ1 P0 R Q,           (* UnivGhostL *)
     M <> mode_ti ->
     {{ Θ0 ⊢[ a_sub_mode_sk | M | P0 | Ψ ] R ⩽ Q ⊣ Θ1 }}da ->
-    {{ Θ0 ⊢[ a_sub_mode_sk | M | P0 | Ψ ] (uskl_tophole R) ⩽ Q ⊣ Θ1 }}da
+    {{ Θ0 ⊢[ a_sub_mode_sk | M | P0 | Ψ ] (uskl_univ_ghost R) ⩽ Q ⊣ Θ1 }}da
 | a_subtag__univ_ghost_lg : forall M Ψ Θ0 Θ1 P0 R Q,          (* UnivGhostLG *)
     M <> mode_ti ->
     {{ Θ0 ⊢[ a_sub_mode_sk | M | P0 | Ψ ] R ⩽ Q ⊣ Θ1 }}da ->
-    {{ Θ0 ⊢[ a_sub_mode_sk | M | P0 | Ψ ] (uskl_topholeg R) ⩽ Q ⊣ Θ1 }}da
+    {{ Θ0 ⊢[ a_sub_mode_sk | M | P0 | Ψ ] (uskl_dot_univ_ghost R) ⩽ Q ⊣ Θ1 }}da
 | a_subtag__flex_mono : forall NM M P0 Ψ Θ0 Θ1 α A,           (* FlexMono (unchanged) *)
     a_subtag_flex NM M P0 Θ0 nil α A Θ1 ->
     Ψ [=] empty ->
@@ -396,10 +396,10 @@ Inductive a_solvetag_sub : uskl -> mode -> pskl -> atoms -> Prop :=
     {{ (uskl_all_tag ε ψ) ≼[ M ] Q ⤳ Ψ }}da
 | a_solvetag_sub__univ_ghost_lg : forall ψ M Q Ψ,             (* SSub-UnivGhostLG *)
     {{ ψ ≼[ M ] Q ⤳ Ψ }}da ->
-    {{ (uskl_topholeg ψ) ≼[ M ] Q ⤳ Ψ }}da
+    {{ (uskl_dot_univ_ghost ψ) ≼[ M ] Q ⤳ Ψ }}da
 | a_solvetag_sub__vacuous : forall ψ M Ψ,                     (* SSub-Vacuous *)
     Ψ [=] empty ->
-    {{ ψ ≼[ M ] pskl_hole ⤳ Ψ }}da
+    {{ ψ ≼[ M ] pskl_ghost ⤳ Ψ }}da
 | a_solvetag_sub__check : forall ψ B Ψ,                       (* SSub-Check *)
     (* SORT, mirroring [a_solve_sub__check]: target is a TYPE. *)
     pskl_ghost_free B ->
@@ -428,7 +428,7 @@ with a_solvetag_eq : uskl -> pskl -> atoms -> Prop :=
     {{ (uskl_var_f α) ∼ Q ⤳ Ψ }}da
 | a_solvetag_eq__vacuous : forall ψ Ψ,                        (* SEq-Vacuous *)
     Ψ [=] empty ->
-    {{ ψ ∼ pskl_hole ⤳ Ψ }}da
+    {{ ψ ∼ pskl_ghost ⤳ Ψ }}da
 | a_solvetag_eq__arrow : forall ψ1 ψ2 Q1 Q2 Ψ Ψ1 Ψ2,          (* SEq-Arrow *)
     {{ ψ1 ∼ Q1 ⤳ Ψ1 }}da ->
     {{ ψ2 ∼ Q2 ⤳ Ψ2 }}da ->
@@ -442,15 +442,15 @@ with a_solvetag_eq : uskl -> pskl -> atoms -> Prop :=
     {{ (uskl_all_tag ε ψ) ∼ (pskl_all_syn Q) ⤳ Ψ }}da
 | a_solvetag_eq__univ_ghostg : forall ψ Q Ψ,                  (* SEq-UnivGhostG *)
     {{ ψ ∼ Q ⤳ Ψ }}da ->
-    {{ (uskl_topholeg ψ) ∼ (pskl_tophole Q) ⤳ Ψ }}da
+    {{ (uskl_dot_univ_ghost ψ) ∼ (pskl_univ_ghost Q) ⤳ Ψ }}da
 | a_solvetag_eq__forall_syn : forall L ε ψ Q Ψ,               (* SEq-ForallSyn *)
     (forall β, β `notin` L ->
-       {{ (open_uskl_wrt_uskl ψ (uskl_var_f β)) ∼ (pskl_tophole Q) ⤳ Ψ }}da) ->
-    {{ (uskl_all_tag ε ψ) ∼ (pskl_tophole Q) ⤳ Ψ }}da
+       {{ (open_uskl_wrt_uskl ψ (uskl_var_f β)) ∼ (pskl_univ_ghost Q) ⤳ Ψ }}da) ->
+    {{ (uskl_all_tag ε ψ) ∼ (pskl_univ_ghost Q) ⤳ Ψ }}da
 | a_solvetag_eq__univ_ghost_r : forall ψ Q Ψ,                 (* SEq-UnivGhostR *)
     guarded_pskl ⌊ ψ ⌋ˢ ->
     {{ ψ ∼ Q ⤳ Ψ }}da ->
-    {{ ψ ∼ (pskl_tophole Q) ⤳ Ψ }}da
+    {{ ψ ∼ (pskl_univ_ghost Q) ⤳ Ψ }}da
 | a_solvetag_eq__flex_r : forall ψ α Ψ,                       (* SEq-FlexR *)
     uskl_ghost_free ψ ->
     Ψ [=] empty ->

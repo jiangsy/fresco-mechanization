@@ -54,11 +54,11 @@
         { gr_supply = r.gr_supply; gr_block = r.gr_block;
           gr_type = (Ptyp_all
             (close_ptyp_wrt_ptyp (supply_fresh s0) r.gr_type)) }
-      | Pskl_hole ->
+      | Pskl_ghost ->
         { gr_supply = (AtomSetImpl.add (supply_fresh s0) s0);
           gr_block = (app (EnvImpl.one ((supply_fresh s0), Abind_flex_mono)) []);
           gr_type = (Ptyp_var_f (supply_fresh s0)) }
-      | Pskl_tophole p0 -> e_guess_mono_impl s0 p0
+      | Pskl_univ_ghost p0 -> e_guess_mono_impl s0 p0
 
       let e_guess_mono_run = e_guess_mono_impl
 >>
@@ -87,7 +87,7 @@
     the convenient one.  Row for row the rest matches too: [l] is [gr_block],
     [incr counter] is [supply_fresh]+[add], [Bindlib.unbind]/[bind_var] are
     [open_pskl_wrt_pskl]/[close_ptyp_wrt_ptyp], and [UGhost p -> aux l k p] is
-    the [Pskl_tophole] row.  ⚙ The one real difference left is accumulator
+    the [Pskl_univ_ghost] row.  ⚙ The one real difference left is accumulator
     SHAPE: [type.ml] conses onto a single [l], we concatenate two blocks.
 
     ⚠️ TWO EXTRACTION NOTES FOR WHOEVER WRITES THE REAL DRIVER.  (i) Coq warns
@@ -168,11 +168,11 @@ Notation guess_res S0 P := (sig (guess_spec S0 P)).
 (* ===================================================================== *)
 
 Inductive e_guess_mono_order : supply -> pskl -> Prop :=
-| ego_hole : forall S,
-    e_guess_mono_order S pskl_hole
-| ego_tophole : forall S P,
+| ego_ghost : forall S,
+    e_guess_mono_order S pskl_ghost
+| ego_univ_ghost : forall S P,
     e_guess_mono_order S P ->
-    e_guess_mono_order S (pskl_tophole P)
+    e_guess_mono_order S (pskl_univ_ghost P)
 | ego_var : forall S α,
     e_guess_mono_order S (pskl_var_f α)
 | ego_unit : forall S,
@@ -224,13 +224,13 @@ Proof. intros * H; inversion H. Qed.
 Equations e_guess_mono_impl (S0 : supply) (P : pskl)
     (H : e_guess_mono_order S0 P) : guess_res S0 P
   by struct H :=
-| S0, pskl_hole, H =>
+| S0, pskl_ghost, H =>
     exist _ (mk_guess_result (add (supply_fresh S0) S0)
                ((supply_fresh S0 ~ abind_flex_mono) ++ nil)
                (ptyp_var_f (supply_fresh S0))) _
 | S0, pskl_var_f α, H => exist _ (mk_guess_result S0 nil (ptyp_var_f α)) _
 | S0, pskl_unit, H => exist _ (mk_guess_result S0 nil ptyp_unit) _
-| S0, pskl_tophole P, H =>
+| S0, pskl_univ_ghost P, H =>
     let (r, Hr) := e_guess_mono_impl S0 P _ in
     exist _ r _
 | S0, pskl_arrow P Q, H =>
@@ -270,8 +270,8 @@ Proof.
   - apply ego_var.
   - apply ego_arrow; [ apply IH1 | intros; apply IH2 ].
   - apply ego_forall. apply IH.
-  - apply ego_hole.
-  - apply ego_tophole. apply IH.
+  - apply ego_ghost.
+  - apply ego_univ_ghost. apply IH.
 Qed.
 
 (** ⭐ THE RUNNER — no derivation argument, no fuel, no measure in its type.

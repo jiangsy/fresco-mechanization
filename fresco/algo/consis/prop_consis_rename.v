@@ -792,12 +792,12 @@ Qed.
 
 (** The [<> ◇] guard the consistency FlexL/FlexR rows carry (algo/def_rules.v)
     survives a RIGID RENAME: the replacement is a variable, so no constructor
-    can turn into a hole.  ⚠️ It does NOT survive an arbitrary substitution —
-    [subst ◇ α (pskl_var_f α)] is a hole — which is why this is stated for a
+    can turn into a ghost.  ⚠️ It does NOT survive an arbitrary substitution —
+    [subst ◇ α (pskl_var_f α)] is a ghost — which is why this is stated for a
     variable replacement only. *)
-Lemma subst_pskl_var_not_hole : forall (β α : atom) P,
-  P <> pskl_hole ->
-  subst_pskl_in_pskl (pskl_var_f β) α P <> pskl_hole.
+Lemma subst_pskl_var_not_ghost : forall (β α : atom) P,
+  P <> pskl_ghost ->
+  subst_pskl_in_pskl (pskl_var_f β) α P <> pskl_ghost.
 Proof.
   intros * H. destruct P; simpl; try discriminate; [ | congruence ].
   destruct_if; discriminate.
@@ -1487,7 +1487,7 @@ Proof.
     apply a_consis__flex_l.
     + subst Θ0. apply a_non_flex_rename; [ | exact Hnf ].
       clear - HYi. rewrite dom_app in *. simpl dom in HYi. fsetdec.
-    + apply subst_pskl_var_not_hole. exact Hnhole.
+    + apply subst_pskl_var_not_ghost. exact Hnhole.
     + exact Hren.
   - (* flex_r : the assign back-edge, mirrored *)
     intros Δ1 Δ2 Θ0 Θ1 β1 P Hnf Hnhole Ha IH.
@@ -1506,7 +1506,7 @@ Proof.
     apply a_consis__flex_r.
     + subst Θ0. apply a_non_flex_rename; [ | exact Hnf ].
       clear - HYi. rewrite dom_app in *. simpl dom in HYi. fsetdec.
-    + apply subst_pskl_var_not_hole. exact Hnhole.
+    + apply subst_pskl_var_not_ghost. exact Hnhole.
     + exact Hren.
   - (* ghost_r : axiom node *)
     intros Δ1 Δ2 Θ0 P Hi. exists empty.
@@ -1573,11 +1573,11 @@ Qed.
 Lemma a_consis_forall_syn_cofinite : forall L Δ1 Δ2 Θ0 Θ1 P0 P Q,
   (forall α, α `notin` L ->
      {{ ((α ~ abind_tvar) ++ Θ0)
-       ⊢[ Δ1 | (add α Δ2) | (pskl_tophole P0) ]
+       ⊢[ Δ1 | (add α Δ2) | (pskl_univ_ghost P0) ]
        (open_pskl_wrt_pskl P (pskl_var_f α)) ∼
        (open_pskl_wrt_pskl Q (pskl_var_f α))
        ⊣ ((α ~ abind_tvar) ++ Θ1) }}a) ->
-  {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_tophole P0) ]
+  {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_univ_ghost P0) ]
     (pskl_all_syn P) ∼ (pskl_all_syn Q) ⊣ Θ1 }}a.
 Proof.
   intros L Δ1 Δ2 Θ0 Θ1 P0 P Q Hbody.
@@ -1608,7 +1608,7 @@ Qed.
     ([a_consistag_decoration_size], prop_decorate_sub.v §7).
 
     The measure is [size_pskl P + size_pskl P0]: the SUBJECT alone does not
-    work, because UnivGhost1 leaves it fixed at [pskl_tophole P] and shrinks
+    work, because UnivGhost1 leaves it fixed at [pskl_univ_ghost P] and shrinks
     only the input, while ForallSyn does the opposite.
 
     (Until the [F]-deletion this lemma was additionally generalized over the
@@ -1720,7 +1720,7 @@ Proof.
       by (simpl; clear - Hβ; fsetdec).
     assert (Hb2 : β `notin` dom ((α ~ abind_tvar) ++ Θ1))
       by (simpl; clear - Hβ; fsetdec).
-    assert (Hb3 : β `notin` ftvar_in_pskl (pskl_tophole P0))
+    assert (Hb3 : β `notin` ftvar_in_pskl (pskl_univ_ghost P0))
       by (simpl; clear - Hβ; fsetdec).
     assert (Hb4 : β `notin`
               ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α)))
@@ -1770,7 +1770,7 @@ Proof.
               ftvar_in_pskl (open_pskl_wrt_pskl P0 (pskl_var_f α)))
       by (apply notin_ftvar_open_pskl_var;
           [ exact Hβα | clear - Hβ; fsetdec ]).
-    assert (Hb4 : β `notin` ftvar_in_pskl (pskl_tophole P))
+    assert (Hb4 : β `notin` ftvar_in_pskl (pskl_univ_ghost P))
       by (simpl; clear - Hβ; fsetdec).
     assert (Hb5 : β `notin` ftvar_in_pskl Q) by (clear - Hβ; fsetdec).
     assert (Hb6 : β `notin` add α Δ1) by (clear - Hβ Hβα; fsetdec).
@@ -1784,8 +1784,8 @@ Proof.
     rewrite (subst_pskl_in_pskl_spec Q (pskl_var_f β) α) in Hren.
     pose proof (auc_delta_consis Hren
                   (rn_set_add_same β HαΔ1) (rn_set_notin β HαΔ2)) as Hren'.
-    change (uskl_tophole (pskl_to_uskl P))
-      with (pskl_to_uskl (pskl_tophole P)).
+    change (uskl_univ_ghost (pskl_to_uskl P))
+      with (pskl_to_uskl (pskl_univ_ghost P)).
     eapply IHn; [ | exact Hren' | solve_uniq ].
     rewrite size_pskl_open_pskl_wrt_pskl_var. simpl. lia.
   - (* UnivGhost2 *)

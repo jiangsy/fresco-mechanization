@@ -100,8 +100,8 @@ Fixpoint degree_pskl_ck (n : nat) (P : pskl) : bool :=
   | pskl_var_f _ => true
   | pskl_arrow P1 P2 => degree_pskl_ck n P1 && degree_pskl_ck n P2
   | pskl_all_syn P1 => degree_pskl_ck (S n) P1
-  | pskl_hole => true
-  | pskl_tophole P1 => degree_pskl_ck n P1
+  | pskl_ghost => true
+  | pskl_univ_ghost P1 => degree_pskl_ck n P1
   end.
 
 Lemma degree_pskl_ck_sound : forall P k,
@@ -302,8 +302,8 @@ Proof.
         | None => None
         | Some (exist _ A1 H1) => Some (exist _ (ptyp_all A1) _)
         end
-    | pskl_hole => None
-    | pskl_tophole _ => None
+    | pskl_ghost => None
+    | pskl_univ_ghost _ => None
     end); simpl; subst; reflexivity.
 Defined.
 
@@ -339,7 +339,7 @@ Inductive e_pat_order : supply -> mode -> aenv -> pskl -> exp -> Prop :=
 | e_pat_order__intro : forall S0 m Θ0 P0 e,
     (* AP-Freeze *)
     (forall e1, e = exp_freeze e1 ->
-       e_pat_order S0 mode_ti Θ0 pskl_hole e1) ->
+       e_pat_order S0 mode_ti Θ0 pskl_ghost e1) ->
     (* AP-Abs — the body, behind the split, at the committed binder *)
     (forall e1, e = exp_abs e1 ->
        forall S1 Θ1 P Q0, {{ S0 ↝ S1 ⊨ Θ0 ⊲ P0 ▹ P ⇢ Q0 ⊣ Θ1 }}e ->
@@ -358,21 +358,21 @@ Inductive e_pat_order : supply -> mode -> aenv -> pskl -> exp -> Prop :=
     (* AP-AbsCheck *)
     (forall e1, e = exp_abs e1 ->
        e_pat_order (add (supply_fresh S0) S0) mode_tc
-         ((supply_fresh S0 ~ abind_var_skl pskl_hole) ++ Θ0) pskl_hole
+         ((supply_fresh S0 ~ abind_var_skl pskl_ghost) ++ Θ0) pskl_ghost
          (open_exp_wrt_exp e1 (exp_var_f (supply_fresh S0)))) ->
     (* AP-AbsAnnoCheck *)
     (forall A e1, e = exp_abs_anno A e1 ->
        e_pat_order (add (supply_fresh S0) S0) mode_tc
-         ((supply_fresh S0 ~ abind_var_typ A) ++ Θ0) pskl_hole
+         ((supply_fresh S0 ~ abind_var_typ A) ++ Θ0) pskl_ghost
          (open_exp_wrt_exp e1 (exp_var_f (supply_fresh S0)))) ->
     (* AP-App, argument then function — conjunction-free on purpose (the
        obligations are closed by [eauto] alone; a /\ would need a select
        ladder as in def_look_impl.v §2) *)
     (forall e1 e2, e = exp_app e1 e2 ->
-       e_pat_order S0 mode_tc Θ0 pskl_hole e2) ->
+       e_pat_order S0 mode_tc Θ0 pskl_ghost e2) ->
     (forall e1 e2, e = exp_app e1 e2 ->
        forall S1 Θ1 P1,
-         {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_tc ; pskl_hole ] e2 ⦂ P1 ⊣ Θ1 }}e ->
+         {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ mode_tc ; pskl_ghost ] e2 ⦂ P1 ⊣ Θ1 }}e ->
        e_pat_order S1 (mode_fn m) Θ1 (pskl_arrow P1 P0) e1) ->
     e_pat_order S0 m Θ0 P0 e.
 
@@ -483,8 +483,8 @@ Equations e_split_impl (S0 : supply) (Θ0 : aenv) (P0 : pskl)
 
 | S0, Θ0, pskl_arrow P Q =>
     Some (exist _ (mk_split_result S0 Θ0 P Q) _)
-| S0, Θ0, pskl_hole =>
-    Some (exist _ (mk_split_result S0 Θ0 pskl_hole pskl_hole) _)
+| S0, Θ0, pskl_ghost =>
+    Some (exist _ (mk_split_result S0 Θ0 pskl_ghost pskl_ghost) _)
 | S0, Θ0, pskl_var_f α =>                                (* split[α̂] *)
     match sumbool_of_bool (defs_mono_ck Θ0) with
     | right _ => None
@@ -587,8 +587,8 @@ Equations e_pat_impl (S0 : supply) (m : mode) (Θ0 : aenv) (P0 : pskl)
     end
 
 (* AP-Freeze *)
-| S0, mode_tc, Θ0, pskl_hole, exp_freeze e1, H =>
-    match e_pat_impl S0 mode_ti Θ0 pskl_hole e1 _ with
+| S0, mode_tc, Θ0, pskl_ghost, exp_freeze e1, H =>
+    match e_pat_impl S0 mode_ti Θ0 pskl_ghost e1 _ with
     | None => None
     | Some (exist _ r Hr) => Some (exist _ r _)
     end
@@ -655,23 +655,23 @@ Equations e_pat_impl (S0 : supply) (m : mode) (Θ0 : aenv) (P0 : pskl)
     end
 
 (* AP-AbsCheck *)
-| S0, mode_tc, Θ0, pskl_hole, exp_abs e1, H =>
+| S0, mode_tc, Θ0, pskl_ghost, exp_abs e1, H =>
     match e_pat_impl (add (supply_fresh S0) S0) mode_tc
-            ((supply_fresh S0 ~ abind_var_skl pskl_hole) ++ Θ0) pskl_hole
+            ((supply_fresh S0 ~ abind_var_skl pskl_ghost) ++ Θ0) pskl_ghost
             (open_exp_wrt_exp e1 (exp_var_f (supply_fresh S0))) _ with
     | None => None
     | Some (exist _ r Hr) =>
         match split_at_key_skl (supply_fresh S0) (pt_ctx r) with
         | None => None
         | Some (exist _ t HΘ) =>
-            match sumbool_of_bool (pskl_eqb (snd (fst t)) pskl_hole
+            match sumbool_of_bool (pskl_eqb (snd (fst t)) pskl_ghost
                                    && suffix_ck (fst (fst t))) with
             | right _ => None
             | left _ =>
                 Some (exist _ (mk_pat_result (pt_supply r)
                         (fst (fst t) ++ snd t)
-                        (pskl_tophole
-                           (pskl_arrow pskl_hole (pt_skel r)))) _)
+                        (pskl_univ_ghost
+                           (pskl_arrow pskl_ghost (pt_skel r)))) _)
             end
         end
     end
@@ -764,9 +764,9 @@ Equations e_pat_impl (S0 : supply) (m : mode) (Θ0 : aenv) (P0 : pskl)
     end
 
 (* AP-AbsAnnoCheck *)
-| S0, mode_tc, Θ0, pskl_hole, exp_abs_anno A e1, H =>
+| S0, mode_tc, Θ0, pskl_ghost, exp_abs_anno A e1, H =>
     match e_pat_impl (add (supply_fresh S0) S0) mode_tc
-            ((supply_fresh S0 ~ abind_var_typ A) ++ Θ0) pskl_hole
+            ((supply_fresh S0 ~ abind_var_typ A) ++ Θ0) pskl_ghost
             (open_exp_wrt_exp e1 (exp_var_f (supply_fresh S0))) _ with
     | None => None
     | Some (exist _ r Hr) =>
@@ -779,7 +779,7 @@ Equations e_pat_impl (S0 : supply) (m : mode) (Θ0 : aenv) (P0 : pskl)
             | left _ =>
                 Some (exist _ (mk_pat_result (pt_supply r)
                         (fst (fst t) ++ snd t)
-                        (pskl_tophole
+                        (pskl_univ_ghost
                            (pskl_arrow (ptyp_to_pskl A) (pt_skel r)))) _)
             end
         end
@@ -788,7 +788,7 @@ Equations e_pat_impl (S0 : supply) (m : mode) (Θ0 : aenv) (P0 : pskl)
 
 (* AP-App *)
 | S0, m, Θ0, P0, exp_app e1 e2, H =>
-    match e_pat_impl S0 mode_tc Θ0 pskl_hole e2 _ with
+    match e_pat_impl S0 mode_tc Θ0 pskl_ghost e2 _ with
     | None => None
     | Some (exist _ r2 Hr2) =>
         match e_pat_impl (pt_supply r2) (mode_fn m) (pt_ctx r2)

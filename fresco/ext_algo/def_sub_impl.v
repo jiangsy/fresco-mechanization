@@ -109,7 +109,7 @@ Definition split_at_tvar (α : atom)
 Proof.
   (* ⚠️ the marker is recognised by [abind_is_tvar_dec], not by a
      constructor pattern beside a catch-all: the match compiler expands a
-     catch-all row per constructor, and the duplicated holes no longer see
+     catch-all row per constructor, and the duplicated ghosts no longer see
      the binding they were written with *)
   refine (fix go (Θ : aenv)
       : option (sig (fun p : aenv * aenv
@@ -231,7 +231,7 @@ Inductive e_sub_call_order : supply -> a_sub_mode -> mode -> pskl -> aenv
     (* ForallL — extract an instantiation, then recurse on the opened body *)
     (forall Q,
        P = pskl_all_syn Q -> M <> mode_ti ->
-       (guarded_pskl P0 \/ P0 = pskl_hole) ->
+       (guarded_pskl P0 \/ P0 = pskl_ghost) ->
        e_extract_order (add (supply_fresh S0) S0) Θ0 NM (supply_fresh S0) M
          (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0))) P0
        /\ (forall S1 Ξ P1,
@@ -243,7 +243,7 @@ Inductive e_sub_call_order : supply -> a_sub_mode -> mode -> pskl -> aenv
                (sub_call_sub (open_pskl_wrt_pskl Q P1)))) ->
     (* UnivGhostL — strip the subject's ⫯ *)
     (forall Q,
-       P = pskl_tophole Q -> M <> mode_ti ->
+       P = pskl_univ_ghost Q -> M <> mode_ti ->
        e_sub_call_order S0 NM M P0 Θ0 (sub_call_sub Q)) ->
     e_sub_call_order S0 NM M P0 Θ0 (sub_call_sub P)
 
@@ -352,7 +352,7 @@ with e_sub_flex_order_to_call S0 NM M P0 Θ0 Ξ α
 (* ===================================================================== *)
 
 #[local] Hint Resolve supply_fresh_notin mem_true_in mem_false_notin
-  guarded_shape_ck_sound ghost_free_ck_sound hole_ck_sound
+  guarded_shape_ck_sound ghost_free_ck_sound ghost_ck_sound
   suffix_ck_sound uniq_ck_sound wf_pskl_ck_sound a_wf_pskl_lc
   lc_pskl_all_syn_inv lc_pskl_open_graft
   subst_pskl_in_pskl_lc_pskl mono_ptyp_to_pskl_lc mono_ptyp_lc
@@ -408,11 +408,11 @@ with e_sub_flex_order_to_call S0 NM M P0 Θ0 Ξ α
              let Hne := fresh "Hne0" in
              assert (Hne : A <> B) by congruence;
              specialize (Hp Hne); clear Hne
-         | Hp : (guarded_pskl ?P \/ ?P = pskl_hole) -> _ |- _ =>
+         | Hp : (guarded_pskl ?P \/ ?P = pskl_ghost) -> _ |- _ =>
              let Hd := fresh "Hd0" in
-             assert (Hd : guarded_pskl P \/ P = pskl_hole)
+             assert (Hd : guarded_pskl P \/ P = pskl_ghost)
                by (solve [ left; apply guarded_shape_ck_sound; assumption
-                         | right; apply hole_ck_sound; assumption
+                         | right; apply ghost_ck_sound; assumption
                          | right; reflexivity ]);
              specialize (Hp Hd); clear Hd
          | Hp : _ /\ _ |- _ => destruct Hp
@@ -427,11 +427,11 @@ with e_sub_flex_order_to_call S0 NM M P0 Θ0 Ξ α
                     assert (Hx := Hlc); apply lc_pskl_arrow_inv in Hx;
                     destruct Hx
              end
-         | Hlc : lc_pskl (pskl_tophole ?a) |- _ =>
+         | Hlc : lc_pskl (pskl_univ_ghost ?a) |- _ =>
              lazymatch goal with
              | _ : lc_pskl a |- _ => fail
              | _ => let Hx := fresh "Hlc0" in
-                    assert (Hx := Hlc); apply lc_pskl_tophole_inv in Hx
+                    assert (Hx := Hlc); apply lc_pskl_univ_ghost_inv in Hx
              end
          end.
 
@@ -510,7 +510,7 @@ Equations e_sub_call_impl (c : sub_call) (S0 : supply) (NM : a_sub_mode)
       match P0 as P01 return P0 = P01
           -> option (sig (sub_call_spec S0 NM M P0 Θ0 (sub_call_sub P)))
       with
-      | pskl_hole => fun EP0 => Some (exist _ (mk_sub_result S0 Θ0 P) _)
+      | pskl_ghost => fun EP0 => Some (exist _ (mk_sub_result S0 Θ0 P) _)
       | _ => fun _ => None
       end eq_refl
 
@@ -565,7 +565,7 @@ Equations e_sub_call_impl (c : sub_call) (S0 : supply) (NM : a_sub_mode)
               with
               (* SI-ForallL, check mode *)
               | pskl_all_syn Q => fun EP =>
-                  match sumbool_of_bool (guarded_shape_ck P0 || hole_ck P0)
+                  match sumbool_of_bool (guarded_shape_ck P0 || ghost_ck P0)
                   with
                   | right _ => None
                   | left _ =>
@@ -617,7 +617,7 @@ Equations e_sub_call_impl (c : sub_call) (S0 : supply) (NM : a_sub_mode)
           with
           (* SI-ForallL, check mode — NM-generic, so also at sk *)
           | pskl_all_syn Q => fun EP =>
-              match sumbool_of_bool (guarded_shape_ck P0 || hole_ck P0) with
+              match sumbool_of_bool (guarded_shape_ck P0 || ghost_ck P0) with
               | right _ => None
               | left _ =>
                   match e_extract_impl (add (supply_fresh S0) S0) Θ0 NM
@@ -644,10 +644,10 @@ Equations e_sub_call_impl (c : sub_call) (S0 : supply) (NM : a_sub_mode)
                   end
               end
           (* SI-Ghost *)
-          | pskl_hole => fun EP =>
+          | pskl_ghost => fun EP =>
               Some (exist _ (mk_sub_result S0 Θ0 P0) _)
           (* SI-UnivGhostL, check mode *)
-          | pskl_tophole Q => fun EP =>
+          | pskl_univ_ghost Q => fun EP =>
               match e_sub_call_impl (sub_call_sub Q) S0 a_sub_mode_sk
                       mode_tc P0 Θ0 _ _ _ _ with
               | None => None
@@ -659,12 +659,12 @@ Equations e_sub_call_impl (c : sub_call) (S0 : supply) (NM : a_sub_mode)
                                     (sub_call_sub P)))
               with
               (* SI-UnivGhostR *)
-              | pskl_hole => fun EP0 =>
+              | pskl_ghost => fun EP0 =>
                   match sumbool_of_bool (guarded_shape_ck P) with
                   | right _ => None
                   | left _ =>
                       Some (exist _ (mk_sub_result S0 Θ0
-                              (pskl_tophole P)) _)
+                              (pskl_univ_ghost P)) _)
                   end
               | _ => fun _ => None
               end eq_refl
@@ -677,7 +677,7 @@ Equations e_sub_call_impl (c : sub_call) (S0 : supply) (NM : a_sub_mode)
       with
       (* SI-ForallL, function mode *)
       | pskl_all_syn Q => fun EP =>
-          match sumbool_of_bool (guarded_shape_ck P0 || hole_ck P0) with
+          match sumbool_of_bool (guarded_shape_ck P0 || ghost_ck P0) with
           | right _ => None
           | left _ =>
               match e_extract_impl (add (supply_fresh S0) S0) Θ0 NM
@@ -730,7 +730,7 @@ Equations e_sub_call_impl (c : sub_call) (S0 : supply) (NM : a_sub_mode)
           | Some (exist _ r Hr) => Some (exist _ r _)
           end
       (* SI-Ghost *)
-      | pskl_hole => fun EP =>
+      | pskl_ghost => fun EP =>
           match NM as NM1 return NM = NM1
               -> option (sig (sub_call_spec S0 NM M P0 Θ0 (sub_call_sub P)))
           with
@@ -739,7 +739,7 @@ Equations e_sub_call_impl (c : sub_call) (S0 : supply) (NM : a_sub_mode)
           | a_sub_mode_ty => fun _ => None
           end eq_refl
       (* SI-UnivGhostL, function mode *)
-      | pskl_tophole Q => fun EP =>
+      | pskl_univ_ghost Q => fun EP =>
           match NM as NM1 return NM = NM1
               -> option (sig (sub_call_spec S0 NM M P0 Θ0 (sub_call_sub P)))
           with

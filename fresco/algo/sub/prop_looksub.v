@@ -408,13 +408,13 @@ Qed.
     exactly where P6's ForallL / UnivGhostL rows work — the collection is
     FORCED to be [· ⨾ ·], and one collection derivation can be swapped for
     another without moving the answer the solve computes from it. *)
-Lemma a_looksub_hole_target : forall Θ α m P Ξ 𝒞,
-  {{ Θ ⊢ P ≼[ α , m ] pskl_hole ⤳ Ξ ⨾ 𝒞 }}a ->
+Lemma a_looksub_ghost_target : forall Θ α m P Ξ 𝒞,
+  {{ Θ ⊢ P ≼[ α , m ] pskl_ghost ⤳ Ξ ⨾ 𝒞 }}a ->
   Ξ = nil /\ (𝒞 = nil
-              \/ (P = pskl_var_f α /\ 𝒞 = a_cstr_sub m pskl_hole :: nil)).
+              \/ (P = pskl_var_f α /\ 𝒞 = a_cstr_sub m pskl_ghost :: nil)).
 Proof.
   intros Θ α m P Ξ 𝒞 H.
-  remember pskl_hole as T eqn:HT.
+  remember pskl_ghost as T eqn:HT.
   induction H; subst; try discriminate HT.
   - (* LS-Var — the ONE emitting row at a ghost target, and it PINS the
        subject to the looked-for variable *)
@@ -422,12 +422,12 @@ Proof.
   - (* LS-Absent *) split; [ reflexivity | left; reflexivity ].
   - (* LS-Vacuous *) split; [ reflexivity | left; reflexivity ].
   - (* LS-Check — [◇] is not guarded *)
-    match goal with Hg : guarded_pskl pskl_hole |- _ => inversion Hg end.
+    match goal with Hg : guarded_pskl pskl_ghost |- _ => inversion Hg end.
   - (* LS-ForallL — blocked by the ◇-dispatch guard *)
-    match goal with Hnh : pskl_hole <> pskl_hole |- _ =>
+    match goal with Hnh : pskl_ghost <> pskl_ghost |- _ =>
       exfalso; exact (Hnh eq_refl) end.
   - (* LS-UnivGhostL — likewise *)
-    match goal with Hnh : pskl_hole <> pskl_hole |- _ =>
+    match goal with Hnh : pskl_ghost <> pskl_ghost |- _ =>
       exfalso; exact (Hnh eq_refl) end.
 Qed.
 
@@ -497,7 +497,7 @@ Qed.
     absence-first guard it cannot be reinstated by a case split.  Only the
     [α ∈ ftv] conjunct is discharged below. *)
 Lemma a_looksub_forall_l_adm : forall Θ α m P P' Ξ C β,
-  P' <> pskl_hole ->
+  P' <> pskl_ghost ->
   forall_r_off m P' ->
   β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
                      `union` ftvar_in_pskl P') ->
@@ -540,8 +540,8 @@ Lemma a_lookeq_forall_syn_adm : forall Θ α P P' Ξ C β,
   β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
                      `union` ftvar_in_pskl P') ->
   {{ ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ]
-     (pskl_tophole P') ⤳ Ξ ⨾ C }}a ->
-  {{ Θ ⊢ (pskl_all_syn P) ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C }}a.
+     (pskl_univ_ghost P') ⤳ Ξ ⨾ C }}a ->
+  {{ Θ ⊢ (pskl_all_syn P) ∼[ α ] (pskl_univ_ghost P') ⤳ Ξ ⨾ C }}a.
 Proof.
   intros Θ α P P' Ξ C β Hβ Hp.
   destruct (AtomSetProperties.In_dec α (ftvar_in_pskl (pskl_all_syn P)))
@@ -558,12 +558,12 @@ Qed.
 Lemma a_lookeq_univ_ghost1_adm : forall Θ α P P' Ξ C β,
   β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
                      `union` ftvar_in_pskl P') ->
-  {{ ((β ~ abind_tvar) ++ Θ) ⊢ (pskl_tophole P) ∼[ α ]
+  {{ ((β ~ abind_tvar) ++ Θ) ⊢ (pskl_univ_ghost P) ∼[ α ]
      (open_pskl_wrt_pskl P' (pskl_var_f β)) ⤳ Ξ ⨾ C }}a ->
-  {{ Θ ⊢ (pskl_tophole P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C }}a.
+  {{ Θ ⊢ (pskl_univ_ghost P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C }}a.
 Proof.
   intros Θ α P P' Ξ C β Hβ Hp.
-  destruct (AtomSetProperties.In_dec α (ftvar_in_pskl (pskl_tophole P)))
+  destruct (AtomSetProperties.In_dec α (ftvar_in_pskl (pskl_univ_ghost P)))
     as [Hin | Hni].
   - apply a_lookeq__univ_ghost1 with (β := β); assumption.
   - (* the SUBJECT is untouched by this row *)
@@ -1596,7 +1596,7 @@ Proof.
         rewrite (@rename_aenv_fresh_eq Θ δ b) in H1 by exact HbΘ.
         rewrite (@rename_aenv_fresh_eq Ξ0 δ b) in H1 by exact HbΞf.
         rewrite (@subst_cstrs_fresh_eq δ b C0) in H1 by exact Hα'C.
-        rewrite (subst_pskl_in_pskl_fresh_eq (pskl_tophole Q')) in H1
+        rewrite (subst_pskl_in_pskl_fresh_eq (pskl_univ_ghost Q')) in H1
           by exact HbQ'.
         rewrite <- (subst_pskl_in_pskl_intro b Q (pskl_var_f δ)) in H1
           by exact HbQ.
@@ -1604,14 +1604,14 @@ Proof.
           [ look_fresh | apply ftv_subst_var_in; exact Hocc0 | ].
         rewrite (subst_pskl_in_pskl_open_pskl_wrt_pskl_var Q (pskl_var_f b))
           by (solve [ congruence | constructor ]).
-        apply IHe with (P' := pskl_tophole Q');
+        apply IHe with (P' := pskl_univ_ghost Q');
           [ rewrite size_pskl_open_pskl_wrt_pskl_var; cbn; lia
           | exact H1 | look_fresh | exact Hα'Ξ | exact Hα'C ].
       + apply a_lookeq__forall_syn with (β := b);
           [ look_fresh | apply ftv_subst_var_in; exact Hocc0 | ].
         rewrite (subst_pskl_in_pskl_open_pskl_wrt_pskl_var Q (pskl_var_f α'))
           by (solve [ congruence | constructor ]).
-        apply IHe with (P' := pskl_tophole Q');
+        apply IHe with (P' := pskl_univ_ghost Q');
           [ rewrite size_pskl_open_pskl_wrt_pskl_var; cbn; lia
           | exact Hp | look_fresh | exact Hα'Ξ | exact Hα'C ].
     - (* LE-UnivGhost *)
@@ -1642,18 +1642,18 @@ Proof.
         rewrite (@rename_aenv_fresh_eq Θ δ b) in H1 by exact HbΘ.
         rewrite (@rename_aenv_fresh_eq Ξ0 δ b) in H1 by exact HbΞf.
         rewrite (@subst_cstrs_fresh_eq δ b C0) in H1 by exact Hα'C.
-        rewrite (subst_pskl_in_pskl_fresh_eq (pskl_tophole Q)) in H1
+        rewrite (subst_pskl_in_pskl_fresh_eq (pskl_univ_ghost Q)) in H1
           by exact HbQ.
         rewrite <- (subst_pskl_in_pskl_intro b Q' (pskl_var_f δ)) in H1
           by exact HbQ'.
         apply a_lookeq__univ_ghost1 with (β := δ);
           [ look_fresh | apply ftv_subst_var_in; exact Hocc0 | ].
-        apply IHe with (P := pskl_tophole Q);
+        apply IHe with (P := pskl_univ_ghost Q);
           [ rewrite size_pskl_open_pskl_wrt_pskl_var; cbn; lia
           | exact H1 | cbn; exact HbQ | exact Hα'Ξ | exact Hα'C ].
       + apply a_lookeq__univ_ghost1 with (β := b);
           [ look_fresh | apply ftv_subst_var_in; exact Hocc0 | ].
-        apply IHe with (P := pskl_tophole Q);
+        apply IHe with (P := pskl_univ_ghost Q);
           [ rewrite size_pskl_open_pskl_wrt_pskl_var; cbn; lia
           | exact Hp | cbn; exact Hα'P | exact Hα'Ξ | exact Hα'C ].
     - (* LE-UnivGhost2 *)

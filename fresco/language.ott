@@ -31,7 +31,7 @@ metavar usklvar, Xus ::= {{ repr-locally-nameless }}
 grammar
 
 % Decorated type AST. Five categories (col-S, col-I, eps-tagged, plus
-% unit/var/arrow/hole/tophole) — the un-decorated plain forall
+% unit/var/arrow/ghost/univ_ghost) — the un-decorated plain forall
 % (`forall X. A`) lives in `ctyp` below, NOT in `typ`. This keeps the
 % paper's distinction between *decorated* universes (where ∀ carries
 % colour or tag) and the *plain* universe (where ∀ has no decoration).
@@ -51,7 +51,7 @@ grammar
 
 % Plain types — paper's "real user type" written in source annotations.
 % Exactly the 5 "type" shapes: unit, var, arrow, ∀ (no colour, no tag,
-% no holes). Used as the annotation type in [exp_anno] / [exp_abs_anno]
+% no ghosts). Used as the annotation type in [exp_anno] / [exp_abs_anno]
 % post-refactor. Colours / tags are derivation-internal bookkeeping
 % added when the typing rule paints a [ptyp] into [bid] for use in
 % subtyping / consistency premises.
@@ -64,7 +64,7 @@ ptyp, A :: 'ptyp_' ::=
   | { A2 / Xpt } A1      :: M :: subst {{ coq (open_ptyp_wrt_ptyp [[Xpt A1]] [[A2]]) }}
 
 % Bidirectional types — paper's bid{T}. Derivation-internal coloured ∀s
-% (no holes). The umbrella type for d_sub / d_consis / d_typing rules
+% (no ghosts). The umbrella type for d_sub / d_consis / d_typing rules
 % (post-refactor).
 btyp, B :: 'btyp_' ::=
   | UNIT                 ::   :: unit
@@ -88,15 +88,15 @@ utyp, C :: 'utyp_' ::=
 
 % Skeletons — for d_wf_skl, d_refine, d_pat_consis, etc.
 % Broadest skleton: matches [bid] shapes (syn / inh / tag ∀s) plus
-% holes / tophole. Narrow classes (e.g. syn-only, no-tag) are
+% ghosts / univ_ghost. Narrow classes (e.g. syn-only, no-tag) are
 % recovered via predicates over skl.
 pskl, P :: 'pskl_' ::=
   | UNIT                 ::   :: unit
   | Xps                  ::   :: var
   | P1 -> P2             ::   :: arrow
   | forall Xps . P1      ::   :: all_syn (+ bind Xps in P1 +)
-  | HOLE                 ::   :: hole
-  | TOPHOLE . P          ::   :: tophole
+  | GHOST                 ::   :: ghost
+  | UNIVGHOST . P          ::   :: univ_ghost
   | ( P )                :: S :: paren {{ coq ([[P]]) }}
   | { P2 / Xps } P1      :: M :: subst {{ coq (open_pskl_wrt_pskl [[Xps P1]] [[P2]]) }}
 
@@ -106,8 +106,8 @@ bskl, Q :: 'bskl_' ::=
   | Q1 -> Q2             ::   :: arrow
   | forall^syn Xbs . Q   ::   :: all_syn   (+ bind Xbs in Q +)
   | forall^inh Xbs . Q   ::   :: all_inh   (+ bind Xbs in Q +)
-  | HOLE                 ::   :: hole
-  | TOPHOLE . Q          ::   :: tophole
+  | GHOST                 ::   :: ghost
+  | UNIVGHOST . Q          ::   :: univ_ghost
   | ( Q )                :: S :: paren {{ coq ([[Q]]) }}
   | { Q2 / Xbs } Q1      :: M :: subst {{ coq (open_bskl_wrt_bskl [[Xbs Q1]] [[Q2]]) }}
 
@@ -117,14 +117,14 @@ uskl, R :: 'uskl_' ::=
   | R1 -> R2             ::   :: arrow
   | forall^syn Xus . R   ::   :: all_syn   (+ bind Xus in R +)
   | forall@ eps Xus . R  ::   :: all_tag  (+ bind Xus in R +)
-  | HOLE                 ::   :: hole
-  | TOPHOLE . R          ::   :: tophole
-  % Dotted ghosts (paper's HoleG / TopHoleG): ghost holes that coexist
+  | GHOST                 ::   :: ghost
+  | UNIVGHOST . R          ::   :: univ_ghost
+  % Dotted ghosts (paper's HoleG / TopHoleG): ghosts that coexist
   % with the plain Hole/TopHole in unresolved skeletons.  Both are
   % UNTAGGED (the universal dotted ghost TopHoleG.R carries no ε tag,
   % unlike [all_tag]); its tags are exactly its body's tags.
-  | HOLEG                ::   :: holeg
-  | TOPHOLEG . R         ::   :: topholeg
+  | DOTGHOST                ::   :: dot_ghost
+  | DOTUNIVGHOST . R         ::   :: dot_univ_ghost
   | ( R )                :: S :: paren {{ coq ([[R]]) }}
   | { R2 / Xus } R1      :: M :: subst {{ coq (open_uskl_wrt_uskl [[Xus R1]] [[R2]]) }}
 

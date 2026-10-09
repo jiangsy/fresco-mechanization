@@ -157,7 +157,7 @@ Hypothesis Hxα : x <> α.
 Definition Θ0w : aenv :=
   (x ~ abind_var_typ ptyp_unit) ++ (α ~ abind_flex_mono) ++ nil.
 
-Definition P0w : pskl := pskl_arrow pskl_hole pskl_hole.   (* ◇ → ◇ *)
+Definition P0w : pskl := pskl_arrow pskl_ghost pskl_ghost.   (* ◇ → ◇ *)
 Definition Pw  : pskl := pskl_var_f α.                     (* the subject α̂ *)
 Definition Rw  : uskl := uskl_var_f α.
 
@@ -183,7 +183,7 @@ Proof.
       [ simpl; clear - Hxα; fsetdec
       | apply a_wf_ptyp__unit
       | apply a_wf_aenv__flex; [ simpl; clear; fsetdec | apply a_wf_aenv__nil ] ].
-  - apply a_wf_pskl__arrow; apply a_wf_pskl__hole.
+  - apply a_wf_pskl__arrow; apply a_wf_pskl__ghost.
   - apply a_wf_pskl__var. right. left.
     unfold binds; simpl; right; left; reflexivity.
   - apply a_sk_mode_compat__fn. apply a_sk_mode_compat__ti.
@@ -253,7 +253,7 @@ Proof.
     unfold P0w, Qw, κw. simpl.
     apply ad_refine_syn_arrow_intro;
       (change bskl_unit with (pskl_to_bskl_syn pskl_unit);
-       apply ad_refine_syn__hole; clear; fsetdec).
+       apply ad_refine_syn__ghost; clear; fsetdec).
 Qed.
 
 (* --------------------------------------------------------------------- *)
