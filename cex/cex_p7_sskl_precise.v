@@ -31,9 +31,9 @@
     2026-10-08 under the paper-faithful refinement rules: the claim stands;
     only the reason moved from "α not in scope" to "α ∈ Δ".)
 
-    That asymmetry is not an encoding artefact: it is the same Θ-versus-Δ
-    asymmetry that forces the F-indexed mirror [ad_refine_syn_f] to exist at all
-    (prop_consis_sound.v:346, "a set F forbidden in ghost fills").
+    That asymmetry is not an encoding artefact: it is the Θ-versus-Δ
+    asymmetry of the paper's own rules (consistency binds a ∀ in Θ only,
+    refinement in Θ and Δ).
 
     The second theorem below shows the mechanization's THIRD solution premise —
     the SUBJECT's own refinement, DESIGN §1's "lesson 1", which the paper does
@@ -53,7 +53,7 @@ Require Import src.fresco.algo.def_rules.
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo.prop_precise.        (* ad_precise *)
-Require Import src.fresco.algo.consis.prop_soundness_consis.   (* ad_refine_pskl_f *)
+Require Import src.fresco.algo.consis.prop_soundness_consis.
 
 Set Implicit Arguments.
 
@@ -117,19 +117,19 @@ Proof.
     inversion Heqt; subst. right; exists τ; assumption.
 Qed.
 
-Lemma refine_pskl_f_hole_var : forall F Θ Δ Ps Pt,
-  ad_refine_pskl_f F Θ Δ Ps Pt ->
+Lemma refine_pskl_hole_var : forall Θ Δ Ps Pt,
+  {{ Θ ⨟ Δ ⊢ᵣₚ Ps ⊳ Pt }}ad ->
   Ps = pskl_hole ->
   forall α, Pt = pskl_var_f α ->
   α `notin` Δ \/ exists τ, binds α (abind_flex_mono_def τ) Θ.
 Proof.
-  intros F Θ Δ Ps Pt H; induction H; intros Heqs α0 Heqt;
+  intros Θ Δ Ps Pt H; induction H; intros Heqs α0 Heqt;
     try discriminate Heqs; try discriminate Heqt.
   - (* __hole : the fill must avoid Δ *)
     subst. left; intros Hin.
     assert (Hx : α0 `in` (Δ ∩ ftvar_in_pskl (pskl_var_f α0)))
       by (cbn; clear - Hin; fsetdec).
-    rewrite H0 in Hx; clear - Hx; fsetdec.
+    rewrite H in Hx; clear - Hx; fsetdec.
   - (* __flex_r *)
     inversion Heqt; subst. right; exists τ; assumption.
 Qed.
@@ -177,14 +177,14 @@ Qed.
     obligation is again [◇ ⊳ α] with the binder in Δ, and refinement's ghost
     fill must avoid Δ.  So the configuration never reaches Sub-Infer
     or Sub-UnivGhostR at all. *)
-Theorem cex_excluded_by_subject_refinement : forall F Δ,
-  ~ ad_refine_pskl_f F nil Δ (uskl_to_pskl Rw) (bskl_to_pskl Qw).
+Theorem cex_excluded_by_subject_refinement : forall Δ,
+  ~ {{ nil ⨟ Δ ⊢ᵣₚ (uskl_to_pskl Rw) ⊳ (bskl_to_pskl Qw) }}ad.
 Proof.
-  intros F Δ H; unfold Rw, Qw in H; cbn in H.
+  intros Δ H; unfold Rw, Qw in H; cbn in H.
   inversion H as [ | | | L Θa Δa Pa Qa Hfam | | | | | | ]; subst.
   pick fresh α for L.
   specialize (Hfam α ltac:(clear - Fr; fsetdec)); cbn in Hfam.
-  pose proof (@refine_pskl_f_hole_var _ _ _ _ _ Hfam eq_refl α eq_refl) as Hb.
+  pose proof (@refine_pskl_hole_var _ _ _ _ Hfam eq_refl α eq_refl) as Hb.
   destruct Hb as [Hb | [τ Hb]];
     [ apply Hb; clear; fsetdec
     | apply binds_cons_1 in Hb; destruct Hb as [[_ Hb] | Hb];

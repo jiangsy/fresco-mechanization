@@ -428,7 +428,7 @@ Qed.
 
 (* --- the subject is a ∀: [SI-ForallL], at every mode that admits it --- *)
 
-(** ⚙ [e_sub_inv_forall_l]'s premise [P0 <> ∀] is there for exactly ONE
+(** ⚙ A plain inversion would need [P0 <> ∀], which is there for exactly ONE
     competing row, [SI-ForallR] — and that row also demands [NM = ty] and
     [M = TC].  The runner reaches [SI-ForallL] from three arms, and only
     the [(ty, TC)] one has already fixed the subject's shape, so state the

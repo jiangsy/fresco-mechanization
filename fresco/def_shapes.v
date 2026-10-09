@@ -226,29 +226,6 @@ Inductive nonghost_pskl : pskl -> Prop :=
 | nonghost_pskl__arrow : forall P1 P2, nonghost_pskl (pskl_arrow P1 P2)
 | nonghost_pskl__all   : forall P, nonghost_pskl (pskl_all_syn P).
 
-(** HOLE-FREE skeletons: no [◇] anywhere (a [⫯] is fine — it is a
-    universal ghost, not a hole).  Two consumers, far apart: partial
-    precision is fully Δ-MONOTONE on them (the □-rule, the only Δ-antitone
-    one, never fires), and — ext_algo, §8c.10 — hole-freeness is what
-    excludes the (ghost pattern, flexible subject) node at which the
-    consistency rules and their runner diverge.
-
-    ⚙ MOVED here 2026-08-16 from algo/consis/prop_completeness_consis.v.
-    It is a shape predicate, so this is its documented home; it was
-    stranded inside an 8600-line completeness bundle, which no consumer
-    outside that bundle can afford to import. *)
-Fixpoint bskl_no_hole (Q : bskl) : Prop :=
-  match Q with
-  | bskl_unit => True
-  | bskl_var_b _ => True
-  | bskl_var_f _ => True
-  | bskl_arrow Q1 Q2 => bskl_no_hole Q1 /\ bskl_no_hole Q2
-  | bskl_all_syn Q0 => bskl_no_hole Q0
-  | bskl_all_inh Q0 => bskl_no_hole Q0
-  | bskl_hole => False
-  | bskl_tophole Q0 => bskl_no_hole Q0
-  end.
-
 Fixpoint pskl_no_hole (P : pskl) : Prop :=
   match P with
   | pskl_unit => True

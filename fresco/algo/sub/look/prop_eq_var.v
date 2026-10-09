@@ -49,30 +49,6 @@ Set Implicit Arguments.
    adds the ForallSyn-specific kit and the main induction over the whole
    consistency judgment. *)
 
-(** [MECH-ONLY kit] Moving a Δ-entry of skeleton well-formedness into the
-    aenv as a rigid tvar (mid-insertion general).  The agreement premise
-    says the target Δ' adds no free variable of P to Δ (a ∀◇-body is
-    checked at Θ∖Δ, so growing Δ on a free variable would hide its
-    binding).  No paper counterpart: the paper writes every descent binder
-    as "Θ,β" and never distinguishes the aenv from the skeleton-scope Δ,
-    so these transports are implicit there. *)
-Lemma a_wf_pskl_delta_to_tvar_mid : forall Θfull Δ P,
-  {{ Θfull ⨟ Δ ⊢ₚₛ P }}a ->
-  forall α1 Θ1 Θ2 Δ', Θfull = Θ1 ++ Θ2 ->
-  Δ [<=] add α1 Δ' ->
-  (forall β, β `in` ftvar_in_pskl P -> β `in` Δ' -> β `in` Δ) ->
-  {{ (Θ1 ++ (α1 ~ abind_tvar) ++ Θ2) ⨟ Δ' ⊢ₚₛ P }}a.
-Proof.
-  intros Θfull Δ P H α1 Θ1 Θ2 Δ' HeqΘ _ Hag; subst.
-  eapply a_wf_pskl_delta_mono; [ | exact Hag ].
-  eapply a_wf_pskl_tvar_mono; [ exact H | ].
-  intros γ Hbt.
-  destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-    [ left; apply binds_weaken; exact Hb
-    | right; left; apply binds_weaken; exact Hb
-    | right; right; exists τ0; apply binds_weaken; exact Hb ].
-Qed.
-
 (** a_inc images are Θ-scoped (the prose wf side-condition, pointwise). *)
 Lemma a_inc_image_ftv_dom : forall Θ0 κ Θ,
   κ ∷ Θ0 ⊑ Θ ->
@@ -167,14 +143,9 @@ Proof.
   - (* var α *)
     destruct (eq_var α α1) as [-> | Hne].
     + repeat (destruct_if as [_ | Hc]; [ | exfalso; apply Hc; reflexivity ]).
-      apply ad_ppre__var; [ assumption | ].
-      right. left. unfold binds; apply in_or_app; right; left; reflexivity.
+      apply ad_ppre__var; assumption.
     + repeat (destruct_if as [Hc | _]; [ exfalso; apply Hne; exact Hc | ]).
-      apply ad_ppre__var; [ assumption | ].
-      destruct H0 as [HΔ | Hbt]; [ left; exact HΔ | right ].
-      destruct Hbt as [Hb | [Hb | [τ Hb]]];
-        [ left | right; left | right; right; exists τ ];
-        eapply binds_swap_mid; try exact Hb; exact Hne.
+      apply ad_ppre__var; assumption.
   - (* arrow *)
     eapply ad_ppre__arrow;
       [ apply IHad_partial_precise1;
@@ -184,7 +155,7 @@ Proof.
           [ exact Hu | reflexivity | exact HWd | exact Hβ2Δ
           | clear - HWP; solve_notin | clear - Hβ2ψ; solve_notin | exact Hdefs ]
       | assumption ].
-  - (* forall: binder β into Δ, aenv unchanged *)
+  - (* forall: binder β into the AENV front and into Δ *)
     eapply ad_ppre__forall with
       (L := L `union` singleton α1 `union` singleton β1
               `union` Δ `union` dom (Θ1 ++ (α1 ~ abind_tvar) ++ Θ0));
@@ -194,15 +165,22 @@ Proof.
       [ | clear - Hβ; fsetdec | apply lc_pskl_var_f ].
     rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - Hβ; fsetdec | apply lc_uskl_var_f ].
-    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) α1 β1 Θ1 Θ0 Hu eq_refl HWd);
-      [ clear - Hβ2Δ Hβ; fsetdec
+    assert (Hu' : uniq ((β ~ abind_tvar) ++ Θ1 ++ (α1 ~ abind_tvar) ++ Θ0))
+      by (apply uniq_push; [ exact Hu | clear - Hβ; solve_notin ]).
+    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) α1 β1
+             ((β ~ abind_tvar) ++ Θ1) Θ0 Hu' eq_refl);
+      [ simpl; clear - HWd Hβ; solve_notin
+      | clear - Hβ2Δ Hβ; fsetdec
       | pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P
                       (pskl_var_f β)) as Hup;
         simpl in Hup; clear - HWP Hβ Hup; fsetdec
       | pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ
                       (uskl_var_f β)) as Hup;
         simpl in Hup; clear - Hβ2ψ Hβ Hup; fsetdec
-      | exact Hdefs ].
+      | intros αd τ Hb;
+        apply Hdefs with (α := αd);
+        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
+          [ discriminate Hc | exact Hb' ] ].
   - (* hole *)
     assert (Hα2ψ : α1 `notin` ftvar_in_uskl ψ \/ α1 `in` ftvar_in_uskl ψ)
       by (destruct (AtomSetProperties.In_dec α1 (ftvar_in_uskl ψ));
@@ -416,19 +394,6 @@ Proof.
   - apply lc_bskl_var_f.
 Qed.
 
-(** Refinement reads the context only through its flexible definitions
-    (the plain-relation mirror of [ad_refine_syn_f_ctx_mono]); in
-    particular a rigid entry can be dropped. *)
-Lemma ad_refine_syn_defs_mono : forall Θ Δ Q Q',
-  {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
-  forall Θ', (forall β τ, binds β (abind_flex_mono_def τ) Θ ->
-                binds β (abind_flex_mono_def τ) Θ') ->
-  {{ Θ' ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad.
-Proof.
-  intros * H; induction H; intros Θ' Hm;
-    eauto 6 using ad_refine_syn, flex_defs_cons_tvar.
-Qed.
-
 (** A refinement out of ◇ fills it with a Δ-avoiding skeleton (the ghost
     rule's side condition), possibly behind defined-flexible lookups, so
     every Δ-variable of the target is bound in the context. *)
@@ -465,24 +430,16 @@ Proof.
 Qed.
 
 (** [refine_primary_to_plain], bag-split form: weaken Θr into the full
-    context and absorb Δr (= dom Θtv, all rigid there). *)
+    context and drop Δr (refinement is antitone in Δ). *)
 Lemma refine_primary_to_plain_split : forall Θf Θtv Θr Δr Q' Q,
-  (forall x b, binds x b Θtv -> b = abind_tvar) ->
-  aenv_split Θf Θtv Θr ->
-  Δr [=] dom Θtv ->
   {{ Θr ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
+  aenv_split Θf Θtv Θr ->
   {{ Θf ⨟ empty ⊢ᵣ Q' ⊳ Q }}ad.
 Proof.
-  intros Θf Θtv Θr Δr Q' Q Htvs Hsp HΔr H.
-  eapply ad_refine_syn_delta_absorb with (Δr := Δr).
-  - eapply ad_refine_syn_weaken;
-      [ exact H | intros x b Hb; eapply aenv_split_sub_r; eassumption ].
-  - intros α2 Hα2. right.
-    assert (HZd : α2 `in` dom Θtv) by (clear - Hα2 HΔr; fsetdec).
-    apply binds_In_inv in HZd; destruct HZd as [b Hb].
-    pose proof (Htvs _ _ Hb) as Heqb; subst b.
-    destruct Hsp as (Hbs & _ & _). apply Hbs. left; exact Hb.
-  - clear; fsetdec.
+  intros Θf Θtv Θr Δr Q' Q H Hsp.
+  eapply ad_refine_syn_delta_mono with (Δ0 := Δr); [ | clear; fsetdec ].
+  eapply ad_refine_syn_weaken;
+    [ exact H | intros x b Hb; eapply aenv_split_sub_r; eassumption ].
 Qed.
 
 (** [consis_subject_ftv_split_bound], bag-split form (Θr's defs are
@@ -1813,8 +1770,7 @@ Proof.
           assert (Hst : {{ Θ ⨟ (add α (Δ `union` (remove α Δ')))
                    ⊢ˢ (msubst_pskl (κ0 ++ κ) PaR) ⊑ᵖ[ Ψc ]
                    (open_uskl_wrt_uskl ψR (uskl_var_f α)) }}ad)
-            by (eapply ad_partial_precise_strengthen_tvar;
-                [ exact Hrun | clear; fsetdec ]).
+            by (eapply ad_partial_precise_strengthen_tvar; exact Hrun).
           assert (Hrn : {{ Θ ⨟ (add α' (remove α (add α (Δ `union` (remove α Δ')))))
                    ⊢ˢ (subst_pskl_in_pskl (pskl_var_f α') α
                         (msubst_pskl (κ0 ++ κ) PaR))
@@ -1911,7 +1867,7 @@ Proof.
               exists (L0 `union` dom κ), PS; split;
                 [ intros α0 Hα0;
                   rewrite msubst_pskl_open_lc;
-                    [ apply Hf; clear - Hα0; fsetdec
+                    [ eapply ad_partial_precise_strengthen_tvar; apply Hf; clear - Hα0; fsetdec
                     | exact Hlcκ | clear - Hα0; fsetdec ]
                 | assumption ]
             end. }
@@ -1993,6 +1949,7 @@ Proof.
             (Ψ0 := Ψi' `union` (remove ε Ψa));
             [ | clear - HΨis Hεa; fsetdec ].
           intros α' HX'.
+          apply ad_partial_precise_weaken_tvar.
           rewrite <- msubst_pskl_open_lc;
             [ | exact HlcκX
             | rewrite dom_app; clear - HX'; solve_notin ].
@@ -2094,8 +2051,7 @@ Proof.
                 clear - Hd HX'; destruct_notin; fsetdec.
               + eapply HS3; [ clear - HYd Hne; fsetdec | exact Hbd' ]. }
           eapply ad_partial_precise_delta_cong;
-            [ eapply ad_partial_precise_strengthen_tvar;
-                [ exact HqS | clear; fsetdec ]
+            [ exact HqS
             | clear; fsetdec ].
         + (* Pi = ∀◇.Pi' — the remove-branch dies (guarded body);
              the fill branch is ROW C (SE-GhostForall) *)
@@ -2188,6 +2144,7 @@ Proof.
               (Ψ0 := Ψi `union` (remove ε Ψa));
               [ | clear - Hεa; fsetdec ].
             intros α' HX'.
+            apply ad_partial_precise_weaken_tvar.
             rewrite <- msubst_pskl_open_lc;
               [ | exact HlcκX
               | rewrite dom_app; clear - HX'; solve_notin ].
@@ -2597,8 +2554,7 @@ Proof.
           assert (Hst : {{ Θ ⨟ (add α (Δ `union` (remove α Δ')))
                    ⊢ˢ (msubst_pskl (κ0 ++ κ) PaR) ⊑ᵖ[ Ψc ]
                    (open_uskl_wrt_uskl ψR (uskl_var_f α)) }}ad)
-            by (eapply ad_partial_precise_strengthen_tvar;
-                [ exact Hrun | clear; fsetdec ]).
+            by (eapply ad_partial_precise_strengthen_tvar; exact Hrun).
           assert (Hrn : {{ Θ ⨟ (add α' (remove α (add α (Δ `union`
                     (remove α Δ')))))
                    ⊢ˢ (subst_pskl_in_pskl (pskl_var_f α') α
@@ -2695,7 +2651,7 @@ Proof.
               exists (L0 `union` dom κ), PS; split;
                 [ intros α0 Hα0;
                   rewrite msubst_pskl_open_lc;
-                    [ apply Hf; clear - Hα0; fsetdec
+                    [ eapply ad_partial_precise_strengthen_tvar; apply Hf; clear - Hα0; fsetdec
                     | exact Hlcκ | clear - Hα0; fsetdec ]
                 | assumption ]
             end. }
@@ -2772,6 +2728,7 @@ Proof.
             (Ψ0 := Ψi' `union` Ψa);
             [ | clear - HΨis; fsetdec ].
           intros α' HX'.
+          apply ad_partial_precise_weaken_tvar.
           rewrite <- msubst_pskl_open_lc;
             [ | exact HlcκX
             | rewrite dom_app; clear - HX'; solve_notin ].

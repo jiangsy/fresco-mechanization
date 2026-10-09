@@ -90,7 +90,7 @@ Proof.
      with a set metavariable — which does not terminate.  Third occurrence of
      this trap in the campaign; see the hand-off's §7 hazards. *)
   apply ad_ppre__arrow with (Ψ1 := empty) (Ψ2 := empty);
-    [ apply ad_ppre__var; [ clear; fsetdec | right; left; exact Hb ]
+    [ apply ad_ppre__var; clear; fsetdec
     | apply ad_ppre__unit; clear; fsetdec
     | clear; fsetdec ].
 Qed.

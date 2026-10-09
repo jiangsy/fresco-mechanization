@@ -456,7 +456,7 @@ Qed.
 (*  confinement: [sub_gv_bskl_downarrow_mono_scoped] (the ⇓-form, which is *)
 (*  also what absorbs the motive's ≡ᵘ slack — ≡ᵗ does not preserve         *)
 (*  ftv-scoping but it does preserve ⇓) composed with the FILL's           *)
-(*  [refine_syn_f_downarrow_source_ftv].  So §5 is steps 0–4 of            *)
+(*  [refine_syn_downarrow_source_ftv].  So §5 is steps 0–4 of              *)
 (*  [a_sub_flex_complete_skip_rigid] read as a REFUTATION.                 *)
 (* ===================================================================== *)
 
@@ -472,7 +472,7 @@ Lemma sub_flex_rigid_head_absurd :
   κ ∷ (Ξ ++ (β ~ abind_tvar) ++ Θ0) ⊑ Θ ->
   {{ Θ ⊢ R' ≡ᵘ (ptyp_to_uskl_syn (msubst_lookup κ α)) }}a ->
   ad_pat_sub_fuel n NM (mode_fn M) Ψ Θ R' Q ->
-  ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh (msubst_pskl κ P0)) Q ->
+  {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
   False.
 Proof.
   intros n NM M Θ0 Ξ α β P0 R' Ψ Θ κ Q
@@ -546,8 +546,7 @@ Proof.
                    = pskl_to_bskl_inh (⇓ˢ[ Θ ] (msubst_pskl κ P0)))
     by (apply msubst_bskl_pskl_to_bskl_inh; exact Hmono_img).
   assert (HO3 : ftvar_in_pskl (⇓ˢ[ Θ ] (msubst_pskl κ P0)) [<=] dom Θ').
-  { pose proof (refine_syn_f_downarrow_source_ftv Hrs Hwfth
-                  ltac:(intros x Hx; exfalso; clear - Hx; solve_notin_auto)) as h.
+  { pose proof (refine_syn_downarrow_source_ftv Hrs Hwfth) as h.
     rewrite Heqinh in h. rewrite ftvar_in_bskl_inh in h.
     clear - h HO2. fsetdec. }
   (* ---- 5. …but β SURVIVES the solution, and it is NOT in the truncation ---- *)
@@ -709,20 +708,20 @@ Qed.
 (*  [__flex_r]'s chain cannot bottom out because a monotype painting is    *)
 (*  never [bskl_all_inh] — while the Check row's counterpart is            *)
 (*  [pskl_to_bskl_inh B] with [guarded_pskl B].  This is the SOURCE-side   *)
-(*  mirror of [ad_refine_syn_f_all_inh_r_shape].                          *)
+(*  mirror of [ad_refine_syn_all_inh_r_shape].                             *)
 (* ===================================================================== *)
 
-Lemma ad_refine_syn_f_all_inh_l_shape : forall F Θ Δ A Qt,
-  ad_refine_syn_f F Θ Δ (bskl_all_inh A) Qt ->
+Lemma ad_refine_syn_all_inh_l_shape : forall Θ Δ A Qt,
+  {{ Θ ⨟ Δ ⊢ᵣ (bskl_all_inh A) ⊳ Qt }}ad ->
   exists B, Qt = bskl_all_inh B.
 Proof.
-  intros F Θ Δ A Qt H.
+  intros Θ Δ A Qt H.
   remember (bskl_all_inh A) as S eqn:HS. revert A HS.
   induction H; intros A0 HS; try discriminate HS.
   - (* all *) eexists; reflexivity.
   - (* flex_r : the target's definition is a MONOTYPE painting, never ∀-inh *)
     exfalso.
-    destruct (IHad_refine_syn_f _ HS) as [B HB].
+    destruct (IHad_refine_syn _ HS) as [B HB].
     destruct τ; cbn in HB; discriminate HB.
 Qed.
 
@@ -731,8 +730,7 @@ Lemma check_row_guarded_p0 : forall Θ0 κ Θ P0 B,
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   a_ty_mode_compat mode_tc P0 ->
   guarded_pskl B ->
-  ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh (msubst_pskl κ P0))
-    (pskl_to_bskl_inh B) ->
+  {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (pskl_to_bskl_inh B) }}ad ->
   guarded_pskl P0.
 Proof.
   intros Θ0 κ Θ P0 B Hinc HwfP0 Hmod HgB Hrs.
@@ -745,7 +743,7 @@ Proof.
   - inversion Hlc; subst. apply guarded_pskl__arrow; assumption.
   - (* ∀ : the fill forces a ∀-inh counterpart, which is not guarded *)
     exfalso.
-    destruct (ad_refine_syn_f_all_inh_l_shape Hrs) as [B0 HB0].
+    destruct (ad_refine_syn_all_inh_l_shape Hrs) as [B0 HB0].
     destruct (@pskl_to_bskl_inh_all_inh_inv B B0 HB0) as [X [HX _]].
     subst B. inversion HgB.
 Qed.
@@ -821,7 +819,7 @@ Qed.
     the ForallL rows' [guarded_pskl P0 \/ P0 = pskl_hole] premise costs
     nothing: the configuration it excludes is exactly the one this lemma
     covers, and a ∀-headed [P0] forces a ∀-inh counterpart through the FILL
-    ([ad_refine_syn_f_all_inh_l_shape], §8). *)
+    ([ad_refine_syn_all_inh_l_shape], §8). *)
 Lemma sub_complete_all_inh_counterpart : forall n Θ0 P0 P R R' Ψ Θ κ B,
   (forall NM' M' Θ0' P0' P' R'' T'' Ψ' Θ' κ' Q',
      sub_complete_concl n NM' M' Θ0' P0' P' R'' T'' Ψ' Θ' κ' Q') ->
@@ -1052,7 +1050,7 @@ Proof.
          counterpart through the FILL, and §8b sends the row through ForallR *)
       subst NM0 Ma P0.
       cbn in Hrs.
-      destruct (ad_refine_syn_f_all_inh_l_shape Hrs) as [B HB]. subst Qa.
+      destruct (ad_refine_syn_all_inh_l_shape Hrs) as [B HB]. subst Qa.
       exact (@sub_complete_all_inh_counterpart n0 Θ0 (pskl_all_syn Pb) P
                (uskl_all_tag εa R0)
                (uskl_all_tag εa Rj) Ψ0 Θa κ B (Hfuel n0 ltac:(lia))
@@ -1083,7 +1081,7 @@ Proof.
                HwfQ Hgf).
     + subst NM0 Ma P0.
       cbn in Hrs.
-      destruct (ad_refine_syn_f_all_inh_l_shape Hrs) as [B HB]. subst Qa.
+      destruct (ad_refine_syn_all_inh_l_shape Hrs) as [B HB]. subst Qa.
       exact (@sub_complete_all_inh_counterpart n0 Θ0 (pskl_all_syn Pb) P
                (uskl_all_syn R0)
                (uskl_all_syn Rj) Ψ0 Θa κ B (Hfuel n0 ltac:(lia))
@@ -1278,14 +1276,6 @@ Theorem a_sub_complete :
     κ ∷ Θ0 ⊑ Θ ->
     {{ Θ ⊢ R' ≡ᵘ (msubst_uskl_syn κ (pskl_to_uskl P)) }}a ->
     ad_pat_sub_fuel n NM M empty Θ R' Q ->
-    (* ⚙ the PLAIN refinement, not the internal [ad_refine_syn_f] variant.
-       [F] is consistency soundness' ghost-fill hygiene set (prop_soundness_
-       consis.v §"Fill-hygienic refinement"); at the [F = ∅] this theorem
-       instantiates it at, the [__hole] side condition is vacuous and the two
-       judgments are INTER-DERIVABLE ([ad_refine_syn_f_of_plain] /
-       [ad_refine_syn_f_forget]).  So [_f] in a HYPOTHESIS was scaffolding
-       leaking into the statement — and, being the stronger of the two, it
-       was also gratuitously weakening the theorem.  Dropped 2026-08-06. *)
     {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
     {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
     (* the subject's TY ghost-freeness — the motive's EXTERNAL side
@@ -1307,6 +1297,6 @@ Proof.
            NM M Θ0 P0 P (pskl_to_uskl P) R' empty Θ κ Q
            Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty
            (uskl_to_pskl_pskl_to_uskl P) Hinc Hslack HDj
-           (ad_refine_syn_f_of_plain Hrs) HwfQ Hgf).
+           Hrs HwfQ Hgf).
 Qed.
 

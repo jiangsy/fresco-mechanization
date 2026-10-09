@@ -1832,7 +1832,9 @@ follow the paper.  It only upgrades our verdict on someone else's code.
   then forbids the capture and the second step above becomes underivable.
   This is the same "inherited variables must not fill ghosts" discipline that
   the soundness proof had to carry explicitly as the fill-hygiene set `F`
-  (`ad_refine_syn_f`) — evidence the constraint genuinely belongs in the rule.
+  (`ad_refine_syn_f`; since the 2026-10-09 cleanup that relation is gone and
+  `F` is simply part of Δ in the plain refinement) — evidence the constraint
+  genuinely belongs in the rule.
 - RESOLUTION (user-directed, and what the paper's comment actually says): do NOT
   add the premise to the rule.  The declarative rules stay verbatim; instead the
   METATHEORY carries well-formedness — a "solution" is a derivation *whose types
@@ -1848,7 +1850,9 @@ follow the paper.  It only upgrades our verdict on someone else's code.
   rule, so Δ never grows and Δ-freeness propagates), and the crux
   `ad_refine_syn_syn_l_wf`: ASSUMING the result is well-formed, it is a syn
   painting of a skeleton well-formed at the EMPTY Δ — exactly what re-applying
-  the Ghost rule needs.
+  the Ghost rule needs.  (2026-10-09: `ad_refine_syn_syn_l_wf` was deleted
+  as unused; under the paper-faithful wf rules it is `ad_refine_syn_syn_l`
+  plus `a_wf_pskl_delta_mono`.)
 - NEXT: the main induction for lemma:precision-preserves-refinement, then the
   metasubstitution-composition algebra, then completeness.
 
@@ -3014,7 +3018,8 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
     move, so neither `fastep_all_r` nor `fsh_all_r` applies and the Δρ
     quantifier is built into the definition instead (as the `ss_walk` one
     already is).
-  - `ad_partial_precise_delta_shrink_fresh` (`Qed`) — the mirror of
+  - `ad_partial_precise_delta_shrink_fresh` (`Qed`; since 2026-10-09
+    `ad_partial_precise_delta_shrink`, with no freshness hypotheses) — the mirror of
     `ad_partial_precise_delta_weaken_fresh`: Sub-ForallL hands the IH the
     precision premise at `add β Δ` (β joins Δρ, and `Δρ ⊆ Δ`) and must
     return the conclusion at plain Δ.
@@ -3214,7 +3219,8 @@ on the RIGHT of a non-ghost left-hand side.
 
 **Consequence, machine-checked** (`cex/cex_p7_univ_ghost_r_vacuous.v`,
 Qed + axiom-free, and `ad_refine_pskl_f_tophole_r_shape` in
-`prop_sub_complete_thm.v`): declarative `Sub-UnivGhostR` has a GUARDED subject
+`prop_sub_complete_thm.v` — since 2026-10-09 `ad_refine_pskl_tophole_r_shape`,
+over the plain refinement, in `sub/prop_completeness_sub_gen.v`): declarative `Sub-UnivGhostR` has a GUARDED subject
 and the counterpart `∀◇.Q_0`, so the third condition reads
 `θ⌊S⌋ ⊳ ∀◇.⌊Q_0⌋` with a guarded left — underivable.  The row's case of P7b is
 therefore closed BY CONTRADICTION (`a_sub_complete_univ_ghost_r`, Qed), and the
@@ -3306,7 +3312,8 @@ the counterexample relied on the mech's old Ghost rule demanding a wf fill).
 At `P_0 = □` that well-formedness was free (`ad_refine_syn_hole_l_target_wf`:
 only `__hole` and `__flex_r` have a ghost source, and both carried it) — ⚠️ no
 longer since 2026-10-08: the paper's Ghost rule does not check its fill, so
-that lemma now takes the target's wf as a hypothesis.  At `Sub-Check` it is not,
+that lemma took the target's wf as a hypothesis (and, left unused, was deleted
+in the 2026-10-09 cleanup).  At `Sub-Check` it is not,
 so `a_sub_complete_check` takes `Θ ⨟ ∅ ⊢ P_B` as a hypothesis.  It is the
 paper's usual "all inputs are well-formed", and the P7 bundle will have to
 carry it on the motive.
@@ -3569,7 +3576,8 @@ premise runs at `open P_0 α` over `α, Θ_0`, so its IH needs the declarative
 side at the *extended* context and at `open B α` where the counterpart is
 `\inh{\forall\alpha.B}`.  The fill supplies that half (a `bskl_all_inh` source
 refines only to a `bskl_all_inh` target — `ad_refine_syn_f_all_inh_l_shape`,
-algo/prop_sub_complete_dispatch.v §8), but the JOIN does not: it is
+algo/prop_sub_complete_dispatch.v §8; since 2026-10-09
+`ad_refine_syn_all_inh_l_shape`, `sub/prop_completeness_sub.v`), but the JOIN does not: it is
 ForallL-rooted.  The missing step is therefore a **join permutation** — push
 the ForallL instantiation under the ForallR binder, i.e. from
 
@@ -4479,8 +4487,10 @@ Both guards are DERIVABLE there:
 - cross-half: `e_looksub_lookeq_cstr_old` (a constraint variable already in
   the INPUT supply came from the INPUTS), used inside `e_looksub_sound`;
 - cross-layer: `e_extract_solve_guard` (the collection's constraints live in
-  the supply already spent, the fold's block is drawn strictly above it),
-  used inside `e_extract_sound` in two lines;
+  the supply already spent, the fold's block is drawn strictly above it), a
+  stand-alone statement; `e_extract_sound` discharges the same guard inline,
+  in one line, from facts its proof already computes (`e_looksub_cstr_ftvar`,
+  `e_solve_cstr_block`);
 - the FINAL GUESS's half: `e_guess_block_fresh` (the guess's block is
   disjoint from the supply it starts at) together with
   `e_looksub_cstr_ftvar` and `e_solve_cstr_out_ftvar` (which put `𝒞`'s and

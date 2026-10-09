@@ -22,7 +22,6 @@
                                                    plain declarative system
 
     §1  inference mode — input the ghost [□]           SOUNDNESS
-    §2  checking mode — input a closed type [A0]       SOUNDNESS
     §3  the COMPLETENESS half, at the same entry point (2026-08-19)
     §4  DECIDABILITY of the THREADED relation
     §5  ⭐⭐⭐ COMPLETENESS AT THE PAPER'S JUDGEMENT — the lift, composed
@@ -37,7 +36,7 @@
     It is also what [type.ml] does at its own entry point — start the
     counter, start the context empty.
 
-    ⚙ §1/§2 were SOUNDNESS ONLY when they were written: [None] meant "no rule
+    ⚙ §1 was SOUNDNESS ONLY when it was written: [None] meant "no rule
     applied" and was justified by nothing (§8b.7's result shape).  §3 closes
     that — the completeness ladder (campaign levels 1–8) is finished — and §4
     is the two-line consequence.
@@ -118,10 +117,6 @@ Proof.
   apply e_typing_sound_init in Hrun.
   apply a_typing_sound_infer; assumption.
 Qed.
-
-(* ===================================================================== *)
-(*  §2  CHECKING mode                                                     *)
-(* ===================================================================== *)
 
 (* ===================================================================== *)
 (*  §3  ⭐ THE COMPLETENESS HALF, at the same entry point                  *)
@@ -307,8 +302,7 @@ Proof.
     [ exact De | exact lc_pskl_hole | exact Hlc ].
 Qed.
 
-(** The CHECK twin, against a closed well-formed [B].  The extra
-    hypothesis mirrors [e_typing_run_sound_check]'s. *)
+(** The CHECK twin, against a closed well-formed [B]. *)
 Corollary e_typing_run_complete_decl_check : forall e (B : btyp),
   {{ nil ⊢ᵉ e }}d ->
   d_wf_ptyp nil (btyp_to_ptyp B) ->

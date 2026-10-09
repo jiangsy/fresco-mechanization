@@ -22,9 +22,10 @@
         [ρx]: SS-ForallR's opener pairs, which never re-close (the rule's
         yield passes through, the leak is BY DESIGN) and stay in the
         yield relation as RIGID pairs, fresh on their own sides;
-    §6  [a_solve_cstr_rel]   — the fold, pointwise on [rel_a_cstrs]
-        (the HYGIENIC-REDERIVATION consumer; the b-core is fused and
-        must NOT be stated through a list rel — §8c.9).
+    §6  [rel_a_cstrs]        — the pointwise rel on constraints the
+        fold transport is stated over (the HYGIENIC-REDERIVATION consumer;
+        the b-core is fused and must NOT be stated through a list rel —
+        §8c.9), and the pair restriction.
 
     Every side-2 generated name additionally dodges the caller's
     avoid-set [L] — the supply discipline's relational rendering. *)
@@ -1407,7 +1408,7 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §6  Transport 4 — the constraint fold along the rel                   *)
+(*  §6  Constraints along the rel                                         *)
 (* ===================================================================== *)
 
 (** Pointwise rel on constraints.  ⚠️ This serves the FOLD TRANSPORT only
@@ -2835,9 +2836,9 @@ Proof.
     unfold binds in Hbd |- *; simpl; right; exact Hbd.
 Qed.
 
-(** ⭐ THE CORRESPONDENCE ON FREE VARIABLES — sharper than [rel_pskl_ftv_l] /
-    [_ftv_r], which only bound the two ftvar sets by [V ∪ cols].  Every free
-    variable of one side is RELATED to one of the other, which is what
+(** ⭐ THE CORRESPONDENCE ON FREE VARIABLES — sharper than [rel_pskl_ftv_r]
+    (prop_solve_det.v), which only bounds an ftvar set by [V ∪ cols].
+    Every free variable of one side is RELATED to one of the other, which is what
     transports a DISJOINTNESS (the consis rows' [Δ ∩ ftvar P [=] empty]
     guards) across the relation. *)
 Lemma rel_pskl_ftv_corr_r : forall ρ V P1 P2,
@@ -3240,9 +3241,9 @@ Qed.
 (* --------------------------------------------------------------------- *)
 (*  ⚙ THE PAIR RESTRICTION, ON A CONTEXT.  A ∀ row of the trio STRIPS its  *)
 (*  opener off the output context, so the conclusion must hand the caller  *)
-(*  a relation that no longer speaks about it — and [rel_aenv_drop_head]   *)
-(*  is not enough, because by then the row's own generated pairs sit in    *)
-(*  FRONT of the opener's.  [restrict_pairs] deletes it wherever it is.    *)
+(*  a relation that no longer speaks about it — and dropping the head      *)
+(*  pair is not enough, because by then the row's own generated pairs sit  *)
+(*  in FRONT of the opener's.  [restrict_pairs] deletes it wherever it is.    *)
 (* --------------------------------------------------------------------- *)
 
 Lemma rel_ptyp_restrict : forall ρ V A1 A2 β1 β2,
@@ -3980,9 +3981,9 @@ Qed.
 (*  ⚙ Three groups, and their natural homes are noted because they are    *)
 (*  general facts that happened to be missing:                            *)
 (*                                                                        *)
-(*  - [a_wf_pskl_ftv_tvarish] / [a_binds_tvar_not_var_{typ,skl}]          *)
+(*  - [a_wf_pskl_ftv_binds] / [a_binds_tvar_not_var_{typ,skl}]            *)
 (*    (algo/prop_basic.v's neighbourhood): every free variable of a       *)
-(*    [Δ]-wf skeleton is [Δ]-bound or TVAR-ISH, so a TERM entry cannot    *)
+(*    wf skeleton is TVAR-ISH, so a TERM entry cannot                     *)
 (*    occur in it — what [Assign-SkipTmVar] needs and its rule does not   *)
 (*    state.                                                              *)
 (*  - [a_wf_pskl_weaken_tvarish] / [a_isub_wf_pskl] (algo/prop_inc.v's):  *)
@@ -4397,15 +4398,6 @@ Proof.
   match goal with
   | Hin : _ `in` add a0 V |- _ => clear - Hin Hne; fsetdec
   end.
-Qed.
-
-Lemma rel_fun_add_fresh : forall ρ V D a0,
-  rel_fun ρ V D -> a0 `notin` D -> rel_fun ρ (add a0 V) D.
-Proof.
-  intros ρ V D a0 Hfun Ha0 a b1 b2 Ha Hr1 Hr2.
-  assert (Hne : a <> a0) by (intros Ex; rewrite Ex in Ha; contradiction).
-  apply (Hfun a b1 b2 Ha);
-    (eapply rel_atom_shrink_add; [ eassumption | exact Hne ]).
 Qed.
 
 (** A tvar-ish binding transports: [rel_abind] preserves the KIND, and

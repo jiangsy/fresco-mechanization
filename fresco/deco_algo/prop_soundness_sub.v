@@ -3494,10 +3494,8 @@ Proof.
     { simpl. exact Hwf. }
     { simpl. exact HwfP0. }
     { simpl.
-      destruct (a_wf_pskl_ftv_tvarish HwfP (α := α)
-                  ltac:(simpl; clear; solve_notin_auto))
-        as [HΔx | Htx];
-        [ exfalso; clear - HΔx; fsetdec | exact Htx ]. }
+      pose proof (a_wf_pskl_ftv_binds HwfP (α := α)
+                  ltac:(simpl; clear; solve_notin_auto)) as Htx; exact Htx. }
     { exact Hmod. }
     { simpl. exact Hgf0. }
   - (* Arrow *)
@@ -3813,8 +3811,7 @@ Proof.
       assert (Hbx : binds x (abind_var_typ Q) (Ξw ++ (x ~ abind_var_typ Q) ++ Θ0))
         by (apply binds_app_3; apply binds_app_2;
             unfold binds; simpl; left; reflexivity).
-      destruct (a_wf_pskl_ftv_tvarish HwfP0 Hin) as [Hemp | Hbt];
-        [ clear - Hemp; fsetdec | ].
+      pose proof (a_wf_pskl_ftv_binds HwfP0 Hin) as Hbt.
       destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
         pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hc;
         discriminate Hc. }
@@ -3843,8 +3840,7 @@ Proof.
       assert (Hbx : binds x (abind_var_skl Q) (Ξw ++ (x ~ abind_var_skl Q) ++ Θ0))
         by (apply binds_app_3; apply binds_app_2;
             unfold binds; simpl; left; reflexivity).
-      destruct (a_wf_pskl_ftv_tvarish HwfP0 Hin) as [Hemp | Hbt];
-        [ clear - Hemp; fsetdec | ].
+      pose proof (a_wf_pskl_ftv_binds HwfP0 Hin) as Hbt.
       destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
         pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hc;
         discriminate Hc. }
@@ -3903,14 +3899,6 @@ Theorem a_sub_sound : forall NM M P0 Θ0 P P' Θ1,
   exists Qt,
     bskl_to_pskl Qt = P' /\
     ({{ empty ⨟ Θ1 ⊢ˢ[ NM | M ] (pskl_to_uskl P) ⩽ Qt }}ad) /\
-    (* ⚙ the PLAIN refinement, not the internal [ad_refine_syn_f] variant.
-       [F] is consistency soundness' ghost-fill hygiene set (prop_soundness_
-       consis.v §"Fill-hygienic refinement"); at [F = ∅] — the only value a
-       paper-facing statement ever uses — the [__hole] side condition is
-       vacuous and the two judgments are INTER-DERIVABLE
-       ([ad_refine_syn_f_forget] / [ad_refine_syn_f_of_plain]).  So [_f] in
-       the conclusion was scaffolding leaking into the statement, nothing
-       more.  Dropped 2026-08-06. *)
     {{ Θ1 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ Qt }}ad.
 Proof.
   intros NM M P0 Θ0 P P' Θ1 Hrun Hwf HwfP0 HwfP Hmod Hgf.
@@ -3931,7 +3919,7 @@ Proof.
   destruct Hjoin as [njoin Hjoin]; apply ad_pat_sub_of_fuel in Hjoin.
   exact (conj Hisub (conj Hwf1
            (ex_intro _ Qt (conj HeQt (conj Hjoin
-              (ad_refine_syn_f_forget Hrs)))))).
+              Hrs))))).
 Qed.
 
 (** ⭐ THE LEAF-VALID COMPANION (hand-off §6.2).  Identical to
@@ -3967,5 +3955,5 @@ Proof.
   destruct Hjoin as [ njoin Hjoin ].
   exact (conj Hisub (conj Hwf1
            (ex_intro _ Qt (conj HeQt (conj (ad_pat_sub_of_fuel Hjoin)
-              (ad_refine_syn_f_forget Hrs)))))).
+              Hrs))))).
 Qed.

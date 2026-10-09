@@ -271,10 +271,8 @@ Lemma ad_refine_syn_rename_paint : forall Θ1 α Θ0 Q P β',
 Proof.
   intros * H Hdom Hdefs.
   eapply ad_refine_syn_mono;
-    [ eapply ad_refine_syn_f_forget, ad_refine_syn_f_rename_ctx;
-        [ apply ad_refine_syn_f_of_plain; exact H
-        | exact Hdom | clear; fsetdec | clear; fsetdec | exact Hdefs
-        | clear; fsetdec ]
+    [ apply ad_refine_syn_rename_ctx_gen;
+        [ exact H | exact Hdom | exact Hdefs | clear; fsetdec ]
     | apply tbinds_le_subst_mid; exact Hdefs ].
 Qed.
 

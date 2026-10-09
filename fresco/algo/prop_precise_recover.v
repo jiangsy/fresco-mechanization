@@ -48,7 +48,7 @@
     already-green [refine_mono_join]: it BUILDS refinement between two
     monotype paintings from their equivalence.  We obtain it for free by
     composing the converse bridge [tyequiv_mono_consis] with the
-    consistency→refinement mono lemma [ad_pat_consis_refine_syn_f_mono].
+    consistency→refinement mono lemma [ad_pat_consis_refine_syn_mono].
 
     NOTE ON [κ₁].  [consis_optimal_post] quantifies the algorithmic solution
     [κ₁] universally (only [κ₁ ∷ Θ₀ ⊑ Θ₁]).  The recovery genuinely needs
@@ -89,28 +89,8 @@ Set Implicit Arguments.
 (*                                                                         *)
 (*  The exact converse of [refine_mono_join] (prop_mono_bridge.v:191).     *)
 (*  Obtained by composing the converse bridge [tyequiv_mono_consis] with    *)
-(*  the consistency→refinement mono lemma [ad_pat_consis_refine_syn_f_mono].*)
+(*  the consistency→refinement mono lemma [ad_pat_consis_refine_syn_mono]. *)
 (* ===================================================================== *)
-
-(** A refinement whose LEFT side is ghost-free never uses the ◇ rule, the
-    only rule that reads [Δ]; so it holds at every [Δ].  (The ◇ rule's
-    premise [Δ ∩ ftv P [=] empty] is why the mono bridge below is stated at
-    [Δ = empty] first.) *)
-Lemma ad_refine_syn_ghost_free_delta : forall Θ Δ0 Q P,
-  {{ Θ ⨟ Δ0 ⊢ᵣ Q ⊳ P }}ad ->
-  bskl_ghost_free Q ->
-  forall Δ, {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad.
-Proof.
-  intros Θ Δ0 Q P H; induction H; intros Hg Δ'; simpl in Hg;
-    try contradiction; eauto using ad_refine_syn.
-  - destruct Hg; eauto using ad_refine_syn.
-  - apply ad_refine_syn__all with (L := L); [ assumption | ]. intros α Hα.
-    apply H1; auto. apply bskl_ghost_free_open_rec; exact Hg.
-  - eapply ad_refine_syn__flex_l; [ exact H | ].
-    apply IHad_refine_syn; auto.
-    unfold ptyp_to_bskl_syn. apply pskl_to_bskl_syn_ghost_free.
-    apply ptyp_to_pskl_ghost_free.
-Qed.
 
 Lemma tyequiv_mono_refine_syn : forall Θ Δ A A',
   {{ ⊢ Θ }}a ->
@@ -125,14 +105,11 @@ Proof.
   apply ad_refine_syn_ghost_free_delta with (Δ0 := empty).
   2:{ unfold ptyp_to_bskl_syn. apply pskl_to_bskl_syn_ghost_free.
       apply ptyp_to_pskl_ghost_free. }
-  eapply (ad_refine_syn_f_forget (F := empty)).
   replace (ptyp_to_bskl_syn A)
     with (pskl_to_bskl_inh (uskl_to_pskl (ptyp_to_uskl_syn A))).
   2:{ rewrite uskl_to_pskl_ptyp. apply ptyp_to_bskl_inh_syn_eq; auto. }
-  eapply ad_pat_consis_refine_syn_f_mono;
-    [ exact Hc | exact Hwf | apply mono_ptyp_to_bskl_syn; auto | | | | ].
-  - clear. fsetdec.
-  - intros β τ Hb. clear. fsetdec.
+  eapply ad_pat_consis_refine_syn_mono;
+    [ exact Hc | exact Hwf | apply mono_ptyp_to_bskl_syn; auto | | ].
   - clear. fsetdec.
   - intros β τ Hb. clear. fsetdec.
 Qed.
@@ -326,14 +303,13 @@ Lemma consis_precise_via_refine : forall Θ0 Θ1 Θ Δ Δ1 κ κ1 ζ α Qb,
   a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ ->
   α `in` dom κ1 ->
   msubst_lookup κ1 α = ptyp_var_f α ->
-  ad_refine_syn_f Δ1 Θ Δ1 (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f α))) Qb ->
+  {{ Θ ⨟ Δ1 ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f α))) ⊳ Qb }}ad ->
   {{ Θ ⨟ Δ ⊢ₚᵣ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb) }}ad.
 Proof.
   intros Θ0 Θ1 Θ Δ Δ1 κ κ1 ζ α Qb
          Hwf Hflex HκΘ HbΘ1 HζΘ Hwf1 Hie Hdom Hid Hrs.
   assert (Hmκα : mono_ptyp (msubst_lookup κ α))
     by (eapply a_inc_lookup_mono; exact HκΘ).
-  apply ad_refine_syn_f_forget in Hrs.
   replace (msubst_pskl κ (pskl_var_f α))
     with (ptyp_to_pskl (msubst_lookup κ α)) in Hrs by reflexivity.
   rewrite (ptyp_to_bskl_inh_syn_eq Hmκα) in Hrs.

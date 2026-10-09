@@ -3,7 +3,7 @@
     §1  supply growth
     §2  the block is generated: it lands in the output supply, and it was not
         in the input one — hence ⭐ [uniq Ξ]
-    §3  the bridge, and ⭐ the [a_sub__forall_l] payoff
+    §3  the bridge
 
     ⚙ The shape is [prop_guess.v]'s, not [prop_consis.v]'s, because the
     collection has no output context (see def_look.v's header).  All four
@@ -119,17 +119,6 @@ Proof. intros * H. apply (proj1 e_looksub_lookeq_block) in H. tauto. Qed.
 
 Corollary e_lookeq_generated_in_supply : forall S0 Θ α P P' S1 Ξ C,
   {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e -> dom Ξ [<=] S1.
-Proof. intros * H. apply (proj2 e_looksub_lookeq_block) in H. tauto. Qed.
-
-(** ⭐ THE BLOCK IS DUPLICATE-FREE — the fact the collection cannot supply
-    unthreaded, and half of what [a_sub__forall_l]'s prose-completed premise
-    [uniq (Ξ ++ Θ0)] asks for (§4). *)
-Corollary e_looksub_uniq : forall S0 Θ α m P P' S1 Ξ C,
-  {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e -> uniq Ξ.
-Proof. intros * H. apply (proj1 e_looksub_lookeq_block) in H. tauto. Qed.
-
-Corollary e_lookeq_uniq : forall S0 Θ α P P' S1 Ξ C,
-  {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e -> uniq Ξ.
 Proof. intros * H. apply (proj2 e_looksub_lookeq_block) in H. tauto. Qed.
 
 Corollary e_looksub_block_ftvar : forall S0 Θ α m P P' S1 Ξ C,
@@ -524,25 +513,6 @@ Corollary e_looksub_sound : forall S0 Θ α m P P' S1 Ξ C,
   add α (ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] S0 ->
   {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a.
 Proof. intros. eapply (proj1 e_looksub_lookeq_sound); eassumption. Qed.
-
-Corollary e_lookeq_sound : forall S0 Θ α P P' S1 Ξ C,
-  {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
-  add α (ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] S0 ->
-  {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}a.
-Proof. intros. eapply (proj2 e_looksub_lookeq_sound); eassumption. Qed.
-
-(* ===================================================================== *)
-(*  §4  ⭐ THE PAYOFF — [a_sub__forall_l]'s [uniq (Ξ ++ Θ0)] is DERIVABLE  *)
-(*                                                                        *)
-(*  fresco/algo/def_rules.v:1253-1256 states it as a prose-completion — the *)
-(*  paper's `fresh` Ξ, needed there because (in that comment's words)      *)
-(*  [a_lookeq]'s LE-FlexR and [a_guess_mono]'s hole rule pick arbitrary    *)
-(*  names, so re-attaching Ξ needs the freshness stated.                   *)
-(*  Threaded, both halves are theorems: §2 gives [uniq Ξ] and              *)
-(*  the block's disjointness from anything the supply already covers.      *)
-(*  This is M1's [AT-Abs] payoff at the second of the two sites the        *)
-(*  comment names.                                                        *)
-(* ===================================================================== *)
 
 (* ===================================================================== *)
 (*  §5  SUPPLY RESPECT — the two supply indexes transport along [=]       *)

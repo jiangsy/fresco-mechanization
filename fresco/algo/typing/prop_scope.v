@@ -1652,8 +1652,7 @@ Proof.
           unfold binds; simpl; left; reflexivity).
     assert (Hxfr : x `notin` ftvar_in_pskl P0).
     { intro Hin.
-      destruct (a_wf_pskl_ftv_tvarish HwfP0 Hin) as [Hemp | Hbt];
-        [ clear - Hemp; fsetdec | ].
+      pose proof (a_wf_pskl_ftv_binds HwfP0 Hin) as Hbt.
       destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
         pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hcx;
         discriminate Hcx. }
@@ -1696,8 +1695,7 @@ Proof.
           unfold binds; simpl; left; reflexivity).
     assert (Hxfr : x `notin` ftvar_in_pskl P0).
     { intro Hin.
-      destruct (a_wf_pskl_ftv_tvarish HwfP0 Hin) as [Hemp | Hbt];
-        [ clear - Hemp; fsetdec | ].
+      pose proof (a_wf_pskl_ftv_binds HwfP0 Hin) as Hbt.
       destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
         pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hcx;
         discriminate Hcx. }
@@ -1867,9 +1865,8 @@ Proof.
     assert (HPtv : forall α1, α1 `in` ftvar_in_pskl P ->
                      a_binds_tvar α1 (αs ++ Θ0)).
     { intros α1 Hα1.
-      destruct (a_wf_pskl_ftv_tvarish HwfPP Hα1) as [HΔ | Ht];
-        [ exfalso; clear - HΔ; fsetdec
-        | apply a_binds_tvar_weaken_cons; exact Ht ]. }
+      pose proof (a_wf_pskl_ftv_binds HwfPP Hα1) as Ht;
+        apply a_binds_tvar_weaken_cons; exact Ht. }
     assert (HwfAg : a_wf_ptyp (αs ++ Θ0) A)
       by (eapply a_guess_mono_wf; [ exact H1 | exact HPtv | exact HΞtv ]).
     assert (Hx : x `notin` dom Θ0 `union` dom αs `union` dom Ξ

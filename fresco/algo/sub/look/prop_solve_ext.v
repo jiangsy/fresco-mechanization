@@ -945,9 +945,6 @@ Proof.
     | exact H ].
 Qed.
 
-Lemma delta_def_fresh_empty : forall Θ, delta_def_fresh empty Θ.
-Proof. intros Θ β α τ Hin; clear - Hin; fsetdec. Qed.
-
 Lemma a_solve_eq_mono : forall n Θ0 Θ Θw κ Δ Ψi τ Pi P0,
   size_pskl Pi + size_pskl P0 <= n ->
   {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->

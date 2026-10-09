@@ -67,7 +67,7 @@ files were `Admitted` scaffolding subsumed by the current algo development.
 - ✅ Stability of constraint collection (`a_looksub_lookeq_subst_stable`); Look freshness (`a_extract_output_fresh`) — both `algo/prop_looksub.v`
 - ✅ Decorating instantiation (`a_extract_decorate`, `algo/prop_soundness_sub.v`); Soundness of decorated algorithmic subtyping of flexible variables (the flex half of `a_subtag_sound_bundle`)
 - ✅ **Theorem: Soundness of subtyping** (`a_sub_sound`, `algo/prop_soundness_sub.v`, axiom-free)
-- ✅ Complete partial precision (`algo/prop_sub_complete.v` P5b, lemma:partial-precision-complete); Stability of subtyping under more precise substitution (`ad_pat_sub_precise_upre`, same file — P5)
+- ✅ Complete partial precision (`ad_partial_precise_complete`, `algo/sub/prop_completeness_sub_precise.v` P5b, lemma:partial-precision-complete; the `_gen` form was merged back 2026-10-09); Stability of subtyping under more precise substitution (`ad_pat_sub_precise_upre_fuel`, same file — P5)
 - ✅ Completeness of constraint collection & solving **for variables** (subtyping-proofs:1696, P6-Sv) — `a_solve_sub_complete_var` in `fresco/algo/prop_look_complete_sub_var.v`, **Qed and axiom-free** (`Print Assumptions`: closed under the global context).  The paper's statement is **FALSE as given**, machine-checked counterexample `fresco/algo/cex/cex_p6sv_forall_flex.v` (`p6sv_with_p6cv_premises_is_false`): its own ForallL case builds, from a ρ = IDENTITY instance, the raw-flexible-payload configuration that `cex_p6_flex_freshened.v` rules unreachable on the constraint-collection route.  What is proved is the REPAIRED statement, which adds the positional premise `flex_shield Θ0 Ψ' Δρ P0 ψa` (plus `flex_apart_walk`, and a `binds`-monotone context generalization so Sub-ForallL can run the IH at `Θ,β`).  `flex_shield_excludes_cex` is kept as the regression test tying the premise to the counterexample.  See docs/PAPER-GAPS.md and DESIGN-completeness-subtyping.md §6 (x)–(a3)
 - 🟢 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_looksub_solve_complete_gen` (ρ-generalized) + the paper's premise-free ρ = identity corollary `a_looksub_solve_complete` in `fresco/algo/prop_look_complete_sub_cstr.v`; **11 of 12 rows closed**, ALL TWELVE ROWS closed.  ⚠️ Phase B's planned prerequisite — a sub-side `ad_pat_consis_target_ftv` — is FALSE at `ad_pat_sub_g__forall_l_tagged` even under `is_tskl` (`cex/cex_p6ss_sub_target_ftv.v`); what Sub-ForallR carries instead is a MODE-GUARDED DISJUNCTION (DESIGN §8 (h)), whose right disjunct (`alpha_stack`) is the shape that never descends the target.  Like P6-Sv it is a REPAIRED statement (`sub_shield`).  ⚠️ P6-Cs's `Δρ ∩ dom Θ0 = ∅` premise was VACUOUS — `cex/cex_p6cs_rsubst_delta_vacuous.v` — and is now the ftv-level one.
 - ✅ **Look completeness** (subtyping-proofs:2730, P6-L) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_extract_complete_gen` in `fresco/algo/prop_look_complete_extract.v`.  **P6 IS COMPLETE**: all five of its lemmas (P6-Cv, P6-Cs, P6-Sv, P6-Ss, P6-L) are closed.  The statement is the paper's, with the paper's own PROSE well-formedness of ψa restored on the statement (`Θ ⨟ Δ ⊢ₚₛᵃ ⌊ψa⌋ˢ`, which `ad_partial_precise_complete` needs, plus the precision hole rule's `Δ ∩ ftv ψa = ∅`); the paper's `inc[θ≡θa]{Θ0}{Θ}` appears as the reflexive `a_inc_equiv Θ0 κ κ Θ` beside an a_inc conclusion exhibiting θa as the EXTENSION `κa ++ κ` — the mech's `a_inc_equiv` is positional, so that is where the content lives (same reading as P6-Ss).  One ENCODING FIX was required first: `a_extract` now carries a context and solves at `Ξ ++ Θ0`, not `Ξ` alone — the paper's solve/guess judgments are context-FREE, and handing the solve `Ξ` alone hid Θ0's flexibles from the one context-sensitive rule of the cluster (`a_solve_eq__flex_r`), which made P6-L unprovable.  See DESIGN-completeness-subtyping.md §7.4 / §7.5
@@ -248,6 +248,55 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 - Restored chain: `prop_weakening` (d_pat base cases repaired for embedded subtyping), `prop_renaming` + `prop_general_subsumption` (compiled unchanged), `prop_skeleton` (lean extraction: the 18-block dependency closure the equivalence needs; the pre-restart skeleton-safety machinery — incl. the now-false `pskl_to_tskl_is_tskl`, a casualty of the `is_tskl` sync fix A1 — stays in `prop_skeleton.v.legacy` for the later paper-faithful redo), `prop_syntax_directed` (base cases of `d_pat_subst_unit` repaired; obsolete `is_base_term` helper dropped)
 
 # Part 2: Progress log (most recent first)
+
+## 2026-10-09 — Cleanup: _f removed, leftovers, faithful partial precision, dead-lemma sweep
+
+Commits `360393bc`, `66a183cf`, `835b629b`, `d923ba2c`, `11a55da7`, plus the
+step-5 deletions below.  No README.v claim changed.
+
+1. **The internal `_f` refinement relations are gone** (`66a183cf`, net
+   −1301; prepared by `360393bc`).  `ad_refine_syn_f` / `ad_refine_pskl_f` /
+   `ad_precise_f` carried a fill-avoidance set `F` beside Δ; they were shown
+   to be plain refinement at `F ∪ Δ` and then removed.  Every former `_f`
+   lemma is stated over the plain relation under the name without `_f`
+   (`ad_refine_syn_all_inh_l_shape`, `ad_refine_pskl_tophole_r_shape`,
+   `skl_tyequiv_refine_syn_transport`, …); duplicates of plain lemmas were
+   deleted.  `a_consis_complete`'s refinement hypotheses are the plain
+   relation at Δ = ∅.
+2. **Leftovers of the wf/refinement rewrite** (`835b629b`, net −619).  22
+   unused and 6 trivialised lemmas deleted, dead hypotheses dropped
+   (`ad_precise_downarrow`, `uskl_precise_erase_refine`,
+   `a_inc_equiv_precise_msubst*`, …), and renames:
+   `a_wf_pskl_ftv_tvarish` → `a_wf_pskl_ftv_binds` (stronger),
+   `ad_refine_syn_hole_l_gen` → `ad_refine_syn_hole_l`,
+   `ad_refine_syn_syn_delta_free_gen` → `ad_refine_syn_syn_delta_free`,
+   `a_wf_pskl_subst_tvar_gen` → `a_wf_pskl_subst_tvar`.  Deleted:
+   `ad_refine_syn_syn_l_wf`, `ad_refine_syn_hole_l_target_wf`,
+   `a_wf_pskl_delta_shrink`.
+3. **Partial precision follows the paper rule for rule** (`d923ba2c`, net
+   −427).  `ad_ppre__var` has no scoping premise and `ad_ppre__forall` binds
+   into both Θ and Δ.  `ad_partial_precise_complete_gen` merged into
+   `ad_partial_precise_complete`; `ad_partial_precise_strip_tvar_mid`,
+   `ad_partial_precise_tvar_to_delta_mid` and `ad_ppre_mono_paint_refl`
+   deleted; `ad_partial_precise_delta_shrink_fresh` →
+   `ad_partial_precise_delta_shrink` (no freshness hypotheses).
+4. **Dead-lemma sweep to a fixpoint** (`11a55da7`, net −3151).  151
+   unreferenced declarations in ten rounds, and the file
+   `fresco/algo/consis/prop_consis_inc.v`.  Kept: the `*_no_loss` lemmas, the
+   documented exported API (docs/REPORT-simplification-audit-2026-10-07.md
+   §1) and lemmas cited in PAPER-GAPS / Part 1.
+5. **Four more unused declarations** (user decision, net −140 with comment
+   fixes): `d_consis_join_consis`, `d_consis_join_refine`
+   (decl/def_rules.v), `freeze_no_infer` (decl/prop_annotation.v, now only a
+   header and a RESTART NOTE) and `a_solve_eq_shielded`; with it went what
+   only it used, `pskl_shielded_ftv_close{,_rec}` and
+   `pskl_ghost_free_shielded` (algo/sub/look/prop_rsubst.v).
+
+Total since `9cc2b9fe` over `fresco/`, `cex/` and `README.v` (including the
+2026-10-08/09 wf rewrite): 96 files, +6903 / −10837 lines.
+
+Validation: full `make coq` passes; all 34 `README.v` claims are closed
+under the global context.
 
 ## 2026-10-09 — Δ is a set everywhere; Q/P naming; inherited colour in refinement
 

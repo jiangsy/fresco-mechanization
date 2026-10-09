@@ -319,8 +319,8 @@ Proof.
   assert (HxV : x `notin` V) by (clear - Hscp HxftvΘb; fsetdec).
   assert (Hxbd : x `notin` ftvar_in_abind bd) by (clear - Hbdf HxΘb; fsetdec).
   assert (HxQ0 : x `notin` ftvar_in_pskl Q0).
-  { intros Hin. destruct (a_wf_pskl_ftv_tvarish HwfQ0 Hin) as [HΔ | Htv];
-      [ clear - HΔ; fsetdec | apply HxΘb; apply a_binds_tvar_in_dom; exact Htv ]. }
+  { intros Hin. pose proof (a_wf_pskl_ftv_binds HwfQ0 Hin) as Htv;
+    apply HxΘb; apply a_binds_tvar_in_dom; exact Htv. }
   assert (Hx2V : x2 `notin` V) by (clear - Hx2 Hcov; fsetdec).
   assert (Hx2cr : x2 `notin` cols_r ρ) by (clear - Hx2 Hcov; fsetdec).
   assert (Hx2Θb' : x2 `notin` dom Θb') by (clear - Hx2 HdΘ; fsetdec).
@@ -1086,9 +1086,8 @@ Proof.
     assert (HPtv : forall α1, α1 `in` ftvar_in_pskl Pa ->
                      a_binds_tvar α1 (αs ++ Θa)).
     { intros α1 Hα1.
-      destruct (a_wf_pskl_ftv_tvarish HwfPa Hα1) as [HΔ | Htv0];
-        [ exfalso; clear - HΔ; fsetdec
-        | apply a_binds_tvar_weaken_cons; exact Htv0 ]. }
+      pose proof (a_wf_pskl_ftv_binds HwfPa Hα1) as Htv0;
+        apply a_binds_tvar_weaken_cons; exact Htv0. }
     assert (HwfAg : a_wf_ptyp (αs ++ Θa) A)
       by (eapply a_guess_mono_wf; [ exact Hgm | exact HPtv | exact HΞtv ]).
     assert (HwfXg : {{ ⊢ ((x ~ abind_var_typ A) ++ αs ++ Θa) }}a).
@@ -1447,8 +1446,7 @@ Proof.
     assert (HΞP0 : dom Ξ ∩ ftvar_in_pskl (ptyp_to_pskl (ptyp_all A0))
                    [=] empty).
     { assert (Hsub : ftvar_in_pskl (ptyp_to_pskl (ptyp_all A0)) [<=] dom Θa).
-      { intros z Hz. destruct (a_wf_pskl_ftv_tvarish Hwfp0 Hz) as [HΔ | Htv];
-          [ clear - HΔ; fsetdec | apply a_binds_tvar_in_dom; exact Htv ]. }
+      { intros z Hz. apply a_binds_tvar_in_dom; exact (a_wf_pskl_ftv_binds Hwfp0 Hz). }
       assert (Hdisj : disjoint Ξ Θa) by (clear - Huq; solve_uniq).
       unfold disjoint in Hdisj. clear - Hdisj Hsub. fsetdec. }
     assert (HΞe : dom Ξ ∩ (fvar_in_exp (exp_abs ea)
@@ -1986,8 +1984,7 @@ Proof.
       unfold disjoint in Hdisj. clear - Hdisj Hsc0 Hdm0. fsetdec. }
     assert (HΞP0 : dom Ξ ∩ ftvar_in_pskl (ptyp_to_pskl A0) [=] empty).
     { assert (Hsub : ftvar_in_pskl (ptyp_to_pskl A0) [<=] dom Θa).
-      { intros z Hz. destruct (a_wf_pskl_ftv_tvarish Hwfp0 Hz) as [HΔ | Htv];
-          [ clear - HΔ; fsetdec | apply a_binds_tvar_in_dom; exact Htv ]. }
+      { intros z Hz. apply a_binds_tvar_in_dom; exact (a_wf_pskl_ftv_binds Hwfp0 Hz). }
       assert (Hdisj : disjoint Ξ Θb) by (clear - Huq; solve_uniq).
       unfold disjoint in Hdisj. clear - Hdisj Hsub Hdm0. fsetdec. }
     assert (HΞeb : dom Ξ ∩ (fvar_in_exp ea ∪ ftvar_in_exp ea) [=] empty).
@@ -2458,8 +2455,7 @@ Proof.
     assert (HΞP0 : dom Ξ ∩ ftvar_in_pskl (ptyp_to_pskl (ptyp_all A0))
                    [=] empty).
     { assert (Hsub : ftvar_in_pskl (ptyp_to_pskl (ptyp_all A0)) [<=] dom Θa).
-      { intros z Hz. destruct (a_wf_pskl_ftv_tvarish Hwfp0 Hz) as [HΔ | Htv];
-          [ clear - HΔ; fsetdec | apply a_binds_tvar_in_dom; exact Htv ]. }
+      { intros z Hz. apply a_binds_tvar_in_dom; exact (a_wf_pskl_ftv_binds Hwfp0 Hz). }
       assert (Hdisj : disjoint Ξ Θa) by (clear - Huq; solve_uniq).
       unfold disjoint in Hdisj. clear - Hdisj Hsub. fsetdec. }
     assert (HΞe : dom Ξ ∩ (fvar_in_exp (exp_abs_anno Aan ea)
@@ -3011,8 +3007,7 @@ Proof.
       unfold disjoint in Hdisj. clear - Hdisj Hsc0 Hdm0 Hdmc. fsetdec. }
     assert (HΞP0 : dom Ξ ∩ ftvar_in_pskl (ptyp_to_pskl A0) [=] empty).
     { assert (Hsub : ftvar_in_pskl (ptyp_to_pskl A0) [<=] dom Θa).
-      { intros z Hz. destruct (a_wf_pskl_ftv_tvarish Hwfp0 Hz) as [HΔ | Htv];
-          [ clear - HΔ; fsetdec | apply a_binds_tvar_in_dom; exact Htv ]. }
+      { intros z Hz. apply a_binds_tvar_in_dom; exact (a_wf_pskl_ftv_binds Hwfp0 Hz). }
       assert (Hdisj : disjoint Ξ Θc) by (clear - Huq; solve_uniq).
       unfold disjoint in Hdisj. clear - Hdisj Hsub Hdm0 Hdmc. fsetdec. }
     assert (HΞeb : dom Ξ ∩ (fvar_in_exp ea ∪ ftvar_in_exp ea) [=] empty).

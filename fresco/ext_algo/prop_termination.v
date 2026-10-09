@@ -256,11 +256,6 @@ Corollary e_looksub_nall : forall S0 Θ α m P P' S1 Ξ C,
   nall_a_cstrs C <= nall_pskl P'.
 Proof. apply e_looksub_lookeq_nall. Qed.
 
-Corollary e_lookeq_nall : forall S0 Θ α P P' S1 Ξ C,
-  {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
-  nall_a_cstrs C <= nall_pskl P'.
-Proof. apply e_looksub_lookeq_nall. Qed.
-
 (* ===================================================================== *)
 (*  §5  ⭐ THE SOLVING LAYER INVENTS NO ∀ EITHER                           *)
 (*                                                                        *)
@@ -327,14 +322,6 @@ Fixpoint hnall_pskl (P : pskl) : nat :=
   | pskl_tophole P1 => hnall_pskl P1
   | _               => 0
   end.
-
-(** The head chain is a prefix of the whole tree, so the head count is below
-    the total one — which is how §6's [nall] bound reaches [hnall]. *)
-Lemma hnall_le_nall_ptyp : forall A, hnall_ptyp A <= nall_ptyp A.
-Proof. induction A; simpl; lia. Qed.
-
-Lemma hnall_le_nall_pskl : forall P, hnall_pskl P <= nall_pskl P.
-Proof. induction P; simpl; lia. Qed.
 
 Lemma guarded_pskl_hnall : forall P, guarded_pskl P -> hnall_pskl P = 0.
 Proof. intros * H; destruct H; reflexivity. Qed.

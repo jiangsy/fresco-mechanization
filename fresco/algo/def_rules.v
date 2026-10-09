@@ -207,14 +207,6 @@ Proof.
   simpl. f_equal. assumption.
 Qed.
 
-Lemma aenv_minus_cons_in : forall α b Θ Δ,
-    α `in` Δ -> aenv_minus ((α ~ b) ++ Θ) Δ = aenv_minus Θ Δ.
-Proof.
-  intros. unfold aenv_minus. simpl.
-  replace (AtomSetImpl.mem α Δ) with true by (symmetry; apply mem_iff; assumption).
-  reflexivity.
-Qed.
-
 Lemma aenv_minus_cons_notin : forall α b Θ Δ,
     α `notin` Δ -> aenv_minus ((α ~ b) ++ Θ) Δ = (α ~ b) ++ aenv_minus Θ Δ.
 Proof.
@@ -311,28 +303,45 @@ Proof.
   - right; right. exists τ. apply binds_app_iff. auto.
 Qed.
 
-(** Well-formedness only reads the context's TYPE variables, so it is
-    monotone along any map that keeps them.  This one fact covers every
-    context change the tree transports [a_wf_pskl] along — weakening, ⊴,
-    renaming the term entries — including through the [∀◇] rule, whose
-    premise is read at [Θ∖Δ]. *)
+(** Well-formedness only reads the context's TYPE variables — and only at
+    the skeleton's FREE variables — so it is monotone along any map that
+    keeps those lookups. *)
+Lemma a_wf_pskl_tvar_mono_ftv : forall Θ Δ P,
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
+  forall Θ', (forall α, α `in` ftvar_in_pskl P ->
+                        a_binds_tvar α Θ -> a_binds_tvar α Θ') ->
+  {{ Θ' ⨟ Δ ⊢ₚₛ P }}a.
+Proof.
+  intros Θ Δ P H; induction H; intros Θ' Hincl; simpl in Hincl.
+  - constructor.
+  - constructor. apply Hincl; [ clear; fsetdec | assumption ].
+  - constructor; [ apply IHa_wf_pskl1 | apply IHa_wf_pskl2 ];
+      intros β Hβ Hb; apply Hincl; solve [ clear - Hβ; fsetdec | exact Hb ].
+  - apply a_wf_pskl__all with (L := L). intros α Hα.
+    apply H0; [ exact Hα | ].
+    intros β Hβ Hb. apply a_binds_tvar_cons_tvar.
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
+                  P (pskl_var_f α)) as Hup; simpl in Hup.
+    destruct (eq_var β α) as [-> | Hne]; [ left; reflexivity | right ].
+    destruct (a_binds_tvar_cons_tvar_inv Hb) as [-> | Hb']; [ congruence | ].
+    apply Hincl; [ clear - Hup Hβ Hne; fsetdec | exact Hb' ].
+  - constructor.
+  - constructor; [ assumption | ]. apply IHa_wf_pskl.
+    intros β Hβ Hb. apply a_binds_tvar_aenv_minus in Hb. destruct Hb as [Hb Hn].
+    apply a_binds_tvar_aenv_minus. split; [ apply Hincl; assumption | exact Hn ].
+Qed.
+
+(** The context-wide form.  This one fact covers every context change the
+    tree transports [a_wf_pskl] along — weakening, ⊴, renaming the term
+    entries — including through the [∀◇] rule, whose premise is read at
+    [Θ∖Δ]. *)
 Lemma a_wf_pskl_tvar_mono : forall Θ Δ P,
   {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
   forall Θ', (forall α, a_binds_tvar α Θ -> a_binds_tvar α Θ') ->
   {{ Θ' ⨟ Δ ⊢ₚₛ P }}a.
 Proof.
-  intros Θ Δ P H; induction H; intros Θ' Hincl.
-  - constructor.
-  - constructor. auto.
-  - constructor; auto.
-  - apply a_wf_pskl__all with (L := L). intros α Hα.
-    apply H0; [ exact Hα | ].
-    intros β Hb. apply a_binds_tvar_cons_tvar.
-    destruct (a_binds_tvar_cons_tvar_inv Hb); auto.
-  - constructor.
-  - constructor; [ assumption | ]. apply IHa_wf_pskl.
-    intros β Hb. apply a_binds_tvar_aenv_minus in Hb. destruct Hb as [Hb Hn].
-    apply a_binds_tvar_aenv_minus. auto.
+  intros Θ Δ P H Θ' Hincl.
+  apply (a_wf_pskl_tvar_mono_ftv H). intros α _. apply Hincl.
 Qed.
 
 Reserved Notation "{{ ⊢ Θ }}a"

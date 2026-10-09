@@ -378,7 +378,7 @@ Proof.
                   ⊑ (msubst_pskl κ P0) }}ad).
   { eapply a_inc_equiv_precise_msubst_flip with (Θ0 := Θ0) (Δ0 := empty);
       [ exact HwfP0 | exact Hwf0 | exact HwfΘ | exact Hinc | exact Hσ
-      | exact Heqvb | clear; fsetdec ]. }
+      | exact Heqvb ]. }
   assert (HrefT : {{ Θ ⨟ empty ⊢ᵣ
                     (pskl_to_bskl_inh (msubst_pskl (msubst_compose ζb κb) P0))
                     ⊳ (btyp_to_bskl B) }}ad).
@@ -700,7 +700,7 @@ Proof.
                   ⊑ (msubst_pskl κ (ptyp_to_pskl Ap)) }}ad).
   { eapply a_inc_equiv_precise_msubst_flip with (Θ0 := Θ0) (Δ0 := empty);
       [ exact HwfP0 | exact Hwf0 | exact HwfΘ | exact Hinc | exact Hσ
-      | exact Heqvb | clear; fsetdec ]. }
+      | exact Heqvb ]. }
   assert (HrefT : {{ Θ ⨟ empty ⊢ᵣ
                     (pskl_to_bskl_inh
                        (msubst_pskl (msubst_compose ζb κb) (ptyp_to_pskl Ap)))
@@ -724,20 +724,18 @@ Proof.
     rewrite pskl_to_uskl_ptyp.
     apply (ad_pat_consis_syn_bid HwfA (ptyp_to_btyp_inh A)
              (btyp_to_ptyp_ptyp_to_btyp_inh A)). }
-  assert (Hrp : ad_refine_pskl_f empty Θ empty
-                  (msubst_pskl ζb (ptyp_to_pskl B')) (bskl_to_pskl Qb)).
+  assert (Hrp : {{ Θ ⨟ empty ⊢ᵣₚ (msubst_pskl ζb (ptyp_to_pskl B')) ⊳ (bskl_to_pskl Qb) }}ad).
   { rewrite msubst_pskl_embed_ptyp.
-    eapply (proj2 (skl_tyequiv_refine_pskl_f_transport Heqs HwfΘ
+    eapply (proj2 (skl_tyequiv_refine_pskl_transport Heqs HwfΘ
                      (fun x b h => h))).
     unfold Qb. rewrite bskl_to_pskl_btyp_to_bskl, btyp_to_ptyp_ptyp_to_btyp_inh.
-    apply ad_refine_pskl_f_of_plain.
     apply ad_refine_pskl_refl.
     apply a_wf_ptyp_to_wf_pskl. exact HwfA. }
   (* ---- 3. the consistency stage ---- *)
   destruct (a_consis_complete Hwfmid HwfApmid
               ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfB'mid)
               Hζb HwfΘ Hjoin
-              ltac:(apply ad_refine_syn_f_of_plain; exact HrefT)
+              ltac:(exact HrefT)
               Hrp)
     as [Qc [Θ2 [HcRun HoptC]]].
   (* ---- 4. the run ---- *)
@@ -952,7 +950,7 @@ Proof.
                    ⊑ (msubst_pskl κ P0) }}ad).
   { eapply a_inc_equiv_precise_msubst_flip with (Θ0 := Θ0) (Δ0 := empty);
       [ exact HwfP0 | exact Hwf0 | exact HwfΘ | exact Hinc | exact Hσ1
-      | exact Heqv1 | clear; fsetdec ]. }
+      | exact Heqv1 ]. }
   assert (Hcod : {{ Θ ⨟ empty ⊢ᵣ
                    (pskl_to_bskl_inh (msubst_pskl (msubst_compose ζ1 κ1b) P0))
                    ⊳ (btyp_to_bskl B2) }}ad).
@@ -1039,10 +1037,8 @@ Proof.
                     (pskl_to_bskl_inh (msubst_pskl ζ2 (ptyp_to_pskl Af)))
                     ⊳ (btyp_to_bskl (ptyp_to_btyp_inh A2)) }}ad).
   { rewrite msubst_pskl_embed_ptyp, <- (pskl_to_bskl_inh_ptyp A2).
-    eapply ad_refine_syn_f_forget.
-    eapply (proj2 (skl_tyequiv_refine_syn_f_transport Heqs HwfΘ
+    eapply (proj2 (skl_tyequiv_refine_syn_transport Heqs HwfΘ
                      (fun x b h => h))).
-    apply ad_refine_syn_f_of_plain.
     apply ad_refine_syn_refl_inh.
     apply a_wf_ptyp_to_wf_pskl. exact HwfA2. }
   destruct (IH2 mode_tc Θ2' (ptyp_to_pskl Af) ζ2 Θ (ptyp_to_btyp_inh A2)
@@ -1245,7 +1241,6 @@ Proof.
     split; [ reflexivity | simpl; rewrite He1, He2; reflexivity ].
 Qed.
 
-(** Looking up past a block the atom avoids. *)
 (** Stacking a block of guessed flexibles onto an increase. *)
 Lemma a_inc_extend_flex_block : forall (Ξg : aenv) (ζg κ : metasubst) Θ1 Θ,
   κ ∷ Θ1 ⊑ Θ ->
@@ -2030,8 +2025,7 @@ Proof.
     - right; left. apply binds_app_2.
       apply a_decls_in_dom_binds; [ exact Hdecls | exact Hin ].
     - assert (HαP : α `in` ftvar_in_pskl P) by (clear - Hα Hsub Hni; fsetdec).
-      destruct (a_wf_pskl_ftv_tvarish HwfP HαP) as [Hc | Ht];
-        [ exfalso; clear - Hc; fsetdec | ].
+      pose proof (a_wf_pskl_ftv_binds HwfP HαP) as Ht.
       destruct Ht as [Hr | [Hm | [τ Hdf]]];
         [ left; apply binds_app_3; exact Hr
         | right; left; apply binds_app_3; exact Hm
@@ -2342,18 +2336,15 @@ Proof.
                      (fun x b h => h))).
     rewrite pskl_to_uskl_ptyp.
     apply (ad_pat_consis_syn_bid HwfA' B1 HB1). }
-  assert (Hrp : ad_refine_pskl_f empty Θ empty
-                  (msubst_pskl κ (ptyp_to_pskl A))
-                  (bskl_to_pskl (btyp_to_bskl B1))).
+  assert (Hrp : {{ Θ ⨟ empty ⊢ᵣₚ (msubst_pskl κ (ptyp_to_pskl A)) ⊳ (bskl_to_pskl (btyp_to_bskl B1)) }}ad).
   { rewrite msubst_pskl_embed_ptyp, HmsA.
     rewrite bskl_to_pskl_btyp_to_bskl, HB1.
-    eapply (proj2 (skl_tyequiv_refine_pskl_f_transport Heqs HwfΘ
+    eapply (proj2 (skl_tyequiv_refine_pskl_transport Heqs HwfΘ
                      (fun x b h => h))).
-    apply ad_refine_pskl_f_of_plain.
     apply ad_refine_pskl_refl.
     apply a_wf_ptyp_to_wf_pskl. exact HwfA'. }
   destruct (a_consis_complete Hwf0 HwfP HwfpA0 Hinc HwfΘ Hjoin
-              ltac:(apply ad_refine_syn_f_of_plain; exact HrefD)
+              ltac:(exact HrefD)
               Hrp)
     as [Qc [Θmid [HcRun HoptC]]].
   destruct (a_consis_isub_wf_nil HcRun Hwf0 HwfP HwfpA0) as [HleC Hwfmid].
@@ -2403,7 +2394,7 @@ Proof.
                   ⊑ (msubst_pskl κ Q) }}ad).
   { eapply a_inc_equiv_precise_msubst_flip with (Θ0 := Θ0) (Δ0 := empty);
       [ exact HwfQ | exact Hwf0 | exact HwfΘ | exact Hinc | exact Hσ
-      | exact Heqvc | clear; fsetdec ]. }
+      | exact Heqvc ]. }
   assert (HrefCζ : {{ Θ ⨟ empty ⊢ᵣ
                      (pskl_to_bskl_inh
                         (msubst_pskl (msubst_compose ζc κc) Q))
@@ -2703,9 +2694,9 @@ Proof.
   destruct Ap as [ | n | β | Aa Ab | A0 ]; simpl in Href.
   - (* 1 : a guarded painting never refines to an inh-∀ *)
     exfalso.
-    eapply ad_refine_syn_f_guarded_src_all_inh_absurd with (Θ := Θ);
+    eapply ad_refine_syn_guarded_src_all_inh_absurd with (Θ := Θ);
       [ exact HwfΘ
-      | eapply ad_refine_syn_f_of_plain; exact Href
+      | exact Href
       | apply guarded_bskl__unit ].
   - (* bvar : not well-formed *)
     simpl in HwfP0. inversion HwfP0.
@@ -2714,9 +2705,9 @@ Proof.
     exfalso.
     pose proof (a_inc_lookup_mono β Hinc) as Hm.
     rewrite (ptyp_to_bskl_inh_syn_eq Hm) in Href.
-    eapply ad_refine_syn_f_guarded_src_all_inh_absurd with (Θ := Θ);
+    eapply ad_refine_syn_guarded_src_all_inh_absurd with (Θ := Θ);
       [ exact HwfΘ
-      | eapply ad_refine_syn_f_of_plain; exact Href
+      | exact Href
       | apply mono_bskl_guarded; apply mono_ptyp_to_bskl_syn; exact Hm ].
   - (* arrow : guarded *)
     exfalso.
@@ -2742,9 +2733,9 @@ Proof.
         [ exact Hinc | exact Hwf0 | exact Hwfb
         | intros γ Hγ; clear - Hγ; fsetdec
         | exact (@msubst_inc_img_empty _ _) ]. }
-    eapply ad_refine_syn_f_guarded_src_all_inh_absurd with (Θ := Θ);
+    eapply ad_refine_syn_guarded_src_all_inh_absurd with (Θ := Θ);
       [ exact HwfΘ
-      | eapply ad_refine_syn_f_of_plain; exact Href
+      | exact Href
       | apply guarded_bskl__arrow; [ exact Hlca | exact Hlcb ] ].
   - (* ---- 2. the live shape [∀A0] : invert the ∀-inh refinement ---- *)
     inversion Href; subst.
@@ -2970,17 +2961,17 @@ Proof.
   rewrite msubst_pskl_embed_ptyp in Href.
   destruct Ap as [ | n | β | Aa Ab | A0 ]; simpl in Href.
   - exfalso.
-    eapply ad_refine_syn_f_guarded_src_all_inh_absurd with (Θ := Θ);
+    eapply ad_refine_syn_guarded_src_all_inh_absurd with (Θ := Θ);
       [ exact HwfΘ
-      | eapply ad_refine_syn_f_of_plain; exact Href
+      | exact Href
       | apply guarded_bskl__unit ].
   - simpl in HwfP0. inversion HwfP0.
   - exfalso.
     pose proof (a_inc_lookup_mono β Hinc) as Hm.
     rewrite (ptyp_to_bskl_inh_syn_eq Hm) in Href.
-    eapply ad_refine_syn_f_guarded_src_all_inh_absurd with (Θ := Θ);
+    eapply ad_refine_syn_guarded_src_all_inh_absurd with (Θ := Θ);
       [ exact HwfΘ
-      | eapply ad_refine_syn_f_of_plain; exact Href
+      | exact Href
       | apply mono_bskl_guarded; apply mono_ptyp_to_bskl_syn; exact Hm ].
   - exfalso.
     simpl in HwfP0. inversion HwfP0; subst.
@@ -3005,9 +2996,9 @@ Proof.
         [ exact Hinc | exact Hwf0 | exact Hwfb
         | intros γ Hγ; clear - Hγ; fsetdec
         | exact (@msubst_inc_img_empty _ _) ]. }
-    eapply ad_refine_syn_f_guarded_src_all_inh_absurd with (Θ := Θ);
+    eapply ad_refine_syn_guarded_src_all_inh_absurd with (Θ := Θ);
       [ exact HwfΘ
-      | eapply ad_refine_syn_f_of_plain; exact Href
+      | exact Href
       | apply guarded_bskl__arrow; [ exact Hlca | exact Hlcb ] ].
   - inversion Href; subst.
     match goal with
@@ -3469,27 +3460,22 @@ Proof.
         rewrite btyp_to_bskl_ptyp_to_btyp_syn in Hc.
         exact Hc. }
       (* the two refinements the consistency completeness theorem wants *)
-      assert (Hrs : ad_refine_syn_f empty Θ empty
-                      (pskl_to_bskl_inh
+      assert (Hrs : {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh
                          (msubst_pskl ((α1, τ2) :: (β1, τ1) :: κ)
-                            (pskl_arrow (pskl_var_f β1) (pskl_var_f α1))))
-                      (ptyp_to_bskl_syn (ptyp_arrow τ1 τ2))).
+                            (pskl_arrow (pskl_var_f β1) (pskl_var_f α1)))) ⊳ (ptyp_to_bskl_syn (ptyp_arrow τ1 τ2)) }}ad).
       { cbn [msubst_pskl]. rewrite Hlkβ1, Hlkα1.
         change (pskl_arrow (ptyp_to_pskl τ1) (ptyp_to_pskl τ2))
           with (ptyp_to_pskl (ptyp_arrow τ1 τ2)).
         rewrite <- (ptyp_to_bskl_inh_syn_eq Hm12).
-        apply ad_refine_syn_f_of_plain.
         apply ad_refine_syn_refl_inh.
         apply a_wf_ptyp_to_wf_pskl; exact HwfA12. }
-      assert (Hrp : ad_refine_pskl_f empty Θ empty
-                      (msubst_pskl ((α1, τ2) :: (β1, τ1) :: κ) (pskl_var_f β))
-                      (bskl_to_pskl (ptyp_to_bskl_syn (ptyp_arrow τ1 τ2)))).
+      assert (Hrp : {{ Θ ⨟ empty ⊢ᵣₚ (msubst_pskl ((α1, τ2) :: (β1, τ1) :: κ) (pskl_var_f β)) ⊳ (bskl_to_pskl (ptyp_to_bskl_syn (ptyp_arrow τ1 τ2))) }}ad).
       { cbn [msubst_pskl]. rewrite Hlkβ.
         unfold ptyp_to_bskl_syn.
         rewrite bskl_to_pskl_pskl_to_bskl_syn.
-        eapply (proj2 (skl_tyequiv_refine_pskl_f_transport Heqs HwfΘ
+        eapply (proj2 (skl_tyequiv_refine_pskl_transport Heqs HwfΘ
                          (fun x b (h : binds x b Θ) => h))).
-        apply ad_refine_pskl_f_refl.
+        apply ad_refine_pskl_refl.
         apply a_wf_ptyp_to_wf_pskl; exact HwfA12. }
       (* THE CONSISTENCY RUN *)
       destruct (a_consis_complete Hwf0'
@@ -3559,12 +3545,10 @@ Proof.
           | reflexivity ]. }
       { (* the codomain's refinement, subject-transported to [ζ α̂1] *)
         cbn [msubst_pskl ptyp_to_pskl].
-        eapply ad_refine_syn_f_forget.
-        eapply (proj1 (skl_tyequiv_refine_syn_f_transport
+        eapply (proj1 (skl_tyequiv_refine_syn_transport
                          (a_tyequiv_pskl Hteq1) HwfΘ
                          (fun x b (h : binds x b Θ) => h))).
         rewrite (ptyp_to_bskl_inh_syn_eq Hm2).
-        apply ad_refine_syn_f_of_plain.
         exact Hr2. }
     - (* an ARROW : the IDENTITY split *)
       exists Aa, Ab, Θ0, κ.
@@ -3923,22 +3907,16 @@ Proof.
     rewrite pskl_to_uskl_ptyp.
     apply (ad_pat_consis_syn_bid HwfAanΘ (ptyp_to_btyp_inh Aan)
              (btyp_to_ptyp_ptyp_to_btyp_inh Aan)). }
-  assert (Hrs : ad_refine_syn_f empty Θ empty
-                  (pskl_to_bskl_inh (msubst_pskl ζ (ptyp_to_pskl Aan)))
-                  (btyp_to_bskl (ptyp_to_btyp_inh Aan))).
+  assert (Hrs : {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl ζ (ptyp_to_pskl Aan))) ⊳ (btyp_to_bskl (ptyp_to_btyp_inh Aan)) }}ad).
   { rewrite msubst_pskl_embed_ptyp, HmsAζ.
     rewrite <- (pskl_to_bskl_inh_ptyp Aan).
-    apply ad_refine_syn_f_of_plain.
     apply ad_refine_syn_refl_inh.
     apply a_wf_ptyp_to_wf_pskl; exact HwfAanΘ. }
-  assert (Hrp : ad_refine_pskl_f empty Θ empty
-                  (msubst_pskl ζ (ptyp_to_pskl Ad))
-                  (bskl_to_pskl (btyp_to_bskl (ptyp_to_btyp_inh Aan)))).
+  assert (Hrp : {{ Θ ⨟ empty ⊢ᵣₚ (msubst_pskl ζ (ptyp_to_pskl Ad)) ⊳ (bskl_to_pskl (btyp_to_bskl (ptyp_to_btyp_inh Aan))) }}ad).
   { rewrite msubst_pskl_embed_ptyp.
     rewrite bskl_to_pskl_btyp_to_bskl, btyp_to_ptyp_ptyp_to_btyp_inh.
-    eapply (proj2 (skl_tyequiv_refine_pskl_f_transport Heqs HwfΘ
+    eapply (proj2 (skl_tyequiv_refine_pskl_transport Heqs HwfΘ
                      (fun x b (h : binds x b Θ) => h))).
-    apply ad_refine_pskl_f_of_plain.
     apply ad_refine_pskl_refl.
     apply a_wf_ptyp_to_wf_pskl; exact HwfAanΘ. }
   assert (HwfAanP1 : {{ Θ1 ⨟ empty ⊢ₚₛ (ptyp_to_pskl Aan) }}a)
@@ -3996,7 +3974,7 @@ Proof.
                   ⊑ (msubst_pskl ζ (ptyp_to_pskl Bc)) }}ad).
   { eapply a_inc_equiv_precise_msubst_flip with (Θ0 := Θ1) (Δ0 := empty);
       [ exact HwfBcP1 | exact Hwf1 | exact HwfΘ | exact Hζ | exact Hσ
-      | exact Heqvc | clear; fsetdec ]. }
+      | exact Heqvc ]. }
   assert (HrefCζ : {{ Θ ⨟ empty ⊢ᵣ
                      (pskl_to_bskl_inh
                         (msubst_pskl (msubst_compose ζc κc) (ptyp_to_pskl Bc)))

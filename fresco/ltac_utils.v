@@ -111,9 +111,7 @@ Ltac inv_guarded_hole :=
 (*                                                                       *)
 (*  ⭐ USE [solve_notin_auto] (bottom of this section).  It DISPATCHES on  *)
 (*  the shape and then applies the matching order — the two cannot be     *)
-(*  merged into one cascade, see the ⚠️ note there.  [solve_notin_fast]    *)
-(*  (a) and [solve_notin_flat] (b) are the explicit single-shape entry    *)
-(*  points, for a site whose shape you have measured.                     *)
+(*  merged into one cascade, see the ⚠️ note there.                       *)
 (* ===================================================================== *)
 
 (** Keep only the freshness hypothesis about THIS goal's subject — case (a). *)
@@ -125,26 +123,6 @@ Ltac keep_only_subject :=
                  tryif constr_eq w v then fail else clear H
              end
   end.
-
-(** ⭐ Case (a) — MANY hypotheses.  The default for a [x ∉ S] goal proved in
-    an ambient context (typical inside a proof body).  [test_examples.v]:
-    467 s -> 23.8 s. *)
-Ltac solve_notin_fast :=
-  first [ assumption
-        | solve [ keep_only_subject; fsetdec ]
-        | solve [ destruct_notin; fsetdec ]
-        | solve [ solve_notin ]
-        | fsetdec ].
-
-(** ⭐ Case (b) — ONE huge hypothesis.  The default for the [ltac:(…)] side
-    conditions of the swap / rename kit, which are already [clear -]-scoped to
-    a single hypothesis that is a rule's [L] avoid-set.
-    [a_pat_complete_abs_anno]: 248 s -> 0.9 s. *)
-Ltac solve_notin_flat :=
-  first [ assumption
-        | solve [ destruct_notin; fsetdec ]
-        | solve [ solve_notin ]
-        | fsetdec ].
 
 (** ⚠️ WHY THE ORDER CANNOT SIMPLY BE MERGED — measured, twice, the hard way.
     Cases (a) and (b) want OPPOSITE first stages, and a plain [first] cascade
@@ -181,8 +159,7 @@ Ltac two_foreign_notin :=
     hand-picking the right tactic at every site (full build 9:44 either way,
     vs 13:04 before the sweep and ~20.5 min before the kit), and it keeps
     [test_examples.v] on the fast branch (30.8 s, vs 130-142 s when the order
-    is wrong).  [solve_notin_fast] / [solve_notin_flat] are kept below as the
-    explicit single-shape entry points, for a site you have measured. *)
+    is wrong). *)
 Ltac solve_notin_auto :=
   first [ assumption
         | tryif two_foreign_notin

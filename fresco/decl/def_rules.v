@@ -152,26 +152,6 @@ Lemma denv_minus_app : forall Γ1 Γ2 Δ,
     denv_minus (Γ1 ++ Γ2) Δ = denv_minus Γ1 Δ ++ denv_minus Γ2 Δ.
 Proof. intros. unfold denv_minus. apply filter_app. Qed.
 
-Lemma denv_minus_empty : forall Γ, denv_minus Γ empty = Γ.
-Proof.
-  induction Γ as [|[a b] Γ IH]; simpl; [ reflexivity | ].
-  unfold denv_minus in *. simpl.
-  replace (AtomSetImpl.mem a empty) with false
-    by (symmetry; apply not_mem_iff; fsetdec).
-  simpl. f_equal. assumption.
-Qed.
-
-Lemma denv_minus_eq : forall Γ Δ1 Δ2,
-    Δ1 [=] Δ2 -> denv_minus Γ Δ1 = denv_minus Γ Δ2.
-Proof.
-  intros Γ Δ1 Δ2 HΔ. unfold denv_minus. apply List.filter_ext.
-  intros [x b]. simpl. f_equal.
-  destruct (AtomSetImpl.mem x Δ1) eqn:H1; destruct (AtomSetImpl.mem x Δ2) eqn:H2;
-    try reflexivity.
-  - rewrite <- mem_iff in H1. rewrite <- not_mem_iff in H2. fsetdec.
-  - rewrite <- not_mem_iff in H1. rewrite <- mem_iff in H2. fsetdec.
-Qed.
-
 Lemma denv_minus_cons_in : forall α b Γ Δ,
     α `in` Δ -> denv_minus ((α ~ b) ++ Γ) Δ = denv_minus Γ Δ.
 Proof.
@@ -194,19 +174,6 @@ Lemma binds_denv_minus : forall α b Γ Δ,
 Proof.
   intros α b Γ Δ. unfold binds, denv_minus. rewrite filter_In. simpl.
   rewrite negb_true_iff, <- not_mem_iff. reflexivity.
-Qed.
-
-Lemma dom_denv_minus : forall α Γ Δ,
-    α `in` dom (denv_minus Γ Δ) -> α `in` dom Γ /\ α `notin` Δ.
-Proof.
-  intros α Γ Δ. induction Γ as [|[a b] Γ IH]; simpl; intro H.
-  - fsetdec.
-  - unfold denv_minus in H. simpl in H.
-    destruct (AtomSetImpl.mem a Δ) eqn:Hm; simpl in H.
-    + destruct (IH H). split; [ fsetdec | assumption ].
-    + apply add_iff in H. destruct H as [<- | H].
-      * split; [ fsetdec | apply not_mem_iff; assumption ].
-      * destruct (IH H). split; [ fsetdec | assumption ].
 Qed.
 
 (* Skeleton well-formedness [{{ Γ ⨟ Δ ⊢ₚₛ P }}d], the paper's [Γ∣Δ ⊢ P]
@@ -718,16 +685,7 @@ Definition d_consis_join (Ψ : atoms) (Γ : list (atom * dbind))
 
 Notation "{{ Ψ ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d" := (d_consis_join Ψ Γ R Q) : fresco_d_scope.
 
-(** The two projections and the pairing, so consumers never unfold. *)
-Lemma d_consis_join_consis : forall Ψ Γ R Q,
-  {{ Ψ ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d -> {{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d.
-Proof. intros * [H _]; exact H. Qed.
-
-Lemma d_consis_join_refine : forall Ψ Γ R Q,
-  {{ Ψ ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d ->
-  {{ Γ ⨟ empty ⊢ᵣₚ (uskl_to_pskl R) ⊳ (bskl_to_pskl Q) }}d.
-Proof. intros * [_ H]; exact H. Qed.
-
+(** The pairing, so consumers never unfold. *)
 Lemma d_consis_join_intro : forall Ψ Γ R Q,
   {{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d ->
   {{ Γ ⨟ empty ⊢ᵣₚ (uskl_to_pskl R) ⊳ (bskl_to_pskl Q) }}d ->

@@ -111,86 +111,39 @@ Require Import src.fresco.algo.sub.look.prop_sub_var.
 (* ===================================================================== *)
 
 (** The mirror of [ad_partial_precise_delta_weaken_fresh]
-    (sub/look/prop_rsubst.v): a Δ-entry the TARGET does not mention can be
-    dropped again.  Sub-ForallL needs both directions — it hands the IH the
-    precision premise at [add β Δ] (β joins Δρ, and [Δρ ⊆ Δ]) and must
-    return the IH's conclusion at plain Δ.
-
-    Only two rows read Δ: [ad_ppre__var]'s disjunct, whose variable IS the
-    target, so a target-fresh Δ-entry is never the one used; and
-    [ad_ppre__hole]'s disjointness side condition, which is ANTITONE in Δ
-    and so only gets easier.  (Unrestricted Δ-shrinking is of course fine
-    for the □ row and false for the var row — hence the freshness.) *)
-Lemma ad_partial_precise_delta_shrink_fresh : forall Θ Δf Ψ P ψ,
+    (sub/look/prop_flex_apart.v): Δ can be shrunk freely.  Sub-ForallL needs
+    both directions — it hands the IH the precision premise at [add β Δ]
+    (β joins Δρ, and [Δρ ⊆ Δ]) and must return the IH's conclusion at
+    plain Δ.  The only row that reads Δ is [ad_ppre__hole], whose
+    disjointness side condition is ANTITONE in Δ, so shrinking needs no
+    freshness (unlike weakening). *)
+Lemma ad_partial_precise_delta_shrink : forall Θ Δf Ψ P ψ,
   {{ Θ ⨟ Δf ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
-  forall Δ Δ', Δf [=] Δ `union` Δ' ->
-  Δ' ∩ ftvar_in_uskl ψ [=] empty ->
-  delta_def_fresh Δ' Θ ->
+  forall Δ, Δ [<=] Δf ->
   {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad.
 Proof.
-  intros Θ Δf Ψ P ψ H; induction H; intros Δ0 Δ' Heq HΔ' Hdf.
+  intros Θ Δf Ψ P ψ H; induction H; intros Δ0 Hsub.
   - apply ad_ppre__unit; assumption.
-  - apply ad_ppre__var; [ assumption | ].
-    match goal with Hor : _ \/ a_binds_tvar _ _ |- _ =>
-      destruct Hor as [HΔ | Hb];
-      [ left; cbn [ftvar_in_uskl] in HΔ'; clear - HΔ Heq HΔ'; fsetdec
-      | right; assumption ] end.
-  - cbn [ftvar_in_uskl] in HΔ'.
-    eapply ad_ppre__arrow;
-      [ eapply (IHad_partial_precise1 Δ0 Δ');
-          [ exact Heq | clear - HΔ'; fsetdec | exact Hdf ]
-      | eapply (IHad_partial_precise2 Δ0 Δ');
-          [ exact Heq | clear - HΔ'; fsetdec | exact Hdf ]
+  - apply ad_ppre__var; assumption.
+  - eapply ad_ppre__arrow;
+      [ exact (IHad_partial_precise1 Δ0 Hsub)
+      | exact (IHad_partial_precise2 Δ0 Hsub)
       | assumption ].
-  - (* forall *)
-    cbn [ftvar_in_uskl] in HΔ'.
-    eapply ad_ppre__forall with (L := L `union` Δ'); [ | eassumption ].
+  - eapply ad_ppre__forall with (L := L); [ | eassumption ].
     intros α0 Hα0.
-    assert (HSX : Δ' ∩
-              (ftvar_in_uskl (open_uskl_wrt_uskl ψ (uskl_var_f α0)))
-              [=] empty).
-    { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ (uskl_var_f α0))
-        as Hup.
-      cbn [ftvar_in_uskl] in Hup. clear - HΔ' Hα0 Hup. fsetdec. }
-    (* Δ and Δ' MUST be pinned: left as evars the [=] goal below is an
-       evar-fsetdec and does not terminate *)
-    eapply (H0 α0 ltac:(clear - Hα0; solve_notin_auto) (add α0 Δ0) Δ');
-      [ clear - Heq; fsetdec | exact HSX | exact Hdf ].
+    apply (H0 α0 Hα0 (add α0 Δ0)). clear - Hsub; fsetdec.
   - (* hole : the side condition is antitone in Δ *)
     apply ad_ppre__hole; [ assumption | ].
     match goal with Hint : _ ∩ _ [=] empty |- _ =>
-      clear - Hint Heq; fsetdec end.
-  - apply ad_ppre__tophole_remove.
-    eapply (IHad_partial_precise Δ0 Δ'); [ exact Heq | exact HΔ' | exact Hdf ].
-  - (* tophole_fill *)
-    eapply ad_ppre__tophole_fill with (L := L `union` Δ').
-    intros α0 Hα0.
-    assert (HSX : Δ' ∩
-              (ftvar_in_uskl (open_uskl_wrt_uskl ψ (uskl_var_f α0)))
-              [=] empty).
-    { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ (uskl_var_f α0))
-        as Hup.
-      cbn [ftvar_in_uskl] in Hup. clear - HΔ' Hα0 Hup. fsetdec. }
-    assert (Hdf' : delta_def_fresh Δ' ((α0 ~ abind_tvar) ++ Θ)).
-    { intros β0 α3 τ3 Hβ0 Hb.
-      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
-        [ discriminate Hc | exact (Hdf β0 α3 τ3 Hβ0 Hb') ]. }
-    eapply (H0 α0 ltac:(clear - Hα0; solve_notin_auto) Δ0 Δ');
-      [ exact Heq | exact HSX | exact Hdf' ].
-  - (* tophole_keep *)
-    cbn [ftvar_in_uskl] in HΔ'.
-    apply ad_ppre__tophole_keep.
-    eapply (IHad_partial_precise Δ0 Δ');
-      [ exact Heq | clear - HΔ'; fsetdec | exact Hdf ].
+      clear - Hint Hsub; fsetdec end.
+  - apply ad_ppre__tophole_remove. exact (IHad_partial_precise Δ0 Hsub).
+  - eapply ad_ppre__tophole_fill with (L := L).
+    intros α0 Hα0. exact (H0 α0 Hα0 Δ0 Hsub).
+  - apply ad_ppre__tophole_keep. exact (IHad_partial_precise Δ0 Hsub).
   - eapply ad_ppre__flex_l; [ eassumption | ].
-    eapply (IHad_partial_precise Δ0 Δ'); [ exact Heq | exact HΔ' | exact Hdf ].
-  - (* flex_r : the target hops to the definition's paint — this is the row
-       [delta_def_fresh] is for, exactly as in the weakening twin *)
-    eapply ad_ppre__flex_r; [ eassumption | ].
-    eapply (IHad_partial_precise Δ0 Δ'); [ exact Heq | | exact Hdf ].
-    rewrite ftvar_ptyp_to_uskl_syn.
-    apply inter_empty_pointwise.
-    intros y Hy. eapply Hdf; [ exact Hy | eassumption ].
+    exact (IHad_partial_precise Δ0 Hsub).
+  - eapply ad_ppre__flex_r; [ eassumption | ].
+    exact (IHad_partial_precise Δ0 Hsub).
 Qed.
 
 (* ===================================================================== *)
@@ -869,33 +822,9 @@ Proof.
             non-ghost script does; at the identity answer the metasubstitution
             collapses to [κ] and the skeleton to [Pi] *)
          simpl in Hprec |- *.
-         assert (HβPiκ : β `notin` ftvar_in_pskl (msubst_pskl κ Pi)).
-         { apply msubst_pskl_ftv_avoid;
-             [ intros pp Hpp;
-               pose proof (a_inc_image_ftv_dom Hκ pp Hpp) as Hb;
-               clear - Hb HβΘ; fsetdec
-             | exact HβPa ]. }
-         eapply ad_partial_precise_delta_shrink_fresh
-           with (Δ := Δ) (Δ' := singleton β);
-           [ eapply ad_partial_precise_strip_tvar_mid
-               with (β := β) (Θ1 := nil) (Θ2 := Θ);
-               [ exact Hprec | reflexivity
-               | intros α0 τ0 Hb;
-                 assert (Hb' : binds α0 (abind_flex_mono_def τ0) Θ)
-                   by (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-                         [ discriminate Habs | exact Hb' ]);
-                 pose proof (a_wf_ptyp_ftv_dom
-                               (@a_wf_aenv_binds_def_wf Θ α0 τ0 HwfΘ Hb')) as Hftd;
-                 clear - Hftd HβΘ; fsetdec
-               | exact HβPiκ
-               | exact Hβψa ]
-           | clear; fsetdec
-           | clear - Hβψa; fsetdec
-           | intros β0 α3 τ3 Hβ0 Hb;
-             assert (Heqβ : β0 = β) by (clear - Hβ0; fsetdec); subst β0;
-             pose proof (a_wf_ptyp_ftv_dom
-                           (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb)) as Hd;
-             clear - Hd HβΘ; fsetdec ].
+         eapply ad_partial_precise_delta_shrink with (Δ := Δ);
+           [ eapply ad_partial_precise_strengthen_tvar; exact Hprec
+           | clear; fsetdec ].
       -- (* ftv 𝒞 : no constraints *) intros _; left; simpl; clear; fsetdec.
       -- (* the SOLVE's block is EMPTY *)
          intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec. }
@@ -965,37 +894,9 @@ Proof.
        intros α0 Hα0. specialize (Hκfresh α0 Hα0). simpl in Hκfresh.
        clear - Hκfresh; fsetdec.
     -- (* precision : strip β from the context, then from Δ *)
-       assert (HβPaκ : β `notin`
-                 ftvar_in_pskl (msubst_pskl (κs ++ κc ++ κ) Pa)).
-       { apply msubst_pskl_ftv_avoid;
-           [ intros pp Hpp; apply in_app_or in Hpp; destruct Hpp as [Hpp | Hpp];
-               [ rewrite Forall_forall in Hβκs; apply Hβκs; exact Hpp
-               | apply in_app_or in Hpp; destruct Hpp as [Hpp | Hpp];
-                   [ rewrite Forall_forall in Hβκc; apply Hβκc; exact Hpp
-                   | pose proof (a_inc_image_ftv_dom Hκ pp Hpp) as Hb;
-                     clear - Hb HβΘ; fsetdec ] ]
-           | exact HβPa ]. }
-       eapply ad_partial_precise_delta_shrink_fresh
-         with (Δ := Δ) (Δ' := singleton β);
-         [ eapply ad_partial_precise_strip_tvar_mid
-             with (β := β) (Θ1 := nil) (Θ2 := Θ);
-             [ exact Hprec | reflexivity
-             | intros α0 τ0 Hb;
-               assert (Hb' : binds α0 (abind_flex_mono_def τ0) Θ)
-                 by (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-                       [ discriminate Habs | exact Hb' ]);
-               pose proof (a_wf_ptyp_ftv_dom
-                             (@a_wf_aenv_binds_def_wf Θ α0 τ0 HwfΘ Hb')) as Hftd;
-               clear - Hftd HβΘ; fsetdec
-             | exact HβPaκ
-             | exact Hβψa ]
-         | clear; fsetdec
-         | clear - Hβψa; fsetdec
-         | intros β0 α3 τ3 Hβ0 Hb;
-           assert (Heqβ : β0 = β) by (clear - Hβ0; fsetdec); subst β0;
-           pose proof (a_wf_ptyp_ftv_dom
-                         (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb)) as Hd;
-           clear - Hd HβΘ; fsetdec ].
+       eapply ad_partial_precise_delta_shrink with (Δ := Δ);
+         [ eapply ad_partial_precise_strengthen_tvar; exact Hprec
+         | clear; fsetdec ].
     -- (* ftv 𝒞 : both disjuncts survive the binder.  LEFT — [def_ftv] ignores
           a rigid entry, so Θ,β contributes nothing new.  RIGHT — an α-stack
           under the opener lifts to one under the ∀ ([alpha_stack_all_of_one]
@@ -1659,29 +1560,7 @@ Proof.
            clear - Hκfresh; fsetdec.
         -- (* precision : only the CONTEXT gained β here — Sub-ForallR leaves
               Δ alone, so no [delta_shrink] step (unlike Sub-ForallL) *)
-           assert (HβPaκ : β `notin`
-                     ftvar_in_pskl (msubst_pskl (κs ++ κc ++ κ) Pa)).
-           { apply msubst_pskl_ftv_avoid;
-               [ intros pp Hpp; apply in_app_or in Hpp;
-                 destruct Hpp as [Hpp | Hpp];
-                   [ rewrite Forall_forall in Hβκs; apply Hβκs; exact Hpp
-                   | apply in_app_or in Hpp; destruct Hpp as [Hpp | Hpp];
-                       [ rewrite Forall_forall in Hβκc; apply Hβκc; exact Hpp
-                       | pose proof (a_inc_image_ftv_dom Hκ pp Hpp) as Hb;
-                         clear - Hb HβΘ; fsetdec ] ]
-               | exact HβPa ]. }
-           eapply ad_partial_precise_strip_tvar_mid
-             with (β := β) (Θ1 := nil) (Θ2 := Θ);
-             [ exact Hprec | reflexivity
-             | intros α0 τ0 Hb;
-               assert (Hb' : binds α0 (abind_flex_mono_def τ0) Θ)
-                 by (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-                       [ discriminate Habs | exact Hb' ]);
-               pose proof (a_wf_ptyp_ftv_dom
-                             (@a_wf_aenv_binds_def_wf Θ α0 τ0 HwfΘ Hb')) as Hftd;
-               clear - Hftd HβΘ; fsetdec
-             | exact HβPaκ
-             | exact Hβψa ].
+           eapply ad_partial_precise_strengthen_tvar; exact Hprec.
         -- (* ftv 𝒞 : still the LEFT disjunct — [def_ftv] ignores the rigid β *)
            intros _; left. cbn [def_ftv] in Hleft. exact Hleft.
         -- (* the SOLVE's block vs the constraints: both pass through *)
@@ -1776,22 +1655,8 @@ Proof.
            ++ (* a_inc_equiv *) apply a_inc_equiv_refl; exact Hκ.
            ++ (* κc fresh *) intros α0 Hα0; cbn in Hα0; clear - Hα0; fsetdec.
            ++ (* precision *)
-           assert (HβPaκ : β `notin`
-                     ftvar_in_pskl (msubst_pskl (κs ++ κ) Pa))
-             by exact HβPaκ0.
-           cbn [app] in Hprec |- *.
-           eapply ad_partial_precise_strip_tvar_mid
-             with (β := β) (Θ1 := nil) (Θ2 := Θ);
-             [ exact Hprec | reflexivity
-             | intros α0 τ0 Hb;
-               assert (Hb' : binds α0 (abind_flex_mono_def τ0) Θ)
-                 by (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-                       [ discriminate Habs | exact Hb' ]);
-               pose proof (a_wf_ptyp_ftv_dom
-                             (@a_wf_aenv_binds_def_wf Θ α0 τ0 HwfΘ Hb')) as Hftd;
-               clear - Hftd HβΘ; fsetdec
-             | exact HβPaκ
-             | exact Hβψa ].
+              cbn [app] in Hprec |- *.
+              eapply ad_partial_precise_strengthen_tvar; exact Hprec.
            ++ (* ftv 𝒞 : the RIGHT disjunct, at the UNDESCENDED target *)
               intros _; right; repeat split; try reflexivity;
               [ apply ast_var | eexists; reflexivity ].
@@ -1844,22 +1709,8 @@ Proof.
            ++ (* a_inc_equiv *) apply a_inc_equiv_refl; exact Hκ.
            ++ (* κc fresh *) intros α0 Hα0; cbn in Hα0; clear - Hα0; fsetdec.
            ++ (* precision *)
-           assert (HβPaκ : β `notin`
-                     ftvar_in_pskl (msubst_pskl (κs ++ κ) Pa))
-             by exact HβPaκ0.
-           cbn [app] in Hprec |- *.
-           eapply ad_partial_precise_strip_tvar_mid
-             with (β := β) (Θ1 := nil) (Θ2 := Θ);
-             [ exact Hprec | reflexivity
-             | intros α0 τ0 Hb;
-               assert (Hb' : binds α0 (abind_flex_mono_def τ0) Θ)
-                 by (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-                       [ discriminate Habs | exact Hb' ]);
-               pose proof (a_wf_ptyp_ftv_dom
-                             (@a_wf_aenv_binds_def_wf Θ α0 τ0 HwfΘ Hb')) as Hftd;
-               clear - Hftd HβΘ; fsetdec
-             | exact HβPaκ
-             | exact Hβψa ].
+              cbn [app] in Hprec |- *.
+              eapply ad_partial_precise_strengthen_tvar; exact Hprec.
            ++ (* ftv 𝒞 : the RIGHT disjunct, at the PEELED target *)
               intros _; right; repeat split; try reflexivity;
               [ apply ast_all with (L := Lst); exact Hstf
@@ -1906,22 +1757,8 @@ Proof.
            ++ (* a_inc_equiv *) apply a_inc_equiv_refl; exact Hκ.
            ++ (* κc fresh *) intros α0 Hα0; cbn in Hα0; clear - Hα0; fsetdec.
            ++ (* precision *)
-           assert (HβPaκ : β `notin`
-                     ftvar_in_pskl (msubst_pskl (κs ++ κ) Pa))
-             by exact HβPaκ0.
-           cbn [app] in Hprec |- *.
-           eapply ad_partial_precise_strip_tvar_mid
-             with (β := β) (Θ1 := nil) (Θ2 := Θ);
-             [ exact Hprec | reflexivity
-             | intros α0 τ0 Hb;
-               assert (Hb' : binds α0 (abind_flex_mono_def τ0) Θ)
-                 by (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-                       [ discriminate Habs | exact Hb' ]);
-               pose proof (a_wf_ptyp_ftv_dom
-                             (@a_wf_aenv_binds_def_wf Θ α0 τ0 HwfΘ Hb')) as Hftd;
-               clear - Hftd HβΘ; fsetdec
-             | exact HβPaκ
-             | exact Hβψa ].
+              cbn [app] in Hprec |- *.
+              eapply ad_partial_precise_strengthen_tvar; exact Hprec.
            ++ (* ftv 𝒞 : the RIGHT disjunct *)
               intros _; right; repeat split; try reflexivity;
               [ apply ast_tophole; exact Hstt | eexists; reflexivity ].
@@ -2686,7 +2523,7 @@ Proof.
        READY HERE for that step: [sub_shield] already carries Δρ (the
        statement below instantiates it at [empty], so nothing has moved
        yet) with [sub_shield_add_fresh] / [_weaken_tvar], and
-       [ad_partial_precise_delta_shrink_fresh] is the Δ-return the row
+       [ad_partial_precise_delta_shrink] is the Δ-return the row
        needs.  P6-Sv's ForallL row (sub/look/prop_sub_var.v:2308) is
        the line-by-line template for the rest — with one simplification:
        P6-Ss's ∀ comes from the SUBJECT, so ψa, P0, Pi, Ψi and Ψa do NOT

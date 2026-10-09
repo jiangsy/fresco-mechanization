@@ -331,6 +331,11 @@ Inductive ad_pat_sub_fuel :
 (*  (subtyping-proofs.tex:1561-1637; the ad_refine_pskl mirror with tags) *)
 (* ===================================================================== *)
 
+(* The paper's partial-precision rules, rule for rule: like the refinement
+   relations it mirrors, it carries no scoping premises (well-formedness is
+   the paper's presupposition, carried as a hypothesis by the lemmas that
+   need it), and its [∀] row extends both [Θ] and [Δ]. *)
+
 Reserved Notation "{{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad"
   (at level 0, Δ at level 74, P at level 74, Ψ at level 0, ψ at level 74,
    format "'{{'  Θ  ⨟  Δ  ⊢ˢ  P  ⊑ᵖ[  Ψ  ]  ψ  '}}ad'").
@@ -342,7 +347,6 @@ Inductive ad_partial_precise :
     {{ Θ ⨟ Δ ⊢ˢ pskl_unit ⊑ᵖ[ Ψ ] uskl_unit }}ad
 | ad_ppre__var : forall Θ Δ Ψ α,
     Ψ [=] empty ->
-    α `in` Δ \/ a_binds_tvar α Θ ->
     {{ Θ ⨟ Δ ⊢ˢ (pskl_var_f α) ⊑ᵖ[ Ψ ] (uskl_var_f α) }}ad
 | ad_ppre__arrow : forall Θ Δ Ψ Ψ1 Ψ2 P1 P2 ψ1 ψ2,
     {{ Θ ⨟ Δ ⊢ˢ P1 ⊑ᵖ[ Ψ1 ] ψ1 }}ad ->
@@ -351,7 +355,8 @@ Inductive ad_partial_precise :
     {{ Θ ⨟ Δ ⊢ˢ (pskl_arrow P1 P2) ⊑ᵖ[ Ψ ] (uskl_arrow ψ1 ψ2) }}ad
 | ad_ppre__forall : forall L Θ Δ Ψ Ψ0 ε P ψ,
     (forall α, α `notin` L ->
-       {{ Θ ⨟ (add α Δ) ⊢ˢ (open_pskl_wrt_pskl P (pskl_var_f α))
+       {{ ((α ~ abind_tvar) ++ Θ) ⨟ (add α Δ) ⊢ˢ
+         (open_pskl_wrt_pskl P (pskl_var_f α))
          ⊑ᵖ[ Ψ0 ] (open_uskl_wrt_uskl ψ (uskl_var_f α)) }}ad) ->
     Ψ [=] add ε Ψ0 ->
     {{ Θ ⨟ Δ ⊢ˢ (pskl_all_syn P) ⊑ᵖ[ Ψ ] (uskl_all_tag ε ψ) }}ad

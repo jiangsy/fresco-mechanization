@@ -153,25 +153,13 @@ Proof.
                 [ assumption | assumption | unfold disjoint; fsetdec ] ].
 Qed.
 
-Corollary e_solve_sub_block_in_supply : forall S0 Θ m P Q S1 Ξ P',
-  {{ S0 ↝ S1 ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e -> dom Ξ [<=] S1.
-Proof. intros * H. apply (proj1 e_solve_sub_eq_block) in H. tauto. Qed.
-
 Corollary e_solve_eq_block_in_supply : forall S0 Θ P Q S1 Ξ P',
   {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e -> dom Ξ [<=] S1.
 Proof. intros * H. apply (proj2 e_solve_sub_eq_block) in H. tauto. Qed.
 
-Corollary e_solve_sub_block_ftvar : forall S0 Θ m P Q S1 Ξ P',
-  {{ S0 ↝ S1 ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e -> ftvar_in_aenv Ξ [<=] dom Ξ.
-Proof. intros * H. apply (proj1 e_solve_sub_eq_block) in H. tauto. Qed.
-
 Corollary e_solve_eq_block_ftvar : forall S0 Θ P Q S1 Ξ P',
   {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e -> ftvar_in_aenv Ξ [<=] dom Ξ.
 Proof. intros * H. apply (proj2 e_solve_sub_eq_block) in H. tauto. Qed.
-
-Corollary e_solve_sub_uniq : forall S0 Θ m P Q S1 Ξ P',
-  {{ S0 ↝ S1 ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e -> uniq Ξ.
-Proof. intros * H. apply (proj1 e_solve_sub_eq_block) in H. tauto. Qed.
 
 Corollary e_solve_eq_uniq : forall S0 Θ P Q S1 Ξ P',
   {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e -> uniq Ξ.

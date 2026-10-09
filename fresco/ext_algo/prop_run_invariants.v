@@ -284,11 +284,6 @@ Corollary e_sub_lc : forall S0 NM M P0 Θ0 P Q S1 Θ1,
   lc_pskl P -> lc_pskl P0 -> aenv_defs_mono Θ0 -> lc_pskl Q.
 Proof. intros. eapply (proj1 e_sub_sub_flex_lc); eassumption. Qed.
 
-Corollary e_sub_flex_lc : forall S0 NM M P0 Θ0 Ξ α Q S1 Θ1,
-  e_sub_flex S0 NM M P0 Θ0 Ξ α Q S1 Θ1 ->
-  lc_pskl P0 -> aenv_defs_mono Θ0 -> aenv_defs_mono Ξ -> lc_pskl Q.
-Proof. intros. eapply (proj2 e_sub_sub_flex_lc); eassumption. Qed.
-
 (* ===================================================================== *)
 (*  §3  Def payloads stay MONO through the whole algorithm                *)
 (*                                                                        *)
@@ -764,11 +759,6 @@ Local Ltac open_all_lc :=
       apply Hx
   end.
 
-Local Ltac push_var HΘ Hdm Hlc :=
-  split;
-  [ unfold lc_aenv in *; simpl; constructor; [ simpl; exact Hlc | exact HΘ ]
-  | simpl; constructor; [ exact I | exact Hdm ] ].
-
 Lemma e_typing_lc_env : forall S0 m Θ0 P0 e B S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}e ->
   lc_pskl P0 -> lc_exp e -> lc_aenv Θ0 -> aenv_defs_mono Θ0 ->
@@ -891,13 +881,3 @@ Proof.
                 ltac:(assumption) HΘ2 Hdm2) as [HA'lc HΘ3].
     split; [ assumption | exact HΘ3 ].
 Qed.
-
-Corollary e_typing_lc : forall S0 m Θ0 P0 e B S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}e ->
-  lc_pskl P0 -> lc_exp e -> lc_aenv Θ0 -> aenv_defs_mono Θ0 -> lc_ptyp B.
-Proof. intros. eapply e_typing_lc_env; eassumption. Qed.
-
-Corollary e_typing_env_lc : forall S0 m Θ0 P0 e B S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}e ->
-  lc_pskl P0 -> lc_exp e -> lc_aenv Θ0 -> aenv_defs_mono Θ0 -> lc_aenv Θ1.
-Proof. intros. eapply e_typing_lc_env; eassumption. Qed.

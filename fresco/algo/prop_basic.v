@@ -1076,33 +1076,6 @@ Qed.
 (*  Assign folds a definition into the assigned skeleton).                *)
 (* ===================================================================== *)
 
-(** [a_wf_pskl_tvar_mono] restricted to the skeleton's FREE variables: only
-    their [a_binds_tvar] lookups need to survive the context change. *)
-Lemma a_wf_pskl_tvar_mono_ftv : forall Θ Δ P,
-  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
-  forall Θ', (forall α, α `in` ftvar_in_pskl P ->
-                        a_binds_tvar α Θ -> a_binds_tvar α Θ') ->
-  {{ Θ' ⨟ Δ ⊢ₚₛ P }}a.
-Proof.
-  intros Θ Δ P H; induction H; intros Θ' Hincl; simpl in Hincl.
-  - constructor.
-  - constructor. apply Hincl; [ clear; fsetdec | assumption ].
-  - constructor; [ apply IHa_wf_pskl1 | apply IHa_wf_pskl2 ];
-      intros β Hβ Hb; apply Hincl; solve [ clear - Hβ; fsetdec | exact Hb ].
-  - apply a_wf_pskl__all with (L := L). intros α Hα.
-    apply H0; [ exact Hα | ].
-    intros β Hβ Hb. apply a_binds_tvar_cons_tvar.
-    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
-                  P (pskl_var_f α)) as Hup; simpl in Hup.
-    destruct (eq_var β α) as [-> | Hne]; [ left; reflexivity | right ].
-    destruct (a_binds_tvar_cons_tvar_inv Hb) as [-> | Hb']; [ congruence | ].
-    apply Hincl; [ clear - Hup Hβ Hne; fsetdec | exact Hb' ].
-  - constructor.
-  - constructor; [ assumption | ]. apply IHa_wf_pskl.
-    intros β Hβ Hb. apply a_binds_tvar_aenv_minus in Hb. destruct Hb as [Hb Hn].
-    apply a_binds_tvar_aenv_minus. split; [ apply Hincl; assumption | exact Hn ].
-Qed.
-
 (** Skeleton wf survives removing ANY entry the skeleton avoids.
     Generalises [a_wf_pskl_strip_tvar] (which only drops [abind_tvar]);
     [a_assign__skip] drops a *flex* binding. *)
@@ -1759,11 +1732,6 @@ Proof.
   - exact Heq.
 Qed.
 
-(** A ghost-free skeleton is not itself the ghost — the cheapest way to meet
-    the ◇-dispatch guard wherever mode compatibility already gives
-    ghost-freeness of the counterpart. *)
-Lemma ghost_free_neq_hole : forall P, pskl_ghost_free P -> P <> pskl_hole.
-Proof. intros P Hgf ->; exact Hgf. Qed.
 
 (* ===================================================================== *)
 (*  ⭐ SS-Vacuous, GENERALIZED PAST THE SOLVE-DISPATCH GUARD (2026-08-18)  *)

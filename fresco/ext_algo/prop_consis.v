@@ -362,11 +362,6 @@ Qed.
   repeat (rewrite dom_app in * );
   simpl ftvar_in_aenv in *; simpl dom in *; simpl_env in *.
 
-(** The supply covers the context's domain, which is the form the [uniq]
-    reasoning wants (the coverage hypotheses are about [ftvar_in_aenv]). *)
-#[local] Ltac dom_cov Θ :=
-  pose proof (dom_subset_ftvar_in_aenv Θ).
-
 (* ===================================================================== *)
 (*  §4  ⭐ THE BRIDGE — [e_*] implies [a_*], over the SAME contexts        *)
 (*                                                                        *)
@@ -1277,19 +1272,6 @@ Proof.
     exists S1'. split; [ exact HS1 | apply e_consis__univ_ghost_r; assumption ].
 Qed.
 
-(** The three projections. *)
-Corollary e_assign_supply_respect : forall S0 Θ0 Ξ α P S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e ->
-  forall S0', S0' [=] S0 ->
-  exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e.
-Proof. apply e_assign_unify_consis_supply_respect. Qed.
-
-Corollary e_unify_supply_respect : forall S0 Θ0 α β S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e ->
-  forall S0', S0' [=] S0 ->
-  exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e.
-Proof. apply e_assign_unify_consis_supply_respect. Qed.
-
 Corollary e_consis_supply_respect : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
   forall S0', S0' [=] S0 ->
@@ -1604,23 +1586,6 @@ Proof.
     apply e_consis__univ_ghost_r;
       auto using guarded_pskl_swap, a_non_flex_swap.
 Qed.
-
-(** The three projections. *)
-Corollary e_assign_swap : forall a b S0 Θ0 Ξ α P S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e ->
-  forall S0', S0' [=] swap_atoms a b S0 ->
-  exists S1', S1' [=] swap_atoms a b S1 /\
-    {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊲[ swap_aenv a b Ξ ]
-       (swap_atom a b α) ≔ (swap_pskl a b P) ⊣ (swap_aenv a b Θ1) }}e.
-Proof. intros a b. apply e_assign_unify_consis_swap. Qed.
-
-Corollary e_unify_swap : forall a b S0 Θ0 α β S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e ->
-  forall S0', S0' [=] swap_atoms a b S0 ->
-  exists S1', S1' [=] swap_atoms a b S1 /\
-    {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊲
-       (swap_atom a b α) ≈ᵘ (swap_atom a b β) ⊣ (swap_aenv a b Θ1) }}e.
-Proof. intros a b. apply e_assign_unify_consis_swap. Qed.
 
 Corollary e_consis_swap : forall a b Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->

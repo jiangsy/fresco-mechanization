@@ -520,7 +520,10 @@ before changing any of them.
   checked at `Γ∖Δ` (`denv_minus` / `aenv_minus`), and the refinement Ghost
   rule asks only `Δ ∩ ftv(fill) = ∅`. Well-formedness of both sides of a
   refinement is the paper's presupposition, carried as a hypothesis — see
-  `docs/WF-SIDE-CONDITIONS.md` §1.
+  `docs/WF-SIDE-CONDITIONS.md` §1.  There is ONE refinement relation per
+  sort: a fill-avoidance set is just part of Δ (the internal `_f` variants
+  were removed 2026-10-09), and partial precision follows the paper rule for
+  rule too (2026-10-09).
 - **Locally-nameless via lngen**, including for ε tag variables.
   Imports go through `Metalib.Metatheory`.
 - **Binder rules: COFINITE in the declarative layers, EXISTS-FRESH in the

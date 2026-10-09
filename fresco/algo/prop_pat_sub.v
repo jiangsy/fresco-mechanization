@@ -64,11 +64,13 @@ Proof.
   intros Θ Δ Ψ P ψ H; induction H; intros Θ' Hmon.
   - apply ad_ppre__unit; auto.
   - apply ad_ppre__var; auto.
-    destruct H0 as [HΔ | [Hb | [Hb | [τ Hb]]]];
-      [ left | right; left | right; right; left
-      | right; right; right; exists τ ]; auto.
   - eapply ad_ppre__arrow; eauto.
   - eapply ad_ppre__forall with (L := L); eauto.
+    intros α Hα. apply H0; auto.
+    intros x b Hb.
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
+      [ unfold binds; left; reflexivity
+      | unfold binds; right; apply Hmon; auto ].
   - apply ad_ppre__hole; auto.
   - apply ad_ppre__tophole_remove; auto.
   - eapply ad_ppre__tophole_fill with (L := L).
@@ -82,8 +84,17 @@ Proof.
   - eapply ad_ppre__flex_r; eauto.
 Qed.
 
+(** A rigid entry in front: the ∀ row's premise lives at [Θ,α]. *)
+Lemma ad_partial_precise_weaken_tvar : forall α Θ Δ Ψ P ψ,
+  {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
+  {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad.
+Proof.
+  intros α Θ Δ Ψ P ψ H. eapply ad_partial_precise_weaken; [ exact H | ].
+  intros x b Hb. unfold binds; right; exact Hb.
+Qed.
+
 (* ===================================================================== *)
-(*  §4  Suffix-strip foundations                                          *)
+(*  §4  Suffix-strip foundations                                         *)
 (*                                                                        *)
 (*  ForallR's soundness case must discard the trailing suffix Ξ the body  *)
 (*  run deposits above the binder — the paper's “context strengthening    *)
@@ -930,7 +941,8 @@ Qed.
 (*  ∀◇ rules, so it consults the context only through definition         *)
 (*  lookups — so it can be strengthened (the                              *)
 (*  trailing Ξ dropped) and its opened binder renamed into a Δ-slot,     *)
-(*  with no F-hygiene at all: what ForallR's fill re-attachment needs.   *)
+(*  with no condition on Δ at all: what ForallR's fill re-attachment      *)
+(*  needs.                                                                *)
 (*                                                                        *)
 (*  [pskl_ghost_free] / [bskl_ghost_free] themselves now live in          *)
 (*  fresco/predicates.v — the algorithmic RULES constrain their type       *)
@@ -957,8 +969,8 @@ Qed.
     induction runs once).  The [_gen] form only asks that the skeletons'
     variables have no DEFINITION in Ξ — the one thing the context is read
     for — because the ∀ row pushes its binder onto Ξ. *)
-Lemma ad_refine_syn_f_ghost_free_strip_rename_gen : forall F Θfull Δ Q Q',
-  ad_refine_syn_f F Θfull Δ Q Q' ->
+Lemma ad_refine_syn_ghost_free_strip_rename_gen : forall Θfull Δ Q Q',
+  {{ Θfull ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
   forall Ξ α Θ1 β,
   Θfull = Ξ ++ (α ~ abind_tvar) ++ Θ1 ->
   bskl_ghost_free Q ->
@@ -966,31 +978,29 @@ Lemma ad_refine_syn_f_ghost_free_strip_rename_gen : forall F Θfull Δ Q Q',
   uniq Θfull ->
   (forall α τ, α `in` (ftvar_in_bskl Q `union` ftvar_in_bskl Q') ->
      ~ binds α (abind_flex_mono_def τ) Ξ) ->
-  ad_refine_syn_f F Θ1 (add β (remove α Δ))
-    (subst_bskl_in_bskl (bskl_var_f β) α Q)
-    (subst_bskl_in_bskl (bskl_var_f β) α Q').
+  {{ Θ1 ⨟ (add β (remove α Δ)) ⊢ᵣ (subst_bskl_in_bskl (bskl_var_f β) α Q) ⊳ (subst_bskl_in_bskl (bskl_var_f β) α Q') }}ad.
 Proof.
-  intros F Θfull Δ Q Q' H; induction H;
+  intros Θfull Δ Q Q' H; induction H;
     intros Ξ0 α0 Θt β Heqc Hg Hwf Huq Hfv; subst; simpl in *.
-  - apply ad_refine_syn_f__unit.
-  - destruct_if; apply ad_refine_syn_f__var.
+  - apply ad_refine_syn__unit.
+  - destruct_if; apply ad_refine_syn__var.
   - destruct Hg as [Hg1 Hg2].
-    apply ad_refine_syn_f__arrow;
-      [ eapply IHad_refine_syn_f1 | eapply IHad_refine_syn_f2 ];
+    apply ad_refine_syn_arrow_intro;
+      [ eapply IHad_refine_syn1 | eapply IHad_refine_syn2 ];
       eauto; intros α τ Hα; apply Hfv; clear - Hα; fsetdec.
-  - apply ad_refine_syn_f__all
+  - apply ad_refine_syn_all_intro
       with (L := L `union` {{α0}} `union` {{β}} `union` dom (Ξ0 ++ Θt)
-                   `union` ftvar_in_bskl Q `union` ftvar_in_bskl P).
+                   `union` ftvar_in_bskl Q `union` ftvar_in_bskl Q').
     intros α Hα.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       [ | intro He; subst; clear - Hα; fsetdec | apply lc_bskl_var_f ].
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       [ | intro He; subst; clear - Hα; fsetdec | apply lc_bskl_var_f ].
     assert (HαΞ : α `notin` dom Ξ0) by (clear - Hα; simpl_env in *; fsetdec).
-    eapply ad_refine_syn_f_ctx_mono;
+    eapply ad_refine_syn_defs_mono;
       [ | intros γ τ Hb; unfold binds; right; exact Hb ].
-    eapply ad_refine_syn_f_delta_mono;
-      [ eapply (H0 α ltac:(clear - Hα; solve_notin_auto)
+    eapply ad_refine_syn_delta_mono;
+      [ eapply (H1 α ltac:(clear - Hα; solve_notin_auto)
                   ((α ~ abind_tvar) ++ Ξ0) α0 Θt β);
         [ reflexivity
         | apply bskl_ghost_free_open_rec; assumption
@@ -1003,9 +1013,9 @@ Proof.
           pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper
                         Q (bskl_var_f α)) as Hup1;
           pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper
-                        P (bskl_var_f α)) as Hup2;
+                        Q' (bskl_var_f α)) as Hup2;
           simpl in Hup1, Hup2;
-          assert (HZQP : α2 `in` (ftvar_in_bskl Q `union` ftvar_in_bskl P)
+          assert (HZQP : α2 `in` (ftvar_in_bskl Q `union` ftvar_in_bskl Q')
                          \/ α2 `in` singleton α)
             by (clear - Hα2 Hup1 Hup2; fsetdec);
           destruct HZQP as [HZQP | HZX];
@@ -1052,17 +1062,17 @@ Proof.
       assert (Hα0Θt : α0 `notin` dom Θt)
         by (clear - Huq; simpl_env in Huq; destruct_uniq;
             unfold disjoint in *; simpl_env in *; fsetdec).
-      eapply ad_refine_syn_f__flex_l; [ exact Hbb | ].
+      eapply ad_refine_syn__flex_l; [ exact Hbb | ].
       rewrite <- (subst_bskl_in_bskl_fresh_eq
                     (ptyp_to_bskl_syn τ) (bskl_var_f β) α0).
       2:{ rewrite ftvar_ptyp_to_bskl_syn.
           clear - Hτsc Hα0Θt. fsetdec. }
-      eapply IHad_refine_syn_f; eauto.
+      eapply IHad_refine_syn; eauto.
       * apply mono_ptyp_to_bskl_syn_ghost_free.
         eapply a_wf_aenv_binds_def_mono; [ exact HwfΘt | exact Hbb ].
       * intros α2 τ2 Hα2 Hb2.
         rewrite ftvar_ptyp_to_bskl_syn in Hα2.
-        assert (HZfv : α2 `in` ftvar_in_ptyp τ \/ α2 `in` ftvar_in_bskl Q)
+        assert (HZfv : α2 `in` ftvar_in_ptyp τ \/ α2 `in` ftvar_in_bskl Q')
           by (clear - Hα2; fsetdec).
         destruct HZfv as [Hα2τ | HZQ];
           [ | exact (Hfv α2 τ2 ltac:(clear - HZQ; fsetdec) Hb2) ].
@@ -1105,15 +1115,15 @@ Proof.
       assert (Hα0Θt : α0 `notin` dom Θt)
         by (clear - Huq; simpl_env in Huq; destruct_uniq;
             unfold disjoint in *; simpl_env in *; fsetdec).
-      eapply ad_refine_syn_f__flex_r; [ exact Hbb | ].
+      eapply ad_refine_syn__flex_r; [ exact Hbb | ].
       rewrite <- (subst_bskl_in_bskl_fresh_eq
                     (ptyp_to_bskl_syn τ) (bskl_var_f β) α0).
       2:{ rewrite ftvar_ptyp_to_bskl_syn.
           clear - Hτsc Hα0Θt. fsetdec. }
-      eapply IHad_refine_syn_f; eauto.
+      eapply IHad_refine_syn; eauto.
       intros α2 τ2 Hα2 Hb2.
       rewrite ftvar_ptyp_to_bskl_syn in Hα2.
-      assert (HZfv : α2 `in` ftvar_in_ptyp τ \/ α2 `in` ftvar_in_bskl P)
+      assert (HZfv : α2 `in` ftvar_in_ptyp τ \/ α2 `in` ftvar_in_bskl Q)
         by (clear - Hα2; fsetdec).
       destruct HZfv as [Hα2τ | HZP];
         [ | exact (Hfv α2 τ2 ltac:(clear - HZP; fsetdec) Hb2) ].
@@ -1123,8 +1133,8 @@ Proof.
       unfold disjoint in *. simpl_env in *. fsetdec.
 Qed.
 
-Lemma ad_refine_syn_f_ghost_free_strip_rename : forall F Θfull Δ Q Q',
-  ad_refine_syn_f F Θfull Δ Q Q' ->
+Lemma ad_refine_syn_ghost_free_strip_rename : forall Θfull Δ Q Q',
+  {{ Θfull ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
   forall Ξ α Θ1 β,
   Θfull = Ξ ++ (α ~ abind_tvar) ++ Θ1 ->
   bskl_ghost_free Q ->
@@ -1132,12 +1142,10 @@ Lemma ad_refine_syn_f_ghost_free_strip_rename : forall F Θfull Δ Q Q',
   uniq Θfull ->
   (forall α, α `in` (ftvar_in_bskl Q `union` ftvar_in_bskl Q') ->
      α `notin` dom Ξ) ->
-  ad_refine_syn_f F Θ1 (add β (remove α Δ))
-    (subst_bskl_in_bskl (bskl_var_f β) α Q)
-    (subst_bskl_in_bskl (bskl_var_f β) α Q').
+  {{ Θ1 ⨟ (add β (remove α Δ)) ⊢ᵣ (subst_bskl_in_bskl (bskl_var_f β) α Q) ⊳ (subst_bskl_in_bskl (bskl_var_f β) α Q') }}ad.
 Proof.
   intros * H Ξ α Θ1 β Heq Hg Hwf Huq Hfv.
-  eapply ad_refine_syn_f_ghost_free_strip_rename_gen; eauto.
+  eapply ad_refine_syn_ghost_free_strip_rename_gen; eauto.
   intros γ τ Hγ Hb. apply binds_In in Hb. exact (Hfv γ Hγ Hb).
 Qed.
 
@@ -1146,15 +1154,15 @@ Qed.
     τ-subtree with [flex_l], rebuilt from the case's own premises.
     (Flex-Assign's re-entry premise speaks about the substituted input;
     its conclusion about the original.) *)
-Lemma ad_refine_syn_f_fold_def_source : forall F Θ Δ Qs Qt,
-  ad_refine_syn_f F Θ Δ Qs Qt ->
+Lemma ad_refine_syn_fold_def_source : forall Θ Δ Qs Qt,
+  {{ Θ ⨟ Δ ⊢ᵣ Qs ⊳ Qt }}ad ->
   forall β τ Q0,
   binds β (abind_flex_mono_def τ) Θ ->
   mono_ptyp τ ->
   Qs = subst_bskl_in_bskl (ptyp_to_bskl_syn τ) β Q0 ->
-  ad_refine_syn_f F Θ Δ Q0 Qt.
+  {{ Θ ⨟ Δ ⊢ᵣ Q0 ⊳ Qt }}ad.
 Proof.
-  intros F Θ Δ Qs Qt H; induction H;
+  intros Θ Δ Qs Qt H; induction H;
     intros β τ0 Q0 Hb Hm HeqQs;
     destruct Q0; simpl in HeqQs;
     try match goal with
@@ -1162,28 +1170,28 @@ Proof.
             let He := fresh "Hne" in destruct e as [-> | He]
         end;
     try discriminate HeqQs.
-  - (* unit / Q0 = unit *) apply ad_refine_syn_f__unit.
+  - (* unit / Q0 = unit *) apply ad_refine_syn__unit.
   - (* unit / Q0 = var β, τ = unit *)
-    eapply ad_refine_syn_f__flex_l; [ exact Hb | ].
-    rewrite <- HeqQs. apply ad_refine_syn_f__unit.
+    eapply ad_refine_syn__flex_l; [ exact Hb | ].
+    rewrite <- HeqQs. apply ad_refine_syn__unit.
   - (* var / Q0 = var β, τ = var *)
-    eapply ad_refine_syn_f__flex_l; [ exact Hb | ].
-    rewrite <- HeqQs. apply ad_refine_syn_f__var; assumption.
+    eapply ad_refine_syn__flex_l; [ exact Hb | ].
+    rewrite <- HeqQs. apply ad_refine_syn__var; assumption.
   - (* var / Q0 = var x ≠ β *)
-    inversion HeqQs; subst. apply ad_refine_syn_f__var; assumption.
+    inversion HeqQs; subst. apply ad_refine_syn__var; assumption.
   - (* arrow / Q0 = var β, τ arrow *)
-    eapply ad_refine_syn_f__flex_l; [ exact Hb | ].
-    rewrite <- HeqQs. apply ad_refine_syn_f__arrow; assumption.
+    eapply ad_refine_syn__flex_l; [ exact Hb | ].
+    rewrite <- HeqQs. apply ad_refine_syn_arrow_intro; assumption.
   - (* arrow / Q0 = arrow *)
     inversion HeqQs; subst.
-    apply ad_refine_syn_f__arrow;
-      [ eapply IHad_refine_syn_f1; eauto
-      | eapply IHad_refine_syn_f2; eauto ].
+    apply ad_refine_syn_arrow_intro;
+      [ eapply IHad_refine_syn1; eauto
+      | eapply IHad_refine_syn2; eauto ].
   - (* all_inh / Q0 = var β : a monotype painting is never a ∀ *)
     destruct τ0; simpl in HeqQs; discriminate.
   - (* all_inh / Q0 = all_inh *)
     inversion HeqQs; subst.
-    apply ad_refine_syn_f__all with (L := L `union` {{β}}).
+    apply ad_refine_syn_all_intro with (L := L `union` {{β}}).
     intros α Hα.
     match goal with
     | IH : forall α, α `notin` L -> _ |- _ =>
@@ -1196,18 +1204,18 @@ Proof.
   - (* hole / Q0 = var β *)
     destruct τ0; simpl in HeqQs; discriminate.
   - (* hole / Q0 = hole *)
-    apply ad_refine_syn_f__hole; assumption.
+    apply ad_refine_syn__hole; assumption.
   - (* tophole_remove / Q0 = var β *)
     destruct τ0; simpl in HeqQs; discriminate.
   - (* tophole_remove / Q0 = tophole *)
     inversion HeqQs; subst.
-    apply ad_refine_syn_f__tophole_remove.
-    eapply IHad_refine_syn_f; eauto.
+    apply ad_refine_syn_tophole_remove_intro.
+    eapply IHad_refine_syn; eauto.
   - (* tophole_fill / Q0 = var β *)
     destruct τ0; simpl in HeqQs; discriminate.
   - (* tophole_fill / Q0 = tophole *)
     inversion HeqQs; subst.
-    apply ad_refine_syn_f__tophole_fill with (L := L `union` {{β}}).
+    apply ad_refine_syn_tophole_fill_intro with (L := L `union` {{β}}).
     intros α Hα.
     match goal with
     | IH : forall α, α `notin` L -> _ |- _ =>
@@ -1218,51 +1226,51 @@ Proof.
     destruct τ0; simpl in HeqQs; discriminate.
   - (* tophole_keep / Q0 = tophole *)
     inversion HeqQs; subst.
-    apply ad_refine_syn_f__tophole_keep.
-    eapply IHad_refine_syn_f; eauto.
+    apply ad_refine_syn_tophole_keep_intro.
+    eapply IHad_refine_syn; eauto.
   - (* flex_l / Q0 = var β : cap with the rebuilt lookup *)
-    eapply ad_refine_syn_f__flex_l; [ exact Hb | ].
+    eapply ad_refine_syn__flex_l; [ exact Hb | ].
     rewrite <- HeqQs.
-    eapply ad_refine_syn_f__flex_l; eassumption.
+    eapply ad_refine_syn__flex_l; eassumption.
   - (* flex_l / Q0 = var x ≠ β : rebuild *)
     inversion HeqQs; subst.
-    eapply ad_refine_syn_f__flex_l; eassumption.
+    eapply ad_refine_syn__flex_l; eassumption.
   (* flex_r : the source is a rule variable — every Q0 shape survives;
      fold under the target lookup uniformly. *)
-  - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
-      eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
+  - eapply ad_refine_syn__flex_r; [ eassumption | ];
+      eapply IHad_refine_syn; [ exact Hb | exact Hm | ];
       simpl;
       try destruct_if; congruence.
-  - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
-      eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
+  - eapply ad_refine_syn__flex_r; [ eassumption | ];
+      eapply IHad_refine_syn; [ exact Hb | exact Hm | ];
       simpl;
       try destruct_if; congruence.
-  - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
-      eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
+  - eapply ad_refine_syn__flex_r; [ eassumption | ];
+      eapply IHad_refine_syn; [ exact Hb | exact Hm | ];
       simpl;
       try destruct_if; congruence.
-  - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
-      eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
+  - eapply ad_refine_syn__flex_r; [ eassumption | ];
+      eapply IHad_refine_syn; [ exact Hb | exact Hm | ];
       simpl;
       try destruct_if; congruence.
-  - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
-      eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
+  - eapply ad_refine_syn__flex_r; [ eassumption | ];
+      eapply IHad_refine_syn; [ exact Hb | exact Hm | ];
       simpl;
       try destruct_if; congruence.
-  - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
-      eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
+  - eapply ad_refine_syn__flex_r; [ eassumption | ];
+      eapply IHad_refine_syn; [ exact Hb | exact Hm | ];
       simpl;
       try destruct_if; congruence.
-  - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
-      eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
+  - eapply ad_refine_syn__flex_r; [ eassumption | ];
+      eapply IHad_refine_syn; [ exact Hb | exact Hm | ];
       simpl;
       try destruct_if; congruence.
-  - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
-      eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
+  - eapply ad_refine_syn__flex_r; [ eassumption | ];
+      eapply IHad_refine_syn; [ exact Hb | exact Hm | ];
       simpl;
       try destruct_if; congruence.
-  - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
-      eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
+  - eapply ad_refine_syn__flex_r; [ eassumption | ];
+      eapply IHad_refine_syn; [ exact Hb | exact Hm | ];
       simpl;
       try destruct_if; congruence.
 Qed.

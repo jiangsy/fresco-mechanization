@@ -555,8 +555,9 @@ Print Assumptions d_shallow_sub_complete.
    mode ([mono_btyp_to_ptyp_inv]).
    ⚠️ ASCRIPTIONS [(e : A)] are NOT erasable even at a monotype: the
    annotation's role there is MODE, not polymorphism — [freeze e] has no
-   inference-mode typing at all ([freeze_no_infer], decl/prop_annotation.v),
-   so an ascription can be the only way to give a term a [ti] typing. *)
+   inference-mode typing at all (the only [ti] rule that applies, Sub,
+   re-types the same term at [ti]), so an ascription can be the only way to
+   give a term a [ti] typing. *)
 Check mono_lambda_anno_redundant :
   forall m Γ A e B2,
   mono_ptyp A ->
@@ -600,8 +601,8 @@ Print Assumptions mono_lambda_anno_redundant.
    not built.  The lift is now Qed ([a_typing_rel_e], ext_algo/prop_lift.v
    §13 — the last rung of a ten-rung ladder over every judgement of the
    algorithm), so BOTH branches reach the paper's own declarative judgement:
-   the POSITIVE by [e_typing_run_sound_infer] / [_check]
-   (prop_run_corollaries.v §1/§2), the NEGATIVE by
+   the POSITIVE by [e_typing_run_sound_infer]
+   (prop_run_corollaries.v §1), the NEGATIVE by
    [e_typing_run_complete_decl_infer] / [_check] (§5).  The design record is
    hand-off §8c.24 (the obstruction) and §8c.47 (the discharge).
 

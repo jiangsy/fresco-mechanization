@@ -12,7 +12,7 @@
     with [{{ Θ ⊢ T ≡ᵘ msubst κ R }}a] (see prop_completeness_sub.v): the IH then
     takes the ORIGINAL join derivation unchanged, and only the consistency
     LEAVES ever transport — via the erasure of ≡ᵘ into ≡ˢ and the EXISTING
-    pskl-level transports (skl_tyequiv_{consis,refine_syn_f,refine_pskl_f}_
+    pskl-level transports (skl_tyequiv_{consis,refine_syn,refine_pskl}_
     transport, prop_completeness_consis.v (PART B)).
 
     Design notes:

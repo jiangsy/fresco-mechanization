@@ -46,6 +46,7 @@ Require Import src.fresco.algo_decl.def_subtyping.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo.prop_inc.
 Require Import src.fresco.algo.prop_basic.
+Require Import src.fresco.algo.prop_swap.          (* a_wf_pskl_ftv_binds *)
 Require Import src.fresco.algo.prop_refine.
 Require Import src.fresco.algo.consis.prop_soundness_consis.
 Require Import src.fresco.algo.consis.prop_completeness_consis.
@@ -273,7 +274,7 @@ Qed.
 
 (** Every definition of a well-formed context is scoped by its domain, so a
     name outside the domain is fresh for all of them — the side condition
-    [ad_refine_syn_f_rename] asks for, discharged by freshness alone. *)
+    [ad_refine_syn_rename] asks for, discharged by freshness alone. *)
 Lemma a_wf_aenv_def_ftv_fresh : forall Θ β,
   {{ ⊢ Θ }}a -> β `notin` dom Θ ->
   forall α τ, binds α (abind_flex_mono_def τ) Θ -> β `notin` ftvar_in_ptyp τ.
@@ -286,12 +287,10 @@ Proof.
   clear - Hβ Hsc; fsetdec.
 Qed.
 
-(** Renaming a Δ-BOUND variable of a refinement derivation.  Routed through
-    the fill-hygiene variant: [ad_refine_syn_f_rename] needs the renamed name
-    in [F], and [ad_refine_syn_f_fextend_delta] puts it there for free because
-    it is in Δ — every hole fill misses Δ, hence can never mention it.  The
-    new name [α0] must avoid the target (a fill could mention it) and the
-    context's definitions. *)
+(** Renaming a Δ-BOUND variable of a refinement derivation, via
+    [ad_refine_syn_rename]: the renamed name is in Δ, so every hole fill
+    misses it.  The new name [α0] must avoid the target (a fill could
+    mention it) and the context's definitions. *)
 (* ⚙ RENAMED from [ad_refine_syn_rename_delta] 2026-08-09 (cleanup audit §8.1c): it collided with a
    DIFFERENT lemma of that name, and this one delivers Δ as [add α0 (remove β Δ)]; prop_soundness_pat.v's takes [Δ0 [=] add α Δ]. *)
 Lemma ad_refine_syn_rename_delta_remove : forall Θ Δ Q Q' β α0,
@@ -304,17 +303,13 @@ Lemma ad_refine_syn_rename_delta_remove : forall Θ Δ Q Q' β α0,
     (subst_bskl_in_bskl (bskl_var_f α0) β Q') }}ad.
 Proof.
   intros Θ Δ Q Q' β α0 H HwfΘ Hβ HβΔ Hα0 Hα0Q.
-  apply ad_refine_syn_f_forget with (F := singleton β).
-  apply ad_refine_syn_f_rename;
-    [ apply ad_refine_syn_f_fextend_delta with (F := empty);
-        [ apply ad_refine_syn_f_of_plain; exact H
-        | intros α1 Hα1; right; assert (α1 = β) by (clear - Hα1; fsetdec);
-          subst; exact HβΔ ]
-    | clear; fsetdec
-    | exact Hβ
-    | eapply a_wf_aenv_def_ftv_fresh; eassumption
-    | exact Hα0Q
-    | eapply a_wf_aenv_def_ftv_fresh; eassumption ].
+  eapply ad_refine_syn_delta_mono;
+    [ apply ad_refine_syn_rename;
+        [ exact H | exact HβΔ | exact Hβ
+        | eapply a_wf_aenv_def_ftv_fresh; eassumption
+        | exact Hα0Q
+        | eapply a_wf_aenv_def_ftv_fresh; eassumption ]
+    | clear; fsetdec ].
 Qed.
 
 (** …and its precision reading, which is what the ∀ case applies. *)
@@ -514,22 +509,16 @@ Qed.
 (*  §7  FOUR SMALL TOOLS THE WITNESS INDUCTION ASSEMBLES WITH             *)
 (* ===================================================================== *)
 
-(** Precision is antitone in Δ (the [_f]-kit transport, at [F = ∅]):
-    shrinking Δ only relaxes the hole rule's disjointness side condition. *)
+(** Precision is antitone in Δ ([ad_refine_syn_delta_mono] at the inh
+    paintings): shrinking Δ only relaxes the hole rule's disjointness side
+    condition. *)
 Lemma ad_precise_delta_mono : forall Θ Δ0 Δ P X,
   {{ Θ ⨟ Δ0 ⊢ₚᵣ P ⊑ X }}ad -> Δ [<=] Δ0 ->
   {{ Θ ⨟ Δ ⊢ₚᵣ P ⊑ X }}ad.
 Proof.
   intros Θ Δ0 Δ P X H Hsub. unfold ad_precise in *.
-  apply ad_refine_syn_f_forget with (F := empty).
-  eapply ad_refine_syn_f_delta_mono;
-    [ apply ad_refine_syn_f_of_plain; exact H | exact Hsub ].
+  eapply ad_refine_syn_delta_mono; [ exact H | exact Hsub ].
 Qed.
-
-(* [a_wf_pskl_rename_delta] — the wf twin of §5's [ad_precise_rename_delta] —
-   MOVED to prop_completeness_consis.v (PART B) (beside [a_wf_pskl_ftv_dom], which its ∀◇
-   case needs): the freshness campaign's solve cluster needs it in
-   sub/look/prop_rsubst.v too, and that file and this one are independent. *)
 
 (* ===================================================================== *)
 (*  §8  THE TWO PROPERTIES OF THE INCOMING κ THE INDUCTION NEEDS           *)

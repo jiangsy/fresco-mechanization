@@ -1,5 +1,7 @@
 # HAND-OFF — a second algorithmic encoding whose freshness is not a premise, and extraction from it
 
+> ⚙ 2026-10-09: the dead-lemma sweep deleted many lemmas named below (e.g. `e_assign_sound`, `a_typing_swap`, `rel_pskl_size`, `a_consis_isub_wf`) and the file `fresco/algo/consis/prop_consis_inc.v`; such names are history (`git log -S<name>` finds them).
+
 Two technical TODOs, recorded 2026-08-13.
 
 > **TODO (1)** — add a SECOND algorithmic encoding in which a rule's freshness

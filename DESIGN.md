@@ -146,7 +146,9 @@ in BOTH). A ∀◇ body is checked at `Γ∖Δ` (universal-ghost contents cannot
 mention `Δ`-vars), and a ghost fill must avoid `Δ`. Both sides of a
 refinement are presupposed well-formed (the mechanization follows the
 paper's rules verbatim since 2026-10-08; see
-`docs/WF-SIDE-CONDITIONS.md` §1).
+`docs/WF-SIDE-CONDITIONS.md` §1).  A fill-avoidance set is carried as part
+of `Δ`; the mechanization's former internal refinement variants with a
+separate set `F` (`ad_refine_*_f`) were removed 2026-10-09.
 
 **Coloured refinement** `inh{P} ⟶ bid{Q}` fills inherited skeletons
 with synthesised continuations — the bridge from skeleton inference's

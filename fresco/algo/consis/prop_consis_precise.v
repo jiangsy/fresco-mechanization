@@ -95,19 +95,6 @@ Proof.
   - apply IHd_tags_skl; assumption.
 Qed.
 
-(** Drop the ghost-binder context [Δ]: under the paper's rules a larger [Δ]
-    only restricts (a [∀◇] body is checked at [Θ∖Δ]), so [Δ := ∅] is always
-    allowed — the disjointness premise is kept for the callers' benefit. *)
-Lemma a_wf_pskl_delta_strip : forall Θ Δ P,
-  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
-  Δ ∩ ftvar_in_pskl P [=] empty ->
-  {{ Θ ⨟ empty ⊢ₚₛ P }}a.
-Proof.
-  intros Θ Δ P H _.
-  eapply a_wf_pskl_delta_mono; [ exact H | ].
-  intros α _ HαΔ. exfalso. clear - HαΔ. fsetdec.
-Qed.
-
 (** Clean structural inversions of [d_tags_skl] (name-agnostic). *)
 Lemma d_tags_skl_unit_inv : forall Ψ,
   d_tags_skl Ψ uskl_unit -> Ψ [=] empty.
@@ -2014,20 +2001,19 @@ Qed.
 (** THE STEP-(3) ENABLER (Sub-ForallL item 1): the erasure of a
     ⊑ᵤ-ghostier subject refines to anything the original subject's
     erasure refines to.  Δ holds refinement-local ∀-variables, fresh for
-    Θ.  The target-wf hypothesis (P5's [Hwfq] at the use site) is no
-    longer needed by the proof: the ghost rule asks only Δ-freeness. *)
+    Θ.  No well-formedness of the target is needed: the ghost rule asks
+    only Δ-freeness. *)
 Lemma uskl_precise_erase_refine : forall Θ Δ Qm Qr,
   {{ Θ ⨟ Δ ⊢ᵣₚ Qm ⊳ Qr }}ad ->
   {{ ⊢ Θ }}a ->
   (forall α, α `in` Δ -> α `notin` dom Θ) ->
-  {{ Θ ⨟ Δ ⊢ₚₛ Qr }}a ->
   forall Θb Ψr R' R,
   uskl_precise Θb Ψr R' R ->
   (forall x (b : abind), binds x b Θb -> binds x b Θ) ->
   ⌊ R ⌋ˢ = Qm ->
   {{ Θ ⨟ Δ ⊢ᵣₚ ⌊ R' ⌋ˢ ⊳ Qr }}ad.
 Proof.
-  intros Θ Δ Qm Qr Hr Hwf Hdisj _ Θb Ψr R' R Hp Hmon Heq.
+  intros Θ Δ Qm Qr Hr Hwf Hdisj Θb Ψr R' R Hp Hmon Heq.
   destruct (delta_fresh_flex_defs Hwf Hdisj) as [Hdefs Hflex].
   eapply uskl_precise_erase_refine_gen;
     [ exact Hr | exact Hwf | exact Hdefs | exact Hflex

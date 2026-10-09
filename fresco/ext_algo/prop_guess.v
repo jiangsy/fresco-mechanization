@@ -1,21 +1,19 @@
-(** ext_algo — the supply invariants of [e_guess_mono], the bridge to
-    [a_guess_mono] in both directions, and the [uniq] payoff.
+(** ext_algo — the supply invariants of [e_guess_mono], its bridge to
+    [a_guess_mono], and the [uniq] payoff.
 
     §1  the three supply invariants, and [uniq] off them
     §2  the payoff: [uniq (Ξ ++ Θ)] — [AT-Abs]'s premise, DERIVED
     §3  SOUNDNESS of the new encoding: [e_guess_mono -> a_guess_mono], over
         the SAME [Ξ] and [A], at any [Θ] the supply covers
-    §4  COMPLETENESS: totality of [e_guess_mono], and why this direction
-        cannot be stated over the same [Ξ] (with the counterexample)
+    §4  why the converse cannot be stated over the same [Ξ] (with the
+        counterexample)
 
-    ⭐ THE TWO DIRECTIONS ARE NOT SYMMETRIC, AND THAT IS THE POINT.  §3 is
-    on-the-nose — inputs fixed pointwise, [Ξ] and [A] carried across
-    unchanged — because it is the direction that has to COMPOSE with the
-    theorems, which fix [Θ0]/[Θ1] (hand-off §3).  §4 is existential because
-    the threaded encoding is STRICTLY STRONGER: it cannot produce a block with
-    a repeated name, and the old one can (§4's exhibit).  So the honest
-    statement of §4 is "the new encoding fires wherever the old one does",
-    not "at the same names". *)
+    ⭐ THE TWO DIRECTIONS ARE NOT SYMMETRIC.  §3 is on-the-nose — inputs
+    fixed pointwise, [Ξ] and [A] carried across unchanged — because it is
+    the direction that has to COMPOSE with the theorems, which fix
+    [Θ0]/[Θ1] (hand-off §3).  The converse could only be existential,
+    because the threaded encoding is STRICTLY STRONGER: it cannot produce a
+    block with a repeated name, and the old one can (§4's exhibit). *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -300,11 +298,7 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §4  COMPLETENESS — and why it is existential                           *)
-(* ===================================================================== *)
-
-(* ===================================================================== *)
-(*  §4b  WHY [e_guess_mono_complete] CANNOT CARRY [Ξ] AND [A] ACROSS       *)
+(*  §4  WHY A CONVERSE OF §3 CANNOT CARRY [Ξ] AND [A] ACROSS              *)
 (*                                                                        *)
 (*  ⚠️ COUNTEREXAMPLE.  [a_guess_mono] admits a block with a REPEATED      *)
 (*  name, and [e_guess_mono] never can (§1.4).  So the converse of §3 is   *)

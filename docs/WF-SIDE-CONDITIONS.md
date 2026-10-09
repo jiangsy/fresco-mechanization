@@ -19,8 +19,8 @@ put it:
 
 **Try (A) first — it is less bookkeeping. But (A) is not always available**: a
 premise must survive every transport lemma (weakening, strengthening,
-Δ-monotonicity, ⊴-stability, renaming, and — the killer — the fill-hygiene
-`strip` lemmas, which *remove a context entry*). If it doesn't, fall back to (B).
+Δ-monotonicity, ⊴-stability, renaming, and — the killer — the `strip`
+lemmas, which *remove a context entry*). If it doesn't, fall back to (B).
 See the refinement entry below for a worked example of (A) failing and (B)
 succeeding.
 
@@ -92,17 +92,18 @@ legitimately mention `α` justified by that very context binding.
 | lemma | content |
 |---|---|
 | `ad_refine_syn_syn_l` | a syn-headed refinement lands in a syn painting — **shape only**; no wf is derivable and none is needed |
-| `ad_refine_syn_syn_delta_free_gen` | a syn LHS never fires the `all` rule, so Δ never grows and Δ-freeness of the fill propagates — given that no flexible is a Δ-variable and no flexible definition mentions one |
-| `ad_refine_syn_hole_l_gen` | **the crux**: whatever a Δ-free syn painting refines to, `◇` refines to as well — one Ghost step, **no wf needed** (the Ghost rule only asks Δ-freeness) |
-| `ad_refine_syn_trans` / `_trans_gen` | transitivity, **assuming the result is well-formed** (`Θ ⨟ Δ ⊢ₚₛ ⌊Qr⌋`, the presupposition); every ghost-left case goes through `ad_refine_syn_hole_l_gen` |
+| `ad_refine_syn_syn_delta_free` | a syn LHS never fires the `all` rule, so Δ never grows and Δ-freeness of the fill propagates — given that no flexible is a Δ-variable and no flexible definition mentions one |
+| `ad_refine_syn_hole_l` | **the crux**: whatever a Δ-free syn painting refines to, `◇` refines to as well — one Ghost step, **no wf needed** (the Ghost rule only asks Δ-freeness) |
+| `ad_refine_syn_trans` / `_trans_gen` | transitivity, **assuming the result is well-formed** (`Θ ⨟ Δ ⊢ₚₛ ⌊Qr⌋`, the presupposition); every ghost-left case goes through `ad_refine_syn_hole_l` |
 | `ad_precise_preserves_refine` | `lemma:precision-preserves-refinement`, a corollary of transitivity (precision IS refinement between inherited paintings) |
-| `ad_refine_syn_hole_l_target_wf` (`sub/prop_completeness_sub_gen.v`) | a refinement OUT OF `◇` moves the target's wf from `Δ = ∅` to any `Δ`; the `Δ = ∅` wf is now a HYPOTHESIS — the Ghost rule used to supply it, the paper presupposes it |
 | `a_wf_pskl_empty_delta_free` | wf at the empty Δ ⇒ Δ-free, when Δ is fresh for Θ (used by `consis/prop_consis_precise.v`) |
 
-⚙ Retained but no longer used by anything: `ad_refine_syn_syn_l_wf` (the old
-crux, which recovered a skeleton wf at the EMPTY Δ from wf of the result),
-`ad_refine_syn_hole_l`, `ad_refine_syn_syn_delta_free`,
-`a_wf_pskl_delta_shrink`.
+⚙ Deleted in the 2026-10-09 cleanup as unused: `ad_refine_syn_syn_l_wf` (the
+old crux, which recovered a skeleton wf at the EMPTY Δ from wf of the result),
+`a_wf_pskl_delta_shrink` and `ad_refine_syn_hole_l_target_wf` (a refinement
+out of `◇` moving the target's wf from `Δ = ∅` to any `Δ` — an instance of
+`a_wf_pskl_delta_mono`).  The `_gen` forms took the plain names
+`ad_refine_syn_hole_l` / `ad_refine_syn_syn_delta_free`.
 
 ⚠️ **Δ-monotonicity now SHRINKS Δ.** Under the paper's Ghost rule a larger Δ is
 harder (a fill may mention an added variable), and under the paper's ∀◇ wf rule
@@ -218,9 +219,10 @@ paper's rule has none). Guardedness of a kept ∀◇ body is read off the
 well-formedness of the refinement's TARGET (§1's presupposition): the ∀◇ wf
 rule demands a guarded body. Lemmas that need it take the target's wf (or, for
 the syntactic forms, `lc`) as a hypothesis — e.g. `ad_refine_syn_guarded_r`
-(+ `lc_bskl Q'`; `ad_refine_syn_guarded_r_all` for a ∀ target), and
-`ad_refine_*_f_guarded_r` in `consis/prop_soundness_consis.v`; to rule out a
-∀◇ target with no side condition at all, `ad_refine_*_f_not_tophole_r`.
+(+ `lc_bskl Q'`, `consis/prop_soundness_consis.v`; `ad_refine_syn_guarded_r_all`
+for a ∀ target); to rule out a ∀◇ target with no side condition at all,
+`ad_refine_*_not_tophole_r` (same file).  (Their `_f` twins went with the `_f`
+relations, 2026-10-09.)
 
 ---
 
@@ -377,7 +379,8 @@ The algo layer has TWO skeleton judgments, both in algo/def_rules.v:
   - Migration shape, for the record: consumers convert with
     `a_scope_pskl_of_wf` (prop_swap.v §0), which is also an `#[export] Hint
     Resolve`, so every site that discharged an entry's scope by `eauto` needed
-    no edit at all.  `a_wf_pskl_ftv_tvarish` and `a_wf_pskl_to_a_scope_pskl`
+    no edit at all.  `a_wf_pskl_ftv_tvarish` (since 2026-10-09 replaced by
+    the stronger `a_wf_pskl_ftv_binds`) and `a_wf_pskl_to_a_scope_pskl`
     moved from the two consistency files to prop_swap.v §0 (the earliest algo
     proof file; algo/prop_basic.v would be the topical home but it IMPORTS
     prop_swap.v).  `a_wf_pskl_scope` — pat/prop_soundness_pat.v's private copy
@@ -566,12 +569,12 @@ that refutation was RETRACTED 2026-10-08 — see §1.)
 **The two `P0 = □` rows.** At `P0 = □` the motive's own P0-fill premise is a
 refinement OUT OF the ghost, and only two rows have a ghost source — `__hole`
 and `__flex_r`, whose target is a defined flexible and so is `a_binds_tvar`.
-That is `ad_refine_syn_hole_l_target_wf` (same file, Qed).  ⚠️ Until
-2026-10-08 the `__hole` row carried the fill's well-formedness on the rule, so
-these rows got the counterpart's wf for free; the paper's Ghost rule does not,
-so `ad_refine_syn_hole_l_target_wf` now takes the `Δ = ∅` wf of the target as a
-hypothesis and the callers supply it (from the motive, the run's output wf, or
-the declarative derivation).
+That was `ad_refine_syn_hole_l_target_wf`.  ⚠️ Until 2026-10-08 the `__hole`
+row carried the fill's well-formedness on the rule, so these rows got the
+counterpart's wf for free; the paper's Ghost rule does not, so the `Δ = ∅` wf of
+the target became a hypothesis that the callers supply (from the motive, the
+run's output wf, or the declarative derivation), and the lemma, left unused,
+was deleted in the 2026-10-09 cleanup.
 
 **Not a well-formedness condition, but registered with it** —
 `a_sub_complete_check` also takes `guarded_pskl P0`.  The DECLARATIVE `Check`

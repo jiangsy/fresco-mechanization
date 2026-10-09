@@ -15,7 +15,8 @@
 
     2. [mono_lambda_anno_redundant] — a MONOTYPE annotation on a lambda binder
        is always redundant (introduction.tex:171).  ⚠️ Ascriptions are not:
-       see [freeze_no_infer] in decl/prop_annotation.v. *)
+       [freeze e] has no inference-mode typing, so an ascription can be the
+       only way to type it at [ti]. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Equality.

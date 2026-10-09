@@ -1059,10 +1059,9 @@ Proof.
     { simpl.
       apply ad_refine_syn_arrow_intro; [ | exact HQb ].
       apply ad_refine_syn__var. }
-    pose proof (proj2 (skl_tyequiv_refine_syn_f_transport Hskleq Hwf'
+    pose proof (proj2 (skl_tyequiv_refine_syn_transport Hskleq Hwf'
                          (fun x b h => h))
-                  empty empty _ (ad_refine_syn_f_of_plain Harr)) as Hτ0.
-    apply ad_refine_syn_f_forget in Hτ0.
+                  empty _ Harr) as Hτ0.
     simpl.
     eapply ad_refine_syn__flex_l;
       [ eapply a_isub_binds_flex_def; [ exact Hle | exact Hbdef ] | ].
@@ -1500,9 +1499,8 @@ Proof.
     assert (HPtv : forall α1, α1 `in` ftvar_in_pskl P ->
                      a_binds_tvar α1 (αs ++ Θ0)).
     { intros α1 Hα1.
-      destruct (a_wf_pskl_ftv_tvarish HwfPP Hα1) as [HΔ | Ht];
-        [ exfalso; clear - HΔ; fsetdec
-        | apply a_binds_tvar_weaken_cons; exact Ht ]. }
+      pose proof (a_wf_pskl_ftv_binds HwfPP Hα1) as Ht;
+        apply a_binds_tvar_weaken_cons; exact Ht. }
     assert (HwfAg : a_wf_ptyp (αs ++ Θ0) A)
       by (eapply a_guess_mono_wf; [ exact H1 | exact HPtv | exact HΞtv ]).
     assert (Hx : x `notin` dom Θ0 `union` dom αs `union` dom Ξ
@@ -1573,11 +1571,9 @@ Proof.
           [ eapply a_guess_mono_refine;
               [ exact H1
               | intros α1 Hα1; right;
-                destruct (a_wf_pskl_ftv_tvarish
+                pose proof (a_wf_pskl_ftv_binds
                             ltac:(eapply a_wf_pskl_isub;
-                                  [ exact HwfPP | exact Hisub ]) Hα1)
-                  as [HΔ | Ht];
-                  [ exfalso; clear - HΔ; fsetdec | exact Ht ]
+                                  [ exact HwfPP | exact Hisub ]) Hα1) as Ht; exact Ht
               | intros α1 Hb; eapply a_isub_binds_flex;
                   [ exact Hisubαs
                   | unfold binds; apply in_or_app; left; exact Hb ]
@@ -1784,9 +1780,8 @@ Proof.
         destruct (binds_cons_1 _ _ _ _ _ _ Hbin) as [[_ He] | Hb0'];
           [ discriminate | exact Hb0' ]. }
       pose proof (Hskl _ _ Hb0) as Hwps.
-      destruct (a_wf_pskl_ftv_tvarish Hwps Hc) as [HΔ | Ht];
-        [ clear - HΔ; fsetdec
-        | apply a_binds_tvar_in_dom in Ht; clear - Hα Ht; fsetdec ]. }
+      pose proof (a_wf_pskl_ftv_binds Hwps Hc) as Ht;
+        apply a_binds_tvar_in_dom in Ht; clear - Hα Ht; fsetdec. }
     (* the declarative instance, suffix-stripped, then the family *)
     assert (Hdα1 : {{ ((α ~ abind_tvar) ++ Θ1) ⊢ˢᵈ[ mode_tc ] (exp_abs e)
                      ⦂ (ptyp_to_btyp_inh
@@ -1852,12 +1847,11 @@ Proof.
         reflexivity. }
       rewrite <- (Hsub A0 ltac:(clear - Hα; solve_notin_auto)).
       rewrite <- (Hsub A ltac:(clear - Hα; solve_notin_auto)).
-      eapply ad_refine_syn_f_forget.
-      eapply ad_refine_syn_f_ctx_mono with (Θ := Θ1);
+      eapply ad_refine_syn_defs_mono with (Θ := Θ1);
         [ | intros ? ? Hb; apply binds_app_iff; right; exact Hb ].
-      eapply ad_refine_syn_f_delta_mono;
-        [ eapply ad_refine_syn_f_ghost_free_strip_rename;
-            [ apply ad_refine_syn_f_of_plain; exact Hrefα
+      eapply ad_refine_syn_delta_mono;
+        [ eapply ad_refine_syn_ghost_free_strip_rename;
+            [ exact Hrefα
             | reflexivity
             | apply bskl_ghost_free_inh_ptyp
             | exact Hwfo
@@ -2058,9 +2052,8 @@ Proof.
         destruct (binds_cons_1 _ _ _ _ _ _ Hbin) as [[_ He] | Hb0'];
           [ discriminate | exact Hb0' ]. }
       pose proof (Hskl _ _ Hb0) as Hwps.
-      destruct (a_wf_pskl_ftv_tvarish Hwps Hc) as [HΔ | Ht];
-        [ clear - HΔ; fsetdec
-        | apply a_binds_tvar_in_dom in Ht; clear - Hα Ht; fsetdec ]. }
+      pose proof (a_wf_pskl_ftv_binds Hwps Hc) as Ht;
+        apply a_binds_tvar_in_dom in Ht; clear - Hα Ht; fsetdec. }
     assert (Hdα1 : {{ ((α ~ abind_tvar) ++ Θ1) ⊢ˢᵈ[ mode_tc ]
                      (exp_abs_anno Aan e)
                      ⦂ (ptyp_to_btyp_inh
@@ -2129,12 +2122,11 @@ Proof.
         reflexivity. }
       rewrite <- (Hsub A0 ltac:(clear - Hα; solve_notin_auto)).
       rewrite <- (Hsub A ltac:(clear - Hα; solve_notin_auto)).
-      eapply ad_refine_syn_f_forget.
-      eapply ad_refine_syn_f_ctx_mono with (Θ := Θ1);
+      eapply ad_refine_syn_defs_mono with (Θ := Θ1);
         [ | intros ? ? Hb; apply binds_app_iff; right; exact Hb ].
-      eapply ad_refine_syn_f_delta_mono;
-        [ eapply ad_refine_syn_f_ghost_free_strip_rename;
-            [ apply ad_refine_syn_f_of_plain; exact Hrefα
+      eapply ad_refine_syn_delta_mono;
+        [ eapply ad_refine_syn_ghost_free_strip_rename;
+            [ exact Hrefα
             | reflexivity
             | apply bskl_ghost_free_inh_ptyp
             | exact Hwfo

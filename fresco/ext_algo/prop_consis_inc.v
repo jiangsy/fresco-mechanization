@@ -1,35 +1,14 @@
-(** THE THREADED TRIO ONLY ADDS INFORMATION — the [e_] face of
-    `algo/consis/prop_consis_inc.v`.
+(** THE GHOST-ROW INVERSIONS of the threaded consistency trio — the cells
+    where a hole meets a pattern or a subject, as prop_consis_complete.v
+    consumes them.
 
-    ⭐ WHAT IT IS FOR.  §8c.12 of
-    docs/HANDOFF-extractable-algo-encoding.md lifts the consistency
-    runner's completeness off its hole-free restriction.  §8c.12a scoped
-    that to TWO divergent cells — (pattern [β̂] flexible, subject [◇]) and
-    its mirror (pattern [◇], subject [α̂] flexible) — at both of which the
-    RUNNER answers with its input context UNCHANGED while the derivation
-    may run an assignment walk.  So the level's whole [⊑] obligation is
-    that the walk only ADDED information, which is [e_assign_isub] below.
-
-    ⚙ NOTHING NEW IS PROVED HERE.  The content is the [a_] lemma; this file
-    is the bridge composition, and it is cheap precisely because
-    prop_consis.v §4 relates [e_] to [a_] over the SAME contexts.  ⭐ Its
-    two hypotheses ([uniq], coverage) are the ones
-    prop_consis_complete.v's motive ALREADY carries
-    ([consis_call_uniq] / [consis_call_cover]), so they cost the consumer
-    nothing.
-
-    ⚠️ [lc_aenv] IS A GENUINELY NEW SIDE CONDITION and the level's motive
-    will have to carry it.  It is not derivable from what is already
-    there: [consis_call_lc] constrains the SKELETONS, not the context, and
-    coverage is a statement about names.  It is also not avoidable —
-    reflexivity of [⊴] needs it, because [a_inc]'s term-variable rows
-    demand [Θ' ⊢ A' ≡ᵗ κA] and the equational theory's base rule demands
-    local closure.  It IS the minimal such hypothesis: every well-formed
-    context satisfies it ([a_wf_aenv_lc_aenv], algo/prop_basic.v).
-
-    ⭐ [aenv_defs_lc], by contrast, is FREE at every call site: it follows
-    from [aenv_defs_mono], which is already an INPUT of every runner call
-    ([consis_call_defs_mono], ext_algo/def_consis_impl.v). *)
+    At a hole SUBJECT only [U-Ghost] can fire unless the pattern is a
+    variable, and at a hole PATTERN only [U-GhostR] can unless the subject
+    is.  ⚙ [U-UnivGhostR] is excluded everywhere here because it demands a
+    GUARDED subject and [◇] is not guarded ([guarded_pskl] is
+    [1 | α | A → B] and nothing else).  The two variable cells are mirror
+    images; since the [<> ◇] dispatch guards landed on [U-FlexL]/[U-FlexR]
+    each of them admits exactly one rule as well. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -44,7 +23,6 @@ Require Import src.fresco.algo.def_meta.
 Require Import src.fresco.prop_basic.
 Require Import src.fresco.algo.prop_basic.
 Require Import src.fresco.algo.prop_inc.
-Require Import src.fresco.algo.consis.prop_consis_inc.
 Require Import src.fresco.ext_algo.notations.
 Require Import src.fresco.ext_algo.def_supply.
 Require Import src.fresco.ext_algo.def_consis.
@@ -55,30 +33,6 @@ Set Implicit Arguments.
 
 Open Scope fresco_a_scope.
 Open Scope fresco_e_scope.
-
-(* ===================================================================== *)
-(*  §1  the runner's own context discipline supplies the definition half  *)
-(* ===================================================================== *)
-
-(* ===================================================================== *)
-(*  §2  the three increases, threaded                                     *)
-(* ===================================================================== *)
-
-(* ===================================================================== *)
-(*  §3  THE GHOST-ROW INVERSIONS                                          *)
-(*                                                                        *)
-(*  The six cells prop_consis_complete.v currently kills with             *)
-(*  [pskl_no_hole] (§8c.12a's table).  ⭐ FOUR of them admit exactly ONE   *)
-(*  rule and so need no [⊑] at all: at a hole SUBJECT only [U-Ghost] can  *)
-(*  fire unless the pattern is a variable, and at a hole PATTERN only     *)
-(*  [U-GhostR] can unless the subject is.  ⚙ [U-UnivGhostR] is excluded   *)
-(*  everywhere here because it demands a GUARDED subject and [◇] is not   *)
-(*  guarded ([guarded_pskl] is [1 | α | A → B] and nothing else).         *)
-(*                                                                        *)
-(*  The two that remain are mirror images, and each comes out as a        *)
-(*  DISJUNCTION whose second branch is an assignment walk — which is      *)
-(*  exactly what §2's increase measures.                                  *)
-(* ===================================================================== *)
 
 (** ⚙ The surviving goals are the rule's own premises plus, at the [(◇,◇)]
     overlap, a disjointness against [ftvar_in_pskl ◇ = ∅]. *)

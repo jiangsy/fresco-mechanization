@@ -1032,7 +1032,7 @@ Proof.
   intros. eapply a_looksub_ctx_ftv_mono; [ eassumption | | ].
   - rewrite ! ftvar_in_aenv_cons_tvar. fsetdec.
   - (* ⭐ FREE: the two entries exchanged are RIGID, so flexibility is
-       untouched in both directions ([binds_tvar_exchange]'s content). *)
+       untouched in both directions. *)
     intros β0 _; rewrite ! a_flex_tvar_cons_tvar_any; reflexivity.
 Qed.
 

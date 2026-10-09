@@ -1097,7 +1097,7 @@ Proof.
                     intros α Hα; clear - Hα; solve_notin_auto))
     as [Hle [Hwf1 [_ [_ [[Qt [_ [Hcons Hrs]]] _]]]]].
   split; [ exact Hle | ]. split; [ exact Hwf1 | ].
-  exists Qt. split; [ exact Hcons | ]. eapply ad_refine_syn_f_forget; exact Hrs.
+  exists Qt. split; [ exact Hcons | ]. exact Hrs.
 Qed.
 
 Lemma ad_refine_syn_arrow_inv : forall Θ Δ Q1 Q2 P1 P2,
@@ -1323,18 +1323,6 @@ Proof.
   - apply IHHb.
     destruct (binds_cons_1 _ _ _ _ _ _ Hbind) as [[_ Hc] | Hb'];
       [ discriminate | exact Hb' ].
-Qed.
-
-Lemma binds_swap_mid_tvar : forall (x : atom) (c : abind) Θa α Θ β,
-  binds x c (Θa ++ (α ~ abind_tvar) ++ Θ) ->
-  x <> α ->
-  binds x c (Θa ++ (β ~ abind_tvar) ++ Θ).
-Proof.
-  intros * Hb Hne.
-  apply binds_app_1 in Hb as [Hb | Hb]; [ apply binds_app_2; exact Hb | ].
-  apply binds_app_1 in Hb as [Hb | Hb].
-  - destruct Hb as [Heq | []]; inversion Heq; subst; contradiction.
-  - apply binds_app_3; unfold binds; simpl; right; exact Hb.
 Qed.
 
 (** ⭐ Renaming a rigid variable of the CONTEXT, and with it its Δ copy.

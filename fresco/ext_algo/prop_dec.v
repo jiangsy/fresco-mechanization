@@ -71,9 +71,6 @@ Require Import src.fresco.ext_algo.def_typing_impl.    (* ptyp_arrow_split *)
 (*  §1  Atom sets and context lookups                                     *)
 (* ===================================================================== *)
 
-Lemma in_mem_true : forall α S, α `in` S -> mem α S = true.
-Proof. intros * H. apply AtomSetFacts.mem_iff. exact H. Qed.
-
 Lemma notin_mem_false : forall α S, α `notin` S -> mem α S = false.
 Proof.
   intros * H. destruct (mem α S) eqn:Hm; [ | reflexivity ].
@@ -87,8 +84,6 @@ Proof.
   intros a Hin. apply (AtomSetFacts.empty_iff a). apply H. exact Hin.
 Qed.
 
-(** ⚙ Off the NEGATIVE scan, not a second induction: def_dec.v §2 already
-    proved [false] refutes, so [true] follows by case analysis on the bool. *)
 (* ⚙ [flex_tvar_flex_bound_ck] was a DUPLICATE of [flex_tvar_flex_bound_ck]; imported, not reproved (2026-08-23). *)
 
 (* ⚙ [rigid_bound_ck_complete] was a DUPLICATE of [rigid_bound_ck_complete]; imported, not reproved (2026-08-23). *)
@@ -120,10 +115,6 @@ Proof. intros P H; inversion H; subst; reflexivity. Qed.
    def_look_impl.v.  It is still in scope here, through def_dec.v. *)
 
 (* ⚙ [mono_ck_complete] was a DUPLICATE of [mono_ck_complete]; imported, not reproved (2026-08-23). *)
-
-Lemma nonghost_ck_complete : forall P,
-  nonghost_pskl P -> nonghost_ck P = true.
-Proof. intros P H; inversion H; subst; reflexivity. Qed.
 
 (* ===================================================================== *)
 (*  §3  Context shapes and structural equality                            *)

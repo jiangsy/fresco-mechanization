@@ -18,9 +18,9 @@
     flagged there as a prose-completion of the paper's "fresh" Ξ and needed
     because [a_lookeq]'s LE-FlexR and [a_guess_mono]'s hole rule "pick
     arbitrary names, so re-attaching Ξ needs the freshness stated".  Threaded,
-    [uniq Ξ] is a theorem ([e_looksub_uniq]) and the block's freshness for the
-    ambient context is another ([e_looksub_generated_fresh]) — so the premise
-    becomes derivable, exactly as [AT-Abs]'s did.
+    [uniq Ξ] and the block's freshness for the ambient context are theorems
+    (both in [e_looksub_lookeq_block]) — so the premise becomes derivable,
+    exactly as [AT-Abs]'s did.
 
     ⚠️ NO ROW HERE CONSTRAINS ITS OWN OUTPUT.  The collection's freshness side
     conditions are already INPUT-only ([β ∉ add α (ftvar_in_aenv Θ ∪ …)]), so

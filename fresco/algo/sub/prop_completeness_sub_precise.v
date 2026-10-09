@@ -84,8 +84,10 @@ Proof.
     specialize (IHad_partial_precise2 Hwf _ Hd2).
     fsetdec.
   - apply d_tags_skl_all_tag_inv in Hdt as [L0 [Ψt0 [Hd0 [Hεt Heqt]]]].
-    pick fresh α for (L `union` L0).
-    specialize (H0 α ltac:(solve_notin_auto) Hwf _ (Hd0 α ltac:(solve_notin_auto))).
+    pick fresh α for (L `union` L0 `union` dom Θ).
+    assert (Hwf' : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
+      by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
+    specialize (H0 α ltac:(solve_notin_auto) Hwf' _ (Hd0 α ltac:(solve_notin_auto))).
     fsetdec.
   - fsetdec.
   - eapply IHad_partial_precise; eauto.
@@ -110,27 +112,16 @@ Qed.
 
 (** [lemma:partial-precision-complete] (subtyping-proofs.tex:1639).  Under
     wf of [ψ] and the tag-sort premise, partial precision at the FULL tag set
-    [Ψ] upgrades to plain (coloured) precision against [⌊ψ⌋].  See §5.1.
-
-    ⚙ The [_gen] form lands the precision at any [Θ'] that keeps [Θ]'s tvar
-    and flexible-definition bindings: partial precision's ∀ row puts the
-    binder into [Δ] only, while refinement's ∀ row (paper: [Γ,α | Δ,α])
-    pushes it into the context too, so the ∀ case needs the IH at
-    [(α ~ abind_tvar) ++ Θ']. *)
-Lemma ad_partial_precise_complete_gen : forall NM Θ Δ Ψ P ψ,
+    [Ψ] upgrades to plain (coloured) precision against [⌊ψ⌋].  See §5.1. *)
+Lemma ad_partial_precise_complete : forall NM Θ Δ Ψ P ψ,
   {{ ⊢ Θ }}a ->
-  {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
-  forall Θ',
-  {{ ⊢ Θ' }}a ->
-  (forall α, a_binds_tvar α Θ -> a_binds_tvar α Θ') ->
-  (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
-     binds α (abind_flex_mono_def τ) Θ') ->
   a_tags_sort NM Ψ ψ ->
-  {{ Θ' ⨟ Δ ⊢ₚₛ ⌊ ψ ⌋ˢ }}a ->
-  {{ Θ' ⨟ Δ ⊢ₚᵣ P ⊑ ⌊ ψ ⌋ˢ }}ad.
+  {{ Θ ⨟ Δ ⊢ₚₛ ⌊ ψ ⌋ˢ }}a ->
+  {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
+  {{ Θ ⨟ Δ ⊢ₚᵣ P ⊑ ⌊ ψ ⌋ˢ }}ad.
 Proof.
-  intros NM Θ Δ Ψ P ψ Hwf H.
-  revert Hwf NM. induction H; intros Hwf NM Θ' Hwf' Htv Hfl Htags Hwfp;
+  intros NM Θ Δ Ψ P ψ Hwf Htags Hwfp H.
+  revert Hwf NM Htags Hwfp. induction H; intros Hwf NM Htags Hwfp;
     unfold ad_precise in *; simpl in *.
   - (* unit *) apply ad_refine_syn__unit.
   - (* var *) apply ad_refine_syn__var.
@@ -143,30 +134,29 @@ Proof.
       (eapply (ad_partial_precise_tags_sub Hwf H0); exact (a_tags_sort_d_tags Htb)).
     apply ad_refine_syn_arrow_intro.
     + eapply IHad_partial_precise1;
-        [ exact Hwf | exact Hwf' | exact Htv | exact Hfl
+        [ exact Hwf
         | eapply a_tags_sort_psi_cong; [ exact Hta | clear - H1 Hun Hdisj Hs1 Hs2; fsetdec ]
         | assumption ].
     + eapply IHad_partial_precise2;
-        [ exact Hwf | exact Hwf' | exact Htv | exact Hfl
+        [ exact Hwf
         | eapply a_tags_sort_psi_cong; [ exact Htb | clear - H1 Hun Hdisj Hs1 Hs2; fsetdec ]
         | assumption ].
-  - (* forall: ψ = all_tag ε ψ0, P = all_syn P0; the binder enters [Θ'] *)
+  - (* forall: ψ = all_tag ε ψ0, P = all_syn P0; both rows extend [Θ] and [Δ] *)
     apply a_tags_sort_all_tag_inv in Htags as [Lt [Ψt [Hta [Hεt Hun]]]].
     apply a_wf_pskl_all_inv in Hwfp as [Lw Hwbody].
-    apply ad_refine_syn_all_intro with (L := L `union` Lt `union` Lw `union` dom Θ'
+    apply ad_refine_syn_all_intro with (L := L `union` Lt `union` Lw `union` dom Θ
        `union` ftvar_in_pskl P `union` ftvar_in_uskl ψ).
     intros α0 Hα0.
+    assert (Hwfa : {{ ⊢ ((α0 ~ abind_tvar) ++ Θ) }}a)
+      by (apply a_wf_aenv__tvar; [ solve_notin_auto | exact Hwf ]).
     assert (Hs0 : Ψ0 [<=] Ψt) by
-      (eapply (ad_partial_precise_tags_sub Hwf (H α0 ltac:(solve_notin_auto)));
+      (eapply (ad_partial_precise_tags_sub Hwfa (H α0 ltac:(solve_notin_auto)));
         exact (a_tags_sort_d_tags (Hta α0 ltac:(solve_notin_auto)))).
     assert (Heq0 : Ψ0 [=] Ψt) by (clear - H1 Hun Hεt Hs0; fsetdec).
     rewrite <- pskl_to_bskl_inh_open.
     rewrite <- pskl_to_bskl_inh_open.
     rewrite <- (uskl_to_pskl_open ψ).
-    eapply H0; [ solve_notin_auto | exact Hwf | | | | | ].
-    + apply a_wf_aenv__tvar; [ solve_notin_auto | exact Hwf' ].
-    + intros β Hβ. apply a_binds_tvar_cons_tvar. right. auto.
-    + intros β τ Hβ. apply binds_app_iff. right. auto.
+    eapply H0; [ solve_notin_auto | exact Hwfa | | ].
     + eapply a_tags_sort_psi_cong;
         [ apply Hta; solve_notin_auto | clear - Heq0; fsetdec ].
     + rewrite uskl_to_pskl_open. apply Hwbody. solve_notin_auto.
@@ -192,10 +182,10 @@ Proof.
         exact (a_tags_sort_d_tags (Hta α ltac:(solve_notin_auto)))).
     clear - Hun Hεt Hsub. fsetdec.
   - (* tophole_keep: ψ = topholeg ψ0 (SK-only; TY gf excludes it).  The body
-       is wf at [Θ'∖Δ], so none of its free variables is in [Δ]. *)
+       is wf at [Θ∖Δ], so none of its free variables is in [Δ]. *)
     inversion Hwfp; subst.
     apply ad_refine_syn_tophole_keep_intro.
-    eapply IHad_partial_precise; [ exact Hwf | exact Hwf' | exact Htv | exact Hfl | | ].
+    eapply IHad_partial_precise; [ exact Hwf | | ].
     + inversion Htags; subst;
         match goal with Hit : is_tskl (uskl_topholeg _) |- _ =>
           inversion Hit; subst end.
@@ -204,7 +194,7 @@ Proof.
         apply a_tags_sort__sk; auto.
       * match goal with Hg0 : uskl_ghost_free (uskl_topholeg _) |- _ =>
           inversion Hg0 end.
-    + match goal with Hw0 : {{ aenv_minus Θ' Δ ⨟ empty ⊢ₚₛ _ }}a |- _ =>
+    + match goal with Hw0 : {{ aenv_minus Θ Δ ⨟ empty ⊢ₚₛ _ }}a |- _ =>
         eapply a_wf_pskl_delta_mono;
         [ eapply a_wf_pskl_tvar_mono;
             [ exact Hw0 | intros β Hβ; apply a_binds_tvar_aenv_minus in Hβ; apply Hβ ]
@@ -215,7 +205,7 @@ Proof.
   - (* flex_l: subject α unfolds to its mono def; ψ unchanged *)
     assert (Hmono : mono_ptyp τ)
       by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact H ]).
-    eapply ad_refine_syn__flex_l; [ exact (Hfl _ _ H) | ].
+    eapply ad_refine_syn__flex_l; [ exact H | ].
     rewrite <- (ptyp_to_bskl_inh_syn_eq Hmono).
     eapply IHad_partial_precise; eauto.
   - (* flex_r: target α unfolds to its mono def (tag-free, wf since flex-free) *)
@@ -225,11 +215,11 @@ Proof.
       by (eapply a_wf_aenv_binds_def_wf; [ exact Hwf | exact H ]).
     assert (HΨ : Ψ [=] empty)
       by exact (d_tags_skl_var_inv (a_tags_sort_d_tags Htags)).
-    eapply ad_refine_syn__flex_r; [ exact (Hfl _ _ H) | ].
+    eapply ad_refine_syn__flex_r; [ exact H | ].
     rewrite <- (ptyp_to_bskl_inh_syn_eq Hmono).
     replace (ptyp_to_pskl τ) with (uskl_to_pskl (ptyp_to_uskl_syn τ))
       by (apply uskl_to_pskl_ptyp_to_uskl_syn).
-    eapply IHad_partial_precise; [ exact Hwf | exact Hwf' | exact Htv | exact Hfl | | ].
+    eapply IHad_partial_precise; [ exact Hwf | | ].
     + (* build at concrete [empty] FIRST (no evar), then re-tag to Ψ [=] empty
          — psi_cong with an evar source would make [fsetdec] hang. *)
       assert (Htagpaint : a_tags_sort NM empty (ptyp_to_uskl_syn τ)).
@@ -245,19 +235,8 @@ Proof.
     + rewrite uskl_to_pskl_ptyp_to_uskl_syn.
       apply a_scope_pskl_of_ptyp_vis.
       * eapply a_wf_ptyp_lc; exact Hwfτ.
-      * intros α0 Hα0. apply Htv.
+      * intros α0 Hα0.
         eapply a_wf_ptyp_ftv_tvarish; [ exact Hwfτ | exact Hα0 ].
-Qed.
-
-Lemma ad_partial_precise_complete : forall NM Θ Δ Ψ P ψ,
-  {{ ⊢ Θ }}a ->
-  a_tags_sort NM Ψ ψ ->
-  {{ Θ ⨟ Δ ⊢ₚₛ ⌊ ψ ⌋ˢ }}a ->
-  {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
-  {{ Θ ⨟ Δ ⊢ₚᵣ P ⊑ ⌊ ψ ⌋ˢ }}ad.
-Proof.
-  intros NM Θ Δ Ψ P ψ Hwf Htags Hwfp H.
-  eapply ad_partial_precise_complete_gen; eauto.
 Qed.
 
 (* ===================================================================== *)
@@ -856,7 +835,7 @@ Proof.
     + eapply uskl_precise_erase_refine;
         [ exact Hlf | exact Hwf
         | intros β Hβ; exfalso; clear - Hβ; fsetdec
-        | exact Hwfq | exact Hup' | exact Hmon | reflexivity ].
+        | exact Hup' | exact Hmon | reflexivity ].
   - (* all_syn cong: not a guarded subject *) inversion Hgd.
   - (* all_tag cong *) inversion Hgd.
   - (* all_inst *) inversion Hgd.
@@ -1056,7 +1035,7 @@ Proof.
       * eapply uskl_precise_erase_refine;
           [ exact Hlf1 | exact Hwf
           | intros β Hβ; exfalso; clear - Hβ; fsetdec
-          | exact Hwfq1 | exact Hup1 | exact Hmon | reflexivity ].
+          | exact Hup1 | exact Hmon | reflexivity ].
     + eapply Hrec with (Ψr0 := Ψ2) (Ψsup0 := Ψsup)
         (Ψna0 := Ψc2 ∩ Ψsup);
         [ exact Hup2 | exact Hwfb | clear - HΨsup H; fsetdec
@@ -1674,7 +1653,7 @@ Proof.
     + eapply uskl_precise_erase_refine;
         [ exact (ad_consis_join_refine H0) | exact Hwf
         | intros β Hβ; exfalso; clear - Hβ; fsetdec
-        | exact Hwfq | exact Hup | exact Hmon | reflexivity ].
+        | exact Hup | exact Hmon | reflexivity ].
   - (* Check (TY) *)
     pose proof Hwfq as HwfB.
     rewrite bskl_to_pskl_pskl_to_bskl_inh in HwfB.
@@ -1690,7 +1669,7 @@ Proof.
     + eapply uskl_precise_erase_refine;
         [ exact (ad_consis_join_inh_refine _ H1) | exact Hwf
         | intros β Hβ; exfalso; clear - Hβ; fsetdec
-        | exact HwfB | exact Hup | exact Hmon | reflexivity ].
+        | exact Hup | exact Hmon | reflexivity ].
   - (* ForallR (TY) *)
     simpl in Hwfq. destruct (a_wf_pskl_all_inv Hwfq) as [Lw Hwbody].
     eapply ad_pat_sub_fuel__forall_r with (L := L `union` Lw `union` dom Θ).

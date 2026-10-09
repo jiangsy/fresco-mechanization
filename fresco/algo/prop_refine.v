@@ -209,6 +209,82 @@ Proof.
   - apply ad_refine_syn__hole. fsetdec.
 Qed.
 
+(** A refinement whose LEFT side is ghost-free never uses the ◇ rule, the
+    only rule that reads [Δ]; so it holds at every [Δ]. *)
+Lemma ad_refine_syn_ghost_free_delta : forall Θ Δ0 Q P,
+  {{ Θ ⨟ Δ0 ⊢ᵣ Q ⊳ P }}ad ->
+  bskl_ghost_free Q ->
+  forall Δ, {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad.
+Proof.
+  intros Θ Δ0 Q P H; induction H; intros Hg Δ'; simpl in Hg;
+    try contradiction; eauto using ad_refine_syn.
+  - destruct Hg; eauto using ad_refine_syn.
+  - apply ad_refine_syn__all with (L := L); [ assumption | ]. intros α Hα.
+    apply H1; auto. apply bskl_ghost_free_open_rec; exact Hg.
+  - eapply ad_refine_syn__flex_l; [ exact H | ].
+    apply IHad_refine_syn; auto.
+    unfold ptyp_to_bskl_syn. apply pskl_to_bskl_syn_ghost_free.
+    apply ptyp_to_pskl_ghost_free.
+Qed.
+
+(** Refinement reads its context only through defined-flexible lookups,
+    and a derivation whose sides avoid [S] only ever looks up variables
+    outside [S] (an unfolded definition avoids [S] too).  So the context
+    may be swapped for any [Θ'] agreeing on those lookups. *)
+Lemma ad_refine_syn_defs_avoid : forall Θ Δ Qs Qt,
+  {{ Θ ⨟ Δ ⊢ᵣ Qs ⊳ Qt }}ad ->
+  forall S Θ',
+  (forall β τ, binds β (abind_flex_mono_def τ) Θ -> β `notin` S ->
+     binds β (abind_flex_mono_def τ) Θ' /\ S ∩ ftvar_in_ptyp τ [=] empty) ->
+  S ∩ ftvar_in_bskl Qs [=] empty ->
+  S ∩ ftvar_in_bskl Qt [=] empty ->
+  {{ Θ' ⨟ Δ ⊢ᵣ Qs ⊳ Qt }}ad.
+Proof.
+  intros Θ Δ Qs Qt H; induction H; intros S Θ' Hm Hs Ht; simpl in Hs, Ht.
+  - apply ad_refine_syn__unit.
+  - apply ad_refine_syn__var.
+  - apply ad_refine_syn_arrow_intro;
+      [ apply (IHad_refine_syn1 S) | apply (IHad_refine_syn2 S) ];
+      try assumption; clear - Hs Ht; fsetdec.
+  - apply ad_refine_syn_all_intro with (L := L `union` S). intros β Hβ.
+    apply (H1 β ltac:(clear - Hβ; fsetdec) S); [ | | ].
+    + intros γ τ Hb Hγ. apply binds_app_1 in Hb as [Hb | Hb];
+        [ apply binds_one_iff in Hb as [_ Hb]; discriminate | ].
+      destruct (Hm γ τ Hb Hγ) as [Hb' Hd].
+      split; [ apply binds_app_3; exact Hb' | exact Hd ].
+    + pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
+        as Hup; simpl in Hup. clear - Hs Hup Hβ; fsetdec.
+    + pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q' (bskl_var_f β))
+        as Hup; simpl in Hup. clear - Ht Hup Hβ; fsetdec.
+  - apply ad_refine_syn__hole; assumption.
+  - apply ad_refine_syn_tophole_remove_intro; eauto.
+  - apply ad_refine_syn_tophole_fill_intro with (L := L `union` S). intros β Hβ.
+    apply (H1 β ltac:(clear - Hβ; fsetdec) S); [ | simpl; exact Hs | ].
+    + intros γ τ Hb Hγ. apply binds_app_1 in Hb as [Hb | Hb];
+        [ apply binds_one_iff in Hb as [_ Hb]; discriminate | ].
+      destruct (Hm γ τ Hb Hγ) as [Hb' Hd].
+      split; [ apply binds_app_3; exact Hb' | exact Hd ].
+    + pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q' (bskl_var_f β))
+        as Hup; simpl in Hup. clear - Ht Hup Hβ; fsetdec.
+  - apply ad_refine_syn_tophole_keep_intro; eauto.
+  - assert (Hα : α `notin` S)
+      by (intros Hin; assert (Hx : α `in` S ∩ singleton α)
+            by (clear - Hin; fsetdec);
+          rewrite Hs in Hx; clear - Hx; fsetdec).
+    destruct (Hm α τ H Hα) as [Hb' Hd].
+    apply ad_refine_syn__flex_l with (τ := τ); [ exact Hb' | ].
+    apply (IHad_refine_syn S); [ exact Hm | | exact Ht ].
+    rewrite ftvar_ptyp_to_bskl_syn; exact Hd.
+  - assert (Hα : α `notin` S)
+      by (intros Hin; assert (Hx : α `in` S ∩ singleton α)
+            by (clear - Hin; fsetdec);
+          rewrite Ht in Hx; clear - Hx; fsetdec).
+    destruct (Hm α τ H Hα) as [Hb' Hd].
+    apply ad_refine_syn__flex_r with (τ := τ); [ exact Hb' | ].
+    apply (IHad_refine_syn S); [ exact Hm | exact Hs | ].
+    rewrite ftvar_ptyp_to_bskl_syn; exact Hd.
+Qed.
+
 Lemma ad_refine_pskl_delta_mono : forall Θ Δ0 P P',
   {{ Θ ⨟ Δ0 ⊢ᵣₚ P ⊳ P' }}ad ->
   forall Δ, Δ [<=] Δ0 ->
@@ -272,6 +348,17 @@ Lemma ad_refine_pskl_refl : forall Θ Δ P,
   {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
   {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ P }}ad.
 Proof. intros. eapply ad_refine_pskl_refl_gen; eauto. Qed.
+
+(** Refinement is reflexive on a monotype painting. *)
+Lemma ad_refine_syn_mono_refl : forall Θ Δ τ,
+  mono_ptyp τ ->
+  {{ Θ ⨟ Δ ⊢ᵣ (ptyp_to_bskl_syn τ) ⊳ (ptyp_to_bskl_syn τ) }}ad.
+Proof.
+  intros Θ Δ τ Hm; induction Hm; simpl.
+  - apply ad_refine_syn__unit.
+  - apply ad_refine_syn__var.
+  - apply ad_refine_syn_arrow_intro; auto.
+Qed.
 
 (* ===================================================================== *)
 (*  Consistency reflexivity along the erasure (the GhostR subsidiary       *)

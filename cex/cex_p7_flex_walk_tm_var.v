@@ -109,6 +109,7 @@ Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.algo_decl.def_subtyping.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo.sub.prop_sub_msubst_equiv.
+Require Import src.fresco.algo.prop_refine.
 Require Import src.fresco.algo.consis.prop_soundness_consis.
 
 Set Implicit Arguments.
@@ -247,13 +248,12 @@ Lemma tm_var_wf_counterpart : {{ Θw ⨟ empty ⊢ₚₛ (bskl_to_pskl Qw) }}a.
 Proof. unfold Qw. simpl. apply a_wf_pskl__arrow; apply a_wf_pskl__unit. Qed.
 
 Lemma tm_var_fill :
-  ad_refine_syn_f empty Θw empty (pskl_to_bskl_inh (msubst_pskl κw P0w)) Qw.
+  {{ Θw ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κw P0w)) ⊳ Qw }}ad.
 Proof.
     unfold P0w, Qw, κw. simpl.
-    apply ad_refine_syn_f__arrow;
+    apply ad_refine_syn_arrow_intro;
       (change bskl_unit with (pskl_to_bskl_syn pskl_unit);
-       apply ad_refine_syn_f__hole;
-         [ clear; fsetdec | clear; fsetdec ]).
+       apply ad_refine_syn__hole; clear; fsetdec).
 Qed.
 
 (* --------------------------------------------------------------------- *)
@@ -292,8 +292,7 @@ Theorem complete_subtyping_needs_flex_skip_tm_var :
   ({{ ⊢ Θw }}a /\ ⌊ Rw ⌋ˢ = Pw /\ κw ∷ Θ0w ⊑ Θw /\
    {{ Θw ⊢ R'w ≡ᵘ (msubst_uskl_syn κw Rw) }}a /\
    ad_pat_sub_fuel 1 a_sub_mode_sk (mode_fn mode_ti) empty Θw R'w Qw /\
-   ad_refine_syn_f empty Θw empty
-     (pskl_to_bskl_inh (msubst_pskl κw P0w)) Qw /\
+   {{ Θw ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κw P0w)) ⊳ Qw }}ad /\
    {{ Θw ⨟ empty ⊢ₚₛ (bskl_to_pskl Qw) }}a)
   /\
   (* …and every run of it uses the rule the paper's figure omits *)

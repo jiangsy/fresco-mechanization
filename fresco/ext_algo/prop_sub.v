@@ -673,12 +673,6 @@ Corollary e_sub_supply_respect : forall S0 NM M P0 Θ0 P Q S1 Θ1,
     {{ S0' ↝ S1' ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e.
 Proof. apply e_sub_sub_flex_supply_respect. Qed.
 
-Corollary e_sub_flex_supply_respect : forall S0 NM M P0 Θ0 Ξ α Q S1 Θ1,
-  e_sub_flex S0 NM M P0 Θ0 Ξ α Q S1 Θ1 ->
-  forall S0', S0' [=] S0 ->
-  exists S1', S1' [=] S1 /\ e_sub_flex S0' NM M P0 Θ0 Ξ α Q S1' Θ1.
-Proof. apply e_sub_sub_flex_supply_respect. Qed.
-
 (** The output-suppressed consistency abbreviation along a swap — [Check]'s
     premise, and the shape [Arrow]'s first premise reduces to. *)
 Lemma e_consis_empty_swap : forall a b S0 Θ0 P0 P Q S1 Θ1,
@@ -859,13 +853,4 @@ Corollary e_sub_swap : forall a b S0 NM M P0 Θ0 P Q S1 Θ1,
   exists S1', S1' [=] swap_atoms a b S1 /\
     {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊢[ NM | M | (swap_pskl a b P0) ]
        (swap_pskl a b P) ⩽ (swap_pskl a b Q) ⊣ (swap_aenv a b Θ1) }}e.
-Proof. intros a b. apply e_sub_sub_flex_swap. Qed.
-
-Corollary e_sub_flex_swap : forall a b S0 NM M P0 Θ0 Ξ α Q S1 Θ1,
-  e_sub_flex S0 NM M P0 Θ0 Ξ α Q S1 Θ1 ->
-  forall S0', S0' [=] swap_atoms a b S0 ->
-  exists S1', S1' [=] swap_atoms a b S1 /\
-    e_sub_flex S0' NM M (swap_pskl a b P0) (swap_aenv a b Θ0)
-      (swap_aenv a b Ξ) (swap_atom a b α) (swap_pskl a b Q)
-      S1' (swap_aenv a b Θ1).
 Proof. intros a b. apply e_sub_sub_flex_swap. Qed.

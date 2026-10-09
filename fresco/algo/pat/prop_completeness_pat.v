@@ -785,10 +785,10 @@ Qed.
 (*  judgement only).  Route: equivariance, per the standing directive —   *)
 (*  [prop_swap.v] already has [a_sub_sub_flex_swap] (:1303),              *)
 (*  [a_assign_unify_consis_swap] (:1078) and [a_guess_mono_swap] (:435),  *)
-(*  so [a_pat_swap] mirrors them row by row and the renaming follows from *)
-(*  equivariance plus freshness.  ⚙ Note the walk's own [Flex-SkipTmVar]  *)
-(*  rows traverse term entries, so they must transport too — they do,     *)
-(*  since the entry is skipped regardless of its name.                    *)
+(*  so an [a_pat] twin mirrors them row by row and the renaming follows   *)
+(*  from equivariance plus freshness.  ⚙ Note the walk's own              *)
+(*  [Flex-SkipTmVar] rows traverse term entries, so they must transport   *)
+(*  too — they do, since the entry is skipped regardless of its name.     *)
 (* ===================================================================== *)
 
 (** [P-Freeze] — the mode drops from TC to TI at the SAME ghost input, so
@@ -817,9 +817,9 @@ Qed.
 
    ⭐ The 2026-08-13 exists-fresh conversion (cleanup audit §3) deleted all
    four blocks and [a_pat_rename_tm] with them.  What survives in prop_swap.v
-   §6 is the general kit ([swap_abind_fresh_eq], [swap_aenv_fresh_eq],
-   [swap_aenv_tm_head], [swap_aenv_one], [a_split_swap]); [swap_aenv_fresh_eq]
-   still has live consumers in typing/prop_completeness_typing.v. *)
+   §6 is [swap_aenv_fresh_eq] and its helper [swap_abind_fresh_eq];
+   [swap_aenv_fresh_eq] still has live consumers in
+   typing/prop_completeness_typing.v. *)
 
 (* ===================================================================== *)
 (*  K8 — the binder rows' support: freshness of a TERM atom for the       *)
@@ -848,9 +848,7 @@ Lemma a_wf_pskl_notin_ftv_tm : forall Θ x (b : abind) P,
   x `notin` ftvar_in_pskl P.
 Proof.
   intros Θ x b P Hwf Hu Hb Htm Hin.
-  destruct (a_wf_pskl_ftv_tvarish Hwf Hin) as [Hd | Htv];
-    [ clear - Hd; fsetdec
-    | eapply a_binds_tvar_tm_absurd; eassumption ].
+  pose proof (a_wf_pskl_ftv_binds Hwf Hin) as Htv; eapply a_binds_tvar_tm_absurd; eassumption.
 Qed.
 
 (** The run's pending suffix cannot mention the walked binder either: its
@@ -1595,7 +1593,7 @@ Proof.
                     (msubst_pskl (msubst_compose ζ κ1) P1) ⊑ (msubst_pskl κ P1) }}ad).
     { eapply a_inc_equiv_precise_msubst_flip with (Θ0 := Θ0) (Δ0 := empty);
         [ exact HwfP1 | exact Hwf0 | exact HwfΘ | exact Hinc | exact Hσ
-        | exact Heqvs | clear; fsetdec ]. }
+        | exact Heqvs ]. }
     assert (Hdom : {{ Θ ⨟ empty ⊢ᵣ
                      (pskl_to_bskl_inh (msubst_pskl (msubst_compose ζ κ1) P1))
                      ⊳ (pskl_to_bskl_inh P) }}ad).
@@ -1609,8 +1607,7 @@ Proof.
     { rewrite msubst_pskl_compose.
       - rewrite (msubst_pskl_id P1 Hid1). reflexivity.
       - intros α Hα.
-        destruct (a_wf_pskl_ftv_tvarish HwfP1 Hα) as [HΔ | Htv];
-          [ exfalso; clear - HΔ; fsetdec | ].
+        pose proof (a_wf_pskl_ftv_binds HwfP1 Hα) as Htv.
         destruct Htv as [Hb | [Hb | [τ Hb]]].
         + right.
           eapply a_inc_tvar_notin_dom;
@@ -1783,18 +1780,12 @@ Proof.
                     ∼ (btyp_to_bskl B) }}ad).
   { rewrite msubst_pskl_embed_ptyp, HmsA, pskl_to_uskl_ptyp.
     apply (ad_pat_consis_syn_bid HwfA B HBA). }
-  assert (Hrs : ad_refine_syn_f empty Θ empty
-                  (pskl_to_bskl_inh (msubst_pskl κ P1)) (btyp_to_bskl B))
-    by (apply ad_refine_syn_f_of_plain; exact Href13).
-  assert (Hrp : ad_refine_pskl_f empty Θ empty
-                  (msubst_pskl κ (ptyp_to_pskl A))
-                  (bskl_to_pskl (btyp_to_bskl B))).
+  assert (Hrp : {{ Θ ⨟ empty ⊢ᵣₚ (msubst_pskl κ (ptyp_to_pskl A)) ⊳ (bskl_to_pskl (btyp_to_bskl B)) }}ad).
   { rewrite msubst_pskl_embed_ptyp, HmsA.
     rewrite bskl_to_pskl_btyp_to_bskl, HBA.
-    apply ad_refine_pskl_f_of_plain.
     apply ad_refine_pskl_refl.
     apply a_wf_ptyp_to_wf_pskl; exact HwfA. }
-  destruct (a_consis_complete Hwf0 HwfP1 HwfpA0 Hinc HwfΘ Hjoin Hrs Hrp)
+  destruct (a_consis_complete Hwf0 HwfP1 HwfpA0 Hinc HwfΘ Hjoin Href13 Hrp)
     as [Ac [Θmid [HcRun HoptC]]].
   destruct (a_consis_isub_wf_nil HcRun Hwf0 HwfP1 HwfpA0) as [Hlec Hwfmid].
   destruct Hlec as [[κc [Hidc Hincc]] _].
@@ -1845,7 +1836,7 @@ Proof.
                   (msubst_pskl (msubst_compose ζc0 κc) Q1) ⊑ (msubst_pskl κ Q1) }}ad).
   { eapply a_inc_equiv_precise_msubst_flip with (Θ0 := Θ0) (Δ0 := empty);
       [ exact HwfQ1 | exact Hwf0 | exact HwfΘ | exact Hinc | exact Hσc
-      | exact Heqvc | clear; fsetdec ]. }
+      | exact Heqvc ]. }
   assert (Href14σ : {{ Θ ⨟ empty ⊢ᵣ
                       (pskl_to_bskl_inh (msubst_pskl (msubst_compose ζc0 κc) Q1))
                       ⊳ Q0 }}ad).
@@ -2224,7 +2215,7 @@ Proof.
                   (msubst_pskl (msubst_compose ζ1 κa) P0) ⊑ (msubst_pskl κ P0) }}ad).
   { eapply a_inc_equiv_precise_msubst_flip with (Θ0 := Θ0) (Δ0 := empty);
       [ exact HwfP0 | exact Hwf0 | exact HwfΘ | exact Hinc | exact Hσ1
-      | exact Heqv1 | clear; fsetdec ]. }
+      | exact Heqv1 ]. }
   assert (Hi : {{ Θ ⨟ empty ⊢ᵣ
                  (pskl_to_bskl_inh (msubst_pskl (msubst_compose ζ1 κa) P0)) ⊳ Q }}ad).
   { eapply ad_precise_preserves_refine;

@@ -465,19 +465,6 @@ Qed.
 (*  §5  Refinement                                                        *)
 (* ===================================================================== *)
 
-(** Refinement is reflexive on a monotype painting — the shape the [var]
-    row turns into once the variable has been replaced by [τ]. *)
-Lemma ad_refine_syn_mono_refl : forall Θ Δ τ,
-  mono_ptyp τ ->
-  a_wf_ptyp Θ τ ->
-  {{ Θ ⨟ Δ ⊢ᵣ (ptyp_to_bskl_syn τ) ⊳ (ptyp_to_bskl_syn τ) }}ad.
-Proof.
-  intros Θ Δ τ Hm; revert Δ; induction Hm; intros Δ Hw; simpl.
-  - apply ad_refine_syn__unit.
-  - apply ad_refine_syn__var.
-  - inversion Hw; subst. apply ad_refine_syn_arrow_intro; auto.
-Qed.
-
 (** The fresh binder a cofinite row pushes joins the PREFIX, so the
     substituted-context statement stays in shape; the [uniq] hypothesis
     travels with it. *)
@@ -502,9 +489,8 @@ Proof.
   - (* unit *) apply ad_refine_syn__unit.
   - (* var *)
     destruct_if as [Heqα | Hne].
-    + subst α. apply ad_refine_syn_mono_refl;
-        [ eapply solves_flex_mono; eassumption
-        | apply a_wf_ptyp_subst_tail; eapply solves_flex_wf; eassumption ].
+    + subst α. apply ad_refine_syn_mono_refl.
+      eapply solves_flex_mono; eassumption.
     + apply ad_refine_syn__var.
   - (* arrow *) apply ad_refine_syn_arrow_intro; eauto.
   - (* all : the witness joins the PREFIX and Δ *)
@@ -910,64 +896,6 @@ Proof.
     intro Hin. pose proof (a_wf_ptyp_ftv_tvarish Hwfτ Hin) as Ht.
     destruct Ht as [Hbb | [Hbb | [τ1 Hbb]]]; apply binds_In in Hbb;
       clear - Hbb Hfrα; fsetdec.
-Qed.
-
-(** Refinement reads its context only through defined-flexible lookups,
-    and a derivation whose sides avoid [S] only ever looks up variables
-    outside [S] (an unfolded definition avoids [S] too).  So the context
-    may be swapped for any [Θ'] agreeing on those lookups. *)
-Lemma ad_refine_syn_defs_avoid : forall Θ Δ Qs Qt,
-  {{ Θ ⨟ Δ ⊢ᵣ Qs ⊳ Qt }}ad ->
-  forall S Θ',
-  (forall β τ, binds β (abind_flex_mono_def τ) Θ -> β `notin` S ->
-     binds β (abind_flex_mono_def τ) Θ' /\ S ∩ ftvar_in_ptyp τ [=] empty) ->
-  S ∩ ftvar_in_bskl Qs [=] empty ->
-  S ∩ ftvar_in_bskl Qt [=] empty ->
-  {{ Θ' ⨟ Δ ⊢ᵣ Qs ⊳ Qt }}ad.
-Proof.
-  intros Θ Δ Qs Qt H; induction H; intros S Θ' Hm Hs Ht; simpl in Hs, Ht.
-  - apply ad_refine_syn__unit.
-  - apply ad_refine_syn__var.
-  - apply ad_refine_syn_arrow_intro;
-      [ apply (IHad_refine_syn1 S) | apply (IHad_refine_syn2 S) ];
-      try assumption; clear - Hs Ht; fsetdec.
-  - apply ad_refine_syn_all_intro with (L := L `union` S). intros β Hβ.
-    apply (H1 β ltac:(clear - Hβ; fsetdec) S); [ | | ].
-    + intros γ τ Hb Hγ. apply binds_app_1 in Hb as [Hb | Hb];
-        [ apply binds_one_iff in Hb as [_ Hb]; discriminate | ].
-      destruct (Hm γ τ Hb Hγ) as [Hb' Hd].
-      split; [ apply binds_app_3; exact Hb' | exact Hd ].
-    + pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
-        as Hup; simpl in Hup. clear - Hs Hup Hβ; fsetdec.
-    + pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q' (bskl_var_f β))
-        as Hup; simpl in Hup. clear - Ht Hup Hβ; fsetdec.
-  - apply ad_refine_syn__hole; assumption.
-  - apply ad_refine_syn_tophole_remove_intro; eauto.
-  - apply ad_refine_syn_tophole_fill_intro with (L := L `union` S). intros β Hβ.
-    apply (H1 β ltac:(clear - Hβ; fsetdec) S); [ | simpl; exact Hs | ].
-    + intros γ τ Hb Hγ. apply binds_app_1 in Hb as [Hb | Hb];
-        [ apply binds_one_iff in Hb as [_ Hb]; discriminate | ].
-      destruct (Hm γ τ Hb Hγ) as [Hb' Hd].
-      split; [ apply binds_app_3; exact Hb' | exact Hd ].
-    + pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q' (bskl_var_f β))
-        as Hup; simpl in Hup. clear - Ht Hup Hβ; fsetdec.
-  - apply ad_refine_syn_tophole_keep_intro; eauto.
-  - assert (Hα : α `notin` S)
-      by (intros Hin; assert (Hx : α `in` S ∩ singleton α)
-            by (clear - Hin; fsetdec);
-          rewrite Hs in Hx; clear - Hx; fsetdec).
-    destruct (Hm α τ H Hα) as [Hb' Hd].
-    apply ad_refine_syn__flex_l with (τ := τ); [ exact Hb' | ].
-    apply (IHad_refine_syn S); [ exact Hm | | exact Ht ].
-    rewrite ftvar_ptyp_to_bskl_syn; exact Hd.
-  - assert (Hα : α `notin` S)
-      by (intros Hin; assert (Hx : α `in` S ∩ singleton α)
-            by (clear - Hin; fsetdec);
-          rewrite Ht in Hx; clear - Hx; fsetdec).
-    destruct (Hm α τ H Hα) as [Hb' Hd].
-    apply ad_refine_syn__flex_r with (τ := τ); [ exact Hb' | ].
-    apply (IHad_refine_syn S); [ exact Hm | exact Hs | ].
-    rewrite ftvar_ptyp_to_bskl_syn; exact Hd.
 Qed.
 
 (** THE DRIVER for refinement — the [ad_pat_sub_strip_suffix] mirror

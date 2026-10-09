@@ -62,34 +62,32 @@ Set Implicit Arguments.
 (*  topical home but it IMPORTS this file, so that direction is a cycle.   *)
 (* ===================================================================== *)
 
-(** A free variable of a well-formed skeleton is either ∀-bound (in [Δ]) or a
-    type variable of the context — flexible or rigid ([a_binds_tvar] covers
-    both).  This is the scoping content of [a_wf_pskl], and the shape every
-    freshness side condition is discharged through. *)
-Lemma a_wf_pskl_ftv_tvarish : forall Θ Δ P,
+(** A free variable of a well-formed skeleton is a type variable of the
+    context — flexible or rigid ([a_binds_tvar] covers both): every variable
+    occurrence is checked against the context, never against [Δ].  This is
+    the scoping content of [a_wf_pskl], and the shape every freshness side
+    condition is discharged through. *)
+Lemma a_wf_pskl_ftv_binds : forall Θ Δ P,
   {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
-  forall α, α `in` ftvar_in_pskl P -> α `in` Δ \/ a_binds_tvar α Θ.
+  forall α, α `in` ftvar_in_pskl P -> a_binds_tvar α Θ.
 Proof.
   intros Θ Δ P H; induction H; intros β Hβ; simpl in Hβ.
   - fsetdec.
   - assert (β = α) by fsetdec. subst. auto.
   - destruct (union_1 Hβ); auto.
-  - pick fresh α2 for (L `union` ftvar_in_pskl P `union` Δ `union` {{β}}
-                        `union` dom Θ).
+  - pick fresh α2 for (L `union` ftvar_in_pskl P `union` {{β}}).
     assert (HZL : α2 `notin` L) by fsetdec.
     assert (HY' : β `in` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α2))).
     { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P (pskl_var_f α2)).
       fsetdec. }
     assert (Hne : β <> α2) by fsetdec.
-    destruct (H0 α2 HZL β HY') as [HΔ | Htv].
-    + left. clear - HΔ Hne. fsetdec.
-    + right. destruct Htv as [Hb | [Hb | [τ Hb]]];
-        apply binds_cons_1 in Hb; destruct Hb as [[? ?] | Hb];
-        try (subst; contradiction);
-        [ left | right; left | right; right; exists τ ]; exact Hb.
+    destruct (H0 α2 HZL β HY') as [Hb | [Hb | [τ Hb]]];
+      apply binds_cons_1 in Hb; destruct Hb as [[? ?] | Hb];
+      try (subst; contradiction);
+      [ left | right; left | right; right; exists τ ]; exact Hb.
   - fsetdec.
-  - destruct (IHa_wf_pskl β Hβ) as [HΔ | Htv]; [ fsetdec | ].
-    right. apply a_binds_tvar_aenv_minus in Htv. apply Htv.
+  - pose proof (IHa_wf_pskl β Hβ) as Htv.
+    apply a_binds_tvar_aenv_minus in Htv. apply Htv.
 Qed.
 
 (** The disciplined judgement implies the scoping-only one — the EASY
@@ -2571,17 +2569,15 @@ Qed.
 (* ##################################################################### *)
 (*  §6 — TERM BINDERS.                                                    *)
 (*                                                                        *)
-(*  The term-variable half of the equivariance primitive; [a_split_swap]  *)
-(*  is a per-judgment equivariance lemma whose eleven siblings are above.  *)
+(*  The term-variable half of the equivariance primitive: a swap of two   *)
+(*  atoms fresh for a binding or a context leaves it unchanged.           *)
 (*                                                                        *)
 (*  ⚠️ These were elaborated under [Set Implicit Arguments] in their old    *)
-(*  home, and this file deliberately has none (see the header).  The      *)
-(*  EXTERNAL call sites are all [@]-applications, which are insensitive   *)
-(*  to it — but the block's INTERNAL ones are not (a proof here writes    *)
-(*  [a_split_swap x y Hrun], leaving five type-level arguments to         *)
-(*  implicit inference).  So the flag is turned on for this section ONLY  *)
-(*  and off again at the end: §1–§5 keep the explicit-argument policy the *)
-(*  header argues for, and §6 keeps the elaboration it was written under. *)
+(*  home, and this file deliberately has none (see the header); their     *)
+(*  callers rely on the arguments it makes implicit.  So the flag is      *)
+(*  turned on for this section ONLY and off again at the end: §1–§5 keep  *)
+(*  the explicit-argument policy the header argues for, and §6 keeps the  *)
+(*  elaboration it was written under.                                     *)
 (* ##################################################################### *)
 
 Set Implicit Arguments.
@@ -2593,8 +2589,7 @@ Set Implicit Arguments.
 (*  renaming primitive.  prop_swap.v already proves it for the whole      *)
 (*  algorithmic tower; what was missing is the bridge that turns a SWAP   *)
 (*  of two atoms into the RENAMING of a term binder — which it is        *)
-(*  exactly when both atoms are fresh for everything else in sight        *)
-(*  ([swap_aenv_tm_head] below).                                          *)
+(*  exactly when both atoms are fresh for everything else in sight.       *)
 (*                                                                       *)
 (*  ⚙ ITS CONSUMER RETIRED 2026-08-13 — see the ⛔ note at the end of      *)
 (*  this section.  [a_pat] went exists-fresh, and with it went            *)
@@ -2655,64 +2650,28 @@ Qed.
 (*  [swap_aenv_fresh_eq] has three live consumers in                       *)
 (*  typing/prop_completeness_typing.v (theorem 4 keeps its own K6, over    *)
 (*  the DECLARATIVE cofinite rows, which is a different lemma).            *)
-(*  [swap_abind_fresh_eq] is its helper.  [swap_aenv_tm_head],             *)
-(*  [swap_aenv_one], [a_split_swap], [a_suffix_swap] and                   *)
-(*  [a_consis_chk_swap] lost their consumer with the lemma above; they are *)
-(*  kept as the equivariance of the judgements they name — the same        *)
-(*  standing directive (equivariance is THE renaming primitive) that the   *)
-(*  rest of this file is built on, and the form any later renaming         *)
-(*  argument over [a_split] / [a_consis_chk] would start from.             *)
+(*  [swap_abind_fresh_eq] is its helper.                                   *)
 (* ===================================================================== *)
-
-(** Swapping distributes over a one-entry block. *)
-Lemma swap_aenv_one : forall a b x (bd : abind),
-  swap_aenv a b (x ~ bd) = (swap_atom a b x) ~ (swap_abind a b bd).
-Proof. reflexivity. Qed.
 
 
 Unset Implicit Arguments.
 
 (* ##################################################################### *)
-(*  §16  EQUIVARIANCE OF THE TWO TOP JUDGEMENTS — [a_pat] and [a_typing]  *)
+(*  §16  THE TRANSPOSITION ON TERMS                                       *)
 (*                                                                       *)
-(*  ⭐ WHY THESE WERE MISSING, AND WHY THEY ARE WANTED NOW.               *)
-(*  §5–§12 cover the whole algorithmic tower BELOW skeleton inference:    *)
-(*  [a_guess_mono]/[a_guess], the look / solve / extract cluster, the     *)
-(*  assign / unify / consis mutual, [a_sub]/[a_sub_flex], and (§6)        *)
-(*  [a_split].  [a_pat] and [a_typing] were never added because nothing   *)
-(*  needed them — [a_pat_complete] regenerated its cofinite family with   *)
-(*  [a_pat_rename_tm] instead, and that lemma went with the exists-fresh  *)
-(*  conversion (the ⛔ note above).  ⚙ The tree even names the gap:       *)
-(*  [algo/pat/prop_completeness_pat.v:885] already says [a_pat_swap]     *)
-(*  mirrors them row by row -- written while [a_pat] was still cofinite. *)
+(*  [swap_exp] and the facts the extractable encoding's equivariance      *)
+(*  lemmas for skeleton inference and typing need (ext_algo/prop_pat.v    *)
+(*  §4, ext_algo/prop_typing.v §3).                                       *)
 (*                                                                       *)
-(*  The consumer is the extractable encoding's COMPLETENESS campaign      *)
-(*  (docs/HANDOFF-extractable-algo-encoding.md §8c.3): the runner's       *)
-(*  domain predicate commits to [supply_fresh S0], so an [a_*] derivation *)
-(*  must be transposed onto that name at each binder before the           *)
-(*  induction's hypothesis applies.                                      *)
-(*                                                                       *)
-(*  ⚠️ THESE ROWS BIND A TERM VARIABLE, so equivariance has to act on the  *)
-(*  SUBJECT too — hence [swap_exp] below.  A statement with the term      *)
-(*  held fixed does NOT work: the binder rows recurse on                  *)
-(*  [open_exp_wrt_exp e (exp_var_f x)], and the hypothesis would then     *)
-(*  need [a <> x] and [b <> x] for a binder the row chooses.  Swapping    *)
-(*  the term makes the row's own binder move with everything else, which  *)
-(*  is what a transposition is for.                                      *)
-(*                                                                       *)
-(*  ⚠️ NOT a resurrection of [a_pat_rename_tm], and the difference is      *)
-(*  exactly the ⛔ note's diagnosis.  That lemma renamed a type variable   *)
-(*  ACROSS a run while the row's own [x] stayed put and unconstrained;    *)
-(*  it needed [b <> x] and nothing bounded [x].  A transposition moves    *)
-(*  EVERY atom at once, so [x] is not left behind and no side condition   *)
-(*  on it is owed.                                                       *)
+(*  ⚠️ THOSE ROWS BIND A TERM VARIABLE, so equivariance has to act on the  *)
+(*  SUBJECT too.  A statement with the term held fixed does NOT work: the *)
+(*  binder rows recurse on [open_exp_wrt_exp e (exp_var_f x)], and the    *)
+(*  hypothesis would then need [a <> x] and [b <> x] for a binder the row *)
+(*  chooses.  Swapping the term makes the row's own binder move with      *)
+(*  everything else, which is what a transposition is for.               *)
 (* ##################################################################### *)
 
 Set Implicit Arguments.
-
-(* ===================================================================== *)
-(*  §16.1  The transposition on terms                                     *)
-(* ===================================================================== *)
 
 Fixpoint swap_exp (a b : atom) (e : exp) : exp :=
   match e with
@@ -2755,38 +2714,6 @@ Proof.
           | apply swap_atom_other; clear - Ha Hb; fsetdec ].
 Qed.
 
-Lemma swap_exp_fvar_notin : forall a b e x,
-  x `notin` fvar_in_exp e ->
-  swap_atom a b x `notin` fvar_in_exp (swap_exp a b e).
-Proof.
-  intros a b e; induction e; simpl; intros y Hn;
-    try solve [ fsetdec
-              | apply IHe; clear - Hn; fsetdec
-              | apply notin_union_3; [ apply IHe1 | apply IHe2 ];
-                clear - Hn; fsetdec ].
-  (* [exp_var_f] — the only row with content, and it is INJECTIVITY of the
-     transposition, not a set fact, which is why [fsetdec] cannot have it *)
-  intros Hc. apply AtomSetFacts.singleton_iff in Hc.
-  apply swap_atom_inj in Hc. subst. clear - Hn; fsetdec.
-Qed.
-
-Lemma swap_exp_ftvar_notin : forall a b e x,
-  x `notin` ftvar_in_exp e ->
-  swap_atom a b x `notin` ftvar_in_exp (swap_exp a b e).
-Proof.
-  intros a b e; induction e; simpl; intros y Hn;
-    try solve [ fsetdec
-              | apply IHe; clear - Hn; fsetdec
-              | apply notin_union_3; [ apply IHe1 | apply IHe2 ];
-                clear - Hn; fsetdec
-              | apply notin_union_3;
-                [ apply swap_ptyp_ftv_notin | apply IHe ];
-                clear - Hn; fsetdec
-              | apply notin_union_3;
-                [ apply IHe | apply swap_ptyp_ftv_notin ];
-                clear - Hn; fsetdec ].
-Qed.
-
 (** The check rows' γ-FILTER on the discarded suffix transports.  ⚙ It is
     not a set fact: the filter quantifies over [dom Ξ], and an atom of
     [dom (swap Ξ)] is the swap-image of one of [dom Ξ] only by INVOLUTION. *)
@@ -2800,21 +2727,5 @@ Proof.
                 (Hf _ (swap_aenv_dom_in_rev a b Ξ γ Hγ))) as h.
   rewrite swap_atom_invol in h. exact h.
 Qed.
-
-(* ===================================================================== *)
-(*  §16.2  [a_pat] and [a_typing]                                         *)
-(* ===================================================================== *)
-
-(** ⚠️ The binder rows' side conditions are a union whose SHAPE varies with
-    the row — [ftvar_in_exp (exp_abs_anno Aan e)] splits under [simpl] into
-    two components where [ftvar_in_exp (exp_abs e)] gives one — so a
-    positional [ [ t1 | … | tn ] ] dispatch is wrong at exactly one row and
-    fails with "incorrect number of goals".  Select by GOAL SHAPE instead. *)
-#[local] Ltac swap_notin_split H :=
-  repeat apply notin_union_3;
-  solve [ apply swap_aenv_dom_notin; clear - H; simpl in H |- *; fsetdec
-        | apply swap_ptyp_ftv_notin;  clear - H; simpl in H |- *; fsetdec
-        | apply swap_exp_ftvar_notin; clear - H; simpl in H |- *; fsetdec
-        | apply swap_exp_fvar_notin;  clear - H; simpl in H |- *; fsetdec ].
 
 Unset Implicit Arguments.

@@ -55,6 +55,7 @@ Require Import src.fresco.algo.def_meta.
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo_decl.def_subtyping.
+Require Import src.fresco.algo.prop_refine.
 Require Import src.fresco.algo.consis.prop_soundness_consis.
 
 Set Implicit Arguments.
@@ -82,9 +83,8 @@ Proof. exact (a_ty_mode_compat__tc ptyp_unit). Qed.
 
 (** (b) the P0-FILL condition. *)
 Lemma cexL_p0_fill :
-  ad_refine_syn_f empty nil empty
-    (pskl_to_bskl_inh (msubst_pskl nil cexL_P0)) cexL_Q.
-Proof. cbn. apply ad_refine_syn_f__unit. Qed.
+  {{ nil ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl nil cexL_P0)) ⊳ cexL_Q }}ad.
+Proof. cbn. apply ad_refine_syn__unit. Qed.
 
 (** (c) the increase is the identity on the empty context. *)
 Lemma cexL_inc : nil ∷ nil ⊑ nil.
@@ -94,8 +94,7 @@ Proof. apply a_inc__empty. apply a_suffix__nil. Qed.
     rows with a [∀] on the left are [__all] (wants a [∀] on the right) and
     [__flex_l] (wants a flexible variable on the left). *)
 Lemma cexL_third_fails :
-  ad_refine_pskl_f empty nil empty
-    (msubst_pskl nil ⌊ cexL_R ⌋ˢ) (bskl_to_pskl cexL_Q) ->
+  {{ nil ⨟ empty ⊢ᵣₚ (msubst_pskl nil ⌊ cexL_R ⌋ˢ) ⊳ (bskl_to_pskl cexL_Q) }}ad ->
   False.
 Proof. cbn. intros H. inversion H. Qed.
 
@@ -119,11 +118,10 @@ Proof. exact (a_ty_mode_compat__tc (ptyp_all ptyp_unit)). Qed.
 (** (b) the P0-FILL condition — the inherited painting of [∀a.unit] IS the
     counterpart, so the fill is the congruent descent. *)
 Lemma cexR_p0_fill :
-  ad_refine_syn_f empty nil empty
-    (pskl_to_bskl_inh (msubst_pskl nil cexR_P0)) cexR_Q.
+  {{ nil ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl nil cexR_P0)) ⊳ cexR_Q }}ad.
 Proof.
-  cbn. apply ad_refine_syn_f__all with (L := empty).
-  intros α Hα. cbn. apply ad_refine_syn_f__unit.
+  cbn. apply ad_refine_syn_all_intro with (L := empty).
+  intros α Hα. cbn. apply ad_refine_syn__unit.
 Qed.
 
 (** (c) the increase is the identity on the empty context. *)
@@ -133,8 +131,7 @@ Proof. apply a_inc__empty. apply a_suffix__nil. Qed.
 (** (d) …and the THIRD condition fails: [unit ⊳ ∀a.unit] has no rule — a
     refinement never invents a quantifier the subject does not have. *)
 Lemma cexR_third_fails :
-  ad_refine_pskl_f empty nil empty
-    (msubst_pskl nil ⌊ cexR_R ⌋ˢ) (bskl_to_pskl cexR_Q) ->
+  {{ nil ⨟ empty ⊢ᵣₚ (msubst_pskl nil ⌊ cexR_R ⌋ˢ) ⊳ (bskl_to_pskl cexR_Q) }}ad ->
   False.
 Proof. cbn. intros H. inversion H. Qed.
 

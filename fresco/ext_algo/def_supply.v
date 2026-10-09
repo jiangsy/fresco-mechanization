@@ -91,19 +91,6 @@ Set Implicit Arguments.
     a [Definition] alias does not unify where a notation does.) *)
 Notation supply := atoms.
 
-(** "The supply hands out [α], and grows by it."  Written [α ∉ S] / [add α S]
-    at the rules rather than through this abbreviation, so that the rules read
-    as set arithmetic and [fsetdec] sees them; the abbreviation exists to name
-    the concept for the reader and to state the two facts below once. *)
-Definition supply_gen (S : supply) (α : atom) (S' : supply) : Prop :=
-  α `notin` S /\ S' [=] add α S.
-
-Lemma supply_gen_fresh : forall S α S', supply_gen S α S' -> α `notin` S.
-Proof. intros * [H _]; exact H. Qed.
-
-Lemma supply_gen_grows : forall S α S', supply_gen S α S' -> S [<=] S'.
-Proof. intros * [_ H]; rewrite H; fsetdec. Qed.
-
 (** The supply only ever grows, and this is the one-step form every rule of
     the encoding uses.  (The per-judgement statement — a whole RUN grows the
     supply — is proved of each judgement in turn; see
@@ -115,9 +102,7 @@ Proof. intros; fsetdec. Qed.
    whose LATER argument mentions the set ([In x S -> False],
    [forall a, In a S -> …]), so [Set Implicit Arguments] judges [S] inferable
    and makes it IMPLICIT — whereupon [supply_add_grows S α] is a type error at
-   every use site, with a message about [In] that names neither.  The
-   [supply_gen_*] lemmas above need no such pin: their next argument is the
-   [supply_gen] hypothesis itself, so implicit is what a caller wants. *)
+   every use site, with a message about [In] that names neither. *)
 Arguments supply_add_grows : clear implicits.
 
 (* ===================================================================== *)
@@ -136,11 +121,3 @@ Proof.
 Qed.
 
 Arguments supply_fresh_notin : clear implicits.   (* see the pin note above *)
-
-(** [supply_fresh] is an admissible choice: the relational rules can always be
-    fired at it.  This is the one lemma that connects the two halves, and it
-    is what makes the runner of TODO (2) an INSTANCE of the relation rather
-    than a separate object needing its own soundness argument. *)
-Lemma supply_gen_fresh_holds : forall S,
-  supply_gen S (supply_fresh S) (add (supply_fresh S) S).
-Proof. intros S. split; [ apply supply_fresh_notin | reflexivity ]. Qed.

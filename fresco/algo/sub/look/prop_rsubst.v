@@ -648,8 +648,6 @@ Qed.
 (*  Shape/tags helpers for the special cases (P0 = □; synthesized Q).      *)
 (* ===================================================================== *)
 
-(** Syn-paintings are synthesized skeletons. *)
-
 (** Refining the hole yields a synthesized skeleton (paper: "by inversion
     on the refinement premise, Q is a synthesised skeleton").  The hole
     row no longer carries a wf check of its fill, so local closure of
@@ -762,10 +760,10 @@ Proof. intros; apply pskl_shielded_ftv_open_rec_upper. Qed.
    false under the faithful SS-ForallR (the leaked binder enters the
    output's shielded set).  A re-proof would mirror [a_solve_sub_eq_ftv]'s
    disjunctive shape: shielded-or-fresh-for-dom-Θ.
-   The EQ half is [a_solve_eq_shielded] below; under the paper-faithful
-   wf rules (2026-10-08) [a_solve_eq_wf] no longer consumes it (the ∀ rule
-   now pushes its binder, so no strip is needed).  The SUB half stays
-   deleted and stays false. *)
+   The EQ half, [a_solve_eq_shielded], lost its last consumer under the
+   paper-faithful wf rules (2026-10-08: [a_solve_eq_wf]'s ∀ rule pushes its
+   binder, so no strip is needed) and was deleted 2026-10-09.  The SUB half
+   stays deleted and stays false. *)
 
 (* ===================================================================== *)
 (*  msubst-avoidance: a variable fresh from κ's images survives msubst.    *)
@@ -1100,137 +1098,51 @@ Proof.
     + apply in_app_iff; right; exact Hb.
 Qed.
 
-(** Partial precision does not need a rigid tvar entry the subject-side Δ
-    already covers: the binder cases' IH concludes at [(β~tvar)++Θ] and
-    must come back to [Θ] (the conclusion's context), with [β ∈ Δ]
-    re-deriving the var rule's tvar side. *)
+(** Partial precision never reads a rigid tvar entry of its context (only
+    the flexible definitions, through flex_l / flex_r), so such an entry
+    can be dropped: the binder cases' IH concludes at [(β~tvar)++Θ] and
+    must come back to [Θ] (the conclusion's context). *)
 Lemma ad_partial_precise_strengthen_tvar_mid : forall Θfull Δ Ψ P ψ,
   {{ Θfull ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
   forall α1 Θ1 Θ0,
   Θfull = Θ1 ++ (α1 ~ abind_tvar) ++ Θ0 ->
-  α1 `in` Δ ->
   {{ (Θ1 ++ Θ0) ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad.
 Proof.
-  intros Θfull Δ Ψ P ψ H; induction H; intros α1 Θ1 Θ0 Heq Hα2Δ; subst.
+  intros Θfull Δ Ψ P ψ H; induction H; intros α1 Θ1 Θ0 Heq; subst.
   - apply ad_ppre__unit; assumption.
-  - apply ad_ppre__var; [ assumption | ].
-    destruct H0 as [HΔ | [Hb | [Hb | [τ Hb]]]].
-    + left; exact HΔ.
-    + destruct (α == α1) as [HeqXZ | HneXZ];
-        [ subst; left; exact Hα2Δ
-        | right; left; exact (binds_remove_mid _ _ _ _ _ _ _ Hb HneXZ) ].
-    + right; right; left.
-      eapply binds_mid_drop; [ exact Hb | intros _ Habs; discriminate Habs ].
-    + right; right; right; exists τ.
-      eapply binds_mid_drop; [ exact Hb | intros _ Habs; discriminate Habs ].
+  - apply ad_ppre__var; assumption.
   - eapply ad_ppre__arrow;
-      [ apply (IHad_partial_precise1 α1 Θ1 Θ0 eq_refl Hα2Δ)
-      | apply (IHad_partial_precise2 α1 Θ1 Θ0 eq_refl Hα2Δ)
+      [ apply (IHad_partial_precise1 α1 Θ1 Θ0 eq_refl)
+      | apply (IHad_partial_precise2 α1 Θ1 Θ0 eq_refl)
       | assumption ].
   - eapply ad_ppre__forall with (L := L);
       [ intros α Hα;
-        apply (H0 α Hα α1 Θ1 Θ0 eq_refl); clear - Hα2Δ; fsetdec
+        apply (H0 α Hα α1 ((α ~ abind_tvar) ++ Θ1) Θ0 eq_refl)
       | assumption ].
   - apply ad_ppre__hole; assumption.
   - apply ad_ppre__tophole_remove.
-    apply (IHad_partial_precise α1 Θ1 Θ0 eq_refl Hα2Δ).
+    apply (IHad_partial_precise α1 Θ1 Θ0 eq_refl).
   - eapply ad_ppre__tophole_fill with (L := L).
     intros α Hα.
-    apply (H0 α Hα α1 ((α ~ abind_tvar) ++ Θ1) Θ0 eq_refl Hα2Δ).
+    apply (H0 α Hα α1 ((α ~ abind_tvar) ++ Θ1) Θ0 eq_refl).
   - apply ad_ppre__tophole_keep.
-    apply (IHad_partial_precise α1 Θ1 Θ0 eq_refl Hα2Δ).
+    apply (IHad_partial_precise α1 Θ1 Θ0 eq_refl).
   - eapply ad_ppre__flex_l;
       [ eapply binds_mid_drop;
         [ exact H | intros _ Habs; discriminate Habs ]
-      | apply (IHad_partial_precise α1 Θ1 Θ0 eq_refl Hα2Δ) ].
+      | apply (IHad_partial_precise α1 Θ1 Θ0 eq_refl) ].
   - eapply ad_ppre__flex_r;
       [ eapply binds_mid_drop;
         [ exact H | intros _ Habs; discriminate Habs ]
-      | apply (IHad_partial_precise α1 Θ1 Θ0 eq_refl Hα2Δ) ].
+      | apply (IHad_partial_precise α1 Θ1 Θ0 eq_refl) ].
 Qed.
 
 Lemma ad_partial_precise_strengthen_tvar : forall α1 Θ0 Δ Ψ P ψ,
   {{ ((α1 ~ abind_tvar) ++ Θ0) ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
-  α1 `in` Δ ->
   {{ Θ0 ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad.
 Proof.
-  intros α1 Θ0 Δ Ψ P ψ H Hα2.
-  exact (@ad_partial_precise_strengthen_tvar_mid _ _ _ _ _ H α1 nil Θ0
-           eq_refl Hα2).
-Qed.
-
-(* ===================================================================== *)
-(*  ⭐ STRIPPING A RIGID FROM THE MIDDLE OF A wf CONTEXT (2026-08-04).      *)
-(*                                                                        *)
-(*  The repair forces this.  The solve's ∀ rows now run their premise at   *)
-(*  [(β ~ tvar) ++ Θ] (so a guess below the binder cannot generate β and   *)
-(*  be captured by the [close]), so every wf-preservation proof over the   *)
-(*  solve gets its IH conclusion at a context CARRYING β and has to        *)
-(*  strengthen back before re-closing.                                    *)
-(*                                                                        *)
-(*  ⚠️ THE NAIVE STATEMENT IS FALSE.  [a_wf_pskl__tophole] runs the body at *)
-(*  the EMPTY Δ, so inside a ∀◇ a variable can be justified ONLY by the    *)
-(*  context — and dropping β breaks exactly those.  Witness: [∀◇(β→β)] is  *)
-(*  wf at [(β ~ tvar)] for any Δ ∌ β, and at [nil] for none.               *)
-(*                                                                        *)
-(*  So the side condition is [β ∉ pskl_shielded_ftv P] — β does not occur  *)
-(*  UNDER a ∀◇ — which is the same "∀◇ bodies are CLOSED" discipline the   *)
-(*  paper states in prose and [pskl_top_guarded] elsewhere renders.  Two   *)
-(*  inductions: the ∀◇ case cannot use the main IH (its Δ is ∅, so         *)
-(*  [β ∈ Δ] is unavailable) and instead calls the β-absent lemma below.    *)
-(* ===================================================================== *)
-
-Lemma pskl_shielded_ftv_close_rec : forall P β k,
-  pskl_shielded_ftv (close_pskl_wrt_pskl_rec k β P)
-    [<=] remove β (pskl_shielded_ftv P).
-Proof.
-  induction P; intros β k; simpl;
-    (* [var_b] shifts and [var_f] branches; neither shields anything *)
-    repeat match goal with
-           | |- context [ if ?e then _ else _ ] => destruct e
-           end;
-    simpl;
-    try solve [ clear; fsetdec
-              | specialize (IHP β k); clear - IHP; fsetdec
-              | specialize (IHP β (S k)); clear - IHP; fsetdec
-              | specialize (IHP1 β k); specialize (IHP2 β k);
-                clear - IHP1 IHP2; fsetdec ].
-  (* ∀◇ : the body's WHOLE ftv is shielded, and [close] removes β from it *)
-  pose proof (ftvar_in_pskl_close_pskl_wrt_pskl_rec P β k) as Hcl.
-  clear - Hcl. fsetdec.
-Qed.
-
-Corollary pskl_shielded_ftv_close : forall P β,
-  pskl_shielded_ftv (close_pskl_wrt_pskl β P)
-    [<=] remove β (pskl_shielded_ftv P).
-Proof. intros. apply pskl_shielded_ftv_close_rec. Qed.
-
-(** A ghost-free skeleton shields nothing — it has no ∀◇ to shield with. *)
-Lemma pskl_ghost_free_shielded : forall P,
-  pskl_ghost_free P -> pskl_shielded_ftv P [=] empty.
-Proof.
-  induction P; intros Hgf; simpl in *;
-    try solve [ clear; fsetdec | contradiction ].
-  - destruct Hgf as [Hgf1 Hgf2].
-    specialize (IHP1 Hgf1); specialize (IHP2 Hgf2).
-    clear - IHP1 IHP2; fsetdec.
-  - exact (IHP Hgf).
-Qed.
-
-(** β ABSENT: then every rule transports, [∀◇] included. *)
-Lemma a_wf_pskl_strip_tvar_absent : forall Θs Δ P,
-  {{ Θs ⨟ Δ ⊢ₚₛ P }}a ->
-  forall Ξ β Θ, Θs = Ξ ++ (β ~ abind_tvar) ++ Θ ->
-  β `notin` ftvar_in_pskl P ->
-  {{ (Ξ ++ Θ) ⨟ Δ ⊢ₚₛ P }}a.
-Proof.
-  intros Θs Δ P H Ξ0 β Θ0 Heq Hβ; subst.
-  eapply a_wf_pskl_tvar_mono_ftv; [ exact H | ].
-  intros α Hα Htv.
-  assert (Hne : α <> β) by (intro; subst; clear - Hα Hβ; fsetdec).
-  destruct Htv as [Hb | [Hb | [τ Hb]]];
-    [ left | right; left | right; right; exists τ ];
-    (eapply binds_mid_drop; [ exact Hb | intros Heq0; contradiction ]).
+  intros α1 Θ0 Δ Ψ P ψ H.
+  exact (@ad_partial_precise_strengthen_tvar_mid _ _ _ _ _ H α1 nil Θ0 eq_refl).
 Qed.
 
 (* RESTART NOTE (2026-10-08, paper-faithful wf): [a_wf_pskl_strip_tvar_mid]
@@ -1412,63 +1324,6 @@ Proof.
     + pose proof (ftvar_ptyp_to_pskl (close_ptyp_wrt_ptyp β A)) as Hco.
       pose proof (ftvar_in_ptyp_close_ptyp_wrt_ptyp A β) as Hcl.
       clear - Hco Hcl; fsetdec.
-Qed.
-
-(** ⭐ THE SHIELDED-ftv BOUND.  What can sit UNDER a ∀◇ in the eq-solve's
-    output is bounded by what sat under a ∀◇ in its inputs, plus the block
-    it generated.  (The SUB half has no such bound — SS-GhostLF builds
-    [∀◇(P1' → P2')], shielding its whole output — which is why this is
-    stated for the eq half alone, exactly where it is needed.)
-
-    (Its former consumer, the strip in [a_solve_eq_wf]'s ∀ rows, is gone
-    under the paper-faithful wf rules; the bound is kept as a fact about
-    the solve.) *)
-Lemma a_solve_eq_shielded : forall Θ P P0 Ξ P',
-  {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a ->
-  pskl_shielded_ftv P'
-    [<=] pskl_shielded_ftv P `union` pskl_shielded_ftv P0 `union` dom Ξ.
-Proof.
-  intros Θ P P0 Ξ P' H; induction H; cbn [pskl_shielded_ftv];
-    try solve [ clear; fsetdec
-              | clear - IHa_solve_eq; fsetdec
-              | (* SE-FlexR : [guess^TY]'s result is ghost-free, so it
-                   shields nothing *)
-                match goal with
-                | Hg : a_guess_mono _ _ _ ?A0 |- _ =>
-                    pose proof (pskl_ghost_free_shielded _
-                                  (ptyp_to_pskl_ghost_free A0)) as He;
-                    clear - He; fsetdec
-                end
-              | (* SE-Arrow : the two blocks split *)
-                rewrite dom_app;
-                clear - IHa_solve_eq1 IHa_solve_eq2; fsetdec ].
-  (* What is left are the rows whose subject or target is a ∀◇ — there the
-     bound flips from "shielded" to the FULL ftv, because a ∀◇ shields its
-     whole body — plus the three ∀-CLOSE rows. *)
-  all: pose proof (pskl_shielded_ftv_sub_ftv P) as HsP;
-       pose proof (pskl_shielded_ftv_sub_ftv Q) as HsQ.
-  all: try solve
-         [ (* SE-UnivGhost : [⫯P ∼ ⫯Q ⤳ ⫯P'] shields ALL of P', so this row
-              needs the full-ftv bound, not the shielded one *)
-           match goal with
-           | Hd : {{ _ ⊢ₑ _ ∼ _ ⤳ _ ⨾ _ }}a |- _ =>
-               pose proof (a_solve_eq_ftv Hd) as Hf; clear - Hf; fsetdec
-           end
-         | (* SE-GhostGuarded / SE-GuardedGhost : the ∀◇ is PEELED, so the
-              IH's shielded bound only has to be relaxed to ftv on one side *)
-           cbn [pskl_shielded_ftv] in IHa_solve_eq;
-           clear - IHa_solve_eq HsP HsQ; fsetdec ].
-  (* the three ∀-CLOSE rows, uniformly: the [close] drops β, and each
-     opening costs at most β — which the [close] then removes again *)
-  all: match goal with
-       | |- pskl_shielded_ftv (close_pskl_wrt_pskl ?b ?p') [<=] _ =>
-           pose proof (pskl_shielded_ftv_close p' b) as Hcl;
-           pose proof (pskl_shielded_ftv_open_upper P (pskl_var_f b)) as HuP;
-           pose proof (pskl_shielded_ftv_open_upper Q (pskl_var_f b)) as HuQ;
-           cbn [ftvar_in_pskl] in HuP, HuQ;
-           cbn [pskl_shielded_ftv] in IHa_solve_eq;
-           clear - IHa_solve_eq Hcl HuP HuQ HsP HsQ; fsetdec
-       end.
 Qed.
 
 (** wf preservation for [a_solve_eq] (a non-mutual induction — the eq half
@@ -1989,6 +1844,9 @@ Definition delta_def_fresh (Δ : atoms) (Θ : aenv) : Prop :=
     binds α (abind_flex_mono_def τ) Θ ->
     β `notin` ftvar_in_ptyp τ.
 
+Lemma delta_def_fresh_empty : forall Θ, delta_def_fresh empty Θ.
+Proof. intros Θ β α τ Hin; clear - Hin; fsetdec. Qed.
+
 (* ---- definition chains (target-side flex unfolding) ---- *)
 
 Inductive a_def_chain (Θ : aenv) : ptyp -> ptyp -> Prop :=
@@ -2019,27 +1877,27 @@ Proof.
   - inversion Hwf; subst. apply a_wf_pskl__arrow; auto.
 Qed.
 
-Lemma ad_ppre_mono_paint_refl : forall τ Θ Δ,
-  a_wf_ptyp Θ τ -> mono_ptyp τ ->
+(** Precision is REFLEXIVE at a monotype. *)
+Lemma ad_ppre_mono_refl : forall Θ Δ τ,
+  mono_ptyp τ ->
   {{ Θ ⨟ Δ ⊢ˢ (ptyp_to_pskl τ) ⊑ᵖ[ empty ] (ptyp_to_uskl_syn τ) }}ad.
 Proof.
-  intros τ Θ Δ Hwf Hm; revert Hwf; induction Hm; intros Hwf; simpl.
+  intros Θ Δ τ Hm; induction Hm;
+    cbn [ptyp_to_pskl ptyp_to_uskl_syn].
   - apply ad_ppre__unit. clear; fsetdec.
-  - inversion Hwf; subst.
-    apply ad_ppre__var; [ clear; fsetdec | auto ].
-  - inversion Hwf; subst.
-    apply ad_ppre__arrow with (Ψ1 := empty) (Ψ2 := empty); auto.
-    clear; fsetdec.
+  - apply ad_ppre__var. clear; fsetdec.
+  - apply ad_ppre__arrow with (Ψ1 := empty) (Ψ2 := empty);
+      [ auto | auto | clear; fsetdec ].
 Qed.
 
 Lemma ad_refine_mono_paint_refl : forall τ Θ Δr,
-  a_wf_ptyp Θ τ -> mono_ptyp τ ->
+  mono_ptyp τ ->
   {{ Θ ⨟ Δr ⊢ᵣ (ptyp_to_bskl_syn τ) ⊳ (ptyp_to_bskl_syn τ) }}ad.
 Proof.
-  intros τ Θ Δr Hwf Hm; revert Hwf; induction Hm; intros Hwf; simpl.
+  intros τ Θ Δr Hm; induction Hm; simpl.
   - apply ad_refine_syn__unit.
-  - inversion Hwf; subst. apply ad_refine_syn__var; auto.
-  - inversion Hwf; subst. apply ad_refine_syn_arrow_intro; auto.
+  - apply ad_refine_syn__var.
+  - apply ad_refine_syn_arrow_intro; auto.
 Qed.
 
 (* ---- precision into a mono paint carries no tags ---- *)
@@ -2096,9 +1954,8 @@ Proof.
     inversion Heq; subst.
     eapply ad_ppre__flex_l; [ exact Hbd | ].
     eapply ad_partial_precise_psi_cong;
-      [ apply ad_ppre_mono_paint_refl;
-          [ eapply a_wf_aenv_binds_def_wf; eauto
-          | eapply a_wf_aenv_binds_def_mono; eauto ]
+      [ apply ad_ppre_mono_refl;
+          eapply a_wf_aenv_binds_def_mono; eauto
       | clear - H; fsetdec ].
   - (* hole *)
     apply ad_ppre__hole; [ assumption | ].
@@ -2130,9 +1987,8 @@ Proof.
   - (* var: subject IS the target var *)
     inversion Heq; subst.
     eapply ad_refine_syn__flex_l; [ exact Hbd | ].
-    apply ad_refine_mono_paint_refl;
-      [ eapply a_wf_aenv_binds_def_wf; eauto
-      | eapply a_wf_aenv_binds_def_mono; eauto ].
+    apply ad_refine_mono_paint_refl.
+    eapply a_wf_aenv_binds_def_mono; eauto.
   - (* hole: rebuild at the definition's paint *)
     destruct P; simpl in Heq; try discriminate Heq.
     unfold ptyp_to_bskl_syn.
@@ -2371,8 +2227,7 @@ Proof.
     symmetry in HeqL; apply ptyp_to_bskl_syn_var_inv in HeqL; subst.
     symmetry in HeqQ; apply ptyp_to_bskl_syn_var_inv in HeqQ.
     inversion HeqQ; subst.
-    simpl. apply ad_ppre__var; [ clear; fsetdec | ].
-    right. inversion Hwτ; subst; assumption.
+    simpl. apply ad_ppre__var. clear; fsetdec.
   - (* arrow *)
     symmetry in HeqL.
     destruct (ptyp_to_bskl_syn_arrow_inv _ HeqL)
@@ -2434,8 +2289,7 @@ Proof.
     assert (HΨ : Ψo [=] empty)
       by (eapply ad_ppre_mono_tags_empty;
             [ exact HwfΘ | exact Hhp | reflexivity | exact Hmu ]).
-    simpl. apply ad_ppre__var; [ exact HΨ | ].
-    right. inversion Hwτ; subst; assumption.
+    simpl. apply ad_ppre__var. exact HΨ.
   - (* arrow *)
     symmetry in HeqQ.
     destruct (ptyp_to_bskl_syn_arrow_inv _ HeqQ)
@@ -2586,22 +2440,7 @@ Qed.
 (*  at [L ∪ dom Ξ1] and get the two blocks disjoint for free.              *)
 (* ===================================================================== *)
 
-(** Precision is REFLEXIVE at a monotype.  The scoping premise is what
-    [ad_ppre__var] demands, and [a_wf_ptyp] is exactly its supply. *)
-Lemma ad_ppre_mono_refl : forall Θ Δ τ,
-  mono_ptyp τ ->
-  a_wf_ptyp Θ τ ->
-  {{ Θ ⨟ Δ ⊢ˢ (ptyp_to_pskl τ) ⊑ᵖ[ empty ] (ptyp_to_uskl_syn τ) }}ad.
-Proof.
-  intros Θ Δ τ Hm; induction Hm; intros Hwf;
-    cbn [ptyp_to_pskl ptyp_to_uskl_syn].
-  - apply ad_ppre__unit. clear; fsetdec.
-  - apply ad_ppre__var;
-      [ clear; fsetdec | right; inversion Hwf; assumption ].
-  - inversion Hwf; subst.
-    apply ad_ppre__arrow with (Ψ1 := empty) (Ψ2 := empty);
-      [ auto | auto | clear; fsetdec ].
-Qed.
+
 
 (** wf transports along a definition chain — each step unfolds a defined
     flexible, whose payload the context's own well-formedness bounds. *)
@@ -2956,7 +2795,7 @@ Proof.
     cbn [app ptyp_to_pskl msubst_pskl msubst_lookup].
     destruct (α1 == α1) as [_ | Hne]; [ | contradiction ].
     eapply ad_partial_precise_psi_cong;
-      [ apply ad_ppre_mono_refl; [ exact Hmτ | exact Hwfτ ]
+      [ apply ad_ppre_mono_refl; exact Hmτ
       | clear - HΨi; fsetdec ].
   - (* ---------------------------- ∀◇ ------------------------------- *)
     (* [guess^TY] DROPS the universal ghost; the precision premise peels

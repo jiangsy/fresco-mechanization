@@ -191,21 +191,6 @@ Qed.
 (*  variable into Θ AND Δ), whereas freshness for Θ does not.              *)
 (* ===================================================================== *)
 
-(** Δ-variables the skeleton does not mention may be dropped.  Under the
-    paper's rules a SMALLER Δ is always easier (Δ is read only by the [∀◇]
-    rule, which removes it from the context), so [Hkeep] is no longer the
-    content; the new [Δ' [<=] Δ] is. *)
-Lemma a_wf_pskl_delta_shrink : forall Θ Δ P,
-  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
-  forall Δ', (forall α, α `in` Δ -> α `in` ftvar_in_pskl P -> α `in` Δ') ->
-  Δ' [<=] Δ ->
-  {{ Θ ⨟ Δ' ⊢ₚₛ P }}a.
-Proof.
-  intros Θ Δ P H Δ' _ Hsub.
-  eapply a_wf_pskl_delta_mono; [ exact H | ].
-  intros α _ Hα. apply Hsub. exact Hα.
-Qed.
-
 (** A skeleton well-formed at the EMPTY Δ mentions only Θ-variables; so if
     Δ is disjoint from Θ (the ∀-variables are refinement-local), it is
     Δ-free. *)
@@ -217,8 +202,7 @@ Proof.
   intros Θ Δ P Hwf Hdisj.
   apply inter_empty_pointwise. intros α HαΔ.
   intro HXP.
-  destruct (a_wf_pskl_ftv_tvarish Hwf HXP) as [Hemp | Htv];
-    [ clear - Hemp; fsetdec | ].
+  pose proof (a_wf_pskl_ftv_binds Hwf HXP) as Htv.
   apply (Hdisj α HαΔ).
   destruct Htv as [Hb | [Hb | [τ Hb]]]; apply binds_In in Hb; exact Hb.
 Qed.
@@ -299,7 +283,7 @@ Qed.
 (** With a SYNTHESISED painting on the left the [all] rule can never fire (a
     syn painting has no [bskl_all_inh]), so Δ never grows: Δ-freeness
     propagates across the refinement. *)
-Lemma ad_refine_syn_syn_delta_free_gen : forall Θ Δ Qb Q,
+Lemma ad_refine_syn_syn_delta_free : forall Θ Δ Qb Q,
   {{ Θ ⨟ Δ ⊢ᵣ Qb ⊳ Q }}ad ->
   forall F, Qb = pskl_to_bskl_syn F ->
   (forall β τ, binds β (abind_flex_mono_def τ) Θ ->
@@ -367,49 +351,6 @@ Proof.
     exact (Hflex α τ Hβ H).
 Qed.
 
-(** The same, with the two Δ-hypotheses read off Δ's freshness for Θ. *)
-Lemma ad_refine_syn_syn_delta_free : forall Θ Δ Qb Q,
-  {{ Θ ⨟ Δ ⊢ᵣ Qb ⊳ Q }}ad ->
-  {{ ⊢ Θ }}a ->
-  forall F, Qb = pskl_to_bskl_syn F ->
-  (forall α, α `in` Δ -> α `notin` dom Θ) ->
-  Δ ∩ ftvar_in_bskl Qb [=] empty ->
-  Δ ∩ ftvar_in_bskl Q [=] empty.
-Proof.
-  intros Θ Δ Qb Q Href Hwf F Heq Hdisj Hfree.
-  destruct (delta_fresh_flex_defs Hwf Hdisj) as [Hdefs Hflex].
-  eapply ad_refine_syn_syn_delta_free_gen; eauto.
-Qed.
-
-(* ===================================================================== *)
-(*  THE CRUX, in the shape the Ghost rule needs.                           *)
-(*                                                                         *)
-(*  To re-apply [ad_refine_syn__hole] after a further refinement step we    *)
-(*  need the new fill to be a syn painting that is Δ-free.  Refinement      *)
-(*  gives both: the shape by [ad_refine_syn_syn_l], Δ-freeness by the       *)
-(*  Δ-discipline above — packaged as [ad_refine_syn_hole_l_gen] below,      *)
-(*  which is what the transitivity proof uses.  The form here, which also   *)
-(*  recovers a skeleton well-formed at the EMPTY Δ, ASSUMES                 *)
-(*  well-formedness of the result (the paper's presupposition).             *)
-(* ===================================================================== *)
-
-Lemma ad_refine_syn_syn_l_wf : forall Θ Δ P Q,
-  {{ Θ ⨟ Δ ⊢ᵣ (pskl_to_bskl_syn P) ⊳ Q }}ad ->
-  {{ ⊢ Θ }}a ->
-  (forall α, α `in` Δ -> α `notin` dom Θ) ->
-  {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
-  {{ Θ ⨟ Δ ⊢ₚₛ (bskl_to_pskl Q) }}a ->
-  exists G, Q = pskl_to_bskl_syn G /\ {{ Θ ⨟ empty ⊢ₚₛ G }}a.
-Proof.
-  intros Θ Δ P Q Href Hwf Hdisj HwfF HwfB.
-  destruct (ad_refine_syn_syn_l Href P eq_refl) as [G HeqG].
-  exists G. split; [ exact HeqG | ].
-  subst Q.
-  rewrite bskl_to_pskl_pskl_to_bskl_syn in HwfB.
-  eapply a_wf_pskl_delta_mono; [ exact HwfB | ].
-  intros α _ Hα. clear - Hα. fsetdec.
-Qed.
-
 (* ===================================================================== *)
 (*  TRANSITIVITY of refinement, under the paper's external wf condition.   *)
 (*                                                                         *)
@@ -423,12 +364,12 @@ Qed.
 (*  the first, to peel the left-hand administrative rules [tophole_remove]  *)
 (*  and [flex_l] (which shrink the left skeleton while the right stands     *)
 (*  still).  Every case whose left side is a GHOST is discharged by         *)
-(*  [ad_refine_syn_hole_l_gen] — that is what the crux is for.             *)
+(*  [ad_refine_syn_hole_l].                                                *)
 (* ===================================================================== *)
 
 (** The left-hand administrative rules, packaged: whatever a Δ-free syn
     painting refines to, a ghost refines to as well. *)
-Lemma ad_refine_syn_hole_l_gen : forall Θ Δ P Qr,
+Lemma ad_refine_syn_hole_l : forall Θ Δ P Qr,
   {{ Θ ⨟ Δ ⊢ᵣ (pskl_to_bskl_syn P) ⊳ Qr }}ad ->
   (forall β τ, binds β (abind_flex_mono_def τ) Θ ->
      Δ ∩ ftvar_in_ptyp τ [=] empty) ->
@@ -437,25 +378,11 @@ Lemma ad_refine_syn_hole_l_gen : forall Θ Δ P Qr,
   {{ Θ ⨟ Δ ⊢ᵣ bskl_hole ⊳ Qr }}ad.
 Proof.
   intros Θ Δ P Qr Href Hdefs Hflex HfrP.
-  pose proof (ad_refine_syn_syn_delta_free_gen Href P eq_refl Hdefs Hflex
+  pose proof (ad_refine_syn_syn_delta_free Href P eq_refl Hdefs Hflex
                 ltac:(rewrite ftvar_pskl_to_bskl_syn; exact HfrP)) as Hfr.
   destruct (ad_refine_syn_syn_l Href P eq_refl) as [G ->].
   apply ad_refine_syn__hole.
   rewrite ftvar_pskl_to_bskl_syn in Hfr. exact Hfr.
-Qed.
-
-Lemma ad_refine_syn_hole_l : forall Θ Δ P Qr,
-  {{ Θ ⨟ Δ ⊢ᵣ (pskl_to_bskl_syn P) ⊳ Qr }}ad ->
-  {{ ⊢ Θ }}a ->
-  (forall α, α `in` Δ -> α `notin` dom Θ) ->
-  {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
-  {{ Θ ⨟ Δ ⊢ₚₛ (bskl_to_pskl Qr) }}a ->
-  {{ Θ ⨟ Δ ⊢ᵣ bskl_hole ⊳ Qr }}ad.
-Proof.
-  intros Θ Δ P Qr Href Hwf Hdisj HwfF _.
-  destruct (delta_fresh_flex_defs Hwf Hdisj) as [Hdefs Hflex].
-  eapply ad_refine_syn_hole_l_gen; [ exact Href | exact Hdefs | exact Hflex | ].
-  eapply a_wf_pskl_empty_delta_free; [ exact HwfF | exact Hdisj ].
 Qed.
 
 Lemma ad_refine_syn_trans_gen : forall Θ Δ Qm Qr,
@@ -482,7 +409,7 @@ Proof.
     + inversion HM; subst. simpl in HwfQr.
       inversion HwfQr as [ | | Θw Δw Pw1 Pw2 Hw1 Hw2 | | | ]; subst.
       apply ad_refine_syn__arrow; [ assumption | apply IHHr1 | apply IHHr2 ]; auto.
-    + eapply ad_refine_syn_hole_l_gen with (P := P);
+    + eapply ad_refine_syn_hole_l with (P := P);
         [ exact Hrr | exact Hdefs | exact Hflex | eassumption ].
     + apply ad_refine_syn__tophole_remove; [ assumption | apply IHHp; auto ].
     + eapply ad_refine_syn__flex_l;
@@ -523,7 +450,7 @@ Proof.
       by (apply ad_refine_syn__tophole_remove; assumption).
     remember (bskl_tophole Qb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
-    + eapply ad_refine_syn_hole_l_gen with (P := P);
+    + eapply ad_refine_syn_hole_l with (P := P);
         [ exact Hrr | exact Hdefs | exact Hflex | eassumption ].
     + apply ad_refine_syn__tophole_remove; [ assumption | apply IHHp; auto ].
     + (* tophole_keep on the left : peel both *)
@@ -536,7 +463,7 @@ Proof.
       by (eapply ad_refine_syn__tophole_fill with (L := L); assumption).
     remember (bskl_tophole Qb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
-    + eapply ad_refine_syn_hole_l_gen with (P := P);
+    + eapply ad_refine_syn_hole_l with (P := P);
         [ exact Hrr | exact Hdefs | exact Hflex | eassumption ].
     + apply ad_refine_syn__tophole_remove; [ assumption | apply IHHp; auto ].
     + (* tophole_keep on the left : rebuild the ∀ *)
@@ -566,7 +493,7 @@ Proof.
       by (apply ad_refine_syn__tophole_keep; assumption).
     remember (bskl_tophole Qb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
-    + eapply ad_refine_syn_hole_l_gen with (P := P);
+    + eapply ad_refine_syn_hole_l with (P := P);
         [ exact Hrr | exact Hdefs | exact Hflex | eassumption ].
     + apply ad_refine_syn__tophole_remove; [ assumption | apply IHHp; auto ].
     + inversion HM; subst.
@@ -591,7 +518,7 @@ Proof.
     + (* var ⊳ var : rebuild the lookup *)
       inversion HM; subst.
       eapply ad_refine_syn__flex_l; eassumption.
-    + eapply ad_refine_syn_hole_l_gen with (P := P);
+    + eapply ad_refine_syn_hole_l with (P := P);
         [ exact Hrr | exact Hdefs | exact Hflex | eassumption ].
     + apply ad_refine_syn__tophole_remove; [ assumption | apply IHHp; auto ].
     + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.

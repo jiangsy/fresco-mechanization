@@ -51,7 +51,7 @@ Require Import src.fresco.algo.def_meta.     (* ≡ˢ *)
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.algo.prop_precise.   (* bskl_to_pskl_open *)
 Require Import src.fresco.algo.prop_pat_sub.   (* {pskl,bskl}_ghost_free *)
-Require Import src.fresco.algo.consis.prop_soundness_consis.  (* a_consis_sound, ad_refine_syn_f_forget *)
+Require Import src.fresco.algo.consis.prop_soundness_consis.  (* a_consis_sound *)
 Require Import src.fresco.deco_algo.prop_soundness_sub.   (* a_sub_sound *)
 
 Set Implicit Arguments.

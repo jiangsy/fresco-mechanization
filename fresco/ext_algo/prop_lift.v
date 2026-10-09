@@ -8,7 +8,7 @@
     bridge, composed with what already exists:
 
       d_ ⟹ a_typing        a_typing_complete_decl_*   (README §III)   ✅
-      a_typing ⟹ e_typing  THIS FILE (§1–§12) + prop_lift_typing.v    ✅
+      a_typing ⟹ e_typing  THIS FILE (§3–§12) + prop_lift_typing.v    ✅
       e_typing ⟹ Some      e_typing_run_complete      (level 8)       ✅
 
     ⭐⭐ THE TECHNIQUE (§8c.24).  A structural induction on the [a_*]
@@ -24,20 +24,18 @@
       subject for [guess^TY], whose ∀ row opens at a variable (size-preserving)
       below a [pskl_all_syn] node that pays the [S].
 
-    ⚙ At the guess the conclusion is EXISTENTIAL up to a CHAIN: the [e_]
-    derivation's outputs are [swaps_*] images of the [a_] derivation's.
+    ⚙ At the guess alone the conclusion could be EXISTENTIAL up to a CHAIN:
+    the [e_] derivation's outputs [swaps_*] images of the [a_] derivation's.
 
-    ⛔⛔ AND THAT CURRENCY DIES ONE LEVEL UP — read §3 before writing any
-    block above §2.  A chain is a FUNCTION on atoms, and above the guess
-    the [a_] rules LEAK binders into their outputs, so one left atom can
-    need two right images.  Everything from §3 on is therefore stated over
+    ⛔⛔ BUT THAT CURRENCY DIES ONE LEVEL UP — read §3 before writing any
+    block above the guess.  A chain is a FUNCTION on atoms, and above the
+    guess the [a_] rules LEAK binders into their outputs, so one left atom
+    can need two right images.  Everything here is therefore stated over
     prop_solve_det.v §1's deliberately RELATIONAL [rel_pskl] / [rel_a_cstrs]
     at a pair list ρ that GROWS — which is also the currency §8c.9's
     transport layer (prop_solve_rel.v §3-§7) already built a → a, so those
     are what §4-§7 are copied from.
 
-    §1  the [close] rename fact the ∀ rows need
-    §2  ⭐ [guess^TY] and its sort wrapper, CHAIN currency — the SCOUT
     §3  ⭐⭐⭐ the LOOK block — ALREADY CLOSED upstream, and why the chain
         currency cannot reach it
     §4  ⭐ [guess^TY] again, REL currency — what the solve layer calls
@@ -113,55 +111,11 @@ Open Scope fresco_a_scope.
 Open Scope fresco_e_scope.
 
 (* ===================================================================== *)
-(*  §1  THE [close] RENAME FACT                                           *)
-(*                                                                        *)
-(*  ⭐ It is what makes the ∀ rows SHORTER than they look: [close] does not *)
-(*  remember WHICH atom it abstracted, so the transposition that moves the *)
-(*  [a_] rule's witness onto a supply-fresh one does NOT appear in the     *)
-(*  conclusion's chain at all.                                            *)
-(*                                                                        *)
-(*  ⚙ Proved through lngen's round trips rather than by a hand induction:  *)
-(*  a swap at a FRESH target IS a substitution, a substitution IS an       *)
-(*  [open] of a [close], and [close] of that [open] is the identity        *)
-(*  because [close]'s own free variables miss the fresh atom.              *)
-(* ===================================================================== *)
-
-(* ===================================================================== *)
-(*  §2  ⭐ [guess^TY] LIFTS — THE SCOUT                                    *)
-(*                                                                        *)
-(*  [a_guess_mono] carries all three hard shapes: an INVENTION row (□), a  *)
-(*  BINDER row (∀), and an ARROW row whose two halves the [a_] side does   *)
-(*  NOT thread.  Getting it right settles the shape of the motive for      *)
-(*  every block above it.                                                 *)
-(*                                                                        *)
-(*  ⚠️ TWO PREMISES, AND NEITHER IS DECORATION (§8c.24).                   *)
-(*                                                                        *)
-(*  [uniq Ξ] — [a_guess_mono__arrow] runs BOTH halves at the SAME [Θ], so  *)
-(*  the two blocks may COLLIDE (which is exactly why [AT-Abs] carries      *)
-(*  [uniq (αs ++ Θ1)]), while [e_guess_mono] threads and its block is      *)
-(*  [uniq] outright.  No single chain sends a colliding block to a [uniq]  *)
-(*  one.  The only consumer already has the premise.                      *)
-(*                                                                        *)
-(*  [dom Ξ ∩ (S0 ∪ L) [=] empty] — the [a_] side's invented atoms avoid    *)
-(*  [ftvar_in_aenv Θ] and NOTHING ELSE, while every step of the arrow row  *)
-(*  that fixes one premise's data by the other's chain needs them off the  *)
-(*  supply.  The consumer discharges it by PRE-FRESHENING.                *)
-(*                                                                        *)
-(*  ⭐ THE MOTIVE CARRIES TWO AVOID-SETS, and they do different jobs.      *)
-(*  [L] is dodged by the chain's TARGETS and by the IMAGE BLOCK — that is  *)
-(*  what lets one premise's answer be fixed by the other's chain.  [K] is  *)
-(*  dodged by the OUTPUT SUPPLY — that is what lets the arrow row's SECOND *)
-(*  call know the right-hand block is still off the threaded supply.  ⚙ A  *)
-(*  single set cannot do both: the image block LIVES in the output supply, *)
-(*  so demanding one set be disjoint from both is contradictory.          *)
-(* ===================================================================== *)
-
-(* ===================================================================== *)
 (*  §3  ⭐⭐⭐ THE LOOK BLOCK — ALREADY CLOSED, AND IN A DIFFERENT           *)
-(*      CURRENCY.  READ THIS BEFORE WRITING ANY BLOCK ABOVE §2.           *)
+(*      CURRENCY.  READ THIS BEFORE WRITING ANY BLOCK ABOVE THE GUESS.    *)
 (*                                                                        *)
 (*  §8c.24's costed plan lists the collection as the lift's next block,    *)
-(*  nineteen rows in §2's CHAIN currency.  ⛔ DO NOT WRITE IT: the chain   *)
+(*  nineteen rows in the CHAIN currency.  ⛔ DO NOT WRITE IT: the chain    *)
 (*  currency is UNAVAILABLE here, and the block is already proved in the   *)
 (*  currency that is — [a_looksub_lookeq_rel_e] (prop_solve_rel.v §7,      *)
 (*  campaign §8c.9's transport 5), which is stated a → e and needs only    *)
@@ -169,10 +123,11 @@ Open Scope fresco_e_scope.
 (*                                                                        *)
 (*  ⛔⛔ WHY THE CHAIN CURRENCY CANNOT WORK ABOVE THE GUESS.  A chain is a  *)
 (*  FUNCTION on atoms; [rel_pskl] is deliberately a RELATION (see          *)
-(*  prop_solve_det.v §1's header).  §2 could use a chain only because      *)
-(*  [a_guess_mono] leaks NOTHING: its ∀ row closes its witness away, so    *)
-(*  every atom the derivation invents lands in [dom Ξ] and [uniq Ξ] — one  *)
-(*  premise, available at the only consumer — makes the columns distinct.  *)
+(*  prop_solve_det.v §1's header).  The guess could use a chain only      *)
+(*  because [a_guess_mono] leaks NOTHING: its ∀ row closes its witness     *)
+(*  away, so every atom the derivation invents lands in [dom Ξ] and       *)
+(*  [uniq Ξ] — one premise, available at the only consumer — makes the   *)
+(*  columns distinct.                                                     *)
 (*  ⚠️ ALL FIVE of the collection's ∀ rows LEAK their binder into [𝒞]      *)
 (*  (def_look.v's header, and [a_looksub_lookeq_ftv]'s three target-       *)
 (*  opening rows), and a leaked binder is NOT in [dom Ξ].  So a LEFT atom  *)
@@ -190,15 +145,16 @@ Open Scope fresco_e_scope.
 (*  ⭐ CONSEQUENCE FOR THE REST OF THE CAMPAIGN.  Every block above the    *)
 (*  guess whose rows can leak a binder into an OUTPUT — the solve layer's  *)
 (*  SS-ForallR leaks by design (def_rules.v:625-638) — wants transport 5's *)
-(*  shape, not §2's: side 2 an [e_] derivation, the outputs related at a   *)
-(*  ρ that GROWS, the blocks read off as [flex_pairs_l] / [flex_pairs_r].  *)
+(*  shape, not the chain's: side 2 an [e_] derivation, the outputs related *)
+(*  at a ρ that GROWS, the blocks read off as [flex_pairs_l] /            *)
+(*  [flex_pairs_r].                                                       *)
 (*  §8c.9 already built that shape a → a for guess, both solve layers and  *)
 (*  the fold (prop_solve_rel.v §3-§6); those are what the a → e versions   *)
 (*  should be copied from.                                                *)
 (*                                                                        *)
 (*  ⚙ THE LIFT PROPER is transport 5 at [ρ = nil], where [rel_pskl] is     *)
 (*  reflexivity on anything the support covers ([rel_pskl_refl]) and the   *)
-(*  flex agreement is two [reflexivity]s.  Both halves below.              *)
+(*  flex agreement is two [reflexivity]s.                                 *)
 (* ===================================================================== *)
 
 (** ⚙ An [In]-inclusion between two ways of associating the same pairs —
@@ -225,7 +181,7 @@ Qed.
 (*  §4  ⭐ [guess^TY] LIFTS IN THE REL CURRENCY TOO — and this is the copy *)
 (*      the SOLVE layer consumes                                          *)
 (*                                                                        *)
-(*  §2's chain form is what a consumer holding [uniq Ξ] wants (AT-Abs).    *)
+(*  A chain form is what a consumer holding [uniq Ξ] would want (AT-Abs). *)
 (*  [SE-FlexR] is not such a consumer: it sits inside the solve layer,     *)
 (*  whose own transport must be relational (§3), so the guess it calls has *)
 (*  to hand its block back as a PAIR LIST that extends the caller's ρ.     *)
@@ -1460,8 +1416,8 @@ Qed.
 (* ===================================================================== *)
 (*  §7  ⭐ THE CONSTRAINT FOLD LIFTS — three rows                          *)
 (*                                                                        *)
-(*  prop_solve_rel.v §6's [a_solve_cstr_rel], side 2 moved to             *)
-(*  [e_solve_cstr].  ⚙ The eq-cons row is the only one with work: the head *)
+(*  The constraint fold's transport, side 2 moved to [e_solve_cstr].      *)
+(*  ⚙ The eq-cons row is the only one with work: the head *)
 (*  goes through §5 and the TAIL runs at the head's OUTPUT supply, so its  *)
 (*  coverage needs [e_solve_eq_out_ftvar] — what the solved pattern can mention —  *)
 (*  which is exactly the fact prop_solve.v §2 says it exists    *)
@@ -2056,7 +2012,7 @@ Qed.
 (*  openers are apart from its own block — the fourth instance of the      *)
 (*  prose-completion this tree has already had to make three times         *)
 (*  ([AT-Abs]'s [uniq (αs ++ Θ1)], [a_sub__forall_l]'s [uniq (Ξ ++ Θ0)],   *)
-(*  and [e_guess_mono_lift]'s [uniq Ξ] in §2).  ⚠️ [uniq Ξ] does NOT       *)
+(*  and [uniq Ξ] for [guess^TY]'s block).  ⚠️ [uniq Ξ] does NOT           *)
 (*  suffice here and no strengthening of it can: a leaked opener is not a  *)
 (*  block member, so [uniq] cannot see it.  ⛔ Nor is it derivable from a  *)
 (*  scoping hypothesis on the look's inputs — both side conditions above   *)
@@ -3789,8 +3745,7 @@ Proof.
       rewrite ftvar_in_aenv_app. simpl. clear - Hd Hds. fsetdec. }
     assert (Hxp : x `notin` ftvar_in_pskl P).
     { intros Hin.
-      destruct (a_wf_pskl_ftv_tvarish Hwfp Hin) as [HΔ | Htv];
-        [ clear - HΔ; fsetdec | ].
+      pose proof (a_wf_pskl_ftv_binds Hwfp Hin) as Htv.
       apply (@a_binds_tvar_not_var_typ
                (Ξ ++ (x ~ abind_var_typ A) ++ Θ0) x A Huq1
                ltac:(unfold binds; apply in_or_app; right; simpl;
@@ -4047,8 +4002,7 @@ Proof.
       rewrite ftvar_in_aenv_app. simpl. clear - Hd Hds. fsetdec. }
     assert (Hxp : x `notin` ftvar_in_pskl P).
     { intros Hin.
-      destruct (a_wf_pskl_ftv_tvarish Hwfp Hin) as [HΔ | Htv];
-        [ clear - HΔ; fsetdec | ].
+      pose proof (a_wf_pskl_ftv_binds Hwfp Hin) as Htv.
       apply (@a_binds_tvar_not_var_skl
                (Ξ ++ (x ~ abind_var_skl Q0) ++ Θ0) x Q0 Huq1
                ltac:(unfold binds; apply in_or_app; right; simpl;
@@ -5737,14 +5691,12 @@ Proof.
       unfold disjoint in Hdisj. clear - Hdisj Hsc0. fsetdec. }
     assert (HΞB : dom Ξ ∩ ftvar_in_pskl (pskl_all_syn B) [=] empty).
     { assert (Hsub : ftvar_in_pskl (pskl_all_syn B) [<=] dom Θ0).
-      { intros x Hx. destruct (a_wf_pskl_ftv_tvarish Hwfp0 Hx) as [HΔ | Htv];
-          [ clear - HΔ; fsetdec | apply a_binds_tvar_in_dom; exact Htv ]. }
+      { intros x Hx. apply a_binds_tvar_in_dom; exact (a_wf_pskl_ftv_binds Hwfp0 Hx). }
       assert (Hdisj : disjoint Ξ Θ0) by (clear - Huq; solve_uniq).
       unfold disjoint in Hdisj. clear - Hdisj Hsub. fsetdec. }
     assert (HΞA : dom Ξ ∩ ftvar_in_pskl A [=] empty).
     { assert (Hsub : ftvar_in_pskl A [<=] dom Θ0).
-      { intros x Hx. destruct (a_wf_pskl_ftv_tvarish Hwfp Hx) as [HΔ | Htv];
-          [ clear - HΔ; fsetdec | apply a_binds_tvar_in_dom; exact Htv ]. }
+      { intros x Hx. apply a_binds_tvar_in_dom; exact (a_wf_pskl_ftv_binds Hwfp Hx). }
       assert (Hdisj : disjoint Ξ Θ0) by (clear - Huq; solve_uniq).
       unfold disjoint in Hdisj. clear - Hdisj Hsub. fsetdec. }
     remember (restrict_l (dom Ξ) ρ) as ρ0 eqn:Eρ0.
@@ -6399,14 +6351,13 @@ Proof.
 
     (* ⭐⭐ THE ρx COLUMN GOES BEFORE THE IH.  [ρx] is the extract's LEAKED
        OPENERS; the motive's [Hblk] cannot keep them out of [dom Θ1], and
-       [rel_fun_app_off] would owe the same, so the IH must run at
+       a [rel_fun] extension would owe the same, so the IH must run at
        [ρn ++ ρ].  ⭐ What pays is the extract's own block conjunct
        ([Hxblk]) together with the rule's SCOPING FILTER on [P1]: every
        free variable of [P1] is bound in [Ξ ++ Θ0], and ρx's atoms are in
        NEITHER half. *)
     assert (HftP1 : ftvar_in_pskl P1 [<=] dom (Ξ ++ Θ0)).
-    { intros x Hx. destruct (a_wf_pskl_ftv_tvarish Hwf1 Hx) as [HΔ | Htv];
-        [ clear - HΔ; fsetdec | apply a_binds_tvar_in_dom; exact Htv ]. }
+    { intros x Hx. apply a_binds_tvar_in_dom; exact (a_wf_pskl_ftv_binds Hwf1 Hx). }
     rewrite dom_app in HftP1.
     assert (Hdrop : rel_pskl (ρn ++ ρ) V P1 P1').
     { eapply rel_pskl_morph_ftv; [ exact HrP1 | | ].
@@ -7309,10 +7260,8 @@ Proof.
           [ exact Huq1 | exact Hbx | exact HbαM ]).
     assert (Hni : x `notin` ftvar_in_pskl P0).
     { intros Hin.
-      destruct (a_wf_pskl_ftv_tvarish Hwfp0 Hin) as [HΔ | Htv];
-        [ clear - HΔ; fsetdec
-        | eapply a_binds_tvar_not_var_typ;
-            [ exact Huq1 | exact Hbx | exact Htv ] ]. }
+      pose proof (a_wf_pskl_ftv_binds Hwfp0 Hin) as Htv;
+        eapply a_binds_tvar_not_var_typ; [ exact Huq1 | exact Hbx | exact Htv ]. }
     destruct (lift_sub_flex_peel IH Hne Hni Hxout HrΘ HrΞ Hrα HrP0 Hagr Hinj
                 Hfun Hwf Hdec Hdec2 Huq2p Hftv2 Hscp Hblk HdΘ Hcov HcovP
                 Hwfp0 HbαM)
@@ -7339,10 +7288,8 @@ Proof.
           [ exact Huq1 | exact Hbx | exact HbαM ]).
     assert (Hni : x `notin` ftvar_in_pskl P0).
     { intros Hin.
-      destruct (a_wf_pskl_ftv_tvarish Hwfp0 Hin) as [HΔ | Htv];
-        [ clear - HΔ; fsetdec
-        | eapply a_binds_tvar_not_var_skl;
-            [ exact Huq1 | exact Hbx | exact Htv ] ]. }
+      pose proof (a_wf_pskl_ftv_binds Hwfp0 Hin) as Htv;
+        eapply a_binds_tvar_not_var_skl; [ exact Huq1 | exact Hbx | exact Htv ]. }
     destruct (lift_sub_flex_peel IH Hne Hni Hxout HrΘ HrΞ Hrα HrP0 Hagr Hinj
                 Hfun Hwf Hdec Hdec2 Huq2p Hftv2 Hscp Hblk HdΘ Hcov HcovP
                 Hwfp0 HbαM)
@@ -7805,8 +7752,8 @@ Proof.
   assert (HxV : x `notin` V) by (clear - Hscp HxftvΘb; fsetdec).
   assert (Hxbd : x `notin` ftvar_in_abind bd) by (clear - Hbdf HxΘb; fsetdec).
   assert (HxQ0 : x `notin` ftvar_in_pskl Q0).
-  { intros Hin. destruct (a_wf_pskl_ftv_tvarish HwfQ0 Hin) as [HΔ | Htv];
-      [ clear - HΔ; fsetdec | apply HxΘb; apply a_binds_tvar_in_dom; exact Htv ]. }
+  { intros Hin. pose proof (a_wf_pskl_ftv_binds HwfQ0 Hin) as Htv;
+    apply HxΘb; apply a_binds_tvar_in_dom; exact Htv. }
   assert (Hx2V : x2 `notin` V) by (clear - Hx2 Hcov; fsetdec).
   assert (Hx2cr : x2 `notin` cols_r ρ) by (clear - Hx2 Hcov; fsetdec).
   assert (Hx2Θb' : x2 `notin` dom Θb') by (clear - Hx2 HdΘ; fsetdec).
@@ -8010,8 +7957,7 @@ Proof.
         [ exact Hbody | exact HwfX | exact HwfQ0X | exact Hmod'
         | exact Hwfeo ]).
   assert (HxQ : x `notin` ftvar_in_pskl Q).
-  { intros Hin. destruct (a_wf_pskl_ftv_tvarish HwfQout Hin) as [HΔ | Htv];
-      [ clear - HΔ; fsetdec | ].
+  { intros Hin. pose proof (a_wf_pskl_ftv_binds HwfQout Hin) as Htv.
     assert (Hbx : binds x bd (Ξ ++ (x ~ bd) ++ Θc))
       by (unfold binds; apply in_or_app; right; left; reflexivity).
     destruct Htv as [Hb | [Hb | [τ Hb]]];
@@ -8276,8 +8222,7 @@ Proof.
         by (simpl; exact Hmodc0).
       assert (HbdfPa : ftvar_in_abind (abind_var_skl Pa) [<=] dom Θa).
       { simpl. intros z Hz.
-        destruct (a_wf_pskl_ftv_tvarish HwfPa Hz) as [HΔ | Htv];
-          [ clear - HΔ; fsetdec | apply a_binds_tvar_in_dom; exact Htv ]. }
+        apply a_binds_tvar_in_dom; exact (a_wf_pskl_ftv_binds HwfPa Hz). }
       assert (HwfXc : {{ ⊢ ((x ~ abind_var_skl Pa) ++ Θa) }}a)
         by (apply a_wf_aenv__var; [ exact HxΘa | exact HwfPa | exact Hwf ]).
       assert (Hbd'f : ftvar_in_abind (abind_var_skl Pa') [<=] S0)

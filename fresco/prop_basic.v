@@ -167,10 +167,6 @@ Proof.
   - exact IHP.
 Qed.
 
-(** The two structural transports of the ForallR-PRIORITY GUARD.  A [∀]
-    counterpart stays a [∀] under both, and the GHOSTY half of the guard is
-    reflected by the two [_inv] lemmas above — so the guard is stable in the
-    direction the rules need it. *)
 (** * Mode/type compatibility.
 
     ⚙ LIFTED here 2026-08-09: it was proved identically in

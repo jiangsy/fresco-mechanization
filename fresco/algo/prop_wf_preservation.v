@@ -914,8 +914,7 @@ Proof.
           unfold binds; simpl; left; reflexivity).
     assert (Hxfr : x `notin` ftvar_in_pskl P0).
     { intro Hin.
-      destruct (a_wf_pskl_ftv_tvarish HwfP0 Hin) as [Hemp | Hbt];
-        [ clear - Hemp; fsetdec | ].
+      pose proof (a_wf_pskl_ftv_binds HwfP0 Hin) as Hbt.
       destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
         pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hcx;
         discriminate Hcx. }
@@ -960,8 +959,7 @@ Proof.
           unfold binds; simpl; left; reflexivity).
     assert (Hxfr : x `notin` ftvar_in_pskl P0).
     { intro Hin.
-      destruct (a_wf_pskl_ftv_tvarish HwfP0 Hin) as [Hemp | Hbt];
-        [ clear - Hemp; fsetdec | ].
+      pose proof (a_wf_pskl_ftv_binds HwfP0 Hin) as Hbt.
       destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
         pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hcx;
         discriminate Hcx. }

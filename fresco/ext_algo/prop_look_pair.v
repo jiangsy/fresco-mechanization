@@ -7,16 +7,14 @@
     §1a  the e-look's context is INERT (every freshness condition reads
          the SUPPLY), so derivations transport to ANY context — which is
          what replaces the a-side [a_looksub_ctx_exchange] surgery;
-    §1c  the COLLECTION-PRESERVING re-rootings, e-side: R″
-         ([e_looksub_strip_tophole_l] — outputs AND supplies exact) and
-         R′ ([e_looksub_open_forall_l_first]) — ⭐ stated with an
+    §1c  the COLLECTION-PRESERVING re-rooting R′, e-side (since removed
+         as unused) — ⭐ stated with an
          EXISTENTIAL opener, which kills the whole rebinding apparatus:
          in its ForallL case the premise IS the goal at the derivation's
          own opener (+ ctx_any), and in its ForallR case the IH's opener
          is reused below the rebuilt root (+ prop_look.v §5's supply
-         respect for the [add]-exchange) — so unlike the a-side R′
-         (prop_look_equiv.v §6) NO swap is ever performed, and no e-side
-         swap kit exists or is needed.
+         respect for the [add]-exchange) — so NO swap is ever performed,
+         and no e-side swap kit exists or is needed.
 
     §2 is the look-pair fold KIT (fourth pass), §3 the look-pair fold itself
     (forthcoming): the pair induction is RUNNER-SIDED — side 1 an
@@ -26,9 +24,9 @@
     (cex/probe_bcore_ug2_flexr.v: LE-FlexR × LE-UnivGhost2 overlap at a
     (⫯, var) node; a variable is [guarded_pskl]).  See
     HANDOFF-extractable-algo-encoding.md §8c.9, third + fourth passes.
-    ⚙ §1c's R″/R′ are NOT consumed by the runner-sided look-pair fold (the
-    diagonals re-root SIDE 1 by §2c's ForallR-first instead); they stay
-    as kit. *)
+    ⚙ §1c's R′ is NOT consumed by the runner-sided look-pair fold (the
+    diagonals re-root SIDE 1 by §2c's ForallR-first instead); it stays
+    as the exhibit docs/PAPER-GAPS.md cites. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -106,12 +104,12 @@ Local Ltac flex_rigid_iff :=
   intros b; repeat rewrite a_flex_tvar_cons_tvar_any; reflexivity.
 
 (* ===================================================================== *)
-(*  §1c  The COLLECTION-PRESERVING re-rootings, e-side (R″ and R′)        *)
+(*  §1c  The COLLECTION-PRESERVING re-rooting, e-side (R′)               *)
 (*                                                                        *)
-(*  Mirrors of prop_look_equiv.v §6, leaning on the inert context.  R′    *)
-(*  is stated with an EXISTENTIAL opener: in its ForallL case the        *)
-(*  premise IS the goal at the derivation's own opener, so no rebinding  *)
-(*  (hence no e-swap kit) is ever needed.                                *)
+(*  Leaning on the inert context, R′ is stated with an EXISTENTIAL        *)
+(*  opener: in its ForallL case the premise IS the goal at the            *)
+(*  derivation's own opener, so no rebinding (hence no e-swap kit) is     *)
+(*  ever needed.                                                          *)
 (* ===================================================================== *)
 
 (* ===================================================================== *)
@@ -135,8 +133,8 @@ Local Ltac flex_rigid_iff :=
 (*         vs runner fresh-flexible) divergence.  ⭐ Since the             *)
 (*         FlexR-PRIORITY guard its two targets are PAIRED and it yields  *)
 (*         [rel_pskl] outright (2026-08-18);                              *)
-(*    §2g  the KEEP-variant of §6a's ∀-peel (conclusion at the consed     *)
-(*         context — SS-ForallR's premise shape, no strip);               *)
+(*    §2g  the KEEP-variant of the solve layer's ∀-peel (conclusion at    *)
+(*         the consed context — SS-ForallR's premise shape, no strip);    *)
 (*    §2h  e-solve context equivalence — rigid entries are invisible, so  *)
 (*         an e-fold weakens to the ENRICHED context (the assembly's      *)
 (*         move; the look-pair fold's scoping premises read the enriched Θf).     *)

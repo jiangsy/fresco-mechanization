@@ -317,12 +317,6 @@ Proof.
   intros. unfold open_pskl_wrt_pskl. apply rel_pskl_open_rec_var; auto.
 Qed.
 
-(** The relation preserves size — the §8c.9 pair induction's measure moves
-    freely between the two sides. *)
-Lemma rel_pskl_size : forall ρ V P1 P2,
-  rel_pskl ρ V P1 P2 -> size_pskl P1 = size_pskl P2.
-Proof. intros * Hrel; induction Hrel; simpl; lia. Qed.
-
 (** [close] at a PAIR of names — the mirror of [rel_pskl_open_pair]: the
     two sides close their own opener in lockstep, and the pair leaves the
     relation.  The column-freshness side conditions say the pair's atoms
@@ -580,9 +574,6 @@ Proof. induction ps1 as [ | [a b] ps1 IH ]; intros; simpl; auto. Qed.
 Lemma swaps_ptyp_app : forall ps1 ps2 A,
   swaps_ptyp (ps1 ++ ps2) A = swaps_ptyp ps2 (swaps_ptyp ps1 A).
 Proof. induction ps1 as [ | [a b] ps1 IH ]; intros; simpl; auto. Qed.
-
-Lemma swaps_ptyp_unit : forall ps, swaps_ptyp ps ptyp_unit = ptyp_unit.
-Proof. induction ps as [ | [a b] ps IH ]; simpl; auto. Qed.
 
 Lemma swaps_ptyp_var_f : forall ps α,
   swaps_ptyp ps (ptyp_var_f α) = ptyp_var_f (swaps_atom ps α).

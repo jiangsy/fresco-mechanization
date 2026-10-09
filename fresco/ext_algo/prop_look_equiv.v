@@ -7,31 +7,20 @@
     (cex/cex_looksub_not_det.v), but two derivations of the same look
     node differ ONLY by fresh names, by the ∀-peel slack at the final
     sub-constraint, and by ◇-EMISSION slack ([≼m ◇] / [eq ◇] vs
-    nothing) — and a ◇-target solve step is the IDENTITY, which is what
-    makes the slack free to transport.  This file proves that
-    inventory's foundation facts:
+    nothing).  This file proves that inventory's foundation facts:
 
-    §1  a lookeq collection is PURE-EQ (so LS-Arrow's left half never
-        contributes a sub-constraint, and the fold of [𝒞1 ++ 𝒞2]
-        decomposes at the seam);
+    §1  [a_cstr_is_eq], the PURE-EQ shape of a lookeq collection's
+        constraints;
     §2  an α-FREE subject collects NOTHING, through EVERY derivation
         (crossing 4 of §8c.9's inventory: LS/LE-Absent vs a structural
         derivation is no slack at all);
-    §3  a ◇-TARGET solve step is the identity — nil block, pattern
-        through — on both layers (crossing 3: the ◇-emission slack);
-    §4  the fold's head inversions and the PURE-EQ APPEND DECOMPOSITION
+    §3  the fold's head inversions and the PURE-EQ APPEND DECOMPOSITION
         [a_solve_cstr_app_inv], the mirror of [a_solve_cstr_app]
         (algo/sub/look/prop_eq_cstr.v) that the b-core's Arrow case
         splits the given fold with.  ⚙ [a_solve_cstr_sub_inv] /
         [a_solve_cstr_eq_inv] MOVED here from prop_run_complete.v §5
         (2026-08-16, one fact one name one file — this file sits below
-        the runner-completeness stack, which now imports it);
-    §5  a ◇-TARGET look collapses to at most one trivial constraint,
-        through EVERY derivation (crossing 3's look half);
-    §6  the COLLECTION-PRESERVING re-rootings R′/R″ — a subject peel
-        moves to the root with [(Ξ, 𝒞)] EXACTLY preserved, so they
-        apply to EITHER side of the b-core pair (even the pinned one)
-        and any fold rides for free. *)
+        the runner-completeness stack, which now imports it). *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -64,17 +53,7 @@ Definition a_cstr_is_eq (c : a_cstr) : Prop := exists Q, c = a_cstr_eq Q.
 (* ===================================================================== *)
 
 (* ===================================================================== *)
-(*  §3  A ◇-target solve step is the identity                             *)
-(* ===================================================================== *)
-
-(** Crossing 3's engine: the slack constraints ([eq ◇] and [≼m ◇]) cost
-    the fold NOTHING — the pattern passes through and no names are
-    generated — so the side that emitted them and the side that did not
-    fold to the SAME state.  (The BUILD direction is one constructor,
-    SE-VacuousR / SS-Vacuous; these are the INVERSIONS.) *)
-
-(* ===================================================================== *)
-(*  §4  The fold's head inversions and the pure-eq append decomposition   *)
+(*  §3  The fold's head inversions and the pure-eq append decomposition   *)
 (* ===================================================================== *)
 
 (** ⚙ Moved from prop_run_complete.v §5 (2026-08-16) — see the header. *)
@@ -133,22 +112,3 @@ Proof.
         by (solve [ apply app_assoc | symmetry; apply app_assoc ]).
       exact Hpost.
 Qed.
-
-(* ===================================================================== *)
-(*  §5  A ◇-target look collapses to at most one trivial constraint       *)
-(* ===================================================================== *)
-
-(* ===================================================================== *)
-(*  §6  The COLLECTION-PRESERVING re-rootings (§8c.9's R′/R″)             *)
-(*                                                                        *)
-(*  A constraint list is built from TARGET material and generated names   *)
-(*  alone — the subject never enters it — so re-rooting a SUBJECT-peel    *)
-(*  to the front preserves (Ξ, 𝒞) EXACTLY, and any fold on 𝒞 rides for   *)
-(*  free.  These are what let the b-core pair induction descend the       *)
-(*  subject on whichever side is ForallR-rooted: apply R′/R″ to THAT      *)
-(*  side (either one — the outputs are pinned), then recurse aligned.     *)
-(*  The only output-CHANGING re-rooting is the target peel at a Var       *)
-(*  root, and there the fold pays by [a_solve_sub_peel_forall_r]          *)
-(*  (prop_run_complete.v §6a).                                            *)
-(* ===================================================================== *)
-
