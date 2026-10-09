@@ -33,8 +33,8 @@
       inclusion [utyp_to_uskl C] of a type, which is GHOST-FREE, so all the
       ghost rows are excluded by their subject and what is left matches the
       type-sorted judgement rule for rule (§4, §8).
-    - the ∀-scope context Δ is an [atoms] on the [ad] side and a [list atom] on
-      the [d] side; they are related by membership rather than converted (§0b).
+    - the ∀-scope context Δ is an [atoms] on both sides, so the two systems
+      share it (§0b).
 
     ⚙ WHY IT LIVES HERE.  It relates the DECLARATIVE system to the
     decl-in-algo one, and [algo_decl/] is where the decl-in-algo layer lives,
