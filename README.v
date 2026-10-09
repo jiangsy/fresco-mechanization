@@ -35,7 +35,8 @@
 
     NOTATION
       Γ / Θ  declarative / algorithmic context      Ξ  suffix (fresh block)
-      Δ, Ψ   tag context, tag scope                 κ, ζ  metasubstitutions
+      Δ      skeleton ∀-scope (atom set)            κ, ζ  metasubstitutions
+      Ψ      solved-tag context (atom set)
       A B C  ptyp, btyp, utyp                       P Q R  pskl, bskl, uskl
       κ ∷ Θ₀ ⊑ Θ  information increase              Θ₀ ⊴ Θ₁  its relational form
       ∼ consistency   ⩽ subtyping   ⦂ a term's type / skeleton (at any mode)

@@ -1018,11 +1018,11 @@ Proof.
   - apply ad_refine_syn_f__var; assumption.
   - destruct Hnh. apply ad_refine_syn_f__arrow; auto.
   - apply ad_refine_syn_f__all with (L := L). intros α Hα.
-    apply H0; [ exact Hα | apply bskl_no_hole_open; assumption ].
+    apply H1; [ exact Hα | apply bskl_no_hole_open; assumption ].
   - destruct Hnh.
   - apply ad_refine_syn_f__tophole_remove; auto.
   - apply ad_refine_syn_f__tophole_fill with (L := L). intros α Hα.
-    apply H0; [ exact Hα | exact Hnh ].
+    apply H1; [ exact Hα | exact Hnh ].
   - apply ad_refine_syn_f__tophole_keep; auto.
   - eapply ad_refine_syn_f__flex_l; [ eassumption | ].
     apply IHad_refine_syn. apply ptyp_to_bskl_syn_no_hole.

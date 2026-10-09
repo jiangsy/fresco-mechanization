@@ -45,14 +45,14 @@ Reserved Notation "{{ Ψ ⨟ Γ ⊢ C ∼ B }}d"
 Reserved Notation "{{ Ψ ⨟ Γ ⊢[ M ] C ⩽ B }}d"
   (at level 0, Γ at level 74, M at level 0, C at level 74, B at level 74,
    format "'{{'  Ψ  ⨟  Γ  ⊢[  M  ]  C  ⩽  B  '}}d'").
-Reserved Notation "{{ Γ ⨟ Δ ⊢ᵣ Q ⊳ P }}d"
-  (at level 0, Δ at level 74, Q at level 74, P at level 74,
-   format "'{{'  Γ  ⨟  Δ  ⊢ᵣ  Q  ⊳  P  '}}d'").
+Reserved Notation "{{ Γ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}d"
+  (at level 0, Δ at level 74, Q at level 74, Q' at level 74,
+   format "'{{'  Γ  ⨟  Δ  ⊢ᵣ  Q  ⊳  Q'  '}}d'").
 (* ⚙ the UNCOLOURED twin (declarative.tex:1516); [ₚ] is the sort subscript, as
    in [⊢ₚₛ] — cf. the same pair under [}}ad] *)
-Reserved Notation "{{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}d"
-  (at level 0, Δ at level 74, P at level 74, Q at level 74,
-   format "'{{'  Γ  ⨟  Δ  ⊢ᵣₚ  P  ⊳  Q  '}}d'").
+Reserved Notation "{{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}d"
+  (at level 0, Δ at level 74, P at level 74, P' at level 74,
+   format "'{{'  Γ  ⨟  Δ  ⊢ᵣₚ  P  ⊳  P'  '}}d'").
 Reserved Notation "{{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d"
   (at level 0, Γ at level 74, R at level 74, Q at level 74,
    format "'{{'  Ψ  ⨟  Γ  ⊢ˢ  R  ∼  Q  '}}d'").
@@ -144,52 +144,68 @@ where "{{ Γ ⊢ᵤ C }}d" := (d_wf_utyp Γ C) : fresco_d_scope.
 
 (** The paper's [Γ∖Δ] (declarative.tex, skeleton well-formedness): [Γ] with
     the entries for the variables in [Δ] removed. *)
-Definition denv_minus (Γ : list (atom * dbind)) (Δ : list atom)
+Definition denv_minus (Γ : list (atom * dbind)) (Δ : atoms)
   : list (atom * dbind) :=
-  List.filter (fun b => if List.in_dec eq_dec (fst b) Δ then false else true) Γ.
+  List.filter (fun b => negb (AtomSetImpl.mem (fst b) Δ)) Γ.
 
 Lemma denv_minus_app : forall Γ1 Γ2 Δ,
     denv_minus (Γ1 ++ Γ2) Δ = denv_minus Γ1 Δ ++ denv_minus Γ2 Δ.
 Proof. intros. unfold denv_minus. apply filter_app. Qed.
 
-Lemma denv_minus_nil : forall Γ, denv_minus Γ nil = Γ.
-Proof. induction Γ as [|[a b] Γ IH]; simpl; f_equal; auto. Qed.
+Lemma denv_minus_empty : forall Γ, denv_minus Γ empty = Γ.
+Proof.
+  induction Γ as [|[a b] Γ IH]; simpl; [ reflexivity | ].
+  unfold denv_minus in *. simpl.
+  replace (AtomSetImpl.mem a empty) with false
+    by (symmetry; apply not_mem_iff; fsetdec).
+  simpl. f_equal. assumption.
+Qed.
+
+Lemma denv_minus_eq : forall Γ Δ1 Δ2,
+    Δ1 [=] Δ2 -> denv_minus Γ Δ1 = denv_minus Γ Δ2.
+Proof.
+  intros Γ Δ1 Δ2 HΔ. unfold denv_minus. apply List.filter_ext.
+  intros [x b]. simpl. f_equal.
+  destruct (AtomSetImpl.mem x Δ1) eqn:H1; destruct (AtomSetImpl.mem x Δ2) eqn:H2;
+    try reflexivity.
+  - rewrite <- mem_iff in H1. rewrite <- not_mem_iff in H2. fsetdec.
+  - rewrite <- not_mem_iff in H1. rewrite <- mem_iff in H2. fsetdec.
+Qed.
 
 Lemma denv_minus_cons_in : forall α b Γ Δ,
-    List.In α Δ -> denv_minus ((α ~ b) ++ Γ) Δ = denv_minus Γ Δ.
+    α `in` Δ -> denv_minus ((α ~ b) ++ Γ) Δ = denv_minus Γ Δ.
 Proof.
   intros. unfold denv_minus. simpl.
-  destruct (List.in_dec eq_dec α Δ); [ reflexivity | contradiction ].
+  replace (AtomSetImpl.mem α Δ) with true by (symmetry; apply mem_iff; assumption).
+  reflexivity.
 Qed.
 
 Lemma denv_minus_cons_notin : forall α b Γ Δ,
-    ~ List.In α Δ -> denv_minus ((α ~ b) ++ Γ) Δ = (α ~ b) ++ denv_minus Γ Δ.
+    α `notin` Δ -> denv_minus ((α ~ b) ++ Γ) Δ = (α ~ b) ++ denv_minus Γ Δ.
 Proof.
   intros. unfold denv_minus. simpl.
-  destruct (List.in_dec eq_dec α Δ); [ contradiction | reflexivity ].
+  replace (AtomSetImpl.mem α Δ) with false
+    by (symmetry; apply not_mem_iff; assumption).
+  reflexivity.
 Qed.
 
 Lemma binds_denv_minus : forall α b Γ Δ,
-    binds α b (denv_minus Γ Δ) <-> binds α b Γ /\ ~ List.In α Δ.
+    binds α b (denv_minus Γ Δ) <-> binds α b Γ /\ α `notin` Δ.
 Proof.
   intros α b Γ Δ. unfold binds, denv_minus. rewrite filter_In. simpl.
-  split.
-  - intros [H1 H2]. split; [ assumption | ].
-    destruct (List.in_dec eq_dec α Δ); [ discriminate | assumption ].
-  - intros [H1 H2]. split; [ assumption | ].
-    destruct (List.in_dec eq_dec α Δ); [ contradiction | reflexivity ].
+  rewrite negb_true_iff, <- not_mem_iff. reflexivity.
 Qed.
 
 Lemma dom_denv_minus : forall α Γ Δ,
-    α `in` dom (denv_minus Γ Δ) -> α `in` dom Γ /\ ~ List.In α Δ.
+    α `in` dom (denv_minus Γ Δ) -> α `in` dom Γ /\ α `notin` Δ.
 Proof.
   intros α Γ Δ. induction Γ as [|[a b] Γ IH]; simpl; intro H.
   - fsetdec.
   - unfold denv_minus in H. simpl in H.
-    destruct (List.in_dec eq_dec a Δ) as [Hin | Hnin]; simpl in H.
+    destruct (AtomSetImpl.mem a Δ) eqn:Hm; simpl in H.
     + destruct (IH H). split; [ fsetdec | assumption ].
     + apply add_iff in H. destruct H as [<- | H].
-      * split; [ fsetdec | assumption ].
+      * split; [ fsetdec | apply not_mem_iff; assumption ].
       * destruct (IH H). split; [ fsetdec | assumption ].
 Qed.
 
@@ -197,7 +213,7 @@ Qed.
    (declarative.tex, "Well-formedness of skeletons"), rule for rule: a
    quantifier binds its variable in BOTH [Γ] and [Δ], and a universal ghost's
    body is checked under [Γ∖Δ]. *)
-Inductive d_wf_pskl : list (atom * dbind) -> list atom -> pskl -> Prop :=
+Inductive d_wf_pskl : list (atom * dbind) -> atoms -> pskl -> Prop :=
 | d_wf_pskl__unit : forall Γ Δ,
     {{ Γ ⨟ Δ ⊢ₚₛ pskl_unit }}d
 | d_wf_pskl__var : forall Γ Δ α,
@@ -209,20 +225,20 @@ Inductive d_wf_pskl : list (atom * dbind) -> list atom -> pskl -> Prop :=
     {{ Γ ⨟ Δ ⊢ₚₛ (pskl_arrow P1 P2) }}d
 | d_wf_pskl__all : forall L Γ Δ P,
     (forall α, α `notin` L ->
-       {{ ((α ~ dbind_tvar) ++ Γ) ⨟ (α :: Δ) ⊢ₚₛ
+       {{ ((α ~ dbind_tvar) ++ Γ) ⨟ (add α Δ) ⊢ₚₛ
          (open_pskl_wrt_pskl P (pskl_var_f α)) }}d) ->
     {{ Γ ⨟ Δ ⊢ₚₛ (pskl_all_syn P) }}d
 | d_wf_pskl__hole : forall Γ Δ,
     {{ Γ ⨟ Δ ⊢ₚₛ pskl_hole }}d
 | d_wf_pskl__tophole : forall Γ Δ P,
     guarded_pskl P ->
-    {{ (denv_minus Γ Δ) ⨟ nil ⊢ₚₛ P }}d ->
+    {{ (denv_minus Γ Δ) ⨟ empty ⊢ₚₛ P }}d ->
     {{ Γ ⨟ Δ ⊢ₚₛ (pskl_tophole P) }}d
 where "{{ Γ ⨟ Δ ⊢ₚₛ P }}d" := (d_wf_pskl Γ Δ P) : fresco_d_scope.
 
 (* The decorated / unresolved skeleton twin: the same rules, with the tagged
    quantifier and the dotted ghosts read as their plain counterparts. *)
-Inductive d_wf_uskl : list (atom * dbind) -> list atom -> uskl -> Prop :=
+Inductive d_wf_uskl : list (atom * dbind) -> atoms -> uskl -> Prop :=
 | d_wf_uskl__unit : forall Γ Δ,
     {{ Γ ⨟ Δ ⊢ᵤₛ uskl_unit }}d
 | d_wf_uskl__var : forall Γ Δ α,
@@ -234,25 +250,25 @@ Inductive d_wf_uskl : list (atom * dbind) -> list atom -> uskl -> Prop :=
     {{ Γ ⨟ Δ ⊢ᵤₛ (uskl_arrow R1 R2) }}d
 | d_wf_uskl__all_syn : forall L Γ Δ R,
     (forall α, α `notin` L ->
-       {{ ((α ~ dbind_tvar) ++ Γ) ⨟ (α :: Δ) ⊢ᵤₛ
+       {{ ((α ~ dbind_tvar) ++ Γ) ⨟ (add α Δ) ⊢ᵤₛ
          (open_uskl_wrt_uskl R (uskl_var_f α)) }}d) ->
     {{ Γ ⨟ Δ ⊢ᵤₛ (uskl_all_syn R) }}d
 | d_wf_uskl__all_tag : forall L Γ Δ ε R,
     (forall α, α `notin` L ->
-       {{ ((α ~ dbind_tvar) ++ Γ) ⨟ (α :: Δ) ⊢ᵤₛ
+       {{ ((α ~ dbind_tvar) ++ Γ) ⨟ (add α Δ) ⊢ᵤₛ
          (open_uskl_wrt_uskl R (uskl_var_f α)) }}d) ->
     {{ Γ ⨟ Δ ⊢ᵤₛ (uskl_all_tag ε R) }}d
 | d_wf_uskl__hole : forall Γ Δ,
     {{ Γ ⨟ Δ ⊢ᵤₛ uskl_hole }}d
 | d_wf_uskl__tophole : forall Γ Δ R,
     guarded_uskl R ->
-    {{ (denv_minus Γ Δ) ⨟ nil ⊢ᵤₛ R }}d ->
+    {{ (denv_minus Γ Δ) ⨟ empty ⊢ᵤₛ R }}d ->
     {{ Γ ⨟ Δ ⊢ᵤₛ (uskl_tophole R) }}d
 | d_wf_uskl__holeg : forall Γ Δ,
     {{ Γ ⨟ Δ ⊢ᵤₛ uskl_holeg }}d
 | d_wf_uskl__topholeg : forall Γ Δ R,
     guarded_uskl R ->
-    {{ (denv_minus Γ Δ) ⨟ nil ⊢ᵤₛ R }}d ->
+    {{ (denv_minus Γ Δ) ⨟ empty ⊢ᵤₛ R }}d ->
     {{ Γ ⨟ Δ ⊢ᵤₛ (uskl_topholeg R) }}d
 where "{{ Γ ⨟ Δ ⊢ᵤₛ R }}d" := (d_wf_uskl Γ Δ R) : fresco_d_scope.
 
@@ -304,8 +320,8 @@ Qed.
 (* ===================================================================== *)
 (*  Tag relation  [tags{Δ}{φ}]  (paper notation [φ # Δ], declarative.tex) *)
 (*  Pure tag-counting: [Δ] is exactly the set of ε-tags appearing in the  *)
-(*  tagged type / skeleton, each used linearly (hence [list_disjoint] /    *)
-(*  [~ In] sidecars mirroring the paper's [⊎]).  This is the relation the  *)
+(*  tagged type / skeleton, each used linearly (hence the disjointness /   *)
+(*  [∉] side conditions mirroring the paper's [⊎]).  This is the relation *)
 (*  latest paper factors out of the old combined [Δ | Γ ⊢ φ]: the [d_sub] *)
 (*  ForallL premise is now [Γ ⊢ tags{Δ}{φ}] = well-scopedness (kept in     *)
 (*  [d_wf_utyp]) ∧ this relation.  Decoupled from [Γ]: tags ignore the     *)
@@ -501,39 +517,45 @@ where "{{ Γ ⊢ A ≤ B }}d" := (d_shallow_sub Γ A B) : fresco_d_scope.
    none, the ghost rule only asks that the fill avoid [Δ], and keeping a [∀◇]
    does not re-check guardedness.  Lemmas over this judgement carry that
    presupposition as a hypothesis where they need it
-   (docs/WF-SIDE-CONDITIONS.md §1).  The paper's [Δ ∩ ftv(Q) = ∅] is stated
-   elementwise because [Δ] is a list here. *)
-(* Todo: we should not use P for RHS in all the rules, P is reserverd for pskl, but RHS is also a bskl here *)
-Inductive d_refine_syn : list (atom * dbind) -> list atom -> bskl -> bskl -> Prop :=
+   (docs/WF-SIDE-CONDITIONS.md §1).  The left-hand side is the paper's
+   inherited skeleton [inh{P}]: each rule whose left side is not already
+   determined states it with [is_iskl], the tree's predicate for the
+   inherited colour. *)
+Inductive d_refine_syn : list (atom * dbind) -> atoms -> bskl -> bskl -> Prop :=
 | d_refine_syn__unit : forall Γ Δ,
     {{ Γ ⨟ Δ ⊢ᵣ bskl_unit ⊳ bskl_unit }}d
 | d_refine_syn__var : forall Γ Δ α,
     {{ Γ ⨟ Δ ⊢ᵣ (bskl_var_f α) ⊳ (bskl_var_f α) }}d
-| d_refine_syn__arrow : forall Γ Δ Q1 Q2 P1 P2,
-    {{ Γ ⨟ Δ ⊢ᵣ Q1 ⊳ P1 }}d ->
-    {{ Γ ⨟ Δ ⊢ᵣ Q2 ⊳ P2 }}d ->
-    {{ Γ ⨟ Δ ⊢ᵣ (bskl_arrow Q1 Q2) ⊳ (bskl_arrow P1 P2) }}d
-| d_refine_syn__all : forall L Γ Δ Q P,
+| d_refine_syn__arrow : forall Γ Δ Q1 Q2 Q3 Q4,
+    is_iskl (bskl_arrow Q1 Q2) ->
+    {{ Γ ⨟ Δ ⊢ᵣ Q1 ⊳ Q3 }}d ->
+    {{ Γ ⨟ Δ ⊢ᵣ Q2 ⊳ Q4 }}d ->
+    {{ Γ ⨟ Δ ⊢ᵣ (bskl_arrow Q1 Q2) ⊳ (bskl_arrow Q3 Q4) }}d
+| d_refine_syn__all : forall L Γ Δ Q Q',
+    is_iskl (bskl_all_inh Q) ->
     (forall α, α `notin` L ->
-       {{ ((α ~ dbind_tvar) ++ Γ) ⨟ (α :: Δ) ⊢ᵣ
+       {{ ((α ~ dbind_tvar) ++ Γ) ⨟ (add α Δ) ⊢ᵣ
          (open_bskl_wrt_bskl Q (bskl_var_f α)) ⊳
-         (open_bskl_wrt_bskl P (bskl_var_f α)) }}d) ->
-    {{ Γ ⨟ Δ ⊢ᵣ (bskl_all_inh Q) ⊳ (bskl_all_inh P) }}d
+         (open_bskl_wrt_bskl Q' (bskl_var_f α)) }}d) ->
+    {{ Γ ⨟ Δ ⊢ᵣ (bskl_all_inh Q) ⊳ (bskl_all_inh Q') }}d
 | d_refine_syn__hole : forall Γ Δ P,
-    (forall α, List.In α Δ -> α `notin` ftvar_in_pskl P) ->
+    Δ ∩ ftvar_in_pskl P [=] empty ->
     {{ Γ ⨟ Δ ⊢ᵣ bskl_hole ⊳ (pskl_to_bskl_syn P) }}d
-| d_refine_syn__tophole_remove : forall Γ Δ Q P,
-    {{ Γ ⨟ Δ ⊢ᵣ Q ⊳ P }}d ->
-    {{ Γ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ P }}d
-| d_refine_syn__tophole_fill : forall L Γ Δ Q P,
+| d_refine_syn__tophole_remove : forall Γ Δ Q Q',
+    is_iskl (bskl_tophole Q) ->
+    {{ Γ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}d ->
+    {{ Γ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ Q' }}d
+| d_refine_syn__tophole_fill : forall L Γ Δ Q Q',
+    is_iskl (bskl_tophole Q) ->
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⨟ Δ ⊢ᵣ
-         (bskl_tophole Q) ⊳ (open_bskl_wrt_bskl P (bskl_var_f α)) }}d) ->
-    {{ Γ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_all_syn P) }}d
-| d_refine_syn__tophole_keep : forall Γ Δ Q P,
-    {{ Γ ⨟ Δ ⊢ᵣ Q ⊳ P }}d ->
-    {{ Γ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_tophole P) }}d
-where "{{ Γ ⨟ Δ ⊢ᵣ Q ⊳ P }}d" := (d_refine_syn Γ Δ Q P) : fresco_d_scope.
+         (bskl_tophole Q) ⊳ (open_bskl_wrt_bskl Q' (bskl_var_f α)) }}d) ->
+    {{ Γ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_all_syn Q') }}d
+| d_refine_syn__tophole_keep : forall Γ Δ Q Q',
+    is_iskl (bskl_tophole Q) ->
+    {{ Γ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}d ->
+    {{ Γ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_tophole Q') }}d
+where "{{ Γ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}d" := (d_refine_syn Γ Δ Q Q') : fresco_d_scope.
 (* ⚙ The [ᵣ] subscript is what keeps refinement apart from [d_shallow_sub]'s
    bare [{{ Γ ⊢ A ≤ B }}d]; the [ad] layer's copy reads the same inside the
    braces ([{{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad]), the delimiter carrying the system. *)
@@ -561,36 +583,36 @@ where "{{ Γ ⨟ Δ ⊢ᵣ Q ⊳ P }}d" := (d_refine_syn Γ Δ Q P) : fresco_d_s
     (declarative.tex:1433).  [__tophole_fill] extends Γ instead — a UNIVERSAL
     ghost is allowed to capture, which is what generalisation means. *)
 Inductive d_refine_pskl :
-  list (atom * dbind) -> list atom -> pskl -> pskl -> Prop :=
+  list (atom * dbind) -> atoms -> pskl -> pskl -> Prop :=
 | d_refine_pskl__unit : forall Γ Δ,
     {{ Γ ⨟ Δ ⊢ᵣₚ pskl_unit ⊳ pskl_unit }}d
 | d_refine_pskl__var : forall Γ Δ α,
     {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_var_f α) ⊳ (pskl_var_f α) }}d
-| d_refine_pskl__arrow : forall Γ Δ P1 P2 Q1 Q2,
-    {{ Γ ⨟ Δ ⊢ᵣₚ P1 ⊳ Q1 }}d ->
-    {{ Γ ⨟ Δ ⊢ᵣₚ P2 ⊳ Q2 }}d ->
-    {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_arrow P1 P2) ⊳ (pskl_arrow Q1 Q2) }}d
-| d_refine_pskl__all : forall L Γ Δ P Q,
+| d_refine_pskl__arrow : forall Γ Δ P1 P2 P3 P4,
+    {{ Γ ⨟ Δ ⊢ᵣₚ P1 ⊳ P3 }}d ->
+    {{ Γ ⨟ Δ ⊢ᵣₚ P2 ⊳ P4 }}d ->
+    {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_arrow P1 P2) ⊳ (pskl_arrow P3 P4) }}d
+| d_refine_pskl__all : forall L Γ Δ P P',
     (forall α, α `notin` L ->
-       {{ ((α ~ dbind_tvar) ++ Γ) ⨟ (α :: Δ) ⊢ᵣₚ
+       {{ ((α ~ dbind_tvar) ++ Γ) ⨟ (add α Δ) ⊢ᵣₚ
          (open_pskl_wrt_pskl P (pskl_var_f α)) ⊳
-         (open_pskl_wrt_pskl Q (pskl_var_f α)) }}d) ->
-    {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_all_syn P) ⊳ (pskl_all_syn Q) }}d
-| d_refine_pskl__hole : forall Γ Δ Q,
-    (forall α, List.In α Δ -> α `notin` ftvar_in_pskl Q) ->
-    {{ Γ ⨟ Δ ⊢ᵣₚ pskl_hole ⊳ Q }}d
-| d_refine_pskl__tophole_remove : forall Γ Δ P Q,
-    {{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}d ->
-    {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ Q }}d
-| d_refine_pskl__tophole_fill : forall L Γ Δ P Q,
+         (open_pskl_wrt_pskl P' (pskl_var_f α)) }}d) ->
+    {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_all_syn P) ⊳ (pskl_all_syn P') }}d
+| d_refine_pskl__hole : forall Γ Δ P',
+    Δ ∩ ftvar_in_pskl P' [=] empty ->
+    {{ Γ ⨟ Δ ⊢ᵣₚ pskl_hole ⊳ P' }}d
+| d_refine_pskl__tophole_remove : forall Γ Δ P P',
+    {{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}d ->
+    {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ P' }}d
+| d_refine_pskl__tophole_fill : forall L Γ Δ P P',
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⨟ Δ ⊢ᵣₚ
-         (pskl_tophole P) ⊳ (open_pskl_wrt_pskl Q (pskl_var_f α)) }}d) ->
-    {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_all_syn Q) }}d
-| d_refine_pskl__tophole_keep : forall Γ Δ P Q,
-    {{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}d ->
-    {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_tophole Q) }}d
-where "{{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}d" := (d_refine_pskl Γ Δ P Q) : fresco_d_scope.
+         (pskl_tophole P) ⊳ (open_pskl_wrt_pskl P' (pskl_var_f α)) }}d) ->
+    {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_all_syn P') }}d
+| d_refine_pskl__tophole_keep : forall Γ Δ P P',
+    {{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}d ->
+    {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_tophole P') }}d
+where "{{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}d" := (d_refine_pskl Γ Δ P P') : fresco_d_scope.
 
 Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
 | d_pat_consis__unit : forall Ψ Γ,
@@ -643,7 +665,7 @@ Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
     {{ Ψ ⨟ Γ ⊢ˢ (uskl_topholeg R) ∼ (bskl_tophole Q) }}d
 | d_pat_consis__hole : forall Ψ Γ P,
     Ψ [=] empty ->
-    d_wf_pskl Γ nil P ->
+    {{ Γ ⨟ empty ⊢ₚₛ P }}d ->
     {{ Ψ ⨟ Γ ⊢ˢ uskl_hole ∼ (pskl_to_bskl_inh P) }}d
 | d_pat_consis__tophole : forall Ψ Γ R Q,
     (* Paper [UnivGhost]: TopHole ∼ TopHole. *)
@@ -692,7 +714,7 @@ where "{{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d" := (d_pat_consis Ψ Γ R Q) : fresco_d_sc
 Definition d_consis_join (Ψ : atoms) (Γ : list (atom * dbind))
                          (R : uskl) (Q : bskl) : Prop :=
   {{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d /\
-  {{ Γ ⨟ nil ⊢ᵣₚ (uskl_to_pskl R) ⊳ (bskl_to_pskl Q) }}d.
+  {{ Γ ⨟ empty ⊢ᵣₚ (uskl_to_pskl R) ⊳ (bskl_to_pskl Q) }}d.
 
 Notation "{{ Ψ ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d" := (d_consis_join Ψ Γ R Q) : fresco_d_scope.
 
@@ -703,12 +725,12 @@ Proof. intros * [H _]; exact H. Qed.
 
 Lemma d_consis_join_refine : forall Ψ Γ R Q,
   {{ Ψ ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d ->
-  {{ Γ ⨟ nil ⊢ᵣₚ (uskl_to_pskl R) ⊳ (bskl_to_pskl Q) }}d.
+  {{ Γ ⨟ empty ⊢ᵣₚ (uskl_to_pskl R) ⊳ (bskl_to_pskl Q) }}d.
 Proof. intros * [_ H]; exact H. Qed.
 
 Lemma d_consis_join_intro : forall Ψ Γ R Q,
   {{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d ->
-  {{ Γ ⨟ nil ⊢ᵣₚ (uskl_to_pskl R) ⊳ (bskl_to_pskl Q) }}d ->
+  {{ Γ ⨟ empty ⊢ᵣₚ (uskl_to_pskl R) ⊳ (bskl_to_pskl Q) }}d ->
   {{ Ψ ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d.
 Proof. intros; split; assumption. Qed.
 
@@ -745,13 +767,13 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     Ψ [=] Ψ1 `union` Ψ2 ->
     {{ Ψ ⨟ Γ ⊢ˢ[ mode_fn m ] (uskl_arrow R1 R2) ⩽ (bskl_arrow Q1 Q2) }}d
 | d_pat_sub__forall_l_tagged : forall Ψ Ψ' Γ m ε R psi Q,
-    (* Paper [ForallL] (tagged head).  [Ψ' fresh] = [list_disjoint];
-       well-scopedness is [{{ Γ ⨟ nil ⊢ᵤₛ ψ }}d] (R1: scope, not tags). *)
+    (* Paper [ForallL] (tagged head).  [Ψ' fresh] = the two [∩ … [=] empty];
+       well-scopedness is [{{ Γ ⨟ empty ⊢ᵤₛ ψ }}d] (R1: scope, not tags). *)
     m <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
     Ψ' ∩ (ftag_in_uskl (uskl_all_tag ε R)) [=] empty ->  (* GLOBAL freshness *)
     d_tags_skl Ψ' psi ->             (* tags{Ψ'}{ψ} : skeleton-tag relation *)
-    {{ Γ ⨟ nil ⊢ᵤₛ psi }}d ->
+    {{ Γ ⨟ empty ⊢ᵤₛ psi }}d ->
     is_tskl psi ->
     {{ (Ψ `union` Ψ') ⨟ Γ ⊢ˢ[ m ] (open_uskl_wrt_uskl R psi) ⩽ Q }}d ->
     {{ Ψ ⨟ Γ ⊢ˢ[ m ] (uskl_all_tag ε R) ⩽ Q }}d
@@ -760,7 +782,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     Ψ' ∩ Ψ [=] empty ->
     Ψ' ∩ (ftag_in_uskl (uskl_all_syn R)) [=] empty ->     (* GLOBAL freshness *)
     d_tags_skl Ψ' psi ->
-    {{ Γ ⨟ nil ⊢ᵤₛ psi }}d ->
+    {{ Γ ⨟ empty ⊢ᵤₛ psi }}d ->
     is_tskl psi ->
     {{ (Ψ `union` Ψ') ⨟ Γ ⊢ˢ[ m ] (open_uskl_wrt_uskl R psi) ⩽ Q }}d ->
     {{ Ψ ⨟ Γ ⊢ˢ[ m ] (uskl_all_syn R) ⩽ Q }}d
@@ -772,7 +794,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
        skeleton analog of [d_sub] having no ghost rule. *)
     (* Todo: lift Ψ quantification above *)
     forall Ψ, Ψ [=] empty ->
-    d_wf_pskl Γ nil P ->
+    {{ Γ ⨟ empty ⊢ₚₛ P }}d ->
     mod_comp_sk (pskl_to_bskl_inh P) m ->
     {{ Ψ ⨟ Γ ⊢ˢ[ m ] uskl_hole ⩽ (pskl_to_bskl_inh P) }}d
 | d_pat_sub__univ_ghost_l : forall m Ψ Γ R Q,
@@ -831,18 +853,18 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
        premise clears Δ), and the paper says so itself — *"it's fine to keep Δ
        since we already required well-formedness separately"*
        (declarative.tex:1502). *)
-    {{ Γ ⨟ nil ⊢ₚₛ (bskl_to_pskl Q) }}d ->
+    {{ Γ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}d ->
     {{ empty ⨟ Γ ⊢ˢ[ m ] uskl_unit ⩽ Q }}d ->
     {{ Γ ⊢ˢ[ m ] exp_unit ⦂ Q }}d
 | d_pat__var : forall Γ m x (P : pskl) d Q,
     binds x d Γ ->
     dbind_to_pskl d = Some P ->
-    {{ Γ ⨟ nil ⊢ₚₛ (bskl_to_pskl Q) }}d ->
+    {{ Γ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}d ->
     {{ empty ⨟ Γ ⊢ˢ[ m ] (bskl_to_uskl (pskl_to_bskl_syn P)) ⩽ Q }}d ->
     {{ Γ ⊢ˢ[ m ] (exp_var_f x) ⦂ Q }}d
 | d_pat__anno : forall Γ m e (A : ptyp) Q,
     {{ Γ ⊢ₚ A }}d ->
-    {{ Γ ⨟ nil ⊢ₚₛ (bskl_to_pskl Q) }}d ->
+    {{ Γ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}d ->
     {{ empty ⨟ Γ ⊢ˢ[ m ] (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl A))) ⩽ Q }}d ->
     {{ Γ ⊢ˢ[ m ] (exp_anno e A) ⦂ Q }}d
 | d_pat__freeze : forall Γ e P,
@@ -855,7 +877,7 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
        threads [mod_comp_sk Q m'] for the body.  [m ≠ tc] keeps this disjoint from
        [abs_check] (which owns the checking mode). *)
     m <> mode_tc ->
-    {{ Γ ⨟ nil ⊢ₚₛ P }}d ->
+    {{ Γ ⨟ empty ⊢ₚₛ P }}d ->
     mod_comp_sk (bskl_arrow (pskl_to_bskl_inh P) Q) m ->
     (forall x, x `notin` L ->
        {{ ((x ~ dbind_skl P) ++ Γ) ⊢ˢ[ decr_mode m ]
@@ -877,7 +899,7 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
        INFERRED ([⦂]) in [FN] mode, not typed — d_pat is self-contained
        skeleton inference.  [P'] is the fill output (the arg skeleton). *)
     {{ Γ ⊢ˢ[ mode_tc ] e2 ⦂ (pskl_to_bskl_syn P) }}d ->
-    {{ Γ ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ Q1 }}d ->
+    {{ Γ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P) ⊳ Q1 }}d ->
     {{ Γ ⊢ˢ[ mode_fn m ] e1 ⦂ (bskl_arrow Q1 Q2) }}d ->
     {{ Γ ⊢ˢ[ m ] (exp_app e1 e2) ⦂ Q2 }}d
 | d_pat__abs_check : forall L Γ e P,
@@ -954,7 +976,7 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
        same [inh A].  (Previously the function domain was an arbitrary [Barg]
        with erasure [A], not justified by the [inh A] refinement output.) *)
     {{ Γ ⊢ˢ[ mode_tc ] e2 ⦂ (pskl_to_bskl_syn P) }}d ->
-    {{ Γ ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B1) }}d ->
+    {{ Γ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B1) }}d ->
     {{ Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow B1 B2) }}d ->
     {{ Γ ⊢[ mode_tc ] e2 ⦂ (ptyp_to_btyp_inh (btyp_to_ptyp B1)) }}d ->
     {{ Γ ⊢[ m ] (exp_app e1 e2) ⦂ B2 }}d
@@ -1042,7 +1064,7 @@ Inductive d_sd_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
        [btyp_to_bskl B1]) and the function premise; the argument is checked at
        the inherited colouring of the same domain. *)
     {{ Γ ⊢ˢ[ mode_tc ] e2 ⦂ (pskl_to_bskl_syn P) }}d ->
-    {{ Γ ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B1) }}d ->
+    {{ Γ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B1) }}d ->
     {{ Γ ⊢ˢᵈ[ (mode_fn m) ] e1 ⦂ (btyp_arrow B1 B2) }}d ->
     {{ Γ ⊢ˢᵈ[ mode_tc ] e2 ⦂ (ptyp_to_btyp_inh (btyp_to_ptyp B1)) }}d ->
     {{ Γ ⊢ˢᵈ[ m ] (exp_app e1 e2) ⦂ B2 }}d

@@ -104,8 +104,8 @@ Proof.
   intros Θ Δ0 Q P H; induction H; intros Hg Δ'; simpl in Hg;
     try contradiction; eauto using ad_refine_syn.
   - destruct Hg; eauto using ad_refine_syn.
-  - apply ad_refine_syn__all with (L := L). intros α Hα.
-    apply H0; auto. apply bskl_ghost_free_open_rec; exact Hg.
+  - apply ad_refine_syn__all with (L := L); [ assumption | ]. intros α Hα.
+    apply H1; auto. apply bskl_ghost_free_open_rec; exact Hg.
   - eapply ad_refine_syn__flex_l; [ exact H | ].
     apply IHad_refine_syn; auto.
     unfold ptyp_to_bskl_syn. apply pskl_to_bskl_syn_ghost_free.

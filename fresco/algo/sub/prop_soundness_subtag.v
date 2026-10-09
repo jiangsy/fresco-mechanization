@@ -1362,7 +1362,7 @@ Proof.
     rewrite (subst_pskl_in_pskl_open_pskl_wrt_pskl_var
                   P pskl_unit β α Hβα lc_pskl_unit).
     rewrite (subst_pskl_in_pskl_open_pskl_wrt_pskl_var
-                  Q pskl_unit β α Hβα lc_pskl_unit).
+                  P' pskl_unit β α Hβα lc_pskl_unit).
     specialize (H0 α ltac:(clear - Hα; solve_notin_auto)
                   ((α ~ abind_tvar) ++ Θ1) β Θ2).
     simpl_env in H0. simpl_env. apply H0;
@@ -1373,7 +1373,7 @@ Proof.
         [ discriminate | eauto ] ].
   - (* __hole : the fill is substituted along with the context *)
     apply ad_refine_pskl__hole.
-    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Q pskl_unit β) as Hup.
+    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P' pskl_unit β) as Hup.
     simpl in Hup. clear - H Hup. fsetdec.
   - (* __tophole_remove *)
     apply ad_refine_pskl__tophole_remove.
@@ -1384,7 +1384,7 @@ Proof.
     intros α Hα.
     assert (Hβα : β <> α) by (clear - Hα; fsetdec).
     rewrite (subst_pskl_in_pskl_open_pskl_wrt_pskl_var
-                  Q pskl_unit β α Hβα lc_pskl_unit).
+                  P' pskl_unit β α Hβα lc_pskl_unit).
     specialize (H0 α ltac:(clear - Hα; solve_notin_auto)
                   ((α ~ abind_tvar) ++ Θ1) β Θ2).
     simpl_env in H0. simpl_env. apply H0;
@@ -1629,7 +1629,7 @@ Proof.
                P (ptyp_to_pskl τ0) β α Hβα
                (mono_ptyp_to_pskl_lc Hm)).
     rewrite (subst_pskl_in_pskl_open_pskl_wrt_pskl_var
-               Q (ptyp_to_pskl τ0) β α Hβα
+               P' (ptyp_to_pskl τ0) β α Hβα
                (mono_ptyp_to_pskl_lc Hm)).
     specialize (H0 α ltac:(clear - Hα; solve_notin_auto)
                   ((α ~ abind_tvar) ++ Θ1) β τ0 Θ2).
@@ -1645,7 +1645,7 @@ Proof.
       | clear - HΔτ Hατ; fsetdec ].
   - (* __hole *)
     apply ad_refine_pskl__hole.
-    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Q (ptyp_to_pskl τ0) β)
+    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P' (ptyp_to_pskl τ0) β)
       as Hup.
     rewrite ftvar_ptyp_to_pskl in Hup.
     clear - H HΔτ Hup. fsetdec.
@@ -1658,7 +1658,7 @@ Proof.
     intros α Hα.
     assert (Hβα : β <> α) by (clear - Hα; fsetdec).
     rewrite (subst_pskl_in_pskl_open_pskl_wrt_pskl_var
-               Q (ptyp_to_pskl τ0) β α Hβα
+               P' (ptyp_to_pskl τ0) β α Hβα
                (mono_ptyp_to_pskl_lc Hm)).
     specialize (H0 α ltac:(clear - Hα; solve_notin_auto)
                   ((α ~ abind_tvar) ++ Θ1) β τ0 Θ2).

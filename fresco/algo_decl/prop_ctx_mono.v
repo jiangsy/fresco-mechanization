@@ -233,22 +233,23 @@ Proof.
       [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
 Qed.
 
-Lemma ad_refine_syn_mono : forall Θ Δ Q P,
-  {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad ->
-  forall Θ', aenv_tbinds_le Θ Θ' -> {{ Θ' ⨟ Δ ⊢ᵣ Q ⊳ P }}ad.
+Lemma ad_refine_syn_mono : forall Θ Δ Q Q',
+  {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
+  forall Θ', aenv_tbinds_le Θ Θ' -> {{ Θ' ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad.
 Proof.
-  intros Θ Δ Q P H; induction H; intros Θ' Hle.
+  intros Θ Δ Q Q' H; induction H; intros Θ' Hle.
   - apply ad_refine_syn__unit.
   - apply ad_refine_syn__var.
   - apply ad_refine_syn__arrow; auto.
   - (* ∀ : binds into both Θ and Δ *)
-    apply ad_refine_syn__all with (L := L). intros α Hα.
-    apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
+    apply ad_refine_syn__all with (L := L); [ assumption | ]. intros α Hα.
+    apply H1; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
   - apply ad_refine_syn__hole. assumption.
   - apply ad_refine_syn__tophole_remove; auto.
   - (* tophole_fill : binds into Θ *)
-    apply ad_refine_syn__tophole_fill with (L := L). intros α Hα.
-    apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
+    apply ad_refine_syn__tophole_fill with (L := L); [ assumption | ].
+    intros α Hα.
+    apply H1; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
   - apply ad_refine_syn__tophole_keep; auto.
   - eapply ad_refine_syn__flex_l;
       [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
@@ -256,11 +257,11 @@ Proof.
       [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
 Qed.
 
-Lemma ad_refine_pskl_mono : forall Θ Δ P Q,
-  {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad ->
-  forall Θ', aenv_tbinds_le Θ Θ' -> {{ Θ' ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad.
+Lemma ad_refine_pskl_mono : forall Θ Δ P P',
+  {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad ->
+  forall Θ', aenv_tbinds_le Θ Θ' -> {{ Θ' ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad.
 Proof.
-  intros Θ Δ P Q H; induction H; intros Θ' Hle.
+  intros Θ Δ P P' H; induction H; intros Θ' Hle.
   - apply ad_refine_pskl__unit.
   - apply ad_refine_pskl__var.
   - apply ad_refine_pskl__arrow; auto.
@@ -431,17 +432,17 @@ Qed.
 (*  the algorithmic Abs rows produce.                                      *)
 (* ===================================================================== *)
 
-Corollary ad_refine_syn_strip_tm_typ : forall Ξ x A Θ Δ Q P,
-  {{ (Ξ ++ (x ~ abind_var_typ A) ++ Θ) ⨟ Δ ⊢ᵣ Q ⊳ P }}ad ->
-  {{ (Ξ ++ Θ) ⨟ Δ ⊢ᵣ Q ⊳ P }}ad.
+Corollary ad_refine_syn_strip_tm_typ : forall Ξ x A Θ Δ Q Q',
+  {{ (Ξ ++ (x ~ abind_var_typ A) ++ Θ) ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
+  {{ (Ξ ++ Θ) ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad.
 Proof.
   intros * H. eapply ad_refine_syn_mono;
     [ exact H | apply aenv_tbinds_le_strip_tm; intros [] ].
 Qed.
 
-Corollary ad_refine_syn_strip_tm_skl : forall Ξ x P0 Θ Δ Q P,
-  {{ (Ξ ++ (x ~ abind_var_skl P0) ++ Θ) ⨟ Δ ⊢ᵣ Q ⊳ P }}ad ->
-  {{ (Ξ ++ Θ) ⨟ Δ ⊢ᵣ Q ⊳ P }}ad.
+Corollary ad_refine_syn_strip_tm_skl : forall Ξ x P0 Θ Δ Q Q',
+  {{ (Ξ ++ (x ~ abind_var_skl P0) ++ Θ) ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
+  {{ (Ξ ++ Θ) ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad.
 Proof.
   intros * H. eapply ad_refine_syn_mono;
     [ exact H | apply aenv_tbinds_le_strip_tm; intros [] ].

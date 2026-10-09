@@ -116,6 +116,14 @@ Lemma pskl_to_bskl_syn_ghost_free : forall P,
   bskl_ghost_free (pskl_to_bskl_syn P).
 Proof. induction P; simpl; intuition. Qed.
 
+Lemma is_iskl_pskl_to_bskl_inh : forall P,
+  lc_pskl P -> is_iskl (pskl_to_bskl_inh P).
+Proof.
+  intros P Hlc; induction Hlc; simpl; try solve [ constructor; auto ].
+  apply is_iskl__all with (L := {}). intros α _.
+  rewrite <- pskl_to_bskl_inh_open. auto.
+Qed.
+
 (** The workhorse for discharging a rule's SORT premise.  Every algorithmic
     type position is reached from another one by opening, closing, renaming or
     instantiating with a [guess^TY] output, so the closure kit above is

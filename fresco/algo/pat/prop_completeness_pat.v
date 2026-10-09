@@ -1160,8 +1160,8 @@ Proof.
     rewrite bskl_to_pskl_pskl_to_bskl_syn in Hprec.
     cbn [msubst_pskl bskl_to_pskl pskl_to_bskl_inh].
     rewrite bskl_to_pskl_pskl_to_bskl_syn.
-    apply ad_refine_syn__tophole_keep.
-    apply ad_refine_syn__arrow.
+    apply ad_refine_syn_tophole_keep_intro.
+    apply ad_refine_syn_arrow_intro.
     - apply (@ad_refine_syn__hole Θ empty pskl_hole).
       clear; fsetdec.
     - eapply ad_refine_syn_mono;
@@ -1340,8 +1340,8 @@ Proof.
           eapply a_inc_binds_tvar;
             [ exact Hincid' | apply HrigA; exact Hα ] ]. }
     rewrite HmsAζ.
-    apply ad_refine_syn__tophole_keep.
-    apply ad_refine_syn__arrow.
+    apply ad_refine_syn_tophole_keep_intro.
+    apply ad_refine_syn_arrow_intro.
     - apply ad_precise_refl.
       apply a_wf_ptyp_to_wf_pskl. exact HwfA.
     - eapply ad_refine_syn_mono;
@@ -1624,7 +1624,7 @@ Proof.
     unfold ad_precise in Hprec |- *.
     cbn [msubst_pskl bskl_to_pskl pskl_to_bskl_inh].
     rewrite bskl_to_pskl_pskl_to_bskl_inh.
-    apply ad_refine_syn__arrow.
+    apply ad_refine_syn_arrow_intro.
     - rewrite <- Hms. exact Hdom.
     - eapply ad_refine_syn_mono;
         [ exact Hprec
@@ -1991,7 +1991,7 @@ Proof.
           eapply a_inc_binds_tvar;
             [ exact Hincb' | apply HrigMid; exact Hα ] ]. }
     rewrite HmsAζb.
-    apply ad_refine_syn__arrow.
+    apply ad_refine_syn_arrow_intro.
     - apply ad_precise_refl.
       apply a_wf_ptyp_to_wf_pskl. exact HwfA.
     - eapply ad_refine_syn_mono;
@@ -2255,7 +2255,7 @@ Proof.
               ltac:(apply a_sk_mode_compat__fn; exact Hmod)
               Hζ1 Hrig1mid Hlc1 Hd1
               ltac:(cbn [msubst_pskl pskl_to_bskl_inh];
-                    apply ad_refine_syn__arrow; [ exact Hh | exact Hi ]))
+                    apply ad_refine_syn_arrow_intro; [ exact Hh | exact Hi ]))
     as [P2 [Θ2 [Hrun1 Hopt1]]].
   (* the function's output is an ARROW (the run's image is FN-compatible) *)
   assert (Hexp1 : {{ Θ1 ⊢ᵉ e1 }}a).

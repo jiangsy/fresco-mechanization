@@ -267,19 +267,21 @@ Metavariable convention in comments and statements: `A` for `ptyp`,
 `B` for `btyp`, `C` for `utyp`; `P` for `pskl`, `Q` for `bskl`,
 `R` for `uskl`.
 
-### 4.2 Predicative contexts (`list atom`)
+### 4.2 Predicative contexts (atom sets)
 
-Tag contexts `Ψ` and skeleton ∀-scope contexts `Δ` are plain `list
-atom` in the declarative layer (`Δ` is an atom set in `algo_decl/` /
-`algo/`). Disjoint-union `Ψ₁ ⊎ Ψ₂` is encoded as `list_disjoint Ψ₁ Ψ₂`
-plus `++`. Avoids the multiset machinery the paper's prose hints at.
+Tag contexts `Ψ` and skeleton ∀-scope contexts `Δ` are atom sets
+(`atoms`) in every layer, compared with `[=]`, as in the paper.
+(`Δ` was a `list atom` in the declarative layer until 2026-10-09; that
+list, `delta_agree` and `tvars_denv` are gone, and the conservativity
+bridges in `algo_decl/prop_conserv.v` are stated at one Δ.)  The paper's
+disjoint union `Ψ₁ ⊎ Ψ₂` is `Ψ [=] Ψ₁ ∪ Ψ₂` plus `Ψ₁ ∩ Ψ₂ [=] empty`
+in `d_tags`; the subtyping / consistency arrow rules use plain union
+(see below), and ForallL's `fresh Ψ'` is a GLOBAL disjointness side
+condition.
 
-The cost: arrow cases of transitivity-style lemmas like
-`d_consis_compose` (paper Lemma B.2) interleave segments
-`(Δ₁ ++ Δb1) ++ (Δ₂ ++ Δb2)` vs the natural `Δa ++ Δb`. Worked
-around with a `Permutation`-quantified conclusion plus the
-`list_swap_middle` helper. Switching to multiset would simplify
-this; deferred decision.
+The `list atom` encoding of `Ψ` (disjoint `++`, a `Permutation`-quantified
+conclusion and `list_swap_middle` in the arrow case of
+`d_consis_compose`) is historical; the set encoding retired it.
 
 **Set semantics for `d_consis` (2026-05-23).** The paper's `Δ` is a *set*
 (`declarative.tex:818`): consistency `[Arrow]` combines tags by **set union**
@@ -290,14 +292,14 @@ freshness side-condition). The mechanized `d_consis` rules had been *stricter*
 transitivity) un-provable: composing two derivations can legitimately reuse a
 tag, which a set absorbs but disjoint-`++` cannot. Both premises were
 **dropped** (paper-faithful set semantics). B.2 then closes with a **superset**
-conclusion `∃ Δc, incl (Δa ++ Δb) Δc ∧ …`: the superset is *not* slack but
+conclusion `∃ Δc, (Δa ∪ Δb) [<=] Δc ∧ …`: the superset is *not* slack but
 necessary — the **tagged→syn→inh** path (an tag-∀ syn-matched against the
 synthesised middle, then inh-matched against the target) mints a tag that is in
 the output but neither input. Conversely the middle MUST stay syn (an inh
 middle drops a recorded tag, breaking the superset) — and this is faithful,
 since the consistency-transitivity middle is always the LHS of the second
 consistency, hence synthesised. Proof uses an explicit witness *function*
-`compose_tags : utyp → btyp → list atom` (the output Δ as a function of the
+`compose_tags : utyp → btyp → atoms` (the output Δ as a function of the
 endpoints, invariant under the opening variable), which sidesteps the cofinite
 "different Δc per opening X" obstruction. The same superset shape now applies
 to B.4 (`d_sub_gen_trans{,_ti_lhs}`); `d_sub_gen_trans_btyp_nil` recovers the
@@ -1047,9 +1049,9 @@ the paper theorem without qualification**:
 - **`d_consis__var` carries a `binds X dbind_tvar Γ` premise**
   (paper-faithful: the paper assumes the wf invariant implicitly).
   Without it, `d_consis_preserves_wf`'s var case is open.
-- **Linearity of tag contexts** is encoded as `list_disjoint` +
-  append, not multiset. This is a prosaic reading of the paper
-  (`Δ₁ ⊎ Δ₂` = disjoint union) but readers expecting linear logic
+- **Linearity of tag contexts** is encoded as set union plus an
+  explicit `Ψ₁ ∩ Ψ₂ [=] empty` (in `d_tags`), not multiset. This is a
+  prosaic reading of the paper (`Ψ₁ ⊎ Ψ₂` = disjoint union) but readers expecting linear logic
   might want a stronger statement. Out of scope.
 
 ### 5.3 Status of paper claims

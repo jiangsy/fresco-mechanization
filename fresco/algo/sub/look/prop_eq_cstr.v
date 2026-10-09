@@ -2049,22 +2049,22 @@ Proof.
     specialize (IHad_refine_syn1 HwfΘ); specialize (IHad_refine_syn2 HwfΘ).
     clear - IHad_refine_syn1 IHad_refine_syn2; fsetdec.
   - (* all *)
-    pick fresh α for (L `union` ftvar_in_bskl Q `union` ftvar_in_bskl P
+    pick fresh α for (L `union` ftvar_in_bskl Q `union` ftvar_in_bskl Q'
                         `union` dom Θ `union` def_ftv Θ).
-    specialize (H0 α ltac:(auto) ltac:(apply a_wf_aenv__tvar; auto)).
-    simpl in H0.
+    specialize (H1 α ltac:(auto) ltac:(apply a_wf_aenv__tvar; auto)).
+    simpl in H1.
     pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_lower Q (bskl_var_f α)) as Hlo.
-    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f α)) as Hup.
-    simpl in Hup. clear - H0 Hlo Hup Fr; fsetdec.
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q' (bskl_var_f α)) as Hup.
+    simpl in Hup. clear - H1 Hlo Hup Fr; fsetdec.
   - (* tophole_remove *)
     specialize (IHad_refine_syn HwfΘ). clear - IHad_refine_syn; fsetdec.
   - (* tophole_fill *)
-    pick fresh α for (L `union` ftvar_in_bskl Q `union` ftvar_in_bskl P
+    pick fresh α for (L `union` ftvar_in_bskl Q `union` ftvar_in_bskl Q'
                         `union` dom Θ `union` def_ftv Θ).
-    specialize (H0 α ltac:(auto) ltac:(apply a_wf_aenv__tvar; auto)).
-    simpl in H0.
-    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f α)) as Hup.
-    simpl in Hup. clear - H0 Hup Fr; fsetdec.
+    specialize (H1 α ltac:(auto) ltac:(apply a_wf_aenv__tvar; auto)).
+    simpl in H1.
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q' (bskl_var_f α)) as Hup.
+    simpl in Hup. clear - H1 Hup Fr; fsetdec.
   - (* tophole_keep *)
     specialize (IHad_refine_syn HwfΘ). clear - IHad_refine_syn; fsetdec.
   - (* flex_l : the source IS a defined variable *)

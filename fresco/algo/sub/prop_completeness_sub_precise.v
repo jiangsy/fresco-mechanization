@@ -141,7 +141,7 @@ Proof.
       (eapply (ad_partial_precise_tags_sub Hwf H); exact (a_tags_sort_d_tags Hta)).
     assert (Hs2 : Ψ2 [<=] Ψb) by
       (eapply (ad_partial_precise_tags_sub Hwf H0); exact (a_tags_sort_d_tags Htb)).
-    apply ad_refine_syn__arrow.
+    apply ad_refine_syn_arrow_intro.
     + eapply IHad_partial_precise1;
         [ exact Hwf | exact Hwf' | exact Htv | exact Hfl
         | eapply a_tags_sort_psi_cong; [ exact Hta | clear - H1 Hun Hdisj Hs1 Hs2; fsetdec ]
@@ -153,7 +153,7 @@ Proof.
   - (* forall: ψ = all_tag ε ψ0, P = all_syn P0; the binder enters [Θ'] *)
     apply a_tags_sort_all_tag_inv in Htags as [Lt [Ψt [Hta [Hεt Hun]]]].
     apply a_wf_pskl_all_inv in Hwfp as [Lw Hwbody].
-    apply ad_refine_syn__all with (L := L `union` Lt `union` Lw `union` dom Θ'
+    apply ad_refine_syn_all_intro with (L := L `union` Lt `union` Lw `union` dom Θ'
        `union` ftvar_in_pskl P `union` ftvar_in_uskl ψ).
     intros α0 Hα0.
     assert (Hs0 : Ψ0 [<=] Ψt) by
@@ -179,7 +179,7 @@ Proof.
     apply ad_refine_syn__hole.
     rewrite ftvar_in_pskl_uskl_to_pskl. assumption.
   - (* tophole_remove *)
-    apply ad_refine_syn__tophole_remove.
+    apply ad_refine_syn_tophole_remove_intro.
     eapply IHad_partial_precise; eauto.
   - (* tophole_fill: VACUOUS via tags_sub — ε is solved but the premise drops it *)
     exfalso.
@@ -194,7 +194,7 @@ Proof.
   - (* tophole_keep: ψ = topholeg ψ0 (SK-only; TY gf excludes it).  The body
        is wf at [Θ'∖Δ], so none of its free variables is in [Δ]. *)
     inversion Hwfp; subst.
-    apply ad_refine_syn__tophole_keep.
+    apply ad_refine_syn_tophole_keep_intro.
     eapply IHad_partial_precise; [ exact Hwf | exact Hwf' | exact Htv | exact Hfl | | ].
     + inversion Htags; subst;
         match goal with Hit : is_tskl (uskl_topholeg _) |- _ =>
@@ -1844,7 +1844,7 @@ Proof.
     apply upre__all_syn with (L := L `union` Lw `union` dom Θ).
     intros α Hα.
     rewrite <- !pskl_to_uskl_open_var.
-    eapply H0 with (α := α);
+    eapply H1 with (α := α);
       [ solve_notin_auto
       | apply a_wf_aenv__tvar; [ solve_notin_auto | exact Hwf ]
       | rewrite <- pskl_to_bskl_inh_open, bskl_to_pskl_pskl_to_bskl_inh;

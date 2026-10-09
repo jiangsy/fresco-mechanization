@@ -764,22 +764,22 @@ Proof.
     intros α2 Θ1 Θt Δr' HeqΘ Hsub; subst.
   - apply ad_refine_syn__unit.
   - apply ad_refine_syn__var.
-  - apply ad_refine_syn__arrow; eauto.
+  - apply ad_refine_syn_arrow_intro; eauto.
   - (* all *)
-    apply ad_refine_syn__all with (L := L).
+    apply ad_refine_syn_all_intro with (L := L).
     intros α Hα.
-    apply (H0 α Hα α2 ((α ~ abind_tvar) ++ Θ1) Θt (add α Δr') eq_refl).
+    apply (H1 α Hα α2 ((α ~ abind_tvar) ++ Θ1) Θt (add α Δr') eq_refl).
     clear - Hsub; fsetdec.
   - (* hole *)
     apply ad_refine_syn__hole.
     match goal with Hint : _ ∩ _ [=] empty |- _ =>
       clear - Hint Hsub; fsetdec end.
-  - apply ad_refine_syn__tophole_remove; auto.
+  - apply ad_refine_syn_tophole_remove_intro; auto.
   - (* tophole_fill: the aenv grows on the left *)
-    apply ad_refine_syn__tophole_fill with (L := L).
+    apply ad_refine_syn_tophole_fill_intro with (L := L).
     intros α Hα.
-    apply (H0 α Hα α2 ((α ~ abind_tvar) ++ Θ1) Θt Δr' eq_refl Hsub).
-  - apply ad_refine_syn__tophole_keep; auto.
+    apply (H1 α Hα α2 ((α ~ abind_tvar) ++ Θ1) Θt Δr' eq_refl Hsub).
+  - apply ad_refine_syn_tophole_keep_intro; auto.
   - eapply ad_refine_syn__flex_l;
       [ apply binds_weaken; eassumption | auto ].
   - eapply ad_refine_syn__flex_r;
@@ -1663,11 +1663,11 @@ Proof.
     simpl in Hsub.
     assert (Hm1 : mono_ptyp τ1) by (inversion Hmb; assumption).
     assert (Hm2 : mono_ptyp τ2) by (inversion Hmb; assumption).
-    assert (Hb1 : ftvar_in_bskl P1 [<=] S)
+    assert (Hb1 : ftvar_in_bskl Q3 [<=] S)
       by (eapply IHad_refine_syn1;
             [ exact HwfΘ | exact Heq1 | exact Hm1
             | clear - Hsub; fsetdec | exact Hdefs ]).
-    assert (Hb2 : ftvar_in_bskl P2 [<=] S)
+    assert (Hb2 : ftvar_in_bskl Q4 [<=] S)
       by (eapply IHad_refine_syn2;
             [ exact HwfΘ | exact Heq2 | exact Hm2
             | clear - Hsub; fsetdec | exact Hdefs ]).

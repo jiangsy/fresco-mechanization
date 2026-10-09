@@ -363,7 +363,9 @@ the binder rows extend `⪯ctx` reflexively (`ad_precise_refl`).
 ⭐⭐ **The flagged rule-change decision RESOLVED — but NOT as recorded.**  The
 memory's route (put `Θ ⨟ ∅ ⊢ₚₛᵃ P` on `ad_pat__app`, propagate a top-level
 target-wf hypothesis down) is REFUTED: the capture configuration of
-`cex/cex_refine_not_transitive.v` sits inside `ad_pat__app`'s own refinement
+`cex/cex_refine_not_transitive.v` [⚠️ RETRACTED 2026-10-08 as a
+non-transitivity witness; the file now proves `ad_refine_syn_output_not_wf`]
+sits inside `ad_pat__app`'s own refinement
 premise, so wf CANNOT propagate into the function premise's domain `Q1` even
 with that premise (refinement from a wf source can produce a nowhere-wf
 target).  A first attempt with BOTH `wf P` and `wf ⌊Q1⌋` on the rule then
@@ -1216,7 +1218,9 @@ the ⊴-peel kit (`uniq_mid_eq`, `a_inc_weaken_suffix_target`,
    refinement** — because once the subject is a monotype painting the two
    judgements have the same five rows.  Going through the consistency needs
    neither refinement symmetry nor TRANSITIVITY (the latter is false:
-   `cex/cex_refine_not_transitive.v`); `consis_mono_sym`
+   `cex/cex_refine_not_transitive.v`) [⚠️ RETRACTED 2026-10-08: refinement
+   is not shown non-transitive; the file now proves
+   `ad_refine_syn_output_not_wf`]; `consis_mono_sym`
    (prop_mono_bridge.v) supplies the direction change that was the only
    reason the `≡ᵗ` route wanted symmetry.
    ⚠️ It carries a FRESHNESS side condition: `a_split__flex` invents two

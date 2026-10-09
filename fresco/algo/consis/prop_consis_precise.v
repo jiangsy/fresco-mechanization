@@ -764,7 +764,7 @@ Proof.
       [ | exact Hun ].
     intros α Hα.
     rewrite <- pskl_to_uskl_open_var.
-    eapply H0 with (α := α) (ψt := open_uskl_wrt_uskl ψ0 (uskl_var_f α));
+    eapply H1 with (α := α) (ψt := open_uskl_wrt_uskl ψ0 (uskl_var_f α));
       [ clear - Hα; solve_notin_auto
       | apply a_wf_aenv__tvar; [ clear - Hα; solve_notin_auto | exact Hwf ]
       | rewrite bskl_to_pskl_open; apply Hwbody; clear - Hα; solve_notin_auto
@@ -1570,7 +1570,7 @@ Proof.
     pose proof (IHHref2 S HSΔ Hdefs Hflex Hs2) as Ht2.
     clear - Ht1 Ht2; fsetdec.
   - (* all *)
-    pick fresh α for (L `union` S `union` ftvar_in_pskl P `union` ftvar_in_pskl Q).
+    pick fresh α for (L `union` S `union` ftvar_in_pskl P `union` ftvar_in_pskl P').
     destruct (@delta_flex_defs_cons_tvar α Θ S Hdefs Hflex) as [Hdefs' Hflex'].
     assert (Hs0 : S ∩ ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α))
                     [=] empty).
@@ -1580,19 +1580,19 @@ Proof.
     pose proof (H0 α ltac:(clear - Fr; solve_notin_auto) S
                   ltac:(clear - HSΔ; fsetdec) Hdefs' Hflex' Hs0) as Ht.
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower
-                  Q (pskl_var_f α)) as Hlo.
+                  P' (pskl_var_f α)) as Hlo.
     clear - Ht Hlo. fsetdec.
   - (* hole : the fill is Δ-free by the rule's own premise *)
     clear - H HSΔ. fsetdec.
   - (* tophole_remove *)
     apply IHHref; auto.
   - (* tophole_fill : the fresh binder is re-bound by the target ∀ *)
-    pick fresh α for (L `union` S `union` ftvar_in_pskl Q).
+    pick fresh α for (L `union` S `union` ftvar_in_pskl P').
     destruct (@delta_flex_defs_cons_tvar α Θ S Hdefs Hflex) as [Hdefs' Hflex'].
     pose proof (H0 α ltac:(clear - Fr; solve_notin_auto) S HSΔ
                   Hdefs' Hflex' Hsrc) as Ht.
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower
-                  Q (pskl_var_f α)) as Hlo.
+                  P' (pskl_var_f α)) as Hlo.
     clear - Ht Hlo. fsetdec.
   - (* tophole_keep *)
     apply IHHref; auto.
@@ -1857,7 +1857,7 @@ Proof.
           | eapply Hdefs; apply Hmon; exact Hb ]
       end.
   - (* arrow *)
-    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_arrow P1 P2) ⊳ (pskl_arrow Q1 Q2) }}ad)
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_arrow P1 P2) ⊳ (pskl_arrow P3 P4) }}ad)
       by (apply ad_refine_pskl__arrow; assumption).
     revert Heq; induction Hp; intros Heq; simpl in Heq; try discriminate Heq.
     + rewrite Heq. exact Hrr.
@@ -1874,7 +1874,7 @@ Proof.
     + erase_refine_remove IHHp Heq.
     + erase_refine_flexl Hmon IHHp Heq.
   - (* all *)
-    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_all_syn P) ⊳ (pskl_all_syn Q) }}ad)
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_all_syn P) ⊳ (pskl_all_syn P') }}ad)
       by (apply ad_refine_pskl__all with (L := L); exact H).
     revert Heq; induction Hp; intros Heq; simpl in Heq; try discriminate Heq.
     + rewrite Heq. exact Hrr.
@@ -1903,7 +1903,7 @@ Proof.
     + erase_refine_remove IHHp Heq.
     + erase_refine_flexl Hmon IHHp Heq.
   - (* hole *)
-    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ pskl_hole ⊳ Q }}ad)
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ pskl_hole ⊳ P' }}ad)
       by (apply ad_refine_pskl__hole; exact H).
     revert Heq; induction Hp; intros Heq; simpl in Heq; try discriminate Heq.
     + rewrite Heq. exact Hrr.
@@ -1911,7 +1911,7 @@ Proof.
     + erase_refine_remove IHHp Heq.
     + erase_refine_flexl Hmon IHHp Heq.
   - (* tophole_remove *)
-    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ Q }}ad)
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ P' }}ad)
       by (apply ad_refine_pskl__tophole_remove; exact Hr).
     revert Heq; induction Hp; intros Heq; simpl in Heq; try discriminate Heq.
     + rewrite Heq. exact Hrr.
@@ -1937,7 +1937,7 @@ Proof.
     + erase_refine_remove IHHp Heq.
     + erase_refine_flexl Hmon IHHp Heq.
   - (* tophole_fill *)
-    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_all_syn Q) }}ad)
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_all_syn P') }}ad)
       by (apply ad_refine_pskl__tophole_fill with (L := L); exact H).
     revert Heq; induction Hp; intros Heq; simpl in Heq; try discriminate Heq.
     + rewrite Heq. exact Hrr.
@@ -1957,7 +1957,7 @@ Proof.
     + erase_refine_remove IHHp Heq.
     + erase_refine_flexl Hmon IHHp Heq.
   - (* tophole_keep *)
-    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_tophole Q) }}ad)
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_tophole P') }}ad)
       by (apply ad_refine_pskl__tophole_keep; assumption).
     revert Heq; induction Hp; intros Heq; simpl in Heq; try discriminate Heq.
     + rewrite Heq. exact Hrr.
@@ -1983,7 +1983,7 @@ Proof.
     + erase_refine_remove IHHp Heq.
     + erase_refine_flexl Hmon IHHp Heq.
   - (* flex_l *)
-    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_var_f α) ⊳ Q }}ad)
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_var_f α) ⊳ P' }}ad)
       by (eapply ad_refine_pskl__flex_l; eassumption).
     revert Heq; induction Hp; intros Heq; simpl in Heq; try discriminate Heq.
     + rewrite Heq. exact Hrr.

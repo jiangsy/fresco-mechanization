@@ -138,7 +138,7 @@ Lemma cex_not_precise : forall Δ,
   ~ {{ nil ⨟ Δ ⊢ₚᵣ (uskl_to_pskl Rw) ⊑ (bskl_to_pskl Qw) }}ad.
 Proof.
   intros Δ H; unfold ad_precise, Rw, Qw in H; cbn in H.
-  inversion H as [ | | | L Θa Δa Qa Pa Hfam | | | | | | ]; subst.
+  inversion H as [ | | | L Θa Δa Qa Pa Hia Hfam | | | | | | ]; subst.
   pick fresh α for L.
   specialize (Hfam α ltac:(clear - Fr; fsetdec)); cbn in Hfam.
   pose proof (@refine_syn_hole_var _ _ _ _ Hfam eq_refl α eq_refl) as Hb.

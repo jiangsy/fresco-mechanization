@@ -98,11 +98,11 @@ easy to extend them to algorithmic contexts Θ"*).  Registered in
 | § | what |
 |---|---|
 | 0 | `denv_to_aenv` — a declarative context IS a flexible-free algorithmic one; `denv_to_aenv_no_flex_def` is what makes every FlexL/FlexR/FlexMono row vacuous |
-| 0b | Δ is `atoms` on the `ad` side, `list atom` on the `d` side: related by membership (`delta_agree`), not converted |
+| 0b | Δ is `atoms` on the `ad` side, `list atom` on the `d` side: related by membership (`delta_agree`), not converted.  ⚙ SUPERSEDED 2026-10-09: Δ is `atoms` on both sides; `delta_agree` is deleted |
 | 1 | `a_tyequiv_denv_eq` — the appendix's four `Θ ⊢ A ≡ B` premises collapse to `=` |
 | 2 | `a_wf_ptyp` / `a_wf_pskl` ⇄ `d_wf_ptyp` / `d_wf_pskl` |
 | 3–4 | `ad_pat_consis` ⇄ `d_pat_consis` (SK) and ⇄ `d_consis` (TY) |
-| 5 | `ad_refine_syn` ⇄ `d_refine_syn` |
+| 5 | `ad_refine_syn` ⇄ `d_refine_syn`.  ⚙ SUPERSEDED 2026-10-09: the bridges are stated at one Δ (no `delta_agree` pair) |
 | 6 | the ForallL instantiation across the sorts (`d_wf_uskl_of_a_wf_pskl`, the ghost-free retraction `uskl_to_utyp`, `d_tags_uskl_to_utyp`, `d_wf_utyp_of_d_wf_uskl`) |
 | 7–8 | `ad_pat_sub` ⇄ `d_pat_sub` (SK) and → `d_sub` (TY) |
 | 9–10 | `ad_pat` → `d_pat`, `ad_sd_typing` → `d_sd_typing` |

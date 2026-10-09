@@ -385,7 +385,7 @@ Proof.
     split; [ intros γ Hγ; apply HscX; cbn; clear - Hγ; fsetdec | ].
     split; [ assumption | ]. split; [ assumption | ].
     intros Y1 Y2 HY1 HY2. cbn.
-    apply ad_refine_syn__arrow; assumption.
+    apply ad_refine_syn_arrow_intro; assumption.
   - (* __flex_r : chase the definition, then re-apply the rule *)
     destruct X as [ | n0 | α0 | X1 X2 | X0 | | X0 ]; cbn in HeqT;
       try discriminate HeqT.
@@ -499,7 +499,7 @@ Proof.
     intros β Hβ. unfold ad_precise.
     rewrite ! pskl_to_bskl_inh_open.
     (* the rule pushes β as a rigid tvar, which no flexible lookup sees *)
-    eapply ad_refine_syn_defs_mono; [ apply H; exact Hβ | ].
+    eapply ad_refine_syn_defs_mono; [ apply H0; exact Hβ | ].
     intros γ τ Hb. apply binds_app_iff in Hb as [Hb | Hb];
       [ apply binds_one_iff in Hb; destruct Hb as [_ Hc]; discriminate Hc
       | exact Hb ].
@@ -620,7 +620,7 @@ Lemma ad_precise_all_of_one : forall Θ Δ S0 X0 β,
 Proof.
   intros Θ Δ S0 X0 β Hpre HwfΘ HβΘ HβΔ HβS HβX.
   unfold ad_precise; cbn [pskl_to_bskl_inh].
-  apply ad_refine_syn__all
+  apply ad_refine_syn_all_intro
     with (L := add β (Δ `union` dom Θ `union` ftvar_in_pskl S0
                         `union` ftvar_in_pskl X0)).
   intros α0 Hα0.

@@ -865,12 +865,12 @@ Proof.
     apply Hmap; exact Hbt.
   - (* arrow : a congruence *)
     unfold ad_precise; cbn [msubst_pskl pskl_to_bskl_inh].
-    apply ad_refine_syn__arrow;
+    apply ad_refine_syn_arrow_intro;
       [ eapply IH1 | eapply IH2 ]; eassumption.
   - (* all : a congruence, under a binder fresh for both metasubstitutions,
        pushed onto both the source and the target *)
     unfold ad_precise; cbn [msubst_pskl pskl_to_bskl_inh].
-    apply ad_refine_syn__all
+    apply ad_refine_syn_all_intro
       with (L := L `union` dom κ `union` dom σ `union` dom Θ0 `union` dom Θ).
     intros α Hα.
     (* the freshness facts are PINNED in named asserts: passed inline as
@@ -902,7 +902,7 @@ Proof.
     apply (@ad_refine_syn__hole Θ Δ pskl_hole). cbn. clear; fsetdec.
   - (* tophole : [__tophole_keep], a congruence *)
     unfold ad_precise; cbn [msubst_pskl pskl_to_bskl_inh].
-    apply ad_refine_syn__tophole_keep.
+    apply ad_refine_syn_tophole_keep_intro.
     apply (IH0 Θ0); try assumption.
     intros β Hβ. apply Hmap.
     apply a_binds_tvar_aenv_minus in Hβ. apply Hβ.
@@ -1242,7 +1242,7 @@ Proof.
   rewrite msubst_bskl_pskl_to_bskl_syn.
   cbn [msubst_pskl bskl_to_pskl pskl_to_bskl_inh].
   rewrite bskl_to_pskl_pskl_to_bskl_syn.
-  apply ad_refine_syn__tophole_keep; exact Hcore.
+  apply ad_refine_syn_tophole_keep_intro; exact Hcore.
 Qed.
 
 (* ===================================================================== *)
@@ -1623,7 +1623,7 @@ Proof.
   rewrite msubst_bskl_pskl_to_bskl_syn in Hprec1, Hprec2 |- *.
   rewrite bskl_to_pskl_pskl_to_bskl_syn in Hprec1, Hprec2 |- *.
   cbn [msubst_pskl bskl_to_pskl pskl_to_bskl_inh].
-  apply ad_refine_syn__arrow.
+  apply ad_refine_syn_arrow_intro.
   - (* domain *)
     apply (ad_refine_syn_f_forget (F := empty)).
     destruct (skl_tyequiv_refine_syn_f_transport Heqζ Hwfth
@@ -2110,7 +2110,7 @@ Proof.
     rewrite (msubst_pskl_open_lc (ptyp_to_pskl A0) Hlcζ Hαζ) in Hprec'.
     rewrite bskl_to_pskl_open in Hprec'.
     cbn [msubst_pskl bskl_to_pskl pskl_to_bskl_inh].
-    apply ad_refine_syn__all with
+    apply ad_refine_syn_all_intro with
       (L := singleton α `union` dom Θ `union` dom Θ1
             `union` ftvar_in_pskl (ptyp_to_pskl A0) `union` ftvar_in_bskl B
             `union` dom κa `union` dom ζ).
@@ -5265,7 +5265,7 @@ Proof.
       destruct (HscP γ ltac:(clear - Hγ Hup Hne; solve_notin_auto)) as [h | h];
         [ left; clear - h; fsetdec | right; simpl_env; clear - h; fsetdec ].
     + intros γ Hγ.
-      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q (pskl_var_f α))
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P' (pskl_var_f α))
         as Hup. simpl in Hup.
       destruct (γ == α) as [-> | Hne]; [ left; clear; fsetdec | ].
       destruct (HscQ γ ltac:(clear - Hγ Hup Hne; solve_notin_auto)) as [h | h];
@@ -5290,7 +5290,7 @@ Proof.
       destruct (HscP γ ltac:(clear - Hγ; solve_notin_auto)) as [h | h];
         [ left; exact h | right; simpl_env; clear - h; fsetdec ].
     + intros γ Hγ.
-      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q (pskl_var_f α))
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P' (pskl_var_f α))
         as Hup. simpl in Hup.
       destruct (γ == α) as [-> | Hne];
         [ right; simpl_env; clear; fsetdec | ].
@@ -5981,10 +5981,10 @@ Proof.
       | apply a_tyequiv__sym; exact Heq
       | intros γ Hγ; eapply a_wf_ptyp_ftv_tvarish; [ exact Hwfd | exact Hγ ] ].
   - (* arrow *)
-    apply ad_refine_syn__arrow;
+    apply ad_refine_syn_arrow_intro;
       [ apply IHa_wf_pskl1 | apply IHa_wf_pskl2 ]; assumption.
   - (* all : the opener joins both contexts *)
-    apply ad_refine_syn__all
+    apply ad_refine_syn_all_intro
       with (L := L `union` dom Θ' `union` dom (aenv_msubst Θ')).
     intros α Hα.
     assert (Heq : msubst_pskl (aenv_msubst Θ')
@@ -6005,7 +6005,7 @@ Proof.
       with (pskl_to_bskl_syn pskl_hole) at 2 by reflexivity.
     apply ad_refine_syn__hole. cbn. clear; fsetdec.
   - (* tophole : its body's wf context embeds too *)
-    apply ad_refine_syn__tophole_keep.
+    apply ad_refine_syn_tophole_keep_intro.
     apply IHa_wf_pskl; [ exact Hwf | ].
     intros β Hβ. apply Hmap.
     apply a_binds_tvar_aenv_minus in Hβ. apply Hβ.

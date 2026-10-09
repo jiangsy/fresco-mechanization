@@ -2039,7 +2039,7 @@ Proof.
   intros τ Θ Δr Hwf Hm; revert Hwf; induction Hm; intros Hwf; simpl.
   - apply ad_refine_syn__unit.
   - inversion Hwf; subst. apply ad_refine_syn__var; auto.
-  - inversion Hwf; subst. apply ad_refine_syn__arrow; auto.
+  - inversion Hwf; subst. apply ad_refine_syn_arrow_intro; auto.
 Qed.
 
 (* ---- precision into a mono paint carries no tags ---- *)
@@ -2141,7 +2141,7 @@ Proof.
     apply inter_empty_pointwise.
     intros y Hy. eapply Hdf; eauto.
   - (* tophole_remove *)
-    apply ad_refine_syn__tophole_remove. eauto.
+    apply ad_refine_syn_tophole_remove_intro. eauto.
   - (* flex_l *)
     eapply ad_refine_syn__flex_l; eauto.
   - (* flex_r: same definition by uniqueness *)

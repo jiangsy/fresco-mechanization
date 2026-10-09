@@ -1368,20 +1368,20 @@ Proof.
   - (* unit *) apply ad_refine_syn__unit.
   - (* var *) destruct_if; apply ad_refine_syn__var.
   - (* arrow *)
-    apply ad_refine_syn__arrow;
+    apply ad_refine_syn_arrow_intro;
       [ apply IHad_refine_syn1 | apply IHad_refine_syn2 ];
       solve [ reflexivity | exact Hblk | exact Hwf | exact HΔ | exact HβΔ
             | clear - Hβ; solve_notin_auto ].
   - (* all : the binder goes into Θ AND Δ, on top of the block *)
-    apply ad_refine_syn__all
+    apply ad_refine_syn_all_intro
       with (L := L `union` singleton α0 `union` singleton β
                    `union` dom (Θa ++ (α0 ~ abind_tvar) ++ Θ')).
     intros γ Hγ.
     rewrite !subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       try solve [ clear - Hγ; fsetdec | apply lc_bskl_var_f ].
-    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f γ)) as Hup.
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q' (bskl_var_f γ)) as Hup.
     simpl in Hup. simpl_env.
-    apply (H0 γ ltac:(clear - Hγ; solve_notin_auto)
+    apply (H1 γ ltac:(clear - Hγ; solve_notin_auto)
              ((γ ~ abind_tvar) ++ Θa) α0 Θ' β (add γ Δ'));
       [ simpl_env; reflexivity
       | apply a_tvar_block__cons; exact Hblk
@@ -1422,12 +1422,12 @@ Proof.
     intros x; split; intros Hx; [ | clear - Hx; fsetdec ].
     exfalso. apply (Hfree x); clear - Hx; fsetdec.
   - (* tophole_remove *)
-    apply ad_refine_syn__tophole_remove.
+    apply ad_refine_syn_tophole_remove_intro.
     apply IHad_refine_syn;
       solve [ reflexivity | exact Hblk | exact Hwf | exact Hβ | exact HΔ
             | exact HβΔ ].
   - (* tophole_fill : the binder goes into Θ, on top of the block *)
-    apply ad_refine_syn__tophole_fill
+    apply ad_refine_syn_tophole_fill_intro
       with (L := L `union` singleton α0 `union` singleton β
                    `union` dom (Θa ++ (α0 ~ abind_tvar) ++ Θ')).
     intros γ Hγ.
@@ -1435,9 +1435,9 @@ Proof.
       try solve [ clear - Hγ; fsetdec | apply lc_bskl_var_f ].
     change (bskl_tophole (subst_bskl_in_bskl (bskl_var_f β) α0 Q))
       with (subst_bskl_in_bskl (bskl_var_f β) α0 (bskl_tophole Q)).
-    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f γ)) as Hup.
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q' (bskl_var_f γ)) as Hup.
     simpl in Hup. simpl_env.
-    apply (H0 γ ltac:(clear - Hγ; solve_notin_auto)
+    apply (H1 γ ltac:(clear - Hγ; solve_notin_auto)
              ((γ ~ abind_tvar) ++ Θa) α0 Θ' β Δ');
       [ simpl_env; reflexivity
       | apply a_tvar_block__cons; exact Hblk
@@ -1447,7 +1447,7 @@ Proof.
       | exact HΔ
       | exact HβΔ ].
   - (* tophole_keep *)
-    apply ad_refine_syn__tophole_keep.
+    apply ad_refine_syn_tophole_keep_intro.
     apply IHad_refine_syn;
       solve [ reflexivity | exact Hblk | exact Hwf | exact Hβ | exact HΔ
             | exact HβΔ ].
@@ -1601,12 +1601,12 @@ Proof.
     induction Href as
       [ Θx Δx
       | Θx Δx αx
-      | Θx Δx Qs1 Qs2 Pt1 Pt2 HrA IHA HrB IHB
-      | Lx Θx Δx Qs Pt Hfam IHfam
+      | Θx Δx Qs1 Qs2 Pt1 Pt2 HiA HrA IHA HrB IHB
+      | Lx Θx Δx Qs Pt Hi Hfam IHfam
       | Θx Δx Pf Hwff
-      | Θx Δx Qs Pt Hr IHr
-      | Lx Θx Δx Qs Pt Hfam IHfam
-      | Θx Δx Qs Pt Hr IHr
+      | Θx Δx Qs Pt Hi Hr IHr
+      | Lx Θx Δx Qs Pt Hi Hfam IHfam
+      | Θx Δx Qs Pt Hi Hr IHr
       | Θx Δx αx τx Pt Hb Hr IHr
       | Θx Δx αx τx Qs Hb Hr IHr ];
       intros HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ; try discriminate HQt.
@@ -1622,7 +1622,7 @@ Proof.
                   HnfΔ HdfΔ HrB) as [B2 [HeqB2 HrB']].
       exists (btyp_arrow B1 B2). split;
         [ simpl; rewrite HeqB1, HeqB2; reflexivity
-        | simpl; apply ad_refine_syn__arrow; assumption ].
+        | simpl; apply ad_refine_syn_arrow_intro; assumption ].
     + (* refine hole *)
       eapply transport_hole_answer;
         [ exact Hc | exact HnfΔ | exact HdfΔ | symmetry; exact HQt
@@ -1630,7 +1630,7 @@ Proof.
     + (* refine tophole_remove *)
       destruct (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ) as [B [HeqB Href']].
       exists B. split;
-        [ exact HeqB | apply ad_refine_syn__tophole_remove; exact Href' ].
+        [ exact HeqB | apply ad_refine_syn_tophole_remove_intro; exact Href' ].
     + (* refine flex_l *)
       destruct (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ) as [B [HeqB Href']].
       exists B. split;
@@ -1649,12 +1649,12 @@ Proof.
     induction Href as
       [ Θx Δx
       | Θx Δx αx
-      | Θx Δx Qs1 Qs2 Pt1 Pt2 HrA IHA HrB IHB
-      | Lx Θx Δx Qs Pt Hfam IHfam
+      | Θx Δx Qs1 Qs2 Pt1 Pt2 HiA HrA IHA HrB IHB
+      | Lx Θx Δx Qs Pt Hi Hfam IHfam
       | Θx Δx Pf Hwff
-      | Θx Δx Qs Pt Hr IHr
-      | Lx Θx Δx Qs Pt Hfam IHfam
-      | Θx Δx Qs Pt Hr IHr
+      | Θx Δx Qs Pt Hi Hr IHr
+      | Lx Θx Δx Qs Pt Hi Hfam IHfam
+      | Θx Δx Qs Pt Hi Hr IHr
       | Θx Δx αx τx Pt Hb Hr IHr
       | Θx Δx αx τx Qs Hb Hr IHr ];
       intros HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ; try discriminate HQt.
@@ -1732,7 +1732,7 @@ Proof.
       * simpl. rewrite btyp_to_ptyp_close, HeqB0.
         rewrite close_ptyp_wrt_ptyp_open_ptyp_wrt_ptyp;
           [ reflexivity | clear - Hα; fsetdec ].
-      * simpl. apply ad_refine_syn__all
+      * simpl. apply ad_refine_syn_all_intro
           with (L := L `union` Lx `union` dom Θx `union` Δx
                        `union` singleton α `union` ftvar_in_bskl Qs
                        `union` ftvar_in_bskl (btyp_to_bskl B0)).
@@ -1759,7 +1759,7 @@ Proof.
     + (* refine tophole_remove *)
       destruct (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ) as [B [HeqB Href']].
       exists B. split;
-        [ exact HeqB | apply ad_refine_syn__tophole_remove; exact Href' ].
+        [ exact HeqB | apply ad_refine_syn_tophole_remove_intro; exact Href' ].
     + (* refine flex_l *)
       destruct (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ) as [B [HeqB Href']].
       exists B. split;
@@ -1778,12 +1778,12 @@ Proof.
     induction Href as
       [ Θx Δx
       | Θx Δx αx
-      | Θx Δx Qs1 Qs2 Pt1 Pt2 HrA IHA HrB IHB
-      | Lx Θx Δx Qs Pt Hfam IHfam
+      | Θx Δx Qs1 Qs2 Pt1 Pt2 HiA HrA IHA HrB IHB
+      | Lx Θx Δx Qs Pt Hi Hfam IHfam
       | Θx Δx Pf Hwff
-      | Θx Δx Qs Pt Hr IHr
-      | Lx Θx Δx Qs Pt Hfam IHfam
-      | Θx Δx Qs Pt Hr IHr
+      | Θx Δx Qs Pt Hi Hr IHr
+      | Lx Θx Δx Qs Pt Hi Hfam IHfam
+      | Θx Δx Qs Pt Hi Hr IHr
       | Θx Δx αx τx Pt Hb Hr IHr
       | Θx Δx αx τx Qs Hb Hr IHr ];
       intros HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ; try discriminate HQt.
@@ -1794,7 +1794,7 @@ Proof.
     + (* refine tophole_remove *)
       destruct (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ) as [B [HeqB Href']].
       exists B. split;
-        [ exact HeqB | apply ad_refine_syn__tophole_remove; exact Href' ].
+        [ exact HeqB | apply ad_refine_syn_tophole_remove_intro; exact Href' ].
     + (* refine tophole_fill : the binder goes into Θr *)
       inversion HQt; subst.
       destruct (atom_fresh (L `union` Lx `union` dom Θ `union` dom Θx
@@ -1848,7 +1848,7 @@ Proof.
       * simpl. rewrite btyp_to_ptyp_close, HeqB0.
         rewrite close_ptyp_wrt_ptyp_open_ptyp_wrt_ptyp;
           [ reflexivity | clear - Hα; fsetdec ].
-      * simpl. apply ad_refine_syn__tophole_fill
+      * simpl. apply ad_refine_syn_tophole_fill_intro
           with (L := L `union` Lx `union` dom Θx `union` Δx
                        `union` singleton α `union` ftvar_in_bskl Qs
                        `union` ftvar_in_bskl (btyp_to_bskl B0)).
@@ -1918,12 +1918,12 @@ Proof.
     induction Href as
       [ Θx Δx
       | Θx Δx αx
-      | Θx Δx Qs1 Qs2 Pt1 Pt2 HrA IHA HrB IHB
-      | Lx Θx Δx Qs Pt Hfam IHfam
+      | Θx Δx Qs1 Qs2 Pt1 Pt2 HiA HrA IHA HrB IHB
+      | Lx Θx Δx Qs Pt Hi Hfam IHfam
       | Θx Δx Pf Hwff
-      | Θx Δx Qs Pt Hr IHr
-      | Lx Θx Δx Qs Pt Hfam IHfam
-      | Θx Δx Qs Pt Hr IHr
+      | Θx Δx Qs Pt Hi Hr IHr
+      | Lx Θx Δx Qs Pt Hi Hfam IHfam
+      | Θx Δx Qs Pt Hi Hr IHr
       | Θx Δx αx τx Pt Hb Hr IHr
       | Θx Δx αx τx Qs Hb Hr IHr ];
       intros HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ Hbr Hmono Hwfτ; try discriminate HQt.
@@ -1945,7 +1945,7 @@ Proof.
       destruct (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ Hbr Hmono Hwfτ)
         as [B [HeqB Href']].
       exists B. split;
-        [ exact HeqB | apply ad_refine_syn__tophole_remove; exact Href' ].
+        [ exact HeqB | apply ad_refine_syn_tophole_remove_intro; exact Href' ].
     + (* refine flex_l *)
       destruct (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ Hbr Hmono Hwfτ)
         as [B [HeqB Href']].
@@ -2253,7 +2253,7 @@ Proof.
         change (bskl_arrow bskl_hole (pskl_to_bskl_syn P'))
           with (pskl_to_bskl_syn (pskl_arrow pskl_hole P')).
         apply ad_refine_syn__hole. clear; fsetdec.
-      - apply ad_refine_syn__arrow;
+      - apply ad_refine_syn_arrow_intro;
           [ apply ad_refine_syn_refl_inh;
               eapply a_wf_pskl_isub; [ exact HwfPP | exact Hisub ]
           | eapply ad_refine_syn_strip_tm_skl; exact Href ]. }
@@ -2369,7 +2369,7 @@ Proof.
           | exact HeqB
           | apply mod_comp_sk__fn; apply (ad_pat_mod_comp_sk (Hbody x))
           | intros y Hy; apply Hbody ].
-      * simpl. apply ad_refine_syn__arrow;
+      * simpl. apply ad_refine_syn_arrow_intro;
           [ eapply ad_refine_syn_isub; [ exact HrefA | exact Hisub ]
           | eapply ad_refine_syn_strip_tm_typ; exact Href ].
   - (* AP-AbsCheck *)

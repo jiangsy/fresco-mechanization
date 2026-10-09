@@ -475,7 +475,7 @@ Proof.
   intros Θ Δ τ Hm; revert Δ; induction Hm; intros Δ Hw; simpl.
   - apply ad_refine_syn__unit.
   - apply ad_refine_syn__var.
-  - inversion Hw; subst. apply ad_refine_syn__arrow; auto.
+  - inversion Hw; subst. apply ad_refine_syn_arrow_intro; auto.
 Qed.
 
 (** The fresh binder a cofinite row pushes joins the PREFIX, so the
@@ -506,16 +506,16 @@ Proof.
         [ eapply solves_flex_mono; eassumption
         | apply a_wf_ptyp_subst_tail; eapply solves_flex_wf; eassumption ].
     + apply ad_refine_syn__var.
-  - (* arrow *) apply ad_refine_syn__arrow; eauto.
+  - (* arrow *) apply ad_refine_syn_arrow_intro; eauto.
   - (* all : the witness joins the PREFIX and Δ *)
-    apply ad_refine_syn__all
+    apply ad_refine_syn_all_intro
       with (L := L `union` singleton α0 `union` ftvar_in_ptyp τs
                  `union` dom Θa `union` dom Θ0). intros β Hβ.
     repeat rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       try solve [ clear - Hβ; fsetdec
                 | apply mono_ptyp_to_bskl_syn_lc;
                   eapply solves_flex_mono; eassumption ].
-    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b
+    apply (H1 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b
              ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ | clear - Hα0 Hβ; fsetdec
       | clear - Hd Hβ; fsetdec ].
@@ -525,19 +525,19 @@ Proof.
     pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P (ptyp_to_pskl τs) α0)
       as Hup.
     rewrite ftvar_ptyp_to_pskl in Hup. clear - H Hd Hup; fsetdec.
-  - (* tophole_remove *) apply ad_refine_syn__tophole_remove; eauto.
+  - (* tophole_remove *) apply ad_refine_syn_tophole_remove_intro; eauto.
   - (* tophole_fill : the witness joins the PREFIX *)
-    apply ad_refine_syn__tophole_fill
+    apply ad_refine_syn_tophole_fill_intro
       with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
     intros β Hβ.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       [ | clear - Hβ; fsetdec
         | apply mono_ptyp_to_bskl_syn_lc; eapply solves_flex_mono;
           eassumption ].
-    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
+    apply (H1 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ | exact Hα0 | exact Hd ].
   - (* tophole_keep *)
-    apply ad_refine_syn__tophole_keep; eauto.
+    apply ad_refine_syn_tophole_keep_intro; eauto.
   - (* flex_l *)
     destruct_if as [Heqα | Hne].
     + (* the eliminated variable: the lookup COLLAPSES into its premise *)
@@ -636,7 +636,7 @@ Proof.
   - (* hole : the fill is substituted, and still avoids Δ — no painting
        rewrite *)
     apply ad_refine_pskl__hole.
-    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Q (ptyp_to_pskl τs) α0)
+    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P' (ptyp_to_pskl τs) α0)
       as Hup.
     rewrite ftvar_ptyp_to_pskl in Hup. clear - H Hd Hup; fsetdec.
   - (* tophole_remove *) apply ad_refine_pskl__tophole_remove; eauto.
@@ -928,30 +928,30 @@ Proof.
   intros Θ Δ Qs Qt H; induction H; intros S Θ' Hm Hs Ht; simpl in Hs, Ht.
   - apply ad_refine_syn__unit.
   - apply ad_refine_syn__var.
-  - apply ad_refine_syn__arrow;
+  - apply ad_refine_syn_arrow_intro;
       [ apply (IHad_refine_syn1 S) | apply (IHad_refine_syn2 S) ];
       try assumption; clear - Hs Ht; fsetdec.
-  - apply ad_refine_syn__all with (L := L `union` S). intros β Hβ.
-    apply (H0 β ltac:(clear - Hβ; fsetdec) S); [ | | ].
+  - apply ad_refine_syn_all_intro with (L := L `union` S). intros β Hβ.
+    apply (H1 β ltac:(clear - Hβ; fsetdec) S); [ | | ].
     + intros γ τ Hb Hγ. apply binds_app_1 in Hb as [Hb | Hb];
         [ apply binds_one_iff in Hb as [_ Hb]; discriminate | ].
       destruct (Hm γ τ Hb Hγ) as [Hb' Hd].
       split; [ apply binds_app_3; exact Hb' | exact Hd ].
     + pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
         as Hup; simpl in Hup. clear - Hs Hup Hβ; fsetdec.
-    + pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f β))
+    + pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q' (bskl_var_f β))
         as Hup; simpl in Hup. clear - Ht Hup Hβ; fsetdec.
   - apply ad_refine_syn__hole; assumption.
-  - apply ad_refine_syn__tophole_remove; eauto.
-  - apply ad_refine_syn__tophole_fill with (L := L `union` S). intros β Hβ.
-    apply (H0 β ltac:(clear - Hβ; fsetdec) S); [ | simpl; exact Hs | ].
+  - apply ad_refine_syn_tophole_remove_intro; eauto.
+  - apply ad_refine_syn_tophole_fill_intro with (L := L `union` S). intros β Hβ.
+    apply (H1 β ltac:(clear - Hβ; fsetdec) S); [ | simpl; exact Hs | ].
     + intros γ τ Hb Hγ. apply binds_app_1 in Hb as [Hb | Hb];
         [ apply binds_one_iff in Hb as [_ Hb]; discriminate | ].
       destruct (Hm γ τ Hb Hγ) as [Hb' Hd].
       split; [ apply binds_app_3; exact Hb' | exact Hd ].
-    + pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f β))
+    + pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q' (bskl_var_f β))
         as Hup; simpl in Hup. clear - Ht Hup Hβ; fsetdec.
-  - apply ad_refine_syn__tophole_keep; eauto.
+  - apply ad_refine_syn_tophole_keep_intro; eauto.
   - assert (Hα : α `notin` S)
       by (intros Hin; assert (Hx : α `in` S ∩ singleton α)
             by (clear - Hin; fsetdec);

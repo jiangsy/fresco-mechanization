@@ -980,7 +980,7 @@ Proof.
               ltac:(apply a_ty_mode_compat__fn; exact Hmod)
               Hζ1 Hrig1m Hlc1 Hd1
               ltac:(cbn [msubst_pskl pskl_to_bskl_inh btyp_to_bskl];
-                    apply ad_refine_syn__arrow; [ exact Hdom | exact Hcod ]))
+                    apply ad_refine_syn_arrow_intro; [ exact Hdom | exact Hcod ]))
     as [C [Θ2' [Hrun2 Hopt2]]].
   (* the output is a SYNTACTIC arrow *)
   pose proof (a_typing_fn_arrow_shape Hrun2) as Hshape.
@@ -1458,7 +1458,7 @@ Proof.
                 (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f βv)))
                 (btyp_to_bskl Bt))
         by (simpl; rewrite <- HeqS, <- HeqT;
-            apply ad_refine_syn__arrow; assumption).
+            apply ad_refine_syn_arrow_intro; assumption).
       destruct (@guess_complete_var_image Θ Δ κ βv Bt Θg Ξg A' Href' HwfΘ Hg) as [-> Heqc].
       exists nil; split;
         [ reflexivity
@@ -1467,7 +1467,7 @@ Proof.
       inversion HeqS; subst Q1 Q2.
       destruct Bt as [ | n | γ | B1 B2 | B0 | B0 ]; simpl in HeqT;
         try discriminate HeqT.
-      inversion HeqT; subst P1 P2.
+      inversion HeqT; subst Q3 Q4.
       simpl in HwfBt; inversion HwfBt; subst.
       inversion Hit; subst.
       inversion Hg; subst.
@@ -1541,7 +1541,7 @@ Proof.
       inversion HeqS; subst Q.
       destruct Bt as [ | n | γ | B1 B2 | B0 | B0 ]; simpl in HeqT;
         try discriminate HeqT.
-      inversion HeqT; subst P.
+      inversion HeqT; subst Q'.
       inversion Hit; subst.
       match goal with
       | Hfam : forall α, α `notin` ?LL ->
@@ -1574,7 +1574,7 @@ Proof.
           [ apply a_guess_mono__forall with (β := β);
               [ exact Hfrβ | exact Hg0 ]
           | clear - Hα0; fsetdec ]. }
-      destruct (H0 α0 ltac:(clear - Hα0; solve_notin_auto)
+      destruct (H1 α0 ltac:(clear - Hα0; solve_notin_auto)
                   (open_pskl_wrt_pskl Pw (pskl_var_f α0))
                   (open_btyp_wrt_btyp B0 (btyp_var_f α0))
                   ((α0 ~ abind_tvar) ++ Θg) Ξg

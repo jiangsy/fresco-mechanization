@@ -32,6 +32,7 @@ Require Import src.fresco.algo.def_meta.
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo_decl.def_subtyping.
+Require Import src.fresco.algo.prop_refine.
 Require Import src.fresco.algo.sub.look.prop_rsubst.  (* [delta_def_fresh] *)
 Require Import src.fresco.algo.sub.look.prop_eq_cstr.  (* P6-Cs + [msubst_uskl_syn] *)
 
@@ -191,7 +192,7 @@ Proof.
     apply ad_pat_consis__unit; clear; fsetdec.
   - (* refinement: ∀◇⟨⟩ ⊳ ∀◇⟨⟩ — R-UnivGhostKeep *)
     cbn [msubst_pskl pskl_to_bskl_inh cex_P0]. unfold cex_Q.
-    apply ad_refine_syn__tophole_keep; apply ad_refine_syn__unit.
+    apply ad_refine_syn_tophole_keep_intro; apply ad_refine_syn__unit.
   - (* … and now the conclusion is refuted *)
     destruct (@cex_lookeq_forced α Ξc 𝒞 HLK) as [-> ->].
     simpl in HSolve.
@@ -260,7 +261,7 @@ Proof.
                      apply a_wf_pskl__tophole;
                        [ apply guarded_pskl__unit | apply a_wf_pskl__unit ])
                ltac:(cbn [msubst_pskl pskl_to_bskl_inh cex_P0];
-                     apply ad_refine_syn__tophole_keep;
+                     apply ad_refine_syn_tophole_keep_intro;
                      apply ad_refine_syn__unit)
                (* the avoid-set parameter of the repaired statement *)
                empty ltac:(cbn; clear; fsetdec))

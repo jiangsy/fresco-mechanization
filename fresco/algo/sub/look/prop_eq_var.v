@@ -2451,7 +2451,7 @@ Proof.
                 simpl in Hin; inversion Hin
               end.
           - (* tophole_fill: the cofinite premise IS the fill body *)
-            rename H5 into Hfill; rename L0 into Lfill.
+            rename H6 into Hfill; rename L0 into Lfill.
             exists Lfill; exact Hfill. }
         destruct Hrefb as (Lrb & Hrefb).
         (* the body-IH wrapper (bag split: Θtv_ih:=Θtv, Θr_ih:=(α0~tvar)++Θr,

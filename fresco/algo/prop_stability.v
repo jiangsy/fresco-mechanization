@@ -104,11 +104,11 @@ Proof.
   - apply ad_refine_syn__unit.
   - apply ad_refine_syn__var.
   - apply ad_refine_syn__arrow; auto.
-  - eapply ad_refine_syn__all with (L := L).
+  - eapply ad_refine_syn__all with (L := L); [ assumption | ].
     intros α Hα. eauto using a_isub_cons_tvar.
   - apply ad_refine_syn__hole; auto.
   - apply ad_refine_syn__tophole_remove; auto.
-  - eapply ad_refine_syn__tophole_fill with (L := L).
+  - eapply ad_refine_syn__tophole_fill with (L := L); [ assumption | ].
     intros α Hα. eauto using a_isub_cons_tvar.
   - apply ad_refine_syn__tophole_keep; auto.
   - eapply ad_refine_syn__flex_l; eauto using a_isub_binds_flex_def.

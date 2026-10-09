@@ -223,12 +223,38 @@ Inductive ad_refine_pskl_f (F : atoms) : aenv -> atoms -> pskl -> pskl -> Prop :
     ad_refine_pskl_f F Θ Δ P (ptyp_to_pskl τ) ->
     ad_refine_pskl_f F Θ Δ P (pskl_var_f α).
 
+(** The LHS of a fill-hygienic refinement is an inherited skeleton.  This
+    is why [ad_refine_syn_f] needs no [is_iskl] premises of its own: the
+    ones [ad_refine_syn] carries are derivable from the sub-derivations. *)
+Lemma ad_refine_syn_f_is_iskl : forall F Θ Δ Q Q',
+  ad_refine_syn_f F Θ Δ Q Q' ->
+  is_iskl Q.
+Proof.
+  intros * H; induction H; try assumption; try solve [constructor; auto].
+  - apply is_iskl__all with (L := L); auto.
+  - pick fresh α for L. eauto.
+Qed.
+
 (** Forgetting the hygiene set recovers the declarative judgments. *)
 Lemma ad_refine_syn_f_forget : forall F Θ Δ Q Q',
   ad_refine_syn_f F Θ Δ Q Q' ->
   {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad.
 Proof.
   intros * H; induction H; eauto using ad_refine_syn.
+  (* the [is_iskl] premises: rebuild the [_f] node and read off its LHS *)
+  - apply ad_refine_syn__arrow; auto.
+    eapply ad_refine_syn_f_is_iskl, ad_refine_syn_f__arrow; eassumption.
+  - apply ad_refine_syn__all with (L := L); auto.
+    eapply ad_refine_syn_f_is_iskl, ad_refine_syn_f__all; eassumption.
+  - apply ad_refine_syn__tophole_remove; auto.
+    eapply ad_refine_syn_f_is_iskl, ad_refine_syn_f__tophole_remove;
+      eassumption.
+  - apply ad_refine_syn__tophole_fill with (L := L); auto.
+    eapply ad_refine_syn_f_is_iskl, ad_refine_syn_f__tophole_fill;
+      eassumption.
+  - apply ad_refine_syn__tophole_keep; auto.
+    eapply ad_refine_syn_f_is_iskl, ad_refine_syn_f__tophole_keep;
+      eassumption.
 Qed.
 
 Lemma ad_refine_pskl_f_forget : forall F Θ Δ P P',

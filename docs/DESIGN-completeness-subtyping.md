@@ -3298,7 +3298,9 @@ at each node.  Three things that are invisible in the paper:
    monotype painting.  So §6's arrow and ∀◇ lemmas chase the chain and return a
    REPLAY function that re-applies the chased steps to whatever the caller
    builds.  This is one-step re-application, NOT transitivity of refinement,
-   which is FALSE (`cex/cex_refine_not_transitive.v`).  The chase terminates on
+   which is FALSE (`cex/cex_refine_not_transitive.v`) [⚠️ RETRACTED
+   2026-10-08: refinement is not shown non-transitive; the file now proves
+   `ad_refine_syn_output_not_wf`].  The chase terminates on
    the DERIVATION, so §6's lemmas are inductions on it, not on a size.
 2. **Why the extension is legal.**  `ad_refine_syn__hole`'s fill premise is
    `Θ ⨟ empty ⊢ₚₛᵃ P` — CLOSED.  So a hole under a binder can never be filled

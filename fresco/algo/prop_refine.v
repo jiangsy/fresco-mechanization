@@ -69,6 +69,65 @@ Proof.
     auto using lc_pskl_to_bskl_inh.
 Qed.
 
+(** The LHS of a coloured refinement is an inherited skeleton: the rows
+    that do not carry [is_iskl] as a premise have a unit / variable / hole
+    LHS, or ([__flex_r]) inherit it from their sub-derivation. *)
+Lemma ad_refine_syn_is_iskl : forall Θ Δ Q Q',
+  {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
+  is_iskl Q.
+Proof.
+  intros * H; induction H; try assumption; constructor.
+Qed.
+
+(** Hence the [is_iskl] premises of the structural rows are DERIVABLE from
+    their sub-derivations; these constructors omit them. *)
+Lemma ad_refine_syn_arrow_intro : forall Θ Δ Q1 Q2 Q3 Q4,
+  {{ Θ ⨟ Δ ⊢ᵣ Q1 ⊳ Q3 }}ad ->
+  {{ Θ ⨟ Δ ⊢ᵣ Q2 ⊳ Q4 }}ad ->
+  {{ Θ ⨟ Δ ⊢ᵣ (bskl_arrow Q1 Q2) ⊳ (bskl_arrow Q3 Q4) }}ad.
+Proof.
+  intros * H1 H2. apply ad_refine_syn__arrow; auto.
+  constructor; eapply ad_refine_syn_is_iskl; eassumption.
+Qed.
+
+Lemma ad_refine_syn_all_intro : forall L Θ Δ Q Q',
+  (forall α, α `notin` L ->
+     {{ ((α ~ abind_tvar) ++ Θ) ⨟ (add α Δ) ⊢ᵣ
+       (open_bskl_wrt_bskl Q (bskl_var_f α)) ⊳
+       (open_bskl_wrt_bskl Q' (bskl_var_f α)) }}ad) ->
+  {{ Θ ⨟ Δ ⊢ᵣ (bskl_all_inh Q) ⊳ (bskl_all_inh Q') }}ad.
+Proof.
+  intros * H. apply ad_refine_syn__all with (L := L); auto.
+  apply is_iskl__all with (L := L). intros α Hα.
+  eapply ad_refine_syn_is_iskl; eauto.
+Qed.
+
+Lemma ad_refine_syn_tophole_remove_intro : forall Θ Δ Q Q',
+  {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
+  {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ Q' }}ad.
+Proof.
+  intros * H. apply ad_refine_syn__tophole_remove; auto.
+  constructor; eapply ad_refine_syn_is_iskl; eassumption.
+Qed.
+
+Lemma ad_refine_syn_tophole_fill_intro : forall L Θ Δ Q Q',
+  (forall α, α `notin` L ->
+     {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ᵣ
+       (bskl_tophole Q) ⊳ (open_bskl_wrt_bskl Q' (bskl_var_f α)) }}ad) ->
+  {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_all_syn Q') }}ad.
+Proof.
+  intros * H. apply ad_refine_syn__tophole_fill with (L := L); auto.
+  pick fresh α for L. eapply ad_refine_syn_is_iskl; eauto.
+Qed.
+
+Lemma ad_refine_syn_tophole_keep_intro : forall Θ Δ Q Q',
+  {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
+  {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_tophole Q') }}ad.
+Proof.
+  intros * H. apply ad_refine_syn__tophole_keep; auto.
+  constructor; eapply ad_refine_syn_is_iskl; eassumption.
+Qed.
+
 (* ===================================================================== *)
 (*  Binds-monotone weakening of the refinement judgments                   *)
 (* ===================================================================== *)
@@ -83,16 +142,16 @@ Proof.
   - apply ad_refine_syn__unit.
   - apply ad_refine_syn__var.
   - apply ad_refine_syn__arrow; auto.
-  - eapply ad_refine_syn__all with (L := L).
-    intros α Hα. apply H0; auto.
+  - eapply ad_refine_syn__all with (L := L); [ assumption | ].
+    intros α Hα. apply H1; auto.
     intros x b Hb.
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
       [ unfold binds; left; reflexivity
       | unfold binds; right; apply Hmon; auto ].
   - apply ad_refine_syn__hole; assumption.
   - apply ad_refine_syn__tophole_remove; auto.
-  - eapply ad_refine_syn__tophole_fill with (L := L).
-    intros α Hα. apply H0; auto.
+  - eapply ad_refine_syn__tophole_fill with (L := L); [ assumption | ].
+    intros α Hα. apply H1; auto.
     intros x b Hb.
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
       [ unfold binds; left; reflexivity
@@ -145,8 +204,8 @@ Lemma ad_refine_syn_delta_mono : forall Θ Δ0 Q Q',
 Proof.
   intros Θ Δ0 Q Q' H; induction H; intros Δ' Hsub;
     eauto using ad_refine_syn.
-  - apply ad_refine_syn__all with (L := L).
-    intros α Hα. apply H0; auto. fsetdec.
+  - apply ad_refine_syn__all with (L := L); [ assumption | ].
+    intros α Hα. apply H1; auto. fsetdec.
   - apply ad_refine_syn__hole. fsetdec.
 Qed.
 
@@ -164,25 +223,31 @@ Qed.
 
 (** Reflexivity needs no scoping at all: the reflexive derivation fills
     every [◇] with [◇] (so [__hole]'s side condition is vacuous) and the
-    remaining rows carry no premise.  Hence the general form, at an
-    arbitrary [Θ'] and [Δ']; the wf hypothesis only supplies local
-    closure. *)
+    remaining rows carry no premise beyond the LHS being inherited, which
+    an inherited painting is.  Hence the general form, at an arbitrary
+    [Θ'] and [Δ']; the wf hypothesis only supplies local closure, so the
+    induction runs on that. *)
 Lemma ad_refine_syn_refl_inh_gen : forall Θ Δ P,
   {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
   forall Θ' Δ',
   {{ Θ' ⨟ Δ' ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh P) }}ad.
 Proof.
-  intros Θ Δ P H; induction H; intros Θ' Δ'; simpl.
+  intros Θ Δ P H.
+  assert (Hlc : lc_pskl P) by (clear - H; induction H; eauto using lc_pskl).
+  clear H. pose proof Hlc as Hlc0. revert Hlc0.
+  induction Hlc; intros Hlc0 Θ' Δ';
+    pose proof (is_iskl_pskl_to_bskl_inh _ Hlc0) as Hi;
+    simpl in Hi |- *.
   - apply ad_refine_syn__unit.
   - apply ad_refine_syn__var.
   - apply ad_refine_syn__arrow; auto.
-  - apply ad_refine_syn__all with (L := L).
-    intros α Hα.
+  - apply ad_refine_syn__all with (L := {}); [ exact Hi | ].
+    intros α _.
     repeat rewrite <- pskl_to_bskl_inh_open. auto.
   - replace (pskl_to_bskl_inh pskl_hole)
       with (pskl_to_bskl_syn pskl_hole) at 2 by reflexivity.
     apply ad_refine_syn__hole. simpl. fsetdec.
-  - apply ad_refine_syn__tophole_keep. auto.
+  - apply ad_refine_syn__tophole_keep; auto.
 Qed.
 
 Lemma ad_refine_syn_refl_inh : forall Θ Δ P,

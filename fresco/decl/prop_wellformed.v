@@ -30,7 +30,7 @@ Inductive d_wf_denv : list (atom * dbind) -> Prop :=
 | d_wf_denv__skl : forall Γ x P,
     d_wf_denv Γ ->
     x `notin` dom Γ ->
-    d_wf_pskl Γ nil P ->
+    d_wf_pskl Γ empty P ->
     d_wf_denv ((x ~ dbind_skl P) ++ Γ).
 
 (** * Weakening. *)

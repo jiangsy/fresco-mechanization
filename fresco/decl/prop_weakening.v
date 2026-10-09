@@ -113,14 +113,16 @@ Proof.
   - apply d_refine_syn__unit.
   - apply d_refine_syn__var.
   - apply d_refine_syn__arrow; auto.
-  - apply d_refine_syn__all with (L := L `union` dom (Γ1 ++ Γ3)). intros α Hα.
-    eapply (H0 α ltac:(solve_notin_auto) ((α ~ dbind_tvar) ++ Γ1) Γ3). simpl_env. reflexivity.
+  - apply d_refine_syn__all with (L := L `union` dom (Γ1 ++ Γ3)); [ assumption | ].
+    intros α Hα.
+    eapply (H1 α ltac:(solve_notin_auto) ((α ~ dbind_tvar) ++ Γ1) Γ3). simpl_env. reflexivity.
   - apply d_refine_syn__hole. assumption.
   - apply d_refine_syn__tophole_remove; auto.
   - (* [tophole_fill] now PREPENDS the bound var to [Γ]; weaken at [α::Γ1]. *)
-    apply d_refine_syn__tophole_fill with (L := L `union` dom (Γ1 ++ Γ3)). intros α Hα.
-    eapply (H0 α ltac:(solve_notin_auto) ((α ~ dbind_tvar) ++ Γ1) Γ3). simpl_env. reflexivity.
-  - apply d_refine_syn__tophole_keep. auto.
+    apply d_refine_syn__tophole_fill with (L := L `union` dom (Γ1 ++ Γ3)); [ assumption | ].
+    intros α Hα.
+    eapply (H1 α ltac:(solve_notin_auto) ((α ~ dbind_tvar) ++ Γ1) Γ3). simpl_env. reflexivity.
+  - apply d_refine_syn__tophole_keep; auto.
 Qed.
 
 (** ⭐ The UNCOLOURED twin.  Same eight rows, same proof — the colours the

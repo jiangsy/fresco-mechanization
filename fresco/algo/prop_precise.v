@@ -164,8 +164,8 @@ Proof.
   - (* tophole_fill : close the body over the fresh variable *)
     destruct P0 as [ | | | | | | Pt ]; simpl in Heq; try discriminate.
     inversion Heq; subst.
-    pick fresh α for (L `union` dom Θ `union` ftvar_in_bskl P).
-    destruct (H0 α ltac:(auto) (pskl_tophole Pt) eq_refl) as [RX HeqRX].
+    pick fresh α for (L `union` dom Θ `union` ftvar_in_bskl Q').
+    destruct (H1 α ltac:(auto) (pskl_tophole Pt) eq_refl) as [RX HeqRX].
     exists (pskl_all_syn (close_pskl_wrt_pskl α RX)).
     simpl. rewrite pskl_to_bskl_syn_close. rewrite <- HeqRX.
     rewrite close_bskl_wrt_bskl_open_bskl_wrt_bskl;
@@ -334,18 +334,18 @@ Proof.
   - (* tophole_fill : the bound variable is fresh, and gets closed over *)
     destruct F as [ | | | | | | Ft ]; simpl in Heq; try discriminate.
     inversion Heq; subst.
-    pick fresh α for (L `union` Δ `union` ftvar_in_bskl P).
+    pick fresh α for (L `union` Δ `union` ftvar_in_bskl Q').
     destruct (@delta_flex_defs_cons_tvar α Θ Δ Hdefs Hflex) as [Hdefs' Hflex'].
     assert (Hsub : Δ ∩
-                     (ftvar_in_bskl (open_bskl_wrt_bskl P (bskl_var_f α)))
+                     (ftvar_in_bskl (open_bskl_wrt_bskl Q' (bskl_var_f α)))
                    [=] empty).
-    { eapply (H0 α ltac:(auto) (pskl_tophole Ft) eq_refl Hdefs' Hflex').
+    { eapply (H1 α ltac:(auto) (pskl_tophole Ft) eq_refl Hdefs' Hflex').
       simpl in Hfree |- *. exact Hfree. }
-    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_lower P (bskl_var_f α))
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_lower Q' (bskl_var_f α))
       as Hlow.
     simpl.
     apply inter_empty_pointwise. intros β Hβ HYP.
-    assert (HYo : β `in` ftvar_in_bskl (open_bskl_wrt_bskl P (bskl_var_f α)))
+    assert (HYo : β `in` ftvar_in_bskl (open_bskl_wrt_bskl Q' (bskl_var_f α)))
       by (clear - HYP Hlow; fsetdec).
     clear - Hβ HYo Hsub. fsetdec.
   - (* tophole_keep *)
@@ -474,21 +474,21 @@ Proof.
   - (* unit : Qm = Qr = unit *) exact Hp.
   - (* var *) exact Hp.
   - (* arrow *)
-    rename Q1 into Qa. rename Q2 into Qb. rename P1 into Pa. rename P2 into Pb.
-    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_arrow Qa Qb) ⊳ (bskl_arrow Pa Pb) }}ad)
+    rename Q1 into Qa. rename Q2 into Qb. rename Q3 into Qc. rename Q4 into Qd.
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_arrow Qa Qb) ⊳ (bskl_arrow Qc Qd) }}ad)
       by (apply ad_refine_syn__arrow; assumption).
     remember (bskl_arrow Qa Qb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
     + inversion HM; subst. simpl in HwfQr.
       inversion HwfQr as [ | | Θw Δw Pw1 Pw2 Hw1 Hw2 | | | ]; subst.
-      apply ad_refine_syn__arrow; [ apply IHHr1 | apply IHHr2 ]; auto.
+      apply ad_refine_syn__arrow; [ assumption | apply IHHr1 | apply IHHr2 ]; auto.
     + eapply ad_refine_syn_hole_l_gen with (P := P);
         [ exact Hrr | exact Hdefs | exact Hflex | eassumption ].
-    + apply ad_refine_syn__tophole_remove. apply IHHp; auto.
+    + apply ad_refine_syn__tophole_remove; [ assumption | apply IHHp; auto ].
     + eapply ad_refine_syn__flex_l;
         [ eassumption | ]. apply IHHp; auto.
   - (* all : ∀^inh Q ⊳ ∀^inh P *)
-    rename Q into Qb. rename P into Pb.
+    rename Q into Qb. rename Q' into Qc.
     remember (bskl_all_inh Qb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate;
       [ | destruct P; simpl in HM; discriminate | | ].
@@ -496,17 +496,17 @@ Proof.
       inversion HM; subst. simpl in HwfQr.
       inversion HwfQr as [ | | | L2 Θw Δw Pw Hbody | | ]; subst.
       apply ad_refine_syn__all
-        with (L := L `union` L0 `union` L2 `union` dom Θ `union` Δ).
-      intros α Hα.
+        with (L := L `union` L0 `union` L2 `union` dom Θ `union` Δ);
+        [ assumption | intros α Hα ].
       assert (HαΘ : α `notin` dom Θ) by (clear - Hα; fsetdec).
       destruct (delta_flex_defs_cons_tvar_add Hwf HαΘ Hdefs Hflex)
         as [Hdefs' Hflex'].
-      apply H0 with (α := α);
+      apply H1 with (α := α);
         [ clear - Hα; fsetdec | apply a_wf_aenv__tvar; auto
         | exact Hdefs' | exact Hflex'
         | rewrite bskl_to_pskl_open; apply Hbody; clear - Hα; fsetdec
-        | apply H1; clear - Hα; fsetdec ].
-    + apply ad_refine_syn__tophole_remove. apply IHHp; auto.
+        | apply H3; clear - Hα; fsetdec ].
+    + apply ad_refine_syn__tophole_remove; [ assumption | apply IHHp; auto ].
     + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
   - (* hole : Qm = □, Qr = syn P *)
     rename P into Pf.
@@ -515,39 +515,39 @@ Proof.
     + (* □ ⊳ □ : the fill of Hp must itself be a ghost *)
       destruct P; simpl in HM; try discriminate.
       apply ad_refine_syn__hole. assumption.
-    + apply ad_refine_syn__tophole_remove. apply IHHp; auto.
+    + apply ad_refine_syn__tophole_remove; [ assumption | apply IHHp; auto ].
     + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
   - (* tophole_remove : Qm = ∀◇Q, Qr from Q ⊳ Qr *)
-    rename Q into Qb. rename P into Pb.
-    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Qb) ⊳ Pb }}ad)
+    rename Q into Qb. rename Q' into Qc.
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Qb) ⊳ Qc }}ad)
       by (apply ad_refine_syn__tophole_remove; assumption).
     remember (bskl_tophole Qb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
     + eapply ad_refine_syn_hole_l_gen with (P := P);
         [ exact Hrr | exact Hdefs | exact Hflex | eassumption ].
-    + apply ad_refine_syn__tophole_remove. apply IHHp; auto.
+    + apply ad_refine_syn__tophole_remove; [ assumption | apply IHHp; auto ].
     + (* tophole_keep on the left : peel both *)
       inversion HM; subst.
-      apply ad_refine_syn__tophole_remove. apply IHHr; auto.
+      apply ad_refine_syn__tophole_remove; [ assumption | apply IHHr; auto ].
     + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
   - (* tophole_fill : ∀◇Q ⊳ ∀^syn P *)
-    rename Q into Qb. rename P into Pb.
-    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Qb) ⊳ (bskl_all_syn Pb) }}ad)
+    rename Q into Qb. rename Q' into Qc.
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Qb) ⊳ (bskl_all_syn Qc) }}ad)
       by (eapply ad_refine_syn__tophole_fill with (L := L); assumption).
     remember (bskl_tophole Qb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
     + eapply ad_refine_syn_hole_l_gen with (P := P);
         [ exact Hrr | exact Hdefs | exact Hflex | eassumption ].
-    + apply ad_refine_syn__tophole_remove. apply IHHp; auto.
+    + apply ad_refine_syn__tophole_remove; [ assumption | apply IHHp; auto ].
     + (* tophole_keep on the left : rebuild the ∀ *)
       inversion HM; subst.
       simpl in HwfQr.
       inversion HwfQr as [ | | | L2 Θw Δw Pw Hbody | | ]; subst.
       apply ad_refine_syn__tophole_fill
-        with (L := L `union` L2 `union` dom Θ `union` Δ).
-      intros α Hα.
+        with (L := L `union` L2 `union` dom Θ `union` Δ);
+        [ assumption | intros α Hα ].
       destruct (@delta_flex_defs_cons_tvar α Θ Δ Hdefs Hflex) as [Hdefs' Hflex'].
-      apply H0 with (α := α);
+      apply H1 with (α := α);
         [ clear - Hα; fsetdec
         | apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]
         | exact Hdefs' | exact Hflex'
@@ -561,18 +561,18 @@ Proof.
           | intros y b Hb; unfold binds; right; exact Hb ]. }
     + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
   - (* tophole_keep : ∀◇Q ⊳ ∀◇P *)
-    rename Q into Qb. rename P into Pb.
-    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Qb) ⊳ (bskl_tophole Pb) }}ad)
+    rename Q into Qb. rename Q' into Qc.
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Qb) ⊳ (bskl_tophole Qc) }}ad)
       by (apply ad_refine_syn__tophole_keep; assumption).
     remember (bskl_tophole Qb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
     + eapply ad_refine_syn_hole_l_gen with (P := P);
         [ exact Hrr | exact Hdefs | exact Hflex | eassumption ].
-    + apply ad_refine_syn__tophole_remove. apply IHHp; auto.
+    + apply ad_refine_syn__tophole_remove; [ assumption | apply IHHp; auto ].
     + inversion HM; subst.
       simpl in HwfQr.
       inversion HwfQr as [ | | | | | Θw Δw Pw Hg Hwb ]; subst.
-      apply ad_refine_syn__tophole_keep.
+      apply ad_refine_syn__tophole_keep; [ assumption | ].
       apply IHHr; auto.
       (* the kept body is wf at [Θ∖Δ ⨟ ∅], hence Δ-free and wf at [Θ ⨟ Δ] *)
       eapply a_wf_pskl_delta_mono.
@@ -584,7 +584,7 @@ Proof.
         exact (Hn HβΔ).
     + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
   - (* flex_l : Qm = α̂ with α̂ := τ *)
-    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_var_f α) ⊳ Q }}ad)
+    assert (Hrr : {{ Θ ⨟ Δ ⊢ᵣ (bskl_var_f α) ⊳ Q' }}ad)
       by (eapply ad_refine_syn__flex_l; eassumption).
     remember (bskl_var_f α) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
@@ -593,7 +593,7 @@ Proof.
       eapply ad_refine_syn__flex_l; eassumption.
     + eapply ad_refine_syn_hole_l_gen with (P := P);
         [ exact Hrr | exact Hdefs | exact Hflex | eassumption ].
-    + apply ad_refine_syn__tophole_remove. apply IHHp; auto.
+    + apply ad_refine_syn__tophole_remove; [ assumption | apply IHHp; auto ].
     + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
     + (* flex_r on the left : the two definitions coincide *)
       inversion HM; subst.

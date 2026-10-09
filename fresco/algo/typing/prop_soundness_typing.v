@@ -146,7 +146,7 @@ Proof.
     assert (HαL : α `notin` L) by solve_notin.
     assert (HαΘ : α `notin` dom Θ) by solve_notin.
     eapply prop_metasubst.a_tyequiv_strengthen_tvar_cons; [ | reflexivity ].
-    apply (H0 α HαL (a_wf_aenv__tvar HαΘ Hwf)
+    apply (H1 α HαL (a_wf_aenv__tvar HαΘ Hwf)
              (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))
              (open_btyp_wrt_btyp B0 (btyp_var_f α)));
       [ rewrite ptyp_to_pskl_open, pskl_to_bskl_inh_open; reflexivity
@@ -815,20 +815,20 @@ Proof.
       by (apply HΞΔ; unfold binds; left; reflexivity).
     simpl. clear - Hn; fsetdec.
   - (* ∀◇P : the universal ghost is DROPPED, so the row is [tophole_remove] *)
-    apply ad_refine_syn__tophole_remove.
+    apply ad_refine_syn_tophole_remove_intro.
     eapply IHn; [ lia | exact Hg | exact Hvars | exact HΞ | exact HΞΔ ].
   - (* variable *)
     apply ad_refine_syn__var.
   - (* unit *) apply ad_refine_syn__unit.
   - (* arrow *)
-    apply ad_refine_syn__arrow;
+    apply ad_refine_syn_arrow_intro;
       [ eapply IHn with (P := P) | eapply IHn with (P := Q) ];
       solve [ lia | eassumption
             | intros α Hα; apply Hvars; simpl; clear - Hα; fsetdec
             | intros α1 Hb; first [ apply HΞ | apply HΞΔ ];
               unfold binds in *; apply in_or_app; auto ].
   - (* ∀ : exists-fresh source, cofinite target *)
-    apply ad_refine_syn__all
+    apply ad_refine_syn_all_intro
       with (L := dom Ξ `union` dom Θ1 `union` Δ `union` ftvar_in_aenv Θ
                    `union` ftvar_in_pskl P `union` ftvar_in_ptyp A
                    `union` singleton β).
@@ -900,7 +900,7 @@ Proof.
   - (* arrow *)
     destruct HmA0 as [ | | A1 A2 Hm1 Hm2 ]; simpl in HeqS; try discriminate.
     inversion HeqS; subst.
-    simpl. apply ad_refine_syn__arrow; [ eapply IHHc1 | eapply IHHc2 ];
+    simpl. apply ad_refine_syn_arrow_intro; [ eapply IHHc1 | eapply IHHc2 ];
       solve [ reflexivity | assumption ].
   - (* forall_inh_tagged *) destruct HmA0; simpl in HeqS; discriminate.
   - (* forall_inh_untagged *) destruct HmA0; simpl in HeqS; discriminate.
@@ -957,7 +957,7 @@ Proof.
         inversion Heq; subst
     end.
     simpl.
-    apply ad_refine_syn__arrow; [ | exact HQb ].
+    apply ad_refine_syn_arrow_intro; [ | exact HQb ].
     apply ad_refine_syn_refl_inh.
     inversion HwfP; subst.
     eapply a_wf_pskl_isub; [ | exact Hle ]. assumption.
@@ -1057,7 +1057,7 @@ Proof.
                  (ptyp_to_pskl (ptyp_arrow (ptyp_var_f β) (ptyp_var_f α1))))
               ⊳ (bskl_arrow (pskl_to_bskl_inh (pskl_var_f β)) Qb) }}ad).
     { simpl.
-      apply ad_refine_syn__arrow; [ | exact HQb ].
+      apply ad_refine_syn_arrow_intro; [ | exact HQb ].
       apply ad_refine_syn__var. }
     pose proof (proj2 (skl_tyequiv_refine_syn_f_transport Hskleq Hwf'
                          (fun x b h => h))
@@ -1569,7 +1569,7 @@ Proof.
                            (pskl_to_bskl_syn P'))
           with (pskl_to_bskl_syn (pskl_arrow (pskl_var_f α) P')).
         apply ad_refine_syn__hole. clear; fsetdec.
-      - apply ad_refine_syn__arrow;
+      - apply ad_refine_syn_arrow_intro;
           [ eapply a_guess_mono_refine;
               [ exact H1
               | intros α1 Hα1; right;
@@ -1685,7 +1685,7 @@ Proof.
           | exact HeB1
           | apply mod_comp_ty__fn; exact Hmq
           | intros y Hy; apply Hbody ].
-      * simpl. apply ad_refine_syn__arrow;
+      * simpl. apply ad_refine_syn_arrow_intro;
           [ eapply ad_refine_syn_isub; [ exact HrefA | exact Hisub ]
           | eapply ad_refine_syn_strip_tm_typ; exact Hrefb ].
   - (* AT-AbsCheck (∀) : the output DROPS the pending suffix, and the rule
@@ -1830,7 +1830,7 @@ Proof.
                       ltac:(clear - Hα; solve_notin_auto)) in Hr.
         exact Hr.
     + rewrite btyp_to_bskl_ptyp_to_btyp_inh. simpl.
-      apply ad_refine_syn__all
+      apply ad_refine_syn_all_intro
         with (L := dom Θ0 `union` dom Ξ `union` dom Θ1
                      `union` ftvar_in_ptyp A `union` ftvar_in_ptyp A0
                      `union` singleton α).
@@ -2107,7 +2107,7 @@ Proof.
                       ltac:(clear - Hα; solve_notin_auto)) in Hr.
         exact Hr.
     + rewrite btyp_to_bskl_ptyp_to_btyp_inh. simpl.
-      apply ad_refine_syn__all
+      apply ad_refine_syn_all_intro
         with (L := dom Θ0 `union` dom Ξ `union` dom Θ1
                      `union` ftvar_in_ptyp A `union` ftvar_in_ptyp A0
                      `union` singleton α).

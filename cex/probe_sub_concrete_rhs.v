@@ -118,7 +118,7 @@ Proof.
     rewrite <- 2 bskl_to_pskl_open.
     (* the premise sits at [α ~ abind_tvar ++ Θ], which defines nothing new *)
     eapply a_pskl_tyequiv_weaken;
-      [ apply H0; [ exact Hα | apply bskl_ghost_free_open_rec; exact Hgf ] | ].
+      [ apply H1; [ exact Hα | apply bskl_ghost_free_open_rec; exact Hgf ] | ].
     intros β τ Hb; apply binds_app_iff in Hb as [Hb | Hb]; [ | exact Hb ].
     apply binds_one_iff in Hb as [_ Heq]; discriminate.
   - (* hole : a GHOST on the left *) tauto.

@@ -71,10 +71,11 @@ Definition Bres : bskl :=
 Lemma step2 : forall Θ Δ,
   {{ Θ ⨟ Δ ⊢ᵣ (pskl_to_bskl_syn Pfill) ⊳ Bres }}ad.
 Proof.
-  intros. simpl. apply ad_refine_syn__tophole_fill with (L := dom Θ `union` Δ).
+  intros. simpl. apply ad_refine_syn__tophole_fill with (L := dom Θ `union` Δ);
+    [ repeat constructor | ].
   intros α Hα. simpl.
-  apply ad_refine_syn__tophole_keep.
-  apply ad_refine_syn__arrow;
+  apply ad_refine_syn__tophole_keep; [ repeat constructor | ].
+  apply ad_refine_syn__arrow; [ repeat constructor | | ];
     (replace (bskl_var_f α) with (pskl_to_bskl_syn (pskl_var_f α)) by reflexivity;
      apply ad_refine_syn__hole; simpl; clear - Hα; fsetdec).
 Qed.

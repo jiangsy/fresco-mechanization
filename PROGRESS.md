@@ -249,6 +249,34 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-09 — Δ is a set everywhere; Q/P naming; inherited colour in refinement
+
+Commit `d9b1be42`.
+
+- **Δ is an atom set in every layer.**  The declarative ∀-scope Δ of
+  `d_wf_pskl` / `d_wf_uskl` / `d_refine_syn` / `d_refine_pskl` was a
+  `list atom`; it is now `atoms`, as in the paper and the algorithmic layer
+  (`add α Δ`, `Δ ∩ ftv P [=] empty`, `denv_minus` over atoms).
+- **Bridges at one Δ.**  The conservativity bridges in
+  `algo_decl/prop_conserv.v` (`a_wf_pskl_to_d` / `d_wf_pskl_to_a`,
+  `ad_refine_*_to_d` / `d_refine_*_to_ad`, `d_wf_uskl_of_a_wf_pskl`, …)
+  are stated at a single Δ instead of a `delta_agree`-related pair.  These
+  are the only statement changes; no README.v claim changed.
+- **Deleted:** `delta_agree` and its four lemmas, `tvars_denv`,
+  `binds_tvars_denv{,_inv}`, `denv_minus_nil` (now `denv_minus_empty`), and
+  `d_wf_utyp_of_d_wf_uskl_gen` (merged into `d_wf_utyp_of_d_wf_uskl`);
+  `is_iskl_pskl_to_bskl_inh` moved to `fresco/prop_basic.v`.
+- **Naming.**  Refinement metavariables follow the tree's convention: `Q`
+  for `bskl` (LHS `Q`, RHS `Q'`), `P` for `pskl` (LHS `P`, RHS `P'`).
+- **Inherited colour.**  The arrow, ∀ and ∀◇ rules of `d_refine_syn` /
+  `ad_refine_syn` carry `is_iskl <LHS>`, the paper's inherited left-hand
+  side.  `ad_refine_syn_is_iskl` (fresco/algo/prop_refine.v) shows every
+  derivation's LHS is inherited; the `ad_refine_syn_*_intro` constructors
+  derive the premise for callers.
+
+Validation: full `make coq` passes; all 34 `README.v` claims are closed
+under the global context.
+
 ## 2026-10-08 — Skeleton well-formedness and refinement follow the paper rule for rule
 
 Commit `51122ada`.  The six relations `d_wf_pskl` / `d_wf_uskl` /

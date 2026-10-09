@@ -173,7 +173,7 @@ mechanization.)  Corrected 2026-08-09.
 | [`CLAUDE.md`](CLAUDE.md) | (this file) ground rules, dirs, tooling, conventions |
 | [`DESIGN.md`](DESIGN.md) | **Two parts**: Part 1 — Fresco calculus design (modes, colours, tags, skeletons, freezing); Part 2 — mechanization design (encoding choices, ctyp / `syn_color` / `inh_color`, proof-debugging methodology, gap rationales) |
 | [`PROGRESS.md`](PROGRESS.md) | **Two parts**: Part 1 — paper → Coq mapping (every paper Lemma / Theorem with status, statement, location); Part 2 — daily progress log |
-| [`README.v`](README.v) | **The compilable paper→Coq HEADLINE index — 32 entries.** Deliberately NOT a catalogue: a paper label is not a reason to appear (the exhaustive map is PROGRESS.md Part 1). Each entry is: the paper's Lemma/Theorem name + label, the statement in the PAPER'S OWN NOTATION (unicode), then `Check` and `Print Assumptions` **together**. So the build tail prints one assumption report per claim and every one must read "Closed under the global context". Adding a claim means adding all three parts. Run via `make coq`. |
+| [`README.v`](README.v) | **The compilable paper→Coq HEADLINE index — 34 entries.** Deliberately NOT a catalogue: a paper label is not a reason to appear (the exhaustive map is PROGRESS.md Part 1). Each entry is: the paper's Lemma/Theorem name + label, the statement in the PAPER'S OWN NOTATION (unicode), then `Check` and `Print Assumptions` **together**. So the build tail prints one assumption report per claim and every one must read "Closed under the global context". Adding a claim means adding all three parts. Run via `make coq`. |
 | [`Makefile`](Makefile) | ott + lngen + coq pipeline; `coq` / `quick` / `clean` / `sync-paper-refs` targets |
 | [`scripts/sync_paper_refs.py`](scripts/sync_paper_refs.py) | Sync paper Lemma / Theorem numbers from `paper/frost.aux` into .v comments and the auto-managed reference-link block in `PROGRESS.md`. Run via `make sync-paper-refs` or `make sync-paper-refs-md`. |
 | [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md) | Canonical registry of everything the paper's authors should see (gaps, prose-completions, refuted statements) |
@@ -505,11 +505,15 @@ before changing any of them.
   and writes `syn_color C` / `inh_color C` for the two paintings.
   Round-trips: `erase (syn_color C) = C = erase (inh_color C)`. See
   [`DESIGN.md` Part 2 — colour-encoding principle](DESIGN.md).
-- **Tag context `Ψ`** (declarative) is `list atom`. Disjoint append:
-  `list_disjoint Ψ Ψ'` premise + plain `++`. Multiset would simplify the
-  `mod Permutation` arrow case of `d_consis_compose` — deferred.
-- **Skeleton ∀-scope context `Δ`** (`list atom` in `decl/`, an atom set in
-  `algo_decl/` / `algo/`), written after the term context: `Γ ⨟ Δ` /
+- **Tag context `Ψ`** (declarative) is an exact atom set (`atoms`),
+  compared with `[=]`: leaves ask `Ψ [=] empty`, ∀-tag rules
+  `Ψ [=] add ε Ψ0`, arrows `Ψ [=] Ψ1 ∪ Ψ2`. `d_tags` adds the paper's `⊎`
+  as `Ψ1 ∩ Ψ2 [=] empty`; ForallL's `fresh Ψ'` is a GLOBAL disjointness
+  side condition (`Ψ' ∩ Ψ [=] empty`, `Ψ' ∩ ftag(subject) [=] empty`).
+- **Skeleton ∀-scope context `Δ`** (an atom set, `atoms`, in every layer —
+  the paper's Δ is a set; the declarative list Δ, `delta_agree` and
+  `tvars_denv` are gone since 2026-10-09, so the conservativity bridges in
+  `algo_decl/prop_conserv.v` are stated at one Δ), written after the term context: `Γ ⨟ Δ` /
   `Θ ⨟ Δ`. Used in skeleton well-formedness and refinement, which follow
   the paper rule for rule (2026-10-08): a ∀ binds its variable in BOTH the
   context and Δ, the variable rule reads only the context, a ∀◇ body is

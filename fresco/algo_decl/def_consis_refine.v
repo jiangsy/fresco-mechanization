@@ -34,12 +34,12 @@ Open Scope fresco_ad_scope.
 Reserved Notation "{{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad"
   (at level 0, Θ at level 74, R at level 74, Q at level 74,
    format "'{{'  Ψ  ⨟  Θ  ⊢ˢ  R  ∼  Q  '}}ad'").
-Reserved Notation "{{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad"
-  (at level 0, Δ at level 74, Q at level 74, P at level 74,
-   format "'{{'  Θ  ⨟  Δ  ⊢ᵣ  Q  ⊳  P  '}}ad'").
-Reserved Notation "{{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad"
-  (at level 0, Δ at level 74, P at level 74, Q at level 74,
-   format "'{{'  Θ  ⨟  Δ  ⊢ᵣₚ  P  ⊳  Q  '}}ad'").
+Reserved Notation "{{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad"
+  (at level 0, Δ at level 74, Q at level 74, Q' at level 74,
+   format "'{{'  Θ  ⨟  Δ  ⊢ᵣ  Q  ⊳  Q'  '}}ad'").
+Reserved Notation "{{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad"
+  (at level 0, Δ at level 74, P at level 74, P' at level 74,
+   format "'{{'  Θ  ⨟  Δ  ⊢ᵣₚ  P  ⊳  P'  '}}ad'").
 (* ⚙ THE JOIN: consistency AND its refinement presupposition, as one
    relation.  [ᵣ] is the refinement subscript, as in [⊢ᵣₚ] — the twin of
    [{{ Ψ ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d] (decl/def_rules.v). *)
@@ -147,40 +147,45 @@ Inductive ad_refine_syn : aenv -> atoms -> bskl -> bskl -> Prop :=
     {{ Θ ⨟ Δ ⊢ᵣ bskl_unit ⊳ bskl_unit }}ad
 | ad_refine_syn__var : forall Θ Δ α,
     {{ Θ ⨟ Δ ⊢ᵣ (bskl_var_f α) ⊳ (bskl_var_f α) }}ad
-| ad_refine_syn__arrow : forall Θ Δ Q1 Q2 P1 P2,
-    {{ Θ ⨟ Δ ⊢ᵣ Q1 ⊳ P1 }}ad ->
-    {{ Θ ⨟ Δ ⊢ᵣ Q2 ⊳ P2 }}ad ->
-    {{ Θ ⨟ Δ ⊢ᵣ (bskl_arrow Q1 Q2) ⊳ (bskl_arrow P1 P2) }}ad
-| ad_refine_syn__all : forall L Θ Δ Q P,
+| ad_refine_syn__arrow : forall Θ Δ Q1 Q2 Q3 Q4,
+    is_iskl (bskl_arrow Q1 Q2) ->
+    {{ Θ ⨟ Δ ⊢ᵣ Q1 ⊳ Q3 }}ad ->
+    {{ Θ ⨟ Δ ⊢ᵣ Q2 ⊳ Q4 }}ad ->
+    {{ Θ ⨟ Δ ⊢ᵣ (bskl_arrow Q1 Q2) ⊳ (bskl_arrow Q3 Q4) }}ad
+| ad_refine_syn__all : forall L Θ Δ Q Q',
+    is_iskl (bskl_all_inh Q) ->
     (forall α, α `notin` L ->
        {{ ((α ~ abind_tvar) ++ Θ) ⨟ (add α Δ) ⊢ᵣ
          (open_bskl_wrt_bskl Q (bskl_var_f α)) ⊳
-         (open_bskl_wrt_bskl P (bskl_var_f α)) }}ad) ->
-    {{ Θ ⨟ Δ ⊢ᵣ (bskl_all_inh Q) ⊳ (bskl_all_inh P) }}ad
+         (open_bskl_wrt_bskl Q' (bskl_var_f α)) }}ad) ->
+    {{ Θ ⨟ Δ ⊢ᵣ (bskl_all_inh Q) ⊳ (bskl_all_inh Q') }}ad
 | ad_refine_syn__hole : forall Θ Δ P,
     Δ ∩ ftvar_in_pskl P [=] empty ->
     {{ Θ ⨟ Δ ⊢ᵣ bskl_hole ⊳ (pskl_to_bskl_syn P) }}ad
-| ad_refine_syn__tophole_remove : forall Θ Δ Q P,
-    {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad ->
-    {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ P }}ad
-| ad_refine_syn__tophole_fill : forall L Θ Δ Q P,
+| ad_refine_syn__tophole_remove : forall Θ Δ Q Q',
+    is_iskl (bskl_tophole Q) ->
+    {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
+    {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ Q' }}ad
+| ad_refine_syn__tophole_fill : forall L Θ Δ Q Q',
+    is_iskl (bskl_tophole Q) ->
     (forall α, α `notin` L ->
        {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ᵣ
-         (bskl_tophole Q) ⊳ (open_bskl_wrt_bskl P (bskl_var_f α)) }}ad) ->
-    {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_all_syn P) }}ad
-| ad_refine_syn__tophole_keep : forall Θ Δ Q P,
-    {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad ->
-    {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_tophole P) }}ad
+         (bskl_tophole Q) ⊳ (open_bskl_wrt_bskl Q' (bskl_var_f α)) }}ad) ->
+    {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_all_syn Q') }}ad
+| ad_refine_syn__tophole_keep : forall Θ Δ Q Q',
+    is_iskl (bskl_tophole Q) ->
+    {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
+    {{ Θ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_tophole Q') }}ad
 (* — new lookup rules (paper fig:declarative-in-algo-context, refinement) — *)
-| ad_refine_syn__flex_l : forall Θ Δ α τ Q,
+| ad_refine_syn__flex_l : forall Θ Δ α τ Q',
     binds α (abind_flex_mono_def τ) Θ ->
-    {{ Θ ⨟ Δ ⊢ᵣ (ptyp_to_bskl_syn τ) ⊳ Q }}ad ->
-    {{ Θ ⨟ Δ ⊢ᵣ (bskl_var_f α) ⊳ Q }}ad
-| ad_refine_syn__flex_r : forall Θ Δ α τ P,
+    {{ Θ ⨟ Δ ⊢ᵣ (ptyp_to_bskl_syn τ) ⊳ Q' }}ad ->
+    {{ Θ ⨟ Δ ⊢ᵣ (bskl_var_f α) ⊳ Q' }}ad
+| ad_refine_syn__flex_r : forall Θ Δ α τ Q,
     binds α (abind_flex_mono_def τ) Θ ->
-    {{ Θ ⨟ Δ ⊢ᵣ P ⊳ (ptyp_to_bskl_syn τ) }}ad ->
-    {{ Θ ⨟ Δ ⊢ᵣ P ⊳ (bskl_var_f α) }}ad
-where "{{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad" := (ad_refine_syn Θ Δ Q P) : fresco_ad_scope.
+    {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ (ptyp_to_bskl_syn τ) }}ad ->
+    {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ (bskl_var_f α) }}ad
+where "{{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad" := (ad_refine_syn Θ Δ Q Q') : fresco_ad_scope.
 
 (* ===================================================================== *)
 (*  Skeleton refinement over Θ, uncoloured  (decl [Γ ⊢ P ⊳ Q], the paper's *)
@@ -192,39 +197,39 @@ Inductive ad_refine_pskl : aenv -> atoms -> pskl -> pskl -> Prop :=
     {{ Θ ⨟ Δ ⊢ᵣₚ pskl_unit ⊳ pskl_unit }}ad
 | ad_refine_pskl__var : forall Θ Δ α,
     {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_var_f α) ⊳ (pskl_var_f α) }}ad
-| ad_refine_pskl__arrow : forall Θ Δ P1 P2 Q1 Q2,
-    {{ Θ ⨟ Δ ⊢ᵣₚ P1 ⊳ Q1 }}ad ->
-    {{ Θ ⨟ Δ ⊢ᵣₚ P2 ⊳ Q2 }}ad ->
-    {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_arrow P1 P2) ⊳ (pskl_arrow Q1 Q2) }}ad
-| ad_refine_pskl__all : forall L Θ Δ P Q,
+| ad_refine_pskl__arrow : forall Θ Δ P1 P2 P3 P4,
+    {{ Θ ⨟ Δ ⊢ᵣₚ P1 ⊳ P3 }}ad ->
+    {{ Θ ⨟ Δ ⊢ᵣₚ P2 ⊳ P4 }}ad ->
+    {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_arrow P1 P2) ⊳ (pskl_arrow P3 P4) }}ad
+| ad_refine_pskl__all : forall L Θ Δ P P',
     (forall α, α `notin` L ->
        {{ ((α ~ abind_tvar) ++ Θ) ⨟ (add α Δ) ⊢ᵣₚ
          (open_pskl_wrt_pskl P (pskl_var_f α)) ⊳
-         (open_pskl_wrt_pskl Q (pskl_var_f α)) }}ad) ->
-    {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_all_syn P) ⊳ (pskl_all_syn Q) }}ad
-| ad_refine_pskl__hole : forall Θ Δ Q,
-    Δ ∩ ftvar_in_pskl Q [=] empty ->
-    {{ Θ ⨟ Δ ⊢ᵣₚ pskl_hole ⊳ Q }}ad
-| ad_refine_pskl__tophole_remove : forall Θ Δ P Q,
-    {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad ->
-    {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ Q }}ad
-| ad_refine_pskl__tophole_fill : forall L Θ Δ P Q,
+         (open_pskl_wrt_pskl P' (pskl_var_f α)) }}ad) ->
+    {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_all_syn P) ⊳ (pskl_all_syn P') }}ad
+| ad_refine_pskl__hole : forall Θ Δ P',
+    Δ ∩ ftvar_in_pskl P' [=] empty ->
+    {{ Θ ⨟ Δ ⊢ᵣₚ pskl_hole ⊳ P' }}ad
+| ad_refine_pskl__tophole_remove : forall Θ Δ P P',
+    {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad ->
+    {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ P' }}ad
+| ad_refine_pskl__tophole_fill : forall L Θ Δ P P',
     (forall α, α `notin` L ->
        {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ᵣₚ
-         (pskl_tophole P) ⊳ (open_pskl_wrt_pskl Q (pskl_var_f α)) }}ad) ->
-    {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_all_syn Q) }}ad
-| ad_refine_pskl__tophole_keep : forall Θ Δ P Q,
-    {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad ->
-    {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_tophole Q) }}ad
-| ad_refine_pskl__flex_l : forall Θ Δ α τ Q,
+         (pskl_tophole P) ⊳ (open_pskl_wrt_pskl P' (pskl_var_f α)) }}ad) ->
+    {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_all_syn P') }}ad
+| ad_refine_pskl__tophole_keep : forall Θ Δ P P',
+    {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad ->
+    {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_tophole P) ⊳ (pskl_tophole P') }}ad
+| ad_refine_pskl__flex_l : forall Θ Δ α τ P',
     binds α (abind_flex_mono_def τ) Θ ->
-    {{ Θ ⨟ Δ ⊢ᵣₚ (ptyp_to_pskl τ) ⊳ Q }}ad ->
-    {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_var_f α) ⊳ Q }}ad
+    {{ Θ ⨟ Δ ⊢ᵣₚ (ptyp_to_pskl τ) ⊳ P' }}ad ->
+    {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_var_f α) ⊳ P' }}ad
 | ad_refine_pskl__flex_r : forall Θ Δ α τ P,
     binds α (abind_flex_mono_def τ) Θ ->
     {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ (ptyp_to_pskl τ) }}ad ->
     {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ (pskl_var_f α) }}ad
-where "{{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}ad" := (ad_refine_pskl Θ Δ P Q) : fresco_ad_scope.
+where "{{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad" := (ad_refine_pskl Θ Δ P P') : fresco_ad_scope.
 
 (* ===================================================================== *)
 (*  THE JOIN  [{{ Ψ ⨟ Θ ⊢ˢ R ∼ᵣ Q }}ad]                                   *)

@@ -80,7 +80,7 @@ Proof.
   - apply d_wf_pskl__hole.
   - simpl. apply d_wf_pskl__tophole;
       [ apply guarded_pskl_subst_unit; assumption | ].
-    destruct (List.in_dec eq_dec α0 Δ) as [Hin | Hnin].
+    destruct (AtomSetProperties.In_dec α0 Δ) as [Hin | Hnin].
     + (* [α0 ∈ Δ]: [Γ∖Δ] has no entry for [α0], so [P] does not mention it *)
       assert (Heqm : denv_minus (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) Δ
                      = denv_minus (Γ1 ++ Γ2) Δ)
@@ -120,7 +120,7 @@ Proof.
   - apply d_wf_uskl__hole.
   - simpl. apply d_wf_uskl__tophole;
       [ apply guarded_uskl_subst_unit; assumption | ].
-    destruct (List.in_dec eq_dec α0 Δ) as [Hin | Hnin].
+    destruct (AtomSetProperties.In_dec α0 Δ) as [Hin | Hnin].
     + assert (Heqm : denv_minus (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) Δ
                      = denv_minus (Γ1 ++ Γ2) Δ)
         by (rewrite (denv_minus_app Γ1 ((α0 ~ dbind_tvar) ++ Γ2)),
@@ -136,7 +136,7 @@ Proof.
   - apply d_wf_uskl__holeg.
   - simpl. apply d_wf_uskl__topholeg;
       [ apply guarded_uskl_subst_unit; assumption | ].
-    destruct (List.in_dec eq_dec α0 Δ) as [Hin | Hnin].
+    destruct (AtomSetProperties.In_dec α0 Δ) as [Hin | Hnin].
     + assert (Heqm : denv_minus (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) Δ
                      = denv_minus (Γ1 ++ Γ2) Δ)
         by (rewrite (denv_minus_app Γ1 ((α0 ~ dbind_tvar) ++ Γ2)),
@@ -263,9 +263,9 @@ Proof.
       by (first [ apply lc_pskl_unit | fsetdec ]).
     eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2);
       simpl_env; reflexivity.
-  - apply d_refine_pskl__hole. intros β Hβ Hin.
-    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Q pskl_unit α0) as Hup.
-    simpl in Hup. apply (H β Hβ). clear - Hin Hup. fsetdec.
+  - apply d_refine_pskl__hole.
+    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P' pskl_unit α0) as Hup.
+    simpl in Hup. clear - H Hup. fsetdec.
   - apply d_refine_pskl__tophole_remove. eapply IHd_refine_pskl; reflexivity.
   - apply d_refine_pskl__tophole_fill
       with (L := L `union` dom (Γ1 ++ Γ2) `union` {{α0}}).
