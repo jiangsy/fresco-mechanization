@@ -67,6 +67,7 @@ Lemma d_wf_pskl_subst_unit : forall Ψ Γ P,
     {{ (Γ1 ++ Γ2) ⨟ Ψ ⊢ₚₛ (subst_pskl_in_pskl pskl_unit α P) }}d.
 Proof.
   intros Ψ Γ P H. induction H; intros Γ1 α0 Γ2 Heq; subst.
+  - apply d_wf_pskl__ghost.
   - apply d_wf_pskl__unit.
   - simpl. destruct_if.
     + apply d_wf_pskl__unit.
@@ -77,7 +78,6 @@ Proof.
       try (apply lc_pskl_unit); try fsetdec.
     rewrite_env (((β ~ dbind_tvar) ++ Γ1) ++ Γ2).
     eapply (H0 β ltac:(auto) ((β ~ dbind_tvar) ++ Γ1) α0 Γ2); reflexivity.
-  - apply d_wf_pskl__ghost.
   - simpl. apply d_wf_pskl__univ_ghost;
       [ apply guarded_pskl_subst_unit; assumption | ].
     destruct (AtomSetProperties.In_dec α0 Δ) as [Hin | Hnin].
@@ -102,6 +102,7 @@ Lemma d_wf_uskl_subst_unit : forall Ψ Γ R,
     {{ (Γ1 ++ Γ2) ⨟ Ψ ⊢ᵤₛ (subst_uskl_in_uskl uskl_unit α R) }}d.
 Proof.
   intros Ψ Γ R H. induction H; intros Γ1 α0 Γ2 Heq; subst.
+  - apply d_wf_uskl__ghost.
   - apply d_wf_uskl__unit.
   - simpl. destruct_if.
     + apply d_wf_uskl__unit.
@@ -117,7 +118,6 @@ Proof.
       try (apply lc_uskl_unit); try fsetdec.
     rewrite_env (((β ~ dbind_tvar) ++ Γ1) ++ Γ2).
     eapply (H0 β ltac:(auto) ((β ~ dbind_tvar) ++ Γ1) α0 Γ2); reflexivity.
-  - apply d_wf_uskl__ghost.
   - simpl. apply d_wf_uskl__univ_ghost;
       [ apply guarded_uskl_subst_unit; assumption | ].
     destruct (AtomSetProperties.In_dec α0 Δ) as [Hin | Hnin].
@@ -288,7 +288,6 @@ Proof.
   - simpl. destruct_if.
     + apply d_pat_consis__unit; (assumption || fsetdec).
     + apply d_pat_consis__var; [ (assumption || fsetdec) | ]; match goal with Hb : binds _ _ _ |- _ => analyze_binds Hb end; auto.
-  - simpl. eapply d_pat_consis__arrow; [ eapply IHd_pat_consis1 | eapply IHd_pat_consis2 | (eassumption || fsetdec) ]; eauto.
   - simpl. apply d_pat_consis__forall_inh_tagged with (L := L `union` {{α0}}) (Ψ0 := Ψ0). 2: assumption.
     intros α2 Hα2. rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
     rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_unit); try fsetdec.
@@ -309,9 +308,10 @@ Proof.
     rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_unit); try fsetdec.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_unit); try fsetdec.
     eapply (H0 α2 ltac:(auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2); simpl_env; reflexivity.
+  - simpl. eapply d_pat_consis__arrow; [ eapply IHd_pat_consis1 | eapply IHd_pat_consis2 | (eassumption || fsetdec) ]; eauto.
+  - simpl. rewrite pskl_to_bskl_inh_subst_unit. apply d_pat_consis__ghost; [ (assumption || fsetdec) | ]; eapply d_wf_pskl_subst_unit; eauto.
   - apply d_pat_consis__ghostg; (assumption || fsetdec).
   - simpl. apply d_pat_consis__dot_univ_ghost. eapply IHd_pat_consis; eauto.
-  - simpl. rewrite pskl_to_bskl_inh_subst_unit. apply d_pat_consis__ghost; [ (assumption || fsetdec) | ]; eapply d_wf_pskl_subst_unit; eauto.
   - simpl. apply d_pat_consis__univ_ghost. eapply IHd_pat_consis; eauto.
   - simpl. apply d_pat_consis__univ_ghost_inh with (L := L `union` {{α0}}).
     intros α2 Hα2. rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
@@ -352,6 +352,11 @@ Proof.
       | apply guarded_bskl_subst_unit; assumption
       | apply is_sskl_subst_unit; assumption
       | eapply d_consis_join_subst_unit; eauto ].
+  - simpl. rewrite pskl_to_bskl_inh_subst_unit. apply d_pat_sub__ghost;
+      [ (assumption || fsetdec)
+      | eapply d_wf_pskl_subst_unit; eauto
+      | rewrite <- pskl_to_bskl_inh_subst_unit; apply mod_comp_sk_subst_unit; assumption ].
+  - apply d_pat_sub__ghostg; (assumption || fsetdec).
   - simpl. eapply d_pat_sub__arg;
       [ eapply d_consis_join_subst_unit; eauto
       | eapply IHd_pat_sub; eauto | (eassumption || fsetdec) ].
@@ -376,12 +381,7 @@ Proof.
       | eapply d_wf_uskl_subst_unit; eauto | apply is_dskl_subst_unit; assumption | ].
     rewrite <- subst_uskl_in_uskl_open_uskl_wrt_uskl; try (apply lc_uskl_unit).
     eapply IHd_pat_sub; eauto.
-  - simpl. rewrite pskl_to_bskl_inh_subst_unit. apply d_pat_sub__ghost;
-      [ (assumption || fsetdec)
-      | eapply d_wf_pskl_subst_unit; eauto
-      | rewrite <- pskl_to_bskl_inh_subst_unit; apply mod_comp_sk_subst_unit; assumption ].
   - simpl. apply d_pat_sub__univ_ghost_l; [ assumption | eapply IHd_pat_sub; eauto ].
-  - apply d_pat_sub__ghostg; (assumption || fsetdec).
   - simpl. apply d_pat_sub__univ_ghost_lg; [ assumption | eapply IHd_pat_sub; eauto ].
 Qed.
 
@@ -459,8 +459,6 @@ Proof.
     intros w Hw. rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
     eapply H4; [ fsetdec | apply uniq_push; [ exact Huniq | fsetdec ]
                | apply binds_app_3; exact Hbx | apply binds_app_3; exact Hby ].
-  - (* app *) eapply d_pat__app;
-      [ eapply IHd_pat1; eauto | exact H0 | eapply IHd_pat2; eauto ].
   - (* abs_check *) apply d_pat__abs_check with
       (L := L `union` {{x0}} `union` {{y0}} `union` dom Γ).
     intros w Hw. rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
@@ -472,6 +470,8 @@ Proof.
     intros w Hw. rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
     eapply H1; [ fsetdec | apply uniq_push; [ exact Huniq | fsetdec ]
                | apply binds_app_3; exact Hbx | apply binds_app_3; exact Hby ].
+  - (* app *) eapply d_pat__app;
+      [ eapply IHd_pat1; eauto | exact H0 | eapply IHd_pat2; eauto ].
 Qed.
 
 (** GENERAL variable substitution for typing: substituting [y] for [x] in ANY

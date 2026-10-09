@@ -79,6 +79,7 @@ Lemma d_wf_pskl_ftv : forall Γ Δ P,
 Proof.
   intros Γ Δ P H; induction H; intros β Hβ; simpl in Hβ.
   - fsetdec.
+  - fsetdec.
   - assert (β = α) by fsetdec. subst. assumption.
   - destruct (union_1 Hβ); auto.
   - pick fresh α2 for (L `union` ftvar_in_pskl P `union` {{β}}).
@@ -88,7 +89,6 @@ Proof.
     specialize (H0 α2 ltac:(fsetdec) β HY').
     apply binds_app_iff in H0. destruct H0 as [Hb | Hb]; [ | exact Hb ].
     apply binds_one_iff in Hb. destruct Hb as [-> _]. exfalso. fsetdec.
-  - fsetdec.
   - pose proof (IHd_wf_pskl β Hβ) as Hb. apply binds_denv_minus in Hb. tauto.
 Qed.
 
@@ -177,7 +177,6 @@ Proof.
   intros Δ Δo Γ C B Heq H. revert Δo Heq. induction H; intros Δo Heq.
   - apply d_consis__unit. fsetdec.
   - apply d_consis__var; [ assumption | fsetdec ].
-  - eapply d_consis__arrow; [ eassumption | eassumption | fsetdec ].
   - eapply d_consis__forall_inh_tagged; [ eassumption | fsetdec ].
   - apply d_consis__forall_inh_untagged with (L := L);
       intros α Hα; eauto.
@@ -185,6 +184,7 @@ Proof.
       intros α Hα; eauto.
   - apply d_consis__forall_syn with (L := L);
       intros α Hα; eauto.
+  - eapply d_consis__arrow; [ eassumption | eassumption | fsetdec ].
 Qed.
 
 Lemma d_sub_equiv : forall m Δ Δo Γ C B,
@@ -539,7 +539,6 @@ Proof.
   intros Δ Γ C B H. induction H; intros Hwf.
   - apply d_wf_btyp__unit.
   - apply d_wf_btyp__var. assumption.
-  - inversion Hwf; subst. apply d_wf_btyp__arrow; auto.
   - (* forall_inh_tagged: utyp_all_tag ε C ∼ btyp_all_inh B *)
     inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_inh.
     intros α Hα. apply H0; auto.
@@ -552,6 +551,7 @@ Proof.
   - (* forall_syn: utyp_all_syn C ∼ btyp_all_syn B *)
     inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_syn.
     intros α Hα. apply H0; auto.
+  - inversion Hwf; subst. apply d_wf_btyp__arrow; auto.
 Qed.
 
 (** Substituting a well-formed [ph] for a head tvar preserves [d_wf_utyp]. *)

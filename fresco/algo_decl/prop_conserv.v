@@ -298,11 +298,11 @@ Lemma d_wf_pskl_to_a : forall Γ Δ P,
   d_wf_pskl Γ Δ P -> a_wf_pskl (denv_to_aenv Γ) Δ P.
 Proof.
   intros Γ Δ P H; induction H.
+  - apply a_wf_pskl__ghost.
   - apply a_wf_pskl__unit.
   - apply a_wf_pskl__var. apply a_binds_tvar_of_denv; exact H.
   - apply a_wf_pskl__arrow; auto.
   - apply a_wf_pskl__all with (L := L). intros α Hα. exact (H0 α Hα).
-  - apply a_wf_pskl__ghost.
   - apply a_wf_pskl__univ_ghost; [ exact H | ].
     rewrite <- (denv_to_aenv_minus Γ Δ). exact IHd_wf_pskl.
 Qed.
@@ -351,15 +351,15 @@ Proof.
   - apply ad_pat_consis__unit; assumption.
   - apply ad_pat_consis__var;
       [ assumption | apply a_binds_tvar_of_denv; assumption ].
-  - apply ad_pat_consis__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2); assumption.
   - apply ad_pat_consis__forall_inh_tagged with (L := L) (Ψ0 := Ψ0); assumption.
   - apply ad_pat_consis__forall_inh_untagged with (L := L); assumption.
   - apply ad_pat_consis__forall_syn_tagged with (L := L); assumption.
   - apply ad_pat_consis__forall_syn with (L := L); assumption.
-  - apply ad_pat_consis__ghostg; assumption.
-  - apply ad_pat_consis__dot_univ_ghost; assumption.
+  - apply ad_pat_consis__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2); assumption.
   - apply ad_pat_consis__ghost;
       [ assumption | exact (d_wf_pskl_to_a Γ empty P H0) ].
+  - apply ad_pat_consis__ghostg; assumption.
+  - apply ad_pat_consis__dot_univ_ghost; assumption.
   - apply ad_pat_consis__univ_ghost; assumption.
   - apply ad_pat_consis__univ_ghost_inh with (L := L); assumption.
   - apply ad_pat_consis__univ_ghost_drop; assumption.
@@ -451,7 +451,6 @@ Proof.
   - apply ad_pat_consis__unit; assumption.
   - apply ad_pat_consis__var;
       [ assumption | apply a_binds_tvar_of_denv; assumption ].
-  - apply ad_pat_consis__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2); assumption.
   - apply ad_pat_consis__forall_inh_tagged with (L := L) (Ψ0 := Ψ0);
       [ | assumption ].
     intros α Hα. pose proof (H0 α Hα) as Hx.
@@ -469,6 +468,7 @@ Proof.
     intros α Hα. pose proof (H0 α Hα) as Hx.
     rewrite utyp_to_uskl_open_var, (btyp_to_bskl_open B (btyp_var_f α)) in Hx.
     exact Hx.
+  - apply ad_pat_consis__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2); assumption.
 Qed.
 
 (* ===================================================================== *)
@@ -635,6 +635,7 @@ Lemma a_wf_pskl_of_d_wf_uskl : forall Γ Δ ψ,
   a_wf_pskl (denv_to_aenv Γ) Δ (uskl_to_pskl ψ).
 Proof.
   intros Γ Δ ψ H; induction H; simpl.
+  - apply a_wf_pskl__ghost.
   - apply a_wf_pskl__unit.
   - apply a_wf_pskl__var. apply a_binds_tvar_of_denv; exact H.
   - apply a_wf_pskl__arrow; auto.
@@ -644,7 +645,6 @@ Proof.
   - apply a_wf_pskl__all with (L := L). intros α Hα.
     pose proof (H0 α Hα) as Hx.
     rewrite uskl_to_pskl_open in Hx. exact Hx.
-  - apply a_wf_pskl__ghost.
   - apply a_wf_pskl__univ_ghost.
     + apply guarded_pskl_uskl_to_pskl; assumption.
     + rewrite <- (denv_to_aenv_minus Γ Δ). exact IHd_wf_uskl.
@@ -714,6 +714,7 @@ Lemma d_wf_utyp_of_d_wf_uskl : forall Γ Δ ψ,
   d_wf_uskl Γ Δ ψ -> uskl_ghost_free ψ -> d_wf_utyp Γ (uskl_to_utyp ψ).
 Proof.
   intros Γ Δ ψ H; induction H; intros Hgf; simpl.
+  - inversion Hgf.
   - apply d_wf_utyp__unit.
   - apply d_wf_utyp__var. exact H.
   - inversion Hgf; subst. apply d_wf_utyp__arrow; auto.
@@ -727,7 +728,6 @@ Proof.
     rewrite <- uskl_to_utyp_open_var.
     exact (H0 α ltac:(clear - Hα; fsetdec)
              (Hgf0 α ltac:(clear - Hα; fsetdec))).
-  - inversion Hgf.
   - inversion Hgf.
   - inversion Hgf.
   - inversion Hgf.
@@ -807,6 +807,11 @@ Proof.
   - apply ad_pat_sub__univ_ghost_r;
       [ assumption | assumption | assumption | assumption
       | apply d_consis_join_to_ad; assumption ].
+  - apply ad_pat_sub__ghost;
+      [ assumption
+      | exact (d_wf_pskl_to_a Γ empty P H0)
+      | assumption ].
+  - apply ad_pat_sub__ghostg; assumption.
   - apply ad_pat_sub__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
       [ apply d_consis_join_to_ad; assumption
       | assumption | assumption ].
@@ -820,12 +825,7 @@ Proof.
       | apply a_tags_sort__sk; assumption
       | exact (a_wf_pskl_of_d_wf_uskl Γ empty psi H3)
       | assumption ].
-  - apply ad_pat_sub__ghost;
-      [ assumption
-      | exact (d_wf_pskl_to_a Γ empty P H0)
-      | assumption ].
   - apply ad_pat_sub__univ_ghost_l; assumption.
-  - apply ad_pat_sub__ghostg; assumption.
   - apply ad_pat_sub__univ_ghost_lg; assumption.
 Qed.
 
@@ -1677,14 +1677,14 @@ Proof.
   - (* P-AbsAnno *) apply ad_pat__abs_anno with (L := L) (B := B);
       [ assumption | exact (d_wf_ptyp_to_a Γ A H0) | assumption | assumption
       | intros x Hx; exact (H4 x Hx) ].
-  - (* P-App *) apply ad_pat__app with (P := P) (Q1 := Q1);
-      [ assumption
-      | exact (d_refine_syn_to_ad Γ empty (pskl_to_bskl_inh P) Q1 H0)
-      | assumption ].
   - (* P-AbsCheck *) apply ad_pat__abs_check with (L := L).
     intros x Hx; exact (H0 x Hx).
   - (* P-AbsAnnoCheck *) apply ad_pat__abs_anno_check with (L := L);
       [ exact (d_wf_ptyp_to_a Γ A H) | intros x Hx; exact (H1 x Hx) ].
+  - (* P-App *) apply ad_pat__app with (P := P) (Q1 := Q1);
+      [ assumption
+      | exact (d_refine_syn_to_ad Γ empty (pskl_to_bskl_inh P) Q1 H0)
+      | assumption ].
 Qed.
 
 Lemma aenv_tbinds_le_weaken_cons : forall Θ x (b : abind),
@@ -1723,17 +1723,17 @@ Proof.
     apply ad_sd_typing__var with (A := A);
       [ apply binds_denv_to_aenv with (d := dbind_typ A); assumption | ].
     base_row ltac:(eapply d_wf_denv_binds_ptyp; eassumption).
-  - (* sd-Anno: the annotation's wf is the AMBIENT hypothesis, not the rule's *)
-    inversion Hwfe as [ | | Θ0 e0 A0 Hwfa Hwfe0 | | | | ]; subst.
-    apply ad_sd_typing__anno with (A := A);
-      [ exact Hwfa | apply IHd_sd_typing; assumption | ].
-    base_row ltac:(eapply a_wf_ptyp_to_d; [ eassumption | reflexivity ]).
-  - (* sd-Freeze: the appendix's equivalence premise is REFLEXIVITY here *)
-    inversion Hwfe as [ | | | Θ0 e0 Hwfe0 | | | ]; subst.
-    apply ad_sd_typing__freeze with (B := A);
-      [ apply IHd_sd_typing; assumption
-      | apply a_tyequiv__refl; apply lc_ptyp_of_lc_btyp_syn;
-        eapply d_sd_typing_target_lc; eassumption ].
+  - (* sd-Abs *)
+    inversion Hwfe as [ | | | | L0 Θ0 e0 Hbody | | ]; subst.
+    apply ad_sd_typing__abs with (L := L `union` L0 `union` dom Γ) (A := A);
+      [ assumption | apply d_wf_ptyp_to_a; assumption | assumption | ].
+    intros x Hx.
+    exact (H3 x ltac:(clear - Hx; solve_notin_auto)
+             ltac:(apply d_wf_denv__typ;
+                     [ exact Hwf | clear - Hx; solve_notin_auto | assumption ])
+             ltac:(apply (a_wf_exp_mono
+                            (Hbody x ltac:(clear - Hx; solve_notin_auto)));
+                   apply aenv_tbinds_le_weaken_cons)).
   - (* sd-AbsCheck (∀) *)
     apply ad_sd_typing__abs_check_step with (L := L `union` dom Γ);
       [ assumption | ].
@@ -1750,6 +1750,27 @@ Proof.
       [ apply d_wf_ptyp_to_a; assumption | assumption | ].
     intros x Hx.
     exact (H2 x ltac:(clear - Hx; solve_notin_auto)
+             ltac:(apply d_wf_denv__typ;
+                     [ exact Hwf | clear - Hx; solve_notin_auto | assumption ])
+             ltac:(apply (a_wf_exp_mono
+                            (Hbody x ltac:(clear - Hx; solve_notin_auto)));
+                   apply aenv_tbinds_le_weaken_cons)).
+  - (* sd-Anno: the annotation's wf is the AMBIENT hypothesis, not the rule's *)
+    inversion Hwfe as [ | | Θ0 e0 A0 Hwfa Hwfe0 | | | | ]; subst.
+    apply ad_sd_typing__anno with (A := A);
+      [ exact Hwfa | apply IHd_sd_typing; assumption | ].
+    base_row ltac:(eapply a_wf_ptyp_to_d; [ eassumption | reflexivity ]).
+  - (* sd-AbsAnno *)
+    inversion Hwfe as [ | | | | | L0 Θ0 A0 e0 Hwfa Hbody | ]; subst.
+    (* ⚙ [subst] used [btyp_to_ptyp B1 = A] to eliminate [A] itself *)
+    apply ad_sd_typing__abs_anno
+      with (L := L `union` L0 `union` dom Γ)
+           (A := btyp_to_ptyp B1) (A' := btyp_to_ptyp B1) (B1 := B1);
+      [ assumption | exact Hwfa
+      | apply a_tyequiv__refl; eapply d_wf_ptyp_lc; eassumption
+      | reflexivity | assumption | ].
+    intros x Hx.
+    exact (H4 x ltac:(clear - Hx; solve_notin_auto)
              ltac:(apply d_wf_denv__typ;
                      [ exact Hwf | clear - Hx; solve_notin_auto | assumption ])
              ltac:(apply (a_wf_exp_mono
@@ -1778,33 +1799,12 @@ Proof.
              ltac:(apply (a_wf_exp_mono
                             (Hbody x ltac:(clear - Hx; solve_notin_auto)));
                    apply aenv_tbinds_le_weaken_cons)).
-  - (* sd-Abs *)
-    inversion Hwfe as [ | | | | L0 Θ0 e0 Hbody | | ]; subst.
-    apply ad_sd_typing__abs with (L := L `union` L0 `union` dom Γ) (A := A);
-      [ assumption | apply d_wf_ptyp_to_a; assumption | assumption | ].
-    intros x Hx.
-    exact (H3 x ltac:(clear - Hx; solve_notin_auto)
-             ltac:(apply d_wf_denv__typ;
-                     [ exact Hwf | clear - Hx; solve_notin_auto | assumption ])
-             ltac:(apply (a_wf_exp_mono
-                            (Hbody x ltac:(clear - Hx; solve_notin_auto)));
-                   apply aenv_tbinds_le_weaken_cons)).
-  - (* sd-AbsAnno *)
-    inversion Hwfe as [ | | | | | L0 Θ0 A0 e0 Hwfa Hbody | ]; subst.
-    (* ⚙ [subst] used [btyp_to_ptyp B1 = A] to eliminate [A] itself *)
-    apply ad_sd_typing__abs_anno
-      with (L := L `union` L0 `union` dom Γ)
-           (A := btyp_to_ptyp B1) (A' := btyp_to_ptyp B1) (B1 := B1);
-      [ assumption | exact Hwfa
-      | apply a_tyequiv__refl; eapply d_wf_ptyp_lc; eassumption
-      | reflexivity | assumption | ].
-    intros x Hx.
-    exact (H4 x ltac:(clear - Hx; solve_notin_auto)
-             ltac:(apply d_wf_denv__typ;
-                     [ exact Hwf | clear - Hx; solve_notin_auto | assumption ])
-             ltac:(apply (a_wf_exp_mono
-                            (Hbody x ltac:(clear - Hx; solve_notin_auto)));
-                   apply aenv_tbinds_le_weaken_cons)).
+  - (* sd-Freeze: the appendix's equivalence premise is REFLEXIVITY here *)
+    inversion Hwfe as [ | | | Θ0 e0 Hwfe0 | | | ]; subst.
+    apply ad_sd_typing__freeze with (B := A);
+      [ apply IHd_sd_typing; assumption
+      | apply a_tyequiv__refl; apply lc_ptyp_of_lc_btyp_syn;
+        eapply d_sd_typing_target_lc; eassumption ].
   - (* sd-App: ⚠️ the ONE ghost — its skeleton-inference premise *)
     inversion Hwfe as [ | | | | | | Θ0 e10 e20 Hwf1 Hwf2 ]; subst.
     apply ad_sd_typing__app with (P := P) (A2 := btyp_to_ptyp B1) (B1 := B1);

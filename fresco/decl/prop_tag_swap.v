@@ -128,10 +128,6 @@ Proof.
   - apply d_consis__unit. eapply swap_atoms_empty_of; eassumption.
   - apply d_consis__var;
       [ assumption | eapply swap_atoms_empty_of; eassumption ].
-  - apply d_consis__arrow with (Ψ1 := swap_atoms ε1 ε2 Ψ1)
-                               (Ψ2 := swap_atoms ε1 ε2 Ψ2);
-      [ apply IHd_consis1; reflexivity | apply IHd_consis2; reflexivity
-      | eapply swap_atoms_union_of; eassumption ].
   - apply d_consis__forall_inh_tagged
       with (L := L) (Ψ0 := swap_atoms ε1 ε2 Ψ0);
       [ | eapply swap_atoms_add_of; eassumption ].
@@ -143,6 +139,10 @@ Proof.
     rewrite <- swap_tag_in_utyp_open_var. apply H0; [ exact Hα | exact Heq ].
   - apply d_consis__forall_syn with (L := L). intros α Hα.
     rewrite <- swap_tag_in_utyp_open_var. apply H0; [ exact Hα | exact Heq ].
+  - apply d_consis__arrow with (Ψ1 := swap_atoms ε1 ε2 Ψ1)
+                               (Ψ2 := swap_atoms ε1 ε2 Ψ2);
+      [ apply IHd_consis1; reflexivity | apply IHd_consis2; reflexivity
+      | eapply swap_atoms_union_of; eassumption ].
 Qed.
 
 (* ===================================================================== *)

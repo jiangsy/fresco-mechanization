@@ -297,11 +297,11 @@ Proof.
   intros Δ Γ C B H. induction H.
   - apply lc_utyp_unit.
   - apply lc_utyp_var_f.
+  - pick fresh α. apply lc_utyp_all_tag_exists with (α1 := α). apply H0. fsetdec.
+  - pick fresh α. apply lc_utyp_all_syn_exists with (α1 := α). apply H0. fsetdec.
+  - pick fresh α. apply lc_utyp_all_tag_exists with (α1 := α). apply H0. fsetdec.
+  - pick fresh α. apply lc_utyp_all_syn_exists with (α1 := α). apply H0. fsetdec.
   - apply lc_utyp_arrow; assumption.
-  - pick fresh α. apply lc_utyp_all_tag_exists with (α1 := α). apply H0. fsetdec.
-  - pick fresh α. apply lc_utyp_all_syn_exists with (α1 := α). apply H0. fsetdec.
-  - pick fresh α. apply lc_utyp_all_tag_exists with (α1 := α). apply H0. fsetdec.
-  - pick fresh α. apply lc_utyp_all_syn_exists with (α1 := α). apply H0. fsetdec.
 Qed.
 
 (** ⭐ …and so is its [btyp] side.  ⚙ The [lc] twin of [d_consis_wf] /
@@ -315,15 +315,15 @@ Proof.
   intros Δ Γ C B H. induction H; intros Hlc.
   - apply lc_btyp_unit.
   - apply lc_btyp_var_f.
+  - inversion Hlc; subst. pick fresh α.
+    apply lc_btyp_all_inh_exists with (α1 := α). apply H0; auto.
+  - inversion Hlc; subst. pick fresh α.
+    apply lc_btyp_all_inh_exists with (α1 := α). apply H0; auto.
+  - inversion Hlc; subst. pick fresh α.
+    apply lc_btyp_all_syn_exists with (α1 := α). apply H0; auto.
+  - inversion Hlc; subst. pick fresh α.
+    apply lc_btyp_all_syn_exists with (α1 := α). apply H0; auto.
   - inversion Hlc; subst. apply lc_btyp_arrow; auto.
-  - inversion Hlc; subst. pick fresh α.
-    apply lc_btyp_all_inh_exists with (α1 := α). apply H0; auto.
-  - inversion Hlc; subst. pick fresh α.
-    apply lc_btyp_all_inh_exists with (α1 := α). apply H0; auto.
-  - inversion Hlc; subst. pick fresh α.
-    apply lc_btyp_all_syn_exists with (α1 := α). apply H0; auto.
-  - inversion Hlc; subst. pick fresh α.
-    apply lc_btyp_all_syn_exists with (α1 := α). apply H0; auto.
 Qed.
 
 Lemma d_sub_lc_btyp : forall m Δ Γ C B,
@@ -605,10 +605,6 @@ Proof.
   intros Δ Γ C B H. induction H.
   - (* unit *) exists empty. apply d_consis__unit. reflexivity.
   - (* var *) exists empty. simpl. apply d_consis__var; [ assumption | reflexivity ].
-  - (* arrow *)
-    destruct IHd_consis1 as [Ψ1' H1']. destruct IHd_consis2 as [Ψ2' H2'].
-    exists (Ψ1' `union` Ψ2'). simpl.
-    eapply d_consis__arrow; [ eassumption | eassumption | reflexivity ].
   - (* forall_inh_tagged: ε-tag erased, ForallInhTagged → ForallInhUntagged *)
     pick fresh α0 for (L `union` dom Γ
        `union` ftvar_in_utyp (btyp_to_utyp_syn (utyp_to_btyp C))
@@ -665,6 +661,10 @@ Proof.
     rewrite (subst_utyp_in_utyp_intro α0) by fsetdec.
     rewrite (subst_btyp_in_btyp_intro α0) by fsetdec.
     apply (@d_consis_rename_tvar _ _ _ _ HΨ'0 nil Γ α0 α); [ reflexivity | simpl; fsetdec ].
+  - (* arrow *)
+    destruct IHd_consis1 as [Ψ1' H1']. destruct IHd_consis2 as [Ψ2' H2'].
+    exists (Ψ1' `union` Ψ2'). simpl.
+    eapply d_consis__arrow; [ eassumption | eassumption | reflexivity ].
 Qed.
 
 (** [nil]-context variant for the reformulated CST's [infer] case: when the
@@ -709,8 +709,6 @@ Proof.
     destruct_if.
     + eapply d_consis_equiv; [ | apply d_consis_dtyp_refl; assumption ]. fsetdec.
     + apply d_consis__var; [ analyze_binds H; auto | assumption ].
-  - eapply d_consis__arrow;
-      [ eapply IHd_consis1; eauto | eapply IHd_consis2; eauto | assumption ].
   - eapply d_consis__forall_inh_tagged with
       (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0).
     + intros α2 Hα2.
@@ -764,6 +762,8 @@ Proof.
       | rewrite_env ((α2 ~ dbind_tvar) ++ (Γ1 ++ Γ2));
         apply d_wf_utyp_weakening_head; exact Hwf
       | assumption ].
+  - eapply d_consis__arrow;
+      [ eapply IHd_consis1; eauto | eapply IHd_consis2; eauto | assumption ].
 Qed.
 
 (** [utyp_tag_refines T Cmid]: [T] and [Cmid] have the same shape, and at
@@ -876,11 +876,11 @@ Proof.
   intros Δ Γ C B_A H. induction H; simpl.
   - apply utr_unit.
   - apply utr_var_f.
+  - apply utr_tag_syn. eapply consis_refines_paint_body; eauto.
+  - apply utr_syn_syn.  eapply consis_refines_paint_body; eauto.
+  - apply utr_tag_syn. eapply consis_refines_paint_body; eauto.
+  - apply utr_syn_syn.  eapply consis_refines_paint_body; eauto.
   - apply utr_arrow; assumption.
-  - apply utr_tag_syn. eapply consis_refines_paint_body; eauto.
-  - apply utr_syn_syn.  eapply consis_refines_paint_body; eauto.
-  - apply utr_tag_syn. eapply consis_refines_paint_body; eauto.
-  - apply utr_syn_syn.  eapply consis_refines_paint_body; eauto.
 Qed.
 
 (** [refines] makes [compose_tags] monotone: [Cmid]'s composed tags are a
@@ -904,19 +904,19 @@ Proof.
   intros Δ Γ C B H. induction H; simpl.
   - fsetdec.
   - fsetdec.
+  - pick fresh α. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
+      specialize (IH α ltac:(solve_notin_auto)) end.
+    rewrite compose_tags_open in *. fsetdec.
+  - pick fresh α. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
+      specialize (IH α ltac:(solve_notin_auto)) end.
+    rewrite compose_tags_open in *. fsetdec.
+  - pick fresh α. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
+      specialize (IH α ltac:(solve_notin_auto)) end.
+    rewrite compose_tags_open in *. fsetdec.
+  - pick fresh α. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
+      specialize (IH α ltac:(solve_notin_auto)) end.
+    rewrite compose_tags_open in *. fsetdec.
   - fsetdec.
-  - pick fresh α. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
-      specialize (IH α ltac:(solve_notin_auto)) end.
-    rewrite compose_tags_open in *. fsetdec.
-  - pick fresh α. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
-      specialize (IH α ltac:(solve_notin_auto)) end.
-    rewrite compose_tags_open in *. fsetdec.
-  - pick fresh α. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
-      specialize (IH α ltac:(solve_notin_auto)) end.
-    rewrite compose_tags_open in *. fsetdec.
-  - pick fresh α. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
-      specialize (IH α ltac:(solve_notin_auto)) end.
-    rewrite compose_tags_open in *. fsetdec.
 Qed.
 
 (** Source-swap with the [compose_tags] witness: if [T] refines [Cmid] (same
@@ -933,8 +933,6 @@ Proof.
   intros Δ Γ Cmid B H. induction H; intros C' Href.
   - inversion Href; subst. simpl. apply d_consis__unit. reflexivity.
   - inversion Href; subst. simpl. apply d_consis__var; [ assumption | reflexivity ].
-  - inversion Href; subst. simpl.
-    eapply d_consis__arrow; [ apply IHd_consis1 | apply IHd_consis2 | reflexivity ]; assumption.
   - (* forall_inh_tagged: Cmid = utyp_all_tag ε C, B = btyp_all_inh; C = utyp_all_tag ε T0 *)
     inversion Href; subst. simpl.
     eapply d_consis__forall_inh_tagged with (L := L) (Ψ0 := compose_tags T0 B); [ | reflexivity ].
@@ -977,6 +975,8 @@ Proof.
       match goal with |- {{ compose_tags ?Tb ?Bb ⨟ _ ⊢ _ ∼ _ }}d =>
         rewrite <- (compose_tags_open Tb Bb α α) end.
       apply (H0 α Hα). apply utyp_tag_refines_open. assumption.
+  - inversion Href; subst. simpl.
+    eapply d_consis__arrow; [ apply IHd_consis1 | apply IHd_consis2 | reflexivity ]; assumption.
 Qed.
 
 (* ======================================================================== *)
@@ -1872,28 +1872,6 @@ Proof.
         by (rewrite <- ptyp_to_utyp_syn_btyp_to_ptyp, btyp_to_ptyp_ptyp_to_btyp_syn; reflexivity).
       apply d_sub_equiv with (Δ := Δ'');
         [ eapply d_sub_paint_lhs_empty; exact HΔ''b | exact HΔ'' ].
-  - (* anno: as [var]; the checked subderivation is weakened. *)
-    eapply d_sd_typing__anno.
-    + eapply d_sd_typing_ctx_weaken; eassumption.
-    + match goal with Hs : {{ empty ⨟ _ ⊢[ _ ] ptyp_to_utyp_syn _ ⩽ _ }}d |- _ =>
-        pose proof (d_sub_ctx_weaken Hcw Hs) as Hs0' end.
-      edestruct (d_sub_trans_spine Hs0' Hfn Hspine Htail) as [Δ'' [_ HΔ'']].
-      pose proof HΔ'' as HΔ''b.
-      replace (ptyp_to_utyp_syn A)
-        with (btyp_to_utyp_syn (ptyp_to_btyp_syn A)) in HΔ''b
-        by (rewrite <- ptyp_to_utyp_syn_btyp_to_ptyp, btyp_to_ptyp_ptyp_to_btyp_syn; reflexivity).
-      apply d_sub_equiv with (Δ := Δ'');
-        [ eapply d_sub_paint_lhs_empty; exact HΔ''b | exact HΔ'' ].
-  - (* freeze (tc): excluded. *)
-    inversion Hfn.
-  - (* abs_check_step (tc): excluded. *)
-    inversion Hfn.
-  - (* abs_check_base (tc): excluded. *)
-    inversion Hfn.
-  - (* abs_anno_check_step (tc): excluded. *)
-    inversion Hfn.
-  - (* abs_anno_check_base (tc): excluded. *)
-    inversion Hfn.
   - (* abs: split on the spine. *)
     assert (Hskm : mod_comp_ty Bres (mode_fn_n_subst m M0))
       by (eapply btyp_spine_skmod; [ exact Hspine | exact Hfn | exact (d_sub_skmod Htail) ]).
@@ -1926,6 +1904,22 @@ Proof.
         -- eassumption.
         -- eassumption.
         -- apply d_sub_weakening_head with (Γ' := (x ~ dbind_typ A)). exact Htail.
+  - (* abs_check_step (tc): excluded. *)
+    inversion Hfn.
+  - (* abs_check_base (tc): excluded. *)
+    inversion Hfn.
+  - (* anno: as [var]; the checked subderivation is weakened. *)
+    eapply d_sd_typing__anno.
+    + eapply d_sd_typing_ctx_weaken; eassumption.
+    + match goal with Hs : {{ empty ⨟ _ ⊢[ _ ] ptyp_to_utyp_syn _ ⩽ _ }}d |- _ =>
+        pose proof (d_sub_ctx_weaken Hcw Hs) as Hs0' end.
+      edestruct (d_sub_trans_spine Hs0' Hfn Hspine Htail) as [Δ'' [_ HΔ'']].
+      pose proof HΔ'' as HΔ''b.
+      replace (ptyp_to_utyp_syn A)
+        with (btyp_to_utyp_syn (ptyp_to_btyp_syn A)) in HΔ''b
+        by (rewrite <- ptyp_to_utyp_syn_btyp_to_ptyp, btyp_to_ptyp_ptyp_to_btyp_syn; reflexivity).
+      apply d_sub_equiv with (Δ := Δ'');
+        [ eapply d_sub_paint_lhs_empty; exact HΔ''b | exact HΔ'' ].
   - (* abs_anno: split on the spine. *)
     assert (Hskm : mod_comp_ty Bres (mode_fn_n_subst m M0))
       by (eapply btyp_spine_skmod; [ exact Hspine | exact Hfn | exact (d_sub_skmod Htail) ]).
@@ -1958,6 +1952,12 @@ Proof.
         -- eassumption.
         -- eassumption.
         -- apply d_sub_weakening_head with (Γ' := (x ~ dbind_typ A)). exact Htail.
+  - (* abs_anno_check_step (tc): excluded. *)
+    inversion Hfn.
+  - (* abs_anno_check_base (tc): excluded. *)
+    inversion Hfn.
+  - (* freeze (tc): excluded. *)
+    inversion Hfn.
   - (* app: thread the spine through [e1] via the IH; weaken the side
        premises ([d_pat], [d_refine_syn], [e2]) by [ctx_weaken]. *)
     eapply d_sd_typing__app.

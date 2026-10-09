@@ -75,10 +75,6 @@ Proof.
   - destruct_if.
     + apply d_consis__var; [ auto | assumption ].
     + apply d_consis__var; [ analyze_binds H; auto | assumption ].
-  - eapply d_consis__arrow.
-    + eapply IHd_consis1; [ reflexivity | exact Hfr ].
-    + eapply IHd_consis2; [ reflexivity | exact Hfr ].
-    + assumption.
   - eapply d_consis__forall_inh_tagged with
       (L := L `union` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) `union` singleton α0 `union` singleton β).
     + intros α2 Hα2.
@@ -108,6 +104,10 @@ Proof.
     erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (solve [ fsetdec | apply lc_btyp_var_f ]).
     rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ (β ~ dbind_tvar) ++ Γ2).
     eapply (H0 α2); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
+  - eapply d_consis__arrow.
+    + eapply IHd_consis1; [ reflexivity | exact Hfr ].
+    + eapply IHd_consis2; [ reflexivity | exact Hfr ].
+    + assumption.
 Qed.
 
 (** [d_wf_utyp] is closed under tvar renaming (pure well-scopedness). *)

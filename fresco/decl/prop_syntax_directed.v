@@ -55,10 +55,8 @@ Proof.
   - (* var: [Var] + [Sub]. *)
     apply d_typing__sub with (A := A);
       [ apply d_typing__var; assumption | assumption ].
-  - (* anno: [Anno] + [Sub]. *)
-    apply d_typing__sub with (A := A);
-      [ apply d_typing__anno; assumption | assumption ].
-  - apply d_typing__freeze; assumption.
+  - (* abs (m ≠ tc) *)
+    apply d_typing__abs with (L := L) (A := A); assumption.
   - (* abs_check_step: peel one inherited ∀ via d_typing__forall.  The result
        body [B] is fully inherited ([is_ityp (btyp_all_inh B)]), hence equal to
        its own inh-repainting, which is what d_typing__forall demands. *)
@@ -75,6 +73,11 @@ Proof.
       | apply mod_comp_ty__tc; apply is_ityp__arrow;
           [ apply is_ityp_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc; eassumption | assumption ]
       | assumption ].
+  - (* anno: [Anno] + [Sub]. *)
+    apply d_typing__sub with (A := A);
+      [ apply d_typing__anno; assumption | assumption ].
+  - (* abs_anno (m ≠ tc) *)
+    apply d_typing__abs_anno with (L := L) (A := A) (B1 := B1); assumption.
   - (* abs_anno_check_step: as abs_check_step, over the annotated lambda. *)
     pose proof (ptyp_to_btyp_inh_btyp_to_ptyp H) as Hrt. simpl in Hrt. injection Hrt as Hrt.
     rewrite <- Hrt. apply d_typing__forall with (L := L) (A := btyp_to_ptyp B).
@@ -88,10 +91,7 @@ Proof.
     + apply mod_comp_ty__tc; apply is_ityp__arrow;
         [ apply is_ityp_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc; eassumption | assumption ].
     + assumption.
-  - (* abs (m ≠ tc) *)
-    apply d_typing__abs with (L := L) (A := A); assumption.
-  - (* abs_anno (m ≠ tc) *)
-    apply d_typing__abs_anno with (L := L) (A := A) (B1 := B1); assumption.
+  - apply d_typing__freeze; assumption.
   - (* app *)
     eapply d_typing__app; eassumption.
 Qed.
@@ -120,20 +120,20 @@ Lemma d_sd_typing_tc_abs_is_ityp : forall Γ e B,
     d_sd_typing mode_tc Γ (exp_abs e) B -> is_ityp B.
 Proof.
   intros Γ e B H. dependent induction H.
+  - exfalso; match goal with Hne : _ <> mode_tc |- _ => apply Hne; reflexivity end.
   - assumption.
   - apply is_ityp__arrow;
       [ apply is_ityp_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc; eassumption | assumption ].
-  - exfalso; match goal with Hne : _ <> mode_tc |- _ => apply Hne; reflexivity end.
 Qed.
 
 Lemma d_sd_typing_tc_abs_anno_is_ityp : forall Γ A0 e B,
     d_sd_typing mode_tc Γ (exp_abs_anno A0 e) B -> is_ityp B.
 Proof.
   intros Γ A0 e B H. dependent induction H.
+  - exfalso; match goal with Hne : _ <> mode_tc |- _ => apply Hne; reflexivity end.
   - assumption.
   - apply is_ityp__arrow;
       [ apply is_ityp_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc; eassumption | assumption ].
-  - exfalso; match goal with Hne : _ <> mode_tc |- _ => apply Hne; reflexivity end.
 Qed.
 
 (* ===================================================================== *)
@@ -530,7 +530,6 @@ Proof.
   intros Ψ Γ C B H. induction H; intros Γ' Hst.
   - apply d_consis__unit; assumption.
   - apply d_consis__var; [ apply Hst; assumption | assumption ].
-  - eapply d_consis__arrow; [ apply IHd_consis1 | apply IHd_consis2 | eassumption ]; assumption.
   - apply d_consis__forall_inh_tagged with (L := L) (Ψ0 := Ψ0); [ | assumption ].
     intros α Hα. apply H0; [ assumption | apply same_tvar_cons; assumption ].
   - apply d_consis__forall_inh_untagged with (L := L). intros α Hα.
@@ -539,6 +538,7 @@ Proof.
     apply H0; [ assumption | apply same_tvar_cons; assumption ].
   - apply d_consis__forall_syn with (L := L). intros α Hα.
     apply H0; [ assumption | apply same_tvar_cons; assumption ].
+  - eapply d_consis__arrow; [ apply IHd_consis1 | apply IHd_consis2 | eassumption ]; assumption.
 Qed.
 
 Lemma d_pat_consis_same_tvar : forall Δ Γ R Q,
@@ -547,7 +547,6 @@ Proof.
   intros Δ Γ R Q H. induction H; intros Γ' Hst.
   - apply d_pat_consis__unit; assumption.
   - apply d_pat_consis__var; [ assumption | apply Hst; assumption ].
-  - eapply d_pat_consis__arrow; [ apply IHd_pat_consis1 | apply IHd_pat_consis2 | eassumption ]; assumption.
   - apply d_pat_consis__forall_inh_tagged with (L := L) (Ψ0 := Ψ0); [ | assumption ].
     intros α Hα. apply H0; [ assumption | apply same_tvar_cons; assumption ].
   - apply d_pat_consis__forall_inh_untagged with (L := L). intros α Hα.
@@ -556,9 +555,10 @@ Proof.
     apply H0; [ assumption | apply same_tvar_cons; assumption ].
   - apply d_pat_consis__forall_syn with (L := L). intros α Hα.
     apply H0; [ assumption | apply same_tvar_cons; assumption ].
+  - eapply d_pat_consis__arrow; [ apply IHd_pat_consis1 | apply IHd_pat_consis2 | eassumption ]; assumption.
+  - apply d_pat_consis__ghost; [ assumption | eapply d_wf_pskl_same_tvar; eassumption ].
   - apply d_pat_consis__ghostg; assumption.
   - apply d_pat_consis__dot_univ_ghost. apply IHd_pat_consis; assumption.
-  - apply d_pat_consis__ghost; [ assumption | eapply d_wf_pskl_same_tvar; eassumption ].
   - apply d_pat_consis__univ_ghost; apply IHd_pat_consis; assumption.
   - apply d_pat_consis__univ_ghost_inh with (L := L). intros α Hα.
     apply H0; [ assumption | apply same_tvar_cons; assumption ].
@@ -620,6 +620,8 @@ Proof.
   - apply d_pat_sub__univ_ghost_r;
       [ assumption | assumption | assumption | assumption
       | eapply d_consis_join_same_tvar; eassumption ].
+  - apply d_pat_sub__ghost; [ assumption | eapply d_wf_pskl_same_tvar; eassumption | assumption ].
+  - apply d_pat_sub__ghostg; assumption.
   - eapply d_pat_sub__arg;
       [ eapply d_consis_join_same_tvar; eassumption
       | apply IHd_pat_sub; eassumption | eassumption ].
@@ -629,9 +631,7 @@ Proof.
   - eapply d_pat_sub__forall_l_untagged;
       [ eassumption | eassumption | eassumption | eassumption
       | eapply d_wf_uskl_same_tvar; eassumption | assumption | apply IHd_pat_sub; assumption ].
-  - apply d_pat_sub__ghost; [ assumption | eapply d_wf_pskl_same_tvar; eassumption | assumption ].
   - apply d_pat_sub__univ_ghost_l; [ assumption | apply IHd_pat_sub; assumption ].
-  - apply d_pat_sub__ghostg; assumption.
   - apply d_pat_sub__univ_ghost_lg; [ assumption | apply IHd_pat_sub; assumption ].
 Qed.
 
@@ -841,16 +841,6 @@ Proof.
       rewrite map_subst_unit_dbind_cons.
       eapply (H4 x ltac:(solve_notin_auto) ((x ~ dbind_typ (btyp_to_ptyp B)) ++ Γ1) α0 Γ2);
         [ simpl_env; reflexivity | assumption ].
-  - (* app *)
-    eapply d_pat__app.
-    + rewrite <- pskl_to_bskl_syn_subst_unit. eapply IHd_pat1; [ reflexivity | assumption ].
-    + rewrite <- pskl_to_bskl_inh_subst_unit.
-      eapply d_refine_syn_same_tvar;
-        [ eapply d_refine_syn_subst_unit; [ eassumption | reflexivity ]
-        | apply same_tvar_map_subst_unit ].
-    + change (bskl_arrow (subst_bskl_in_bskl bskl_unit α0 Q1) (subst_bskl_in_bskl bskl_unit α0 Q2))
-        with (subst_bskl_in_bskl bskl_unit α0 (bskl_arrow Q1 Q2)).
-      eapply IHd_pat2; [ reflexivity | assumption ].
   - (* abs_check (cofinite) *)
     rewrite pskl_to_bskl_syn_subst_unit.
     apply d_pat__abs_check with (L := L `union` {{α0}}) (P := subst_pskl_in_pskl pskl_unit α0 P).
@@ -874,6 +864,16 @@ Proof.
       rewrite <- pskl_to_bskl_syn_subst_unit.
       eapply (H1 x ltac:(solve_notin_auto) ((x ~ dbind_typ A) ++ Γ1) α0 Γ2);
         [ simpl_env; reflexivity | assumption ].
+  - (* app *)
+    eapply d_pat__app.
+    + rewrite <- pskl_to_bskl_syn_subst_unit. eapply IHd_pat1; [ reflexivity | assumption ].
+    + rewrite <- pskl_to_bskl_inh_subst_unit.
+      eapply d_refine_syn_same_tvar;
+        [ eapply d_refine_syn_subst_unit; [ eassumption | reflexivity ]
+        | apply same_tvar_map_subst_unit ].
+    + change (bskl_arrow (subst_bskl_in_bskl bskl_unit α0 Q1) (subst_bskl_in_bskl bskl_unit α0 Q2))
+        with (subst_bskl_in_bskl bskl_unit α0 (bskl_arrow Q1 Q2)).
+      eapply IHd_pat2; [ reflexivity | assumption ].
 Qed.
 
 (* [mod_comp_ty] is the colour/mode discipline on the type only; it depends on the
@@ -910,18 +910,22 @@ Proof.
       eapply d_sub_same_tvar;
         [ eapply d_sub_subst_unit; [ eassumption | reflexivity ]
         | apply same_tvar_map_subst_unit ].
-  - (* anno *)
-    eapply d_sd_typing__anno.
-    + rewrite <- ptyp_to_btyp_inh_subst_unit.
-      eapply IHd_sd_typing; [ reflexivity | assumption ].
-    + rewrite <- ptyp_to_utyp_syn_subst_unit.
-      eapply d_sub_same_tvar;
-        [ eapply d_sub_subst_unit; [ eassumption | reflexivity ]
-        | apply same_tvar_map_subst_unit ].
-  - (* freeze *)
+  - (* abs (m ≠ tc, cofinite) *)
     rewrite ptyp_to_btyp_inh_subst_unit.
-    apply d_sd_typing__freeze. rewrite <- ptyp_to_btyp_syn_subst_unit.
-    eapply IHd_sd_typing; [ reflexivity | assumption ].
+    apply d_sd_typing__abs with (L := L `union` {{α0}}).
+    + assumption.
+    + eapply d_wf_ptyp_subst_unit_ctx; [ eassumption | reflexivity ].
+    + rewrite <- ptyp_to_btyp_inh_subst_unit.
+      change (btyp_arrow (subst_btyp_in_btyp btyp_unit α0 (ptyp_to_btyp_inh A))
+                         (subst_btyp_in_btyp btyp_unit α0 B))
+        with (subst_btyp_in_btyp btyp_unit α0 (btyp_arrow (ptyp_to_btyp_inh A) B)).
+      apply mod_comp_ty_subst_unit. assumption.
+    + intros x Hx.
+      rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_unit | fsetdec ]).
+      rewrite_env (((x ~ subst_unit_dbind α0 (dbind_typ A)) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
+      rewrite map_subst_unit_dbind_cons.
+      eapply (H3 x ltac:(solve_notin_auto) ((x ~ dbind_typ A) ++ Γ1) α0 Γ2);
+        [ simpl_env; reflexivity | assumption ].
   - (* abs_check_step *)
     apply d_sd_typing__abs_check_step with (L := L `union` {{α0}}).
     + pose proof (is_ityp_subst_unit (btyp_all_inh B) α0 H) as Hi. simpl in Hi. exact Hi.
@@ -941,6 +945,27 @@ Proof.
       rewrite_env (((x ~ subst_unit_dbind α0 (dbind_typ A)) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
       rewrite map_subst_unit_dbind_cons.
       eapply (H2 x ltac:(solve_notin_auto) ((x ~ dbind_typ A) ++ Γ1) α0 Γ2);
+        [ simpl_env; reflexivity | assumption ].
+  - (* anno *)
+    eapply d_sd_typing__anno.
+    + rewrite <- ptyp_to_btyp_inh_subst_unit.
+      eapply IHd_sd_typing; [ reflexivity | assumption ].
+    + rewrite <- ptyp_to_utyp_syn_subst_unit.
+      eapply d_sub_same_tvar;
+        [ eapply d_sub_subst_unit; [ eassumption | reflexivity ]
+        | apply same_tvar_map_subst_unit ].
+  - (* abs_anno (m ≠ tc, cofinite) *)
+    apply d_sd_typing__abs_anno with (L := L `union` {{α0}})
+      (B1 := subst_btyp_in_btyp btyp_unit α0 B1).
+    + assumption.
+    + eapply d_wf_ptyp_subst_unit_ctx; [ eassumption | reflexivity ].
+    + symmetry. apply btyp_to_ptyp_subst_unit.
+    + pose proof (mod_comp_ty_subst_unit (btyp_arrow B1 B2) m α0 H2) as Hsk. simpl in Hsk. exact Hsk.
+    + intros x Hx.
+      rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_unit | fsetdec ]).
+      rewrite_env (((x ~ subst_unit_dbind α0 (dbind_typ (btyp_to_ptyp B1))) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
+      rewrite map_subst_unit_dbind_cons.
+      eapply (H4 x ltac:(solve_notin_auto) ((x ~ dbind_typ (btyp_to_ptyp B1)) ++ Γ1) α0 Γ2);
         [ simpl_env; reflexivity | assumption ].
   - (* abs_anno_check_step *)
     apply d_sd_typing__abs_anno_check_step with (L := L `union` {{α0}}).
@@ -962,35 +987,10 @@ Proof.
       rewrite map_subst_unit_dbind_cons.
       eapply (H2 x ltac:(solve_notin_auto) ((x ~ dbind_typ A) ++ Γ1) α0 Γ2);
         [ simpl_env; reflexivity | assumption ].
-  - (* abs (m ≠ tc, cofinite) *)
+  - (* freeze *)
     rewrite ptyp_to_btyp_inh_subst_unit.
-    apply d_sd_typing__abs with (L := L `union` {{α0}}).
-    + assumption.
-    + eapply d_wf_ptyp_subst_unit_ctx; [ eassumption | reflexivity ].
-    + rewrite <- ptyp_to_btyp_inh_subst_unit.
-      change (btyp_arrow (subst_btyp_in_btyp btyp_unit α0 (ptyp_to_btyp_inh A))
-                         (subst_btyp_in_btyp btyp_unit α0 B))
-        with (subst_btyp_in_btyp btyp_unit α0 (btyp_arrow (ptyp_to_btyp_inh A) B)).
-      apply mod_comp_ty_subst_unit. assumption.
-    + intros x Hx.
-      rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_unit | fsetdec ]).
-      rewrite_env (((x ~ subst_unit_dbind α0 (dbind_typ A)) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
-      rewrite map_subst_unit_dbind_cons.
-      eapply (H3 x ltac:(solve_notin_auto) ((x ~ dbind_typ A) ++ Γ1) α0 Γ2);
-        [ simpl_env; reflexivity | assumption ].
-  - (* abs_anno (m ≠ tc, cofinite) *)
-    apply d_sd_typing__abs_anno with (L := L `union` {{α0}})
-      (B1 := subst_btyp_in_btyp btyp_unit α0 B1).
-    + assumption.
-    + eapply d_wf_ptyp_subst_unit_ctx; [ eassumption | reflexivity ].
-    + symmetry. apply btyp_to_ptyp_subst_unit.
-    + pose proof (mod_comp_ty_subst_unit (btyp_arrow B1 B2) m α0 H2) as Hsk. simpl in Hsk. exact Hsk.
-    + intros x Hx.
-      rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_unit | fsetdec ]).
-      rewrite_env (((x ~ subst_unit_dbind α0 (dbind_typ (btyp_to_ptyp B1))) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
-      rewrite map_subst_unit_dbind_cons.
-      eapply (H4 x ltac:(solve_notin_auto) ((x ~ dbind_typ (btyp_to_ptyp B1)) ++ Γ1) α0 Γ2);
-        [ simpl_env; reflexivity | assumption ].
+    apply d_sd_typing__freeze. rewrite <- ptyp_to_btyp_syn_subst_unit.
+    eapply IHd_sd_typing; [ reflexivity | assumption ].
   - (* app *)
     eapply d_sd_typing__app.
     + rewrite <- pskl_to_bskl_syn_subst_unit.
@@ -1318,14 +1318,12 @@ Proof.
     eapply d_sub_lc_btyp; [ eassumption | ].
     apply lc_ptyp_to_utyp_syn. eapply d_wf_ptyp_lc.
     eapply d_wf_denv_binds_ptyp; eassumption.
-  - (* sd-Anno: [lc] comes from the CHECKED premise, not from a wf premise —
-       [d_sd_typing__anno] has none *)
-    eapply d_sub_lc_btyp; [ eassumption | ].
-    apply lc_ptyp_to_utyp_syn, lc_ptyp_of_lc_btyp_inh.
-    apply IHd_sd_typing; exact Hwf.
-  - (* sd-Freeze *)
-    apply lc_ptyp_to_btyp_inh, lc_ptyp_of_lc_btyp_syn.
-    apply IHd_sd_typing; exact Hwf.
+  - (* sd-Abs *)
+    pick fresh x for (L `union` dom Γ). apply lc_btyp_arrow;
+      [ apply lc_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc; eassumption | ].
+    apply (H3 x); [ solve_notin_auto
+                  | apply d_wf_denv__typ;
+                      [ exact Hwf | solve_notin_auto | assumption ] ].
   - (* sd-AbsCheck (∀) *)
     pick fresh α for (L `union` dom Γ).
     apply lc_btyp_all_inh_exists with (α1 := α).
@@ -1337,6 +1335,18 @@ Proof.
     apply (H2 x); [ solve_notin_auto
                   | apply d_wf_denv__typ;
                       [ exact Hwf | solve_notin_auto | assumption ] ].
+  - (* sd-Anno: [lc] comes from the CHECKED premise, not from a wf premise —
+       [d_sd_typing__anno] has none *)
+    eapply d_sub_lc_btyp; [ eassumption | ].
+    apply lc_ptyp_to_utyp_syn, lc_ptyp_of_lc_btyp_inh.
+    apply IHd_sd_typing; exact Hwf.
+  - (* sd-AbsAnno: the arrow's domain erases to the annotation *)
+    pick fresh x for (L `union` dom Γ). apply lc_btyp_arrow.
+    + apply lc_btyp_of_lc_ptyp_erase.
+      rewrite H1. eapply d_wf_ptyp_lc; eassumption.
+    + apply (H4 x); [ solve_notin_auto
+                    | apply d_wf_denv__typ;
+                        [ exact Hwf | solve_notin_auto | assumption ] ].
   - (* sd-AbsAnnoCheck (∀) *)
     pick fresh α for (L `union` dom Γ).
     apply lc_btyp_all_inh_exists with (α1 := α).
@@ -1348,19 +1358,9 @@ Proof.
     apply (H2 x); [ solve_notin_auto
                   | apply d_wf_denv__typ;
                       [ exact Hwf | solve_notin_auto | assumption ] ].
-  - (* sd-Abs *)
-    pick fresh x for (L `union` dom Γ). apply lc_btyp_arrow;
-      [ apply lc_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc; eassumption | ].
-    apply (H3 x); [ solve_notin_auto
-                  | apply d_wf_denv__typ;
-                      [ exact Hwf | solve_notin_auto | assumption ] ].
-  - (* sd-AbsAnno: the arrow's domain erases to the annotation *)
-    pick fresh x for (L `union` dom Γ). apply lc_btyp_arrow.
-    + apply lc_btyp_of_lc_ptyp_erase.
-      rewrite H1. eapply d_wf_ptyp_lc; eassumption.
-    + apply (H4 x); [ solve_notin_auto
-                    | apply d_wf_denv__typ;
-                        [ exact Hwf | solve_notin_auto | assumption ] ].
+  - (* sd-Freeze *)
+    apply lc_ptyp_to_btyp_inh, lc_ptyp_of_lc_btyp_syn.
+    apply IHd_sd_typing; exact Hwf.
   - (* sd-App: the function's arrow target *)
     assert (Ha : lc_btyp (btyp_arrow B1 B2)) by (apply IHd_sd_typing1; exact Hwf).
     inversion Ha; subst; assumption.
