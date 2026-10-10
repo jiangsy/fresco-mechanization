@@ -54,17 +54,9 @@
     runner's own answer), and [SI-ForallL] (pre-swap the opener, then
     [e_extract_det]).
 
-    ⛔ ONE UPSTREAM PREMISE HAD TO GO — not because it was wrong, but
-    because it is UNSATISFIABLE at its only consumer, so a true lemma was
-    unusable.  [e_extract_impl_complete] (prop_look_pair.v §4) carried
-    [add α (ftv P ∪ ftv P') ⊆ ftvar Θ0], and at [SI-ForallL] the extract's
-    [α] IS the rule's fresh opener, so [α ∈ ftvar Θ0] cannot hold.  ⚙
-    Dropping it yields a STRICTLY STRONGER statement, so nothing that used
-    the old form is disturbed (nothing did — see below).  The
-    repair is local to that proof: cut the b-core's RIGID ENRICHMENT at
-    [ftvar Θ0] rather than at the input supply, so the whole supply — hence
-    [α], [ftv P] and [ftv P'] — is visible in the enriched contexts, and
-    peel the two rigid prefixes by RIGIDITY rather than by freshness. *)
+    Runner completeness uses the same extraction derivation and input supply
+    as this proof, through [prop_extract_complete].  Collection determinism
+    moves its fold directly onto the runner's collection. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -106,7 +98,7 @@ Require Import src.fresco.ext_algo.def_consis_impl.
 Require Import src.fresco.ext_algo.prop_consis_complete.
 Require Import src.fresco.ext_algo.def_extract_impl.
 Require Import src.fresco.ext_algo.prop_extract_det.
-Require Import src.fresco.ext_algo.prop_look_pair.
+Require Import src.fresco.ext_algo.prop_extract_complete.
 Require Import src.fresco.ext_algo.def_sub_impl.
 
 Set Implicit Arguments.
@@ -1349,14 +1341,12 @@ Local Ltac do_forall_l Hd Hu Hcov pmot s0 t0 p0 q :=
              ∪ ftvar_in_pskl p0) [<=] add (supply_fresh s0) s0)
     by (clear - Hcov Hop; simpl in *; fsetdec);
   (* the RUNNER's extraction answers — level 4's headline *)
-  destruct (e_extract_inv Dx1) as [Sa1 [Sa2 [Xl [Xs [Xg [Cl [Qs
-              [Hxeq [Hlk [Hfd Hgs]]]]]]]]]];
   let rx := fresh "rx" in let Hrx := fresh "Hrx" in
   let Hne := fresh "Hne" in let Hxc := fresh "Hxc" in
   match goal with
   | |- context [ e_extract_impl ?S ?T ?nm ?al ?mm ?pp ?pp' ?h1 ?h2 ?h3 ] =>
       assert (Hne : e_extract_impl S T nm al mm pp pp' h1 h2 h3 <> None)
-        by (exact (e_extract_impl_complete h1 h2 h3 Hlk Hfd Hcx Hcx));
+        by (exact (e_extract_impl_complete h1 h2 h3 Dx1 Hcx));
       destruct (e_extract_impl S T nm al mm pp pp' h1 h2 h3)
         as [ [rx Hrx] | ] eqn:Hxc;
       [ cbv beta iota | exact (False_ind _ (Hne eq_refl)) ]

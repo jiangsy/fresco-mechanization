@@ -181,6 +181,35 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Replace paired look/fold induction with collection determinism
+
+- The existing `e_looksub_rel` already relates two collections at the same
+  input supply by a swap chain. The only consumer of extraction runner
+  completeness has exactly that supply and an `e_extract` derivation.
+- Replace the generalized comparison of independently supplied, related
+  looks and their folds with a direct pipeline proof in
+  `ext_algo/prop_extract_complete.v`: obtain the runner collection, apply
+  collection determinism, swap the given fold onto the runner collection,
+  then invoke solver runner completeness. Guessing is total. Rigid
+  enrichment still supplies visibility of leaked collection openers.
+- Delete `prop_look_pair.v`, including both size inductions, their two
+  statement definitions and 16 obsolete support lemmas. Retain solver
+  context equivalence in `prop_solve.v`; it is independent of collection.
+  Remove the old module imports from subtyping, pattern and typing
+  completeness. No new Ltac; the retained context tactic is moved unchanged.
+- Internal interfaces `e_extract_impl_complete` and
+  `e_extract_run_complete` now take an extraction derivation at the runner's
+  input supply. The old independent-supply generalization had no consumer.
+  These are not paper-facing theorems; all paper-facing statements and all
+  other retained lemma/theorem statements are unchanged.
+- Net: −3538 nonblank, noncomment Coq lines, including the new module,
+  moved support and caller/import changes. This replaces a proof path;
+  it does not just abbreviate repeated branches.
+- Validation: full `make coq` passed, including extraction and all 34
+  headline assumption reports closed under the global context. The reused
+  determinism theorem has no dependency on extraction completeness.
+  `git diff --check` passed.
+
 ## 2026-10-11 — Shared binder extension for freshness and context invariants
 
 - Prove rigid-binder extension once for definition freshness, replacement

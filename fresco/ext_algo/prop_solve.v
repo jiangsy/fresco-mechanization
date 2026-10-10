@@ -809,3 +809,110 @@ Proof.
     eapply e_solve_cstr__eq;
       [ exact Hd1 | rewrite <- swap_aenv_app; exact Hd2 ].
 Qed.
+
+(** Solving depends on the context only through flexibility tests. *)
+Local Ltac ctx_equiv_ih :=
+  match goal with
+  | IH : forall _, _ -> e_solve_sub _ _ _ _ _ _ _ _
+    |- e_solve_sub _ _ _ _ _ _ _ _ =>
+      apply IH;
+      first [ assumption | apply a_flex_tvar_app_congr; assumption ]
+  | IH : forall _, _ -> e_solve_eq _ _ _ _ _ _ _
+    |- e_solve_eq _ _ _ _ _ _ _ =>
+      apply IH;
+      first [ assumption | apply a_flex_tvar_app_congr; assumption ]
+  end.
+
+Lemma e_solve_sub_eq_ctx_equiv :
+  (forall S0 Θ m P Q S1 Ξ P',
+     {{ S0 ↝ S1 ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e ->
+     forall Θ', (forall α, a_flex_tvar Θ α <-> a_flex_tvar Θ' α) ->
+     {{ S0 ↝ S1 ⊨ Θ' ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e) /\
+  (forall S0 Θ P Q S1 Ξ P',
+     {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e ->
+     forall Θ', (forall α, a_flex_tvar Θ α <-> a_flex_tvar Θ' α) ->
+     {{ S0 ↝ S1 ⊨ Θ' ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e).
+Proof.
+  apply (e_solve_sub_eq_mutind
+           (fun S0 Θ m P Q S1 Ξ P' _ =>
+              forall Θ', (forall α, a_flex_tvar Θ α <-> a_flex_tvar Θ' α) ->
+              {{ S0 ↝ S1 ⊨ Θ' ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e)
+           (fun S0 Θ P Q S1 Ξ P' _ =>
+              forall Θ', (forall α, a_flex_tvar Θ α <-> a_flex_tvar Θ' α) ->
+              {{ S0 ↝ S1 ⊨ Θ' ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e));
+    intros;
+    match goal with
+    | |- _ => idtac
+    end.
+  - (* SS-Var *) apply e_solve_sub__var.
+  - (* SS-ForallL *)
+    apply e_solve_sub__forall_l; [ assumption | ctx_equiv_ih ].
+  - (* SS-UnivGhostL *) apply e_solve_sub__univ_ghost_l; ctx_equiv_ih.
+  - (* SS-Vacuous *) apply e_solve_sub__vacuous; assumption.
+  - (* SS-Check *)
+    apply e_solve_sub__check; try assumption; ctx_equiv_ih.
+  - (* SS-ForallR *)
+    eapply e_solve_sub__forall_r;
+      [ assumption | assumption | eassumption | ctx_equiv_ih ].
+  - (* SS-Arrow *) eapply e_solve_sub__arrow; ctx_equiv_ih.
+  - (* SS-GhostLF *) eapply e_solve_sub__ghost_l_fn; ctx_equiv_ih.
+  - (* SS-GhostL *) apply e_solve_sub__ghost_l; assumption.
+  - (* SE-Unit *) apply e_solve_eq__unit.
+  - (* SE-Var *) apply e_solve_eq__var.
+  - (* SE-FlexR *)
+    match goal with
+    | Hft : a_flex_tvar _ ?a, Hnf : a_non_flex _ _,
+      Hiff : forall _, a_flex_tvar _ _ <-> a_flex_tvar _ _ |- _ =>
+        apply e_solve_eq__flex_r;
+        [ apply Hiff; exact Hft
+        | destruct Hnf as [Hlc Hnfl];
+          split;
+          [ exact Hlc
+          | intros Hf0; apply Hnfl;
+            eapply a_flex_of_tvar_iff;
+            [ intros a0; exact (iff_sym (Hiff a0)) | exact Hf0 ] ]
+        | assumption
+        | assumption ]
+    end.
+  - (* SE-GhostL *) apply e_solve_eq__ghost_l.
+  - (* SE-VacuousR *) apply e_solve_eq__ghost_r.
+  - (* SE-Arrow *) eapply e_solve_eq__arrow; ctx_equiv_ih.
+  - (* SE-Forall *)
+    eapply e_solve_eq__forall; [ eassumption | ctx_equiv_ih ].
+  - (* SE-UnivGhost *) apply e_solve_eq__univ_ghost_both; ctx_equiv_ih.
+  - (* SE-GhostForall *)
+    eapply e_solve_eq__univ_ghost_l_all; [ eassumption | ctx_equiv_ih ].
+  - (* SE-GhostGuarded *)
+    apply e_solve_eq__univ_ghost_l_guarded; [ assumption | ctx_equiv_ih ].
+  - (* SE-ForallGhost *)
+    eapply e_solve_eq__all_l_univ_ghost; [ eassumption | ctx_equiv_ih ].
+  - (* SE-GuardedGhost *)
+    apply e_solve_eq__univ_ghost_r_guarded; [ assumption | ctx_equiv_ih ].
+Qed.
+
+Lemma e_solve_cstr_ctx_equiv : forall S0 Θ C P S1 Ξ P',
+  {{ S0 ↝ S1 ⊨ Θ ⊩ C ⨾ P ⤳ Ξ ⨾ P' }}e ->
+  forall Θ', (forall α, a_flex_tvar Θ α <-> a_flex_tvar Θ' α) ->
+  {{ S0 ↝ S1 ⊨ Θ' ⊩ C ⨾ P ⤳ Ξ ⨾ P' }}e.
+Proof.
+  intros * H; induction H; intros Θ' Hiff.
+  - apply e_solve_cstr__empty.
+  - apply e_solve_cstr__sub.
+    eapply (proj1 e_solve_sub_eq_ctx_equiv); eassumption.
+  - eapply e_solve_cstr__eq.
+    + eapply (proj2 e_solve_sub_eq_ctx_equiv); eassumption.
+    + apply IHe_solve_cstr. apply a_flex_tvar_app_congr. exact Hiff.
+Qed.
+
+(** The assembly's enrichment move: an e-fold rigid-weakens freely
+    (its freshness reads the SUPPLY, and rigid entries are invisible to
+    the flex tests). *)
+Lemma e_solve_cstr_weaken_rigid : forall S0 Θ C P S1 Ξ P' (Δr : aenv),
+  {{ S0 ↝ S1 ⊨ Θ ⊩ C ⨾ P ⤳ Ξ ⨾ P' }}e ->
+  (forall x bd, binds x bd Δr -> bd = abind_tvar) ->
+  {{ S0 ↝ S1 ⊨ (Δr ++ Θ) ⊩ C ⨾ P ⤳ Ξ ⨾ P' }}e.
+Proof.
+  intros * H Hr.
+  eapply e_solve_cstr_ctx_equiv; [ exact H | ].
+  intros α. symmetry. apply a_flex_tvar_rigid_prefix_iff. exact Hr.
+Qed.

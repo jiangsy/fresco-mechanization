@@ -76,7 +76,6 @@ Require Import src.fresco.ext_algo.def_consis_impl.
 Require Import src.fresco.ext_algo.prop_consis_complete.
 Require Import src.fresco.ext_algo.def_extract_impl.
 Require Import src.fresco.ext_algo.prop_extract_det.
-Require Import src.fresco.ext_algo.prop_look_pair.
 Require Import src.fresco.ext_algo.def_sub_impl.
 Require Import src.fresco.ext_algo.prop_sub_complete.
 Require Import src.fresco.ext_algo.def_pat_impl.
