@@ -1125,7 +1125,7 @@ Proof.
     | apply a_suffix_binding__flex_mono_def ].
 Qed.
 
-(** The three target-shape rewrites the rows need, packaged so the tactic
+(** The two target-shape rewrites the rows need, packaged so the tactic
     scripts do not have to steer [unfold … at n]. *)
 Lemma subst_pskl_to_bskl_syn_eq : forall τ α P,
   subst_bskl_in_bskl (ptyp_to_bskl_syn τ) α (pskl_to_bskl_syn P)
@@ -1138,22 +1138,6 @@ Lemma subst_btyp_to_bskl_eq : forall τ α B,
 Proof.
   intros. rewrite btyp_to_bskl_subst, btyp_to_bskl_ptyp_to_btyp_syn.
   reflexivity.
-Qed.
-
-(** Erasure commutes with a painting-image substitution — what the App row's
-    target-wf premise needs under [ad_pat_subst_mid]. *)
-Lemma subst_bskl_to_pskl_eq : forall τ α Q,
-  bskl_to_pskl (subst_bskl_in_bskl (ptyp_to_bskl_syn τ) α Q)
-  = subst_pskl_in_pskl (ptyp_to_pskl τ) α (bskl_to_pskl Q).
-Proof.
-  intros τ α Q; induction Q; simpl;
-    try solve [ reflexivity
-              | rewrite IHQ; reflexivity
-              | rewrite IHQ1, IHQ2; reflexivity ].
-  destruct_if;
-    [ unfold ptyp_to_bskl_syn; rewrite bskl_to_pskl_pskl_to_bskl_syn;
-      reflexivity
-    | reflexivity ].
 Qed.
 
 Lemma ad_pat_subst_mid : forall M Θ e Q,
@@ -1172,7 +1156,7 @@ Proof.
     (assert (Hlcτ : lc_ptyp τs) by (apply mono_ptyp_lc; exact Hm)).
   - (* unit *)
     apply ad_pat__unit.
-    + rewrite subst_bskl_to_pskl_eq.
+    + rewrite bskl_to_pskl_subst_mono.
       eapply a_wf_pskl_subst_mid;
         [ exact H | reflexivity | exact Hs | clear; fsetdec | clear; fsetdec ].
     + pose proof (@ad_pat_sub_subst_mid _ _ _ _ _ _ H0 τs α0 b0 Θa Θ0
@@ -1186,7 +1170,7 @@ Proof.
     eapply ad_pat__var;
       [ eapply binds_subst_strip_mid; eassumption
       | apply abind_to_pskl_subst; eassumption
-      | rewrite subst_bskl_to_pskl_eq;
+      | rewrite bskl_to_pskl_subst_mono;
         eapply a_wf_pskl_subst_mid;
           [ exact H1 | reflexivity | exact Hs | clear; fsetdec | clear; fsetdec ]
       | ].
@@ -1198,7 +1182,7 @@ Proof.
     eapply ad_pat__anno;
       [ eapply a_wf_ptyp_subst_mid;
           [ eassumption | reflexivity | exact Hs ]
-      | rewrite subst_bskl_to_pskl_eq;
+      | rewrite bskl_to_pskl_subst_mono;
         eapply a_wf_pskl_subst_mid;
           [ exact H0 | reflexivity | exact Hs | clear; fsetdec | clear; fsetdec ]
       | ].

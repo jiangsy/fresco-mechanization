@@ -258,7 +258,7 @@ Proof.
        binder, so there is no representative to pick *)
     intros Δ1 Δ2 Θ0 Θ1 P0 P P' α Hfr Hco IH α1 Hα1.
     assert (Hγ' : a_flex_tvar ((α ~ abind_tvar) ++ Θ1) α1).
-    { apply IH. apply a_flex_tvar_weaken_prefix. exact Hα1. }
+    { apply IH. apply a_flex_tvar_weaken_app. exact Hα1. }
     apply a_flex_tvar_alt in Hγ'; destruct Hγ' as [b [Hs Hb]].
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqγ Heqb] | Hb'];
       [ subst; inversion Hs | ].
@@ -268,7 +268,7 @@ Proof.
        binder, so there is no representative to pick *)
     intros Δ1 Δ2 Θ0 Θ1 P0 P P' α Hfr Hco IH α1 Hα1.
     assert (Hγ' : a_flex_tvar ((α ~ abind_tvar) ++ Θ1) α1).
-    { apply IH. apply a_flex_tvar_weaken_prefix. exact Hα1. }
+    { apply IH. apply a_flex_tvar_weaken_app. exact Hα1. }
     apply a_flex_tvar_alt in Hγ'; destruct Hγ' as [b [Hs Hb]].
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqγ Heqb] | Hb'];
       [ subst; inversion Hs | ].
@@ -280,7 +280,7 @@ Proof.
        binder, so there is no representative to pick *)
     intros Δ1 Δ2 Θ0 Θ1 P0 P P' α Hfr Hco IH α1 Hα1.
     assert (Hγ' : a_flex_tvar ((α ~ abind_tvar) ++ Θ1) α1).
-    { apply IH. apply a_flex_tvar_weaken_prefix. exact Hα1. }
+    { apply IH. apply a_flex_tvar_weaken_app. exact Hα1. }
     apply a_flex_tvar_alt in Hγ'; destruct Hγ' as [b [Hs Hb]].
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqγ Heqb] | Hb'];
       [ subst; inversion Hs | ].

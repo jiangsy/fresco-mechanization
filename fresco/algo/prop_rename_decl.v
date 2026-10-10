@@ -196,7 +196,7 @@ Proof.
     destruct_var_eqs.
     rewrite subst_ptyp_in_ptyp_fresh_eq; [ | exact Hfr ].
     apply a_tyequiv__flex_def.
-    apply (@binds_insert_mid (abind_flex_mono_def τ) α
+    apply (@binds_weaken abind α (abind_flex_mono_def τ)
              Θ1 (β' ~ abind_tvar) Θ0); auto.
   - (* arrow *)
     apply a_tyequiv__arrow;

@@ -2567,94 +2567,16 @@ Proof.
 Qed.
 
 (* ##################################################################### *)
-(*  §6 — TERM BINDERS.                                                    *)
-(*                                                                        *)
-(*  The term-variable half of the equivariance primitive: a swap of two   *)
-(*  atoms fresh for a binding or a context leaves it unchanged.           *)
-(*                                                                        *)
-(*  ⚠️ These were elaborated under [Set Implicit Arguments] in their old    *)
-(*  home, and this file deliberately has none (see the header); their     *)
-(*  callers rely on the arguments it makes implicit.  So the flag is      *)
-(*  turned on for this section ONLY and off again at the end: §1–§5 keep  *)
-(*  the explicit-argument policy the header argues for, and §6 keeps the  *)
-(*  elaboration it was written under.                                     *)
+(*  §6 — TERM BINDERS: a swap of two atoms fresh for a context leaves it  *)
+(*  unchanged.  [swap_aenv_fresh_id] (§13) is the strong form; this is the*)
+(*  form typing/prop_completeness_typing.v consumes.                      *)
 (* ##################################################################### *)
 
-Set Implicit Arguments.
-
-(* ===================================================================== *)
-(*  K6 — TERM-VARIABLE RENAMING for cofinite binder rows.                *)
-(*                                                                       *)
-(*  ⭐ The route is the standing directive's: EQUIVARIANCE is the one     *)
-(*  renaming primitive.  prop_swap.v already proves it for the whole      *)
-(*  algorithmic tower; what was missing is the bridge that turns a SWAP   *)
-(*  of two atoms into the RENAMING of a term binder — which it is        *)
-(*  exactly when both atoms are fresh for everything else in sight.       *)
-(*                                                                       *)
-(*  ⚙ ITS CONSUMER RETIRED 2026-08-13 — see the ⛔ note at the end of      *)
-(*  this section.  [a_pat] went exists-fresh, and with it went            *)
-(*  [a_pat_rename_tm], the only lemma this bridge was built for.          *)
-(* ===================================================================== *)
-
-(** A binding the two swapped atoms do not occur in is untouched. *)
-Lemma swap_abind_fresh_eq : forall x y (b : abind),
-  x `notin` ftvar_in_abind b ->
-  y `notin` ftvar_in_abind b ->
-  swap_abind x y b = b.
-Proof.
-  intros x y b Hx Hy; destruct b; simpl in *; try reflexivity; f_equal;
-    first [ apply swap_ptyp_fresh_id | apply swap_pskl_fresh_id ];
-    assumption.
-Qed.
-
-(** …hence a whole context the two atoms are fresh for. *)
 Lemma swap_aenv_fresh_eq : forall x y Θ,
   x `notin` (dom Θ `union` ftvar_in_aenv Θ) ->
   y `notin` (dom Θ `union` ftvar_in_aenv Θ) ->
   swap_aenv x y Θ = Θ.
-Proof.
-  induction Θ as [ | [z c] Θ' IH ]; intros Hx Hy; simpl in *;
-    [ reflexivity | ].
-  f_equal.
-  - f_equal.
-    + unfold swap_atom.
-      destruct (z == x) as [->|Hzx]; [ exfalso; clear - Hx; fsetdec | ].
-      destruct (z == y) as [->|Hzy]; [ exfalso; clear - Hy; fsetdec | ].
-      reflexivity.
-    + apply swap_abind_fresh_eq; [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
-  - apply IH; [ clear - Hx; fsetdec | clear - Hy; fsetdec ].
-Qed.
-
-(* ===================================================================== *)
-(*  K6, LAST PIECE — RETIRED 2026-08-13 with the exists-fresh conversion   *)
-(*  of [a_pat]'s four binder rows (fresco/algo/def_rules.v).                *)
-(*                                                                        *)
-(*  ⛔ [a_pat_rename_tm] IS GONE, AND IT CANNOT COME BACK IN THIS SHAPE.   *)
-(*  It renamed a term binder across an [a_pat] run — the hybrid that       *)
-(*  SWAPS the type-level data and SUBSTITUTES in the term — and its ONLY   *)
-(*  consumers were the four binder rows of [a_pat_complete], which used it *)
-(*  to REGENERATE a cofinite family from the IH's one instance.            *)
-(*  Exists-fresh rows need one instance, so all four calls went with the   *)
-(*  conversion.                                                            *)
-(*                                                                        *)
-(*  ⚠️ AND IT IS NOT MERELY UNUSED — restated over the converted rules it   *)
-(*  is NOT PROVABLE.  Its binder rows needed [b ∉ fvar_in_exp (open e x)], *)
-(*  i.e. [b <> x].  Cofinitely that was free: the row picked its own [x]   *)
-(*  away from [b].  Exists-fresh the row HANDS OVER an [x] the statement   *)
-(*  cannot constrain, and no hypothesis on [Θ0]/[Θ1]/[e] bounds it — the   *)
-(*  conclusion's output [Ξ ++ Θ2] has had [x] removed.  A size induction    *)
-(*  does not rescue it either: the inner rename would need                 *)
-(*  [x ∉ ftvar_in_exp e], which the row does not state.                    *)
-(*                                                                        *)
-(*  ⚙ WHAT STAYED, and why it is not orphan sweepings.                     *)
-(*  [swap_aenv_fresh_eq] has three live consumers in                       *)
-(*  typing/prop_completeness_typing.v (theorem 4 keeps its own K6, over    *)
-(*  the DECLARATIVE cofinite rows, which is a different lemma).            *)
-(*  [swap_abind_fresh_eq] is its helper.                                   *)
-(* ===================================================================== *)
-
-
-Unset Implicit Arguments.
+Proof. intros; apply swap_aenv_fresh_id; fsetdec. Qed.
 
 (* ##################################################################### *)
 (*  §16  THE TRANSPOSITION ON TERMS                                       *)

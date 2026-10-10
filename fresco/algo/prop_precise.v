@@ -537,7 +537,7 @@ Proof.
   - (* flex_r : Qr = α̂ with α̂ := τ; recurse into the definition *)
     eapply ad_refine_syn__flex_r; [ eassumption | ].
     apply IHHr; auto.
-    unfold ptyp_to_bskl_syn. rewrite bskl_to_pskl_pskl_to_bskl_syn.
+    rewrite bskl_to_pskl_ptyp_to_bskl_syn.
     apply a_wf_ptyp_to_wf_pskl.
     eapply a_wf_aenv_binds_def_wf; [ exact Hwf | eassumption ].
 Qed.

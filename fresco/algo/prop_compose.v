@@ -94,31 +94,13 @@ Qed.
 (*  κ's domain is EXACTLY the source's flexible variables                  *)
 (* ===================================================================== *)
 
-(** The skeleton mirror of [a_wf_ptyp_ftv_tvarish]. *)
+(** The skeleton mirror of [a_wf_ptyp_ftv_tvarish]; same fact as
+    [a_scope_pskl_ftv_binds] (prop_swap.v). *)
 Lemma a_scope_pskl_ftv_tvarish : forall Θ P α,
   a_scope_pskl Θ P ->
   α `in` ftvar_in_pskl P ->
   a_binds_tvar α Θ.
-Proof.
-  intros Θ P α Hwf; revert α; induction Hwf; intros β Hβ; simpl in Hβ.
-  - exfalso. clear - Hβ. fsetdec.
-  (* [α] is the var rule's OWN binder ([a_scope_pskl__var], algo/def_rules.v),
-     auto-bound by [induction Hwf] — not this lemma's α ([revert α]). *)
-  - assert (HeqY : β = α) by (clear - Hβ; fsetdec). subst. exact H.
-  - destruct (union_1 Hβ); auto.
-  - (* ∀ : the bound variable is fresh, so it is not the one we are tracking *)
-    pick fresh α2 for (L `union` ftvar_in_pskl P `union` singleton β).
-    assert (HYo : β `in` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α2))).
-    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P (pskl_var_f α2)) as Hl.
-      clear - Hβ Hl. fsetdec. }
-    specialize (H0 α2 ltac:(auto) β HYo).
-    destruct H0 as [Hb | [Hb | [τ Hb]]];
-      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[HeqZ ?] | Hb'];
-      try (subst; exfalso; clear - Fr; fsetdec);
-      [ left | right; left | right; right; exists τ ]; exact Hb'.
-  - exfalso. clear - Hβ. fsetdec.
-  - auto.
-Qed.
+Proof. intros; eapply a_scope_pskl_ftv_binds; eauto. Qed.
 
 Lemma a_inc_dom_flex : forall Θ κ Θ',
   κ ∷ Θ ⊑ Θ' ->
@@ -392,38 +374,8 @@ Lemma a_wf_aenv_def_ftv_dom_in : forall Θ β τ,
   binds β (abind_flex_mono_def τ) Θ ->
   forall α', α' `in` ftvar_in_ptyp τ -> α' `in` dom Θ.
 Proof.
-  intros Θ β τ Hwf; induction Hwf; intros Hb α' Hα; simpl in *.
-  - inversion Hb.
-  - (* flex *)
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
-      [ discriminate | ].
-    assert (Hd : α' `in` dom Θ) by (eapply IHHwf; eauto).
-    clear - Hd; fsetdec.
-  - (* flex_def : the definition's type is well-formed in the TAIL *)
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'].
-    + inversion Heqb; subst.
-      assert (Hbt : a_binds_tvar α' Θ) by (eapply a_wf_ptyp_ftv_tvarish; eauto).
-      assert (Hd : α' `in` dom Θ).
-      { destruct Hbt as [Hbb | [Hbb | [τd Hbb]]];
-          apply binds_In in Hbb; exact Hbb. }
-      clear - Hd; fsetdec.
-    + assert (Hd : α' `in` dom Θ) by (eapply IHHwf; eauto).
-      clear - Hd; fsetdec.
-  - (* var_skl *)
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
-      [ discriminate | ].
-    assert (Hd : α' `in` dom Θ) by (eapply IHHwf; eauto).
-    clear - Hd; fsetdec.
-  - (* var_typ *)
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
-      [ discriminate | ].
-    assert (Hd : α' `in` dom Θ) by (eapply IHHwf; eauto).
-    clear - Hd; fsetdec.
-  - (* tvar *)
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
-      [ discriminate | ].
-    assert (Hd : α' `in` dom Θ) by (eapply IHHwf; eauto).
-    clear - Hd; fsetdec.
+  intros * Hwf Hb α' Hα.
+  eapply a_wf_ptyp_ftv_dom; [ eapply a_wf_aenv_binds_def_wf; eauto | exact Hα ].
 Qed.
 
 (** Consequently an entry ABOVE a definition never occurs free in it. *)

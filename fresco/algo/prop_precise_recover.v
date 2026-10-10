@@ -139,8 +139,7 @@ Proof.
   rewrite (ptyp_to_bskl_inh_syn_eq HmA).
   (* right painting reduces to [Qb = syn A] *)
   subst Qb.
-  replace (bskl_to_pskl (ptyp_to_bskl_syn A)) with (ptyp_to_pskl A).
-  2:{ unfold ptyp_to_bskl_syn. rewrite bskl_to_pskl_pskl_to_bskl_syn. reflexivity. }
+  rewrite (bskl_to_pskl_ptyp_to_bskl_syn A).
   rewrite (ptyp_to_bskl_inh_syn_eq HmC).
   apply tyequiv_mono_refine_syn; auto.
 Qed.

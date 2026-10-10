@@ -211,7 +211,7 @@ Qed.
     for well-formed contexts. *)
 Lemma a_isub_refl : forall Θ, {{ ⊢ Θ }}a -> Θ ⊴ Θ.
 Proof.
-  intros Θ Hwf. apply a_isub_refl_lc; auto.
+  intros Θ Hwf. apply (a_isub_weaken_suffix (Ξ := nil)); auto using a_suffix.
 Qed.
 
 (** Declaration-only suffixes (the paper's "Ξ only contains declarations
@@ -673,6 +673,18 @@ Qed.
 (*  (each unfolded occurrence re-wraps with the FlexL lookup rule).       *)
 (* ===================================================================== *)
 
+(* [ad_pat_consis_fold_def]'s case split: destruct the folded subject
+   [S0x] against the rule's subject, and close the case where [S0x] is the
+   variable [β] (its unfolding is a monotype, so no rule but the leaves
+   can match it). *)
+Local Ltac fold_def_split S HeqS :=
+  destruct S as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
+    simpl in HeqS; try discriminate HeqS.
+Local Ltac fold_def_no_var X β Hm HeqS :=
+  destruct (eq_var X β) as [->|?];
+    [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS | ];
+    discriminate HeqS.
+
 Lemma ad_pat_consis_fold_def : forall Θ β τ Ψ R' Q,
   ad_pat_consis Ψ Θ R' Q ->
   binds β (abind_flex_mono_def τ) Θ ->
@@ -687,116 +699,72 @@ Proof.
   (* β̂-occurrence refolding and mono-embedding head contradictions *)
   induction H; intros S0x HeqS.
   - (* unit *)
-    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
-      simpl in HeqS; try discriminate HeqS.
+    fold_def_split S0x HeqS.
     + apply ad_pat_consis__unit; auto.
     + destruct (eq_var X0x β) as [->|Hne].
       * apply ad_pat_consis__flex_l with (τ := τ); [ exact Hb | ].
         rewrite <- HeqS. apply ad_pat_consis__unit; auto.
       * discriminate HeqS.
   - (* var *)
-    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
-      simpl in HeqS; try discriminate HeqS.
+    fold_def_split S0x HeqS.
     destruct (eq_var X0x β) as [->|Hne].
     + apply ad_pat_consis__flex_l with (τ := τ); [ exact Hb | ].
       rewrite <- HeqS. apply ad_pat_consis__var; auto.
     + inversion HeqS; subst. apply ad_pat_consis__var; auto.
   - (* arrow *)
-    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
-      simpl in HeqS; try discriminate HeqS.
+    fold_def_split S0x HeqS.
     + destruct (eq_var X0x β) as [->|Hne].
       * apply ad_pat_consis__flex_l with (τ := τ); [ exact Hb | ].
         rewrite <- HeqS. eapply ad_pat_consis__arrow; eauto.
       * discriminate HeqS.
     + inversion HeqS; subst. eapply ad_pat_consis__arrow; eauto.
   - (* forall_inh_tagged *)
-    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
-      simpl in HeqS; try discriminate HeqS.
-    + destruct (eq_var X0x β) as [->|Hne];
-        [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
-        | ]; discriminate HeqS.
-    + inversion HeqS; subst.
-      eapply ad_pat_consis__forall_inh_tagged with (L := L `union` {{β}});
-        eauto.
-      intros α Hα. eapply H0; auto.
-      rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var; auto.
+    fold_def_split S0x HeqS; [ fold_def_no_var X0x β Hm HeqS | ].
+    inversion HeqS; subst.
+    eapply ad_pat_consis__forall_inh_tagged with (L := L `union` {{β}});
+      eauto.
+    intros α Hα. eapply H0; auto.
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var; auto.
   - (* forall_inh_untagged *)
-    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
-      simpl in HeqS; try discriminate HeqS.
-    + destruct (eq_var X0x β) as [->|Hne];
-        [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
-        | ]; discriminate HeqS.
-    + inversion HeqS; subst.
-      eapply ad_pat_consis__forall_inh_untagged with (L := L `union` {{β}}).
-      intros α Hα. eapply H0; auto.
-      rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var; auto.
+    fold_def_split S0x HeqS; [ fold_def_no_var X0x β Hm HeqS | ].
+    inversion HeqS; subst.
+    eapply ad_pat_consis__forall_inh_untagged with (L := L `union` {{β}}).
+    intros α Hα. eapply H0; auto.
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var; auto.
   - (* forall_syn_tagged *)
-    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
-      simpl in HeqS; try discriminate HeqS.
-    + destruct (eq_var X0x β) as [->|Hne];
-        [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
-        | ]; discriminate HeqS.
-    + inversion HeqS; subst.
-      eapply ad_pat_consis__forall_syn_tagged with (L := L `union` {{β}}).
-      intros α Hα. eapply H0; auto.
-      rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var; auto.
+    fold_def_split S0x HeqS; [ fold_def_no_var X0x β Hm HeqS | ].
+    inversion HeqS; subst.
+    eapply ad_pat_consis__forall_syn_tagged with (L := L `union` {{β}}).
+    intros α Hα. eapply H0; auto.
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var; auto.
   - (* forall_syn *)
-    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
-      simpl in HeqS; try discriminate HeqS.
-    + destruct (eq_var X0x β) as [->|Hne];
-        [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
-        | ]; discriminate HeqS.
-    + inversion HeqS; subst.
-      eapply ad_pat_consis__forall_syn with (L := L `union` {{β}}).
-      intros α Hα. eapply H0; auto.
-      rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var; auto.
+    fold_def_split S0x HeqS; [ fold_def_no_var X0x β Hm HeqS | ].
+    inversion HeqS; subst.
+    eapply ad_pat_consis__forall_syn with (L := L `union` {{β}}).
+    intros α Hα. eapply H0; auto.
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var; auto.
   - (* ghostg *)
-    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
-      simpl in HeqS; try discriminate HeqS.
-    + destruct (eq_var X0x β) as [->|Hne];
-        [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
-        | ]; discriminate HeqS.
-    + apply ad_pat_consis__ghostg; auto.
+    fold_def_split S0x HeqS; [ fold_def_no_var X0x β Hm HeqS | ].
+    apply ad_pat_consis__ghostg; auto.
   - (* dot_univ_ghost *)
-    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
-      simpl in HeqS; try discriminate HeqS.
-    + destruct (eq_var X0x β) as [->|Hne];
-        [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
-        | ]; discriminate HeqS.
-    + inversion HeqS; subst. apply ad_pat_consis__dot_univ_ghost; auto.
+    fold_def_split S0x HeqS; [ fold_def_no_var X0x β Hm HeqS | ].
+    inversion HeqS; subst. apply ad_pat_consis__dot_univ_ghost; auto.
   - (* ghost *)
-    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
-      simpl in HeqS; try discriminate HeqS.
-    + destruct (eq_var X0x β) as [->|Hne];
-        [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
-        | ]; discriminate HeqS.
-    + apply ad_pat_consis__ghost; auto.
+    fold_def_split S0x HeqS; [ fold_def_no_var X0x β Hm HeqS | ].
+    apply ad_pat_consis__ghost; auto.
   - (* univ_ghost *)
-    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
-      simpl in HeqS; try discriminate HeqS.
-    + destruct (eq_var X0x β) as [->|Hne];
-        [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
-        | ]; discriminate HeqS.
-    + inversion HeqS; subst. apply ad_pat_consis__univ_ghost; auto.
+    fold_def_split S0x HeqS; [ fold_def_no_var X0x β Hm HeqS | ].
+    inversion HeqS; subst. apply ad_pat_consis__univ_ghost; auto.
   - (* univ_ghost_inh *)
-    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
-      simpl in HeqS; try discriminate HeqS.
-    + destruct (eq_var X0x β) as [->|Hne];
-        [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
-        | ]; discriminate HeqS.
-    + inversion HeqS; subst.
-      eapply ad_pat_consis__univ_ghost_inh with (L := L);
-        try (intros α Hα; eapply H0; auto; simpl; reflexivity).
+    fold_def_split S0x HeqS; [ fold_def_no_var X0x β Hm HeqS | ].
+    inversion HeqS; subst.
+    eapply ad_pat_consis__univ_ghost_inh with (L := L);
+      try (intros α Hα; eapply H0; auto; simpl; reflexivity).
   - (* univ_ghost_drop *)
-    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
-      simpl in HeqS; try discriminate HeqS.
-    + destruct (eq_var X0x β) as [->|Hne];
-        [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
-        | ]; discriminate HeqS.
-    + inversion HeqS; subst. apply ad_pat_consis__univ_ghost_drop; auto.
+    fold_def_split S0x HeqS; [ fold_def_no_var X0x β Hm HeqS | ].
+    inversion HeqS; subst. apply ad_pat_consis__univ_ghost_drop; auto.
   - (* flex_l *)
-    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
-      simpl in HeqS; try discriminate HeqS.
+    fold_def_split S0x HeqS.
     destruct (eq_var X0x β) as [->|Hne].
     + apply ad_pat_consis__flex_l with (τ := τ); [ exact Hb | ].
       rewrite <- HeqS. eapply ad_pat_consis__flex_l; eauto.
@@ -901,33 +869,14 @@ Proof.
     eauto using binds_strip_mid.
 Qed.
 
-(** Free variables of a well-formed type are tvar-ish in the context. *)
+(** Free variables of a well-formed type are tvar-ish in the context.
+    Same fact as [a_wf_ptyp_ftv_binds] (prop_swap.v); both names have
+    consumers outside this layer. *)
 Lemma a_wf_ptyp_ftv_tvarish : forall Θ A α,
   a_wf_ptyp Θ A ->
   α `in` ftvar_in_ptyp A ->
   a_binds_tvar α Θ.
-Proof.
-  intros * Hwf; revert α; induction Hwf; intros β Hβ; simpl in Hβ.
-  - fsetdec.
-  (* [α] is the var rule's OWN binder ([a_wf_ptyp__var], algo/def_rules.v),
-     auto-bound by [induction Hwf] — not this lemma's α, which [revert α]
-     has just generalised away. *)
-  - assert (β = α) by fsetdec. subst. auto.
-  - destruct (union_1 Hβ); auto.
-  - pick fresh α2 for (L `union` ftvar_in_ptyp A `union` {{β}}).
-    assert (HZL : α2 `notin` L) by fsetdec.
-    assert (Hyz : β <> α2) by fsetdec.
-    assert (HY' : β `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A (ptyp_var_f α2))).
-    { pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower A (ptyp_var_f α2)).
-      fsetdec. }
-    assert (Htv : a_binds_tvar β ((α2 ~ abind_tvar) ++ Θ)) by (apply H0; auto).
-    rewrite_env (nil ++ Θ).
-    eapply a_binds_tvar_strip_mid with (c := α2) (b := abind_tvar);
-      [ exact Htv
-      | intro Hc; inversion Hc; subst; congruence
-      | intro Hc; inversion Hc
-      | intros τ0 Hc; inversion Hc ].
-Qed.
+Proof. intros; eapply a_wf_ptyp_ftv_binds; eauto. Qed.
 
 (** ** [wf] / [scope] bound the free variables by the domain.  ⚠️ These four
     and [a_wf_ptyp_ftv_tvarish] just above are ONE family and this is their
@@ -1155,6 +1104,37 @@ Proof.
     [ intros y b0 Hb0; unfold binds; simpl; right; exact Hb0 | auto ].
 Qed.
 
+(** A name outside a well-formed context's domain is fresh for every
+    flexible definition in it. *)
+Lemma a_wf_aenv_def_ftv_notin : forall Θ β,
+  {{ ⊢ Θ }}a -> β `notin` dom Θ ->
+  forall α τ, binds α (abind_flex_mono_def τ) Θ -> β `notin` ftvar_in_ptyp τ.
+Proof.
+  intros Θ β Hwf Hβ α τ Hb.
+  assert (Hsc : ftvar_in_ptyp τ [<=] dom Θ)
+    by (eapply a_wf_ptyp_ftv_dom, a_wf_aenv_binds_def_wf; eassumption).
+  clear - Hβ Hsc; fsetdec.
+Qed.
+
+(** Erasure undoes the syn painting of a type.  ⚙ A coercion retraction:
+    its home is fresco/prop_coercions.v; it lives here until it moves. *)
+Lemma bskl_to_pskl_ptyp_to_bskl_syn : forall A,
+  bskl_to_pskl (ptyp_to_bskl_syn A) = ptyp_to_pskl A.
+Proof. intros; unfold ptyp_to_bskl_syn; apply bskl_to_pskl_pskl_to_bskl_syn. Qed.
+
+(** A flexible definition's payload, read back as a skeleton through the
+    syn painting, is well-formed (it is a well-formed monotype). *)
+Lemma a_wf_pskl_flex_def_payload : forall Θ Δ α τ,
+  {{ ⊢ Θ }}a ->
+  binds α (abind_flex_mono_def τ) Θ ->
+  {{ Θ ⨟ Δ ⊢ₚₛ (bskl_to_pskl (ptyp_to_bskl_syn τ)) }}a.
+Proof.
+  intros * Hwf Hb. rewrite bskl_to_pskl_ptyp_to_bskl_syn.
+  apply a_wf_pskl_mono_ptyp;
+    [ eapply a_wf_aenv_binds_def_mono | eapply a_wf_aenv_binds_def_wf ];
+    eassumption.
+Qed.
+
 (** A monotype whose variables are all [a_binds_tvar] in Θ paints to a
     well-formed skeleton, in any [Δ]. *)
 Lemma a_wf_pskl_mono_ptyp_ftv : forall Θ Δ τ,
@@ -1248,50 +1228,25 @@ Qed.
 (* ===================================================================== *)
 
 (** The converse of [a_wf_ptyp_to_wf_pskl] on a painting.  Both judgements
-    push a [∀] binder into Θ ([a_wf_pskl] also records it in [Δ]); the
-    statement quantifies the target context and asks the caller to relate
-    the two. *)
+    push a [∀] binder into Θ ([a_wf_pskl] also records it in [Δ], which the
+    type judgement does not need). *)
 Lemma a_wf_ptyp_of_wf_pskl : forall Θ Δ P,
   {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
-  forall A Θ', P = ptyp_to_pskl A ->
-  (forall α, α `in` Δ -> a_binds_tvar α Θ') ->
-  (forall α, a_binds_tvar α Θ -> a_binds_tvar α Θ') ->
-  a_wf_ptyp Θ' A.
+  forall A, P = ptyp_to_pskl A -> a_wf_ptyp Θ A.
 Proof.
-  intros Θ Δ P H; induction H; intros A0 Θ' Heq HΔ HΘ;
-    destruct A0; simpl in Heq; try discriminate.
+  intros Θ Δ P H; induction H; intros A0 Heq;
+    destruct A0; simpl in Heq; try discriminate; inversion Heq; subst.
   - (* unit *) apply a_wf_ptyp__unit.
-  - (* var *)
-    inversion Heq; subst. apply a_wf_ptyp__var. apply HΘ; assumption.
-  - (* arrow *)
-    inversion Heq; subst.
-    apply a_wf_ptyp__arrow;
-      [ eapply IHa_wf_pskl1 | eapply IHa_wf_pskl2 ];
-      solve [ reflexivity | assumption ].
-  - (* all : the binder moves from Δ to Θ' *)
-    inversion Heq; subst.
+  - (* var *) apply a_wf_ptyp__var; assumption.
+  - (* arrow *) apply a_wf_ptyp__arrow; eauto.
+  - (* all *)
     apply a_wf_ptyp__all with (L := L). intros α Hα.
-    eapply (H0 α Hα);
-      [ rewrite ptyp_to_pskl_open; reflexivity
-      | intros β Hβ;
-        destruct (eq_var β α) as [Heqβ | Hne];
-          [ subst β; unfold a_binds_tvar; left;
-            unfold binds; simpl; left; reflexivity
-          | apply a_binds_tvar_weaken_cons; apply HΔ;
-            clear - Hβ Hne; fsetdec ]
-      | intros β Hβ; apply a_binds_tvar_cons_tvar;
-        destruct (a_binds_tvar_cons_tvar_inv Hβ) as [-> | Hβ'];
-          [ left; reflexivity | right; apply HΘ; exact Hβ' ] ].
+    eapply (H0 α Hα). rewrite ptyp_to_pskl_open; reflexivity.
 Qed.
 
 Corollary a_wf_ptyp_of_wf_pskl_empty : forall Θ A,
   {{ Θ ⨟ empty ⊢ₚₛ (ptyp_to_pskl A) }}a -> a_wf_ptyp Θ A.
-Proof.
-  intros Θ A H. eapply a_wf_ptyp_of_wf_pskl;
-    [ exact H | reflexivity
-    | intros α Hα; exfalso; clear - Hα; fsetdec
-    | intros α Hα; exact Hα ].
-Qed.
+Proof. intros Θ A H. eapply a_wf_ptyp_of_wf_pskl; [ exact H | reflexivity ]. Qed.
 
 (** The [a_guess_mono_refine] (§9) companion: [guess^TY]'s output type is
     well formed wherever its input skeleton's variables and its own
@@ -1312,7 +1267,7 @@ Proof.
     cbn in Hsz; intros Θ1 Hvars HΞ.
   - (* ghost ↦ fresh flexible *)
     apply a_wf_ptyp__var. apply HΞ. unfold binds; left; reflexivity.
-  - (* ⫯.P *)
+  - (* ∀◇.P *)
     eapply IHn with (P := P); [ lia | exact Hg | exact Hvars | exact HΞ ].
   - (* variable *) apply a_wf_ptyp__var. apply Hvars. simpl. fsetdec.
   - (* unit *) apply a_wf_ptyp__unit.
@@ -1424,6 +1379,8 @@ Lemma a_flex_tvar_in_dom : forall (Θ : aenv) x,
   a_flex_tvar Θ x -> x `in` dom Θ.
 Proof. intros Θ x [Hb | [τ Hb]]; eapply binds_In; eassumption. Qed.
 
+(** Flexibility survives an arbitrary context PREFIX ([binds] is plain
+    membership, so no freshness side condition is needed). *)
 Lemma a_flex_tvar_weaken_app : forall Ξ Θ α,
   a_flex_tvar Θ α -> a_flex_tvar (Ξ ++ Θ) α.
 Proof.
@@ -1567,15 +1524,10 @@ Proof.
           | right; exists τ; exact Hin ].
 Qed.
 
-(* ⚙ RENAMED from [binds_weaken_mid] 2026-08-09 (cleanup audit §8.1c): it collided with a
-   DIFFERENT lemma of that name, and this one inserts Ξm INSIDE an existing Ξl++Θ0; prop_inc.v's weakens a bare Θ on both sides. *)
+(** Metalib's [binds_weaken] at [aenv]; the name sub/look consumes. *)
 Lemma binds_weaken_inner : forall (x : atom) (b : abind) Ξl Ξm Θ0,
   binds x b (Ξl ++ Θ0) -> binds x b (Ξl ++ Ξm ++ Θ0).
-Proof.
-  intros x b Ξl Ξm Θ0 H. apply binds_app_1 in H as [H | H].
-  - apply binds_app_2; exact H.
-  - apply binds_app_3; apply binds_app_3; exact H.
-Qed.
+Proof. intros; apply binds_weaken; assumption. Qed.
 
 Lemma a_flex_tvar_weaken_mid : forall Ξl Ξm Θ0 α,
   a_flex_tvar (Ξl ++ Θ0) α -> a_flex_tvar (Ξl ++ Ξm ++ Θ0) α.
@@ -1650,8 +1602,7 @@ Lemma ftvar_ptyp_to_bskl_syn : forall τ,
   ftvar_in_bskl (ptyp_to_bskl_syn τ) [=] ftvar_in_ptyp τ.
 Proof.
   intros. rewrite <- (ftvar_bskl_to_pskl (ptyp_to_bskl_syn τ)).
-  unfold ptyp_to_bskl_syn. rewrite bskl_to_pskl_pskl_to_bskl_syn.
-  apply ftvar_ptyp_to_pskl.
+  rewrite bskl_to_pskl_ptyp_to_bskl_syn. apply ftvar_ptyp_to_pskl.
 Qed.
 
 (* ===================================================================== *)
@@ -1713,12 +1664,12 @@ Qed.
 (* ===================================================================== *)
 (*  ⭐ SS-Vacuous, GENERALIZED PAST THE SOLVE-DISPATCH GUARD (2026-08-18)  *)
 (*                                                                        *)
-(*  Under guard 5 [SS-Vacuous] no longer fires at a [∀] or [⫯] subject —   *)
+(*  Under guard 5 [SS-Vacuous] no longer fires at a [∀] or [∀◇] subject —  *)
 (*  the implementation peels there first (type.ml:494 matches              *)
 (*  [SolS-ForallL] and [SolS-UnivGhostL] before [SolS-Vacuous]).  ⭐ But    *)
 (*  the PEELED route gives the SAME answer: an empty block and the         *)
 (*  subject back, because [∀]'s row re-CLOSES over the opener it drew and  *)
-(*  [⫯]'s re-wraps.  So every old [apply a_solve_sub__vacuous] site can    *)
+(*  [∀◇]'s re-wraps.  So every old [apply a_solve_sub__vacuous] site can   *)
 (*  read this lemma instead, with no change to what it proves.            *)
 (*                                                                        *)
 (*  ⚙ SIZE induction: the [∀] row opens, which preserves [size_pskl], so   *)
@@ -1748,7 +1699,7 @@ Proof.
     apply a_solve_sub__forall_l with (β := β).
     + simpl. clear - Hβ. fsetdec.
     + apply IH. rewrite size_pskl_open_pskl_wrt_pskl_var. lia.
-  - (* ⫯ — strip, then RE-WRAP *)
+  - (* ∀◇ — strip, then RE-WRAP *)
     simpl in Hsz.
     apply a_solve_sub__univ_ghost_l. apply IH. lia.
 Qed.
@@ -1830,18 +1781,12 @@ Qed.
 
 (** ⚙ The two term-entry moves the abs rows make on the flexibility
     picture: a term entry never carries a flex binding, so INSERTING or
-    STRIPPING one changes nothing (with the atom apart). *)
+    STRIPPING one changes nothing (with the atom apart).  The first is
+    [a_flex_tvar_mid_other] with its arguments reordered. *)
 Lemma a_flex_tvar_insert_mid : forall (Ξ Θ : aenv) x (bd : abind) a,
   a <> x ->
   (a_flex_tvar (Ξ ++ (x ~ bd) ++ Θ) a <-> a_flex_tvar (Ξ ++ Θ) a).
-Proof.
-  intros Ξ Θ x bd a Hne.
-  rewrite ! a_flex_tvar_app_iff.
-  assert (Hone : ~ a_flex_tvar (x ~ bd) a).
-  { intros [Hb | [t Hb]]; unfold binds in Hb; simpl in Hb;
-      destruct Hb as [E | []]; inversion E; subst; apply Hne; reflexivity. }
-  tauto.
-Qed.
+Proof. intros; apply a_flex_tvar_mid_other; auto. Qed.
 
 Definition abind_nonflex (bd : abind) : Prop :=
   bd <> abind_flex_mono /\ forall τ, bd <> abind_flex_mono_def τ.
