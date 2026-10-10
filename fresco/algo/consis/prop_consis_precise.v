@@ -9,7 +9,7 @@
     DESIGN-completeness-subtyping.md §5.2).  This file holds that
     consistency-level metatheory:
 
-    - general tag/wf helpers shared with [prop_sub_complete.v] (the
+    - general tag/wf helpers shared with sub/prop_completeness_sub_precise.v (the
       [pskl_no_forall] kit, [a_wf_pskl] Δ-stripping, [d_tags_skl] /
       [a_tags_sort] inversions and congruences);
     - crux (1a) [ad_pat_consis_strip_tags]: strip the decorated subject to
@@ -23,12 +23,12 @@
       SUBSTITUTION [R[ψa/α] ∼ Q  ⇒  R[Pa/α] ∼ Q], by induction on the
       consistency derivation, whose [R = α] case is crux (1).  Its tag
       bookkeeping needs the syntactic-tag reading ([ftag_in_uskl],
-      algo/def_rules.v): the tag context is contained in the subject's tags
+      fresco/def_shapes.v): the tag context is contained in the subject's tags
       ([ad_pat_consis_ftag_sub]), and the paper's [fresh Ψ'] side condition
       is rendered as disjointness from the subject's OTHER tags
       ([inter Ψ' (ftag R) = ∅]).  Consistency has no ForallL, so no new
       tags appear inside a derivation and the syntactic premise suffices —
-      unlike the subtyping level (see prop_sub_complete.v §P5b-ii). *)
+      unlike the subtyping level (see sub/prop_completeness_sub_precise.v). *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -59,7 +59,7 @@ Require Import src.fresco.algo.prop_pat_sub.
 Set Implicit Arguments.
 
 (* ===================================================================== *)
-(*  General tag / wf helpers (shared with prop_sub_complete.v).           *)
+(*  General tag / wf helpers (shared with sub/prop_completeness_sub_precise.v).  *)
 (* ===================================================================== *)
 
 (** A pskl with no synthesised quantifier: [inh] and [syn] paintings then
@@ -343,7 +343,7 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  Step (2) infrastructure — syntactic tags [ftag_in_uskl] (algo/def_rules.v). *)
+(*  Step (2) infrastructure — syntactic tags [ftag_in_uskl] (fresco/def_shapes.v). *)
 (* ===================================================================== *)
 
 Lemma ftag_in_uskl_open_rec_var : forall α' R k,
@@ -384,7 +384,7 @@ Qed.
 (** The consistency tag context is contained in the SUBJECT's syntactic
     tags — every solved tag is consumed at an [all_tag] node of the
     subject.  (Syntactic counterpart of [ad_partial_precise_tags_sub],
-    prop_sub_complete.v; the precision-substitution crux uses it to pin
+    above; the precision-substitution crux uses it to pin
     the residual tag context of a wholly-[ψa] subject to ∅.) *)
 Lemma ad_pat_consis_ftag_sub : forall Ψ Θ R' Q,
   {{ Ψ ⨟ Θ ⊢ˢ R' ∼ Q }}ad ->
@@ -831,7 +831,7 @@ Proof.
     eapply upre__flex_r; [ apply Hmfl; exact H | ].
     eapply IHHr;
       [ exact Hwf
-      | unfold ptyp_to_bskl_syn; rewrite bskl_to_pskl_pskl_to_bskl_syn;
+      | rewrite bskl_to_pskl_ptyp_to_bskl_syn;
         apply a_wf_ptyp_to_wf_pskl;
         eapply a_wf_aenv_binds_def_wf; [ exact Hwf | exact H ]
       | exact Hmtv | exact Hmfl
@@ -915,12 +915,7 @@ Proof.
   - (* flex_r: the target unfolds a flexible definition *)
     eapply ad_pat_consis__flex_r; [ eassumption | ].
     apply (IHHc HeqS Ψn Ψna HΨf HΨa Hdisj Hmon Hwf).
-    replace (bskl_to_pskl (ptyp_to_bskl_syn τ)) with (ptyp_to_pskl τ)
-      by (unfold ptyp_to_bskl_syn; rewrite bskl_to_pskl_pskl_to_bskl_syn;
-          reflexivity).
-    apply a_wf_pskl_mono_ptyp;
-      [ eapply a_wf_aenv_binds_def_mono; eauto
-      | eapply a_wf_aenv_binds_def_wf; eauto ].
+    eapply a_wf_pskl_flex_def_payload; eauto.
 Qed.
 
 Lemma consis_split_transport_all_syn : forall Θb Ψsup R0 R0' L0,
@@ -963,12 +958,7 @@ Proof.
   - (* flex_r *)
     eapply ad_pat_consis__flex_r; [ eassumption | ].
     apply (IHHc HeqS Ψn Ψna HΨf HΨa Hdisj Hmon Hwf).
-    replace (bskl_to_pskl (ptyp_to_bskl_syn τ)) with (ptyp_to_pskl τ)
-      by (unfold ptyp_to_bskl_syn; rewrite bskl_to_pskl_pskl_to_bskl_syn;
-          reflexivity).
-    apply a_wf_pskl_mono_ptyp;
-      [ eapply a_wf_aenv_binds_def_mono; eauto
-      | eapply a_wf_aenv_binds_def_wf; eauto ].
+    eapply a_wf_pskl_flex_def_payload; eauto.
 Qed.
 
 Lemma consis_split_transport_all_tag_cong : forall Θb Ψsup ε R0 R0' L0,
@@ -1018,12 +1008,7 @@ Proof.
   - (* flex_r *)
     eapply ad_pat_consis__flex_r; [ eassumption | ].
     apply (IHHc HeqS Ψn Ψna HΨf HΨa Hdisj Hmon Hwf).
-    replace (bskl_to_pskl (ptyp_to_bskl_syn τ)) with (ptyp_to_pskl τ)
-      by (unfold ptyp_to_bskl_syn; rewrite bskl_to_pskl_pskl_to_bskl_syn;
-          reflexivity).
-    apply a_wf_pskl_mono_ptyp;
-      [ eapply a_wf_aenv_binds_def_mono; eauto
-      | eapply a_wf_aenv_binds_def_wf; eauto ].
+    eapply a_wf_pskl_flex_def_payload; eauto.
 Qed.
 
 Lemma consis_split_transport_all_inst : forall Θb Ψsup ε R0 R0' L0,
@@ -1070,12 +1055,7 @@ Proof.
   - (* flex_r *)
     eapply ad_pat_consis__flex_r; [ eassumption | ].
     apply (IHHc HeqS Ψn Ψna HΨf HΨa Hdisj Hmon Hwf).
-    replace (bskl_to_pskl (ptyp_to_bskl_syn τ)) with (ptyp_to_pskl τ)
-      by (unfold ptyp_to_bskl_syn; rewrite bskl_to_pskl_pskl_to_bskl_syn;
-          reflexivity).
-    apply a_wf_pskl_mono_ptyp;
-      [ eapply a_wf_aenv_binds_def_mono; eauto
-      | eapply a_wf_aenv_binds_def_wf; eauto ].
+    eapply a_wf_pskl_flex_def_payload; eauto.
 Qed.
 
 Lemma consis_split_transport_univ_ghost : forall Θb Ψsup R0 R0',
@@ -1114,12 +1094,7 @@ Proof.
   - (* flex_r *)
     eapply ad_pat_consis__flex_r; [ eassumption | ].
     apply (IHHc HeqS Ψn Ψna HΨf HΨa Hdisj Hmon Hwf).
-    replace (bskl_to_pskl (ptyp_to_bskl_syn τ)) with (ptyp_to_pskl τ)
-      by (unfold ptyp_to_bskl_syn; rewrite bskl_to_pskl_pskl_to_bskl_syn;
-          reflexivity).
-    apply a_wf_pskl_mono_ptyp;
-      [ eapply a_wf_aenv_binds_def_mono; eauto
-      | eapply a_wf_aenv_binds_def_wf; eauto ].
+    eapply a_wf_pskl_flex_def_payload; eauto.
 Qed.
 
 (** Both dotted (dot_univ_ghost-vs-dot_univ_ghost) and mixed (univ_ghost-vs-dot_univ_ghost)
@@ -1144,12 +1119,7 @@ Proof.
   - (* flex_r *)
     eapply ad_pat_consis__flex_r; [ eassumption | ].
     apply (IHHc HeqS Ψn Ψna HΨf HΨa Hdisj Hmon Hwf).
-    replace (bskl_to_pskl (ptyp_to_bskl_syn τ)) with (ptyp_to_pskl τ)
-      by (unfold ptyp_to_bskl_syn; rewrite bskl_to_pskl_pskl_to_bskl_syn;
-          reflexivity).
-    apply a_wf_pskl_mono_ptyp;
-      [ eapply a_wf_aenv_binds_def_mono; eauto
-      | eapply a_wf_aenv_binds_def_wf; eauto ].
+    eapply a_wf_pskl_flex_def_payload; eauto.
 Qed.
 
 Lemma consis_split_transport_keepg : forall Θb Ψsup R0 R0',
@@ -1172,12 +1142,7 @@ Proof.
   - (* flex_r *)
     eapply ad_pat_consis__flex_r; [ eassumption | ].
     apply (IHHc HeqS Ψn Ψna HΨf HΨa Hdisj Hmon Hwf).
-    replace (bskl_to_pskl (ptyp_to_bskl_syn τ)) with (ptyp_to_pskl τ)
-      by (unfold ptyp_to_bskl_syn; rewrite bskl_to_pskl_pskl_to_bskl_syn;
-          reflexivity).
-    apply a_wf_pskl_mono_ptyp;
-      [ eapply a_wf_aenv_binds_def_mono; eauto
-      | eapply a_wf_aenv_binds_def_wf; eauto ].
+    eapply a_wf_pskl_flex_def_payload; eauto.
 Qed.
 
 Lemma consis_split_transport_flexvar : forall Θb Ψsup α τ R,
@@ -1205,9 +1170,7 @@ Proof.
         | intros β Hβ; eapply a_wf_ptyp_ftv_tvarish; [ exact Hwfτ | exact Hβ ] ]
       | exact Hmon | exact Hwf
       | clear - H HΨf; fsetdec | exact HΨa | exact Hdisj
-      | replace (bskl_to_pskl (ptyp_to_bskl_syn τ)) with (ptyp_to_pskl τ)
-          by (unfold ptyp_to_bskl_syn; rewrite bskl_to_pskl_pskl_to_bskl_syn;
-              reflexivity);
+      | rewrite bskl_to_pskl_ptyp_to_bskl_syn;
         apply a_wf_pskl_mono_ptyp; [ exact Hm | exact Hwfτ ] ].
   - (* flex_l: the subject unfolds — its definition agrees by uniqueness *)
     inversion HeqS; subst.
@@ -1220,12 +1183,7 @@ Proof.
   - (* flex_r: the target unfolds *)
     eapply ad_pat_consis__flex_r; [ eassumption | ].
     apply (IHHc HeqS Ψn Ψna HΨf HΨa Hdisj Hmon Hwf).
-    replace (bskl_to_pskl (ptyp_to_bskl_syn τ0)) with (ptyp_to_pskl τ0)
-      by (unfold ptyp_to_bskl_syn; rewrite bskl_to_pskl_pskl_to_bskl_syn;
-          reflexivity).
-    apply a_wf_pskl_mono_ptyp;
-      [ eapply a_wf_aenv_binds_def_mono; eauto
-      | eapply a_wf_aenv_binds_def_wf; eauto ].
+    eapply a_wf_pskl_flex_def_payload; eauto.
 Qed.
 
 (** (2') — the consistency face of precision-substitution, over ⊑ᵤ:

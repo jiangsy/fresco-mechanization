@@ -518,6 +518,22 @@ Proof.
     apply a_binds_tvar_aenv_minus in Hb. exact (proj2 Hb HγΔ).
 Qed.
 
+(** A well-formed, NON-flexible variable is a rigid binding of the context
+    — the shape every rigid-variable case of the optimality walk starts
+    from. *)
+Lemma a_wf_pskl_var_non_flex_tvar : forall Θ Δ β,
+  {{ Θ ⨟ Δ ⊢ₚₛ (pskl_var_f β) }}a ->
+  a_non_flex Θ (pskl_var_f β) ->
+  binds β abind_tvar Θ.
+Proof.
+  intros Θ Δ β Hwf [_ Hnfl].
+  inversion Hwf as [ | Θw Δw δw Hbt | | | | ]; subst.
+  destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
+    [ exact Hb
+    | exfalso; apply Hnfl; apply a_flex__var; exact Hb
+    | exfalso; apply Hnfl; eapply a_flex__var_def; exact Hb ].
+Qed.
+
 Ltac str_forall H0 Hu Hwf' Hsub HscS HscQ Rr Qq α Hα openU openB :=
   apply H0;
   [ clear - Hα; fsetdec
@@ -637,8 +653,7 @@ Proof.
   unfold ad_precise.
   rewrite (ptyp_to_bskl_inh_syn_eq HmA).
   subst Qb.
-  replace (bskl_to_pskl (ptyp_to_bskl_syn C)) with (ptyp_to_pskl C).
-  2:{ unfold ptyp_to_bskl_syn. rewrite bskl_to_pskl_pskl_to_bskl_syn. reflexivity. }
+  rewrite (bskl_to_pskl_ptyp_to_bskl_syn C).
   rewrite (ptyp_to_bskl_inh_syn_eq HmC).
   apply tyequiv_mono_refine_syn; auto.
 Qed.
@@ -1142,17 +1157,11 @@ Qed.
 (*  §1d  Rename-vs-embedding/metasubstitution commutations               *)
 (* ===================================================================== *)
 
+(** [subst_var_bskl_inh] (prop_soundness_consis.v) with the atoms first. *)
 Lemma pskl_to_bskl_inh_subst_var : forall α' α P,
   subst_bskl_in_bskl (bskl_var_f α') α (pskl_to_bskl_inh P)
   = pskl_to_bskl_inh (subst_pskl_in_pskl (pskl_var_f α') α P).
-Proof.
-  intros α' α P; induction P; simpl;
-    try solve [ reflexivity
-              | rewrite IHP; reflexivity
-              | rewrite IHP1, IHP2; reflexivity ].
-  destruct_if;
-    reflexivity.
-Qed.
+Proof. intros; apply subst_var_bskl_inh. Qed.
 
 Lemma bskl_to_pskl_subst_var : forall α' α Q,
   subst_pskl_in_pskl (pskl_var_f α') α (bskl_to_pskl Q)
@@ -1761,7 +1770,7 @@ Qed.
 (*  §2  The three completeness statements AT A MEASURE                    *)
 (*                                                                        *)
 (*  Hypotheses mirror the AUGMENTED problem/solution of consistency-      *)
-(*  proofs.tex:2230-2242 exactly as [consis_optimal_post] does (the       *)
+(*  proofs.tex:2230-2242 exactly (the                                    *)
 (*  competing-solution shape of the green soundness bundle); the          *)
 (*  conclusion is the fused existence+optimality of :2246-2255, with the  *)
 (*  algorithm's own id-witness quantified as in [a_consis_optimal].       *)
@@ -3199,9 +3208,6 @@ Qed.
 
 (** Bridge to the Δ-free skeleton wf (the form the ≡ˢ/V lemmas take):
     Δ-variables must be tvar-ish in the receiving context. *)
-(* [a_wf_pskl_to_a_scope_pskl] relocated to algo/prop_swap.v §0 (with the
-   [Δ = ∅] corollary [a_scope_pskl_of_wf]) — see that file's header. *)
-
 (** The join's target erases to a well-formed (Δ-free) skeleton — the
     output-regularity C-Arrow's precision transport needs. *)
 Lemma ad_pat_consis_target_wf : forall Ψ Θ R Qt,
@@ -6165,14 +6171,7 @@ Proof.
       simpl in HeqS; try discriminate.
     2:{ (* var β1 : rigid, its image is β1 itself *)
       exfalso.
-      assert (Hbtδ : binds β1 abind_tvar Θ0).
-      { inversion HwfP as [ | Θw Δw δw Hbt | | | | ]; subst.
-        destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-          [ exact Hb
-          | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
-            apply a_flex__var; exact Hb
-          | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
-            eapply a_flex__var_def; exact Hb ]. }
+      pose proof (a_wf_pskl_var_non_flex_tvar HwfP HnfP) as Hbtδ.
       assert (Hβ1κ : β1 `notin` dom κ)
         by (eapply a_inc_tvar_notin_dom; eauto).
       rewrite (msubst_lookup_notin κ Hβ1κ) in HeqS.
@@ -6182,14 +6181,7 @@ Proof.
     2:{ inversion Hrs. }
     2:{ (* var β10 : rigid; a rigid variable does not refine to unit *)
       exfalso.
-      assert (Hbtδ0 : binds β10 abind_tvar Θ0).
-      { inversion HwfP0 as [ | Θw Δw δw Hbt | | | | ]; subst.
-        destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-          [ exact Hb
-          | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
-            apply a_flex__var; exact Hb
-          | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
-            eapply a_flex__var_def; exact Hb ]. }
+      pose proof (a_wf_pskl_var_non_flex_tvar HwfP0 HnfP0) as Hbtδ0.
       assert (Hβ1κ0 : β10 `notin` dom κ)
         by (eapply a_inc_tvar_notin_dom; eauto).
       rewrite (msubst_lookup_notin κ Hβ1κ0) in Hrs.
@@ -6223,14 +6215,7 @@ Proof.
   - (* SUBJECT: PP = var β1 with β1 RIGID; forces α = β1, PP0 = var β1. *)
     destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
       simpl in HeqS; try discriminate.
-    assert (Hbtδ : binds β1 abind_tvar Θ0).
-    { inversion HwfP as [ | Θw Δw δw Hbt | | | | ]; subst.
-      destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-        [ exact Hb
-        | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
-          apply a_flex__var; exact Hb
-        | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
-          eapply a_flex__var_def; exact Hb ]. }
+    pose proof (a_wf_pskl_var_non_flex_tvar HwfP HnfP) as Hbtδ.
     assert (Hβ1κ : β1 `notin` dom κ)
       by (eapply a_inc_tvar_notin_dom; eauto).
     rewrite (msubst_lookup_notin κ Hβ1κ) in HeqS.
@@ -6267,14 +6252,7 @@ Proof.
     2:{ exfalso; apply HneP0ghost; reflexivity. }
     2:{ exfalso; apply (Hnthg Pt0 eq_refl); apply guarded_pskl__var. }
     (* var β10 rigid; the refinement forces β10 = β1 *)
-    assert (Hbtδ0 : binds β10 abind_tvar Θ0).
-    { inversion HwfP0 as [ | Θw Δw δw Hbt | | | | ]; subst.
-      destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-        [ exact Hb
-        | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
-          apply a_flex__var; exact Hb
-        | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
-          eapply a_flex__var_def; exact Hb ]. }
+    pose proof (a_wf_pskl_var_non_flex_tvar HwfP0 HnfP0) as Hbtδ0.
     assert (Hβ1κ0 : β10 `notin` dom κ)
       by (eapply a_inc_tvar_notin_dom; eauto).
     rewrite (msubst_lookup_notin κ Hβ1κ0) in Hrs.
@@ -6337,14 +6315,7 @@ Proof.
       simpl in HeqS; try discriminate.
     { (* var β1 : rigid, its image is β1 itself *)
       exfalso.
-      assert (Hbtδ : binds β1 abind_tvar Θ0).
-      { inversion HwfP as [ | Θw Δw δw Hbt | | | | ]; subst.
-        destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-          [ exact Hb
-          | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
-            apply a_flex__var; exact Hb
-          | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
-            eapply a_flex__var_def; exact Hb ]. }
+      pose proof (a_wf_pskl_var_non_flex_tvar HwfP HnfP) as Hbtδ.
       assert (Hβ1κ : β1 `notin` dom κ)
         by (eapply a_inc_tvar_notin_dom; eauto).
       rewrite (msubst_lookup_notin κ Hβ1κ) in HeqS.
@@ -6360,14 +6331,7 @@ Proof.
     1:{ exfalso; inversion Hrs. }
     1:{ (* var β10 : rigid; a rigid variable does not refine to an arrow *)
       exfalso.
-      assert (Hbtδ0 : binds β10 abind_tvar Θ0).
-      { inversion HwfP0 as [ | Θw Δw δw Hbt | | | | ]; subst.
-        destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-          [ exact Hb
-          | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
-            apply a_flex__var; exact Hb
-          | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
-            eapply a_flex__var_def; exact Hb ]. }
+      pose proof (a_wf_pskl_var_non_flex_tvar HwfP0 HnfP0) as Hbtδ0.
       assert (Hβ1κ0 : β10 `notin` dom κ)
         by (eapply a_inc_tvar_notin_dom; eauto).
       rewrite (msubst_lookup_notin κ Hβ1κ0) in Hrs.
@@ -6592,14 +6556,7 @@ Proof.
       simpl in HeqS; try discriminate.
     { (* var β1 : rigid, its image is β1 itself *)
       exfalso.
-      assert (Hbtδ : binds β1 abind_tvar Θ0).
-      { inversion HwfP as [ | Θw Δw δw Hbt | | | | ]; subst.
-        destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-          [ exact Hb
-          | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
-            apply a_flex__var; exact Hb
-          | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
-            eapply a_flex__var_def; exact Hb ]. }
+      pose proof (a_wf_pskl_var_non_flex_tvar HwfP HnfP) as Hbtδ.
       assert (Hβ1κ : β1 `notin` dom κ)
         by (eapply a_inc_tvar_notin_dom; eauto).
       rewrite (msubst_lookup_notin κ Hβ1κ) in HeqS.
@@ -6611,14 +6568,7 @@ Proof.
     1:{ exfalso; inversion Hrs. }
     1:{ (* rigid input var never refines to an inherited ∀ *)
       exfalso.
-      assert (Hbtδ0 : binds β10 abind_tvar Θ0).
-      { inversion HwfP0 as [ | Θw Δw δw Hbt | | | | ]; subst.
-        destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-          [ exact Hb
-          | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
-            apply a_flex__var; exact Hb
-          | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
-            eapply a_flex__var_def; exact Hb ]. }
+      pose proof (a_wf_pskl_var_non_flex_tvar HwfP0 HnfP0) as Hbtδ0.
       assert (Hβ1κ0 : β10 `notin` dom κ)
         by (eapply a_inc_tvar_notin_dom; eauto).
       rewrite (msubst_lookup_notin κ Hβ1κ0) in Hrs.
@@ -6875,14 +6825,7 @@ Proof.
     destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
       simpl in HeqS; try discriminate.
     { exfalso.
-      assert (Hbtδ : binds β1 abind_tvar Θ0).
-      { inversion HwfP as [ | Θw Δw δw Hbt | | | | ]; subst.
-        destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-          [ exact Hb
-          | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
-            apply a_flex__var; exact Hb
-          | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
-            eapply a_flex__var_def; exact Hb ]. }
+      pose proof (a_wf_pskl_var_non_flex_tvar HwfP HnfP) as Hbtδ.
       assert (Hβ1κ : β1 `notin` dom κ)
         by (eapply a_inc_tvar_notin_dom; eauto).
       rewrite (msubst_lookup_notin κ Hβ1κ) in HeqS.
@@ -6893,14 +6836,7 @@ Proof.
     1:{ exfalso; inversion Hrs. }
     1:{ exfalso; inversion Hrs. }
     1:{ exfalso.
-      assert (Hbtδ0 : binds β10 abind_tvar Θ0).
-      { inversion HwfP0 as [ | Θw Δw δw Hbt | | | | ]; subst.
-        destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-          [ exact Hb
-          | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
-            apply a_flex__var; exact Hb
-          | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
-            eapply a_flex__var_def; exact Hb ]. }
+      pose proof (a_wf_pskl_var_non_flex_tvar HwfP0 HnfP0) as Hbtδ0.
       assert (Hβ1κ0 : β10 `notin` dom κ)
         by (eapply a_inc_tvar_notin_dom; eauto).
       rewrite (msubst_lookup_notin κ Hβ1κ0) in Hrs.
@@ -7147,14 +7083,7 @@ Proof.
       simpl in HeqS; try discriminate.
     { (* var β1 : rigid, its image is β1 itself *)
       exfalso.
-      assert (Hbtδ : binds β1 abind_tvar Θ0).
-      { inversion HwfP as [ | Θw Δw δw Hbt | | | | ]; subst.
-        destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-          [ exact Hb
-          | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
-            apply a_flex__var; exact Hb
-          | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
-            eapply a_flex__var_def; exact Hb ]. }
+      pose proof (a_wf_pskl_var_non_flex_tvar HwfP HnfP) as Hbtδ.
       assert (Hβ1κ : β1 `notin` dom κ)
         by (eapply a_inc_tvar_notin_dom; eauto).
       rewrite (msubst_lookup_notin κ Hβ1κ) in HeqS.
@@ -7246,14 +7175,7 @@ Proof.
       simpl in HeqS; try discriminate.
     { (* var β1 : rigid, its image is β1 itself *)
       exfalso.
-      assert (Hbtδ : binds β1 abind_tvar Θ0).
-      { inversion HwfP as [ | Θw Δw δw Hbt | | | | ]; subst.
-        destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-          [ exact Hb
-          | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
-            apply a_flex__var; exact Hb
-          | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
-            eapply a_flex__var_def; exact Hb ]. }
+      pose proof (a_wf_pskl_var_non_flex_tvar HwfP HnfP) as Hbtδ.
       assert (Hβ1κ : β1 `notin` dom κ)
         by (eapply a_inc_tvar_notin_dom; eauto).
       rewrite (msubst_lookup_notin κ Hβ1κ) in HeqS.
@@ -7276,14 +7198,7 @@ Proof.
     1:{ exfalso; inversion Hrs. }
     1:{ (* var β10 : rigid; a rigid variable does not refine to a ∀◇ *)
       exfalso.
-      assert (Hbtδ0 : binds β10 abind_tvar Θ0).
-      { inversion HwfP0 as [ | Θw Δw δw Hbt | | | | ]; subst.
-        destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-          [ exact Hb
-          | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
-            apply a_flex__var; exact Hb
-          | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
-            eapply a_flex__var_def; exact Hb ]. }
+      pose proof (a_wf_pskl_var_non_flex_tvar HwfP0 HnfP0) as Hbtδ0.
       assert (Hβ1κ0 : β10 `notin` dom κ)
         by (eapply a_inc_tvar_notin_dom; eauto).
       rewrite (msubst_lookup_notin κ Hβ1κ0) in Hrs.
@@ -7343,14 +7258,7 @@ Proof.
     destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
       simpl in HeqS; try discriminate.
     { exfalso.
-      assert (Hbtδ : binds β1 abind_tvar Θ0).
-      { inversion HwfP as [ | Θw Δw δw Hbt | | | | ]; subst.
-        destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-          [ exact Hb
-          | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
-            apply a_flex__var; exact Hb
-          | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
-            eapply a_flex__var_def; exact Hb ]. }
+      pose proof (a_wf_pskl_var_non_flex_tvar HwfP HnfP) as Hbtδ.
       assert (Hβ1κ : β1 `notin` dom κ)
         by (eapply a_inc_tvar_notin_dom; eauto).
       rewrite (msubst_lookup_notin κ Hβ1κ) in HeqS.
@@ -7361,14 +7269,7 @@ Proof.
     1:{ exfalso; inversion Hrs. }
     1:{ exfalso; inversion Hrs. }
     1:{ exfalso.
-      assert (Hbtδ0 : binds β10 abind_tvar Θ0).
-      { inversion HwfP0 as [ | Θw Δw δw Hbt | | | | ]; subst.
-        destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-          [ exact Hb
-          | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
-            apply a_flex__var; exact Hb
-          | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
-            eapply a_flex__var_def; exact Hb ]. }
+      pose proof (a_wf_pskl_var_non_flex_tvar HwfP0 HnfP0) as Hbtδ0.
       assert (Hβ1κ0 : β10 `notin` dom κ)
         by (eapply a_inc_tvar_notin_dom; eauto).
       rewrite (msubst_lookup_notin κ Hβ1κ0) in Hrs.
@@ -7613,14 +7514,7 @@ Proof.
       simpl in HeqS; try discriminate.
     { (* var β1 : rigid, its image is β1 itself *)
       exfalso.
-      assert (Hbtδ : binds β1 abind_tvar Θ0).
-      { inversion HwfP as [ | Θw Δw δw Hbt | | | | ]; subst.
-        destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-          [ exact Hb
-          | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
-            apply a_flex__var; exact Hb
-          | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
-            eapply a_flex__var_def; exact Hb ]. }
+      pose proof (a_wf_pskl_var_non_flex_tvar HwfP HnfP) as Hbtδ.
       assert (Hβ1κ : β1 `notin` dom κ)
         by (eapply a_inc_tvar_notin_dom; eauto).
       rewrite (msubst_lookup_notin κ Hβ1κ) in HeqS.
@@ -7708,14 +7602,7 @@ Proof.
     exfalso.
     destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
       simpl in HeqS; try discriminate.
-    assert (Hbtδ : binds β1 abind_tvar Θ0).
-    { inversion HwfP as [ | Θw Δw δw Hbt | | | | ]; subst.
-      destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-        [ exact Hb
-        | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
-          apply a_flex__var; exact Hb
-        | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
-          eapply a_flex__var_def; exact Hb ]. }
+    pose proof (a_wf_pskl_var_non_flex_tvar HwfP HnfP) as Hbtδ.
     assert (Hβ1κ : β1 `notin` dom κ)
       by (eapply a_inc_tvar_notin_dom; eauto).
     rewrite (msubst_lookup_notin κ Hβ1κ) in HeqS.
@@ -7752,8 +7639,7 @@ Proof.
         | clear - Hdisj; fsetdec
         | exact Hrs ]. }
     assert (Hrp' : {{ Θ ⨟ Δ2 ⊢ᵣₚ (msubst_pskl κ PP) ⊳ (bskl_to_pskl (ptyp_to_bskl_syn τ)) }}ad).
-    { unfold ptyp_to_bskl_syn.
-      rewrite bskl_to_pskl_pskl_to_bskl_syn.
+    { rewrite bskl_to_pskl_ptyp_to_bskl_syn.
       eapply ad_refine_pskl_flex_target_unfold;
         [ exact Hwfth | exact Hbα
         | intros α0 Hα0; apply HΔbt; clear - Hα0; fsetdec
@@ -7772,8 +7658,7 @@ Proof.
     (* re-attach the flexible target to the precision *)
     unfold ad_precise in *. simpl.
     eapply ad_refine_syn__flex_r; [ exact Hbα | ].
-    unfold ptyp_to_bskl_syn in Hprec.
-    rewrite bskl_to_pskl_pskl_to_bskl_syn in Hprec.
+    rewrite (bskl_to_pskl_ptyp_to_bskl_syn τ) in Hprec.
     rewrite (ptyp_to_bskl_inh_syn_eq Hmτ) in Hprec.
     exact Hprec.
 Qed.
@@ -7976,8 +7861,6 @@ Proof.
           [ exact Hrs | exact Hwfth
           | apply mono_ptyp_to_bskl_syn; exact HmC
           | reflexivity
-          | intros α Hα; left; eapply a_inc_binds_tvar;
-              [ exact Hinc | apply Hrig; clear - Hα; fsetdec ]
           | eapply ad_pat_consis_target_binds; exact Hjoin'' ]. }
       (* transport the join target from C to κβ̂ along the equivalence *)
       assert (Hvβ : forall α, α `in` ftvar_in_ptyp (msubst_lookup κ β) ->

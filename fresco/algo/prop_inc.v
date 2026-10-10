@@ -166,18 +166,8 @@ Proof.
         unfold binds; apply in_or_app; right; left; reflexivity.
 Qed.
 
-(** [Θ ⊴ Θ] — reflexivity of information increase (payloads locally
-    closed; well-formed contexts qualify via [a_wf_aenv_lc_aenv]). *)
-Lemma a_isub_refl_lc : forall Θ, lc_aenv Θ -> Θ ⊴ Θ.
-Proof.
-  intros Θ Hlc. split.
-  - destruct (a_inc_refl_gen (Ξ0 := nil) Hlc) as [κ [Hid Hinc]];
-      [ constructor | ].
-    exists κ. simpl in Hinc. auto.
-  - auto.
-Qed.
-
-(** [Θ ⊴ Ξ ++ Θ] — the target may grow by a fresh flexible suffix. *)
+(** [Θ ⊴ Ξ ++ Θ] — the target may grow by a fresh flexible suffix (at
+    [Ξ = nil] this is reflexivity, [a_isub_refl] in prop_basic.v). *)
 Lemma a_isub_weaken_suffix : forall Θ Ξ,
   lc_aenv Θ ->
   a_suffix Ξ ->
@@ -270,17 +260,6 @@ Proof.
   intros * [Hb | [Hb | [τ Hb]]];
     [ left | right; left | right; right; exists τ ];
     auto using binds_weaken_mid.
-Qed.
-
-(** Flexibility survives an arbitrary context PREFIX ([binds] is plain
-    membership, so no freshness side condition is needed — contrast
-    [a_flex_tvar_weaken_cons], which asks for one it does not use).
-    (Relocated here from prop_consis_sound to break an import cycle.) *)
-Lemma a_flex_tvar_weaken_prefix : forall α Ξ Θ,
-  a_flex_tvar Θ α -> a_flex_tvar (Ξ ++ Θ) α.
-Proof.
-  intros * [Hb | [τ Hb]]; [ left | right; exists τ ];
-    unfold binds in *; apply in_or_app; right; exact Hb.
 Qed.
 
 (** [a_tyequiv] uses its context only through positive [binds] lookups, so it

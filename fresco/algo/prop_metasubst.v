@@ -211,13 +211,11 @@ Proof.
   - apply a_pskl_tyequiv__univ_ghost; eauto.
 Qed.
 
-(** An [a_inc]'s images are locally closed (they are monotypes). *)
+(** An [a_inc]'s images are locally closed: [a_inc_lookup_lc] in the
+    [msubst_lc] form. *)
 Lemma a_inc_msubst_lc : forall Θ0 κ Θ,
   κ ∷ Θ0 ⊑ Θ -> msubst_lc κ.
-Proof.
-  intros Θ0 κ Θ Hinc α. apply mono_ptyp_lc.
-  eapply a_inc_lookup_mono; exact Hinc.
-Qed.
+Proof. intros * Hinc α; exact (a_inc_lookup_lc α Hinc). Qed.
 
 (** Identity metasubstitutions have locally-closed (variable) images. *)
 Lemma is_id_msubst_values_lc : forall κ,
@@ -244,9 +242,7 @@ Proof.
     + apply IH; [ intros a t Hin; apply (Hlc a t); right; exact Hin ].
 Qed.
 
-(** [msubst_pskl] commutes with opening under a locally-closed metasubst.
-    (Local copies of [prop_consis_exist]'s lemmas, which cannot be imported
-    here — that file imports this one.) *)
+(** [msubst_pskl] commutes with opening under a locally-closed metasubst. *)
 Lemma msubst_pskl_open_rec_lc : forall κ,
   msubst_lc κ ->
   forall P P' k,
@@ -751,17 +747,6 @@ Proof.
     [ apply binds_app_2 | apply binds_app_3; apply Hsub ]; assumption.
 Qed.
 
-(** A unique middle binding forces the two flanking decompositions to agree
-    (Metalib [uniq_mid], spelled with explicit arguments). *)
-Lemma aenv_mid_split : forall (E1 : aenv) x b1 F1 E2 b2 F2,
-  uniq (E1 ++ (x ~ b1) ++ F1) ->
-  E1 ++ (x ~ b1) ++ F1 = E2 ++ (x ~ b2) ++ F2 ->
-  E1 = E2 /\ b1 = b2 /\ F1 = F2.
-Proof.
-  intros E1 x b1 F1 E2 b2 F2 Hu Heq.
-  eapply uniq_mid; eauto.
-Qed.
-
 (** Head inversions for [a_inc_equiv] at the three binder entries: they carry
     [κ1]/[κ2] over unchanged and split the target at a suffix. *)
 Lemma a_inc_equiv_tvar_inv : forall α Θ0 κ1 κ2 Θ,
@@ -841,7 +826,7 @@ Proof.
 Qed.
 
 (** TRANSITIVITY of metasubstitution equivalence (through a fixed target).
-    The [var]/[var_skl] cases use [aenv_mid_split] to realign the two
+    The [var]/[var_skl] cases use Metalib's [uniq_mid] to realign the two
     target decompositions at the unique term-variable position. *)
 Lemma a_inc_equiv_trans : forall Θ0 κa κb Θ,
   a_inc_equiv Θ0 κa κb Θ ->
@@ -876,7 +861,7 @@ Proof.
     destruct (a_inc_equiv_var_typ_inv Hbc)
       as [Xic [Ac' [Tc [Heqt [Heqvc [Hsc Hrec]]]]]].
     pose proof (a_wf_aenv_uniq Hwf) as Hu.
-    destruct (aenv_mid_split _ _ _ _ _ _ _ Hu Heqt) as [HeqΞ [Heqb HeqΘ]].
+    destruct (uniq_mid _ _ _ _ _ _ _ _ Hu Heqt) as [HeqΞ [Heqb HeqΘ]].
     injection Heqb as HeqA. subst.
     apply a_wf_aenv_strip_prefix in Hwf.
     inversion Hwf; subst.
@@ -886,7 +871,7 @@ Proof.
     destruct (a_inc_equiv_var_skl_inv Hbc)
       as [Xic [Pc' [Tc [Heqt [Heqvc [Hsc Hrec]]]]]].
     pose proof (a_wf_aenv_uniq Hwf) as Hu.
-    destruct (aenv_mid_split _ _ _ _ _ _ _ Hu Heqt) as [HeqΞ [Heqb HeqΘ]].
+    destruct (uniq_mid _ _ _ _ _ _ _ _ Hu Heqt) as [HeqΞ [Heqb HeqΘ]].
     injection Heqb as HeqP. subst.
     apply a_wf_aenv_strip_prefix in Hwf.
     inversion Hwf; subst.
@@ -895,7 +880,7 @@ Proof.
   - (* tvar α *)
     destruct (a_inc_equiv_tvar_inv Hbc) as [Xic [Tc [Heqt [Hsc Hrec]]]].
     pose proof (a_wf_aenv_uniq Hwf) as Hu.
-    destruct (aenv_mid_split _ _ _ _ _ _ _ Hu Heqt) as [HeqΞ [Heqb HeqΘ]].
+    destruct (uniq_mid _ _ _ _ _ _ _ _ Hu Heqt) as [HeqΞ [Heqb HeqΘ]].
     subst.
     apply a_wf_aenv_strip_prefix in Hwf.
     inversion Hwf; subst.
@@ -907,7 +892,7 @@ Qed.
     mirroring [a_inc_compose] (prop_compose.v:695); the binder cases peel the
     suffix off the [a_inc_equiv] and its two witnessing increments together
     ([a_inc_equiv_inc_peel_suffix]) and realign the three target
-    decompositions at the unique term-variable via [aenv_mid_split]. *)
+    decompositions at the unique term-variable via Metalib's [uniq_mid]. *)
 Lemma a_inc_equiv_compose : forall Θ0 κ Θmid,
   κ ∷ Θ0 ⊑ Θmid ->
   {{ ⊢ Θ0 }}a -> {{ ⊢ Θmid }}a ->
@@ -960,12 +945,12 @@ Proof.
     assert (HeqE1 : Ξe ++ (x ~ abind_var_typ Ae') ++ Te
                   = Ξ1 ++ (x ~ abind_var_typ A1') ++ T1)
       by (rewrite <- Heqe; exact Heq1).
-    destruct (aenv_mid_split _ _ _ _ _ _ _ HuT HeqE1) as [HE1 [HB1 HT1]].
+    destruct (uniq_mid _ _ _ _ _ _ _ _ HuT HeqE1) as [HE1 [HB1 HT1]].
     injection HB1 as HB1. subst A1' T1.
     assert (HeqE2 : Ξe ++ (x ~ abind_var_typ Ae') ++ Te
                   = Ξ2 ++ (x ~ abind_var_typ A2') ++ T2)
       by (rewrite <- Heqe; exact Heq2).
-    destruct (aenv_mid_split _ _ _ _ _ _ _ HuT HeqE2) as [HE2 [HB2 HT2]].
+    destruct (uniq_mid _ _ _ _ _ _ _ _ HuT HeqE2) as [HE2 [HB2 HT2]].
     injection HB2 as HB2. subst A2' T2.
     assert (Hc1 : msubst_compose κ1 κ = msubst_compose κ1b κ)
       by (rewrite Hp1; eapply msubst_compose_peel;
@@ -1009,12 +994,12 @@ Proof.
     assert (HeqE1 : Ξe ++ (x ~ abind_var_skl Pe') ++ Te
                   = Ξ1 ++ (x ~ abind_var_skl P1') ++ T1)
       by (rewrite <- Heqe; exact Heq1).
-    destruct (aenv_mid_split _ _ _ _ _ _ _ HuT HeqE1) as [HE1 [HB1 HT1]].
+    destruct (uniq_mid _ _ _ _ _ _ _ _ HuT HeqE1) as [HE1 [HB1 HT1]].
     injection HB1 as HB1. subst P1' T1.
     assert (HeqE2 : Ξe ++ (x ~ abind_var_skl Pe') ++ Te
                   = Ξ2 ++ (x ~ abind_var_skl P2') ++ T2)
       by (rewrite <- Heqe; exact Heq2).
-    destruct (aenv_mid_split _ _ _ _ _ _ _ HuT HeqE2) as [HE2 [HB2 HT2]].
+    destruct (uniq_mid _ _ _ _ _ _ _ _ HuT HeqE2) as [HE2 [HB2 HT2]].
     injection HB2 as HB2. subst P2' T2.
     assert (Hc1 : msubst_compose κ1 κ = msubst_compose κ1b κ)
       by (rewrite Hp1; eapply msubst_compose_peel;
@@ -1055,10 +1040,10 @@ Proof.
     rewrite Heqe in HuT.
     assert (HeqE1 : Ξe ++ (α ~ abind_tvar) ++ Te = Ξ1 ++ (α ~ abind_tvar) ++ T1)
       by (rewrite <- Heqe; exact Heq1).
-    destruct (aenv_mid_split _ _ _ _ _ _ _ HuT HeqE1) as [HE1 [_ HT1]]; subst T1.
+    destruct (uniq_mid _ _ _ _ _ _ _ _ HuT HeqE1) as [HE1 [_ HT1]]; subst T1.
     assert (HeqE2 : Ξe ++ (α ~ abind_tvar) ++ Te = Ξ2 ++ (α ~ abind_tvar) ++ T2)
       by (rewrite <- Heqe; exact Heq2).
-    destruct (aenv_mid_split _ _ _ _ _ _ _ HuT HeqE2) as [HE2 [_ HT2]]; subst T2.
+    destruct (uniq_mid _ _ _ _ _ _ _ _ HuT HeqE2) as [HE2 [_ HT2]]; subst T2.
     assert (Hc1 : msubst_compose κ1 κ = msubst_compose κ1b κ)
       by (rewrite Hp1; eapply msubst_compose_peel;
           [ exact Hκ | intros α0 Hα0; apply Hdisj; rewrite <- Hdp1; exact Hα0 ]).

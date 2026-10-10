@@ -878,30 +878,6 @@ Proof.
     [ apply uskl_to_pskl_ptyp_to_uskl_syn | reflexivity ].
 Qed.
 
-(** Unique mid-split of a uniq environment at a shared key. *)
-Lemma app_mid_uniq_split : forall (Ξ : aenv) Ξ' Θ Θ' α (b b' : abind),
-  uniq (Ξ ++ (α ~ b) ++ Θ) ->
-  Ξ ++ (α ~ b) ++ Θ = Ξ' ++ (α ~ b') ++ Θ' ->
-  Ξ = Ξ' /\ b = b' /\ Θ = Θ'.
-Proof.
-  induction Ξ as [ | [α1 c] Ξ2 IH ]; intros Ξ' Θ Θ' α b b' Huq Heq.
-  - destruct Ξ' as [ | [α1' c'] Ξ'' ].
-    + simpl in Heq. inversion Heq; subst. auto.
-    + simpl in Heq. inversion Heq; subst.
-      exfalso.
-      inversion Huq; subst.
-      simpl_env in *. fsetdec.
-  - destruct Ξ' as [ | [α1' c'] Ξ'' ].
-    + simpl in Heq. inversion Heq; subst.
-      exfalso.
-      inversion Huq; subst.
-      simpl_env in *. fsetdec.
-    + simpl in Heq. inversion Heq; subst.
-      inversion Huq; subst.
-      destruct (IH Ξ'' Θ Θ' α b b' H1 H2) as [E1 [E2 E3]]; subst.
-      auto.
-Qed.
-
 (** Strip the shared rigid binder — and the Barendregt suffix above it —
     from an information increase (the ⊴-half of soundness's ForallR). *)
 Lemma a_isub_strip_tvar_mid : forall α Ξ Θ0 Θ1,
@@ -913,7 +889,7 @@ Lemma a_isub_strip_tvar_mid : forall α Ξ Θ0 Θ1,
 Proof.
   intros α Ξ Θ0 Θ1 Huq HuqΞ Hα [[κ [Hid Hinc]] Hdef].
   destruct (a_inc_tvar_inv Hinc) as [Ξ' [Θ2 [Heq [Hsuf Hinc']]]].
-  destruct (app_mid_uniq_split _ _ _ _ _ _ _ Huq Heq) as [<- [_ <-]].
+  destruct (uniq_mid _ _ _ _ _ _ _ _ Huq Heq) as [<- [_ <-]].
   split.
   - exists κ. split; [ exact Hid | exact Hinc' ].
   - intros β τ Hb.
@@ -944,9 +920,9 @@ Qed.
 (*  with no condition on Δ at all: what ForallR's fill re-attachment      *)
 (*  needs.                                                                *)
 (*                                                                        *)
-(*  [pskl_ghost_free] / [bskl_ghost_free] themselves now live in          *)
-(*  fresco/predicates.v — the algorithmic RULES constrain their type       *)
-(*  positions with them, so the definition has to precede algo/def_extra. *)
+(*  [pskl_ghost_free] / [bskl_ghost_free] themselves live in              *)
+(*  fresco/def_shapes.v — the algorithmic RULES constrain their type       *)
+(*  positions with them, so the definition has to precede algo/def_rules. *)
 (* ===================================================================== *)
 
 Lemma mono_ptyp_to_bskl_syn_ghost_free : forall τ,
