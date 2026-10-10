@@ -931,8 +931,13 @@ type into the term without asking the type to be well formed in the context:
                      Θ ⊢ᵃᵈ[m] (e : A) ⦂ B
 ```
 
-Its four type-carrying siblings — sd-AbsCheck (→), sd-AbsAnnoCheck (→),
-sd-Abs, sd-AbsAnno — all state `Θ ⊢ A`.  The join in the second premise does
+(⚙ Corrected 2026-10-10: this used to say the four type-carrying siblings —
+sd-AbsCheck (→), sd-AbsAnnoCheck (→), sd-Abs, sd-AbsAnno — "all state
+`Θ ⊢ A`" in the paper.  They do not: neither `fig:declarative-in-algo-context`
+(full-algo-spec.tex:133-163) nor the declarative figure prints that premise;
+it is the paper's implicit-wf prose that the MECHANIZATION renders on those
+four rules.  The argument is therefore about consistency among the
+mechanization's rules, and it stands.)  The join in the second premise does
 not cover for it: the only wf a join yields is about its **target**
 (`ad_pat_sub_target_wf` gives `a_scope_pskl Θ (bskl_to_pskl Qt)`), and
 subject well-formedness is one of the paper's EXTERNAL side conditions
@@ -1858,7 +1863,7 @@ follow the paper.  It only upgrades our verdict on someone else's code.
 
 ## MECH-BUG (fixed) — decorated FlexR had an over-general subject
 - Where: fig:decorated-alg-consistency (decorated-algosub.tex:237-238); mech
-  `a_consistag__flex_r` (algo/def_decorated.v).  Found while closing the
+  `a_consistag__flex_r` (deco_algo/def_decorated.v).  Found while closing the
   FlexR case of lemma:sound-decorated-consistency.
 - The paper says the flexible-variable rules "are inherited unchanged" from
   fig:alg-consistency, whose FlexR subject is a PLAIN skeleton `P`
@@ -2229,7 +2234,7 @@ the appendix self-contained.
 use of it) picks ONE decoration ψ of the guessed instantiation P1 ("let ψ be
 a decorated skeleton with ⌊ψ⌋ = P1 ...") and treats its choice as
 WLOG-irrelevant.  The mech's `a_subtag__forall_l_{tagged,untagged}`
-(algo/def_decorated.v) instead quantifies the premise over EVERY sorted
+(deco_algo/def_decorated.v) instead quantifies the premise over EVERY sorted
 decoration whose tag names avoid the rule's cofinite set L:
 
     forall Ψg ψg, inter Ψg L [=] empty -> a_tags_sort NM Ψg ψg ->
@@ -3138,6 +3143,18 @@ each side.  (Note also that algorithmic
 so the syntactic reading is only ever needed for the OTHER rows, which are
 exactly the ones that refute it.)
 
+> ⚠️ **To re-check (2026-10-10).**  The parenthetical above reads SI-Check's
+> premise as the output-suppressing abbreviation.  But SI-Check
+> (full-algo-spec.tex:799-804) writes `\aconsis[B]{Θ₀}{A}{B}{Θ₁}`, and by
+> `macro.tex:1002-1016` the optional `[B]` prints `B` as the consistency
+> judgement's OUTPUT annotation (`⊢^B`).  So read literally, the rule pins the
+> output to `B` rather than suppressing it.  The paper's own proof
+> (subtyping-proofs.tex, the Check case) uses the abbreviation reading, which
+> the mechanization follows (`a_sub__check` premises `a_consis_chk`).  This
+> is probably a typesetting slip.  It is unverified whether the pinned reading
+> can fail (e.g. at `A = α̂`, `B = ()`); worth asking the authors which reading
+> they intend.
+
 ---
 
 ## ~~FALSE~~ **NOT A GAP — RETRACTED (2026-07-30)** — `thm:complete-subtyping`'s Sub-Infer / Sub-UnivGhostR precision step (:3134, :3288)
@@ -3375,7 +3392,17 @@ what "by Barendregt" costs to discharge.
 
 ---
 
-## ⛔ INCOMPLETE RULE SET (2026-08-03) — the flexible SUBTYPING walk has NO rule for a TERM-VARIABLE head
+## ✅ RESOLVED BY THE AUTHORS — INCOMPLETE RULE SET (2026-08-03) — the flexible SUBTYPING walk has NO rule for a TERM-VARIABLE head
+
+> **Resolved 2026-10-08** (paper commit `f484dde3`, "incorporate two fixes of
+> the algorithm from the thesis"): `fig:alg-subtyping` now has
+> `Flex-SkipTmVar` (full-algo-spec.tex:914-920), exactly the repair proposed
+> below.  The mechanization's `a_sub_flex__skip_tm_var` /
+> `a_sub_flex__skip_tm_skl` match it (two rules because the mechanization has
+> two term-entry sorts); their only extra premise is the standard re-attach
+> freshness `x ∉ dom Θ1`.  The rest of this entry is kept as the record;
+> `cex/cex_p7_flex_walk_tm_var.v` now refutes only the paper's former
+> five-rule set.
 
 **Where.**  `fig:alg-subtyping`'s second box (the auxiliary judgment
 `\atypsub[\N][\FN\M][P_0]{\Theta_0\mid\Xi}{\hat\alpha}{Q}{\Theta_1}`,
@@ -3515,7 +3542,7 @@ in the paper's own idiom, as verbatim mirrors of `Assign-SkipTmVar`:
 ```
 
 `a_sub_flex__skip_tm_var` / `__skip_tm_skl` (algo/def_rules.v) with decorated
-mirrors on `a_subtag_flex` (algo/def_decorated.v) — the mech splits the
+mirrors on `a_subtag_flex` (deco_algo/def_decorated.v) — the mech splits the
 paper's single `x : P` entry into a type binding and a skeleton binding, hence
 two rules for the paper's one.  All three mutual inductions over the
 `a_sub` / `a_sub_flex` pair carry their two new cases: the soundness bundle
@@ -3834,8 +3861,13 @@ which DISCARDS the pattern the collection has already accumulated
 
 with the note *"Thread the fresh suffix Ξ through all constraint-solving
 judgements, add it to Look's output suffix, and update the corresponding
-specification and proofs."*  The mechanization is propagating it.  **Three
-things the authors need to know about the repaired rule itself.**
+specification and proofs."*  **The paper adopted it on 2026-10-08** (commit
+`f484dde3`): `SolE-FlexR` now reads as above (full-algo-spec.tex:1386-1393),
+every solve row threads its suffix, and Look returns `Ξ,Ξ',Ξ''`
+(full-algo-spec.tex:1001-1008).  The mechanization matches it rule for rule.
+**Three things the authors need to know about the repaired rule itself** —
+FINDING 2 is still live against the adopted rule, which still asks only
+`nonflex P`.
 
 ### FINDING 1 — soundness of subtyping survives, and its STATEMENT does not move
 
@@ -3980,7 +4012,7 @@ hypothesis to appeal to.  Same premise, same idiom.
 
 ### 3. `AT-AbsAnnoCheck`'s result domain is the SPLIT's `A'`, not the annotation
 
-The rule (`algorithmic.tex:296-303`, currently commented out) reads
+The rule (`full-algo-spec.tex:358-367`; the copy at `algorithmic.tex:296-303` is commented out) reads
 
 ```
   Θ₀,ᾱ ⊢ split(A₀) = A' → B ⊣ Θ₁,ᾱ     Θ₁,ᾱ ⊢ A' ∼ A ⊣ Θ₂,ᾱ

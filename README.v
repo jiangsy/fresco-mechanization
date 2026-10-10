@@ -536,11 +536,13 @@ Check d_typing_order_irrel :
 Print Assumptions d_typing_order_irrel.
 
 (* SHALLOW SUBTYPING IS SUBSUMED — the LOWER bound on [⩽]'s expressive power.
-   [{{ Γ ⊢ A ≤ B }}d] ([d_shallow_sub], decl/def_rules.v:375) is the standard
-   shallow polymorphic subtyping relation with MONOTYPE instantiation that
-   declarative.tex:1191 defines; the claim that check-mode [⩽] subsumes it is
-   at :1179.  ⚠️ Both passages currently sit inside an [\iffalse] block, so
-   this entry is a mechanized claim looking for a home in the paper, not a
+   [{{ Γ ⊢ A ≤ B }}d] ([d_shallow_sub], decl/def_rules.v) is the standard
+   shallow polymorphic subtyping relation with MONOTYPE instantiation,
+   [Γ ⊢^mono A ≤ B]; the claim that check-mode [⩽] subsumes it is the
+   commented-out first point at declarative.tex:1173-1176.  ⚠️ The paper's
+   own definition of [≤] (:1186-1225) sits in an [\iffalse] block and guesses
+   ARBITRARY polytypes, which this relation deliberately does not.  So this
+   entry is a mechanized claim looking for a home in the paper, not a
    transcription of a live one. *)
 Check d_shallow_sub_complete :
   forall Γ A A',

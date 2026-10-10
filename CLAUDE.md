@@ -88,10 +88,11 @@ mechanization.)  Corrected 2026-08-09.
     mech's old Ghost rule demanding a well-formed fill, which the paper's
     never did; the file now proves only that the rules alone derive an
     ill-formed output, `ad_refine_syn_output_not_wf`.)
-  - ⛔ **NOT yet done**: the paper itself.  `paper/` has not been touched
-    — see [`docs/HANDOFF-solve-flexr-repair.md`](docs/HANDOFF-solve-flexr-repair.md)
-    §0 (standing user directive) and §6 Step 4 for what the repair owes
-    `full-algo-spec.tex`.
+  - ✅ **The paper has adopted both algorithm fixes** (paper commit
+    `f484dde3`, 2026-10-08): the threaded-`Ξ` `SolE-FlexR` repair and the
+    missing `Flex-SkipTmVar` row.  The mechanization already matched both,
+    rule for rule.  `SolE-FlexR`'s ghost-subject exclusion (PAPER-GAPS,
+    "FINDING 2") is still not in the paper.
   - The per-lemma map and the dated history — including every retraction —
     are in [`PROGRESS.md`](PROGRESS.md); this bullet is deliberately short.
 

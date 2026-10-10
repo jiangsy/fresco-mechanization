@@ -172,7 +172,7 @@ the other. It is now a single judgement — **the JOIN** —
 
 ```coq
 Definition d_consis_join Ψ Γ R Q :=            (* {{ Ψ ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d  *)
-  {{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d /\ {{ Γ ⨟ nil ⊢ᵣₚ ⌊R⌋ˢ ⊳ ⌊Q⌋ }}d.
+  {{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d /\ {{ Γ ⨟ empty ⊢ᵣₚ ⌊R⌋ˢ ⊳ ⌊Q⌋ }}d.
 Definition ad_consis_join Ψ Θ R Q :=           (* {{ Ψ ⨟ Θ ⊢ˢ R ∼ᵣ Q }}ad *)
   {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad /\ {{ Θ ⨟ empty ⊢ᵣₚ ⌊R⌋ˢ ⊳ ⌊Q⌋ }}ad.
 ```
@@ -232,8 +232,10 @@ relations, 2026-10-09.)
 > … as well as the compatibility between bidirectional skeletons and modes
 > `skmod{bid{P}}{M}`."
 
-`skmod` is already a rule premise in the mech (route **A**). The wf of `M` and
-`bid{P}` is route **B** — carry it in the statements.
+`skmod` is a rule premise in the mech (route **A**).  The wf of `bid{P}` is
+route **A** too: since 2026-08-11 the base rows (`d_pat__unit` / `__var` /
+`__anno` and their `ad_pat` twins) carry `⊢ₚₛ ⌊Q⌋` as a premise.  The wf of
+`M` stays route **B** — carried in the statements.
 
 ---
 
@@ -334,7 +336,7 @@ The algo layer has TWO skeleton judgments, both in algo/def_rules.v:
   `∀α.∀◇.(α→α)` is well-formed in NO context.  Whenever the paper writes
   skeleton wf, it means this judgment — the paper has no weak variant.
 
-- **`a_scope_pskl` (algo/def_rules.v:113) — scoping only.**  Single context Θ,
+- **`a_scope_pskl` (algo/def_rules.v:164) — scoping only.**  Single context Θ,
   ∀ binds a plain `abind_tvar` into Θ, `pskl_univ_ghost` merely recurses (no
   guardedness, no Δ-clearing).  `∀α.∀◇.(α→α)` PASSES it.  The reference
   implementation's `is_wf_` takes the same weak reading.
