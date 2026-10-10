@@ -875,13 +875,16 @@ have to be made explicit on the way, and each is a small finding of its own:
    to unfold, so `Θ ⊢ A ≡ B` implies `A = B` — which is exactly why the
    §declarative figure may silently reuse an annotation.
 2. **The colour-discipline premises the two systems state differently must be
-   RECOVERED, not assumed.**  `d_sub`'s Infer states `is_styp B`, its Check
-   states guardedness of both sides plus `is_ityp B`, its ForallR states
-   `is_ityp (∀ⁱ B)`; the fused `typsub^N_M` figure states none of them,
-   because at `N = TY` they follow from the sort.  The mech proves that: the
-   target is a `btyp`'s skeleton there, and a skeleton predicate on it
-   transports back (`is_styp_of_btyp_to_bskl`, `is_ityp_of_btyp_to_bskl`,
-   `ad_pat_sub_ty_tc_target_ityp`).
+   RECOVERED, not assumed.**  `d_sub`'s Infer states `is_styp B` and its Check
+   states guardedness of both sides plus `is_ityp B`; the fused `typsub^N_M`
+   figure states none of them, because at `N = TY` they follow from the sort.
+   The mech proves that: the target is a `btyp`'s skeleton there, and a
+   skeleton predicate on it transports back (`is_styp_of_btyp_to_bskl`,
+   `is_ityp_of_btyp_to_bskl`).  (⚙ 2026-10-10: `d_sub`'s ForallR — and the
+   `d_sd_typing` / `ad_sd_typing` ∀-step rows — no longer state
+   `is_ityp (∀ⁱ B)`; the paper's rules do not, and it follows from the body,
+   a TC-mode judgement (`d_sub_tc_is_ityp`).  So
+   `ad_pat_sub_ty_tc_target_ityp`, which recovered it here, is gone.)
 3. **The ∀-scope context Δ and the tvar context Γ swap roles between the
    sorts.**  Skeleton well-formedness and refinement put a bound rigid into Δ;
    type well-formedness puts it into Γ.  Translating a ForallL instantiation

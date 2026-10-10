@@ -848,25 +848,6 @@ Proof.
   - inversion Hlc; subst. apply guarded_btyp__arrow; assumption.
 Qed.
 
-(** At [N = TY, M = TC] the target is always inherited — the declarative
-    [ForallR]'s [is_ityp] premise, recovered by induction rather than
-    assumed. *)
-Lemma ad_pat_sub_ty_tc_target_ityp : forall NM M Ψ Θ R Q,
-  ad_pat_sub NM M Ψ Θ R Q -> NM = a_sub_mode_ty -> M = mode_tc ->
-  forall B, Q = btyp_to_bskl B -> is_ityp B.
-Proof.
-  intros NM M Ψ Θ R Q H; induction H; intros HNM HM B0 HQ;
-    try discriminate HNM; try discriminate HM; subst.
-  - (* Check *) exact (proj1 (inh_paint_btyp B B0 H0 (eq_sym HQ))).
-  - (* ForallR *) destruct B0; simpl in HQ; try discriminate HQ.
-    inversion HQ; subst.
-    apply is_ityp__all with (L := L). intros α Hα.
-    exact (H0 α Hα eq_refl eq_refl (open_btyp_wrt_btyp B0 (btyp_var_f α))
-             ltac:(rewrite btyp_to_bskl_open; reflexivity)).
-  - (* ForallL, tagged *) exact (IHad_pat_sub eq_refl eq_refl B0 eq_refl).
-  - (* ForallL, untagged *) exact (IHad_pat_sub eq_refl eq_refl B0 eq_refl).
-Qed.
-
 Lemma ad_pat_sub_ty_to_d : forall NM M Ψ Θ R Q,
   ad_pat_sub NM M Ψ Θ R Q -> NM = a_sub_mode_ty ->
   forall Γ, Θ = denv_to_aenv Γ ->
@@ -1031,14 +1012,14 @@ Proof.
     rewrite (a_tyequiv_denv_eq (denv_to_aenv Γ0) B A H0 Γ0 eq_refl) in *.
     apply d_sd_typing__freeze. exact (IHad_sd_typing Γ0 eq_refl).
   - (* sd-AbsCheck (∀) *) apply d_sd_typing__abs_check_step with (L := L);
-      intros α Hα; exact (H1 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
+      intros α Hα; exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
   - (* sd-AbsCheck (→) *) apply d_sd_typing__abs_check_base with (L := L);
       [ exact (a_wf_ptyp_to_d (denv_to_aenv Γ0) A H Γ0 eq_refl)
       | assumption
       | intros x Hx; exact (H2 x Hx ((x ~ dbind_typ A) ++ Γ0) eq_refl) ].
   - (* sd-AbsAnnoCheck (∀) *)
     apply d_sd_typing__abs_anno_check_step with (L := L);
-      intros α Hα; exact (H1 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
+      intros α Hα; exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
   - (* sd-AbsAnnoCheck (→) *)
     rewrite <- (a_tyequiv_denv_eq (denv_to_aenv Γ0) A A' H0 Γ0 eq_refl).
     apply d_sd_typing__abs_anno_check_base with (L := L);
@@ -1586,8 +1567,7 @@ Proof.
                             (Hbody x ltac:(clear - Hx; solve_notin_auto)));
                    apply aenv_tbinds_le_weaken_cons)).
   - (* sd-AbsCheck (∀) *)
-    apply ad_sd_typing__abs_check_step with (L := L `union` dom Γ);
-      [ eapply d_sd_typing_tc_abs_is_ityp; eapply d_sd_typing__abs_check_step; exact H | ].
+    apply ad_sd_typing__abs_check_step with (L := L `union` dom Γ).
     intros α Hα.
     exact (H0 α ltac:(clear - Hα; solve_notin_auto)
              ltac:(apply d_wf_denv__tvar;
@@ -1628,8 +1608,7 @@ Proof.
                             (Hbody x ltac:(clear - Hx; solve_notin_auto)));
                    apply aenv_tbinds_le_weaken_cons)).
   - (* sd-AbsAnnoCheck (∀) *)
-    apply ad_sd_typing__abs_anno_check_step with (L := L `union` dom Γ);
-      [ eapply d_sd_typing_tc_abs_anno_is_ityp; eapply d_sd_typing__abs_anno_check_step; exact H | ].
+    apply ad_sd_typing__abs_anno_check_step with (L := L `union` dom Γ).
     intros α Hα.
     exact (H0 α ltac:(clear - Hα; solve_notin_auto)
              ltac:(apply d_wf_denv__tvar;

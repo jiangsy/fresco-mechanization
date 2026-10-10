@@ -1398,16 +1398,12 @@ Proof.
         [ eassumption | reflexivity | exact Hs | exact Hu ].
   - (* abs_check_step *)
     apply ad_sd_typing__abs_check_step
-      with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0);
-      [ change (btyp_all_inh (subst_btyp_in_btyp (ptyp_to_btyp_syn τs) α0 B))
-          with (subst_btyp_in_btyp (ptyp_to_btyp_syn τs) α0 (btyp_all_inh B));
-        apply is_ityp_subst_mono; assumption
-      | ].
+      with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
     intros β Hβ.
     rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var;
       [ | clear - Hβ; fsetdec
         | apply is_styp_lc; apply mono_ptyp_to_btyp_syn_is_styp; assumption ].
-    apply (H1 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b0
+    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b0
              ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
   - (* abs_check_base *)
@@ -1424,16 +1420,12 @@ Proof.
       [ reflexivity | exact Hs | push_uniq Hu Hx ].
   - (* abs_anno_check_step *)
     apply ad_sd_typing__abs_anno_check_step
-      with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0);
-      [ change (btyp_all_inh (subst_btyp_in_btyp (ptyp_to_btyp_syn τs) α0 B))
-          with (subst_btyp_in_btyp (ptyp_to_btyp_syn τs) α0 (btyp_all_inh B));
-        apply is_ityp_subst_mono; assumption
-      | ].
+      with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
     intros β Hβ.
     rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var;
       [ | clear - Hβ; fsetdec
         | apply is_styp_lc; apply mono_ptyp_to_btyp_syn_is_styp; assumption ].
-    apply (H1 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b0
+    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b0
              ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
   - (* abs_anno_check_base *)

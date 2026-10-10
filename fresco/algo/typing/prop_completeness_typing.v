@@ -530,7 +530,7 @@ Proof.
     apply a_wf_ptyp__all with (L := L `union` dom Θ).
     intros α Hα.
     rewrite <- btyp_to_ptyp_open_var.
-    apply H1; [ clear - Hα; fsetdec | ].
+    apply H0; [ clear - Hα; fsetdec | ].
     apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ].
   - (* abs_check_base *)
     simpl.
@@ -546,7 +546,7 @@ Proof.
     apply a_wf_ptyp__all with (L := L `union` dom Θ).
     intros α Hα.
     rewrite <- btyp_to_ptyp_open_var.
-    apply H1; [ clear - Hα; fsetdec | ].
+    apply H0; [ clear - Hα; fsetdec | ].
     apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ].
   - (* abs_anno_check_base *)
     simpl.

@@ -536,14 +536,10 @@ Proof.
     apply ad_sd_typing__abs_check_step
       with (L := L `union` singleton α `union` singleton β'
                    `union` dom (Θ1 ++ Θ0)).
-    + change (btyp_all_inh (subst_btyp_in_btyp (btyp_var_f β') α B))
-        with (subst_btyp_in_btyp (btyp_var_f β') α (btyp_all_inh B)).
-      change (btyp_var_f β') with (ptyp_to_btyp_syn (ptyp_var_f β')).
-      apply is_ityp_subst_mono; [ exact H | apply mono_ptyp__var ].
     + intros α1 Hα1.
       rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var;
         [ | clear - Hα1; fsetdec | apply lc_btyp_var_f ].
-      apply (H1 α1 ltac:(clear - Hα1; solve_notin_auto) ((α1 ~ abind_tvar) ++ Θ1));
+      apply (H0 α1 ltac:(clear - Hα1; solve_notin_auto) ((α1 ~ abind_tvar) ++ Θ1));
         [ simpl_env; reflexivity
         | clear - Hdom Hα1; simpl; repeat rewrite dom_app in *; fsetdec
         | clear - Hβ' Hα1; simpl; repeat rewrite dom_app in *; fsetdec
@@ -572,14 +568,10 @@ Proof.
     apply ad_sd_typing__abs_anno_check_step
       with (L := L `union` singleton α `union` singleton β'
                    `union` dom (Θ1 ++ Θ0)).
-    + change (btyp_all_inh (subst_btyp_in_btyp (btyp_var_f β') α B))
-        with (subst_btyp_in_btyp (btyp_var_f β') α (btyp_all_inh B)).
-      change (btyp_var_f β') with (ptyp_to_btyp_syn (ptyp_var_f β')).
-      apply is_ityp_subst_mono; [ exact H | apply mono_ptyp__var ].
     + intros α1 Hα1.
       rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var;
         [ | clear - Hα1; fsetdec | apply lc_btyp_var_f ].
-      apply (H1 α1 ltac:(clear - Hα1; solve_notin_auto) ((α1 ~ abind_tvar) ++ Θ1));
+      apply (H0 α1 ltac:(clear - Hα1; solve_notin_auto) ((α1 ~ abind_tvar) ++ Θ1));
         [ simpl_env; reflexivity
         | clear - Hdom Hα1; simpl; repeat rewrite dom_app in *; fsetdec
         | clear - Hβ' Hα1; simpl; repeat rewrite dom_app in *; fsetdec

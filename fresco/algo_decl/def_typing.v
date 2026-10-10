@@ -196,7 +196,8 @@ Inductive ad_sd_typing : mode -> aenv -> exp -> btyp -> Prop :=
     {{ Θ ⊢ B ≡ᵗ A }}a ->
     {{ Θ ⊢ˢᵈ[ mode_tc ] (exp_freeze e) ⦂ (ptyp_to_btyp_inh A) }}ad
 | ad_sd_typing__abs_check_step : forall L Θ e B,        (* sd-AbsCheck (∀) *)
-    is_ityp (btyp_all_inh B) ->
+    (* no [is_ityp] premise, as in the paper and [d_sd_typing]: the body is
+       TC-mode, so its type is always inherited *)
     (forall α, α `notin` L ->
        {{ ((α ~ abind_tvar) ++ Θ) ⊢ˢᵈ[ mode_tc ] (exp_abs e)
          ⦂ (open_btyp_wrt_btyp B (btyp_var_f α)) }}ad) ->
@@ -209,7 +210,7 @@ Inductive ad_sd_typing : mode -> aenv -> exp -> btyp -> Prop :=
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ B }}ad) ->
     {{ Θ ⊢ˢᵈ[ mode_tc ] (exp_abs e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B) }}ad
 | ad_sd_typing__abs_anno_check_step : forall L Θ A e B,
-    is_ityp (btyp_all_inh B) ->                     (* sd-AbsAnnoCheck (∀) *)
+                                                    (* sd-AbsAnnoCheck (∀) *)
     (forall α, α `notin` L ->
        {{ ((α ~ abind_tvar) ++ Θ) ⊢ˢᵈ[ mode_tc ] (exp_abs_anno A e)
          ⦂ (open_btyp_wrt_btyp B (btyp_var_f α)) }}ad) ->
