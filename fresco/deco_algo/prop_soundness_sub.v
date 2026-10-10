@@ -36,7 +36,6 @@ Require Import src.fresco.algo.prop_metasubst.
 Require Import src.fresco.algo.prop_precise.
 Require Import src.fresco.algo.consis.prop_soundness_consis.
 Require Import src.fresco.algo.consis.prop_consis_rename.
-Require Import src.fresco.algo.consis.prop_consis_precise.   (* d_tags_skl_ftag *)
 Require Import src.fresco.algo.prop_refine.
 Require Import src.fresco.algo.prop_stability.
 Require Import src.fresco.algo.prop_pat_sub.
@@ -59,18 +58,6 @@ Set Implicit Arguments.
 (*  looked variable is renamed on the fly (a_looksub_rename_var) to keep  *)
 (*  it clear of guessed flexible names (Barendregt prose-completion).     *)
 (* ===================================================================== *)
-
-Lemma pskl_to_uskl_not_tag : forall P ε ψ,
-  pskl_to_uskl P <> uskl_all_tag ε ψ.
-Proof. destruct P; simpl; discriminate. Qed.
-
-Lemma pskl_to_uskl_not_dot_ghost : forall P,
-  pskl_to_uskl P <> uskl_dot_ghost.
-Proof. destruct P; simpl; discriminate. Qed.
-
-Lemma pskl_to_uskl_not_dot_univ_ghost : forall P ψ,
-  pskl_to_uskl P <> uskl_dot_univ_ghost ψ.
-Proof. destruct P; simpl; discriminate. Qed.
 
 (** Rename-composition for the decorated substitution: substituting at a
     RE-FRESHENED variable composes back — [αv' ∉ ftv R0] and the value's

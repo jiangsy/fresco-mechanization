@@ -1047,20 +1047,10 @@ Qed.
 (*  (prop_termination.v); the fact lives in prop_consis_complete.v §5,     *)
 (*  where that is in scope.                                                *)
 (*                                                                        *)
-(*  ⚙ The two helpers below are [fresco/algo]-side facts kept here, like    *)
-(*  prop_run_complete.v §2b's, only because this campaign leaves fresco/    *)
-(*  alone; [a_flex_tvar]'s weakening is NOT re-proved — algo/prop_basic.v  *)
-(*  already has it as [a_flex_tvar_weaken_app].                            *)
+(*  ⚙ The [fresco/algo]-side helper that sat here ([a_flex_tvar_flex]) is  *)
+(*  [a_flex_var_iff_tvar] in algo/prop_basic.v since 2026-10-10;           *)
+(*  [a_flex_tvar]'s weakening is that file's [a_flex_tvar_weaken_app].     *)
 (* ===================================================================== *)
-
-(** A flexible variable, as a [a_flex] SUBJECT — what the [FlexL]/[FlexR]
-    refutations turn [e_assign_target_flex] into. *)
-Lemma a_flex_tvar_flex : forall Θ α,
-  a_flex_tvar Θ α -> a_flex Θ (pskl_var_f α).
-Proof.
-  intros * [Hb | [τ Hb]];
-    [ apply a_flex__var | eapply a_flex__var_def ]; eassumption.
-Qed.
 
 (** The assign half, and STRONGER than the motive needed: a walk that
     assigns [α̂] anything at all must have found [α̂] flex-bound.  Every

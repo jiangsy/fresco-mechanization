@@ -5,6 +5,7 @@ Require Import Coq.Sorting.Permutation.
 Require Import Metalib.Metatheory.
 
 Require Import src.fresco.notations.
+Require Import src.fresco.prop_tag.
 Require Import src.fresco.ltac_utils.
 Require Import src.fresco.coercions.
 Require Import src.fresco.def_shapes.
@@ -92,4 +93,18 @@ Proof.
       [ exact H | exact H1 | clear - H2 Heq; fsetdec ].
   - apply d_tags_skl__dot_ghost; fsetdec.
   - apply d_tags_skl__dot_univ_ghost; apply IHd_tags_skl; exact Heq.
+Qed.
+
+(* ⚙ Moved here 2026-10-10 from algo/consis/prop_consis_precise.v: it is a
+   fact about the declarative [d_tags_skl] alone. *)
+(** A decorated skeleton's tag reading is exactly its syntactic tags. *)
+Lemma d_tags_skl_ftag : forall Ψ ψ,
+  d_tags_skl Ψ ψ -> Ψ [=] ftag_in_uskl ψ.
+Proof.
+  intros Ψ ψ H; induction H; simpl; try fsetdec.
+  - match goal with |- _ [=] add _ (ftag_in_uskl ?R) =>
+      pick fresh α for L;
+      pose proof (H0 α ltac:(solve_notin_auto)) as Hα;
+      pose proof (ftag_in_uskl_open_var R α) as Hov
+    end; fsetdec.
 Qed.

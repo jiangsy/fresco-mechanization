@@ -51,6 +51,8 @@ Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
 Require Import src.fresco.notations.
+Require Import src.fresco.prop_tag.
+Require Import src.fresco.decl.prop_basic.
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.ltac_utils.   (* solve_notin_auto *)
 Require Import src.fresco.coercions.

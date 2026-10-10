@@ -412,3 +412,47 @@ Proof.
   - apply AtomSetFacts.inter_iff. split; assumption.
   - intros Hc. apply AtomSetFacts.inter_iff in Hc as [ Hc _ ]. contradiction.
 Qed.
+
+(* ===================================================================== *)
+(*  §4  [ftag_in_uskl] across opening                                     *)
+(*                                                                        *)
+(*  ⚙ Moved here 2026-10-10 from algo/consis/prop_consis_precise.v.       *)
+(* ===================================================================== *)
+
+Lemma ftag_in_uskl_open_rec_var : forall α' R k,
+  ftag_in_uskl (open_uskl_wrt_uskl_rec k (uskl_var_f α') R) [=] ftag_in_uskl R.
+Proof.
+  intros α' R; induction R; intros k; simpl; try fsetdec.
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; fsetdec.
+  - pose proof (IHR1 k); pose proof (IHR2 k); fsetdec.
+  - pose proof (IHR (S k)); fsetdec.
+  - pose proof (IHR (S k)); fsetdec.
+  - pose proof (IHR k); fsetdec.
+  - pose proof (IHR k); fsetdec.
+Qed.
+
+Lemma ftag_in_uskl_open_var : forall R α,
+  ftag_in_uskl (open_uskl_wrt_uskl R (uskl_var_f α)) [=] ftag_in_uskl R.
+Proof.
+  intros; unfold open_uskl_wrt_uskl; apply ftag_in_uskl_open_rec_var.
+Qed.
+
+Lemma ftag_in_uskl_open_rec_upper : forall R ψ k,
+  ftag_in_uskl (open_uskl_wrt_uskl_rec k ψ R) [<=]
+  ftag_in_uskl R `union` ftag_in_uskl ψ.
+Proof.
+  intros R ψ; induction R; intros k; simpl; try fsetdec.
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; fsetdec.
+  - pose proof (IHR1 k); pose proof (IHR2 k); fsetdec.
+  - pose proof (IHR (S k)); fsetdec.
+  - pose proof (IHR (S k)); fsetdec.
+  - pose proof (IHR k); fsetdec.
+  - pose proof (IHR k); fsetdec.
+Qed.
+
+Lemma ftag_in_uskl_open_upper : forall R ψ,
+  ftag_in_uskl (open_uskl_wrt_uskl R ψ) [<=]
+  ftag_in_uskl R `union` ftag_in_uskl ψ.
+Proof.
+  intros; unfold open_uskl_wrt_uskl; apply ftag_in_uskl_open_rec_upper.
+Qed.

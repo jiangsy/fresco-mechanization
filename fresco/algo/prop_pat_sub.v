@@ -742,23 +742,6 @@ Proof.
                  uskl_ghost_free_subst_mono.
 Qed.
 
-(** Erasure of a monotype painting, and of the painting substitution. *)
-Lemma uskl_to_pskl_ptyp_to_uskl_syn : forall τ,
-  ⌊ ptyp_to_uskl_syn τ ⌋ˢ = ptyp_to_pskl τ.
-Proof.
-  intros. rewrite <- pskl_to_uskl_ptyp.
-  apply uskl_to_pskl_pskl_to_uskl.
-Qed.
-
-Lemma uskl_to_pskl_subst_mono : forall R' τ β,
-  ⌊ subst_uskl_in_uskl (ptyp_to_uskl_syn τ) β R' ⌋ˢ
-  = subst_pskl_in_pskl (ptyp_to_pskl τ) β ⌊ R' ⌋ˢ.
-Proof.
-  induction R'; intros; simpl; try (f_equal; auto; fail).
-  repeat destruct_if; try contradiction;
-    [ apply uskl_to_pskl_ptyp_to_uskl_syn | reflexivity ].
-Qed.
-
 (** Strip the shared rigid binder — and the Barendregt suffix above it —
     from an information increase (the ⊴-half of soundness's ForallR). *)
 Lemma a_isub_strip_tvar_mid : forall α Ξ Θ0 Θ1,

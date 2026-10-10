@@ -1353,10 +1353,6 @@ Qed.
 (*  guarded shapes have no rule into them.                                 *)
 (* ===================================================================== *)
 
-Lemma d_tags_skl_dot_ghost_inv : forall Ψ,
-  d_tags_skl Ψ uskl_dot_ghost -> Ψ [=] empty.
-Proof. intros Ψ H; inversion H; subst; auto. Qed.
-
 Lemma ad_ppre_mono_paint_dot_ghost_absurd : forall Θ Δ Ψ P ψ,
   {{ ⊢ Θ }}a ->
   {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->

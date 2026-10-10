@@ -12,6 +12,7 @@ Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
 Require Import src.fresco.notations.
+Require Import src.fresco.prop_tag.
 Require Import src.fresco.ltac_utils.
 Require Import src.fresco.coercions.
 Require Import src.fresco.def_shapes.
@@ -27,7 +28,6 @@ Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo_decl.def_subtyping.
 Require Import src.fresco.algo.consis.prop_soundness_consis.
-Require Import src.fresco.algo.consis.prop_consis_precise.   (* ftag_in_uskl_open_var *)
 Require Import src.fresco.algo.prop_refine.
 Require Import src.fresco.algo.prop_stability.
 Require Import src.fresco.algo.prop_pat_sub.
@@ -154,14 +154,6 @@ Proof.
     [ contradiction | reflexivity ].
 Qed.
 (* general erasure/open commute (open with an arbitrary skeleton) *)
-Lemma uskl_to_pskl_open_gen : forall R ψg,
-  ⌊ open_uskl_wrt_uskl R ψg ⌋ˢ
-  = open_pskl_wrt_pskl ⌊ R ⌋ˢ ⌊ ψg ⌋ˢ.
-Proof.
-  intros. unfold open_uskl_wrt_uskl, open_pskl_wrt_pskl.
-  generalize 0. induction R; intros k; simpl; try (f_equal; auto; fail).
-  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
-Qed.
 
 (* ===================================================================== *)
 (*  §6  Vacuous subtyping decoration (lemma:vacuous-subtyping-decoration) *)
@@ -497,22 +489,6 @@ Proof.
     eapply IHa_consistag;
       [ first [ eassumption | reflexivity ] | exact Hwf | eassumption ].
 Qed.
-
-Lemma lc_uskl_arrow_inv : forall R R',
-  lc_uskl (uskl_arrow R R') -> lc_uskl R /\ lc_uskl R'.
-Proof. intros R R' H; inversion H; auto. Qed.
-
-Lemma a_wf_pskl_arrow_inv : forall Θ Δ P1 P2,
-  {{ Θ ⨟ Δ ⊢ₚₛ (pskl_arrow P1 P2) }}a -> {{ Θ ⨟ Δ ⊢ₚₛ P1 }}a /\ {{ Θ ⨟ Δ ⊢ₚₛ P2 }}a.
-Proof. intros * H; inversion H; auto. Qed.
-
-Lemma lc_uskl_univ_ghost_inv : forall R,
-  lc_uskl (uskl_univ_ghost R) -> lc_uskl R.
-Proof. intros R H; inversion H; auto. Qed.
-
-Lemma lc_uskl_dot_univ_ghost_inv : forall R,
-  lc_uskl (uskl_dot_univ_ghost R) -> lc_uskl R.
-Proof. intros R H; inversion H; auto. Qed.
 
 (** Discharge one of the three Δ-invariants ([rigid] / [no_flex_dep] /
     [flex_above_free]) after a ∀ row has extended Δ and Θ by the fresh rigid

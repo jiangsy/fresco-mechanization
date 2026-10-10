@@ -111,105 +111,11 @@ Qed.
 (*  §2  Substitution commutes with every coercion in play                 *)
 (* ===================================================================== *)
 
-(** The PLAIN commutations first — each coercion is structural, so it
-    commutes with substitution when the substituted term is coerced too.
-    [pskl_to_uskl_subst] is already in algo/prop_basic.v. *)
-
-Lemma ptyp_to_pskl_subst : forall A0 α A,
-  ptyp_to_pskl (subst_ptyp_in_ptyp A0 α A)
-  = subst_pskl_in_pskl (ptyp_to_pskl A0) α (ptyp_to_pskl A).
-Proof.
-  intros A0 α A; induction A; simpl; try congruence.
-  destruct_if; reflexivity.
-Qed.
-
-Lemma pskl_to_bskl_syn_subst : forall P0 α P,
-  pskl_to_bskl_syn (subst_pskl_in_pskl P0 α P)
-  = subst_bskl_in_bskl (pskl_to_bskl_syn P0) α (pskl_to_bskl_syn P).
-Proof.
-  intros P0 α P; induction P; simpl; try congruence.
-  destruct_if; reflexivity.
-Qed.
-
-Lemma pskl_to_bskl_inh_subst : forall P0 α P,
-  pskl_to_bskl_inh (subst_pskl_in_pskl P0 α P)
-  = subst_bskl_in_bskl (pskl_to_bskl_inh P0) α (pskl_to_bskl_inh P).
-Proof.
-  intros P0 α P; induction P; simpl; try congruence.
-  destruct_if; reflexivity.
-Qed.
-
-Lemma bskl_to_uskl_subst : forall Q0 α Q,
-  bskl_to_uskl (subst_bskl_in_bskl Q0 α Q)
-  = subst_uskl_in_uskl (bskl_to_uskl Q0) α (bskl_to_uskl Q).
-Proof.
-  intros Q0 α Q; induction Q; simpl; try congruence.
-  destruct_if; reflexivity.
-Qed.
-
-Lemma btyp_to_bskl_subst : forall B0 α B,
-  btyp_to_bskl (subst_btyp_in_btyp B0 α B)
-  = subst_bskl_in_bskl (btyp_to_bskl B0) α (btyp_to_bskl B).
-Proof.
-  intros B0 α B; induction B; simpl; try congruence.
-  destruct_if; reflexivity.
-Qed.
-
-Lemma btyp_to_ptyp_subst : forall B0 α B,
-  btyp_to_ptyp (subst_btyp_in_btyp B0 α B)
-  = subst_ptyp_in_ptyp (btyp_to_ptyp B0) α (btyp_to_ptyp B).
-Proof.
-  intros B0 α B; induction B; simpl; try congruence.
-  destruct_if; reflexivity.
-Qed.
-
-Lemma ptyp_to_btyp_syn_subst : forall A0 α A,
-  ptyp_to_btyp_syn (subst_ptyp_in_ptyp A0 α A)
-  = subst_btyp_in_btyp (ptyp_to_btyp_syn A0) α (ptyp_to_btyp_syn A).
-Proof.
-  intros A0 α A; induction A; simpl; try congruence.
-  destruct_if; reflexivity.
-Qed.
-
-Lemma ptyp_to_btyp_inh_subst : forall A0 α A,
-  ptyp_to_btyp_inh (subst_ptyp_in_ptyp A0 α A)
-  = subst_btyp_in_btyp (ptyp_to_btyp_inh A0) α (ptyp_to_btyp_inh A).
-Proof.
-  intros A0 α A; induction A; simpl; try congruence.
-  destruct_if; reflexivity.
-Qed.
-
-(** The composite coercions, derived. *)
-Lemma ptyp_to_bskl_syn_subst : forall τ α A,
-  ptyp_to_bskl_syn (subst_ptyp_in_ptyp τ α A)
-  = subst_bskl_in_bskl (ptyp_to_bskl_syn τ) α (ptyp_to_bskl_syn A).
-Proof.
-  intros. unfold ptyp_to_bskl_syn.
-  rewrite ptyp_to_pskl_subst, pskl_to_bskl_syn_subst. reflexivity.
-Qed.
-
-Lemma ptyp_to_uskl_syn_subst : forall τ α A,
-  ptyp_to_uskl_syn (subst_ptyp_in_ptyp τ α A)
-  = subst_uskl_in_uskl (ptyp_to_uskl_syn τ) α (ptyp_to_uskl_syn A).
-Proof.
-  intros. unfold ptyp_to_uskl_syn.
-  rewrite ptyp_to_bskl_syn_subst, bskl_to_uskl_subst. reflexivity.
-Qed.
-
-(** ⚙ [pskl_to_bskl_inh_subst_mono] — substituting a MONOTYPE into an
-    inherited painting is the same substitution as into a synthesised one —
-    is already in prop_pat_sub.v, oriented [subst (inh P) = inh (subst P)].
-    Used below in that direction.
-
-Note also: *)
-Lemma ptyp_to_btyp_inh_subst_mono : forall τ α A,
-  mono_ptyp τ ->
-  ptyp_to_btyp_inh (subst_ptyp_in_ptyp τ α A)
-  = subst_btyp_in_btyp (ptyp_to_btyp_syn τ) α (ptyp_to_btyp_inh A).
-Proof.
-  intros τ α A Hm.
-  rewrite ptyp_to_btyp_inh_subst, (ptyp_to_btyp_inh_mono_syn Hm). reflexivity.
-Qed.
+(* ⚙ The commutations of substitution with every coercion — the plain ones
+   ([ptyp_to_pskl_subst], …) and the composites over the monotype embeddings
+   ([ptyp_to_bskl_syn_subst], [ptyp_to_uskl_syn_subst],
+   [ptyp_to_btyp_inh_subst_mono]) — live in fresco/prop_coercions.v (moved
+   2026-10-10). *)
 
 (* ===================================================================== *)
 (*  §3  The solving hypothesis, and the well-formedness judgements        *)

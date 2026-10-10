@@ -89,17 +89,6 @@ Lemma bskl_to_pskl_btyp_to_bskl : forall B,
   bskl_to_pskl (btyp_to_bskl B) = ptyp_to_pskl (btyp_to_ptyp B).
 Proof. induction B; simpl; f_equal; auto. Qed.
 
-(** Substitution commutes with the [ptyp] painting — the [pskl] analogue of
-    the [open] commutations below. *)
-Lemma subst_ptyp_to_pskl_comm : forall A τ β,
-  subst_pskl_in_pskl (ptyp_to_pskl τ) β (ptyp_to_pskl A)
-    = ptyp_to_pskl (subst_ptyp_in_ptyp τ β A).
-Proof.
-  induction A; intros τ β; simpl; try solve [ f_equal; auto ];
-    destruct_if;
-    reflexivity.
-Qed.
-
 (** A synthesised [btyp] is the syn-painting of its own forgetful image, so
     [d_consis_compose]'s [ptyp_to_btyp_syn A] middle can be fed an arbitrary
     [is_styp] btyp via [A := btyp_to_ptyp B]. *)
@@ -543,62 +532,109 @@ Proof.
   rewrite btyp_to_utyp_syn_open. reflexivity.
 Qed.
 
+(** Substitution commutes with every coercion — each is structural, so it
+    commutes with substitution when the substituted term is coerced too.
+    ⚙ Moved here 2026-10-10 from algo/prop_suffix_erase.v §2;
+    [ptyp_to_pskl_subst] also replaces this file's own reversed copy,
+    [subst_ptyp_to_pskl_comm]. *)
+
+Lemma ptyp_to_pskl_subst : forall A0 α A,
+  ptyp_to_pskl (subst_ptyp_in_ptyp A0 α A)
+  = subst_pskl_in_pskl (ptyp_to_pskl A0) α (ptyp_to_pskl A).
+Proof.
+  intros A0 α A; induction A; simpl; try congruence.
+  destruct_if; reflexivity.
+Qed.
+
+Lemma pskl_to_bskl_syn_subst : forall P0 α P,
+  pskl_to_bskl_syn (subst_pskl_in_pskl P0 α P)
+  = subst_bskl_in_bskl (pskl_to_bskl_syn P0) α (pskl_to_bskl_syn P).
+Proof.
+  intros P0 α P; induction P; simpl; try congruence.
+  destruct_if; reflexivity.
+Qed.
+
+Lemma pskl_to_bskl_inh_subst : forall P0 α P,
+  pskl_to_bskl_inh (subst_pskl_in_pskl P0 α P)
+  = subst_bskl_in_bskl (pskl_to_bskl_inh P0) α (pskl_to_bskl_inh P).
+Proof.
+  intros P0 α P; induction P; simpl; try congruence.
+  destruct_if; reflexivity.
+Qed.
+
+Lemma bskl_to_uskl_subst : forall Q0 α Q,
+  bskl_to_uskl (subst_bskl_in_bskl Q0 α Q)
+  = subst_uskl_in_uskl (bskl_to_uskl Q0) α (bskl_to_uskl Q).
+Proof.
+  intros Q0 α Q; induction Q; simpl; try congruence.
+  destruct_if; reflexivity.
+Qed.
+
+Lemma btyp_to_bskl_subst : forall B0 α B,
+  btyp_to_bskl (subst_btyp_in_btyp B0 α B)
+  = subst_bskl_in_bskl (btyp_to_bskl B0) α (btyp_to_bskl B).
+Proof.
+  intros B0 α B; induction B; simpl; try congruence.
+  destruct_if; reflexivity.
+Qed.
+
+Lemma btyp_to_ptyp_subst : forall B0 α B,
+  btyp_to_ptyp (subst_btyp_in_btyp B0 α B)
+  = subst_ptyp_in_ptyp (btyp_to_ptyp B0) α (btyp_to_ptyp B).
+Proof.
+  intros B0 α B; induction B; simpl; try congruence.
+  destruct_if; reflexivity.
+Qed.
+
+Lemma ptyp_to_btyp_syn_subst : forall A0 α A,
+  ptyp_to_btyp_syn (subst_ptyp_in_ptyp A0 α A)
+  = subst_btyp_in_btyp (ptyp_to_btyp_syn A0) α (ptyp_to_btyp_syn A).
+Proof.
+  intros A0 α A; induction A; simpl; try congruence.
+  destruct_if; reflexivity.
+Qed.
+
+Lemma ptyp_to_btyp_inh_subst : forall A0 α A,
+  ptyp_to_btyp_inh (subst_ptyp_in_ptyp A0 α A)
+  = subst_btyp_in_btyp (ptyp_to_btyp_inh A0) α (ptyp_to_btyp_inh A).
+Proof.
+  intros A0 α A; induction A; simpl; try congruence.
+  destruct_if; reflexivity.
+Qed.
+
 (** Commutation with the [α := 1] substitution — what the [_subst_unit]
     strengthening lemmas of decl/ rewrite with: every conversion sends [unit]
-    to the [unit] of its target sort. *)
+    to the [unit] of its target sort.  Instances of the general commutations
+    just above. *)
 Lemma pskl_to_bskl_inh_subst_unit : forall P α',
     subst_bskl_in_bskl bskl_unit α' (pskl_to_bskl_inh P)
     = pskl_to_bskl_inh (subst_pskl_in_pskl pskl_unit α' P).
-Proof.
-  induction P; intros α'; simpl; try reflexivity;
-    try (rewrite IHP1, IHP2; reflexivity); try (rewrite IHP; reflexivity).
-  - destruct_if; reflexivity.
-Qed.
+Proof. intros P α'. symmetry. exact (pskl_to_bskl_inh_subst pskl_unit α' P). Qed.
 
 Lemma pskl_to_bskl_syn_subst_unit : forall P α',
     subst_bskl_in_bskl bskl_unit α' (pskl_to_bskl_syn P)
     = pskl_to_bskl_syn (subst_pskl_in_pskl pskl_unit α' P).
-Proof.
-  induction P; intros α'; simpl; try reflexivity;
-    try (rewrite IHP1, IHP2; reflexivity); try (rewrite IHP; reflexivity).
-  - destruct_if; reflexivity.
-Qed.
+Proof. intros P α'. symmetry. exact (pskl_to_bskl_syn_subst pskl_unit α' P). Qed.
 
 Lemma bskl_to_uskl_subst_unit : forall Q α',
     subst_uskl_in_uskl uskl_unit α' (bskl_to_uskl Q)
     = bskl_to_uskl (subst_bskl_in_bskl bskl_unit α' Q).
-Proof.
-  induction Q; intros α'; simpl; try reflexivity;
-    try (rewrite IHQ1, IHQ2; reflexivity); try (rewrite IHQ; reflexivity).
-  - destruct_if; reflexivity.
-Qed.
+Proof. intros Q α'. symmetry. exact (bskl_to_uskl_subst bskl_unit α' Q). Qed.
 
 Lemma ptyp_to_pskl_subst_unit : forall A α',
     subst_pskl_in_pskl pskl_unit α' (ptyp_to_pskl A)
     = ptyp_to_pskl (subst_ptyp_in_ptyp ptyp_unit α' A).
-Proof.
-  induction A; intros α'; simpl; try reflexivity;
-    try (rewrite IHA1, IHA2; reflexivity); try (rewrite IHA; reflexivity).
-  - destruct_if; reflexivity.
-Qed.
+Proof. intros A α'. symmetry. exact (ptyp_to_pskl_subst ptyp_unit α' A). Qed.
 
 Lemma ptyp_to_btyp_syn_subst_unit : forall A α',
     subst_btyp_in_btyp btyp_unit α' (ptyp_to_btyp_syn A)
     = ptyp_to_btyp_syn (subst_ptyp_in_ptyp ptyp_unit α' A).
-Proof.
-  induction A; intros α'; simpl; try reflexivity;
-    try (rewrite IHA1, IHA2; reflexivity); try (rewrite IHA; reflexivity).
-  - destruct_if; reflexivity.
-Qed.
+Proof. intros A α'. symmetry. exact (ptyp_to_btyp_syn_subst ptyp_unit α' A). Qed.
 
 Lemma ptyp_to_btyp_inh_subst_unit : forall A α',
     subst_btyp_in_btyp btyp_unit α' (ptyp_to_btyp_inh A)
     = ptyp_to_btyp_inh (subst_ptyp_in_ptyp ptyp_unit α' A).
-Proof.
-  induction A; intros α'; simpl; try reflexivity;
-    try (rewrite IHA1, IHA2; reflexivity); try (rewrite IHA; reflexivity).
-  - destruct_if; reflexivity.
-Qed.
+Proof. intros A α'. symmetry. exact (ptyp_to_btyp_inh_subst ptyp_unit α' A). Qed.
 
 Lemma ptyp_to_utyp_syn_subst_unit : forall A α',
     subst_utyp_in_utyp utyp_unit α' (ptyp_to_utyp_syn A)
@@ -612,20 +648,12 @@ Qed.
 Lemma btyp_to_bskl_subst_unit : forall B α',
     subst_bskl_in_bskl bskl_unit α' (btyp_to_bskl B)
     = btyp_to_bskl (subst_btyp_in_btyp btyp_unit α' B).
-Proof.
-  induction B; intros α'; simpl; try reflexivity;
-    try (rewrite IHB1, IHB2; reflexivity); try (rewrite IHB; reflexivity).
-  - destruct_if; reflexivity.
-Qed.
+Proof. intros B α'. symmetry. exact (btyp_to_bskl_subst btyp_unit α' B). Qed.
 
 Lemma btyp_to_ptyp_subst_unit : forall B α',
     subst_ptyp_in_ptyp ptyp_unit α' (btyp_to_ptyp B)
     = btyp_to_ptyp (subst_btyp_in_btyp btyp_unit α' B).
-Proof.
-  induction B; intros α'; simpl; try reflexivity;
-    try (rewrite IHB1, IHB2; reflexivity); try (rewrite IHB; reflexivity).
-  - destruct_if; reflexivity.
-Qed.
+Proof. intros B α'. symmetry. exact (btyp_to_ptyp_subst btyp_unit α' B). Qed.
 
 Lemma uskl_to_pskl_subst_unit : forall R α,
   uskl_to_pskl (subst_uskl_in_uskl uskl_unit α R)
@@ -1258,3 +1286,170 @@ Qed.
 Lemma size_pskl_ptyp_to_pskl : forall A,
   size_pskl (ptyp_to_pskl A) = size_ptyp A.
 Proof. induction A; simpl; auto. Qed.
+
+(* ===================================================================== *)
+(*  §6  The MONOTYPE EMBEDDINGS, and the stragglers                        *)
+(*                                                                        *)
+(*  Facts about [ptyp_to_bskl_syn] / [ptyp_to_uskl_syn] (coercions.v) and *)
+(*  a few more conversion / local-closure facts.  ⚙ Gathered here         *)
+(*  2026-10-10 from algo/prop_basic.v, algo/prop_suffix_erase.v,          *)
+(*  algo/prop_mono_bridge.v, algo/prop_pat_sub.v and deco_algo/ — the      *)
+(*  embeddings used to be defined in algo_decl/, which is what kept these *)
+(*  out.  [Set Implicit Arguments] is scoped to this section, as in the    *)
+(*  files they came from.                                                 *)
+(* ===================================================================== *)
+
+Set Implicit Arguments.
+
+(** Embedding composition and substitution commutation for the fold step. *)
+Lemma pskl_to_uskl_ptyp : forall A,
+  pskl_to_uskl (ptyp_to_pskl A) = ptyp_to_uskl_syn A.
+Proof.
+  induction A; unfold ptyp_to_uskl_syn in *; simpl; f_equal; auto.
+Qed.
+
+Lemma pskl_to_uskl_subst : forall P τ β,
+  pskl_to_uskl (subst_pskl_in_pskl (ptyp_to_pskl τ) β P)
+  = subst_uskl_in_uskl (ptyp_to_uskl_syn τ) β (pskl_to_uskl P).
+Proof.
+  induction P; intros; simpl; f_equal; auto.
+  destruct (eq_var α β); simpl; auto using pskl_to_uskl_ptyp.
+Qed.
+
+Lemma ptyp_to_bskl_syn_open_var : forall A α,
+  ptyp_to_bskl_syn (open_ptyp_wrt_ptyp A (ptyp_var_f α))
+  = open_bskl_wrt_bskl (ptyp_to_bskl_syn A) (bskl_var_f α).
+Proof.
+  intros. unfold ptyp_to_bskl_syn, open_ptyp_wrt_ptyp, open_bskl_wrt_bskl.
+  rewrite ptyp_to_pskl_open_rec. rewrite pskl_to_bskl_syn_open_rec.
+  reflexivity.
+Qed.
+
+(** Erasure undoes the syn painting of a type.  ⚙ A coercion retraction:
+    its home is fresco/prop_coercions.v; it lives here until it moves. *)
+Lemma bskl_to_pskl_ptyp_to_bskl_syn : forall A,
+  bskl_to_pskl (ptyp_to_bskl_syn A) = ptyp_to_pskl A.
+Proof. intros; unfold ptyp_to_bskl_syn; apply bskl_to_pskl_pskl_to_bskl_syn. Qed.
+
+(** On a MONOTYPE the inherited and synthesised paintings coincide — they only
+    differ at quantifiers, and a monotype has none. *)
+Lemma ptyp_to_bskl_inh_syn_eq : forall A,
+  mono_ptyp A ->
+  pskl_to_bskl_inh (ptyp_to_pskl A) = ptyp_to_bskl_syn A.
+Proof.
+  unfold ptyp_to_bskl_syn.
+  intros A Hm; induction Hm; simpl; f_equal; auto.
+Qed.
+
+(** Free variables of monotype paintings. *)
+Lemma ftvar_ptyp_to_uskl_syn : forall τ,
+  ftvar_in_uskl (ptyp_to_uskl_syn τ) [=] ftvar_in_ptyp τ.
+Proof.
+  intros. rewrite <- pskl_to_uskl_ptyp.
+  rewrite ftvar_in_uskl_pskl. apply ftvar_ptyp_to_pskl.
+Qed.
+
+Lemma ftvar_ptyp_to_bskl_syn : forall τ,
+  ftvar_in_bskl (ptyp_to_bskl_syn τ) [=] ftvar_in_ptyp τ.
+Proof.
+  intros. rewrite <- (ftvar_bskl_to_pskl (ptyp_to_bskl_syn τ)).
+  rewrite bskl_to_pskl_ptyp_to_bskl_syn. apply ftvar_ptyp_to_pskl.
+Qed.
+
+(** The composite coercions, derived. *)
+Lemma ptyp_to_bskl_syn_subst : forall τ α A,
+  ptyp_to_bskl_syn (subst_ptyp_in_ptyp τ α A)
+  = subst_bskl_in_bskl (ptyp_to_bskl_syn τ) α (ptyp_to_bskl_syn A).
+Proof.
+  intros. unfold ptyp_to_bskl_syn.
+  rewrite ptyp_to_pskl_subst, pskl_to_bskl_syn_subst. reflexivity.
+Qed.
+
+Lemma ptyp_to_uskl_syn_subst : forall τ α A,
+  ptyp_to_uskl_syn (subst_ptyp_in_ptyp τ α A)
+  = subst_uskl_in_uskl (ptyp_to_uskl_syn τ) α (ptyp_to_uskl_syn A).
+Proof.
+  intros. unfold ptyp_to_uskl_syn.
+  rewrite ptyp_to_bskl_syn_subst, bskl_to_uskl_subst. reflexivity.
+Qed.
+
+(** ⚙ [pskl_to_bskl_inh_subst_mono] — substituting a MONOTYPE into an
+    inherited painting is the same substitution as into a synthesised one —
+    is already in prop_pat_sub.v, oriented [subst (inh P) = inh (subst P)].
+    Used below in that direction.
+
+Note also: *)
+Lemma ptyp_to_btyp_inh_subst_mono : forall τ α A,
+  mono_ptyp τ ->
+  ptyp_to_btyp_inh (subst_ptyp_in_ptyp τ α A)
+  = subst_btyp_in_btyp (ptyp_to_btyp_syn τ) α (ptyp_to_btyp_inh A).
+Proof.
+  intros τ α A Hm.
+  rewrite ptyp_to_btyp_inh_subst, (ptyp_to_btyp_inh_mono_syn Hm). reflexivity.
+Qed.
+
+(** The syn painting of a monotype determines it. *)
+Lemma ptyp_to_bskl_syn_inj : forall A A',
+  mono_ptyp A -> mono_ptyp A' ->
+  ptyp_to_bskl_syn A = ptyp_to_bskl_syn A' ->
+  A = A'.
+Proof.
+  unfold ptyp_to_bskl_syn.
+  intros A A' HmA; revert A'; induction HmA as [ | α | A1 A2 Hm1 IH1 Hm2 IH2 ];
+    intros A' HmB Heq; destruct HmB; simpl in Heq; try discriminate.
+  - reflexivity.
+  - inversion Heq; reflexivity.
+  - inversion Heq. f_equal; [ apply IH1 | apply IH2 ]; auto.
+Qed.
+
+(** Erasure of a monotype painting, and of the painting substitution. *)
+Lemma uskl_to_pskl_ptyp_to_uskl_syn : forall τ,
+  ⌊ ptyp_to_uskl_syn τ ⌋ˢ = ptyp_to_pskl τ.
+Proof.
+  intros. rewrite <- pskl_to_uskl_ptyp.
+  apply uskl_to_pskl_pskl_to_uskl.
+Qed.
+
+Lemma uskl_to_pskl_subst_mono : forall R' τ β,
+  ⌊ subst_uskl_in_uskl (ptyp_to_uskl_syn τ) β R' ⌋ˢ
+  = subst_pskl_in_pskl (ptyp_to_pskl τ) β ⌊ R' ⌋ˢ.
+Proof.
+  induction R'; intros; simpl; try (f_equal; auto; fail).
+  repeat destruct_if; try contradiction;
+    [ apply uskl_to_pskl_ptyp_to_uskl_syn | reflexivity ].
+Qed.
+
+Lemma pskl_to_uskl_not_tag : forall P ε ψ,
+  pskl_to_uskl P <> uskl_all_tag ε ψ.
+Proof. destruct P; simpl; discriminate. Qed.
+
+Lemma pskl_to_uskl_not_dot_ghost : forall P,
+  pskl_to_uskl P <> uskl_dot_ghost.
+Proof. destruct P; simpl; discriminate. Qed.
+
+Lemma pskl_to_uskl_not_dot_univ_ghost : forall P ψ,
+  pskl_to_uskl P <> uskl_dot_univ_ghost ψ.
+Proof. destruct P; simpl; discriminate. Qed.
+
+Lemma uskl_to_pskl_open_gen : forall R ψg,
+  ⌊ open_uskl_wrt_uskl R ψg ⌋ˢ
+  = open_pskl_wrt_pskl ⌊ R ⌋ˢ ⌊ ψg ⌋ˢ.
+Proof.
+  intros. unfold open_uskl_wrt_uskl, open_pskl_wrt_pskl.
+  generalize 0. induction R; intros k; simpl; try (f_equal; auto; fail).
+  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
+Qed.
+
+Lemma lc_uskl_arrow_inv : forall R R',
+  lc_uskl (uskl_arrow R R') -> lc_uskl R /\ lc_uskl R'.
+Proof. intros R R' H; inversion H; auto. Qed.
+
+Lemma lc_uskl_univ_ghost_inv : forall R,
+  lc_uskl (uskl_univ_ghost R) -> lc_uskl R.
+Proof. intros R H; inversion H; auto. Qed.
+
+Lemma lc_uskl_dot_univ_ghost_inv : forall R,
+  lc_uskl (uskl_dot_univ_ghost R) -> lc_uskl R.
+Proof. intros R H; inversion H; auto. Qed.
+
+Unset Implicit Arguments.

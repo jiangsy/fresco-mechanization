@@ -580,7 +580,7 @@ Lemma pskl_ty_core_subst_gen : forall M P C τ β,
                  (subst_ptyp_in_ptyp τ β C).
 Proof.
   intros M P C τ β H; induction H; simpl.
-  - rewrite subst_ptyp_to_pskl_comm. apply pskl_ty_core__tc.
+  - rewrite <- ptyp_to_pskl_subst. apply pskl_ty_core__tc.
   - apply pskl_ty_core__fn. exact IHpskl_ty_core.
 Qed.
 

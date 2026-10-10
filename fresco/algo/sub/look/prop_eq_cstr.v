@@ -30,6 +30,7 @@ Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
 Require Import src.fresco.notations.
+Require Import src.fresco.prop_tag.
 Require Import src.fresco.ltac_utils.
 Require Import src.fresco.coercions.
 Require Import src.fresco.def_shapes.
@@ -51,7 +52,6 @@ Require Import src.fresco.algo.consis.prop_soundness_consis.
 Require Import src.fresco.algo.consis.prop_completeness_consis.
 Require Import src.fresco.algo.prop_mono_bridge.
 Require Import src.fresco.algo.prop_precise.
-Require Import src.fresco.deco_algo.prop_decorate_sub.
 Require Import src.fresco.algo.prop_pat_sub.
 Require Import src.fresco.algo.consis.prop_consis_precise.
 Require Import src.fresco.algo.sub.prop_looksub.

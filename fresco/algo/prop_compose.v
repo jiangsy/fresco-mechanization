@@ -831,3 +831,45 @@ Proof.
     apply a_inc__tvar; [ | exact Hs2 ].
     apply IHHinc1; [ exact Hwa | exact Hwf1t | exact Hinc2'' ].
 Qed.
+
+(** A metasubstitution that is the identity on a term's free variables
+    leaves it unchanged; the empty one in particular.  ⚙ Moved here
+    2026-10-10 from consis/prop_completeness_consis.v and
+    sub/prop_sub_msubst_equiv.v. *)
+Lemma msubst_ptyp_lookup_refl : forall κ A,
+  (forall α, α `in` ftvar_in_ptyp A -> msubst_lookup κ α = ptyp_var_f α) ->
+  msubst_ptyp κ A = A.
+Proof.
+  intros κ A; induction A as [ | n | α2 | A1 IH1 A2 IH2 | A0 IH0 ];
+    intros Hlk; simpl in *.
+  - reflexivity.
+  - reflexivity.
+  - apply Hlk. fsetdec.
+  - rewrite IH1, IH2;
+      [ reflexivity
+      | intros α Hα; apply Hlk; fsetdec
+      | intros α Hα; apply Hlk; fsetdec ].
+  - rewrite IH0; [ reflexivity | intros α Hα; apply Hlk; fsetdec ].
+Qed.
+
+Lemma msubst_pskl_lookup_refl : forall κ P,
+  (forall α, α `in` ftvar_in_pskl P -> msubst_lookup κ α = ptyp_var_f α) ->
+  msubst_pskl κ P = P.
+Proof.
+  intros κ P;
+    induction P as [ | n | α2 | Pa IHa Pb IHb | Pb IHb | | Pt IHt ];
+    intros Hlk; simpl in *.
+  - reflexivity.
+  - reflexivity.
+  - rewrite Hlk; [ reflexivity | fsetdec ].
+  - rewrite IHa, IHb;
+      [ reflexivity
+      | intros α Hα; apply Hlk; fsetdec
+      | intros α Hα; apply Hlk; fsetdec ].
+  - rewrite IHb; [ reflexivity | intros α Hα; apply Hlk; fsetdec ].
+  - reflexivity.
+  - rewrite IHt; [ reflexivity | intros α Hα; apply Hlk; fsetdec ].
+Qed.
+
+Lemma msubst_pskl_nil : forall P, msubst_pskl nil P = P.
+Proof. intros P. apply msubst_pskl_lookup_refl. intros; reflexivity. Qed.

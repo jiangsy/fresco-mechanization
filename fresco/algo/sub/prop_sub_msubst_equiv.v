@@ -28,6 +28,7 @@ Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
 Require Import src.fresco.notations.
+Require Import src.fresco.prop_tag.
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.ltac_utils.   (* solve_notin_auto *)
 Require Import src.fresco.coercions.
@@ -364,9 +365,6 @@ Qed.
 (*  is a [__flex_def] step.  Natural home is prop_normal.v; parked here   *)
 (*  to keep the rebuild local (moving it forces the full algo chain).     *)
 (* ===================================================================== *)
-
-Lemma msubst_pskl_nil : forall P, msubst_pskl nil P = P.
-Proof. induction P; cbn; f_equal; auto. Qed.
 
 (** Pointwise congruence: a metasubstitution each of whose lookups is
     ≡ᵗ-related to the variable itself relates every type to its image. *)

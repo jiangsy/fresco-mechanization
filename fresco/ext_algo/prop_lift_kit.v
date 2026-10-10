@@ -1620,7 +1620,7 @@ Lemma rel_ptyp_subst : forall ρ V A1 A2 τ1 τ2 β1 β2,
   rel_ptyp ρ V (subst_ptyp_in_ptyp τ1 β1 A1) (subst_ptyp_in_ptyp τ2 β2 A2).
 Proof.
   intros ρ V A1 A2 τ1 τ2 β1 β2 H HT Hβ Hinj Hfun. unfold rel_ptyp in *.
-  rewrite <- 2 subst_ptyp_to_pskl_comm.
+  rewrite 2 ptyp_to_pskl_subst.
   apply rel_pskl_subst; assumption.
 Qed.
 
@@ -1798,7 +1798,7 @@ Qed.
 (*                               binder shapes are read                    *)
 (*    [a_flex_tvar_cons_other]   …and hence peeling one entry               *)
 (*    [a_flex_tvar_mid_other]    …anywhere under a pending suffix          *)
-(*                               (these two in algo/prop_basic.v)          *)
+(*                               (these three in algo/prop_basic.v)        *)
 (*    [a_flex_tvar_solve_m]      [Assign-SolveM]'s surgery, in one line    *)
 (*                                                                        *)
 (*  ⭐⭐ AND THE TWO MOVES EVERY WALK ROW MAKES, factored:                  *)
@@ -1886,18 +1886,6 @@ Proof.
     destruct (x == α1) as [-> | Hne].
     + left. left. unfold binds; simpl; left; reflexivity.
     + right. apply IH. clear - Hx Hne. fsetdec.
-Qed.
-
-
-Lemma a_flex_tvar_one_flex : forall α (b : abind) x,
-  (b = abind_flex_mono \/ exists t, b = abind_flex_mono_def t) ->
-  (a_flex_tvar (α ~ b) x <-> x = α).
-Proof.
-  intros α b x Hb. split.
-  - intros [Hbd | [t Hbd]]; unfold binds in Hbd; simpl in Hbd;
-      destruct Hbd as [E | E]; try contradiction; inversion E; reflexivity.
-  - intros ->. destruct Hb as [-> | [t ->]];
-      [ left | right; exists t ]; unfold binds; simpl; left; reflexivity.
 Qed.
 
 (** ⭐ [Assign-SolveM]'s context surgery, as seen by FLEXIBILITY: the head
@@ -2180,29 +2168,6 @@ Proof.
   induction H; subst; constructor; auto.
   - eapply rel_atom_drop_id; [ eassumption | exact Hx ].
   - eapply rel_abind_drop_id; [ eassumption | exact Hx ].
-Qed.
-
-Lemma a_flex_tvar_one_nonflex : forall (c : atom) (bd : abind) x,
-  bd <> abind_flex_mono ->
-  (forall t, bd <> abind_flex_mono_def t) ->
-  ~ a_flex_tvar (c ~ bd) x.
-Proof.
-  intros c bd x H1 H2 [Hb | [t Hb]]; unfold binds in Hb; simpl in Hb;
-    destruct Hb as [E | E]; try contradiction; inversion E; subst.
-  - apply H1; reflexivity.
-  - apply (H2 t); reflexivity.
-Qed.
-
-Lemma a_flex_tvar_cons_absent : forall (c : atom) (bd : abind) (Θ : aenv) x,
-  bd <> abind_flex_mono ->
-  (forall t, bd <> abind_flex_mono_def t) ->
-  x `notin` dom Θ ->
-  ~ a_flex_tvar ((c ~ bd) ++ Θ) x.
-Proof.
-  intros c bd Θ x H1 H2 Hx Hf. rewrite a_flex_tvar_app_iff in Hf.
-  destruct Hf as [Hf | Hf];
-    [ exact (@a_flex_tvar_one_nonflex c bd x H1 H2 Hf)
-    | exact (Hx (a_flex_tvar_in_dom Hf)) ].
 Qed.
 
 Lemma flex_agree_rel_push_id_absent : forall ρ V x Θ1 Θ2,

@@ -1387,41 +1387,6 @@ Proof.
         apply IH. intros τ Hb. apply (Hnd τ). unfold binds. right. exact Hb.
 Qed.
 
-Lemma msubst_ptyp_lookup_refl : forall κ A,
-  (forall α, α `in` ftvar_in_ptyp A -> msubst_lookup κ α = ptyp_var_f α) ->
-  msubst_ptyp κ A = A.
-Proof.
-  intros κ A; induction A as [ | n | α2 | A1 IH1 A2 IH2 | A0 IH0 ];
-    intros Hlk; simpl in *.
-  - reflexivity.
-  - reflexivity.
-  - apply Hlk. fsetdec.
-  - rewrite IH1, IH2;
-      [ reflexivity
-      | intros α Hα; apply Hlk; fsetdec
-      | intros α Hα; apply Hlk; fsetdec ].
-  - rewrite IH0; [ reflexivity | intros α Hα; apply Hlk; fsetdec ].
-Qed.
-
-Lemma msubst_pskl_lookup_refl : forall κ P,
-  (forall α, α `in` ftvar_in_pskl P -> msubst_lookup κ α = ptyp_var_f α) ->
-  msubst_pskl κ P = P.
-Proof.
-  intros κ P;
-    induction P as [ | n | α2 | Pa IHa Pb IHb | Pb IHb | | Pt IHt ];
-    intros Hlk; simpl in *.
-  - reflexivity.
-  - reflexivity.
-  - rewrite Hlk; [ reflexivity | fsetdec ].
-  - rewrite IHa, IHb;
-      [ reflexivity
-      | intros α Hα; apply Hlk; fsetdec
-      | intros α Hα; apply Hlk; fsetdec ].
-  - rewrite IHb; [ reflexivity | intros α Hα; apply Hlk; fsetdec ].
-  - reflexivity.
-  - rewrite IHt; [ reflexivity | intros α Hα; apply Hlk; fsetdec ].
-Qed.
-
 (** ⇓-idempotence along a context restriction. *)
 Lemma downarrow_idem_sub_ptyp : forall Θ Θs A,
   {{ ⊢ Θ }}a ->
