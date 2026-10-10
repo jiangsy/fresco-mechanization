@@ -1112,7 +1112,7 @@ into the colour discipline. A few patterns to watch for:
 | consistency RHS appears non-wf | `is_syn_skel P` on the calling `d_pat_sub` rule | Lemma 3.7 (`d_pat_preserves_skel_wf`) |
 | `d_typing__sub` takes arbitrary B | `is_base_term e` (paper restricts to base terms) | general-subsumption (D1) |
 | ∀-introduction in TI mode | `is_value e` (value restriction) | `d_typing__forall` |
-| arrow-position pattern coerces freely | `mode_fn m` (function-position mode) | `d_pat_sub__arg` |
+| arrow-position pattern coerces freely | `mode_fn m` (function-position mode) | `d_pat_sub__arrow` |
 | skeleton input to a refinement rule | `is_inh_skel` / `is_syn_skel` matching colour expectation | `d_refine_*` family |
 | `d_consis` LHS shape "looks too permissive" | `d_wf_typ Γ T` to rule out `typ_all_tag` LHS | `d_consis_sub_trans` (D10 / paper B.3) |
 

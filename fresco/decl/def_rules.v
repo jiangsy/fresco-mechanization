@@ -409,8 +409,7 @@ Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :
        {{ Ψ ⨟ ((α ~ dbind_tvar) ++ Γ) ⊢[ mode_tc ] C ⩽
          (open_btyp_wrt_btyp B (btyp_var_f α)) }}d) ->
     {{ Ψ ⨟ Γ ⊢[ mode_tc ] C ⩽ (btyp_all_inh B) }}d
-(* Todo: rename d_sub__arg to d_sub__arrow *)
-| d_sub__arg : forall Ψ Ψ1 Ψ2 Γ m C1 C2 B1 B2,
+| d_sub__arrow : forall Ψ Ψ1 Ψ2 Γ m C1 C2 B1 B2,
     {{ Ψ1 ⨟ Γ ⊢ C1 ∼ B1 }}d ->
     {{ Ψ2 ⨟ Γ ⊢[ m ] C2 ⩽ B2 }}d ->
     Ψ [=] Ψ1 `union` Ψ2 ->
@@ -721,7 +720,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     Ψ [=] empty ->
     mod_comp_sk bskl_ghost m ->
     {{ Ψ ⨟ Γ ⊢ˢ[ m ] uskl_dot_ghost ⩽ bskl_ghost }}d
-| d_pat_sub__arg : forall Ψ Ψ1 Ψ2 Γ m R1 R2 Q1 Q2,
+| d_pat_sub__arrow : forall Ψ Ψ1 Ψ2 Γ m R1 R2 Q1 Q2,
     (* Paper [Arrow]: set-union tag context.  The DOMAIN premise is a
        consistency judgement, hence a join. *)
     {{ Ψ1 ⨟ Γ ⊢ˢ R1 ∼ᵣ Q1 }}d ->

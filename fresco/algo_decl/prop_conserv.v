@@ -738,7 +738,7 @@ Proof.
   - (* UnivGhostR *) apply d_pat_sub__univ_ghost_r;
       [ assumption | assumption | assumption | assumption
       | eapply ad_consis_join_to_d; [ exact H3 | reflexivity ] ].
-  - (* Arrow *) apply d_pat_sub__arg with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
+  - (* Arrow *) apply d_pat_sub__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
       [ eapply ad_consis_join_to_d; [ exact H | reflexivity ]
       | exact (IHad_pat_sub eq_refl Γ0 eq_refl) | assumption ].
   - (* ForallL, tagged *) inversion H2; subst.
@@ -906,7 +906,7 @@ Proof.
     destruct C0; simpl in HR; try discriminate HR.
     destruct B0; simpl in HQ; try discriminate HQ.
     inversion HR; inversion HQ; subst.
-    apply d_sub__arg with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
+    apply d_sub__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
       [ exact (ad_pat_consis_ty_to_d Ψ1 (denv_to_aenv Γ0) (utyp_to_uskl C0_1)
                  (btyp_to_bskl B0_1) (ad_consis_join_consis H)
                  Γ0 eq_refl C0_1 B0_1 eq_refl eq_refl)

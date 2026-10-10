@@ -247,7 +247,7 @@ Proof.
     eapply d_consis_equiv; [ exact Heq | eassumption ].
   - apply d_sub__forall_r with (L := L);
       [ assumption | intros α Hα; eauto ].
-  - eapply d_sub__arg; [ eassumption | eassumption | fsetdec ].
+  - eapply d_sub__arrow; [ eassumption | eassumption | fsetdec ].
   - (* forall_l_tagged: outer context pass-through, premise via IH *)
     eapply d_sub__forall_l_tagged with (Ψ' := Ψ');
       [ assumption | fsetdec | assumption | eassumption | assumption

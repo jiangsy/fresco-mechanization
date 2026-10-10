@@ -48,7 +48,7 @@ Proof.
   - apply d_sub__infer; eauto using d_consis_tvar_mono.
   - apply d_sub__check; eauto using d_consis_tvar_mono.
   - apply d_sub__forall_r with (L := L); [ assumption | mono_cof ].
-  - eapply d_sub__arg; eauto using d_consis_tvar_mono.
+  - eapply d_sub__arrow; eauto using d_consis_tvar_mono.
   - eapply d_sub__forall_l_tagged; eauto using d_wf_utyp_tvar_mono.
   - eapply d_sub__forall_l_untagged; eauto using d_wf_utyp_tvar_mono.
 Qed.
@@ -92,7 +92,7 @@ Proof.
   - apply d_pat_sub__univ_ghost_r; eauto using d_consis_join_tvar_mono.
   - apply d_pat_sub__ghost; eauto using d_wf_pskl_tvar_mono.
   - apply d_pat_sub__ghostg; assumption.
-  - eapply d_pat_sub__arg; eauto using d_consis_join_tvar_mono.
+  - eapply d_pat_sub__arrow; eauto using d_consis_join_tvar_mono.
   - eapply d_pat_sub__forall_l_tagged; eauto using d_wf_uskl_tvar_mono.
   - eapply d_pat_sub__forall_l_untagged; eauto using d_wf_uskl_tvar_mono.
   - apply d_pat_sub__univ_ghost_l; auto.

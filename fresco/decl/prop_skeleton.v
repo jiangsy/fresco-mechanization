@@ -293,7 +293,7 @@ Proof.
       | eapply d_wf_pskl_subst_unit; eauto
       | rewrite <- pskl_to_bskl_inh_subst_unit; apply mod_comp_sk_subst_unit; assumption ].
   - apply d_pat_sub__ghostg; (assumption || fsetdec).
-  - simpl. eapply d_pat_sub__arg;
+  - simpl. eapply d_pat_sub__arrow;
       [ eapply d_consis_join_subst_unit; eauto
       | eapply IHd_pat_sub; eauto | (eassumption || fsetdec) ].
   - simpl. eapply d_pat_sub__forall_l_tagged with

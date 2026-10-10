@@ -265,7 +265,7 @@ Proof.
     rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ (β ~ dbind_tvar) ++ Γ2).
     eapply (H1 α2); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
   - (* arg *)
-    eapply d_sub__arg.
+    eapply d_sub__arrow.
     + eapply d_consis_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
     + eapply IHd_sub; [ reflexivity | exact Hfr ].
     + assumption.

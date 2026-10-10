@@ -273,7 +273,7 @@ Proof.
       rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
       eapply (H1 α2); [ fsetdec | simpl_env; reflexivity ].
   - (* arg *)
-    eapply d_sub__arg.
+    eapply d_sub__arrow.
     + change btyp_unit with (utyp_to_btyp utyp_unit).
       eapply d_consis_subst_tvar;
         [ eassumption | reflexivity | apply d_wf_utyp__unit | apply is_dtyp__unit ].

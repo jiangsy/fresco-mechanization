@@ -776,7 +776,7 @@ Proof.
       match goal with Hr : utyp_tag_refines_in _ _ C1 |- _ =>
         pose proof (utyp_tag_refines_compose_mono Hr B1) as Hc2 end.
       fsetdec.
-    + eapply d_sub__arg;
+    + eapply d_sub__arrow;
         [ match goal with Hr : utyp_tag_refines_in _ _ C1 |- _ =>
             apply (refines_consis_swap H Hr) end
         | exact Hres | reflexivity ].
@@ -1005,14 +1005,14 @@ Proof.
     inversion Hfn.
   - (* d_sub__forall_r (tc): excluded. *)
     inversion Hfn.
-  - (* d_sub__arg (fn m'): peel one arrow, recurse on the result spine. *)
+  - (* d_sub__arrow (fn m'): peel one arrow, recurse on the result spine. *)
     inversion Hfn; subst.
     dependent destruction Hspine.
     edestruct IHHsub as [Ψ2' [Hb2 Hres]];
       [ eassumption | eassumption | eassumption | ].
     exists (Ψ1 `union` Ψ2'). split.
     + fsetdec.
-    + simpl. eapply d_sub__arg; [ eassumption | exact Hres | reflexivity ].
+    + simpl. eapply d_sub__arrow; [ eassumption | exact Hres | reflexivity ].
   - (* d_sub__forall_l_tagged: subset invariant + set difference. *)
     edestruct IHHsub as [Ψr [Hb Hr]];
       [ eassumption | eassumption | eassumption | ].
