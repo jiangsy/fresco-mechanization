@@ -15,11 +15,7 @@
       a fresh flexible block inserted in the middle;
     - the three packages the five P6 lemmas are actually stated over:
       [solve_ext], its subtyping twin [solve_sub_ext], and [solve_eq_mono_concl];
-    - the per-case kits (GhostG, Flex, Topholeg) built directly on them.
-
-    ⚙ SPLIT 2026-08-09 out of prop_kit.v.  "kit" named nothing: the file was
-    6952 lines and three separable concerns, and the audit had already found
-    it to be the source of most duplicate names in the tree. *)
+    - the per-case kits (GhostG, Flex, Topholeg) built directly on them. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -56,8 +52,7 @@ Require Import src.fresco.algo.prop_metasubst.
 Require Import src.fresco.algo.prop_compose.   (* a_inc_dom_flex, a_inc_lookup_mono *)
 Require Import src.fresco.algo.sub.look.prop_rsubst.
 
-(* ⚠️ Per-FILE flag — see prop_flex_apart.v's note.  It was line 84 of the old
-   prop_kit.v, so each half of the split needs its own copy. *)
+(* ⚠️ Per-FILE flag — see prop_flex_apart.v's note. *)
 Set Implicit Arguments.
 
 (* ===================================================================== *)
@@ -1018,9 +1013,9 @@ Proof.
           by (eapply msubst_pskl_tvar_id;
                 [ exact HwfΘ0 | exact Hκ | exact Hrig ]).
         rewrite Hmid in Href'. simpl in Href'.
-        eapply ad_refine_syn_rigid_var_nonvar_absurd;
-          [ exact HwfΘ | eapply a_inc_binds_tvar; eauto | exact Href'
-          | intros β0 Hcc; discriminate Hcc ].
+        eapply (ad_refine_syn_rigid_var_nonvar_absurd Href');
+          [ intros x b Hb; exact Hb | apply a_wf_aenv_uniq; exact HwfΘ
+          | eapply a_inc_binds_tvar; eauto | intros β0 Hcc; discriminate Hcc ].
       * (* flexible: SE-FlexR, precision via Bridge A *)
         assert (HΨi : Ψi [=] empty)
           by (eapply ad_ppre_mono_tags_empty;

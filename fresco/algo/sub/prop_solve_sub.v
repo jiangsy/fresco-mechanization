@@ -778,3 +778,102 @@ Proof.
     end.
 Qed.
 
+(* ===================================================================== *)
+(*  Inversions of the solve at a fixed SUBJECT shape                      *)
+(* ===================================================================== *)
+
+Lemma a_solve_eq_var_subject : forall Θ P Q Ξ P',
+  {{ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}a ->
+  forall α, P = pskl_var_f α -> Ξ = nil /\ P' = pskl_var_f α.
+Proof.
+  intros Θ P Q Ξ P' HD.
+  induction HD; intros α0 Heq; try discriminate.
+  - (* SE-Var *) inversion Heq; subst. split; reflexivity.
+  - (* SE-FlexR — the guess at a variable IS the variable *)
+    subst.
+    match goal with
+    | G : a_guess_mono _ (pskl_var_f _) _ _ |- _ => inversion G; subst
+    end.
+    split; reflexivity.
+  - (* SE-VacuousR *) subst. split; reflexivity.
+  - (* SE-GuardedGhost *) eauto.
+Qed.
+
+Lemma a_solve_sub_var_subject : forall Θ m α Q Ξ P',
+  {{ Θ ⊢ₛ (pskl_var_f α) ≼[ m ] Q ⤳ Ξ ⨾ P' }}a ->
+  Ξ = nil /\ P' = pskl_var_f α.
+Proof.
+  intros * HD; inversion HD; subst.
+  - (* SS-Var *) split; reflexivity.
+  - (* SS-Vacuous *) split; reflexivity.
+  - (* SS-Check — the EQ layer answers a variable subject with itself *)
+    match goal with
+    | He : a_solve_eq _ _ _ _ _ |- _ =>
+        apply (a_solve_eq_var_subject He); reflexivity
+    end.
+  - (* SS-ForallR — ⛔ BARRED at a variable subject by the guard *)
+    exfalso.
+    match goal with
+    | Hoff : solve_l_off (pskl_var_f _) |- _ => exact (proj1 Hoff _ eq_refl)
+    end.
+Qed.
+
+Lemma a_solve_sub_inv_forall_l : forall Θ m P0 Q Ξ P',
+  {{ Θ ⊢ₛ (pskl_all_syn P0) ≼[ m ] Q ⤳ Ξ ⨾ P' }}a ->
+  exists β P'',
+    β `notin` ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl Q
+    /\ P' = pskl_all_syn (close_pskl_wrt_pskl β P'')
+    /\ {{ ((β ~ abind_tvar) ++ Θ) ⊢ₛ (open_pskl_wrt_pskl P0 (pskl_var_f β))
+          ≼[ m ] Q ⤳ Ξ ⨾ P'' }}a.
+Proof.
+  intros * H; inversion H; subst.
+  - (* SS-ForallL *)
+    match goal with
+    | Hfr : ?b `notin` _, Hp : a_solve_sub _ _ _ _ _ ?y |- _ =>
+        exists b, y
+    end.
+    repeat split; assumption.
+  - (* SS-Vacuous — ⛔ BARRED at a ∀ subject *)
+    exfalso.
+    match goal with
+    | Hoff : peel_l_off (pskl_all_syn _) |- _ => exact (proj1 Hoff _ eq_refl)
+    end.
+  - (* SS-Check — a ∀ subject is never guarded *)
+    match goal with
+    | Hg : guarded_pskl (pskl_all_syn _) |- _ => inversion Hg
+    end.
+  - (* SS-ForallR — ⛔ BARRED at a ∀ subject *)
+    exfalso.
+    match goal with
+    | Hoff : solve_l_off (pskl_all_syn _) |- _ =>
+        exact (proj1 (proj2 Hoff) _ eq_refl)
+    end.
+Qed.
+
+Lemma a_solve_sub_inv_univ_ghost_l : forall Θ m P0 Q Ξ P',
+  {{ Θ ⊢ₛ (pskl_univ_ghost P0) ≼[ m ] Q ⤳ Ξ ⨾ P' }}a ->
+  exists P'', P' = pskl_univ_ghost P''
+    /\ {{ Θ ⊢ₛ P0 ≼[ m ] Q ⤳ Ξ ⨾ P'' }}a.
+Proof.
+  intros * H; inversion H; subst.
+  - (* SS-UnivGhostL *)
+    match goal with
+    | Hp : a_solve_sub _ _ P0 _ _ ?y |- _ => exists y
+    end.
+    split; [ reflexivity | assumption ].
+  - (* SS-Vacuous — ⛔ BARRED at a ⫯ subject *)
+    exfalso.
+    match goal with
+    | Hoff : peel_l_off (pskl_univ_ghost _) |- _ => exact (proj2 Hoff _ eq_refl)
+    end.
+  - (* SS-Check — a ⫯ subject is never guarded *)
+    match goal with
+    | Hg : guarded_pskl (pskl_univ_ghost _) |- _ => inversion Hg
+    end.
+  - (* SS-ForallR — ⛔ BARRED at a ⫯ subject *)
+    exfalso.
+    match goal with
+    | Hoff : solve_l_off (pskl_univ_ghost _) |- _ =>
+        exact (proj2 (proj2 Hoff) _ eq_refl)
+    end.
+Qed.

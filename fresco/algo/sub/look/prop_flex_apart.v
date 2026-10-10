@@ -1,22 +1,18 @@
-(** P6 — FLEXIBLE APARTNESS, and the Arrow-case repair built on it.
+(** P6 — the mono-paint, precision and refinement kit of the look chain.
 
     The second half of the P6 shared substrate; [prop_rsubst.v] is the first.
     Where that file carries the ρ representation and the κ-extension /
-    [solve_ext] packages, this one carries the invariant that makes the
-    ARROW case go through:
+    [solve_ext] packages, this one carries what the Arrow and ∀ rows of
+    P6-Cv / P6-Cs / P6-Ss need about the GUESS and the COUNTERPART: ρ is the
+    identity on a Δρ-clean guess ([uskl_rsubst_clean_eq]), mono paints and
+    [bskl_monoish] counterparts, the arrow / ∀ inversions of precision and
+    refinement, the tagged-∀ repair kit of DESIGN §6(l)/(m), and the
+    precision rename.
 
-    [flex_apart Θ0 Δρ P0 ψa] — every FLEXIBLE-variable position of the solve
-    counterpart [P0] faces a Δρ-CLEAN part of [ψa], i.e. no ρ-replaced leaf
-    sits below it.  It is the reachability fact the LE-FlexR freshening
-    guarantees (cex/cex_p6_flex_freshened.v), it is VACUOUS at every ρ = id
-    call site, and it is maintained inside the P6 cluster only.
-
-    Also here, because they exist to serve that invariant: [pskl_flex_free]
-    (raw flexible-freedom of a payload), [bskl_monoish], the P0-only walk
-    [p0_step] / [p0_walk] (P6-Cs), [flex_apart_deep], and the tagged-∀ repair
-    kit of DESIGN §6(l)/(m).
-
-    ⚙ SPLIT 2026-08-09 out of prop_rsubst.v — see that file's tail for why. *)
+    ⚠️ The file name is historical: the [flex_apart] premise it was built
+    around is gone (the guess's Δρ-apartness, [ftvar_in_uskl ψa ∩ Δρ = ∅],
+    which every P6 statement already carries, implies it).  The name stays
+    because cex/ imports this file. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -54,149 +50,13 @@ Require Import src.fresco.algo.prop_compose.   (* a_inc_dom_flex, a_inc_lookup_m
 Require Import src.fresco.algo.sub.look.prop_rsubst.
 Require Import src.fresco.algo.sub.look.prop_solve_ext.
 
-(* ⚠️ Per-FILE flag, and load-bearing: it was line 84 of the old prop_kit.v, so
-   the split left this half without it.  Most lemmas here have the shape
-   [forall Θ0 P.., Pred .. -> ..], whose leading arguments are strictly
-   implicit; without the flag a call like [flex_apart_deep_here Hfa] reads
-   [Hfa] as the [aenv].  ⚙ Worse, the failure is SILENT inside [match goal]:
+(* ⚠️ Per-FILE flag, and load-bearing.  Most lemmas here have the shape
+   [forall Θ P.., Pred .. -> ..], whose leading arguments are strictly
+   implicit; without the flag a call like [lemma Hfa] reads [Hfa] as the
+   [aenv].  ⚙ Worse, the failure is SILENT inside [match goal]:
    the pattern matches, the branch BODY fails to typecheck, and the match then
    reports only "No matching clauses for match" at the enclosing tactic. *)
 Set Implicit Arguments.
-
-(* ===================================================================== *)
-(*  The flexible-apartness premise (Arrow-case repair, option (i)).        *)
-(*  [flex_apart Θ0 Δρ P0 ψa]: every FLEXIBLE-variable position of the      *)
-(*  solve counterpart P0 faces a Δρ-CLEAN part of ψa (no ρ-replaced leaf   *)
-(*  below it).  This is the reachability fact the LE-FlexR freshening      *)
-(*  guarantees (cex_p6_flex_freshened.v): a raw Θ0-flex payload never      *)
-(*  sits opposite a compound covering a ρ-substituted position.  It is     *)
-(*  VACUOUS at every ρ = id call site (fa_clean with Δρ = ∅) and is        *)
-(*  maintained internally by the P6 lemma cluster only.                    *)
-(* ===================================================================== *)
-
-(* ===================================================================== *)
-(*  Raw-flexible-freedom of a payload                                     *)
-(* ===================================================================== *)
-
-(** [pskl_flex_free Θ0 P]: no free variable of [P] is a FLEXIBLE of [Θ0]
-    (declared or defined).  Stated over [ftvar_in_pskl] rather than
-    structurally, so the opening / weakening facts below are set algebra
-    instead of inductions. *)
-Definition pskl_flex_free (Θ0 : aenv) (P : pskl) : Prop :=
-  forall α, α `in` ftvar_in_pskl P -> ~ a_flex_tvar Θ0 α.
-
-Inductive flex_apart (Θ0 : aenv) (Δρ : atoms) : pskl -> uskl -> Prop :=
-| fa_clean : forall P0 ψa,
-    (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
-    flex_apart Θ0 Δρ P0 ψa
-| fa_unit : forall ψa, flex_apart Θ0 Δρ pskl_unit ψa
-| fa_var_rigid : forall α ψa,
-    binds α abind_tvar Θ0 ->
-    flex_apart Θ0 Δρ (pskl_var_f α) ψa
-| fa_ghost : forall ψa, flex_apart Θ0 Δρ pskl_ghost ψa
-| fa_univ_ghost : forall P0 ψa,
-    flex_apart Θ0 Δρ P0 ψa ->
-    flex_apart Θ0 Δρ (pskl_univ_ghost P0) ψa
-(* ⚠️ NO [fa_dot_univ_ghost_t] ROW (DESIGN §10.5).  Letting a ∀◈ target inherit the
-   guard from its body is the ONLY way a guard can hold at a ∀◈ that is neither
-   [fa_clean] nor [fa_flexfree], and with [fa_rsubst_var] present that produces a
-   "∀◈-STACK over a Δρ-variable" — a shape the flexible-P0 read-off then has to
-   report and no consumer can use (it is not a mono paint, and there is no
-   [var ⊑ᵖ dot_univ_ghost] precision rule).  Dropping the row costs NOTHING: every
-   producer was a transport re-applying it while rebuilding a derivation, never
-   a consumer building one, and [flex_apart_dot_univ_ghost_target_inv] — the direction
-   that IS used, stripping a ∀◈ off the target — still holds, since [fa_clean]
-   and [fa_flexfree] both survive the strip. *)
-| fa_arrow : forall P1 P2 ψ1 ψ2,
-    flex_apart Θ0 Δρ P1 ψ1 ->
-    flex_apart Θ0 Δρ P2 ψ2 ->
-    flex_apart Θ0 Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2)
-| fa_all_tag : forall L ε P0 ψ,
-    (forall α, α `notin` L ->
-       flex_apart Θ0 Δρ (open_pskl_wrt_pskl P0 (pskl_var_f α))
-                        (open_uskl_wrt_uskl ψ (uskl_var_f α))) ->
-    flex_apart Θ0 Δρ (pskl_all_syn P0) (uskl_all_tag ε ψ)
-| fa_all_syn : forall L P0 ψ,
-    (forall α, α `notin` L ->
-       flex_apart Θ0 Δρ (open_pskl_wrt_pskl P0 (pskl_var_f α))
-                        (open_uskl_wrt_uskl ψ (uskl_var_f α))) ->
-    flex_apart Θ0 Δρ (pskl_all_syn P0) (uskl_all_syn ψ)
-(* ===================================================================== *)
-(*  THE TWO BASE ROWS [flex_shield] HAS AND THIS ONE LACKED.              *)
-(*                                                                        *)
-(*  DESIGN §10: the two repair premises legitimately differ in their       *)
-(*  DESCENT discipline — P6-Cv descends consistency, which matches ∀s in   *)
-(*  LOCKSTEP ([fa_all_tag] / [fa_all_syn], Δρ fixed), while P6-Sv         *)
-(*  descends subtyping, which INSTANTIATES ([fsh_all_r], Δρ grows).  That  *)
-(*  difference is real and must stay.  Their BASE rows, on the other hand, *)
-(*  say the same thing about the same hazard and must agree — and these    *)
-(*  two were missing here:                                                 *)
-(*                                                                        *)
-(*   · [fa_flexfree] — nothing to keep apart when the payload has no raw   *)
-(*     Θ0-flexible at all.  [fa_unit] / [fa_var_rigid] / [fa_ghost] were    *)
-(*     three special cases of it; the general rule was never written.      *)
-(*   · [fa_rsubst_var] — a ρ-REPLACED RIGID VARIABLE is safe opposite ANY     *)
-(*     payload.  This is P6-Cv's own leaf: the precision premise forces    *)
-(*     [Pi] to be that very variable, SolS-Var / SolE-Var keep it, and the *)
-(*     conclusion's precision is the var rule, so no dirt reaches the      *)
-(*     payload however dirty the position is.  [flex_shield] states it as  *)
-(*     [fsh_rsubst_var] for exactly this reason.                              *)
-(*                                                                        *)
-(*  ⚠️ WITHOUT them the premise is TOO STRONG — [sub_shield] is            *)
-(*  UNSATISFIABLE at an ARROW P0 against a tagged-identity guess, because  *)
-(*  Sub-ForallL's walk step makes the guess mention the very binder it put *)
-(*  into Δρ and nothing was left to apply.  Machine-checked in             *)
-(*  cex/cex_p7_shield_arrow.v (two witnesses: the first needs              *)
-(*  [fa_flexfree], the second needs [fa_rsubst_var]).                         *)
-(*                                                                        *)
-(*  NEITHER disturbs the lockstep inversions: [fa_flexfree]'s conclusion   *)
-(*  re-applies at any sub-payload (flex-freedom is inherited), and         *)
-(*  [fa_rsubst_var]'s target is a bare variable, which every ∀ / arrow        *)
-(*  inversion discriminates away.  An [fa_all_r] row WOULD have broken     *)
-(*  them, which is why it is deliberately absent.                          *)
-(* ===================================================================== *)
-| fa_flexfree : forall P0 ψa,
-    pskl_flex_free Θ0 P0 ->
-    flex_apart Θ0 Δρ P0 ψa
-| fa_rsubst_var : forall P0 α,
-    α `in` Δρ ->
-    flex_apart Θ0 Δρ P0 (uskl_var_f α).
-
-(** THE FLEX-P0 READ-OFF.  A [flex_apart] whose P0 is a FLEXIBLE variable has
-    only two ways to hold.  [fa_var_rigid] wants that very variable RIGID and
-    [fa_flexfree] wants it non-flexible, so both are excluded by the caller's
-    own [a_flex_tvar]; the arrow / ∀ rows want another P0 shape; and
-    and the ∀◈ target has its own row of the consumer's induction, so it is
-    excluded here by a SHAPE side condition — exactly as [flex_shield_flex_leaf]
-    does it on the shield side.  That leaves [fa_clean] — the guess is Δρ-CLEAN,
-    i.e. ρ acts as the identity on it ([uskl_rsubst_clean_eq]) — and [fa_rsubst_var],
-    where the guess IS a Δρ-variable.
-
-    ⚠️ The second disjunct is NEW (DESIGN §10): before [fa_rsubst_var] existed
-    this read-off was an equation, and the premise was correspondingly TOO
-    STRONG.  It costs the consumer nothing, because a Δρ-VARIABLE is already a
-    mono paint — which is exactly what the cleanliness was being used to
-    establish (P6-Cs's Arrow row feeds it to
-    [ad_pat_consis_rsubst_psia_mono] to get "ψa is mono, hence tag-free"). *)
-Lemma flex_apart_flex_var_clean : forall Θ0 Δρ β ψa,
-  flex_apart Θ0 Δρ (pskl_var_f β) ψa ->
-  ~ binds β abind_tvar Θ0 ->
-  a_flex_tvar Θ0 β ->
-  (ftvar_in_uskl ψa) ∩ Δρ [=] empty
-  \/ (exists α0, ψa = uskl_var_f α0 /\ α0 `in` Δρ).
-Proof.
-  intros Θ0 Δρ β ψa H.
-  remember (pskl_var_f β) as t eqn:Heqt.
-  revert β Heqt; induction H; intros β' Heqt Hnr Hflex;
-    try discriminate Heqt; subst.
-  - (* fa_clean *) left; assumption.
-  - (* fa_var_rigid : the caller's own [a_flex_tvar] excludes it *)
-    inversion Heqt; subst; contradiction.
-  - (* fa_flexfree : IMPOSSIBLE — β is flexible, so P0 is not flex-free *)
-    exfalso. apply (H β'); [ simpl; clear; fsetdec | exact Hflex ].
-  - (* fa_rsubst_var : the guess IS a Δρ-variable — already a mono paint *)
-    right; exists α; split; [ reflexivity | exact H ].
-Qed.
 
 (* ===================================================================== *)
 (*  Arrow-case flex-subcase discharge (Phase B).                           *)
@@ -469,7 +329,7 @@ Proof.
     eapply ad_ppre__flex_l; [ exact Hbγ | ].
     eapply CONT;
       [ exact HΔr | exact Hmγ
-      | apply ad_refine_mono_paint_refl; exact Hmγ ].
+      | apply ad_refine_syn_mono_refl; exact Hmγ ].
   - (* ghost: LHS never a paint *)
     destruct τb; simpl in HeqL; discriminate HeqL.
   - (* univ_ghost_remove *)
@@ -580,7 +440,7 @@ Qed.
 (* ===================================================================== *)
 (*  Arrow-case grid support (Phase C): component inversions at both-arrow *)
 (*  nodes, the mono-SUBJECT tag-emptiness lemma (the [Pi = var] rows of   *)
-(*  the CORE grids), and the [flex_apart] arrow inversion.                 *)
+(*  the CORE grids).                                                      *)
 (* ===================================================================== *)
 
 (** Component inversions at both-arrow nodes (names controlled by the
@@ -655,26 +515,50 @@ Qed.
 (*  REPAIR KIT (DESIGN §6(l)) — support lemmas for the tagged-∀ cases.    *)
 (* ===================================================================== *)
 
+(** The mirror of [ad_partial_precise_delta_weaken_fresh] (below): Δ can
+    be shrunk freely.  Sub-ForallL needs
+    both directions — it hands the IH the precision premise at [add β Δ]
+    (β joins Δρ, and [Δρ ⊆ Δ]) and must return the IH's conclusion at
+    plain Δ.  The only row that reads Δ is [ad_ppre__ghost], whose
+    disjointness side condition is ANTITONE in Δ, so shrinking needs no
+    freshness (unlike weakening). *)
+Lemma ad_partial_precise_delta_shrink : forall Θ Δf Ψ P ψ,
+  {{ Θ ⨟ Δf ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
+  forall Δ, Δ [<=] Δf ->
+  {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad.
+Proof.
+  intros Θ Δf Ψ P ψ H; induction H; intros Δ0 Hsub.
+  - apply ad_ppre__unit; assumption.
+  - apply ad_ppre__var; assumption.
+  - eapply ad_ppre__arrow;
+      [ exact (IHad_partial_precise1 Δ0 Hsub)
+      | exact (IHad_partial_precise2 Δ0 Hsub)
+      | assumption ].
+  - eapply ad_ppre__forall with (L := L); [ | eassumption ].
+    intros α0 Hα0.
+    apply (H0 α0 Hα0 (add α0 Δ0)). clear - Hsub; fsetdec.
+  - (* ghost : the side condition is antitone in Δ *)
+    apply ad_ppre__ghost; [ assumption | ].
+    match goal with Hint : _ ∩ _ [=] empty |- _ =>
+      clear - Hint Hsub; fsetdec end.
+  - apply ad_ppre__univ_ghost_remove. exact (IHad_partial_precise Δ0 Hsub).
+  - eapply ad_ppre__univ_ghost_fill with (L := L).
+    intros α0 Hα0. exact (H0 α0 Hα0 Δ0 Hsub).
+  - apply ad_ppre__univ_ghost_keep. exact (IHad_partial_precise Δ0 Hsub).
+  - eapply ad_ppre__flex_l; [ eassumption | ].
+    exact (IHad_partial_precise Δ0 Hsub).
+  - eapply ad_ppre__flex_r; [ eassumption | ].
+    exact (IHad_partial_precise Δ0 Hsub).
+Qed.
+
 (** Precision respects set-equality of Δ. *)
 Lemma ad_partial_precise_delta_cong : forall Θ Δ Ψ P ψ,
   {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
   forall Δ', Δ [=] Δ' ->
   {{ Θ ⨟ Δ' ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad.
 Proof.
-  intros Θ Δ Ψ P ψ H; induction H; intros Δ' Heq.
-  - apply ad_ppre__unit; assumption.
-  - apply ad_ppre__var; assumption.
-  - eapply ad_ppre__arrow; eauto.
-  - eapply ad_ppre__forall with (L := L);
-      [ intros α Hα; apply (H0 α Hα); clear - Heq; fsetdec | assumption ].
-  - apply ad_ppre__ghost; [ assumption | ].
-    match goal with Hint : _ ∩ _ [=] empty |- _ =>
-      clear - Hint Heq; fsetdec end.
-  - apply ad_ppre__univ_ghost_remove; auto.
-  - eapply ad_ppre__univ_ghost_fill with (L := L); eauto.
-  - apply ad_ppre__univ_ghost_keep; auto.
-  - eapply ad_ppre__flex_l; eauto.
-  - eapply ad_ppre__flex_r; eauto.
+  intros Θ Δ Ψ P ψ H Δ' Heq.
+  apply (ad_partial_precise_delta_shrink H). clear - Heq; fsetdec.
 Qed.
 
 (** Δ-weakening by variables fresh for the target and for Θ's definition
@@ -863,9 +747,7 @@ Qed.
 (** ⭐ ρ IS CONGRUENT AT EVERY CONSTRUCTOR and non-trivial only at a bare
     VARIABLE of the guess ([ursubst__leaf]) — and a bare variable is itself a
     MONOTYPE.  So a mono-paint ρ-IMAGE forces a mono-paint GUESS, with no
-    cleanliness premise: this is what replaces the [flex_apart]-supplied
-    "ρ acts as the identity on the guess" step at P6-Cv's SE-FlexR row
-    (2026-08-05). *)
+    cleanliness premise — what P6-Cv's SE-FlexR row uses. *)
 Lemma uskl_rsubst_mono_target : forall NM Θ Δρ Ψρ ψsub ψa τ,
   uskl_rsubst NM Θ Δρ Ψρ ψsub ψa ->
   ψsub = ptyp_to_uskl_syn τ -> mono_ptyp τ ->
@@ -919,264 +801,6 @@ Lemma is_dskl_all_tag_inv : forall ε ψ,
   exists L, forall α, α `notin` L ->
     is_dskl (open_uskl_wrt_uskl ψ (uskl_var_f α)).
 Proof. intros ε ψ H; inversion H; subst. eexists; eassumption. Qed.
-
-(** [flex_apart] aenv weakening (binds-monotone).  ⚠️ Since [fa_flexfree]
-    (DESIGN §10) reads the context NEGATIVELY, the map must also create no new
-    flexibles — true of every RIGID extension, which is what all the callers do.
-    A FLEXIBLE prefix needs the ftv-scoped twin below, exactly as on the
-    [flex_shield] side. *)
-Lemma flex_apart_weaken : forall Θ0 Δρ P ψ,
-  flex_apart Θ0 Δρ P ψ ->
-  forall Θ0', (forall x b, binds x b Θ0 -> binds x b Θ0') ->
-  (forall α, a_flex_tvar Θ0' α -> a_flex_tvar Θ0 α) ->
-  flex_apart Θ0' Δρ P ψ.
-Proof.
-  intros Θ0 Δρ P ψ H; induction H; intros Θ0' Hmon Hfx.
-  - apply fa_clean; assumption.
-  - apply fa_unit.
-  - apply fa_var_rigid; auto.
-  - apply fa_ghost.
-  - apply fa_univ_ghost; auto.
-  - apply fa_arrow; auto.
-  - eapply fa_all_tag with (L := L); eauto.
-  - eapply fa_all_syn with (L := L); eauto.
-  - apply fa_flexfree; intros α Hα Hflex; apply (H α Hα); auto.
-  - apply fa_rsubst_var; assumption.
-Qed.
-
-(** …and the FLEXIBLE-prefix twin ([flex_shield_weaken_flex_prefix]'s mirror):
-    a payload variable outside [dom Ξ] keeps its Θ0 binding, so flex-freedom
-    survives.  The opened binder in the ∀ rows must miss [dom Ξ] too. *)
-Lemma flex_apart_weaken_flex_prefix : forall Θ0 Δρ P ψ,
-  flex_apart Θ0 Δρ P ψ ->
-  forall Ξ, (ftvar_in_pskl P) ∩ (dom Ξ) [=] empty ->
-  flex_apart (Ξ ++ Θ0) Δρ P ψ.
-Proof.
-  intros Θ0 Δρ P ψ H; induction H; intros Ξ Hfr.
-  - apply fa_clean; assumption.
-  - apply fa_unit.
-  - apply fa_var_rigid; apply binds_app_3; assumption.
-  - apply fa_ghost.
-  - simpl in Hfr. apply fa_univ_ghost; apply IHflex_apart; exact Hfr.
-  - simpl in Hfr. apply fa_arrow;
-      [ apply IHflex_apart1 | apply IHflex_apart2 ]; clear - Hfr; fsetdec.
-  - apply fa_all_tag with (L := L `union` dom Ξ); intros α Hα.
-    apply H0; [ clear - Hα; solve_notin | ].
-    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f α)) as Hup.
-    simpl in Hup, Hfr. clear - Hup Hfr Hα; fsetdec.
-  - apply fa_all_syn with (L := L `union` dom Ξ); intros α Hα.
-    apply H0; [ clear - Hα; solve_notin | ].
-    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f α)) as Hup.
-    simpl in Hup, Hfr. clear - Hup Hfr Hα; fsetdec.
-  - (* flexfree: a payload variable outside [dom Ξ] keeps its Θ0 binding *)
-    apply fa_flexfree. intros α Hα Hflex.
-    assert (HαΞ : α `notin` dom Ξ) by (clear - Hfr Hα; fsetdec).
-    apply (H α Hα).
-    destruct Hflex as [Hb | [τ Hb]];
-      [ left | right; exists τ ];
-      (destruct (binds_app_1 _ _ _ _ _ Hb) as [Hb' | Hb'];
-        [ exfalso; apply HαΞ; eapply binds_In; exact Hb' | exact Hb' ]).
-  - apply fa_rsubst_var; assumption.
-Qed.
-
-(* ===================================================================== *)
-(* ===================================================================== *)
-(*  ⚠️ WHY THE HEREDITARY [flex_apart_deep] AND NOT A WALK ALONG THE       *)
-(*  SUBTYPING DESCENT.  A walk indexing [flex_apart] along the descent has *)
-(*  no guess-fixed ARROW rows, and adding them makes it UNSATISFIABLE when *)
-(*  composed with a [∀]-right descent (a raw Θ0-flexible facing the opened *)
-(*  body at [β ∈ Δρ]).  That is why such a premise had to be ASSUMED       *)
-(*  rather than derived, whereas [flex_apart_deep] — whose [p0_step] DOES  *)
-(*  have the arrow rows — is derivable                                     *)
-(*  ([flex_apart_deep_sub_shield], sub/look/prop_sub_cstr.v).              *)
-(* ===================================================================== *)
-
-(* ===================================================================== *)
-(*  The P0-ONLY walk (P6-Cs).                                             *)
-(*                                                                        *)
-(*  P6-Cs descends P0 alone — ψa is the single guess for the looked-up α  *)
-(*  and NEVER moves — so it needs [flex_apart] only at the P0-subterms it  *)
-(*  actually reaches, at a CONSTANT Δρ.  That is strictly weaker than      *)
-(*  [flex_apart_walk], whose [fastep_all_r] can grow Δρ, and the           *)
-(*  difference is what makes the paper-faithful ρ = identity corollary of  *)
-(*  P6-Cs PREMISE-FREE: at Δρ = ∅ every reachable state is [fa_clean].     *)
-(*  ⚠️ P6-Ss carries this closure as its OWN [sub_shield] conjunct — it is  *)
-(*  NOT derivable from [flex_apart_walk], and the two rows that once made   *)
-(*  it so are what sank that premise (DESIGN §14.3; see the ⚠️ note on      *)
-(*  [fa_step]).                                                            *)
-(* ===================================================================== *)
-
-(** ⚠️ The walk carries an AVOID SET [A], and the ∀-descent's binder must miss
-    it — exactly as [ss_step] does (sub/look/prop_sub_cstr.v:90) and for
-    exactly the same reason.  Without it the walk reaches states mentioning an
-    ARBITRARY γ, and [flex_apart_deep] could then not be transported across a
-    FLEXIBLE PREFIX at all: [fa_flexfree] is anti-monotone in the context, so
-    its transport needs [ftv P0' ∩ dom Ξ = ∅], which only holds if the opened
-    binders miss [dom Ξ].  [flex_apart_deep] instantiates [A := dom Θ0], and
-    every call site picks its binder fresh for the context anyway — so the
-    condition costs nothing and buys [flex_apart_deep_weaken_flex_prefix]. *)
-Inductive p0_step (A : atoms) : pskl -> pskl -> Prop :=
-| p0step_arrow_l : forall P1 P2, p0_step A (pskl_arrow P1 P2) P1
-| p0step_arrow_r : forall P1 P2, p0_step A (pskl_arrow P1 P2) P2
-| p0step_all     : forall P0 γ,
-    γ `notin` A ->
-    p0_step A (pskl_all_syn P0) (open_pskl_wrt_pskl P0 (pskl_var_f γ))
-| p0step_univ_ghost : forall P0, p0_step A (pskl_univ_ghost P0) P0.
-
-Inductive p0_walk (A : atoms) : pskl -> pskl -> Prop :=
-| p0w_refl : forall P0, p0_walk A P0 P0
-| p0w_step : forall P0 P1 P2,
-    p0_step A P0 P1 -> p0_walk A P1 P2 -> p0_walk A P0 P2.
-
-(** Shrinking the avoid set only admits MORE walks. *)
-Lemma p0_walk_mono : forall A A' P0 P1,
-  p0_walk A P0 P1 -> A' [<=] A -> p0_walk A' P0 P1.
-Proof.
-  intros A A' P0 P1 H; induction H; intros Hsub; [ apply p0w_refl | ].
-  eapply p0w_step; [ | apply IHp0_walk; exact Hsub ].
-  destruct H;
-    [ apply p0step_arrow_l | apply p0step_arrow_r
-    | apply p0step_all; clear - H Hsub; fsetdec
-    | apply p0step_univ_ghost ].
-Qed.
-
-(** …and the endpoint's free variables still miss [A]. *)
-Lemma p0_walk_ftv : forall A P0 P1,
-  p0_walk A P0 P1 -> (ftvar_in_pskl P0) ∩ A [=] empty ->
-  (ftvar_in_pskl P1) ∩ A [=] empty.
-Proof.
-  intros A P0 P1 H; induction H; intros Hfr; [ exact Hfr | ].
-  apply IHp0_walk. destruct H; simpl in Hfr;
-    try solve [ clear - Hfr; fsetdec ].
-  pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f γ)) as Hup.
-  simpl in Hup. clear - Hup Hfr H; fsetdec.
-Qed.
-
-(** ⭐ [flex_apart_deep]: [flex_apart] HEREDITARILY — at [P0] and at every
-    subterm the recursion can descend to, against the SAME fixed guess.
-
-    ⚙ It was called [flex_apart_p0] until 2026-08-05, which read as "at P0"
-    and is exactly what it does NOT mean.  The [p0] in [p0_walk] below is
-    right, though: that relation really is the descent the COUNTERPART [P0]
-    makes, one constructor at a time. *)
-Definition flex_apart_deep (Θ0 : aenv) (Δρ : atoms) (P0 : pskl) (ψa : uskl)
-  : Prop :=
-  forall P0', p0_walk (dom Θ0) P0 P0' -> flex_apart Θ0 Δρ P0' ψa.
-
-Lemma flex_apart_deep_here : forall Θ0 Δρ P0 ψa,
-  flex_apart_deep Θ0 Δρ P0 ψa -> flex_apart Θ0 Δρ P0 ψa.
-Proof. intros Θ0 Δρ P0 ψa H; apply H; apply p0w_refl. Qed.
-
-Lemma flex_apart_deep_step : forall Θ0 Δρ P0 ψa P1,
-  flex_apart_deep Θ0 Δρ P0 ψa -> p0_step (dom Θ0) P0 P1 ->
-  flex_apart_deep Θ0 Δρ P1 ψa.
-Proof.
-  intros Θ0 Δρ P0 ψa P1 H Hs P0' Hw.
-  apply H; eapply p0w_step; [ exact Hs | exact Hw ].
-Qed.
-
-Lemma flex_apart_deep_weaken : forall Θ0 Δρ P0 ψa,
-  flex_apart_deep Θ0 Δρ P0 ψa ->
-  forall Θ0', (forall x b, binds x b Θ0 -> binds x b Θ0') ->
-  (forall α, a_flex_tvar Θ0' α -> a_flex_tvar Θ0 α) ->
-  (dom Θ0) [<=] (dom Θ0') ->
-  flex_apart_deep Θ0' Δρ P0 ψa.
-Proof.
-  intros Θ0 Δρ P0 ψa H Θ0' Hmon Hfx Hdom P0' Hw.
-  eapply flex_apart_weaken;
-    [ apply H; eapply p0_walk_mono; [ exact Hw | exact Hdom ]
-    | exact Hmon | exact Hfx ].
-Qed.
-
-Lemma flex_apart_deep_weaken_tvar : forall Θ0 Δρ P0 ψa β,
-  flex_apart_deep Θ0 Δρ P0 ψa ->
-  flex_apart_deep ((β ~ abind_tvar) ++ Θ0) Δρ P0 ψa.
-Proof.
-  intros Θ0 Δρ P0 ψa β H.
-  eapply flex_apart_deep_weaken;
-    [ exact H | intros x b Hb; apply binds_app_3; exact Hb
-    | apply a_flex_tvar_strip_tvar | simpl; clear; fsetdec ].
-Qed.
-
-(** The FLEXIBLE-prefix transport (the [sub_shield_weaken_flex_prefix] mirror):
-    the walk misses [dom Ξ] throughout, so its endpoint does, and [fa_flexfree]
-    survives.  This is what the avoid set on [p0_step] was added for. *)
-Lemma flex_apart_deep_weaken_flex_prefix : forall Θ0 Δρ P0 ψa Ξ,
-  flex_apart_deep Θ0 Δρ P0 ψa ->
-  (ftvar_in_pskl P0) ∩ (dom Ξ) [=] empty ->
-  flex_apart_deep (Ξ ++ Θ0) Δρ P0 ψa.
-Proof.
-  intros Θ0 Δρ P0 ψa Ξ H HfrP0 P0' Hw.
-  assert (HwΞ : p0_walk (dom Ξ) P0 P0')
-    by (eapply p0_walk_mono; [ exact Hw | rewrite dom_app; clear; fsetdec ]).
-  assert (Hw0 : p0_walk (dom Θ0) P0 P0')
-    by (eapply p0_walk_mono; [ exact Hw | rewrite dom_app; clear; fsetdec ]).
-  assert (HfrP0' : (ftvar_in_pskl P0') ∩ (dom Ξ) [=] empty)
-    by (eapply p0_walk_ftv; [ exact HwΞ | exact HfrP0 ]).
-  eapply flex_apart_weaken_flex_prefix; [ apply H; exact Hw0 | exact HfrP0' ].
-Qed.
-
-(** A Δρ-CLEAN guess shields every P0-subterm at once — in particular at
-    Δρ = ∅, which is what the ρ = identity corollary of P6-Cs uses. *)
-(** …and [flex_apart] tolerates a Δρ that grows by variables the guess does
-    not mention.  Only two rows read Δρ: [fa_clean], whose disjointness the
-    growth condition preserves, and [fa_rsubst_var], which is monotone. *)
-Lemma flex_apart_delta_grow : forall Θ0 Δρ Δρ' P0 ψa,
-  flex_apart Θ0 Δρ P0 ψa ->
-  Δρ [<=] Δρ' -> Δρ' ∩ ftvar_in_uskl ψa [<=] Δρ ->
-  flex_apart Θ0 Δρ' P0 ψa.
-Proof.
-  intros Θ0 Δρ Δρ' P0 ψa H; induction H; intros Hle Hcl.
-  - apply fa_clean. clear - H Hcl; fsetdec.
-  - apply fa_unit.
-  - apply fa_var_rigid; assumption.
-  - apply fa_ghost.
-  - apply fa_univ_ghost; auto.
-  - apply fa_arrow;
-      [ apply IHflex_apart1 | apply IHflex_apart2 ];
-      solve [ exact Hle | cbn [ftvar_in_uskl] in Hcl; clear - Hcl; fsetdec ].
-  - (* ⚠️ the binder must dodge [Δρ'] too: the growth condition only bounds
-       [Δρ' ∩ ftv ψa], and opening puts the binder INTO the payload's ftv. *)
-    eapply fa_all_tag with (L := L `union` Δρ'); intros α0 Hα0.
-    apply H0; [ clear - Hα0; fsetdec | exact Hle | ].
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ (uskl_var_f α0)) as Hup.
-    cbn [ftvar_in_uskl] in Hcl, Hup. clear - Hcl Hup Hα0; fsetdec.
-  - (* ⚠️ the binder must dodge [Δρ'] too: the growth condition only bounds
-       [Δρ' ∩ ftv ψa], and opening puts the binder INTO the payload's ftv. *)
-    eapply fa_all_syn with (L := L `union` Δρ'); intros α0 Hα0.
-    apply H0; [ clear - Hα0; fsetdec | exact Hle | ].
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ (uskl_var_f α0)) as Hup.
-    cbn [ftvar_in_uskl] in Hcl, Hup. clear - Hcl Hup Hα0; fsetdec.
-  - apply fa_flexfree; assumption.
-  - apply fa_rsubst_var. clear - H Hle; fsetdec.
-Qed.
-
-(** …and the same for the P0-only closure, which is Δρ-CONSTANT: the growth is
-    pointwise.  This is what Sub-ForallL needs, where the row's fresh rigid β
-    joins Δρ and is fresh for the guess. *)
-Lemma flex_apart_deep_delta_grow : forall Θ0 Δρ Δρ' P0 ψa,
-  flex_apart_deep Θ0 Δρ P0 ψa ->
-  Δρ [<=] Δρ' -> Δρ' ∩ ftvar_in_uskl ψa [<=] Δρ ->
-  flex_apart_deep Θ0 Δρ' P0 ψa.
-Proof.
-  intros Θ0 Δρ Δρ' P0 ψa H Hle Hcl P0' Hw.
-  eapply flex_apart_delta_grow; [ apply H; exact Hw | exact Hle | exact Hcl ].
-Qed.
-
-Lemma flex_apart_deep_clean : forall Θ0 Δρ P0 ψa,
-  (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
-  flex_apart_deep Θ0 Δρ P0 ψa.
-Proof. intros Θ0 Δρ P0 ψa Hc P0' _; apply fa_clean; exact Hc. Qed.
-
-(** ⚠️ There is NO [flex_apart_walk_p0] (DESIGN §14.3, 2026-08-03).  P6-Ss's
-    walk used to imply this closure, via the two guess-fixed P0 arrow steps
-    [fa_step] carried for exactly that purpose — and those steps made
-    [flex_apart_walk] unsatisfiable at a reachable P7b node (see the ⚠️ note
-    on [fa_step]).  [flex_apart_deep] is now an INDEPENDENT [sub_shield]
-    conjunct: P6-Ss reads it off directly instead of deriving it.  The two
-    closures are compatible at a [sub_shield] position precisely because the
-    Δρ' quantifier there keeps the guess CLEAN for the grown part of Δρ',
-    which the guess-OPENING step [fastep_all_r] does not. *)
 
 (* ⚙ [pskl_no_ghost] (ghost-free skeletons — for them partial precision is fully
    Δ-MONOTONE, since the □-rule, the only Δ-antitone one, never fires) is
@@ -1318,26 +942,6 @@ Proof.
     exfalso. apply HX0.
     match goal with Hb : binds _ (abind_flex_mono_def _) _ |- _ =>
       eapply binds_In; exact Hb end.
-Qed.
-
-(** Rigid-variable-source refinement into a non-variable target is absurd,
-    sub-context version (the def-lookup transports along binds-inclusion
-    into the full context, where uniqueness kills it). *)
-Lemma ad_refine_syn_rigid_var_nonvar_absurd_sub : forall Θr Δr β Q,
-  {{ Θr ⨟ Δr ⊢ᵣ (bskl_var_f β) ⊳ Q }}ad ->
-  forall Θfull, (forall x b, binds x b Θr -> binds x b Θfull) ->
-  uniq Θfull ->
-  binds β abind_tvar Θfull ->
-  (forall β0, Q <> bskl_var_f β0) ->
-  False.
-Proof.
-  intros Θr Δr β Q H; inversion H; subst; intros Θfull Hmon Hu Hb Hnv.
-  - eapply Hnv; reflexivity.
-  - match goal with Hbd : binds _ (abind_flex_mono_def _) _ |- _ =>
-      pose proof (Hmon _ _ Hbd) as Hbd';
-      pose proof (binds_unique _ _ _ _ _ Hb Hbd' Hu) as Hc;
-      discriminate Hc end.
-  - eapply Hnv; reflexivity.
 Qed.
 
 (** Δ-monotone variant of the leaf closer (the target is a replaced rigid

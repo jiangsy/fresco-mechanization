@@ -2,31 +2,14 @@
     subtyping side ([lemma:complete-constraint-collection-solving-var],
     subtyping-proofs.tex:1696).
 
-    ✅ UNCONDITIONAL.  [a_solve_sub_complete_var] (:1515) carries NO repair
+    ✅ UNCONDITIONAL.  [a_solve_sub_complete_var] carries NO repair
     premise: it is the paper's statement, modulo the [Θw] pack that every P6
     lemma takes and the EXTERNAL wf side conditions of
     docs/WF-SIDE-CONDITIONS.md.
 
-    ⚠️  HISTORY — this header said the opposite until 2026-08-09, and the
-    correction matters to anyone reading the P6 development.  It claimed the
-    paper's statement was FALSE, refuted by [cex_p6sv_forall_flex.v], and that
-    this file proved a REPAIRED statement whose extra premise was
-    [flex_shield].  All three claims are now void:
-
-      · the counterexample was RETRACTED — under the authors' repaired
-        [SolE-FlexR] (which threads the fresh suffix Ξ and returns
-        guess^TY(P), and which this tree now mechanizes) the configuration is
-        no longer derivable.  `cex_p6sv_forall_flex.v` no longer exists;
-      · [flex_shield] and its whole transport tower were DELETED with it —
-        `grep -rn "flex_shield" fresco/` finds no declaration, only prose;
-      · so the theorem below has no shield premise, and the two failure
-        shapes the old header analysed at length ((1) machine-checked,
-        (2) hand-verified) are configurations the repaired rule excludes.
-
-    What survives from that episode is [flex_apart] — P6-Cv's Δρ-cleanliness
-    condition, which is a genuine premise of the constraint-collection lemmas
-    and is NOT the shield.  Do not conflate them.
-
+    The paper's statement was once refuted here (the old [SolE-FlexR]
+    discarded the accumulated pattern); the authors' repaired rule, which
+    this tree mechanizes, retired that counterexample.
     The retraction and the repair are recorded in docs/PAPER-GAPS.md and, in
     the paper's own notation, docs/refutations.tex; the design history is
     docs/DESIGN-completeness-subtyping.md §6. *)
@@ -73,14 +56,6 @@ Require Import src.fresco.algo.sub.look.prop_eq_cstr.  (* the ∀-binder kit,
     was in this file AND in prop_consis_precise.v, under two names) *)
 
 Set Implicit Arguments.
-
-(* ===================================================================== *)
-(*  Raw-flexible-freedom of a payload                                     *)
-(* ===================================================================== *)
-
-(** [pskl_flex_free] and its kit MOVED UP to sub/look/prop_flex_apart.v — it is
-    now a base rule of [flex_apart] too ([fa_flexfree]), so it must be in
-    scope before P6-Cv.  See DESIGN §10. *)
 
 (** A GUARDED payload skeleton is never precise to a dotted universal ghost:
     its κ-image is unit / a mono paint / an arrow, and the ∀◈ target has no
@@ -696,10 +671,6 @@ Proof.
       | cbn [subst_uskl_in_uskl]; apply ursubst__dot_univ_ghost; exact Hr1 ].
 Qed.
 
-(* [fa_step] / [fa_walk] / [flex_apart_walk] and its three lemmas MOVED to
-   sub/look/prop_flex_apart.v, next to [flex_apart] itself: P6-Cs needs them too
-   under the ρ-generalization, and this file is DOWNSTREAM of P6-Cs. *)
-
 (* ===================================================================== *)
 (*  The ρ-LEAF CLOSER — used by every case of the main induction           *)
 (* ===================================================================== *)
@@ -710,9 +681,8 @@ Qed.
     is the subtyping twin of [a_solve_eq_complete_rsubst_var]
     (sub/look/prop_flex_apart.v):
     same argument, [a_solve_sub__var] in place of [a_solve_eq__var].
-
-    It serves BOTH leaf sources: the [rsubst_leaf] disjunct of the [uskl_rsubst]
-    inversions, and the [fsh_rsubst_var] branch of [flex_shield_flex_leaf]. *)
+    Its leaf source is the [ursubst__leaf] disjunct of the [uskl_rsubst]
+    inversions. *)
 Lemma a_solve_sub_complete_rsubst_var :
   forall NM m Θ0 Θ Θw κ Δ Δρ Ψ' Ψi Ψa α Pi P0,
   {{ ⊢ Θ }}a ->
@@ -978,53 +948,6 @@ Proof.
     cbn [msubst_pskl]. apply ad_ppre__univ_ghost_remove; exact Hp.
 Qed.
 
-(* ===================================================================== *)
-(*  P6-Sv — THE REPAIRED STATEMENT                                        *)
-(*  [lemma:complete-constraint-collection-solving-var]                    *)
-(*  (subtyping-proofs.tex:1696)                                           *)
-(* ===================================================================== *)
-
-(** Premises are the paper's, threaded exactly as in the CLOSED consistency
-    twin [a_solve_eq_complete_var] (sub/look/prop_eq_var.v:3070) —
-    ρ/[uskl_rsubst], the tag bookkeeping, the freshness pack, [flex_apart] —
-    with three differences:
-
-    1. the mode [M] and the paper's [skmod{N}{P0}{M}], in the two-implication
-       form used by [a_sub_sound] (prop_soundness_sub.v:3331);
-    2. the subtyping premise [ad_pat_sub_fuel] (the tag-hygienic fuel mirror)
-       in place of consistency — the fuel rides inertly here, since ForallL's
-       premise is a structural sub-derivation of [ad_pat_sub_fuel]; the fuel is
-       what P7b's measure consumes;
-    3. **[flex_shield] — the repair.**  Without it the statement is FALSE
-       (cex_p6sv_forall_flex.v); [flex_shield_excludes_cex] above is the
-       regression test that this premise rules the counterexample out.
-
-    Also carried, as in P6-Cs: well-formedness of the consistency SUBJECT
-    (⌊ψsub⌋ˢ), the premise whose absence made P6-Cs false.
-
-    CASE MAP for the induction on [ad_pat_sub_fuel] (paper's own case list at
-    :1749, plus the mech-only rows):
-      infer/univ_ghost_r/ghostg  ↔ Infer / UnivGhostR / GhostG — leaves with
-                                   Ψ = ∅, so Ψa = ∅ and Pa := Pi
-      check                      ↔ Case Check — delegates to P6-Cv
-                                   [a_solve_eq_complete_var] (flex_apart is
-                                   passed straight through), then the four
-                                   Pi-subcases guarded / □ / ∀ (impossible)
-                                   / ∀◇ with SolS-Check / GhostL / UnivGhostL
-      forall_r                   ↔ Case ForallR — refinement inversion gives
-                                   P0 = ∀.P0', descend with
-                                   [flex_shield_descend_l]; strip β from the
-                                   outputs with P6-Cs's ∀-binder kit
-      arrow                      ↔ Case Arrow — [flex_shield_arrow_inv];
-                                   left premise → P6-Cv, right → IH
-      forall_l_{tagged,untagged} ↔ Case ForallL — ε ∈ Ψi forces Pi = ∀β.P1;
-                                   descend with [flex_shield_descend_r]
-                                   (whose clean-rule exclusion is exactly
-                                   the counterexample's death)
-      univ_ghost_l/lg            ↔ Case UnivGhostLG — [flex_shield_univ_ghost_l_inv]
-                                   / [flex_shield_dot_univ_ghost_r_inv]
-      ghost                      ↔ Case Ghost — impossible (ψa has no □)
-      flex_mono                  ↔ the mech's defined-flexible unfolding *)
 (** Abstraction never shields more than the body already did. *)
 Lemma pskl_shielded_ftv_close_rec_upper : forall P β k,
   pskl_shielded_ftv (close_pskl_wrt_pskl_rec k β P) [<=] pskl_shielded_ftv P.
@@ -1544,7 +1467,7 @@ Proof.
     clear - HPsiae; fsetdec.
   - (* Check (TY/TC).  The premise IS a consistency judgment, so P6-Cv
        ([a_solve_eq_complete_var]) applies verbatim — every premise of this
-       lemma is one of its premises, with [flex_apart] read off the walk.
+       lemma is one of its premises.
        It returns the EQUALITY solve; SolS-Check then lifts it, after a
        case analysis on Pi.  P0 is GUARDED here: [skmod{TY}] makes it a
        type, and a ∀ is excluded because a [bskl_all_inh] target cannot be

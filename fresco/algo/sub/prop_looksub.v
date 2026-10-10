@@ -745,9 +745,9 @@ Qed.
 (* ===================================================================== *)
 
 (* ===================================================================== *)
-(*  §5  Rigid renames of a look run (moved from prop_look_complete_cstr,  *)
-(*  2026-07-31 — the exists-fresh ForallR consumers need them below the   *)
-(*  decoration layer).  This is the CANONICAL rename asset of the cluster: *)
+(*  §5  Rigid renames of a look run (the exists-fresh ForallR consumers    *)
+(*  need them below the decoration layer).  This is the CANONICAL rename   *)
+(*  asset of the cluster:                                                 *)
 (*  §6's rename of the looked-for variable has to MOVE binders, and it     *)
 (*  moves them with the lemma proved here.                                 *)
 (* ===================================================================== *)
@@ -787,10 +787,6 @@ Qed.
     row).  So the rows never hand a union to [fsetdec]: [look_fresh] SPLITS
     the goal structurally with these one-liners and closes each leaf from an
     atomic hypothesis. *)
-Lemma notin_union_both : forall (γ : atom) S1 S2,
-  γ `notin` S1 -> γ `notin` S2 -> γ `notin` S1 `union` S2.
-Proof. intros; fsetdec. Qed.
-
 Lemma notin_add_atom : forall (γ δ : atom) S,
   γ <> δ -> γ `notin` S -> γ `notin` add δ S.
 Proof. intros; fsetdec. Qed.
@@ -847,7 +843,7 @@ Ltac look_fresh_leaf :=
    STRONGER [β ∉ ftv P] the caller need not have. *)
 Ltac look_fresh :=
   repeat first
-    [ apply notin_union_both
+    [ apply notin_union_3
     | apply notin_add_atom
     | look_fresh_leaf
     | apply notin_ftvar_in_aenv_cons_tvar

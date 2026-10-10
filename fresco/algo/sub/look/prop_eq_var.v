@@ -83,20 +83,6 @@ Qed.
 (*  and ∀◇-fill-rows fold their bodies at (add α Δ).  The paper's         *)
 (*  statement is the Θtv := [] / R := ∅ corollary.                        *)
 (* ===================================================================== *)
-(*  ForallSyn kit: flex_apart TARGET descent through an all_tag binder    *)
-(*  (the ∀◇-body is guarded, which excludes the all_syn source that would  *)
-(*  otherwise block the descent).  [MECH-ONLY: maintenance lemmas for the  *)
-(*  mech-only flex_apart premise — the paper has no counterpart because    *)
-(*  its proof never states the FlexR-freshening reachability invariant.]   *)
-(* ===================================================================== *)
-
-(* RESTART NOTE (no-ghost removal rework): the "ForallSyn kit (2)" that
-   lived here — [bskl_no_ghost] + [ad_refine_syn_aenv_to_delta(_mid)], the
-   aenv→Δr transport of the refinement premise, valid only for ghost-free
-   sources — was DELETED as dead.  The bag split [aenv_split] lets the
-   ForallSyn binder join Θr, so the univ_ghost_fill body is the IH's
-   refinement premise VERBATIM and no transport (hence no pskl_no_ghost
-   premise) is needed. *)
 
 (* ===================================================================== *)
 (*  ForallSyn kit (4): rename a tvar α2↦β2 in the AENV of a precision       *)
@@ -552,7 +538,7 @@ Theorem a_solve_eq_complete_var_gen :
      adds only a RIGID to [Θ0], which no flexible lookup can see.  Compare
      [κ ∷ Θ0 ⊑ Θw], which is NOT invariant: the ∀ row's binder is rigid in
      the extended [Θ0] but absent from [Θw].  This is what shuts the
-     SE-FlexR node's payload-scope obligation — see the FLEX block. *)
+     SE-FlexR node's payload-scope obligation — see the FLEXMONO block. *)
   (forall α, a_flex_tvar Θ0 α ->
      ftvar_in_ptyp (msubst_lookup κ α) [<=] dom Θw) ->
   uskl_rsubst NM Θ Δρ Ψρ ψsub ψa ->
@@ -759,118 +745,11 @@ Proof.
           by (eapply ad_pat_consis_sskl_tags;
                 [ exact Hconsis2 | exact HwfΘ | exact HskQ2 ]).
         clear - Hsubeq2 H HΨ1e HΨ2e; fsetdec. }
-      (* the repaired flexible-P0 discharge chain, Δ-universal via B2 *)
-      (* ⚙️ (2026-08-05) the first premise WAS
-         [flex_apart Θ0 Δρ β̂ (ψa1 → ψa2)].  At a FLEXIBLE P0 against an ARROW
-         guess that predicate has exactly one satisfiable row — [fa_clean] —
-         so its whole content is "the guess is Δρ-clean", and taking THAT
-         directly is what frees the block.  The one row that still calls
-         [FLEX] is SE-GhostL, where [Pi = ◇] and [ad_ppre__ghost]'s own side
-         condition supplies the cleanliness for nothing. *)
-      assert (FLEX : forall β,
-        (ftvar_in_uskl (uskl_arrow ψa1 ψa2)) ∩ Δρ [=] empty ->
-        a_flex_tvar Θ0 β ->
-        {{ Θr ⨟ Δr ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f β)))
-             ⊳ (bskl_arrow Q1 Q2) }}ad ->
-        Ψa [=] empty /\
-        (* ⭐ the counterpart monotype's WELL-FORMEDNESS is new (2026-08-04):
-           the repaired SE-FlexR's κ-extension sends each invented flexible
-           to the monotype standing at that ghost's position, and
-           [a_inc__flex] admits only a monotype wf IN THE TARGET.  It is not
-           a new assumption — the counterpart is a consistency SUBJECT here,
-           and consistency's own var/flex_l rows carry the binding.
-           ⭐ And it is reported at [Θw], NOT at [Θ]: the block is emitted
-           OUTSIDE every ∀ the induction has opened, so a payload naming a
-           bound rigid would be ill-scoped.  See the derivation below. *)
-        (exists τa1 τa2, mono_ptyp τa1 /\ mono_ptyp τa2 /\
-           ψa1 = ptyp_to_uskl_syn τa1 /\ ψa2 = ptyp_to_uskl_syn τa2 /\
-           a_wf_ptyp Θw (ptyp_arrow τa1 τa2)) /\
-        forall Δx,
-          {{ Θ ⨟ Δx ⊢ˢ (msubst_pskl κ (pskl_var_f β)) ⊑ᵖ[ empty ]
-            (uskl_arrow ψa1 ψa2) }}ad).
-      { intros β Hclean Hflxβ Hrefβ.
-        simpl in Hclean.
-        destruct (uskl_rsubst_clean_eq Hrho1 ltac:(clear - Hclean; solve_notin_auto))
-          as [HeqR1 HΨρ1e].
-        destruct (uskl_rsubst_clean_eq Hrho2 ltac:(clear - Hclean; solve_notin_auto))
-          as [HeqR2 HΨρ2e].
-        subst R1 R2.
-        assert (Hml : mono_ptyp (msubst_lookup κ β))
-          by (eapply a_inc_lookup_mono; eauto).
-        simpl in Hrefβ.
-        rewrite (ptyp_to_bskl_inh_syn_eq Hml) in Hrefβ.
-        assert (Hmi : bskl_monoish (bskl_arrow Q1 Q2))
-          by (eapply ad_refine_mono_paint_rhs_monoish;
-                [ exact HwfΘr | exact Hrefβ | reflexivity | exact Hml ]).
-        assert (Hmi1 : bskl_monoish Q1) by (inversion Hmi; assumption).
-        assert (Hmi2 : bskl_monoish Q2) by (inversion Hmi; assumption).
-        assert (Htsk1 : is_dskl ψa1) by (inversion Htags1; assumption).
-        assert (Htsk2 : is_dskl ψa2) by (inversion Htags2; assumption).
-        destruct (ad_pat_consis_monoish_counterpart Hconsis1 HwfΘ Htsk1 Hmi1)
-          as (HΨ1e & τa1 & Hma1 & Heqψ1).
-        destruct (ad_pat_consis_monoish_counterpart Hconsis2 HwfΘ Htsk2 Hmi2)
-          as (HΨ2e & τa2 & Hma2 & Heqψ2).
-        assert (Hcons' : {{ Ψ ⨟ Θ ⊢ˢ (uskl_arrow ψa1 ψa2)
-                           ∼ (bskl_arrow Q1 Q2) }}ad)
-          by (eapply ad_pat_consis__arrow; eassumption).
-        assert (Hrefβ' : {{ Θ ⨟ empty ⊢ᵣ (ptyp_to_bskl_syn (msubst_lookup κ β))
-                           ⊳ (bskl_arrow Q1 Q2) }}ad)
-          by (eapply refine_primary_to_plain_split; eassumption).
-        (* ⭐⭐ THE PAYLOAD-SCOPE DERIVATION (2026-08-04).  The κ-extension the
-           repaired SE-FlexR needs is reported well-formed in [Θw], the FIXED
-           context; here we only have [a_wf_ptyp Θ], and under a ∀ row [Θ] is
-           [Θw] plus the bound rigids.  The counterpart is nevertheless apart
-           from every one of them, and the reason is that BOTH bounds below are
-           over the context's DEFINITIONS, never over its domain — a rigid
-           binder carries no definition.  (Routing through [dom Θr] instead
-           would FAIL: the [forall_syn_tagged] row puts its binder on the Θr
-           side.  [dom Θw] is what both bounds actually land in.) *)
-        assert (Hdefw : forall α0 τ0, binds α0 (abind_flex_mono_def τ0) Θ ->
-                  α0 `in` dom Θw /\ ftvar_in_ptyp τ0 [<=] dom Θw).
-        { intros α0 τ0 Hb.
-          pose proof (Hdefs _ _ Hb) as Hbw.
-          split; [ eapply binds_In; exact Hbw
-                 | eapply a_wf_aenv_def_ftv_dom;
-                     [ exact HwfΘw | exact Hbw ] ]. }
-        assert (HftQ : ftvar_in_bskl (bskl_arrow Q1 Q2) [<=] dom Θw).
-        { eapply ad_refine_mono_paint_ftv_bound;
-            [ exact HwfΘ | exact Hrefβ' | reflexivity | exact Hml
-            | exact (Hκw β Hflxβ) | exact Hdefw ]. }
-        assert (Hftψ : ftvar_in_uskl (uskl_arrow ψa1 ψa2) [<=] dom Θw).
-        { pose proof (consis_subject_ftv_defs_bound Hcons' Hdefw) as Ht.
-          clear - Ht HftQ; fsetdec. }
-        assert (Hwfar : a_wf_ptyp Θw (ptyp_arrow τa1 τa2)).
-        { eapply a_wf_ptyp_mono_strengthen_dom;
-            [ exact HwfΘ | exact Hmon | apply mono_ptyp__arrow; assumption
-            | eapply ad_pat_consis_mono_subject_wf;
-                [ exact Hcons' | rewrite Heqψ1, Heqψ2; reflexivity
-                | apply mono_ptyp__arrow; assumption ]
-            | ].
-          rewrite Heqψ1, Heqψ2 in Hftψ. simpl in Hftψ |- *.
-          rewrite !ftvar_ptyp_to_uskl_syn in Hftψ. exact Hftψ. }
-        split; [ clear - Hsubeq2 H HΨ1e HΨ2e; fsetdec | ].
-        split; [ exists τa1, τa2; repeat split; assumption | ].
-        intros Δx.
-        simpl.
-        rewrite Heqψ1, Heqψ2.
-        change (uskl_arrow (ptyp_to_uskl_syn τa1) (ptyp_to_uskl_syn τa2))
-          with (ptyp_to_uskl_syn (ptyp_arrow τa1 τa2)).
-        eapply mono_paint_paint_refine_consis_ppre with (Δr := empty);
-          [ exact Hcons' | exact HwfΘ | rewrite Heqψ1, Heqψ2; reflexivity
-          | apply mono_ptyp__arrow; assumption
-          | clear; fsetdec | exact Hml | exact Hrefβ' ]. }
-      (* ⭐⭐ THE ρ-DIRTY COMPANION OF [FLEX] (2026-08-05, the SolE-FlexR
-         repair).  Everything the SE-FlexR row below actually needs — the
-         counterpart monotype, its well-formedness and its scope — is
-         available WITHOUT [FLEX]'s cleanliness step, hence without reading
-         the [flex_apart] premise at all.
-
-         [FLEX] argues "the guess is Δρ-CLEAN, so ρ is the identity on it, so
-         the consistency SUBJECT *is* the guess".  That detour existed because
-         the OLD row answered a flexible counterpart with the FLEXIBLE, and
-         the obligation then compared the whole guess against a κ-image — a
-         whole-object comparison with no position-wise escape.  The repaired
-         row answers [guess^TY(Pi)], so we may instead read the monotype off
+      (* ⭐⭐ THE FLEXIBLE-P0 DISCHARGE (the SolE-FlexR repair).  Everything
+         the SE-FlexR row below needs — the counterpart monotype, its
+         well-formedness and its scope — is available WITHOUT knowing the
+         guess is Δρ-clean.  The repaired row answers [guess^TY(Pi)], so we
+         read the monotype off
          the SUBJECT and lift it to the GUESS: ρ is CONGRUENT at every
          constructor and non-trivial only at a bare VARIABLE ([ursubst__leaf]),
          and a bare variable is itself a monotype ([uskl_rsubst_mono_target]).
@@ -927,7 +806,7 @@ Proof.
             [ exact Hcons' | rewrite HeqR1, HeqR2; reflexivity
             | apply mono_ptyp__arrow; assumption ]. }
         (* both bounds below are over the context's DEFINITIONS, never over a
-           domain — a rigid binder carries no definition (see [FLEX]) *)
+           domain — a rigid binder carries no definition *)
         assert (Hdefw : forall α0 τ0, binds α0 (abind_flex_mono_def τ0) Θ ->
                   α0 `in` dom Θw /\ ftvar_in_ptyp τ0 [<=] dom Θw).
         { intros α0 τ0 Hb.
@@ -1029,16 +908,15 @@ Proof.
                 by (eapply msubst_pskl_tvar_id;
                     [ exact HwfΘ0 | exact Hκ | exact Hrig ]).
               rewrite Hmid in Hrefine1. simpl in Hrefine1.
-              eapply (ad_refine_syn_rigid_var_nonvar_absurd_sub Hrefine1);
+              eapply (ad_refine_syn_rigid_var_nonvar_absurd Hrefine1);
                 [ intros x b Hb; eapply aenv_split_sub_r;
                     [ exact HspΘ | exact Hb ]
                 | apply a_wf_aenv_uniq; exact HwfΘ
                 | eapply a_inc_binds_tvar; eauto
                 | intros β0 Hcc; discriminate Hcc ].
             * (* flexible: SE-FlexR + the discharge chain *)
-              (* ⭐⭐ [FLEXMONO], not [FLEX] (2026-08-05): this row needs the
-                 counterpart monotype and its SCOPE, and neither needs the
-                 [flex_apart] cleanliness step.  See the block's header. *)
+              (* [FLEXMONO]: this row needs the counterpart monotype and its
+                 SCOPE, neither of which needs the guess to be Δρ-clean. *)
               destruct (FLEXMONO β Hflx Hrefine1)
                 as (HΨae
                     & (τa1 & τa2 & Hma1 & Hma2 & Heq1 & Heq2 & Hwfar
@@ -1052,12 +930,9 @@ Proof.
               (* ⭐ SE-FlexR, REPAIRED.  The output is [guess^TY(P_i)] — the
                  pattern the collection has accumulated — not the flexible,
                  so the witness is the guess and the κ-extension is the one
-                 [a_guess_ty_witness_mono] builds alongside it.  The old
-                 proof went the other way: its witness was [β̂] and the
-                 obligation was discharged by [FLEX]'s [Hqf], the mono-paint
-                 bridge through the refinement.  Here the precision
-                 obligation IS the witness's own output — [Hqf] survives only
-                 as the source of the counterpart monotype [τa1 → τa2]. *)
+                 [a_guess_ty_witness_mono] builds alongside it.  The precision
+                 obligation IS the witness's own output; [FLEXMONO] is only
+                 the source of the counterpart monotype [τa1 → τa2]. *)
               assert (Hmar : mono_ptyp (ptyp_arrow τa1 τa2))
                 by (apply mono_ptyp__arrow; assumption).
               assert (Hpre1' : {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ (pskl_arrow Pi1 Pi2))
@@ -1100,9 +975,7 @@ Proof.
                 with (ptyp_to_uskl_syn (ptyp_arrow τa1 τa2)).
               (* ⭐ NO Δ-freshness needed: [guess^TY]'s output is a PAINT,
                  hence HOLE-FREE, and precision with a ghost-free subject is
-                 Δ-MONOTONE.  (The old proof had to be Δ-universal instead,
-                 via FLEX's [Hqf] — the flexible it returned carried no such
-                 structure.)  This is the same reason the repair leaves
+                 Δ-MONOTONE.  This is the same reason the repair leaves
                  [a_solve_eq_no_ghost_p0] true. *)
               eapply ad_partial_precise_psi_cong;
                 [ eapply ad_ppre_no_ghost_subject_delta_mono;
@@ -1281,7 +1154,7 @@ Proof.
           + (* P0 = unit: refinement absurd *)
             simpl in Hrefine1. inversion Hrefine1.
           + (* P0 = var_b *) inversion HwfP00.
-          + (* P0 = var β: rigid absurd / flexible via SE-GhostL + FLEX *)
+          + (* P0 = var β: rigid absurd / flexible via SE-GhostL *)
             inversion HwfP00; subst;
             match goal with Hb : a_binds_tvar β _ |- _ =>
               rename Hb into Habt end.
@@ -1291,26 +1164,47 @@ Proof.
                 by (eapply msubst_pskl_tvar_id;
                     [ exact HwfΘ0 | exact Hκ | exact Hrig ]).
               rewrite Hmid in Hrefine1. simpl in Hrefine1.
-              eapply (ad_refine_syn_rigid_var_nonvar_absurd_sub Hrefine1);
+              eapply (ad_refine_syn_rigid_var_nonvar_absurd Hrefine1);
                 [ intros x b Hb; eapply aenv_split_sub_r;
                     [ exact HspΘ | exact Hb ]
                 | apply a_wf_aenv_uniq; exact HwfΘ
                 | eapply a_inc_binds_tvar; eauto
                 | intros β0 Hcc; discriminate Hcc ].
-            * (* ⭐ the cleanliness [FLEX] wants is FREE here: the subject is
-                 [◇], so [Hpre1] IS [ad_ppre__ghost] and [Hhd] is its own side
-                 condition — with [Δρ ⊆ Δ] that is exactly the premise.
-                 ⚠️ NAMED, not [ltac:(… solve_notin_auto)]: a premise slot runs its
-                 tactic against a goal whose set arguments are still evars. *)
-              assert (Hclean0 : (ftvar_in_uskl (uskl_arrow ψa1 ψa2))
-                                ∩ Δρ [=] empty)
-                by (cbn [ftvar_in_uskl]; clear - Hhd Hdelta; fsetdec).
-              destruct (FLEX β Hclean0 Hflx Hrefine1) as (HΨae & _ & Hqf).
+            * (* the guess is Δρ-CLEAN for free here: the subject is [◇], so
+                 [Hpre1] IS [ad_ppre__ghost] and [Hhd] is its own side
+                 condition — with [Δρ ⊆ Δ] that is the cleanliness.  So ρ is
+                 the identity on the guess, the consistency subject IS the
+                 guess, and the mono-paint precision chain applies. *)
+              destruct (FLEXMONO β Hflx Hrefine1)
+                as (HΨae & (τa1 & τa2 & Hma1 & Hma2 & Heq1 & Heq2 & _ & _)).
+              destruct (uskl_rsubst_clean_eq Hrho1
+                          ltac:(clear - Hhd Hdelta; fsetdec)) as [HeqR1 _].
+              destruct (uskl_rsubst_clean_eq Hrho2
+                          ltac:(clear - Hhd Hdelta; fsetdec)) as [HeqR2 _].
+              assert (Hcons' : {{ Ψ ⨟ Θ ⊢ˢ (uskl_arrow ψa1 ψa2)
+                                 ∼ (bskl_arrow Q1 Q2) }}ad)
+                by (rewrite <- HeqR1, <- HeqR2;
+                    eapply ad_pat_consis__arrow; eassumption).
+              assert (Hml : mono_ptyp (msubst_lookup κ β))
+                by (eapply a_inc_lookup_mono; eauto).
+              assert (Hrefβ : {{ Θ ⨟ empty ⊢ᵣ (ptyp_to_bskl_syn (msubst_lookup κ β))
+                                 ⊳ (bskl_arrow Q1 Q2) }}ad).
+              { pose proof Hrefine1 as Hr. simpl in Hr.
+                rewrite (ptyp_to_bskl_inh_syn_eq Hml) in Hr.
+                eapply refine_primary_to_plain_split; eassumption. }
               eapply solve_ext_nil with (Pa := (pskl_var_f β)); [ apply a_solve_eq__ghost_l | ].
               intros Δ' HS1 HS2 HS3.
+              assert (Hq : {{ Θ ⨟ (Δ `union` Δ') ⊢ˢ (msubst_pskl κ (pskl_var_f β))
+                             ⊑ᵖ[ empty ] (uskl_arrow ψa1 ψa2) }}ad).
+              { simpl. rewrite Heq1, Heq2.
+                change (uskl_arrow (ptyp_to_uskl_syn τa1) (ptyp_to_uskl_syn τa2))
+                  with (ptyp_to_uskl_syn (ptyp_arrow τa1 τa2)).
+                eapply mono_paint_paint_refine_consis_ppre with (Δr := empty);
+                  [ exact Hcons' | exact HwfΘ | rewrite Heq1, Heq2; reflexivity
+                  | apply mono_ptyp__arrow; assumption
+                  | clear; fsetdec | exact Hml | exact Hrefβ ]. }
               eapply ad_partial_precise_psi_cong;
-                [ exact (Hqf (Δ `union` Δ'))
-                | clear - HΨie HΨae; fsetdec ].
+                [ exact Hq | clear - HΨie HΨae; fsetdec ].
           + (* P0 = arrow: □-precisions per branch + branch main IHs *)
             assert (HwfP01 : {{ Θ0 ⨟ empty ⊢ₚₛ P01 }}a)
               by (inversion HwfP00; assumption).
@@ -1578,7 +1472,7 @@ Proof.
             by (eapply msubst_pskl_tvar_id;
                 [ exact HwfΘ0 | exact Hκ | exact Hrig ]).
           rewrite Hmid in Hrefine. simpl in Hrefine.
-          eapply (ad_refine_syn_rigid_var_nonvar_absurd_sub Hrefine)
+          eapply (ad_refine_syn_rigid_var_nonvar_absurd Hrefine)
             with (Θfull := Θ);
             [ intros x b Hb; eapply aenv_split_sub_r;
                 [ exact HspΘ | exact Hb ]
@@ -2208,7 +2102,7 @@ Proof.
                 by (eapply msubst_pskl_tvar_id;
                     [ exact HwfΘ0 | exact Hκ | exact Hrig ]);
               rewrite Hmid in Hin; simpl in Hin;
-              eapply (ad_refine_syn_rigid_var_nonvar_absurd_sub Hin);
+              eapply (ad_refine_syn_rigid_var_nonvar_absurd Hin);
                 [ intros x b Hb; eapply aenv_split_sub_r;
                     [ exact HspΘ | exact Hb ]
                 | apply a_wf_aenv_uniq; exact HwfΘ
@@ -2323,7 +2217,7 @@ Proof.
             by (eapply msubst_pskl_tvar_id;
                 [ exact HwfΘ0 | exact Hκ | exact Hrig ]).
           rewrite Hmid in Hrefine. simpl in Hrefine.
-          eapply (ad_refine_syn_rigid_var_nonvar_absurd_sub Hrefine)
+          eapply (ad_refine_syn_rigid_var_nonvar_absurd Hrefine)
             with (Θfull := Θ);
             [ intros x b Hb; eapply aenv_split_sub_r;
                 [ exact HspΘ | exact Hb ]
@@ -3474,16 +3368,7 @@ Qed.
 (*   2. delta_def_fresh Δ Θ — the paper's implicit wf of the Δ-extended   *)
 (*      context; machine-checked necessary; free at call sites            *)
 (*      (WF-SIDE-CONDITIONS §7: binders postdate definitions).            *)
-(*   3. flex_apart Θ0 Δρ P0 ψa — the LE-FlexR freshening invariant (a     *)
-(*      raw Θ0-flex of P0 never faces a ρ-replaced part of ψa); NOT       *)
-(*      derivable from the other premises (cex_p6_flex_freshened.v);      *)
-(*      ⭕ and, since 2026-08-05, NOT CONSUMED BY THIS PROOF EITHER —     *)
-(*      see the annotation on the premise itself.  The witness that       *)
-(*      motivated it (cex_p6_flex_counterpart.v) is RETRACTED, killed by  *)
-(*      the repaired SolE-FlexR (cex/probe_flexr_neutralises_p6.v).       *)
-(*      vacuous (fa_clean) at every ρ = id call site, e.g. P6-Cs's,       *)
-(*      since Δρ = ∅ — only the P6-Rv ForallL descent maintains it.       *)
-(*   4. the rsubst_fresh / Δρ ⊆ Δ / shielded pack — replaces the paper's     *)
+(*   3. the rsubst_fresh / Δρ ⊆ Δ / shielded pack — replaces the paper's     *)
 (*      positional "Pi has the same rigid variable at every ρ-position"   *)
 (*      side condition ([paper-gap], see the sub/look/prop_rsubst.v         *)
 (*      header); established at the one leaf-creating call site, P6-Rv    *)
