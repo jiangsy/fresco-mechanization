@@ -9,8 +9,8 @@
     the derived equations — are prop_run_corollaries.v §2.)
 
     ⭐ §2 is the campaign's FIRST LEVEL, CLOSED: completeness of the LOOK
-    block's two runners ([e_lookeq_run_complete] /
-    [e_looksub_run_complete]) — an [a_*] derivation whose inputs the
+    block's two implementations ([e_lookeq_impl_complete] /
+    [e_looksub_impl_complete]) — an [a_*] derivation whose inputs the
     supply covers means the runner does not return [None].  The coverage
     premise is the ONLY hypothesis beyond the derivation: the e-side
     rules state freshness against the supply, so the runner's own fresh
@@ -21,7 +21,7 @@
     is the template every level above copies (§8c.6).
 
     ⭐ §3 and §4 CLOSE the SOLVE level, both layers
-    ([e_solve_eq_run_complete] / [e_solve_sub_run_complete]): the arrow
+    ([e_solve_eq_impl_complete] / [e_solve_sub_impl_complete]): the arrow
     rows thread the CONTEXT, so the motive carries the derivation's
     context separately, related to the runner's by [flex_agree] on the
     inputs' variables (§3's banner).  §4 additionally pays the sub
@@ -620,24 +620,6 @@ Proof.
       discriminate.
 Qed.
 
-(** ⭐ The eq layer's headline: a derivation at covered inputs means the
-    RUNNER answers. *)
-Lemma e_lookeq_run_complete : forall S0 Θ α P P' HP HP' Ξ C,
-  {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}a ->
-  ftvar_in_aenv Θ ∪ {{ α }} ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P' [<=] S0 ->
-  e_lookeq_run S0 Θ α P P' HP HP' <> None.
-Proof.
-  intros * Hd Hcov. unfold e_lookeq_run.
-  pose proof (e_lookeq_impl_complete HP HP'
-                (e_lookeq_order_total S0 Θ α P P') Hd Hcov) as Hne.
-  revert Hne.
-  destruct (e_lookeq_impl S0 Θ α P P' HP HP'
-              (e_lookeq_order_total S0 Θ α P P')) as [ [r Hr] | ];
-    intros Hne.
-  - discriminate.
-  - exact (False_ind _ (Hne eq_refl)).
-Qed.
-
 (** The looksub twins of the two kill tactics: one for motive IHs (all
     arguments explicit), one dropping into the FINISHED eq lemma. *)
 Local Ltac kill_sub_call IH Hder Hcv r Hr :=
@@ -1102,23 +1084,6 @@ Proof.
       kill_sub_call IHf HPREM Hcv1 r1 Hr1. discriminate.
 Qed.
 
-(** ⭐ The sub layer's headline. *)
-Lemma e_looksub_run_complete : forall S0 Θ α m P P' HP HP' Ξ C,
-  {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
-  ftvar_in_aenv Θ ∪ {{ α }} ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P' [<=] S0 ->
-  e_looksub_run S0 Θ α m P P' HP HP' <> None.
-Proof.
-  intros * Hd Hcov. unfold e_looksub_run.
-  pose proof (e_looksub_impl_complete HP HP'
-                (e_looksub_order_total S0 Θ α m P P') Hd Hcov) as Hne.
-  revert Hne.
-  destruct (e_looksub_impl S0 Θ α m P P' HP HP'
-              (e_looksub_order_total S0 Θ α m P P')) as [ [r Hr] | ];
-    intros Hne.
-  - discriminate.
-  - exact (False_ind _ (Hne eq_refl)).
-Qed.
-
 (* ===================================================================== *)
 (*  §3  The SOLVE level, eq layer (§8c.3, level 2a)                       *)
 (*                                                                        *)
@@ -1150,9 +1115,6 @@ Qed.
 
 Definition flex_agree (V : atoms) (Θ1 Θ2 : aenv) : Prop :=
   forall α, α `in` V -> (a_flex_tvar Θ1 α <-> a_flex_tvar Θ2 α).
-
-Lemma flex_agree_refl : forall V Θ, flex_agree V Θ Θ.
-Proof. intros V Θ α _. tauto. Qed.
 
 Lemma flex_agree_weaken : forall V V' Θ1 Θ2,
   flex_agree V Θ1 Θ2 -> V' [<=] V -> flex_agree V' Θ1 Θ2.
@@ -1812,29 +1774,6 @@ Proof.
       kill_seq_call IHf HPREM Hagr1 Hscp1 Hcov1 r1 Hr1. discriminate.
 Qed.
 
-(** ⭐ The eq-solve headline: a derivation at scoped, covered inputs means
-    the runner answers.  The context equality at the entry point makes the
-    agreement premise reflexive. *)
-Lemma e_solve_eq_run_complete : forall S0 Θ P Q HP HQ Ξ P',
-  {{ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}a ->
-  ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] ftvar_in_aenv Θ ->
-  ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] S0 ->
-  e_solve_eq_run S0 Θ P Q HP HQ <> None.
-Proof.
-  intros * Hd Hscp Hcov. unfold e_solve_eq_run.
-  assert (Hagr : flex_agree (ftvar_in_pskl P ∪ ftvar_in_pskl Q) Θ Θ)
-    by apply flex_agree_refl.
-  pose proof (e_solve_eq_impl_complete HP HQ
-                (@e_solve_eq_order_total S0 Θ P Q HP)
-                Hd Hagr Hscp Hcov) as Hne.
-  revert Hne.
-  destruct (e_solve_eq_impl S0 Θ P Q HP HQ
-              (@e_solve_eq_order_total S0 Θ P Q HP)) as [ [r Hr] | ];
-    intros Hne.
-  - discriminate.
-  - exact (False_ind _ (Hne eq_refl)).
-Qed.
-
 (* ===================================================================== *)
 (*  §4  The SOLVE level, sub layer (§8c.3, level 2b)                      *)
 (*                                                                        *)
@@ -1895,32 +1834,6 @@ Proof.
   exists (swap_aenv b β Ξ), (swap_pskl b β P'). exact Hs.
 Qed.
 Arguments a_solve_sub_rebind_l {Θ m P Qt Ξ P' b β}.
-
-Lemma a_solve_sub_rebind_r : forall Θ m Ps Q Ξ P' b β,
-  {{ ((b ~ abind_tvar) ++ Θ) ⊢ₛ Ps ≼[ m ]
-     (open_pskl_wrt_pskl Q (pskl_var_f b)) ⤳ Ξ ⨾ P' }}a ->
-  b `notin` ftvar_in_aenv Θ ∪ ftvar_in_pskl Ps ∪ ftvar_in_pskl Q ->
-  β `notin` ftvar_in_aenv Θ ∪ ftvar_in_pskl Ps ∪ ftvar_in_pskl Q ->
-  exists Ξ' P'',
-    {{ ((β ~ abind_tvar) ++ Θ) ⊢ₛ Ps ≼[ m ]
-       (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ Ξ' ⨾ P'' }}a.
-Proof.
-  intros * Hp Hb Hβ.
-  destruct (β == b) as [-> | Hne]; [ exists Ξ, P'; exact Hp | ].
-  assert (Hctx : swap_aenv b β ((b ~ abind_tvar) ++ Θ)
-                 = (β ~ abind_tvar) ++ Θ).
-  { simpl. rewrite swap_atom_l.
-    rewrite (swap_aenv_fresh_id b β Θ) by (clear - Hb Hβ; fsetdec).
-    reflexivity. }
-  pose proof (proj1 (a_solve_sub_eq_swap b β) _ _ _ _ _ _ Hp) as Hs.
-  rewrite Hctx in Hs.
-  rewrite swap_pskl_open_var in Hs.
-  rewrite swap_atom_l in Hs.
-  rewrite (swap_pskl_fresh_id b β Ps) in Hs by (clear - Hb Hβ; fsetdec).
-  rewrite (swap_pskl_fresh_id b β Q) in Hs by (clear - Hb Hβ; fsetdec).
-  exists (swap_aenv b β Ξ), (swap_pskl b β P'). exact Hs.
-Qed.
-Arguments a_solve_sub_rebind_r {Θ m Ps Q Ξ P' b β}.
 
 Lemma a_solve_sub_rebind_r_ctx : forall Θ m Ps Q Ξ P' b β,
   {{ ((b ~ abind_tvar) ++ Θ) ⊢ₛ Ps ≼[ m ]
@@ -2690,27 +2603,4 @@ Proof.
                       [<=] S0)
       by (clear - Hcov; simpl in *; fsetdec).
     kill_ssub_call IHf HP2 Hagr1 Hscp1 Hcov1 r1 Hr1. discriminate.
-Qed.
-
-(** ⭐ The sub-solve headline: a derivation at scoped, covered inputs means
-    the runner answers.  The context equality at the entry point makes the
-    agreement premise reflexive. *)
-Lemma e_solve_sub_run_complete : forall S0 Θ m P Q HP HQ Ξ P',
-  {{ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}a ->
-  ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] ftvar_in_aenv Θ ->
-  ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] S0 ->
-  e_solve_sub_run S0 Θ m P Q HP HQ <> None.
-Proof.
-  intros * Hd Hscp Hcov. unfold e_solve_sub_run.
-  assert (Hagr : flex_agree (ftvar_in_pskl P ∪ ftvar_in_pskl Q) Θ Θ)
-    by apply flex_agree_refl.
-  pose proof (e_solve_sub_impl_complete HP HQ
-                (@e_solve_sub_order_total S0 Θ m P Q HP)
-                Hd Hagr Hscp Hcov) as Hne.
-  revert Hne.
-  destruct (e_solve_sub_impl S0 Θ m P Q HP HQ
-              (@e_solve_sub_order_total S0 Θ m P Q HP)) as [ [r Hr] | ];
-    intros Hne.
-  - discriminate.
-  - exact (False_ind _ (Hne eq_refl)).
 Qed.

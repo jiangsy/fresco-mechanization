@@ -181,6 +181,24 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Remove unused completeness entry points
+
+Removed seven internal completeness wrappers with no consumers: the four
+look/solve runner corollaries, the assign/unify implementation corollaries,
+and the consistency runner corollary. The live proofs use arbitrary-order
+implementation completeness directly. Also removed `flex_agree_refl`, used
+only by the deleted wrappers, and the unused fixed-context
+`a_solve_sub_rebind_r`; its live counterpart permits the context to move.
+Updated the remaining section headers to name the actual entry points.
+
+**Reduction:** 166 nonblank, noncomment Coq lines, including the dead
+`Arguments` declaration. Every retained theorem statement is unchanged;
+`README.v` and computational definitions are unchanged.
+
+**Validation:** full `make coq`; all 34 headline assumption checks closed
+under the global context. Extracted OCaml unchanged.
+
+
 ## 2026-10-11 — Direct induction for subtyping/flexible-walk completeness
 
 Exposed the combined subtyping order's arrow tail, ForallL continuation,

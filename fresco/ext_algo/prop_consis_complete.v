@@ -2127,63 +2127,12 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §8  THE THREE HEADLINES                                               *)
+(*  §8  The consistency implementation entry point                         *)
 (*                                                                        *)
 (*  The side conditions are prop_consis.v §4's, verbatim: the context is  *)
 (*  [uniq] and the supply covers it — ⚠️ including [Δ1] and [Δ2], which    *)
 (*  are reachable from neither the context nor the skeletons.             *)
 (* ===================================================================== *)
-
-Corollary e_assign_impl_complete : forall S0 Θ Ξ α P
-    (HP : lc_pskl P) (HD : aenv_defs_mono (Ξ ++ Θ))
-    (H : e_assign_order S0 Θ Ξ α P) Sd Θd,
-  {{ S0 ↝ Sd ⊨ Θ ⊲[ Ξ ] α ≔ P ⊣ Θd }}e ->
-  uniq (Ξ ++ Θ) ->
-  ftvar_in_aenv (Ξ ++ Θ) ∪ ftvar_in_pskl P [<=] S0 ->
-  exists r ps,
-    e_assign_impl S0 Θ Ξ α P HP HD H = Some r
-    /\ (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0)
-    /\ swaps_atoms ps Sd [=] ur_supply (proj1_sig r)
-    /\ swaps_aenv ps Θd = ur_ctx (proj1_sig r).
-Proof.
-  intros * Hd Hu Hcov.
-  set (Ho := e_assign_order_to_call _ _ _ _ _ H).
-  destruct (e_consis_call_impl_complete Ho HP HD Ho Hu Hcov
-              Sd Θd pskl_unit Hd) as [r0 [ps [Heq [Hav [HS [HT _]]]]]].
-  unfold e_assign_impl. fold Ho.
-  destruct (e_consis_call_impl (consis_call_assign Ξ α P) S0 Θ HP HD Ho)
-    as [ [rr Hrr] | ] eqn:Hcl;
-    try rewrite Hcl in Heq; cbn [consis_call_answer proj1_sig] in Heq;
-    [ inversion Heq; subst | discriminate ].
-  exists (exist _ (mk_unify_result (cs_supply r0) (cs_ctx r0)) Hrr), ps.
-  split; [ reflexivity | ].
-  split; [ exact Hav | ]. split; [ exact HS | exact HT ].
-Qed.
-
-Corollary e_unify_impl_complete : forall S0 Θ α β
-    (HD : aenv_defs_mono Θ) (H : e_unify_order S0 Θ α β) Sd Θd,
-  {{ S0 ↝ Sd ⊨ Θ ⊲ α ≈ᵘ β ⊣ Θd }}e ->
-  uniq Θ ->
-  ftvar_in_aenv Θ [<=] S0 ->
-  exists r ps,
-    e_unify_impl S0 Θ α β HD H = Some r
-    /\ (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0)
-    /\ swaps_atoms ps Sd [=] ur_supply (proj1_sig r)
-    /\ swaps_aenv ps Θd = ur_ctx (proj1_sig r).
-Proof.
-  intros * Hd Hu Hcov.
-  set (Ho := e_unify_order_to_call _ _ _ _ H).
-  destruct (e_consis_call_impl_complete Ho I HD Ho Hu Hcov
-              Sd Θd pskl_unit Hd) as [r0 [ps [Heq [Hav [HS [HT _]]]]]].
-  unfold e_unify_impl. fold Ho.
-  destruct (e_consis_call_impl (consis_call_unify α β) S0 Θ I HD Ho)
-    as [ [rr Hrr] | ] eqn:Hcl;
-    try rewrite Hcl in Heq; cbn [consis_call_answer proj1_sig] in Heq;
-    [ inversion Heq; subst | discriminate ].
-  exists (exist _ (mk_unify_result (cs_supply r0) (cs_ctx r0)) Hrr), ps.
-  split; [ reflexivity | ].
-  split; [ exact Hav | ]. split; [ exact HS | exact HT ].
-Qed.
 
 (** ⚙ The same over [e_consis_impl], i.e. at an ARBITRARY order proof rather
     than at [e_consis_order_total]'s.  Levels 7/8 need this form and not the
@@ -2214,31 +2163,6 @@ Proof.
     [ inversion Heq; subst | discriminate ].
   eexists; exists ps.
   split; [ reflexivity | ].
-  split; [ exact Hav | ]. split; [ exact HS | ].
-  split; [ exact HT | exact HQ ].
-Qed.
-
-(** ⭐ The consistency headline, over the argument-free runner of
-    def_consis_impl.v §4 — the twin of [e_consis_run_sound]. *)
-Theorem e_consis_run_complete : forall Δ1 Δ2 S0 Θ P0 P
-    (HP0 : lc_pskl P0) (HP : lc_pskl P) (HD : aenv_defs_mono Θ) Sd Θd Qd,
-  {{ S0 ↝ Sd ⊨ Θ ⊢[ Δ1 | Δ2 | P0 ] P ∼ Qd ⊣ Θd }}e ->
-  uniq Θ ->
-  ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P ∪ Δ1 ∪ Δ2 [<=] S0 ->
-  exists r ps,
-    e_consis_run Δ1 Δ2 S0 Θ P0 P HP0 HP HD = Some r
-    /\ (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0)
-    /\ swaps_atoms ps Sd [=] cs_supply r
-    /\ swaps_aenv ps Θd = cs_ctx r
-    /\ swaps_pskl ps Qd = cs_out r.
-Proof.
-  intros * Hd Hu Hcov.
-  set (Ho := e_consis_order_to_call _ _ _ _ _ _
-               (@e_consis_order_total Δ1 Δ2 S0 Θ P0 P HP0 HP HD)).
-  destruct (e_consis_call_impl_complete Ho (conj HP0 HP) HD Ho
-              Hu Hcov Sd Θd Qd Hd)
-    as [r [ps [Heq [Hav [HS [HT HQ]]]]]].
-  exists r, ps. split; [ exact Heq | ].
   split; [ exact Hav | ]. split; [ exact HS | ].
   split; [ exact HT | exact HQ ].
 Qed.
