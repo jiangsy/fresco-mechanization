@@ -2005,13 +2005,9 @@ Qed.
 (* ===================================================================== *)
 
 (* ---- The two ForallL rows differ only in the subject's ∀ head (∀^ε or ∀).
-   [uskl_all_hd] names that head, so ONE proof serves both. ---- *)
-Definition uskl_all_hd (o : option atom) (R : uskl) : uskl :=
-  match o with Some ε => uskl_all_tag ε R | None => uskl_all_syn R end.
-
-Lemma uskl_all_hd_erase : forall o R,
-  ⌊ uskl_all_hd o R ⌋ˢ = pskl_all_syn ⌊ R ⌋ˢ.
-Proof. intros [ε | ] R; reflexivity. Qed.
+   [uskl_all_hd] (deco_algo/prop_soundness_sub.v, where the decoration's
+   own ForallL rows share it too) names that head, so ONE proof serves
+   both. ---- *)
 
 Lemma uskl_all_hd_msubst : forall κ o R,
   msubst_uskl_syn κ (uskl_all_hd o R) = uskl_all_hd o (msubst_uskl_syn κ R).
