@@ -53,7 +53,8 @@
 
     ⭐ WHAT IT COSTS: NOTHING SEMANTIC.  Where a guarded row can no longer
     fire, the subject is α-free and [LS-Absent] / [LE-Absent] give the SAME
-    block and the SAME collection ([a_looksub_subject_absent], prop_look_equiv.v);
+    block and the SAME collection (at an α-free subject every [a_looksub]
+    derivation returns [Ξ = ·] and [𝒞 = ·]);
     the guard survives an opening ([ftvar_in_pskl_open_pskl_wrt_pskl_lower])
     and a substitution (the substituted variable is [≠ α]).
 
@@ -61,11 +62,10 @@
     the SUPPLY, and only the threaded encoding has one.  [e_looksub_sound]
     is unaffected — a SMALLER relation still maps into the [a_] side — and the
     one place the two meet, [a_looksub_lookeq_rel_e] (prop_lift_kit.v §7),
-    pays for the asymmetry with [rel_e_absent_{sub,eq}]: at an α-free subject
+    pays for the asymmetry: at an α-free subject
     the a-side's own answer is already the empty one, so the transport hands
     back [Ξ = ·], [𝒞 = ·].  Guarding [a_looksub] too would reopen ~250
-    construction sites across eleven files AND break [alpha_stack_looksub]
-    (algo/sub/look/prop_sub_cstr.v:373) once the second guard lands.
+    construction sites across eleven files.
     docs/PAPER-GAPS.md carries the finding in the paper's own notation. *)
 
 Require Import Coq.Lists.List.

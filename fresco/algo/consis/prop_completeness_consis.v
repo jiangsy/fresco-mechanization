@@ -3206,8 +3206,6 @@ Proof.
       apply Hrr. exact Hr'.
 Qed.
 
-(** Bridge to the Δ-free skeleton wf (the form the ≡ˢ/V lemmas take):
-    Δ-variables must be tvar-ish in the receiving context. *)
 (** The join's target erases to a well-formed (Δ-free) skeleton — the
     output-regularity C-Arrow's precision transport needs. *)
 Lemma ad_pat_consis_target_wf : forall Ψ Θ R Qt,

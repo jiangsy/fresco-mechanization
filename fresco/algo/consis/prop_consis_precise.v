@@ -384,7 +384,7 @@ Qed.
 (** The consistency tag context is contained in the SUBJECT's syntactic
     tags — every solved tag is consumed at an [all_tag] node of the
     subject.  (Syntactic counterpart of [ad_partial_precise_tags_sub],
-    above; the precision-substitution crux uses it to pin
+    sub/prop_completeness_sub_precise.v; the precision-substitution crux uses it to pin
     the residual tag context of a wholly-[ψa] subject to ∅.) *)
 Lemma ad_pat_consis_ftag_sub : forall Ψ Θ R' Q,
   {{ Ψ ⨟ Θ ⊢ˢ R' ∼ Q }}ad ->
